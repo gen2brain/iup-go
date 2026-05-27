@@ -35,10 +35,8 @@ typedef struct _IeflTableData
   Evas_Object** cell_bgs;      /* Background rectangles for cells (for colors) */
   Evas_Object** cell_images;   /* Image widgets per cell (only when show_image) */
   Evas_Object** cell_containers; /* Box containers per cell (only when show_image, packed into table) */
-  Evas_Object* focus_rect;     /* Focus rectangle overlay */
-  Evas_Object* focus_clip;     /* Clip rectangle for focus rect */
-  int focus_rect_lin;          /* Current focus rect position */
-  int focus_rect_col;
+  int focus_cell_lin;          /* Currently focus-painted cell (1-based, 0 = none) */
+  int focus_cell_col;
   int header_height;           /* Height of header row */
   int row_height;              /* Height of data rows */
   int* col_widths;             /* Array of column widths */
@@ -72,7 +70,7 @@ typedef struct _IeflTableData
 #define MIN_COL_WIDTH 20
 
 /* Forward declarations */
-static void eflTableUpdateVisibleRows(Ihandle* ih);
+static void eflTableUpdateVisibleRows(Ihandle* ih, int force);
 static void eflTableRebuildVirtualCells(Ihandle* ih);
 static void eflTableUpdateSortIndicators(Ihandle* ih);
 static void eflTableSortRows(Ihandle* ih, int col, int ascending);
@@ -204,74 +202,74 @@ static void eflTableGetCellFgColor(Ihandle* ih, int lin, int col, unsigned char*
   *r = 0; *g = 0; *b = 0;
 }
 
-static void eflTableUpdateFocusRect(Ihandle* ih)
+static int eflTablePoolRow(IeflTableData* data, int lin)
+{
+  int pool_lin = data->is_virtual ? (lin - data->first_visible_row + 1) : lin;
+  if (pool_lin < 1 || pool_lin > data->alloc_num_lin)
+    return -1;
+  return pool_lin;
+}
+
+static void eflTableSetCellBgColor(Ihandle* ih, int lin, int col)
 {
   IeflTableData* data = IEFL_TABLE_DATA(ih);
-  int lin, col;
   int num_col = ih->data->num_col;
-  int idx;
-  Evas_Object* cell_widget;
-  int x, y, w, h;
+  int pool_lin, idx;
+  Evas_Object* cell_bg;
+  unsigned char r, g, b;
+  int a;
 
-  if (!data || !data->focus_rect || !data->table)
+  if (!data || !data->cell_bgs)
+    return;
+  if (col < 1 || col > num_col)
+    return;
+  pool_lin = eflTablePoolRow(data, lin);
+  if (pool_lin < 1)
     return;
 
-  /* Hide focus rect if FOCUSRECT=NO */
-  if (!iupAttribGetBoolean(ih, "FOCUSRECT"))
-  {
-    efl_gfx_entity_visible_set(data->focus_rect, EINA_FALSE);
+  idx = (pool_lin - 1) * num_col + (col - 1);
+  cell_bg = data->cell_bgs[idx];
+  if (!cell_bg)
     return;
-  }
 
-  lin = data->selected_lin;
-  col = data->selected_col;
-
-  if (lin < 1 || lin > ih->data->num_lin || col < 1 || col > ih->data->num_col)
+  if (lin == data->selected_lin)
   {
-    efl_gfx_entity_visible_set(data->focus_rect, EINA_FALSE);
-    return;
+    r = data->sel_r; g = data->sel_g; b = data->sel_b; a = 200;
   }
-
-  /* Get the cell background to overlay */
-  idx = (lin - 1) * num_col + (col - 1);
-  cell_widget = data->cell_bgs ? data->cell_bgs[idx] : NULL;
-  if (!cell_widget)
-    cell_widget = data->cell_labels ? data->cell_labels[idx] : NULL;
-  if (!cell_widget)
-  {
-    efl_gfx_entity_visible_set(data->focus_rect, EINA_FALSE);
-    return;
-  }
-
-  /* Get cell geometry and position focus rect as overlay */
-  {
-    Eina_Rect geom = efl_gfx_entity_geometry_get(cell_widget);
-    x = geom.x; y = geom.y; w = geom.w; h = geom.h;
-  }
-
-  /* Update clip rectangle to match scroller viewport */
-  if (data->scroller && data->focus_clip)
-  {
-    int sv_x, sv_y, sv_w, sv_h;
-    evas_object_geometry_get(data->scroller, &sv_x, &sv_y, &sv_w, &sv_h);
-    efl_gfx_entity_position_set(data->focus_clip, EINA_POSITION2D(sv_x, sv_y));
-    efl_gfx_entity_size_set(data->focus_clip, EINA_SIZE2D(sv_w, sv_h));
-  }
-
-  efl_gfx_entity_position_set(data->focus_rect, EINA_POSITION2D(x, y));
-  efl_gfx_entity_size_set(data->focus_rect, EINA_SIZE2D(w, h));
-
-  data->focus_rect_lin = lin;
-  data->focus_rect_col = col;
-
-  /* Style: semi-transparent overlay, dimmed when table doesn't have focus */
-  if (data->has_focus)
-    efl_gfx_color_set(data->focus_rect, 0, 0, 0, 80);
   else
-    efl_gfx_color_set(data->focus_rect, 0, 0, 0, 30);
+  {
+    eflTableGetCellBgColor(ih, lin, col, &r, &g, &b);
+    a = 255;
+  }
 
-  efl_gfx_stack_raise_to_top(data->focus_rect);
-  efl_gfx_entity_visible_set(data->focus_rect, EINA_TRUE);
+  if (iupAttribGetBoolean(ih, "FOCUSRECT") &&
+      lin == data->selected_lin && col == data->selected_col)
+  {
+    int factor = data->has_focus ? (255 - 80) : (255 - 30);
+    r = (unsigned char)(r * factor / 255);
+    g = (unsigned char)(g * factor / 255);
+    b = (unsigned char)(b * factor / 255);
+  }
+
+  efl_gfx_color_set(cell_bg, r, g, b, a);
+}
+
+static void eflTableUpdateFocusCell(Ihandle* ih)
+{
+  IeflTableData* data = IEFL_TABLE_DATA(ih);
+
+  if (!data || !data->cell_bgs)
+    return;
+
+  if ((data->focus_cell_lin != data->selected_lin || data->focus_cell_col != data->selected_col)
+      && data->focus_cell_lin >= 1 && data->focus_cell_col >= 1)
+    eflTableSetCellBgColor(ih, data->focus_cell_lin, data->focus_cell_col);
+
+  if (data->selected_lin >= 1 && data->selected_col >= 1)
+    eflTableSetCellBgColor(ih, data->selected_lin, data->selected_col);
+
+  data->focus_cell_lin = data->selected_lin;
+  data->focus_cell_col = data->selected_col;
 }
 
 static char* eflTableGetCellText(Ihandle* ih, int lin, int col)
@@ -481,23 +479,24 @@ static void eflTableUpdateCellLabel(Ihandle* ih, int lin, int col)
 {
   IeflTableData* data = IEFL_TABLE_DATA(ih);
   int num_col = ih->data->num_col;
-  int idx;
+  int pool_lin, idx;
   char* text;
   Evas_Object* label;
-  Evas_Object* cell_bg;
   int align;
   const char* align_tag;
   char markup[1024];
   unsigned char fg_r, fg_g, fg_b;
-  unsigned char bg_r, bg_g, bg_b;
 
   if (!data || !data->cell_labels)
     return;
 
-  if (lin < 1 || lin > ih->data->num_lin || col < 1 || col > num_col)
+  if (col < 1 || col > num_col)
+    return;
+  pool_lin = eflTablePoolRow(data, lin);
+  if (pool_lin < 1)
     return;
 
-  idx = (lin - 1) * num_col + (col - 1);
+  idx = (pool_lin - 1) * num_col + (col - 1);
   label = data->cell_labels[idx];
 
   if (!label)
@@ -505,9 +504,7 @@ static void eflTableUpdateCellLabel(Ihandle* ih, int lin, int col)
 
   text = eflTableGetCellText(ih, lin, col);
 
-  /* Get colors */
   eflTableGetCellFgColor(ih, lin, col, &fg_r, &fg_g, &fg_b);
-  eflTableGetCellBgColor(ih, lin, col, &bg_r, &bg_g, &bg_b);
 
   /* Apply alignment via style and color via markup */
   align = eflTableGetColumnAlignment(ih, col);
@@ -592,18 +589,7 @@ static void eflTableUpdateCellLabel(Ihandle* ih, int lin, int col)
            fg_r, fg_g, fg_b, text ? text : "");
   elm_object_text_set(label, markup);
 
-  /* Update cell background, preserve selection highlight */
-  if (data->cell_bgs)
-  {
-    cell_bg = data->cell_bgs[idx];
-    if (cell_bg)
-    {
-      if (lin == data->selected_lin)
-        efl_gfx_color_set(cell_bg, data->sel_r, data->sel_g, data->sel_b, 200);
-      else
-        efl_gfx_color_set(cell_bg, bg_r, bg_g, bg_b, 255);
-    }
-  }
+  eflTableSetCellBgColor(ih, lin, col);
 
   if (ih->data->show_image && data->cell_images)
   {
@@ -1048,7 +1034,7 @@ static void eflTableDragPointerUp(void* cb_data, const Efl_Event* ev)
         data->sort_column = source;
 
       if (data->is_virtual)
-        eflTableUpdateVisibleRows(ih);
+        eflTableUpdateVisibleRows(ih, 1);
       else
         eflTableRefreshCells(ih);
     }
@@ -1087,7 +1073,7 @@ static void eflTableResizeCallback(void* data, const Efl_Event* ev)
   }
 
   /* Update focus rect position after layout */
-  eflTableUpdateFocusRect(ih);
+  eflTableUpdateFocusCell(ih);
 }
 
 static void eflTableFocusRectJob(void* data)
@@ -1099,7 +1085,7 @@ static void eflTableFocusRectJob(void* data)
   if (!iupObjectCheck(ih))
     return;
 
-  eflTableUpdateFocusRect(ih);
+  eflTableUpdateFocusCell(ih);
 }
 
 static void eflTableFocusInCallback(void* data, Evas_Object* obj, void* event_info)
@@ -1113,7 +1099,7 @@ static void eflTableFocusInCallback(void* data, Evas_Object* obj, void* event_in
     return;
 
   table_data->has_focus = 1;
-  eflTableUpdateFocusRect(ih);
+  eflTableUpdateFocusCell(ih);
 
   evas_object_focus_set(obj, EINA_TRUE);
 
@@ -1136,7 +1122,7 @@ static void eflTableFocusOutCallback(void* data, Evas_Object* obj, void* event_i
     return;
 
   table_data->has_focus = 0;
-  eflTableUpdateFocusRect(ih);
+  eflTableUpdateFocusCell(ih);
 
   iupCallKillFocusCb(ih);
 }
@@ -1483,7 +1469,7 @@ static void eflTableCellClickCallback(void* data, const Efl_Event* ev)
   }
 
   /* Update focus rectangle */
-  eflTableUpdateFocusRect(ih);
+  eflTableUpdateFocusCell(ih);
 
   /* Ensure scroller has focus for keyboard navigation */
   if (table_data->scroller)
@@ -1952,8 +1938,8 @@ static void eflTableScrollJobCallback(void* data)
   if (table_data)
     table_data->scroll_job = NULL;
 
-  eflTableUpdateVisibleRows(ih);
-  eflTableUpdateFocusRect(ih);
+  eflTableUpdateVisibleRows(ih, 0);
+  eflTableUpdateFocusCell(ih);
 }
 
 static void eflTableVirtualScrollCallback(void* cb_data, Evas_Object* obj, void* event_info)
@@ -2265,7 +2251,7 @@ static void eflTableRebuildVirtualCells(Ihandle* ih)
   data->visible_row_count = visible_rows;
 }
 
-static void eflTableUpdateVisibleRows(Ihandle* ih)
+static void eflTableUpdateVisibleRows(Ihandle* ih, int force)
 {
   IeflTableData* data = IEFL_TABLE_DATA(ih);
   int num_col = ih->data->num_col;
@@ -2309,8 +2295,7 @@ static void eflTableUpdateVisibleRows(Ihandle* ih)
   if (first_data_row < 1)
     first_data_row = 1;
 
-  /* Skip expensive cell updates if first visible row hasn't changed */
-  if (first_data_row == data->first_visible_row)
+  if (!force && first_data_row == data->first_visible_row)
     return;
 
   /* Update spacer heights to keep cells in visible viewport */
@@ -2462,7 +2447,7 @@ IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
   if (data && data->is_virtual)
   {
     /* Virtual mode: update visible rows */
-    eflTableUpdateVisibleRows(ih);
+    eflTableUpdateVisibleRows(ih, 1);
   }
   else
   {
@@ -2651,7 +2636,7 @@ IUP_SDK_API void iupdrvTableSetFocusCell(Ihandle* ih, int lin, int col)
   }
 
   /* Update focus rectangle */
-  eflTableUpdateFocusRect(ih);
+  eflTableUpdateFocusCell(ih);
 
   /* Scroll to cell */
   iupdrvTableScrollToCell(ih, lin, col);
@@ -2711,7 +2696,7 @@ IUP_SDK_API void iupdrvTableRedraw(Ihandle* ih)
   if (data->is_virtual)
   {
     /* Virtual mode: just update visible rows (cells are reused) */
-    eflTableUpdateVisibleRows(ih);
+    eflTableUpdateVisibleRows(ih, 1);
     return;
   }
 
@@ -3081,15 +3066,8 @@ static int eflTableMapMethod(Ihandle* ih)
 
     elm_object_content_set(scroller, table);
 
-    data->focus_clip = efl_add(EFL_CANVAS_RECTANGLE_CLASS, evas_object_evas_get(table));
-    efl_gfx_color_set(data->focus_clip, 255, 255, 255, 255);
-    efl_gfx_entity_visible_set(data->focus_clip, EINA_TRUE);
-
-    data->focus_rect = efl_add(EFL_CANVAS_RECTANGLE_CLASS, evas_object_evas_get(table));
-    evas_object_pass_events_set(data->focus_rect, EINA_TRUE);
-    evas_object_clip_set(data->focus_rect, data->focus_clip);
-    data->focus_rect_lin = 0;
-    data->focus_rect_col = 0;
+    data->focus_cell_lin = 0;
+    data->focus_cell_col = 0;
 
     ih->handle = (void*)scroller;
 
@@ -3153,15 +3131,8 @@ static int eflTableMapMethod(Ihandle* ih)
 
     elm_object_content_set(scroller, table);
 
-    data->focus_clip = efl_add(EFL_CANVAS_RECTANGLE_CLASS, evas_object_evas_get(table));
-    efl_gfx_color_set(data->focus_clip, 255, 255, 255, 255);
-    efl_gfx_entity_visible_set(data->focus_clip, EINA_TRUE);
-
-    data->focus_rect = efl_add(EFL_CANVAS_RECTANGLE_CLASS, evas_object_evas_get(table));
-    evas_object_pass_events_set(data->focus_rect, EINA_TRUE);
-    evas_object_clip_set(data->focus_rect, data->focus_clip);
-    data->focus_rect_lin = 0;
-    data->focus_rect_col = 0;
+    data->focus_cell_lin = 0;
+    data->focus_cell_col = 0;
 
     ih->handle = (void*)scroller;
 
@@ -3228,18 +3199,6 @@ static void eflTableUnMapMethod(Ihandle* ih)
 
     /* Clear all cells */
     eflTableClearCells(ih);
-
-    /* Delete focus rectangle */
-    if (data->focus_rect)
-    {
-      efl_del(data->focus_rect);
-      data->focus_rect = NULL;
-    }
-    if (data->focus_clip)
-    {
-      efl_del(data->focus_clip);
-      data->focus_clip = NULL;
-    }
 
     /* Free column widths */
     if (data->col_widths)
