@@ -123,6 +123,8 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 		setEnterWindowFunc(ih, fn.(EnterWindowFunc))
 	case "LEAVEWINDOW_CB":
 		setLeaveWindowFunc(ih, fn.(LeaveWindowFunc))
+	case "TIPS_CB":
+		setTipsFunc(ih, fn.(TipsFunc))
 	case "K_ANY":
 		setKAnyFunc(ih, fn.(KAnyFunc))
 	case "HELP_CB":

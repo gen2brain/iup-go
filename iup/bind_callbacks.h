@@ -71,6 +71,11 @@ static void goIupSetLeaveWindowFunc(Ihandle *ih) {
 	IupSetCallback(ih, "LEAVEWINDOW_CB", (Icallback) goIupLeaveWindowCB);
 }
 
+CGO_EXPORT extern int goIupTipsCB(void *, int x, int y);
+static void goIupSetTipsFunc(Ihandle *ih) {
+	IupSetCallback(ih, "TIPS_CB", (Icallback) goIupTipsCB);
+}
+
 CGO_EXPORT extern int goIupKAnyCB(void *, int c);
 static void goIupSetKAnyFunc(Ihandle *ih) {
 	IupSetCallback(ih, "K_ANY", (Icallback) goIupKAnyCB);

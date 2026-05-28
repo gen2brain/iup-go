@@ -310,6 +310,28 @@ func setLeaveWindowFunc(ih Ihandle, f LeaveWindowFunc) {
 
 //--------------------
 
+// TipsFunc for TIPS_CB callback.
+// Action before a tip is displayed.
+//
+// https://github.com/gen2brain/iup-go/blob/main/docs/attrib/iup_tip.md
+type TipsFunc func(ih Ihandle, x, y int) int
+
+//export goIupTipsCB
+func goIupTipsCB(ih unsafe.Pointer, x, y C.int) C.int {
+	f := loadCallback((Ihandle)(ih), "_IUPGO_TIPS_CB").Value().(TipsFunc)
+
+	return C.int(f((Ihandle)(ih), int(x), int(y)))
+}
+
+// setTipsFunc for TIPS_CB.
+func setTipsFunc(ih Ihandle, f TipsFunc) {
+	storeCallback(ih, "_IUPGO_TIPS_CB", f)
+
+	C.goIupSetTipsFunc(ih.ptr())
+}
+
+//--------------------
+
 // KAnyFunc for K_ANY callback.
 // Action generated when a keyboard event occurs.
 //
