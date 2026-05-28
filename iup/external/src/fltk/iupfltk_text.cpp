@@ -356,6 +356,23 @@ public:
     delete text_buffer;
   }
 
+  void recalc_display() override
+  {
+    Fl_Align saved = scrollbar_align();
+    if (!(saved & (FL_ALIGN_TOP | FL_ALIGN_BOTTOM)))
+    {
+      Fl_Text_Display::recalc_display();
+      return;
+    }
+
+    scrollbar_align(saved & ~(FL_ALIGN_TOP | FL_ALIGN_BOTTOM));
+    Fl_Text_Display::recalc_display();
+    scrollbar_align(saved);
+
+    if (longest_vline() > text_area.w)
+      Fl_Text_Display::recalc_display();
+  }
+
   int handle(int event) override
   {
     if (event == FL_PASTE && iupfltkHandleDropFiles(iup_handle))
