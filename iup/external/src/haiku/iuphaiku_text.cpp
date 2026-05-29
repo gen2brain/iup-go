@@ -755,6 +755,22 @@ static IupHaikuTextView* haikuTextGetMultilineView(Ihandle* ih)
   return (IupHaikuTextView*)iupAttribGet(ih, "_IUPHAIKU_TEXT_INNER");
 }
 
+/* BTextView offsets are byte offsets into the UTF-8 buffer; IUP positions are character indices. */
+static int32 haikuTextCharToByte(BTextView* tv, int char_pos)
+{
+  const char* text = tv->Text();
+  if (!text || char_pos <= 0) return 0;
+  int32 byte = 0;
+  int chars = 0;
+  while (text[byte] && chars < char_pos)
+  {
+    unsigned char c = (unsigned char)text[byte];
+    byte += (c < 0x80) ? 1 : (c < 0xE0) ? 2 : (c < 0xF0) ? 3 : 4;
+    chars++;
+  }
+  return byte;
+}
+
 static int haikuTextParseRange(BTextView* tv, const char* sel, bool one_based, int32* start, int32* end)
 {
   if (!tv || !sel) return 0;
@@ -763,8 +779,8 @@ static int haikuTextParseRange(BTextView* tv, const char* sel, bool one_based, i
   if (one_based) { s -= 1; e -= 1; }
   if (s < 0) s = 0;
   if (e < s) e = s;
-  *start = s;
-  *end = e;
+  *start = haikuTextCharToByte(tv, s);
+  *end = haikuTextCharToByte(tv, e);
   return 1;
 }
 
@@ -1333,41 +1349,45 @@ static void haikuTextApplyFormatTagFont(BFont& bfont, Ihandle* tag, uint32* mode
   }
 
   uint16 face = bfont.Face();
+  bool is_bold = (face & B_BOLD_FACE) != 0;
+  bool is_italic = (face & B_ITALIC_FACE) != 0;
+  bool is_underline = (face & B_UNDERSCORE_FACE) != 0;
+  bool is_strikeout = (face & B_STRIKEOUT_FACE) != 0;
   bool face_changed = false;
 
   char* weight = iupAttribGet(tag, "WEIGHT");
   if (weight)
   {
-    if (iupStrEqualNoCase(weight, "BOLD") || iupStrEqualNoCase(weight, "EXTRABOLD"))
-      face |= B_BOLD_FACE;
-    else
-      face &= ~B_BOLD_FACE;
+    is_bold = iupStrEqualNoCase(weight, "BOLD") || iupStrEqualNoCase(weight, "EXTRABOLD");
     face_changed = true;
   }
 
   char* italic = iupAttribGet(tag, "ITALIC");
   if (italic)
   {
-    if (iupStrBoolean(italic)) face |= B_ITALIC_FACE; else face &= ~B_ITALIC_FACE;
+    is_italic = iupStrBoolean(italic);
     face_changed = true;
   }
 
   char* underline = iupAttribGet(tag, "UNDERLINE");
   if (underline)
   {
-    if (iupStrEqualNoCase(underline, "NONE")) face &= ~B_UNDERSCORE_FACE;
-    else                                       face |= B_UNDERSCORE_FACE;
+    is_underline = iupStrEqualNoCase(underline, "SINGLE") || iupStrEqualNoCase(underline, "DOUBLE");
     face_changed = true;
   }
 
   char* strikeout = iupAttribGet(tag, "STRIKEOUT");
   if (strikeout)
   {
-    if (iupStrBoolean(strikeout)) face |= B_STRIKEOUT_FACE; else face &= ~B_STRIKEOUT_FACE;
+    is_strikeout = iupStrBoolean(strikeout);
     face_changed = true;
   }
 
-  if (face_changed) { bfont.SetFace(face); *mode |= B_FONT_FACE; }
+  if (face_changed)
+  {
+    iuphaikuFontApplyFace(&bfont, is_bold, is_italic, is_underline, is_strikeout);
+    *mode |= B_FONT_FAMILY_AND_STYLE | B_FONT_FACE;
+  }
 }
 
 extern "C" IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* tag, int /*bulk*/)
@@ -1427,8 +1447,9 @@ extern "C" IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* tag, in
     tv->Insert(start, ph, 3);
     BFont ifont(be_plain_font);
     ifont.SetSize((float)img_h);
-    rgb_color clear = { 0, 0, 0, 0 };
-    tv->SetFontAndColor(start, start + 3, &ifont, B_FONT_ALL, &clear);
+    rgb_color ph_color = tv->ViewColor();
+    ph_color.alpha = 255;
+    tv->SetFontAndColor(start, start + 3, &ifont, B_FONT_ALL, &ph_color);
     itv->AddImageRange(start, bm, img_w, img_h);
     itv->SetSuppress(false);
     return;
@@ -1684,7 +1705,13 @@ static char* haikuTextGetCountAttrib(Ihandle* ih)
 {
   BTextView* tv = haikuTextGetEditor(ih);
   if (!tv) return NULL;
-  return iupStrReturnInt((int)tv->TextLength());
+  const char* text = tv->Text();
+  int count = 0;
+  if (text)
+    for (const char* p = text; *p; ++p)
+      if (((unsigned char)*p & 0xC0) != 0x80)
+        count++;
+  return iupStrReturnInt(count);
 }
 
 static char* haikuTextGetLineCountAttrib(Ihandle* ih)

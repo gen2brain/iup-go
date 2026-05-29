@@ -644,6 +644,15 @@ static int iTextSetMarkdownValueAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
+static int iTextSetAppendMarkdownAttrib(Ihandle* ih, const char* value)
+{
+  if (!ih->data->has_formatting || !ih->data->is_multiline)
+    return 0;
+  if (value)
+    iupMarkdownAppendValue(ih, value);
+  return 0;
+}
+
 static int iTextSetLoadMarkdownAttrib(Ihandle* ih, const char* value)
 {
   FILE* f;
@@ -764,6 +773,7 @@ Iclass* iupTextNewClass(void)
   iupClassRegisterAttribute(ic, "WORDWRAP", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "CHANGECASE", NULL, iTextSetChangeCaseAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MARKDOWNVALUE", NULL, iTextSetMarkdownValueAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "APPENDMARKDOWN", NULL, iTextSetAppendMarkdownAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "LOADMARKDOWN", NULL, iTextSetLoadMarkdownAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
 
   iupdrvTextInitClass(ic);
