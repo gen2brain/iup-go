@@ -901,6 +901,73 @@ static void gtkCanvasSetupGestures(Ihandle* ih)
   g_object_set_data_full(G_OBJECT(ih->handle), "_IUPGTK_GESTURE_TAP", tap, g_object_unref);
 }
 
+#define IUPGTK_MAX_TOUCH 10
+typedef struct { GdkEventSequence* seq; int x, y; } IgtkTouchPoint;
+typedef struct { IgtkTouchPoint pts[IUPGTK_MAX_TOUCH]; } IgtkTouchState;
+
+static int gtkCanvasTouchSlot(IgtkTouchState* ts, GdkEventSequence* seq, int add)
+{
+  int i, freeslot = -1;
+  for (i = 0; i < IUPGTK_MAX_TOUCH; i++)
+  {
+    if (ts->pts[i].seq == seq) return i;
+    if (!ts->pts[i].seq && freeslot < 0) freeslot = i;
+  }
+  if (add && freeslot >= 0) { ts->pts[freeslot].seq = seq; return freeslot; }
+  return -1;
+}
+
+static gboolean gtkCanvasTouchEvent(GtkWidget* widget, GdkEvent* event, Ihandle* ih)
+{
+  GdkEventTouch* te = (GdkEventTouch*)event;
+  IFniiis single_cb = (IFniiis)IupGetCallback(ih, "TOUCH_CB");
+  IFniIIII multi_cb = (IFniIIII)IupGetCallback(ih, "MULTITOUCH_CB");
+  IgtkTouchState* ts;
+  int slot, x, y, primary;
+  char st;
+  (void)widget;
+
+  if (te->type != GDK_TOUCH_BEGIN && te->type != GDK_TOUCH_UPDATE && te->type != GDK_TOUCH_END && te->type != GDK_TOUCH_CANCEL)
+    return FALSE;
+  if ((!single_cb && !multi_cb) || !iupAttribGetBoolean(ih, "TOUCH"))
+    return FALSE;
+
+  ts = (IgtkTouchState*)iupAttribGet(ih, "_IUPGTK_TOUCH_STATE");
+  if (!ts) { ts = (IgtkTouchState*)calloc(1, sizeof(IgtkTouchState)); iupAttribSet(ih, "_IUPGTK_TOUCH_STATE", (char*)ts); }
+
+  slot = gtkCanvasTouchSlot(ts, te->sequence, te->type == GDK_TOUCH_BEGIN);
+  if (slot < 0) return FALSE;
+  x = (int)te->x; y = (int)te->y;
+  ts->pts[slot].x = x; ts->pts[slot].y = y;
+  primary = te->emulating_pointer;
+  st = (te->type == GDK_TOUCH_BEGIN)? 'D' : ((te->type == GDK_TOUCH_UPDATE)? 'M' : 'U');
+
+  if (single_cb)
+  {
+    const char* str;
+    if (st == 'D') str = primary? "DOWN-PRIMARY" : "DOWN";
+    else if (st == 'U') str = primary? "UP-PRIMARY" : "UP";
+    else str = primary? "MOVE-PRIMARY" : "MOVE";
+    if (single_cb(ih, slot, x, y, (char*)str) == IUP_CLOSE) IupExitLoop();
+  }
+
+  if (multi_cb)
+  {
+    int ids[IUPGTK_MAX_TOUCH], xs[IUPGTK_MAX_TOUCH], ys[IUPGTK_MAX_TOUCH], states[IUPGTK_MAX_TOUCH], n = 0, i;
+    for (i = 0; i < IUPGTK_MAX_TOUCH; i++)
+    {
+      if (!ts->pts[i].seq) continue;
+      ids[n] = i; xs[n] = ts->pts[i].x; ys[n] = ts->pts[i].y;
+      states[n] = (i == slot)? st : 'M';
+      n++;
+    }
+    if (multi_cb(ih, n, ids, xs, ys, states) == IUP_CLOSE) IupExitLoop();
+  }
+
+  if (te->type == GDK_TOUCH_END || te->type == GDK_TOUCH_CANCEL) ts->pts[slot].seq = NULL;
+  return TRUE;
+}
+
 static int gtkCanvasMapMethod(Ihandle* ih)
 {
   GtkWidget* sb_win;
@@ -974,6 +1041,7 @@ static int gtkCanvasMapMethod(Ihandle* ih)
   g_signal_connect(G_OBJECT(ih->handle), "size-allocate", G_CALLBACK(gtkCanvasSizeAllocate), ih);
 
   gtkCanvasSetupGestures(ih);
+  g_signal_connect(G_OBJECT(ih->handle), "touch-event", G_CALLBACK(gtkCanvasTouchEvent), ih);
 
   /* To receive mouse events on a drawing area, you will need to enable them. */
   gtk_widget_add_events(ih->handle, GDK_EXPOSURE_MASK|
@@ -981,6 +1049,7 @@ static int gtkCanvasMapMethod(Ihandle* ih)
     GDK_BUTTON_PRESS_MASK|GDK_BUTTON_RELEASE_MASK|GDK_BUTTON_MOTION_MASK|
     GDK_KEY_PRESS_MASK | GDK_KEY_RELEASE_MASK |
     GDK_SCROLL_MASK |  /* Added for GTK3, but it seems to work ok for GTK2 */
+    GDK_TOUCH_MASK |
     GDK_ENTER_NOTIFY_MASK | GDK_LEAVE_NOTIFY_MASK |
     GDK_FOCUS_CHANGE_MASK|GDK_STRUCTURE_MASK);
 
@@ -1062,6 +1131,11 @@ static void gtkCanvasUnMapMethod(Ihandle* ih)
     cairo_surface_destroy(buffer);
 #endif
 
+  {
+    IgtkTouchState* ts = (IgtkTouchState*)iupAttribGet(ih, "_IUPGTK_TOUCH_STATE");
+    if (ts) { free(ts); iupAttribSet(ih, "_IUPGTK_TOUCH_STATE", NULL); }
+  }
+
   iupdrvBaseUnMapMethod(ih);
 }
 
@@ -1073,6 +1147,10 @@ IUP_SDK_API void iupdrvCanvasInitClass(Iclass* ic)
   ic->LayoutUpdate = gtkCanvasLayoutUpdateMethod;
 
   iupClassRegisterCallback(ic, "GESTURE_CB", "iiiidd");
+  iupClassRegisterCallback(ic, "TOUCH_CB", "iiis");
+  iupClassRegisterCallback(ic, "MULTITOUCH_CB", "iIII");
+
+  iupClassRegisterAttribute(ic, "TOUCH", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
 
   /* Driver Dependent Attribute functions */
 
