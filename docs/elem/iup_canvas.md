@@ -90,7 +90,7 @@ Default: "YES".\
 Can be: YES (both), VERTICAL, HORIZONTAL, NO.
 Supported in Win32, WinUI, Qt and macOS.
 
-**TOUCH** [Windows, iOS and Android Only]: enable the touch processing if touch support is available.
+**TOUCH** [Win32, iOS and Android Only]: enable the touch processing if touch support is available.
 In Qt, iOS and Android, touch events are always enabled.
 
 **GESTURE** [Win32 Only]: disable the OS gesture processing so raw touch events are delivered to TOUCH_CB/MULTITOUCH_CB.
@@ -158,9 +158,9 @@ If your callback process the arrow keys, we recommend you to return IUP_IGNORE s
 
 [SCROLL_CB](../call/iup_scroll_cb.md): Called when the scrollbar is manipulated.
 
-**TOUCH_CB** [Windows, Qt, iOS and Android Only]: Action generated when a touch event occurred.
+**TOUCH_CB** [Win32, Qt, iOS and Android Only]: Action generated when a touch event occurred.
 Multiple touch events will trigger several calls.
-In Windows must set TOUCH=Yes to receive this event. In Qt, iOS and Android, touch events are always enabled.
+In Win32 must set TOUCH=Yes to receive this event. In Qt, iOS and Android, touch events are always enabled.
 
     int function(Ihandle* ih, int id, int x, int y, char* state);
 
@@ -172,8 +172,8 @@ If the point is a "primary" point, then "-PRIMARY" is appended to the string.
 
 **Returns**: IUP_CLOSE will be processed.
 
-**MULTITOUCH_CB** [Windows, Qt, iOS and Android Only]: Action generated when multiple touch events occurred.
-In Windows must set TOUCH=Yes to receive this event; in Qt, iOS and Android touch events are always enabled.
+**MULTITOUCH_CB** [Win32, Qt, iOS and Android Only]: Action generated when multiple touch events occurred.
+In Win32 must set TOUCH=Yes to receive this event; in Qt, iOS and Android touch events are always enabled.
 
     int function(Ihandle *ih, int count, int* pid, int* px, int* py, int* pstate)
 
@@ -183,6 +183,30 @@ In Windows must set TOUCH=Yes to receive this event; in Qt, iOS and Android touc
 **px**: Array of touch point x coordinates in pixels, relative to the top-left corner of the canvas.\
 **py**: Array of touch point y coordinates in pixels, relative to the top-left corner of the canvas.\
 **pstate**: Array of touch point states. Can be 'D' (DOWN), 'U' (UP) or 'M' (MOVE).\
+
+**Returns**: IUP_CLOSE will be processed.
+
+**GESTURE_CB**: Action generated when a touch gesture is recognized.
+Not supported in Motif, FLTK and Haiku.
+On Win32 only PINCH, ROTATE and PAN are reported, and only when TOUCH is not set.
+On Cocoa only PINCH, ROTATE and SWIPE are reported.
+
+    int function(Ihandle* ih, int gesture, int state, int x, int y, double v1, double v2);
+
+**ih**: identifies the element that activated the event.\
+**gesture**: the gesture type: IUP_GESTURE_PINCH, IUP_GESTURE_ROTATE, IUP_GESTURE_PAN, IUP_GESTURE_SWIPE, IUP_GESTURE_TAP or IUP_GESTURE_LONGPRESS.\
+**state**: for the continuous gestures (PINCH, ROTATE, PAN) one of IUP_GESTURE_BEGIN, IUP_GESTURE_CHANGED, IUP_GESTURE_END or IUP_GESTURE_CANCEL; the discrete gestures (SWIPE, TAP, LONGPRESS) report IUP_GESTURE_END.\
+**x**, **y**: gesture center position in pixels, relative to the top-left corner of the canvas.\
+**v1**, **v2**: payload that depends on **gesture**:
+
+- PINCH: **v1** is the scale factor accumulated since BEGIN (1.0 means no change).
+- ROTATE: **v1** is the rotation in degrees accumulated since BEGIN, clockwise-positive.
+- PAN: **v1** and **v2** are the horizontal and vertical offset in pixels accumulated since BEGIN.
+- SWIPE: **v1** is the direction: IUP_GESTURE_SWIPE_RIGHT, IUP_GESTURE_SWIPE_LEFT, IUP_GESTURE_SWIPE_UP or IUP_GESTURE_SWIPE_DOWN.
+- TAP: **v1** is the number of taps (1 or 2).
+- LONGPRESS: not used.
+
+A single touch interaction can trigger several gestures at once (for example PINCH, ROTATE and PAN with two fingers); each is reported independently.
 
 **Returns**: IUP_CLOSE will be processed.
 

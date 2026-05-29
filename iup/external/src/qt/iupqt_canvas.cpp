@@ -12,6 +12,7 @@
 #include <QMimeData>
 #include <QUrl>
 #include <QVarLengthArray>
+#include <QGesture>
 
 extern "C" {
 #include "iup.h"
@@ -55,6 +56,74 @@ public:
 
     /* Enable touch events */
     setAttribute(Qt::WA_AcceptTouchEvents, true);
+
+    grabGesture(Qt::PinchGesture);
+    grabGesture(Qt::PanGesture);
+    grabGesture(Qt::SwipeGesture);
+    grabGesture(Qt::TapGesture);
+    grabGesture(Qt::TapAndHoldGesture);
+  }
+
+  static int gestureState(Qt::GestureState s)
+  {
+    switch (s)
+    {
+      case Qt::GestureStarted:  return IUP_GESTURE_BEGIN;
+      case Qt::GestureUpdated:  return IUP_GESTURE_CHANGED;
+      case Qt::GestureFinished: return IUP_GESTURE_END;
+      default:                  return IUP_GESTURE_CANCEL;
+    }
+  }
+
+  void fireGesture(int gesture, int state, const QPointF& global_pt, double v1, double v2)
+  {
+    IFniiiidd cb = (IFniiiidd)IupGetCallback(ih, "GESTURE_CB");
+    if (!cb)
+      return;
+    QPoint local = mapFromGlobal(global_pt.toPoint());
+    if (cb(ih, gesture, state, local.x(), local.y(), v1, v2) == IUP_CLOSE)
+      IupExitLoop();
+  }
+
+  void handleGestureEvent(QGestureEvent* ge)
+  {
+    if (QGesture* g = ge->gesture(Qt::PinchGesture))
+    {
+      /* QPinchGesture carries scale and rotation together; totals are cumulative since start */
+      QPinchGesture* p = static_cast<QPinchGesture*>(g);
+      int st = gestureState(p->state());
+      fireGesture(IUP_GESTURE_PINCH, st, p->centerPoint(), p->totalScaleFactor(), 0.0);
+      fireGesture(IUP_GESTURE_ROTATE, st, p->centerPoint(), p->totalRotationAngle(), 0.0);
+    }
+    if (QGesture* g = ge->gesture(Qt::PanGesture))
+    {
+      QPanGesture* p = static_cast<QPanGesture*>(g);
+      QPointF off = p->offset();
+      fireGesture(IUP_GESTURE_PAN, gestureState(p->state()), p->hotSpot(), off.x(), off.y());
+    }
+    if (QGesture* g = ge->gesture(Qt::SwipeGesture))
+    {
+      QSwipeGesture* p = static_cast<QSwipeGesture*>(g);
+      if (p->state() == Qt::GestureFinished)
+      {
+        int dir;
+        if (p->horizontalDirection() == QSwipeGesture::Left)       dir = IUP_GESTURE_SWIPE_LEFT;
+        else if (p->horizontalDirection() == QSwipeGesture::Right) dir = IUP_GESTURE_SWIPE_RIGHT;
+        else if (p->verticalDirection() == QSwipeGesture::Up)      dir = IUP_GESTURE_SWIPE_UP;
+        else                                                       dir = IUP_GESTURE_SWIPE_DOWN;
+        fireGesture(IUP_GESTURE_SWIPE, IUP_GESTURE_END, p->hotSpot(), dir, 0.0);
+      }
+    }
+    if (QGesture* g = ge->gesture(Qt::TapGesture))
+    {
+      if (g->state() == Qt::GestureFinished)
+        fireGesture(IUP_GESTURE_TAP, IUP_GESTURE_END, g->hotSpot(), 1.0, 0.0);
+    }
+    if (QGesture* g = ge->gesture(Qt::TapAndHoldGesture))
+    {
+      if (g->state() == Qt::GestureFinished)
+        fireGesture(IUP_GESTURE_LONGPRESS, IUP_GESTURE_END, g->hotSpot(), 0.0, 0.0);
+    }
   }
 
   /* Override paintEngine() to return nullptr for OpenGL canvases */
@@ -423,6 +492,16 @@ protected:
           event->accept();
           return true;
         }
+      }
+    }
+
+    if (event->type() == QEvent::Gesture)
+    {
+      if (IupGetCallback(ih, "GESTURE_CB"))
+      {
+        handleGestureEvent(static_cast<QGestureEvent*>(event));
+        event->accept();
+        return true;
       }
     }
 
@@ -1118,6 +1197,7 @@ extern "C" IUP_SDK_API void iupdrvCanvasInitClass(Iclass* ic)
   /* Touch (always enabled via WA_AcceptTouchEvents) */
   iupClassRegisterCallback(ic, "TOUCH_CB", "iiis");
   iupClassRegisterCallback(ic, "MULTITOUCH_CB", "iIII");
+  iupClassRegisterCallback(ic, "GESTURE_CB", "iiiidd");
 
   /* Native window handle (platform-specific: XWINDOW, WL_SURFACE, HWND, NSVIEW) */
   iupClassRegisterAttribute(ic, iupqtGetNativeWindowHandleName(), iupqtGetNativeWindowHandleAttrib, nullptr, nullptr, nullptr, IUPAF_NO_STRING|IUPAF_NO_INHERIT);

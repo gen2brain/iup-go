@@ -40,8 +40,40 @@ static BOOL cocoaTouchCanvasIsDragHandle(Ihandle* ih)
 @property(nonatomic, retain) UIColor* customBackground;
 @property(nonatomic, retain) UIPanGestureRecognizer* scrollGesture;
 @property(nonatomic, retain) UILongPressGestureRecognizer* longPressGesture;
+@property(nonatomic, retain) UIPinchGestureRecognizer* pinchGesture;
+@property(nonatomic, retain) UIRotationGestureRecognizer* rotateGesture;
+@property(nonatomic, retain) UIPanGestureRecognizer* panGesture;
+@property(nonatomic, retain) UITapGestureRecognizer* singleTapGesture;
+@property(nonatomic, retain) UITapGestureRecognizer* doubleTapGesture;
+@property(nonatomic, retain) NSMutableArray<UISwipeGestureRecognizer*>* swipeGestures;
 @property(nonatomic, retain) NSMutableArray<UIGestureRecognizer*>* pausedAncestorPans;
 @end
+
+/* observe touches without stealing them, so raw TOUCH/BUTTON/MOTION still fire */
+static void cocoaTouchCanvasPrepGesture(UIGestureRecognizer* g, id delegate)
+{
+	g.cancelsTouchesInView = NO;
+	g.delaysTouchesBegan = NO;
+	g.delaysTouchesEnded = NO;
+	g.delegate = delegate;
+}
+
+static int cocoaTouchGestureState(UIGestureRecognizerState s)
+{
+	switch (s)
+	{
+		case UIGestureRecognizerStateBegan:   return IUP_GESTURE_BEGIN;
+		case UIGestureRecognizerStateChanged: return IUP_GESTURE_CHANGED;
+		case UIGestureRecognizerStateEnded:   return IUP_GESTURE_END;
+		default:                              return IUP_GESTURE_CANCEL;
+	}
+}
+
+static void cocoaTouchFireGesture(Ihandle* ih, int gesture, int state, int x, int y, double v1, double v2)
+{
+	IFniiiidd cb = (IFniiiidd)IupGetCallback(ih, "GESTURE_CB");
+	if (cb && cb(ih, gesture, state, x, y, v1, v2) == IUP_CLOSE) IupExitLoop();
+}
 
 @implementation IupCocoaTouchCanvasView
 
@@ -71,8 +103,56 @@ static BOOL cocoaTouchCanvasIsDragHandle(Ihandle* ih)
 		_longPressGesture = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(onLongPress:)];
 		_longPressGesture.delegate = self;
 		[self addGestureRecognizer:_longPressGesture];
+
+		_pinchGesture = [[UIPinchGestureRecognizer alloc] initWithTarget:self action:@selector(onPinch:)];
+		cocoaTouchCanvasPrepGesture(_pinchGesture, self);
+		[self addGestureRecognizer:_pinchGesture];
+
+		_rotateGesture = [[UIRotationGestureRecognizer alloc] initWithTarget:self action:@selector(onRotate:)];
+		cocoaTouchCanvasPrepGesture(_rotateGesture, self);
+		[self addGestureRecognizer:_rotateGesture];
+
+		/* two fingers: one-finger drag stays BUTTON_CB+MOTION_CB */
+		_panGesture = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(onPan:)];
+		_panGesture.minimumNumberOfTouches = 2;
+		_panGesture.maximumNumberOfTouches = 2;
+		cocoaTouchCanvasPrepGesture(_panGesture, self);
+		[self addGestureRecognizer:_panGesture];
+
+		_doubleTapGesture = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(onTap:)];
+		_doubleTapGesture.numberOfTapsRequired = 2;
+		cocoaTouchCanvasPrepGesture(_doubleTapGesture, self);
+		[self addGestureRecognizer:_doubleTapGesture];
+
+		_singleTapGesture = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(onTap:)];
+		_singleTapGesture.numberOfTapsRequired = 1;
+		[_singleTapGesture requireGestureRecognizerToFail:_doubleTapGesture];
+		[_singleTapGesture requireGestureRecognizerToFail:_longPressGesture];
+		cocoaTouchCanvasPrepGesture(_singleTapGesture, self);
+		[self addGestureRecognizer:_singleTapGesture];
+
+		_swipeGestures = [[NSMutableArray alloc] init];
+		UISwipeGestureRecognizerDirection dirs[4] = {
+			UISwipeGestureRecognizerDirectionRight, UISwipeGestureRecognizerDirectionLeft,
+			UISwipeGestureRecognizerDirectionUp,    UISwipeGestureRecognizerDirectionDown };
+		for (int i = 0; i < 4; i++)
+		{
+			UISwipeGestureRecognizer* sw = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(onSwipe:)];
+			sw.direction = dirs[i];
+			cocoaTouchCanvasPrepGesture(sw, self);
+			[self addGestureRecognizer:sw];
+			[_swipeGestures addObject:sw];
+			[sw release];
+		}
 	}
 	return self;
+}
+
+- (BOOL)gestureRecognizer:(UIGestureRecognizer*)a shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer*)b
+{
+	/* pinch, rotate and two-finger pan must run together; tap/long-press/swipe stay exclusive */
+	NSArray* combo = @[_pinchGesture, _rotateGesture, _panGesture];
+	return ([combo containsObject:a] && [combo containsObject:b]) ? YES : NO;
 }
 
 - (void)dealloc
@@ -80,6 +160,12 @@ static BOOL cocoaTouchCanvasIsDragHandle(Ihandle* ih)
 	[_customBackground release];
 	[_scrollGesture release];
 	[_longPressGesture release];
+	[_pinchGesture release];
+	[_rotateGesture release];
+	[_panGesture release];
+	[_singleTapGesture release];
+	[_doubleTapGesture release];
+	[_swipeGestures release];
 	[_pausedAncestorPans release];
 	[super dealloc];
 }
@@ -88,15 +174,58 @@ static BOOL cocoaTouchCanvasIsDragHandle(Ihandle* ih)
 {
 	if (!_ihandle) return;
 	if (g.state != UIGestureRecognizerStateBegan) return;
-	IFniiiis cb = (IFniiiis)IupGetCallback(_ihandle, "BUTTON_CB");
-	if (!cb) return;
 
 	CGPoint p = [g locationInView:self];
+	cocoaTouchFireGesture(_ihandle, IUP_GESTURE_LONGPRESS, IUP_GESTURE_END, (int)p.x, (int)p.y, 0.0, 0.0);
+
+	IFniiiis cb = (IFniiiis)IupGetCallback(_ihandle, "BUTTON_CB");
+	if (!cb) return;
 	char status[IUPKEY_STATUS_SIZE];
 	iupCocoaTouchButtonKeySetStatus(nil, 0, 1, 0, status);
 	if (cb(_ihandle, IUP_BUTTON3, 1, (int)p.x, (int)p.y, status) == IUP_CLOSE) IupExitLoop();
 	iupCocoaTouchButtonKeySetStatus(nil, 0, 0, 0, status);
 	if (cb(_ihandle, IUP_BUTTON3, 0, (int)p.x, (int)p.y, status) == IUP_CLOSE) IupExitLoop();
+}
+
+- (void)onPinch:(UIPinchGestureRecognizer*)g
+{
+	CGPoint p = [g locationInView:self];
+	cocoaTouchFireGesture(_ihandle, IUP_GESTURE_PINCH, cocoaTouchGestureState(g.state), (int)p.x, (int)p.y, (double)g.scale, 0.0);
+}
+
+- (void)onRotate:(UIRotationGestureRecognizer*)g
+{
+	CGPoint p = [g locationInView:self];
+	/* degrees, clockwise-positive to match the Android two-finger angle */
+	double deg = (double)g.rotation * 180.0 / M_PI;
+	cocoaTouchFireGesture(_ihandle, IUP_GESTURE_ROTATE, cocoaTouchGestureState(g.state), (int)p.x, (int)p.y, deg, 0.0);
+}
+
+- (void)onPan:(UIPanGestureRecognizer*)g
+{
+	CGPoint p = [g locationInView:self];
+	CGPoint t = [g translationInView:self];
+	cocoaTouchFireGesture(_ihandle, IUP_GESTURE_PAN, cocoaTouchGestureState(g.state), (int)p.x, (int)p.y, (double)t.x, (double)t.y);
+}
+
+- (void)onTap:(UITapGestureRecognizer*)g
+{
+	CGPoint p = [g locationInView:self];
+	cocoaTouchFireGesture(_ihandle, IUP_GESTURE_TAP, IUP_GESTURE_END, (int)p.x, (int)p.y, (double)g.numberOfTapsRequired, 0.0);
+}
+
+- (void)onSwipe:(UISwipeGestureRecognizer*)g
+{
+	CGPoint p = [g locationInView:self];
+	int dir;
+	switch (g.direction)
+	{
+		case UISwipeGestureRecognizerDirectionLeft: dir = IUP_GESTURE_SWIPE_LEFT; break;
+		case UISwipeGestureRecognizerDirectionUp:   dir = IUP_GESTURE_SWIPE_UP;   break;
+		case UISwipeGestureRecognizerDirectionDown: dir = IUP_GESTURE_SWIPE_DOWN; break;
+		default:                                    dir = IUP_GESTURE_SWIPE_RIGHT; break;
+	}
+	cocoaTouchFireGesture(_ihandle, IUP_GESTURE_SWIPE, IUP_GESTURE_END, (int)p.x, (int)p.y, (double)dir, 0.0);
 }
 
 - (BOOL)canBecomeFirstResponder
@@ -600,4 +729,6 @@ IUP_SDK_API void iupdrvCanvasInitClass(Iclass* ic)
 	iupClassRegisterAttribute(ic, "TOUCH", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "GESTURE", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "NATIVEFOCUSRING",NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+
+	iupClassRegisterCallback(ic, "GESTURE_CB", "iiiidd");
 }

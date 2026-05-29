@@ -438,6 +438,104 @@ static int eflCanvasSetTipVisibleAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
+static void eflCanvasFireGesture(Ihandle* ih, int gesture, int state, int x, int y, double v1, double v2)
+{
+  IFniiiidd cb = (IFniiiidd)IupGetCallback(ih, "GESTURE_CB");
+  if (cb && cb(ih, gesture, state, x, y, v1, v2) == IUP_CLOSE)
+    IupExitLoop();
+}
+
+/* zoom drives PINCH; EFL has no 2-finger pan gesture, so PAN is derived from the zoom center */
+static void eflCanvasGestureZoom(Ihandle* ih, int state, void* event_info)
+{
+  Elm_Gesture_Zoom_Info* p = (Elm_Gesture_Zoom_Info*)event_info;
+  double dx = 0, dy = 0;
+  if (state == IUP_GESTURE_BEGIN)
+  {
+    iupAttribSetDouble(ih, "_IUPEFL_GESTURE_X0", p->x);
+    iupAttribSetDouble(ih, "_IUPEFL_GESTURE_Y0", p->y);
+  }
+  else
+  {
+    dx = p->x - iupAttribGetDouble(ih, "_IUPEFL_GESTURE_X0");
+    dy = p->y - iupAttribGetDouble(ih, "_IUPEFL_GESTURE_Y0");
+  }
+  eflCanvasFireGesture(ih, IUP_GESTURE_PINCH, state, p->x, p->y, p->zoom, 0);
+  eflCanvasFireGesture(ih, IUP_GESTURE_PAN, state, p->x, p->y, dx, dy);
+}
+
+static Evas_Event_Flags eflCanvasZoomStart(void* d, void* ei) { eflCanvasGestureZoom((Ihandle*)d, IUP_GESTURE_BEGIN, ei);   return EVAS_EVENT_FLAG_NONE; }
+static Evas_Event_Flags eflCanvasZoomMove(void* d, void* ei)  { eflCanvasGestureZoom((Ihandle*)d, IUP_GESTURE_CHANGED, ei); return EVAS_EVENT_FLAG_NONE; }
+static Evas_Event_Flags eflCanvasZoomEnd(void* d, void* ei)   { eflCanvasGestureZoom((Ihandle*)d, IUP_GESTURE_END, ei);     return EVAS_EVENT_FLAG_NONE; }
+static Evas_Event_Flags eflCanvasZoomAbort(void* d, void* ei) { eflCanvasGestureZoom((Ihandle*)d, IUP_GESTURE_CANCEL, ei);  return EVAS_EVENT_FLAG_NONE; }
+
+static void eflCanvasGestureRotate(Ihandle* ih, int state, void* event_info)
+{
+  Elm_Gesture_Rotate_Info* p = (Elm_Gesture_Rotate_Info*)event_info;
+  eflCanvasFireGesture(ih, IUP_GESTURE_ROTATE, state, p->x, p->y, p->angle, 0);
+}
+
+static Evas_Event_Flags eflCanvasRotateStart(void* d, void* ei) { eflCanvasGestureRotate((Ihandle*)d, IUP_GESTURE_BEGIN, ei);   return EVAS_EVENT_FLAG_NONE; }
+static Evas_Event_Flags eflCanvasRotateMove(void* d, void* ei)  { eflCanvasGestureRotate((Ihandle*)d, IUP_GESTURE_CHANGED, ei); return EVAS_EVENT_FLAG_NONE; }
+static Evas_Event_Flags eflCanvasRotateEnd(void* d, void* ei)   { eflCanvasGestureRotate((Ihandle*)d, IUP_GESTURE_END, ei);     return EVAS_EVENT_FLAG_NONE; }
+static Evas_Event_Flags eflCanvasRotateAbort(void* d, void* ei) { eflCanvasGestureRotate((Ihandle*)d, IUP_GESTURE_CANCEL, ei);  return EVAS_EVENT_FLAG_NONE; }
+
+static Evas_Event_Flags eflCanvasFlick(void* d, void* ei)
+{
+  Elm_Gesture_Line_Info* p = (Elm_Gesture_Line_Info*)ei;
+  int dir;
+  if (abs(p->momentum.mx) > abs(p->momentum.my)) dir = p->momentum.mx > 0 ? IUP_GESTURE_SWIPE_RIGHT : IUP_GESTURE_SWIPE_LEFT;
+  else                                           dir = p->momentum.my > 0 ? IUP_GESTURE_SWIPE_DOWN : IUP_GESTURE_SWIPE_UP;
+  eflCanvasFireGesture((Ihandle*)d, IUP_GESTURE_SWIPE, IUP_GESTURE_END, p->momentum.x2, p->momentum.y2, dir, 0);
+  return EVAS_EVENT_FLAG_NONE;
+}
+
+static Evas_Event_Flags eflCanvasTap(void* d, void* ei)
+{
+  Elm_Gesture_Taps_Info* p = (Elm_Gesture_Taps_Info*)ei;
+  eflCanvasFireGesture((Ihandle*)d, IUP_GESTURE_TAP, IUP_GESTURE_END, p->x, p->y, 1, 0);
+  return EVAS_EVENT_FLAG_NONE;
+}
+
+static Evas_Event_Flags eflCanvasDoubleTap(void* d, void* ei)
+{
+  Elm_Gesture_Taps_Info* p = (Elm_Gesture_Taps_Info*)ei;
+  eflCanvasFireGesture((Ihandle*)d, IUP_GESTURE_TAP, IUP_GESTURE_END, p->x, p->y, 2, 0);
+  return EVAS_EVENT_FLAG_NONE;
+}
+
+static Evas_Event_Flags eflCanvasLongTap(void* d, void* ei)
+{
+  Elm_Gesture_Taps_Info* p = (Elm_Gesture_Taps_Info*)ei;
+  eflCanvasFireGesture((Ihandle*)d, IUP_GESTURE_LONGPRESS, IUP_GESTURE_END, p->x, p->y, 0, 0);
+  return EVAS_EVENT_FLAG_NONE;
+}
+
+static void eflCanvasSetupGestures(Ihandle* ih, Eo* parent, Eo* vg)
+{
+  Eo* gl = elm_gesture_layer_add(parent);
+  if (!gl)
+    return;
+  elm_gesture_layer_attach(gl, vg);
+
+  elm_gesture_layer_cb_set(gl, ELM_GESTURE_ZOOM, ELM_GESTURE_STATE_START, eflCanvasZoomStart, ih);
+  elm_gesture_layer_cb_set(gl, ELM_GESTURE_ZOOM, ELM_GESTURE_STATE_MOVE,  eflCanvasZoomMove,  ih);
+  elm_gesture_layer_cb_set(gl, ELM_GESTURE_ZOOM, ELM_GESTURE_STATE_END,   eflCanvasZoomEnd,   ih);
+  elm_gesture_layer_cb_set(gl, ELM_GESTURE_ZOOM, ELM_GESTURE_STATE_ABORT, eflCanvasZoomAbort, ih);
+
+  elm_gesture_layer_cb_set(gl, ELM_GESTURE_ROTATE, ELM_GESTURE_STATE_START, eflCanvasRotateStart, ih);
+  elm_gesture_layer_cb_set(gl, ELM_GESTURE_ROTATE, ELM_GESTURE_STATE_MOVE,  eflCanvasRotateMove,  ih);
+  elm_gesture_layer_cb_set(gl, ELM_GESTURE_ROTATE, ELM_GESTURE_STATE_END,   eflCanvasRotateEnd,   ih);
+  elm_gesture_layer_cb_set(gl, ELM_GESTURE_ROTATE, ELM_GESTURE_STATE_ABORT, eflCanvasRotateAbort, ih);
+
+  elm_gesture_layer_cb_set(gl, ELM_GESTURE_N_FLICKS, ELM_GESTURE_STATE_END, eflCanvasFlick, ih);
+  elm_gesture_layer_cb_set(gl, ELM_GESTURE_N_TAPS, ELM_GESTURE_STATE_END, eflCanvasTap, ih);
+  elm_gesture_layer_cb_set(gl, ELM_GESTURE_N_DOUBLE_TAPS, ELM_GESTURE_STATE_END, eflCanvasDoubleTap, ih);
+  elm_gesture_layer_cb_set(gl, ELM_GESTURE_N_LONG_TAPS, ELM_GESTURE_STATE_END, eflCanvasLongTap, ih);
+
+  iupAttribSet(ih, "_IUP_EFL_GESTURE_LAYER", (char*)gl);
+}
+
 /****************************************************************
                      Attributes
 ****************************************************************/
@@ -589,6 +687,8 @@ static int eflCanvasMapMethod(Ihandle* ih)
   efl_event_callback_add(vg, EFL_EVENT_POINTER_IN, iupeflPointerInEvent, ih);
   efl_event_callback_add(vg, EFL_EVENT_POINTER_OUT, iupeflPointerOutEvent, ih);
 
+  eflCanvasSetupGestures(ih, parent, vg);
+
   eflCanvasSetDXAttrib(ih, NULL);
   eflCanvasSetDYAttrib(ih, NULL);
 
@@ -603,6 +703,15 @@ static void eflCanvasUnMapMethod(Ihandle* ih)
   Eo* vg = iupeflGetWidget(ih);
   Eo* scroller = (Eo*)iupAttribGet(ih, "_IUP_EFL_SCROLLER");
   Efl_VG* root = (Efl_VG*)iupAttribGet(ih, "_IUP_EFL_VG_ROOT");
+
+  {
+    Eo* gl = (Eo*)iupAttribGet(ih, "_IUP_EFL_GESTURE_LAYER");
+    if (gl)
+    {
+      evas_object_del(gl);
+      iupAttribSet(ih, "_IUP_EFL_GESTURE_LAYER", NULL);
+    }
+  }
 
   {
     Eo* clip = (Eo*)iupAttribGet(ih, "_IUP_EFL_CANVAS_CLIP");
@@ -770,6 +879,8 @@ IUP_SDK_API void iupdrvCanvasInitClass(Iclass* ic)
   ic->UnMap = eflCanvasUnMapMethod;
   ic->LayoutUpdate = eflCanvasLayoutUpdateMethod;
   ic->GetInnerNativeContainerHandle = eflCanvasGetInnerNativeContainerHandleMethod;
+
+  iupClassRegisterCallback(ic, "GESTURE_CB", "iiiidd");
 
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, eflCanvasSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
 

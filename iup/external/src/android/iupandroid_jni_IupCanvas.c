@@ -133,6 +133,36 @@ JNIEXPORT jboolean JNICALL Java_io_github_gen2brain_iupgo_IupCanvasHelper_isTouc
   return (IupGetCallback(ih, "TOUCH_CB") || IupGetCallback(ih, "MULTITOUCH_CB")) ? JNI_TRUE : JNI_FALSE;
 }
 
+/* a gesture canvas must own its touch sequence or the parent NestedScrollView steals it mid-pinch/rotate */
+JNIEXPORT jboolean JNICALL Java_io_github_gen2brain_iupgo_IupCanvasHelper_isGestureEnabled(JNIEnv* jni_env, jclass cls, jlong ihandle_ptr)
+{
+  (void)jni_env; (void)cls;
+  Ihandle* ih = (Ihandle*)(intptr_t)ihandle_ptr;
+  if (!ih) return JNI_FALSE;
+  return IupGetCallback(ih, "GESTURE_CB") ? JNI_TRUE : JNI_FALSE;
+}
+
+/* x/y always need density conversion; only PAN's v1/v2 offset is in HW pixels too */
+JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupCanvasHelper_dispatchGesture(JNIEnv* jni_env, jclass cls, jlong ihandle_ptr, jint gesture, jint state, jint x, jint y, jdouble v1, jdouble v2)
+{
+  (void)jni_env;
+  (void)cls;
+
+  Ihandle* ih = (Ihandle*)(intptr_t)ihandle_ptr;
+  if (!ih) return;
+
+  IFniiiidd cb = (IFniiiidd)IupGetCallback(ih, "GESTURE_CB");
+  if (!cb) return;
+
+  float d = iupAndroid_GetDisplayDensity(); if (d < 1.0f) d = 1.0f;
+
+  double v1d = v1, v2d = v2;
+  if (gesture == IUP_GESTURE_PAN) { v1d /= d; v2d /= d; }
+
+  if (cb(ih, (int)gesture, (int)state, (int)((float)x / d), (int)((float)y / d), v1d, v2d) == IUP_CLOSE)
+    IupExitLoop();
+}
+
 /* fires TOUCH_CB per touch point + one MULTITOUCH_CB for the batch; states are 'D'/'M'/'U' */
 JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupCanvasHelper_dispatchTouch(JNIEnv* jni_env, jclass cls, jlong ihandle_ptr, jint count, jintArray jids, jintArray jxs, jintArray jys, jintArray jstates, jint primary_id)
 {

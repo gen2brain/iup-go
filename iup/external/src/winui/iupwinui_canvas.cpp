@@ -698,6 +698,13 @@ static void winuiScrollBarForceVisible(ScrollBar sb)
   });
 }
 
+static void winuiCanvasFireGesture(Ihandle* ih, int gesture, int state, int x, int y, double v1, double v2)
+{
+  IFniiiidd cb = (IFniiiidd)IupGetCallback(ih, "GESTURE_CB");
+  if (cb)
+    cb(ih, gesture, state, x, y, v1, v2);
+}
+
 static int winuiCanvasMapMethod(Ihandle* ih)
 {
   if (!ih->parent)
@@ -964,6 +971,52 @@ static int winuiCanvasMapMethod(Ihandle* ih)
     iupwinuiCanvasCallAction(ih);
   });
 
+  /* ManipulationDelta carries scale, rotation and translation together (cumulative since start) */
+  canvas.ManipulationMode(ManipulationModes::Scale | ManipulationModes::Rotate | ManipulationModes::TranslateX | ManipulationModes::TranslateY);
+
+  aux->manipulationStartedToken = canvas.ManipulationStarted([ih](IInspectable const&, ManipulationStartedRoutedEventArgs const& args) {
+    auto p = args.Position();
+    winuiCanvasFireGesture(ih, IUP_GESTURE_PINCH, IUP_GESTURE_BEGIN, (int)p.X, (int)p.Y, 1.0, 0);
+    winuiCanvasFireGesture(ih, IUP_GESTURE_ROTATE, IUP_GESTURE_BEGIN, (int)p.X, (int)p.Y, 0, 0);
+    winuiCanvasFireGesture(ih, IUP_GESTURE_PAN, IUP_GESTURE_BEGIN, (int)p.X, (int)p.Y, 0, 0);
+  });
+
+  aux->manipulationDeltaToken = canvas.ManipulationDelta([ih](IInspectable const&, ManipulationDeltaRoutedEventArgs const& args) {
+    auto p = args.Position();
+    auto c = args.Cumulative();
+    winuiCanvasFireGesture(ih, IUP_GESTURE_PINCH, IUP_GESTURE_CHANGED, (int)p.X, (int)p.Y, c.Scale, 0);
+    winuiCanvasFireGesture(ih, IUP_GESTURE_ROTATE, IUP_GESTURE_CHANGED, (int)p.X, (int)p.Y, c.Rotation, 0);
+    winuiCanvasFireGesture(ih, IUP_GESTURE_PAN, IUP_GESTURE_CHANGED, (int)p.X, (int)p.Y, c.Translation.X, c.Translation.Y);
+  });
+
+  aux->manipulationCompletedToken = canvas.ManipulationCompleted([ih](IInspectable const&, ManipulationCompletedRoutedEventArgs const& args) {
+    auto p = args.Position();
+    auto c = args.Cumulative();
+    winuiCanvasFireGesture(ih, IUP_GESTURE_PINCH, IUP_GESTURE_END, (int)p.X, (int)p.Y, c.Scale, 0);
+    winuiCanvasFireGesture(ih, IUP_GESTURE_ROTATE, IUP_GESTURE_END, (int)p.X, (int)p.Y, c.Rotation, 0);
+    winuiCanvasFireGesture(ih, IUP_GESTURE_PAN, IUP_GESTURE_END, (int)p.X, (int)p.Y, c.Translation.X, c.Translation.Y);
+  });
+
+  aux->tappedToken = canvas.Tapped([ih](IInspectable const&, TappedRoutedEventArgs const& args) {
+    Canvas c = winuiGetHandle<Canvas>(ih);
+    auto p = args.GetPosition(c);
+    winuiCanvasFireGesture(ih, IUP_GESTURE_TAP, IUP_GESTURE_END, (int)p.X, (int)p.Y, 1, 0);
+  });
+
+  aux->doubleTappedToken = canvas.DoubleTapped([ih](IInspectable const&, DoubleTappedRoutedEventArgs const& args) {
+    Canvas c = winuiGetHandle<Canvas>(ih);
+    auto p = args.GetPosition(c);
+    winuiCanvasFireGesture(ih, IUP_GESTURE_TAP, IUP_GESTURE_END, (int)p.X, (int)p.Y, 2, 0);
+  });
+
+  aux->holdingToken = canvas.Holding([ih](IInspectable const&, HoldingRoutedEventArgs const& args) {
+    if (args.HoldingState() != HoldingState::Started)
+      return;
+    Canvas c = winuiGetHandle<Canvas>(ih);
+    auto p = args.GetPosition(c);
+    winuiCanvasFireGesture(ih, IUP_GESTURE_LONGPRESS, IUP_GESTURE_END, (int)p.X, (int)p.Y, 0, 0);
+  });
+
   canvas.Loaded([ih](IInspectable const&, RoutedEventArgs const&) {
     iupwinuiCanvasCallAction(ih);
   });
@@ -1021,6 +1074,18 @@ static void winuiCanvasUnMapMethod(Ihandle* ih)
         canvas.LostFocus(aux->lostFocusToken);
       if (aux->sizeChangedToken)
         canvas.SizeChanged(aux->sizeChangedToken);
+      if (aux->manipulationStartedToken)
+        canvas.ManipulationStarted(aux->manipulationStartedToken);
+      if (aux->manipulationDeltaToken)
+        canvas.ManipulationDelta(aux->manipulationDeltaToken);
+      if (aux->manipulationCompletedToken)
+        canvas.ManipulationCompleted(aux->manipulationCompletedToken);
+      if (aux->tappedToken)
+        canvas.Tapped(aux->tappedToken);
+      if (aux->doubleTappedToken)
+        canvas.DoubleTapped(aux->doubleTappedToken);
+      if (aux->holdingToken)
+        canvas.Holding(aux->holdingToken);
     }
 
     if (aux->sbHoriz && aux->sbHorizScrollToken)
@@ -1094,6 +1159,8 @@ extern "C" IUP_SDK_API void iupdrvCanvasInitClass(Iclass* ic)
   ic->Map = winuiCanvasMapMethod;
   ic->UnMap = winuiCanvasUnMapMethod;
   ic->LayoutUpdate = winuiCanvasLayoutUpdateMethod;
+
+  iupClassRegisterCallback(ic, "GESTURE_CB", "iiiidd");
 
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, winuiCanvasSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
 
