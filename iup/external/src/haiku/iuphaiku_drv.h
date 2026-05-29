@@ -56,6 +56,7 @@ IUP_DRV_API BWindow* iuphaikuGetParentWindow(Ihandle* ih);
 IUP_DRV_API BView* iuphaikuDialogRootView(BWindow* win);
 
 IUP_DRV_API BFont* iuphaikuGetBFont(const char* value);
+IUP_DRV_API void iuphaikuFontApplyFace(BFont* bf, int is_bold, int is_italic, int is_underline, int is_strikeout);
 IUP_DRV_API void iuphaikuUpdateWidgetFont(Ihandle* ih, BView* widget);
 
 IUP_DRV_API char* iuphaikuGetNativeWindowHandleAttrib(Ihandle* ih);

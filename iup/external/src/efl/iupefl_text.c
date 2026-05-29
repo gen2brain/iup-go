@@ -1102,7 +1102,14 @@ static char* eflTextGetCountAttrib(Ihandle* ih)
   if (!text)
     return "0";
 
-  return iupStrReturnInt((int)strlen(text));
+  {
+    int count = 0;
+    const char* p;
+    for (p = text; *p; p++)
+      if (((unsigned char)*p & 0xC0) != 0x80)
+        count++;
+    return iupStrReturnInt(count);
+  }
 }
 
 static char* eflTextGetLineCountAttrib(Ihandle* ih)

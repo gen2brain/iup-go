@@ -968,6 +968,30 @@ static void iMdParseDocument(iMdState* s, const char* input)
   }
 }
 
+static void iMdConvert(iMdState* s, const char* markdown_text)
+{
+  iMdBufInit(&s->text);
+  s->bulk_tag = IupUser();
+  IupSetAttribute(s->bulk_tag, "BULK", "YES");
+  s->in_code_block = 0;
+  s->pending_break = 0;
+
+  iMdParseDocument(s, markdown_text);
+}
+
+static void iMdOffsetTags(Ihandle* bulk_tag, int offset)
+{
+  int i, count = IupGetChildCount(bulk_tag);
+  for (i = 0; i < count; i++)
+  {
+    Ihandle* child = IupGetChild(bulk_tag, i);
+    char* selectionpos = IupGetAttribute(child, "SELECTIONPOS");
+    int start, end;
+    if (selectionpos && iupStrToIntInt(selectionpos, &start, &end, ':') == 2)
+      IupSetStrf(child, "SELECTIONPOS", "%d:%d", start + offset, end + offset);
+  }
+}
+
 void iupMarkdownSetValue(Ihandle* ih, const char* markdown_text)
 {
   iMdState state;
@@ -975,16 +999,94 @@ void iupMarkdownSetValue(Ihandle* ih, const char* markdown_text)
   if (!markdown_text || !markdown_text[0])
     return;
 
-  iMdBufInit(&state.text);
-  state.bulk_tag = IupUser();
-  IupSetAttribute(state.bulk_tag, "BULK", "YES");
+  iMdConvert(&state, markdown_text);
   IupSetAttribute(state.bulk_tag, "CLEANOUT", "YES");
-  state.in_code_block = 0;
-  state.pending_break = 0;
-
-  iMdParseDocument(&state, markdown_text);
 
   IupSetStrAttribute(ih, "VALUE", state.text.data);
+
+  iupTextSetAddFormatTagHandleAttrib(ih, (const char*)state.bulk_tag);
+
+  iMdBufFree(&state.text);
+}
+
+static void iMdResetColor(Ihandle* ih, const char* name, Ihandle* tag, const char* tagname)
+{
+  unsigned char r, g, b;
+  char* value = IupGetAttribute(ih, name);
+  if (!value)
+    return;
+  if (!iupStrToRGB(value, &r, &g, &b))
+  {
+    char* global = IupGetGlobal(value);
+    if (!global || !iupStrToRGB(global, &r, &g, &b))
+      return;
+  }
+  IupSetStrf(tag, tagname, "%d %d %d", r, g, b);
+}
+
+static void iMdAppendResetTag(Ihandle* ih, Ihandle* bulk_tag, int charlen)
+{
+  Ihandle* reset = IupUser();
+  char* font;
+
+  IupSetStrf(reset, "SELECTIONPOS", "%d:%d", 0, charlen);
+  IupSetAttribute(reset, "WEIGHT", "NORMAL");
+  IupSetAttribute(reset, "ITALIC", "NO");
+  IupSetAttribute(reset, "UNDERLINE", "NONE");
+  IupSetAttribute(reset, "STRIKEOUT", "NO");
+  IupSetAttribute(reset, "FONTSCALE", "1.0");
+  IupSetAttribute(reset, "INDENT", "0");
+  IupSetAttribute(reset, "ALIGNMENT", "LEFT");
+  iMdResetColor(ih, "FGCOLOR", reset, "FGCOLOR");
+
+  font = IupGetAttribute(ih, "FONT");
+  if (font)
+  {
+    char family[256];
+    const char* comma = strchr(font, ',');
+    int n = comma ? (int)(comma - font) : (int)strlen(font);
+    if (n > (int)sizeof(family) - 1)
+      n = (int)sizeof(family) - 1;
+    memcpy(family, font, n);
+    while (n > 0 && family[n - 1] == ' ')
+      n--;
+    family[n] = 0;
+    if (n > 0)
+      IupSetStrAttribute(reset, "FONTFACE", family);
+  }
+
+  if (IupGetChildCount(bulk_tag) > 0)
+    IupInsert(bulk_tag, IupGetChild(bulk_tag, 0), reset);
+  else
+    IupAppend(bulk_tag, reset);
+}
+
+void iupMarkdownAppendValue(Ihandle* ih, const char* markdown_text)
+{
+  iMdState state;
+  int offset;
+
+  if (!markdown_text || !markdown_text[0])
+    return;
+
+  iMdConvert(&state, markdown_text);
+
+  if (state.text.charlen == 0)
+  {
+    IupDestroy(state.bulk_tag);
+    iMdBufFree(&state.text);
+    return;
+  }
+
+  IupSetStrAttribute(ih, "APPEND", state.text.data);
+
+  offset = IupGetInt(ih, "COUNT") - state.text.charlen;
+  if (offset < 0)
+    offset = 0;
+
+  iMdAppendResetTag(ih, state.bulk_tag, state.text.charlen);
+
+  iMdOffsetTags(state.bulk_tag, offset);
 
   iupTextSetAddFormatTagHandleAttrib(ih, (const char*)state.bulk_tag);
 

@@ -13,6 +13,7 @@ extern "C" {
 #endif
 
 void iupMarkdownSetValue(Ihandle* ih, const char* markdown_text);
+void iupMarkdownAppendValue(Ihandle* ih, const char* markdown_text);
 
 #ifdef __cplusplus
 }

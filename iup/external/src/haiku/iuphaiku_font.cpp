@@ -348,6 +348,29 @@ IUP_DRV_API BFont* iuphaikuGetBFont(const char* value)
   return hf ? hf->bfont : NULL;
 }
 
+IUP_DRV_API void iuphaikuFontApplyFace(BFont* bf, int is_bold, int is_italic, int is_underline, int is_strikeout)
+{
+  if (!bf) return;
+
+  font_family family;
+  font_style style;
+  bf->GetFamilyAndStyle(&family, &style);
+
+  uint16 want_face = 0;
+  if (is_bold) want_face |= B_BOLD_FACE;
+  if (is_italic) want_face |= B_ITALIC_FACE;
+  haikuFindStyle(family, want_face, style);
+  bf->SetFamilyAndStyle(family, style);
+
+  uint16 face = bf->Face();
+  if (is_bold)      face |= B_BOLD_FACE;
+  if (is_italic)    face |= B_ITALIC_FACE;
+  if (is_underline) face |= B_UNDERSCORE_FACE; else face &= ~B_UNDERSCORE_FACE;
+  if (is_strikeout) face |= B_STRIKEOUT_FACE;  else face &= ~B_STRIKEOUT_FACE;
+  if (face == 0) face = B_REGULAR_FACE;
+  bf->SetFace(face);
+}
+
 IUP_DRV_API void iuphaikuUpdateWidgetFont(Ihandle* ih, BView* widget)
 {
   if (!widget) return;

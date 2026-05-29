@@ -57,6 +57,15 @@ continues on next line.
 
 Final paragraph with **nested *bold and italic* text** to show combined formatting.`
 
+const appendSection = `## Appended Section
+
+This text was added at runtime with **APPENDMARKDOWN**, preserving the formatting above.
+
+- Appended item *one*
+- Appended item ` + "`two`" + `
+
+> Appended blockquote.`
+
 var imagePattern = regexp.MustCompile(`!\[([^\]]*)\]\((https?://[^)]+)\)`)
 
 func init() { iup.EntryPoint(main) }
@@ -96,9 +105,16 @@ func main() {
 		return iup.DEFAULT
 	}))
 
-	dlg := iup.Dialog(iup.Vbox(mltline))
+	btnAppend := iup.Button("Append Section")
+	iup.SetCallback(btnAppend, "ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
+		iup.SetAttribute(mltline, "APPENDMARKDOWN", appendSection)
+		return iup.DEFAULT
+	}))
+
+	dlg := iup.Dialog(iup.Vbox(mltline, btnAppend))
 	iup.SetAttribute(dlg, "TITLE", "Markdown Example")
 	iup.SetAttribute(dlg, "MARGIN", "10x10")
+	iup.SetAttribute(dlg, "GAP", "10")
 
 	iup.Map(dlg)
 

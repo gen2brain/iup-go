@@ -1291,13 +1291,28 @@ static char* fltkTextGetCountAttrib(Ihandle* ih)
   {
     Fl_Text_Buffer* buf = fltkTextGetBuffer(ih);
     if (buf)
-      return iupStrReturnInt(buf->length());
+    {
+      int count = 0, pos = 0, len = buf->length();
+      while (pos < len)
+      {
+        pos = buf->next_char(pos);
+        count++;
+      }
+      return iupStrReturnInt(count);
+    }
   }
   else
   {
     Fl_Input* input = fltkTextGetInputWidget(ih);
     if (input)
-      return iupStrReturnInt((int)strlen(input->value()));
+    {
+      int count = 0;
+      const char* v = input->value();
+      for (; *v; v++)
+        if (((unsigned char)*v & 0xC0) != 0x80)
+          count++;
+      return iupStrReturnInt(count);
+    }
   }
   return NULL;
 }

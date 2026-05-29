@@ -106,6 +106,10 @@ Requires FORMATTING=YES and MULTILINE=YES. Not supported in Motif.
 **MARKDOWNVALUE** (write-only): sets the text from a Markdown string, interpreting headings, emphasis, lists, code blocks, blockquotes, links, images, and HTML `<img>` tags as IUP format tags.
 Requires FORMATTING=YES and MULTILINE=YES. Not supported in Motif.
 
+**APPENDMARKDOWN** (write-only): appends a Markdown string to the current content using the same conversion rules as MARKDOWNVALUE, keeping the existing text and formatting.
+Honors APPENDNEWLINE and APPENDSCROLL. Effective only after the element is mapped.
+Requires FORMATTING=YES and MULTILINE=YES. Not supported in Motif.
+
 [MASK](../attrib/iup_mask.md) (non-inheritable): Defines a mask that will filter interactive text input.
 
 **MULTILINE** (creation-only) (non-inheritable): allows the edition of multiple lines.
