@@ -771,6 +771,8 @@ static char* gtkCanvasGetDrawableAttrib(Ihandle* ih)
   return (char*)iupgtkGetWindow(ih->handle);
 }
 
+#if GTK_CHECK_VERSION(3, 14, 0)
+
 static void gtkCanvasFireGesture(Ihandle* ih, int gesture, int state, int x, int y, double v1, double v2)
 {
   IFniiiidd cb = (IFniiiidd)IupGetCallback(ih, "GESTURE_CB");
@@ -968,6 +970,8 @@ static gboolean gtkCanvasTouchEvent(GtkWidget* widget, GdkEvent* event, Ihandle*
   return TRUE;
 }
 
+#endif  /* GTK_CHECK_VERSION(3, 14, 0) */
+
 static int gtkCanvasMapMethod(Ihandle* ih)
 {
   GtkWidget* sb_win;
@@ -1040,8 +1044,10 @@ static int gtkCanvasMapMethod(Ihandle* ih)
 
   g_signal_connect(G_OBJECT(ih->handle), "size-allocate", G_CALLBACK(gtkCanvasSizeAllocate), ih);
 
+#if GTK_CHECK_VERSION(3, 14, 0)
   gtkCanvasSetupGestures(ih);
   g_signal_connect(G_OBJECT(ih->handle), "touch-event", G_CALLBACK(gtkCanvasTouchEvent), ih);
+#endif
 
   /* To receive mouse events on a drawing area, you will need to enable them. */
   gtk_widget_add_events(ih->handle, GDK_EXPOSURE_MASK|
@@ -1049,7 +1055,9 @@ static int gtkCanvasMapMethod(Ihandle* ih)
     GDK_BUTTON_PRESS_MASK|GDK_BUTTON_RELEASE_MASK|GDK_BUTTON_MOTION_MASK|
     GDK_KEY_PRESS_MASK | GDK_KEY_RELEASE_MASK |
     GDK_SCROLL_MASK |  /* Added for GTK3, but it seems to work ok for GTK2 */
+#if GTK_CHECK_VERSION(3, 14, 0)
     GDK_TOUCH_MASK |
+#endif
     GDK_ENTER_NOTIFY_MASK | GDK_LEAVE_NOTIFY_MASK |
     GDK_FOCUS_CHANGE_MASK|GDK_STRUCTURE_MASK);
 
@@ -1131,10 +1139,12 @@ static void gtkCanvasUnMapMethod(Ihandle* ih)
     cairo_surface_destroy(buffer);
 #endif
 
+#if GTK_CHECK_VERSION(3, 14, 0)
   {
     IgtkTouchState* ts = (IgtkTouchState*)iupAttribGet(ih, "_IUPGTK_TOUCH_STATE");
     if (ts) { free(ts); iupAttribSet(ih, "_IUPGTK_TOUCH_STATE", NULL); }
   }
+#endif
 
   iupdrvBaseUnMapMethod(ih);
 }
@@ -1146,11 +1156,12 @@ IUP_SDK_API void iupdrvCanvasInitClass(Iclass* ic)
   ic->UnMap = gtkCanvasUnMapMethod;
   ic->LayoutUpdate = gtkCanvasLayoutUpdateMethod;
 
+#if GTK_CHECK_VERSION(3, 14, 0)
   iupClassRegisterCallback(ic, "GESTURE_CB", "iiiidd");
   iupClassRegisterCallback(ic, "TOUCH_CB", "iiis");
   iupClassRegisterCallback(ic, "MULTITOUCH_CB", "iIII");
-
   iupClassRegisterAttribute(ic, "TOUCH", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
+#endif
 
   /* Driver Dependent Attribute functions */
 
@@ -1175,6 +1186,8 @@ IUP_SDK_API void iupdrvCanvasInitClass(Iclass* ic)
 
   /* Not Supported */
   iupClassRegisterAttribute(ic, "BACKINGSTORE", NULL, NULL, "YES", NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+#if !GTK_CHECK_VERSION(3, 14, 0)
   iupClassRegisterAttribute(ic, "TOUCH", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+#endif
   iupClassRegisterAttribute(ic, "SCROLLVISIBLE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 }

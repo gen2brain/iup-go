@@ -1449,8 +1449,12 @@ static char* gtkListGetReadOnlyAttrib(Ihandle* ih)
 
 static int gtkListSetDropExpandAttrib(Ihandle* ih, const char* value)
 {
+#if GTK_CHECK_VERSION(3, 0, 0)
   if (ih->data->is_dropdown && ih->handle)
     gtk_combo_box_set_popup_fixed_width(GTK_COMBO_BOX(ih->handle), !iupStrBoolean(value));
+#else
+  (void)ih; (void)value;
+#endif
   return 1;
 }
 
