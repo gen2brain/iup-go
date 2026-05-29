@@ -13,10 +13,6 @@
 #include <gdk/gdkwayland.h>
 #endif
 
-#ifdef HILDON
-#include <hildon/hildon-window.h>
-#endif
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -460,21 +456,11 @@ static int gtkMenuMapMethod(Ihandle* ih)
   if (iupMenuIsMenuBar(ih))
   {
     /* top level menu used for MENU attribute in IupDialog (a menu bar) */
-#ifdef HILDON
-    Ihandle *pih;
-    ih->handle = gtk_menu_new();
-    if (!ih->handle)
-      return IUP_ERROR;
-
-    pih = iupChildTreeGetNativeParent(ih);
-    hildon_window_set_menu(HILDON_WINDOW(pih->handle), GTK_MENU(ih->handle));
-#else
     ih->handle = gtk_menu_bar_new();
     if (!ih->handle)
       return IUP_ERROR;
 
     iupgtkAddToParent(ih);
-#endif
   }
   else
   {
@@ -639,11 +625,9 @@ static int gtkMenuItemMapMethod(Ihandle* ih)
   if (!ih->parent)
     return IUP_ERROR;
 
-#ifndef HILDON
   if (iupMenuIsMenuBar(ih->parent))
     ih->handle = gtk_menu_item_new_with_label("");
   else
-#endif
   {
     if (iupAttribGet(ih, "IMAGE")||iupAttribGet(ih, "TITLEIMAGE"))
     {
@@ -746,11 +730,9 @@ static int gtkSubmenuMapMethod(Ihandle* ih)
   if (!ih->parent)
     return IUP_ERROR;
 
-#ifndef HILDON
   if (iupMenuIsMenuBar(ih->parent))
     ih->handle = gtk_menu_item_new_with_label("");
   else
-#endif
   {
 #if GTK_CHECK_VERSION(3, 10, 0)
     ih->handle = gtkMenuItemNewWithImageBox();

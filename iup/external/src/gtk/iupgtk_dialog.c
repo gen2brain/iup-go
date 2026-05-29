@@ -14,10 +14,6 @@
 #include <gdk/gdkwayland.h>
 #endif
 
-#ifdef HILDON
-#include <hildon/hildon-program.h>
-#endif
-
 #include <stdlib.h>
 #include <string.h>
 #include <memory.h>
@@ -134,14 +130,10 @@ IUP_SDK_API void iupdrvDialogSetPosition(Ihandle *ih, int x, int y)
 
 static int gtkDialogGetMenuSize(Ihandle* ih)
 {
-#ifdef HILDON
-  return 0;
-#else
   if (ih->data->menu && !iupStrBoolean(IupGetGlobal("GLOBALMENU")))
     return iupdrvMenuGetMenuBarSize(ih->data->menu);
   else
     return 0;
-#endif
 }
 
 #define iupABS(_x) ((_x)<0? -(_x): (_x))
@@ -222,14 +214,6 @@ static void gtkDialogGetWindowDecor(Ihandle* ih, int *win_border, int *win_capti
 
 IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int *border, int *caption, int *menu)
 {
-#ifdef HILDON
-  if (border)
-    *border = (iupAttribGetBoolean(ih, "HILDONWINDOW") && !iupAttribGetBoolean(ih, "FULLSCREEN")) ? 12 : 0;
-  if (caption)
-    *caption = 0;
-  if (menu)
-    *menu = 0;
-#else
   static int native_border = 0;
   static int native_caption = 0;
   int has_csd = 0;
@@ -272,7 +256,6 @@ IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int *border, int *captio
       return;
     }
   }
-#endif
 
   /* Non-CSD visible path (SSD windows only) */
   if (!has_csd && ih->handle && iupdrvIsVisible(ih))
@@ -431,13 +414,11 @@ static gboolean gtkDialogConfigureEvent(GtkWidget *widget, GdkEventConfigure *ev
   gint x, y;
   (void)widget;
 
-#ifndef HILDON
   if (ih->data->menu && ih->data->menu->handle)
   {
     if (evt->width > 0)
       gtk_widget_set_size_request(ih->data->menu->handle, evt->width, -1);
   }
-#endif
 
   if (ih->data->ignore_resize)
     return FALSE;
@@ -701,22 +682,7 @@ static int gtkDialogMapMethod(Ihandle* ih)
   GtkWidget* inner_parent;
   int has_titlebar = 0;
 
-#ifdef HILDON
-  if (iupAttribGetBoolean(ih, "HILDONWINDOW"))
-  {
-    HildonProgram *program = HILDON_PROGRAM(hildon_program_get_instance());
-    ih->handle = hildon_window_new();
-    if (ih->handle)
-      hildon_program_add_window(program, HILDON_WINDOW(ih->handle));
-  }
-  else
-  {
-    iupAttribSet(ih, "DIALOGHINT", "YES"); /* otherwise not displayed correctly */
-    ih->handle = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-  }
-#else
   ih->handle = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-#endif
   if (!ih->handle)
     return IUP_ERROR;
 
