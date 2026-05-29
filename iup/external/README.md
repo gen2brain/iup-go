@@ -70,7 +70,7 @@ Available presets:
 | `debug`           | Platform native, debug         |                      |
 
 You can create a `CMakeUserPresets.json` file for local overrides (e.g., toolchain or compiler paths) without modifying the tracked `CMakePresets.json`.
-IDEs automatically pick up both files.
+IDEs automatically pick up both files. See [example](https://gist.github.com/gen2brain/dcf02ececc5890f8a7a8e9fc172a13d5).
 
 ### Options
 
@@ -190,7 +190,19 @@ cd build
 cpack --config CPackSourceConfig.cmake
 ```
 
-This produces `iup-<version>.tar.gz` and `iup-<version>.tar.xz` in the build directory.
+This produces `iup-<version>.tar.gz` in the build directory.
+
+### Docs Tarball
+
+To create a tarball of the `docs/` reference documentation:
+
+```bash
+cmake -B build
+cd build
+cpack --config CPackDocsConfig.cmake
+```
+
+This produces `iup-docs-<version>.tar.gz` in the build directory.
 
 ## Libraries
 

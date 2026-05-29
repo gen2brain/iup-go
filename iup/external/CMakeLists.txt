@@ -343,7 +343,7 @@ install(FILES
 
 set(CPACK_PACKAGE_NAME "iup")
 set(CPACK_PACKAGE_VERSION "${_IUP_VERSION_RAW}")
-set(CPACK_SOURCE_GENERATOR "TGZ;TXZ")
+set(CPACK_SOURCE_GENERATOR "TGZ")
 set(CPACK_SOURCE_PACKAGE_FILE_NAME "iup-${_IUP_VERSION_RAW}")
 set(CPACK_SOURCE_IGNORE_FILES
   "/build/"
@@ -351,3 +351,20 @@ set(CPACK_SOURCE_IGNORE_FILES
   "vendor\\.go$"
 )
 include(CPack)
+
+# --- Docs package ---
+# Standalone config because docs/ lives outside the CMake source tree.
+get_filename_component(_IUP_DOCS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../docs" ABSOLUTE)
+if(EXISTS "${_IUP_DOCS_DIR}")
+  file(CONFIGURE OUTPUT "${CMAKE_BINARY_DIR}/CPackDocsConfig.cmake" @ONLY CONTENT [[
+set(CPACK_GENERATOR "TGZ")
+set(CPACK_PACKAGE_NAME "iup-docs")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "IUP API reference documentation")
+set(CPACK_PACKAGE_DESCRIPTION "IUP API reference documentation.")
+set(CPACK_PACKAGE_VERSION "@_IUP_VERSION_RAW@")
+set(CPACK_PACKAGE_FILE_NAME "iup-docs-@_IUP_VERSION_RAW@")
+set(CPACK_PACKAGE_DIRECTORY "@CMAKE_BINARY_DIR@")
+set(CPACK_INSTALLED_DIRECTORIES "@_IUP_DOCS_DIR@;.")
+set(CPACK_INCLUDE_TOPLEVEL_DIRECTORY 1)
+]])
+endif()
