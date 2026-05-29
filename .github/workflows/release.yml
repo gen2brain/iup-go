@@ -1,0 +1,30 @@
+name: Release
+on:
+  push:
+    tags:
+      - 'iup/v*'
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: Install dependencies
+      run: sudo apt-get update -y && sudo apt-get install -y cmake libgtk-3-dev
+    - name: Build tarballs
+      run: |
+        cmake -S iup/external -B build
+        cd build
+        cpack --config CPackSourceConfig.cmake
+        cpack --config CPackDocsConfig.cmake
+    - name: Create release
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        VERSION="$(tr -d '[:space:]' < iup/external/VERSION)"
+        gh release create "$GITHUB_REF_NAME" \
+          --title "IUP $VERSION" \
+          --generate-notes \
+          build/iup-*.tar.gz

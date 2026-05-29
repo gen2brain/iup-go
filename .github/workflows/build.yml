@@ -473,6 +473,60 @@ jobs:
       run: go build -tags qt
       working-directory: iup
 
+  linux-android:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: Install Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: stable
+    - name: Install NDK
+      id: setup-ndk
+      uses: nttld/setup-ndk@v1
+      with:
+        ndk-version: r27c
+        local-cache: false
+    - name: Build
+      env:
+        CGO_ENABLED: "1"
+        GOOS: android
+        GOARCH: arm64
+        PKG_CONFIG: "true"
+      run: |
+        NDK_BIN="${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin"
+        CC="$NDK_BIN/aarch64-linux-android22-clang" \
+        CXX="$NDK_BIN/aarch64-linux-android22-clang++" \
+          go build
+      working-directory: iup
+
+  macos-ios:
+    runs-on: macos-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: Install Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: stable
+    - name: Build
+      env:
+        CGO_ENABLED: "1"
+        GOOS: ios
+        GOARCH: arm64
+      run: |
+        SDK="$(xcrun --sdk iphoneos --show-sdk-path)"
+        CC="$(xcrun --sdk iphoneos --find clang)"
+        CXX="$(xcrun --sdk iphoneos --find clang++)"
+        export CC CXX
+        IOS_FLAGS="-isysroot $SDK -arch arm64 -miphoneos-version-min=15.0"
+        export CGO_CFLAGS="$IOS_FLAGS"
+        export CGO_CXXFLAGS="$IOS_FLAGS"
+        export CGO_LDFLAGS="$IOS_FLAGS"
+        go build
+      working-directory: iup
+
   linux-cmake:
     runs-on: ubuntu-latest
     steps:

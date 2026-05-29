@@ -29,8 +29,7 @@ You can also build a binary in [MSYS2](https://msys2.github.io/) shell.
 
 * For MSYS2, install `pacman -S mingw-w64-x86_64-go mingw-w64-x86_64-gcc mingw-w64-x86_64-pkg-config`.
 * You can build for Qt, with the `qt` build tag. Install deps with `pacman -S mingw-w64-x86_64-qt6-base`.
-* You can build for GTK3, with the `gtk` build tag. Install deps with `pacman -S mingw-w64-x86_64-gtk3`.
-* You can build for GTK4, with the `gtk4` build tag. Install deps with `pacman -S mingw-w64-x86_64-gtk4`.
+* You can build for GTK, with the `gtk/gtk4` build tags. Install deps with `pacman -S mingw-w64-x86_64-gtk3 / -gtk4`.
 * You can build for FLTK, with the `fltk` build tag. Install deps with `pacman -S mingw-w64-x86_64-fltk`.
 
 [<img src="examples/sample/sample_win32.png" width="700"/>](examples/sample/sample_win32.png)
@@ -58,8 +57,7 @@ On macOS, you need Command Line Tools for Xcode (if you have `brew`, you already
 To create an `.app` bundle or `.dmg` image, check this [gist](https://gist.github.com/mholt/11008646c95d787c30806d3f24b2c844).
 
 * You can build for Qt, with the `qt` build tag. Install deps with `brew install qt`.
-* You can build for GTK3, with the `gtk` build tag. Install deps with `brew install gtk+3`.
-* You can build for GTK4, with the `gtk4` build tag. Install deps with `brew install gtk4`.
+* You can build for GTK, with the `gtk/gtk4` build tag. Install deps with `brew install gtk+3 / gtk4`.
 * You can build for FLTK, with the `fltk` build tag. Install deps with `brew install fltk`.
 
 [<img src="examples/sample/sample_cocoa.png" width="700"/>](examples/sample/sample_cocoa.png)
@@ -195,7 +193,7 @@ Tested with the [gen2brain/go](https://github.com/gen2brain/go) Haiku port of th
 
 The same `main()` compiles as a desktop binary, an Android shared library, and an iOS executable. Every example under [examples/](examples/) builds unchanged on all three.
 Most examples are laid out for desktop windows and will overflow a phone screen though; production mobile apps need a layout tuned for small screens.
-See [examples/mobile_sample](examples/mobile_sample) and [examples/mobile_hello](examples/mobile_hello) for examples designed for mobile.
+See [mobile_sample](examples/mobile_sample) and [mobile_hello](examples/mobile_hello) for examples designed for mobile.
 
 `iup.EntryPoint(main)` registers `main` as the callback the platform fires after launch; on desktop it is a no-op and the Go runtime calls `main` directly.
 `iup.Close()` and `iup.MainLoop()` are no-ops on mobile (the host platform owns the lifecycle), so avoid scheduling cleanup after `iup.MainLoop()`.
