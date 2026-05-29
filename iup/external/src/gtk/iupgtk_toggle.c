@@ -38,14 +38,10 @@ static GtkWidget* gtk_button_get_image(GtkButton *button)
 }
 #endif
 
-#ifdef HILDON
-#define IUP_TOGGLE_BOX 30
-#else
 #if GTK_CHECK_VERSION(3, 0, 0)
 #define IUP_TOGGLE_BOX 18
 #else
 #define IUP_TOGGLE_BOX 16
-#endif
 #endif
 
 #if !GTK_CHECK_VERSION(3, 0, 0)
