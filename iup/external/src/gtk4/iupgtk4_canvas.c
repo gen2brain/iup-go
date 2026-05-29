@@ -5,6 +5,7 @@
  */
 
 #include <stdarg.h>
+#include <math.h>
 
 #include "iup.h"
 #include "iupcbs.h"
@@ -552,6 +553,134 @@ static void gtk4CanvasLayoutUpdateMethod(Ihandle* ih)
     gtk4CanvasUpdateChildLayout(ih, 0);
 }
 
+static void gtk4CanvasFireGesture(Ihandle* ih, int gesture, int state, int x, int y, double v1, double v2)
+{
+  IFniiiidd cb = (IFniiiidd)IupGetCallback(ih, "GESTURE_CB");
+  if (cb && cb(ih, gesture, state, x, y, v1, v2) == IUP_CLOSE)
+    IupExitLoop();
+}
+
+/* GTK has no 2-finger 2D pan gesture; derive it from the zoom gesture's bounding-box center */
+static void gtk4CanvasZoomBegin(GtkGesture* gesture, GdkEventSequence* seq, Ihandle* ih)
+{
+  double cx = 0, cy = 0;
+  (void)seq;
+  gtk_gesture_get_bounding_box_center(gesture, &cx, &cy);
+  iupAttribSetDouble(ih, "_IUPGTK_GESTURE_CX0", cx);
+  iupAttribSetDouble(ih, "_IUPGTK_GESTURE_CY0", cy);
+  iupAttribSetDouble(ih, "_IUPGTK_GESTURE_CX", cx);
+  iupAttribSetDouble(ih, "_IUPGTK_GESTURE_CY", cy);
+  iupAttribSetDouble(ih, "_IUPGTK_GESTURE_SCALE", 1.0);
+  gtk4CanvasFireGesture(ih, IUP_GESTURE_PINCH, IUP_GESTURE_BEGIN, (int)cx, (int)cy, 1.0, 0);
+  gtk4CanvasFireGesture(ih, IUP_GESTURE_PAN, IUP_GESTURE_BEGIN, (int)cx, (int)cy, 0, 0);
+}
+
+static void gtk4CanvasZoomUpdate(GtkGesture* gesture, GdkEventSequence* seq, Ihandle* ih)
+{
+  double cx = 0, cy = 0, scale, dx, dy;
+  (void)seq;
+  gtk_gesture_get_bounding_box_center(gesture, &cx, &cy);
+  scale = gtk_gesture_zoom_get_scale_delta(GTK_GESTURE_ZOOM(gesture));
+  dx = cx - iupAttribGetDouble(ih, "_IUPGTK_GESTURE_CX0");
+  dy = cy - iupAttribGetDouble(ih, "_IUPGTK_GESTURE_CY0");
+  iupAttribSetDouble(ih, "_IUPGTK_GESTURE_CX", cx);
+  iupAttribSetDouble(ih, "_IUPGTK_GESTURE_CY", cy);
+  iupAttribSetDouble(ih, "_IUPGTK_GESTURE_SCALE", scale);
+  gtk4CanvasFireGesture(ih, IUP_GESTURE_PINCH, IUP_GESTURE_CHANGED, (int)cx, (int)cy, scale, 0);
+  gtk4CanvasFireGesture(ih, IUP_GESTURE_PAN, IUP_GESTURE_CHANGED, (int)cx, (int)cy, dx, dy);
+}
+
+static void gtk4CanvasZoomEnd(GtkGesture* gesture, GdkEventSequence* seq, Ihandle* ih)
+{
+  int x = (int)iupAttribGetDouble(ih, "_IUPGTK_GESTURE_CX");
+  int y = (int)iupAttribGetDouble(ih, "_IUPGTK_GESTURE_CY");
+  double scale = iupAttribGetDouble(ih, "_IUPGTK_GESTURE_SCALE");
+  double dx = x - (int)iupAttribGetDouble(ih, "_IUPGTK_GESTURE_CX0");
+  double dy = y - (int)iupAttribGetDouble(ih, "_IUPGTK_GESTURE_CY0");
+  int state = gtk_gesture_is_recognized(gesture) ? IUP_GESTURE_END : IUP_GESTURE_CANCEL;
+  (void)seq;
+  gtk4CanvasFireGesture(ih, IUP_GESTURE_PINCH, state, x, y, scale, 0);
+  gtk4CanvasFireGesture(ih, IUP_GESTURE_PAN, state, x, y, dx, dy);
+}
+
+static void gtk4CanvasRotateBegin(GtkGesture* gesture, GdkEventSequence* seq, Ihandle* ih)
+{
+  double cx = 0, cy = 0;
+  (void)seq;
+  gtk_gesture_get_bounding_box_center(gesture, &cx, &cy);
+  iupAttribSetDouble(ih, "_IUPGTK_GESTURE_ANGLE", 0);
+  gtk4CanvasFireGesture(ih, IUP_GESTURE_ROTATE, IUP_GESTURE_BEGIN, (int)cx, (int)cy, 0, 0);
+}
+
+static void gtk4CanvasRotateUpdate(GtkGesture* gesture, GdkEventSequence* seq, Ihandle* ih)
+{
+  double cx = 0, cy = 0, deg;
+  (void)seq;
+  gtk_gesture_get_bounding_box_center(gesture, &cx, &cy);
+  deg = gtk_gesture_rotate_get_angle_delta(GTK_GESTURE_ROTATE(gesture)) * 180.0 / G_PI;
+  iupAttribSetDouble(ih, "_IUPGTK_GESTURE_ANGLE", deg);
+  gtk4CanvasFireGesture(ih, IUP_GESTURE_ROTATE, IUP_GESTURE_CHANGED, (int)cx, (int)cy, deg, 0);
+}
+
+static void gtk4CanvasRotateEnd(GtkGesture* gesture, GdkEventSequence* seq, Ihandle* ih)
+{
+  int x = (int)iupAttribGetDouble(ih, "_IUPGTK_GESTURE_CX");
+  int y = (int)iupAttribGetDouble(ih, "_IUPGTK_GESTURE_CY");
+  double deg = iupAttribGetDouble(ih, "_IUPGTK_GESTURE_ANGLE");
+  int state = gtk_gesture_is_recognized(gesture) ? IUP_GESTURE_END : IUP_GESTURE_CANCEL;
+  (void)seq;
+  gtk4CanvasFireGesture(ih, IUP_GESTURE_ROTATE, state, x, y, deg, 0);
+}
+
+static void gtk4CanvasSwipe(GtkGestureSwipe* gesture, double vx, double vy, Ihandle* ih)
+{
+  double cx = 0, cy = 0;
+  int dir;
+  gtk_gesture_get_bounding_box_center(GTK_GESTURE(gesture), &cx, &cy);
+  if (fabs(vx) > fabs(vy)) dir = vx > 0 ? IUP_GESTURE_SWIPE_RIGHT : IUP_GESTURE_SWIPE_LEFT;
+  else                     dir = vy > 0 ? IUP_GESTURE_SWIPE_DOWN : IUP_GESTURE_SWIPE_UP;
+  gtk4CanvasFireGesture(ih, IUP_GESTURE_SWIPE, IUP_GESTURE_END, (int)cx, (int)cy, dir, 0);
+}
+
+static void gtk4CanvasLongPress(GtkGestureLongPress* gesture, double x, double y, Ihandle* ih)
+{
+  (void)gesture;
+  gtk4CanvasFireGesture(ih, IUP_GESTURE_LONGPRESS, IUP_GESTURE_END, (int)x, (int)y, 0, 0);
+}
+
+static void gtk4CanvasTap(GtkGestureClick* gesture, int n_press, double x, double y, Ihandle* ih)
+{
+  (void)gesture;
+  gtk4CanvasFireGesture(ih, IUP_GESTURE_TAP, IUP_GESTURE_END, (int)x, (int)y, (double)n_press, 0);
+}
+
+static void gtk4CanvasSetupGestures(Ihandle* ih)
+{
+  GtkGesture* zoom = gtk_gesture_zoom_new();
+  g_signal_connect(zoom, "begin",  G_CALLBACK(gtk4CanvasZoomBegin),  ih);
+  g_signal_connect(zoom, "update", G_CALLBACK(gtk4CanvasZoomUpdate), ih);
+  g_signal_connect(zoom, "end",    G_CALLBACK(gtk4CanvasZoomEnd),    ih);
+  gtk_widget_add_controller(ih->handle, GTK_EVENT_CONTROLLER(zoom));
+
+  GtkGesture* rotate = gtk_gesture_rotate_new();
+  g_signal_connect(rotate, "begin",  G_CALLBACK(gtk4CanvasRotateBegin),  ih);
+  g_signal_connect(rotate, "update", G_CALLBACK(gtk4CanvasRotateUpdate), ih);
+  g_signal_connect(rotate, "end",    G_CALLBACK(gtk4CanvasRotateEnd),    ih);
+  gtk_widget_add_controller(ih->handle, GTK_EVENT_CONTROLLER(rotate));
+
+  GtkGesture* swipe = gtk_gesture_swipe_new();
+  g_signal_connect(swipe, "swipe", G_CALLBACK(gtk4CanvasSwipe), ih);
+  gtk_widget_add_controller(ih->handle, GTK_EVENT_CONTROLLER(swipe));
+
+  GtkGesture* longp = gtk_gesture_long_press_new();
+  g_signal_connect(longp, "pressed", G_CALLBACK(gtk4CanvasLongPress), ih);
+  gtk_widget_add_controller(ih->handle, GTK_EVENT_CONTROLLER(longp));
+
+  GtkGesture* tap = gtk_gesture_click_new();
+  g_signal_connect(tap, "released", G_CALLBACK(gtk4CanvasTap), ih);
+  gtk_widget_add_controller(ih->handle, GTK_EVENT_CONTROLLER(tap));
+}
+
 static int gtk4CanvasMapMethod(Ihandle* ih)
 {
   GtkWidget* sb_win;
@@ -589,6 +718,8 @@ static int gtk4CanvasMapMethod(Ihandle* ih)
   GtkGesture* click_gesture = gtk_gesture_click_new();
   gtk_widget_add_controller(ih->handle, GTK_EVENT_CONTROLLER(click_gesture));
   g_signal_connect(click_gesture, "pressed", G_CALLBACK(gtk4CanvasButtonPressed), ih);
+
+  gtk4CanvasSetupGestures(ih);
 
   iupgtk4SetupButtonEvents(ih->handle, ih);
   iupgtk4SetupMotionEvents(ih->handle, ih);
@@ -688,6 +819,8 @@ IUP_SDK_API void iupdrvCanvasInitClass(Iclass* ic)
   ic->Map = gtk4CanvasMapMethod;
   ic->UnMap = gtk4CanvasUnMapMethod;
   ic->LayoutUpdate = gtk4CanvasLayoutUpdateMethod;
+
+  iupClassRegisterCallback(ic, "GESTURE_CB", "iiiidd");
 
   iupClassRegisterAttribute(ic, "BGCOLOR", iupBaseNativeParentGetBgColorAttrib, gtk4CanvasSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_NO_SAVE|IUPAF_DEFAULT);
 

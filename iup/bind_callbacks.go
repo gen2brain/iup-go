@@ -474,6 +474,28 @@ func setMultiTouchFunc(ih Ihandle, f MultiTouchFunc) {
 
 //--------------------
 
+// GestureFunc for GESTURE_CB callback.
+// Action generated when a pinch, rotate, pan, swipe, tap or long-press gesture is recognized.
+//
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_canvas.md
+type GestureFunc func(ih Ihandle, gesture, state, x, y int, v1, v2 float64) int
+
+//export goIupGestureCB
+func goIupGestureCB(ih unsafe.Pointer, gesture, state, x, y C.int, v1, v2 C.double) C.int {
+	f := loadCallback((Ihandle)(ih), "_IUPGO_GESTURE_CB").Value().(GestureFunc)
+
+	return C.int(f((Ihandle)(ih), int(gesture), int(state), int(x), int(y), float64(v1), float64(v2)))
+}
+
+// setGestureFunc for GESTURE_CB.
+func setGestureFunc(ih Ihandle, f GestureFunc) {
+	storeCallback(ih, "_IUPGO_GESTURE_CB", f)
+
+	C.goIupSetGestureFunc(ih.ptr())
+}
+
+//--------------------
+
 // DropFilesFunc for DROPFILES_CB callback.
 // Action called when a file is "dropped" into control.
 //

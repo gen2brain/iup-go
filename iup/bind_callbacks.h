@@ -111,6 +111,11 @@ static void goIupSetMultiTouchFunc(Ihandle *ih) {
 	IupSetCallback(ih, "MULTITOUCH_CB", (Icallback) goIupMultiTouchCB);
 }
 
+CGO_EXPORT extern int goIupGestureCB(void *, int gesture, int state, int x, int y, double v1, double v2);
+static void goIupSetGestureFunc(Ihandle *ih) {
+	IupSetCallback(ih, "GESTURE_CB", (Icallback) goIupGestureCB);
+}
+
 CGO_EXPORT extern int goIupDropFilesCB(void *, void *filename, int num, int x, int y);
 static void goIupSetDropFilesFunc(Ihandle *ih) {
 	IupSetCallback(ih, "DROPFILES_CB", (Icallback) goIupDropFilesCB);

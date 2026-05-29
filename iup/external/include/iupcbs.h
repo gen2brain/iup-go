@@ -55,6 +55,7 @@ typedef int (*IFniiIII)(Ihandle*, int, int, int*, int*, int*); /* fgcolor_cb, bg
 typedef int (*IFniinsii)(Ihandle*, int, int, Ihandle*, char*, int, int); /* dropselect_cb */
 typedef int (*IFnccc)(Ihandle*, unsigned char, unsigned char, unsigned char); /* drag_cb, change_cb */
 typedef int (*IFniIIII)(Ihandle*, int, int*, int*, int*, int*); /* multitouch_cb */
+typedef int (*IFniiiidd)(Ihandle*, int, int, int, int, double, double); /* gesture_cb */
 
 typedef int (*IFniidd)(Ihandle*, int, int, double, double); /* delete_cb */
 typedef int (*IFniiddi)(Ihandle*, int, int, double, double, int); /* select_cb */

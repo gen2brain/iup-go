@@ -443,6 +443,13 @@ enum{IUP_SBUP,   IUP_SBDN,    IUP_SBPGUP,   IUP_SBPGDN,    IUP_SBPOSV, IUP_SBDRA
      IUP_SBLEFT, IUP_SBRIGHT, IUP_SBPGLEFT, IUP_SBPGRIGHT, IUP_SBPOSH, IUP_SBDRAGH};
 
 /************************************************************************/
+/*               GESTURE_CB Callback Values                             */
+/************************************************************************/
+enum{IUP_GESTURE_PINCH, IUP_GESTURE_ROTATE, IUP_GESTURE_PAN, IUP_GESTURE_SWIPE, IUP_GESTURE_TAP, IUP_GESTURE_LONGPRESS};
+enum{IUP_GESTURE_BEGIN, IUP_GESTURE_CHANGED, IUP_GESTURE_END, IUP_GESTURE_CANCEL};
+enum{IUP_GESTURE_SWIPE_RIGHT, IUP_GESTURE_SWIPE_LEFT, IUP_GESTURE_SWIPE_UP, IUP_GESTURE_SWIPE_DOWN};
+
+/************************************************************************/
 /*               Mouse Button Values and Macros                         */
 /************************************************************************/
 #define IUP_BUTTON1   '1'

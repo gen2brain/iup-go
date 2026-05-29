@@ -16,6 +16,7 @@
 #include "iup_object.h"
 #include "iup_drv.h"
 #include "iup_str.h"
+#include "iup_attrib.h"
 
 #include "iupwin_drv.h"
 
@@ -90,10 +91,71 @@ static int winSetGestureAttrib(Ihandle *ih, const char *value)
   return 0;
 }
 
+/* WM_GESTURE and WM_TOUCH are mutually exclusive; GESTURE_CB needs TOUCH off. Gestures are on by default. */
+IUP_DRV_API int iupwinGestureProcessInfo(Ihandle* ih, void* lp)
+{
+  GESTUREINFO gi;
+  HGESTUREINFO hgi = (HGESTUREINFO)lp;
+  IFniiiidd cb = (IFniiiidd)IupGetCallback(ih, "GESTURE_CB");
+  int x, y, state;
+
+  if (!cb)
+    return 0;
+
+  ZeroMemory(&gi, sizeof(GESTUREINFO));
+  gi.cbSize = sizeof(GESTUREINFO);
+  if (!GetGestureInfo(hgi, &gi))
+    return 0;
+
+  x = gi.ptsLocation.x;
+  y = gi.ptsLocation.y;
+  iupdrvScreenToClient(ih, &x, &y);
+
+  if (gi.dwFlags & GF_BEGIN)    state = IUP_GESTURE_BEGIN;
+  else if (gi.dwFlags & GF_END) state = IUP_GESTURE_END;
+  else                          state = IUP_GESTURE_CHANGED;
+
+  switch (gi.dwID)
+  {
+    case GID_ZOOM:
+    {
+      double dist = (double)(DWORD)gi.ullArguments;
+      double scale;
+      if (state == IUP_GESTURE_BEGIN) { iupAttribSetDouble(ih, "_IUPWIN_GESTURE_DIST0", dist); scale = 1.0; }
+      else { double d0 = iupAttribGetDouble(ih, "_IUPWIN_GESTURE_DIST0"); scale = (d0 > 0.0)? dist / d0 : 1.0; }
+      if (cb(ih, IUP_GESTURE_PINCH, state, x, y, scale, 0) == IUP_CLOSE) IupExitLoop();
+      break;
+    }
+    case GID_ROTATE:
+    {
+      double ang = GID_ROTATE_ANGLE_FROM_ARGUMENT(gi.ullArguments) * 180.0 / 3.14159265358979;
+      double deg;
+      if (state == IUP_GESTURE_BEGIN) { iupAttribSetDouble(ih, "_IUPWIN_GESTURE_ANGLE0", ang); deg = 0; }
+      else deg = ang - iupAttribGetDouble(ih, "_IUPWIN_GESTURE_ANGLE0");
+      if (cb(ih, IUP_GESTURE_ROTATE, state, x, y, deg, 0) == IUP_CLOSE) IupExitLoop();
+      break;
+    }
+    case GID_PAN:
+    {
+      double dx, dy;
+      if (state == IUP_GESTURE_BEGIN) { iupAttribSetInt(ih, "_IUPWIN_GESTURE_PANX0", x); iupAttribSetInt(ih, "_IUPWIN_GESTURE_PANY0", y); dx = dy = 0; }
+      else { dx = x - iupAttribGetInt(ih, "_IUPWIN_GESTURE_PANX0"); dy = y - iupAttribGetInt(ih, "_IUPWIN_GESTURE_PANY0"); }
+      if (cb(ih, IUP_GESTURE_PAN, state, x, y, dx, dy) == IUP_CLOSE) IupExitLoop();
+      break;
+    }
+    default:
+      return 0;  /* GID_BEGIN/END/TWOFINGERTAP/PRESSANDTAP: let DefWindowProc close the handle */
+  }
+
+  CloseGestureInfoHandle(hgi);
+  return 1;
+}
+
 IUP_DRV_API void iupwinTouchRegisterAttrib(Iclass* ic)
 {
   iupClassRegisterCallback(ic, "TOUCH_CB", "iiis");
   iupClassRegisterCallback(ic, "MULTITOUCH_CB", "iIII");
+  iupClassRegisterCallback(ic, "GESTURE_CB", "iiiidd");
 
   iupClassRegisterAttribute(ic, "TOUCH", winGetTouchAttrib, winSetTouchAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "GESTURE", NULL, winSetGestureAttrib, NULL, NULL, IUPAF_NO_INHERIT);

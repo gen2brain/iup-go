@@ -47,6 +47,7 @@ IUP_DRV_API void iupwinTipsDestroy(Ihandle* ih);
 IUP_DRV_API void iupwinTouchInit(void);
 IUP_DRV_API void iupwinTouchRegisterAttrib(Iclass* ic);
 IUP_DRV_API void iupwinTouchProcessInput(Ihandle* ih, int count, void* lp);
+IUP_DRV_API int iupwinGestureProcessInfo(Ihandle* ih, void* lp);
 
 /* font */
 IUP_DRV_API char* iupwinGetHFontAttrib(Ihandle *ih);

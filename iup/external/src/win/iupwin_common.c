@@ -41,6 +41,9 @@ static UINT WM_DRAGLISTMSG = 0;
 #ifndef WM_TOUCH
 #define WM_TOUCH            0x0240
 #endif
+#ifndef WM_GESTURE
+#define WM_GESTURE          0x0119
+#endif
 #ifndef WS_EX_COMPOSITED
 #define WS_EX_COMPOSITED 0x02000000L
 #endif
@@ -373,6 +376,13 @@ IUP_DRV_API int iupwinBaseMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, L
     /* Touch messages are greedy, the top-level window receives them all. */
     if (LOWORD(wp))
       iupwinTouchProcessInput(ih, (int)LOWORD(wp), (void*)lp);
+    break;
+  case WM_GESTURE:
+    if (iupwinGestureProcessInfo(ih, (void*)lp))
+    {
+      *result = 0;
+      return 1;
+    }
     break;
   case WOM_CLOSE:
   case WOM_DONE:

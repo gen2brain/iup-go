@@ -123,6 +123,24 @@ static void cocoaCanvasDrawBuffer(NSBitmapImageRep* buffer, NSRect bounds)
   [context restoreGraphicsState];
 }
 
+static int cocoaCanvasGestureState(NSGestureRecognizerState s)
+{
+  switch (s)
+  {
+    case NSGestureRecognizerStateBegan:   return IUP_GESTURE_BEGIN;
+    case NSGestureRecognizerStateChanged: return IUP_GESTURE_CHANGED;
+    case NSGestureRecognizerStateEnded:   return IUP_GESTURE_END;
+    default:                              return IUP_GESTURE_CANCEL;
+  }
+}
+
+static void cocoaCanvasFireGesture(Ihandle* ih, int gesture, int state, int x, int y, double v1, double v2)
+{
+  IFniiiidd cb = (IFniiiidd)IupGetCallback(ih, "GESTURE_CB");
+  if (cb && cb(ih, gesture, state, x, y, v1, v2) == IUP_CLOSE)
+    IupExitLoop();
+}
+
 @implementation IupCocoaCanvasView
 
 - (instancetype) initWithFrame:(NSRect)frame_rect ih:(Ihandle*)ih
@@ -132,8 +150,47 @@ static void cocoaCanvasDrawBuffer(NSBitmapImageRep* buffer, NSRect bounds)
   {
     _ih = ih;
     [self setEnabled:YES];
+
+    /* trackpad gestures; pan is scroll (WHEEL_CB) and tap/long-press are mouse (BUTTON_CB) on the desktop */
+    NSMagnificationGestureRecognizer* magnify = [[NSMagnificationGestureRecognizer alloc] initWithTarget:self action:@selector(onMagnify:)];
+    [self addGestureRecognizer:magnify];
+    [magnify release];
+
+    NSRotationGestureRecognizer* rotate = [[NSRotationGestureRecognizer alloc] initWithTarget:self action:@selector(onRotate:)];
+    [self addGestureRecognizer:rotate];
+    [rotate release];
   }
   return self;
+}
+
+- (void) onMagnify:(NSMagnificationGestureRecognizer*)g
+{
+  NSPoint p = [g locationInView:self];
+  cocoaCanvasFireGesture(_ih, IUP_GESTURE_PINCH, cocoaCanvasGestureState([g state]), (int)p.x, (int)p.y, 1.0 + (double)[g magnification], 0.0);
+}
+
+- (void) onRotate:(NSRotationGestureRecognizer*)g
+{
+  NSPoint p = [g locationInView:self];
+  double deg = (double)[g rotation] * 180.0 / M_PI;
+  cocoaCanvasFireGesture(_ih, IUP_GESTURE_ROTATE, cocoaCanvasGestureState([g state]), (int)p.x, (int)p.y, deg, 0.0);
+}
+
+- (void) swipeWithEvent:(NSEvent*)the_event
+{
+  if (!_ih || !IupGetCallback(_ih, "GESTURE_CB"))
+  {
+    [super swipeWithEvent:the_event];
+    return;
+  }
+  NSPoint p = [self convertPoint:[the_event locationInWindow] fromView:nil];
+  CGFloat dx = [the_event deltaX];
+  CGFloat dy = [the_event deltaY];
+  int dir;
+  /* AppKit swipe: +deltaX = left, +deltaY = up */
+  if (fabs(dx) > fabs(dy)) dir = dx > 0 ? IUP_GESTURE_SWIPE_LEFT : IUP_GESTURE_SWIPE_RIGHT;
+  else                     dir = dy > 0 ? IUP_GESTURE_SWIPE_UP : IUP_GESTURE_SWIPE_DOWN;
+  cocoaCanvasFireGesture(_ih, IUP_GESTURE_SWIPE, IUP_GESTURE_END, (int)p.x, (int)p.y, (double)dir, 0.0);
 }
 
 - (void) dealloc
@@ -1518,6 +1575,8 @@ IUP_SDK_API void iupdrvCanvasInitClass(Iclass* ic)
   ic->LayoutUpdate = cocoaCanvasLayoutUpdateMethod;
   ic->ComputeNaturalSize = cocoaCanvasComputeNaturalSizeMethod;
   ic->GetInnerNativeContainerHandle = cocoaCanvasGetInnerNativeContainerHandleMethod;
+
+  iupClassRegisterCallback(ic, "GESTURE_CB", "iiiidd");
 
   /* Visual */
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, cocoaCanvasSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);

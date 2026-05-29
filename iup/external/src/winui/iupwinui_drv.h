@@ -518,6 +518,12 @@ struct IupWinUICanvasAux
   winrt::event_token sizeChangedToken;
   winrt::event_token sbHorizScrollToken;
   winrt::event_token sbVertScrollToken;
+  winrt::event_token manipulationStartedToken;
+  winrt::event_token manipulationDeltaToken;
+  winrt::event_token manipulationCompletedToken;
+  winrt::event_token tappedToken;
+  winrt::event_token doubleTappedToken;
+  winrt::event_token holdingToken;
   std::shared_ptr<bool> alive;
 
   IupWinUICanvasAux() : displayImage(nullptr),
@@ -527,6 +533,8 @@ struct IupWinUICanvasAux
     keyDownToken{}, keyUpToken{},
     gotFocusToken{}, lostFocusToken{}, sizeChangedToken{},
     sbHorizScrollToken{}, sbVertScrollToken{},
+    manipulationStartedToken{}, manipulationDeltaToken{}, manipulationCompletedToken{},
+    tappedToken{}, doubleTappedToken{}, holdingToken{},
     alive(std::make_shared<bool>(true)) {}
 };
 

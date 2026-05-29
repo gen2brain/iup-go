@@ -157,6 +157,8 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 		setTouchFunc(ih, fn.(TouchFunc))
 	case "MULTITOUCH_CB":
 		setMultiTouchFunc(ih, fn.(MultiTouchFunc))
+	case "GESTURE_CB":
+		setGestureFunc(ih, fn.(GestureFunc))
 	case "DROPFILES_CB":
 		setDropFilesFunc(ih, fn.(DropFilesFunc))
 	case "CARET_CB":

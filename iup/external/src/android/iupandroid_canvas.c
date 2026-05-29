@@ -139,6 +139,8 @@ void iupdrvCanvasInitClass(Iclass* ic)
 
   iupClassRegisterCallback(ic, "TOUCH_CB", "iiis");
   iupClassRegisterCallback(ic, "MULTITOUCH_CB", "iIII");
+  iupClassRegisterCallback(ic, "GESTURE_CB", "iiiidd");
+
   iupClassRegisterAttribute(ic, "TOUCH", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "GESTURE", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
 }
