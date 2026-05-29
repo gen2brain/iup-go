@@ -681,6 +681,90 @@ static void gtk4CanvasSetupGestures(Ihandle* ih)
   gtk_widget_add_controller(ih->handle, GTK_EVENT_CONTROLLER(tap));
 }
 
+#define IUPGTK_MAX_TOUCH 10
+typedef struct { GdkEventSequence* seq; int x, y; } IgtkTouchPoint;
+typedef struct { IgtkTouchPoint pts[IUPGTK_MAX_TOUCH]; } IgtkTouchState;
+
+static int gtk4CanvasTouchSlot(IgtkTouchState* ts, GdkEventSequence* seq, int add)
+{
+  int i, freeslot = -1;
+  for (i = 0; i < IUPGTK_MAX_TOUCH; i++)
+  {
+    if (ts->pts[i].seq == seq) return i;
+    if (!ts->pts[i].seq && freeslot < 0) freeslot = i;
+  }
+  if (add && freeslot >= 0) { ts->pts[freeslot].seq = seq; return freeslot; }
+  return -1;
+}
+
+/* GTK4 events carry surface coordinates; translate to the canvas widget */
+static void gtk4CanvasEventCoords(GtkWidget* widget, GdkEvent* event, int* ox, int* oy)
+{
+  double sx = 0, sy = 0;
+  GtkNative* native = gtk_widget_get_native(widget);
+  gdk_event_get_position(event, &sx, &sy);
+  *ox = (int)sx; *oy = (int)sy;
+  if (native)
+  {
+    double nx = 0, ny = 0;
+    graphene_point_t in, out;
+    gtk_native_get_surface_transform(native, &nx, &ny);
+    in.x = (float)(sx - nx); in.y = (float)(sy - ny);
+    if (gtk_widget_compute_point(GTK_WIDGET(native), widget, &in, &out)) { *ox = (int)out.x; *oy = (int)out.y; }
+  }
+}
+
+static gboolean gtk4CanvasTouchEvent(GtkEventControllerLegacy* controller, GdkEvent* event, Ihandle* ih)
+{
+  GdkEventType type = gdk_event_get_event_type(event);
+  IFniiis single_cb = (IFniiis)IupGetCallback(ih, "TOUCH_CB");
+  IFniIIII multi_cb = (IFniIIII)IupGetCallback(ih, "MULTITOUCH_CB");
+  IgtkTouchState* ts;
+  int slot, x, y, primary;
+  char st;
+  (void)controller;
+
+  if (type != GDK_TOUCH_BEGIN && type != GDK_TOUCH_UPDATE && type != GDK_TOUCH_END && type != GDK_TOUCH_CANCEL)
+    return FALSE;
+  if ((!single_cb && !multi_cb) || !iupAttribGetBoolean(ih, "TOUCH"))
+    return FALSE;
+
+  ts = (IgtkTouchState*)iupAttribGet(ih, "_IUPGTK_TOUCH_STATE");
+  if (!ts) { ts = (IgtkTouchState*)calloc(1, sizeof(IgtkTouchState)); iupAttribSet(ih, "_IUPGTK_TOUCH_STATE", (char*)ts); }
+
+  slot = gtk4CanvasTouchSlot(ts, gdk_event_get_event_sequence(event), type == GDK_TOUCH_BEGIN);
+  if (slot < 0) return FALSE;
+  gtk4CanvasEventCoords(ih->handle, event, &x, &y);
+  ts->pts[slot].x = x; ts->pts[slot].y = y;
+  primary = gdk_touch_event_get_emulating_pointer(event)? 1 : 0;
+  st = (type == GDK_TOUCH_BEGIN)? 'D' : ((type == GDK_TOUCH_UPDATE)? 'M' : 'U');
+
+  if (single_cb)
+  {
+    const char* str;
+    if (st == 'D') str = primary? "DOWN-PRIMARY" : "DOWN";
+    else if (st == 'U') str = primary? "UP-PRIMARY" : "UP";
+    else str = primary? "MOVE-PRIMARY" : "MOVE";
+    if (single_cb(ih, slot, x, y, (char*)str) == IUP_CLOSE) IupExitLoop();
+  }
+
+  if (multi_cb)
+  {
+    int ids[IUPGTK_MAX_TOUCH], xs[IUPGTK_MAX_TOUCH], ys[IUPGTK_MAX_TOUCH], states[IUPGTK_MAX_TOUCH], n = 0, i;
+    for (i = 0; i < IUPGTK_MAX_TOUCH; i++)
+    {
+      if (!ts->pts[i].seq) continue;
+      ids[n] = i; xs[n] = ts->pts[i].x; ys[n] = ts->pts[i].y;
+      states[n] = (i == slot)? st : 'M';
+      n++;
+    }
+    if (multi_cb(ih, n, ids, xs, ys, states) == IUP_CLOSE) IupExitLoop();
+  }
+
+  if (type == GDK_TOUCH_END || type == GDK_TOUCH_CANCEL) ts->pts[slot].seq = NULL;
+  return TRUE;
+}
+
 static int gtk4CanvasMapMethod(Ihandle* ih)
 {
   GtkWidget* sb_win;
@@ -720,6 +804,12 @@ static int gtk4CanvasMapMethod(Ihandle* ih)
   g_signal_connect(click_gesture, "pressed", G_CALLBACK(gtk4CanvasButtonPressed), ih);
 
   gtk4CanvasSetupGestures(ih);
+
+  {
+    GtkEventController* touch = gtk_event_controller_legacy_new();
+    g_signal_connect(touch, "event", G_CALLBACK(gtk4CanvasTouchEvent), ih);
+    gtk_widget_add_controller(ih->handle, touch);
+  }
 
   iupgtk4SetupButtonEvents(ih->handle, ih);
   iupgtk4SetupMotionEvents(ih->handle, ih);
@@ -811,6 +901,11 @@ static void gtk4CanvasUnMapMethod(Ihandle* ih)
   if (buffer)
     cairo_surface_destroy(buffer);
 
+  {
+    IgtkTouchState* ts = (IgtkTouchState*)iupAttribGet(ih, "_IUPGTK_TOUCH_STATE");
+    if (ts) { free(ts); iupAttribSet(ih, "_IUPGTK_TOUCH_STATE", NULL); }
+  }
+
   iupdrvBaseUnMapMethod(ih);
 }
 
@@ -821,6 +916,10 @@ IUP_SDK_API void iupdrvCanvasInitClass(Iclass* ic)
   ic->LayoutUpdate = gtk4CanvasLayoutUpdateMethod;
 
   iupClassRegisterCallback(ic, "GESTURE_CB", "iiiidd");
+  iupClassRegisterCallback(ic, "TOUCH_CB", "iiis");
+  iupClassRegisterCallback(ic, "MULTITOUCH_CB", "iIII");
+
+  iupClassRegisterAttribute(ic, "TOUCH", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "BGCOLOR", iupBaseNativeParentGetBgColorAttrib, gtk4CanvasSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_NO_SAVE|IUPAF_DEFAULT);
 
