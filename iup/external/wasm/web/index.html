@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>IUP WASM</title>
+  <style>
+    html, body { margin: 0; padding: 0; height: 100%; background: #fff; }
+  </style>
+  <script src="iupwasm_dom.js"></script>
+</head>
+<body>
+  <script>
+    (function () {
+      // App runs on a Worker; this thread owns the DOM, routes events to it, answers SAB reads.
+      var SAB = new SharedArrayBuffer(262144);
+      var i32 = new Int32Array(SAB), u8 = new Uint8Array(SAB);
+      var MS = i32.length - 1;  // modal-event counter slot (Worker blocks on it during a modal Popup)
+      var worker = new Worker('worker.js');
+
+      // A blocked modal pump can't receive postMessage, so during a modal events queue
+      // here and the Worker drains them over the SAB (the counter wakes its wait).
+      globalThis.__iupModalActive = 0;
+      globalThis.__iupModalQueue = [];
+      function dispatchEv(name, args, types) {
+        if (globalThis.__iupModalActive) {
+          globalThis.__iupModalQueue.push({ name: name, args: args, types: types || null });
+          Atomics.add(i32, MS, 1); Atomics.notify(i32, MS);
+        } else {
+          worker.postMessage({ __iupEv: 1, name: name, types: types, args: args });
+        }
+      }
+
+      globalThis.__iupInstallApplier({
+        call: function (name, args) { dispatchEv(name, args, null); },
+        callRet: function (name, ret, types, args) { dispatchEv(name, args, types); return ret === 'number' ? 1 : 0; },
+        callType: function (name, types, args) { dispatchEv(name, args, types); },
+        sync: false
+      });
+      globalThis.__iupInstallKeyHandler();
+
+      function writeResult(v) {
+        if (v === null || v === undefined) { i32[1] = 3; }
+        else if (typeof v === 'number') { i32[1] = 0; i32[2] = v | 0; }
+        else if (Array.isArray(v)) { i32[1] = 1; i32[2] = v.length; for (var k = 0; k < v.length; k++) i32[3 + k] = v[k] | 0; }
+        else { var b = new TextEncoder().encode(String(v)); i32[1] = 2; i32[2] = b.length; u8.set(b, 16); }
+        Atomics.store(i32, 0, 1); Atomics.notify(i32, 0);
+      }
+
+      // IupFileDlg OPEN: native picker reads the file async; the Worker stays blocked on the
+      // SAB until writeResult fires.
+      function doFileOpen() {
+        if (navigator.userActivation && !navigator.userActivation.isActive) { globalThis.__iupOpenFile = null; writeResult(null); return; }
+        var inp = document.createElement('input');
+        inp.type = 'file'; inp.style.display = 'none';
+        document.body.appendChild(inp);
+        var done = false;
+        function finish(v) { if (done) return; done = true; if (inp.parentNode) inp.parentNode.removeChild(inp); writeResult(v); }
+        inp.addEventListener('change', function () {
+          var f = inp.files && inp.files[0];
+          if (!f) { globalThis.__iupOpenFile = null; finish(null); return; }
+          var rd = new FileReader();
+          rd.onload = function () { globalThis.__iupOpenFile = { name: f.name, bytes: new Uint8Array(rd.result) }; finish(f.name); };
+          rd.onerror = function () { globalThis.__iupOpenFile = null; finish(null); };
+          rd.readAsArrayBuffer(f);
+        });
+        inp.addEventListener('cancel', function () { globalThis.__iupOpenFile = null; finish(null); });
+        inp.click();
+      }
+      function fileChunk(req) {
+        var bytes = (globalThis.__iupOpenFile && globalThis.__iupOpenFile.bytes) || new Uint8Array(0);
+        var slice = bytes.subarray(req.off, req.off + req.len);
+        u8.set(slice, 16); i32[1] = 0; i32[2] = slice.length;
+        Atomics.store(i32, 0, 1); Atomics.notify(i32, 0);
+      }
+
+      worker.onmessage = function (e) {
+        var m = e.data;
+        if (m.__iup) globalThis.__iupApply(m.cmd);
+        else if (m.__iupRead) {
+          if (m.req.op === 'fileopen') doFileOpen();
+          else if (m.req.op === 'fileopenchunk') fileChunk(m.req);
+          else writeResult(globalThis.__iupRead(m.req));
+        }
+        else if (m.__iupPost) {
+          dispatchEv('iupwasmDispatchPost', [m.ih, m.s, m.i, m.d, m.p], ['number', 'string', 'number', 'number', 'number']);
+        }
+        else if (m.__iupBlit) {
+          var wel = globalThis.__iup.els[m.cid];
+          var tgt = wel && wel.__iupCanvas ? wel.__iupCanvas : wel;
+          if (tgt && tgt.getContext) {
+            if (tgt.width !== m.bitmap.width) tgt.width = m.bitmap.width;
+            if (tgt.height !== m.bitmap.height) tgt.height = m.bitmap.height;
+            tgt.getContext('2d').drawImage(m.bitmap, 0, 0);
+          }
+          m.bitmap.close();
+        }
+      };
+      worker.postMessage({ type: 'init', sab: SAB });
+    })();
+  </script>
+</body>
+</html>
