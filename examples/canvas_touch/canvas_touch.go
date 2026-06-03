@@ -34,7 +34,7 @@ func main() {
 	txtLog.SetAttributes("MULTILINE=YES, EXPAND=HORIZONTAL, READONLY=YES, VISIBLELINES=10")
 	txtLog.SetAttribute("VALUE", "Touch the canvas to see TOUCH_CB / MULTITOUCH_CB.\n"+
 		"state: DOWN / MOVE / UP (-PRIMARY for the primary point); the MULTITOUCH state char is D/M/U.\n"+
-		"Reported on Windows, Qt, iOS and Android only.\n"+
+		"Reported on Windows, Qt, WebAssembly, iOS and Android only.\n"+
 		"---\n")
 	iup.SetHandle("log", txtLog)
 

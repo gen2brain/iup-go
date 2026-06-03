@@ -105,8 +105,8 @@ func main() {
 	iup.SetCallback(btnClearColors, "ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
 		t := iup.GetHandle("table")
 		// Clear per-row color for row 3
-		iup.SetAttributeId2(t, "BGCOLOR", 3, 0, "")
-		iup.SetAttributeId2(t, "FGCOLOR", 3, 0, "")
+		iup.SetAttributeId2(t, "BGCOLOR", 3, 0, nil)
+		iup.SetAttributeId2(t, "FGCOLOR", 3, 0, nil)
 		t.SetAttribute("REDRAW", "YES")
 		log := iup.GetHandle("log")
 		log.SetAttribute("APPEND", "Cleared row 3 colors\n")

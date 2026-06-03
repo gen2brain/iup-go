@@ -78,6 +78,12 @@
 ### Haiku
 [<img src="sample_haiku.png" width="700" title="Haiku" alt="Haiku" />](sample_haiku.png)
 
+### WebAssembly
+[<img src="sample_wasm.png" width="700" title="Wasm" alt="Wasm" />](sample_wasm.png)
+
+### WebAssembly Dark
+[<img src="sample_wasm_dark.png" width="700" title="Wasm Dark" alt="Wasm Dark" />](sample_wasm_dark.png)
+
 ### Android
 [<img src="../mobile_sample/mobile_sample_android1.png" width="300" title="Android 1" alt="Android 1" />](../mobile_sample/mobile_sample_android1.png)
 [<img src="../mobile_sample/mobile_sample_android2.png" width="300" title="Android 2" alt="Android 2" />](../mobile_sample/mobile_sample_android2.png)

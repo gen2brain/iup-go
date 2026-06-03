@@ -180,7 +180,7 @@ func switchTheme(idx int) {
 	if bg, ok := t.attrs["BGCOLOR"]; ok {
 		dlg.SetAttribute("BGCOLOR", bg)
 	} else {
-		dlg.SetAttribute("BGCOLOR", "")
+		dlg.SetAttribute("BGCOLOR", nil)
 	}
 
 	dlg.SetAttribute("TITLE", fmt.Sprintf("Flat Theme - %s", t.name))
