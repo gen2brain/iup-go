@@ -301,6 +301,8 @@ const (
 	DriverFLTK       = 256
 	DriverAndroid    = 512
 	DriverCocoaTouch = 1024
+	DriverHaiku      = 2048
+	DriverWasm       = 4096
 )
 
 // GlobalInfo is the metadata returned by [GetGlobalInfo].
