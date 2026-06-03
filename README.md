@@ -5,7 +5,8 @@
 Go library based on [IUP](https://www.tecgraf.puc-rio.br/iup/), a multi-platform toolkit for building graphical user interfaces.
 
 IUP-Go provides system native UI controls for Windows ([Win32](#win32), [WinUI](#winui)), macOS ([Cocoa](#macos)), 
-Linux/BSD ([GTK](#gtk), [Qt](#qt), [FLTK](#fltk), [EFL](#efl), [Motif](#motif), [GNUstep](#gnustep)), Haiku ([Interface Kit](#haiku)), Android ([Android](#android)), and iOS ([CocoaTouch](#ios)).
+Linux/BSD ([GTK](#gtk), [Qt](#qt), [FLTK](#fltk), [EFL](#efl), [Motif](#motif), [GNUstep](#gnustep)), Haiku ([Interface Kit](#haiku)),
+WebAssembly ([Emscripten](#emscripten)), Android ([Android](#android)), and iOS ([CocoaTouch](#ios)).
 
 C/C++/Obj-C source code is included and compiled together with bindings.
 Note that the first build can take a few minutes.
@@ -188,6 +189,14 @@ Native `Interface Kit` driver. Requires a Haiku nightly (or `beta6` once release
 Tested with the [gen2brain/go](https://github.com/gen2brain/go) Haiku port of the Go toolchain.
 
 [<img src="examples/sample/sample_haiku.png" width="700"/>](examples/sample/sample_haiku.png)
+
+#### Emscripten
+
+Compiles the IUP C driver to WebAssembly and runs the Go app in the browser; every widget renders as a DOM element.
+
+See [iup/external/wasm/README.md](iup/external/wasm/README.md) for prerequisites, build flow, and serving.
+
+[<img src="examples/sample/sample_wasm.png" width="700"/>](examples/sample/sample_wasm.png)
 
 #### Mobile
 
