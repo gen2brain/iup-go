@@ -11,6 +11,8 @@ It inherits from [IupCanvas](../elem/iup_canvas.md).
 
 **Haiku:** The implementation uses BGLView (Haiku's Mesa-based GL kit).
 
+**WebAssembly:** The implementation uses a WebGL context (WebGL 2.0 by default, WebGL 1.0 fallback). **IupGLPalette** and **IupGLUseFont** are no-ops.
+
 ### Initialization and Usage
 
 The **IupGLCanvasOpen** function must be called after a **IupOpen**, so that the control can be used.
@@ -22,6 +24,7 @@ In Linux/Unix with EGL (GTK3, GTK4, Qt, EFL, FLTK), add: -lEGL -lGL.
 In Linux/Unix with GLX (Motif, GTK2), add: -lGL.
 In macOS add: -framework OpenGL.
 On Haiku, add: -lGL.
+On WebAssembly no GL library is linked.
 
 ### Creation
 
@@ -174,6 +177,8 @@ Possible ERROR strings during **IupMap**:
     "Could not create OpenGL context." - Failed to create context (macOS only)
     "Failed to create OpenGL Core profile context." - Core profile unavailable (macOS only)
     "Failed to create OpenGL Legacy profile context." - Legacy profile unavailable (macOS only)
+    "Could not create WebGL context." - Failed to create the WebGL context (WebAssembly only)
+    "Failed to make WebGL context current." - WebGL context could not be made current (WebAssembly only)
 
 ### Examples
 

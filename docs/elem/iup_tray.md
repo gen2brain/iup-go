@@ -70,7 +70,7 @@ On Linux/Unix, two tray protocols are supported depending on the build configura
 
 On Haiku the tray uses a Deskbar replicant. The executable must export its Instantiate symbol; link with `-Wl,-soname,_APP_` so Deskbar can `dlopen` the team and resolve the replicant constructor.
 
-Not supported on Android and iOS (no system tray).
+Not supported on Android, iOS and WebAssembly (no system tray).
 
 ### See Also
 

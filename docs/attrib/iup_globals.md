@@ -187,7 +187,7 @@ When consulted returns NULL if inside the second instance.
 So usually in the application initialization after **IupOpen**, set SINGLEINSTANCE and then consult its value, if NULL abort the second instance by calling **IupClose** and returning from *main*.
 
 In Windows (Win32 and WinUI) uses a named mutex for detection and WM_COPYDATA for communication. In Linux/Unix (GTK, GTK4, Qt, Motif, FLTK, EFL) uses D-Bus session bus name ownership. In macOS uses CFMessagePort. In Haiku uses a named-port rendezvous.
-On Android single instance is enforced by the Activity launchMode in the manifest, so the SINGLEINSTANCE attribute and COPYDATA_CB are not implemented. Not supported in iOS.
+On Android single instance is enforced by the Activity launchMode in the manifest, so the SINGLEINSTANCE attribute and COPYDATA_CB are not implemented. Not supported in iOS and WebAssembly.
 
 ## System Mouse and Keyboard
 

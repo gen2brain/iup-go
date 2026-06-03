@@ -96,6 +96,8 @@ In Windows when "TEXT" format data is copied to the clipboard, the system will a
 This means that when copying "TEXT" Windows will also store "Unicode Text" and "OEM Text", but only if those formats were not copied before.
 So to make sure the system will copy all the other text formats clear the clipboard before copying your own data (you can simply set TEXT=NULL before setting the actual value).
 
+In WebAssembly only TEXT and TEXTAVAILABLE are supported; image and custom binary formats are not.
+
 ### Examples
 
     Ihandle* clipboard = IupClipboard();
