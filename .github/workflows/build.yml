@@ -527,6 +527,29 @@ jobs:
         go build
       working-directory: iup
 
+  linux-wasm:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: Install Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: stable
+    - name: Install dependencies
+      run: sudo apt-get update -y && sudo apt-get install -y cmake
+    - name: Install Emscripten
+      uses: mymindstorm/setup-emsdk@v14
+      with:
+        version: latest
+    - name: Build
+      run: GOOS=js GOARCH=wasm go build
+      working-directory: iup
+    - name: CMake Wasm
+      run: |
+        emcmake cmake -S iup/external -B build/wasm -DIUP_BACKEND=wasm -DIUP_BUILD_GL=ON -DIUP_BUILD_WEB=ON -DIUP_BUILD_CTRL=ON -DIUP_BUILD_PLOT=ON
+        cmake --build build/wasm --parallel
+
   linux-cmake:
     runs-on: ubuntu-latest
     steps:
