@@ -230,7 +230,8 @@ enum {
   IUPDRV_FLTK       = 256,
   IUPDRV_ANDROID    = 512,
   IUPDRV_COCOATOUCH = 1024,
-  IUPDRV_HAIKU      = 2048
+  IUPDRV_HAIKU      = 2048,
+  IUPDRV_WASM       = 4096
 };
 
 IUP_API Ihandle*  IupCreate(const char* classname);

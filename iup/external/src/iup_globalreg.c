@@ -27,7 +27,8 @@
 #define A   IUPDRV_ANDROID
 #define CT  IUPDRV_COCOATOUCH
 #define HK  IUPDRV_HAIKU
-#define ALL  (W|M|G|C|Q|G4|E|WU|F|A|CT|HK)
+#define WS  IUPDRV_WASM
+#define ALL  (W|M|G|C|Q|G4|E|WU|F|A|CT|HK|WS)
 #define UNIX (M|G|C|Q|G4|E|F|HK)
 #define MOB  (A|CT)
 #define R  IUPGF_READONLY
@@ -100,11 +101,11 @@ static const iGlobalRegEntry registry[] = {
   { "LASTERROR",              0,    W|WU },
   { "LINKFGCOLOR",            0,    ALL },
   { "LOCKLOOP",               0,    ALL },
-  { "MENUBGCOLOR",            0,    W|C|Q|E|WU|F|HK },
-  { "MENUFGCOLOR",            R,    W|C|Q|E|WU|F|HK },
+  { "MENUBGCOLOR",            0,    W|C|Q|E|WU|F|HK|WS },
+  { "MENUFGCOLOR",            R,    W|C|Q|E|WU|F|HK|WS },
   { "MODKEYSTATE",            R,    ALL },
-  { "MONITORSCOUNT",          R,    W|G|C|Q|G4|E|WU|F|A|CT|HK },
-  { "MONITORSINFO",           R,    W|G|C|Q|G4|E|WU|F|A|CT|HK },
+  { "MONITORSCOUNT",          R,    W|G|C|Q|G4|E|WU|F|A|CT|HK|WS },
+  { "MONITORSINFO",           R,    W|G|C|Q|G4|E|WU|F|A|CT|HK|WS },
   { "MOTIFNUMBER",            R,    M },
   { "MOTIFVERSION",           R,    M },
   { "MOUSEBUTTON",            R,    ALL },
@@ -135,11 +136,11 @@ static const iGlobalRegEntry registry[] = {
   { "TXTFGCOLOR",             0,    ALL },
   { "TXTHLCOLOR",             0,    ALL },
   { "USERNAME",               R,    ALL },
-  { "UTF8AUTOCONVERT",        0,    G|C|Q|G4|WU|F|CT|HK },
-  { "UTF8MODE",               0,    W|G|C|Q|G4|E|WU|F|A|HK },
+  { "UTF8AUTOCONVERT",        0,    G|C|Q|G4|WU|F|CT|HK|WS },
+  { "UTF8MODE",               0,    W|G|C|Q|G4|E|WU|F|A|HK|WS },
   { "UTF8MODE_FILE",          0,    W },
   { "VERSION",                R,    ALL },
-  { "VIRTUALSCREEN",          R,    W|G|C|Q|G4|E|WU|F|A|CT|HK },
+  { "VIRTUALSCREEN",          R,    W|G|C|Q|G4|E|WU|F|A|CT|HK|WS },
   { "WINDOWING",              R,    ALL },
   { "WINUIVERSION",           R,    WU },
   { "WL_DISPLAY",             R|P,  G|Q|G4|E|F },
