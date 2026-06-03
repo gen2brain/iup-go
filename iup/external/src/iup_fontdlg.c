@@ -338,7 +338,8 @@ Iclass* iupFontDlgNewClass(void)
       iupStrEqualNoCase(IupGetGlobal("DRIVER"), "EFL") ||
       iupStrEqualNoCase(IupGetGlobal("DRIVER"), "WinUI") ||
       iupStrEqualNoCase(IupGetGlobal("DRIVER"), "Android") ||
-      iupStrEqualNoCase(IupGetGlobal("DRIVER"), "Haiku"))
+      iupStrEqualNoCase(IupGetGlobal("DRIVER"), "Haiku") ||
+      iupStrEqualNoCase(IupGetGlobal("DRIVER"), "WASM"))
   {
     ic->Create = iFontDlgCreateMethod;
 

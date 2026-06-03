@@ -36,6 +36,7 @@ static int iGlobalsCurrentDriverBit(void)
   if (iupStrEqualNoCase(drv, "Android"))    return IUPDRV_ANDROID;
   if (iupStrEqualNoCase(drv, "CocoaTouch")) return IUPDRV_COCOATOUCH;
   if (iupStrEqualNoCase(drv, "Haiku"))      return IUPDRV_HAIKU;
+  if (iupStrEqualNoCase(drv, "WASM"))       return IUPDRV_WASM;
   return 0;
 }
 
