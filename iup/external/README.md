@@ -67,6 +67,8 @@ Available presets:
 | `fltk-full`       | FLTK + all optional libs       |                      |
 | `android-full`    | Android + GL + Web             | Requires NDK         |
 | `haiku-full`      | Haiku + all optional libs      |                      |
+| `wasm`            | WebAssembly (Emscripten)       | Requires EMSDK       |
+| `wasm-full`       | WebAssembly + all optional libs| Requires EMSDK       |
 | `debug`           | Platform native, debug         |                      |
 
 You can create a `CMakeUserPresets.json` file for local overrides (e.g., toolchain or compiler paths) without modifying the tracked `CMakePresets.json`.
@@ -156,6 +158,23 @@ The app-bundle build (sign + install + log) is wrapped by helper scripts under `
 **Haiku** (default on Haiku):
 No external dependencies.
 For Web: `pkgman install haikuwebkit_devel`.
+
+**WebAssembly** (Emscripten):
+Requires the [Emscripten SDK](https://emscripten.org). Export `EMSDK` and use the `wasm` preset, or configure with `emcmake`:
+
+```bash
+EMSDK=/path/to/emsdk cmake --preset wasm     # or: emcmake cmake -B build/wasm -DIUP_BACKEND=wasm
+cmake --build build/wasm                     # -> build/wasm/libiup.a (wasm32)
+```
+
+Linking via `find_package(IUP)` / `IUP::iup` pulls in the Emscripten runtime flags IUP needs automatically. For a direct `emcc` link, pass them yourself:
+
+```bash
+emcc app.c build/wasm/libiup.a -Iinclude \
+  -sEMULATE_FUNCTION_POINTER_CASTS=1 -sALLOW_MEMORY_GROWTH=1 -sNO_EXIT_RUNTIME=1 -o app.html
+```
+
+This builds the static library only. To build and run a complete app (C or Go) in the browser, use `wasm/build-wasm.sh`; see `wasm/README.md`.
 
 **OpenGL** (`IUP_BUILD_GL`):
 GTK3/GTK4/Qt/EFL/FLTK use EGL on Linux: `libegl-dev libgl-dev` or `libglvnd-devel`.

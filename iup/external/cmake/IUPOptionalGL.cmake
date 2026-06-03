@@ -40,6 +40,9 @@ elseif(IUP_BACKEND STREQUAL "haiku")
   list(APPEND _GL_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/srcgl/iup_glcanvas_haiku.cpp")
   set(_GL_LIBS GL)
 
+elseif(EMSCRIPTEN)
+  list(APPEND _GL_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/srcgl/iup_glcanvas_wasm.c")
+
 else()
   # EGL path: GTK3, GTK4, Qt, EFL (Unix/Linux only)
   # iup_glcanvas_egl.c is a unity file that #includes the correct backend .c

@@ -30,7 +30,8 @@ include(GNUInstallDirs)
 
 include(CheckIPOSupported)
 check_ipo_supported(RESULT _ipo_supported)
-if(_ipo_supported)
+# LTO breaks EM_JS on Emscripten.
+if(_ipo_supported AND NOT EMSCRIPTEN)
   set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE ON)
   set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_MINSIZEREL ON)
 endif()
@@ -43,7 +44,9 @@ endif()
 
 # --- Options ---
 
-if(ANDROID)
+if(EMSCRIPTEN)
+  set(_IUP_BACKEND_DEFAULT "wasm")
+elseif(ANDROID)
   set(_IUP_BACKEND_DEFAULT "android")
 elseif(APPLE)
   set(_IUP_BACKEND_DEFAULT "cocoa")
@@ -56,9 +59,9 @@ else()
 endif()
 
 set(IUP_BACKEND "${_IUP_BACKEND_DEFAULT}" CACHE STRING
-  "GUI backend: gtk3, gtk4, gtk2, win32, winui, cocoa, cocoatouch, motif, qt6, qt5, efl, fltk, android, haiku")
+  "GUI backend: gtk3, gtk4, gtk2, win32, winui, cocoa, cocoatouch, motif, qt6, qt5, efl, fltk, android, haiku, wasm")
 set_property(CACHE IUP_BACKEND PROPERTY STRINGS
-  gtk3 gtk4 gtk2 win32 winui cocoa cocoatouch motif qt6 qt5 efl fltk android haiku)
+  gtk3 gtk4 gtk2 win32 winui cocoa cocoatouch motif qt6 qt5 efl fltk android haiku wasm)
 
 option(IUP_BUILD_GL        "Build iupgl (OpenGL canvas)"     OFF)
 option(IUP_BUILD_WEB       "Build iupweb (Web browser)"      OFF)
@@ -78,8 +81,8 @@ endif()
 file(GLOB IUP_CORE_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/iup_*.c")
 list(APPEND IUP_CORE_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/iup.c")
 
-# iup_datepick.c is a core fallback; Win32, Qt, Android and iOS provide their own
-if(IUP_BACKEND STREQUAL "win32" OR IUP_BACKEND MATCHES "^qt" OR IUP_BACKEND STREQUAL "android" OR IUP_BACKEND STREQUAL "cocoatouch")
+# iup_datepick.c is a core fallback; Win32, Qt, Android, iOS and wasm provide their own
+if(IUP_BACKEND STREQUAL "win32" OR IUP_BACKEND MATCHES "^qt" OR IUP_BACKEND STREQUAL "android" OR IUP_BACKEND STREQUAL "cocoatouch" OR IUP_BACKEND STREQUAL "wasm")
   list(REMOVE_ITEM IUP_CORE_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/src/iup_datepick.c"
   )
@@ -117,6 +120,8 @@ elseif(IUP_BACKEND STREQUAL "android")
   include(IUPDriverAndroid)
 elseif(IUP_BACKEND STREQUAL "haiku")
   include(IUPDriverHaiku)
+elseif(IUP_BACKEND STREQUAL "wasm")
+  include(IUPDriverWasm)
 else()
   message(FATAL_ERROR "Unknown IUP_BACKEND: ${IUP_BACKEND}")
 endif()
@@ -240,6 +245,14 @@ if(_iup_type STREQUAL "SHARED_LIBRARY")
   )
 endif()
 
+if(EMSCRIPTEN)
+  target_link_options(iup INTERFACE
+    "-sEMULATE_FUNCTION_POINTER_CASTS=1"
+    "-sALLOW_MEMORY_GROWTH=1"
+    "-sNO_EXIT_RUNTIME=1"
+  )
+endif()
+
 # Suppress false -Wodr from C _IcontrolData pattern when C++ LTO merges TUs.
 if((IUP_BACKEND MATCHES "^qt" OR IUP_BACKEND STREQUAL "fltk") AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
   target_link_options(iup PUBLIC -Wno-odr)
@@ -270,7 +283,9 @@ endif()
 
 # --- Examples ---
 
-if(IUP_BUILD_EXAMPLES)
+if(IUP_BUILD_EXAMPLES AND EMSCRIPTEN)
+  message(STATUS "IUP_BUILD_EXAMPLES ignored on wasm; use wasm/build-wasm.sh to build a runnable app.")
+elseif(IUP_BUILD_EXAMPLES)
   add_executable(dialog_hello "${CMAKE_CURRENT_SOURCE_DIR}/examples/dialog_hello.c")
   target_link_libraries(dialog_hello PRIVATE IUP::iup)
 
