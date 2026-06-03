@@ -353,6 +353,26 @@
       }
     },
     {
+      "name": "wasm",
+      "displayName": "WebAssembly backend (Emscripten)",
+      "inherits": "default",
+      "toolchainFile": "$env{EMSDK}/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake",
+      "cacheVariables": {
+        "IUP_BACKEND": "wasm"
+      }
+    },
+    {
+      "name": "wasm-full",
+      "displayName": "WebAssembly with all optional libraries",
+      "inherits": "wasm",
+      "cacheVariables": {
+        "IUP_BUILD_GL": "ON",
+        "IUP_BUILD_WEB": "ON",
+        "IUP_BUILD_CTRL": "ON",
+        "IUP_BUILD_PLOT": "ON"
+      }
+    },
+    {
       "name": "debug",
       "displayName": "Debug build (platform native backend)",
       "binaryDir": "${sourceDir}/build/${presetName}",

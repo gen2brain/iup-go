@@ -46,6 +46,9 @@ elseif(IUP_BACKEND STREQUAL "android")
 elseif(IUP_BACKEND STREQUAL "haiku")
   list(APPEND _WEB_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/srcweb/iuphaiku_webbrowser.cpp")
   list(APPEND _WEB_LIBS WebKitLegacy JavaScriptCore)
+
+elseif(EMSCRIPTEN)
+  list(APPEND _WEB_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/srcweb/iupwasm_webbrowser.c")
 endif()
 
 if(IUP_BUILD_FRAMEWORK)
