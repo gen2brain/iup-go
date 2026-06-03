@@ -32,11 +32,19 @@ func main() {
 		}
 	}
 
+	// Register a small colored icon per category for use in virtual cells
+	for i := 0; i < 10; i++ {
+		iup.ImageRGBA(16, 16, categoryIcon(i)).SetHandle(fmt.Sprintf("cat%d", i))
+	}
+
 	// Create table in virtual mode
 	table := iup.Table()
 
 	// Enable virtual mode BEFORE setting the number of rows
 	table.SetAttribute("VIRTUALMODE", "YES")
+
+	// Enable per-cell images (resolved on demand via IMAGE_CB)
+	table.SetAttribute("SHOWIMAGE", "YES")
 
 	// Enable sorting (application handles sorting via SORT_CB)
 	table.SetAttribute("SORTABLE", "YES")
@@ -73,6 +81,14 @@ func main() {
 			return ""
 		}
 		return dataset[lin-1][col-1]
+	}))
+
+	// Set IMAGE_CB to provide a per-cell image name on demand (virtual mode)
+	iup.SetCallback(table, "IMAGE_CB", iup.TableImageFunc(func(ih iup.Ihandle, lin, col int) string {
+		if col != 3 || lin <= 0 || lin > len(dataset) {
+			return ""
+		}
+		return fmt.Sprintf("cat%d", (lin-1)%10)
 	}))
 
 	// Set SORT_CB callback for virtual mode sorting
@@ -177,4 +193,20 @@ func main() {
 
 	iup.Show(dlg)
 	iup.MainLoop()
+}
+
+func categoryIcon(idx int) []byte {
+	palette := [][3]byte{
+		{220, 60, 60}, {60, 160, 220}, {80, 180, 80}, {230, 170, 40}, {160, 90, 200},
+		{40, 190, 190}, {230, 110, 60}, {120, 120, 200}, {200, 60, 150}, {110, 160, 60},
+	}
+	c := palette[idx%len(palette)]
+	pix := make([]byte, 16*16*4)
+	for i := 0; i < 16*16; i++ {
+		pix[i*4+0] = c[0]
+		pix[i*4+1] = c[1]
+		pix[i*4+2] = c[2]
+		pix[i*4+3] = 255
+	}
+	return pix
 }

@@ -163,7 +163,7 @@ func webBrowserTest() {
 
 	// Set initial URL
 	//web.SetAttribute("HTML", "<html><body><b>Hello</b>World!</body></html>")
-	txt.SetAttribute("VALUE", "https://github.com/gen2brain/iup-go")
+	txt.SetAttribute("VALUE", "https://en.wikipedia.org/wiki/Main_Page")
 	web.SetAttribute("VALUE", txt.GetAttribute("VALUE"))
 	dlg.SetAttribute("DEFAULTENTER", "btLoad")
 

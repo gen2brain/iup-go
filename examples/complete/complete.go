@@ -73,7 +73,7 @@ func textValueChangedCb(ih iup.Ihandle) int {
 	go func(h iup.Ihandle, q string) {
 		client := &http.Client{}
 
-		req, err := http.NewRequest("GET", "https://en.wikipedia.org/w/api.php?action=opensearch&format=json&search="+q, nil)
+		req, err := http.NewRequest("GET", "https://en.wikipedia.org/w/api.php?action=opensearch&format=json&origin=*&search="+q, nil)
 		if err != nil {
 			fmt.Println(err)
 			return
