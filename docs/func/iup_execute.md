@@ -8,6 +8,7 @@ In Windows, there is no need to add the ".exe" file extension.
 
 On iOS, **filename** must be a URL (the platform forbids launching arbitrary executables).
 On Android, **filename** can be a URL or an installed app's package name.
+In WebAssembly, **filename** must be an http/https URL, opened in a new browser tab.
 
 Used by the [IupHelp](iup_help.md) function.
 

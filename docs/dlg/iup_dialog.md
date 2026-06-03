@@ -11,6 +11,8 @@ For any interface element to be shown, it must be encapsulated in a dialog.
 
 **Returns:** the identifier of the created element, or NULL if an error occurs.
 
+In WebAssembly the dialog is a region of the browser page. MAXBOX, MINBOX, CUSTOMFRAME, HIDETITLEBAR, HIDETASKBAR and TOPMOST have no effect.
+
 ### Attributes
 
 #### Common

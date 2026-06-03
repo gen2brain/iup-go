@@ -18,6 +18,10 @@ In Qt, the implementation uses QWebEngineView from QtWebEngine (Chromium-based).
 
 In Haiku, the implementation uses BWebView from the system Legacy WebKit library (libWebKitLegacy).
 
+In WebAssembly, the implementation uses an HTML `<iframe>`. Cross-origin pages cannot be scripted or introspected.
+
+Not supported: BACKCOUNT, FORWARDCOUNT, CANGOBACK, CANGOFORWARD, ITEMHISTORY, OPENFILE, SAVEFILE and PRINTPREVIEW.
+
 ### Initialization and Usage
 
 The **IupWebBrowserOpen** function must be called after **IupOpen**.

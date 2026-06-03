@@ -35,6 +35,6 @@ If this callback returns or does not exist, the thread is terminated.
 
     int function(Ihandle* ih);
 
-**ih**: identifier of the element that activated the event. 
+**ih**: identifier of the element that activated the event.
 
- 
+In WebAssembly uses Emscripten POSIX threads; under the Go binding the callback runs as a goroutine.

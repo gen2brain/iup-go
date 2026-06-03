@@ -90,8 +90,8 @@ Default: "YES".\
 Can be: YES (both), VERTICAL, HORIZONTAL, NO.
 Supported in Win32, WinUI, Qt and macOS.
 
-**TOUCH** [Win32, GTK, GTK 4, iOS and Android Only]: enable the touch processing if touch support is available.
-In GTK, GTK 4, Qt, iOS and Android, touch events are always enabled.
+**TOUCH** [Win32, GTK, GTK 4, WebAssembly, iOS and Android Only]: enable the touch processing if touch support is available.
+In GTK, GTK 4, Qt, WebAssembly, iOS and Android, touch events are always enabled.
 
 **GESTURE** [Win32 Only]: disable the OS gesture processing so raw touch events are delivered to TOUCH_CB/MULTITOUCH_CB.
 Accepts only the NO value.
@@ -158,7 +158,7 @@ If your callback process the arrow keys, we recommend you to return IUP_IGNORE s
 
 [SCROLL_CB](../call/iup_scroll_cb.md): Called when the scrollbar is manipulated.
 
-**TOUCH_CB** [Win32, GTK, GTK 4, Qt, iOS and Android Only]: Action generated when a touch event occurred.
+**TOUCH_CB** [Win32, GTK, GTK 4, Qt, WebAssembly, iOS and Android Only]: Action generated when a touch event occurred.
 Multiple touch events will trigger several calls.
 In Win32 must set TOUCH=Yes to receive this event. In GTK, GTK 4, Qt, iOS and Android, touch events are always enabled.
 
@@ -172,7 +172,7 @@ If the point is a "primary" point, then "-PRIMARY" is appended to the string.
 
 **Returns**: IUP_CLOSE will be processed.
 
-**MULTITOUCH_CB** [Win32, GTK, GTK 4, Qt, iOS and Android Only]: Action generated when multiple touch events occurred.
+**MULTITOUCH_CB** [Win32, GTK, GTK 4, Qt, WebAssembly, iOS and Android Only]: Action generated when multiple touch events occurred.
 In Win32 must set TOUCH=Yes to receive this event; in GTK, GTK 4, Qt, iOS and Android touch events are always enabled.
 
     int function(Ihandle *ih, int count, int* pid, int* px, int* py, int* pstate)

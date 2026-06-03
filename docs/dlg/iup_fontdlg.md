@@ -43,7 +43,7 @@ The dialog is mapped only inside **IupPopup**, **IupMap** does nothing.
 
 In Windows, the dialog will be modal relative only to its parent or to the active dialog.
 
-In Win32 uses ChooseFont, in GTK 3 uses GtkFontChooser, in GTK 4 uses GtkFontDialog, in macOS uses NSFontPanel, in Qt uses QFontDialog, in iOS uses UIFontPickerViewController, and in WinUI, Motif, FLTK, EFL and Android uses a custom dialog implemented using IUP controls.
+In Win32 uses ChooseFont, in GTK 3 uses GtkFontChooser, in GTK 4 uses GtkFontDialog, in macOS uses NSFontPanel, in Qt uses QFontDialog, in iOS uses UIFontPickerViewController, and in WinUI, Motif, FLTK, EFL, Android and WebAssembly uses a custom dialog implemented using IUP controls.
 
 ### Examples
 
