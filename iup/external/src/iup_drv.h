@@ -111,6 +111,10 @@ IUP_SDK_API void iupdrvSleep(int time);
  * \ingroup drv */
 IUP_SDK_API void iupdrvSetAccessibleTitle(Ihandle *ih, const char* title);
 
+/** Sets the accessibility description (help/hint) for screen readers.
+ * \ingroup drv */
+IUP_SDK_API void iupdrvSetAccessibleDescription(Ihandle *ih, const char* description);
+
 /** Sets the application identifier (for Wayland/XDG desktop file name).
  * \ingroup drv */
 IUP_SDK_API int iupdrvSetGlobalAppIDAttrib(const char* value);

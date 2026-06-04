@@ -799,11 +799,14 @@ extern "C" IUP_SDK_API void iupdrvSendMouse(int x, int y, int bt, int status)
 
 extern "C" IUP_SDK_API void iupdrvSetAccessibleTitle(Ihandle *ih, const char* title)
 {
-  /* Set accessible title for screen readers */
   QWidget* widget = (QWidget*)ih->handle;
+  if (widget)
+    widget->setAccessibleName(title ? QString::fromUtf8(title) : QString());
+}
 
-  if (widget && title)
-  {
-    widget->setAccessibleName(QString::fromUtf8(title));
-  }
+extern "C" IUP_SDK_API void iupdrvSetAccessibleDescription(Ihandle *ih, const char* description)
+{
+  QWidget* widget = (QWidget*)ih->handle;
+  if (widget)
+    widget->setAccessibleDescription(description ? QString::fromUtf8(description) : QString());
 }

@@ -897,12 +897,20 @@ IUP_SDK_API void iupdrvBaseRegisterVisualAttrib(Iclass* ic)
 
   iupClassRegisterAttribute(ic, "TIPMARKUP", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "TIPRECT", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "ACCESSIBLETITLE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "ACCESSIBLEDESCRIPTION", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_DEFAULT);
 }
 
 IUP_SDK_API void iupdrvSetAccessibleTitle(Ihandle* ih, const char* title)
 {
   (void)ih;
   (void)title;
+}
+
+IUP_SDK_API void iupdrvSetAccessibleDescription(Ihandle* ih, const char* description)
+{
+  (void)ih;
+  (void)description;
 }
 
 static void eflGetWidgetScreenPos(Ihandle* ih, int* widget_x, int* widget_y)

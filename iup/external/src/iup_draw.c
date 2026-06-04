@@ -1452,7 +1452,7 @@ IUP_SDK_API void iupFlatDrawIcon(Ihandle* ih, IdrawCanvas* dc, int icon_x, int i
 
   iupdrvDrawSetClipRect(dc, clip_x1, clip_y1, clip_x2, clip_y2);
 
-  if (title && !iupAttribGet(ih, "SECONDARYTITLE"))
+  if (title && !iupAttribGet(ih, "ACCESSIBLETITLE") && !iupAttribGet(ih, "SECONDARYTITLE"))
     iupdrvSetAccessibleTitle(ih, title);  /* for accessibility */
 }
 

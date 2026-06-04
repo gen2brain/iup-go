@@ -845,6 +845,23 @@ extern "C" IUP_SDK_API void iupdrvSetAccessibleTitle(Ihandle* ih, const char* ti
   }
 }
 
+extern "C" IUP_SDK_API void iupdrvSetAccessibleDescription(Ihandle* ih, const char* description)
+{
+  if (!ih || !ih->handle || winuiHandleIsHWND(ih))
+    return;
+
+  UIElement elem = winuiGetHandle<UIElement>(ih);
+  if (elem)
+  {
+    DependencyObject dep = elem.try_as<DependencyObject>();
+    if (dep)
+    {
+      hstring help = description ? iupwinuiStringToHString(description) : hstring();
+      Automation::AutomationProperties::SetHelpText(dep, help);
+    }
+  }
+}
+
 extern "C" IUP_SDK_API void iupdrvBaseRegisterCommonAttrib(Iclass* ic)
 {
   (void)ic;

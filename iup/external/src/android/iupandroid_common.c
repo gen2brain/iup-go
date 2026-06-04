@@ -479,6 +479,21 @@ void iupdrvSetAccessibleTitle(Ihandle* ih, const char* title)
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
 }
 
+void iupdrvSetAccessibleDescription(Ihandle* ih, const char* description)
+{
+  jobject widget = iupAndroid_RealNativeHandle(ih);
+  if (!widget) return;
+
+  JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
+  jclass java_class = IUPJNI_FindClass(IupCommon, jni_env, "io/github/gen2brain/iupgo/IupCommon");
+  jmethodID method_id = (*jni_env)->GetStaticMethodID(jni_env, java_class, "setAccessibleDescription", "(Ljava/lang/Object;Ljava/lang/String;)V");
+  jstring j_desc = description ? (*jni_env)->NewStringUTF(jni_env, description) : NULL;
+  (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, widget, j_desc);
+  iupAndroid_CheckException(jni_env, "IupCommon.setAccessibleDescription");
+  if (j_desc) (*jni_env)->DeleteLocalRef(jni_env, j_desc);
+  (*jni_env)->DeleteLocalRef(jni_env, java_class);
+}
+
 void iupdrvBaseRegisterCommonAttrib(Iclass* ic)
 {
   (void)ic;
