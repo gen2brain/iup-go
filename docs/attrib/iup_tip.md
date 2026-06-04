@@ -2,6 +2,7 @@
 
 Text to be shown when the mouse lies over the element.
 On touch platforms (Android, iOS) the tip is shown after a long-press on the element.
+It also serves as the element accessible description for screen readers, unless ACCESSIBLEDESCRIPTION is set. Not used for accessibility in Win32, Motif, FLTK, EFL and Haiku.
 
 ### Value
 

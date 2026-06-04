@@ -164,6 +164,9 @@ IUP_SDK_API int iupdrvBaseSetTipAttrib(Ihandle* ih, const char* value)
 
   gtkTooltipSetTitle(ih, widget, value);
 
+  if (!iupAttribGet(ih, "ACCESSIBLEDESCRIPTION"))
+    iupdrvSetAccessibleDescription(ih, value);
+
   return 1;
 }
 

@@ -199,6 +199,9 @@ extern "C" IUP_SDK_API int iupdrvBaseSetTipAttrib(Ihandle* ih, const char* value
     ToolTipService::SetToolTip(elem, nullptr);
   }
 
+  if (!iupAttribGet(ih, "ACCESSIBLEDESCRIPTION"))
+    iupdrvSetAccessibleDescription(ih, value);
+
   return 1;
 }
 
