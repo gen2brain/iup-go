@@ -1161,9 +1161,28 @@ IUP_DRV_API int iupgtkIsSystemDarkMode(void)
 
 IUP_SDK_API void iupdrvSetAccessibleTitle(Ihandle *ih, const char* title)
 {
-  /* AtkText Interface? */
-  (void)title;
-  (void)ih;
+  GtkWidget* widget = (GtkWidget*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
+  if (!widget)
+    widget = (GtkWidget*)ih->handle;
+  if (GTK_IS_WIDGET(widget))
+  {
+    AtkObject* acc = gtk_widget_get_accessible(widget);
+    if (acc)
+      atk_object_set_name(acc, title ? title : "");
+  }
+}
+
+IUP_SDK_API void iupdrvSetAccessibleDescription(Ihandle *ih, const char* description)
+{
+  GtkWidget* widget = (GtkWidget*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
+  if (!widget)
+    widget = (GtkWidget*)ih->handle;
+  if (GTK_IS_WIDGET(widget))
+  {
+    AtkObject* acc = gtk_widget_get_accessible(widget);
+    if (acc)
+      atk_object_set_description(acc, description ? description : "");
+  }
 }
 
 /* Deprecated but still used for GTK2:

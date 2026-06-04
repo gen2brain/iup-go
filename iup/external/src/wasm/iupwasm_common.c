@@ -194,6 +194,10 @@ EM_JS(void, iupwasmJsSetAccessible, (int id, const char* txt), {
   globalThis.__iupApply({ op: 'aria', id: id, text: UTF8ToString(txt) });
 })
 
+EM_JS(void, iupwasmJsSetAccessibleDesc, (int id, const char* txt), {
+  globalThis.__iupApply({ op: 'ariadesc', id: id, text: UTF8ToString(txt) });
+})
+
 EM_JS(void, iupwasmJsInstallKeyHandler, (void), {
   if (typeof document !== 'undefined' && globalThis.__iupInstallKeyHandler) globalThis.__iupInstallKeyHandler();
 })
@@ -713,4 +717,11 @@ IUP_SDK_API void iupdrvSetAccessibleTitle(Ihandle *ih, const char* title)
   int id = iupwasmIdOf(ih);
   if (id)
     iupwasmJsSetAccessible(id, title ? title : "");
+}
+
+IUP_SDK_API void iupdrvSetAccessibleDescription(Ihandle *ih, const char* description)
+{
+  int id = iupwasmIdOf(ih);
+  if (id)
+    iupwasmJsSetAccessibleDesc(id, description ? description : "");
 }

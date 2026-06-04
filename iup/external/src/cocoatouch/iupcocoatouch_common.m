@@ -510,6 +510,13 @@ IUP_SDK_API void iupdrvSetAccessibleTitle(Ihandle* ih, const char* title)
 	}
 }
 
+IUP_SDK_API void iupdrvSetAccessibleDescription(Ihandle* ih, const char* description)
+{
+	id handle = ih->handle;
+	if ([handle respondsToSelector:@selector(setAccessibilityHint:)])
+		[handle setAccessibilityHint:description ? [NSString stringWithUTF8String:description] : nil];
+}
+
 IUP_SDK_API void iupdrvBaseRegisterCommonAttrib(Iclass* ic)
 {
 	(void)ic;

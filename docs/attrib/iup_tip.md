@@ -63,3 +63,7 @@ Returns the current visible state.
 ### Affects
 
 All controls that have visual representation, except menus.
+
+### See Also
+
+[ACCESSIBLETITLE](iup_accessibletitle.md)

@@ -675,6 +675,20 @@ IUP_SDK_API void iupBaseRegisterCommonAttrib(Iclass* ic)
   iupdrvBaseRegisterCommonAttrib(ic);
 }
 
+static int iBaseSetAccessibleTitleAttrib(Ihandle* ih, const char* value)
+{
+  if (ih->handle)
+    iupdrvSetAccessibleTitle(ih, value);
+  return 1;
+}
+
+static int iBaseSetAccessibleDescriptionAttrib(Ihandle* ih, const char* value)
+{
+  if (ih->handle)
+    iupdrvSetAccessibleDescription(ih, value);
+  return 1;
+}
+
 IUP_SDK_API void iupBaseRegisterVisualAttrib(Iclass* ic)
 {
   iupClassRegisterAttribute(ic, "VISIBLE", iupBaseGetVisibleAttrib, iupBaseSetVisibleAttrib, "YES", "NO", IUPAF_NO_SAVE);   /* must be inheritable to propagate visual state to children and from parent */
@@ -691,6 +705,9 @@ IUP_SDK_API void iupBaseRegisterVisualAttrib(Iclass* ic)
   iupClassRegisterAttribute(ic, "TIPBGCOLOR", NULL, NULL, IUPAF_SAMEASSYSTEM, "255 255 225", IUPAF_DEFAULT); /* Light Yellow */
   iupClassRegisterAttribute(ic, "TIPFGCOLOR", NULL, NULL, IUPAF_SAMEASSYSTEM, "0 0 0", IUPAF_DEFAULT);       /* black */
   iupClassRegisterAttribute(ic, "TIPRECT", NULL, NULL, IUPAF_SAMEASSYSTEM, NULL, IUPAF_DEFAULT);
+
+  iupClassRegisterAttribute(ic, "ACCESSIBLETITLE", NULL, iBaseSetAccessibleTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ACCESSIBLEDESCRIPTION", NULL, iBaseSetAccessibleDescriptionAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 
   iupdrvBaseRegisterVisualAttrib(ic);
 }

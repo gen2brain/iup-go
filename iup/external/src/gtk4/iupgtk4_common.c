@@ -920,6 +920,21 @@ IUP_SDK_API void iupdrvSetAccessibleTitle(Ihandle *ih, const char* title)
     gtk_accessible_update_property(GTK_ACCESSIBLE(widget), GTK_ACCESSIBLE_PROPERTY_LABEL, title, -1);
 }
 
+IUP_SDK_API void iupdrvSetAccessibleDescription(Ihandle *ih, const char* description)
+{
+  GtkWidget* widget = (GtkWidget*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
+  if (!widget)
+    widget = (GtkWidget*)ih->handle;
+
+  if (!widget || !GTK_IS_WIDGET(widget))
+    return;
+
+  if (!description || description[0] == 0)
+    gtk_accessible_update_property(GTK_ACCESSIBLE(widget), GTK_ACCESSIBLE_PROPERTY_DESCRIPTION, "", -1);
+  else
+    gtk_accessible_update_property(GTK_ACCESSIBLE(widget), GTK_ACCESSIBLE_PROPERTY_DESCRIPTION, description, -1);
+}
+
 IUP_DRV_API int iupgtk4IsVisible(GtkWidget* widget)
 {
   if (!widget || !GTK_IS_WIDGET(widget))

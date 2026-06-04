@@ -229,6 +229,13 @@ public final class IupCommon
     }
 
     @Keep
+    public static void setAccessibleDescription(Object widget, String description)
+    {
+        if (widget instanceof View && android.os.Build.VERSION.SDK_INT >= 26)
+            ((View)widget).setTooltipText(description);
+    }
+
+    @Keep
     public static void reparentTo(long childIhandlePtr, Object newParentWidget)
     {
         Object childWidget = getObjectFromIhandle(childIhandlePtr);

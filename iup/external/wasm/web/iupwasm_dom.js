@@ -342,6 +342,9 @@
       case 'aria': {
         if (el) { if (c.text) el.setAttribute('aria-label', c.text); else el.removeAttribute('aria-label'); }
       } break;
+      case 'ariadesc': {
+        if (el) { if (c.text) el.setAttribute('aria-description', c.text); else el.removeAttribute('aria-description'); }
+      } break;
       case 'setfont': {
         if (el) el.style.font = c.css;
       } break;

@@ -919,6 +919,13 @@ IUP_SDK_API void iupdrvSetAccessibleTitle(Ihandle *ih, const char* title)
   }
 }
 
+IUP_SDK_API void iupdrvSetAccessibleDescription(Ihandle *ih, const char* description)
+{
+  id the_object = iupcocoaGetMainView(ih);
+  if([the_object respondsToSelector:@selector(setAccessibilityHelp:)])
+    [the_object setAccessibilityHelp:description ? [NSString stringWithUTF8String:description] : nil];
+}
+
 IUP_SDK_API void iupdrvBaseRegisterCommonAttrib(Iclass* ic)
 {
 }
