@@ -9,6 +9,7 @@
 
 #include "iup_object.h"
 #include "iup_attrib.h"
+#include "iup_drv.h"
 
 #include "iupcocoa_drv.h"
 
@@ -150,6 +151,9 @@ IUP_SDK_API int iupdrvBaseSetTipAttrib(Ihandle* ih, const char* value)
   {
     iupcocoaTipsDestroy(ih);
   }
+
+  if (!iupAttribGet(ih, "ACCESSIBLEDESCRIPTION"))
+    iupdrvSetAccessibleDescription(ih, value);
 
   return 1;
 }

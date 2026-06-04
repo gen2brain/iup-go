@@ -11,6 +11,7 @@ Text.
 ## ACCESSIBLEDESCRIPTION (non-inheritable)
 
 Accessible description announced by screen readers after the name (help or hint text).
+When not set, the TIP text is used instead.
 Not supported in Win32, Motif, FLTK, EFL and Haiku.
 On Android it maps to the tooltip text, announced by the screen reader (API 26+).
 
