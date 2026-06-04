@@ -174,7 +174,7 @@ emcc app.c build/wasm/libiup.a -Iinclude \
   -sEMULATE_FUNCTION_POINTER_CASTS=1 -sALLOW_MEMORY_GROWTH=1 -sNO_EXIT_RUNTIME=1 -o app.html
 ```
 
-This builds the static library only. To build and run a complete app (C or Go) in the browser, use `wasm/build-wasm.sh`; see `wasm/README.md`.
+This builds the static library only. To build and run a complete app (C or Go) in the browser, use `wasm/build-wasm.sh`; see [wasm/README.md](wasm/README.md).
 
 **OpenGL** (`IUP_BUILD_GL`):
 GTK3/GTK4/Qt/EFL/FLTK use EGL on Linux: `libegl-dev libgl-dev` or `libglvnd-devel`.
