@@ -339,6 +339,9 @@
       case 'doctitle': {
         document.title = c.text;
       } break;
+      case 'aria': {
+        if (el) { if (c.text) el.setAttribute('aria-label', c.text); else el.removeAttribute('aria-label'); }
+      } break;
       case 'setfont': {
         if (el) el.style.font = c.css;
       } break;

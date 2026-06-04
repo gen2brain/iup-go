@@ -190,6 +190,10 @@ EM_JS(void, iupwasmJsSetDocTitle, (const char* txt), {
   globalThis.__iupApply({ op: 'doctitle', text: UTF8ToString(txt) });
 })
 
+EM_JS(void, iupwasmJsSetAccessible, (int id, const char* txt), {
+  globalThis.__iupApply({ op: 'aria', id: id, text: UTF8ToString(txt) });
+})
+
 EM_JS(void, iupwasmJsInstallKeyHandler, (void), {
   if (typeof document !== 'undefined' && globalThis.__iupInstallKeyHandler) globalThis.__iupInstallKeyHandler();
 })
@@ -706,6 +710,7 @@ IUP_SDK_API void iupdrvSleep(int time)
 
 IUP_SDK_API void iupdrvSetAccessibleTitle(Ihandle *ih, const char* title)
 {
-  (void)ih;
-  (void)title;
+  int id = iupwasmIdOf(ih);
+  if (id)
+    iupwasmJsSetAccessible(id, title ? title : "");
 }
