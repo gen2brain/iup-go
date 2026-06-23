@@ -302,7 +302,7 @@ static char* qtLabelGetTitleAttrib(Ihandle* ih)
 
 static int qtLabelSetAlignmentAttrib(Ihandle* ih, const char* value)
 {
-  if (ih->data->type == IUP_LABEL_TEXT)
+  if (ih->data->type == IUP_LABEL_TEXT || ih->data->type == IUP_LABEL_IMAGE)
   {
     QWidget* widget = qtLabelGetInnerWidget(ih);
     QLabel* label = qobject_cast<QLabel*>(widget);
@@ -313,65 +313,34 @@ static int qtLabelSetAlignmentAttrib(Ihandle* ih, const char* value)
     char value1[30], value2[30];
     iupStrToStrStr(value, value1, sizeof(value1), value2, sizeof(value2), ':');
 
-    /* Horizontal alignment */
-    Qt::Alignment align = Qt::AlignLeft | Qt::AlignVCenter;
+    /* unspecified axis keeps the default ALEFT:ACENTER */
+    Qt::Alignment halign = Qt::AlignLeft, valign = Qt::AlignVCenter;
+    ih->data->horiz_alignment = IUP_ALIGN_ALEFT;
+    ih->data->vert_alignment = IUP_ALIGN_ACENTER;
 
     if (iupStrEqualNoCase(value1, "ARIGHT"))
     {
-      align = Qt::AlignRight | Qt::AlignVCenter;
+      halign = Qt::AlignRight;
       ih->data->horiz_alignment = IUP_ALIGN_ARIGHT;
     }
     else if (iupStrEqualNoCase(value1, "ACENTER"))
     {
-      align = Qt::AlignHCenter | Qt::AlignVCenter;
+      halign = Qt::AlignHCenter;
       ih->data->horiz_alignment = IUP_ALIGN_ACENTER;
     }
-    else if (iupStrEqualNoCase(value1, "ALEFT"))
-    {
-      align = Qt::AlignLeft | Qt::AlignVCenter;
-      ih->data->horiz_alignment = IUP_ALIGN_ALEFT;
-    }
 
-    /* Vertical alignment */
     if (iupStrEqualNoCase(value2, "ABOTTOM"))
     {
-      align = (align & Qt::AlignHorizontal_Mask) | Qt::AlignBottom;
+      valign = Qt::AlignBottom;
       ih->data->vert_alignment = IUP_ALIGN_ABOTTOM;
     }
     else if (iupStrEqualNoCase(value2, "ATOP"))
     {
-      align = (align & Qt::AlignHorizontal_Mask) | Qt::AlignTop;
+      valign = Qt::AlignTop;
       ih->data->vert_alignment = IUP_ALIGN_ATOP;
     }
-    else if (iupStrEqualNoCase(value2, "ACENTER"))
-    {
-      align = (align & Qt::AlignHorizontal_Mask) | Qt::AlignVCenter;
-      ih->data->vert_alignment = IUP_ALIGN_ACENTER;
-    }
 
-    label->setAlignment(align);
-    return 1;
-  }
-  else if (ih->data->type == IUP_LABEL_IMAGE)
-  {
-    /* Store alignment for image labels */
-    char value1[30], value2[30];
-    iupStrToStrStr(value, value1, sizeof(value1), value2, sizeof(value2), ':');
-
-    if (iupStrEqualNoCase(value1, "ARIGHT"))
-      ih->data->horiz_alignment = IUP_ALIGN_ARIGHT;
-    else if (iupStrEqualNoCase(value1, "ACENTER"))
-      ih->data->horiz_alignment = IUP_ALIGN_ACENTER;
-    else
-      ih->data->horiz_alignment = IUP_ALIGN_ALEFT;
-
-    if (iupStrEqualNoCase(value2, "ABOTTOM"))
-      ih->data->vert_alignment = IUP_ALIGN_ABOTTOM;
-    else if (iupStrEqualNoCase(value2, "ATOP"))
-      ih->data->vert_alignment = IUP_ALIGN_ATOP;
-    else
-      ih->data->vert_alignment = IUP_ALIGN_ACENTER;
-
+    label->setAlignment(halign | valign);
     return 1;
   }
 
