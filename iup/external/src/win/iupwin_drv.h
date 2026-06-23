@@ -26,6 +26,7 @@ extern HHOOK     iupwin_threadmsghook;  /* iupwin_open.c */
 IUP_DRV_API void iupwinShowLastError(void);
 IUP_DRV_API void iupwinSetInstance(HINSTANCE hInstance);
 IUP_DRV_API void iupwinSetGlobalColors(void);
+IUP_DRV_API COLORREF iupwinGetAccentColor(void);
 
 /* focus */
 IUP_DRV_API void iupwinWmSetFocus(Ihandle *ih);

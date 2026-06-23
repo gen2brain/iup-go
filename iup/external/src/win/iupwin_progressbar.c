@@ -75,7 +75,7 @@ static void winProgressBarDraw(Ihandle* ih, HDC hDC)
   if (iupStrToRGB(value, &r, &g, &b))
     fgcolor = RGB(r, g, b);
   else
-    fgcolor = GetSysColor(COLOR_HIGHLIGHT);
+    fgcolor = iupwinGetAccentColor();
 
   hBrush = CreateSolidBrush(bgcolor);
   FillRect(hDC, &rect, hBrush);

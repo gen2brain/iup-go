@@ -41,6 +41,7 @@ static const iGlobalRegEntry registry[] = {
   { "APPNAME",                0,    W|C|Q|E|WU|F|A|CT },
   { "APPSHELL",               R|P,  M|G|G4 },
   { "ARGV0",                  0,    G|Q|G4|E|WU|F|HK },
+  { "AUTODARKMODE",           0,    W },
   { "AUTOREPEAT",             0,    M|E|F },
   { "CACHEDIR",               R,    ALL },
   { "COMCTL32VER6",           R,    W },

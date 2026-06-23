@@ -32,6 +32,7 @@
 #include "iupwin_draw.h"
 #include "iupwin_info.h"
 #include "iupwin_str.h"
+#include "iupwin_darkmode.h"
 
 
 /* Not defined for Cygwin and MingW */
@@ -69,6 +70,7 @@ typedef struct tagNMTVITEMCHANGE {
 typedef struct _winTreeItemData
 {
   COLORREF color;
+  int has_custom_color;  /* app set a per-node COLOR; otherwise the node follows the live tree FGCOLOR */
   unsigned char kind;
   HFONT hFont;
   short image;
@@ -1429,6 +1431,7 @@ static int winTreeSetColorAttrib(Ihandle* ih, int id, const char* value)
   if (iupStrToRGB(value, &r, &g, &b))
   {
     itemData->color = RGB(r,g,b);
+    itemData->has_custom_color = 1;
     iupdrvPostRedraw(ih);
   }
 
@@ -2913,10 +2916,15 @@ static int winTreeWmNotify(Ihandle* ih, NMHDR* msg_info, int *result)
       if (customdraw->nmcd.uItemState & CDIS_SELECTED)
       {
         iupwinGetColor(iupAttribGetStr(ih, "HLCOLOR"), &customdraw->clrTextBk);
-        customdraw->clrText = winTreeInvertColor(itemData->color);
+        if (iupwinDarkModeEnabled())  /* invert would give dark-on-dark on the dark selection */
+          customdraw->clrText = GetSysColor(COLOR_HIGHLIGHTTEXT);
+        else
+          customdraw->clrText = winTreeInvertColor(itemData->color);
       }
-      else
+      else if (itemData->has_custom_color)
         customdraw->clrText = itemData->color;
+      else
+        iupwinGetColor(iupAttribGetStr(ih, "FGCOLOR"), &customdraw->clrText);
 
       *result = CDRF_NOTIFYSUBITEMDRAW|CDRF_NOTIFYPOSTPAINT;
 
@@ -3314,8 +3322,11 @@ static int winTreeMapMethod(Ihandle* ih)
       winTreeSetBgColorAttrib(ih, value);
       iupAttribSet(ih, "BGCOLOR", NULL);
     }
-    else if (!iupwin_comctl32ver6 || !iupwinIsVistaOrNew()) /* force background in XP because of the editbox background */
+    else
       winTreeSetBgColorAttrib(ih, IupGetGlobal("TXTBGCOLOR"));
+
+    if (!iupAttribGet(ih, "FGCOLOR"))
+      winTreeSetFgColorAttrib(ih, IupGetGlobal("TXTFGCOLOR"));
   }
 
   /* Initialize the default images */

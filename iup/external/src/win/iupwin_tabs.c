@@ -28,6 +28,7 @@
 #include "iup_assert.h"
 
 #include "iupwin_drv.h"
+#include "iupwin_darkmode.h"
 #include "iupwin_handle.h"
 #include "iupwin_draw.h"
 #include "iupwin_info.h"
@@ -601,7 +602,7 @@ static void winTabsPlacePageWindows(Ihandle* ih, RECT* rect)
 
 static int winTabsUsingXPStyles(Ihandle* ih)
 {
-  return iupwin_comctl32ver6 && ih->data->type == ITABS_TOP && !(ih->data->show_close);
+  return iupwin_comctl32ver6 && ih->data->type == ITABS_TOP && !(ih->data->show_close) && !iupwinDarkModeEnabled();
 }
 
 static void winTabsDrawPageBackground(Ihandle* ih, HDC hDC, RECT* rect)
@@ -1215,6 +1216,21 @@ static int winTabsMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT *
 {
   switch (msg)
   {
+  case WM_ERASEBKGND:
+    if (iupwinDarkModeEnabled())  /* fill the strip dark around the owner-drawn items */
+    {
+      COLORREF bgcolor;
+      if (iupwinGetParentBgColor(ih, &bgcolor))
+      {
+        RECT rect;
+        GetClientRect(ih->handle, &rect);
+        SetDCBrushColor((HDC)wp, bgcolor);
+        FillRect((HDC)wp, &rect, (HBRUSH)GetStockObject(DC_BRUSH));
+        *result = 1;
+        return 1;
+      }
+    }
+    break;
   case WM_SIZE:
   {
     RECT rect;
@@ -1537,19 +1553,23 @@ static void winTabsDrawTab(Ihandle* ih, HDC hDC, int p, int width, int height, C
     imgH = pImgInfo.rcImage.bottom - pImgInfo.rcImage.top;
   }
 
-  /* Create the close button image */
-  high_p = iupAttribGetInt(ih, "_IUPTABS_CLOSEHIGH");
-  if (high_p == p)
-    hBitmapClose = iupImageGetImage("IMGCLOSEHIGH", ih, 0, NULL);
-  else
-    hBitmapClose = iupImageGetImage("IMGCLOSE", ih, 0, NULL);
-  if (!hBitmapClose)
+  hBitmapClose = NULL;
+  bpp = 0;
+  if (ih->data->show_close)
   {
-    if (str && str != value) free(str);
-    return;
-  }
+    high_p = iupAttribGetInt(ih, "_IUPTABS_CLOSEHIGH");
+    if (high_p == p)
+      hBitmapClose = iupImageGetImage("IMGCLOSEHIGH", ih, 0, NULL);
+    else
+      hBitmapClose = iupImageGetImage("IMGCLOSE", ih, 0, NULL);
+    if (!hBitmapClose)
+    {
+      if (str && str != value) free(str);
+      return;
+    }
 
-  iupdrvImageGetInfo(hBitmapClose, NULL, NULL, &bpp);
+    iupdrvImageGetInfo(hBitmapClose, NULL, NULL, &bpp);
+  }
 
   /* Draw image tab, title tab and close image */
   if (ih->data->type == ITABS_BOTTOM || ih->data->type == ITABS_TOP)
@@ -1614,14 +1634,17 @@ static void winTabsDrawTab(Ihandle* ih, HDC hDC, int p, int width, int height, C
     y = height - border - ITABS_CLOSE_SIZE;
   }
 
-  press_p = iupAttribGetInt(ih, "_IUPTABS_CLOSEPRESS");
-  if (press_p == p)
+  if (ih->data->show_close)
   {
-    x++;
-    y++;
-  }
+    press_p = iupAttribGetInt(ih, "_IUPTABS_CLOSEPRESS");
+    if (press_p == p)
+    {
+      x++;
+      y++;
+    }
 
-  iupwinDrawBitmap(hDC, hBitmapClose, x, y, ITABS_CLOSE_SIZE, ITABS_CLOSE_SIZE, ITABS_CLOSE_SIZE, ITABS_CLOSE_SIZE, bpp);
+    iupwinDrawBitmap(hDC, hBitmapClose, x, y, ITABS_CLOSE_SIZE, ITABS_CLOSE_SIZE, ITABS_CLOSE_SIZE, ITABS_CLOSE_SIZE, bpp);
+  }
 
   if (str && str != value) free(str);
 }
@@ -1788,7 +1811,7 @@ static int winTabsMapMethod(Ihandle* ih)
   if (ih->data->is_multiline)
     dwStyle |= TCS_MULTILINE;
 
-  if (ih->data->show_close)
+  if (ih->data->show_close || iupwinDarkModeEnabled())
     dwStyle |= TCS_OWNERDRAWFIXED;
 
   iupwinGetNativeParentStyle(ih, &dwExStyle, &dwStyle);
@@ -1823,8 +1846,10 @@ static int winTabsMapMethod(Ihandle* ih)
     /* owner draw tab image + tab title + close image */
     IupSetCallback(ih, "_IUPWIN_DRAWITEM_CB", (Icallback)winTabsDrawItem);
   }
+  else if (iupwinDarkModeEnabled())  /* owner-draw the dark tab */
+    IupSetCallback(ih, "_IUPWIN_DRAWITEM_CB", (Icallback)winTabsDrawItem);
 
-  if (iupwin_comctl32ver6 && (ih->data->type != ITABS_TOP || ih->data->show_close))
+  if (iupwin_comctl32ver6 && (ih->data->type != ITABS_TOP || ih->data->show_close || iupwinDarkModeEnabled()))
   {
     /* XP Styles support only TABTYPE=TOP,
        show_close ownerdraw will work only with classic style */

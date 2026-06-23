@@ -304,7 +304,15 @@ Returns Yes or No if the Windows common controls are using Visual Styles or not.
 
 ### DARKMODE (read-only)
 
-Returns "1" if the system is currently in dark mode, "0" otherwise.
+Returns "1" if the system is currently in dark mode, "0" otherwise. Independent of AUTODARKMODE.
+
+### AUTODARKMODE [Windows Only]
+
+Follows the system dark mode when "YES": seeds the dark palette (DLGBGCOLOR, TXTBGCOLOR, MENUBGCOLOR and their foregrounds) and dark-themes the native controls. Default: "NO". Must be set after IupOpen, before creating dialogs.
+
+Not darkened: IupFontDlg (native font chooser), IupCalendar and IupDatePick (native month-calendar control). IupFileDlg uses the native shell file dialog, which follows the system theme regardless of this setting.
+
+The [dialog](../dlg/iup_dialog.md) THEMECHANGED_CB is called on a live light/dark switch.
 
 ### WINDOWING (read-only)
 

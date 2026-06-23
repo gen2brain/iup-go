@@ -21,12 +21,12 @@ IUP_DRV_API void iupwinDrawText(HDC hDC, const char* text, int x, int y, int wid
 IUP_DRV_API void iupwinDrawParentBackground(Ihandle* ih, HDC hDC, RECT* rect);
 IUP_DRV_API void iupwinDrawButtonBorder(HWND hWnd, HDC hDC, RECT *rect, UINT itemState);
 IUP_DRV_API void iupwinDraw3StateButton(HWND hWnd, HDC hDC, RECT *rect);
+IUP_DRV_API int  iupwinDrawToggleGlyph(HWND hWnd, HDC hDC, RECT* item, int is_radio, int check, UINT itemState, int align_right);
 
 IUP_DRV_API void iupwinDrawThemeInit(void);
 IUP_DRV_API void iupwinDrawThemeFrameBorder(HWND hWnd, HDC hDC, RECT *rect, UINT itemState);
 IUP_DRV_API int  iupwinDrawGetThemeTabsBgColor(HWND hWnd, COLORREF *color);
 IUP_DRV_API int  iupwinDrawGetThemeButtonBgColor(HWND hWnd, COLORREF *color);
-IUP_DRV_API int  iupwinDrawGetThemeFrameFgColor(HWND hWnd, COLORREF *color);
 IUP_DRV_API void iupwinDrawRemoveTheme(HWND hWnd);
 
 typedef struct _iupwinBitmapDC

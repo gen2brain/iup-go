@@ -18,6 +18,7 @@
 
 #include "iup_object.h"
 #include "iup_attrib.h"
+#include "iup_class.h"
 #include "iup_drv.h"
 #include "iup_drvinfo.h"
 #include "iup_str.h"
@@ -29,6 +30,7 @@
 #include "iupwin_handle.h"
 #include "iupwin_info.h"
 #include "iupwin_str.h"
+#include "iupwin_darkmode.h"
 
 
 #ifndef SM_CXPADDEDBORDER
@@ -460,6 +462,7 @@ static int winDialogDrawBackground(Ihandle* ih, HDC hdc, int force_bgcolor)
   {
     unsigned char r, g, b;
     char* color = force_bgcolor? iupAttribGetStr(ih, "BGCOLOR"): iupAttribGet(ih, "_IUPWIN_BACKGROUND_COLOR");
+    if (!color) color = iupAttribGetStr(ih, "BGCOLOR");
     if (iupStrToRGB(color, &r, &g, &b))
     {
       RECT rect;
@@ -701,6 +704,25 @@ static int winDialogCustomFrameProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp,
   return 0;
 }
 
+/* Re-run BGCOLOR/FGCOLOR setters with the resolved global so controls that cached a color at map
+   time follow a light/dark switch. iupClassObjectSetAttribute does not store, keeping the default. */
+static void winDialogRefreshThemeColors(Ihandle* ih)
+{
+  Ihandle* child;
+  int inherit;
+  char* color;
+
+  color = iupAttribGetStr(ih, "BGCOLOR");
+  if (color)
+    iupClassObjectSetAttribute(ih, "BGCOLOR", color, &inherit);
+  color = iupAttribGetStr(ih, "FGCOLOR");
+  if (color)
+    iupClassObjectSetAttribute(ih, "FGCOLOR", color, &inherit);
+
+  for (child = ih->firstchild; child; child = child->brother)
+    winDialogRefreshThemeColors(child);
+}
+
 static int winDialogBaseProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT *result)
 {
   if (iupAttribGetBoolean(ih, "CUSTOMFRAMEDRAW") || iupAttribGetBoolean(ih, "CUSTOMFRAME"))
@@ -708,6 +730,8 @@ static int winDialogBaseProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESUL
     if (winDialogCustomFrameProc(ih, msg, wp, lp, result))
       return 1;
   }
+  else if (iupwinDarkModeMenuBarProc(ih->handle, msg, wp, lp, result))
+    return 1;
 
   if (iupwinBaseContainerMsgProc(ih, msg, wp, lp, result))
     return 1;
@@ -900,9 +924,12 @@ static int winDialogBaseProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESUL
         LPCTSTR area = (LPCTSTR)lp;
         if (lstrcmp(area, TEXT("ImmersiveColorSet")) == 0)
         {
+          iupwinDarkModeRefresh();
           iupwinTitleBarThemeColor(ih->handle);
 
           iupwinSetGlobalColors();
+          winDialogRefreshThemeColors(ih);
+          iupwinDarkModeApplyToTree(ih->handle);
 
           int dark_mode = iupwinIsSystemDarkMode();
 
@@ -1160,6 +1187,7 @@ static int winDialogMapMethod(Ihandle* ih)
     return IUP_ERROR;
 
   iupwinTitleBarThemeColor(ih->handle);
+  iupwinDarkModeApplyToWindow(ih->handle);
 
   /* associate HWND with Ihandle*, all Win32 controls must call this. */
   iupwinHandleAdd(ih, ih->handle);

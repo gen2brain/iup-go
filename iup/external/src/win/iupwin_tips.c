@@ -21,6 +21,7 @@
 #include "iupwin_drv.h"
 #include "iupwin_handle.h"
 #include "iupwin_str.h"
+#include "iupwin_darkmode.h"
 
 
 #ifndef TTTOOLINFO
@@ -135,6 +136,7 @@ IUP_SDK_API char* iupdrvBaseGetTipVisibleAttrib(Ihandle* ih)
 IUP_DRV_API void iupwinTipsUpdateInfo(Ihandle* ih, HWND tips_hwnd)
 {
   COLORREF color, tip_color;
+  unsigned char r, g, b;
   char* value;
 
   if (!IsWindow(ih->handle))
@@ -164,15 +166,23 @@ IUP_DRV_API void iupwinTipsUpdateInfo(Ihandle* ih, HWND tips_hwnd)
     }
   }
 
-  iupwinGetColorRef(ih, "TIPBGCOLOR", &color);
-  tip_color = (COLORREF)SendMessage(tips_hwnd, TTM_GETTIPBKCOLOR, 0, 0);
-  if (color != tip_color)
-    SendMessage(tips_hwnd, TTM_SETTIPBKCOLOR, (WPARAM)color, 0);
+  if (iupwinGetColorRef(ih, "TIPBGCOLOR", &color))
+  {
+    tip_color = (COLORREF)SendMessage(tips_hwnd, TTM_GETTIPBKCOLOR, 0, 0);
+    if (color != tip_color)
+      SendMessage(tips_hwnd, TTM_SETTIPBKCOLOR, (WPARAM)color, 0);
+  }
+  else if (iupwinDarkModeEnabled() && iupStrToRGB(IupGetGlobal("TXTBGCOLOR"), &r, &g, &b))
+    SendMessage(tips_hwnd, TTM_SETTIPBKCOLOR, (WPARAM)RGB(r, g, b), 0);
 
-  iupwinGetColorRef(ih, "TIPFGCOLOR", &color);
-  tip_color = (COLORREF)SendMessage(tips_hwnd, TTM_GETTIPTEXTCOLOR, 0, 0);
-  if (color != tip_color)
-    SendMessage(tips_hwnd, TTM_SETTIPTEXTCOLOR, (WPARAM)color, 0);
+  if (iupwinGetColorRef(ih, "TIPFGCOLOR", &color))
+  {
+    tip_color = (COLORREF)SendMessage(tips_hwnd, TTM_GETTIPTEXTCOLOR, 0, 0);
+    if (color != tip_color)
+      SendMessage(tips_hwnd, TTM_SETTIPTEXTCOLOR, (WPARAM)color, 0);
+  }
+  else if (iupwinDarkModeEnabled() && iupStrToRGB(IupGetGlobal("TXTFGCOLOR"), &r, &g, &b))
+    SendMessage(tips_hwnd, TTM_SETTIPTEXTCOLOR, (WPARAM)RGB(r, g, b), 0);
 
   {
     int balloon = IupGetInt(ih, "TIPBALLOON");  /* must use IupGetInt to use inheritance */

@@ -24,6 +24,7 @@
 #include "iupwin_drv.h"
 #include "iupwin_str.h"
 #include "iupwin_info.h"
+#include "iupwin_darkmode.h"
 
 
 /* old cygwin related hack */
@@ -243,6 +244,12 @@ static LRESULT CALLBACK winHookGetMessageProc(int hcode, WPARAM gm_wp, LPARAM gm
 
 IUP_SDK_API int iupdrvSetGlobal(const char* name, const char* value)
 {
+  if (iupStrEqual(name, "AUTODARKMODE"))
+  {
+    iupwinDarkModeSetOptIn(iupStrBoolean(value));
+    iupwinSetGlobalColors();  /* re-seed the palette for the new mode */
+    return 1;
+  }
   if (iupStrEqual(name, "INPUTCALLBACKS"))
   {
     if (iupStrBoolean(value))
@@ -429,6 +436,10 @@ IUP_SDK_API char* iupdrvGetGlobal(const char* name)
   if (iupStrEqual(name, "DARKMODE"))
   {
     return iupStrReturnBoolean(iupwinIsSystemDarkMode());
+  }
+  if (iupStrEqual(name, "AUTODARKMODE"))
+  {
+    return iupStrReturnBoolean(iupwinDarkModeOptIn());
   }
   return NULL;
 }

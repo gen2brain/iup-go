@@ -17,6 +17,7 @@
 #include "iup_drv.h"
 #include "iup_drvinfo.h"
 #include "iup_globalattrib.h"
+#include "iup_str.h"
 
 #include "iupwin_drv.h"
 #include "iupwin_info.h"
@@ -24,6 +25,7 @@
 #include "iupwin_brush.h"
 #include "iupwin_draw.h"
 #include "iupwin_str.h"
+#include "iupwin_darkmode.h"
 
 
 #ifndef ICC_LINK_CLASS
@@ -80,17 +82,65 @@ static void winSetGlobalColor(int index, const char* name)
                                        (int)GetBValue(color));
 }
 
+/* The user-chosen accent (HKCU\..\DWM\AccentColor, ABGR), not the COLOR_HIGHLIGHT selection shade. */
+static int winGetDwmAccentColor(int* r, int* g, int* b)
+{
+  HKEY hKey;
+  DWORD value = 0, size = sizeof(value), type = 0;
+  int ok = 0;
+
+  if (RegOpenKeyExA(HKEY_CURRENT_USER, "Software\\Microsoft\\Windows\\DWM", 0, KEY_READ, &hKey) != ERROR_SUCCESS)
+    return 0;
+  if (RegQueryValueExA(hKey, "AccentColor", NULL, &type, (LPBYTE)&value, &size) == ERROR_SUCCESS && type == REG_DWORD)
+  {
+    *r = (int)(value & 0xFF);
+    *g = (int)((value >> 8) & 0xFF);
+    *b = (int)((value >> 16) & 0xFF);
+    ok = 1;
+  }
+  RegCloseKey(hKey);
+  return ok;
+}
+
+IUP_DRV_API COLORREF iupwinGetAccentColor(void)
+{
+  unsigned char r, g, b;
+  if (iupStrToRGB(IupGetGlobal("ACCENTCOLOR"), &r, &g, &b))
+    return RGB(r, g, b);
+  return GetSysColor(COLOR_HIGHLIGHT);
+}
+
 IUP_DRV_API void iupwinSetGlobalColors(void)
 {
-  winSetGlobalColor(COLOR_BTNFACE, "DLGBGCOLOR");
-  winSetGlobalColor(COLOR_BTNTEXT, "DLGFGCOLOR");
-  winSetGlobalColor(COLOR_WINDOW, "TXTBGCOLOR");
-  winSetGlobalColor(COLOR_WINDOWTEXT, "TXTFGCOLOR");
+  if (iupwinDarkModeEnabled())  /* GetSysColor stays light in dark mode; seed the Fluent dark palette */
+  {
+    iupGlobalSetDefaultColorAttrib("DLGBGCOLOR", 32, 32, 32);
+    iupGlobalSetDefaultColorAttrib("DLGFGCOLOR", 255, 255, 255);
+    iupGlobalSetDefaultColorAttrib("TXTBGCOLOR", 45, 45, 45);
+    iupGlobalSetDefaultColorAttrib("TXTFGCOLOR", 255, 255, 255);
+    iupGlobalSetDefaultColorAttrib("MENUBGCOLOR", 43, 43, 43);
+    iupGlobalSetDefaultColorAttrib("MENUFGCOLOR", 255, 255, 255);
+  }
+  else
+  {
+    winSetGlobalColor(COLOR_BTNFACE, "DLGBGCOLOR");
+    winSetGlobalColor(COLOR_BTNTEXT, "DLGFGCOLOR");
+    winSetGlobalColor(COLOR_WINDOW, "TXTBGCOLOR");
+    winSetGlobalColor(COLOR_WINDOWTEXT, "TXTFGCOLOR");
+    winSetGlobalColor(COLOR_MENU, "MENUBGCOLOR");
+    winSetGlobalColor(COLOR_MENUTEXT, "MENUFGCOLOR");
+  }
+
   winSetGlobalColor(COLOR_HIGHLIGHT, "TXTHLCOLOR");
-  winSetGlobalColor(COLOR_HIGHLIGHT, "ACCENTCOLOR");
   winSetGlobalColor(COLOR_HOTLIGHT, "LINKFGCOLOR");
-  winSetGlobalColor(COLOR_MENU, "MENUBGCOLOR");
-  winSetGlobalColor(COLOR_MENUTEXT, "MENUFGCOLOR");
+
+  {
+    int r, g, b;
+    if (winGetDwmAccentColor(&r, &g, &b))
+      iupGlobalSetDefaultColorAttrib("ACCENTCOLOR", r, g, b);
+    else
+      winSetGlobalColor(COLOR_HIGHLIGHT, "ACCENTCOLOR");
+  }
 }
 
 IUP_SDK_API int iupdrvOpen(int *argc, char ***argv)
@@ -136,6 +186,7 @@ IUP_SDK_API int iupdrvOpen(int *argc, char ***argv)
 #endif
   IupSetGlobal("SYSTEMLANGUAGE", iupwinGetSystemLanguage());
 
+  iupwinDarkModeInit();
   iupwinSetGlobalColors();
 
   iupwinHandleInit();
