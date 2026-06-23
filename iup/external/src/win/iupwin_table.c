@@ -24,6 +24,7 @@
 #include "iup_image.h"
 
 #include "iupwin_drv.h"
+#include "iupwin_darkmode.h"
 #include "iupwin_handle.h"
 #include "iupwin_draw.h"
 #include "iupwin_str.h"
@@ -1646,6 +1647,55 @@ static int winTableCallClickCB(Ihandle* ih, int lin, int col, char* status)
 
 static void winTableStartEdit(Ihandle* ih, int lin, int col);
 
+static COLORREF winTableDefaultColor(const char* global, int sys_index)
+{
+  unsigned char r, g, b;
+  if (iupStrToRGB(IupGetGlobal(global), &r, &g, &b))
+    return RGB(r, g, b);
+  return GetSysColor(sys_index);
+}
+
+/* Recolor the header text from its NM_CUSTOMDRAW (reflected to the list view); chain the default
+   proc first so the list view's own drawing is intact. */
+static int winTableCtrlMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT* result)
+{
+  if (msg == WM_THEMECHANGED)  /* re-apply base colors on a light/dark switch */
+  {
+    IwinTableData* data = IWIN_TABLE_DATA(ih);
+    if (data && data->list_view)
+    {
+      ListView_SetBkColor(data->list_view, winTableDefaultColor("TXTBGCOLOR", COLOR_WINDOW));
+      ListView_SetTextBkColor(data->list_view, winTableDefaultColor("TXTBGCOLOR", COLOR_WINDOW));
+      ListView_SetTextColor(data->list_view, winTableDefaultColor("TXTFGCOLOR", COLOR_WINDOWTEXT));
+    }
+  }
+
+  if (msg == WM_NOTIFY && iupwinDarkModeEnabled())
+  {
+    NMHDR* nmhdr = (NMHDR*)lp;
+    IwinTableData* data = IWIN_TABLE_DATA(ih);
+    if (nmhdr && nmhdr->code == NM_CUSTOMDRAW && data &&
+        nmhdr->hwndFrom == (HWND)SendMessage(data->list_view, LVM_GETHEADER, 0, 0))
+    {
+      LPNMCUSTOMDRAW nmcd = (LPNMCUSTOMDRAW)lp;
+      WNDPROC oldProc = (WNDPROC)IupGetCallback(ih, "_IUPWIN_OLDWNDPROC_CB");
+
+      CallWindowProc(oldProc, ih->handle, msg, wp, lp);
+
+      if (nmcd->dwDrawStage == CDDS_PREPAINT)
+        *result = CDRF_NOTIFYITEMDRAW;
+      else
+      {
+        if (nmcd->dwDrawStage == CDDS_ITEMPREPAINT)
+          SetTextColor(nmcd->hdc, winTableDefaultColor("TXTFGCOLOR", COLOR_WINDOWTEXT));
+        *result = CDRF_DODEFAULT;
+      }
+      return 1;
+    }
+  }
+  return iupwinBaseMsgProc(ih, msg, wp, lp, result);
+}
+
 static int winTableNotifyCallback(Ihandle* ih, void* msg_info, int* result)
 {
   IwinTableData* data = IWIN_TABLE_DATA(ih);
@@ -1875,11 +1925,11 @@ static int winTableNotifyCallback(Ihandle* ih, void* msg_info, int* result)
               if (iupStrToRGB(bgcolor, &r, &g, &b))
                 bg_color = RGB(r, g, b);
               else
-                bg_color = GetSysColor(COLOR_WINDOW);
+                bg_color = winTableDefaultColor("TXTBGCOLOR", COLOR_WINDOW);
             }
             else
             {
-              bg_color = GetSysColor(COLOR_WINDOW);
+              bg_color = winTableDefaultColor("TXTBGCOLOR", COLOR_WINDOW);
             }
 
             SetDCBrushColor(hdc, bg_color);
@@ -1897,11 +1947,11 @@ static int winTableNotifyCallback(Ihandle* ih, void* msg_info, int* result)
               if (iupStrToRGB(fgcolor, &r, &g, &b))
                 fg_color = RGB(r, g, b);
               else
-                fg_color = GetSysColor(COLOR_WINDOWTEXT);
+                fg_color = winTableDefaultColor("TXTFGCOLOR", COLOR_WINDOWTEXT);
             }
             else
             {
-              fg_color = GetSysColor(COLOR_WINDOWTEXT);
+              fg_color = winTableDefaultColor("TXTFGCOLOR", COLOR_WINDOWTEXT);
             }
 
             int img_offset = 0;
@@ -2000,11 +2050,11 @@ static int winTableNotifyCallback(Ihandle* ih, void* msg_info, int* result)
               if (iupStrToRGB(bgcolor, &r, &g, &b))
                 lplvcd->clrTextBk = RGB(r, g, b);
               else
-                lplvcd->clrTextBk = CLR_DEFAULT;
+                lplvcd->clrTextBk = winTableDefaultColor("TXTBGCOLOR", COLOR_WINDOW);
             }
             else
             {
-              lplvcd->clrTextBk = CLR_DEFAULT;
+              lplvcd->clrTextBk = winTableDefaultColor("TXTBGCOLOR", COLOR_WINDOW);
             }
 
             if (fgcolor && *fgcolor)
@@ -2013,11 +2063,11 @@ static int winTableNotifyCallback(Ihandle* ih, void* msg_info, int* result)
               if (iupStrToRGB(fgcolor, &r, &g, &b))
                 lplvcd->clrText = RGB(r, g, b);
               else
-                lplvcd->clrText = CLR_DEFAULT;
+                lplvcd->clrText = winTableDefaultColor("TXTFGCOLOR", COLOR_WINDOWTEXT);
             }
             else
             {
-              lplvcd->clrText = CLR_DEFAULT;
+              lplvcd->clrText = winTableDefaultColor("TXTFGCOLOR", COLOR_WINDOWTEXT);
             }
           }
 
@@ -2655,6 +2705,10 @@ static int winTableMapMethod(Ihandle* ih)
 
   data->list_view = ih->handle;
 
+  ListView_SetBkColor(data->list_view, winTableDefaultColor("TXTBGCOLOR", COLOR_WINDOW));
+  ListView_SetTextBkColor(data->list_view, winTableDefaultColor("TXTBGCOLOR", COLOR_WINDOW));
+  ListView_SetTextColor(data->list_view, winTableDefaultColor("TXTFGCOLOR", COLOR_WINDOWTEXT));
+
   /* Set extended styles (no LVS_EX_GRIDLINES - we'll draw custom grid) */
   DWORD exStyle = LVS_EX_FULLROWSELECT;
   ListView_SetExtendedListViewStyle(data->list_view, exStyle);
@@ -2712,6 +2766,7 @@ static int winTableMapMethod(Ihandle* ih)
 
   /* Register notify callback for WM_NOTIFY messages */
   IupSetCallback(ih, "_IUPWIN_NOTIFY_CB", (Icallback)winTableNotifyCallback);
+  IupSetCallback(ih, "_IUPWIN_CTRLMSGPROC_CB", (Icallback)winTableCtrlMsgProc);
 
   /* Subclass the ListView control for keyboard handling */
   iupwinHandleAdd(ih, data->list_view);
@@ -2747,6 +2802,9 @@ static int winTableMapMethod(Ihandle* ih)
       winTableCallEnterItemCB(ih, lin, col);
     }
   }
+
+  iupwinDarkModeApplyToWindow((HWND)SendMessage(data->list_view, LVM_GETHEADER, 0, 0));
+  iupwinDarkModeSetNoHover(data->list_view);
 
   return IUP_NOERROR;
 }

@@ -30,6 +30,7 @@
 #include "iupwin_handle.h"
 #include "iupwin_info.h"
 #include "iupwin_str.h"
+#include "iupwin_darkmode.h"
 
 
 static UINT WM_DRAGLISTMSG = 0;
@@ -1102,6 +1103,8 @@ IUP_DRV_API int iupwinCreateWindow(Ihandle* ih, LPCTSTR lpClassName, DWORD dwExS
   /* replace the WinProc to handle base callbacks */
   iupwinChangeWndProc(ih, iupwinBaseWndProc);
 
+  iupwinDarkModeApplyToWindow(ih->handle);
+
   return 1;
 }
 
@@ -1316,7 +1319,7 @@ IUP_DRV_API void iupwinTitleBarThemeColor(HWND hwnd)
 
   if (dwmSetWindowAttribute)
   {
-    int dark_mode = iupwinIsSystemDarkMode();
+    int dark_mode = iupwinDarkModeEnabled();
     BOOL value = dark_mode ? TRUE : FALSE;
     DWORD attribute = 20;
 

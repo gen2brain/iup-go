@@ -44,11 +44,14 @@ typedef HTHEME  (STDAPICALLTYPE *_winThemeOpenData)(HWND hwnd, LPCWSTR pszClassL
 typedef HRESULT (STDAPICALLTYPE *_winThemeCloseData)(HTHEME hTheme);
 typedef HRESULT (STDAPICALLTYPE *_winThemeDrawBackground)(HTHEME hTheme, HDC hDC, int iPartId, int iStateId, const RECT *pRect, const RECT *pClipRect);
 typedef HRESULT (STDAPICALLTYPE *_winThemeGetColor)(HTHEME hTheme, int iPartId, int iStateId, int iPropId, COLORREF *pColor);
+typedef HRESULT (STDAPICALLTYPE *_winThemeGetPartSize)(HTHEME hTheme, HDC hDC, int iPartId, int iStateId, const RECT *pRect, enum THEMESIZE eSize, SIZE *psz);
+
 
 static _winThemeOpenData winThemeOpenData = NULL;
 static _winThemeCloseData winThemeCloseData = NULL;
 static _winThemeDrawBackground winThemeDrawBackground = NULL;
 static _winThemeGetColor winThemeGetColor = NULL;
+static _winThemeGetPartSize winThemeGetPartSize = NULL;
 
 typedef BOOL (CALLBACK* _winAlphaBlendFunc)( HDC hdcDest,
                              int xoriginDest, int yoriginDest,
@@ -81,8 +84,51 @@ IUP_DRV_API void iupwinDrawThemeInit(void)
       winThemeCloseData = (_winThemeCloseData)GetProcAddress(hinstDll, "CloseThemeData");
       winThemeDrawBackground = (_winThemeDrawBackground)GetProcAddress(hinstDll, "DrawThemeBackground");
       winThemeGetColor = (_winThemeGetColor)GetProcAddress(hinstDll, "GetThemeColor");
+      winThemeGetPartSize = (_winThemeGetPartSize)GetProcAddress(hinstDll, "GetThemePartSize");
     }
   }
+}
+
+/* check: 0=unchecked, 1=checked, 2=indeterminate. Returns the glyph width. */
+IUP_DRV_API int iupwinDrawToggleGlyph(HWND hWnd, HDC hDC, RECT* item, int is_radio, int check, UINT itemState, int align_right)
+{
+  HTHEME hTheme;
+  int part, state, base;
+  SIZE sz;
+  RECT rect;
+
+  if (!winDrawThemeEnabled())
+    return 0;
+
+  hTheme = winThemeOpenData(NULL, L"DarkMode_Explorer::Button");  /* NULL hwnd forces the dark glyph */
+  if (!hTheme)
+    hTheme = winThemeOpenData(hWnd, L"BUTTON");
+  if (!hTheme)
+    return 0;
+
+  part = is_radio ? BP_RADIOBUTTON : BP_CHECKBOX;
+  base = (check == 2)? CBS_MIXEDNORMAL: (check? CBS_CHECKEDNORMAL: CBS_UNCHECKEDNORMAL);
+  if (itemState & ODS_DISABLED)
+    state = base + 3;
+  else if (itemState & ODS_SELECTED)
+    state = base + 2;
+  else if (itemState & ODS_HOTLIGHT)
+    state = base + 1;
+  else
+    state = base;
+
+  sz.cx = sz.cy = 13;
+  if (winThemeGetPartSize)
+    winThemeGetPartSize(hTheme, hDC, part, state, NULL, TS_TRUE, &sz);
+
+  rect.left = align_right? item->right - sz.cx: item->left;
+  rect.top = item->top + (item->bottom - item->top - sz.cy) / 2;
+  rect.right = rect.left + sz.cx;
+  rect.bottom = rect.top + sz.cy;
+  winThemeDrawBackground(hTheme, hDC, part, state, &rect, NULL);
+
+  winThemeCloseData(hTheme);
+  return sz.cx;
 }
 
 static int winDrawGetThemeStateId(int itemState)
@@ -190,24 +236,6 @@ IUP_DRV_API int iupwinDrawGetThemeButtonBgColor(HWND hWnd, COLORREF *color)
     return 0;
 
   ret = winThemeGetColor(hTheme, BP_PUSHBUTTON, PBS_NORMAL, TMT_FILLCOLORHINT, color);
-
-  winThemeCloseData(hTheme);
-  return (ret == S_OK)? 1: 0;
-}
-
-IUP_DRV_API int iupwinDrawGetThemeFrameFgColor(HWND hWnd, COLORREF *color)
-{
-  HTHEME hTheme;
-  HRESULT ret;
-
-  if (!winDrawThemeEnabled())
-    return 0;
-
-  hTheme = winThemeOpenData(hWnd, L"BUTTON");
-  if (!hTheme)
-    return 0;
-
-  ret = winThemeGetColor(hTheme, BP_GROUPBOX, GBS_NORMAL, TMT_TEXTCOLOR, color);
 
   winThemeCloseData(hTheme);
   return (ret == S_OK)? 1: 0;

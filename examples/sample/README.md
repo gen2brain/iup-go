@@ -3,6 +3,9 @@
 ### Windows Win32
 [<img src="sample_win32.png" width="700" title="Windows Win32" alt="Windows Win32" />](sample_win32.png)
 
+### Windows Win32 Dark
+[<img src="sample_win32_dark.png" width="700" title="Windows Win32 Dark" alt="Windows Win32 Dark" />](sample_win32_dark.png)
+
 ### Windows WinUI
 [<img src="sample_winui.png" width="700" title="Windows WinUI" alt="Windows WinUI" />](sample_winui.png)
 

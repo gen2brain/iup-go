@@ -24,6 +24,7 @@
 #include "iup_image.h"
 
 #include "iupwin_drv.h"
+#include "iupwin_darkmode.h"
 #include "iupwin_handle.h"
 #include "iupwin_draw.h"
 
@@ -154,7 +155,7 @@ static void winSwitchCustomDraw(Ihandle* ih, HDC hDC, RECT* rect, UINT itemState
   /* Get theme colors - interpolate during animation for smooth transition */
   COLORREF track_color_ref, thumb_color_ref;
   COLORREF track_off_color = GetSysColor(COLOR_BTNSHADOW);
-  COLORREF track_on_color = GetSysColor(COLOR_HIGHLIGHT);
+  COLORREF track_on_color = iupwinGetAccentColor();
 
   if (is_disabled)
   {
@@ -463,6 +464,92 @@ static void winToggleDrawItem(Ihandle* ih, DRAWITEMSTRUCT *drawitem)
   }
 
   iupwinDrawDestroyBitmapDC(&bmpDC);
+}
+
+/* Dark checkbox/radio stays a real auto button (native nav + state); only WM_PAINT is intercepted
+   to draw the themed glyph + the IUP FGCOLOR text the control would otherwise paint frozen-light. */
+static void winToggleDrawDark(Ihandle* ih)
+{
+  HWND hWnd = ih->handle;
+  iupwinBitmapDC bmpDC;
+  PAINTSTRUCT ps;
+  HDC hDC, dc;
+  RECT rc, glyph_rect;
+  int width, height, check, glyph_w, tx, align_right, nstate;
+  UINT itemState;
+  COLORREF fgcolor;
+  HFONT hFont = (HFONT)iupwinGetHFontAttrib(ih);
+  char* title = iupAttribGet(ih, "TITLE");
+
+  if (!title) title = "";
+
+  GetClientRect(hWnd, &rc);
+  width = rc.right - rc.left;
+  height = rc.bottom - rc.top;
+
+  hDC = BeginPaint(hWnd, &ps);
+  dc = iupwinDrawCreateBitmapDC(&bmpDC, hDC, 0, 0, width, height);
+
+  iupwinDrawParentBackground(ih, dc, &rc);
+
+  nstate = (int)SendMessage(hWnd, BM_GETSTATE, 0, 0);
+  check = (nstate & BST_INDETERMINATE)? 2: ((nstate & BST_CHECKED)? 1: 0);
+
+  if (!IsWindowEnabled(hWnd))
+    itemState = ODS_DISABLED;
+  else if (nstate & BST_PUSHED)
+    itemState = ODS_SELECTED;
+  else if (nstate & BST_HOT)
+    itemState = ODS_HOTLIGHT;
+  else
+    itemState = 0;
+
+  align_right = (GetWindowLongPtr(hWnd, GWL_STYLE) & BS_RIGHTBUTTON)? 1: 0;
+
+  glyph_rect.left = 0;
+  glyph_rect.top = 0;
+  glyph_rect.right = width;
+  glyph_rect.bottom = height;
+  glyph_w = iupwinDrawToggleGlyph(hWnd, dc, &glyph_rect, ih->data->is_radio, check, itemState, align_right);
+
+  if (!iupwinGetColorRef(ih, "FGCOLOR", &fgcolor))
+    fgcolor = GetSysColor(COLOR_WINDOWTEXT);
+  if (itemState & ODS_DISABLED)
+    fgcolor = RGB(113, 113, 113);
+
+  if (align_right)
+  {
+    tx = 0;
+    iupwinDrawText(dc, title, tx, 0, width - glyph_w - 4, height, hFont, fgcolor, DT_RIGHT | DT_VCENTER | DT_SINGLELINE);
+  }
+  else
+  {
+    tx = glyph_w + 4;
+    iupwinDrawText(dc, title, tx, 0, width - tx, height, hFont, fgcolor, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
+  }
+
+  if ((nstate & BST_FOCUS) && iupAttribGetBoolean(ih, "CANFOCUS") &&
+      !(SendMessage(hWnd, WM_QUERYUISTATE, 0, 0) & UISF_HIDEFOCUS))
+    iupwinDrawFocusRect(dc, align_right? 0: tx, 1, align_right? width - glyph_w - 4: width - tx - 1, height - 2);
+
+  iupwinDrawDestroyBitmapDC(&bmpDC);
+  EndPaint(hWnd, &ps);
+}
+
+static int winToggleDarkMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT *result)
+{
+  switch (msg)
+  {
+  case WM_ERASEBKGND:
+    *result = 1;
+    return 1;
+  case WM_PAINT:
+    winToggleDrawDark(ih);
+    *result = 0;
+    return 1;
+  }
+
+  return iupwinBaseMsgProc(ih, msg, wp, lp, result);
 }
 
 
@@ -1152,6 +1239,8 @@ regular_toggle:
       }
     }
   }
+  else if (iupwinDarkModeEnabled() && ih->data->type == IUP_TOGGLE_TEXT)
+    IupSetCallback(ih, "_IUPWIN_CTRLMSGPROC_CB", (Icallback)winToggleDarkMsgProc);
 
   return IUP_NOERROR;
 }

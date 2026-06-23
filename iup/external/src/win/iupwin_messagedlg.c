@@ -17,6 +17,7 @@
 #include "iupwin_drv.h"
 #include "iupwin_str.h"
 #include "iupwin_info.h"
+#include "iupwin_darkmode.h"
 
 
 static void CALLBACK winMessageDlgHelpCallback(HELPINFO* HelpInfo)
@@ -46,9 +47,10 @@ static HRESULT CALLBACK winMessageDlgTaskDialogCallback(HWND hwnd, UINT msg, WPA
   (void)wp;
   (void)lp;
 
-  if (msg == TDN_CREATED)
+  if (msg == TDN_CREATED || msg == TDN_DIALOG_CONSTRUCTED)
   {
     iupwinTitleBarThemeColor(hwnd);
+    iupwinDarkModeApplyTaskDialog(hwnd);
     return S_OK;
   }
 
@@ -152,7 +154,16 @@ static int winMessageDlgPopupTaskDialog(Ihandle* ih, InativeHandle* parent, char
       config.nDefaultButton = IDCANCEL;
   }
 
-  hr = pTaskDialogIndirect(&config, &nButton, NULL, NULL);
+  {
+    int dark = iupwinDarkModeEnabled();
+    if (dark)
+      iupwinDarkModeHookTaskDialog(1);
+
+    hr = pTaskDialogIndirect(&config, &nButton, NULL, NULL);
+
+    if (dark)
+      iupwinDarkModeHookTaskDialog(0);
+  }
 
   if (wszTitle) free(wszTitle);
   if (wszContent) free(wszContent);
@@ -180,7 +191,7 @@ static int winMessageDlgPopup(Ihandle* ih, int x, int y)
   icon = iupAttribGetStr(ih, "DIALOGTYPE");
   buttons = iupAttribGetStr(ih, "BUTTONS");
 
-  if (iupwinIsSystemDarkMode() && iupwinIsVistaOrNew())
+  if (iupwinIsVistaOrNew())  /* TaskDialog in both modes: same look and size */
   {
     if (winMessageDlgPopupTaskDialog(ih, parent, icon, buttons))
       return IUP_NOERROR;

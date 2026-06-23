@@ -145,18 +145,11 @@ static void winFrameDrawItem(Ihandle* ih, DRAWITEMSTRUCT *drawitem)
     {
       unsigned char r, g, b;
       char* color = iupAttribGetInherit(ih, "FGCOLOR");
-      if (!color)
-      {
-        if (!iupwinDrawGetThemeFrameFgColor(ih->handle, &fgcolor))
-          fgcolor = 0;  /* black */
-      }
+      if (!color) color = IupGetGlobal("DLGFGCOLOR");  /* the frame title is the dialog foreground */
+      if (iupStrToRGB(color, &r, &g, &b))
+        fgcolor = RGB(r,g,b);
       else
-      {
-        if (iupStrToRGB(color, &r, &g, &b))
-          fgcolor = RGB(r,g,b);
-        else
-          fgcolor = 0;  /* black */
-      }
+        fgcolor = 0;  /* black */
     }
 
     winFrameDrawText(hDC, title, x, y, fgcolor);
