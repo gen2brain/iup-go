@@ -21,6 +21,8 @@
 #include <QFrame>
 #include <QTextList>
 #include <QSignalBlocker>
+#include <QStyle>
+#include <QStyleOptionFrame>
 
 #include <cstdlib>
 #include <cstdio>
@@ -446,17 +448,23 @@ static void iupqtTextMeasureEntryBorders(void)
     QLineEdit* temp_entry = new QLineEdit();
     temp_entry->setFrame(true);
 
-    /* Use minimumSizeHint which IS content-dependent (uses fm.maxWidth())
-       Same pattern as Button: get widget size, subtract content, get borders */
-    QSize min_hint = temp_entry->minimumSizeHint();
-    QFontMetrics fm(temp_entry->font());
+    int probe = 1000;
+    temp_entry->resize(probe, temp_entry->sizeHint().height());
 
-    /* minimumSizeHint uses fm.maxWidth() for width and fm.height() for height */
-    int char_width = fm.maxWidth();
-    int char_height = fm.height();
+    QStyleOptionFrame opt;
+    opt.initFrom(temp_entry);
+    opt.rect = temp_entry->rect();
+    opt.lineWidth = temp_entry->style()->pixelMetric(QStyle::PM_DefaultFrameWidth, &opt, temp_entry);
+    opt.midLineWidth = 0;
+    opt.state |= QStyle::State_Sunken;
+    opt.features = QStyleOptionFrame::None;
 
-    iupqt_entry_border_x = min_hint.width() - char_width;
-    iupqt_entry_border_y = min_hint.height() - char_height;
+    QRect content = temp_entry->style()->subElementRect(QStyle::SE_LineEditContents, &opt, temp_entry);
+    content = content.marginsRemoved(temp_entry->textMargins());
+
+    /* QLineEdit draws text inset by horizontalMargin (2px) on each side of the contents rect */
+    iupqt_entry_border_x = probe - content.width() + 2 * 2;
+    iupqt_entry_border_y = temp_entry->sizeHint().height() - QFontMetrics(temp_entry->font()).height();
 
     if (iupqt_entry_border_x < 6) iupqt_entry_border_x = 6;
     if (iupqt_entry_border_y < 6) iupqt_entry_border_y = 6;
@@ -503,6 +511,16 @@ extern "C" IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int *x, int *y)
     iupqtTextMeasureEntryBorders();
     (*x) += iupqt_entry_border_x;
     (*y) += iupqt_entry_border_y;
+  }
+
+  /* core sizes VISIBLECOLUMNS by the widest glyph; bring it down to digit width */
+  int visiblecolumns = iupAttribGetInt(ih, "VISIBLECOLUMNS");
+  if (visiblecolumns > 0)
+  {
+    int adjust = (iupdrvFontGetStringWidth(ih, "WWWWWWWWWW") -
+                  iupdrvFontGetStringWidth(ih, "0000000000")) / 10;
+    if (adjust > 0)
+      (*x) -= visiblecolumns * adjust;
   }
 }
 
