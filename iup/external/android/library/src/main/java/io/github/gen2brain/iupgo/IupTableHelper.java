@@ -704,11 +704,47 @@ public final class IupTableHelper
         });
     }
 
+    /* Mirrors the C iupStrCompare so all drivers sort identically. */
     static int naturalCompare(String a, String b)
     {
-        try { return Double.compare(Double.parseDouble(a), Double.parseDouble(b)); }
-        catch (NumberFormatException ignored) {}
-        return a.compareToIgnoreCase(b);
+        int la = a.length(), lb = b.length();
+        int i = 0, j = 0;
+
+        while (i < la && j < lb)
+        {
+            char ca = a.charAt(i), cb = b.charAt(j);
+            boolean da = Character.isDigit(ca), db = Character.isDigit(cb);
+
+            if (da && db)
+            {
+                while (i < la && a.charAt(i) == '0') i++;
+                while (j < lb && b.charAt(j) == '0') j++;
+
+                int si = i, sj = j;
+                while (i < la && Character.isDigit(a.charAt(i))) i++;
+                while (j < lb && Character.isDigit(b.charAt(j))) j++;
+
+                int leni = i - si, lenj = j - sj;
+                if (leni != lenj) return leni - lenj;
+                for (int k = 0; k < leni; k++)
+                {
+                    char xa = a.charAt(si + k), xb = b.charAt(sj + k);
+                    if (xa != xb) return xa - xb;
+                }
+            }
+            else if (da) return -1;
+            else if (db) return 1;
+            else
+            {
+                char xa = Character.toLowerCase(ca), xb = Character.toLowerCase(cb);
+                if (xa != xb) return xa - xb;
+                i++; j++;
+            }
+        }
+
+        if (j < lb) return -1;
+        if (i < la) return 1;
+        return 0;
     }
 
     static int computeTargetCol(IupTableView t, int xInRow)

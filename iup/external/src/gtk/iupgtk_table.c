@@ -305,23 +305,6 @@ static IupGtkVirtualModel *iup_gtk_virtual_model_new(Ihandle *ih)
 /* Forward declarations */
 static void gtkTableColumnClicked(GtkTreeViewColumn* column, Ihandle* ih);
 
-static gint gtkTableCompareFn(GtkTreeModel* model, GtkTreeIter* a, GtkTreeIter* b, gpointer user_data)
-{
-  gint sort_column = GPOINTER_TO_INT(user_data);
-  gchar* val1 = NULL;
-  gchar* val2 = NULL;
-
-  gtk_tree_model_get(model, a, sort_column, &val1, -1);
-  gtk_tree_model_get(model, b, sort_column, &val2, -1);
-
-  gint result = g_strcmp0(val1, val2);
-
-  g_free(val1);
-  g_free(val2);
-
-  return result;
-}
-
 static int gtkTableModelColCount(Ihandle* ih)
 {
   if (ih->data->show_image)
@@ -339,6 +322,60 @@ static int gtkTableTextModelCol(Ihandle* ih, int iup_col)
 static int gtkTableImageModelCol(int iup_col)
 {
   return iup_col * 2;
+}
+
+/* Sort rows in place; GtkListStore auto-sort reorders on every cell set, so setting cells by row index breaks. col_index is 1-based. */
+static void gtkTableSortStore(Ihandle* ih, int col_index, int ascending)
+{
+  IgtkTableData* gtk_data = IGTK_TABLE_DATA(ih);
+  if (!gtk_data || !gtk_data->store)
+    return;
+
+  GtkTreeModel* model = GTK_TREE_MODEL(gtk_data->store);
+  int n = gtk_tree_model_iter_n_children(model, NULL);
+  if (n < 2)
+    return;
+
+  int text_col = gtkTableTextModelCol(ih, col_index - 1);
+
+  char** values = (char**)malloc(sizeof(char*) * n);
+  gint* order = (gint*)malloc(sizeof(gint) * n);
+
+  int i;
+  for (i = 0; i < n; i++)
+  {
+    GtkTreeIter iter;
+    gchar* val = NULL;
+    gtk_tree_model_iter_nth_child(model, &iter, NULL, i);
+    gtk_tree_model_get(model, &iter, text_col, &val, -1);
+    values[i] = val ? val : g_strdup("");
+    order[i] = i;
+  }
+
+  /* Stable insertion sort of the index array (row counts here are small). */
+  for (i = 1; i < n; i++)
+  {
+    gint cur = order[i];
+    int j = i - 1;
+    while (j >= 0)
+    {
+      int cmp = iupStrCompare(values[order[j]], values[cur], 0, 1);
+      if (!ascending)
+        cmp = -cmp;
+      if (cmp <= 0)
+        break;
+      order[j + 1] = order[j];
+      j--;
+    }
+    order[j + 1] = cur;
+  }
+
+  gtk_list_store_reorder(gtk_data->store, order);
+
+  for (i = 0; i < n; i++)
+    g_free(values[i]);
+  free(values);
+  free(order);
 }
 
 static void gtkTableEnsureStore(Ihandle* ih)
@@ -374,12 +411,6 @@ static void gtkTableEnsureStore(Ihandle* ih)
 
   gtk_data->store = gtk_list_store_newv(model_cols, gtk_data->column_types);
   gtk_tree_view_set_model(GTK_TREE_VIEW(gtk_data->tree_view), GTK_TREE_MODEL(gtk_data->store));
-
-  for (i = 0; i < ih->data->num_col; i++)
-  {
-    int sort_col = gtkTableTextModelCol(ih, i);
-    gtk_tree_sortable_set_sort_func(GTK_TREE_SORTABLE(gtk_data->store), sort_col, gtkTableCompareFn, GINT_TO_POINTER(sort_col), NULL);
-  }
 }
 
 static gboolean gtkTableHeaderButtonPress(GtkWidget* button, GdkEventButton* evt, GtkTreeViewColumn* column)
@@ -440,8 +471,8 @@ static void gtkTableUpdateColumns(Ihandle* ih)
       }
       else
       {
-        /* Normal mode - enable GTK's automatic sorting */
-        gtk_tree_view_column_set_sort_column_id(column, text_model_col);
+        /* Normal mode - sort manually on click (no GtkTreeSortable auto-sort) */
+        gtk_tree_view_column_set_sort_column_id(column, -1);
         gtk_tree_view_column_set_clickable(column, TRUE);
         g_signal_connect(G_OBJECT(column), "clicked", G_CALLBACK(gtkTableColumnClicked), ih);
       }
@@ -734,52 +765,43 @@ static void gtkTableColumnClicked(GtkTreeViewColumn* column, Ihandle* ih)
     return;
   }
 
-  if (gtk_data->is_virtual)
+  /* Toggle direction for the same column, ascending for a new column */
+  if (gtk_data->sort_column == col_index)
+    gtk_data->sort_ascending = !gtk_data->sort_ascending;
+  else
   {
-    /* Virtual mode - manually track sort state and call SORT_CB */
-    /* Toggle sort direction for same column, ascending for new column */
-    if (gtk_data->sort_column == col_index)
-    {
-      /* Same column, toggle direction */
-      gtk_data->sort_ascending = !gtk_data->sort_ascending;
-    }
-    else
-    {
-      /* New column, start with ascending */
-      gtk_data->sort_column = col_index;
-      gtk_data->sort_ascending = 1;
-    }
+    gtk_data->sort_column = col_index;
+    gtk_data->sort_ascending = 1;
+  }
 
-    /* Update sort indicators for all columns */
+  /* Update sort indicators for all columns */
+  {
     GList* l;
     int i = 1;
     for (l = columns; l != NULL; l = l->next, i++)
     {
       GtkTreeViewColumn* col = GTK_TREE_VIEW_COLUMN(l->data);
-
       if (i == col_index)
       {
-        /* This is the sorted column, show indicator */
         gtk_tree_view_column_set_sort_indicator(col, TRUE);
         gtk_tree_view_column_set_sort_order(col,
           gtk_data->sort_ascending ? GTK_SORT_ASCENDING : GTK_SORT_DESCENDING);
       }
       else
-      {
-        /* Other columns, hide indicator */
         gtk_tree_view_column_set_sort_indicator(col, FALSE);
-      }
     }
   }
 
   g_list_free(columns);
 
+  /* Normal mode sorts the backing store directly; virtual mode defers to SORT_CB. */
+  if (!gtk_data->is_virtual)
+    gtkTableSortStore(ih, col_index, gtk_data->sort_ascending);
+
   /* Call SORT_CB if it exists */
   IFni sort_cb = (IFni)IupGetCallback(ih, "SORT_CB");
   if (sort_cb)
-  {
     sort_cb(ih, col_index);
-  }
 }
 
 
@@ -1790,8 +1812,8 @@ static int gtkTableMapMethod(Ihandle* ih)
         }
         else
         {
-          /* Normal mode - enable GTK's automatic sorting and connect clicked signal for SORT_CB notification */
-          gtk_tree_view_column_set_sort_column_id(column, text_model_col);
+          /* Normal mode - sort manually on click (no GtkTreeSortable auto-sort) */
+          gtk_tree_view_column_set_sort_column_id(column, -1);
           gtk_tree_view_column_set_clickable(column, TRUE);
           g_signal_connect(G_OBJECT(column), "clicked", G_CALLBACK(gtkTableColumnClicked), ih);
         }
@@ -2649,7 +2671,8 @@ static int gtkTableSetSortableAttrib(Ihandle* ih, const char* value)
 
         if (ih->data->sortable)
         {
-          gtk_tree_view_column_set_sort_column_id(column, gtkTableTextModelCol(ih, col_index));
+          /* Manual sort on click (no GtkTreeSortable auto-sort); handler connected at map */
+          gtk_tree_view_column_set_sort_column_id(column, -1);
           gtk_tree_view_column_set_clickable(column, TRUE);
         }
         else

@@ -39,6 +39,19 @@ static void qtTableConfigureItem(Ihandle* ih, QTableWidgetItem* item, int lin, i
 static void qtTableApplyCellColors(Ihandle* ih, QTableWidgetItem* item, int lin, int col);
 
 /****************************************************************************
+ * Table cell item with natural, numeric-aware sorting
+ ****************************************************************************/
+
+class IupQtTableItem : public QTableWidgetItem
+{
+public:
+  bool operator<(const QTableWidgetItem& other) const override
+  {
+    return iupStrCompare(text().toUtf8().constData(), other.text().toUtf8().constData(), 0, 1) < 0;
+  }
+};
+
+/****************************************************************************
  * Custom QLineEdit with fixed size hints
  ****************************************************************************/
 
@@ -328,7 +341,7 @@ public:
         QTableWidgetItem* existingItem = item(row, col);
         if (!existingItem)
         {
-          existingItem = new QTableWidgetItem();
+          existingItem = new IupQtTableItem();
           setItem(row, col, existingItem);
         }
 
@@ -649,7 +662,7 @@ static void qtTableEnsureItem(QTableWidget* table, int row, int col)
   /* Qt uses 0-based indices */
   if (!table->item(row, col))
   {
-    QTableWidgetItem* item = new QTableWidgetItem();
+    QTableWidgetItem* item = new IupQtTableItem();
     table->setItem(row, col, item);
   }
 }

@@ -811,7 +811,7 @@ static void fltkTableSortRows(Ihandle* ih, int col, int ascending)
       if (j < (int)table->cells.size() && c < (int)table->cells[j].size())
         b = table->cells[j][c].c_str();
 
-      int cmp = strcmp(a, b);
+      int cmp = iupStrCompare(a, b, 0, 1);
       if (ascending ? (cmp > 0) : (cmp < 0))
         std::swap(table->cells[i], table->cells[j]);
     }

@@ -1299,7 +1299,7 @@ static int table_sort_func(gconstpointer a, gconstpointer b, gpointer user_data)
   if (!row_a || !row_b || col >= row_a->num_cols || col >= row_b->num_cols)
     return GTK_ORDERING_EQUAL;
 
-  int result = g_strcmp0(row_a->values[col], row_b->values[col]);
+  int result = iupStrCompare(row_a->values[col], row_b->values[col], 0, 1);
   if (result < 0)
     return GTK_ORDERING_SMALLER;
   else if (result > 0)

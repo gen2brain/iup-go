@@ -634,7 +634,7 @@ static void eflTableSortRows(Ihandle* ih, int col, int ascending)
     {
       char* val1 = eflTableGetCellText(ih, j + 1, col);
       char* val2 = eflTableGetCellText(ih, j + 2, col);
-      int cmp = strcmp(val1 ? val1 : "", val2 ? val2 : "");
+      int cmp = iupStrCompare(val1, val2, 0, 1);
       int should_swap = ascending ? (cmp > 0) : (cmp < 0);
 
       if (should_swap)

@@ -1117,8 +1117,7 @@ public:
     IupHaikuTableField* fa = dynamic_cast<IupHaikuTableField*>(a);
     IupHaikuTableField* fb = dynamic_cast<IupHaikuTableField*>(b);
     if (!fa || !fb) return 0;
-    return strcmp(fa->String() ? fa->String() : "",
-                  fb->String() ? fb->String() : "");
+    return iupStrCompare(fa->String(), fb->String(), 0, 1);
   }
 
   /* Per-cell natural width; CLV maxes across rows, factors in the title, clamps to MinWidth. */
