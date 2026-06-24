@@ -182,7 +182,7 @@ static void motTableSortRows(Ihandle* ih, int col, int ascending)
       if (!val2) val2 = "";
 
       /* Compare strings */
-      int cmp = strcmp(val1, val2);
+      int cmp = iupStrCompare(val1, val2, 0, 1);
 
       /* Determine if swap is needed based on sort direction */
       if (ascending)

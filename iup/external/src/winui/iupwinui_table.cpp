@@ -758,7 +758,7 @@ static void winuiTableSortRows(Ihandle* ih, int col, int ascending)
       if (!val1) val1 = "";
       if (!val2) val2 = "";
 
-      int cmp = strcmp(val1, val2);
+      int cmp = iupStrCompare(val1, val2, 0, 1);
       int should_swap = ascending ? (cmp > 0) : (cmp < 0);
 
       if (should_swap)

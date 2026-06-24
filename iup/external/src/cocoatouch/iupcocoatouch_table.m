@@ -609,12 +609,8 @@ static UICollectionViewLayout* cocoaTouchTableMakeLayout(IupCocoaTouchTableContr
 		NSMutableArray* rb = [_cells objectAtIndex:[b unsignedIntegerValue]];
 		NSString* va = (NSUInteger)col0 < [ra count] ? [ra objectAtIndex:(NSUInteger)col0] : @"";
 		NSString* vb = (NSUInteger)col0 < [rb count] ? [rb objectAtIndex:(NSUInteger)col0] : @"";
-		double na, nb;
-		BOOL na_num = [[NSScanner scannerWithString:va] scanDouble:&na] && [[NSScanner scannerWithString:va] isAtEnd];
-		BOOL nb_num = [[NSScanner scannerWithString:vb] scanDouble:&nb] && [[NSScanner scannerWithString:vb] isAtEnd];
-		NSComparisonResult r;
-		if (na_num && nb_num) r = (na < nb) ? NSOrderedAscending : (na > nb ? NSOrderedDescending : NSOrderedSame);
-		else r = [va compare:vb options:NSCaseInsensitiveSearch];
+		int cmp = iupStrCompare([va UTF8String], [vb UTF8String], 0, 1);
+		NSComparisonResult r = cmp < 0 ? NSOrderedAscending : (cmp > 0 ? NSOrderedDescending : NSOrderedSame);
 		return asc ? r : -r;
 	}];
 

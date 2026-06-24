@@ -1156,10 +1156,11 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
         NSString* val1 = (col_index < [row1 count]) ? [row1 objectAtIndex:col_index] : @"";
         NSString* val2 = (col_index < [row2 count]) ? [row2 objectAtIndex:col_index] : @"";
 
-        if ([descriptor ascending])
-          return [val1 compare:val2];
-        else
-          return [val2 compare:val1];
+        int cmp = iupStrCompare([val1 UTF8String], [val2 UTF8String], 0, 1);
+        if (![descriptor ascending])
+          cmp = -cmp;
+
+        return cmp < 0 ? NSOrderedAscending : (cmp > 0 ? NSOrderedDescending : NSOrderedSame);
       }];
 
     [tableView reloadData];
