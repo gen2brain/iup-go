@@ -4,6 +4,7 @@ package iup
 
 import (
 	"runtime/cgo"
+	"slices"
 	"strconv"
 	"strings"
 	"unsafe"
@@ -44,10 +45,11 @@ func storeCallback(ih Ihandle, key string, f any) {
 		old.Delete()
 	} else {
 		list := ih.GetAttribute(iupgoRegistryAttr)
-		if list == "" {
+		switch {
+		case list == "":
 			ih.SetAttribute(iupgoRegistryAttr, key)
 			C.goIupSetLDestroyFunc(ih.ptr())
-		} else {
+		case !slices.Contains(strings.Split(list, ","), key):
 			ih.SetAttribute(iupgoRegistryAttr, list+","+key)
 		}
 	}
@@ -89,8 +91,10 @@ func goIupLDestroyCB(ih unsafe.Pointer) C.int {
 	for _, key := range strings.Split(list, ",") {
 		if ch := strToHandle(h.GetAttribute(key)); ch != 0 {
 			ch.Delete()
+			h.SetAttribute(key, "")
 		}
 	}
+	h.SetAttribute(iupgoRegistryAttr, "")
 	return 0
 }
 
