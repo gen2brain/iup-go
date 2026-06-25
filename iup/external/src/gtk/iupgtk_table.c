@@ -2347,22 +2347,10 @@ IUP_SDK_API void iupdrvTableSetColWidth(Ihandle* ih, int col, int width)
   GtkTreeViewColumn* column = gtk_tree_view_get_column(GTK_TREE_VIEW(gtk_data->tree_view), col - 1);
   if (column)
   {
-    /* Set the explicit width first */
+    /* Explicit width is FIXED so it is honored; USERRESIZE only toggles resizing. */
+    gtk_tree_view_column_set_sizing(column, GTK_TREE_VIEW_COLUMN_FIXED);
     gtk_tree_view_column_set_fixed_width(column, width);
-
-    /* Determine sizing mode based on USERRESIZE setting */
-    if (ih->data->user_resize)
-    {
-      /* AUTOSIZE with resizable to allow user manual resizing */
-      gtk_tree_view_column_set_sizing(column, GTK_TREE_VIEW_COLUMN_AUTOSIZE);
-      gtk_tree_view_column_set_resizable(column, TRUE);
-    }
-    else
-    {
-      /* FIXED width when explicit width is set */
-      gtk_tree_view_column_set_sizing(column, GTK_TREE_VIEW_COLUMN_FIXED);
-      gtk_tree_view_column_set_resizable(column, FALSE);
-    }
+    gtk_tree_view_column_set_resizable(column, ih->data->user_resize ? TRUE : FALSE);
   }
 }
 
