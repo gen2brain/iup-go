@@ -136,6 +136,18 @@ protected:
     QLineEdit::keyPressEvent(event);
   }
 
+  void focusInEvent(QFocusEvent* event) override
+  {
+    QLineEdit::focusInEvent(event);
+    iupqtFocusInOutEvent(this, event, ih);
+  }
+
+  void focusOutEvent(QFocusEvent* event) override
+  {
+    QLineEdit::focusOutEvent(event);
+    iupqtFocusInOutEvent(this, event, ih);
+  }
+
   void dragEnterEvent(QDragEnterEvent* event) override
   {
     if (IupGetCallback(ih, "DROPFILES_CB"))
@@ -235,6 +247,18 @@ protected:
     }
     QSpinBox::keyPressEvent(event);
   }
+
+  void focusInEvent(QFocusEvent* event) override
+  {
+    QSpinBox::focusInEvent(event);
+    iupqtFocusInOutEvent(this, event, ih);
+  }
+
+  void focusOutEvent(QFocusEvent* event) override
+  {
+    QSpinBox::focusOutEvent(event);
+    iupqtFocusInOutEvent(this, event, ih);
+  }
 };
 
 /* Custom QTextEdit with additional functionality */
@@ -311,6 +335,18 @@ protected:
     }
 
     QTextEdit::keyPressEvent(event);
+  }
+
+  void focusInEvent(QFocusEvent* event) override
+  {
+    QTextEdit::focusInEvent(event);
+    iupqtFocusInOutEvent(this, event, ih);
+  }
+
+  void focusOutEvent(QFocusEvent* event) override
+  {
+    QTextEdit::focusOutEvent(event);
+    iupqtFocusInOutEvent(this, event, ih);
   }
 
   void dragEnterEvent(QDragEnterEvent* event) override
