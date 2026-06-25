@@ -645,17 +645,10 @@ static void iTableComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *chi
     natural_w = 80 * charwidth;  /* Default for no columns */
   }
 
-  /* Calculate height from number of lines */
   if (visiblelines > 0)
     visible_lines = visiblelines;
   else
-  {
-    visible_lines = ih->data->num_lin;
-    if (visible_lines == 0)
-      visible_lines = 10;  /* Default to 10 visible lines */
-    else if (visible_lines > 15)
-      visible_lines = 15;  /* Cap at 15 lines for natural size to keep it reasonable */
-  }
+    visible_lines = 8;
 
   /* Get row heights from driver */
   int row_height = iupdrvTableGetRowHeight(ih);
