@@ -938,6 +938,10 @@ static int fltkTableColHasExplicitWidth(Ihandle* ih, int col)
   int width = 0;
   char* width_str = NULL;
 
+  /* WIDTH/RASTERWIDTH are dropped from the hash after map, so use the map-time flag. */
+  if (iupAttribGetId(ih, "_IUPFLTK_EXPLICITWIDTH", col))
+    return 1;
+
   snprintf(name, sizeof(name), "RASTERWIDTH%d", col);
   width_str = iupAttribGet(ih, name);
   if (!width_str)
@@ -1215,7 +1219,10 @@ static int fltkTableMapMethod(Ihandle* ih)
     }
 
     if (width_str && iupStrToInt(width_str, &width) && width > 0)
+    {
       table->col_width(c, width);
+      iupAttribSetId(ih, "_IUPFLTK_EXPLICITWIDTH", c + 1, "1");
+    }
     else
       table->col_width(c, 100);
   }
@@ -1546,6 +1553,7 @@ extern "C" IUP_SDK_API void iupdrvTableSetColWidth(Ihandle* ih, int col, int wid
   if (c < 0 || c >= table->cols())
     return;
 
+  iupAttribSetId(ih, "_IUPFLTK_EXPLICITWIDTH", col, "1");
   table->col_width(c, width);
   table->redraw();
 }
