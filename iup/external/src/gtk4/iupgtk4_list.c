@@ -424,6 +424,18 @@ IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
 
   if (ih->data->is_dropdown)
   {
+    /* Measure the real widget; callers add sb_size after, so subtract it here. */
+    if (!ih->data->has_editbox && ih->handle && GTK_IS_DROP_DOWN(ih->handle))
+    {
+      int rnat_w = 0, rnat_h = 0, sb_size = iupdrvGetScrollbarSize();
+      gtk_widget_measure(ih->handle, GTK_ORIENTATION_HORIZONTAL, -1, NULL, &rnat_w, NULL, NULL);
+      gtk_widget_measure(ih->handle, GTK_ORIENTATION_VERTICAL, -1, NULL, &rnat_h, NULL, NULL);
+      *x = rnat_w - sb_size;
+      if (*x < 0) *x = 0;
+      *y = rnat_h;
+      return;
+    }
+
     if (dropdown_border_x == -1)
     {
       GtkWidget* temp_combo = gtk_drop_down_new(NULL, NULL);
@@ -432,19 +444,15 @@ IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
       gtk_widget_measure(temp_combo, GTK_ORIENTATION_HORIZONTAL, -1, &min_w, &nat_w, NULL, NULL);
       gtk_widget_measure(temp_combo, GTK_ORIENTATION_VERTICAL, -1, &min_h, &nat_h, NULL, NULL);
 
-      /* Store natural height for future reference */
       dropdown_natural_height = nat_h;
+      dropdown_border_x = nat_w - iupdrvGetScrollbarSize();
+      if (dropdown_border_x < 0) dropdown_border_x = 0;
 
-      /* Dropdown borders are the widget size minus content area */
-      dropdown_border_x = (nat_w > 50) ? 22 : 20;  /* Approximate dropdown arrow + spacing */
-
-      /* Calculate border needed to reach widget's natural height */
       int char_width, char_height;
       iupdrvFontGetCharSize(ih, &char_width, &char_height);
       int typical_item_height = char_height;
       iupdrvListAddItemSpace(ih, &typical_item_height);
 
-      /* dropdown_border_y should add enough to reach natural height */
       dropdown_border_y = dropdown_natural_height - typical_item_height - border_size;
 
       g_object_ref_sink(temp_combo);
@@ -495,7 +503,6 @@ IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
     {
       (*x) += dropdown_border_x;
       (*y) += dropdown_border_y;
-      (*x) += dropdown_border_y;
     }
   }
   else
@@ -2339,9 +2346,7 @@ static int gtk4ListMapMethod(Ihandle* ih)
         iupAttribSetInt(ih, "_IUP_DROPDOWN_NATURAL_W", natural_w);
       }
       else
-      {
         gtk_widget_set_size_request(ih->handle, natural_w, natural_h);
-      }
     }
 
     if (ih->data->has_editbox)
