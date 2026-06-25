@@ -699,6 +699,10 @@ static gboolean gtkTableButtonEvent(GtkWidget* widget, GdkEventButton* evt, Ihan
   if (evt->button != 1)
     return FALSE;
 
+  /* Only cell-area clicks; a grip press has window-relative coords that would match a phantom cell and block resize. */
+  if (evt->window != gtk_tree_view_get_bin_window(GTK_TREE_VIEW(widget)))
+    return FALSE;
+
   GtkTreePath* path;
   GtkTreeViewColumn* column;
 
