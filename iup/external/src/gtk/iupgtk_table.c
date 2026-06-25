@@ -1872,6 +1872,18 @@ static int gtkTableMapMethod(Ihandle* ih)
 
       gtk_tree_view_append_column(GTK_TREE_VIEW(gtk_data->tree_view), dummy_column);
 
+      /* Zero the blank filler header button's extents so a narrow allocation doesn't warn. */
+      {
+        GtkWidget* dummy_button = gtk_tree_view_column_get_button(dummy_column);
+        if (dummy_button)
+        {
+          GtkCssProvider* provider = gtk_css_provider_new();
+          gtk_css_provider_load_from_data(provider, "button { padding: 0; border: 0; margin: 0; min-width: 0; }", -1, NULL);
+          gtk_style_context_add_provider(gtk_widget_get_style_context(dummy_button), GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+          g_object_unref(provider);
+        }
+      }
+
       /* Store dummy column pointer so we can check for it in event handlers */
       iupAttribSet(ih, "_IUPGTK_DUMMY_COLUMN", (char*)dummy_column);
     }
