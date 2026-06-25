@@ -1715,9 +1715,43 @@ static void motTableUnMapMethod(Ihandle* ih)
 
 IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
 {
-  /* Not implemented - would require reallocation */
-  (void)ih;
-  (void)num_lin;
+  ImotTableData* mot_data = IMOT_TABLE_DATA(ih);
+  int old_num_lin, i, col;
+
+  if (!mot_data || num_lin < 0)
+    return;
+
+  old_num_lin = ih->data->num_lin;
+  if (num_lin == old_num_lin)
+    return;
+
+  /* Free rows being removed when shrinking */
+  for (i = num_lin; i < old_num_lin; i++)
+  {
+    for (col = 0; col < ih->data->num_col; col++)
+    {
+      if (mot_data->cell_values[i][col])
+        free(mot_data->cell_values[i][col]);
+    }
+    free(mot_data->cell_values[i]);
+  }
+
+  if (num_lin == 0)
+  {
+    free(mot_data->cell_values);
+    mot_data->cell_values = NULL;
+  }
+  else
+  {
+    mot_data->cell_values = (char***)realloc(mot_data->cell_values, num_lin * sizeof(char**));
+    for (i = old_num_lin; i < num_lin; i++)
+      mot_data->cell_values[i] = (char**)calloc(ih->data->num_col, sizeof(char*));
+  }
+
+  ih->data->num_lin = num_lin;
+
+  motTableUpdateScrollbars(ih);
+  motTableRedraw(ih);
 }
 
 IUP_SDK_API void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
