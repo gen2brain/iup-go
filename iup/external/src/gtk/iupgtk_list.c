@@ -497,6 +497,18 @@ IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
 
   if (ih->data->is_dropdown)
   {
+    /* Measure the real combo; core adds sb_size after, so subtract it here. */
+    if (!ih->data->has_editbox && ih->handle && GTK_IS_COMBO_BOX(ih->handle))
+    {
+      GtkRequisition rmin, rnat;
+      int sb_size = iupdrvGetScrollbarSize();
+      gtk_widget_get_preferred_size(ih->handle, &rmin, &rnat);
+      *x = rnat.width - sb_size;
+      if (*x < 0) *x = 0;
+      *y = rnat.height;
+      return;
+    }
+
     if (dropdown_border_x == -1)
     {
       GtkWidget *temp_window = gtk_offscreen_window_new();
