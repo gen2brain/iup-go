@@ -14,6 +14,7 @@
 #include <QPainter>
 #include <QStyledItemDelegate>
 #include <QStyleOptionFocusRect>
+#include <QStyleOptionViewItem>
 #include <QFontMetrics>
 #include <QLineEdit>
 
@@ -462,6 +463,65 @@ protected:
     QTableWidget::resizeEvent(event);
     /* Populate virtual cells after resizing */
     updateVirtualCells();
+  }
+
+  QColor rowFillerColor(int row)  /* 0-based */
+  {
+    if (selectionModel() && selectionModel()->isRowSelected(row, QModelIndex()))
+      return palette().color(QPalette::Highlight);
+
+    int lin = row + 1;
+    char* bgcolor = iupAttribGetId2(ih, "BGCOLOR", lin, 0);
+    if (!bgcolor && iupStrBoolean(iupAttribGet(ih, "ALTERNATECOLOR")))
+      bgcolor = (lin % 2 == 0) ? iupAttribGet(ih, "EVENROWCOLOR") : iupAttribGet(ih, "ODDROWCOLOR");
+    if (!bgcolor)
+      bgcolor = iupAttribGet(ih, "BGCOLOR");
+
+    unsigned char r, g, b;
+    if (bgcolor && *bgcolor && iupStrToRGB(bgcolor, &r, &g, &b))
+      return QColor(r, g, b);
+    return palette().color(QPalette::Base);
+  }
+
+  void paintEvent(QPaintEvent* event) override
+  {
+    QTableWidget::paintEvent(event);
+
+    int cols = columnCount(), rows = rowCount();
+    if (cols == 0 || rows == 0)
+      return;
+
+    int rightEdge = columnViewportPosition(cols - 1) + columnWidth(cols - 1);
+    int vw = viewport()->width(), vh = viewport()->height();
+    if (rightEdge >= vw)
+      return;
+
+    QStyleOptionViewItem opt;
+    opt.initFrom(this);
+    int gridHint = style()->styleHint(QStyle::SH_Table_GridLineColor, &opt, this);
+    QPen gridPen(QColor::fromRgba(static_cast<QRgb>(gridHint)), 1, gridStyle());
+
+    QPainter painter(viewport());
+    for (int r = 0; r < rows; r++)
+    {
+      int ry = rowViewportPosition(r), rh = rowHeight(r);
+      if (ry + rh <= 0 || ry >= vh)
+        continue;
+
+      painter.fillRect(rightEdge, ry, vw - rightEdge, rh, rowFillerColor(r));
+      if (showGrid())
+      {
+        painter.setPen(gridPen);
+        painter.drawLine(rightEdge, ry + rh - 1, vw, ry + rh - 1);
+      }
+    }
+  }
+
+  /* Qt invalidates only the cell rects on selection change; repaint the filler too. */
+  void selectionChanged(const QItemSelection& selected, const QItemSelection& deselected) override
+  {
+    QTableWidget::selectionChanged(selected, deselected);
+    viewport()->update();
   }
 
   void keyPressEvent(QKeyEvent* event) override
