@@ -304,7 +304,7 @@ Returns Yes or No if the Windows common controls are using Visual Styles or not.
 
 ### DARKMODE (read-only)
 
-Returns "1" if the system is currently in dark mode, "0" otherwise. Independent of AUTODARKMODE.
+Returns "YES" if the system is currently in dark mode, "NO" otherwise. Independent of AUTODARKMODE.
 
 ### AUTODARKMODE [Windows Only]
 

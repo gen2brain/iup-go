@@ -145,7 +145,7 @@ Uses L:C notation. The value is an image name set with [IupSetHandle](../func/iu
 When not set, all columns are used (capped at the actual column count).
 
 **VISIBLELINES**: Number of data rows to consider for the natural size calculation.
-When not set, uses the actual row count (default 10 if no rows, capped at 15).
+When not set, a default of 8 rows is used.
 
 >
 >
