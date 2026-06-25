@@ -842,11 +842,31 @@ IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_ina
   /* must use this info, since image can be a driver image loaded from resources */
   iupdrvImageGetInfo((void*)pixmap, &img_w, &img_h, &bpp);
 
-  /* Image scaling not supported in X11 driver */
   if (w == -1 || w == 0) w = img_w;
   if (h == -1 || h == 0) h = img_h;
-  (void)w;
-  (void)h;
+
+  if (w != img_w || h != img_h)
+  {
+    XImage* src = XGetImage(iupmot_display, pixmap, 0, 0, img_w, img_h, AllPlanes, ZPixmap);
+    if (src)
+    {
+      XImage* dst = XCreateImage(iupmot_display, iupmot_visual, src->depth, ZPixmap, 0, NULL, w, h, src->bitmap_pad, 0);
+      if (dst && (dst->data = (char*)malloc((size_t)dst->bytes_per_line * h)) != NULL)
+      {
+        int dx, dy;
+        for (dy = 0; dy < h; dy++)
+        {
+          int sy = dy * img_h / h;
+          for (dx = 0; dx < w; dx++)
+            XPutPixel(dst, dx, dy, XGetPixel(src, dx * img_w / w, sy));
+        }
+        XPutImage(iupmot_display, dc->pixmap, dc->pixmap_gc, dst, 0, 0, x, y, w, h);
+      }
+      if (dst) XDestroyImage(dst);
+      XDestroyImage(src);
+      return;
+    }
+  }
 
   XCopyArea(iupmot_display, pixmap, dc->pixmap, dc->pixmap_gc, 0, 0, img_w, img_h, x, y);
 }
