@@ -364,12 +364,17 @@ protected:
         if (has_dummy_col && C >= iup_handle->data->num_col)
         {
           unsigned char r, g, b;
-          char* bgcolor = iupAttribGet(iup_handle, "BGCOLOR");
-          if (bgcolor && iupStrToRGB(bgcolor, &r, &g, &b))
-            fl_color(r, g, b);
+          fltkTableGetCellBgColor(iup_handle, R + 1, C + 1, &r, &g, &b);
+          if (row_selected(R))
+            fl_color(FL_SELECTION_COLOR);
           else
-            fl_color(FL_BACKGROUND_COLOR);
+            fl_color(r, g, b);
           fl_rectf(X, Y, W, H);
+          if (show_grid)
+          {
+            fl_color(FL_DARK2);
+            fl_rect(X, Y, W, H);
+          }
           fl_pop_clip();
           break;
         }
