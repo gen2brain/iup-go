@@ -629,29 +629,6 @@ extern "C" IUP_SDK_API void iupdrvSetActive(Ihandle* ih, int enable)
 }
 
 /****************************************************************************
- * Text and Mnemonic Handling
- ****************************************************************************/
-
-IUP_DRV_API void iupfltkSetMnemonicTitle(Ihandle* ih, Fl_Widget* widget, const char* value)
-{
-  (void)ih;
-
-  if (!value)
-    value = "";
-
-  char c;
-  char* str = iupStrProcessMnemonic(value, &c, -1);
-
-  if (str != value)
-  {
-    widget->copy_label(str);
-    free(str);
-  }
-  else
-    widget->copy_label(value);
-}
-
-/****************************************************************************
  * Z-Order
  ****************************************************************************/
 
