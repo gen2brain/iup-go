@@ -1873,6 +1873,7 @@ static int gtkTableMapMethod(Ihandle* ih)
       gtk_tree_view_append_column(GTK_TREE_VIEW(gtk_data->tree_view), dummy_column);
 
       /* Zero the blank filler header button's extents so a narrow allocation doesn't warn. */
+#if GTK_CHECK_VERSION(3, 0, 0)
       {
         GtkWidget* dummy_button = gtk_tree_view_column_get_button(dummy_column);
         if (dummy_button)
@@ -1883,6 +1884,7 @@ static int gtkTableMapMethod(Ihandle* ih)
           g_object_unref(provider);
         }
       }
+#endif
 
       /* Store dummy column pointer so we can check for it in event handlers */
       iupAttribSet(ih, "_IUPGTK_DUMMY_COLUMN", (char*)dummy_column);
