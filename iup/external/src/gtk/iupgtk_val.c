@@ -81,13 +81,13 @@ IUP_SDK_API void iupdrvValGetMinSize(Ihandle* ih, int *w, int *h)
   /* GTK2 fallback */
   if (ih->data->orientation == IVAL_HORIZONTAL)
   {
-    *w = 20;
+    *w = 100;
     *h = 35;
   }
   else
   {
     *w = 35;
-    *h = 20;
+    *h = 100;
   }
 #endif
 }
