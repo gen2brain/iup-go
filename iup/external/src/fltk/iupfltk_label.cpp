@@ -132,6 +132,23 @@ extern "C" IUP_SDK_API void iupdrvLabelAddExtraPadding(Ihandle* ih, int *x, int 
     *x += 6;
 }
 
+/* Labels strip the '&' mnemonic: FLTK labels aren't focusable, so it has no effect. */
+static void fltkLabelSetTitle(Fl_Widget* widget, const char* value)
+{
+  if (!value)
+    value = "";
+
+  char c;
+  char* str = iupStrProcessMnemonic(value, &c, -1);
+  if (str != value)
+  {
+    widget->copy_label(str);
+    free(str);
+  }
+  else
+    widget->copy_label(value);
+}
+
 static int fltkLabelSetTitleAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->type == IUP_LABEL_TEXT)
@@ -139,7 +156,7 @@ static int fltkLabelSetTitleAttrib(Ihandle* ih, const char* value)
     IupFltkLabel* label = (IupFltkLabel*)ih->handle;
     if (label)
     {
-      iupfltkSetMnemonicTitle(ih, label, value);
+      fltkLabelSetTitle(label, value);
       return 1;
     }
   }
@@ -399,7 +416,7 @@ static int fltkLabelMapMethod(Ihandle* ih)
 
     char* title = iupAttribGet(ih, "TITLE");
     if (title)
-      iupfltkSetMnemonicTitle(ih, label, title);
+      fltkLabelSetTitle(label, title);
   }
   else
   {

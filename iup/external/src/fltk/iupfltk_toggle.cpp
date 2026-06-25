@@ -347,7 +347,7 @@ static int fltkToggleSetTitleAttrib(Ihandle* ih, const char* value)
     Fl_Button* button = (Fl_Button*)ih->handle;
     if (button)
     {
-      iupfltkSetMnemonicTitle(ih, button, value);
+      button->copy_label(value ? value : "");
       return 1;
     }
   }
@@ -598,7 +598,7 @@ static int fltkToggleMapMethod(Ihandle* ih)
   {
     char* title = iupAttribGet(ih, "TITLE");
     if (title)
-      iupfltkSetMnemonicTitle(ih, button, title);
+      button->copy_label(title);
   }
 
   iupfltkAddToParent(ih);

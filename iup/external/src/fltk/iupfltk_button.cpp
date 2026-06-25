@@ -232,7 +232,7 @@ static int fltkButtonSetTitleAttrib(Ihandle* ih, const char* value)
     IupFltkButton* button = (IupFltkButton*)ih->handle;
     if (button)
     {
-      iupfltkSetMnemonicTitle(ih, button, value);
+      button->copy_label(value ? value : "");
       return 1;
     }
   }
@@ -447,7 +447,7 @@ static int fltkButtonMapMethod(Ihandle* ih)
 
   char* title = iupAttribGet(ih, "TITLE");
   if (title)
-    iupfltkSetMnemonicTitle(ih, button, title);
+    button->copy_label(title);
 
   if (ih->data->type & IUP_BUTTON_IMAGE)
   {
