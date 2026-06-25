@@ -500,9 +500,13 @@ IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
     /* Measure the real combo; core adds sb_size after, so subtract it here. */
     if (!ih->data->has_editbox && ih->handle && GTK_IS_COMBO_BOX(ih->handle))
     {
-      GtkRequisition rmin, rnat;
+      GtkRequisition rnat;
       int sb_size = iupdrvGetScrollbarSize();
-      gtk_widget_get_preferred_size(ih->handle, &rmin, &rnat);
+#if GTK_CHECK_VERSION(3, 0, 0)
+      gtk_widget_get_preferred_size(ih->handle, NULL, &rnat);
+#else
+      gtk_widget_size_request(ih->handle, &rnat);
+#endif
       *x = rnat.width - sb_size;
       if (*x < 0) *x = 0;
       *y = rnat.height;

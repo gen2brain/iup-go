@@ -256,6 +256,7 @@ IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int *border, int *captio
       return;
     }
   }
+#endif
 
   /* Non-CSD visible path (SSD windows only) */
   if (!has_csd && ih->handle && iupdrvIsVisible(ih))
@@ -298,7 +299,6 @@ IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int *border, int *captio
 
   if (iupAttribGetBoolean(ih, "HIDETITLEBAR"))
     *caption = 0;
-#endif
 }
 
 IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
