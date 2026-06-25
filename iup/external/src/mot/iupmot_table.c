@@ -666,6 +666,51 @@ static void motTableDrawTable(Ihandle* ih)
         motTableDrawCell(ih, lin, col, 0);
       }
     }
+
+    /* Fill the area right of the last column with header/row backgrounds and grid */
+    {
+      int content_right = -mot_data->scroll_x;
+      for (col = 0; col < ih->data->num_col; col++)
+        content_right += mot_data->col_widths[col];
+
+      if (content_right < width)
+      {
+        int fw = width - content_right;
+
+        XSetForeground(display, mot_data->gc, mot_data->header_bg_pixel);
+        XFillRectangle(display, window, mot_data->gc, content_right, 0, fw, mot_data->header_height);
+        if (mot_data->show_grid)
+        {
+          XSetForeground(display, mot_data->gc, mot_data->grid_pixel);
+          XDrawLine(display, window, mot_data->gc, content_right, mot_data->header_height - 1, width, mot_data->header_height - 1);
+        }
+
+        for (lin = first_visible_row; lin <= last_visible_row; lin++)
+        {
+          int ry = mot_data->header_height + (lin - 1) * mot_data->row_height - mot_data->scroll_y;
+          Pixel bg = mot_data->bg_pixel;
+
+          if (lin == mot_data->current_row)
+            bg = mot_data->select_bg_pixel;
+          else
+          {
+            char* bgcolor = iupAttribGetId2(ih, "BGCOLOR", lin, 0);
+            if (!bgcolor && iupStrEqualNoCase(iupAttribGet(ih, "ALTERNATECOLOR"), "YES"))
+              bgcolor = (lin % 2 == 0) ? iupAttribGetStr(ih, "EVENROWCOLOR") : iupAttribGetStr(ih, "ODDROWCOLOR");
+            if (bgcolor && *bgcolor)
+              bg = iupmotColorGetPixelStr(bgcolor);
+          }
+
+          XSetForeground(display, mot_data->gc, bg);
+          XFillRectangle(display, window, mot_data->gc, content_right, ry, fw, mot_data->row_height);
+          if (mot_data->show_grid)
+          {
+            XSetForeground(display, mot_data->gc, mot_data->grid_pixel);
+            XDrawLine(display, window, mot_data->gc, content_right, ry + mot_data->row_height - 1, width, ry + mot_data->row_height - 1);
+          }
+        }
+      }
+    }
   }
 }
 
