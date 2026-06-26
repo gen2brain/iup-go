@@ -40,6 +40,7 @@ static char* iupCocoaFileDlgGetNextStr(char* str)
 
 @interface IupPreviewCanvasView : NSView
 @property(nonatomic, assign) Ihandle* ihandle;
+@property(nonatomic, copy) NSString* previewPath;
 @end
 
 
@@ -73,26 +74,42 @@ static void cocoaPreviewSetButtonStatus(int button, char* status)
   return YES;
 }
 
+- (void)dealloc
+{
+  [_previewPath release];
+  [super dealloc];
+}
+
 - (void)drawRect:(NSRect)dirtyRect
 {
   Ihandle* ih = [self ihandle];
   if (!ih) return;
 
   IFnss cb = (IFnss)IupGetCallback(ih, "FILE_CB");
-  if (cb)
-  {
-    NSSavePanel* file_panel = (NSSavePanel*)[(NSView*)[self superview] window];
-    NSString* path_str = [[file_panel URL] path];
-    BOOL is_dir;
+  if (!cb) return;
 
-    if (path_str && [[NSFileManager defaultManager] fileExistsAtPath:path_str isDirectory:&is_dir] && !is_dir)
-    {
-      cb(ih, (char*)[path_str UTF8String], "PAINT");
-    }
-    else
-    {
-      cb(ih, NULL, "PAINT");
-    }
+  NSString* path_str = [self previewPath];
+  BOOL is_dir;
+
+  /* Mirror IupCanvas drawRect: run PAINT, then blit the buffer it filled. */
+  iupAttribSet(ih, "CGCONTEXT", (char*)[[NSGraphicsContext currentContext] CGContext]);
+
+  if (path_str && [[NSFileManager defaultManager] fileExistsAtPath:path_str isDirectory:&is_dir] && !is_dir)
+    cb(ih, (char*)[path_str UTF8String], "PAINT");
+  else
+    cb(ih, NULL, "PAINT");
+
+  iupAttribSet(ih, "CGCONTEXT", NULL);
+
+  NSBitmapImageRep* buffer = (NSBitmapImageRep*)iupAttribGet(ih, "_IUPCOCOA_CANVAS_BUFFER");
+  if (buffer)
+  {
+    [buffer drawInRect:[self bounds]
+              fromRect:NSMakeRect(0, 0, [self bounds].size.width, [self bounds].size.height)
+             operation:NSCompositingOperationCopy
+              fraction:1.0
+        respectFlipped:YES
+                 hints:nil];
   }
 }
 
@@ -274,6 +291,13 @@ static void cocoaPreviewSetButtonStatus(int button, char* status)
     IupPreviewCanvasView* preview_view = (IupPreviewCanvasView*)[file_panel accessoryView];
     if (preview_view)
     {
+      NSURL* url = [file_panel URL];
+      BOOL is_dir;
+      if (url && [[NSFileManager defaultManager] fileExistsAtPath:[url path] isDirectory:&is_dir] && !is_dir)
+        [preview_view setPreviewPath:[url path]];
+      else
+        [preview_view setPreviewPath:nil];
+
       [preview_view setNeedsDisplay:YES];
     }
   }
