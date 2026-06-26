@@ -1990,6 +1990,11 @@ static int cocoaTableSetNumColAttrib(Ihandle* ih, const char* value)
         width_str = iupAttribGet(ih, width_name);
       }
 
+      /* WIDTH%d is purged from the hash post-map; record an explicit-width marker for later passes. */
+      char expwidth_name[50];
+      snprintf(expwidth_name, sizeof(expwidth_name), "_IUP_TABLE_EXPWIDTH%d", i + 1);
+      iupAttribSetStr(ih, expwidth_name, width_str ? "1" : NULL);
+
       /* Last column: stretch ONLY if no explicit width was set AND STRETCHLAST=YES */
       if (i == num_col - 1)
       {
@@ -2029,6 +2034,10 @@ static int cocoaTableSetNumColAttrib(Ihandle* ih, const char* value)
           [column setResizingMask:NSTableColumnUserResizingMask];  /* Fixed but user can resize */
         else
           [column setResizingMask:NSTableColumnNoResizing];  /* Fixed and locked */
+
+        int width_val = 0;
+        if (iupStrToInt(width_str, &width_val) && width_val > 0)
+          [column setWidth:width_val];
       }
       else
       {
@@ -2307,21 +2316,15 @@ IUP_SDK_API void iupdrvTableSetColTitle(Ihandle* ih, int col, const char* title)
     NSString* titleStr = title ? [NSString stringWithUTF8String:title] : @"";
     [column.headerCell setStringValue:titleStr];
 
-    /* Calculate column width for columns without explicit width */
     int col_index = col - 1;
 
-    /* Check if this column has explicit width */
-    char width_name[50];
-    snprintf(width_name, sizeof(width_name), "RASTERWIDTH%d", col);
-    char* width_str = iupAttribGet(ih, width_name);
-    if (!width_str)
-    {
-      snprintf(width_name, sizeof(width_name), "WIDTH%d", col);
-      width_str = iupAttribGet(ih, width_name);
-    }
+    /* explicit-width marker (see cocoaTableSetNumColAttrib), not WIDTH%d */
+    char expwidth_name[50];
+    snprintf(expwidth_name, sizeof(expwidth_name), "_IUP_TABLE_EXPWIDTH%d", col);
+    int has_explicit_width = iupAttribGet(ih, expwidth_name) != NULL;
 
-    /* Only calculate width for columns without explicit width and not the last column (which stretches) */
-    if (!width_str && col_index < ih->data->num_col - 1)
+    /* Only auto-size columns without an explicit width, and not the last column (which stretches) */
+    if (!has_explicit_width && col_index < ih->data->num_col - 1)
     {
       NSFont* font = [NSFont systemFontOfSize:[NSFont systemFontSize]];
       CGFloat calculated_width = cocoaTableCalculateColumnWidth(ih, col_index, font);
@@ -2368,6 +2371,10 @@ IUP_SDK_API void iupdrvTableSetColWidth(Ihandle* ih, int col, int width)
     NSTableColumn* column = [columns objectAtIndex:(col - 1)];
 
     [column setWidth:width];
+
+    char expwidth_name[50];
+    snprintf(expwidth_name, sizeof(expwidth_name), "_IUP_TABLE_EXPWIDTH%d", col);
+    iupAttribSetStr(ih, expwidth_name, "1");
 
     if (col - 1 == ih->data->num_col - 1)
       iupAttribSet(ih, "_IUP_TABLE_LAST_COL_WIDTH_SET", "YES");
