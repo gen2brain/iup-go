@@ -149,6 +149,13 @@ IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
 
   wdBeginPaint(dc->hCanvas);
 
+  /* Clear to BGCOLOR; the ACTION may not paint the whole area and WM_ERASEBKGND skips it. */
+  {
+    COLORREF bg;
+    if (iupwinGetColorRef(ih, "BGCOLOR", &bg))
+      wdClear(dc->hCanvas, WD_RGB(GetRValue(bg), GetGValue(bg), GetBValue(bg)));
+  }
+
   return dc;
 }
 
