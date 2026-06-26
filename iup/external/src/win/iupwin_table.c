@@ -207,17 +207,19 @@ static void winTableAdjustColumnWidths(Ihandle* ih)
     return;
 
   int last_col_idx = num_col - 1;
+  int stretch_last = ih->data->stretch_last && !data->col_width_set[last_col_idx];
 
   for (int i = 0; i < num_col; i++)
   {
     if (data->col_width_set[i])
       ListView_SetColumnWidth(list_view, i + 1, data->col_widths[i]);
-    else
+    else if (!(stretch_last && i == last_col_idx))
       data->col_widths[i] = ListView_GetColumnWidth(list_view, i + 1);
   }
 
-  if (ih->data->stretch_last && !data->col_width_set[last_col_idx])
+  if (stretch_last)
   {
+    /* Recompute from the preserved natural width each layout, so it shrinks on restore, not only grows. */
     RECT rect;
     GetClientRect(list_view, &rect);
     int list_width = rect.right - rect.left;
@@ -226,12 +228,11 @@ static void winTableAdjustColumnWidths(Ihandle* ih)
     for (int i = 0; i < last_col_idx; i++)
       used_width += data->col_widths[i];
 
+    int natural = data->col_widths[last_col_idx];
     int remaining = list_width - used_width;
-    if (remaining > data->col_widths[last_col_idx])
-    {
-      ListView_SetColumnWidth(list_view, num_col, remaining);
-      data->col_widths[last_col_idx] = remaining;
-    }
+    int last_width = (remaining > natural) ? remaining : natural;
+
+    ListView_SetColumnWidth(list_view, num_col, last_width);
   }
 }
 
@@ -2913,6 +2914,9 @@ static void winTableLayoutUpdateMethod(Ihandle* ih)
       if (!was_visible)
         ShowWindow(list_view, SW_SHOW);
     }
+
+    /* Repaint after a resize (e.g. maximize/restore); ListView leaves stale rows otherwise. */
+    RedrawWindow(list_view, NULL, NULL, RDW_INVALIDATE | RDW_ALLCHILDREN);
   }
 }
 
