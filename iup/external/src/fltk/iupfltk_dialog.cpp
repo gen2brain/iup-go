@@ -238,6 +238,9 @@ static int fltkDialogGetMenuSize(Ihandle* ih)
 
 extern "C" IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int *border, int *caption, int *menu)
 {
+  /* Estimate used until the native window frame can be measured. */
+  const int est_border = 1, est_caption = 25;
+
   *menu = fltkDialogGetMenuSize(ih);
 
   if (iupAttribGetBoolean(ih, "CUSTOMFRAME") || iupAttribGetBoolean(ih, "HIDETITLEBAR"))
@@ -272,8 +275,8 @@ extern "C" IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int *border, 
     }
   }
 
-  *border = has_border ? 1 : 0;
-  *caption = has_titlebar ? 25 : 0;
+  *border = has_border ? est_border : 0;
+  *caption = has_titlebar ? est_caption : 0;
 }
 
 extern "C" IUP_SDK_API void iupdrvDialogGetPosition(Ihandle *ih, InativeHandle* handle, int *x, int *y)
@@ -820,6 +823,13 @@ static void fltkDialogLayoutUpdateMethod(Ihandle* ih)
   ih->data->ignore_resize = 1;
 
   iupdrvDialogGetDecoration(ih, &border, &caption, &menu);
+
+  /* Grow the window to the natural (minimum) size so appearing content isn't clipped. */
+  if (!iupAttribGetBoolean(ih, "SHRINK"))
+  {
+    if (ih->naturalwidth > ih->currentwidth) ih->currentwidth = ih->naturalwidth;
+    if (ih->naturalheight > ih->currentheight) ih->currentheight = ih->naturalheight;
+  }
 
   width = ih->currentwidth - 2 * border;
   height = ih->currentheight - 2 * border - caption;
