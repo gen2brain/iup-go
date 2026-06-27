@@ -67,7 +67,14 @@ IUP_DRV_API int iupfltkFocusInOutEvent(Fl_Widget* widget, Ihandle* ih, int event
   }
   else if (event == FL_UNFOCUS)
   {
-    iupCallKillFocusCb(ih);
+    if (ih == IupGetFocus())
+      iupCallKillFocusCb(ih);
+    else
+    {
+      /* FLTK sends the new widget's FL_FOCUS before this FL_UNFOCUS, so the core guard drops KILLFOCUS_CB; fire it directly. */
+      Icallback cb = IupGetCallback(ih, "KILLFOCUS_CB");
+      if (cb) cb(ih);
+    }
   }
 
   return 0;
