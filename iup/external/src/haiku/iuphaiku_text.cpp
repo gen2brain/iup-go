@@ -96,8 +96,8 @@ public:
     /* "bytes" is stored null-terminated, FindData reports size+1 */
     int char_len = (byte_count > 0 && bytes[byte_count - 1] == 0) ? (int)byte_count - 1 : (int)byte_count;
 
-    /* Control keys reach our hooks via Delete/Select, not InsertText. */
-    if (char_len == 1 && (unsigned char)bytes[0] < B_SPACE && bytes[0] != '\n' && bytes[0] != '\t')
+    /* Control keys (incl. Tab/Enter for navigate/invoke) bypass the mask. */
+    if (char_len == 1 && (unsigned char)bytes[0] < B_SPACE)
       return B_DISPATCH_MESSAGE;
 
     int32 sel_s = 0, sel_e = 0;
@@ -167,7 +167,8 @@ public:
       fIhandle(ih), fKeyFilter(NULL), fMute(false)
   {
     BTextControl::SetDivider(0);
-    SetFlags(Flags() | B_DRAW_ON_CHILDREN);
+    /* Keep B_NAVIGABLE: SetFlags syncs it to the inner view, else Tab skips it. */
+    SetFlags(Flags() | B_DRAW_ON_CHILDREN | B_NAVIGABLE);
   }
 
   ~IupHaikuTextControl() override
