@@ -24,6 +24,7 @@ extern "C" {
 #include "iup.h"
 #include "iupcbs.h"
 #include "iup_drv.h"
+#include "iup_key.h"
 #include "iup_object.h"
 #include "iup_class.h"
 #include "iup_classbase.h"
@@ -552,6 +553,8 @@ static int haikuToggleSetTitleAttrib(Ihandle* ih, const char* value)
   if (ih->data->type != IUP_TOGGLE_TEXT) return 0;
   BView* v = (BView*)ih->handle;
   if (!v) return 1;
+  int mn = iupStrFindMnemonic(value);
+  if (mn) iupKeySetMnemonic(ih, mn, 0);
   char* stripped = haikuStrippedMnemonic(value);
   LooperLockGuard guard(v->Looper());
   haikuToggleNativeSetLabel(v, stripped ? stripped : "");
