@@ -7,6 +7,7 @@
 #include <cstddef>
 #include <cstdlib>
 #include <cstring>
+#include <vector>
 
 #include <Application.h>
 #include <Entry.h>
@@ -16,6 +17,7 @@
 #include <Messenger.h>
 #include <OS.h>
 #include <Path.h>
+#include <String.h>
 #include <Window.h>
 
 extern "C" {
@@ -34,12 +36,11 @@ public:
   IupHaikuFileDlgRecv()
     : BLooper("iup_filedlg_recv"),
       fStatus(-1), fSem(create_sem(0, "iup_fdlg_done")),
-      fPath(NULL), fIsMultiple(false), fDone(false) {}
+      fIsMultiple(false), fDone(false) {}
 
   ~IupHaikuFileDlgRecv() override
   {
     if (fSem >= B_OK) delete_sem(fSem);
-    free(fPath);
   }
 
   /* fDone latch: BFilePanel sends a trailing B_CANCEL after REFS_RECEIVED */
@@ -50,25 +51,12 @@ public:
     if (msg->what == B_REFS_RECEIVED)
     {
       entry_ref ref;
-      if (fIsMultiple)
-      {
-        BString joined;
-        for (int32 i = 0; msg->FindRef("refs", i, &ref) == B_OK; ++i)
-        {
-          BPath p(&ref);
-          if (i > 0) joined << "|";
-          joined << p.Path();
-        }
-        if (joined.Length() > 0) joined << "|";  /* IUP terminator */
-        fPath = strdup(joined.String());
-        fStatus = 1;
-      }
-      else if (msg->FindRef("refs", &ref) == B_OK)
+      for (int32 i = 0; msg->FindRef("refs", i, &ref) == B_OK; ++i)
       {
         BPath p(&ref);
-        fPath = strdup(p.Path());
-        fStatus = 1;
+        fPaths.push_back(BString(p.Path()));
       }
+      if (!fPaths.empty()) fStatus = 0;  /* selected entries exist */
     }
     else if (msg->what == B_SAVE_REQUESTED)
     {
@@ -79,9 +67,9 @@ public:
       {
         BPath dir(&dir_ref);
         BPath full(dir.Path(), name);
-        fPath = strdup(full.Path());
+        fPaths.push_back(BString(full.Path()));
         BEntry exists(full.Path());
-        fStatus = exists.Exists() ? 1 : 0;
+        fStatus = exists.Exists() ? 0 : 1;  /* 0 overwrite, 1 new file */
       }
     }
     else if (msg->what == B_CANCEL)
@@ -113,16 +101,50 @@ public:
     }
   }
   int Status() const { return fStatus; }
-  const char* ResultPath() const { return fPath; }
+  const std::vector<BString>& Paths() const { return fPaths; }
+  bool IsMultiple() const { return fIsMultiple; }
   void SetMultiple(bool m) { fIsMultiple = m; }
 
 private:
   int fStatus;
   sem_id fSem;
-  char* fPath;
+  std::vector<BString> fPaths;
   bool fIsMultiple;
   bool fDone;
 };
+
+/* MULTIVALUE[0]=dir, [1..N]=names (full paths if MULTIVALUEPATH), count=N+1. */
+static void haikuFileDlgSetResult(Ihandle* ih, const std::vector<BString>& paths, bool multiple)
+{
+  BPath parent;
+  BPath(paths[0].String()).GetParent(&parent);
+  BString dir(parent.Path());
+  if (dir.Length() && dir[dir.Length() - 1] != '/') dir << "/";
+  iupAttribSetStr(ih, "DIRECTORY", dir.String());
+
+  if (!multiple)
+  {
+    iupAttribSetStr(ih, "VALUE", paths[0].String());
+    return;
+  }
+
+  bool multipath = iupAttribGetBoolean(ih, "MULTIVALUEPATH");
+  iupAttribSetStrId(ih, "MULTIVALUE", 0, dir.String());
+
+  BString value;
+  for (size_t i = 0; i < paths.size(); ++i)
+  {
+    const char* rel = paths[i].String();
+    if (!multipath && paths[i].Compare(dir, dir.Length()) == 0)
+      rel += dir.Length();
+    iupAttribSetStrId(ih, "MULTIVALUE", (int)i + 1, rel);
+
+    if (i > 0) value << "|";
+    value << rel;
+  }
+  iupAttribSetInt(ih, "MULTIVALUECOUNT", (int)paths.size() + 1);
+  iupAttribSetStr(ih, "VALUE", value.String());
+}
 
 static int haikuFileDlgPopup(Ihandle* ih, int /*x*/, int /*y*/)
 {
@@ -163,11 +185,11 @@ static int haikuFileDlgPopup(Ihandle* ih, int /*x*/, int /*y*/)
   recv->WaitDone();
 
   int status = recv->Status();
-  const char* result_path = recv->ResultPath();
+  const std::vector<BString>& paths = recv->Paths();
 
   iupAttribSetInt(ih, "STATUS", status);
-  if (status >= 0 && result_path)
-    iupAttribSetStr(ih, "VALUE", result_path);
+  if (status >= 0 && !paths.empty())
+    haikuFileDlgSetResult(ih, paths, recv->IsMultiple());
   else
     iupAttribSet(ih, "VALUE", NULL);
 
