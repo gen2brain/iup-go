@@ -326,6 +326,9 @@ static int haikuButtonSetTitleAttrib(Ihandle* ih, const char* value)
   BButton* button = dynamic_cast<BButton*>((BView*)ih->handle);
   if (!button) return 1;
 
+  int mn = iupStrFindMnemonic(value);
+  if (mn) iupKeySetMnemonic(ih, mn, 0);
+
   char* stripped = haikuStrippedMnemonic(value);
   LooperLockGuard guard(button->Looper());
   button->SetLabel(stripped ? stripped : "");

@@ -26,6 +26,7 @@ extern "C" {
 #include "iup.h"
 #include "iupcbs.h"
 #include "iup_drv.h"
+#include "iup_key.h"
 #include "iup_object.h"
 #include "iup_class.h"
 #include "iup_attrib.h"
@@ -295,6 +296,21 @@ public:
   {
     if (msg && iupStrBoolean(IupGetGlobal("INPUTCALLBACKS")))
       iuphaikuFireGlobalInputCB(msg);
+
+    /* Command+letter activates a mnemonic; Command rides physical Alt on the default keymap (see SHORTCUTKEY). */
+    if (msg && msg->what == B_KEY_DOWN && fIhandle && iupObjectCheck(fIhandle))
+    {
+      int32 mods = 0, raw = 0;
+      msg->FindInt32("modifiers", &mods);
+      msg->FindInt32("raw_char", &raw);
+      if ((mods & B_COMMAND_KEY) && !(mods & (B_CONTROL_KEY | B_OPTION_KEY)))
+      {
+        if (raw >= 'a' && raw <= 'z') raw = raw - 'a' + 'A';
+        if (raw >= 'A' && raw <= 'Z' && iupKeyProcessMnemonic(fIhandle, raw))
+          return;
+      }
+    }
+
     BWindow::DispatchMessage(msg, target);
   }
 
