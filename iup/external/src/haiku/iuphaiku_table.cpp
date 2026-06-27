@@ -436,6 +436,13 @@ public:
       }
       line += rh + 1.0f;
     }
+
+    /* Fill the trail below the last row; CLV leaves it as panel (gray) bg. */
+    if (trail_left < of.right && of.top + line < of.bottom)
+    {
+      SetLowColor(base);
+      FillRect(BRect(trail_left, of.top + line, of.right, of.bottom), B_SOLID_LOW);
+    }
   }
 
   void UpdateScrollBarVisibility()
