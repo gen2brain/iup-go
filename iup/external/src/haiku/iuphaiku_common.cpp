@@ -208,9 +208,9 @@ extern "C" IUP_SDK_API void iupdrvSetVisible(Ihandle* ih, int enable)
   }
 }
 
-extern "C" IUP_SDK_API void iupdrvSetActive(Ihandle* ih, int enable)
+static void haikuSetActiveSelf(Ihandle* ih, int enable)
 {
-  if (!ih || !ih->handle) return;
+  if (!ih->handle) return;
   if (ih->iclass && (ih->iclass->nativetype == IUP_TYPEVOID ||
                      ih->iclass->nativetype == IUP_TYPEMENU ||
                      ih->iclass->nativetype == IUP_TYPEDIALOG))
@@ -233,6 +233,21 @@ extern "C" IUP_SDK_API void iupdrvSetActive(Ihandle* ih, int enable)
   iupAttribSet(ih, "_IUPHAIKU_INACTIVE", enable ? NULL : (char*)"1");
 
   view->Invalidate();
+}
+
+/* BViews don't inherit the disabled state; cascade it, honoring each child's ACTIVE. */
+extern "C" IUP_SDK_API void iupdrvSetActive(Ihandle* ih, int enable)
+{
+  if (!ih) return;
+
+  haikuSetActiveSelf(ih, enable);
+
+  for (Ihandle* child = ih->firstchild; child; child = child->brother)
+  {
+    char* a = iupAttribGet(child, "ACTIVE");
+    int child_enable = enable && !(a && !iupStrBoolean(a));
+    iupdrvSetActive(child, child_enable);
+  }
 }
 
 extern "C" IUP_SDK_API void iupdrvActivate(Ihandle* ih)
