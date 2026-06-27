@@ -525,6 +525,9 @@ static int gtkFileDlgPopup(Ihandle* ih, int x, int y)
       iupAttribSet(ih, "_IUPDLG_FILE_CHOOSER", (char*)dialog);
 
       gtk_file_chooser_set_preview_widget(GTK_FILE_CHOOSER(dialog), frame);
+
+      /* Drop the filename label, else it sizes the preview column to its width (per-filename canvas resize). */
+      gtk_file_chooser_set_use_preview_label(GTK_FILE_CHOOSER(dialog), FALSE);
     }
   }
 
