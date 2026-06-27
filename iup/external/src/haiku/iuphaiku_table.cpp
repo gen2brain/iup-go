@@ -1188,6 +1188,16 @@ static IupHaikuTableField* haikuTableEnsureField(IupHaikuTableView* tv, int lin,
   return f;
 }
 
+/* WIDTHn is dropped from the hash after map; track explicit width with a flag. */
+static bool haikuTableColHasExplicitWidth(Ihandle* ih, int col)
+{
+  if (iupAttribGetId(ih, "_IUPHAIKU_EXPLICITWIDTH", col))
+    return true;
+  if (iupAttribGetIntId(ih, "RASTERWIDTH", col) > 0) return true;
+  if (iupAttribGetIntId(ih, "WIDTH",       col) > 0) return true;
+  return false;
+}
+
 /* One-shot column auto-size: title (header font) + first 100 rows of content. */
 static void haikuTableAutoSizeColumns(Ihandle* ih, IupHaikuTableView* tv)
 {
@@ -1205,8 +1215,7 @@ static void haikuTableAutoSizeColumns(Ihandle* ih, IupHaikuTableView* tv)
 
   for (int i = 0; i < num_col; i++)
   {
-    if (iupAttribGetIntId(ih, "RASTERWIDTH", i + 1) > 0) continue;
-    if (iupAttribGetIntId(ih, "WIDTH",       i + 1) > 0) continue;
+    if (haikuTableColHasExplicitWidth(ih, i + 1)) continue;
 
     IupHaikuTableColumn* c = (IupHaikuTableColumn*)tv->ColumnAt(i);
     if (!c) continue;
@@ -1241,6 +1250,8 @@ extern "C" IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
   IupHaikuTableView* tv = haikuTableGetView(ih);
   if (!tv) return;
   LooperLockGuard guard(tv->Looper());
+
+  ih->data->num_lin = num_lin;
 
   int cur = tv->CountRows(NULL);
   if (num_lin > cur)
@@ -1281,6 +1292,8 @@ extern "C" IUP_SDK_API void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
   IupHaikuTableView* tv = haikuTableGetView(ih);
   if (!tv) return;
   LooperLockGuard guard(tv->Looper());
+
+  ih->data->num_col = num_col;
 
   int cur = tv->CountColumns();
   if (num_col > cur)
@@ -1426,6 +1439,7 @@ extern "C" IUP_SDK_API void iupdrvTableSetColWidth(Ihandle* ih, int col, int wid
   IupHaikuTableView* tv = haikuTableGetView(ih);
   IupHaikuTableColumn* c = haikuTableGetColumn(tv, col);
   if (!tv || !c) return;
+  iupAttribSetId(ih, "_IUPHAIKU_EXPLICITWIDTH", col, "1");
   LooperLockGuard guard(tv->Looper());
   c->SetWidth((float)width);
   tv->RepositionTrail();
@@ -1496,6 +1510,8 @@ extern "C" IUP_SDK_API int iupdrvTableGetBorderWidth(Ihandle* /*ih*/)
 extern "C" IUP_SDK_API int iupdrvTableGetRowHeight(Ihandle* ih)
 {
   IupHaikuTableView* tv = haikuTableGetView(ih);
+  /* GetFont needs the looper locked; natural-size may run unlocked. */
+  LooperLockGuard guard(tv ? tv->Looper() : NULL);
   /* CLV accumulates Height() + 1 per row in fItemsHeight; return the pitch. */
   return (int)(haikuTableRowHeight(tv) + 0.5f) + 1;
 }
@@ -1504,6 +1520,7 @@ extern "C" IUP_SDK_API int iupdrvTableGetHeaderHeight(Ihandle* ih)
 {
   IupHaikuTableView* tv = haikuTableGetView(ih);
   if (!tv) return 20;
+  LooperLockGuard guard(tv->Looper());
   BFont font;
   tv->GetFont(B_FONT_HEADER, &font);
   int hh = (int)ceilf(font.Size() * 1.4f);

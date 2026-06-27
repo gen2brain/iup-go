@@ -49,6 +49,7 @@ extern "C" {
 
 
 #define IUPHAIKU_TEXT_MODIFIED_MSG 'IupT'
+#define IUPHAIKU_TEXT_INVOKE_MSG   'IupI'
 
 static void haikuTextFireCaretCb(Ihandle* ih, BTextView* tv);
 
@@ -181,6 +182,8 @@ public:
     BTextControl::AttachedToWindow();
     SetTarget(this);
     SetModificationMessage(new BMessage(IUPHAIKU_TEXT_MODIFIED_MSG));
+    /* Invoked on Enter and on focus loss with a changed value. */
+    SetMessage(new BMessage(IUPHAIKU_TEXT_INVOKE_MSG));
 
     if (fIhandle && !fKeyFilter && TextView())
     {
@@ -216,6 +219,17 @@ public:
         if (ret == IUP_CLOSE) IupExitLoop();
       }
       if (TextView()) haikuTextFireCaretCb(fIhandle, TextView());
+      return;
+    }
+    /* Async, so focus already moved; call KILLFOCUS_CB directly past the guard. */
+    if (msg && msg->what == IUPHAIKU_TEXT_INVOKE_MSG && fIhandle)
+    {
+      Icallback cb = IupGetCallback(fIhandle, "KILLFOCUS_CB");
+      if (cb)
+      {
+        int ret = cb(fIhandle);
+        if (ret == IUP_CLOSE) IupExitLoop();
+      }
       return;
     }
     BTextControl::MessageReceived(msg);
@@ -291,6 +305,12 @@ public:
     BRect b = Bounds();
     BRect tr(b.left + 2, b.top + 2, b.right - 2, b.bottom - 2);
     if (tr.IsValid() && tr != TextRect()) SetTextRect(tr);
+  }
+
+  void MakeFocus(bool focused = true) override
+  {
+    BTextView::MakeFocus(focused);
+    if (fIhandle) iuphaikuFocusInOutEvent(fIhandle, focused ? 1 : 0);
   }
 
   void Draw(BRect updateRect) override
