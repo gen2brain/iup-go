@@ -471,6 +471,9 @@ static int qtDialogGetMenuSize(Ihandle* ih)
 
 extern "C" IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int *border, int *caption, int *menu)
 {
+  /* Estimate used until the native window frame can be measured. */
+  const int est_border = 5, est_caption = 25;
+
 #ifdef Q_OS_MAC
   /* On macOS, Qt uses the native global menu bar */
   *menu = 0;
@@ -533,6 +536,14 @@ extern "C" IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int *border, 
           *border = has_border ? win_border : 0;
           *caption = has_titlebar ? win_caption : 0;
 
+          /* Correct the current size, sized below with the estimate, by the real-vs-estimate delta. */
+          if (!native_border && !native_caption && ih->currentheight > 0)
+          {
+            int est_b = has_border ? est_border : 0, est_c = has_titlebar ? est_caption : 0;
+            ih->currentwidth  += 2 * (*border - est_b);
+            ih->currentheight += 2 * (*border - est_b) + (*caption - est_c);
+          }
+
           /* Cache values for later use - only cache valid non-zero values */
           if (win_border > 0)
             iupAttribSetInt(ih, "_IUPQT_NATIVE_BORDER", win_border);
@@ -548,11 +559,11 @@ extern "C" IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int *border, 
   /* Estimate when not visible or invalid values */
   *border = 0;
   if (has_border)
-    *border = native_border ? native_border : 5;
+    *border = native_border ? native_border : est_border;
 
   *caption = 0;
   if (has_titlebar)
-    *caption = native_caption ? native_caption : 25;
+    *caption = native_caption ? native_caption : est_caption;
 }
 
 static void qtDialogGetClientSize(Ihandle* ih, int *width, int *height)
