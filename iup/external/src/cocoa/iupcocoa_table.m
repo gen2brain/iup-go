@@ -901,77 +901,12 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
   unichar ch = [chars characterAtIndex:0];
   IcocoaTableData* table_data = ICOCOA_TABLE_DATA(ih);
 
-  /* Handle Tab/Shift+Tab for column navigation */
+  /* Tab/Shift+Tab: move focus to the next/previous control (IUP field navigation) */
   if (ch == NSTabCharacter || ch == NSBackTabCharacter)
   {
-    /* Save old focused cell before Tab moves focus */
-    int old_focused_col = table_data ? table_data->current_col : 0;
-    int old_focused_row = table_data ? table_data->current_row : 0;
-    NSInteger currentRow = [self selectedRow];
-
-    /* Let NSTableView handle Tab navigation first */
-    [super keyDown:event];
-
-    /* Now update our tracked column based on Tab direction */
-    if (table_data && currentRow >= 0)
-    {
-      int num_cols = ih->data->num_col;
-
-      if (ch == NSTabCharacter)
-      {
-        /* Tab: Move to next column */
-        table_data->current_col++;
-        if (table_data->current_col > num_cols)
-          table_data->current_col = 1;
-      }
-      else
-      {
-        /* Shift+Tab: Move to previous column */
-        table_data->current_col--;
-        if (table_data->current_col < 1)
-          table_data->current_col = num_cols;
-      }
-
-      /* Check if row changed */
-      NSInteger newRow = [self selectedRow];
-      BOOL row_changed = (newRow != currentRow);
-
-      /* Reload cells to update focus rectangle */
-      if (row_changed)
-      {
-        /* Row changed, reload both old and new rows */
-        NSMutableIndexSet* rowsToReload = [NSMutableIndexSet indexSet];
-        if (currentRow >= 0)
-          [rowsToReload addIndex:currentRow];
-        if (newRow >= 0)
-          [rowsToReload addIndex:newRow];
-
-        NSIndexSet* allCols = [NSIndexSet indexSetWithIndexesInRange:NSMakeRange(0, num_cols)];
-        [self reloadDataForRowIndexes:rowsToReload columnIndexes:allCols];
-      }
-      else
-      {
-        /* Same row, different column, reload just the affected cells */
-        NSMutableIndexSet* colsToReload = [NSMutableIndexSet indexSet];
-        if (old_focused_col > 0)
-          [colsToReload addIndex:(old_focused_col - 1)];
-        if (table_data->current_col > 0)
-          [colsToReload addIndex:(table_data->current_col - 1)];
-
-        if ([colsToReload count] > 0 && currentRow >= 0)
-        {
-          NSIndexSet* rowSet = [NSIndexSet indexSetWithIndex:currentRow];
-          [self reloadDataForRowIndexes:rowSet columnIndexes:colsToReload];
-        }
-      }
-
-      /* Trigger ENTERITEM_CB */
-      IFnii enteritem_cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
-      if (enteritem_cb)
-      {
-        enteritem_cb(ih, (int)newRow + 1, table_data->current_col);
-      }
-    }
+    int mac_key_code = [event keyCode];
+    if (!iupcocoaKeyEvent(ih, event, mac_key_code, true))
+      [super keyDown:event];
     return;
   }
 
@@ -1074,13 +1009,17 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
 {
   BOOL result = [super becomeFirstResponder];
   if (result)
+  {
     cocoaTableReloadFocusedCell(self, ICOCOA_TABLE_DATA(ih));
+    iupcocoaFocusIn(ih);
+  }
   return result;
 }
 
 - (BOOL)resignFirstResponder
 {
   cocoaTableReloadFocusedCell(self, ICOCOA_TABLE_DATA(ih));
+  iupcocoaFocusOut(ih);
   return [super resignFirstResponder];
 }
 
