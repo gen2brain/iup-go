@@ -338,12 +338,23 @@ class IupFltkInputChoice : public Fl_Input_Choice
 {
 public:
   Ihandle* iup_handle;
+  bool iup_focused;
 
   IupFltkInputChoice(int x, int y, int w, int h, Ihandle* ih)
-    : Fl_Input_Choice(x, y, w, h), iup_handle(ih) {}
+    : Fl_Input_Choice(x, y, w, h), iup_handle(ih), iup_focused(false) {}
 
   int handle(int event) override
   {
+    if (event == FL_FOCUS && !iup_focused)
+    {
+      iup_focused = true;
+      iupfltkFocusInOutEvent(this, iup_handle, FL_FOCUS);
+    }
+    else if (event == FL_UNFOCUS && iup_focused)
+    {
+      iup_focused = false;
+      iupfltkFocusInOutEvent(this, iup_handle, FL_UNFOCUS);
+    }
     /* InputMenuButton is private; intercept at group level when event targets the button child. */
     Fl_Widget* mb = menubutton();
     bool drop = false;

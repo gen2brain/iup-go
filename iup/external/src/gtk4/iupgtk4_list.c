@@ -2372,6 +2372,7 @@ static int gtk4ListMapMethod(Ihandle* ih)
       iupgtk4SetupEnterLeaveEvents(entry, ih);
       iupgtk4SetupFocusEvents(entry, ih);
       iupgtk4SetupKeyEvents(entry, ih);
+      iupAttribSet(ih, "_IUPGTK4_FOCUSWIDGET", (char*)entry);
 
       GtkEventController* key_controller = gtk_event_controller_key_new();
       gtk_widget_add_controller(entry, key_controller);
@@ -2553,6 +2554,7 @@ static int gtk4ListMapMethod(Ihandle* ih)
       iupgtk4SetupEnterLeaveEvents(entry, ih);
       iupgtk4SetupFocusEvents(entry, ih);
       iupgtk4SetupKeyEvents(entry, ih);
+      iupAttribSet(ih, "_IUPGTK4_FOCUSWIDGET", (char*)entry);
 
       GtkEventController* key_controller = gtk_event_controller_key_new();
       gtk_widget_add_controller(entry, key_controller);

@@ -605,11 +605,10 @@ static void motTreeFocusChangeEvent(Widget w, Ihandle *ih, XEvent *evt, Boolean 
   if (XtParent(wItem) == w) /* is a node */
     iupAttribSet(ih, "_IUPTREE_LAST_FOCUS", (char*)wItem);
 
+  iupmotFocusChangeEvent(w, ih, evt, cont);
+
   if (wItem == NULL || wItem == wRoot)
-  {
-    iupmotFocusChangeEvent(w, ih, evt, cont);
     return;
-  }
 
   XtVaGetValues(w, XmNselectionPolicy, &selpol, NULL);
   if (selpol != XmSINGLE_SELECT)

@@ -1168,56 +1168,6 @@ static gboolean gtkTableKeyPressEvent(GtkWidget* widget, GdkEventKey* event, Iha
       }
       break;
 
-    case GDK_KEY_Tab:
-      /* Move to next cell (right, or next row if at end) */
-      if (col < ih->data->num_col)
-      {
-        /* Move right */
-        GtkTreeViewColumn* next_col = gtk_tree_view_get_column(GTK_TREE_VIEW(gtk_data->tree_view), col);
-        if (next_col)
-        {
-          gtk_tree_view_set_cursor(GTK_TREE_VIEW(gtk_data->tree_view), path, next_col, FALSE);
-          handled = TRUE;
-        }
-      }
-      else if (lin < ih->data->num_lin)
-      {
-        /* At end of row, move to first column of next row */
-        gtk_tree_path_next(path);
-        GtkTreeViewColumn* first_col = gtk_tree_view_get_column(GTK_TREE_VIEW(gtk_data->tree_view), 0);
-        if (first_col)
-        {
-          gtk_tree_view_set_cursor(GTK_TREE_VIEW(gtk_data->tree_view), path, first_col, FALSE);
-          handled = TRUE;
-        }
-      }
-      break;
-
-    case GDK_KEY_ISO_Left_Tab:  /* Shift+Tab */
-      /* Move to previous cell (left, or previous row if at start) */
-      if (col > 1)
-      {
-        /* Move left */
-        GtkTreeViewColumn* prev_col = gtk_tree_view_get_column(GTK_TREE_VIEW(gtk_data->tree_view), col - 2);
-        if (prev_col)
-        {
-          gtk_tree_view_set_cursor(GTK_TREE_VIEW(gtk_data->tree_view), path, prev_col, FALSE);
-          handled = TRUE;
-        }
-      }
-      else if (lin > 1)
-      {
-        /* At start of row, move to last column of previous row */
-        gtk_tree_path_prev(path);
-        GtkTreeViewColumn* last_col = gtk_tree_view_get_column(GTK_TREE_VIEW(gtk_data->tree_view), ih->data->num_col - 1);
-        if (last_col)
-        {
-          gtk_tree_view_set_cursor(GTK_TREE_VIEW(gtk_data->tree_view), path, last_col, FALSE);
-          handled = TRUE;
-        }
-      }
-      break;
-
     case GDK_KEY_Escape:
       /* Just let it propagate */
       break;
@@ -1914,6 +1864,8 @@ static int gtkTableMapMethod(Ihandle* ih)
 
   /* Connect signals */
   g_signal_connect(gtk_data->tree_view, "button-press-event", G_CALLBACK(gtkTableButtonEvent), ih);
+  g_signal_connect(gtk_data->tree_view, "focus-in-event", G_CALLBACK(iupgtkFocusInOutEvent), ih);
+  g_signal_connect(gtk_data->tree_view, "focus-out-event", G_CALLBACK(iupgtkFocusInOutEvent), ih);
   g_signal_connect(gtk_data->tree_view, "key-press-event", G_CALLBACK(gtkTableKeyPressEvent), ih);
   g_signal_connect(gtk_data->tree_view, "cursor-changed", G_CALLBACK(gtkTableCursorChanged), ih);
   g_signal_connect(gtk_data->tree_view, "columns-changed", G_CALLBACK(gtkTableColumnsChanged), ih);

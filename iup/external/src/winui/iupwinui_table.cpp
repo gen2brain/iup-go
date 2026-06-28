@@ -2454,45 +2454,9 @@ static void winuiTableKeyDown(Ihandle* ih, KeyRoutedEventArgs const& args)
       break;
 
     case Windows::System::VirtualKey::Tab:
-    {
-      bool shift = (GetKeyState(VK_SHIFT) & 0x8000) != 0;
-
-      if (shift)
-      {
-        if (col > 1)
-        {
-          iupdrvTableSetFocusCell(ih, lin, col - 1);
-          IFnii cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
-          if (cb) cb(ih, lin, col - 1);
-          handled = true;
-        }
-        else if (lin > 1)
-        {
-          iupdrvTableSetFocusCell(ih, lin - 1, ih->data->num_col);
-          IFnii cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
-          if (cb) cb(ih, lin - 1, ih->data->num_col);
-          handled = true;
-        }
-      }
-      else
-      {
-        if (col < ih->data->num_col)
-        {
-          iupdrvTableSetFocusCell(ih, lin, col + 1);
-          IFnii cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
-          if (cb) cb(ih, lin, col + 1);
-          handled = true;
-        }
-        else if (lin < ih->data->num_lin)
-        {
-          iupdrvTableSetFocusCell(ih, lin + 1, 1);
-          IFnii cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
-          if (cb) cb(ih, lin + 1, 1);
-          handled = true;
-        }
-      }
+      if (!iupwinuiKeyEvent(ih, VK_TAB, 1))
+        handled = true;
       break;
-    }
 
     case Windows::System::VirtualKey::Enter:
     case Windows::System::VirtualKey::F2:

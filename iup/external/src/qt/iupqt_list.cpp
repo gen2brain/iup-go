@@ -316,6 +316,42 @@ public:
     if (cb)
       cb(ih, 0);
   }
+
+protected:
+  void focusInEvent(QFocusEvent* event) override
+  {
+    QComboBox::focusInEvent(event);
+    iupqtFocusInOutEvent(this, event, ih);
+  }
+
+  void focusOutEvent(QFocusEvent* event) override
+  {
+    QComboBox::focusOutEvent(event);
+    iupqtFocusInOutEvent(this, event, ih);
+  }
+};
+
+class IupQtListLineEdit : public QLineEdit
+{
+private:
+  Ihandle* ih;
+
+public:
+  explicit IupQtListLineEdit(Ihandle* ih_param, QWidget* parent = nullptr)
+    : QLineEdit(parent), ih(ih_param) {}
+
+protected:
+  void focusInEvent(QFocusEvent* event) override
+  {
+    QLineEdit::focusInEvent(event);
+    iupqtFocusInOutEvent(this, event, ih);
+  }
+
+  void focusOutEvent(QFocusEvent* event) override
+  {
+    QLineEdit::focusOutEvent(event);
+    iupqtFocusInOutEvent(this, event, ih);
+  }
 };
 
 /****************************************************************************
@@ -1815,6 +1851,7 @@ static int qtListMapMethod(Ihandle* ih)
     /* For editbox */
     if (ih->data->has_editbox)
     {
+      combo->setLineEdit(new IupQtListLineEdit(ih));
       QLineEdit* edit = combo->lineEdit();
       if (edit)
       {
@@ -1849,7 +1886,7 @@ static int qtListMapMethod(Ihandle* ih)
     layout->setSpacing(0);
 
     /* Create edit box */
-    QLineEdit* edit = new QLineEdit();
+    QLineEdit* edit = new IupQtListLineEdit(ih);
     /* Set fixed height for edit box to match IUP's edit_line_size calculation */
     QFontMetrics fm(edit->font());
     int edit_height = fm.height() + 8;  /* Add some padding like IUP does */

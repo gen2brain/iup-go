@@ -63,6 +63,12 @@ public:
     BSlider::MessageReceived(msg);
   }
 
+  void MakeFocus(bool focus = true) override
+  {
+    BSlider::MakeFocus(focus);
+    if (fIhandle) iuphaikuFocusInOutEvent(fIhandle, focus ? 1 : 0);
+  }
+
 private:
   void Dispatch();
 

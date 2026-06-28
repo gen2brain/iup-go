@@ -181,6 +181,12 @@ public:
   {
   }
 
+  void MakeFocus(bool focus = true) override
+  {
+    BTabView::MakeFocus(focus);
+    if (fIhandle) iuphaikuFocusInOutEvent(fIhandle, focus ? 1 : 0);
+  }
+
   /* BTabView indices skip hidden tabs; convert to IUP child positions. */
   int IupPosFromBTab(int bp) const
   {

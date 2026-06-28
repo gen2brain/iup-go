@@ -261,6 +261,20 @@ protected:
     return QTreeWidget::event(e);
   }
 
+  void focusInEvent(QFocusEvent* event) override
+  {
+    QTreeWidget::focusInEvent(event);
+    if (ih)
+      iupqtFocusInOutEvent(this, event, ih);
+  }
+
+  void focusOutEvent(QFocusEvent* event) override
+  {
+    QTreeWidget::focusOutEvent(event);
+    if (ih)
+      iupqtFocusInOutEvent(this, event, ih);
+  }
+
 public:
   IupQtTree(Ihandle* ih_param) : QTreeWidget(), ih(ih_param), mark_start_node(nullptr) {}
 

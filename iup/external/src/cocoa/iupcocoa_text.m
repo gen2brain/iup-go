@@ -385,6 +385,30 @@ static BOOL cocoaTextHandleShouldChangeText(NSTextField* text_field, NSTextView*
   return [super acceptsFirstResponder];
 }
 
+- (BOOL)becomeFirstResponder
+{
+  BOOL result = [super becomeFirstResponder];
+  if(result)
+  {
+    Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
+    if(ih && iupObjectCheck(ih))
+      iupcocoaFocusIn(ih);
+  }
+  return result;
+}
+
+- (BOOL)resignFirstResponder
+{
+  BOOL result = [super resignFirstResponder];
+  if(result)
+  {
+    Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
+    if(ih && iupObjectCheck(ih))
+      iupcocoaFocusOut(ih);
+  }
+  return result;
+}
+
 @end
 
 static void cocoaTextCallCaretCb(Ihandle* ih)
