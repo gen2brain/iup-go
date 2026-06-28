@@ -683,9 +683,6 @@ static int winuiFileDlgPopup(Ihandle* ih, int x, int y)
     if (iupAttribGetBoolean(ih, "SHOWHIDDEN"))
       dwFlags |= FOS_FORCESHOWHIDDEN;
 
-    if (iupAttribGetBoolean(ih, "SHOWPREVIEW"))
-      dwFlags |= FOS_FORCEPREVIEWPANEON;
-
     pfd->SetOptions(dwFlags | FOS_FORCEFILESYSTEM);
 
     /* default extension */
