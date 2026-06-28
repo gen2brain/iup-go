@@ -607,6 +607,14 @@ static int winuiButtonMapMethod(Ihandle* ih)
       args.Handled(true);
   });
 
+  aux->gotFocusToken = btn.GotFocus([ih](IInspectable const&, RoutedEventArgs const&) {
+    iupwinuiFocusInOutEvent(ih, 1);
+  });
+
+  aux->lostFocusToken = btn.LostFocus([ih](IInspectable const&, RoutedEventArgs const&) {
+    iupwinuiFocusInOutEvent(ih, 0);
+  });
+
   winuiSetAux(ih, IUPWINUI_BUTTON_AUX, aux);
 
   Canvas parentCanvas = iupwinuiGetParentCanvas(ih);
@@ -641,6 +649,10 @@ static void winuiButtonUnMapMethod(Ihandle* ih)
         btn.Click(aux->clickToken);
       if (aux->keyDownToken)
         btn.PreviewKeyDown(aux->keyDownToken);
+      if (aux->gotFocusToken)
+        btn.GotFocus(aux->gotFocusToken);
+      if (aux->lostFocusToken)
+        btn.LostFocus(aux->lostFocusToken);
       Border contentBorder = btn.Content().try_as<Border>();
       if (contentBorder)
       {

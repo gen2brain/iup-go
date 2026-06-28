@@ -201,9 +201,9 @@ static ContentPreTranslateMessageFunc winui_content_pretranslate = NULL;
 
 static void iupwinuiFindContentPreTranslateMessage(void)
 {
-  HMODULE hModule = GetModuleHandleW(L"Microsoft.UI.Xaml.dll");
+  HMODULE hModule = GetModuleHandleW(L"Microsoft.UI.Windowing.Core.dll");
   if (!hModule)
-    hModule = GetModuleHandleW(L"Microsoft.ui.xaml.dll");
+    hModule = LoadLibraryW(L"Microsoft.UI.Windowing.Core.dll");
 
   if (hModule)
   {

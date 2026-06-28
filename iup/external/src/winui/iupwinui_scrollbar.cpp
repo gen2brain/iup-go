@@ -32,6 +32,9 @@ struct IupWinUIScrollbarAux
   event_token scrollToken;
   bool ignore_changed;
 
+  winrt::event_token gotFocusToken{};
+  winrt::event_token lostFocusToken{};
+
   IupWinUIScrollbarAux() : scrollToken{}, ignore_changed(false) {}
 };
 
@@ -221,6 +224,9 @@ static int winuiScrollbarMapMethod(Ihandle* ih)
   if (parentCanvas)
     parentCanvas.Children().Append(sb);
 
+  aux->gotFocusToken = sb.GotFocus([ih](IInspectable const&, RoutedEventArgs const&) { iupwinuiFocusInOutEvent(ih, 1); });
+  aux->lostFocusToken = sb.LostFocus([ih](IInspectable const&, RoutedEventArgs const&) { iupwinuiFocusInOutEvent(ih, 0); });
+
   winuiSetAux(ih, IUPWINUI_SCROLLBAR_AUX, aux);
   winuiStoreHandle(ih, sb);
   return IUP_NOERROR;
@@ -237,6 +243,10 @@ static void winuiScrollbarUnMapMethod(Ihandle* ih)
     {
       if (aux->scrollToken)
         sb.Scroll(aux->scrollToken);
+      if (aux->gotFocusToken)
+        sb.GotFocus(aux->gotFocusToken);
+      if (aux->lostFocusToken)
+        sb.LostFocus(aux->lostFocusToken);
     }
     winuiReleaseHandle<ScrollBar>(ih);
   }

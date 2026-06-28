@@ -33,6 +33,9 @@ struct IupWinUICalendarAux
 {
   event_token selectedDatesChangedToken;
 
+  winrt::event_token gotFocusToken{};
+  winrt::event_token lostFocusToken{};
+
   IupWinUICalendarAux() : selectedDatesChangedToken{} {}
 };
 
@@ -152,6 +155,9 @@ static int winuiCalendarMapMethod(Ihandle* ih)
   if (parentCanvas)
     parentCanvas.Children().Append(cv);
 
+  aux->gotFocusToken = cv.GotFocus([ih](IInspectable const&, RoutedEventArgs const&) { iupwinuiFocusInOutEvent(ih, 1); });
+  aux->lostFocusToken = cv.LostFocus([ih](IInspectable const&, RoutedEventArgs const&) { iupwinuiFocusInOutEvent(ih, 0); });
+
   winuiSetAux(ih, IUPWINUI_CALENDAR_AUX, aux);
   winuiStoreHandle(ih, cv);
   return IUP_NOERROR;
@@ -164,8 +170,15 @@ static void winuiCalendarUnMapMethod(Ihandle* ih)
   if (ih->handle && aux)
   {
     CalendarView cv = winuiGetHandle<CalendarView>(ih);
-    if (cv && aux->selectedDatesChangedToken)
-      cv.SelectedDatesChanged(aux->selectedDatesChangedToken);
+    if (cv)
+    {
+      if (aux->selectedDatesChangedToken)
+        cv.SelectedDatesChanged(aux->selectedDatesChangedToken);
+      if (aux->gotFocusToken)
+        cv.GotFocus(aux->gotFocusToken);
+      if (aux->lostFocusToken)
+        cv.LostFocus(aux->lostFocusToken);
+    }
     winuiReleaseHandle<CalendarView>(ih);
   }
 

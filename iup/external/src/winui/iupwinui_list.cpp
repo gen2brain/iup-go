@@ -544,6 +544,8 @@ static int winuiListSetValueAttrib(Ihandle* ih, const char* value)
       if (aux->hasEditbox && value && !iupStrToInt(value, &dummy))
       {
         comboBox.Text(iupwinuiStringToHString(value));
+        if (!winuiListGetTextBox(ih))
+          iupAttribSetStr(ih, "_IUPWINUI_PENDING_EDIT_TEXT", value);
       }
       else
       {
@@ -1351,6 +1353,13 @@ static int winuiListMapMethod(Ihandle* ih)
           winuiListReleaseTextBoxAttrib(ih);
           winuiListStoreTextBox(ih, editBox);
 
+          char* pending = iupAttribGet(ih, "_IUPWINUI_PENDING_EDIT_TEXT");
+          if (pending)
+          {
+            sender.as<ComboBox>().Text(iupwinuiStringToHString(pending));
+            iupAttribSet(ih, "_IUPWINUI_PENDING_EDIT_TEXT", NULL);
+          }
+
           if (ih->data->nc > 0)
             editBox.MaxLength(ih->data->nc);
 
@@ -1420,7 +1429,7 @@ static int winuiListMapMethod(Ihandle* ih)
     });
 
     aux->gotFocusToken = comboBox.GotFocus([ih](IInspectable const&, RoutedEventArgs const&) {
-      iupCallGetFocusCb(ih);
+      iupwinuiFocusInOutEvent(ih, 1);
     });
 
     aux->lostFocusToken = comboBox.LostFocus([ih](IInspectable const&, RoutedEventArgs const&) {
@@ -1428,7 +1437,7 @@ static int winuiListMapMethod(Ihandle* ih)
       if (cb && cb.IsDropDownOpen())
         return;
 
-      iupCallKillFocusCb(ih);
+      iupwinuiFocusInOutEvent(ih, 0);
     });
 
     iupwinuiUpdateControlFont(ih, comboBox);
@@ -1531,13 +1540,13 @@ static int winuiListMapMethod(Ihandle* ih)
     });
 
     aux->gotFocusToken = grid.GotFocus([ih](IInspectable const&, RoutedEventArgs const&) {
-      iupCallGetFocusCb(ih);
+      iupwinuiFocusInOutEvent(ih, 1);
     });
 
     aux->lostFocusToken = grid.LostFocus([ih](IInspectable const& sender, RoutedEventArgs const&) {
       if (winuiListFocusIsInside(sender.try_as<UIElement>()))
         return;
-      iupCallKillFocusCb(ih);
+      iupwinuiFocusInOutEvent(ih, 0);
     });
 
     void* lbPtr = nullptr;
@@ -1663,13 +1672,13 @@ static int winuiListMapMethod(Ihandle* ih)
     });
 
     aux->gotFocusToken = listView.GotFocus([ih](IInspectable const&, RoutedEventArgs const&) {
-      iupCallGetFocusCb(ih);
+      iupwinuiFocusInOutEvent(ih, 1);
     });
 
     aux->lostFocusToken = listView.LostFocus([ih](IInspectable const& sender, RoutedEventArgs const&) {
       if (winuiListFocusIsInside(sender.try_as<UIElement>()))
         return;
-      iupCallKillFocusCb(ih);
+      iupwinuiFocusInOutEvent(ih, 0);
     });
 
     winuiListAttachPointerEvents(ih, listView, aux);
@@ -1709,13 +1718,13 @@ static int winuiListMapMethod(Ihandle* ih)
     });
 
     aux->gotFocusToken = listBox.GotFocus([ih](IInspectable const&, RoutedEventArgs const&) {
-      iupCallGetFocusCb(ih);
+      iupwinuiFocusInOutEvent(ih, 1);
     });
 
     aux->lostFocusToken = listBox.LostFocus([ih](IInspectable const& sender, RoutedEventArgs const&) {
       if (winuiListFocusIsInside(sender.try_as<UIElement>()))
         return;
-      iupCallKillFocusCb(ih);
+      iupwinuiFocusInOutEvent(ih, 0);
     });
 
     winuiListAttachPointerEvents(ih, listBox, aux);

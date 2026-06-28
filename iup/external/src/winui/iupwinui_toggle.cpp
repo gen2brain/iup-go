@@ -37,8 +37,11 @@ using namespace Microsoft::UI::Xaml::Media::Imaging;
 using namespace Windows::Foundation;
 
 
-static void winuiToggleCallAction(Ihandle* ih, int checked)
+static void winuiToggleCallAction(Ihandle* ih, int checked, bool valuechanged = true)
 {
+  if (iupAttribGet(ih, "_IUPWINUI_IGNORE_TOGGLE"))
+    return;
+
   IFni cb = (IFni)IupGetCallback(ih, "ACTION");
   if (cb)
   {
@@ -46,6 +49,9 @@ static void winuiToggleCallAction(Ihandle* ih, int checked)
     if (ret == IUP_CLOSE)
       IupExitLoop();
   }
+
+  if (valuechanged && iupObjectCheck(ih))
+    iupBaseCallValueChangedCb(ih);
 }
 
 static int winuiToggleGetChecked(Ihandle* ih)
@@ -108,6 +114,8 @@ static int winuiToggleSetValueAttrib(Ihandle* ih, const char* value)
 
   bool checked = iupStrBoolean(value);
 
+  iupAttribSet(ih, "_IUPWINUI_IGNORE_TOGGLE", "1");
+
   switch (aux->controlType)
   {
   case IUPWINUI_TOGGLE_TOGGLESWITCH:
@@ -145,6 +153,8 @@ static int winuiToggleSetValueAttrib(Ihandle* ih, const char* value)
     }
     break;
   }
+
+  iupAttribSet(ih, "_IUPWINUI_IGNORE_TOGGLE", NULL);
 
   return 0;
 }
@@ -604,7 +614,7 @@ static int winuiToggleMapMethod(Ihandle* ih)
             {
               winuiToggleSetValueAttrib(last_ih, "OFF");
               if (last_ih->data->type == IUP_TOGGLE_IMAGE)
-                winuiToggleCallAction(last_ih, 0);
+                winuiToggleCallAction(last_ih, 0, false);
             }
 
             iupAttribSet(radio, "_IUPWINUI_RADIO_ACTIVE", (char*)ih);
@@ -675,7 +685,7 @@ static int winuiToggleMapMethod(Ihandle* ih)
         if (last_ih && last_ih != ih && iupObjectCheck(last_ih) && last_ih->data->type == IUP_TOGGLE_IMAGE)
         {
           winuiToggleSetValueAttrib(last_ih, "OFF");
-          winuiToggleCallAction(last_ih, 0);
+          winuiToggleCallAction(last_ih, 0, false);
         }
 
         iupAttribSet(radio, "_IUPWINUI_RADIO_ACTIVE", (char*)ih);
@@ -749,6 +759,17 @@ static int winuiToggleMapMethod(Ihandle* ih)
     winuiStoreHandle(ih, cb);
   }
 
+  FrameworkElement fe = winuiGetHandle<FrameworkElement>(ih);
+  if (fe)
+  {
+    aux->gotFocusToken = fe.GotFocus([ih](IInspectable const&, RoutedEventArgs const&) {
+      iupwinuiFocusInOutEvent(ih, 1);
+    });
+    aux->lostFocusToken = fe.LostFocus([ih](IInspectable const&, RoutedEventArgs const&) {
+      iupwinuiFocusInOutEvent(ih, 0);
+    });
+  }
+
   winuiSetAux(ih, IUPWINUI_TOGGLE_AUX, aux);
   return IUP_NOERROR;
 }
@@ -759,6 +780,15 @@ static void winuiToggleUnMapMethod(Ihandle* ih)
 
   if (ih->handle && aux)
   {
+    FrameworkElement fe = winuiGetHandle<FrameworkElement>(ih);
+    if (fe)
+    {
+      if (aux->gotFocusToken)
+        fe.GotFocus(aux->gotFocusToken);
+      if (aux->lostFocusToken)
+        fe.LostFocus(aux->lostFocusToken);
+    }
+
     switch (aux->controlType)
     {
     case IUPWINUI_TOGGLE_TOGGLESWITCH:
