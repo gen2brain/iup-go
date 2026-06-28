@@ -493,6 +493,24 @@ static void cocoaTextCallCaretCb(Ihandle* ih)
     cocoaTextCallCaretCb(ih);
 }
 
+- (void) controlTextDidBeginEditing:(NSNotification*)the_notification
+{
+  NSTextField* text_field = [the_notification object];
+  Ihandle* ih = (Ihandle*)objc_getAssociatedObject(text_field, IHANDLE_ASSOCIATED_OBJ_KEY);
+
+  if (ih && iupObjectCheck(ih))
+    iupcocoaFocusIn(ih);
+}
+
+- (void) controlTextDidEndEditing:(NSNotification*)the_notification
+{
+  NSTextField* text_field = [the_notification object];
+  Ihandle* ih = (Ihandle*)objc_getAssociatedObject(text_field, IHANDLE_ASSOCIATED_OBJ_KEY);
+
+  if (ih && iupObjectCheck(ih))
+    iupcocoaFocusOut(ih);
+}
+
 @end
 
 /* Inherit from IupCocoaTextFieldDelegate to get VALUECHANGED_CB */
