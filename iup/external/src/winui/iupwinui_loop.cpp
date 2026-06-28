@@ -71,6 +71,14 @@ static int winuiLoopProcessMessage(MSG* msg)
   if (msg->message == WM_QUIT)
     return IUP_CLOSE;
 
+  if (msg->wParam == VK_MENU)
+  {
+    if (msg->message == WM_SYSKEYDOWN || msg->message == WM_KEYDOWN)
+      iupwinuiSetAccelCueAlt(1);
+    else if (msg->message == WM_SYSKEYUP || msg->message == WM_KEYUP)
+      iupwinuiSetAccelCueAlt(0);
+  }
+
   if (msg->message == WM_KEYDOWN || msg->message == WM_SYSKEYDOWN)
   {
     int wincode = (int)msg->wParam;

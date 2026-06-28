@@ -182,7 +182,7 @@ static int winuiLabelSetTitleAttrib(Ihandle* ih, const char* value)
         iupwinuiApplyMarkupToTextBlock(textBlock, value);
       }
       else
-        textBlock.Text(iupwinuiProcessMnemonic(value, NULL));
+        iupwinuiSetMnemonicText(textBlock, value, NULL);
     }
   }
   return 1;
@@ -197,7 +197,7 @@ static char* winuiLabelGetTitleAttrib(Ihandle* ih)
 
     TextBlock textBlock = winuiLabelGetTextBlock(ih);
     if (textBlock)
-      return iupwinuiHStringToString(textBlock.Text());
+      return iupwinuiHStringToString(iupwinuiTextBlockText(textBlock));
   }
   return NULL;
 }
@@ -382,7 +382,7 @@ static int winuiLabelMapMethod(Ihandle* ih)
 
     const char* title = iupAttribGet(ih, "TITLE");
     if (title)
-      textBlock.Text(iupwinuiProcessMnemonic(title, NULL));
+      iupwinuiSetMnemonicText(textBlock, title, NULL);
 
     border.Child(textBlock);
 

@@ -15,11 +15,15 @@ extern "C" {
 #include "iup_childtree.h"
 #include "iup_canvas.h"
 #include "iup_image.h"
+#include "iup_dlglist.h"
 }
+
+#include <string>
 
 #include "iupwinui_drv.h"
 
 #include <winrt/Microsoft.UI.Xaml.Automation.h>
+#include <winrt/Microsoft.UI.Xaml.Documents.h>
 
 using namespace winrt;
 using namespace Microsoft::UI::Xaml;
@@ -991,4 +995,168 @@ IUP_DRV_API hstring iupwinuiProcessMnemonic(const char* str, char* c)
     *c = mnemonic;
 
   return result;
+}
+
+static bool winui_accel_alt_down = false;
+
+IUP_DRV_API int iupwinuiShowAccelCues(void)
+{
+  BOOL always = FALSE;
+  SystemParametersInfo(SPI_GETKEYBOARDCUES, 0, &always, 0);
+  if (always)
+    return 1;
+
+  return winui_accel_alt_down ? 1 : 0;
+}
+
+IUP_DRV_API hstring iupwinuiTextBlockText(TextBlock const& tb)
+{
+  if (!tb || tb.Inlines().Size() == 0)
+    return tb ? tb.Text() : hstring();
+
+  std::wstring text;
+  for (auto const& inl : tb.Inlines())
+  {
+    if (auto run = inl.try_as<Documents::Run>())
+      text += std::wstring(run.Text());
+    else if (auto span = inl.try_as<Documents::Span>())
+    {
+      for (auto const& inner : span.Inlines())
+        if (auto run2 = inner.try_as<Documents::Run>())
+          text += std::wstring(run2.Text());
+    }
+  }
+  return hstring(text);
+}
+
+static void winuiBuildMnemonicInlines(TextBlock const& tb, std::wstring const& clean, int idx)
+{
+  tb.Text(hstring{});
+  tb.Inlines().Clear();
+
+  if (idx < 0 || !iupwinuiShowAccelCues())
+  {
+    Documents::Run run;
+    run.Text(hstring(clean));
+    tb.Inlines().Append(run);
+    return;
+  }
+
+  if (idx > 0)
+  {
+    Documents::Run pre;
+    pre.Text(hstring(clean.substr(0, idx)));
+    tb.Inlines().Append(pre);
+  }
+
+  Documents::Underline underline;
+  Documents::Run mnemonic;
+  mnemonic.Text(hstring(clean.substr(idx, 1)));
+  underline.Inlines().Append(mnemonic);
+  tb.Inlines().Append(underline);
+
+  if ((size_t)(idx + 1) < clean.size())
+  {
+    Documents::Run post;
+    post.Text(hstring(clean.substr(idx + 1)));
+    tb.Inlines().Append(post);
+  }
+}
+
+IUP_DRV_API void iupwinuiSetMnemonicText(TextBlock const& tb, const char* title, char* c)
+{
+  if (c)
+    *c = 0;
+  if (!tb)
+    return;
+  if (!title)
+    title = "";
+
+  char mnemonic = 0;
+  char* processed = iupStrProcessMnemonic(title, &mnemonic, -1);
+  std::string clean = processed ? processed : "";
+
+  int byte_idx = -1;
+  if (mnemonic)
+  {
+    int ci = 0;
+    for (const char* p = title; *p; p++)
+    {
+      if (*p == '&')
+      {
+        if (*(p + 1) == '&') { ci++; p++; }
+        else { byte_idx = ci; break; }
+      }
+      else
+        ci++;
+    }
+  }
+
+  if (processed && processed != title)
+    free(processed);
+
+  std::wstring clean_w(iupwinuiStringToHString(clean.c_str()).c_str());
+  int idx = -1;
+  if (byte_idx >= 0)
+    idx = (int)std::wstring(iupwinuiStringToHString(clean.substr(0, byte_idx).c_str()).c_str()).size();
+
+  tb.Tag(idx >= 0 ? box_value((int32_t)idx) : nullptr);
+  winuiBuildMnemonicInlines(tb, clean_w, idx);
+
+  if (c)
+    *c = mnemonic;
+}
+
+static void winuiRefreshTextBlocks(Windows::Foundation::IInspectable const& node)
+{
+  if (!node)
+    return;
+
+  int count = VisualTreeHelper::GetChildrenCount(node.as<DependencyObject>());
+  for (int i = 0; i < count; i++)
+  {
+    DependencyObject child = VisualTreeHelper::GetChild(node.as<DependencyObject>(), i);
+
+    TextBlock tb = child.try_as<TextBlock>();
+    if (tb && tb.Tag())
+    {
+      auto boxed = tb.Tag().try_as<Windows::Foundation::IReference<int32_t>>();
+      if (boxed)
+      {
+        std::wstring clean(iupwinuiTextBlockText(tb).c_str());
+        winuiBuildMnemonicInlines(tb, clean, boxed.Value());
+      }
+    }
+
+    winuiRefreshTextBlocks(child);
+  }
+}
+
+IUP_DRV_API void iupwinuiRefreshAccelCues(void)
+{
+  for (Ihandle* dlg = iupDlgListFirst(); dlg; dlg = iupDlgListNext())
+  {
+    if (!IupClassMatch(dlg, "dialog"))
+      continue;
+
+    IupWinUIDialogAux* aux = winuiGetAux<IupWinUIDialogAux>(dlg, IUPWINUI_DIALOG_AUX);
+    if (aux && aux->rootPanel)
+      winuiRefreshTextBlocks(aux->rootPanel);
+  }
+}
+
+IUP_DRV_API void iupwinuiSetAccelCueAlt(int down)
+{
+  bool d = down ? true : false;
+  if (winui_accel_alt_down == d)
+    return;
+
+  winui_accel_alt_down = d;
+
+  BOOL always = FALSE;
+  SystemParametersInfo(SPI_GETKEYBOARDCUES, 0, &always, 0);
+  if (always)
+    return;
+
+  iupwinuiRefreshAccelCues();
 }

@@ -127,6 +127,11 @@ IUP_DRV_API std::wstring iupwinuiStringToWString(const char* str);
  ****************************************************************************/
 
 IUP_DRV_API winrt::hstring iupwinuiProcessMnemonic(const char* str, char* c);
+IUP_DRV_API void iupwinuiSetMnemonicText(winrt::Microsoft::UI::Xaml::Controls::TextBlock const& tb, const char* title, char* c);
+IUP_DRV_API winrt::hstring iupwinuiTextBlockText(winrt::Microsoft::UI::Xaml::Controls::TextBlock const& tb);
+IUP_DRV_API int iupwinuiShowAccelCues(void);
+IUP_DRV_API void iupwinuiRefreshAccelCues(void);
+IUP_DRV_API void iupwinuiSetAccelCueAlt(int down);
 
 /****************************************************************************
  * Parent Canvas Helper

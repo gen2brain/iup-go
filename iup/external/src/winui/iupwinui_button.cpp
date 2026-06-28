@@ -66,8 +66,7 @@ static int winuiButtonSetTitleAttrib(Ihandle* ih, const char* value)
         else
         {
           char c = 0;
-          hstring text = iupwinuiProcessMnemonic(value, &c);
-          tb.Text(text);
+          iupwinuiSetMnemonicText(tb, value, &c);
           if (c)
           {
             wchar_t wc = (wchar_t)c;
@@ -93,7 +92,7 @@ static char* winuiButtonGetTitleAttrib(Ihandle* ih)
     {
       TextBlock tb = border.Child().try_as<TextBlock>();
       if (tb)
-        return iupwinuiHStringToString(tb.Text());
+        return iupwinuiHStringToString(iupwinuiTextBlockText(tb));
     }
   }
   return NULL;
@@ -108,10 +107,8 @@ static void winuiButtonSetImageTextContent(Ihandle* ih, Button btn, Border borde
     sp.Orientation(orient);
 
     char c = 0;
-    hstring text = iupwinuiProcessMnemonic(title, &c);
-
     TextBlock tb;
-    tb.Text(text);
+    iupwinuiSetMnemonicText(tb, title, &c);
 
     if (orient == Orientation::Vertical)
     {
@@ -504,9 +501,8 @@ static int winuiButtonMapMethod(Ihandle* ih)
   else if (title)
   {
     char c = 0;
-    hstring text = iupwinuiProcessMnemonic(title, &c);
     TextBlock tb;
-    tb.Text(text);
+    iupwinuiSetMnemonicText(tb, title, &c);
     contentBorder.Child(tb);
     if (c)
     {
