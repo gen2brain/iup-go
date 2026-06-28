@@ -945,15 +945,11 @@ static int winuiCanvasMapMethod(Ihandle* ih)
   });
 
   aux->gotFocusToken = canvas.GotFocus([ih](IInspectable const&, RoutedEventArgs const&) {
-    IFni cb = (IFni)IupGetCallback(ih, "FOCUS_CB");
-    if (cb)
-      cb(ih, 1);
+    iupwinuiFocusInOutEvent(ih, 1);
   });
 
   aux->lostFocusToken = canvas.LostFocus([ih](IInspectable const&, RoutedEventArgs const&) {
-    IFni cb = (IFni)IupGetCallback(ih, "FOCUS_CB");
-    if (cb)
-      cb(ih, 0);
+    iupwinuiFocusInOutEvent(ih, 0);
   });
 
   aux->sizeChangedToken = canvas.SizeChanged([ih](IInspectable const&, SizeChangedEventArgs const&) {

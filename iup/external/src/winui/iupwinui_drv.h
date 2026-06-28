@@ -48,6 +48,7 @@ IUP_DRV_API void iupwinuiTipsDestroy(Ihandle* ih);
  ****************************************************************************/
 
 IUP_DRV_API void iupwinuiSetCanFocus(void* widget, int can);
+IUP_DRV_API void iupwinuiFocusInOutEvent(Ihandle* ih, int got);
 
 /****************************************************************************
  * Key Input Handling
@@ -278,6 +279,7 @@ struct IupWinUIDialogAux
   HWND lastFocusedHwnd;
   bool isVisible;
   bool windowCreated;
+  winrt::event_token takeFocusToken{};
 
   IupWinUIDialogAux() : xamlSource(nullptr), siteBridge(nullptr),
                         rootPanel(nullptr), contentCanvas(nullptr), menuBar(nullptr),
@@ -295,8 +297,10 @@ struct IupWinUIButtonAux
   winrt::event_token buttonReleasedToken;
   winrt::event_token buttonCaptureLostToken;
   winrt::event_token keyDownToken;
+  winrt::event_token gotFocusToken;
+  winrt::event_token lostFocusToken;
 
-  IupWinUIButtonAux() : clickToken{}, pointerPressedToken{}, captureLostToken{}, buttonPressedToken{}, buttonReleasedToken{}, buttonCaptureLostToken{}, keyDownToken{} {}
+  IupWinUIButtonAux() : clickToken{}, pointerPressedToken{}, captureLostToken{}, buttonPressedToken{}, buttonReleasedToken{}, buttonCaptureLostToken{}, keyDownToken{}, gotFocusToken{}, lostFocusToken{} {}
 };
 
 enum IupWinUIToggleType
@@ -315,10 +319,12 @@ struct IupWinUIToggleAux
   winrt::event_token clickToken;
   winrt::event_token toggledToken;
   winrt::event_token keyDownToken;
+  winrt::event_token gotFocusToken;
+  winrt::event_token lostFocusToken;
   IupWinUIToggleType controlType;
 
   IupWinUIToggleAux() : checkedToken{}, uncheckedToken{}, indeterminateToken{}, clickToken{}, toggledToken{},
-                        keyDownToken{}, controlType(IUPWINUI_TOGGLE_CHECKBOX) {}
+                        keyDownToken{}, gotFocusToken{}, lostFocusToken{}, controlType(IUPWINUI_TOGGLE_CHECKBOX) {}
 };
 
 struct IupWinUITextAux
@@ -404,6 +410,9 @@ struct IupWinUITreeAux
   winrt::event_token dragItemsCompletedToken;
   bool ignoreChange;
 
+  winrt::event_token gotFocusToken{};
+  winrt::event_token lostFocusToken{};
+
   IupWinUITreeAux() : expandingToken{}, collapsedToken{},
                        itemInvokedToken{}, selectionChangedToken{},
                        rightTappedToken{}, keyDownToken{}, doubleTappedToken{},
@@ -461,6 +470,9 @@ struct IupWinUITableAux
   winrt::event_token keyDownToken;
   winrt::event_token sizeChangedToken;
   winrt::event_token containerContentChangingToken;
+
+  winrt::event_token gotFocusToken{};
+  winrt::event_token lostFocusToken{};
 
   IupWinUITableAux() : col_widths(nullptr), col_width_set(nullptr),
                         col_titles(nullptr), cell_values(nullptr),

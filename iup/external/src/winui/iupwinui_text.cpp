@@ -949,11 +949,11 @@ static int winuiTextMapMethod(Ihandle* ih)
     });
 
     aux->gotFocusToken = nb.GotFocus([ih](IInspectable const&, RoutedEventArgs const&) {
-      iupCallGetFocusCb(ih);
+      iupwinuiFocusInOutEvent(ih, 1);
     });
 
     aux->lostFocusToken = nb.LostFocus([ih](IInspectable const&, RoutedEventArgs const&) {
-      iupCallKillFocusCb(ih);
+      iupwinuiFocusInOutEvent(ih, 0);
     });
 
     aux->keyDownToken = nb.PreviewKeyDown([ih](IInspectable const&, KeyRoutedEventArgs const& args) {
@@ -994,11 +994,11 @@ static int winuiTextMapMethod(Ihandle* ih)
     });
 
     aux->gotFocusToken = pb.GotFocus([ih](IInspectable const&, RoutedEventArgs const&) {
-      iupCallGetFocusCb(ih);
+      iupwinuiFocusInOutEvent(ih, 1);
     });
 
     aux->lostFocusToken = pb.LostFocus([ih](IInspectable const&, RoutedEventArgs const&) {
-      iupCallKillFocusCb(ih);
+      iupwinuiFocusInOutEvent(ih, 0);
     });
 
     aux->keyDownToken = pb.PreviewKeyDown([ih](IInspectable const&, KeyRoutedEventArgs const& args) {
@@ -1070,11 +1070,11 @@ static int winuiTextMapMethod(Ihandle* ih)
     });
 
     aux->gotFocusToken = reb.GotFocus([ih](IInspectable const&, RoutedEventArgs const&) {
-      iupCallGetFocusCb(ih);
+      iupwinuiFocusInOutEvent(ih, 1);
     });
 
     aux->lostFocusToken = reb.LostFocus([ih](IInspectable const&, RoutedEventArgs const&) {
-      iupCallKillFocusCb(ih);
+      iupwinuiFocusInOutEvent(ih, 0);
     });
 
     aux->keyDownToken = reb.PreviewKeyDown([ih](IInspectable const&, KeyRoutedEventArgs const& args) {
@@ -1258,11 +1258,11 @@ static int winuiTextMapMethod(Ihandle* ih)
     });
 
     aux->gotFocusToken = tb.GotFocus([ih](IInspectable const&, RoutedEventArgs const&) {
-      iupCallGetFocusCb(ih);
+      iupwinuiFocusInOutEvent(ih, 1);
     });
 
     aux->lostFocusToken = tb.LostFocus([ih](IInspectable const&, RoutedEventArgs const&) {
-      iupCallKillFocusCb(ih);
+      iupwinuiFocusInOutEvent(ih, 0);
     });
 
     aux->keyDownToken = tb.PreviewKeyDown([ih](IInspectable const&, KeyRoutedEventArgs const& args) {

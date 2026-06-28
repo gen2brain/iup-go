@@ -56,6 +56,9 @@ struct IupWinUITabsAux
   int ignoreChange;
   int previousIndex;
 
+  winrt::event_token gotFocusToken{};
+  winrt::event_token lostFocusToken{};
+
   IupWinUITabsAux() : selectionChangedToken{}, tabCloseToken{}, keyDownToken{}, tabItemsChangedToken{}, ignoreChange(0), previousIndex(0) {}
 };
 
@@ -419,7 +422,20 @@ static int winuiTabsMapMethod(Ihandle* ih)
     }
   });
 
-  aux->keyDownToken = tabView.PreviewKeyDown([ih](IInspectable const&, Input::KeyRoutedEventArgs const& args) {
+  aux->keyDownToken = tabView.PreviewKeyDown([ih](IInspectable const& sender, Input::KeyRoutedEventArgs const& args) {
+    DependencyObject self = sender.try_as<DependencyObject>();
+    DependencyObject src = args.OriginalSource().try_as<DependencyObject>();
+    bool forTabs = (src == self);
+    for (DependencyObject d = src; d && d != self; d = VisualTreeHelper::GetParent(d))
+    {
+      if (d.try_as<TabViewItem>())
+      {
+        forTabs = true;
+        break;
+      }
+    }
+    if (!forTabs)
+      return;
     if (!iupwinuiKeyEvent(ih, (int)args.Key(), 1))
       args.Handled(true);
   });
@@ -427,6 +443,9 @@ static int winuiTabsMapMethod(Ihandle* ih)
   Canvas parentCanvas = iupwinuiGetParentCanvas(ih);
   if (parentCanvas)
     parentCanvas.Children().Append(tabView);
+
+  aux->gotFocusToken = tabView.GotFocus([ih](IInspectable const&, RoutedEventArgs const&) { iupwinuiFocusInOutEvent(ih, 1); });
+  aux->lostFocusToken = tabView.LostFocus([ih](IInspectable const&, RoutedEventArgs const&) { iupwinuiFocusInOutEvent(ih, 0); });
 
   winuiSetAux(ih, IUPWINUI_TABS_AUX, aux);
   winuiStoreHandle(ih, tabView);
@@ -478,6 +497,10 @@ static void winuiTabsUnMapMethod(Ihandle* ih)
       tabView.TabItemsChanged(aux->tabItemsChangedToken);
       if (aux->keyDownToken)
         tabView.PreviewKeyDown(aux->keyDownToken);
+      if (aux->gotFocusToken)
+        tabView.GotFocus(aux->gotFocusToken);
+      if (aux->lostFocusToken)
+        tabView.LostFocus(aux->lostFocusToken);
     }
     delete aux;
     iupAttribSet(ih, IUPWINUI_TABS_AUX, nullptr);

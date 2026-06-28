@@ -1921,6 +1921,9 @@ static int winuiTreeMapMethod(Ihandle* ih)
   if (parentCanvas)
     parentCanvas.Children().Append(treeView);
 
+  aux->gotFocusToken = treeView.GotFocus([ih](IInspectable const&, RoutedEventArgs const&) { iupwinuiFocusInOutEvent(ih, 1); });
+  aux->lostFocusToken = treeView.LostFocus([ih](IInspectable const&, RoutedEventArgs const&) { iupwinuiFocusInOutEvent(ih, 0); });
+
   winuiSetAux(ih, IUPWINUI_TREE_AUX, aux);
 
   winuiTreeApplyItemTemplate(ih, treeView);
@@ -1989,6 +1992,10 @@ static void winuiTreeUnMapMethod(Ihandle* ih)
         treeView.KeyDown(aux->keyDownToken);
       if (aux->doubleTappedToken)
         treeView.DoubleTapped(aux->doubleTappedToken);
+      if (aux->gotFocusToken)
+        treeView.GotFocus(aux->gotFocusToken);
+      if (aux->lostFocusToken)
+        treeView.LostFocus(aux->lostFocusToken);
     }
 
     void* tbPtr = (void*)iupAttribGet(ih, "_IUPWINUI_TREE_RENAME_TEXTBLOCK");

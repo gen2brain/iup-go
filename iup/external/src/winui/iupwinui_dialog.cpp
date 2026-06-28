@@ -684,6 +684,16 @@ static int winuiDialogMapMethod(Ihandle* ih)
 
   aux->xamlSource.Content(aux->rootPanel);
 
+  aux->takeFocusToken = aux->xamlSource.TakeFocusRequested(
+    [](DesktopWindowXamlSource const& sender, DesktopWindowXamlSourceTakeFocusRequestedEventArgs const& args) {
+      XamlSourceFocusNavigationReason reason = args.Request().Reason();
+      if (reason != XamlSourceFocusNavigationReason::First && reason != XamlSourceFocusNavigationReason::Last)
+        return;
+
+      XamlSourceFocusNavigationRequest request(reason);
+      sender.NavigateFocus(request);
+    });
+
   {
     const char* backdrop = iupAttribGet(ih, "BACKDROP");
     if (backdrop && backdrop[0])
@@ -740,6 +750,11 @@ static void winuiDialogUnMapMethod(Ihandle* ih)
   {
     if (aux->xamlSource)
     {
+      if (aux->takeFocusToken.value)
+      {
+        aux->xamlSource.TakeFocusRequested(aux->takeFocusToken);
+        aux->takeFocusToken = {};
+      }
       aux->xamlSource.Close();
       aux->xamlSource = nullptr;
     }

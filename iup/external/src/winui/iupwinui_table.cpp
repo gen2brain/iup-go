@@ -3097,6 +3097,9 @@ static int winuiTableMapMethod(Ihandle* ih)
   auto gridVisual = ElementCompositionPreview::GetElementVisual(containerGrid);
   gridVisual.Clip(gridVisual.Compositor().CreateInsetClip());
 
+  aux->gotFocusToken = listView.GotFocus([ih](IInspectable const&, RoutedEventArgs const&) { iupwinuiFocusInOutEvent(ih, 1); });
+  aux->lostFocusToken = listView.LostFocus([ih](IInspectable const&, RoutedEventArgs const&) { iupwinuiFocusInOutEvent(ih, 0); });
+
   winuiStoreHandle(ih, containerGrid);
 
   iupwinuiAddToParent(ih);
@@ -3159,6 +3162,10 @@ static void winuiTableUnMapMethod(Ihandle* ih)
     listView.SelectionChanged(aux->selectionChangedToken);
     listView.DoubleTapped(aux->doubleTappedToken);
     listView.PreviewKeyDown(aux->keyDownToken);
+    if (aux->gotFocusToken)
+      listView.GotFocus(aux->gotFocusToken);
+    if (aux->lostFocusToken)
+      listView.LostFocus(aux->lostFocusToken);
     listView.SizeChanged(aux->sizeChangedToken);
     if (aux->isVirtual)
       listView.ContainerContentChanging(aux->containerContentChangingToken);

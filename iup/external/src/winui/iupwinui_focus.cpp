@@ -26,6 +26,32 @@ using namespace Microsoft::UI::Xaml::Hosting;
 using namespace Microsoft::UI::Xaml::Input;
 
 
+IUP_DRV_API void iupwinuiFocusInOutEvent(Ihandle* ih, int got)
+{
+  if (!iupObjectCheck(ih))
+    return;
+
+  if (got)
+  {
+    if (!iupdrvIsActive(ih))
+      return;
+
+    iupCallGetFocusCb(ih);
+  }
+  else
+  {
+    if (ih == IupGetFocus())
+      iupCallKillFocusCb(ih);
+    else
+    {
+      Icallback cb = IupGetCallback(ih, "KILLFOCUS_CB");
+      if (cb)
+        cb(ih);
+    }
+  }
+}
+
+
 static UIElement winuiGetFocusableElement(Ihandle* ih)
 {
   if (!ih || !ih->handle)
@@ -155,7 +181,8 @@ extern "C" IUP_SDK_API void iupdrvSetFocus(Ihandle* ih)
   if (dialog)
     iupAttribSet(dialog, "_IUPWINUI_LASTFOCUS", (char*)ih);
 
-  winuiSetFocusToIsland(dialog);
+  if (dialog && dialog->handle)
+    iupwinuiBringWindowToForeground((HWND)dialog->handle);
 
   UIElement elem = winuiGetFocusableElement(ih);
   if (elem)

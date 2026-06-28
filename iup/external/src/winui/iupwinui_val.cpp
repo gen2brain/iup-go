@@ -14,6 +14,7 @@ extern "C" {
 #include "iup_object.h"
 #include "iup_str.h"
 #include "iup_val.h"
+#include "iup_focus.h"
 }
 
 #include "iupwinui_drv.h"
@@ -32,9 +33,11 @@ struct IupWinUIValAux
 {
   event_token valueChangedToken;
   event_token keyDownToken;
+  event_token gotFocusToken;
+  event_token lostFocusToken;
   bool ignore_changed;
 
-  IupWinUIValAux() : valueChangedToken{}, keyDownToken{}, ignore_changed(false) {}
+  IupWinUIValAux() : valueChangedToken{}, keyDownToken{}, gotFocusToken{}, lostFocusToken{}, ignore_changed(false) {}
 };
 
 #define IUPWINUI_VAL_AUX "_IUPWINUI_VAL_AUX"
@@ -214,6 +217,14 @@ static int winuiValMapMethod(Ihandle* ih)
       args.Handled(true);
   });
 
+  aux->gotFocusToken = slider.GotFocus([ih](IInspectable const&, RoutedEventArgs const&) {
+    iupwinuiFocusInOutEvent(ih, 1);
+  });
+
+  aux->lostFocusToken = slider.LostFocus([ih](IInspectable const&, RoutedEventArgs const&) {
+    iupwinuiFocusInOutEvent(ih, 0);
+  });
+
   Canvas parentCanvas = iupwinuiGetParentCanvas(ih);
   if (parentCanvas)
     parentCanvas.Children().Append(slider);
@@ -236,6 +247,10 @@ static void winuiValUnMapMethod(Ihandle* ih)
         slider.ValueChanged(aux->valueChangedToken);
       if (aux->keyDownToken)
         slider.PreviewKeyDown(aux->keyDownToken);
+      if (aux->gotFocusToken)
+        slider.GotFocus(aux->gotFocusToken);
+      if (aux->lostFocusToken)
+        slider.LostFocus(aux->lostFocusToken);
     }
     winuiReleaseHandle<Slider>(ih);
   }
