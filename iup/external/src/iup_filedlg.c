@@ -46,8 +46,8 @@ Iclass* iupFileDlgNewClass(void)
   iupClassRegisterAttribute(ic, "DIALOGTYPE", NULL, NULL, IUPAF_SAMEASSYSTEM, "OPEN", IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "PREVIEWDC", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT|IUPAF_READONLY|IUPAF_NO_STRING);
-  iupClassRegisterAttribute(ic, "PREVIEWWIDTH", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT|IUPAF_READONLY);
-  iupClassRegisterAttribute(ic, "PREVIEWHEIGHT", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT|IUPAF_READONLY);
+  iupClassRegisterAttribute(ic, "PREVIEWWIDTH", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "PREVIEWHEIGHT", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "ALLOWNEW", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DIRECTORY", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);

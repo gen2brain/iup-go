@@ -432,6 +432,9 @@ static int fltkFileDlgPopup(Ihandle* ih, int x, int y)
   Fl_Window* dlg_win = Fl::first_window();
   if (dlg_win)
   {
+    if (preview_canvas)
+      preview_canvas->resize(2, preview_canvas->y(), dlg_win->w() - 4, preview_canvas->h());
+
     if (iupDialogGetNativeParent(ih))
       iupfltkX11SetSkipTaskbar(dlg_win);
 

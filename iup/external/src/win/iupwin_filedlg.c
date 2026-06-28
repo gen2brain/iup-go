@@ -620,8 +620,16 @@ static UINT_PTR CALLBACK winFileDlgPreviewHook(HWND hWnd, UINT uiMsg, WPARAM wPa
   return 0;
 }
 
-static HGLOBAL winFileDlgCreatePreviewTemplate(void)
+static HGLOBAL winFileDlgCreatePreviewTemplate(int preview_height)
 {
+  int dlg_cy = 95, item_cy = 90;   /* dialog units (8pt MS Shell Dlg) */
+
+  if (preview_height > 0)
+  {
+    item_cy = MulDiv(preview_height, 8, 13);   /* pixels to vertical dialog units */
+    dlg_cy = item_cy + 5;
+  }
+
   /*
    * Creates a dialog template in memory equivalent to:
    *
@@ -664,7 +672,7 @@ static HGLOBAL winFileDlgCreatePreviewTemplate(void)
     pDlg->x = 0;
     pDlg->y = 0;
     pDlg->cx = 250;
-    pDlg->cy = 95;
+    pDlg->cy = dlg_cy;
     p += sizeof(DLGTEMPLATE);
   }
 
@@ -700,7 +708,7 @@ static HGLOBAL winFileDlgCreatePreviewTemplate(void)
     pItem->x = 70;
     pItem->y = 0;
     pItem->cx = 120;
-    pItem->cy = 90;
+    pItem->cy = item_cy;
     pItem->id = IUP_PREVIEWCANVAS;
     p += sizeof(DLGITEMTEMPLATE);
   }
@@ -898,7 +906,7 @@ static int winFileDlgPopup(Ihandle *ih, int x, int y)
 
   if (iupAttribGetBoolean(ih, "SHOWPREVIEW") && IupGetCallback(ih, "FILE_CB"))
   {
-    hPreviewTemplate = winFileDlgCreatePreviewTemplate();
+    hPreviewTemplate = winFileDlgCreatePreviewTemplate(iupAttribGetInt(ih, "PREVIEWHEIGHT"));
     if (hPreviewTemplate)
     {
       openfilename.Flags |= OFN_ENABLETEMPLATEHANDLE;

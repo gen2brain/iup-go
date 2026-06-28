@@ -562,11 +562,20 @@ static void motFileDlgPreviewCanvasExposeCallback(Widget w, Ihandle *ih, XtPoint
   if (!iupAttribGet(ih, "PREVIEWDC"))
     motFileDlgPreviewCanvasInit(ih, w);
 
+  cb = (IFnss)IupGetCallback(ih, "FILE_CB");
+
+  filename = iupAttribGet(ih, "_IUPDLG_PREVIEWFILE");
+  if (filename && iupmotIsFile(filename))
+  {
+    cb(ih, filename, "PAINT");
+    (void)call_data;
+    (void)w;
+    return;
+  }
+
   XtVaGetValues(filebox, XmNdirSpec, &xm_file, NULL);
   filename = XmStringUnparse(xm_file, NULL, XmCHARSET_TEXT, XmCHARSET_TEXT, NULL, 0, XmOUTPUT_ALL);
 
-  /* callback here always exists */
-  cb = (IFnss)IupGetCallback(ih, "FILE_CB");
   if (iupmotIsFile(filename))
     cb(ih, filename, "PAINT");
   else
@@ -583,6 +592,8 @@ static void motFileDlgBrowseSelectionCallback(Widget w, Ihandle* ih, XmListCallb
   IFnss cb;
 
   filename = XmStringUnparse(list_data->item, NULL, XmCHARSET_TEXT, XmCHARSET_TEXT, NULL, 0, XmOUTPUT_ALL);
+
+  iupAttribSetStr(ih, "_IUPDLG_PREVIEWFILE", filename);
 
   /* callback here always exists */
   cb = (IFnss)IupGetCallback(ih, "FILE_CB");
@@ -780,13 +791,18 @@ static int motFileDlgPopup(Ihandle* ih, int x, int y)
 
       if (iupAttribGetBoolean(ih, "SHOWPREVIEW"))
       {
+        int preview_width = iupAttribGetInt(ih, "PREVIEWWIDTH");
+        int preview_height = iupAttribGetInt(ih, "PREVIEWHEIGHT");
         Widget frame = XtVaCreateManagedWidget("preview_canvas", xmFrameWidgetClass, filebox,
                                                         XmNshadowType, XmSHADOW_ETCHED_IN,
                                                         NULL);
 
+        if (preview_width <= 0) preview_width = 180;
+        if (preview_height <= 0) preview_height = 150;
+
         preview_canvas = XtVaCreateManagedWidget("preview_canvas", xmDrawingAreaWidgetClass, frame,
-                                                        XmNwidth, 180, 
-                                                        XmNheight, 150,
+                                                        XmNwidth, preview_width,
+                                                        XmNheight, preview_height,
                                                         XmNresizePolicy, XmRESIZE_GROW,
                                                         NULL);
 
