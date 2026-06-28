@@ -324,7 +324,12 @@ extern "C" IUP_SDK_API int iupdrvIsVisible(Ihandle* ih)
 
   UIElement elem = winuiGetHandle<UIElement>(ih);
   if (elem)
-    return elem.Visibility() == Visibility::Visible ? 1 : 0;
+  {
+    if (elem.Visibility() != Visibility::Visible)
+      return 0;
+
+    return iupwinuiIsInCurrentTab(ih);
+  }
 
   return 0;
 }

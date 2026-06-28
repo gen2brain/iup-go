@@ -543,9 +543,40 @@ static int winuiListSetValueAttrib(Ihandle* ih, const char* value)
       int dummy;
       if (aux->hasEditbox && value && !iupStrToInt(value, &dummy))
       {
-        comboBox.Text(iupwinuiStringToHString(value));
-        if (!winuiListGetTextBox(ih))
-          iupAttribSetStr(ih, "_IUPWINUI_PENDING_EDIT_TEXT", value);
+        hstring text = iupwinuiStringToHString(value);
+
+        int match = -1;
+        uint32_t count = comboBox.Items().Size();
+        for (uint32_t i = 0; i < count; i++)
+        {
+          if (unbox_value_or<hstring>(comboBox.Items().GetAt(i), hstring{}) == text)
+          {
+            match = (int)i;
+            break;
+          }
+        }
+
+        if (match >= 0)
+        {
+          iupAttribSet(ih, "_IUPWINUI_PENDING_EDIT_TEXT", NULL);
+          comboBox.SelectedIndex(match);
+        }
+        else
+        {
+          comboBox.SelectedIndex(-1);
+          TextBox editBox = winuiListGetTextBox(ih);
+          if (editBox)
+          {
+            iupAttribSet(ih, "_IUPWINUI_DISABLE_TEXT_CB", "1");
+            editBox.Text(text);
+            iupAttribSet(ih, "_IUPWINUI_DISABLE_TEXT_CB", NULL);
+          }
+          else
+          {
+            comboBox.Text(text);
+            iupAttribSetStr(ih, "_IUPWINUI_PENDING_EDIT_TEXT", value);
+          }
+        }
       }
       else
       {
@@ -630,10 +661,17 @@ static char* winuiListGetValueAttrib(Ihandle* ih)
         hstring text = comboBox.Text();
         if (!text.empty())
           return iupwinuiHStringToString(text);
+
+        int pos = comboBox.SelectedIndex();
+        if (pos >= 0)
+          return iupwinuiHStringToString(unbox_value_or<hstring>(comboBox.Items().GetAt(pos), hstring{}));
       }
-      int pos = comboBox.SelectedIndex();
-      if (pos >= 0)
-        return iupStrReturnInt(pos + 1);
+      else
+      {
+        int pos = comboBox.SelectedIndex();
+        if (pos >= 0)
+          return iupStrReturnInt(pos + 1);
+      }
     }
   }
   else if (aux->hasEditbox)
@@ -1356,7 +1394,7 @@ static int winuiListMapMethod(Ihandle* ih)
           char* pending = iupAttribGet(ih, "_IUPWINUI_PENDING_EDIT_TEXT");
           if (pending)
           {
-            sender.as<ComboBox>().Text(iupwinuiStringToHString(pending));
+            editBox.Text(iupwinuiStringToHString(pending));
             iupAttribSet(ih, "_IUPWINUI_PENDING_EDIT_TEXT", NULL);
           }
 

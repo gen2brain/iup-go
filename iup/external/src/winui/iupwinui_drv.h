@@ -49,6 +49,7 @@ IUP_DRV_API void iupwinuiTipsDestroy(Ihandle* ih);
 
 IUP_DRV_API void iupwinuiSetCanFocus(void* widget, int can);
 IUP_DRV_API void iupwinuiFocusInOutEvent(Ihandle* ih, int got);
+IUP_DRV_API int iupwinuiIsInCurrentTab(Ihandle* ih);
 
 /****************************************************************************
  * Key Input Handling

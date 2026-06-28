@@ -598,6 +598,17 @@ extern "C" IUP_SDK_API int iupdrvTabsGetCurrentTab(Ihandle* ih)
   return tabView.SelectedIndex();
 }
 
+IUP_DRV_API int iupwinuiIsInCurrentTab(Ihandle* ih)
+{
+  Ihandle* prev = ih;
+  for (Ihandle* p = ih->parent; p; prev = p, p = p->parent)
+  {
+    if (IupClassMatch(p, "tabs") && IupGetChildPos(p, prev) != iupdrvTabsGetCurrentTab(p))
+      return 0;
+  }
+  return 1;
+}
+
 extern "C" IUP_SDK_API void iupdrvTabsSetCurrentTab(Ihandle* ih, int pos)
 {
   TabView tabView = winuiTabsGetTabView(ih);
