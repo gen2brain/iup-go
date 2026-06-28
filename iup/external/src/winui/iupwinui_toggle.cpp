@@ -243,13 +243,12 @@ static void winuiToggleSetImageContent(Ihandle* ih, const char* name, int make_i
 
 static IInspectable winuiToggleMakeContent(Ihandle* ih, const char* value)
 {
+  TextBlock tb;
   if (iupAttribGetBoolean(ih, "MARKUP"))
-  {
-    TextBlock tb;
     iupwinuiApplyMarkupToTextBlock(tb, value);
-    return tb;
-  }
-  return box_value(iupwinuiProcessMnemonic(value, NULL));
+  else
+    iupwinuiSetMnemonicText(tb, value, NULL);
+  return tb;
 }
 
 static int winuiToggleSetTitleAttrib(Ihandle* ih, const char* value)
@@ -355,7 +354,7 @@ static char* winuiToggleGetTitleAttrib(Ihandle* ih)
   {
     TextBlock tb = content.try_as<TextBlock>();
     if (tb)
-      return iupwinuiHStringToString(tb.Text());
+      return iupwinuiHStringToString(iupwinuiTextBlockText(tb));
 
     return iupwinuiHStringToString(unbox_value<hstring>(content));
   }
@@ -544,7 +543,7 @@ static int winuiToggleMapMethod(Ihandle* ih)
     ts.Resources().Insert(box_value(L"ToggleSwitchPostContentMargin"), box_value(5.0));
 
     if (title)
-      ts.Header(box_value(iupwinuiProcessMnemonic(title, NULL)));
+      ts.Header(winuiToggleMakeContent(ih, title));
 
     aux->toggledToken = ts.Toggled([ih](IInspectable const&, RoutedEventArgs const&) {
       ToggleSwitch t = winuiGetHandle<ToggleSwitch>(ih);
@@ -676,7 +675,7 @@ static int winuiToggleMapMethod(Ihandle* ih)
     rb.GroupName(iupwinuiStringToHString(groupName));
 
     if (title)
-      rb.Content(box_value(iupwinuiProcessMnemonic(title, NULL)));
+      rb.Content(winuiToggleMakeContent(ih, title));
 
     aux->checkedToken = rb.Checked([ih, radio](IInspectable const&, RoutedEventArgs const&) {
       if (radio)
@@ -729,7 +728,7 @@ static int winuiToggleMapMethod(Ihandle* ih)
     cb.MinHeight(0);
 
     if (title)
-      cb.Content(box_value(iupwinuiProcessMnemonic(title, NULL)));
+      cb.Content(winuiToggleMakeContent(ih, title));
 
     aux->checkedToken = cb.Checked([ih](IInspectable const&, RoutedEventArgs const&) {
       winuiToggleCallAction(ih, 1);
