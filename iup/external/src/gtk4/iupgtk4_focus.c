@@ -9,6 +9,7 @@
 #include "iup.h"
 
 #include "iup_object.h"
+#include "iup_attrib.h"
 #include "iup_focus.h"
 #include "iup_drv.h"
 
@@ -30,7 +31,8 @@ IUP_SDK_API void iupdrvSetFocus(Ihandle *ih)
       gtk_window_present(GTK_WINDOW(dialog->handle));
   }
 
-  gtk_widget_grab_focus(ih->handle);
+  GtkWidget* focus_widget = (GtkWidget*)iupAttribGet(ih, "_IUPGTK4_FOCUSWIDGET");
+  gtk_widget_grab_focus(focus_widget ? focus_widget : ih->handle);
 }
 
 static void gtk4FocusEnter(GtkEventControllerFocus* controller, Ihandle* ih)

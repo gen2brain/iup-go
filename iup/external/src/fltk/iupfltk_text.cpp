@@ -497,15 +497,26 @@ public:
   Ihandle* iup_handle;
   char saved_text[256];
   int noauto;
+  bool iup_focused;
 
   IupFltkSpinner(int x, int y, int w, int h, Ihandle* ih)
-    : Fl_Spinner(x, y, w, h), iup_handle(ih), noauto(0)
+    : Fl_Spinner(x, y, w, h), iup_handle(ih), noauto(0), iup_focused(false)
   {
     saved_text[0] = '\0';
   }
 
   int handle(int event) override
   {
+    if (event == FL_FOCUS && !iup_focused)
+    {
+      iup_focused = true;
+      iupfltkFocusInOutEvent(this, iup_handle, FL_FOCUS);
+    }
+    else if (event == FL_UNFOCUS && iup_focused)
+    {
+      iup_focused = false;
+      iupfltkFocusInOutEvent(this, iup_handle, FL_UNFOCUS);
+    }
     if (noauto && (event == FL_PUSH || event == FL_KEYBOARD))
     {
       Fl_Input* inp = (Fl_Input*)child(0);

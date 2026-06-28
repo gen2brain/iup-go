@@ -18,6 +18,7 @@
 #include "iup_drvfont.h"
 #include "iup_key.h"
 #include "iup_image.h"
+#include "iup_focus.h"
 
 #include "iupgtk4_drv.h"
 #include "iup_table.h"
@@ -1034,49 +1035,7 @@ static gboolean on_key_pressed(GtkEventControllerKey* controller, guint keyval, 
 {
   Igtk4TableData* gtk_data = IGTK4_TABLE_DATA(ih);
 
-  if (keyval == GDK_KEY_Tab || keyval == GDK_KEY_ISO_Left_Tab)
-  {
-    int old_row = gtk_data->current_row;
-
-    if (state & GDK_SHIFT_MASK)
-    {
-      gtk_data->current_col--;
-      if (gtk_data->current_col < 1)
-      {
-        gtk_data->current_col = ih->data->num_col;
-        if (gtk_data->current_row > 1)
-          gtk_data->current_row--;
-        else
-          gtk_data->current_row = ih->data->num_lin;
-      }
-    }
-    else
-    {
-      gtk_data->current_col++;
-      if (gtk_data->current_col > ih->data->num_col)
-      {
-        gtk_data->current_col = 1;
-        if (gtk_data->current_row < ih->data->num_lin)
-          gtk_data->current_row++;
-        else
-          gtk_data->current_row = 1;
-      }
-    }
-
-    if (gtk_data->current_row != old_row && GTK_IS_SINGLE_SELECTION(gtk_data->selection_model))
-      gtk_single_selection_set_selected(GTK_SINGLE_SELECTION(gtk_data->selection_model), gtk_data->current_row - 1);
-
-    gtk4TableNotifyRow(gtk_data, old_row);
-    if (gtk_data->current_row != old_row)
-      gtk4TableNotifyRow(gtk_data, gtk_data->current_row);
-
-    IFnii cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
-    if (cb)
-      cb(ih, gtk_data->current_row, gtk_data->current_col);
-
-    return TRUE;
-  }
-  else if (keyval == GDK_KEY_Left || keyval == GDK_KEY_Right)
+  if (keyval == GDK_KEY_Left || keyval == GDK_KEY_Right)
   {
     /* Check if currently editing, if so, let arrow keys move cursor in text */
     GtkWidget* current = gtk_data->column_view;
@@ -1459,6 +1418,8 @@ static void gtk4TableFocusEnter(GtkEventControllerFocus* controller, Ihandle* ih
   gtk_data->has_focus = 1;
   if (gtk_data->current_row >= 1)
     gtk4TableNotifyRow(gtk_data, gtk_data->current_row);
+  if (iupObjectCheck(ih) && iupdrvIsActive(ih))
+    iupCallGetFocusCb(ih);
 }
 
 static void gtk4TableFocusLeave(GtkEventControllerFocus* controller, Ihandle* ih)
@@ -1468,6 +1429,8 @@ static void gtk4TableFocusLeave(GtkEventControllerFocus* controller, Ihandle* ih
   gtk_data->has_focus = 0;
   if (gtk_data->current_row >= 1)
     gtk4TableNotifyRow(gtk_data, gtk_data->current_row);
+  if (iupObjectCheck(ih))
+    iupCallKillFocusCb(ih);
 }
 
 static int gtk4TableMapMethod(Ihandle* ih)

@@ -151,12 +151,8 @@ public:
     {
       case FL_FOCUS:
       case FL_UNFOCUS:
-      {
-        IFni cb = (IFni)IupGetCallback(iup_handle, "FOCUS_CB");
-        if (cb)
-          cb(iup_handle, event == FL_FOCUS ? 1 : 0);
+        iupfltkFocusInOutEvent(this, iup_handle, event);
         break;
-      }
       case FL_ENTER:
       {
         IFn cb = (IFn)IupGetCallback(iup_handle, "ENTERWINDOW_CB");
@@ -217,12 +213,8 @@ public:
     {
       case FL_FOCUS:
       case FL_UNFOCUS:
-      {
-        IFni cb = (IFni)IupGetCallback(iup_handle, "FOCUS_CB");
-        if (cb)
-          cb(iup_handle, event == FL_FOCUS ? 1 : 0);
+        iupfltkFocusInOutEvent(this, iup_handle, event);
         break;
-      }
       case FL_ENTER:
       {
         IFn cb = (IFn)IupGetCallback(iup_handle, "ENTERWINDOW_CB");

@@ -133,7 +133,7 @@ class IupHaikuTableView : public BColumnListView
 public:
   explicit IupHaikuTableView(Ihandle* ih)
     : BColumnListView(BRect(0, 0, 0, 0), "iup_table",
-                      B_FOLLOW_NONE, B_SUPPORTS_LAYOUT | B_DRAW_ON_CHILDREN,
+                      B_FOLLOW_NONE, B_SUPPORTS_LAYOUT | B_DRAW_ON_CHILDREN | B_NAVIGABLE,
                       B_FANCY_BORDER, true),
       fIhandle(ih)
   {

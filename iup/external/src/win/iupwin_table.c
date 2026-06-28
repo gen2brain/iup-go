@@ -2469,61 +2469,9 @@ static int winTableKeyProc(Ihandle* ih, HWND hwnd, UINT msg, WPARAM wp, LPARAM l
         break;
 
       case VK_TAB:
-      {
-        BOOL shift = (GetKeyState(VK_SHIFT) & 0x8000) != 0;
-
-        if (shift)
-        {
-          /* Shift+Tab: Move to previous cell */
-          if (col > 1)
-          {
-            iupdrvTableSetFocusCell(ih, lin, col - 1);
-
-            IFnii enteritem_cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
-            if (enteritem_cb)
-              enteritem_cb(ih, lin, col - 1);
-
-            handled = TRUE;
-          }
-          else if (lin > 1)
-          {
-            /* At start of row, move to last column of previous row */
-            iupdrvTableSetFocusCell(ih, lin - 1, ih->data->num_col);
-
-            IFnii enteritem_cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
-            if (enteritem_cb)
-              enteritem_cb(ih, lin - 1, ih->data->num_col);
-
-            handled = TRUE;
-          }
-        }
-        else
-        {
-          /* Tab: Move to next cell */
-          if (col < ih->data->num_col)
-          {
-            iupdrvTableSetFocusCell(ih, lin, col + 1);
-
-            IFnii enteritem_cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
-            if (enteritem_cb)
-              enteritem_cb(ih, lin, col + 1);
-
-            handled = TRUE;
-          }
-          else if (lin < ih->data->num_lin)
-          {
-            /* At end of row, move to first column of next row */
-            iupdrvTableSetFocusCell(ih, lin + 1, 1);
-
-            IFnii enteritem_cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
-            if (enteritem_cb)
-              enteritem_cb(ih, lin + 1, 1);
-
-            handled = TRUE;
-          }
-        }
+        if (!iupwinKeyEvent(ih, (int)wp, 1))
+          handled = TRUE;
         break;
-      }
 
       case VK_RETURN:
         winTableStartEdit(ih, lin, col);

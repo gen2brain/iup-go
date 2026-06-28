@@ -131,6 +131,10 @@ public:
       case FL_UNFOCUS:
         iupfltkFocusInOutEvent(this, iup_handle, event);
         break;
+      case FL_KEYBOARD:
+        if (Fl::event_key() == FL_Tab && iupfltkKeyPressEvent(this, iup_handle))
+          return 1;
+        break;
       case FL_ENTER:
       case FL_LEAVE:
         iupfltkEnterLeaveEvent(this, iup_handle, event);

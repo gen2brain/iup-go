@@ -152,6 +152,12 @@ public:
     Base::SetTarget(this);
   }
 
+  void MakeFocus(bool focus = true) override
+  {
+    Base::MakeFocus(focus);
+    if (fIhandle) iuphaikuFocusInOutEvent(fIhandle, focus ? 1 : 0);
+  }
+
   void MessageReceived(BMessage* msg) override
   {
     if (msg && msg->what == IUPHAIKU_TOGGLE_MSG && fIhandle)
@@ -231,6 +237,12 @@ public:
   {
     BButton::AttachedToWindow();
     SetTarget(this);
+  }
+
+  void MakeFocus(bool focus = true) override
+  {
+    BButton::MakeFocus(focus);
+    if (fIhandle) iuphaikuFocusInOutEvent(fIhandle, focus ? 1 : 0);
   }
 
   void MessageReceived(BMessage* msg) override
@@ -387,6 +399,7 @@ public:
   {
     BView::MakeFocus(focus);
     Invalidate();
+    if (fIhandle) iuphaikuFocusInOutEvent(fIhandle, focus ? 1 : 0);
   }
 
   void MessageReceived(BMessage* msg) override

@@ -616,24 +616,14 @@ IUP_SDK_API int iupdrvIsVisible(Ihandle* ih)
   if (!ih->handle || !GTK_IS_WIDGET(ih->handle))
     return 0;
 
-  if (gtk_widget_get_visible(ih->handle))
+  GtkWidget* widget = (GtkWidget*)ih->handle;
+  while (widget)
   {
-    /* Must check parents since we use gtk_widget_set_visible individually */
-    Ihandle* parent = ih->parent;
-    while (parent)
-    {
-      if (parent->iclass->nativetype != IUP_TYPEVOID)
-      {
-        if (!parent->handle || !GTK_IS_WIDGET(parent->handle))
-          return 0;
-        if (!gtk_widget_get_visible(parent->handle))
-          return 0;
-      }
-      parent = parent->parent;
-    }
-    return 1;
+    if (!gtk_widget_get_visible(widget))
+      return 0;
+    widget = gtk_widget_get_parent(widget);
   }
-  return 0;
+  return 1;
 }
 
 IUP_SDK_API int iupdrvIsActive(Ihandle* ih)

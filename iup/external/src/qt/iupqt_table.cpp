@@ -449,6 +449,13 @@ protected:
       enableChangeNotifications();
     }
     QTableWidget::focusInEvent(event);
+    iupqtFocusInOutEvent(this, event, ih);
+  }
+
+  void focusOutEvent(QFocusEvent* event) override
+  {
+    QTableWidget::focusOutEvent(event);
+    iupqtFocusInOutEvent(this, event, ih);
   }
 
   void scrollContentsBy(int dx, int dy) override
@@ -526,6 +533,12 @@ protected:
 
   void keyPressEvent(QKeyEvent* event) override
   {
+    if (iupqtKeyPressEvent(this, event, ih))
+    {
+      event->accept();
+      return;
+    }
+
     /* Handle copy/paste */
     if (event->matches(QKeySequence::Copy))
     {

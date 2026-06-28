@@ -5,6 +5,7 @@ When the focus is changed, the application is notified through the callbacks GET
 
 Keyboard navigation in the dialog uses the "Tab" and "Shift+Tab" keys to change the keyboard focus from one control to another.
 The exception is when the focus is at an **IupMultiline** control, to change focus the combination "Ctrl+Tab" must be used, because "Tab" is a valid input for the text.
+On the Haiku driver keyboard navigation is performed by the system, so to leave an **IupMultiline** the combination "Option+Tab" must be used instead of "Ctrl+Tab".
 All IUP interactive controls have Tab stops, but the navigation order is related to the order the controls are placed in the dialog and cannot be changed.
 The order is the same implemented by the functions **IupNextField** and **IupPreviousField**.
 To remove the Tab stop from a control, use the CANFOCUS attribute.

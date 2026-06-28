@@ -628,11 +628,24 @@ public:
     BTextControl::MessageReceived(msg);
   }
 
+  /* the inner BTextView holds the focus and invalidates us on focus change */
+  void Draw(BRect updateRect) override
+  {
+    BTextControl::Draw(updateRect);
+    bool focused = TextView() && TextView()->IsFocus();
+    if (focused != fLastFocus)
+    {
+      fLastFocus = focused;
+      if (fIhandle) iuphaikuFocusInOutEvent(fIhandle, focused ? 1 : 0);
+    }
+  }
+
   void SetIhandle(Ihandle* ih) { fIhandle = ih; }
 
 private:
   Ihandle* fIhandle;
   BMessageFilter* fKeyFilter;
+  bool fLastFocus = false;
 };
 
 

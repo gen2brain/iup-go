@@ -193,6 +193,18 @@ public:
     }
   }
 
+  /* the inner BTextView holds the focus and invalidates us on focus change */
+  void Draw(BRect updateRect) override
+  {
+    BTextControl::Draw(updateRect);
+    bool focused = TextView() && TextView()->IsFocus();
+    if (focused != fLastFocus)
+    {
+      fLastFocus = focused;
+      if (fIhandle) iuphaikuFocusInOutEvent(fIhandle, focused ? 1 : 0);
+    }
+  }
+
   /* SetDivider resets fText's frame; SetInsets + SetTextRect drive _ResetTextRect to re-center H and V. */
   void FrameResized(float w, float h) override
   {
@@ -283,6 +295,7 @@ private:
   Ihandle* fIhandle;
   IupHaikuTextKeyFilter* fKeyFilter;
   bool fMute;
+  bool fLastFocus = false;
 };
 
 

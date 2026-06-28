@@ -80,9 +80,9 @@ In GTK 4, the native GtkFileDialog already uses portals when appropriate.
 Valid only if the FILE_CB callback is defined, use it to retrieve the file name and the necessary attributes to paint the preview area.
 Supported in Win32, GTK 3, Motif, FLTK, macOS and Qt.
 
-> Read only attributes that are valid inside the FILE_CB callback when status="PAINT":\
-> **    PREVIEWDC**: Returns the Device Context (HDC in Windows and GC in Unix)\
-> **    PREVIEWWIDTH** and **PREVIEWHEIGHT**: Returns the width and the height of the client rectangle for the preview area.\
+> Attributes that are valid inside the FILE_CB callback when status="PAINT":\
+> **    PREVIEWDC** (read-only): Returns the Device Context (HDC in Windows and GC in Unix)\
+> **    PREVIEWWIDTH** and **PREVIEWHEIGHT**: Returns the width and the height of the client rectangle for the preview area. Can also be set before the dialog is shown to define the size in pixels of the preview area (default is driver dependent). In Win32 only the height is used, the width follows the file list.\
 >   Also the attributes WID, HWND, XWINDOW and XDISPLAY are valid and are relative to the preview area.
 >
 > If the attribute PREVIEWGLCANVAS is defined, then it is used as the name of an existent **IupGLCanvas** control to be mapped internally to the preview canvas. Notice that this is not a fully implemented **IupGLCanvas** that inherits from **IupCanvas**. This does the minimum necessary so you can use **IupGLCanvas** auxiliary functions for the preview canvas and call OpenGL functions. No **IupCanvas** attributes or callbacks are available.
