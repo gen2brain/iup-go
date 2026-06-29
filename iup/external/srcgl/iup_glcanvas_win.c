@@ -591,6 +591,18 @@ IUPGL_API void IupGLSwapBuffers(Ihandle* ih)
   SwapBuffers(gldata->device);
 }
 
+IUPGL_API void* IupGLGetProcAddress(const char* name)
+{
+  PROC proc = wglGetProcAddress(name);
+  if (proc == NULL || proc == (PROC)1 || proc == (PROC)2 || proc == (PROC)3 || proc == (PROC)-1)
+  {
+    HMODULE lib = GetModuleHandleA("opengl32.dll");
+    if (lib)
+      proc = (PROC)GetProcAddress(lib, name);
+  }
+  return (void*)proc;
+}
+
 IUPGL_API void IupGLPalette(Ihandle* ih, int index, float r, float g, float b)
 {
   IGlControlData* gldata;

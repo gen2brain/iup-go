@@ -100,6 +100,7 @@ IUPGL_API Ihandle*  IupGLBackgroundBox(Ihandle* child);
 IUPGL_API void      IupGLMakeCurrent(Ihandle* ih);
 IUPGL_API int       IupGLIsCurrent(Ihandle* ih);
 IUPGL_API void      IupGLSwapBuffers(Ihandle* ih);
+IUPGL_API void*     IupGLGetProcAddress(const char* name);
 IUPGL_API void      IupGLPalette(Ihandle* ih, int index, float r, float g, float b);
 IUPGL_API void      IupGLUseFont(Ihandle* ih, int first, int count, int list_base);
 IUPGL_API void      IupGLWait(int gl);

@@ -470,6 +470,11 @@ IUPGL_API void IupGLSwapBuffers(Ihandle* ih)
   eglSwapBuffers(gldata->display, gldata->surface);
 }
 
+IUPGL_API void* IupGLGetProcAddress(const char* name)
+{
+  return (void*)eglGetProcAddress(name);
+}
+
 IUPGL_API void IupGLPalette(Ihandle* ih, int index, float r, float g, float b)
 {
   (void)ih; (void)index; (void)r; (void)g; (void)b;

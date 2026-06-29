@@ -18,6 +18,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <dlfcn.h>
 
 #include "iup.h"
 #include "iupgl.h"
@@ -349,6 +350,11 @@ IUPGL_API void IupGLSwapBuffers(Ihandle* ih)
 
 	glBindRenderbuffer(GL_RENDERBUFFER, gldata->color_renderbuffer);
 	[gldata->context presentRenderbuffer:GL_RENDERBUFFER];
+}
+
+IUPGL_API void* IupGLGetProcAddress(const char* name)
+{
+	return dlsym(RTLD_DEFAULT, name);
 }
 
 /* Indexed color and display-list fonts do not exist in OpenGL ES. */

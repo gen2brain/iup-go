@@ -3,10 +3,13 @@
 package iup
 
 /*
+#include <stdlib.h>
 #include "iup.h"
 #include "iupgl.h"
 */
 import "C"
+
+import "unsafe"
 
 // GLCanvasOpen must be called after Open, so that the control can be used.
 //
@@ -44,6 +47,16 @@ func GLIsCurrent(ih Ihandle) bool {
 // https://github.com/gen2brain/iup-go/blob/main/docs/ctrl/iup_glcanvas.md
 func GLSwapBuffers(ih Ihandle) {
 	C.IupGLSwapBuffers(ih.ptr())
+}
+
+// GLGetProcAddress returns the address of the named OpenGL function, or nil. Call GLMakeCurrent first.
+//
+// https://github.com/gen2brain/iup-go/blob/main/docs/ctrl/iup_glcanvas.md
+func GLGetProcAddress(name string) unsafe.Pointer {
+	cName := C.CString(name)
+	defer C.free(unsafe.Pointer(cName))
+
+	return C.IupGLGetProcAddress(cName)
 }
 
 // GLPalette defines a color in the color palette. This function is necessary when INDEX color is used.
