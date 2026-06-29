@@ -519,6 +519,11 @@ IUPGL_API void IupGLSwapBuffers(Ihandle* ih)
   glXSwapBuffers(gldata->display, gldata->window);
 }
 
+IUPGL_API void* IupGLGetProcAddress(const char* name)
+{
+  return (void*)glXGetProcAddressARB((const GLubyte*)name);
+}
+
 static int xGLCanvasIgnoreError(Display *param1, XErrorEvent *param2)
 {
   (void)param1;

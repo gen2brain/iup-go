@@ -216,6 +216,11 @@ IUPGL_API void IupGLSwapBuffers(Ihandle* ih)
   iupwasmJsCanvasBlit(iupwasmIdOf(ih));
 }
 
+IUPGL_API void* IupGLGetProcAddress(const char* name)
+{
+  return emscripten_GetProcAddress(name);
+}
+
 /* IupGLPalette/IupGLUseFont have no WebGL equivalent (no indexed color or display-list fonts). */
 IUPGL_API void IupGLPalette(Ihandle* ih, int index, float r, float g, float b)
 { (void)ih; (void)index; (void)r; (void)g; (void)b; }

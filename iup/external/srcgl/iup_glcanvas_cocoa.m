@@ -8,6 +8,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <dlfcn.h>
 
 #import <Cocoa/Cocoa.h>
 #import <OpenGL/gl.h>
@@ -809,6 +810,11 @@ IUPGL_API void IupGLSwapBuffers(Ihandle* ih)
   [gldata->context flushBuffer];
 
   [pool drain];
+}
+
+IUPGL_API void* IupGLGetProcAddress(const char* name)
+{
+  return dlsym(RTLD_DEFAULT, name);
 }
 
 IUPGL_API void IupGLPalette(Ihandle* ih, int index, float r, float g, float b)

@@ -1037,6 +1037,11 @@ IUPGL_API void IupGLSwapBuffers(Ihandle* ih)
   iupEGLBackendPostSwapBuffers(ih, gldata);
 }
 
+IUPGL_API void* IupGLGetProcAddress(const char* name)
+{
+  return (void*)eglGetProcAddress(name);
+}
+
 IUPGL_API void IupGLPalette(Ihandle* ih, int index, float r, float g, float b)
 {
   (void)ih;
