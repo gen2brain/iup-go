@@ -218,7 +218,7 @@ IUPGL_API void IupGLSwapBuffers(Ihandle* ih)
 
 IUPGL_API void* IupGLGetProcAddress(const char* name)
 {
-  return emscripten_GetProcAddress(name);
+  return emscripten_webgl_get_proc_address(name);
 }
 
 /* IupGLPalette/IupGLUseFont have no WebGL equivalent (no indexed color or display-list fonts). */
