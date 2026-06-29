@@ -141,6 +141,10 @@ Returns a non-zero value if the given canvas is the current OpenGL context.
 
 Makes the BACK buffer visible. This function is necessary when a double buffer is used.
 
+    void* IupGLGetProcAddress(const char* name);
+
+Returns the address of the named OpenGL function for the current context, or NULL if not available. Call IupGLMakeCurrent first.
+
     void IupGLPalette(Ihandle* ih, int index, float r, float g, float b);
 
 Defines a color in the color palette. This function is necessary when INDEX color is used.
