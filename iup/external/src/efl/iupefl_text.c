@@ -515,17 +515,30 @@ static char* eflTextGetSpinValueAttrib(Ihandle* ih)
   return iupStrReturnInt(val);
 }
 
+/* EFL's spin rejects min==max and value out of range; widen a degenerate range and clamp the value. */
+static void eflSpinApplyLimits(Ihandle* ih, Eo* widget, int min, int max)
+{
+  double cur = efl_ui_range_value_get(widget);
+
+  if (max < min) max = min;
+  if (cur < min) cur = min;
+  else if (cur > max) cur = max;
+
+  ih->data->disable_callbacks = 1;
+  efl_ui_range_limits_set(widget, (double)min, (double)(max > min ? max : min + 1));
+  efl_ui_range_value_set(widget, cur);
+  ih->data->disable_callbacks = 0;
+}
+
 static int eflTextSetSpinMinAttrib(Ihandle* ih, const char* value)
 {
   Eo* widget = iupeflGetWidget(ih);
 
   if (widget && iupAttribGet(ih, "_IUP_EFL_IS_SPINNER"))
   {
-    double min, max;
-    efl_ui_range_limits_get(widget, &min, &max);
-    if (value)
-      { int tmp = 0; iupStrToInt(value, &tmp); min = (double)tmp; }
-    efl_ui_range_limits_set(widget, min, max);
+    int min = 0;
+    if (value) iupStrToInt(value, &min);
+    eflSpinApplyLimits(ih, widget, min, iupAttribGetInt(ih, "SPINMAX"));
   }
 
   return 1;
@@ -537,11 +550,9 @@ static int eflTextSetSpinMaxAttrib(Ihandle* ih, const char* value)
 
   if (widget && iupAttribGet(ih, "_IUP_EFL_IS_SPINNER"))
   {
-    double min, max;
-    efl_ui_range_limits_get(widget, &min, &max);
-    if (value)
-      { int tmp = 0; iupStrToInt(value, &tmp); max = (double)tmp; }
-    efl_ui_range_limits_set(widget, min, max);
+    int max = 0;
+    if (value) iupStrToInt(value, &max);
+    eflSpinApplyLimits(ih, widget, iupAttribGetInt(ih, "SPINMIN"), max);
   }
 
   return 1;
@@ -1514,14 +1525,16 @@ static int eflTextMapMethod(Ihandle* ih)
     double inc = (double)iupAttribGetInt(ih, "SPININC");
     double val = (double)iupAttribGetInt(ih, "SPINVALUE");
 
-    if (max <= min) max = 100;
+    if (max < min) max = min;
     if (inc <= 0) inc = 1;
+    if (val < min) val = min;
+    else if (val > max) val = max;
 
     widget = efl_add(EFL_UI_SPIN_BUTTON_CLASS, parent_win);
     if (!widget)
       return IUP_ERROR;
 
-    efl_ui_range_limits_set(widget, min, max);
+    efl_ui_range_limits_set(widget, min, max > min ? max : min + 1);
     efl_ui_range_step_set(widget, inc);
     efl_ui_range_value_set(widget, val);
     efl_ui_spin_button_direct_text_input_set(widget, EINA_TRUE);
