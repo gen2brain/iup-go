@@ -315,7 +315,12 @@ IUP_DRV_API int iupeflSetMnemonicTitle(Ihandle* ih, Eo* widget, const char* valu
     return 1;
   }
 
-  str = iupStrProcessMnemonic(value, NULL, 0);
+  {
+    char c = 0;
+    str = iupStrProcessMnemonic(value, &c, -1);
+    if (c)
+      iupKeySetMnemonic(ih, c, -1);
+  }
 
   if (efl_isa(widget, EFL_TEXT_INTERFACE))
   {
@@ -828,14 +833,18 @@ IUP_SDK_API int iupdrvBaseSetZorderAttrib(Ihandle* ih, const char* value)
 
 IUP_SDK_API void iupdrvActivate(Ihandle* ih)
 {
-  Eo* widget = iupeflGetWidget(ih);
-  if (widget)
+  Eo* check_widget = (Eo*)iupAttribGet(ih, "_IUP_EFL_CHECK");
+  if (check_widget)
   {
-    if (efl_isa(widget, EFL_INPUT_CLICKABLE_MIXIN))
-    {
-      Efl_Input_Clickable_Clicked clicked = {0, 1};
-      efl_event_callback_call(widget, EFL_INPUT_EVENT_CLICKED, &clicked);
-    }
+    efl_ui_selectable_selected_set(check_widget, !efl_ui_selectable_selected_get(check_widget));
+    return;
+  }
+
+  Eo* widget = iupeflGetWidget(ih);
+  if (widget && efl_isa(widget, EFL_INPUT_CLICKABLE_MIXIN))
+  {
+    Efl_Input_Clickable_Clicked clicked = {0, 1};
+    efl_event_callback_call(widget, EFL_INPUT_EVENT_CLICKED, &clicked);
   }
 }
 

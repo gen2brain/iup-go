@@ -37,6 +37,7 @@
 #include "iup_class.h"
 #include "iup_object.h"
 #include "iup_attrib.h"
+#include "iup_key.h"
 #include "iup_drv.h"
 #include "iup_drvinfo.h"
 #include "iup_str.h"
@@ -246,6 +247,8 @@ static void eflDialogKeyDownCallback(void* data, const Efl_Event* event)
     if (str && str[0] && !str[1])
     {
       char key = str[0];
+      if (iupKeyProcessMnemonic(ih, key))
+        return;
       Elm_Object_Item* item = iupeflMenuFindMnemonic(ih, key);
       if (item)
         elm_menu_item_selected_set(item, EINA_TRUE);
