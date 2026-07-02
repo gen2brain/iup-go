@@ -31,6 +31,7 @@ typedef struct _IeflTableData
   Evas_Object* top_spacer;     /* Spacer above visible cells (virtual mode) */
   Evas_Object* bottom_spacer;  /* Spacer below visible cells (virtual mode) */
   Evas_Object** header_labels; /* Array of column header labels */
+  Evas_Object** header_bgs;    /* Background rectangles for headers (drive column width) */
   Evas_Object** cell_labels;   /* 2D array (flattened): [(lin-1) * num_col + (col-1)] */
   Evas_Object** cell_bgs;      /* Background rectangles for cells (for colors) */
   Evas_Object** cell_images;   /* Image widgets per cell (only when show_image) */
@@ -475,6 +476,54 @@ static void eflTableSwapRows(Ihandle* ih, int lin1, int lin2)
   }
 }
 
+/* Apply alignment, color, font and text to a cell textbox. */
+static void eflTableApplyCellText(Ihandle* ih, Evas_Object* txt, int lin, int col, const char* text, int is_header)
+{
+  int align = eflTableGetColumnAlignment(ih, col);
+  double halign = (align == 1) ? 1.0 : (align == 0) ? 0.5 : 0.0;
+  unsigned char fg_r, fg_g, fg_b;
+  char* font;
+
+  efl_text_horizontal_align_set(txt, halign);
+
+  eflTableGetCellFgColor(ih, lin, col, &fg_r, &fg_g, &fg_b);
+  efl_text_color_set(txt, fg_r, fg_g, fg_b, 255);
+
+  font = eflTableGetCellFont(ih, lin, col);
+  if (font && font[0])
+  {
+    char font_family[100] = "Sans";
+    int font_size = 10, is_bold = 0, is_italic = 0;
+    const char* p = strchr(font, ',');
+
+    if (p)
+    {
+      int len = (int)(p - font);
+      if (len > 0 && len < 100) { strncpy(font_family, font, len); font_family[len] = 0; }
+      p++;
+      while (*p)
+      {
+        while (*p == ' ') p++;
+        if (strncasecmp(p, "Bold", 4) == 0) { is_bold = 1; p += 4; }
+        else if (strncasecmp(p, "Italic", 6) == 0) { is_italic = 1; p += 6; }
+        else if (*p >= '0' && *p <= '9') { font_size = 0; iupStrToInt(p, &font_size); while (*p >= '0' && *p <= '9') p++; }
+        else p++;
+      }
+    }
+    else if (sscanf(font, "%99s %d", font_family, &font_size) < 2)
+      iupStrCopyN(font_family, sizeof(font_family), font);
+
+    efl_text_font_family_set(txt, font_family);
+    efl_text_font_size_set(txt, font_size);
+    efl_text_font_weight_set(txt, (is_header || is_bold) ? EFL_TEXT_FONT_WEIGHT_BOLD : EFL_TEXT_FONT_WEIGHT_NORMAL);
+    efl_text_font_slant_set(txt, is_italic ? EFL_TEXT_FONT_SLANT_ITALIC : EFL_TEXT_FONT_SLANT_NORMAL);
+  }
+  else
+    efl_text_font_weight_set(txt, is_header ? EFL_TEXT_FONT_WEIGHT_BOLD : EFL_TEXT_FONT_WEIGHT_NORMAL);
+
+  efl_text_set(txt, text ? text : "");
+}
+
 static void eflTableUpdateCellLabel(Ihandle* ih, int lin, int col)
 {
   IeflTableData* data = IEFL_TABLE_DATA(ih);
@@ -482,10 +531,6 @@ static void eflTableUpdateCellLabel(Ihandle* ih, int lin, int col)
   int pool_lin, idx;
   char* text;
   Evas_Object* label;
-  int align;
-  const char* align_tag;
-  char markup[1024];
-  unsigned char fg_r, fg_g, fg_b;
 
   if (!data || !data->cell_labels)
     return;
@@ -503,91 +548,7 @@ static void eflTableUpdateCellLabel(Ihandle* ih, int lin, int col)
     return;
 
   text = eflTableGetCellText(ih, lin, col);
-
-  eflTableGetCellFgColor(ih, lin, col, &fg_r, &fg_g, &fg_b);
-
-  /* Apply alignment via style and color via markup */
-  align = eflTableGetColumnAlignment(ih, col);
-  switch (align)
-  {
-    case 1: align_tag = "right"; break;
-    case 0: align_tag = "center"; break;
-    default: align_tag = "left"; break;
-  }
-
-  /* Build and push text style with alignment and font */
-  {
-    char style[512];
-    char* font = eflTableGetCellFont(ih, lin, col);
-
-    if (font && font[0])
-    {
-      char font_family[100] = "Sans";
-      char font_style_str[50] = "";
-      int font_size = 10;
-      int is_bold = 0, is_italic = 0;
-      const char* p;
-
-      p = strchr(font, ',');
-      if (p)
-      {
-        int len = (int)(p - font);
-        if (len > 0 && len < 100)
-        {
-          strncpy(font_family, font, len);
-          font_family[len] = 0;
-        }
-        p++;
-        while (*p)
-        {
-          while (*p == ' ') p++;
-          if (strncasecmp(p, "Bold", 4) == 0)
-          {
-            is_bold = 1;
-            p += 4;
-          }
-          else if (strncasecmp(p, "Italic", 6) == 0)
-          {
-            is_italic = 1;
-            p += 6;
-          }
-          else if (*p >= '0' && *p <= '9')
-          {
-            font_size = 0; iupStrToInt(p, &font_size);
-            while (*p >= '0' && *p <= '9') p++;
-          }
-          else
-            p++;
-        }
-      }
-      else
-      {
-        if (sscanf(font, "%99s %d", font_family, &font_size) < 2)
-          iupStrCopyN(font_family, sizeof(font_family), font);
-      }
-
-      if (is_bold && is_italic)
-        iupStrCopyN(font_style_str, sizeof(font_style_str), ":style=Bold Italic");
-      else if (is_bold)
-        iupStrCopyN(font_style_str, sizeof(font_style_str), ":style=Bold");
-      else if (is_italic)
-        iupStrCopyN(font_style_str, sizeof(font_style_str), ":style=Italic");
-
-      snprintf(style, sizeof(style), "DEFAULT='align=%s font=%s%s font_size=%d'",
-               align_tag, font_family, font_style_str, font_size);
-    }
-    else
-    {
-      snprintf(style, sizeof(style), "DEFAULT='align=%s'", align_tag);
-    }
-
-    elm_entry_text_style_user_pop(label);
-    elm_entry_text_style_user_push(label, style);
-  }
-
-  snprintf(markup, sizeof(markup), "<color=#%02X%02X%02X>%s</color>",
-           fg_r, fg_g, fg_b, text ? text : "");
-  elm_object_text_set(label, markup);
+  eflTableApplyCellText(ih, label, lin, col, text, 0);
 
   eflTableSetCellBgColor(ih, lin, col);
 
@@ -673,14 +634,11 @@ static void eflTableUpdateSortIndicators(Ihandle* ih)
     if (col + 1 == data->sort_column)
     {
       const char* arrow = data->sort_ascending ? " \xe2\x96\xb2" : " \xe2\x96\xbc";
-      snprintf(markup, sizeof(markup), "<b>%s%s</b>", original_title ? original_title : "", arrow);
-      elm_object_text_set(label, markup);
+      snprintf(markup, sizeof(markup), "%s%s", original_title ? original_title : "", arrow);
+      efl_text_set(label, markup);
     }
     else
-    {
-      snprintf(markup, sizeof(markup), "<b>%s</b>", original_title ? original_title : "");
-      elm_object_text_set(label, markup);
-    }
+      efl_text_set(label, original_title ? original_title : "");
   }
 }
 
@@ -699,9 +657,7 @@ static void eflTableRefreshHeaders(Ihandle* ih)
     if (label)
     {
       char* title = eflTableGetHeaderText(ih, col + 1);
-      char markup[512];
-      snprintf(markup, sizeof(markup), "<b>%s</b>", title ? title : "");
-      elm_object_text_set(label, markup);
+      efl_text_set(label, title ? title : "");
     }
   }
 
@@ -1146,52 +1102,38 @@ static int eflTableIsCellEditable(Ihandle* ih, int col)
 
 static void eflTableEndCellEdit(Ihandle* ih, int apply);
 
-static void eflTableEditActivatedCallback(void* data, Evas_Object* obj, void* event_info)
+static void eflTableEditKeyDownCallback(void* data, const Efl_Event* ev)
 {
   Ihandle* ih = (Ihandle*)data;
-  (void)obj;
-  (void)event_info;
+  const char* keyname;
 
   if (!iupObjectCheck(ih))
     return;
 
-  eflTableEndCellEdit(ih, 1);
-}
-
-static void eflTableEditAbortedCallback(void* data, Evas_Object* obj, void* event_info)
-{
-  Ihandle* ih = (Ihandle*)data;
-  (void)obj;
-  (void)event_info;
-
-  if (!iupObjectCheck(ih))
+  keyname = efl_input_key_name_get(ev->info);
+  if (!keyname)
     return;
 
-  eflTableEndCellEdit(ih, 0);
+  if (!strcmp(keyname, "Return") || !strcmp(keyname, "KP_Enter"))
+    eflTableEndCellEdit(ih, 1);
+  else if (!strcmp(keyname, "Escape"))
+    eflTableEndCellEdit(ih, 0);
 }
 
-static void eflTableEditChangedCallback(void* data, Evas_Object* obj, void* event_info)
+static void eflTableEditChangedCallback(void* data, const Efl_Event* ev)
 {
   Ihandle* ih = (Ihandle*)data;
   IeflTableData* table_data = IEFL_TABLE_DATA(ih);
   IFniis edition_cb;
 
-  (void)event_info;
-
-  if (!iupObjectCheck(ih) || !table_data)
-    return;
-
-  if (table_data->editing_lin == 0)
+  if (!iupObjectCheck(ih) || !table_data || table_data->editing_lin == 0)
     return;
 
   edition_cb = (IFniis)IupGetCallback(ih, "EDITION_CB");
   if (edition_cb)
   {
-    const char* markup = elm_entry_entry_get(obj);
-    char* text = markup ? elm_entry_markup_to_utf8(markup) : NULL;
-    edition_cb(ih, table_data->editing_lin, table_data->editing_col, text);
-    if (text)
-      free(text);
+    const char* text = efl_text_get(ev->object);
+    edition_cb(ih, table_data->editing_lin, table_data->editing_col, (char*)(text ? text : ""));
   }
 }
 
@@ -1237,17 +1179,15 @@ static void eflTableStartCellEdit(Ihandle* ih, int lin, int col)
   data->editing_lin = lin;
   data->editing_col = col;
 
-  elm_entry_text_style_user_pop(entry);
-  elm_object_text_set(entry, current_value ? current_value : "");
+  efl_text_set(entry, current_value ? current_value : "");
 
-  elm_object_focus_allow_set(entry, EINA_TRUE);
-  elm_entry_editable_set(entry, EINA_TRUE);
+  efl_text_interactive_selection_allowed_set(entry, EINA_TRUE);
+  efl_text_interactive_editable_set(entry, EINA_TRUE);
   elm_object_focus_set(entry, EINA_TRUE);
-  elm_entry_select_all(entry);
+  efl_text_interactive_all_select(entry);
 
-  evas_object_smart_callback_add(entry, "activated", eflTableEditActivatedCallback, ih);
-  evas_object_smart_callback_add(entry, "aborted", eflTableEditAbortedCallback, ih);
-  evas_object_smart_callback_add(entry, "changed,user", eflTableEditChangedCallback, ih);
+  efl_event_callback_add(entry, EFL_EVENT_KEY_DOWN, eflTableEditKeyDownCallback, ih);
+  efl_event_callback_add(entry, EFL_UI_TEXTBOX_EVENT_CHANGED, eflTableEditChangedCallback, ih);
 }
 
 static void eflTableEndCellEdit(Ihandle* ih, int apply)
@@ -1282,8 +1222,8 @@ static void eflTableEndCellEdit(Ihandle* ih, int apply)
   }
 
   {
-    const char* markup = elm_entry_entry_get(entry);
-    new_text = markup ? elm_entry_markup_to_utf8(markup) : NULL;
+    const char* t = efl_text_get(entry);
+    new_text = t ? strdup(t) : NULL;
   }
 
   editend_cb = (IFniisi)IupGetCallback(ih, "EDITEND_CB");
@@ -1298,9 +1238,8 @@ static void eflTableEndCellEdit(Ihandle* ih, int apply)
     }
   }
 
-  evas_object_smart_callback_del(entry, "activated", eflTableEditActivatedCallback);
-  evas_object_smart_callback_del(entry, "aborted", eflTableEditAbortedCallback);
-  evas_object_smart_callback_del(entry, "changed,user", eflTableEditChangedCallback);
+  efl_event_callback_del(entry, EFL_EVENT_KEY_DOWN, eflTableEditKeyDownCallback, ih);
+  efl_event_callback_del(entry, EFL_UI_TEXTBOX_EVENT_CHANGED, eflTableEditChangedCallback, ih);
 
   if (apply)
   {
@@ -1322,9 +1261,8 @@ static void eflTableEndCellEdit(Ihandle* ih, int apply)
     eflTableUpdateCellLabel(ih, lin, col);
   }
 
-  elm_entry_editable_set(entry, EINA_FALSE);
-  elm_object_focus_allow_set(entry, EINA_FALSE);
-  evas_object_focus_set(entry, EINA_FALSE);
+  efl_text_interactive_editable_set(entry, EINA_FALSE);
+  efl_text_interactive_selection_allowed_set(entry, EINA_FALSE);
 
   data->editing_lin = 0;
   data->editing_col = 0;
@@ -1435,7 +1373,6 @@ static void eflTableCellClickCallback(void* data, const Efl_Event* ev)
 
   if (lin == 0)
     return;
-
   int prev_lin = table_data->selected_lin;
   int prev_col = table_data->selected_col;
 
@@ -1503,120 +1440,14 @@ static void eflTableCellClickCallback(void* data, const Efl_Event* ev)
 
 static Evas_Object* eflTableCreateCellWidget(Ihandle* ih, Evas_Object* parent, const char* text, int is_header, int lin, int col)
 {
-  Evas_Object* entry;
-  int align;
-  const char* align_tag;
-  char markup[1024];
-  unsigned char fg_r, fg_g, fg_b;
+  Evas_Object* entry = efl_add(EFL_UI_TEXTBOX_CLASS, parent);
 
-  entry = elm_entry_add(parent);
-  elm_entry_single_line_set(entry, EINA_TRUE);
-  elm_entry_editable_set(entry, EINA_FALSE);
-  elm_entry_scrollable_set(entry, EINA_FALSE);
-  elm_entry_context_menu_disabled_set(entry, EINA_TRUE);
-  elm_object_focus_allow_set(entry, EINA_FALSE);
+  efl_ui_textbox_scrollable_set(entry, EINA_FALSE);
+  efl_text_multiline_set(entry, EINA_FALSE);
+  efl_text_interactive_editable_set(entry, EINA_FALSE);
+  efl_text_interactive_selection_allowed_set(entry, EINA_FALSE);
 
-  /* Remove the xterm/I-beam cursor that entry sets by default */
-  {
-    Evas_Object* edje = elm_layout_edje_get(entry);
-    if (edje)
-      elm_object_cursor_unset(edje);
-  }
-
-  /* Get column alignment */
-  align = eflTableGetColumnAlignment(ih, col);
-  switch (align)
-  {
-    case 1: align_tag = "right"; break;
-    case 0: align_tag = "center"; break;
-    default: align_tag = "left"; break;
-  }
-
-  /* Get foreground color */
-  eflTableGetCellFgColor(ih, lin, col, &fg_r, &fg_g, &fg_b);
-
-  /* Build and push text style with alignment and font */
-  {
-    char style[512];
-    char* font = eflTableGetCellFont(ih, lin, col);
-
-    if (font && font[0])
-    {
-      char font_family[100] = "Sans";
-      char font_style_str[50] = "";
-      int font_size = 10;
-      int is_bold = 0, is_italic = 0;
-      const char* p;
-
-      /* Parse IUP font format using same logic as eflFontParse */
-      p = strchr(font, ',');
-      if (p)
-      {
-        int len = (int)(p - font);
-        if (len > 0 && len < 100)
-        {
-          strncpy(font_family, font, len);
-          font_family[len] = 0;
-        }
-        p++;
-        while (*p)
-        {
-          while (*p == ' ') p++;
-          if (strncasecmp(p, "Bold", 4) == 0)
-          {
-            is_bold = 1;
-            p += 4;
-          }
-          else if (strncasecmp(p, "Italic", 6) == 0)
-          {
-            is_italic = 1;
-            p += 6;
-          }
-          else if (*p >= '0' && *p <= '9')
-          {
-            font_size = 0; iupStrToInt(p, &font_size);
-            while (*p >= '0' && *p <= '9') p++;
-          }
-          else
-            p++;
-        }
-      }
-      else
-      {
-        /* Simple format like "Monospace 10" */
-        if (sscanf(font, "%99s %d", font_family, &font_size) < 2)
-          iupStrCopyN(font_family, sizeof(font_family), font);
-      }
-
-      if (is_bold && is_italic)
-        iupStrCopyN(font_style_str, sizeof(font_style_str), ":style=Bold Italic");
-      else if (is_bold)
-        iupStrCopyN(font_style_str, sizeof(font_style_str), ":style=Bold");
-      else if (is_italic)
-        iupStrCopyN(font_style_str, sizeof(font_style_str), ":style=Italic");
-
-      snprintf(style, sizeof(style), "DEFAULT='align=%s font=%s%s font_size=%d'",
-               align_tag, font_family, font_style_str, font_size);
-    }
-    else
-    {
-      snprintf(style, sizeof(style), "DEFAULT='align=%s'", align_tag);
-    }
-
-    elm_entry_text_style_user_push(entry, style);
-  }
-
-  if (is_header)
-  {
-    snprintf(markup, sizeof(markup), "<color=#%02X%02X%02X><b>%s</b></color>",
-             fg_r, fg_g, fg_b, text ? text : "");
-  }
-  else
-  {
-    snprintf(markup, sizeof(markup), "<color=#%02X%02X%02X>%s</color>",
-             fg_r, fg_g, fg_b, text ? text : "");
-  }
-  elm_object_text_set(entry, markup);
+  eflTableApplyCellText(ih, entry, lin, col, text, is_header);
 
   efl_gfx_hint_align_set(entry, EVAS_HINT_FILL, EVAS_HINT_FILL);
   efl_gfx_hint_weight_set(entry, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
@@ -1651,6 +1482,20 @@ static void eflTableClearCells(Ihandle* ih)
     }
     free(data->header_labels);
     data->header_labels = NULL;
+  }
+
+  if (data->header_bgs)
+  {
+    for (i = 0; i < alloc_col; i++)
+    {
+      if (data->header_bgs[i])
+      {
+        efl_del(data->header_bgs[i]);
+        data->header_bgs[i] = NULL;
+      }
+    }
+    free(data->header_bgs);
+    data->header_bgs = NULL;
   }
 
   /* Clear cell containers (boxes containing image + entry, when show_image) */
@@ -1758,6 +1603,7 @@ static void eflTableRebuildCells(Ihandle* ih)
 
   /* Allocate header labels */
   data->header_labels = (Evas_Object**)calloc(num_col, sizeof(Evas_Object*));
+  data->header_bgs = (Evas_Object**)calloc(num_col, sizeof(Evas_Object*));
   data->alloc_num_col = num_col;
 
   /* Create header row (row 0 in table) */
@@ -1787,6 +1633,7 @@ static void eflTableRebuildCells(Ihandle* ih)
     efl_gfx_hint_align_set(bg, EVAS_HINT_FILL, EVAS_HINT_FILL);
     efl_gfx_entity_visible_set(bg, EINA_TRUE);
     elm_table_pack(data->table, bg, col, 0, 1, 1);
+    data->header_bgs[col] = bg;
 
     /* Create header label on top */
     label = eflTableCreateCellWidget(ih, data->table, text, 1, 0, col + 1);
@@ -2045,6 +1892,7 @@ static void eflTableRebuildVirtualCells(Ihandle* ih)
 
   /* Create headers at row 0 */
   data->header_labels = (Evas_Object**)calloc(num_col, sizeof(Evas_Object*));
+  data->header_bgs = (Evas_Object**)calloc(num_col, sizeof(Evas_Object*));
   data->alloc_num_col = num_col;
 
   for (col = 0; col < num_col; col++)
@@ -2072,6 +1920,7 @@ static void eflTableRebuildVirtualCells(Ihandle* ih)
     efl_gfx_hint_align_set(bg, EVAS_HINT_FILL, EVAS_HINT_FILL);
     efl_gfx_entity_visible_set(bg, EINA_TRUE);
     elm_table_pack(table, bg, col, 0, 1, 1);
+    data->header_bgs[col] = bg;
 
     label = eflTableCreateCellWidget(ih, table, text, 1, 0, col + 1);
     efl_gfx_hint_size_min_set(label, EINA_SIZE2D(col_width, data->header_height));
@@ -2269,10 +2118,6 @@ static void eflTableUpdateVisibleRows(Ihandle* ih, int force)
   int first_data_row;
   int pool_row, col;
   sIFnii value_cb;
-  int align;
-  const char* align_tag;
-  char markup[1024];
-  unsigned char fg_r, fg_g, fg_b;
   int row_height;
   int scroll_y = 0;
 
@@ -2344,19 +2189,7 @@ static void eflTableUpdateVisibleRows(Ihandle* ih, int force)
       if (value_cb)
         text = value_cb(ih, data_row, col);
 
-      /* Update cell text with proper formatting */
-      align = eflTableGetColumnAlignment(ih, col);
-      switch (align)
-      {
-        case 1: align_tag = "right"; break;
-        case 0: align_tag = "center"; break;
-        default: align_tag = "left"; break;
-      }
-      eflTableGetCellFgColor(ih, data_row, col, &fg_r, &fg_g, &fg_b);
-      snprintf(markup, sizeof(markup),
-               "<align=%s><color=#%02X%02X%02X>%s</color></align>",
-               align_tag, fg_r, fg_g, fg_b, text ? text : "");
-      elm_entry_entry_set(entry, markup);
+      eflTableApplyCellText(ih, entry, data_row, col, text, 0);
 
       /* Update background color */
       if (bg)
@@ -2542,11 +2375,7 @@ IUP_SDK_API void iupdrvTableSetColTitle(Ihandle* ih, int col, const char* title)
     {
       Evas_Object* label = data->header_labels[col - 1];
       if (label)
-      {
-        char markup[512];
-        snprintf(markup, sizeof(markup), "<b>%s</b>", title ? title : "");
-        elm_object_text_set(label, markup);
-      }
+        efl_text_set(label, title ? title : "");
     }
   }
 }
@@ -2573,9 +2402,11 @@ IUP_SDK_API void iupdrvTableSetColWidth(Ihandle* ih, int col, int width)
 
   if (ih->handle)
   {
-    /* Update header label width */
+    /* header label + bg both drive the column width */
     if (data->header_labels && data->header_labels[col - 1])
       efl_gfx_hint_size_min_set(data->header_labels[col - 1], EINA_SIZE2D(width, data->header_height));
+    if (data->header_bgs && data->header_bgs[col - 1])
+      efl_gfx_hint_size_min_set(data->header_bgs[col - 1], EINA_SIZE2D(width, data->header_height));
 
     /* Update all cells in this column */
     {
@@ -2587,6 +2418,8 @@ IUP_SDK_API void iupdrvTableSetColWidth(Ihandle* ih, int col, int width)
                                data->cell_containers[idx] : (data->cell_labels ? data->cell_labels[idx] : NULL);
         if (widget)
           efl_gfx_hint_size_min_set(widget, EINA_SIZE2D(width, data->row_height));
+        if (data->cell_bgs && data->cell_bgs[idx])
+          efl_gfx_hint_size_min_set(data->cell_bgs[idx], EINA_SIZE2D(width, data->row_height));
       }
     }
   }
