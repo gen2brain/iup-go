@@ -362,10 +362,7 @@ IUP_DRV_API void iupeflBaseAddCallbacks(Ihandle* ih, Eo* widget)
   efl_event_callback_add(widget, EFL_EVENT_KEY_UP, iupeflKeyUpEvent, ih);
 
   if (efl_isa(widget, EFL_UI_WIDGET_CLASS))
-  {
-    efl_event_callback_add(widget, EFL_EVENT_FOCUS_IN, iupeflFocusChangedEvent, ih);
-    efl_event_callback_add(widget, EFL_EVENT_FOCUS_OUT, iupeflFocusChangedEvent, ih);
-  }
+    efl_event_callback_add(widget, EFL_UI_FOCUS_OBJECT_EVENT_FOCUS_CHANGED, iupeflFocusChangedEvent, ih);
 }
 
 IUP_DRV_API void iupeflBaseRemoveCallbacks(Ihandle* ih, Eo* widget)
@@ -383,10 +380,7 @@ IUP_DRV_API void iupeflBaseRemoveCallbacks(Ihandle* ih, Eo* widget)
   efl_event_callback_del(widget, EFL_EVENT_KEY_UP, iupeflKeyUpEvent, ih);
 
   if (efl_isa(widget, EFL_UI_WIDGET_CLASS))
-  {
-    efl_event_callback_del(widget, EFL_EVENT_FOCUS_IN, iupeflFocusChangedEvent, ih);
-    efl_event_callback_del(widget, EFL_EVENT_FOCUS_OUT, iupeflFocusChangedEvent, ih);
-  }
+    efl_event_callback_del(widget, EFL_UI_FOCUS_OBJECT_EVENT_FOCUS_CHANGED, iupeflFocusChangedEvent, ih);
 }
 
 /****************************************************************************
