@@ -299,9 +299,12 @@ IUP_DRV_API int iupeflSetMnemonicTitle(Ihandle* ih, Eo* widget, const char* valu
   if (!widget)
     return 0;
 
+  if (!value)
+    value = "";
+
   if (iupAttribGetBoolean(ih, "MARKUP"))
   {
-    efl_markup = iupMarkupToEfl(value ? value : "");
+    efl_markup = iupMarkupToEfl(value);
 
     if (efl_isa(widget, EFL_TEXT_MARKUP_INTERFACE))
       efl_text_markup_set(widget, efl_markup);
@@ -313,8 +316,6 @@ IUP_DRV_API int iupeflSetMnemonicTitle(Ihandle* ih, Eo* widget, const char* valu
   }
 
   str = iupStrProcessMnemonic(value, NULL, 0);
-  if (!str)
-    str = (char*)(value ? value : "");
 
   if (efl_isa(widget, EFL_TEXT_INTERFACE))
   {
