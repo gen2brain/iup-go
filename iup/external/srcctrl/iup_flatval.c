@@ -10,6 +10,7 @@
 #include <math.h>
 
 #include "iup.h"
+#include "iupcontrols.h"
 #include "iupcbs.h"
 
 #include "iup_drvdraw.h"
@@ -956,7 +957,7 @@ Iclass* iupFlatValNewClass(void)
   return ic;
 }
 
-IUP_API Ihandle* IupFlatVal(const char *orientation)
+IUPCONTROLS_API Ihandle* IupFlatVal(const char *orientation)
 {
   void *params[2];
   params[0] = (void*)orientation;

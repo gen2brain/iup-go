@@ -8,6 +8,7 @@
 #include <stdlib.h>
 
 #include "iup.h"
+#include "iupcontrols.h"
 
 #include "iup_object.h"
 #include "iup_attrib.h"
@@ -212,7 +213,7 @@ static int iFlatFrameSetAttribPostRedraw(Ihandle* ih, const char* value)
 
 /******************************************************************************/
 
-IUP_API Ihandle* IupFlatFrame(Ihandle* child)
+IUPCONTROLS_API Ihandle* IupFlatFrame(Ihandle* child)
 {
   void *children[2];
   children[0] = (void*)child;

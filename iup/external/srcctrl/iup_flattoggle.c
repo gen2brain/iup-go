@@ -7,6 +7,7 @@
 #include <stdlib.h>
 
 #include "iup.h"
+#include "iupcontrols.h"
 #include "iupcbs.h"
 
 #include "iup_object.h"
@@ -1201,7 +1202,7 @@ Iclass* iupFlatToggleNewClass(void)
   return ic;
 }
 
-IUP_API Ihandle* IupFlatToggle(const char* title)
+IUPCONTROLS_API Ihandle* IupFlatToggle(const char* title)
 {
   void *params[2];
   params[0] = (void*)title;

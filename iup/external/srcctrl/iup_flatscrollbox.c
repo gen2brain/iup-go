@@ -8,6 +8,7 @@
 #include <string.h>
 
 #include "iup.h"
+#include "iupcontrols.h"
 
 #include "iup_object.h"
 #include "iup_register.h"
@@ -480,7 +481,7 @@ Iclass* iupFlatScrollBoxNewClass(void)
   return ic;
 }
 
-IUP_API Ihandle* IupFlatScrollBox(Ihandle* child)
+IUPCONTROLS_API Ihandle* IupFlatScrollBox(Ihandle* child)
 {
   void *children[2];
   children[0] = (void*)child;

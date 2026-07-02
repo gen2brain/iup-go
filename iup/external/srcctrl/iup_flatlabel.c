@@ -8,6 +8,7 @@
 #include <string.h>
 
 #include "iup.h"
+#include "iupcontrols.h"
 
 #include "iup_object.h"
 #include "iup_attrib.h"
@@ -286,7 +287,7 @@ Iclass* iupFlatLabelNewClass(void)
   return ic;
 }
 
-IUP_API Ihandle* IupFlatLabel(const char* title)
+IUPCONTROLS_API Ihandle* IupFlatLabel(const char* title)
 {
   void *params[2];
   params[0] = (void*)title;

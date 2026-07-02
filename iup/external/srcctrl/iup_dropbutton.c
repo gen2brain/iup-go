@@ -8,6 +8,7 @@
 #include <string.h>
 
 #include "iup.h"
+#include "iupcontrols.h"
 #include "iupcbs.h"
 
 #include "iup_object.h"
@@ -995,7 +996,7 @@ Iclass* iupDropButtonNewClass(void)
   return ic;
 }
 
-IUP_API Ihandle* IupDropButton(Ihandle* dropchild)
+IUPCONTROLS_API Ihandle* IupDropButton(Ihandle* dropchild)
 {
   void *children[2];
   children[0] = (void*)dropchild;

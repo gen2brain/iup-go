@@ -9,6 +9,7 @@
 #include <string.h>
 
 #include "iup.h"
+#include "iupcontrols.h"
 #include "iupcbs.h"
 
 #include "iup_object.h"
@@ -1926,7 +1927,7 @@ static int iFlatListCreateMethod(Ihandle* ih, void** params)
 
 /******************************************************************************/
 
-IUP_API Ihandle* IupFlatList(void)
+IUPCONTROLS_API Ihandle* IupFlatList(void)
 {
   return IupCreate("flatlist");
 }

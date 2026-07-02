@@ -10,6 +10,7 @@
 #include <string.h>
 
 #include "iup.h"
+#include "iupcontrols.h"
 #include "iupcbs.h"
 
 #include "iup_object.h"
@@ -2608,7 +2609,7 @@ Iclass* iupFlatTabsNewClass(void)
   return ic;
 }
 
-IUP_API Ihandle* IupFlatTabsv(Ihandle** params)
+IUPCONTROLS_API Ihandle* IupFlatTabsv(Ihandle** params)
 {
   return IupCreatev("flattabs", (void**)params);
 }
@@ -2618,7 +2619,7 @@ IUP_API Ihandle* IupFlatTabsV(Ihandle* child, va_list arglist)
   return IupCreateV("flattabs", child, arglist);
 }
 
-IUP_API Ihandle* IupFlatTabs(Ihandle* child, ...)
+IUPCONTROLS_API Ihandle* IupFlatTabs(Ihandle* child, ...)
 {
   Ihandle *ih;
 
