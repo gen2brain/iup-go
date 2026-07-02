@@ -12,6 +12,7 @@
 
 #include "iup_object.h"
 #include "iup_attrib.h"
+#include "iup_key.h"
 #include "iup_str.h"
 #include "iup_image.h"
 #include "iup_toggle.h"
@@ -351,7 +352,16 @@ static int eflToggleSetTitleAttrib(Ihandle* ih, const char* value)
       free(efl_markup);
     }
     else
-      efl_text_set(label, value);
+    {
+      char c = 0;
+      const char* v = value ? value : "";
+      char* str = iupStrProcessMnemonic(v, &c, -1);
+      efl_text_set(label, str ? str : "");
+      if (c)
+        iupKeySetMnemonic(ih, c, -1);
+      if (str && str != v)
+        free(str);
+    }
     iupeflApplyTextStyle(ih, label);
     return 1;
   }

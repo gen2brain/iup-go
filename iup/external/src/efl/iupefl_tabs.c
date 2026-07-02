@@ -14,6 +14,7 @@
 #include "iup_class.h"
 #include "iup_layout.h"
 #include "iup_attrib.h"
+#include "iup_key.h"
 #include "iup_str.h"
 #include "iup_image.h"
 #include "iup_tabs.h"
@@ -638,7 +639,15 @@ static int eflTabsSetTabTitleAttrib(Ihandle* ih, int pos, const char* value)
       {
         Eo* item = efl_ui_tab_page_tab_bar_item_get(page);
         if (item)
-          efl_text_set(item, value);
+        {
+          char c = 0;
+          char* str = iupStrProcessMnemonic(value, &c, -1);
+          efl_text_set(item, str ? str : "");
+          if (c)
+            iupKeySetMnemonic(ih, c, pos);
+          if (str && str != value)
+            free(str);
+        }
       }
     }
   }
@@ -835,7 +844,15 @@ static void eflTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
     if (item)
     {
       if (tabtitle)
-        efl_text_set(item, tabtitle);
+      {
+        char c = 0;
+        char* str = iupStrProcessMnemonic(tabtitle, &c, -1);
+        efl_text_set(item, str ? str : "");
+        if (c)
+          iupKeySetMnemonic(ih, c, pos);
+        if (str && str != tabtitle)
+          free(str);
+      }
       if (tabimage)
         eflTabsSetItemIcon(item, tabimage, ih);
 
