@@ -170,6 +170,8 @@ static int eflValMapMethod(Ihandle* ih)
   efl_ui_layout_orientation_set(slider, dir);
 
   efl_ui_range_limits_set(slider, ih->data->vmin, ih->data->vmax);
+  /* nudge: value_set no-ops if unchanged, leaving the thumb at the pre-range position */
+  efl_ui_range_value_set(slider, (ih->data->val != ih->data->vmin) ? ih->data->vmin : ih->data->vmax);
   efl_ui_range_value_set(slider, ih->data->val);
 
   if (ih->data->step > 0)
