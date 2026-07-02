@@ -43,12 +43,11 @@ IUP_SDK_API void iupdrvSetFocus(Ihandle *ih)
 IUP_DRV_API void iupeflFocusChangedEvent(void* data, const Efl_Event* ev)
 {
   Ihandle* ih = (Ihandle*)data;
-  Eina_Bool focused = *((Eina_Bool*)ev->info);
 
   if (!iupObjectCheck(ih))
     return;
 
-  if (focused)
+  if (efl_ui_focus_object_focus_get(ev->object))
   {
     if (!iupdrvIsActive(ih))
       return;
