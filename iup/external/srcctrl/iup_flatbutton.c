@@ -8,6 +8,7 @@
 #include <string.h>
 
 #include "iup.h"
+#include "iupcontrols.h"
 #include "iupcbs.h"
 
 #include "iup_object.h"
@@ -833,7 +834,7 @@ Iclass* iupFlatButtonNewClass(void)
   return ic;
 }
 
-IUP_API Ihandle* IupFlatButton(const char* title)
+IUPCONTROLS_API Ihandle* IupFlatButton(const char* title)
 {
   void *params[2];
   params[0] = (void*)title;

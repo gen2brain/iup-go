@@ -10,6 +10,7 @@
 #include <time.h>
 
 #include "iup.h"
+#include "iupcontrols.h"
 #include "iupcbs.h"
 
 #include "iup_object.h"
@@ -4157,7 +4158,7 @@ static int iFlatTreeCreateMethod(Ihandle* ih, void** params)
 
 /******************************************************************************/
 
-IUP_API Ihandle* IupFlatTree(void)
+IUPCONTROLS_API Ihandle* IupFlatTree(void)
 {
   return IupCreate("flattree");
 }
