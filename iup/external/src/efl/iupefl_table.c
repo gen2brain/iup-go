@@ -1436,6 +1436,9 @@ static void eflTableCellClickCallback(void* data, const Efl_Event* ev)
   if (lin == 0)
     return;
 
+  int prev_lin = table_data->selected_lin;
+  int prev_col = table_data->selected_col;
+
   /* Update selection */
   table_data->selected_lin = lin;
   table_data->selected_col = col;
@@ -1476,6 +1479,13 @@ static void eflTableCellClickCallback(void* data, const Efl_Event* ev)
   {
     elm_object_focus_set(table_data->scroller, EINA_TRUE);
     evas_object_focus_set(table_data->scroller, EINA_TRUE);
+  }
+
+  if (lin != prev_lin || col != prev_col)
+  {
+    IFnii enteritem_cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
+    if (enteritem_cb)
+      enteritem_cb(ih, lin, col);
   }
 
   /* Handle double-click: start editing if cell is editable */
