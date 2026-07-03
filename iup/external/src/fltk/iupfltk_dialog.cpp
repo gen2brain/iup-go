@@ -824,13 +824,6 @@ static void fltkDialogLayoutUpdateMethod(Ihandle* ih)
 
   iupdrvDialogGetDecoration(ih, &border, &caption, &menu);
 
-  /* Grow the window to the natural (minimum) size so appearing content isn't clipped. */
-  if (!iupAttribGetBoolean(ih, "SHRINK"))
-  {
-    if (ih->naturalwidth > ih->currentwidth) ih->currentwidth = ih->naturalwidth;
-    if (ih->naturalheight > ih->currentheight) ih->currentheight = ih->naturalheight;
-  }
-
   width = ih->currentwidth - 2 * border;
   height = ih->currentheight - 2 * border - caption;
 
