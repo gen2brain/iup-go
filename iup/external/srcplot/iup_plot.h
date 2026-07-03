@@ -5,8 +5,8 @@
    directly using IupDraw for drawing and IUP callback for interaction.
    */
 
-#ifndef __IUPPLOT_H__
-#define __IUPPLOT_H__
+#ifndef __IUP_PLOT_H
+#define __IUP_PLOT_H
 
 #include <cstdlib>
 #include <cmath>
