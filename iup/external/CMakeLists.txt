@@ -70,11 +70,32 @@ option(IUP_BUILD_CTRL      "Build iupctrl (Matrix/Controls)" OFF)
 option(IUP_BUILD_EXAMPLES  "Build example programs"          OFF)
 option(IUP_USE_XEMBED      "Use XEmbed tray protocol instead of SNI (GTK3/Motif on Linux)" OFF)
 option(IUP_BUILD_FRAMEWORK "Build iup as a .framework bundle (requires IUP_BACKEND=cocoatouch)" OFF)
+option(IUP_EMBED_MANIFEST  "Embed the IUP application manifest into built executables (Windows)" ON)
 set(IUP_FRAMEWORK_BUILD "1" CACHE STRING "CFBundleVersion for the framework bundle")
 
 if(APPLE)
   enable_language(OBJC)
 endif()
+
+if(WIN32 AND IUP_EMBED_MANIFEST)
+  enable_language(RC)
+  set(IUP_MANIFEST_PATH "${CMAKE_CURRENT_SOURCE_DIR}/iup.manifest")
+  configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/iup.manifest.rc.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/iup.manifest.rc"
+    @ONLY
+  )
+endif()
+
+function(iup_embed_manifest tgt)
+  if(NOT WIN32 OR NOT IUP_EMBED_MANIFEST)
+    return()
+  endif()
+  target_sources(${tgt} PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/iup.manifest.rc")
+  if(MSVC)
+    target_link_options(${tgt} PRIVATE /MANIFEST:NO)
+  endif()
+endfunction()
 
 # --- Core sources (platform-independent) ---
 
@@ -288,9 +309,11 @@ if(IUP_BUILD_EXAMPLES AND EMSCRIPTEN)
 elseif(IUP_BUILD_EXAMPLES)
   add_executable(dialog_hello "${CMAKE_CURRENT_SOURCE_DIR}/examples/dialog_hello.c")
   target_link_libraries(dialog_hello PRIVATE IUP::iup)
+  iup_embed_manifest(dialog_hello)
 
   add_executable(dialog_hello_plus "${CMAKE_CURRENT_SOURCE_DIR}/examples/dialog_hello_plus.cpp")
   target_link_libraries(dialog_hello_plus PRIVATE IUP::iup)
+  iup_embed_manifest(dialog_hello_plus)
 endif()
 
 # --- Install ---
@@ -318,6 +341,12 @@ install(DIRECTORY include/
     PATTERN "*.hpp"
   PATTERN "vendor.go" EXCLUDE
 )
+
+if(WIN32)
+  install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/iup.manifest"
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/iup
+  )
+endif()
 
 install(EXPORT IUPTargets
   FILE IUPTargets.cmake

@@ -3,7 +3,7 @@
 IUP is a multi-platform toolkit for building graphical user interfaces.
 It uses native interface elements for high performance and platform-consistent look and feel.
 
-This is a fork maintained as part of [IUP-Go](https://github.com/gen2brain/iup-go) with additional backends (Cocoa, WinUI, Qt, GTK4, FLTK, EFL, Android, CocoaTouch, Haiku) and features.
+This is a fork maintained as part of [IUP-Go](https://github.com/gen2brain/iup-go) with additional backends (Cocoa, WinUI, Qt, GTK4, FLTK, EFL, Android, CocoaTouch, Haiku, WebAssembly) and features.
 
 API reference documentation is available in the [docs](https://github.com/gen2brain/iup-go/tree/main/docs) directory.
 For the original IUP documentation, visit [IUP's website](https://www.tecgraf.puc-rio.br/iup).
@@ -36,56 +36,57 @@ cmake --build build/gtk4
 
 Available presets:
 
-| Preset            | Backend                        | Notes                |
-|-------------------|--------------------------------|----------------------|
-| `default`         | Platform native                | GTK3 / Win32 / Cocoa |
-| `gtk3`            | GTK3                           |                      |
-| `gtk4`            | GTK4                           |                      |
-| `gtk2`            | GTK2                           | Legacy               |
-| `win32`           | Win32                          | Windows native       |
-| `winui`           | WinUI / XAML Islands           |                      |
-| `cocoa`           | Cocoa / AppKit                 | macOS native         |
-| `cocoatouch`      | CocoaTouch / UIKit             | iOS                  |
-| `motif`           | Motif / X11                    |                      |
-| `qt6`             | Qt6                            |                      |
-| `qt5`             | Qt5                            |                      |
-| `fltk`            | FLTK                           |                      |
-| `efl`             | EFL / Elementary               |                      |
-| `android`         | Android (arm64-v8a)            | Requires NDK         |
-| `haiku`           | Haiku / Be API                 |                      |
-| `gtk3-full`       | GTK3 + all optional libs       |                      |
-| `gtk4-full`       | GTK4 + all optional libs       |                      |
-| `gtk2-full`       | GTK2 + all optional libs       |                      |
-| `win32-full`      | Win32 + all optional libs      |                      |
-| `winui-full`      | WinUI + all optional libs      |                      |
-| `cocoa-full`      | Cocoa + all optional libs      |                      |
-| `cocoatouch-full` | CocoaTouch + all optional libs |                      |
-| `motif-full`      | Motif + all optional libs      |                      |
-| `qt6-full`        | Qt6 + all optional libs        |                      |
-| `qt5-full`        | Qt5 + all optional libs        |                      |
-| `efl-full`        | EFL + all optional libs        |                      |
-| `fltk-full`       | FLTK + all optional libs       |                      |
-| `android-full`    | Android + GL + Web             | Requires NDK         |
-| `haiku-full`      | Haiku + all optional libs      |                      |
-| `wasm`            | WebAssembly (Emscripten)       | Requires EMSDK       |
-| `wasm-full`       | WebAssembly + all optional libs| Requires EMSDK       |
-| `debug`           | Platform native, debug         |                      |
+| Preset            | Backend                         | Notes                |
+|-------------------|---------------------------------|----------------------|
+| `default`         | Platform native                 | GTK3 / Win32 / Cocoa |
+| `gtk3`            | GTK3                            |                      |
+| `gtk4`            | GTK4                            |                      |
+| `gtk2`            | GTK2                            | Legacy               |
+| `win32`           | Win32                           | Windows native       |
+| `winui`           | WinUI / XAML Islands            |                      |
+| `cocoa`           | Cocoa / AppKit                  | macOS native         |
+| `cocoatouch`      | CocoaTouch / UIKit              | iOS                  |
+| `motif`           | Motif / X11                     |                      |
+| `qt6`             | Qt6                             |                      |
+| `qt5`             | Qt5                             |                      |
+| `fltk`            | FLTK                            |                      |
+| `efl`             | EFL / Elementary                |                      |
+| `android`         | Android (arm64-v8a)             | Requires NDK         |
+| `haiku`           | Haiku / Be API                  |                      |
+| `gtk3-full`       | GTK3 + all optional libs        |                      |
+| `gtk4-full`       | GTK4 + all optional libs        |                      |
+| `gtk2-full`       | GTK2 + all optional libs        |                      |
+| `win32-full`      | Win32 + all optional libs       |                      |
+| `winui-full`      | WinUI + all optional libs       |                      |
+| `cocoa-full`      | Cocoa + all optional libs       |                      |
+| `cocoatouch-full` | CocoaTouch + all optional libs  |                      |
+| `motif-full`      | Motif + all optional libs       |                      |
+| `qt6-full`        | Qt6 + all optional libs         |                      |
+| `qt5-full`        | Qt5 + all optional libs         |                      |
+| `efl-full`        | EFL + all optional libs         |                      |
+| `fltk-full`       | FLTK + all optional libs        |                      |
+| `android-full`    | Android + GL + Web              | Requires NDK         |
+| `haiku-full`      | Haiku + all optional libs       |                      |
+| `wasm`            | WebAssembly (Emscripten)        | Requires EMSDK       |
+| `wasm-full`       | WebAssembly + all optional libs | Requires EMSDK       |
+| `debug`           | Platform native, debug          |                      |
 
 You can create a `CMakeUserPresets.json` file for local overrides (e.g., toolchain or compiler paths) without modifying the tracked `CMakePresets.json`.
 IDEs automatically pick up both files. See [example](https://gist.github.com/gen2brain/dcf02ececc5890f8a7a8e9fc172a13d5).
 
 ### Options
 
-| Option               | Default          | Description                                          |
-|----------------------|------------------|------------------------------------------------------|
-| `IUP_BACKEND`        | Platform default | GUI backend selection                                |
-| `IUP_BUILD_GL`       | `OFF`            | Build `iupgl` (OpenGL canvas)                        |
-| `IUP_BUILD_WEB`      | `OFF`            | Build `iupweb` (Web browser control)                 |
-| `IUP_BUILD_CTRL`     | `OFF`            | Build `iupctrl` (Matrix, Cells, and Flat* controls)  |
-| `IUP_BUILD_PLOT`     | `OFF`            | Build `iupplot` (Plot control)                       |
-| `IUP_BUILD_EXAMPLES` | `OFF`            | Build example programs (C and C++)                   |
-| `IUP_USE_XEMBED`     | `OFF`            | Use XEmbed tray protocol instead of SNI (GTK3/Motif) |
-| `BUILD_SHARED_LIBS`  | `OFF`            | Build shared libraries instead of static             |
+| Option               | Default          | Description                                                     |
+|----------------------|------------------|-----------------------------------------------------------------|
+| `IUP_BACKEND`        | Platform default | GUI backend selection                                           |
+| `IUP_BUILD_GL`       | `OFF`            | Build `iupgl` (OpenGL canvas)                                   |
+| `IUP_BUILD_WEB`      | `OFF`            | Build `iupweb` (Web browser control)                            |
+| `IUP_BUILD_CTRL`     | `OFF`            | Build `iupctrl` (Matrix, Cells, and Flat* controls)             |
+| `IUP_BUILD_PLOT`     | `OFF`            | Build `iupplot` (Plot control)                                  |
+| `IUP_BUILD_EXAMPLES` | `OFF`            | Build example programs (C and C++)                              |
+| `IUP_USE_XEMBED`     | `OFF`            | Use XEmbed tray protocol instead of SNI (GTK3/Motif)            |
+| `IUP_EMBED_MANIFEST` | `ON`             | Embed the application manifest into built executables (Windows) |
+| `BUILD_SHARED_LIBS`  | `OFF`            | Build shared libraries instead of static                        |
 
 ### Examples
 
@@ -111,6 +112,9 @@ cmake --build build
 
 **Win32** (default on Windows):
 No external dependencies.
+
+Executables embed `iup.manifest` by default (`IUP_EMBED_MANIFEST`).
+Static-lib users must embed `iup.manifest` (installed under `share/iup`) into their own executable.
 
 **Cocoa** (default on macOS):
 No external dependencies.
