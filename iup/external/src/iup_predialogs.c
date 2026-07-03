@@ -18,8 +18,10 @@
 
 int iupDialogButtonOrder(void)
 {
+  const char* driver = IupGetGlobal("DRIVER");
   const char* sys = IupGetGlobal("SYSTEM");
-  if (sys && iupStrEqualNoCasePartial(sys, "Win"))
+  if ((driver && iupStrEqualNoCasePartial(driver, "FLTK")) ||
+      (sys && iupStrEqualNoCasePartial(sys, "Win")))
     return IUP_BUTTON_ORDER_OK_FIRST;
   return IUP_BUTTON_ORDER_CANCEL_FIRST;
 }
