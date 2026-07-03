@@ -42,11 +42,18 @@
 
 static BOOL iupCocoaTabsLiquidGlass(void)
 {
+#ifdef GNUSTEP
+  return NO;
+#else
   return [[NSProcessInfo processInfo] operatingSystemVersion].majorVersion >= 26;
+#endif
 }
 
 static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
 {
+#ifdef GNUSTEP
+  return nil;
+#else
   NSOperatingSystemVersion version = [[NSProcessInfo processInfo] operatingSystemVersion];
   if (version.majorVersion < 11)
     return nil;
@@ -64,6 +71,7 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
   [tinted unlockFocus];
   [tinted setTemplate:NO];
   return tinted;
+#endif
 }
 
 @implementation IupCocoaTabBarView (Expose)

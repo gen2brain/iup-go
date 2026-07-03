@@ -78,6 +78,16 @@
 + (NSColor*)selectedContentBackgroundColor    { return [NSColor selectedTextBackgroundColor]; }
 + (NSColor*)underPageBackgroundColor          { return [NSColor windowBackgroundColor]; }
 + (NSColor*)separatorColor                    { return [NSColor gridColor]; }
++ (NSColor*)controlAccentColor                { return [NSColor alternateSelectedControlColor]; }
++ (NSColor*)unemphasizedSelectedContentBackgroundColor { return [NSColor selectedControlColor]; }
+@end
+
+@implementation NSObject (IupGnustepAccessibility)
+- (void)setAccessibilityRole:(NSString*)role      { (void)role; }
+- (void)setAccessibilityParent:(id)parent         { (void)parent; }
+- (void)setAccessibilityTabs:(NSArray*)tabs       { (void)tabs; }
+- (void)setAccessibilityChildren:(NSArray*)children { (void)children; }
+- (void)setAccessibilityHelp:(NSString*)help      { (void)help; }
 @end
 
 @implementation NSTimer (IupGnustepShimImpl)

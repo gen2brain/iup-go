@@ -126,6 +126,12 @@ typedef NSString* NSPasteboardType;
 #endif
 
 
+/* Visual effect material added on 10.14; map to the closest legacy material. */
+#ifndef NSVisualEffectMaterialHeaderView
+#define NSVisualEffectMaterialHeaderView NSVisualEffectMaterialTitlebar
+#endif
+
+
 /* Informal category declarations for methods GNUstep's public headers omit.
    Implementations (mostly no-ops) live in iupcocoa_common.m. */
 
@@ -208,6 +214,18 @@ typedef NSString* NSPasteboardType;
 + (NSColor*)selectedContentBackgroundColor;
 + (NSColor*)underPageBackgroundColor;
 + (NSColor*)separatorColor;
++ (NSColor*)controlAccentColor;
++ (NSColor*)unemphasizedSelectedContentBackgroundColor;
+@end
+
+/* Accessibility setters GNUstep omits; no-ops on NSObject so any receiver
+   (views and NSAccessibilityElement) stays safe. */
+@interface NSObject (IupGnustepAccessibility)
+- (void)setAccessibilityRole:(NSString*)role;
+- (void)setAccessibilityParent:(id)parent;
+- (void)setAccessibilityTabs:(NSArray*)tabs;
+- (void)setAccessibilityChildren:(NSArray*)children;
+- (void)setAccessibilityHelp:(NSString*)help;
 @end
 
 @interface NSColorSpace (IupGnustepShim)
