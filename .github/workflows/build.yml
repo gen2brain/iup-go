@@ -464,6 +464,9 @@ jobs:
 
   windows-qt6:
     runs-on: windows-latest
+    env:
+      CGO_CFLAGS: ""
+      CGO_CXXFLAGS: ""
     defaults:
       run:
         shell: msys2 {0}
