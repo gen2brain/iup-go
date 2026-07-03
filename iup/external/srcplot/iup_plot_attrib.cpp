@@ -8,7 +8,7 @@
 #include <math.h>
 #include <string.h>
 
-#include "iupPlot.h"
+#include "iup_plot.h"
 
 #include "iup_class.h"
 #include "iup_object.h"

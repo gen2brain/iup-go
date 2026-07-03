@@ -3,7 +3,7 @@
 #include <math.h>
 #include <string.h>
 
-#include "iupPlot.h"
+#include "iup_plot.h"
 
 
 static bool iPlotCheckInsideBox(double x, double y, double boxMinX, double boxMaxX, double boxMinY, double boxMaxY)

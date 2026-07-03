@@ -3,7 +3,7 @@
 #include <math.h>
 #include <string.h>
 
-#include "iupPlot.h"
+#include "iup_plot.h"
 
 
 const double kTickValueVeryBig = 1.0e4;     // switch to scientific format
