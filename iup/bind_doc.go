@@ -40,3 +40,5 @@
 // Executing these functions in this order is crucial for the correct functioning of the toolkit.
 // Between calls to the Open and Close functions, the application can create dialogs and display them.
 package iup
+
+//go:generate go run ./internal/genversion
