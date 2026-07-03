@@ -473,6 +473,24 @@ jobs:
       run: go build -tags qt
       working-directory: iup
 
+  windows-cmake:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+    - name: Setup MSYS2
+      uses: msys2/setup-msys2@v2
+      with:
+        msystem: MINGW64
+        install: mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake mingw-w64-x86_64-ninja
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: CMake Win32
+      run: |
+        cmake -S iup/external -B build/win32 -G Ninja -DBUILD_SHARED_LIBS=ON -DIUP_BACKEND=win32 -DIUP_BUILD_GL=ON -DIUP_BUILD_WEB=ON -DIUP_BUILD_CTRL=ON -DIUP_BUILD_PLOT=ON
+        cmake --build build/win32 --parallel
+
   linux-android:
     runs-on: ubuntu-latest
     steps:
