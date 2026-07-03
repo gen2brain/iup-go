@@ -11,6 +11,9 @@ WebAssembly ([Emscripten](#emscripten)), Android ([Android](#android)), and iOS 
 C/C++/Obj-C source code is included and compiled together with bindings.
 Note that the first build can take a few minutes.
 
+Alternatively, build with `CGO_ENABLED=0` and no C compiler. A prebuilt library for the platform's default backend is bundled and loaded at runtime, for `linux`, `darwin`, and `windows` on `amd64` and `arm64`.
+Other backends and platforms require the cgo build.
+
 To build the IUP C library standalone (without Go bindings), see [iup/external](iup/external) for CMake build instructions.
 
 ### Requirements
@@ -164,9 +167,9 @@ Also, several bugs in `gnustep-base`, `gnustep-gui`, `libs-opal` and `libs-coreb
 Tarball with the required patches is at [gnustep.tar.gz](https://gist.github.com/gen2brain/eaa0a38d0fb099d3601e6d1bc9d3b07d).
 
 `-fobjc-runtime=gnustep-2.2` - tells Clang to emit Objective-C 2 ABI metadata compatible with libobjc2.
-`gnustep-config --objc-flags` expands to this plus include paths; the Makefiles pick it up automatically, but CGo does not.
+`gnustep-config --objc-flags` expands to this plus include paths; the Makefiles pick it up automatically, but cgo does not.
 
-CGo sanitizes compiler/linker flags by default, so you have to pass the flag and unblock it via the env vars:
+Cgo sanitizes compiler/linker flags by default, so you have to pass the flag and unblock it via the env vars:
 
 ```
 CC=clang \
@@ -246,6 +249,7 @@ See [iup/external/ios/README.md](iup/external/ios/README.md) for prerequisites, 
 * `xembed` - use XEmbed tray protocol instead of SNI (GTK3/GTK2 and Motif)
 * `nomanifest` - do not include manifest in Windows build
 * `nopkgconfig` - do not use pkg-config for compile and link flags
+* `extlib` - load the system IUP library instead of the bundled one (used with `CGO_ENABLED=0`)
 
 ### Compiler flags
 
@@ -272,7 +276,7 @@ The secondary threads (goroutines) should not directly update the UI; instead, u
 See [example](examples/postmessage/postmessage.go) that uses `PostMessage` to send data to an element, which will be received by a callback when the main loop regains control.
 You can also use [Idle](docs/call/iup_idle_action.md) and [Timer](docs/elem/iup_timer.md).
 
-### Cross-compile (Linux)
+### Cross-compile (Linux cgo)
 
 To cross-compile for Win32, install [MinGW](https://www.mingw-w64.org/) toolchain.
 
