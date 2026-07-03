@@ -3665,9 +3665,9 @@ static int winuiTextSetSaveRtfAttrib(Ihandle* ih, const char* value)
     iupAttribSet(ih, "SAVERTFSTATUS", "FAILED");
     return 0;
   }
-  std::wstring_view wv{rtf_text};
-  std::string narrow(wv.begin(), wv.end());  /* RTF body is 7-bit ASCII */
-  f.write(narrow.data(), narrow.size());
+  char* rtf = iupwinuiHStringToString(rtf_text);
+  if (rtf)
+    f.write(rtf, strlen(rtf));
   iupAttribSet(ih, "SAVERTFSTATUS", "OK");
   return 0;
 }
