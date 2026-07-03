@@ -909,7 +909,7 @@ static void cocoaMenuItemSetShortcutFromString(NSMenuItem* item, const char* sho
     }
 
     NSUInteger mask = 0;
-    char key_char = 0;
+    const char* key_token = NULL;
     char* current_part = iupStrDup(shortcut_string);
     char* next_token = current_part;
 
@@ -928,9 +928,8 @@ static void cocoaMenuItemSetShortcutFromString(NSMenuItem* item, const char* sho
             mask |= NSEventModifierFlagOption;
         else if (iupStrEqualNoCase(next_token, "Sys"))
             mask |= NSEventModifierFlagCommand;
-        else if (strlen(next_token) == 1) {
-            key_char = next_token[0];
-        }
+        else if (next_token[0] != '\0')
+            key_token = next_token;
 
         if (plus_pos) {
             next_token = plus_pos + 1;
@@ -938,11 +937,22 @@ static void cocoaMenuItemSetShortcutFromString(NSMenuItem* item, const char* sho
             next_token = NULL;
         }
     }
+
+    NSString* key_str = nil;
+    int fn = 0;
+    if (key_token && (key_token[0] == 'F' || key_token[0] == 'f') && iupStrToInt(key_token + 1, &fn) && fn >= 1 && fn <= 35)
+    {
+        unichar fk = (unichar)(NSF1FunctionKey + (fn - 1));
+        key_str = [NSString stringWithCharacters:&fk length:1];
+    }
+    else if (key_token && strlen(key_token) == 1)
+    {
+        key_str = [[NSString stringWithFormat:@"%c", key_token[0]] lowercaseString];
+    }
     free(current_part);
 
-    if (key_char)
+    if (key_str)
     {
-        NSString* key_str = [[NSString stringWithFormat:@"%c", key_char] lowercaseString];
         [item setKeyEquivalent:key_str];
         [item setKeyEquivalentModifierMask:mask];
     }
