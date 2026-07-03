@@ -1,5 +1,8 @@
 on: [push, pull_request]
 name: Build
+env:
+  CGO_CFLAGS: -Werror
+  CGO_CXXFLAGS: -Werror
 jobs:
   linux-gtk3:
     runs-on: ubuntu-latest
@@ -78,6 +81,9 @@ jobs:
 
   linux-gtk2:
     runs-on: ubuntu-latest
+    env:
+      CGO_CFLAGS: ""
+      CGO_CXXFLAGS: ""
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -488,7 +494,7 @@ jobs:
       uses: actions/checkout@v4
     - name: CMake Win32
       run: |
-        cmake -S iup/external -B build/win32 -G Ninja -DBUILD_SHARED_LIBS=ON -DIUP_BACKEND=win32 -DIUP_BUILD_GL=ON -DIUP_BUILD_WEB=ON -DIUP_BUILD_CTRL=ON -DIUP_BUILD_PLOT=ON
+        cmake -S iup/external -B build/win32 -G Ninja -DBUILD_SHARED_LIBS=ON -DIUP_BACKEND=win32 -DIUP_BUILD_GL=ON -DIUP_BUILD_WEB=ON -DIUP_BUILD_CTRL=ON -DIUP_BUILD_PLOT=ON -DCMAKE_COMPILE_WARNING_AS_ERROR=ON
         cmake --build build/win32 --parallel
 
   linux-android:
@@ -593,26 +599,26 @@ jobs:
         sudo cmake --install /tmp/fltk-build
     - name: CMake GTK3
       run: |
-        cmake -S iup/external -B build/gtk3 -DBUILD_SHARED_LIBS=ON -DIUP_BACKEND=gtk3 -DIUP_BUILD_GL=ON -DIUP_BUILD_WEB=ON -DIUP_BUILD_CTRL=ON -DIUP_BUILD_PLOT=ON
+        cmake -S iup/external -B build/gtk3 -DBUILD_SHARED_LIBS=ON -DIUP_BACKEND=gtk3 -DIUP_BUILD_GL=ON -DIUP_BUILD_WEB=ON -DIUP_BUILD_CTRL=ON -DIUP_BUILD_PLOT=ON -DCMAKE_COMPILE_WARNING_AS_ERROR=ON
         cmake --build build/gtk3 --parallel
     - name: CMake GTK4
       run: |
-        cmake -S iup/external -B build/gtk4 -DBUILD_SHARED_LIBS=ON -DIUP_BACKEND=gtk4 -DIUP_BUILD_GL=ON -DIUP_BUILD_WEB=ON -DIUP_BUILD_CTRL=ON -DIUP_BUILD_PLOT=ON
+        cmake -S iup/external -B build/gtk4 -DBUILD_SHARED_LIBS=ON -DIUP_BACKEND=gtk4 -DIUP_BUILD_GL=ON -DIUP_BUILD_WEB=ON -DIUP_BUILD_CTRL=ON -DIUP_BUILD_PLOT=ON -DCMAKE_COMPILE_WARNING_AS_ERROR=ON
         cmake --build build/gtk4 --parallel
     - name: CMake Qt6
       run: |
-        cmake -S iup/external -B build/qt6 -DBUILD_SHARED_LIBS=ON -DIUP_BACKEND=qt6 -DIUP_BUILD_WEB=ON -DIUP_BUILD_CTRL=ON -DIUP_BUILD_PLOT=ON
+        cmake -S iup/external -B build/qt6 -DBUILD_SHARED_LIBS=ON -DIUP_BACKEND=qt6 -DIUP_BUILD_WEB=ON -DIUP_BUILD_CTRL=ON -DIUP_BUILD_PLOT=ON -DCMAKE_COMPILE_WARNING_AS_ERROR=ON
         cmake --build build/qt6 --parallel
     - name: CMake FLTK
       run: |
-        cmake -S iup/external -B build/fltk -DBUILD_SHARED_LIBS=ON -DIUP_BACKEND=fltk -DIUP_BUILD_GL=ON -DIUP_BUILD_CTRL=ON -DIUP_BUILD_PLOT=ON
+        cmake -S iup/external -B build/fltk -DBUILD_SHARED_LIBS=ON -DIUP_BACKEND=fltk -DIUP_BUILD_GL=ON -DIUP_BUILD_CTRL=ON -DIUP_BUILD_PLOT=ON -DCMAKE_COMPILE_WARNING_AS_ERROR=ON
         cmake --build build/fltk --parallel
     - name: CMake EFL
       run: |
         sudo mkdir -p /usr/include/ector-1
-        cmake -S iup/external -B build/efl -DBUILD_SHARED_LIBS=ON -DIUP_BACKEND=efl -DIUP_BUILD_GL=ON -DIUP_BUILD_CTRL=ON -DIUP_BUILD_PLOT=ON
+        cmake -S iup/external -B build/efl -DBUILD_SHARED_LIBS=ON -DIUP_BACKEND=efl -DIUP_BUILD_GL=ON -DIUP_BUILD_CTRL=ON -DIUP_BUILD_PLOT=ON -DCMAKE_COMPILE_WARNING_AS_ERROR=ON
         cmake --build build/efl --parallel
     - name: CMake Motif
       run: |
-        cmake -S iup/external -B build/motif -DBUILD_SHARED_LIBS=ON -DIUP_BACKEND=motif -DIUP_BUILD_GL=ON -DIUP_BUILD_CTRL=ON -DIUP_BUILD_PLOT=ON
+        cmake -S iup/external -B build/motif -DBUILD_SHARED_LIBS=ON -DIUP_BACKEND=motif -DIUP_BUILD_GL=ON -DIUP_BUILD_CTRL=ON -DIUP_BUILD_PLOT=ON -DCMAKE_COMPILE_WARNING_AS_ERROR=ON
         cmake --build build/motif --parallel
