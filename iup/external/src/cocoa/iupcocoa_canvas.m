@@ -123,6 +123,7 @@ static void cocoaCanvasDrawBuffer(NSBitmapImageRep* buffer, NSRect bounds)
   [context restoreGraphicsState];
 }
 
+#ifndef GNUSTEP
 static int cocoaCanvasGestureState(NSGestureRecognizerState s)
 {
   switch (s)
@@ -133,13 +134,16 @@ static int cocoaCanvasGestureState(NSGestureRecognizerState s)
     default:                              return IUP_GESTURE_CANCEL;
   }
 }
+#endif /* !GNUSTEP */
 
+#ifndef GNUSTEP
 static void cocoaCanvasFireGesture(Ihandle* ih, int gesture, int state, int x, int y, double v1, double v2)
 {
   IFniiiidd cb = (IFniiiidd)IupGetCallback(ih, "GESTURE_CB");
   if (cb && cb(ih, gesture, state, x, y, v1, v2) == IUP_CLOSE)
     IupExitLoop();
 }
+#endif /* !GNUSTEP */
 
 @implementation IupCocoaCanvasView
 
@@ -151,6 +155,7 @@ static void cocoaCanvasFireGesture(Ihandle* ih, int gesture, int state, int x, i
     _ih = ih;
     [self setEnabled:YES];
 
+#ifndef GNUSTEP
     /* trackpad gestures; pan is scroll (WHEEL_CB) and tap/long-press are mouse (BUTTON_CB) on the desktop */
     NSMagnificationGestureRecognizer* magnify = [[NSMagnificationGestureRecognizer alloc] initWithTarget:self action:@selector(onMagnify:)];
     [self addGestureRecognizer:magnify];
@@ -159,10 +164,12 @@ static void cocoaCanvasFireGesture(Ihandle* ih, int gesture, int state, int x, i
     NSRotationGestureRecognizer* rotate = [[NSRotationGestureRecognizer alloc] initWithTarget:self action:@selector(onRotate:)];
     [self addGestureRecognizer:rotate];
     [rotate release];
+#endif /* !GNUSTEP */
   }
   return self;
 }
 
+#ifndef GNUSTEP
 - (void) onMagnify:(NSMagnificationGestureRecognizer*)g
 {
   NSPoint p = [g locationInView:self];
@@ -192,6 +199,7 @@ static void cocoaCanvasFireGesture(Ihandle* ih, int gesture, int state, int x, i
   else                     dir = dy > 0 ? IUP_GESTURE_SWIPE_UP : IUP_GESTURE_SWIPE_DOWN;
   cocoaCanvasFireGesture(_ih, IUP_GESTURE_SWIPE, IUP_GESTURE_END, (int)p.x, (int)p.y, (double)dir, 0.0);
 }
+#endif /* !GNUSTEP */
 
 - (void) dealloc
 {
