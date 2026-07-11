@@ -98,6 +98,8 @@ Use "&&" to show the "&" character instead on defining a mnemonic.
 The button can be activated from any control in the dialog using the "Alt+key" combination.
 When set after map it will update the TABTITLE attribute on the respective child.
 
+**TABTIPn** (non-inheritable): tooltip text shown when the cursor hovers over the respective tab. n starts at 0.
+
 #### Current Tab
 
 **VALUE** (non-inheritable): Changes the current tab by its name.
