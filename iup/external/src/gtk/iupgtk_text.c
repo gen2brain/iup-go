@@ -2299,22 +2299,20 @@ static void gtkTextScrolledWindowSizeAllocate(GtkWidget* widget, GdkRectangle* a
   gtk_widget_get_size_request(widget, &sw_req_w, &sw_req_h);
 
   int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
-  if (visiblelines > 0 && sw_req_h > 0 && allocation->height > sw_req_h)
+  int clamp_height = (visiblelines > 0 && sw_req_h > 0 && allocation->height > sw_req_h);
+  /* clamp the width too so WORDWRAP text re-wraps when the container over-allocates it */
+  int clamp_width = (sw_req_w > 0 && allocation->width > sw_req_w);
+  if (clamp_height || clamp_width)
   {
-    /* Create a new clamped allocation and apply it */
     GtkAllocation clamped = *allocation;
-    clamped.height = sw_req_h;
+    if (clamp_height) clamped.height = sw_req_h;
+    if (clamp_width) clamped.width = sw_req_w;
 
     /* Block this signal handler to prevent recursion */
     g_signal_handlers_block_by_func(widget, gtkTextScrolledWindowSizeAllocate, user_data);
-
-    /* Apply the clamped allocation - this will allocate children correctly */
     gtk_widget_size_allocate(widget, &clamped);
-
-    /* Unblock the signal handler */
     g_signal_handlers_unblock_by_func(widget, gtkTextScrolledWindowSizeAllocate, user_data);
 
-    /* Update the allocation parameter to reflect what we actually did */
     *allocation = clamped;
   }
 }
