@@ -20,7 +20,9 @@
 extern "C" {
 #include "iup.h"
 #include "iup_attrib.h"
+#include "iup_str.h"
 #include "iup_class.h"
+#include "iup_classbase.h"
 #include "iup_object.h"
 #include "iup_image.h"
 #include "iup_drvdraw.h"
@@ -128,8 +130,13 @@ extern "C" IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
 
       if (!old_buffer)
       {
+        unsigned char r = 255, g = 255, b = 255;
+        char* bgcolor = iupAttribGet(ih, "BGCOLOR");
+        if (!bgcolor || !iupStrToRGB(bgcolor, &r, &g, &b))
+          iupStrToRGB(iupBaseNativeParentGetBgColor(ih), &r, &g, &b);
+
         dc->buffer = new QPixmap(widget_size);
-        dc->buffer->fill(Qt::white);
+        dc->buffer->fill(QColor(r, g, b));
 
         /* Store buffer pointer so paintEvent can access it */
         iupAttribSet(ih, "_IUPQT_CANVAS_BUFFER", (char*)dc->buffer);

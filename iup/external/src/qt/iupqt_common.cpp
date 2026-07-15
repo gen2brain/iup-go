@@ -668,6 +668,7 @@ extern "C" IUP_SDK_API int iupdrvBaseSetBgColorAttrib(Ihandle* ih, const char* v
   QWidget* widget = (QWidget*)ih->handle;
   QPalette palette = widget->palette();
   palette.setColor(QPalette::Window, QColor(r, g, b));
+  palette.setColor(QPalette::Base, QColor(r, g, b));
   widget->setPalette(palette);
   widget->setAutoFillBackground(true);
 

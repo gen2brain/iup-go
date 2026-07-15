@@ -319,7 +319,7 @@ public:
 
 static void qtTabsHandleCurrentChanged(IupQtTabWidget* tabs, int index, Ihandle* ih, int* prev_index)
 {
-  if (!ih || iupAttribGet(ih, "_IUPQT_IGNORE_CHANGE"))
+  if (!ih)
     return;
 
   if (index < 0)
@@ -357,17 +357,20 @@ static void qtTabsHandleCurrentChanged(IupQtTabWidget* tabs, int index, Ihandle*
       container->show();
   }
 
-  /* Fire callbacks */
-  IFnnn cb = (IFnnn)IupGetCallback(ih, "TABCHANGE_CB");
-  if (cb)
+  /* Fire callbacks, except on a programmatic tab change */
+  if (!iupAttribGet(ih, "_IUPQT_IGNORE_CHANGE"))
   {
-    cb(ih, child, prev_child);
-  }
-  else
-  {
-    IFnii cb2 = (IFnii)IupGetCallback(ih, "TABCHANGEPOS_CB");
-    if (cb2 && *prev_index >= 0)
-      cb2(ih, index, *prev_index);
+    IFnnn cb = (IFnnn)IupGetCallback(ih, "TABCHANGE_CB");
+    if (cb)
+    {
+      cb(ih, child, prev_child);
+    }
+    else
+    {
+      IFnii cb2 = (IFnii)IupGetCallback(ih, "TABCHANGEPOS_CB");
+      if (cb2 && *prev_index >= 0)
+        cb2(ih, index, *prev_index);
+    }
   }
 
   *prev_index = index;

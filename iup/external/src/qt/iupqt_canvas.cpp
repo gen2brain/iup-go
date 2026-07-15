@@ -196,7 +196,11 @@ protected:
     {
       /* Fallback for regular canvas with no buffer/action */
       QPainter painter(this);
-      painter.fillRect(rect(), Qt::white);
+      unsigned char r = 255, g = 255, b = 255;
+      char* bgcolor = iupAttribGet(ih, "BGCOLOR");
+      if (!bgcolor || !iupStrToRGB(bgcolor, &r, &g, &b))
+        iupStrToRGB(iupBaseNativeParentGetBgColor(ih), &r, &g, &b);
+      painter.fillRect(rect(), QColor(r, g, b));
     }
 
     event->accept();
