@@ -356,6 +356,17 @@ static gboolean gtkCanvasExposeEvent(GtkWidget *widget, GdkEventExpose *evt, Iha
     iupAttribSet(ih, "CLIPRECT", NULL);
     iupAttribSet(ih, "CAIRO_CR", NULL);
   }
+#if GTK_CHECK_VERSION(3, 0, 0)
+  else if (!cb)
+  {
+    unsigned char r = 255, g = 255, b = 255;
+    char* bgcolor = IupGetAttribute(ih, "BGCOLOR");
+    if (!bgcolor || !iupStrToRGB(bgcolor, &r, &g, &b))
+      iupStrToRGB(IupGetGlobal("DLGBGCOLOR"), &r, &g, &b);
+    cairo_set_source_rgb(cr, r/255.0, g/255.0, b/255.0);
+    cairo_paint(cr);
+  }
+#endif
 
   (void)widget;
   return FALSE;
