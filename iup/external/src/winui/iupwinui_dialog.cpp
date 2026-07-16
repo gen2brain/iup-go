@@ -686,12 +686,18 @@ static int winuiDialogMapMethod(Ihandle* ih)
 
   aux->takeFocusToken = aux->xamlSource.TakeFocusRequested(
     [](DesktopWindowXamlSource const& sender, DesktopWindowXamlSourceTakeFocusRequestedEventArgs const& args) {
+      static thread_local bool navigating = false;
+      if (navigating)
+        return;
+
       XamlSourceFocusNavigationReason reason = args.Request().Reason();
       if (reason != XamlSourceFocusNavigationReason::First && reason != XamlSourceFocusNavigationReason::Last)
         return;
 
+      navigating = true;
       XamlSourceFocusNavigationRequest request(reason);
       sender.NavigateFocus(request);
+      navigating = false;
     });
 
   {
