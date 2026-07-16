@@ -369,7 +369,17 @@ static void winuiCanvasProcessVerScroll(Ihandle* ih, double newValue, int op)
 
 static int winuiCanvasSetBgColorAttrib(Ihandle* ih, const char* value)
 {
-  (void)value;
+  unsigned char r, g, b;
+  Canvas canvas = winuiGetHandle<Canvas>(ih);
+  if (canvas && !IupGetCallback(ih, "ACTION") && iupStrToRGB(value, &r, &g, &b))
+  {
+    Windows::UI::Color color;
+    color.A = 255;
+    color.R = r;
+    color.G = g;
+    color.B = b;
+    canvas.Background(SolidColorBrush(color));
+  }
   iupdrvPostRedraw(ih);
   return 1;
 }
@@ -1023,6 +1033,8 @@ static int winuiCanvasMapMethod(Ihandle* ih)
 
   winuiSetAux(ih, IUPWINUI_CANVAS_AUX, aux);
   winuiStoreHandle(ih, canvas);
+
+  winuiCanvasSetBgColorAttrib(ih, IupGetAttribute(ih, "BGCOLOR"));
 
   winuiCanvasSetDXAttrib(ih, NULL);
   winuiCanvasSetDYAttrib(ih, NULL);
