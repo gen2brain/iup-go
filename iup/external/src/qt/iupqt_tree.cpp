@@ -508,13 +508,11 @@ extern "C" IUP_SDK_API void iupdrvTreeAddNode(Ihandle* ih, int id, int kind, con
   if (def_image)
     new_item->setIcon(0, QIcon(*def_image));
 
-  /* Add checkbox if enabled */
+  /* default OFF */
   if (ih->data->show_toggle)
   {
-    if (ih->data->show_toggle == 2)
-      new_item->setCheckState(0, Qt::PartiallyChecked);
-    else
-      new_item->setCheckState(0, Qt::Unchecked);
+    new_item->setData(0, Qt::UserRole + 3, (int)Qt::Unchecked);
+    new_item->setCheckState(0, Qt::Unchecked);
   }
 
   /* Insert the item into the Qt tree widget */
@@ -600,13 +598,10 @@ static QTreeWidgetItem* qtTreeCopyNode(Ihandle* ih, QTreeWidgetItem* src, QTreeW
   if (ih->data->show_rename)
     new_item->setFlags(new_item->flags() | Qt::ItemIsEditable);
 
-  /* Initialize checkbox state based on destination tree settings, not source */
   if (ih->data->show_toggle)
   {
-    if (ih->data->show_toggle == 2)
-      new_item->setCheckState(0, Qt::PartiallyChecked);
-    else
-      new_item->setCheckState(0, Qt::Unchecked);
+    new_item->setData(0, Qt::UserRole + 3, (int)src->checkState(0));
+    new_item->setCheckState(0, src->checkState(0));
   }
 
   /* Increment node count for the destination tree */
@@ -650,13 +645,10 @@ static QTreeWidgetItem* qtTreeDragDropCopyItem(Ihandle* src_ih, Ihandle* dst_ih,
   if (dst_ih->data->show_rename)
     new_item->setFlags(new_item->flags() | Qt::ItemIsEditable);
 
-  /* Initialize checkbox state based on destination tree settings */
   if (dst_ih->data->show_toggle)
   {
-    if (dst_ih->data->show_toggle == 2)
-      new_item->setCheckState(0, Qt::PartiallyChecked);
-    else
-      new_item->setCheckState(0, Qt::Unchecked);
+    new_item->setData(0, Qt::UserRole + 3, (int)src_item->checkState(0));
+    new_item->setCheckState(0, src_item->checkState(0));
   }
 
   /* Increment node count for the destination tree */
@@ -1464,13 +1456,21 @@ static int qtTreeSetToggleValueAttrib(Ihandle* ih, int id, const char* value)
   if (!item)
     return 0;
 
+  Qt::CheckState target = item->checkState(0);
   if (iupStrEqualNoCase(value, "ON"))
-    item->setCheckState(0, Qt::Checked);
+    target = Qt::Checked;
   else if (iupStrEqualNoCase(value, "OFF"))
-    item->setCheckState(0, Qt::Unchecked);
+    target = Qt::Unchecked;
   else if ((iupStrEqualNoCase(value, "NOTDEF") || (iupAttribGetBoolean(ih, "EMPTYAS3STATE") && !value))
            && ih->data->show_toggle == 2)
-    item->setCheckState(0, Qt::PartiallyChecked);
+    target = Qt::PartiallyChecked;
+
+  /* programmatic change: do not fire TOGGLEVALUE_CB */
+  {
+    QSignalBlocker blocker((IupQtTree*)ih->handle);
+    item->setData(0, Qt::UserRole + 3, (int)target);
+    item->setCheckState(0, target);
+  }
 
   return 1;
 }
@@ -1958,9 +1958,13 @@ static void qtTreeItemChanged(Ihandle* ih, QTreeWidgetItem* item, int column)
   /* Check if this is a toggle change */
   if (ih->data->show_toggle)
   {
-    int id = qtTreeFindNodeId(ih, item);
     Qt::CheckState state = item->checkState(0);
+    QVariant last = item->data(0, Qt::UserRole + 3);
+    if (last.isValid() && last.toInt() == (int)state)
+      return; /* not a user toggle */
+    item->setData(0, Qt::UserRole + 3, (int)state);
 
+    int id = qtTreeFindNodeId(ih, item);
     IFnii cb = (IFnii)IupGetCallback(ih, "TOGGLEVALUE_CB");
     if (cb)
     {
