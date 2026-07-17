@@ -771,7 +771,8 @@ static int winuiCanvasMapMethod(Ihandle* ih)
 
   aux->pointerPressedToken = canvas.PointerPressed([ih](IInspectable const&, PointerRoutedEventArgs const& args) {
     Canvas c = winuiGetHandle<Canvas>(ih);
-    if (c)
+    /* a drag source must not capture the pointer, it prevents the drop from completing */
+    if (c && !iupAttribGetBoolean(ih, "DRAGSOURCE"))
       c.CapturePointer(args.Pointer());
 
     IFniiiis cb = (IFniiiis)IupGetCallback(ih, "BUTTON_CB");
@@ -805,6 +806,15 @@ static int winuiCanvasMapMethod(Ihandle* ih)
       }
     }
 
+    /* the canvas captures the pointer, so CanDrag never fires; track the press to start the drag ourselves */
+    if (iupAttribGetBoolean(ih, "DRAGSOURCE"))
+    {
+      auto hostPt = args.GetCurrentPoint(nullptr);
+      iupAttribSetInt(ih, "_IUPWINUI_DRAGX", (int)hostPt.Position().X);
+      iupAttribSetInt(ih, "_IUPWINUI_DRAGY", (int)hostPt.Position().Y);
+      iupAttribSet(ih, "_IUPWINUI_DRAGPRESSED", "1");
+    }
+
     args.Handled(true);
   });
 
@@ -812,6 +822,8 @@ static int winuiCanvasMapMethod(Ihandle* ih)
     Canvas c = winuiGetHandle<Canvas>(ih);
     if (c)
       c.ReleasePointerCapture(args.Pointer());
+
+    iupAttribSet(ih, "_IUPWINUI_DRAGPRESSED", NULL);
 
     IFniiiis cb = (IFniiiis)IupGetCallback(ih, "BUTTON_CB");
     if (cb)
@@ -853,6 +865,20 @@ static int winuiCanvasMapMethod(Ihandle* ih)
       iupwinuiButtonKeySetStatus(iupwinuiGetModifierKeys(), button, status, 0);
       cb(ih, x, y, status);
     }
+
+    if (iupAttribGet(ih, "_IUPWINUI_DRAGPRESSED"))
+    {
+      Canvas c = winuiGetHandle<Canvas>(ih);
+      auto hostPt = args.GetCurrentPoint(nullptr);
+      float dx = hostPt.Position().X - iupAttribGetInt(ih, "_IUPWINUI_DRAGX");
+      float dy = hostPt.Position().Y - iupAttribGetInt(ih, "_IUPWINUI_DRAGY");
+      if (c && dx * dx + dy * dy > 16)
+      {
+        iupAttribSet(ih, "_IUPWINUI_DRAGPRESSED", NULL);
+        c.StartDragAsync(args.GetCurrentPoint(c));
+      }
+    }
+
     args.Handled(true);
   });
 

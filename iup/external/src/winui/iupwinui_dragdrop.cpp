@@ -312,7 +312,7 @@ static int winuiSetDropTargetAttrib(Ihandle* ih, const char* value)
     elem.AllowDrop(true);
 
     dragOverToken = new event_token();
-    *dragOverToken = elem.DragOver([ih](IInspectable const&, DragEventArgs const& e) {
+    *dragOverToken = elem.DragOver([ih](IInspectable const& sender, DragEventArgs const& e) {
       char* drop_types = iupAttribGet(ih, "DROPTYPES");
       if (!drop_types)
         return;
@@ -325,7 +325,7 @@ static int winuiSetDropTargetAttrib(Ihandle* ih, const char* value)
       {
         char status[20] = "";
         iupdrvGetKeyState(status);
-        auto pos = e.GetPosition(nullptr);
+        auto pos = e.GetPosition(sender.try_as<UIElement>());
         dropmotion_cb(ih, (int)pos.X, (int)pos.Y, status);
       }
 
@@ -335,7 +335,7 @@ static int winuiSetDropTargetAttrib(Ihandle* ih, const char* value)
     iupAttribSet(ih, "_IUPWINUI_CUSTOMDRAGOVER_TOKEN", (char*)dragOverToken);
 
     dropToken = new event_token();
-    *dropToken = elem.Drop([ih](IInspectable const&, DragEventArgs const& e) {
+    *dropToken = elem.Drop([ih](IInspectable const& sender, DragEventArgs const& e) {
       IFnsViii dropdata_cb = (IFnsViii)IupGetCallback(ih, "DROPDATA_CB");
       if (!dropdata_cb)
         return;
@@ -347,7 +347,7 @@ static int winuiSetDropTargetAttrib(Ihandle* ih, const char* value)
       if (!winui_drag_data || winui_drag_type[0] == '\0' || strcmp(winui_drag_type, drop_types) != 0)
         return;
 
-      auto pos = e.GetPosition(nullptr);
+      auto pos = e.GetPosition(sender.try_as<UIElement>());
       dropdata_cb(ih, winui_drag_type, winui_drag_data, winui_drag_data_size, (int)pos.X, (int)pos.Y);
 
       e.Handled(true);

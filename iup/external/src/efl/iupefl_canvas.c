@@ -654,6 +654,14 @@ static int eflCanvasMapMethod(Ihandle* ih)
 
     efl_content_set(scroller, vg);
   }
+  else if (iupAttribGetBoolean(ih, "DROPTARGET"))
+  {
+    /* a raw vg has no smart parent so Efl.Ui.Dnd cannot reach it; wrap it in an Efl.Ui widget */
+    Eo* wrap = efl_add(EFL_UI_SCROLLER_CLASS, parent, efl_gfx_entity_visible_set(efl_added, EINA_TRUE));
+    efl_ui_scrollbar_bar_mode_set(wrap, EFL_UI_SCROLLBAR_MODE_OFF, EFL_UI_SCROLLBAR_MODE_OFF);
+    efl_content_set(wrap, vg);
+    iupAttribSet(ih, "_IUP_EXTRAPARENT", (char*)wrap);
+  }
 
   root = efl_add(EFL_CANVAS_VG_CONTAINER_CLASS, vg);
   if (!root)
@@ -813,12 +821,13 @@ static void eflCanvasUnMapMethod(Ihandle* ih)
 
 static void eflCanvasLayoutUpdateMethod(Ihandle* ih)
 {
+  Eo* xparent = (Eo*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
   Eo* scroller = (Eo*)iupAttribGet(ih, "_IUP_EFL_SCROLLER");
   Eo* vg = iupeflGetWidget(ih);
 
   if (!iupeflIsInsideTabs(ih))
   {
-    if (scroller)
+    if (xparent)
     {
       Ihandle* parent;
       int abs_x = ih->x;
@@ -835,9 +844,10 @@ static void eflCanvasLayoutUpdateMethod(Ihandle* ih)
         parent = parent->parent;
       }
 
-      efl_gfx_entity_position_set(scroller, EINA_POSITION2D(abs_x, abs_y));
-      efl_gfx_entity_size_set(scroller, EINA_SIZE2D(ih->currentwidth, ih->currentheight));
+      efl_gfx_entity_position_set(xparent, EINA_POSITION2D(abs_x, abs_y));
+      efl_gfx_entity_size_set(xparent, EINA_SIZE2D(ih->currentwidth, ih->currentheight));
 
+      if (scroller)
       {
         Eo* clip = (Eo*)iupAttribGet(ih, "_IUP_EFL_CANVAS_CLIP");
         if (clip)

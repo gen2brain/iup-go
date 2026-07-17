@@ -48,6 +48,7 @@ static void cocoaCanvasComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int
 @property(nonatomic, assign, getter=isCurrentFirstResponder) bool currentFirstResponder;
 
 @property(nonatomic, assign) bool startedDrag;
+@property(nonatomic, assign) NSPoint dragStartPoint;
 
 @property(nonatomic, assign) CGSize previousSize;
 
@@ -649,6 +650,15 @@ static void cocoaCanvasFireGesture(Ihandle* ih, int gesture, int state, int x, i
 {
   if(![self isEnabled]) return;
 
+  if([cocoaSourceDragGetAssociatedData(_ih) isDragSourceEnabled])
+  {
+    NSPoint point = [self convertPoint:[the_event locationInWindow] fromView:nil];
+    if(![self isFlipped])
+      point.y = [self bounds].size.height - point.y;
+    [self setDragStartPoint:point];
+    [self setStartedDrag:false];
+  }
+
   if(!iupcocoaCommonBaseHandleMouseButtonCallback(_ih, the_event, self, true))
   {
     [super mouseDown:the_event];
@@ -672,6 +682,22 @@ static void cocoaCanvasFireGesture(Ihandle* ih, int gesture, int state, int x, i
   if(!iupcocoaCommonBaseHandleMouseMotionCallback(_ih, the_event, self))
   {
     [super mouseDragged:the_event];
+  }
+
+  /* start the drag past the threshold (no built-in drag on a custom view) */
+  if(![self startedDrag] && [cocoaSourceDragGetAssociatedData(_ih) isDragSourceEnabled])
+  {
+    NSPoint point = [self convertPoint:[the_event locationInWindow] fromView:nil];
+    if(![self isFlipped])
+      point.y = [self bounds].size.height - point.y;
+
+    CGFloat dx = point.x - [self dragStartPoint].x;
+    CGFloat dy = point.y - [self dragStartPoint].y;
+    if(dx*dx + dy*dy >= 25)
+    {
+      [self setStartedDrag:true];
+      IupSetStrf(_ih, "DRAGSTART", "%d,%d", (int)[self dragStartPoint].x, (int)[self dragStartPoint].y);
+    }
   }
 }
 
