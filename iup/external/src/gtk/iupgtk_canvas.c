@@ -262,9 +262,19 @@ static gboolean gtkCanvasScrollEvent(GtkWidget *widget, GdkEventScroll *evt, Iha
 
 static gboolean gtkCanvasButtonEvent(GtkWidget *widget, GdkEventButton *evt, Ihandle *ih)
 {
+  /* canvas returns TRUE so start the drag ourselves; skip the grab, it conflicts with the drag */
+  int dragsource = iupAttribGetBoolean(ih, "DRAGSOURCE");
+
   if (evt->type == GDK_BUTTON_PRESS)
   {
-    gtk_grab_add(widget);
+    if (dragsource && evt->button == 1)
+    {
+      iupAttribSetInt(ih, "_IUPGTK_DRAGX", (int)evt->x);
+      iupAttribSetInt(ih, "_IUPGTK_DRAGY", (int)evt->y);
+      iupAttribSet(ih, "_IUPGTK_DRAGPRESSED", "1");
+    }
+    else
+      gtk_grab_add(widget);
 
     /* Force focus on canvas click */
     if (iupAttribGetBoolean(ih, "CANFOCUS"))
@@ -272,7 +282,10 @@ static gboolean gtkCanvasButtonEvent(GtkWidget *widget, GdkEventButton *evt, Iha
   }
   else  /* GDK_BUTTON_RELEASE */
   {
-    gtk_grab_remove(widget);
+    if (dragsource)
+      iupAttribSet(ih, "_IUPGTK_DRAGPRESSED", NULL);
+    else
+      gtk_grab_remove(widget);
   }
 
   iupgtkButtonEvent(widget, evt, ih);
@@ -283,6 +296,27 @@ static gboolean gtkCanvasButtonEvent(GtkWidget *widget, GdkEventButton *evt, Iha
 static gboolean gtkCanvasMotionNotifyEvent(GtkWidget *widget, GdkEventMotion *evt, Ihandle *ih)
 {
   iupgtkMotionNotifyEvent(widget, evt, ih);
+
+  if ((evt->state & GDK_BUTTON1_MASK) && iupAttribGet(ih, "_IUPGTK_DRAGPRESSED"))
+  {
+    int x0 = iupAttribGetInt(ih, "_IUPGTK_DRAGX");
+    int y0 = iupAttribGetInt(ih, "_IUPGTK_DRAGY");
+    if (gtk_drag_check_threshold(widget, x0, y0, (int)evt->x, (int)evt->y))
+    {
+      GtkTargetList* targetlist = (GtkTargetList*)iupAttribGet(ih, "_IUPGTK_DRAG_TARGETLIST");
+      iupAttribSet(ih, "_IUPGTK_DRAGPRESSED", NULL);
+      if (targetlist)
+      {
+        GdkDragAction actions = iupAttribGetBoolean(ih, "DRAGSOURCEMOVE")? GDK_ACTION_MOVE|GDK_ACTION_COPY: GDK_ACTION_COPY;
+#if GTK_CHECK_VERSION(3, 10, 0)
+        gtk_drag_begin_with_coordinates(widget, targetlist, actions, 1, (GdkEvent*)evt, (int)evt->x, (int)evt->y);
+#else
+        gtk_drag_begin(widget, targetlist, actions, 1, (GdkEvent*)evt);
+#endif
+      }
+    }
+  }
+
   return TRUE; /* stop other handlers from being invoked */
 }
 

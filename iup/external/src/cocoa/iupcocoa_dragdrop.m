@@ -786,10 +786,29 @@ static void cocoaSourceDragProvideDataForTypeUser(Ihandle* ih, NSPasteboard* pas
       drag_image = (NSImage*)iupImageGetImage(drag_cursor_name, ih, 0, NULL);
     }
 
+    if(!drag_image && main_view)
+    {
+      NSRect view_bounds = [main_view bounds];
+      if(view_bounds.size.width > 0 && view_bounds.size.height > 0)
+      {
+        NSBitmapImageRep* bitmap_rep = [main_view bitmapImageRepForCachingDisplayInRect:view_bounds];
+        if(bitmap_rep)
+        {
+          [main_view cacheDisplayInRect:view_bounds toBitmapImageRep:bitmap_rep];
+          drag_image = [[[NSImage alloc] initWithSize:view_bounds.size] autorelease];
+          [drag_image addRepresentation:bitmap_rep];
+        }
+      }
+    }
+
     if(drag_image)
     {
       NSRect image_rect = NSMakeRect(0, 0, [drag_image size].width, [drag_image size].height);
       [dragging_item setDraggingFrame:image_rect contents:drag_image];
+    }
+    else
+    {
+      [dragging_item setDraggingFrame:NSMakeRect(0, 0, 16, 16) contents:nil];
     }
   }
   return dragging_item;
@@ -960,7 +979,8 @@ static NSMutableArray* cocoaParseDragDropTypes(const char* value)
   while (iupStrToStrStr(value_copy, value_temp1, sizeof(value_temp1), value_temp2, sizeof(value_temp2), ',') > 0)
   {
     NSString* type_string = [NSString stringWithUTF8String:value_temp1];
-    [array_of_types addObject:type_string];
+    if ([type_string length] > 0)
+      [array_of_types addObject:type_string];
 
     if (iupStrEqualNoCase(value_temp2, value_temp1))
       break;
@@ -1015,7 +1035,9 @@ IupTargetDropAssociatedData* cocoaTargetDropGetAssociatedData(Ihandle* ih)
 static int cocoaTargetDropSetDropTypesAttrib(Ihandle* ih, const char* value)
 {
   IupTargetDropAssociatedData* drag_drop_data = cocoaTargetDropGetAssociatedData(ih);
-  id the_object = ih->handle;
+  id the_object = [drag_drop_data mainView];
+  if(!the_object)
+    the_object = ih->handle;
 
   if(NULL != value)
   {
@@ -1047,8 +1069,10 @@ static int cocoaTargetDropSetDropTypesAttrib(Ihandle* ih, const char* value)
 
 static int cocoaTargetDropSetDropTargetAttrib(Ihandle* ih, const char* value)
 {
-  id the_object = ih->handle;
   IupTargetDropAssociatedData* drag_drop_data = cocoaTargetDropGetAssociatedData(ih);
+  id the_object = [drag_drop_data mainView];
+  if(!the_object)
+    the_object = ih->handle;
   if(iupStrBoolean(value))
   {
     [drag_drop_data setDropTargetEnabled:true];

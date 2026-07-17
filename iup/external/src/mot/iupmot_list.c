@@ -1268,6 +1268,7 @@ static void motListEnableDragDrop(Widget w, Ihandle* ih)
   iupMOT_SETARG(args, num_args, XmNdropProc, motListDropProc);
   iupMOT_SETARG(args, num_args, XmNanimationStyle, XmDRAG_UNDER_NONE);
   XmDropSiteRegister(w, args, num_args);
+  iupAttribSet(ih, "_IUPMOT_DROPSITE", "1");
 }
 
 /*********************************************************************************/

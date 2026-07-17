@@ -122,9 +122,10 @@ static void eflDropPositionChangedCb(void *data, const Efl_Event *ev)
   cbDropMotion = (IFniis)IupGetCallback(ih, "DROPMOTION_CB");
   if (cbDropMotion)
   {
+    Eina_Rect r = efl_gfx_entity_geometry_get(ev->object);
     char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
     iupeflButtonKeySetStatus(eflGetModifiers(ih), 0, status, 0);
-    cbDropMotion(ih, drop_ev->position.x, drop_ev->position.y, status);
+    cbDropMotion(ih, drop_ev->position.x - r.rect.x, drop_ev->position.y - r.rect.y, status);
   }
 }
 
@@ -137,8 +138,9 @@ static void eflDropDroppedCb(void *data, const Efl_Event *ev)
 
   if (drop_ev)
   {
-    drop_x = drop_ev->dnd.position.x;
-    drop_y = drop_ev->dnd.position.y;
+    Eina_Rect r = efl_gfx_entity_geometry_get(ev->object);
+    drop_x = drop_ev->dnd.position.x - r.rect.x;
+    drop_y = drop_ev->dnd.position.y - r.rect.y;
   }
 
   if (!efl_drag_data || !efl_drag_data_size)
@@ -178,7 +180,10 @@ static int eflSetDropTypesAttrib(Ihandle* ih, const char* value)
 
 static int eflSetDropTargetAttrib(Ihandle* ih, const char* value)
 {
-  Eo* widget = iupeflGetWidget(ih);
+  /* a raw canvas is wrapped in an Efl.Ui widget (_IUP_EXTRAPARENT) that receives the drop */
+  Eo* widget = (Eo*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
+  if (!widget)
+    widget = iupeflGetWidget(ih);
   if (!widget)
     return 0;
 

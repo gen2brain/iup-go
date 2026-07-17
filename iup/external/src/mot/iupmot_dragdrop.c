@@ -480,9 +480,15 @@ static int motSetDropTargetAttrib(Ihandle* ih, const char* value)
 
     iupMOT_SETARG(args, num_args, XmNimportTargets, dropTypesList);
     iupMOT_SETARG(args, num_args, XmNnumImportTargets, numDropTypes);
+    iupMOT_SETARG(args, num_args, XmNdropSiteOperations, XmDROP_MOVE|XmDROP_COPY);
     iupMOT_SETARG(args, num_args, XmNdropProc, motDropProc);
     iupMOT_SETARG(args, num_args, XmNdragProc, motDragProc);
-    XmDropSiteUpdate(w, args, num_args);
+
+    /* register the site unless the control already has one (e.g. list) */
+    if (iupAttribGet(ih, "_IUPMOT_DROPSITE"))
+      XmDropSiteUpdate(w, args, num_args);
+    else
+      XmDropSiteRegister(w, args, num_args);
 
     XtVaSetValues(w, XmNuserData, ih, NULL);  /* Warning: always check if this affects other controls */
   }
