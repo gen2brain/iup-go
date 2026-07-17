@@ -1020,6 +1020,114 @@ static int haikuTreeSetToggleVisibleAttrib(Ihandle* ih, int id, const char* valu
   return 0;
 }
 
+static char* haikuTreeGetRootCountAttrib(Ihandle* ih)
+{
+  int count = 0;
+  for (int i = 0; i < ih->data->node_count; i++)
+  {
+    IupHaikuTreeItem* it = haikuTreeGetItem(ih, i);
+    if (it && it->OutlineLevel() == 0) count++;
+  }
+  return iupStrReturnInt(count);
+}
+
+static char* haikuTreeGetMarkedNodesAttrib(Ihandle* ih)
+{
+  char* str = iupStrGetMemory(ih->data->node_count + 1);
+  for (int i = 0; i < ih->data->node_count; i++)
+  {
+    IupHaikuTreeItem* it = haikuTreeGetItem(ih, i);
+    str[i] = (it && it->IsSelected()) ? '+' : '-';
+  }
+  str[ih->data->node_count] = 0;
+  return str;
+}
+
+static int haikuTreeSetMarkedNodesAttrib(Ihandle* ih, const char* value)
+{
+  IupHaikuTreeView* tv = haikuTreeGetView(ih);
+  if (!tv || !value || ih->data->mark_mode != ITREE_MARK_MULTIPLE) return 0;
+  LooperLockGuard guard(tv->Looper());
+  iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", "1");
+  int len = (int)strlen(value);
+  for (int i = 0; i < ih->data->node_count && i < len; i++)
+  {
+    IupHaikuTreeItem* it = haikuTreeGetItem(ih, i);
+    int idx = it ? tv->IndexOf(it) : -1;
+    if (idx < 0) continue;
+    if (value[i] == '+') tv->Select(idx, true);
+    else                 tv->Deselect(idx);
+  }
+  iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", NULL);
+  return 0;
+}
+
+static int haikuTreeSetMarkStartAttrib(Ihandle* ih, const char* value)
+{
+  int id;
+  if (iupStrToInt(value, &id))
+    iupAttribSetInt(ih, "_IUPTREE_MARKSTART", id);
+  return 0;
+}
+
+static void haikuTreeSelectRange(IupHaikuTreeView* tv, Ihandle* ih, int id1, int id2)
+{
+  if (id1 > id2) { int t = id1; id1 = id2; id2 = t; }
+  for (int i = id1; i <= id2; i++)
+  {
+    IupHaikuTreeItem* it = haikuTreeGetItem(ih, i);
+    int idx = it ? tv->IndexOf(it) : -1;
+    if (idx >= 0) tv->Select(idx, true);
+  }
+}
+
+static int haikuTreeSetMarkAttrib(Ihandle* ih, const char* value)
+{
+  IupHaikuTreeView* tv = haikuTreeGetView(ih);
+  if (!tv || ih->data->mark_mode != ITREE_MARK_MULTIPLE) return 0;
+  LooperLockGuard guard(tv->Looper());
+  iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", "1");
+
+  if (iupStrEqualNoCase(value, "CLEARALL"))
+    tv->DeselectAll();
+  else if (iupStrEqualNoCase(value, "MARKALL"))
+    haikuTreeSelectRange(tv, ih, 0, ih->data->node_count - 1);
+  else if (iupStrEqualNoCase(value, "INVERTALL"))
+  {
+    for (int i = 0; i < ih->data->node_count; i++)
+    {
+      IupHaikuTreeItem* it = haikuTreeGetItem(ih, i);
+      int idx = it ? tv->IndexOf(it) : -1;
+      if (idx < 0) continue;
+      if (it->IsSelected()) tv->Deselect(idx); else tv->Select(idx, true);
+    }
+  }
+  else if (iupStrEqualNoCase(value, "BLOCK"))
+  {
+    int start = iupAttribGetInt(ih, "_IUPTREE_MARKSTART");
+    int cur = tv->CurrentSelection(0);
+    IupHaikuTreeItem* cit = cur >= 0 ? dynamic_cast<IupHaikuTreeItem*>(tv->ItemAt(cur)) : NULL;
+    haikuTreeSelectRange(tv, ih, start, cit ? iupTreeFindNodeId(ih, (InodeHandle*)cit) : start);
+  }
+  else if (iupStrEqualPartial(value, "INVERT")) /* INVERTid, after INVERTALL */
+  {
+    int id = IUP_INVALID_ID;
+    iupStrToInt(&value[strlen("INVERT")], &id);
+    IupHaikuTreeItem* it = haikuTreeGetItem(ih, id);
+    int idx = it ? tv->IndexOf(it) : -1;
+    if (idx >= 0) { if (it->IsSelected()) tv->Deselect(idx); else tv->Select(idx, true); }
+  }
+  else /* start-end range */
+  {
+    int id1, id2;
+    if (iupStrToIntInt(value, &id1, &id2, '-') == 2)
+      haikuTreeSelectRange(tv, ih, id1, id2);
+  }
+
+  iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", NULL);
+  return 0;
+}
+
 static int haikuTreeSetImageAttrib(Ihandle* ih, int id, const char* value)
 {
   IupHaikuTreeView* tv = haikuTreeGetView(ih);
@@ -1230,6 +1338,11 @@ extern "C" IUP_SDK_API void iupdrvTreeInitClass(Iclass* ic)
 
   /* Marks / selection */
   iupClassRegisterAttributeId(ic, "MARKED", haikuTreeGetMarkedAttrib, haikuTreeSetMarkedAttrib, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ROOTCOUNT", haikuTreeGetRootCountAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MARK", NULL, haikuTreeSetMarkAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MARKSTART", NULL, haikuTreeSetMarkStartAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "STARTING", NULL, haikuTreeSetMarkStartAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MARKEDNODES", haikuTreeGetMarkedNodesAttrib, haikuTreeSetMarkedNodesAttrib, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "TOGGLEVALUE", haikuTreeGetToggleValueAttrib, haikuTreeSetToggleValueAttrib, IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "TOGGLEVISIBLE", haikuTreeGetToggleVisibleAttrib, haikuTreeSetToggleVisibleAttrib, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "VALUE", haikuTreeGetValueAttrib, haikuTreeSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
