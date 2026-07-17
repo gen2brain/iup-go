@@ -54,6 +54,7 @@ static void eflTreeEndRenameEdit(Ihandle* ih, int apply);
 
 static void eflTreeCopyNodeData(IeflTreeNode* src, IeflTreeNode* dst);
 static void eflTreeCopyChildren(Ihandle* ih, Eo* tree, Elm_Object_Item* src_item, Elm_Object_Item* dst_parent);
+static void eflTreeToggleChanged(void* data, Evas_Object* obj, void* event_info);
 
 static char* eflTreeTextGet(void* data, Evas_Object* obj, const char* part)
 {
@@ -73,7 +74,7 @@ static Evas_Object* eflTreeContentGet(void* data, Evas_Object* obj, const char* 
   Ihandle* ih;
   const char* image_name = NULL;
   const char* theme_icon = NULL;
-  Evas_Object* img;
+  Evas_Object* img = NULL;
 
   if (!node || !node->ih)
     return NULL;
@@ -110,25 +111,70 @@ static Evas_Object* eflTreeContentGet(void* data, Evas_Object* obj, const char* 
   {
     img = iupeflImageGetImageForParent(image_name, ih, 0, obj);
     if (img)
-    {
       efl_gfx_hint_aspect_set(img, EFL_GFX_HINT_ASPECT_VERTICAL, EINA_SIZE2D(1, 1));
-      return img;
-    }
   }
 
-  if (theme_icon)
+  if (!img && theme_icon)
   {
     img = elm_icon_add(obj);
     if (img && elm_icon_standard_set(img, theme_icon))
-    {
       efl_gfx_hint_aspect_set(img, EFL_GFX_HINT_ASPECT_VERTICAL, EINA_SIZE2D(1, 1));
-      return img;
-    }
-    if (img)
+    else if (img)
+    {
       efl_del(img);
+      img = NULL;
+    }
   }
 
-  return NULL;
+  /* elm_check is 2-state; NOTDEF renders as OFF */
+  if (ih->data->show_toggle && node->toggle_visible)
+  {
+    Evas_Object* box = elm_box_add(obj);
+    Evas_Object* chk = elm_check_add(obj);
+    elm_box_horizontal_set(box, EINA_TRUE);
+    elm_check_state_set(chk, node->toggle_value == 1 ? EINA_TRUE : EINA_FALSE);
+    evas_object_smart_callback_add(chk, "changed", eflTreeToggleChanged, node);
+    evas_object_size_hint_weight_set(chk, 0.0, EVAS_HINT_EXPAND);
+    evas_object_size_hint_align_set(chk, 0.0, EVAS_HINT_FILL);
+    evas_object_show(chk);
+    elm_box_pack_end(box, chk);
+    if (img)
+    {
+      evas_object_size_hint_min_set(img, 20, 20);
+      evas_object_size_hint_weight_set(img, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
+      evas_object_size_hint_align_set(img, EVAS_HINT_FILL, EVAS_HINT_FILL);
+      evas_object_show(img);
+      elm_box_pack_end(box, img);
+    }
+    evas_object_show(box);
+    return box;
+  }
+
+  return img;
+}
+
+static void eflTreeToggleChanged(void* data, Evas_Object* obj, void* event_info)
+{
+  IeflTreeNode* node = (IeflTreeNode*)data;
+  Ihandle* ih;
+  IFnii cb;
+  int id, state;
+  (void)event_info;
+
+  if (!node || !node->ih || !node->item)
+    return;
+
+  ih = node->ih;
+  state = elm_check_state_get(obj) ? 1 : 0;
+  node->toggle_value = state;
+
+  id = iupTreeFindNodeId(ih, (InodeHandle*)node->item);
+  cb = (IFnii)IupGetCallback(ih, "TOGGLEVALUE_CB");
+  if (cb)
+    cb(ih, id, state);
+
+  if (iupAttribGetBoolean(ih, "MARKWHENTOGGLE"))
+    elm_genlist_item_selected_set(node->item, state ? EINA_TRUE : EINA_FALSE);
 }
 
 static void eflTreeItemDel(void* data, Evas_Object* obj)
@@ -773,6 +819,7 @@ IUP_SDK_API void iupdrvTreeAddNode(Ihandle* ih, int id, int kind, const char* ti
   node->title = title ? strdup(title) : NULL;
   node->kind = kind;
   node->expanded = ih->data->add_expanded;
+  node->toggle_visible = 1;
 
   itc = (kind == ITREE_BRANCH) ? efl_tree_branch_itc : efl_tree_leaf_itc;
 
@@ -2184,8 +2231,10 @@ static char* eflTreeGetToggleValueAttrib(Ihandle* ih, int id)
   if (!ih->data->show_toggle)
     return NULL;
 
-  if (node->toggle_value)
+  if (node->toggle_value == 1)
     return "ON";
+  else if (node->toggle_value == -1)
+    return "NOTDEF";
   else
     return "OFF";
 }
@@ -2203,6 +2252,8 @@ static int eflTreeSetToggleValueAttrib(Ihandle* ih, int id, const char* value)
 
   if (iupStrEqualNoCase(value, "ON"))
     node->toggle_value = 1;
+  else if (iupStrEqualNoCase(value, "NOTDEF") && ih->data->show_toggle == 2)
+    node->toggle_value = -1;
   else
     node->toggle_value = 0;
 
