@@ -1383,6 +1383,30 @@ static int qtTreeSetMarkAttrib(Ihandle* ih, const char* value)
         item->setSelected(!item->isSelected());
     }
   }
+  else if (iupStrEqualPartial(value, "INVERT")) /* INVERTid, after INVERTALL */
+  {
+    int id = IUP_INVALID_ID;
+    iupStrToInt(&value[strlen("INVERT")], &id);
+    QTreeWidgetItem* item = qtTreeFindNode(ih, id);
+    if (!item)
+      item = tree->currentItem();
+    if (item)
+      item->setSelected(!item->isSelected());
+  }
+  else /* start-end range */
+  {
+    int id1, id2;
+    if (iupStrToIntInt(value, &id1, &id2, '-') == 2)
+    {
+      if (id1 > id2) { int tmp = id1; id1 = id2; id2 = tmp; }
+      for (int i = id1; i <= id2; i++)
+      {
+        QTreeWidgetItem* item = qtTreeFindNode(ih, i);
+        if (item)
+          item->setSelected(true);
+      }
+    }
+  }
 
   return 1;
 }
@@ -1404,22 +1428,14 @@ static int qtTreeSetMarkStartAttrib(Ihandle* ih, const char* value)
 
 static char* qtTreeGetMarkedNodesAttrib(Ihandle* ih)
 {
-  IupQtTree* tree = (IupQtTree*)ih->handle;
-  QList<QTreeWidgetItem*> selected = tree->selectedItems();
-
-  if (selected.isEmpty())
-    return nullptr;
-
-  QString result;
-  for (int i = 0; i < selected.count(); i++)
+  char* str = iupStrGetMemory(ih->data->node_count + 1);
+  for (int i = 0; i < ih->data->node_count; i++)
   {
-    int id = qtTreeFindNodeId(ih, selected[i]);
-    if (i > 0)
-      result += ":";
-    result += QString::number(id);
+    QTreeWidgetItem* item = qtTreeFindNode(ih, i);
+    str[i] = (item && item->isSelected()) ? '+' : '-';
   }
-
-  return iupStrReturnStr(result.toUtf8().constData());
+  str[ih->data->node_count] = 0;
+  return str;
 }
 
 static int qtTreeSetMarkedNodesAttrib(Ihandle* ih, const char* value)
