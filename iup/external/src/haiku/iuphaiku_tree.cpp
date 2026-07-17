@@ -48,7 +48,8 @@ public:
   IupHaikuTreeItem(uint32 level, int kind, const char* title)
     : BListItem(level, true), fKind(kind), fTitle(title ? title : ""),
       fImage(NULL), fImageExpanded(NULL),
-      fHasFgColor(false), fHasBgColor(false), fHasFont(false), fFont(*be_plain_font)
+      fHasFgColor(false), fHasBgColor(false), fHasFont(false), fFont(*be_plain_font),
+      fShowToggle(0), fToggleValue(0), fToggleVisible(true)
   {
     fFgColor = ui_color(B_LIST_ITEM_TEXT_COLOR);
     fBgColor = ui_color(B_LIST_BACKGROUND_COLOR);
@@ -76,12 +77,21 @@ public:
   bool HasFont() const { return fHasFont; }
   const BFont& Font() const { return fFont; }
 
+  void SetShowToggle(int m) { fShowToggle = m; }
+  int ShowToggle() const { return fShowToggle; }
+  void SetToggleValue(int v) { fToggleValue = v; }
+  int ToggleValue() const { return fToggleValue; }
+  void SetToggleVisible(bool v) { fToggleVisible = v; }
+  bool ToggleVisible() const { return fToggleVisible; }
+  BRect ToggleBox() const { return fToggleBox; }
+
   /* Width this item draws into, used for h-scrollbar autohide. */
   float DrawWidth(BView* owner) const
   {
     float left = OutlineLevel() * be_control_look->DefaultItemSpacing()
                + be_plain_font->Size();
     float w = 2;
+    if (fShowToggle) w += ceilf(be_plain_font->Size() + 2) + 4;
     BBitmap* img = (fKind == ITREE_BRANCH && IsExpanded() && fImageExpanded)
                      ? fImageExpanded : fImage;
     if (img) w += img->Bounds().Width() + 1 + 4;
@@ -109,6 +119,24 @@ public:
                      ? fImageExpanded : fImage;
 
     float x = frame.left + 2;
+    if (fShowToggle)
+    {
+      float boxSize = ceilf(be_plain_font->Size() + 2);
+      if (fToggleVisible)
+      {
+        float by = frame.top + ((frame.Height() - boxSize) / 2);
+        BRect cb(x, by, x + boxSize, by + boxSize);
+        fToggleBox = cb;
+        uint32 flags = 0;
+        if (fToggleValue == 1) flags |= BControlLook::B_ACTIVATED;
+        else if (fToggleValue == -1) flags |= BControlLook::B_PARTIALLY_ACTIVATED;
+        BRect drawRect = cb;
+        be_control_look->DrawCheckBox(owner, drawRect, cb, bg, flags);
+      }
+      else
+        fToggleBox = BRect();
+      x += boxSize + 4;
+    }
     if (img)
     {
       BRect ib = img->Bounds();
@@ -148,6 +176,10 @@ private:
   bool fHasBgColor;
   bool fHasFont;
   BFont fFont;
+  int fShowToggle;
+  int fToggleValue;
+  bool fToggleVisible;
+  mutable BRect fToggleBox;
 };
 
 
@@ -341,6 +373,20 @@ public:
       BListItem* item = ItemAt(idx);
       IupHaikuTreeItem* tit = dynamic_cast<IupHaikuTreeItem*>(item);
       int id = item ? iupTreeFindNodeId(fIhandle, (InodeHandle*)item) : -1;
+
+      /* toggle checkbox click */
+      if (tit && tit->ShowToggle() && tit->ToggleVisible() && id >= 0
+          && !(buttons & B_SECONDARY_MOUSE_BUTTON) && tit->ToggleBox().Contains(where))
+      {
+        int newval = (tit->ToggleValue() == 1) ? 0 : 1;
+        tit->SetToggleValue(newval);
+        InvalidateItem(idx);
+        IFnii cb = (IFnii)IupGetCallback(fIhandle, "TOGGLEVALUE_CB");
+        if (cb) cb(fIhandle, id, newval);
+        if (iupAttribGetBoolean(fIhandle, "MARKWHENTOGGLE"))
+          Select(idx, false);
+        return;
+      }
 
       if (buttons & B_SECONDARY_MOUSE_BUTTON)
       {
@@ -626,6 +672,8 @@ extern "C" IUP_SDK_API void iupdrvTreeAddNode(Ihandle* ih, int id, int kind, con
     it = new IupHaikuTreeItem(0, kind, title);
     tv->AddItem(it, 0);
   }
+
+  it->SetShowToggle(ih->data->show_toggle);
 
   if (kind == ITREE_BRANCH)
   {
@@ -931,6 +979,47 @@ static int haikuTreeSetColorAttrib(Ihandle* ih, int id, const char* value)
   return 0;
 }
 
+static char* haikuTreeGetToggleValueAttrib(Ihandle* ih, int id)
+{
+  IupHaikuTreeItem* it = haikuTreeGetItem(ih, id);
+  if (!ih->data->show_toggle || !it) return NULL;
+  int v = it->ToggleValue();
+  if (v == 1) return (char*)"ON";
+  if (v == -1) return (char*)"NOTDEF";
+  return (char*)"OFF";
+}
+
+static int haikuTreeSetToggleValueAttrib(Ihandle* ih, int id, const char* value)
+{
+  IupHaikuTreeView* tv = haikuTreeGetView(ih);
+  IupHaikuTreeItem* it = haikuTreeGetItem(ih, id);
+  if (!ih->data->show_toggle || !tv || !it) return 0;
+  if (iupStrEqualNoCase(value, "ON")) it->SetToggleValue(1);
+  else if (iupStrEqualNoCase(value, "NOTDEF") && ih->data->show_toggle == 2) it->SetToggleValue(-1);
+  else it->SetToggleValue(0);
+  LooperLockGuard guard(tv->Looper());
+  tv->InvalidateItem(tv->IndexOf(it));
+  return 0;
+}
+
+static char* haikuTreeGetToggleVisibleAttrib(Ihandle* ih, int id)
+{
+  IupHaikuTreeItem* it = haikuTreeGetItem(ih, id);
+  if (!it) return NULL;
+  return (char*)(it->ToggleVisible() ? "YES" : "NO");
+}
+
+static int haikuTreeSetToggleVisibleAttrib(Ihandle* ih, int id, const char* value)
+{
+  IupHaikuTreeView* tv = haikuTreeGetView(ih);
+  IupHaikuTreeItem* it = haikuTreeGetItem(ih, id);
+  if (!tv || !it) return 0;
+  it->SetToggleVisible(iupStrBoolean(value) ? true : false);
+  LooperLockGuard guard(tv->Looper());
+  tv->InvalidateItem(tv->IndexOf(it));
+  return 0;
+}
+
 static int haikuTreeSetImageAttrib(Ihandle* ih, int id, const char* value)
 {
   IupHaikuTreeView* tv = haikuTreeGetView(ih);
@@ -1141,6 +1230,8 @@ extern "C" IUP_SDK_API void iupdrvTreeInitClass(Iclass* ic)
 
   /* Marks / selection */
   iupClassRegisterAttributeId(ic, "MARKED", haikuTreeGetMarkedAttrib, haikuTreeSetMarkedAttrib, IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "TOGGLEVALUE", haikuTreeGetToggleValueAttrib, haikuTreeSetToggleValueAttrib, IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "TOGGLEVISIBLE", haikuTreeGetToggleVisibleAttrib, haikuTreeSetToggleVisibleAttrib, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "VALUE", haikuTreeGetValueAttrib, haikuTreeSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
 
   /* Action */
