@@ -19,6 +19,14 @@
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_assert.h"
+#include "iup_drv.h"
+
+#ifndef GL_BGRA
+#define GL_BGRA 0x80E1
+#endif
+#ifndef GL_CLAMP_TO_EDGE
+#define GL_CLAMP_TO_EDGE 0x812F
+#endif
 
 
 typedef GLXContext (*glXCreateContextAttribsARB_PROC)(Display *dpy, GLXFBConfig config, GLXContext share_list, Bool direct, const int *attrib_list);
@@ -47,7 +55,159 @@ typedef struct _IGlControlData
   Colormap colormap;
   XVisualInfo *vinfo;
   GLXContext context;
+
+  int use_composite;
+  GLuint fbo, color_tex, depth_rbo;
+  int fbo_w, fbo_h;
+  unsigned char* composite_pixels;   /* BGRA, top-left */
+  size_t composite_cap;
 } IGlControlData;
+
+typedef void (*IUPglGenFramebuffers)(GLsizei, GLuint*);
+typedef void (*IUPglBindFramebuffer)(GLenum, GLuint);
+typedef void (*IUPglDeleteFramebuffers)(GLsizei, const GLuint*);
+typedef void (*IUPglFramebufferTexture2D)(GLenum, GLenum, GLenum, GLuint, GLint);
+typedef GLenum (*IUPglCheckFramebufferStatus)(GLenum);
+typedef void (*IUPglGenRenderbuffers)(GLsizei, GLuint*);
+typedef void (*IUPglBindRenderbuffer)(GLenum, GLuint);
+typedef void (*IUPglDeleteRenderbuffers)(GLsizei, const GLuint*);
+typedef void (*IUPglRenderbufferStorage)(GLenum, GLenum, GLsizei, GLsizei);
+typedef void (*IUPglFramebufferRenderbuffer)(GLenum, GLenum, GLenum, GLuint);
+
+static IUPglGenFramebuffers        xGLGenFramebuffers;
+static IUPglBindFramebuffer        xGLBindFramebuffer;
+static IUPglDeleteFramebuffers     xGLDeleteFramebuffers;
+static IUPglFramebufferTexture2D   xGLFramebufferTexture2D;
+static IUPglCheckFramebufferStatus xGLCheckFramebufferStatus;
+static IUPglGenRenderbuffers       xGLGenRenderbuffers;
+static IUPglBindRenderbuffer       xGLBindRenderbuffer;
+static IUPglDeleteRenderbuffers    xGLDeleteRenderbuffers;
+static IUPglRenderbufferStorage    xGLRenderbufferStorage;
+static IUPglFramebufferRenderbuffer xGLFramebufferRenderbuffer;
+
+static int xGLLoadFBOProcs(void)
+{
+  if (xGLGenFramebuffers)
+    return 1;
+  xGLGenFramebuffers         = (IUPglGenFramebuffers)glXGetProcAddressARB((const GLubyte*)"glGenFramebuffers");
+  xGLBindFramebuffer         = (IUPglBindFramebuffer)glXGetProcAddressARB((const GLubyte*)"glBindFramebuffer");
+  xGLDeleteFramebuffers      = (IUPglDeleteFramebuffers)glXGetProcAddressARB((const GLubyte*)"glDeleteFramebuffers");
+  xGLFramebufferTexture2D    = (IUPglFramebufferTexture2D)glXGetProcAddressARB((const GLubyte*)"glFramebufferTexture2D");
+  xGLCheckFramebufferStatus  = (IUPglCheckFramebufferStatus)glXGetProcAddressARB((const GLubyte*)"glCheckFramebufferStatus");
+  xGLGenRenderbuffers        = (IUPglGenRenderbuffers)glXGetProcAddressARB((const GLubyte*)"glGenRenderbuffers");
+  xGLBindRenderbuffer        = (IUPglBindRenderbuffer)glXGetProcAddressARB((const GLubyte*)"glBindRenderbuffer");
+  xGLDeleteRenderbuffers     = (IUPglDeleteRenderbuffers)glXGetProcAddressARB((const GLubyte*)"glDeleteRenderbuffers");
+  xGLRenderbufferStorage     = (IUPglRenderbufferStorage)glXGetProcAddressARB((const GLubyte*)"glRenderbufferStorage");
+  xGLFramebufferRenderbuffer = (IUPglFramebufferRenderbuffer)glXGetProcAddressARB((const GLubyte*)"glFramebufferRenderbuffer");
+  return xGLGenFramebuffers && xGLBindFramebuffer && xGLFramebufferTexture2D && xGLCheckFramebufferStatus && xGLGenRenderbuffers && xGLRenderbufferStorage && xGLFramebufferRenderbuffer;
+}
+
+static int xGLCompositeEnsureFBO(IGlControlData* gldata, int w, int h)
+{
+  if (w < 1) w = 1;
+  if (h < 1) h = 1;
+
+  if (gldata->fbo && gldata->fbo_w == w && gldata->fbo_h == h)
+    return 1;
+
+  if (!xGLLoadFBOProcs())
+    return 0;
+
+  if (!gldata->fbo)       xGLGenFramebuffers(1, &gldata->fbo);
+  if (!gldata->color_tex) glGenTextures(1, &gldata->color_tex);
+  if (!gldata->depth_rbo) xGLGenRenderbuffers(1, &gldata->depth_rbo);
+
+  glBindTexture(GL_TEXTURE_2D, gldata->color_tex);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  glBindTexture(GL_TEXTURE_2D, 0);
+
+  xGLBindRenderbuffer(GL_RENDERBUFFER, gldata->depth_rbo);
+  xGLRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, w, h);
+  xGLBindRenderbuffer(GL_RENDERBUFFER, 0);
+
+  xGLBindFramebuffer(GL_FRAMEBUFFER, gldata->fbo);
+  xGLFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gldata->color_tex, 0);
+  xGLFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, gldata->depth_rbo);
+
+  if (xGLCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+  {
+    xGLBindFramebuffer(GL_FRAMEBUFFER, 0);
+    return 0;
+  }
+
+  gldata->fbo_w = w;
+  gldata->fbo_h = h;
+  return 1;
+}
+
+static void xGLCompositeReadback(Ihandle* ih, IGlControlData* gldata)
+{
+  int w = gldata->fbo_w, h = gldata->fbo_h;
+  int rowbytes = w * 4;
+  size_t need = (size_t)rowbytes * h;
+  unsigned char* px;
+  int y;
+
+  if (!gldata->fbo || w < 1 || h < 1)
+    return;
+
+  if (gldata->composite_cap < need)
+  {
+    unsigned char* nb = (unsigned char*)realloc(gldata->composite_pixels, need);
+    if (!nb) return;
+    gldata->composite_pixels = nb;
+    gldata->composite_cap = need;
+  }
+  px = gldata->composite_pixels;
+
+  xGLBindFramebuffer(GL_FRAMEBUFFER, gldata->fbo);
+  glPixelStorei(GL_PACK_ALIGNMENT, 1);
+  glReadPixels(0, 0, w, h, GL_BGRA, GL_UNSIGNED_BYTE, px);
+
+  {
+    unsigned char* tmp = (unsigned char*)malloc(rowbytes);
+    if (tmp)
+    {
+      for (y = 0; y < h/2; y++)
+      {
+        unsigned char* a = px + (size_t)y*rowbytes;
+        unsigned char* b = px + (size_t)(h-1-y)*rowbytes;
+        memcpy(tmp, a, rowbytes); memcpy(a, b, rowbytes); memcpy(b, tmp, rowbytes);
+      }
+      free(tmp);
+    }
+  }
+  {
+    size_t i, n = (size_t)w*h;
+    for (i = 0; i < n; i++)
+      px[i*4+3] = 255;
+  }
+
+  iupAttribSet(ih, "_IUPGL_COMPOSITE_PIXELS", (char*)px);
+  iupAttribSetInt(ih, "_IUPGL_COMPOSITE_W", w);
+  iupAttribSetInt(ih, "_IUPGL_COMPOSITE_H", h);
+}
+
+static void xGLCompositeSize(IGlControlData* gldata, int* w, int* h)
+{
+  Window root;
+  int x, y;
+  unsigned int ww, hh, bw, depth;
+  if (gldata->window && XGetGeometry(gldata->display, gldata->window, &root, &x, &y, &ww, &hh, &bw, &depth))
+  {
+    *w = (int)ww;
+    *h = (int)hh;
+  }
+  else
+  {
+    *w = 1;
+    *h = 1;
+  }
+}
 
 
 static int xGLCanvasDefaultResize(Ihandle *ih, int width, int height)
@@ -257,6 +417,12 @@ static int xGLCanvasMapMethod(Ihandle* ih)
   if (!gldata->window)
     return IUP_NOERROR;
 
+  if (IupClassMatch(ih, "glbackgroundbox"))
+  {
+    gldata->use_composite = 1;
+    iupAttribSet(ih, "_IUPGL_COMPOSITE", "1");
+  }
+
   ih_shared = IupGetAttributeHandle(ih, "SHAREDCONTEXT");
   if (ih_shared && IupClassMatch(ih_shared, "glcanvas"))  /* must be an IupGLCanvas */
   {
@@ -408,11 +574,40 @@ static void xGLCanvasUnMapMethod(Ihandle* ih)
 
   if (gldata->context)
   {
+    if (gldata->fbo || gldata->color_tex || gldata->depth_rbo)
+    {
+      glXMakeCurrent(gldata->display, gldata->window, gldata->context);
+      if (gldata->fbo)       xGLDeleteFramebuffers(1, &gldata->fbo);
+      if (gldata->color_tex) glDeleteTextures(1, &gldata->color_tex);
+      if (gldata->depth_rbo) xGLDeleteRenderbuffers(1, &gldata->depth_rbo);
+    }
+
     if (gldata->context == glXGetCurrentContext())
       glXMakeCurrent(gldata->display, None, NULL);
 
     glXDestroyContext(gldata->display, gldata->context);
   }
+
+  if (gldata->composite_pixels)
+    free(gldata->composite_pixels);
+  iupAttribSet(ih, "_IUPGL_COMPOSITE_PIXELS", NULL);
+
+#if defined(IUP_USE_MOTIF)
+  {
+    Pixmap pm = (Pixmap)iupAttribGet(ih, "_IUPMOT_GLPIXMAP");
+    GC gc = (GC)iupAttribGet(ih, "_IUPMOT_GLGC");
+    if (pm)
+    {
+      XFreePixmap(gldata->display, pm);
+      iupAttribSet(ih, "_IUPMOT_GLPIXMAP", NULL);
+    }
+    if (gc)
+    {
+      XFreeGC(gldata->display, gc);
+      iupAttribSet(ih, "_IUPMOT_GLGC", NULL);
+    }
+  }
+#endif
 
   if (gldata->colormap != None)
     XFreeColormap(gldata->display, gldata->colormap);
@@ -484,6 +679,14 @@ IUPGL_API void IupGLMakeCurrent(Ihandle* ih)
     iupAttribSet(ih, "ERROR", NULL);
     glXWaitX();
 
+    if (gldata->use_composite)
+    {
+      int pw, ph;
+      xGLCompositeSize(gldata, &pw, &ph);
+      if (xGLCompositeEnsureFBO(gldata, pw, ph))
+        xGLBindFramebuffer(GL_FRAMEBUFFER, gldata->fbo);
+    }
+
     if (!IupGetGlobal("GL_VERSION"))
     {
       IupSetStrGlobal("GL_VENDOR", (char*)glGetString(GL_VENDOR));
@@ -515,6 +718,14 @@ IUPGL_API void IupGLSwapBuffers(Ihandle* ih)
   cb = IupGetCallback(ih, "SWAPBUFFERS_CB");
   if (cb)
     cb(ih);
+
+  if (gldata->use_composite)
+  {
+    xGLCompositeReadback(ih, gldata);
+    if (!iupAttribGet(ih, "_IUPGL_IN_DRAW"))
+      iupdrvPostRedraw(ih);
+    return;
+  }
 
   glXSwapBuffers(gldata->display, gldata->window);
 }
