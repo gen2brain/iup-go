@@ -44,6 +44,8 @@ extern "C" {
 /* Custom BListItem holding the IUP per-node state. Each item knows its kind
  * (branch/leaf), its title, its optional images and per-node colors so DrawItem
  * can render without a hash lookup back to attributes. */
+static int haikuTreeExtraItemHeight(BView* owner);
+
 class IupHaikuTreeItem : public BListItem
 {
 public:
@@ -176,6 +178,8 @@ public:
       float ih = fImage->Bounds().Height() + 2;
       if (ih > Height()) SetHeight(ih);
     }
+    int extra = haikuTreeExtraItemHeight(owner);
+    if (extra > 0) SetHeight(Height() + extra);
   }
 
 private:
@@ -310,9 +314,24 @@ public:
       fIhandle(ih), fEditor(NULL) {}
 
   void SetIhandle(Ihandle* ih) { fIhandle = ih; }
+  Ihandle* GetIhandle() const { return fIhandle; }
 
   void StartRename(int id);
   void EndRename(bool apply);
+
+  BRect LatchRect(BRect itemRect, int32 level) const override
+  {
+    int indent = fIhandle ? iupAttribGetInt(fIhandle, "INDENTATION") : 0;
+    if (indent <= 0)
+      return BOutlineListView::LatchRect(itemRect, level);
+
+    float latchWidth = be_plain_font->Size();
+    float latchHeight = be_plain_font->Size();
+    float heightOffset = itemRect.Height() / 2 - latchHeight / 2;
+    return BRect(0, 0, latchWidth, latchHeight)
+             .OffsetBySelf(itemRect.left, itemRect.top)
+             .OffsetBySelf((float)(level * indent), heightOffset);
+  }
 
   void SelectionChanged() override
   {
@@ -364,6 +383,13 @@ protected:
     /* Swap branch image when collapsed/expanded image differs. */
     IupHaikuTreeItem* it = dynamic_cast<IupHaikuTreeItem*>(super);
     if (it) InvalidateItem(IndexOf(super));
+  }
+
+  void DrawLatch(BRect itemRect, int32 level, bool collapsed, bool highlighted, bool misTracked) override
+  {
+    if (fIhandle && iupAttribGetBoolean(fIhandle, "HIDEBUTTONS"))
+      return;
+    BOutlineListView::DrawLatch(itemRect, level, collapsed, highlighted, misTracked);
   }
 
   void MessageReceived(BMessage* msg) override
@@ -563,6 +589,50 @@ static IupHaikuTreeView* haikuTreeGetView(Ihandle* ih)
 {
   if (!ih || !ih->handle) return NULL;
   return (IupHaikuTreeView*)iupAttribGet(ih, "_IUPHAIKU_TREE_INNER");
+}
+
+static int haikuTreeExtraItemHeight(BView* owner)
+{
+  IupHaikuTreeView* tv = dynamic_cast<IupHaikuTreeView*>(owner);
+  if (!tv) return 0;
+  Ihandle* ih = tv->GetIhandle();
+  return ih ? 2 * ih->data->spacing : 0;
+}
+
+static char* haikuTreeGetIndentationAttrib(Ihandle* ih)
+{
+  int indent = iupAttribGetInt(ih, "INDENTATION");
+  if (indent <= 0)
+    indent = (int)be_control_look->DefaultItemSpacing();
+  return iupStrReturnInt(indent);
+}
+
+static int haikuTreeSetIndentationAttrib(Ihandle* ih, const char* value)
+{
+  (void)value;
+  IupHaikuTreeView* tv = haikuTreeGetView(ih);
+  if (tv)
+  {
+    LooperLockGuard guard(tv->Looper());
+    tv->Invalidate();
+  }
+  return 1; /* store; LatchRect reads it back */
+}
+
+static int haikuTreeSetSpacingAttrib(Ihandle* ih, const char* value)
+{
+  iupStrToInt(value, &ih->data->spacing);
+  if (ih->data->spacing < 0) ih->data->spacing = 0;
+
+  IupHaikuTreeView* tv = haikuTreeGetView(ih);
+  if (tv)
+  {
+    LooperLockGuard guard(tv->Looper());
+    BFont f; tv->GetFont(&f); tv->SetFont(&f); /* re-runs item Update to recompute heights */
+    tv->Invalidate();
+    return 0;
+  }
+  return 1; /* store until mapped */
 }
 
 static IupHaikuTreeItem* haikuTreeGetItem(Ihandle* ih, int id)
@@ -1468,8 +1538,8 @@ extern "C" IUP_SDK_API void iupdrvTreeInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "COUNT", haikuTreeGetCountAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TOPITEM", NULL, haikuTreeSetTopItemAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "EXPANDALL", NULL, haikuTreeSetExpandAllAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "INDENTATION", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "SPACING", iupTreeGetSpacingAttrib, NULL, IUPAF_SAMEASSYSTEM, "0", IUPAF_NOT_MAPPED);
+  iupClassRegisterAttribute(ic, "INDENTATION", haikuTreeGetIndentationAttrib, haikuTreeSetIndentationAttrib, NULL, NULL, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "SPACING", iupTreeGetSpacingAttrib, haikuTreeSetSpacingAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NOT_MAPPED);
 
   /* Images */
   iupClassRegisterAttribute(ic, "IMAGELEAF", NULL, haikuTreeSetImageLeafAttrib, IUPAF_SAMEASSYSTEM, "IMGLEAF", IUPAF_IHANDLENAME | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
@@ -1506,5 +1576,6 @@ extern "C" IUP_SDK_API void iupdrvTreeInitClass(Iclass* ic)
 
   /* Not yet supported on Haiku */
   iupClassRegisterAttribute(ic, "RUBBERBAND", NULL, NULL, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "HIDELINES", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "RENAME", NULL, haikuTreeSetRenameAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
 }
