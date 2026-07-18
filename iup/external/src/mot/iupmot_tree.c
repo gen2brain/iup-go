@@ -3221,7 +3221,9 @@ IUP_SDK_API void iupdrvTreeInitClass(Iclass* ic)
   iupClassRegisterAttributeId(ic, "COPYNODE", NULL, motTreeSetCopyNodeAttrib, IUPAF_NOT_MAPPED|IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
 
   /* not supported in Motif */
+  iupClassRegisterAttribute(ic, "SHOWTOGGLE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "TOGGLEVALUE", NULL, NULL, IUPAF_NOT_SUPPORTED);
-  iupClassRegisterAttributeId(ic, "SHOWTOGGLE", NULL, NULL, IUPAF_NOT_SUPPORTED);
+  iupClassRegisterAttributeId(ic, "TOGGLEVISIBLE", NULL, NULL, IUPAF_NOT_SUPPORTED);
+  iupClassRegisterAttribute(ic, "MARKWHENTOGGLE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SCROLLVISIBLE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 }

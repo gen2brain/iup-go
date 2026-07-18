@@ -8,6 +8,7 @@
 
 #include <cstdlib>
 #include <cstring>
+#include <vector>
 
 extern "C" {
 #include "iup.h"
@@ -83,6 +84,8 @@ static IVector<TreeViewNode> winuiTreeGetSiblings(Ihandle* ih, TreeViewNode cons
     return parent.Children();
   return winuiTreeGetTreeView(ih).RootNodes();
 }
+
+static void winuiTreeSetFocus(Ihandle* ih, int id);
 
 static void winuiTreeSetNodeProperty(TreeViewNode const& node, hstring const& key, IInspectable const& value)
 {
@@ -337,17 +340,19 @@ static void winuiTreeSelectionChangedHandler(Ihandle* ih)
   if (!treeView)
     return;
 
-  IFnii cb = (IFnii)IupGetCallback(ih, "SELECTION_CB");
-  if (!cb)
-    return;
-
   auto selectedNodes = treeView.SelectedNodes();
   if (selectedNodes.Size() > 0)
   {
     TreeViewNode node = selectedNodes.GetAt(0);
     int id = winuiTreeFindNodeId(ih, node);
     if (id >= 0)
-      cb(ih, id, 1);
+    {
+      winuiTreeSetFocus(ih, id);
+
+      IFnii cb = (IFnii)IupGetCallback(ih, "SELECTION_CB");
+      if (cb)
+        cb(ih, id, 1);
+    }
   }
 }
 
@@ -570,77 +575,147 @@ static int winuiTreeSetTopItemAttrib(Ihandle* ih, const char* value)
  * Attribute Handlers
  ****************************************************************************/
 
+static void winuiTreeBuildFlat(IVector<TreeViewNode> const& nodes, std::vector<TreeViewNode>& out)
+{
+  for (uint32_t i = 0; i < nodes.Size(); i++)
+  {
+    TreeViewNode n = nodes.GetAt(i);
+    out.push_back(n);
+    if (n.IsExpanded())
+      winuiTreeBuildFlat(n.Children(), out);
+  }
+}
+
+static void winuiTreeApplyFocusVisual(TreeView const& treeView, TreeViewNode const& node, bool on)
+{
+  if (!node)
+    return;
+  DependencyObject container = treeView.ContainerFromNode(node);
+  if (!container)
+    return;
+  TreeViewItem tvi = container.try_as<TreeViewItem>();
+  if (!tvi)
+    return;
+  if (on)
+  {
+    Windows::UI::Color color;
+    color.A = 255; color.R = 0x00; color.G = 0x78; color.B = 0xD4;
+    tvi.BorderBrush(Media::SolidColorBrush(color));
+    tvi.BorderThickness(Thickness{2, 2, 2, 2});
+  }
+  else
+    tvi.BorderThickness(Thickness{0, 0, 0, 0});
+}
+
+static void winuiTreeSetFocus(Ihandle* ih, int id)
+{
+  TreeView treeView = winuiTreeGetTreeView(ih);
+  if (!treeView)
+    return;
+
+  int old_id = iupAttribGetInt(ih, "_IUPWINUI_FOCUS_ID");
+  iupAttribSetInt(ih, "_IUPWINUI_FOCUS_ID", id);
+
+  if (old_id != id && old_id >= 0)
+    winuiTreeApplyFocusVisual(treeView, winuiTreeGetNode(ih, old_id), false);
+
+  if (id >= 0)
+  {
+    TreeViewNode node = winuiTreeGetNode(ih, id);
+    if (node)
+    {
+      DependencyObject container = treeView.ContainerFromNode(node);
+      if (container)
+      {
+        UIElement elem = container.try_as<UIElement>();
+        if (elem)
+          elem.StartBringIntoView();
+      }
+      winuiTreeApplyFocusVisual(treeView, node, true);
+    }
+  }
+}
+
 static int winuiTreeSetValueAttrib(Ihandle* ih, const char* value)
 {
   TreeView treeView = winuiTreeGetTreeView(ih);
   if (!treeView)
     return 0;
 
-  IupWinUITreeAux* aux = winuiGetAux<IupWinUITreeAux>(ih, IUPWINUI_TREE_AUX);
-  if (aux)
-    aux->ignoreChange = true;
+  if (iupStrEqualNoCase(value, "CLEAR"))
+  {
+    winuiTreeSetFocus(ih, -1);
+    return 0;
+  }
 
+  std::vector<TreeViewNode> flat;
+  winuiTreeBuildFlat(treeView.RootNodes(), flat);
+  int n = (int)flat.size();
+  if (n == 0)
+    return 0;
+
+  int focus_id = iupAttribGetInt(ih, "_IUPWINUI_FOCUS_ID");
+  TreeViewNode focus_node = winuiTreeGetNode(ih, focus_id);
+  int cur = 0;
+  for (int i = 0; i < n; i++)
+    if (flat[i] == focus_node) { cur = i; break; }
+
+  int target = -1;
   if (iupStrEqualNoCase(value, "ROOT") || iupStrEqualNoCase(value, "FIRST"))
-  {
-    if (treeView.RootNodes().Size() > 0)
-    {
-      treeView.SelectedNodes().Clear();
-      treeView.SelectedNodes().Append(treeView.RootNodes().GetAt(0));
-    }
-  }
+    target = 0;
   else if (iupStrEqualNoCase(value, "LAST"))
-  {
-    int count = ih->data->node_count;
-    if (count > 0)
-    {
-      TreeViewNode node = winuiTreeGetNode(ih, count - 1);
-      if (node)
-      {
-        treeView.SelectedNodes().Clear();
-        treeView.SelectedNodes().Append(node);
-      }
-    }
-  }
-  else if (iupStrEqualNoCase(value, "CLEARALL"))
-  {
-    treeView.SelectedNodes().Clear();
-  }
+    target = n - 1;
+  else if (iupStrEqualNoCase(value, "NEXT"))
+    target = (cur + 1 < n) ? cur + 1 : n - 1;
+  else if (iupStrEqualNoCase(value, "PREVIOUS"))
+    target = (cur > 0) ? cur - 1 : 0;
+  else if (iupStrEqualNoCase(value, "PGDN"))
+    target = (cur + 10 < n) ? cur + 10 : n - 1;
+  else if (iupStrEqualNoCase(value, "PGUP"))
+    target = (cur > 10) ? cur - 10 : 0;
   else
   {
     int id;
     if (iupStrToInt(value, &id))
     {
       TreeViewNode node = winuiTreeGetNode(ih, id);
-      if (node)
-      {
-        treeView.SelectedNodes().Clear();
-        treeView.SelectedNodes().Append(node);
-      }
+      for (int i = 0; i < n; i++)
+        if (flat[i] == node) { target = i; break; }
     }
   }
 
-  if (aux)
-    aux->ignoreChange = false;
+  if (target < 0)
+    return 0;
+
+  TreeViewNode target_node = flat[target];
+  int target_id = winuiTreeFindNodeId(ih, target_node);
+
+  if (ih->data->mark_mode == ITREE_MARK_SINGLE)
+  {
+    IupWinUITreeAux* aux = winuiGetAux<IupWinUITreeAux>(ih, IUPWINUI_TREE_AUX);
+    if (aux)
+      aux->ignoreChange = true;
+    treeView.SelectedNodes().Clear();
+    treeView.SelectedNodes().Append(target_node);
+    if (aux)
+      aux->ignoreChange = false;
+  }
+
+  winuiTreeSetFocus(ih, target_id);
 
   return 0;
 }
 
 static char* winuiTreeGetValueAttrib(Ihandle* ih)
 {
-  TreeView treeView = winuiTreeGetTreeView(ih);
-  if (!treeView)
-    return NULL;
+  int focus_id = iupAttribGetInt(ih, "_IUPWINUI_FOCUS_ID");
 
-  auto selectedNodes = treeView.SelectedNodes();
-  if (selectedNodes.Size() > 0)
-  {
-    TreeViewNode node = selectedNodes.GetAt(0);
-    int id = winuiTreeFindNodeId(ih, node);
-    if (id >= 0)
-      return iupStrReturnInt(id);
-  }
+  if (focus_id >= 0 && focus_id < ih->data->node_count)
+    return iupStrReturnInt(focus_id);
 
-  return NULL;
+  if (ih->data->node_count > 0)
+    return (char*)"0";
+  return (char*)"-1";
 }
 
 static int winuiTreeSetTitleAttrib(Ihandle* ih, int id, const char* value)
@@ -1938,11 +2013,16 @@ static int winuiTreeMapMethod(Ihandle* ih)
   {
     iupdrvTreeAddNode(ih, -1, ITREE_BRANCH, "", 0);
 
-    TreeView tv = winuiTreeGetTreeView(ih);
-    if (tv && tv.RootNodes().Size() > 0)
+    /* focus the root; select it only in single mode (multiple would mark it and
+       cascade the check to all children) */
+    if (ih->data->mark_mode == ITREE_MARK_SINGLE)
     {
-      tv.SelectedNodes().Clear();
-      tv.SelectedNodes().Append(tv.RootNodes().GetAt(0));
+      TreeView tv = winuiTreeGetTreeView(ih);
+      if (tv && tv.RootNodes().Size() > 0)
+      {
+        tv.SelectedNodes().Clear();
+        tv.SelectedNodes().Append(tv.RootNodes().GetAt(0));
+      }
     }
   }
 
@@ -2097,16 +2177,9 @@ extern "C" IUP_SDK_API void iupdrvTreeAddNode(Ihandle* ih, int id, int kind, con
 
 extern "C" IUP_SDK_API InodeHandle* iupdrvTreeGetFocusNode(Ihandle* ih)
 {
-  TreeView treeView = winuiTreeGetTreeView(ih);
-  if (!treeView)
-    return NULL;
-
-  auto selectedNodes = treeView.SelectedNodes();
-  if (selectedNodes.Size() > 0)
-  {
-    TreeViewNode node = selectedNodes.GetAt(0);
-    return (InodeHandle*)winrt::get_abi(node);
-  }
+  int focus_id = iupAttribGetInt(ih, "_IUPWINUI_FOCUS_ID");
+  if (focus_id >= 0 && focus_id < ih->data->node_count)
+    return ih->data->node_cache[focus_id].node_handle;
 
   if (ih->data->node_count > 0)
     return ih->data->node_cache[0].node_handle;

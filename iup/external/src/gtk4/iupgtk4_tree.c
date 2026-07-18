@@ -529,6 +529,56 @@ typedef struct {
   gulong check_toggled_handler;
 } IupGtk4TreeItemWidgets;
 
+static IupGtk4TreeNode*
+iupgtk4TreeGetNodeFromVisiblePosition(Ihandle *ih, int pos)
+{
+  GtkTreeListModel *tree_model = GTK_TREE_LIST_MODEL(iupAttribGet(ih, "_IUPGTK4_TREE_MODEL"));
+  GtkTreeListRow *row;
+  gpointer item;
+  IupGtk4TreeNode *node = NULL;
+
+  if (!tree_model || pos < 0)
+    return NULL;
+
+  row = gtk_tree_list_model_get_row(tree_model, (guint)pos);
+  if (!row)
+    return NULL;
+
+  item = gtk_tree_list_row_get_item(row);
+  g_object_unref(row);
+  if (item)
+  {
+    node = (IupGtk4TreeNode*)item;
+    g_object_unref(item);
+  }
+  return node;
+}
+
+static void
+iupgtk4TreeSetFocusId(Ihandle *ih, int new_id)
+{
+  int old_id = iupAttribGetInt(ih, "_IUPGTK4_FOCUS_ID");
+  IupGtk4TreeNode *node;
+
+  if (old_id == new_id)
+    return;
+
+  iupAttribSetInt(ih, "_IUPGTK4_FOCUS_ID", new_id);
+
+  if (old_id >= 0)
+  {
+    node = iupgtk4TreeGetNodeFromId(ih, old_id);
+    if (node)
+      iupgtk4TreeNotifyNodeChanged(ih, node);
+  }
+  if (new_id >= 0)
+  {
+    node = iupgtk4TreeGetNodeFromId(ih, new_id);
+    if (node)
+      iupgtk4TreeNotifyNodeChanged(ih, node);
+  }
+}
+
 /*****************************************************************************/
 /* Rename editing support using GtkLabel + GtkOverlay + GtkText              */
 /*****************************************************************************/
@@ -1141,6 +1191,11 @@ iupgtk4TreeBindCb(GtkListItemFactory *factory, GtkListItem *list_item, gpointer 
   widgets->row_notify_handler = g_signal_connect(row, "notify::expanded",
                                                   G_CALLBACK(iupgtk4TreeRowExpandedChanged), list_item);
 
+  if (iupgtk4TreeFindNodeId(ih, node) == iupAttribGetInt(ih, "_IUPGTK4_FOCUS_ID"))
+    gtk_widget_add_css_class(widgets->box, "iup-tree-focus");
+  else
+    gtk_widget_remove_css_class(widgets->box, "iup-tree-focus");
+
   g_object_unref(item);
   (void)factory;
 }
@@ -1215,6 +1270,7 @@ iupgtk4TreeSelectionChanged(GtkSelectionModel *selection, guint position, guint 
 
   cbSelec = (IFnii)IupGetCallback(ih, "SELECTION_CB");
 
+  int focus_id = -1;
   for (i = position; i < position + n_items; i++)
   {
     GtkTreeListRow *row = gtk_tree_list_model_get_row(tree_model, i);
@@ -1225,21 +1281,29 @@ iupgtk4TreeSelectionChanged(GtkSelectionModel *selection, guint position, guint 
       {
         IupGtk4TreeNode *node = IUP_GTK4_TREE_NODE(item);
         gboolean selected = gtk_selection_model_is_selected(selection, i);
+        int id = iupgtk4TreeFindNodeId(ih, node);
 
         /* Always update node's selection state */
         node->selected = selected;
 
+        if (selected)
+          focus_id = id;
+
         /* Call callback if registered */
         if (cbSelec)
-        {
-          int id = iupgtk4TreeFindNodeId(ih, node);
           cbSelec(ih, id, selected ? 1 : 0);
-        }
 
         g_object_unref(item);
       }
       g_object_unref(row);
     }
+  }
+
+  if (focus_id >= 0)
+  {
+    iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", "1");
+    iupgtk4TreeSetFocusId(ih, focus_id);
+    iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", NULL);
   }
 }
 
@@ -1612,40 +1676,18 @@ IUP_SDK_API int iupdrvTreeTotalChildCount(Ihandle *ih, InodeHandle *node_handle)
 
 IUP_SDK_API InodeHandle* iupdrvTreeGetFocusNode(Ihandle *ih)
 {
-  /* In GTK4 ListView, we don't have a direct "cursor" concept. Return the first selected item instead */
-  GtkSelectionModel *selection = GTK_SELECTION_MODEL(iupAttribGet(ih, "_IUPGTK4_SELECTION"));
-  GtkTreeListModel *tree_model = GTK_TREE_LIST_MODEL(iupAttribGet(ih, "_IUPGTK4_TREE_MODEL"));
+  int focus_id = iupAttribGetInt(ih, "_IUPGTK4_FOCUS_ID");
+  IupGtk4TreeNode *node = iupgtk4TreeGetNodeFromId(ih, focus_id);
 
-  if (!selection || !tree_model)
-    return NULL;
-
-  /* Find first selected item */
-  guint n_items = g_list_model_get_n_items(G_LIST_MODEL(tree_model));
-  for (guint i = 0; i < n_items; i++)
-  {
-    if (gtk_selection_model_is_selected(selection, i))
-    {
-      GtkTreeListRow *row = gtk_tree_list_model_get_row(tree_model, i);
-      if (row)
-      {
-        gpointer item = gtk_tree_list_row_get_item(row);
-        g_object_unref(row);
-        if (item)
-        {
-          InodeHandle *handle = (InodeHandle*)item;
-          g_object_unref(item);
-          return handle;
-        }
-      }
-    }
-  }
-
+  if (node)
+    return (InodeHandle*)node;
+  if (ih->data->node_count > 0)
+    return (InodeHandle*)iupgtk4TreeGetNodeFromId(ih, 0);
   return NULL;
 }
 
 IUP_SDK_API void iupdrvTreeUpdateMarkMode(Ihandle *ih)
 {
-  GtkSelectionModel *old_selection = GTK_SELECTION_MODEL(iupAttribGet(ih, "_IUPGTK4_SELECTION"));
   GtkTreeListModel *tree_model = GTK_TREE_LIST_MODEL(iupAttribGet(ih, "_IUPGTK4_TREE_MODEL"));
   GtkSelectionModel *new_selection;
 
@@ -1661,21 +1703,16 @@ IUP_SDK_API void iupdrvTreeUpdateMarkMode(Ihandle *ih)
   /* Connect selection changed signal */
   g_signal_connect(new_selection, "selection-changed", G_CALLBACK(iupgtk4TreeSelectionChanged), ih);
 
-  /* Update ListView */
   gtk_list_view_set_model(GTK_LIST_VIEW(ih->handle), new_selection);
 
-  /* Store new selection model */
   iupAttribSet(ih, "_IUPGTK4_SELECTION", (char*)new_selection);
+  g_object_unref(new_selection);
 
   /* Enable rubberband for multi-selection */
   if (ih->data->mark_mode == ITREE_MARK_MULTIPLE && iupAttribGetBoolean(ih, "RUBBERBAND"))
     gtk_list_view_set_enable_rubberband(GTK_LIST_VIEW(ih->handle), TRUE);
   else
     gtk_list_view_set_enable_rubberband(GTK_LIST_VIEW(ih->handle), FALSE);
-
-  /* Release old selection model */
-  if (old_selection)
-    g_object_unref(old_selection);
 }
 
 /*****************************************************************************/
@@ -1759,6 +1796,9 @@ static int gtkTreeMapMethod(Ihandle *ih)
   /* Create list view */
   listview = gtk_list_view_new(selection, factory);
   ih->handle = listview;
+
+  iupgtk4CssAddStaticRule(".iup-tree-focus", "outline: 2px solid alpha(currentColor, 0.6); outline-offset: -2px;");
+  iupgtk4CssAddStaticRule("listview > row:focus:focus-visible, listview > row treeexpander:focus:focus-visible", "outline: none;");
 
   /* Configure list view */
   gtk_list_view_set_single_click_activate(GTK_LIST_VIEW(listview), FALSE);
@@ -2027,33 +2067,10 @@ static int gtkTreeSetTitleAttrib(Ihandle *ih, int id, const char *value)
 
 static char* gtkTreeGetValueAttrib(Ihandle *ih)
 {
-  GtkSelectionModel *selection = GTK_SELECTION_MODEL(iupAttribGet(ih, "_IUPGTK4_SELECTION"));
-  GtkTreeListModel *tree_model = GTK_TREE_LIST_MODEL(iupAttribGet(ih, "_IUPGTK4_TREE_MODEL"));
+  int focus_id = iupAttribGetInt(ih, "_IUPGTK4_FOCUS_ID");
 
-  if (!selection || !tree_model)
-    return "-1";
-
-  /* Find first selected item */
-  guint n_items = g_list_model_get_n_items(G_LIST_MODEL(tree_model));
-  for (guint i = 0; i < n_items; i++)
-  {
-    if (gtk_selection_model_is_selected(selection, i))
-    {
-      GtkTreeListRow *row = gtk_tree_list_model_get_row(tree_model, i);
-      if (row)
-      {
-        gpointer item = gtk_tree_list_row_get_item(row);
-        g_object_unref(row);
-        if (item)
-        {
-          int id = iupgtk4TreeFindNodeId(ih, (IupGtk4TreeNode*)item);
-          g_object_unref(item);
-          return iupStrReturnInt(id);
-        }
-      }
-    }
-  }
-
+  if (focus_id >= 0 && focus_id < ih->data->node_count)
+    return iupStrReturnInt(focus_id);
   if (ih->data->node_count)
     return "0";
   return "-1";
@@ -2064,24 +2081,47 @@ static int gtkTreeSetValueAttrib(Ihandle *ih, const char *value)
   GtkSelectionModel *selection = GTK_SELECTION_MODEL(iupAttribGet(ih, "_IUPGTK4_SELECTION"));
   GtkTreeListModel *tree_model = GTK_TREE_LIST_MODEL(iupAttribGet(ih, "_IUPGTK4_TREE_MODEL"));
   IupGtk4TreeNode *node;
-  int id;
+  int id, cur_id, cur_pos, vis_count, pos;
 
   if (!selection || !tree_model)
     return 0;
 
-  /* Handle special values */
+  if (iupStrEqualNoCase(value, "CLEAR"))
+  {
+    iupgtk4TreeSetFocusId(ih, -1);
+    return 0;
+  }
+
+  vis_count = (int)g_list_model_get_n_items(G_LIST_MODEL(tree_model));
+  cur_id = iupAttribGetInt(ih, "_IUPGTK4_FOCUS_ID");
+  node = iupgtk4TreeGetNodeFromId(ih, cur_id);
+  cur_pos = node ? iupgtk4TreeGetVisiblePosition(ih, node) : -1;
+  if (cur_pos < 0)
+    cur_pos = 0;
+
   if (iupStrEqualNoCase(value, "ROOT") || iupStrEqualNoCase(value, "FIRST"))
-    id = 0;
+    node = iupgtk4TreeGetNodeFromVisiblePosition(ih, 0);
   else if (iupStrEqualNoCase(value, "LAST"))
-    id = ih->data->node_count - 1;
-  else if (!iupStrToInt(value, &id))
+    node = iupgtk4TreeGetNodeFromVisiblePosition(ih, vis_count - 1);
+  else if (iupStrEqualNoCase(value, "NEXT"))
+    node = iupgtk4TreeGetNodeFromVisiblePosition(ih, cur_pos + 1 < vis_count ? cur_pos + 1 : vis_count - 1);
+  else if (iupStrEqualNoCase(value, "PREVIOUS"))
+    node = iupgtk4TreeGetNodeFromVisiblePosition(ih, cur_pos > 0 ? cur_pos - 1 : 0);
+  else if (iupStrEqualNoCase(value, "PGDN"))
+    node = iupgtk4TreeGetNodeFromVisiblePosition(ih, cur_pos + 10 < vis_count ? cur_pos + 10 : vis_count - 1);
+  else if (iupStrEqualNoCase(value, "PGUP"))
+    node = iupgtk4TreeGetNodeFromVisiblePosition(ih, cur_pos > 10 ? cur_pos - 10 : 0);
+  else if (iupStrToInt(value, &id))
+    node = iupgtk4TreeGetNodeFromId(ih, id);
+  else
     return 0;
 
-  node = iupgtk4TreeGetNodeFromId(ih, id);
   if (!node)
     return 0;
 
-  int pos = iupgtk4TreeGetVisiblePosition(ih, node);
+  id = iupgtk4TreeFindNodeId(ih, node);
+
+  pos = iupgtk4TreeGetVisiblePosition(ih, node);
   if (pos < 0)
   {
     /* Node is hidden, expand parents to make it visible */
@@ -2103,13 +2143,17 @@ static int gtkTreeSetValueAttrib(Ihandle *ih, const char *value)
     pos = iupgtk4TreeGetVisiblePosition(ih, node);
   }
 
-  if (pos >= 0)
+  if (ih->data->mark_mode == ITREE_MARK_SINGLE && pos >= 0)
   {
     iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", "1");
     gtk_selection_model_select_item(selection, pos, TRUE);
-    gtk_list_view_scroll_to(GTK_LIST_VIEW(ih->handle), pos, GTK_LIST_SCROLL_FOCUS, NULL);
     iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", NULL);
   }
+
+  iupgtk4TreeSetFocusId(ih, id);
+
+  if (pos >= 0)
+    gtk_list_view_scroll_to(GTK_LIST_VIEW(ih->handle), pos, GTK_LIST_SCROLL_FOCUS, NULL);
 
   return 0;
 }

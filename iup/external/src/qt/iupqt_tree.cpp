@@ -1267,39 +1267,59 @@ static char* qtTreeGetCountAttrib(Ihandle* ih)
 static int qtTreeSetValueAttrib(Ihandle* ih, const char* value)
 {
   IupQtTree* tree = (IupQtTree*)ih->handle;
+  QTreeWidgetItem* cur = tree->currentItem();
+  if (!cur)
+    cur = tree->topLevelItem(0);
 
-  if (iupStrEqualNoCase(value, "ROOT"))
-  {
-    tree->clearSelection();
-    QTreeWidgetItem* root = tree->topLevelItem(0);
-    if (root)
-      tree->setCurrentItem(root);
-  }
+  QTreeWidgetItem* item = NULL;
+
+  if (iupStrEqualNoCase(value, "ROOT") || iupStrEqualNoCase(value, "FIRST"))
+    item = tree->topLevelItem(0);
   else if (iupStrEqualNoCase(value, "LAST"))
   {
-    tree->clearSelection();
-    int count = tree->topLevelItemCount();
-    if (count > 0)
-    {
-      QTreeWidgetItem* item = tree->topLevelItem(count - 1);
-      tree->setCurrentItem(item);
-    }
+    item = tree->topLevelItem(0);
+    while (item && tree->itemBelow(item))
+      item = tree->itemBelow(item);
+  }
+  else if (iupStrEqualNoCase(value, "NEXT"))
+    item = cur ? tree->itemBelow(cur) : NULL;
+  else if (iupStrEqualNoCase(value, "PREVIOUS"))
+    item = cur ? tree->itemAbove(cur) : NULL;
+  else if (iupStrEqualNoCase(value, "PGDN"))
+  {
+    item = cur;
+    for (int i = 0; i < 10 && item && tree->itemBelow(item); i++)
+      item = tree->itemBelow(item);
+  }
+  else if (iupStrEqualNoCase(value, "PGUP"))
+  {
+    item = cur;
+    for (int i = 0; i < 10 && item && tree->itemAbove(item); i++)
+      item = tree->itemAbove(item);
   }
   else if (iupStrEqualNoCase(value, "CLEAR"))
   {
-    tree->clearSelection();
+    tree->setCurrentItem(NULL);
+    return 0;
   }
   else
   {
     int id = 0;
     iupStrToInt(value, &id);
-    QTreeWidgetItem* item = qtTreeFindNode(ih, id);
-    if (item)
+    item = qtTreeFindNode(ih, id);
+  }
+
+  if (item)
+  {
+    /* single mode selects the focus node; multiple mode moves focus only */
+    if (ih->data->mark_mode == ITREE_MARK_SINGLE)
     {
       tree->clearSelection();
       tree->setCurrentItem(item);
-      tree->scrollToItem(item);
     }
+    else
+      tree->setCurrentItem(item, 0, QItemSelectionModel::NoUpdate);
+    tree->scrollToItem(item);
   }
 
   return 0;
