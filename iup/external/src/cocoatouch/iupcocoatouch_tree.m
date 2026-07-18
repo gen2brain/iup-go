@@ -193,17 +193,29 @@ static int cocoaTouchTreeIndexInParent(IupCocoaTouchTreeNode* node)
 {
 	[super layoutSubviews];
 
+	Ihandle* ih = _owner ? _owner.ihandle : NULL;
+	CGFloat per_level = 20;
+	BOOL hide_buttons = NO;
+	if (ih)
+	{
+		int v = iupAttribGetInt(ih, "INDENTATION");
+		if (v > 0) per_level = v;
+		hide_buttons = iupAttribGetBoolean(ih, "HIDEBUTTONS") ? YES : NO;
+	}
+
 	CGFloat depth = self.node ? self.node.depth : 0;
-	CGFloat indent = 16 + depth * 20;
+	CGFloat indent = 16 + depth * per_level;
 	CGFloat h = self.contentView.bounds.size.height;
 	CGFloat w = self.contentView.bounds.size.width;
-	CGFloat disclosureW = 22;
+	CGFloat gap = 6;
+	CGFloat disclosureW = hide_buttons ? 0 : 22;
 	CGFloat iconW = 20;
-	CGFloat spacing = 6;
 
+	_disclosure.hidden = hide_buttons;
 	_disclosure.frame = CGRectMake(indent, 0, disclosureW, h);
-	_icon.frame = CGRectMake(indent + disclosureW + spacing, (h - iconW)/2, iconW, iconW);
-	CGFloat text_x = indent + disclosureW + spacing + iconW + spacing;
+	CGFloat icon_x = indent + disclosureW + (hide_buttons ? 0 : gap);
+	_icon.frame = CGRectMake(icon_x, (h - iconW)/2, iconW, iconW);
+	CGFloat text_x = icon_x + iconW + gap;
 	_titleLabel.frame = CGRectMake(text_x, 0, w - text_x - 8, h);
 }
 
@@ -1400,6 +1412,9 @@ static int cocoaTouchTreeMapMethod(Ihandle* ih)
 
 	iupdrvTreeUpdateMarkMode(ih);
 
+	if (ih->data->spacing > 0)
+		view.tableView.rowHeight = 32 + 2 * ih->data->spacing;
+
 	if (iupAttribGetInt(ih, "ADDROOT"))
 		iupdrvTreeAddNode(ih, -1, ITREE_BRANCH, "", 0);
 
@@ -1458,6 +1473,29 @@ static int cocoaTouchTreeSetActiveAttrib(Ihandle* ih, const char* value)
 	return 1;
 }
 
+static int cocoaTouchTreeSetIndentationAttrib(Ihandle* ih, const char* value)
+{
+	(void)value;
+	IupCocoaTouchTreeView* view = cocoaTouchTreeGetView(ih);
+	if (view) [view.tableView reloadData];
+	return 1; /* store; the cell reads INDENTATION when laying out */
+}
+
+static int cocoaTouchTreeSetSpacingAttrib(Ihandle* ih, const char* value)
+{
+	iupStrToInt(value, &ih->data->spacing);
+	if (ih->data->spacing < 0) ih->data->spacing = 0;
+
+	IupCocoaTouchTreeView* view = cocoaTouchTreeGetView(ih);
+	if (view)
+	{
+		view.tableView.rowHeight = 32 + 2 * ih->data->spacing;
+		[view.tableView reloadData];
+		return 0;
+	}
+	return 1;
+}
+
 IUP_SDK_API void iupdrvTreeInitClass(Iclass* ic)
 {
 	ic->Map = cocoaTouchTreeMapMethod;
@@ -1500,10 +1538,10 @@ IUP_SDK_API void iupdrvTreeInitClass(Iclass* ic)
 
 	iupClassRegisterAttribute(ic, "RENAME", NULL, cocoaTouchTreeSetRenameAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
 
-	iupClassRegisterAttribute(ic, "SPACING", iupTreeGetSpacingAttrib, NULL, IUPAF_SAMEASSYSTEM, "0", IUPAF_NOT_MAPPED|IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
-	iupClassRegisterAttribute(ic, "INDENTATION", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+	iupClassRegisterAttribute(ic, "SPACING", iupTreeGetSpacingAttrib, cocoaTouchTreeSetSpacingAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
+	iupClassRegisterAttribute(ic, "INDENTATION", NULL, cocoaTouchTreeSetIndentationAttrib, NULL, NULL, IUPAF_DEFAULT);
 	iupClassRegisterAttribute(ic, "HIDELINES", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
-	iupClassRegisterAttribute(ic, "HIDEBUTTONS", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+	iupClassRegisterAttribute(ic, "HIDEBUTTONS", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "SHOWTOGGLE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "INFOTIP", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "SHOWDRAGDROP", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
