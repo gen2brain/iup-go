@@ -1082,110 +1082,54 @@ static int fltkTreeSetSpacingAttrib(Ihandle* ih, const char* value)
 static int fltkTreeSetValueAttrib(Ihandle* ih, const char* value)
 {
   IupFltkTree* tree = (IupFltkTree*)ih->handle;
+  Fl_Tree_Item* focus = tree->get_item_focus();
+  if (!focus)
+    focus = tree->first();
+  Fl_Tree_Item* item = NULL;
 
   if (iupStrEqualNoCase(value, "ROOT") || iupStrEqualNoCase(value, "FIRST"))
-  {
-    Fl_Tree_Item* item = fltkTreeGetItemFromId(ih, 0);
-    if (item)
-    {
-      tree->deselect_all(NULL, 0);
-      tree->select(item, 0);
-      tree->set_item_focus(item);
-    }
-  }
+    item = fltkTreeGetItemFromId(ih, 0);
   else if (iupStrEqualNoCase(value, "LAST"))
+    item = tree->last();
+  else if (iupStrEqualNoCase(value, "NEXT"))
+    item = focus ? tree->next(focus) : NULL;
+  else if (iupStrEqualNoCase(value, "PREVIOUS"))
+    item = focus ? tree->prev(focus) : NULL;
+  else if (iupStrEqualNoCase(value, "PGDN"))
   {
-    if (ih->data->node_count > 0)
-    {
-      Fl_Tree_Item* item = fltkTreeGetItemFromId(ih, ih->data->node_count - 1);
-      if (item)
-      {
-        tree->deselect_all(NULL, 0);
-        tree->select(item, 0);
-        tree->set_item_focus(item);
-      }
-    }
+    item = focus;
+    for (int i = 0; i < 10 && item && tree->next(item); i++)
+      item = tree->next(item);
   }
   else if (iupStrEqualNoCase(value, "PGUP"))
   {
-    Fl_Tree_Item* focus = tree->get_item_focus();
-    if (focus)
-    {
-      Fl_Tree_Item* item = focus;
-      for (int i = 0; i < 10 && item; i++)
-        item = tree->prev(item);
-      if (!item)
-        item = tree->first();
-      if (item)
-      {
-        tree->deselect_all(NULL, 0);
-        tree->select(item, 0);
-        tree->set_item_focus(item);
-      }
-    }
-  }
-  else if (iupStrEqualNoCase(value, "PGDN"))
-  {
-    Fl_Tree_Item* focus = tree->get_item_focus();
-    if (focus)
-    {
-      Fl_Tree_Item* item = focus;
-      for (int i = 0; i < 10 && item; i++)
-        item = tree->next(item);
-      if (!item)
-        item = tree->last();
-      if (item)
-      {
-        tree->deselect_all(NULL, 0);
-        tree->select(item, 0);
-        tree->set_item_focus(item);
-      }
-    }
-  }
-  else if (iupStrEqualNoCase(value, "NEXT"))
-  {
-    Fl_Tree_Item* focus = tree->get_item_focus();
-    if (focus)
-    {
-      Fl_Tree_Item* item = tree->next(focus);
-      if (item)
-      {
-        tree->deselect_all(NULL, 0);
-        tree->select(item, 0);
-        tree->set_item_focus(item);
-      }
-    }
-  }
-  else if (iupStrEqualNoCase(value, "PREVIOUS"))
-  {
-    Fl_Tree_Item* focus = tree->get_item_focus();
-    if (focus)
-    {
-      Fl_Tree_Item* item = tree->prev(focus);
-      if (item)
-      {
-        tree->deselect_all(NULL, 0);
-        tree->select(item, 0);
-        tree->set_item_focus(item);
-      }
-    }
+    item = focus;
+    for (int i = 0; i < 10 && item && tree->prev(item); i++)
+      item = tree->prev(item);
   }
   else if (iupStrEqualNoCase(value, "CLEAR"))
   {
     tree->deselect_all(NULL, 0);
+    tree->redraw();
+    return 0;
   }
   else
   {
     int id = 0;
     iupStrToInt(value, &id);
-    Fl_Tree_Item* item = fltkTreeGetItemFromId(ih, id);
-    if (item)
+    item = fltkTreeGetItemFromId(ih, id);
+  }
+
+  if (item)
+  {
+    /* single mode selects the focus node; multiple mode moves focus only */
+    if (ih->data->mark_mode == ITREE_MARK_SINGLE)
     {
       tree->deselect_all(NULL, 0);
       tree->select(item, 0);
-      tree->set_item_focus(item);
-      tree->show_item(item);
     }
+    tree->set_item_focus(item);
+    tree->show_item(item);
   }
 
   tree->redraw();
@@ -1883,8 +1827,10 @@ extern "C" IUP_SDK_API void iupdrvTreeInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "VALUE", fltkTreeGetValueAttrib, fltkTreeSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
 
   /* IupTree Attributes - TOGGLE */
-  iupClassRegisterAttributeId(ic, "TOGGLEVALUE", NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttributeId(ic, "TOGGLEVISIBLE", NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SHOWTOGGLE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "TOGGLEVALUE", NULL, NULL, IUPAF_NOT_SUPPORTED);
+  iupClassRegisterAttributeId(ic, "TOGGLEVISIBLE", NULL, NULL, IUPAF_NOT_SUPPORTED);
+  iupClassRegisterAttribute(ic, "MARKWHENTOGGLE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
 
   /* IupTree Attributes - ACTION */
   iupClassRegisterAttribute(ic, "ADDROOT", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);

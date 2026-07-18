@@ -2743,6 +2743,16 @@ static int winTreeWmNotify(Ihandle* ih, NMHDR* msg_info, int *result)
   else if (msg_info->code == TVN_SELCHANGED)
   {
     NMTREEVIEW* info = (NMTREEVIEW*)msg_info;
+
+    /* caret auto-highlight (not by mouse/keyboard) is focus, not a mark */
+    if (ih->data->mark_mode==ITREE_MARK_MULTIPLE
+        && info->action != TVC_BYMOUSE && info->action != TVC_BYKEYBOARD
+        && !iupAttribGet(ih, "_IUPTREE_IGNORE_SELECTION_CB"))
+    {
+      winTreeSelectNode(ih, info->itemNew.hItem, 0);
+      return 0;
+    }
+
     if (ih->data->mark_mode!=ITREE_MARK_MULTIPLE || /* NOT multiple selection with Control or Shift key is down */
         !(GetKeyState(VK_CONTROL) & 0x8000 || GetKeyState(VK_SHIFT) & 0x8000)) /* OR multiple selection with Control or Shift key NOT pressed */
     {

@@ -906,7 +906,9 @@ IUP_SDK_API InodeHandle* iupdrvTreeGetFocusNode(Ihandle* ih)
   if (!tree)
     return NULL;
 
-  item = elm_genlist_selected_item_get(tree);
+  item = elm_object_focused_item_get(tree);
+  if (!item)
+    item = elm_genlist_selected_item_get(tree);
   if (!item)
     item = elm_genlist_first_item_get(tree);
 
@@ -1061,14 +1063,42 @@ static int eflTreeSetValueAttrib(Ihandle* ih, const char* value)
 {
   Eo* tree = iupeflGetWidget(ih);
   Elm_Object_Item* item;
+  Elm_Object_Item* cur;
+  int i;
 
   if (!tree)
     return 0;
 
-  if (iupStrEqualNoCase(value, "ROOT") || iupStrEqualNoCase(value, "FIRST"))
+  cur = elm_object_focused_item_get(tree);
+  if (!cur)
+    cur = elm_genlist_first_item_get(tree);
+
+  if (iupStrEqualNoCase(value, "CLEAR"))
+  {
+    if (cur)
+      elm_object_item_focus_set(cur, EINA_FALSE);
+    return 0;
+  }
+  else if (iupStrEqualNoCase(value, "ROOT") || iupStrEqualNoCase(value, "FIRST"))
     item = elm_genlist_first_item_get(tree);
   else if (iupStrEqualNoCase(value, "LAST"))
     item = elm_genlist_last_item_get(tree);
+  else if (iupStrEqualNoCase(value, "NEXT"))
+    item = cur ? elm_genlist_item_next_get(cur) : NULL;
+  else if (iupStrEqualNoCase(value, "PREVIOUS"))
+    item = cur ? elm_genlist_item_prev_get(cur) : NULL;
+  else if (iupStrEqualNoCase(value, "PGDN"))
+  {
+    item = cur;
+    for (i = 0; i < 10 && item && elm_genlist_item_next_get(item); i++)
+      item = elm_genlist_item_next_get(item);
+  }
+  else if (iupStrEqualNoCase(value, "PGUP"))
+  {
+    item = cur;
+    for (i = 0; i < 10 && item && elm_genlist_item_prev_get(item); i++)
+      item = elm_genlist_item_prev_get(item);
+  }
   else
   {
     int id = 0;
@@ -1078,12 +1108,15 @@ static int eflTreeSetValueAttrib(Ihandle* ih, const char* value)
       return 0;
   }
 
-  if (item)
-  {
-    iupAttribSet(ih, "_IUP_EFL_IGNORE_SELECTION", "1");
+  if (!item)
+    return 0;
+
+  iupAttribSet(ih, "_IUP_EFL_IGNORE_SELECTION", "1");
+  if (ih->data->mark_mode == ITREE_MARK_SINGLE)
     elm_genlist_item_selected_set(item, EINA_TRUE);
-    iupAttribSet(ih, "_IUP_EFL_IGNORE_SELECTION", NULL);
-  }
+  elm_object_item_focus_set(item, EINA_TRUE);
+  elm_genlist_item_show(item, ELM_GENLIST_ITEM_SCROLLTO_IN);
+  iupAttribSet(ih, "_IUP_EFL_IGNORE_SELECTION", NULL);
 
   return 0;
 }
@@ -1097,7 +1130,11 @@ static char* eflTreeGetValueAttrib(Ihandle* ih)
   if (!tree)
     return NULL;
 
-  item = elm_genlist_selected_item_get(tree);
+  item = elm_object_focused_item_get(tree);
+  if (!item)
+    item = elm_genlist_selected_item_get(tree);
+  if (!item)
+    item = elm_genlist_first_item_get(tree);
   if (!item)
     return NULL;
 
@@ -2590,6 +2627,15 @@ static int eflTreeMapMethod(Ihandle* ih)
   iupeflBaseAddCallbacks(ih, tree);
 
   iupeflAddToParent(ih);
+
+  {
+    Eo* win = elm_object_top_widget_get(tree);
+    if (win)
+    {
+      elm_win_focus_highlight_enabled_set(win, EINA_TRUE);
+      elm_win_focus_highlight_animate_set(win, EINA_FALSE);
+    }
+  }
 
   if (iupAttribGetInt(ih, "ADDROOT"))
     iupdrvTreeAddNode(ih, -1, ITREE_BRANCH, "", 0);

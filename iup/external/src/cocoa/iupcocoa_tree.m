@@ -175,10 +175,25 @@ static NSOutlineView* cocoaTreeGetOutlineView(Ihandle* ih)
 /* Custom row view to handle HLCOLOR attribute for selection */
 @interface IupCocoaTreeRowView : NSTableRowView
 @property(nonatomic, assign) Ihandle* ih;
+@property(nonatomic, assign) BOOL iupFocused;
 @end
 
 @implementation IupCocoaTreeRowView
 @synthesize ih = _ih;
+@synthesize iupFocused = _iupFocused;
+
+- (void)drawRect:(NSRect)dirtyRect
+{
+  [super drawRect:dirtyRect];
+  if (self.iupFocused)
+  {
+    NSRect r = NSInsetRect([self bounds], 1.5, 1.5);
+    NSBezierPath* path = [NSBezierPath bezierPathWithRect:r];
+    [path setLineWidth:2.0];
+    [[NSColor keyboardFocusIndicatorColor] set];
+    [path stroke];
+  }
+}
 
 - (void)drawSelectionInRect:(NSRect)dirtyRect
 {
@@ -272,6 +287,7 @@ static NSOutlineView* cocoaTreeGetOutlineView(Ihandle* ih)
 
 /* Forward declaration needed */
 static void cocoaTreeReloadItem(IupCocoaTreeItem* tree_item, NSOutlineView* outline_view);
+static void cocoaTreeSetFocus(Ihandle* ih, int id);
 
 @implementation IupCocoaTreeItem
 
@@ -1422,6 +1438,15 @@ static NSImage* helperGetActiveImageForTreeItem(IupCocoaTreeItem* tree_item, Iup
   if (NULL == ih || iupAttribGet(ih, "_IUPTREE_IGNORE_SELECTION_CB"))
     return;
 
+  NSInteger focus_row = [outline_view selectedRow];
+  if (focus_row >= 0)
+  {
+    IupCocoaTreeItem* focus_item = [outline_view itemAtRow:focus_row];
+    int focus_id = iupTreeFindNodeId(ih, (InodeHandle*)focus_item);
+    if (focus_id >= 0)
+      cocoaTreeSetFocus(ih, focus_id);
+  }
+
   IFnii single_selection_cb = (IFnii)IupGetCallback(ih, "SELECTION_CB");
   IFnIi multi_selection_cb = (IFnIi)IupGetCallback(ih, "MULTISELECTION_CB");
   IFnIi multi_unselection_cb = (IFnIi)IupGetCallback(ih, "MULTIUNSELECTION_CB");
@@ -1537,7 +1562,9 @@ static NSImage* helperGetActiveImageForTreeItem(IupCocoaTreeItem* tree_item, Iup
     row_view = [[[IupCocoaTreeRowView alloc] init] autorelease];
     row_view.identifier = @"IupTreeRow";
   }
-  [row_view setIh:[iup_outline_view ih]];
+  Ihandle* ih = [iup_outline_view ih];
+  [row_view setIh:ih];
+  [row_view setIupFocused:(iupTreeFindNodeId(ih, (InodeHandle*)item) == iupAttribGetInt(ih, "_IUPCOCOA_FOCUS_ID"))];
   return row_view;
 }
 
@@ -2803,11 +2830,10 @@ IUP_SDK_API int iupdrvTreeTotalChildCount(Ihandle* ih, InodeHandle* node_handle)
 
 IUP_SDK_API InodeHandle* iupdrvTreeGetFocusNode(Ihandle* ih)
 {
-  NSOutlineView* outline_view = cocoaTreeGetOutlineView(ih);
-
-  NSInteger row = [outline_view selectedRow];
-  if (row >= 0)
-    return (InodeHandle*)[outline_view itemAtRow:row];
+  int focus_id = iupAttribGetInt(ih, "_IUPCOCOA_FOCUS_ID");
+  InodeHandle* node = iupTreeGetNode(ih, focus_id);
+  if (node)
+    return node;
 
   if (ih->data->node_count > 0)
     return ih->data->node_cache[0].node_handle;
@@ -3835,10 +3861,39 @@ static int cocoaTreeSetTopItemAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
+static void cocoaTreeRefreshFocusRow(NSOutlineView* outline_view, Ihandle* ih, int node_id, BOOL focused)
+{
+  if (node_id < 0)
+    return;
+  InodeHandle* node = iupTreeGetNode(ih, node_id);
+  if (!node)
+    return;
+  NSInteger row = [outline_view rowForItem:(id)node];
+  if (row < 0)
+    return;
+  IupCocoaTreeRowView* row_view = (IupCocoaTreeRowView*)[outline_view rowViewAtRow:row makeIfNecessary:NO];
+  if ([row_view isKindOfClass:[IupCocoaTreeRowView class]])
+  {
+    [row_view setIupFocused:focused];
+    [row_view setNeedsDisplay:YES];
+  }
+}
+
+static void cocoaTreeSetFocus(Ihandle* ih, int id)
+{
+  NSOutlineView* outline_view = cocoaTreeGetOutlineView(ih);
+  int old_id = iupAttribGetInt(ih, "_IUPCOCOA_FOCUS_ID");
+
+  iupAttribSetInt(ih, "_IUPCOCOA_FOCUS_ID", id);
+  if (old_id != id)
+    cocoaTreeRefreshFocusRow(outline_view, ih, old_id, NO);
+  cocoaTreeRefreshFocusRow(outline_view, ih, id, YES);
+}
+
 static int cocoaTreeSetValueAttrib(Ihandle* ih, const char* value)
 {
   IupCocoaOutlineView* outline_view = (IupCocoaOutlineView*)cocoaTreeGetOutlineView(ih);
-  NSUInteger number_of_visible_rows = [outline_view numberOfRows];
+  NSInteger number_of_visible_rows = [outline_view numberOfRows];
 
   if (0 == number_of_visible_rows)
     return 0;
@@ -3846,104 +3901,58 @@ static int cocoaTreeSetValueAttrib(Ihandle* ih, const char* value)
   if (cocoaTreeSetMarkAttrib(ih, value))
     return 0;
 
-  NSUInteger new_selected_row;
+  if (iupStrEqualNoCase(value, "CLEAR"))
+  {
+    cocoaTreeSetFocus(ih, -1);
+    return 0;
+  }
 
+  int focus_id = iupAttribGetInt(ih, "_IUPCOCOA_FOCUS_ID");
+  InodeHandle* focus_node = iupTreeGetNode(ih, focus_id);
+  NSInteger cur_row = focus_node ? [outline_view rowForItem:(id)focus_node] : 0;
+  if (cur_row < 0)
+    cur_row = 0;
+
+  NSInteger target = -1;
   if (iupStrEqualNoCase(value, "ROOT") || iupStrEqualNoCase(value, "FIRST"))
-  {
-    new_selected_row = 0;
-    [outline_view scrollRowToVisible:0];
-    NSIndexSet* index_set = [NSIndexSet indexSetWithIndex:0];
-    iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", "1");
-    [outline_view selectRowIndexes:index_set byExtendingSelection:NO];
-    iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", NULL);
-  }
+    target = 0;
   else if (iupStrEqualNoCase(value, "LAST"))
-  {
-    new_selected_row = number_of_visible_rows - 1;
-    [outline_view scrollRowToVisible:new_selected_row];
-    NSIndexSet* index_set = [NSIndexSet indexSetWithIndex:new_selected_row];
-    iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", "1");
-    [outline_view selectRowIndexes:index_set byExtendingSelection:NO];
-    iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", NULL);
-  }
-  else if (iupStrEqualNoCase(value, "PGUP"))
-  {
-    NSIndexSet* selected_index = [outline_view selectedRowIndexes];
-    NSUInteger selected_i = [selected_index firstIndex];
-    if (selected_i == NSNotFound)
-      return 0;
-
-    if (selected_i < 10)
-      new_selected_row = 0;
-    else
-      new_selected_row = selected_i - 10;
-
-    [outline_view scrollRowToVisible:new_selected_row];
-    NSIndexSet* index_set = [NSIndexSet indexSetWithIndex:new_selected_row];
-    iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", "1");
-    [outline_view selectRowIndexes:index_set byExtendingSelection:NO];
-    iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", NULL);
-  }
-  else if (iupStrEqualNoCase(value, "PGDN"))
-  {
-    NSIndexSet* selected_index = [outline_view selectedRowIndexes];
-    NSUInteger selected_i = [selected_index firstIndex];
-    if (selected_i == NSNotFound)
-      return 0;
-
-    if ((selected_i + 10) > (number_of_visible_rows - 1))
-      new_selected_row = number_of_visible_rows - 1;
-    else
-      new_selected_row = selected_i + 10;
-
-    [outline_view scrollRowToVisible:new_selected_row];
-    NSIndexSet* index_set = [NSIndexSet indexSetWithIndex:new_selected_row];
-    iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", "1");
-    [outline_view selectRowIndexes:index_set byExtendingSelection:NO];
-    iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", NULL);
-  }
+    target = number_of_visible_rows - 1;
   else if (iupStrEqualNoCase(value, "NEXT"))
-  {
-    NSIndexSet* selected_index = [outline_view selectedRowIndexes];
-    NSUInteger selected_i = [selected_index firstIndex];
-    if (selected_i == NSNotFound)
-      return 0;
-
-    if ((selected_i + 1) > (number_of_visible_rows - 1))
-      new_selected_row = number_of_visible_rows - 1;
-    else
-      new_selected_row = selected_i + 1;
-
-    [outline_view scrollRowToVisible:new_selected_row];
-    NSIndexSet* index_set = [NSIndexSet indexSetWithIndex:new_selected_row];
-    iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", "1");
-    [outline_view selectRowIndexes:index_set byExtendingSelection:NO];
-    iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", NULL);
-  }
+    target = (cur_row + 1 < number_of_visible_rows) ? cur_row + 1 : number_of_visible_rows - 1;
   else if (iupStrEqualNoCase(value, "PREVIOUS"))
+    target = (cur_row > 0) ? cur_row - 1 : 0;
+  else if (iupStrEqualNoCase(value, "PGDN"))
+    target = (cur_row + 10 < number_of_visible_rows) ? cur_row + 10 : number_of_visible_rows - 1;
+  else if (iupStrEqualNoCase(value, "PGUP"))
+    target = (cur_row > 10) ? cur_row - 10 : 0;
+  else
   {
-    NSIndexSet* selected_index = [outline_view selectedRowIndexes];
-    NSUInteger selected_i = [selected_index firstIndex];
-    if (selected_i == NSNotFound)
-      return 0;
+    int nid = 0;
+    if (iupStrToInt(value, &nid))
+    {
+      InodeHandle* node = iupTreeGetNode(ih, nid);
+      if (node)
+        target = [outline_view rowForItem:(id)node];
+    }
+  }
 
-    if (selected_i < 1)
-      new_selected_row = 0;
-    else
-      new_selected_row = selected_i - 1;
+  if (target < 0)
+    return 0;
 
-    [outline_view scrollRowToVisible:new_selected_row];
-    NSIndexSet* index_set = [NSIndexSet indexSetWithIndex:new_selected_row];
+  [outline_view scrollRowToVisible:target];
+  IupCocoaTreeItem* target_item = [outline_view itemAtRow:target];
+  int target_id = iupTreeFindNodeId(ih, (InodeHandle*)target_item);
+
+  if (ih->data->mark_mode == ITREE_MARK_SINGLE)
+  {
+    NSIndexSet* index_set = [NSIndexSet indexSetWithIndex:target];
     iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", "1");
     [outline_view selectRowIndexes:index_set byExtendingSelection:NO];
     iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", NULL);
   }
-  else if (iupStrEqualNoCase(value, "CLEAR"))
-  {
-    iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", "1");
-    [outline_view deselectAll:nil];
-    iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", NULL);
-  }
+
+  cocoaTreeSetFocus(ih, target_id);
 
   return 0;
 }
@@ -4052,23 +4061,14 @@ static void helperReplaceDefaultImages(Ihandle* ih, IupCocoaOutlineView* outline
 
 static char* cocoaTreeGetValueAttrib(Ihandle* ih)
 {
-  NSOutlineView* outline_view = cocoaTreeGetOutlineView(ih);
-  NSIndexSet* selected_index = [outline_view selectedRowIndexes];
-  NSUInteger selected_i = [selected_index firstIndex];
+  int focus_id = iupAttribGetInt(ih, "_IUPCOCOA_FOCUS_ID");
 
-  if (selected_i != NSNotFound)
-  {
-    InodeHandle* selected_item = (InodeHandle*)[outline_view itemAtRow:selected_i];
-    int object_id = iupTreeFindNodeId(ih, selected_item);
-    return iupStrReturnInt(object_id);
-  }
-  else
-  {
-    if (ih->data->node_count > 0)
-      return "0";
-    else
-      return "-1";
-  }
+  if (focus_id >= 0 && focus_id < ih->data->node_count)
+    return iupStrReturnInt(focus_id);
+
+  if (ih->data->node_count > 0)
+    return "0";
+  return "-1";
 }
 
 static char* cocoaTreeGetToggleValueAttrib(Ihandle* ih, int item_id)

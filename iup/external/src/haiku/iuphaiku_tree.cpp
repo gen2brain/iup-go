@@ -49,7 +49,7 @@ public:
     : BListItem(level, true), fKind(kind), fTitle(title ? title : ""),
       fImage(NULL), fImageExpanded(NULL),
       fHasFgColor(false), fHasBgColor(false), fHasFont(false), fFont(*be_plain_font),
-      fShowToggle(0), fToggleValue(0), fToggleVisible(true)
+      fShowToggle(0), fToggleValue(0), fToggleVisible(true), fFocused(false)
   {
     fFgColor = ui_color(B_LIST_ITEM_TEXT_COLOR);
     fBgColor = ui_color(B_LIST_BACKGROUND_COLOR);
@@ -84,6 +84,9 @@ public:
   void SetToggleVisible(bool v) { fToggleVisible = v; }
   bool ToggleVisible() const { return fToggleVisible; }
   BRect ToggleBox() const { return fToggleBox; }
+
+  void SetFocused(bool f) { fFocused = f; }
+  bool IsFocused() const { return fFocused; }
 
   /* Width this item draws into, used for h-scrollbar autohide. */
   float DrawWidth(BView* owner) const
@@ -153,6 +156,14 @@ public:
     owner->GetFontHeight(&fh);
     float ty = frame.top + ((frame.Height() - (fh.ascent + fh.descent)) / 2) + fh.ascent;
     owner->DrawString(fTitle.String(), BPoint(x, ty));
+
+    if (fFocused)
+    {
+      owner->SetHighColor(keyboard_navigation_color());
+      BRect fr = frame;
+      fr.InsetBy(1, 1);
+      owner->StrokeRect(fr);
+    }
   }
 
   void Update(BView* owner, const BFont* font) override
@@ -179,8 +190,11 @@ private:
   int fShowToggle;
   int fToggleValue;
   bool fToggleVisible;
+  bool fFocused;
   mutable BRect fToggleBox;
 };
+
+static void haikuTreeSetFocus(Ihandle* ih, int id);
 
 
 /* BScrollView always shows both bars; hide them when content fits. */
@@ -311,15 +325,17 @@ public:
       return;
     }
 
-    IFnii cb = (IFnii)IupGetCallback(fIhandle, "SELECTION_CB");
-    if (!cb) return;
-
     int32 idx = CurrentSelection(0);
     if (idx < 0) return;
     BListItem* item = ItemAt(idx);
     if (!item) return;
     int id = iupTreeFindNodeId(fIhandle, (InodeHandle*)item);
-    if (id >= 0) cb(fIhandle, id, 1);
+    if (id < 0) return;
+
+    haikuTreeSetFocus(fIhandle, id);
+
+    IFnii cb = (IFnii)IupGetCallback(fIhandle, "SELECTION_CB");
+    if (cb) cb(fIhandle, id, 1);
   }
 
 protected:
@@ -552,6 +568,29 @@ static IupHaikuTreeItem* haikuTreeGetItem(Ihandle* ih, int id)
   return (IupHaikuTreeItem*)iupTreeGetNode(ih, id);
 }
 
+static void haikuTreeSetFocus(Ihandle* ih, int id)
+{
+  IupHaikuTreeView* tv = haikuTreeGetView(ih);
+  int old_id = iupAttribGetInt(ih, "_IUPHAIKU_FOCUS_ID");
+  IupHaikuTreeItem* it;
+
+  if (!tv) return;
+
+  if (old_id != id && old_id >= 0 && (it = haikuTreeGetItem(ih, old_id)) != NULL)
+  {
+    it->SetFocused(false);
+    int idx = tv->IndexOf(it);
+    if (idx >= 0) tv->InvalidateItem(idx);
+  }
+  iupAttribSetInt(ih, "_IUPHAIKU_FOCUS_ID", id);
+  if (id >= 0 && (it = haikuTreeGetItem(ih, id)) != NULL)
+  {
+    it->SetFocused(true);
+    int idx = tv->IndexOf(it);
+    if (idx >= 0) tv->InvalidateItem(idx);
+  }
+}
+
 static int haikuTreeGetIdFromItem(Ihandle* ih, BListItem* item)
 {
   if (!item) return -1;
@@ -690,7 +729,7 @@ extern "C" IUP_SDK_API void iupdrvTreeAddNode(Ihandle* ih, int id, int kind, con
 
   iupTreeAddToCache(ih, add, kindPrev, (InodeHandle*)prev, (InodeHandle*)it);
 
-  if (ih->data->node_count == 1)
+  if (ih->data->node_count == 1 && ih->data->mark_mode == ITREE_MARK_SINGLE)
   {
     iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", "1");
     tv->Select(tv->IndexOf(it), false);
@@ -704,14 +743,10 @@ extern "C" IUP_SDK_API void iupdrvTreeAddNode(Ihandle* ih, int id, int kind, con
 
 extern "C" IUP_SDK_API InodeHandle* iupdrvTreeGetFocusNode(Ihandle* ih)
 {
-  IupHaikuTreeView* tv = haikuTreeGetView(ih);
-  if (!tv) return NULL;
-  LooperLockGuard guard(tv->Looper());
-  int32 idx = tv->CurrentSelection(0);
-  if (idx < 0)
-    return (ih->data->node_count > 0) ? ih->data->node_cache[0].node_handle : NULL;
-  /* CurrentSelection returns visible index; we need the actual item. */
-  return (InodeHandle*)tv->ItemAt(idx);
+  int focus_id = iupAttribGetInt(ih, "_IUPHAIKU_FOCUS_ID");
+  if (focus_id >= 0 && focus_id < ih->data->node_count)
+    return ih->data->node_cache[focus_id].node_handle;
+  return (ih->data->node_count > 0) ? ih->data->node_cache[0].node_handle : NULL;
 }
 
 extern "C" IUP_SDK_API int iupdrvTreeTotalChildCount(Ihandle* ih, InodeHandle* node_handle)
@@ -1271,24 +1306,61 @@ static int haikuTreeSetValueAttrib(Ihandle* ih, const char* value)
 {
   IupHaikuTreeView* tv = haikuTreeGetView(ih);
   if (!tv) return 0;
-  InodeHandle* node = iupTreeGetNodeFromString(ih, value);
-  if (!node) return 0;
   LooperLockGuard guard(tv->Looper());
-  iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", "1");
-  int idx = tv->IndexOf((BListItem*)node);
-  if (idx >= 0) tv->Select(idx, false);
-  iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", NULL);
+
+  int n = tv->CountItems();
+  int cur_id = iupAttribGetInt(ih, "_IUPHAIKU_FOCUS_ID");
+  IupHaikuTreeItem* cur = haikuTreeGetItem(ih, cur_id);
+  int cur_idx = cur ? tv->IndexOf(cur) : -1;
+  if (cur_idx < 0) cur_idx = 0;
+
+  BListItem* item;
+  if (iupStrEqualNoCase(value, "CLEAR"))
+  {
+    haikuTreeSetFocus(ih, -1);
+    return 0;
+  }
+  else if (iupStrEqualNoCase(value, "ROOT") || iupStrEqualNoCase(value, "FIRST"))
+    item = tv->ItemAt(0);
+  else if (iupStrEqualNoCase(value, "LAST"))
+    item = tv->ItemAt(n - 1);
+  else if (iupStrEqualNoCase(value, "NEXT"))
+    item = tv->ItemAt(cur_idx + 1 < n ? cur_idx + 1 : n - 1);
+  else if (iupStrEqualNoCase(value, "PREVIOUS"))
+    item = tv->ItemAt(cur_idx > 0 ? cur_idx - 1 : 0);
+  else if (iupStrEqualNoCase(value, "PGDN"))
+    item = tv->ItemAt(cur_idx + 10 < n ? cur_idx + 10 : n - 1);
+  else if (iupStrEqualNoCase(value, "PGUP"))
+    item = tv->ItemAt(cur_idx > 10 ? cur_idx - 10 : 0);
+  else
+  {
+    int id = 0;
+    if (!iupStrToInt(value, &id)) return 0;
+    item = haikuTreeGetItem(ih, id);
+  }
+
+  if (!item) return 0;
+
+  if (ih->data->mark_mode == ITREE_MARK_SINGLE)
+  {
+    iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", "1");
+    int idx = tv->IndexOf(item);
+    if (idx >= 0) tv->Select(idx, false);
+    iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", NULL);
+  }
+
+  haikuTreeSetFocus(ih, haikuTreeGetIdFromItem(ih, item));
+  int idx = tv->IndexOf(item);
+  if (idx >= 0) tv->ScrollTo(idx);
   return 0;
 }
 
 static char* haikuTreeGetValueAttrib(Ihandle* ih)
 {
-  IupHaikuTreeView* tv = haikuTreeGetView(ih);
-  if (!tv) return NULL;
-  int32 idx = tv->CurrentSelection(0);
-  if (idx < 0) return iupStrReturnInt(-1);
-  BListItem* it = tv->ItemAt(idx);
-  return iupStrReturnInt(haikuTreeGetIdFromItem(ih, it));
+  int focus_id = iupAttribGetInt(ih, "_IUPHAIKU_FOCUS_ID");
+  if (focus_id >= 0 && focus_id < ih->data->node_count)
+    return iupStrReturnInt(focus_id);
+  return iupStrReturnInt(ih->data->node_count > 0 ? 0 : -1);
 }
 
 static int haikuTreeSetRenameAttrib(Ihandle* ih, const char* /*value*/)
