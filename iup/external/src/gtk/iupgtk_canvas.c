@@ -339,6 +339,32 @@ static gboolean gtkCanvasExposeEvent(GtkWidget *widget, GdkEventExpose *evt, Iha
   IFn cb = (IFn)IupGetCallback(ih,"ACTION");
 
 #if GTK_CHECK_VERSION(3, 0, 0)
+  if (iupAttribGet(ih, "_IUPGL_COMPOSITE"))
+  {
+    unsigned char* px;
+    int pw, ph;
+
+    iupAttribSet(ih, "_IUPGL_IN_DRAW", "1");
+    if (cb && !(ih->data->inside_resize))
+      cb(ih);
+    iupAttribSet(ih, "_IUPGL_IN_DRAW", NULL);
+
+    px = (unsigned char*)iupAttribGet(ih, "_IUPGL_COMPOSITE_PIXELS");
+    pw = iupAttribGetInt(ih, "_IUPGL_COMPOSITE_W");
+    ph = iupAttribGetInt(ih, "_IUPGL_COMPOSITE_H");
+    if (px && pw > 0 && ph > 0)
+    {
+      cairo_surface_t* s = cairo_image_surface_create_for_data(px, CAIRO_FORMAT_ARGB32, pw, ph, cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, pw));
+      cairo_save(cr);
+      cairo_set_source_surface(cr, s, 0, 0);
+      cairo_paint(cr);
+      cairo_restore(cr);
+      cairo_surface_destroy(s);
+    }
+    (void)widget;
+    return FALSE;
+  }
+
   /* Check if there's a persistent buffer from SCROLL_CB or other drawing outside ACTION */
   if (iupAttribGet(ih, "_IUPGTK3_BUFFER_DIRTY"))
   {
@@ -361,6 +387,32 @@ static gboolean gtkCanvasExposeEvent(GtkWidget *widget, GdkEventExpose *evt, Iha
         return TRUE;  /* Don't call ACTION callback */
       }
     }
+  }
+#else
+  if (iupAttribGet(ih, "_IUPGL_COMPOSITE"))
+  {
+    unsigned char* px;
+    int pw, ph;
+    cairo_t* cr = gdk_cairo_create(evt->window);
+
+    iupAttribSet(ih, "_IUPGL_IN_DRAW", "1");
+    if (cb && !(ih->data->inside_resize))
+      cb(ih);
+    iupAttribSet(ih, "_IUPGL_IN_DRAW", NULL);
+
+    px = (unsigned char*)iupAttribGet(ih, "_IUPGL_COMPOSITE_PIXELS");
+    pw = iupAttribGetInt(ih, "_IUPGL_COMPOSITE_W");
+    ph = iupAttribGetInt(ih, "_IUPGL_COMPOSITE_H");
+    if (px && pw > 0 && ph > 0)
+    {
+      cairo_surface_t* s = cairo_image_surface_create_for_data(px, CAIRO_FORMAT_ARGB32, pw, ph, cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, pw));
+      cairo_set_source_surface(cr, s, 0, 0);
+      cairo_paint(cr);
+      cairo_surface_destroy(s);
+    }
+    cairo_destroy(cr);
+    (void)widget;
+    return FALSE;
   }
 #endif
 
@@ -770,7 +822,7 @@ static int gtkCanvasSetBgColorAttrib(Ihandle* ih, const char* value)
   {
 #if !GTK_CHECK_VERSION(3, 14, 0)
     /* disable automatic double buffering if not a container or an OpenGL canvas */
-    if (ih->iclass->childtype != IUP_CHILDNONE && !iupAttribGet(ih, "_IUP_GLCONTROLDATA"))
+    if (ih->iclass->childtype != IUP_CHILDNONE && (!iupAttribGet(ih, "_IUP_GLCONTROLDATA") || IupClassMatch(ih, "glbackgroundbox")))
     {
       gtk_widget_set_double_buffered(ih->handle, TRUE);
       gtk_widget_set_double_buffered(sb_win, TRUE);
@@ -1038,7 +1090,11 @@ static int gtkCanvasMapMethod(Ihandle* ih)
   /* canvas is also a container */
   /* use a window to be a full native container */
   /* Check if this is a GL canvas to determine Wayland window handling */
+#if GTK_CHECK_VERSION(3, 0, 0)
+  if (iupAttribGet(ih, "_IUP_GLCONTROLDATA") && !IupClassMatch(ih, "glbackgroundbox"))
+#else
   if (iupAttribGet(ih, "_IUP_GLCONTROLDATA"))
+#endif
     iupgtkNativeContainerSetGLCanvas(1);
 
   ih->handle = iupgtkNativeContainerNew(1);
