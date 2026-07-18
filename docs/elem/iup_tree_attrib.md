@@ -127,16 +127,18 @@ Actually changes the **TITLEFONTid** attribute.
 ### Toggle (non-inheritable)
 
 **SHOWTOGGLE** (creation-only) (non-inheritable): enables the use of toggles for all nodes of the tree.
-Can be "YES", "3STATE" or NO". Default: "NO".
+Can be "YES", "3STATE" or "NO". Default: "NO".
+Not supported in Motif and FLTK.
 
-**EMPTYAS3STATE** (non-inheritable) [Windows Only]: when SHOWTOGGLE=Yes, the empty space left in nodes that TOGGLEVISIBLEid=NO is filled with the image of the 3state toggle.
-Can be Yes or NO. Default: No.
+**EMPTYAS3STATE** (non-inheritable) [Win32 Only]: when SHOWTOGGLE=YES, the empty space left in nodes that TOGGLEVISIBLEid=NO is filled with the image of the 3state toggle.
+Can be YES or NO. Default: NO.
 
 **TOGGLEVALUEid** (non-inheritable): defines the toggle state. Values can be "ON" or "OFF".
-If SHOW3STATE=YES then can also be "NOTDEF". Default: "OFF".
+If SHOWTOGGLE=3STATE then can also be "NOTDEF". Default: "OFF".
+In EFL the NOTDEF state is displayed as OFF.
 
-**TOGGLEVISIBLEid** (non-inheritable): defines the toggle visible state. Values can be "Yes" or "No".
-Default: "Yes".
+**TOGGLEVISIBLEid** (non-inheritable): defines the toggle visible state. Values can be "YES" or "NO".
+Default: "YES".
 
 ### Images (non-inheritable)
 
