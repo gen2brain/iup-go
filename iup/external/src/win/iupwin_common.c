@@ -49,6 +49,81 @@ static UINT WM_DRAGLISTMSG = 0;
 #define WS_EX_COMPOSITED 0x02000000L
 #endif
 
+IUP_DRV_API int iupwinGLBackgroundColor(Ihandle* ih, HDC hdc, LRESULT* result)
+{
+  HWND parent;
+  Ihandle* box;
+  HBRUSH br;
+  int bw, bh;
+  RECT rc;
+  POINT pt;
+  COLORREF cr;
+
+  if (!ih->handle)
+    return 0;
+
+  parent = GetParent(ih->handle);
+  box = iupwinHandleGet(parent);
+  if (!box)
+    return 0;
+
+  br = (HBRUSH)iupAttribGet(box, "_IUPWIN_GLBRUSH");
+  if (!br)
+    return 0;
+
+  bw = iupAttribGetInt(box, "_IUPWIN_GLBMPW");
+  bh = iupAttribGetInt(box, "_IUPWIN_GLBMPH");
+
+  GetWindowRect(ih->handle, &rc);
+  pt.x = rc.left; pt.y = rc.top;
+  ScreenToClient(parent, &pt);
+
+  SetBkMode(hdc, TRANSPARENT);
+  if (iupwinGetColorRef(ih, "FGCOLOR", &cr))
+    SetTextColor(hdc, cr);
+
+  UnrealizeObject(br);
+  SetBrushOrgEx(hdc, bw ? (bw - (pt.x % bw)) % bw : 0, bh ? (bh - (pt.y % bh)) % bh : 0, NULL);
+
+  *result = (LRESULT)br;
+  return 1;
+}
+
+IUP_DRV_API int iupwinDrawGLParentBackground(Ihandle* ih, HDC hdc, RECT* rect)
+{
+  HWND parent;
+  Ihandle* box;
+  HBITMAP hbmp;
+  HDC memdc;
+  HGDIOBJ old;
+  RECT rc;
+  POINT pt;
+
+  if (!ih->handle)
+    return 0;
+
+  parent = GetParent(ih->handle);
+  box = iupwinHandleGet(parent);
+  if (!box)
+    return 0;
+
+  hbmp = (HBITMAP)iupAttribGet(box, "_IUPWIN_GLBMP");
+  if (!hbmp)
+    return 0;
+
+  GetWindowRect(ih->handle, &rc);
+  pt.x = rc.left; pt.y = rc.top;
+  ScreenToClient(parent, &pt);
+
+  memdc = CreateCompatibleDC(hdc);
+  old = SelectObject(memdc, hbmp);
+  BitBlt(hdc, rect->left, rect->top, rect->right - rect->left, rect->bottom - rect->top,
+         memdc, pt.x + rect->left, pt.y + rect->top, SRCCOPY);
+  SelectObject(memdc, old);
+  DeleteDC(memdc);
+  return 1;
+}
+
 IUP_DRV_API int iupwinClassExist(const TCHAR* name)
 {
   WNDCLASS WndClass;

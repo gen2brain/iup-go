@@ -793,6 +793,9 @@ static int winToggleCtlColor(Ihandle* ih, HDC hdc, LRESULT *result)
 {
   COLORREF cr;
 
+  if (iupwinGLBackgroundColor(ih, hdc, result))
+    return 1;
+
   SetBkMode(hdc, TRANSPARENT);
 
   if (iupwinGetColorRef(ih, "FGCOLOR", &cr))
