@@ -147,6 +147,8 @@ static int iupEGLBackendMapInit(Ihandle* ih, IGlControlData* gldata)
   }
 
   gldata->backend_handle = gdk_surface;
+  gldata->use_composite = 1;
+  iupAttribSet(ih, "_IUPGL_COMPOSITE", "1");
   return 1;
 }
 
@@ -202,6 +204,9 @@ static EGLNativeWindowType iupEGLBackendPostConfig(Ihandle* ih, IGlControlData* 
 {
   GdkSurface* gdk_surface = (GdkSurface*)gldata->backend_handle;
   *skip_rest = 0;
+
+  if (gldata->use_composite)
+    return (EGLNativeWindowType)NULL;
 
 #ifdef GDK_WINDOWING_WAYLAND
   if (GDK_IS_WAYLAND_SURFACE(gdk_surface)) {
@@ -457,6 +462,13 @@ static void iupEGLBackendPreSwapBuffers(Ihandle* ih, IGlControlData* gldata)
 static void iupEGLBackendPostSwapBuffers(Ihandle* ih, IGlControlData* gldata)
 {
   (void)ih; (void)gldata;
+}
+
+static void iupEGLBackendQueueComposite(Ihandle* ih, IGlControlData* gldata)
+{
+  (void)gldata;
+  if (!iupAttribGet(ih, "_IUPGL_IN_DRAW") && ih->handle && GTK_IS_WIDGET(ih->handle))
+    gtk_widget_queue_draw((GtkWidget*)ih->handle);
 }
 
 #endif

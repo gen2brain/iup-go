@@ -133,6 +133,12 @@ typedef struct _IGlControlData
   int last_logical_width;
   int last_logical_height;
 
+  int use_composite;
+  unsigned int fbo, color_tex, depth_rbo;
+  int fbo_w, fbo_h;
+  unsigned char* composite_pixels;   /* BGRA, top-left */
+  size_t composite_cap;
+
   /* Wayland support fields (always present, NULL/0 when unused) */
   struct wl_egl_window* egl_window;
   int egl_window_physical_width;
@@ -149,6 +155,153 @@ typedef struct _IGlControlData
 
 /* Forward declaration of common function used by backends */
 static void eGLCanvasGetActualSize(Ihandle* ih, IGlControlData* gldata, int* physical_width, int* physical_height);
+
+#ifndef GL_FRAMEBUFFER
+#define GL_FRAMEBUFFER 0x8D40
+#define GL_RENDERBUFFER 0x8D41
+#define GL_COLOR_ATTACHMENT0 0x8CE0
+#define GL_DEPTH_STENCIL_ATTACHMENT 0x821A
+#define GL_DEPTH24_STENCIL8 0x88F0
+#define GL_FRAMEBUFFER_COMPLETE 0x8CD5
+#endif
+#ifndef GL_RGBA8
+#define GL_RGBA8 0x8058
+#endif
+#ifndef GL_BGRA
+#define GL_BGRA 0x80E1
+#endif
+#ifndef GL_CLAMP_TO_EDGE
+#define GL_CLAMP_TO_EDGE 0x812F
+#endif
+
+typedef void (*IUPglGenFramebuffers)(GLsizei, GLuint*);
+typedef void (*IUPglBindFramebuffer)(GLenum, GLuint);
+typedef void (*IUPglDeleteFramebuffers)(GLsizei, const GLuint*);
+typedef void (*IUPglFramebufferTexture2D)(GLenum, GLenum, GLenum, GLuint, GLint);
+typedef GLenum (*IUPglCheckFramebufferStatus)(GLenum);
+typedef void (*IUPglGenRenderbuffers)(GLsizei, GLuint*);
+typedef void (*IUPglBindRenderbuffer)(GLenum, GLuint);
+typedef void (*IUPglDeleteRenderbuffers)(GLsizei, const GLuint*);
+typedef void (*IUPglRenderbufferStorage)(GLenum, GLenum, GLsizei, GLsizei);
+typedef void (*IUPglFramebufferRenderbuffer)(GLenum, GLenum, GLenum, GLuint);
+
+static IUPglGenFramebuffers        eGLGenFramebuffers;
+static IUPglBindFramebuffer        eGLBindFramebuffer;
+static IUPglDeleteFramebuffers     eGLDeleteFramebuffers;
+static IUPglFramebufferTexture2D   eGLFramebufferTexture2D;
+static IUPglCheckFramebufferStatus eGLCheckFramebufferStatus;
+static IUPglGenRenderbuffers       eGLGenRenderbuffers;
+static IUPglBindRenderbuffer       eGLBindRenderbuffer;
+static IUPglDeleteRenderbuffers    eGLDeleteRenderbuffers;
+static IUPglRenderbufferStorage    eGLRenderbufferStorage;
+static IUPglFramebufferRenderbuffer eGLFramebufferRenderbuffer;
+
+static int eGLLoadFBOProcs(void)
+{
+  if (eGLGenFramebuffers)
+    return 1;
+  eGLGenFramebuffers         = (IUPglGenFramebuffers)eglGetProcAddress("glGenFramebuffers");
+  eGLBindFramebuffer         = (IUPglBindFramebuffer)eglGetProcAddress("glBindFramebuffer");
+  eGLDeleteFramebuffers      = (IUPglDeleteFramebuffers)eglGetProcAddress("glDeleteFramebuffers");
+  eGLFramebufferTexture2D    = (IUPglFramebufferTexture2D)eglGetProcAddress("glFramebufferTexture2D");
+  eGLCheckFramebufferStatus  = (IUPglCheckFramebufferStatus)eglGetProcAddress("glCheckFramebufferStatus");
+  eGLGenRenderbuffers        = (IUPglGenRenderbuffers)eglGetProcAddress("glGenRenderbuffers");
+  eGLBindRenderbuffer        = (IUPglBindRenderbuffer)eglGetProcAddress("glBindRenderbuffer");
+  eGLDeleteRenderbuffers     = (IUPglDeleteRenderbuffers)eglGetProcAddress("glDeleteRenderbuffers");
+  eGLRenderbufferStorage     = (IUPglRenderbufferStorage)eglGetProcAddress("glRenderbufferStorage");
+  eGLFramebufferRenderbuffer = (IUPglFramebufferRenderbuffer)eglGetProcAddress("glFramebufferRenderbuffer");
+  return eGLGenFramebuffers && eGLBindFramebuffer && eGLFramebufferTexture2D && eGLCheckFramebufferStatus && eGLGenRenderbuffers && eGLRenderbufferStorage && eGLFramebufferRenderbuffer;
+}
+
+static int eGLCompositeEnsureFBO(IGlControlData* gldata, int w, int h)
+{
+  if (w < 1) w = 1;
+  if (h < 1) h = 1;
+
+  if (gldata->fbo && gldata->fbo_w == w && gldata->fbo_h == h)
+    return 1;
+
+  if (!eGLLoadFBOProcs())
+    return 0;
+
+  if (!gldata->fbo)       eGLGenFramebuffers(1, &gldata->fbo);
+  if (!gldata->color_tex) glGenTextures(1, &gldata->color_tex);
+  if (!gldata->depth_rbo) eGLGenRenderbuffers(1, &gldata->depth_rbo);
+
+  glBindTexture(GL_TEXTURE_2D, gldata->color_tex);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  glBindTexture(GL_TEXTURE_2D, 0);
+
+  eGLBindRenderbuffer(GL_RENDERBUFFER, gldata->depth_rbo);
+  eGLRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, w, h);
+  eGLBindRenderbuffer(GL_RENDERBUFFER, 0);
+
+  eGLBindFramebuffer(GL_FRAMEBUFFER, gldata->fbo);
+  eGLFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gldata->color_tex, 0);
+  eGLFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, gldata->depth_rbo);
+
+  if (eGLCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+  {
+    eGLBindFramebuffer(GL_FRAMEBUFFER, 0);
+    return 0;
+  }
+
+  gldata->fbo_w = w;
+  gldata->fbo_h = h;
+  return 1;
+}
+
+static void eGLCompositeReadback(Ihandle* ih, IGlControlData* gldata)
+{
+  int w = gldata->fbo_w, h = gldata->fbo_h;
+  int rowbytes = w * 4;
+  size_t need = (size_t)rowbytes * h;
+  unsigned char* px;
+  int y;
+
+  if (!gldata->fbo || w < 1 || h < 1)
+    return;
+
+  if (gldata->composite_cap < need)
+  {
+    unsigned char* nb = (unsigned char*)realloc(gldata->composite_pixels, need);
+    if (!nb) return;
+    gldata->composite_pixels = nb;
+    gldata->composite_cap = need;
+  }
+  px = gldata->composite_pixels;
+
+  eGLBindFramebuffer(GL_FRAMEBUFFER, gldata->fbo);
+  glPixelStorei(GL_PACK_ALIGNMENT, 1);
+  glReadPixels(0, 0, w, h, GL_BGRA, GL_UNSIGNED_BYTE, px);
+
+  {
+    unsigned char* tmp = (unsigned char*)malloc(rowbytes);
+    if (tmp)
+    {
+      for (y = 0; y < h/2; y++)
+      {
+        unsigned char* a = px + (size_t)y*rowbytes;
+        unsigned char* b = px + (size_t)(h-1-y)*rowbytes;
+        memcpy(tmp, a, rowbytes); memcpy(a, b, rowbytes); memcpy(b, tmp, rowbytes);
+      }
+      free(tmp);
+    }
+  }
+  {
+    size_t i, n = (size_t)w*h;
+    for (i = 0; i < n; i++)
+      px[i*4+3] = 255;
+  }
+
+  iupAttribSet(ih, "_IUPGL_COMPOSITE_PIXELS", (char*)px);
+  iupAttribSetInt(ih, "_IUPGL_COMPOSITE_W", w);
+  iupAttribSetInt(ih, "_IUPGL_COMPOSITE_H", h);
+}
 
 #ifdef IUP_GL_HAS_WAYLAND
 static void eGLCopyWaylandSubsurface(struct IGlWaylandSubsurface* ws, IGlControlData* gldata, struct wl_surface* parent_surface)
@@ -191,6 +344,7 @@ static void eGLCopyWaylandSubsurface(struct IGlWaylandSubsurface* ws, IGlControl
  *   iupEGLBackendGetVisual                - Get visual for VISUAL attribute
  *   iupEGLBackendPreSwapBuffers           - Pre-swap handling
  *   iupEGLBackendPostSwapBuffers          - Post-swap handling
+ *   iupEGLBackendQueueComposite           - Queue a toolkit repaint of the FBO pixels
  */
 #if defined(IUP_EGL_USE_GTK3)
   #include "iup_glcanvas_egl_gtk.h"
@@ -359,7 +513,7 @@ static int eGLCanvasChooseConfig(Ihandle* ih, IGlControlData* gldata, int visual
   }
 
   alist[n++] = EGL_SURFACE_TYPE;
-  alist[n++] = EGL_WINDOW_BIT;
+  alist[n++] = gldata->use_composite ? EGL_PBUFFER_BIT : EGL_WINDOW_BIT;
 
   alist[n++] = EGL_RENDERABLE_TYPE;
   alist[n++] = EGL_OPENGL_BIT;
@@ -422,7 +576,7 @@ static int eGLCanvasChooseConfig(Ihandle* ih, IGlControlData* gldata, int visual
   if (!eglChooseConfig(gldata->display, alist, &gldata->config, 1, &num_config) || num_config == 0)
   {
     EGLint fallback_alist[] = {
-        EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
+        EGL_SURFACE_TYPE, gldata->use_composite ? EGL_PBUFFER_BIT : EGL_WINDOW_BIT,
         EGL_RENDERABLE_TYPE, EGL_OPENGL_BIT,
         EGL_RED_SIZE, 8,
         EGL_GREEN_SIZE, 8,
@@ -525,7 +679,7 @@ static int eGLCanvasMapMethod(Ihandle* ih)
       return IUP_NOERROR;
   }
 
-  if (!eGLCanvasChooseConfig(ih, gldata, target_visual_id))
+  if (!eGLCanvasChooseConfig(ih, gldata, gldata->use_composite ? 0 : target_visual_id))
     return IUP_NOERROR;
 
   /* Post-config: get native window or setup lazy init */
@@ -538,11 +692,22 @@ static int eGLCanvasMapMethod(Ihandle* ih)
       native_window = post_native;
   }
 
-  if (native_window == (EGLNativeWindowType)NULL && !iupAttribGet(ih, "_IUP_EGL_LAZY_INIT")) {
+  if (native_window == (EGLNativeWindowType)NULL && !iupAttribGet(ih, "_IUP_EGL_LAZY_INIT") && !gldata->use_composite) {
       iupAttribSet(ih, "ERROR", "Could not create/obtain native window handle (Wayland EGL window or X11 Window ID). Check backend.");
       return IUP_NOERROR;
   }
 
+  if (gldata->use_composite)
+  {
+    EGLint pbuffer_attribs[] = { EGL_WIDTH, 1, EGL_HEIGHT, 1, EGL_NONE };
+    gldata->surface = eglCreatePbufferSurface(gldata->display, gldata->config, pbuffer_attribs);
+    if (gldata->surface == EGL_NO_SURFACE)
+    {
+        iupAttribSetStrf(ih, "ERROR", "Could not create EGL pbuffer surface. Error: 0x%X", eglGetError());
+        return IUP_NOERROR;
+    }
+  }
+  else
   {
     EGLint surface_attribs[3] = { EGL_NONE, EGL_NONE, EGL_NONE };
     if (iupStrEqualNoCase(iupAttribGetStr(ih,"BUFFER"), "SINGLE"))
@@ -744,6 +909,23 @@ static void eGLCanvasUnMapMethod(Ihandle* ih)
     iupEGLBackendCleanup(ih, gldata);
     return;
   }
+
+  if (gldata->use_composite && gldata->context != EGL_NO_CONTEXT && gldata->surface != EGL_NO_SURFACE)
+  {
+    eglMakeCurrent(gldata->display, gldata->surface, gldata->surface, gldata->context);
+    if (gldata->fbo)       eGLDeleteFramebuffers(1, &gldata->fbo);
+    if (gldata->color_tex) glDeleteTextures(1, &gldata->color_tex);
+    if (gldata->depth_rbo) eGLDeleteRenderbuffers(1, &gldata->depth_rbo);
+    gldata->fbo = gldata->color_tex = gldata->depth_rbo = 0;
+  }
+
+  if (gldata->composite_pixels)
+  {
+    free(gldata->composite_pixels);
+    gldata->composite_pixels = NULL;
+    gldata->composite_cap = 0;
+  }
+  iupAttribSet(ih, "_IUPGL_COMPOSITE_PIXELS", NULL);
 
   if (gldata->context != EGL_NO_CONTEXT)
   {
@@ -1000,6 +1182,14 @@ IUPGL_API void IupGLMakeCurrent(Ihandle* ih)
       glViewport(0, 0, physical_width, physical_height);
     }
 
+    if (gldata->use_composite)
+    {
+      int pw = 0, ph = 0;
+      eGLCanvasGetActualSize(ih, gldata, &pw, &ph);
+      if (eGLCompositeEnsureFBO(gldata, pw, ph))
+        eGLBindFramebuffer(GL_FRAMEBUFFER, gldata->fbo);
+    }
+
     iupAttribSet(ih, "ERROR", NULL);
 
     if (!IupGetGlobal("GL_VERSION"))
@@ -1031,6 +1221,13 @@ IUPGL_API void IupGLSwapBuffers(Ihandle* ih)
   cb = IupGetCallback(ih, "SWAPBUFFERS_CB");
   if (cb)
     cb(ih);
+
+  if (gldata->use_composite)
+  {
+    eGLCompositeReadback(ih, gldata);
+    iupEGLBackendQueueComposite(ih, gldata);
+    return;
+  }
 
   iupEGLBackendPreSwapBuffers(ih, gldata);
   eglSwapBuffers(gldata->display, gldata->surface);

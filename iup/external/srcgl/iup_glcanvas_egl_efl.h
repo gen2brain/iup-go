@@ -143,6 +143,23 @@ static int iupEGLBackendMapInit(Ihandle* ih, IGlControlData* gldata)
     return 0;
   }
 
+  if (IupClassMatch(ih, "glbackgroundbox"))
+  {
+    Evas* evas = evas_object_evas_get(evas_obj);
+    Evas_Object* img = evas ? evas_object_image_filled_add(evas) : NULL;
+    if (img)
+    {
+      evas_object_image_colorspace_set(img, EVAS_COLORSPACE_ARGB8888);
+      evas_object_image_alpha_set(img, EINA_FALSE);
+      evas_object_image_smooth_scale_set(img, EINA_FALSE);
+      evas_object_stack_above(img, evas_obj);
+      evas_object_show(img);
+      iupAttribSet(ih, "_IUPGL_EFL_IMAGE", (char*)img);
+      gldata->use_composite = 1;
+      iupAttribSet(ih, "_IUPGL_COMPOSITE", "1");
+    }
+  }
+
   return 1;
 }
 
@@ -198,6 +215,9 @@ static EGLNativeWindowType iupEGLBackendPostConfig(Ihandle* ih, IGlControlData* 
 {
   Ecore_Evas* ee = (Ecore_Evas*)gldata->backend_handle2;
   *skip_rest = 0;
+
+  if (gldata->use_composite)
+    return (EGLNativeWindowType)NULL;
 
 #ifdef HAVE_ECORE_WL2
   if (eGLCanvasEflIsWayland(ee)) {
@@ -419,7 +439,14 @@ static void iupEGLBackendCleanup(Ihandle* ih, IGlControlData* gldata)
     }
   }
 #endif
-  (void)ih;
+  {
+    Evas_Object* img = (Evas_Object*)iupAttribGet(ih, "_IUPGL_EFL_IMAGE");
+    if (img)
+    {
+      evas_object_del(img);
+      iupAttribSet(ih, "_IUPGL_EFL_IMAGE", NULL);
+    }
+  }
   gldata->backend_handle = NULL;
   gldata->backend_handle2 = NULL;
 }
@@ -465,6 +492,26 @@ static void iupEGLBackendPostSwapBuffers(Ihandle* ih, IGlControlData* gldata)
     eglMakeCurrent(gldata->display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
 
   (void)ih;
+}
+
+static void iupEGLBackendQueueComposite(Ihandle* ih, IGlControlData* gldata)
+{
+  Evas_Object* img = (Evas_Object*)iupAttribGet(ih, "_IUPGL_EFL_IMAGE");
+  Evas_Object* evas_obj = (Evas_Object*)gldata->backend_handle;
+  unsigned char* px = (unsigned char*)iupAttribGet(ih, "_IUPGL_COMPOSITE_PIXELS");
+  int pw = iupAttribGetInt(ih, "_IUPGL_COMPOSITE_W");
+  int ph = iupAttribGetInt(ih, "_IUPGL_COMPOSITE_H");
+  Eina_Rect geom;
+
+  if (!img || !evas_obj || !px || pw < 1 || ph < 1)
+    return;
+
+  geom = efl_gfx_entity_geometry_get(evas_obj);
+  evas_object_move(img, geom.x, geom.y);
+  evas_object_resize(img, geom.w, geom.h);
+  evas_object_image_size_set(img, pw, ph);
+  evas_object_image_data_copy_set(img, px);
+  evas_object_image_data_update_add(img, 0, 0, pw, ph);
 }
 
 #endif

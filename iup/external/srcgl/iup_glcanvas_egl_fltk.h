@@ -10,6 +10,7 @@
 #define __IUP_GLCANVAS_EGL_FLTK_H
 
 #include "iup.h"
+#include "iup_drv.h"
 
 
 #define IUP_EGL_HAS_WAYLAND
@@ -51,6 +52,13 @@ static int iupEGLBackendMapInit(Ihandle* ih, IGlControlData* gldata)
     gldata->backend_handle = info.canvas_window;
   else
     gldata->backend_handle = info.parent_window;
+
+  if (IupClassMatch(ih, "glbackgroundbox"))
+  {
+    gldata->use_composite = 1;
+    iupAttribSet(ih, "_IUPGL_COMPOSITE", "1");
+    return 1;
+  }
 
   return gldata->backend_handle ? 1 : 0;
 }
@@ -95,6 +103,9 @@ static EGLNativeWindowType iupEGLBackendPostConfig(Ihandle* ih, IGlControlData* 
 {
   IGlNativeInfo info;
   *skip_rest = 0;
+
+  if (gldata->use_composite)
+    return (EGLNativeWindowType)NULL;
 
   if (!iupGLGetNativeInfo(ih, &info))
     return (EGLNativeWindowType)NULL;
@@ -242,6 +253,13 @@ static void iupEGLBackendPreSwapBuffers(Ihandle* ih, IGlControlData* gldata)
 static void iupEGLBackendPostSwapBuffers(Ihandle* ih, IGlControlData* gldata)
 {
   (void)ih; (void)gldata;
+}
+
+static void iupEGLBackendQueueComposite(Ihandle* ih, IGlControlData* gldata)
+{
+  (void)gldata;
+  if (!iupAttribGet(ih, "_IUPGL_IN_DRAW"))
+    iupdrvPostRedraw(ih);
 }
 
 #endif
