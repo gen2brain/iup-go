@@ -796,6 +796,15 @@ regular_toggle:
   if (ih->data->type == IUP_TOGGLE_TEXT)
     iupmotSetXmString(ih->handle, XmNlabelString, "");
 
+  {
+    Ihandle* native_parent = iupChildTreeGetNativeParent(ih);
+    if (native_parent && IupClassMatch(native_parent, "glbackgroundbox") && !iupAttribGet(ih, "BGCOLOR"))
+    {
+      XSetWindowBackgroundPixmap(iupmot_display, XtWindow(ih->handle), ParentRelative);
+      iupAttribSet(ih, "_IUPMOT_GLTRANSPARENT", "1");
+    }
+  }
+
   return IUP_NOERROR;
 }
 
