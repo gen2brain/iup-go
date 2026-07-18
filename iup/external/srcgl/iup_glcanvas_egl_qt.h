@@ -10,6 +10,7 @@
 #define __IUP_GLCANVAS_EGL_QT_H
 
 #include "iup.h"
+#include "iup_drv.h"
 
 
 #define IUP_EGL_HAS_WAYLAND
@@ -43,6 +44,13 @@ static int iupEGLBackendMapInit(Ihandle* ih, IGlControlData* gldata)
   if (!windowing)
     return 0;
 
+  if (IupClassMatch(ih, "glbackgroundbox"))
+  {
+    gldata->use_composite = 1;
+    iupAttribSet(ih, "_IUPGL_COMPOSITE", "1");
+    return 1;
+  }
+
   if (strcmp(windowing, "WAYLAND") == 0)
   {
     if (!IupGetGlobal("WL_DISPLAY"))
@@ -75,6 +83,21 @@ static EGLDisplay iupEGLBackendGetEGLDisplay(Ihandle* ih, IGlControlData* gldata
   (void)gldata;
   *visual_id = 0;
   *native_window = (EGLNativeWindowType)0;
+
+  if (gldata->use_composite)
+  {
+    int wl = (windowing && strcmp(windowing, "WAYLAND") == 0);
+    void* conn = wl ? IupGetGlobal("WL_DISPLAY") : IupGetGlobal("XDISPLAY");
+    EGLenum platform = wl ? EGL_PLATFORM_WAYLAND_KHR : EGL_PLATFORM_X11_KHR;
+    if (conn)
+    {
+      if (func)
+        display = func(platform, conn, NULL);
+      if (display == EGL_NO_DISPLAY)
+        display = eglGetDisplay((EGLNativeDisplayType)conn);
+    }
+    return display;
+  }
 
   if (windowing && strcmp(windowing, "WAYLAND") == 0)
   {
@@ -112,6 +135,9 @@ static EGLNativeWindowType iupEGLBackendPostConfig(Ihandle* ih, IGlControlData* 
 {
   const char* windowing = IupGetGlobal("WINDOWING");
   *skip_rest = 0;
+
+  if (gldata->use_composite)
+    return (EGLNativeWindowType)NULL;
 
   if (windowing && strcmp(windowing, "WAYLAND") == 0)
   {
@@ -262,6 +288,13 @@ static void iupEGLBackendPreSwapBuffers(Ihandle* ih, IGlControlData* gldata)
 static void iupEGLBackendPostSwapBuffers(Ihandle* ih, IGlControlData* gldata)
 {
   (void)ih; (void)gldata;
+}
+
+static void iupEGLBackendQueueComposite(Ihandle* ih, IGlControlData* gldata)
+{
+  (void)gldata;
+  if (!iupAttribGet(ih, "_IUPGL_IN_DRAW"))
+    iupdrvPostRedraw(ih);
 }
 
 #endif
