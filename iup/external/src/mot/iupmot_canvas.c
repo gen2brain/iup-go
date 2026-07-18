@@ -165,6 +165,76 @@ static void motCanvasResizeCallback(Widget w, Ihandle *ih, XtPointer call_data)
 
 static int motCanvasSetBgColorAttrib(Ihandle* ih, const char* value);
 
+static void motCanvasGLRefreshChildren(Ihandle* child)
+{
+  Ihandle* c;
+  for (c = child; c; c = c->brother)
+  {
+    if (c->handle && iupAttribGet(c, "_IUPMOT_GLTRANSPARENT"))
+    {
+      Window cw = XtWindow(c->handle);
+      if (cw)
+        XClearArea(iupmot_display, cw, 0, 0, 0, 0, True);
+    }
+    if (c->firstchild)
+      motCanvasGLRefreshChildren(c->firstchild);
+  }
+}
+
+static void motCanvasGLComposite(Ihandle* ih)
+{
+  unsigned char* px = (unsigned char*)iupAttribGet(ih, "_IUPGL_COMPOSITE_PIXELS");
+  int pw = iupAttribGetInt(ih, "_IUPGL_COMPOSITE_W");
+  int ph = iupAttribGetInt(ih, "_IUPGL_COMPOSITE_H");
+  Window win = XtWindow(ih->handle);
+  Pixmap pm;
+  int pmw, pmh;
+  Window root;
+  int rx, ry;
+  unsigned int rw, rh, bw, depth;
+
+  if (!px || pw <= 0 || ph <= 0 || !win)
+    return;
+
+  if (!XGetGeometry(iupmot_display, win, &root, &rx, &ry, &rw, &rh, &bw, &depth))
+    return;
+
+  pm = (Pixmap)iupAttribGet(ih, "_IUPMOT_GLPIXMAP");
+  pmw = iupAttribGetInt(ih, "_IUPMOT_GLPIXMAPW");
+  pmh = iupAttribGetInt(ih, "_IUPMOT_GLPIXMAPH");
+  if (!pm || pmw != pw || pmh != ph)
+  {
+    if (pm) XFreePixmap(iupmot_display, pm);
+    pm = XCreatePixmap(iupmot_display, win, pw, ph, depth);
+    iupAttribSet(ih, "_IUPMOT_GLPIXMAP", (char*)pm);
+    iupAttribSetInt(ih, "_IUPMOT_GLPIXMAPW", pw);
+    iupAttribSetInt(ih, "_IUPMOT_GLPIXMAPH", ph);
+  }
+
+  {
+    Visual* vis = (Visual*)IupGetAttribute(ih, "VISUAL");
+    XImage* img = XCreateImage(iupmot_display, vis, depth, ZPixmap, 0, (char*)px, pw, ph, 32, pw*4);
+    if (img)
+    {
+      GC gc = (GC)iupAttribGet(ih, "_IUPMOT_GLGC");
+      if (!gc)
+      {
+        gc = XCreateGC(iupmot_display, pm, 0, NULL);
+        iupAttribSet(ih, "_IUPMOT_GLGC", (char*)gc);
+      }
+      img->byte_order = LSBFirst;
+      XPutImage(iupmot_display, pm, gc, img, 0, 0, 0, 0, pw, ph);
+      img->data = NULL;
+      XDestroyImage(img);
+    }
+  }
+
+  XSetWindowBackgroundPixmap(iupmot_display, win, pm);
+  XClearWindow(iupmot_display, win);
+
+  motCanvasGLRefreshChildren(ih->firstchild);
+}
+
 static void motCanvasExposeCallback(Widget w, Ihandle *ih, XtPointer call_data)
 {
   IFn cb;
@@ -174,6 +244,20 @@ static void motCanvasExposeCallback(Widget w, Ihandle *ih, XtPointer call_data)
     return;
 
   cb = (IFn)IupGetCallback(ih,"ACTION");
+
+  if (iupAttribGet(ih, "_IUPGL_COMPOSITE"))
+  {
+    iupAttribSet(ih, "_IUPGL_IN_DRAW", "1");
+    if (cb && !(ih->data->inside_resize))
+    {
+      iupAttribSet(ih, "DRAWABLE", (char*)XtWindow(w));
+      cb(ih);
+    }
+    iupAttribSet(ih, "_IUPGL_IN_DRAW", NULL);
+    motCanvasGLComposite(ih);
+    return;
+  }
+
   if (cb && !(ih->data->inside_resize))
   {
     if (!iupAttribGet(ih, "_IUPMOT_NO_BGCOLOR"))
