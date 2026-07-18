@@ -427,6 +427,13 @@ static void cocoaTreeSetFocus(Ihandle* ih, int id);
 }
 #endif
 
+- (NSRect) frameOfOutlineCellAtRow:(NSInteger)row
+{
+  if (self.ih && iupAttribGetBoolean(self.ih, "HIDEBUTTONS"))
+    return NSZeroRect;
+  return [super frameOfOutlineCellAtRow:row];
+}
+
 - (NSMenu *)menuForEvent:(NSEvent *)event
 {
   /* Check if CONTEXTMENU attribute has been configured by the user */
@@ -4331,6 +4338,7 @@ static int cocoaTreeSetIndentationAttrib(Ihandle* ih, const char* value)
   {
     IupCocoaOutlineView* outline_view = (IupCocoaOutlineView*)cocoaTreeGetOutlineView(ih);
     [outline_view setIndentationPerLevel:(CGFloat)indent];
+    [outline_view reloadData];
   }
 
   return 0;
@@ -4692,7 +4700,6 @@ IUP_SDK_API void iupdrvTreeInitClass(Iclass* ic)
   /* IupTree Attributes - macOS specific */
   iupClassRegisterAttribute(ic, "RUBBERBAND", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "HIDELINES", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "HIDEBUTTONS", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "INFOTIP", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
 
   /* Tooltip attributes */
