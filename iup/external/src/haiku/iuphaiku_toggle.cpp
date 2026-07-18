@@ -28,6 +28,7 @@ extern "C" {
 #include "iup_object.h"
 #include "iup_class.h"
 #include "iup_classbase.h"
+#include "iup_childtree.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_image.h"
@@ -171,13 +172,30 @@ public:
   /* Custom draw needed for explicit textColor (DrawLabel ignores our HighColor) and for box-on-right */
   void Draw(BRect updateRect) override
   {
+    bool over_gl = false;
+    if (fIhandle && iupAttribGet(fIhandle, "_IUPHAIKU_GLTRANSPARENT"))
+    {
+      Ihandle* np = iupChildTreeGetNativeParent(fIhandle);
+      BBitmap* bmp = np ? (BBitmap*)iupAttribGet(np, "_IUPHAIKU_GLBITMAP") : NULL;
+      if (bmp)
+      {
+        BRect frame = this->Frame();
+        BRect bounds = this->Bounds();
+        BRect srcR(frame.left, frame.top, frame.left + bounds.Width(), frame.top + bounds.Height());
+        this->SetDrawingMode(B_OP_COPY);
+        this->DrawBitmap(bmp, srcR, bounds);
+        this->SetDrawingMode(B_OP_OVER);
+        over_gl = true;
+      }
+    }
+
     bool rightButton = false;
     if constexpr (std::is_same_v<Base, BCheckBox>)
       rightButton = fIhandle && iupAttribGetBoolean(fIhandle, "RIGHTBUTTON");
 
-    if (!fHasFgColor && !rightButton) { Base::Draw(updateRect); return; }
+    if (!over_gl && !fHasFgColor && !rightButton) { Base::Draw(updateRect); return; }
 
-    rgb_color base = this->ViewColor();
+    rgb_color base = over_gl ? ui_color(B_PANEL_BACKGROUND_COLOR) : this->ViewColor();
     font_height fh;
     this->GetFontHeight(&fh);
     uint32 flags = be_control_look->Flags(this);
@@ -677,6 +695,16 @@ static int haikuToggleMapMethod(Ihandle* ih)
 
   ih->handle = (InativeHandle*)native;
   iuphaikuAddToParent(ih);
+
+  {
+    Ihandle* native_parent = iupChildTreeGetNativeParent(ih);
+    if (native_parent && IupClassMatch(native_parent, "glbackgroundbox") && !iupAttribGet(ih, "BGCOLOR"))
+    {
+      LooperLockGuard guard(native->Looper());
+      native->SetViewColor(B_TRANSPARENT_COLOR);
+      iupAttribSet(ih, "_IUPHAIKU_GLTRANSPARENT", "1");
+    }
+  }
 
   iuphaikuUpdateWidgetFont(ih, native);
 
