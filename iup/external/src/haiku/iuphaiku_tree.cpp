@@ -5,6 +5,8 @@
  */
 
 #include <cstddef>
+#include <map>
+#include <vector>
 
 #include <Bitmap.h>
 #include <ControlLook.h>
@@ -1207,6 +1209,83 @@ static char* haikuTreeGetMarkedAttrib(Ihandle* ih, int id)
   return iupStrReturnBoolean(it->IsSelected() ? 1 : 0);
 }
 
+static int haikuTreeIsAncestor(IupHaikuTreeView* tv, IupHaikuTreeItem* item, IupHaikuTreeItem* ancestor)
+{
+  for (BListItem* p = tv->Superitem(item); p; p = tv->Superitem(p))
+    if ((IupHaikuTreeItem*)p == ancestor)
+      return 1;
+  return 0;
+}
+
+static int haikuTreeSetCopyNodeAttrib(Ihandle* ih, int id, const char* value)
+{
+  IupHaikuTreeView* tv = haikuTreeGetView(ih);
+  if (!tv) return 0;
+
+  IupHaikuTreeItem* src = haikuTreeGetItem(ih, id);
+  IupHaikuTreeItem* dst = (IupHaikuTreeItem*)iupTreeGetNodeFromString(ih, value);
+  if (!src || !dst || src == dst || haikuTreeIsAncestor(tv, dst, src))
+    return 0;
+
+  iupdrvTreeDragDropCopyNode(ih, ih, (InodeHandle*)src, (InodeHandle*)dst);
+  return 0;
+}
+
+static int haikuTreeSetMoveNodeAttrib(Ihandle* ih, int id, const char* value)
+{
+  IupHaikuTreeView* tv = haikuTreeGetView(ih);
+  if (!tv) return 0;
+
+  IupHaikuTreeItem* src = haikuTreeGetItem(ih, id);
+  IupHaikuTreeItem* dst = (IupHaikuTreeItem*)iupTreeGetNodeFromString(ih, value);
+  if (!src || !dst || src == dst || haikuTreeIsAncestor(tv, dst, src))
+    return 0;
+
+  LooperLockGuard guard(tv->Looper());
+
+  int count = 1 + haikuTreeChildCountRec(tv, src);
+
+  /* userdata by item, so it follows the moved objects (a move preserves userdata) */
+  std::map<void*, void*> udata;
+  for (int i = 0; i < ih->data->node_count; i++)
+    udata[(void*)ih->data->node_cache[i].node_handle] = ih->data->node_cache[i].userdata;
+
+  /* a subtree is contiguous in the full list */
+  std::vector<IupHaikuTreeItem*> items(count);
+  std::vector<uint32> levels(count);
+  for (int k = 0; k < count; k++)
+  {
+    items[k] = (IupHaikuTreeItem*)tv->FullListItemAt(id + k);
+    levels[k] = items[k]->OutlineLevel();
+  }
+
+  bool as_child = (dst->Kind() == ITREE_BRANCH && dst->IsExpanded());
+  int delta = (int)(as_child ? dst->OutlineLevel() + 1 : dst->OutlineLevel()) - (int)levels[0];
+
+  /* detach bottom-up: each item is a leaf when removed, so nothing is deleted */
+  for (int k = count - 1; k >= 0; k--)
+    tv->RemoveItem(items[k]);
+
+  for (int k = 0; k < count; k++)
+    items[k]->SetOutlineLevel((uint32)((int)levels[k] + delta));
+
+  int dst_idx = tv->FullListIndexOf(dst);
+  int ins = as_child ? dst_idx + 1 : dst_idx + 1 + haikuTreeChildCountRec(tv, dst);
+  for (int k = 0; k < count; k++)
+    tv->AddItem(items[k], ins + k);
+
+  /* node_count is unchanged by a move; rebuild the cache from the new order */
+  for (int i = 0; i < ih->data->node_count; i++)
+  {
+    BListItem* it = tv->FullListItemAt(i);
+    ih->data->node_cache[i].node_handle = (InodeHandle*)it;
+    ih->data->node_cache[i].userdata = udata[(void*)it];
+  }
+
+  tv->Invalidate();
+  return 0;
+}
+
 static int haikuTreeSetDelNodeAttrib(Ihandle* ih, int id, const char* value)
 {
   IupHaikuTreeView* tv = haikuTreeGetView(ih);
@@ -1422,6 +1501,8 @@ extern "C" IUP_SDK_API void iupdrvTreeInitClass(Iclass* ic)
   /* Action */
   iupClassRegisterAttribute(ic, "ADDROOT", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "DELNODE", NULL, haikuTreeSetDelNodeAttrib, IUPAF_NOT_MAPPED | IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "COPYNODE", NULL, haikuTreeSetCopyNodeAttrib, IUPAF_NOT_MAPPED | IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "MOVENODE", NULL, haikuTreeSetMoveNodeAttrib, IUPAF_NOT_MAPPED | IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
 
   /* Not yet supported on Haiku */
   iupClassRegisterAttribute(ic, "RUBBERBAND", NULL, NULL, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
