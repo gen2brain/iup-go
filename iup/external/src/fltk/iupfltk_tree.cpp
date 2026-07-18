@@ -1260,6 +1260,59 @@ static int fltkTreeSetMarkedNodesAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
+static int fltkTreeIsAncestor(Fl_Tree_Item* item, Fl_Tree_Item* ancestor)
+{
+  for (Fl_Tree_Item* p = item->parent(); p; p = p->parent())
+    if (p == ancestor)
+      return 1;
+  return 0;
+}
+
+static int fltkTreeSetCopyNodeAttrib(Ihandle* ih, int id, const char* value)
+{
+  if (!ih->handle)
+    return 0;
+
+  Fl_Tree_Item* src = fltkTreeGetItemFromId(ih, id);
+  Fl_Tree_Item* dst = (Fl_Tree_Item*)iupTreeGetNodeFromString(ih, value);
+  if (!src || !dst || src == dst || fltkTreeIsAncestor(dst, src))
+    return 0;
+
+  iupdrvTreeDragDropCopyNode(ih, ih, (InodeHandle*)src, (InodeHandle*)dst);
+  return 0;
+}
+
+static int fltkTreeSetMoveNodeAttrib(Ihandle* ih, int id, const char* value)
+{
+  if (!ih->handle)
+    return 0;
+
+  Fl_Tree_Item* src = fltkTreeGetItemFromId(ih, id);
+  Fl_Tree_Item* dst = (Fl_Tree_Item*)iupTreeGetNodeFromString(ih, value);
+  if (!src || !dst || src == dst || fltkTreeIsAncestor(dst, src))
+    return 0;
+
+  int id_src = id;
+  int count = 1 + iupdrvTreeTotalChildCount(ih, (InodeHandle*)src);
+  int id_dst = iupTreeFindNodeId(ih, (InodeHandle*)dst);
+  int id_new = id_dst + 1;
+
+  if (fltkTreeGetNodeKind(dst) == ITREE_BRANCH && dst->is_open())
+    src->move_into(dst, 0);
+  else
+  {
+    if (fltkTreeGetNodeKind(dst) == ITREE_BRANCH)
+      id_new += iupdrvTreeTotalChildCount(ih, (InodeHandle*)dst);
+    src->move_below(dst);
+  }
+
+  iupTreeCopyMoveCache(ih, id_src, id_new, count, 0);
+  fltkTreeRebuildEntireCache(ih);
+
+  ((IupFltkTree*)ih->handle)->redraw();
+  return 0;
+}
+
 static int fltkTreeSetDelNodeAttrib(Ihandle* ih, int id, const char* value)
 {
   if (!ih->handle)
@@ -1835,8 +1888,8 @@ extern "C" IUP_SDK_API void iupdrvTreeInitClass(Iclass* ic)
   /* IupTree Attributes - ACTION */
   iupClassRegisterAttribute(ic, "ADDROOT", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "DELNODE", NULL, fltkTreeSetDelNodeAttrib, IUPAF_NOT_MAPPED | IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttributeId(ic, "COPYNODE", NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttributeId(ic, "MOVENODE", NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "COPYNODE", NULL, fltkTreeSetCopyNodeAttrib, IUPAF_NOT_MAPPED | IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "MOVENODE", NULL, fltkTreeSetMoveNodeAttrib, IUPAF_NOT_MAPPED | IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "RUBBERBAND", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
 }
