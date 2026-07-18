@@ -366,9 +366,10 @@ static char* winuiTreeGetDepthAttrib(Ihandle* ih, int id)
   if (!node)
     return NULL;
 
+  /* RootNodes() are children of an implicit hidden root (its Parent() is null); do not count it */
   int depth = 0;
   TreeViewNode parent = node.Parent();
-  while (parent)
+  while (parent && parent.Parent())
   {
     depth++;
     parent = parent.Parent();
