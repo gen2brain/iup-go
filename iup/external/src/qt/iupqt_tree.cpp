@@ -17,6 +17,8 @@
 #include <QAbstractItemView>
 #include <QApplication>
 #include <QStyle>
+#include <QProxyStyle>
+#include <QStyleOption>
 #include <QStyledItemDelegate>
 #include <QLineEdit>
 
@@ -39,6 +41,30 @@ extern "C" {
 
 /* Forward declaration */
 static int qtTreeFindNodeId(Ihandle* ih, QTreeWidgetItem* item);
+
+/* HIDELINES/HIDEBUTTONS via the branch indicator state. */
+class IupQtTreeBranchStyle : public QProxyStyle
+{
+public:
+  bool hide_lines;
+  bool hide_buttons;
+  IupQtTreeBranchStyle(bool hl, bool hb) : hide_lines(hl), hide_buttons(hb) {}
+
+  void drawPrimitive(PrimitiveElement pe, const QStyleOption* opt, QPainter* p, const QWidget* w) const override
+  {
+    if (pe == PE_IndicatorBranch)
+    {
+      QStyleOption o(*opt);
+      if (hide_lines)
+        o.state &= ~(State_Item | State_Sibling);
+      if (hide_buttons)
+        o.state &= ~(State_Children | State_Open);
+      QProxyStyle::drawPrimitive(pe, &o, p, w);
+      return;
+    }
+    QProxyStyle::drawPrimitive(pe, opt, p, w);
+  }
+};
 
 /****************************************************************************
  * Custom Item Delegate for Rename Support
@@ -1111,6 +1137,19 @@ static int qtTreeSetTitleBgColorAttrib(Ihandle* ih, int id, const char* value)
   return 1;
 }
 
+/* Expanded branch icon: per-node IMAGEEXPANDED if set, else the global IMAGEBRANCHEXPANDED */
+static void qtTreeUpdateExpandImage(Ihandle* ih, QTreeWidgetItem* item)
+{
+  QPixmap* pixmap = nullptr;
+  QString expanded_img = item->data(0, Qt::UserRole + 2).toString();
+  if (!expanded_img.isEmpty())
+    pixmap = (QPixmap*)iupImageGetImage(expanded_img.toUtf8().constData(), ih, 0, nullptr);
+  if (!pixmap)
+    pixmap = (QPixmap*)ih->data->def_image_expanded;
+  if (pixmap)
+    item->setIcon(0, QIcon(*pixmap));
+}
+
 static int qtTreeSetStateAttrib(Ihandle* ih, int id, const char* value)
 {
   QTreeWidgetItem* item = qtTreeFindNode(ih, id);
@@ -1122,14 +1161,10 @@ static int qtTreeSetStateAttrib(Ihandle* ih, int id, const char* value)
   else
     item->setExpanded(false);
 
-  /* Update image based on expanded state */
-  QString expanded_img = item->data(0, Qt::UserRole + 2).toString();
-  if (!expanded_img.isEmpty() && item->isExpanded())
-  {
-    QPixmap* pixmap = (QPixmap*)iupImageGetImage(expanded_img.toUtf8().constData(), ih, 0, nullptr);
-    if (pixmap)
-      item->setIcon(0, QIcon(*pixmap));
-  }
+  if (item->isExpanded())
+    qtTreeUpdateExpandImage(ih, item);
+  else if (ih->data->def_image_collapsed)
+    item->setIcon(0, QIcon(*(QPixmap*)ih->data->def_image_collapsed));
 
   return 1;
 }
@@ -1952,14 +1987,7 @@ static void qtTreeItemExpanded(Ihandle* ih, QTreeWidgetItem* item)
 {
   int id = qtTreeFindNodeId(ih, item);
 
-  /* Update image to expanded version if available */
-  QString expanded_img = item->data(0, Qt::UserRole + 2).toString();
-  if (!expanded_img.isEmpty())
-  {
-    QPixmap* pixmap = (QPixmap*)iupImageGetImage(expanded_img.toUtf8().constData(), ih, 0, nullptr);
-    if (pixmap)
-      item->setIcon(0, QIcon(*pixmap));
-  }
+  qtTreeUpdateExpandImage(ih, item);
 
   IFni cb = (IFni)IupGetCallback(ih, "BRANCHOPEN_CB");
   if (cb)
@@ -2059,6 +2087,17 @@ static int qtTreeMapMethod(Ihandle* ih)
 
   tree->setUniformRowHeights(false);
   tree->setAnimated(true);
+
+  {
+    bool hl = iupAttribGetBoolean(ih, "HIDELINES");
+    bool hb = iupAttribGetBoolean(ih, "HIDEBUTTONS");
+    if (hl || hb)
+    {
+      IupQtTreeBranchStyle* branch_style = new IupQtTreeBranchStyle(hl, hb);
+      branch_style->setParent(tree);
+      tree->setStyle(branch_style);
+    }
+  }
 
   /* Enable editing if show_rename */
   if (ih->data->show_rename)

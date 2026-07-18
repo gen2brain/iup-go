@@ -1014,6 +1014,8 @@ iupgtk4TreeSetupCb(GtkListItemFactory *factory, GtkListItem *list_item, gpointer
   /* Create widget hierarchy */
 
   widgets->expander = gtk_tree_expander_new();
+  if (iupAttribGetBoolean(ih, "HIDEBUTTONS"))
+    gtk_tree_expander_set_hide_expander(GTK_TREE_EXPANDER(widgets->expander), TRUE);
   widgets->box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 4);
   widgets->image = gtk_image_new();
 
@@ -3354,4 +3356,5 @@ IUP_SDK_API void iupdrvTreeInitClass(Iclass *ic)
 
   /* Not Supported in new implementation */
   iupClassRegisterAttribute(ic, "SCROLLVISIBLE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "HIDELINES", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
 }

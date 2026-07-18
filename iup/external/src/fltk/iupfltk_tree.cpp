@@ -755,6 +755,11 @@ static int fltkTreeSetTitleAttrib(Ihandle* ih, int id, const char* value)
       if (ih->data->add_expanded)
         item->open();
 
+      if (item->is_open() && ih->data->def_image_expanded)
+        item->usericon((Fl_Image*)ih->data->def_image_expanded);
+      else if (ih->data->def_image_collapsed)
+        item->usericon((Fl_Image*)ih->data->def_image_collapsed);
+
       tree->mark_start_node = item;
       tree->set_item_focus(item);
     }
@@ -1764,7 +1769,9 @@ static int fltkTreeMapMethod(Ihandle* ih)
   ih->handle = (InativeHandle*)tree;
 
   tree->showroot(0);
-  tree->connectorstyle(FL_TREE_CONNECTOR_DOTTED);
+  tree->connectorstyle(iupAttribGetBoolean(ih, "HIDELINES") ? FL_TREE_CONNECTOR_NONE : FL_TREE_CONNECTOR_DOTTED);
+  if (iupAttribGetBoolean(ih, "HIDEBUTTONS"))
+    tree->showcollapse(0);
   tree->selectmode(FL_TREE_SELECT_SINGLE);
   tree->item_reselect_mode(FL_TREE_SELECTABLE_ALWAYS);
   tree->when(FL_WHEN_CHANGED);
