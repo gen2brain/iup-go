@@ -40,7 +40,12 @@ static int gtkLabelSetBgColorAttrib(Ihandle* ih, const char* value)
 
   /* Set background on the eventbox wrapper */
   if (eventbox)
+  {
+#if GTK_CHECK_VERSION(2, 2, 0) && !GTK_CHECK_VERSION(3, 0, 0)
+    gtk_event_box_set_visible_window((GtkEventBox*)eventbox, TRUE);
+#endif
     iupgtkSetBgColor(eventbox, r, g, b);
+  }
 
   /* Also set on the inner label widget */
   if (ih->handle)
@@ -356,6 +361,11 @@ static int gtkLabelMapMethod(Ihandle* ih)
     GtkWidget *box = gtk_event_box_new();
     gtk_container_add((GtkContainer*)box, ih->handle);
     iupAttribSet(ih, "_IUP_EXTRAPARENT", (char*)box);
+
+#if GTK_CHECK_VERSION(2, 2, 0) && !GTK_CHECK_VERSION(3, 0, 0)
+    if (!iupAttribGet(ih, "BGCOLOR"))
+      gtk_event_box_set_visible_window((GtkEventBox*)box, FALSE);
+#endif
 
     gtk_widget_add_events(box,
       GDK_POINTER_MOTION_MASK| GDK_POINTER_MOTION_HINT_MASK|
