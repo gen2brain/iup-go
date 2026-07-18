@@ -14,18 +14,14 @@ Default: the global attribute TXTBGCOLOR.
 Once each node is created it will not change its color when FGCOLOR is changed.
 Default: the global attribute TXTFGCOLOR.
 
-**HIDEBUTTONS** (creation-only): hide the expand and collapse buttons.
-In GTK, branches will be only expanded programmatically.
-
-**HIDELINES** (creation-only): hide the lines that connect the nodes in the hierarchy.
-
 **HLCOLOR** (non-inheritable): the background color of the selected node.
 Default: TXTHLCOLOR global attribute.
 
 **INDENTATION**: sets the indentation level in pixels.
 The visual effect of changing the indentation is highly system-dependent.
 In GTK it acts as an additional indent value, and the lines do not follow the extra indent.
-In Windows is limited to a minimum of 5 pixels.
+In Win32 it is limited to a minimum of 5 pixels.
+Not supported in EFL.
 
 **INFOTIP** [Windows Only]: the TIP is shown every time a node is highlighted.
 This is the default behavior for TIPs in native tree controls in Windows, if set to No then it will use the regular TIP behavior.
@@ -44,6 +40,7 @@ Can be: YES (both), VERTICAL, HORIZONTAL, NO.
 
 **SPACING**: vertical internal padding for each node.
 Notice that the distance between each node will be actually 2x the spacing.
+Not supported in EFL.
 
 **CSPACING**: same as SPACING but using the units of the vertical part of the **SIZE** attribute.
 It will actually set the SPACING attribute.
@@ -61,8 +58,10 @@ If any parent node is collapsed then they are automatically expanded.
 
 **HIDEBUTTONS** (creation-only): hide the expand and collapse buttons.
 In GTK, branches will be only expanded programmatically.
+Not supported in EFL, WinUI and WebAssembly.
 
 **HIDELINES** (creation-only): hide the lines that connect the nodes in the hierarchy.
+Supported in GTK, Motif, Win32, Qt and FLTK.
 
 ### Nodes  (non-inheritable)
 
