@@ -933,6 +933,50 @@ static int androidTreeSetBgColorAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
+static int androidTreeSetIndentationAttrib(Ihandle* ih, const char* value)
+{
+  int indent;
+  if (!iupStrToInt(value, &indent)) return 1;
+  if (!ih->handle) return 1;
+
+  JNIEnv* env = iupAndroid_GetEnvThreadSafe();
+  jclass cls = androidTreeFindClass(env);
+  jmethodID m = (*env)->GetStaticMethodID(env, cls, "setIndentation", "(Landroid/view/View;I)V");
+  (*env)->CallStaticVoidMethod(env, cls, m, ih->handle, (jint)indent);
+  iupAndroid_CheckException(env, "IupTreeHelper.setIndentation");
+  (*env)->DeleteLocalRef(env, cls);
+  return 1;
+}
+
+static int androidTreeSetSpacingAttrib(Ihandle* ih, const char* value)
+{
+  iupStrToInt(value, &ih->data->spacing);
+  if (ih->data->spacing < 0) ih->data->spacing = 0;
+  if (!ih->handle) return 0;
+
+  JNIEnv* env = iupAndroid_GetEnvThreadSafe();
+  jclass cls = androidTreeFindClass(env);
+  jmethodID m = (*env)->GetStaticMethodID(env, cls, "setSpacing", "(Landroid/view/View;I)V");
+  (*env)->CallStaticVoidMethod(env, cls, m, ih->handle, (jint)ih->data->spacing);
+  iupAndroid_CheckException(env, "IupTreeHelper.setSpacing");
+  (*env)->DeleteLocalRef(env, cls);
+  return 0;
+}
+
+static int androidTreeSetHideButtonsAttrib(Ihandle* ih, const char* value)
+{
+  int hide = iupStrBoolean(value);
+  if (!ih->handle) return 1;
+
+  JNIEnv* env = iupAndroid_GetEnvThreadSafe();
+  jclass cls = androidTreeFindClass(env);
+  jmethodID m = (*env)->GetStaticMethodID(env, cls, "setHideButtons", "(Landroid/view/View;Z)V");
+  (*env)->CallStaticVoidMethod(env, cls, m, ih->handle, (jboolean)hide);
+  iupAndroid_CheckException(env, "IupTreeHelper.setHideButtons");
+  (*env)->DeleteLocalRef(env, cls);
+  return 1;
+}
+
 IUP_SDK_API void iupdrvTreeAddBorders(Ihandle* ih, int *w, int *h)
 {
   (void)ih;
@@ -946,6 +990,11 @@ IUP_SDK_API void iupdrvTreeInitClass(Iclass* ic)
   ic->UnMap = androidTreeUnMapMethod;
 
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, androidTreeSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTBGCOLOR", IUPAF_DEFAULT);
+
+  iupClassRegisterAttribute(ic, "INDENTATION", NULL, androidTreeSetIndentationAttrib, NULL, NULL, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "SPACING", iupTreeGetSpacingAttrib, androidTreeSetSpacingAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "HIDEBUTTONS", NULL, androidTreeSetHideButtonsAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "HIDELINES", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "ADDEXPANDED", NULL, androidTreeSetAddExpandedAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "EXPANDALL", NULL, androidTreeSetExpandAllAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
