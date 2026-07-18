@@ -7,6 +7,10 @@
 #include <windows.h>
 #include <GL/gl.h>
 
+#ifndef GL_BGRA
+#define GL_BGRA 0x80E1
+#endif
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -452,6 +456,13 @@ static void wGLCanvasUnMapMethod(Ihandle* ih)
   if (gldata->owns_window && gldata->window)
     iupGLDestroyChildWindow(gldata->window);
 
+  {
+    HBRUSH br = (HBRUSH)iupAttribGet(ih, "_IUPWIN_GLBRUSH");
+    HBITMAP bmp = (HBITMAP)iupAttribGet(ih, "_IUPWIN_GLBMP");
+    if (br) { DeleteObject(br); iupAttribSet(ih, "_IUPWIN_GLBRUSH", NULL); }
+    if (bmp) { DeleteObject(bmp); iupAttribSet(ih, "_IUPWIN_GLBMP", NULL); }
+  }
+
   memset(gldata, 0, sizeof(IGlControlData));
 }
 
@@ -565,6 +576,54 @@ IUPGL_API void IupGLMakeCurrent(Ihandle* ih)
   }
 }
 
+static void wGLCompositeReadback(Ihandle* ih)
+{
+  int w = ih->currentwidth, h = ih->currentheight;
+  int oldw = iupAttribGetInt(ih, "_IUPWIN_GLBMPW");
+  int oldh = iupAttribGetInt(ih, "_IUPWIN_GLBMPH");
+  HBITMAP hbmp = (HBITMAP)iupAttribGet(ih, "_IUPWIN_GLBMP");
+  void* bits = iupAttribGet(ih, "_IUPWIN_GLBMPBITS");
+  HBRUSH oldbr, br;
+  int first = 0;
+
+  if (w < 1 || h < 1)
+    return;
+
+  if (!hbmp || oldw != w || oldh != h)
+  {
+    BITMAPINFO bi;
+    memset(&bi, 0, sizeof(bi));
+    bi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+    bi.bmiHeader.biWidth = w;
+    bi.bmiHeader.biHeight = h;    /* bottom-up */
+    bi.bmiHeader.biPlanes = 1;
+    bi.bmiHeader.biBitCount = 32;
+    bi.bmiHeader.biCompression = BI_RGB;
+
+    if (hbmp) DeleteObject(hbmp);
+    hbmp = CreateDIBSection(NULL, &bi, DIB_RGB_COLORS, &bits, NULL, 0);
+    if (!hbmp) return;
+
+    iupAttribSet(ih, "_IUPWIN_GLBMP", (char*)hbmp);
+    iupAttribSet(ih, "_IUPWIN_GLBMPBITS", (char*)bits);
+    iupAttribSetInt(ih, "_IUPWIN_GLBMPW", w);
+    iupAttribSetInt(ih, "_IUPWIN_GLBMPH", h);
+    first = 1;
+  }
+
+  glPixelStorei(GL_PACK_ALIGNMENT, 4);
+  glReadPixels(0, 0, w, h, GL_BGRA, GL_UNSIGNED_BYTE, bits);
+  GdiFlush();
+
+  oldbr = (HBRUSH)iupAttribGet(ih, "_IUPWIN_GLBRUSH");
+  br = CreatePatternBrush(hbmp);
+  iupAttribSet(ih, "_IUPWIN_GLBRUSH", (char*)br);
+  if (oldbr) DeleteObject(oldbr);
+
+  if (first)
+    RedrawWindow(ih->handle, NULL, NULL, RDW_INVALIDATE | RDW_ALLCHILDREN);
+}
+
 IUPGL_API void IupGLSwapBuffers(Ihandle* ih)
 {
   IGlControlData* gldata;
@@ -587,6 +646,9 @@ IUPGL_API void IupGLSwapBuffers(Ihandle* ih)
   cb = IupGetCallback(ih, "SWAPBUFFERS_CB");
   if (cb)
     cb(ih);
+
+  if (IupClassMatch(ih, "glbackgroundbox"))
+    wGLCompositeReadback(ih);
 
   SwapBuffers(gldata->device);
 }

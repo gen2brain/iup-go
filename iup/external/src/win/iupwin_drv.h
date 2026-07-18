@@ -96,6 +96,9 @@ typedef int (*IFwmCommand)(Ihandle* ih, WPARAM wp, LPARAM lp);
 */
 typedef int (*IwinMsgProc)(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT *result);
 
+IUP_DRV_API int iupwinGLBackgroundColor(Ihandle* ih, HDC hdc, LRESULT* result);
+IUP_DRV_API int iupwinDrawGLParentBackground(Ihandle* ih, HDC hdc, RECT* rect);
+
 /* Base IwinMsgProc callback used by native controls. */
 IUP_DRV_API int iupwinBaseMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT *result);
 

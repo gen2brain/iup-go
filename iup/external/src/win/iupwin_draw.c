@@ -346,8 +346,14 @@ IUP_DRV_API void iupwinDraw3StateButton(HWND hWnd, HDC hDC, RECT *rect)
 
 IUP_DRV_API void iupwinDrawParentBackground(Ihandle* ih, HDC hDC, RECT* rect)
 {
-  char* color_str = iupBaseNativeParentGetBgColorAttrib(ih);
-  long color = iupDrawStrToColor(color_str, 0);
+  char* color_str;
+  long color;
+
+  if (iupwinDrawGLParentBackground(ih, hDC, rect))
+    return;
+
+  color_str = iupBaseNativeParentGetBgColorAttrib(ih);
+  color = iupDrawStrToColor(color_str, 0);
   SetDCBrushColor(hDC, RGB(iupDrawRed(color),iupDrawGreen(color),iupDrawBlue(color)));
   FillRect(hDC, rect, (HBRUSH)GetStockObject(DC_BRUSH));
 }
