@@ -25,6 +25,7 @@ extern "C" {
 #include "iup_object.h"
 #include "iup_class.h"
 #include "iup_classbase.h"
+#include "iup_childtree.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_image.h"
@@ -107,6 +108,23 @@ public:
   /* BStringView always bottom-anchors and ignores vertical alignment, so lay out the lines ourselves. */
   void Draw(BRect /*update*/) override
   {
+    bool over_gl = false;
+    if (fIhandle && iupAttribGet(fIhandle, "_IUPHAIKU_GLTRANSPARENT"))
+    {
+      Ihandle* np = iupChildTreeGetNativeParent(fIhandle);
+      BBitmap* bmp = np ? (BBitmap*)iupAttribGet(np, "_IUPHAIKU_GLBITMAP") : NULL;
+      if (bmp)
+      {
+        BRect frame = Frame();
+        BRect bounds = Bounds();
+        BRect src(frame.left, frame.top, frame.left + bounds.Width(), frame.top + bounds.Height());
+        SetDrawingMode(B_OP_COPY);
+        DrawBitmap(bmp, src, bounds);
+        SetDrawingMode(B_OP_OVER);
+        over_gl = true;
+      }
+    }
+
     const char* full = Text();
     if (!full || !*full)
       return;
@@ -119,7 +137,7 @@ public:
       rgb_color dim = { (uint8)((hc.red + bg.red) / 2), (uint8)((hc.green + bg.green) / 2), (uint8)((hc.blue + bg.blue) / 2), 255 };
       SetHighColor(dim);
     }
-    if (LowUIColor() == B_NO_COLOR)
+    if (!over_gl && LowUIColor() == B_NO_COLOR)
       SetLowColor(ViewColor());
 
     font_height fh;
@@ -445,6 +463,16 @@ static int haikuLabelMapMethod(Ihandle* ih)
 
   ih->handle = (InativeHandle*)native;
   iuphaikuAddToParent(ih);
+
+  {
+    Ihandle* native_parent = iupChildTreeGetNativeParent(ih);
+    if (native_parent && IupClassMatch(native_parent, "glbackgroundbox") && !iupAttribGet(ih, "BGCOLOR"))
+    {
+      LooperLockGuard guard(native->Looper());
+      native->SetViewColor(B_TRANSPARENT_COLOR);
+      iupAttribSet(ih, "_IUPHAIKU_GLTRANSPARENT", "1");
+    }
+  }
 
   if (ih->data->type == IUP_LABEL_TEXT)
     iuphaikuUpdateWidgetFont(ih, native);

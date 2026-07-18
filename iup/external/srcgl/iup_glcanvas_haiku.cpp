@@ -7,6 +7,7 @@
 #include <cstddef>
 #include <cstdlib>
 #include <cstring>
+#include <dlfcn.h>
 
 #include <Application.h>
 #include <Handler.h>
@@ -16,6 +17,7 @@
 #include <SupportDefs.h>
 #include <Window.h>
 
+#include <Bitmap.h>
 #include <GL/gl.h>
 #include <GLView.h>
 
@@ -26,10 +28,15 @@ extern "C" {
 #include "iup_object.h"
 #include "iup_class.h"
 #include "iup_classbase.h"
+#include "iup_childtree.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_assert.h"
 }
+
+#ifndef GL_BGRA
+#define GL_BGRA 0x80E1
+#endif
 
 #include "iuphaiku_drv.h"
 
@@ -39,6 +46,8 @@ extern "C" {
 #define IUPHAIKU_GL_RESIZE_MSG  'IGlS'
 
 class IupHaikuGLView;
+
+static void haikuGLInvalidateTransparent(Ihandle* child);
 
 typedef struct _IGlControlData
 {
@@ -77,6 +86,9 @@ public:
       }
     }
     BGLView::Draw(dirty);
+
+    if (fIhandle && iupObjectCheck(fIhandle) && IupClassMatch(fIhandle, "glbackgroundbox"))
+      haikuGLInvalidateTransparent(fIhandle->firstchild);
   }
 
   void FrameResized(float new_w, float new_h) override
@@ -325,6 +337,15 @@ static void haikuGLCanvasUnMapMethod(Ihandle* ih)
     gldata->view = NULL;
   }
 
+  {
+    BBitmap* bmp = (BBitmap*)iupAttribGet(ih, "_IUPHAIKU_GLBITMAP");
+    if (bmp)
+    {
+      delete bmp;
+      iupAttribSet(ih, "_IUPHAIKU_GLBITMAP", NULL);
+    }
+  }
+
   iupdrvBaseUnMapMethod(ih);
 
   iupAttribSet(ih, "CONTEXT", NULL);
@@ -418,6 +439,52 @@ IUPGL_API void IupGLMakeCurrent(Ihandle* ih)
   }
 }
 
+static void haikuGLCompositeReadback(Ihandle* ih)
+{
+  int w = ih->currentwidth, h = ih->currentheight;
+  if (w < 1 || h < 1) return;
+
+  BBitmap* bmp = (BBitmap*)iupAttribGet(ih, "_IUPHAIKU_GLBITMAP");
+  int bw = iupAttribGetInt(ih, "_IUPHAIKU_GLBITMAPW");
+  int bh = iupAttribGetInt(ih, "_IUPHAIKU_GLBITMAPH");
+  if (!bmp || bw != w || bh != h)
+  {
+    if (bmp) delete bmp;
+    bmp = new BBitmap(BRect(0, 0, w - 1, h - 1), B_RGBA32);
+    iupAttribSet(ih, "_IUPHAIKU_GLBITMAP", (char*)bmp);
+    iupAttribSetInt(ih, "_IUPHAIKU_GLBITMAPW", w);
+    iupAttribSetInt(ih, "_IUPHAIKU_GLBITMAPH", h);
+  }
+
+  int32 bpr = bmp->BytesPerRow();
+  uint8* bits = (uint8*)bmp->Bits();
+  uint8* row = (uint8*)malloc((size_t)w * 4);
+  if (!row) return;
+
+  glPixelStorei(GL_PACK_ALIGNMENT, 4);
+  for (int y = 0; y < h; y++)
+  {
+    glReadPixels(0, h - 1 - y, w, 1, GL_BGRA, GL_UNSIGNED_BYTE, row);
+    memcpy(bits + (size_t)y * bpr, row, (size_t)w * 4);
+  }
+  free(row);
+}
+
+static void haikuGLInvalidateTransparent(Ihandle* child)
+{
+  for (Ihandle* c = child; c; c = c->brother)
+  {
+    if (c->handle && iupAttribGet(c, "_IUPHAIKU_GLTRANSPARENT"))
+    {
+      BView* v = (BView*)c->handle;
+      if (v->Window())
+        v->Invalidate();
+    }
+    if (c->firstchild)
+      haikuGLInvalidateTransparent(c->firstchild);
+  }
+}
+
 IUPGL_API void IupGLSwapBuffers(Ihandle* ih)
 {
   iupASSERT(iupObjectCheck(ih));
@@ -431,6 +498,9 @@ IUPGL_API void IupGLSwapBuffers(Ihandle* ih)
 
   Icallback cb = IupGetCallback(ih, "SWAPBUFFERS_CB");
   if (cb) cb(ih);
+
+  if (IupClassMatch(ih, "glbackgroundbox"))
+    haikuGLCompositeReadback(ih);
 
   gldata->view->SwapBuffers(gldata->vsync != 0);
 
@@ -450,6 +520,11 @@ IUPGL_API void IupGLUseFont(Ihandle* ih, int first, int count, int list_base)
 IUPGL_API void IupGLWait(int gl)
 {
   if (gl) glFinish();
+}
+
+IUPGL_API void* IupGLGetProcAddress(const char* name)
+{
+  return dlsym(RTLD_DEFAULT, name);
 }
 
 extern "C" void iupGlCanvasInitClass(Iclass* ic)
