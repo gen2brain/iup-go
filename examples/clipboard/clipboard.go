@@ -9,6 +9,7 @@ import (
 )
 
 var clipboard iup.Ihandle
+var pastedImg iup.Ihandle
 
 func logMsg(msg string) {
 	log := iup.GetHandle("log")
@@ -257,6 +258,65 @@ func main() {
 		return iup.DEFAULT
 	}))
 
+	// Image operations: copy an IupImage to the clipboard, paste it back for display.
+	srcPix := make([]byte, 64*64*3)
+	for y := 0; y < 64; y++ {
+		for x := 0; x < 64; x++ {
+			i := (y*64 + x) * 3
+			srcPix[i] = byte(x * 4)
+			srcPix[i+1] = byte(y * 4)
+			srcPix[i+2] = byte(200 - (x + y))
+		}
+	}
+	iup.SetHandle("srcimg", iup.ImageRGB(64, 64, srcPix))
+	blankPix := make([]byte, 64*64*3)
+	for i := range blankPix {
+		blankPix[i] = 220
+	}
+	iup.SetHandle("blankimg", iup.ImageRGB(64, 64, blankPix))
+	lblSrc := iup.Label("").SetAttribute("IMAGE", "srcimg")
+	lblPasted := iup.Label("").SetAttribute("IMAGE", "blankimg")
+
+	btnCopyImage := iup.Button("Copy Image").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
+		clipboard.SetAttribute("IMAGE", "srcimg")
+		logMsg("Copied image to clipboard")
+		updateStatus()
+		return iup.DEFAULT
+	}))
+
+	btnPasteImage := iup.Button("Paste Image").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
+		if clipboard.GetAttribute("IMAGEAVAILABLE") != "YES" {
+			logMsg("No image available in clipboard")
+			updateStatus()
+			return iup.DEFAULT
+		}
+		img := iup.ImageFromHandle(iup.GetPtr(clipboard, "NATIVEIMAGE"))
+		if img == 0 {
+			logMsg("Clipboard image could not be converted")
+			updateStatus()
+			return iup.DEFAULT
+		}
+		lblPasted.SetAttribute("IMAGE", nil)
+		if pastedImg != 0 {
+			pastedImg.Destroy()
+		}
+		pastedImg = img
+		iup.SetHandle("pastedimg", img)
+		lblPasted.SetAttribute("IMAGE", "pastedimg")
+		iup.Refresh(lblPasted)
+		logMsg("Pasted image from clipboard via NATIVEIMAGE")
+		updateStatus()
+		return iup.DEFAULT
+	}))
+
+	imageFrame := iup.Frame(iup.Vbox(
+		iup.Hbox(
+			iup.Vbox(iup.Label("Source:"), lblSrc),
+			iup.Vbox(iup.Label("Pasted:"), lblPasted),
+		).SetAttribute("GAP", "20"),
+		iup.Hbox(btnCopyImage, btnPasteImage).SetAttribute("GAP", "5"),
+	)).SetAttributes(`TITLE="Image Operations", MARGIN=5x5, GAP=5`)
+
 	// Layout
 	vboxMain := iup.Vbox(
 		iup.Label("IUP Clipboard Demo").SetAttributes(`FONT="Sans, Bold 12"`),
@@ -285,6 +345,8 @@ func main() {
 			).SetAttribute("GAP", "5"),
 		)).SetAttributes(`TITLE="Custom Format Operations", MARGIN=5x5, GAP=5`),
 	)
+
+	vboxMain = iup.Append(vboxMain, imageFrame)
 
 	// Add an HTML section if Qt driver is detected
 	if btnCopyHTML != 0 {
