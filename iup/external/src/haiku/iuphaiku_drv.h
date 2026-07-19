@@ -24,6 +24,7 @@ class BMessage;
 class BMessenger;
 class BCursor;
 class BFont;
+class BBitmap;
 struct rgb_color;
 
 /* IupHaikuApp / IupHaikuWindow MessageReceived 'what' codes. */
@@ -99,6 +100,10 @@ IUP_DRV_API void iuphaikuFireGlobalInputCB(BMessage* msg);
 
 /* `*owned` set true when the BCursor was new'd and the caller must delete. */
 IUP_DRV_API BCursor* iuphaikuGetCursor(Ihandle* ih, const char* name, bool* owned);
+
+/* GLBackgroundBox: mark a child transparent over the GL, and paint its GL slice in Draw. */
+IUP_DRV_API void iuphaikuSetGLBackgroundChild(Ihandle* ih, BView* view);
+IUP_DRV_API bool iuphaikuPaintGLBackgroundSlice(BView* view, Ihandle* ih);
 
 class LooperLockGuard
 {

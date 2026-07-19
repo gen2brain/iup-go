@@ -108,22 +108,7 @@ public:
   /* BStringView always bottom-anchors and ignores vertical alignment, so lay out the lines ourselves. */
   void Draw(BRect /*update*/) override
   {
-    bool over_gl = false;
-    if (fIhandle && iupAttribGet(fIhandle, "_IUPHAIKU_GLTRANSPARENT"))
-    {
-      Ihandle* np = iupChildTreeGetNativeParent(fIhandle);
-      BBitmap* bmp = np ? (BBitmap*)iupAttribGet(np, "_IUPHAIKU_GLBITMAP") : NULL;
-      if (bmp)
-      {
-        BRect frame = Frame();
-        BRect bounds = Bounds();
-        BRect src(frame.left, frame.top, frame.left + bounds.Width(), frame.top + bounds.Height());
-        SetDrawingMode(B_OP_COPY);
-        DrawBitmap(bmp, src, bounds);
-        SetDrawingMode(B_OP_OVER);
-        over_gl = true;
-      }
-    }
+    bool over_gl = iuphaikuPaintGLBackgroundSlice(this, fIhandle);
 
     const char* full = Text();
     if (!full || !*full)
@@ -207,6 +192,7 @@ public:
 
   void Draw(BRect /*update*/) override
   {
+    iuphaikuPaintGLBackgroundSlice(this, fIhandle);
     if (fBitmap)
     {
       SetDrawingMode(B_OP_ALPHA);
@@ -233,15 +219,16 @@ private:
 class IupHaikuLabelSeparator : public BView
 {
 public:
-  explicit IupHaikuLabelSeparator(bool horizontal)
+  IupHaikuLabelSeparator(Ihandle* ih, bool horizontal)
     : BView(BRect(0, 0, 0, 0), "iup_label_sep", B_FOLLOW_NONE, B_WILL_DRAW),
-      fHorizontal(horizontal)
+      fIhandle(ih), fHorizontal(horizontal)
   {
     SetViewUIColor(B_PANEL_BACKGROUND_COLOR);
   }
 
   void Draw(BRect /*update*/) override
   {
+    iuphaikuPaintGLBackgroundSlice(this, fIhandle);
     BRect b = Bounds();
     rgb_color base = ui_color(B_PANEL_BACKGROUND_COLOR);
     rgb_color dark = tint_color(base, B_DARKEN_2_TINT);
@@ -266,6 +253,7 @@ public:
   }
 
 private:
+  Ihandle* fIhandle;
   bool fHorizontal;
 };
 
@@ -432,11 +420,11 @@ static int haikuLabelMapMethod(Ihandle* ih)
 
   if (ih->data->type == IUP_LABEL_SEP_HORIZ)
   {
-    native = new IupHaikuLabelSeparator(true);
+    native = new IupHaikuLabelSeparator(ih, true);
   }
   else if (ih->data->type == IUP_LABEL_SEP_VERT)
   {
-    native = new IupHaikuLabelSeparator(false);
+    native = new IupHaikuLabelSeparator(ih, false);
   }
   else if (ih->data->type == IUP_LABEL_IMAGE)
   {
@@ -464,15 +452,7 @@ static int haikuLabelMapMethod(Ihandle* ih)
   ih->handle = (InativeHandle*)native;
   iuphaikuAddToParent(ih);
 
-  {
-    Ihandle* native_parent = iupChildTreeGetNativeParent(ih);
-    if (native_parent && IupClassMatch(native_parent, "glbackgroundbox") && !iupAttribGet(ih, "BGCOLOR"))
-    {
-      LooperLockGuard guard(native->Looper());
-      native->SetViewColor(B_TRANSPARENT_COLOR);
-      iupAttribSet(ih, "_IUPHAIKU_GLTRANSPARENT", "1");
-    }
-  }
+  iuphaikuSetGLBackgroundChild(ih, native);
 
   if (ih->data->type == IUP_LABEL_TEXT)
     iuphaikuUpdateWidgetFont(ih, native);

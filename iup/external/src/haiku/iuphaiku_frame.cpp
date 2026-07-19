@@ -28,6 +28,33 @@ extern "C" {
 
 static const uint32 kFrameFlags = B_WILL_DRAW | B_FRAME_EVENTS | B_NAVIGABLE_JUMP;
 
+class IupHaikuFrameBox : public BBox
+{
+public:
+  IupHaikuFrameBox(Ihandle* ih, BRect r, border_style bs)
+    : BBox(r, "iup_frame", B_FOLLOW_NONE, kFrameFlags, bs), fIhandle(ih) {}
+  void Draw(BRect update) override
+  {
+    iuphaikuPaintGLBackgroundSlice(this, fIhandle);
+    BBox::Draw(update);
+  }
+private:
+  Ihandle* fIhandle;
+};
+
+class IupHaikuFrameInner : public BView
+{
+public:
+  IupHaikuFrameInner(Ihandle* ih, BRect r)
+    : BView(r, "iup_frame_inner", B_FOLLOW_ALL_SIDES, B_WILL_DRAW), fIhandle(ih) {}
+  void Draw(BRect /*update*/) override
+  {
+    iuphaikuPaintGLBackgroundSlice(this, fIhandle);
+  }
+private:
+  Ihandle* fIhandle;
+};
+
 static border_style haikuFrameResolveBorder(Ihandle* ih)
 {
   /* IUP convention: BORDER=NO removes the border; default is bordered. */
@@ -50,12 +77,12 @@ static int haikuFrameMapMethod(Ihandle* ih)
   else if (iupAttribGet(ih, "BGCOLOR"))
     iupAttribSet(ih, "_IUPFRAME_HAS_BGCOLOR", "1");
 
-  BBox* box = new BBox(BRect(0, 0, 99, 99), "iup_frame", B_FOLLOW_NONE,
-                       kFrameFlags, haikuFrameResolveBorder(ih));
+  IupHaikuFrameBox* box = new IupHaikuFrameBox(ih, BRect(0, 0, 99, 99),
+                                               haikuFrameResolveBorder(ih));
   if (title)
     box->SetLabel(title);
 
-  BView* inner = new BView(box->InnerFrame(), "iup_frame_inner", B_FOLLOW_ALL_SIDES, B_WILL_DRAW);
+  IupHaikuFrameInner* inner = new IupHaikuFrameInner(ih, box->InnerFrame());
   inner->SetViewUIColor(B_PANEL_BACKGROUND_COLOR);
   box->AddChild(inner);
 
@@ -64,6 +91,13 @@ static int haikuFrameMapMethod(Ihandle* ih)
 
   iuphaikuAddToParent(ih);
   iuphaikuUpdateWidgetFont(ih, box);
+
+  iuphaikuSetGLBackgroundChild(ih, box);
+  if (iupAttribGet(ih, "_IUPHAIKU_GLTRANSPARENT"))
+  {
+    LooperLockGuard guard(inner->Looper());
+    inner->SetViewColor(B_TRANSPARENT_COLOR);
+  }
 
   return IUP_NOERROR;
 }
