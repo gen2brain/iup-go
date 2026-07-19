@@ -45,4 +45,4 @@ In all cases, the function returns a new image handle and associates the name wi
 
 ### See Also
 
-[IupImage](../elem/iup_image.md), [IupImageSave](iup_imagesave.md), [IupImageSaveToBuffer](iup_imagesavetobuffer.md)
+[IupImage](../elem/iup_image.md), [IupImageFromHandle](iup_imagefromhandle.md), [IupImageSave](iup_imagesave.md), [IupImageSaveToBuffer](iup_imagesavetobuffer.md)

@@ -208,6 +208,7 @@ API reference for IUP (Portable User Interface).
 | [IupImage](elem/iup_image.md)                         | In-memory bitmap image (also IupImageRGB and IupImageRGBA) |
 | [IupDraw](func/iup_draw.md)                           | Cross-driver immediate-mode drawing API on IupCanvas       |
 | [IupImageGetHandle](func/iup_imagegethandle.md)       | Decodes raw image data into an IupImage                    |
+| [IupImageFromHandle](func/iup_imagefromhandle.md)     | Creates an IupImage from a native image handle             |
 | [IupImageSave](func/iup_imagesave.md)                 | Writes an IupImage to a file                               |
 | [IupImageSaveToBuffer](func/iup_imagesavetobuffer.md) | Writes an IupImage to memory                               |
 
