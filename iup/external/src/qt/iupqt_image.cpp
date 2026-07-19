@@ -40,16 +40,21 @@ extern "C" IUP_SDK_API void iupdrvImageGetData(void* handle, unsigned char* imgd
   QImage image = pixmap->toImage();
   int w = image.width();
   int h = image.height();
-  int bpp = image.depth();
 
-  if (bpp == 8)
+  /* Match the bpp iupdrvImageGetInfo reports, so the caller's buffer fits */
+  if (!image.hasAlphaChannel() && image.depth() <= 8)
   {
-    memset(imgdata, 0, (size_t)w * h * 3);
+    for (int y = 0; y < h; y++)
+    {
+      unsigned char* line_data = imgdata + y * w;
+      for (int x = 0; x < w; x++)
+        line_data[x] = (unsigned char)image.pixelIndex(x, y);
+    }
     return;
   }
 
   /* Convert QImage to IUP format (packed, top-bottom) */
-  int channels = (bpp == 32) ? 4 : 3;
+  int channels = image.hasAlphaChannel() ? 4 : 3;
   int line_size = w * channels;
   for (int y = 0; y < h; y++)
   {
