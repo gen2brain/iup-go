@@ -172,22 +172,7 @@ public:
   /* Custom draw needed for explicit textColor (DrawLabel ignores our HighColor) and for box-on-right */
   void Draw(BRect updateRect) override
   {
-    bool over_gl = false;
-    if (fIhandle && iupAttribGet(fIhandle, "_IUPHAIKU_GLTRANSPARENT"))
-    {
-      Ihandle* np = iupChildTreeGetNativeParent(fIhandle);
-      BBitmap* bmp = np ? (BBitmap*)iupAttribGet(np, "_IUPHAIKU_GLBITMAP") : NULL;
-      if (bmp)
-      {
-        BRect frame = this->Frame();
-        BRect bounds = this->Bounds();
-        BRect srcR(frame.left, frame.top, frame.left + bounds.Width(), frame.top + bounds.Height());
-        this->SetDrawingMode(B_OP_COPY);
-        this->DrawBitmap(bmp, srcR, bounds);
-        this->SetDrawingMode(B_OP_OVER);
-        over_gl = true;
-      }
-    }
+    bool over_gl = iuphaikuPaintGLBackgroundSlice(this, fIhandle);
 
     bool rightButton = false;
     if constexpr (std::is_same_v<Base, BCheckBox>)
@@ -696,15 +681,7 @@ static int haikuToggleMapMethod(Ihandle* ih)
   ih->handle = (InativeHandle*)native;
   iuphaikuAddToParent(ih);
 
-  {
-    Ihandle* native_parent = iupChildTreeGetNativeParent(ih);
-    if (native_parent && IupClassMatch(native_parent, "glbackgroundbox") && !iupAttribGet(ih, "BGCOLOR"))
-    {
-      LooperLockGuard guard(native->Looper());
-      native->SetViewColor(B_TRANSPARENT_COLOR);
-      iupAttribSet(ih, "_IUPHAIKU_GLTRANSPARENT", "1");
-    }
-  }
+  iuphaikuSetGLBackgroundChild(ih, native);
 
   iuphaikuUpdateWidgetFont(ih, native);
 

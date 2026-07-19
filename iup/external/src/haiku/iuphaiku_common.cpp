@@ -4,6 +4,7 @@
  * See Copyright Notice in "iup.h"
  */
 
+#include <Bitmap.h>
 #include <Control.h>
 #include <ControlLook.h>
 #include <Cursor.h>
@@ -580,6 +581,46 @@ extern "C" IUP_SDK_API void iupdrvBaseUnMapMethod(Ihandle* ih)
 
   delete view;
   ih->handle = NULL;
+}
+
+IUP_DRV_API void iuphaikuSetGLBackgroundChild(Ihandle* ih, BView* view)
+{
+  if (!view || iupAttribGet(ih, "BGCOLOR"))
+    return;
+
+  Ihandle* native_parent = iupChildTreeGetNativeParent(ih);
+  if (native_parent && (IupClassMatch(native_parent, "glbackgroundbox") || iupAttribGet(native_parent, "_IUPHAIKU_GLTRANSPARENT")))
+  {
+    LooperLockGuard guard(view->Looper());
+    view->SetViewColor(B_TRANSPARENT_COLOR);
+    iupAttribSet(ih, "_IUPHAIKU_GLTRANSPARENT", "1");
+  }
+}
+
+IUP_DRV_API bool iuphaikuPaintGLBackgroundSlice(BView* view, Ihandle* ih)
+{
+  if (!ih || !view || !iupAttribGet(ih, "_IUPHAIKU_GLTRANSPARENT"))
+    return false;
+
+  Ihandle* box = iupChildTreeGetNativeParent(ih);
+  while (box && !IupClassMatch(box, "glbackgroundbox"))
+    box = iupChildTreeGetNativeParent(box);
+  if (!box || !box->handle)
+    return false;
+
+  BBitmap* bmp = (BBitmap*)iupAttribGet(box, "_IUPHAIKU_GLBITMAP");
+  if (!bmp)
+    return false;
+
+  BView* boxview = (BView*)box->handle;
+  BRect bounds = view->Bounds();
+  BRect src(boxview->ConvertFromScreen(view->ConvertToScreen(bounds.LeftTop())),
+            boxview->ConvertFromScreen(view->ConvertToScreen(bounds.RightBottom())));
+
+  view->SetDrawingMode(B_OP_COPY);
+  view->DrawBitmap(bmp, src, bounds);
+  view->SetDrawingMode(B_OP_OVER);
+  return true;
 }
 
 extern "C" IUP_SDK_API int iupdrvBaseSetBgColorAttrib(Ihandle* ih, const char* value)
