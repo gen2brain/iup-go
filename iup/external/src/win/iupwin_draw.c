@@ -349,7 +349,7 @@ IUP_DRV_API void iupwinDrawParentBackground(Ihandle* ih, HDC hDC, RECT* rect)
   char* color_str;
   long color;
 
-  if (iupwinDrawGLParentBackground(ih, hDC, rect))
+  if (iupwinDrawParentBgBitmap(ih, hDC, rect))
     return;
 
   color_str = iupBaseNativeParentGetBgColorAttrib(ih);

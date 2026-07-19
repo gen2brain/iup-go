@@ -454,6 +454,9 @@ static int winCanvasMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT
         iupAttribSet(ih, "HDC_WMPAINT", NULL);
         EndPaint(ih->handle, &ps);
 
+        if (iupAttribGet(ih, "BACKIMAGE") && !iupAttribGet(ih, "_IUP_GLCONTROLDATA"))
+          iupwinDrawBackImageUpdate(ih);
+
         *result = 0;
         return 1;
       }
