@@ -47,7 +47,7 @@ static int winDibNumColors(BITMAPINFOHEADER* bmih)
 IUP_SDK_API void iupdrvImageGetData(void* handle, unsigned char* imgdata)
 {
   int x, y, w, h, bpp;
-  size_t bmp_line_size, bits_size, planesize;
+  size_t bmp_line_size, bits_size, dst_line_size;
   BYTE* bits;
   HANDLE hHandle = (HANDLE)handle;
   void* dib = GlobalLock(hHandle);
@@ -59,7 +59,7 @@ IUP_SDK_API void iupdrvImageGetData(void* handle, unsigned char* imgdata)
   bpp = iupImageNormBpp(bmih->biBitCount);
   bmp_line_size = (((size_t)w * bmih->biBitCount + 31) / 32) * 4;    /* DWORD aligned, 4 bytes boundary in a N bpp image */
   bits_size = bmp_line_size*h;
-  planesize = (size_t)w*h;
+  dst_line_size = (size_t)w * (bpp / 8);   /* imgdata is packed: bpp/8 bytes per pixel (1 indexed, 3 rgb, 4 rgba) */
 
   bits = ((BYTE*)dib) + sizeof(BITMAPINFOHEADER) + winDibNumColors(bmih)*sizeof(RGBQUAD);
 
@@ -73,7 +73,7 @@ IUP_SDK_API void iupdrvImageGetData(void* handle, unsigned char* imgdata)
   {
     for (y = 0; y < h; y++)
     {
-      line_data = imgdata + (h - 1 - y) * planesize;  /* imgdata is top-bottom */
+      line_data = imgdata + (h - 1 - y) * dst_line_size;  /* imgdata is top-bottom */
 
       for (x = 0; x < w; x++)
       {
@@ -145,7 +145,7 @@ IUP_SDK_API void iupdrvImageGetData(void* handle, unsigned char* imgdata)
 
     for (y = 0; y < h; y++)
     {
-      line_data = imgdata + (h - 1 - y) * planesize;  /* imgdata is top-bottom */
+      line_data = imgdata + (h - 1 - y) * dst_line_size;  /* imgdata is top-bottom */
 
       for (x = 0; x < w; x++)
       {
