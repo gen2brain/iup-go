@@ -285,7 +285,15 @@ static int gtkFrameMapMethod(Ihandle* ih)
 
   /* the container that will receive the child element. */
   /* use a window to be a full native container */
-  inner_parent = iupgtkNativeContainerNew(1);
+  {
+    int has_window = 1;
+#if !GTK_CHECK_VERSION(3, 0, 0)
+    Ihandle* p;
+    for (p = ih->parent; p; p = p->parent)
+      if (IupClassMatch(p, "glbackgroundbox")) { has_window = 0; break; }  /* windowless composes over the GL */
+#endif
+    inner_parent = iupgtkNativeContainerNew(has_window);
+  }
 
   gtk_container_add((GtkContainer*)ih->handle, inner_parent);
   gtk_widget_show(inner_parent);
