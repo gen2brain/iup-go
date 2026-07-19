@@ -185,7 +185,7 @@ static NSOutlineView* cocoaTreeGetOutlineView(Ihandle* ih)
 - (void)drawRect:(NSRect)dirtyRect
 {
   [super drawRect:dirtyRect];
-  if (self.iupFocused)
+  if (self.iupFocused && self.ih && self.ih->data->mark_mode == ITREE_MARK_MULTIPLE)
   {
     NSRect r = NSInsetRect([self bounds], 1.5, 1.5);
     NSBezierPath* path = [NSBezierPath bezierPathWithRect:r];
