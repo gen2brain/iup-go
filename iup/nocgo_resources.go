@@ -76,6 +76,11 @@ func ImageGetHandle(name string) Ihandle {
 	return mkih(iupImageGetHandle(name))
 }
 
+// ImageFromHandle creates an IUP image from a native image handle (e.g. the IupClipboard NATIVEIMAGE).
+func ImageFromHandle(handle uintptr) Ihandle {
+	return mkih(iupImageFromHandle(handle))
+}
+
 func Menu(children ...Ihandle) Ihandle {
 	return mkih(iupMenuv(childrenArray(children)))
 }

@@ -6,7 +6,6 @@ import (
 	"image"
 	"image/draw"
 	"unsafe"
-
 )
 
 /*
@@ -106,6 +105,11 @@ func ImageGetHandle(name string) Ihandle {
 
 	h := mkih(C.IupImageGetHandle(cName))
 	return h
+}
+
+// ImageFromHandle creates an IUP image from a native image handle (e.g. the IupClipboard NATIVEIMAGE).
+func ImageFromHandle(handle uintptr) Ihandle {
+	return mkih(C.IupImageFromHandle(unsafe.Pointer(handle)))
 }
 
 // ImageSave saves an IUP image to a file in the specified format.

@@ -177,23 +177,24 @@ var (
 	iupUnmap           func(ih uintptr)
 	iupConvertXYToPos  func(ih uintptr, x, y int32) int32
 
-	iupImage          func(w, h int32, pix []byte) uintptr
-	iupImageRGB       func(w, h int32, pix []byte) uintptr
-	iupImageRGBA      func(w, h int32, pix []byte) uintptr
-	iupImageGetHandle func(name string) uintptr
-	iupMenuv          func(children []uintptr) uintptr
-	iupMenuItem       func(title *byte) uintptr
-	iupMenuSeparator  func() uintptr
-	iupSubmenu        func(title *byte, child uintptr) uintptr
-	iupNextField      func(ih uintptr) uintptr
-	iupPreviousField  func(ih uintptr) uintptr
-	iupGetFocus       func() uintptr
-	iupSetFocus       func(ih uintptr) uintptr
-	iupGetName        func(ih uintptr) string
-	iupClipboard      func() uintptr
-	iupThread         func() uintptr
-	iupTray           func() uintptr
-	iupGetFile        func(buf *byte) int32
+	iupImage           func(w, h int32, pix []byte) uintptr
+	iupImageRGB        func(w, h int32, pix []byte) uintptr
+	iupImageRGBA       func(w, h int32, pix []byte) uintptr
+	iupImageGetHandle  func(name string) uintptr
+	iupImageFromHandle func(handle uintptr) uintptr
+	iupMenuv           func(children []uintptr) uintptr
+	iupMenuItem        func(title *byte) uintptr
+	iupMenuSeparator   func() uintptr
+	iupSubmenu         func(title *byte, child uintptr) uintptr
+	iupNextField       func(ih uintptr) uintptr
+	iupPreviousField   func(ih uintptr) uintptr
+	iupGetFocus        func() uintptr
+	iupSetFocus        func(ih uintptr) uintptr
+	iupGetName         func(ih uintptr) string
+	iupClipboard       func() uintptr
+	iupThread          func() uintptr
+	iupTray            func() uintptr
+	iupGetFile         func(buf *byte) int32
 
 	iupConfig                       func() uintptr
 	iupConfigLoad                   func(ih uintptr) int32
@@ -486,6 +487,7 @@ func ensureBase() {
 		reg(&iupImageRGB, "IupImageRGB")
 		reg(&iupImageRGBA, "IupImageRGBA")
 		reg(&iupImageGetHandle, "IupImageGetHandle")
+		reg(&iupImageFromHandle, "IupImageFromHandle")
 		reg(&iupMenuv, "IupMenuv")
 		reg(&iupMenuItem, "IupMenuItem")
 		reg(&iupMenuSeparator, "IupMenuSeparator")
