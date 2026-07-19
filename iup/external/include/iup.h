@@ -276,6 +276,7 @@ IUP_API Ihandle*  IupPopover(Ihandle* child);
 IUP_API Ihandle*  IupImage(int width, int height, const unsigned char* pixels);
 IUP_API Ihandle*  IupImageRGB(int width, int height, const unsigned char* pixels);
 IUP_API Ihandle*  IupImageRGBA(int width, int height, const unsigned char* pixels);
+IUP_API Ihandle*  IupImageFromHandle(void* handle);
 /** @} */
 
 /** \defgroup menus Menus
