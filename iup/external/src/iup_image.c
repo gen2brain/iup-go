@@ -801,6 +801,13 @@ static Ihandle* iImageGetHandleFromImage(void* handle)
   return NULL;
 }
 
+IUP_API Ihandle* IupImageFromHandle(void* handle)
+{
+  if (!handle)
+    return NULL;
+  return iImageGetHandleFromImage(handle);
+}
+
 IUP_API Ihandle* IupImageGetHandle(const char* name)
 {
   /* Used in additional controls where WID is mandatory - IupMatrix, IupGLControls and IupPlot */
