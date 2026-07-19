@@ -31,7 +31,7 @@ func ImageToImage(ih Ihandle) *image.RGBA {
 	if ptr == 0 {
 		return nil
 	}
-	src := unsafe.Slice((*byte)(unsafe.Pointer(ptr)), size)
+	src := unsafe.Slice((*byte)(goPtr(ptr)), size)
 	img := image.NewRGBA(image.Rect(0, 0, width, height))
 	if bpp == 32 {
 		copy(img.Pix, src)
@@ -53,7 +53,7 @@ func ImageSaveToBuffer(ih Ihandle, format string) []byte {
 		return nil
 	}
 	out := make([]byte, size)
-	copy(out, unsafe.Slice((*byte)(unsafe.Pointer(buf)), int(size)))
+	copy(out, unsafe.Slice((*byte)(goPtr(buf)), int(size)))
 	if cfree != nil {
 		cfree(buf)
 	}

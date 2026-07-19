@@ -98,7 +98,7 @@ func SetAttribute(ih Ihandle, name string, value interface{}) {
 	case Ihandle:
 		C.IupSetAttribute(ih.ptr(), cName, cih(val))
 	case uintptr:
-		C.IupSetAttribute(ih.ptr(), cName, cih(value.(Ihandle)))
+		C.IupSetAttribute(ih.ptr(), cName, cih(Ihandle(val)))
 	case string:
 		cValue := cStrOrNull(val)
 		defer cStrFree(cValue)
@@ -176,7 +176,7 @@ func SetAtt(ih Ihandle, handle_name string, args ...string) Ihandle {
 
 // SetAttrs method does not exist in C Iup. It has been provided as a convenience function to allow code such as:
 //
-//     box := iup.Hbox(button1, button2).SetAttrs("GAP", "5", "MARGIN", "8x8")
+//	box := iup.Hbox(button1, button2).SetAttrs("GAP", "5", "MARGIN", "8x8")
 //
 // C Iup provides SetAtt for this purpose but in Go Iup SetAttrs is an easier method to
 // accomplish this task due to no necessity of handle_name.
@@ -331,7 +331,7 @@ func SetAttributeId(ih Ihandle, name string, id int, value interface{}) {
 	case Ihandle:
 		C.IupSetAttributeId(ih.ptr(), cName, C.int(id), cih(value.(Ihandle)))
 	case uintptr:
-		C.IupSetAttributeId(ih.ptr(), cName, C.int(id), cih(value.(Ihandle)))
+		C.IupSetAttributeId(ih.ptr(), cName, C.int(id), cih(Ihandle(val)))
 	case string:
 		cValue := cStrOrNull(val)
 		defer cStrFree(cValue)
@@ -386,7 +386,7 @@ func SetAttributeId2(ih Ihandle, name string, lin, col int, value interface{}) {
 	case Ihandle:
 		C.IupSetAttributeId2(ih.ptr(), cName, C.int(lin), C.int(col), cih(value.(Ihandle)))
 	case uintptr:
-		C.IupSetAttributeId2(ih.ptr(), cName, C.int(lin), C.int(col), cih(value.(Ihandle)))
+		C.IupSetAttributeId2(ih.ptr(), cName, C.int(lin), C.int(col), cih(Ihandle(val)))
 	case string:
 		cValue := cStrOrNull(val)
 		defer cStrFree(cValue)
