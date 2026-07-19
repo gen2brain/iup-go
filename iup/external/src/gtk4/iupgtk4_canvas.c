@@ -190,10 +190,42 @@ static void gtk4CanvasButtonPressed(GtkGestureClick *gesture, int n_press, doubl
 
 static int gtk4CanvasSetBgColorAttrib(Ihandle* ih, const char* value);
 
+static void gtk4CanvasGLComposite(Ihandle* ih, cairo_t* cr, int width, int height)
+{
+  unsigned char* px = (unsigned char*)iupAttribGet(ih, "_IUPGL_COMPOSITE_PIXELS");
+  int pw = iupAttribGetInt(ih, "_IUPGL_COMPOSITE_W");
+  int ph = iupAttribGetInt(ih, "_IUPGL_COMPOSITE_H");
+  cairo_surface_t* s;
+
+  if (!px || pw <= 0 || ph <= 0)
+    return;
+
+  s = cairo_image_surface_create_for_data(px, CAIRO_FORMAT_ARGB32, pw, ph,
+                                          cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, pw));
+  cairo_save(cr);
+  if (pw != width || ph != height)
+    cairo_scale(cr, (double)width/pw, (double)height/ph);
+  cairo_set_source_surface(cr, s, 0, 0);
+  cairo_paint(cr);
+  cairo_restore(cr);
+  cairo_surface_destroy(s);
+}
+
 static void gtk4CanvasDraw(GtkDrawingArea *area, cairo_t* cr, int width, int height, Ihandle *ih)
 {
   IFn cb = (IFn)IupGetCallback(ih,"ACTION");
   cairo_surface_t* buffer;
+
+  if (iupAttribGet(ih, "_IUPGL_COMPOSITE"))
+  {
+    iupAttribSet(ih, "_IUPGL_IN_DRAW", "1");
+    if (cb && !(ih->data->inside_resize))
+      cb(ih);
+    iupAttribSet(ih, "_IUPGL_IN_DRAW", NULL);
+    gtk4CanvasGLComposite(ih, cr, width, height);
+    (void)area;
+    return;
+  }
 
   /* If there's a persistent buffer from drawing outside ACTION (e.g. SCROLL_CB),
      use it. When an ACTION callback exists, consume the buffer so the next

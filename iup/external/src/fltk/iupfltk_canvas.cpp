@@ -110,6 +110,36 @@ public:
     if (!ih)
       return;
 
+    if (iupAttribGet(ih, "_IUPGL_COMPOSITE"))
+    {
+      IFn glcb = (IFn)IupGetCallback(ih, "ACTION");
+      iupAttribSet(ih, "_IUPGL_IN_DRAW", "1");
+      if (glcb && !(ih->data->inside_resize))
+        glcb(ih);
+      iupAttribSet(ih, "_IUPGL_IN_DRAW", NULL);
+
+      unsigned char* px = (unsigned char*)iupAttribGet(ih, "_IUPGL_COMPOSITE_PIXELS");
+      int pw = iupAttribGetInt(ih, "_IUPGL_COMPOSITE_W");
+      int ph = iupAttribGetInt(ih, "_IUPGL_COMPOSITE_H");
+      if (px && pw > 0 && ph > 0)
+      {
+        unsigned char* rgb = (unsigned char*)malloc((size_t)pw * ph * 3);
+        if (rgb)
+        {
+          size_t i, n = (size_t)pw * ph;
+          for (i = 0; i < n; i++)   /* BGRA (top-left) -> RGB for fl_draw_image */
+          {
+            rgb[i*3+0] = px[i*4+2];
+            rgb[i*3+1] = px[i*4+1];
+            rgb[i*3+2] = px[i*4+0];
+          }
+          fl_draw_image(rgb, x(), y(), pw, ph, 3, 0);
+          free(rgb);
+        }
+      }
+      return;
+    }
+
     IFn cb = (IFn)IupGetCallback(ih, "ACTION");
     if (cb && !(ih->data->inside_resize))
     {

@@ -457,10 +457,10 @@ static void wGLCanvasUnMapMethod(Ihandle* ih)
     iupGLDestroyChildWindow(gldata->window);
 
   {
-    HBRUSH br = (HBRUSH)iupAttribGet(ih, "_IUPWIN_GLBRUSH");
-    HBITMAP bmp = (HBITMAP)iupAttribGet(ih, "_IUPWIN_GLBMP");
-    if (br) { DeleteObject(br); iupAttribSet(ih, "_IUPWIN_GLBRUSH", NULL); }
-    if (bmp) { DeleteObject(bmp); iupAttribSet(ih, "_IUPWIN_GLBMP", NULL); }
+    HBRUSH br = (HBRUSH)iupAttribGet(ih, "_IUPWIN_BGBRUSH");
+    HBITMAP bmp = (HBITMAP)iupAttribGet(ih, "_IUPWIN_BGBMP");
+    if (br) { DeleteObject(br); iupAttribSet(ih, "_IUPWIN_BGBRUSH", NULL); }
+    if (bmp) { DeleteObject(bmp); iupAttribSet(ih, "_IUPWIN_BGBMP", NULL); }
   }
 
   memset(gldata, 0, sizeof(IGlControlData));
@@ -579,10 +579,10 @@ IUPGL_API void IupGLMakeCurrent(Ihandle* ih)
 static void wGLCompositeReadback(Ihandle* ih)
 {
   int w = ih->currentwidth, h = ih->currentheight;
-  int oldw = iupAttribGetInt(ih, "_IUPWIN_GLBMPW");
-  int oldh = iupAttribGetInt(ih, "_IUPWIN_GLBMPH");
-  HBITMAP hbmp = (HBITMAP)iupAttribGet(ih, "_IUPWIN_GLBMP");
-  void* bits = iupAttribGet(ih, "_IUPWIN_GLBMPBITS");
+  int oldw = iupAttribGetInt(ih, "_IUPWIN_BGBMPW");
+  int oldh = iupAttribGetInt(ih, "_IUPWIN_BGBMPH");
+  HBITMAP hbmp = (HBITMAP)iupAttribGet(ih, "_IUPWIN_BGBMP");
+  void* bits = iupAttribGet(ih, "_IUPWIN_BGBMPBITS");
   HBRUSH oldbr, br;
   int first = 0;
 
@@ -604,10 +604,10 @@ static void wGLCompositeReadback(Ihandle* ih)
     hbmp = CreateDIBSection(NULL, &bi, DIB_RGB_COLORS, &bits, NULL, 0);
     if (!hbmp) return;
 
-    iupAttribSet(ih, "_IUPWIN_GLBMP", (char*)hbmp);
-    iupAttribSet(ih, "_IUPWIN_GLBMPBITS", (char*)bits);
-    iupAttribSetInt(ih, "_IUPWIN_GLBMPW", w);
-    iupAttribSetInt(ih, "_IUPWIN_GLBMPH", h);
+    iupAttribSet(ih, "_IUPWIN_BGBMP", (char*)hbmp);
+    iupAttribSet(ih, "_IUPWIN_BGBMPBITS", (char*)bits);
+    iupAttribSetInt(ih, "_IUPWIN_BGBMPW", w);
+    iupAttribSetInt(ih, "_IUPWIN_BGBMPH", h);
     first = 1;
   }
 
@@ -615,9 +615,9 @@ static void wGLCompositeReadback(Ihandle* ih)
   glReadPixels(0, 0, w, h, GL_BGRA, GL_UNSIGNED_BYTE, bits);
   GdiFlush();
 
-  oldbr = (HBRUSH)iupAttribGet(ih, "_IUPWIN_GLBRUSH");
+  oldbr = (HBRUSH)iupAttribGet(ih, "_IUPWIN_BGBRUSH");
   br = CreatePatternBrush(hbmp);
-  iupAttribSet(ih, "_IUPWIN_GLBRUSH", (char*)br);
+  iupAttribSet(ih, "_IUPWIN_BGBRUSH", (char*)br);
   if (oldbr) DeleteObject(oldbr);
 
   if (first)
