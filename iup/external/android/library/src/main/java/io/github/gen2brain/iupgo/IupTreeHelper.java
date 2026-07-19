@@ -116,6 +116,7 @@ public final class IupTreeHelper
         boolean markMultiple;
         boolean showRename;
         boolean showDragDrop;
+        boolean hideButtons;
 
         /* Adapter index of the row over which the drag is hovering, -1 = no drop indicator. */
         int dropIndicatorIdx = -1;
@@ -148,6 +149,32 @@ public final class IupTreeHelper
             this.markedBg  = IupCommon.blendColor(IupCommon.paletteTxtBg, selectBg, 0.30f);
             setBackgroundColor(rowBg);
         }
+    }
+
+    @Keep
+    public static void setIndentation(View widget, int px)
+    {
+        if (!(widget instanceof IupTreeView t)) return;
+        if (px > 0) t.indentPx = px;
+        if (t.adapter != null) t.adapter.notifyDataSetChanged();
+    }
+
+    @Keep
+    public static void setSpacing(View widget, int px)
+    {
+        if (!(widget instanceof IupTreeView t)) return;
+        if (px < 0) px = 0;
+        int base = Math.round(32 * IupCommon.getDisplayDensity());
+        t.rowHeightPx = base + 2 * px;
+        if (t.adapter != null) t.adapter.notifyDataSetChanged();
+    }
+
+    @Keep
+    public static void setHideButtons(View widget, boolean hide)
+    {
+        if (!(widget instanceof IupTreeView t)) return;
+        t.hideButtons = hide;
+        if (t.adapter != null) t.adapter.notifyDataSetChanged();
     }
 
     @Keep
@@ -258,7 +285,14 @@ public final class IupTreeHelper
             sp.width = depth * tree.indentPx;
             h.spacer.setLayoutParams(sp);
 
-            if (node.kind == 0)
+            ViewGroup.LayoutParams rlp = h.itemView.getLayoutParams();
+            if (rlp != null && rlp.height != tree.rowHeightPx)
+            {
+                rlp.height = tree.rowHeightPx;
+                h.itemView.setLayoutParams(rlp);
+            }
+
+            if (node.kind == 0 && !tree.hideButtons)
             {
                 h.chevron.setText(node.expanded ? "▾" : "▸");
                 h.chevron.setVisibility(View.VISIBLE);
