@@ -77,22 +77,48 @@ IUP_SDK_API void iupdrvImageGetData(void* handle, unsigned char* out_img_data)
 
   NSInteger w = [bitmap pixelsWide];
   NSInteger h = [bitmap pixelsHigh];
-  NSInteger samplesPerPixel = [bitmap samplesPerPixel];
-  NSInteger bytesPerRow = [bitmap bytesPerRow];
-  unsigned char* bitmap_data = [bitmap bitmapData];
+  int channels = (int)([bitmap bitsPerPixel] / 8);   /* matches the bpp iupdrvImageGetInfo reports */
 
-  if (samplesPerPixel < 3)
+  if (channels < 3)
     return;
 
-  int channels = (int)samplesPerPixel;
-  int dest_line_size = (int)w * channels;
+  CGImageRef cg_image = [bitmap CGImage];
+  if (!cg_image)
+    return;
+
+  /* Normalize any source layout to packed RGBA before packing to dest. */
+  size_t rgba_stride = (size_t)w * 4;
+  unsigned char* rgba = (unsigned char*)calloc(rgba_stride * h, 1);
+  if (!rgba)
+    return;
+
+  CGColorSpaceRef cs = CGColorSpaceCreateDeviceRGB();
+  CGContextRef ctx = CGBitmapContextCreate(rgba, w, h, 8, rgba_stride, cs,
+    kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
+  CGColorSpaceRelease(cs);
+  if (!ctx)
+  {
+    free(rgba);
+    return;
+  }
+  CGContextDrawImage(ctx, CGRectMake(0, 0, w, h), cg_image);
+  CGContextRelease(ctx);
 
   for (int y = 0; y < h; y++)
   {
-    unsigned char* src_line = bitmap_data + y * bytesPerRow;
-    unsigned char* dest_line = out_img_data + y * dest_line_size;
-    memcpy(dest_line, src_line, dest_line_size);
+    unsigned char* src_line = rgba + y * rgba_stride;
+    unsigned char* dest_line = out_img_data + y * ((size_t)w * channels);
+    for (int x = 0; x < w; x++)
+    {
+      dest_line[x * channels + 0] = src_line[x * 4 + 0];
+      dest_line[x * channels + 1] = src_line[x * 4 + 1];
+      dest_line[x * channels + 2] = src_line[x * 4 + 2];
+      if (channels == 4)
+        dest_line[x * channels + 3] = src_line[x * 4 + 3];
+    }
   }
+
+  free(rgba);
 }
 
 /* The output format is separated RGB(A) planes, bottom-up, matching the IM image data format. */
