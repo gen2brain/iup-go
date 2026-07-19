@@ -27,6 +27,7 @@
 #include "iup_drv.h"
 
 #include "iupwin_drv.h"
+#include "iupwin_draw.h"
 #include "iupwin_handle.h"
 #include "iupwin_info.h"
 #include "iupwin_str.h"
@@ -49,9 +50,25 @@ static UINT WM_DRAGLISTMSG = 0;
 #define WS_EX_COMPOSITED 0x02000000L
 #endif
 
-IUP_DRV_API int iupwinGLBackgroundColor(Ihandle* ih, HDC hdc, LRESULT* result)
+/* Walk up the parent chain to the box that owns the background bitmap (handles nesting in frames). */
+static Ihandle* winFindBgBitmapBox(HWND child, HWND* box_hwnd)
 {
-  HWND parent;
+  HWND p;
+  for (p = GetParent(child); p; p = GetParent(p))
+  {
+    Ihandle* cand = iupwinHandleGet(p);
+    if (cand && iupAttribGet(cand, "_IUPWIN_BGBMP"))
+    {
+      if (box_hwnd) *box_hwnd = p;
+      return cand;
+    }
+  }
+  return NULL;
+}
+
+IUP_DRV_API int iupwinBgBitmapColor(Ihandle* ih, HDC hdc, LRESULT* result)
+{
+  HWND box_hwnd;
   Ihandle* box;
   HBRUSH br;
   int bw, bh;
@@ -62,21 +79,20 @@ IUP_DRV_API int iupwinGLBackgroundColor(Ihandle* ih, HDC hdc, LRESULT* result)
   if (!ih->handle)
     return 0;
 
-  parent = GetParent(ih->handle);
-  box = iupwinHandleGet(parent);
+  box = winFindBgBitmapBox(ih->handle, &box_hwnd);
   if (!box)
     return 0;
 
-  br = (HBRUSH)iupAttribGet(box, "_IUPWIN_GLBRUSH");
+  br = (HBRUSH)iupAttribGet(box, "_IUPWIN_BGBRUSH");
   if (!br)
     return 0;
 
-  bw = iupAttribGetInt(box, "_IUPWIN_GLBMPW");
-  bh = iupAttribGetInt(box, "_IUPWIN_GLBMPH");
+  bw = iupAttribGetInt(box, "_IUPWIN_BGBMPW");
+  bh = iupAttribGetInt(box, "_IUPWIN_BGBMPH");
 
   GetWindowRect(ih->handle, &rc);
   pt.x = rc.left; pt.y = rc.top;
-  ScreenToClient(parent, &pt);
+  ScreenToClient(box_hwnd, &pt);
 
   SetBkMode(hdc, TRANSPARENT);
   if (iupwinGetColorRef(ih, "FGCOLOR", &cr))
@@ -89,9 +105,9 @@ IUP_DRV_API int iupwinGLBackgroundColor(Ihandle* ih, HDC hdc, LRESULT* result)
   return 1;
 }
 
-IUP_DRV_API int iupwinDrawGLParentBackground(Ihandle* ih, HDC hdc, RECT* rect)
+IUP_DRV_API int iupwinDrawParentBgBitmap(Ihandle* ih, HDC hdc, RECT* rect)
 {
-  HWND parent;
+  HWND box_hwnd;
   Ihandle* box;
   HBITMAP hbmp;
   HDC memdc;
@@ -102,18 +118,17 @@ IUP_DRV_API int iupwinDrawGLParentBackground(Ihandle* ih, HDC hdc, RECT* rect)
   if (!ih->handle)
     return 0;
 
-  parent = GetParent(ih->handle);
-  box = iupwinHandleGet(parent);
+  box = winFindBgBitmapBox(ih->handle, &box_hwnd);
   if (!box)
     return 0;
 
-  hbmp = (HBITMAP)iupAttribGet(box, "_IUPWIN_GLBMP");
+  hbmp = (HBITMAP)iupAttribGet(box, "_IUPWIN_BGBMP");
   if (!hbmp)
     return 0;
 
   GetWindowRect(ih->handle, &rc);
   pt.x = rc.left; pt.y = rc.top;
-  ScreenToClient(parent, &pt);
+  ScreenToClient(box_hwnd, &pt);
 
   memdc = CreateCompatibleDC(hdc);
   old = SelectObject(memdc, hbmp);
@@ -122,6 +137,91 @@ IUP_DRV_API int iupwinDrawGLParentBackground(Ihandle* ih, HDC hdc, RECT* rect)
   SelectObject(memdc, old);
   DeleteDC(memdc);
   return 1;
+}
+
+IUP_DRV_API void iupwinDrawBackImageUpdate(Ihandle* ih)
+{
+  char* bgimage = iupAttribGet(ih, "BACKIMAGE");
+  char* bgcolor;
+  char sig[256];
+  int w = ih->currentwidth, h = ih->currentheight;
+  HBITMAP hbmp, hbimg;
+  void* bits;
+  HDC memdc;
+  HGDIOBJ oldsel;
+  HBRUSH oldbr, br, fill;
+  BITMAPINFO bi;
+  RECT rc;
+  unsigned char r = 255, g = 255, b = 255;
+  int img_w, img_h, bpp, zoom;
+
+  if (!bgimage || w < 1 || h < 1)
+    return;
+
+  bgcolor = iupAttribGet(ih, "BACKCOLOR");
+  if (!bgcolor)
+    bgcolor = IupGetAttribute(ih, "BGCOLOR");
+  zoom = iupAttribGetBoolean(ih, "BACKIMAGEZOOM");
+
+  sprintf(sig, "%dx%d %s %s %d", w, h, bgimage, bgcolor ? bgcolor : "", zoom);
+  if (iupStrEqual(sig, iupAttribGet(ih, "_IUPWIN_BGIMAGE_SIG")))
+    return;
+  iupAttribSetStr(ih, "_IUPWIN_BGIMAGE_SIG", sig);
+
+  hbmp = (HBITMAP)iupAttribGet(ih, "_IUPWIN_BGBMP");
+  if (hbmp && (iupAttribGetInt(ih, "_IUPWIN_BGBMPW") != w || iupAttribGetInt(ih, "_IUPWIN_BGBMPH") != h))
+  {
+    DeleteObject(hbmp);
+    hbmp = NULL;
+  }
+  if (!hbmp)
+  {
+    memset(&bi, 0, sizeof(bi));
+    bi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+    bi.bmiHeader.biWidth = w;
+    bi.bmiHeader.biHeight = h;    /* bottom-up */
+    bi.bmiHeader.biPlanes = 1;
+    bi.bmiHeader.biBitCount = 32;
+    bi.bmiHeader.biCompression = BI_RGB;
+    hbmp = CreateDIBSection(NULL, &bi, DIB_RGB_COLORS, &bits, NULL, 0);
+    if (!hbmp)
+      return;
+    iupAttribSet(ih, "_IUPWIN_BGBMP", (char*)hbmp);
+    iupAttribSet(ih, "_IUPWIN_BGBMPBITS", (char*)bits);
+    iupAttribSetInt(ih, "_IUPWIN_BGBMPW", w);
+    iupAttribSetInt(ih, "_IUPWIN_BGBMPH", h);
+  }
+
+  memdc = CreateCompatibleDC(NULL);
+  oldsel = SelectObject(memdc, hbmp);
+
+  iupStrToRGB(bgcolor, &r, &g, &b);
+  fill = CreateSolidBrush(RGB(r, g, b));
+  rc.left = 0; rc.top = 0; rc.right = w; rc.bottom = h;
+  FillRect(memdc, &rc, fill);
+  DeleteObject(fill);
+
+  hbimg = (HBITMAP)iupImageGetImage(bgimage, ih, 0, NULL);
+  if (hbimg)
+  {
+    iupdrvImageGetInfo(hbimg, &img_w, &img_h, &bpp);
+    if (zoom)
+      iupwinDrawBitmap(memdc, hbimg, 0, 0, w, h, img_w, img_h, bpp);
+    else
+      iupwinDrawBitmap(memdc, hbimg, 0, 0, img_w, img_h, img_w, img_h, bpp);
+  }
+
+  GdiFlush();
+  SelectObject(memdc, oldsel);
+  DeleteDC(memdc);
+
+  oldbr = (HBRUSH)iupAttribGet(ih, "_IUPWIN_BGBRUSH");
+  br = CreatePatternBrush(hbmp);
+  iupAttribSet(ih, "_IUPWIN_BGBRUSH", (char*)br);
+  if (oldbr)
+    DeleteObject(oldbr);
+
+  RedrawWindow(ih->handle, NULL, NULL, RDW_INVALIDATE | RDW_ALLCHILDREN);
 }
 
 IUP_DRV_API int iupwinClassExist(const TCHAR* name)
