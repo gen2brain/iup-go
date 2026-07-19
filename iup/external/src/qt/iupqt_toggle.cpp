@@ -848,10 +848,11 @@ static int qtToggleSetFgColorAttrib(Ihandle* ih, const char* value)
   if (!button || !iupStrToRGB(value, &r, &g, &b))
     return 0;
 
-  /* Set text color via palette */
+  /* Set text color via palette; the check/radio label is drawn from Text */
   QPalette palette = button->palette();
   palette.setColor(QPalette::WindowText, QColor(r, g, b));
   palette.setColor(QPalette::ButtonText, QColor(r, g, b));
+  palette.setColor(QPalette::Text, QColor(r, g, b));
   button->setPalette(palette);
 
   return 1;

@@ -148,6 +148,27 @@ protected:
     if (iupAttribGet(ih, "_IUP_GLCONTROLDATA"))
     {
       IFn cb = (IFn)IupGetCallback(ih, "ACTION");
+
+      if (iupAttribGet(ih, "_IUPGL_COMPOSITE"))
+      {
+        iupAttribSet(ih, "_IUPGL_IN_DRAW", "1");
+        if (cb && !(ih->data->inside_resize))
+          cb(ih);
+        iupAttribSet(ih, "_IUPGL_IN_DRAW", NULL);
+
+        unsigned char* px = (unsigned char*)iupAttribGet(ih, "_IUPGL_COMPOSITE_PIXELS");
+        int pw = iupAttribGetInt(ih, "_IUPGL_COMPOSITE_W");
+        int ph = iupAttribGetInt(ih, "_IUPGL_COMPOSITE_H");
+        if (px && pw > 0 && ph > 0)
+        {
+          QImage img(px, pw, ph, pw * 4, QImage::Format_ARGB32);
+          QPainter painter(this);
+          painter.drawImage(this->rect(), img);
+        }
+        event->accept();
+        return;
+      }
+
       if (cb && !(ih->data->inside_resize))
       {
         iupAttribSetStrf(ih, "CLIPRECT", "%d %d %d %d",
@@ -779,7 +800,7 @@ static int qtCanvasMapMethod(Ihandle* ih)
   container_data->canvas = canvas;
   QWidget* canvas_widget = canvas;
 
-  if (iupAttribGet(ih, "_IUP_GLCONTROLDATA"))
+  if (iupAttribGet(ih, "_IUP_GLCONTROLDATA") && !IupClassMatch(ih, "glbackgroundbox"))
   {
     /* Wayland: our GL renders into a subsurface on the dialog's wl_surface, not a canvas-owned one. */
     const char* windowing = IupGetGlobal("WINDOWING");
