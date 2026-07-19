@@ -71,6 +71,48 @@ func expanderScroll() iup.Ihandle {
 	return vbox
 }
 
+// scrollMulti puts a MultiBox (wrapping flow layout) of toggles inside a ScrollBox.
+func scrollMulti() iup.Ihandle {
+	var items []iup.Ihandle
+	for i := 1; i <= 40; i++ {
+		items = append(items, iup.Toggle(fmt.Sprintf("Option %d", i)))
+	}
+	sb := iup.ScrollBox(iup.MultiBox(items...).SetAttributes(`NMARGIN=10x10, NGAP=8`)).SetAttribute("EXPAND", "YES")
+	sb.SetAttribute("TABTITLE", "Scroll>MultiBox")
+	return sb
+}
+
+// scrollTabs nests a Tabs inside a ScrollBox.
+func scrollTabs() iup.Ihandle {
+	mkPage := func(title string) iup.Ihandle {
+		var rows []iup.Ihandle
+		for i := 1; i <= 20; i++ {
+			rows = append(rows, iup.Label(fmt.Sprintf("%s line %d", title, i)))
+		}
+		page := iup.Vbox(rows...).SetAttributes(`NMARGIN=10x10, NGAP=4`)
+		page.SetAttribute("TABTITLE", title)
+		return page
+	}
+	sb := iup.ScrollBox(iup.Tabs(mkPage("Inner A"), mkPage("Inner B"), mkPage("Inner C"))).SetAttribute("EXPAND", "YES")
+	sb.SetAttribute("TABTITLE", "Scroll>Tabs")
+	return sb
+}
+
+// scrollFrame stacks titled Frames inside a ScrollBox.
+func scrollFrame() iup.Ihandle {
+	var frames []iup.Ihandle
+	for i := 1; i <= 8; i++ {
+		frames = append(frames, iup.Frame(iup.Vbox(
+			iup.Label("Name:"),
+			iup.Text().SetAttributes("EXPAND=HORIZONTAL"),
+			iup.Toggle("Enabled"),
+		).SetAttributes(`NMARGIN=8x8, NGAP=4`)).SetAttribute("TITLE", fmt.Sprintf("Group %d", i)))
+	}
+	sb := iup.ScrollBox(iup.Vbox(frames...).SetAttributes(`NMARGIN=8x8, NGAP=8`)).SetAttribute("EXPAND", "YES")
+	sb.SetAttribute("TABTITLE", "Scroll>Frame")
+	return sb
+}
+
 func main() {
 	iup.Open()
 	defer iup.Close()
@@ -78,6 +120,9 @@ func main() {
 	tabs := iup.Tabs(
 		darkScroll(),
 		scrollGrid(),
+		scrollMulti(),
+		scrollTabs(),
+		scrollFrame(),
 		nestedSplit(),
 		expanderScroll(),
 	)

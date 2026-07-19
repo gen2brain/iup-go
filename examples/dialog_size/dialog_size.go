@@ -85,6 +85,49 @@ func startFocusDemo() {
 	setStatus("child shown with STARTFOCUS on the second field")
 }
 
+// showNoFocus shows a child that does not steal focus from the main dialog.
+func showNoFocus() {
+	child := newChild("SHOWNOFOCUS", `SHOWNOFOCUS=YES`,
+		iup.Vbox(iup.Label("Shown without taking focus - the main dialog keeps it.")).SetAttributes(`NMARGIN=16x16`))
+	iup.ShowXY(child, iup.RIGHT, iup.LEFT)
+	setStatus("SHOWNOFOCUS child shown - main dialog keeps focus")
+}
+
+// showNoActivate shows a child without activating it (Windows/macOS; no-op elsewhere).
+func showNoActivate() {
+	child := newChild("SHOWNOACTIVATE", `SHOWNOACTIVATE=YES`,
+		iup.Vbox(iup.Label("Shown without activating (Windows/macOS).")).SetAttributes(`NMARGIN=16x16`))
+	iup.ShowXY(child, iup.RIGHT, iup.RIGHT)
+	setStatus("SHOWNOACTIVATE child shown")
+}
+
+// simulateModal disables the other dialogs without a nested loop; a button releases it.
+func simulateModal() {
+	var child iup.Ihandle
+	child = newChild("SIMULATEMODAL", "",
+		iup.Vbox(
+			iup.Label("The main dialog is disabled (manual modal)."),
+			btn("Release and close", func() {
+				child.SetAttribute("SIMULATEMODAL", "NO")
+				iup.Hide(child)
+			}),
+		).SetAttributes(`NMARGIN=16x16, NGAP=8`))
+	iup.Show(child)
+	child.SetAttribute("SIMULATEMODAL", "YES")
+	setStatus("SIMULATEMODAL on - the main dialog is disabled until released")
+}
+
+// nativeParentDemo parents a child through the raw native window handle (WID) instead of PARENTDIALOG.
+func nativeParentDemo() {
+	child := iup.Dialog(
+		iup.Vbox(iup.Label("Parented via NATIVEPARENT (raw native handle).")).SetAttributes(`NMARGIN=16x16`)).
+		SetAttribute("TITLE", "NATIVEPARENT")
+	child.SetAttribute("NATIVEPARENT", iup.GetPtr(mainDlg(), "WID"))
+	child.SetCallback("CLOSE_CB", iup.CloseFunc(func(iup.Ihandle) int { return iup.CLOSE }))
+	iup.ShowXY(child, iup.CENTER, iup.CENTER)
+	setStatus("child shown via NATIVEPARENT (raw native handle)")
+}
+
 func main() {
 	iup.Open()
 	defer iup.Close()
@@ -156,13 +199,20 @@ func main() {
 		btn("Focus-less RASTERSIZE", focusless),
 	).SetAttributes(`NMARGIN=6x6, NGAP=4`)).SetAttribute("TITLE", "Child windows")
 
+	modes := iup.Frame(iup.Vbox(
+		btn("SHOWNOFOCUS child", showNoFocus),
+		btn("SHOWNOACTIVATE child", showNoActivate),
+		btn("SIMULATEMODAL child", simulateModal),
+		btn("NATIVEPARENT child", nativeParentDemo),
+	).SetAttributes(`NMARGIN=6x6, NGAP=4`)).SetAttribute("TITLE", "Modal & focus")
+
 	status := iup.Label("Drive dialog sizing, placement and child windows.").
 		SetAttribute("EXPAND", "HORIZONTAL")
 	iup.SetHandle("status", status)
 
 	dlg := iup.Dialog(
 		iup.Vbox(
-			iup.Hbox(sizing, placement, windows).SetAttributes(`NGAP=10`),
+			iup.Hbox(sizing, placement, windows, modes).SetAttributes(`NGAP=10`),
 			status,
 		).SetAttributes(`NMARGIN=12x12, NGAP=8`),
 	).SetAttributes(`TITLE="Dialog sizing and placement"`)

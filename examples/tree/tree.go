@@ -46,6 +46,16 @@ func executeLeafCb(ih iup.Ihandle, id int) int {
 	return iup.DEFAULT
 }
 
+func executeBranchCb(ih iup.Ihandle, id int) int {
+	fmt.Printf("executeBranchCb (%d)\n", id)
+	return iup.DEFAULT
+}
+
+func showRenameCb(ih iup.Ihandle, id int) int {
+	fmt.Printf("showRenameCb (%d)\n", id)
+	return iup.DEFAULT
+}
+
 func renameCb(ih iup.Ihandle, id int, name string) int {
 	fmt.Printf("renameCb (%d=%s)\n", id, name)
 	if name == "fool" {
@@ -97,6 +107,8 @@ func initTree() {
 	tree := iup.Tree()
 
 	iup.SetCallback(tree, "EXECUTELEAF_CB", iup.ExecuteLeafFunc(executeLeafCb))
+	iup.SetCallback(tree, "EXECUTEBRANCH_CB", iup.ExecuteBranchFunc(executeBranchCb))
+	iup.SetCallback(tree, "SHOWRENAME_CB", iup.ShowRenameFunc(showRenameCb))
 	iup.SetCallback(tree, "RENAME_CB", iup.RenameFunc(renameCb))
 	iup.SetCallback(tree, "BRANCHCLOSE_CB", iup.BranchCloseFunc(branchCloseCb))
 	iup.SetCallback(tree, "BRANCHOPEN_CB", iup.BranchOpenFunc(branchOpenCb))
