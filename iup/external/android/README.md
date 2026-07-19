@@ -4,18 +4,8 @@ This directory is the Android-side Gradle project that pairs with the IUP C driv
 
 Two independent build flows are supported:
 
-1. **Go flow (primary)** - an IUP app is a Go program compiled as `-buildmode=c-shared`, producing a single `.so` that Gradle picks up from `jniLibs/`.
-2. **C flow (optional)** - Gradle drives CMake via `externalNativeBuild` and builds the stock IUP C library (`libiup.so`) alongside the Java bridge. Enable with `-Piup.buildC`.
-
-## Project layout
-
-```
-iup/external/android/
-├── build.gradle         root build script (SDK levels, ABI defaults)
-├── settings.gradle      library + iupapp modules
-├── library/             AAR: IupLaunchActivity, IupActivity, *Helper Java classes
-└── iupapp/              example APK consuming the library
-```
+* **Go flow (primary)** - an IUP app is a Go program compiled as `-buildmode=c-shared`, producing a single `.so` that Gradle picks up from `jniLibs/`.
+* **C flow (optional)** - Gradle drives CMake via `externalNativeBuild` and builds the stock IUP C library (`libiup.so`) alongside the Java bridge. Enable with `-Piup.buildC`.
 
 ## Prerequisites
 
