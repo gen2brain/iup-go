@@ -23,7 +23,21 @@
 #include "iup_draw.h"
 
 
-static Ihandle* load_image_arrowup_highlight(void)
+static Ihandle* make_arrow(unsigned char* imgdata, int dark)
+{
+  if (dark)
+  {
+    int i;
+    for (i = 0; i < 15 * 15 * 4; i += 4)
+    {
+      if (imgdata[i + 3] != 0 && imgdata[i] == imgdata[i + 1] && imgdata[i + 1] == imgdata[i + 2])
+        imgdata[i] = imgdata[i + 1] = imgdata[i + 2] = 200;
+    }
+  }
+  return IupImageRGBA(15, 15, imgdata);
+}
+
+static Ihandle* load_image_arrowup_highlight(int dark)
 {
   unsigned char imgdata[] = {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -42,11 +56,10 @@ static Ihandle* load_image_arrowup_highlight(void)
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
-  Ihandle* image = IupImageRGBA(15, 15, imgdata);
-  return image;
+  return make_arrow(imgdata, dark);
 }
 
-static Ihandle* load_image_arrowdown_highlight(void)
+static Ihandle* load_image_arrowdown_highlight(int dark)
 {
   unsigned char imgdata[] = {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -65,11 +78,10 @@ static Ihandle* load_image_arrowdown_highlight(void)
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
-  Ihandle* image = IupImageRGBA(15, 15, imgdata);
-  return image;
+  return make_arrow(imgdata, dark);
 }
 
-static Ihandle* load_image_arrowleft_highlight(void)
+static Ihandle* load_image_arrowleft_highlight(int dark)
 {
   unsigned char imgdata[] = {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -88,11 +100,10 @@ static Ihandle* load_image_arrowleft_highlight(void)
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
-  Ihandle* image = IupImageRGBA(15, 15, imgdata);
-  return image;
+  return make_arrow(imgdata, dark);
 }
 
-static Ihandle* load_image_arrowright_highlight(void)
+static Ihandle* load_image_arrowright_highlight(int dark)
 {
   unsigned char imgdata[] = {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -111,11 +122,10 @@ static Ihandle* load_image_arrowright_highlight(void)
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
-  Ihandle* image = IupImageRGBA(15, 15, imgdata);
-  return image;
+  return make_arrow(imgdata, dark);
 }
 
-static Ihandle* load_image_arrowup(void)
+static Ihandle* load_image_arrowup(int dark)
 {
   unsigned char imgdata[] = {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -134,11 +144,10 @@ static Ihandle* load_image_arrowup(void)
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
-  Ihandle* image = IupImageRGBA(15, 15, imgdata);
-  return image;
+  return make_arrow(imgdata, dark);
 }
 
-static Ihandle* load_image_arrowleft(void)
+static Ihandle* load_image_arrowleft(int dark)
 {
   unsigned char imgdata[] = {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -157,11 +166,10 @@ static Ihandle* load_image_arrowleft(void)
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
-  Ihandle* image = IupImageRGBA(15, 15, imgdata);
-  return image;
+  return make_arrow(imgdata, dark);
 }
 
-static Ihandle* load_image_arrowright(void)
+static Ihandle* load_image_arrowright(int dark)
 {
   unsigned char imgdata[] = {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -180,11 +188,10 @@ static Ihandle* load_image_arrowright(void)
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
-  Ihandle* image = IupImageRGBA(15, 15, imgdata);
-  return image;
+  return make_arrow(imgdata, dark);
 }
 
-static Ihandle* load_image_arrowdown(void)
+static Ihandle* load_image_arrowdown(int dark)
 {
   unsigned char imgdata[] = {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -203,20 +210,28 @@ static Ihandle* load_image_arrowdown(void)
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
-  Ihandle* image = IupImageRGBA(15, 15, imgdata);
-  return image;
+  return make_arrow(imgdata, dark);
 }
 
 static void iExpanderLoadImages(void)
 {
-  IupSetHandle("IupArrowUp", load_image_arrowup());
-  IupSetHandle("IupArrowLeft", load_image_arrowleft());
-  IupSetHandle("IupArrowRight", load_image_arrowright());
-  IupSetHandle("IupArrowDown", load_image_arrowdown());
-  IupSetHandle("IupArrowUpHighlight", load_image_arrowup_highlight());
-  IupSetHandle("IupArrowDownHighlight", load_image_arrowdown_highlight());
-  IupSetHandle("IupArrowLeftHighlight", load_image_arrowleft_highlight());
-  IupSetHandle("IupArrowRightHighlight", load_image_arrowright_highlight());
+  IupSetHandle("IupArrowUp", load_image_arrowup(0));
+  IupSetHandle("IupArrowLeft", load_image_arrowleft(0));
+  IupSetHandle("IupArrowRight", load_image_arrowright(0));
+  IupSetHandle("IupArrowDown", load_image_arrowdown(0));
+  IupSetHandle("IupArrowUpHighlight", load_image_arrowup_highlight(0));
+  IupSetHandle("IupArrowDownHighlight", load_image_arrowdown_highlight(0));
+  IupSetHandle("IupArrowLeftHighlight", load_image_arrowleft_highlight(0));
+  IupSetHandle("IupArrowRightHighlight", load_image_arrowright_highlight(0));
+
+  IupSetHandle("IupArrowUpDark", load_image_arrowup(1));
+  IupSetHandle("IupArrowLeftDark", load_image_arrowleft(1));
+  IupSetHandle("IupArrowRightDark", load_image_arrowright(1));
+  IupSetHandle("IupArrowDownDark", load_image_arrowdown(1));
+  IupSetHandle("IupArrowUpHighlightDark", load_image_arrowup_highlight(1));
+  IupSetHandle("IupArrowDownHighlightDark", load_image_arrowdown_highlight(1));
+  IupSetHandle("IupArrowLeftHighlightDark", load_image_arrowleft_highlight(1));
+  IupSetHandle("IupArrowRightHighlightDark", load_image_arrowright_highlight(1));
 }
 
 enum { IEXPANDER_LEFT, IEXPANDER_RIGHT, IEXPANDER_TOP, IEXPANDER_BOTTOM };
@@ -363,7 +378,14 @@ static void iExpanderUpdateStateImage(Ihandle* ih)
       break;
     }
 
-    if (iupAttribGet(expand_button, "HIGHLIGHT"))
+    if (IupGetInt(NULL, "DARKMODE"))
+    {
+      if (iupAttribGet(expand_button, "HIGHLIGHT"))
+        IupSetfAttribute(expand_button, "IMAGE", "%sHighlightDark", image);
+      else
+        IupSetfAttribute(expand_button, "IMAGE", "%sDark", image);
+    }
+    else if (iupAttribGet(expand_button, "HIGHLIGHT"))
       IupSetfAttribute(expand_button, "IMAGE", "%sHighlight", image);
     else
       IupSetAttribute(expand_button, "IMAGE", image);
