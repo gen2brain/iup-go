@@ -76,7 +76,7 @@ func main() {
 
 	// Log widget
 	txtLog := iup.Text()
-	txtLog.SetAttributes("MULTILINE=YES, EXPAND=HORIZONTAL, READONLY=YES, VISIBLELINES=10")
+	txtLog.SetAttributes("MULTILINE=YES, EXPAND=HORIZONTAL, READONLY=YES, VISIBLELINES=6")
 	driver := iup.GetGlobal("DRIVER")
 	txtLog.SetAttribute("VALUE", "=== IUP Clipboard Demo ===\n"+
 		"Platform: "+runtime.GOOS+"\n"+
@@ -317,58 +317,55 @@ func main() {
 		iup.Hbox(btnCopyImage, btnPasteImage).SetAttribute("GAP", "5"),
 	)).SetAttributes(`TITLE="Image Operations", MARGIN=5x5, GAP=5`)
 
-	// Layout
-	vboxMain := iup.Vbox(
-		iup.Label("IUP Clipboard Demo").SetAttributes(`FONT="Sans, Bold 12"`),
+	textFrame := iup.Frame(iup.Vbox(
+		iup.Label("Input Text:"),
+		txtInput,
+		iup.Hbox(
+			btnCopyText,
+			btnPasteText,
+			btnClearClipboard,
+		).SetAttribute("GAP", "5"),
+		iup.Label("Output Text:"),
+		txtOutput,
+	)).SetAttributes("TITLE=Basic Text Operations, MARGIN=5x5, GAP=5")
 
-		iup.Frame(iup.Vbox(
-			iup.Label("Input Text:"),
-			txtInput,
-			iup.Hbox(
-				btnCopyText,
-				btnPasteText,
-				btnClearClipboard,
-			).SetAttribute("GAP", "5"),
-			iup.Label("Output Text:"),
-			txtOutput,
-		)).SetAttributes("TITLE=Basic Text Operations, MARGIN=5x5, GAP=5"),
+	formatFrame := iup.Frame(iup.Vbox(
+		iup.Label("Format Name (e.g., text/custom, application/json):"),
+		txtFormatName,
+		iup.Label("Format Data:"),
+		txtFormatData,
+		iup.Hbox(
+			btnRegisterFormat,
+			btnCopyFormat,
+			btnPasteFormat,
+		).SetAttribute("GAP", "5"),
+	)).SetAttributes(`TITLE="Custom Format Operations", MARGIN=5x5, GAP=5`)
 
-		iup.Frame(iup.Vbox(
-			iup.Label("Format Name (e.g., text/custom, application/json):"),
-			txtFormatName,
-			iup.Label("Format Data:"),
-			txtFormatData,
-			iup.Hbox(
-				btnRegisterFormat,
-				btnCopyFormat,
-				btnPasteFormat,
-			).SetAttribute("GAP", "5"),
-		)).SetAttributes(`TITLE="Custom Format Operations", MARGIN=5x5, GAP=5`),
-	)
+	// Two columns keep the dialog short enough to fit on smaller desktops.
+	leftCol := iup.Vbox(textFrame).SetAttributes("GAP=10, EXPAND=HORIZONTAL")
+	rightCol := iup.Vbox(imageFrame, formatFrame).SetAttributes("GAP=10, EXPAND=HORIZONTAL")
 
-	vboxMain = iup.Append(vboxMain, imageFrame)
-
-	// Add an HTML section if Qt driver is detected
 	if btnCopyHTML != 0 {
-		htmlFrame := iup.Frame(iup.Vbox(
+		rightCol = iup.Append(rightCol, iup.Frame(iup.Vbox(
 			iup.Label("HTML Content (Qt Driver):"),
 			txtHTML,
 			iup.Hbox(
 				btnCopyHTML,
 				btnPasteHTML,
 			).SetAttribute("GAP", "5"),
-		)).SetAttributes(`TITLE="HTML Operations", MARGIN=5x5, GAP=5`)
-		vboxMain = iup.Append(vboxMain, htmlFrame)
+		)).SetAttributes(`TITLE="HTML Operations", MARGIN=5x5, GAP=5`))
 	}
 
-	// Add platform-specific frame
 	if platformFrame != 0 {
-		vboxMain = iup.Append(vboxMain, platformFrame)
+		rightCol = iup.Append(rightCol, platformFrame)
 	}
 
-	// Add status and log
-	vboxMain = iup.Append(vboxMain, iup.Hbox(btnCheckStatus, lblStatus).SetAttribute("GAP", "10"))
-	vboxMain = iup.Append(vboxMain, iup.Frame(txtLog).SetAttributes(`TITLE="Event Log", MARGIN=5x5`))
+	vboxMain := iup.Vbox(
+		iup.Label("IUP Clipboard Demo").SetAttributes(`FONT="Sans, Bold 12"`),
+		iup.Hbox(leftCol, rightCol).SetAttributes("GAP=10, ALIGNMENT=ATOP"),
+		iup.Hbox(btnCheckStatus, lblStatus).SetAttribute("GAP", "10"),
+		iup.Frame(txtLog).SetAttributes(`TITLE="Event Log", MARGIN=5x5`),
+	)
 
 	vboxMain.SetAttributes("MARGIN=10x10, GAP=10")
 
