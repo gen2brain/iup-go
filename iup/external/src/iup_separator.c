@@ -45,6 +45,13 @@ static long iDrawGetDarkerColor(long color)
   return iupDrawColor(r, g, b, a);
 }
 
+static long iSeparatorDefaultColor(void)
+{
+  if (IupGetInt(NULL, "DARKMODE"))
+    return iupDrawColor(90, 90, 90, 255);
+  return iupDrawColor(160, 160, 160, 255);
+}
+
 static int iSeparatorRedraw_CB(Ihandle* ih)
 {
   IdrawCanvas* dc = iupdrvDrawCreateCanvas(ih);
@@ -54,7 +61,7 @@ static int iSeparatorRedraw_CB(Ihandle* ih)
   if (ih->data->style != ISEPARATOR_FILL && ih->data->style != ISEPARATOR_EMPTY)
   {
     int x, y, w, h;
-    long color = iupDrawStrToColor(iupAttribGetStr(ih, "COLOR"), iupDrawColor(160, 160, 160, 255));
+    long color = iupDrawStrToColor(iupAttribGet(ih, "COLOR"), iSeparatorDefaultColor());
 
     iupdrvDrawGetSize(dc, &w, &h);
 
@@ -150,7 +157,7 @@ static int iSeparatorRedraw_CB(Ihandle* ih)
   else if (ih->data->style == ISEPARATOR_FILL)
   {
     int w, h;
-    long color = iupDrawStrToColor(iupAttribGetStr(ih, "COLOR"), iupDrawColor(160, 160, 160, 255));
+    long color = iupDrawStrToColor(iupAttribGet(ih, "COLOR"), iSeparatorDefaultColor());
     long border_color = iDrawGetDarkerColor(color);
 
     iupdrvDrawGetSize(dc, &w, &h);

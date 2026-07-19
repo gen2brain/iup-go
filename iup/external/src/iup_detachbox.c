@@ -248,6 +248,13 @@ static int iDetachBoxK_Any_CB(Ihandle* ih, int key)
   return IUP_CONTINUE;
 }
 
+static long iDetachBoxDefaultColor(void)
+{
+  if (IupGetInt(NULL, "DARKMODE"))
+    return iupDrawColor(90, 90, 90, 255);
+  return iupDrawColor(160, 160, 160, 255);
+}
+
 static int iDetachBoxAction_CB(Ihandle* bar)
 {
   Ihandle* ih = bar->parent;
@@ -258,7 +265,7 @@ static int iDetachBoxAction_CB(Ihandle* bar)
   if (ih->data->showgrip)
   {
     int i, w, h, x, y, count;
-    long color = iupDrawStrToColor(IupGetAttribute(ih, "COLOR"), iupDrawColor(160, 160, 160, 255));
+    long color = iupDrawStrToColor(iupAttribGet(ih, "COLOR"), iDetachBoxDefaultColor());
     long bgcolor;
     iupdrvDrawGetSize(dc, &w, &h);
 
@@ -303,7 +310,7 @@ static int iDetachBoxAction_CB(Ihandle* bar)
   else
   {
     int w, h, x, y;
-    long color = iupDrawStrToColor(IupGetAttribute(ih, "COLOR"), iupDrawColor(160, 160, 160, 255));
+    long color = iupDrawStrToColor(iupAttribGet(ih, "COLOR"), iDetachBoxDefaultColor());
 
     iupdrvDrawGetSize(dc, &w, &h);
 
