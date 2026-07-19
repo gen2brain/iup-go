@@ -13,6 +13,7 @@
 
 #include <cstring>
 #include <climits>
+#include <cstdlib>
 
 extern "C" {
 #include "iup.h"
