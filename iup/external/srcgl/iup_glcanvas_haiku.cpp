@@ -479,6 +479,10 @@ static void haikuGLInvalidateTransparent(Ihandle* child)
       BView* v = (BView*)c->handle;
       if (v->Window())
         v->Invalidate();
+
+      BView* inner = (BView*)iupAttribGet(c, "_IUPHAIKU_FRAME_INNER");
+      if (inner && inner->Window())
+        inner->Invalidate();
     }
     if (c->firstchild)
       haikuGLInvalidateTransparent(c->firstchild);
