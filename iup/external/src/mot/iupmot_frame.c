@@ -280,6 +280,16 @@ static int motFrameMapMethod(Ihandle* ih)
   /* initialize the widget */
   XtRealizeWidget(ih->handle);
 
+  iupmotSetGLBackgroundChild(ih);
+  if (iupAttribGet(ih, "_IUPMOT_GLTRANSPARENT"))
+  {
+    Widget title_label = (Widget)iupAttribGet(ih, "_IUPMOT_FRAMELABEL");
+    if (child_manager && XtWindow(child_manager))
+      XSetWindowBackgroundPixmap(iupmot_display, XtWindow(child_manager), ParentRelative);
+    if (title_label && XtWindow(title_label))
+      XSetWindowBackgroundPixmap(iupmot_display, XtWindow(title_label), ParentRelative);
+  }
+
   return IUP_NOERROR;
 }
 

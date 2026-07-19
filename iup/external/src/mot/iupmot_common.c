@@ -38,6 +38,21 @@ IUP_SDK_API void iupdrvActivate(Ihandle* ih)
   XtCallActionProc(ih->handle, "ArmAndActivate", 0, 0, 0 );
 }
 
+IUP_DRV_API void iupmotSetGLBackgroundChild(Ihandle* ih)
+{
+  Ihandle* native_parent;
+
+  if (!ih->handle || !XtWindow(ih->handle) || iupAttribGet(ih, "BGCOLOR"))
+    return;
+
+  native_parent = iupChildTreeGetNativeParent(ih);
+  if (native_parent && (IupClassMatch(native_parent, "glbackgroundbox") || iupAttribGet(native_parent, "_IUPMOT_GLTRANSPARENT")))
+  {
+    XSetWindowBackgroundPixmap(iupmot_display, XtWindow(ih->handle), ParentRelative);
+    iupAttribSet(ih, "_IUPMOT_GLTRANSPARENT", "1");
+  }
+}
+
 static void motSaveAttributesRec(Ihandle* ih)
 {
   Ihandle *child;
