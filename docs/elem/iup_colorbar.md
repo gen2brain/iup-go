@@ -124,7 +124,7 @@ It is only called if SHOW_SECONDARY=YES**.**
 When the control has the focus the keyboard can be used to change the colors and activate the callbacks.
 Use the arrow keys to move from cell to cell, **Home** goes to the first cell, **End** goes to the last cell.
 **Space** will activate the **SELECT_CB** callback for the primary color, **Ctrl**+**Space** will activate the **SELECT_CB** callback for the secondary color.
-**Shift**+**Space** will activate the **EXTENTED_CB** callback.
+**Shift**+**Space** will activate the **EXTENDED_CB** callback.
 **Shift**+**Enter** will activate the **CELL_CB** callback.
 
 ### Examples

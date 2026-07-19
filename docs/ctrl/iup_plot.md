@@ -357,7 +357,7 @@ The maximum number of plots is 20.
 
 All plot attributes and callbacks are dependent on this value.
 
-**IMPORTANT**: When an **IupCanvas** mouse event occurs, such as BUTTON_CB, WHELL_CB or MOTION_CB, the current plot is set to the plot where the event occurred.
+**IMPORTANT**: When an **IupCanvas** mouse event occurs, such as BUTTON_CB, WHEEL_CB or MOTION_CB, the current plot is set to the plot where the event occurred.
 
 **PLOT_INSERT** (write-only): inserts a new plot at the given index. If value is NULL will append after the last plot.
 Value can also be the TITLE of an existing plot.
