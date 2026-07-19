@@ -493,6 +493,10 @@ func SetAttributeId(ih Ihandle, name string, id int, value interface{}) {
 	switch v := value.(type) {
 	case nil:
 		ccall("IupSetAttributeId", "", []interface{}{"number", "string", "number", "number"}, []interface{}{int(ih), name, id, 0})
+	case Ihandle:
+		ccall("IupSetAttributeId", "", []interface{}{"number", "string", "number", "number"}, []interface{}{int(ih), name, id, int(v)})
+	case uintptr:
+		ccall("IupSetAttributeId", "", []interface{}{"number", "string", "number", "number"}, []interface{}{int(ih), name, id, int(v)})
 	case string:
 		ccall("IupSetStrAttributeId", "", []interface{}{"number", "string", "number", "string"}, []interface{}{int(ih), name, id, v})
 	case int:
@@ -516,6 +520,10 @@ func SetAttributeId2(ih Ihandle, name string, lin, col int, value interface{}) {
 	switch v := value.(type) {
 	case nil:
 		ccall("IupSetAttributeId2", "", []interface{}{"number", "string", "number", "number", "number"}, []interface{}{int(ih), name, lin, col, 0})
+	case Ihandle:
+		ccall("IupSetAttributeId2", "", []interface{}{"number", "string", "number", "number", "number"}, []interface{}{int(ih), name, lin, col, int(v)})
+	case uintptr:
+		ccall("IupSetAttributeId2", "", []interface{}{"number", "string", "number", "number", "number"}, []interface{}{int(ih), name, lin, col, int(v)})
 	case string:
 		ccall("IupSetStrAttributeId2", "", []interface{}{"number", "string", "number", "number", "string"}, []interface{}{int(ih), name, lin, col, v})
 	case int:
@@ -584,6 +592,10 @@ func SetAttribute(ih Ihandle, name string, value interface{}) {
 	switch v := value.(type) {
 	case nil:
 		ccall("IupSetAttribute", "", []interface{}{"number", "string", "number"}, []interface{}{int(ih), name, 0})
+	case Ihandle:
+		ccall("IupSetAttribute", "", []interface{}{"number", "string", "number"}, []interface{}{int(ih), name, int(v)})
+	case uintptr:
+		ccall("IupSetAttribute", "", []interface{}{"number", "string", "number"}, []interface{}{int(ih), name, int(v)})
 	case string:
 		ccall("IupSetStrAttribute", "", []interface{}{"number", "string", "string"}, []interface{}{int(ih), name, v})
 	case bool:
@@ -739,6 +751,10 @@ func SetGlobal(name string, value interface{}) {
 	switch v := value.(type) {
 	case nil:
 		ccall("IupSetGlobal", "", []interface{}{"string", "number"}, []interface{}{name, 0})
+	case Ihandle:
+		ccall("IupSetGlobal", "", []interface{}{"string", "number"}, []interface{}{name, int(v)})
+	case uintptr:
+		ccall("IupSetGlobal", "", []interface{}{"string", "number"}, []interface{}{name, int(v)})
 	case string:
 		ccall("IupSetStrGlobal", "", []interface{}{"string", "string"}, []interface{}{name, v})
 	case bool:

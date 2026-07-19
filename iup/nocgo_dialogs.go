@@ -253,11 +253,11 @@ func GetParam(title string, action GetParamFunc, format string, data ...interfac
 		for i := 0; i < len(types); i++ {
 			switch types[i] {
 			case 'b', 'i', 'l', 'o':
-				*data[dataIdx].(*int) = int(*(*int32)(unsafe.Pointer(paramData[i])))
+				*data[dataIdx].(*int) = int(*(*int32)(goPtr(paramData[i])))
 			case 'r', 'a':
-				*data[dataIdx].(*float32) = *(*float32)(unsafe.Pointer(paramData[i]))
+				*data[dataIdx].(*float32) = *(*float32)(goPtr(paramData[i]))
 			case 'R', 'A':
-				*data[dataIdx].(*float64) = *(*float64)(unsafe.Pointer(paramData[i]))
+				*data[dataIdx].(*float64) = *(*float64)(goPtr(paramData[i]))
 			case 's', 'm', 'c', 'f', 'n', 'd':
 				*data[dataIdx].(*string) = goString(paramData[i])
 			}

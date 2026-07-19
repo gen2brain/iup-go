@@ -12,15 +12,19 @@ func init() {
 	runtime.LockOSThread()
 }
 
+func goPtr(p uintptr) unsafe.Pointer {
+	return *(*unsafe.Pointer)(unsafe.Pointer(&p))
+}
+
 func goString(p uintptr) string {
 	if p == 0 {
 		return ""
 	}
 	var n int
-	for *(*byte)(unsafe.Pointer(p + uintptr(n))) != 0 {
+	for *(*byte)(goPtr(p + uintptr(n))) != 0 {
 		n++
 	}
-	return string(unsafe.Slice((*byte)(unsafe.Pointer(p)), n))
+	return string(unsafe.Slice((*byte)(goPtr(p)), n))
 }
 
 func optCStr(s string) *byte {

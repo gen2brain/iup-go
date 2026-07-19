@@ -1142,7 +1142,7 @@ type MultiSelectionFunc func(ih Ihandle, ids []int, n int) int
 
 var multiSelectionCB = purego.NewCallback(func(ih, ids uintptr, n int32) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_MULTISELECTION_CB").(MultiSelectionFunc); ok {
-		cints := unsafe.Slice((*int32)(unsafe.Pointer(ids)), int(n))
+		cints := unsafe.Slice((*int32)(goPtr(ids)), int(n))
 		goIds := make([]int, n)
 		for i, v := range cints {
 			goIds[i] = int(v)
@@ -1301,7 +1301,7 @@ type DragDataFunc func(ih Ihandle, dragType string, data unsafe.Pointer, size in
 
 var dragDataCB = purego.NewCallback(func(ih, dragType, data uintptr, size int32) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_DRAGDATA_CB").(DragDataFunc); ok {
-		return f(Ihandle(ih), goString(dragType), unsafe.Pointer(data), int(size))
+		return f(Ihandle(ih), goString(dragType), goPtr(data), int(size))
 	}
 	return 0
 })
@@ -1329,7 +1329,7 @@ type DropDataFunc func(ih Ihandle, dragType string, data unsafe.Pointer, size, x
 
 var dropDataCB = purego.NewCallback(func(ih, dragType, data uintptr, size, x, y int32) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_DROPDATA_CB").(DropDataFunc); ok {
-		return f(Ihandle(ih), goString(dragType), unsafe.Pointer(data), int(size), int(x), int(y))
+		return f(Ihandle(ih), goString(dragType), goPtr(data), int(size), int(x), int(y))
 	}
 	return 0
 })
@@ -1343,7 +1343,7 @@ func intSlice(p uintptr, n int32) []int {
 	if p == 0 || n <= 0 {
 		return nil
 	}
-	src := unsafe.Slice((*int32)(unsafe.Pointer(p)), int(n))
+	src := unsafe.Slice((*int32)(goPtr(p)), int(n))
 	out := make([]int, n)
 	for i, v := range src {
 		out[i] = int(v)
