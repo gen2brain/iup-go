@@ -4,19 +4,8 @@ This directory pairs the iOS (CocoaTouch) C driver with build helper and app-bun
 
 Two independent build flows are supported:
 
-1. **Go flow on macOS (native)** - Apple's clang + codesign, no third-party tooling.
-2. **Go flow on Linux (cross-compile)** - osxcross + zsign + go-ios.
-
-## Project layout
-
-```
-iup/external/ios/
-├── build-ios.sh          native macOS build/sign/install (Apple toolchain)
-├── build-ios-cross.sh    end-to-end Linux cross-compile pipeline
-├── build-framework.sh    native macOS XCFramework producer
-├── iupapp/               app-bundle template (Info.plist, entitlements)
-└── library/              IUP.xcframework metadata (Info.plist.in, modulemap)
-```
+* **Go flow on macOS (native)** - Apple's clang + codesign, no third-party tooling.
+* **Go flow on Linux (cross-compile)** - osxcross + zsign + go-ios.
 
 ## Prerequisites
 

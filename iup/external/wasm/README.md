@@ -5,18 +5,8 @@ Widgets render as real DOM elements, so an app looks and behaves like a normal w
 
 Two independent build flows are supported:
 
-1. **Go flow (primary)** - a normal IUP-Go program compiled for `GOOS=js GOARCH=wasm`, served alongside the Emscripten-built IUP module.
-2. **C flow (optional)** - a `*.c`/`*.cpp` IUP app compiled together with IUP into a single module.
-
-## Project layout
-
-```
-iup/external/wasm/
-├── build-wasm.sh     build helper (+ optional headless-Chrome screenshot/log)
-├── serve/main.go     dev server with the required headers
-├── web/              loader page, worker, and DOM glue copied into build/
-└── build/            generated output, served as the site root
-```
+* **Go flow (primary)** - a normal IUP-Go program compiled for `GOOS=js GOARCH=wasm`, served alongside the Emscripten-built IUP module.
+* **C flow (optional)** - a `*.c`/`*.cpp` IUP app compiled together with IUP into a single module.
 
 ## Prerequisites
 
