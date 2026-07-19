@@ -26,6 +26,9 @@ IUP_DRV_API void iupmotLoopPostMessageInit(void);
 IUP_DRV_API void iupmotDialogSetVisual(Ihandle* ih, void* visual);
 IUP_DRV_API void iupmotDialogResetVisual(Ihandle* ih);
 
+/* makes a child window transparent (ParentRelative) when it sits over a GLBackgroundBox */
+IUP_DRV_API void iupmotSetGLBackgroundChild(Ihandle* ih);
+
 /* focus */
 IUP_DRV_API void iupmotFocusChangeEvent(Widget w, Ihandle *ih, XEvent *evt, Boolean *cont);
 

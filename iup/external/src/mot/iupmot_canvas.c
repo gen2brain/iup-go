@@ -172,9 +172,17 @@ static void motCanvasGLRefreshChildren(Ihandle* child)
   {
     if (c->handle && iupAttribGet(c, "_IUPMOT_GLTRANSPARENT"))
     {
+      Widget internal[2];
+      int i;
       Window cw = XtWindow(c->handle);
       if (cw)
         XClearArea(iupmot_display, cw, 0, 0, 0, 0, True);
+
+      internal[0] = (Widget)iupAttribGet(c, "_IUPMOT_FRAMECONTAINER");
+      internal[1] = (Widget)iupAttribGet(c, "_IUPMOT_FRAMELABEL");
+      for (i = 0; i < 2; i++)
+        if (internal[i] && XtWindow(internal[i]))
+          XClearArea(iupmot_display, XtWindow(internal[i]), 0, 0, 0, 0, True);
     }
     if (c->firstchild)
       motCanvasGLRefreshChildren(c->firstchild);
