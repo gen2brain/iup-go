@@ -1245,7 +1245,7 @@ func goIupOpenCloseCB(ih unsafe.Pointer, state C.int) C.int {
 
 // setOpenCloseFunc for OPENCLOSE_CB.
 func setOpenCloseFunc(ih Ihandle, f OpenCloseFunc) {
-	storeCallback(ih, "_IUPGO_OPENCLOSE", f)
+	storeCallback(ih, "_IUPGO_OPENCLOSE_CB", f)
 
 	C.goIupSetOpenCloseFunc(ih.ptr())
 }
