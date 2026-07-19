@@ -27,6 +27,14 @@ func main() {
 	scrollbox := iup.ScrollBox(vbox).SetAttributes(`EXPAND=YES`)
 	iup.SetHandle("SCROLLBOXTEST", scrollbox)
 
+	status := iup.Label("POSY=0").SetAttributes(`EXPAND=HORIZONTAL`)
+	iup.SetHandle("status", status)
+
+	scrollbox.SetCallback("LAYOUTUPDATE_CB", iup.LayoutUpdateFunc(func(ih iup.Ihandle) int {
+		iup.GetHandle("status").SetAttribute("TITLE", "POSY="+iup.GetAttribute(ih, "POSY"))
+		return iup.DEFAULT
+	}))
+
 	btnTop := iup.Button("Top").SetAttributes(`PADDING=5x5`)
 	btnBottom := iup.Button("Bottom").SetAttributes(`PADDING=5x5`)
 	btnChild := iup.Button("Label 10").SetAttributes(`PADDING=5x5`)
@@ -52,7 +60,7 @@ func main() {
 		return iup.DEFAULT
 	}))
 
-	buttons := iup.Hbox(btnTop, btnBottom, btnChild, btnPos).SetAttributes(`MARGIN=10x5, GAP=5`)
+	buttons := iup.Hbox(btnTop, btnBottom, btnChild, btnPos, status).SetAttributes(`MARGIN=10x5, GAP=5, ALIGNMENT=ACENTER`)
 
 	dlg := iup.Dialog(
 		iup.Vbox(buttons, scrollbox),
