@@ -276,6 +276,88 @@ static int cocoaLabelSetPaddingAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
+static void cocoaLabelApplyLineBreakMode(NSTextField* the_label, BOOL wordwrap, BOOL ellipsis)
+{
+  IUPCocoaVerticalAlignmentTextFieldCell* vertical_cell = (IUPCocoaVerticalAlignmentTextFieldCell*)[the_label cell];
+  NSCAssert([vertical_cell isKindOfClass:[IUPCocoaVerticalAlignmentTextFieldCell class]], @"Expected IUPCocoaVerticalAlignmentTextFieldCell");
+
+  if ([the_label respondsToSelector:@selector(setLineBreakMode:)])
+  {
+    if (wordwrap)
+    {
+      [the_label setUsesSingleLineMode:NO];
+      [the_label setLineBreakMode:NSLineBreakByWordWrapping];
+    }
+    else if (ellipsis)
+    {
+      [the_label setUsesSingleLineMode:YES];
+      [the_label setLineBreakMode:NSLineBreakByTruncatingTail];
+    }
+    else
+    {
+      [the_label setLineBreakMode:NSLineBreakByClipping];
+    }
+  }
+  else
+  {
+    if (wordwrap)
+    {
+      [the_label setUsesSingleLineMode:NO];
+      [[the_label cell] setScrollable:NO];
+      [[the_label cell] setWraps:YES];
+      if (ellipsis)
+      {
+        [[the_label cell] setLineBreakMode:NSLineBreakByTruncatingTail];
+        [[the_label cell] setTruncatesLastVisibleLine:YES];
+      }
+      else
+      {
+        [[the_label cell] setLineBreakMode:NSLineBreakByWordWrapping];
+        [[the_label cell] setTruncatesLastVisibleLine:NO];
+      }
+    }
+    else if (ellipsis)
+    {
+      [the_label setUsesSingleLineMode:NO];
+      [[the_label cell] setScrollable:NO];
+      [[the_label cell] setWraps:YES];
+      [[the_label cell] setLineBreakMode:NSLineBreakByWordWrapping];
+      [[the_label cell] setTruncatesLastVisibleLine:YES];
+    }
+    else
+    {
+      [the_label setUsesSingleLineMode:YES];
+      [[the_label cell] setScrollable:YES];
+      [[the_label cell] setWraps:NO];
+      [[the_label cell] setLineBreakMode:NSLineBreakByClipping];
+      [[the_label cell] setTruncatesLastVisibleLine:NO];
+    }
+  }
+
+  [vertical_cell setUseWordWrap:wordwrap];
+  [vertical_cell setUseEllipsis:ellipsis];
+}
+
+static void cocoaLabelApplyInactiveColor(Ihandle* ih, NSTextField* the_label)
+{
+  if (iupdrvIsActive(ih))
+    return;
+
+  NSColor* disabled = [NSColor disabledControlTextColor];
+  NSAttributedString* current = [the_label attributedStringValue];
+  if (current && [current length] > 0)
+  {
+    NSMutableAttributedString* attr_str = [current mutableCopy];
+    [attr_str addAttribute:NSForegroundColorAttributeName value:disabled range:NSMakeRange(0, [attr_str length])];
+    [the_label setAttributedStringValue:attr_str];
+    [attr_str release];
+  }
+  else
+  {
+    [the_label setTextColor:disabled];
+  }
+}
+
 static int cocoaLabelSetTitleAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->type != IUP_LABEL_TEXT)
@@ -327,21 +409,9 @@ static int cocoaLabelSetTitleAttrib(Ihandle* ih, const char* value)
     ns_string = @"";
   }
 
-  /* Configure multi-line mode if needed */
-  if (has_newlines)
-  {
-    [the_label setUsesSingleLineMode:NO];
-    [[the_label cell] setScrollable:NO];
-    [[the_label cell] setWraps:YES];
-    [[the_label cell] setLineBreakMode:NSLineBreakByWordWrapping];
-  }
-  else
-  {
-    [the_label setUsesSingleLineMode:YES];
-    [[the_label cell] setScrollable:YES];
-    [[the_label cell] setWraps:NO];
-    [[the_label cell] setLineBreakMode:NSLineBreakByClipping];
-  }
+  BOOL wordwrap = has_newlines || iupAttribGetBoolean(ih, "WORDWRAP");
+  BOOL ellipsis = iupAttribGetBoolean(ih, "ELLIPSIS");
+  cocoaLabelApplyLineBreakMode(the_label, wordwrap, ellipsis);
 
   IupCocoaFont* iup_font = iupcocoaGetFont(ih);
   char* fgcolor = iupAttribGet(ih, "FGCOLOR");
@@ -390,6 +460,8 @@ static int cocoaLabelSetTitleAttrib(Ihandle* ih, const char* value)
   {
     [the_label setStringValue:ns_string];
   }
+
+  cocoaLabelApplyInactiveColor(ih, the_label);
 
   return 1;
 }
@@ -643,68 +715,6 @@ static int cocoaLabelSetAlignmentAttrib(Ihandle* ih, const char* value)
   }
 
   return 0;
-}
-
-static void cocoaLabelApplyLineBreakMode(NSTextField* the_label, BOOL wordwrap, BOOL ellipsis)
-{
-  IUPCocoaVerticalAlignmentTextFieldCell* vertical_cell = (IUPCocoaVerticalAlignmentTextFieldCell*)[the_label cell];
-  NSCAssert([vertical_cell isKindOfClass:[IUPCocoaVerticalAlignmentTextFieldCell class]], @"Expected IUPCocoaVerticalAlignmentTextFieldCell");
-
-  if ([the_label respondsToSelector:@selector(setLineBreakMode:)])
-  {
-    if (wordwrap)
-    {
-      [the_label setUsesSingleLineMode:NO];
-      [the_label setLineBreakMode:NSLineBreakByWordWrapping];
-    }
-    else if (ellipsis)
-    {
-      [the_label setUsesSingleLineMode:YES];
-      [the_label setLineBreakMode:NSLineBreakByTruncatingTail];
-    }
-    else
-    {
-      [the_label setLineBreakMode:NSLineBreakByClipping];
-    }
-  }
-  else
-  {
-    if (wordwrap)
-    {
-      [the_label setUsesSingleLineMode:NO];
-      [[the_label cell] setScrollable:NO];
-      [[the_label cell] setWraps:YES];
-      if (ellipsis)
-      {
-        [[the_label cell] setLineBreakMode:NSLineBreakByTruncatingTail];
-        [[the_label cell] setTruncatesLastVisibleLine:YES];
-      }
-      else
-      {
-        [[the_label cell] setLineBreakMode:NSLineBreakByWordWrapping];
-        [[the_label cell] setTruncatesLastVisibleLine:NO];
-      }
-    }
-    else if (ellipsis)
-    {
-      [the_label setUsesSingleLineMode:NO];
-      [[the_label cell] setScrollable:NO];
-      [[the_label cell] setWraps:YES];
-      [[the_label cell] setLineBreakMode:NSLineBreakByWordWrapping];
-      [[the_label cell] setTruncatesLastVisibleLine:YES];
-    }
-    else
-    {
-      [the_label setUsesSingleLineMode:YES];
-      [[the_label cell] setScrollable:YES];
-      [[the_label cell] setWraps:NO];
-      [[the_label cell] setLineBreakMode:NSLineBreakByClipping];
-      [[the_label cell] setTruncatesLastVisibleLine:NO];
-    }
-  }
-
-  [vertical_cell setUseWordWrap:wordwrap];
-  [vertical_cell setUseEllipsis:ellipsis];
 }
 
 static int cocoaLabelSetWordWrapAttrib(Ihandle* ih, const char* value)
