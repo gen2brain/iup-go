@@ -25,9 +25,11 @@
 static const void* IUP_COCOA_BUTTON_RECEIVER_OBJ_KEY = @"IUP_COCOA_BUTTON_RECEIVER_OBJ_KEY";
 
 @interface IupCocoaButtonCell : NSButtonCell
+@property (nonatomic, assign) BOOL isHovering;
 @end
 
 @implementation IupCocoaButtonCell
+@synthesize isHovering = _isHovering;
 
 - (void)drawWithFrame:(NSRect)cellFrame inView:(NSView*)controlView
 {
@@ -35,6 +37,11 @@ static const void* IUP_COCOA_BUTTON_RECEIVER_OBJ_KEY = @"IUP_COCOA_BUTTON_RECEIV
   {
     [self.backgroundColor setFill];
     NSRectFill(cellFrame);
+  }
+  if (self.isHovering)
+  {
+    [[[NSColor labelColor] colorWithAlphaComponent:0.15] setFill];
+    NSRectFillUsingOperation(cellFrame, NSCompositingOperationSourceOver);
   }
   [super drawWithFrame:cellFrame inView:controlView];
 }
@@ -76,7 +83,7 @@ static const void* IUP_COCOA_BUTTON_RECEIVER_OBJ_KEY = @"IUP_COCOA_BUTTON_RECEIV
   if (self.isFlat && !self.isHovering && [self isEnabled])
   {
     self.isHovering = YES;
-    [self setBordered:YES];
+    [(IupCocoaButtonCell*)[self cell] setIsHovering:YES];
     [self setNeedsDisplay:YES];
   }
 
@@ -96,7 +103,7 @@ static const void* IUP_COCOA_BUTTON_RECEIVER_OBJ_KEY = @"IUP_COCOA_BUTTON_RECEIV
   if (self.isFlat && self.isHovering)
   {
     self.isHovering = NO;
-    [self setBordered:NO];
+    [(IupCocoaButtonCell*)[self cell] setIsHovering:NO];
     [self setNeedsDisplay:YES];
   }
 
@@ -541,6 +548,9 @@ static int cocoaButtonSetTitleAttrib(Ihandle* ih, const char* value)
       else
       {
         [the_button setTitle:ns_string];
+
+        if (iupAttribGetBoolean(ih, "FLAT") && [the_button respondsToSelector:@selector(setContentTintColor:)])
+          [the_button setContentTintColor:[NSColor labelColor]];
       }
 
       /* Prevent text wrapping */
