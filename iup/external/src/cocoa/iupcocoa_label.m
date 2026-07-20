@@ -387,6 +387,10 @@ static int cocoaLabelSetTitleAttrib(Ihandle* ih, const char* value)
 
       [the_label setAttributedStringValue:attr_str];
       [attr_str release];
+
+      BOOL markup_wordwrap = (strchr(value, '\n') != NULL) || iupAttribGetBoolean(ih, "WORDWRAP");
+      cocoaLabelApplyLineBreakMode(the_label, markup_wordwrap, iupAttribGetBoolean(ih, "ELLIPSIS"));
+      cocoaLabelApplyInactiveColor(ih, the_label);
       return 1;
     }
   }
@@ -473,52 +477,14 @@ static int cocoaLabelSetActiveAttrib(Ihandle* ih, const char* value)
     return iupBaseSetActiveAttrib(ih, value);
 
   BOOL is_active = (BOOL)iupStrBoolean(value);
+  iupAttribSet(ih, "_IUPCOCOA_ACTIVE", is_active ? "YES" : "NO");
 
   if ([the_view isKindOfClass:[NSTextField class]])
   {
     NSTextField* the_label = (NSTextField*)the_view;
     [the_label setEnabled:is_active];
 
-    IupCocoaFont* iup_font = iupcocoaGetFont(ih);
-    BOOL uses_attributed_string = ([iup_font usesAttributes] || [[the_label attributedStringValue] length] > 0);
-
-    NSColor* color;
-    if (is_active)
-    {
-      char* user_color = iupAttribGet(ih, "_IUPCOCOA_USER_FGCOLOR");
-      if (user_color)
-      {
-        unsigned char r, g, b;
-        if (iupStrToRGB(user_color, &r, &g, &b))
-          color = [NSColor colorWithSRGBRed:r/255.0 green:g/255.0 blue:b/255.0 alpha:1.0];
-        else
-          color = [NSColor controlTextColor];
-      }
-      else
-      {
-        color = [NSColor controlTextColor];
-      }
-    }
-    else
-    {
-      color = [NSColor disabledControlTextColor];
-    }
-
-    if (uses_attributed_string)
-    {
-      NSMutableAttributedString* attr_str = [[the_label attributedStringValue] mutableCopy];
-      if (attr_str && [attr_str length] > 0)
-      {
-        NSRange range = NSMakeRange(0, [attr_str length]);
-        [attr_str addAttribute:NSForegroundColorAttributeName value:color range:range];
-        [the_label setAttributedStringValue:attr_str];
-        [attr_str release];
-      }
-    }
-    else
-    {
-      [the_label setTextColor:color];
-    }
+    cocoaLabelSetTitleAttrib(ih, iupAttribGet(ih, "TITLE"));
   }
   else if ([the_view isKindOfClass:[NSImageView class]])
   {
