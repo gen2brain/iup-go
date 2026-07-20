@@ -35,37 +35,28 @@ static int is_leap_year(int year)
     return 0;
 }
 
+static int iDatePickDaysInMonth(int month, int year)
+{
+  if (month == 2)
+    return is_leap_year(year) ? 29 : 28;
+  else if (month == 4 || month == 6 || month == 9 || month == 11)
+    return 30;
+  else
+    return 31;
+}
+
 static void iDatePickUpdateDayLimits(Ihandle* ih)
 {
+  Ihandle* txt_year = (Ihandle*)iupAttribGet(ih, "_IUP_DATE_YEAR");
   Ihandle* txt_month = (Ihandle*)iupAttribGet(ih, "_IUP_DATE_MONTH");
   Ihandle* txt_day = (Ihandle*)iupAttribGet(ih, "_IUP_DATE_DAY");
   int day = IupGetInt(txt_day, "VALUE");
-  int month = IupGetInt(txt_month, "VALUE");
-  if (month == 2)
-  {
-    Ihandle* txt_year = (Ihandle*)iupAttribGet(ih, "_IUP_DATE_YEAR");
-    int year = IupGetInt(txt_year, "VALUE");
-    if (is_leap_year(year))
-    {
-      IupSetAttribute(txt_day, "MASKINT", "1:29");
-      if (day > 29)
-        IupSetInt(txt_day, "VALUE", 29);
-    }
-    else
-    {
-      IupSetAttribute(txt_day, "MASKINT", "1:28");
-      if (day > 28)
-        IupSetInt(txt_day, "VALUE", 28);
-    }
-  }
-  else if (month == 4 || month == 6 || month == 9 || month == 11)
-  {
-    IupSetAttribute(txt_day, "MASKINT", "1:30");
-    if (day > 30)
-      IupSetInt(txt_day, "VALUE", 30);
-  }
-  else
-    IupSetAttribute(txt_day, "MASKINT", "1:31");
+  int max_day = iDatePickDaysInMonth(IupGetInt(txt_month, "VALUE"), IupGetInt(txt_year, "VALUE"));
+
+  IupSetStrf(txt_day, "MASKINT", "1:%d", max_day);
+
+  if (day > max_day)
+    IupSetInt(txt_day, "VALUE", max_day);
 }
 
 static int iDatePickCalendarValueChanged_CB(Ihandle* ih_calendar)
@@ -268,9 +259,14 @@ static int iDatePickSetValueAttrib(Ihandle* ih, const char* value)
       Ihandle* txt_year = (Ihandle*)iupAttribGet(ih, "_IUP_DATE_YEAR");
       Ihandle* txt_month = (Ihandle*)iupAttribGet(ih, "_IUP_DATE_MONTH");
       Ihandle* txt_day = (Ihandle*)iupAttribGet(ih, "_IUP_DATE_DAY");
+      int max_day;
 
       if (month < 1) month = 1;
       if (month > 12) month = 12;
+
+      max_day = iDatePickDaysInMonth(month, year);
+      if (day < 1) day = 1;
+      if (day > max_day) day = max_day;
 
       IupSetInt(txt_year, "VALUE", year);
       if (iupAttribGetBoolean(ih, "ZEROPRECED"))
@@ -281,9 +277,9 @@ static int iDatePickSetValueAttrib(Ihandle* ih, const char* value)
       iDatePickUpdateDayLimits(ih);
 
       if (iupAttribGetBoolean(ih, "ZEROPRECED"))
-        IupSetStrf(txt_day, "VALUEMASKED", "%02d", day);
+        IupSetStrf(txt_day, "VALUE", "%02d", day);
       else
-        IupSetInt(txt_day, "VALUEMASKED", day);
+        IupSetInt(txt_day, "VALUE", day);
     }
   }
   return 0; /* do not store value in hash table */
