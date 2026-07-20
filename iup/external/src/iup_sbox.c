@@ -198,7 +198,7 @@ static char* iSboxGetBarSizeAttrib(Ihandle* ih)
 
 static int iSboxSetColorAttrib(Ihandle* ih, const char* value)
 {
-  IupSetAttribute(ih->firstchild, "COLOR", value);
+  IupSetStrAttribute(ih->firstchild, "COLOR", value);
   return 0;  /* do not store value in hash table */
 }
 
