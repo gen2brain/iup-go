@@ -184,23 +184,6 @@ static void cocoaTabsHideShowPage(Ihandle* ih, int old_pos, int new_pos, int is_
     if (new_child) new_container = (NSView*)iupAttribGet(new_child, "_IUPTAB_CONTAINER");
   }
 
-#ifndef GNUSTEP
-  if (old_container && new_container && old_container != new_container)
-  {
-    new_container.alphaValue = 0.0;
-    [new_container setHidden:NO];
-    [NSAnimationContext runAnimationGroup:^(NSAnimationContext* context) {
-      context.duration = 0.15;
-      [[new_container animator] setAlphaValue:1.0];
-      [[old_container animator] setAlphaValue:0.0];
-    } completionHandler:^{
-      [old_container setHidden:YES];
-      old_container.alphaValue = 1.0;
-    }];
-    return;
-  }
-#endif
-
   if (old_container) [old_container setHidden:YES];
   if (new_container) [new_container setHidden:NO];
 }

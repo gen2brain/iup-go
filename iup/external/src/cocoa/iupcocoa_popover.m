@@ -28,10 +28,12 @@ static const void* POPOVER_DELEGATE_KEY = @"POPOVER_DELEGATE_KEY";
 {
   Ihandle* _ih;
 }
+@property(nonatomic, assign) NSTimeInterval lastCloseTime;
 - (instancetype)initWithIhandle:(Ihandle*)ih;
 @end
 
 @implementation IupCocoaPopoverDelegate
+@synthesize lastCloseTime = _lastCloseTime;
 
 - (instancetype)initWithIhandle:(Ihandle*)ih
 {
@@ -45,6 +47,8 @@ static const void* POPOVER_DELEGATE_KEY = @"POPOVER_DELEGATE_KEY";
 
 - (void)popoverDidClose:(NSNotification *)notification
 {
+  self.lastCloseTime = [NSDate timeIntervalSinceReferenceDate];
+
   IFni show_cb = (IFni)IupGetCallback(_ih, "SHOW_CB");
   if (show_cb)
     show_cb(_ih, IUP_HIDE);
@@ -145,6 +149,13 @@ static int cocoaPopoverSetVisibleAttrib(Ihandle* ih, const char* value)
     }
 
     popover = (NSPopover*)ih->handle;
+
+    /* A transient popover is dismissed by the same click that re-triggers the anchor, which would reopen it. */
+    {
+      IupCocoaPopoverDelegate* popover_delegate = objc_getAssociatedObject(popover, POPOVER_DELEGATE_KEY);
+      if (popover_delegate && ([NSDate timeIntervalSinceReferenceDate] - [popover_delegate lastCloseTime]) < 0.25)
+        return 0;
+    }
 
     anchor_view = iupcocoaGetMainView(anchor);
     if (!anchor_view)
@@ -271,14 +282,6 @@ static int cocoaPopoverMapMethod(Ihandle* ih)
   [popover setDelegate:delegate];
   objc_setAssociatedObject(popover, POPOVER_DELEGATE_KEY, delegate, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
   [delegate release];
-
-  int show_arrow = iupAttribGetBoolean(ih, "ARROW");
-  if (!show_arrow)
-  {
-#ifndef GNUSTEP
-    [popover setAppearance:[NSAppearance appearanceNamed:NSAppearanceNameAqua]];
-#endif
-  }
 
   ih->handle = popover;
 
