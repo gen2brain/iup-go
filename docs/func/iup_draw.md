@@ -14,7 +14,7 @@ Internally, IupDraw uses several drawing APIs depending on the platform:
 - **Qt**: QPainter
 - **FLTK**: FLTK offscreen drawing (fl_draw)
 - **EFL**: Efl.Canvas.VG (vector graphics)
-- **Motif**: X11 (Xlib)
+- **Motif**: X11 (Xlib + XRender)
 - **Android**: android.graphics.Canvas
 - **Haiku**: BView attached to an offscreen BBitmap (Interface Kit)
 
@@ -59,7 +59,9 @@ Returns the previous rectangular clipping region set by IupDrawSetClipRect, if c
 ### Primitives
 
 The primitives color is controlled by the attribute **DRAWCOLOR**.  Default: "0 0 0".
-The alpha component is also supported but depends on the current driver, if not specified 255 (opaque) is assumed.
+The alpha component is also supported, if not specified 255 (opaque) is assumed.
+In Motif alpha requires the X11 RENDER extension (text alpha only in the Xft build).
+In FLTK alpha blending requires the Cairo-based build, otherwise colors are pre-blended with the theme background.
 
 Rectangle, Arc, Ellipse and Polygon can be filled or stroked. When stroked, the line style can be continuous, dashed or dotted.
 These are controlled by the attribute **DRAWSTYLE**.
@@ -112,7 +114,7 @@ Draws a quadratic Bezier curve from (x1,y1) to (x3,y3) with control point (x2,y2
 
 ### Gradients
 
-Gradient colors are passed as parameters, not controlled by DRAWCOLOR.
+Gradient colors are passed as parameters, not controlled by DRAWCOLOR. Both colors also accept the alpha component in the "R G B A" format for translucent gradients.
 
     void IupDrawLinearGradient(Ihandle* ih, int x1, int y1, int x2, int y2, float angle, const char* color1, const char* color2);
 
@@ -149,7 +151,15 @@ Use [IupSetHandle](../func/iup_sethandle.md) or [IupSetAttributeHandle](../func/
 See also [IupImage](../elem/iup_image.md).
 The **DRAWMAKEINACTIVE** attribute can be used to force the image to be drawn with an inactive state appearance.
 The **DRAWBGCOLOR** can be used to control the inactive state background color or when transparency is flattened.
-w and h are optional and can be -1 or 0, then the image size will be used, and no zoom will be performed.
+w and h are optional and can be -1 or 0, then the source size will be used, and no zoom will be performed.
+
+The **DRAWIMAGESRCRECT** attribute selects a source sub-rectangle in the format "X Y W H" (in image pixels), so a region of the image can be drawn without creating a new image. Default: NULL (whole image).
+
+The **DRAWIMAGETINT** attribute is a color "R G B [A]" that replaces the image color keeping its alpha channel, recoloring a monochrome image while preserving its shape. The tint alpha component is multiplied into the image alpha. Default: NULL (no tint).
+
+The **DRAWIMAGEOPACITY** attribute scales the opacity of the drawn image (0-255). Default: 255 (opaque).
+
+The **DRAWIMAGEQUALITY** attribute controls the interpolation used when the image is scaled. Can be: LINEAR or NEAREST. Default: LINEAR.
 
     void IupDrawSelectRect(Ihandle* ih, int x1, int y1, int x2, int y2);
 
@@ -169,6 +179,11 @@ Returns the drawing area size. In C unwanted values can be NULL.
 
 Returns the given text size using the font defined by DRAWFONT, if not defined then use [FONT](../attrib/iup_font.md).
 In C, unwanted values can be NULL, and if len is -1 the string must be 0 terminated, and len will be calculated using strlen.
+
+    void IupDrawGetTextMetrics(Ihandle* ih, int *ascent, int *descent, int *line_height);
+
+Returns the font vertical metrics for the font defined by DRAWFONT, if not defined then use [FONT](../attrib/iup_font.md).
+**ascent** is the baseline-to-top distance, **descent** the baseline-to-bottom distance, and **line_height** the line spacing. IupDrawText places the baseline at y+ascent. In C, unwanted values can be NULL.
 
     void IupDrawGetImageInfo(const char* name, int *w, int *h, int *bpp);
 
