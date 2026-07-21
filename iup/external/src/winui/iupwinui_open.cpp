@@ -34,10 +34,13 @@ typedef struct {
 } PACKAGE_VERSION_T;
 
 /* Dynamic loading of Windows App SDK Bootstrap */
+typedef HRESULT (WINAPI *MddBootstrapInitialize2Func)(UINT32, PCWSTR, PACKAGE_VERSION_T, INT32);
 typedef HRESULT (WINAPI *MddBootstrapInitializeFunc)(UINT32, PCWSTR, PACKAGE_VERSION_T);
 typedef void (WINAPI *MddBootstrapShutdownFunc)(void);
 
 static HMODULE winui_bootstrap_module = NULL;
+static MddBootstrapInitialize2Func winui_bootstrap_init2 = NULL;
+static MddBootstrapInitializeFunc winui_bootstrap_init = NULL;
 static MddBootstrapShutdownFunc winui_bootstrap_shutdown = NULL;
 
 extern "C" {
@@ -150,32 +153,8 @@ IUP_DRV_API void* iupwinuiGetDispatcherQueue(void)
  * Driver Initialization
  ****************************************************************************/
 
-static int iupwinuiInitBootstrap(void)
+static int iupwinuiBootstrapTryVersions(void)
 {
-  /* Try to load the Windows App SDK Bootstrap DLL */
-  winui_bootstrap_module = LoadLibraryW(L"Microsoft.WindowsAppRuntime.Bootstrap.dll");
-  if (!winui_bootstrap_module)
-  {
-    return 0;
-  }
-
-  MddBootstrapInitializeFunc initFunc = (MddBootstrapInitializeFunc)
-    GetProcAddress(winui_bootstrap_module, "MddBootstrapInitialize2");
-  if (!initFunc)
-  {
-    initFunc = (MddBootstrapInitializeFunc)
-      GetProcAddress(winui_bootstrap_module, "MddBootstrapInitialize");
-  }
-  winui_bootstrap_shutdown = (MddBootstrapShutdownFunc)
-    GetProcAddress(winui_bootstrap_module, "MddBootstrapShutdown");
-
-  if (!initFunc)
-  {
-    FreeLibrary(winui_bootstrap_module);
-    winui_bootstrap_module = NULL;
-    return 0;
-  }
-
   PACKAGE_VERSION_T minVersion = {};
   minVersion.Major = 1;
   minVersion.Minor = 0;
@@ -184,16 +163,61 @@ static int iupwinuiInitBootstrap(void)
   UINT32 versions[] = { 0x00010008, 0x00010007, 0x00010006, 0x00010005, 0x00010004, 0x00010003, 0x00010002, 0x00010001 };
   for (int i = 0; i < 8; i++)
   {
-    HRESULT hr = initFunc(versions[i], NULL, minVersion);
+    HRESULT hr = winui_bootstrap_init2 ? winui_bootstrap_init2(versions[i], NULL, minVersion, 0)
+                                       : winui_bootstrap_init(versions[i], NULL, minVersion);
     if (SUCCEEDED(hr))
-    {
       return 1;
-    }
+  }
+  return 0;
+}
+
+static int iupwinuiInitBootstrap(void)
+{
+  winui_bootstrap_module = LoadLibraryW(L"Microsoft.WindowsAppRuntime.Bootstrap.dll");
+  if (!winui_bootstrap_module)
+  {
+    return 0;
   }
 
-  FreeLibrary(winui_bootstrap_module);
-  winui_bootstrap_module = NULL;
-  return 0;
+  winui_bootstrap_init2 = (MddBootstrapInitialize2Func)
+    GetProcAddress(winui_bootstrap_module, "MddBootstrapInitialize2");
+  winui_bootstrap_init = (MddBootstrapInitializeFunc)
+    GetProcAddress(winui_bootstrap_module, "MddBootstrapInitialize");
+  winui_bootstrap_shutdown = (MddBootstrapShutdownFunc)
+    GetProcAddress(winui_bootstrap_module, "MddBootstrapShutdown");
+
+  if (!winui_bootstrap_init2 && !winui_bootstrap_init)
+  {
+    FreeLibrary(winui_bootstrap_module);
+    winui_bootstrap_module = NULL;
+    return 0;
+  }
+
+  /* AppExtension DDLM activation avoids the ~5s startup busy cursor; needs 20H1+ */
+  typedef LONG (WINAPI *RtlGetVersionFunc)(OSVERSIONINFOW*);
+  RtlGetVersionFunc getVersion = (RtlGetVersionFunc)
+    GetProcAddress(GetModuleHandleW(L"ntdll.dll"), "RtlGetVersion");
+  OSVERSIONINFOW osvi = { sizeof(osvi) };
+  int use_appext = getVersion && getVersion(&osvi) == 0 && osvi.dwBuildNumber >= 19041;
+
+  if (use_appext)
+    SetEnvironmentVariableW(L"MICROSOFT_WINDOWSAPPRUNTIME_DDLM_ALGORITHM", L"1");
+
+  int ok = iupwinuiBootstrapTryVersions();
+  if (use_appext)
+  {
+    SetEnvironmentVariableW(L"MICROSOFT_WINDOWSAPPRUNTIME_DDLM_ALGORITHM", NULL);
+    if (!ok)
+      ok = iupwinuiBootstrapTryVersions();
+  }
+
+  if (!ok)
+  {
+    FreeLibrary(winui_bootstrap_module);
+    winui_bootstrap_module = NULL;
+    return 0;
+  }
+  return 1;
 }
 
 typedef BOOL (__stdcall *ContentPreTranslateMessageFunc)(const MSG*);
