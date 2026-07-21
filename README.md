@@ -48,7 +48,7 @@ then install `pacman -S mingw-w64-clang-x86_64-go mingw-w64-clang-x86_64-clang` 
 You can also use [LLVM MinGW](https://github.com/mstorsjo/llvm-mingw).
 
 The requirement is to have `Microsoft.WindowsAppRuntime.Bootstrap.dll` and `resources.pri` files next to the `.exe` file.
-You can find those files in `Microsoft.WindowsAppSDK` that you can install with `nuget install Microsoft.WindowsAppSDK`.
+You can find those files in `Microsoft.WindowsAppSDK` that you can install with `nuget install Microsoft.WindowsAppSDK`. Use Windows App SDK 1.8 or newer.
 
 Add `-ldflags "-s -w"` to strip symbols and DWARF info; the C++/WinRT headers generate huge amounts of debug info, dropping it shrinks a typical `.exe` from ~30 MB to ~4 MB.
 
@@ -188,8 +188,6 @@ Native `Interface Kit` driver. Requires a Haiku nightly (or `beta6` once release
 
 * For `WebBrowser`, install `haikuwebkit_devel` via `pkgman install haikuwebkit_devel`.
 * You can also build for Qt, with the `qt` build tag. Install deps with `pkgman install qt6_base_devel`.
-
-Tested with the [gen2brain/go](https://github.com/gen2brain/go) Haiku port of the Go toolchain.
 
 [<img src="examples/sample/sample_haiku.png" width="700"/>](examples/sample/sample_haiku.png)
 
