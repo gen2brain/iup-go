@@ -265,11 +265,17 @@ EM_JS(void, iupwasmJsDrawText, (int cid, const char* txt, int x, int y, int w, i
   ctx.restore();
 })
 
-EM_JS(void, iupwasmJsDrawImage, (int cid, int imgId, int x, int y, int w, int h), {
+EM_JS(void, iupwasmJsDrawImage, (int cid, int imgId, int x, int y, int w, int h, int sx, int sy, int sw, int sh, int smooth, int opacity), {
   var ctx = globalThis.__iupCtx(cid); if (!ctx) return;
   var im = globalThis.__iupImg && globalThis.__iupImg.map[imgId];
   if (!im || !im.canvas) return;
-  ctx.drawImage(im.canvas, x, y, w, h);
+  var old = ctx.imageSmoothingEnabled;
+  var oldAlpha = ctx.globalAlpha;
+  ctx.imageSmoothingEnabled = !!smooth;
+  ctx.globalAlpha = oldAlpha * (opacity / 255);
+  ctx.drawImage(im.canvas, sx, sy, sw, sh, x, y, w, h);
+  ctx.globalAlpha = oldAlpha;
+  ctx.imageSmoothingEnabled = old;
 })
 
 EM_JS(void, iupwasmJsClipRect, (int cid, int x, int y, int w, int h), {
@@ -473,18 +479,26 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
   if (buf) free(buf);
 }
 
-IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_inactive, const char* bgcolor, int x, int y, int w, int h)
+IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_inactive, const char* bgcolor, long tint, int opacity, int x, int y, int w, int h, int sx, int sy, int sw, int sh, int quality)
 {
   int img_w, img_h, bpp;
-  void* handle = iupImageGetImage(name, dc->ih, make_inactive, bgcolor);
+  void* handle = iupImageGetImageTint(name, dc->ih, make_inactive, bgcolor, tint);
   if (!handle)
     return;
 
   iupdrvImageGetInfo(handle, &img_w, &img_h, &bpp);
-  if (w <= 0) w = img_w;
-  if (h <= 0) h = img_h;
 
-  iupwasmJsDrawImage(dc->cid, (int)(intptr_t)handle, x, y, w, h);
+  if (sw <= 0 || sh <= 0)
+  {
+    sx = 0;
+    sy = 0;
+    sw = img_w;
+    sh = img_h;
+  }
+  if (w <= 0) w = sw;
+  if (h <= 0) h = sh;
+
+  iupwasmJsDrawImage(dc->cid, (int)(intptr_t)handle, x, y, w, h, sx, sy, sw, sh, quality != IUP_DRAW_IMAGE_NEAREST, opacity);
 }
 
 IUP_SDK_API void iupdrvDrawSetClipRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2)

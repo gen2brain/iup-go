@@ -29,8 +29,8 @@
 
 
 void
-wdBitBltImage(WD_HCANVAS hCanvas, const WD_HIMAGE hImage,
-               const WD_RECT* pDestRect, const WD_RECT* pSourceRect)
+wdBitBltImageEx(WD_HCANVAS hCanvas, const WD_HIMAGE hImage,
+               const WD_RECT* pDestRect, const WD_RECT* pSourceRect, BOOL bNearest, float fOpacity)
 {
     if(d2d_enabled()) {
         d2d_canvas_t* c = (d2d_canvas_t*) hCanvas;
@@ -56,14 +56,17 @@ wdBitBltImage(WD_HCANVAS hCanvas, const WD_HIMAGE hImage,
             return;
         }
 
-        dummy_ID2D1RenderTarget_DrawBitmap(c->target, b, &dest, 1.0f,
-                dummy_D2D1_BITMAP_INTERPOLATION_MODE_LINEAR, (dummy_D2D1_RECT_F*) pSourceRect);
+        dummy_ID2D1RenderTarget_DrawBitmap(c->target, b, &dest, fOpacity,
+                bNearest ? dummy_D2D1_BITMAP_INTERPOLATION_MODE_NEAREST_NEIGHBOR
+                         : dummy_D2D1_BITMAP_INTERPOLATION_MODE_LINEAR,
+                (dummy_D2D1_RECT_F*) pSourceRect);
         dummy_ID2D1Bitmap_Release(b);
     } else {
         gdix_canvas_t* c = (gdix_canvas_t*) hCanvas;
         dummy_GpImage* b = (dummy_GpImage*) hImage;
         float dx, dy, dw, dh;
         float sx, sy, sw, sh;
+        void* attr = NULL;
 
         dx = pDestRect->x0;
         dy = pDestRect->y0;
@@ -87,9 +90,33 @@ wdBitBltImage(WD_HCANVAS hCanvas, const WD_HIMAGE hImage,
             sh = (float) h;
         }
 
+        if(fOpacity < 1.0f) {
+            float cm[25] = { 1,0,0,0,0, 0,1,0,0,0, 0,0,1,0,0, 0,0,0,0,0, 0,0,0,0,1 };
+            cm[18] = fOpacity;
+            gdix_vtable->fn_CreateImageAttributes(&attr);
+            if(attr)
+                gdix_vtable->fn_SetImageAttributesColorMatrix(attr, 0, TRUE, cm, NULL, 0);
+        }
+
+        if(bNearest)
+            gdix_vtable->fn_SetInterpolationMode(c->graphics, dummy_InterpolationModeNearestNeighbor);
+
         gdix_vtable->fn_DrawImageRectRect(c->graphics, b, dx, dy, dw, dh,
-                 sx, sy, sw, sh, dummy_UnitPixel, NULL, NULL, NULL);
+                 sx, sy, sw, sh, dummy_UnitPixel, attr, NULL, NULL);
+
+        if(bNearest)
+            gdix_vtable->fn_SetInterpolationMode(c->graphics, dummy_InterpolationModeDefault);
+
+        if(attr)
+            gdix_vtable->fn_DisposeImageAttributes(attr);
     }
+}
+
+void
+wdBitBltImage(WD_HCANVAS hCanvas, const WD_HIMAGE hImage,
+               const WD_RECT* pDestRect, const WD_RECT* pSourceRect)
+{
+    wdBitBltImageEx(hCanvas, hImage, pDestRect, pSourceRect, FALSE, 1.0f);
 }
 
 void

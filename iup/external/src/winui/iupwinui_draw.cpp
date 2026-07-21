@@ -909,12 +909,12 @@ extern "C" IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, in
   free(wtext);
 }
 
-extern "C" IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_inactive, const char* bgcolor, int x, int y, int w, int h)
+extern "C" IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_inactive, const char* bgcolor, long tint, int opacity, int x, int y, int w, int h, int sx, int sy, int sw, int sh, int quality)
 {
   if (!dc || !dc->d2dContext || !name)
     return;
 
-  void* handle = iupImageGetImage(name, dc->ih, make_inactive, bgcolor);
+  void* handle = iupImageGetImageTint(name, dc->ih, make_inactive, bgcolor, tint);
   if (!handle)
     return;
 
@@ -923,8 +923,15 @@ extern "C" IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, i
   if (img_w == 0 || img_h == 0)
     return;
 
-  if (w == -1 || w == 0) w = img_w;
-  if (h == -1 || h == 0) h = img_h;
+  if (sw <= 0 || sh <= 0)
+  {
+    sx = 0;
+    sy = 0;
+    sw = img_w;
+    sh = img_h;
+  }
+  if (w == -1 || w == 0) w = sw;
+  if (h == -1 || h == 0) h = sh;
 
   WriteableBitmap wb = winuiGetBitmapFromHandle(handle);
   if (!wb)
@@ -946,7 +953,10 @@ extern "C" IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, i
     return;
 
   D2D1_RECT_F destRect = D2D1::RectF((float)x, (float)y, (float)(x + w), (float)(y + h));
-  dc->d2dContext->DrawBitmap(d2dBitmap.get(), destRect);
+  D2D1_RECT_F srcRect = D2D1::RectF((float)sx, (float)sy, (float)(sx + sw), (float)(sy + sh));
+  dc->d2dContext->DrawBitmap(d2dBitmap.get(), destRect, opacity / 255.0f,
+    quality == IUP_DRAW_IMAGE_NEAREST ? D2D1_BITMAP_INTERPOLATION_MODE_NEAREST_NEIGHBOR : D2D1_BITMAP_INTERPOLATION_MODE_LINEAR,
+    srcRect);
 }
 
 extern "C" IUP_SDK_API void iupdrvDrawSetClipRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2)

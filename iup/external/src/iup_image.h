@@ -41,6 +41,14 @@ IUP_SDK_API int iupdrvGetIconPixels(Ihandle* ih, const char* value, int* width, 
 void* iupImageGetIcon(const char* name);
 void* iupImageGetCursor(const char* name);
 IUP_SDK_API void* iupImageGetImage(const char* name, Ihandle* parent, int make_inactive, const char* bgcolor);
+
+/** Same as iupImageGetImage but with a tint color (as iup_draw.h long) multiplied into the pixels.
+ * \ingroup image */
+IUP_SDK_API void* iupImageGetImageTint(const char* name, Ihandle* parent, int make_inactive, const char* bgcolor, long tint);
+
+/** Returns a malloc'd RGBA copy of the image data (8/24/32 bpp), NULL on failure.
+ * \ingroup image */
+IUP_SDK_API unsigned char* iupImageGetRGBAData(Ihandle* ih, int make_inactive, const char* bgcolor, int *img_w, int *img_h);
 IUP_SDK_API void iupImageGetInfo(const char* name, int *w, int *h, int *bpp);
 void iupImageRemoveFromCache(Ihandle* ih, void* handle);
 

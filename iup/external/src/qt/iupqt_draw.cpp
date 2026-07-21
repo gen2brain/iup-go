@@ -941,32 +941,31 @@ extern "C" IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, in
  * Image Draw
  ****************************************************************************/
 
-extern "C" IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_inactive, const char* bgcolor, int x, int y, int w, int h)
+extern "C" IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_inactive, const char* bgcolor, long tint, int opacity, int x, int y, int w, int h, int sx, int sy, int sw, int sh, int quality)
 {
   if (!dc || !dc->painter || !name)
     return;
 
-  /* Get image */
-  QPixmap* pixmap = (QPixmap*)iupImageGetImage(name, dc->ih, make_inactive, bgcolor);
+  QPixmap* pixmap = (QPixmap*)iupImageGetImageTint(name, dc->ih, make_inactive, bgcolor, tint);
   if (!pixmap)
     return;
 
-  /* Draw image */
-  if (w > 0 && h > 0 && (w != pixmap->width() || h != pixmap->height()))
+  if (sw <= 0 || sh <= 0)
   {
-    /* Scale to fit - use painter transformation instead of creating scaled pixmap */
-    /* This is faster as Qt can use hardware acceleration for the transform */
-    dc->painter->save();
-    dc->painter->translate(x, y);
-    dc->painter->scale((double)w / pixmap->width(), (double)h / pixmap->height());
-    dc->painter->drawPixmap(0, 0, *pixmap);
-    dc->painter->restore();
+    sx = 0;
+    sy = 0;
+    sw = pixmap->width();
+    sh = pixmap->height();
   }
-  else
-  {
-    /* Draw at original size */
-    dc->painter->drawPixmap(x, y, *pixmap);
-  }
+  if (w <= 0) w = sw;
+  if (h <= 0) h = sh;
+
+  dc->painter->save();
+  dc->painter->setRenderHint(QPainter::SmoothPixmapTransform, quality != IUP_DRAW_IMAGE_NEAREST);
+  if (opacity < 255)
+    dc->painter->setOpacity(opacity / 255.0);
+  dc->painter->drawPixmap(QRect(x, y, w, h), *pixmap, QRect(sx, sy, sw, sh));
+  dc->painter->restore();
 }
 
 /****************************************************************************

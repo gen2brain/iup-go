@@ -24,6 +24,10 @@ typedef struct _IdrawCanvas IdrawCanvas;
 
 enum{ IUP_DRAW_FILL, IUP_DRAW_STROKE, IUP_DRAW_STROKE_DASH, IUP_DRAW_STROKE_DOT, IUP_DRAW_STROKE_DASH_DOT, IUP_DRAW_STROKE_DASH_DOT_DOT };
 
+enum{ IUP_DRAW_IMAGE_NEAREST, IUP_DRAW_IMAGE_LINEAR };
+
+#define IUP_DRAW_NO_TINT -1L  /* outside the iupDrawColor range */
+
 /** Creates a draw canvas based on an IupCanvas.
  * This will create an image for offscreen drawing.
  * \ingroup drvdraw */
@@ -107,10 +111,9 @@ IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int r
  * \ingroup drvdraw */
 IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int x, int y, int w, int h, long color, const char* font, int flags, double text_orientation);
 
-/** Draws an image.
- * x,y is at left,top corner of the image.
+/** Draws an image. sw/sh -1 = whole image, w/h -1 = source size, tint IUP_DRAW_NO_TINT = none, opacity 0-255.
  * \ingroup drvdraw */
-IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_inactive, const char* bgcolor, int x, int y, int w, int h);
+IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_inactive, const char* bgcolor, long tint, int opacity, int x, int y, int w, int h, int sx, int sy, int sw, int sh, int quality);
 
 /** Sets a rectangle clipping area.
  * \ingroup drvdraw */

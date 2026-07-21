@@ -44,9 +44,9 @@ static int iBackgroundBoxRedrawBackImage_CB(Ihandle* ih)
   iupFlatDrawBox(dc, 0, ih->currentwidth - 1, 0, ih->currentheight - 1, bgcolor, NULL, 1);
 
   if (backimage_zoom)
-    iupdrvDrawImage(dc, bgimage, 0, bgcolor, 0, 0, ih->currentwidth, ih->currentheight);
+    iupdrvDrawImage(dc, bgimage, 0, bgcolor, IUP_DRAW_NO_TINT, 255, 0, 0, ih->currentwidth, ih->currentheight, 0, 0, -1, -1, IUP_DRAW_IMAGE_LINEAR);
   else
-    iupdrvDrawImage(dc, bgimage, 0, bgcolor, 0, 0, -1, -1);
+    iupdrvDrawImage(dc, bgimage, 0, bgcolor, IUP_DRAW_NO_TINT, 255, 0, 0, -1, -1, 0, 0, -1, -1, IUP_DRAW_IMAGE_LINEAR);
 
   iupdrvDrawFlush(dc);
 

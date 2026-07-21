@@ -870,7 +870,7 @@ static int iFlatTabsRedraw_CB(Ihandle* ih)
         }
 
         imagename = iupFlatGetImageName(ih, "CLOSEIMAGE", NULL, pos == tab_close_press, pos == tab_close_high, tab_active, &make_inactive);
-        iupdrvDrawImage(dc, imagename, make_inactive, background_color, close_x, close_y, -1, -1);
+        iupdrvDrawImage(dc, imagename, make_inactive, background_color, IUP_DRAW_NO_TINT, 255, close_x, close_y, -1, -1, 0, 0, -1, -1, IUP_DRAW_IMAGE_LINEAR);
       }
 
       /* goto next tab area */

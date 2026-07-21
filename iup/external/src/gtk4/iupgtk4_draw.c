@@ -690,10 +690,10 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
     cairo_restore(dc->image_cr);
 }
 
-IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_inactive, const char* bgcolor, int x, int y, int w, int h)
+IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_inactive, const char* bgcolor, long tint, int opacity, int x, int y, int w, int h, int sx, int sy, int sw, int sh, int quality)
 {
   int bpp, img_w, img_h;
-  GdkTexture* texture = iupImageGetImage(name, dc->ih, make_inactive, bgcolor);
+  GdkTexture* texture = iupImageGetImageTint(name, dc->ih, make_inactive, bgcolor, tint);
   cairo_surface_t* surface;
   guchar* pixels;
   int stride;
@@ -701,18 +701,22 @@ IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_ina
   if (!texture)
     return;
 
-  /* Get texture info and download pixels */
   iupdrvImageGetInfo(texture, &img_w, &img_h, &bpp);
 
-  if (w == -1 || w == 0) w = img_w;
-  if (h == -1 || h == 0) h = img_h;
+  if (sw <= 0 || sh <= 0)
+  {
+    sx = 0;
+    sy = 0;
+    sw = img_w;
+    sh = img_h;
+  }
+  if (w == -1 || w == 0) w = sw;
+  if (h == -1 || h == 0) h = sh;
 
-  /* Download texture data to create Cairo surface */
   stride = cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, img_w);
   pixels = g_malloc((gsize)stride * img_h);
   gdk_texture_download(texture, pixels, stride);
 
-  /* Create Cairo surface from pixel data */
   surface = cairo_image_surface_create_for_data(pixels, CAIRO_FORMAT_ARGB32,
                                                  img_w, img_h, stride);
 
@@ -720,20 +724,18 @@ IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_ina
 
   cairo_new_path(dc->image_cr);
   cairo_rectangle(dc->image_cr, x, y, w, h);
-  cairo_clip(dc->image_cr); /* intersect with the current clipping */
+  cairo_clip(dc->image_cr);
 
-  if (w != img_w || h != img_h)
-  {
-    /* Scale *before* setting the source surface */
-    cairo_translate(dc->image_cr, x, y);
-    cairo_scale(dc->image_cr, (double)w / img_w, (double)h / img_h);
-    cairo_translate(dc->image_cr, -x, -y);
-  }
+  cairo_translate(dc->image_cr, x, y);
+  cairo_scale(dc->image_cr, (double)w / sw, (double)h / sh);
 
-  cairo_set_source_surface(dc->image_cr, surface, x, y);
-  cairo_paint(dc->image_cr);  /* paints the current source everywhere within the current clip region. */
+  cairo_set_source_surface(dc->image_cr, surface, -sx, -sy);
+  cairo_pattern_set_filter(cairo_get_source(dc->image_cr), quality == IUP_DRAW_IMAGE_NEAREST ? CAIRO_FILTER_NEAREST : CAIRO_FILTER_GOOD);
+  if (opacity < 255)
+    cairo_paint_with_alpha(dc->image_cr, opacity / 255.0);
+  else
+    cairo_paint(dc->image_cr);
 
-  /* must restore clipping */
   cairo_restore(dc->image_cr);
 
   cairo_surface_destroy(surface);

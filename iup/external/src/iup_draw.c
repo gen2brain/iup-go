@@ -708,8 +708,6 @@ IUP_API char* IupDrawGetSvg(Ihandle* ih)
 static void iDrawGetImageRGBA(const char* name, int make_inactive, const char* bgcolor, unsigned char** out_rgba, int* out_w, int* out_h)
 {
   Ihandle* img_ih;
-  unsigned char* imgdata;
-  int img_w, img_h, bpp, channels;
 
   *out_rgba = NULL;
   *out_w = 0;
@@ -719,66 +717,16 @@ static void iDrawGetImageRGBA(const char* name, int make_inactive, const char* b
   if (!img_ih)
     return;
 
-  imgdata = (unsigned char*)iupAttribGet(img_ih, "WID");
-  if (!imgdata)
-    return;
-
-  img_w = img_ih->currentwidth;
-  img_h = img_ih->currentheight;
-  bpp = iupAttribGetInt(img_ih, "BPP");
-  channels = iupAttribGetInt(img_ih, "CHANNELS");
-
-  if (img_w <= 0 || img_h <= 0 || channels <= 0)
-    return;
-
-  {
-    int i, count;
-    unsigned char bg_r = 0, bg_g = 0, bg_b = 0;
-    unsigned char* rgba;
-    if (img_w > 32767 || img_h > 32767)
-      return;
-    count = img_w * img_h;
-    rgba = (unsigned char*)malloc(count * 4);
-    if (!rgba)
-      return;
-
-    if (bgcolor)
-      iupStrToRGB(bgcolor, &bg_r, &bg_g, &bg_b);
-
-    if (bpp == 32)
-      memcpy(rgba, imgdata, count * 4);
-    else if (bpp == 24)
-    {
-      for (i = 0; i < count; i++)
-      {
-        rgba[i * 4 + 0] = imgdata[i * 3 + 0];
-        rgba[i * 4 + 1] = imgdata[i * 3 + 1];
-        rgba[i * 4 + 2] = imgdata[i * 3 + 2];
-        rgba[i * 4 + 3] = 255;
-      }
-    }
-    else
-    {
-      free(rgba);
-      return;
-    }
-
-    if (make_inactive)
-    {
-      for (i = 0; i < count; i++)
-        iupImageColorMakeInactive(&rgba[i * 4], &rgba[i * 4 + 1], &rgba[i * 4 + 2], bg_r, bg_g, bg_b);
-    }
-
-    *out_rgba = rgba;
-    *out_w = img_w;
-    *out_h = img_h;
-  }
+  *out_rgba = iupImageGetRGBAData(img_ih, make_inactive, bgcolor, out_w, out_h);
 }
 
 IUP_API void IupDrawImage(Ihandle* ih, const char* name, int x, int y, int w, int h)
 {
   char* bgcolor;
-  int make_inactive;
+  char* value;
+  int make_inactive, quality, opacity;
+  int sx = 0, sy = 0, sw = -1, sh = -1;
+  long tint;
   iSvgCanvas* svg;
 
   iupASSERT(iupObjectCheck(ih));
@@ -790,6 +738,38 @@ IUP_API void IupDrawImage(Ihandle* ih, const char* name, int x, int y, int w, in
 
   bgcolor = iupAttribGetStr(ih, "DRAWBGCOLOR");
   make_inactive = iupAttribGetInt(ih, "DRAWMAKEINACTIVE");
+  tint = iupDrawStrToColor(iupAttribGetStr(ih, "DRAWIMAGETINT"), IUP_DRAW_NO_TINT);
+
+  opacity = iupAttribGetInt(ih, "DRAWIMAGEOPACITY");
+  if (opacity < 0) opacity = 0;
+  if (opacity > 255) opacity = 255;
+
+  quality = IUP_DRAW_IMAGE_LINEAR;
+  if (iupStrEqualNoCase(iupAttribGetStr(ih, "DRAWIMAGEQUALITY"), "NEAREST"))
+    quality = IUP_DRAW_IMAGE_NEAREST;
+
+  value = iupAttribGetStr(ih, "DRAWIMAGESRCRECT");
+  if (value && sscanf(value, "%d %d %d %d", &sx, &sy, &sw, &sh) == 4 && sw > 0 && sh > 0)
+  {
+    int img_w = 0, img_h = 0;
+    iupImageGetInfo(name, &img_w, &img_h, NULL);
+    if (img_w > 0 && img_h > 0)
+    {
+      if (sx < 0) sx = 0;
+      if (sy < 0) sy = 0;
+      if (sx > img_w - 1) sx = img_w - 1;
+      if (sy > img_h - 1) sy = img_h - 1;
+      if (sx + sw > img_w) sw = img_w - sx;
+      if (sy + sh > img_h) sh = img_h - sy;
+    }
+  }
+  else
+  {
+    sx = 0;
+    sy = 0;
+    sw = -1;
+    sh = -1;
+  }
 
   svg = IUP_SVG_GET(ih);
   if (svg)
@@ -799,15 +779,42 @@ IUP_API void IupDrawImage(Ihandle* ih, const char* name, int x, int y, int w, in
     iDrawGetImageRGBA(name, make_inactive, bgcolor, &rgba, &img_w, &img_h);
     if (rgba)
     {
+      if (sw > 0 && sh > 0 && sw <= img_w && sh <= img_h)
+      {
+        int line;
+        for (line = 0; line < sh; line++)
+          memmove(rgba + (size_t)line * sw * 4, rgba + ((size_t)(sy + line) * img_w + sx) * 4, (size_t)sw * 4);
+        img_w = sw;
+        img_h = sh;
+      }
+
+      if (tint != IUP_DRAW_NO_TINT || opacity < 255)
+      {
+        int i, count = img_w * img_h;
+        int tint_on = (tint != IUP_DRAW_NO_TINT);
+        unsigned char tr = iupDrawRed(tint), tg = iupDrawGreen(tint), tb = iupDrawBlue(tint), ta = iupDrawAlpha(tint);
+        for (i = 0; i < count; i++)
+        {
+          if (tint_on)
+          {
+            rgba[i * 4 + 0] = tr;
+            rgba[i * 4 + 1] = tg;
+            rgba[i * 4 + 2] = tb;
+            rgba[i * 4 + 3] = (unsigned char)((rgba[i * 4 + 3] * ta) / 255);
+          }
+          rgba[i * 4 + 3] = (unsigned char)((rgba[i * 4 + 3] * opacity) / 255);
+        }
+      }
+
       if (w == -1 || w == 0) w = img_w;
       if (h == -1 || h == 0) h = img_h;
-      iupSvgDrawImageRGBA(svg, rgba, img_w, img_h, x, y, w, h);
+      iupSvgDrawImageRGBA(svg, rgba, img_w, img_h, x, y, w, h, quality);
       free(rgba);
     }
     return;
   }
 
-  iupdrvDrawImage((IdrawCanvas*)iupAttribGet(ih, "_IUP_DRAW_DC"), name, make_inactive, bgcolor, x, y, w, h);
+  iupdrvDrawImage((IdrawCanvas*)iupAttribGet(ih, "_IUP_DRAW_DC"), name, make_inactive, bgcolor, tint, opacity, x, y, w, h, sx, sy, sw, sh, quality);
 }
 
 IUP_API void IupDrawSetClipRect(Ihandle* ih, int x1, int y1, int x2, int y2)
@@ -1420,7 +1427,7 @@ IUP_SDK_API void iupFlatDrawIcon(Ihandle* ih, IdrawCanvas* dc, int icon_x, int i
                                 img_width, img_height, txt_width, txt_height,
                                 &img_x, &img_y, &txt_x, &txt_y);
 
-      iupdrvDrawImage(dc, imagename, make_inactive, bgcolor, icon_x + img_x, icon_y + img_y, img_width, img_height);  /* no zoom */
+      iupdrvDrawImage(dc, imagename, make_inactive, bgcolor, IUP_DRAW_NO_TINT, 255, icon_x + img_x, icon_y + img_y, img_width, img_height, 0, 0, -1, -1, IUP_DRAW_IMAGE_LINEAR);  /* no zoom */
       iFlatDrawText(dc, icon_x + txt_x, icon_y + txt_y, txt_width, txt_height, title, font, text_flags, text_orientation, fgcolor, bgcolor, active);
     }
     else
@@ -1431,7 +1438,7 @@ IUP_SDK_API void iupFlatDrawIcon(Ihandle* ih, IdrawCanvas* dc, int icon_x, int i
 
       iFlatGetIconPosition(icon_width, icon_height, &x, &y, width, height, horiz_alignment, vert_alignment);
 
-      iupdrvDrawImage(dc, imagename, make_inactive, bgcolor, icon_x + x, icon_y + y, img_width, img_height);  /* no zoom */
+      iupdrvDrawImage(dc, imagename, make_inactive, bgcolor, IUP_DRAW_NO_TINT, 255, icon_x + x, icon_y + y, img_width, img_height, 0, 0, -1, -1, IUP_DRAW_IMAGE_LINEAR);  /* no zoom */
     }
   }
   else if (title)

@@ -1280,19 +1280,80 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
     free(text_copy);
 }
 
-IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_inactive, const char* bgcolor, int x, int y, int w, int h)
+typedef struct {
+  unsigned char* imgdata;
+  int img_w, bpp;
+  iupColor* colors;
+  int has_alpha, make_inactive;
+  unsigned char bg_r, bg_g, bg_b;
+  int tint_on, opacity;
+  unsigned char tr, tg, tb, ta;
+} IeflImageSampler;
+
+static void eflDrawImageSample(const IeflImageSampler* s, int ix, int iy, int* pr, int* pg, int* pb, int* pa)
+{
+  unsigned char r, g, b, a;
+
+  if (s->bpp == 8)
+  {
+    iupColor* c = &s->colors[s->imgdata[iy * s->img_w + ix]];
+    r = c->r;
+    g = c->g;
+    b = c->b;
+    a = c->a;
+  }
+  else
+  {
+    int channels = (s->bpp == 32) ? 4 : 3;
+    unsigned char* p = s->imgdata + ((size_t)iy * s->img_w + ix) * channels;
+    r = p[0];
+    g = p[1];
+    b = p[2];
+    a = (s->bpp == 32) ? p[3] : 255;
+
+    if (s->make_inactive)
+    {
+      if (a == 0 && s->has_alpha)
+      {
+        r = s->bg_r;
+        g = s->bg_g;
+        b = s->bg_b;
+        a = 255;
+      }
+      iupImageColorMakeInactive(&r, &g, &b, s->bg_r, s->bg_g, s->bg_b);
+    }
+  }
+
+  if (s->tint_on)
+  {
+    r = s->tr;
+    g = s->tg;
+    b = s->tb;
+    a = (unsigned char)((a * s->ta) / 255);
+  }
+
+  if (s->opacity < 255)
+    a = (unsigned char)((a * s->opacity) / 255);
+
+  *pa = a;
+  *pr = (r * a) / 255;
+  *pg = (g * a) / 255;
+  *pb = (b * a) / 255;
+}
+
+IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_inactive, const char* bgcolor, long tint, int opacity, int x, int y, int w, int h, int sx, int sy, int sw, int sh, int quality)
 {
   Efl_VG* vg_image;
   IeflVgImageData* img_data;
   Ihandle* img_ih;
-  unsigned char* imgdata;
   unsigned int* pixels;
   int img_w, img_h, bpp;
-  int colors_count = 0, has_alpha = 0;
+  int colors_count = 0;
   iupColor colors[256];
-  unsigned char bg_r = 0, bg_g = 0, bg_b = 0;
   int vis_x, vis_y, vis_w, vis_h;
+  int px, py, bilinear;
   double scale_x, scale_y;
+  IeflImageSampler s;
 
   img_ih = iupImageGetImageFromName(name);
   if (!img_ih)
@@ -1302,16 +1363,39 @@ IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_ina
   img_h = img_ih->currentheight;
   bpp = iupAttribGetInt(img_ih, "BPP");
 
+  memset(&s, 0, sizeof(s));
+  s.img_w = img_w;
+  s.bpp = bpp;
+  s.colors = colors;
+  s.make_inactive = make_inactive;
+  s.opacity = opacity;
+
   if (bpp == 8)
-    has_alpha = iupImageInitColorTable(img_ih, colors, &colors_count);
+    s.has_alpha = iupImageInitColorTable(img_ih, colors, &colors_count);
   else if (bpp == 32)
-    has_alpha = 1;
+    s.has_alpha = 1;
 
   if (make_inactive && bgcolor)
-    iupStrToRGB(bgcolor, &bg_r, &bg_g, &bg_b);
+    iupStrToRGB(bgcolor, &s.bg_r, &s.bg_g, &s.bg_b);
 
-  if (w <= 0) w = img_w;
-  if (h <= 0) h = img_h;
+  if (tint != IUP_DRAW_NO_TINT)
+  {
+    s.tint_on = 1;
+    s.tr = iupDrawRed(tint);
+    s.tg = iupDrawGreen(tint);
+    s.tb = iupDrawBlue(tint);
+    s.ta = iupDrawAlpha(tint);
+  }
+
+  if (sw <= 0 || sh <= 0)
+  {
+    sx = 0;
+    sy = 0;
+    sw = img_w;
+    sh = img_h;
+  }
+  if (w <= 0) w = sw;
+  if (h <= 0) h = sh;
 
   vis_x = (x > dc->clip_x1) ? x : dc->clip_x1;
   vis_y = (y > dc->clip_y1) ? y : dc->clip_y1;
@@ -1321,101 +1405,81 @@ IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_ina
   if (vis_w <= 0 || vis_h <= 0)
     return;
 
-  scale_x = (double)img_w / (double)w;
-  scale_y = (double)img_h / (double)h;
+  scale_x = (double)sw / (double)w;
+  scale_y = (double)sh / (double)h;
+  bilinear = (quality != IUP_DRAW_IMAGE_NEAREST) && (w != sw || h != sh);
 
   pixels = (unsigned int*)malloc((size_t)vis_w * vis_h * sizeof(unsigned int));
   if (!pixels)
     return;
 
-  imgdata = (unsigned char*)iupAttribGetStr(img_ih, "WID");
+  s.imgdata = (unsigned char*)iupAttribGetStr(img_ih, "WID");
 
-  if (bpp == 8)
+  if (bpp == 8 && make_inactive)
   {
-    int px, py;
-
-    if (make_inactive)
+    int i;
+    for (i = 0; i < colors_count; i++)
     {
-      int i;
-      for (i = 0; i < colors_count; i++)
+      if (colors[i].a == 0)
       {
-        if (colors[i].a == 0)
-        {
-          colors[i].r = bg_r;
-          colors[i].g = bg_g;
-          colors[i].b = bg_b;
-          colors[i].a = 255;
-        }
-        iupImageColorMakeInactive(&colors[i].r, &colors[i].g, &colors[i].b, bg_r, bg_g, bg_b);
+        colors[i].r = s.bg_r;
+        colors[i].g = s.bg_g;
+        colors[i].b = s.bg_b;
+        colors[i].a = 255;
       }
-    }
-
-    for (py = 0; py < vis_h; py++)
-    {
-      unsigned int* pix_line = pixels + py * vis_w;
-      int src_y = (int)((vis_y - y + py) * scale_y);
-      if (src_y >= img_h) src_y = img_h - 1;
-
-      for (px = 0; px < vis_w; px++)
-      {
-        int src_x = (int)((vis_x - x + px) * scale_x);
-        unsigned char index;
-        iupColor* c;
-        unsigned char pa, pr, pg, pb;
-
-        if (src_x >= img_w) src_x = img_w - 1;
-
-        index = imgdata[src_y * img_w + src_x];
-        c = &colors[index];
-        pa = c->a;
-        pr = (c->r * pa) / 255;
-        pg = (c->g * pa) / 255;
-        pb = (c->b * pa) / 255;
-        pix_line[px] = (pa << 24) | (pr << 16) | (pg << 8) | pb;
-      }
+      iupImageColorMakeInactive(&colors[i].r, &colors[i].g, &colors[i].b, s.bg_r, s.bg_g, s.bg_b);
     }
   }
-  else
+
+  for (py = 0; py < vis_h; py++)
   {
-    int channels = (bpp == 32) ? 4 : 3;
-    int px, py;
+    unsigned int* pix_line = pixels + py * vis_w;
 
-    for (py = 0; py < vis_h; py++)
+    for (px = 0; px < vis_w; px++)
     {
-      unsigned int* pix_line = pixels + py * vis_w;
-      int src_y = (int)((vis_y - y + py) * scale_y);
-      if (src_y >= img_h) src_y = img_h - 1;
+      int pr, pg, pb, pa;
 
-      for (px = 0; px < vis_w; px++)
+      if (bilinear)
       {
-        int src_x = (int)((vis_x - x + px) * scale_x);
-        unsigned char r, g, b, a;
-        unsigned char pr, pg, pb;
+        double fx = sx + ((vis_x - x + px) + 0.5) * scale_x - 0.5;
+        double fy = sy + ((vis_y - y + py) + 0.5) * scale_y - 0.5;
+        int x0 = (int)floor(fx);
+        int y0 = (int)floor(fy);
+        double u = fx - x0, v = fy - y0;
+        int x1 = x0 + 1, y1 = y0 + 1;
+        int r00, g00, b00, a00, r10, g10, b10, a10;
+        int r01, g01, b01, a01, r11, g11, b11, a11;
 
-        if (src_x >= img_w) src_x = img_w - 1;
+        if (x0 < sx) x0 = sx;
+        if (y0 < sy) y0 = sy;
+        if (x0 > sx + sw - 1) x0 = sx + sw - 1;
+        if (y0 > sy + sh - 1) y0 = sy + sh - 1;
+        if (x1 < sx) x1 = sx;
+        if (y1 < sy) y1 = sy;
+        if (x1 > sx + sw - 1) x1 = sx + sw - 1;
+        if (y1 > sy + sh - 1) y1 = sy + sh - 1;
 
-        r = imgdata[(src_y * img_w + src_x) * channels];
-        g = imgdata[(src_y * img_w + src_x) * channels + 1];
-        b = imgdata[(src_y * img_w + src_x) * channels + 2];
-        a = (bpp == 32) ? imgdata[(src_y * img_w + src_x) * channels + 3] : 255;
+        eflDrawImageSample(&s, x0, y0, &r00, &g00, &b00, &a00);
+        eflDrawImageSample(&s, x1, y0, &r10, &g10, &b10, &a10);
+        eflDrawImageSample(&s, x0, y1, &r01, &g01, &b01, &a01);
+        eflDrawImageSample(&s, x1, y1, &r11, &g11, &b11, &a11);
 
-        if (make_inactive)
-        {
-          if (a == 0 && has_alpha)
-          {
-            r = bg_r;
-            g = bg_g;
-            b = bg_b;
-            a = 255;
-          }
-          iupImageColorMakeInactive(&r, &g, &b, bg_r, bg_g, bg_b);
-        }
-
-        pr = (r * a) / 255;
-        pg = (g * a) / 255;
-        pb = (b * a) / 255;
-        pix_line[px] = (a << 24) | (pr << 16) | (pg << 8) | pb;
+        pr = (int)((1 - u) * (1 - v) * r00 + u * (1 - v) * r10 + (1 - u) * v * r01 + u * v * r11 + 0.5);
+        pg = (int)((1 - u) * (1 - v) * g00 + u * (1 - v) * g10 + (1 - u) * v * g01 + u * v * g11 + 0.5);
+        pb = (int)((1 - u) * (1 - v) * b00 + u * (1 - v) * b10 + (1 - u) * v * b01 + u * v * b11 + 0.5);
+        pa = (int)((1 - u) * (1 - v) * a00 + u * (1 - v) * a10 + (1 - u) * v * a01 + u * v * a11 + 0.5);
       }
+      else
+      {
+        int ix = sx + (int)((vis_x - x + px) * scale_x);
+        int iy = sy + (int)((vis_y - y + py) * scale_y);
+        if (ix > sx + sw - 1) ix = sx + sw - 1;
+        if (iy > sy + sh - 1) iy = sy + sh - 1;
+
+        eflDrawImageSample(&s, ix, iy, &pr, &pg, &pb, &pa);
+      }
+
+      pix_line[px] = (pa << 24) | (pr << 16) | (pg << 8) | pb;
     }
   }
 
