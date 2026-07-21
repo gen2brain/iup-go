@@ -92,6 +92,12 @@ func DrawGetTextSize(ih Ihandle, str string) (w, h int) {
 	return int(cw), int(ch)
 }
 
+func DrawGetTextMetrics(ih Ihandle) (ascent, descent, lineHeight int) {
+	var ca, cd, cl int32
+	iupDrawGetTextMetrics(uintptr(ih), &ca, &cd, &cl)
+	return int(ca), int(cd), int(cl)
+}
+
 func DrawGetImageInfo(name string) (w, h, bpp int) {
 	var cw, ch, cbpp int32
 	iupDrawGetImageInfo(name, &cw, &ch, &cbpp)

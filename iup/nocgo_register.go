@@ -254,6 +254,7 @@ var (
 	iupDrawQuadraticBezier    func(ih uintptr, x1, y1, x2, y2, x3, y3 int32)
 	iupDrawGetSize            func(ih uintptr, w, h *int32)
 	iupDrawGetTextSize        func(ih uintptr, str string, length int32, w, h *int32)
+	iupDrawGetTextMetrics     func(ih uintptr, ascent, descent, lineHeight *int32)
 	iupDrawGetImageInfo       func(name string, w, h, bpp *int32)
 	iupDrawGetImage           func(ih uintptr) uintptr
 	iupDrawGetSvg             func(ih uintptr) string
@@ -560,6 +561,7 @@ func ensureBase() {
 		reg(&iupDrawQuadraticBezier, "IupDrawQuadraticBezier")
 		reg(&iupDrawGetSize, "IupDrawGetSize")
 		reg(&iupDrawGetTextSize, "IupDrawGetTextSize")
+		reg(&iupDrawGetTextMetrics, "IupDrawGetTextMetrics")
 		reg(&iupDrawGetImageInfo, "IupDrawGetImageInfo")
 		reg(&iupDrawGetImage, "IupDrawGetImage")
 		reg(&iupDrawGetSvg, "IupDrawGetSvg")

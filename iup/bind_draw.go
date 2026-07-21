@@ -206,6 +206,16 @@ func DrawGetTextSize(ih Ihandle, str string) (w, h int) {
 	return
 }
 
+// DrawGetTextMetrics returns the font metrics for the font defined by DRAWFONT, if not defined then use FONT.
+//
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+func DrawGetTextMetrics(ih Ihandle) (ascent, descent, lineHeight int) {
+	var cA, cD, cL C.int
+	C.IupDrawGetTextMetrics(ih.ptr(), &cA, &cD, &cL)
+	ascent, descent, lineHeight = int(cA), int(cD), int(cL)
+	return
+}
+
 // DrawGetImageInfo returns the given image size and bits per pixel.
 // bpp can be 8, 24 or 32.
 //

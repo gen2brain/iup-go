@@ -32,7 +32,7 @@ set(IUP_DRIVER_INCLUDE_DIRS
   "${CMAKE_CURRENT_SOURCE_DIR}/src/unix"
 )
 
-set(IUP_DRIVER_LINK_LIBRARIES Xm Xmu Xt Xext X11 dl m)
+set(IUP_DRIVER_LINK_LIBRARIES Xm Xmu Xt Xext Xrender X11 dl m)
 
 pkg_check_modules(XFT IMPORTED_TARGET xft)
 pkg_check_modules(FREETYPE IMPORTED_TARGET freetype2)
@@ -56,7 +56,7 @@ set(IUP_PC_REQUIRES "")
 if(XFT_FOUND AND FREETYPE_FOUND)
   set(IUP_PC_REQUIRES "xft freetype2")
 endif()
-set(IUP_PC_LIBS_PRIVATE "-lXm -lXmu -lXt -lXext -lX11 -ldl -lm")
+set(IUP_PC_LIBS_PRIVATE "-lXm -lXmu -lXt -lXext -lXrender -lX11 -ldl -lm")
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
   string(APPEND IUP_PC_LIBS_PRIVATE " -lXpm")
 endif()

@@ -607,6 +607,26 @@ IUP_API void IupDrawGetTextSize(Ihandle* ih, const char* text, int len, int *w, 
   iupDrawGetTextSize(ih, text, len, w, h, text_orientation);
 }
 
+IUP_API void IupDrawGetTextMetrics(Ihandle* ih, int *ascent, int *descent, int *line_height)
+{
+  char* font;
+  int max_width, lh, asc, desc;
+
+  iupASSERT(iupObjectCheck(ih));
+  if (!iupObjectCheck(ih))
+    return;
+
+  font = iupAttribGetStr(ih, "DRAWFONT");
+  if (!font)
+    font = IupGetAttribute(ih, "FONT");
+
+  iupdrvFontGetFontDim(font, &max_width, &lh, &asc, &desc);
+
+  if (ascent) *ascent = asc;
+  if (descent) *descent = desc;
+  if (line_height) *line_height = lh;
+}
+
 IUP_API void IupDrawGetImageInfo(const char* name, int *w, int *h, int *bpp)
 {
   iupImageGetInfo(name, w, h, bpp);
