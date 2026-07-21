@@ -44,7 +44,7 @@ static void iProgressDlgSetPercent(IprogressDlgData* progress_data, int percent)
 
   cur_clock = (int)clock();
   if (cur_clock - progress_data->last_clock > progress_data->min_clock ||  /* significant amount of time */
-      progress_data->percent - progress_data->last_percent > progress_data->min_percent)  /* minimum percentage */
+      percent - progress_data->last_percent > progress_data->min_percent)  /* minimum percentage */
   {
     /* avoid duplicate updates */
     if (percent != progress_data->percent)
