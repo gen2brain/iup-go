@@ -41,7 +41,7 @@ package iup
 #cgo qt,!qt5,web,!nopkgconfig pkg-config: Qt6WebEngineCore Qt6WebEngineWidgets
 #cgo qt,qt5,web,!nopkgconfig pkg-config: Qt5WebEngineCore  Qt5WebEngineWidgets
 
-#cgo motif LDFLAGS: -lXm -lXmu -lXt -lXext -lX11
+#cgo motif LDFLAGS: -lXm -lXmu -lXt -lXext -lXrender -lX11
 #cgo linux,!android,motif LDFLAGS: -lXpm
 #cgo darwin,motif LDFLAGS: -liconv
 #cgo motif,gl LDFLAGS: -lGL
