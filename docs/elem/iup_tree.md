@@ -287,17 +287,10 @@ But these functions are faster than the traditional functions because they do no
 
 [Browse for Example Files](../../examples/)
 
-**Windows**
-
-![](../images/iuptree_win.png)
-
-**Motif**
-
-![](../images/iuptree_mot.png)
-
-**GTK**
-
-![](../images/iuptree_gtk.png)
+|                                 |                               |                                |                                |
+|---------------------------------|-------------------------------|--------------------------------|--------------------------------|
+| GTK                             | Qt                            | Win32                          | macOS                          |
+| ![](../images/iuptree_gtk3.png) | ![](../images/iuptree_qt.png) | ![](../images/iuptree_win.png) | ![](../images/iuptree_mac.png) |
 
 ### See Also
 

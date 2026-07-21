@@ -24,6 +24,11 @@ The dialog is shown centered relative to its parent.
 
 [Browse for Example Files](../../examples/)
 
+|                                         |                                       |                                        |                                        |
+|-----------------------------------------|---------------------------------------|----------------------------------------|----------------------------------------|
+| GTK                                     | Qt                                    | Win32                                  | macOS                                  |
+| ![](../images/iupmessagealarm_gtk3.png) | ![](../images/iupmessagealarm_qt.png) | ![](../images/iupmessagealarm_win.png) | ![](../images/iupmessagealarm_mac.png) |
+
 ### See Also
 
 [IupGetFile](iup_getfile.md), [IupListDialog](iup_listdialog.md), [IupAlarm](iup_alarm.md), [IupMessage](iup_message.md), [IupMessageDlg](iup_messagedlg.md)

@@ -72,3 +72,8 @@ To avoid overlapping the drawing areas, it is recommended that children must be 
 
 [Browse for Example Files](../../examples/)
 
+|                                          |                                        |                                         |                                         |
+|------------------------------------------|----------------------------------------|-----------------------------------------|-----------------------------------------|
+| GTK                                      | Qt                                     | Win32                                   | macOS                                   |
+| ![](../images/iupbackgroundbox_gtk3.png) | ![](../images/iupbackgroundbox_qt.png) | ![](../images/iupbackgroundbox_win.png) | ![](../images/iupbackgroundbox_mac.png) |
+

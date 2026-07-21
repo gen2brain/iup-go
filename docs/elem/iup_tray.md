@@ -72,6 +72,17 @@ On Haiku the tray uses a Deskbar replicant. The executable must export its Insta
 
 Not supported on Android, iOS and WebAssembly (no system tray).
 
+### Examples
+
+[Browse for Example Files](../../examples/)
+
+|                                 |                                |                                |
+|---------------------------------|--------------------------------|--------------------------------|
+| GTK                             | Win32                          | macOS                          |
+| ![](../images/iuptray_gtk3.png) | ![](../images/iuptray_win.png) | ![](../images/iuptray_mac.png) |
+
+The tray icon with its MENU open. On GTK this uses the SNI protocol.
+
 ### See Also
 
 [IupMenu](iup_menu.md), [IupPopup](../func/iup_popup.md), [IupImage](iup_image.md)

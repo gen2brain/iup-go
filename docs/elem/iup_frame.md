@@ -91,21 +91,10 @@ The frame can be created with no elements and be dynamic filled using [IupAppend
       IupSetAttribute(frame1, "TITLE", "Title Text");
       IupSetAttribute(frame2, "SUNKEN", "YES");
 
-**Windows Classic**
-
-![](../images/iupframe_win2k.png)
-
-**Windows w/ Styles**
-
-![](../images/iupframe_winxp.png)
-
-**Motif**
-
-![](../images/iupframe_mot.png)
-
-**GTK**
-
-![](../images/iupframe_gtk.png)
+|                                  |                                |                                 |                                 |
+|----------------------------------|--------------------------------|---------------------------------|---------------------------------|
+| GTK                              | Qt                             | Win32                           | macOS                           |
+| ![](../images/iupframe_gtk3.png) | ![](../images/iupframe_qt.png) | ![](../images/iupframe_win.png) | ![](../images/iupframe_mac.png) |
 
 ### See Also
 

@@ -60,31 +60,12 @@ On Android and iOS, an optional navigation drawer can be attached alongside the 
 
 [Browse for Example Files](../../examples/)
 
-**Windows Classic**
-![](../images/iupmenu_win2k.png)
+The **IupMenuItem** check is affected by the RADIO attribute in **IupMenu**.
 
-**Windows w/ Styles**
-![](../images/iupmenu_winxp.png)
-
-**Motif**
-![](../images/iupmenu_mot.png)
-
-**GTK**
-![](../images/iupmenu_gtk.png)
-
-The **IupMenuItem** check is affected by the RADIO attribute in **IupMenu**:
-
-**Windows Classic**
-![](../images/iupmenu_win2k_radio.png)
-
-**Windows XP Style**
-![](../images/iupmenu_winxp_radio.png)
-
-**Motif**
-![](../images/iupmenu_mot_radio.png)
-
-**GTK**
-![](../images/iupmenu_gtk_radio.png)
+|                                 |                               |                                |                                |
+|---------------------------------|-------------------------------|--------------------------------|--------------------------------|
+| GTK                             | Qt                            | Win32                          | macOS                          |
+| ![](../images/iupmenu_gtk3.png) | ![](../images/iupmenu_qt.png) | ![](../images/iupmenu_win.png) | ![](../images/iupmenu_mac.png) |
 
 ### See Also
 

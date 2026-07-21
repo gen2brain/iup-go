@@ -35,7 +35,10 @@ It also uses a global attribute called "ICON" as the dialog icon if it is define
 
 [Browse for Example Files](../../examples/)
 
-![](../images/alarm.png)
+|                                  |                                |                                 |                                 |
+|----------------------------------|--------------------------------|---------------------------------|---------------------------------|
+| GTK                              | Qt                             | Win32                           | macOS                           |
+| ![](../images/iupalarm_gtk3.png) | ![](../images/iupalarm_qt.png) | ![](../images/iupalarm_win.png) | ![](../images/iupalarm_mac.png) |
 
 ### See Also
 

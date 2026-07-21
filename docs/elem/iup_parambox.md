@@ -97,6 +97,15 @@ The parameter label is also available using the parameter attribute "LABEL".
 
 The box cannot be dynamically filled using [IupAppend](../func/iup_append.md) or [IupInsert](../func/iup_insert.md).
 
+### Examples
+
+[Browse for Example Files](../../examples/)
+
+|                                     |                                   |                                    |                                    |
+|-------------------------------------|-----------------------------------|------------------------------------|------------------------------------|
+| GTK                                 | Qt                                | Win32                              | macOS                              |
+| ![](../images/iupparambox_gtk3.png) | ![](../images/iupparambox_qt.png) | ![](../images/iupparambox_win.png) | ![](../images/iupparambox_mac.png) |
+
 ### See Also
 
 [IupGetParam](../dlg/iup_getparam.md), [IupParam](iup_param.md) 

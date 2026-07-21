@@ -17,7 +17,7 @@ Inherits all attributes and callbacks of the [IupCanvas](../elem/iup_canvas.md),
 **BARSIZE** (non-inheritable): controls the size of the separator in the opposite direction of its orientation.
 Default: 5.
 
-**COLOR** (non-inheritable): Changes the color of the separator. Default: "192 192 192".
+**COLOR** (non-inheritable): Changes the color of the separator. Default: "160 160 160" ("90 90 90" when DARKMODE is enabled).
 
 **ORIENTATION** (non-inheritable): Indicates the orientation of the separator.
 Possible values are "VERTICAL" or "HORIZONTAL". Default: "VERTICAL".
@@ -47,7 +47,10 @@ The **IupSeparator** is used internally in [IupSplit](iup_split.md) and in [IupS
 
 [Browse for Example Files](../../examples/)
 
-![](../images/iupseparator.png)
+|                                      |                                    |                                     |                                     |
+|--------------------------------------|------------------------------------|-------------------------------------|-------------------------------------|
+| GTK                                  | Qt                                 | Win32                               | macOS                               |
+| ![](../images/iupseparator_gtk3.png) | ![](../images/iupseparator_qt.png) | ![](../images/iupseparator_win.png) | ![](../images/iupseparator_mac.png) |
 
 Styles: LINE, SUNKENLINE, DUALLINES, GRIP, FILLCOLOR="255 0 128".
 

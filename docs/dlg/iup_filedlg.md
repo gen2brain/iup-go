@@ -224,17 +224,10 @@ On Android, SAF returns `content://` URIs rather than filesystem paths. The driv
 
     IupDestroy(dlg);
 
-**Windows XP**
-
-![](../images/filedlg_win.png)
-
-**Motif/Mwm**
-
-![](../images/filedlg_mot.png)
-
-**GTK/GNOME**
-
-![](../images/filedlg_gtk.png)
+|                                    |                                  |                                   |                                   |
+|------------------------------------|----------------------------------|-----------------------------------|-----------------------------------|
+| GTK                                | Qt                               | Win32                             | macOS                             |
+| ![](../images/iupfiledlg_gtk3.png) | ![](../images/iupfiledlg_qt.png) | ![](../images/iupfiledlg_win.png) | ![](../images/iupfiledlg_mac.png) |
 
 [Browse for Example Files](../../examples/)
 

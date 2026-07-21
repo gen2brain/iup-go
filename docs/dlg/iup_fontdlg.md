@@ -66,17 +66,10 @@ In Win32 uses ChooseFont, in GTK 3 uses GtkFontChooser, in GTK 4 uses GtkFontDia
 
     IupDestroy(dlg);
 
-**Windows XP**
-
-![](../images/fontdlg_win.png)
-
-**GTK/GNOME**
-
-![](../images/fontdlg_gtk.png)
-
-**Motif/MWM**
-
-![](../images/fontdlg_mot.png)
+|                                    |                                  |                                   |                                   |
+|------------------------------------|----------------------------------|-----------------------------------|-----------------------------------|
+| GTK                                | Qt                               | Win32                             | macOS                             |
+| ![](../images/iupfontdlg_gtk3.png) | ![](../images/iupfontdlg_qt.png) | ![](../images/iupfontdlg_win.png) | ![](../images/iupfontdlg_mac.png) |
 
 ### See Also
 

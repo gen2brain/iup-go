@@ -130,14 +130,6 @@ So for the expansion to occur, the children must be expandable with EXPAND!=NO, 
 
 ![](../images/iupgridbox.png)
 
-**NORMALIZE=BOTH**
-
-![](../images/iupgridbox_normalize.png)
-
-**EXPANDCHILDREN=YES**
-
-![](../images/iupgridbox_expandchild.png)
-
 ### See Also
 
 [IupVbox](iup_vbox.md), [IupHbox](iup_hbox.md)

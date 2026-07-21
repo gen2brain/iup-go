@@ -148,11 +148,8 @@ After the mouse is move away from the child, then it is automatically hidden.
 
 [Browse for Example Files](../../examples/)
 
-![](../images/iupexpander_open.png)
-
-Container Expanded (STATE = "OPEN")
-
-![](../images/iupexpander_close.png)
-
-Container Collapsed (STATE = "CLOSE")
+|                                     |                                   |                                    |                                    |
+|-------------------------------------|-----------------------------------|------------------------------------|------------------------------------|
+| GTK                                 | Qt                                | Win32                              | macOS                              |
+| ![](../images/iupexpander_gtk3.png) | ![](../images/iupexpander_qt.png) | ![](../images/iupexpander_win.png) | ![](../images/iupexpander_mac.png) |
 

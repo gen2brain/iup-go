@@ -353,10 +353,10 @@ Here is a list of the common keys for all drivers. Other keys are available depe
 
 [Browse for Example Files](../../examples/)
 
-|                                |                                  |                                  |                                |
-|--------------------------------|----------------------------------|----------------------------------|--------------------------------|
-| Motif                          | Windows Classic                  | Windows w/ Styles                | GTK                            |
-| ![](../images/iuptext_mot.png) | ![](../images/iuptext_win2k.png) | ![](../images/iuptext_winxp.png) | ![](../images/iuptext_gtk.png) |
+|                                 |                               |                                |                                |
+|---------------------------------|-------------------------------|--------------------------------|--------------------------------|
+| GTK                             | Qt                            | Win32                          | macOS                          |
+| ![](../images/iuptext_gtk3.png) | ![](../images/iuptext_qt.png) | ![](../images/iuptext_win.png) | ![](../images/iuptext_mac.png) |
 
 When FORMATTING=YES in Windows or GTK (formatting attributes are set to a formatag object that it is a **IupUser**):
 
@@ -380,13 +380,6 @@ When FORMATTING=YES in Windows or GTK (formatting attributes are set to a format
 ```
 
 ![](../images/iuptext_formatting.png)
-
-When SPIN=YES:
-
-|                                     |                                       |                                       |                                     |
-|-------------------------------------|---------------------------------------|---------------------------------------|-------------------------------------|
-| Motif                               | Windows Classic                       | Windows w/ Styles                     | GTK                                 |
-| ![](../images/iuptext_mot_spin.png) | ![](../images/iuptext_win2k_spin.png) | ![](../images/iuptext_winxp_spin.png) | ![](../images/iuptext_gtk_spin.png) |
 
 ### See Also
 

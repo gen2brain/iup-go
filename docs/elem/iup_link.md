@@ -46,7 +46,10 @@ The **IupLabel** callbacks BUTTON_CB, ENTERWINDOW_CB and LEAVEWINDOW_CB are used
 
 [Browse for Example Files](../../examples/)
 
-![](../images/iuplink.png)
+|                                 |                               |                                |                                |
+|---------------------------------|-------------------------------|--------------------------------|--------------------------------|
+| GTK                             | Qt                            | Win32                          | macOS                          |
+| ![](../images/iuplink_gtk3.png) | ![](../images/iuplink_qt.png) | ![](../images/iuplink_win.png) | ![](../images/iuplink_mac.png) |
 
 ### See Also
 

@@ -36,7 +36,10 @@ The spinbox can be created with no elements and be dynamic filled using [IupAppe
 
     Ihandle* spinbox = IupSpinbox(IupText(NULL));
 
-![](../images/iupspin.png)
+|                                 |                               |                                |                                |
+|---------------------------------|-------------------------------|--------------------------------|--------------------------------|
+| GTK                             | Qt                            | Win32                          | macOS                          |
+| ![](../images/iupspin_gtk3.png) | ![](../images/iupspin_qt.png) | ![](../images/iupspin_win.png) | ![](../images/iupspin_mac.png) |
 
 ### See Also
 

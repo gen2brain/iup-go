@@ -188,7 +188,10 @@ Possible ERROR strings during **IupMap**:
 
 [Browse for Example Files](../../examples/)
 
-![](../images/iupglcanvas.png)
+|                                     |                                   |                                    |                                    |
+|-------------------------------------|-----------------------------------|------------------------------------|------------------------------------|
+| GTK                                 | Qt                                | Win32                              | macOS                              |
+| ![](../images/iupglcanvas_gtk3.png) | ![](../images/iupglcanvas_qt.png) | ![](../images/iupglcanvas_win.png) | ![](../images/iupglcanvas_mac.png) |
 
 ### See Also
 

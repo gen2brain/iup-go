@@ -90,7 +90,10 @@ It is a regular **IupDialog** that can be shown with [IupShow](../func/iup_show.
 
     IupDestroy(dlg);  
 
-![](../images/colordlg_cb.png)
+|                                     |                                   |                                    |                                    |
+|-------------------------------------|-----------------------------------|------------------------------------|------------------------------------|
+| GTK                                 | Qt                                | Win32                              | macOS                              |
+| ![](../images/iupcolordlg_gtk3.png) | ![](../images/iupcolordlg_qt.png) | ![](../images/iupcolordlg_win.png) | ![](../images/iupcolordlg_mac.png) |
 
 ### See Also
 

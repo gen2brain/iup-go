@@ -77,7 +77,10 @@ Notice that it is possible to use the **IupScrollBox** to overcome the internal 
 
 [Browse for Example Files](../../examples/)
 
-![](../images/iupscrollbox.png)
+|                                      |                                    |                                     |                                     |
+|--------------------------------------|------------------------------------|-------------------------------------|-------------------------------------|
+| GTK                                  | Qt                                 | Win32                               | macOS                               |
+| ![](../images/iupscrollbox_gtk3.png) | ![](../images/iupscrollbox_qt.png) | ![](../images/iupscrollbox_win.png) | ![](../images/iupscrollbox_mac.png) |
 
 ### See Also
 

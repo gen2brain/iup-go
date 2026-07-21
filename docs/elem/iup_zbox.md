@@ -79,6 +79,8 @@ For the zbox behave as a **IupTabs** use native containers as immediate children
 
 [Browse for Example Files](../../examples/)
 
+![](../images/iupzbox.png)
+
 ### See Also
 
 [IupHbox](iup_hbox.md), [IupVBox](iup_vbox.md)

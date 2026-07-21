@@ -16,3 +16,9 @@ See [IupText](iup_text.md)
 ### Examples
 
 [Browse for Example Files](../../examples/)
+
+|                                      |                                    |                                     |                                     |
+|--------------------------------------|------------------------------------|-------------------------------------|-------------------------------------|
+| GTK                                  | Qt                                 | Win32                               | macOS                               |
+| ![](../images/iupmultiline_gtk3.png) | ![](../images/iupmultiline_qt.png) | ![](../images/iupmultiline_win.png) | ![](../images/iupmultiline_mac.png) |
+

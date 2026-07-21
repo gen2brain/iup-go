@@ -60,19 +60,8 @@ The box can be created with no elements and be dynamic filled using [IupAppend](
 
 [Browse for Example Files](../../examples/)
 
-![](../images/iupsbox1.png)
-
-Natural Size
-
-![](../images/iupsbox2.png)
-
-After Expanding the Sbox
-
-![](../images/iupsbox3.png)
-
-Expanding the Dialog
-
-![](../images/iupsbox4.png)
-
-After Expanding the Sbox
+|                                 |                               |                                |                                |
+|---------------------------------|-------------------------------|--------------------------------|--------------------------------|
+| GTK                             | Qt                            | Win32                          | macOS                          |
+| ![](../images/iupsbox_gtk3.png) | ![](../images/iupsbox_qt.png) | ![](../images/iupsbox_win.png) | ![](../images/iupsbox_mac.png) |
 

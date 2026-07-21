@@ -23,7 +23,10 @@ It also uses a global attribute called "ICON" as the dialog icon if it is define
 
 ### Examples
 
-![](../images/gettext.png)
+|                                    |                                  |                                   |                                   |
+|------------------------------------|----------------------------------|-----------------------------------|-----------------------------------|
+| GTK                                | Qt                               | Win32                             | macOS                             |
+| ![](../images/iupgettext_gtk3.png) | ![](../images/iupgettext_qt.png) | ![](../images/iupgettext_win.png) | ![](../images/iupgettext_mac.png) |
 
 ### See Also
 

@@ -28,7 +28,10 @@ It also uses a global attribute called "ICON" as the dialog icon if it is define
 
 [Browse for Example Files](../../examples/)
 
-![](../images/listdialog.png)
+|                                       |                                     |                                      |                                      |
+|---------------------------------------|-------------------------------------|--------------------------------------|--------------------------------------|
+| GTK                                   | Qt                                  | Win32                                | macOS                                |
+| ![](../images/iuplistdialog_gtk3.png) | ![](../images/iuplistdialog_qt.png) | ![](../images/iuplistdialog_win.png) | ![](../images/iuplistdialog_mac.png) |
 
 ### See Also
 

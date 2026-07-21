@@ -33,6 +33,11 @@ For a more controlled dialog, use directly the [IupFileDlg](iup_filedlg.md) elem
 
 [Browse for Example Files](../../examples/)
 
+|                                    |                                  |                                   |                                   |
+|------------------------------------|----------------------------------|-----------------------------------|-----------------------------------|
+| GTK                                | Qt                               | Win32                             | macOS                             |
+| ![](../images/iupgetfile_gtk3.png) | ![](../images/iupgetfile_qt.png) | ![](../images/iupgetfile_win.png) | ![](../images/iupgetfile_mac.png) |
+
 ### See Also
 
 [IupFileDlg](iup_filedlg.md), [IupMessage](iup_message.md), [IupListDialog](iup_listdialog.md), [IupAlarm](iup_alarm.md), [IupSetLanguage](../func/iup_setlanguage.md).

@@ -23,6 +23,11 @@ It also uses a global attribute called "ICON" as the dialog icon if it is define
 
 [Browse for Example Files](../../examples/)
 
+|                                     |                                   |                                    |                                    |
+|-------------------------------------|-----------------------------------|------------------------------------|------------------------------------|
+| GTK                                 | Qt                                | Win32                              | macOS                              |
+| ![](../images/iupgetcolor_gtk3.png) | ![](../images/iupgetcolor_qt.png) | ![](../images/iupgetcolor_win.png) | ![](../images/iupgetcolor_mac.png) |
+
 ### See Also
 
 [IupMessage](iup_message.md), [IupListDialog](iup_listdialog.md), [IupAlarm](iup_alarm.md), [IupGetFile](iup_getfile.md).

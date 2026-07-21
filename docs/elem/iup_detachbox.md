@@ -93,11 +93,8 @@ The box can be created with no elements and be dynamic filled using [IupAppend](
 
 [Browse for Example Files](../../examples/)
 
-![](../images/iupdbox_vertical.png)
-
-IupDetachBox (ORIENTATION = VERTICAL)
-
-![](../images/iupdbox_detached.png)
-
-New dialog created after the detach action
+|                                      |                                    |                                     |                                     |
+|--------------------------------------|------------------------------------|-------------------------------------|-------------------------------------|
+| GTK                                  | Qt                                 | Win32                               | macOS                               |
+| ![](../images/iupdetachbox_gtk3.png) | ![](../images/iupdetachbox_qt.png) | ![](../images/iupdetachbox_win.png) | ![](../images/iupdetachbox_mac.png) |
 
