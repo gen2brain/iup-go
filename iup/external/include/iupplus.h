@@ -410,6 +410,7 @@ namespace Iup
     void DrawFocusRect(int x1, int y1, int x2, int y2) { IupDrawFocusRect(ih, x1, y1, x2, y2); }
     void DrawGetSize(int &w, int &h) { IupDrawGetSize(ih, &w, &h); }
     void DrawGetTextSize(const char* str, int len, int &w, int &h) { IupDrawGetTextSize(ih, str, len, &w, &h); }
+    void DrawGetTextMetrics(int &ascent, int &descent, int &line_height) { IupDrawGetTextMetrics(ih, &ascent, &descent, &line_height); }
     void DrawGetImageInfo(const char* name, int &w, int &h, int &bpp) { IupDrawGetImageInfo(name, &w, &h, &bpp); }
     Image DrawGetImage() { return Image(IupDrawGetImage(ih)); }
     char* DrawGetSvg() { return IupDrawGetSvg(ih); }
@@ -693,6 +694,7 @@ namespace Iup
     void DrawFocusRect(int x1, int y1, int x2, int y2) { IupDrawFocusRect(ih, x1, y1, x2, y2); }
     void DrawGetSize(int &w, int &h) { IupDrawGetSize(ih, &w, &h); }
     void DrawGetTextSize(const char* str, int len, int &w, int &h) { IupDrawGetTextSize(ih, str, len, &w, &h); }
+    void DrawGetTextMetrics(int &ascent, int &descent, int &line_height) { IupDrawGetTextMetrics(ih, &ascent, &descent, &line_height); }
     void DrawGetImageInfo(const char* name, int &w, int &h, int &bpp) { IupDrawGetImageInfo(name, &w, &h, &bpp); }
     Image DrawGetImage() { return Image(IupDrawGetImage(ih)); }
     char* DrawGetSvg() { return IupDrawGetSvg(ih); }

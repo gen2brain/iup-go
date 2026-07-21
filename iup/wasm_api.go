@@ -951,3 +951,16 @@ func DrawGetTextSize(ih Ihandle, str string) (w, h int) {
 	wasmFree(pw)
 	return
 }
+
+// DrawGetTextMetrics returns the font metrics using DRAWFONT, or FONT.
+//
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+func DrawGetTextMetrics(ih Ihandle) (ascent, descent, lineHeight int) {
+	pa := wasmMalloc(12)
+	pd := pa + 4
+	pl := pa + 8
+	ccall("IupDrawGetTextMetrics", "", []interface{}{"number", "number", "number", "number"}, []interface{}{int(ih), pa, pd, pl})
+	ascent, descent, lineHeight = wasmGetI32(pa), wasmGetI32(pd), wasmGetI32(pl)
+	wasmFree(pa)
+	return
+}
