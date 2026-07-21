@@ -2,6 +2,8 @@
 
 package iup
 
+import "unsafe"
+
 func DrawBegin(ih Ihandle) { iupDrawBegin(uintptr(ih)) }
 
 func DrawEnd(ih Ihandle) { iupDrawEnd(uintptr(ih)) }
@@ -46,6 +48,42 @@ func DrawPolygon(ih Ihandle, points []int, count int) {
 		cp[i] = int32(v)
 	}
 	iupDrawPolygon(uintptr(ih), cp, int32(count))
+}
+
+func DrawLinearGradientStops(ih Ihandle, x1, y1, x2, y2 int, angle float32, colors []string, offsets []float32) {
+	n := len(colors)
+	if n < 2 {
+		return
+	}
+	bufs := make([][]byte, n)
+	pColors := make([]uintptr, n)
+	for i, s := range colors {
+		bufs[i] = append([]byte(s), 0)
+		pColors[i] = uintptr(unsafe.Pointer(&bufs[i][0]))
+	}
+	var pOff *float32
+	if len(offsets) >= n {
+		pOff = &offsets[0]
+	}
+	iupDrawLinearGradientStops(uintptr(ih), int32(x1), int32(y1), int32(x2), int32(y2), angle, &pColors[0], pOff, int32(n))
+}
+
+func DrawRadialGradientStops(ih Ihandle, cx, cy, radius int, colors []string, offsets []float32) {
+	n := len(colors)
+	if n < 2 {
+		return
+	}
+	bufs := make([][]byte, n)
+	pColors := make([]uintptr, n)
+	for i, s := range colors {
+		bufs[i] = append([]byte(s), 0)
+		pColors[i] = uintptr(unsafe.Pointer(&bufs[i][0]))
+	}
+	var pOff *float32
+	if len(offsets) >= n {
+		pOff = &offsets[0]
+	}
+	iupDrawRadialGradientStops(uintptr(ih), int32(cx), int32(cy), int32(radius), &pColors[0], pOff, int32(n))
 }
 
 func DrawPixel(ih Ihandle, x, y int) {

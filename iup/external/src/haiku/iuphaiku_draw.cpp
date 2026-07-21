@@ -291,7 +291,7 @@ extern "C" IUP_SDK_API void iupdrvDrawQuadraticBezier(IdrawCanvas* dc, int x1, i
   iupdrvDrawBezier(dc, x1, y1, cx1, cy1, cx2, cy2, x3, y3, color, style, line_width);
 }
 
-extern "C" IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, float angle, long color1, long color2)
+extern "C" IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, float angle, const long* colors, const float* offsets, int count)
 {
   if (!dc || !dc->bm) return;
   iupDrawCheckSwapCoord(x1, x2);
@@ -306,21 +306,21 @@ extern "C" IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, in
   float dy = sinf(rad) * len * 0.5f;
 
   BGradientLinear grad(BPoint(cx - dx, cy - dy), BPoint(cx + dx, cy + dy));
-  grad.AddColor(haikuColorFromLong(color1), 0.0f);
-  grad.AddColor(haikuColorFromLong(color2), 255.0f);
+  for (int i = 0; i < count; i++)
+    grad.AddColor(haikuColorFromLong(colors[i]), offsets[i] * 255.0f);
 
   dc->bm->Lock();
   dc->view->FillRect(r, grad);
   dc->bm->Unlock();
 }
 
-extern "C" IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int radius, long colorCenter, long colorEdge)
+extern "C" IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int radius, const long* colors, const float* offsets, int count)
 {
   if (!dc || !dc->bm) return;
   BPoint c(cx, cy);
   BGradientRadial grad(c, (float)radius);
-  grad.AddColor(haikuColorFromLong(colorCenter), 0.0f);
-  grad.AddColor(haikuColorFromLong(colorEdge), 255.0f);
+  for (int i = 0; i < count; i++)
+    grad.AddColor(haikuColorFromLong(colors[i]), offsets[i] * 255.0f);
 
   BRect r(cx - radius, cy - radius, cx + radius, cy + radius);
   dc->bm->Lock();

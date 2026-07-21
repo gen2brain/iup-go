@@ -936,6 +936,49 @@ func DrawLinearGradient(ih Ihandle, x1, y1, x2, y2 int, angle float32, color1, c
 // DrawRadialGradient draws a radial gradient from center to edge.
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+func drawGradientStopArgs(colors []string, offsets []float32) (colorsPtr, offsetsPtr, n int, free func()) {
+	n = len(colors)
+	colorsPtr, freeColors := wasmStrArray(colors)
+	offsetsPtr = 0
+	if len(offsets) >= n {
+		offsetsPtr = wasmMalloc(n * 4)
+		for i := 0; i < n; i++ {
+			wasmSetF32(offsetsPtr+i*4, offsets[i])
+		}
+	}
+	free = func() {
+		freeColors()
+		if offsetsPtr != 0 {
+			wasmFree(offsetsPtr)
+		}
+	}
+	return
+}
+
+// DrawLinearGradientStops draws a linear gradient across count color stops.
+//
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+func DrawLinearGradientStops(ih Ihandle, x1, y1, x2, y2 int, angle float32, colors []string, offsets []float32) {
+	if len(colors) < 2 {
+		return
+	}
+	cp, op, n, free := drawGradientStopArgs(colors, offsets)
+	ccall("IupDrawLinearGradientStops", "", []interface{}{"number", "number", "number", "number", "number", "number", "number", "number", "number"}, []interface{}{int(ih), x1, y1, x2, y2, float64(angle), cp, op, n})
+	free()
+}
+
+// DrawRadialGradientStops draws a radial gradient across count color stops.
+//
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+func DrawRadialGradientStops(ih Ihandle, cx, cy, radius int, colors []string, offsets []float32) {
+	if len(colors) < 2 {
+		return
+	}
+	cp, op, n, free := drawGradientStopArgs(colors, offsets)
+	ccall("IupDrawRadialGradientStops", "", []interface{}{"number", "number", "number", "number", "number", "number"}, []interface{}{int(ih), cx, cy, radius, cp, op, n})
+	free()
+}
+
 func DrawRadialGradient(ih Ihandle, cx, cy, radius int, colorCenter, colorEdge string) {
 	ccall("IupDrawRadialGradient", "", []interface{}{"number", "number", "number", "number", "string", "string"}, []interface{}{int(ih), cx, cy, radius, colorCenter, colorEdge})
 }

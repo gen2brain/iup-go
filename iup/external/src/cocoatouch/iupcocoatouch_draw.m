@@ -562,26 +562,32 @@ IUP_SDK_API void iupdrvDrawQuadraticBezier(IdrawCanvas* dc, int x1, int y1, int 
 
 
 
-static CGGradientRef cocoaTouchDrawCreateGradient(long color1, long color2)
+static CGGradientRef cocoaTouchDrawCreateGradient(const long* colors, const float* offsets, int count)
 {
 	CGColorSpaceRef cs = CGColorSpaceCreateDeviceRGB();
-	CGFloat comps[] = {
-		iupDrawRed(color1)/255.0, iupDrawGreen(color1)/255.0, iupDrawBlue(color1)/255.0, iupDrawAlpha(color1)/255.0,
-		iupDrawRed(color2)/255.0, iupDrawGreen(color2)/255.0, iupDrawBlue(color2)/255.0, iupDrawAlpha(color2)/255.0
-	};
-	CGFloat locations[] = { 0.0, 1.0 };
-	CGGradientRef gradient = CGGradientCreateWithColorComponents(cs, comps, locations, 2);
+	CGFloat comps[IUP_GRADIENT_MAX_STOPS * 4];
+	CGFloat locations[IUP_GRADIENT_MAX_STOPS];
+	int i;
+	for (i = 0; i < count; i++)
+	{
+		comps[i*4+0] = iupDrawRed(colors[i])/255.0;
+		comps[i*4+1] = iupDrawGreen(colors[i])/255.0;
+		comps[i*4+2] = iupDrawBlue(colors[i])/255.0;
+		comps[i*4+3] = iupDrawAlpha(colors[i])/255.0;
+		locations[i] = offsets[i];
+	}
+	CGGradientRef gradient = CGGradientCreateWithColorComponents(cs, comps, locations, count);
 	CGColorSpaceRelease(cs);
 	return gradient;
 }
 
-IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, float angle, long color1, long color2)
+IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, float angle, const long* colors, const float* offsets, int count)
 {
 	if (!dc) return;
 	iupDrawCheckSwapCoord(x1, x2);
 	iupDrawCheckSwapCoord(y1, y2);
 
-	CGGradientRef gradient = cocoaTouchDrawCreateGradient(color1, color2);
+	CGGradientRef gradient = cocoaTouchDrawCreateGradient(colors, offsets, count);
 	if (!gradient) return;
 
 	CGContextSaveGState(dc->cgContext);
@@ -604,11 +610,12 @@ IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x
 	CGGradientRelease(gradient);
 }
 
-IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int radius, long colorCenter, long colorEdge)
+IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int radius, const long* colors, const float* offsets, int count)
 {
 	if (!dc || radius <= 0) return;
 
-	CGGradientRef gradient = cocoaTouchDrawCreateGradient(colorCenter, colorEdge);
+	long colorEdge = colors[count - 1];
+	CGGradientRef gradient = cocoaTouchDrawCreateGradient(colors, offsets, count);
 	if (!gradient) return;
 
 	CGContextSaveGState(dc->cgContext);

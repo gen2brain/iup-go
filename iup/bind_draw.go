@@ -266,6 +266,60 @@ func DrawLinearGradient(ih Ihandle, x1, y1, x2, y2 int, angle float32, color1, c
 	C.IupDrawLinearGradient(ih.ptr(), C.int(x1), C.int(y1), C.int(x2), C.int(y2), C.float(angle), cColor1, cColor2)
 }
 
+// DrawLinearGradientStops draws a linear gradient across count color stops.
+// offsets are in the 0-1 range, ascending; if nil the stops are evenly spaced.
+//
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+func DrawLinearGradientStops(ih Ihandle, x1, y1, x2, y2 int, angle float32, colors []string, offsets []float32) {
+	n := len(colors)
+	if n < 2 {
+		return
+	}
+	cColors := make([]*C.char, n)
+	for i, c := range colors {
+		cColors[i] = C.CString(c)
+	}
+	defer func() {
+		for _, p := range cColors {
+			C.free(unsafe.Pointer(p))
+		}
+	}()
+
+	var cOffsets *C.float
+	if len(offsets) >= n {
+		cOffsets = (*C.float)(unsafe.Pointer(&offsets[0]))
+	}
+
+	C.IupDrawLinearGradientStops(ih.ptr(), C.int(x1), C.int(y1), C.int(x2), C.int(y2), C.float(angle), (**C.char)(unsafe.Pointer(&cColors[0])), cOffsets, C.int(n))
+}
+
+// DrawRadialGradientStops draws a radial gradient across count color stops.
+// offsets are in the 0-1 range, ascending; if nil the stops are evenly spaced.
+//
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+func DrawRadialGradientStops(ih Ihandle, cx, cy, radius int, colors []string, offsets []float32) {
+	n := len(colors)
+	if n < 2 {
+		return
+	}
+	cColors := make([]*C.char, n)
+	for i, c := range colors {
+		cColors[i] = C.CString(c)
+	}
+	defer func() {
+		for _, p := range cColors {
+			C.free(unsafe.Pointer(p))
+		}
+	}()
+
+	var cOffsets *C.float
+	if len(offsets) >= n {
+		cOffsets = (*C.float)(unsafe.Pointer(&offsets[0]))
+	}
+
+	C.IupDrawRadialGradientStops(ih.ptr(), C.int(cx), C.int(cy), C.int(radius), (**C.char)(unsafe.Pointer(&cColors[0])), cOffsets, C.int(n))
+}
+
 // DrawRadialGradient draws a radial gradient from center to edge.
 // colorCenter and colorEdge are color strings (e.g., "255 0 0" for red).
 //

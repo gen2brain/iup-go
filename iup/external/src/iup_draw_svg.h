@@ -40,8 +40,8 @@ void iupSvgDrawBezier(iSvgCanvas* dc, int x1, int y1, int x2, int y2, int x3, in
 void iupSvgDrawQuadraticBezier(iSvgCanvas* dc, int x1, int y1, int x2, int y2, int x3, int y3, const char* color, int style, int line_width);
 void iupSvgDrawText(iSvgCanvas* dc, const char* text, int len, int x, int y, int w, int h, const char* color, const char* font, int flags, double text_orientation);
 
-void iupSvgDrawLinearGradient(iSvgCanvas* dc, int x1, int y1, int x2, int y2, float angle, const char* color1, const char* color2);
-void iupSvgDrawRadialGradient(iSvgCanvas* dc, int cx, int cy, int radius, const char* color_center, const char* color_edge);
+void iupSvgDrawLinearGradient(iSvgCanvas* dc, int x1, int y1, int x2, int y2, float angle, const long* colors, const float* offsets, int count);
+void iupSvgDrawRadialGradient(iSvgCanvas* dc, int cx, int cy, int radius, const long* colors, const float* offsets, int count);
 
 void iupSvgDrawSetClipRect(iSvgCanvas* dc, int x1, int y1, int x2, int y2);
 void iupSvgDrawSetClipRoundedRect(iSvgCanvas* dc, int x1, int y1, int x2, int y2, int corner_radius);

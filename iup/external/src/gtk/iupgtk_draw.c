@@ -828,11 +828,12 @@ IUP_SDK_API void iupdrvDrawFocusRect(IdrawCanvas* dc, int x1, int y1, int x2, in
   iupdrvDrawRectangle(dc, x1, y1, x2, y2, iupDrawColor(0, 0, 0, 224), IUP_DRAW_STROKE_DOT, 1);
 }
 
-IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, float angle, long color1, long color2)
+IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, float angle, const long* colors, const float* offsets, int count)
 {
   cairo_pattern_t *pattern;
   float rad, x0, y0, x3, y3;
   float w, h;
+  int i;
 
   iupDrawCheckSwapCoord(x1, x2);
   iupDrawCheckSwapCoord(y1, y2);
@@ -851,10 +852,9 @@ IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x
   y3 = y1 + h / 2.0f + (h * sin(rad)) / 2.0f;
 
   pattern = cairo_pattern_create_linear(x0, y0, x3, y3);
-  cairo_pattern_add_color_stop_rgba(pattern, 0.0,
-    iupDrawRed(color1) / 255.0, iupDrawGreen(color1) / 255.0, iupDrawBlue(color1) / 255.0, iupDrawAlpha(color1) / 255.0);
-  cairo_pattern_add_color_stop_rgba(pattern, 1.0,
-    iupDrawRed(color2) / 255.0, iupDrawGreen(color2) / 255.0, iupDrawBlue(color2) / 255.0, iupDrawAlpha(color2) / 255.0);
+  for (i = 0; i < count; i++)
+    cairo_pattern_add_color_stop_rgba(pattern, offsets[i],
+      iupDrawRed(colors[i]) / 255.0, iupDrawGreen(colors[i]) / 255.0, iupDrawBlue(colors[i]) / 255.0, iupDrawAlpha(colors[i]) / 255.0);
 
   cairo_set_source(dc->image_cr, pattern);
   cairo_rectangle(dc->image_cr, x1, y1, w, h);
@@ -862,15 +862,15 @@ IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x
   cairo_pattern_destroy(pattern);
 }
 
-IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int radius, long colorCenter, long colorEdge)
+IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int radius, const long* colors, const float* offsets, int count)
 {
   cairo_pattern_t *pattern;
+  int i;
 
   pattern = cairo_pattern_create_radial(cx, cy, 0, cx, cy, radius);
-  cairo_pattern_add_color_stop_rgba(pattern, 0.0,
-    iupDrawRed(colorCenter) / 255.0, iupDrawGreen(colorCenter) / 255.0, iupDrawBlue(colorCenter) / 255.0, iupDrawAlpha(colorCenter) / 255.0);
-  cairo_pattern_add_color_stop_rgba(pattern, 1.0,
-    iupDrawRed(colorEdge) / 255.0, iupDrawGreen(colorEdge) / 255.0, iupDrawBlue(colorEdge) / 255.0, iupDrawAlpha(colorEdge) / 255.0);
+  for (i = 0; i < count; i++)
+    cairo_pattern_add_color_stop_rgba(pattern, offsets[i],
+      iupDrawRed(colors[i]) / 255.0, iupDrawGreen(colors[i]) / 255.0, iupDrawBlue(colors[i]) / 255.0, iupDrawAlpha(colors[i]) / 255.0);
 
   cairo_set_source(dc->image_cr, pattern);
   cairo_arc(dc->image_cr, cx, cy, radius, 0, 2 * G_PI);

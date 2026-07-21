@@ -875,21 +875,17 @@ IUP_SDK_API void iupdrvDrawQuadraticBezier(IdrawCanvas* dc, int x1, int y1, int 
   iupdrvDrawBezier(dc, x1, y1, cx1, cy1, cx2, cy2, x3, y3, color, style, line_width);
 }
 
-IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, float angle, long color1, long color2)
+IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, float angle, const long* colors, const float* offsets, int count)
 {
   Efl_VG* shape;
   Efl_Canvas_Vg_Gradient* grad;
-  Efl_Gfx_Gradient_Stop stops[2];
-  int r1, g1, b1, a1;
-  int r2, g2, b2, a2;
+  Efl_Gfx_Gradient_Stop stops[IUP_GRADIENT_MAX_STOPS];
   int corner_radius = dc->clip_corner_radius;
   double rad, w, h, gx0, gy0, gx1, gy1;
+  int i;
 
   iupDrawCheckSwapCoord(x1, x2);
   iupDrawCheckSwapCoord(y1, y2);
-
-  iDrawGetColor(color1, &r1, &g1, &b1, &a1);
-  iDrawGetColor(color2, &r2, &g2, &b2, &a2);
 
   w = (double)(x2 - x1);
   h = (double)(y2 - y1);
@@ -907,11 +903,14 @@ IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x
     efl_gfx_gradient_linear_start_set(efl_added, gx0, gy0),
     efl_gfx_gradient_linear_end_set(efl_added, gx1, gy1));
 
-  stops[0].offset = 0.0;
-  stops[0].r = r1; stops[0].g = g1; stops[0].b = b1; stops[0].a = a1;
-  stops[1].offset = 1.0;
-  stops[1].r = r2; stops[1].g = g2; stops[1].b = b2; stops[1].a = a2;
-  efl_gfx_gradient_stop_set(grad, stops, 2);
+  for (i = 0; i < count; i++)
+  {
+    int r, g, b, a;
+    iDrawGetColor(colors[i], &r, &g, &b, &a);
+    stops[i].offset = offsets[i];
+    stops[i].r = r; stops[i].g = g; stops[i].b = b; stops[i].a = a;
+  }
+  efl_gfx_gradient_stop_set(grad, stops, count);
 
   efl_canvas_vg_shape_fill_set(shape, grad);
 
@@ -919,16 +918,12 @@ IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x
   dc->shapes = eina_list_append(dc->shapes, grad);
 }
 
-IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int radius, long colorCenter, long colorEdge)
+IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int radius, const long* colors, const float* offsets, int count)
 {
   Efl_VG* shape;
   Efl_Canvas_Vg_Gradient* grad;
-  Efl_Gfx_Gradient_Stop stops[2];
-  int r1, g1, b1, a1;
-  int r2, g2, b2, a2;
-
-  iDrawGetColor(colorCenter, &r1, &g1, &b1, &a1);
-  iDrawGetColor(colorEdge, &r2, &g2, &b2, &a2);
+  Efl_Gfx_Gradient_Stop stops[IUP_GRADIENT_MAX_STOPS];
+  int i;
 
   shape = efl_add(EFL_CANVAS_VG_SHAPE_CLASS, dc->root,
     efl_gfx_path_append_circle(efl_added, cx, cy, radius));
@@ -937,11 +932,14 @@ IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int r
     efl_gfx_gradient_radial_center_set(efl_added, cx, cy),
     efl_gfx_gradient_radial_radius_set(efl_added, radius));
 
-  stops[0].offset = 0.0;
-  stops[0].r = r1; stops[0].g = g1; stops[0].b = b1; stops[0].a = a1;
-  stops[1].offset = 1.0;
-  stops[1].r = r2; stops[1].g = g2; stops[1].b = b2; stops[1].a = a2;
-  efl_gfx_gradient_stop_set(grad, stops, 2);
+  for (i = 0; i < count; i++)
+  {
+    int r, g, b, a;
+    iDrawGetColor(colors[i], &r, &g, &b, &a);
+    stops[i].offset = offsets[i];
+    stops[i].r = r; stops[i].g = g; stops[i].b = b; stops[i].a = a;
+  }
+  efl_gfx_gradient_stop_set(grad, stops, count);
 
   efl_canvas_vg_shape_fill_set(shape, grad);
 

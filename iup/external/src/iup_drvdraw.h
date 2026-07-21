@@ -89,14 +89,16 @@ IUP_SDK_API void iupdrvDrawBezier(IdrawCanvas* dc, int x1, int y1, int x2, int y
  * \ingroup drvdraw */
 IUP_SDK_API void iupdrvDrawQuadraticBezier(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int x3, int y3, long color, int style, int line_width);
 
-/** Draws a linear gradient between two colors.
+#define IUP_GRADIENT_MAX_STOPS 64
+
+/** Draws a linear gradient across count color stops (offsets in 0-1, ascending).
  * angle: 0=horizontal right, 90=vertical down, 180=horizontal left, 270=vertical up
  * \ingroup drvdraw */
-IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, float angle, long color1, long color2);
+IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, float angle, const long* colors, const float* offsets, int count);
 
-/** Draws a radial gradient from center to edge.
+/** Draws a radial gradient from center to edge across count color stops.
  * \ingroup drvdraw */
-IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int radius, long colorCenter, long colorEdge);
+IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int radius, const long* colors, const float* offsets, int count);
 
 #define IUP_DRAW_LEFT     0x0000
 #define IUP_DRAW_CENTER   0x0001

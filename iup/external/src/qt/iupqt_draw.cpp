@@ -1023,7 +1023,7 @@ extern "C" IUP_SDK_API void iupdrvDrawFocusRect(IdrawCanvas* dc, int x1, int y1,
  * Linear Gradient
  ****************************************************************************/
 
-extern "C" IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, float angle, long color1, long color2)
+extern "C" IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, float angle, const long* colors, const float* offsets, int count)
 {
   if (!dc || !dc->painter)
     return;
@@ -1043,8 +1043,8 @@ extern "C" IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, in
   QPointF end(cx + (w * cos(rad)) / 2.0, cy + (h * sin(rad)) / 2.0);
 
   QLinearGradient gradient(start, end);
-  gradient.setColorAt(0, QColor(iupDrawRed(color1), iupDrawGreen(color1), iupDrawBlue(color1), iupDrawAlpha(color1)));
-  gradient.setColorAt(1, QColor(iupDrawRed(color2), iupDrawGreen(color2), iupDrawBlue(color2), iupDrawAlpha(color2)));
+  for (int i = 0; i < count; i++)
+    gradient.setColorAt(offsets[i], QColor(iupDrawRed(colors[i]), iupDrawGreen(colors[i]), iupDrawBlue(colors[i]), iupDrawAlpha(colors[i])));
 
   dc->painter->fillRect(x1, y1, x2 - x1, y2 - y1, gradient);
 }
@@ -1053,14 +1053,14 @@ extern "C" IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, in
  * Radial Gradient
  ****************************************************************************/
 
-extern "C" IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int radius, long colorCenter, long colorEdge)
+extern "C" IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int radius, const long* colors, const float* offsets, int count)
 {
   if (!dc || !dc->painter)
     return;
 
   QRadialGradient gradient(cx, cy, radius, cx, cy);
-  gradient.setColorAt(0, QColor(iupDrawRed(colorCenter), iupDrawGreen(colorCenter), iupDrawBlue(colorCenter), iupDrawAlpha(colorCenter)));
-  gradient.setColorAt(1, QColor(iupDrawRed(colorEdge), iupDrawGreen(colorEdge), iupDrawBlue(colorEdge), iupDrawAlpha(colorEdge)));
+  for (int i = 0; i < count; i++)
+    gradient.setColorAt(offsets[i], QColor(iupDrawRed(colors[i]), iupDrawGreen(colors[i]), iupDrawBlue(colors[i]), iupDrawAlpha(colors[i])));
 
   dc->painter->setPen(Qt::NoPen);
   dc->painter->setBrush(gradient);

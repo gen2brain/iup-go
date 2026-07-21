@@ -214,7 +214,7 @@ EM_JS(void, iupwasmJsDrawQuadBezier, (int cid, int x1, int y1, int x2, int y2, i
   ctx.stroke();
 })
 
-EM_JS(void, iupwasmJsDrawLinearGradient, (int cid, int x1, int y1, int x2, int y2, double angle, int r1, int g1, int b1, int a1, int r2, int g2, int b2, int a2), {
+EM_JS(void, iupwasmJsDrawLinearGradient, (int cid, int x1, int y1, int x2, int y2, double angle, int rgbaPtr, int offsPtr, int count), {
   var ctx = globalThis.__iupCtx(cid); if (!ctx) return;
   var w = x2 - x1, h = y2 - y1;
   var rad = angle * Math.PI / 180;
@@ -223,18 +223,20 @@ EM_JS(void, iupwasmJsDrawLinearGradient, (int cid, int x1, int y1, int x2, int y
   var x3 = x1 + w / 2 + (w * Math.cos(rad)) / 2;
   var y3 = y1 + h / 2 + (h * Math.sin(rad)) / 2;
   var grad = ctx.createLinearGradient(x0, y0, x3, y3);
-  grad.addColorStop(0, globalThis.__iupRGBA(r1, g1, b1, a1));
-  grad.addColorStop(1, globalThis.__iupRGBA(r2, g2, b2, a2));
+  for (var i = 0; i < count; i++)
+    grad.addColorStop(HEAPF32[(offsPtr >> 2) + i],
+      globalThis.__iupRGBA(HEAPU8[rgbaPtr+i*4], HEAPU8[rgbaPtr+i*4+1], HEAPU8[rgbaPtr+i*4+2], HEAPU8[rgbaPtr+i*4+3]));
   ctx.setLineDash([]);
   ctx.fillStyle = grad;
   ctx.fillRect(x1, y1, w, h);
 })
 
-EM_JS(void, iupwasmJsDrawRadialGradient, (int cid, int cx, int cy, int radius, int r1, int g1, int b1, int a1, int r2, int g2, int b2, int a2), {
+EM_JS(void, iupwasmJsDrawRadialGradient, (int cid, int cx, int cy, int radius, int rgbaPtr, int offsPtr, int count), {
   var ctx = globalThis.__iupCtx(cid); if (!ctx) return;
   var grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
-  grad.addColorStop(0, globalThis.__iupRGBA(r1, g1, b1, a1));
-  grad.addColorStop(1, globalThis.__iupRGBA(r2, g2, b2, a2));
+  for (var i = 0; i < count; i++)
+    grad.addColorStop(HEAPF32[(offsPtr >> 2) + i],
+      globalThis.__iupRGBA(HEAPU8[rgbaPtr+i*4], HEAPU8[rgbaPtr+i*4+1], HEAPU8[rgbaPtr+i*4+2], HEAPU8[rgbaPtr+i*4+3]));
   ctx.setLineDash([]);
   ctx.fillStyle = grad;
   ctx.beginPath();
@@ -444,20 +446,35 @@ IUP_SDK_API void iupdrvDrawQuadraticBezier(IdrawCanvas* dc, int x1, int y1, int 
   iupwasmJsDrawQuadBezier(dc->cid, x1, y1, x2, y2, x3, y3, iupDrawRed(color), iupDrawGreen(color), iupDrawBlue(color), iupDrawAlpha(color), style, line_width);
 }
 
-IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, float angle, long color1, long color2)
+static void wasmGradientArrays(const long* colors, const float* offsets, int count, unsigned char* rgba, float* offs)
 {
-  iupDrawCheckSwapCoord(x1, x2);
-  iupDrawCheckSwapCoord(y1, y2);
-  iupwasmJsDrawLinearGradient(dc->cid, x1, y1, x2, y2, angle,
-    iupDrawRed(color1), iupDrawGreen(color1), iupDrawBlue(color1), iupDrawAlpha(color1),
-    iupDrawRed(color2), iupDrawGreen(color2), iupDrawBlue(color2), iupDrawAlpha(color2));
+  int i;
+  for (i = 0; i < count; i++)
+  {
+    rgba[i*4+0] = iupDrawRed(colors[i]);
+    rgba[i*4+1] = iupDrawGreen(colors[i]);
+    rgba[i*4+2] = iupDrawBlue(colors[i]);
+    rgba[i*4+3] = iupDrawAlpha(colors[i]);
+    offs[i] = offsets[i];
+  }
 }
 
-IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int radius, long colorCenter, long colorEdge)
+IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, float angle, const long* colors, const float* offsets, int count)
 {
-  iupwasmJsDrawRadialGradient(dc->cid, cx, cy, radius,
-    iupDrawRed(colorCenter), iupDrawGreen(colorCenter), iupDrawBlue(colorCenter), iupDrawAlpha(colorCenter),
-    iupDrawRed(colorEdge), iupDrawGreen(colorEdge), iupDrawBlue(colorEdge), iupDrawAlpha(colorEdge));
+  unsigned char rgba[IUP_GRADIENT_MAX_STOPS * 4];
+  float offs[IUP_GRADIENT_MAX_STOPS];
+  iupDrawCheckSwapCoord(x1, x2);
+  iupDrawCheckSwapCoord(y1, y2);
+  wasmGradientArrays(colors, offsets, count, rgba, offs);
+  iupwasmJsDrawLinearGradient(dc->cid, x1, y1, x2, y2, angle, (int)(intptr_t)rgba, (int)(intptr_t)offs, count);
+}
+
+IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int radius, const long* colors, const float* offsets, int count)
+{
+  unsigned char rgba[IUP_GRADIENT_MAX_STOPS * 4];
+  float offs[IUP_GRADIENT_MAX_STOPS];
+  wasmGradientArrays(colors, offsets, count, rgba, offs);
+  iupwasmJsDrawRadialGradient(dc->cid, cx, cy, radius, (int)(intptr_t)rgba, (int)(intptr_t)offs, count);
 }
 
 IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int x, int y, int w, int h, long color, const char* font, int flags, double text_orientation)

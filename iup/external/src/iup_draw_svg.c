@@ -440,15 +440,23 @@ void iupSvgDrawQuadraticBezier(iSvgCanvas* dc, int x1, int y1, int x2, int y2, i
 
 /* ---- Gradients ---- */
 
-void iupSvgDrawLinearGradient(iSvgCanvas* dc, int x1, int y1, int x2, int y2, float angle, const char* color1, const char* color2)
+static void iSvgWriteStops(iSvgCanvas* dc, const long* colors, const float* offsets, int count)
 {
-  int r1, g1, b1, a1, r2, g2, b2, a2;
+  int i;
+  for (i = 0; i < count; i++)
+  {
+    int r = (int)((colors[i] >> 16) & 0xFF), g = (int)((colors[i] >> 8) & 0xFF), b = (int)(colors[i] & 0xFF);
+    int a = (int)(~((colors[i] >> 24) & 0xFF) & 0xFF);
+    iSvgBufPrintf(&dc->buf, "<stop offset=\"%.3g%%\" stop-color=\"rgb(%d,%d,%d)\" stop-opacity=\"%.3g\"/>",
+                  offsets[i] * 100.0f, r, g, b, iSvgAlphaVal(a));
+  }
+}
+
+void iupSvgDrawLinearGradient(iSvgCanvas* dc, int x1, int y1, int x2, int y2, float angle, const long* colors, const float* offsets, int count)
+{
   int gid;
   float rad, w, h;
   float gx1, gy1, gx2, gy2;
-
-  iSvgParseColor(color1, &r1, &g1, &b1, &a1);
-  iSvgParseColor(color2, &r2, &g2, &b2, &a2);
 
   iSvgSwapCoord(x1, x2);
   iSvgSwapCoord(y1, y2);
@@ -468,12 +476,10 @@ void iupSvgDrawLinearGradient(iSvgCanvas* dc, int x1, int y1, int x2, int y2, fl
   gid = dc->id_counter++;
 
   iSvgBufPrintf(&dc->buf,
-    "<defs><linearGradient id=\"lg%d\" x1=\"%.3f\" y1=\"%.3f\" x2=\"%.3f\" y2=\"%.3f\">"
-    "<stop offset=\"0%%\" stop-color=\"rgb(%d,%d,%d)\" stop-opacity=\"%.3g\"/>"
-    "<stop offset=\"100%%\" stop-color=\"rgb(%d,%d,%d)\" stop-opacity=\"%.3g\"/>"
-    "</linearGradient></defs>\n",
-    gid, gx1, gy1, gx2, gy2,
-    r1, g1, b1, iSvgAlphaVal(a1), r2, g2, b2, iSvgAlphaVal(a2));
+    "<defs><linearGradient id=\"lg%d\" x1=\"%.3f\" y1=\"%.3f\" x2=\"%.3f\" y2=\"%.3f\">",
+    gid, gx1, gy1, gx2, gy2);
+  iSvgWriteStops(dc, colors, offsets, count);
+  iSvgBufAppend(&dc->buf, "</linearGradient></defs>\n");
 
   iSvgBufPrintf(&dc->buf, "<rect x=\"%d\" y=\"%d\" width=\"%.0f\" height=\"%.0f\" fill=\"url(#lg%d)\" stroke=\"none\"",
                 x1, y1, w, h, gid);
@@ -481,20 +487,14 @@ void iupSvgDrawLinearGradient(iSvgCanvas* dc, int x1, int y1, int x2, int y2, fl
   iSvgBufAppend(&dc->buf, "/>\n");
 }
 
-void iupSvgDrawRadialGradient(iSvgCanvas* dc, int cx, int cy, int radius, const char* color_center, const char* color_edge)
+void iupSvgDrawRadialGradient(iSvgCanvas* dc, int cx, int cy, int radius, const long* colors, const float* offsets, int count)
 {
-  int r1, g1, b1, a1, r2, g2, b2, a2;
   int gid = dc->id_counter++;
 
-  iSvgParseColor(color_center, &r1, &g1, &b1, &a1);
-  iSvgParseColor(color_edge, &r2, &g2, &b2, &a2);
-
   iSvgBufPrintf(&dc->buf,
-    "<defs><radialGradient id=\"rg%d\" cx=\"50%%\" cy=\"50%%\" r=\"50%%\">"
-    "<stop offset=\"0%%\" stop-color=\"rgb(%d,%d,%d)\" stop-opacity=\"%.3g\"/>"
-    "<stop offset=\"100%%\" stop-color=\"rgb(%d,%d,%d)\" stop-opacity=\"%.3g\"/>"
-    "</radialGradient></defs>\n",
-    gid, r1, g1, b1, iSvgAlphaVal(a1), r2, g2, b2, iSvgAlphaVal(a2));
+    "<defs><radialGradient id=\"rg%d\" cx=\"50%%\" cy=\"50%%\" r=\"50%%\">", gid);
+  iSvgWriteStops(dc, colors, offsets, count);
+  iSvgBufAppend(&dc->buf, "</radialGradient></defs>\n");
 
   iSvgBufPrintf(&dc->buf, "<circle cx=\"%d\" cy=\"%d\" r=\"%d\" fill=\"url(#rg%d)\" stroke=\"none\"",
                 cx, cy, radius, gid);

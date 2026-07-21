@@ -260,6 +260,8 @@ var (
 	iupDrawGetSvg             func(ih uintptr) string
 	iupDrawLinearGradient     func(ih uintptr, x1, y1, x2, y2 int32, angle float32, color1, color2 string)
 	iupDrawRadialGradient     func(ih uintptr, cx, cy, radius int32, colorCenter, colorEdge string)
+	iupDrawLinearGradientStops func(ih uintptr, x1, y1, x2, y2 int32, angle float32, colors *uintptr, offsets *float32, count int32)
+	iupDrawRadialGradientStops func(ih uintptr, cx, cy, radius int32, colors *uintptr, offsets *float32, count int32)
 
 	iupSetLanguage              func(lng string)
 	iupGetLanguage              func() string
@@ -567,6 +569,8 @@ func ensureBase() {
 		reg(&iupDrawGetSvg, "IupDrawGetSvg")
 		reg(&iupDrawLinearGradient, "IupDrawLinearGradient")
 		reg(&iupDrawRadialGradient, "IupDrawRadialGradient")
+		reg(&iupDrawLinearGradientStops, "IupDrawLinearGradientStops")
+		reg(&iupDrawRadialGradientStops, "IupDrawRadialGradientStops")
 
 		reg(&iupSetLanguage, "IupSetLanguage")
 		reg(&iupGetLanguage, "IupGetLanguage")

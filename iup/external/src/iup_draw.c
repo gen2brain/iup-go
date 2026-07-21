@@ -403,9 +403,40 @@ IUP_API void IupDrawQuadraticBezier(Ihandle* ih, int x1, int y1, int x2, int y2,
   iupdrvDrawQuadraticBezier((IdrawCanvas*)iupAttribGet(ih, "_IUP_DRAW_DC"), x1, y1, x2, y2, x3, y3, color, style, line_width);
 }
 
+static int iDrawBuildStops(const char** colors, const float* offsets, int count, long* out_colors, float* out_offsets)
+{
+  int i;
+
+  if (count < 2)
+    return 0;
+  if (count > IUP_GRADIENT_MAX_STOPS)
+    count = IUP_GRADIENT_MAX_STOPS;
+
+  for (i = 0; i < count; i++)
+  {
+    out_colors[i] = iupDrawStrToColor(colors[i], 0);
+    if (offsets)
+      out_offsets[i] = offsets[i];
+    else
+      out_offsets[i] = (float)i / (float)(count - 1);
+  }
+
+  return count;
+}
+
 IUP_API void IupDrawLinearGradient(Ihandle* ih, int x1, int y1, int x2, int y2, float angle, const char* color1, const char* color2)
 {
+  const char* colors[2];
+  colors[0] = color1;
+  colors[1] = color2;
+  IupDrawLinearGradientStops(ih, x1, y1, x2, y2, angle, colors, NULL, 2);
+}
+
+IUP_API void IupDrawLinearGradientStops(Ihandle* ih, int x1, int y1, int x2, int y2, float angle, const char** colors, const float* offsets, int count)
+{
   iSvgCanvas* svg;
+  long c[IUP_GRADIENT_MAX_STOPS];
+  float o[IUP_GRADIENT_MAX_STOPS];
 
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
@@ -414,23 +445,33 @@ IUP_API void IupDrawLinearGradient(Ihandle* ih, int x1, int y1, int x2, int y2, 
   if (!iupAttribGet(ih, "_IUP_DRAW_DC"))
     return;
 
+  count = iDrawBuildStops(colors, offsets, count, c, o);
+  if (!count)
+    return;
+
   svg = IUP_SVG_GET(ih);
   if (svg)
   {
-    iupSvgDrawLinearGradient(svg, x1, y1, x2, y2, angle, color1, color2);
+    iupSvgDrawLinearGradient(svg, x1, y1, x2, y2, angle, c, o, count);
     return;
   }
 
-  {
-    long c1 = iupDrawStrToColor(color1, 0);
-    long c2 = iupDrawStrToColor(color2, 0);
-    iupdrvDrawLinearGradient((IdrawCanvas*)iupAttribGet(ih, "_IUP_DRAW_DC"), x1, y1, x2, y2, angle, c1, c2);
-  }
+  iupdrvDrawLinearGradient((IdrawCanvas*)iupAttribGet(ih, "_IUP_DRAW_DC"), x1, y1, x2, y2, angle, c, o, count);
 }
 
 IUP_API void IupDrawRadialGradient(Ihandle* ih, int cx, int cy, int radius, const char* colorCenter, const char* colorEdge)
 {
+  const char* colors[2];
+  colors[0] = colorCenter;
+  colors[1] = colorEdge;
+  IupDrawRadialGradientStops(ih, cx, cy, radius, colors, NULL, 2);
+}
+
+IUP_API void IupDrawRadialGradientStops(Ihandle* ih, int cx, int cy, int radius, const char** colors, const float* offsets, int count)
+{
   iSvgCanvas* svg;
+  long c[IUP_GRADIENT_MAX_STOPS];
+  float o[IUP_GRADIENT_MAX_STOPS];
 
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
@@ -439,18 +480,18 @@ IUP_API void IupDrawRadialGradient(Ihandle* ih, int cx, int cy, int radius, cons
   if (!iupAttribGet(ih, "_IUP_DRAW_DC"))
     return;
 
+  count = iDrawBuildStops(colors, offsets, count, c, o);
+  if (!count)
+    return;
+
   svg = IUP_SVG_GET(ih);
   if (svg)
   {
-    iupSvgDrawRadialGradient(svg, cx, cy, radius, colorCenter, colorEdge);
+    iupSvgDrawRadialGradient(svg, cx, cy, radius, c, o, count);
     return;
   }
 
-  {
-    long c1 = iupDrawStrToColor(colorCenter, 0);
-    long c2 = iupDrawStrToColor(colorEdge, 0);
-    iupdrvDrawRadialGradient((IdrawCanvas*)iupAttribGet(ih, "_IUP_DRAW_DC"), cx, cy, radius, c1, c2);
-  }
+  iupdrvDrawRadialGradient((IdrawCanvas*)iupAttribGet(ih, "_IUP_DRAW_DC"), cx, cy, radius, c, o, count);
 }
 
 static void iDrawRotatePoint(int x, int y, int *rx, int *ry, double sin_theta, double cos_theta)
@@ -1216,14 +1257,20 @@ IUP_SDK_API void iupFlatDrawGradientBox(IdrawCanvas* dc, int xmin, int xmax, int
     c2 = iFlatDrawColorMakeInactive(c2, bgcolor);
   }
 
-  if (corner_radius > 0)
   {
-    iupdrvDrawSetClipRoundedRect(dc, xmin, ymin, xmax, ymax, corner_radius);
-    iupdrvDrawLinearGradient(dc, xmin, ymin, xmax, ymax, angle, c1, c2);
-    iupdrvDrawResetClip(dc);
+    long colors[2]; float offsets[2];
+    colors[0] = c1; colors[1] = c2;
+    offsets[0] = 0.0f; offsets[1] = 1.0f;
+
+    if (corner_radius > 0)
+    {
+      iupdrvDrawSetClipRoundedRect(dc, xmin, ymin, xmax, ymax, corner_radius);
+      iupdrvDrawLinearGradient(dc, xmin, ymin, xmax, ymax, angle, colors, offsets, 2);
+      iupdrvDrawResetClip(dc);
+    }
+    else
+      iupdrvDrawLinearGradient(dc, xmin, ymin, xmax, ymax, angle, colors, offsets, 2);
   }
-  else
-    iupdrvDrawLinearGradient(dc, xmin, ymin, xmax, ymax, angle, c1, c2);
 }
 
 static void iFlatDrawText(IdrawCanvas* dc, int x, int y, int w, int h, const char* str, const char* font, int text_flags, double text_orientation, const char* fgcolor, const char* bgcolor, int active)
