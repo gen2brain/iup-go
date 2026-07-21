@@ -30,6 +30,7 @@ typedef struct _ImaskMatchVars
   ImaskParsed *fsm;
   iMaskMatchFunc function;
   short *tested;
+  short *tested_end;
   void *user;
 } ImaskMatchVars;
 
@@ -176,6 +177,9 @@ static long iMaskMatchRecursive (ImaskMatchVars * vars, long j, int state, Imask
 
       return j;
     }
+
+    if (vars->tested + size >= vars->tested_end)
+      return IMASK_NOMATCH;
 
     /* check if the current state has already been evaluated */
     {
@@ -571,6 +575,7 @@ int iupMaskMatch (const char *text, ImaskParsed * fsm, long start, iMaskMatchFun
   vars.text = text;
   vars.fsm = fsm;
   vars.tested = tested;
+  vars.tested_end = tested + (sizeof(tested) / sizeof(tested[0]));
   vars.function = function;
   vars.user = user;
 
