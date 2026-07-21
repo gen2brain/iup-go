@@ -125,6 +125,11 @@ The angle is in degrees and defines the gradient direction.
 
 Draws a radial gradient fill centered at (cx, cy) with the given radius.
 
+    void IupDrawLinearGradientStops(Ihandle* ih, int x1, int y1, int x2, int y2, float angle, const char** colors, const float* offsets, int count);
+    void IupDrawRadialGradientStops(Ihandle* ih, int cx, int cy, int radius, const char** colors, const float* offsets, int count);
+
+Same as the two-color functions but across **count** color stops (2 to 64). **offsets** are positions in the 0-1 range in ascending order; if NULL the stops are evenly spaced. The colors accept the alpha component. Two stops at the same offset produce a hard color edge on most drivers; Qt keeps only one stop per offset (the last color set), so the edge blends instead.
+
 ### Text and Images
 
     void IupDrawText(Ihandle* ih, const char* str, int len, int x, int y, int w, int h);
