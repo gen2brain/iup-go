@@ -6,6 +6,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "iup.h"
 
@@ -131,6 +132,51 @@ static void gtk4MenuRadioActivated(GSimpleAction* action, GVariant* parameter, g
 
 /* Recursively build GMenu model from IUP menu hierarchy
  * is_root: TRUE if this is the root menu bar level (requires submenus only), FALSE if this is inside a submenu */
+/* Convert IUP accelerator text ("Ctrl+N") to a GTK accel string ("<Control>n") for the menu "accel" attribute. */
+static gboolean gtk4MenuBuildAccel(const char* text, char* buffer, size_t bufsize)
+{
+  guint key = 0;
+  GdkModifierType mods = 0;
+  const char* p = text;
+
+  buffer[0] = 0;
+  while (*p)
+  {
+    char token[48];
+    const char* plus = strchr(p, '+');
+    int len = plus ? (int)(plus - p) : (int)strlen(p);
+    if (len <= 0 || len >= (int)sizeof(token) || strlen(buffer) + 12 >= bufsize)
+      return FALSE;
+    memcpy(token, p, len);
+    token[len] = 0;
+
+    if (plus)
+    {
+      if (iupStrEqualNoCase(token, "Ctrl") || iupStrEqualNoCase(token, "Control"))
+        strcat(buffer, "<Control>");
+      else if (iupStrEqualNoCase(token, "Shift"))
+        strcat(buffer, "<Shift>");
+      else if (iupStrEqualNoCase(token, "Alt"))
+        strcat(buffer, "<Alt>");
+      else if (iupStrEqualNoCase(token, "Meta") || iupStrEqualNoCase(token, "Super") || iupStrEqualNoCase(token, "Cmd"))
+        strcat(buffer, "<Super>");
+      else
+        return FALSE;
+      p = plus + 1;
+    }
+    else
+    {
+      if (len == 1 && token[0] >= 'A' && token[0] <= 'Z')
+        token[0] = (char)(token[0] + 32);
+      strcat(buffer, token);
+      break;
+    }
+  }
+
+  gtk_accelerator_parse(buffer, &key, &mods);
+  return key != 0;
+}
+
 static GMenu* gtk4BuildMenuModel(Ihandle* ih_menu, GSimpleActionGroup* action_group, int is_root)
 {
   GMenu* menu;
@@ -282,24 +328,41 @@ static GMenu* gtk4BuildMenuModel(Ihandle* ih_menu, GSimpleActionGroup* action_gr
       char full_action_name[96];
       snprintf(full_action_name, sizeof(full_action_name), "menu.%s", action_name);
 
+      char* tab = strchr(processed_title, '\t');
+      char accel_buf[128];
+      gboolean has_accel = FALSE;
+      char* label_str = processed_title;
+      char* label_copy = NULL;
+
+      if (tab)
+      {
+        has_accel = gtk4MenuBuildAccel(tab + 1, accel_buf, sizeof(accel_buf));
+        if (has_accel)
+        {
+          label_copy = iupStrDup(processed_title);
+          label_copy[tab - processed_title] = 0;
+          label_str = label_copy;
+        }
+      }
+
       if (is_root)
       {
-        /* GtkPopoverMenuBar requires submenus at root level.
-         * For root-level items, create a submenu with single unlabeled item.
-         * Menu bar shows the title, clicking opens dropdown and immediately triggers the action. */
+        /* GtkPopoverMenuBar requires submenus at root level; wrap the action in a single-item submenu. */
         GMenu* item_submenu = g_menu_new();
-        /* Add item without label, will just trigger the action */
         g_menu_append(item_submenu, NULL, full_action_name);
-        g_menu_append_submenu(section, processed_title, G_MENU_MODEL(item_submenu));
+        g_menu_append_submenu(section, label_str, G_MENU_MODEL(item_submenu));
         g_object_unref(item_submenu);
       }
       else
       {
-        /* Regular submenu item, add directly */
-        g_menu_append(section, processed_title, full_action_name);
+        GMenuItem* mitem = g_menu_item_new(label_str, full_action_name);
+        if (has_accel)
+          g_menu_item_set_attribute(mitem, "accel", "s", accel_buf);
+        g_menu_append_item(section, mitem);
+        g_object_unref(mitem);
       }
 
-      /* Free processed title if it was allocated */
+      if (label_copy) free(label_copy);
       if (processed_title != title)
         free(processed_title);
     }
