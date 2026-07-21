@@ -1213,7 +1213,24 @@ static long x11InterpolateColor(long color1, long color2, float t)
   return iupDrawColor(r, g, b, a);
 }
 
-IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, float angle, long color1, long color2)
+static long x11InterpolateStops(const long* colors, const float* offsets, int count, float t)
+{
+  int i;
+  if (t <= offsets[0]) return colors[0];
+  if (t >= offsets[count - 1]) return colors[count - 1];
+  for (i = 0; i < count - 1; i++)
+  {
+    if (t <= offsets[i + 1])
+    {
+      float span = offsets[i + 1] - offsets[i];
+      float lt = span > 0 ? (t - offsets[i]) / span : 0.0f;
+      return x11InterpolateColor(colors[i], colors[i + 1], lt);
+    }
+  }
+  return colors[count - 1];
+}
+
+IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, float angle, const long* colors, const float* offsets, int count)
 {
   int i, steps;
   float frac, dx, dy, length;
@@ -1238,22 +1255,24 @@ IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x
     if (gx != 0 || gy != 0)
     {
       XLinearGradient grad;
-      XFixed stops[2];
-      XRenderColor colors[2];
+      XFixed stops[IUP_GRADIENT_MAX_STOPS];
+      XRenderColor rcolors[IUP_GRADIENT_MAX_STOPS];
       Picture src;
       XRenderPictureAttributes pa;
+      int si;
 
       grad.p1.x = XDoubleToFixed(x1 + w / 2.0f - gx);
       grad.p1.y = XDoubleToFixed(y1 + h / 2.0f - gy);
       grad.p2.x = XDoubleToFixed(x1 + w / 2.0f + gx);
       grad.p2.y = XDoubleToFixed(y1 + h / 2.0f + gy);
 
-      stops[0] = 0;
-      stops[1] = XDoubleToFixed(1.0);
-      colors[0] = motDrawRenderColor(color1);
-      colors[1] = motDrawRenderColor(color2);
+      for (si = 0; si < count; si++)
+      {
+        stops[si] = XDoubleToFixed(offsets[si]);
+        rcolors[si] = motDrawRenderColor(colors[si]);
+      }
 
-      src = XRenderCreateLinearGradient(iupmot_display, &grad, stops, colors, 2);
+      src = XRenderCreateLinearGradient(iupmot_display, &grad, stops, rcolors, count);
       pa.repeat = RepeatPad;
       XRenderChangePicture(iupmot_display, src, CPRepeat, &pa);
       XRenderComposite(iupmot_display, PictOpOver, src, None, dc->pict, x1, y1, 0, 0, x1, y1, x2 - x1 + 1, y2 - y1 + 1);
@@ -1272,7 +1291,7 @@ IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x
   for (i = 0; i < steps; i++)
   {
     frac = (float)i / (float)(steps - 1);
-    long color = x11InterpolateColor(color1, color2, frac);
+    long color = x11InterpolateStops(colors, offsets, count, frac);
 
     pixel = iupmotColorGetPixel(iupDrawRed(color), iupDrawGreen(color), iupDrawBlue(color));
     XSetForeground(iupmot_display, dc->pixmap_gc, pixel);
@@ -1297,7 +1316,7 @@ IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x
   }
 }
 
-IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int radius, long colorCenter, long colorEdge)
+IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int radius, const long* colors, const float* offsets, int count)
 {
   int i, steps;
   float t, r;
@@ -1309,9 +1328,10 @@ IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int r
     if (motDrawAlphaMaskBegin(dc, &m, cx - radius, cy - radius, cx + radius, cy + radius, 0))
     {
       XRadialGradient grad;
-      XFixed stops[2];
-      XRenderColor colors[2];
+      XFixed stops[IUP_GRADIENT_MAX_STOPS];
+      XRenderColor rcolors[IUP_GRADIENT_MAX_STOPS];
       Picture src;
+      int si;
 
       grad.inner.x = XDoubleToFixed(cx);
       grad.inner.y = XDoubleToFixed(cy);
@@ -1320,12 +1340,13 @@ IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int r
       grad.outer.y = XDoubleToFixed(cy);
       grad.outer.radius = XDoubleToFixed(radius);
 
-      stops[0] = 0;
-      stops[1] = XDoubleToFixed(1.0);
-      colors[0] = motDrawRenderColor(colorCenter);
-      colors[1] = motDrawRenderColor(colorEdge);
+      for (si = 0; si < count; si++)
+      {
+        stops[si] = XDoubleToFixed(offsets[si]);
+        rcolors[si] = motDrawRenderColor(colors[si]);
+      }
 
-      src = XRenderCreateRadialGradient(iupmot_display, &grad, stops, colors, 2);
+      src = XRenderCreateRadialGradient(iupmot_display, &grad, stops, rcolors, count);
       XFillArc(iupmot_display, m.pixmap, m.gc, cx - radius, cy - radius, 2 * radius, 2 * radius, 0, 23040);
       motDrawAlphaMaskComposite(dc, &m, src);
       XRenderFreePicture(iupmot_display, src);
@@ -1342,7 +1363,7 @@ IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int r
   for (i = steps - 1; i >= 0; i--)
   {
     t = (float)i / (float)(steps - 1);
-    long color = x11InterpolateColor(colorCenter, colorEdge, t);
+    long color = x11InterpolateStops(colors, offsets, count, t);
     r = (float)radius * t;
 
     pixel = iupmotColorGetPixel(iupDrawRed(color), iupDrawGreen(color), iupDrawBlue(color));

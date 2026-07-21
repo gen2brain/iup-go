@@ -1004,7 +1004,7 @@ IUP_SDK_API void iupdrvDrawFocusRect(IdrawCanvas* dc, int x1, int y1, int x2, in
   }
 }
 
-IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, float angle, long color1, long color2)
+IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, float angle, const long* colors, const float* offsets, int count)
 {
   CGContextRef cg_context = dc->cgContext;
   CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
@@ -1013,13 +1013,18 @@ IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x
   iupDrawCheckSwapCoord(y1, y2);
 
   /* Create gradient colors */
-  CGFloat components[8] = {
-    iupDrawRed(color1) / 255.0f, iupDrawGreen(color1) / 255.0f, iupDrawBlue(color1) / 255.0f, iupDrawAlpha(color1) / 255.0f,
-    iupDrawRed(color2) / 255.0f, iupDrawGreen(color2) / 255.0f, iupDrawBlue(color2) / 255.0f, iupDrawAlpha(color2) / 255.0f
-  };
-  CGFloat locations[2] = { 0.0, 1.0 };
+  CGFloat components[IUP_GRADIENT_MAX_STOPS * 4];
+  CGFloat locations[IUP_GRADIENT_MAX_STOPS];
+  for (int i = 0; i < count; i++)
+  {
+    components[i*4+0] = iupDrawRed(colors[i]) / 255.0f;
+    components[i*4+1] = iupDrawGreen(colors[i]) / 255.0f;
+    components[i*4+2] = iupDrawBlue(colors[i]) / 255.0f;
+    components[i*4+3] = iupDrawAlpha(colors[i]) / 255.0f;
+    locations[i] = offsets[i];
+  }
 
-  CGGradientRef gradient = CGGradientCreateWithColorComponents(colorSpace, components, locations, 2);
+  CGGradientRef gradient = CGGradientCreateWithColorComponents(colorSpace, components, locations, count);
 
   /* Calculate gradient endpoints based on angle */
   /* 0 = left to right, 90 = top to bottom, 180 = right to left, 270 = bottom to top */
@@ -1089,19 +1094,25 @@ IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x
   CGColorSpaceRelease(colorSpace);
 }
 
-IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int radius, long colorCenter, long colorEdge)
+IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int radius, const long* colors, const float* offsets, int count)
 {
   CGContextRef cg_context = dc->cgContext;
   CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
 
-  /* Create gradient colors */
-  CGFloat components[8] = {
-    iupDrawRed(colorCenter) / 255.0f, iupDrawGreen(colorCenter) / 255.0f, iupDrawBlue(colorCenter) / 255.0f, iupDrawAlpha(colorCenter) / 255.0f,
-    iupDrawRed(colorEdge) / 255.0f, iupDrawGreen(colorEdge) / 255.0f, iupDrawBlue(colorEdge) / 255.0f, iupDrawAlpha(colorEdge) / 255.0f
-  };
-  CGFloat locations[2] = { 0.0, 1.0 };
+  long colorEdge = colors[count - 1];
+  CGFloat components[IUP_GRADIENT_MAX_STOPS * 4];
+  CGFloat locations[IUP_GRADIENT_MAX_STOPS];
+  int i;
+  for (i = 0; i < count; i++)
+  {
+    components[i*4+0] = iupDrawRed(colors[i]) / 255.0f;
+    components[i*4+1] = iupDrawGreen(colors[i]) / 255.0f;
+    components[i*4+2] = iupDrawBlue(colors[i]) / 255.0f;
+    components[i*4+3] = iupDrawAlpha(colors[i]) / 255.0f;
+    locations[i] = offsets[i];
+  }
 
-  CGGradientRef gradient = CGGradientCreateWithColorComponents(colorSpace, components, locations, 2);
+  CGGradientRef gradient = CGGradientCreateWithColorComponents(colorSpace, components, locations, count);
 
   CGPoint center = CGPointMake(cx, cy);
   CGRect circleRect = CGRectMake(cx - radius, cy - radius, 2 * radius, 2 * radius);

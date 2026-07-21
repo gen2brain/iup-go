@@ -701,7 +701,24 @@ static long iInterpolateColor(long color1, long color2, float t)
   return iupDrawColor(r, g, b, a);
 }
 
-IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, float angle, long color1, long color2)
+static long iInterpolateStops(const long* colors, const float* offsets, int count, float t)
+{
+  int i;
+  if (t <= offsets[0]) return colors[0];
+  if (t >= offsets[count - 1]) return colors[count - 1];
+  for (i = 0; i < count - 1; i++)
+  {
+    if (t <= offsets[i + 1])
+    {
+      float span = offsets[i + 1] - offsets[i];
+      float lt = span > 0 ? (t - offsets[i]) / span : 0.0f;
+      return iInterpolateColor(colors[i], colors[i + 1], lt);
+    }
+  }
+  return colors[count - 1];
+}
+
+IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, float angle, const long* colors, const float* offsets, int count)
 {
   WD_HBRUSH brush;
   float rad, dx, dy, cx, cy, w, h;
@@ -725,7 +742,7 @@ IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x
   x3 = cx + (w * dx) / 2.0f;
   y3 = cy + (h * dy) / 2.0f;
 
-  brush = wdCreateLinearGradientBrush(dc->hCanvas, x0, y0, x3, y3, iupColor2ARGB(color1), iupColor2ARGB(color2));
+  brush = (count == 2) ? wdCreateLinearGradientBrush(dc->hCanvas, x0, y0, x3, y3, iupColor2ARGB(colors[0]), iupColor2ARGB(colors[1])) : NULL;
   if (brush)
   {
     wdFillRect(dc->hCanvas, brush, iupInt2Float(x1), iupInt2Float(y1), iupInt2Float(x2), iupInt2Float(y2));
@@ -746,7 +763,7 @@ IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x
     for (i = 0; i < steps; i++)
     {
       t = (float)i / (float)(steps - 1);
-      long color = iInterpolateColor(color1, color2, t);
+      long color = iInterpolateStops(colors, offsets, count, t);
       brush = wdCreateSolidBrush(dc->hCanvas, iupColor2ARGB(color));
 
       if (fabs(dx) > fabs(dy))
@@ -770,13 +787,13 @@ IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x
   }
 }
 
-IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int radius, long colorCenter, long colorEdge)
+IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int radius, const long* colors, const float* offsets, int count)
 {
   WD_HBRUSH brush;
 
-  brush = wdCreateRadialGradientBrush(dc->hCanvas, iupInt2Float(cx), iupInt2Float(cy),
+  brush = (count == 2) ? wdCreateRadialGradientBrush(dc->hCanvas, iupInt2Float(cx), iupInt2Float(cy),
                                        iupInt2Float(radius), iupInt2Float(radius),
-                                       iupColor2ARGB(colorCenter), iupColor2ARGB(colorEdge));
+                                       iupColor2ARGB(colors[0]), iupColor2ARGB(colors[1])) : NULL;
   if (brush)
   {
     wdFillEllipse(dc->hCanvas, brush, iupInt2Float(cx), iupInt2Float(cy), iupInt2Float(radius), iupInt2Float(radius));
@@ -795,7 +812,7 @@ IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int r
     for (i = steps - 1; i >= 0; i--)
     {
       t = (float)i / (float)(steps - 1);
-      long color = iInterpolateColor(colorCenter, colorEdge, t);
+      long color = iInterpolateStops(colors, offsets, count, t);
       brush = wdCreateSolidBrush(dc->hCanvas, iupColor2ARGB(color));
 
       r = (float)radius * t;

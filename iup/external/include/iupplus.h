@@ -404,6 +404,8 @@ namespace Iup
     void DrawQuadraticBezier(int x1, int y1, int x2, int y2, int x3, int y3) { IupDrawQuadraticBezier(ih, x1, y1, x2, y2, x3, y3); }
     void DrawLinearGradient(int x1, int y1, int x2, int y2, float angle, const char* color1, const char* color2) { IupDrawLinearGradient(ih, x1, y1, x2, y2, angle, color1, color2); }
     void DrawRadialGradient(int cx, int cy, int radius, const char* colorCenter, const char* colorEdge) { IupDrawRadialGradient(ih, cx, cy, radius, colorCenter, colorEdge); }
+    void DrawLinearGradientStops(int x1, int y1, int x2, int y2, float angle, const char** colors, const float* offsets, int count) { IupDrawLinearGradientStops(ih, x1, y1, x2, y2, angle, colors, offsets, count); }
+    void DrawRadialGradientStops(int cx, int cy, int radius, const char** colors, const float* offsets, int count) { IupDrawRadialGradientStops(ih, cx, cy, radius, colors, offsets, count); }
     void DrawText(const char* text, int len, int x, int y, int w, int h) { IupDrawText(ih, text, len, x, y, w, h); }
     void DrawImage(const char* name, int x, int y, int w, int h) { IupDrawImage(ih, name, x, y, w, h); }
     void DrawSelectRect(int x1, int y1, int x2, int y2) { IupDrawSelectRect(ih, x1, y1, x2, y2); }
@@ -688,6 +690,8 @@ namespace Iup
     void DrawQuadraticBezier(int x1, int y1, int x2, int y2, int x3, int y3) { IupDrawQuadraticBezier(ih, x1, y1, x2, y2, x3, y3); }
     void DrawLinearGradient(int x1, int y1, int x2, int y2, float angle, const char* color1, const char* color2) { IupDrawLinearGradient(ih, x1, y1, x2, y2, angle, color1, color2); }
     void DrawRadialGradient(int cx, int cy, int radius, const char* colorCenter, const char* colorEdge) { IupDrawRadialGradient(ih, cx, cy, radius, colorCenter, colorEdge); }
+    void DrawLinearGradientStops(int x1, int y1, int x2, int y2, float angle, const char** colors, const float* offsets, int count) { IupDrawLinearGradientStops(ih, x1, y1, x2, y2, angle, colors, offsets, count); }
+    void DrawRadialGradientStops(int cx, int cy, int radius, const char** colors, const float* offsets, int count) { IupDrawRadialGradientStops(ih, cx, cy, radius, colors, offsets, count); }
     void DrawText(const char* text, int len, int x, int y, int w, int h) { IupDrawText(ih, text, len, x, y, w, h); }
     void DrawImage(const char* name, int x, int y, int w, int h) { IupDrawImage(ih, name, x, y, w, h); }
     void DrawSelectRect(int x1, int y1, int x2, int y2) { IupDrawSelectRect(ih, x1, y1, x2, y2); }

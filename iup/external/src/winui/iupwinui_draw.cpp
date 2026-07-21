@@ -1096,7 +1096,7 @@ extern "C" IUP_SDK_API void iupdrvDrawFocusRect(IdrawCanvas* dc, int x1, int y1,
   iupdrvDrawRectangle(dc, x1, y1, x2, y2, iupDrawColor(0, 0, 0, 224), IUP_DRAW_STROKE_DOT, 1);
 }
 
-extern "C" IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, float angle, long color1, long color2)
+extern "C" IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, float angle, const long* colors, const float* offsets, int count)
 {
   if (!dc || !dc->d2dContext)
     return;
@@ -1115,12 +1115,11 @@ extern "C" IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, in
   float ex = cx + (w * cosf(rad)) / 2.0f;
   float ey = cy + (h * sinf(rad)) / 2.0f;
 
-  D2D1_COLOR_F c1 = winuiDrawColor(color1);
-  D2D1_COLOR_F c2 = winuiDrawColor(color2);
-
-  D2D1_GRADIENT_STOP stops[2] = {{0.0f, c1}, {1.0f, c2}};
+  D2D1_GRADIENT_STOP stops[IUP_GRADIENT_MAX_STOPS];
+  for (int i = 0; i < count; i++)
+    stops[i] = { offsets[i], winuiDrawColor(colors[i]) };
   com_ptr<ID2D1GradientStopCollection> collection;
-  dc->d2dContext->CreateGradientStopCollection(stops, 2, collection.put());
+  dc->d2dContext->CreateGradientStopCollection(stops, count, collection.put());
 
   com_ptr<ID2D1LinearGradientBrush> brush;
   dc->d2dContext->CreateLinearGradientBrush(
@@ -1132,17 +1131,16 @@ extern "C" IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, in
     brush.get());
 }
 
-extern "C" IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int radius, long colorCenter, long colorEdge)
+extern "C" IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int radius, const long* colors, const float* offsets, int count)
 {
   if (!dc || !dc->d2dContext)
     return;
 
-  D2D1_COLOR_F c1 = winuiDrawColor(colorCenter);
-  D2D1_COLOR_F c2 = winuiDrawColor(colorEdge);
-
-  D2D1_GRADIENT_STOP stops[2] = {{0.0f, c1}, {1.0f, c2}};
+  D2D1_GRADIENT_STOP stops[IUP_GRADIENT_MAX_STOPS];
+  for (int i = 0; i < count; i++)
+    stops[i] = { offsets[i], winuiDrawColor(colors[i]) };
   com_ptr<ID2D1GradientStopCollection> collection;
-  dc->d2dContext->CreateGradientStopCollection(stops, 2, collection.put());
+  dc->d2dContext->CreateGradientStopCollection(stops, count, collection.put());
 
   com_ptr<ID2D1RadialGradientBrush> brush;
   dc->d2dContext->CreateRadialGradientBrush(

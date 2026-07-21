@@ -357,14 +357,30 @@ extern "C" IUP_SDK_API void iupdrvDrawQuadraticBezier(IdrawCanvas* dc, int x1, i
   iupdrvDrawBezier(dc, x1, y1, cx1, cy1, cx2, cy2, x3, y3, color, style, line_width);
 }
 
-extern "C" IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, float angle, long color1, long color2)
+static long fltkInterpolateStops(const long* colors, const float* offsets, int count, float t)
+{
+  int i;
+  if (t <= offsets[0]) return colors[0];
+  if (t >= offsets[count - 1]) return colors[count - 1];
+  for (i = 0; i < count - 1; i++)
+  {
+    if (t <= offsets[i + 1])
+    {
+      float span = offsets[i + 1] - offsets[i];
+      float lt = span > 0 ? (t - offsets[i]) / span : 0.0f;
+      unsigned char r1 = iupDrawRed(colors[i]), g1 = iupDrawGreen(colors[i]), b1 = iupDrawBlue(colors[i]);
+      unsigned char r2 = iupDrawRed(colors[i+1]), g2 = iupDrawGreen(colors[i+1]), b2 = iupDrawBlue(colors[i+1]);
+      return iupDrawColor((unsigned char)(r1 + lt * (r2 - r1)), (unsigned char)(g1 + lt * (g2 - g1)), (unsigned char)(b1 + lt * (b2 - b1)), 255);
+    }
+  }
+  return colors[count - 1];
+}
+
+extern "C" IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, float angle, const long* colors, const float* offsets, int count)
 {
   if (!dc) return;
 
   iupDrawOrderMinMax(&x1, &y1, &x2, &y2);
-
-  unsigned char r1 = iupDrawRed(color1), g1 = iupDrawGreen(color1), b1 = iupDrawBlue(color1);
-  unsigned char r2 = iupDrawRed(color2), g2 = iupDrawGreen(color2), b2 = iupDrawBlue(color2);
 
   int w = x2 - x1 + 1;
   int h = y2 - y1 + 1;
@@ -377,10 +393,8 @@ extern "C" IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, in
     float t = (steps > 1) ? (float)i / (float)(steps - 1) : 0.0f;
     if (angle == 180 || angle == 270) t = 1.0f - t;
 
-    unsigned char r = (unsigned char)(r1 + t * (r2 - r1));
-    unsigned char g = (unsigned char)(g1 + t * (g2 - g1));
-    unsigned char b = (unsigned char)(b1 + t * (b2 - b1));
-    fl_color(r, g, b);
+    long c = fltkInterpolateStops(colors, offsets, count, t);
+    fl_color(iupDrawRed(c), iupDrawGreen(c), iupDrawBlue(c));
 
     if (horizontal)
       fl_line(x1 + i, y1, x1 + i, y2);
@@ -389,21 +403,16 @@ extern "C" IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, in
   }
 }
 
-extern "C" IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int radius, long colorCenter, long colorEdge)
+extern "C" IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int radius, const long* colors, const float* offsets, int count)
 {
   if (!dc || radius <= 0) return;
 
-  unsigned char r1 = iupDrawRed(colorCenter), g1 = iupDrawGreen(colorCenter), b1 = iupDrawBlue(colorCenter);
-  unsigned char r2 = iupDrawRed(colorEdge), g2 = iupDrawGreen(colorEdge), b2 = iupDrawBlue(colorEdge);
-
   for (int r = radius; r >= 0; r--)
   {
-    float t = (float)(radius - r) / (float)radius;
+    float t = (float)r / (float)radius;
 
-    unsigned char cr = (unsigned char)(r1 + t * (r2 - r1));
-    unsigned char cg = (unsigned char)(g1 + t * (g2 - g1));
-    unsigned char cb = (unsigned char)(b1 + t * (b2 - b1));
-    fl_color(cr, cg, cb);
+    long c = fltkInterpolateStops(colors, offsets, count, t);
+    fl_color(iupDrawRed(c), iupDrawGreen(c), iupDrawBlue(c));
 
     fl_pie(cx - r, cy - r, 2 * r + 1, 2 * r + 1, 0, 360);
   }
