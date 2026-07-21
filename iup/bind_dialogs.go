@@ -190,7 +190,7 @@ func GetText(title, text string, maxSize int) (string, int) {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/dlg/iup_listdialog.md
 func ListDialog(_type int, title string, list []string, op, maxCol, maxLin int, marks *[]bool) (ret int) {
-	if len(list) != len(*marks) {
+	if marks != nil && len(list) != len(*marks) {
 		panic("bad parameter passed to ListDialog")
 	}
 
@@ -207,22 +207,26 @@ func ListDialog(_type int, title string, list []string, op, maxCol, maxLin int, 
 		}
 	}()
 
-	pMark := make([]C.int, len(list))
-	for i := 0; i < len(list); i++ {
-		if (*marks)[i] {
-			pMark[i] = 1
-		} else {
-			pMark[i] = 0
-		}
-	}
-	defer func() {
+	var pMarkPtr *C.int
+	if marks != nil {
+		pMark := make([]C.int, len(list))
 		for i := 0; i < len(list); i++ {
-			(*marks)[i] = pMark[i] != C.int(0)
+			if (*marks)[i] {
+				pMark[i] = 1
+			} else {
+				pMark[i] = 0
+			}
 		}
-	}()
+		defer func() {
+			for i := 0; i < len(list); i++ {
+				(*marks)[i] = pMark[i] != C.int(0)
+			}
+		}()
+		pMarkPtr = (*C.int)(unsafe.Pointer(&pMark[0]))
+	}
 
 	ret = int(C.IupListDialog(C.int(_type), cTitle, C.int(len(list)), (**C.char)(unsafe.Pointer(&(pList[0]))),
-		C.int(op), C.int(maxCol), C.int(maxLin), (*C.int)(unsafe.Pointer(&pMark[0]))))
+		C.int(op), C.int(maxCol), C.int(maxLin), pMarkPtr))
 	return
 }
 
