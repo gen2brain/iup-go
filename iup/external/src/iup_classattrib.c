@@ -76,6 +76,8 @@ static const char* iClassCutNameId(const char* name, const char* name_id)
   int len = (int)(name_id - name);
   if (len == 0)
     return NULL;
+  if (len > (int)sizeof(str) - 1)
+    len = (int)sizeof(str) - 1;
 
   memcpy(str, name, len);
   str[len] = 0;

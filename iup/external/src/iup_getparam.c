@@ -1417,7 +1417,7 @@ static void iParamStrCopyLine(char* line, const char* format)
   {
     line[i] = format[i];
     i++;
-    if (i > 4094)   /* to avoid being bigger than the local array */
+    if (i > 4093)   /* leave room for the '\n' and '\0' below */
       break;
   }
   line[i] = '\n';

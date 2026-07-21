@@ -111,6 +111,8 @@ static int iScrollBoxGetChildPosition(Ihandle* ih, Ihandle* child, int *posx, in
     *posy += child->y;
 
     child = iupChildTreeGetNativeParent(child);
+    if (!child)
+      return 0;
 
     IupGetIntInt(child, "CLIENTOFFSET", &off_x, &off_y);
     *posx += off_x;

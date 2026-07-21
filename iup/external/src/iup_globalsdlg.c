@@ -392,7 +392,7 @@ static int iGlobalsNameFind_CB(Ihandle* bt)
     if (count > 1)
     {
       int i, total_len = 0, max_len = count * 50;
-      char* str = malloc(max_len);
+      char* str = malloc(max_len + 1);
       char** names = malloc(count * sizeof(char*));
       if (!str || !names) { free(str); free(names); return IUP_DEFAULT; }
       iupNamesFindAll(elem, names, count);
@@ -406,7 +406,7 @@ static int iGlobalsNameFind_CB(Ihandle* bt)
           {
             char* new_str;
             max_len += 10 * (total_len - max_len);
-            new_str = realloc(str, max_len);
+            new_str = realloc(str, max_len + 1);
             if (!new_str) break;
             str = new_str;
           }
@@ -438,7 +438,7 @@ static int iGlobalsNameCheckHandles_CB(Ihandle* bt)
   Ihandle* list = (Ihandle*)iupAttribGetInherit(bt, "_IUP_NAMESLIST");
   int i, count = IupGetInt(list, "COUNT");
   int log_size = 0, log_max_size = count * 50;
-  char* log = malloc(log_max_size);
+  char* log = malloc(log_max_size + 1);
   if (!log) return IUP_DEFAULT;
 
   for (i = 0; i < count; i++)
@@ -452,7 +452,7 @@ static int iGlobalsNameCheckHandles_CB(Ihandle* bt)
       {
         char* new_log;
         log_max_size += 10 * name_len;
-        new_log = realloc(log, log_max_size);
+        new_log = realloc(log, log_max_size + 1);
         if (!new_log) break;
         log = new_log;
       }

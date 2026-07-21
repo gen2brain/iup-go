@@ -874,7 +874,7 @@ IUP_SDK_API char* iupStrFileGetPath(const char *filename)
   {
     /* Starts at the last character */
     int len = (int)strlen(filename) - 1;
-    while (len != 0)
+    while (len > 0)
     {
       if (filename[len] == '\\' || filename[len] == '/')
       {
@@ -884,7 +884,7 @@ IUP_SDK_API char* iupStrFileGetPath(const char *filename)
 
       len--;
     }
-    if (len == 0)
+    if (len <= 0)
       return NULL;
 
     {
@@ -906,7 +906,7 @@ IUP_SDK_API char* iupStrFileGetTitle(const char *filename)
     /* Starts at the last character */
     int len = (int)strlen(filename);
     int offset = len - 1;
-    while (offset != 0)
+    while (offset > 0)
     {
       if (filename[offset] == '\\' || filename[offset] == '/')
       {
@@ -916,6 +916,8 @@ IUP_SDK_API char* iupStrFileGetTitle(const char *filename)
 
       offset--;
     }
+    if (offset < 0)
+      offset = 0;
 
     {
       int title_size = len - offset + 1;
@@ -935,7 +937,7 @@ IUP_SDK_API char* iupStrFileGetExt(const char *filename)
     /* Starts at the last character */
     int len = (int)strlen(filename);
     int offset = len - 1;
-    while (offset != 0)
+    while (offset > 0)
     {
       /* if found a path separator stop. */
       if (filename[offset] == '\\' || filename[offset] == '/')
@@ -950,7 +952,7 @@ IUP_SDK_API char* iupStrFileGetExt(const char *filename)
       offset--;
     }
 
-    if (offset == 0)
+    if (offset <= 0)
       return NULL;
 
     {
@@ -1363,6 +1365,8 @@ static char iStrUTF8toLatin1(const char* *s)
   {
     short u;
     u  = (c & 0x1F) << 6;    /* first part + make room for second part */
+    if (*(*s + 1) == 0)      /* truncated: no continuation byte */
+      return 0;
     (*s)++;
     c = **s;
     u |= (c & 0x3F);         /* second part (10XXXXXX) */
@@ -1372,11 +1376,12 @@ static char iStrUTF8toLatin1(const char* *s)
       return 0;
   }
 
-  /* only increment the pointer for the remaining codes */
-  if ((c & 0x10) == 0)       /* Use 00010000 to detect 1110XXXX */
-    *s += 3-1;
-  else if ((c & 0x08) == 0)  /* Use 00001000 to detect 11110XXX */
-    *s += 4-1;
+  /* only increment the pointer for the remaining codes, never past the terminator */
+  {
+    int n = ((c & 0x10) == 0) ? 2 : ((c & 0x08) == 0) ? 3 : 0;
+    while (n-- > 0 && *(*s + 1) != 0)
+      (*s)++;
+  }
 
   return 0;
 }
