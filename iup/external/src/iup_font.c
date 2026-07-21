@@ -614,13 +614,15 @@ IUP_SDK_API int iupFontParseWin(const char *value, char *typeface, int *size, in
     while (strlen(value)) /* extract style (bold/italic etc.) */
     {
       char style[30];
+      int copy_len;
 
       c = (int)strcspn(value, ":,");
       if (c == 0)
         break;
 
-      strncpy(style, value, c);
-      style[c] = '\0';
+      copy_len = c > 29 ? 29 : c;
+      strncpy(style, value, copy_len);
+      style[copy_len] = '\0';
 
       if(iupStrEqual(style, "BOLD"))
         *bold = 1;

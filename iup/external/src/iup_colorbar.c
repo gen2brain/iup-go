@@ -524,7 +524,7 @@ static char* iColorbarGetPreviewSizeAttrib(Ihandle* ih)
 
 static int iColorbarSetCellAttrib(Ihandle* ih, int id, const char* value)
 {
-  if (id >= 0 || id < ih->data->num_cells)
+  if (id >= 0 && id < ih->data->num_cells)
   {
     ih->data->colors[id] = iupDrawStrToColor(value, ih->data->colors[id]);
     IupUpdate(ih);

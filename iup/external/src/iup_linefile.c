@@ -83,7 +83,7 @@ IUP_SDK_API int iupLineFileReadLine(IlineFile* line_file)
       return -1;  /* error reading */
     }
 
-    if (count+1 > line_file->buffer_maxsize)
+    if (count+1 >= line_file->buffer_maxsize)
     {
       int new_maxsize = line_file->buffer_maxsize + LINEFILE_STRING_BLOCK;
       char* new_buffer = (char*)realloc(line_file->line_buffer, new_maxsize);
