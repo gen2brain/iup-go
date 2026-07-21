@@ -262,9 +262,9 @@ static int iFlatValRedraw_CB(Ihandle* ih)
     int backimage_zoom = iupAttribGetBoolean(ih, "BACKIMAGEZOOM");
     const char* draw_image = iupFlatGetImageName(ih, "BACKIMAGE", bgimage, 0, 0, 1, &make_inactive);
     if (backimage_zoom)
-      iupdrvDrawImage(dc, draw_image, make_inactive, bgcolor, 0, 0, draw_w, draw_h);
+      iupdrvDrawImage(dc, draw_image, make_inactive, bgcolor, IUP_DRAW_NO_TINT, 255, 0, 0, draw_w, draw_h, 0, 0, -1, -1, IUP_DRAW_IMAGE_LINEAR);
     else
-      iupdrvDrawImage(dc, draw_image, make_inactive, bgcolor, 0, 0, -1, -1);
+      iupdrvDrawImage(dc, draw_image, make_inactive, bgcolor, IUP_DRAW_NO_TINT, 255, 0, 0, -1, -1, 0, 0, -1, -1, IUP_DRAW_IMAGE_LINEAR);
   }
 
   /* draw slider background */
@@ -302,7 +302,7 @@ static int iFlatValRedraw_CB(Ihandle* ih)
     y = (y2 - y1 + 1 - height) / 2;
 
     iupdrvDrawSetClipRect(dc, x1, y1, x2, y2);
-    iupdrvDrawImage(dc, image, active, bgcolor, x1 + x, y1 + y, -1, -1);
+    iupdrvDrawImage(dc, image, active, bgcolor, IUP_DRAW_NO_TINT, 255, x1 + x, y1 + y, -1, -1, 0, 0, -1, -1, IUP_DRAW_IMAGE_LINEAR);
     iupdrvDrawResetClip(dc);
   }
   else

@@ -19,6 +19,8 @@
 #include "iup_assert.h"
 #include "iup_stdcontrols.h"
 #include "iup_drvinfo.h"
+#include "iup_drvdraw.h"
+#include "iup_draw.h"
 
 
 void iupImageResizeRGBA(int src_width, int src_height, unsigned char *src_map, int dst_width, int dst_height, unsigned char *dst_map, int depth)
@@ -721,6 +723,149 @@ IUP_SDK_API void* iupImageGetImage(const char* name, Ihandle* ih_parent, int mak
 
   /* save the native image in the cache */
   iupAttribSet(ih, cache_name, (char*)handle);
+
+  return handle;
+}
+
+IUP_SDK_API unsigned char* iupImageGetRGBAData(Ihandle* ih, int make_inactive, const char* bgcolor, int *img_w, int *img_h)
+{
+  unsigned char* imgdata;
+  unsigned char* rgba;
+  int w, h, bpp, i, count;
+  unsigned char bg_r = 0, bg_g = 0, bg_b = 0;
+
+  *img_w = 0;
+  *img_h = 0;
+
+  imgdata = (unsigned char*)iupAttribGet(ih, "WID");
+  if (!imgdata)
+    return NULL;
+
+  w = ih->currentwidth;
+  h = ih->currentheight;
+  bpp = iupAttribGetInt(ih, "BPP");
+  if (w <= 0 || h <= 0 || w > 32767 || h > 32767)
+    return NULL;
+
+  count = w * h;
+  rgba = (unsigned char*)malloc((size_t)count * 4);
+  if (!rgba)
+    return NULL;
+
+  if (bgcolor)
+    iupStrToRGB(bgcolor, &bg_r, &bg_g, &bg_b);
+
+  if (bpp == 32)
+    memcpy(rgba, imgdata, (size_t)count * 4);
+  else if (bpp == 24)
+  {
+    for (i = 0; i < count; i++)
+    {
+      rgba[i * 4 + 0] = imgdata[i * 3 + 0];
+      rgba[i * 4 + 1] = imgdata[i * 3 + 1];
+      rgba[i * 4 + 2] = imgdata[i * 3 + 2];
+      rgba[i * 4 + 3] = 255;
+    }
+  }
+  else if (bpp == 8)
+  {
+    iupColor colors[256];
+    int colors_count = 0;
+    iupImageInitColorTable(ih, colors, &colors_count);
+    for (i = 0; i < count; i++)
+    {
+      iupColor* c = &colors[imgdata[i]];
+      rgba[i * 4 + 0] = c->r;
+      rgba[i * 4 + 1] = c->g;
+      rgba[i * 4 + 2] = c->b;
+      rgba[i * 4 + 3] = c->a;
+    }
+  }
+  else
+  {
+    free(rgba);
+    return NULL;
+  }
+
+  if (make_inactive)
+  {
+    for (i = 0; i < count; i++)
+      iupImageColorMakeInactive(&rgba[i * 4], &rgba[i * 4 + 1], &rgba[i * 4 + 2], bg_r, bg_g, bg_b);
+  }
+
+  *img_w = w;
+  *img_h = h;
+  return rgba;
+}
+
+IUP_SDK_API void* iupImageGetImageTint(const char* name, Ihandle* ih_parent, int make_inactive, const char* bgcolor, long tint)
+{
+  char cache_name[100];
+  char* img_bgcolor;
+  void* handle;
+  Ihandle *ih, *tmp;
+  unsigned char* rgba;
+  unsigned char tr, tg, tb, ta;
+  int img_w, img_h, i, count, pos;
+
+  if (tint == IUP_DRAW_NO_TINT)
+    return iupImageGetImage(name, ih_parent, make_inactive, bgcolor);
+
+  if (!name)
+    return NULL;
+
+  ih = iupImageGetImageFromName(name);
+  if (!ih)
+    return iupImageGetImage(name, ih_parent, make_inactive, bgcolor);
+
+  img_bgcolor = iupAttribGet(ih, "BGCOLOR");
+  if (ih_parent && !img_bgcolor)
+  {
+    if (!bgcolor)
+      bgcolor = IupGetAttribute(ih_parent, "BGCOLOR");
+  }
+  else
+    bgcolor = img_bgcolor;
+
+  tr = iupDrawRed(tint);
+  tg = iupDrawGreen(tint);
+  tb = iupDrawBlue(tint);
+  ta = iupDrawAlpha(tint);
+
+  pos = snprintf(cache_name, sizeof(cache_name), "_IUPIMAGE_IMAGE_TINT%s(%d %d %d %d)", make_inactive? "_INACTIVE": "", tr, tg, tb, ta);
+  if (bgcolor)
+    snprintf(cache_name + pos, sizeof(cache_name) - pos, "(%s)", bgcolor);
+
+  handle = (void*)iupAttribGet(ih, cache_name);
+  if (handle)
+    return handle;
+
+  rgba = iupImageGetRGBAData(ih, make_inactive, bgcolor, &img_w, &img_h);
+  if (!rgba)
+    return iupImageGetImage(name, ih_parent, make_inactive, bgcolor);
+
+  count = img_w * img_h;
+  for (i = 0; i < count; i++)
+  {
+    rgba[i * 4 + 0] = tr;
+    rgba[i * 4 + 1] = tg;
+    rgba[i * 4 + 2] = tb;
+    rgba[i * 4 + 3] = (unsigned char)((rgba[i * 4 + 3] * ta) / 255);
+  }
+
+  tmp = IupImageRGBA(img_w, img_h, rgba);
+  free(rgba);
+  if (!tmp)
+    return NULL;
+
+  if (ih_parent && iupAttribGetStr(ih_parent, "FLAT_ALPHA"))
+    iupAttribSet(tmp, "FLAT_ALPHA", "1");
+
+  handle = iupdrvImageCreateImage(tmp, bgcolor, 0);
+  IupDestroy(tmp);
+
+  if (handle)
+    iupAttribSet(ih, cache_name, (char*)handle);
 
   return handle;
 }

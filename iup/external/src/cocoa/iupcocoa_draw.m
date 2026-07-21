@@ -859,16 +859,23 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
   }
 }
 
-IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_inactive, const char* bgcolor, int x, int y, int w, int h)
+IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_inactive, const char* bgcolor, long tint, int opacity, int x, int y, int w, int h, int sx, int sy, int sw, int sh, int quality)
 {
-  NSImage* user_image = (NSImage*)iupImageGetImage(name, dc->ih, make_inactive, bgcolor);
+  NSImage* user_image = (NSImage*)iupImageGetImageTint(name, dc->ih, make_inactive, bgcolor, tint);
   if (!user_image)
     return;
 
   @autoreleasepool {
     NSSize image_size = [user_image size];
-    if (w == -1 || w == 0) w = image_size.width;
-    if (h == -1 || h == 0) h = image_size.height;
+    if (sw <= 0 || sh <= 0)
+    {
+      sx = 0;
+      sy = 0;
+      sw = image_size.width;
+      sh = image_size.height;
+    }
+    if (w == -1 || w == 0) w = sw;
+    if (h == -1 || h == 0) h = sh;
 
     CGContextRef cg_context = dc->cgContext;
 
@@ -907,9 +914,23 @@ IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_ina
 
       if (cgimg)
       {
+        CGImageRef sub_img = NULL;
+        if (sx != 0 || sy != 0 || sw != (int)CGImageGetWidth(cgimg) || sh != (int)CGImageGetHeight(cgimg))
+        {
+          sub_img = CGImageCreateWithImageInRect(cgimg, CGRectMake(sx, sy, sw, sh));
+          if (sub_img)
+          {
+            CGImageRelease(cgimg);
+            cgimg = sub_img;
+          }
+        }
+
         /* Our CTM is Y-down (IUP convention); CGContextDrawImage draws with the image's
            top-left at rect origin on a Y-up context. Flip locally so the image lands upright. */
         CGContextSaveGState(cg_context);
+        CGContextSetInterpolationQuality(cg_context, quality == IUP_DRAW_IMAGE_NEAREST ? kCGInterpolationNone : kCGInterpolationDefault);
+        if (opacity < 255)
+          CGContextSetAlpha(cg_context, opacity / 255.0);
         CGContextTranslateCTM(cg_context, x, y + h);
         CGContextScaleCTM(cg_context, 1.0, -1.0);
         CGContextDrawImage(cg_context, CGRectMake(0, 0, w, h), cgimg);
@@ -925,8 +946,12 @@ IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_ina
     [NSGraphicsContext saveGraphicsState];
     [NSGraphicsContext setCurrentContext:temp_ns_context];
 
+    [temp_ns_context setImageInterpolation:quality == IUP_DRAW_IMAGE_NEAREST ? NSImageInterpolationNone : NSImageInterpolationDefault];
+
     CGRect target_rect = CGRectMake(x, y, w, h);
-    [user_image drawInRect:target_rect];
+    /* fromRect is in the image's Y-up space */
+    NSRect from_rect = NSMakeRect(sx, image_size.height - sy - sh, sw, sh);
+    [user_image drawInRect:target_rect fromRect:from_rect operation:NSCompositingOperationSourceOver fraction:opacity / 255.0 respectFlipped:YES hints:nil];
 
     [NSGraphicsContext restoreGraphicsState];
     CGContextRestoreGState(cg_context);

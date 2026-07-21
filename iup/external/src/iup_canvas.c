@@ -207,6 +207,10 @@ Iclass* iupCanvasNewClass(void)
   iupClassRegisterAttribute(ic, "DRAWLINEWIDTH", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DRAWBGCOLOR", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);  /* used only for images */
   iupClassRegisterAttribute(ic, "DRAWMAKEINACTIVE", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);  /* used only for images */
+  iupClassRegisterAttribute(ic, "DRAWIMAGETINT", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DRAWIMAGEOPACITY", NULL, NULL, IUPAF_SAMEASSYSTEM, "255", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DRAWIMAGESRCRECT", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DRAWIMAGEQUALITY", NULL, NULL, IUPAF_SAMEASSYSTEM, "LINEAR", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DRAWDRIVER", NULL, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DRAWIMAGE", iCanvasGetDrawImageAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT | IUPAF_IHANDLENAME);
 

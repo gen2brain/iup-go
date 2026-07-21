@@ -452,24 +452,103 @@ extern "C" IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, in
   }
 }
 
-extern "C" IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_inactive, const char* bgcolor, int x, int y, int w, int h)
+extern "C" IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_inactive, const char* bgcolor, long tint, int opacity, int x, int y, int w, int h, int sx, int sy, int sw, int sh, int quality)
 {
   if (!dc || !name) return;
 
-  Fl_Image* image = (Fl_Image*)iupImageGetImage(name, dc->ih, make_inactive, bgcolor);
+  Fl_Image* image = (Fl_Image*)iupImageGetImageTint(name, dc->ih, make_inactive, bgcolor, tint);
   if (!image) return;
 
-  if (w > 0 && h > 0 && (image->data_w() != w || image->data_h() != h))
+  int img_w = image->data_w();
+  int img_h = image->data_h();
+
+  if (sw <= 0 || sh <= 0)
   {
-    Fl_Image* scaled = image->copy(w, h);
+    sx = 0;
+    sy = 0;
+    sw = img_w;
+    sh = img_h;
+  }
+  if (w <= 0) w = sw;
+  if (h <= 0) h = sh;
+
+  Fl_RGB_Image* faded = NULL;
+  if (opacity < 255 && image->count() == 1 && image->d() >= 3)
+  {
+    Fl_RGB_Image* rgbsrc = (Fl_RGB_Image*)image;
+    int d = rgbsrc->d();
+    int ld = rgbsrc->ld() ? rgbsrc->ld() : img_w * d;
+    uchar* data = new uchar[(size_t)img_w * img_h * 4];
+    for (int yy = 0; yy < img_h; yy++)
+    {
+      const uchar* sp = rgbsrc->array + (size_t)yy * ld;
+      uchar* dp = data + (size_t)yy * img_w * 4;
+      for (int xx = 0; xx < img_w; xx++)
+      {
+        dp[0] = sp[0];
+        dp[1] = sp[1];
+        dp[2] = sp[2];
+        dp[3] = (uchar)((((d == 4) ? sp[3] : 255) * opacity) / 255);
+        sp += d;
+        dp += 4;
+      }
+    }
+    faded = new Fl_RGB_Image(data, img_w, img_h, 4);
+    faded->alloc_array = 1;
+    image = faded;
+  }
+
+  Fl_RGB_Scaling old_scaling = Fl_Image::RGB_scaling();
+  Fl_Image::RGB_scaling(quality == IUP_DRAW_IMAGE_NEAREST ? FL_RGB_SCALING_NEAREST : FL_RGB_SCALING_BILINEAR);
+
+  if (sx == 0 && sy == 0 && sw == img_w && sh == img_h)
+  {
+    if (w != sw || h != sh)
+    {
+      Fl_Image* scaled = image->copy(w, h);
+      if (scaled)
+      {
+        scaled->draw(x, y);
+        delete scaled;
+      }
+    }
+    else
+      image->draw(x, y);
+  }
+  else if (image->count() == 1 && image->d() >= 1)
+  {
+    Fl_RGB_Image* rgb = (Fl_RGB_Image*)image;
+    int d = rgb->d();
+    int ld = rgb->ld() ? rgb->ld() : img_w * d;
+    Fl_RGB_Image sub(rgb->array + (size_t)sy * ld + (size_t)sx * d, sw, sh, d, ld);
+    if (w != sw || h != sh)
+    {
+      Fl_Image* scaled = sub.copy(w, h);
+      if (scaled)
+      {
+        scaled->draw(x, y);
+        delete scaled;
+      }
+    }
+    else
+      sub.draw(x, y);
+  }
+  else if (w == sw && h == sh)
+    image->draw(x, y, sw, sh, sx, sy);
+  else
+  {
+    Fl_Image* scaled = image->copy(img_w * w / sw, img_h * h / sh);
     if (scaled)
     {
-      scaled->draw(x, y);
+      scaled->draw(x, y, w, h, sx * w / sw, sy * h / sh);
       delete scaled;
     }
   }
-  else
-    image->draw(x, y);
+
+  Fl_Image::RGB_scaling(old_scaling);
+
+  if (faded)
+    delete faded;
 }
 
 extern "C" IUP_SDK_API void iupdrvDrawSetClipRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2)

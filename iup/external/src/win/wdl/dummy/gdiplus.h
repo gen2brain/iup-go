@@ -79,6 +79,12 @@ enum dummy_GpPixelOffsetMode_tag {
     dummy_PixelOffsetModeHalf = 4
 };
 
+typedef enum dummy_GpInterpolationMode_tag dummy_GpInterpolationMode;
+enum dummy_GpInterpolationMode_tag {
+    dummy_InterpolationModeDefault = 0,
+    dummy_InterpolationModeNearestNeighbor = 5
+};
+
 typedef enum dummy_GpSmoothingMode_tag dummy_GpSmoothingMode;
 enum dummy_GpSmoothingMode_tag {
     dummy_SmoothingModeInvalid = -1,

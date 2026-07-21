@@ -18,6 +18,8 @@
 #include "iup_class.h"
 #include "iup_image.h"
 #include "iup_str.h"
+#include "iup_drvdraw.h"
+#include "iup_draw.h"
 
 #include "iupwin_drv.h"
 #include "iupwin_str.h"
@@ -397,6 +399,70 @@ IUP_DRV_API WD_HIMAGE iupwinWdlImageGetImage(const char* name, Ihandle* ih_paren
 
   /* save the native image in the cache */
   iupAttribSet(ih, cache_name, (char*)handle);
+
+  return handle;
+}
+
+IUP_DRV_API WD_HIMAGE iupwinWdlImageGetImageTint(const char* name, Ihandle* ih_parent, int make_inactive, const char* bgcolor, long tint)
+{
+  char cache_name[100];
+  char* img_bgcolor;
+  WD_HIMAGE handle;
+  Ihandle *ih;
+  unsigned char* rgba;
+  unsigned char tr, tg, tb, ta;
+  int img_w, img_h, i, count, pos;
+
+  if (tint == IUP_DRAW_NO_TINT)
+    return iupwinWdlImageGetImage(name, ih_parent, make_inactive, bgcolor);
+
+  if (!name)
+    return NULL;
+
+  ih = iupImageGetImageFromName(name);
+  if (!ih)
+    return iupwinWdlImageGetImage(name, ih_parent, make_inactive, bgcolor);
+
+  img_bgcolor = iupAttribGet(ih, "BGCOLOR");
+  if (ih_parent && !img_bgcolor)
+  {
+    if (!bgcolor)
+      bgcolor = IupGetAttribute(ih_parent, "BGCOLOR");
+  }
+  else
+    bgcolor = img_bgcolor;
+
+  tr = iupDrawRed(tint);
+  tg = iupDrawGreen(tint);
+  tb = iupDrawBlue(tint);
+  ta = iupDrawAlpha(tint);
+
+  pos = snprintf(cache_name, sizeof(cache_name), "_IUPIMAGE_WD_IMAGE_TINT%s(%d %d %d %d)", make_inactive? "_INACTIVE": "", tr, tg, tb, ta);
+  if (bgcolor)
+    snprintf(cache_name + pos, sizeof(cache_name) - pos, "(%s)", bgcolor);
+
+  handle = (WD_HIMAGE)iupAttribGet(ih, cache_name);
+  if (handle)
+    return handle;
+
+  rgba = iupImageGetRGBAData(ih, make_inactive, bgcolor, &img_w, &img_h);
+  if (!rgba)
+    return iupwinWdlImageGetImage(name, ih_parent, make_inactive, bgcolor);
+
+  count = img_w * img_h;
+  for (i = 0; i < count; i++)
+  {
+    rgba[i * 4 + 0] = tr;
+    rgba[i * 4 + 1] = tg;
+    rgba[i * 4 + 2] = tb;
+    rgba[i * 4 + 3] = (unsigned char)((rgba[i * 4 + 3] * ta) / 255);
+  }
+
+  handle = wdlCreateImageFromBuffer(img_w, img_h, 0, rgba, WD_PIXELFORMAT_R8G8B8A8, NULL, bgcolor, 0);
+  free(rgba);
+
+  if (handle)
+    iupAttribSet(ih, cache_name, (char*)handle);
 
   return handle;
 }

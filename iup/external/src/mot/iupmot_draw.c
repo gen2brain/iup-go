@@ -1028,21 +1028,57 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
   }
 }
 
-IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_inactive, const char* bgcolor, int x, int y, int w, int h)
+IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_inactive, const char* bgcolor, long tint, int opacity, int x, int y, int w, int h, int sx, int sy, int sw, int sh, int quality)
 {
   int img_w, img_h;
   int bpp;
-  Pixmap pixmap = (Pixmap)iupImageGetImage(name, dc->ih, make_inactive, bgcolor);
+  Pixmap pixmap = (Pixmap)iupImageGetImageTint(name, dc->ih, make_inactive, bgcolor, tint);
   if (!pixmap)
     return;
 
   /* must use this info, since image can be a driver image loaded from resources */
   iupdrvImageGetInfo((void*)pixmap, &img_w, &img_h, &bpp);
 
-  if (w == -1 || w == 0) w = img_w;
-  if (h == -1 || h == 0) h = img_h;
+  if (sw <= 0 || sh <= 0)
+  {
+    sx = 0;
+    sy = 0;
+    sw = img_w;
+    sh = img_h;
+  }
+  if (w == -1 || w == 0) w = sw;
+  if (h == -1 || h == 0) h = sh;
 
-  if (w != img_w || h != img_h)
+  if (dc->pict)
+  {
+    XRenderPictFormat* fmt = XRenderFindVisualFormat(iupmot_display, iupmot_visual);
+    if (fmt)
+    {
+      Picture src = XRenderCreatePicture(iupmot_display, pixmap, fmt, 0, NULL);
+      XTransform xf;
+      memset(&xf, 0, sizeof(xf));
+      xf.matrix[0][0] = XDoubleToFixed((double)sw / w);
+      xf.matrix[0][2] = XDoubleToFixed(sx);
+      xf.matrix[1][1] = XDoubleToFixed((double)sh / h);
+      xf.matrix[1][2] = XDoubleToFixed(sy);
+      xf.matrix[2][2] = XDoubleToFixed(1.0);
+      XRenderSetPictureTransform(iupmot_display, src, &xf);
+      XRenderSetPictureFilter(iupmot_display, src, quality == IUP_DRAW_IMAGE_NEAREST ? FilterNearest : FilterBilinear, NULL, 0);
+      if (opacity < 255)
+      {
+        XRenderColor rc = { 0, 0, 0, (unsigned short)(opacity * 257) };
+        Picture msk = XRenderCreateSolidFill(iupmot_display, &rc);
+        XRenderComposite(iupmot_display, PictOpOver, src, msk, dc->pict, 0, 0, 0, 0, x, y, w, h);
+        XRenderFreePicture(iupmot_display, msk);
+      }
+      else
+        XRenderComposite(iupmot_display, PictOpOver, src, None, dc->pict, 0, 0, 0, 0, x, y, w, h);
+      XRenderFreePicture(iupmot_display, src);
+      return;
+    }
+  }
+
+  if (w != sw || h != sh)
   {
     XImage* src = XGetImage(iupmot_display, pixmap, 0, 0, img_w, img_h, AllPlanes, ZPixmap);
     if (src)
@@ -1053,9 +1089,9 @@ IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_ina
         int dx, dy;
         for (dy = 0; dy < h; dy++)
         {
-          int sy = dy * img_h / h;
+          int py = sy + dy * sh / h;
           for (dx = 0; dx < w; dx++)
-            XPutPixel(dst, dx, dy, XGetPixel(src, dx * img_w / w, sy));
+            XPutPixel(dst, dx, dy, XGetPixel(src, sx + dx * sw / w, py));
         }
         XPutImage(iupmot_display, dc->pixmap, dc->pixmap_gc, dst, 0, 0, x, y, w, h);
       }
@@ -1065,7 +1101,7 @@ IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_ina
     }
   }
 
-  XCopyArea(iupmot_display, pixmap, dc->pixmap, dc->pixmap_gc, 0, 0, img_w, img_h, x, y);
+  XCopyArea(iupmot_display, pixmap, dc->pixmap, dc->pixmap_gc, sx, sy, sw, sh, x, y);
 }
 
 IUP_SDK_API void iupdrvDrawSelectRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2)

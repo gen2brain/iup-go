@@ -48,7 +48,7 @@ void iupSvgDrawSetClipRoundedRect(iSvgCanvas* dc, int x1, int y1, int x2, int y2
 void iupSvgDrawResetClip(iSvgCanvas* dc);
 void iupSvgDrawGetClipRect(iSvgCanvas* dc, int* x1, int* y1, int* x2, int* y2);
 
-void iupSvgDrawImageRGBA(iSvgCanvas* dc, const unsigned char* rgba, int img_w, int img_h, int x, int y, int w, int h);
+void iupSvgDrawImageRGBA(iSvgCanvas* dc, const unsigned char* rgba, int img_w, int img_h, int x, int y, int w, int h, int quality);
 
 void iupSvgDrawSelectRect(iSvgCanvas* dc, int x1, int y1, int x2, int y2);
 void iupSvgDrawFocusRect(iSvgCanvas* dc, int x1, int y1, int x2, int y2);

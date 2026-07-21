@@ -304,9 +304,9 @@ static int iFlatListRedraw_CB(Ihandle* ih)
   {
     int backimage_zoom = iupAttribGetBoolean(ih, "BACKIMAGEZOOM");
     if (backimage_zoom)
-      iupdrvDrawImage(dc, back_image, 0, background_color, border_width, border_width, width - border_width, height - border_width);
+      iupdrvDrawImage(dc, back_image, 0, background_color, IUP_DRAW_NO_TINT, 255, border_width, border_width, width - border_width, height - border_width, 0, 0, -1, -1, IUP_DRAW_IMAGE_LINEAR);
     else
-      iupdrvDrawImage(dc, back_image, 0, background_color, border_width, border_width, -1, -1);
+      iupdrvDrawImage(dc, back_image, 0, background_color, IUP_DRAW_NO_TINT, 255, border_width, border_width, -1, -1, 0, 0, -1, -1, IUP_DRAW_IMAGE_LINEAR);
   }
 
   if (!active)

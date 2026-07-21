@@ -736,22 +736,40 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
 	}
 }
 
-IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_inactive, const char* bgcolor, int x, int y, int w, int h)
+IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_inactive, const char* bgcolor, long tint, int opacity, int x, int y, int w, int h, int sx, int sy, int sw, int sh, int quality)
 {
 	if (!dc || !name) return;
 
-	UIImage* ui_image = (UIImage*)iupImageGetImage(name, dc->ih, make_inactive, bgcolor);
+	UIImage* ui_image = (UIImage*)iupImageGetImageTint(name, dc->ih, make_inactive, bgcolor, tint);
 	if (!ui_image) return;
 
 	@autoreleasepool
 	{
 		CGSize size = [ui_image size];
-		if (w <= 0) w = (int)size.width;
-		if (h <= 0) h = (int)size.height;
+		if (sw <= 0 || sh <= 0)
+		{
+			sx = 0;
+			sy = 0;
+			sw = (int)size.width;
+			sh = (int)size.height;
+		}
+		if (w <= 0) w = sw;
+		if (h <= 0) h = sh;
+
+		if (sx != 0 || sy != 0 || sw != (int)size.width || sh != (int)size.height)
+		{
+			CGImageRef sub_img = CGImageCreateWithImageInRect([ui_image CGImage], CGRectMake(sx, sy, sw, sh));
+			if (sub_img)
+			{
+				ui_image = [UIImage imageWithCGImage:sub_img];
+				CGImageRelease(sub_img);
+			}
+		}
 
 		CGContextSaveGState(dc->cgContext);
+		CGContextSetInterpolationQuality(dc->cgContext, quality == IUP_DRAW_IMAGE_NEAREST ? kCGInterpolationNone : kCGInterpolationDefault);
 		UIGraphicsPushContext(dc->cgContext);
-		[ui_image drawInRect:CGRectMake(x, y, w, h)];
+		[ui_image drawInRect:CGRectMake(x, y, w, h) blendMode:kCGBlendModeNormal alpha:opacity / 255.0];
 		UIGraphicsPopContext();
 		CGContextRestoreGState(dc->cgContext);
 	}

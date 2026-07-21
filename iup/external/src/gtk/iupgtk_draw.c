@@ -774,36 +774,40 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
     cairo_restore(dc->image_cr);
 }
 
-IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_inactive, const char* bgcolor, int x, int y, int w, int h)
+IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_inactive, const char* bgcolor, long tint, int opacity, int x, int y, int w, int h, int sx, int sy, int sw, int sh, int quality)
 {
   int bpp, img_w, img_h;
-  GdkPixbuf* pixbuf = iupImageGetImage(name, dc->ih, make_inactive, bgcolor);
+  GdkPixbuf* pixbuf = iupImageGetImageTint(name, dc->ih, make_inactive, bgcolor, tint);
   if (!pixbuf)
     return;
 
-  /* must use this info, since image can be a driver image loaded from resources */
   iupdrvImageGetInfo(pixbuf, &img_w, &img_h, &bpp);
 
-  if (w == -1 || w == 0) w = img_w;
-  if (h == -1 || h == 0) h = img_h;
+  if (sw <= 0 || sh <= 0)
+  {
+    sx = 0;
+    sy = 0;
+    sw = img_w;
+    sh = img_h;
+  }
+  if (w == -1 || w == 0) w = sw;
+  if (h == -1 || h == 0) h = sh;
 
   cairo_save (dc->image_cr);
 
   cairo_rectangle(dc->image_cr, x, y, w, h);
-  cairo_clip(dc->image_cr); /* intersect with the current clipping */
+  cairo_clip(dc->image_cr);
 
-  if (w != img_w || h != img_h)
-  {
-    /* Scale *before* setting the source surface (1) */
-    cairo_translate(dc->image_cr, x, y);
-    cairo_scale(dc->image_cr, (double)w / img_w, (double)h / img_h);
-    cairo_translate(dc->image_cr, -x, -y);
-  }
+  cairo_translate(dc->image_cr, x, y);
+  cairo_scale(dc->image_cr, (double)w / sw, (double)h / sh);
 
-  gdk_cairo_set_source_pixbuf(dc->image_cr, pixbuf, x, y);
-  cairo_paint(dc->image_cr);  /* paints the current source everywhere within the current clip region. */
+  gdk_cairo_set_source_pixbuf(dc->image_cr, pixbuf, -sx, -sy);
+  cairo_pattern_set_filter(cairo_get_source(dc->image_cr), quality == IUP_DRAW_IMAGE_NEAREST ? CAIRO_FILTER_NEAREST : CAIRO_FILTER_GOOD);
+  if (opacity < 255)
+    cairo_paint_with_alpha(dc->image_cr, opacity / 255.0);
+  else
+    cairo_paint(dc->image_cr);
 
-  /* must restore clipping */
   cairo_restore(dc->image_cr);
 }
 

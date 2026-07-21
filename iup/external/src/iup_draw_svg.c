@@ -922,7 +922,7 @@ static void iSvgBase64Encode(iSvgBuffer* out, const unsigned char* data, int len
   out->data[out->len] = '\0';
 }
 
-void iupSvgDrawImageRGBA(iSvgCanvas* dc, const unsigned char* rgba, int img_w, int img_h, int x, int y, int w, int h)
+void iupSvgDrawImageRGBA(iSvgCanvas* dc, const unsigned char* rgba, int img_w, int img_h, int x, int y, int w, int h, int quality)
 {
   iSvgBuffer png_buf;
 
@@ -947,6 +947,8 @@ void iupSvgDrawImageRGBA(iSvgCanvas* dc, const unsigned char* rgba, int img_w, i
   iSvgBufAppend(&dc->buf, "\"");
   if (w != img_w || h != img_h)
     iSvgBufAppend(&dc->buf, " preserveAspectRatio=\"none\"");
+  if (quality == IUP_DRAW_IMAGE_NEAREST)
+    iSvgBufAppend(&dc->buf, " image-rendering=\"pixelated\"");
   iSvgClipRef(dc, &dc->buf);
   iSvgBufAppend(&dc->buf, "/>\n");
 

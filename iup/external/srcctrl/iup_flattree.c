@@ -1374,7 +1374,7 @@ static int iFlatTreeDrawExpander(Ihandle *ih, IdrawCanvas* dc, iFlatTreeNode *no
       {
         const char *button_image = (node->state == IFLATTREE_EXPANDED) ? button_minus_image : button_plus_image;
         int py = y + (node->height - ih->data->button_size) / 2;
-        iupdrvDrawImage(dc, button_image, 0, bgcolor, px, py, 0, 0);
+        iupdrvDrawImage(dc, button_image, 0, bgcolor, IUP_DRAW_NO_TINT, 255, px, py, 0, 0, 0, 0, -1, -1, IUP_DRAW_IMAGE_LINEAR);
       }
       else
         iFlatTreeDrawExpanderButton(dc, node, px, y, node->height, ih->data->button_size, border_color, fore_color, back_color);
@@ -1427,9 +1427,9 @@ static int iFlatTreeRedraw_CB(Ihandle* ih)
   {
     int backimage_zoom = iupAttribGetBoolean(ih, "BACKIMAGEZOOM");
     if (backimage_zoom)
-      iupdrvDrawImage(dc, back_image, 0, bg_color, border_width, border_width, width - border_width, height - border_width);
+      iupdrvDrawImage(dc, back_image, 0, bg_color, IUP_DRAW_NO_TINT, 255, border_width, border_width, width - border_width, height - border_width, 0, 0, -1, -1, IUP_DRAW_IMAGE_LINEAR);
     else
-      iupdrvDrawImage(dc, back_image, 0, bg_color, border_width, border_width, -1, -1);
+      iupdrvDrawImage(dc, back_image, 0, bg_color, IUP_DRAW_NO_TINT, 255, border_width, border_width, -1, -1, 0, 0, -1, -1, IUP_DRAW_IMAGE_LINEAR);
   }
 
   if (!active)

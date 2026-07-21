@@ -29,6 +29,7 @@
 /* From iupwin_image_wdl.c */
 IUP_DRV_API void iupwinWdlImageInit(void);
 IUP_DRV_API WD_HIMAGE iupwinWdlImageGetImage(const char* name, Ihandle* ih_parent, int make_inactive, const char* bgcolor);
+IUP_DRV_API WD_HIMAGE iupwinWdlImageGetImageTint(const char* name, Ihandle* ih_parent, int make_inactive, const char* bgcolor, long tint);
 
 struct _IdrawCanvas{
   Ihandle* ih;
@@ -638,25 +639,37 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
   wdDestroyBrush(brush);
 }
 
-IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_inactive, const char* bgcolor, int x, int y, int w, int h)
+IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_inactive, const char* bgcolor, long tint, int opacity, int x, int y, int w, int h, int sx, int sy, int sw, int sh, int quality)
 {
-  WD_HIMAGE hImage = iupwinWdlImageGetImage(name, dc->ih, make_inactive, bgcolor);
+  WD_HIMAGE hImage = iupwinWdlImageGetImageTint(name, dc->ih, make_inactive, bgcolor, tint);
   if (hImage)
   {
     UINT img_w, img_h;
-    WD_RECT rect;
+    WD_RECT rect, src_rect;
 
     wdGetImageSize(hImage, &img_w, &img_h);
 
-    if (w == -1 || w == 0) w = img_w;
-    if (h == -1 || h == 0) h = img_h;
+    if (sw <= 0 || sh <= 0)
+    {
+      sx = 0;
+      sy = 0;
+      sw = img_w;
+      sh = img_h;
+    }
+    if (w == -1 || w == 0) w = sw;
+    if (h == -1 || h == 0) h = sh;
 
     rect.x0 = iupInt2Float(x);
     rect.y0 = iupInt2Float(y);
     rect.x1 = iupInt2Float(x + w);
     rect.y1 = iupInt2Float(y + h);
 
-    wdBitBltImage(dc->hCanvas, hImage, &rect, NULL);
+    src_rect.x0 = iupInt2Float(sx);
+    src_rect.y0 = iupInt2Float(sy);
+    src_rect.x1 = iupInt2Float(sx + sw);
+    src_rect.y1 = iupInt2Float(sy + sh);
+
+    wdBitBltImageEx(dc->hCanvas, hImage, &rect, &src_rect, quality == IUP_DRAW_IMAGE_NEAREST, opacity / 255.0f);
   }
 }
 

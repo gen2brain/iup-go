@@ -110,7 +110,13 @@ gdix_init(void)
     GPA(SetPageUnit, (dummy_GpGraphics*, dummy_GpUnit));
     GPA(SetPixelOffsetMode, (dummy_GpGraphics*, dummy_GpPixelOffsetMode));
     GPA(SetSmoothingMode, (dummy_GpGraphics*, dummy_GpSmoothingMode));
+    GPA(SetInterpolationMode, (dummy_GpGraphics*, dummy_GpInterpolationMode));
     GPA(TranslateWorldTransform, (dummy_GpGraphics*, float, float, dummy_GpMatrixOrder));
+
+    /* Image attributes functions */
+    GPA(CreateImageAttributes, (void**));
+    GPA(DisposeImageAttributes, (void*));
+    GPA(SetImageAttributesColorMatrix, (void*, int, BOOL, const float*, const float*, int));
 
     /* Brush functions */
     GPA(CreateSolidFill, (dummy_ARGB, dummy_GpSolidFill**));

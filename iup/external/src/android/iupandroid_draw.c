@@ -276,22 +276,31 @@ void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int x, int y, in
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
 }
 
-void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_inactive, const char* bgcolor, int x, int y, int w, int h)
+void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_inactive, const char* bgcolor, long tint, int opacity, int x, int y, int w, int h, int sx, int sy, int sw, int sh, int quality)
 {
   if (!dc || !dc->ih->handle) return;
 
-  jobject java_bitmap = (jobject)iupImageGetImage(name, dc->ih, make_inactive, bgcolor);
+  jobject java_bitmap = (jobject)iupImageGetImageTint(name, dc->ih, make_inactive, bgcolor, tint);
   if (!java_bitmap) return;
 
   int bpp, img_w, img_h;
   iupdrvImageGetInfo(java_bitmap, &img_w, &img_h, &bpp);
-  if (w <= 0) w = img_w;
-  if (h <= 0) h = img_h;
+
+  if (sw <= 0 || sh <= 0)
+  {
+    sx = 0;
+    sy = 0;
+    sw = img_w;
+    sh = img_h;
+  }
+  if (w <= 0) w = sw;
+  if (h <= 0) h = sh;
 
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
   jclass java_class = androidDrawFindHelper(jni_env);
-  jmethodID method_id = (*jni_env)->GetStaticMethodID(jni_env, java_class, "drawBitmap", "(Lio/github/gen2brain/iupgo/IupAndroidCanvas;Landroid/graphics/Bitmap;IIII)V");
-  (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, dc->ih->handle, java_bitmap, (jint)x, (jint)y, (jint)w, (jint)h);
+  jmethodID method_id = (*jni_env)->GetStaticMethodID(jni_env, java_class, "drawBitmap", "(Lio/github/gen2brain/iupgo/IupAndroidCanvas;Landroid/graphics/Bitmap;IIIIIIIIZI)V");
+  (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, dc->ih->handle, java_bitmap, (jint)x, (jint)y, (jint)w, (jint)h,
+                                   (jint)sx, (jint)sy, (jint)sw, (jint)sh, (jboolean)(quality != IUP_DRAW_IMAGE_NEAREST), (jint)opacity);
   iupAndroid_CheckException(jni_env, "IupCanvasHelper.drawBitmap");
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
 }

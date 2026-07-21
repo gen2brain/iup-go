@@ -393,20 +393,54 @@ extern "C" IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, in
   dc->bm->Unlock();
 }
 
-extern "C" IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_inactive, const char* bgcolor, int x, int y, int w, int h)
+extern "C" IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_inactive, const char* bgcolor, long tint, int opacity, int x, int y, int w, int h, int sx, int sy, int sw, int sh, int quality)
 {
   if (!dc || !dc->bm || !name) return;
-  BBitmap* img = (BBitmap*)iupImageGetImage(name, dc->ih, make_inactive, bgcolor);
+  BBitmap* img = (BBitmap*)iupImageGetImageTint(name, dc->ih, make_inactive, bgcolor, tint);
   if (!img) return;
 
-  if (w <= 0) w = (int)(img->Bounds().Width() + 1);
-  if (h <= 0) h = (int)(img->Bounds().Height() + 1);
+  int img_w = (int)(img->Bounds().Width() + 1);
+  int img_h = (int)(img->Bounds().Height() + 1);
 
+  if (sw <= 0 || sh <= 0)
+  {
+    sx = 0;
+    sy = 0;
+    sw = img_w;
+    sh = img_h;
+  }
+  if (w <= 0) w = sw;
+  if (h <= 0) h = sh;
+
+  BBitmap* faded = NULL;
+  if (opacity < 255 && img->ColorSpace() == B_RGBA32)
+  {
+    faded = new BBitmap(img->Bounds(), B_RGBA32);
+    if (faded->IsValid())
+    {
+      uint8* d = (uint8*)faded->Bits();
+      uint8* s = (uint8*)img->Bits();
+      int32 len = img->BitsLength();
+      memcpy(d, s, len);
+      for (int32 i = 3; i < len; i += 4)
+        d[i] = (uint8)((d[i] * opacity) / 255);
+      img = faded;
+    }
+    else
+    {
+      delete faded;
+      faded = NULL;
+    }
+  }
+
+  BRect src(sx, sy, sx + sw - 1, sy + sh - 1);
   BRect dst(x, y, x + w - 1, y + h - 1);
   dc->bm->Lock();
   dc->view->SetDrawingMode(B_OP_ALPHA);
-  dc->view->DrawBitmap(img, dst);
+  dc->view->DrawBitmap(img, src, dst, quality == IUP_DRAW_IMAGE_NEAREST ? 0 : B_FILTER_BITMAP_BILINEAR);
   dc->bm->Unlock();
+
+  delete faded;
 }
 
 /* clipping */

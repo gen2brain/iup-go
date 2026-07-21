@@ -148,9 +148,9 @@ static int iFlatButtonRedraw_CB(Ihandle* ih)
     int backimage_zoom = iupAttribGetBoolean(ih, "BACKIMAGEZOOM");
     draw_image = iupFlatGetImageName(ih, "BACKIMAGE", bgimage, image_pressed, ih->data->highlighted, 1, &make_inactive);
     if (backimage_zoom)
-      iupdrvDrawImage(dc, draw_image, make_inactive, bgcolor, border_width, border_width, draw_w - border_width, draw_h - border_width);
+      iupdrvDrawImage(dc, draw_image, make_inactive, bgcolor, IUP_DRAW_NO_TINT, 255, border_width, border_width, draw_w - border_width, draw_h - border_width, 0, 0, -1, -1, IUP_DRAW_IMAGE_LINEAR);
     else
-      iupdrvDrawImage(dc, draw_image, make_inactive, bgcolor, border_width, border_width, -1, -1);
+      iupdrvDrawImage(dc, draw_image, make_inactive, bgcolor, IUP_DRAW_NO_TINT, 255, border_width, border_width, -1, -1, 0, 0, -1, -1, IUP_DRAW_IMAGE_LINEAR);
   }
   else
   {
@@ -208,7 +208,7 @@ static int iFlatButtonRedraw_CB(Ihandle* ih)
   if (fgimage)
   {
     draw_image = iupFlatGetImageName(ih, "FRONTIMAGE", fgimage, image_pressed, ih->data->highlighted, active, &make_inactive);
-    iupdrvDrawImage(dc, draw_image, make_inactive, bgcolor, border_width, border_width, -1, -1);
+    iupdrvDrawImage(dc, draw_image, make_inactive, bgcolor, IUP_DRAW_NO_TINT, 255, border_width, border_width, -1, -1, 0, 0, -1, -1, IUP_DRAW_IMAGE_LINEAR);
   }
   else if (!image && !title)  /* color only button */
   {

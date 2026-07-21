@@ -238,10 +238,10 @@ static void iFlatScrollBarDrawVertical(Ihandle* sb_vert, IdrawCanvas* dc, int ac
       const char* image;
 
       image = iupFlatGetImageName(sb_vert->parent, "SB_IMAGETOP", NULL, pressed != SB_NONE, highlight != SB_NONE, active, &make_inactive);
-      iupdrvDrawImage(dc, image, make_inactive, bgcolor, 0, 0, -1, -1);
+      iupdrvDrawImage(dc, image, make_inactive, bgcolor, IUP_DRAW_NO_TINT, 255, 0, 0, -1, -1, 0, 0, -1, -1, IUP_DRAW_IMAGE_LINEAR);
 
       image = iupFlatGetImageName(sb_vert->parent, "SB_IMAGEBOTTOM", NULL, pressed != SB_NONE, highlight != SB_NONE, active, &make_inactive);
-      iupdrvDrawImage(dc, image, make_inactive, bgcolor, height - 1 - arrow_size, 0, -1, -1);
+      iupdrvDrawImage(dc, image, make_inactive, bgcolor, IUP_DRAW_NO_TINT, 255, height - 1 - arrow_size, 0, -1, -1, 0, 0, -1, -1, IUP_DRAW_IMAGE_LINEAR);
     }
     else
     {
@@ -318,10 +318,10 @@ static void iFlatScrollBarDrawHorizontal(Ihandle* sb_horiz, IdrawCanvas* dc, int
       const char* image;
 
       image = iupFlatGetImageName(sb_horiz->parent, "SB_IMAGELEFT", NULL, pressed != SB_NONE, highlight != SB_NONE, active, &make_inactive);
-      iupdrvDrawImage(dc, image, make_inactive, bgcolor, 0, 0, -1, -1);
+      iupdrvDrawImage(dc, image, make_inactive, bgcolor, IUP_DRAW_NO_TINT, 255, 0, 0, -1, -1, 0, 0, -1, -1, IUP_DRAW_IMAGE_LINEAR);
 
       image = iupFlatGetImageName(sb_horiz->parent, "SB_IMAGERIGHT", NULL, pressed != SB_NONE, highlight != SB_NONE, active, &make_inactive);
-      iupdrvDrawImage(dc, image, make_inactive, bgcolor, width - 1 - arrow_size, 0, -1, -1);
+      iupdrvDrawImage(dc, image, make_inactive, bgcolor, IUP_DRAW_NO_TINT, 255, width - 1 - arrow_size, 0, -1, -1, 0, 0, -1, -1, IUP_DRAW_IMAGE_LINEAR);
     }
     else
     {
