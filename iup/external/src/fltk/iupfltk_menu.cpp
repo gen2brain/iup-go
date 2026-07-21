@@ -37,20 +37,12 @@ extern "C" {
 typedef std::vector<Fl_Multi_Label*> FltkMenuLabelList;
 
 
-/****************************************************************************
- * Title helpers
- *
- * FLTK's Fl_Menu_ natively understands `&X` as an Alt+X mnemonic (same as
- * Win32), and uses `/` as the submenu path separator. Escape `/` and drop
- * the `\tShortcut` tail used by IUP; FLTK shortcuts are set via shortcut(int).
- ****************************************************************************/
-
+/* Escape `/` (FLTK submenu separator); the `\t` shortcut tail is drawn right-aligned by fl_draw_shortcut. */
 static char* fltkMenuBuildLabel(const char* title)
 {
   if (!title) title = "";
 
-  const char* tab = strchr(title, '\t');
-  size_t len = tab ? (size_t)(tab - title) : strlen(title);
+  size_t len = strlen(title);
 
   /* Worst case: every char needs escaping */
   char* out = (char*)malloc(len * 2 + 1);
