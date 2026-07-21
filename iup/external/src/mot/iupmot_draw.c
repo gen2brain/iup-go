@@ -11,6 +11,7 @@
 
 #include <Xm/Xm.h>
 #include <X11/Xlib.h>
+#include <X11/extensions/Xrender.h>
 
 #ifdef IUP_USE_XFT
 #include <X11/Xft/Xft.h>
@@ -37,6 +38,7 @@ struct _IdrawCanvas{
   Window wnd;
   Pixmap pixmap;
   GC pixmap_gc, gc;
+  Picture pict;
 
   int clip_x1, clip_y1, clip_x2, clip_y2;
 };
@@ -73,6 +75,103 @@ static void motDrawClearBackground(IdrawCanvas* dc)
   }
   XSetForeground(iupmot_display, dc->pixmap_gc, iupmotColorGetPixel(r, g, b));
   XFillRectangle(iupmot_display, dc->pixmap, dc->pixmap_gc, 0, 0, dc->w, dc->h);
+}
+
+static int motDrawHasRender(void)
+{
+  static int has_render = -1;
+  if (has_render == -1)
+  {
+    int event_base, error_base;
+    has_render = XRenderQueryExtension(iupmot_display, &event_base, &error_base) ? 1 : 0;
+  }
+  return has_render;
+}
+
+/* XRender wants premultiplied 16-bit components */
+static XRenderColor motDrawRenderColor(long color)
+{
+  XRenderColor rc;
+  unsigned int a = iupDrawAlpha(color);
+  rc.red = (unsigned short)((iupDrawRed(color) * a * 257) / 255);
+  rc.green = (unsigned short)((iupDrawGreen(color) * a * 257) / 255);
+  rc.blue = (unsigned short)((iupDrawBlue(color) * a * 257) / 255);
+  rc.alpha = (unsigned short)(a * 257);
+  return rc;
+}
+
+static void motDrawCreatePicture(IdrawCanvas* dc)
+{
+  XRenderPictFormat* fmt;
+
+  if (!motDrawHasRender())
+    return;
+
+  fmt = XRenderFindVisualFormat(iupmot_display, iupmot_visual);
+  if (fmt)
+    dc->pict = XRenderCreatePicture(iupmot_display, dc->pixmap, fmt, 0, NULL);
+}
+
+static int motDrawAlphaColor(IdrawCanvas* dc, long color)
+{
+  return dc->pict != None && iupDrawAlpha(color) != 255;
+}
+
+typedef struct {
+  Pixmap pixmap;
+  GC gc;
+  int x, y, w, h;
+} ImotAlphaMask;
+
+static int motDrawAlphaMaskBegin(IdrawCanvas* dc, ImotAlphaMask* m, int x1, int y1, int x2, int y2, int margin)
+{
+  m->x = x1 - margin;
+  m->y = y1 - margin;
+  if (m->x < 0) m->x = 0;
+  if (m->y < 0) m->y = 0;
+
+  x2 += margin;
+  y2 += margin;
+  if (x2 > dc->w - 1) x2 = dc->w - 1;
+  if (y2 > dc->h - 1) y2 = dc->h - 1;
+
+  m->w = x2 - m->x + 1;
+  m->h = y2 - m->y + 1;
+  if (m->w <= 0 || m->h <= 0)
+    return 0;
+
+  m->pixmap = XCreatePixmap(iupmot_display, dc->pixmap, dc->w, dc->h, 8);
+  if (!m->pixmap)
+    return 0;
+
+  m->gc = XCreateGC(iupmot_display, m->pixmap, 0, NULL);
+  if (!m->gc)
+  {
+    XFreePixmap(iupmot_display, m->pixmap);
+    return 0;
+  }
+
+  XSetForeground(iupmot_display, m->gc, 0);
+  XFillRectangle(iupmot_display, m->pixmap, m->gc, m->x, m->y, m->w, m->h);
+  XSetForeground(iupmot_display, m->gc, 255);
+  return 1;
+}
+
+static void motDrawAlphaMaskComposite(IdrawCanvas* dc, ImotAlphaMask* m, Picture src)
+{
+  Picture mask = XRenderCreatePicture(iupmot_display, m->pixmap, XRenderFindStandardFormat(iupmot_display, PictStandardA8), 0, NULL);
+  XRenderComposite(iupmot_display, PictOpOver, src, mask, dc->pict, m->x, m->y, m->x, m->y, m->x, m->y, m->w, m->h);
+  XRenderFreePicture(iupmot_display, mask);
+  XFreeGC(iupmot_display, m->gc);
+  XFreePixmap(iupmot_display, m->pixmap);
+}
+
+static void motDrawAlphaMaskEnd(IdrawCanvas* dc, ImotAlphaMask* m, long color)
+{
+  XRenderColor rc = motDrawRenderColor(color);
+  Picture src = XRenderCreateSolidFill(iupmot_display, &rc);
+  motDrawAlphaMaskComposite(dc, m, src);
+  XRenderFreePicture(iupmot_display, src);
 }
 
 IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
@@ -125,6 +224,8 @@ IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
     return NULL;
   }
 
+  motDrawCreatePicture(dc);
+
   iupAttribSet(ih, "DRAWDRIVER", "X11");
 
   motDrawClearBackground(dc);
@@ -137,6 +238,8 @@ IUP_SDK_API void iupdrvDrawKillCanvas(IdrawCanvas* dc)
   if (!dc)
     return;
 
+  if (dc->pict)
+    XRenderFreePicture(iupmot_display, dc->pict);
   if (dc->pixmap_gc)
     XFreeGC(iupmot_display, dc->pixmap_gc);
   if (dc->pixmap)
@@ -165,6 +268,9 @@ IUP_SDK_API void iupdrvDrawUpdateSize(IdrawCanvas* dc)
     dc->w = w;
     dc->h = h;
 
+    if (dc->pict)
+      XRenderFreePicture(iupmot_display, dc->pict);
+    dc->pict = None;
     if (dc->pixmap_gc)
       XFreeGC(iupmot_display, dc->pixmap_gc);
     if (dc->pixmap)
@@ -188,6 +294,8 @@ IUP_SDK_API void iupdrvDrawUpdateSize(IdrawCanvas* dc)
       dc->h = 0;
       return;
     }
+
+    motDrawCreatePicture(dc);
 
     motDrawClearBackground(dc);
   }
@@ -214,41 +322,7 @@ IUP_SDK_API void iupdrvDrawGetSize(IdrawCanvas* dc, int *w, int *h)
   if (h) *h = dc->h;
 }
 
-static void iDrawSetLineStyle(IdrawCanvas* dc, int style)
-{
-  XGCValues gcval;
-  if (style == IUP_DRAW_STROKE || style == IUP_DRAW_FILL)
-    gcval.line_style = LineSolid;
-  else
-  {
-    if (style == IUP_DRAW_STROKE_DASH)
-    {
-      char dashes[2] = { 9, 3 };
-      XSetDashes(iupmot_display, dc->pixmap_gc, 0, dashes, 2);
-    }
-    else if (style == IUP_DRAW_STROKE_DOT)
-    {
-      char dashes[2] = { 1, 2 };
-      XSetDashes(iupmot_display, dc->pixmap_gc, 0, dashes, 2);
-    }
-    else if (style == IUP_DRAW_STROKE_DASH_DOT)
-    {
-      char dashes[4] = { 7, 3, 1, 3 };
-      XSetDashes(iupmot_display, dc->pixmap_gc, 0, dashes, 4);
-    }
-    else if (style == IUP_DRAW_STROKE_DASH_DOT_DOT)
-    {
-      char dashes[6] = { 7, 3, 1, 3, 1, 3 };
-      XSetDashes(iupmot_display, dc->pixmap_gc, 0, dashes, 6);
-    }
-
-    gcval.line_style = LineOnOffDash;
-  }
-
-  XChangeGC(iupmot_display, dc->pixmap_gc, GCLineStyle, &gcval);
-}
-
-static void iDrawSetLineWidth(IdrawCanvas* dc, int line_width)
+static void iDrawSetLineStyleAndWidth(GC gc, int style, int line_width)
 {
   XGCValues gcval;
 
@@ -257,21 +331,6 @@ static void iDrawSetLineWidth(IdrawCanvas* dc, int line_width)
   else
     gcval.line_width = line_width;
 
-  XChangeGC(iupmot_display, dc->pixmap_gc, GCLineWidth, &gcval);
-}
-
-/* Combined function to set both line style and width in one XChangeGC call */
-static void iDrawSetLineStyleAndWidth(IdrawCanvas* dc, int style, int line_width)
-{
-  XGCValues gcval;
-
-  /* Set line width */
-  if (line_width == 1)
-    gcval.line_width = 0;
-  else
-    gcval.line_width = line_width;
-
-  /* Set line style */
   if (style == IUP_DRAW_STROKE || style == IUP_DRAW_FILL)
     gcval.line_style = LineSolid;
   else
@@ -279,43 +338,62 @@ static void iDrawSetLineStyleAndWidth(IdrawCanvas* dc, int style, int line_width
     if (style == IUP_DRAW_STROKE_DASH)
     {
       char dashes[2] = { 9, 3 };
-      XSetDashes(iupmot_display, dc->pixmap_gc, 0, dashes, 2);
+      XSetDashes(iupmot_display, gc, 0, dashes, 2);
     }
     else if (style == IUP_DRAW_STROKE_DOT)
     {
       char dashes[2] = { 1, 2 };
-      XSetDashes(iupmot_display, dc->pixmap_gc, 0, dashes, 2);
+      XSetDashes(iupmot_display, gc, 0, dashes, 2);
     }
     else if (style == IUP_DRAW_STROKE_DASH_DOT)
     {
       char dashes[4] = { 7, 3, 1, 3 };
-      XSetDashes(iupmot_display, dc->pixmap_gc, 0, dashes, 4);
+      XSetDashes(iupmot_display, gc, 0, dashes, 4);
     }
     else if (style == IUP_DRAW_STROKE_DASH_DOT_DOT)
     {
       char dashes[6] = { 7, 3, 1, 3, 1, 3 };
-      XSetDashes(iupmot_display, dc->pixmap_gc, 0, dashes, 6);
+      XSetDashes(iupmot_display, gc, 0, dashes, 6);
     }
 
     gcval.line_style = LineOnOffDash;
   }
 
-  /* Batch update both line width and style in one call */
-  XChangeGC(iupmot_display, dc->pixmap_gc, GCLineWidth | GCLineStyle, &gcval);
+  XChangeGC(iupmot_display, gc, GCLineWidth | GCLineStyle, &gcval);
 }
 
 IUP_SDK_API void iupdrvDrawRectangle(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color, int style, int line_width)
 {
-  XSetForeground(iupmot_display, dc->pixmap_gc, iupmotColorGetPixel(iupDrawRed(color),iupDrawGreen(color),iupDrawBlue(color)));
-
   iupDrawCheckSwapCoord(x1, x2);
   iupDrawCheckSwapCoord(y1, y2);
+
+  if (motDrawAlphaColor(dc, color))
+  {
+    if (style == IUP_DRAW_FILL)
+    {
+      XRenderColor rc = motDrawRenderColor(color);
+      XRenderFillRectangle(iupmot_display, PictOpOver, dc->pict, &rc, x1, y1, x2 - x1 + 1, y2 - y1 + 1);
+    }
+    else
+    {
+      ImotAlphaMask m;
+      if (motDrawAlphaMaskBegin(dc, &m, x1, y1, x2, y2, line_width))
+      {
+        iDrawSetLineStyleAndWidth(m.gc, style, line_width);
+        XDrawRectangle(iupmot_display, m.pixmap, m.gc, x1, y1, x2 - x1, y2 - y1);
+        motDrawAlphaMaskEnd(dc, &m, color);
+      }
+    }
+    return;
+  }
+
+  XSetForeground(iupmot_display, dc->pixmap_gc, iupmotColorGetPixel(iupDrawRed(color),iupDrawGreen(color),iupDrawBlue(color)));
 
   if (style==IUP_DRAW_FILL)
     XFillRectangle(iupmot_display, dc->pixmap, dc->pixmap_gc, x1, y1, x2 - x1 + 1, y2 - y1 + 1);
   else
   {
-    iDrawSetLineStyleAndWidth(dc, style, line_width);  /* Batch GC update */
+    iDrawSetLineStyleAndWidth(dc->pixmap_gc, style, line_width);
 
     XDrawRectangle(iupmot_display, dc->pixmap, dc->pixmap_gc, x1, y1, x2 - x1, y2 - y1);
   }
@@ -323,19 +401,55 @@ IUP_SDK_API void iupdrvDrawRectangle(IdrawCanvas* dc, int x1, int y1, int x2, in
 
 IUP_SDK_API void iupdrvDrawLine(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color, int style, int line_width)
 {
+  if (motDrawAlphaColor(dc, color))
+  {
+    ImotAlphaMask m;
+    int bx1 = x1 < x2 ? x1 : x2;
+    int by1 = y1 < y2 ? y1 : y2;
+    int bx2 = x1 > x2 ? x1 : x2;
+    int by2 = y1 > y2 ? y1 : y2;
+    if (motDrawAlphaMaskBegin(dc, &m, bx1, by1, bx2, by2, line_width))
+    {
+      iDrawSetLineStyleAndWidth(m.gc, style, line_width);
+      XDrawLine(iupmot_display, m.pixmap, m.gc, x1, y1, x2, y2);
+      motDrawAlphaMaskEnd(dc, &m, color);
+    }
+    return;
+  }
+
   XSetForeground(iupmot_display, dc->pixmap_gc, iupmotColorGetPixel(iupDrawRed(color),iupDrawGreen(color),iupDrawBlue(color)));
 
-  iDrawSetLineStyleAndWidth(dc, style, line_width);  /* Batch GC update */
+  iDrawSetLineStyleAndWidth(dc->pixmap_gc, style, line_width);
 
   XDrawLine(iupmot_display, dc->pixmap, dc->pixmap_gc, x1, y1, x2, y2);
 }
 
 IUP_SDK_API void iupdrvDrawArc(IdrawCanvas* dc, int x1, int y1, int x2, int y2, double a1, double a2, long color, int style, int line_width)
 {
-  XSetForeground(iupmot_display, dc->pixmap_gc, iupmotColorGetPixel(iupDrawRed(color),iupDrawGreen(color),iupDrawBlue(color)));
-
   iupDrawCheckSwapCoord(x1, x2);
   iupDrawCheckSwapCoord(y1, y2);
+
+  if (motDrawAlphaColor(dc, color))
+  {
+    ImotAlphaMask m;
+    if (motDrawAlphaMaskBegin(dc, &m, x1, y1, x2, y2, line_width))
+    {
+      if (style == IUP_DRAW_FILL)
+      {
+        XSetArcMode(iupmot_display, m.gc, ArcPieSlice);
+        XFillArc(iupmot_display, m.pixmap, m.gc, x1, y1, x2 - x1 + 1, y2 - y1 + 1, iupRound(a1 * 64), iupRound((a2 - a1) * 64));
+      }
+      else
+      {
+        iDrawSetLineStyleAndWidth(m.gc, style, line_width);
+        XDrawArc(iupmot_display, m.pixmap, m.gc, x1, y1, x2 - x1 + 1, y2 - y1 + 1, iupRound(a1 * 64), iupRound((a2 - a1) * 64));
+      }
+      motDrawAlphaMaskEnd(dc, &m, color);
+    }
+    return;
+  }
+
+  XSetForeground(iupmot_display, dc->pixmap_gc, iupmotColorGetPixel(iupDrawRed(color),iupDrawGreen(color),iupDrawBlue(color)));
 
   if (style==IUP_DRAW_FILL)
   {
@@ -344,7 +458,7 @@ IUP_SDK_API void iupdrvDrawArc(IdrawCanvas* dc, int x1, int y1, int x2, int y2, 
   }
   else
   {
-    iDrawSetLineStyleAndWidth(dc, style, line_width);  /* Batch GC update */
+    iDrawSetLineStyleAndWidth(dc->pixmap_gc, style, line_width);
 
     XDrawArc(iupmot_display, dc->pixmap, dc->pixmap_gc, x1, y1, x2 - x1 + 1, y2 - y1 + 1, iupRound(a1 * 64), iupRound((a2 - a1) * 64));   /* angle = 1/64ths of a degree */
   }
@@ -352,10 +466,30 @@ IUP_SDK_API void iupdrvDrawArc(IdrawCanvas* dc, int x1, int y1, int x2, int y2, 
 
 IUP_SDK_API void iupdrvDrawEllipse(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color, int style, int line_width)
 {
-  XSetForeground(iupmot_display, dc->pixmap_gc, iupmotColorGetPixel(iupDrawRed(color),iupDrawGreen(color),iupDrawBlue(color)));
-
   iupDrawCheckSwapCoord(x1, x2);
   iupDrawCheckSwapCoord(y1, y2);
+
+  if (motDrawAlphaColor(dc, color))
+  {
+    ImotAlphaMask m;
+    if (motDrawAlphaMaskBegin(dc, &m, x1, y1, x2, y2, line_width))
+    {
+      if (style == IUP_DRAW_FILL)
+      {
+        XSetArcMode(iupmot_display, m.gc, ArcPieSlice);
+        XFillArc(iupmot_display, m.pixmap, m.gc, x1, y1, x2 - x1 + 1, y2 - y1 + 1, 0, 23040);
+      }
+      else
+      {
+        iDrawSetLineStyleAndWidth(m.gc, style, line_width);
+        XDrawArc(iupmot_display, m.pixmap, m.gc, x1, y1, x2 - x1 + 1, y2 - y1 + 1, 0, 23040);
+      }
+      motDrawAlphaMaskEnd(dc, &m, color);
+    }
+    return;
+  }
+
+  XSetForeground(iupmot_display, dc->pixmap_gc, iupmotColorGetPixel(iupDrawRed(color),iupDrawGreen(color),iupDrawBlue(color)));
 
   /* Draw full ellipse using X11 arc with 360 degree span */
   /* angle in X11 is 1/64ths of a degree, so 360*64 = 23040 */
@@ -366,7 +500,7 @@ IUP_SDK_API void iupdrvDrawEllipse(IdrawCanvas* dc, int x1, int y1, int x2, int 
   }
   else
   {
-    iDrawSetLineStyleAndWidth(dc, style, line_width);  /* Batch GC update */
+    iDrawSetLineStyleAndWidth(dc->pixmap_gc, style, line_width);
     XDrawArc(iupmot_display, dc->pixmap, dc->pixmap_gc, x1, y1, x2 - x1 + 1, y2 - y1 + 1, 0, 23040);
   }
 }
@@ -404,13 +538,41 @@ IUP_SDK_API void iupdrvDrawPolygon(IdrawCanvas* dc, int* points, int count, long
     pnt[count].y = pnt[0].y;
   }
 
+  if (motDrawAlphaColor(dc, color))
+  {
+    ImotAlphaMask m;
+    int bx1 = pnt[0].x, by1 = pnt[0].y, bx2 = pnt[0].x, by2 = pnt[0].y;
+    for (i = 1; i < count; i++)
+    {
+      if (pnt[i].x < bx1) bx1 = pnt[i].x;
+      if (pnt[i].y < by1) by1 = pnt[i].y;
+      if (pnt[i].x > bx2) bx2 = pnt[i].x;
+      if (pnt[i].y > by2) by2 = pnt[i].y;
+    }
+    if (motDrawAlphaMaskBegin(dc, &m, bx1, by1, bx2, by2, line_width))
+    {
+      if (style == IUP_DRAW_FILL)
+        XFillPolygon(iupmot_display, m.pixmap, m.gc, pnt, count, Complex, CoordModeOrigin);
+      else
+      {
+        iDrawSetLineStyleAndWidth(m.gc, style, line_width);
+        XDrawLines(iupmot_display, m.pixmap, m.gc, pnt, pnt_count, CoordModeOrigin);
+      }
+      motDrawAlphaMaskEnd(dc, &m, color);
+    }
+
+    if (use_heap)
+      free(pnt);
+    return;
+  }
+
   XSetForeground(iupmot_display, dc->pixmap_gc, iupmotColorGetPixel(iupDrawRed(color),iupDrawGreen(color),iupDrawBlue(color)));
 
   if (style==IUP_DRAW_FILL)
     XFillPolygon(iupmot_display, dc->pixmap, dc->pixmap_gc, pnt, count, Complex, CoordModeOrigin);
   else
   {
-    iDrawSetLineStyleAndWidth(dc, style, line_width);  /* Batch GC update */
+    iDrawSetLineStyleAndWidth(dc->pixmap_gc, style, line_width);
 
     XDrawLines(iupmot_display, dc->pixmap, dc->pixmap_gc, pnt, pnt_count, CoordModeOrigin);
   }
@@ -421,69 +583,95 @@ IUP_SDK_API void iupdrvDrawPolygon(IdrawCanvas* dc, int* points, int count, long
 
 IUP_SDK_API void iupdrvDrawPixel(IdrawCanvas* dc, int x, int y, long color)
 {
+  if (motDrawAlphaColor(dc, color))
+  {
+    XRenderColor rc = motDrawRenderColor(color);
+    XRenderFillRectangle(iupmot_display, PictOpOver, dc->pict, &rc, x, y, 1, 1);
+    return;
+  }
+
   XSetForeground(iupmot_display, dc->pixmap_gc, iupmotColorGetPixel(iupDrawRed(color), iupDrawGreen(color), iupDrawBlue(color)));
   XDrawPoint(iupmot_display, dc->pixmap, dc->pixmap_gc, x, y);
 }
 
 IUP_SDK_API void iupdrvDrawRoundedRectangle(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int corner_radius, long color, int style, int line_width)
 {
-  int diameter;
+  int diameter, max_radius, use_alpha;
+  ImotAlphaMask m;
+  Drawable target;
+  GC gc;
 
   iupDrawCheckSwapCoord(x1, x2);
   iupDrawCheckSwapCoord(y1, y2);
 
   /* Clamp radius to prevent oversized corners */
-  int max_radius = ((x2 - x1) < (y2 - y1)) ? (x2 - x1) / 2 : (y2 - y1) / 2;
+  max_radius = ((x2 - x1) < (y2 - y1)) ? (x2 - x1) / 2 : (y2 - y1) / 2;
   if (corner_radius > max_radius)
     corner_radius = max_radius;
 
   diameter = corner_radius * 2;
 
-  XSetForeground(iupmot_display, dc->pixmap_gc, iupmotColorGetPixel(iupDrawRed(color), iupDrawGreen(color), iupDrawBlue(color)));
+  use_alpha = motDrawAlphaColor(dc, color);
+  if (use_alpha)
+  {
+    if (!motDrawAlphaMaskBegin(dc, &m, x1, y1, x2, y2, line_width))
+      return;
+    target = m.pixmap;
+    gc = m.gc;
+  }
+  else
+  {
+    XSetForeground(iupmot_display, dc->pixmap_gc, iupmotColorGetPixel(iupDrawRed(color), iupDrawGreen(color), iupDrawBlue(color)));
+    target = dc->pixmap;
+    gc = dc->pixmap_gc;
+  }
 
   if (style == IUP_DRAW_FILL)
   {
     /* Fill rounded rectangle by drawing filled arcs and rectangles */
     /* Top-right arc */
-    XFillArc(iupmot_display, dc->pixmap, dc->pixmap_gc, x2 - diameter, y1, diameter, diameter, 0 * 64, 90 * 64);
+    XFillArc(iupmot_display, target, gc, x2 - diameter, y1, diameter, diameter, 0 * 64, 90 * 64);
     /* Bottom-right arc */
-    XFillArc(iupmot_display, dc->pixmap, dc->pixmap_gc, x2 - diameter, y2 - diameter, diameter, diameter, 270 * 64, 90 * 64);
+    XFillArc(iupmot_display, target, gc, x2 - diameter, y2 - diameter, diameter, diameter, 270 * 64, 90 * 64);
     /* Bottom-left arc */
-    XFillArc(iupmot_display, dc->pixmap, dc->pixmap_gc, x1, y2 - diameter, diameter, diameter, 180 * 64, 90 * 64);
+    XFillArc(iupmot_display, target, gc, x1, y2 - diameter, diameter, diameter, 180 * 64, 90 * 64);
     /* Top-left arc */
-    XFillArc(iupmot_display, dc->pixmap, dc->pixmap_gc, x1, y1, diameter, diameter, 90 * 64, 90 * 64);
+    XFillArc(iupmot_display, target, gc, x1, y1, diameter, diameter, 90 * 64, 90 * 64);
 
     /* Fill center rectangle */
-    XFillRectangle(iupmot_display, dc->pixmap, dc->pixmap_gc, x1 + corner_radius, y1, x2 - x1 - diameter + 1, y2 - y1 + 1);
+    XFillRectangle(iupmot_display, target, gc, x1 + corner_radius, y1, x2 - x1 - diameter + 1, y2 - y1 + 1);
     /* Fill left rectangle */
-    XFillRectangle(iupmot_display, dc->pixmap, dc->pixmap_gc, x1, y1 + corner_radius, corner_radius, y2 - y1 - diameter + 1);
+    XFillRectangle(iupmot_display, target, gc, x1, y1 + corner_radius, corner_radius, y2 - y1 - diameter + 1);
     /* Fill right rectangle */
-    XFillRectangle(iupmot_display, dc->pixmap, dc->pixmap_gc, x2 - corner_radius + 1, y1 + corner_radius, corner_radius, y2 - y1 - diameter + 1);
+    XFillRectangle(iupmot_display, target, gc, x2 - corner_radius + 1, y1 + corner_radius, corner_radius, y2 - y1 - diameter + 1);
   }
   else
   {
-    iDrawSetLineStyleAndWidth(dc, style, line_width);
+    iDrawSetLineStyleAndWidth(gc, style, line_width);
 
     /* Draw rounded rectangle by drawing arcs and lines */
     /* Top-right arc */
-    XDrawArc(iupmot_display, dc->pixmap, dc->pixmap_gc, x2 - diameter, y1, diameter, diameter, 0 * 64, 90 * 64);
+    XDrawArc(iupmot_display, target, gc, x2 - diameter, y1, diameter, diameter, 0 * 64, 90 * 64);
     /* Bottom-right arc */
-    XDrawArc(iupmot_display, dc->pixmap, dc->pixmap_gc, x2 - diameter, y2 - diameter, diameter, diameter, 270 * 64, 90 * 64);
+    XDrawArc(iupmot_display, target, gc, x2 - diameter, y2 - diameter, diameter, diameter, 270 * 64, 90 * 64);
     /* Bottom-left arc */
-    XDrawArc(iupmot_display, dc->pixmap, dc->pixmap_gc, x1, y2 - diameter, diameter, diameter, 180 * 64, 90 * 64);
+    XDrawArc(iupmot_display, target, gc, x1, y2 - diameter, diameter, diameter, 180 * 64, 90 * 64);
     /* Top-left arc */
-    XDrawArc(iupmot_display, dc->pixmap, dc->pixmap_gc, x1, y1, diameter, diameter, 90 * 64, 90 * 64);
+    XDrawArc(iupmot_display, target, gc, x1, y1, diameter, diameter, 90 * 64, 90 * 64);
 
     /* Draw connecting lines */
     /* Top line */
-    XDrawLine(iupmot_display, dc->pixmap, dc->pixmap_gc, x1 + corner_radius, y1, x2 - corner_radius, y1);
+    XDrawLine(iupmot_display, target, gc, x1 + corner_radius, y1, x2 - corner_radius, y1);
     /* Right line */
-    XDrawLine(iupmot_display, dc->pixmap, dc->pixmap_gc, x2, y1 + corner_radius, x2, y2 - corner_radius);
+    XDrawLine(iupmot_display, target, gc, x2, y1 + corner_radius, x2, y2 - corner_radius);
     /* Bottom line */
-    XDrawLine(iupmot_display, dc->pixmap, dc->pixmap_gc, x2 - corner_radius, y2, x1 + corner_radius, y2);
+    XDrawLine(iupmot_display, target, gc, x2 - corner_radius, y2, x1 + corner_radius, y2);
     /* Left line */
-    XDrawLine(iupmot_display, dc->pixmap, dc->pixmap_gc, x1, y2 - corner_radius, x1, y1 + corner_radius);
+    XDrawLine(iupmot_display, target, gc, x1, y2 - corner_radius, x1, y1 + corner_radius);
   }
+
+  if (use_alpha)
+    motDrawAlphaMaskEnd(dc, &m, color);
 }
 
 IUP_SDK_API void iupdrvDrawGetClipRect(IdrawCanvas* dc, int *x1, int *y1, int *x2, int *y2)
@@ -513,6 +701,8 @@ IUP_SDK_API void iupdrvDrawSetClipRect(IdrawCanvas* dc, int x1, int y1, int x2, 
   rect.height = (unsigned short)(y2 - y1 + 1);
 
   XSetClipRectangles(iupmot_display, dc->pixmap_gc, 0, 0, &rect, 1, Unsorted);
+  if (dc->pict)
+    XRenderSetPictureClipRectangles(iupmot_display, dc->pict, 0, 0, &rect, 1);
 
   dc->clip_x1 = x1;
   dc->clip_y1 = y1;
@@ -587,6 +777,8 @@ IUP_SDK_API void iupdrvDrawSetClipRoundedRect(IdrawCanvas* dc, int x1, int y1, i
   /* Create X11 region from polygon */
   region = XPolygonRegion(points, num_points, WindingRule);
   XSetRegion(iupmot_display, dc->pixmap_gc, region);
+  if (dc->pict)
+    XRenderSetPictureClipRegion(iupmot_display, dc->pict, region);
   XDestroyRegion(region);
 
   dc->clip_x1 = x1;
@@ -598,6 +790,12 @@ IUP_SDK_API void iupdrvDrawSetClipRoundedRect(IdrawCanvas* dc, int x1, int y1, i
 IUP_SDK_API void iupdrvDrawResetClip(IdrawCanvas* dc)
 {
   XSetClipMask(iupmot_display, dc->pixmap_gc, None);
+  if (dc->pict)
+  {
+    XRenderPictureAttributes pa;
+    pa.clip_mask = None;
+    XRenderChangePicture(iupmot_display, dc->pict, CPClipMask, &pa);
+  }
 
   dc->clip_x1 = 0;
   dc->clip_y1 = 0;
@@ -614,10 +812,9 @@ static void iDrawTextXft(IdrawCanvas* dc, const char* text, int len, int x, int 
   XRenderColor rendercolor;
   XGlyphInfo extents;
 
-  rendercolor.red = (unsigned short)(iupDrawRed(color) << 8);
-  rendercolor.green = (unsigned short)(iupDrawGreen(color) << 8);
-  rendercolor.blue = (unsigned short)(iupDrawBlue(color) << 8);
-  rendercolor.alpha = 0xFFFF;
+  if (!motDrawHasRender())
+    color &= 0x00FFFFFF;  /* stored alpha 0 = opaque */
+  rendercolor = motDrawRenderColor(color);
   XftColorAllocValue(iupmot_display, iupmot_visual, DefaultColormap(iupmot_display, iupmot_screen), &rendercolor, &xftcolor);
 
   xftdraw = XftDrawCreate(iupmot_display, dc->pixmap, iupmot_visual, DefaultColormap(iupmot_display, iupmot_screen));
@@ -898,10 +1095,10 @@ IUP_SDK_API void iupdrvDrawBezier(IdrawCanvas* dc, int x1, int y1, int x2, int y
   /* X11/Motif does not have native Bezier support - use line approximation */
   XPoint points[21]; /* 20 segments should give smooth curve */
   int i, num_segments = 20;
-
-  /* Set color and line properties */
-  XSetForeground(iupmot_display, dc->pixmap_gc, iupmotColorGetPixel(iupDrawRed(color), iupDrawGreen(color), iupDrawBlue(color)));
-  XSetLineAttributes(iupmot_display, dc->pixmap_gc, line_width, LineSolid, CapRound, JoinRound);
+  int use_alpha;
+  ImotAlphaMask m;
+  Drawable target;
+  GC gc;
 
   /* Generate points along Bezier curve using parametric equation */
   for (i = 0; i <= num_segments; i++)
@@ -917,16 +1114,43 @@ IUP_SDK_API void iupdrvDrawBezier(IdrawCanvas* dc, int x1, int y1, int x2, int y
     points[i].y = (short)(t1_3 * y1 + t1_2_t * y2 + t1_t_2 * y3 + t_3 * y4);
   }
 
-  if (style == IUP_DRAW_FILL)
+  use_alpha = motDrawAlphaColor(dc, color);
+  if (use_alpha)
   {
-    /* Fill as polygon */
-    XFillPolygon(iupmot_display, dc->pixmap, dc->pixmap_gc, points, num_segments + 1, Nonconvex, CoordModeOrigin);
+    /* curve stays inside the control-point hull */
+    int bx1 = x1, by1 = y1, bx2 = x1, by2 = y1;
+    int px[3], py[3];
+    px[0] = x2; py[0] = y2;
+    px[1] = x3; py[1] = y3;
+    px[2] = x4; py[2] = y4;
+    for (i = 0; i < 3; i++)
+    {
+      if (px[i] < bx1) bx1 = px[i];
+      if (py[i] < by1) by1 = py[i];
+      if (px[i] > bx2) bx2 = px[i];
+      if (py[i] > by2) by2 = py[i];
+    }
+    if (!motDrawAlphaMaskBegin(dc, &m, bx1, by1, bx2, by2, line_width + 1))
+      return;
+    target = m.pixmap;
+    gc = m.gc;
   }
   else
   {
-    /* Draw as polyline */
-    XDrawLines(iupmot_display, dc->pixmap, dc->pixmap_gc, points, num_segments + 1, CoordModeOrigin);
+    XSetForeground(iupmot_display, dc->pixmap_gc, iupmotColorGetPixel(iupDrawRed(color), iupDrawGreen(color), iupDrawBlue(color)));
+    target = dc->pixmap;
+    gc = dc->pixmap_gc;
   }
+
+  XSetLineAttributes(iupmot_display, gc, line_width, LineSolid, CapRound, JoinRound);
+
+  if (style == IUP_DRAW_FILL)
+    XFillPolygon(iupmot_display, target, gc, points, num_segments + 1, Nonconvex, CoordModeOrigin);
+  else
+    XDrawLines(iupmot_display, target, gc, points, num_segments + 1, CoordModeOrigin);
+
+  if (use_alpha)
+    motDrawAlphaMaskEnd(dc, &m, color);
 }
 
 IUP_SDK_API void iupdrvDrawQuadraticBezier(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int x3, int y3, long color, int style, int line_width)
@@ -968,6 +1192,40 @@ IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x
   dx = (float)cos(rad);
   dy = (float)sin(rad);
 
+  if (dc->pict)
+  {
+    float w = (float)(x2 - x1);
+    float h = (float)(y2 - y1);
+    float gx = (w * dx) / 2.0f;
+    float gy = (h * dy) / 2.0f;
+
+    if (gx != 0 || gy != 0)
+    {
+      XLinearGradient grad;
+      XFixed stops[2];
+      XRenderColor colors[2];
+      Picture src;
+      XRenderPictureAttributes pa;
+
+      grad.p1.x = XDoubleToFixed(x1 + w / 2.0f - gx);
+      grad.p1.y = XDoubleToFixed(y1 + h / 2.0f - gy);
+      grad.p2.x = XDoubleToFixed(x1 + w / 2.0f + gx);
+      grad.p2.y = XDoubleToFixed(y1 + h / 2.0f + gy);
+
+      stops[0] = 0;
+      stops[1] = XDoubleToFixed(1.0);
+      colors[0] = motDrawRenderColor(color1);
+      colors[1] = motDrawRenderColor(color2);
+
+      src = XRenderCreateLinearGradient(iupmot_display, &grad, stops, colors, 2);
+      pa.repeat = RepeatPad;
+      XRenderChangePicture(iupmot_display, src, CPRepeat, &pa);
+      XRenderComposite(iupmot_display, PictOpOver, src, None, dc->pict, x1, y1, 0, 0, x1, y1, x2 - x1 + 1, y2 - y1 + 1);
+      XRenderFreePicture(iupmot_display, src);
+      return;
+    }
+  }
+
   /* Number of steps for smooth gradient */
   length = (float)sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
   steps = (int)length;
@@ -1008,6 +1266,36 @@ IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int r
   int i, steps;
   float t, r;
   unsigned long pixel;
+
+  if (dc->pict && radius > 0)
+  {
+    ImotAlphaMask m;
+    if (motDrawAlphaMaskBegin(dc, &m, cx - radius, cy - radius, cx + radius, cy + radius, 0))
+    {
+      XRadialGradient grad;
+      XFixed stops[2];
+      XRenderColor colors[2];
+      Picture src;
+
+      grad.inner.x = XDoubleToFixed(cx);
+      grad.inner.y = XDoubleToFixed(cy);
+      grad.inner.radius = 0;
+      grad.outer.x = XDoubleToFixed(cx);
+      grad.outer.y = XDoubleToFixed(cy);
+      grad.outer.radius = XDoubleToFixed(radius);
+
+      stops[0] = 0;
+      stops[1] = XDoubleToFixed(1.0);
+      colors[0] = motDrawRenderColor(colorCenter);
+      colors[1] = motDrawRenderColor(colorEdge);
+
+      src = XRenderCreateRadialGradient(iupmot_display, &grad, stops, colors, 2);
+      XFillArc(iupmot_display, m.pixmap, m.gc, cx - radius, cy - radius, 2 * radius, 2 * radius, 0, 23040);
+      motDrawAlphaMaskComposite(dc, &m, src);
+      XRenderFreePicture(iupmot_display, src);
+      return;
+    }
+  }
 
   /* Number of steps for smooth gradient */
   steps = radius;
