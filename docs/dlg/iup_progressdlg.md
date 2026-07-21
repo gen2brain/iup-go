@@ -123,7 +123,10 @@ The dialog is **not** automatically closed, the application must do that manuall
       return 1;
     }
 
-![](../images/progressdlg.png)
+|                                        |                                      |                                       |                                       |
+|----------------------------------------|--------------------------------------|---------------------------------------|---------------------------------------|
+| GTK                                    | Qt                                   | Win32                                 | macOS                                 |
+| ![](../images/iupprogressdlg_gtk3.png) | ![](../images/iupprogressdlg_qt.png) | ![](../images/iupprogressdlg_win.png) | ![](../images/iupprogressdlg_mac.png) |
 
 ### See Also
 

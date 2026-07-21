@@ -127,6 +127,15 @@ On macOS and iOS, use REQUESTPERMISSION to prompt and PERMISSION to check the no
 
 On Android, STYLE="TOAST" needs no permission.
 
+### Examples
+
+[Browse for Example Files](../../examples/)
+
+|                                   |                                  |                                  |
+|-----------------------------------|----------------------------------|----------------------------------|
+| GTK                               | WinUI                            | macOS                            |
+| ![](../images/iupnotify_gtk3.png) | ![](../images/iupnotify_win.png) | ![](../images/iupnotify_mac.png) |
+
 ### See Also
 
 [IupTimer](iup_timer.md)

@@ -239,34 +239,13 @@ But these functions are faster than the traditional functions because they do no
 [Browse for Example Files](../../examples/)
 
 In Windows, the Visual Styles work only when TABTYPE is TOP.
+GTK is the only one that supports vertical text in the TOP configuration, but does not support multiple lines of tab buttons.
+Motif does not support vertical text.
 
-**Windows Classic**
-
-![](../images/iuptabs_win2k_top.png)
-![](../images/iuptabs_win2k_left.png)
-![](../images/iuptabs_win2k_top_multi.png)
-
-**Windows w/ Styles**
-
-![](../images/iuptabs_winxp_top.png)
-![](../images/iuptabs_winxp_left.png)
-![](../images/iuptabs_winxp_top_multi.png)
-
-GTK is the only one that supports vertical text in the TOP configuration, but does not supports multiple lines of tab buttons.
-
-**GTK**
-
-![](../images/iuptabs_gtk_top.png)
-![](../images/iuptabs_gtk_top_vert.png)
-![](../images/iuptabs_gtk_left.png)
-![](../images/iuptabs_gtk_left_vert.png)
-
-Motif does not supports vertical text.
-
-**Motif**
-
-![](../images/iuptabs_mot_top.png)
-![](../images/iuptabs_mot_left.png)
+|                                 |                               |                                |                                |
+|---------------------------------|-------------------------------|--------------------------------|--------------------------------|
+| GTK                             | Qt                            | Win32                          | macOS                          |
+| ![](../images/iuptabs_gtk3.png) | ![](../images/iuptabs_qt.png) | ![](../images/iuptabs_win.png) | ![](../images/iuptabs_mac.png) |
 
 ### See Also
 

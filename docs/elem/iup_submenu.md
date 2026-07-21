@@ -55,7 +55,10 @@ In Motif and GTK, the text font will be affected by the dialog font when the men
 
 [Browse for Example Files](../../examples/)
 
-![](../images/iupsubmenu.png)
+|                                    |                                  |                                   |                                   |
+|------------------------------------|----------------------------------|-----------------------------------|-----------------------------------|
+| GTK                                | Qt                               | Win32                             | macOS                             |
+| ![](../images/iupsubmenu_gtk3.png) | ![](../images/iupsubmenu_qt.png) | ![](../images/iupsubmenu_win.png) | ![](../images/iupsubmenu_mac.png) |
 
 See the **IupMenu** element for more screenshots.
 

@@ -458,6 +458,7 @@ Very simple dialog with a label and a button. The application is closed when the
                0);
       IupSetAttribute(vbox, "MARGIN", "10x10");
       IupSetAttribute(vbox, "GAP", "5");
+      IupSetAttribute(vbox, "ALIGNMENT", "ACENTER");
 
       /* Creating the dialog */ 
       dialog = IupDialog(vbox);
@@ -474,7 +475,10 @@ Very simple dialog with a label and a button. The application is closed when the
       return 0;
     }
 
-![](../images/iupdialog.gif)
+|                                   |                                 |                                  |                                  |
+|-----------------------------------|---------------------------------|----------------------------------|----------------------------------|
+| GTK                               | Qt                              | Win32                            | macOS                            |
+| ![](../images/iupdialog_gtk3.png) | ![](../images/iupdialog_qt.png) | ![](../images/iupdialog_win.png) | ![](../images/iupdialog_mac.png) |
 
 [Browse for Example Files](../../examples/)
 

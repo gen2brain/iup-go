@@ -33,6 +33,8 @@ The attributes SIZE and RASTERSIZE can be normally set.
 
 [Browse for Example Files](../../examples/)
 
+![](../images/iupspace.png)
+
 ### See Also
 
 [IupHbox](iup_hbox.md), [IupVbox](iup_vbox.md).

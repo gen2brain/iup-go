@@ -19,7 +19,7 @@ Use [IupSetAttributeHandle](../func/iup_setattributehandle.md) to associate the 
 
 **ARROW** (non-inheritable): Shows an arrow pointing to the anchor element.
 Can be "YES" or "NO". Default: "YES".
-Only supported in GTK 4 and macOS. In GTK 3 the arrow is always shown. In other systems the popover is displayed without an arrow.
+Only supported in GTK 4. In GTK 3 and macOS the arrow is always shown. In other systems the popover is displayed without an arrow.
 
 **AUTOHIDE** (non-inheritable): When enabled, the popover is automatically hidden when the user clicks outside of it or when focus leaves.
 Clicks on the anchor element do not trigger auto-hide.
@@ -76,6 +76,15 @@ The ANCHOR attribute must be set before mapping, and the anchor element must alr
 
 When AUTOHIDE=YES, the popover behaves like a modal popup that closes on outside interaction.
 When AUTOHIDE=NO, the popover remains visible until explicitly hidden via VISIBLE=NO.
+
+### Examples
+
+[Browse for Example Files](../../examples/)
+
+|                                    |                                  |                                   |                                   |
+|------------------------------------|----------------------------------|-----------------------------------|-----------------------------------|
+| GTK                                | Qt                               | Win32                             | macOS                             |
+| ![](../images/iuppopover_gtk3.png) | ![](../images/iuppopover_qt.png) | ![](../images/iuppopover_win.png) | ![](../images/iuppopover_mac.png) |
 
 ### See Also
 

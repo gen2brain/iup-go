@@ -30,7 +30,7 @@ Check the [IupDialog](iup_dialog.md) callbacks.
 
 The dialog is displayed next.
 
-![](../images/globalsdialog.png)
+![](../images/iupglobalsdialog_gtk3.png)
 
 ### See Also
 

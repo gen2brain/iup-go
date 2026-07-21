@@ -44,7 +44,7 @@ Check the [IupDialog](iup_dialog.md) callbacks.
 
 The dialog is displayed next.
 
-![](../images/layoutdlg2.png)
+![](../images/iupelementpropdialog_gtk3.png)
 
 ### See Also
 

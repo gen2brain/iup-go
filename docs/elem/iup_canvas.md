@@ -244,21 +244,10 @@ In GTK uses GtkFixed (with custom iupGtk4Fixed in GTK 4), in Windows uses a cust
 
 [Browse for Example Files](../../examples/)
 
-**Windows Classic**
-
-![](../images/iupcanvas_win2k.png)
-
-**Windows w/ Styles**
-
-![](../images/iupcanvas_winxp.png)
-
-**Motif**
-
-![](../images/iupcanvas_mot.png)
-
-**GTK**
-
-![](../images/iupcanvas_gtk.png)
+|                                   |                                 |                                  |                                  |
+|-----------------------------------|---------------------------------|----------------------------------|----------------------------------|
+| GTK                               | Qt                              | Win32                            | macOS                            |
+| ![](../images/iupcanvas_gtk3.png) | ![](../images/iupcanvas_qt.png) | ![](../images/iupcanvas_win.png) | ![](../images/iupcanvas_mac.png) |
 
 ### See Also
 

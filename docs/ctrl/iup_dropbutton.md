@@ -280,15 +280,7 @@ But notice that the natural size will not use the largest item in the drop child
 
 [Browse for Example Files](../../examples/)
 
-The following screenshots where taken while the button is highlighted or dropped.
-
-![](../images/iupdropbutton1a.png)
-![](../images/iupdropbutton1.png)
-
-![](../images/iupdropbutton2a.png)
-![](../images/iupdropbutton2.png)
-
-![](../images/iupdropbutton3.png)
+![](../images/iupdropbutton.png)
 
 ### See Also
 

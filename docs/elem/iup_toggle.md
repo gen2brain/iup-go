@@ -139,15 +139,10 @@ A toggle that is a child of an **IupRadio** automatically receives a name when i
 
 [Browse for Example Files](../../examples/)
 
-|                                         |                                           |                                           |                                         |
-|-----------------------------------------|-------------------------------------------|-------------------------------------------|-----------------------------------------|
-| Motif                                   | Windows Classic                           | Windows w/ Styles                         | GTK                                     |
-| ![](../images/iuptoggle_mot_image.png)  | ![](../images/iuptoggle_win2k_image.png)  | ![](../images/iuptoggle_winxp_image.png)  | ![](../images/iuptoggle_gtk_image.png)  |
-| ![](../images/iuptoggle_mot_text.png)   | ![](../images/iuptoggle_win2k_text.png)   | ![](../images/iuptoggle_winxp_text.png)   | ![](../images/iuptoggle_gtk_text.png)   |
-| ![](../images/iuptoggle_mot_3state.png) | ![](../images/iuptoggle_win2k_3state.png) | ![](../images/iuptoggle_winxp_3state.png) | ![](../images/iuptoggle_gtk_3state.png) |
-| ![](../images/iuptoggle_mot_radio.png)  | ![](../images/iuptoggle_win2k_radio.png)  | ![](../images/iuptoggle_winxp_radio.png)  | ![](../images/iuptoggle_gtk_radio.png)  |
-
- 
+|                                   |                                 |                                  |                                  |
+|-----------------------------------|---------------------------------|----------------------------------|----------------------------------|
+| GTK                               | Qt                              | Win32                            | macOS                            |
+| ![](../images/iuptoggle_gtk3.png) | ![](../images/iuptoggle_qt.png) | ![](../images/iuptoggle_win.png) | ![](../images/iuptoggle_mac.png) |
 
 ### See Also
 

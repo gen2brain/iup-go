@@ -313,27 +313,7 @@ When the **IupFlatToggle** displays only a text it will look like a label, use S
 
 [Browse for Example Files](../../examples/)
 
-Here are a few combinations:
-
-**Text+Check**
-
-![](../images/iupflattoggle5.png)
-
-**Image+Check**
-
-![](../images/iupflattoggle2.png)
-
-**3 State**
-
-![](../images/iupflattoggle3.png)
-
-**Text Only**
-
-![](../images/iupflattoggle4.png)
-
-**Inside a Radio**
-
-![](../images/iupflattoggle1.png)
+![](../images/iupflattoggle.png)
 
 ### See Also
 

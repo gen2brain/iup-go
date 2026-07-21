@@ -82,11 +82,8 @@ The container can be created with no elements and be dynamic filled using [IupAp
 
 [Browse for Example Files](../../examples/)
 
-![](../images/iupsplit1.png)
-
-Natural Size
-
-![](../images/iupsplit2.png)
-
-After Moving the Split Bar
+|                                  |                                |                                 |                                 |
+|----------------------------------|--------------------------------|---------------------------------|---------------------------------|
+| GTK                              | Qt                             | Win32                           | macOS                           |
+| ![](../images/iupsplit_gtk3.png) | ![](../images/iupsplit_qt.png) | ![](../images/iupsplit_win.png) | ![](../images/iupsplit_mac.png) |
 

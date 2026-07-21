@@ -82,21 +82,7 @@ Also the **v**box will not reduce its children beyond their **vertical** natural
 
 [Browse for Example Files](../../examples/)
 
-![](../images/iupvbox_align.png)
-
 ![](../images/iupvbox.png)
-
-**HOMOGENEOUS=YES**
-![](../images/iupvbox_homogeneous.png)
-
-**EXPANDCHILDREN=YES**
-![](../images/iupvbox_expandchildren.png)
-
-**VISIBLE=NO**
-![](../images/iupvbox_visible.png)
-
-**+FLOATING=NO**
-![](../images/iupvbox_floating.png)
 
 ### See Also
 

@@ -58,6 +58,11 @@ All **IupLabel** callbacks. No label callbacks are used internally.
 
 [Browse for Example Files](../../examples/)
 
+|                                          |                                        |                                         |                                         |
+|------------------------------------------|----------------------------------------|-----------------------------------------|-----------------------------------------|
+| GTK                                      | Qt                                     | Win32                                   | macOS                                   |
+| ![](../images/iupanimatedlabel_gtk3.png) | ![](../images/iupanimatedlabel_qt.png) | ![](../images/iupanimatedlabel_win.png) | ![](../images/iupanimatedlabel_mac.png) |
+
 ### See Also
 
 [IupLabel](iup_label.md), [IupUser](iup_user.md), [IupImage](iup_image.md).

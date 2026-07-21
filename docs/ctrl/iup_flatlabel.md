@@ -106,14 +106,6 @@ Mnemonics are not supported.
 
 ![](../images/iupflatlabel.png)
 
-Normal Text Label: FGCOLOR = "0 0 255" ALIGNMENT="ALEFT:ATOP",
-FONT = "Helvetica, 14" ALIGNMENT = "ACENTER:ACENTER" TEXTALIGNMENT = "ACENTER",
-ALIGNMENT = "ARIGHT:ABOTTOM".
-
-Normal Image Label: ALIGNMENT = "ALEFT" (8bpp Image),
-ALIGNMENT = "ACENTER" (24 bpp Image),
-ALIGNMENT = "ARIGHT" (32 bpp Image).
-
 ### See Also
 
 [IupImage](../elem/iup_image.md), [IupButton](../elem/iup_button.md), [IupToggle](../elem/iup_toggle.md), [IupLabel](../elem/iup_label.md)

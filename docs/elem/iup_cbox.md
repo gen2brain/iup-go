@@ -47,6 +47,8 @@ The box can be created with no elements and be dynamic filled using [IupAppend](
 
 [Browse for Example Files](../../examples/)
 
+![](../images/iupcbox.png)
+
 ### See Also
 
 [IupVbox](iup_vbox.md), [IupHbox](iup_hbox.md)

@@ -276,6 +276,15 @@ When SORTABLE=YES, clicking a column header fires SORT_CB.
 The application must perform the actual sorting and update the table.
 Sort direction arrows are shown in the column header.
 
+### Examples
+
+[Browse for Example Files](../../examples/)
+
+|                                  |                                |                                 |                                 |
+|----------------------------------|--------------------------------|---------------------------------|---------------------------------|
+| GTK                              | Qt                             | Win32                           | macOS                           |
+| ![](../images/iuptable_gtk3.png) | ![](../images/iuptable_qt.png) | ![](../images/iuptable_win.png) | ![](../images/iuptable_mac.png) |
+
 ### See Also
 
 [IupMatrix](../ctrl/iup_matrix.md), [IupList](iup_list.md)

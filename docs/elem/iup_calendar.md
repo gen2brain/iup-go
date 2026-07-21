@@ -35,17 +35,10 @@ Not supported in WinUI, macOS, Android and iOS.
 
 ### Examples
 
-**Windows Classic**
-
-![](../images/iupcalendar_win2k.png)
-
-**Windows w/ Styles**
-
-![](../images/iupcalendar_winxp.png)
-
-**GTK**
-
-![](../images/iupcalendar_gtk.png)
+|                                     |                                   |                                    |                                    |
+|-------------------------------------|-----------------------------------|------------------------------------|------------------------------------|
+| GTK                                 | Qt                                | Win32                              | macOS                              |
+| ![](../images/iupcalendar_gtk3.png) | ![](../images/iupcalendar_qt.png) | ![](../images/iupcalendar_win.png) | ![](../images/iupcalendar_mac.png) |
 
 [Browse for Example Files](../../examples/)
 

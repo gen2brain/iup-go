@@ -208,4 +208,7 @@ Used only when EDITABLE=Yes.
 
 [Browse for Example Files](../../examples/)
 
-![](../images/iupwebbrowser.png)
+|                                      |                                      |
+|--------------------------------------|--------------------------------------|
+| Win32                                | macOS                                |
+| ![](../images/iupwebbrowser_win.png) | ![](../images/iupwebbrowser_mac.png) |

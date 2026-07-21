@@ -87,17 +87,10 @@ The (x,y) position from IupPopup is ignored by the native widget on all drivers 
 
     IupDestroy(dlg);  
 
-**Windows XP**
-
-![](../images/messagedlg_win.png)
-
-**Motif/Mwm**
-
-![](../images/messagedlg_mot.png)
-
-**GTK/GNOME**
-
-![](../images/messagedlg_gtk.png)
+|                                       |                                     |                                      |                                      |
+|---------------------------------------|-------------------------------------|--------------------------------------|--------------------------------------|
+| GTK                                   | Qt                                  | Win32                                | macOS                                |
+| ![](../images/iupmessagedlg_gtk3.png) | ![](../images/iupmessagedlg_qt.png) | ![](../images/iupmessagedlg_win.png) | ![](../images/iupmessagedlg_mac.png) |
 
 ### See Also
 

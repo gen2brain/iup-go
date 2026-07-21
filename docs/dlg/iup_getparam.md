@@ -80,7 +80,10 @@ We show only one for each type, but you can have as many parameters of the same 
                        &poptions, &plist, file_name, pcolor, pfont, pstring2, NULL))
         return;
 
-![](../images/getparam.png)
+|                                     |                                   |                                    |                                    |
+|-------------------------------------|-----------------------------------|------------------------------------|------------------------------------|
+| GTK                                 | Qt                                | Win32                              | macOS                              |
+| ![](../images/iupgetparam_gtk3.png) | ![](../images/iupgetparam_qt.png) | ![](../images/iupgetparam_win.png) | ![](../images/iupgetparam_mac.png) |
 
 ### See Also
 

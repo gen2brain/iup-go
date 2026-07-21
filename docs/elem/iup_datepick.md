@@ -2,7 +2,7 @@
 
 Creates a date editing interface element, which can displays a calendar for selecting a date.
 
-In Windows, Qt, Android and iOS is a native element. In GTK, GTK 4, macOS, EFL and Motif is a custom element built with IUP controls.
+In Windows, Qt, Android and iOS is a native element. In GTK, GTK 4, macOS, EFL, FLTK and Motif is a custom element built with IUP controls.
 
 ### Creation
 
@@ -68,35 +68,25 @@ In Windows, when the user navigates to other pages in the calendar, the date is 
 
 In Windows and Qt, FORMAT can have the following values, but other text in the format string must be enclosed in single quotes:
 
-| Element | Description |
-|----|----|
-| "d" | The one- or two-digit day. (**default**) |
-| "dd" | The two-digit day. Single-digit day values are preceded by a zero.(Set when ZEROPRECED=Yes) |
-| "ddd" | The three-character weekday abbreviation. |
-| "dddd" | The full weekday name. |
-| "M" | The one- or two-digit month number. (**default**) |
-| "MM" | The two-digit month number. Single-digit values are preceded by a zero. (Set when ZEROPRECED=Yes) |
-| "MMM" | The three-character month abbreviation.(Set when MONTHSHORTNAMES=Yes) |
-| "MMMM" | The full month name. |
-| "yy" | The last two digits of the year (that is, 1996 would be displayed as "96").(Not recommended) |
-| "yyyy" | The full year (that is, 1996 would be displayed as "1996"). (**default**) |
+| Element | Description                                                                                       |
+|---------|---------------------------------------------------------------------------------------------------|
+| "d"     | The one- or two-digit day. (**default**)                                                          |
+| "dd"    | The two-digit day. Single-digit day values are preceded by a zero.(Set when ZEROPRECED=Yes)       |
+| "ddd"   | The three-character weekday abbreviation.                                                         |
+| "dddd"  | The full weekday name.                                                                            |
+| "M"     | The one- or two-digit month number. (**default**)                                                 |
+| "MM"    | The two-digit month number. Single-digit values are preceded by a zero. (Set when ZEROPRECED=Yes) |
+| "MMM"   | The three-character month abbreviation.(Set when MONTHSHORTNAMES=Yes)                             |
+| "MMMM"  | The full month name.                                                                              |
+| "yy"    | The last two digits of the year (that is, 1996 would be displayed as "96").(Not recommended)      |
+| "yyyy"  | The full year (that is, 1996 would be displayed as "1996"). (**default**)                         |
 
 ### Examples
 
-**Windows Classic**
-
-![](../images/iupdatepick_win2k.png)
-![](../images/iupdatepick_win2k_open.png)
-
-**Windows w/ Styles**
-
-![](../images/iupdatepick_winxp.png)
-![](../images/iupdatepick_winxp_open.png)
-
-**GTK**
-
-![](../images/iupdatepick_gtk.png)
-![](../images/iupdatepick_gtk_open.png)
+|                                     |                                   |                                    |                                    |
+|-------------------------------------|-----------------------------------|------------------------------------|------------------------------------|
+| GTK                                 | Qt                                | Win32                              | macOS                              |
+| ![](../images/iupdatepick_gtk3.png) | ![](../images/iupdatepick_qt.png) | ![](../images/iupdatepick_win.png) | ![](../images/iupdatepick_mac.png) |
 
 [Browse for Example Files](../../examples/)
 

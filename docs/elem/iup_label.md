@@ -99,7 +99,10 @@ But after map, the image can be changed for another image, and the text for anot
 
 ### Examples
 
-![](../images/iuplabel.png)
+|                                  |                                |                                 |                                 |
+|----------------------------------|--------------------------------|---------------------------------|---------------------------------|
+| GTK                              | Qt                             | Win32                           | macOS                           |
+| ![](../images/iuplabel_gtk3.png) | ![](../images/iuplabel_qt.png) | ![](../images/iuplabel_win.png) | ![](../images/iuplabel_mac.png) |
 
 Text labels:
 
