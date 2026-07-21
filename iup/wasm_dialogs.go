@@ -95,7 +95,7 @@ func GetText(title, text string, maxSize int) (string, int) {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/dlg/iup_listdialog.md
 func ListDialog(_type int, title string, list []string, op, maxCol, maxLin int, marks *[]bool) (ret int) {
-	if len(list) != len(*marks) {
+	if marks != nil && len(list) != len(*marks) {
 		panic("bad parameter passed to ListDialog")
 	}
 
@@ -110,22 +110,27 @@ func ListDialog(_type int, title string, list []string, op, maxCol, maxLin int, 
 		wasmSetI32(listArr+i*4, p)
 	}
 
-	marksArr := wasmMalloc(len(list) * 4)
-	defer wasmFree(marksArr)
-	for i, m := range *marks {
-		v := 0
-		if m {
-			v = 1
+	marksArr := 0
+	if marks != nil {
+		marksArr = wasmMalloc(len(list) * 4)
+		defer wasmFree(marksArr)
+		for i, m := range *marks {
+			v := 0
+			if m {
+				v = 1
+			}
+			wasmSetI32(marksArr+i*4, v)
 		}
-		wasmSetI32(marksArr+i*4, v)
 	}
 
 	ret = ccall("IupListDialog", "number",
 		[]interface{}{"number", "number", "number", "number", "number", "number", "number", "number"},
 		[]interface{}{_type, cTitle, len(list), listArr, op, maxCol, maxLin, marksArr}).Int()
 
-	for i := range *marks {
-		(*marks)[i] = wasmGetI32(marksArr+i*4) != 0
+	if marks != nil {
+		for i := range *marks {
+			(*marks)[i] = wasmGetI32(marksArr+i*4) != 0
+		}
 	}
 	return
 }

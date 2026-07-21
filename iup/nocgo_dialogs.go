@@ -19,7 +19,7 @@ func ParamBox(params ...Ihandle) Ihandle {
 }
 
 func ListDialog(_type int, title string, list []string, op, maxCol, maxLin int, marks *[]bool) int {
-	if len(list) != len(*marks) {
+	if marks != nil && len(list) != len(*marks) {
 		panic("bad parameter passed to ListDialog")
 	}
 	bufs := make([][]byte, len(list))
@@ -28,16 +28,23 @@ func ListDialog(_type int, title string, list []string, op, maxCol, maxLin int, 
 		bufs[i] = append([]byte(s), 0)
 		pList[i] = uintptr(unsafe.Pointer(&bufs[i][0]))
 	}
-	pMark := make([]int32, len(list))
-	for i := range list {
-		if (*marks)[i] {
-			pMark[i] = 1
+	var pMark []int32
+	var pMarkPtr *int32
+	if marks != nil {
+		pMark = make([]int32, len(list))
+		for i := range list {
+			if (*marks)[i] {
+				pMark[i] = 1
+			}
 		}
+		pMarkPtr = &pMark[0]
 	}
 	ret := int(iupListDialog(int32(_type), optCStr(title), int32(len(list)), &pList[0],
-		int32(op), int32(maxCol), int32(maxLin), &pMark[0]))
-	for i := range list {
-		(*marks)[i] = pMark[i] != 0
+		int32(op), int32(maxCol), int32(maxLin), pMarkPtr))
+	if marks != nil {
+		for i := range list {
+			(*marks)[i] = pMark[i] != 0
+		}
 	}
 	runtime.KeepAlive(bufs)
 	return ret
