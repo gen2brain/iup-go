@@ -188,6 +188,29 @@ static void cocoaTabsHideShowPage(Ihandle* ih, int old_pos, int new_pos, int is_
   if (new_container) [new_container setHidden:NO];
 }
 
+static CGFloat cocoaTabsMaxTabWidth(Ihandle* ih)
+{
+  CGFloat max_w = kMinTabCellWidth;
+  int i, count = IupGetChildCount(ih);
+  for (i = 0; i < count; i++)
+  {
+    Ihandle* child = IupGetChild(ih, i);
+    if (!child)
+      continue;
+
+    char* title = iupAttribGet(child, "TABTITLE");
+    if (!title) title = iupAttribGetId(ih, "TABTITLE", i);
+    char* image = iupAttribGet(child, "TABIMAGE");
+    if (!image) image = iupAttribGetId(ih, "TABIMAGE", i);
+
+    int w = 0, h = 0;
+    iupdrvTabsGetTabSize(ih, title, image, &w, &h);
+    if ((CGFloat)w > max_w)
+      max_w = (CGFloat)w;
+  }
+  return max_w;
+}
+
 
   @implementation IupTabsRootView
   @synthesize tabBarView = _tabBarView;
@@ -238,7 +261,7 @@ static void cocoaTabsHideShowPage(Ihandle* ih, int old_pos, int new_pos, int is_
 
   /* For vertical tab bars (LEFT/RIGHT). The dimensions are swapped based on text orientation. */
   BOOL isVerticalText = (ih->data->orientation == ITABS_VERTICAL);
-  CGFloat kVerticalTabBarWidth = isVerticalText ? kTabCellHeight : kMinTabCellWidth;
+  CGFloat kVerticalTabBarWidth = isVerticalText ? kTabCellHeight : cocoaTabsMaxTabWidth(ih);
 
   /* Clamp subtraction results to >= 0. At initial layout bounds may be smaller than the
      tab bar thickness, and a negative frame dimension locks Opal/cairo into an error state. */
