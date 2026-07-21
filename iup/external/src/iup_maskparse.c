@@ -17,7 +17,7 @@
  * Table of characters (customizable through iupMaskSetChar)
  */
 
-static char* imask_parse_chars = "|*+()[]-^/.?^${}~";
+static char imask_parse_chars[] = "|*+()[]-^/.?^${}~";
 /*                                01234567890123456     */
 
 #define OR_CH        imask_parse_chars[0]   /* OR character */
@@ -66,7 +66,7 @@ static void iMaskParseSetState (ImaskParseVars * vars, int state, char ch, char 
 
 int iupMaskSetChar (int char_number, char new_char)
 {
-  if ((char_number < 0) || (char_number > (int)strlen(imask_parse_chars)))
+  if ((char_number < 0) || (char_number >= (int)strlen(imask_parse_chars)))
     return 0;
 
   imask_parse_chars[char_number] = new_char;
@@ -410,7 +410,7 @@ static int iMaskParseFactor (ImaskParseVars * vars)
 
     if (match_functions[loop1].ch == '\0')
     {
-      int temp;
+      int temp = 0;
 
       switch (vars->string[vars->j])
       {
@@ -427,15 +427,31 @@ static int iMaskParseFactor (ImaskParseVars * vars)
         break;
 
       case 'x':
-        vars->j++;
-        sscanf (&vars->string[vars->j], "%2x", &temp);
-        vars->j++;
+        if (vars->string[vars->j + 1])
+        {
+          vars->j++;
+          sscanf (&vars->string[vars->j], "%2x", &temp);
+          if (vars->string[vars->j + 1])
+            vars->j++;
+        }
+        else
+          temp = 'x';
         break;
 
       case 'o':
-        vars->j++;
-        sscanf (&vars->string[vars->j], "%3o", &temp);
-        vars->j += 2;
+        if (vars->string[vars->j + 1])
+        {
+          vars->j++;
+          sscanf (&vars->string[vars->j], "%3o", &temp);
+          if (vars->string[vars->j + 1])
+          {
+            vars->j++;
+            if (vars->string[vars->j + 1])
+              vars->j++;
+          }
+        }
+        else
+          temp = 'o';
         break;
 
       default:
@@ -446,7 +462,12 @@ static int iMaskParseFactor (ImaskParseVars * vars)
           {
             iMaskParseError (vars);
           }
-          vars->j += 2;
+          if (vars->string[vars->j + 1])
+          {
+            vars->j++;
+            if (vars->string[vars->j + 1])
+              vars->j++;
+          }
         }
         else
           temp = vars->string[vars->j];

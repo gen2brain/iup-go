@@ -330,8 +330,12 @@ static int iColorbarCheckPreview(Ihandle* ih, int x, int y)
 
 static int iColorbarSetNumPartsAttrib(Ihandle* ih, const char* value)
 {
-  if (iupStrToInt(value, &ih->data->num_parts))
+  int num_parts;
+  if (iupStrToInt(value, &num_parts) && num_parts > 0)
+  {
+    ih->data->num_parts = num_parts;
     IupUpdate(ih);
+  }
   return 0;
 }
 

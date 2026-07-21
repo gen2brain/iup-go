@@ -631,9 +631,9 @@ static void iSplitComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *chi
     {
       /* is just an initial value based on natural size of the split and the child, similar to iSplitCalcVal */
       if (ih->data->orientation == ISPLIT_VERT)
-        ih->data->val = (child1->naturalwidth*1000)/(natural_w - ih->data->barsize_hw);
+        ih->data->val = (natural_w > ih->data->barsize_hw) ? (child1->naturalwidth*1000)/(natural_w - ih->data->barsize_hw) : ih->data->min;
       else
-        ih->data->val = (child1->naturalheight*1000)/(natural_h - ih->data->barsize_hw);
+        ih->data->val = (natural_h > ih->data->barsize_hw) ? (child1->naturalheight*1000)/(natural_h - ih->data->barsize_hw) : ih->data->min;
     }
     else
       ih->data->val = ih->data->min;

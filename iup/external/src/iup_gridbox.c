@@ -973,7 +973,10 @@ static int iGridBoxGetColWidth(Ihandle* ih, Ihandle** child_array, int col)
   else
   {
     int i = iGridBoxCalcPos(ih, ih->data->size_lin, col);
-    Ihandle* child = child_array[i];
+    Ihandle* child;
+    if (i < 0 || i >= ih->data->num_lin * ih->data->num_col)
+      return 0;
+    child = child_array[i];
     if (child)
       return child->currentwidth;
     else
@@ -1006,7 +1009,10 @@ static int iGridBoxGetLinHeight(Ihandle* ih, Ihandle** child_array, int lin)
   else
   {
     int i = iGridBoxCalcPos(ih, lin, ih->data->size_col);
-    Ihandle* child = child_array[i];
+    Ihandle* child;
+    if (i < 0 || i >= ih->data->num_lin * ih->data->num_col)
+      return 0;
+    child = child_array[i];
     if (child)
       return child->currentheight;
     else

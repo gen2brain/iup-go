@@ -1229,8 +1229,12 @@ static int iImageSetReshapeAttrib(Ihandle *ih, const char* value)
       return 0;
     if (w*h > old_w*old_h)
     {
+      int channels = iupAttribGetInt(ih, "CHANNELS");
       unsigned char* imgdata = (unsigned char*)iupAttribGet(ih, "WID");
-      unsigned char* new_imgdata = (unsigned char *)realloc(imgdata, sizeof(unsigned char)*w*h * 3);
+      unsigned char* new_imgdata;
+      if (channels < 1)
+        channels = 3;
+      new_imgdata = (unsigned char *)realloc(imgdata, sizeof(unsigned char)*w*h * channels);
       if (!new_imgdata)
         return 0;
       iupAttribSet(ih, "WID", (char*)new_imgdata);
