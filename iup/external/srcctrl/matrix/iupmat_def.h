@@ -162,6 +162,12 @@ struct _IcontrolData
   int colres_x, colres_y1, colres_y2;
   int colres_drag;       /* draw while dragging */
 
+  /* ColMove AUX (column reorder) */
+  int colmove_dragging;  /* armed on a column title press */
+  int colmove_feedback;  /* past threshold, draw the insertion marker */
+  int colmove_src_col, colmove_dst_col, colmove_start_x;
+  int colmove_x, colmove_y1, colmove_y2;
+
   /* Mark AUX */
   int mark_lin1, mark_col1,  /* used to store the start cell when a block is being marked */
       mark_lin2, mark_col2,  /* used to store the end cell when a block was marked */

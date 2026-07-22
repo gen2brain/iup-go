@@ -848,11 +848,20 @@ static int iMatrixSetMoveColAttrib(Ihandle* ih, int from_col, const char* value)
   if (!iupMATRIX_CHECK_COL(ih, from_col) || !iupMATRIX_CHECK_COL(ih, to_col) || from_col == to_col)
     return 0;
 
-  iupMatrixSetAddColAttrib(ih, value);
-  if (to_col < from_col)
+  if (to_col > from_col)
+  {
+    iupMatrixSetAddColAttrib(ih, value);  /* blank inserted after to_col */
+    snprintf(str, sizeof(str), "%d", to_col + 1);
+  }
+  else
+  {
+    snprintf(str, sizeof(str), "%d", to_col - 1);
+    iupMatrixSetAddColAttrib(ih, str);  /* blank inserted before to_col */
     from_col++;
+    snprintf(str, sizeof(str), "%d", to_col);
+  }
 
-  iMatrixSetCopyColAttrib(ih, from_col, value);
+  iMatrixSetCopyColAttrib(ih, from_col, str);
 
   snprintf(str, sizeof(str), "%d", from_col);
   iupMatrixSetDelColAttrib(ih, str);
@@ -869,11 +878,20 @@ static int iMatrixSetMoveLinAttrib(Ihandle* ih, int from_lin, const char* value)
   if (!iupMATRIX_CHECK_LIN(ih, from_lin) || !iupMATRIX_CHECK_LIN(ih, to_lin) || from_lin == to_lin)
     return 0;
 
-  iupMatrixSetAddLinAttrib(ih, value);
-  if (to_lin < from_lin)
+  if (to_lin > from_lin)
+  {
+    iupMatrixSetAddLinAttrib(ih, value);  /* blank inserted after to_lin */
+    snprintf(str, sizeof(str), "%d", to_lin + 1);
+  }
+  else
+  {
+    snprintf(str, sizeof(str), "%d", to_lin - 1);
+    iupMatrixSetAddLinAttrib(ih, str);  /* blank inserted before to_lin */
     from_lin++;
+    snprintf(str, sizeof(str), "%d", to_lin);
+  }
 
-  iMatrixSetCopyLinAttrib(ih, from_lin, value);
+  iMatrixSetCopyLinAttrib(ih, from_lin, str);
 
   snprintf(str, sizeof(str), "%d", from_lin);
   iupMatrixSetDelLinAttrib(ih, str);
@@ -2143,6 +2161,7 @@ Iclass* iupMatrixNewClass(void)
   iupClassRegisterCallback(ic, "COLRESIZE_CB", "i");
   iupClassRegisterCallback(ic, "TOGGLEVALUE_CB", "iii");
   iupClassRegisterCallback(ic, "RESIZEMATRIX_CB", "ii");
+  iupClassRegisterCallback(ic, "REORDER_CB", "ii");
   iupClassRegisterCallback(ic, "EDITCLICK_CB", "iis");
   iupClassRegisterCallback(ic, "EDITRELEASE_CB", "iis");
   iupClassRegisterCallback(ic, "EDITMOUSEMOVE_CB", "ii");
@@ -2304,6 +2323,7 @@ Iclass* iupMatrixNewClass(void)
   iupClassRegisterAttribute(ic, "READONLY", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "RESIZEMATRIX", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "RESIZEMATRIXCOLOR", NULL, NULL, IUPAF_SAMEASSYSTEM, "102 102 102", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ALLOWREORDER", NULL, NULL, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "RESIZEDRAG", iMatrixGetResizeDragAttrib, iMatrixSetResizeDragAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "HIDEFOCUS", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SHOWFILLVALUE", iMatrixGetShowFillValueAttrib, iMatrixSetShowFillValueAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);

@@ -284,6 +284,8 @@ int iupMatrixMouseButton_CB(Ihandle* ih, int button, int press, int x, int y, ch
         return IUP_DEFAULT;  /* Resize of the width of a column was started */
       }
 
+      iupMatrixColMoveStart(ih, x, y);  /* arm a column reorder, still process the press normally */
+
       if (lin!=-1 && col!=-1)
         iMatrixMouseLeftPress(ih, lin, col, iup_isshift(status), iup_iscontrol(status), iup_isdouble(status), x, y);
     }
@@ -291,6 +293,11 @@ int iupMatrixMouseButton_CB(Ihandle* ih, int button, int press, int x, int y, ch
     {
       if (iupMatrixColResIsResizing(ih))  /* If it was made a column resize, finish it */
         iupMatrixColResFinish(ih, x);
+      else if (iupMatrixColMoveIsMoving(ih))
+      {
+        if (iupMatrixColMoveFinish(ih))
+          return IUP_DEFAULT;
+      }
 
       if (ih->data->button1edit)           /* edit only when releasing the button */
         iMatrixMouseEdit(ih, x, y);
@@ -336,6 +343,12 @@ int iupMatrixMouseMove_CB(Ihandle* ih, int x, int y, char *status)
   iupFlatScrollBarMotionUpdate(ih, x, y);
 
   has_lincol = iupMatrixGetCellFromXY(ih, x, y, &lin, &col);
+
+  if (iup_isbutton1(status) && iupMatrixColMoveIsMoving(ih))
+  {
+    iupMatrixColMoveMove(ih, x);
+    return IUP_DEFAULT;
+  }
 
   if (iup_isbutton1(status) && ih->data->button1press && ih->data->mark_block && ih->data->mark_multiple && ih->data->mark_mode != IMAT_MARK_NO)
   {

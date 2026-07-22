@@ -1,5 +1,5 @@
 /** \file
- * \brief iupmatrix column resize.
+ * \brief iupmatrix column resize and reorder.
  *
  * See Copyright Notice in "iup.h"
  */
@@ -16,6 +16,11 @@ void  iupMatrixColResFinish      (Ihandle* ih, int x);
 void  iupMatrixColResMove        (Ihandle* ih, int x);
 int   iupMatrixColResCheckChangeCursor(Ihandle* ih, int x, int y);
 int   iupMatrixColResIsResizing  (Ihandle* ih);
+
+int   iupMatrixColMoveStart      (Ihandle* ih, int x, int y);
+void  iupMatrixColMoveMove       (Ihandle* ih, int x);
+int   iupMatrixColMoveFinish     (Ihandle* ih);
+int   iupMatrixColMoveIsMoving   (Ihandle* ih);
 
 #ifdef __cplusplus
 }
