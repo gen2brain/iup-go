@@ -436,7 +436,7 @@ static char* winClipboardGetFormatDataStringAttrib(Ihandle *ih)
     return NULL;
 
   int size = iupAttribGetInt(ih, "FORMATDATASIZE");
-  data[size] = 0;  /* add terminator, even if there is one already */
+  ((char*)data)[size] = 0;  /* add terminator, even if there is one already */
   return iupStrReturnStr(iupwinStrFromSystem(data));
 }
 

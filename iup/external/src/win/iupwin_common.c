@@ -163,7 +163,7 @@ IUP_DRV_API void iupwinDrawBackImageUpdate(Ihandle* ih)
     bgcolor = IupGetAttribute(ih, "BGCOLOR");
   zoom = iupAttribGetBoolean(ih, "BACKIMAGEZOOM");
 
-  sprintf(sig, "%dx%d %s %s %d", w, h, bgimage, bgcolor ? bgcolor : "", zoom);
+  snprintf(sig, sizeof(sig), "%dx%d %s %s %d", w, h, bgimage, bgcolor ? bgcolor : "", zoom);
   if (iupStrEqual(sig, iupAttribGet(ih, "_IUPWIN_BGIMAGE_SIG")))
     return;
   iupAttribSetStr(ih, "_IUPWIN_BGIMAGE_SIG", sig);

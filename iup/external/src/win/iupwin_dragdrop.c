@@ -1093,7 +1093,17 @@ IUP_DRV_API void iupwinDropFiles(HDROP hDrop, Ihandle *ih)
     DragQueryFile(hDrop, i, filename, numchar+1);
 
     str = iupwinStrFromSystemFilename(filename);
-    memcpy(filename, str, strlen(str) + 1);
+    {
+      size_t slen = strlen(str) + 1;
+      TCHAR* newbuf = (TCHAR*)realloc(filename, slen);
+      if (!newbuf)
+      {
+        free(filename);
+        break;
+      }
+      filename = newbuf;
+      memcpy(filename, str, slen);
+    }
     str = (char*)filename;
 
     ret = cb(ih, str, numFiles-i-1, (int) point.x, (int) point.y);
