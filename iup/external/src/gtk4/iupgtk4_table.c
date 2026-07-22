@@ -1593,7 +1593,7 @@ static int gtk4TableMapMethod(Ihandle* ih)
   {
     /* Normal mode - use GtkSortListModel for automatic sorting */
     GtkSorter* sorter = gtk_column_view_get_sorter(GTK_COLUMN_VIEW(gtk_data->column_view));
-    GtkSortListModel* sort_model = gtk_sort_list_model_new(gtk_data->model, sorter);
+    GtkSortListModel* sort_model = gtk_sort_list_model_new(gtk_data->model, g_object_ref(sorter));
     model_for_selection = G_LIST_MODEL(sort_model);
 
     /* Connect sorter changed signal for SORT_CB callback */
@@ -1635,29 +1635,32 @@ static int gtk4TableMapMethod(Ihandle* ih)
     gtk_selection_model_unselect_all(gtk_data->selection_model);
   }
 
-  GtkCssProvider* global_provider = gtk_css_provider_new();
-  gtk_css_provider_load_from_string(global_provider,
-    ".iup-table-cell-box {\n"
-    "  padding: 0;\n"
-    "  margin: 0;\n"
-    "}\n"
-    ".iup-table-cell-box > label,\n"
-    ".iup-table-cell-box > editablelabel {\n"
-    "  padding: 6px;\n"
-    "}\n"
-    "columnview row > cell {\n"
-    "  padding: 0;\n"
-    "}\n"
-    ".iup-table-focus-rect {\n"
-    "  outline: 1px dashed rgba(50,50,50,0.8);\n"
-    "  outline-offset: -2px;\n"
-    "}\n"
-    ".iup-table-focus-rect-unfocused {\n"
-    "  outline: 1px dashed rgba(150,150,150,0.5);\n"
-    "  outline-offset: -2px;\n"
-    "}\n");
-  gtk_style_context_add_provider_for_display(gdk_display_get_default(), GTK_STYLE_PROVIDER(global_provider), GTK_STYLE_PROVIDER_PRIORITY_USER);
-  g_object_unref(global_provider);
+  static GtkCssProvider* table_css_provider = NULL;
+  if (!table_css_provider)
+  {
+    table_css_provider = gtk_css_provider_new();
+    gtk_css_provider_load_from_string(table_css_provider,
+      ".iup-table-cell-box {\n"
+      "  padding: 0;\n"
+      "  margin: 0;\n"
+      "}\n"
+      ".iup-table-cell-box > label,\n"
+      ".iup-table-cell-box > editablelabel {\n"
+      "  padding: 6px;\n"
+      "}\n"
+      "columnview row > cell {\n"
+      "  padding: 0;\n"
+      "}\n"
+      ".iup-table-focus-rect {\n"
+      "  outline: 1px dashed rgba(50,50,50,0.8);\n"
+      "  outline-offset: -2px;\n"
+      "}\n"
+      ".iup-table-focus-rect-unfocused {\n"
+      "  outline: 1px dashed rgba(150,150,150,0.5);\n"
+      "  outline-offset: -2px;\n"
+      "}\n");
+    gtk_style_context_add_provider_for_display(gdk_display_get_default(), GTK_STYLE_PROVIDER(table_css_provider), GTK_STYLE_PROVIDER_PRIORITY_USER);
+  }
 
 
   gtk_data->scrolled_win = gtk_scrolled_window_new();
@@ -1762,7 +1765,10 @@ static void gtk4TableUnMapMethod(Ihandle* ih)
     if (gtk_data->click_controller)
       g_signal_handlers_disconnect_by_data(gtk_data->click_controller, ih);
     if (gtk_data->selection_model)
+    {
       g_signal_handlers_disconnect_by_data(gtk_data->selection_model, ih);
+      g_object_unref(gtk_data->selection_model);
+    }
 
     free(gtk_data);
     ih->data->native_data = NULL;
