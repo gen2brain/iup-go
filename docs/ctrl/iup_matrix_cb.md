@@ -58,6 +58,17 @@ The same macros used for [BUTTON_CB](../call/iup_button_cb.md) can be used for t
 **width**: the width of the internal element size in pixels not considering the BORDER size (client size)\
 **height**: the height of the internal element size in pixels not considering the BORDER size (client size)
 
+**REORDER_CB**: Action generated when the user reorders a column by dragging its title.
+Called only when ALLOWREORDER=YES.
+
+    int function(Ihandle *ih, int old_pos, int new_pos);
+
+**ih**: identifier of the element that activated the event.\
+**old_pos**: the original column position before the reorder.\
+**new_pos**: the new column position after the reorder.
+
+**Returns**: if IUP_IGNORE is returned the reorder is rejected and the column is not moved.
+
 **MOUSEMOVE_CB**: Action generated to notify the application that the mouse has moved over the matrix.
 When  EDITHIDEONFOCUS=NO and editing is on going the callback EDITMOUSEMOVE_CB with the same parameters will also be called right before this one.
 
