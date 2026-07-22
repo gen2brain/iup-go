@@ -1609,8 +1609,10 @@ static void fltkListSetScrollbarMode(Fl_Browser_* browser, Ihandle* ih)
 {
   if (!ih->data->sb)
     browser->has_scrollbar(0);
+  else if (iupAttribGetBoolean(ih, "AUTOHIDE"))
+    browser->has_scrollbar(Fl_Browser_::VERTICAL);
   else
-    fltkListSetScrollbarMode(browser, ih);
+    browser->has_scrollbar(Fl_Browser_::VERTICAL_ALWAYS);
 }
 
 /****************************************************************************

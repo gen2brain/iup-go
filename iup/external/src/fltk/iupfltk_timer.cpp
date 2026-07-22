@@ -47,6 +47,12 @@ static void fltkTimerProc(void* data)
     }
   }
 
+  /* the callback may have stopped or destroyed the timer, freeing timer_data */
+  if (!iupObjectCheck(ih))
+    return;
+  if ((IupFltkTimer*)iupAttribGet(ih, "_IUP_FLTKTIMER") != timer_data)
+    return;
+
   if (timer_data->active)
     Fl::repeat_timeout(timer_data->interval_sec, fltkTimerProc, data);
 }
