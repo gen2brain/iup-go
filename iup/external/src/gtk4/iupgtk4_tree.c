@@ -1750,6 +1750,7 @@ static int gtkTreeConvertXYToPos(Ihandle* ih, int x, int y)
   node = IUP_GTK4_TREE_NODE(item);
   id = iupTreeFindNodeId(ih, (InodeHandle*)node);
 
+  g_object_unref(item);
   return id;
 }
 
@@ -3120,6 +3121,8 @@ static int gtkTreeSetCopyNodeAttrib(Ihandle *ih, int id, const char *value)
 
   /* Copy recursively */
   iupgtk4TreeCopyNodeRec(ih, src_node, dst_parent, dst_pos);
+
+  iupTreeIncCacheMem(ih);
 
   /* Rebuild the entire node cache after copy */
   {

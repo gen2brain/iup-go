@@ -85,6 +85,8 @@ static char* gtk4CalendarGetValueAttrib(Ihandle* ih)
   int month = g_date_time_get_month(dt);
   int day = g_date_time_get_day_of_month(dt);
 
+  g_date_time_unref(dt);
+
   return iupStrReturnStrf("%d/%d/%d", year, month, day);
 }
 

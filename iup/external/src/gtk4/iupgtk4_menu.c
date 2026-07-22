@@ -145,7 +145,7 @@ static gboolean gtk4MenuBuildAccel(const char* text, char* buffer, size_t bufsiz
     char token[48];
     const char* plus = strchr(p, '+');
     int len = plus ? (int)(plus - p) : (int)strlen(p);
-    if (len <= 0 || len >= (int)sizeof(token) || strlen(buffer) + 12 >= bufsize)
+    if (len <= 0 || len >= (int)sizeof(token) || strlen(buffer) + sizeof(token) >= (size_t)bufsize)
       return FALSE;
     memcpy(token, p, len);
     token[len] = 0;
@@ -244,8 +244,9 @@ static GMenu* gtk4BuildMenuModel(Ihandle* ih_menu, GSimpleActionGroup* action_gr
         if (submenu_model)
         {
           g_menu_append_submenu(section, processed_title, G_MENU_MODEL(submenu_model));
-          /* Store GMenu reference on the IUP menu handle for later access (e.g., recent files) */
+          /* borrowed pointer for later access (e.g. recent files); the section owns it */
           iupAttribSet(submenu_ih, "_IUP_RECENT_GMENU", (char*)submenu_model);
+          g_object_unref(submenu_model);
         }
       }
 
