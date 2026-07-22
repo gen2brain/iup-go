@@ -366,9 +366,9 @@ static void winTextParseCharacterFormat(Ihandle* formattag, CHARFORMAT2 *charfor
     /* Map standard names to native names */
     const char* mapped_name = iupFontGetWinName(format);
     if (mapped_name)
-      iupwinStrCopy(charformat->szFaceName, mapped_name, sizeof(charformat->szFaceName));
+      iupwinStrCopy(charformat->szFaceName, mapped_name, sizeof(charformat->szFaceName)/sizeof(charformat->szFaceName[0]));
     else
-      iupwinStrCopy(charformat->szFaceName, format, sizeof(charformat->szFaceName));
+      iupwinStrCopy(charformat->szFaceName, format, sizeof(charformat->szFaceName)/sizeof(charformat->szFaceName[0]));
     charformat->dwMask |= CFM_FACE;
   }
 
@@ -482,7 +482,7 @@ static void winTextUpdateFontFormat(CHARFORMAT2* charformat, const char* value)
     iupStrCopyN(typeface, sizeof(typeface), mapped_name);
 
   charformat->dwMask |= CFM_FACE;
-  iupwinStrCopy(charformat->szFaceName, typeface, sizeof(charformat->szFaceName));
+  iupwinStrCopy(charformat->szFaceName, typeface, sizeof(charformat->szFaceName)/sizeof(charformat->szFaceName[0]));
 
   /* (1/1440 of an inch, or 1/20 of a printer's point) */
   charformat->dwMask |= CFM_SIZE;
@@ -999,7 +999,7 @@ static char* winTextGetLineValueAttrib(Ihandle* ih)
   if (ih->data->is_multiline)
   {
     int len, lin, col;
-    TCHAR* str = (TCHAR*)iupStrGetMemory(256*sizeof(TCHAR));
+    TCHAR* str = (TCHAR*)iupStrGetMemory((256+1)*sizeof(TCHAR));
     WORD* wstr = (WORD*)str;
     *wstr = 256;
     winTextGetCaret(ih, &lin, &col);

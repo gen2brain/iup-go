@@ -131,7 +131,7 @@ static void winTabsSetVisibleArrayItem(Ihandle* ih, int pos, int visible)
   else
   {
     Iarray* visible_array = winTabsGetVisibleArray(ih);
-    int* visible_array_array_data = (int*)iupArrayGetData(visible_array);
+    int* visible_array_array_data;
 
     /* first invisible init array */
     if (!visible && !ih->data->has_invisible)
@@ -140,6 +140,7 @@ static void winTabsSetVisibleArrayItem(Ihandle* ih, int pos, int visible)
       winTabsInitVisibleArray(visible_array, count);
     }
 
+    visible_array_array_data = (int*)iupArrayGetData(visible_array);
     visible_array_array_data[pos] = visible;
 
     if (!visible)

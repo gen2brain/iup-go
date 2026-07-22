@@ -162,7 +162,7 @@ static int winFontDlgPopup(Ihandle* ih, int x, int y)
   if (IupGetCallback(ih, "HELP_CB"))
     choosefont.Flags |= CF_SHOWHELP;
 
-  iupwinStrCopy(logfont.lfFaceName, typeface, sizeof(logfont.lfFaceName));
+  iupwinStrCopy(logfont.lfFaceName, typeface, sizeof(logfont.lfFaceName)/sizeof(TCHAR));
 
   logfont.lfHeight = height_pixels;
   logfont.lfWeight = (is_bold)? FW_BOLD: FW_NORMAL;

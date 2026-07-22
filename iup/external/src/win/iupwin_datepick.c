@@ -124,6 +124,8 @@ static int winDatePickSetOrderAttrib(Ihandle* ih, const char* value)
     int pos = 0;
     for (i = 0; i < 3; i++)
     {
+      if (pos >= (int)sizeof(format))
+        break;
       if (value[i] == 'D' || value[i] == 'd')
       {
         if (zeropreced)

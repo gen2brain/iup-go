@@ -1471,23 +1471,10 @@ IUP_SDK_API void iupdrvTableAddCol(Ihandle* ih, int pos)
   if (!list_view)
     return;
 
-  if (pos < 0)
-    pos = ih->data->num_col;  /* Append */
+  (void)pos;
 
-  if (pos > ih->data->num_col)
-    pos = ih->data->num_col;
-
-  /* Insert column at position (account for dummy column at index 0) */
-  LVCOLUMN lvc;
-  ZeroMemory(&lvc, sizeof(LVCOLUMN));
-  lvc.mask = LVCF_TEXT | LVCF_WIDTH | LVCF_FMT;
-  lvc.pszText = iupwinStrToSystem("");
-  lvc.cx = 100;
-  lvc.fmt = LVCFMT_LEFT;  /* Default alignment */
-  ListView_InsertColumn(list_view, pos + 1, &lvc);
-
+  iupdrvTableSetNumCol(ih, ih->data->num_col + 1);
   ih->data->num_col++;
-  iupdrvTableSetNumCol(ih, ih->data->num_col);
 }
 
 IUP_SDK_API void iupdrvTableDelCol(Ihandle* ih, int pos)
