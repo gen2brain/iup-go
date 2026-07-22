@@ -1815,11 +1815,13 @@ IUP_SDK_API void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
   mot_data->col_widths = (int*)realloc(mot_data->col_widths, num_col * sizeof(int));
   mot_data->col_natural_widths = (int*)realloc(mot_data->col_natural_widths, num_col * sizeof(int));
   mot_data->col_width_set = (int*)realloc(mot_data->col_width_set, num_col * sizeof(int));
+  mot_data->sort_signs = (char*)realloc(mot_data->sort_signs, num_col * sizeof(char));
   for (i = old_num_col; i < num_col; i++)
   {
     mot_data->col_widths[i] = MOT_TABLE_DEF_COL_WIDTH;
     mot_data->col_natural_widths[i] = MOT_TABLE_DEF_COL_WIDTH;
     mot_data->col_width_set[i] = 0;
+    mot_data->sort_signs[i] = 0;
   }
 
   /* Reallocate column titles */
@@ -1947,16 +1949,19 @@ IUP_SDK_API void iupdrvTableAddCol(Ihandle* ih, int pos)
   mot_data->col_widths = (int*)realloc(mot_data->col_widths, new_num_col * sizeof(int));
   mot_data->col_natural_widths = (int*)realloc(mot_data->col_natural_widths, new_num_col * sizeof(int));
   mot_data->col_width_set = (int*)realloc(mot_data->col_width_set, new_num_col * sizeof(int));
+  mot_data->sort_signs = (char*)realloc(mot_data->sort_signs, new_num_col * sizeof(char));
   /* Shift widths to make room */
   for (col = new_num_col - 1; col > pos; col--)
   {
     mot_data->col_widths[col] = mot_data->col_widths[col - 1];
     mot_data->col_natural_widths[col] = mot_data->col_natural_widths[col - 1];
     mot_data->col_width_set[col] = mot_data->col_width_set[col - 1];
+    mot_data->sort_signs[col] = mot_data->sort_signs[col - 1];
   }
   mot_data->col_widths[pos] = MOT_TABLE_DEF_COL_WIDTH;
   mot_data->col_natural_widths[pos] = MOT_TABLE_DEF_COL_WIDTH;
   mot_data->col_width_set[pos] = 0;
+  mot_data->sort_signs[pos] = 0;
 
   /* Reallocate column titles */
   mot_data->col_titles = (char**)realloc(mot_data->col_titles, new_num_col * sizeof(char*));
