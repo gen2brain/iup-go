@@ -869,7 +869,6 @@ static void haikuTreeCopyChildren(IupHaikuTreeView* src_tv, IupHaikuTreeView* ds
     int flat = dst_tv->FullListIndexOf(dst_parent) + 1
              + haikuTreeChildCountRec(dst_tv, dst_parent);
     IupHaikuTreeItem* nw = haikuTreeCopyItem(dst_tv, src_child, dst_parent->OutlineLevel() + 1, flat);
-    dst->data->node_count++;
     haikuTreeCopyChildren(src_tv, dst_tv, dst, src_child, nw);
   }
 }
@@ -900,10 +899,26 @@ extern "C" IUP_SDK_API void iupdrvTreeDragDropCopyNode(Ihandle* src, Ihandle* ds
     nw = haikuTreeCopyItem(dst_tv, src_item, dst_item->OutlineLevel(), flat);
   }
 
-  iupTreeAddToCache(dst, kind_dst == ITREE_BRANCH && dst_item->IsExpanded() ? 1 : 0,
-                    kind_dst, (InodeHandle*)dst_item, (InodeHandle*)nw);
-
   haikuTreeCopyChildren(src_tv, dst_tv, dst, src_item, nw);
+
+  int old_count = dst->data->node_count;
+
+  std::map<void*, void*> udata;
+  for (int i = 0; i < old_count; i++)
+    udata[(void*)dst->data->node_cache[i].node_handle] = dst->data->node_cache[i].userdata;
+
+  dst->data->node_count = dst_tv->FullListCountItems();
+  iupTreeIncCacheMem(dst);
+
+  for (int i = 0; i < dst->data->node_count; i++)
+  {
+    BListItem* it = dst_tv->FullListItemAt(i);
+    dst->data->node_cache[i].node_handle = (InodeHandle*)it;
+    std::map<void*, void*>::iterator f = udata.find((void*)it);
+    dst->data->node_cache[i].userdata = (f != udata.end()) ? f->second : NULL;
+  }
+
+  iupAttribSetInt(dst, "LASTADDNODE", dst_tv->FullListIndexOf(nw));
 }
 
 static int haikuTreeSetImageLeafAttrib(Ihandle* ih, const char* value)
