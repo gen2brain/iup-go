@@ -2578,6 +2578,19 @@ static int eflTreeConvertXYToPos(Ihandle* ih, int x, int y)
                      Methods
 ****************************************************************/
 
+static void eflTreeFocusHighlightChanged(void* data, const Efl_Event* ev)
+{
+  Ihandle* ih = (Ihandle*)data;
+  Eo* win;
+
+  if (!iupObjectCheck(ih))
+    return;
+
+  win = elm_object_top_widget_get(ev->object);
+  if (win)
+    elm_win_focus_highlight_enabled_set(win, efl_ui_focus_object_focus_get(ev->object));
+}
+
 static int eflTreeMapMethod(Ihandle* ih)
 {
   Eo* parent;
@@ -2619,11 +2632,9 @@ static int eflTreeMapMethod(Ihandle* ih)
   {
     Eo* win = elm_object_top_widget_get(tree);
     if (win)
-    {
-      elm_win_focus_highlight_enabled_set(win, EINA_TRUE);
       elm_win_focus_highlight_animate_set(win, EINA_FALSE);
-    }
   }
+  efl_event_callback_add(tree, EFL_UI_FOCUS_OBJECT_EVENT_FOCUS_CHANGED, eflTreeFocusHighlightChanged, ih);
 
   if (iupAttribGetInt(ih, "ADDROOT"))
     iupdrvTreeAddNode(ih, -1, ITREE_BRANCH, "", 0);
@@ -2665,6 +2676,12 @@ static void eflTreeUnMapMethod(Ihandle* ih)
     efl_event_callback_del(tree, EFL_EVENT_POINTER_DOWN, eflTreeRightClickCallback, ih);
     efl_event_callback_del(tree, EFL_EVENT_POINTER_DOWN, eflTreeClickCallback, ih);
     efl_event_callback_del(tree, EFL_EVENT_KEY_DOWN, eflTreeKeyDownCallback, ih);
+    efl_event_callback_del(tree, EFL_UI_FOCUS_OBJECT_EVENT_FOCUS_CHANGED, eflTreeFocusHighlightChanged, ih);
+    {
+      Eo* win = elm_object_top_widget_get(tree);
+      if (win)
+        elm_win_focus_highlight_enabled_set(win, EINA_FALSE);
+    }
     iupeflBaseRemoveCallbacks(ih, tree);
     elm_genlist_clear(tree);
     iupeflDelete(tree);
