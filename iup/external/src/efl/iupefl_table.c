@@ -1465,6 +1465,14 @@ static void eflTableClearCells(Ihandle* ih)
   if (!data)
     return;
 
+  data->editing_lin = 0;
+  data->editing_col = 0;
+  if (data->original_value)
+  {
+    free(data->original_value);
+    data->original_value = NULL;
+  }
+
   /* Use allocated sizes, not current ih->data values which may have changed */
   alloc_col = data->alloc_num_col;
   alloc_lin = data->alloc_num_lin;

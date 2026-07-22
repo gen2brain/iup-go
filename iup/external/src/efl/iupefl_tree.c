@@ -1804,7 +1804,17 @@ static int eflTreeSetDelNodeAttrib(Ihandle* ih, int id, const char* value)
     while (item)
     {
       if (elm_genlist_item_selected_get(item))
-        marked_items = eina_list_append(marked_items, item);
+      {
+        Elm_Object_Item* parent = elm_genlist_item_parent_get(item);
+        int ancestor_marked = 0;
+        while (parent)
+        {
+          if (elm_genlist_item_selected_get(parent)) { ancestor_marked = 1; break; }
+          parent = elm_genlist_item_parent_get(parent);
+        }
+        if (!ancestor_marked)
+          marked_items = eina_list_append(marked_items, item);
+      }
       item = elm_genlist_item_next_get(item);
     }
 
@@ -1975,6 +1985,84 @@ static void eflTreeCopyChildren(Ihandle* ih, Eo* tree, Elm_Object_Item* src_item
   }
 }
 
+static void eflTreeCopyMoveNode(Ihandle* ih, Eo* tree, Elm_Object_Item* src_item, Elm_Object_Item* dst_item, int is_copy)
+{
+  IeflTreeNode* src_node = (IeflTreeNode*)elm_object_item_data_get(src_item);
+  IeflTreeNode* dst_node = (IeflTreeNode*)elm_object_item_data_get(dst_item);
+  IeflTreeNode* new_node;
+  Elm_Object_Item* dst_parent;
+  Elm_Object_Item* new_item;
+  Elm_Genlist_Item_Class* itc;
+  int old_count, id_src, id_dst, id_new, count;
+
+  if (!src_node)
+    return;
+
+  old_count = ih->data->node_count;
+  id_src = iupTreeFindNodeId(ih, (InodeHandle*)src_item);
+  id_dst = iupTreeFindNodeId(ih, (InodeHandle*)dst_item);
+  id_new = id_dst + 1;
+
+  new_node = (IeflTreeNode*)calloc(1, sizeof(IeflTreeNode));
+  if (!new_node)
+    return;
+
+  eflTreeCopyNodeData(src_node, new_node);
+
+  itc = (new_node->kind == ITREE_BRANCH) ? efl_tree_branch_itc : efl_tree_leaf_itc;
+
+  if (dst_node && dst_node->kind == ITREE_BRANCH && elm_genlist_item_expanded_get(dst_item))
+  {
+    dst_parent = dst_item;
+    new_item = elm_genlist_item_prepend(tree, itc, new_node, dst_parent,
+                                         (new_node->kind == ITREE_BRANCH) ? ELM_GENLIST_ITEM_TREE : ELM_GENLIST_ITEM_NONE,
+                                         NULL, NULL);
+  }
+  else
+  {
+    dst_parent = elm_genlist_item_parent_get(dst_item);
+    new_item = elm_genlist_item_insert_after(tree, itc, new_node, dst_parent, dst_item,
+                                              (new_node->kind == ITREE_BRANCH) ? ELM_GENLIST_ITEM_TREE : ELM_GENLIST_ITEM_NONE,
+                                              NULL, NULL);
+    if (dst_node && dst_node->kind == ITREE_BRANCH)
+      id_new += iupdrvTreeTotalChildCount(ih, (InodeHandle*)dst_item);
+  }
+
+  if (!new_item)
+  {
+    if (new_node->title) free(new_node->title);
+    if (new_node->font) free(new_node->font);
+    if (new_node->image) free(new_node->image);
+    if (new_node->image_expanded) free(new_node->image_expanded);
+    free(new_node);
+    return;
+  }
+
+  new_node->item = new_item;
+  ih->data->node_count++;
+
+  if (new_node->kind == ITREE_BRANCH && new_node->expanded)
+    elm_genlist_item_expanded_set(new_item, EINA_TRUE);
+
+  eflTreeCopyChildren(ih, tree, src_item, new_item);
+
+  count = ih->data->node_count - old_count;
+  iupTreeCopyMoveCache(ih, id_src, id_new, count, is_copy);
+
+  if (!is_copy)
+  {
+    efl_ui_focus_manager_calc_unregister(tree, src_item);
+    elm_object_item_del(src_item);
+
+    ih->data->node_count = old_count;
+
+    if (id_new > id_src)
+      id_new -= count;
+  }
+
+  eflTreeRebuildNodeCache(ih, id_new, new_item);
+}
+
 static int eflTreeSetCopyNodeAttrib(Ihandle* ih, int id, const char* value)
 {
   Eo* tree = iupeflGetWidget(ih);
@@ -1982,11 +2070,7 @@ static int eflTreeSetCopyNodeAttrib(Ihandle* ih, int id, const char* value)
   InodeHandle* dst_handle;
   Elm_Object_Item* src_item;
   Elm_Object_Item* dst_item;
-  Elm_Object_Item* dst_parent;
-  IeflTreeNode* src_node;
-  IeflTreeNode* new_node;
-  Elm_Object_Item* new_item;
-  Elm_Genlist_Item_Class* itc;
+  Elm_Object_Item* parent;
   int dst_id;
 
   if (!tree || !ih->handle)
@@ -2005,65 +2089,12 @@ static int eflTreeSetCopyNodeAttrib(Ihandle* ih, int id, const char* value)
 
   src_item = (Elm_Object_Item*)src_handle;
   dst_item = (Elm_Object_Item*)dst_handle;
-  src_node = (IeflTreeNode*)elm_object_item_data_get(src_item);
 
-  if (!src_node)
-    return 0;
+  for (parent = dst_item; parent; parent = elm_genlist_item_parent_get(parent))
+    if (parent == src_item)
+      return 0;
 
-  {
-    Elm_Object_Item* parent = dst_item;
-    while (parent)
-    {
-      if (parent == src_item)
-        return 0;
-      parent = elm_genlist_item_parent_get(parent);
-    }
-  }
-
-  new_node = (IeflTreeNode*)calloc(1, sizeof(IeflTreeNode));
-  if (!new_node)
-    return 0;
-
-  eflTreeCopyNodeData(src_node, new_node);
-
-  itc = (new_node->kind == ITREE_BRANCH) ? efl_tree_branch_itc : efl_tree_leaf_itc;
-
-  {
-    IeflTreeNode* dst_node = (IeflTreeNode*)elm_object_item_data_get(dst_item);
-    if (dst_node && dst_node->kind == ITREE_BRANCH && elm_genlist_item_expanded_get(dst_item))
-    {
-      dst_parent = dst_item;
-      new_item = elm_genlist_item_prepend(tree, itc, new_node, dst_parent,
-                                           (new_node->kind == ITREE_BRANCH) ? ELM_GENLIST_ITEM_TREE : ELM_GENLIST_ITEM_NONE,
-                                           NULL, NULL);
-    }
-    else
-    {
-      dst_parent = elm_genlist_item_parent_get(dst_item);
-      new_item = elm_genlist_item_insert_after(tree, itc, new_node, dst_parent, dst_item,
-                                                (new_node->kind == ITREE_BRANCH) ? ELM_GENLIST_ITEM_TREE : ELM_GENLIST_ITEM_NONE,
-                                                NULL, NULL);
-    }
-  }
-
-  if (new_item)
-  {
-    new_node->item = new_item;
-    ih->data->node_count++;
-
-    if (new_node->kind == ITREE_BRANCH && new_node->expanded)
-      elm_genlist_item_expanded_set(new_item, EINA_TRUE);
-
-    eflTreeCopyChildren(ih, tree, src_item, new_item);
-  }
-  else
-  {
-    if (new_node->title)
-      free(new_node->title);
-    if (new_node->font)
-      free(new_node->font);
-    free(new_node);
-  }
+  eflTreeCopyMoveNode(ih, tree, src_item, dst_item, 1);
 
   return 0;
 }
@@ -2075,11 +2106,7 @@ static int eflTreeSetMoveNodeAttrib(Ihandle* ih, int id, const char* value)
   InodeHandle* dst_handle;
   Elm_Object_Item* src_item;
   Elm_Object_Item* dst_item;
-  Elm_Object_Item* dst_parent;
-  IeflTreeNode* src_node;
-  IeflTreeNode* dst_node;
-  Elm_Object_Item* new_item;
-  Elm_Genlist_Item_Class* itc;
+  Elm_Object_Item* parent;
   int dst_id;
 
   if (!tree || !ih->handle)
@@ -2098,51 +2125,12 @@ static int eflTreeSetMoveNodeAttrib(Ihandle* ih, int id, const char* value)
 
   src_item = (Elm_Object_Item*)src_handle;
   dst_item = (Elm_Object_Item*)dst_handle;
-  src_node = (IeflTreeNode*)elm_object_item_data_get(src_item);
-  dst_node = (IeflTreeNode*)elm_object_item_data_get(dst_item);
 
-  if (!src_node)
-    return 0;
+  for (parent = dst_item; parent; parent = elm_genlist_item_parent_get(parent))
+    if (parent == src_item)
+      return 0;
 
-  {
-    Elm_Object_Item* parent = dst_item;
-    while (parent)
-    {
-      if (parent == src_item)
-        return 0;
-      parent = elm_genlist_item_parent_get(parent);
-    }
-  }
-
-  itc = (src_node->kind == ITREE_BRANCH) ? efl_tree_branch_itc : efl_tree_leaf_itc;
-
-  if (dst_node && dst_node->kind == ITREE_BRANCH && elm_genlist_item_expanded_get(dst_item))
-  {
-    dst_parent = dst_item;
-    new_item = elm_genlist_item_prepend(tree, itc, src_node, dst_parent,
-                                         (src_node->kind == ITREE_BRANCH) ? ELM_GENLIST_ITEM_TREE : ELM_GENLIST_ITEM_NONE,
-                                         NULL, NULL);
-  }
-  else
-  {
-    dst_parent = elm_genlist_item_parent_get(dst_item);
-    new_item = elm_genlist_item_insert_after(tree, itc, src_node, dst_parent, dst_item,
-                                              (src_node->kind == ITREE_BRANCH) ? ELM_GENLIST_ITEM_TREE : ELM_GENLIST_ITEM_NONE,
-                                              NULL, NULL);
-  }
-
-  if (new_item)
-  {
-    src_node->item = new_item;
-
-    if (src_node->kind == ITREE_BRANCH && src_node->expanded)
-      elm_genlist_item_expanded_set(new_item, EINA_TRUE);
-
-    eflTreeCopyChildren(ih, tree, src_item, new_item);
-
-    efl_ui_focus_manager_calc_unregister(tree, src_item);
-    elm_object_item_del(src_item);
-  }
+  eflTreeCopyMoveNode(ih, tree, src_item, dst_item, 0);
 
   return 0;
 }
