@@ -195,12 +195,13 @@ void iupTreeIncCacheMem(Ihandle* ih)
   if (ih->data->node_count+10 > ih->data->node_cache_max)
   {
     int old_node_cache_max = ih->data->node_cache_max;
-    InodeData* new_cache = realloc(ih->data->node_cache, (old_node_cache_max + 20)*sizeof(InodeData));
+    int new_node_cache_max = ih->data->node_count + 20;
+    InodeData* new_cache = realloc(ih->data->node_cache, new_node_cache_max*sizeof(InodeData));
     if (!new_cache)
       return;
     ih->data->node_cache = new_cache;
-    ih->data->node_cache_max = old_node_cache_max + 20;
-    memset(ih->data->node_cache+old_node_cache_max, 0, 20*sizeof(InodeData));
+    ih->data->node_cache_max = new_node_cache_max;
+    memset(ih->data->node_cache+old_node_cache_max, 0, (new_node_cache_max - old_node_cache_max)*sizeof(InodeData));
   }
 }
 
