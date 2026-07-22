@@ -375,8 +375,11 @@ static GdkPixbuf *gtkImageLoadFactoryIcon(const char* name, int render_icon_size
     if (strstr(name, "-ltr")!=0)
     {
       char sname[50];
+      size_t slen;
       iupStrCopyN(sname, sizeof(sname), name);
-      sname[strlen(name) - 4] = 0;  /* remove the suffix and try again */
+      slen = strlen(sname);
+      if (slen >= 4)
+        sname[slen - 4] = 0;  /* remove the suffix and try again */
 
       icon_set = gtk_icon_factory_lookup_default(sname);
       if (icon_set)
@@ -389,8 +392,11 @@ static GdkPixbuf *gtkImageLoadFactoryIcon(const char* name, int render_icon_size
     else if (strstr(name, "-rtl")!=0)
     {
       char sname[50];
+      size_t slen;
       iupStrCopyN(sname, sizeof(sname), name);
-      sname[strlen(name) - 4] = 0;  /* remove the suffix and try again */
+      slen = strlen(sname);
+      if (slen >= 4)
+        sname[slen - 4] = 0;  /* remove the suffix and try again */
 
       icon_set = gtk_icon_factory_lookup_default(sname);
       if (icon_set)
