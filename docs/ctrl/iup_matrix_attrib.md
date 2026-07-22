@@ -219,6 +219,10 @@ The minimum size is 0 by default, the column is then hidden, but it can be contr
 By default, the column is resized only when the mouse button is released, the resize feedback is a simple vertical line.
 Works only when RESIZEMATRIX=Yes. Default: NO.
 
+**ALLOWREORDER** (non-inheritable): enables the user to reorder columns by dragging a column title.
+Can be "YES" or "NO". Default: "NO".
+In callback mode the column values are not moved, REORDER_CB must do it.
+
 **USETITLESIZE:** Use the title size to define the cell size if necessary. See WIDTHn and HEIGHTn.
 Default: NO.
 

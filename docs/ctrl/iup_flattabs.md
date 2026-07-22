@@ -32,8 +32,7 @@ Default: YES.
 **FOCUSFEEDBACK** (non-inheritable): draw the focus feedback. Can be Yes or No.
 Default: Yes.
 
-**ALLOWREORDER** (non-inheritable): enables the user to reorder tabs by dragging a tab title onto another.
-An insertion marker is drawn during the drag and the tab attributes (title, image, colors, ...) follow the tab to its new position.
+**ALLOWREORDER** (non-inheritable): enables the user to reorder tabs by dragging a tab title.
 Can be "YES" or "NO". Default: "NO".
 
 **PROPAGATEFOCUS** (non-inheritable): enables the focus callback forwarding to the next native parent with FOCUS_CB defined.
