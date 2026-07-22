@@ -693,7 +693,8 @@ static int qtTextKeyPress(Ihandle* ih, QKeyEvent* evt)
             IupQtLineEdit* edit = (IupQtLineEdit*)ih->handle;
             value_str = edit->text();
           }
-          value = value_str.toUtf8().constData();
+          QByteArray value_utf8 = value_str.toUtf8();
+          value = value_utf8.constData();
 
           int result = cb(ih, iup_key, (char*)value);
 
