@@ -575,7 +575,7 @@ static void gtkMenuParseAccel(const char* text, guint* accel_key, GdkModifierTyp
     char token[48];
     const char* plus = strchr(p, '+');
     int len = plus ? (int)(plus - p) : (int)strlen(p);
-    if (len <= 0 || len >= (int)sizeof(token) || strlen(buffer) + 12 >= sizeof(buffer))
+    if (len <= 0 || len >= (int)sizeof(token) || strlen(buffer) + sizeof(token) >= sizeof(buffer))
       return;
     memcpy(token, p, len);
     token[len] = 0;
