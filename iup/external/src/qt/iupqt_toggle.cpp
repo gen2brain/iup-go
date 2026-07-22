@@ -713,15 +713,10 @@ static int qtToggleSetValueAttrib(Ihandle* ih, const char* value)
   button->blockSignals(false);
 
   /* For switch widgets, update thumb position without animation when set programmatically */
-  if (iupAttribGetBoolean(ih, "SWITCH"))
+  if (ih->data->type == IUP_TOGGLE_TEXT && !ih->data->is_radio && iupAttribGetBoolean(ih, "SWITCH"))
   {
-    /* Safe to static_cast since we know it's a switch widget */
     IupQtSwitch* switch_widget = static_cast<IupQtSwitch*>(button);
-    if (switch_widget)
-    {
-      /* Update thumb position immediately (no animation during programmatic setValue) */
-      switch_widget->setThumbPosition(button->isChecked() ? 1.0 : 0.0);
-    }
+    switch_widget->setThumbPosition(button->isChecked() ? 1.0 : 0.0);
   }
 
   return 0;
@@ -1139,9 +1134,8 @@ static int qtToggleMapMethod(Ihandle* ih)
   iupqtUpdateMnemonic(ih);
 
   /* Initialize thumb position for switch widgets after all setup is complete */
-  if (iupAttribGetBoolean(ih, "SWITCH"))
+  if (ih->data->type == IUP_TOGGLE_TEXT && !ih->data->is_radio && iupAttribGetBoolean(ih, "SWITCH"))
   {
-    /* Safe to static_cast since we know it's a switch widget based on SWITCH attribute */
     IupQtSwitch* switch_widget = static_cast<IupQtSwitch*>(button);
     switch_widget->initializeThumbPosition();
   }
