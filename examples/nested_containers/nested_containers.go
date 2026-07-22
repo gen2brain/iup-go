@@ -127,7 +127,7 @@ func main() {
 		expanderScroll(),
 	)
 
-	dlg := iup.Dialog(tabs).SetAttributes(`TITLE="Nested containers", SIZE=HALFxHALF`)
+	dlg := iup.Dialog(tabs).SetAttributes(`TITLE="Nested containers", SIZE=xHALF`)
 
 	iup.Show(dlg)
 	iup.MainLoop()
