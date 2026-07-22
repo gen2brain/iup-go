@@ -32,6 +32,10 @@ Default: YES.
 **FOCUSFEEDBACK** (non-inheritable): draw the focus feedback. Can be Yes or No.
 Default: Yes.
 
+**ALLOWREORDER** (non-inheritable): enables the user to reorder tabs by dragging a tab title onto another.
+An insertion marker is drawn during the drag and the tab attributes (title, image, colors, ...) follow the tab to its new position.
+Can be "YES" or "NO". Default: "NO".
+
 **PROPAGATEFOCUS** (non-inheritable): enables the focus callback forwarding to the next native parent with FOCUS_CB defined.
 Default: NO.
 
@@ -324,6 +328,17 @@ int function(Ihandle* ih, int pos);
 **button**: identifies the extra button.
 Can be 1, 2, 3, 4, and so on. (this is not the same as BUTTON_CB)\
 **pressed**: indicates the state of the button (1=pressed, 0=released)
+
+**REORDER_CB**: Callback called when the user reorders a tab by dragging it to a new position.
+Called only when ALLOWREORDER=YES.
+
+int function(Ihandle* ih, int old_pos, int new_pos);
+
+**ih**: identifier of the element that activated the event.\
+**old_pos**: the original tab position before the reorder.\
+**new_pos**: the new tab position after the reorder.
+
+**Returns**: if IUP_IGNORE is returned the reorder is rejected and the tab stays in its original position.
 
 ------------------------------------------------------------------------
 
