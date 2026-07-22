@@ -1,5 +1,5 @@
 /** \file
- * \brief iupmatrix column resize
+ * \brief iupmatrix column resize and reorder
  *
  * See Copyright Notice in "iup.h"
  */
@@ -24,6 +24,7 @@
 #include "iupmat_draw.h"
 #include "iupmat_aux.h"
 #include "iupmat_edit.h"
+#include "iupmat_getset.h"
 
 #define IMAT_COLRES_TOL       3
 
@@ -167,5 +168,99 @@ int iupMatrixColResCheckChangeCursor(Ihandle* ih, int x, int y)
 int iupMatrixColResIsResizing(Ihandle* ih)
 {
   return ih->data->colres_dragging;
+}
+
+
+/*******************************************************************/
+/* Interactive Column Reorder Functions                            */
+/*******************************************************************/
+
+#define IMAT_COLMOVE_TOL 4
+
+static int iMatrixColMoveTargetCol(Ihandle* ih, int x)
+{
+  int lin, col;
+  int ytitle = ih->data->lines.dt[0].size / 2;
+
+  if (iupMatrixGetCellFromXY(ih, x, ytitle, &lin, &col) && col >= 1)
+    return col;
+
+  if (x < ih->data->columns.dt[0].size)
+    return (ih->data->columns.num_noscroll > 1) ? ih->data->columns.num_noscroll : 1;
+
+  return ih->data->columns.num - 1;
+}
+
+int iupMatrixColMoveStart(Ihandle* ih, int x, int y)
+{
+  int lin, col;
+
+  if (!iupAttribGetBoolean(ih, "ALLOWREORDER"))
+    return 0;
+
+  if (ih->data->lines.dt[0].size == 0 || y >= ih->data->lines.dt[0].size)
+    return 0;
+
+  if (!iupMatrixGetCellFromXY(ih, x, y, &lin, &col) || lin != 0 || col < 1)
+    return 0;
+
+  ih->data->colmove_dragging = 1;
+  ih->data->colmove_feedback = 0;
+  ih->data->colmove_src_col = col;
+  ih->data->colmove_dst_col = col;
+  ih->data->colmove_start_x = x;
+  return 1;
+}
+
+void iupMatrixColMoveMove(Ihandle* ih, int x)
+{
+  int col, cx, cy, cw, ch;
+
+  if (!ih->data->colmove_feedback && abs(x - ih->data->colmove_start_x) < IMAT_COLMOVE_TOL)
+    return;
+
+  col = iMatrixColMoveTargetCol(ih, x);
+  ih->data->colmove_dst_col = col;
+
+  if (iupMatrixGetVisibleCellDim(ih, 0, col, &cx, &cy, &cw, &ch))
+  {
+    ih->data->colmove_feedback = 1;
+    ih->data->colmove_x = (ih->data->colmove_src_col < col) ? cx + cw : cx;
+    ih->data->colmove_y1 = cy;
+    ih->data->colmove_y2 = cy + ch;
+    iupMatrixDrawUpdate(ih);
+  }
+}
+
+int iupMatrixColMoveFinish(Ihandle* ih)
+{
+  int src = ih->data->colmove_src_col;
+  int dst = ih->data->colmove_dst_col;
+  int moved = ih->data->colmove_feedback;
+
+  ih->data->colmove_dragging = 0;
+  ih->data->colmove_feedback = 0;
+
+  if (!moved)
+    return 0;
+
+  if (src != dst && dst >= 1)
+  {
+    int ret = IUP_DEFAULT;
+    IFnii cb = (IFnii)IupGetCallback(ih, "REORDER_CB");
+    if (cb)
+      ret = cb(ih, src, dst);
+
+    if (ret != IUP_IGNORE && !ih->data->callback_mode)
+      IupSetIntId(ih, "MOVECOL", src, dst);
+  }
+
+  iupMatrixDraw(ih, 1);
+  return 1;
+}
+
+int iupMatrixColMoveIsMoving(Ihandle* ih)
+{
+  return ih->data->colmove_dragging;
 }
 

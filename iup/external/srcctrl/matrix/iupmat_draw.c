@@ -932,6 +932,17 @@ static void iMatrixDrawColRes(Ihandle* ih)
                                     ih->data->colres_x, ih->data->colres_y2);
 }
 
+static void iMatrixDrawColMove(Ihandle* ih)
+{
+  unsigned char r, g, b;
+  int i;
+  iupMatrixGetFgRGB(ih, 0, ih->data->colmove_dst_col, &r, &g, &b, 0, 1);
+  iMatrixSetDrawColor(ih, r, g, b);
+  for (i = -1; i <= 1; i++)
+    IupDrawLine(ih, ih->data->colmove_x + i, ih->data->colmove_y1,
+                    ih->data->colmove_x + i, ih->data->colmove_y2);
+}
+
 
 /**************************************************************************/
 /* Exported functions                                                     */
@@ -1681,6 +1692,9 @@ void iupMatrixDrawCB(Ihandle* ih)
 
   if (ih->data->colres_feedback)
     iMatrixDrawColRes(ih);
+
+  if (ih->data->colmove_feedback)
+    iMatrixDrawColMove(ih);
 
   IupDrawEnd(ih);
 
