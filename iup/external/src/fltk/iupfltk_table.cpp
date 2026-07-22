@@ -1383,9 +1383,12 @@ extern "C" IUP_SDK_API void iupdrvTableAddLin(Ihandle* ih, int pos)
   if (pos < 1 || pos > ih->data->num_lin + 1)
     return;
 
-  int idx = pos - 1;
-  std::vector<std::string> new_row(ih->data->num_col);
-  table->cells.insert(table->cells.begin() + idx, new_row);
+  if (!table->is_virtual)
+  {
+    int idx = pos - 1;
+    std::vector<std::string> new_row(ih->data->num_col);
+    table->cells.insert(table->cells.begin() + idx, new_row);
+  }
 
   ih->data->num_lin++;
   table->rows(ih->data->num_lin);
@@ -1401,8 +1404,11 @@ extern "C" IUP_SDK_API void iupdrvTableDelLin(Ihandle* ih, int pos)
   if (pos < 1 || pos > ih->data->num_lin)
     return;
 
-  int idx = pos - 1;
-  table->cells.erase(table->cells.begin() + idx);
+  if (!table->is_virtual)
+  {
+    int idx = pos - 1;
+    table->cells.erase(table->cells.begin() + idx);
+  }
 
   ih->data->num_lin--;
   table->rows(ih->data->num_lin);
