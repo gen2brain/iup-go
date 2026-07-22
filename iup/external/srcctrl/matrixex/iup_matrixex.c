@@ -615,7 +615,7 @@ static int iMatrixExItemNumericUnits_CB(Ihandle* ih_item)
   ImatExData* matex_data = (ImatExData*)IupGetAttribute(ih_item, "MATRIX_EX_DATA");
   int unit, decimals;
   int lin, col;
-  char format[200], list_str[200] = "|";
+  char format[256], list_str[200] = "|";
 
   IupGetIntInt(ih_item, "MENUCONTEXT_CELL", &lin, &col);
 
