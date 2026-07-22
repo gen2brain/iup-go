@@ -2791,6 +2791,7 @@ IUP_SDK_API void iupdrvTreeAddNode(Ihandle* ih, int prev_id, int kind, const cha
 
     if (ih->data->node_count == 1)
     {
+        [(IupCocoaOutlineView*)outline_view setMarkStartNode:inode_new];
         iupAttribSet(ih, "_IUPTREE_MARKSTART_NODE", (char*)inode_new);
 
         iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", "1");

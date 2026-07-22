@@ -547,6 +547,7 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
     IupCocoaTabCell *nextTab = [tabs objectAtIndex:index];
     [nextTab setAsActiveTab];
   }
+  [self syncAccessibilityElements];
   [self redraw];
 }
 
