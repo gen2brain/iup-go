@@ -114,6 +114,9 @@ The application must handle the actual sorting via SORT_CB.
 **ALLOWREORDER** (non-inheritable): Enables column reordering via drag-and-drop on the header.
 Can be "YES" or "NO". Default: "NO".
 
+**SHOWDRAGDROP** (creation-only) (non-inheritable): enables the interactive reordering of rows by dragging, and enables the DRAGDROP_CB callback.
+Can be "YES" or "NO". Default: "NO".
+
 **USERRESIZE** (non-inheritable): Enables user column resizing by dragging the header dividers.
 Can be "YES" or "NO". Default: "NO".
 
@@ -195,6 +198,19 @@ Called only when ALLOWREORDER=YES.
 **new_pos**: the new column position after the reorder (1-based).
 
 **Returns**: if IUP_IGNORE is returned the reorder is rejected and the column returns to its original position.
+
+**DRAGDROP_CB**: Callback called when the user reorders a row by dragging it.
+Called only when SHOWDRAGDROP=YES.
+
+    int function(Ihandle *ih, int drag_id, int drop_id, int isshift, int iscontrol);
+
+**ih**: identifier of the element that activated the event.\
+**drag_id**: the original row position where the drag started (1-based).\
+**drop_id**: the row position where the drop was executed (1-based). -1 indicates a drop in a blank area.\
+**isshift**: flag indicating the shift key state.\
+**iscontrol**: flag indicating the control key state.
+
+**Returns**: if IUP_CONTINUE is returned, or if the callback is not defined and SHOWDRAGDROP=YES, then the row is moved to the new position.
 
 **VALUECHANGED_CB**: Called after a cell value was changed.
 
