@@ -85,6 +85,12 @@ static void eflTableHideDragIndicator(Ihandle* ih);
 static void eflTableDragPointerMove(void* cb_data, const Efl_Event* ev);
 static void eflTableDragPointerUp(void* cb_data, const Efl_Event* ev);
 static int eflTableIsNearColumnBorder(Ihandle* ih, int x);
+static int eflTableFindTargetRow(Ihandle* ih, int y);
+static void eflTableMoveRow(Ihandle* ih, int from, int to);
+static void eflTableUpdateRowDragIndicator(Ihandle* ih, int target);
+static void eflTableHideRowDragIndicator(Ihandle* ih);
+static void eflTableRowDragPointerMove(void* cb_data, const Efl_Event* ev);
+static void eflTableRowDragPointerUp(void* cb_data, const Efl_Event* ev);
 
 /* ========================================================================= */
 /* Helper Functions                                                          */
@@ -1003,6 +1009,241 @@ static void eflTableDragPointerUp(void* cb_data, const Efl_Event* ev)
   }
 }
 
+/* ========================================================================= */
+/* Row drag-reorder (SHOWDRAGDROP)                                           */
+/* ========================================================================= */
+
+static int eflTableFindTargetRow(Ihandle* ih, int y)
+{
+  IeflTableData* data = IEFL_TABLE_DATA(ih);
+  int num_lin = ih->data->num_lin;
+  int num_col = ih->data->num_col;
+  int lin;
+
+  if (!data || !data->cell_bgs || num_col < 1)
+    return -1;
+
+  for (lin = 1; lin <= num_lin; lin++)
+  {
+    Evas_Object* cell = data->cell_bgs[(lin - 1) * num_col];
+    if (cell)
+    {
+      Eina_Rect geom = efl_gfx_entity_geometry_get(cell);
+      if (y < geom.y + geom.h / 2)
+        return lin - 1;
+    }
+  }
+  return num_lin;
+}
+
+static void eflTableMoveRowData(Ihandle* ih, int from, int to)
+{
+  int col;
+  int num_col = ih->data->num_col;
+
+  for (col = 1; col <= num_col; col++)
+  {
+    char name[50];
+    char* saved;
+    int l;
+
+    snprintf(name, sizeof(name), "CELLVALUE%d:%d", from, col);
+    saved = iupAttribGet(ih, name);
+    saved = saved ? iupStrDup(saved) : NULL;
+
+    if (from < to)
+      for (l = from; l < to; l++)
+      {
+        char cur[50], nxt[50];
+        snprintf(cur, sizeof(cur), "CELLVALUE%d:%d", l, col);
+        snprintf(nxt, sizeof(nxt), "CELLVALUE%d:%d", l + 1, col);
+        iupAttribSetStr(ih, cur, iupAttribGet(ih, nxt));
+      }
+    else
+      for (l = from; l > to; l--)
+      {
+        char cur[50], prv[50];
+        snprintf(cur, sizeof(cur), "CELLVALUE%d:%d", l, col);
+        snprintf(prv, sizeof(prv), "CELLVALUE%d:%d", l - 1, col);
+        iupAttribSetStr(ih, cur, iupAttribGet(ih, prv));
+      }
+
+    snprintf(name, sizeof(name), "CELLVALUE%d:%d", to, col);
+    iupAttribSetStr(ih, name, saved);
+    if (saved)
+      free(saved);
+
+    if (ih->data->show_image)
+    {
+      char* img = iupAttribGetId2(ih, "_IUPEFL_CELLIMAGE", from, col);
+      char* saved_img = img ? iupStrDup(img) : NULL;
+
+      if (from < to)
+        for (l = from; l < to; l++)
+          iupAttribSetStrId2(ih, "_IUPEFL_CELLIMAGE", l, col, iupAttribGetId2(ih, "_IUPEFL_CELLIMAGE", l + 1, col));
+      else
+        for (l = from; l > to; l--)
+          iupAttribSetStrId2(ih, "_IUPEFL_CELLIMAGE", l, col, iupAttribGetId2(ih, "_IUPEFL_CELLIMAGE", l - 1, col));
+
+      iupAttribSetStrId2(ih, "_IUPEFL_CELLIMAGE", to, col, saved_img);
+      if (saved_img)
+        free(saved_img);
+    }
+  }
+}
+
+static void eflTableMoveRow(Ihandle* ih, int from, int to)
+{
+  IeflTableData* data = IEFL_TABLE_DATA(ih);
+  int num_lin = ih->data->num_lin;
+
+  if (from == to || from < 1 || to < 1 || from > num_lin || to > num_lin)
+    return;
+
+  eflTableMoveRowData(ih, from, to);
+  iupTableMoveLinAttribs(ih, from, to);
+
+  if (data)
+  {
+    if (data->selected_lin == from)
+      data->selected_lin = to;
+    else if (from < to && data->selected_lin > from && data->selected_lin <= to)
+      data->selected_lin--;
+    else if (from > to && data->selected_lin >= to && data->selected_lin < from)
+      data->selected_lin++;
+
+    eflTableRefreshCells(ih);
+    eflTableUpdateFocusCell(ih);
+  }
+}
+
+static Evas_Object* efl_table_row_drag_indicator = NULL;
+
+static void eflTableHideRowDragIndicator(Ihandle* ih)
+{
+  (void)ih;
+  if (efl_table_row_drag_indicator)
+    efl_gfx_entity_visible_set(efl_table_row_drag_indicator, EINA_FALSE);
+}
+
+static void eflTableUpdateRowDragIndicator(Ihandle* ih, int target)
+{
+  IeflTableData* data = IEFL_TABLE_DATA(ih);
+  int num_lin = ih->data->num_lin;
+  int num_col = ih->data->num_col;
+  int source = iupAttribGetInt(ih, "_IUPTABLE_ROWDRAG_SOURCE");
+  int x, y, w;
+
+  if (!data || !data->cell_bgs || num_col < 1 || num_lin < 1)
+    return;
+
+  if (target == source - 1 || target == source)
+  {
+    eflTableHideRowDragIndicator(ih);
+    return;
+  }
+
+  {
+    Eina_Rect gl = efl_gfx_entity_geometry_get(data->cell_bgs[0]);
+    Eina_Rect gr = efl_gfx_entity_geometry_get(data->cell_bgs[num_col - 1]);
+    x = gl.x;
+    w = (gr.x + gr.w) - gl.x;
+  }
+
+  if (target < num_lin)
+  {
+    Eina_Rect g = efl_gfx_entity_geometry_get(data->cell_bgs[target * num_col]);
+    y = g.y;
+  }
+  else
+  {
+    Eina_Rect g = efl_gfx_entity_geometry_get(data->cell_bgs[(num_lin - 1) * num_col]);
+    y = g.y + g.h;
+  }
+
+  if (!efl_table_row_drag_indicator)
+  {
+    efl_table_row_drag_indicator = efl_add(EFL_CANVAS_RECTANGLE_CLASS, evas_object_evas_get(data->table));
+    efl_gfx_color_set(efl_table_row_drag_indicator, 0, 120, 215, 255);
+  }
+
+  efl_gfx_entity_position_set(efl_table_row_drag_indicator, EINA_POSITION2D(x, y - 1));
+  efl_gfx_entity_size_set(efl_table_row_drag_indicator, EINA_SIZE2D(w, 2));
+  efl_gfx_entity_visible_set(efl_table_row_drag_indicator, EINA_TRUE);
+  efl_gfx_stack_raise_to_top(efl_table_row_drag_indicator);
+}
+
+static void eflTableRowDragPointerMove(void* cb_data, const Efl_Event* ev)
+{
+  Ihandle* ih = (Ihandle*)cb_data;
+  Efl_Input_Pointer* pointer = ev->info;
+  Eina_Position2D pos;
+  int target, old_target;
+
+  if (!iupAttribGet(ih, "_IUPTABLE_ROWDRAG_SOURCE"))
+    return;
+
+  pos = efl_input_pointer_position_get(pointer);
+
+  if (!iupAttribGetInt(ih, "_IUPTABLE_ROWDRAGGING"))
+  {
+    int start_x = iupAttribGetInt(ih, "_IUPTABLE_ROWDRAG_START_X");
+    int start_y = iupAttribGetInt(ih, "_IUPTABLE_ROWDRAG_START_Y");
+    if (abs(pos.x - start_x) > 5 || abs(pos.y - start_y) > 5)
+      iupAttribSetInt(ih, "_IUPTABLE_ROWDRAGGING", 1);
+    else
+      return;
+  }
+
+  target = eflTableFindTargetRow(ih, pos.y);
+  if (target < 0)
+    return;
+
+  old_target = iupAttribGetInt(ih, "_IUPTABLE_ROWDRAG_TARGET") - 1;
+  if (target != old_target)
+  {
+    iupAttribSetInt(ih, "_IUPTABLE_ROWDRAG_TARGET", target + 1);
+    eflTableUpdateRowDragIndicator(ih, target);
+  }
+}
+
+static void eflTableRowDragPointerUp(void* cb_data, const Efl_Event* ev)
+{
+  Ihandle* ih = (Ihandle*)cb_data;
+  int is_dragging, source, target;
+
+  (void)ev;
+
+  if (!iupAttribGet(ih, "_IUPTABLE_ROWDRAG_SOURCE"))
+    return;
+
+  is_dragging = iupAttribGetInt(ih, "_IUPTABLE_ROWDRAGGING");
+  source = iupAttribGetInt(ih, "_IUPTABLE_ROWDRAG_SOURCE");
+  target = iupAttribGetInt(ih, "_IUPTABLE_ROWDRAG_TARGET") - 1;
+
+  iupAttribSet(ih, "_IUPTABLE_ROWDRAGGING", NULL);
+  iupAttribSet(ih, "_IUPTABLE_ROWDRAG_SOURCE", NULL);
+  iupAttribSet(ih, "_IUPTABLE_ROWDRAG_TARGET", NULL);
+  iupAttribSet(ih, "_IUPTABLE_ROWDRAG_START_X", NULL);
+  iupAttribSet(ih, "_IUPTABLE_ROWDRAG_START_Y", NULL);
+
+  eflTableHideRowDragIndicator(ih);
+
+  if (is_dragging && target >= 0)
+  {
+    int is_ctrl = 0;
+    int src0 = source - 1;
+    if (iupTableCallDragDropCb(ih, src0, target, &is_ctrl) == IUP_CONTINUE)
+    {
+      int num_lin = ih->data->num_lin;
+      int to = (target > src0) ? target - 1 : target;
+      if (to >= num_lin) to = num_lin - 1;
+      if (to < 0) to = 0;
+      eflTableMoveRow(ih, source, to + 1);
+    }
+  }
+}
+
 static void eflTableResizeCallback(void* data, const Efl_Event* ev)
 {
   Ihandle* ih = (Ihandle*)data;
@@ -1373,6 +1614,16 @@ static void eflTableCellClickCallback(void* data, const Efl_Event* ev)
 
   if (lin == 0)
     return;
+
+  if (ih->data->show_dragdrop && !table_data->is_virtual)
+  {
+    Eina_Position2D pos = efl_input_pointer_position_get(pointer);
+    iupAttribSetInt(ih, "_IUPTABLE_ROWDRAG_SOURCE", lin);
+    iupAttribSetInt(ih, "_IUPTABLE_ROWDRAG_TARGET", 0);
+    iupAttribSetInt(ih, "_IUPTABLE_ROWDRAG_START_X", pos.x);
+    iupAttribSetInt(ih, "_IUPTABLE_ROWDRAG_START_Y", pos.y);
+  }
+
   int prev_lin = table_data->selected_lin;
   int prev_col = table_data->selected_col;
 
@@ -1728,6 +1979,11 @@ static void eflTableRebuildCells(Ihandle* ih)
           efl_gfx_entity_visible_set(box, EINA_TRUE);
 
           efl_event_callback_add(label, EFL_EVENT_POINTER_DOWN, eflTableCellClickCallback, ih);
+          if (ih->data->show_dragdrop)
+          {
+            efl_event_callback_add(label, EFL_EVENT_POINTER_MOVE, eflTableRowDragPointerMove, ih);
+            efl_event_callback_add(label, EFL_EVENT_POINTER_UP, eflTableRowDragPointerUp, ih);
+          }
 
           elm_table_pack(data->table, box, col - 1, lin, 1, 1);
           data->cell_containers[idx] = box;
@@ -1743,6 +1999,11 @@ static void eflTableRebuildCells(Ihandle* ih)
           efl_gfx_hint_weight_set(label, weight_x, 0.0);
 
           efl_event_callback_add(label, EFL_EVENT_POINTER_DOWN, eflTableCellClickCallback, ih);
+          if (ih->data->show_dragdrop)
+          {
+            efl_event_callback_add(label, EFL_EVENT_POINTER_MOVE, eflTableRowDragPointerMove, ih);
+            efl_event_callback_add(label, EFL_EVENT_POINTER_UP, eflTableRowDragPointerUp, ih);
+          }
 
           elm_table_pack(data->table, label, col - 1, lin, 1, 1);
           data->cell_labels[idx] = label;

@@ -17,6 +17,12 @@
 #include <QStyleOptionViewItem>
 #include <QFontMetrics>
 #include <QLineEdit>
+#include <QMimeData>
+#include <QDrag>
+#include <QDropEvent>
+#include <QDragEnterEvent>
+#include <QDragMoveEvent>
+#include <QMouseEvent>
 
 #include <cstdio>
 
@@ -301,6 +307,7 @@ class IupQtTableWidget : public QTableWidget
 private:
   Ihandle* ih;
   bool firstShow;
+  QPoint press_pos;  /* drag hotspot, viewport-relative */
 
 public:
   explicit IupQtTableWidget(Ihandle* ih_param, QWidget* parent = nullptr)
@@ -565,6 +572,123 @@ protected:
     }
 
     QTableWidget::keyPressEvent(event);
+  }
+
+  void mousePressEvent(QMouseEvent* event) override
+  {
+    if (event->button() == Qt::LeftButton)
+    {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+      press_pos = event->position().toPoint();
+#else
+      press_pos = event->pos();
+#endif
+    }
+    QTableWidget::mousePressEvent(event);
+  }
+
+  void startDrag(Qt::DropActions /*supportedActions*/) override
+  {
+    int row = currentRow();
+    if (row < 0)
+      return;
+
+    iupAttribSetInt(ih, "_IUPTABLE_DRAGITEM", row + 1);  /* 1-based for the drop side */
+
+    QMimeData* data = new QMimeData();
+    data->setData("application/x-iup-table-row", QByteArray::number(row));
+
+    QDrag* drag = new QDrag(this);
+    drag->setMimeData(data);
+
+    QRect rect = visualRect(model()->index(row, 0));
+    rect.setRight(viewport()->rect().right());
+    if (!rect.isEmpty())
+    {
+      drag->setPixmap(viewport()->grab(rect));
+      drag->setHotSpot(press_pos - rect.topLeft());
+    }
+
+    drag->exec(Qt::MoveAction, Qt::MoveAction);
+
+    iupAttribSet(ih, "_IUPTABLE_DRAGITEM", NULL);
+  }
+
+  void dragEnterEvent(QDragEnterEvent* event) override
+  {
+    if (event->mimeData()->hasFormat("application/x-iup-table-row"))
+      event->acceptProposedAction();
+    else
+      QTableWidget::dragEnterEvent(event);
+  }
+
+  void dragMoveEvent(QDragMoveEvent* event) override
+  {
+    if (event->mimeData()->hasFormat("application/x-iup-table-row"))
+      event->acceptProposedAction();
+    else
+      QTableWidget::dragMoveEvent(event);
+  }
+
+  void dropEvent(QDropEvent* event) override
+  {
+    int drag_id = iupAttribGetInt(ih, "_IUPTABLE_DRAGITEM");  /* 1-based */
+    if (drag_id < 1)
+    {
+      event->ignore();
+      return;
+    }
+
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    QPoint drop_pos = event->position().toPoint();
+#else
+    QPoint drop_pos = event->pos();
+#endif
+    QModelIndex drop_index = indexAt(drop_pos);
+    int drop_id;
+    if (drop_index.isValid())
+    {
+      drop_id = drop_index.row() + 1;  /* 1-based */
+      QRect rect = visualRect(drop_index);
+      if (drop_pos.y() > rect.top() + rect.height() / 2)  /* lower half means insert after */
+        drop_id++;
+    }
+    else
+      drop_id = -1;
+
+    int is_ctrl = 0;
+    if (iupTableCallDragDropCb(ih, drag_id - 1, drop_id - 1, &is_ctrl) == IUP_CONTINUE &&
+        !iupStrBoolean(iupAttribGet(ih, "VIRTUALMODE")))
+    {
+      int src = drag_id - 1;  /* 0-based */
+      int ncol = columnCount();
+      QList<QTableWidgetItem*> items;
+      int dest, c;
+
+      bool wasBlocked = signalsBlocked();
+      blockSignals(true);
+
+      for (c = 0; c < ncol; c++)
+        items.append(takeItem(src, c));
+      removeRow(src);
+
+      if (drop_id < 1)
+        dest = rowCount();
+      else
+        dest = (drop_id - 1 > src) ? drop_id - 2 : drop_id - 1;
+
+      insertRow(dest);
+      for (c = 0; c < ncol; c++)
+        if (items[c])
+          setItem(dest, c, items[c]);
+
+      iupTableMoveLinAttribs(ih, src + 1, dest + 1);
+      selectRow(dest);
+
+      blockSignals(wasBlocked);
+    }
+
+    event->acceptProposedAction();
   }
 
   void updateVirtualCells()
@@ -1123,6 +1247,16 @@ static int qtTableMapMethod(Ihandle* ih)
   /* Clear any default selection - no cell should be selected on start */
   table->clearSelection();
   table->setCurrentCell(-1, -1);
+
+  if (ih->data->show_dragdrop)
+  {
+    table->setSelectionBehavior(QAbstractItemView::SelectRows);
+    table->setDragEnabled(true);
+    table->setAcceptDrops(true);
+    table->setDragDropMode(QAbstractItemView::DragDrop);
+    table->setDropIndicatorShown(true);
+    table->setDefaultDropAction(Qt::MoveAction);
+  }
 
   /* Store widget handle */
   ih->handle = (InativeHandle*)table;

@@ -716,6 +716,9 @@ static gboolean gtkTableButtonEvent(GtkWidget* widget, GdkEventButton* evt, Ihan
     return TRUE;
   }
 
+  if (ih->data->show_dragdrop)
+    iupAttribSetInt(ih, "_IUPTABLE_DRAGITEM", gtk_tree_path_get_indices(path)[0] + 1);
+
   if (evt->type == GDK_BUTTON_PRESS)
   {
     IFniis cb = (IFniis)IupGetCallback(ih, "CLICK_CB");
@@ -731,6 +734,12 @@ static gboolean gtkTableButtonEvent(GtkWidget* widget, GdkEventButton* evt, Ihan
       iupgtkButtonKeySetStatus(evt->state, evt->button, status, 0);
 
       cb(ih, lin, col_index, status);
+    }
+
+    if (ih->data->show_dragdrop)
+    {
+      gtk_tree_path_free(path);
+      return FALSE;  /* let GtkTreeView select and start the row drag */
     }
 
     gtk_tree_view_set_cursor(GTK_TREE_VIEW(widget), path, column, FALSE);
@@ -1520,6 +1529,102 @@ static void gtkTableLayoutUpdateMethod(Ihandle* ih)
   }
 }
 
+static gboolean gtkTableDragMotion(GtkWidget* widget, GdkDragContext* context, gint x, gint y, guint time, Ihandle* ih)
+{
+  GtkTreePath* path;
+  GtkTreeViewDropPosition pos;
+  if (gtk_tree_view_get_dest_row_at_pos(GTK_TREE_VIEW(ih->handle), x, y, &path, &pos))
+  {
+    gtk_tree_view_set_drag_dest_row(GTK_TREE_VIEW(widget), path, pos);
+    gtk_tree_path_free(path);
+#if GTK_CHECK_VERSION(2, 22, 0)
+    gdk_drag_status(context, gdk_drag_context_get_suggested_action(context), time);
+#else
+    gdk_drag_status(context, context->suggested_action, time);
+#endif
+    return TRUE;
+  }
+  return FALSE;
+}
+
+static void gtkTableDragDataReceived(GtkWidget* widget, GdkDragContext* context, gint x, gint y,
+                                     GtkSelectionData* selection_data, guint info, guint time, Ihandle* ih)
+{
+  IgtkTableData* gtk_data = IGTK_TABLE_DATA(ih);
+  int is_ctrl;
+  int idDrag = iupAttribGetInt(ih, "_IUPTABLE_DRAGITEM");  /* 1-based */
+  int idDrop;
+  GtkTreePath* drop_path = NULL;
+  GtkTreeViewDropPosition drop_pos;
+
+  if (gtk_tree_view_get_dest_row_at_pos(GTK_TREE_VIEW(ih->handle), x, y, &drop_path, &drop_pos))
+  {
+    idDrop = gtk_tree_path_get_indices(drop_path)[0] + 1;  /* 1-based */
+    if (drop_pos == GTK_TREE_VIEW_DROP_AFTER || drop_pos == GTK_TREE_VIEW_DROP_INTO_OR_AFTER)
+      idDrop++;
+    gtk_tree_path_free(drop_path);
+  }
+  else
+    idDrop = -1;
+
+  idDrag--;  /* 0-based */
+  idDrop--;
+
+  if (iupTableCallDragDropCb(ih, idDrag, idDrop, &is_ctrl) == IUP_CONTINUE && !gtk_data->is_virtual && idDrag >= 0)
+  {
+    int count = ih->data->num_lin;
+    GtkTreeModel* model = GTK_TREE_MODEL(gtk_data->store);
+    GtkTreeIter iterDrag, iterDrop;
+
+    if (gtk_tree_model_iter_nth_child(model, &iterDrag, NULL, idDrag))
+    {
+      GtkTreeSelection* selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(ih->handle));
+      GtkTreePath* to_path;
+      int to_lin;
+
+      if (idDrop >= 0 && idDrop < count)
+      {
+        gtk_tree_model_iter_nth_child(model, &iterDrop, NULL, idDrop);
+        gtk_list_store_move_before(gtk_data->store, &iterDrag, &iterDrop);
+        to_lin = (idDrag < idDrop) ? idDrop - 1 : idDrop;
+      }
+      else
+      {
+        gtk_list_store_move_before(gtk_data->store, &iterDrag, NULL);  /* to end */
+        to_lin = count - 1;
+      }
+
+      iupTableMoveLinAttribs(ih, idDrag + 1, to_lin + 1);
+
+      to_path = gtk_tree_path_new_from_indices(to_lin, -1);
+      gtk_tree_selection_select_path(selection, to_path);
+      gtk_tree_path_free(to_path);
+
+      iupdrvTableRedraw(ih);
+    }
+  }
+
+  gtk_drag_finish(context, TRUE, FALSE, time);
+  (void)widget;
+  (void)selection_data;
+  (void)info;
+}
+
+static void gtkTableEnableDragDrop(Ihandle* ih)
+{
+  const GtkTargetEntry row_targets[] = {
+    { "IUP_TABLE_ROW", GTK_TARGET_SAME_WIDGET, 0 }
+  };
+
+  gtk_tree_view_enable_model_drag_source(GTK_TREE_VIEW(ih->handle), GDK_BUTTON1_MASK,
+    row_targets, G_N_ELEMENTS(row_targets), GDK_ACTION_MOVE);
+  gtk_tree_view_enable_model_drag_dest(GTK_TREE_VIEW(ih->handle),
+    row_targets, G_N_ELEMENTS(row_targets), GDK_ACTION_MOVE);
+
+  g_signal_connect(G_OBJECT(ih->handle), "drag-motion", G_CALLBACK(gtkTableDragMotion), ih);
+  g_signal_connect(G_OBJECT(ih->handle), "drag-data-received", G_CALLBACK(gtkTableDragDataReceived), ih);
+}
+
 static int gtkTableMapMethod(Ihandle* ih)
 {
   GtkListStore* store;
@@ -1869,6 +1974,9 @@ static int gtkTableMapMethod(Ihandle* ih)
   g_signal_connect(gtk_data->tree_view, "key-press-event", G_CALLBACK(gtkTableKeyPressEvent), ih);
   g_signal_connect(gtk_data->tree_view, "cursor-changed", G_CALLBACK(gtkTableCursorChanged), ih);
   g_signal_connect(gtk_data->tree_view, "columns-changed", G_CALLBACK(gtkTableColumnsChanged), ih);
+
+  if (ih->data->show_dragdrop)
+    gtkTableEnableDragDrop(ih);
 #if GTK_CHECK_VERSION(3, 0, 0)
   g_signal_connect_after(gtk_data->tree_view, "draw", G_CALLBACK(gtkTableDrawFocusRect), ih);
 #else

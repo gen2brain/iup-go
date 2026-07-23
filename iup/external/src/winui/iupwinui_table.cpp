@@ -784,6 +784,7 @@ static void winuiTableRebuildListViewItems(Ihandle* ih)
     return;
   }
 
+  aux->suppress_reorder = true;
   listView.Items().Clear();
 
   for (int i = 0; i < ih->data->num_lin; i++)
@@ -811,6 +812,8 @@ static void winuiTableRebuildListViewItems(Ihandle* ih)
 
     listView.Items().Append(rowGrid);
   }
+
+  aux->suppress_reorder = false;
 }
 
 static void winuiTableSort(Ihandle* ih, int col)
@@ -945,6 +948,70 @@ static void winuiTableShiftAttribLinCol(Ihandle* ih, const char* fmt, int lin, i
   }
   else
     iupAttribSet(ih, dst_name, NULL);
+}
+
+static void winuiTableMoveRow(Ihandle* ih, int source, int target)
+{
+  IupWinUITableAux* aux = winuiTableGetAux(ih);
+  if (!aux || source == target || !aux->cell_values)
+    return;
+
+  int src_idx = source - 1;
+  int tgt_idx = target - 1;
+
+  char** saved_row = aux->cell_values[src_idx];
+  if (source < target)
+    memmove(&aux->cell_values[src_idx], &aux->cell_values[src_idx + 1], (tgt_idx - src_idx) * sizeof(char**));
+  else
+    memmove(&aux->cell_values[tgt_idx + 1], &aux->cell_values[tgt_idx], (src_idx - tgt_idx) * sizeof(char**));
+  aux->cell_values[tgt_idx] = saved_row;
+
+  iupTableMoveLinAttribs(ih, source, target);
+
+  if (aux->current_row == source)
+    aux->current_row = target;
+  else if (source < target && aux->current_row > source && aux->current_row <= target)
+    aux->current_row--;
+  else if (source > target && aux->current_row >= target && aux->current_row < source)
+    aux->current_row++;
+}
+
+static void winuiTableOnItemsChanged(Ihandle* ih,
+    Windows::Foundation::Collections::IObservableVector<IInspectable> const& sender,
+    Windows::Foundation::Collections::IVectorChangedEventArgs const& args)
+{
+  IupWinUITableAux* aux = winuiTableGetAux(ih);
+  if (!aux || aux->suppress_reorder)
+    return;
+
+  if (args.CollectionChange() == Windows::Foundation::Collections::CollectionChange::ItemRemoved)
+  {
+    aux->reorder_from = (int)args.Index();
+    return;
+  }
+
+  if (args.CollectionChange() == Windows::Foundation::Collections::CollectionChange::ItemInserted)
+  {
+    int from = aux->reorder_from;
+    int to = (int)args.Index();
+    aux->reorder_from = -1;
+
+    if (from < 0 || from == to)
+      return;
+
+    int drop0 = (to > from) ? to + 1 : to;  /* insert-before index in original order */
+    int is_ctrl = 0;
+    if (iupTableCallDragDropCb(ih, from, drop0, &is_ctrl) == IUP_CONTINUE)
+      winuiTableMoveRow(ih, from + 1, to + 1);
+    else
+    {
+      aux->suppress_reorder = true;
+      IInspectable item = sender.GetAt(to);
+      sender.RemoveAt(to);
+      sender.InsertAt(from, item);
+      aux->suppress_reorder = false;
+    }
+  }
 }
 
 static void winuiTableMoveColumn(Ihandle* ih, int source, int target)
@@ -3034,6 +3101,18 @@ static int winuiTableMapMethod(Ihandle* ih)
     winuiTableAdjustColumnWidths(ih);
   });
 
+  if (ih->data->show_dragdrop && !aux->isVirtual)
+  {
+    listView.CanReorderItems(true);
+    listView.CanDragItems(true);
+    listView.AllowDrop(true);
+    aux->itemsChangedToken = listView.Items().VectorChanged(
+      [ih](Windows::Foundation::Collections::IObservableVector<IInspectable> const& sender,
+           Windows::Foundation::Collections::IVectorChangedEventArgs const& args) {
+        winuiTableOnItemsChanged(ih, sender, args);
+      });
+  }
+
   void* headerPtr = nullptr;
   winrt::copy_to_abi(headerPanel, headerPtr);
   iupAttribSet(ih, "_IUPWINUI_TABLE_HEADER", (char*)headerPtr);
@@ -3133,6 +3212,8 @@ static void winuiTableUnMapMethod(Ihandle* ih)
     listView.SizeChanged(aux->sizeChangedToken);
     if (aux->isVirtual)
       listView.ContainerContentChanging(aux->containerContentChangingToken);
+    if (aux->itemsChangedToken)
+      listView.Items().VectorChanged(aux->itemsChangedToken);
   }
 
   char* indicatorPtr = iupAttribGet(ih, "_IUPWINUI_TABLE_DRAG_INDICATOR");

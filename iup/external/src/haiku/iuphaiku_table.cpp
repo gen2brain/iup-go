@@ -361,6 +361,53 @@ public:
     if (r) StartEdit((int)IndexOf(r) + 1, fFocusCol);
   }
 
+  void SetDragSourceRow(int r) { fDragSourceRow = r; }
+  int DragSourceRow() const { return fDragSourceRow; }
+  void SetRowDragStartY(int y) { fDragStartY = y; }
+  int RowDragStartY() const { return fDragStartY; }
+  void SetRowDragging(bool d) { fRowDragging = d; }
+  bool RowDragging() const { return fRowDragging; }
+  void SetDragTargetRow(int t) { fDragTargetRow = t; }
+  int DragTargetRow() const { return fDragTargetRow; }
+
+  int InsertBeforeAtOutlineY(float oy)
+  {
+    int n = (int)CountRows(NULL);
+    float y = 0.0f;
+    for (int i = 0; i < n; i++)
+    {
+      const BRow* row = RowAt(i, NULL);
+      if (!row) continue;
+      float rh = row->Height();
+      if (oy < y + rh / 2.0f) return i;
+      y += rh + 1.0f;
+    }
+    return n;
+  }
+
+  void CommitRowMove(int source, int drop)
+  {
+    int is_ctrl = 0;
+    if (source < 0 || drop < 0)
+      return;
+    if (iupTableCallDragDropCb(fIhandle, source, drop, &is_ctrl) != IUP_CONTINUE)
+      return;
+
+    int n = (int)CountRows(NULL);
+    int target = (drop > source) ? drop - 1 : drop;
+    if (target >= n) target = n - 1;
+    if (target < 0) target = 0;
+    if (target == source) return;
+
+    BRow* row = RowAt(source, NULL);
+    if (!row) return;
+    RemoveRow(row);
+    AddRow(row, target, NULL);
+    iupTableMoveLinAttribs(fIhandle, source + 1, target + 1);
+    SetFocusRow(row, true);
+    Invalidate();
+  }
+
   void FrameResized(float w, float h) override
   {
     BColumnListView::FrameResized(w, h);
@@ -442,6 +489,23 @@ public:
     {
       SetLowColor(base);
       FillRect(BRect(trail_left, of.top + line, of.right, of.bottom), B_SOLID_LOW);
+    }
+
+    if (fRowDragging && fDragTargetRow >= 0 &&
+        fDragTargetRow != fDragSourceRow && fDragTargetRow != fDragSourceRow + 1)
+    {
+      float ly = of.top - scroll_y;
+      for (int i = 0; i < n && i < fDragTargetRow; i++)
+      {
+        const BRow* r = RowAt(i, NULL);
+        if (r) ly += r->Height() + 1.0f;
+      }
+      if (ly >= of.top && ly <= of.bottom)
+      {
+        rgb_color blue = { 0, 120, 215, 255 };
+        SetHighColor(blue);
+        FillRect(BRect(of.left, ly - 1, of.right, ly + 1));
+      }
     }
   }
 
@@ -619,6 +683,10 @@ private:
   BMessageFilter* fSortFilter = NULL;
   IupHaikuTableEditor* fEditor = NULL;
   BView* fTrail = NULL;
+  int fDragSourceRow = -1;
+  int fDragTargetRow = -1;
+  bool fRowDragging = false;
+  int fDragStartY = 0;
 };
 
 
@@ -894,11 +962,42 @@ public:
     if (msg->what == B_MOUSE_MOVED)
     {
       fTv->RepositionTrail();
+      if (fTv->GetIhandle()->data->show_dragdrop && fTv->DragSourceRow() >= 0)
+      {
+        BPoint where;
+        BView* outline = fTv->ScrollView();
+        if (outline && msg->FindPoint("be:view_where", &where) == B_OK)
+        {
+          BPoint ov_pt = outline->ConvertFromScreen(tgt->ConvertToScreen(where));
+          if (!fTv->RowDragging() && abs((int)ov_pt.y - fTv->RowDragStartY()) > 4)
+            fTv->SetRowDragging(true);
+          if (fTv->RowDragging())
+          {
+            int t = fTv->InsertBeforeAtOutlineY(ov_pt.y);
+            if (t != fTv->DragTargetRow())
+            {
+              fTv->SetDragTargetRow(t);
+              fTv->Invalidate();
+            }
+          }
+        }
+      }
       return B_DISPATCH_MESSAGE;
     }
 
     if (msg->what == B_MOUSE_UP)
     {
+      if (fTv->GetIhandle()->data->show_dragdrop && fTv->DragSourceRow() >= 0)
+      {
+        int source = fTv->DragSourceRow();
+        int target = fTv->DragTargetRow();
+        bool was_dragging = fTv->RowDragging();
+        fTv->SetDragSourceRow(-1);
+        fTv->SetRowDragging(false);
+        fTv->SetDragTargetRow(-1);
+        if (was_dragging && target >= 0)
+          fTv->CommitRowMove(source, target);
+      }
       fTv->RepositionTrail();
       fTv->UpdateScrollBarVisibility();
       if (BView* outline = fTv->ScrollView()) outline->Invalidate();
@@ -942,6 +1041,14 @@ public:
         if (ov_pt.y >= y && ov_pt.y <= y + rh) { hit_lin = i + 1; break; }
         y += rh + 1.0f;
       }
+      if (hit_lin > 0 && ih->data->show_dragdrop)
+      {
+        fTv->SetDragSourceRow(hit_lin - 1);
+        fTv->SetRowDragStartY((int)ov_pt.y);
+        fTv->SetRowDragging(false);
+        fTv->SetDragTargetRow(-1);
+      }
+
       if (hit_lin > 0 && col)
       {
         IFniis cb = (IFniis)IupGetCallback(ih, "CLICK_CB");
@@ -1623,6 +1730,12 @@ static int haikuTableMapMethod(Ihandle* ih)
 
   LooperLockGuard guard(tv->Looper());
   tv->SetSortingEnabled(ih->data->sortable ? true : false);
+  {
+    /* CLV defaults to MULTIPLE; IUP's default is SINGLE. */
+    const char* selmode = iupAttribGet(ih, "SELECTIONMODE");
+    tv->SetSelectionMode(selmode && iupStrEqualNoCase(selmode, "MULTIPLE")
+                         ? B_MULTIPLE_SELECTION_LIST : B_SINGLE_SELECTION_LIST);
+  }
   haikuTableApplyColumnFlags(ih);
   tv->StretchLastColumn();
   tv->UpdateScrollBarVisibility();

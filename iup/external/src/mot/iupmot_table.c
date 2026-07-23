@@ -82,6 +82,13 @@ typedef struct _ImotTableData
   int current_row;           /* Current focused row (1-based, 0=none) */
   int current_col;           /* Current focused column (1-based, 0=none) */
 
+  /* Row drag-reorder state (SHOWDRAGDROP) */
+  int drag_source_row;       /* Row where the drag started (1-based, 0=none) */
+  int drag_target_row;       /* Insert-before index while dragging (0-based, -1=none) */
+  int row_dragging;          /* 1 once past the drag threshold */
+  int drag_start_x;
+  int drag_start_y;
+
   /* Cell data storage (2D array) */
   char*** cell_values;       /* [num_lin][num_col] -> string */
   char** col_titles;         /* [num_col] -> string */
@@ -127,6 +134,9 @@ static void motTableEndCellEdit(Ihandle* ih, int apply);
 static void motTablePixelToCell(Ihandle* ih, int px, int py, int* lin, int* col);
 static void motTableStartCellEdit(Ihandle* ih, int lin, int col);
 static void motTableEndCellEdit(Ihandle* ih, int apply);
+static int motTableFindTargetRow(Ihandle* ih, int py);
+static void motTableMoveRow(Ihandle* ih, int from, int to);
+static void motTableRowDragMotion(Widget w, XtPointer client_data, XEvent* event, Boolean* cont);
 
 /* ========================================================================= */
 /* Helper Functions - Sort Indicators                                       */
@@ -307,6 +317,79 @@ static void motTablePixelToCell(Ihandle* ih, int px, int py, int* lin, int* col)
     row = (py - mot_data->header_height) / mot_data->row_height;
     if (row >= 0 && row < ih->data->num_lin)
       *lin = row + 1;
+  }
+}
+
+static int motTableFindTargetRow(Ihandle* ih, int py)
+{
+  ImotTableData* mot_data = IMOT_TABLE_DATA(ih);
+  int num_lin = ih->data->num_lin;
+  int y = py + mot_data->scroll_y;
+  int lin;
+
+  for (lin = 1; lin <= num_lin; lin++)
+  {
+    int mid = mot_data->header_height + (lin - 1) * mot_data->row_height + mot_data->row_height / 2;
+    if (y < mid)
+      return lin - 1;
+  }
+  return num_lin;
+}
+
+static void motTableMoveRow(Ihandle* ih, int from, int to)
+{
+  ImotTableData* mot_data = IMOT_TABLE_DATA(ih);
+  int num_lin = ih->data->num_lin;
+  char** row;
+  int l;
+
+  if (from == to || from < 1 || to < 1 || from > num_lin || to > num_lin)
+    return;
+  if (!mot_data->cell_values)
+    return;
+
+  row = mot_data->cell_values[from - 1];
+  if (from < to)
+    for (l = from - 1; l < to - 1; l++)
+      mot_data->cell_values[l] = mot_data->cell_values[l + 1];
+  else
+    for (l = from - 1; l > to - 1; l--)
+      mot_data->cell_values[l] = mot_data->cell_values[l - 1];
+  mot_data->cell_values[to - 1] = row;
+
+  iupTableMoveLinAttribs(ih, from, to);
+
+  mot_data->current_row = to;
+  motTableRedraw(ih);
+}
+
+static void motTableRowDragMotion(Widget w, XtPointer client_data, XEvent* event, Boolean* cont)
+{
+  Ihandle* ih = (Ihandle*)client_data;
+  ImotTableData* mot_data = IMOT_TABLE_DATA(ih);
+  XMotionEvent* motion = (XMotionEvent*)event;
+  int target;
+
+  (void)w;
+  (void)cont;
+
+  if (!mot_data || mot_data->drag_source_row < 1 || !ih->data->show_dragdrop)
+    return;
+
+  if (!mot_data->row_dragging)
+  {
+    int dx = motion->x - mot_data->drag_start_x;
+    int dy = motion->y - mot_data->drag_start_y;
+    if (dx * dx + dy * dy < 25)
+      return;
+    mot_data->row_dragging = 1;
+  }
+
+  target = motTableFindTargetRow(ih, motion->y);
+  if (target != mot_data->drag_target_row)
+  {
+    mot_data->drag_target_row = target;
+    motTableRedraw(ih);
   }
 }
 
@@ -712,6 +795,18 @@ static void motTableDrawTable(Ihandle* ih)
       }
     }
   }
+
+  /* Row drag-reorder drop indicator */
+  if (mot_data->row_dragging && mot_data->drag_target_row >= 0 &&
+      mot_data->drag_target_row != mot_data->drag_source_row - 1 &&
+      mot_data->drag_target_row != mot_data->drag_source_row)
+  {
+    int ly = mot_data->header_height + mot_data->drag_target_row * mot_data->row_height - mot_data->scroll_y;
+    XSetForeground(display, mot_data->gc, iupmotColorGetPixel(0, 120, 215));
+    XSetLineAttributes(display, mot_data->gc, 2, LineSolid, CapButt, JoinMiter);
+    XDrawLine(display, window, mot_data->gc, 0, ly, width, ly);
+    XSetLineAttributes(display, mot_data->gc, 1, LineSolid, CapButt, JoinMiter);
+  }
 }
 
 static void motTableRedraw(Ihandle* ih)
@@ -1009,6 +1104,16 @@ static void motTableInputCallback(Widget w, XtPointer client_data, XtPointer cal
       mot_data->current_row = lin;
       mot_data->current_col = col;
 
+      /* Arm row drag-reorder */
+      if (ih->data->show_dragdrop && button_event->button == Button1)
+      {
+        mot_data->drag_source_row = lin;
+        mot_data->drag_target_row = -1;
+        mot_data->row_dragging = 0;
+        mot_data->drag_start_x = button_event->x;
+        mot_data->drag_start_y = button_event->y;
+      }
+
       /* Call CLICK_CB */
       IFniis cb = (IFniis)IupGetCallback(ih, "CLICK_CB");
       if (cb)
@@ -1043,6 +1148,36 @@ static void motTableInputCallback(Widget w, XtPointer client_data, XtPointer cal
         last_click_time = button_event->time;
         last_click_lin = lin;
         last_click_col = col;
+      }
+    }
+  }
+  else if (event->type == ButtonRelease)
+  {
+    XButtonEvent* button_event = (XButtonEvent*)event;
+
+    if (button_event->button == Button1 && mot_data->drag_source_row >= 1)
+    {
+      int src = mot_data->drag_source_row;
+      int tgt = mot_data->drag_target_row;
+      int was_dragging = mot_data->row_dragging;
+
+      mot_data->drag_source_row = 0;
+      mot_data->drag_target_row = -1;
+      mot_data->row_dragging = 0;
+
+      if (was_dragging && tgt >= 0)
+      {
+        int is_ctrl = 0;
+        if (iupTableCallDragDropCb(ih, src - 1, tgt, &is_ctrl) == IUP_CONTINUE)
+        {
+          int num_lin = ih->data->num_lin;
+          int to = (tgt > src - 1) ? tgt - 1 : tgt;
+          if (to >= num_lin) to = num_lin - 1;
+          if (to < 0) to = 0;
+          motTableMoveRow(ih, src, to + 1);
+        }
+        else
+          motTableRedraw(ih);
       }
     }
   }
@@ -1483,6 +1618,7 @@ static int motTableMapMethod(Ihandle* ih)
   XtAddCallback(mot_data->drawing_area, XmNinputCallback, motTableInputCallback, (XtPointer)ih);
 
   XtAddEventHandler(mot_data->drawing_area, KeyPressMask, False, (XtEventHandler)motTableKeyPressCallback, (XtPointer)ih);
+  XtAddEventHandler(mot_data->drawing_area, Button1MotionMask, False, (XtEventHandler)motTableRowDragMotion, (XtPointer)ih);
   XtAddEventHandler(mot_data->drawing_area, FocusChangeMask, False, (XtEventHandler)iupmotFocusChangeEvent, (XtPointer)ih);
   XtAddEventHandler(mot_data->drawing_area, EnterWindowMask, False, (XtEventHandler)iupmotEnterLeaveWindowEvent, (XtPointer)ih);
   XtAddEventHandler(mot_data->drawing_area, LeaveWindowMask, False, (XtEventHandler)iupmotEnterLeaveWindowEvent, (XtPointer)ih);

@@ -84,6 +84,10 @@ typedef struct _IwinTableData {
   BOOL is_dragging;
   int drag_start_x;
   int drag_start_y;
+
+  /* Row reorder drag state */
+  int drag_source_row;
+  BOOL row_dragging;
 } IwinTableData;
 
 #define IWIN_TABLE_DATA(ih) ((IwinTableData*)(ih->data->native_data))
@@ -565,6 +569,67 @@ static void winTableRefreshAfterReorder(Ihandle* ih)
   }
 
   InvalidateRect(list_view, NULL, TRUE);
+}
+
+static void winTableMoveRow(Ihandle* ih, int from0, int to0)
+{
+  IwinTableData* data = IWIN_TABLE_DATA(ih);
+  HWND list_view = winTableGetListView(ih);
+  int num_lin = ih->data->num_lin;
+  int num_col = ih->data->num_col;
+  char** row;
+  int l, c;
+
+  if (!data || !list_view || !data->cell_values)
+    return;
+  if (from0 == to0 || from0 < 0 || to0 < 0 || from0 >= num_lin || to0 >= num_lin)
+    return;
+
+  row = data->cell_values[from0];
+  if (from0 < to0)
+    for (l = from0; l < to0; l++)
+      data->cell_values[l] = data->cell_values[l + 1];
+  else
+    for (l = from0; l > to0; l--)
+      data->cell_values[l] = data->cell_values[l - 1];
+  data->cell_values[to0] = row;
+
+  iupTableMoveLinAttribs(ih, from0 + 1, to0 + 1);
+
+  for (c = 1; c <= num_col; c++)
+  {
+    char* img = iupAttribGetId2(ih, "_IUPWIN_CELLIMAGE", from0 + 1, c);
+    char* saved = img ? iupStrDup(img) : NULL;
+    if (from0 < to0)
+      for (l = from0 + 1; l < to0 + 1; l++)
+        iupAttribSetStrId2(ih, "_IUPWIN_CELLIMAGE", l, c, iupAttribGetId2(ih, "_IUPWIN_CELLIMAGE", l + 1, c));
+    else
+      for (l = from0 + 1; l > to0 + 1; l--)
+        iupAttribSetStrId2(ih, "_IUPWIN_CELLIMAGE", l, c, iupAttribGetId2(ih, "_IUPWIN_CELLIMAGE", l - 1, c));
+    iupAttribSetStrId2(ih, "_IUPWIN_CELLIMAGE", to0 + 1, c, saved);
+    if (saved) free(saved);
+  }
+
+  {
+    int lo = (from0 < to0) ? from0 : to0;
+    int hi = (from0 < to0) ? to0 : from0;
+    for (l = lo; l <= hi; l++)
+      for (c = 0; c < num_col; c++)
+      {
+        LVITEM item;
+        ZeroMemory(&item, sizeof(LVITEM));
+        item.mask = LVIF_TEXT;
+        item.iItem = l;
+        item.iSubItem = c + 1;
+        item.pszText = iupwinStrToSystem(data->cell_values[l][c] ? data->cell_values[l][c] : "");
+        ListView_SetItem(list_view, &item);
+      }
+    InvalidateRect(list_view, NULL, TRUE);
+  }
+
+  ListView_SetItemState(list_view, -1, 0, LVIS_SELECTED | LVIS_FOCUSED);
+  ListView_SetItemState(list_view, to0, LVIS_SELECTED | LVIS_FOCUSED, LVIS_SELECTED | LVIS_FOCUSED);
+  data->current_row = to0 + 1;
 }
 
 static int winTableFindTargetColumn(Ihandle* ih, HWND header, int x)
@@ -1695,6 +1760,18 @@ static int winTableNotifyCallback(Ihandle* ih, void* msg_info, int* result)
   /* Handle ListView notifications */
   switch (nmhdr->code)
   {
+    case LVN_BEGINDRAG:
+    {
+      if (ih->data->show_dragdrop)
+      {
+        LPNMLISTVIEW pnmv = (LPNMLISTVIEW)msg_info;
+        data->drag_source_row = pnmv->iItem;
+        data->row_dragging = TRUE;
+        SetCapture(data->list_view);
+      }
+      break;
+    }
+
     case LVN_GETDISPINFO:
     {
       /* Virtual mode: provide text on demand */
@@ -2566,6 +2643,49 @@ static LRESULT CALLBACK winTableListViewWndProc(HWND hwnd, UINT msg, WPARAM wp, 
     {
       /* Invalidate focused cell to redraw/remove FOCUSRECT */
       winTableInvalidateCell(hwnd, data->current_row, data->current_col);
+    }
+  }
+
+  /* Row drag-reorder tracking */
+  {
+    IwinTableData* data = IWIN_TABLE_DATA(ih);
+    if (data && data->row_dragging && (msg == WM_MOUSEMOVE || msg == WM_LBUTTONUP))
+    {
+      POINT pt = { GET_X_LPARAM(lp), GET_Y_LPARAM(lp) };
+      LVINSERTMARK lvim;
+      ZeroMemory(&lvim, sizeof(lvim));
+      lvim.cbSize = sizeof(lvim);
+      ListView_InsertMarkHitTest(hwnd, &pt, &lvim);
+
+      if (msg == WM_MOUSEMOVE)
+      {
+        ListView_SetInsertMark(hwnd, &lvim);
+        return 0;
+      }
+
+      ReleaseCapture();
+      data->row_dragging = FALSE;
+
+      LVINSERTMARK clear;
+      ZeroMemory(&clear, sizeof(clear));
+      clear.cbSize = sizeof(clear);
+      clear.iItem = -1;
+      ListView_SetInsertMark(hwnd, &clear);
+
+      int source = data->drag_source_row;
+      data->drag_source_row = -1;
+      int drop0 = (lvim.iItem < 0) ? ih->data->num_lin
+                                   : lvim.iItem + ((lvim.dwFlags & LVIM_AFTER) ? 1 : 0);
+
+      int is_ctrl = 0;
+      if (iupTableCallDragDropCb(ih, source, drop0, &is_ctrl) == IUP_CONTINUE)
+      {
+        int to0 = (drop0 > source) ? drop0 - 1 : drop0;
+        if (to0 >= ih->data->num_lin) to0 = ih->data->num_lin - 1;
+        if (to0 < 0) to0 = 0;
+        winTableMoveRow(ih, source, to0);
+      }
+      return 0;
     }
   }
 

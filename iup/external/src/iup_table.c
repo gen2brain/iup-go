@@ -712,6 +712,85 @@ static int iTableSetSortableAttrib(Ihandle* ih, const char* value)
   return 0; /* do not store in hash table */
 }
 
+int iupTableCallDragDropCb(Ihandle* ih, int drag_id, int drop_id, int *is_ctrl)
+{
+  IFniiii cbDragDrop = (IFniiii)IupGetCallback(ih, "DRAGDROP_CB");
+  int is_shift = 0;
+  char key[5];
+  iupdrvGetKeyState(key);
+  if (key[0] == 'S')
+    is_shift = 1;
+  if (key[1] == 'C')
+    *is_ctrl = 1;
+  else
+    *is_ctrl = 0;
+
+  /* ignore a drop that will do nothing */
+  if ((*is_ctrl) == 0 && (drag_id + 1 == drop_id || drag_id == drop_id))
+    return IUP_DEFAULT;
+  if ((*is_ctrl) != 0 && drag_id == drop_id)
+    return IUP_DEFAULT;
+
+  drag_id++;
+  if (drop_id < 0)
+    drop_id = -1;
+  else
+    drop_id++;
+
+  if (cbDragDrop)
+    return cbDragDrop(ih, drag_id, drop_id, is_shift, *is_ctrl);  /* starts at 1 */
+
+  return IUP_CONTINUE;  /* move/copy by default when no callback */
+}
+
+void iupTableMoveLinAttribs(Ihandle* ih, int from_lin, int to_lin)
+{
+  static const char* attribs[3] = { "BGCOLOR", "FGCOLOR", "FONT" };
+  int a, col;
+
+  if (from_lin == to_lin)
+    return;
+
+  for (a = 0; a < 3; a++)
+  {
+    const char* name = attribs[a];
+    for (col = 0; col <= ih->data->num_col; col++)  /* col 0 is the per-row (L:*) entry */
+    {
+      char* value = iupAttribGetId2(ih, name, from_lin, col);
+      char* saved = value ? iupStrDup(value) : NULL;
+      int l;
+
+      if (from_lin < to_lin)
+      {
+        for (l = from_lin; l < to_lin; l++)
+          iupAttribSetStrId2(ih, name, l, col, iupAttribGetId2(ih, name, l + 1, col));
+      }
+      else
+      {
+        for (l = from_lin; l > to_lin; l--)
+          iupAttribSetStrId2(ih, name, l, col, iupAttribGetId2(ih, name, l - 1, col));
+      }
+
+      iupAttribSetStrId2(ih, name, to_lin, col, saved);
+      if (saved)
+        free(saved);
+    }
+  }
+}
+
+static char* iTableGetShowDragDropAttrib(Ihandle* ih)
+{
+  return iupStrReturnBoolean(ih->data->show_dragdrop);
+}
+
+static int iTableSetShowDragDropAttrib(Ihandle* ih, const char* value)
+{
+  if (ih->handle)  /* creation-only */
+    return 0;
+  ih->data->show_dragdrop = iupStrBoolean(value) ? 1 : 0;
+  return 0;
+}
+
 static char* iTableGetAllowReorderAttrib(Ihandle* ih)
 {
   return iupStrReturnBoolean(ih->data->allow_reorder);
@@ -793,6 +872,7 @@ Iclass* iupTableNewClass(void)
   iupClassRegisterCallback(ic, "VALUE_CB", "ii=s");  /* lin, col, returns string value for virtual mode */
   iupClassRegisterCallback(ic, "IMAGE_CB", "ii=s");  /* lin, col, returns image name for virtual mode */
   iupClassRegisterCallback(ic, "REORDER_CB", "ii");
+  iupClassRegisterCallback(ic, "DRAGDROP_CB", "iiii");  /* row drag-reorder: drag_id, drop_id, isshift, isctrl */
 
   /* Common Callbacks */
   iupBaseRegisterCommonCallbacks(ic);
@@ -855,6 +935,7 @@ Iclass* iupTableNewClass(void)
 
   /* Column reordering attributes - driver will replace SET handler to update native widget */
   iupClassRegisterAttribute(ic, "ALLOWREORDER", iTableGetAllowReorderAttrib, iTableSetAllowReorderAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);  /* Enable/disable column reordering via drag-and-drop: YES, NO */
+  iupClassRegisterAttribute(ic, "SHOWDRAGDROP", iTableGetShowDragDropAttrib, iTableSetShowDragDropAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);  /* Enable/disable interactive row drag-reorder (creation-only): YES, NO */
 
   /* Column resizing attributes */
   iupClassRegisterAttribute(ic, "USERRESIZE", iTableGetUserResizeAttrib, iTableSetUserResizeAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);  /* Enable/disable user column resizing: YES, NO */

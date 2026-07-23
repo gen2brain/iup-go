@@ -124,6 +124,8 @@ static void fltkTableSortRows(Ihandle* ih, int col, int ascending);
 static void fltkTableHandleHeaderClick(Ihandle* ih, int col);
 static void fltkTableSwapColumns(Ihandle* ih, int src, int dst);
 static int fltkTableFindTargetCol(IupFltkTable* table, int mx);
+static int fltkTableFindTargetRow(IupFltkTable* table, int my);
+static void fltkTableMoveRow(Ihandle* ih, int from, int to);
 
 static int fltkTableIsCellEditable(Ihandle* ih, int lin, int col)
 {
@@ -243,12 +245,16 @@ public:
   int drag_target_col;
   int drag_start_x, drag_start_y;
   int dragging;
+  int drag_source_row;
+  int drag_target_row;
+  int row_dragging;
 
   IupFltkTable(int X, int Y, int W, int H, Ihandle* ih)
     : Fl_Table_Row(X, Y, W, H), iup_handle(ih),
       focus_lin(0), focus_col(0), show_grid(1), is_virtual(0), has_dummy_col(0), auto_widths_done(0),
       sort_column(0), sort_ascending(1),
-      drag_source_col(-1), drag_target_col(-1), drag_start_x(0), drag_start_y(0), dragging(0)
+      drag_source_col(-1), drag_target_col(-1), drag_start_x(0), drag_start_y(0), dragging(0),
+      drag_source_row(-1), drag_target_row(-1), row_dragging(0)
   {
     selection_color(FL_SELECTION_COLOR);
   }
@@ -486,6 +492,21 @@ protected:
           fl_line_style(FL_SOLID, 1);
         }
 
+        if (row_dragging && R == drag_source_row)
+        {
+          fl_color(FL_RED);
+          fl_line_style(FL_SOLID, 2);
+          fl_line(X, Y + 1, X + W, Y + 1);
+          fl_line(X, Y + H - 1, X + W, Y + H - 1);
+          fl_line_style(FL_SOLID, 1);
+        }
+
+        if (row_dragging && R == drag_target_row)
+        {
+          fl_color(FL_RED);
+          fl_rectf(X, Y, W, 3);
+        }
+
         fl_pop_clip();
         break;
       }
@@ -542,6 +563,15 @@ protected:
           int prev_col = focus_col;
           focus_lin = R;
           focus_col = C;
+
+          if (iup_handle->data->show_dragdrop)
+          {
+            drag_source_row = R;
+            drag_target_row = R;
+            drag_start_x = Fl::event_x();
+            drag_start_y = Fl::event_y();
+            row_dragging = 0;
+          }
 
           if (prev_lin != R || prev_col != C)
           {
@@ -618,6 +648,25 @@ protected:
             }
           }
         }
+
+        if (drag_source_row >= 0 && iup_handle->data->show_dragdrop)
+        {
+          int dx = Fl::event_x() - drag_start_x;
+          int dy = Fl::event_y() - drag_start_y;
+          if (!row_dragging && (dx * dx + dy * dy) >= 25)
+            row_dragging = 1;
+          if (row_dragging)
+          {
+            if (window()) window()->cursor(FL_CURSOR_MOVE);
+            int new_target = fltkTableFindTargetRow(this, Fl::event_y());
+            if (new_target != drag_target_row)
+            {
+              drag_target_row = new_target;
+              redraw();
+            }
+            return 1;
+          }
+        }
         break;
       }
 
@@ -652,6 +701,33 @@ protected:
           }
 
           redraw();
+        }
+
+        if (drag_source_row >= 0 && iup_handle->data->show_dragdrop)
+        {
+          int src = drag_source_row;
+          int tgt = drag_target_row;
+          int was_dragging = row_dragging;
+          drag_source_row = -1;
+          drag_target_row = -1;
+          row_dragging = 0;
+
+          if (window()) window()->cursor(FL_CURSOR_DEFAULT);
+
+          if (was_dragging)
+          {
+            int is_ctrl = 0;
+            if (iupTableCallDragDropCb(iup_handle, src, tgt, &is_ctrl) == IUP_CONTINUE)
+            {
+              int count = iup_handle->data->num_lin;
+              int to = (tgt > src) ? tgt - 1 : tgt;
+              if (to >= count) to = count - 1;
+              if (to >= 0 && to != src)
+                fltkTableMoveRow(iup_handle, src + 1, to + 1);
+            }
+            redraw();
+            return 1;
+          }
         }
         break;
       }
@@ -930,6 +1006,52 @@ static int fltkTableFindTargetCol(IupFltkTable* table, int mx)
     cx += cw;
   }
   return num_col;
+}
+
+static int fltkTableFindTargetRow(IupFltkTable* table, int my)
+{
+  int num_lin = table->iup_handle->data->num_lin;
+  int cy = table->y() + (table->col_header() ? table->col_header_height() : 0);
+  cy += Fl::box_dy(table->box());
+
+  for (int r = 0; r < num_lin; r++)
+  {
+    int rh = table->row_height(r);
+    int mid = cy + rh / 2;
+    if (my < mid)
+      return r;
+    cy += rh;
+  }
+  return num_lin;
+}
+
+static void fltkTableMoveRow(Ihandle* ih, int from, int to)
+{
+  IupFltkTable* table = (IupFltkTable*)ih->handle;
+  if (!table) return;
+
+  int f = from - 1;
+  int t = to - 1;
+  int num_lin = ih->data->num_lin;
+  if (f < 0 || f >= num_lin || t < 0 || t >= num_lin || f == t)
+    return;
+
+  if (!table->is_virtual && f < (int)table->cells.size())
+  {
+    std::vector<std::string> row = table->cells[f];
+    table->cells.erase(table->cells.begin() + f);
+    table->cells.insert(table->cells.begin() + t, row);
+  }
+
+  iupTableMoveLinAttribs(ih, from, to);
+
+  if (table->focus_lin == f) table->focus_lin = t;
+  else if (f < t && table->focus_lin > f && table->focus_lin <= t) table->focus_lin--;
+  else if (f > t && table->focus_lin >= t && table->focus_lin < f) table->focus_lin++;
+
+  table->select_all_rows(0);
+  table->select_row(t, 1);
+  table->redraw();
 }
 
 static IupFltkTable* fltkTableGetWidget(Ihandle* ih)
