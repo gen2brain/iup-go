@@ -471,6 +471,10 @@ struct IupWinUITableAux
   double resize_start_x;
   int resize_start_width;
 
+  int reorder_from;
+  bool suppress_reorder;
+  winrt::event_token itemsChangedToken;
+
   winrt::event_token selectionChangedToken;
   winrt::event_token doubleTappedToken;
   winrt::event_token keyDownToken;
@@ -490,6 +494,7 @@ struct IupWinUITableAux
                         drag_source_col(0), drag_target_col(0),
                         dragging(false), drag_start_x(0), drag_start_y(0),
                         resize_col(0), resize_start_x(0), resize_start_width(0),
+                        reorder_from(-1), suppress_reorder(false), itemsChangedToken{},
                         selectionChangedToken{}, doubleTappedToken{},
                         keyDownToken{}, sizeChangedToken{},
                         containerContentChangingToken{} {}

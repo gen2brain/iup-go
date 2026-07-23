@@ -190,6 +190,7 @@ static const void* IUP_COCOATOUCH_TABLE_CTRL_OBJ_KEY = "IUP_COCOATOUCH_TABLE_CTR
 - (void)setCell:(NSString*)value atLin:(NSInteger)lin col:(NSInteger)col;
 - (void)setImage:(NSString*)name atLin:(NSInteger)lin col:(NSInteger)col;
 - (void)resizeToLines:(NSInteger)num_lin cols:(NSInteger)num_col;
+- (void)moveRowFrom:(NSInteger)from0 to:(NSInteger)to0;
 @end
 
 static UICollectionViewLayout* cocoaTouchTableMakeLayout(IupCocoaTouchTableController* ctrl)
@@ -403,6 +404,19 @@ static UICollectionViewLayout* cocoaTouchTableMakeLayout(IupCocoaTouchTableContr
 	swapInArray(_colWidths, a, b);
 	for (NSMutableArray* row in _cells)  swapInArray(row, a, b);
 	for (NSMutableArray* row in _images) swapInArray(row, a, b);
+}
+
+- (void)moveRowFrom:(NSInteger)from0 to:(NSInteger)to0
+{
+	void (^moveInArray)(NSMutableArray*, NSInteger, NSInteger) = ^(NSMutableArray* arr, NSInteger f, NSInteger t) {
+		if (!arr || f < 0 || t < 0 || f >= (NSInteger)arr.count || t >= (NSInteger)arr.count || f == t) return;
+		id obj = [[arr objectAtIndex:(NSUInteger)f] retain];
+		[arr removeObjectAtIndex:(NSUInteger)f];
+		[arr insertObject:obj atIndex:(NSUInteger)t];
+		[obj release];
+	};
+	moveInArray(_cells, from0, to0);
+	moveInArray(_images, from0, to0);
 }
 
 - (void)resizeToLines:(NSInteger)num_lin cols:(NSInteger)num_col
@@ -1073,6 +1087,176 @@ static void cocoaTouchTableSwapColumnAttribs(Ihandle* ih, int col1, int col2)
 
 @end
 
+@interface IupCocoaTouchTableRowReorderGR : NSObject
+@property(nonatomic, assign) Ihandle* ihandle;
+@property(nonatomic, assign) UICollectionView* collectionView;
+@property(nonatomic, assign) NSInteger sourceLin;    /* 0-based */
+@property(nonatomic, assign) NSInteger targetLin;    /* 0-based insert-before (0..num_lin) */
+@property(nonatomic, retain) UIView* dropIndicator;
+@end
+
+@implementation IupCocoaTouchTableRowReorderGR
+
+- (instancetype)init { self = [super init]; if (self) { _sourceLin = -1; _targetLin = -1; } return self; }
+
+- (void)dealloc { [_dropIndicator release]; [super dealloc]; }
+
+- (IupCocoaTouchTableController*)controller
+{
+	return objc_getAssociatedObject(self.collectionView, IUP_COCOATOUCH_TABLE_CTRL_OBJ_KEY);
+}
+
+- (NSInteger)lineAtPoint:(CGPoint)pt
+{
+	UICollectionView* cv = self.collectionView;
+	NSIndexPath* ip = [cv indexPathForItemAtPoint:pt];
+	if (!ip || [ip section] != IUPCOCOATOUCH_TABLE_BODY_SECTION) return -1;
+	IupCocoaTouchTableController* ctrl = [self controller];
+	NSInteger num_col = ctrl ? [ctrl numberOfColumns] : 0;
+	if (num_col <= 0) return -1;
+	return [ip item] / num_col;
+}
+
+- (NSInteger)insertBeforeAtPoint:(CGPoint)pt
+{
+	UICollectionView* cv = self.collectionView;
+	IupCocoaTouchTableController* ctrl = [self controller];
+	if (!ctrl) return -1;
+	NSInteger num_col = [ctrl numberOfColumns];
+	NSInteger num_lin = [ctrl numberOfLines];
+	if (num_col <= 0 || num_lin <= 0) return -1;
+
+	NSIndexPath* ip = [cv indexPathForItemAtPoint:pt];
+	if (ip && [ip section] == IUPCOCOATOUCH_TABLE_BODY_SECTION)
+	{
+		NSInteger lin = [ip item] / num_col;
+		UICollectionViewLayoutAttributes* attr = [cv layoutAttributesForItemAtIndexPath:ip];
+		return (attr && pt.y < CGRectGetMidY(attr.frame)) ? lin : lin + 1;
+	}
+
+	NSIndexPath* last = [NSIndexPath indexPathForItem:(num_lin - 1) * num_col inSection:IUPCOCOATOUCH_TABLE_BODY_SECTION];
+	UICollectionViewLayoutAttributes* lastAttr = [cv layoutAttributesForItemAtIndexPath:last];
+	if (lastAttr && pt.y >= CGRectGetMaxY(lastAttr.frame)) return num_lin;
+	return -1;
+}
+
+- (void)showIndicatorForTarget:(NSInteger)target0
+{
+	UICollectionView* cv = self.collectionView;
+	IupCocoaTouchTableController* ctrl = [self controller];
+	if (!ctrl) return;
+	NSInteger num_col = [ctrl numberOfColumns];
+	NSInteger num_lin = [ctrl numberOfLines];
+	if (num_col <= 0 || num_lin <= 0) return;
+
+	if (target0 < 0 || target0 == _sourceLin || target0 == _sourceLin + 1)
+	{
+		self.dropIndicator.hidden = YES;
+		return;
+	}
+
+	CGFloat y;
+	if (target0 < num_lin)
+	{
+		NSIndexPath* ip = [NSIndexPath indexPathForItem:target0 * num_col inSection:IUPCOCOATOUCH_TABLE_BODY_SECTION];
+		UICollectionViewLayoutAttributes* a = [cv layoutAttributesForItemAtIndexPath:ip];
+		if (!a) { self.dropIndicator.hidden = YES; return; }
+		y = a.frame.origin.y;
+	}
+	else
+	{
+		NSIndexPath* ip = [NSIndexPath indexPathForItem:(num_lin - 1) * num_col inSection:IUPCOCOATOUCH_TABLE_BODY_SECTION];
+		UICollectionViewLayoutAttributes* a = [cv layoutAttributesForItemAtIndexPath:ip];
+		if (!a) { self.dropIndicator.hidden = YES; return; }
+		y = CGRectGetMaxY(a.frame);
+	}
+
+	if (!_dropIndicator)
+	{
+		UIView* v = [[UIView alloc] init];
+		v.backgroundColor = [UIColor systemBlueColor];
+		v.userInteractionEnabled = NO;
+		[cv addSubview:v];
+		self.dropIndicator = v;
+		[v release];
+	}
+	CGFloat width = [ctrl totalWidthFor:cv.bounds.size.width];
+	_dropIndicator.frame = CGRectMake(0, y - 1, width, 2);
+	_dropIndicator.hidden = NO;
+	[cv bringSubviewToFront:_dropIndicator];
+}
+
+- (void)handleLongPress:(UILongPressGestureRecognizer*)gr
+{
+	if (!self.ihandle || !iupObjectCheck(self.ihandle)) return;
+	CGPoint pt = [gr locationInView:self.collectionView];
+
+	if (gr.state == UIGestureRecognizerStateBegan)
+	{
+		_sourceLin = [self lineAtPoint:pt];
+		_targetLin = _sourceLin;
+	}
+	else if (gr.state == UIGestureRecognizerStateChanged)
+	{
+		if (_sourceLin < 0) return;
+		NSInteger t = [self insertBeforeAtPoint:pt];
+		if (t >= 0)
+		{
+			_targetLin = t;
+			[self showIndicatorForTarget:t];
+		}
+	}
+	else if (gr.state == UIGestureRecognizerStateEnded)
+	{
+		self.dropIndicator.hidden = YES;
+		NSInteger source = _sourceLin;
+		NSInteger target = _targetLin;
+		_sourceLin = -1;
+		_targetLin = -1;
+		if (source < 0 || target < 0) return;
+
+		int is_ctrl = 0;
+		if (iupTableCallDragDropCb(self.ihandle, (int)source, (int)target, &is_ctrl) != IUP_CONTINUE)
+			return;
+
+		IupCocoaTouchTableController* ctrl = [self controller];
+		NSInteger num_lin = ctrl ? [ctrl numberOfLines] : 0;
+		NSInteger to = (target > source) ? target - 1 : target;
+		if (to >= num_lin) to = num_lin - 1;
+		if (to < 0) to = 0;
+
+		[ctrl moveRowFrom:source to:to];
+		iupTableMoveLinAttribs(self.ihandle, (int)source + 1, (int)to + 1);
+		ctrl.focusLin = to + 1;
+		[self.collectionView reloadData];
+	}
+	else if (gr.state == UIGestureRecognizerStateCancelled || gr.state == UIGestureRecognizerStateFailed)
+	{
+		self.dropIndicator.hidden = YES;
+		_sourceLin = -1;
+		_targetLin = -1;
+	}
+}
+
+@end
+
+static void cocoaTouchTableInstallRowReorder(Ihandle* ih)
+{
+	UICollectionView* cv = cocoaTouchTableGet(ih);
+	if (!cv) return;
+	if (objc_getAssociatedObject(cv, @"IUP_TABLE_ROWDRAG_GR")) return;
+
+	IupCocoaTouchTableRowReorderGR* h = [[[IupCocoaTouchTableRowReorderGR alloc] init] autorelease];
+	h.ihandle = ih;
+	h.collectionView = cv;
+	UILongPressGestureRecognizer* gr = [[[UILongPressGestureRecognizer alloc]
+		initWithTarget:h action:@selector(handleLongPress:)] autorelease];
+	gr.minimumPressDuration = 0.4;
+	[cv addGestureRecognizer:gr];
+	objc_setAssociatedObject(cv, @"IUP_TABLE_ROWDRAG_GR",      gr, OBJC_ASSOCIATION_ASSIGN);
+	objc_setAssociatedObject(cv, @"IUP_TABLE_ROWDRAG_HANDLER", h,  OBJC_ASSOCIATION_RETAIN);
+}
+
 static int cocoaTouchTableSetAllowReorderAttrib(Ihandle* ih, const char* value)
 {
 	BOOL enable = iupStrBoolean(value);
@@ -1139,6 +1323,9 @@ static int cocoaTouchTableMapMethod(Ihandle* ih)
 
 	if (ih->data->allow_reorder)
 		cocoaTouchTableSetAllowReorderAttrib(ih, "YES");
+
+	if (ih->data->show_dragdrop)
+		cocoaTouchTableInstallRowReorder(ih);
 
 	[view setCollectionViewLayout:cocoaTouchTableMakeLayout(ctrl) animated:NO];
 	[view reloadData];

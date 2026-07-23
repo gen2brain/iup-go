@@ -44,6 +44,8 @@ static char kVisibleColumnsKey;
 /* Data Structures                                                           */
 /* ========================================================================= */
 
+static NSString* const kIupTableRowPasteboardType = @"com.iup.table.row";
+
 typedef struct _IcocoaTableColumnInfo {
   NSString* title;
   CGFloat width;
@@ -1059,6 +1061,67 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
 {
   NSInteger col = [[tableColumn identifier] integerValue];
   return cocoaTableGetCellValue(ih, (int)row, (int)col);
+}
+
+/* Row drag-reorder (SHOWDRAGDROP) */
+- (id<NSPasteboardWriting>)tableView:(NSTableView*)tableView pasteboardWriterForRow:(NSInteger)row
+{
+  if (!ih->data->show_dragdrop)
+    return nil;
+  NSPasteboardItem* item = [[[NSPasteboardItem alloc] init] autorelease];
+  [item setString:[NSString stringWithFormat:@"%ld", (long)row] forType:kIupTableRowPasteboardType];
+  return item;
+}
+
+- (NSDragOperation)tableView:(NSTableView*)tableView validateDrop:(id<NSDraggingInfo>)info
+    proposedRow:(NSInteger)row proposedDropOperation:(NSTableViewDropOperation)dropOperation
+{
+  if (!ih->data->show_dragdrop)
+    return NSDragOperationNone;
+  if (dropOperation == NSTableViewDropOn)
+    [tableView setDropRow:row dropOperation:NSTableViewDropAbove];
+  return NSDragOperationMove;
+}
+
+- (BOOL)tableView:(NSTableView*)tableView acceptDrop:(id<NSDraggingInfo>)info
+    row:(NSInteger)row dropOperation:(NSTableViewDropOperation)dropOperation
+{
+  NSString* str = [[info draggingPasteboard] stringForType:kIupTableRowPasteboardType];
+  if (!str)
+    return NO;
+
+  int from = [str intValue];   /* 0-based source */
+  int drop0 = (int)row;        /* 0-based insert-before */
+  int is_ctrl = 0;
+  if (iupTableCallDragDropCb(ih, from, drop0, &is_ctrl) != IUP_CONTINUE)
+    return NO;
+
+  int count = ih->data->num_lin;
+  int to = (drop0 > from) ? drop0 - 1 : drop0;
+  if (to >= count)
+    to = count - 1;
+  if (from == to || from < 0 || to < 0)
+    return NO;
+
+  IcocoaTableData* table_data = cocoaTableGetData(ih);
+  if (table_data && table_data->data_array && !table_data->is_virtual_mode &&
+      from < (int)[table_data->data_array count])
+  {
+    NSMutableArray* rowData = [[table_data->data_array objectAtIndex:from] retain];
+    [table_data->data_array removeObjectAtIndex:from];
+    [table_data->data_array insertObject:rowData atIndex:to];
+    [rowData release];
+  }
+
+  iupTableMoveLinAttribs(ih, from + 1, to + 1);
+
+  if (table_data && table_data->current_row > 0)
+    table_data->current_row = to + 1;   /* focus follows the dropped row */
+
+  [tableView reloadData];
+  [tableView selectRowIndexes:[NSIndexSet indexSetWithIndex:to] byExtendingSelection:NO];
+
+  return YES;
 }
 
 /* Sorting support */
@@ -2659,6 +2722,12 @@ static int cocoaTableMapMethod(Ihandle* ih)
   [tableView setDelegate:delegate];
   [tableView setDoubleAction:@selector(tableViewAction:)];
   [tableView setTarget:delegate];
+
+  if (ih->data->show_dragdrop)
+  {
+    [tableView registerForDraggedTypes:@[kIupTableRowPasteboardType]];
+    [tableView setDraggingSourceOperationMask:NSDragOperationMove forLocal:YES];
+  }
 
   /* Store references */
   objc_setAssociatedObject(tableView, IUP_COCOA_TABLE_DATASOURCE_KEY, dataSource, OBJC_ASSOCIATION_RETAIN);

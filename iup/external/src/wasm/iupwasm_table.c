@@ -40,8 +40,12 @@ EM_JS(void, iupwasmJsTableBuild, (int id, int numlin, int numcol), {
   globalThis.__iupApply({ op: 'tablebuild', id: id, numlin: numlin, numcol: numcol });
 })
 
-EM_JS(void, iupwasmJsTableFeatures, (int id, int reorder, int resize), {
-  globalThis.__iupApply({ op: 'tablefeatures', id: id, reorder: reorder, resize: resize });
+EM_JS(void, iupwasmJsTableFeatures, (int id, int reorder, int resize, int dragdrop), {
+  globalThis.__iupApply({ op: 'tablefeatures', id: id, reorder: reorder, resize: resize, dragdrop: dragdrop });
+})
+
+EM_JS(void, iupwasmJsTableMoveRow, (int id, int from, int to), {
+  globalThis.__iupApply({ op: 'tablemoverow', id: id, from: from, to: to });
 })
 
 EM_JS(void, iupwasmJsTableColTitle, (int id, int col, const char* title), {
@@ -509,6 +513,29 @@ EMSCRIPTEN_KEEPALIVE int iupwasmTableReorder(int id, int oldCol, int newCol)
   return 1;
 }
 
+EMSCRIPTEN_KEEPALIVE int iupwasmTableRowDragDrop(int id, int from, int before)
+{
+  Ihandle* ih = iupwasmHandleFromId(id);
+  int is_ctrl = 0;
+  int to;
+
+  if (!ih || !ih->data->show_dragdrop)
+    return 0;
+
+  if (iupTableCallDragDropCb(ih, from - 1, before - 1, &is_ctrl) != IUP_CONTINUE)
+    return 0;
+
+  to = (before > from) ? before - 1 : before;
+  if (to > ih->data->num_lin) to = ih->data->num_lin;
+  if (to < 1) to = 1;
+
+  iupTableMoveLinAttribs(ih, from, to);
+  iupwasmJsTableMoveRow(id, from, to);
+  wasmTableApplyCellColors(ih);
+  wasmTableUpdateFocus(ih, to, ih->data->num_col > 0 ? 1 : 0);
+  return 1;
+}
+
 static int wasmTableMapMethod(Ihandle* ih)
 {
   int id, col;
@@ -520,7 +547,7 @@ static int wasmTableMapMethod(Ihandle* ih)
   ih->handle = (InativeHandle*)(intptr_t)id;
   iupwasmRegisterHandle(id, ih);
 
-  iupwasmJsTableFeatures(id, ih->data->allow_reorder, ih->data->user_resize);
+  iupwasmJsTableFeatures(id, ih->data->allow_reorder, ih->data->user_resize, ih->data->show_dragdrop);
 
   {
     int charheight = 0;
@@ -578,7 +605,7 @@ static int wasmTableSetAllowReorderAttrib(Ihandle* ih, const char* value)
   int id = iupwasmIdOf(ih);
   ih->data->allow_reorder = iupStrBoolean(value);
   if (id)
-    iupwasmJsTableFeatures(id, ih->data->allow_reorder, ih->data->user_resize);
+    iupwasmJsTableFeatures(id, ih->data->allow_reorder, ih->data->user_resize, ih->data->show_dragdrop);
   return 0;
 }
 
@@ -587,7 +614,7 @@ static int wasmTableSetUserResizeAttrib(Ihandle* ih, const char* value)
   int id = iupwasmIdOf(ih);
   ih->data->user_resize = iupStrBoolean(value);
   if (id)
-    iupwasmJsTableFeatures(id, ih->data->allow_reorder, ih->data->user_resize);
+    iupwasmJsTableFeatures(id, ih->data->allow_reorder, ih->data->user_resize, ih->data->show_dragdrop);
   return 0;
 }
 

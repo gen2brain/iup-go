@@ -33,6 +33,7 @@ struct _IcontrolData
 
   int show_image;     /* Enable image display, set before map only */
   int fit_image;      /* Scale images to fit row height, default 1 (YES) */
+  int show_dragdrop;  /* Enable interactive row drag-reorder, set before map only */
 
   /* Platform-specific data */
   void* native_data;  /* Platform-specific data (GtkTreeView, QTableWidget, etc.) */
@@ -45,6 +46,9 @@ struct _IcontrolData
 int iupTableIsValid(Ihandle* ih);
 int iupTableCheckCellPos(Ihandle* ih, int lin, int col);
 char* iupTableGetCellImageCb(Ihandle* ih, int lin, int col);
+
+int iupTableCallDragDropCb(Ihandle* ih, int drag_id, int drop_id, int *is_ctrl);
+void iupTableMoveLinAttribs(Ihandle* ih, int from_lin, int to_lin);
 
 /* ========================================================================= */
 /* Driver Functions                                                         */

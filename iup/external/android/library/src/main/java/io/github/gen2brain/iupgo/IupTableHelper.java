@@ -32,6 +32,7 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.view.ContextThemeWrapper;
 import androidx.recyclerview.widget.DividerItemDecoration;
+import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -109,6 +110,9 @@ public final class IupTableHelper
         boolean sortAsc = true;
         boolean userResize;
         boolean allowReorder;
+        boolean showDragDrop;
+        int dragFrom = -1;
+        int dragTo = -1;
         boolean virtualMode;
 
         final HashMap<Long, Integer> cellBg = new HashMap<>();
@@ -914,6 +918,129 @@ public final class IupTableHelper
     }
 
 
+    static final class RowDragCallback extends ItemTouchHelper.Callback
+    {
+        final IupTableView table;
+
+        RowDragCallback(IupTableView table) { this.table = table; }
+
+        @Override
+        public boolean isLongPressDragEnabled() { return table.showDragDrop && !table.virtualMode; }
+
+        @Override
+        public boolean isItemViewSwipeEnabled() { return false; }
+
+        @Override
+        public int getMovementFlags(RecyclerView rv, RecyclerView.ViewHolder vh)
+        {
+            if (!table.showDragDrop || table.virtualMode)
+                return 0;
+            return makeMovementFlags(ItemTouchHelper.UP | ItemTouchHelper.DOWN, 0);
+        }
+
+        @Override
+        public boolean onMove(RecyclerView rv, RecyclerView.ViewHolder vh, RecyclerView.ViewHolder target)
+        {
+            int from = vh.getBindingAdapterPosition();
+            int to = target.getBindingAdapterPosition();
+            if (from < 0 || to < 0)
+                return false;
+            moveRowValues(table, from, to);
+            table.adapter.notifyItemMoved(from, to);
+            table.dragTo = to;
+            return true;
+        }
+
+        @Override
+        public void onSelectedChanged(RecyclerView.ViewHolder vh, int actionState)
+        {
+            super.onSelectedChanged(vh, actionState);
+            if (actionState == ItemTouchHelper.ACTION_STATE_DRAG && vh != null)
+            {
+                table.dragFrom = vh.getBindingAdapterPosition();
+                table.dragTo = table.dragFrom;
+                vh.itemView.setAlpha(0.7f);
+                vh.itemView.setElevation(8f * IupCommon.getDisplayDensity());
+            }
+        }
+
+        @Override
+        public void clearView(RecyclerView rv, RecyclerView.ViewHolder vh)
+        {
+            super.clearView(rv, vh);
+            vh.itemView.setAlpha(1.0f);
+            vh.itemView.setElevation(0f);
+
+            int from = table.dragFrom, to = table.dragTo;
+            table.dragFrom = -1;
+            table.dragTo = -1;
+            if (from < 0 || to < 0 || from == to)
+                return;
+
+            int keep = dispatchRowDragDrop(table.ihandlePtr, from + 1, to + 1);
+            if (keep != 0)
+            {
+                moveRowVisuals(table, from + 1, to + 1);
+                table.focusLin = to + 1;
+                table.adapter.notifyDataSetChanged();
+            }
+            else
+            {
+                moveRowValues(table, to, from);
+                table.adapter.notifyItemMoved(to, from);
+            }
+        }
+
+        @Override
+        public void onSwiped(RecyclerView.ViewHolder vh, int direction) { }
+    }
+
+    static void moveRowValues(IupTableView t, int from0, int to0)
+    {
+        if (from0 < 0 || to0 < 0 || from0 >= t.rows.size() || to0 >= t.rows.size())
+            return;
+        String[] moved = t.rows.remove(from0);
+        t.rows.add(to0, moved);
+    }
+
+    static void moveRowVisuals(IupTableView t, int fromLin, int toLin)
+    {
+        if (fromLin == toLin)
+            return;
+
+        SparseIntArray nrb = remapSparseIntArray(t.rowBg, fromLin, toLin);
+        t.rowBg.clear();
+        for (int i = 0; i < nrb.size(); i++) t.rowBg.put(nrb.keyAt(i), nrb.valueAt(i));
+
+        SparseIntArray nrf = remapSparseIntArray(t.rowFg, fromLin, toLin);
+        t.rowFg.clear();
+        for (int i = 0; i < nrf.size(); i++) t.rowFg.put(nrf.keyAt(i), nrf.valueAt(i));
+
+        SparseArray<CellFont> nrfo = remapSparseArray(t.rowFont, fromLin, toLin);
+        t.rowFont.clear();
+        for (int i = 0; i < nrfo.size(); i++) t.rowFont.put(nrfo.keyAt(i), nrfo.valueAt(i));
+
+        t.cellBg.putAll(remapCellLin(t.cellBg, fromLin, toLin));
+        t.cellFg.putAll(remapCellLin(t.cellFg, fromLin, toLin));
+        t.cellImage.putAll(remapCellLin(t.cellImage, fromLin, toLin));
+        t.cellFont.putAll(remapCellLin(t.cellFont, fromLin, toLin));
+    }
+
+    static <V> HashMap<Long, V> remapCellLin(HashMap<Long, V> src, int fromLin, int toLin)
+    {
+        HashMap<Long, V> dst = new HashMap<>();
+        for (HashMap.Entry<Long, V> e : src.entrySet())
+        {
+            long key = e.getKey();
+            int lin = (int)(key >> 32);
+            int col = (int)(key & 0xFFFFFFFFL);
+            dst.put(cellKey(remapCol(lin, fromLin, toLin), col), e.getValue());
+        }
+        src.clear();
+        return dst;
+    }
+
+
     @Keep
     public static View createTable(long ihandlePtr)
     {
@@ -949,6 +1076,8 @@ public final class IupTableHelper
         table.adapter = new RowAdapter(table);
         table.recyclerView.setAdapter(table.adapter);
         table.bodyScroll.addView(table.recyclerView);
+
+        new ItemTouchHelper(new RowDragCallback(table)).attachToRecyclerView(table.recyclerView);
 
         table.addView(table.headerScroll);
         table.addView(table.bodyScroll);
@@ -1623,6 +1752,13 @@ public final class IupTableHelper
     }
 
     @Keep
+    public static void setShowDragDrop(View v, boolean on)
+    {
+        if (!(v instanceof IupTableView)) return;
+        ((IupTableView) v).showDragDrop = on;
+    }
+
+    @Keep
     public static void setVirtualMode(View v, boolean on)
     {
         if (!(v instanceof IupTableView t)) return;
@@ -1652,5 +1788,6 @@ public final class IupTableHelper
     public static native void dispatchValueChanged(long ihandlePtr, int lin, int col);
     public static native void dispatchSort(long ihandlePtr, int col, int asc);
     public static native void dispatchReorder(long ihandlePtr, int fromCol, int toCol);
+    public static native int dispatchRowDragDrop(long ihandlePtr, int fromLin, int toLin);
     public static native String dispatchValueRequest(long ihandlePtr, int lin, int col);
 }

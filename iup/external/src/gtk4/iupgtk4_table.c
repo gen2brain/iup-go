@@ -283,6 +283,7 @@ typedef struct _Igtk4TableData
   int current_row;  /* Current focused row (1-based row_index, 0=none) */
   int current_col;  /* Current focused column (1-based, 0=none) */
   int has_focus;    /* 1 if table control has keyboard focus */
+  GtkWidget* drop_highlight_row;  /* Row widget currently showing the drop indicator */
 } Igtk4TableData;
 
 #define IGTK4_TABLE_DATA(ih) ((Igtk4TableData*)(ih->data->native_data))
@@ -502,6 +503,163 @@ static void on_label_click_pressed(GtkGestureClick* gesture, int n_press, double
   (void)gesture; (void)x; (void)y; (void)user_data;
 }
 
+/* ========================================================================= */
+/* Row drag-reorder (SHOWDRAGDROP)                                           */
+/* ========================================================================= */
+
+static GtkWidget* gtk4TableFindRowWidget(GtkWidget* w)
+{
+  while (w)
+  {
+    if (g_strcmp0(G_OBJECT_TYPE_NAME(w), "GtkColumnViewRowWidget") == 0)
+      return w;
+    w = gtk_widget_get_parent(w);
+  }
+  return NULL;
+}
+
+static void gtk4TableClearDropHighlight(Igtk4TableData* gtk_data)
+{
+  if (gtk_data->drop_highlight_row)
+  {
+    gtk_widget_remove_css_class(gtk_data->drop_highlight_row, "iup-table-drop-above");
+    gtk_widget_remove_css_class(gtk_data->drop_highlight_row, "iup-table-drop-below");
+    g_object_remove_weak_pointer(G_OBJECT(gtk_data->drop_highlight_row), (gpointer*)&gtk_data->drop_highlight_row);
+    gtk_data->drop_highlight_row = NULL;
+  }
+}
+
+static void gtk4TableReindexRows(Igtk4TableData* gtk_data)
+{
+  guint n = g_list_model_get_n_items(gtk_data->model);
+  for (guint i = 0; i < n; i++)
+  {
+    IupTableRow* row = IUP_TABLE_ROW(g_list_model_get_item(gtk_data->model, i));
+    if (row)
+    {
+      row->row_index = (gint)i + 1;
+      row->update_count++;
+      g_object_notify_by_pspec(G_OBJECT(row), row_props[PROP_UPDATE]);
+      g_object_unref(row);
+    }
+  }
+}
+
+static void gtk4TableMoveRow(Ihandle* ih, int from, int to)
+{
+  Igtk4TableData* gtk_data = IGTK4_TABLE_DATA(ih);
+  GListStore* store;
+  IupTableRow* row;
+
+  if (!gtk_data || gtk_data->is_virtual || from == to)
+    return;
+  if (from < 1 || to < 1 || from > ih->data->num_lin || to > ih->data->num_lin)
+    return;
+
+  store = G_LIST_STORE(gtk_data->model);
+  row = IUP_TABLE_ROW(g_list_model_get_item(gtk_data->model, from - 1));
+  if (!row)
+    return;
+
+  g_list_store_remove(store, from - 1);
+  g_list_store_insert(store, to - 1, row);
+  g_object_unref(row);
+
+  iupTableMoveLinAttribs(ih, from, to);
+  gtk4TableReindexRows(gtk_data);
+
+  gtk_data->current_row = to;
+  if (GTK_IS_SINGLE_SELECTION(gtk_data->selection_model))
+    gtk_single_selection_set_selected(GTK_SINGLE_SELECTION(gtk_data->selection_model), (guint)(to - 1));
+}
+
+static GdkContentProvider* on_row_drag_prepare(GtkDragSource* source, double x, double y, gpointer user_data)
+{
+  GtkWidget* box = gtk_event_controller_get_widget(GTK_EVENT_CONTROLLER(source));
+  GtkListItem* list_item = g_object_get_data(G_OBJECT(box), "iup-list-item");
+  guint pos;
+  GValue v = G_VALUE_INIT;
+  GdkContentProvider* provider;
+
+  (void)x; (void)y; (void)user_data;
+
+  if (!list_item)
+    return NULL;
+  pos = gtk_list_item_get_position(list_item);
+  if (pos == GTK_INVALID_LIST_POSITION)
+    return NULL;
+
+  g_value_init(&v, G_TYPE_INT);
+  g_value_set_int(&v, (int)pos + 1);
+  provider = gdk_content_provider_new_for_value(&v);
+  g_value_unset(&v);
+  return provider;
+}
+
+static GdkDragAction on_row_drop_motion(GtkDropTarget* target, double x, double y, gpointer user_data)
+{
+  Ihandle* ih = (Ihandle*)user_data;
+  Igtk4TableData* gtk_data = IGTK4_TABLE_DATA(ih);
+  GtkWidget* box = gtk_event_controller_get_widget(GTK_EVENT_CONTROLLER(target));
+  GtkWidget* row_widget = gtk4TableFindRowWidget(box);
+  int above = (y < gtk_widget_get_height(box) / 2.0);
+
+  (void)x;
+
+  gtk4TableClearDropHighlight(gtk_data);
+  if (row_widget)
+  {
+    gtk_widget_add_css_class(row_widget, above ? "iup-table-drop-above" : "iup-table-drop-below");
+    gtk_data->drop_highlight_row = row_widget;
+    g_object_add_weak_pointer(G_OBJECT(row_widget), (gpointer*)&gtk_data->drop_highlight_row);
+  }
+  return GDK_ACTION_MOVE;
+}
+
+static void on_row_drop_leave(GtkDropTarget* target, gpointer user_data)
+{
+  Ihandle* ih = (Ihandle*)user_data;
+  (void)target;
+  gtk4TableClearDropHighlight(IGTK4_TABLE_DATA(ih));
+}
+
+static gboolean on_row_drop(GtkDropTarget* target, const GValue* value, double x, double y, gpointer user_data)
+{
+  Ihandle* ih = (Ihandle*)user_data;
+  Igtk4TableData* gtk_data = IGTK4_TABLE_DATA(ih);
+  GtkWidget* box = gtk_event_controller_get_widget(GTK_EVENT_CONTROLLER(target));
+  GtkListItem* list_item = g_object_get_data(G_OBJECT(box), "iup-list-item");
+  int source_lin, target_lin, insert_before, is_ctrl = 0;
+  guint tpos;
+
+  (void)x;
+
+  gtk4TableClearDropHighlight(gtk_data);
+
+  if (!G_VALUE_HOLDS_INT(value) || !list_item)
+    return FALSE;
+
+  source_lin = g_value_get_int(value);
+  tpos = gtk_list_item_get_position(list_item);
+  if (tpos == GTK_INVALID_LIST_POSITION)
+    return FALSE;
+  target_lin = (int)tpos + 1;
+
+  if (y < gtk_widget_get_height(box) / 2.0)
+    insert_before = target_lin - 1;
+  else
+    insert_before = target_lin;
+
+  if (iupTableCallDragDropCb(ih, source_lin - 1, insert_before, &is_ctrl) == IUP_CONTINUE)
+  {
+    int to = (insert_before > source_lin - 1) ? insert_before - 1 : insert_before;
+    if (to >= ih->data->num_lin) to = ih->data->num_lin - 1;
+    if (to < 0) to = 0;
+    gtk4TableMoveRow(ih, source_lin, to + 1);
+  }
+  return TRUE;
+}
+
 static void cell_factory_setup(GtkSignalListItemFactory* factory, GtkListItem* list_item, gpointer user_data)
 {
   IupCellFactoryData* data = (IupCellFactoryData*)user_data;
@@ -593,6 +751,20 @@ static void cell_factory_setup(GtkSignalListItemFactory* factory, GtkListItem* l
 
   gtk_widget_set_hexpand(widget, TRUE);
   gtk_box_append(GTK_BOX(box), widget);
+
+  if (ih->data->show_dragdrop && !IGTK4_TABLE_DATA(ih)->is_virtual)
+  {
+    GtkDragSource* drag = gtk_drag_source_new();
+    gtk_drag_source_set_actions(drag, GDK_ACTION_MOVE);
+    g_signal_connect(drag, "prepare", G_CALLBACK(on_row_drag_prepare), ih);
+    gtk_widget_add_controller(box, GTK_EVENT_CONTROLLER(drag));
+
+    GtkDropTarget* drop = gtk_drop_target_new(G_TYPE_INT, GDK_ACTION_MOVE);
+    g_signal_connect(drop, "motion", G_CALLBACK(on_row_drop_motion), ih);
+    g_signal_connect(drop, "leave", G_CALLBACK(on_row_drop_leave), ih);
+    g_signal_connect(drop, "drop", G_CALLBACK(on_row_drop), ih);
+    gtk_widget_add_controller(box, GTK_EVENT_CONTROLLER(drop));
+  }
 
   gtk_list_item_set_child(list_item, box);
 }
@@ -707,6 +879,7 @@ static void cell_factory_bind(GtkSignalListItemFactory* factory, GtkListItem* li
 
   g_object_set_data(G_OBJECT(box), "iup-factory-data", data);
   g_object_set_data(G_OBJECT(box), "iup-row-index", GINT_TO_POINTER(row->row_index));
+  g_object_set_data(G_OBJECT(box), "iup-list-item", list_item);
 
   gint lin = row->row_index;
   gboolean is_selected = gtk_list_item_get_selected(list_item);
@@ -1658,6 +1831,12 @@ static int gtk4TableMapMethod(Ihandle* ih)
       ".iup-table-focus-rect-unfocused {\n"
       "  outline: 1px dashed rgba(150,150,150,0.5);\n"
       "  outline-offset: -2px;\n"
+      "}\n"
+      ".iup-table-drop-above {\n"
+      "  box-shadow: inset 0 2px 0 0 rgb(53,132,228);\n"
+      "}\n"
+      ".iup-table-drop-below {\n"
+      "  box-shadow: inset 0 -2px 0 0 rgb(53,132,228);\n"
       "}\n");
     gtk_style_context_add_provider_for_display(gdk_display_get_default(), GTK_STYLE_PROVIDER(table_css_provider), GTK_STYLE_PROVIDER_PRIORITY_USER);
   }

@@ -521,6 +521,20 @@ static char* androidTableGetAllowReorderAttrib(Ihandle* ih)
   return iupStrReturnBoolean(ih->data->allow_reorder);
 }
 
+int iupAndroidTableRowDragDrop(Ihandle* ih, int from, int to)
+{
+  int from0 = from - 1;
+  int to0 = to - 1;
+  int drop0 = (to0 > from0) ? to0 + 1 : to0;
+  int is_ctrl = 0;
+
+  if (iupTableCallDragDropCb(ih, from0, drop0, &is_ctrl) != IUP_CONTINUE)
+    return 0;
+
+  iupTableMoveLinAttribs(ih, from, to);
+  return 1;
+}
+
 static int androidTableSetAllowReorderAttrib(Ihandle* ih, const char* value)
 {
   int on = iupStrBoolean(value);
@@ -684,6 +698,7 @@ static int androidTableMapMethod(Ihandle* ih)
   if (ih->data->sortable) androidTableCallBool(ih, "setSortable", 1);
   if (ih->data->user_resize) androidTableCallBool(ih, "setUserResize", 1);
   if (ih->data->allow_reorder) androidTableCallBool(ih, "setAllowReorder", 1);
+  if (ih->data->show_dragdrop) androidTableCallBool(ih, "setShowDragDrop", 1);
   if (iupAttribGetBoolean(ih, "VIRTUALMODE")) androidTableCallBool(ih, "setVirtualMode", 1);
   v = iupAttribGet(ih, "FOCUSRECT");
   if (v) androidTableCallBool(ih, "setFocusRect", iupStrBoolean(v));
