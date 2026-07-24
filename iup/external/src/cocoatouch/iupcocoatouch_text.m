@@ -469,7 +469,8 @@ static NSParagraphStyle* cocoaTouchTextTagBuildParagraph(Ihandle* tag)
 	const char* space_before_s = iupAttribGet(tag, "SPACEBEFORE");
 	const char* space_after_s = iupAttribGet(tag, "SPACEAFTER");
 	const char* line_spacing_s = iupAttribGet(tag, "LINESPACING");
-	if (!align && !indent_s && !space_before_s && !space_after_s && !line_spacing_s) return nil;
+	const char* tabs_s = iupAttribGet(tag, "TABSARRAY");
+	if (!align && !indent_s && !space_before_s && !space_after_s && !line_spacing_s && !tabs_s) return nil;
 
 	NSMutableParagraphStyle* ps = [[[NSMutableParagraphStyle alloc] init] autorelease];
 	if (align)
@@ -486,6 +487,27 @@ static NSParagraphStyle* cocoaTouchTextTagBuildParagraph(Ihandle* tag)
 	if (line_spacing_s)
 	{
 		double d = 0; if (iupStrToDouble(line_spacing_s, &d)) ps.lineHeightMultiple = (CGFloat)d;
+	}
+	if (tabs_s)
+	{
+		NSMutableArray* stops = [NSMutableArray array];
+		char* str = (char*)tabs_s;
+		int count = 0;
+		while (str && count < 32)
+		{
+			char* postok = iupStrDupUntil((const char**)&str, ' ');
+			if (!postok) break;
+			int pos = 0; iupStrToInt(postok, &pos); free(postok);
+			char* aligntok = iupStrDupUntil((const char**)&str, ' ');
+			if (!aligntok) break;
+			NSTextAlignment ta = NSTextAlignmentLeft;
+			if (iupStrEqualNoCase(aligntok, "RIGHT")) ta = NSTextAlignmentRight;
+			else if (iupStrEqualNoCase(aligntok, "CENTER")) ta = NSTextAlignmentCenter;
+			free(aligntok);
+			[stops addObject:[[[NSTextTab alloc] initWithTextAlignment:ta location:(CGFloat)pos options:@{}] autorelease]];
+			count++;
+		}
+		if ([stops count] > 0) ps.tabStops = stops;
 	}
 	return ps;
 }
@@ -510,6 +532,22 @@ static void cocoaTouchTextApplyTagToAttributes(Ihandle* tag, NSMutableDictionary
 	if (!base) base = [UIFont systemFontOfSize:[UIFont systemFontSize]];
 	UIFont* styled = cocoaTouchTextTagBuildFont(tag, base);
 	if (styled) attrs[NSFontAttributeName] = styled;
+
+	if (iupAttribGetBoolean(tag, "SMALLCAPS"))
+	{
+		UIFont* f = attrs[NSFontAttributeName];
+		if (f)
+		{
+			UIFontDescriptor* desc = [f.fontDescriptor fontDescriptorByAddingAttributes:@{
+				UIFontDescriptorFeatureSettingsAttribute: @[@{
+					UIFontFeatureTypeIdentifierKey: @(37),    /* kLowerCaseType */
+					UIFontFeatureSelectorIdentifierKey: @(1)  /* kLowerCaseSmallCapsSelector */
+				}]
+			}];
+			UIFont* sc = [UIFont fontWithDescriptor:desc size:f.pointSize];
+			if (sc) attrs[NSFontAttributeName] = sc;
+		}
+	}
 
 	const char* rise = iupAttribGet(tag, "RISE");
 	if (rise)
