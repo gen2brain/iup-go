@@ -1273,6 +1273,78 @@ IUP_SDK_API void iupFlatDrawGradientBox(IdrawCanvas* dc, int xmin, int xmax, int
   }
 }
 
+static long iFlatDrawColorShade(long color, int shade)
+{
+  int r = iupDrawRed(color), g = iupDrawGreen(color), b = iupDrawBlue(color);
+  unsigned char a = iupDrawAlpha(color);
+  if (shade > 0)
+  {
+    r += (255 - r) * shade / 100;
+    g += (255 - g) * shade / 100;
+    b += (255 - b) * shade / 100;
+  }
+  else if (shade < 0)
+  {
+    r += r * shade / 100;
+    g += g * shade / 100;
+    b += b * shade / 100;
+  }
+  return iupDrawColor((unsigned char)r, (unsigned char)g, (unsigned char)b, a);
+}
+
+IUP_SDK_API void iupFlatDrawGradientBoxStops(IdrawCanvas* dc, int xmin, int xmax, int ymin, int ymax, int corner_radius, float angle, const char* gradient, const char* bgcolor, int active, int shade)
+{
+  long colors[IUP_GRADIENT_MAX_STOPS];
+  float offsets[IUP_GRADIENT_MAX_STOPS];
+  int i, count = 0;
+  const char* p = gradient;
+
+  if (!gradient || xmin == xmax || ymin == ymax)
+    return;
+
+  iupDrawCheckSwapCoord(xmin, xmax);
+  iupDrawCheckSwapCoord(ymin, ymax);
+
+  while (p && count < IUP_GRADIENT_MAX_STOPS)
+  {
+    char token[30];
+    const char* sep = strchr(p, ':');
+    int len = sep ? (int)(sep - p) : (int)strlen(p);
+    if (len > (int)sizeof(token) - 1) len = (int)sizeof(token) - 1;
+    memcpy(token, p, len);
+    token[len] = 0;
+    colors[count++] = iupDrawStrToColor(token, 0);
+    if (!sep) break;
+    p = sep + 1;
+  }
+
+  if (count == 0)
+    return;
+
+  if (count == 1)
+    colors[count++] = iupDrawStrToColor(bgcolor, 0);
+
+  if (shade != 0)
+    for (i = 0; i < count; i++)
+      colors[i] = iFlatDrawColorShade(colors[i], shade);
+
+  if (!active)
+    for (i = 0; i < count; i++)
+      colors[i] = iFlatDrawColorMakeInactive(colors[i], bgcolor);
+
+  for (i = 0; i < count; i++)
+    offsets[i] = (float)i / (float)(count - 1);
+
+  if (corner_radius > 0)
+  {
+    iupdrvDrawSetClipRoundedRect(dc, xmin, ymin, xmax, ymax, corner_radius);
+    iupdrvDrawLinearGradient(dc, xmin, ymin, xmax, ymax, angle, colors, offsets, count);
+    iupdrvDrawResetClip(dc);
+  }
+  else
+    iupdrvDrawLinearGradient(dc, xmin, ymin, xmax, ymax, angle, colors, offsets, count);
+}
+
 static void iFlatDrawText(IdrawCanvas* dc, int x, int y, int w, int h, const char* str, const char* font, int text_flags, double text_orientation, const char* fgcolor, const char* bgcolor, int active)
 {
   long color;
