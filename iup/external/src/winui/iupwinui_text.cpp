@@ -2007,6 +2007,34 @@ static void winuiTextParseParagraphFormat(Ihandle* formattag, ITextRange const& 
     changed = true;
   }
 
+  val = iupAttribGet(formattag, "TABSARRAY");
+  if (val)
+  {
+    char* str = val;
+    int count = 0;
+    pf.ClearAllTabs();
+    while (str && count < 32)
+    {
+      char* postok = iupStrDupUntil((const char**)&str, ' ');
+      if (!postok) break;
+      int pos = 0;
+      iupStrToInt(postok, &pos);
+      free(postok);
+
+      char* aligntok = iupStrDupUntil((const char**)&str, ' ');
+      if (!aligntok) break;
+      TabAlignment ta = TabAlignment::Left;
+      if (iupStrEqualNoCase(aligntok, "DECIMAL")) ta = TabAlignment::Decimal;
+      else if (iupStrEqualNoCase(aligntok, "RIGHT")) ta = TabAlignment::Right;
+      else if (iupStrEqualNoCase(aligntok, "CENTER")) ta = TabAlignment::Center;
+      free(aligntok);
+
+      pf.AddTab((float)pos * pixelToPoint, ta, TabLeader::Spaces);
+      count++;
+    }
+    changed = true;
+  }
+
   val = iupAttribGet(formattag, "NUMBERING");
   if (val)
   {
