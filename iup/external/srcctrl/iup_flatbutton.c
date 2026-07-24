@@ -156,33 +156,32 @@ static int iFlatButtonRedraw_CB(Ihandle* ih)
   {
     char* gradient = iupAttribGet(ih, "GRADIENT");
     int corner_radius = iupAttribGetInt(ih, "CORNERRADIUS");
+    int shade = 0;  /* lighten on highlight / darken on press when no explicit state gradient */
 
     if ((ih->data->pressed && ih->data->highlighted) || (selected && !ih->data->highlighted))
     {
       char* pressgrad = iupAttribGet(ih, "GRADIENTPS");
       if (pressgrad)
         gradient = pressgrad;
+      else
+        shade = -20;
     }
     else if (ih->data->highlighted)
     {
       char* hlgrad = iupAttribGet(ih, "GRADIENTHL");
       if (hlgrad)
         gradient = hlgrad;
+      else
+        shade = 30;
     }
 
     if (gradient)
     {
-      char color1[30], color2[30];
       float angle = iupAttribGetFloat(ih, "GRADIENTANGLE");
       if (angle == 0) angle = 90;  /* default is top to bottom */
-      if (iupStrToStrStr(gradient, color1, sizeof(color1), color2, sizeof(color2), ':'))
-        iupFlatDrawGradientBox(dc, border_width, draw_w - 1 - border_width,
-                                border_width, draw_h - 1 - border_width,
-                                corner_radius, angle, color1, color2, bgcolor, 1);  /* background is always active */
-      else
-        iupFlatDrawGradientBox(dc, border_width, draw_w - 1 - border_width,
-                                border_width, draw_h - 1 - border_width,
-                                corner_radius, angle, gradient, bgcolor, bgcolor, 1);
+      iupFlatDrawGradientBoxStops(dc, border_width, draw_w - 1 - border_width,
+                                  border_width, draw_h - 1 - border_width,
+                                  corner_radius, angle, gradient, bgcolor, 1, shade);  /* background is always active */
     }
     else if (corner_radius > 0)
       iupFlatDrawRoundedBox(dc, border_width, draw_w - 1 - border_width,
