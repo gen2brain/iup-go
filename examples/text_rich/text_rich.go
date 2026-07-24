@@ -30,7 +30,9 @@ func main() {
 			"Line with indentation and spacing.\n"+
 			"Bullet list and numbering test.\n"+
 			"Image inline test: [IMG1] and scaled [IMG2] done.\n"+
-			"Visit IUP Documentation for more info.")
+			"Visit IUP Documentation for more info.\n"+
+			"Small caps show lowercase text as capital letters.\n"+
+			"Columns:\tleft\tcenter\tright")
 
 	// Title - large, centered, bold
 	formattag := iup.User()
@@ -101,6 +103,18 @@ func main() {
 	formattag = iup.User()
 	iup.SetAttribute(formattag, "NUMBERING", "BULLET")
 	iup.SetAttribute(formattag, "SELECTION", "8,1:8,50")
+	iup.SetAttributeHandle(mltline, "ADDFORMATTAG", formattag)
+
+	// Small caps on line 11
+	formattag = iup.User()
+	iup.SetAttribute(formattag, "SMALLCAPS", "YES")
+	iup.SetAttribute(formattag, "SELECTION", "11,1:11,50")
+	iup.SetAttributeHandle(mltline, "ADDFORMATTAG", formattag)
+
+	// Custom tab stops on line 12
+	formattag = iup.User()
+	iup.SetAttribute(formattag, "TABSARRAY", "120 LEFT 240 CENTER 360 RIGHT")
+	iup.SetAttribute(formattag, "SELECTION", "12,1:12,50")
 	iup.SetAttributeHandle(mltline, "ADDFORMATTAG", formattag)
 
 	// Hyperlink on "IUP Documentation" (line 10, cols 7-23)
