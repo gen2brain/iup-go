@@ -2697,6 +2697,17 @@ static NSFont* cocoaTextChangeFontWeight(NSFont* start_font, int font_target_wei
     return [font_manager convertFont:start_font toNotHaveTrait:NSBoldFontMask];
 }
 
+static NSFont* cocoaTextApplySmallCaps(NSFont* font)
+{
+  NSDictionary* feature = @{
+    NSFontFeatureTypeIdentifierKey: @(37),    /* kLowerCaseType */
+    NSFontFeatureSelectorIdentifierKey: @(1)  /* kLowerCaseSmallCapsSelector */
+  };
+  NSFontDescriptor* desc = [[font fontDescriptor] fontDescriptorByAddingAttributes:@{ NSFontFeatureSettingsAttribute: @[feature] }];
+  NSFont* result = [NSFont fontWithDescriptor:desc size:[font pointSize]];
+  return result ? result : font;
+}
+
 static NSMutableDictionary* cocoaTextParseCharacterFormat(Ihandle* ih, Ihandle* formattag, NSTextView* text_view, NSRange selection_range)
 {
   char* format;
@@ -2705,6 +2716,7 @@ static NSMutableDictionary* cocoaTextParseCharacterFormat(Ihandle* ih, Ihandle* 
   bool did_change_font_family = false;
   bool did_change_font_traits = false;
   bool did_change_font_weight = false;
+  bool did_change_smallcaps = false;
 
   bool did_change_font_fgcolor = false;
   bool did_change_font_bgcolor = false;
@@ -2899,6 +2911,12 @@ static NSMutableDictionary* cocoaTextParseCharacterFormat(Ihandle* ih, Ihandle* 
     did_change_font_weight = true;
   }
 
+  if(iupAttribGetBoolean(formattag, "SMALLCAPS"))
+  {
+    did_change_attribute = true;
+    did_change_smallcaps = true;
+  }
+
   format = iupAttribGet(formattag, "FGCOLOR");
   if(format)
   {
@@ -3010,7 +3028,7 @@ static NSMutableDictionary* cocoaTextParseCharacterFormat(Ihandle* ih, Ihandle* 
 
         NSFont* target_font = nil;
 
-        if(did_change_font_family || did_change_font_traits || did_change_font_size || did_change_font_weight)
+        if(did_change_font_family || did_change_font_traits || did_change_font_size || did_change_font_weight || did_change_smallcaps)
         {
           NSFont* base_font = [current_substring_attributes objectForKey:NSFontAttributeName];
           if(nil == base_font)
@@ -3035,6 +3053,11 @@ static NSMutableDictionary* cocoaTextParseCharacterFormat(Ihandle* ih, Ihandle* 
           if(did_change_font_weight)
           {
             target_font = cocoaTextChangeFontWeight(target_font, font_target_weight);
+          }
+
+          if(did_change_smallcaps)
+          {
+            target_font = cocoaTextApplySmallCaps(target_font);
           }
 
           [attribute_dict setObject:target_font forKey:NSFontAttributeName];
@@ -3066,7 +3089,7 @@ static NSMutableDictionary* cocoaTextParseCharacterFormat(Ihandle* ih, Ihandle* 
 
       NSFont* target_font = nil;
 
-      if(did_change_font_family || did_change_font_traits || did_change_font_size || did_change_font_weight)
+      if(did_change_font_family || did_change_font_traits || did_change_font_size || did_change_font_weight || did_change_smallcaps)
       {
         NSFont* base_font = [current_substring_attributes objectForKey:NSFontAttributeName];
         if(nil == base_font)
@@ -3091,6 +3114,11 @@ static NSMutableDictionary* cocoaTextParseCharacterFormat(Ihandle* ih, Ihandle* 
         if(did_change_font_weight)
         {
           target_font = cocoaTextChangeFontWeight(target_font, font_target_weight);
+        }
+
+        if(did_change_smallcaps)
+        {
+          target_font = cocoaTextApplySmallCaps(target_font);
         }
 
         [attribute_dict setObject:target_font forKey:NSFontAttributeName];
