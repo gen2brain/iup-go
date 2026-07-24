@@ -52,15 +52,20 @@ Can be set to NULL. If NULL, BGCOLOR will be used instead.
 **PSCOLOR**: background color used to indicate a press state. Pre-defined to "150 200 235".
 Can be set to NULL. If NULL, BGCOLOR will be used instead.
 
-**GRADIENT** (non-inheritable): gradient background colors in the format "color1:color2".
+**GRADIENT** (non-inheritable): gradient background colors, a list of colors separated by ":"
+in the format "color1:color2:...:colorN".
 When defined, the background is drawn as a linear gradient instead of a solid color.
+Two colors give a simple gradient; three or more define a multi-stop gradient with the stops
+distributed evenly from the first color to the last. A single color gradients from that color
+to the background color.
 Can be set to NULL to disable.
 
-**GRADIENTHL** (non-inheritable): gradient colors used for highlight state.
-If not defined, GRADIENT will be used.
+**GRADIENTHL** (non-inheritable): gradient colors used for the highlight (hover) state.
+If not defined, GRADIENT is used automatically lightened, so gradient buttons get a hover effect
+without extra configuration (mirroring the HLCOLOR default for solid buttons).
 
-**GRADIENTPS** (non-inheritable): gradient colors used for pressed state.
-If not defined, GRADIENT will be used.
+**GRADIENTPS** (non-inheritable): gradient colors used for the pressed state.
+If not defined, GRADIENT is used automatically darkened.
 
 **GRADIENTANGLE** (non-inheritable): angle in degrees for the gradient direction.
 Default: "90" (top to bottom).
