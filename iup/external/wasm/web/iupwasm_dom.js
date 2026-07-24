@@ -1241,6 +1241,11 @@
           tel.style.whiteSpace = c.wordwrap ? 'pre-wrap' : 'pre'; tel.style.overflow = 'auto'; tel.style.font = 'inherit';
           tel.style.background = 'var(--iup-txtbg)'; tel.style.border = '1px solid var(--iup-bd)';
           tel.__iupText = ''; tel.__iupTags = [];
+          tel.addEventListener('click', function (e) {
+            var n = e.target;
+            while (n && n !== tel && !(n.getAttribute && n.getAttribute('data-iuplink') !== null)) n = n.parentNode;
+            if (n && n.getAttribute && n.getAttribute('data-iuplink') !== null) D('iupwasmTextLinkClick', c.id, parseInt(n.getAttribute('data-iuplink')));
+          });
           tel.__iupRender = function () {
             var t = tel.__iupText, tags = tel.__iupTags;
             if (!tags.length) { tel.textContent = t; return; }
@@ -1248,28 +1253,53 @@
             function styleAt(p) { var a = ''; for (var k = 0; k < tags.length; k++) { var g = tags[k]; if (g.css && p >= g.s && p < g.e) a += g.css; } return a; }
             function imgAt(p) { for (var k = 0; k < tags.length; k++) { var g = tags[k]; if (g.img && g.s === p) return g; } return null; }
             function alignIn(a, b) { for (var k = 0; k < tags.length; k++) { var g = tags[k]; if (g.align && g.s < b && g.e > a) return g.align; } return ''; }
-            var lines = t.split('\n'), html = '', pos = 0;
+            function pcssIn(a, b) { var s = ''; for (var k = 0; k < tags.length; k++) { var g = tags[k]; if (g.pcss && g.s < b && g.e > a) s += g.pcss; } return s; }
+            function numIn(a, b) { for (var k = 0; k < tags.length; k++) { var g = tags[k]; if (g.num && g.s < b && g.e > a) return g; } return null; }
+            function numMarker(kind, style, n) {
+              kind = (kind || '').toUpperCase(); style = (style || '').toUpperCase();
+              if (kind === 'BULLET') return '•';
+              var s;
+              if (kind === 'LCLETTER') s = String.fromCharCode(97 + (n - 1) % 26);
+              else if (kind === 'UCLETTER') s = String.fromCharCode(65 + (n - 1) % 26);
+              else s = '' + n;
+              if (style === 'RIGHTPARENTHESIS') return s + ')';
+              if (style === 'PARENTHESES') return '(' + s + ')';
+              if (style === 'NONUMBER') return '';
+              return s + '.';
+            }
+            function linkAt(p) { for (var k = 0; k < tags.length; k++) { var g = tags[k]; if (g.link != null && p >= g.s && p < g.e) return g.link; } return -1; }
+            function emitSpan(text, css, link) {
+              if (link >= 0) return '<span data-iuplink="' + link + '" style="' + (css || '') + 'color:var(--iup-link);text-decoration:underline;cursor:pointer;">' + text + '</span>';
+              return css ? '<span style="' + css + '">' + text + '</span>' : text;
+            }
+            var lines = t.split('\n'), html = '', pos = 0, numCount = 0, lastNum = false;
             for (var li = 0; li < lines.length; li++) {
               var line = lines[li], ls = pos, le = pos + line.length;
               var al = alignIn(ls, le > ls ? le : ls + 1);
-              var inner = '', buf = '', cur = null, i = 0;
+              var pst = pcssIn(ls, le > ls ? le : ls + 1);
+              var ng = numIn(ls, le > ls ? le : ls + 1), marker = '';
+              if (ng) { if (!lastNum) numCount = 0; numCount++; marker = numMarker(ng.num, ng.nstyle, numCount); lastNum = true; }
+              else lastNum = false;
+              var inner = '', buf = '', cur = null, curlink = -1, i = 0;
               while (i < line.length) {
                 var gp = ls + i, im = imgAt(gp);
                 if (im) {
-                  if (buf) inner += cur ? '<span style="' + cur + '">' + buf + '</span>' : buf;
-                  buf = ''; cur = null;
+                  if (buf) inner += emitSpan(buf, cur, curlink);
+                  buf = ''; cur = null; curlink = -1;
                   var dim = ''; if (im.iw) dim += 'width:' + im.iw + 'px;'; if (im.ih) dim += 'height:' + im.ih + 'px;';
                   inner += '<img src="' + im.img + '" style="vertical-align:middle;' + dim + '">';
                   var step = im.e - gp; i += step > 0 ? step : 1;
                   continue;
                 }
-                var st = styleAt(gp);
-                if (st !== cur) { if (buf) inner += cur ? '<span style="' + cur + '">' + buf + '</span>' : buf; buf = ''; cur = st; }
+                var st = styleAt(gp), lk = linkAt(gp);
+                if (st !== cur || lk !== curlink) { if (buf) inner += emitSpan(buf, cur, curlink); buf = ''; cur = st; curlink = lk; }
                 buf += esc(line[i]); i++;
               }
-              if (buf) inner += cur ? '<span style="' + cur + '">' + buf + '</span>' : buf;
+              if (buf) inner += emitSpan(buf, cur, curlink);
               if (!inner) inner = '<br>';
-              html += '<div' + (al ? ' style="text-align:' + al + '"' : '') + '>' + inner + '</div>';
+              if (marker) inner = '<span style="margin-right:6px;">' + marker + '</span>' + inner;
+              var dstyle = (al ? 'text-align:' + al + ';' : '') + pst;
+              html += '<div' + (dstyle ? ' style="' + dstyle + '"' : '') + '>' + inner + '</div>';
               pos = le + 1;
             }
             tel.innerHTML = html;
@@ -1339,6 +1369,33 @@
       } break;
       case 'textaddalignpos': {
         if (el && el.__iupRender) { el.__iupTags.push({ s: c.start, e: c.end, align: c.align }); el.__iupRender(); }
+      } break;
+      case 'textaddpcss': {
+        if (el && el.__iupRender) {
+          var ps = globalThis.__iupTextOff(el, c.l1, c.c1), pe = globalThis.__iupTextOff(el, c.l2, c.c2);
+          el.__iupTags.push({ s: ps, e: pe, pcss: c.pcss }); el.__iupRender();
+        }
+      } break;
+      case 'textaddpcsspos': {
+        if (el && el.__iupRender) { el.__iupTags.push({ s: c.start, e: c.end, pcss: c.pcss }); el.__iupRender(); }
+      } break;
+      case 'textaddnumbering': {
+        if (el && el.__iupRender) {
+          var us = globalThis.__iupTextOff(el, c.l1, c.c1), ue = globalThis.__iupTextOff(el, c.l2, c.c2);
+          el.__iupTags.push({ s: us, e: ue, num: c.kind, nstyle: c.nstyle }); el.__iupRender();
+        }
+      } break;
+      case 'textaddnumberingpos': {
+        if (el && el.__iupRender) { el.__iupTags.push({ s: c.start, e: c.end, num: c.kind, nstyle: c.nstyle }); el.__iupRender(); }
+      } break;
+      case 'textaddlink': {
+        if (el && el.__iupRender) {
+          var ks = globalThis.__iupTextOff(el, c.l1, c.c1), ke = globalThis.__iupTextOff(el, c.l2, c.c2);
+          el.__iupTags.push({ s: ks, e: ke, link: c.idx }); el.__iupRender();
+        }
+      } break;
+      case 'textaddlinkpos': {
+        if (el && el.__iupRender) { el.__iupTags.push({ s: c.start, e: c.end, link: c.idx }); el.__iupRender(); }
       } break;
       case 'textspinrange': {
         if (el) { el.min = c.min; el.max = c.max; el.step = c.step < 1 ? 1 : c.step; }
