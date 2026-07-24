@@ -58,6 +58,30 @@ EM_JS(void, iupwasmJsTextAddAlignPos, (int id, int start, int end, const char* a
   globalThis.__iupApply({ op: 'textaddalignpos', id: id, start: start, end: end, align: UTF8ToString(align) });
 })
 
+EM_JS(void, iupwasmJsTextAddPCss, (int id, int l1, int c1, int l2, int c2, const char* pcss), {
+  globalThis.__iupApply({ op: 'textaddpcss', id: id, l1: l1, c1: c1, l2: l2, c2: c2, pcss: UTF8ToString(pcss) });
+})
+
+EM_JS(void, iupwasmJsTextAddPCssPos, (int id, int start, int end, const char* pcss), {
+  globalThis.__iupApply({ op: 'textaddpcsspos', id: id, start: start, end: end, pcss: UTF8ToString(pcss) });
+})
+
+EM_JS(void, iupwasmJsTextAddNumbering, (int id, int l1, int c1, int l2, int c2, const char* kind, const char* nstyle), {
+  globalThis.__iupApply({ op: 'textaddnumbering', id: id, l1: l1, c1: c1, l2: l2, c2: c2, kind: UTF8ToString(kind), nstyle: UTF8ToString(nstyle) });
+})
+
+EM_JS(void, iupwasmJsTextAddNumberingPos, (int id, int start, int end, const char* kind, const char* nstyle), {
+  globalThis.__iupApply({ op: 'textaddnumberingpos', id: id, start: start, end: end, kind: UTF8ToString(kind), nstyle: UTF8ToString(nstyle) });
+})
+
+EM_JS(void, iupwasmJsTextAddLink, (int id, int l1, int c1, int l2, int c2, int idx), {
+  globalThis.__iupApply({ op: 'textaddlink', id: id, l1: l1, c1: c1, l2: l2, c2: c2, idx: idx });
+})
+
+EM_JS(void, iupwasmJsTextAddLinkPos, (int id, int start, int end, int idx), {
+  globalThis.__iupApply({ op: 'textaddlinkpos', id: id, start: start, end: end, idx: idx });
+})
+
 EM_JS(void, iupwasmJsTextSpinRange, (int id, int min, int max, int step), {
   globalThis.__iupApply({ op: 'textspinrange', id: id, min: min, max: max, step: step });
 })
@@ -692,6 +716,21 @@ IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bul
     snprintf(c, sizeof(c), "font-family:%s;", v);
     strcat(css, c);
   }
+  v = iupAttribGet(formattag, "RISE");
+  if (v)
+  {
+    int rise = 0;
+    if (iupStrEqualNoCase(v, "SUPERSCRIPT")) strcat(css, "vertical-align:super;");
+    else if (iupStrEqualNoCase(v, "SUBSCRIPT")) strcat(css, "vertical-align:sub;");
+    else if (iupStrToInt(v, &rise) && rise != 0)
+    {
+      char c[40];
+      snprintf(c, sizeof(c), "vertical-align:%dpx;", rise);
+      strcat(css, c);
+    }
+  }
+  if (iupAttribGetBoolean(formattag, "SMALLCAPS"))
+    strcat(css, "font-variant:small-caps;");
 
   v = iupAttribGet(formattag, "IMAGE");
   if (v && v[0])
@@ -723,6 +762,74 @@ IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bul
       iupwasmJsTextAddAlign(id, l1, c1, l2, c2, a);
   }
 
+  {
+    char pcss[160] = "";
+    int n;
+    v = iupAttribGet(formattag, "INDENT");
+    if (v && iupStrToInt(v, &n) && n > 0)
+    {
+      char c[40];
+      snprintf(c, sizeof(c), "padding-left:%dpx;", n);
+      strcat(pcss, c);
+    }
+    v = iupAttribGet(formattag, "LINESPACING");
+    if (v)
+    {
+      char c[40] = "";
+      if (iupStrEqualNoCase(v, "SINGLE")) strcpy(c, "line-height:1;");
+      else if (iupStrEqualNoCase(v, "ONEHALF")) strcpy(c, "line-height:1.5;");
+      else if (iupStrEqualNoCase(v, "DOUBLE")) strcpy(c, "line-height:2;");
+      else if (iupStrToInt(v, &n) && n > 0) snprintf(c, sizeof(c), "line-height:%dpx;", n);
+      if (c[0]) strcat(pcss, c);
+    }
+    v = iupAttribGet(formattag, "SPACEBEFORE");
+    if (v && iupStrToInt(v, &n) && n > 0)
+    {
+      char c[40];
+      snprintf(c, sizeof(c), "margin-top:%dpx;", n);
+      strcat(pcss, c);
+    }
+    v = iupAttribGet(formattag, "SPACEAFTER");
+    if (v && iupStrToInt(v, &n) && n > 0)
+    {
+      char c[40];
+      snprintf(c, sizeof(c), "margin-bottom:%dpx;", n);
+      strcat(pcss, c);
+    }
+    if (pcss[0])
+    {
+      if (use_pos)
+        iupwasmJsTextAddPCssPos(id, p1, p2, pcss);
+      else
+        iupwasmJsTextAddPCss(id, l1, c1, l2, c2, pcss);
+    }
+  }
+
+  v = iupAttribGet(formattag, "NUMBERING");
+  if (v && !iupStrEqualNoCase(v, "NONE"))
+  {
+    char* nstyle = iupAttribGet(formattag, "NUMBERINGSTYLE");
+    if (!nstyle) nstyle = "";
+    if (use_pos)
+      iupwasmJsTextAddNumberingPos(id, p1, p2, v, nstyle);
+    else
+      iupwasmJsTextAddNumbering(id, l1, c1, l2, c2, v, nstyle);
+  }
+
+  v = iupAttribGet(formattag, "LINK");
+  if (v && v[0])
+  {
+    int idx = iupAttribGetInt(ih, "_IUP_WASMLINK_COUNT");
+    char name[40];
+    snprintf(name, sizeof(name), "_IUP_WASMLINK_%d", idx);
+    iupAttribSetStr(ih, name, v);
+    iupAttribSetInt(ih, "_IUP_WASMLINK_COUNT", idx + 1);
+    if (use_pos)
+      iupwasmJsTextAddLinkPos(id, p1, p2, idx);
+    else
+      iupwasmJsTextAddLink(id, l1, c1, l2, c2, idx);
+  }
+
   if (css[0])
   {
     if (use_pos)
@@ -730,6 +837,23 @@ IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bul
     else
       iupwasmJsTextAddTag(id, l1, c1, l2, c2, css);
   }
+}
+
+EMSCRIPTEN_KEEPALIVE void iupwasmTextLinkClick(int id, int idx)
+{
+  Ihandle* ih = iupwasmHandleFromId(id);
+  char name[40];
+  char* url;
+  IFns cb;
+  if (!ih)
+    return;
+  snprintf(name, sizeof(name), "_IUP_WASMLINK_%d", idx);
+  url = iupAttribGet(ih, name);
+  if (!url)
+    return;
+  cb = (IFns)IupGetCallback(ih, "LINK_CB");
+  if (cb)
+    cb(ih, url);
 }
 
 static int wasmTextSetRemoveFormattingAttrib(Ihandle* ih, const char* value)
