@@ -66,29 +66,38 @@ Can be TWIP or PIXELS. Default: PIXELS.
 #### Paragraph Format Tag Attributes
 
 **ALIGNMENT**: Can be JUSTIFY, RIGHT, CENTER and LEFT. Default: LEFT.
+Not supported in FLTK and Haiku.
 
 **INDENT**: paragraph indentation, the distance between the margin and the paragraph.
 In Windows the right indentation, and the indentation of the second and subsequent lines (relative to the indentation of the first line) can be independently set using the **INDENTRIGHT** and **INDENTOFFSET** attributes, but only when **INDENT** is set.
+Not supported in Haiku.
 
 **LINESPACING**: the distance between lines of the same paragraph.
 In Windows, the values SINGLE, ONEHALF and DOUBLE can be used.
+Not supported in FLTK and Haiku.
 
 **NUMBERING**: Can be BULLET (bullet symbol), ARABIC (arabic numbers - 1,2,3...), LCLETTER (lower case letters - a,b,c...), UCLETTER (upper case letters - A,B,C...), LCROMAN (lower case Roman numerals - i,ii,iii...), UCROMAN (upper case Roman numerals - I,II,III...) and NONE.
 Default: NONE.
+Not supported in Haiku.
 
 **NUMBERINGSTYLE**: Can be RIGHTPARENTHESIS "a)", PARENTHESES "(a)", PERIOD "a.", NONUMBER (it will skip the numbering or bullet for the item) and NONE "".
 Default: NONE.
+Not supported in Haiku.
 
 **NUMBERINGTAB**: Minimum distance from a paragraph numbering or bullet to the paragraph text.
+Not supported in FLTK, Android, WebAssembly, iOS and Haiku.
 
 **SPACEAFTER**: distance left empty above the paragraph.
+Not supported in FLTK, EFL, Android and Haiku.
 
 **SPACEBEFORE**: distance left empty below the paragraph.
+Not supported in FLTK, EFL, Android and Haiku.
 
 **TABSARRAY**: a sequence of tab positions and alignment up to 32 tabs.
 It uses the format:"pos align pos align pos align...".
 Position is the distance relative to the left margin and alignment can be LEFT, CENTER, RIGHT and DECIMAL.
 When DECIMAL alignment is used, the text is aligned according to a decimal point or period in the text, it is normally used to align numbers.
+Not supported in FLTK, EFL, Android, WebAssembly and Haiku.
 
 #### Character Format Tag Attributes
 
@@ -113,10 +122,13 @@ The same value can be used in the "SYSTEMLANGUAGE" global attribute.
 
 **RISE**: the distance, positive or negative from the base line.
 Can also use the values SUPERSCRIPT and SUBSCRIPT, but this values will also reduce the size of the font.
+Not supported in FLTK, EFL and Haiku.
 
 **SMALLCAPS**: Can be YES or NO. Default NO. (Does not work always, depends on the font)
+Not supported in Win32, FLTK, EFL, Android and Haiku.
 
 **PROTECTED**: Can be YES or NO. Default NO. When set to YES the selected text cannot be edited.
+Supported in GTK, GTK 4, Qt, Win32 and WinUI.
 
 **STRETCH** [GTK and EFL Only]: Can be EXTRA_CONDENSED, CONDENSED, SEMI_CONDENSED, NORMAL, SEMI_EXPANDED, EXPANDED and EXTRA_EXPANDED.
 Default NORMAL. (Does not work always, depends on the font)
