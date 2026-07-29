@@ -113,7 +113,6 @@ Iclass* iupClipboardNewClass(void)
   iupClassRegisterAttribute(ic, "IMAGE", NULL, wasmClipboardSetImageAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_IHANDLENAME | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "IMAGEAVAILABLE", wasmClipboardGetImageAvailableAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
 
-  /* the browser exposes no native image handle */
   iupClassRegisterAttribute(ic, "NATIVEIMAGE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_STRING | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
 
   return ic;

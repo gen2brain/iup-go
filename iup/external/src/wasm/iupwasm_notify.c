@@ -122,7 +122,6 @@ IUP_SDK_API void iupdrvNotifyInitClass(Iclass* ic)
 {
   iupClassRegisterAttribute(ic, "APPICON", NULL, NULL, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
 
-  /* the Notification API has no urgency level and no transient flag */
   iupClassRegisterAttribute(ic, "URGENCY", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TRANSIENT", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
 }
