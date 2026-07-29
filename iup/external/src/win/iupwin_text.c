@@ -2731,6 +2731,126 @@ static int winTextMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
+static int winTextSameCharFormat(const CHARFORMAT2* a, const CHARFORMAT2* b)
+{
+  DWORD effects = CFE_BOLD | CFE_ITALIC | CFE_STRIKEOUT | CFE_UNDERLINE | CFE_LINK;
+
+  if ((a->dwEffects & effects) != (b->dwEffects & effects))
+    return 0;
+  if (a->yHeight != b->yHeight)
+    return 0;
+  if (lstrcmp(a->szFaceName, b->szFaceName) != 0)
+    return 0;
+
+  return 1;
+}
+
+static void winTextAddFormatRun(Ihandle* ih, Ihandle* bulk_tag, const CHARFORMAT2* charformat, int start, int end)
+{
+  Ihandle* formattag = IupUser();
+  const char* url;
+
+  IupSetStrf(formattag, "SELECTIONPOS", "%d:%d", start, end);
+  IupAppend(bulk_tag, formattag);
+
+  IupSetAttribute(formattag, "WEIGHT", (charformat->dwEffects & CFE_BOLD) ? "BOLD" : "NORMAL");
+  IupSetAttribute(formattag, "ITALIC", (charformat->dwEffects & CFE_ITALIC) ? "YES" : "NO");
+  IupSetAttribute(formattag, "STRIKEOUT", (charformat->dwEffects & CFE_STRIKEOUT) ? "YES" : "NO");
+
+  if (charformat->szFaceName[0])
+    IupSetStrAttribute(formattag, "FONTFACE", iupwinStrFromSystem(charformat->szFaceName));
+
+  if (charformat->yHeight > 0)
+    IupSetInt(formattag, "FONTSIZE", charformat->yHeight / 20);
+
+  url = winTextFindLinkUrl(ih, start, end);
+  if (url)
+    IupSetStrAttribute(formattag, "LINK", url);
+}
+
+IUP_SDK_API int iupdrvTextGetFormatTags(Ihandle* ih, Ihandle* bulk_tag)
+{
+  CHARRANGE old_range, range;
+  CHARFORMAT2 charformat, run_format;
+  int count, pos, run_start = 0, line, linecount, event_mask, pixel2twips;
+  DWORD first_line;
+
+  if (!ih->data->has_formatting || !ih->data->is_multiline || !ih->handle)
+    return 0;
+
+  count = winTextGetLastPosition(ih);
+  if (count <= 0)
+    return 1;
+
+  pixel2twips = 1440 / iupwinGetScreenRes();
+
+  first_line = (DWORD)SendMessage(ih->handle, EM_GETFIRSTVISIBLELINE, 0, 0);
+  SendMessage(ih->handle, EM_EXGETSEL, 0, (LPARAM)&old_range);
+  event_mask = (int)SendMessage(ih->handle, EM_SETEVENTMASK, 0, 0);
+  SendMessage(ih->handle, WM_SETREDRAW, FALSE, 0);
+
+  ZeroMemory(&run_format, sizeof(CHARFORMAT2));
+  ZeroMemory(&charformat, sizeof(CHARFORMAT2));
+
+  for (pos = 0; pos <= count; pos++)
+  {
+    if (pos < count)
+    {
+      range.cpMin = pos;
+      range.cpMax = pos + 1;
+      SendMessage(ih->handle, EM_EXSETSEL, 0, (LPARAM)&range);
+
+      ZeroMemory(&charformat, sizeof(CHARFORMAT2));
+      charformat.cbSize = sizeof(CHARFORMAT2);
+      SendMessage(ih->handle, EM_GETCHARFORMAT, SCF_SELECTION, (LPARAM)&charformat);
+    }
+
+    if (pos == 0)
+      run_format = charformat;
+    else if (pos == count || !winTextSameCharFormat(&run_format, &charformat))
+    {
+      winTextAddFormatRun(ih, bulk_tag, &run_format, run_start, pos);
+      run_start = pos;
+      run_format = charformat;
+    }
+  }
+
+  linecount = (int)SendMessage(ih->handle, EM_GETLINECOUNT, 0, 0);
+  for (line = 0; line < linecount; line++)
+  {
+    PARAFORMAT2 paraformat;
+    int start = (int)SendMessage(ih->handle, EM_LINEINDEX, (WPARAM)line, 0);
+    int length = (int)SendMessage(ih->handle, EM_LINELENGTH, (WPARAM)start, 0);
+
+    if (start < 0 || length <= 0)
+      continue;
+
+    range.cpMin = start;
+    range.cpMax = start + length;
+    SendMessage(ih->handle, EM_EXSETSEL, 0, (LPARAM)&range);
+
+    ZeroMemory(&paraformat, sizeof(PARAFORMAT2));
+    paraformat.cbSize = sizeof(PARAFORMAT2);
+    SendMessage(ih->handle, EM_GETPARAFORMAT, 0, (LPARAM)&paraformat);
+
+    if (paraformat.dxStartIndent > 0)
+    {
+      Ihandle* formattag = IupUser();
+      IupSetStrf(formattag, "SELECTIONPOS", "%d:%d", start, start + length);
+      IupSetInt(formattag, "INDENT", paraformat.dxStartIndent / pixel2twips);
+      IupAppend(bulk_tag, formattag);
+    }
+  }
+
+  SendMessage(ih->handle, EM_EXSETSEL, 0, (LPARAM)&old_range);
+  SendMessage(ih->handle, EM_LINESCROLL, 0, first_line - (DWORD)SendMessage(ih->handle, EM_GETFIRSTVISIBLELINE, 0, 0));
+  SendMessage(ih->handle, EM_SETEVENTMASK, 0, event_mask);
+  SendMessage(ih->handle, WM_SETREDRAW, TRUE, 0);
+  iupdrvRedrawNow(ih);
+
+  return 1;
+}
+
 IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
