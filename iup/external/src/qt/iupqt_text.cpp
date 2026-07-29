@@ -2347,6 +2347,65 @@ static void qtTextParseCharacterFormat(Ihandle* formattag, QTextCharFormat* char
   }
 }
 
+extern "C" IUP_SDK_API int iupdrvTextGetFormatTags(Ihandle* ih, Ihandle* bulk_tag)
+{
+  if (!ih->data->is_multiline)
+    return 0;
+
+  QTextEdit* text = (QTextEdit*)ih->handle;
+  if (!text)
+    return 0;
+
+  QTextDocument* doc = text->document();
+
+  for (QTextBlock block = doc->begin(); block.isValid(); block = block.next())
+  {
+    qreal left_margin = block.blockFormat().leftMargin();
+
+    for (QTextBlock::iterator it = block.begin(); !it.atEnd(); ++it)
+    {
+      QTextFragment fragment = it.fragment();
+      if (!fragment.isValid())
+        continue;
+
+      QTextCharFormat charFormat = fragment.charFormat();
+      QFont font = charFormat.font();
+      Ihandle* formattag = IupUser();
+
+      IupSetStrf(formattag, "SELECTIONPOS", "%d:%d", fragment.position(), fragment.position() + fragment.length());
+      IupAppend(bulk_tag, formattag);
+
+      IupSetAttribute(formattag, "WEIGHT", charFormat.fontWeight() >= QFont::DemiBold ? "BOLD" : "NORMAL");
+      IupSetAttribute(formattag, "ITALIC", font.italic() ? "YES" : "NO");
+      IupSetAttribute(formattag, "STRIKEOUT", font.strikeOut() ? "YES" : "NO");
+
+      if (!font.family().isEmpty())
+        IupSetStrAttribute(formattag, "FONTFACE", font.family().toUtf8().constData());
+
+      qreal base_size = doc->defaultFont().pointSizeF();
+      if (charFormat.fontPointSize() > 0 && base_size > 0)
+        IupSetDouble(formattag, "FONTSCALE", charFormat.fontPointSize() / base_size);
+
+      if (charFormat.isAnchor() && !charFormat.anchorHref().isEmpty())
+        IupSetStrAttribute(formattag, "LINK", charFormat.anchorHref().toUtf8().constData());
+
+      if (charFormat.isImageFormat())
+      {
+        QString name = charFormat.toImageFormat().name();
+        if (name.startsWith(QStringLiteral("iup_image_")))
+          name = name.mid(10);
+        if (!name.isEmpty())
+          IupSetStrAttribute(formattag, "IMAGE", name.toUtf8().constData());
+      }
+
+      if (left_margin > 0)
+        IupSetInt(formattag, "INDENT", (int)left_margin);
+    }
+  }
+
+  return 1;
+}
+
 static int qtTextSetRemoveFormattingAttrib(Ihandle* ih, const char* value)
 {
   if (!ih->data->is_multiline)
