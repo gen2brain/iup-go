@@ -117,6 +117,49 @@ func importButton() iup.Ihandle {
 	return b
 }
 
+func previewButton() iup.Ihandle {
+	b := iup.Button("Preview MD")
+	b.SetAttribute("CANFOCUS", "NO")
+	iup.SetCallback(b, "ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
+		view := iup.Text()
+		view.SetAttributes(`MULTILINE=YES, READONLY=YES, WORDWRAP=YES, EXPAND=YES, SIZE=380x220, FONT="Courier, 10"`)
+		view.SetAttribute("VALUE", editorOf(ih).GetAttribute("GETMARKDOWNVALUE"))
+
+		btnClose := iup.Button("Close")
+		btnClose.SetAttribute("PADDING", "10x2")
+		iup.SetCallback(btnClose, "ACTION", iup.ActionFunc(func(iup.Ihandle) int { return iup.CLOSE }))
+
+		dlg := iup.Dialog(iup.Vbox(view, iup.Hbox(iup.Fill(), btnClose)).SetAttributes("NMARGIN=10x10, NGAP=6"))
+		dlg.SetAttribute("TITLE", "Markdown Preview")
+		iup.SetAttributeHandle(dlg, "PARENTDIALOG", iup.GetDialog(ih))
+
+		iup.Popup(dlg, iup.CENTERPARENT, iup.CENTERPARENT)
+		dlg.Destroy()
+		return iup.DEFAULT
+	}))
+	return b
+}
+
+func exportButton() iup.Ihandle {
+	b := iup.Button("Export MD")
+	b.SetAttribute("CANFOCUS", "NO")
+	iup.SetCallback(b, "ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
+		fd := iup.FileDlg()
+		fd.SetAttributes(`DIALOGTYPE=SAVE, TITLE="Export Markdown", FILE="untitled.md", EXTFILTER="Markdown Files|*.md;*.markdown|All Files|*.*"`)
+		iup.Popup(fd, iup.CENTER, iup.CENTER)
+		if iup.GetInt(fd, "STATUS") != -1 {
+			editor := editorOf(ih)
+			editor.SetAttribute("SAVEMARKDOWN", fd.GetAttribute("VALUE"))
+			if editor.GetAttribute("SAVEMARKDOWNSTATUS") != "OK" {
+				iup.MessageError(iup.GetDialog(ih), "Could not save the Markdown file.")
+			}
+		}
+		fd.Destroy()
+		return iup.DEFAULT
+	}))
+	return b
+}
+
 func actionButton(title string, cb func(editor iup.Ihandle)) iup.Ihandle {
 	b := iup.Button(title)
 	b.SetAttribute("CANFOCUS", "NO")
@@ -170,6 +213,8 @@ func main() {
 		styleButton("Numbered", func(t iup.Ihandle) { t.SetAttribute("NUMBERING", "ARABIC") }),
 		linkButton(),
 		importButton(),
+		previewButton(),
+		exportButton(),
 		actionButton("Sample MD", func(editor iup.Ihandle) {
 			editor.SetAttribute("APPENDMARKDOWN", sampleMarkdown)
 		}),
