@@ -151,6 +151,40 @@ static int wasmDialogSetBackgroundAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
+static int wasmDialogSetBackImageZoomAttrib(Ihandle* ih, const char* value)
+{
+  char* background = iupAttribGet(ih, "BACKGROUND");
+  if (background)
+    wasmDialogSetBackgroundAttrib(ih, background);
+  (void)value;
+  return 1;
+}
+
+static char* wasmDialogGetClientSizeAttrib(Ihandle* ih)
+{
+  int border, caption, menu, width, height;
+
+  if (!ih->handle)
+    return iupDialogGetClientSizeAttrib(ih);
+
+  iupdrvDialogGetDecoration(ih, &border, &caption, &menu);
+
+  width = ih->currentwidth - 2 * border;
+  height = ih->currentheight - caption - menu;
+
+  if (width < 0) width = 0;
+  if (height < 0) height = 0;
+
+  return iupStrReturnIntInt(width, height, 'x');
+}
+
+static char* wasmDialogGetClientOffsetAttrib(Ihandle* ih)
+{
+  int border, caption, menu;
+  iupdrvDialogGetDecoration(ih, &border, &caption, &menu);
+  return iupStrReturnIntInt(border, caption + menu, 'x');
+}
+
 static char* wasmDialogGetActiveWindowAttrib(Ihandle* ih)
 {
   int id = iupwasmIdOf(ih);
@@ -270,6 +304,9 @@ IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "OPACITY", NULL, wasmDialogSetOpacityAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "BRINGFRONT", NULL, wasmDialogSetBringFrontAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "BACKGROUND", NULL, wasmDialogSetBackgroundAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BACKIMAGEZOOM", NULL, wasmDialogSetBackImageZoomAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CLIENTSIZE", wasmDialogGetClientSizeAttrib, iupDialogSetClientSizeAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_SAVE | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CLIENTOFFSET", wasmDialogGetClientOffsetAttrib, NULL, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_DEFAULTVALUE | IUPAF_READONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ACTIVEWINDOW", wasmDialogGetActiveWindowAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "RESIZE", NULL, wasmDialogSetResizeAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
 

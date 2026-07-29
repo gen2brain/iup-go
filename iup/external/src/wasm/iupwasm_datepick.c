@@ -33,6 +33,10 @@ EM_JS(void, iupwasmJsDateSet, (int id, const char* iso), {
   globalThis.__iupApply({ op: 'inputval', id: id, value: UTF8ToString(iso) });
 })
 
+EM_JS(void, iupwasmJsDateShowPicker, (int id), {
+  globalThis.__iupApply({ op: 'dateshowpicker', id: id });
+})
+
 EM_JS(int, iupwasmJsDateGet, (int id), {
   var s;
   if (typeof document === 'undefined') s = globalThis.__iupReadSync({ op: 'inputvalue', id: id });
@@ -94,6 +98,14 @@ static char* wasmDatePickGetValueAttrib(Ihandle* ih)
   return iupStrReturnStrf("%d/%d/%d", y, m, d);
 }
 
+static int wasmDatePickSetShowDropdownAttrib(Ihandle* ih, const char* value)
+{
+  int id = iupwasmIdOf(ih);
+  if (id && iupStrBoolean(value))
+    iupwasmJsDateShowPicker(id);
+  return 0;
+}
+
 static char* wasmDatePickGetTodayAttrib(Ihandle* ih)
 {
   int y, m, d;
@@ -150,6 +162,9 @@ Iclass* iupDatePickNewClass(void)
 
   iupClassRegisterAttribute(ic, "VALUE", wasmDatePickGetValueAttrib, wasmDatePickSetValueAttrib, NULL, "TODAY", IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TODAY", wasmDatePickGetTodayAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SHOWDROPDOWN", NULL, wasmDatePickSetShowDropdownAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, iupdrvBaseSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTFGCOLOR", IUPAF_DEFAULT);
 
   /* native <input type=date> field layout is locale/UA governed, not scriptable */
   iupClassRegisterAttribute(ic, "SEPARATOR", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);

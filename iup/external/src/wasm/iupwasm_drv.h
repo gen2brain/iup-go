@@ -25,6 +25,7 @@ void iupwasmUnregisterHandle(int id);
 void iupwasmSetVisibleState(int id, int visible);
 Ihandle* iupwasmHandleFromId(int id);
 void iupwasmFillStatus(char* status, int mods);
+char* iupwasmGetScrollVisibleAttrib(Ihandle* ih);
 
 void iupwasmAddToParent(Ihandle* ih);
 
