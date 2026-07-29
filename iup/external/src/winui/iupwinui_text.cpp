@@ -538,9 +538,13 @@ static char* winuiTextGetValueAttrib(Ihandle* ih)
       hstring text;
       reb.Document().GetText(TextGetOptions::None, text);
       uint32_t len = text.size();
+      char* str;
       if (len > 0 && text.c_str()[len - 1] == L'\r')
-        return iupwinuiHStringToString(hstring(std::wstring_view(text.c_str(), len - 1)));
-      return iupwinuiHStringToString(text);
+        str = iupwinuiHStringToString(hstring(std::wstring_view(text.c_str(), len - 1)));
+      else
+        str = iupwinuiHStringToString(text);
+      iupStrToUnix(str);
+      return str;
     }
   }
   else
@@ -549,7 +553,11 @@ static char* winuiTextGetValueAttrib(Ihandle* ih)
     if (tb)
     {
       char* str = iupwinuiHStringToString(tb.Text());
-      return str ? str : (char*)"";
+      if (!str)
+        return (char*)"";
+      if (ih->data->is_multiline)
+        iupStrToUnix(str);
+      return str;
     }
   }
 
@@ -3764,6 +3772,93 @@ static int winuiTextSetMaskFloatAttrib(Ihandle* ih, const char* value)
     }
   }
   return 0;
+}
+
+extern "C" IUP_SDK_API int iupdrvTextGetFormatTags(Ihandle* ih, Ihandle* bulk_tag)
+{
+  IupWinUITextAux* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
+  if (!aux || !aux->isFormatted)
+    return 0;
+
+  RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
+  if (!reb)
+    return 0;
+
+  auto doc = reb.Document();
+  hstring text;
+  doc.GetText(TextGetOptions::None, text);
+
+  int count = (int)text.size();
+  if (count <= 0)
+    return 1;
+
+  bool run_bold = false, run_italic = false, run_strike = false;
+  float run_size = 0, run_indent = 0;
+  UnderlineType run_underline = UnderlineType::None;
+  hstring run_name;
+  int run_start = 0;
+
+  for (int pos = 0; pos <= count; pos++)
+  {
+    bool bold = false, italic = false, strike = false;
+    float size = 0, indent = 0;
+    UnderlineType underline = UnderlineType::None;
+    hstring name;
+
+    if (pos < count)
+    {
+      auto range = doc.GetRange(pos, pos + 1);
+      auto cf = range.CharacterFormat();
+
+      bold = (cf.Bold() == FormatEffect::On);
+      italic = (cf.Italic() == FormatEffect::On);
+      strike = (cf.Strikethrough() == FormatEffect::On);
+      underline = cf.Underline();
+      size = cf.Size();
+      name = cf.Name();
+      indent = range.ParagraphFormat().LeftIndent();
+    }
+
+    if (pos == 0)
+    {
+      run_bold = bold; run_italic = italic; run_strike = strike;
+      run_underline = underline;
+      run_size = size; run_name = name; run_indent = indent;
+      continue;
+    }
+
+    if (pos == count || bold != run_bold || italic != run_italic || strike != run_strike ||
+        underline != run_underline || size != run_size || name != run_name || indent != run_indent)
+    {
+      Ihandle* formattag = IupUser();
+      const char* url;
+
+      IupSetStrf(formattag, "SELECTIONPOS", "%d:%d", run_start, pos);
+      IupAppend(bulk_tag, formattag);
+
+      IupSetAttribute(formattag, "WEIGHT", run_bold ? "BOLD" : "NORMAL");
+      IupSetAttribute(formattag, "ITALIC", run_italic ? "YES" : "NO");
+      IupSetAttribute(formattag, "STRIKEOUT", run_strike ? "YES" : "NO");
+
+      if (!run_name.empty())
+        IupSetStrAttribute(formattag, "FONTFACE", winrt::to_string(run_name).c_str());
+      if (run_size > 0)
+        IupSetInt(formattag, "FONTSIZE", (int)(run_size + 0.5f));
+      if (run_indent > 0)
+        IupSetInt(formattag, "INDENT", (int)run_indent);
+
+      url = winuiTextFindLinkUrl(ih, run_start);
+      if (url)
+        IupSetStrAttribute(formattag, "LINK", url);
+
+      run_start = pos;
+      run_bold = bold; run_italic = italic; run_strike = strike;
+      run_underline = underline;
+      run_size = size; run_name = name; run_indent = indent;
+    }
+  }
+
+  return 1;
 }
 
 extern "C" IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
