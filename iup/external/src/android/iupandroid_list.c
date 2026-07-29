@@ -19,6 +19,8 @@
 #include "iup_drvfont.h"
 #include "iup_mask.h"
 #include "iup_image.h"
+#include "iup_drv.h"
+#include "iup_drvinfo.h"
 #include "iup_list.h"
 
 #include "iupandroid_drv.h"
@@ -588,6 +590,184 @@ static int androidListConvertXYToPos(Ihandle* ih, int x, int y)
   return (int)pos + 1;  /* 1-based for IUP */
 }
 
+
+static void androidListCallVoidII(Ihandle* ih, const char* name, const char* sig, jint a, jint b)
+{
+  JNIEnv* env = iupAndroid_GetEnvThreadSafe();
+  jclass cls = IUPJNI_FindClass(IupListHelper, env, "io/github/gen2brain/iupgo/IupListHelper");
+  jmethodID m = (*env)->GetStaticMethodID(env, cls, name, sig);
+  (*env)->CallStaticVoidMethod(env, cls, m, (jobject)ih->handle, a, b);
+  iupAndroid_CheckException(env, name);
+  (*env)->DeleteLocalRef(env, cls);
+}
+
+static int androidListEditIntGet(Ihandle* ih, const char* name)
+{
+  JNIEnv* env = iupAndroid_GetEnvThreadSafe();
+  jclass cls = IUPJNI_FindClass(IupListHelper, env, "io/github/gen2brain/iupgo/IupListHelper");
+  jmethodID m = (*env)->GetStaticMethodID(env, cls, name, "(Landroid/view/View;)I");
+  jint v = (*env)->CallStaticIntMethod(env, cls, m, (jobject)ih->handle);
+  iupAndroid_CheckException(env, name);
+  (*env)->DeleteLocalRef(env, cls);
+  return (int)v;
+}
+
+static void androidListEditStrCall(Ihandle* ih, const char* name, const char* value)
+{
+  JNIEnv* env = iupAndroid_GetEnvThreadSafe();
+  jclass cls = IUPJNI_FindClass(IupListHelper, env, "io/github/gen2brain/iupgo/IupListHelper");
+  jmethodID m = (*env)->GetStaticMethodID(env, cls, name, "(Landroid/view/View;Ljava/lang/String;)V");
+  jstring js = value ? (*env)->NewStringUTF(env, value) : NULL;
+  (*env)->CallStaticVoidMethod(env, cls, m, (jobject)ih->handle, js);
+  iupAndroid_CheckException(env, name);
+  if (js) (*env)->DeleteLocalRef(env, js);
+  (*env)->DeleteLocalRef(env, cls);
+}
+
+static int androidListSetCaretAttrib(Ihandle* ih, const char* value)
+{
+  int lin = 1, col = 1;
+  if (!ih->handle || !ih->data->has_editbox) return 0;
+  if (!value) return 0;
+  iupStrToIntInt(value, &lin, &col, ',');
+  if (col < 1) col = 1;
+  androidListCallVoidII(ih, "setEditCaret", "(Landroid/view/View;I)V", (jint)(col - 1), 0);
+  return 0;
+}
+
+static char* androidListGetCaretAttrib(Ihandle* ih)
+{
+  if (!ih->handle || !ih->data->has_editbox) return NULL;
+  return iupStrReturnIntInt(1, androidListEditIntGet(ih, "getEditCaret") + 1, ',');
+}
+
+static int androidListSetCaretPosAttrib(Ihandle* ih, const char* value)
+{
+  int pos = 0;
+  if (!ih->handle || !ih->data->has_editbox) return 0;
+  if (!iupStrToInt(value, &pos)) return 0;
+  if (pos < 0) pos = 0;
+  androidListCallVoidII(ih, "setEditCaret", "(Landroid/view/View;I)V", (jint)pos, 0);
+  return 0;
+}
+
+static char* androidListGetCaretPosAttrib(Ihandle* ih)
+{
+  if (!ih->handle || !ih->data->has_editbox) return NULL;
+  return iupStrReturnInt(androidListEditIntGet(ih, "getEditCaret"));
+}
+
+static char* androidListGetSelectedTextAttrib(Ihandle* ih)
+{
+  if (!ih->handle || !ih->data->has_editbox) return NULL;
+  JNIEnv* env = iupAndroid_GetEnvThreadSafe();
+  jclass cls = IUPJNI_FindClass(IupListHelper, env, "io/github/gen2brain/iupgo/IupListHelper");
+  jmethodID m = (*env)->GetStaticMethodID(env, cls, "getEditSelectedText", "(Landroid/view/View;)Ljava/lang/String;");
+  jstring js = (jstring)(*env)->CallStaticObjectMethod(env, cls, m, (jobject)ih->handle);
+  iupAndroid_CheckException(env, "IupListHelper.getEditSelectedText");
+  (*env)->DeleteLocalRef(env, cls);
+  if (!js) return NULL;
+  const char* c = (*env)->GetStringUTFChars(env, js, NULL);
+  char* ret = iupStrReturnStr(c);
+  (*env)->ReleaseStringUTFChars(env, js, c);
+  (*env)->DeleteLocalRef(env, js);
+  return ret;
+}
+
+static int androidListSetSelectedTextAttrib(Ihandle* ih, const char* value)
+{
+  if (!ih->handle || !ih->data->has_editbox) return 0;
+  androidListEditStrCall(ih, "setEditSelectedText", value);
+  return 0;
+}
+
+static int androidListSetInsertAttrib(Ihandle* ih, const char* value)
+{
+  if (!ih->handle || !ih->data->has_editbox) return 0;
+  androidListEditStrCall(ih, "insertEditText", value);
+  return 0;
+}
+
+static int androidListSetAppendAttrib(Ihandle* ih, const char* value)
+{
+  if (!ih->handle || !ih->data->has_editbox) return 0;
+  androidListEditStrCall(ih, "appendEditText", value);
+  return 0;
+}
+
+static int androidListSetClipboardAttrib(Ihandle* ih, const char* value)
+{
+  int op;
+  if (!ih->handle || !ih->data->has_editbox || !value) return 0;
+  if      (iupStrEqualNoCase(value, "COPY"))  op = 0;
+  else if (iupStrEqualNoCase(value, "CUT"))   op = 1;
+  else if (iupStrEqualNoCase(value, "PASTE")) op = 2;
+  else if (iupStrEqualNoCase(value, "CLEAR")) op = 3;
+  else if (iupStrEqualNoCase(value, "UNDO"))  op = 4;
+  else if (iupStrEqualNoCase(value, "REDO"))  op = 5;
+  else return 0;
+  androidListCallVoidII(ih, "editClipboard", "(Landroid/view/View;I)V", (jint)op, 0);
+  return 0;
+}
+
+static int androidListSetNCAttrib(Ihandle* ih, const char* value)
+{
+  if (!iupStrToInt(value, &ih->data->nc)) ih->data->nc = 0;
+  if (!ih->handle || !ih->data->has_editbox) return 1;
+  androidListCallVoidII(ih, "setEditMaxChars", "(Landroid/view/View;I)V", (jint)ih->data->nc, 0);
+  return 1;
+}
+
+static int androidListSetReadOnlyAttrib(Ihandle* ih, const char* value)
+{
+  if (!ih->handle || !ih->data->has_editbox) return 1;
+  androidListCallVoidII(ih, "setEditReadOnly", "(Landroid/view/View;Z)V", (jint)(iupStrBoolean(value) ? JNI_TRUE : JNI_FALSE), 0);
+  return 1;
+}
+
+static char* androidListGetReadOnlyAttrib(Ihandle* ih)
+{
+  if (!ih->handle || !ih->data->has_editbox) return NULL;
+  JNIEnv* env = iupAndroid_GetEnvThreadSafe();
+  jclass cls = IUPJNI_FindClass(IupListHelper, env, "io/github/gen2brain/iupgo/IupListHelper");
+  jmethodID m = (*env)->GetStaticMethodID(env, cls, "getEditReadOnly", "(Landroid/view/View;)Z");
+  jboolean b = (*env)->CallStaticBooleanMethod(env, cls, m, (jobject)ih->handle);
+  iupAndroid_CheckException(env, "IupListHelper.getEditReadOnly");
+  (*env)->DeleteLocalRef(env, cls);
+  return iupStrReturnBoolean(b == JNI_TRUE);
+}
+
+static int androidListSetPaddingAttrib(Ihandle* ih, const char* value)
+{
+  iupStrToIntInt(value, &ih->data->horiz_padding, &ih->data->vert_padding, 'x');
+  ih->data->horiz_padding = iupdrvScaleNaturalPx(ih->data->horiz_padding);
+  ih->data->vert_padding  = iupdrvScaleNaturalPx(ih->data->vert_padding);
+  if (!ih->handle || !ih->data->has_editbox) return 1;
+  androidListCallVoidII(ih, "setEditPadding", "(Landroid/view/View;II)V",
+                        (jint)ih->data->horiz_padding, (jint)ih->data->vert_padding);
+  return 0;
+}
+
+static int androidListSetScrollToAttrib(Ihandle* ih, const char* value)
+{
+  int lin = 1, col = 1;
+  if (!ih->handle || !ih->data->has_editbox || !value) return 0;
+  iupStrToIntInt(value, &lin, &col, ',');
+  if (col < 1) col = 1;
+  androidListCallVoidII(ih, "scrollEditTo", "(Landroid/view/View;I)V", (jint)(col - 1), 0);
+  return 0;
+}
+
+static int androidListSetScrollToPosAttrib(Ihandle* ih, const char* value)
+{
+  int pos = 0;
+  if (!ih->handle || !ih->data->has_editbox) return 0;
+  if (!iupStrToInt(value, &pos)) return 0;
+  if (pos < 0) pos = 0;
+  androidListCallVoidII(ih, "scrollEditTo", "(Landroid/view/View;I)V", (jint)pos, 0);
+  return 0;
+}
+
 static int androidListMapMethod(Ihandle* ih)
 {
   IUPJNI_DECLARE_METHOD_ID_STATIC(IupListHelper_createListView);
@@ -657,6 +837,18 @@ void iupdrvListInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "FASTSCROLL", NULL, androidListSetFastScrollAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SELECTION", androidListGetSelectionAttrib, androidListSetSelectionAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SELECTIONPOS", androidListGetSelectionPosAttrib, androidListSetSelectionPosAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+
+  iupClassRegisterAttribute(ic, "CARET", androidListGetCaretAttrib, androidListSetCaretAttrib, NULL, NULL, IUPAF_NO_SAVE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CARETPOS", androidListGetCaretPosAttrib, androidListSetCaretPosAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_SAVE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTEDTEXT", androidListGetSelectedTextAttrib, androidListSetSelectedTextAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "INSERT", NULL, androidListSetInsertAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "APPEND", NULL, androidListSetAppendAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CLIPBOARD", NULL, androidListSetClipboardAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "NC", iupListGetNCAttrib, androidListSetNCAttrib, NULL, NULL, IUPAF_NOT_MAPPED);
+  iupClassRegisterAttribute(ic, "READONLY", androidListGetReadOnlyAttrib, androidListSetReadOnlyAttrib, NULL, NULL, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "PADDING", iupListGetPaddingAttrib, androidListSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
+  iupClassRegisterAttribute(ic, "SCROLLTO", NULL, androidListSetScrollToAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SCROLLTOPOS", NULL, androidListSetScrollToPosAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "SPACING", iupListGetSpacingAttrib, androidListSetSpacingAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "VISIBLEITEMS", NULL, androidListSetVisibleItemsAttrib, IUPAF_SAMEASSYSTEM, "5", IUPAF_NO_INHERIT);
