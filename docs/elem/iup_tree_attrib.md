@@ -35,8 +35,9 @@ It uses a wider character size than the one used for the SIZE attribute, so stri
 
 **VISIBLELINES**: Defines the number of visible lines for the **Natural Size**, this means that will act also as minimum number of visible lines. Default: 8
 
-**SCROLLVISIBLE** (read-only) [Windows Only]: Returns which scrollbars are visible at the moment.
+**SCROLLVISIBLE** (read-only): Returns which scrollbars are visible at the moment.
 Can be: YES (both), VERTICAL, HORIZONTAL, NO.
+Supported in Windows, Qt, macOS and WebAssembly.
 
 **SPACING**: vertical internal padding for each node.
 Notice that the distance between each node will be actually 2x the spacing.

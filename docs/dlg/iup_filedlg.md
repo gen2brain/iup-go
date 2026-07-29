@@ -49,9 +49,11 @@ Example: "*.C;*.txt;test.*". In Motif only the first filter is used.
 
 **FILTERINFO**: Filter's description.
 If not defined the filter itself will be used as its description.
+Not supported in WebAssembly.
 
 **FILTERUSED**: the index of the filter in EXTFILTER to use starting at 1.
 It returns the selection made by the user. Set only if EXTFILTER is defined.
+Not supported in WebAssembly.
 
 **MULTIPLEFILES**: Allows the user to select multiple files when DIALOGTYPE=OPEN.
 Can be "Yes" or "No". Default "No".
@@ -199,7 +201,7 @@ The underlying native widget per driver:
 - **EFL**: elm_fileselector.
 - **Android**: Storage Access Framework (`ACTION_OPEN_DOCUMENT` / `ACTION_CREATE_DOCUMENT`).
 - **Haiku**: BFilePanel.
-- **WebAssembly**: the browser file picker; OPEN reads one file, SAVE downloads. No directory selection or filesystem paths.
+- **WebAssembly**: the browser file picker; OPEN reads one file, SAVE downloads. No directory selection or filesystem paths. EXTFILTER and FILTER are mapped to the picker extension list, `*.*` accepting everything.
 
 On Android, SAF returns `content://` URIs rather than filesystem paths. The driver stages the picked URI into the app's `getCacheDir()` so VALUE stays fopen-able for the session, and in SAVE mode the cache file is flushed back to the URI when the FileDlg is destroyed. VALUE_URI exposes the raw SAF URI for persistent use (recent-files). DIALOGTYPE=DIR is not supported (SAF tree URIs are not filesystem paths). EXTFILTER and FILTER are mapped to MIME types for the Intent; only the first pattern is used.
 

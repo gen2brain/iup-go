@@ -20,6 +20,9 @@ In WebAssembly the dialog is a region of the browser page. MAXBOX, MINBOX, CUSTO
 **BACKGROUND** (non-inheritable): Dialog background color or image.
 Can be a non-inheritable alternative to BGCOLOR or can be the name of an image to be tiled on the background.
 
+**BACKIMAGEZOOM** (non-inheritable): if set, the BACKGROUND image is zoomed to occupy the full background instead of being tiled.
+Not supported in Android.
+
 **BORDER** (non-inheritable) (creation-only): Shows a resize border around the dialog.
 Default: "YES". BORDER=NO is useful only when RESIZE=NO, MAXBOX=NO, MINBOX=NO, MENUBOX=NO and TITLE=NULL, if any of these are defined there will be always some border.
 

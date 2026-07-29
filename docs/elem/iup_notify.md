@@ -56,7 +56,7 @@ All content attributes (TITLE, BODY, ICON, etc.) should be set before showing.
 **URGENCY** [Linux/Unix Only] (non-inheritable): Notification urgency level.
 Can be "0" (low), "1" (normal), or "2" (high). Default: "1".
 
-**APPICON** [Linux/Unix Only] (non-inheritable): Application icon name used as a fallback when ICON is not set.
+**APPICON** [Linux/Unix and WebAssembly Only] (non-inheritable): Application icon name used as a fallback when ICON is not set.
 
 **TRANSIENT** [Linux/Unix Only] (non-inheritable): When set, the notification is transient and may be skipped from the notification history.
 
