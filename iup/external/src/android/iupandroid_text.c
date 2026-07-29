@@ -5,6 +5,8 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -1159,6 +1161,103 @@ static int androidTextSetBgColorAttrib(Ihandle* ih, const char* value)
   (*env)->CallStaticVoidMethod(env, cls, m, ih->handle, (jint)r, (jint)g, (jint)b);
   iupAndroid_CheckException(env, "IupTextHelper.setBgColor");
   (*env)->DeleteLocalRef(env, cls);
+  return 1;
+}
+
+int iupdrvTextGetFormatTags(Ihandle* ih, Ihandle* bulk_tag)
+{
+  IUPJNI_DECLARE_METHOD_ID_STATIC(IupTextHelper_getFormatRuns);
+  JNIEnv* jni_env;
+  jclass java_class;
+  jmethodID method_id;
+  jstring jruns;
+  const char* runs;
+  char* copy;
+  char* line;
+
+  if (!ih->data->is_multiline || !ih->data->has_formatting || !ih->handle)
+    return 0;
+
+  jni_env = iupAndroid_GetEnvThreadSafe();
+  java_class = IUPJNI_FindClass(IupTextHelper, jni_env, "io/github/gen2brain/iupgo/IupTextHelper");
+  method_id = IUPJNI_GetStaticMethodID(IupTextHelper_getFormatRuns, jni_env, java_class,
+    "getFormatRuns", "(Landroid/view/View;)Ljava/lang/String;");
+
+  jruns = (jstring)(*jni_env)->CallStaticObjectMethod(jni_env, java_class, method_id, (jobject)ih->handle);
+  iupAndroid_CheckException(jni_env, "IupTextHelper.getFormatRuns");
+  (*jni_env)->DeleteLocalRef(jni_env, java_class);
+
+  if (!jruns)
+    return 1;
+
+  runs = (*jni_env)->GetStringUTFChars(jni_env, jruns, NULL);
+  copy = runs ? iupStrDup(runs) : NULL;
+  if (runs)
+    (*jni_env)->ReleaseStringUTFChars(jni_env, jruns, runs);
+  (*jni_env)->DeleteLocalRef(jni_env, jruns);
+
+  if (!copy)
+    return 1;
+
+  line = strtok(copy, "\n");
+  while (line)
+  {
+    char face[128] = "", url[512] = "";
+    int start = 0, end = 0, bold = 0, italic = 0, strike = 0, size = 0, indent = 0;
+    double scale = 0;
+    char* field = line;
+    int index = 0;
+
+    while (field && index < 10)
+    {
+      char* tab = strchr(field, '\t');
+      if (tab)
+        *tab = 0;
+
+      switch (index)
+      {
+      case 0: iupStrToInt(field, &start); break;
+      case 1: iupStrToInt(field, &end); break;
+      case 2: iupStrToInt(field, &bold); break;
+      case 3: iupStrToInt(field, &italic); break;
+      case 4: iupStrToInt(field, &strike); break;
+      case 5: iupStrToDouble(field, &scale); break;
+      case 6: iupStrToInt(field, &size); break;
+      case 7: iupStrCopyN(face, sizeof(face), field); break;
+      case 8: iupStrToInt(field, &indent); break;
+      case 9: iupStrCopyN(url, sizeof(url), field); break;
+      }
+
+      field = tab ? tab + 1 : NULL;
+      index++;
+    }
+
+    if (end > start)
+    {
+      Ihandle* formattag = IupUser();
+      IupSetStrf(formattag, "SELECTIONPOS", "%d:%d", start, end);
+      IupAppend(bulk_tag, formattag);
+
+      IupSetAttribute(formattag, "WEIGHT", bold ? "BOLD" : "NORMAL");
+      IupSetAttribute(formattag, "ITALIC", italic ? "YES" : "NO");
+      IupSetAttribute(formattag, "STRIKEOUT", strike ? "YES" : "NO");
+
+      if (face[0])
+        IupSetStrAttribute(formattag, "FONTFACE", face);
+      if (scale > 0)
+        IupSetDouble(formattag, "FONTSCALE", scale);
+      if (size > 0)
+        IupSetInt(formattag, "FONTSIZE", size);
+      if (indent > 0)
+        IupSetInt(formattag, "INDENT", indent);
+      if (url[0])
+        IupSetStrAttribute(formattag, "LINK", url);
+    }
+
+    line = strtok(NULL, "\n");
+  }
+
+  free(copy);
   return 1;
 }
 
