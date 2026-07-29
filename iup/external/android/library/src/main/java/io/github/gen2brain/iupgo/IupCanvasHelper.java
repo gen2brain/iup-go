@@ -2,6 +2,7 @@ package io.github.gen2brain.iupgo;
 
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.DashPathEffect;
 import android.graphics.LinearGradient;
 import android.graphics.Paint;
@@ -12,6 +13,7 @@ import android.graphics.RectF;
 import android.graphics.Shader;
 import android.graphics.Typeface;
 import android.text.TextPaint;
+import android.view.View;
 
 import androidx.annotation.Keep;
 import androidx.appcompat.view.ContextThemeWrapper;
@@ -45,6 +47,12 @@ public final class IupCanvasHelper
     {
         ContextThemeWrapper themeContext = IupCommon.getContextThemeWrapper();
         return new IupAndroidCanvas(themeContext, ihandlePtr);
+    }
+
+    @Keep
+    public static void setBgColor(View view, int r, int g, int b)
+    {
+        if (view != null) view.setBackgroundColor(Color.rgb(r, g, b));
     }
 
     @Keep

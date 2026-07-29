@@ -1164,6 +1164,21 @@ static int androidTextSetBgColorAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
+static int androidTextSetFgColorAttrib(Ihandle* ih, const char* value)
+{
+  unsigned char r, g, b;
+  if (!iupStrToRGB(value, &r, &g, &b)) return 0;
+  if (!ih->handle) return 1;
+
+  JNIEnv* env = iupAndroid_GetEnvThreadSafe();
+  jclass cls = IUPJNI_FindClass(IupTextHelper, env, "io/github/gen2brain/iupgo/IupTextHelper");
+  jmethodID m = (*env)->GetStaticMethodID(env, cls, "setFgColor", "(Landroid/view/View;III)V");
+  (*env)->CallStaticVoidMethod(env, cls, m, ih->handle, (jint)r, (jint)g, (jint)b);
+  iupAndroid_CheckException(env, "IupTextHelper.setFgColor");
+  (*env)->DeleteLocalRef(env, cls);
+  return 1;
+}
+
 int iupdrvTextGetFormatTags(Ihandle* ih, Ihandle* bulk_tag)
 {
   IUPJNI_DECLARE_METHOD_ID_STATIC(IupTextHelper_getFormatRuns);
@@ -1267,6 +1282,7 @@ void iupdrvTextInitClass(Iclass* ic)
   ic->UnMap = iupdrvBaseUnMapMethod;
 
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, androidTextSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, androidTextSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTFGCOLOR", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "VALUE", androidTextGetValueAttrib, androidTextSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "READONLY", androidTextGetReadOnlyAttrib, androidTextSetReadOnlyAttrib, NULL, NULL, IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "CUEBANNER", NULL, androidTextSetCueBannerAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
