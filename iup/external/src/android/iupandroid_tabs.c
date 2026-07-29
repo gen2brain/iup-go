@@ -16,6 +16,7 @@
 #include "iup_str.h"
 #include "iup_drvfont.h"
 #include "iup_image.h"
+#include "iup_drvinfo.h"
 #include "iup_tabs.h"
 
 #include "iupandroid_drv.h"
@@ -321,6 +322,71 @@ static int androidTabsSetFgColorAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
+static int androidTabsSetTabTypeAttrib(Ihandle* ih, const char* value)
+{
+  if (iupStrEqualNoCase(value, "BOTTOM"))
+    ih->data->type = ITABS_BOTTOM;
+  else
+    ih->data->type = ITABS_TOP;
+
+  if (!ih->handle) return 1;
+
+  JNIEnv* env = iupAndroid_GetEnvThreadSafe();
+  jclass cls = IUPJNI_FindClass(IupTabsHelper, env, "io/github/gen2brain/iupgo/IupTabsHelper");
+  jmethodID m = (*env)->GetStaticMethodID(env, cls, "setTabType", "(Landroid/view/View;Z)V");
+  (*env)->CallStaticVoidMethod(env, cls, m, ih->handle, (jboolean)(ih->data->type == ITABS_BOTTOM ? JNI_TRUE : JNI_FALSE));
+  iupAndroid_CheckException(env, "IupTabsHelper.setTabType");
+  (*env)->DeleteLocalRef(env, cls);
+  return 1;
+}
+
+static int androidTabsSetBgColorAttrib(Ihandle* ih, const char* value)
+{
+  unsigned char r, g, b;
+  if (!iupStrToRGB(value, &r, &g, &b)) return 0;
+  if (!ih->handle) return 1;
+
+  JNIEnv* env = iupAndroid_GetEnvThreadSafe();
+  jclass cls = IUPJNI_FindClass(IupTabsHelper, env, "io/github/gen2brain/iupgo/IupTabsHelper");
+  jmethodID m = (*env)->GetStaticMethodID(env, cls, "setBgColor", "(Landroid/view/View;III)V");
+  (*env)->CallStaticVoidMethod(env, cls, m, ih->handle, (jint)r, (jint)g, (jint)b);
+  iupAndroid_CheckException(env, "IupTabsHelper.setBgColor");
+  (*env)->DeleteLocalRef(env, cls);
+  return 1;
+}
+
+static int androidTabsSetTabPaddingAttrib(Ihandle* ih, const char* value)
+{
+  int h = 0, v = 0;
+  iupStrToIntInt(value, &h, &v, 'x');
+  h = iupdrvScaleNaturalPx(h);
+  v = iupdrvScaleNaturalPx(v);
+  if (!ih->handle) return 1;
+
+  JNIEnv* env = iupAndroid_GetEnvThreadSafe();
+  jclass cls = IUPJNI_FindClass(IupTabsHelper, env, "io/github/gen2brain/iupgo/IupTabsHelper");
+  jmethodID m = (*env)->GetStaticMethodID(env, cls, "setTabPadding", "(Landroid/view/View;II)V");
+  (*env)->CallStaticVoidMethod(env, cls, m, ih->handle, (jint)h, (jint)v);
+  iupAndroid_CheckException(env, "IupTabsHelper.setTabPadding");
+  (*env)->DeleteLocalRef(env, cls);
+  return 1;
+}
+
+static int androidTabsSetTabTipAttribId(Ihandle* ih, int pos, const char* value)
+{
+  if (!ih->handle) return 1;
+
+  JNIEnv* env = iupAndroid_GetEnvThreadSafe();
+  jclass cls = IUPJNI_FindClass(IupTabsHelper, env, "io/github/gen2brain/iupgo/IupTabsHelper");
+  jmethodID m = (*env)->GetStaticMethodID(env, cls, "setTabTip", "(Landroid/view/View;ILjava/lang/String;)V");
+  jstring js = value ? (*env)->NewStringUTF(env, value) : NULL;
+  (*env)->CallStaticVoidMethod(env, cls, m, ih->handle, (jint)pos, js);
+  iupAndroid_CheckException(env, "IupTabsHelper.setTabTip");
+  if (js) (*env)->DeleteLocalRef(env, js);
+  (*env)->DeleteLocalRef(env, cls);
+  return 1;
+}
+
 void iupdrvTabsInitClass(Iclass* ic)
 {
   ic->Map = androidTabsMapMethod;
@@ -332,6 +398,11 @@ void iupdrvTabsInitClass(Iclass* ic)
 
   iupClassRegisterAttribute(ic, "ALLOWREORDER", NULL, androidTabsSetAllowReorderAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FGCOLOR", NULL, androidTabsSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, androidTabsSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "TABTYPE", iupTabsGetTabTypeAttrib, androidTabsSetTabTypeAttrib, IUPAF_SAMEASSYSTEM, "TOP", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TABPADDING", NULL, androidTabsSetTabPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
+  iupClassRegisterAttributeId(ic, "TABTIP", NULL, androidTabsSetTabTipAttribId, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TABORIENTATION", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 
   iupClassRegisterAttributeId(ic, "TABTITLE", NULL, androidTabsSetTabTitleAttribId, IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "TABIMAGE", NULL, androidTabsSetTabImageAttribId, IUPAF_IHANDLENAME|IUPAF_NO_INHERIT);
