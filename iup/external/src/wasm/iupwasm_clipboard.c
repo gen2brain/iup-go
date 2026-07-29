@@ -14,6 +14,7 @@
 
 #include "iup_str.h"
 #include "iup_class.h"
+#include "iup_image.h"
 #include "iup_stdcontrols.h"
 
 
@@ -36,6 +37,15 @@ EM_JS(int, iupwasmJsClipboardGet, (void), {
 EM_JS(int, iupwasmJsClipboardHasText, (void), {
   var s = globalThis.__iupClipText;
   return (s !== undefined && s !== null && s.length > 0) ? 1 : 0;
+})
+
+EM_JS(void, iupwasmJsClipboardSetImage, (int imgId), {
+  globalThis.__iupApply({ op: 'clipwriteimage', imgId: imgId });
+})
+
+EM_JS(int, iupwasmJsClipboardHasImage, (void), {
+  if (typeof document === 'undefined') return globalThis.__iupReadSync({ op: 'clipimageavailable' });
+  return 0;
 })
 
 static int wasmClipboardSetTextAttrib(Ihandle* ih, const char* value)
@@ -63,6 +73,29 @@ static char* wasmClipboardGetTextAvailableAttrib(Ihandle* ih)
   return iupStrReturnBoolean(iupwasmJsClipboardHasText());
 }
 
+static int wasmClipboardSetImageAttrib(Ihandle* ih, const char* value)
+{
+  void* img;
+
+  if (!value)
+  {
+    iupwasmJsClipboardSet("");
+    return 0;
+  }
+
+  img = iupImageGetImage(value, ih, 0, NULL);
+  if (img)
+    iupwasmJsClipboardSetImage((int)(intptr_t)img);
+
+  return 0;
+}
+
+static char* wasmClipboardGetImageAvailableAttrib(Ihandle* ih)
+{
+  (void)ih;
+  return iupStrReturnBoolean(iupwasmJsClipboardHasImage());
+}
+
 Iclass* iupClipboardNewClass(void)
 {
   Iclass* ic = iupClassNew(NULL);
@@ -77,6 +110,11 @@ Iclass* iupClipboardNewClass(void)
 
   iupClassRegisterAttribute(ic, "TEXT", wasmClipboardGetTextAttrib, wasmClipboardSetTextAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TEXTAVAILABLE", wasmClipboardGetTextAvailableAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMAGE", NULL, wasmClipboardSetImageAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_IHANDLENAME | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMAGEAVAILABLE", wasmClipboardGetImageAvailableAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+
+  /* the browser exposes no native image handle */
+  iupClassRegisterAttribute(ic, "NATIVEIMAGE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_STRING | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
 
   return ic;
 }

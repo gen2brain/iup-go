@@ -2178,6 +2178,14 @@
         globalThis.__iupClipText = c.text;
         if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(c.text).catch(function () {});
       } break;
+      case 'clipwriteimage': {
+        var cimg = c.imgId && globalThis.__iupImg ? globalThis.__iupImg.map[c.imgId] : null;
+        if (cimg && cimg.canvas && navigator.clipboard && navigator.clipboard.write && typeof ClipboardItem !== 'undefined') {
+          cimg.canvas.toBlob(function (b) {
+            if (b) navigator.clipboard.write([new ClipboardItem({ 'image/png': b })]).catch(function () {});
+          }, 'image/png');
+        }
+      } break;
       case 'openurl': {
         window.open(c.url, '_blank');
       } break;
@@ -2195,7 +2203,7 @@
           var nmake = function () {
             var nopt = { body: c.body, silent: !!c.silent };
             var nimg = c.imgId && globalThis.__iupImg ? globalThis.__iupImg.map[c.imgId] : null;
-            if (nimg) nopt.icon = nimg;
+            if (nimg && nimg.url) nopt.icon = nimg.url;
             var n = new Notification(c.title, nopt);
             globalThis.__iupNotify.map[c.id] = n;
             n.onclick = function () { D('iupwasmNotifyEvent', c.ihptr, c.id, 0); };

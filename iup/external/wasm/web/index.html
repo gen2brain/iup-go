@@ -67,6 +67,18 @@
         inp.addEventListener('cancel', function () { globalThis.__iupOpenFile = null; finish(null); });
         inp.click();
       }
+      // Clipboard read is async and permission-gated; the Worker stays blocked until writeResult.
+      function doClipRead() {
+        if (!navigator.clipboard || !navigator.clipboard.read) { writeResult(0); return; }
+        navigator.clipboard.read().then(function (items) {
+          var has = 0;
+          for (var i = 0; i < items.length && !has; i++)
+            for (var t = 0; t < items[i].types.length; t++)
+              if (items[i].types[t].indexOf('image/') === 0) { has = 1; break; }
+          writeResult(has);
+        }).catch(function () { writeResult(0); });
+      }
+
       function fileChunk(req) {
         var bytes = (globalThis.__iupOpenFile && globalThis.__iupOpenFile.bytes) || new Uint8Array(0);
         var slice = bytes.subarray(req.off, req.off + req.len);
@@ -79,6 +91,7 @@
         if (m.__iup) globalThis.__iupApply(m.cmd);
         else if (m.__iupRead) {
           if (m.req.op === 'fileopen') doFileOpen();
+          else if (m.req.op === 'clipimageavailable') doClipRead();
           else if (m.req.op === 'fileopenchunk') fileChunk(m.req);
           else writeResult(globalThis.__iupRead(m.req));
         }

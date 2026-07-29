@@ -63,6 +63,7 @@ function serve(dir) {
   // new headless renders like a real browser (classic scrollbars, etc.)
   const browser = await chromium.launch(browserLaunchOptions());
   const page = await browser.newPage({ viewport: { width: 1280, height: 960 }, colorScheme: process.env.IUP_DARK ? 'dark' : 'light' });
+  await page.context().grantPermissions(['clipboard-read', 'clipboard-write'], { origin: 'http://localhost:' + port }).catch(() => {});
 
   const logs = [];
   page.on('console', (m) => logs.push(m.text()));
