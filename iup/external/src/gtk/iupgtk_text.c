@@ -1847,6 +1847,127 @@ IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bul
   gtk_text_buffer_apply_tag(buffer, tag, &start_iter, &end_iter);
 }
 
+static void gtkTextGetTagFormat(GtkTextTag* tag, Ihandle* formattag)
+{
+  gboolean is_set;
+  const char* url;
+
+  g_object_get(G_OBJECT(tag), "weight-set", &is_set, NULL);
+  if (is_set)
+  {
+    int weight = PANGO_WEIGHT_NORMAL;
+    g_object_get(G_OBJECT(tag), "weight", &weight, NULL);
+    IupSetAttribute(formattag, "WEIGHT", weight >= PANGO_WEIGHT_SEMIBOLD ? "BOLD" : "NORMAL");
+  }
+
+  g_object_get(G_OBJECT(tag), "style-set", &is_set, NULL);
+  if (is_set)
+  {
+    int style = PANGO_STYLE_NORMAL;
+    g_object_get(G_OBJECT(tag), "style", &style, NULL);
+    IupSetAttribute(formattag, "ITALIC", style == PANGO_STYLE_NORMAL ? "NO" : "YES");
+  }
+
+  g_object_get(G_OBJECT(tag), "strikethrough-set", &is_set, NULL);
+  if (is_set)
+  {
+    gboolean strikethrough = FALSE;
+    g_object_get(G_OBJECT(tag), "strikethrough", &strikethrough, NULL);
+    IupSetAttribute(formattag, "STRIKEOUT", strikethrough ? "YES" : "NO");
+  }
+
+  g_object_get(G_OBJECT(tag), "family-set", &is_set, NULL);
+  if (is_set)
+  {
+    char* family = NULL;
+    g_object_get(G_OBJECT(tag), "family", &family, NULL);
+    if (family)
+    {
+      IupSetStrAttribute(formattag, "FONTFACE", family);
+      g_free(family);
+    }
+  }
+
+  g_object_get(G_OBJECT(tag), "scale-set", &is_set, NULL);
+  if (is_set)
+  {
+    double scale = 1.0;
+    g_object_get(G_OBJECT(tag), "scale", &scale, NULL);
+    IupSetDouble(formattag, "FONTSCALE", scale);
+  }
+
+  g_object_get(G_OBJECT(tag), "size-set", &is_set, NULL);
+  if (is_set)
+  {
+    double points = 0;
+    g_object_get(G_OBJECT(tag), "size-points", &points, NULL);
+    if (points > 0)
+      IupSetInt(formattag, "FONTSIZE", (int)(points + 0.5));
+  }
+
+  g_object_get(G_OBJECT(tag), "indent-set", &is_set, NULL);
+  if (is_set)
+  {
+    int indent = 0;
+    g_object_get(G_OBJECT(tag), "indent", &indent, NULL);
+    if (indent <= 0)
+    {
+      int left_margin = 0;
+      g_object_get(G_OBJECT(tag), "left-margin", &left_margin, NULL);
+      if (left_margin > 0)
+        indent = left_margin;
+    }
+    IupSetInt(formattag, "INDENT", indent);
+  }
+
+  url = (const char*)g_object_get_data(G_OBJECT(tag), "iup-link-url");
+  if (url)
+    IupSetStrAttribute(formattag, "LINK", url);
+}
+
+IUP_SDK_API int iupdrvTextGetFormatTags(Ihandle* ih, Ihandle* bulk_tag)
+{
+  GtkTextBuffer* buffer;
+  GtkTextIter iter, end_iter;
+
+  if (!ih->data->is_multiline || !ih->handle)
+    return 0;
+
+  buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
+  gtk_text_buffer_get_start_iter(buffer, &iter);
+  gtk_text_buffer_get_end_iter(buffer, &end_iter);
+
+  while (gtk_text_iter_compare(&iter, &end_iter) < 0)
+  {
+    GtkTextIter next_iter = iter;
+    GSList *tags, *item;
+    Ihandle* formattag;
+    int start, end;
+
+    if (!gtk_text_iter_forward_to_tag_toggle(&next_iter, NULL) ||
+        gtk_text_iter_compare(&next_iter, &end_iter) > 0)
+      next_iter = end_iter;
+
+    start = gtk_text_iter_get_offset(&iter);
+    end = gtk_text_iter_get_offset(&next_iter);
+    if (end <= start)
+      break;
+
+    formattag = IupUser();
+    IupSetStrf(formattag, "SELECTIONPOS", "%d:%d", start, end);
+    IupAppend(bulk_tag, formattag);
+
+    tags = gtk_text_iter_get_tags(&iter);
+    for (item = tags; item; item = item->next)
+      gtkTextGetTagFormat((GtkTextTag*)item->data, formattag);
+    g_slist_free(tags);
+
+    iter = next_iter;
+  }
+
+  return 1;
+}
+
 static int gtkTextSetRemoveFormattingAttrib(Ihandle* ih, const char* value)
 {
   GtkTextBuffer *buffer;
