@@ -80,45 +80,6 @@ static jobject androidImageFinalize(JNIEnv* jni_env, jobject java_bitmap)
   return return_bitmap;
 }
 
-/* Legacy raw format: four w*h planes (R, G, B, A) stored bottom-up. */
-void iupdrvImageGetRawData(void* handle, unsigned char* imgdata)
-{
-  jobject java_bitmap = (jobject)handle;
-  if (java_bitmap == NULL || imgdata == NULL)
-    return;
-
-  JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
-  AndroidBitmapInfo bitmap_info;
-  if (AndroidBitmap_getInfo(jni_env, java_bitmap, &bitmap_info) < 0)
-    return;
-
-  unsigned char* pixels = NULL;
-  if (AndroidBitmap_lockPixels(jni_env, java_bitmap, (void**)&pixels) < 0)
-    return;
-
-  int w = (int)bitmap_info.width;
-  int h = (int)bitmap_info.height;
-  size_t planesize = (size_t)w * h;
-  unsigned char* r = imgdata;
-  unsigned char* g = imgdata + planesize;
-  unsigned char* b = imgdata + 2 * planesize;
-  unsigned char* a = imgdata + 3 * planesize;
-
-  for (int y = 0; y < h; y++)
-  {
-    const unsigned char* src_line = pixels + y * bitmap_info.stride;
-    int lineoffset = (h - 1 - y) * w;
-    for (int x = 0; x < w; x++)
-    {
-      r[lineoffset + x] = src_line[x * 4 + 0];
-      g[lineoffset + x] = src_line[x * 4 + 1];
-      b[lineoffset + x] = src_line[x * 4 + 2];
-      a[lineoffset + x] = src_line[x * 4 + 3];
-    }
-  }
-
-  AndroidBitmap_unlockPixels(jni_env, java_bitmap);
-}
 
 /* Expands IUP's RGB/RGBA/indexed buffer into an ARGB_8888 pixel span (RGBA byte order). */
 static void androidImageFillPixels(unsigned char* pixels, int stride, int width, int height, int bpp, iupColor* colors, int colors_count, unsigned char* imgdata)
@@ -185,11 +146,6 @@ static jobject androidImageBuildBitmapFromRaw(JNIEnv* jni_env, int width, int he
   return androidImageFinalize(jni_env, java_bitmap);
 }
 
-void* iupdrvImageCreateImageRaw(int width, int height, int bpp, iupColor* colors, int colors_count, unsigned char* imgdata)
-{
-  JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
-  return androidImageBuildBitmapFromRaw(jni_env, width, height, bpp, colors, colors_count, imgdata);
-}
 
 int iupdrvImageGetRawInfo(void* handle, int* w, int* h, int* bpp, iupColor* colors, int* colors_count)
 {

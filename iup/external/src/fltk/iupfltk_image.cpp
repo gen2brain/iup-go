@@ -21,7 +21,6 @@ extern "C" {
 #include "iup_image.h"
 }
 
-
 /****************************************************************************
  * Image Data Extraction
  ****************************************************************************/
@@ -57,111 +56,6 @@ extern "C" IUP_SDK_API void iupdrvImageGetData(void* handle, unsigned char* imgd
         dst_line[x * channels + 3] = (d >= 4) ? src_line[x * d + 3] : 255;
     }
   }
-}
-
-extern "C" IUP_SDK_API void iupdrvImageGetRawData(void* handle, unsigned char* imgdata)
-{
-  Fl_RGB_Image* image = (Fl_RGB_Image*)handle;
-
-  if (!image || !image->data() || !image->data()[0])
-    return;
-
-  int w = image->data_w();
-  int h = image->data_h();
-  int d = image->d();
-  const unsigned char* src = (const unsigned char*)image->data()[0];
-  int ld = image->ld();
-  if (ld == 0) ld = w * d;
-
-  size_t planesize = (size_t)w * h;
-  unsigned char* r = imgdata;
-  unsigned char* g = imgdata + planesize;
-  unsigned char* b = imgdata + 2 * planesize;
-  unsigned char* a = imgdata + 3 * planesize;
-
-  for (int y = 0; y < h; y++)
-  {
-    int lineoffset = (h - 1 - y) * w;
-    const unsigned char* src_line = src + y * ld;
-
-    for (int x = 0; x < w; x++)
-    {
-      r[lineoffset + x] = src_line[x * d + 0];
-      g[lineoffset + x] = src_line[x * d + 1];
-      b[lineoffset + x] = src_line[x * d + 2];
-
-      if (d >= 4)
-        a[lineoffset + x] = src_line[x * d + 3];
-    }
-  }
-}
-
-/****************************************************************************
- * Image Creation from Raw Data
- ****************************************************************************/
-
-extern "C" IUP_SDK_API void* iupdrvImageCreateImageRaw(int width, int height, int bpp, iupColor* colors, int colors_count, unsigned char *imgdata)
-{
-  int channels = (bpp == 32) ? 4 : 3;
-  unsigned char* data = (unsigned char*)malloc((size_t)width * height * channels);
-
-  if (!data)
-    return NULL;
-
-  if (bpp == 8)
-  {
-    for (int y = 0; y < height; y++)
-    {
-      int src_y = height - 1 - y;
-      unsigned char* dst_line = data + y * width * channels;
-
-      for (int x = 0; x < width; x++)
-      {
-        unsigned char index = imgdata[src_y * width + x];
-        if (index < colors_count)
-        {
-          iupColor* c = &colors[index];
-          dst_line[x * channels + 0] = c->r;
-          dst_line[x * channels + 1] = c->g;
-          dst_line[x * channels + 2] = c->b;
-          if (channels == 4)
-            dst_line[x * channels + 3] = c->a;
-        }
-      }
-    }
-  }
-  else
-  {
-    size_t planesize = (size_t)width * height;
-    unsigned char* r_plane = imgdata;
-    unsigned char* g_plane = imgdata + planesize;
-    unsigned char* b_plane = imgdata + 2 * planesize;
-    unsigned char* a_plane = imgdata + 3 * planesize;
-
-    for (int y = 0; y < height; y++)
-    {
-      int src_y = height - 1 - y;
-      unsigned char* dst_line = data + y * width * channels;
-
-      for (int x = 0; x < width; x++)
-      {
-        dst_line[x * channels + 0] = r_plane[src_y * width + x];
-        dst_line[x * channels + 1] = g_plane[src_y * width + x];
-        dst_line[x * channels + 2] = b_plane[src_y * width + x];
-        if (channels == 4)
-          dst_line[x * channels + 3] = a_plane[src_y * width + x];
-      }
-    }
-  }
-
-  Fl_RGB_Image* image = new Fl_RGB_Image(data, width, height, channels);
-  image->alloc_array = 1;
-
-  IFvs cb = (IFvs)IupGetFunction("IMAGECREATE_CB");
-  if (cb)
-    cb(image, (char*)"Fl_RGB_Image");
-
-  return image;
 }
 
 /****************************************************************************

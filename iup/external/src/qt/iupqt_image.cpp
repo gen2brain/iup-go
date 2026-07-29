@@ -25,7 +25,6 @@ extern "C" {
 #include "iup_image.h"
 }
 
-
 /****************************************************************************
  * Image Data Extraction
  ****************************************************************************/
@@ -70,123 +69,6 @@ extern "C" IUP_SDK_API void iupdrvImageGetData(void* handle, unsigned char* imgd
         line_data[x * channels + 3] = qAlpha(pixel);
     }
   }
-}
-
-extern "C" IUP_SDK_API void iupdrvImageGetRawData(void* handle, unsigned char* imgdata)
-{
-  QPixmap* pixmap = (QPixmap*)handle;
-
-  if (!pixmap || pixmap->isNull())
-    return;
-
-  QImage image = pixmap->toImage();
-  int w = image.width();
-  int h = image.height();
-  int bpp = image.depth();
-
-  if (bpp == 8)
-    return;
-
-  /* Planes are separated in imgdata */
-  size_t planesize = (size_t)w * h;
-  unsigned char* r = imgdata;
-  unsigned char* g = imgdata + planesize;
-  unsigned char* b = imgdata + 2 * planesize;
-  unsigned char* a = imgdata + 3 * planesize;
-
-  bool has_alpha = image.hasAlphaChannel();
-
-  for (int y = 0; y < h; y++)
-  {
-    int lineoffset = (h - 1 - y) * w;  /* imgdata is bottom up */
-
-    for (int x = 0; x < w; x++)
-    {
-      QRgb pixel = image.pixel(x, y);
-
-      r[lineoffset + x] = qRed(pixel);
-      g[lineoffset + x] = qGreen(pixel);
-      b[lineoffset + x] = qBlue(pixel);
-
-      if (has_alpha)
-        a[lineoffset + x] = qAlpha(pixel);
-    }
-  }
-}
-
-/****************************************************************************
- * Image Creation from Raw Data
- ****************************************************************************/
-
-extern "C" IUP_SDK_API void* iupdrvImageCreateImageRaw(int width, int height, int bpp, iupColor* colors, int colors_count, unsigned char *imgdata)
-{
-  QImage::Format format;
-  bool has_alpha = (bpp == 32);
-
-  if (has_alpha)
-    format = QImage::Format_ARGB32;
-  else
-    format = QImage::Format_RGB888;
-
-  QImage image(width, height, format);
-
-  if (image.isNull())
-    return NULL;
-
-  /* QImage is top-bottom, imgdata is bottom-up */
-
-  if (bpp == 8)
-  {
-    /* Indexed color */
-    for (int y = 0; y < height; y++)
-    {
-      unsigned char* line_data = imgdata + (height - 1 - y) * width;
-
-      for (int x = 0; x < width; x++)
-      {
-        unsigned char index = line_data[x];
-        if (index < colors_count)
-        {
-          iupColor* c = &colors[index];
-          image.setPixel(x, y, qRgba(c->r, c->g, c->b, c->a));
-        }
-      }
-    }
-  }
-  else /* bpp == 24 or bpp == 32 */
-  {
-    /* Planes are separated in imgdata */
-    size_t planesize = (size_t)width * height;
-    unsigned char* r = imgdata;
-    unsigned char* g = imgdata + planesize;
-    unsigned char* b = imgdata + 2 * planesize;
-    unsigned char* a = imgdata + 3 * planesize;
-
-    for (int y = 0; y < height; y++)
-    {
-      int lineoffset = (height - 1 - y) * width;  /* imgdata is bottom up */
-
-      for (int x = 0; x < width; x++)
-      {
-        if (has_alpha)
-          image.setPixel(x, y, qRgba(r[lineoffset + x], g[lineoffset + x],
-                                      b[lineoffset + x], a[lineoffset + x]));
-        else
-          image.setPixel(x, y, qRgb(r[lineoffset + x], g[lineoffset + x],
-                                     b[lineoffset + x]));
-      }
-    }
-  }
-
-  QPixmap* pixmap = new QPixmap();
-  *pixmap = QPixmap::fromImage(image);
-
-  /* Callback for memory monitoring */
-  IFvs cb = (IFvs)IupGetFunction("IMAGECREATE_CB");
-  if (cb)
-    cb(pixmap, const_cast<char*>("QPixmap"));
-
-  return pixmap;
 }
 
 /****************************************************************************

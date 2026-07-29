@@ -131,11 +131,6 @@ IUP_SDK_API void* iupdrvImageCreateCursor(Ihandle *ih)
   return iupdrvImageCreateImage(ih, NULL, 0);
 }
 
-IUP_SDK_API void* iupdrvImageCreateImageRaw(int width, int height, int bpp, iupColor* colors, int colors_count, unsigned char *imgdata)
-{
-  (void)colors_count;
-  return wasmImageCreateRGBA(width, height, bpp, colors, imgdata);
-}
 
 IUP_SDK_API void* iupdrvImageLoad(const char* name, int type)
 {
@@ -202,42 +197,6 @@ IUP_SDK_API int iupdrvImageGetRawInfo(void* handle, int *w, int *h, int *bpp, iu
   return iupdrvImageGetInfo(handle, w, h, bpp);
 }
 
-IUP_SDK_API void iupdrvImageGetRawData(void* handle, unsigned char* imgdata)
-{
-  int id = (int)(intptr_t)handle, w, h, bpp, x, y;
-  unsigned char *tmp, *r, *g, *b, *a;
-  size_t planesize;
-  if (!imgdata || !iupdrvImageGetInfo(handle, &w, &h, &bpp))
-    return;
-  if (bpp == 8)  /* an indexed source can't be recovered from the rendered RGBA */
-    return;
-
-  tmp = (unsigned char*)malloc((size_t)w * h * 4);
-  if (!tmp)
-    return;
-  iupwasmJsImageGetRGBA(id, (int)(intptr_t)tmp, w, h);  /* interleaved RGBA, top-down */
-
-  /* IUP raw layout: separate R/G/B/A planes, rows bottom-up */
-  planesize = (size_t)w * h;
-  r = imgdata;
-  g = imgdata + planesize;
-  b = imgdata + 2 * planesize;
-  a = imgdata + 3 * planesize;
-  for (y = 0; y < h; y++)
-  {
-    int lineoffset = (h - 1 - y) * w;
-    unsigned char* src = tmp + (size_t)y * w * 4;
-    for (x = 0; x < w; x++)
-    {
-      r[lineoffset + x] = src[x * 4 + 0];
-      g[lineoffset + x] = src[x * 4 + 1];
-      b[lineoffset + x] = src[x * 4 + 2];
-      if (bpp == 32)
-        a[lineoffset + x] = src[x * 4 + 3];
-    }
-  }
-  free(tmp);
-}
 
 /* PNG/JPEG via the browser canvas encoder; returns a _malloc'd buffer (caller frees). */
 EM_JS(int, iupwasmJsEncodeImage, (int ptr, int w, int h, int bpp, const char* mimeStr, int sizePtr), {
