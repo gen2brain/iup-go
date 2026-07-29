@@ -2678,6 +2678,198 @@ IUP_SDK_API void iupdrvTextAddExtraPadding(Ihandle* ih, int* w, int* h)
   if (h) *h += efl_text_border_y > 4 ? efl_text_border_y / 2 : 4;
 }
 
+static const char* eflTextMarkupFindKey(const char* format, const char* key)
+{
+  int len = (int)strlen(key);
+  const char* p = format;
+
+  while (*p)
+  {
+    if ((p == format || p[-1] == ' ') && strncmp(p, key, len) == 0 && p[len] == '=')
+      return p + len + 1;
+    p++;
+  }
+  return NULL;
+}
+
+static int eflTextMarkupGetKey(const char* format, const char* key, char* value, int size)
+{
+  const char* found = eflTextMarkupFindKey(format, key);
+  int i = 0;
+
+  if (!found)
+    return 0;
+
+  while (found[i] && found[i] != ' ' && i < size - 1)
+  {
+    value[i] = found[i];
+    i++;
+  }
+  value[i] = 0;
+  return 1;
+}
+
+static void eflTextMarkupApplyFormat(const char* format, Ihandle* formattag)
+{
+  char value[128];
+
+  if (eflTextMarkupGetKey(format, "font_weight", value, sizeof(value)))
+    IupSetAttribute(formattag, "WEIGHT",
+      (iupStrEqualNoCase(value, "bold") || iupStrEqualNoCase(value, "semibold") ||
+       iupStrEqualNoCase(value, "extrabold") || iupStrEqualNoCase(value, "ultrabold") ||
+       iupStrEqualNoCase(value, "black")) ? "BOLD" : "NORMAL");
+
+  if (eflTextMarkupGetKey(format, "font_style", value, sizeof(value)))
+    IupSetAttribute(formattag, "ITALIC",
+      (iupStrEqualNoCase(value, "italic") || iupStrEqualNoCase(value, "oblique")) ? "YES" : "NO");
+
+  if (eflTextMarkupGetKey(format, "strikethrough_type", value, sizeof(value)))
+    IupSetAttribute(formattag, "STRIKEOUT", iupStrEqualNoCase(value, "none") ? "NO" : "YES");
+
+  if (eflTextMarkupGetKey(format, "font", value, sizeof(value)))
+    IupSetStrAttribute(formattag, "FONTFACE", value);
+
+  if (eflTextMarkupGetKey(format, "font_size", value, sizeof(value)))
+    IupSetStrAttribute(formattag, "FONTSIZE", value);
+
+  if (eflTextMarkupGetKey(format, "left_margin", value, sizeof(value)))
+    IupSetStrAttribute(formattag, "INDENT", value);
+}
+
+static void eflTextMarkupEmitRun(Ihandle* bulk_tag, char** stack, int count, int start, int end)
+{
+  Ihandle* formattag;
+  int i;
+
+  if (count == 0 || end <= start)
+    return;
+
+  formattag = IupUser();
+  IupSetStrf(formattag, "SELECTIONPOS", "%d:%d", start, end);
+  IupAppend(bulk_tag, formattag);
+
+  for (i = 0; i < count; i++)
+    eflTextMarkupApplyFormat(stack[i], formattag);
+}
+
+static int eflTextMarkupIsStandalone(const char* tag, int len)
+{
+  static const char* names[] = { "br", "ps", "tab", "item", NULL };
+  int i;
+
+  for (i = 0; names[i]; i++)
+  {
+    int name_len = (int)strlen(names[i]);
+    if (len >= name_len && strncmp(tag, names[i], name_len) == 0 &&
+        (len == name_len || tag[name_len] == ' ' || tag[name_len] == '/'))
+      return 1;
+  }
+  return 0;
+}
+
+IUP_SDK_API int iupdrvTextGetFormatTags(Ihandle* ih, Ihandle* bulk_tag)
+{
+  Eo* entry = iupeflGetWidget(ih);
+  const char* markup;
+  const char* p;
+  char* stack[32];
+  int stack_count = 0;
+  int pos = 0, run_start = 0, i, link_count;
+
+  if (!ih->data->is_multiline || !entry || iupAttribGet(ih, "_IUP_EFL_IS_SPINNER"))
+    return 0;
+
+  markup = efl_text_markup_get(entry);
+  if (!markup)
+    return 1;
+
+  p = markup;
+  while (*p)
+  {
+    if (*p == '<')
+    {
+      const char* close = strchr(p, '>');
+      int len;
+
+      if (!close)
+        break;
+
+      len = (int)(close - p - 1);
+
+      eflTextMarkupEmitRun(bulk_tag, stack, stack_count, run_start, pos);
+
+      if (len > 0 && p[1] == '/')
+      {
+        if (stack_count > 0)
+        {
+          stack_count--;
+          free(stack[stack_count]);
+        }
+      }
+      else if (len > 0 && eflTextMarkupIsStandalone(p + 1, len))
+        pos++;
+      else if (len > 0 && stack_count < 32)
+      {
+        char* format = (char*)malloc(len + 1);
+        memcpy(format, p + 1, len);
+        format[len] = 0;
+        stack[stack_count] = format;
+        stack_count++;
+      }
+
+      run_start = pos;
+      p = close + 1;
+      continue;
+    }
+
+    if (*p == '&')
+    {
+      const char* semi = strchr(p, ';');
+      if (semi && semi - p < 12)
+      {
+        pos++;
+        p = semi + 1;
+        continue;
+      }
+    }
+
+    if (((unsigned char)*p & 0xC0) != 0x80)
+      pos++;
+    p++;
+  }
+
+  eflTextMarkupEmitRun(bulk_tag, stack, stack_count, run_start, pos);
+
+  while (stack_count > 0)
+  {
+    stack_count--;
+    free(stack[stack_count]);
+  }
+
+  link_count = iupAttribGetInt(ih, "_IUP_LINK_COUNT");
+  for (i = 0; i < link_count; i++)
+  {
+    char name[80];
+    char *url, *range;
+    int start, end;
+
+    snprintf(name, sizeof(name), "_IUP_LINK_URL_%d", i);
+    url = iupAttribGet(ih, name);
+    snprintf(name, sizeof(name), "_IUP_LINK_RANGE_%d", i);
+    range = iupAttribGet(ih, name);
+
+    if (url && range && iupStrToIntInt(range, &start, &end, ':') == 2)
+    {
+      Ihandle* formattag = IupUser();
+      IupSetStrf(formattag, "SELECTIONPOS", "%d:%d", start, end);
+      IupSetStrAttribute(formattag, "LINK", url);
+      IupAppend(bulk_tag, formattag);
+    }
+  }
+
+  return 1;
+}
+
 IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
 {
   ic->Map = eflTextMapMethod;
