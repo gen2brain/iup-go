@@ -177,7 +177,7 @@ On Android and iOS defaults to YES; touch UIs don't autofocus controls on launch
 
 **ACTIVEWINDOW** (read-only): informs if the dialog is the active window (the window with focus).
 Can be Yes or No.
-Not supported in Motif.
+Not supported in Motif, Android and iOS.
 
 **BRINGFRONT** (write-only): makes the dialog the foreground window.
 Use "YES" to activate it. Useful for multithreaded applications.
