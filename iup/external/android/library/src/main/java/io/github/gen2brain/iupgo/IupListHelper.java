@@ -730,6 +730,192 @@ public final class IupListHelper
     }
 
     /* end == -1 sentinel selects to end of text. */
+    /* programmatic edits must bypass the NC LengthFilter, same as IupTextHelper.clipboardOp */
+    private interface EditOp { void run(android.text.Editable ed); }
+
+    private static void editBypassingFilters(android.widget.EditText e, EditOp op)
+    {
+        android.text.Editable ed = e.getText();
+        if (ed == null) return;
+        android.text.InputFilter[] saved = e.getFilters();
+        e.setFilters(new android.text.InputFilter[0]);
+        op.run(ed);
+        e.setFilters(saved);
+    }
+
+    @Keep
+    public static int getEditCaret(View widget)
+    {
+        android.widget.EditText e = editBoxOf(widget);
+        if (e == null) return 0;
+        int c = e.getSelectionStart();
+        return c < 0 ? 0 : c;
+    }
+
+    @Keep
+    public static void setEditCaret(View widget, int pos)
+    {
+        android.widget.EditText e = editBoxOf(widget);
+        if (e == null) return;
+        CharSequence cs = e.getText();
+        int len = cs == null ? 0 : cs.length();
+        if (pos < 0) pos = 0;
+        if (pos > len) pos = len;
+        e.setSelection(pos);
+    }
+
+    @Keep
+    public static String getEditSelectedText(View widget)
+    {
+        android.widget.EditText e = editBoxOf(widget);
+        if (e == null) return null;
+        int a = e.getSelectionStart(), b = e.getSelectionEnd();
+        if (a < 0 || b < 0 || a == b) return null;
+        if (a > b) { int t = a; a = b; b = t; }
+        CharSequence cs = e.getText();
+        return cs == null ? null : cs.subSequence(a, b).toString();
+    }
+
+    @Keep
+    public static void setEditSelectedText(View widget, String s)
+    {
+        android.widget.EditText e = editBoxOf(widget);
+        if (e == null || s == null) return;
+        int a0 = e.getSelectionStart(), b0 = e.getSelectionEnd();
+        if (a0 < 0) a0 = 0;
+        if (b0 < 0) b0 = a0;
+        if (a0 > b0) { int t = a0; a0 = b0; b0 = t; }
+        final int a = a0, b = b0;
+        editBypassingFilters(e, ed -> ed.replace(a, b, s));
+    }
+
+    @Keep
+    public static void insertEditText(View widget, String s)
+    {
+        android.widget.EditText e = editBoxOf(widget);
+        if (e == null || s == null) return;
+        editBypassingFilters(e, ed -> {
+            int c = e.getSelectionStart();
+            if (c < 0) c = ed.length();
+            ed.insert(c, s);
+        });
+    }
+
+    @Keep
+    public static void appendEditText(View widget, String s)
+    {
+        android.widget.EditText e = editBoxOf(widget);
+        if (e == null || s == null) return;
+        editBypassingFilters(e, ed -> ed.append(s));
+    }
+
+    @Keep
+    public static int getEditCharCount(View widget)
+    {
+        android.widget.EditText e = editBoxOf(widget);
+        if (e == null) return 0;
+        CharSequence cs = e.getText();
+        return cs == null ? 0 : cs.length();
+    }
+
+    /* op: 0 copy, 1 cut, 2 paste, 3 clear, 4 undo, 5 redo */
+    @Keep
+    public static void editClipboard(View widget, int op)
+    {
+        android.widget.EditText e = editBoxOf(widget);
+        if (e == null) return;
+        android.content.ClipboardManager cm = (android.content.ClipboardManager)
+            e.getContext().getSystemService(android.content.Context.CLIPBOARD_SERVICE);
+        if (cm == null) return;
+        android.text.Editable ed = e.getText();
+        if (ed == null) return;
+        int a = e.getSelectionStart(), b = e.getSelectionEnd();
+        if (a < 0) a = 0;
+        if (b < 0) b = a;
+        if (a > b) { int t = a; a = b; b = t; }
+        final int fa = a, fb = b;
+
+        switch (op)
+        {
+            case 0:
+                if (a != b) cm.setPrimaryClip(android.content.ClipData.newPlainText(null, ed.subSequence(a, b)));
+                break;
+            case 1:
+                if (a != b)
+                {
+                    cm.setPrimaryClip(android.content.ClipData.newPlainText(null, ed.subSequence(fa, fb)));
+                    editBypassingFilters(e, x -> x.delete(fa, fb));
+                }
+                break;
+            case 2:
+                if (cm.hasPrimaryClip())
+                {
+                    android.content.ClipData clip = cm.getPrimaryClip();
+                    if (clip != null && clip.getItemCount() > 0)
+                    {
+                        CharSequence cs = clip.getItemAt(0).coerceToText(e.getContext());
+                        if (cs != null)
+                            editBypassingFilters(e, x -> { if (fa != fb) x.replace(fa, fb, cs); else x.insert(fa, cs); });
+                    }
+                }
+                break;
+            case 3:
+                if (a != b) editBypassingFilters(e, x -> x.delete(fa, fb));
+                break;
+            case 4: e.onTextContextMenuItem(android.R.id.undo); break;
+            case 5: e.onTextContextMenuItem(android.R.id.redo); break;
+        }
+    }
+
+    @Keep
+    public static void setEditMaxChars(View widget, int nc)
+    {
+        android.widget.EditText e = editBoxOf(widget);
+        if (e == null) return;
+        if (nc > 0)
+            e.setFilters(new android.text.InputFilter[] { new android.text.InputFilter.LengthFilter(nc) });
+        else
+            e.setFilters(new android.text.InputFilter[0]);
+    }
+
+    @Keep
+    public static void setEditReadOnly(View widget, boolean readOnly)
+    {
+        android.widget.EditText e = editBoxOf(widget);
+        if (e == null) return;
+        e.setFocusable(!readOnly);
+        e.setFocusableInTouchMode(!readOnly);
+        e.setCursorVisible(!readOnly);
+        e.setKeyListener(readOnly ? null : android.text.method.TextKeyListener.getInstance());
+    }
+
+    @Keep
+    public static boolean getEditReadOnly(View widget)
+    {
+        android.widget.EditText e = editBoxOf(widget);
+        return e != null && e.getKeyListener() == null;
+    }
+
+    @Keep
+    public static void setEditPadding(View widget, int h, int v)
+    {
+        android.widget.EditText e = editBoxOf(widget);
+        if (e != null) e.setPadding(h, v, h, v);
+    }
+
+    @Keep
+    public static void scrollEditTo(View widget, int pos)
+    {
+        android.widget.EditText e = editBoxOf(widget);
+        if (e == null) return;
+        CharSequence cs = e.getText();
+        int len = cs == null ? 0 : cs.length();
+        if (pos < 0) pos = 0;
+        if (pos > len) pos = len;
+        e.setSelection(pos);
+        e.bringPointIntoView(pos);
+    }
+
     @Keep
     public static void setEditSelection(View widget, int start, int end)
     {
