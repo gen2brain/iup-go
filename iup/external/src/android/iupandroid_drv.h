@@ -58,6 +58,7 @@ IUP_SDK_API void  iupAndroid_GetButtonBorderSize(int* w, int* h);
 /* declarations live here so widget _IcontrolData stays out of the header */
 IUP_SDK_API void  iupAndroid_ScrollbarDispatch(Ihandle* ih, int op, double value);
 IUP_SDK_API void  iupAndroid_ToggleActionFromJava(Ihandle* ih, int state);
+IUP_SDK_API void  iupAndroid_TreeToggleValueChanged(Ihandle* ih, int id, int state);
 
 /* returns ih->data->mask without exposing the widget _IcontrolData */
 IUP_SDK_API void* iupAndroidTextGetMask(Ihandle* ih);

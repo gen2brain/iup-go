@@ -45,6 +45,8 @@ public final class IupTreeHelper
         TreeNode parent;
         final ArrayList<TreeNode> children = new ArrayList<>();
         boolean expanded = true;
+        int toggleValue;
+        boolean toggleVisible = true;
     }
 
 
@@ -110,6 +112,8 @@ public final class IupTreeHelper
         int textFg;
         int rowBg;
         int chevronFg;
+        boolean showToggle;
+        boolean toggle3State;
         int markedBg;
 
         boolean addExpanded = true;
@@ -204,16 +208,18 @@ public final class IupTreeHelper
         final LinearLayout row;
         final View spacer;
         final TextView chevron;
+        final android.widget.CheckBox toggle;
         final TextView iconEmoji;
         final ImageView iconImage;
         final TextView title;
 
-        NodeHolder(LinearLayout row, View spacer, TextView chev, TextView iconEmoji, ImageView iconImage, TextView tv)
+        NodeHolder(LinearLayout row, View spacer, TextView chev, android.widget.CheckBox toggle, TextView iconEmoji, ImageView iconImage, TextView tv)
         {
             super(row);
             this.row = row;
             this.spacer = spacer;
             this.chevron = chev;
+            this.toggle = toggle;
             this.iconEmoji = iconEmoji;
             this.iconImage = iconImage;
             this.title = tv;
@@ -250,6 +256,13 @@ public final class IupTreeHelper
             chev.setLayoutParams(new LinearLayout.LayoutParams(tree.chevronSizePx, ViewGroup.LayoutParams.MATCH_PARENT));
             row.addView(chev);
 
+            android.widget.CheckBox toggle = new android.widget.CheckBox(ctx);
+            toggle.setPadding(0, 0, 0, 0);
+            toggle.setLayoutParams(new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT));
+            toggle.setVisibility(View.GONE);
+            row.addView(toggle);
+
             FrameLayout iconBox = new FrameLayout(ctx);
             LinearLayout.LayoutParams iconBoxLp = new LinearLayout.LayoutParams(
                 tree.iconSizePx + 2 * tree.iconPaddingPx, ViewGroup.LayoutParams.MATCH_PARENT);
@@ -279,7 +292,7 @@ public final class IupTreeHelper
             tv.setLayoutParams(tvLp);
             row.addView(tv);
 
-            final NodeHolder holder = new NodeHolder(row, spacer, chev, iconEmoji, iconImage, tv);
+            final NodeHolder holder = new NodeHolder(row, spacer, chev, toggle, iconEmoji, iconImage, tv);
             attachListeners(tree, holder);
             return holder;
         }
@@ -299,6 +312,39 @@ public final class IupTreeHelper
             {
                 rlp.height = tree.rowHeightPx;
                 h.itemView.setLayoutParams(rlp);
+            }
+
+            if (tree.showToggle && node.toggleVisible)
+            {
+                h.toggle.setVisibility(View.VISIBLE);
+                h.toggle.setOnCheckedChangeListener(null);
+                if (node.toggleValue == -1)
+                {
+                    h.toggle.setChecked(false);
+                    h.toggle.setAlpha(0.5f);
+                }
+                else
+                {
+                    h.toggle.setChecked(node.toggleValue == 1);
+                    h.toggle.setAlpha(1.0f);
+                }
+                h.toggle.setOnCheckedChangeListener((btn, checked) -> {
+                    int pos = h.getBindingAdapterPosition();
+                    if (pos == RecyclerView.NO_POSITION) return;
+                    TreeNode nd = tree.visible.get(pos);
+                    if (tree.toggle3State && nd.toggleValue == 1 && !checked)
+                        nd.toggleValue = -1;
+                    else
+                        nd.toggleValue = checked ? 1 : 0;
+                    btn.setAlpha(nd.toggleValue == -1 ? 0.5f : 1.0f);
+                    if (tree.ihandlePtr != 0L)
+                        dispatchToggleValue(tree.ihandlePtr, idOfNode(tree, nd), nd.toggleValue);
+                });
+            }
+            else
+            {
+                h.toggle.setOnCheckedChangeListener(null);
+                h.toggle.setVisibility(View.GONE);
             }
 
             if (node.kind == 0 && !tree.hideButtons)
@@ -955,6 +1001,51 @@ public final class IupTreeHelper
     /* Per-node color / font / image. */
 
     @Keep
+    public static void setShowToggle(View v, boolean show, boolean threeState)
+    {
+        if (!(v instanceof IupTreeView t)) return;
+        t.showToggle = show;
+        t.toggle3State = threeState;
+        if (t.adapter != null) t.adapter.notifyDataSetChanged();
+    }
+
+    @Keep
+    public static void setNodeToggleValue(View v, int id, int state)
+    {
+        if (!(v instanceof IupTreeView t)) return;
+        TreeNode n = nodeAtId(t, id);
+        if (n == null) return;
+        n.toggleValue = state;
+        notifyNodeChanged(t, n);
+    }
+
+    @Keep
+    public static int getNodeToggleValue(View v, int id)
+    {
+        if (!(v instanceof IupTreeView t)) return 0;
+        TreeNode n = nodeAtId(t, id);
+        return n == null ? 0 : n.toggleValue;
+    }
+
+    @Keep
+    public static void setNodeToggleVisible(View v, int id, boolean visible)
+    {
+        if (!(v instanceof IupTreeView t)) return;
+        TreeNode n = nodeAtId(t, id);
+        if (n == null) return;
+        n.toggleVisible = visible;
+        notifyNodeChanged(t, n);
+    }
+
+    @Keep
+    public static boolean getNodeToggleVisible(View v, int id)
+    {
+        if (!(v instanceof IupTreeView t)) return false;
+        TreeNode n = nodeAtId(t, id);
+        return n != null && n.toggleVisible;
+    }
+
+    @Keep
     public static void setNodeColor(View v, int id, int r, int g, int b)
     {
         if (!(v instanceof IupTreeView t)) return;
@@ -1462,4 +1553,5 @@ public final class IupTreeHelper
     public static native int  dispatchShowRename(long ihandlePtr, int id);
     public static native int  dispatchRename(long ihandlePtr, int id, String title);
     public static native void dispatchDragDrop(long ihandlePtr, int dragId, int dropId, int isShift, int isControl);
+    public static native void dispatchToggleValue(long ihandlePtr, int id, int state);
 }

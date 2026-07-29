@@ -147,3 +147,14 @@ JNIEXPORT jint JNICALL Java_io_github_gen2brain_iupgo_IupTreeHelper_dispatchRena
   if (ret == IUP_CLOSE) IupExitLoop();
   return (ret == IUP_IGNORE) ? 1 : 0;
 }
+
+JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupTreeHelper_dispatchToggleValue(
+    JNIEnv* env, jclass cls, jlong ihandle_ptr, jint id, jint state)
+{
+  (void)env;
+  (void)cls;
+  Ihandle* ih = (Ihandle*)ihandle_ptr;
+  if (!ih) return;
+
+  iupAndroid_TreeToggleValueChanged(ih, (int)id, (int)state);
+}
