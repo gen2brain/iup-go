@@ -1099,6 +1099,57 @@ public final class IupTextHelper
         }
     }
 
+    /* One run per line for the Markdown exporter:
+       "start<TAB>end<TAB>bold<TAB>italic<TAB>strike<TAB>scale<TAB>sizePt<TAB>face<TAB>indent<TAB>url". */
+    @Keep
+    public static String getFormatRuns(View v)
+    {
+        IupEditText tv = resolve(v);
+        if (tv == null) return "";
+        Editable buf = tv.getText();
+        if (buf == null || buf.length() == 0) return "";
+
+        float density = IupCommon.getDisplayDensity();
+        StringBuilder out = new StringBuilder();
+        int length = buf.length();
+        int pos = 0;
+
+        while (pos < length)
+        {
+            int next = buf.nextSpanTransition(pos, length, Object.class);
+            int bold = 0, italic = 0, strike = 0, indent = 0, sizePt = 0;
+            float scale = 0f;
+            String face = "", url = "";
+
+            for (StyleSpan s : buf.getSpans(pos, next, StyleSpan.class))
+            {
+                if ((s.getStyle() & Typeface.BOLD) != 0) bold = 1;
+                if ((s.getStyle() & Typeface.ITALIC) != 0) italic = 1;
+            }
+            if (buf.getSpans(pos, next, StrikethroughSpan.class).length > 0) strike = 1;
+
+            for (AbsoluteSizeSpan s : buf.getSpans(pos, next, AbsoluteSizeSpan.class))
+                sizePt = Math.round(s.getSize() / density / (96f / 72f));
+            for (RelativeSizeSpan s : buf.getSpans(pos, next, RelativeSizeSpan.class))
+                scale = s.getSizeChange();
+            for (TypefaceSpan s : buf.getSpans(pos, next, TypefaceSpan.class))
+                if (s.getFamily() != null) face = s.getFamily();
+            for (LeadingMarginSpan.Standard s : buf.getSpans(pos, next, LeadingMarginSpan.Standard.class))
+                indent = Math.round(s.getLeadingMargin(true) / density);
+            for (IupLinkSpan s : buf.getSpans(pos, next, IupLinkSpan.class))
+                url = s.url;
+
+            out.append(pos).append('\t').append(next).append('\t')
+               .append(bold).append('\t').append(italic).append('\t').append(strike).append('\t')
+               .append(scale).append('\t').append(sizePt).append('\t')
+               .append(face).append('\t').append(indent).append('\t').append(url).append('\n');
+
+            pos = next;
+        }
+
+        return out.toString();
+    }
+
     private static String romanNumeral(int n, boolean upper)
     {
         if (n < 1) return "";
