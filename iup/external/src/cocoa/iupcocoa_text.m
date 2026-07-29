@@ -5595,6 +5595,74 @@ static int cocoaTextSetPaddingAttrib(Ihandle* ih, const char* value)
     return 1;
 }
 
+IUP_SDK_API int iupdrvTextGetFormatTags(Ihandle* ih, Ihandle* bulk_tag)
+{
+  if(!ih->data->is_multiline || !ih->data->has_formatting)
+  {
+    return 0;
+  }
+
+  NSTextView* text_view = cocoaTextGetTextView(ih);
+  if(nil == text_view)
+  {
+    return 0;
+  }
+
+  NSTextStorage* text_storage = [text_view textStorage];
+  NSUInteger length = [text_storage length];
+  NSFontManager* font_manager = [NSFontManager sharedFontManager];
+
+  [text_storage enumerateAttributesInRange:NSMakeRange(0, length)
+                                   options:0
+                                usingBlock:^(NSDictionary<NSAttributedStringKey, id>* attributes, NSRange range, BOOL* stop)
+  {
+    Ihandle* formattag = IupUser();
+    IupSetStrf(formattag, "SELECTIONPOS", "%d:%d", (int)range.location, (int)(range.location + range.length));
+    IupAppend(bulk_tag, formattag);
+
+    NSFont* font = [attributes objectForKey:NSFontAttributeName];
+    if(nil != font)
+    {
+      NSFontTraitMask traits = [font_manager traitsOfFont:font];
+      IupSetAttribute(formattag, "WEIGHT", (traits & NSBoldFontMask) ? "BOLD" : "NORMAL");
+      IupSetAttribute(formattag, "ITALIC", (traits & NSItalicFontMask) ? "YES" : "NO");
+      IupSetStrAttribute(formattag, "FONTFACE", [[font familyName] UTF8String]);
+      IupSetInt(formattag, "FONTSIZE", (int)([font pointSize] + 0.5));
+    }
+
+    NSNumber* strikethrough = [attributes objectForKey:NSStrikethroughStyleAttributeName];
+    IupSetAttribute(formattag, "STRIKEOUT", (nil != strikethrough && [strikethrough intValue] != 0) ? "YES" : "NO");
+
+    id link = [attributes objectForKey:NSLinkAttributeName];
+    if(nil != link)
+    {
+      NSString* url = [link isKindOfClass:[NSURL class]] ? [(NSURL*)link absoluteString] : (NSString*)link;
+      if(nil != url)
+      {
+        IupSetStrAttribute(formattag, "LINK", [url UTF8String]);
+      }
+    }
+
+    NSParagraphStyle* paragraph_style = [attributes objectForKey:NSParagraphStyleAttributeName];
+    if(nil != paragraph_style)
+    {
+      CGFloat indent = [paragraph_style firstLineHeadIndent];
+      if(indent <= 0.0)
+      {
+        indent = [paragraph_style headIndent];
+      }
+      if(indent > 0.0)
+      {
+        IupSetInt(formattag, "INDENT", (int)indent);
+      }
+    }
+
+    (void)stop;
+  }];
+
+  return 1;
+}
+
 IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
 {
   ic->Map = cocoaTextMapMethod;
