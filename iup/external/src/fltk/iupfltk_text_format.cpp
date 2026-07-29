@@ -546,6 +546,81 @@ extern "C" IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formatt
   editor->redisplay_range(start, end);
 }
 
+extern "C" IUP_SDK_API int iupdrvTextGetFormatTags(Ihandle* ih, Ihandle* bulk_tag)
+{
+  if (!ih->data->is_multiline)
+    return 0;
+
+  FltkFormatData* fdata = fltkFormatGetData(ih);
+  if (!fdata || !fdata->style_buffer)
+    return 0;
+
+  Fl_Text_Editor* editor = (Fl_Text_Editor*)ih->handle;
+  if (!editor || !editor->buffer())
+    return 0;
+
+  Fl_Text_Buffer* buf = editor->buffer();
+  int len = buf->length();
+  int style_len = fdata->style_buffer->length();
+  int pos = 0, charpos = 0;
+
+  while (pos < len)
+  {
+    char style = (pos < style_len) ? fdata->style_buffer->byte_at(pos) : 'A';
+    int start_char = charpos;
+    int next = pos;
+
+    while (next < len)
+    {
+      if (((next < style_len) ? fdata->style_buffer->byte_at(next) : 'A') != style)
+        break;
+
+      unsigned char c = (unsigned char)buf->byte_at(next);
+      if (c >= 0xF0) next += 4;
+      else if (c >= 0xE0) next += 3;
+      else if (c >= 0xC0) next += 2;
+      else next++;
+
+      charpos++;
+    }
+
+    {
+      int index = (unsigned char)style - 'A';
+      if (index < 0 || index >= fdata->num_styles)
+        index = 0;
+
+      Fl_Text_Display::Style_Table_Entry* entry = &fdata->style_table[index];
+      Ihandle* formattag = IupUser();
+      const char* face;
+      char link_attr[32];
+      const char* url;
+
+      IupSetStrf(formattag, "SELECTIONPOS", "%d:%d", start_char, charpos);
+      IupAppend(bulk_tag, formattag);
+
+      IupSetAttribute(formattag, "WEIGHT", (entry->font & FL_BOLD) ? "BOLD" : "NORMAL");
+      IupSetAttribute(formattag, "ITALIC", (entry->font & FL_ITALIC) ? "YES" : "NO");
+      IupSetAttribute(formattag, "STRIKEOUT", (entry->attr & Fl_Text_Display::ATTR_STRIKE_THROUGH) ? "YES" : "NO");
+
+      face = Fl::get_font_name(entry->font, NULL);
+      if (face)
+        IupSetStrAttribute(formattag, "FONTFACE", face);
+
+      if (fdata->style_table[0].size > 0)
+        IupSetDouble(formattag, "FONTSCALE", (double)entry->size / (double)fdata->style_table[0].size);
+
+      snprintf(link_attr, sizeof(link_attr), "_IUPFLTK_LINK_%c", style);
+      url = iupAttribGet(ih, link_attr);
+      if (url)
+        IupSetStrAttribute(formattag, "LINK", url);
+    }
+
+    pos = next;
+  }
+
+  return 1;
+}
+
 extern "C" IUP_SDK_API void* iupdrvTextAddFormatTagStartBulk(Ihandle* ih)
 {
   FltkFormatData* fdata = fltkFormatGetData(ih);
