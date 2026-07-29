@@ -47,6 +47,7 @@ Not supported in EFL.
 
 **STEP**: Controls the increment for keyboard control and the mouse wheel. It is not the size of the increment.
 The increment size is "step*(max-min)", so it must be 0<step<1. Default is "0.01".
+Not supported in Android.
 
 **TICKSPOS** (creation-only): Allows to position the ticks in both sides (BOTH) or in the reverse side (REVERSE).
 Default: NORMAL. The normal position for horizontal orientation is at the top of the control, and for vertical orientation is at the left of the control.
