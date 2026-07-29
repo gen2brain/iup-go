@@ -15,7 +15,7 @@ Or you can simply create and destroy every time you need to copy or paste.
 **ADDFORMAT** (write-only): register a custom format for clipboard data given its name.
 The registration remains valid even after the element is destroyed.
 A new format must be added before used.
-Custom format attributes (ADDFORMAT, FORMAT, FORMATAVAILABLE, FORMATDATA, FORMATDATASTRING, FORMATDATASIZE) are not supported in FLTK.
+Custom format attributes (ADDFORMAT, FORMAT, FORMATAVAILABLE, FORMATDATA, FORMATDATASTRING, FORMATDATASIZE) are not supported in FLTK and WebAssembly.
 On Android only the string path is available (ADDFORMAT, FORMAT, FORMATAVAILABLE, FORMATDATASTRING, FORMATDATASIZE); the binary FORMATDATA is not.
 
 **EMFAVAILABLE** (read-only) [Windows Only]: informs if there is a Windows Enhanced Metafile available at the clipboard.
@@ -64,7 +64,7 @@ In Haiku is a **BBitmap***.
 If set to NULL clears the clipboard data.
 The returned handle in a paste must be released after used.
 After copy, do NOT release the given handle.
-Not supported in EFL and Android.
+Not supported in EFL, Android and WebAssembly.
 
 **NATIVEVECTORIMAGE**: copy or paste vector image data, a PDF document, to or from the clipboard.
 When set the FORMATDATASIZE attribute must be set before with the data size.
@@ -95,8 +95,6 @@ Available in Win32 and WinUI.
 In Windows when "TEXT" format data is copied to the clipboard, the system will automatically store other text formats too if those formats are not already stored.
 This means that when copying "TEXT" Windows will also store "Unicode Text" and "OEM Text", but only if those formats were not copied before.
 So to make sure the system will copy all the other text formats clear the clipboard before copying your own data (you can simply set TEXT=NULL before setting the actual value).
-
-In WebAssembly only TEXT and TEXTAVAILABLE are supported; image and custom binary formats are not.
 
 ### Examples
 
