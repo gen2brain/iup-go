@@ -16,6 +16,8 @@
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_image.h"
+#include "iup_drv.h"
+#include "iup_drvinfo.h"
 #include "iup_toggle.h"
 
 #include "iupandroid_drv.h"
@@ -257,6 +259,42 @@ static void androidToggleApplyImages(Ihandle* ih, const char* image_name, const 
   (*jni_env)->DeleteLocalRef(jni_env, cls);
 }
 
+static int androidToggleSetBgColorAttrib(Ihandle* ih, const char* value)
+{
+  IUPJNI_DECLARE_METHOD_ID_STATIC(IupToggleHelper_setBgColor);
+  unsigned char r, g, b;
+
+  if (!iupStrToRGB(value, &r, &g, &b)) return 0;
+  if (!ih->handle) return 1;
+
+  JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
+  jclass cls = IUPJNI_FindClass(IupToggleHelper, jni_env, "io/github/gen2brain/iupgo/IupToggleHelper");
+  jmethodID m = IUPJNI_GetStaticMethodID(IupToggleHelper_setBgColor, jni_env, cls, "setBgColor", "(Landroid/view/View;III)V");
+  (*jni_env)->CallStaticVoidMethod(jni_env, cls, m, (jobject)ih->handle, (jint)r, (jint)g, (jint)b);
+  iupAndroid_CheckException(jni_env, "IupToggleHelper.setBgColor");
+  (*jni_env)->DeleteLocalRef(jni_env, cls);
+  return 1;
+}
+
+static int androidToggleSetPaddingAttrib(Ihandle* ih, const char* value)
+{
+  IUPJNI_DECLARE_METHOD_ID_STATIC(IupToggleHelper_setPadding);
+
+  iupStrToIntInt(value, &ih->data->horiz_padding, &ih->data->vert_padding, 'x');
+  ih->data->horiz_padding = iupdrvScaleNaturalPx(ih->data->horiz_padding);
+  ih->data->vert_padding  = iupdrvScaleNaturalPx(ih->data->vert_padding);
+
+  if (!ih->handle) return 1;
+
+  JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
+  jclass cls = IUPJNI_FindClass(IupToggleHelper, jni_env, "io/github/gen2brain/iupgo/IupToggleHelper");
+  jmethodID m = IUPJNI_GetStaticMethodID(IupToggleHelper_setPadding, jni_env, cls, "setPadding", "(Landroid/view/View;II)V");
+  (*jni_env)->CallStaticVoidMethod(jni_env, cls, m, (jobject)ih->handle, (jint)ih->data->horiz_padding, (jint)ih->data->vert_padding);
+  iupAndroid_CheckException(jni_env, "IupToggleHelper.setPadding");
+  (*jni_env)->DeleteLocalRef(jni_env, cls);
+  return 0;
+}
+
 static int androidToggleSetImageAttrib(Ihandle* ih, const char* value)
 {
   if (!ih->handle) return 1;
@@ -368,6 +406,8 @@ void iupdrvToggleInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "ALIGNMENT", NULL, androidToggleSetAlignmentAttrib, IUPAF_SAMEASSYSTEM, "ACENTER:ACENTER", IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "FGCOLOR", NULL, androidToggleSetFgColorAttrib, "DLGFGCOLOR", NULL, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, androidToggleSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "PADDING", iupToggleGetPaddingAttrib, androidToggleSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
 
   iupClassRegisterAttribute(ic, "3STATE", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "RIGHTBUTTON", NULL, androidToggleSetRightButtonAttrib, NULL, NULL, IUPAF_NO_INHERIT);

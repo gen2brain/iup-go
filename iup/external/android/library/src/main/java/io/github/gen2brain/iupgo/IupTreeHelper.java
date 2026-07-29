@@ -189,6 +189,15 @@ public final class IupTreeHelper
         if (t.adapter != null) t.adapter.notifyDataSetChanged();
     }
 
+    @Keep
+    public static void setFgColor(View widget, int r, int g, int b)
+    {
+        if (!(widget instanceof IupTreeView t)) return;
+        t.textFg    = Color.rgb(r, g, b);
+        t.chevronFg = IupCommon.blendColor(t.rowBg, t.textFg, 0.55f);
+        if (t.adapter != null) t.adapter.notifyDataSetChanged();
+    }
+
 
     static final class NodeHolder extends RecyclerView.ViewHolder
     {

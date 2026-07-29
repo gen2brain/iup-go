@@ -118,6 +118,21 @@ static int androidValSetShowTicksAttrib(Ihandle* ih, const char* value)
   return 0;  /* already stored */
 }
 
+static int androidValSetBgColorAttrib(Ihandle* ih, const char* value)
+{
+  unsigned char r, g, b;
+  if (!iupStrToRGB(value, &r, &g, &b)) return 0;
+  if (!ih->handle) return 1;
+
+  JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
+  jclass cls = IUPJNI_FindClass(IupValHelper, jni_env, "io/github/gen2brain/iupgo/IupValHelper");
+  jmethodID m = (*jni_env)->GetStaticMethodID(jni_env, cls, "setBgColor", "(Landroid/view/View;III)V");
+  (*jni_env)->CallStaticVoidMethod(jni_env, cls, m, ih->handle, (jint)r, (jint)g, (jint)b);
+  iupAndroid_CheckException(jni_env, "IupValHelper.setBgColor");
+  (*jni_env)->DeleteLocalRef(jni_env, cls);
+  return 1;
+}
+
 static int androidValMapMethod(Ihandle* ih)
 {
   IUPJNI_DECLARE_METHOD_ID_STATIC(IupValHelper_createHorizontal);
@@ -163,6 +178,7 @@ void iupdrvValInitClass(Iclass* ic)
   iupClassRegisterReplaceAttribFunc(ic, "MAX", NULL, androidValSetMaxAttrib);
 
   iupClassRegisterAttribute(ic, "SHOWTICKS", NULL, androidValSetShowTicksAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, androidValSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
   /* Material Slider draws ticks centered along the track; tick position is not separately controllable. */
   iupClassRegisterAttribute(ic, "TICKSPOS", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "STEP", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);

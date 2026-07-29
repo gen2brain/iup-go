@@ -984,12 +984,28 @@ IUP_SDK_API void iupdrvTreeAddBorders(Ihandle* ih, int *w, int *h)
   *h += iupAndroid_DpToPx(8);
 }
 
-IUP_SDK_API void iupdrvTreeInitClass(Iclass* ic)
+IUP_SDK_API static int androidTreeSetFgColorAttrib(Ihandle* ih, const char* value)
+{
+  unsigned char r, g, b;
+  if (!iupStrToRGB(value, &r, &g, &b)) return 0;
+  if (!ih->handle) return 1;
+
+  JNIEnv* env = iupAndroid_GetEnvThreadSafe();
+  jclass cls = androidTreeFindClass(env);
+  jmethodID m = (*env)->GetStaticMethodID(env, cls, "setFgColor", "(Landroid/view/View;III)V");
+  (*env)->CallStaticVoidMethod(env, cls, m, ih->handle, (jint)r, (jint)g, (jint)b);
+  iupAndroid_CheckException(env, "IupTreeHelper.setFgColor");
+  (*env)->DeleteLocalRef(env, cls);
+  return 1;
+}
+
+void iupdrvTreeInitClass(Iclass* ic)
 {
   ic->Map = androidTreeMapMethod;
   ic->UnMap = androidTreeUnMapMethod;
 
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, androidTreeSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, androidTreeSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTFGCOLOR", IUPAF_DEFAULT);
 
   iupClassRegisterAttribute(ic, "INDENTATION", NULL, androidTreeSetIndentationAttrib, NULL, NULL, IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "SPACING", iupTreeGetSpacingAttrib, androidTreeSetSpacingAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_INHERIT);

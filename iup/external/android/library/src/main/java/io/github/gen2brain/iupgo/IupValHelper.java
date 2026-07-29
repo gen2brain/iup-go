@@ -98,6 +98,14 @@ public final class IupValHelper
     }
 
     @Keep
+    public static void setBgColor(View widget, int r, int g, int b)
+    {
+        Slider s = unwrap(widget);
+        if (s == null) return;
+        s.setTrackInactiveTintList(android.content.res.ColorStateList.valueOf(android.graphics.Color.rgb(r, g, b)));
+    }
+
+    @Keep
     public static void setStep(View widget, float step)
     {
         Slider s = unwrap(widget);

@@ -309,6 +309,18 @@ public final class IupToggleHelper
     }
 
     @Keep
+    public static void setBgColor(View widget, int r, int g, int b)
+    {
+        if (widget != null) widget.setBackgroundColor(Color.rgb(r, g, b));
+    }
+
+    @Keep
+    public static void setPadding(View widget, int h, int v)
+    {
+        if (widget != null) widget.setPadding(h, v, h, v);
+    }
+
+    @Keep
     public static void setFgColor(View widget, int r, int g, int b)
     {
         /* ColorStateList so ACTIVE=NO fades text to Material's 38% disabled alpha. */
