@@ -57,6 +57,30 @@ public final class IupDialogHelper
     }
 
     @Keep
+    public static void setBackImage(Object handle, Bitmap bmp, boolean zoom)
+    {
+        IupAndroidFixed rootFixed = resolveRootFixed(handle);
+        if (rootFixed == null) return;
+        if (bmp == null) { rootFixed.setBackground(null); return; }
+
+        if (zoom)
+        {
+            android.graphics.drawable.BitmapDrawable d =
+                new android.graphics.drawable.BitmapDrawable(rootFixed.getResources(), bmp);
+            d.setGravity(android.view.Gravity.FILL);
+            rootFixed.setBackground(d);
+        }
+        else
+        {
+            android.graphics.drawable.BitmapDrawable d =
+                new android.graphics.drawable.BitmapDrawable(rootFixed.getResources(), bmp);
+            d.setTileModeXY(android.graphics.Shader.TileMode.REPEAT,
+                            android.graphics.Shader.TileMode.REPEAT);
+            rootFixed.setBackground(d);
+        }
+    }
+
+    @Keep
     public static void setBgColor(Object handle, int r, int g, int b)
     {
         IupAndroidFixed rootFixed = resolveRootFixed(handle);
