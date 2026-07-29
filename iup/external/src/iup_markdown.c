@@ -9,11 +9,14 @@
 #include <string.h>
 
 #include "iup.h"
+#include "iupcbs.h"
 
 #include "iup_str.h"
+#include "iup_class.h"
+#include "iup_mask.h"
+#include "iup_array.h"
+#include "iup_text.h"
 #include "iup_markdown.h"
-
-int iupTextSetAddFormatTagHandleAttrib(Ihandle* ih, const char* value);
 
 /* Growable text buffer */
 typedef struct {
@@ -796,8 +799,7 @@ static void iMdParseOrderedList(iMdState* s, const char* line, int len, int num_
   memcpy(prefix + 2, line, prefix_len);
   prefix[0] = ' ';
   prefix[1] = ' ';
-  prefix[prefix_len + 2] = ' ';
-  prefix[prefix_len + 3] = 0;
+  prefix[prefix_len + 2] = 0;
   iMdBufAppendStr(&s->text, prefix);
 
   /* Parse content after the number marker */
@@ -1091,4 +1093,477 @@ void iupMarkdownAppendValue(Ihandle* ih, const char* markdown_text)
   iupTextSetAddFormatTagHandleAttrib(ih, (const char*)state.bulk_tag);
 
   iMdBufFree(&state.text);
+}
+
+
+enum { IMD_BLANK, IMD_RULE, IMD_CODE, IMD_HEADING, IMD_QUOTE, IMD_ULIST, IMD_OLIST, IMD_PARA };
+
+typedef struct {
+  const char* link;
+  const char* image;
+  float scale;
+  unsigned char bold, italic, strike, mono, quote;
+} iMdFmt;
+
+static int iMdFaceIsMono(const char* face)
+{
+  static const char* names[] = { "mono", "courier", "consol", "menlo", "monaco", "terminal", "fixed", "cascadia", NULL };
+  int i, j, len;
+
+  if (!face)
+    return 0;
+
+  len = (int)strlen(face);
+  for (i = 0; i < len; i++)
+  {
+    for (j = 0; names[j]; j++)
+    {
+      if (iupStrEqualNoCasePartial(face + i, names[j]))
+        return 1;
+    }
+  }
+  return 0;
+}
+
+static float iMdNamedScale(const char* value)
+{
+  if (iupStrEqualNoCase(value, "XX-SMALL")) return 0.58f;
+  if (iupStrEqualNoCase(value, "X-SMALL")) return 0.64f;
+  if (iupStrEqualNoCase(value, "SMALL")) return 0.83f;
+  if (iupStrEqualNoCase(value, "MEDIUM")) return 1.0f;
+  if (iupStrEqualNoCase(value, "LARGE")) return 1.2f;
+  if (iupStrEqualNoCase(value, "X-LARGE")) return 1.44f;
+  if (iupStrEqualNoCase(value, "XX-LARGE")) return 1.73f;
+  return 0;
+}
+
+static void iMdApplyTag(Ihandle* tag, iMdFmt* fmt, int charlen, int base_size)
+{
+  char *value;
+  const char *link, *image;
+  int start = 0, end = 0, i;
+  int bold = -1, italic = -1, strike = -1, mono = -1, quote = -1;
+  float scale = 0;
+
+  value = IupGetAttribute(tag, "SELECTIONPOS");
+  if (!value || iupStrToIntInt(value, &start, &end, ':') != 2)
+    return;
+  if (start < 0) start = 0;
+  if (end > charlen) end = charlen;
+  if (end <= start)
+    return;
+
+  value = IupGetAttribute(tag, "WEIGHT");
+  if (value)
+    bold = (iupStrEqualNoCase(value, "BOLD") || iupStrEqualNoCase(value, "SEMIBOLD") ||
+            iupStrEqualNoCase(value, "EXTRABOLD") || iupStrEqualNoCase(value, "HEAVY")) ? 1 : 0;
+
+  value = IupGetAttribute(tag, "ITALIC");
+  if (value)
+    italic = iupStrBoolean(value);
+
+  value = IupGetAttribute(tag, "STRIKEOUT");
+  if (value)
+    strike = iupStrBoolean(value);
+
+  value = IupGetAttribute(tag, "FONTFACE");
+  if (value)
+    mono = iMdFaceIsMono(value);
+
+  value = IupGetAttribute(tag, "FONTSCALE");
+  if (value)
+  {
+    double dval = 0;
+    scale = iMdNamedScale(value);
+    if (scale == 0 && iupStrToDouble(value, &dval) && dval > 0)
+      scale = (float)dval;
+  }
+
+  value = IupGetAttribute(tag, "FONTSIZE");
+  if (value && base_size > 0)
+  {
+    int size = 0;
+    if (iupStrToInt(value, &size) && size != 0)
+    {
+      if (size < 0) size = -size;
+      scale = (float)size / (float)base_size;
+    }
+  }
+
+  value = IupGetAttribute(tag, "INDENT");
+  if (value)
+  {
+    int indent = 0;
+    iupStrToInt(value, &indent);
+    quote = indent > 0 ? 1 : 0;
+  }
+
+  link = IupGetAttribute(tag, "LINK");
+  image = IupGetAttribute(tag, "IMAGE");
+
+  for (i = start; i < end; i++)
+  {
+    if (bold >= 0) fmt[i].bold = (unsigned char)bold;
+    if (italic >= 0) fmt[i].italic = (unsigned char)italic;
+    if (strike >= 0) fmt[i].strike = (unsigned char)strike;
+    if (mono >= 0) fmt[i].mono = (unsigned char)mono;
+    if (quote >= 0) fmt[i].quote = (unsigned char)quote;
+    if (scale > 0) fmt[i].scale = scale;
+    if (link) fmt[i].link = link;
+    if (image) fmt[i].image = image;
+  }
+}
+
+static int iMdCharIs(const char* text, const int* choff, int c, const char* utf8, int utf8_len)
+{
+  return (choff[c + 1] - choff[c]) == utf8_len && memcmp(text + choff[c], utf8, utf8_len) == 0;
+}
+
+static int iMdCharIsSpace(const char* text, const int* choff, int c)
+{
+  return (choff[c + 1] - choff[c]) == 1 && (text[choff[c]] == ' ' || text[choff[c]] == '\t');
+}
+
+static int iMdCharIsByte(const char* text, const int* choff, int c, char b)
+{
+  return (choff[c + 1] - choff[c]) == 1 && text[choff[c]] == b;
+}
+
+static int iMdLineKind(const char* text, const int* choff, const iMdFmt* fmt, int c0, int c1, int* level, int* content)
+{
+  int i, blank = 1, all_mono = 1, all_bold = 1, all_quote = 1, all_rule = 1, count = 0;
+  float max_scale = 0;
+
+  *level = 0;
+  *content = c0;
+
+  for (i = c0; i < c1; i++)
+  {
+    if (iMdCharIsSpace(text, choff, i))
+      continue;
+
+    blank = 0;
+    count++;
+    if (!fmt[i].mono) all_mono = 0;
+    if (!fmt[i].bold) all_bold = 0;
+    if (!fmt[i].quote) all_quote = 0;
+    if (!iMdCharIs(text, choff, i, "\xe2\x94\x81", 3)) all_rule = 0;
+    if (fmt[i].scale > max_scale) max_scale = fmt[i].scale;
+  }
+
+  if (blank)
+    return IMD_BLANK;
+
+  if (all_rule && count >= 3)
+    return IMD_RULE;
+
+  if (all_mono)
+    return IMD_CODE;
+
+  if (all_quote)
+    return IMD_QUOTE;
+
+  if (all_bold && max_scale >= 1.04f)
+  {
+    if (max_scale >= 1.6f) *level = 1;
+    else if (max_scale >= 1.3f) *level = 2;
+    else if (max_scale >= 1.12f) *level = 3;
+    else *level = 4;
+    return IMD_HEADING;
+  }
+
+  i = c0;
+  while (i < c1 && iMdCharIsByte(text, choff, i, ' '))
+    i++;
+
+  if (i < c1 - 1 && iMdCharIs(text, choff, i, "\xe2\x80\xa2", 3) && iMdCharIsByte(text, choff, i + 1, ' '))
+  {
+    *content = i + 2;
+    return IMD_ULIST;
+  }
+
+  if (i < c1 - 1 && iMdCharIsByte(text, choff, i + 1, ' ') &&
+      (iMdCharIsByte(text, choff, i, '-') || iMdCharIsByte(text, choff, i, '*') || iMdCharIsByte(text, choff, i, '+')))
+  {
+    *content = i + 2;
+    return IMD_ULIST;
+  }
+
+  {
+    int digits = i;
+    while (digits < c1 && (choff[digits + 1] - choff[digits]) == 1 && iup_isdigit(text[choff[digits]]))
+      digits++;
+
+    if (digits > i && digits < c1 - 1 &&
+        (iMdCharIsByte(text, choff, digits, '.') || iMdCharIsByte(text, choff, digits, ')')) &&
+        iMdCharIsByte(text, choff, digits + 1, ' '))
+    {
+      *content = i;
+      return IMD_OLIST;
+    }
+  }
+
+  return IMD_PARA;
+}
+
+static void iMdEmitEscaped(iMdBuf* out, const char* str, int len, int line_start)
+{
+  int i;
+  for (i = 0; i < len; i++)
+  {
+    char c = str[i];
+    int escape = (c == '\\' || c == '`' || c == '*' || c == '_' || c == '[' || c == ']' || c == '~');
+
+    if (line_start && i == 0 && (c == '#' || c == '>'))
+      escape = 1;
+
+    if (escape)
+      iMdBufAppendChar(out, '\\');
+    iMdBufAppendChar(out, c);
+  }
+}
+
+static int iMdFmtEqual(const iMdFmt* a, const iMdFmt* b)
+{
+  if (a->bold != b->bold || a->italic != b->italic || a->strike != b->strike || a->mono != b->mono)
+    return 0;
+  if (a->link != b->link && !(a->link && b->link && iupStrEqual(a->link, b->link)))
+    return 0;
+  return 1;
+}
+
+static int iMdFmtHasMarkers(const iMdFmt* f, int heading, int quote)
+{
+  if (f->link || f->strike || f->mono)
+    return 1;
+  if (f->bold && !heading)
+    return 1;
+  if (f->italic && !quote)
+    return 1;
+  return 0;
+}
+
+static void iMdOpenMarkers(iMdBuf* out, const iMdFmt* f, int heading, int quote)
+{
+  if (f->link) iMdBufAppendChar(out, '[');
+  if (f->bold && !heading) iMdBufAppendStr(out, "**");
+  if (f->italic && !quote) iMdBufAppendChar(out, '*');
+  if (f->strike) iMdBufAppendStr(out, "~~");
+  if (f->mono) iMdBufAppendChar(out, '`');
+}
+
+static void iMdCloseMarkers(iMdBuf* out, const iMdFmt* f, int content_start, int heading, int quote)
+{
+  int spaces = 0;
+
+  while (out->len - spaces > content_start && out->data[out->len - spaces - 1] == ' ')
+    spaces++;
+
+  out->len -= spaces;
+  out->charlen -= spaces;
+  out->data[out->len] = 0;
+
+  if (f->mono) iMdBufAppendChar(out, '`');
+  if (f->strike) iMdBufAppendStr(out, "~~");
+  if (f->italic && !quote) iMdBufAppendChar(out, '*');
+  if (f->bold && !heading) iMdBufAppendStr(out, "**");
+  if (f->link)
+  {
+    iMdBufAppendStr(out, "](");
+    iMdBufAppendStr(out, f->link);
+    iMdBufAppendChar(out, ')');
+  }
+
+  while (spaces-- > 0)
+    iMdBufAppendChar(out, ' ');
+}
+
+static void iMdEmitInline(iMdBuf* out, const char* text, const int* choff, const iMdFmt* fmt, int c0, int c1, int heading, int quote)
+{
+  iMdFmt cur;
+  int open = 0, content_start = 0, first = 1, i;
+
+  memset(&cur, 0, sizeof(iMdFmt));
+
+  for (i = c0; i < c1; i++)
+  {
+    const iMdFmt* f = &fmt[i];
+    const char* ch = text + choff[i];
+    int blen = choff[i + 1] - choff[i];
+
+    if (f->image)
+    {
+      if (open)
+      {
+        iMdCloseMarkers(out, &cur, content_start, heading, quote);
+        open = 0;
+      }
+      iMdBufAppendStr(out, "![](");
+      iMdBufAppendStr(out, f->image);
+      iMdBufAppendChar(out, ')');
+      first = 0;
+      continue;
+    }
+
+    if (open && !iMdFmtEqual(&cur, f))
+    {
+      iMdCloseMarkers(out, &cur, content_start, heading, quote);
+      open = 0;
+    }
+
+    if (!open)
+    {
+      if (iMdCharIsSpace(text, choff, i) && iMdFmtHasMarkers(f, heading, quote))
+      {
+        iMdBufAppend(out, ch, blen);
+        continue;
+      }
+      cur = *f;
+      iMdOpenMarkers(out, &cur, heading, quote);
+      content_start = out->len;
+      open = 1;
+    }
+
+    if (cur.mono)
+      iMdBufAppend(out, ch, blen);
+    else
+      iMdEmitEscaped(out, ch, blen, first);
+
+    first = 0;
+  }
+
+  if (open)
+    iMdCloseMarkers(out, &cur, content_start, heading, quote);
+}
+
+char* iupMarkdownGetValue(Ihandle* ih)
+{
+  char* value;
+  int* choff;
+  iMdFmt* fmt;
+  iMdBuf out;
+  Ihandle* bulk;
+  int blen, charlen, base_size = 0, i, c;
+  int in_code = 0, prev_kind = IMD_BLANK;
+
+  value = IupGetAttribute(ih, "VALUE");
+  if (!value)
+    value = "";
+
+  blen = (int)strlen(value);
+  charlen = iMdUtf8CharCount(value, blen);
+
+  choff = (int*)malloc(((size_t)charlen + 1) * sizeof(int));
+  fmt = (iMdFmt*)calloc((size_t)charlen + 1, sizeof(iMdFmt));
+  if (!choff || !fmt)
+  {
+    if (choff) free(choff);
+    if (fmt) free(fmt);
+    return iupStrDup(value);
+  }
+
+  c = 0;
+  for (i = 0; i <= blen; i++)
+  {
+    if (i == blen || (value[i] & 0xC0) != 0x80)
+      choff[c++] = i;
+  }
+
+  if (!iupStrToInt(IupGetAttribute(ih, "FONTSIZE"), &base_size))
+    base_size = 0;
+  if (base_size < 0)
+    base_size = -base_size;
+
+  bulk = IupUser();
+  IupSetAttribute(bulk, "BULK", "YES");
+
+  if (iupdrvTextGetFormatTags(ih, bulk))
+  {
+    int count = IupGetChildCount(bulk);
+    for (i = 0; i < count; i++)
+      iMdApplyTag(IupGetChild(bulk, i), fmt, charlen, base_size);
+  }
+
+  iMdBufInit(&out);
+
+  i = 0;
+  while (i <= charlen)
+  {
+    int line_end = i;
+    int kind, level, content;
+    int trim;
+
+    while (line_end < charlen && !iMdCharIsByte(value, choff, line_end, '\n'))
+      line_end++;
+
+    trim = line_end;
+    if (trim > i && iMdCharIsByte(value, choff, trim - 1, '\r'))
+      trim--;
+
+    kind = iMdLineKind(value, choff, fmt, i, trim, &level, &content);
+
+    if (in_code && kind != IMD_CODE)
+    {
+      iMdBufAppendStr(&out, "\n```");
+      in_code = 0;
+    }
+    else if (!in_code && kind == IMD_CODE)
+    {
+      if (out.len > 0)
+        iMdBufAppendChar(&out, '\n');
+      iMdBufAppendStr(&out, "```");
+      in_code = 1;
+    }
+
+    if (out.len > 0)
+    {
+      iMdBufAppendChar(&out, '\n');
+      if (prev_kind == IMD_PARA && kind == IMD_PARA)
+        iMdBufAppendChar(&out, '\n');
+    }
+
+    switch (kind)
+    {
+    case IMD_RULE:
+      iMdBufAppendStr(&out, "---");
+      break;
+    case IMD_CODE:
+      iMdBufAppend(&out, value + choff[i], choff[trim] - choff[i]);
+      break;
+    case IMD_HEADING:
+      for (c = 0; c < level; c++)
+        iMdBufAppendChar(&out, '#');
+      iMdBufAppendChar(&out, ' ');
+      iMdEmitInline(&out, value, choff, fmt, content, trim, 1, 0);
+      break;
+    case IMD_QUOTE:
+      iMdBufAppendStr(&out, "> ");
+      iMdEmitInline(&out, value, choff, fmt, content, trim, 0, 1);
+      break;
+    case IMD_ULIST:
+      iMdBufAppendStr(&out, "- ");
+      iMdEmitInline(&out, value, choff, fmt, content, trim, 0, 0);
+      break;
+    case IMD_OLIST:
+      iMdEmitInline(&out, value, choff, fmt, content, trim, 0, 0);
+      break;
+    case IMD_BLANK:
+      break;
+    default:
+      iMdEmitInline(&out, value, choff, fmt, i, trim, 0, 0);
+      break;
+    }
+
+    prev_kind = kind;
+    i = line_end + 1;
+  }
+
+  if (in_code)
+    iMdBufAppendStr(&out, "\n```");
+
+  IupDestroy(bulk);
+  free(choff);
+  free(fmt);
+
+  return out.data;
 }

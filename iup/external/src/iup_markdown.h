@@ -14,6 +14,7 @@ extern "C" {
 
 void iupMarkdownSetValue(Ihandle* ih, const char* markdown_text);
 void iupMarkdownAppendValue(Ihandle* ih, const char* markdown_text);
+char* iupMarkdownGetValue(Ihandle* ih);
 
 #ifdef __cplusplus
 }
