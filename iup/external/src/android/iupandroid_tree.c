@@ -10,6 +10,7 @@
 #include <jni.h>
 
 #include "iup.h"
+#include "iupcbs.h"
 
 #include "iup_object.h"
 #include "iup_attrib.h"
@@ -872,6 +873,106 @@ static int androidTreeSetAddExpandedAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
+void iupAndroid_TreeToggleValueChanged(Ihandle* ih, int id, int state)
+{
+  IFnii cb;
+  if (!ih) return;
+
+  cb = (IFnii)IupGetCallback(ih, "TOGGLEVALUE_CB");
+  if (cb)
+  {
+    int ret = cb(ih, id, state);
+    if (ret == IUP_CLOSE) IupExitLoop();
+  }
+
+  if (ih->data->mark_mode == ITREE_MARK_MULTIPLE && iupAttribGetBoolean(ih, "MARKWHENTOGGLE"))
+  {
+    JNIEnv* env = iupAndroid_GetEnvThreadSafe();
+    jclass cls = androidTreeFindClass(env);
+    jmethodID m = (*env)->GetStaticMethodID(env, cls, "setNodeMarked", "(Landroid/view/View;IZ)V");
+    (*env)->CallStaticVoidMethod(env, cls, m, ih->handle, (jint)id, (jboolean)(state == 1));
+    iupAndroid_CheckException(env, "setNodeMarked");
+    (*env)->DeleteLocalRef(env, cls);
+  }
+}
+
+static void androidTreePushShowToggle(Ihandle* ih)
+{
+  if (!ih->handle) return;
+  JNIEnv* env = iupAndroid_GetEnvThreadSafe();
+  jclass cls = androidTreeFindClass(env);
+  jmethodID m = (*env)->GetStaticMethodID(env, cls, "setShowToggle", "(Landroid/view/View;ZZ)V");
+  (*env)->CallStaticVoidMethod(env, cls, m, ih->handle,
+      (jboolean)(ih->data->show_toggle ? JNI_TRUE : JNI_FALSE),
+      (jboolean)(ih->data->show_toggle == 2 ? JNI_TRUE : JNI_FALSE));
+  iupAndroid_CheckException(env, "setShowToggle");
+  (*env)->DeleteLocalRef(env, cls);
+}
+
+static char* androidTreeGetToggleValueAttrib(Ihandle* ih, int id)
+{
+  int st;
+  if (!ih->handle || !ih->data->show_toggle) return NULL;
+  if (!iupTreeGetNode(ih, id)) return NULL;
+
+  JNIEnv* env = iupAndroid_GetEnvThreadSafe();
+  jclass cls = androidTreeFindClass(env);
+  jmethodID m = (*env)->GetStaticMethodID(env, cls, "getNodeToggleValue", "(Landroid/view/View;I)I");
+  st = (int)(*env)->CallStaticIntMethod(env, cls, m, ih->handle, (jint)id);
+  iupAndroid_CheckException(env, "getNodeToggleValue");
+  (*env)->DeleteLocalRef(env, cls);
+
+  if (st == -1) return "NOTDEF";
+  return st ? "ON" : "OFF";
+}
+
+static int androidTreeSetToggleValueAttrib(Ihandle* ih, int id, const char* value)
+{
+  int st;
+  if (!ih->handle || !ih->data->show_toggle) return 0;
+  if (!iupTreeGetNode(ih, id)) return 0;
+
+  if (iupStrEqualNoCase(value, "NOTDEF")) st = -1;
+  else st = iupStrBoolean(value) ? 1 : 0;
+
+  JNIEnv* env = iupAndroid_GetEnvThreadSafe();
+  jclass cls = androidTreeFindClass(env);
+  jmethodID m = (*env)->GetStaticMethodID(env, cls, "setNodeToggleValue", "(Landroid/view/View;II)V");
+  (*env)->CallStaticVoidMethod(env, cls, m, ih->handle, (jint)id, (jint)st);
+  iupAndroid_CheckException(env, "setNodeToggleValue");
+  (*env)->DeleteLocalRef(env, cls);
+  return 0;
+}
+
+static char* androidTreeGetToggleVisibleAttrib(Ihandle* ih, int id)
+{
+  jboolean vis;
+  if (!ih->handle || !ih->data->show_toggle) return NULL;
+  if (!iupTreeGetNode(ih, id)) return NULL;
+
+  JNIEnv* env = iupAndroid_GetEnvThreadSafe();
+  jclass cls = androidTreeFindClass(env);
+  jmethodID m = (*env)->GetStaticMethodID(env, cls, "getNodeToggleVisible", "(Landroid/view/View;I)Z");
+  vis = (*env)->CallStaticBooleanMethod(env, cls, m, ih->handle, (jint)id);
+  iupAndroid_CheckException(env, "getNodeToggleVisible");
+  (*env)->DeleteLocalRef(env, cls);
+  return iupStrReturnBoolean(vis == JNI_TRUE);
+}
+
+static int androidTreeSetToggleVisibleAttrib(Ihandle* ih, int id, const char* value)
+{
+  if (!ih->handle || !ih->data->show_toggle) return 0;
+  if (!iupTreeGetNode(ih, id)) return 0;
+
+  JNIEnv* env = iupAndroid_GetEnvThreadSafe();
+  jclass cls = androidTreeFindClass(env);
+  jmethodID m = (*env)->GetStaticMethodID(env, cls, "setNodeToggleVisible", "(Landroid/view/View;IZ)V");
+  (*env)->CallStaticVoidMethod(env, cls, m, ih->handle, (jint)id, (jboolean)(iupStrBoolean(value) ? JNI_TRUE : JNI_FALSE));
+  iupAndroid_CheckException(env, "setNodeToggleVisible");
+  (*env)->DeleteLocalRef(env, cls);
+  return 0;
+}
+
 static int androidTreeMapMethod(Ihandle* ih)
 {
   JNIEnv* env = iupAndroid_GetEnvThreadSafe();
@@ -884,6 +985,8 @@ static int androidTreeMapMethod(Ihandle* ih)
 
   ih->handle = (jobject)((*env)->NewGlobalRef(env, widget));
   (*env)->DeleteLocalRef(env, widget);
+
+  androidTreePushShowToggle(ih);
 
   char* v = iupAttribGet(ih, "ADDEXPANDED");
   if (v) androidTreeSetAddExpandedAttrib(ih, v);
@@ -1042,6 +1145,9 @@ void iupdrvTreeInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "MARKMODE", NULL, androidTreeSetMarkModeAttrib, IUPAF_SAMEASSYSTEM, "SINGLE", IUPAF_NOT_MAPPED);
 
   iupClassRegisterAttributeId(ic, "COLOR", androidTreeGetColorIdAttrib, androidTreeSetColorIdAttrib, IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "TOGGLEVALUE", androidTreeGetToggleValueAttrib, androidTreeSetToggleValueAttrib, IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "TOGGLEVISIBLE", androidTreeGetToggleVisibleAttrib, androidTreeSetToggleVisibleAttrib, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MARKWHENTOGGLE", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "TITLEFONT", NULL, androidTreeSetTitleFontIdAttrib, IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "IMAGE", NULL, androidTreeSetImageIdAttrib, IUPAF_IHANDLENAME|IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "IMAGEEXPANDED", NULL, androidTreeSetImageExpandedIdAttrib, IUPAF_IHANDLENAME|IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
