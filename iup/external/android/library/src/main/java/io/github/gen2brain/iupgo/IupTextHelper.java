@@ -198,7 +198,7 @@ public final class IupTextHelper
         /* LinkMovementMethod dispatches ClickableSpan taps; NestedScrollView owns scroll. */
         tv.setMovementMethod(LinkMovementMethod.getInstance());
 
-        NestedScrollView sv = new NestedScrollView(tv.getContext()) {
+        NestedScrollView sv = new NestedScrollView(tv.getContext(), null, android.R.attr.scrollViewStyle) {
             @Override
             public void setEnabled(boolean enabled) {
                 super.setEnabled(enabled);
@@ -324,6 +324,13 @@ public final class IupTextHelper
         if (v instanceof TextInputLayout til) til.setBoxBackgroundColor(color);
         else if (v instanceof androidx.core.widget.NestedScrollView nsv) nsv.setBackgroundColor(color);
         else if (v instanceof IupEditText tv) tv.setBackgroundColor(color);
+    }
+
+    @Keep
+    public static void setFgColor(View v, int r, int g, int b)
+    {
+        IupEditText tv = resolve(v);
+        if (tv != null) tv.setTextColor(Color.rgb(r, g, b));
     }
 
     @Keep

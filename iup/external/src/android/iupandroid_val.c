@@ -109,15 +109,6 @@ static int androidValSetMaxAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-static int androidValSetStepAttrib(Ihandle* ih, const char* value)
-{
-  /* IUP STEP is keyboard/wheel increment; discreteness is driven by SHOWTICKS via stepSize */
-  double d;
-  if (!iupStrToDouble(value, &d)) return 0;
-  ih->data->step = d;
-  return 1;
-}
-
 static int androidValSetShowTicksAttrib(Ihandle* ih, const char* value)
 {
   if (!ih->handle) return 1;
@@ -170,10 +161,10 @@ void iupdrvValInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "VALUE", iupValGetValueAttrib, androidValSetValueAttrib, "0", NULL, IUPAF_NO_INHERIT);
   iupClassRegisterReplaceAttribFunc(ic, "MIN", NULL, androidValSetMinAttrib);
   iupClassRegisterReplaceAttribFunc(ic, "MAX", NULL, androidValSetMaxAttrib);
-  iupClassRegisterReplaceAttribFunc(ic, "STEP", NULL, androidValSetStepAttrib);
 
   iupClassRegisterAttribute(ic, "SHOWTICKS", NULL, androidValSetShowTicksAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   /* Material Slider draws ticks centered along the track; tick position is not separately controllable. */
   iupClassRegisterAttribute(ic, "TICKSPOS", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "STEP", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "PAGESTEP", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 }

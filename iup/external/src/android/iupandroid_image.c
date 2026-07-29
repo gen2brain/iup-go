@@ -29,35 +29,8 @@ IUPJNI_DECLARE_METHOD_ID_STATIC(IupImageHelper_loadBitmap);
 IUPJNI_DECLARE_METHOD_ID_STATIC(IupImageHelper_saveBitmap);
 IUPJNI_DECLARE_METHOD_ID_STATIC(IupImageHelper_saveBitmapToBuffer);
 
-/* Adapted from SDL (zlib): compute the 4-byte-aligned scanline width in bytes. */
-static int CalculateBytesPerRow(int width, int bytes_per_pixel)
-{
-  int pitch;
-  int bits_per_pixel = bytes_per_pixel * 8;
-  pitch = width * bytes_per_pixel;
-  switch (bits_per_pixel)
-  {
-    case 1:
-      pitch = (pitch + 7) / 8;
-      break;
-    case 4:
-      pitch = (pitch + 1) / 2;
-      break;
-    default:
-      break;
-  }
-  pitch = (pitch + 3) & ~3;
-  return pitch;
-}
-
-static int CalculateRowLength(int width, int bytes_per_pixel)
-{
-  int pitch = CalculateBytesPerRow(width, bytes_per_pixel);
-  return pitch / bytes_per_pixel;
-}
-
 /* allocates an android.graphics.Bitmap via Java and locks its pixel buffer; NULL on failure */
-static jobject androidImageAllocBitmap(JNIEnv* jni_env, int width, int height, unsigned char** out_pixels)
+static jobject androidImageAllocBitmap(JNIEnv* jni_env, int width, int height, unsigned char** out_pixels, int* out_stride)
 {
   jclass java_class;
   jmethodID method_id;
@@ -66,6 +39,7 @@ static jobject androidImageAllocBitmap(JNIEnv* jni_env, int width, int height, u
   int ret_val;
 
   *out_pixels = NULL;
+  *out_stride = 0;
 
   java_class = IUPJNI_FindClass(IupImageHelper, jni_env, "io/github/gen2brain/iupgo/IupImageHelper");
   method_id = IUPJNI_GetStaticMethodID(IupImageHelper_createBitmap, jni_env, java_class, "createBitmap", "(III)Landroid/graphics/Bitmap;");
@@ -92,6 +66,7 @@ static jobject androidImageAllocBitmap(JNIEnv* jni_env, int width, int height, u
     return NULL;
   }
 
+  *out_stride = (int)bitmap_info.stride;
   return java_bitmap;
 }
 
@@ -146,51 +121,53 @@ void iupdrvImageGetRawData(void* handle, unsigned char* imgdata)
 }
 
 /* Expands IUP's RGB/RGBA/indexed buffer into an ARGB_8888 pixel span (RGBA byte order). */
-static void androidImageFillPixels(unsigned char* pixels, int width, int height, int bpp, iupColor* colors, int colors_count, unsigned char* imgdata)
+static void androidImageFillPixels(unsigned char* pixels, int stride, int width, int height, int bpp, iupColor* colors, int colors_count, unsigned char* imgdata)
 {
   (void)colors_count;
-  unsigned char* source_pixel = imgdata;
 
   if (bpp == 32)
   {
-    int row_length = CalculateRowLength(width, 4);
     for (int y = 0; y < height; y++)
     {
-      for (int x = 0; x < row_length; x++)
+      unsigned char* dst = pixels + (size_t)y * stride;
+      unsigned char* src = imgdata + (size_t)y * width * 4;
+      for (int x = 0; x < width; x++)
       {
-        *pixels++ = *source_pixel++;
-        *pixels++ = *source_pixel++;
-        *pixels++ = *source_pixel++;
-        *pixels++ = *source_pixel++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
       }
     }
   }
   else if (bpp == 24)
   {
-    int row_length = CalculateRowLength(width, 3);
     for (int y = 0; y < height; y++)
     {
-      for (int x = 0; x < row_length; x++)
+      unsigned char* dst = pixels + (size_t)y * stride;
+      unsigned char* src = imgdata + (size_t)y * width * 3;
+      for (int x = 0; x < width; x++)
       {
-        *pixels++ = *source_pixel++;
-        *pixels++ = *source_pixel++;
-        *pixels++ = *source_pixel++;
-        *pixels++ = 255;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = 255;
       }
     }
   }
   else if (bpp == 8)
   {
-    int row_length = CalculateRowLength(width, 4);
     for (int y = 0; y < height; y++)
     {
-      for (int x = 0; x < row_length; x++)
+      unsigned char* dst = pixels + (size_t)y * stride;
+      unsigned char* src = imgdata + (size_t)y * width;
+      for (int x = 0; x < width; x++)
       {
-        iupColor* c = &colors[*source_pixel++];
-        *pixels++ = c->r;
-        *pixels++ = c->g;
-        *pixels++ = c->b;
-        *pixels++ = 255;
+        iupColor* c = &colors[*src++];
+        *dst++ = c->r;
+        *dst++ = c->g;
+        *dst++ = c->b;
+        *dst++ = 255;
       }
     }
   }
@@ -200,10 +177,11 @@ static void androidImageFillPixels(unsigned char* pixels, int width, int height,
 static jobject androidImageBuildBitmapFromRaw(JNIEnv* jni_env, int width, int height, int bpp, iupColor* colors, int colors_count, unsigned char* imgdata)
 {
   unsigned char* pixels = NULL;
-  jobject java_bitmap = androidImageAllocBitmap(jni_env, width, height, &pixels);
+  int stride = 0;
+  jobject java_bitmap = androidImageAllocBitmap(jni_env, width, height, &pixels, &stride);
   if (java_bitmap == NULL)
     return NULL;
-  androidImageFillPixels(pixels, width, height, bpp, colors, colors_count, imgdata);
+  androidImageFillPixels(pixels, stride, width, height, bpp, colors, colors_count, imgdata);
   return androidImageFinalize(jni_env, java_bitmap);
 }
 
@@ -232,48 +210,49 @@ void* iupdrvImageCreateImage(Ihandle* ih, const char* bgcolor, int make_inactive
   iupStrToRGB(bgcolor, &bg_r, &bg_g, &bg_b);
 
   unsigned char* pixels = NULL;
-  jobject java_bitmap = androidImageAllocBitmap(jni_env, width, height, &pixels);
+  int stride = 0;
+  jobject java_bitmap = androidImageAllocBitmap(jni_env, width, height, &pixels, &stride);
   if (java_bitmap == NULL)
     return NULL;
 
-  unsigned char* source_pixel = imgdata;
-
   if (bpp == 32)
   {
-    int row_length = CalculateRowLength(width, 4);
     for (int y = 0; y < height; y++)
     {
-      for (int x = 0; x < row_length; x++)
+      unsigned char* dst = pixels + (size_t)y * stride;
+      unsigned char* src = imgdata + (size_t)y * width * 4;
+      for (int x = 0; x < width; x++)
       {
-        unsigned char s_r = *source_pixel++;
-        unsigned char s_g = *source_pixel++;
-        unsigned char s_b = *source_pixel++;
-        unsigned char s_a = *source_pixel++;
+        unsigned char s_r = *src++;
+        unsigned char s_g = *src++;
+        unsigned char s_b = *src++;
+        unsigned char s_a = *src++;
         if (make_inactive)
           iupImageColorMakeInactive(&s_r, &s_g, &s_b, bg_r, bg_g, bg_b);
-        *pixels++ = s_r;
-        *pixels++ = s_g;
-        *pixels++ = s_b;
-        *pixels++ = s_a;
+        *dst++ = s_r;
+        *dst++ = s_g;
+        *dst++ = s_b;
+        *dst++ = s_a;
       }
     }
   }
   else if (bpp == 24)
   {
-    int row_length = CalculateRowLength(width, 3);
     for (int y = 0; y < height; y++)
     {
-      for (int x = 0; x < row_length; x++)
+      unsigned char* dst = pixels + (size_t)y * stride;
+      unsigned char* src = imgdata + (size_t)y * width * 3;
+      for (int x = 0; x < width; x++)
       {
-        unsigned char s_r = *source_pixel++;
-        unsigned char s_g = *source_pixel++;
-        unsigned char s_b = *source_pixel++;
+        unsigned char s_r = *src++;
+        unsigned char s_g = *src++;
+        unsigned char s_b = *src++;
         if (make_inactive)
           iupImageColorMakeInactive(&s_r, &s_g, &s_b, bg_r, bg_g, bg_b);
-        *pixels++ = s_r;
-        *pixels++ = s_g;
-        *pixels++ = s_b;
-        *pixels++ = 255;
+        *dst++ = s_r;
+        *dst++ = s_g;
+        *dst++ = s_b;
+        *dst++ = 255;
       }
     }
   }
@@ -282,22 +261,23 @@ void* iupdrvImageCreateImage(Ihandle* ih, const char* bgcolor, int make_inactive
     iupColor colors[256];
     int colors_count = 0;
     int has_alpha = iupImageInitColorTable(ih, colors, &colors_count);
-    int row_length = CalculateRowLength(width, 4);
     for (int y = 0; y < height; y++)
     {
-      for (int x = 0; x < row_length; x++)
+      unsigned char* dst = pixels + (size_t)y * stride;
+      unsigned char* src = imgdata + (size_t)y * width;
+      for (int x = 0; x < width; x++)
       {
-        iupColor* c = &colors[*source_pixel++];
+        iupColor* c = &colors[*src++];
         unsigned char s_r = c->r;
         unsigned char s_g = c->g;
         unsigned char s_b = c->b;
         unsigned char s_a = has_alpha ? c->a : 255;
         if (make_inactive)
           iupImageColorMakeInactive(&s_r, &s_g, &s_b, bg_r, bg_g, bg_b);
-        *pixels++ = s_r;
-        *pixels++ = s_g;
-        *pixels++ = s_b;
-        *pixels++ = s_a;
+        *dst++ = s_r;
+        *dst++ = s_g;
+        *dst++ = s_b;
+        *dst++ = s_a;
       }
     }
   }

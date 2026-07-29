@@ -68,7 +68,28 @@ static char* androidCanvasGetDrawSizeAttrib(Ihandle* ih)
   return iupStrReturnIntInt(w, h, 'x');
 }
 
-/* No native scrollbars; track DX/DY/POSX/POSY and fire SCROLL_CB on a position change. */
+static int androidCanvasSetBgColorAttrib(Ihandle* ih, const char* value)
+{
+  IUPJNI_DECLARE_METHOD_ID_STATIC(IupCanvasHelper_setBgColor);
+  unsigned char r, g, b;
+
+  if (!iupStrToRGB(value, &r, &g, &b))
+    return 0;
+  if (!ih->handle)
+    return 1;
+
+  JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
+  jclass java_class = IUPJNI_FindClass(IupCanvasHelper, jni_env, "io/github/gen2brain/iupgo/IupCanvasHelper");
+  jmethodID method_id = IUPJNI_GetStaticMethodID(IupCanvasHelper_setBgColor, jni_env, java_class, "setBgColor", "(Landroid/view/View;III)V");
+
+  (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, ih->handle, (jint)r, (jint)g, (jint)b);
+  iupAndroid_CheckException(jni_env, "IupCanvasHelper.setBgColor");
+  (*jni_env)->DeleteLocalRef(jni_env, java_class);
+
+  return 1;
+}
+
+/* No native scrollbars; track DX/DY/POSX/POSY only. */
 static int androidCanvasSetDXAttrib(Ihandle* ih, const char* value)
 {
   double dx;
@@ -98,9 +119,6 @@ static int androidCanvasSetPosXAttrib(Ihandle* ih, const char* value)
     if (posx < xmin) posx = xmin;
     if (posx > (xmax - dx)) posx = xmax - dx;
     ih->data->posx = posx;
-
-    IFniff cb = (IFniff)IupGetCallback(ih, "SCROLL_CB");
-    if (cb) cb(ih, IUP_SBPOSH, (float)posx, (float)ih->data->posy);
   }
   return 1;
 }
@@ -118,9 +136,6 @@ static int androidCanvasSetPosYAttrib(Ihandle* ih, const char* value)
     if (posy < ymin) posy = ymin;
     if (posy > (ymax - dy)) posy = ymax - dy;
     ih->data->posy = posy;
-
-    IFniff cb = (IFniff)IupGetCallback(ih, "SCROLL_CB");
-    if (cb) cb(ih, IUP_SBPOSV, (float)ih->data->posx, (float)posy);
   }
   return 1;
 }
@@ -131,6 +146,10 @@ void iupdrvCanvasInitClass(Iclass* ic)
   ic->UnMap = iupdrvBaseUnMapMethod;
 
   iupClassRegisterAttribute(ic, "DRAWSIZE", androidCanvasGetDrawSizeAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
+
+  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, androidCanvasSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
+
+  iupClassRegisterAttribute(ic, "DRAWABLE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_STRING|IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "POSX", iupCanvasGetPosXAttrib, androidCanvasSetPosXAttrib, "0", NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "POSY", iupCanvasGetPosYAttrib, androidCanvasSetPosYAttrib, "0", NULL, IUPAF_NO_INHERIT);
