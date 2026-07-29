@@ -112,6 +112,7 @@ Values smaller than 1 will shrink the font. Default: 1.0.
 The following values are also accepted: "XX-SMALL" (0.58), "X-SMALL" (0.64), "SMALL" (0.83), "MEDIUM" (1.0), "LARGE" (1.2), "X-LARGE" (1.44), "XX-LARGE" (1.73).
 
 **FONTFACE**: the face name of the font.
+Not supported in WinUI.
 
 **FONTSIZE**: the size of the font in pixels or points. Pixel size uses negative values.
 

@@ -110,6 +110,16 @@ Requires FORMATTING=YES and MULTILINE=YES. Not supported in Motif.
 Honors APPENDNEWLINE and APPENDSCROLL. Effective only after the element is mapped.
 Requires FORMATTING=YES and MULTILINE=YES. Not supported in Motif.
 
+**GETMARKDOWNVALUE** (read-only): returns the current text converted to Markdown.
+Emphasis, strikeout, code spans, code blocks, links, headings, blockquotes, lists and horizontal rules are converted; UNDERLINE, colors, ALIGNMENT, RISE and SMALLCAPS are lost.
+Headings are recognized from a bold line larger than the control font, code from a monospaced font, lists from the line text.
+Inline images are converted only in Qt. Blockquotes are not converted in FLTK and Haiku, code spans and code blocks not in WinUI.
+Requires FORMATTING=YES and MULTILINE=YES. Not supported in Motif.
+
+**SAVEMARKDOWN** (write-only): saves the result of GETMARKDOWNVALUE to a file given its filename.
+The attribute SAVEMARKDOWNSTATUS is set to OK or FAILED after the file is saved.
+Requires FORMATTING=YES and MULTILINE=YES. Not supported in Motif.
+
 [MASK](../attrib/iup_mask.md) (non-inheritable): Defines a mask that will filter interactive text input.
 
 **MULTILINE** (creation-only) (non-inheritable): allows the edition of multiple lines.
