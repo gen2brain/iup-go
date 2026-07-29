@@ -21,6 +21,7 @@ IUP_SDK_API void iupdrvTextAddSpin(Ihandle* ih, int *w, int h);
 IUP_SDK_API void* iupdrvTextAddFormatTagStartBulk(Ihandle* ih);
 IUP_SDK_API void iupdrvTextAddFormatTagStopBulk(Ihandle* ih, void* state);
 IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bulk);
+IUP_SDK_API int iupdrvTextGetFormatTags(Ihandle* ih, Ihandle* bulk_tag);
 /** Converts line/col to char position. */
 IUP_SDK_API void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, int col, int *pos);
 /** Converts char position to line/col. */

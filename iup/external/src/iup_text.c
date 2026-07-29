@@ -707,6 +707,66 @@ static int iTextSetLoadMarkdownAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
+static char* iTextGetMarkdownValueAttrib(Ihandle* ih)
+{
+  char* markdown;
+  char* ret;
+
+  if (!ih->data->has_formatting || !ih->data->is_multiline || !ih->handle)
+    return NULL;
+
+  markdown = iupMarkdownGetValue(ih);
+  if (!markdown)
+    return NULL;
+
+  ret = iupStrReturnStr(markdown);
+  free(markdown);
+  return ret;
+}
+
+static int iTextSetSaveMarkdownAttrib(Ihandle* ih, const char* value)
+{
+  FILE* file;
+  char* markdown;
+  size_t size;
+
+  if (!value || !ih->data->has_formatting || !ih->data->is_multiline || !ih->handle)
+  {
+    iupAttribSet(ih, "SAVEMARKDOWNSTATUS", "FAILED");
+    return 0;
+  }
+
+  markdown = iupMarkdownGetValue(ih);
+  if (!markdown)
+  {
+    iupAttribSet(ih, "SAVEMARKDOWNSTATUS", "FAILED");
+    return 0;
+  }
+
+  file = fopen(value, "wb");
+  if (!file)
+  {
+    free(markdown);
+    iupAttribSet(ih, "SAVEMARKDOWNSTATUS", "FAILED");
+    return 0;
+  }
+
+  size = strlen(markdown);
+  if (size > 0 && fwrite(markdown, 1, size, file) != size)
+  {
+    fclose(file);
+    free(markdown);
+    iupAttribSet(ih, "SAVEMARKDOWNSTATUS", "FAILED");
+    return 0;
+  }
+
+  fclose(file);
+  free(markdown);
+
+  iupAttribSet(ih, "SAVEMARKDOWNSTATUS", "OK");
+  return 0;
+}
+
 Iclass* iupTextNewClass(void)
 {
   Iclass* ic = iupClassNew(NULL);
@@ -775,6 +835,8 @@ Iclass* iupTextNewClass(void)
   iupClassRegisterAttribute(ic, "MARKDOWNVALUE", NULL, iTextSetMarkdownValueAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "APPENDMARKDOWN", NULL, iTextSetAppendMarkdownAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "LOADMARKDOWN", NULL, iTextSetLoadMarkdownAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "GETMARKDOWNVALUE", iTextGetMarkdownValueAttrib, NULL, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_READONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SAVEMARKDOWN", NULL, iTextSetSaveMarkdownAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
 
   iupdrvTextInitClass(ic);
 
