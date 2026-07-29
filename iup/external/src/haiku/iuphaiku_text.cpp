@@ -1307,20 +1307,13 @@ static void haikuTextApplyFormatTagFont(BFont& bfont, Ihandle* tag, uint32* mode
     {
       if (typeface[0])
       {
-        int32 family_count = count_font_families();
-        for (int32 i = 0; i < family_count; ++i)
+        font_family family;
+        if (iuphaikuFindFontFamily(typeface, family))
         {
-          font_family family;
-          uint32 flags = 0;
-          if (get_font_family(i, &family, &flags) == B_OK &&
-              strcasecmp(family, typeface) == 0)
-          {
-            font_style style;
-            strcpy(style, "Regular");
-            bfont.SetFamilyAndStyle(family, style);
-            *mode |= B_FONT_FAMILY_AND_STYLE;
-            break;
-          }
+          font_style style;
+          strcpy(style, "Regular");
+          bfont.SetFamilyAndStyle(family, style);
+          *mode |= B_FONT_FAMILY_AND_STYLE;
         }
       }
       if (size > 0) { bfont.SetSize((float)size); *mode |= B_FONT_SIZE; }
@@ -1337,20 +1330,13 @@ static void haikuTextApplyFormatTagFont(BFont& bfont, Ihandle* tag, uint32* mode
   char* fontface = iupAttribGet(tag, "FONTFACE");
   if (fontface)
   {
-    int32 family_count = count_font_families();
-    for (int32 i = 0; i < family_count; ++i)
+    font_family family;
+    if (iuphaikuFindFontFamily(fontface, family))
     {
-      font_family family;
-      uint32 flags = 0;
-      if (get_font_family(i, &family, &flags) == B_OK &&
-          strcasecmp(family, fontface) == 0)
-      {
-        font_style style;
-        bfont.GetFamilyAndStyle(NULL, &style);
-        bfont.SetFamilyAndStyle(family, style);
-        *mode |= B_FONT_FAMILY_AND_STYLE;
-        break;
-      }
+      font_style style;
+      bfont.GetFamilyAndStyle(NULL, &style);
+      bfont.SetFamilyAndStyle(family, style);
+      *mode |= B_FONT_FAMILY_AND_STYLE;
     }
   }
 
@@ -1857,6 +1843,127 @@ extern "C" IUP_SDK_API void iupdrvTextConvertPosToLinCol(Ihandle* ih, int pos, i
   int32 ls = tv->OffsetAt(ln);
   if (lin) *lin = ln + 1;
   if (col) *col = pos - ls + 1;
+}
+
+static int haikuTextByteToChar(const char* text, int32 byte_pos)
+{
+  int32 byte = 0;
+  int chars = 0;
+
+  if (!text) return 0;
+  while (text[byte] && byte < byte_pos)
+  {
+    unsigned char c = (unsigned char)text[byte];
+    byte += (c < 0x80) ? 1 : (c < 0xE0) ? 2 : (c < 0xF0) ? 3 : 4;
+    chars++;
+  }
+  return chars;
+}
+
+static int haikuTextSameFont(const BFont& a, const BFont& b, const rgb_color& color_a, const rgb_color& color_b)
+{
+  font_family family_a, family_b;
+  font_style style_a, style_b;
+
+  if (a.Face() != b.Face() || a.Size() != b.Size())
+    return 0;
+
+  if (color_a.red != color_b.red || color_a.green != color_b.green || color_a.blue != color_b.blue)
+    return 0;
+
+  a.GetFamilyAndStyle(&family_a, &style_a);
+  b.GetFamilyAndStyle(&family_b, &style_b);
+
+  return strcmp(family_a, family_b) == 0 && strcmp(style_a, style_b) == 0;
+}
+
+static void haikuTextAddFormatRun(Ihandle* ih, Ihandle* bulk_tag, const BFont& bfont, int start, int end, int32 byte_start)
+{
+  Ihandle* formattag = IupUser();
+  uint16 face = bfont.Face();
+  font_family family;
+  font_style style;
+  int count, i;
+
+  IupSetStrf(formattag, "SELECTIONPOS", "%d:%d", start, end);
+  IupAppend(bulk_tag, formattag);
+
+  bfont.GetFamilyAndStyle(&family, &style);
+
+  IupSetAttribute(formattag, "WEIGHT", (face & B_BOLD_FACE) ? "BOLD" : "NORMAL");
+  IupSetAttribute(formattag, "ITALIC", (face & B_ITALIC_FACE) ? "YES" : "NO");
+  IupSetAttribute(formattag, "STRIKEOUT", (face & B_STRIKEOUT_FACE) ? "YES" : "NO");
+  IupSetStrAttribute(formattag, "FONTFACE", family);
+  IupSetInt(formattag, "FONTSIZE", (int)(bfont.Size() + 0.5f));
+
+  count = iupAttribGetInt(ih, "_IUPHAIKU_LINK_COUNT");
+  for (i = 0; i < count; ++i)
+  {
+    char key[64];
+    int link_start = 0, link_end = 0;
+
+    snprintf(key, sizeof(key), "_IUPHAIKU_LINK_RANGE_%d", i);
+    if (iupStrToIntInt(iupAttribGet(ih, key), &link_start, &link_end, ':') == 2 &&
+        byte_start >= link_start && byte_start < link_end)
+    {
+      snprintf(key, sizeof(key), "_IUPHAIKU_LINK_URL_%d", i);
+      char* url = iupAttribGet(ih, key);
+      if (url)
+        IupSetStrAttribute(formattag, "LINK", url);
+      break;
+    }
+  }
+}
+
+extern "C" IUP_SDK_API int iupdrvTextGetFormatTags(Ihandle* ih, Ihandle* bulk_tag)
+{
+  if (!ih->data->is_multiline)
+    return 0;
+
+  BTextView* tv = haikuTextGetEditor(ih);
+  if (!tv)
+    return 0;
+
+  LooperLockGuard guard(haikuTextGetLooper(ih));
+
+  const char* text = tv->Text();
+  int32 length = tv->TextLength();
+  if (!text || length <= 0)
+    return 1;
+
+  BFont run_font;
+  rgb_color run_color;
+  rgb_color color;
+  int32 byte = 0;
+  int32 run_byte = 0;
+
+  tv->GetFontAndColor(0, &run_font, &run_color);
+
+  while (byte < length)
+  {
+    unsigned char c = (unsigned char)text[byte];
+    int32 next = byte + ((c < 0x80) ? 1 : (c < 0xE0) ? 2 : (c < 0xF0) ? 3 : 4);
+    BFont bfont;
+
+    if (next > length)
+      next = length;
+
+    tv->GetFontAndColor(byte, &bfont, &color);
+
+    if (byte > 0 && !haikuTextSameFont(bfont, run_font, color, run_color))
+    {
+      haikuTextAddFormatRun(ih, bulk_tag, run_font, haikuTextByteToChar(text, run_byte), haikuTextByteToChar(text, byte), run_byte);
+      run_byte = byte;
+      run_font = bfont;
+      run_color = color;
+    }
+
+    byte = next;
+  }
+
+  haikuTextAddFormatRun(ih, bulk_tag, run_font, haikuTextByteToChar(text, run_byte), haikuTextByteToChar(text, length), run_byte);
+
+  return 1;
 }
 
 extern "C" IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)

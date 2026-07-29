@@ -95,7 +95,7 @@ static bool haikuFindFamilyExact(const char* typeface, font_family out_family)
   return false;
 }
 
-static bool haikuFindFamily(const char* typeface, font_family out_family)
+IUP_DRV_API bool iuphaikuFindFontFamily(const char* typeface, font_family out_family)
 {
   if (!typeface || !*typeface)
     return false;
@@ -192,7 +192,7 @@ static BFont* haikuBuildBFont(const char* typeface, int size, int is_bold, int i
   if (is_italic) want_face |= B_ITALIC_FACE;
 
   font_family family;
-  bool family_found = haikuFindFamily(typeface, family);
+  bool family_found = iuphaikuFindFontFamily(typeface, family);
   if (family_found)
   {
     font_style style;
