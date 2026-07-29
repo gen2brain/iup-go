@@ -258,6 +258,54 @@ static int androidDialogSetTitleAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
+static void androidDialogPushBackImage(Ihandle* ih, const char* name)
+{
+  if (!ih || !ih->handle) return;
+
+  jobject bitmap = name ? (jobject)iupImageGetImage(name, ih, 0, NULL) : NULL;
+
+  JNIEnv* env = iupAndroid_GetEnvThreadSafe();
+  jclass cls = IUPJNI_FindClass(IupDialogHelper, env, "io/github/gen2brain/iupgo/IupDialogHelper");
+  jmethodID m = (*env)->GetStaticMethodID(env, cls, "setBackImage", "(Ljava/lang/Object;Landroid/graphics/Bitmap;Z)V");
+  (*env)->CallStaticVoidMethod(env, cls, m, ih->handle, bitmap,
+      (jboolean)(iupAttribGetBoolean(ih, "BACKIMAGEZOOM") ? JNI_TRUE : JNI_FALSE));
+  iupAndroid_CheckException(env, "IupDialogHelper.setBackImage");
+  (*env)->DeleteLocalRef(env, cls);
+}
+
+static int androidDialogSetBackgroundAttrib(Ihandle* ih, const char* value)
+{
+  unsigned char r, g, b;
+
+  if (!value)
+  {
+    androidDialogPushBackImage(ih, NULL);
+    return 0;
+  }
+
+  if (iupStrToRGB(value, &r, &g, &b))
+  {
+    androidDialogPushBackImage(ih, NULL);
+    androidDialogSetBgColor(ih, r, g, b);
+    return 1;
+  }
+
+  androidDialogPushBackImage(ih, value);
+  return 1;
+}
+
+static int androidDialogSetBackImageZoomAttrib(Ihandle* ih, const char* value)
+{
+  iupAttribSetStr(ih, "BACKIMAGEZOOM", value);
+  {
+    char* bg = iupAttribGet(ih, "BACKGROUND");
+    unsigned char r, g, b;
+    if (bg && !iupStrToRGB(bg, &r, &g, &b))
+      androidDialogPushBackImage(ih, bg);
+  }
+  return 1;
+}
+
 static int androidDialogSetBgColorAttrib(Ihandle* ih, const char* value)
 {
   unsigned char r = 0, g = 0, b = 0;
@@ -389,6 +437,10 @@ void iupAndroid_DialogActivityCreated(Ihandle* ih)
   if (ih->data && ih->data->menu && ih->data->menu->handle)
     iupAndroid_MenuAttachActivity(ih, ih->data->menu);
 
+  value = iupAttribGet(ih, "BACKGROUND");
+  if (value)
+    androidDialogSetBackgroundAttrib(ih, value);
+
   value = iupAttribGet(ih, "DRAWER");
   if (value)
     androidDialogSetDrawerAttrib(ih, value);
@@ -474,6 +526,8 @@ void iupdrvDialogInitClass(Iclass* ic)
 
   /* Overwrite Common */
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, androidDialogSetBgColorAttrib, "DLGBGCOLOR", NULL, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BACKGROUND", NULL, androidDialogSetBackgroundAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BACKIMAGEZOOM", NULL, androidDialogSetBackImageZoomAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 
   /* Special */
   iupClassRegisterAttribute(ic, "TITLE", NULL, androidDialogSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
