@@ -47,6 +47,21 @@ static void androidScrollbarPushSteps(Ihandle* ih)
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
 }
 
+static int androidScrollbarSetBgColorAttrib(Ihandle* ih, const char* value)
+{
+  unsigned char r, g, b;
+  if (!iupStrToRGB(value, &r, &g, &b)) return 0;
+  if (!ih->handle) return 1;
+
+  JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
+  jclass cls = IUPJNI_FindClass(IupScrollbarHelper, jni_env, "io/github/gen2brain/iupgo/IupScrollbarHelper");
+  jmethodID m = (*jni_env)->GetStaticMethodID(jni_env, cls, "setBgColor", "(Landroid/view/View;III)V");
+  (*jni_env)->CallStaticVoidMethod(jni_env, cls, m, ih->handle, (jint)r, (jint)g, (jint)b);
+  iupAndroid_CheckException(jni_env, "IupScrollbarHelper.setBgColor");
+  (*jni_env)->DeleteLocalRef(jni_env, cls);
+  return 1;
+}
+
 static int androidScrollbarSetValueAttrib(Ihandle* ih, const char* value)
 {
   if (iupStrToDouble(value, &(ih->data->val)))
@@ -146,6 +161,7 @@ void iupdrvScrollbarInitClass(Iclass* ic)
   ic->UnMap = iupdrvBaseUnMapMethod;
 
   iupClassRegisterAttribute(ic, "VALUE", iupScrollbarGetValueAttrib, androidScrollbarSetValueAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, androidScrollbarSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "LINESTEP", iupScrollbarGetLineStepAttrib, androidScrollbarSetLineStepAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "PAGESTEP", iupScrollbarGetPageStepAttrib, androidScrollbarSetPageStepAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "PAGESIZE", iupScrollbarGetPageSizeAttrib, androidScrollbarSetPageSizeAttrib, NULL, NULL, IUPAF_NO_INHERIT);

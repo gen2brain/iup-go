@@ -289,6 +289,7 @@ void iupdrvFrameInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "TITLE", NULL, androidFrameSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FGCOLOR", NULL, androidFrameSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "BGCOLOR", iupFrameGetBgColorAttrib, androidFrameSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BACKCOLOR", iupFrameGetBgColorAttrib, androidFrameSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FRAMECOLOR", NULL, androidFrameSetFrameColorAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 
   /* FONT inherits to children (core handles this); driver pushes it to the title TextPaint too. */

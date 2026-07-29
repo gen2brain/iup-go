@@ -197,6 +197,12 @@ public final class IupScrollbarHelper
     }
 
     @Keep
+    public static void setBgColor(View v, int r, int g, int b)
+    {
+        if (v != null) v.setBackgroundColor(android.graphics.Color.rgb(r, g, b));
+    }
+
+    @Keep
     public static void setRange(View v, double vmin, double vmax, double val, double pagesize)
     {
         if (v instanceof IupScrollbarView) ((IupScrollbarView)v).setRange(vmin, vmax, val, pagesize);
