@@ -136,10 +136,6 @@ extern "C" IUP_SDK_API void* iupdrvImageCreateImage(Ihandle *ih, const char* bgc
   return haikuBuildBitmap(ih->currentwidth, ih->currentheight, bpp, colors, colors_count, imgdata, bg_r, bg_g, bg_b, make_inactive);
 }
 
-extern "C" IUP_SDK_API void* iupdrvImageCreateImageRaw(int width, int height, int bpp, iupColor* colors, int colors_count, unsigned char *imgdata)
-{
-  return haikuBuildBitmap(width, height, bpp, colors, colors_count, imgdata, 0, 0, 0, 0);
-}
 
 extern "C" IUP_SDK_API void* iupdrvImageCreateIcon(Ihandle *ih)
 {
@@ -219,10 +215,6 @@ extern "C" IUP_SDK_API void iupdrvImageGetData(void* handle, unsigned char* imgd
   }
 }
 
-extern "C" IUP_SDK_API void iupdrvImageGetRawData(void* handle, unsigned char* imgdata)
-{
-  iupdrvImageGetData(handle, imgdata);
-}
 
 /* Driver hooks - load */
 

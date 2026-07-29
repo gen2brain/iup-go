@@ -126,32 +126,6 @@ static unsigned char* cocoaTouchImageReadBackRGBA(CGImageRef cg_image, int* out_
 }
 
 
-IUP_SDK_API void iupdrvImageGetRawData(void* handle, unsigned char* imgdata)
-{
-	if (!handle || !imgdata) return;
-	UIImage* ui_image = (UIImage*)handle;
-	CGImageRef cg = [ui_image CGImage];
-	int w = 0, h = 0;
-	unsigned char* rgba = cocoaTouchImageReadBackRGBA(cg, &w, &h);
-	if (!rgba) return;
-
-	int bpp = (int)CGImageGetBitsPerPixel(cg);
-	size_t plane = (size_t)w * (size_t)h;
-	unsigned char* dst_r = imgdata;
-	unsigned char* dst_g = imgdata + plane;
-	unsigned char* dst_b = imgdata + 2 * plane;
-	unsigned char* dst_a = (bpp >= 32) ? (imgdata + 3 * plane) : NULL;
-
-	for (size_t i = 0; i < plane; i++)
-	{
-		*dst_r++ = rgba[i * 4 + 0];
-		*dst_g++ = rgba[i * 4 + 1];
-		*dst_b++ = rgba[i * 4 + 2];
-		if (dst_a) *dst_a++ = rgba[i * 4 + 3];
-	}
-	free(rgba);
-}
-
 IUP_SDK_API void iupdrvImageGetData(void* handle, unsigned char* imgdata)
 {
 	/* interleaved RGBA, or RGB if no alpha */
@@ -180,24 +154,6 @@ IUP_SDK_API void iupdrvImageGetData(void* handle, unsigned char* imgdata)
 	free(rgba);
 }
 
-
-IUP_SDK_API void* iupdrvImageCreateImageRaw(int width, int height, int bpp, iupColor* palette, int palette_count, unsigned char* imgdata)
-{
-	if (!imgdata || width <= 0 || height <= 0) return NULL;
-
-	int palette_has_alpha = 0;
-	if (bpp == 8 && palette)
-	{
-		for (int i = 0; i < palette_count; i++)
-			if (palette[i].a != 255) { palette_has_alpha = 1; break; }
-	}
-
-	unsigned char* rgba = cocoaTouchImageToRGBA(imgdata, width, height, bpp, palette, palette_has_alpha, 0, (unsigned char[3]){0,0,0});
-	if (!rgba) return NULL;
-
-	UIImage* ui_image = cocoaTouchImageFromRGBA(rgba, width, height);
-	return [ui_image retain];
-}
 
 IUP_SDK_API int iupdrvImageGetRawInfo(void* handle, int* w, int* h, int* bpp, iupColor* palette, int* palette_count)
 {

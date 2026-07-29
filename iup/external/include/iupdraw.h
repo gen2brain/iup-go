@@ -1,5 +1,5 @@
 /** \file
- * \brief Canvas Draw API
+ * \brief IupDraw API
  *
  * See Copyright Notice in "iup.h"
  */
