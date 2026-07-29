@@ -579,7 +579,7 @@ static void goIupSetListEditionFunc(Ihandle *ih) {
 	IupSetCallback(ih, "LISTEDITION_CB", (Icallback) goIupListEditionCB);
 }
 
-CGO_EXPORT extern int goIupListDrawCB(void *, int lin, int x1, int x2, int y1, int y2, int canvas);
+CGO_EXPORT extern int goIupListDrawCB(void *, int lin, int col, int x1, int x2, int y1, int y2);
 static void goIupSetListDrawFunc(Ihandle *ih) {
 	IupSetCallback(ih, "LISTDRAW_CB", (Icallback) goIupListDrawCB);
 }
