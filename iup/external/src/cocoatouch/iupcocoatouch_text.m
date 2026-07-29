@@ -1673,6 +1673,61 @@ static int cocoaTouchTextMapMethod(Ihandle* ih)
 	return IUP_NOERROR;
 }
 
+IUP_SDK_API int iupdrvTextGetFormatTags(Ihandle* ih, Ihandle* bulk_tag)
+{
+	if (!ih->data->is_multiline || !ih->data->has_formatting)
+		return 0;
+
+	UITextView* tv = cocoaTouchTextView(ih);
+	if (!tv)
+		return 0;
+
+	NSTextStorage* storage = tv.textStorage;
+	NSUInteger length = storage.length;
+
+	[storage enumerateAttributesInRange:NSMakeRange(0, length)
+	                            options:0
+	                         usingBlock:^(NSDictionary<NSAttributedStringKey, id>* attrs, NSRange range, BOOL* stop)
+	{
+		Ihandle* formattag = IupUser();
+		IupSetStrf(formattag, "SELECTIONPOS", "%d:%d", (int)range.location, (int)(range.location + range.length));
+		IupAppend(bulk_tag, formattag);
+
+		UIFont* font = attrs[NSFontAttributeName];
+		if (font)
+		{
+			UIFontDescriptorSymbolicTraits traits = font.fontDescriptor.symbolicTraits;
+			IupSetAttribute(formattag, "WEIGHT", (traits & UIFontDescriptorTraitBold) ? "BOLD" : "NORMAL");
+			IupSetAttribute(formattag, "ITALIC", (traits & UIFontDescriptorTraitItalic) ? "YES" : "NO");
+			IupSetStrAttribute(formattag, "FONTFACE", [font.familyName UTF8String]);
+			IupSetInt(formattag, "FONTSIZE", (int)(font.pointSize + 0.5));
+		}
+
+		NSNumber* strike = attrs[NSStrikethroughStyleAttributeName];
+		IupSetAttribute(formattag, "STRIKEOUT", (strike && strike.intValue != 0) ? "YES" : "NO");
+
+		id link = attrs[NSLinkAttributeName];
+		if (link)
+		{
+			NSString* url = [link isKindOfClass:[NSURL class]] ? [(NSURL*)link absoluteString] : (NSString*)link;
+			if (url)
+				IupSetStrAttribute(formattag, "LINK", [url UTF8String]);
+		}
+
+		NSParagraphStyle* ps = attrs[NSParagraphStyleAttributeName];
+		if (ps)
+		{
+			CGFloat indent = ps.firstLineHeadIndent > 0 ? ps.firstLineHeadIndent : ps.headIndent;
+			if (indent > 0)
+				IupSetInt(formattag, "INDENT", (int)indent);
+		}
+
+		(void)stop;
+	}];
+
+	return 1;
+}
+
 IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
 {
 	ic->Map = cocoaTouchTextMapMethod;
