@@ -14,6 +14,7 @@
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_class.h"
+#include "iup_image.h"
 #include "iup_notify.h"
 
 
@@ -30,8 +31,8 @@ EM_JS(int, iupwasmJsNotifyPermission, (void), {
   return 0;
 })
 
-EM_JS(void, iupwasmJsNotifyShow, (int ihptr, int id, const char* title, const char* body, int silent), {
-  globalThis.__iupApply({ op: 'notifyshow', ihptr: ihptr, id: id, title: UTF8ToString(title), body: UTF8ToString(body), silent: silent });
+EM_JS(void, iupwasmJsNotifyShow, (int ihptr, int id, const char* title, const char* body, int silent, int imgId), {
+  globalThis.__iupApply({ op: 'notifyshow', ihptr: ihptr, id: id, title: UTF8ToString(title), body: UTF8ToString(body), silent: silent, imgId: imgId });
 })
 
 EM_JS(void, iupwasmJsNotifyClose, (int id), {
@@ -88,7 +89,14 @@ IUP_SDK_API int iupdrvNotifyShow(Ihandle* ih)
     iupAttribSetInt(ih, "ID", id);
   }
 
-  iupwasmJsNotifyShow((int)(intptr_t)ih, id, title ? title : "", body ? body : "", iupAttribGetBoolean(ih, "SILENT"));
+  {
+    const char* icon = IupGetAttribute(ih, "ICON");
+    void* img;
+    if (!icon || !icon[0])
+      icon = IupGetAttribute(ih, "APPICON");
+    img = (icon && icon[0]) ? iupImageGetImage(icon, ih, 0, NULL) : NULL;
+    iupwasmJsNotifyShow((int)(intptr_t)ih, id, title ? title : "", body ? body : "", iupAttribGetBoolean(ih, "SILENT"), (int)(intptr_t)img);
+  }
   return 1;
 }
 
@@ -112,5 +120,9 @@ IUP_SDK_API int iupdrvNotifyIsAvailable(void)
 
 IUP_SDK_API void iupdrvNotifyInitClass(Iclass* ic)
 {
-  (void)ic;
+  iupClassRegisterAttribute(ic, "APPICON", NULL, NULL, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+
+  /* the Notification API has no urgency level and no transient flag */
+  iupClassRegisterAttribute(ic, "URGENCY", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TRANSIENT", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
 }

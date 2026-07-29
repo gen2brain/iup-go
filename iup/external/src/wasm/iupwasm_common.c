@@ -712,6 +712,25 @@ IUP_SDK_API void iupdrvSleep(int time)
   (void)time;
 }
 
+EM_JS(int, iupwasmJsScrollVisible, (int id), {
+  if (typeof document === 'undefined') return globalThis.__iupReadSync({ op: 'scrollvisible', id: id });
+  var el = globalThis.__iup.els[id];
+  var sv = el && (el.__iupVal || el);
+  if (!sv) return 0;
+  return (sv.scrollWidth > sv.clientWidth ? 1 : 0) | (sv.scrollHeight > sv.clientHeight ? 2 : 0);
+})
+
+char* iupwasmGetScrollVisibleAttrib(Ihandle* ih)
+{
+  int id = iupwasmIdOf(ih);
+  int visible = id ? iupwasmJsScrollVisible(id) : 0;
+
+  if (visible == 3) return "YES";
+  if (visible == 1) return "HORIZONTAL";
+  if (visible == 2) return "VERTICAL";
+  return "NO";
+}
+
 IUP_SDK_API void iupdrvSetAccessibleTitle(Ihandle *ih, const char* title)
 {
   int id = iupwasmIdOf(ih);

@@ -1445,6 +1445,9 @@
       case 'textmaxlen': {
         if (el) { if (c.n > 0) el.maxLength = c.n; else el.removeAttribute('maxlength'); }
       } break;
+      case 'dateshowpicker': {
+        if (el && el.showPicker) { try { el.showPicker(); } catch (e) {} }
+      } break;
       case 'textsetcaret': {
         if (el && el.setSelectionRange) el.setSelectionRange(c.pos, c.pos);
       } break;
@@ -2190,7 +2193,10 @@
         if (typeof Notification !== 'undefined') {
           if (!globalThis.__iupNotify) globalThis.__iupNotify = { map: {} };
           var nmake = function () {
-            var n = new Notification(c.title, { body: c.body, silent: !!c.silent });
+            var nopt = { body: c.body, silent: !!c.silent };
+            var nimg = c.imgId && globalThis.__iupImg ? globalThis.__iupImg.map[c.imgId] : null;
+            if (nimg) nopt.icon = nimg;
+            var n = new Notification(c.title, nopt);
             globalThis.__iupNotify.map[c.id] = n;
             n.onclick = function () { D('iupwasmNotifyEvent', c.ihptr, c.id, 0); };
             n.onclose = function () { D('iupwasmNotifyEvent', c.ihptr, c.id, 1); delete globalThis.__iupNotify.map[c.id]; };
@@ -2668,6 +2674,11 @@
       } break;
       case 'textcount': {
         return el ? el.value.length : 0;
+      } break;
+      case 'scrollvisible': {
+        var sv = el && (el.__iupVal || el);
+        if (!sv) return 0;
+        return (sv.scrollWidth > sv.clientWidth ? 1 : 0) | (sv.scrollHeight > sv.clientHeight ? 2 : 0);
       } break;
       case 'textlctopos': {
         return el ? iupLcToPos(el.value, req.lin, req.col) : (req.col > 0 ? req.col - 1 : 0);

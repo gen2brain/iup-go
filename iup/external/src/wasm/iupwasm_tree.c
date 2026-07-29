@@ -1060,6 +1060,7 @@ IUP_SDK_API void iupdrvTreeInitClass(Iclass* ic)
   ic->UnMap = iupdrvBaseUnMapMethod;
 
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "SCROLLVISIBLE", iupwasmGetScrollVisibleAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FGCOLOR", NULL, iupdrvBaseSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTFGCOLOR", IUPAF_DEFAULT);
 
   iupClassRegisterAttributeId(ic, "TITLE", wasmTreeGetTitleAttrib, wasmTreeSetTitleAttrib, IUPAF_NO_INHERIT);

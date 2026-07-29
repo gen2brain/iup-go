@@ -835,6 +835,7 @@ IUP_SDK_API void iupdrvListInitClass(Iclass* ic)
   ic->LayoutUpdate = iupdrvBaseLayoutUpdateMethod;
 
   iupClassRegisterAttribute(ic, "READONLY", NULL, wasmListSetReadOnlyAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SCROLLVISIBLE", iupwasmGetScrollVisibleAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "NC", NULL, wasmListSetNCAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "APPEND", NULL, wasmListSetAppendAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "INSERT", NULL, wasmListSetInsertAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);

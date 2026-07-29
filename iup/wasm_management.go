@@ -182,13 +182,19 @@ func VersionNumber() int {
 }
 
 func wasmNames(cfunc string, argTypes, args []interface{}) []string {
-	n := ccall(cfunc, "number", append(argTypes, "number", "number"), append(args, 0, 0)).Int()
+	max := ccall(cfunc, "number", append(argTypes, "number", "number"), append(args, 0, 0)).Int()
+	if max <= 0 {
+		return nil
+	}
+	arr := wasmMalloc(max * 4)
+	defer wasmFree(arr)
+	n := ccall(cfunc, "number", append(argTypes, "number", "number"), append(args, arr, max)).Int()
+	if n > max {
+		n = max
+	}
 	if n <= 0 {
 		return nil
 	}
-	arr := wasmMalloc(n * 4)
-	defer wasmFree(arr)
-	ccall(cfunc, "number", append(argTypes, "number", "number"), append(args, arr, n))
 	out := make([]string, n)
 	for i := 0; i < n; i++ {
 		out[i] = wasmGetStrAt(arr + i*4)
