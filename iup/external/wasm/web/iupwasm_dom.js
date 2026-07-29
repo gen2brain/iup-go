@@ -1304,6 +1304,14 @@
             }
             tel.innerHTML = html;
           };
+          if (!globalThis.__iupTextRuns) globalThis.__iupTextRuns = function (elem) {
+            var s = '', tags = (elem && elem.__iupTags) || [];
+            for (var k = 0; k < tags.length; k++) {
+              var g = tags[k];
+              s += g.s + '\t' + g.e + '\t' + (g.css || '') + '\t' + (g.pcss || '') + '\t' + (g.link != null ? g.link : -1) + '\n';
+            }
+            return s;
+          };
           if (!globalThis.__iupTextOff) globalThis.__iupTextOff = function (elem, lin, col) {
             var lines = elem.__iupText.split('\n'), o = 0, k;
             for (k = 0; k < lin - 1 && k < lines.length; k++) o += lines[k].length + 1;
@@ -2645,6 +2653,9 @@
       } break;
       case 'textvalue': {
         return el ? (el.value || '') : '';
+      } break;
+      case 'textformatruns': {
+        return (el && globalThis.__iupTextRuns) ? globalThis.__iupTextRuns(el) : '';
       } break;
       case 'textcaret': {
         return el ? (el.selectionStart || 0) : 0;

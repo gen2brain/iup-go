@@ -105,6 +105,15 @@ EM_JS(char*, iupwasmJsTextGetValue, (int id), {
   return p;
 })
 
+EM_JS(char*, iupwasmJsTextGetFormatRuns, (int id), {
+  var s;
+  if (typeof document === 'undefined') s = globalThis.__iupReadSync({ op: 'textformatruns', id: id });
+  else s = globalThis.__iupTextRuns ? globalThis.__iupTextRuns(globalThis.__iup.els[id]) : "";
+  var len = lengthBytesUTF8(s) + 1, p = _malloc(len);
+  stringToUTF8(s, p, len);
+  return p;
+})
+
 EM_JS(void, iupwasmJsTextSetReadOnly, (int id, int ro), {
   globalThis.__iupApply({ op: 'textreadonly', id: id, ro: ro });
 })
@@ -891,6 +900,131 @@ static int wasmTextSetScrollToAttrib(Ihandle* ih, const char* value)
     iupwasmJsTextScrollTo(id, lin);
   }
   return 0;
+}
+
+static void wasmTextParseRunCss(const char* css, const char* pcss, Ihandle* formattag)
+{
+  const char* v;
+
+  if (strstr(css, "font-weight:bold"))
+    IupSetAttribute(formattag, "WEIGHT", "BOLD");
+  if (strstr(css, "font-style:italic"))
+    IupSetAttribute(formattag, "ITALIC", "YES");
+  if (strstr(css, "line-through"))
+    IupSetAttribute(formattag, "STRIKEOUT", "YES");
+
+  v = strstr(css, "font-family:");
+  if (v)
+  {
+    char face[80];
+    int i = 0;
+    v += 12;
+    while (v[i] && v[i] != ';' && i < (int)sizeof(face) - 1)
+    {
+      face[i] = v[i];
+      i++;
+    }
+    face[i] = 0;
+    IupSetStrAttribute(formattag, "FONTFACE", face);
+  }
+
+  v = strstr(css, "font-size:");
+  if (v)
+  {
+    char value[40];
+    double size = 0;
+    int i = 0;
+
+    v += 10;
+    while (v[i] && v[i] != ';' && i < (int)sizeof(value) - 1)
+    {
+      value[i] = v[i];
+      i++;
+    }
+    value[i] = 0;
+
+    if (iupStrToDouble(value, &size) && size > 0)
+    {
+      if (strstr(value, "em"))
+        IupSetDouble(formattag, "FONTSCALE", size);
+      else
+        IupSetInt(formattag, "FONTSIZE", (int)(size + 0.5));
+    }
+  }
+
+  v = strstr(pcss, "padding-left:");
+  if (v)
+  {
+    int indent = 0;
+    if (iupStrToInt(v + 13, &indent) && indent > 0)
+      IupSetInt(formattag, "INDENT", indent);
+  }
+}
+
+IUP_SDK_API int iupdrvTextGetFormatTags(Ihandle* ih, Ihandle* bulk_tag)
+{
+  int id = iupwasmIdOf(ih);
+  char* runs;
+  char* line;
+
+  if (!id || !ih->data->is_multiline || !ih->data->has_formatting)
+    return 0;
+
+  runs = iupwasmJsTextGetFormatRuns(id);
+  if (!runs)
+    return 1;
+
+  line = strtok(runs, "\n");
+  while (line)
+  {
+    char css[512] = "", pcss[256] = "";
+    int start = 0, end = 0, link = -1;
+    char* field = line;
+    int index = 0;
+
+    while (field && index < 5)
+    {
+      char* tab = strchr(field, '\t');
+      if (tab)
+        *tab = 0;
+
+      switch (index)
+      {
+      case 0: iupStrToInt(field, &start); break;
+      case 1: iupStrToInt(field, &end); break;
+      case 2: iupStrCopyN(css, sizeof(css), field); break;
+      case 3: iupStrCopyN(pcss, sizeof(pcss), field); break;
+      case 4: iupStrToInt(field, &link); break;
+      }
+
+      field = tab ? tab + 1 : NULL;
+      index++;
+    }
+
+    if (end > start)
+    {
+      Ihandle* formattag = IupUser();
+      IupSetStrf(formattag, "SELECTIONPOS", "%d:%d", start, end);
+      IupAppend(bulk_tag, formattag);
+
+      wasmTextParseRunCss(css, pcss, formattag);
+
+      if (link >= 0)
+      {
+        char name[40];
+        char* url;
+        snprintf(name, sizeof(name), "_IUP_WASMLINK_%d", link);
+        url = iupAttribGet(ih, name);
+        if (url)
+          IupSetStrAttribute(formattag, "LINK", url);
+      }
+    }
+
+    line = strtok(NULL, "\n");
+  }
+
+  free(runs);
+  return 1;
 }
 
 IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
