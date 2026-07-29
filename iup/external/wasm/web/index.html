@@ -49,10 +49,11 @@
 
       // IupFileDlg OPEN: native picker reads the file async; the Worker stays blocked on the
       // SAB until writeResult fires.
-      function doFileOpen() {
+      function doFileOpen(req) {
         if (navigator.userActivation && !navigator.userActivation.isActive) { globalThis.__iupOpenFile = null; writeResult(null); return; }
         var inp = document.createElement('input');
         inp.type = 'file'; inp.style.display = 'none';
+        if (req && req.accept) inp.accept = req.accept;
         document.body.appendChild(inp);
         var done = false;
         function finish(v) { if (done) return; done = true; if (inp.parentNode) inp.parentNode.removeChild(inp); writeResult(v); }
@@ -90,7 +91,7 @@
         var m = e.data;
         if (m.__iup) globalThis.__iupApply(m.cmd);
         else if (m.__iupRead) {
-          if (m.req.op === 'fileopen') doFileOpen();
+          if (m.req.op === 'fileopen') doFileOpen(m.req);
           else if (m.req.op === 'clipimageavailable') doClipRead();
           else if (m.req.op === 'fileopenchunk') fileChunk(m.req);
           else writeResult(globalThis.__iupRead(m.req));

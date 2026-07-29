@@ -30,8 +30,8 @@ EM_JS(int, iupwasmJsFilePrompt, (const char* title, const char* def), {
 })
 
 /* OPEN on a Worker: block on the main thread's <input type=file>; returns byte size (-1 if canceled), name into namePtr, bytes pulled over the SAB */
-EM_JS(int, iupwasmJsFileOpenStart, (int namePtr, int nameMax), {
-  var name = globalThis.__iupReadSync({ op: 'fileopen' });
+EM_JS(int, iupwasmJsFileOpenStart, (int namePtr, int nameMax, const char* accept), {
+  var name = globalThis.__iupReadSync({ op: 'fileopen', accept: UTF8ToString(accept) });
   if (name === null) return -1;
   stringToUTF8(name, namePtr, nameMax);
   return globalThis.__iupReadSync({ op: 'fileopensize' });
@@ -43,12 +43,58 @@ EM_JS(int, iupwasmJsFileOpenChunk, (int off, int len, int destPtr), {
 
 EM_JS(int, iupwasmJsIsWorker, (void), { return (typeof document === 'undefined') ? 1 : 0; })
 
+static void wasmFileDlgBuildAccept(Ihandle* ih, char* accept, int accept_size)
+{
+  char* extfilter = iupAttribGet(ih, "EXTFILTER");
+  char* filter = extfilter ? extfilter : iupAttribGet(ih, "FILTER");
+  int is_ext = (extfilter != NULL);
+  int part = 0, len = 0;
+  const char* p;
+
+  accept[0] = 0;
+  if (!filter)
+    return;
+
+  for (p = filter; ; p++)
+  {
+    if (*p == '*' && *(p + 1) == '.' && (!is_ext || (part % 2) == 1))
+    {
+      const char* ext = p + 1;
+      int n = 0;
+      while (ext[n] && ext[n] != ';' && ext[n] != '|' && ext[n] != ' ')
+        n++;
+      if (n == 2 && ext[1] == '*')
+      {
+        accept[0] = 0;
+        return;
+      }
+      if (len + n + 2 < accept_size)
+      {
+        if (len)
+          accept[len++] = ',';
+        memcpy(accept + len, ext, n);
+        len += n;
+        accept[len] = 0;
+      }
+      p += n;
+    }
+    if (*p == '|')
+      part++;
+    if (!*p)
+      break;
+  }
+}
+
 /* write the picked file into MEMFS so C fopen() can read it; VALUE is that path */
 static void wasmFileDlgOpen(Ihandle* ih)
 {
   char name[1024] = "";
   char path[1100];
-  int size = iupwasmJsFileOpenStart((int)(intptr_t)name, sizeof(name));
+  char accept[512];
+  int size;
+
+  wasmFileDlgBuildAccept(ih, accept, sizeof(accept));
+  size = iupwasmJsFileOpenStart((int)(intptr_t)name, sizeof(name), accept);
 
   if (size < 0)
   {
@@ -124,4 +170,9 @@ static int wasmFileDlgPopup(Ihandle* ih, int x, int y)
 IUP_SDK_API void iupdrvFileDlgInitClass(Iclass* ic)
 {
   ic->DlgPopup = wasmFileDlgPopup;
+
+  iupClassRegisterAttribute(ic, "EXTFILTER", NULL, NULL, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+
+  iupClassRegisterAttribute(ic, "FILTERINFO", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FILTERUSED", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
 }
