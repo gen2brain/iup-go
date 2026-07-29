@@ -270,11 +270,11 @@ func setLeaveItemFunc(ih Ihandle, f LeaveItemFunc) {
 	iupSetCallback(uintptr(ih), "LEAVEITEM_CB", leaveItemFuncCB)
 }
 
-type ListDrawFunc func(ih Ihandle, lin, x1, x2, y1, y2, canvas int) int
+type ListDrawFunc func(ih Ihandle, lin, col, x1, x2, y1, y2 int) int
 
-var listDrawFuncCB = purego.NewCallback(func(ih uintptr, lin int32, x1 int32, x2 int32, y1 int32, y2 int32, canvas int32) int {
+var listDrawFuncCB = purego.NewCallback(func(ih uintptr, lin int32, col int32, x1 int32, x2 int32, y1 int32, y2 int32) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_LISTDRAW_CB").(ListDrawFunc); ok {
-		return f(Ihandle(ih), int(lin), int(x1), int(x2), int(y1), int(y2), int(canvas))
+		return f(Ihandle(ih), int(lin), int(col), int(x1), int(x2), int(y1), int(y2))
 	}
 	return 0
 })

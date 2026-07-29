@@ -113,10 +113,10 @@ func setListEditionFunc(ih Ihandle, f ListEditionFunc) {
 
 // ListDrawFunc for LISTDRAW_CB callback in MatrixList.
 // Called to draw a list item (custom drawing).
-type ListDrawFunc func(ih Ihandle, lin, x1, x2, y1, y2, canvas int) int
+type ListDrawFunc func(ih Ihandle, lin, col, x1, x2, y1, y2 int) int
 
 //export goIupListDrawCB
-func goIupListDrawCB(ih unsafe.Pointer, lin, x1, x2, y1, y2, canvas C.int) C.int {
+func goIupListDrawCB(ih unsafe.Pointer, lin, col, x1, x2, y1, y2 C.int) C.int {
 	ch := loadCallback((Ihandle)(ih), "_IUPGO_LISTDRAW_CB")
 	if ch == 0 {
 		return C.IUP_DEFAULT
@@ -124,7 +124,7 @@ func goIupListDrawCB(ih unsafe.Pointer, lin, x1, x2, y1, y2, canvas C.int) C.int
 
 	f := ch.Value().(ListDrawFunc)
 
-	return C.int(f((Ihandle)(ih), int(lin), int(x1), int(x2), int(y1), int(y2), int(canvas)))
+	return C.int(f((Ihandle)(ih), int(lin), int(col), int(x1), int(x2), int(y1), int(y2)))
 }
 
 // setListDrawFunc for LISTDRAW_CB.

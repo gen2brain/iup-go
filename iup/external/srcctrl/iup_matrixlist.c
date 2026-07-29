@@ -1417,7 +1417,7 @@ Iclass* iupMatrixListNewClass(void)
   iupClassRegisterCallback(ic, "LISTINSERT_CB", "i");
   iupClassRegisterCallback(ic, "LISTREMOVE_CB", "i");
   iupClassRegisterCallback(ic, "LISTEDITION_CB", "iiii");
-  iupClassRegisterCallback(ic, "LISTDRAW_CB", "iiiiiiC");
+  iupClassRegisterCallback(ic, "LISTDRAW_CB", "iiiiii");
   iupClassRegisterCallback(ic, "ACTION_CB", "ii");
 
   iupClassRegisterReplaceAttribDef(ic, "CURSOR", IUPAF_SAMEASSYSTEM, "ARROW");

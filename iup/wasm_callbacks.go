@@ -45,7 +45,7 @@ type LayoutUpdateFunc func(ih Ihandle) int
 type LeaveItemFunc func(ih Ihandle, lin, col int) int
 type LeaveWindowFunc func(Ihandle) int
 type LinkActionFunc func(ih Ihandle, url string) int
-type ListDrawFunc func(ih Ihandle, lin, x1, x2, y1, y2, canvas int) int
+type ListDrawFunc func(ih Ihandle, lin, col, x1, x2, y1, y2 int) int
 type ListEditionFunc func(ih Ihandle, lin, col, mode, update int) int
 type ListImageFunc func(ih Ihandle, pos int) string
 type ListInsertFunc func(ih Ihandle, pos int) int
