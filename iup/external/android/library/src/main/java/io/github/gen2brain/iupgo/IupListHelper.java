@@ -730,7 +730,6 @@ public final class IupListHelper
     }
 
     /* end == -1 sentinel selects to end of text. */
-    /* programmatic edits must bypass the NC LengthFilter, same as IupTextHelper.clipboardOp */
     private interface EditOp { void run(android.text.Editable ed); }
 
     private static void editBypassingFilters(android.widget.EditText e, EditOp op)
@@ -818,7 +817,6 @@ public final class IupListHelper
         return cs == null ? 0 : cs.length();
     }
 
-    /* op: 0 copy, 1 cut, 2 paste, 3 clear, 4 undo, 5 redo */
     @Keep
     public static void editClipboard(View widget, int op)
     {

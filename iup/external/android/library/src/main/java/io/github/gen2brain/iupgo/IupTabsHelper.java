@@ -321,6 +321,47 @@ public final class IupTabsHelper
     }
 
     @Keep
+    public static void setTabType(View v, boolean bottom)
+    {
+        if (!(v instanceof IupAndroidTabs t)) return;
+        int want = bottom ? 1 : 0;
+        int cur = t.indexOfChild(t.tabLayout) == 0 ? 0 : 1;
+        if (want == cur) return;
+        t.removeView(t.tabLayout);
+        t.addView(t.tabLayout, bottom ? t.getChildCount() : 0);
+    }
+
+    @Keep
+    public static void setBgColor(View v, int r, int g, int b)
+    {
+        if (!(v instanceof IupAndroidTabs t)) return;
+        int color = android.graphics.Color.rgb(r, g, b);
+        t.setBackgroundColor(color);
+        t.tabLayout.setBackgroundColor(color);
+        t.content.setBackgroundColor(color);
+    }
+
+    @Keep
+    public static void setTabPadding(View v, int h, int vp)
+    {
+        if (!(v instanceof IupAndroidTabs t)) return;
+        for (int i = 0, n = t.tabLayout.getTabCount(); i < n; i++)
+        {
+            TabContent tc = contentOf(t.tabLayout.getTabAt(i));
+            if (tc != null) tc.setPadding(h, vp, h, vp);
+        }
+    }
+
+    @Keep
+    public static void setTabTip(View v, int pos, String tip)
+    {
+        if (!(v instanceof IupAndroidTabs t)) return;
+        TabLayout.Tab tab = t.tabLayout.getTabAt(pos);
+        if (tab == null) return;
+        androidx.appcompat.widget.TooltipCompat.setTooltipText(tab.view, tip);
+    }
+
+    @Keep
     public static void setFgColor(View tabs, int color)
     {
         if (!(tabs instanceof IupAndroidTabs t)) return;
