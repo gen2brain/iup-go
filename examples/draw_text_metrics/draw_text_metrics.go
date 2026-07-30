@@ -6,6 +6,8 @@ import (
 	"github.com/gen2brain/iup-go/iup"
 )
 
+func init() { iup.EntryPoint(main) }
+
 var fonts = []string{"Helvetica, 12", "Times, Italic 20", "Courier, Bold 28", "Helvetica, 40"}
 
 func hline(ih iup.Ihandle, x1, x2, y int, color string) {

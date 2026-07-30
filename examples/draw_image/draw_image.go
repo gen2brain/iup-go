@@ -7,6 +7,8 @@ import (
 	"github.com/gen2brain/iup-go/iup"
 )
 
+func init() { iup.EntryPoint(main) }
+
 var tick int
 
 func card(ih iup.Ihandle, x1, y1, x2, y2 int, title string) {
