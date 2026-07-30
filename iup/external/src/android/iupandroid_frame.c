@@ -254,7 +254,7 @@ static int androidFrameMapMethod(Ihandle* ih)
 
   if (iupAttribGet(ih, "TITLE"))
     iupAttribSet(ih, "_IUPFRAME_HAS_TITLE", "1");
-  else if (iupAttribGet(ih, "BGCOLOR"))
+  else if (iupAttribGet(ih, "BGCOLOR") || iupAttribGet(ih, "BACKCOLOR"))
     iupAttribSet(ih, "_IUPFRAME_HAS_BGCOLOR", "1");
 
   iupAndroid_AddWidgetToParent(jni_env, ih);

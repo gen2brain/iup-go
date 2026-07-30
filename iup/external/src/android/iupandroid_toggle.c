@@ -82,19 +82,17 @@ void iupdrvToggleAddBorders(Ihandle* ih, int* x, int* y)
 void iupdrvToggleAddCheckBox(Ihandle* ih, int* x, int* y, const char* str)
 {
   /* Indicator (~24dp) plus drawable padding (~16dp) plus a breathing margin. */
-  (void)ih;
   (void)str;
-  if (x) *x += iupAndroid_DpToPx(48.0f);
-  if (y) *y += iupAndroid_DpToPx(8.0f);
+  if (x) *x += iupAndroid_DpToPx(48.0f) + 2 * ih->data->horiz_padding;
+  if (y) *y += iupAndroid_DpToPx(8.0f) + 2 * ih->data->vert_padding;
 }
 
 void iupdrvToggleAddSwitch(Ihandle* ih, int* x, int* y, const char* str)
 {
   /* MaterialSwitch track is ~52dp wide + ~8dp padding. */
-  (void)ih;
   (void)str;
-  if (x) *x += iupAndroid_DpToPx(60.0f);
-  if (y) *y += iupAndroid_DpToPx(8.0f);
+  if (x) *x += iupAndroid_DpToPx(60.0f) + 2 * ih->data->horiz_padding;
+  if (y) *y += iupAndroid_DpToPx(8.0f) + 2 * ih->data->vert_padding;
 }
 
 static int androidToggleSetTitleAttrib(Ihandle* ih, const char* value)
