@@ -77,6 +77,9 @@ static int iDropButtonRedraw_CB(Ihandle* ih)
   IdrawCanvas* dc = iupdrvDrawCreateCanvas(ih);
   int make_inactive = 0, arrow_x, arrow_y;
   char* bgcolor_button, *bgcolor_arrow, *arrow_align;
+  int draw_w, draw_h;
+
+  iupdrvDrawGetSize(dc, &draw_w, &draw_h);
 
   iupDrawParentBackground(dc, ih);
 
@@ -154,17 +157,17 @@ static int iDropButtonRedraw_CB(Ihandle* ih)
 
     if (drop_onarrow)
     {
-      iupFlatDrawBorder(dc, 0, ih->currentwidth - 1 - ih->data->arrow_size,
-                            0, ih->currentheight - 1,
+      iupFlatDrawBorder(dc, 0, draw_w - 1 - ih->data->arrow_size,
+                            0, draw_h - 1,
                             border_width, bordercolor, bgcolor_button, active);
-      iupFlatDrawBorder(dc, ih->currentwidth - 1 - ih->data->arrow_size - border_width, ih->currentwidth - 1,
-                            0, ih->currentheight - 1,
+      iupFlatDrawBorder(dc, draw_w - 1 - ih->data->arrow_size - border_width, draw_w - 1,
+                            0, draw_h - 1,
                             border_width, bordercolor, bgcolor_arrow, active);
     }
     else
     {
-      iupFlatDrawBorder(dc, 0, ih->currentwidth - 1,
-                            0, ih->currentheight - 1,
+      iupFlatDrawBorder(dc, 0, draw_w - 1,
+                            0, draw_h - 1,
                             border_width, bordercolor, bgcolor_button, active);
     }
   }
@@ -180,7 +183,7 @@ static int iDropButtonRedraw_CB(Ihandle* ih)
     int backimage_zoom = iupAttribGetBoolean(ih, "BACKIMAGEZOOM");
     draw_image = iupFlatGetImageName(ih, "BACKIMAGE", bgimage, image_pressed, ih->data->highlighted, 1, &make_inactive);
     if (backimage_zoom)
-      iupdrvDrawImage(dc, draw_image, make_inactive, bgcolor, IUP_DRAW_NO_TINT, 255, border_width, border_width, ih->currentwidth - border_width, ih->currentheight - border_width, 0, 0, -1, -1, IUP_DRAW_IMAGE_LINEAR);
+      iupdrvDrawImage(dc, draw_image, make_inactive, bgcolor, IUP_DRAW_NO_TINT, 255, border_width, border_width, draw_w - border_width, draw_h - border_width, 0, 0, -1, -1, IUP_DRAW_IMAGE_LINEAR);
     else
       iupdrvDrawImage(dc, draw_image, make_inactive, bgcolor, IUP_DRAW_NO_TINT, 255, border_width, border_width, -1, -1, 0, 0, -1, -1, IUP_DRAW_IMAGE_LINEAR);
   }
@@ -188,17 +191,17 @@ static int iDropButtonRedraw_CB(Ihandle* ih)
   {
     if (drop_onarrow)
     {
-      iupFlatDrawBox(dc, border_width, ih->currentwidth - 1 - border_width - ih->data->arrow_size,
-                         border_width, ih->currentheight - 1 - border_width,
+      iupFlatDrawBox(dc, border_width, draw_w - 1 - border_width - ih->data->arrow_size,
+                         border_width, draw_h - 1 - border_width,
                          bgcolor_button, NULL, 1);  /* background is always active */
 
-      iupFlatDrawBox(dc, ih->currentwidth - 1 - ih->data->arrow_size + border_width, ih->currentwidth - 1 - border_width,
-                         border_width, ih->currentheight - 1 - border_width,
+      iupFlatDrawBox(dc, draw_w - 1 - ih->data->arrow_size + border_width, draw_w - 1 - border_width,
+                         border_width, draw_h - 1 - border_width,
                          bgcolor_arrow, NULL, 1);  /* background is always active */
     }
     else
-      iupFlatDrawBox(dc, border_width, ih->currentwidth - 1 - border_width,
-                         border_width, ih->currentheight - 1 - border_width,
+      iupFlatDrawBox(dc, border_width, draw_w - 1 - border_width,
+                         border_width, draw_h - 1 - border_width,
                          bgcolor_button, NULL, 1);  /* background is always active */
   }
 
@@ -208,7 +211,7 @@ static int iDropButtonRedraw_CB(Ihandle* ih)
 
   draw_image = iupFlatGetImageName(ih, "IMAGE", image, image_pressed, ih->data->highlighted, active, &make_inactive);
   iupFlatDrawIcon(ih, dc, border_width, border_width,
-                  ih->currentwidth - 2 * border_width - ih->data->arrow_size, ih->currentheight - 2 * border_width,
+                  draw_w - 2 * border_width - ih->data->arrow_size, draw_h - 2 * border_width,
                   ih->data->img_position, ih->data->spacing, ih->data->horiz_alignment, ih->data->vert_alignment, ih->data->horiz_padding, ih->data->vert_padding,
                   draw_image, make_inactive, title, text_flags, text_orientation, fgcolor, bgcolor_button, active);
 
@@ -220,24 +223,24 @@ static int iDropButtonRedraw_CB(Ihandle* ih)
   else if (!image && !title) /* color only button */
   {
     int space = border_width + 2;
-    iupFlatDrawBorder(dc, space, ih->currentwidth - 1 - space - ih->data->arrow_size,
-                          space, ih->currentheight - 1 - space,
+    iupFlatDrawBorder(dc, space, draw_w - 1 - space - ih->data->arrow_size,
+                          space, draw_h - 1 - space,
                           1, "0 0 0", bgcolor_button, active);
     space++;
-    iupFlatDrawBox(dc, space, ih->currentwidth - 1 - space - ih->data->arrow_size,
-                       space, ih->currentheight - 1 - space,
+    iupFlatDrawBox(dc, space, draw_w - 1 - space - ih->data->arrow_size,
+                       space, draw_h - 1 - space,
                        fgcolor, bgcolor_button, active);
   }
 
-  arrow_x = ih->currentwidth - 1 - ih->data->arrow_size - border_width + ih->data->arrow_padding;
-  arrow_y = (ih->currentheight - ih->data->arrow_size) / 2 + ih->data->arrow_padding;
+  arrow_x = draw_w - 1 - ih->data->arrow_size - border_width + ih->data->arrow_padding;
+  arrow_y = (draw_h - ih->data->arrow_size) / 2 + ih->data->arrow_padding;
   arrow_align = iupAttribGet(ih, "ARROWALIGN");
   if (arrow_align)
   {
     if (iupStrEqualNoCase(arrow_align, "TOP"))
       arrow_y = ih->data->arrow_padding;
     else if (iupStrEqualNoCase(arrow_align, "BOTTOM"))
-      arrow_y = ih->currentheight - ih->data->arrow_size - ih->data->arrow_padding;
+      arrow_y = draw_h - ih->data->arrow_size - ih->data->arrow_padding;
   }
 
   if (arrow_images)
@@ -257,7 +260,7 @@ static int iDropButtonRedraw_CB(Ihandle* ih)
   if (ih->data->has_focus && focus_feedback)
   {
     border_width--;
-    iupdrvDrawFocusRect(dc, border_width, border_width, ih->currentwidth - 1 - border_width, ih->currentheight - 1 - border_width);
+    iupdrvDrawFocusRect(dc, border_width, border_width, draw_w - 1 - border_width, draw_h - 1 - border_width);
   }
 
   iupdrvDrawFlush(dc);
@@ -387,9 +390,12 @@ static void iDropButtonNotify(Ihandle* ih, int pressed)
 
 static int iDropButtonUpdateHighlighted(Ihandle* ih, int x, int y)
 {
+  int draw_w, draw_h;
+  IupGetIntInt(ih, "DRAWSIZE", &draw_w, &draw_h);
+
   /* handle when mouse is pressed and moved to/from inside the canvas */
-  if (x < 0 || x > ih->currentwidth - 1 ||
-      y < 0 || y > ih->currentheight - 1)
+  if (x < 0 || x > draw_w - 1 ||
+      y < 0 || y > draw_h - 1)
   {
     if (ih->data->highlighted)
     {
@@ -422,8 +428,13 @@ static int iDropButtonMotion_CB(Ihandle* ih, int x, int y, char* status)
 
   drop_onarrow = iupAttribGetBoolean(ih, "DROPONARROW");
   over_arrow = 1;
-  if (drop_onarrow && (x < ih->currentwidth - ih->data->arrow_size))
+  if (drop_onarrow)
+  {
+    int draw_w, draw_h;
+    IupGetIntInt(ih, "DRAWSIZE", &draw_w, &draw_h);
+    if (x < draw_w - ih->data->arrow_size)
       over_arrow = 0;
+  }
 
   if (over_arrow != ih->data->over_arrow)
   {
@@ -454,7 +465,9 @@ static int iDropButtonButton_CB(Ihandle* ih, int button, int pressed, int x, int
   if (button == IUP_BUTTON1)
   {
     int drop_onarrow = iupAttribGetBoolean(ih, "DROPONARROW");
-    if (drop_onarrow && (x < ih->currentwidth - ih->data->arrow_size))
+    int draw_w, draw_h;
+    IupGetIntInt(ih, "DRAWSIZE", &draw_w, &draw_h);
+    if (drop_onarrow && (x < draw_w - ih->data->arrow_size))
       ih->data->over_arrow = 0;
     else
       ih->data->over_arrow = 1;
