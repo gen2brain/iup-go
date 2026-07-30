@@ -2057,13 +2057,14 @@ static void gtk4TextParseParagraphFormat(Ihandle* formattag, GtkTextTag* tag)
   }
 
   format = iupAttribGet(formattag, "TABSARRAY");
+  if (format)
   {
     PangoTabArray *tabs;
     int pos, i = 0;
     PangoTabAlign align;
     char* str;
 
-    tabs = pango_tab_array_new(32, TRUE);
+    tabs = pango_tab_array_new(32, FALSE);
     while (format && *format && i < 32)
     {
       str = iupStrDupUntil((const char**)&format, ' ');
@@ -2654,6 +2655,7 @@ IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "ALIGNMENT", NULL, gtk4TextSetAlignmentAttrib, IUPAF_SAMEASSYSTEM, "ALEFT", IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "FORMATTING", iupTextGetFormattingAttrib, iupTextSetFormattingAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TABSARRAY", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ADDFORMATTAG", NULL, iupTextSetAddFormatTagAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ADDFORMATTAG_HANDLE", NULL, iupTextSetAddFormatTagHandleAttrib, NULL, NULL, IUPAF_IHANDLE | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "OVERWRITE", gtk4TextGetOverwriteAttrib, gtk4TextSetOverwriteAttrib, NULL, NULL, IUPAF_NO_INHERIT);
