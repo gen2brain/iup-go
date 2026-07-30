@@ -24,6 +24,7 @@
 #include "iup_array.h"
 #include "iup_text.h"
 #include "iup_drv.h"
+#include "iup_drvfont.h"
 #include "iup_drvinfo.h"
 
 #include "iupandroid_drv.h"
@@ -329,6 +330,12 @@ void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bulk)
   char* selectionpos = iupAttribGet(formattag, "SELECTIONPOS");
   char* fontFamily = iupAttribGet(formattag, "FONTFAMILY");
   if (!fontFamily) fontFamily = iupAttribGet(formattag, "FONTFACE");
+  if (fontFamily)
+  {
+    const char* mapped = iupFontGetAndroidName(fontFamily);
+    if (mapped)
+      fontFamily = (char*)mapped;
+  }
   char* link = iupAttribGet(formattag, "LINK");
   char* numbering = iupAttribGet(formattag, "NUMBERING");
   char* numberingStyle = iupAttribGet(formattag, "NUMBERINGSTYLE");
@@ -1317,6 +1324,7 @@ void iupdrvTextInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "TABSIZE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "FORMATTING", iupTextGetFormattingAttrib, iupTextSetFormattingAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TABSARRAY", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ADDFORMATTAG", NULL, iupTextSetAddFormatTagAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ADDFORMATTAG_HANDLE", NULL, iupTextSetAddFormatTagHandleAttrib, NULL, NULL, IUPAF_IHANDLE|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "REMOVEFORMATTING", NULL, androidTextSetRemoveFormattingAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
