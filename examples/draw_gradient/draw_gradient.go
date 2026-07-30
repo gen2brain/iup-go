@@ -4,6 +4,8 @@ import (
 	"github.com/gen2brain/iup-go/iup"
 )
 
+func init() { iup.EntryPoint(main) }
+
 func label(ih iup.Ihandle, text string, x, y int) {
 	ih.SetAttribute("DRAWFONT", "Helvetica, 9")
 	ih.SetAttribute("DRAWCOLOR", "60 60 70")
