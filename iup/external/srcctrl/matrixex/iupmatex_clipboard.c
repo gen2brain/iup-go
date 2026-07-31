@@ -458,7 +458,7 @@ static int iMatrixExStrGetDataSize(const char* data, int *num_lin, int *num_col,
 
 static char* iMatrixExStrCopyData(char* value, int *value_max_size, const char* data, int value_len)
 {
-  if (*value_max_size < value_len)
+  if (*value_max_size <= value_len)
   {
     *value_max_size = value_len+10;
     value = realloc(value, *value_max_size);

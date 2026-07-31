@@ -2698,6 +2698,8 @@ static int iFlatTreeDropData_CB(Ihandle *ih, char* type, void* data, int len, in
 
   /* Data is not the pointer, it contains the pointer */
   Ihandle* ih_source;
+  if (len != sizeof(Ihandle*))
+    return IUP_DEFAULT;
   memcpy((void*)&ih_source, data, len);
 
   /*TODO support IupTree??? */
@@ -2745,6 +2747,8 @@ static int iFlatTreeDragData_CB(Ihandle *ih, char* type, void *data, int len)
   }
 
   /* Copy source handle */
+  if (len != sizeof(Ihandle*))
+    return IUP_DEFAULT;
   memcpy(data, (void*)&ih, len);
 
   (void)type;

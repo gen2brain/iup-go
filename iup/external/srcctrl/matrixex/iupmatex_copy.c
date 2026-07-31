@@ -145,6 +145,9 @@ static int iMatrixExStrGetInterval(const char* interval, int num_lin, char* sele
     const char* next_value = iupStrNextValue(interval, len, &value_len, ',');
     if (value_len)
     {
+      if (value_len >= (int)sizeof(value))
+        return 0;
+
       memcpy(value, interval, value_len);
       value[value_len] = 0;
 

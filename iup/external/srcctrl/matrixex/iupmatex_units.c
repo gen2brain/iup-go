@@ -21,6 +21,8 @@
 #define M_PI       3.14159265358979323846
 #endif
 
+#define IMATEX_UNITNAME_MAXSTR 50
+
 /* Source for conversion names, symbols and factors:
    http://en.wikipedia.org/wiki/Conversion_of_units
 
@@ -367,7 +369,7 @@ static int iMatrixGetUnity(const char* name, char* am_name)
   if (s)
   {
     int off = (int)(s - name);
-    iupStrCopyN(am_name, 30, name);
+    iupStrCopyN(am_name, IMATEX_UNITNAME_MAXSTR, name);
     strncpy(am_name+off, "meter", 5);
     return 1;
   }
@@ -377,7 +379,7 @@ static int iMatrixGetUnity(const char* name, char* am_name)
     if (s)
     {
       int off = (int)(s - name);
-      iupStrCopyN(am_name, 30, name);
+      iupStrCopyN(am_name, IMATEX_UNITNAME_MAXSTR, name);
       strncpy(am_name+off, "liter", 5);   /* don't confuse with litter */
       return 1;
     }
@@ -390,7 +392,7 @@ static char* iMatrixExReturnUnit(const char* name)
 {
   if (imatex_unity_spell)
   {
-    char am_name[30];
+    char am_name[IMATEX_UNITNAME_MAXSTR];
     if (iMatrixGetUnity(name, am_name))
       return iupStrReturnStr(am_name);
   }
@@ -402,7 +404,7 @@ static int iMatrixCompareUnity(const char* name, const char* value)
 {
   if (imatex_unity_spell)
   {
-    char am_name[30];
+    char am_name[IMATEX_UNITNAME_MAXSTR];
     if (iMatrixGetUnity(name, am_name))
       return iupStrEqualNoCaseNoSpace(am_name, value);
   }

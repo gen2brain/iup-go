@@ -21,6 +21,10 @@
 #include "iup_matrixex.h"
 
 
+#define IMATEX_CELLTITLE_MAXSTR 50
+#define IMATEX_SEPARATOR_MAXSTR 5
+
+
 void iupMatrixExGetDialogPosition(ImatExData* matex_data, int *x, int *y)
 {
   /* return a dialog position aligned with the bottom-right corner of the focus cell,
@@ -251,11 +255,37 @@ static int setparent_param_cb(Ihandle* param_dialog, int param_index, void* user
   return 1;
 }
 
+static void iMatrixExSetParamMaxStr(Ihandle* param_dialog, int param_index, int max_str)
+{
+  Ihandle* param = (Ihandle*)IupGetAttributeId(param_dialog, "PARAM", param_index);
+  if (param)
+    IupSetInt(param, "MAXSTR", max_str);
+}
+
+static int settings_param_cb(Ihandle* param_dialog, int param_index, void* user_data)
+{
+  if (param_index == IUP_GETPARAM_INIT)
+    iMatrixExSetParamMaxStr(param_dialog, 1, IMATEX_SEPARATOR_MAXSTR);
+
+  return setparent_param_cb(param_dialog, param_index, user_data);
+}
+
+static int celltitle_param_cb(Ihandle* param_dialog, int param_index, void* user_data)
+{
+  if (param_index == IUP_GETPARAM_INIT)
+  {
+    iMatrixExSetParamMaxStr(param_dialog, 0, IMATEX_CELLTITLE_MAXSTR);
+    iMatrixExSetParamMaxStr(param_dialog, 1, IMATEX_CELLTITLE_MAXSTR);
+  }
+
+  return setparent_param_cb(param_dialog, param_index, user_data);
+}
+
 static int iMatrixExItemSettings_CB(Ihandle* ih_item)
 {
   ImatExData* matex_data = (ImatExData*)IupGetAttribute(ih_item, "MATRIX_EX_DATA");
   int sep_index = 0, decimal_sep_index = 0, decimal_sep_old, decimals, decimals_old;
-  char sep_other[5] = "", *decimal_symbol;
+  char sep_other[IMATEX_SEPARATOR_MAXSTR] = "", *decimal_symbol;
 
   char sep = *(IupGetAttribute(matex_data->ih, "TEXTSEPARATOR"));
   if (sep == ';') sep_index = 1;
@@ -278,7 +308,7 @@ static int iMatrixExItemSettings_CB(Ihandle* ih_item)
   decimals = IupGetInt(matex_data->ih, "NUMERICFORMATPRECISION");  /* get the value for the whole matrix */
   decimals_old = decimals;
 
-  if (IupGetParam("_@IUP_SETTINGSDLG", setparent_param_cb, IupGetDialog(matex_data->ih),
+  if (IupGetParam("_@IUP_SETTINGSDLG", settings_param_cb, IupGetDialog(matex_data->ih),
                   "_@IUP_TEXTSEPARATOR%l|Tab|\";\"|\" \"|\n"
                   "_@IUP_OTHERTEXTSEPARATOR%s[^0-9]\n"
                   "_@IUP_DECIMALS%i[0]\n"
@@ -367,15 +397,15 @@ static int iMatrixExItemCopyColTo_CB(Ihandle* ih_item)
   {
     if (iupAttribGetInt(matex_data->ih, "CELLBYTITLE"))
     {
-      char line1[50] = "";
-      char line2[50] = "";
+      char line1[IMATEX_CELLTITLE_MAXSTR] = "";
+      char line2[IMATEX_CELLTITLE_MAXSTR] = "";
 
       char* last_lin1 = iupAttribGet(matex_data->ih, "_IUP_LAST_COPYTO_LIN1");
       char* last_lin2 = iupAttribGet(matex_data->ih, "_IUP_LAST_COPYTO_LIN2");
-      iupStrCopyN(line1, 50, last_lin1);
-      iupStrCopyN(line2, 50, last_lin2);
+      iupStrCopyN(line1, sizeof(line1), last_lin1);
+      iupStrCopyN(line2, sizeof(line2), last_lin2);
 
-      if (IupGetParam("_@IUP_COPYTOINTERVAL", setparent_param_cb, IupGetDialog(matex_data->ih), "_@IUP_LINESTART%s\n_@IUP_LINEEND%s\n", line1, line2, NULL))
+      if (IupGetParam("_@IUP_COPYTOINTERVAL", celltitle_param_cb, IupGetDialog(matex_data->ih), "_@IUP_LINESTART%s\n_@IUP_LINEEND%s\n", line1, line2, NULL))
       {
         int lin1 = iMatrixExFindLin(matex_data->ih, line1);
         int lin2 = iMatrixExFindLin(matex_data->ih, line2);
@@ -481,15 +511,15 @@ static int iMatrixExItemGoTo_CB(Ihandle* ih_item)
 
   if (iupAttribGetInt(matex_data->ih, "CELLBYTITLE"))
   {
-    char line[50] = "";
-    char column[50] = "";
+    char line[IMATEX_CELLTITLE_MAXSTR] = "";
+    char column[IMATEX_CELLTITLE_MAXSTR] = "";
 
     char* last_lin = iupAttribGet(matex_data->ih, "_IUP_LAST_GOTO_LIN");
     char* last_col = iupAttribGet(matex_data->ih, "_IUP_LAST_GOTO_COL");
-    iupStrCopyN(line, 50, last_lin);
-    iupStrCopyN(column, 50, last_col);
+    iupStrCopyN(line, sizeof(line), last_lin);
+    iupStrCopyN(column, sizeof(column), last_col);
 
-    if (IupGetParam("_@IUP_GOTO", setparent_param_cb, IupGetDialog(matex_data->ih), "_@IUP_LINE%s\n_@IUP_COLUMN%s\n", line, column, NULL))
+    if (IupGetParam("_@IUP_GOTO", celltitle_param_cb, IupGetDialog(matex_data->ih), "_@IUP_LINE%s\n_@IUP_COLUMN%s\n", line, column, NULL))
     {
       int lin = iMatrixExFindLin(matex_data->ih, line);
       int col = iMatrixExFindCol(matex_data->ih, column);
