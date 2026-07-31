@@ -60,7 +60,7 @@ Default: NO.
 
 ### Notes
 
-In Windows uses DATETIMEPICK_CLASS, in Qt uses QDateEdit, in Android uses MaterialDatePicker, in iOS uses UIDatePicker (compact style), and in GTK, GTK 4, macOS, EFL and Motif uses a custom control built with IUP elements.
+In GTK, GTK 4, macOS, EFL and Motif it is a custom control built with IUP elements.
 
 In iOS, the label uses the system locale's date format; ORDER, SEPARATOR, ZEROPRECED, MONTHSHORTNAMES and FORMAT are not supported.
 

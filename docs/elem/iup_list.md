@@ -98,7 +98,7 @@ For all systems, when SCROLLBAR=YES the natural size will always include its siz
 If **AUTOHIDE**=YES scrollbars are shown only if they are necessary, by default AUTOHIDE=YES.
 SCROLLBAR=NO is not supported in Motif and iOS. In Motif, if EDITBOX=YES the horizontal scrollbar is never shown.
 
-When DROPDOWN= YES, the scrollbars are system-dependent, and do NOT depend on the SCROLLBAR or AUTOHIDE attributes.
+When DROPDOWN=YES, the scrollbars are system-dependent, and do NOT depend on the SCROLLBAR or AUTOHIDE attributes.
 Usually the scrollbars are shown if necessary. In GTK, scrollbars are never shown and all items are always visible.
 In Motif, the horizontal scrollbar is never shown.
 In Windows, if DROPEXPAND=YES then the horizontal scrollbar is never shown.
@@ -329,13 +329,13 @@ In all systems, the dropdown list is closed by using the Alt+Up key combination,
 The [GETFOCUS_CB](../call/iup_getfocus_cb.md) and [KILLFOCUS_CB](../call/iup_killfocus_cb.md) callbacks behave differently depending on the list configuration and on the native system:
 
 > - If DROPDOWN=NO and EDITBOX=YES, then the list never gets the focus, the callbacks are called only when the edit box is clicked.
-> - In Motif if DROPDOWN= YES, then when the dropdown button is clicked, the list loses its focus, and when the dropped list is closed the list regains the focus, also when that happen if the list loses its focus to another control the kill focus callback is not called.
-> - In GTK, if DROPDOWN=YES and EDITBOX=NO, both callbacks are called only when navigating with the keyboard (tip: if you need those callbacks with mouse navigation set EDITBOX=YES and READONLY=YES). Also in GTK, if DROPDOWN=YES and EDITBOX= YES, then when the dropdown button is clicked, the list loses its focus, and it gets it back only if the edit box is clicked.
+> - In Motif if DROPDOWN=YES, then when the dropdown button is clicked, the list loses its focus, and when the dropped list is closed the list regains the focus, also when that happen if the list loses its focus to another control the kill focus callback is not called.
+> - In GTK, if DROPDOWN=YES and EDITBOX=NO, both callbacks are called only when navigating with the keyboard (tip: if you need those callbacks with mouse navigation set EDITBOX=YES and READONLY=YES). Also in GTK, if DROPDOWN=YES and EDITBOX=YES, then when the dropdown button is clicked, the list loses its focus, and it gets it back only if the edit box is clicked.
 
-In Windows, if EDITBOX= YES, then the tooltips are shown only when the cursor is near the control border or at the dropdown arrow.
+In Windows, if EDITBOX=YES, then the tooltips are shown only when the cursor is near the control border or at the dropdown arrow.
 Also, the selection and caret attributes are not preserved if the list loses its focus, or in other words, these attributes are only useful in Windows if the list has the focus.
 
-**IMPORTANT:** In Windows when DROPDOWN= YES, the vertical size is controlled by the system, and has the height just right to include the borders and the text.
+**IMPORTANT:** In Windows when DROPDOWN=YES, the vertical size is controlled by the system, and has the height just right to include the borders and the text.
 So the **User** height from RASTERSIZE or SIZE will always be ignored.
 
 In Windows, list items are limited to 255 pixels height.

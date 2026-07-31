@@ -21,7 +21,7 @@ It does not have a native representation, but it contains also a **IupCanvas** t
 To completely hide the bar set BARSIZE to 0. Default: 10.
 
 **COLOR**: Changes the color of the bar grip affordance. The value should be given in "R G B" color style.
-Default: "160 160 160". When SHOWGRIP = NO, this attribute sets the background color of the bar handler.
+Default: "160 160 160". When SHOWGRIP=NO, this attribute sets the background color of the bar handler.
 
 [EXPAND](../attrib/iup_expand.md) (non-inheritable): The default value is "YES".
 
