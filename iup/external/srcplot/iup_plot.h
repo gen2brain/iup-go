@@ -356,7 +356,7 @@ public:
   virtual double GetSample(int inSampleIndex) const = 0;
 
   void RemoveSample(int inSampleIndex) {
-    if (inSampleIndex < 0) inSampleIndex = 0; if (inSampleIndex > mCount) inSampleIndex = mCount;
+    if (inSampleIndex < 0 || inSampleIndex >= mCount) return;
     iupArrayRemove(mArray, inSampleIndex, 1); mCount--;
   }
 
@@ -376,7 +376,8 @@ public:
 
   void AddSample(double inReal) { mData = (double*)iupArrayInc(mArray); mData[mCount] = inReal; mCount++; }
   void InsertSample(int inSampleIndex, double inReal) {
-    if (inSampleIndex < 0) inSampleIndex = 0; if (inSampleIndex > mCount) inSampleIndex = mCount;
+    if (inSampleIndex < 0) inSampleIndex = 0;
+    if (inSampleIndex > mCount) inSampleIndex = mCount;
     mData = (double*)iupArrayInsert(mArray, inSampleIndex, 1); mData[inSampleIndex] = inReal; mCount++;
   }
 
@@ -403,7 +404,8 @@ public:
 
   void AddSample(const char *inString) { mData = (char**)iupArrayInc(mArray); mData[mCount] = iupStrDup(inString); mCount++; }
   void InsertSample(int inSampleIndex, const char *inString) {
-    if (inSampleIndex < 0) inSampleIndex = 0; if (inSampleIndex > mCount) inSampleIndex = mCount;
+    if (inSampleIndex < 0) inSampleIndex = 0;
+    if (inSampleIndex > mCount) inSampleIndex = mCount;
     mData = (char**)iupArrayInsert(mArray, inSampleIndex, 1); mData[inSampleIndex] = iupStrDup(inString); mCount++;
   }
 
@@ -425,7 +427,8 @@ public:
 
   void AddSample(bool inBool) { mData = (bool*)iupArrayInc(mArray); mData[mCount] = inBool; mCount++; }
   void InsertSample(int inSampleIndex, bool inBool) {
-    if (inSampleIndex < 0) inSampleIndex = 0; if (inSampleIndex > mCount) inSampleIndex = mCount;
+    if (inSampleIndex < 0) inSampleIndex = 0;
+    if (inSampleIndex > mCount) inSampleIndex = mCount;
     mData = (bool*)iupArrayInsert(mArray, inSampleIndex, 1); mData[inSampleIndex] = inBool; mCount++;
   }
 

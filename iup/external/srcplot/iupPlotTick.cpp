@@ -148,6 +148,9 @@ bool iupPlotTickIterLinear::Init()
   double theMin = mAxis->mMin;
   double theMajorTickSpan = mAxis->mTick.mMajorSpan;
   int theDiv = mAxis->mTick.mMinorDivision;
+  if (theDiv <= 0 || !(theMajorTickSpan > 0))
+    return false;
+
   mDelta = theMajorTickSpan/theDiv;
   mCount = (long)ceil(theMin/mDelta);
   mCurrentTick = mCount*mDelta;
@@ -208,6 +211,9 @@ bool iupPlotTickIterLog::Init ()
   double theMin = mAxis->mMin;
   double theMajorTickSpan = mAxis->mTick.mMajorSpan;
   int theDiv = mAxis->mTick.mMinorDivision;
+  if (theDiv <= 0 || !(theMajorTickSpan > 0))
+    return false;
+
   mDelta = theMajorTickSpan/theDiv;
   double theBase = mAxis->mLogBase;
   long thePowMin = (long)floor(iupPlotLog(theMin, theBase));

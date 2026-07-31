@@ -1408,9 +1408,12 @@ static int iPlotSetRemoveAttrib(Ihandle* ih, const char* value)
   int ii;
   if (iupStrToInt(value, &ii))
   {
-    ih->data->current_plot->RemoveDataSet(ii);
-    ih->data->current_plot->mRedraw = true;
-    iPlotCheckCurrentDataSet(ih);
+    if (ii >= 0 && ii < ih->data->current_plot->mDataSetListCount)
+    {
+      ih->data->current_plot->RemoveDataSet(ii);
+      ih->data->current_plot->mRedraw = true;
+      iPlotCheckCurrentDataSet(ih);
+    }
   }
   else
   {
@@ -3454,7 +3457,7 @@ static char* iPlotGetAxisYTickRotateNumberAngleAttrib(Ihandle* ih)
 static int iPlotSetAxisXTickMajorSpanAttrib(Ihandle* ih, const char* value)
 {
   double xx;
-  if (iupStrToDouble(value, &xx))
+  if (iupStrToDouble(value, &xx) && xx > 0)
   {
     iupPlotAxis* axis = &ih->data->current_plot->mAxisX;
     axis->mTick.mMajorSpan = xx;
@@ -3466,7 +3469,7 @@ static int iPlotSetAxisXTickMajorSpanAttrib(Ihandle* ih, const char* value)
 static int iPlotSetAxisYTickMajorSpanAttrib(Ihandle* ih, const char* value)
 {
   double xx;
-  if (iupStrToDouble(value, &xx))
+  if (iupStrToDouble(value, &xx) && xx > 0)
   {
     iupPlotAxis* axis = &ih->data->current_plot->mAxisY;
     axis->mTick.mMajorSpan = xx;
@@ -3490,7 +3493,7 @@ static char* iPlotGetAxisYTickMajorSpanAttrib(Ihandle* ih)
 static int iPlotSetAxisXTickDivisionAttrib(Ihandle* ih, const char* value)
 {
   int ii;
-  if (iupStrToInt(value, &ii))
+  if (iupStrToInt(value, &ii) && ii > 0)
   {
     iupPlotAxis* axis = &ih->data->current_plot->mAxisX;
     axis->mTick.mMinorDivision = ii;
@@ -3502,7 +3505,7 @@ static int iPlotSetAxisXTickDivisionAttrib(Ihandle* ih, const char* value)
 static int iPlotSetAxisYTickDivisionAttrib(Ihandle* ih, const char* value)
 {
   int ii;
-  if (iupStrToInt(value, &ii))
+  if (iupStrToInt(value, &ii) && ii > 0)
   {
     iupPlotAxis* axis = &ih->data->current_plot->mAxisY;
     axis->mTick.mMinorDivision = ii;
