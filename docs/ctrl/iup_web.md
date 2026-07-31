@@ -19,6 +19,9 @@ In Qt, the implementation uses QWebEngineView from QtWebEngine (Chromium-based).
 In Haiku, the implementation uses BWebView from the system Legacy WebKit library (libWebKitLegacy).
 
 In WebAssembly, the implementation uses an HTML `<iframe>`. Cross-origin pages cannot be scripted or introspected.
+A page loaded with VALUE is sandboxed and has a unique origin, with scripts, forms and popups allowed.
+Content loaded with HTML is not sandboxed and uses the origin of the application page.
+The `javascript:` and `vbscript:` schemes are rejected in VALUE.
 
 Not supported: BACKCOUNT, FORWARDCOUNT, CANGOBACK, CANGOFORWARD, ITEMHISTORY, OPENFILE, SAVEFILE and PRINTPREVIEW.
 

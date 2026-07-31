@@ -482,6 +482,7 @@ Default is "CONTINUOUS".
 
 **REMOVE** (write-only): removes a dataset given its index or its DS_NAME attribute, "CURRENT" or NULL are also accepted to remove the current dataset.
 Notice that after removing a dataset the other datasets indices that are greater than the given index will be updated.
+Out of range indices are ignored.
 
 **CLEAR** (write-only): removes all datasets. Value is ignored.
 
@@ -541,6 +542,7 @@ The color is automatically set, but a custom color can be set using SAMPLECOLORi
 Default: No.
 
 **DS_REMOVE** (write-only): removes a sample from the current dataset given its index.
+Out of range indices are ignored.
 
 **DS_SELECTED**: the curve shows selected feedback.
 Only works when DS_MODE is LINE, MARKLINE, AREA, STEP or ERRORBAR.
@@ -656,10 +658,10 @@ Default: AUTO.
 Default: YES. AXS_XAUTOTICK and AXS_YAUTOTICK are also accepted.
 
 **AXS_XTICKMAJORSPAN**, **AXS_YTICKMAJORSPAN**: The spacing between major ticks in plot units.
-Default: 1. Automatically calculated when AUTOTICK=Yes.
+Default: 1. Automatically calculated when AUTOTICK=YES. Values less than or equal to 0 are ignored.
 
 **AXS_XTICKMINORDIVISION**, **AXS_YTICKMINORDIVISION**: number of minor ticks intervals between each major tick.
-Default: 5.  Automatically calculated when AUTOTICK=Yes.
+Default: 5.  Automatically calculated when AUTOTICK=YES. Values less than 1 are ignored.
 AXS_XTICKDIVISION and AXS_YTICKDIVISION are also accepted.
 
 **AXS_XTICKSIZEAUTO, AXS_YTICKSIZEAUTO**: configures the automatic tick size. Can be YES or NO.
