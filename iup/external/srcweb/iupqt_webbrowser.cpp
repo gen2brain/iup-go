@@ -21,6 +21,7 @@
 #include <QEventLoop>
 #include <QElapsedTimer>
 #include <QCoreApplication>
+#include <QPointer>
 
 #include <cstdlib>
 #include <cstdio>
@@ -1572,11 +1573,20 @@ static void qtWebBrowserUnMapMethod(Ihandle* ih)
   {
     IupQtWebBrowser* webview = (IupQtWebBrowser*)ih->handle;
 
+    QPointer<QWebEnginePage> page = webview->page();
+    IupQtWebPage* iup_page = static_cast<IupQtWebPage*>(page.data());
+
     /* Clear the ihandle pointer to prevent callbacks during destruction */
     webview->ih = nullptr;
+    if (iup_page)
+      iup_page->ih = nullptr;
 
     /* Delete the widget - Qt will automatically disconnect signals */
     delete webview;
+
+    if (page)
+      delete page;
+
     ih->handle = nullptr;
   }
 }
