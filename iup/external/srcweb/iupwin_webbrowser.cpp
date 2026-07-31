@@ -249,14 +249,12 @@ HRESULT IupWebView2LoaderInit(void)
     }
   }
 
-  SetDllDirectoryW(g_runtimePath.c_str());
-
-  g_embeddedBrowserModule = LoadLibraryW(loaderDllPath.c_str());
+  g_embeddedBrowserModule = LoadLibraryExW(loaderDllPath.c_str(), NULL,
+      LOAD_LIBRARY_SEARCH_DEFAULT_DIRS | LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR);
 
   if (!g_embeddedBrowserModule)
   {
     DWORD error = GetLastError();
-    SetDllDirectoryW(NULL);
     IupSetGlobal("IUP_WEBBROWSER_MISSING_LIB", "EmbeddedBrowserWebView.dll");
     return HRESULT_FROM_WIN32(error);
   }
@@ -269,7 +267,6 @@ HRESULT IupWebView2LoaderInit(void)
     DWORD error = GetLastError();
     FreeLibrary(g_embeddedBrowserModule);
     g_embeddedBrowserModule = NULL;
-    SetDllDirectoryW(NULL);
     IupSetGlobal("IUP_WEBBROWSER_MISSING_LIB", "EmbeddedBrowserWebView.dll (Invalid Version?)");
     return HRESULT_FROM_WIN32(error);
   }
@@ -283,7 +280,6 @@ void IupWebView2LoaderCleanup(void)
   {
     FreeLibrary(g_embeddedBrowserModule);
     g_embeddedBrowserModule = NULL;
-    SetDllDirectoryW(NULL);
   }
 
   g_createEnvInternalFunc = NULL;
@@ -306,6 +302,8 @@ const wchar_t* IupWebView2LoaderGetRuntimePath(void)
 
 static int g_comInitialized = 0;
 
+#define IUPWIN_WEBVIEW_INIT_TIMEOUT 3000  /* 10ms slices */
+
 typedef enum
 {
   WEBVIEW_STATUS_COMPLETED = 0,
@@ -323,7 +321,6 @@ struct _IcontrolData
   EventRegistrationToken historyChangedToken;
   EventRegistrationToken webMessageReceivedToken;
   WebViewLoadStatus loadStatus;
-  int initComplete;
   WNDPROC oldWndProc;
 };
 
@@ -390,6 +387,14 @@ public:
       delete static_cast<TDerived*>(this);
     return count;
   }
+};
+
+struct WinInitState
+{
+  int complete;
+  int abandoned;
+
+  WinInitState() : complete(0), abandoned(0) {}
 };
 
 struct WinScriptResult
@@ -579,9 +584,10 @@ class CreateWebViewHandler : public EventHandler<ICoreWebView2CreateCoreWebView2
 {
 private:
   HWND hwnd;
+  WinInitState* state;
 
 public:
-  CreateWebViewHandler(Ihandle* handle, HWND window) : EventHandler(handle), hwnd(window) {}
+  CreateWebViewHandler(Ihandle* handle, HWND window, WinInitState* init) : EventHandler(handle), hwnd(window), state(init) {}
 
   HRESULT STDMETHODCALLTYPE Invoke(HRESULT result, ICoreWebView2Controller* controller) noexcept override;
 };
@@ -590,24 +596,31 @@ class CreateEnvironmentHandler : public EventHandler<ICoreWebView2CreateCoreWebV
 {
 private:
   HWND hwnd;
+  WinInitState* state;
 
 public:
-  CreateEnvironmentHandler(Ihandle* handle, HWND window) : EventHandler(handle), hwnd(window) {}
+  CreateEnvironmentHandler(Ihandle* handle, HWND window, WinInitState* init) : EventHandler(handle), hwnd(window), state(init) {}
 
   HRESULT STDMETHODCALLTYPE Invoke(HRESULT result, ICoreWebView2Environment* env) noexcept override
   {
+    if (state->abandoned)
+    {
+      delete state;
+      return S_OK;
+    }
+
     if (FAILED(result))
     {
-      ih->data->initComplete = -1;
+      state->complete = -1;
       return result;
     }
 
-    CreateWebViewHandler* handler = new CreateWebViewHandler(ih, hwnd);
+    CreateWebViewHandler* handler = new CreateWebViewHandler(ih, hwnd, state);
     HRESULT hr = env->CreateCoreWebView2Controller(hwnd, handler);
     handler->Release();
 
     if (FAILED(hr))
-      ih->data->initComplete = -1;
+      state->complete = -1;
 
     return hr;
   }
@@ -707,9 +720,15 @@ HRESULT HistoryChangedHandler::Invoke(ICoreWebView2* sender, IUnknown* args) noe
 
 HRESULT CreateWebViewHandler::Invoke(HRESULT result, ICoreWebView2Controller* controller) noexcept
 {
+  if (state->abandoned)
+  {
+    delete state;
+    return S_OK;
+  }
+
   if (FAILED(result))
   {
-    ih->data->initComplete = -1;
+    state->complete = -1;
     return result;
   }
 
@@ -829,7 +848,7 @@ HRESULT CreateWebViewHandler::Invoke(HRESULT result, ICoreWebView2Controller* co
 
   webview->AddScriptToExecuteOnDocumentCreated(scrollbarStyleScript, NULL);
 
-  ih->data->initComplete = 1;
+  state->complete = 1;
 
   return S_OK;
 }
@@ -2007,21 +2026,23 @@ static int winWebBrowserMapMethod(Ihandle* ih)
 
   std::wstring userDataFolder = GetWebView2UserDataFolder();
 
-  ih->data->initComplete = 0;
+  WinInitState* state = new WinInitState();
 
-  CreateEnvironmentHandler* envHandler = new CreateEnvironmentHandler(ih, hwnd);
+  CreateEnvironmentHandler* envHandler = new CreateEnvironmentHandler(ih, hwnd, state);
   hr = createEnvFunc(runtimePath, userDataFolder.empty() ? nullptr : userDataFolder.c_str(), nullptr, envHandler);
   envHandler->Release();
 
   if (FAILED(hr))
   {
+    delete state;
     DestroyWindow(hwnd);
     ih->handle = NULL;
     return IUP_ERROR;
   }
 
   MSG msg;
-  while (ih->data->initComplete == 0)
+  int loopCount = 0;
+  while (state->complete == 0 && loopCount < IUPWIN_WEBVIEW_INIT_TIMEOUT)
   {
     if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
     {
@@ -2032,14 +2053,26 @@ static int winWebBrowserMapMethod(Ihandle* ih)
     {
       Sleep(10);
     }
+    loopCount++;
   }
 
-  if (ih->data->initComplete < 0)
+  if (state->complete == 0)
   {
+    state->abandoned = 1;
     DestroyWindow(hwnd);
     ih->handle = NULL;
     return IUP_ERROR;
   }
+
+  if (state->complete < 0)
+  {
+    delete state;
+    DestroyWindow(hwnd);
+    ih->handle = NULL;
+    return IUP_ERROR;
+  }
+
+  delete state;
 
   RECT rect;
   GetClientRect(hwnd, &rect);
@@ -2120,7 +2153,6 @@ static int winWebBrowserCreateMethod(Ihandle* ih, void **params)
   ih->data->webviewController = NULL;
   ih->data->webviewWindow = NULL;
   ih->data->loadStatus = WEBVIEW_STATUS_COMPLETED;
-  ih->data->initComplete = 0;
   ih->data->oldWndProc = NULL;
 
   IupSetAttribute(ih, "BORDER", "NO");
