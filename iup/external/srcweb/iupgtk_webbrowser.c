@@ -286,10 +286,22 @@ static char* gtkWebBrowserEscapeJavaScript(const char* str)
   char* result = (char*)malloc(escaped_len);
   char* p = result;
 
+  if (!result)
+    return iupStrDup("null");
+
   *p++ = '"';
 
   for (const char* s = str; *s; s++)
   {
+    if ((unsigned char)*s == 0xE2 && (unsigned char)*(s+1) == 0x80 &&
+        ((unsigned char)*(s+2) == 0xA8 || (unsigned char)*(s+2) == 0xA9))
+    {
+      snprintf(p, (size_t)((result + escaped_len) - p), "\\u202%c", (unsigned char)*(s+2) == 0xA8 ? '8' : '9');
+      p += 6;
+      s += 2;
+      continue;
+    }
+
     switch (*s)
     {
       case '"':  *p++ = '\\'; *p++ = '"'; break;
@@ -1015,11 +1027,14 @@ static void gtkWebBrowserInitSelectionTracking(Ihandle* ih)
 
 static void gtkWebBrowserRunJavascript(Ihandle* ih, const char* format, ...)
 {
-  char js[1024];
+  char* js;
   va_list arglist;
   va_start(arglist, format);
-  vsnprintf(js, 1024, format, arglist);
+  js = g_strdup_vprintf(format, arglist);
   va_end(arglist);
+
+  if (!js)
+    return;
 
 #ifdef IUPWEB_USE_DLOPEN
   if (s_use_webkit6)
@@ -1035,6 +1050,8 @@ static void gtkWebBrowserRunJavascript(Ihandle* ih, const char* format, ...)
 #elif defined(IUPWEB_USE_WEBKIT1)
   webkit_web_view_execute_script((WebKitWebView*)ih->handle, js);
 #endif
+
+  g_free(js);
 }
 
 static void gtkWebBrowserUpdateHistory(Ihandle* ih)
@@ -1244,22 +1261,30 @@ static char* gtkWebBrowserExecJavaScriptSync(Ihandle* ih, const char* js)
 
 static char* gtkWebBrowserRunJavaScriptSync(Ihandle* ih, const char* format, ...)
 {
-  char js[1024];
+  char* js;
+  char* result;
   va_list arglist;
   va_start(arglist, format);
-  vsnprintf(js, 1024, format, arglist);
+  js = g_strdup_vprintf(format, arglist);
   va_end(arglist);
 
-  return gtkWebBrowserExecJavaScriptSync(ih, js);
+  if (!js)
+    return NULL;
+
+  result = gtkWebBrowserExecJavaScriptSync(ih, js);
+  g_free(js);
+  return result;
 }
 
 static char* gtkWebBrowserQueryCommandValue(Ihandle* ih, const char* cmd)
 {
   char* escaped_cmd = gtkWebBrowserEscapeJavaScript(cmd);
-  char js[256];
-  snprintf(js, sizeof(js), "document.queryCommandValue(%s);", escaped_cmd);
+  char* result;
+  if (!escaped_cmd)
+    return NULL;
+  result = gtkWebBrowserRunJavaScriptSync(ih, "document.queryCommandValue(%s);", escaped_cmd);
   free(escaped_cmd);
-  return gtkWebBrowserRunJavaScriptSync(ih, "%s", js);
+  return result;
 }
 
 #if (defined(IUPWEB_USE_WEBKIT2) || defined(IUPWEB_USE_WEBKIT6) || defined(IUPWEB_USE_DLOPEN))
@@ -1840,19 +1865,23 @@ static char* gtkWebBrowserGetValueAttrib(Ihandle* ih)
 static char* gtkWebBrowserQueryCommandState(Ihandle* ih, const char* cmd)
 {
   char* escaped_cmd = gtkWebBrowserEscapeJavaScript(cmd);
-  char js[256];
-  snprintf(js, sizeof(js), "document.queryCommandState(%s);", escaped_cmd);
+  char* result;
+  if (!escaped_cmd)
+    return NULL;
+  result = gtkWebBrowserRunJavaScriptSync(ih, "document.queryCommandState(%s);", escaped_cmd);
   free(escaped_cmd);
-  return gtkWebBrowserRunJavaScriptSync(ih, "%s", js);
+  return result;
 }
 
 static char* gtkWebBrowserQueryCommandEnabled(Ihandle* ih, const char* cmd)
 {
   char* escaped_cmd = gtkWebBrowserEscapeJavaScript(cmd);
-  char js[256];
-  snprintf(js, sizeof(js), "document.queryCommandEnabled(%s);", escaped_cmd);
+  char* result;
+  if (!escaped_cmd)
+    return NULL;
+  result = gtkWebBrowserRunJavaScriptSync(ih, "document.queryCommandEnabled(%s);", escaped_cmd);
   free(escaped_cmd);
-  return gtkWebBrowserRunJavaScriptSync(ih, "%s", js);
+  return result;
 }
 
 static char* gtkWebBrowserGetCommandStateAttrib(Ihandle* ih)
@@ -1978,11 +2007,11 @@ static char* gtkWebBrowserGetInnerTextAttrib(Ihandle* ih)
     return NULL;
 
   char* escaped_id = gtkWebBrowserEscapeJavaScript(element_id);
-  char js[512];
-  snprintf(js, sizeof(js), "document.getElementById(%s)?.innerText || '';", escaped_id);
-  free(escaped_id);
+  if (!escaped_id)
+    return NULL;
 
-  char* result = gtkWebBrowserRunJavaScriptSync(ih, "%s", js);
+  char* result = gtkWebBrowserRunJavaScriptSync(ih, "document.getElementById(%s)?.innerText || '';", escaped_id);
+  free(escaped_id);
   if (result)
   {
     char* ret = iupStrReturnStr(result);
@@ -2000,13 +2029,13 @@ static int gtkWebBrowserSetInnerTextAttrib(Ihandle* ih, const char* value)
 
   char* escaped_id = gtkWebBrowserEscapeJavaScript(element_id);
   char* escaped_value = gtkWebBrowserEscapeJavaScript(value ? value : "");
-  char js[1024];
-  snprintf(js, sizeof(js), "if(document.getElementById(%s)) document.getElementById(%s).innerText = %s;",
-           escaped_id, escaped_id, escaped_value);
+
+  if (escaped_id && escaped_value)
+    gtkWebBrowserRunJavascript(ih, "if(document.getElementById(%s)) document.getElementById(%s).innerText = %s;",
+                               escaped_id, escaped_id, escaped_value);
+
   free(escaped_id);
   free(escaped_value);
-
-  gtkWebBrowserRunJavascript(ih, "%s", js);
   return 0;
 }
 
@@ -2039,13 +2068,13 @@ static char* gtkWebBrowserGetAttributeAttrib(Ihandle* ih)
 
   char* escaped_id = gtkWebBrowserEscapeJavaScript(element_id);
   char* escaped_attr = gtkWebBrowserEscapeJavaScript(attr_name);
-  char js[512];
-  snprintf(js, sizeof(js), "document.getElementById(%s)?.getAttribute(%s) || '';",
-           escaped_id, escaped_attr);
+  char* result = NULL;
+
+  if (escaped_id && escaped_attr)
+    result = gtkWebBrowserRunJavaScriptSync(ih, "document.getElementById(%s)?.getAttribute(%s) || '';",
+                                            escaped_id, escaped_attr);
   free(escaped_id);
   free(escaped_attr);
-
-  char* result = gtkWebBrowserRunJavaScriptSync(ih, "%s", js);
   if (result)
   {
     char* ret = iupStrReturnStr(result);
@@ -2065,14 +2094,14 @@ static int gtkWebBrowserSetAttributeAttrib(Ihandle* ih, const char* value)
   char* escaped_id = gtkWebBrowserEscapeJavaScript(element_id);
   char* escaped_attr = gtkWebBrowserEscapeJavaScript(attr_name);
   char* escaped_value = gtkWebBrowserEscapeJavaScript(value ? value : "");
-  char js[1024];
-  snprintf(js, sizeof(js), "if(document.getElementById(%s)) document.getElementById(%s).setAttribute(%s, %s);",
-           escaped_id, escaped_id, escaped_attr, escaped_value);
+
+  if (escaped_id && escaped_attr && escaped_value)
+    gtkWebBrowserRunJavascript(ih, "if(document.getElementById(%s)) document.getElementById(%s).setAttribute(%s, %s);",
+                               escaped_id, escaped_id, escaped_attr, escaped_value);
+
   free(escaped_id);
   free(escaped_attr);
   free(escaped_value);
-
-  gtkWebBrowserRunJavascript(ih, "%s", js);
   return 0;
 }
 
@@ -2102,11 +2131,11 @@ static int gtkWebBrowserSetFindAttrib(Ihandle* ih, const char* value)
     return 0;
 
   char* escaped_text = gtkWebBrowserEscapeJavaScript(value);
-  char js[512];
-  snprintf(js, sizeof(js), "window.find(%s);", escaped_text);
-  free(escaped_text);
+  if (!escaped_text)
+    return 0;
 
-  gtkWebBrowserRunJavascript(ih, "%s", js);
+  gtkWebBrowserRunJavascript(ih, "window.find(%s);", escaped_text);
+  free(escaped_text);
   return 0;
 }
 

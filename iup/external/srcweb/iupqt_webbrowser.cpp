@@ -72,6 +72,15 @@ static char* qtWebBrowserEscapeJavaScript(const char* str)
 
   for (const char* s = str; *s; s++)
   {
+    if ((unsigned char)*s == 0xE2 && (unsigned char)*(s+1) == 0x80 &&
+        ((unsigned char)*(s+2) == 0xA8 || (unsigned char)*(s+2) == 0xA9))
+    {
+      snprintf(p, (size_t)((result + escaped_len) - p), "\\u202%c", (unsigned char)*(s+2) == 0xA8 ? '8' : '9');
+      p += 6;
+      s += 2;
+      continue;
+    }
+
     switch (*s)
     {
       case '"':  *p++ = '\\'; *p++ = '"'; break;
