@@ -415,10 +415,18 @@ static int qtButtonSetBgColorAttrib(Ihandle* ih, const char* value)
   QAbstractButton* button = (QAbstractButton*)ih->handle;
   if (button)
   {
-    QPalette palette = button->palette();
-    palette.setColor(QPalette::Button, QColor(r, g, b));
-    button->setPalette(palette);
-    button->setAutoFillBackground(true);
+    if (ih->data->type == IUP_BUTTON_TEXT && !iupAttribGet(ih, "TITLE"))
+    {
+      button->setStyleSheet(QString("QPushButton { background-color: rgb(%1, %2, %3); border: 1px solid palette(mid); }")
+                            .arg(r).arg(g).arg(b));
+    }
+    else
+    {
+      QPalette palette = button->palette();
+      palette.setColor(QPalette::Button, QColor(r, g, b));
+      button->setPalette(palette);
+      button->setAutoFillBackground(true);
+    }
   }
   return 1;
 }
