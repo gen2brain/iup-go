@@ -83,11 +83,9 @@ If never set, the default system context menu is shown.
 
 ### Notes
 
-In GTK uses GtkTreeView, in Windows uses WC_TREEVIEW, in WinUI uses XAML TreeView, in macOS uses NSOutlineView, in Qt uses QTreeWidget, in FLTK uses Fl_Tree, in EFL uses Elm_Genlist, and in Motif uses xmContainer.
-
 #### Hierarchy
 
-Branches can contain other branches or leaves. When ADDROOT= YES, the tree has initially one branch, the **root**.
+Branches can contain other branches or leaves. When ADDROOT=YES, the tree has initially one branch, the **root**.
 The first node always has id=0 and depth=0.
 The tree nodes have a sequential identification number (id), starting by the first, with id=0, and increases for each node independent of the node depth.
 The following picture illustrates the numbering of the nodes in a tree.

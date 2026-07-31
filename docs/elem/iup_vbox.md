@@ -66,7 +66,7 @@ The standard format "wxh" can also be used, but width will be ignored.
 
 **EXPANDWEIGHT** (non-inheritable) **(at children only)**: If a child defines the expand weight, then it is used to multiply the free space used for expansion.
 
-[FLOATING](../attrib/iup_floating.md) (non-inheritable) **(at children only)**: If a child has FLOATING= YES, then its size and position will be ignored by the layout processing.
+[FLOATING](../attrib/iup_floating.md) (non-inheritable) **(at children only)**: If a child has FLOATING=YES, then its size and position will be ignored by the layout processing.
 Default: "NO".
 
 ### Notes

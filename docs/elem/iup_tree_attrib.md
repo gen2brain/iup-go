@@ -296,6 +296,6 @@ Default: NO, but if DROPFILES_CB is defined when the element is mapped then it w
 This is NOT related to the drag&drop of nodes inside the tree.
 
 **DROPEQUALDRAG** (non-inheritable): if enabled will allow a drop node to be equal to the drag node.
-Used only if SHOWDRAGDROP =YES. In the case the nodes are equal the callback return value is ignored, and nothing is done after.
+Used only if SHOWDRAGDROP=YES. In the case the nodes are equal the callback return value is ignored, and nothing is done after.
 
 [Drag & Drop](../attrib/iup_dragdrop.md) attributes are supported, but SHOWDRAGDROP must be set to NO.  

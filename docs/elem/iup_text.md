@@ -328,7 +328,7 @@ For single line controls, **lin** is always 1, and **col** is always "**pos**+1"
 
 ### Notes
 
-When MULTILINE= YES, the Enter key will add a new line, and the Tab key will insert a Tab.
+When MULTILINE=YES, the Enter key will add a new line, and the Tab key will insert a Tab.
 So the "DEFAULTENTER" button will not be processed when the element has the keyboard focus, also to change focus to the next element press <Ctrl>+<Tab>.
 
 In Windows, if you press a Ctrl+key combination that is not supported by the control, then a beep is sound.

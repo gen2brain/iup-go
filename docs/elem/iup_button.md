@@ -134,8 +134,6 @@ In this case in Windows TITLE can also be defined.
 
 Usually toolbar buttons have FLAT=YES and CANFOCUS=NO.
 
-In GTK uses GtkButton, in Windows uses WC_BUTTON, in WinUI uses XAML Button, in macOS uses NSButton, in Qt uses QPushButton, in FLTK uses Fl_Button, in EFL uses Elm_Button, in Motif uses xmPushButton, in Android uses MaterialButton, and in iOS uses UIButton.
-
 ### Examples
 
 [Browse for Example Files](../../examples/)
