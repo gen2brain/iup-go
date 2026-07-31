@@ -9,8 +9,8 @@ This can be done inside a control, from one control to another in the same dialo
 
 In IUP, a drag and drop transfer can result in the data being moved or copied.
 A **copy** operation is enabled with the CTRL key pressed. A **move** operation is enabled with the SHIFT key pressed.
-A move operation will be possible only if the attribute DRAGSOURCEMOVE is Yes.
-When no key is pressed, the default operation is **copy** when DRAGSOURCEMOVE=No and **move** when DRAGSOURCEMOVE=Yes.
+A move operation will be possible only if the attribute DRAGSOURCEMOVE is YES.
+When no key is pressed, the default operation is **copy** when DRAGSOURCEMOVE=NO and **move** when DRAGSOURCEMOVE=YES.
 The user can cancel a drag at any time by pressing the ESCAPE key.
 
 Steps to use the Drag & Drop support in an IUP application:
@@ -59,7 +59,7 @@ Default: NO.
 Accepts a string with one or more names separated by commas. See the Notes below for a list of known names.
 Must be set.
 
-### Callbacks at Drag Source (Must be set when DRAGSOURCE=Yes)
+### Callbacks at Drag Source (Must be set when DRAGSOURCE=YES)
 
 **DRAGBEGIN_CB**: notifies a source that drag started.
 It is called when the mouse starts a drag operation.
@@ -101,7 +101,7 @@ It is called after the data has been dropped.
 
 If action is 1, it is the responsibility of the application to remove the data from source.
 
-### Callbacks at Drop Target (Must be set when DROPTARGET=Yes)
+### Callbacks at Drop Target (Must be set when DROPTARGET=YES)
 
 **DROPDATA_CB**: source has sent target the requested data. It is called when the data is dropped.
 If both drag and drop were in the same application, it would be called after the **DRAGDATA_CB** callback.

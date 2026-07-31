@@ -16,7 +16,7 @@ If not defined, the system will provide a default text.
 Supported in GTK 3, Qt, Motif, FLTK, EFL, WinUI and Android.
 
 **COLOR**: The initial color value and the returned selected value if the user pressed the Ok button.
-Must set SHOWCOLOR=Yes to enable this option.
+Must set SHOWCOLOR=YES to enable this option.
 Supported in Windows, WinUI, macOS and Qt.
 
 [PARENTDIALOG](../attrib/iup_parentdialog.md) (creation-only): Name of a dialog to be used as parent.

@@ -29,7 +29,7 @@ Use [IupSetHandle](../func/iup_sethandle.md) or [IupSetAttributeHandle](../func/
 See also [IupImage](../elem/iup_image.md).
 
 **BACKIMAGEZOOM** (non-inheritable): if set, the back image will be zoomed to occupy the full background.
-Aspect ratio is NOT preserved. Can be Yes or No. Default: No.
+Aspect ratio is NOT preserved. Can be YES or NO. Default: NO.
 
 **BORDER** (creation-only): the default value is "NO". This is the **IupCanvas** border.
 
@@ -40,7 +40,7 @@ Aspect ratio is NOT preserved. Can be Yes or No. Default: No.
 [FGCOLOR](../attrib/iup_fgcolor.md): Text color. Default: the global attribute DLGFGCOLOR.
 
 **FITTOBACKIMAGE** (non-inheritable): enable the natural size to be computed from the BACKIMAGE.
-If BACKIMAGE is not defined will be ignored. Can be Yes or No. Default: No.
+If BACKIMAGE is not defined will be ignored. Can be YES or NO. Default: NO.
 
 **FRONTIMAGE** (non-inheritable): image name to be used as foreground.
 The foreground image is drawn in the same position as the background, but it is drawn at last.
@@ -79,7 +79,7 @@ Notice that this is done internally by the system, the element natural size will
 For the remaining lines to be visible, the element should use EXPAND=VERTICAL or set a SIZE/RASTERSIZE with enough height for the wrapped lines.
 
 **TEXTELLIPSIS** (non-inheritable): If the text is larger than its box, an ellipsis ("...") will be placed near the last visible part of the text and replace the invisible part.
-It will be ignored when TEXTWRAP=Yes.
+It will be ignored when TEXTWRAP=YES.
 
   **TEXTORIENTATION** (non-inheritable): text angle in degrees and counterclockwise.
 The text size will adapt to include the rotated space.

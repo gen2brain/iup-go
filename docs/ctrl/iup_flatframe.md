@@ -15,14 +15,14 @@ The control inherits from [IupBackgroundBox](../elem/iup_backgroundbox.md).
 
 Inherits all attributes and callbacks of the [IupBackgroundBox](../elem/iup_backgroundbox.md), but redefines a few attributes.
 
-**DECORATION** [read-only] (non-inheritable): return Yes.
+**DECORATION** [read-only] (non-inheritable): return YES.
 
 **DECOROFFSET** and **DECORSIZE** [read-only] (non-inheritable): are calculated according to FRAME, FRAMEWIDTH, FRAMESPACE and the title area.
 
 **BGCOLOR**: background color of the child area.
 If not defined it will use the background color of the native parent.
 
-**FRAME** (non-inheritable): enables the frame line. Default: Yes.
+**FRAME** (non-inheritable): enables the frame line. Default: YES.
 If value is CROSSTITLE the frame at top crosses the title, like traditional frames in native systems.
 When CROSSTITLE is used TITLELINE and TITLEALIGNMENT are ignored, the title line is never drawn and alignment is always left.
 
@@ -30,7 +30,7 @@ When CROSSTITLE is used TITLELINE and TITLEALIGNMENT are ignored, the title line
 
 **FRAMEWIDTH** (non-inheritable): frame line width. Default: 1.
 
-**FRAMESPACE** (non-inheritable): spacing between frame line and child area. Used only when FRAME=Yes.
+**FRAMESPACE** (non-inheritable): spacing between frame line and child area. Used only when FRAME=YES.
 Default: 2.
 
 [TITLE](../attrib/iup_title.md) (non-inheritable): Text the user will see at the top of the frame.
@@ -41,7 +41,7 @@ Default: 2.
 If not defined BGCOLOR will be used.
 
 **TITLELINE** (non-inheritable): enables the title line.
-Horizontal line that separates the title area from the child area. Default: Yes.
+Horizontal line that separates the title area from the child area. Default: YES.
 
 **TITLELINECOLOR** (non-inheritable): title line color. Default: the global attribute DLGFGCOLOR.
 
@@ -70,7 +70,7 @@ Notice that this is done internally by the system, the element natural size will
 For the remaining lines to be visible, the element should use EXPAND=VERTICAL or set a SIZE/RASTERSIZE with enough height for the wrapped lines.
 
 **TITLETEXTELLIPSIS** (non-inheritable): If the text is larger than its box, an ellipsis ("...") will be placed near the last visible part of the text and replace the invisible part.
-It will be ignored when TEXTWRAP=Yes.
+It will be ignored when TEXTWRAP=YES.
 
   **TITLETEXTORIENTATION** (non-inheritable): text angle in degrees and counterclockwise.
 The text size will adapt to include the rotated space.
@@ -80,7 +80,7 @@ Default value: "0x0".
 
 ### Notes
 
-To replace a **IupFrame** by a **IupFlatFrame**, you must set TITLELINE=No, TITLEALIGNMENT=ALEFT and FRAMECOLOR="160 160 160" (or a lighter version of the DLGFGCOLOR).
+To replace a **IupFrame** by a **IupFlatFrame**, you must set TITLELINE=NO, TITLEALIGNMENT=ALEFT and FRAMECOLOR="160 160 160" (or a lighter version of the DLGFGCOLOR).
 But the line cannot be positioned in the middle of the text like in IupFrame. 
 
 ### Examples
@@ -137,9 +137,9 @@ But the line cannot be positioned in the middle of the text like in IupFrame.
       IupSetAttribute(frame2, "FONTSTYLE", "Bold");
       IupSetAttribute(frame2, "FONTSIZE", "14");
 
-      IupSetAttribute(frame3, "FRAME", "No");
+      IupSetAttribute(frame3, "FRAME", "NO");
       IupSetAttribute(frame3, "TITLE", "Title Text");
-      IupSetAttribute(frame3, "TITLELINE", "No");
+      IupSetAttribute(frame3, "TITLELINE", "NO");
       IupSetAttribute(frame3, "TITLEBGCOLOR", "64 128 255");
 
 ![](../images/iupflatframe.png)\

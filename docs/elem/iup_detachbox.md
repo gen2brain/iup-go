@@ -48,7 +48,7 @@ Use [IupSetHandle](../func/iup_sethandle.md) or [IupSetAttributeHandle](../func/
 The handler is shown (if restored to inside a zbox, the application must update the zbox child visibility manually).
 
 **RESTOREWHENCLOSED**: automatically restore the box to its original position when the new dialog is closed.
-Can be Yes or No. Default: No.
+Can be YES or NO. Default: NO.
 
 **SHOWGRIP** (non-inheritable): Shows the bar grip affordance. Default: YES.
 When set to NO, the BARSIZE is set to 5 (if greater than 5).
@@ -75,7 +75,7 @@ At this point only the PARENTDIALOG attribute was set.\
 
 **Returns**: IUP_IGNORE will be processed, in order to cancel the detach action.
 
-**RESTORED_CB**: Callback called when the box is restored if RESTOREWHENCLOSED=Yes.
+**RESTORED_CB**: Callback called when the box is restored if RESTOREWHENCLOSED=YES.
 
     int function(Ihandle *ih, Ihandle *old_parent, int x, int y);
 

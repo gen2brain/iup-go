@@ -24,8 +24,8 @@ In Win32 it is limited to a minimum of 5 pixels.
 Not supported in EFL.
 
 **INFOTIP** [Windows Only]: the TIP is shown every time a node is highlighted.
-This is the default behavior for TIPs in native tree controls in Windows, if set to No then it will use the regular TIP behavior.
-Default: Yes.
+This is the default behavior for TIPs in native tree controls in Windows, if set to NO then it will use the regular TIP behavior.
+Default: YES.
 
 [RASTERSIZE](../attrib/iup_rastersize.md) (non-inheritable): the initial size is computed from VISIBLELINES and VISIBLECOLUMNS.
 Set to NULL after map to use it as an initial value.
@@ -209,7 +209,7 @@ Can be set only when MARKMODE=MULTIPLE, can also be get when MARKMODE=SINGLE.
 The value must be the node identifier. Default: 0 (first node).
 
 **MARKWHENTOGGLE** (non-inheritable): selects or clears the selection of a node when its toggle is changed.
-Works only if the node has a toggle. Default: No.
+Works only if the node has a toggle. Default: NO.
 
 ### Hierarchy  (non-inheritable)
 
@@ -278,7 +278,7 @@ RENAMESELECTION (write-only): the selection interval of the text box when in-pla
 Same as the SELECTION attribute for [IupText](iup_text.md), but here is used only once after SHOWRENAME_CB is called and before the text box is shown.
 
 **SHOWRENAME** (creation in Windows) (non-inheritable): Allows the in place rename of a node.
-Default: "NO". F2 and clicking twice only starts to rename a node if SHOWRENAME=Yes.
+Default: "NO". F2 and clicking twice only starts to rename a node if SHOWRENAME=YES.
 In Windows must be set to YES before map, but can be changed later.
 
 ### Drag&Drop
@@ -296,6 +296,6 @@ Default: NO, but if DROPFILES_CB is defined when the element is mapped then it w
 This is NOT related to the drag&drop of nodes inside the tree.
 
 **DROPEQUALDRAG** (non-inheritable): if enabled will allow a drop node to be equal to the drag node.
-Used only if SHOWDRAGDROP =Yes. In the case the nodes are equal the callback return value is ignored, and nothing is done after.
+Used only if SHOWDRAGDROP =YES. In the case the nodes are equal the callback return value is ignored, and nothing is done after.
 
-[Drag & Drop](../attrib/iup_dragdrop.md) attributes are supported, but SHOWDRAGDROP must be set to No.  
+[Drag & Drop](../attrib/iup_dragdrop.md) attributes are supported, but SHOWDRAGDROP must be set to NO.  

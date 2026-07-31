@@ -24,11 +24,11 @@ The **IupMatrixEx** element handles all attributes defined for a [IupMatrix](iup
 >
 > ------------------------------------------------------------------------
 
-**BUSY**: returns Yes if the library is changing the matrix contents internally as a result of an operation such as paste or duplicate.
-Can be canceled setting to No. See the BUSY_CB callback for more information.
+**BUSY**: returns YES if the library is changing the matrix contents internally as a result of an operation such as paste or duplicate.
+Can be canceled setting to NO. See the BUSY_CB callback for more information.
 
 **BUSYPROGRESS**: flag to display a progress dialog while data is being changed.
-Can be Yes or No. Default: No.
+Can be YES or NO. Default: NO.
 
 **LASTERROR** (read-only): set when an error occurred during an operation.
 It is reset to NULL at the start of every operation that sets its value.
@@ -43,7 +43,7 @@ Title cells are not copied, even when a line or column is fully selected.
 If the column or line is invisible (its size=0) it is not copied.
 The **TEXTSEPARATOR** attribute can be used to define a column separator (default is tab '\t') and line separator will be line feeds ('\n').
 
-When MARKMODE=CELLS and sparse cells are selected, there are two options for copy according to the **COPYKEEPSTRUCT** attribute, if "Yes" the copied data will fit a rectangular region that contains all the selected cells and the non selected cells inside the region will be copied as empty spaces (' '), if "No" only the selected cells will be copied but they must contain a matrix consistent structure, in other words the selected column pattern must be consistent along lines.\
+When MARKMODE=CELLS and sparse cells are selected, there are two options for copy according to the **COPYKEEPSTRUCT** attribute, if "YES" the copied data will fit a rectangular region that contains all the selected cells and the non selected cells inside the region will be copied as empty spaces (' '), if "NO" only the selected cells will be copied but they must contain a matrix consistent structure, in other words the selected column pattern must be consistent along lines.\
 LASTERROR can be set to "NOMARKED" (no selected cells) or "MARKEDCONSISTENCY" (when COPYKEEPSTRUCT=NO and inconsistent selection).\
 Copied lines will follow the sort order.
 
@@ -75,7 +75,7 @@ Use the attribute **TEXTSKIPLINES** to skip a number of lines at the beginning o
 If data at the insert position have more lines or columns than the current matrix, then the PASTESIZE_CB callback is called if the callback does not exist, the matrix size is not changed, and the exceeding data will be discarded.
 If defined, the [EDITION_CB](iup_matrix_cb.md) callback will be called before the cell value is set.
 **LASTERROR** can be set to "NOTEXT" (data is empty or NULL), "INVALIDMATRIX" (not matrix data).
-**BUSY** will be set to Yes during the operation. Only visible cells will receive data.\
+**BUSY** will be set to YES during the operation. Only visible cells will receive data.\
 Pasted lines will follow the sort order.
 
 **PASTEDATA** (write-only): paste (import) data from a memory buffer. Value is the data.
@@ -103,17 +103,17 @@ if BOTTOMRIGHT will search from top to **bottom**, then left to **right**; (sear
 if TOPLEFT will search from bottom to **top**, then right to **left**;
 
 **FINDMATCHCASE**: defines if the text comparison is case-sensitive when using FIND.
-Can be Yes or No. Default: Yes.
+Can be YES or NO. Default: YES.
 
 **FINDMATCHWHOLECELL**: defines if the whole cell is used for comparison, or it will search for the first occurrence of the text inside the cell.
-Can be Yes or No. Default: Yes.
+Can be YES or NO. Default: YES.
 
 **FINDMATCHSELECTION**: defines if the whole matrix is searched or just the selected cells.
-Can be Yes or No. Default: No.
+Can be YES or NO. Default: NO.
 
 #### Undo/Redo
 
-**UNDOREDO**: Enable or disable the Undo/Redo support. Can be Yes or No. Default: No.
+**UNDOREDO**: Enable or disable the Undo/Redo support. Can be YES or NO. Default: NO.
 Undo/Redo support is available only for cell values, interactively or programmatically changed.
 Attributes are not saved/restored.
 
@@ -123,12 +123,12 @@ Attributes are not saved/restored.
 Uses descriptive strings based on the names "PASTECLIP", "PASTEDATA", "PASTEFILE", "COPYCOLTO:ALL", "COPYCOLTO:TOP", "COPYCOLTO:BOTTOM", "COPYCOLTO:MARKED", "COPYCOLTO:INTERVAL", "CLEARVALUE", "SETCELL" and "EDITCELL", that are language dependent.
 
 **UNDO**: Sets the number of undo levels to be performed. If value is NULL will undo 1 level.
-When retrieved returns Yes or No indicating if it has Undo to be performed.
-BUSY will be set to Yes during the operation.
+When retrieved returns YES or NO indicating if it has Undo to be performed.
+BUSY will be set to YES during the operation.
 
 **REDO**: Sets the number of redo levels to be performed. If value is NULL will redo 1 level.
-When retrieved returns Yes or No indicating if it has Redo to be performed.
-BUSY will be set to Yes during the operation.
+When retrieved returns YES or NO indicating if it has Redo to be performed.
+BUSY will be set to YES during the operation.
 
 **UNDOCLEAR** (write-only): clears all Undo/Redo information.
 
@@ -141,7 +141,7 @@ The SORTSIGN*id* attribute will be updated to reflect the ordering.
 When the SORTCOLUMNCOMPARE_CB callback is NOT defined, and the column is NOT numeric, then the text is **lexicographically** sorted.
 This means that numbers and text in the same value are sorted separately (for ex: A1 A2 A11 A30 B1).
 Also, natural alphabetic order is used: 123...aAáÁ...bBcC...
-The internal comparison will work only for Latin-1 characters, even if UTF8MODE is Yes.
+The internal comparison will work only for Latin-1 characters, even if UTF8MODE is YES.
 Uses the [IupStringCompare](../func/iup_stringcompare.md) function.\
 Sorting is reset if lines are added or removed.\
 **IMPORTANT**: The sort will not affect the original data, only how it is displayed from the original data and how it is updated to the original data.
@@ -152,8 +152,8 @@ ALSO the line and cell attributes of the sorted lines will NOT be affected, this
 Default: ASCENDING. Used during SORTCOLUMN*id* and when the SORTCOLUMNCOMPARE_CB callback is NOT defined.
 Used to update the SORTSIGN*id* attribute when the SORTCOLUMNCOMPARE_CB callback is defined.
 
-**SORTCOLUMNCASESENSITIVE**: defines if the text comparison is case-sensitive. Can be Yes or No.
-Default: Yes. Used only during SORTCOLUMN*id* and when the SORTCOLUMNCOMPARE_CB callback is not defined.
+**SORTCOLUMNCASESENSITIVE**: defines if the text comparison is case-sensitive. Can be YES or NO.
+Default: YES. Used only during SORTCOLUMN*id* and when the SORTCOLUMNCOMPARE_CB callback is not defined.
 
 **SORTCOLUMNINTERVAL** (read-only): Returns the last sorted interval, in the format "L1,L2".
 
@@ -165,23 +165,23 @@ To be used inside other callbacks.
 #### Line and Column Visibility
 
 **FREEZE:** freezes the scroll of columns and lines up to the given cell.
-Can be: "Yes" - uses the value of the FOCUS_CELL attribute, "*L*:*C*" where L and C are the line and column, or "No" clear the freeze state.
+Can be: "YES" - uses the value of the FOCUS_CELL attribute, "*L*:*C*" where L and C are the line and column, or "NO" clear the freeze state.
 Internally will set the NUMLIN_NOSCROLL and NUMCOL_NOSCROLL, and change the FRAMEHORIZCOLOR of the line and the FRAMEVERTCOLOR of the column to the color defined by FREEZECOLOR.
 
 **FREEZECOLOR**: color used for the freeze lines. Default: "0 0 255".
 Used only by the FREEZE attribute.
 
-**VISIBLECOL*id***: returns if the column is visible ("Yes" or "No").
+**VISIBLECOL*id***: returns if the column is visible ("YES" or "NO").
 Actually checks for WIDTHid and RASTERWIDTHid if they are defined and non-zero, but more complex logic when id=0.
 When changed will simply set those attributes to zero or NULL (when setting to NULL and col=0 not necessarily the column will become visible because of the internal matrix logic for titles).
 
-**VISIBLELIN*id***: returns if the line is visible ("Yes" or "No").
+**VISIBLELIN*id***: returns if the line is visible ("YES" or "NO").
 Actually checks for HEIGHTid and RASTERHEIGHTid if they are defined and non-zero, but more complex logic when id=0.
 When changed will simply set those attributes to zero or NULL (when setting to NULL and lin=0 not necessarily the line will become visible because of the internal matrix logic for titles).
 
 #### Context Menu
 
-**MENUCONTEXT**: enable the context menu. Can be Yes or No. Default: Yes.
+**MENUCONTEXT**: enable the context menu. Can be YES or NO. Default: YES.
 
 **SHOWCONTEXTMENU***L:C* (write-only): shows the context menu using the L:C cell as reference and its value as screen position in the format "x:y".
 
@@ -196,7 +196,7 @@ Some dialogs are not show if the matrix is read-only.
 
 **COPYCOLTO*L:C*** (write-only): copies (duplicates) the value of the given cell to a specified range of cells in the same column.
 Value can be "ALL" (for all lines), TOP (for all lines before the given line), BOTTOM (for all lines after the given line), MARKED (for all lines where the cell is marked), or a series of intervals in the format "L1-L2,L3-L4,L5,L6-L7,...".
-BUSY will be set to Yes during the operation.  Only visible cells will receive data.
+BUSY will be set to YES during the operation.  Only visible cells will receive data.
 
 #### Numeric Columns
 
@@ -331,7 +331,7 @@ If defined the value will not be updated as string in normal mode and  [VALUE_ED
 **value**: new value of the cell.
 
 **MENUCONTEXT_CB**: Action generated after the context menu is created but before it is displayed, so the application can add or removed items from the menu.
-Only shown if MENUCONTEXT=Yes.
+Only shown if MENUCONTEXT=YES.
 
     int function(Ihandle* ih, Ihandle* menu, int lin, int col);
 
@@ -342,7 +342,7 @@ Only shown if MENUCONTEXT=Yes.
 **Returns**: if returns IUP_IGNORE the action will be aborted, and the context menu will not be shown.
 
 **MENUCONTEXTCLOSE_CB**: Same as MENUCONTEXT_CB, but called after the context menu is closed.
-Only shown if MENUCONTEXT=Yes.
+Only shown if MENUCONTEXT=YES.
 
 **PASTESIZE_CB**: Action generated when pasting and importing data at the insert position will have more lines or columns than the current matrix.
 The application can change the NUMLIN and NUMCOL attributes to receive the new data.
@@ -380,7 +380,7 @@ If LASTFILENAME is set before the dialog is shown, then used to obtain the initi
 LASTFILENAME is set to NULL if the dialog is canceled.
 
 The CELLBYTITLE attribute controls how the "Go To..." dialog and the "Copy To - Interval" dialog interpret line and column values.
-If set to Yes, then the title lines/columns are used as indices to locate the cell.
+If set to YES, then the title lines/columns are used as indices to locate the cell.
 
     Settings...         => Shows the Settings Dialog
     ----------------

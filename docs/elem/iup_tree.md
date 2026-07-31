@@ -87,7 +87,7 @@ In GTK uses GtkTreeView, in Windows uses WC_TREEVIEW, in WinUI uses XAML TreeVie
 
 #### Hierarchy
 
-Branches can contain other branches or leaves. When ADDROOT= Yes, the tree has initially one branch, the **root**.
+Branches can contain other branches or leaves. When ADDROOT= YES, the tree has initially one branch, the **root**.
 The first node always has id=0 and depth=0.
 The tree nodes have a sequential identification number (id), starting by the first, with id=0, and increases for each node independent of the node depth.
 The following picture illustrates the numbering of the nodes in a tree.
@@ -210,7 +210,7 @@ Using the left mouse button:
 - **Clicking a (-/+) box**: Makes the branch to the right of the (-/+) box collapse/expand.
 - **Double-clicking a node**: Moves the focus node to the clicked node. If the node is an expanded branch, it is collapsed; if it is a collapsed branch, it is expanded; if it is a leaf, it is executed.
 - **Clicking twice a node**: Calls the rename callback or invoke the in place rename.
-- **Clicking and dragging a node**: if SHOWDRAGDROP=Yes starts a drag. When mouse is released, the DRAGDROP_CB callback is called. If the callback does not exist or if it returns IUP_CONTINUE then the node is moved to the new position. If Ctrl is pressed then the node is copied instead of moved.
+- **Clicking and dragging a node**: if SHOWDRAGDROP=YES starts a drag. When mouse is released, the DRAGDROP_CB callback is called. If the callback does not exist or if it returns IUP_CONTINUE then the node is moved to the new position. If Ctrl is pressed then the node is copied instead of moved.
 
 #### Removing a Node with "Del"
 

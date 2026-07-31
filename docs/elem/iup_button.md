@@ -132,7 +132,7 @@ Also in Windows, the highlight feedback when that happens is different if the bu
 Buttons always have borders, except when IMAGE and IMPRESS are both defined and IMPRESSBORDER=NO.
 In this case in Windows TITLE can also be defined.
 
-Usually toolbar buttons have FLAT=Yes and CANFOCUS=NO.
+Usually toolbar buttons have FLAT=YES and CANFOCUS=NO.
 
 In GTK uses GtkButton, in Windows uses WC_BUTTON, in WinUI uses XAML Button, in macOS uses NSButton, in Qt uses QPushButton, in FLTK uses Fl_Button, in EFL uses Elm_Button, in Motif uses xmPushButton, in Android uses MaterialButton, and in iOS uses UIButton.
 

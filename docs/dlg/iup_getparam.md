@@ -60,7 +60,7 @@ We show only one for each type, but you can have as many parameters of the same 
       
       if (!IupGetParam("Title", param_action, 0,
                        "Bt %u[, MyCancel, Help!]\n"
-                       "Boolean: %b[No,Yes]\n"
+                       "Boolean: %b[NO,YES]\n"
                        "Integer: %i\n"
                        "Real 1: %r\n"
                        "Sep1 %t\n"

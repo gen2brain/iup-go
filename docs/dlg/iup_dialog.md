@@ -158,8 +158,8 @@ Used only if PARENTDIALOG is not defined.
 Default: NORMAL. After **IupShow**/**IupPopup** the attribute is set back to "NORMAL".
 FULL is similar to FULLSCREEN, but only the dialog client area covers the screen area, menu and decorations will be there but out of the screen.
 In UNIX there is a chance that the placement won't work correctly, that depends on the Window Manager.
-The SHOWNOACTIVATE attribute can be set to Yes to prevent the window from being activated [Win32, WinUI, Qt and Cocoa].
-The SHOWMINIMIZENEXT attribute can be set to Yes to activate the next top-level window in the Z order when minimizing [Win32 and WinUI].
+The SHOWNOACTIVATE attribute can be set to YES to prevent the window from being activated [Win32, WinUI, Qt and Cocoa].
+The SHOWMINIMIZENEXT attribute can be set to YES to activate the next top-level window in the Z order when minimizing [Win32 and WinUI].
 
 **RESIZE** (creation-only): Allows interactively changing the dialog’s size. Default: YES.
 If RESIZE=NO then MAXBOX will be set to NO.
@@ -176,7 +176,7 @@ Updated after SHOW_CB is called and only if the focus was not changed during the
 On Android and iOS defaults to YES; touch UIs don't autofocus controls on launch.
 
 **ACTIVEWINDOW** (read-only): informs if the dialog is the active window (the window with focus).
-Can be Yes or No.
+Can be YES or NO.
 Not supported in Motif, Android and iOS.
 
 **BRINGFRONT** (write-only): makes the dialog the foreground window.
@@ -258,7 +258,7 @@ It is NOT compatible with IupCanvas, and all derived IUP controls such as IupFla
 Largely obsolete since Windows Vista, as the DWM compositor already prevents window flicker.
 
 **CUSTOMFRAMEDRAW** [Win32 Only] (non-inheritable): allows the application to customize the dialog frame elements (the title and its buttons) by drawing them with the CUSTOMFRAMEDRAW_CB callback.
-Can be Yes or No. The Window client area is expanded to include the whole window.
+Can be YES or NO. The Window client area is expanded to include the whole window.
 Notice that the dialog attributes like BORDER, RESIZE, MAXBOX, MINBOX and TITLE must still be defined.
 But maximize, minimize and close buttons must be manually implemented in the BUTTON_CB callback.
 One drawback is that menu bars will not work.
@@ -284,7 +284,7 @@ Possible values: YES, NO. Default: NO.
 
 **HIDETASKBAR** (write-only): Action attribute that when set to "YES", hides the dialog, but does not decrement the visible dialog count, does not call SHOW_CB and does not mark the dialog as hidden inside IUP.
 It is usually used to hide the dialog and keep the tray icon working without closing the main loop.
-It has the same effect as setting LOCKLOOP=Yes and normally hiding the dialog.
+It has the same effect as setting LOCKLOOP=YES and normally hiding the dialog.
 IMPORTANT: when you hide using HIDETASKBAR, you must show using HIDETASKBAR also.
 Possible values: YES, NO.
 Not supported in Android and iOS.

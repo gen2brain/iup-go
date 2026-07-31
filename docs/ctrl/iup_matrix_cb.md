@@ -11,7 +11,7 @@
 **lin**, **col**: Coordinates of the selected cell.\
 **edition**: 1 if the cell is in edition mode, and 0 if it is not.\
 **value**: When EDITMODE=NO is the cell current value, but if the type key is a valid character then contains a string with that character.
-When EDITMODE=Yes depends on the editing field type. If a dropdown, then it is an empty string ("").
+When EDITMODE=YES depends on the editing field type. If a dropdown, then it is an empty string ("").
 If a text, and the type key is a valid character then it is the future value of the text field, if not a valid character then it is the cell current value.
 Notice that this value can be NULL if the cell does not have a value and the key pressed is not a character.
 
@@ -185,7 +185,7 @@ value: original cell value
 
 **Returns:** the string to be drawn.
 
-### Editing (not called if READONLY=Yes) TOGGLEVALUE_CB: Action generated when a toggle button is pressed.
+### Editing (not called if READONLY=YES) TOGGLEVALUE_CB: Action generated when a toggle button is pressed.
 
     int function(Ihandle *ih, int lin, int col, int status);
 
@@ -194,7 +194,7 @@ value: original cell value
 **status**: Value of the toggle. Can be 1 or 0.
 
 **VALUECHANGED_CB**: Called after the value was interactively changed by the user or after a group of values where programmatically changed in a single operation.
-When it was interactively changed the temporary attribute CELL_EDITED will be set to Yes during the callback.
+When it was interactively changed the temporary attribute CELL_EDITED will be set to YES during the callback.
 
     int function(Ihandle *ih);
 
@@ -290,7 +290,7 @@ Called both for common cells and for line and column titles.
 **VALUE_EDIT_CB**: Action generated to notify the application that the value of a cell was changed.
 Never called when READONLY=YES. This callback is usually set in callback mode, but also works in normal mode.
 When in normal mode, it is called after the new value has been internally stored, so to refuse the new value simply reset the cell to the desired value.
-When it was interactively changed the temporary attribute CELL_EDITED will be set to Yes during the callback.
+When it was interactively changed the temporary attribute CELL_EDITED will be set to YES during the callback.
 
     int function(Ihandle *ih, int lin, int col, char* newval);
 

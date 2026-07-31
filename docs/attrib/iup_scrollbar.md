@@ -42,9 +42,9 @@ Default: "YES".
 **YAUTOHIDE**: When enabled, if DY >= YMAX-YMIN then the vertical scrollbar is hidden.
 Default: "YES".
 
-**XHIDDEN** [read-only]: returns if the scrollbar is hidden or not when XAUTOHIDE=Yes.
+**XHIDDEN** [read-only]: returns if the scrollbar is hidden or not when XAUTOHIDE=YES.
 
-**YHIDDEN** [read-only]: returns if the scrollbar is hidden or not when YAUTOHIDE=Yes.
+**YHIDDEN** [read-only]: returns if the scrollbar is hidden or not when YAUTOHIDE=YES.
 
 **SB_RESIZE** [read-only]: returns if a scrollbar visibility was changed forcing a canvas resize after setting DX or DY.
 
@@ -69,7 +69,7 @@ Since the canvas can have scrollbars and borders, its visible area in pixel coor
 **IMPORTANT:** when working with a virtual space with integer coordinates, set XMAX to the integer size of the virtual space, NOT to "width-1", or the last pixel of the virtual space will never be visible.
 If you decide to let XMAX with the default value of 1.0 and to control only DX, then use the formula DX=visible_width/width.
 
-**IMPORTANT:** When the virtual space has the same size as the canvas, i.e., when **DX >= XMAX-XMIN**, the scrollbar is automatically hidden if **XAUTOHIDE**=Yes.
+**IMPORTANT:** When the virtual space has the same size as the canvas, i.e., when **DX >= XMAX-XMIN**, the scrollbar is automatically hidden if **XAUTOHIDE**=YES.
 The width of the vertical scrollbar (the same as the height of the horizontal scrollbar) can be obtained using the SCROLLBARSIZE global attribute.
 
 The same is valid for YMIN, YMAX, DY and POSY. But remember that the Y axis is oriented from top to bottom in IUP.
@@ -77,7 +77,7 @@ So if you want to consider YMIN and YMAX as bottom-up oriented, then the actual 
 
 **IMPORTANT:** Changes in the scrollbar parameters do NOT generate ACTION nor SCROLL_CB callback events.
 If you need to update the canvas contents call your own action callback or call **IupUpdate**.
-But a change in the DX attribute may generate a RESIZE_CB callback event if XAUTOHIDE=Yes.
+But a change in the DX attribute may generate a RESIZE_CB callback event if XAUTOHIDE=YES.
 
 If you have to change the properties of the scrollbar (XMIN, XMAX and DX) but you want to keep the thumb still (if possible) in the same relative position, then you have to also recalculate its position (POSX) using the old position as reference to the new one.
 For example, you can convert it to a 0-1 interval and then scale to the new limits:
@@ -87,7 +87,7 @@ For example, you can convert it to a 0-1 interval and then scale to the new limi
 
 **IupList**, **IupTree**, and **IupText/IupMultiline** scrollbars are automatically managed and do NOT have the POS*, *MIN, *MAX and D* attributes.
 
-When updating the virtual space size, or when the canvas is resized, if **XAUTOHIDE**=Yes then calculating the actual DX size can be very tricky.
+When updating the virtual space size, or when the canvas is resized, if **XAUTOHIDE**=YES then calculating the actual DX size can be very tricky.
 Here is a helpful algorithm:
 
     void scrollbar_update(Ihandle* ih, int view_width, int view_height)  /* view_width and view_height is the virtual space size */

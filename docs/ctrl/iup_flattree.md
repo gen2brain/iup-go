@@ -181,7 +181,7 @@ By default:
 
     "IMGBLANK" and "IMGPAPER" are designed for use as "IMAGELEAF"
 
-The default images are 16x16 pixels on standard resolution and 24x24 pixels on high resolution (4k displays), but you can force the use of the high resolution images by defining the global attribute "TREEIMAGE24" to "Yes".
+The default images are 16x16 pixels on standard resolution and 24x24 pixels on high resolution (4k displays), but you can force the use of the high resolution images by defining the global attribute "TREEIMAGE24" to "YES".
 
 All images do NOT need to have the same size, but it is recommended that a pair of branch open and branch collapsed to have the same size.
 
@@ -231,7 +231,7 @@ Using the left mouse button:
 - **Clicking a (-/+) box**: Makes the branch to the right of the (-/+) box collapse/expand.
 - **Double-clicking a node**: Moves the focus node to the clicked node. If the node is an expanded branch, it is collapsed; if it is a collapsed branch, it is expanded; if it is a leaf, it is executed.
 - **Clicking twice a node**: Calls the rename callback or invoke the in place rename.
-- **Clicking and dragging a node**: if SHOWDRAGDROP=Yes starts a drag. When mouse is released, the DRAGDROP_CB callback is called. If the callback does not exist or if it returns IUP_CONTINUE then the node is moved to the new position. If Ctrl is pressed then the node is copied instead of moved.
+- **Clicking and dragging a node**: if SHOWDRAGDROP=YES starts a drag. When mouse is released, the DRAGDROP_CB callback is called. If the callback does not exist or if it returns IUP_CONTINUE then the node is moved to the new position. If Ctrl is pressed then the node is copied instead of moved.
 
 #### Removing a Node with "Del"
 

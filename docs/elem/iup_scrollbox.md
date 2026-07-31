@@ -23,7 +23,7 @@ Inherits all attributes and callbacks of the [IupCanvas](../elem/iup_canvas.md),
 
 **CANVASBOX** (non-inheritable): enable the behavior of a canvas box instead of a regular container.
 This will affect the EXPAND attribute, the Natural size computation, and child layout distribution.
-Can be Yes or No. Default: No.
+Can be YES or NO. Default: NO.
 
 **CHILDOFFSET**: Allow specifying a position offset for the child. Available for native containers only.
 It will not affect the natural size, and allows to position controls outside the client area.
@@ -46,7 +46,7 @@ The child must be contained in the Scrollbox hierarchy.
 
 **SCROLLTOCHILD_HANDLE** (write-only): same as SCROLLTOCHILD but directly using the child handle.
 
-**WHEELDROPFOCUS:** set to Yes.
+**WHEELDROPFOCUS:** set to YES.
 
 > 
 >

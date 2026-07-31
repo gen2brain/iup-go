@@ -94,7 +94,7 @@ Selection and delete behavior can be controlled using the respective callbacks.
 
 #### Context Menu
 
-The context menu is shown by a single click with the right mouse button when MENUCONTEXT=Yes.
+The context menu is shown by a single click with the right mouse button when MENUCONTEXT=YES.
 The default menu contains the following items:
 
     Zoom In  +
@@ -104,12 +104,12 @@ The default menu contains the following items:
     Show/Hide Legend
     Show/Hide Grid
     -----------
-    Data Set Values...      (only when MENUITEMVALUES=Yes)
-    Data Set Properties...  (only when MENUITEMPROPERTIES=Yes)
-    Properties...           (only when MENUITEMPROPERTIES=Yes)
+    Data Set Values...      (only when MENUITEMVALUES=YES)
+    Data Set Properties...  (only when MENUITEMPROPERTIES=YES)
+    Properties...           (only when MENUITEMPROPERTIES=YES)
 
 The "Data Set Values..." dialog is available only if the [IupMatrixEx](iup_matrixex.md) control is initialized and ready to be used.
-Also, the dialog in read-only by default, to enable the editing of values on the dialog set EDITABLEVALUES=Yes.
+Also, the dialog in read-only by default, to enable the editing of values on the dialog set EDITABLEVALUES=YES.
 It is shown for the current Dataset.
 
 The "Data Set Properties..." dialog is shown for the current Dataset.
@@ -290,7 +290,7 @@ Only works when DS_MODE is LINE, MARKLINE, AREA, STEP or ERRORBAR.
 
 ### Attributes (All non-inheritable, except when noted)
 
-**ANTIALIAS**: Enable or disable the anti-aliasing support when available. Default: Yes.
+**ANTIALIAS**: Enable or disable the anti-aliasing support when available. Default: YES.
 
 **READONLY**: allow the selected samples to be removed when the Del key is pressed.
 
@@ -332,19 +332,19 @@ When set, will not overwrite *FONTSTYLE nor *FONTSIZE attributes.
 
 ------------------------------------------------------------------------
 
-**MENUCONTEXT**: enable the context menu. Can be Yes or No. Default: Yes.
+**MENUCONTEXT**: enable the context menu. Can be YES or NO. Default: YES.
 
 **MENUITEMPROPERTIES**: enable the properties menu items and dataset values menu item in the context menu.
-Can be Yes or No. Default: No.
+Can be YES or NO. Default: NO.
 
-**MENUITEMVALUES**: enable only the dataset menu item in the context menu. Can be Yes, No, or Hide.
-Hide can be used to hide it when MENUITEMPROPERTIES=Yes. Default: No.
+**MENUITEMVALUES**: enable only the dataset menu item in the context menu. Can be YES, NO, or Hide.
+Hide can be used to hide it when MENUITEMPROPERTIES=YES. Default: NO.
 
 **SHOWMENUCONTEXT** (write-only): show the context menu in the given position.
 Value has the "x:y" format and is relative to the left-top corner of the screen.
 
 **EDITABLEVALUES**: enable the editing of values when the "DataSet Values..." dialog is displayed.
-Can be Yes or No. Default: No.
+Can be YES or NO. Default: NO.
 
 #### Multiple Plots Management 
 
@@ -417,12 +417,12 @@ When NONE area is extended up to the plot limits.
 **TITLEFONTSIZE, TITLEFONTSTYLE:** the title font size and style.
 Default: FONT, but size is increased by 6 points.
 
-**TITLEPOSAUTO**: If Yes, it will position the title at top-center of the plot area, else it will use TITLEPOSXY to position the title.
+**TITLEPOSAUTO**: If YES, it will position the title at top-center of the plot area, else it will use TITLEPOSXY to position the title.
 If set to NO it will disable the automatic position but reuse the last calculated position, and it will enable the interactive change of the title position.
-Default: Yes.
+Default: YES.
 
 **TITLEPOSXY**: position of the title in the format "x,y" in pixels inside the plot area relative to the bottom-left corner of the plot, oriented left to right and bottom to top, and anchored at the north-center point of the title bounding box.
-When set, it will also set TITLEPOSAUTO to No.
+When set, it will also set TITLEPOSAUTO to NO.
 Notice that when this value is used, if the plot is resized the value must also be manually updated to maintain the same appearance.
 
 #### Legend Configuration
@@ -539,7 +539,7 @@ Can be 0 to 100. Default: 10.
 
 **DS_BARMULTICOLOR**: enable the use of one color for each sample when mode is BAR or HORIZONTALBAR.
 The color is automatically set, but a custom color can be set using SAMPLECOLORid attribute.
-Default: No.
+Default: NO.
 
 **DS_REMOVE** (write-only): removes a sample from the current dataset given its index.
 Out of range indices are ignored.
@@ -554,14 +554,14 @@ Can be 0 (fully transparent) to 255 (opaque). Used only for AREA mode.
 When different then 255 a line with dataset line attributes and using the regular dataset color will be drawn as an outline of the area.
 Default: 255.
 
-**DS_PIERADIUS**: radius of the pie. Notice that the pie will be a circle only if the viewport area is a perfect square or if VIEWPORTSQUARE=Yes, otherwise it will be an ellipse.
+**DS_PIERADIUS**: radius of the pie. Notice that the pie will be a circle only if the viewport area is a perfect square or if VIEWPORTSQUARE=YES, otherwise it will be an ellipse.
 Used only for PIE mode. Default: 0.95
 
 **DS_PIESTARTANGLE**: The angle where the first sample sector starts in degrees.
 Used only for PIE mode. Default: 0º
 
 **DS_PIECONTOUR**: enable a contour separating each sector, the external ring and the internal ring (when there is a hole).
-Can be Yes or No. Used only for PIE mode.
+Can be YES or NO. Used only for PIE mode.
 The line is drawn with DS_COLOR, DS_LINEWIDTH and DS_LINESTYLE.
 
 **DS_PIEHOLE**: size of the hole as a factor of DS_PIERADIUS. Can be 0.0 to 1.0.
@@ -580,14 +580,14 @@ The value can be negative to orient the text outwards. Used only for PIE mode.
 Default: 0.95
 
 **DS_STRXDATA** [read-only]: returns if the dataset has strings for X coordinates, i.e. the strXdata parameter in IupPlotBegin was non-zero.
-Can be: Yes or No.
+Can be: YES or NO.
 
 **DS_EXTRA** [read-only]: returns if the dataset has extra values, i.e.,
-IupPlotSetSampleExtra was called for the dataset. Can be: Yes or No.
+IupPlotSetSampleExtra was called for the dataset. Can be: YES or NO.
 
 **DS_ORDEREDX**: informs if the dataset X values are ordered.
 If so the FindSample and FindSample routines are optimized to be faster (does not affect BAR modes nor PIE mode).
-Default: No.
+Default: NO.
 
 #### Axis Configuration 
 
@@ -668,10 +668,10 @@ AXS_XTICKDIVISION and AXS_YTICKDIVISION are also accepted.
 Default: YES. AXS_XAUTOTICKSIZE and AXS_XAUTOTICKSIZE are also accepted.
 
 **AXS_XTICKMINORSIZE, AXS_YTICKMINORSIZE**: size of minor ticks in pixels. Default: 5.
-Automatically calculated when AUTOTICKSIZE=Yes. AXS_XTICKSIZE and AXS_YTICKSIZE are also accepted.
+Automatically calculated when AUTOTICKSIZE=YES. AXS_XTICKSIZE and AXS_YTICKSIZE are also accepted.
 
 **AXS_XTICKMAJORSIZE, AXS_YTICKMAJORSIZE**: size of major ticks in pixels. Default is 8.
-Automatically calculated when AUTOTICKSIZE=Yes.
+Automatically calculated when AUTOTICKSIZE=YES.
 
 #### Axis Ticks Number Configuration
 
@@ -686,7 +686,7 @@ Use values between 90º and 45º for better results. Default: 90.
 
 **AXS_XTICKFORMATAUTO, AXS_YTICKFORMATAUTO**: enable the automatic axis tick number format.
 For the log scale axis the format is dynamically changed for every major tick.
-Default: "Yes".
+Default: "YES".
 
 **AXS_XTICKFORMAT, AXS_YTICKFORMAT**: axis tick number C format string. If set, it will also set AXS_*TICKFORMATAUTO to NO.
 Default: "%.0f". The decimal symbol will follow the DEFAULTDECIMALSYMBOL global attribute definition if any.
@@ -713,7 +713,7 @@ The sample is searched using IupPlotFindSample.
 **ih**: identifier of the element that activated the event.\
 **ds_index**: index of the dataset\
 **sample_index**: index of the sample in the dataset**\
-x**: X coordinate value of the sample. When DS_STRXDATA=Yes, contains just the sample_index.\
+x**: X coordinate value of the sample. When DS_STRXDATA=YES, contains just the sample_index.\
 **y**: Y coordinate value of the sample\
 **button**: identifies the activated mouse button\
     IUP_BUTTON1 - left mouse button (button 1)\
@@ -741,14 +741,14 @@ The segment is searched using IupPlotFindSegment.
     IUP_BUTTON2 - middle mouse button (button 2)\
     IUP_BUTTON3 - right mouse button (button 3)
 
-**EDITSAMPLE_CB**: Action generated when a sample coordinates are changed in the "Data Set Values..." dialog if EDITABLEVALUES=Yes.
+**EDITSAMPLE_CB**: Action generated when a sample coordinates are changed in the "Data Set Values..." dialog if EDITABLEVALUES=YES.
 
     int function(Ihandle *ih, int ds_index, int sample_index, double x, double y);
 
 **ih**: identifier of the element that activated the event.\
 **ds_index**: index of the dataset\
 **sample_index**: index of the sample in the dataset**\
-x**: X coordinate value of the sample. When DS_STRXDATA=Yes, contains just the sample_index.\
+x**: X coordinate value of the sample. When DS_STRXDATA=YES, contains just the sample_index.\
 **y**: Y coordinate value of the sample
 
 **DELETE_CB**: Action generated when the Del key is pressed to remove a sample from a dataset.
@@ -759,7 +759,7 @@ If multiple samples are selected it is called once for each selected sample.
 **ih**: identifier of the element that activated the event.\
 **ds_index**: index of the dataset\
 **sample_index**: index of the sample in the dataset**\
-x**: X coordinate value of the sample. When DS_STRXDATA=Yes, contains just the sample_index.\
+x**: X coordinate value of the sample. When DS_STRXDATA=YES, contains just the sample_index.\
 **y**: Y coordinate value of the sample
 
 **Returns:** If IUP_IGNORE then the sample is not deleted.
@@ -781,14 +781,14 @@ When the plot is redraw, it is called for each sample, then it is called again f
 **ih**: identifier of the element that activated the event.\
 **index**: index of the dataset\
 **sample_index**: index of the sample in the dataset**\
-x**: X coordinate value of the sample. When DS_STRXDATA=Yes, contains just the sample_index.\
+x**: X coordinate value of the sample. When DS_STRXDATA=YES, contains just the sample_index.\
 **y**: Y coordinate value of the sample\
 **select**: indicates if the sample is selected.
 
 **Returns:** When called by the second time for a selected sample, if IUP_IGNORE is returned, the selection is not dawn.
 
 **MENUCONTEXT_CB**: Action generated after the context menu (right-click) is created but before it is displayed, so the application can add or removed items from the menu.
-Called when the mouse button is pressed, with no Ctrl nor Shift keys. Only shown if MENUCONTEXT=Yes.
+Called when the mouse button is pressed, with no Ctrl nor Shift keys. Only shown if MENUCONTEXT=YES.
 
     int function(Ihandle* ih, Ihandle* menu, int cnv_x, int cnv_y);
 
@@ -797,7 +797,7 @@ Called when the mouse button is pressed, with no Ctrl nor Shift keys. Only shown
 **cnv_x**, **cnv_y**: canvas coordinates inside the current plot.\
 
 **MENUCONTEXTCLOSE_CB**: Same as MENUCONTEXT_CB, but called after the context menu is closed.
-Only shown if MENUCONTEXT=Yes.
+Only shown if MENUCONTEXT=YES.
 
 **DSPROPERTIESCHANGED_CB**: Called after the user changed dataset attributes using the "Data Set Properties..." dialog.
 
@@ -842,7 +842,7 @@ It is called only if the selection state of the sample is about to be changed.
 **ih**: identifier of the element that activated the event.\
 **ds_index**: index of the dataset\
 **sample_index**: index of the sample in the dataset**\
-x**: X coordinate value of the sample. When DS_STRXDATA=Yes, contains just the sample_index.\
+x**: X coordinate value of the sample. When DS_STRXDATA=YES, contains just the sample_index.\
 **y**: Y coordinate value of the sample\
 **select**: indicates if the sample is to be selected.
 

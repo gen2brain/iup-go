@@ -40,7 +40,7 @@ If it is not defined then the BACKIMAGE is used and its colors will be replaced 
 If it is not defined then the BACKIMAGE is used.
 
 **BACKIMAGEZOOM** (non-inheritable): if set, the back image will be zoomed to occupy the full background.
-Aspect ratio is NOT preserved. Can be Yes or No. Default: No.
+Aspect ratio is NOT preserved. Can be YES or NO. Default: NO.
 
 [BGCOLOR](../attrib/iup_bgcolor.md): Background color.
 If text and image are not defined, the button is configured to simply show a color, in this case set the button size because the natural size will be very small.
@@ -87,14 +87,14 @@ This is for the **IupFlatButton** drawn border.
 **CORNERRADIUS** (non-inheritable): radius of the rounded corners for the button background and border.
 Default: "0" (no rounding).
 
-**SHOWBORDER**: by default borders are drawn only when the button is highlighted, if SHOWBORDER=Yes borders are always show.
-When SHOWBORDER=Yes and BGCOLOR is not defined, the actual BGCOLOR will be a darker version of the background color of the native parent.
+**SHOWBORDER**: by default borders are drawn only when the button is highlighted, if SHOWBORDER=YES borders are always show.
+When SHOWBORDER=YES and BGCOLOR is not defined, the actual BGCOLOR will be a darker version of the background color of the native parent.
 
 **CANFOCUS** (creation-only) (non-inheritable): enables the focus traversal of the control.
 Default: YES.
 
-**FOCUSFEEDBACK** (non-inheritable): draw the focus feedback. Can be Yes or No.
-Default: Yes.
+**FOCUSFEEDBACK** (non-inheritable): draw the focus feedback. Can be YES or NO.
+Default: YES.
 
 **PROPAGATEFOCUS** (non-inheritable): enables the focus callback forwarding to the next native parent with FOCUS_CB defined.
 Default: NO.
@@ -110,7 +110,7 @@ If not defined FGCOLOR will be used instead.
 If not defined FGCOLOR will be used instead.
 
 **FITTOBACKIMAGE** (non-inheritable): enable the natural size to be computed from the BACKIMAGE.
-If BACKIMAGE is not defined will be ignored. Can be Yes or No. Default: No.
+If BACKIMAGE is not defined will be ignored. Can be YES or NO. Default: NO.
 
 **FRONTIMAGE** (non-inheritable): image name to be used as foreground.
 The foreground image is drawn in the same position as the background, but it is drawn at last.
@@ -126,9 +126,9 @@ If it is not defined then the FRONTIMAGE is used and its colors will be replaced
 **FRONTIMAGEPRESS** (non-inheritable): foreground image name of the element in pressed state.
 If it is not defined then the FRONTIMAGE is used.
 
-**HASFOCUS** (read-only): returns the button state if has focus. Can be Yes or No.
+**HASFOCUS** (read-only): returns the button state if has focus. Can be YES or NO.
 
-**HIGHLIGHTED** (read-only): returns the button state if highlighted. Can be Yes or No.
+**HIGHLIGHTED** (read-only): returns the button state if highlighted. Can be YES or NO.
 
 **IMAGE** (non-inheritable): Image name.
 Use [IupSetHandle](../func/iup_sethandle.md) or [IupSetAttributeHandle](../func/iup_setattributehandle.md) to associate an image to a name.
@@ -153,10 +153,10 @@ Value can be DEFAULTBUTTONPADDING, so the global attribute of this name will be 
 **CPADDING**: same as PADDING but using the units of the **SIZE** attribute.
 It will actually set the PADDING attribute.
 
-**PRESSED** (read-only): returns the button state if pressed. Can be Yes or No.
+**PRESSED** (read-only): returns the button state if pressed. Can be YES or NO.
 
 **RADIO** (read-only): returns if the toggle is inside a radio. Can be "YES" or "NO".
-Valid only after the element is mapped and TOGGLE=Yes, before returns NULL.
+Valid only after the element is mapped and TOGGLE=YES, before returns NULL.
 
 **IGNORERADIO** (non-inheritable): when set, the toggle will not behave as a radio when inside an **IupRadio** hierarchy.
 
@@ -178,15 +178,15 @@ Notice that this is done internally by the system, the element natural size will
 For the remaining lines to be visible, the element should use EXPAND=VERTICAL or set a SIZE/RASTERSIZE with enough height for the wrapped lines.
 
 **TEXTELLIPSIS** (non-inheritable): If the text is larger than its box, an ellipsis ("...") will be placed near the last visible part of the text and replace the invisible part.
-It will be ignored when TEXTWRAP=Yes.
+It will be ignored when TEXTWRAP=YES.
 
-**TEXTCLIP** (non-inheritable): If Yes, the text will be clipped to the button area. Default: No.
+**TEXTCLIP** (non-inheritable): If YES, the text will be clipped to the button area. Default: NO.
 
 **TEXTORIENTATION** (non-inheritable): text angle in degrees and counterclockwise.
 The text size will adapt to include the rotated space.
 
 **VALUE** (non-inheritable): Toggle's state. Values can be "ON", "OFF" or "TOGGLE".
-Default: "OFF". The TOGGLE option will invert the current state. Valid only when TOGGLE=Yes.
+Default: "OFF". The TOGGLE option will invert the current state. Valid only when TOGGLE=YES.
 Can only be set to ON for a toggle inside a radio, it will automatically set to OFF the previous toggle that was ON.
 
 **SELECTED** (non-inheritable): Same as VALUE but ignore the TOGGLE attribute.
@@ -215,7 +215,7 @@ This callback is called only after the mouse is released and when it is released
 **Returns**: IUP_CLOSE will be processed.
 
 **VALUECHANGED_CB**: Called after the value was interactively changed by the user.
-Called only when TOGGLE=Yes. Called after the ACTION callback but under the same context.
+Called only when TOGGLE=YES. Called after the ACTION callback but under the same context.
 
     int function(Ihandle *ih);
 
@@ -231,24 +231,24 @@ The **IupFlatButton** can contain text and image simultaneously.
 
 The natural size will be a combination of the size of the image and the title, if any, plus PADDING and SPACING (if both image and title are present).
 
-Borders are drawn only when the button is highlighted reproducing the behavior of the **IupButton** when FLAT=Yes.
+Borders are drawn only when the button is highlighted reproducing the behavior of the **IupButton** when FLAT=YES.
 
 Buttons are activated using Enter or Space keys.
 
-When TOGGLE=Yes, to build a set of mutual exclusive toggles, insert them in a **IupRadio** container.
+When TOGGLE=YES, to build a set of mutual exclusive toggles, insert them in a **IupRadio** container.
 Only the **IupFlatButton** controls inside the radio will be part of the exclusive group.
 
-When TOGGLE=Yes, the button that is a child of an **IupRadio** automatically receives a name when its is mapped into the native system.
+When TOGGLE=YES, the button that is a child of an **IupRadio** automatically receives a name when its is mapped into the native system.
 
 To replace a **IupButton** by a **IupFlatButton**, you must change the function call (**IupFlatButton** does not include the action callback in the constructor) and change the ACTION callback name to FLAT_ACTION.
 
-To replace a **IupToggle** by a **IupFlatButton**, you must do the same, and set TOGGLE=Yes.
+To replace a **IupToggle** by a **IupFlatButton**, you must do the same, and set TOGGLE=YES.
 But notice that there will be no check box nor radio button.
 
 Finally, notice that the name of the secondary image attributes are different (for instance, IMINACTIVE is IMAGEINACTIVE, IMPRESS is IMAGEPRESS, and so on).
 To define a button that only shows a color, do the same as in **IupButton** and don't define TITLE nor IMAGE, but instead of BGCOLOR use FGCOLOR to set the color of the button.
 
-When the **IupFlatButton** displays only a text it will look like a label, use SHOWBORDER=Yes to force the display of the borders all the time.
+When the **IupFlatButton** displays only a text it will look like a label, use SHOWBORDER=YES to force the display of the borders all the time.
 
 ### Examples
 

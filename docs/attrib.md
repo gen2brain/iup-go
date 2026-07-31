@@ -6,7 +6,7 @@ Depending on the element, its value can be computed or simply verified.
 Also, it can be internally stored or not.
 
 Attribute names are always upper case, lower case names will not work.
-But attribute values like "YES", "NO", "TOP", are case-insensitive, so "Yes", "no", "top", and other variations will work.
+But attribute values like "YES", "NO", "TOP", are case-insensitive, so "YES", "no", "top", and other variations will work.
 
 If not defined, their value can be inherited from the parent container.
 
@@ -78,7 +78,7 @@ If the attribute is checked before the control is mapped and just after, its val
 Depending on how the attribute is stored, its inheritance can be completely ignored.
 
 Attribute **names** are always upper case, lower case names will not work.
-But attribute **values** like "YES", "NO", "TOP", are case-insensitive, so "Yes", "no", "top", and other variations will work.
+But attribute **values** like "YES", "NO", "TOP", are case-insensitive, so "YES", "no", "top", and other variations will work.
 
 Boolean attributes accept the values "1", "YES" or "ON" for **true**, and "0", "NO" or "OFF" for **false**.
 But they will return the value described in the documentation.

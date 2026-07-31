@@ -5,7 +5,7 @@ Used internally in **IupMatrixEx** when sorting, but available in the main libra
 
 This means that numbers and text in the string are sorted separately (for ex: A1 A2 A11 A30 B1).
 Also, natural alphabetic order is used: 123...aAáÁ...bBcC...
-The comparison will work only for Latin-1 characters, even if UTF8MODE is Yes.
+The comparison will work only for Latin-1 characters, even if UTF8MODE is YES.
 
 ### Parameters/Return
 

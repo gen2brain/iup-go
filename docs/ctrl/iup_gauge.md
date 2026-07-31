@@ -22,9 +22,9 @@ Can be NULL. When NULL it will use the parent's background color.
 Default: "0 120 220".
 
 **FLAT**: use a 1 pixel flat border instead of the default 3-pixel sunken border.
-Can be Yes or No. Default: No.
+Can be YES or NO. Default: NO.
 
-**FLATCOLOR:** color of the border when FLAT=Yes. Default: "160 160 160".
+**FLATCOLOR:** color of the border when FLAT=YES. Default: "160 160 160".
 
 **MAX** (non-inheritable): Contains the maximum value. Default is "1".
 

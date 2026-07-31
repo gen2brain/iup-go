@@ -24,9 +24,9 @@ The maximum number of colors is 256. The default colors use the same set of **Iu
 **COUNT** (read-only) (non-inheritable)**:** same as **NUM_CELLS** but it is read-only.
 
 **FLAT**: use a 1 pixel flat border instead of the default 3-pixel sunken border.
-When enabled is the same as setting SHADOWED=NO. Can be Yes or No. Default: No.
+When enabled is the same as setting SHADOWED=NO. Can be YES or NO. Default: NO.
 
-**FLATCOLOR:** color of the border when FLAT=Yes and the preview area borders.
+**FLATCOLOR:** color of the border when FLAT=YES and the preview area borders.
 Default: "0 0 0".
 
 **FOCUSSELECT**: when focus is changed, the primary selection is also changed.

@@ -92,7 +92,7 @@ The name of the content attribute is given by the attribute ATTRIBUTE_NAME.
 
 ------------------------------------------------------------------------
 
-**EDITABLE**: enable the design mode, or the WYSIWYG HTML editor. Can be Yes or NO.
+**EDITABLE**: enable the design mode, or the WYSIWYG HTML editor. Can be YES or NO.
 
 (All the following attributes depend on the EDITABLE attribute)
 
@@ -102,7 +102,7 @@ The name of the content attribute is given by the attribute ATTRIBUTE_NAME.
 
 **SAVEFILE** (write-only): save the contents in an HTML file given its filename.
 
-**DIRTY** (read-only): Returns Yes or No if the contents have been edited by the user.
+**DIRTY** (read-only): Returns YES or NO if the contents have been edited by the user.
 
 **UNDO** (write-only): undo the last editing.
 
@@ -119,11 +119,11 @@ The name of the content attribute is given by the attribute ATTRIBUTE_NAME.
 **EXECCOMMAND** (write-only): executes an editing command.
 Possible commands: CUT, COPY, PASTE, UNDO, REDO, SELECTALL, BOLD, ITALIC, UNDERLINE, STRIKETHROUGH, JUSTIFYLEFT, JUSTIFYCENTER, JUSTIFYRIGHT, JUSTIFYFULL, INDENT, OUTDENT, REMOVEFORMAT, DELETE, SUBSCRIPT, SUPERSCRIPT, INSERTORDEREDLIST, INSERTUNORDEREDLIST, UNLINK.
 
-**COMMANDSTATE** (read-only): returns the command state. Can be Yes or No.
+**COMMANDSTATE** (read-only): returns the command state. Can be YES or NO.
 The command name must be stored on the attribute COMMAND.
 
 **COMMANDENABLED** (read-only): returns if the command is enabled.
-Can be Yes or No. The command name must be stored on the attribute COMMAND.
+Can be YES or NO. The command name must be stored on the attribute COMMAND.
 
 **COMMANDTEXT** (read-only): returns the command text if any.
 The command name must be stored on the attribute COMMAND.
@@ -195,7 +195,7 @@ Can be called multiple times when a frame set loads its frames, or when a page l
 **url**: the URL address that is opened in the new window.
 
 **UPDATE_CB**: action generated when the selection was changed and the editor interface needs an update.
-Used only when EDITABLE=Yes.
+Used only when EDITABLE=YES.
 
     int function(Ihandle* ih);
 

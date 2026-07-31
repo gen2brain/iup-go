@@ -31,7 +31,7 @@ The list of params cannot be changed after the box is created.
 Default: ALEFT.
 
 **MODIFIABLE**: controls the active state of all controls but when disabled allows the text boxes to be read-only and selectable instead of inactive.
-Default: Yes.
+Default: YES.
 
 **SPINNING**: defined only during the callback to indicate that the spin was activated.
 

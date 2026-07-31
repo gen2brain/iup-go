@@ -42,7 +42,7 @@ Use [IupSetHandle](../func/iup_sethandle.md) or [IupSetAttributeHandle](../func/
 See also [IupImage](../elem/iup_image.md).
 
 **BACKIMAGEZOOM** (non-inheritable): if set, the back image will be zoomed to occupy the full background.
-Aspect ratio is NOT preserved. Can be Yes or No. Default: No.
+Aspect ratio is NOT preserved. Can be YES or NO. Default: NO.
 
 [BGCOLOR](../attrib/iup_bgcolor.md): Background color of the text.
 Default: the global attribute TXTBGCOLOR.
@@ -68,15 +68,15 @@ Default: NO, but if DROPFILES_CB is defined when the element is mapped then it w
 
 [FGCOLOR](../attrib/iup_fgcolor.md): Text color. Default: the global attribute TXTFGCOLOR.
 
-**FOCUSFEEDBACK** (non-inheritable): draw the focus feedback. Can be Yes or No. Default: Yes.
+**FOCUSFEEDBACK** (non-inheritable): draw the focus feedback. Can be YES or NO. Default: YES.
 
 **PROPAGATEFOCUS** (non-inheritable): enables the focus callback forwarding to the next native parent with FOCUS_CB defined.
 Default: NO.
 
 **FITTOBACKIMAGE** (non-inheritable): enable the natural size to be computed from the BACKIMAGE.
-If BACKIMAGE is not defined will be ignored. Can be Yes or No. Default: No.
+If BACKIMAGE is not defined will be ignored. Can be YES or NO. Default: NO.
 
-**HASFOCUS** (read-only): returns the button state if has focus. Can be Yes or No.
+**HASFOCUS** (read-only): returns the button state if has focus. Can be YES or NO.
 
 **IMAGEid** (non-inheritable): image name to be used in the specified item, where id is the specified item starting at 1.
 The item must already exist. Use [IupSetHandle](../func/iup_sethandle.md) or [IupSetAttributeHandle](../func/iup_setattributehandle.md) to associate an image to a name.
@@ -131,10 +131,10 @@ Default: "NO".
 If value is NULL or "ALL" removes all the items. Different from IupList, can be set before map.
 
 [SCROLLBAR](../attrib/iup_scrollbar.md) (read-only): is always "NO". So the IupCanvas native scrollbars are hidden.
-See the FLATSCROLLBAR attribute below. YAUTOHIDE and XAUTOHIDE will always be Yes.
+See the FLATSCROLLBAR attribute below. YAUTOHIDE and XAUTOHIDE will always be YES.
 
-[FLATSCROLLBAR](iup_flatscrollbar.md): Can be Yes, Vertical or Horizontal.
-Can be set only before map. Default: Yes.
+[FLATSCROLLBAR](iup_flatscrollbar.md): Can be YES, Vertical or Horizontal.
+Can be set only before map. Default: YES.
 
 **SHOWDRAGDROP** (creation-only) (non-inheritable): enables the internal drag and drop of items in the same list, and enables the **DRAGDROP_CB** callback.
 Default: "NO". Works only if MULTIPLE=NO.
@@ -160,7 +160,7 @@ Notice that this is done internally by the system, the element natural size will
 For the remaining lines to be visible, the element should use EXPAND=VERTICAL or set a SIZE/RASTERSIZE with enough height for the wrapped lines.
 
 **TEXTELLIPSIS** (non-inheritable): If the text is larger than its box, an ellipsis ("...") will be placed near the last visible part of the text and replace the invisible part.
-It will be ignored when TEXTWRAP=Yes.
+It will be ignored when TEXTWRAP=YES.
 
 **VALUE** (non-inheritable): Depends on the selection mode:
 
@@ -245,7 +245,7 @@ Pressing PgDn or PgUp the list is scrolled but the selection is not changed.
 
 When adding or removing items, the selection can be changed depending on the operation, but the selection callbacks will not be called.
 
-**Clicking and dragging a item**: if SHOWDRAGDROP=Yes starts a drag.
+**Clicking and dragging a item**: if SHOWDRAGDROP=YES starts a drag.
 When mouse is released, the DRAGDROP_CB callback is called.
 If the callback does not exist or if it returns IUP_CONTINUE then the item is moved to the new position.
 If Ctrl is pressed then the node is copied instead of moved.

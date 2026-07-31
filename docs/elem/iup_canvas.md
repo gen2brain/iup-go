@@ -96,7 +96,7 @@ In GTK, GTK 4, Qt, WebAssembly, iOS and Android, touch events are always enabled
 **GESTURE** [Win32 Only]: disable the OS gesture processing so raw touch events are delivered to TOUCH_CB/MULTITOUCH_CB.
 Accepts only the NO value.
 
-**WHEELDROPFOCUS** (non-inheritable): when the wheel is used the focus control receives a SHOWDROPDOWN=No.
+**WHEELDROPFOCUS** (non-inheritable): when the wheel is used the focus control receives a SHOWDROPDOWN=NO.
 
 **CGCONTEXT** [macOS Only] (non-inheritable, read-only): Returns the CoreGraphics context (CGContextRef).
 
@@ -160,7 +160,7 @@ If your callback process the arrow keys, we recommend you to return IUP_IGNORE s
 
 **TOUCH_CB** [Win32, GTK, GTK 4, Qt, WebAssembly, iOS and Android Only]: Action generated when a touch event occurred.
 Multiple touch events will trigger several calls.
-In Win32 must set TOUCH=Yes to receive this event. In GTK, GTK 4, Qt, iOS and Android, touch events are always enabled.
+In Win32 must set TOUCH=YES to receive this event. In GTK, GTK 4, Qt, iOS and Android, touch events are always enabled.
 
     int function(Ihandle* ih, int id, int x, int y, char* state);
 
@@ -173,7 +173,7 @@ If the point is a "primary" point, then "-PRIMARY" is appended to the string.
 **Returns**: IUP_CLOSE will be processed.
 
 **MULTITOUCH_CB** [Win32, GTK, GTK 4, Qt, WebAssembly, iOS and Android Only]: Action generated when multiple touch events occurred.
-In Win32 must set TOUCH=Yes to receive this event; in GTK, GTK 4, Qt, iOS and Android touch events are always enabled.
+In Win32 must set TOUCH=YES to receive this event; in GTK, GTK 4, Qt, iOS and Android touch events are always enabled.
 
     int function(Ihandle *ih, int count, int* pid, int* px, int* py, int* pstate)
 

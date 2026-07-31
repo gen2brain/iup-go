@@ -2,7 +2,7 @@
 
 Complementary attributes when a flat scrollbar is used (a drawn scrollbar).
 
-Used in [IupFlatScrollBox](iup_flatscrollbox.md), [IupFlatList](iup_flatlist.md), [IupFlatTree](iup_flattree.md) and in [IupMatrix](iup_matrix.md) when FLATSCROLLBAR=Yes is defined.
+Used in [IupFlatScrollBox](iup_flatscrollbox.md), [IupFlatList](iup_flatlist.md), [IupFlatTree](iup_flattree.md) and in [IupMatrix](iup_matrix.md) when FLATSCROLLBAR=YES is defined.
 
 ### Attributes (non-inheritable)
 
@@ -19,16 +19,16 @@ Used instead of FGCOLOR to avoid inheritance problems.
 **SCROLLBARSIZE** (non-inheritable): The width of the vertical scrollbar or the height of the horizontal scrollbar.
 Default: 15.
 
-**SHOWARROWS** (non-inheritable): Allow to show or hide the arrows. Default: Yes.
+**SHOWARROWS** (non-inheritable): Allow to show or hide the arrows. Default: YES.
 
 **SHOWFLOATING** (non-inheritable): the scrollbar is shown only when used, over the space it occupied.
 Move the mouse over the scrollbar area to show the scrollbars.
 They are automatically hidden after not being used by the time defined in FLOATINGDELAY.
 
 **SHOWTRANSPARENT** (non-inheritable): This makes the flat scrollbar semi transparent and only interactive through its handler.
-It implies in SHOWARROWS=NO and SHOWFLOATING=Yes.
+It implies in SHOWARROWS=NO and SHOWFLOATING=YES.
 
-**FLOATINGDELAY** (non-inheritable): time to hide the scrollbar when SHOWFLOATING=Yes in milliseconds.
+**FLOATINGDELAY** (non-inheritable): time to hide the scrollbar when SHOWFLOATING=YES in milliseconds.
 Default: 2000.
 
 **ARROWIMAGES** (non-inheritable): replace the drawn arrows by the following images.
@@ -53,7 +53,7 @@ If it is not defined then the IMAGE* is used.
 
 ### Notes
 
-When SHOWFLOATING=Yes, the natural size of the **IupMatrix** is reduced because it will not include the scrollbars area.
+When SHOWFLOATING=YES, the natural size of the **IupMatrix** is reduced because it will not include the scrollbars area.
 But notice that when vertically scrolling the last column or horizontally scrolling the last line the visibility or the cells are reduced because the scrollbar is show above the cells.
 
 The flat scrollbar does not support the XMIN nor YMIN attributes. They are considered to be 0 always.

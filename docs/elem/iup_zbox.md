@@ -32,7 +32,7 @@ It can be empty, but in C must have at least the NULL terminator.
 Default: "NW".
 
 **CHILDSIZEALL** (non-inheritable): compute the natural size using all children.
-If set to NO will compute using only the visible child. Default: Yes.
+If set to NO will compute using only the visible child. Default: YES.
 
 [EXPAND](../attrib/iup_expand.md) (non-inheritable): The default value is "YES".
 

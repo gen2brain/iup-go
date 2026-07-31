@@ -18,9 +18,9 @@ It inherits from [IupCanvas](../elem/iup_canvas.md).
 [EXPAND](../attrib/iup_expand.md): the default is "NO".
 
 **FLAT**: use a 1 pixel flat border instead of the default 3-pixel sunken border.
-Can be Yes or No. Default: No.
+Can be YES or NO. Default: NO.
 
-**FLATCOLOR:** color of the border when FLAT=Yes. Default: "160 160 160".
+**FLATCOLOR:** color of the border when FLAT=YES. Default: "160 160 160".
 
 [FGCOLOR](../attrib/iup_fgcolor.md): foreground color.
 The default value is "64 64 64".
@@ -81,7 +81,7 @@ Press the Home key in the circular dial to reset to 0.
 Regular
 
 ![](../images/iupdial2.png)\
-Flat=Yes and fgcolor
+Flat=YES and fgcolor
 
 ### See Also
 

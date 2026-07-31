@@ -51,7 +51,7 @@ This size is called **Natural** size. The **Natural** size is calculated just be
 
 The **Natural** size of a container is the size that allows all the elements inside the container to be fully displayed.
 Then the **Natural** size is calculated from the inner element to the outer element (the dialog).
-**Important**: even if the element is invisible, its size will be included in the size of its containers, except when FLOATING=Yes.
+**Important**: even if the element is invisible, its size will be included in the size of its containers, except when FLOATING=YES.
 
 So consider the following code and its result. Each button size is large enough to display their respective text.
 If the dialog size is increased or reduced by the size handlers in the dialog borders, the buttons do not move or change their sizes.

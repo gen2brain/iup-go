@@ -178,7 +178,7 @@ For example, if the developer is using a charset, and its user is also using the
 The advantage is that any charset can be used, and localization is usually done in that way.
 
 IUP supports UTF-8 (ISO10646-1) encoding in all drivers.
-To specify a string in UTF-8 encoding set the global attribute "[UTF8MODE](iup_globals.md#utf8mode)" to "Yes".
+To specify a string in UTF-8 encoding set the global attribute "[UTF8MODE](iup_globals.md#utf8mode)" to "YES".
 In GTK, GTK 4, macOS, CocoaTouch, Qt, EFL, FLTK, Android and Haiku, UTF-8 is the native encoding.
 In Windows, WinUI and Motif (with XFT), UTF-8 strings are converted to the native encoding as needed.
 

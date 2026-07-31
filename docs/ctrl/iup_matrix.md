@@ -147,7 +147,7 @@ The width of a column C first checks the WIDTH*C* attribute, then checks RASTERW
 When the scrollbars are enabled if the matrix area is greater than the visible area, then scrollbars will be displayed so the cells can be scrolled to be visible area.
 When dragging the scrollbar, the position of cells is free, when clicking on its buttons it will move in cell steps, aligning to the left border of the cell.
 
-By default, EXPAND=Yes, so matrix will be automatically resized when the dialog is resized.
+By default, EXPAND=YES, so matrix will be automatically resized when the dialog is resized.
 So more columns and lines will be displayed. But the matrix Natural size will be used as minimum size.
 To remove the minimum size limitation, set NUMCOL_VISIBLE and NUMLIN_VISIBLE to 0 after showing it for the first time.
 
@@ -181,7 +181,7 @@ Keyboard navigation through the matrix cells outside the edition mode is done by
 
 When using the keyboard to change the focus cell if the limit of the visible area is reached, then the cells are automatically scrolled.
 Also if a cell partially visible is edited, then first it is scrolled to the visible area.
-Also while pressing together the **Shift** key and marks are enabled with MARKMULTIPLE=Yes then a continuous area will be selected.
+Also while pressing together the **Shift** key and marks are enabled with MARKMULTIPLE=YES then a continuous area will be selected.
 
 Inside the **edition mode**, the following keys are used for a text field:
 
