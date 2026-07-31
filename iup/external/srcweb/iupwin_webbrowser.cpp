@@ -449,6 +449,14 @@ static std::string winWebBrowserEscapeJavaScript(const char* str)
   std::string result = "\"";
   for (const char* p = str; *p; p++)
   {
+    if ((unsigned char)*p == 0xE2 && (unsigned char)*(p+1) == 0x80 &&
+        ((unsigned char)*(p+2) == 0xA8 || (unsigned char)*(p+2) == 0xA9))
+    {
+      result += ((unsigned char)*(p+2) == 0xA8) ? "\\u2028" : "\\u2029";
+      p += 2;
+      continue;
+    }
+
     switch (*p)
     {
       case '"':  result += "\\\""; break;
@@ -1020,6 +1028,22 @@ static char* winWebBrowserUnescapeJSON(const char* json_str)
             unsigned int code;
             if (sscanf(hex, "%x", &code) == 1)
             {
+              if (code >= 0xD800 && code <= 0xDBFF && i + 6 < len &&
+                  json_str[i+1] == '\\' && json_str[i+2] == 'u')
+              {
+                char lohex[5] = {0};
+                unsigned int low;
+                lohex[0] = json_str[i+3];
+                lohex[1] = json_str[i+4];
+                lohex[2] = json_str[i+5];
+                lohex[3] = json_str[i+6];
+                if (sscanf(lohex, "%x", &low) == 1 && low >= 0xDC00 && low <= 0xDFFF)
+                {
+                  code = 0x10000 + ((code - 0xD800) << 10) + (low - 0xDC00);
+                  i += 6;
+                }
+              }
+
               if (code < 0x80)
               {
                 result[j++] = (char)code;
@@ -1029,9 +1053,16 @@ static char* winWebBrowserUnescapeJSON(const char* json_str)
                 result[j++] = (char)(0xC0 | (code >> 6));
                 result[j++] = (char)(0x80 | (code & 0x3F));
               }
-              else
+              else if (code < 0x10000)
               {
                 result[j++] = (char)(0xE0 | (code >> 12));
+                result[j++] = (char)(0x80 | ((code >> 6) & 0x3F));
+                result[j++] = (char)(0x80 | (code & 0x3F));
+              }
+              else
+              {
+                result[j++] = (char)(0xF0 | (code >> 18));
+                result[j++] = (char)(0x80 | ((code >> 12) & 0x3F));
                 result[j++] = (char)(0x80 | ((code >> 6) & 0x3F));
                 result[j++] = (char)(0x80 | (code & 0x3F));
               }
@@ -1269,8 +1300,13 @@ public:
           str[len-1] = '\0';
           memmove(str, str+1, len-1);
         }
-        async->result = iupStrDup(str);
+        char* unescaped = winWebBrowserUnescapeJSON(str);
         free(str);
+        if (unescaped)
+        {
+          async->result = iupStrDup(unescaped);
+          free(unescaped);
+        }
       }
     }
     async->completed = 1;

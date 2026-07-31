@@ -255,7 +255,21 @@ static char* haikuWebBrowserRunJSSync(Ihandle* ih, const char* script)
   msg.AddPointer("page", page);
   msg.AddString("script", script);
   BMessage reply;
-  if (msgr.SendMessage(&msg, &reply, IUPHAIKU_JS_TIMEOUT, IUPHAIKU_JS_TIMEOUT) != B_OK) return NULL;
+
+  /* the page thread needs this looper to reach the view, and we are about to
+     block it */
+  BLooper* self_looper = BLooper::LooperForThread(find_thread(NULL));
+  BWindow* self_window = dynamic_cast<BWindow*>(self_looper);
+  int relock = 0;
+
+  if (self_window) self_window->UpdateIfNeeded();
+  if (self_looper) while (self_looper->IsLocked()) { self_looper->Unlock(); relock++; }
+
+  status_t sent = msgr.SendMessage(&msg, &reply, IUPHAIKU_JS_TIMEOUT, IUPHAIKU_JS_TIMEOUT);
+
+  while (relock--) self_looper->Lock();
+
+  if (sent != B_OK) return NULL;
 
   const char* result = NULL;
   if (reply.FindString("result", &result) != B_OK || !result) return NULL;
@@ -285,6 +299,15 @@ static void haikuWebBrowserJSEscape(BString& out, const char* s)
   for (const char* p = s; *p; ++p)
   {
     unsigned char c = (unsigned char)*p;
+
+    if (c == 0xE2 && (unsigned char)*(p+1) == 0x80 &&
+        ((unsigned char)*(p+2) == 0xA8 || (unsigned char)*(p+2) == 0xA9))
+    {
+      out << (((unsigned char)*(p+2) == 0xA8) ? "\\u2028" : "\\u2029");
+      p += 2;
+      continue;
+    }
+
     switch (c)
     {
       case '"':  out << "\\\""; break;
