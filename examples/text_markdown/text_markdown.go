@@ -48,6 +48,19 @@ func main() {
 > This is a blockquote.
 > It can span multiple lines.
 
+| Driver | Language | Platform |
+| ------ | -------- | -------- |
+| Win32 | C | Windows |
+| GTK3 | C | Linux |
+| Cocoa | Objective-C | macOS |
+
+Alignment is taken from the delimiter row:
+
+| Left | Center | Right |
+|:-----|:------:|------:|
+| a | b | 1 |
+| longer cell | centered | 1000 |
+
 ---
 
 Escaped characters: \*not italic\*, \**not bold\**, \` + "`not code`" + `.
