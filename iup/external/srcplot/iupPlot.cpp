@@ -172,12 +172,15 @@ void iupPlot::AddDataSet(iupPlotDataSet* inDataSet)
 
 void iupPlot::RemoveDataSet(int inIndex)
 {
+  if (inIndex < 0 || inIndex >= mDataSetListCount)
+    return;
+
   if (mCurrentDataSet == mDataSetListCount - 1)
     mCurrentDataSet--;
 
   delete mDataSetList[inIndex];
 
-  for (int i = inIndex; i < mDataSetListCount; i++)
+  for (int i = inIndex; i < mDataSetListCount - 1; i++)
     mDataSetList[i] = mDataSetList[i + 1];
 
   mDataSetList[mDataSetListCount - 1] = NULL;

@@ -24,6 +24,9 @@
 #include "iup_plot_ctrl.h"
 
 
+#define IUP_PLOT_DSNAME_MAXSTR 100
+
+
 static int iPlotSelectFile(Ihandle* parent, char* filename, const char* title, const char* extfilter)
 {
   Ihandle* filedlg = IupFileDlg();
@@ -983,6 +986,12 @@ static int iPlotDataSetPropertiesParam_cb(Ihandle* param_dialog, int param_index
     Ihandle* ih = (Ihandle*)user_data;
     IupSetAttributeHandle(param_dialog, "PARENTDIALOG", IupGetDialog(ih));
   }
+  else if (param_index == IUP_GETPARAM_INIT)
+  {
+    Ihandle* param = (Ihandle*)IupGetAttributeId(param_dialog, "PARAM", 0);
+    if (param)
+      IupSetInt(param, "MAXSTR", IUP_PLOT_DSNAME_MAXSTR);
+  }
   else if (param_index == IUP_GETPARAM_BUTTON1)
   {
     Ihandle* ih = (Ihandle*)user_data;
@@ -1001,7 +1010,7 @@ static int iPlotDataSetProperties_CB(Ihandle* ih_item)
   Ihandle* ih_menu = IupGetParent(ih_item);
   int plot_current = iupAttribGetInt(ih_menu, "_IUP_PLOT_CURRENT");
   int ds = iupAttribGetInt(ih_menu, "_IUP_DS");
-  char name[100];
+  char name[IUP_PLOT_DSNAME_MAXSTR];
 
   IupSetInt(ih, "PLOT_CURRENT", plot_current);
   IupSetInt(ih, "CURRENT", ds);
@@ -2057,6 +2066,9 @@ IUPPLOT_API void IupPlotAdd(Ihandle* ih, double x, double y)
       return;
 
   iupPlotDataSet* theDataSet = (iupPlotDataSet*)iupAttribGet(ih, "_IUP_PLOT_DATASET");
+  if (!theDataSet)
+    return;
+
   theDataSet->AddSample(x, y);
 }
 
@@ -2071,6 +2083,9 @@ IUPPLOT_API void IupPlotAddStr(Ihandle* ih, const char* x, double y)
       return;
 
   iupPlotDataSet* theDataSet = (iupPlotDataSet*)iupAttribGet(ih, "_IUP_PLOT_DATASET");
+  if (!theDataSet)
+    return;
+
   theDataSet->AddSample(x, y);
 }
 
@@ -2085,6 +2100,9 @@ IUPPLOT_API void IupPlotAddSegment(Ihandle* ih, double x, double y)
       return;
 
   iupPlotDataSet* theDataSet = (iupPlotDataSet*)iupAttribGet(ih, "_IUP_PLOT_DATASET");
+  if (!theDataSet)
+    return;
+
   theDataSet->AddSampleSegment(x, y, true);
 }
 
@@ -2489,7 +2507,7 @@ static int iPlotAddToDataSetsStrX(Ihandle* ih, const char* line_buffer, int ds_s
   {
     if (ds == 0)
     {
-      int ret = sscanf(line_buffer, "%s", x);
+      int ret = sscanf(line_buffer, "%99s", x);
       if (!ret)
         return 0;
     }
