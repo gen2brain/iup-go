@@ -18,8 +18,6 @@
 #include <QPrinter>
 #include <QPrintDialog>
 #include <QPrintPreviewDialog>
-#include <QTimer>
-#include <QMutexLocker>
 #include <QEventLoop>
 #include <QElapsedTimer>
 #include <QCoreApplication>
@@ -102,16 +100,31 @@ static char* qtWebBrowserEscapeJavaScript(const char* str)
   return result;
 }
 
-/* Structure for synchronous JavaScript execution */
 struct JavaScriptResult
 {
   QString result;
   bool completed;
-  QMutex mutex;
-  QEventLoop* loop;
+  bool abandoned;
 
-  JavaScriptResult() : completed(false), loop(nullptr) {}
+  JavaScriptResult() : completed(false), abandoned(false) {}
 };
+
+static char* qtWebBrowserTakeResult(JavaScriptResult* async)
+{
+  char* ret = nullptr;
+
+  if (!async->completed)
+  {
+    async->abandoned = true;
+    return nullptr;
+  }
+
+  if (!async->result.isEmpty())
+    ret = iupStrReturnStr(async->result.toUtf8().constData());
+
+  delete async;
+  return ret;
+}
 
 /* Run JavaScript asynchronously (fire and forget) */
 static void qtWebBrowserRunJavaScript(Ihandle* ih, const char* format, ...)
@@ -135,37 +148,30 @@ static char* qtWebBrowserExecJavaScriptSync(Ihandle* ih, const char* js)
   if (!webview)
     return nullptr;
 
-  JavaScriptResult js_result;
-  js_result.loop = new QEventLoop();
+  JavaScriptResult* async = new JavaScriptResult();
 
   webview->page()->runJavaScript(QString::fromUtf8(js),
-    [&js_result](const QVariant &result) {
-      QMutexLocker locker(&js_result.mutex);
-      js_result.result = result.toString();
-      js_result.completed = true;
-      if (js_result.loop)
-        js_result.loop->quit();
+    [async](const QVariant &result) {
+      if (async->abandoned)
+      {
+        delete async;
+        return;
+      }
+      async->result = result.toString();
+      async->completed = true;
     });
 
-  /* Wait for JavaScript to complete (with timeout) - use manual event pumping
-   * instead of exec() to avoid "event loop already running" errors */
-  if (!js_result.completed)
+  /* Manual event pumping instead of exec() to avoid "event loop already running" errors */
+  if (!async->completed)
   {
     QElapsedTimer timeout_timer;
     timeout_timer.start();
 
-    while (!js_result.completed && timeout_timer.elapsed() < 5000)  /* 5 second timeout */
-    {
-      QCoreApplication::processEvents(QEventLoop::AllEvents, 50);  /* Process events with 50ms timeout */
-    }
+    while (!async->completed && timeout_timer.elapsed() < 5000)
+      QCoreApplication::processEvents(QEventLoop::AllEvents, 50);
   }
 
-  delete js_result.loop;
-
-  if (js_result.completed && !js_result.result.isEmpty())
-    return iupStrReturnStr(js_result.result.toUtf8().constData());
-
-  return nullptr;
+  return qtWebBrowserTakeResult(async);
 }
 
 /* Run JavaScript synchronously and return the result */
@@ -301,30 +307,28 @@ static char* qtWebBrowserGetHTMLAttrib(Ihandle* ih)
   }
 
   /* For non-editable content, we need to use toHtml() asynchronously */
-  /* Store result in a temporary attribute */
-  JavaScriptResult html_result;
-  html_result.loop = new QEventLoop();
+  JavaScriptResult* async = new JavaScriptResult();
 
-  webview->page()->toHtml([&html_result](const QString &html) {
-    QMutexLocker locker(&html_result.mutex);
-    html_result.result = html;
-    html_result.completed = true;
-    if (html_result.loop)
-      html_result.loop->quit();
+  webview->page()->toHtml([async](const QString &html) {
+    if (async->abandoned)
+    {
+      delete async;
+      return;
+    }
+    async->result = html;
+    async->completed = true;
   });
 
-  if (!html_result.completed)
+  if (!async->completed)
   {
-    QTimer::singleShot(5000, html_result.loop, &QEventLoop::quit);
-    html_result.loop->exec();
+    QElapsedTimer timeout_timer;
+    timeout_timer.start();
+
+    while (!async->completed && timeout_timer.elapsed() < 5000)
+      QCoreApplication::processEvents(QEventLoop::AllEvents, 50);
   }
 
-  delete html_result.loop;
-
-  if (html_result.completed && !html_result.result.isEmpty())
-    return iupStrReturnStr(html_result.result.toUtf8().constData());
-
-  return nullptr;
+  return qtWebBrowserTakeResult(async);
 }
 
 static int qtWebBrowserSetValueAttrib(Ihandle* ih, const char* value)
@@ -761,12 +765,22 @@ static int qtWebBrowserSetRedoAttrib(Ihandle* ih, const char* value)
 
 static int qtWebBrowserExecCommandAttrib(Ihandle* ih, const char* value)
 {
-  if (!value)
+  QWebEngineView* webview = (QWebEngineView*)ih->handle;
+  if (!webview || !value)
     return 0;
 
-  qtWebBrowserRunJavaScript(ih,
-    "if (window.iupRestoreSelection) window.iupRestoreSelection(); document.execCommand('%s', false, null);",
-    value);
+  char* escaped = qtWebBrowserEscapeJavaScript(value);
+  if (!escaped)
+    return 0;
+
+  QString js = QString(
+    "if (window.iupRestoreSelection) window.iupRestoreSelection(); "
+    "document.execCommand(%1, false, null);")
+    .arg(QString::fromUtf8(escaped));
+
+  free(escaped);
+
+  webview->page()->runJavaScript(js);
   return 0;
 }
 
@@ -1460,7 +1474,6 @@ static int qtWebBrowserMapMethod(Ihandle* ih)
   QWebEngineSettings* settings = page->settings();
   settings->setAttribute(QWebEngineSettings::JavascriptEnabled, true);
   settings->setAttribute(QWebEngineSettings::LocalStorageEnabled, true);
-  settings->setAttribute(QWebEngineSettings::LocalContentCanAccessRemoteUrls, true);
   settings->setAttribute(QWebEngineSettings::PluginsEnabled, true);
 
   /* Install initialization script that runs on every page load (like Windows AddScriptToExecuteOnDocumentCreated) */

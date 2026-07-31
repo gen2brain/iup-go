@@ -58,6 +58,7 @@ extern "C" {
 
 
 #define IUPHAIKU_JS_EXEC_MSG 'IuJX'  /* sync JS eval hop to the WebPage looper */
+#define IUPHAIKU_JS_TIMEOUT  5000000
 #define IUPHAIKU_WEB_MAP_MSG 'IuWM'  /* deferred bind of BWebView once the dialog window is up */
 
 typedef enum {
@@ -163,13 +164,18 @@ public:
   {
     if (msg->what != IUPHAIKU_JS_EXEC_MSG) { BHandler::MessageReceived(msg); return; }
 
-    void* ctx_ptr = NULL;
+    void* page_ptr = NULL;
     const char* script = NULL;
-    msg->FindPointer("ctx", &ctx_ptr);
+    msg->FindPointer("page", &page_ptr);
     msg->FindString("script", &script);
 
     BMessage reply(IUPHAIKU_JS_EXEC_MSG);
-    JSGlobalContextRef ctx = (JSGlobalContextRef)ctx_ptr;
+
+    /* the context dies on navigation, so resolve it here, never across threads */
+    BWebPage* page = (BWebPage*)page_ptr;
+    BWebFrame* frame = page ? page->MainFrame() : NULL;
+    JSGlobalContextRef ctx = frame ? frame->GlobalContext() : NULL;
+
     if (ctx && script)
     {
       JSStringRef js_script = JSStringCreateWithUTF8CString(script);
@@ -185,10 +191,13 @@ public:
         {
           size_t maxlen = JSStringGetMaximumUTF8CStringSize(str_ref);
           char* buf = (char*)malloc(maxlen);
-          JSStringGetUTF8CString(str_ref, buf, maxlen);
+          if (buf)
+          {
+            JSStringGetUTF8CString(str_ref, buf, maxlen);
+            reply.AddString("result", buf);
+            free(buf);
+          }
           JSStringRelease(str_ref);
-          reply.AddString("result", buf);
-          free(buf);
         }
       }
     }
@@ -196,21 +205,40 @@ public:
   }
 };
 
-static IupHaikuJSExecHandler* sJSExecHandler = NULL;
-
-static BMessenger haikuWebBrowserJSExecMessenger(BWebPage* page)
+static BMessenger haikuWebBrowserJSExecMessenger(Ihandle* ih, BWebPage* page)
 {
-  if (!sJSExecHandler)
+  IupHaikuJSExecHandler* handler = (IupHaikuJSExecHandler*)iupAttribGet(ih, "_IUPWEB_JSHANDLER");
+
+  if (!handler)
   {
     BHandler* page_handler = reinterpret_cast<BHandler*>(page);
     BLooper* page_looper = page_handler->Looper();
     if (!page_looper) return BMessenger();
 
-    sJSExecHandler = new IupHaikuJSExecHandler();
-    LooperLockGuard guard(page_looper);
-    page_looper->AddHandler(sJSExecHandler);
+    handler = new IupHaikuJSExecHandler();
+    {
+      LooperLockGuard guard(page_looper);
+      page_looper->AddHandler(handler);
+    }
+    iupAttribSet(ih, "_IUPWEB_JSHANDLER", (char*)handler);
   }
-  return BMessenger(sJSExecHandler);
+
+  return BMessenger(handler);
+}
+
+static void haikuWebBrowserDestroyJSExecHandler(Ihandle* ih)
+{
+  IupHaikuJSExecHandler* handler = (IupHaikuJSExecHandler*)iupAttribGet(ih, "_IUPWEB_JSHANDLER");
+  if (!handler) return;
+
+  BLooper* looper = handler->Looper();
+  if (looper)
+  {
+    LooperLockGuard guard(looper);
+    looper->RemoveHandler(handler);
+  }
+  delete handler;
+  iupAttribSet(ih, "_IUPWEB_JSHANDLER", NULL);
 }
 
 static char* haikuWebBrowserRunJSSync(Ihandle* ih, const char* script)
@@ -220,19 +248,15 @@ static char* haikuWebBrowserRunJSSync(Ihandle* ih, const char* script)
 
   BWebPage* page = view->WebPage();
   if (!page) return NULL;
-  BWebFrame* frame = page->MainFrame();
-  if (!frame) return NULL;
-  JSGlobalContextRef ctx = frame->GlobalContext();
-  if (!ctx) return NULL;
 
-  BMessenger msgr = haikuWebBrowserJSExecMessenger(page);
+  BMessenger msgr = haikuWebBrowserJSExecMessenger(ih, page);
   if (!msgr.IsValid()) return NULL;
 
   BMessage msg(IUPHAIKU_JS_EXEC_MSG);
-  msg.AddPointer("ctx", ctx);
+  msg.AddPointer("page", page);
   msg.AddString("script", script);
   BMessage reply;
-  if (msgr.SendMessage(&msg, &reply) != B_OK) return NULL;
+  if (msgr.SendMessage(&msg, &reply, IUPHAIKU_JS_TIMEOUT, IUPHAIKU_JS_TIMEOUT) != B_OK) return NULL;
 
   const char* result = NULL;
   if (reply.FindString("result", &result) != B_OK || !result) return NULL;
@@ -246,16 +270,12 @@ static void haikuWebBrowserRunJSAsync(Ihandle* ih, const char* script)
 
   BWebPage* page = view->WebPage();
   if (!page) return;
-  BWebFrame* frame = page->MainFrame();
-  if (!frame) return;
-  JSGlobalContextRef ctx = frame->GlobalContext();
-  if (!ctx) return;
 
-  BMessenger msgr = haikuWebBrowserJSExecMessenger(page);
+  BMessenger msgr = haikuWebBrowserJSExecMessenger(ih, page);
   if (!msgr.IsValid()) return;
 
   BMessage msg(IUPHAIKU_JS_EXEC_MSG);
-  msg.AddPointer("ctx", ctx);
+  msg.AddPointer("page", page);
   msg.AddString("script", script);
   msgr.SendMessage(&msg);
 }
@@ -968,6 +988,8 @@ static int haikuWebBrowserMapMethod(Ihandle* ih)
 static void haikuWebBrowserUnMapMethod(Ihandle* ih)
 {
   IupHaikuWebHandler* handler = haikuWebBrowserHandler(ih);
+
+  haikuWebBrowserDestroyJSExecHandler(ih);
 
   if (handler)
   {

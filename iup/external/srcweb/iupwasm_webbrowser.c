@@ -140,11 +140,20 @@ EMSCRIPTEN_KEEPALIVE void iupwasmWebOnLoad(int id)
   }
 }
 
+static int wasmWebIsScriptUrl(const char* url)
+{
+  while (*url == ' ' || *url == '\t' || *url == '\n' || *url == '\r' || *url == '\f')
+    url++;
+
+  return iupStrEqualNoCasePartial(url, "javascript:") ||
+         iupStrEqualNoCasePartial(url, "vbscript:");
+}
+
 static int wasmWebSetValueAttrib(Ihandle* ih, const char* value)
 {
   int id = iupwasmIdOf(ih);
   wasmWebUrlCb cb;
-  if (!id || !value)
+  if (!id || !value || wasmWebIsScriptUrl(value))
     return 1;
 
   cb = (wasmWebUrlCb)IupGetCallback(ih, "NAVIGATE_CB");

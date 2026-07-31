@@ -45,6 +45,7 @@ typedef struct _WebKitUserScript WebKitUserScript;
 /* --- JSCore Types (used for JavaScript results in WebKit2) --- */
 typedef const struct OpaqueJSContext* JSGlobalContextRef;
 typedef const struct OpaqueJSValue* JSValueRef;
+typedef struct OpaqueJSValue* JSObjectRef;
 typedef struct OpaqueJSString* JSStringRef;
 
 /* --- JSCore GObject Types (used in WebKit6) --- */
@@ -173,7 +174,10 @@ static void (*webkit_user_script_unref)(WebKitUserScript *user_script);
 static WebKitWebView* (*webkit_web_view_new_with_user_content_manager)(WebKitUserContentManager *user_content_manager);
 static WebKitUserContentManager* (*webkit_web_view_get_user_content_manager)(WebKitWebView *web_view);
 
-/* --- JSCore Function Pointers (for JavaScript result handling in WebKit2) --- */
+/* --- JSCore Function Pointers (WebKit2 result handling, WebKit1 sync eval) --- */
+static JSGlobalContextRef (*webkit_web_frame_get_global_context)(WebKitWebFrame *frame);
+static JSStringRef (*JSStringCreateWithUTF8CString)(const char* string);
+static JSValueRef (*JSEvaluateScript)(JSGlobalContextRef ctx, JSStringRef script, JSObjectRef thisObject, JSStringRef sourceURL, int startingLineNumber, JSValueRef* exception);
 static JSStringRef (*JSValueToStringCopy)(JSGlobalContextRef ctx, JSValueRef value, JSValueRef* exception);
 static size_t (*JSStringGetMaximumUTF8CStringSize)(JSStringRef string);
 static size_t (*JSStringGetUTF8CString)(JSStringRef string, char* buffer, size_t bufferSize);
@@ -271,7 +275,10 @@ static void iupgtkWebBrowser_ClearDLSymbols()
   webkit_navigation_action_get_request = NULL;
   webkit_uri_request_get_uri = NULL;
 
-  /* Clear JSCore (WebKit2) */
+  /* Clear JSCore */
+  webkit_web_frame_get_global_context = NULL;
+  JSStringCreateWithUTF8CString = NULL;
+  JSEvaluateScript = NULL;
   JSValueToStringCopy = NULL;
   JSStringGetMaximumUTF8CStringSize = NULL;
   JSStringGetUTF8CString = NULL;
@@ -440,6 +447,17 @@ static int iupgtkWebBrowser_SetDLSymbolsWK1(void* webkit_library)
   webkit_web_view_execute_script = (void (*)(WebKitWebView*, const gchar*))dlsym(webkit_library, "webkit_web_view_execute_script");
   webkit_web_frame_get_uri = (const gchar* (*)(WebKitWebFrame*))dlsym(webkit_library, "webkit_web_frame_get_uri");
   webkit_web_policy_decision_get_navigation_action = (WebKitWebNavigationAction* (*)(WebKitWebPolicyDecision*))dlsym(webkit_library, "webkit_web_policy_decision_get_navigation_action");
+
+  /* WebKit1 has no async JS API, sync eval goes through JSCore */
+  webkit_web_frame_get_global_context = (JSGlobalContextRef (*)(WebKitWebFrame*))dlsym(webkit_library, "webkit_web_frame_get_global_context");
+  JSStringCreateWithUTF8CString = (JSStringRef (*)(const char*))dlsym(webkit_library, "JSStringCreateWithUTF8CString");
+  JSEvaluateScript = (JSValueRef (*)(JSGlobalContextRef, JSStringRef, JSObjectRef, JSStringRef, int, JSValueRef*))dlsym(webkit_library, "JSEvaluateScript");
+  JSValueToStringCopy = (JSStringRef (*)(JSGlobalContextRef, JSValueRef, JSValueRef*))dlsym(webkit_library, "JSValueToStringCopy");
+  JSStringGetMaximumUTF8CStringSize = (size_t (*)(JSStringRef))dlsym(webkit_library, "JSStringGetMaximumUTF8CStringSize");
+  JSStringGetUTF8CString = (size_t (*)(JSStringRef, char*, size_t))dlsym(webkit_library, "JSStringGetUTF8CString");
+  JSStringRelease = (void (*)(JSStringRef))dlsym(webkit_library, "JSStringRelease");
+  JSValueIsNull = (int (*)(JSGlobalContextRef, JSValueRef))dlsym(webkit_library, "JSValueIsNull");
+  JSValueIsUndefined = (int (*)(JSGlobalContextRef, JSValueRef))dlsym(webkit_library, "JSValueIsUndefined");
 
   /* Check for a few critical symbols */
   if (!webkit_web_view_new || !webkit_web_view_load_string || !webkit_web_view_get_main_frame)
