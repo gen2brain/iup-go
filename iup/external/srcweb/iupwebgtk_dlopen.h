@@ -448,7 +448,6 @@ static int iupgtkWebBrowser_SetDLSymbolsWK1(void* webkit_library)
   webkit_web_frame_get_uri = (const gchar* (*)(WebKitWebFrame*))dlsym(webkit_library, "webkit_web_frame_get_uri");
   webkit_web_policy_decision_get_navigation_action = (WebKitWebNavigationAction* (*)(WebKitWebPolicyDecision*))dlsym(webkit_library, "webkit_web_policy_decision_get_navigation_action");
 
-  /* WebKit1 has no async JS API, sync eval goes through JSCore */
   webkit_web_frame_get_global_context = (JSGlobalContextRef (*)(WebKitWebFrame*))dlsym(webkit_library, "webkit_web_frame_get_global_context");
   JSStringCreateWithUTF8CString = (JSStringRef (*)(const char*))dlsym(webkit_library, "JSStringCreateWithUTF8CString");
   JSEvaluateScript = (JSValueRef (*)(JSGlobalContextRef, JSStringRef, JSObjectRef, JSStringRef, int, JSValueRef*))dlsym(webkit_library, "JSEvaluateScript");

@@ -523,17 +523,49 @@ static int qtWebBrowserSetOpenAttrib(Ihandle* ih, const char* value)
 
 static char* qtWebBrowserGetInnerTextAttrib(Ihandle* ih)
 {
-  return qtWebBrowserRunJavaScriptSync(ih, "document.body.innerText;");
+  char* element_id = iupAttribGet(ih, "ELEMENT_ID");
+  if (!element_id)
+    return nullptr;
+
+  char* escaped_id = qtWebBrowserEscapeJavaScript(element_id);
+  if (!escaped_id)
+    return nullptr;
+
+  QString js = QString(
+    "(function() {"
+    "  var elem = document.getElementById(%1);"
+    "  return elem ? elem.innerText : '';"
+    "})();").arg(QString::fromUtf8(escaped_id));
+
+  free(escaped_id);
+
+  return qtWebBrowserExecJavaScriptSync(ih, js.toUtf8().constData());
 }
 
 static int qtWebBrowserSetInnerTextAttrib(Ihandle* ih, const char* value)
 {
-  if (!value)
+  QWebEngineView* webview = (QWebEngineView*)ih->handle;
+  char* element_id = iupAttribGet(ih, "ELEMENT_ID");
+
+  if (!webview || !element_id)
     return 0;
 
-  char* escaped = qtWebBrowserEscapeJavaScript(value);
-  qtWebBrowserRunJavaScript(ih, "document.body.innerText = %s;", escaped);
-  free(escaped);
+  char* escaped_id = qtWebBrowserEscapeJavaScript(element_id);
+  char* escaped_value = qtWebBrowserEscapeJavaScript(value ? value : "");
+
+  if (escaped_id && escaped_value)
+  {
+    QString js = QString(
+      "(function() {"
+      "  var elem = document.getElementById(%1);"
+      "  if (elem) elem.innerText = %2;"
+      "})();").arg(QString::fromUtf8(escaped_id), QString::fromUtf8(escaped_value));
+
+    webview->page()->runJavaScript(js);
+  }
+
+  free(escaped_id);
+  free(escaped_value);
 
   return 0;
 }

@@ -171,7 +171,6 @@ public:
 
     BMessage reply(IUPHAIKU_JS_EXEC_MSG);
 
-    /* the context dies on navigation, so resolve it here, never across threads */
     BWebPage* page = (BWebPage*)page_ptr;
     BWebFrame* frame = page ? page->MainFrame() : NULL;
     JSGlobalContextRef ctx = frame ? frame->GlobalContext() : NULL;
