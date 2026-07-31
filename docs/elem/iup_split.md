@@ -73,7 +73,7 @@ It can be obtained using **IupGetChild** or **IupGetNextChild**.
 The **IupSplit** control looks just like the **IupSbox**, but internally is very different.
 While the **IupSbox** controls only one element and can push other elements outside the dialog, the **IupSplit** balance its internal size and never push other elements outside its boundaries.
 
-When AUTOHIDE= Yes, the control will set FLOATING=IGNORE and VISIBLE=NO for the child to be auto-hidden, then back to FLOATING=NO and VISIBLE=Yes when shown.
+When AUTOHIDE= YES, the control will set FLOATING=IGNORE and VISIBLE=NO for the child to be auto-hidden, then back to FLOATING=NO and VISIBLE=YES when shown.
 So if the child has several children with different combinations of VISIBLE, it is recommended that this child be a native container like **IupBackgroundBox** or **IupFrame,** so the VISIBLE attribute will not be propagated to its children.
 
 The container can be created with no elements and be dynamic filled using [IupAppend](../func/iup_append.md) or [IupInsert](../func/iup_insert.md).

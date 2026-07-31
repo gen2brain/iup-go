@@ -150,13 +150,13 @@ Actually changes the **TITLEFONTid** attribute.
 **SHOWTOGGLE**: enables the use of toggles for all nodes of the tree. Can be "YES", "3STATE" or NO".
 Default: "NO".
 
-**EMPTYTOGGLE**: when SHOWTOGGLE=Yes, the empty space left in nodes that TOGGLEVISIBLEid=NO is filled with a blank space.
-Can be Yes or NO. Default: No.
+**EMPTYTOGGLE**: when SHOWTOGGLE=YES, the empty space left in nodes that TOGGLEVISIBLEid=NO is filled with a blank space.
+Can be YES or NO. Default: NO.
 
 **TOGGLEVALUEid**: defines the toggle state. Values can be "ON" or "OFF". If SHOW3STATE=YES then can also be "NOTDEF".
 Default: "OFF".
 
-**TOGGLEVISIBLEid**: defines the toggle visible state. Values can be "Yes" or "No". Default: "Yes".
+**TOGGLEVISIBLEid**: defines the toggle visible state. Values can be "YES" or "NO". Default: "YES".
 
 **TOGGLEBGCOLOR**: background color of the toggle. Default: "TXTBGCOLOR"
 
@@ -191,7 +191,7 @@ Use [IupSetHandle](../func/iup_sethandle.md) or [IupSetAttributeHandle](../func/
 See also [IupImage](../elem/iup_image.md).
 
 **BACKIMAGEZOOM**: if set, the back image will be zoomed to occupy the full background.
-Aspect ratio is NOT preserved. Can be Yes or No. Default: No.
+Aspect ratio is NOT preserved. Can be YES or NO. Default: NO.
 
 ### Focus
 
@@ -214,9 +214,9 @@ Default: YES.
 **PROPAGATEFOCUS**(non-inheritable): enables the focus callback forwarding to the next native parent with FOCUS_CB defined.
 Default: NO.
 
-**FOCUSFEEDBACK** (non-inheritable): draw the focus feedback. Can be Yes or No. Default: Yes.
+**FOCUSFEEDBACK** (non-inheritable): draw the focus feedback. Can be YES or NO. Default: YES.
 
-**HASFOCUS** (read-only): returns the button state if has focus. Can be Yes or No. 
+**HASFOCUS** (read-only): returns the button state if has focus. Can be YES or NO. 
 
 ### Marks
 
@@ -244,7 +244,7 @@ Can be set only when MARKMODE=MULTIPLE, can also be get when MARKMODE=SINGLE.
 The value must be the node identifier. Default: 0 (first node).
 
 **MARKWHENTOGGLE** (non-inheritable): selects or clears the selection of a node when its toggle is changed.
-Works only if the node has a toggle. Default: No.
+Works only if the node has a toggle. Default: NO.
 
 ### Hierarchy  (non-inheritable)
 
@@ -304,7 +304,7 @@ RENAMESELECTION (write-only): the selection interval of the text box when in-pla
 Same as the SELECTION attribute for [IupText](../elem/iup_text.md), but here is used only once after SHOWRENAME_CB is called and before the text box is shown.
 
 **SHOWRENAME** (non-inheritable): Allows the in place rename of a node. Default: "NO".
-F2 and clicking twice only starts to rename a node if SHOWRENAME=Yes.
+F2 and clicking twice only starts to rename a node if SHOWRENAME=YES.
 
 ### Drag&Drop
 
@@ -320,6 +320,6 @@ Default: NO, but if DROPFILES_CB is defined when the element is mapped then it w
 This is NOT related to the drag&drop of nodes inside the tree.
 
 **DROPEQUALDRAG** (non-inheritable): if enabled will allow a drop node to be equal to the drag node.
-Used only if SHOWDRAGDROP =Yes. In the case the nodes are equal the callback return value is ignored and nothing is done after.
+Used only if SHOWDRAGDROP =YES. In the case the nodes are equal the callback return value is ignored and nothing is done after.
 
-[Drag & Drop](../attrib/iup_dragdrop.md) attributes are supported, but SHOWDRAGDROP must be set no No.  
+[Drag & Drop](../attrib/iup_dragdrop.md) attributes are supported, but SHOWDRAGDROP must be set to NO.  

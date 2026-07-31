@@ -15,7 +15,7 @@ It does not have a native representation, but it contains also several elements 
 ### Attributes
 
 **AUTOSHOW** (non-inheritable): enables the automatic show of the child when mouse is over the handler for more than 1 second.
-Default: No. See Notes below.
+Default: NO. See Notes below.
 
 **ANIMATION** (non-inheritable): enable animation during open/close.
 Works only for BARPOSITION=TOP and does not work for AUTOSHOW.
@@ -51,10 +51,10 @@ Default: the global attribute DLGFGCOLOR.
 **OPENCOLOR** (non-inheritable): title text color when STATE=OPEN.
 Defaults to the FORECOLOR if not defined.
 
-**HIGHCOLOR** (non-inheritable): title text color when highlighted. Works only when TITLEEXPAND=Yes.
+**HIGHCOLOR** (non-inheritable): title text color when highlighted. Works only when TITLEEXPAND=YES.
 Defaults to the FORECOLOR if not defined.
 
-**FRAME** (non-inheritable): enables the frame line around the bar area. Default: No.
+**FRAME** (non-inheritable): enables the frame line around the bar area. Default: NO.
 
 **FRAMECOLOR** (non-inheritable): frame line color.
 Default: the global attribute DLGFGCOLOR.
@@ -74,7 +74,7 @@ Possible values: "OPEN" (expanded) or "CLOSE" (collapsed). Default: OPEN.
 Setting this attribute will automatically change the layout of the entire dialog so the child can be recomposed.
 
 **STATEREFRESH** (non-inheritable): when state is changed **IupRefresh** is automatically called.
-Can be Yes or No. Default: Yes.
+Can be YES or NO. Default: YES.
 
 **TITLE** (non-inheritable): title text, shown in the bar handler near the expand/collapse button.
 When set it will reset TITLEIMAGE. Shown only when BARPOSITION=TOP.
@@ -139,7 +139,7 @@ The container can be created with no elements and be dynamic filled using [IupAp
 When the TITLE is defined and BARPOSITION=TOP, then the expand/collapse button is left aligned.
 In all other situations, the expand/collapse button is centered.
 
-When AUTOSHOW=Yes the dialog layout is NOT recalculated.
+When AUTOSHOW=YES the dialog layout is NOT recalculated.
 The child is shown on top of the dialog, so the other children will not move or redraw.
 After the mouse is move away from the child, then it is automatically hidden.
 **IMPORTANT**: this feature will ONLY work if the child is a native container like **IupFrame**, **IupBackgroundBox, IupScrollBox** or **IupTabs**.

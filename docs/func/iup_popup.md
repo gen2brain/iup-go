@@ -63,7 +63,7 @@ The main screen area does not include additional monitors.
 This is now a modal dialog. Although it interrupts the processing, it does not destroy the dialog when it ends.
 To destroy the dialog, **IupDestroy** must be called.
 
-The MODAL attribute of the dialog will be changed internally to return Yes.
+The MODAL attribute of the dialog will be changed internally to return YES.
 
 In GTK and Motif the inactive dialogs will still be moveable, resizable and changeable their Z-order.
 Although their contents will be inactive, the keyboard will be disabled, and they cannot be closed from the close box.

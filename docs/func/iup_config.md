@@ -57,7 +57,7 @@ If APP_SYSTEMPATH is set to NO, a legacy home-folder path is used instead:
 "<HOME>/.<APP_NAME>" on UNIX and macOS, "<HOMEDRIVE><HOMEPATH>\\<APP_NAME>.cfg" on Windows.
 On iOS the value is ignored and the system path is always used.
 
-The **Application Configuration File** is defined by setting APP_CONFIG to Yes (default No).
+The **Application Configuration File** is defined by setting APP_CONFIG to YES (default NO).
 APP_PATH must also be set, with a trailing folder separator. The filename will be "<APP_PATH>.<APP_NAME>" on UNIX, "<APP_PATH><APP_NAME>.cfg" on Windows, macOS and Android.
 
 After the functions are called the attribute FILENAME is set reflecting the constructed filename.
@@ -157,7 +157,7 @@ And use the function **IupConfigDialogClosed** to save the last dialog position 
 **IupConfigDialogShow** does no adjustments if the dialog is already visible, just call **IupShow**.
 If the dialog was closed maximized it will be shown maximized.
 The default size, at the first time ever the dialog is shown, is maximized.
-The dialog size is set only if RESIZE=Yes.
+The dialog size is set only if RESIZE=YES.
 
 The position is saved in the variables "X" and "Y" of the given group name.
 The size is saved in the variables "Width" and "Height" of the given group name.

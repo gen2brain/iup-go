@@ -29,8 +29,8 @@ Default: "255 255 255". It is non-inheritable, but when set will internally prop
 **CANFOCUS** (creation-only) (non-inheritable): enables the focus traversal of the control.
 Default: YES.
 
-**FOCUSFEEDBACK** (non-inheritable): draw the focus feedback. Can be Yes or No.
-Default: Yes.
+**FOCUSFEEDBACK** (non-inheritable): draw the focus feedback. Can be YES or NO.
+Default: YES.
 
 **ALLOWREORDER** (non-inheritable): enables the user to reorder tabs by dragging a tab title.
 Can be "YES" or "NO". Default: "NO".
@@ -39,7 +39,7 @@ Can be "YES" or "NO". Default: "NO".
 Default: NO.
 
 **CHILDSIZEALL** (non-inheritable): compute the natural size using all children.
-If set to NO will compute using only the current tab. Default: Yes.
+If set to NO will compute using only the current tab. Default: YES.
 
 **FORECOLOR**: text color for the current Tab. Default: "50 150 255".
 
@@ -59,13 +59,13 @@ Default: 0x0.
 **FIXEDWIDTH**: forces all tabs to use the same width, given by the attribute.
 It does not include padding, nor the close button space if any, i.e., padding and close button space will be added to the fixed width.
 
-**HASFOCUS** (read-only): returns the tabs state if it has focus. Can be Yes or No.
+**HASFOCUS** (read-only): returns the tabs state if it has focus. Can be YES or NO.
 
 **SHOWCLOSE**:  enables the close button on each tab. Default value: "NO". By default, when closed the tab is hidden.
 To change that behavior, use the TABCLOSE_CB callback.
 
 **SHOWLINES**: when enabled, the current tab will be separated from the other tabs by a line.
-Can be Yes or No. Default: Yes.
+Can be YES or NO. Default: YES.
 
 [SIZE](../attrib/iup_size.md): The default size is the smallest size that fits its largest child.
 All child elements are considered even invisible ones.
@@ -100,7 +100,7 @@ Notice that this is done internally by the system, the element natural size will
 For the remaining lines to be visible, the element should use EXPAND=VERTICAL or set a SIZE/RASTERSIZE with enough height for the wrapped lines.
 
 **TABSTEXTELLIPSIS** (non-inheritable): If the text is larger than its box, an ellipsis ("...") will be placed near the last visible part of the text and replace the invisible part.
-It will be ignored when TEXTWRAP=Yes.
+It will be ignored when TEXTWRAP=YES.
 
   **TABSTEXTORIENTATION** (non-inheritable): text angle in degrees and counterclockwise.
 The text size will adapt to include the rotated space.
@@ -137,12 +137,12 @@ If not defined TABIMAGEn is used.
 If not defined TABIMAGEn is used, and its colors will be replaced by a modified version creating the disabled effect.
 
 **TABVISIBLEn**: controls the visibility of a tab. When a tab is hidden the tabs indices are not changed.
-Can be Yes or No. Default: Yes.
+Can be YES or NO. Default: YES.
 
 **TABTITLEn**: contains the text to be shown in the respective tab title. n starts at 0.
 If this value is NULL, it will remain empty.
 
-**TABACTIVEn**: active state of the tab.  Can be Yes or No. Default: Yes.
+**TABACTIVEn**: active state of the tab.  Can be YES or NO. Default: YES.
 
 **TABFORECOLORn**: text color of the tab title. When not defined TABSFORECOLOR is used.
 
@@ -187,8 +187,8 @@ But they also don't affect the tabs title height, if button title or image are l
 
 **EXTRATITLE*****id***: text of the respective button.
 
-**EXTRAACTIVE*****id***: active state of the button. Can be Yes or No.
-When not defined works as "Yes".
+**EXTRAACTIVE*****id***: active state of the button. Can be YES or NO.
+When not defined works as "YES".
 
 **EXTRABORDERWIDTH*id***: width of the button border. Set this attribute to at least 1 to enable the border.
 Default: 0
@@ -239,7 +239,7 @@ When collapsed a click on a tab causes that tab to be temporarily expanded until
 
 **EXPANDBUTTONPOS** (read-only): position of the expand button in the extra buttons.
 
-**EXPANDBUTTONSTATE**: The expand button is on expand state. Can be Yes or No. Default: Yes.
+**EXPANDBUTTONSTATE**: The expand button is on expand state. Can be YES or NO. Default: YES.
 
 #### Current Tab (non-inheritable)
 
@@ -301,7 +301,7 @@ int function(Ihandle* ih, int new_pos, int old_pos);
 **Returns**: if IUP_IGNORE is returned, the current tab is NOT changed.
 
 **TABCLOSE_CB**: Callback called when the user clicks on the close button.
-Called only when SHOWCLOSE=Yes.
+Called only when SHOWCLOSE=YES.
 
 int function(Ihandle* ih, int pos);
 

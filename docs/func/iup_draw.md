@@ -139,14 +139,14 @@ The size of the string is used only in C. Can be -1 so **strlen** is used intern
 The coordinates are relative to the top-left corner of the text.
 Strings with multiple lines are accepted using '\n" as line separator.
 Horizontal text alignment for multiple lines can be controlled using **DRAWTEXTALIGNMENT** attribute: ALEFT (default), ARIGHT and ACENTER options.
-For single line texts, if the text is larger than its box and **DRAWTEXTWRAP**=Yes, then the line will be automatically broken in multiple lines.
+For single line texts, if the text is larger than its box and **DRAWTEXTWRAP**=YES, then the line will be automatically broken in multiple lines.
 Notice that this is done internally by the system, the element natural size will still use only a single line.
 For the remaining lines to be visible, the element should use EXPAND=VERTICAL or set a SIZE/RASTERSIZE with enough height for the wrapped lines.
-If the text is larger that its box and **DRAWTEXTELLIPSIS**=Yes, an ellipsis ("...") will be placed near the last visible part of the text and replace the invisible part.
-It will be ignored when WRAP=Yes.
+If the text is larger that its box and **DRAWTEXTELLIPSIS**=YES, an ellipsis ("...") will be placed near the last visible part of the text and replace the invisible part.
+It will be ignored when WRAP=YES.
 w and h are optional and can be -1 or 0, the text size will be used, so WRAP nor ELLIPSIS will not produce any changes.
-The text is not automatically clipped to the rectangle, if **DRAWTEXTCLIP**=Yes it will be clipped but depending on the driver may affect the clipping set by IupDrawSetClipRect.
-The text can be drawn in any angle using **DRAWTEXTORIENTATION**, in degrees and counterclockwise, its layout is not centered inside the given rectangle when text is oriented, to center the layout use **DRAWTEXTLAYOUTCENTER**=Yes.
+The text is not automatically clipped to the rectangle, if **DRAWTEXTCLIP**=YES it will be clipped but depending on the driver may affect the clipping set by IupDrawSetClipRect.
+The text can be drawn in any angle using **DRAWTEXTORIENTATION**, in degrees and counterclockwise, its layout is not centered inside the given rectangle when text is oriented, to center the layout use **DRAWTEXTLAYOUTCENTER**=YES.
 
     void IupDrawImage(Ihandle* ih, const char* name, int x, int y, int w, int h);
 

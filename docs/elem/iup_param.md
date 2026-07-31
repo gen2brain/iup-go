@@ -44,18 +44,18 @@ And describe the type of the parameter. For all parameters.
 And describe the C data type that must be passed to **IupGetParam** to initialize and receive parameter values.
 For all parameters.
 
-**MULTILINE**: can be Yes or No. Defines if the edit box can have more than one line.
+**MULTILINE**: can be YES or NO. Defines if the edit box can have more than one line.
 For 'm' parameter.
 
 **MAXSTR**: maximum size for the string.
 Its default value is 10240 for multiline strings, 4096 for file names, and 512 for other strings.
 For 'm', 's', 'd', 'f', 'n' and 'c' parameters.
 
-**ANGLE**: can be Yes or No. defines if the REAL type is an angle. For 'a' or 'A' parameters.
+**ANGLE**: can be YES or NO. defines if the REAL type is an angle. For 'a' or 'A' parameters.
 
 **TRUE**, **FALSE**: boolean names. For 'b' parameter.
 
-**INTERVAL** (Yes/No), **MIN**, **MAX**, **STEP**, **PARTIAL** (Yes/No): optional limits for **integer** and **real** types.
+**INTERVAL** (YES/NO), **MIN**, **MAX**, **STEP**, **PARTIAL** (YES/NO): optional limits for **integer** and **real** types.
 For 'a', 'A', 'i', 'R', and 'r' parameters.
 
 **PRECISION**: numeric precision for real value display. For 'a', 'A', 'r', and 'R' parameters.

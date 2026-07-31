@@ -27,7 +27,7 @@ Use [IupSetHandle](../func/iup_sethandle.md) or [IupSetAttributeHandle](../func/
 See also [IupImage](../elem/iup_image.md).
 
 **BACKIMAGEZOOM** (non-inheritable): if set the back image will be zoomed to occupy the full background.
-Aspect ratio is NOT preserved. Can be Yes or No. Default: No.
+Aspect ratio is NOT preserved. Can be YES or NO. Default: NO.
 
 **BORDER** (creation-only): the default value is "NO". This is the **IupCanvas** border.
 
@@ -49,7 +49,7 @@ In Windows the control will still get the focus when clicked. Default: YES.
 Default: NO.
 
 **FITTOBACKIMAGE** (non-inheritable): enable the natural size to be computed from the BACKIMAGE.
-If BACKIMAGE is not defined will be ignored. Can be Yes or No. Default: No.
+If BACKIMAGE is not defined will be ignored. Can be YES or NO. Default: NO.
 
 [FGCOLOR](../attrib/iup_fgcolor.md): Controls the handler color. Default: "0 120 220".
 

@@ -46,7 +46,7 @@ If set to NULL will increment +1.
 **STATE**: describe the state of the iteration. Can be: IDLE, PROCESSING, UNDEFINED or ABORTED.
 Default is IDLE. When INC, COUNT or PERCENT are set the state is changed to PROCESSING.
 If the user pressed the Cancel button, the state is changed to ABORTED, but check the CANCEL_CB callback for other options.
-If the state is set to UNDEFINED by the application the progress bar will display an undefined state animation (same as setting MARQUEE=Yes in [IupProgressBar](../elem/iup_progressbar.md)), to resume processing set the state attribute to PROCESSING.
+If the state is set to UNDEFINED by the application the progress bar will display an undefined state animation (same as setting MARQUEE=YES in [IupProgressBar](../elem/iup_progressbar.md)), to resume processing set the state attribute to PROCESSING.
 
 **DESCRIPTION**: text description to be shown in the dialog.
 
@@ -87,8 +87,8 @@ The dialog is **not** automatically closed, the application must do that manuall
 
     static int cancel_cb(Ihandle* ih)
     {
-      int ret = IupAlarm("Warning!", "Interrupt Processing?", "Yes", "No", NULL);
-      if (ret == 1) /* Yes Interrupt */
+      int ret = IupAlarm("Warning!", "Interrupt Processing?", "YES", "NO", NULL);
+      if (ret == 1) /* YES Interrupt */
       {
         IupExitLoop();
         return IUP_DEFAULT;

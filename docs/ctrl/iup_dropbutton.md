@@ -36,7 +36,7 @@ Default: CENTER.
 **ARROWCOLOR**: color used for the arrow. Default uses FGCOLOR.
 
 **ARROWIMAGES** (non-inheritable): replace the drawn arrows by the following images.
-Make sure their sizes are equal or smaller than ARROWSIZE. Default: No.
+Make sure their sizes are equal or smaller than ARROWSIZE. Default: NO.
 
 **ARROWIMAGE** (non-inheritable): Arrow image name.
 Use [IupSetHandle](../func/iup_sethandle.md) or [IupSetAttributeHandle](../func/iup_setattributehandle.md) to associate an image to a name.
@@ -71,7 +71,7 @@ If it is not defined then the BACKIMAGE is used and its colors will be replaced 
 If it is not defined then the BACKIMAGE is used.
 
 **BACKIMAGEZOOM** (non-inheritable): if set, the back image will be zoomed to occupy the full background.
-Aspect ratio is NOT preserved. Can be Yes or No. Default: No.
+Aspect ratio is NOT preserved. Can be YES or NO. Default: NO.
 
 [BGCOLOR](../attrib/iup_bgcolor.md): Background color.
 If text and image are not defined, the button is configured to simply show a color, in this case set the button size because the natural size will be very small.
@@ -96,14 +96,14 @@ This is for the **IupDropButton** drawn border.
 Any borders can be hidden by simply setting this value to 0.
 This is for the **IupDropButton** drawn border.
 
-**SHOWBORDER**: by default borders are drawn only when the button is highlighted, if SHOWBORDER=Yes borders are always shown.
-When SHOWBORDER=Yes and BGCOLOR is not defined, the actual BGCOLOR will be a darker version of the background color of the native parent.
+**SHOWBORDER**: by default borders are drawn only when the button is highlighted, if SHOWBORDER=YES borders are always shown.
+When SHOWBORDER=YES and BGCOLOR is not defined, the actual BGCOLOR will be a darker version of the background color of the native parent.
 
 **CANFOCUS** (creation-only) (non-inheritable): enables the focus traversal of the control.
 In Windows the button will respect CANFOCUS in opposite to the other controls. Default: YES.
 
-**FOCUSFEEDBACK** (non-inheritable): draw the focus feedback. Can be Yes or No.
-Default: Yes.
+**FOCUSFEEDBACK** (non-inheritable): draw the focus feedback. Can be YES or NO.
+Default: YES.
 
 **DROPCHILD**: the name of the element that will be displayed when dropped.
 Use [IupSetHandle](../func/iup_sethandle.md) or [IupSetAttributeHandle](../func/iup_setattributehandle.md) to associate a child to a name.
@@ -116,7 +116,7 @@ See the Notes below for more information.
 Clicking on the remaining of the button will call FLAT_ACTION.
 There will be two separates areas in the button, one for the drop arrow and one for the regular button.
 When disabled there will be only one area, and the drop child will be shown anywhere the button is clicked, the callback FLAT_ACTION will not be called.
-Default: Yes.
+Default: YES.
 
 **DROPPOSITION** (non-inheritable): the drop child can be shown in four different positions relative to the drop button: BOTTOMLEFT, TOPLEFT, BOTTOMRIGHT, TOPRIGHT.
 BOTTOMLEFT the top-left corner of the drop child is aligned with the bottom-left corner of the drop button, BOTTOMRIGHT the top-right corner of the drop child is aligned with the bottom-right corner of the drop button, TOPLEFT the bottom-left corner of the drop child is aligned with the top-left corner of the drop button, TOPRIGHT the bottom-right corner of the drop child is aligned with the top-right corner of the drop button.
@@ -136,7 +136,7 @@ If not defined FGCOLOR will be used instead.
 If not defined FGCOLOR will be used instead.
 
 **FITTOBACKIMAGE** (non-inheritable): enable the natural size to be computed from the BACKIMAGE.
-If BACKIMAGE is not defined will be ignored. Can be Yes or No. Default: No.
+If BACKIMAGE is not defined will be ignored. Can be YES or NO. Default: NO.
 
 **FRONTIMAGE** (non-inheritable): image name to be used as foreground.
 The foreground image is drawn in the same position as the background, but it is drawn at last.
@@ -152,9 +152,9 @@ If it is not defined then the FRONTIMAGE is used and its colors will be replaced
 **FRONTIMAGEPRESS** (non-inheritable): foreground image name of the element in pressed state.
 If it is not defined then the FRONTIMAGE is used.
 
-**HASFOCUS** (read-only): returns the button state if has focus. Can be Yes or No.
+**HASFOCUS** (read-only): returns the button state if has focus. Can be YES or NO.
 
-**HIGHLIGHTED** (read-only): returns the button state if highlighted. Can be Yes or No.
+**HIGHLIGHTED** (read-only): returns the button state if highlighted. Can be YES or NO.
 
 **IMAGE** (non-inheritable): Image name.
 Use [IupSetHandle](../func/iup_sethandle.md) or [IupSetAttributeHandle](../func/iup_setattributehandle.md) to associate an image to a name.
@@ -179,7 +179,7 @@ Value can be DEFAULTBUTTONPADDING, so the global attribute of this name will be 
 **CPADDING**: same as PADDING but using the units of the **SIZE** attribute.
 It will actually set the PADDING attribute.
 
-**PRESSED** (read-only): returns the button state if pressed. Can be Yes or No.
+**PRESSED** (read-only): returns the button state if pressed. Can be YES or NO.
 
 **SHOWDROPDOWN** (write-only): opens or closes the dropdown child. Can be "YES" or "NO".
 Ignored if set before map.
@@ -200,7 +200,7 @@ Notice that this is done internally by the system, the element natural size will
 For the remaining lines to be visible, the element should use EXPAND=VERTICAL or set a SIZE/RASTERSIZE with enough height for the wrapped lines.
 
 **TEXTELLIPSIS** (non-inheritable): If the text is larger than its box, an ellipsis ("...") will be placed near the last visible part of the text and replace the invisible part.
-It will be ignored when TEXTWRAP=Yes.
+It will be ignored when TEXTWRAP=YES.
 
   **TEXTORIENTATION** (non-inheritable): text angle in degrees and counterclockwise.
 The text size will adapt to include the rotated space.
@@ -224,7 +224,7 @@ They are all called before the internal callbacks, and if they return IUP_IGNORE
 
 **FLAT_ACTION**: Action generated when the button 1 (usually left) is selected.
 This callback is called only after the mouse is released and when it is released inside the button area.
-Called only when DROPONARROW=Yes.
+Called only when DROPONARROW=YES.
 
     int function(Ihandle* ih);
 
@@ -259,7 +259,7 @@ The natural size will be a combination of the size of the image and the title, i
 The drop dialog is configured with no decorations, and it is not resizable, only the FOCUS_CB and K_ESC callbacks are set.
 But this can be changed by the application. It is a regular [IupDialog](../dlg/iup_dialog.md).
 To obtain the drop button handle from the handle of the dialog, get the "DROPBUTTON" attribute handle from the dialog, using [IupGetAttributeHandle](../func/iup_getattributehandle.md).
-After performing some operation on the drop child, use SHOWDROPDOWN=NO on the drop button, you may also update its TITLE, just like a regular **IupList** with DROPDOWN=Yes, but this will not be performed automatically by the drop button.
+After performing some operation on the drop child, use SHOWDROPDOWN=NO on the drop button, you may also update its TITLE, just like a regular **IupList** with DROPDOWN=YES, but this will not be performed automatically by the drop button.
 For example, set the ACTION callback on the IupList used as drop child:
 
     static int list_cb(Ihandle* list, char *text, int item, int state)
@@ -267,13 +267,13 @@ For example, set the ACTION callback on the IupList used as drop child:
       if (state == 1)
       {
         Ihandle* ih = IupGetAttributeHandle(IupGetDialog(list), "DROPBUTTON");
-        IupSetAttribute(ih, "SHOWDROPDOWN", "No");
+        IupSetAttribute(ih, "SHOWDROPDOWN", "NO");
         IupSetStrAttribute(ih, "TITLE", text);
       }
       return IUP_DEFAULT;
     }
 
-Additionally, to mimic a **IupList** with DROPDOWN=Yes set SHOWBORDER=Yes and DROPONARROW=NO on the drop button.
+Additionally, to mimic a **IupList** with DROPDOWN=YES set SHOWBORDER=YES and DROPONARROW=NO on the drop button.
 But notice that the natural size will not use the largest item in the drop child list, so you can use EXPAND=HORIZONTAL or set VISIBLECOLUMNS, both on the drop button.
 
 ### Examples

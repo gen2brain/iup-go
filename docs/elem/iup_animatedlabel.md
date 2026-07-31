@@ -30,7 +30,7 @@ By default, the animation is stopped.
 **STOP** (write-only): stops the animation. The value is ignored.
 
 **STOPWHENHIDDEN**: automatically stops the animation when the label is hidden.
-Default: Yes.
+Default: YES.
 
 **RUNNING** (read-only): return YES if the animation is running.
 
@@ -54,7 +54,7 @@ All **IupLabel** callbacks. No label callbacks are used internally.
 
      label = IupAnimatedLabel(NULL);
     IupSetAttribute(label, "ANIMATION", "IUP_CircleProgressAnimation");
-    IupSetAttribute(label, "START", "Yes");
+    IupSetAttribute(label, "START", "YES");
 
 [Browse for Example Files](../../examples/)
 

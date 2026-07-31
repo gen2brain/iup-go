@@ -13,7 +13,7 @@ Default:: "0.1".
 LINEX, XMAX and XMIN are only updated in the scrollbar when DX is updated.
 
 When the canvas is visible, a change in DX can generate a redraw in the horizontal scrollbar on the screen.
-But it may generate a RESIZE_CB callback event if XAUTOHIDE=Yes.
+But it may generate a RESIZE_CB callback event if XAUTOHIDE=YES.
 
 A change in these values can affect the attribute [POSX](iup_posx.md).
 

@@ -42,7 +42,7 @@ Not supported in Qt.
 Can be set to "TODAY". Default value is the today date.
 
 **ZEROPRECED**: Day and month numbers will be preceded by a zero. Must be set before ORDER in Windows.
-Default: No.
+Default: NO.
 
 ### Callbacks
 
@@ -71,12 +71,12 @@ In Windows and Qt, FORMAT can have the following values, but other text in the f
 | Element | Description                                                                                       |
 |---------|---------------------------------------------------------------------------------------------------|
 | "d"     | The one- or two-digit day. (**default**)                                                          |
-| "dd"    | The two-digit day. Single-digit day values are preceded by a zero.(Set when ZEROPRECED=Yes)       |
+| "dd"    | The two-digit day. Single-digit day values are preceded by a zero.(Set when ZEROPRECED=YES)       |
 | "ddd"   | The three-character weekday abbreviation.                                                         |
 | "dddd"  | The full weekday name.                                                                            |
 | "M"     | The one- or two-digit month number. (**default**)                                                 |
-| "MM"    | The two-digit month number. Single-digit values are preceded by a zero. (Set when ZEROPRECED=Yes) |
-| "MMM"   | The three-character month abbreviation.(Set when MONTHSHORTNAMES=Yes)                             |
+| "MM"    | The two-digit month number. Single-digit values are preceded by a zero. (Set when ZEROPRECED=YES) |
+| "MMM"   | The three-character month abbreviation.(Set when MONTHSHORTNAMES=YES)                             |
 | "MMMM"  | The full month name.                                                                              |
 | "yy"    | The last two digits of the year (that is, 1996 would be displayed as "96").(Not recommended)      |
 | "yyyy"  | The full year (that is, 1996 would be displayed as "1996"). (**default**)                         |

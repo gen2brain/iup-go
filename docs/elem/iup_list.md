@@ -38,7 +38,7 @@ Not supported in Android and iOS.
 Set to NO to add many items to the list without updating the display. Default: "YES".
 
 [BGCOLOR](../attrib/iup_bgcolor.md): Background color of the text. Default: the global attribute TXTBGCOLOR.
-In GTK does nothing when DROPDOWN=Yes.
+In GTK does nothing when DROPDOWN=YES.
 
 **CANFOCUS** (creation-only) (non-inheritable): enables the focus traversal of the control.
 In Windows the control will still get the focus when clicked. Default: YES.
@@ -64,21 +64,21 @@ Default: NO, but if DROPFILES_CB is defined when the element is mapped then it w
 To select another option, the user must press this button, which displays all items in the list.
 Can be "YES" or "NO". Default "NO".
 
-**DROPEXPAND** [Win32, macOS, GTK and Qt Only]: When DROPDOWN=Yes, the size of the dropped list will expand to include the largest text.
+**DROPEXPAND** [Win32, macOS, GTK and Qt Only]: When DROPDOWN=YES, the size of the dropped list will expand to include the largest text.
 Can be "YES" or "NO". Default: "YES".
 
 **EDITBOX** (creation-only): Adds an edit box to the list. Can be "YES" or "NO". Default "NO".
 
 [FGCOLOR](../attrib/iup_fgcolor.md): Text color. Default: the global attribute TXTFGCOLOR.
 
-**FITIMAGE** (non-inheritable): when SHOWIMAGE=Yes, images are scaled proportionally to fit the item height based on the font size.
+**FITIMAGE** (non-inheritable): when SHOWIMAGE=YES, images are scaled proportionally to fit the item height based on the font size.
 Can be "YES" or "NO". Default: "YES".
 Not supported in Motif.
 
 **IMAGEid** (non-inheritable) (write-only): image name to be used in the specified item, where id is the specified item starting at 1.
 The item must already exist. Use [IupSetHandle](../func/iup_sethandle.md) or [IupSetAttributeHandle](../func/iup_setattributehandle.md) to associate an image to a name.
-See also [IupImage](iup_image.md). The image is always displayed at the left of the text and only when SHOWIMAGE=Yes.
-When EDITBOX=Yes the image is not displayed at the edit box. Images don't need to have the same size.
+See also [IupImage](iup_image.md). The image is always displayed at the left of the text and only when SHOWIMAGE=YES.
+When EDITBOX=YES the image is not displayed at the edit box. Images don't need to have the same size.
 In Windows, list items are limited to 255 pixels height.
 Not supported in Motif.
 
@@ -169,7 +169,7 @@ In virtual mode, items are not stored internally, and the list queries the appli
 Set ITEMCOUNT to define the number of items, and use the list callbacks to provide item data.
 Can be "YES" or "NO". Default: "NO".
 
-**ITEMCOUNT** (non-inheritable): number of items in the list when VIRTUALMODE=Yes.
+**ITEMCOUNT** (non-inheritable): number of items in the list when VIRTUALMODE=YES.
 Must be set after VIRTUALMODE is enabled.
 
 >
@@ -286,7 +286,7 @@ If this callback is defined, the **ACTION** callback will not be called.
 The non changed items marked with 'x' are simulated internally by IUP in all systems.
 If you add or remove items to/from the list, and you count on the 'x' values, then after adding/removing items set the VALUE attribute to ensure proper 'x' values.
 
-**VALUE_CB**: Called to retrieve the text for each item when VIRTUALMODE=Yes.
+**VALUE_CB**: Called to retrieve the text for each item when VIRTUALMODE=YES.
 
     char* function(Ihandle *ih, int pos);
 
@@ -295,7 +295,7 @@ If you add or remove items to/from the list, and you count on the 'x' values, th
 
 **Returns**: the text to be used for the item.
 
-**IMAGE_CB**: Called to retrieve the image name for each item when SHOWIMAGE=Yes and VIRTUALMODE=Yes.
+**IMAGE_CB**: Called to retrieve the image name for each item when SHOWIMAGE=YES and VIRTUALMODE=YES.
 
     char* function(Ihandle *ih, int pos);
 
@@ -322,7 +322,7 @@ Called when the selection is changed or when the text is edited.
 Text is always left aligned.
 
 When the list has focus, use the arrow keys to move focus from one item to another.
-When DROPDOWN=Yes uses the Alt+Down key combination to show the dropdown list.
+When DROPDOWN=YES uses the Alt+Down key combination to show the dropdown list.
 While the dropdown is shown, the arrow key may change the current value depending on the system, on Windows will directly change the current value, on GTK will change the current value only if Enter is pressed.
 In all systems, the dropdown list is closed by using the Alt+Up key combination, or by pressing Enter or Esc keys. While the dropdown list is shown, the DEFAULTENTER and DEFAULTESC dialog buttons will not be activated.
 
@@ -335,7 +335,7 @@ The [GETFOCUS_CB](../call/iup_getfocus_cb.md) and [KILLFOCUS_CB](../call/iup_kil
 In Windows, if EDITBOX= YES, then the tooltips are shown only when the cursor is near the control border or at the dropdown arrow.
 Also, the selection and caret attributes are not preserved if the list loses its focus, or in other words, these attributes are only useful in Windows if the list has the focus.
 
-**IMPORTANT:** In Windows when DROPDOWN= Yes, the vertical size is controlled by the system, and has the height just right to include the borders and the text.
+**IMPORTANT:** In Windows when DROPDOWN= YES, the vertical size is controlled by the system, and has the height just right to include the borders and the text.
 So the **User** height from RASTERSIZE or SIZE will always be ignored.
 
 In Windows, list items are limited to 255 pixels height.

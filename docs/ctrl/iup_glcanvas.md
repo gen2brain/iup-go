@@ -67,13 +67,13 @@ Indexed color mode is not supported on macOS, EGL, and Haiku; RGBA will be used 
 **CONTEXT** (read-only): Returns the platform OpenGL context handle.
 
 **CONTEXTFLAGS** (non-inheritable): Context flags. Can be DEBUG, FORWARDCOMPATIBLE or DEBUGFORWARDCOMPATIBLE.
-On Windows/GLX, used only when ARBCONTEXT=Yes. On EGL and macOS, can be used independently.
+On Windows/GLX, used only when ARBCONTEXT=YES. On EGL and macOS, can be used independently.
 
 **CONTEXTPROFILE** (non-inheritable): Context profile mask. Can be CORE, COMPATIBILITY or CORECOMPATIBILITY.
-On Windows/GLX, used only when ARBCONTEXT=Yes. On EGL and macOS, can be used independently.
+On Windows/GLX, used only when ARBCONTEXT=YES. On EGL and macOS, can be used independently.
 
 **CONTEXTVERSION** (non-inheritable): Context version number in the format "major.minor".
-On Windows/GLX, used only when ARBCONTEXT=Yes. On EGL and macOS, can be used independently.
+On Windows/GLX, used only when ARBCONTEXT=YES. On EGL and macOS, can be used independently.
 
 **DEPTH_SIZE**: Indicates the number of bits for representing the *z* coordinate in the z-buffer.
 Value 0 means the z-buffer is not necessary.
@@ -94,7 +94,7 @@ Value 0 means the stencil buffer is not necessary. Default is 0.
 
 **STEREO**: Creates a stereo GL canvas (special glasses are required to visualize it correctly).
 Possible values: "YES" or "NO". Default: "NO".
-When this flag is set to Yes but the OpenGL driver does not support it, the map will be successful and STEREO will be set to NO and ERROR will not be set.
+When this flag is set to YES but the OpenGL driver does not support it, the map will be successful and STEREO will be set to NO and ERROR will not be set.
 
 **SHAREDCONTEXT**: name of another **IupGLCanvas** that will share its display lists and textures.
 That canvas must be mapped before this canvas.

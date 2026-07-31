@@ -46,13 +46,13 @@ These values also can be combined in these formats: VALUE1 (one column); VALUE1:
 Default: "LABEL" (one column).
 
 **COUNT**: defines the number of items in the list. Differently from the **IupList** control, it is not read-only.
-It does not include the extra empty item when EDITABLE=Yes.
+It does not include the extra empty item when EDITABLE=YES.
 
 **DELLIN** (write-only): removes the given line from the list.
 To remove more than one line, use format "***L-L***", where the first number corresponds to the base line and the second number corresponds to the number of lines to be removed.
 Ignored if set before map.
 
-**EDITABLE** (creation-only): enables the interactive editing of the list. It can be Yes or No.
+**EDITABLE** (creation-only): enables the interactive editing of the list. It can be YES or NO.
 Default: "NO". An empty item at the end of the list will be available so new items can be interactively inserted.
 Also while editing a label, the IMAGE column will display a button so the item can be interactively removed.
 
@@ -68,8 +68,8 @@ If not defined uses the ITEMFGCOLORid.
 Use [IupSetHandle](../func/iup_sethandle.md) or [IupSetAttributeHandle](../func/iup_setattributehandle.md) to associate an image to a name.
 See also [IupImage](../elem/iup_image.md). Image column must be available.
 
-**IMAGEACTIVE*id***: controls the interaction with the image of an item. It can be Yes or No.
-Default: Yes. Image column must be available.
+**IMAGEACTIVE*id***: controls the interaction with the image of an item. It can be YES or NO.
+Default: YES. Image column must be available.
 
 **IMAGEADD** (write-only): name of the image that will be shown when the IupMatrixList is editable.
 Default: "MTXLIST_IMG_ADD". Use [IupSetHandle](../func/iup_sethandle.md) or [IupSetAttributeHandle](../func/iup_setattributehandle.md) to associate an image to a name.
@@ -81,7 +81,7 @@ See also [IupImage](../elem/iup_image.md). Image column must be available.
 
 **IMAGECOL** (read-only): returns the number of image column. If not exists, returns 0.
 
-**IMAGEDEL** (write-only): name of the image that will be shown when the IupMatrixList is editable or when SHOWDELETE=Yes.
+**IMAGEDEL** (write-only): name of the image that will be shown when the IupMatrixList is editable or when SHOWDELETE=YES.
 Default: "MTXLIST_IMG_DEL". Use [IupSetHandle](../func/iup_sethandle.md) or [IupSetAttributeHandle](../func/iup_setattributehandle.md) to associate an image to a name.
 See also [IupImage](../elem/iup_image.md). Image column must be available.
 
@@ -90,13 +90,13 @@ Default: "MTXLIST_IMG_UNCHECK". Use [IupSetHandle](../func/iup_sethandle.md) or 
 See also [IupImage](../elem/iup_image.md). Image column must be available.
 
 **IMAGEVALUE*id***: selects the CHECK or the UNCHECK image to display for an item (id).
-It can be Yes or No. Default: NO.
+It can be YES or NO. Default: NO.
 
 **INSERTITEM*id*** (write-only): inserts an item before the given id position (id starts at 1).
 If id=COUNT+1 then it will append after the last item. Ignored if out of bounds.
 Ignored if set before map.
 
-**ITEMACTIVE*id***: controls the interaction with an item (id). It can be Yes or No. Default: "YES".
+**ITEMACTIVE*id***: controls the interaction with an item (id). It can be YES or NO. Default: "YES".
 
 **ITEMFGCOLOR*id***: text color of an item (id). If not defined FGCOLOR is used.
 

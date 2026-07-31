@@ -15,7 +15,7 @@ Default: "1:1".
 **FLAT**: removes the 3D appearance from the matrix.
 
 [FLATSCROLLBAR](iup_flatscrollbar.md): enable the flat scrollbars. Can be set only before map.
-SCROLLBAR is set to NO. Can be Yes, Vertical or Horizontal. Default: not defined.
+SCROLLBAR is set to NO. Can be YES, Vertical or Horizontal. Default: not defined.
 
 **HIDEFOCUS**: do not show the focus mark when drawing the matrix. Default is NO.
 
@@ -48,7 +48,7 @@ Use [IupSetHandle](../func/iup_sethandle.md) or [IupSetAttributeHandle](../func/
 See also [IupImage](../elem/iup_image.md). By default an internal image will be used.
 
 **TYPECOLORINACTIVE**: when inactive the color of the cell for TYPE*=COLOR will be attenuated as everything else.
-Default: Yes.
+Default: YES.
 
 > 
 >
@@ -130,12 +130,12 @@ When not defined the `FRAMECOLORL:*` is used.\
 When not defined the `FRAMEHORIZCOLOR0:C` is used. "C" can also be "*".
 
 **FRAMETITLEHIGHLIGHT**: by default, the title cells will have a bright line at left and top to configure a raise appearance.
-Can be Yes or No. Default: Yes.
+Can be YES or NO. Default: YES.
 
 **FRAMEBORDER**: show a fixed border (non scrollable) of 1 pixel around the matrix visible area using FRAMECOLOR.
 It is drawn after the matrix cells are drawn.
 Drawn only when the scrollbars are visible, and only up to matrix total size.
-Default: No.
+Default: NO.
 
 **RESIZEMATRIXCOLOR**: color used by the column resize feedback. Default: "102 102 102".
 
@@ -208,7 +208,7 @@ See also [IupImage](../elem/iup_image.md). By default, an internal image will be
 
 **LIMITEXPAND**: limit expansion to the maximum size that shows all cells.
 This will set the MAXSIZE attribute to match the natural size of the matrix when all cells are visible.
-When the scrollbars have *AUTOHIDE=Yes, the maximum size will not include the scrollbars.
+When the scrollbars have *AUTOHIDE=YES, the maximum size will not include the scrollbars.
 
 **RESIZEMATRIX**: Defines if the width of a column can be interactively changed.
 When this is possible, the user can change the size of a column by dragging the column title right border.
@@ -217,7 +217,7 @@ The minimum size is 0 by default, the column is then hidden, but it can be contr
 
 **RESIZEDRAG**: Resize the column while dragging.
 By default, the column is resized only when the mouse button is released, the resize feedback is a simple vertical line.
-Works only when RESIZEMATRIX=Yes. Default: NO.
+Works only when RESIZEMATRIX=YES. Default: NO.
 
 **ALLOWREORDER** (non-inheritable): enables the user to reorder columns by dragging a column title.
 Can be "YES" or "NO". Default: "NO".
@@ -335,7 +335,7 @@ It will always use the first lines of the matrix.
 The cells appearance will be the same of ordinary cells, and they can also receive the focus and be edited.  Must be less than the total number of lines.
 
 **NOSCROLLASTITLE**: Non scrollable lines and columns to look and behave as title cells.
-Can be Yes or No. Default: No.
+Can be YES or NO. Default: NO.
 
 ### Mark Attributes
 
@@ -343,7 +343,7 @@ Can be Yes or No. Default: No.
 Possible values: "CONTINUOUS" or "NOT_CONTINUOUS". Default: "CONTINUOUS".
 
 **MARKATTITLE**: a click at a title will mark a full line or a full column if they can be marked.
-Default: "Yes".
+Default: "YES".
 
 **MARKMODE**: Defines the entity that can be marked: none, lines, columns, (lines **or** columns), and cells.
 Possible values: "NO", "LIN", "COL", "LINCOL" or "CELL". Default: "NO" (no mark).
@@ -367,7 +367,7 @@ Possible values: "YES" or "NO". Default: "NO".
 
 ### Merge Attributes
 
-**MERGE**`L:C`: merge a range of cells starting from the given "lin:col" (in id), and ending at the given "lin:col" (in value). Title cells can also be merge but only among them, i.e. in the line of column titles (L=0) can only merge columns, and in the column of line titles (C=0) can only merge lines. The corner cell (0:0) can not be merged with any other cell. Only cells that are not already merged can be merged into a range. Returns if the given cell belongs to a merged range, can be "Yes" or "No".
+**MERGE**`L:C`: merge a range of cells starting from the given "lin:col" (in id), and ending at the given "lin:col" (in value). Title cells can also be merge but only among them, i.e. in the line of column titles (L=0) can only merge columns, and in the column of line titles (C=0) can only merge lines. The corner cell (0:0) can not be merged with any other cell. Only cells that are not already merged can be merged into a range. Returns if the given cell belongs to a merged range, can be "YES" or "NO".
 
 **MERGESPLIT** (write-only): split a merged range. value is a cell "lin:col" than belongs to the range, any cell of the range can be used.
 
@@ -449,7 +449,7 @@ When consulted informs if the editing control is visible (text or dropdown).
 Possible values: "YES" or "NO".
 
 **EDITALIGN**: sets the text box alignment to the column alignment when editing a cell value.
-Default: No.
+Default: NO.
 
 **EDITCELL** (read-only): returns the current cell being edited ("L:C"), or NULL if none.
 Can also be used during interaction while editing is being performed and EDITHIDEONFOCUS=NO.
@@ -458,10 +458,10 @@ Can also be used during interaction while editing is being performed and EDITHID
 While editing if more room is necessary it will grow to the right.
 
 **EDITHIDEONFOCUS**: when editing a cell if text box loses its focus, then editing ends.
-Default: Yes. When set to NO editing will continue and the matrix can be scrolled, also when pressing Esc or Enter if the focus is at the matrix it has the same effect as if pressed at the text box.
+Default: YES. When set to NO editing will continue and the matrix can be scrolled, also when pressing Esc or Enter if the focus is at the matrix it has the same effect as if pressed at the text box.
 
-**EDITING** (read-only): returns Yes if the editing process is active for text or dropdown.
-It is set to Yes after EDITION_CB, after MENUDROP_CB,  before DROP_CB, and before the editing control is made visible.
+**EDITING** (read-only): returns YES if the editing process is active for text or dropdown.
+It is set to YES after EDITION_CB, after MENUDROP_CB,  before DROP_CB, and before the editing control is made visible.
 Set to NO when editing is about to end, after EDITION_CB and after the value has been updated, but before the editing control is made invisible.
 
 **EDITNEXT**: controls how the next cell after editing is chosen. Can be LIN, COL, LINCR, COLCR.
@@ -473,9 +473,9 @@ COL   - go to the next column at the same line, if at the last column then go to
 COLCR - go to the next column at the same line, if at the last column then go to the next line at the first column;\
 NONE  - stay in the same cell.
 
-**EDITTEXT** (read-only): returns Yes if the editing is being done by a text box.
+**EDITTEXT** (read-only): returns YES if the editing is being done by a text box.
 
-**EDITVALUE** (read-only): returns Yes if the display cell value being consulted will be used for a text box initial value.
+**EDITVALUE** (read-only): returns YES if the display cell value being consulted will be used for a text box initial value.
 Useful for being consulted inside the translate and numeric callbacks.
 
 ### Text Editing Attributes

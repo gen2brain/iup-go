@@ -22,7 +22,7 @@ See also [IupImage](../elem/iup_image.md).
 When defined the ACTION callback of the IupCanvas will be defined.
 
 **BACKIMAGEZOOM** (non-inheritable): if set the back image will be zoomed to occupy the full background.
-Aspect ratio is NOT preserved. Can be Yes or No. Default: No.
+Aspect ratio is NOT preserved. Can be YES or NO. Default: NO.
 
 **BACKCOLOR** (non-inheritable): if defined used to fill the background color when BACKIMAGE is defined.
 If not defined BGCOLOR is used.
@@ -33,21 +33,21 @@ If not defined BGCOLOR is used.
 
 **CANVASBOX** (non-inheritable): enable the behavior of a canvas box instead of a regular container.
 This will affect the EXPAND attribute, the Natural size computation, and children layout distribution.
-Can be Yes or No. Default: No.
+Can be YES or NO. Default: NO.
 
 **CHILDOFFSET** (non-inheritable): Allow to specify a position offset for the child.
 Available for native containers only. It will not affect the natural size, and allows to position controls outside the client area.
 Format "*dx*x*dy*", where *dx* and *dy* are integer values corresponding to the horizontal and vertical offsets, respectively, in pixels.
 Default: 0x0.
 
-**DECORATION** (non-inheritable): Enable a decoration area around the child. Can be Yes or No.
-Default No.
+**DECORATION** (non-inheritable): Enable a decoration area around the child. Can be YES or NO.
+Default NO.
 
 **DECORSIZE** (non-inheritable): total size of the decoration in the format "WidthxHeight" (in C "%dx%d).
-Used only when DECORATION=Yes.
+Used only when DECORATION=YES.
 
 **DECOROFFSET** (non-inheritable): decoration offset from a left border and top border in the format "XxY" (in C "%dx%d).
-Used only when DECORATION=Yes.
+Used only when DECORATION=YES.
 
 [EXPAND](../attrib/iup_expand.md) (non-inheritable):  behaves as a container.
 See CANVASBOX attribute.

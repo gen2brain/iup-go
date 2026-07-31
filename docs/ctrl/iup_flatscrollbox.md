@@ -23,7 +23,7 @@ Inherits all attributes and callbacks of the [IupCanvas](../elem/iup_canvas.md),
 
 **CANVASBOX** (non-inheritable): enable the behavior of a canvas box instead of a regular container.
 This will affect the EXPAND attribute, the Natural size computation, and child layout distribution.
-Can be Yes or No. Default: No.
+Can be YES or NO. Default: NO.
 
 **CHILDOFFSET**: Allow specifying a position offset for the child. Available for native containers only.
 It will not affect the natural size, and allows to position controls outside the client area.
@@ -36,7 +36,7 @@ Default: 0x0.
 Default: YES. If set to NO then the layout will be updated only when the mouse drag is released.
 
 [SCROLLBAR](../attrib/iup_scrollbar.md) (read-only): is always "NO". So the IupCanvas native scrollbars are hidden.
-See the FLATSCROLLBAR attribute below. YAUTOHIDE and XAUTOHIDE will be always Yes.
+See the FLATSCROLLBAR attribute below. YAUTOHIDE and XAUTOHIDE will be always YES.
 
 **SCROLLTO** (write-only): position the scroll at the given x,y coordinates relative to the box top-left corner.
 Format "*x,y*". Value can also be TOP or BOTTOM for a vertical scroll to the top or to the bottom of the scroll range.
@@ -47,10 +47,10 @@ The child must be contained in the Scrollbox hierarchy.
 
 **SCROLLTOCHILD_HANDLE** (write-only): same as SCROLLTOCHILD but directly using the child handle.
 
-[FLATSCROLLBAR](iup_flatscrollbar.md): Can be Yes, Vertical or Horizontal.
-Can be set only before map. Default: Yes.
+[FLATSCROLLBAR](iup_flatscrollbar.md): Can be YES, Vertical or Horizontal.
+Can be set only before map. Default: YES.
 
-**WHEELDROPFOCUS:** set to Yes.
+**WHEELDROPFOCUS:** set to YES.
 
 ### Scrollbars Appearance Attributes
 

@@ -129,14 +129,14 @@ Requires FORMATTING=YES and MULTILINE=YES. Not supported in Motif.
 
 **MULTILINE** (creation-only) (non-inheritable): allows the edition of multiple lines.
 In single line mode some characters are invalid, like "\t", "\r" and "\n". Default: NO.
-When set to Yes will also reset the SCROLLBAR attribute to Yes.
+When set to YES will also reset the SCROLLBAR attribute to YES.
 
 **NC**: Maximum number of **characters** allowed for keyboard input, a larger text can still be set using attributes.
 The maximum value is the limit of the VALUE attribute. The "0" value is the same as maximum.
 Default: maximum.
 
 **NOHIDESEL** [Windows Only]: do not hide the selection when the control loses its focus.
-Default: Yes.
+Default: YES.
 
 **OVERWRITE** (non-inheritable): turns the overwrite mode ON or OFF.
 Pressing the Insert key toggles the value.
@@ -169,7 +169,7 @@ In Windows not supported when FORMATTING=NO.
 
 **SCROLLTO** (non-inheritable, write-only): Scroll the text to make the given **character** position visible.
 It uses the same format and reference of the CARET attribute ("lin,col" or "col" starting at 1).
-In Windows, when FORMATTING=Yes "col" is ignored.
+In Windows, when FORMATTING=YES "col" is ignored.
 
 **SCROLLTOPOS** (non-inheritable, write-only): Scroll the text to make the given **character** position visible.
 It uses the same format and reference of the CARETPOS attribute ("pos" starting at 0).

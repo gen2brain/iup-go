@@ -56,7 +56,7 @@ It returns the selection made by the user. Set only if EXTFILTER is defined.
 Not supported in WebAssembly.
 
 **MULTIPLEFILES**: Allows the user to select multiple files when DIALOGTYPE=OPEN.
-Can be "Yes" or "No". Default "No".
+Can be "YES" or "NO". Default "NO".
 
 **NOCHANGEDIR**: Indicates if the current working directory must be restored after the user navigation.
 Default: "YES".
@@ -100,21 +100,21 @@ Supported in Win32, GTK 3, Motif, FLTK, macOS and Qt.
 
 **VALUE** (read-only): Name of the selected file(s), or NULL if no file was selected.
 If FILE is not defined this is used as the initial value.
-When MULTIPLEFILES=Yes it contains the path (but NOT the same value returned in DIRECTORY, it does not contain the last separator) and several file names separated by the '\|' character.
+When MULTIPLEFILES=YES it contains the path (but NOT the same value returned in DIRECTORY, it does not contain the last separator) and several file names separated by the '\|' character.
 The file list ends with character '\|'.
 BUT when the user selects just one file, the directory and the file are not separated by '\|'.
 For example:
 
-    "/tecgraf/iup/test|a.txt|b.txt|c.txt|" (MULTIPLEFILES=Yes and more than one file is selected)
+    "/tecgraf/iup/test|a.txt|b.txt|c.txt|" (MULTIPLEFILES=YES and more than one file is selected)
     "/tecgraf/iup/test/a.txt" (only one file is selected)
 
-**MULTIVALUECOUNT**(read-only): number of returned values when MULTIPLEFILES=Yes.
+**MULTIVALUECOUNT**(read-only): number of returned values when MULTIPLEFILES=YES.
 It always includes the path, so if only 1 file is selected its value is 2.
 
-**MULTIVALUE*****id*** (read-only): almost the same sequence returned in VALUE when MULTIPLEFILES=Yes but split in several attributes.
+**MULTIVALUE*****id*** (read-only): almost the same sequence returned in VALUE when MULTIPLEFILES=YES but split in several attributes.
 VALUE0 contains the path (same value returned in DIRECTORY), and VALUE1, VALUE2, ... contains each file name without the path.
 
-**MULTIVALUEPATH**: force a full path in MULTIVALUE and VALUE attributes when MULTIPLEFILES=Yes (id=0 will still contain the path of the first file).
+**MULTIVALUEPATH**: force a full path in MULTIVALUE and VALUE attributes when MULTIPLEFILES=YES (id=0 will still contain the path of the first file).
 In Windows and Motif, only files in the same folder may be selected, but in GTK when using the "Recent Files" files from different folders can be selected.
 
 **VALUE_URI** [Android Only] (read-only) (non-inheritable): SAF `content://` URI of the last successful pick.
@@ -165,8 +165,8 @@ In Windows, the FILE and the DIRECTORY attributes also accept strings containing
 
 In Windows, the dialog will be modal relative only to its parent or to the active dialog.
 
-In Windows, when using UTF-8 strings (UTF8MODE=Yes), attributes that return file names are still using the current locale, because the standard file I/O functions, like fopen, use ANSI file names.
-To use UTF-8 filenames (that can lately be converted to UTF-16) set the global attribute [UTF8MODE_FILE](../attrib/iup_globals.md) to Yes.
+In Windows, when using UTF-8 strings (UTF8MODE=YES), attributes that return file names are still using the current locale, because the standard file I/O functions, like fopen, use ANSI file names.
+To use UTF-8 filenames (that can lately be converted to UTF-16) set the global attribute [UTF8MODE_FILE](../attrib/iup_globals.md) to YES.
 In a specific case, the application can set before popup, and unset after, so for just that call will return in UTF-8.
 
 In Windows (Win32), if FILE_CB and HELP_CB are not defined, and x,y are IUP_CENTER or IUP_CURRENT then it will use the newer Explorer interface.

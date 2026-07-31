@@ -33,7 +33,7 @@ The format tag cannot be reused.
 
 #### REMOVEFORMATTING [write-only] (non-inheritable)
 
-Removes the formatting of the current selection if Yes or NULL, and from all text if ALL is used.
+Removes the formatting of the current selection if YES or NULL, and from all text if ALL is used.
 
 ### Format Tag
 
@@ -52,7 +52,7 @@ The default values cannot be dynamically changed.
 The bulk tag itself does not have formatting. Used to optimize format tag modifications.
 Default: NO.
 
-**CLEANOUT**: when BULK=Yes is used to clear all the formatting at start. Default: NO.
+**CLEANOUT**: when BULK=YES is used to clear all the formatting at start. Default: NO.
 
 **SELECTION/SELECTIONPOS**: same as the **IupText** [SELECTION/SELECTIONPOS](../elem/iup_text.md) attributes.
 If not defined the **IupText** attribute will be used.

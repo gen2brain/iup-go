@@ -81,13 +81,13 @@ Available in Win32 and WinUI.
 ### UTF8MODE
 
 By default, IUP uses strings in the current locale (See [FONT](iup_font.md) attribute).
-To use UTF-8 strings, set this attribute to Yes. Default: NO.
+To use UTF-8 strings, set this attribute to YES. Default: NO.
 Not supported in Motif and WinUI.
 
 ### UTF8MODE_FILE [Windows Only]
 
-By default, IUP uses file names in the current locale, even when UTF8MODE=Yes.
-To use UTF-8 file names in Windows, set this attribute to Yes. Default: NO.
+By default, IUP uses file names in the current locale, even when UTF8MODE=YES.
+To use UTF-8 file names in Windows, set this attribute to YES. Default: NO.
 
 The main places affected by this attribute are **IupFileDlg** attributes, such as VALUE, FILE and DIRECTORY, and the DROPFILES_CB callback.
 
@@ -128,12 +128,12 @@ Can be "." or "," only. Default uses the one defined by the system locale.
 ### SB_BGCOLOR [GTK, GTK 4 and Motif Only]
 
 By default, the scrollbars will not be affected by the BGCOLOR in native controls.
-If set to Yes, the system will try to render scrollbars in the same color of the BGCOLOR, but notice that this may affect scrollbars visibility.
+If set to YES, the system will try to render scrollbars in the same color of the BGCOLOR, but notice that this may affect scrollbars visibility.
 This affects **IupCanvas**, **IupList**, **IupText** and **IupTree**.
 
 ### SHOWMENUIMAGES
 
-Force the display of images in menus. Default: Yes.
+Force the display of images in menus. Default: YES.
 Supported in GTK, GTK 4, Qt, EFL and WinUI.
 
 ### OVERLAYSCROLLBAR [GTK Only]
@@ -165,7 +165,7 @@ Default: 96. Used when IMAGEAUTOSCALE=DPI.
 
 ### IMAGESTOCKAUTOSCALE
 
-Stock images are automatically scaled by default. Default: Yes.
+Stock images are automatically scaled by default. Default: YES.
 
 ### IMAGESTOCKSIZE
 
@@ -300,7 +300,7 @@ Returns the width of the vertical scrollbar (the same as the height of the horiz
 
 ### COMCTL32VER6 (read-only) [Windows Only]
 
-Returns Yes or No if the Windows common controls are using Visual Styles or not.
+Returns YES or NO if the Windows common controls are using Visual Styles or not.
 
 ### DARKMODE (read-only)
 
@@ -325,9 +325,9 @@ Returns the hostname.
 
 ### TOUCHREADY (read-only)
 
-Informs if a touch input device is available. Always returns Yes or No.
-On Windows and WinUI it reflects the presence of a touch digitizer; on Android and iOS it is always Yes.
-The other drivers do not detect touch and report No.
+Informs if a touch input device is available. Always returns YES or NO.
+On Windows and WinUI it reflects the presence of a touch digitizer; on Android and iOS it is always YES.
+The other drivers do not detect touch and report NO.
 
 ### USERNAME (read-only)
 

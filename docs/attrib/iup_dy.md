@@ -13,7 +13,7 @@ Default:: "0.1".
 LINEY, YMAX and YMIN are only updated in the scrollbar when DY is updated.
 
 When the canvas is visible, a change in DY can generate a redraw in the horizontal scrollbar on the screen.
-But it may generate a RESIZE_CB callback event if YAUTOHIDE=Yes.
+But it may generate a RESIZE_CB callback event if YAUTOHIDE=YES.
 
 A change in these values can affect the attribute [POSY](iup_posy.md).
 

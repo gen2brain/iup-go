@@ -76,7 +76,7 @@ The box can be created with no elements and be dynamic filled using [IupAppend](
 The box will NOT expand its children, it will allow its children to expand according to the space left in the box parent.
 So for the expansion to occur, the children must be expandable with EXPAND!=NO, and there must be room in the box parent.
 
-Also the **v**box will not reduce its children beyond their **vertical** natural size even if SHRINK=Yes at the dialog.
+Also the **v**box will not reduce its children beyond their **vertical** natural size even if SHRINK=YES at the dialog.
 
 ### Examples
 
