@@ -2265,10 +2265,14 @@
         }
       } break;
       case 'webseturl': {
-        if (el) { el.removeAttribute('srcdoc'); el.src = c.url; }
+        if (el) {
+          el.removeAttribute('srcdoc');
+          el.setAttribute('sandbox', 'allow-scripts allow-forms allow-popups allow-modals');
+          el.src = c.url;
+        }
       } break;
       case 'websethtml': {
-        if (el) { el.removeAttribute('src'); el.srcdoc = c.html; }
+        if (el) { el.removeAttribute('src'); el.removeAttribute('sandbox'); el.srcdoc = c.html; }
       } break;
       case 'webreload': {
         if (el) { try { el.contentWindow.location.reload(); } catch (e) { if (el.src) el.src = el.src; } }

@@ -392,6 +392,50 @@ public:
   }
 };
 
+struct WinScriptResult
+{
+  char* result;
+  int completed;
+  int abandoned;
+
+  WinScriptResult() : result(NULL), completed(0), abandoned(0) {}
+};
+
+static void winWebBrowserWaitScript(WinScriptResult* async)
+{
+  MSG msg;
+  int loopCount = 0;
+
+  while (async->completed == 0 && loopCount < 1000)
+  {
+    if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
+    {
+      TranslateMessage(&msg);
+      DispatchMessage(&msg);
+    }
+    else
+    {
+      Sleep(10);
+    }
+    loopCount++;
+  }
+}
+
+static char* winWebBrowserTakeScript(WinScriptResult* async)
+{
+  char* result;
+
+  if (!async->completed)
+  {
+    async->abandoned = 1;
+    return NULL;
+  }
+
+  result = async->result;
+  delete async;
+  return result;
+}
+
 static std::string winWebBrowserEscapeJavaScript(const char* str)
 {
   if (!str)
@@ -997,20 +1041,22 @@ static char* winWebBrowserGetHTMLAttrib(Ihandle* ih)
   const char* script = "document.documentElement.outerHTML;";
   WCHAR* wscript = iupwinStrChar2Wide(script);
 
-  char* result = NULL;
-  int complete = 0;
-
   class GetHTMLHandler : public EventHandler<ICoreWebView2ExecuteScriptCompletedHandler, GetHTMLHandler>
   {
   private:
-    char** result;
-    int* complete;
+    WinScriptResult* async;
 
   public:
-    GetHTMLHandler(Ihandle* handle, char** res, int* comp) : EventHandler(handle), result(res), complete(comp) {}
+    GetHTMLHandler(Ihandle* handle, WinScriptResult* res) : EventHandler(handle), async(res) {}
 
     HRESULT STDMETHODCALLTYPE Invoke(HRESULT errorCode, LPCWSTR resultObjectAsJson) noexcept override
     {
+      if (async->abandoned)
+      {
+        delete async;
+        return S_OK;
+      }
+
       if (SUCCEEDED(errorCode) && resultObjectAsJson)
       {
         char* str = iupwinStrWide2Char(resultObjectAsJson);
@@ -1026,40 +1072,31 @@ static char* winWebBrowserGetHTMLAttrib(Ihandle* ih)
           free(str);
           if (unescaped)
           {
-            *result = iupStrDup(unescaped);
+            async->result = iupStrDup(unescaped);
             free(unescaped);
           }
         }
       }
-      *complete = 1;
+      async->completed = 1;
       return S_OK;
     }
   };
 
-  GetHTMLHandler* handler = new GetHTMLHandler(ih, &result, &complete);
+  WinScriptResult* async = new WinScriptResult();
+  GetHTMLHandler* handler = new GetHTMLHandler(ih, async);
   HRESULT hr = ih->data->webviewWindow->ExecuteScript(wscript, handler);
   handler->Release();
   free(wscript);
 
   if (FAILED(hr))
-    return NULL;
-
-  MSG msg;
-  int loopCount = 0;
-  while (complete == 0 && loopCount < 1000)
   {
-    if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
-    {
-      TranslateMessage(&msg);
-      DispatchMessage(&msg);
-    }
-    else
-    {
-      Sleep(10);
-    }
-    loopCount++;
+    delete async;
+    return NULL;
   }
 
+  winWebBrowserWaitScript(async);
+
+  char* result = winWebBrowserTakeScript(async);
   if (result)
   {
     char* ret = iupStrReturnStr(result);
@@ -1189,14 +1226,19 @@ static void winWebBrowserExecuteJavascript(Ihandle* ih, const char* script)
 class ExecuteScriptHandler : public EventHandler<ICoreWebView2ExecuteScriptCompletedHandler, ExecuteScriptHandler>
 {
 private:
-  char** result;
-  int* complete;
+  WinScriptResult* async;
 
 public:
-  ExecuteScriptHandler(Ihandle* handle, char** res, int* comp) : EventHandler(handle), result(res), complete(comp) {}
+  ExecuteScriptHandler(Ihandle* handle, WinScriptResult* res) : EventHandler(handle), async(res) {}
 
   HRESULT STDMETHODCALLTYPE Invoke(HRESULT errorCode, LPCWSTR resultObjectAsJson) noexcept override
   {
+    if (async->abandoned)
+    {
+      delete async;
+      return S_OK;
+    }
+
     if (SUCCEEDED(errorCode) && resultObjectAsJson)
     {
       char* str = iupwinStrWide2Char(resultObjectAsJson);
@@ -1208,11 +1250,11 @@ public:
           str[len-1] = '\0';
           memmove(str, str+1, len-1);
         }
-        *result = iupStrDup(str);
+        async->result = iupStrDup(str);
         free(str);
       }
     }
-    *complete = 1;
+    async->completed = 1;
     return S_OK;
   }
 };
@@ -1222,35 +1264,23 @@ static char* winWebBrowserRunJavaScriptSync(Ihandle* ih, const char* script)
   if (!ih->data->webviewWindow || !script)
     return NULL;
 
-  char* result = NULL;
-  int complete = 0;
+  WinScriptResult* async = new WinScriptResult();
 
   WCHAR* wscript = iupwinStrChar2Wide(script);
-  ExecuteScriptHandler* handler = new ExecuteScriptHandler(ih, &result, &complete);
+  ExecuteScriptHandler* handler = new ExecuteScriptHandler(ih, async);
   HRESULT hr = ih->data->webviewWindow->ExecuteScript(wscript, handler);
   handler->Release();
   free(wscript);
 
   if (FAILED(hr))
-    return NULL;
-
-  MSG msg;
-  int loopCount = 0;
-  while (complete == 0 && loopCount < 1000)
   {
-    if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
-    {
-      TranslateMessage(&msg);
-      DispatchMessage(&msg);
-    }
-    else
-    {
-      Sleep(10);
-    }
-    loopCount++;
+    delete async;
+    return NULL;
   }
 
-  return result;
+  winWebBrowserWaitScript(async);
+
+  return winWebBrowserTakeScript(async);
 }
 
 static void winWebBrowserExecCommand(Ihandle* ih, const char* cmd)
@@ -1417,10 +1447,16 @@ static int winWebBrowserSetOpenAttrib(Ihandle* ih, const char* value)
   long fileSize = ftell(file);
   fseek(file, 0, SEEK_SET);
 
+  if (fileSize <= 0 || fileSize > 64 * 1024 * 1024)
+  {
+    fclose(file);
+    return 0;
+  }
+
   char* buffer = (char*)malloc(fileSize + 1);
   if (buffer)
   {
-    size_t bytesRead = fread(buffer, 1, fileSize, file);
+    size_t bytesRead = fread(buffer, 1, (size_t)fileSize, file);
     buffer[bytesRead] = '\0';
     winWebBrowserSetHTMLAttrib(ih, buffer);
     free(buffer);
@@ -1476,10 +1512,16 @@ static int winWebBrowserSetInsertImageFileAttrib(Ihandle* ih, const char* value)
   long fileSize = ftell(file);
   fseek(file, 0, SEEK_SET);
 
+  if (fileSize <= 0 || fileSize > 10 * 1024 * 1024)
+  {
+    fclose(file);
+    return 0;
+  }
+
   unsigned char* buffer = (unsigned char*)malloc(fileSize);
   if (buffer)
   {
-    size_t bytesRead = fread(buffer, 1, fileSize, file);
+    size_t bytesRead = fread(buffer, 1, (size_t)fileSize, file);
 
     static const char base64_chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
     size_t base64_len = 4 * ((bytesRead + 2) / 3);

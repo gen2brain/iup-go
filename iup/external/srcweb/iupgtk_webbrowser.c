@@ -67,7 +67,8 @@
     #include <webkit2/webkit2.h>
     #include <JavaScriptCore/JavaScript.h>
   #elif defined(IUPWEB_USE_WEBKIT1)
-    #include <webkitgtk/webkitgtk.h>
+    #include <webkit/webkit.h>
+    #include <JavaScriptCore/JavaScript.h>
     #undef IUPWEB_USE_WEBKIT2
   #else
     #include <webkit2/webkit2.h>
@@ -79,16 +80,12 @@
 #else
   /* GTK2 uses WebKit1 */
   #include <webkit/webkit.h>
+  #include <JavaScriptCore/JavaScript.h>
   #if !defined(IUPWEB_USE_WEBKIT1)
     #define IUPWEB_USE_WEBKIT1
   #endif
   #undef IUPWEB_USE_WEBKIT2
 #endif
-#endif
-
-
-#ifndef WEBKIT_LOAD_STATUS_FAILED
-#define WEBKIT_LOAD_STATUS_FAILED 4
 #endif
 
 #ifdef IUPWEB_USE_DLOPEN
@@ -324,7 +321,11 @@ static char* gtkWebBrowserEscapeJavaScript(const char* str)
 
 static char* gtkWebBrowserGetItemHistoryAttrib(Ihandle* ih, int id)
 {
+#if defined(IUPWEB_USE_WEBKIT1) && !defined(IUPWEB_USE_DLOPEN)
+  WebKitWebBackForwardList* back_forward_list = webkit_web_view_get_back_forward_list((WebKitWebView*)ih->handle);
+#else
   WebKitBackForwardList* back_forward_list = webkit_web_view_get_back_forward_list((WebKitWebView*)ih->handle);
+#endif
 
 #ifdef IUPWEB_USE_DLOPEN
   if (s_use_webkit2)
@@ -344,7 +345,7 @@ static char* gtkWebBrowserGetItemHistoryAttrib(Ihandle* ih, int id)
   if (item)
     return iupStrReturnStr(webkit_back_forward_list_item_get_uri(item));
 #elif defined(IUPWEB_USE_WEBKIT1)
-  WebKitWebHistoryItem* item = webkit_web_back_forward_list_get_nth_item((WebKitWebBackForwardList*)back_forward_list, id);
+  WebKitWebHistoryItem* item = webkit_web_back_forward_list_get_nth_item(back_forward_list, id);
   if (item)
     return iupStrReturnStr(webkit_web_history_item_get_uri(item));
 #endif
@@ -354,7 +355,11 @@ static char* gtkWebBrowserGetItemHistoryAttrib(Ihandle* ih, int id)
 
 static char* gtkWebBrowserGetForwardCountAttrib(Ihandle* ih)
 {
+#if defined(IUPWEB_USE_WEBKIT1) && !defined(IUPWEB_USE_DLOPEN)
+  WebKitWebBackForwardList *back_forward_list = webkit_web_view_get_back_forward_list((WebKitWebView*)ih->handle);
+#else
   WebKitBackForwardList *back_forward_list = webkit_web_view_get_back_forward_list ((WebKitWebView*)ih->handle);
+#endif
 
 #ifdef IUPWEB_USE_DLOPEN
   if (s_use_webkit2)
@@ -368,13 +373,17 @@ static char* gtkWebBrowserGetForwardCountAttrib(Ihandle* ih)
 #elif defined(IUPWEB_USE_WEBKIT6) || defined(IUPWEB_USE_WEBKIT2)
   return iupStrReturnInt(g_list_length(webkit_back_forward_list_get_forward_list(back_forward_list)));
 #elif defined(IUPWEB_USE_WEBKIT1)
-  return iupStrReturnInt(webkit_web_back_forward_list_get_forward_length((WebKitWebBackForwardList*)back_forward_list));
+  return iupStrReturnInt(webkit_web_back_forward_list_get_forward_length(back_forward_list));
 #endif
 }
 
 static char* gtkWebBrowserGetBackCountAttrib(Ihandle* ih)
 {
+#if defined(IUPWEB_USE_WEBKIT1) && !defined(IUPWEB_USE_DLOPEN)
+  WebKitWebBackForwardList *back_forward_list = webkit_web_view_get_back_forward_list((WebKitWebView*)ih->handle);
+#else
   WebKitBackForwardList *back_forward_list = webkit_web_view_get_back_forward_list((WebKitWebView*)ih->handle);
+#endif
 
 #ifdef IUPWEB_USE_DLOPEN
   if (s_use_webkit2)
@@ -388,7 +397,7 @@ static char* gtkWebBrowserGetBackCountAttrib(Ihandle* ih)
 #elif defined(IUPWEB_USE_WEBKIT6) || defined(IUPWEB_USE_WEBKIT2)
   return iupStrReturnInt(g_list_length(webkit_back_forward_list_get_back_list(back_forward_list)));
 #elif defined(IUPWEB_USE_WEBKIT1)
-  return iupStrReturnInt(webkit_web_back_forward_list_get_back_length((WebKitWebBackForwardList*)back_forward_list));
+  return iupStrReturnInt(webkit_web_back_forward_list_get_back_length(back_forward_list));
 #endif
 }
 
@@ -418,31 +427,75 @@ static int gtkWebBrowserSetHTMLAttrib(Ihandle* ih, const char* value)
 }
 
 #if (defined(IUPWEB_USE_WEBKIT6) || defined(IUPWEB_USE_WEBKIT2) || defined(IUPWEB_USE_DLOPEN))
+enum { IUPWEB_ASYNC_PENDING, IUPWEB_ASYNC_DONE, IUPWEB_ASYNC_ABANDONED };
+
+typedef struct _gtkWebAsyncStr
+{
+  int state;
+  char* data;
+} gtkWebAsyncStr;
+
 static void gtkWebBrowserGetResourceData(GObject *source_object, GAsyncResult *res, gpointer user_data)
 {
-  Ihandle* ih = (Ihandle*)user_data;
+  gtkWebAsyncStr* async = (gtkWebAsyncStr*)user_data;
   WebKitWebResource *resource = (WebKitWebResource*)source_object;
   GError *error = NULL;
   gsize len = 0;
   guchar* data = webkit_web_resource_get_data_finish(resource, res, &len, &error);
 
-  if (!data)
+  if (async->state == IUPWEB_ASYNC_ABANDONED)
   {
+    if (data)
+      g_free(data);
     if (error)
-    {
-      iupAttribSetStrf(ih, "_IUP_WEB_HTML_RESULT", "ERROR: %s", error->message);
       g_error_free(error);
-    }
-    else
-      iupAttribSet(ih, "_IUP_WEB_HTML_RESULT", "ERROR: UNKNOWN");
+    free(async);
+    return;
   }
-  else
+
+  if (data)
   {
-    char* html_str = g_strndup((const gchar*)data, len);
-    iupAttribSetStr(ih, "_IUP_WEB_HTML_RESULT", html_str);
-    g_free(html_str);
+    async->data = g_strndup((const gchar*)data, len);
     g_free(data);
   }
+  if (error)
+    g_error_free(error);
+
+  async->state = IUPWEB_ASYNC_DONE;
+}
+
+static char* gtkWebBrowserWaitResourceData(Ihandle* ih)
+{
+  gtkWebAsyncStr* async;
+  char* result = NULL;
+  int i;
+
+  WebKitWebResource* resource = webkit_web_view_get_main_resource((WebKitWebView*)ih->handle);
+  if (!resource)
+    return NULL;
+
+  async = (gtkWebAsyncStr*)calloc(1, sizeof(gtkWebAsyncStr));
+  if (!async)
+    return NULL;
+
+  webkit_web_resource_get_data(resource, NULL, gtkWebBrowserGetResourceData, async);
+
+  for (i = 0; async->state == IUPWEB_ASYNC_PENDING && i < 1000; i++)
+    IupLoopStep();
+
+  if (async->state != IUPWEB_ASYNC_DONE)
+  {
+    async->state = IUPWEB_ASYNC_ABANDONED;
+    return NULL;
+  }
+
+  if (async->data)
+  {
+    result = iupStrReturnStr(async->data);
+    g_free(async->data);
+  }
+  free(async);
+  return result;
 }
 #endif
 
@@ -460,28 +513,7 @@ static char* gtkWebBrowserGetHTMLAttrib(Ihandle* ih)
 #ifdef IUPWEB_USE_DLOPEN
   if (s_use_webkit2)
   {
-    char* value = NULL;
-    iupAttribSet(ih, "_IUP_WEB_HTML_RESULT", NULL);
-    WebKitWebResource* resource = webkit_web_view_get_main_resource((WebKitWebView*)ih->handle);
-    if (!resource) return NULL;
-
-    webkit_web_resource_get_data(resource, NULL, gtkWebBrowserGetResourceData, ih);
-
-    int i = 0;
-    while (!value && i < 1000)
-    {
-      IupLoopStep();
-      value = iupAttribGet(ih, "_IUP_WEB_HTML_RESULT");
-      i++;
-    }
-
-    if (value)
-    {
-      char* result = iupStrReturnStr(value);
-      iupAttribSet(ih, "_IUP_WEB_HTML_RESULT", NULL);
-      return result;
-    }
-    return NULL;
+    return gtkWebBrowserWaitResourceData(ih);
   }
   else
   {
@@ -499,28 +531,7 @@ static char* gtkWebBrowserGetHTMLAttrib(Ihandle* ih)
     return NULL;
   }
 #elif defined(IUPWEB_USE_WEBKIT6) || defined(IUPWEB_USE_WEBKIT2)
-  char* value = NULL;
-  iupAttribSet(ih, "_IUP_WEB_HTML_RESULT", NULL);
-  WebKitWebResource* resource = webkit_web_view_get_main_resource((WebKitWebView*)ih->handle);
-  if (!resource) return NULL;
-
-  webkit_web_resource_get_data(resource, NULL, gtkWebBrowserGetResourceData, ih);
-
-  int i = 0;
-  while (!value && i < 1000)
-  {
-    IupLoopStep();
-    value = iupAttribGet(ih, "_IUP_WEB_HTML_RESULT");
-    i++;
-  }
-
-  if (value)
-  {
-    char* result = iupStrReturnStr(value);
-    iupAttribSet(ih, "_IUP_WEB_HTML_RESULT", NULL);
-    return result;
-  }
-  return NULL;
+  return gtkWebBrowserWaitResourceData(ih);
 #elif defined(IUPWEB_USE_WEBKIT1)
   WebKitWebFrame* frame = webkit_web_view_get_main_frame((WebKitWebView*)ih->handle);
   if (frame)
@@ -1035,6 +1046,56 @@ static void gtkWebBrowserUpdateHistory(Ihandle* ih)
   iupAttribSet(ih, "CANGOFORWARD", can_go_forward ? "YES" : "NO");
 }
 
+#if defined(IUPWEB_USE_WEBKIT1) || defined(IUPWEB_USE_DLOPEN)
+/* WebKit1 has no async JS API, so evaluate on the frame context directly */
+static char* gtkWebBrowserExecJavaScriptWK1(Ihandle* ih, const char* js)
+{
+  WebKitWebFrame* frame;
+  JSGlobalContextRef context;
+  JSStringRef js_script, js_str;
+  JSValueRef exception = NULL;
+  JSValueRef result;
+  char* ret = NULL;
+
+#ifdef IUPWEB_USE_DLOPEN
+  if (!webkit_web_frame_get_global_context || !JSStringCreateWithUTF8CString || !JSEvaluateScript)
+    return NULL;
+#endif
+
+  frame = webkit_web_view_get_main_frame((WebKitWebView*)ih->handle);
+  if (!frame)
+    return NULL;
+
+  context = webkit_web_frame_get_global_context(frame);
+  if (!context)
+    return NULL;
+
+  js_script = JSStringCreateWithUTF8CString(js);
+  result = JSEvaluateScript(context, js_script, NULL, NULL, 1, &exception);
+  JSStringRelease(js_script);
+
+  if (exception || !result ||
+      JSValueIsNull(context, result) || JSValueIsUndefined(context, result))
+    return NULL;
+
+  js_str = JSValueToStringCopy(context, result, NULL);
+  if (js_str)
+  {
+    size_t max_size = JSStringGetMaximumUTF8CStringSize(js_str);
+    char* buffer = (char*)malloc(max_size);
+    if (buffer)
+    {
+      JSStringGetUTF8CString(js_str, buffer, max_size);
+      ret = iupStrDup(buffer);
+      free(buffer);
+    }
+    JSStringRelease(js_str);
+  }
+
+  return ret;
+}
+#endif
+
 #if (defined(IUPWEB_USE_WEBKIT2) || defined(IUPWEB_USE_WEBKIT6) || defined(IUPWEB_USE_DLOPEN))
 static void gtkWebBrowserJavaScriptFinished(GObject* object, GAsyncResult* result, gpointer user_data)
 {
@@ -1056,19 +1117,6 @@ static void gtkWebBrowserJavaScriptFinished(GObject* object, GAsyncResult* resul
         g_free(str);
       }
     }
-
-    /* Check for JavaScript exceptions */
-    if (js_value)
-    {
-      JSCContext* context = jsc_value_get_context(js_value);
-      JSCException* exception = jsc_context_get_exception(context);
-      if (exception)
-      {
-        char* msg = jsc_exception_get_message(exception);
-        if (msg)
-          g_free(msg);
-      }
-    }
   }
   else
   #elif defined(IUPWEB_USE_WEBKIT6)
@@ -1083,19 +1131,6 @@ static void gtkWebBrowserJavaScriptFinished(GObject* object, GAsyncResult* resul
       {
         js_result->result = iupStrDup(str);
         g_free(str);
-      }
-    }
-
-    /* Check for JavaScript exceptions */
-    if (js_value)
-    {
-      JSCContext* context = jsc_value_get_context(js_value);
-      JSCException* exception = jsc_context_get_exception(context);
-      if (exception)
-      {
-        char* msg = jsc_exception_get_message(exception);
-        if (msg)
-          g_free(msg);
       }
     }
   }
@@ -1195,9 +1230,18 @@ static char* gtkWebBrowserExecJavaScriptSync(Ihandle* ih, const char* js)
   }
 
   #ifdef IUPWEB_USE_DLOPEN
-  return NULL;
+  return gtkWebBrowserExecJavaScriptWK1(ih, js);
   #endif
 }
+
+#endif
+
+#if defined(IUPWEB_USE_WEBKIT1) && !defined(IUPWEB_USE_DLOPEN)
+static char* gtkWebBrowserExecJavaScriptSync(Ihandle* ih, const char* js)
+{
+  return gtkWebBrowserExecJavaScriptWK1(ih, js);
+}
+#endif
 
 static char* gtkWebBrowserRunJavaScriptSync(Ihandle* ih, const char* format, ...)
 {
@@ -1218,6 +1262,8 @@ static char* gtkWebBrowserQueryCommandValue(Ihandle* ih, const char* cmd)
   free(escaped_cmd);
   return gtkWebBrowserRunJavaScriptSync(ih, "%s", js);
 }
+
+#if (defined(IUPWEB_USE_WEBKIT2) || defined(IUPWEB_USE_WEBKIT6) || defined(IUPWEB_USE_DLOPEN))
 
 static char* gtkWebBrowserGetFontNameAttrib(Ihandle* ih)
 {
@@ -1279,6 +1325,28 @@ static char* gtkWebBrowserGetFormatBlockAttrib(Ihandle* ih)
 }
 #endif
 
+#if defined(IUPWEB_USE_WEBKIT1) || defined(IUPWEB_USE_DLOPEN)
+static void gtkWebBrowserExecCommandScript(Ihandle* ih, const char* value)
+{
+  char* escaped = gtkWebBrowserEscapeJavaScript(value);
+  size_t len;
+  char* cmd;
+
+  if (!escaped)
+    return;
+
+  len = strlen(escaped) + 64;
+  cmd = (char*)malloc(len);
+  if (cmd)
+  {
+    snprintf(cmd, len, "document.execCommand(%s, false, null);", escaped);
+    webkit_web_view_execute_script((WebKitWebView*)ih->handle, cmd);
+    free(cmd);
+  }
+  free(escaped);
+}
+#endif
+
 static int gtkWebBrowserExecCommandAttrib(Ihandle* ih, const char* value)
 {
   if (value)
@@ -1287,17 +1355,11 @@ static int gtkWebBrowserExecCommandAttrib(Ihandle* ih, const char* value)
     if (s_use_webkit2)
       webkit_web_view_execute_editing_command((WebKitWebView*)ih->handle, value);
     else
-    {
-      char cmd[256];
-      snprintf(cmd, sizeof(cmd), "document.execCommand('%s', false, null);", value);
-      webkit_web_view_execute_script((WebKitWebView*)ih->handle, cmd);
-    }
+      gtkWebBrowserExecCommandScript(ih, value);
 #elif defined(IUPWEB_USE_WEBKIT6) || defined(IUPWEB_USE_WEBKIT2)
     webkit_web_view_execute_editing_command((WebKitWebView*)ih->handle, value);
 #elif defined(IUPWEB_USE_WEBKIT1)
-    char cmd[256];
-    snprintf(cmd, sizeof(cmd), "document.execCommand('%s', false, null);", value);
-    webkit_web_view_execute_script((WebKitWebView*)ih->handle, cmd);
+    gtkWebBrowserExecCommandScript(ih, value);
 #endif
   }
   return 0;
@@ -1647,13 +1709,13 @@ static char* gtkWebBrowserGetStatusAttrib(Ihandle* ih)
 #elif defined(IUPWEB_USE_WEBKIT1)
   switch(webkit_web_view_get_load_status((WebKitWebView*)ih->handle))
   {
-  case WEBKIT_LOAD_STATUS_PROVISIONAL:
-  case WEBKIT_LOAD_STATUS_COMMITTED:
-  case WEBKIT_LOAD_STATUS_FIRST_VISUALLY_NON_EMPTY_LAYOUT:
+  case WEBKIT_LOAD_PROVISIONAL:
+  case WEBKIT_LOAD_COMMITTED:
+  case WEBKIT_LOAD_FIRST_VISUALLY_NON_EMPTY_LAYOUT:
     return "LOADING";
-  case WEBKIT_LOAD_STATUS_FINISHED:
+  case WEBKIT_LOAD_FINISHED:
     return "COMPLETED";
-  case WEBKIT_LOAD_STATUS_FAILED:
+  case WEBKIT_LOAD_FAILED:
     return "FAILED";
   }
   return "FAILED";
