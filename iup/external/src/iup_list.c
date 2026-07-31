@@ -791,6 +791,8 @@ static int iListDropData_CB(Ihandle *ih, char* type, void* data, int len, int x,
 
   /* Data is not the pointer, it contains the pointer */
   Ihandle* ih_source;
+  if (len != sizeof(Ihandle*))
+    return IUP_DEFAULT;
   memcpy((void*)&ih_source, data, len);  /* but ih_source can be IupList or IupFlatList, can NOT use ih_source->data here */
 
   if (!IupClassMatch(ih_source, "list") && !IupClassMatch(ih_source, "flatlist"))
@@ -887,6 +889,8 @@ static int iListDragData_CB(Ihandle *ih, char* type, void *data, int len)
   }
 
   /* Copy source handle */
+  if (len != sizeof(Ihandle*))
+    return IUP_DEFAULT;
   memcpy(data, (void*)&ih, len);
 
   (void)type;
