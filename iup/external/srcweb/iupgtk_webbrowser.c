@@ -1047,7 +1047,6 @@ static void gtkWebBrowserUpdateHistory(Ihandle* ih)
 }
 
 #if defined(IUPWEB_USE_WEBKIT1) || defined(IUPWEB_USE_DLOPEN)
-/* WebKit1 has no async JS API, so evaluate on the frame context directly */
 static char* gtkWebBrowserExecJavaScriptWK1(Ihandle* ih, const char* js)
 {
   WebKitWebFrame* frame;
