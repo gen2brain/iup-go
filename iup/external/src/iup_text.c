@@ -700,7 +700,10 @@ static int iTextSetLoadMarkdownAttrib(Ihandle* ih, const char* value)
   buf[size] = 0;
   fclose(f);
 
-  iupMarkdownSetValue(ih, buf);
+  if (size >= 3 && (unsigned char)buf[0] == 0xEF && (unsigned char)buf[1] == 0xBB && (unsigned char)buf[2] == 0xBF)
+    iupMarkdownSetValue(ih, buf + 3);
+  else
+    iupMarkdownSetValue(ih, buf);
   free(buf);
 
   iupAttribSet(ih, "LOADMARKDOWNSTATUS", "OK");
@@ -837,6 +840,8 @@ Iclass* iupTextNewClass(void)
   iupClassRegisterAttribute(ic, "LOADMARKDOWN", NULL, iTextSetLoadMarkdownAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "GETMARKDOWNVALUE", iTextGetMarkdownValueAttrib, NULL, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_READONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SAVEMARKDOWN", NULL, iTextSetSaveMarkdownAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "LOADMARKDOWNSTATUS", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SAVEMARKDOWNSTATUS", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
 
   iupdrvTextInitClass(ic);
 

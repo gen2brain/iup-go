@@ -103,7 +103,10 @@ Requires FORMATTING=YES.
 The attribute LOADMARKDOWNSTATUS is set to OK or FAILED after the file is loaded.
 Requires FORMATTING=YES and MULTILINE=YES. Not supported in Motif.
 
-**MARKDOWNVALUE** (write-only): sets the text from a Markdown string, interpreting headings, emphasis, lists, code blocks, blockquotes, links, images, and HTML `<img>` tags as IUP format tags.
+**MARKDOWNVALUE** (write-only): sets the text from a Markdown string, interpreting headings, emphasis, lists, code blocks, blockquotes, links, images, tables, and HTML `<img>` tags as IUP format tags.
+Tables use the pipe syntax, with per-column alignment taken from the delimiter row, drawn as a monospaced grid with box drawing borders. In WinUI they are tab aligned columns with a bold underlined header.
+An image in a table cell does not affect the column width.
+Images are not rendered in FLTK. The horizontal rule is not centered in FLTK. Heading spacing is not supported in Android and EFL.
 Requires FORMATTING=YES and MULTILINE=YES. Not supported in Motif.
 
 **APPENDMARKDOWN** (write-only): appends a Markdown string to the current content using the same conversion rules as MARKDOWNVALUE, keeping the existing text and formatting.
@@ -111,8 +114,10 @@ Honors APPENDNEWLINE and APPENDSCROLL. Effective only after the element is mappe
 Requires FORMATTING=YES and MULTILINE=YES. Not supported in Motif.
 
 **GETMARKDOWNVALUE** (read-only): returns the current text converted to Markdown.
-Emphasis, strikeout, code spans, code blocks, links, headings, blockquotes, lists and horizontal rules are converted; UNDERLINE, colors, ALIGNMENT, RISE and SMALLCAPS are lost.
-Headings are recognized from a bold line larger than the control font, code from a monospaced font, lists from the line text.
+Emphasis, strikeout, code spans, code blocks, links, headings, blockquotes, lists, tables and horizontal rules are converted; UNDERLINE, colors, ALIGNMENT, RISE and SMALLCAPS are lost.
+Headings are recognized from a bold line whose font size differs from the control font, code from a monospaced font, lists from the line text, tables from their column layout.
+A single monospaced line is converted to a code span, a run of them to a code block.
+Tables are written back as pipe syntax with per-column alignment.
 Inline images are converted only in Qt. Blockquotes are not converted in FLTK and Haiku, code spans and code blocks not in WinUI.
 Requires FORMATTING=YES and MULTILINE=YES. Not supported in Motif.
 
