@@ -546,6 +546,11 @@ static int goIupCallGetParamvNoAction(const char *title, const char *format, int
 	return IupGetParamv(title, NULL, NULL, format, param_count, param_extra, param_data);
 }
 
+CGO_EXPORT extern int goIupParamCB(void *, int, void *);
+static void goIupSetParamFunc(Ihandle *ih) {
+	IupSetCallback(ih, "PARAM_CB", (Icallback) goIupParamCB);
+}
+
 CGO_EXPORT extern int goIupLDestroyCB(void *);
 static void goIupSetLDestroyFunc(Ihandle *ih) {
 	IupSetCallback(ih, "LDESTROY_CB", (Icallback) goIupLDestroyCB);

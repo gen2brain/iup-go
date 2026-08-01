@@ -438,6 +438,8 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 		setMenuCloseFunc(ih, fn.(MenuCloseFunc))
 	case "COLORUPDATE_CB":
 		setColorUpdateFunc(ih, fn.(ColorUpdateFunc))
+	case "PARAM_CB":
+		setParamFunc(ih, fn.(ParamFunc))
 	case "LISTRELEASE_CB":
 		setListReleaseFunc(ih, fn.(ListReleaseFunc))
 	case "LISTINSERT_CB":

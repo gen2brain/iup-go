@@ -231,6 +231,8 @@ func dispatch(ih Ihandle, name string, i1, i2, i3, i4 int, sarg string) int {
 		ret = f(ih, i1)
 	case NotifyCloseFunc:
 		ret = f(ih, i1)
+	case ParamFunc:
+		ret = f(ih, i1)
 	case ErrorFunc:
 		ret = f(ih, sarg)
 	case CompletedFunc:

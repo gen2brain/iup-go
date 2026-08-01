@@ -220,6 +220,8 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 		setNotifyFunc(ih, fn.(NotifyFunc))
 	case "OPENCLOSE_CB":
 		setOpenCloseFunc(ih, fn.(OpenCloseFunc))
+	case "PARAM_CB":
+		setParamFunc(ih, fn.(ParamFunc))
 	case "POSTMESSAGE_CB":
 		setPostMessageFunc(ih, fn.(PostMessageFunc))
 	case "REORDER_CB":
@@ -1573,6 +1575,20 @@ var openCloseCB = purego.NewCallback(func(ih uintptr, state int32) int {
 func setOpenCloseFunc(ih Ihandle, f OpenCloseFunc) {
 	storeCallback(ih, "_IUPGO_OPENCLOSE_CB", f)
 	iupSetCallback(uintptr(ih), "OPENCLOSE_CB", openCloseCB)
+}
+
+type ParamFunc func(paramBox Ihandle, paramIndex int) int
+
+var paramCB = purego.NewCallback(func(ih uintptr, paramIndex int32, userData uintptr) int {
+	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_PARAM_CB").(ParamFunc); ok {
+		return f(Ihandle(ih), int(paramIndex))
+	}
+	return 1
+})
+
+func setParamFunc(ih Ihandle, f ParamFunc) {
+	storeCallback(ih, "_IUPGO_PARAM_CB", f)
+	iupSetCallback(uintptr(ih), "PARAM_CB", paramCB)
 }
 
 type ReorderFunc func(ih Ihandle, oldPos, newPos int) int
