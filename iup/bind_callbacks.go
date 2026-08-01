@@ -1445,6 +1445,7 @@ func goIupTextLinkCB(ih, url unsafe.Pointer) C.int {
 	return C.int(f((Ihandle)(ih), goUrl))
 }
 
+// setTextLinkFunc for LINK_CB.
 func setTextLinkFunc(ih Ihandle, f TextLinkFunc) {
 	storeCallback(ih, "_IUPGO_LINK_CB", f)
 
@@ -1465,6 +1466,7 @@ func goIupMaskFailCB(ih, newValue unsafe.Pointer) C.int {
 	return C.int(f((Ihandle)(ih), goNewValue))
 }
 
+// setMaskFailFunc for MASKFAIL_CB.
 func setMaskFailFunc(ih Ihandle, f MaskFailFunc) {
 	storeCallback(ih, "_IUPGO_MASKFAIL_CB", f)
 
@@ -2040,6 +2042,7 @@ func goIupTableImageCB(ih unsafe.Pointer, lin, col C.int) *C.char {
 	return C.CString(result)
 }
 
+// setTableImageFunc for IMAGE_CB (Table version).
 func setTableImageFunc(ih Ihandle, f TableImageFunc) {
 	storeCallback(ih, "_IUPGO_TABLE_IMAGE_CB", f)
 	C.goIupSetTableImageFunc(ih.ptr())
@@ -2272,4 +2275,28 @@ func goIupGetParamCB(dialog unsafe.Pointer, paramIndex C.int, userData unsafe.Po
 	ch := cgo.Handle(userData)
 	f := ch.Value().(GetParamFunc)
 	return C.int(f(Ihandle(dialog), int(paramIndex)))
+}
+
+//--------------------
+
+// ParamFunc for PARAM_CB callback.
+// Called when a parameter value changes or a button is pressed.
+//
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_parambox.md
+type ParamFunc func(paramBox Ihandle, paramIndex int) int
+
+//export goIupParamCB
+func goIupParamCB(ih unsafe.Pointer, paramIndex C.int, userData unsafe.Pointer) C.int {
+	ch := loadCallback((Ihandle)(ih), "_IUPGO_PARAM_CB")
+	if ch == 0 {
+		return C.int(1)
+	}
+	f := ch.Value().(ParamFunc)
+	return C.int(f((Ihandle)(ih), int(paramIndex)))
+}
+
+// setParamFunc for PARAM_CB on ParamBox.
+func setParamFunc(ih Ihandle, f ParamFunc) {
+	storeCallback(ih, "_IUPGO_PARAM_CB", f)
+	C.goIupSetParamFunc(ih.ptr())
 }

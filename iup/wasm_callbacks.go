@@ -80,6 +80,7 @@ type NodeRemovedFunc func(ih Ihandle, userId uintptr) int
 type NumericGetValueFunc func(ih Ihandle, lin, col int) float64
 type NumericSetValueFunc func(ih Ihandle, lin, col int, value float64) int
 type OpenCloseFunc func(ih Ihandle, state int) int
+type ParamFunc func(paramBox Ihandle, paramIndex int) int
 type PasteSizeFunc func(ih Ihandle, numlin, numcol int) int
 type PlotButtonFunc func(ih Ihandle, button, pressed int, x, y float64, status string) int
 type PlotClickSampleFunc func(ih Ihandle, dsIndex, sampleIndex int, x, y float64, button int) int
