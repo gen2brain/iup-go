@@ -1091,12 +1091,21 @@ static Ihandle* iupParamBoxDlg(Ihandle *param_box, const char* title)
   }
 
   button1 = (Ihandle*)iupAttribGet(param_box, "BUTTON1");
-  IupSetStrAttribute(button1, "TITLE", "_@IUP_OK");
   button2 = (Ihandle*)iupAttribGet(param_box, "BUTTON2");
-  IupSetStrAttribute(button2, "TITLE", "_@IUP_CANCEL");
 
-  IupSetAttributeHandle(dlg, "DEFAULTENTER", button1);
-  IupSetAttributeHandle(dlg, "DEFAULTESC", button2);
+  if (button1)
+  {
+    if (!iupAttribGet(button1, "_IUP_CUSTOMTITLE"))
+      IupSetStrAttribute(button1, "TITLE", "_@IUP_OK");
+    IupSetAttributeHandle(dlg, "DEFAULTENTER", button1);
+  }
+
+  if (button2)
+  {
+    if (!iupAttribGet(button2, "_IUP_CUSTOMTITLE"))
+      IupSetStrAttribute(button2, "TITLE", "_@IUP_CANCEL");
+    IupSetAttributeHandle(dlg, "DEFAULTESC", button2);
+  }
 
   IupSetAttribute(dlg, "PARENTDIALOG", IupGetGlobal("PARENTDIALOG"));
   IupSetAttribute(dlg, "ICON", IupGetGlobal("ICON"));
@@ -1110,9 +1119,9 @@ static Ihandle* iupParamBoxDlg(Ihandle *param_box, const char* title)
 static int iParamBoxCreateMethod(Ihandle* param_box, void** vparams)
 {
   Ihandle** params = (Ihandle**)vparams;
-  Ihandle *button_1, *button_2, *button_3 = NULL,
-    *params_vbox, *button_box, *ctrl_box;
-  int i, p, count = 0, noframe = 0;
+  Ihandle *button_1 = NULL, *button_2 = NULL, *button_3 = NULL,
+    *params_vbox, *button_box = NULL, *ctrl_box, *content, *names_param = NULL;
+  int i, p, count = 0, noframe = 0, nobuttons = 0;
 
   if (vparams)
   {
@@ -1127,14 +1136,6 @@ static int iParamBoxCreateMethod(Ihandle* param_box, void** vparams)
   if (count == 0)
     return IUP_ERROR;
 
-  button_1 = IupButton("_@IUP_APPLY");
-  IupSetStrAttribute(button_1, "PADDING", IupGetGlobal("DEFAULTBUTTONPADDING"));
-  IupSetCallback(button_1, "ACTION", (Icallback)iParamButton1_CB);
-
-  button_2 = IupButton("_@IUP_RESET");
-  IupSetStrAttribute(button_2, "PADDING", IupGetGlobal("DEFAULTBUTTONPADDING"));
-  IupSetCallback(button_2, "ACTION", (Icallback)iParamButton2_CB);
-
   ctrl_box = IupVbox(NULL);
 
   for (i = 0; i < count; i++)
@@ -1143,20 +1144,7 @@ static int iParamBoxCreateMethod(Ihandle* param_box, void** vparams)
 
     if (iupStrEqual(type, "BUTTONNAMES"))
     {
-      char* value = iupAttribGet(params[i], "BUTTON1");
-      if (value && *value) IupSetStrAttribute(button_1, "TITLE", value);
-      value = iupAttribGet(params[i], "BUTTON2");
-      if (value && *value) IupSetStrAttribute(button_2, "TITLE", value);
-      value = iupAttribGet(params[i], "BUTTON3");
-      if (value && *value)
-      {
-        button_3 = IupButton(value);
-        IupSetStrAttribute(button_3, "PADDING", IupGetGlobal("DEFAULTBUTTONPADDING"));
-        IupSetCallback(button_3, "ACTION", (Icallback)iParamButton3_CB);
-      }
-
-      IupSetCallback(button_1, "DESTROY_CB", iParamDestroy_CB);
-      iupAttribSet(button_1, "PARAM", (char*)params[i]);
+      names_param = params[i];
     }
     else if (iupStrEqual(type, "HANDLE"))
     {
@@ -1168,6 +1156,7 @@ static int iParamBoxCreateMethod(Ihandle* param_box, void** vparams)
     else if (iupStrEqual(type, "PARAMBOX"))
     {
       noframe = IupGetInt(params[i], "NOFRAME");
+      nobuttons = IupGetInt(params[i], "NOBUTTONS");
     }
     else
       IupAppend(ctrl_box, iParamCreateCtrlBox(params[i], type));
@@ -1176,22 +1165,57 @@ static int iParamBoxCreateMethod(Ihandle* param_box, void** vparams)
       iupAttribSet(param_box, "TEXTEXPAND", "Yes");
   }
 
-  if (iupDialogButtonOrder() == IUP_BUTTON_ORDER_CANCEL_FIRST)
+  if (!nobuttons)
   {
-    if (button_3)
-      button_box = IupHbox(IupFill(), button_3, button_2, button_1, NULL);
-    else
-      button_box = IupHbox(IupFill(), button_2, button_1, NULL);
-  }
-  else
-    button_box = IupHbox(IupFill(), button_1, button_2, button_3, NULL);
-  IupSetAttribute(button_box,"MARGIN","0x0");
-  IupSetAttribute(button_box, "NORMALIZESIZE", "HORIZONTAL");
+    button_1 = IupButton("_@IUP_APPLY");
+    IupSetStrAttribute(button_1, "PADDING", IupGetGlobal("DEFAULTBUTTONPADDING"));
+    IupSetCallback(button_1, "ACTION", (Icallback)iParamButton1_CB);
 
-  params_vbox = IupVbox(
-    noframe? ctrl_box: IupFrame(ctrl_box),
-    button_box,
-    NULL);
+    button_2 = IupButton("_@IUP_RESET");
+    IupSetStrAttribute(button_2, "PADDING", IupGetGlobal("DEFAULTBUTTONPADDING"));
+    IupSetCallback(button_2, "ACTION", (Icallback)iParamButton2_CB);
+
+    if (names_param)
+    {
+      char* value = iupAttribGet(names_param, "BUTTON1");
+      if (value && *value)
+      {
+        IupSetStrAttribute(button_1, "TITLE", value);
+        iupAttribSet(button_1, "_IUP_CUSTOMTITLE", "1");
+      }
+      value = iupAttribGet(names_param, "BUTTON2");
+      if (value && *value)
+      {
+        IupSetStrAttribute(button_2, "TITLE", value);
+        iupAttribSet(button_2, "_IUP_CUSTOMTITLE", "1");
+      }
+      value = iupAttribGet(names_param, "BUTTON3");
+      if (value && *value)
+      {
+        button_3 = IupButton(value);
+        IupSetStrAttribute(button_3, "PADDING", IupGetGlobal("DEFAULTBUTTONPADDING"));
+        IupSetCallback(button_3, "ACTION", (Icallback)iParamButton3_CB);
+      }
+
+      IupSetCallback(button_1, "DESTROY_CB", iParamDestroy_CB);
+      iupAttribSet(button_1, "PARAM", (char*)names_param);
+    }
+
+    if (iupDialogButtonOrder() == IUP_BUTTON_ORDER_CANCEL_FIRST)
+    {
+      if (button_3)
+        button_box = IupHbox(IupFill(), button_3, button_2, button_1, NULL);
+      else
+        button_box = IupHbox(IupFill(), button_2, button_1, NULL);
+    }
+    else
+      button_box = IupHbox(IupFill(), button_1, button_2, button_3, NULL);
+    IupSetAttribute(button_box,"MARGIN","0x0");
+    IupSetAttribute(button_box, "NORMALIZESIZE", "HORIZONTAL");
+  }
+
+  content = noframe? ctrl_box: IupFrame(ctrl_box);
+  params_vbox = nobuttons? IupVbox(content, NULL): IupVbox(content, button_box, NULL);
   IupSetAttribute(params_vbox, "MARGIN", "10x10");
   IupSetAttribute(params_vbox, "GAP", "5");
   IupInsert(param_box, NULL, params_vbox); /* it will be the first child */
@@ -1894,6 +1918,7 @@ Iclass* iupParamNewClass(void)
   iupClassRegisterAttribute(ic, "TIP", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "VALUE", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "NOFRAME", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "NOBUTTONS", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "PRECISION", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
 
   return ic;

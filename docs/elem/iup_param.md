@@ -79,6 +79,9 @@ For 'u' parameter.
 **NOFRAME**: do not include the **IupFrame** around the parameter list.
 For 'x' parameter.
 
+**NOBUTTONS**: do not include the button box. BUTTON1, BUTTON2 and BUTTON3 will return NULL.
+For 'x' parameter.
+
 ### Notes
 
 The format string must have the following format, notice the "\n" at the end

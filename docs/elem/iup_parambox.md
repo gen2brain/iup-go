@@ -20,6 +20,7 @@ The list of params cannot be changed after the box is created.
 ### Attributes
 
 **BUTTON1**, **BUTTON2**, **BUTTON3** [read-only]: returns an IUP Ihandle* of the respective button in the button box.
+Returns NULL when the 'x' parameter has NOBUTTONS=YES.
 
 **PARAM*n*** [read-only]: returns an IUP Ihandle* representing the n<sup>th</sup> parameter, indexed by the declaration order, not counting separators or button names. n starts at 0.
 
