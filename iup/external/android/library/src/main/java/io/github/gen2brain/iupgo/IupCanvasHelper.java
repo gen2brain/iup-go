@@ -317,7 +317,6 @@ public final class IupCanvasHelper
     public static native void dispatchTextInput(long ihandlePtr, String text);
     public static native boolean dispatchKey(long ihandlePtr, int keyCode, int unicode, int metaState);
     public static native boolean wantsTextInput(long ihandlePtr);
-    public static native void dispatchFocus(long ihandlePtr, boolean hasFocus);
 
 
     /* shared scratch; Canvas draws complete before the next JNI round-trip */

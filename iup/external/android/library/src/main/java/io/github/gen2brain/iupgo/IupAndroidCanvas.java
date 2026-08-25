@@ -111,14 +111,6 @@ public class IupAndroidCanvas extends IupAndroidFixed
     }
 
     @Override
-    protected void onFocusChanged(boolean gainFocus, int direction, Rect previouslyFocusedRect)
-    {
-        super.onFocusChanged(gainFocus, direction, previouslyFocusedRect);
-        if (ihandlePtr != 0)
-            IupCanvasHelper.dispatchFocus(ihandlePtr, gainFocus);
-    }
-
-    @Override
     public boolean onCheckIsTextEditor()
     {
         return ihandlePtr != 0 && IupCanvasHelper.wantsTextInput(ihandlePtr);
