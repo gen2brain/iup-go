@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"runtime"
 	"time"
 
 	"github.com/gen2brain/iup-go/iup"
@@ -32,11 +31,12 @@ func updateStatus() {
 	statusText := fmt.Sprintf("Text: %s | Image: %s", textAvail, imageAvail)
 
 	// Platform-specific availability checks
-	if runtime.GOOS == "windows" {
+	switch iup.GetGlobal("DRIVER") {
+	case "Win32", "WinUI":
 		wmfAvail := clipboard.GetAttribute("WMFAVAILABLE")
 		emfAvail := clipboard.GetAttribute("EMFAVAILABLE")
 		statusText += fmt.Sprintf(" | WMF: %s | EMF: %s", wmfAvail, emfAvail)
-	} else if runtime.GOOS == "darwin" {
+	case "Cocoa", "CocoaTouch", "Qt":
 		pdfAvail := clipboard.GetAttribute("PDFAVAILABLE")
 		statusText += fmt.Sprintf(" | PDF: %s", pdfAvail)
 	}
@@ -50,8 +50,10 @@ func main() {
 	iup.Open()
 	defer iup.Close()
 
+	system := iup.GetGlobal("SYSTEM")
+
 	clipboard = iup.Clipboard()
-	if runtime.GOOS != "android" && runtime.GOOS != "ios" {
+	if system != "Android" && system != "iOS" {
 		defer clipboard.Destroy()
 	}
 
@@ -79,7 +81,7 @@ func main() {
 	txtLog.SetAttributes("MULTILINE=YES, EXPAND=HORIZONTAL, READONLY=YES, VISIBLELINES=6")
 	driver := iup.GetGlobal("DRIVER")
 	txtLog.SetAttribute("VALUE", "=== IUP Clipboard Demo ===\n"+
-		"Platform: "+runtime.GOOS+"\n"+
+		"Platform: "+system+"\n"+
 		"Driver: "+driver+"\n"+
 		"Test all clipboard features below.\n"+
 		"---\n")
@@ -182,7 +184,7 @@ func main() {
 	var platformButtons []iup.Ihandle
 	var platformFrame iup.Ihandle
 
-	if runtime.GOOS == "windows" {
+	if driver == "Win32" || driver == "WinUI" {
 		btnCheckWMF := iup.Button("Check WMF/EMF").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
 			wmfAvail := clipboard.GetAttribute("WMFAVAILABLE")
 			emfAvail := clipboard.GetAttribute("EMFAVAILABLE")
@@ -194,8 +196,8 @@ func main() {
 
 		hboxPlatform := iup.Hbox(platformButtons...).SetAttribute("GAP", "5")
 		platformFrame = iup.Frame(hboxPlatform).SetAttributes("TITLE=Windows Metafiles, MARGIN=5x5")
-	} else if runtime.GOOS == "darwin" {
-		// macOS/Cocoa PDF vector image support
+	} else if driver == "Cocoa" || driver == "CocoaTouch" || driver == "Qt" {
+		// PDF vector image support
 		txtPDFInfo := iup.Text().SetAttributes("EXPAND=HORIZONTAL, READONLY=YES")
 		txtPDFInfo.SetAttribute("VALUE", "No PDF data")
 
@@ -376,7 +378,7 @@ func main() {
 	// Initial status update
 	updateStatus()
 
-	logMsg(fmt.Sprintf("Clipboard demo ready. Platform: %s, Driver: %s", runtime.GOOS, driver))
+	logMsg(fmt.Sprintf("Clipboard demo ready. Platform: %s, Driver: %s", system, driver))
 
 	iup.MainLoop()
 }
