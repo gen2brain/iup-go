@@ -176,12 +176,14 @@ case "$APP" in
       echo ">>> tinygo build (js/wasm): $APP"
       TGROOT=$(tinygo env TINYGOROOT 2>/dev/null || echo /opt/tinygo)
       [ "$OPT" = 1 ] && TGFLAGS="-no-debug" || TGFLAGS=""
-      (cd "$APP" && tinygo build -target wasm $TGFLAGS -tags "$TAGS" -o "$BUILD/app.wasm" .)
+      # tinygo 0.41 caps at Go 1.26; drop the pin once it accepts the system toolchain
+      (cd "$APP" && GOTOOLCHAIN=${GOTOOLCHAIN:-go1.26.3} tinygo build -target wasm $TGFLAGS -tags "$TAGS" -o "$BUILD/app.wasm" .)
       cp "$TGROOT/targets/wasm_exec.js" "$BUILD/wasm_exec.js"
     else
       echo ">>> go build (js/wasm): $APP"
       [ "$FORCE" = 1 ] && GOFORCE="-a" || GOFORCE=""
-      (cd "$APP" && GOOS=js GOARCH=wasm go build $GOFORCE -tags "$TAGS" ${GOLD:+-ldflags="$GOLD"} -o "$BUILD/app.wasm" .)
+      # pinned: js/wasm has no cgo, and an exported CGO_ENABLED=1 makes Go reject wasm_bridge.c
+      (cd "$APP" && CGO_ENABLED=0 GOOS=js GOARCH=wasm go build $GOFORCE -tags "$TAGS" ${GOLD:+-ldflags="$GOLD"} -o "$BUILD/app.wasm" .)
 
       # Go's wasm uses bulk-memory/sign-ext/etc; enable them or wasm-opt rejects the module
       if [ "$OPT" = 1 ]; then

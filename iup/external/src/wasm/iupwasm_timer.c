@@ -16,12 +16,14 @@
 #include "iup_timer.h"
 
 
-EM_JS(int, iupwasmJsSetInterval, (int ihptr, int ms), {
-  return setInterval(function() { Module._iupwasmDispatchTimer(ihptr); }, ms);
+static int wasm_timer_last_id = 0;
+
+EM_JS(void, iupwasmJsTimerRun, (int tid, int ihptr, int ms), {
+  globalThis.__iupApply({ op: 'timerrun', tid: tid, ih: ihptr, ms: ms });
 })
 
-EM_JS(void, iupwasmJsClearInterval, (int sid), {
-  clearInterval(sid);
+EM_JS(void, iupwasmJsTimerStop, (int tid), {
+  globalThis.__iupApply({ op: 'timerstop', tid: tid });
 })
 
 EMSCRIPTEN_KEEPALIVE void iupwasmDispatchTimer(int ihptr)
@@ -42,14 +44,17 @@ IUP_SDK_API void iupdrvTimerRun(Ihandle* ih)
     return;
   time_ms = iupAttribGetInt(ih, "TIME");
   if (time_ms > 0)
-    ih->serial = iupwasmJsSetInterval((int)(intptr_t)ih, time_ms);
+  {
+    ih->serial = ++wasm_timer_last_id;
+    iupwasmJsTimerRun(ih->serial, (int)(intptr_t)ih, time_ms);
+  }
 }
 
 IUP_SDK_API void iupdrvTimerStop(Ihandle* ih)
 {
   if (ih->serial > 0)
   {
-    iupwasmJsClearInterval(ih->serial);
+    iupwasmJsTimerStop(ih->serial);
     ih->serial = -1;
   }
 }
