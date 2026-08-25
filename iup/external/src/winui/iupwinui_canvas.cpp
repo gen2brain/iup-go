@@ -731,10 +731,7 @@ static int winuiCanvasMapMethod(Ihandle* ih)
   canvas.Background(SolidColorBrush(Microsoft::UI::Colors::Transparent()));
 
   if (iupAttribGetBoolean(ih, "CANFOCUS"))
-  {
     canvas.IsTabStop(true);
-    canvas.AllowFocusOnInteraction(false);
-  }
 
   Image displayImage;
   displayImage.Stretch(Stretch::None);
@@ -929,8 +926,83 @@ static int winuiCanvasMapMethod(Ihandle* ih)
     args.Handled(true);
   });
 
+  aux->charReceivedToken = canvas.CharacterReceived([ih](IInspectable const&, winrt::Microsoft::UI::Xaml::Input::CharacterReceivedRoutedEventArgs const& args) {
+    char utf8[8];
+    int len;
+    unsigned int cp = (unsigned int)args.Character();
+
+    if (!IupGetCallback(ih, "TEXTINPUT_CB"))
+      return;
+    if (cp < 0x20 || cp == 0x7F)
+      return;
+
+    if (cp >= 0xD800 && cp <= 0xDBFF)
+    {
+      iupAttribSetInt(ih, "_IUPWINUI_HIGHSURROGATE", (int)cp);
+      args.Handled(true);
+      return;
+    }
+    if (cp >= 0xDC00 && cp <= 0xDFFF)
+    {
+      unsigned int high = (unsigned int)iupAttribGetInt(ih, "_IUPWINUI_HIGHSURROGATE");
+      iupAttribSet(ih, "_IUPWINUI_HIGHSURROGATE", NULL);
+      if (high < 0xD800 || high > 0xDBFF)
+        return;
+      cp = 0x10000 + ((high - 0xD800) << 10) + (cp - 0xDC00);
+    }
+
+    if (cp < 0x80)
+    {
+      utf8[0] = (char)cp;
+      len = 1;
+    }
+    else if (cp < 0x800)
+    {
+      utf8[0] = (char)(0xC0 | (cp >> 6));
+      utf8[1] = (char)(0x80 | (cp & 0x3F));
+      len = 2;
+    }
+    else if (cp < 0x10000)
+    {
+      utf8[0] = (char)(0xE0 | (cp >> 12));
+      utf8[1] = (char)(0x80 | ((cp >> 6) & 0x3F));
+      utf8[2] = (char)(0x80 | (cp & 0x3F));
+      len = 3;
+    }
+    else
+    {
+      utf8[0] = (char)(0xF0 | (cp >> 18));
+      utf8[1] = (char)(0x80 | ((cp >> 12) & 0x3F));
+      utf8[2] = (char)(0x80 | ((cp >> 6) & 0x3F));
+      utf8[3] = (char)(0x80 | (cp & 0x3F));
+      len = 4;
+    }
+    utf8[len] = 0;
+
+    if (iupKeyCallTextInputCb(ih, utf8) == IUP_IGNORE)
+      args.Handled(true);
+  });
+
   aux->keyDownToken = canvas.KeyDown([ih](IInspectable const&, KeyRoutedEventArgs const& args) {
-    int code = iupwinuiKeyDecode((int)args.Key());
+    int code;
+    if (IupGetCallback(ih, "TEXTINPUT_CB"))
+    {
+      int vk = (int)args.Key();
+      int has_ctrl = GetKeyState(VK_CONTROL) & 0x8000;
+      int has_alt = GetKeyState(VK_MENU) & 0x8000;
+      if (has_alt && !has_ctrl)
+      {
+        if (vk >= VK_NUMPAD0 && vk <= VK_NUMPAD9)  /* Alt+numpad composition */
+          return;
+      }
+      else if (!(has_ctrl && !has_alt))
+      {
+        UINT ch = MapVirtualKeyA((UINT)vk, MAPVK_VK_TO_CHAR);
+        if ((ch & 0xFFFF) >= 0x20)
+          return;
+      }
+    }
+    code = iupwinuiKeyDecode((int)args.Key());
     if (code)
     {
       int ret = iupKeyCallKeyPressCb(ih, code, 1);
@@ -1102,6 +1174,8 @@ static void winuiCanvasUnMapMethod(Ihandle* ih)
         canvas.KeyDown(aux->keyDownToken);
       if (aux->keyUpToken)
         canvas.KeyUp(aux->keyUpToken);
+      if (aux->charReceivedToken)
+        canvas.CharacterReceived(aux->charReceivedToken);
       if (aux->gotFocusToken)
         canvas.GotFocus(aux->gotFocusToken);
       if (aux->lostFocusToken)

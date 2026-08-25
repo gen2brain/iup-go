@@ -178,6 +178,21 @@ IUP_DRV_API void iupeflButtonKeySetStatus(Evas_Modifier* modifiers, unsigned int
     iupKEY_SETDOUBLE(status);
 }
 
+/* a commit consumed by TEXTINPUT_CB suppresses the K_ANY for that key */
+static int eflKeyTextInput(Ihandle* ih, Efl_Input_Key* key_event, const char* keystr)
+{
+  if (!IupGetCallback(ih, "TEXTINPUT_CB"))
+    return 0;
+  if (efl_input_modifier_enabled_get(key_event, EFL_INPUT_MODIFIER_CONTROL, NULL) ||
+      efl_input_modifier_enabled_get(key_event, EFL_INPUT_MODIFIER_ALT, NULL))
+    return 0;
+  if (!keystr || !keystr[0])
+    return 0;
+  if (!keystr[1] && ((unsigned char)keystr[0] < 0x20 || (unsigned char)keystr[0] == 0x7F))
+    return 0;
+  return iupKeyCallTextInputCb(ih, keystr) == IUP_IGNORE;
+}
+
 IUP_DRV_API void iupeflKeyDownEvent(void* data, const Efl_Event* ev)
 {
   Ihandle* ih = (Ihandle*)data;
@@ -187,6 +202,9 @@ IUP_DRV_API void iupeflKeyDownEvent(void* data, const Efl_Event* ev)
   int code;
   int result;
   int has_shift;
+
+  if (eflKeyTextInput(ih, key_event, keystr))
+    return;
 
   code = iupeflKeyDecodeFromName(keyname, keystr);
   if (code == 0)

@@ -90,6 +90,49 @@
 - (void)setAccessibilityHelp:(NSString*)help      { (void)help; }
 @end
 
+/* GNUstep has no content tint; the colored title path above already covers FGCOLOR. */
+@implementation NSButton (IupGnustepShimImpl)
+- (void)setContentTintColor:(NSColor*)color { (void)color; }
+@end
+
+/* GNUstep stops at the primitive attributesAtIndex:effectiveRange:, so walk the range with it.
+   The reverse option is not honored; no caller in the driver asks for it. */
+@implementation NSAttributedString (IupGnustepShimImpl)
+- (void)enumerateAttributesInRange:(NSRange)range
+                           options:(NSUInteger)options
+                        usingBlock:(void (^)(NSDictionary* attributes, NSRange range, BOOL* stop))block
+{
+  NSUInteger location = range.location;
+  NSUInteger end = NSMaxRange(range);
+  BOOL stop = NO;
+
+  (void)options;
+
+  if (!block)
+    return;
+
+  while (location < end && !stop)
+  {
+    NSRange effective;
+    NSDictionary* attributes = [self attributesAtIndex:location effectiveRange:&effective];
+
+    if (effective.location < range.location)
+    {
+      effective.length -= range.location - effective.location;
+      effective.location = range.location;
+    }
+    if (NSMaxRange(effective) > end)
+      effective.length = end - effective.location;
+
+    if (effective.length == 0)
+      break;
+
+    block(attributes, effective, &stop);
+    location = NSMaxRange(effective);
+  }
+}
+@end
+
 @implementation NSTimer (IupGnustepShimImpl)
 - (void)setTolerance:(NSTimeInterval)tolerance { (void)tolerance; }
 @end

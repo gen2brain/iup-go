@@ -179,6 +179,16 @@ typedef NSString* NSPasteboardType;
 - (instancetype)initWithCGImage:(CGImageRef)cgImage;
 @end
 
+@interface NSButton (IupGnustepShim)
+- (void)setContentTintColor:(NSColor*)color;
+@end
+
+@interface NSAttributedString (IupGnustepShim)
+- (void)enumerateAttributesInRange:(NSRange)range
+                           options:(NSUInteger)options
+                        usingBlock:(void (^)(NSDictionary* attributes, NSRange range, BOOL* stop))block;
+@end
+
 @interface NSImage (IupGnustepShim)
 + (NSArray*)imageTypes;
 @end

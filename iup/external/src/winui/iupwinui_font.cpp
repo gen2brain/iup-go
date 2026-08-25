@@ -39,7 +39,6 @@ static std::deque<IwinuiFont> winui_fonts;
 IDWriteFactory* winui_dwrite_factory = NULL;
 float winui_screen_dpi = 96.0f;
 
-#define iupWINUI_PT2PIXEL(_pt, _dpi) ((_pt) * (_dpi) / 72.0f)
 #define iupWINUI_PIXEL2PT(_px, _dpi) ((_px) * 72.0f / (_dpi))
 
 static void winuiDWriteMeasureText(IDWriteTextFormat* format, const wchar_t* text, int len, float* width, float* height)

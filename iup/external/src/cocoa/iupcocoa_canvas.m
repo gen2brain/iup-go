@@ -40,9 +40,12 @@ static void cocoaCanvasComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int
  * When used with an NSScrollView, it relies on NSViewBoundsDidChangeNotification from the parent NSClipView
  * to update IUP's scroll position attributes and trigger the SCROLL_CB callback.
  */
-@interface IupCocoaCanvasView : NSControl
+@interface IupCocoaCanvasView : NSControl <NSTextInputClient>
 
 @property(nonatomic, assign) Ihandle* ih;
+
+@property(nonatomic, retain) NSString* textInputMarked;
+@property(nonatomic, assign) bool textInputConsumed;
 
 @property(nonatomic, assign, getter=isCurrentKeyWindow) bool currentKeyWindow;
 @property(nonatomic, assign, getter=isCurrentFirstResponder) bool currentFirstResponder;
@@ -207,6 +210,7 @@ static void cocoaCanvasFireGesture(Ihandle* ih, int gesture, int state, int x, i
   NSNotificationCenter* notification_center = [NSNotificationCenter defaultCenter];
   [notification_center removeObserver:self];
   [self setBackgroundColor:nil];
+  [self setTextInputMarked:nil];
 
   [super dealloc];
 }
@@ -628,11 +632,100 @@ static void cocoaCanvasFireGesture(Ihandle* ih, int gesture, int state, int x, i
 {
   if(![self isEnabled]) return;
 
+  if (IupGetCallback(_ih, "TEXTINPUT_CB"))
+  {
+    [self setTextInputConsumed:false];
+#ifdef GNUSTEP
+    [self interpretKeyEvents:[NSArray arrayWithObject:the_event]];
+#else
+    [[self inputContext] handleEvent:the_event];
+#endif
+    if ([self textInputConsumed])
+      return;
+    if ([self hasMarkedText])
+      return;
+  }
+
   unsigned short mac_key_code = [the_event keyCode];
   if(!iupcocoaKeyEvent(_ih, the_event, (int)mac_key_code, true))
   {
     [super keyDown:the_event];
   }
+}
+
+- (void) insertText:(id)a_string replacementRange:(NSRange)replacement_range
+{
+  NSString* text = [a_string isKindOfClass:[NSAttributedString class]] ? [a_string string] : a_string;
+  (void)replacement_range;
+  [self setTextInputMarked:nil];
+  if ([text length] == 0)
+    return;
+  if ([text length] == 1 && ([text characterAtIndex:0] < 0x20 || [text characterAtIndex:0] == 0x7F))
+    return;
+  if (iupKeyCallTextInputCb(_ih, [text UTF8String]) == IUP_IGNORE)
+    [self setTextInputConsumed:true];
+}
+
+- (void) doCommandBySelector:(SEL)a_selector
+{
+  (void)a_selector;
+}
+
+- (void) setMarkedText:(id)a_string selectedRange:(NSRange)selected_range replacementRange:(NSRange)replacement_range
+{
+  NSString* text = [a_string isKindOfClass:[NSAttributedString class]] ? [a_string string] : a_string;
+  (void)selected_range;
+  (void)replacement_range;
+  [self setTextInputMarked:([text length] > 0) ? text : nil];
+}
+
+- (void) unmarkText
+{
+  [self setTextInputMarked:nil];
+}
+
+- (BOOL) hasMarkedText
+{
+  return [self textInputMarked] != nil;
+}
+
+- (NSRange) markedRange
+{
+  NSString* marked = [self textInputMarked];
+  if (marked)
+    return NSMakeRange(0, [marked length]);
+  return NSMakeRange(NSNotFound, 0);
+}
+
+- (NSRange) selectedRange
+{
+  return NSMakeRange(0, 0);
+}
+
+- (NSArray<NSAttributedStringKey>*) validAttributesForMarkedText
+{
+  return [NSArray array];
+}
+
+- (NSAttributedString*) attributedSubstringForProposedRange:(NSRange)a_range actualRange:(NSRangePointer)actual_range
+{
+  (void)a_range;
+  (void)actual_range;
+  return nil;
+}
+
+- (NSRect) firstRectForCharacterRange:(NSRange)a_range actualRange:(NSRangePointer)actual_range
+{
+  NSRect rect = [self convertRect:[self bounds] toView:nil];
+  (void)a_range;
+  (void)actual_range;
+  return [[self window] convertRectToScreen:rect];
+}
+
+- (NSUInteger) characterIndexForPoint:(NSPoint)a_point
+{
+  (void)a_point;
+  return 0;
 }
 
 - (void) keyUp:(NSEvent*)the_event

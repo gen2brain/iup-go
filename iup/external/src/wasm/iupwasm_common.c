@@ -286,6 +286,24 @@ EMSCRIPTEN_KEEPALIVE void iupwasmDispatchHelp(int id)
     IupExitLoop();
 }
 
+EMSCRIPTEN_KEEPALIVE int iupwasmDispatchKey(int id, int code);
+
+EMSCRIPTEN_KEEPALIVE int iupwasmDispatchTextInput(int id, const char* text)
+{
+  Ihandle* ih = iupwasmHandleFromId(id);
+  if (!ih || !text || !text[0])
+    return 0;
+  return iupKeyCallTextInputCb(ih, text) == IUP_IGNORE;
+}
+
+EMSCRIPTEN_KEEPALIVE int iupwasmDispatchKeyText(int id, int code, const char* text)
+{
+  Ihandle* ih = iupwasmHandleFromId(id);
+  if (ih && text && text[0] && iupKeyCallTextInputCb(ih, text) == IUP_IGNORE)
+    return 1;
+  return iupwasmDispatchKey(id, code);
+}
+
 EMSCRIPTEN_KEEPALIVE int iupwasmDispatchKey(int id, int code)
 {
   Ihandle* ih = iupwasmHandleFromId(id);

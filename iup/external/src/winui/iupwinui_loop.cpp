@@ -102,7 +102,11 @@ static int winuiLoopProcessMessage(MSG* msg)
               ih = dlg;
           }
         }
-        if (ih)
+        int alt_numpad_compose = ih &&
+            (GetKeyState(VK_MENU) & 0x8000) && !(GetKeyState(VK_CONTROL) & 0x8000) &&
+            wincode >= VK_NUMPAD0 && wincode <= VK_NUMPAD9 &&
+            IupGetCallback(ih, "TEXTINPUT_CB") != NULL;
+        if (ih && !alt_numpad_compose)
         {
           if (!iupwinuiKeyEvent(ih, wincode, 1))
           {

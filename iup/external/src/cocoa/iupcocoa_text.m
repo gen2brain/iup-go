@@ -2699,6 +2699,7 @@ static NSFont* cocoaTextChangeFontWeight(NSFont* start_font, int font_target_wei
 
 static NSFont* cocoaTextApplySmallCaps(NSFont* font)
 {
+#ifndef GNUSTEP
   NSDictionary* feature = @{
     NSFontFeatureTypeIdentifierKey: @(37),    /* kLowerCaseType */
     NSFontFeatureSelectorIdentifierKey: @(1)  /* kLowerCaseSmallCapsSelector */
@@ -2706,6 +2707,9 @@ static NSFont* cocoaTextApplySmallCaps(NSFont* font)
   NSFontDescriptor* desc = [[font fontDescriptor] fontDescriptorByAddingAttributes:@{ NSFontFeatureSettingsAttribute: @[feature] }];
   NSFont* result = [NSFont fontWithDescriptor:desc size:[font pointSize]];
   return result ? result : font;
+#else
+  return font;
+#endif
 }
 
 static NSMutableDictionary* cocoaTextParseCharacterFormat(Ihandle* ih, Ihandle* formattag, NSTextView* text_view, NSRange selection_range)

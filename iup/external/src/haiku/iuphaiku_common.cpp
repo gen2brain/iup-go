@@ -59,7 +59,8 @@ IUP_DRV_API void iuphaikuAddToParent(Ihandle* ih)
   if (!ih || !ih->handle)
     return;
 
-  BView* widget = (BView*)ih->handle;
+  BView* widget = (BView*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
+  if (!widget) widget = (BView*)ih->handle;
   BView* parent = (BView*)iupChildTreeGetNativeParentHandle(ih);
   if (!parent)
     return;
@@ -558,7 +559,8 @@ extern "C" IUP_SDK_API void iupdrvBaseLayoutUpdateMethod(Ihandle *ih)
   if (!ih || !ih->handle)
     return;
 
-  BView* view = (BView*)ih->handle;
+  BView* view = (BView*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
+  if (!view) view = (BView*)ih->handle;
   iuphaikuSetPosSize(view, ih->x, ih->y, ih->currentwidth, ih->currentheight);
 }
 

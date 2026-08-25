@@ -6,8 +6,13 @@ import android.graphics.Canvas;
 import android.graphics.Rect;
 import android.util.AttributeSet;
 import android.view.GestureDetector;
+import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
+import android.view.inputmethod.BaseInputConnection;
+import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputConnection;
+import android.view.inputmethod.InputMethodManager;
 
 import androidx.annotation.NonNull;
 
@@ -41,6 +46,109 @@ public class IupAndroidCanvas extends IupAndroidFixed
         setFocusableInTouchMode(true);
         setWillNotDraw(false);
         initGestureDetectors(ctx);
+    }
+
+    /* soft keyboard commits arrive here; hardware and IME action keys go through onKeyDown */
+    @Override
+    public InputConnection onCreateInputConnection(EditorInfo outAttrs)
+    {
+        outAttrs.inputType = EditorInfo.TYPE_CLASS_TEXT | EditorInfo.TYPE_TEXT_FLAG_NO_SUGGESTIONS;
+        outAttrs.imeOptions = EditorInfo.IME_ACTION_NONE | EditorInfo.IME_FLAG_NO_FULLSCREEN
+                            | EditorInfo.IME_FLAG_NO_EXTRACT_UI;
+        return new BaseInputConnection(this, false)
+        {
+            @Override
+            public boolean commitText(CharSequence text, int newCursorPosition)
+            {
+                if (ihandlePtr != 0 && text != null && text.length() > 0)
+                    IupCanvasHelper.dispatchTextInput(ihandlePtr, text.toString());
+                return true;
+            }
+
+            @Override
+            public boolean setComposingText(CharSequence text, int newCursorPosition)
+            {
+                return true;
+            }
+
+            @Override
+            public boolean finishComposingText()
+            {
+                return true;
+            }
+
+            /* the IME skips backspace when it believes there is nothing before the cursor,
+               and the dummy editable is always empty */
+            @Override
+            public CharSequence getTextBeforeCursor(int length, int flags)
+            {
+                return " ";
+            }
+
+            @Override
+            public CharSequence getSelectedText(int flags)
+            {
+                return null;
+            }
+
+            @Override
+            public boolean deleteSurroundingText(int beforeLength, int afterLength)
+            {
+                int n = Math.max(beforeLength, 1);
+                for (int i = 0; i < n; i++)
+                    IupCanvasHelper.dispatchKey(ihandlePtr, KeyEvent.KEYCODE_DEL, 0, 0);
+                return true;
+            }
+
+            @Override
+            public boolean sendKeyEvent(KeyEvent event)
+            {
+                if (event.getAction() == KeyEvent.ACTION_DOWN)
+                    return onKeyDown(event.getKeyCode(), event);
+                return true;
+            }
+        };
+    }
+
+    @Override
+    protected void onFocusChanged(boolean gainFocus, int direction, Rect previouslyFocusedRect)
+    {
+        super.onFocusChanged(gainFocus, direction, previouslyFocusedRect);
+        if (ihandlePtr != 0)
+            IupCanvasHelper.dispatchFocus(ihandlePtr, gainFocus);
+    }
+
+    @Override
+    public boolean onCheckIsTextEditor()
+    {
+        return ihandlePtr != 0 && IupCanvasHelper.wantsTextInput(ihandlePtr);
+    }
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event)
+    {
+        if (ihandlePtr != 0)
+        {
+            int unicode = event.getUnicodeChar(event.getMetaState());
+            if (IupCanvasHelper.dispatchKey(ihandlePtr, keyCode, unicode, event.getMetaState()))
+                return true;
+        }
+        return super.onKeyDown(keyCode, event);
+    }
+
+    public void showSoftKeyboard()
+    {
+        requestFocus();
+        InputMethodManager imm = (InputMethodManager)getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+        if (imm != null)
+            imm.showSoftInput(this, InputMethodManager.SHOW_IMPLICIT);
+    }
+
+    public void hideSoftKeyboard()
+    {
+        InputMethodManager imm = (InputMethodManager)getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+        if (imm != null)
+            imm.hideSoftInputFromWindow(getWindowToken(), 0);
     }
 
     public IupAndroidCanvas(Context ctx, AttributeSet attrs)
@@ -230,6 +338,9 @@ public class IupAndroidCanvas extends IupAndroidFixed
         gestureDetector.onTouchEvent(ev);
         scaleDetector.onTouchEvent(ev);
         handleRotation(ev);
+
+        if (ev.getActionMasked() == MotionEvent.ACTION_DOWN && onCheckIsTextEditor())
+            showSoftKeyboard();
 
         int x = (int)ev.getX();
         int y = (int)ev.getY();

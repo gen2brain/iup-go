@@ -23,6 +23,8 @@ extern "C" {
 #include "iup_classbase.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
+#include <string.h>
+
 #include "iup_key.h"
 #include "iup_drv.h"
 #include "iup_canvas.h"
@@ -181,6 +183,26 @@ void iuphaikuCanvasOnMouseMoved(Ihandle* ih, BView* view, BPoint where, unsigned
   if (cb) cb(ih, (int)where.x, (int)where.y, status);
 }
 
+/* KeyDown bytes are already UTF-8 from the input server, dead keys and IME included */
+static bool haikuCanvasTextInput(Ihandle* ih, const char* bytes, int numBytes, unsigned int mods)
+{
+  char utf8[16];
+
+  if (!IupGetCallback(ih, "TEXTINPUT_CB"))
+    return false;
+  if (mods & (B_CONTROL_KEY | B_COMMAND_KEY))
+    return false;
+  if (numBytes < 1 || numBytes > (int)sizeof(utf8) - 1)
+    return false;
+  if (numBytes == 1 && ((unsigned char)bytes[0] < 0x20 || (unsigned char)bytes[0] == 0x7F))
+    return false;
+
+  memcpy(utf8, bytes, numBytes);
+  utf8[numBytes] = 0;
+
+  return iupKeyCallTextInputCb(ih, utf8) == IUP_IGNORE;
+}
+
 bool iuphaikuCanvasOnKeyDown(Ihandle* ih, BView* view, const char* bytes, int numBytes)
 {
   if (!ih || numBytes < 1) return false;
@@ -193,6 +215,9 @@ bool iuphaikuCanvasOnKeyDown(Ihandle* ih, BView* view, const char* bytes, int nu
     msg->FindInt32("raw_char", &raw_char);
     msg->FindInt32("modifiers", &mods);
   }
+
+  if (haikuCanvasTextInput(ih, bytes, numBytes, (unsigned)mods))
+    return true;
 
   int code = iuphaikuKeyDecode((unsigned char)bytes[0], raw_char, (unsigned)mods);
   if (code == 0) return false;
@@ -372,7 +397,7 @@ public:
       cb(fIhandle, op, (float)fIhandle->data->posx, (float)fIhandle->data->posy);
     }
     else if (IupHaikuCanvasView* inner =
-        (IupHaikuCanvasView*)iupAttribGet(fIhandle, "_IUPHAIKU_CANVAS_INNER"))
+        (IupHaikuCanvasView*)fIhandle->handle)
       inner->Invalidate();
   }
 
@@ -474,20 +499,16 @@ void IupHaikuCanvasWrap::RelayoutChildren()
 
   iupAttribSet(fIhandle, "XHIDDEN", show_h ? "NO" : "YES");
   iupAttribSet(fIhandle, "YHIDDEN", show_v ? "NO" : "YES");
-  iupAttribSetInt(fIhandle, "_IUPHAIKU_CANVAS_INNER_W", (int)(c_w + 1));
-  iupAttribSetInt(fIhandle, "_IUPHAIKU_CANVAS_INNER_H", (int)(c_h + 1));
 }
 
 static IupHaikuCanvasView* haikuCanvasGetInner(Ihandle* ih)
 {
-  if (IupHaikuCanvasView* v = (IupHaikuCanvasView*)iupAttribGet(ih, "_IUPHAIKU_CANVAS_INNER"))
-    return v;
   return dynamic_cast<IupHaikuCanvasView*>((BView*)ih->handle);
 }
 
 static IupHaikuCanvasWrap* haikuCanvasGetWrap(Ihandle* ih)
 {
-  return dynamic_cast<IupHaikuCanvasWrap*>((BView*)ih->handle);
+  return dynamic_cast<IupHaikuCanvasWrap*>((BView*)iupAttribGet(ih, "_IUP_EXTRAPARENT"));
 }
 
 static void haikuCanvasSyncScrollBar(Ihandle* ih, bool horiz)
@@ -555,8 +576,8 @@ static int haikuCanvasMapMethod(Ihandle* ih)
   IupHaikuCanvasWrap* wrap = new IupHaikuCanvasWrap(ih);
   wrap->Attach(canvas, hsb, vsb);
 
-  ih->handle = (InativeHandle*)wrap;
-  iupAttribSet(ih, "_IUPHAIKU_CANVAS_INNER", (char*)canvas);
+  ih->handle = (InativeHandle*)canvas;
+  iupAttribSet(ih, "_IUP_EXTRAPARENT", (char*)wrap);
   if (vsb) iupAttribSet(ih, "_IUPHAIKU_CANVAS_VSB", (char*)vsb);
   iuphaikuAddToParent(ih);
 
@@ -577,7 +598,7 @@ static void haikuCanvasUnMapMethod(Ihandle* ih)
   {
     v->SetIhandle(NULL);
   }
-  iupAttribSet(ih, "_IUPHAIKU_CANVAS_INNER", NULL);
+  iupAttribSet(ih, "_IUP_EXTRAPARENT", NULL);
   iupAttribSet(ih, "_IUPHAIKU_CANVAS_VSB", NULL);
   iupdrvBaseUnMapMethod(ih);
 }
@@ -586,6 +607,7 @@ static char* haikuCanvasGetDrawSizeAttrib(Ihandle* ih)
 {
   IupHaikuCanvasView* inner = haikuCanvasGetInner(ih);
   if (!inner) return NULL;
+  LooperLockGuard guard(inner->Looper());
   BRect b = inner->Bounds();
   return iupStrReturnIntInt((int)(b.Width() + 1), (int)(b.Height() + 1), 'x');
 }
@@ -629,7 +651,11 @@ static int haikuCanvasSetDXAttrib(Ihandle* ih, const char* value)
   if (!iupStrToDoubleDef(value, &dx, 0.1)) return 1;
   iupAttribSetDouble(ih, "DX", dx);
   haikuCanvasSyncScrollBar(ih, true);
-  if (IupHaikuCanvasWrap* wrap = haikuCanvasGetWrap(ih)) wrap->RelayoutChildren();
+  if (IupHaikuCanvasWrap* wrap = haikuCanvasGetWrap(ih))
+  {
+    LooperLockGuard guard(wrap->Looper());
+    wrap->RelayoutChildren();
+  }
   return 1;
 }
 
@@ -640,7 +666,11 @@ static int haikuCanvasSetDYAttrib(Ihandle* ih, const char* value)
   if (!iupStrToDoubleDef(value, &dy, 0.1)) return 1;
   iupAttribSetDouble(ih, "DY", dy);
   haikuCanvasSyncScrollBar(ih, false);
-  if (IupHaikuCanvasWrap* wrap = haikuCanvasGetWrap(ih)) wrap->RelayoutChildren();
+  if (IupHaikuCanvasWrap* wrap = haikuCanvasGetWrap(ih))
+  {
+    LooperLockGuard guard(wrap->Looper());
+    wrap->RelayoutChildren();
+  }
   return 1;
 }
 

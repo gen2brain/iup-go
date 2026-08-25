@@ -314,6 +314,10 @@ public final class IupCanvasHelper
     public static native void dispatchTouch(long ihandlePtr, int count, int[] ids, int[] xs, int[] ys, int[] states, int primaryId);
     public static native void dispatchGesture(long ihandlePtr, int gesture, int state, int x, int y, double v1, double v2);
     public static native boolean isDragInteractive(long ihandlePtr);
+    public static native void dispatchTextInput(long ihandlePtr, String text);
+    public static native boolean dispatchKey(long ihandlePtr, int keyCode, int unicode, int metaState);
+    public static native boolean wantsTextInput(long ihandlePtr);
+    public static native void dispatchFocus(long ihandlePtr, boolean hasFocus);
 
 
     /* shared scratch; Canvas draws complete before the next JNI round-trip */

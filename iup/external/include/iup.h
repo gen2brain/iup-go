@@ -319,6 +319,7 @@ IUP_API Ihandle*  IupDatePick(void);
 IUP_API Ihandle*  IupCalendar(void);
 IUP_API Ihandle*  IupColorbar(void);
 IUP_API Ihandle*  IupDial(const char* type);
+IUP_API Ihandle*  IupTerminal(void);
 IUP_API Ihandle*  IupColorBrowser(void);
 /** @} */
 

@@ -280,10 +280,31 @@ static int iupObjectIsNativeContainer(Ihandle* ih)
     return 0;
 }
 
+/* a commit consumed by TEXTINPUT_CB suppresses the K_ANY for that key */
+static int qtKeyTextInput(QKeyEvent *evt, Ihandle *ih)
+{
+  if (!IupGetCallback(ih, "TEXTINPUT_CB"))
+    return 0;
+  if (evt->modifiers() & (Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier))
+    return 0;
+  QString text = evt->text();
+  if (text.isEmpty())
+    return 0;
+  QChar ch = text.at(0);
+  if (ch.unicode() < 0x20 || ch.unicode() == 0x7F)
+    return 0;
+  return iupKeyCallTextInputCb(ih, text.toUtf8().constData()) == IUP_IGNORE;
+}
+
 IUP_DRV_API int iupqtKeyPressEvent(QWidget *widget, QKeyEvent *evt, Ihandle *ih)
 {
   int result;
-  int code = qtKeyDecode(evt);
+  int code;
+
+  if (qtKeyTextInput(evt, ih))
+    return 1;
+
+  code = qtKeyDecode(evt);
   if (code == 0)
     return 0;
 

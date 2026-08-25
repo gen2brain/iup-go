@@ -186,9 +186,9 @@ extern "C" IUP_SDK_API void iupdrvSetFocus(Ihandle* ih)
 
   UIElement elem = winuiGetFocusableElement(ih);
   if (elem)
-    elem.Focus(FocusState::Programmatic);
-
-  iupSetCurrentFocus(ih);
+    elem.Focus(FocusState::Programmatic);  /* GotFocus updates the current focus */
+  else
+    iupSetCurrentFocus(ih);
 }
 
 extern "C" IUP_SDK_API void iupdrvActivate(Ihandle* ih)

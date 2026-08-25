@@ -16,6 +16,7 @@
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
+#include "iupkey.h"
 #include "iup_key.h"
 #include "iup_canvas.h"
 #include "iup_focus.h"
@@ -33,7 +34,7 @@ static BOOL cocoaTouchCanvasIsDragHandle(Ihandle* ih)
 }
 
 
-@interface IupCocoaTouchCanvasView : UIView <UIGestureRecognizerDelegate>
+@interface IupCocoaTouchCanvasView : UIView <UIGestureRecognizerDelegate, UIKeyInput>
 @property(nonatomic, assign) Ihandle* ihandle;
 @property(nonatomic, assign) CGSize previousSize;
 @property(nonatomic, assign) BOOL canFocus;
@@ -231,6 +232,63 @@ static void cocoaTouchFireGesture(Ihandle* ih, int gesture, int state, int x, in
 - (BOOL)canBecomeFirstResponder
 {
 	return _canFocus && _ihandle != NULL;
+}
+
+/* UIKeyInput: the soft keyboard commits text here, dead keys and IME already composed */
+- (BOOL)hasText
+{
+	return YES;
+}
+
+- (void)insertText:(NSString*)text
+{
+	if (!_ihandle || [text length] == 0)
+	{
+		return;
+	}
+
+	if ([text isEqualToString:@"\n"])
+	{
+		if (iupKeyCallKeyCb(_ihandle, K_CR) == IUP_CLOSE)
+		{
+			IupExitLoop();
+		}
+		return;
+	}
+
+	iupKeyCallTextInputCb(_ihandle, [text UTF8String]);
+}
+
+- (void)deleteBackward
+{
+	if (_ihandle)
+	{
+		if (iupKeyCallKeyCb(_ihandle, K_BS) == IUP_CLOSE)
+		{
+			IupExitLoop();
+		}
+	}
+}
+
+- (UIKeyboardType)keyboardType
+{
+	/* not ASCIICapable: that hides the globe key and blocks other-script keyboards */
+	return UIKeyboardTypeDefault;
+}
+
+- (UITextAutocorrectionType)autocorrectionType
+{
+	return UITextAutocorrectionTypeNo;
+}
+
+- (UITextAutocapitalizationType)autocapitalizationType
+{
+	return UITextAutocapitalizationTypeNone;
+}
+
+- (UITextSpellCheckingType)spellCheckingType
+{
+	return UITextSpellCheckingTypeNo;
 }
 
 - (BOOL)becomeFirstResponder

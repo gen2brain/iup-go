@@ -127,6 +127,9 @@ IUP_DRV_API int iupeflIsInsideTabs(Ihandle* ih);
 /* Base widget callbacks registration (EO API) */
 IUP_DRV_API void iupeflBaseAddCallbacks(Ihandle* ih, Eo* widget);
 IUP_DRV_API void iupeflBaseRemoveCallbacks(Ihandle* ih, Eo* widget);
+IUP_DRV_API int iupeflCanvasHasSize(Ihandle* ih);
+IUP_DRV_API void iupeflRedrawSetPending(Ihandle* ih);
+IUP_DRV_API void iupeflRedrawClearPending(Ihandle* ih);
 
 /* Common attribute handlers */
 IUP_DRV_API int iupeflBaseSetActiveAttrib(Ihandle* ih, const char* value);

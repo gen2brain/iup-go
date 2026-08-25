@@ -194,6 +194,14 @@ IUP_DRV_API IupCocoaFont *iupcocoaFindFont(const char *iup_font_name)
   {
     NSString *ns_type_face = [NSString stringWithUTF8String:type_face];
     ns_font = [NSFont fontWithName:ns_type_face size:final_font_size];
+
+    /* fontWithName: matches a font name, a family name only resolves through a descriptor */
+    if (nil == ns_font)
+    {
+      NSFontDescriptor *descriptor = [NSFontDescriptor fontDescriptorWithFontAttributes:
+        [NSDictionary dictionaryWithObject:ns_type_face forKey:NSFontFamilyAttribute]];
+      ns_font = [NSFont fontWithDescriptor:descriptor size:final_font_size];
+    }
   }
 
   if (nil == ns_font)

@@ -848,7 +848,7 @@ IUP_SDK_API void iupdrvActivate(Ihandle* ih)
   }
 }
 
-static int iupeflCanvasHasSize(Ihandle* ih)
+IUP_DRV_API int iupeflCanvasHasSize(Ihandle* ih)
 {
   Eina_Size2D size = efl_gfx_entity_size_get(iupeflGetWidget(ih));
   return (size.w > 1 && size.h > 1);
@@ -862,6 +862,7 @@ IUP_SDK_API void iupdrvRedrawNow(Ihandle* ih)
     if (ih->iclass->nativetype == IUP_TYPECANVAS && iupeflCanvasHasSize(ih))
     {
       IFn cb = (IFn)IupGetCallback(ih, "ACTION");
+      iupeflRedrawClearPending(ih);
       if (cb)
         cb(ih);
     }
@@ -877,12 +878,8 @@ IUP_SDK_API void iupdrvPostRedraw(Ihandle* ih)
   Eo* widget = iupeflGetWidget(ih);
   if (widget)
   {
-    if (ih->iclass->nativetype == IUP_TYPECANVAS && iupeflCanvasHasSize(ih))
-    {
-      IFn cb = (IFn)IupGetCallback(ih, "ACTION");
-      if (cb)
-        cb(ih);
-    }
+    if (ih->iclass->nativetype == IUP_TYPECANVAS)
+      iupeflRedrawSetPending(ih);
 
     Evas* evas = evas_object_evas_get(widget);
     if (evas)

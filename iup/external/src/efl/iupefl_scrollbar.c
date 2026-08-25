@@ -99,7 +99,7 @@ static int eflScrollbarSetLineStepAttrib(Ihandle* ih, const char* value)
 
   if (iupStrToDoubleDef(value, &(ih->data->linestep), 0.01))
   {
-    if (slider)
+    if (slider && ih->data->linestep > 0)
       efl_ui_range_step_set(slider, ih->data->linestep);
   }
 
