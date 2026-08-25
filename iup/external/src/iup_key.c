@@ -353,6 +353,14 @@ IUP_SDK_API int iupKeyCallKeyPressCb(Ihandle *ih, int code, int press)
   return IUP_DEFAULT;
 }
 
+IUP_SDK_API int iupKeyCallTextInputCb(Ihandle *ih, const char* value)
+{
+  IFns cb = (IFns)IupGetCallback(ih, "TEXTINPUT_CB");
+  if (cb)
+    return cb(ih, (char*)value);
+  return IUP_DEFAULT;
+}
+
 static void iupKeyActivate(Ihandle* ih)
 {
   if (ih->handle && iupdrvIsActive(ih))

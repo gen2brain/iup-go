@@ -35,6 +35,11 @@ IUP_SDK_API int iupKeyCallKeyCb(Ihandle *ih, int c);
  * \ingroup key */
 IUP_SDK_API int iupKeyCallKeyPressCb(Ihandle *ih, int code, int press);
 
+/** Calls the TEXTINPUT_CB callback with committed UTF-8 text.
+ * Returns IUP_IGNORE when the control consumed the text.
+ * \ingroup key */
+IUP_SDK_API int iupKeyCallTextInputCb(Ihandle *ih, const char* value);
+
 /** Process Tab, DEFAULTENTER and DEFAULTESC in key press events.
  * \ingroup key */
 IUP_SDK_API int iupKeyProcessNavigation(Ihandle* ih, int code, int shift);
