@@ -56,6 +56,7 @@ public:
 
     /* Enable touch events */
     setAttribute(Qt::WA_AcceptTouchEvents, true);
+    setAttribute(Qt::WA_InputMethodEnabled, true);
 
     grabGesture(Qt::PinchGesture);
     grabGesture(Qt::PanGesture);
@@ -362,6 +363,19 @@ protected:
       return;
     }
     QWidget::keyReleaseEvent(event);
+  }
+
+  void inputMethodEvent(QInputMethodEvent* event) override
+  {
+    if (ih && !event->commitString().isEmpty() && IupGetCallback(ih, "TEXTINPUT_CB"))
+    {
+      if (iupKeyCallTextInputCb(ih, event->commitString().toUtf8().constData()) == IUP_IGNORE)
+      {
+        event->accept();
+        return;
+      }
+    }
+    QWidget::inputMethodEvent(event);
   }
 
   void focusInEvent(QFocusEvent* event) override

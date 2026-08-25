@@ -403,6 +403,83 @@ IUP_DRV_API void iupwinSetStyle(Ihandle* ih, DWORD value, int set)
   SetWindowLong(ih->handle, GWL_STYLE, dwStyle);
 }
 
+/* K_ANY comes before WM_CHAR on Windows, so a key that will commit text
+   skips K_ANY when the control listens to TEXTINPUT_CB */
+static int winTextInputSkipsKey(Ihandle* ih, int wincode)
+{
+  int has_ctrl, has_alt;
+  UINT ch;
+
+  if (!IupGetCallback(ih, "TEXTINPUT_CB"))
+    return 0;
+
+  has_ctrl = GetKeyState(VK_CONTROL) & 0x8000;
+  has_alt = GetKeyState(VK_MENU) & 0x8000;
+  if (has_alt && !has_ctrl)
+    return wincode >= VK_NUMPAD0 && wincode <= VK_NUMPAD9;  /* Alt+numpad composition */
+  if (has_ctrl && !has_alt)
+    return 0;
+
+  ch = MapVirtualKeyA((UINT)wincode, MAPVK_VK_TO_CHAR);
+  return (ch & 0xFFFF) >= 0x20;
+}
+
+static int winTextInputChar(Ihandle* ih, WCHAR wc)
+{
+  char utf8[8];
+  int len;
+  unsigned int cp = wc;
+
+  if (!IupGetCallback(ih, "TEXTINPUT_CB"))
+    return 0;
+  if (cp < 0x20 || cp == 0x7F)
+    return 0;
+
+  if (cp >= 0xD800 && cp <= 0xDBFF)
+  {
+    iupAttribSetInt(ih, "_IUPWIN_HIGHSURROGATE", (int)cp);
+    return 1;
+  }
+  if (cp >= 0xDC00 && cp <= 0xDFFF)
+  {
+    unsigned int high = (unsigned int)iupAttribGetInt(ih, "_IUPWIN_HIGHSURROGATE");
+    iupAttribSet(ih, "_IUPWIN_HIGHSURROGATE", NULL);
+    if (high < 0xD800 || high > 0xDBFF)
+      return 0;
+    cp = 0x10000 + ((high - 0xD800) << 10) + (cp - 0xDC00);
+  }
+
+  if (cp < 0x80)
+  {
+    utf8[0] = (char)cp;
+    len = 1;
+  }
+  else if (cp < 0x800)
+  {
+    utf8[0] = (char)(0xC0 | (cp >> 6));
+    utf8[1] = (char)(0x80 | (cp & 0x3F));
+    len = 2;
+  }
+  else if (cp < 0x10000)
+  {
+    utf8[0] = (char)(0xE0 | (cp >> 12));
+    utf8[1] = (char)(0x80 | ((cp >> 6) & 0x3F));
+    utf8[2] = (char)(0x80 | (cp & 0x3F));
+    len = 3;
+  }
+  else
+  {
+    utf8[0] = (char)(0xF0 | (cp >> 18));
+    utf8[1] = (char)(0x80 | ((cp >> 12) & 0x3F));
+    utf8[2] = (char)(0x80 | ((cp >> 6) & 0x3F));
+    utf8[3] = (char)(0x80 | (cp & 0x3F));
+    len = 4;
+  }
+  utf8[len] = 0;
+
+  return iupKeyCallTextInputCb(ih, utf8) == IUP_IGNORE;
+}
+
 IUP_DRV_API int iupwinBaseMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT *result)
 {
   switch (msg)
@@ -493,8 +570,17 @@ IUP_DRV_API int iupwinBaseMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, L
       }
       break;
     }
+  case WM_CHAR:
+    if (winTextInputChar(ih, (WCHAR)wp))
+    {
+      *result = 0;
+      return 1;
+    }
+    break;
   case WM_KEYDOWN:
   case WM_SYSKEYDOWN:
+    if (winTextInputSkipsKey(ih, (int)wp))
+      break;
     if (!iupwinKeyEvent(ih, (int)wp, 1))
     {
       *result = 0;

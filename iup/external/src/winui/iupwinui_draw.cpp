@@ -16,6 +16,7 @@ extern "C" {
 #include "iup_draw.h"
 #include "iup_image.h"
 #include "iup_drvfont.h"
+#include "iup_str.h"
 #include "iup_class.h"
 }
 
@@ -774,9 +775,20 @@ extern "C" IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, in
   char typeface[256] = "";
   int size = 12;
   int is_bold = 0, is_italic = 0, is_underline = 0, is_strikeout = 0;
+  float font_size;
 
   if (font)
+  {
     iupGetFontInfo(font, typeface, &size, &is_bold, &is_italic, &is_underline, &is_strikeout);
+
+    const char* mapped_name = iupFontGetWinName(typeface);
+    if (mapped_name)
+      iupStrCopyN(typeface, sizeof(typeface), mapped_name);
+  }
+
+  font_size = (size < 0) ? (float)(-size) : iupWINUI_PT2PIXEL((float)size, winui_screen_dpi);
+  if (font_size <= 0)
+    return;
 
   wchar_t wTypeface[256];
   if (typeface[0])
@@ -790,7 +802,7 @@ extern "C" IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, in
     is_bold ? DWRITE_FONT_WEIGHT_BOLD : DWRITE_FONT_WEIGHT_NORMAL,
     is_italic ? DWRITE_FONT_STYLE_ITALIC : DWRITE_FONT_STYLE_NORMAL,
     DWRITE_FONT_STRETCH_NORMAL,
-    (float)size, L"", textFormat.put());
+    font_size, L"", textFormat.put());
 
   if (!textFormat)
     return;

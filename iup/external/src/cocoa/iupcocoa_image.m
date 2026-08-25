@@ -42,6 +42,51 @@ IUP_DRV_API int iupcocoaImageCalculateBytesPerRow(int width, int bytes_per_pixel
   return CalculateBytesPerRow(width, bytes_per_pixel);
 }
 
+#ifdef GNUSTEP
+/* Opal's NSBitmapImageRep has no -CGImage, so read the interleaved samples and premultiply the
+   way CGContextDrawImage into a premultiplied context would. */
+static int cocoaImageBitmapToRGBA(NSBitmapImageRep* bitmap, unsigned char* rgba, int w, int h)
+{
+  const unsigned char* data = [bitmap bitmapData];
+  NSInteger src_stride = [bitmap bytesPerRow];
+  NSInteger samples = [bitmap samplesPerPixel];
+  int straight = ([bitmap bitmapFormat] & NSBitmapFormatAlphaNonpremultiplied) != 0;
+  int x, y;
+
+  if (!data || [bitmap isPlanar] || samples < 3 || [bitmap bitsPerPixel] != samples * 8)
+    return 0;
+
+  for (y = 0; y < h; y++)
+  {
+    const unsigned char* src_line = data + (size_t)y * src_stride;
+    unsigned char* dest_line = rgba + (size_t)y * w * 4;
+
+    for (x = 0; x < w; x++)
+    {
+      const unsigned char* src = src_line + x * samples;
+      unsigned char* dest = dest_line + x * 4;
+      unsigned int a = (samples > 3) ? src[3] : 255;
+
+      if (straight && a != 255)
+      {
+        dest[0] = (unsigned char)((src[0] * a) / 255);
+        dest[1] = (unsigned char)((src[1] * a) / 255);
+        dest[2] = (unsigned char)((src[2] * a) / 255);
+      }
+      else
+      {
+        dest[0] = src[0];
+        dest[1] = src[1];
+        dest[2] = src[2];
+      }
+      dest[3] = (unsigned char)a;
+    }
+  }
+
+  return 1;
+}
+#endif
+
 /* The output format is packed RGB(A), top-down, matching the IUP image data format. */
 IUP_SDK_API void iupdrvImageGetData(void* handle, unsigned char* out_img_data)
 {
@@ -82,15 +127,25 @@ IUP_SDK_API void iupdrvImageGetData(void* handle, unsigned char* out_img_data)
   if (channels < 3)
     return;
 
-  CGImageRef cg_image = [bitmap CGImage];
-  if (!cg_image)
-    return;
-
   /* Normalize any source layout to packed RGBA before packing to dest. */
   size_t rgba_stride = (size_t)w * 4;
   unsigned char* rgba = (unsigned char*)calloc(rgba_stride * h, 1);
   if (!rgba)
     return;
+
+#ifdef GNUSTEP
+  if (!cocoaImageBitmapToRGBA(bitmap, rgba, (int)w, (int)h))
+  {
+    free(rgba);
+    return;
+  }
+#else
+  CGImageRef cg_image = [bitmap CGImage];
+  if (!cg_image)
+  {
+    free(rgba);
+    return;
+  }
 
   CGColorSpaceRef cs = CGColorSpaceCreateDeviceRGB();
   CGContextRef ctx = CGBitmapContextCreate(rgba, w, h, 8, rgba_stride, cs,
@@ -103,6 +158,7 @@ IUP_SDK_API void iupdrvImageGetData(void* handle, unsigned char* out_img_data)
   }
   CGContextDrawImage(ctx, CGRectMake(0, 0, w, h), cg_image);
   CGContextRelease(ctx);
+#endif
 
   for (int y = 0; y < h; y++)
   {

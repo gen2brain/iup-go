@@ -186,10 +186,31 @@ static int iupObjectIsNativeContainer(Ihandle* ih)
     return 0;
 }
 
+/* a commit consumed by TEXTINPUT_CB suppresses the K_ANY for that key */
+static int fltkKeyTextInput(Ihandle *ih)
+{
+  if (!IupGetCallback(ih, "TEXTINPUT_CB"))
+    return 0;
+  if (Fl::event_state() & (FL_CTRL | FL_ALT | FL_META))
+    return 0;
+  const char* text = Fl::event_text();
+  int len = Fl::event_length();
+  if (len <= 0 || !text || !text[0])
+    return 0;
+  if (len == 1 && ((unsigned char)text[0] < 0x20 || (unsigned char)text[0] == 0x7F))
+    return 0;
+  return iupKeyCallTextInputCb(ih, text) == IUP_IGNORE;
+}
+
 IUP_DRV_API int iupfltkKeyPressEvent(Fl_Widget *widget, Ihandle *ih)
 {
   int result;
-  int code = iupfltkKeyDecode();
+  int code;
+
+  if (fltkKeyTextInput(ih))
+    return 1;
+
+  code = iupfltkKeyDecode();
   if (code == 0)
     return 0;
 

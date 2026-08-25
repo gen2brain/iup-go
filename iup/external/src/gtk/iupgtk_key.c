@@ -15,6 +15,7 @@
 #include "iup_object.h"
 #include "iup_key.h"
 #include "iup_str.h"
+#include "iup_attrib.h"
 
 #include "iup_drv.h"
 #include "iupgtk_drv.h"
@@ -187,10 +188,50 @@ static int iupObjectIsNativeContainer(Ihandle* ih)
     return 0;
 }
 
+static void gtkKeyImCommit(GtkIMContext *context, const char *str, Ihandle *ih)
+{
+  (void)context;
+  if (iupKeyCallTextInputCb(ih, str) == IUP_IGNORE)
+    iupAttribSet(ih, "_IUPGTK_IM_CONSUMED", "1");
+}
+
+static GtkIMContext* gtkKeyGetImContext(GtkWidget *widget, Ihandle *ih)
+{
+  GtkIMContext* context = (GtkIMContext*)g_object_get_data(G_OBJECT(widget), "_IUP_IM_CONTEXT");
+  if (!context)
+  {
+    context = gtk_im_multicontext_new();
+    gtk_im_context_set_client_window(context, iupgtkGetWindow(widget));
+    g_signal_connect(context, "commit", G_CALLBACK(gtkKeyImCommit), ih);
+    g_object_set_data_full(G_OBJECT(widget), "_IUP_IM_CONTEXT", context, g_object_unref);
+    gtk_im_context_focus_in(context);
+  }
+  return context;
+}
+
+/* a commit consumed by TEXTINPUT_CB suppresses the K_ANY for that key */
+static gboolean gtkKeyImFilter(GtkWidget *widget, GdkEventKey *evt, Ihandle *ih)
+{
+  if (!IupGetCallback(ih, "TEXTINPUT_CB"))
+    return FALSE;
+  gtk_im_context_filter_keypress(gtkKeyGetImContext(widget, ih), evt);
+  if (iupAttribGet(ih, "_IUPGTK_IM_CONSUMED"))
+  {
+    iupAttribSet(ih, "_IUPGTK_IM_CONSUMED", NULL);
+    return TRUE;
+  }
+  return FALSE;
+}
+
 IUP_DRV_API gboolean iupgtkKeyPressEvent(GtkWidget *widget, GdkEventKey *evt, Ihandle *ih)
 {
   int result;
-  int code = iupgtkKeyDecode(evt);
+  int code;
+
+  if (gtkKeyImFilter(widget, evt, ih))
+    return TRUE;
+
+  code = iupgtkKeyDecode(evt);
   if (code == 0)
     return FALSE;
 
@@ -256,7 +297,12 @@ IUP_DRV_API gboolean iupgtkKeyReleaseEvent(GtkWidget *widget, GdkEventKey *evt, 
 {
   /* this is called only for canvas */
   int result;
-  int code = iupgtkKeyDecode(evt);
+  int code;
+
+  if (gtkKeyImFilter(widget, evt, ih))
+    return TRUE;
+
+  code = iupgtkKeyDecode(evt);
   if (code == 0)
     return FALSE;
 

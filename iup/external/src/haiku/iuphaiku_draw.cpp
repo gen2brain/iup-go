@@ -19,6 +19,7 @@
 #include <Region.h>
 #include <View.h>
 
+
 extern "C" {
 #include "iup.h"
 #include "iup_drvdraw.h"
@@ -88,12 +89,13 @@ extern "C" IUP_SDK_API void iupdrvDrawUpdateSize(IdrawCanvas* dc)
   if (!dc) return;
   int w = dc->ih->currentwidth  > 0 ? dc->ih->currentwidth  : 1;
   int h = dc->ih->currentheight > 0 ? dc->ih->currentheight : 1;
-  if (iupAttribGet(dc->ih, "_IUPHAIKU_CANVAS_INNER"))
+
+  /* scrollbars take part of the element, the drawing view knows the rest */
+  if (BView* view = (BView*)dc->ih->handle)
   {
-    int iw = iupAttribGetInt(dc->ih, "_IUPHAIKU_CANVAS_INNER_W");
-    int ih_ = iupAttribGetInt(dc->ih, "_IUPHAIKU_CANVAS_INNER_H");
-    if (iw > 0) w = iw;
-    if (ih_ > 0) h = ih_;
+    BRect bounds = view->Bounds();
+    if (bounds.IntegerWidth() > 0)  w = bounds.IntegerWidth() + 1;
+    if (bounds.IntegerHeight() > 0) h = bounds.IntegerHeight() + 1;
   }
   if (dc->bm && dc->w == w && dc->h == h) return;
 
@@ -125,8 +127,7 @@ extern "C" IUP_SDK_API void iupdrvDrawFlush(IdrawCanvas* dc)
   dc->view->Sync();
   dc->bm->Unlock();
 
-  BView* canvas = (BView*)iupAttribGet(dc->ih, "_IUPHAIKU_CANVAS_INNER");
-  if (!canvas) canvas = (BView*)dc->ih->handle;
+  BView* canvas = (BView*)dc->ih->handle;
   if (!canvas) return;
 
   canvas->DrawBitmap(dc->bm, BPoint(0, 0));

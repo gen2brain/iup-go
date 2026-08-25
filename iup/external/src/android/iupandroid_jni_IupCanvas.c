@@ -117,6 +117,63 @@ JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupCanvasHelper_dispatchLe
 }
 
 /* canvas drives its own drag when BUTTON_CB+MOTION_CB are set; Java pauses ancestor scroll then */
+JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupCanvasHelper_dispatchTextInput(JNIEnv* jni_env, jclass cls, jlong ihandle_ptr, jstring jtext)
+{
+  Ihandle* ih = (Ihandle*)(intptr_t)ihandle_ptr;
+  const char* text;
+  (void)cls;
+
+  if (!ih || !iupObjectCheck(ih) || !jtext)
+    return;
+
+  text = (*jni_env)->GetStringUTFChars(jni_env, jtext, NULL);
+  if (text)
+  {
+    iupKeyCallTextInputCb(ih, text);
+    (*jni_env)->ReleaseStringUTFChars(jni_env, jtext, text);
+  }
+}
+
+JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupCanvasHelper_dispatchFocus(JNIEnv* jni_env, jclass cls, jlong ihandle_ptr, jboolean has_focus)
+{
+  Ihandle* ih = (Ihandle*)(intptr_t)ihandle_ptr;
+  (void)jni_env;
+  (void)cls;
+
+  iupandroidFocusInOutEvent(ih, has_focus ? 1 : 0);
+}
+
+JNIEXPORT jboolean JNICALL Java_io_github_gen2brain_iupgo_IupCanvasHelper_wantsTextInput(JNIEnv* jni_env, jclass cls, jlong ihandle_ptr)
+{
+  Ihandle* ih = (Ihandle*)(intptr_t)ihandle_ptr;
+  (void)jni_env;
+  (void)cls;
+
+  if (!ih || !iupObjectCheck(ih))
+    return JNI_FALSE;
+  return IupGetCallback(ih, "TEXTINPUT_CB") ? JNI_TRUE : JNI_FALSE;
+}
+
+JNIEXPORT jboolean JNICALL Java_io_github_gen2brain_iupgo_IupCanvasHelper_dispatchKey(JNIEnv* jni_env, jclass cls, jlong ihandle_ptr, jint keycode, jint unicode, jint meta_state)
+{
+  Ihandle* ih = (Ihandle*)(intptr_t)ihandle_ptr;
+  int code;
+  (void)jni_env;
+  (void)cls;
+  (void)unicode;
+
+  if (!ih || !iupObjectCheck(ih))
+    return JNI_FALSE;
+
+  code = iupandroidKeyDecode(keycode, meta_state);
+  if (!code)
+    return JNI_FALSE;
+
+  if (iupKeyCallKeyCb(ih, code) == IUP_IGNORE)
+    return JNI_TRUE;
+  return JNI_FALSE;
+}
+
 JNIEXPORT jboolean JNICALL Java_io_github_gen2brain_iupgo_IupCanvasHelper_isDragInteractive(JNIEnv* jni_env, jclass cls, jlong ihandle_ptr)
 {
   (void)jni_env; (void)cls;

@@ -97,6 +97,8 @@ struct IDWriteFactory;
 extern IDWriteFactory* winui_dwrite_factory;
 extern float winui_screen_dpi;
 
+#define iupWINUI_PT2PIXEL(_pt, _dpi) ((_pt) * (_dpi) / 72.0f)
+
 /****************************************************************************
  * Handle Type Check
  *
@@ -536,6 +538,7 @@ struct IupWinUICanvasAux
   winrt::event_token pointerExitedToken;
   winrt::event_token keyDownToken;
   winrt::event_token keyUpToken;
+  winrt::event_token charReceivedToken;
   winrt::event_token gotFocusToken;
   winrt::event_token lostFocusToken;
   winrt::event_token sizeChangedToken;

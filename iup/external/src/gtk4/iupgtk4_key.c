@@ -13,6 +13,7 @@
 
 #include "iup_object.h"
 #include "iup_key.h"
+#include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_drv.h"
 
@@ -183,14 +184,57 @@ static int iupObjectIsNativeContainer(Ihandle* ih)
     return 0;
 }
 
+static void gtk4KeyImCommit(GtkIMContext *context, const char *str, Ihandle *ih)
+{
+  (void)context;
+  if (iupKeyCallTextInputCb(ih, str) == IUP_IGNORE)
+    iupAttribSet(ih, "_IUPGTK4_IM_CONSUMED", "1");
+}
+
+/* a commit consumed by TEXTINPUT_CB suppresses the K_ANY for that key */
+static gboolean gtk4KeyImFilter(GtkEventControllerKey *controller, Ihandle *ih)
+{
+  GtkWidget *widget;
+  GtkIMContext *context;
+  GdkEvent *event;
+
+  if (!IupGetCallback(ih, "TEXTINPUT_CB"))
+    return FALSE;
+
+  widget = gtk_event_controller_get_widget(GTK_EVENT_CONTROLLER(controller));
+  context = (GtkIMContext*)g_object_get_data(G_OBJECT(widget), "_IUP_IM_CONTEXT");
+  if (!context)
+  {
+    context = gtk_im_multicontext_new();
+    gtk_im_context_set_client_widget(context, widget);
+    g_signal_connect(context, "commit", G_CALLBACK(gtk4KeyImCommit), ih);
+    g_object_set_data_full(G_OBJECT(widget), "_IUP_IM_CONTEXT", context, g_object_unref);
+    gtk_im_context_focus_in(context);
+  }
+
+  event = gtk_event_controller_get_current_event(GTK_EVENT_CONTROLLER(controller));
+  if (event)
+    gtk_im_context_filter_keypress(context, event);
+  if (iupAttribGet(ih, "_IUPGTK4_IM_CONSUMED"))
+  {
+    iupAttribSet(ih, "_IUPGTK4_IM_CONSUMED", NULL);
+    return TRUE;
+  }
+  return FALSE;
+}
+
 IUP_DRV_API gboolean iupgtk4KeyPressEvent(GtkEventControllerKey *controller, guint keyval, guint keycode, GdkModifierType state, Ihandle *ih)
 {
   int result;
-  int code = iupgtk4KeyDecode(keyval, state);
+  int code;
   GtkWidget *widget;
 
   (void)keycode;
 
+  if (gtk4KeyImFilter(controller, ih))
+    return TRUE;
+
+  code = iupgtk4KeyDecode(keyval, state);
   if (code == 0)
     return FALSE;
 
@@ -254,10 +298,14 @@ IUP_DRV_API gboolean iupgtk4KeyPressEvent(GtkEventControllerKey *controller, gui
 IUP_DRV_API gboolean iupgtk4KeyReleaseEvent(GtkEventControllerKey *controller, guint keyval, guint keycode, GdkModifierType state, Ihandle *ih)
 {
   int result;
-  int code = iupgtk4KeyDecode(keyval, state);
+  int code;
 
-  (void)controller;
   (void)keycode;
+
+  if (gtk4KeyImFilter(controller, ih))
+    return TRUE;
+
+  code = iupgtk4KeyDecode(keyval, state);
 
   if (code == 0)
     return FALSE;

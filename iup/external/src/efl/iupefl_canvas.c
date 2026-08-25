@@ -20,183 +20,172 @@
 #include "iupefl_drv.h"
 
 
-static void eflCanvasScrollChangedCallback(void* data, const Efl_Event* ev)
+static void eflCanvasScrollNotify(Ihandle* ih, int op)
 {
-  Ihandle* ih = (Ihandle*)data;
-  Eina_Position2D pos;
-  IFniff scroll_cb;
-  double old_posx, old_posy;
-  int op;
-
-  pos = efl_ui_scrollable_content_pos_get(ev->object);
-
-  old_posx = ih->data->posx;
-  old_posy = ih->data->posy;
-  ih->data->posx = (double)pos.x;
-  ih->data->posy = (double)pos.y;
-
-  if (old_posx == ih->data->posx && old_posy == ih->data->posy)
-    return;
-
-  if (old_posx != ih->data->posx)
-    op = IUP_SBPOSH;
-  else
-    op = IUP_SBPOSV;
-
-  scroll_cb = (IFniff)IupGetCallback(ih, "SCROLL_CB");
+  IFniff scroll_cb = (IFniff)IupGetCallback(ih, "SCROLL_CB");
   if (scroll_cb)
     scroll_cb(ih, op, (float)ih->data->posx, (float)ih->data->posy);
+  else if (IupGetCallback(ih, "ACTION"))
+    iupdrvRedrawNow(ih);
+}
+
+/* Evas has no expose event, so a burst of update requests collapses into one repaint here */
+static void eflCanvasRenderPreCallback(void* data, Evas* e, void* event_info)
+{
+  Ihandle* ih = (Ihandle*)data;
+  IFn cb;
+
+  (void)e;
+  (void)event_info;
+
+  if (!iupAttribGet(ih, "_IUP_EFL_REDRAW_PENDING"))
+    return;
+
+  iupAttribSet(ih, "_IUP_EFL_REDRAW_PENDING", NULL);
+
+  if (!ih->handle || !iupeflCanvasHasSize(ih))
+    return;
+
+  cb = (IFn)IupGetCallback(ih, "ACTION");
+  if (cb)
+    cb(ih);
+}
+
+IUP_DRV_API void iupeflRedrawSetPending(Ihandle* ih)
+{
+  iupAttribSet(ih, "_IUP_EFL_REDRAW_PENDING", "1");
+}
+
+IUP_DRV_API void iupeflRedrawClearPending(Ihandle* ih)
+{
+  iupAttribSet(ih, "_IUP_EFL_REDRAW_PENDING", NULL);
+}
+
+static void eflCanvasSliderChangedCallback(void* data, const Efl_Event* ev)
+{
+  Ihandle* ih = (Ihandle*)data;
+  Eo* vsb = (Eo*)iupAttribGet(ih, "_IUP_EFL_VSB");
+  double value = efl_ui_range_value_get(ev->object);
+
+  if (ev->object == vsb)
+  {
+    if (ih->data->posy == value)
+      return;
+    ih->data->posy = value;
+    eflCanvasScrollNotify(ih, IUP_SBPOSV);
+  }
   else
   {
-    IFn cb = (IFn)IupGetCallback(ih, "ACTION");
-    if (cb)
-      iupdrvRedrawNow(ih);
+    if (ih->data->posx == value)
+      return;
+    ih->data->posx = value;
+    eflCanvasScrollNotify(ih, IUP_SBPOSH);
   }
 }
 
-static void eflCanvasUpdateScrollContentSize(Ihandle* ih)
+/* the range is in application units, the drawing surface is always the visible area */
+static void eflCanvasUpdateScrollBar(Ihandle* ih, int horiz)
 {
-  Eo* scroller = (Eo*)iupAttribGet(ih, "_IUP_EFL_SCROLLER");
-  Eo* vg = iupeflGetWidget(ih);
-  double xmin, xmax, ymin, ymax;
-  int content_w, content_h;
+  Eo* sb = (Eo*)iupAttribGet(ih, horiz ? "_IUP_EFL_HSB" : "_IUP_EFL_VSB");
+  double lo, hi, page, pos;
 
-  if (!scroller || !vg)
+  if (!sb)
     return;
 
-  xmin = iupAttribGetDouble(ih, "XMIN");
-  xmax = iupAttribGetDouble(ih, "XMAX");
-  ymin = iupAttribGetDouble(ih, "YMIN");
-  ymax = iupAttribGetDouble(ih, "YMAX");
+  lo = iupAttribGetDouble(ih, horiz ? "XMIN" : "YMIN");
+  hi = iupAttribGetDouble(ih, horiz ? "XMAX" : "YMAX");
+  page = iupAttribGetDouble(ih, horiz ? "DX" : "DY");
+  pos = horiz ? ih->data->posx : ih->data->posy;
 
-  content_w = (int)(xmax - xmin);
-  content_h = (int)(ymax - ymin);
+  if (page >= (hi - lo) || (hi - lo) <= 0)
+  {
+    /* the slider rejects an empty range, so keep one unit and take the thumb out of use */
+    efl_ui_range_limits_set(sb, lo, lo + 1);
+    efl_ui_range_value_set(sb, lo);
+    efl_ui_widget_disabled_set(sb, EINA_TRUE);
+    iupeflSetVisible(sb, !iupAttribGetBoolean(ih, horiz ? "XAUTOHIDE" : "YAUTOHIDE"));
+    return;
+  }
 
-  if (content_w < 1) content_w = 1;
-  if (content_h < 1) content_h = 1;
+  efl_ui_widget_disabled_set(sb, EINA_FALSE);
+  iupeflSetVisible(sb, EINA_TRUE);
 
-  efl_gfx_hint_size_min_set(vg, EINA_SIZE2D(content_w, content_h));
-  efl_gfx_entity_size_set(vg, EINA_SIZE2D(content_w, content_h));
+  if (pos < lo) pos = lo;
+  if (pos > hi - page) pos = hi - page;
+
+  {
+    double step = iupAttribGetDouble(ih, horiz ? "LINEX" : "LINEY");
+    efl_ui_range_limits_set(sb, lo, hi - page);
+    if (step > 0)
+      efl_ui_range_step_set(sb, step);
+    efl_ui_range_value_set(sb, pos);
+  }
 }
 
 static int eflCanvasSetDXAttrib(Ihandle* ih, const char* value)
 {
-  Eo* scroller = (Eo*)iupAttribGet(ih, "_IUP_EFL_SCROLLER");
-  double xmin, xmax, dx;
-
-  if (!scroller)
-    return 1;
-
-  xmin = iupAttribGetDouble(ih, "XMIN");
-  xmax = iupAttribGetDouble(ih, "XMAX");
+  double dx;
 
   if (!iupStrToDoubleDef(value, &dx, 0.1))
     return 1;
 
-  eflCanvasUpdateScrollContentSize(ih);
-
-  if (iupAttribGetBoolean(ih, "XAUTOHIDE"))
-  {
-    Efl_Ui_Scrollbar_Mode h_mode, v_mode;
-    efl_ui_scrollbar_bar_mode_get(scroller, &h_mode, &v_mode);
-
-    if (dx >= (xmax - xmin))
-      h_mode = EFL_UI_SCROLLBAR_MODE_OFF;
-    else if (ih->data->sb & IUP_SB_HORIZ)
-      h_mode = EFL_UI_SCROLLBAR_MODE_AUTO;
-
-    efl_ui_scrollbar_bar_mode_set(scroller, h_mode, v_mode);
-  }
-
+  iupAttribSetDouble(ih, "DX", dx);
+  eflCanvasUpdateScrollBar(ih, 1);
   return 1;
 }
 
 static int eflCanvasSetDYAttrib(Ihandle* ih, const char* value)
 {
-  Eo* scroller = (Eo*)iupAttribGet(ih, "_IUP_EFL_SCROLLER");
-  double ymin, ymax, dy;
-
-  if (!scroller)
-    return 1;
-
-  ymin = iupAttribGetDouble(ih, "YMIN");
-  ymax = iupAttribGetDouble(ih, "YMAX");
+  double dy;
 
   if (!iupStrToDoubleDef(value, &dy, 0.1))
     return 1;
 
-  eflCanvasUpdateScrollContentSize(ih);
-
-  if (iupAttribGetBoolean(ih, "YAUTOHIDE"))
-  {
-    Efl_Ui_Scrollbar_Mode h_mode, v_mode;
-    efl_ui_scrollbar_bar_mode_get(scroller, &h_mode, &v_mode);
-
-    if (dy >= (ymax - ymin))
-      v_mode = EFL_UI_SCROLLBAR_MODE_OFF;
-    else if (ih->data->sb & IUP_SB_VERT)
-      v_mode = EFL_UI_SCROLLBAR_MODE_AUTO;
-
-    efl_ui_scrollbar_bar_mode_set(scroller, h_mode, v_mode);
-  }
-
+  iupAttribSetDouble(ih, "DY", dy);
+  eflCanvasUpdateScrollBar(ih, 0);
   return 1;
 }
 
 static int eflCanvasSetPosXAttrib(Ihandle* ih, const char* value)
 {
-  Eo* scroller = (Eo*)iupAttribGet(ih, "_IUP_EFL_SCROLLER");
-  double posx, xmin, xmax, dx;
+  double pos, lo, hi, page;
 
   if (!value)
-    posx = 0;
+    pos = 0;
   else
-    iupStrToDouble(value, &posx);
+    iupStrToDouble(value, &pos);
 
-  xmin = iupAttribGetDouble(ih, "XMIN");
-  xmax = iupAttribGetDouble(ih, "XMAX");
-  dx = iupAttribGetDouble(ih, "DX");
+  lo = iupAttribGetDouble(ih, "XMIN");
+  hi = iupAttribGetDouble(ih, "XMAX");
+  page = iupAttribGetDouble(ih, "DX");
 
-  if (posx < xmin) posx = xmin;
-  if (posx > (xmax - dx)) posx = xmax - dx;
+  if (pos < lo) pos = lo;
+  if (pos > (hi - page)) pos = hi - page;
 
-  ih->data->posx = posx;
-
-  if (scroller)
-  {
-    Eina_Position2D pos = efl_ui_scrollable_content_pos_get(scroller);
-    pos.x = (int)posx;
-    efl_ui_scrollable_content_pos_set(scroller, pos);
-  }
+  ih->data->posx = pos;
+  eflCanvasUpdateScrollBar(ih, 1);
 
   return 1;
 }
 
 static int eflCanvasSetPosYAttrib(Ihandle* ih, const char* value)
 {
-  Eo* scroller = (Eo*)iupAttribGet(ih, "_IUP_EFL_SCROLLER");
-  double posy, ymin, ymax, dy;
+  double pos, lo, hi, page;
 
   if (!value)
-    posy = 0;
+    pos = 0;
   else
-    iupStrToDouble(value, &posy);
+    iupStrToDouble(value, &pos);
 
-  ymin = iupAttribGetDouble(ih, "YMIN");
-  ymax = iupAttribGetDouble(ih, "YMAX");
-  dy = iupAttribGetDouble(ih, "DY");
+  lo = iupAttribGetDouble(ih, "YMIN");
+  hi = iupAttribGetDouble(ih, "YMAX");
+  page = iupAttribGetDouble(ih, "DY");
 
-  if (posy < ymin) posy = ymin;
-  if (posy > (ymax - dy)) posy = ymax - dy;
+  if (pos < lo) pos = lo;
+  if (pos > (hi - page)) pos = hi - page;
 
-  ih->data->posy = posy;
-
-  if (scroller)
-  {
-    Eina_Position2D pos = efl_ui_scrollable_content_pos_get(scroller);
-    pos.y = (int)posy;
-    efl_ui_scrollable_content_pos_set(scroller, pos);
-  }
+  ih->data->posy = pos;
+  eflCanvasUpdateScrollBar(ih, 0);
 
   return 1;
 }
@@ -208,16 +197,12 @@ static int eflCanvasSetPosYAttrib(Ihandle* ih, const char* value)
 static void eflCanvasResizeCallback(void* data, const Efl_Event* ev)
 {
   Ihandle* ih = (Ihandle*)data;
-  Eo* scroller = (Eo*)iupAttribGet(ih, "_IUP_EFL_SCROLLER");
   Eina_Size2D size;
   IFnii cb;
 
   (void)ev;
 
-  if (scroller)
-    size = efl_gfx_entity_size_get(scroller);
-  else
-    size = efl_gfx_entity_size_get(iupeflGetWidget(ih));
+  size = efl_gfx_entity_size_get(iupeflGetWidget(ih));
 
   cb = (IFnii)IupGetCallback(ih, "RESIZE_CB");
   if (cb)
@@ -227,15 +212,11 @@ static void eflCanvasResizeCallback(void* data, const Efl_Event* ev)
 static void eflCanvasActionCallback(void* data, const Efl_Event* ev)
 {
   Ihandle* ih = (Ihandle*)data;
-  Eo* scroller = (Eo*)iupAttribGet(ih, "_IUP_EFL_SCROLLER");
   Eina_Size2D size;
 
   (void)ev;
 
-  if (scroller)
-    size = efl_gfx_entity_size_get(scroller);
-  else
-    size = efl_gfx_entity_size_get(iupeflGetWidget(ih));
+  size = efl_gfx_entity_size_get(iupeflGetWidget(ih));
 
   if (size.w <= 0 || size.h <= 0)
     return;
@@ -300,6 +281,9 @@ static void eflCanvasButtonCallback(void* data, const Efl_Event* ev)
   canvas_pos = efl_gfx_entity_position_get(ev->object);
   button = efl_input_pointer_button_get(pointer);
   pressed = (efl_input_pointer_action_get(pointer) == EFL_POINTER_ACTION_DOWN) ? 1 : 0;
+
+  if (pressed && iupAttribGetBoolean(ih, "CANFOCUS"))
+    efl_canvas_object_key_focus_set(ev->object, EINA_TRUE);
 
   cb = (IFniiiis)IupGetCallback(ih, "BUTTON_CB");
   if (cb)
@@ -368,9 +352,9 @@ static void eflCanvasWheelCallback(void* data, const Efl_Event* ev)
 
 static Eo* eflCanvasGetTooltipWidget(Ihandle* ih)
 {
-  Eo* scroller = (Eo*)iupAttribGet(ih, "_IUP_EFL_SCROLLER");
-  if (scroller)
-    return scroller;
+  Eo* wrap = (Eo*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
+  if (wrap)
+    return wrap;
 
   Eo* overlay = (Eo*)iupAttribGet(ih, "_IUP_EFL_TOOLTIP_OVERLAY");
   if (overlay)
@@ -563,20 +547,12 @@ static char* eflCanvasGetDrawableAttrib(Ihandle* ih)
 
 static char* eflCanvasGetDrawSizeAttrib(Ihandle* ih)
 {
-  Eo* scroller = (Eo*)iupAttribGet(ih, "_IUP_EFL_SCROLLER");
+  Eo* vg = iupeflGetWidget(ih);
   Eina_Size2D size;
 
-  if (scroller)
-  {
-    size = efl_gfx_entity_size_get(scroller);
-  }
-  else
-  {
-    Eo* vg = iupeflGetWidget(ih);
-    if (!vg)
-      return NULL;
-    size = efl_gfx_entity_size_get(vg);
-  }
+  if (!vg)
+    return NULL;
+  size = efl_gfx_entity_size_get(vg);
 
   return iupStrReturnIntInt(size.w, size.h, 'x');
 }
@@ -589,7 +565,8 @@ static int eflCanvasMapMethod(Ihandle* ih)
 {
   Eo* parent;
   Eo* vg;
-  Eo* scroller = NULL;
+  Eo* wrap = NULL;
+  Eo* row = NULL;
   Eo* vg_parent;
   Efl_VG* root;
 
@@ -599,30 +576,29 @@ static int eflCanvasMapMethod(Ihandle* ih)
 
   ih->data->sb = iupBaseGetScrollbar(ih);
 
+  /* the range is in application units, so IUP owns the scrollbars and the surface is the viewport */
   if (ih->data->sb)
   {
-    Efl_Ui_Scrollbar_Mode h_mode = EFL_UI_SCROLLBAR_MODE_OFF;
-    Efl_Ui_Scrollbar_Mode v_mode = EFL_UI_SCROLLBAR_MODE_OFF;
-
-    scroller = efl_add(EFL_UI_SCROLLER_CLASS, parent,
-      efl_gfx_entity_visible_set(efl_added, EINA_TRUE));
-    if (!scroller)
+    wrap = efl_add(EFL_UI_BOX_CLASS, parent, efl_gfx_entity_visible_set(efl_added, EINA_TRUE));
+    if (!wrap)
       return IUP_ERROR;
+    efl_ui_layout_orientation_set(wrap, EFL_UI_LAYOUT_ORIENTATION_VERTICAL);
 
-    if (ih->data->sb & IUP_SB_HORIZ)
-      h_mode = EFL_UI_SCROLLBAR_MODE_AUTO;
-    if (ih->data->sb & IUP_SB_VERT)
-      v_mode = EFL_UI_SCROLLBAR_MODE_AUTO;
+    row = efl_add(EFL_UI_BOX_CLASS, wrap, efl_gfx_entity_visible_set(efl_added, EINA_TRUE));
+    if (!row)
+    {
+      efl_del(wrap);
+      return IUP_ERROR;
+    }
+    efl_ui_layout_orientation_set(row, EFL_UI_LAYOUT_ORIENTATION_HORIZONTAL);
+    efl_gfx_hint_weight_set(row, 1.0, 1.0);
+    efl_pack(wrap, row);
 
-    efl_ui_scrollbar_bar_mode_set(scroller, h_mode, v_mode);
-
-    iupAttribSet(ih, "_IUP_EFL_SCROLLER", (char*)scroller);
-    iupAttribSet(ih, "_IUP_EXTRAPARENT", (char*)scroller);
-
-    efl_event_callback_add(scroller, EFL_UI_EVENT_SCROLL_CHANGED, eflCanvasScrollChangedCallback, ih);
+    iupAttribSet(ih, "_IUP_EXTRAPARENT", (char*)wrap);
+    iupAttribSet(ih, "_IUP_EFL_CANVAS_ROW", (char*)row);
   }
 
-  vg_parent = scroller ? scroller : parent;
+  vg_parent = row ? row : parent;
 
   {
     Evas* evas = evas_object_evas_get(vg_parent);
@@ -632,8 +608,8 @@ static int eflCanvasMapMethod(Ihandle* ih)
 
   if (!vg)
   {
-    if (scroller)
-      efl_del(scroller);
+    if (wrap)
+      efl_del(wrap);
     return IUP_ERROR;
   }
 
@@ -642,32 +618,47 @@ static int eflCanvasMapMethod(Ihandle* ih)
 
   ih->handle = (InativeHandle*)vg;
 
-  if (scroller)
+  evas_event_callback_add(evas_object_evas_get(vg), EVAS_CALLBACK_RENDER_PRE, eflCanvasRenderPreCallback, ih);
+
+  if (row)
   {
-    if (iupStrEqual(ih->iclass->name, "scrollbox") || iupStrEqual(ih->iclass->name, "flatscrollbox"))
+    efl_gfx_hint_weight_set(vg, 1.0, 1.0);
+    efl_pack(row, vg);
+
+    if (ih->data->sb & IUP_SB_VERT)
     {
-      Eo* canvas = evas_object_evas_get(scroller);
-      Eo* clip = efl_add(EFL_CANVAS_RECTANGLE_CLASS, canvas);
-      iupeflSetVisible(clip, EINA_TRUE);
-      iupAttribSet(ih, "_IUP_EFL_CANVAS_CLIP", (char*)clip);
+      Eo* vsb = efl_add(EFL_UI_SLIDER_CLASS, row, efl_gfx_entity_visible_set(efl_added, EINA_TRUE));
+      efl_ui_layout_orientation_set(vsb, EFL_UI_LAYOUT_ORIENTATION_VERTICAL);
+      efl_gfx_hint_weight_set(vsb, 0.0, 1.0);
+      efl_event_callback_add(vsb, EFL_UI_RANGE_EVENT_CHANGED, eflCanvasSliderChangedCallback, ih);
+      efl_pack(row, vsb);
+      iupAttribSet(ih, "_IUP_EFL_VSB", (char*)vsb);
     }
 
-    efl_content_set(scroller, vg);
+    if (ih->data->sb & IUP_SB_HORIZ)
+    {
+      Eo* hsb = efl_add(EFL_UI_SLIDER_CLASS, wrap, efl_gfx_entity_visible_set(efl_added, EINA_TRUE));
+      efl_ui_layout_orientation_set(hsb, EFL_UI_LAYOUT_ORIENTATION_HORIZONTAL);
+      efl_gfx_hint_weight_set(hsb, 1.0, 0.0);
+      efl_event_callback_add(hsb, EFL_UI_RANGE_EVENT_CHANGED, eflCanvasSliderChangedCallback, ih);
+      efl_pack(wrap, hsb);
+      iupAttribSet(ih, "_IUP_EFL_HSB", (char*)hsb);
+    }
   }
   else if (iupAttribGetBoolean(ih, "DROPTARGET"))
   {
     /* a raw vg has no smart parent so Efl.Ui.Dnd cannot reach it; wrap it in an Efl.Ui widget */
-    Eo* wrap = efl_add(EFL_UI_SCROLLER_CLASS, parent, efl_gfx_entity_visible_set(efl_added, EINA_TRUE));
-    efl_ui_scrollbar_bar_mode_set(wrap, EFL_UI_SCROLLBAR_MODE_OFF, EFL_UI_SCROLLBAR_MODE_OFF);
-    efl_content_set(wrap, vg);
-    iupAttribSet(ih, "_IUP_EXTRAPARENT", (char*)wrap);
+    Eo* dnd_wrap = efl_add(EFL_UI_SCROLLER_CLASS, parent, efl_gfx_entity_visible_set(efl_added, EINA_TRUE));
+    efl_ui_scrollbar_bar_mode_set(dnd_wrap, EFL_UI_SCROLLBAR_MODE_OFF, EFL_UI_SCROLLBAR_MODE_OFF);
+    efl_content_set(dnd_wrap, vg);
+    iupAttribSet(ih, "_IUP_EXTRAPARENT", (char*)dnd_wrap);
   }
 
   root = efl_add(EFL_CANVAS_VG_CONTAINER_CLASS, vg);
   if (!root)
   {
-    if (scroller)
-      efl_del(scroller);
+    if (wrap)
+      efl_del(wrap);
     efl_del(vg);
     ih->handle = NULL;
     return IUP_ERROR;
@@ -676,16 +667,8 @@ static int eflCanvasMapMethod(Ihandle* ih)
   efl_canvas_vg_object_root_node_set(vg, root);
   iupAttribSet(ih, "_IUP_EFL_VG_ROOT", (char*)root);
 
-  if (scroller)
-  {
-    efl_event_callback_add(scroller, EFL_GFX_ENTITY_EVENT_SIZE_CHANGED, eflCanvasActionCallback, ih);
-    efl_event_callback_add(scroller, EFL_GFX_ENTITY_EVENT_SIZE_CHANGED, eflCanvasResizeCallback, ih);
-  }
-  else
-  {
-    efl_event_callback_add(vg, EFL_GFX_ENTITY_EVENT_SIZE_CHANGED, eflCanvasActionCallback, ih);
-    efl_event_callback_add(vg, EFL_GFX_ENTITY_EVENT_SIZE_CHANGED, eflCanvasResizeCallback, ih);
-  }
+  efl_event_callback_add(vg, EFL_GFX_ENTITY_EVENT_SIZE_CHANGED, eflCanvasActionCallback, ih);
+  efl_event_callback_add(vg, EFL_GFX_ENTITY_EVENT_SIZE_CHANGED, eflCanvasResizeCallback, ih);
   efl_event_callback_add(vg, EFL_EVENT_POINTER_MOVE, eflCanvasMotionCallback, ih);
   efl_event_callback_add(vg, EFL_EVENT_POINTER_DOWN, eflCanvasButtonCallback, ih);
   efl_event_callback_add(vg, EFL_EVENT_POINTER_UP, eflCanvasButtonCallback, ih);
@@ -709,7 +692,7 @@ static int eflCanvasMapMethod(Ihandle* ih)
 static void eflCanvasUnMapMethod(Ihandle* ih)
 {
   Eo* vg = iupeflGetWidget(ih);
-  Eo* scroller = (Eo*)iupAttribGet(ih, "_IUP_EFL_SCROLLER");
+  Eo* wrap = (Eo*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
   Efl_VG* root = (Efl_VG*)iupAttribGet(ih, "_IUP_EFL_VG_ROOT");
 
   {
@@ -770,20 +753,12 @@ static void eflCanvasUnMapMethod(Ihandle* ih)
     iupAttribSet(ih, "_IUP_EFL_EVAS_OBJECTS", NULL);
   }
 
-  if (scroller)
-  {
-    efl_event_callback_del(scroller, EFL_GFX_ENTITY_EVENT_SIZE_CHANGED, eflCanvasResizeCallback, ih);
-    efl_event_callback_del(scroller, EFL_GFX_ENTITY_EVENT_SIZE_CHANGED, eflCanvasActionCallback, ih);
-    efl_event_callback_del(scroller, EFL_UI_EVENT_SCROLL_CHANGED, eflCanvasScrollChangedCallback, ih);
-  }
-
   if (vg)
   {
-    if (!scroller)
-    {
-      efl_event_callback_del(vg, EFL_GFX_ENTITY_EVENT_SIZE_CHANGED, eflCanvasResizeCallback, ih);
-      efl_event_callback_del(vg, EFL_GFX_ENTITY_EVENT_SIZE_CHANGED, eflCanvasActionCallback, ih);
-    }
+    evas_event_callback_del_full(evas_object_evas_get(vg), EVAS_CALLBACK_RENDER_PRE, eflCanvasRenderPreCallback, ih);
+    iupeflRedrawClearPending(ih);
+    efl_event_callback_del(vg, EFL_GFX_ENTITY_EVENT_SIZE_CHANGED, eflCanvasResizeCallback, ih);
+    efl_event_callback_del(vg, EFL_GFX_ENTITY_EVENT_SIZE_CHANGED, eflCanvasActionCallback, ih);
     efl_event_callback_del(vg, EFL_EVENT_POINTER_MOVE, eflCanvasMotionCallback, ih);
     efl_event_callback_del(vg, EFL_EVENT_POINTER_DOWN, eflCanvasButtonCallback, ih);
     efl_event_callback_del(vg, EFL_EVENT_POINTER_UP, eflCanvasButtonCallback, ih);
@@ -797,11 +772,13 @@ static void eflCanvasUnMapMethod(Ihandle* ih)
     efl_del(vg);
   }
 
-  if (scroller)
+  if (wrap)
   {
-    efl_del(scroller);
-    iupAttribSet(ih, "_IUP_EFL_SCROLLER", NULL);
+    efl_del(wrap);
     iupAttribSet(ih, "_IUP_EXTRAPARENT", NULL);
+    iupAttribSet(ih, "_IUP_EFL_CANVAS_ROW", NULL);
+    iupAttribSet(ih, "_IUP_EFL_VSB", NULL);
+    iupAttribSet(ih, "_IUP_EFL_HSB", NULL);
   }
 
   {
@@ -822,7 +799,6 @@ static void eflCanvasUnMapMethod(Ihandle* ih)
 static void eflCanvasLayoutUpdateMethod(Ihandle* ih)
 {
   Eo* xparent = (Eo*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
-  Eo* scroller = (Eo*)iupAttribGet(ih, "_IUP_EFL_SCROLLER");
   Eo* vg = iupeflGetWidget(ih);
 
   if (!iupeflIsInsideTabs(ih))
@@ -847,7 +823,6 @@ static void eflCanvasLayoutUpdateMethod(Ihandle* ih)
       efl_gfx_entity_position_set(xparent, EINA_POSITION2D(abs_x, abs_y));
       efl_gfx_entity_size_set(xparent, EINA_SIZE2D(ih->currentwidth, ih->currentheight));
 
-      if (scroller)
       {
         Eo* clip = (Eo*)iupAttribGet(ih, "_IUP_EFL_CANVAS_CLIP");
         if (clip)

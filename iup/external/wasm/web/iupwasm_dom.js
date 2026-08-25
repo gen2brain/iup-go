@@ -2850,22 +2850,41 @@
         globalThis.__iupMods = (e.shiftKey ? 1 : 0) | (e.ctrlKey ? 2 : 0) | (e.altKey ? 4 : 0) | (e.metaKey ? 8 : 0);
       };
       document.addEventListener('keyup', stashMods, true);
+      // committed text (incl. dead-key results) arrives in e.key as a single grapheme
+      var textInput = function (id, text) {
+        if (!text) return false;
+        if (dispatch.sync)
+          return !!Dr('iupwasmDispatchTextInput', 'number', ['number', 'string'], [id, text]);
+        Dt('iupwasmDispatchTextInput', ['number', 'string'], [id, text]);
+        return false;
+      };
+      document.addEventListener('compositionend', function (e) {
+        var id = iupId(document.activeElement) || (globalThis.__iupActiveDialog || 0);
+        if (id && e.data) textInput(id, e.data);
+      }, true);
       document.addEventListener('keydown', function (e) {
         stashMods(e);
         var id = iupId(document.activeElement) || (globalThis.__iupActiveDialog || 0);
         if (!id) return;
         var k = e.key, code = 0;
+        // a single code point that is not a named key is committed text
+        var txt = '';
+        if (k && !Object.prototype.hasOwnProperty.call(SP, k) &&
+            !e.ctrlKey && !e.altKey && !e.metaKey && !e.isComposing &&
+            Array.from(k).length === 1 && k.codePointAt(0) >= 0x20)
+          txt = k;
         if (Object.prototype.hasOwnProperty.call(SP, k)) code = SP[k];
         else if (k && k.length === 1) code = k.charCodeAt(0);
         else if (/^F([1-9]|1[0-2])$/.test(k)) code = 0xFFBE + (parseInt(k.slice(1)) - 1);
-        if (!code) return;
+        if (!code && !txt) return;
         if (e.ctrlKey) code |= 0x20000000;
         if (e.altKey) code |= 0x40000000;
         if (e.shiftKey && !(k && k.length === 1)) code |= 0x10000000;
         if (dispatch.sync) {
-          if (Dr('iupwasmDispatchKey', 'number', ['number', 'number'], [id, code])) e.preventDefault();
+          if (Dr('iupwasmDispatchKeyText', 'number', ['number', 'number', 'string'], [id, code, txt]))
+            e.preventDefault();
         } else {
-          D('iupwasmDispatchKey', id, code);
+          Dt('iupwasmDispatchKeyText', ['number', 'number', 'string'], [id, code, txt]);
         }
         if (k === 'F1') { e.preventDefault(); D('iupwasmDispatchHelp', id); }  // GTK fires HELP_CB on plain F1
       });

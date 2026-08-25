@@ -195,10 +195,60 @@ static int cocoaKeyApplyModifiers(int iup_key, int has_shift, int has_ctrl, int 
  * - Converts lowercase to uppercase when modifiers are present
  * - Handles CapsLock inverting Shift state for letters
  */
+#ifdef GNUSTEP
+/* GNUstep reports X11 keycodes where Cocoa reports virtual key codes, so the table above does not
+   apply, but the characters follow Apple's convention including the function-key range */
+static int cocoaKeyDecodeCharacter(NSEvent *ns_event)
+{
+  NSString* chars = [ns_event charactersIgnoringModifiers];
+  unichar ch;
+
+  if ([chars length] == 0)
+    return 0;
+
+  ch = [chars characterAtIndex:0];
+
+  if (ch >= NSF1FunctionKey && ch <= NSF20FunctionKey)
+    return K_F1 + (int)(ch - NSF1FunctionKey);
+
+  switch (ch)
+  {
+    case NSUpArrowFunctionKey:     return K_UP;
+    case NSDownArrowFunctionKey:   return K_DOWN;
+    case NSLeftArrowFunctionKey:   return K_LEFT;
+    case NSRightArrowFunctionKey:  return K_RIGHT;
+    case NSHomeFunctionKey:        return K_HOME;
+    case NSEndFunctionKey:         return K_END;
+    case NSPageUpFunctionKey:      return K_PGUP;
+    case NSPageDownFunctionKey:    return K_PGDN;
+    case NSInsertFunctionKey:      return K_INS;
+    case NSDeleteFunctionKey:      return K_DEL;
+    case NSPrintScreenFunctionKey: return K_Print;
+    case NSMenuFunctionKey:        return K_Menu;
+    case NSHelpFunctionKey:        return K_HELP;
+    case 0x1B:                     return K_ESC;
+    case 0x09:                     return K_TAB;
+    case 0x0D:
+    case 0x03:                     return K_CR;
+    case 0x7F:                     return K_BS;
+  }
+
+  if (ch >= K_SP && ch <= K_tilde)
+    return (int)ch;
+
+  return 0;
+}
+#endif
+
 static int cocoaKeyDecode(NSEvent *ns_event, int mac_key_code)
 {
-  const size_t array_length = sizeof(s_macKeyMap) / sizeof(s_macKeyMap[0]);
   int iup_base_key = 0;
+
+#ifdef GNUSTEP
+  /* the keycode is an X11 one here, so every kVK_ comparison below would match the wrong key */
+  iup_base_key = cocoaKeyDecodeCharacter(ns_event);
+#else
+  const size_t array_length = sizeof(s_macKeyMap) / sizeof(s_macKeyMap[0]);
   size_t i;
 
   /* Handle modifier keys directly */
@@ -228,6 +278,7 @@ static int cocoaKeyDecode(NSEvent *ns_event, int mac_key_code)
       break;
     }
   }
+#endif
 
   if (iup_base_key == 0)
     return 0;

@@ -43,6 +43,7 @@ IUP_SDK_API char* iupAndroid_JStringToReturnStr(JNIEnv* jni_env, jstring j_strin
 IUP_SDK_API void iupAndroidUpdateGlobalColors(void);
 
 IUP_SDK_API int iupandroidKeyDecode(int keycode, int meta_state);
+void iupandroidFocusInOutEvent(Ihandle* ih, int focus_in);
 
 /* replays Android-only Dialog attributes once the Activity exists; called from IupActivity.onCreate */
 IUP_SDK_API void iupAndroid_DialogActivityCreated(Ihandle* ih);

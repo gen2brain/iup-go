@@ -128,7 +128,9 @@ public final class IupCommon
 
         /* layout pass calls setWidgetPosition with real coords before first paint */
         parentView.addView(childView, new IupAndroidFixed.LayoutParams(0, 0, 0, 0));
+
     }
+
 
     @Keep
     public static void removeWidgetFromParent(long ihandlePtr)

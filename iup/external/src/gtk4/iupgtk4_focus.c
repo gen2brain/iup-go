@@ -18,7 +18,7 @@
 
 IUP_DRV_API void iupgtk4SetCanFocus(GtkWidget *widget, int can)
 {
-  gtk_widget_set_can_focus(widget, can);
+  gtk_widget_set_focusable(widget, can);
 }
 
 IUP_SDK_API void iupdrvSetFocus(Ihandle *ih)

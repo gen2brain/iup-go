@@ -5,6 +5,7 @@
  */
 
 #include <Xm/Xm.h>
+#include <Xm/XmIm.h>
 #include <X11/keysym.h>
 
 #include <ctype.h>
@@ -14,6 +15,7 @@
 
 #include "iup_object.h"
 #include "iup_key.h"
+#include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_drv.h"
 
@@ -292,10 +294,56 @@ IUP_DRV_API void iupmotCanvasKeyReleaseEvent(Widget w, Ihandle *ih, XEvent *evt,
   }
 }
 
+static void motKeyImDestroyCallback(Widget w, XtPointer client_data, XtPointer call_data)
+{
+  (void)client_data;
+  (void)call_data;
+  XmImUnregister(w);
+}
+
+/* a commit consumed by TEXTINPUT_CB suppresses the K_ANY for that key */
+static int motKeyTextInput(Widget w, XKeyEvent *evt, Ihandle *ih)
+{
+  char buf[64];
+  KeySym keysym = 0;
+  int status = 0;
+  int len;
+
+  if (!IupGetCallback(ih, "TEXTINPUT_CB"))
+    return 0;
+  if (evt->state & (ControlMask | Mod1Mask))
+    return 0;
+
+  if (!iupAttribGet(ih, "_IUPMOT_IM_REGISTERED"))
+  {
+    XmImRegister(w, 0);
+    XmImSetFocusValues(w, NULL, 0);
+    XtAddCallback(w, XmNdestroyCallback, motKeyImDestroyCallback, NULL);
+    iupAttribSet(ih, "_IUPMOT_IM_REGISTERED", "1");
+  }
+
+  len = XmImMbLookupString(w, (XKeyPressedEvent*)evt, buf, sizeof(buf) - 1, &keysym, &status);
+  if (len <= 0)
+    return 0;
+  buf[len] = 0;
+  if (len == 1 && ((unsigned char)buf[0] < 0x20 || (unsigned char)buf[0] == 0x7F))
+    return 0;
+
+  return iupKeyCallTextInputCb(ih, buf) == IUP_IGNORE;
+}
+
 IUP_DRV_API void iupmotKeyPressEvent(Widget w, Ihandle *ih, XEvent *evt, Boolean *cont)
 {
   int result;
-  int code = iupmotKeyDecode((XKeyEvent*)evt);
+  int code;
+
+  if (motKeyTextInput(w, (XKeyEvent*)evt, ih))
+  {
+    *cont = False;
+    return;
+  }
+
+  code = iupmotKeyDecode((XKeyEvent*)evt);
   if (code == 0)
       return;
 

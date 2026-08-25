@@ -138,7 +138,7 @@ function serve(dir) {
   }
 
   // Scripted sequence: steps split by ';', each "cmd:arg".
-  // click/type/press/wait/shot/drag (drag:srcSel##tgtSel[##x,y]). shot writes _stepN.png.
+  // click/type/press/rawkey/wait/shot/drag (drag:srcSel##tgtSel[##x,y]). shot writes _stepN.png.
   if (keySeq) {
     let n = 0;
     for (const st of keySeq.split(';')) {
@@ -148,6 +148,16 @@ function serve(dir) {
       if (cmd === 'click') await page.click(arg).catch((e) => logs.push('click failed: ' + e.message));
       else if (cmd === 'type') await page.keyboard.type(arg).catch((e) => logs.push('type failed: ' + e.message));
       else if (cmd === 'press') await page.keyboard.press(arg).catch((e) => logs.push('press failed: ' + e.message));
+      else if (cmd === 'rawkey') {
+        // CDP: dispatch a trusted keydown carrying arbitrary text (playwright press() only knows named keys)
+        const cdp = await page.context().newCDPSession(page).catch(() => null);
+        if (cdp) {
+          await cdp.send('Input.dispatchKeyEvent', { type: 'keyDown', text: arg, key: arg })
+            .catch((e) => logs.push('rawkey failed: ' + e.message));
+          await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', key: arg }).catch(() => {});
+          await cdp.detach().catch(() => {});
+        } else logs.push('rawkey: no CDP session');
+      }
       else if (cmd === 'wait') await page.waitForTimeout(parseInt(arg) || 0);
       else if (cmd === 'drag') {
         const p = arg.split('##'), o = {};

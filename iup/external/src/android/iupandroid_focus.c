@@ -11,11 +11,24 @@
 #include "iup.h"
 #include "iup_drv.h"
 #include "iup_attrib.h"
+#include "iup_object.h"
+#include "iup_focus.h"
 
 #include "iupandroid_drv.h"
 #include "iupandroid_jnimacros.h"
 #include "iupandroid_jnicacheglobals.h"
 
+
+void iupandroidFocusInOutEvent(Ihandle* ih, int focus_in)
+{
+  if (!ih || !iupObjectCheck(ih))
+    return;
+
+  if (focus_in)
+    iupCallGetFocusCb(ih);
+  else
+    iupCallKillFocusCb(ih);
+}
 
 void iupdrvSetFocus(Ihandle* ih)
 {

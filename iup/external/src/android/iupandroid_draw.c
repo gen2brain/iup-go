@@ -265,13 +265,29 @@ void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int radius, const
 
 void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int x, int y, int w, int h, long color, const char* font, int flags, double text_orientation)
 {
-  (void)len;
+  char* text_buffer = NULL;
+
   if (!dc || !dc->ih->handle || !text) return;
 
+  /* callers may pass a slice of a larger buffer; NewStringUTF needs its own terminated copy */
+  if (len >= 0)
+  {
+    text_buffer = (char*)malloc(len + 1);
+    if (!text_buffer) return;
+    memcpy(text_buffer, text, len);
+    text_buffer[len] = 0;
+    text = text_buffer;
+  }
+
   char typeface[1024] = "";
+  const char* family = NULL;
   int size = 0, is_bold = 0, is_italic = 0, is_underline = 0, is_strikeout = 0;
   if (font && font[0])
+  {
     iupGetFontInfo(font, typeface, &size, &is_bold, &is_italic, &is_underline, &is_strikeout);
+    family = iupFontGetAndroidName(typeface);
+    if (!family) family = typeface;
+  }
 
   int style = 0;  /* 0=NORMAL, 1=BOLD, 2=ITALIC, 3=BOLD_ITALIC */
   if (is_bold && is_italic) style = 3;
@@ -284,13 +300,15 @@ void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int x, int y, in
     "(Lio/github/gen2brain/iupgo/IupAndroidCanvas;Ljava/lang/String;IIIIIIFLjava/lang/String;IIZZ)V");
 
   jstring j_text = (*jni_env)->NewStringUTF(jni_env, text);
-  jstring j_family = typeface[0] ? (*jni_env)->NewStringUTF(jni_env, typeface) : NULL;
+  jstring j_family = (family && family[0]) ? (*jni_env)->NewStringUTF(jni_env, family) : NULL;
   (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id,
     dc->ih->handle, j_text,
     (jint)x, (jint)y, (jint)w, (jint)h,
     (jint)androidPackColor(color), (jint)flags, (jfloat)text_orientation,
     j_family, (jint)style, (jint)size,
     (jboolean)(is_underline ? 1 : 0), (jboolean)(is_strikeout ? 1 : 0));
+
+  free(text_buffer);
   iupAndroid_CheckException(jni_env, "IupCanvasHelper.drawText");
   (*jni_env)->DeleteLocalRef(jni_env, j_text);
   if (j_family) (*jni_env)->DeleteLocalRef(jni_env, j_family);
