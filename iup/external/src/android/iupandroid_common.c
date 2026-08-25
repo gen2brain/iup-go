@@ -198,6 +198,10 @@ void iupAndroid_AddWidgetToParent(JNIEnv* jni_env, Ihandle* ih)
   (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, parent_native_handle, child_handle);
   iupAndroid_CheckException(jni_env, "IupCommon.addWidgetToParent");
 
+  method_id = IUPJNI_GetStaticMethodID(IupCommon_attachFocusListener, jni_env, java_class, "attachFocusListener", "(Ljava/lang/Object;J)V");
+  (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, child_handle, (jlong)(intptr_t)ih);
+  iupAndroid_CheckException(jni_env, "IupCommon.attachFocusListener");
+
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
 }
 

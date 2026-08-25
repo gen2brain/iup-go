@@ -69,6 +69,14 @@ JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupCommon_dispatchGlobalKe
 }
 
 
+JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupCommon_dispatchFocus(JNIEnv* jni_env, jclass cls, jlong ihandle_ptr, jboolean has_focus)
+{
+  Ihandle* ih = (Ihandle*)(intptr_t)ihandle_ptr;
+  (void)jni_env; (void)cls;
+
+  iupandroidFocusInOutEvent(ih, has_focus ? 1 : 0);
+}
+
 JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupCommon_RetainIhandle(JNIEnv* jni_env, jclass cls, jobject the_widget, jlong ihandle_ptr)
 {
   (void)cls;

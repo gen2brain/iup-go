@@ -134,15 +134,6 @@ JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupCanvasHelper_dispatchTe
   }
 }
 
-JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupCanvasHelper_dispatchFocus(JNIEnv* jni_env, jclass cls, jlong ihandle_ptr, jboolean has_focus)
-{
-  Ihandle* ih = (Ihandle*)(intptr_t)ihandle_ptr;
-  (void)jni_env;
-  (void)cls;
-
-  iupandroidFocusInOutEvent(ih, has_focus ? 1 : 0);
-}
-
 JNIEXPORT jboolean JNICALL Java_io_github_gen2brain_iupgo_IupCanvasHelper_wantsTextInput(JNIEnv* jni_env, jclass cls, jlong ihandle_ptr)
 {
   Ihandle* ih = (Ihandle*)(intptr_t)ihandle_ptr;

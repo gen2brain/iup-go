@@ -9,6 +9,7 @@ On the Haiku driver keyboard navigation is performed by the system, so to leave 
 All IUP interactive controls have Tab stops, but the navigation order is related to the order the controls are placed in the dialog and cannot be changed.
 The order is the same implemented by the functions **IupNextField** and **IupPreviousField**.
 To remove the Tab stop from a control, use the CANFOCUS attribute.
+In Android, touch does not move the focus to buttons, toggles and sliders; there the focus changes only through keyboard or D-pad navigation and IupSetFocus.
 
 Arrows can also be used for navigation between buttons and toggles.
 This is necessary because when an **IupToggle** is inside an **IupRadio** the "Tab" keys will navigate only to the selected toggle.

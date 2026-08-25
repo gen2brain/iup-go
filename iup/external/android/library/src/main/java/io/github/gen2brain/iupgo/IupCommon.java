@@ -132,6 +132,25 @@ public final class IupCommon
     }
 
 
+    /* Wrappers stash the focusable view as their tag, the same rule IupTextHelper.resolve uses. */
+    private static View resolveFocusView(View view)
+    {
+        if (view instanceof ViewGroup && view.getTag() instanceof View inner)
+            return inner;
+        return view;
+    }
+
+    @Keep
+    public static void attachFocusListener(Object widget, final long ihandlePtr)
+    {
+        if (!(widget instanceof View view))
+            return;
+
+        resolveFocusView(view).setOnFocusChangeListener((v, hasFocus) -> dispatchFocus(ihandlePtr, hasFocus));
+    }
+
+    public native static void dispatchFocus(long ihandlePtr, boolean hasFocus);
+
     @Keep
     public static void removeWidgetFromParent(long ihandlePtr)
     {
@@ -186,8 +205,10 @@ public final class IupCommon
     {
         if (widget instanceof View view)
         {
-            if (!view.isFocusable()) view.setFocusableInTouchMode(true);
-            view.requestFocus();
+            View target = resolveFocusView(view);
+            /* buttons and sliders are focusable but not in touch mode, where only that flag counts */
+            if (!target.isFocusableInTouchMode()) target.setFocusableInTouchMode(true);
+            target.requestFocus();
         }
     }
 
