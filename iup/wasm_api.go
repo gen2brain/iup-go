@@ -114,6 +114,24 @@ type TimerActionFunc func(ih Ihandle) int
 // ResizeFunc is the type for the RESIZE_CB callback.
 type ResizeFunc func(ih Ihandle, width, height int) int
 
+// TerminalInputFunc is the type for the Terminal INPUT_CB callback.
+type TerminalInputFunc func(ih Ihandle, bytes []byte) int
+
+// TerminalTitleFunc is the type for the Terminal TITLE_CB callback.
+type TerminalTitleFunc func(ih Ihandle, title string) int
+
+// TerminalBellFunc is the type for the Terminal BELL_CB callback.
+type TerminalBellFunc func(ih Ihandle) int
+
+// TerminalSizeFunc is the type for the Terminal TERMSIZE_CB callback.
+type TerminalSizeFunc func(ih Ihandle, cols, lines int) int
+
+// TerminalExitFunc is the type for the Terminal EXIT_CB callback.
+type TerminalExitFunc func(ih Ihandle, status int) int
+
+// TextInputFunc is the type for the TEXTINPUT_CB callback.
+type TextInputFunc func(ih Ihandle, text string) int
+
 // MotionFunc is the type for the MOTION_CB callback.
 type MotionFunc func(ih Ihandle, x, y int, status string) int
 

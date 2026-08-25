@@ -79,6 +79,11 @@ func DatePick() Ihandle {
 	return h
 }
 
+// Terminal creates a terminal emulator control.
+func Terminal() Ihandle {
+	return mkih(C.IupTerminal())
+}
+
 // Dial creates a dial for regulating a given angular variable.
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_dial.md

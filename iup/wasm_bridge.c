@@ -127,6 +127,22 @@ static int wasmCbHighlight(Ihandle* ih) { return iupwasmGoDispatch(ih, "HIGHLIGH
 static int wasmCbMenuOpen(Ihandle* ih) { return iupwasmGoDispatch(ih, "MENUOPEN_CB", 0, 0, 0, 0, 0); }
 static int wasmCbMenuClose(Ihandle* ih) { return iupwasmGoDispatch(ih, "MENUCLOSE_CB", 0, 0, 0, 0, 0); }
 static int wasmCbResize(Ihandle* ih, int w, int h) { return iupwasmGoDispatch(ih, "RESIZE_CB", w, h, 0, 0, 0); }
+static int wasmCbTerminalTitle(Ihandle* ih, char* title) { return iupwasmGoDispatch(ih, "TITLE_CB", 0, 0, 0, 0, title); }
+static int wasmCbTerminalBell(Ihandle* ih) { return iupwasmGoDispatch(ih, "BELL_CB", 0, 0, 0, 0, 0); }
+static int wasmCbTerminalSize(Ihandle* ih, int cols, int lines) { return iupwasmGoDispatch(ih, "TERMSIZE_CB", cols, lines, 0, 0, 0); }
+static int wasmCbTerminalExit(Ihandle* ih, int status) { return iupwasmGoDispatch(ih, "EXIT_CB", status, 0, 0, 0, 0); }
+static int wasmCbTextInput(Ihandle* ih, char* text) { return iupwasmGoDispatch(ih, "TEXTINPUT_CB", 0, 0, 0, 0, text); }
+
+/* INPUT_CB bytes are not NUL terminated */
+static int wasmCbTerminalInput(Ihandle* ih, char* bytes, int len)
+{
+  char buf[64];
+  if (len < 0) len = 0;
+  if (len > (int)sizeof(buf) - 1) len = (int)sizeof(buf) - 1;
+  memcpy(buf, bytes, len);
+  buf[len] = 0;
+  return iupwasmGoDispatch(ih, "INPUT_CB", len, 0, 0, 0, buf);
+}
 static int wasmCbMotion(Ihandle* ih, int x, int y, char* st) { return iupwasmGoDispatch(ih, "MOTION_CB", x, y, 0, 0, st); }
 static int wasmCbWheel(Ihandle* ih, float delta, int x, int y, char* st) { return iupwasmGoDispatch(ih, "WHEEL_CB", (int)delta, x, y, 0, st); }
 static int wasmCbEnterWindow(Ihandle* ih) { return iupwasmGoDispatch(ih, "ENTERWINDOW_CB", 0, 0, 0, 0, 0); }
@@ -282,6 +298,18 @@ EMSCRIPTEN_KEEPALIVE void iupwasmGoSetCallback(Ihandle* ih, const char* name)
     IupSetCallback(ih, name, (Icallback)wasmCbMenuClose);
   else if (strcmp(name, "RESIZE_CB") == 0)
     IupSetCallback(ih, name, (Icallback)wasmCbResize);
+  else if (strcmp(name, "INPUT_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbTerminalInput);
+  else if (strcmp(name, "TITLE_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbTerminalTitle);
+  else if (strcmp(name, "BELL_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbTerminalBell);
+  else if (strcmp(name, "TERMSIZE_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbTerminalSize);
+  else if (strcmp(name, "EXIT_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbTerminalExit);
+  else if (strcmp(name, "TEXTINPUT_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbTextInput);
   else if (strcmp(name, "SCROLL_CB") == 0)
     IupSetCallback(ih, name, (Icallback)wasmCbScroll);
   else if (strcmp(name, "MOTION_CB") == 0)

@@ -502,6 +502,102 @@ func setGestureFunc(ih Ihandle, f GestureFunc) {
 
 //--------------------
 
+// TerminalInputFunc for Terminal INPUT_CB callback.
+type TerminalInputFunc func(ih Ihandle, bytes []byte) int
+
+//export goIupTerminalInputCB
+func goIupTerminalInputCB(ih, b unsafe.Pointer, length C.int) C.int {
+	f := loadCallback((Ihandle)(ih), "_IUPGO_TERMINAL_INPUT").Value().(TerminalInputFunc)
+	return C.int(f((Ihandle)(ih), C.GoBytes(b, length)))
+}
+
+func setTerminalInputFunc(ih Ihandle, f TerminalInputFunc) {
+	storeCallback(ih, "_IUPGO_TERMINAL_INPUT", f)
+	C.goIupSetTerminalInputFunc(ih.ptr())
+}
+
+//--------------------
+
+// TerminalTitleFunc for Terminal TITLE_CB callback.
+type TerminalTitleFunc func(ih Ihandle, title string) int
+
+//export goIupTerminalTitleCB
+func goIupTerminalTitleCB(ih, title unsafe.Pointer) C.int {
+	f := loadCallback((Ihandle)(ih), "_IUPGO_TERMINAL_TITLE").Value().(TerminalTitleFunc)
+	return C.int(f((Ihandle)(ih), C.GoString((*C.char)(title))))
+}
+
+func setTerminalTitleFunc(ih Ihandle, f TerminalTitleFunc) {
+	storeCallback(ih, "_IUPGO_TERMINAL_TITLE", f)
+	C.goIupSetTerminalTitleFunc(ih.ptr())
+}
+
+//--------------------
+
+// TerminalBellFunc for Terminal BELL_CB callback.
+type TerminalBellFunc func(ih Ihandle) int
+
+//export goIupTerminalBellCB
+func goIupTerminalBellCB(ih unsafe.Pointer) C.int {
+	f := loadCallback((Ihandle)(ih), "_IUPGO_TERMINAL_BELL").Value().(TerminalBellFunc)
+	return C.int(f((Ihandle)(ih)))
+}
+
+func setTerminalBellFunc(ih Ihandle, f TerminalBellFunc) {
+	storeCallback(ih, "_IUPGO_TERMINAL_BELL", f)
+	C.goIupSetTerminalBellFunc(ih.ptr())
+}
+
+//--------------------
+
+// TerminalSizeFunc for Terminal TERMSIZE_CB callback.
+type TerminalSizeFunc func(ih Ihandle, cols, lines int) int
+
+//export goIupTerminalSizeCB
+func goIupTerminalSizeCB(ih unsafe.Pointer, cols, lines C.int) C.int {
+	f := loadCallback((Ihandle)(ih), "_IUPGO_TERMINAL_SIZE").Value().(TerminalSizeFunc)
+	return C.int(f((Ihandle)(ih), int(cols), int(lines)))
+}
+
+func setTerminalSizeFunc(ih Ihandle, f TerminalSizeFunc) {
+	storeCallback(ih, "_IUPGO_TERMINAL_SIZE", f)
+	C.goIupSetTerminalSizeFunc(ih.ptr())
+}
+
+//--------------------
+
+// TerminalExitFunc for Terminal EXIT_CB callback.
+type TerminalExitFunc func(ih Ihandle, status int) int
+
+//export goIupTerminalExitCB
+func goIupTerminalExitCB(ih unsafe.Pointer, status C.int) C.int {
+	f := loadCallback((Ihandle)(ih), "_IUPGO_TERMINAL_EXIT").Value().(TerminalExitFunc)
+	return C.int(f((Ihandle)(ih), int(status)))
+}
+
+func setTerminalExitFunc(ih Ihandle, f TerminalExitFunc) {
+	storeCallback(ih, "_IUPGO_TERMINAL_EXIT", f)
+	C.goIupSetTerminalExitFunc(ih.ptr())
+}
+
+//--------------------
+
+// TextInputFunc for TEXTINPUT_CB callback.
+type TextInputFunc func(ih Ihandle, text string) int
+
+//export goIupTextInputCB
+func goIupTextInputCB(ih, text unsafe.Pointer) C.int {
+	f := loadCallback((Ihandle)(ih), "_IUPGO_TEXTINPUT").Value().(TextInputFunc)
+	return C.int(f((Ihandle)(ih), C.GoString((*C.char)(text))))
+}
+
+func setTextInputFunc(ih Ihandle, f TextInputFunc) {
+	storeCallback(ih, "_IUPGO_TEXTINPUT", f)
+	C.goIupSetTextInputFunc(ih.ptr())
+}
+
+//--------------------
+
 // DropFilesFunc for DROPFILES_CB callback.
 // Action called when a file is "dropped" into control.
 //

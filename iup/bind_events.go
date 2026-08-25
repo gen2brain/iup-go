@@ -163,6 +163,18 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 		setGestureFunc(ih, fn.(GestureFunc))
 	case "DROPFILES_CB":
 		setDropFilesFunc(ih, fn.(DropFilesFunc))
+	case "INPUT_CB":
+		setTerminalInputFunc(ih, fn.(TerminalInputFunc))
+	case "TITLE_CB":
+		setTerminalTitleFunc(ih, fn.(TerminalTitleFunc))
+	case "BELL_CB":
+		setTerminalBellFunc(ih, fn.(TerminalBellFunc))
+	case "TERMSIZE_CB":
+		setTerminalSizeFunc(ih, fn.(TerminalSizeFunc))
+	case "EXIT_CB":
+		setTerminalExitFunc(ih, fn.(TerminalExitFunc))
+	case "TEXTINPUT_CB":
+		setTextInputFunc(ih, fn.(TextInputFunc))
 	case "CARET_CB":
 		setCaretFunc(ih, fn.(CaretFunc))
 	case "DBLCLICK_CB":

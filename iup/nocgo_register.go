@@ -112,6 +112,7 @@ var (
 	iupProgressBar            func() uintptr
 	iupSpin                   func() uintptr
 	iupSpinbox                func(child uintptr) uintptr
+	iupTerminal               func() uintptr
 	iupText                   func() uintptr
 	iupMultiLine              func() uintptr
 	iupToggle                 func(title *byte) uintptr
@@ -414,6 +415,7 @@ func ensureBase() {
 		reg(&iupColorbar, "IupColorbar")
 		reg(&iupColorBrowser, "IupColorBrowser")
 		reg(&iupDatePick, "IupDatePick")
+		reg(&iupTerminal, "IupTerminal")
 		reg(&iupDial, "IupDial")
 		reg(&iupSeparator, "IupSeparator")
 		reg(&iupLink, "IupLink")
