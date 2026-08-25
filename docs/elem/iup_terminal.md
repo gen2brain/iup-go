@@ -49,6 +49,11 @@ is in the history. Can be YES or NO. Default: YES.
 **SCROLLONKEY** (non-inheritable): scroll to the bottom on key input while the view is in the
 history. Can be YES or NO. Default: YES.
 
+**OPTIONASMETA** (non-inheritable): send Option as Meta, so Option+X produces ESC followed by X
+instead of the character the keyboard layout composes. Can be YES or NO. Default: NO.
+Only affects macOS; the other drivers already report the key as Alt. While YES, Option no longer
+composes accented characters or dead keys.
+
 **COLOR0** ... **COLOR15** (non-inheritable): the 16 base palette colors, in "R G B" format.
 Defaults are the xterm palette. Also changed by the OSC 4 escape sequence.
 

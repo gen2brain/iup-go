@@ -1519,6 +1519,7 @@ Iclass* iupTerminalNewClass(void)
   iupClassRegisterAttribute(ic, "CURSORBLINK", itermGetCursorBlinkAttrib, itermSetCursorBlinkAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SCROLLONOUTPUT", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SCROLLONKEY", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "OPTIONASMETA", NULL, NULL, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "RESET", NULL, itermSetResetAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CLEARSCREEN", NULL, itermSetClearScreenAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "EXEC", NULL, itermSetExecAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
