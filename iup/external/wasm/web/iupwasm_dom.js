@@ -131,6 +131,16 @@
       var el = els[c.id];
       switch (c.op) {
       case 'theme': installTheme(c); break;
+      // main owns the interval: the Worker running the app is blocked in the pump and would never run it
+      case 'timerrun': {
+        var tms = globalThis.__iupTimers = globalThis.__iupTimers || {};
+        if (tms[c.tid]) clearInterval(tms[c.tid]);
+        tms[c.tid] = setInterval(function () { D('iupwasmDispatchTimer', c.ih); }, c.ms);
+      } break;
+      case 'timerstop': {
+        var tmo = globalThis.__iupTimers && globalThis.__iupTimers[c.tid];
+        if (tmo) { clearInterval(tmo); delete globalThis.__iupTimers[c.tid]; }
+      } break;
       case 'create': {
         el = document.createElement(c.tag);
         el.style.position = 'absolute'; el.style.boxSizing = 'border-box'; el.style.margin = '0';
