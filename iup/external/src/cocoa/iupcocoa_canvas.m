@@ -628,11 +628,23 @@ static void cocoaCanvasFireGesture(Ihandle* ih, int gesture, int state, int x, i
   }
 }
 
+/* Option composes a character, which is right for text but hides Meta from a terminal */
+static BOOL cocoaCanvasOptionIsMeta(Ihandle* ih, NSEvent* the_event)
+{
+  NSEventModifierFlags flags;
+
+  if (!iupAttribGetBoolean(ih, "OPTIONASMETA"))
+    return NO;
+
+  flags = [the_event modifierFlags];
+  return (flags & NSEventModifierFlagOption) && !(flags & NSEventModifierFlagCommand);
+}
+
 - (void) keyDown:(NSEvent*)the_event
 {
   if(![self isEnabled]) return;
 
-  if (IupGetCallback(_ih, "TEXTINPUT_CB"))
+  if (IupGetCallback(_ih, "TEXTINPUT_CB") && !cocoaCanvasOptionIsMeta(_ih, the_event))
   {
     [self setTextInputConsumed:false];
 #ifdef GNUSTEP
