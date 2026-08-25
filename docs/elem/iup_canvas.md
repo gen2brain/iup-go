@@ -151,6 +151,9 @@ It is called after the common callbacks GETFOCUS_CB and KILL_FOCUS_CB.
 [KEYPRESS_CB](../call/iup_keypress_cb.md): Action generated when a key is pressed or released.
 It is called after the common callback K_ANY.
 
+[TEXTINPUT_CB](../call/iup_textinput_cb.md): Action generated when the user commits text input
+(plain characters, dead-key composition, IME).
+
 When the canvas has the focus, pressing the arrow keys may change the focus to another control in some systems.
 If your callback process the arrow keys, we recommend you to return IUP_IGNORE so it will not lose its focus.
 

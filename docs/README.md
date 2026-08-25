@@ -57,7 +57,7 @@ API reference for IUP (Portable User Interface).
 
 ### Other
 
-[BUTTON_CB](call/iup_button_cb.md), [CLOSE_CB](call/iup_close_cb.md), [DROPFILES_CB](call/iup_dropfiles_cb.md), [HIGHLIGHT_CB](call/iup_highlight_cb.md), [KEYPRESS_CB](call/iup_keypress_cb.md), [MENUCLOSE_CB](call/iup_menuclose_cb.md), [MENUOPEN_CB](call/iup_menuopen_cb.md), [MOTION_CB](call/iup_motion_cb.md), [RESIZE_CB](call/iup_resize_cb.md), [SCROLL_CB](call/iup_scroll_cb.md), [SHOW_CB](call/iup_show_cb.md), [WHEEL_CB](call/iup_wheel_cb.md)
+[BUTTON_CB](call/iup_button_cb.md), [CLOSE_CB](call/iup_close_cb.md), [DROPFILES_CB](call/iup_dropfiles_cb.md), [HIGHLIGHT_CB](call/iup_highlight_cb.md), [KEYPRESS_CB](call/iup_keypress_cb.md), [MENUCLOSE_CB](call/iup_menuclose_cb.md), [MENUOPEN_CB](call/iup_menuopen_cb.md), [MOTION_CB](call/iup_motion_cb.md), [RESIZE_CB](call/iup_resize_cb.md), [SCROLL_CB](call/iup_scroll_cb.md), [SHOW_CB](call/iup_show_cb.md), [TEXTINPUT_CB](call/iup_textinput_cb.md), [WHEEL_CB](call/iup_wheel_cb.md)
 
 ---
 
@@ -156,6 +156,7 @@ API reference for IUP (Portable User Interface).
 | [IupScrollbar](elem/iup_scrollbar.md)         | Standalone scrollbar control                                 |
 | [IupSpin](elem/iup_spin.md)                   | Up/down arrow buttons; IupSpinBox wraps any element          |
 | [IupTable](elem/iup_table.md)                 | Native table widget for tabular data                         |
+| [IupTerminal](elem/iup_terminal.md)           | VT100 terminal emulator screen                               |
 | [IupText](elem/iup_text.md)                   | Single or multi-line editable text                           |
 | [IupToggle](elem/iup_toggle.md)               | Two-state on/off button or switch                            |
 | [IupTree](elem/iup_tree.md)                   | Hierarchical view of branches and leaves                     |
