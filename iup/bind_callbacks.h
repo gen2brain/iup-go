@@ -116,6 +116,36 @@ static void goIupSetGestureFunc(Ihandle *ih) {
 	IupSetCallback(ih, "GESTURE_CB", (Icallback) goIupGestureCB);
 }
 
+CGO_EXPORT extern int goIupTerminalInputCB(void *, void *bytes, int len);
+static void goIupSetTerminalInputFunc(Ihandle *ih) {
+	IupSetCallback(ih, "INPUT_CB", (Icallback) goIupTerminalInputCB);
+}
+
+CGO_EXPORT extern int goIupTerminalTitleCB(void *, void *title);
+static void goIupSetTerminalTitleFunc(Ihandle *ih) {
+	IupSetCallback(ih, "TITLE_CB", (Icallback) goIupTerminalTitleCB);
+}
+
+CGO_EXPORT extern int goIupTerminalBellCB(void *);
+static void goIupSetTerminalBellFunc(Ihandle *ih) {
+	IupSetCallback(ih, "BELL_CB", (Icallback) goIupTerminalBellCB);
+}
+
+CGO_EXPORT extern int goIupTerminalSizeCB(void *, int cols, int lines);
+static void goIupSetTerminalSizeFunc(Ihandle *ih) {
+	IupSetCallback(ih, "TERMSIZE_CB", (Icallback) goIupTerminalSizeCB);
+}
+
+CGO_EXPORT extern int goIupTerminalExitCB(void *, int status);
+static void goIupSetTerminalExitFunc(Ihandle *ih) {
+	IupSetCallback(ih, "EXIT_CB", (Icallback) goIupTerminalExitCB);
+}
+
+CGO_EXPORT extern int goIupTextInputCB(void *, void *text);
+static void goIupSetTextInputFunc(Ihandle *ih) {
+	IupSetCallback(ih, "TEXTINPUT_CB", (Icallback) goIupTextInputCB);
+}
+
 CGO_EXPORT extern int goIupDropFilesCB(void *, void *filename, int num, int x, int y);
 static void goIupSetDropFilesFunc(Ihandle *ih) {
 	IupSetCallback(ih, "DROPFILES_CB", (Icallback) goIupDropFilesCB);

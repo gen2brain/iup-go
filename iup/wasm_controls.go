@@ -14,6 +14,10 @@ func DatePick() Ihandle {
 	return ccallHandle("IupDatePick", nil, nil)
 }
 
+func Terminal() Ihandle {
+	return ccallHandle("IupTerminal", nil, nil)
+}
+
 func Dial(orientation string) Ihandle {
 	return ccallHandle("IupDial", []interface{}{"string"}, []interface{}{orientation})
 }

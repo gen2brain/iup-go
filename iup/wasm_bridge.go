@@ -215,6 +215,18 @@ func dispatch(ih Ihandle, name string, i1, i2, i3, i4 int, sarg string) int {
 		ret = f(ih)
 	case ResizeFunc:
 		ret = f(ih, i1, i2)
+	case TerminalInputFunc:
+		ret = f(ih, []byte(sarg))
+	case TerminalTitleFunc:
+		ret = f(ih, sarg)
+	case TerminalBellFunc:
+		ret = f(ih)
+	case TerminalSizeFunc:
+		ret = f(ih, i1, i2)
+	case TerminalExitFunc:
+		ret = f(ih, i1)
+	case TextInputFunc:
+		ret = f(ih, sarg)
 	case MotionFunc:
 		ret = f(ih, i1, i2, sarg)
 	case EnterWindowFunc:

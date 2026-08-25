@@ -30,6 +30,10 @@ func DatePick() Ihandle {
 	return mkih(iupDatePick())
 }
 
+func Terminal() Ihandle {
+	return mkih(iupTerminal())
+}
+
 func Dial(orientation string) Ihandle {
 	return mkih(iupDial(optCStr(orientation)))
 }

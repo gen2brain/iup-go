@@ -295,6 +295,18 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 		setTabChangePosFunc(ih, fn.(TabChangePosFunc))
 	case "DROPFILES_CB":
 		setDropFilesFunc(ih, fn.(DropFilesFunc))
+	case "INPUT_CB":
+		setTerminalInputFunc(ih, fn.(TerminalInputFunc))
+	case "TITLE_CB":
+		setTerminalTitleFunc(ih, fn.(TerminalTitleFunc))
+	case "BELL_CB":
+		setTerminalBellFunc(ih, fn.(TerminalBellFunc))
+	case "TERMSIZE_CB":
+		setTerminalSizeFunc(ih, fn.(TerminalSizeFunc))
+	case "EXIT_CB":
+		setTerminalExitFunc(ih, fn.(TerminalExitFunc))
+	case "TEXTINPUT_CB":
+		setTextInputFunc(ih, fn.(TextInputFunc))
 	case "SCROLL_CB":
 		setScrollFunc(ih, fn.(ScrollFunc))
 	case "KEYPRESS_CB":
@@ -984,6 +996,86 @@ var dropFilesCB = purego.NewCallback(func(ih, filename uintptr, num, x, y int32)
 func setDropFilesFunc(ih Ihandle, f DropFilesFunc) {
 	storeCallback(ih, "_IUPGO_DROPFILES_CB", f)
 	iupSetCallback(uintptr(ih), "DROPFILES_CB", dropFilesCB)
+}
+
+type TerminalInputFunc func(ih Ihandle, bytes []byte) int
+
+var terminalInputCB = purego.NewCallback(func(ih, b uintptr, length int32) int {
+	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_TERMINAL_INPUT").(TerminalInputFunc); ok {
+		out := make([]byte, int(length))
+		if length > 0 {
+			copy(out, unsafe.Slice((*byte)(goPtr(b)), int(length)))
+		}
+		return f(Ihandle(ih), out)
+	}
+	return 0
+})
+
+func setTerminalInputFunc(ih Ihandle, f TerminalInputFunc) {
+	storeCallback(ih, "_IUPGO_TERMINAL_INPUT", f)
+	iupSetCallback(uintptr(ih), "INPUT_CB", terminalInputCB)
+}
+
+type TerminalTitleFunc func(ih Ihandle, title string) int
+
+var terminalTitleCB = purego.NewCallback(func(ih, title uintptr) int {
+	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_TERMINAL_TITLE").(TerminalTitleFunc); ok {
+		return f(Ihandle(ih), goString(title))
+	}
+	return 0
+})
+
+func setTerminalTitleFunc(ih Ihandle, f TerminalTitleFunc) {
+	storeCallback(ih, "_IUPGO_TERMINAL_TITLE", f)
+	iupSetCallback(uintptr(ih), "TITLE_CB", terminalTitleCB)
+}
+
+type TerminalBellFunc func(ih Ihandle) int
+
+func setTerminalBellFunc(ih Ihandle, f TerminalBellFunc) {
+	setIhIntFunc(ih, "BELL_CB", (func(Ihandle) int)(f))
+}
+
+type TerminalSizeFunc func(ih Ihandle, cols, lines int) int
+
+var terminalSizeCB = purego.NewCallback(func(ih uintptr, cols, lines int32) int {
+	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_TERMINAL_SIZE").(TerminalSizeFunc); ok {
+		return f(Ihandle(ih), int(cols), int(lines))
+	}
+	return 0
+})
+
+func setTerminalSizeFunc(ih Ihandle, f TerminalSizeFunc) {
+	storeCallback(ih, "_IUPGO_TERMINAL_SIZE", f)
+	iupSetCallback(uintptr(ih), "TERMSIZE_CB", terminalSizeCB)
+}
+
+type TerminalExitFunc func(ih Ihandle, status int) int
+
+var terminalExitCB = purego.NewCallback(func(ih uintptr, status int32) int {
+	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_TERMINAL_EXIT").(TerminalExitFunc); ok {
+		return f(Ihandle(ih), int(status))
+	}
+	return 0
+})
+
+func setTerminalExitFunc(ih Ihandle, f TerminalExitFunc) {
+	storeCallback(ih, "_IUPGO_TERMINAL_EXIT", f)
+	iupSetCallback(uintptr(ih), "EXIT_CB", terminalExitCB)
+}
+
+type TextInputFunc func(ih Ihandle, text string) int
+
+var textInputCB = purego.NewCallback(func(ih, text uintptr) int {
+	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_TEXTINPUT").(TextInputFunc); ok {
+		return f(Ihandle(ih), goString(text))
+	}
+	return 0
+})
+
+func setTextInputFunc(ih Ihandle, f TextInputFunc) {
+	storeCallback(ih, "_IUPGO_TEXTINPUT", f)
+	iupSetCallback(uintptr(ih), "TEXTINPUT_CB", textInputCB)
 }
 
 type WheelFunc func(ih Ihandle, delta float64, x, y int, status string) int
