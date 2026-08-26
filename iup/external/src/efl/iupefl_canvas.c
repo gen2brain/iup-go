@@ -568,7 +568,6 @@ static int eflCanvasMapMethod(Ihandle* ih)
   Eo* wrap = NULL;
   Eo* row = NULL;
   Eo* vg_parent;
-  Efl_VG* root;
 
   parent = iupeflGetParentWidget(ih);
   if (!parent)
@@ -601,9 +600,15 @@ static int eflCanvasMapMethod(Ihandle* ih)
   vg_parent = row ? row : parent;
 
   {
+    /* the frame is composited off-screen and pushed here as pixels */
     Evas* evas = evas_object_evas_get(vg_parent);
-    vg = efl_add(EFL_CANVAS_VG_OBJECT_CLASS, evas,
-      efl_canvas_object_key_focus_set(efl_added, EINA_TRUE));
+    vg = evas_object_image_filled_add(evas);
+    if (vg)
+    {
+      evas_object_image_colorspace_set(vg, EVAS_COLORSPACE_ARGB8888);
+      evas_object_image_alpha_set(vg, EINA_TRUE);
+      efl_canvas_object_key_focus_set(vg, EINA_TRUE);
+    }
   }
 
   if (!vg)
@@ -654,19 +659,6 @@ static int eflCanvasMapMethod(Ihandle* ih)
     iupAttribSet(ih, "_IUP_EXTRAPARENT", (char*)dnd_wrap);
   }
 
-  root = efl_add(EFL_CANVAS_VG_CONTAINER_CLASS, vg);
-  if (!root)
-  {
-    if (wrap)
-      efl_del(wrap);
-    efl_del(vg);
-    ih->handle = NULL;
-    return IUP_ERROR;
-  }
-
-  efl_canvas_vg_object_root_node_set(vg, root);
-  iupAttribSet(ih, "_IUP_EFL_VG_ROOT", (char*)root);
-
   efl_event_callback_add(vg, EFL_GFX_ENTITY_EVENT_SIZE_CHANGED, eflCanvasActionCallback, ih);
   efl_event_callback_add(vg, EFL_GFX_ENTITY_EVENT_SIZE_CHANGED, eflCanvasResizeCallback, ih);
   efl_event_callback_add(vg, EFL_EVENT_POINTER_MOVE, eflCanvasMotionCallback, ih);
@@ -693,7 +685,6 @@ static void eflCanvasUnMapMethod(Ihandle* ih)
 {
   Eo* vg = iupeflGetWidget(ih);
   Eo* wrap = (Eo*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
-  Efl_VG* root = (Efl_VG*)iupAttribGet(ih, "_IUP_EFL_VG_ROOT");
 
   {
     Eo* gl = (Eo*)iupAttribGet(ih, "_IUP_EFL_GESTURE_LAYER");
@@ -766,9 +757,6 @@ static void eflCanvasUnMapMethod(Ihandle* ih)
     efl_event_callback_del(vg, EFL_EVENT_KEY_DOWN, iupeflKeyDownEvent, ih);
     efl_event_callback_del(vg, EFL_EVENT_KEY_UP, iupeflKeyUpEvent, ih);
 
-    if (root)
-      efl_del(root);
-
     efl_del(vg);
   }
 
@@ -790,7 +778,6 @@ static void eflCanvasUnMapMethod(Ihandle* ih)
     }
   }
 
-  iupAttribSet(ih, "_IUP_EFL_VG_ROOT", NULL);
   ih->handle = NULL;
 
   iupeflFontFree(ih);
