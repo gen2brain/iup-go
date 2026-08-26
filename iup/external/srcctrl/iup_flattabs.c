@@ -2465,9 +2465,15 @@ static void iFlatTabsComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *
   *h = children_naturalheight;
 
   if (tabType == ITABS_TOP || tabType == ITABS_BOTTOM)
+  {
     *h += height;
+    *w = iupMAX(*w, width);
+  }
   else
+  {
     *w += width;
+    *h = iupMAX(*h, height);
+  }
 
   if (iupAttribGetBoolean(ih, "SHOWLINES"))
   {
