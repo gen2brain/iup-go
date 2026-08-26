@@ -232,15 +232,24 @@ IUP_SDK_API void iupdrvDrawQuadraticBezier(IdrawCanvas* dc, int x1, int y1, int 
 
 IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, float angle, const long* colors, const float* offsets, int count)
 {
-  (void)angle;  /* Shader direction is encoded by the endpoints. */
   if (!dc || !dc->ih->handle) return;
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
   jclass java_class = androidDrawFindHelper(jni_env);
   jintArray jcolors = androidGradientColors(jni_env, colors, count);
   jfloatArray joffsets = (*jni_env)->NewFloatArray(jni_env, count);
   (*jni_env)->SetFloatArrayRegion(jni_env, joffsets, 0, count, offsets);
-  jmethodID method_id = (*jni_env)->GetStaticMethodID(jni_env, java_class, "drawLinearGradient", "(Lio/github/gen2brain/iupgo/IupAndroidCanvas;IIII[I[F)V");
-  (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, dc->ih->handle, (jint)x1, (jint)y1, (jint)x2, (jint)y2, jcolors, joffsets);
+
+  /* 0 = left to right, 90 = top to bottom, 180 = right to left, 270 = bottom to top */
+  double rad = angle * M_PI / 180.0;
+  double w = (double)(x2 - x1);
+  double h = (double)(y2 - y1);
+  int sx = (int)(x1 + w / 2.0 - (w * cos(rad)) / 2.0);
+  int sy = (int)(y1 + h / 2.0 - (h * sin(rad)) / 2.0);
+  int ex = (int)(x1 + w / 2.0 + (w * cos(rad)) / 2.0);
+  int ey = (int)(y1 + h / 2.0 + (h * sin(rad)) / 2.0);
+
+  jmethodID method_id = (*jni_env)->GetStaticMethodID(jni_env, java_class, "drawLinearGradient", "(Lio/github/gen2brain/iupgo/IupAndroidCanvas;IIIIIIII[I[F)V");
+  (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, dc->ih->handle, (jint)x1, (jint)y1, (jint)x2, (jint)y2, (jint)sx, (jint)sy, (jint)ex, (jint)ey, jcolors, joffsets);
   iupAndroid_CheckException(jni_env, "IupCanvasHelper.drawLinearGradient");
   (*jni_env)->DeleteLocalRef(jni_env, jcolors);
   (*jni_env)->DeleteLocalRef(jni_env, joffsets);
