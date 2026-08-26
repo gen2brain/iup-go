@@ -374,7 +374,7 @@ static int cocoaTouchTreeIndexInParent(IupCocoaTouchTreeNode* node)
 	cell.titleLabel.font = node.font ? node.font : (_defaultFont ? _defaultFont : cell.titleLabel.font);
 	cell.titleLabel.textColor = node.textColor ? node.textColor : (_fgColor ? _fgColor : [UIColor labelColor]);
 
-	if (node.marked)
+	if (node.marked && iupTreeFindNodeId(_ihandle, (InodeHandle*)node) != _focusNodeId)
 		cell.backgroundColor = [UIColor systemFillColor];
 	else if (_bgColor)
 		cell.backgroundColor = _bgColor;
@@ -412,7 +412,6 @@ static int cocoaTouchTreeIndexInParent(IupCocoaTouchTreeNode* node)
 
 - (void)tableView:(UITableView*)tableView didSelectRowAtIndexPath:(NSIndexPath*)indexPath
 {
-	(void)tableView;
 	if ((NSUInteger)indexPath.row >= _flatNodes.count) return;
 
 	IupCocoaTouchTreeNode* node = _flatNodes[indexPath.row];
@@ -420,6 +419,23 @@ static int cocoaTouchTreeIndexInParent(IupCocoaTouchTreeNode* node)
 	if (id_ < 0) return;
 
 	_focusNodeId = id_;
+
+	if (_ihandle->data->mark_mode == ITREE_MARK_MULTIPLE)
+	{
+		NSMutableArray<NSIndexPath*>* stale = [NSMutableArray array];
+		for (NSUInteger r = 0; r < _flatNodes.count; r++)
+		{
+			if (_flatNodes[r] != node && [_flatNodes[r] marked])
+				[stale addObject:[NSIndexPath indexPathForRow:(NSInteger)r inSection:0]];
+		}
+		for (int i = 0; i < _ihandle->data->node_count; i++)
+		{
+			IupCocoaTouchTreeNode* n = (IupCocoaTouchTreeNode*)_ihandle->data->node_cache[i].node_handle;
+			if (n) n.marked = (n == node) ? YES : NO;
+		}
+		if (stale.count)
+			[tableView reloadRowsAtIndexPaths:stale withRowAnimation:UITableViewRowAnimationNone];
+	}
 
 	IFnii cb = (IFnii)IupGetCallback(_ihandle, "SELECTION_CB");
 	if (cb) cb(_ihandle, id_, 1);
@@ -1003,28 +1019,31 @@ static char* cocoaTouchTreeGetMarkedIdAttrib(Ihandle* ih, int id_)
 	return iupStrReturnBoolean(node.marked);
 }
 
+static void cocoaTouchTreeMarkRange(Ihandle* ih, int from, int to)
+{
+	if (from > to) { int t = from; from = to; to = t; }
+	if (from < 0) from = 0;
+	for (int i = from; i <= to && i < ih->data->node_count; i++)
+	{
+		IupCocoaTouchTreeNode* n = (IupCocoaTouchTreeNode*)ih->data->node_cache[i].node_handle;
+		if (n) n.marked = YES;
+	}
+}
+
 static int cocoaTouchTreeSetMarkAttrib(Ihandle* ih, const char* value)
 {
 	IupCocoaTouchTreeView* view = cocoaTouchTreeGetView(ih);
 	if (!view || !value) return 0;
+	if (ih->data->mark_mode == ITREE_MARK_SINGLE) return 0;
 
-	if (iupStrEqualNoCase(value, "CLEARALL"))
+	if (iupStrEqualNoCase(value, "CLEARALL") || iupStrEqualNoCase(value, "MARKALL"))
 	{
+		BOOL mark = iupStrEqualNoCase(value, "MARKALL") ? YES : NO;
 		for (int i = 0; i < ih->data->node_count; i++)
 		{
 			IupCocoaTouchTreeNode* n = (IupCocoaTouchTreeNode*)ih->data->node_cache[i].node_handle;
-			if (n) n.marked = NO;
+			if (n) n.marked = mark;
 		}
-		[view.tableView reloadData];
-	}
-	else if (iupStrEqualNoCase(value, "MARKALL"))
-	{
-		for (int i = 0; i < ih->data->node_count; i++)
-		{
-			IupCocoaTouchTreeNode* n = (IupCocoaTouchTreeNode*)ih->data->node_cache[i].node_handle;
-			if (n) n.marked = YES;
-		}
-		[view.tableView reloadData];
 	}
 	else if (iupStrEqualNoCase(value, "INVERTALL"))
 	{
@@ -1033,23 +1052,55 @@ static int cocoaTouchTreeSetMarkAttrib(Ihandle* ih, const char* value)
 			IupCocoaTouchTreeNode* n = (IupCocoaTouchTreeNode*)ih->data->node_cache[i].node_handle;
 			if (n) n.marked = !n.marked;
 		}
-		[view.tableView reloadData];
 	}
-	else if (iupStrEqualPartial(value, "BLOCK"))
+	else if (iupStrEqualNoCase(value, "BLOCK"))
+	{
+		cocoaTouchTreeMarkRange(ih, view.focusNodeId, view.markStartId);
+	}
+	else if (iupStrEqualPartial(value, "INVERT"))
+	{
+		int id_ = view.focusNodeId;
+		iupStrToInt(value + strlen("INVERT"), &id_);
+		IupCocoaTouchTreeNode* n = cocoaTouchTreeNodeFromId(ih, id_);
+		if (n) n.marked = !n.marked;
+	}
+	else
 	{
 		int from = -1, to = -1;
-		const char* p = value + 5;
-		if (iupStrToIntInt(p, &from, &to, '-') == 2 || iupStrToIntInt(p, &from, &to, ':') == 2)
-		{
-			if (from > to) { int t = from; from = to; to = t; }
-			for (int i = from; i <= to && i < ih->data->node_count; i++)
-			{
-				IupCocoaTouchTreeNode* n = (IupCocoaTouchTreeNode*)ih->data->node_cache[i].node_handle;
-				if (n) n.marked = YES;
-			}
-			[view.tableView reloadData];
-		}
+		if (iupStrToIntInt(value, &from, &to, '-') != 2)
+			return 0;
+		cocoaTouchTreeMarkRange(ih, from, to);
 	}
+
+	[view.tableView reloadData];
+	return 0;
+}
+
+static char* cocoaTouchTreeGetMarkedNodesAttrib(Ihandle* ih)
+{
+	char* str = iupStrGetMemory(ih->data->node_count + 1);
+	for (int i = 0; i < ih->data->node_count; i++)
+	{
+		IupCocoaTouchTreeNode* n = (IupCocoaTouchTreeNode*)ih->data->node_cache[i].node_handle;
+		str[i] = (n && n.marked) ? '+' : '-';
+	}
+	str[ih->data->node_count] = 0;
+	return str;
+}
+
+static int cocoaTouchTreeSetMarkedNodesAttrib(Ihandle* ih, const char* value)
+{
+	IupCocoaTouchTreeView* view = cocoaTouchTreeGetView(ih);
+	if (!view || !value) return 0;
+
+	int count = (int)strlen(value);
+	if (count > ih->data->node_count) count = ih->data->node_count;
+	for (int i = 0; i < count; i++)
+	{
+		IupCocoaTouchTreeNode* n = (IupCocoaTouchTreeNode*)ih->data->node_cache[i].node_handle;
+		if (n) n.marked = (value[i] == '+') ? YES : NO;
+	}
+	[view.tableView reloadData];
 	return 0;
 }
 
@@ -1638,6 +1689,7 @@ IUP_SDK_API void iupdrvTreeInitClass(Iclass* ic)
 	iupClassRegisterAttribute(ic, "MARK", NULL, cocoaTouchTreeSetMarkAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "STARTING", NULL, cocoaTouchTreeSetMarkStartAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "MARKSTART", NULL, cocoaTouchTreeSetMarkStartAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+	iupClassRegisterAttribute(ic, "MARKEDNODES", cocoaTouchTreeGetMarkedNodesAttrib, cocoaTouchTreeSetMarkedNodesAttrib, NULL, NULL, IUPAF_NO_SAVE|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "MARKMODE", NULL, cocoaTouchTreeSetMarkModeAttrib, IUPAF_SAMEASSYSTEM, "SINGLE", IUPAF_NOT_MAPPED);
 
 	iupClassRegisterAttributeId(ic, "COLOR", cocoaTouchTreeGetColorIdAttrib, cocoaTouchTreeSetColorIdAttrib, IUPAF_NO_INHERIT);
