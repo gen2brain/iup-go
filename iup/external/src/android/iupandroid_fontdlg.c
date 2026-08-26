@@ -9,7 +9,7 @@
 #include "iup_object.h"
 
 
-void iupdrvFontDlgInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvFontDlgInitClass(Iclass* ic)
 {
   (void)ic;
 }

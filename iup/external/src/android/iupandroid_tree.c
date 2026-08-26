@@ -1102,7 +1102,7 @@ IUP_SDK_API static int androidTreeSetFgColorAttrib(Ihandle* ih, const char* valu
   return 1;
 }
 
-void iupdrvTreeInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvTreeInitClass(Iclass* ic)
 {
   ic->Map = androidTreeMapMethod;
   ic->UnMap = androidTreeUnMapMethod;

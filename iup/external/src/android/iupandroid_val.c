@@ -23,7 +23,7 @@
 
 IUPJNI_DECLARE_CLASS_STATIC(IupValHelper);
 
-void iupdrvValGetMinSize(Ihandle* ih, int* w, int* h)
+IUP_SDK_API void iupdrvValGetMinSize(Ihandle* ih, int* w, int* h)
 {
   /* Logical px; parser scales to HW. 48dp thumb halo (cross axis), 200dp touch-friendly major. */
   if (ih->data->orientation == IVAL_HORIZONTAL)
@@ -168,7 +168,7 @@ static int androidValMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-void iupdrvValInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvValInitClass(Iclass* ic)
 {
   ic->Map = androidValMapMethod;
   ic->UnMap = iupdrvBaseUnMapMethod;

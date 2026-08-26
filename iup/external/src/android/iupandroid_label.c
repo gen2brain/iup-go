@@ -48,7 +48,7 @@ static IupAndroidLabelSubType androidLabelGetSubType(Ihandle* ih)
   }
 }
 
-void iupdrvLabelAddExtraPadding(Ihandle* ih, int* x, int* y)
+IUP_SDK_API void iupdrvLabelAddExtraPadding(Ihandle* ih, int* x, int* y)
 {
   (void)ih;
   (void)x;
@@ -319,7 +319,7 @@ static int androidLabelMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-void iupdrvLabelInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvLabelInitClass(Iclass* ic)
 {
   ic->Map = androidLabelMapMethod;
   ic->UnMap = iupdrvBaseUnMapMethod;

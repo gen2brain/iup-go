@@ -138,7 +138,7 @@ static int androidScrollbarMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-void iupdrvScrollbarGetMinSize(Ihandle* ih, int* w, int* h)
+IUP_SDK_API void iupdrvScrollbarGetMinSize(Ihandle* ih, int* w, int* h)
 {
   /* Logical px; parser scales to HW. */
   int thumb = 20;
@@ -155,7 +155,7 @@ void iupdrvScrollbarGetMinSize(Ihandle* ih, int* w, int* h)
   }
 }
 
-void iupdrvScrollbarInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvScrollbarInitClass(Iclass* ic)
 {
   ic->Map = androidScrollbarMapMethod;
   ic->UnMap = iupdrvBaseUnMapMethod;

@@ -147,14 +147,14 @@ static jobject androidImageBuildBitmapFromRaw(JNIEnv* jni_env, int width, int he
 }
 
 
-int iupdrvImageGetRawInfo(void* handle, int* w, int* h, int* bpp, iupColor* colors, int* colors_count)
+IUP_SDK_API int iupdrvImageGetRawInfo(void* handle, int* w, int* h, int* bpp, iupColor* colors, int* colors_count)
 {
   (void)colors;
   (void)colors_count;
   return iupdrvImageGetInfo(handle, w, h, bpp);
 }
 
-void* iupdrvImageCreateImage(Ihandle* ih, const char* bgcolor, int make_inactive)
+IUP_SDK_API void* iupdrvImageCreateImage(Ihandle* ih, const char* bgcolor, int make_inactive)
 {
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
   int bpp = iupAttribGetInt(ih, "BPP");
@@ -244,18 +244,18 @@ void* iupdrvImageCreateImage(Ihandle* ih, const char* bgcolor, int make_inactive
   return androidImageFinalize(jni_env, java_bitmap);
 }
 
-void* iupdrvImageCreateIcon(Ihandle* ih)
+IUP_SDK_API void* iupdrvImageCreateIcon(Ihandle* ih)
 {
   return iupdrvImageCreateImage(ih, NULL, 0);
 }
 
-void* iupdrvImageCreateCursor(Ihandle* ih)
+IUP_SDK_API void* iupdrvImageCreateCursor(Ihandle* ih)
 {
   (void)ih;
   return NULL;
 }
 
-void* iupdrvImageLoad(const char* name, int type)
+IUP_SDK_API void* iupdrvImageLoad(const char* name, int type)
 {
   (void)type;
 
@@ -281,7 +281,7 @@ void* iupdrvImageLoad(const char* name, int type)
   return NULL;
 }
 
-int iupdrvImageGetInfo(void* handle, int* w, int* h, int* bpp)
+IUP_SDK_API int iupdrvImageGetInfo(void* handle, int* w, int* h, int* bpp)
 {
   jobject java_bitmap = (jobject)handle;
   if (java_bitmap == NULL)
@@ -305,7 +305,7 @@ int iupdrvImageGetInfo(void* handle, int* w, int* h, int* bpp)
   return 1;
 }
 
-void iupdrvImageDestroy(void* handle, int type)
+IUP_SDK_API void iupdrvImageDestroy(void* handle, int type)
 {
   (void)type;
   if (handle == NULL)
@@ -314,7 +314,7 @@ void iupdrvImageDestroy(void* handle, int type)
   (*jni_env)->DeleteGlobalRef(jni_env, (jobject)handle);
 }
 
-void iupdrvImageGetData(void* handle, unsigned char* imgdata)
+IUP_SDK_API void iupdrvImageGetData(void* handle, unsigned char* imgdata)
 {
   jobject java_bitmap = (jobject)handle;
   if (java_bitmap == NULL || imgdata == NULL)
@@ -339,7 +339,7 @@ void iupdrvImageGetData(void* handle, unsigned char* imgdata)
   AndroidBitmap_unlockPixels(jni_env, java_bitmap);
 }
 
-int iupdrvImageSave(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count, const char* filename, const char* format)
+IUP_SDK_API int iupdrvImageSave(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count, const char* filename, const char* format)
 {
   if (iupStrEqualNoCase(format, "BMP"))
   {
@@ -375,7 +375,7 @@ int iupdrvImageSave(unsigned char* imgdata, int width, int height, int bpp, iupC
   return ok ? 1 : 0;
 }
 
-unsigned char* iupdrvImageSaveToBuffer(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count, const char* format, int* size)
+IUP_SDK_API unsigned char* iupdrvImageSaveToBuffer(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count, const char* format, int* size)
 {
   if (iupStrEqualNoCase(format, "BMP"))
     return iupImageWriteBMP(imgdata, width, height, bpp, colors, colors_count, size);
@@ -408,7 +408,7 @@ unsigned char* iupdrvImageSaveToBuffer(unsigned char* imgdata, int width, int he
   return buffer;
 }
 
-int iupdrvGetIconPixels(Ihandle* ih, const char* value, int* width, int* height, unsigned char** pixels)
+IUP_SDK_API int iupdrvGetIconPixels(Ihandle* ih, const char* value, int* width, int* height, unsigned char** pixels)
 {
   (void)ih;
   (void)value;

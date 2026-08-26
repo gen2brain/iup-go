@@ -12,45 +12,45 @@
 
 /* Android has no system tray, but the core still links against these symbols. */
 
-void iupdrvTrayInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvTrayInitClass(Iclass* ic)
 {
   (void)ic;
 }
 
-int iupdrvTraySetVisible(Ihandle* ih, int visible)
+IUP_SDK_API int iupdrvTraySetVisible(Ihandle* ih, int visible)
 {
   (void)ih;
   (void)visible;
   return 0;
 }
 
-int iupdrvTraySetImage(Ihandle* ih, const char* value)
+IUP_SDK_API int iupdrvTraySetImage(Ihandle* ih, const char* value)
 {
   (void)ih;
   (void)value;
   return 0;
 }
 
-int iupdrvTraySetTip(Ihandle* ih, const char* value)
+IUP_SDK_API int iupdrvTraySetTip(Ihandle* ih, const char* value)
 {
   (void)ih;
   (void)value;
   return 0;
 }
 
-int iupdrvTraySetMenu(Ihandle* ih, Ihandle* menu)
+IUP_SDK_API int iupdrvTraySetMenu(Ihandle* ih, Ihandle* menu)
 {
   (void)ih;
   (void)menu;
   return 0;
 }
 
-void iupdrvTrayDestroy(Ihandle* ih)
+IUP_SDK_API void iupdrvTrayDestroy(Ihandle* ih)
 {
   (void)ih;
 }
 
-int iupdrvTrayIsAvailable(void)
+IUP_SDK_API int iupdrvTrayIsAvailable(void)
 {
   return 0;
 }

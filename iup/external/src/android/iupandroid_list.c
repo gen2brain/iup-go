@@ -57,7 +57,7 @@ static int androidListEditBoxHeight(void)
   return (int)h;
 }
 
-void iupdrvListAddItemSpace(Ihandle* ih, int* h)
+IUP_SDK_API void iupdrvListAddItemSpace(Ihandle* ih, int* h)
 {
   /* Floor to measured row height; VISIBLELINES * row then fits exactly. */
   if (h)
@@ -69,7 +69,7 @@ void iupdrvListAddItemSpace(Ihandle* ih, int* h)
   }
 }
 
-void iupdrvListAddBorders(Ihandle* ih, int* x, int* y)
+IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int* x, int* y)
 {
   int extra_x, extra_y;
   if (ih->data->is_dropdown)
@@ -125,7 +125,7 @@ void iupdrvListAddBorders(Ihandle* ih, int* x, int* y)
   }
 }
 
-int iupdrvListGetCount(Ihandle* ih)
+IUP_SDK_API int iupdrvListGetCount(Ihandle* ih)
 {
   if (!ih->handle) return 0;
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
@@ -179,7 +179,7 @@ static int androidListSortPos(Ihandle* ih, const char* value)
   return n;
 }
 
-void iupdrvListAppendItem(Ihandle* ih, const char* value)
+IUP_SDK_API void iupdrvListAppendItem(Ihandle* ih, const char* value)
 {
   if (iupAttribGetBoolean(ih, "SORT"))
     androidListCallStringAtPos(ih, "insertItem", "(Landroid/view/View;ILjava/lang/String;)V", androidListSortPos(ih, value), value);
@@ -187,14 +187,14 @@ void iupdrvListAppendItem(Ihandle* ih, const char* value)
     androidListCallStringAtPos(ih, "appendItem", "(Landroid/view/View;Ljava/lang/String;)V", -1, value);
 }
 
-void iupdrvListInsertItem(Ihandle* ih, int pos, const char* value)
+IUP_SDK_API void iupdrvListInsertItem(Ihandle* ih, int pos, const char* value)
 {
   if (iupAttribGetBoolean(ih, "SORT"))
     pos = androidListSortPos(ih, value);
   androidListCallStringAtPos(ih, "insertItem", "(Landroid/view/View;ILjava/lang/String;)V", pos, value);
 }
 
-void iupdrvListRemoveItem(Ihandle* ih, int pos)
+IUP_SDK_API void iupdrvListRemoveItem(Ihandle* ih, int pos)
 {
   if (!ih->handle) return;
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
@@ -205,7 +205,7 @@ void iupdrvListRemoveItem(Ihandle* ih, int pos)
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
 }
 
-void iupdrvListRemoveAllItems(Ihandle* ih)
+IUP_SDK_API void iupdrvListRemoveAllItems(Ihandle* ih)
 {
   if (!ih->handle) return;
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
@@ -217,7 +217,7 @@ void iupdrvListRemoveAllItems(Ihandle* ih)
 }
 
 /* JNI local ref, consumed in the same frame by iupdrvListSetImageHandle. */
-void* iupdrvListGetImageHandle(Ihandle* ih, int id)
+IUP_SDK_API void* iupdrvListGetImageHandle(Ihandle* ih, int id)
 {
   if (!ih->handle) return NULL;
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
@@ -234,7 +234,7 @@ static char* androidListGetImageNativeHandleAttribId(Ihandle* ih, int id)
   return (char*)iupdrvListGetImageHandle(ih, id);
 }
 
-int iupdrvListSetImageHandle(Ihandle* ih, int id, void* hImage)
+IUP_SDK_API int iupdrvListSetImageHandle(Ihandle* ih, int id, void* hImage)
 {
   if (!ih->handle) return 0;
 
@@ -256,7 +256,7 @@ static int androidListSetImageAttrib(Ihandle* ih, int id, const char* value)
   return 1;
 }
 
-void iupdrvListSetItemCount(Ihandle* ih, int count)
+IUP_SDK_API void iupdrvListSetItemCount(Ihandle* ih, int count)
 {
   if (!ih->handle) return;
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
@@ -818,7 +818,7 @@ static int androidListMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-void iupdrvListInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvListInitClass(Iclass* ic)
 {
   ic->Map = androidListMapMethod;
   ic->UnMap = iupdrvBaseUnMapMethod;

@@ -288,7 +288,7 @@ char* iupAndroid_JStringToReturnStr(JNIEnv* jni_env, jstring j_string)
   return value;
 }
 
-void iupdrvActivate(Ihandle* ih)
+IUP_SDK_API void iupdrvActivate(Ihandle* ih)
 {
   if (!ih || !ih->handle) return;
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
@@ -299,7 +299,7 @@ void iupdrvActivate(Ihandle* ih)
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
 }
 
-void iupdrvReparent(Ihandle* ih)
+IUP_SDK_API void iupdrvReparent(Ihandle* ih)
 {
   if (!ih || !ih->handle) return;
   /* native-parent resolution skips TYPE_VOID and uses per-child inner containers (Tabs) */
@@ -313,7 +313,7 @@ void iupdrvReparent(Ihandle* ih)
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
 }
 
-void iupdrvBaseLayoutUpdateMethod(Ihandle* ih)
+IUP_SDK_API void iupdrvBaseLayoutUpdateMethod(Ihandle* ih)
 {
   jobject child_handle = ih->handle;
 
@@ -326,7 +326,7 @@ void iupdrvBaseLayoutUpdateMethod(Ihandle* ih)
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
 }
 
-void iupdrvBaseUnMapMethod(Ihandle* ih)
+IUP_SDK_API void iupdrvBaseUnMapMethod(Ihandle* ih)
 {
   if (!ih || !ih->handle) return;
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
@@ -357,7 +357,7 @@ static void androidCommonGetViewScreenLocation(Ihandle* ih, int* sx, int* sy)
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
 }
 
-void iupdrvScreenToClient(Ihandle* ih, int* x, int* y)
+IUP_SDK_API void iupdrvScreenToClient(Ihandle* ih, int* x, int* y)
 {
   int sx, sy;
   androidCommonGetViewScreenLocation(ih, &sx, &sy);
@@ -365,7 +365,7 @@ void iupdrvScreenToClient(Ihandle* ih, int* x, int* y)
   if (y) *y -= sy;
 }
 
-void iupdrvClientToScreen(Ihandle* ih, int* x, int* y)
+IUP_SDK_API void iupdrvClientToScreen(Ihandle* ih, int* x, int* y)
 {
   int sx, sy;
   androidCommonGetViewScreenLocation(ih, &sx, &sy);
@@ -373,14 +373,14 @@ void iupdrvClientToScreen(Ihandle* ih, int* x, int* y)
   if (y) *y += sy;
 }
 
-int iupdrvBaseSetZorderAttrib(Ihandle* ih, const char* value)
+IUP_SDK_API int iupdrvBaseSetZorderAttrib(Ihandle* ih, const char* value)
 {
   (void)ih;
   (void)value;
   return 0;
 }
 
-void iupdrvSetVisible(Ihandle* ih, int visible)
+IUP_SDK_API void iupdrvSetVisible(Ihandle* ih, int visible)
 {
   jobject widget = iupAndroid_RealNativeHandle(ih);
   if (!widget) return;
@@ -392,7 +392,7 @@ void iupdrvSetVisible(Ihandle* ih, int visible)
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
 }
 
-int iupdrvIsVisible(Ihandle* ih)
+IUP_SDK_API int iupdrvIsVisible(Ihandle* ih)
 {
   jobject widget = iupAndroid_RealNativeHandle(ih);
   if (!widget) return 0;
@@ -412,7 +412,7 @@ jobject iupAndroid_RealNativeHandle(Ihandle* ih)
   return (jobject)ih->handle;
 }
 
-int iupdrvIsActive(Ihandle* ih)
+IUP_SDK_API int iupdrvIsActive(Ihandle* ih)
 {
   jobject widget = iupAndroid_RealNativeHandle(ih);
   if (!widget) return 1;
@@ -428,7 +428,7 @@ int iupdrvIsActive(Ihandle* ih)
   return ret_val;
 }
 
-void iupdrvSetActive(Ihandle* ih, int enable)
+IUP_SDK_API void iupdrvSetActive(Ihandle* ih, int enable)
 {
   jobject widget = iupAndroid_RealNativeHandle(ih);
   if (!widget) return;
@@ -442,33 +442,33 @@ void iupdrvSetActive(Ihandle* ih, int enable)
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
 }
 
-int iupdrvBaseSetBgColorAttrib(Ihandle* ih, const char* value)
+IUP_SDK_API int iupdrvBaseSetBgColorAttrib(Ihandle* ih, const char* value)
 {
   (void)ih;
   (void)value;
   return 1;
 }
 
-int iupdrvBaseSetFgColorAttrib(Ihandle* ih, const char* value)
+IUP_SDK_API int iupdrvBaseSetFgColorAttrib(Ihandle* ih, const char* value)
 {
   (void)ih;
   (void)value;
   return 1;
 }
 
-int iupdrvBaseSetCursorAttrib(Ihandle* ih, const char* value)
+IUP_SDK_API int iupdrvBaseSetCursorAttrib(Ihandle* ih, const char* value)
 {
   (void)ih;
   (void)value;
   return 0;
 }
 
-int iupdrvGetScrollbarSize(void)
+IUP_SDK_API int iupdrvGetScrollbarSize(void)
 {
   return 0;
 }
 
-void iupdrvSetAccessibleTitle(Ihandle* ih, const char* title)
+IUP_SDK_API void iupdrvSetAccessibleTitle(Ihandle* ih, const char* title)
 {
   jobject widget = iupAndroid_RealNativeHandle(ih);
   if (!widget) return;
@@ -483,7 +483,7 @@ void iupdrvSetAccessibleTitle(Ihandle* ih, const char* title)
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
 }
 
-void iupdrvSetAccessibleDescription(Ihandle* ih, const char* description)
+IUP_SDK_API void iupdrvSetAccessibleDescription(Ihandle* ih, const char* description)
 {
   jobject widget = iupAndroid_RealNativeHandle(ih);
   if (!widget) return;
@@ -498,17 +498,17 @@ void iupdrvSetAccessibleDescription(Ihandle* ih, const char* description)
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
 }
 
-void iupdrvBaseRegisterCommonAttrib(Iclass* ic)
+IUP_SDK_API void iupdrvBaseRegisterCommonAttrib(Iclass* ic)
 {
   (void)ic;
 }
 
-void iupdrvBaseRegisterVisualAttrib(Iclass* ic)
+IUP_SDK_API void iupdrvBaseRegisterVisualAttrib(Iclass* ic)
 {
   (void)ic;
 }
 
-void iupdrvPostRedraw(Ihandle* ih)
+IUP_SDK_API void iupdrvPostRedraw(Ihandle* ih)
 {
   if (!ih) return;
   jobject widget = iupAndroid_RealNativeHandle(ih);
@@ -521,7 +521,7 @@ void iupdrvPostRedraw(Ihandle* ih)
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
 }
 
-void iupdrvRedrawNow(Ihandle* ih)
+IUP_SDK_API void iupdrvRedrawNow(Ihandle* ih)
 {
   if (!ih) return;
   jobject widget = iupAndroid_RealNativeHandle(ih);
@@ -534,7 +534,7 @@ void iupdrvRedrawNow(Ihandle* ih)
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
 }
 
-void iupdrvSendKey(int key, int press)
+IUP_SDK_API void iupdrvSendKey(int key, int press)
 {
   unsigned int keyval = 0, state = 0;
   iupdrvKeyEncode(key, &keyval, &state);
@@ -548,7 +548,7 @@ void iupdrvSendKey(int key, int press)
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
 }
 
-void iupdrvSendMouse(int x, int y, int bt, int status)
+IUP_SDK_API void iupdrvSendMouse(int x, int y, int bt, int status)
 {
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
   jclass java_class = IUPJNI_FindClass(IupCommon, jni_env, "io/github/gen2brain/iupgo/IupCommon");
@@ -558,12 +558,12 @@ void iupdrvSendMouse(int x, int y, int bt, int status)
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
 }
 
-void iupdrvSleep(int time)
+IUP_SDK_API void iupdrvSleep(int time)
 {
   if (time > 0) usleep((useconds_t)time * 1000);
 }
 
-void iupdrvWarpPointer(int x, int y)
+IUP_SDK_API void iupdrvWarpPointer(int x, int y)
 {
   (void)x;
   (void)y;

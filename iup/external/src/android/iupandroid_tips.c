@@ -19,7 +19,7 @@
 
 IUPJNI_DECLARE_CLASS_STATIC(IupTipHelper);
 
-int iupdrvBaseSetTipAttrib(Ihandle* ih, const char* value)
+IUP_SDK_API int iupdrvBaseSetTipAttrib(Ihandle* ih, const char* value)
 {
   if (!ih || !ih->handle) return 1;
 
@@ -34,7 +34,7 @@ int iupdrvBaseSetTipAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-int iupdrvBaseSetTipVisibleAttrib(Ihandle* ih, const char* value)
+IUP_SDK_API int iupdrvBaseSetTipVisibleAttrib(Ihandle* ih, const char* value)
 {
   if (!ih || !ih->handle) return 0;
 
@@ -47,7 +47,7 @@ int iupdrvBaseSetTipVisibleAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-char* iupdrvBaseGetTipVisibleAttrib(Ihandle* ih)
+IUP_SDK_API char* iupdrvBaseGetTipVisibleAttrib(Ihandle* ih)
 {
   /* Android has no public API to query tooltip visibility. */
   (void)ih;

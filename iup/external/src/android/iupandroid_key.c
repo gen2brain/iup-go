@@ -43,7 +43,7 @@
 #define AMETA_CTRL_ON   0x1000
 #define AMETA_META_ON   0x10000
 
-void iupdrvKeyEncode(int code, unsigned int* keyval, unsigned int* state)
+IUP_SDK_API void iupdrvKeyEncode(int code, unsigned int* keyval, unsigned int* state)
 {
   int base = iup_XkeyBase(code);
   unsigned int kv = 0;

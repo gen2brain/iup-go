@@ -23,7 +23,7 @@
 #include "iupandroid_jnicacheglobals.h"
 
 
-void* iupdrvGetDisplay(void)
+IUP_SDK_API void* iupdrvGetDisplay(void)
 {
   return NULL;
 }
@@ -222,7 +222,7 @@ static void iupAndroidRedirectStdio(void)
   }
 }
 
-int iupdrvOpen(int *argc, char ***argv)
+IUP_SDK_API int iupdrvOpen(int *argc, char ***argv)
 {
   (void)argc;
   (void)argv;
@@ -239,18 +239,18 @@ int iupdrvOpen(int *argc, char ***argv)
   return IUP_NOERROR;
 }
 
-int iupdrvSetGlobalAppIDAttrib(const char* value)
+IUP_SDK_API int iupdrvSetGlobalAppIDAttrib(const char* value)
 {
   (void)value;
   return 0;
 }
 
-int iupdrvSetGlobalAppNameAttrib(const char* value)
+IUP_SDK_API int iupdrvSetGlobalAppNameAttrib(const char* value)
 {
   (void)value;
   return 0;
 }
 
-void iupdrvClose(void)
+IUP_SDK_API void iupdrvClose(void)
 {
 }

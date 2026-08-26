@@ -58,7 +58,7 @@ void iupAndroid_ToggleActionFromJava(Ihandle* ih, int state)
   if (vc) vc(ih);
 }
 
-void iupdrvToggleAddBorders(Ihandle* ih, int* x, int* y)
+IUP_SDK_API void iupdrvToggleAddBorders(Ihandle* ih, int* x, int* y)
 {
   /* IMAGE-only. Override IUP's raw-pixel size with our 32dp icon + 16dp pad. */
   (void)ih;
@@ -79,7 +79,7 @@ void iupdrvToggleAddBorders(Ihandle* ih, int* x, int* y)
   }
 }
 
-void iupdrvToggleAddCheckBox(Ihandle* ih, int* x, int* y, const char* str)
+IUP_SDK_API void iupdrvToggleAddCheckBox(Ihandle* ih, int* x, int* y, const char* str)
 {
   /* Indicator (~24dp) plus drawable padding (~16dp) plus a breathing margin. */
   (void)str;
@@ -87,7 +87,7 @@ void iupdrvToggleAddCheckBox(Ihandle* ih, int* x, int* y, const char* str)
   if (y) *y += iupAndroid_DpToPx(8.0f) + 2 * ih->data->vert_padding;
 }
 
-void iupdrvToggleAddSwitch(Ihandle* ih, int* x, int* y, const char* str)
+IUP_SDK_API void iupdrvToggleAddSwitch(Ihandle* ih, int* x, int* y, const char* str)
 {
   /* MaterialSwitch track is ~52dp wide + ~8dp padding. */
   (void)str;
@@ -392,7 +392,7 @@ static int androidToggleMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-void iupdrvToggleInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvToggleInitClass(Iclass* ic)
 {
   ic->Map = androidToggleMapMethod;
   ic->UnMap = iupdrvBaseUnMapMethod;

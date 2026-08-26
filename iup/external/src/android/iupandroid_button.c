@@ -30,7 +30,7 @@ static jclass androidButtonFindHelper(JNIEnv* jni_env)
 }
 
 
-void iupdrvButtonAddBorders(Ihandle* ih, int* x, int* y)
+IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int* x, int* y)
 {
   int bw = 0, bh = 0;
 
@@ -322,7 +322,7 @@ static int androidButtonMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-void iupdrvButtonInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvButtonInitClass(Iclass* ic)
 {
   ic->Map = androidButtonMapMethod;
   ic->UnMap = iupdrvBaseUnMapMethod;

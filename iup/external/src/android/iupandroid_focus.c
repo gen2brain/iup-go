@@ -30,7 +30,7 @@ void iupandroidFocusInOutEvent(Ihandle* ih, int focus_in)
     iupCallKillFocusCb(ih);
 }
 
-void iupdrvSetFocus(Ihandle* ih)
+IUP_SDK_API void iupdrvSetFocus(Ihandle* ih)
 {
   if (!iupAttribGetBoolean(ih, "CANFOCUS")) return;
 

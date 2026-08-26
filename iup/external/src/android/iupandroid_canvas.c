@@ -140,7 +140,7 @@ static int androidCanvasSetPosYAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-void iupdrvCanvasInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvCanvasInitClass(Iclass* ic)
 {
   ic->Map = androidCanvasMapMethod;
   ic->UnMap = iupdrvBaseUnMapMethod;

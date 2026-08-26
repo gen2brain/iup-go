@@ -75,7 +75,7 @@ static char* androidCallStringStatic(const char* method_name)
 }
 
 
-void iupdrvAddScreenOffset(int* x, int* y, int add)
+IUP_SDK_API void iupdrvAddScreenOffset(int* x, int* y, int add)
 {
   /* Only X11 supports desktop origin offsets. */
   (void)x;
@@ -83,38 +83,38 @@ void iupdrvAddScreenOffset(int* x, int* y, int add)
   (void)add;
 }
 
-void iupdrvGetScreenSize(int* width, int* height)
+IUP_SDK_API void iupdrvGetScreenSize(int* width, int* height)
 {
   if (s_screen_w == 0) androidQueryDisplayMetrics();
   if (width) *width = s_screen_w;
   if (height) *height = s_screen_h;
 }
 
-void iupdrvGetFullSize(int* width, int* height)
+IUP_SDK_API void iupdrvGetFullSize(int* width, int* height)
 {
   if (s_full_w == 0) androidQueryDisplayMetrics();
   if (width) *width = s_full_w;
   if (height) *height = s_full_h;
 }
 
-int iupdrvGetScreenDepth(void)
+IUP_SDK_API int iupdrvGetScreenDepth(void)
 {
   /* Android window surfaces are effectively always 32-bit. */
   return 32;
 }
 
-double iupdrvGetScreenDpi(void)
+IUP_SDK_API double iupdrvGetScreenDpi(void)
 {
   if (s_screen_dpi == 0) androidQueryDisplayMetrics();
   return (double)s_screen_dpi;
 }
 
-int iupdrvScaleNaturalPx(int px)
+IUP_SDK_API int iupdrvScaleNaturalPx(int px)
 {
   return iupAndroid_DpToPx((float)px);
 }
 
-void iupdrvGetCursorPos(int* x, int* y)
+IUP_SDK_API void iupdrvGetCursorPos(int* x, int* y)
 {
   if (x) *x = 0;
   if (y) *y = 0;
@@ -133,7 +133,7 @@ void iupdrvGetCursorPos(int* x, int* y)
   (*env)->DeleteLocalRef(env, cls);
 }
 
-void iupdrvGetKeyState(char* key)
+IUP_SDK_API void iupdrvGetKeyState(char* key)
 {
   /* Modifier state is only meaningful during key events on Android. */
   key[0] = ' ';
@@ -143,28 +143,28 @@ void iupdrvGetKeyState(char* key)
   key[4] = 0;
 }
 
-char* iupdrvGetSystemName(void)
+IUP_SDK_API char* iupdrvGetSystemName(void)
 {
   return "Android";
 }
 
-char* iupdrvGetSystemVersion(void)
+IUP_SDK_API char* iupdrvGetSystemVersion(void)
 {
   return androidCallStringStatic("getSystemVersion");
 }
 
-char* iupdrvGetComputerName(void)
+IUP_SDK_API char* iupdrvGetComputerName(void)
 {
   /* Use Manufacturer + Model as the device identifier. */
   return androidCallStringStatic("getDeviceName");
 }
 
-char* iupdrvGetUserName(void)
+IUP_SDK_API char* iupdrvGetUserName(void)
 {
   return androidCallStringStatic("getUserName");
 }
 
-int iupdrvGetPreferencePath(char* filename, const char* app_name, int use_system)
+IUP_SDK_API int iupdrvGetPreferencePath(char* filename, const char* app_name, int use_system)
 {
   filename[0] = '\0';
 
@@ -188,7 +188,7 @@ int iupdrvGetPreferencePath(char* filename, const char* app_name, int use_system
   return 1;
 }
 
-int iupdrvGetUserDir(char* path, int size, int kind)
+IUP_SDK_API int iupdrvGetUserDir(char* path, int size, int kind)
 {
   if (!path || size <= 0) return 0;
   path[0] = '\0';
@@ -236,12 +236,12 @@ int iupdrvGetUserDir(char* path, int size, int kind)
   return ok;
 }
 
-char* iupdrvLocaleInfo(void)
+IUP_SDK_API char* iupdrvLocaleInfo(void)
 {
   return androidCallStringStatic("getLocaleTag");
 }
 
-char* iupdrvGetCurrentDirectory(void)
+IUP_SDK_API char* iupdrvGetCurrentDirectory(void)
 {
   char* cwd = getcwd(NULL, 0);
   if (!cwd) return NULL;
@@ -250,7 +250,7 @@ char* iupdrvGetCurrentDirectory(void)
   return ret;
 }
 
-int iupdrvSetCurrentDirectory(const char* dir)
+IUP_SDK_API int iupdrvSetCurrentDirectory(const char* dir)
 {
   return chdir(dir) == 0;
 }

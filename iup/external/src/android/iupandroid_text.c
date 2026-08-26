@@ -57,14 +57,14 @@ static IupAndroidTextSubType androidTextGetSubType(Ihandle* ih)
   return IUPANDROIDTEXTSUBTYPE_FIELD;
 }
 
-void iupdrvTextAddSpin(Ihandle* ih, int* w, int h)
+IUP_SDK_API void iupdrvTextAddSpin(Ihandle* ih, int* w, int h)
 {
   (void)ih;
   (void)h;
   if (w) *w += iupAndroid_DpToPx(72.0f);  /* 2x 36dp spin buttons */
 }
 
-void iupdrvTextAddBorders(Ihandle* ih, int* x, int* y)
+IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int* x, int* y)
 {
   IUPJNI_DECLARE_METHOD_ID_STATIC(IupTextHelper_getEditTextBorderH);
   IUPJNI_DECLARE_METHOD_ID_STATIC(IupTextHelper_getEditTextBorderV);
@@ -107,7 +107,7 @@ void iupdrvTextAddBorders(Ihandle* ih, int* x, int* y)
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
 }
 
-void iupdrvTextAddExtraPadding(Ihandle* ih, int* w, int* h)
+IUP_SDK_API void iupdrvTextAddExtraPadding(Ihandle* ih, int* w, int* h)
 {
   (void)ih;
   (void)w;
@@ -145,7 +145,7 @@ static void androidTextPosToLinCol(Ihandle* ih, int pos, int* lin, int* col)
   if (col) *col = (int)(packed & 0xFFFFFFFFLL);
 }
 
-void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, int col, int* pos)
+IUP_SDK_API void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, int col, int* pos)
 {
   if (!pos) return;
   *pos = 0;
@@ -158,7 +158,7 @@ void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, int col, int* pos)
   *pos = androidTextLinColToPos(ih, lin, col);
 }
 
-void iupdrvTextConvertPosToLinCol(Ihandle* ih, int pos, int* lin, int* col)
+IUP_SDK_API void iupdrvTextConvertPosToLinCol(Ihandle* ih, int pos, int* lin, int* col)
 {
   if (lin) *lin = 1;
   if (col) *col = 1;
@@ -174,7 +174,7 @@ void iupdrvTextConvertPosToLinCol(Ihandle* ih, int pos, int* lin, int* col)
 /* Matches IupTextHelper.FMT_UNSET (Integer.MIN_VALUE). */
 #define ANDROID_FMT_UNSET ((jint)0x80000000)
 
-void* iupdrvTextAddFormatTagStartBulk(Ihandle* ih)
+IUP_SDK_API void* iupdrvTextAddFormatTagStartBulk(Ihandle* ih)
 {
   IUPJNI_DECLARE_METHOD_ID_STATIC(IupTextHelper_beginFormatBulk);
   if (!ih->handle) return NULL;
@@ -188,7 +188,7 @@ void* iupdrvTextAddFormatTagStartBulk(Ihandle* ih)
   return state ? (void*)((*jni_env)->NewGlobalRef(jni_env, state)) : NULL;
 }
 
-void iupdrvTextAddFormatTagStopBulk(Ihandle* ih, void* state)
+IUP_SDK_API void iupdrvTextAddFormatTagStopBulk(Ihandle* ih, void* state)
 {
   IUPJNI_DECLARE_METHOD_ID_STATIC(IupTextHelper_endFormatBulk);
   if (!ih->handle) return;
@@ -231,7 +231,7 @@ static jint androidTextParseFontSize(const char* s)
   return (jint)v;
 }
 
-void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bulk)
+IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bulk)
 {
   IUPJNI_DECLARE_METHOD_ID_STATIC(IupTextHelper_applyFormatTag);
   IUPJNI_DECLARE_METHOD_ID_STATIC(IupTextHelper_applyImageSpan);
@@ -1186,7 +1186,7 @@ static int androidTextSetFgColorAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-int iupdrvTextGetFormatTags(Ihandle* ih, Ihandle* bulk_tag)
+IUP_SDK_API int iupdrvTextGetFormatTags(Ihandle* ih, Ihandle* bulk_tag)
 {
   IUPJNI_DECLARE_METHOD_ID_STATIC(IupTextHelper_getFormatRuns);
   JNIEnv* jni_env;
@@ -1283,7 +1283,7 @@ int iupdrvTextGetFormatTags(Ihandle* ih, Ihandle* bulk_tag)
   return 1;
 }
 
-void iupdrvTextInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
 {
   ic->Map = androidTextMapMethod;
   ic->UnMap = iupdrvBaseUnMapMethod;

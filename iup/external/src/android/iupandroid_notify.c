@@ -33,7 +33,7 @@ static int androidNotifyUrgency(Ihandle* ih)
   return u;
 }
 
-int iupdrvNotifyShow(Ihandle* ih)
+IUP_SDK_API int iupdrvNotifyShow(Ihandle* ih)
 {
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
   jclass java_class = IUPJNI_FindClass(IupNotifyHelper, jni_env, "io/github/gen2brain/iupgo/IupNotifyHelper");
@@ -153,7 +153,7 @@ int iupdrvNotifyShow(Ihandle* ih)
   return 1;
 }
 
-int iupdrvNotifyClose(Ihandle* ih)
+IUP_SDK_API int iupdrvNotifyClose(Ihandle* ih)
 {
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
   jclass java_class = IUPJNI_FindClass(IupNotifyHelper, jni_env, "io/github/gen2brain/iupgo/IupNotifyHelper");
@@ -185,7 +185,7 @@ int iupdrvNotifyClose(Ihandle* ih)
   return 1;
 }
 
-void iupdrvNotifyDestroy(Ihandle* ih)
+IUP_SDK_API void iupdrvNotifyDestroy(Ihandle* ih)
 {
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
   jclass java_class = IUPJNI_FindClass(IupNotifyHelper, jni_env, "io/github/gen2brain/iupgo/IupNotifyHelper");
@@ -211,7 +211,7 @@ void iupdrvNotifyDestroy(Ihandle* ih)
   iupAttribSet(ih, "_IUPANDROID_NOTIFY_ID", NULL);
 }
 
-int iupdrvNotifyIsAvailable(void)
+IUP_SDK_API int iupdrvNotifyIsAvailable(void)
 {
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
   jclass java_class = IUPJNI_FindClass(IupNotifyHelper, jni_env, "io/github/gen2brain/iupgo/IupNotifyHelper");
@@ -222,7 +222,7 @@ int iupdrvNotifyIsAvailable(void)
   return ok ? 1 : 0;
 }
 
-void iupdrvNotifyInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvNotifyInitClass(Iclass* ic)
 {
   iupClassRegisterAttribute(ic, "URGENCY", NULL, NULL, IUPAF_SAMEASSYSTEM, "1", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "APPICON", NULL, NULL, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);

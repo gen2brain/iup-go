@@ -178,7 +178,7 @@ static void androidFileDlgDestroyMethod(Ihandle* ih)
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
 }
 
-void iupdrvFileDlgInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvFileDlgInitClass(Iclass* ic)
 {
   ic->DlgPopup = androidFileDlgPopup;
   ic->Destroy  = androidFileDlgDestroyMethod;

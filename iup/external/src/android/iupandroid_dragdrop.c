@@ -282,7 +282,7 @@ JNIEXPORT jint JNICALL Java_io_github_gen2brain_iupgo_IupDragDropHelper_dispatch
 }
 
 
-void iupdrvRegisterDragDropAttrib(Iclass* ic)
+IUP_SDK_API void iupdrvRegisterDragDropAttrib(Iclass* ic)
 {
   iupClassRegisterCallback(ic, "DRAGBEGIN_CB",    "ii");
   iupClassRegisterCallback(ic, "DRAGDATASIZE_CB", "s");

@@ -174,7 +174,7 @@ static void androidPopoverUnMapMethod(Ihandle* ih)
   iupAndroid_ReleaseIhandle(jni_env, ih);
 }
 
-void iupdrvPopoverInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvPopoverInitClass(Iclass* ic)
 {
   ic->Map = androidPopoverMapMethod;
   ic->UnMap = androidPopoverUnMapMethod;
