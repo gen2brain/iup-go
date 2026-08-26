@@ -1078,6 +1078,8 @@ public final class IupTextHelper
             int pend = end;
             int len = buf.length();
             while (pend < len && buf.charAt(pend - 1) != '\n') pend++;
+            /* centering needs a bounded layout width; horizontal scrolling makes it unbounded */
+            if (alignment == 1 || alignment == 2) tv.setHorizontallyScrolling(false);
             applyParaSpans(buf, pstart, pend, alignment, indent, lineSpacing);
         }
 
