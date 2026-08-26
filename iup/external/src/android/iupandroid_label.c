@@ -192,30 +192,34 @@ static int androidLabelSetImageAttrib(Ihandle* ih, const char* value)
 
 static int androidLabelSetEllipsisAttrib(Ihandle* ih, const char* value)
 {
-  IUPJNI_DECLARE_METHOD_ID_STATIC(IupLabelHelper_setEllipsis);
+  IUPJNI_DECLARE_METHOD_ID_STATIC(IupLabelHelper_setLineMode);
   if (androidLabelGetSubType(ih) != IUPANDROIDLABELSUBTYPE_TEXT) return 0;
   if (!ih->handle) return 1;
 
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
   jclass cls = IUPJNI_FindClass(IupLabelHelper, jni_env, "io/github/gen2brain/iupgo/IupLabelHelper");
-  jmethodID m = IUPJNI_GetStaticMethodID(IupLabelHelper_setEllipsis, jni_env, cls, "setEllipsis", "(Landroid/widget/TextView;Z)V");
-  (*jni_env)->CallStaticVoidMethod(jni_env, cls, m, (jobject)ih->handle, iupStrBoolean(value) ? JNI_TRUE : JNI_FALSE);
-  iupAndroid_CheckException(jni_env, "IupLabelHelper.setEllipsis");
+  jmethodID m = IUPJNI_GetStaticMethodID(IupLabelHelper_setLineMode, jni_env, cls, "setLineMode", "(Landroid/widget/TextView;ZZ)V");
+  (*jni_env)->CallStaticVoidMethod(jni_env, cls, m, (jobject)ih->handle,
+      iupAttribGetBoolean(ih, "WORDWRAP") ? JNI_TRUE : JNI_FALSE,
+      iupStrBoolean(value) ? JNI_TRUE : JNI_FALSE);
+  iupAndroid_CheckException(jni_env, "IupLabelHelper.setLineMode");
   (*jni_env)->DeleteLocalRef(jni_env, cls);
   return 1;
 }
 
 static int androidLabelSetWordWrapAttrib(Ihandle* ih, const char* value)
 {
-  IUPJNI_DECLARE_METHOD_ID_STATIC(IupLabelHelper_setWordWrap);
+  IUPJNI_DECLARE_METHOD_ID_STATIC(IupLabelHelper_setLineModeWrap);
   if (androidLabelGetSubType(ih) != IUPANDROIDLABELSUBTYPE_TEXT) return 0;
   if (!ih->handle) return 1;
 
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
   jclass cls = IUPJNI_FindClass(IupLabelHelper, jni_env, "io/github/gen2brain/iupgo/IupLabelHelper");
-  jmethodID m = IUPJNI_GetStaticMethodID(IupLabelHelper_setWordWrap, jni_env, cls, "setWordWrap", "(Landroid/widget/TextView;Z)V");
-  (*jni_env)->CallStaticVoidMethod(jni_env, cls, m, (jobject)ih->handle, iupStrBoolean(value) ? JNI_TRUE : JNI_FALSE);
-  iupAndroid_CheckException(jni_env, "IupLabelHelper.setWordWrap");
+  jmethodID m = IUPJNI_GetStaticMethodID(IupLabelHelper_setLineModeWrap, jni_env, cls, "setLineMode", "(Landroid/widget/TextView;ZZ)V");
+  (*jni_env)->CallStaticVoidMethod(jni_env, cls, m, (jobject)ih->handle,
+      iupStrBoolean(value) ? JNI_TRUE : JNI_FALSE,
+      iupAttribGetBoolean(ih, "ELLIPSIS") ? JNI_TRUE : JNI_FALSE);
+  iupAndroid_CheckException(jni_env, "IupLabelHelper.setLineMode");
   (*jni_env)->DeleteLocalRef(jni_env, cls);
   return 1;
 }

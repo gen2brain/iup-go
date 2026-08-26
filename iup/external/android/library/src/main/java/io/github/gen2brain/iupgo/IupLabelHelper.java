@@ -114,17 +114,13 @@ public final class IupLabelHelper
         textView.setText(markup ? IupCommon.parseMarkup(text) : text);
     }
 
+    /* TextView ellipsizes only with a bounded line count and no horizontal scrolling */
     @Keep
-    public static void setEllipsis(TextView textView, boolean enable)
+    public static void setLineMode(TextView textView, boolean wordWrap, boolean ellipsis)
     {
-        textView.setEllipsize(enable ? android.text.TextUtils.TruncateAt.END : null);
-    }
-
-    /* WORDWRAP=NO disables auto-wrap; '\n' still inserts newlines */
-    @Keep
-    public static void setWordWrap(TextView textView, boolean enable)
-    {
-        textView.setHorizontallyScrolling(!enable);
+        textView.setHorizontallyScrolling(!wordWrap && !ellipsis);
+        textView.setMaxLines(ellipsis && !wordWrap ? 1 : Integer.MAX_VALUE);
+        textView.setEllipsize(ellipsis ? android.text.TextUtils.TruncateAt.END : null);
     }
 
     @Keep
