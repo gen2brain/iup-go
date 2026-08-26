@@ -4,10 +4,19 @@ import android.content.ClipData;
 import android.content.ClipDescription;
 import android.content.ClipboardManager;
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.net.Uri;
+
 import androidx.annotation.Keep;
+import androidx.core.content.FileProvider;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
 
 
-/* plain text + custom string formats (custom MIME on a text item); images/binary need a ContentProvider */
+/* plain text + custom string formats (custom MIME on a text item); images go through the FileProvider */
 public final class IupClipboardHelper
 {
     private IupClipboardHelper() {}
@@ -58,6 +67,70 @@ public final class IupClipboardHelper
         if (desc == null) return false;
         return desc.hasMimeType(ClipDescription.MIMETYPE_TEXT_PLAIN)
             || desc.hasMimeType(ClipDescription.MIMETYPE_TEXT_HTML);
+    }
+
+    @Keep
+    public static boolean setImage(Bitmap bitmap)
+    {
+        ClipboardManager cm = getClipboard();
+        Context ctx = IupApplication.getIupApplication();
+        if (cm == null || ctx == null || bitmap == null) return false;
+        try
+        {
+            File dir = new File(ctx.getCacheDir(), "clipboard");
+            if (!dir.isDirectory() && !dir.mkdirs()) return false;
+            File file = new File(dir, "image.png");
+            try (FileOutputStream out = new FileOutputStream(file))
+            {
+                bitmap.compress(Bitmap.CompressFormat.PNG, 100, out);
+            }
+            Uri uri = FileProvider.getUriForFile(ctx, ctx.getPackageName() + ".iupclipboard", file);
+            cm.setPrimaryClip(ClipData.newUri(ctx.getContentResolver(), "image", uri));
+            return true;
+        }
+        catch (Exception e)
+        {
+            return false;
+        }
+    }
+
+    @Keep
+    public static Bitmap getImage()
+    {
+        ClipboardManager cm = getClipboard();
+        Context ctx = IupApplication.getIupApplication();
+        if (cm == null || ctx == null || !cm.hasPrimaryClip()) return null;
+        ClipData clip = cm.getPrimaryClip();
+        if (clip == null) return null;
+
+        for (int i = 0; i < clip.getItemCount(); i++)
+        {
+            Uri uri = clip.getItemAt(i).getUri();
+            if (uri == null) continue;
+            try (InputStream in = ctx.getContentResolver().openInputStream(uri))
+            {
+                Bitmap bitmap = BitmapFactory.decodeStream(in);
+                if (bitmap != null) return bitmap;
+            }
+            catch (Exception ignored)
+            {
+            }
+        }
+        return null;
+    }
+
+    @Keep
+    public static boolean isImageAvailable()
+    {
+        ClipboardManager cm = getClipboard();
+        if (cm == null || !cm.hasPrimaryClip()) return false;
+        ClipDescription desc = cm.getPrimaryClipDescription();
+        if (desc == null) return false;
+        for (int i = 0; i < desc.getMimeTypeCount(); i++)
+        {
+            if (desc.getMimeType(i).startsWith("image/")) return true;
+        }
+        return false;
     }
 
     @Keep
