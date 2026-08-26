@@ -369,7 +369,11 @@ static NSRange cocoaTouchTextResolveFormatRange(Ihandle* ih, Ihandle* tag, NSUIn
 		}
 	}
 
-	return NSMakeRange(0, text_len);
+	/* undefined on the tag falls back to the control selection, then to the caret */
+	NSRange current = cocoaTouchTextSelection(ih);
+	if (current.location > text_len) current.location = text_len;
+	if (current.location + current.length > text_len) current.length = text_len - current.location;
+	return current;
 }
 
 static BOOL cocoaTouchTextFontIsSystem(UIFont* font)
