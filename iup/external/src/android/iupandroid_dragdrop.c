@@ -72,6 +72,14 @@ static jobjectArray androidDragDropParseTypes(JNIEnv* jni_env, const char* value
   return arr;
 }
 
+/* touch arrives in HW px, canvas callbacks are in logical px like BUTTON_CB */
+static int androidDragDropCanvasPx(int v)
+{
+  float d = iupAndroid_GetDisplayDensity();
+  if (d < 1.0f) d = 1.0f;
+  return (int)((float)v / d);
+}
+
 static int androidDragDropTypeMatches(const char* drop_types, const char* type)
 {
   if (!drop_types || !*drop_types || !type) return 0;
@@ -234,7 +242,7 @@ JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupDragDropHelper_deliverD
   jsize len = (*jni_env)->GetArrayLength(jni_env, j_data);
   jbyte* bytes = (*jni_env)->GetByteArrayElements(jni_env, j_data, NULL);
 
-  cb(ih, (char*)type, (void*)bytes, (int)len, (int)x, (int)y);
+  cb(ih, (char*)type, (void*)bytes, (int)len, androidDragDropCanvasPx(x), androidDragDropCanvasPx(y));
 
   (*jni_env)->ReleaseByteArrayElements(jni_env, j_data, bytes, JNI_ABORT);
   if (j_type) (*jni_env)->ReleaseStringUTFChars(jni_env, j_type, type);
@@ -252,7 +260,7 @@ JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupDragDropHelper_deliverM
 
   char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
   iupKEY_SETBUTTON1(status);
-  cb(ih, (int)x, (int)y, status);
+  cb(ih, androidDragDropCanvasPx(x), androidDragDropCanvasPx(y), status);
 }
 
 JNIEXPORT jint JNICALL Java_io_github_gen2brain_iupgo_IupDragDropHelper_dispatchDropFile(
@@ -276,7 +284,7 @@ JNIEXPORT jint JNICALL Java_io_github_gen2brain_iupgo_IupDragDropHelper_dispatch
   if (!cb) return IUP_DEFAULT;
 
   const char* path = (*jni_env)->GetStringUTFChars(jni_env, j_path, NULL);
-  int ret = cb(cb_ih, (char*)path, (int)remaining, (int)x, (int)y);
+  int ret = cb(cb_ih, (char*)path, (int)remaining, androidDragDropCanvasPx(x), androidDragDropCanvasPx(y));
   (*jni_env)->ReleaseStringUTFChars(jni_env, j_path, path);
   return ret;
 }
