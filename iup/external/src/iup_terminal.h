@@ -74,6 +74,7 @@ typedef struct _ItermCallbacks
   void (*bell)(void* user);
   void (*title)(void* user, const char* title);
   void (*palette)(void* user, int index, unsigned int rgb);
+  void (*clipboard)(void* user, const char* text);
 } ItermCallbacks;
 
 typedef struct _Iterm
