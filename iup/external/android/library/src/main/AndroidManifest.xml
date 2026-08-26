@@ -22,6 +22,16 @@
 	</queries>
 
 	<application android:supportsRtl="true">
+		<provider
+			android:name="androidx.core.content.FileProvider"
+			android:authorities="${applicationId}.iupclipboard"
+			android:exported="false"
+			android:grantUriPermissions="true">
+			<meta-data
+				android:name="android.support.FILE_PROVIDER_PATHS"
+				android:resource="@xml/iup_clipboard_paths"/>
+		</provider>
+
 		<activity
 			android:name="io.github.gen2brain.iupgo.IupLaunchActivity"
 			android:configChanges="orientation|keyboardHidden|screenSize"

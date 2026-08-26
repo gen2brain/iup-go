@@ -14,6 +14,7 @@
 #include "iup_object.h"
 #include "iup_str.h"
 #include "iup_attrib.h"
+#include "iup_image.h"
 
 #include "iupandroid_drv.h"
 #include "iupandroid_jnimacros.h"
@@ -67,6 +68,60 @@ static char* androidClipboardGetTextAvailableAttrib(Ihandle *ih)
   iupAndroid_CheckException(jni_env, "IupClipboardHelper.isTextAvailable");
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
   return iupStrReturnBoolean((int)available);
+}
+
+static int androidClipboardSetNativeImageAttrib(Ihandle *ih, const char *value)
+{
+  (void)ih;
+  if (!value) return 0;
+
+  JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
+  jclass java_class = IUPJNI_FindClass(IupClipboardHelper, jni_env, "io/github/gen2brain/iupgo/IupClipboardHelper");
+  jmethodID method_id = (*jni_env)->GetStaticMethodID(jni_env, java_class, "setImage", "(Landroid/graphics/Bitmap;)Z");
+  (*jni_env)->CallStaticBooleanMethod(jni_env, java_class, method_id, (jobject)value);
+  iupAndroid_CheckException(jni_env, "IupClipboardHelper.setImage");
+  (*jni_env)->DeleteLocalRef(jni_env, java_class);
+  return 0;
+}
+
+static char* androidClipboardGetNativeImageAttrib(Ihandle *ih)
+{
+  (void)ih;
+  JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
+  jclass java_class = IUPJNI_FindClass(IupClipboardHelper, jni_env, "io/github/gen2brain/iupgo/IupClipboardHelper");
+  jmethodID method_id = (*jni_env)->GetStaticMethodID(jni_env, java_class, "getImage", "()Landroid/graphics/Bitmap;");
+  jobject bitmap = (*jni_env)->CallStaticObjectMethod(jni_env, java_class, method_id);
+  iupAndroid_CheckException(jni_env, "IupClipboardHelper.getImage");
+  (*jni_env)->DeleteLocalRef(jni_env, java_class);
+  if (!bitmap) return NULL;
+
+  /* NATIVEIMAGE contract: the caller owns it, so hand back a global ref */
+  jobject global = (*jni_env)->NewGlobalRef(jni_env, bitmap);
+  (*jni_env)->DeleteLocalRef(jni_env, bitmap);
+  return (char*)global;
+}
+
+static int androidClipboardSetImageAttrib(Ihandle *ih, const char *value)
+{
+  void* bitmap;
+  if (!value) return 0;
+
+  bitmap = iupImageGetImage(value, ih, 0, NULL);
+  if (!bitmap) return 0;
+
+  return androidClipboardSetNativeImageAttrib(ih, (const char*)bitmap);
+}
+
+static char* androidClipboardGetImageAvailableAttrib(Ihandle *ih)
+{
+  (void)ih;
+  JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
+  jclass java_class = IUPJNI_FindClass(IupClipboardHelper, jni_env, "io/github/gen2brain/iupgo/IupClipboardHelper");
+  jmethodID method_id = (*jni_env)->GetStaticMethodID(jni_env, java_class, "isImageAvailable", "()Z");
+  jboolean available = (*jni_env)->CallStaticBooleanMethod(jni_env, java_class, method_id);
+  iupAndroid_CheckException(jni_env, "IupClipboardHelper.isImageAvailable");
+  (*jni_env)->DeleteLocalRef(jni_env, java_class);
+  return iupStrReturnBoolean(available == JNI_TRUE);
 }
 
 static int androidClipboardSetAddFormatAttrib(Ihandle *ih, const char *value)
@@ -168,9 +223,9 @@ Iclass* iupClipboardNewClass(void)
 
   /* custom string formats ride a ClipData with a custom MIME (FORMAT) on a text item; images and
      binary FORMATDATA would need a content-URI/ContentProvider, so they stay unsupported */
-  iupClassRegisterAttribute(ic, "NATIVEIMAGE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_STRING|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "IMAGE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_IHANDLENAME|IUPAF_WRITEONLY|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "IMAGEAVAILABLE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_READONLY|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "NATIVEIMAGE", androidClipboardGetNativeImageAttrib, androidClipboardSetNativeImageAttrib, NULL, NULL, IUPAF_NO_STRING|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMAGE", NULL, androidClipboardSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_WRITEONLY|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMAGEAVAILABLE", androidClipboardGetImageAvailableAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ADDFORMAT", NULL, androidClipboardSetAddFormatAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FORMAT", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FORMATAVAILABLE", androidClipboardGetFormatAvailableAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
