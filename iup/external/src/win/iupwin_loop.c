@@ -35,6 +35,11 @@ IUP_DRV_API void iupwinSetCustomQuitMessage(int enable)
     win_quit_message = WM_QUIT;
 }
 
+IUP_SDK_API void iupdrvSetEntryFunction(Icallback func)
+{
+  (void)func;
+}
+
 IUP_SDK_API void iupdrvSetIdleFunction(Icallback f)
 {
   win_idle_cb = (IFidle)f;

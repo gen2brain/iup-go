@@ -60,6 +60,11 @@ static void qtIdleFunc(void)
   }
 }
 
+extern "C" IUP_SDK_API void iupdrvSetEntryFunction(Icallback func)
+{
+  (void)func;
+}
+
 extern "C" IUP_SDK_API void iupdrvSetIdleFunction(Icallback f)
 {
   if (qt_idle_timer)

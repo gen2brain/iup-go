@@ -92,6 +92,11 @@ static Eina_Bool eflIdlerCallback(void *data)
   return ECORE_CALLBACK_CANCEL;
 }
 
+IUP_SDK_API void iupdrvSetEntryFunction(Icallback func)
+{
+  (void)func;
+}
+
 IUP_SDK_API void iupdrvSetIdleFunction(Icallback func)
 {
   if (efl_idler)
