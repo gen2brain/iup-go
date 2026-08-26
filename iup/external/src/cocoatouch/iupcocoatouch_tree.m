@@ -374,7 +374,12 @@ static int cocoaTouchTreeIndexInParent(IupCocoaTouchTreeNode* node)
 	cell.titleLabel.font = node.font ? node.font : (_defaultFont ? _defaultFont : cell.titleLabel.font);
 	cell.titleLabel.textColor = node.textColor ? node.textColor : (_fgColor ? _fgColor : [UIColor labelColor]);
 
-	if (_bgColor) cell.backgroundColor = _bgColor;
+	if (node.marked)
+		cell.backgroundColor = [UIColor systemFillColor];
+	else if (_bgColor)
+		cell.backgroundColor = _bgColor;
+	else
+		cell.backgroundColor = [UIColor clearColor];
 	cell.contentView.backgroundColor = [UIColor clearColor];
 
 	UIImage* icon = node.image;
@@ -415,7 +420,6 @@ static int cocoaTouchTreeIndexInParent(IupCocoaTouchTreeNode* node)
 	if (id_ < 0) return;
 
 	_focusNodeId = id_;
-	node.marked = YES;
 
 	IFnii cb = (IFnii)IupGetCallback(_ihandle, "SELECTION_CB");
 	if (cb) cb(_ihandle, id_, 1);
@@ -429,8 +433,6 @@ static int cocoaTouchTreeIndexInParent(IupCocoaTouchTreeNode* node)
 	IupCocoaTouchTreeNode* node = _flatNodes[indexPath.row];
 	int id_ = iupTreeFindNodeId(_ihandle, (InodeHandle*)node);
 	if (id_ < 0) return;
-
-	node.marked = NO;
 
 	IFnii cb = (IFnii)IupGetCallback(_ihandle, "SELECTION_CB");
 	if (cb) cb(_ihandle, id_, 0);
@@ -524,7 +526,9 @@ IUP_SDK_API void iupdrvTreeUpdateMarkMode(Ihandle* ih)
 {
 	IupCocoaTouchTreeView* view = cocoaTouchTreeGetView(ih);
 	if (!view) return;
-	view.tableView.allowsMultipleSelection = (ih->data->mark_mode == ITREE_MARK_MULTIPLE) ? YES : NO;
+	/* touch has no modifier key to extend a selection */
+	view.tableView.allowsMultipleSelection = NO;
+	[view.tableView reloadData];
 }
 
 static IupCocoaTouchTreeNode* cocoaTouchTreeCopySubtree(Ihandle* dst_ih, IupCocoaTouchTreeNode* src_node, int prev_id, int add)
@@ -552,6 +556,102 @@ static IupCocoaTouchTreeNode* cocoaTouchTreeCopySubtree(Ihandle* dst_ih, IupCoco
 		first = 0;
 	}
 	return new_node;
+}
+
+static void cocoaTouchTreeUpdateDepth(IupCocoaTouchTreeNode* node, int depth)
+{
+	node.depth = depth;
+	for (IupCocoaTouchTreeNode* child in node.children)
+		cocoaTouchTreeUpdateDepth(child, depth + 1);
+}
+
+static int cocoaTouchTreeCopyMoveNode(Ihandle* ih, int id_, const char* value, int is_copy)
+{
+	IupCocoaTouchTreeView* view = cocoaTouchTreeGetView(ih);
+	if (!view) return 0;
+
+	IupCocoaTouchTreeNode* src = cocoaTouchTreeNodeFromId(ih, id_);
+	InodeHandle* dst_handle = iupTreeGetNodeFromString(ih, value);
+	if (!src || !dst_handle) return 0;
+
+	IupCocoaTouchTreeNode* dst = (IupCocoaTouchTreeNode*)dst_handle;
+	if (src == dst) return 0;
+
+	for (IupCocoaTouchTreeNode* p = dst; p; p = p.parent)
+	{
+		if (p == src) return 0;
+	}
+
+	int id_src = id_;
+	int id_dst = iupTreeFindNodeId(ih, dst_handle);
+	if (id_dst < 0) return 0;
+
+	int position = 0;
+	int id_new = id_dst + 1;
+	if (dst.kind == ITREE_BRANCH)
+	{
+		if (dst.expanded)
+			position = 1;
+		else
+			id_new += cocoaTouchTreeSubtreeCount(dst);
+	}
+
+	if (is_copy)
+	{
+		cocoaTouchTreeCopySubtree(ih, src, id_dst, position);
+		cocoaTouchTreeRebuildFlat(view);
+		[view.tableView reloadData];
+		return 0;
+	}
+
+	if (id_new == id_src) return 0;
+
+	int old_count = ih->data->node_count;
+	int count = 1 + cocoaTouchTreeSubtreeCount(src);
+
+	[src retain];
+	if (src.parent) [src.parent.children removeObjectIdenticalTo:src];
+	else            [view.rootNodes removeObjectIdenticalTo:src];
+
+	if (position == 1)
+	{
+		src.parent = dst;
+		[dst.children insertObject:src atIndex:0];
+	}
+	else if (dst.parent)
+	{
+		src.parent = dst.parent;
+		int idx = cocoaTouchTreeIndexInParent(dst);
+		[dst.parent.children insertObject:src atIndex:(NSUInteger)(idx + 1)];
+	}
+	else
+	{
+		src.parent = nil;
+		NSUInteger idx = [view.rootNodes indexOfObjectIdenticalTo:dst];
+		[view.rootNodes insertObject:src atIndex:(idx == NSNotFound ? view.rootNodes.count : idx + 1)];
+	}
+	[src release];
+
+	cocoaTouchTreeUpdateDepth(src, src.parent ? src.parent.depth + 1 : 0);
+
+	/* iupTreeCopyMoveCache expects the count to already include the moved block */
+	ih->data->node_count = old_count + count;
+	iupTreeCopyMoveCache(ih, id_src, id_new, count, 0);
+	ih->data->node_count = old_count;
+
+	cocoaTouchTreeRebuildFlat(view);
+	[view.tableView reloadData];
+	return 0;
+}
+
+static int cocoaTouchTreeSetMoveNodeAttrib(Ihandle* ih, int id_, const char* value)
+{
+	return cocoaTouchTreeCopyMoveNode(ih, id_, value, 0);
+}
+
+static int cocoaTouchTreeSetCopyNodeAttrib(Ihandle* ih, int id_, const char* value)
+{
+	return cocoaTouchTreeCopyMoveNode(ih, id_, value, 1);
 }
 
 IUP_SDK_API void iupdrvTreeDragDropCopyNode(Ihandle* src, Ihandle* dst, InodeHandle* item_src, InodeHandle* item_dst)
@@ -833,7 +933,6 @@ static int cocoaTouchTreeSetValueAttrib(Ihandle* ih, const char* value)
 	if (row < 0) return 0;
 
 	view.focusNodeId = id_;
-	node.marked = YES;
 	NSIndexPath* ip = [NSIndexPath indexPathForRow:row inSection:0];
 	[view.tableView selectRowAtIndexPath:ip animated:NO scrollPosition:UITableViewScrollPositionMiddle];
 	return 0;
@@ -893,10 +992,7 @@ static int cocoaTouchTreeSetMarkedIdAttrib(Ihandle* ih, int id_, const char* val
 	int row = cocoaTouchTreeVisibleRow(view, node);
 	if (row < 0) return 0;
 	NSIndexPath* ip = [NSIndexPath indexPathForRow:row inSection:0];
-	if (mark)
-		[view.tableView selectRowAtIndexPath:ip animated:NO scrollPosition:UITableViewScrollPositionNone];
-	else
-		[view.tableView deselectRowAtIndexPath:ip animated:NO];
+	[view.tableView reloadRowsAtIndexPaths:@[ip] withRowAnimation:UITableViewRowAnimationNone];
 	return 0;
 }
 
@@ -919,8 +1015,7 @@ static int cocoaTouchTreeSetMarkAttrib(Ihandle* ih, const char* value)
 			IupCocoaTouchTreeNode* n = (IupCocoaTouchTreeNode*)ih->data->node_cache[i].node_handle;
 			if (n) n.marked = NO;
 		}
-		for (NSIndexPath* ip in [view.tableView indexPathsForSelectedRows])
-			[view.tableView deselectRowAtIndexPath:ip animated:NO];
+		[view.tableView reloadData];
 	}
 	else if (iupStrEqualNoCase(value, "MARKALL"))
 	{
@@ -929,8 +1024,7 @@ static int cocoaTouchTreeSetMarkAttrib(Ihandle* ih, const char* value)
 			IupCocoaTouchTreeNode* n = (IupCocoaTouchTreeNode*)ih->data->node_cache[i].node_handle;
 			if (n) n.marked = YES;
 		}
-		for (int r = 0; r < (int)view.flatNodes.count; r++)
-			[view.tableView selectRowAtIndexPath:[NSIndexPath indexPathForRow:r inSection:0] animated:NO scrollPosition:UITableViewScrollPositionNone];
+		[view.tableView reloadData];
 	}
 	else if (iupStrEqualNoCase(value, "INVERTALL"))
 	{
@@ -996,6 +1090,11 @@ static int cocoaTouchTreeSetDelNodeAttrib(Ihandle* ih, int id_, const char* valu
 		{
 			IupCocoaTouchTreeNode* n = (IupCocoaTouchTreeNode*)ih->data->node_cache[i].node_handle;
 			if (n && n.marked) [nodes addObject:n];
+		}
+		if (nodes.count == 0 && ih->data->mark_mode == ITREE_MARK_SINGLE)
+		{
+			IupCocoaTouchTreeNode* f = cocoaTouchTreeNodeFromId(ih, view.focusNodeId);
+			if (f) [nodes addObject:f];
 		}
 		/* delete in descending id order so removals don't shift the rest */
 		[nodes sortUsingComparator:^NSComparisonResult(IupCocoaTouchTreeNode* a, IupCocoaTouchTreeNode* b) {
@@ -1531,6 +1630,8 @@ IUP_SDK_API void iupdrvTreeInitClass(Iclass* ic)
 	iupClassRegisterAttributeId(ic, "CHILDCOUNT", cocoaTouchTreeGetChildCountIdAttrib, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
 	iupClassRegisterAttributeId(ic, "PARENT", cocoaTouchTreeGetParentIdAttrib, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
 
+	iupClassRegisterAttributeId(ic, "MOVENODE", NULL, cocoaTouchTreeSetMoveNodeAttrib, IUPAF_NOT_MAPPED|IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+	iupClassRegisterAttributeId(ic, "COPYNODE", NULL, cocoaTouchTreeSetCopyNodeAttrib, IUPAF_NOT_MAPPED|IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
 	iupClassRegisterAttributeId(ic, "DELNODE", NULL, cocoaTouchTreeSetDelNodeAttrib, IUPAF_NOT_MAPPED|IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
 
 	iupClassRegisterAttributeId(ic, "MARKED", cocoaTouchTreeGetMarkedIdAttrib, cocoaTouchTreeSetMarkedIdAttrib, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
