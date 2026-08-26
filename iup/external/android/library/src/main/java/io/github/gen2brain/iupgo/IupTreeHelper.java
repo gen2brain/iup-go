@@ -19,6 +19,8 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import com.google.android.material.checkbox.MaterialCheckBox;
+
 import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
@@ -215,12 +217,12 @@ public final class IupTreeHelper
         final LinearLayout row;
         final View spacer;
         final TextView chevron;
-        final android.widget.CheckBox toggle;
+        final MaterialCheckBox toggle;
         final TextView iconEmoji;
         final ImageView iconImage;
         final TextView title;
 
-        NodeHolder(LinearLayout row, View spacer, TextView chev, android.widget.CheckBox toggle, TextView iconEmoji, ImageView iconImage, TextView tv)
+        NodeHolder(LinearLayout row, View spacer, TextView chev, MaterialCheckBox toggle, TextView iconEmoji, ImageView iconImage, TextView tv)
         {
             super(row);
             this.row = row;
@@ -263,7 +265,7 @@ public final class IupTreeHelper
             chev.setLayoutParams(new LinearLayout.LayoutParams(tree.chevronSizePx, ViewGroup.LayoutParams.MATCH_PARENT));
             row.addView(chev);
 
-            android.widget.CheckBox toggle = new android.widget.CheckBox(ctx);
+            MaterialCheckBox toggle = new MaterialCheckBox(ctx);
             toggle.setPadding(0, 0, 0, 0);
             toggle.setLayoutParams(new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT));
@@ -324,26 +326,21 @@ public final class IupTreeHelper
             if (tree.showToggle && node.toggleVisible)
             {
                 h.toggle.setVisibility(View.VISIBLE);
-                h.toggle.setOnCheckedChangeListener(null);
-                if (node.toggleValue == -1)
-                {
-                    h.toggle.setChecked(false);
-                    h.toggle.setAlpha(0.5f);
-                }
-                else
-                {
-                    h.toggle.setChecked(node.toggleValue == 1);
-                    h.toggle.setAlpha(1.0f);
-                }
-                h.toggle.setOnCheckedChangeListener((btn, checked) -> {
+                h.toggle.setCheckedState(toggleState(node.toggleValue));
+                /* a click only flips checked/unchecked, so the ring is driven from the value */
+                h.toggle.setOnClickListener(btn -> {
                     int pos = h.getBindingAdapterPosition();
                     if (pos == RecyclerView.NO_POSITION) return;
                     TreeNode nd = tree.visible.get(pos);
-                    if (tree.toggle3State && nd.toggleValue == 1 && !checked)
-                        nd.toggleValue = -1;
+                    if (tree.toggle3State)
+                    {
+                        if (nd.toggleValue == 1) nd.toggleValue = -1;
+                        else if (nd.toggleValue == -1) nd.toggleValue = 0;
+                        else nd.toggleValue = 1;
+                    }
                     else
-                        nd.toggleValue = checked ? 1 : 0;
-                    btn.setAlpha(nd.toggleValue == -1 ? 0.5f : 1.0f);
+                        nd.toggleValue = (nd.toggleValue == 1) ? 0 : 1;
+                    ((MaterialCheckBox) btn).setCheckedState(toggleState(nd.toggleValue));
                     if (tree.ihandlePtr != 0L)
                         dispatchToggleValue(tree.ihandlePtr, idOfNode(tree, nd), nd.toggleValue);
                 });
@@ -1022,6 +1019,12 @@ public final class IupTreeHelper
         t.showToggle = show;
         t.toggle3State = threeState;
         if (t.adapter != null) t.adapter.notifyDataSetChanged();
+    }
+
+    static int toggleState(int value)
+    {
+        if (value < 0) return MaterialCheckBox.STATE_INDETERMINATE;
+        return value > 0 ? MaterialCheckBox.STATE_CHECKED : MaterialCheckBox.STATE_UNCHECKED;
     }
 
     @Keep
