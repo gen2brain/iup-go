@@ -49,6 +49,11 @@ static gboolean gtkIdleFunc(gpointer data)
   return FALSE;
 }
 
+IUP_SDK_API void iupdrvSetEntryFunction(Icallback func)
+{
+  (void)func;
+}
+
 IUP_SDK_API void iupdrvSetIdleFunction(Icallback f)
 {
   if (gtk_idle_cb)

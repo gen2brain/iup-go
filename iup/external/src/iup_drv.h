@@ -33,6 +33,10 @@ IUP_SDK_API char* iupdrvGetGlobal(const char* name);
  * \ingroup drv */
 IUP_SDK_API void iupdrvSetIdleFunction(Icallback func);
 
+/** Changes the entry point callback. Called from IupSetFunction.
+ * \ingroup drv */
+IUP_SDK_API void iupdrvSetEntryFunction(Icallback func);
+
 /** Convert the coordinates from screen relative to client area.
  * \ingroup drv */
 IUP_SDK_API void iupdrvScreenToClient(Ihandle* ih, int *x, int *y);

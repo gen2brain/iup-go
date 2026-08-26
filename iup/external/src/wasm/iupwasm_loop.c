@@ -37,6 +37,11 @@ EM_JS(void, iupwasmJsSetIdle, (int on), {
   }
 })
 
+IUP_SDK_API void iupdrvSetEntryFunction(Icallback func)
+{
+  (void)func;
+}
+
 IUP_SDK_API void iupdrvSetIdleFunction(Icallback f)
 {
   wasm_idle_cb = (IFidle)f;

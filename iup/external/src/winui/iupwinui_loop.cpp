@@ -299,6 +299,11 @@ extern "C" void IupPostMessage(Ihandle* ih, const char* s, int i, double d, void
   });
 }
 
+extern "C" IUP_SDK_API void iupdrvSetEntryFunction(Icallback func)
+{
+  (void)func;
+}
+
 extern "C" IUP_SDK_API void iupdrvSetIdleFunction(Icallback func)
 {
   winui_idle_cb = (IFidle)func;

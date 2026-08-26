@@ -37,6 +37,11 @@ static void androidIdleSet(int enable)
   (*jni_env)->DeleteLocalRef(jni_env, cls);
 }
 
+IUP_SDK_API void iupdrvSetEntryFunction(Icallback func)
+{
+  (void)func;
+}
+
 void iupdrvSetIdleFunction(Icallback f)
 {
   IFidle prev = android_idle_cb;

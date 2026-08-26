@@ -4,6 +4,7 @@
  * See Copyright Notice in "iup.h"
  */
 
+#include <stdlib.h>
 #include <string.h>
 
 #import <UIKit/UIKit.h>
@@ -76,6 +77,22 @@ IUP_SDK_API void iupdrvSetIdleFunction(Icallback f)
 IUP_DRV_API void iupCocoaTouchMarkEntryFinished(void)
 {
 	s_entry_finished = 1;
+}
+
+IUP_SDK_API void iupdrvSetEntryFunction(Icallback func)
+{
+	if (!func || s_entry_finished)
+		return;
+	if ([[UIApplication sharedApplication] delegate] != nil)
+		return;
+
+	@autoreleasepool
+	{
+		char prog[] = "iup";
+		char* argv[] = { prog, NULL };
+		UIApplicationMain(1, argv, nil, NSStringFromClass([IupAppDelegate class]));
+	}
+	exit(0);
 }
 
 /* break the modal pump if active, otherwise dismiss the topmost presented sheet */

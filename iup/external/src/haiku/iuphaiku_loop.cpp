@@ -159,6 +159,11 @@ extern "C" IUP_API void IupPostMessage(Ihandle* ih, const char* s, int i, double
   if (need_kick) haikuPostKick();
 }
 
+extern "C" IUP_SDK_API void iupdrvSetEntryFunction(Icallback func)
+{
+  (void)func;
+}
+
 extern "C" IUP_SDK_API void iupdrvSetIdleFunction(Icallback f)
 {
   haiku_idle_cb = (IFidle)f;
