@@ -56,10 +56,12 @@ public final class IupTextHelper
 
     private static final java.util.WeakHashMap<IupEditText, Boolean> sThemableTexts = new java.util.WeakHashMap<>();
     private static final java.util.WeakHashMap<TextInputLayout, Boolean> sThemableTils = new java.util.WeakHashMap<>();
+    private static final java.util.WeakHashMap<NestedScrollView, Boolean> sThemableBoxes = new java.util.WeakHashMap<>();
 
     static {
         IupTheme.register(IupTextHelper::refreshAllTexts);
         IupTheme.register(IupTextHelper::refreshAllTils);
+        IupTheme.register(IupTextHelper::refreshAllBoxes);
     }
 
     private static void refreshAllTexts()
@@ -70,7 +72,7 @@ public final class IupTextHelper
         }
     }
 
-    private static void refreshAllTils()
+    private static void applyTilPalette(TextInputLayout til)
     {
         Context ctx = IupCommon.getThemeContext();
         int outline = MaterialColors.getColor(ctx,
@@ -82,15 +84,41 @@ public final class IupTextHelper
 
         int[][] states = { { android.R.attr.state_focused }, { android.R.attr.state_hovered }, {} };
         int[]   colors = { primary, primary, outline };
-        ColorStateList strokeCsl = new ColorStateList(states, colors);
 
+        til.setBoxStrokeColorStateList(new ColorStateList(states, colors));
+        til.setDefaultHintTextColor(ColorStateList.valueOf(onSurfaceVar));
+        til.setHintTextColor(ColorStateList.valueOf(primary));
+        til.setBoxBackgroundColor(IupCommon.paletteTxtBg);
+    }
+
+    private static void applyBoxPalette(NestedScrollView sv)
+    {
+        int outline = MaterialColors.getColor(IupCommon.getThemeContext(),
+            com.google.android.material.R.attr.colorOutline, Color.GRAY);
+        float radius = 4f * IupCommon.getDisplayDensity();
+        int stroke = Math.max(1, (int)IupCommon.getDisplayDensity());
+
+        android.graphics.drawable.GradientDrawable box = new android.graphics.drawable.GradientDrawable();
+        box.setShape(android.graphics.drawable.GradientDrawable.RECTANGLE);
+        box.setCornerRadius(radius);
+        box.setColor(IupCommon.paletteTxtBg);
+        box.setStroke(stroke, outline);
+        sv.setBackground(box);
+    }
+
+    private static void refreshAllBoxes()
+    {
+        for (NestedScrollView sv : new java.util.ArrayList<>(sThemableBoxes.keySet()))
+        {
+            if (sv != null) applyBoxPalette(sv);
+        }
+    }
+
+    private static void refreshAllTils()
+    {
         for (TextInputLayout til : new java.util.ArrayList<>(sThemableTils.keySet()))
         {
-            if (til == null) continue;
-            til.setBoxStrokeColorStateList(strokeCsl);
-            til.setDefaultHintTextColor(ColorStateList.valueOf(onSurfaceVar));
-            til.setHintTextColor(ColorStateList.valueOf(primary));
-            til.setBoxBackgroundColor(IupCommon.paletteTxtBg);
+            if (til != null) applyTilPalette(til);
         }
     }
 
@@ -167,8 +195,9 @@ public final class IupTextHelper
             | InputType.TYPE_TEXT_VARIATION_NORMAL
             | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
 
-        /* M3 textInputStyle defaults to OutlinedBox; hint stays off until CUEBANNER is set. */
+        /* M3 textInputStyle is FilledBox; hint stays off until CUEBANNER is set. */
         TextInputLayout til = new TextInputLayout(IupCommon.getContextThemeWrapper());
+        til.setBoxBackgroundMode(TextInputLayout.BOX_BACKGROUND_OUTLINE);
         til.setHintEnabled(false);
         til.setBoxCollapsedPaddingTop(0);
         tv.setMinHeight(0);
@@ -178,6 +207,9 @@ public final class IupTextHelper
             ViewGroup.LayoutParams.WRAP_CONTENT));
         til.setTag(tv);
         sThemableTils.put(til, Boolean.TRUE);
+        /* the TIL draws the box, the EditText background would add a second underline */
+        tv.setBackground(null);
+        applyTilPalette(til);
         return til;
     }
 
@@ -230,6 +262,9 @@ public final class IupTextHelper
                 ViewGroup.LayoutParams.MATCH_PARENT));
         }
         sv.setTag(tv);
+        tv.setBackground(null);
+        sThemableBoxes.put(sv, Boolean.TRUE);
+        applyBoxPalette(sv);
         return sv;
     }
 
@@ -247,6 +282,7 @@ public final class IupTextHelper
 
         Context ctx = IupCommon.getContextThemeWrapper();
         TextInputLayout til = new TextInputLayout(ctx);
+        til.setBoxBackgroundMode(TextInputLayout.BOX_BACKGROUND_OUTLINE);
         til.setHintEnabled(false);
         til.setBoxCollapsedPaddingTop(0);
         tv.setMinHeight(0);
@@ -255,6 +291,8 @@ public final class IupTextHelper
             ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         til.setTag(tv);
         sThemableTils.put(til, Boolean.TRUE);
+        tv.setBackground(null);
+        applyTilPalette(til);
 
         LinearLayout box = new LinearLayout(ctx) {
             @Override
