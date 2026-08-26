@@ -1036,10 +1036,22 @@ static int androidTreeSetBgColorAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
+static char* androidTreeGetIndentationAttrib(Ihandle* ih)
+{
+  if (!ih->handle) return NULL;
+  JNIEnv* env = iupAndroid_GetEnvThreadSafe();
+  jclass cls = androidTreeFindClass(env);
+  jmethodID m = (*env)->GetStaticMethodID(env, cls, "getIndentation", "(Landroid/view/View;)I");
+  jint r = (*env)->CallStaticIntMethod(env, cls, m, ih->handle);
+  iupAndroid_CheckException(env, "IupTreeHelper.getIndentation");
+  (*env)->DeleteLocalRef(env, cls);
+  return iupStrReturnInt((int)r);
+}
+
 static int androidTreeSetIndentationAttrib(Ihandle* ih, const char* value)
 {
   int indent;
-  if (!iupStrToInt(value, &indent)) return 1;
+  if (!iupStrToInt(value, &indent) || indent < 0) return 1;
   if (!ih->handle) return 1;
 
   JNIEnv* env = iupAndroid_GetEnvThreadSafe();
@@ -1110,7 +1122,7 @@ IUP_SDK_API void iupdrvTreeInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, androidTreeSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTBGCOLOR", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "FGCOLOR", NULL, androidTreeSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTFGCOLOR", IUPAF_DEFAULT);
 
-  iupClassRegisterAttribute(ic, "INDENTATION", NULL, androidTreeSetIndentationAttrib, NULL, NULL, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "INDENTATION", androidTreeGetIndentationAttrib, androidTreeSetIndentationAttrib, NULL, NULL, IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "SPACING", iupTreeGetSpacingAttrib, androidTreeSetSpacingAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "HIDEBUTTONS", NULL, androidTreeSetHideButtonsAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "HIDELINES", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);

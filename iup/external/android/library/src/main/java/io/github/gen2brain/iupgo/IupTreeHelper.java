@@ -159,8 +159,15 @@ public final class IupTreeHelper
     public static void setIndentation(View widget, int px)
     {
         if (!(widget instanceof IupTreeView t)) return;
-        if (px > 0) t.indentPx = px;
+        if (px >= 0) t.indentPx = px;
         if (t.adapter != null) t.adapter.notifyDataSetChanged();
+    }
+
+    @Keep
+    public static int getIndentation(View widget)
+    {
+        if (!(widget instanceof IupTreeView t)) return 0;
+        return t.indentPx;
     }
 
     @Keep

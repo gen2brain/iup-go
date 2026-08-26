@@ -1188,7 +1188,7 @@ static NSImage* helperGetActiveImageForTreeItem(IupCocoaTreeItem* tree_item, Iup
     final_height = text_height;
   }
 
-  return final_height + ih->data->spacing;
+  return final_height + 2 * ih->data->spacing;
 }
 
 /* WARNING: This is another method that should be fast for performance. */

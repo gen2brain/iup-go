@@ -24,6 +24,17 @@
 
 #include "iupcocoatouch_drv.h"
 
+#define ITREE_INDENTATION_DEFAULT 20
+
+static int cocoaTouchTreeIndentation(Ihandle* ih)
+{
+	int indent;
+	char* value = ih ? iupAttribGet(ih, "INDENTATION") : NULL;
+	if (value && iupStrToInt(value, &indent) && indent >= 0)
+		return indent;
+	return ITREE_INDENTATION_DEFAULT;
+}
+
 
 @class IupCocoaTouchTreeNode;
 @class IupCocoaTouchTreeView;
@@ -194,14 +205,10 @@ static int cocoaTouchTreeIndexInParent(IupCocoaTouchTreeNode* node)
 	[super layoutSubviews];
 
 	Ihandle* ih = _owner ? _owner.ihandle : NULL;
-	CGFloat per_level = 20;
+	CGFloat per_level = cocoaTouchTreeIndentation(ih);
 	BOOL hide_buttons = NO;
 	if (ih)
-	{
-		int v = iupAttribGetInt(ih, "INDENTATION");
-		if (v > 0) per_level = v;
 		hide_buttons = iupAttribGetBoolean(ih, "HIDEBUTTONS") ? YES : NO;
-	}
 
 	CGFloat depth = self.node ? self.node.depth : 0;
 	CGFloat indent = 16 + depth * per_level;
@@ -1473,6 +1480,11 @@ static int cocoaTouchTreeSetActiveAttrib(Ihandle* ih, const char* value)
 	return 1;
 }
 
+static char* cocoaTouchTreeGetIndentationAttrib(Ihandle* ih)
+{
+	return iupStrReturnInt(cocoaTouchTreeIndentation(ih));
+}
+
 static int cocoaTouchTreeSetIndentationAttrib(Ihandle* ih, const char* value)
 {
 	(void)value;
@@ -1539,7 +1551,7 @@ IUP_SDK_API void iupdrvTreeInitClass(Iclass* ic)
 	iupClassRegisterAttribute(ic, "RENAME", NULL, cocoaTouchTreeSetRenameAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
 
 	iupClassRegisterAttribute(ic, "SPACING", iupTreeGetSpacingAttrib, cocoaTouchTreeSetSpacingAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
-	iupClassRegisterAttribute(ic, "INDENTATION", NULL, cocoaTouchTreeSetIndentationAttrib, NULL, NULL, IUPAF_DEFAULT);
+	iupClassRegisterAttribute(ic, "INDENTATION", cocoaTouchTreeGetIndentationAttrib, cocoaTouchTreeSetIndentationAttrib, NULL, NULL, IUPAF_DEFAULT);
 	iupClassRegisterAttribute(ic, "HIDELINES", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "HIDEBUTTONS", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "SHOWTOGGLE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);

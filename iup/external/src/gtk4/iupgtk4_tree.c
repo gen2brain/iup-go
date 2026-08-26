@@ -22,6 +22,8 @@
 
 #include "iupgtk4_drv.h"
 
+#define ITREE_INDENTATION_DEFAULT 12
+
 
 /*****************************************************************************/
 /* Helper functions                                                          */
@@ -1891,17 +1893,27 @@ static void gtkTreeUnMapMethod(Ihandle *ih)
 
 static char* gtkTreeGetIndentationAttrib(Ihandle *ih)
 {
-  /* GtkListView doesn't have direct indentation control;
-     GtkTreeExpander handles indentation automatically */
-  return "0";
+  int indent;
+  char* value = iupAttribGet(ih, "INDENTATION");
+  if (value && iupStrToInt(value, &indent) && indent >= 0)
+    return iupStrReturnInt(indent);
+  return iupStrReturnInt(ITREE_INDENTATION_DEFAULT);
 }
 
 static int gtkTreeSetIndentationAttrib(Ihandle *ih, const char *value)
 {
-  /* GtkTreeExpander handles indentation automatically */
-  (void)ih;
-  (void)value;
-  return 0;
+  char css_decl[64];
+  int indent;
+
+  if (!iupStrToInt(value, &indent) || indent < 0)
+    return 1;
+  if (!ih->handle)
+    return 1;
+
+  /* GtkTreeExpander prepends one "indent" node per depth level */
+  g_snprintf(css_decl, sizeof(css_decl), "min-width: %dpx;", indent);
+  iupgtk4CssSetWidgetSubRule(ih->handle, " row treeexpander indent", css_decl);
+  return 1;
 }
 
 static int gtkTreeSetTopItemAttrib(Ihandle *ih, const char *value)
@@ -1926,9 +1938,19 @@ static int gtkTreeSetTopItemAttrib(Ihandle *ih, const char *value)
 
 static int gtkTreeSetSpacingAttrib(Ihandle *ih, const char *value)
 {
+  char css_decl[64];
+
   iupStrToInt(value, &ih->data->spacing);
-  /* Spacing is applied in factory bind callback via widget properties */
-  return ih->handle ? 0 : 1;
+  if (ih->data->spacing < 0)
+    ih->data->spacing = 0;
+
+  if (!ih->handle)
+    return 1;
+
+  g_snprintf(css_decl, sizeof(css_decl), "padding-top: %dpx; padding-bottom: %dpx;",
+             ih->data->spacing, ih->data->spacing);
+  iupgtk4CssSetWidgetSubRule(ih->handle, " > row", css_decl);
+  return 0;
 }
 
 static int gtkTreeSetExpandAllAttrib(Ihandle *ih, const char *value)

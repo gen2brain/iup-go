@@ -1072,14 +1072,15 @@ static int fltkTreeSetTopItemAttrib(Ihandle* ih, const char* value)
 
 static int fltkTreeSetSpacingAttrib(Ihandle* ih, const char* value)
 {
-  if (!ih->handle)
-    return 0;
+  iupStrToInt(value, &ih->data->spacing);
+  if (ih->data->spacing < 0)
+    ih->data->spacing = 0;
 
-  int val = 0;
-  iupStrToInt(value, &val);
+  if (!ih->handle)
+    return 1;
 
   IupFltkTree* tree = (IupFltkTree*)ih->handle;
-  tree->linespacing(val);
+  tree->linespacing(2 * ih->data->spacing);
   tree->redraw();
   return 0;
 }
@@ -1786,9 +1787,8 @@ static int fltkTreeMapMethod(Ihandle* ih)
   if (indent > 0)
     tree->connectorwidth(indent);
 
-  int spacing = ih->data->spacing;
-  if (spacing > 0)
-    tree->linespacing(spacing);
+  if (ih->data->spacing > 0)
+    tree->linespacing(2 * ih->data->spacing);
 
   IupSetCallback(ih, "_IUP_XY2POS_CB", (Icallback)fltkTreeConvertXYToPos);
 

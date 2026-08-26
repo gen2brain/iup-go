@@ -80,6 +80,14 @@ public:
   IupQtTreeDelegate(Ihandle* ih_param, QObject* parent = nullptr)
     : QStyledItemDelegate(parent), ih(ih_param) {}
 
+  QSize sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const override
+  {
+    QSize size = QStyledItemDelegate::sizeHint(option, index);
+    if (ih)
+      size.setHeight(size.height() + 2 * ih->data->spacing);
+    return size;
+  }
+
   QWidget* createEditor(QWidget* parent, const QStyleOptionViewItem& option, const QModelIndex& index) const override
   {
     if (!ih || !ih->data->show_rename)
@@ -953,11 +961,16 @@ static char* qtTreeGetIndentationAttrib(Ihandle* ih)
 
 static int qtTreeSetSpacingAttrib(Ihandle* ih, const char* value)
 {
-  /* Qt doesn't have direct row spacing control */
-  /* Would need custom item delegate for this */
-  (void)ih;
-  (void)value;
-  return 1;
+  iupStrToInt(value, &ih->data->spacing);
+  if (ih->data->spacing < 0)
+    ih->data->spacing = 0;
+
+  if (!ih->handle)
+    return 1;
+
+  IupQtTree* tree = (IupQtTree*)ih->handle;
+  tree->doItemsLayout();
+  return 0;
 }
 
 static int qtTreeSetHlColorAttrib(Ihandle* ih, const char* value)
