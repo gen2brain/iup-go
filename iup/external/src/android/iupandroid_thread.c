@@ -31,7 +31,7 @@ static void* androidThreadFunc(void* obj)
   return NULL;
 }
 
-void* iupdrvThreadStart(Ihandle* ih)
+IUP_SDK_API void* iupdrvThreadStart(Ihandle* ih)
 {
   pthread_t* thread = malloc(sizeof(pthread_t));
   if (!thread)
@@ -45,37 +45,37 @@ void* iupdrvThreadStart(Ihandle* ih)
   return thread;
 }
 
-void iupdrvThreadJoin(void* handle)
+IUP_SDK_API void iupdrvThreadJoin(void* handle)
 {
   if (!handle)
     return;
   pthread_join(*(pthread_t*)handle, NULL);
 }
 
-void iupdrvThreadYield(void)
+IUP_SDK_API void iupdrvThreadYield(void)
 {
   sched_yield();
 }
 
-int iupdrvThreadIsCurrent(void* handle)
+IUP_SDK_API int iupdrvThreadIsCurrent(void* handle)
 {
   if (!handle)
     return 0;
   return pthread_equal(*(pthread_t*)handle, pthread_self()) != 0;
 }
 
-void iupdrvThreadExit(int code)
+IUP_SDK_API void iupdrvThreadExit(int code)
 {
   pthread_exit((void*)(intptr_t)code);
 }
 
-void iupdrvThreadDestroy(void* handle)
+IUP_SDK_API void iupdrvThreadDestroy(void* handle)
 {
   if (handle)
     free(handle);
 }
 
-void* iupdrvMutexCreate(void)
+IUP_SDK_API void* iupdrvMutexCreate(void)
 {
   pthread_mutex_t* mutex = malloc(sizeof(pthread_mutex_t));
   if (mutex)
@@ -83,19 +83,19 @@ void* iupdrvMutexCreate(void)
   return mutex;
 }
 
-void iupdrvMutexLock(void* handle)
+IUP_SDK_API void iupdrvMutexLock(void* handle)
 {
   if (handle)
     pthread_mutex_lock(handle);
 }
 
-void iupdrvMutexUnlock(void* handle)
+IUP_SDK_API void iupdrvMutexUnlock(void* handle)
 {
   if (handle)
     pthread_mutex_unlock(handle);
 }
 
-void iupdrvMutexDestroy(void* handle)
+IUP_SDK_API void iupdrvMutexDestroy(void* handle)
 {
   if (!handle)
     return;

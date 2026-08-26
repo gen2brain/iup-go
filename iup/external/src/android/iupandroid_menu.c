@@ -152,7 +152,7 @@ static int androidSeparatorMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-int iupdrvMenuPopup(Ihandle* ih, int x, int y)
+IUP_SDK_API int iupdrvMenuPopup(Ihandle* ih, int x, int y)
 {
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
   jclass java_class = IUPJNI_FindClass(IupMenuHelper, jni_env, "io/github/gen2brain/iupgo/IupMenuHelper");
@@ -163,20 +163,20 @@ int iupdrvMenuPopup(Ihandle* ih, int x, int y)
   return IUP_NOERROR;
 }
 
-int iupdrvMenuGetMenuBarSize(Ihandle* ih)
+IUP_SDK_API int iupdrvMenuGetMenuBarSize(Ihandle* ih)
 {
   (void)ih;
   /* Material toolbar is 56dp. */
   return iupAndroid_DpToPx(56.0f);
 }
 
-void iupdrvMenuInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvMenuInitClass(Iclass* ic)
 {
   ic->Map = androidMenuMapMethod;
   ic->UnMap = androidMenuUnMapMethod;
 }
 
-void iupdrvMenuItemInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvMenuItemInitClass(Iclass* ic)
 {
   ic->Map = androidMenuItemMapMethod;
   ic->UnMap = androidMenuUnMapMethod;
@@ -190,7 +190,7 @@ void iupdrvMenuItemInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "HIDEMARK",   NULL, androidMenuItemRefreshAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 }
 
-void iupdrvSubmenuInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvSubmenuInitClass(Iclass* ic)
 {
   ic->Map = androidSubmenuMapMethod;
   ic->UnMap = androidMenuUnMapMethod;
@@ -202,7 +202,7 @@ void iupdrvSubmenuInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "STATE",      NULL, NULL, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
 }
 
-void iupdrvMenuSeparatorInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvMenuSeparatorInitClass(Iclass* ic)
 {
   ic->Map = androidSeparatorMapMethod;
   ic->UnMap = androidMenuUnMapMethod;
@@ -224,7 +224,7 @@ static Ihandle* androidRecentFindMenuBar(Ihandle* menu)
   return NULL;
 }
 
-int iupdrvRecentMenuInit(Ihandle* menu, int max_recent, Icallback recent_cb)
+IUP_SDK_API int iupdrvRecentMenuInit(Ihandle* menu, int max_recent, Icallback recent_cb)
 {
   iupAttribSetInt(menu, "_IUP_RECENT_MAX", max_recent);
   iupAttribSet(menu, "_IUP_RECENT_CB", (char*)recent_cb);
@@ -232,7 +232,7 @@ int iupdrvRecentMenuInit(Ihandle* menu, int max_recent, Icallback recent_cb)
   return 0;
 }
 
-int iupdrvRecentMenuUpdate(Ihandle* menu, const char** filenames, int count, Icallback recent_cb)
+IUP_SDK_API int iupdrvRecentMenuUpdate(Ihandle* menu, const char** filenames, int count, Icallback recent_cb)
 {
   int max_recent, existing, i;
   if (!menu) return -1;

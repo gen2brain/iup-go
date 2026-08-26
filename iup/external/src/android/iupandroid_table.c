@@ -60,7 +60,7 @@ static int androidTableCallInt(Ihandle* ih, const char* method, const char* sig)
   return (int)r;
 }
 
-void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
+IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
 {
   ih->data->num_lin = num_lin;
   if (!ih->handle) return;
@@ -72,7 +72,7 @@ void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
   (*env)->DeleteLocalRef(env, cls);
 }
 
-void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
+IUP_SDK_API void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
 {
   ih->data->num_col = num_col;
   if (!ih->handle) return;
@@ -84,7 +84,7 @@ void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
   (*env)->DeleteLocalRef(env, cls);
 }
 
-void iupdrvTableAddLin(Ihandle* ih, int pos)
+IUP_SDK_API void iupdrvTableAddLin(Ihandle* ih, int pos)
 {
   if (!ih->handle) return;
   JNIEnv* env = iupAndroid_GetEnvThreadSafe();
@@ -96,7 +96,7 @@ void iupdrvTableAddLin(Ihandle* ih, int pos)
   ih->data->num_lin++;
 }
 
-void iupdrvTableDelLin(Ihandle* ih, int pos)
+IUP_SDK_API void iupdrvTableDelLin(Ihandle* ih, int pos)
 {
   if (!ih->handle) return;
   JNIEnv* env = iupAndroid_GetEnvThreadSafe();
@@ -108,7 +108,7 @@ void iupdrvTableDelLin(Ihandle* ih, int pos)
   if (ih->data->num_lin > 0) ih->data->num_lin--;
 }
 
-void iupdrvTableAddCol(Ihandle* ih, int pos)
+IUP_SDK_API void iupdrvTableAddCol(Ihandle* ih, int pos)
 {
   if (!ih->handle) return;
   JNIEnv* env = iupAndroid_GetEnvThreadSafe();
@@ -120,7 +120,7 @@ void iupdrvTableAddCol(Ihandle* ih, int pos)
   ih->data->num_col++;
 }
 
-void iupdrvTableDelCol(Ihandle* ih, int pos)
+IUP_SDK_API void iupdrvTableDelCol(Ihandle* ih, int pos)
 {
   if (!ih->handle) return;
   JNIEnv* env = iupAndroid_GetEnvThreadSafe();
@@ -132,7 +132,7 @@ void iupdrvTableDelCol(Ihandle* ih, int pos)
   if (ih->data->num_col > 0) ih->data->num_col--;
 }
 
-void iupdrvTableSetCellValue(Ihandle* ih, int lin, int col, const char* value)
+IUP_SDK_API void iupdrvTableSetCellValue(Ihandle* ih, int lin, int col, const char* value)
 {
   if (iupAttribGetBoolean(ih, "VIRTUALMODE")) return;
   if (!ih->handle) return;
@@ -146,7 +146,7 @@ void iupdrvTableSetCellValue(Ihandle* ih, int lin, int col, const char* value)
   (*env)->DeleteLocalRef(env, cls);
 }
 
-char* iupdrvTableGetCellValue(Ihandle* ih, int lin, int col)
+IUP_SDK_API char* iupdrvTableGetCellValue(Ihandle* ih, int lin, int col)
 {
   if (iupAttribGetBoolean(ih, "VIRTUALMODE"))
   {
@@ -166,7 +166,7 @@ char* iupdrvTableGetCellValue(Ihandle* ih, int lin, int col)
   return result;
 }
 
-void iupdrvTableSetCellImage(Ihandle* ih, int lin, int col, const char* image)
+IUP_SDK_API void iupdrvTableSetCellImage(Ihandle* ih, int lin, int col, const char* image)
 {
   if (!ih->handle) return;
   JNIEnv* env = iupAndroid_GetEnvThreadSafe();
@@ -178,7 +178,7 @@ void iupdrvTableSetCellImage(Ihandle* ih, int lin, int col, const char* image)
   (*env)->DeleteLocalRef(env, cls);
 }
 
-void iupdrvTableSetColTitle(Ihandle* ih, int col, const char* title)
+IUP_SDK_API void iupdrvTableSetColTitle(Ihandle* ih, int col, const char* title)
 {
   if (!ih->handle) return;
   JNIEnv* env = iupAndroid_GetEnvThreadSafe();
@@ -191,7 +191,7 @@ void iupdrvTableSetColTitle(Ihandle* ih, int col, const char* title)
   (*env)->DeleteLocalRef(env, cls);
 }
 
-char* iupdrvTableGetColTitle(Ihandle* ih, int col)
+IUP_SDK_API char* iupdrvTableGetColTitle(Ihandle* ih, int col)
 {
   if (!ih->handle) return NULL;
   JNIEnv* env = iupAndroid_GetEnvThreadSafe();
@@ -204,7 +204,7 @@ char* iupdrvTableGetColTitle(Ihandle* ih, int col)
   return result;
 }
 
-void iupdrvTableSetColWidth(Ihandle* ih, int col, int width)
+IUP_SDK_API void iupdrvTableSetColWidth(Ihandle* ih, int col, int width)
 {
   if (!ih->handle) return;
   JNIEnv* env = iupAndroid_GetEnvThreadSafe();
@@ -215,7 +215,7 @@ void iupdrvTableSetColWidth(Ihandle* ih, int col, int width)
   (*env)->DeleteLocalRef(env, cls);
 }
 
-int iupdrvTableGetColWidth(Ihandle* ih, int col)
+IUP_SDK_API int iupdrvTableGetColWidth(Ihandle* ih, int col)
 {
   if (!ih->handle) return 0;
   JNIEnv* env = iupAndroid_GetEnvThreadSafe();
@@ -227,7 +227,7 @@ int iupdrvTableGetColWidth(Ihandle* ih, int col)
   return (int)w;
 }
 
-void iupdrvTableSetFocusCell(Ihandle* ih, int lin, int col)
+IUP_SDK_API void iupdrvTableSetFocusCell(Ihandle* ih, int lin, int col)
 {
   if (!ih->handle) return;
   JNIEnv* env = iupAndroid_GetEnvThreadSafe();
@@ -238,7 +238,7 @@ void iupdrvTableSetFocusCell(Ihandle* ih, int lin, int col)
   (*env)->DeleteLocalRef(env, cls);
 }
 
-void iupdrvTableGetFocusCell(Ihandle* ih, int* lin, int* col)
+IUP_SDK_API void iupdrvTableGetFocusCell(Ihandle* ih, int* lin, int* col)
 {
   if (lin) *lin = 1;
   if (col) *col = 1;
@@ -255,7 +255,7 @@ void iupdrvTableGetFocusCell(Ihandle* ih, int* lin, int* col)
   if (col) *col = (int)c;
 }
 
-void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col)
+IUP_SDK_API void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col)
 {
   if (!ih->handle) return;
   JNIEnv* env = iupAndroid_GetEnvThreadSafe();
@@ -266,12 +266,12 @@ void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col)
   (*env)->DeleteLocalRef(env, cls);
 }
 
-void iupdrvTableRedraw(Ihandle* ih)
+IUP_SDK_API void iupdrvTableRedraw(Ihandle* ih)
 {
   androidTableCallVoid(ih, "redraw", "(Landroid/view/View;)V");
 }
 
-void iupdrvTableSetShowGrid(Ihandle* ih, int show)
+IUP_SDK_API void iupdrvTableSetShowGrid(Ihandle* ih, int show)
 {
   if (!ih->handle) return;
   JNIEnv* env = iupAndroid_GetEnvThreadSafe();
@@ -282,13 +282,13 @@ void iupdrvTableSetShowGrid(Ihandle* ih, int show)
   (*env)->DeleteLocalRef(env, cls);
 }
 
-int iupdrvTableGetBorderWidth(Ihandle* ih)
+IUP_SDK_API int iupdrvTableGetBorderWidth(Ihandle* ih)
 {
   (void)ih;
   return 0;
 }
 
-int iupdrvTableGetRowHeight(Ihandle* ih)
+IUP_SDK_API int iupdrvTableGetRowHeight(Ihandle* ih)
 {
   if (ih->handle)
     return androidTableCallInt(ih, "getRowHeight", "(Landroid/view/View;)I");
@@ -302,7 +302,7 @@ int iupdrvTableGetRowHeight(Ihandle* ih)
   return (int)r;
 }
 
-int iupdrvTableGetHeaderHeight(Ihandle* ih)
+IUP_SDK_API int iupdrvTableGetHeaderHeight(Ihandle* ih)
 {
   if (ih->handle)
     return androidTableCallInt(ih, "getHeaderHeight", "(Landroid/view/View;)I");
@@ -316,7 +316,7 @@ int iupdrvTableGetHeaderHeight(Ihandle* ih)
   return (int)r;
 }
 
-void iupdrvTableAddBorders(Ihandle* ih, int* w, int* h)
+IUP_SDK_API void iupdrvTableAddBorders(Ihandle* ih, int* w, int* h)
 {
   (void)ih;
   (void)w;
@@ -737,7 +737,7 @@ static int androidTableMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-void iupdrvTableInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvTableInitClass(Iclass* ic)
 {
   ic->Map = androidTableMapMethod;
   ic->UnMap = iupdrvBaseUnMapMethod;

@@ -52,7 +52,7 @@ static void androidFontRectGetSize(JNIEnv* jni_env, jobject j_rect, jint* w, jin
   (*jni_env)->DeleteLocalRef(jni_env, rect_class);
 }
 
-char* iupdrvGetSystemFont(void)
+IUP_SDK_API char* iupdrvGetSystemFont(void)
 {
   /* Static: iup_class stores this pointer as the FONT default. */
   static char systemfont[200] = "";
@@ -140,7 +140,7 @@ int iupdrvSetStandardFontAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-void iupdrvFontGetMultiLineStringSize(Ihandle* ih, const char* str, int* w, int* h)
+IUP_SDK_API void iupdrvFontGetMultiLineStringSize(Ihandle* ih, const char* str, int* w, int* h)
 {
   IUPJNI_DECLARE_METHOD_ID_STATIC(IupFontHelper_getMultiLineStringSize);
 
@@ -162,7 +162,7 @@ void iupdrvFontGetMultiLineStringSize(Ihandle* ih, const char* str, int* w, int*
   if (h) *h = (int)j_height;
 }
 
-void iupdrvFontGetTextSize(const char* font, const char* str, int len, int* w, int* h)
+IUP_SDK_API void iupdrvFontGetTextSize(const char* font, const char* str, int len, int* w, int* h)
 {
   IUPJNI_DECLARE_METHOD_ID_STATIC(IupFontHelper_getTextSize);
   (void)len;
@@ -193,7 +193,7 @@ void iupdrvFontGetTextSize(const char* font, const char* str, int len, int* w, i
   if (h) *h = (int)ceilf((float)j_height / d);
 }
 
-int iupdrvFontGetStringWidth(Ihandle* ih, const char* str)
+IUP_SDK_API int iupdrvFontGetStringWidth(Ihandle* ih, const char* str)
 {
   IUPJNI_DECLARE_METHOD_ID_STATIC(IupFontHelper_getStringWidth);
 
@@ -210,7 +210,7 @@ int iupdrvFontGetStringWidth(Ihandle* ih, const char* str)
   return (int)j_width;
 }
 
-void iupdrvFontGetCharSize(Ihandle* ih, int* charwidth, int* charheight)
+IUP_SDK_API void iupdrvFontGetCharSize(Ihandle* ih, int* charwidth, int* charheight)
 {
   IUPJNI_DECLARE_METHOD_ID_STATIC(IupFontHelper_getCharSize);
 
@@ -230,7 +230,7 @@ void iupdrvFontGetCharSize(Ihandle* ih, int* charwidth, int* charheight)
   if (charheight) *charheight = (int)j_height;
 }
 
-void iupdrvFontGetFontDim(const char* font, int* max_width, int* line_height, int* ascent, int* descent)
+IUP_SDK_API void iupdrvFontGetFontDim(const char* font, int* max_width, int* line_height, int* ascent, int* descent)
 {
   IUPJNI_DECLARE_METHOD_ID_STATIC(IupFontHelper_getFontDim);
 
@@ -266,7 +266,7 @@ void iupdrvFontGetFontDim(const char* font, int* max_width, int* line_height, in
   if (descent)     *descent     = (int)ceilf((float)vals[3] / d);
 }
 
-int iupdrvFontGetFamilyList(char*** list)
+IUP_SDK_API int iupdrvFontGetFamilyList(char*** list)
 {
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
   if (!jni_env)
@@ -334,15 +334,15 @@ int iupdrvFontGetFamilyList(char*** list)
   return out;
 }
 
-void iupdrvFontInit(void)
+IUP_SDK_API void iupdrvFontInit(void)
 {
 }
 
-void iupdrvFontFinish(void)
+IUP_SDK_API void iupdrvFontFinish(void)
 {
 }
 
-int iupdrvSetFontAttrib(Ihandle* ih, const char* value)
+IUP_SDK_API int iupdrvSetFontAttrib(Ihandle* ih, const char* value)
 {
   char typeface[1024] = "";
   int size = 0, is_bold = 0, is_italic = 0, is_underline = 0, is_strikeout = 0;

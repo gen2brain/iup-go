@@ -11,12 +11,12 @@
 #include "iup_singleinstance.h"
 
 
-int iupdrvSingleInstanceSet(const char* name)
+IUP_SDK_API int iupdrvSingleInstanceSet(const char* name)
 {
   (void)name;
   return 0;
 }
 
-void iupdrvSingleInstanceClose(void)
+IUP_SDK_API void iupdrvSingleInstanceClose(void)
 {
 }

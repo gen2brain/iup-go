@@ -53,7 +53,7 @@ static void androidFrameCallColorSetter(Ihandle* ih, const char* method_name, un
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
 }
 
-void iupdrvFrameGetDecorOffset(Ihandle* ih, int* x, int* y)
+IUP_SDK_API void iupdrvFrameGetDecorOffset(Ihandle* ih, int* x, int* y)
 {
   int title_h = 0;
   int stroke = 1;
@@ -66,14 +66,14 @@ void iupdrvFrameGetDecorOffset(Ihandle* ih, int* x, int* y)
   if (y) *y = stroke + title_h;
 }
 
-int iupdrvFrameHasClientOffset(Ihandle* ih)
+IUP_SDK_API int iupdrvFrameHasClientOffset(Ihandle* ih)
 {
   /* inner IupAndroidFixed already offsets children past the decoration */
   (void)ih;
   return 0;
 }
 
-int iupdrvFrameGetTitleHeight(Ihandle* ih, int* h)
+IUP_SDK_API int iupdrvFrameGetTitleHeight(Ihandle* ih, int* h)
 {
   const char* title = iupAttribGet(ih, "TITLE");
   if (!title || !*title)
@@ -96,7 +96,7 @@ int iupdrvFrameGetTitleHeight(Ihandle* ih, int* h)
   return 1;
 }
 
-int iupdrvFrameGetDecorSize(Ihandle* ih, int* w, int* h)
+IUP_SDK_API int iupdrvFrameGetDecorSize(Ihandle* ih, int* w, int* h)
 {
   int title_h;
   int stroke = ih->handle ? androidFrameCallIntGetter(ih, "getStrokePx") : iupAndroid_DpToPx(1.0f);
@@ -280,7 +280,7 @@ static void androidFrameUnMapMethod(Ihandle* ih)
   iupAndroid_ReleaseIhandle(jni_env, ih);
 }
 
-void iupdrvFrameInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvFrameInitClass(Iclass* ic)
 {
   ic->Map = androidFrameMapMethod;
   ic->UnMap = androidFrameUnMapMethod;

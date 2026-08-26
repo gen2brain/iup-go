@@ -66,7 +66,7 @@ static jintArray androidGradientColors(JNIEnv* jni_env, const long* colors, int 
   return arr;
 }
 
-IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
+IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
 {
   IdrawCanvas* dc = calloc(1, sizeof(IdrawCanvas));
   dc->ih = ih;
@@ -89,12 +89,12 @@ IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
   return dc;
 }
 
-void iupdrvDrawKillCanvas(IdrawCanvas* dc)
+IUP_SDK_API void iupdrvDrawKillCanvas(IdrawCanvas* dc)
 {
   free(dc);
 }
 
-void iupdrvDrawUpdateSize(IdrawCanvas* dc)
+IUP_SDK_API void iupdrvDrawUpdateSize(IdrawCanvas* dc)
 {
   if (!dc || !dc->ih) return;
   dc->w = dc->ih->currentwidth;
@@ -110,7 +110,7 @@ void iupdrvDrawUpdateSize(IdrawCanvas* dc)
   }
 }
 
-void iupdrvDrawFlush(IdrawCanvas* dc)
+IUP_SDK_API void iupdrvDrawFlush(IdrawCanvas* dc)
 {
   if (!dc || !dc->ih || !dc->ih->handle) return;
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
@@ -121,7 +121,7 @@ void iupdrvDrawFlush(IdrawCanvas* dc)
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
 }
 
-void iupdrvDrawGetSize(IdrawCanvas* dc, int* w, int* h)
+IUP_SDK_API void iupdrvDrawGetSize(IdrawCanvas* dc, int* w, int* h)
 {
   /* HW px -> canvas-coord; float density + ceil for exact round-trip with iupdrvScaleNaturalPx */
   float d = iupAndroid_GetDisplayDensity(); if (d < 1.0f) d = 1.0f;
@@ -140,22 +140,22 @@ static void androidDrawRect(IdrawCanvas* dc, const char* method_name, int x1, in
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
 }
 
-void iupdrvDrawLine(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color, int style, int line_width)
+IUP_SDK_API void iupdrvDrawLine(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color, int style, int line_width)
 {
   androidDrawRect(dc, "drawLine", x1, y1, x2, y2, color, style, line_width);
 }
 
-void iupdrvDrawRectangle(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color, int style, int line_width)
+IUP_SDK_API void iupdrvDrawRectangle(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color, int style, int line_width)
 {
   androidDrawRect(dc, "drawRectangle", x1, y1, x2, y2, color, style, line_width);
 }
 
-void iupdrvDrawEllipse(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color, int style, int line_width)
+IUP_SDK_API void iupdrvDrawEllipse(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color, int style, int line_width)
 {
   androidDrawRect(dc, "drawEllipse", x1, y1, x2, y2, color, style, line_width);
 }
 
-void iupdrvDrawArc(IdrawCanvas* dc, int x1, int y1, int x2, int y2, double a1, double a2, long color, int style, int line_width)
+IUP_SDK_API void iupdrvDrawArc(IdrawCanvas* dc, int x1, int y1, int x2, int y2, double a1, double a2, long color, int style, int line_width)
 {
   if (!dc || !dc->ih->handle) return;
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
@@ -171,7 +171,7 @@ void iupdrvDrawArc(IdrawCanvas* dc, int x1, int y1, int x2, int y2, double a1, d
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
 }
 
-void iupdrvDrawPolygon(IdrawCanvas* dc, int* points, int count, long color, int style, int line_width)
+IUP_SDK_API void iupdrvDrawPolygon(IdrawCanvas* dc, int* points, int count, long color, int style, int line_width)
 {
   if (!dc || !dc->ih->handle || count <= 0) return;
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
@@ -186,7 +186,7 @@ void iupdrvDrawPolygon(IdrawCanvas* dc, int* points, int count, long color, int 
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
 }
 
-void iupdrvDrawPixel(IdrawCanvas* dc, int x, int y, long color)
+IUP_SDK_API void iupdrvDrawPixel(IdrawCanvas* dc, int x, int y, long color)
 {
   if (!dc || !dc->ih->handle) return;
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
@@ -197,7 +197,7 @@ void iupdrvDrawPixel(IdrawCanvas* dc, int x, int y, long color)
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
 }
 
-void iupdrvDrawRoundedRectangle(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int corner_radius, long color, int style, int line_width)
+IUP_SDK_API void iupdrvDrawRoundedRectangle(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int corner_radius, long color, int style, int line_width)
 {
   if (!dc || !dc->ih->handle) return;
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
@@ -208,7 +208,7 @@ void iupdrvDrawRoundedRectangle(IdrawCanvas* dc, int x1, int y1, int x2, int y2,
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
 }
 
-void iupdrvDrawBezier(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int x3, int y3, int x4, int y4, long color, int style, int line_width)
+IUP_SDK_API void iupdrvDrawBezier(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int x3, int y3, int x4, int y4, long color, int style, int line_width)
 {
   if (!dc || !dc->ih->handle) return;
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
@@ -219,7 +219,7 @@ void iupdrvDrawBezier(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int x3, i
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
 }
 
-void iupdrvDrawQuadraticBezier(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int x3, int y3, long color, int style, int line_width)
+IUP_SDK_API void iupdrvDrawQuadraticBezier(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int x3, int y3, long color, int style, int line_width)
 {
   if (!dc || !dc->ih->handle) return;
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
@@ -230,7 +230,7 @@ void iupdrvDrawQuadraticBezier(IdrawCanvas* dc, int x1, int y1, int x2, int y2, 
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
 }
 
-void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, float angle, const long* colors, const float* offsets, int count)
+IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, float angle, const long* colors, const float* offsets, int count)
 {
   (void)angle;  /* Shader direction is encoded by the endpoints. */
   if (!dc || !dc->ih->handle) return;
@@ -247,7 +247,7 @@ void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, f
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
 }
 
-void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int radius, const long* colors, const float* offsets, int count)
+IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int radius, const long* colors, const float* offsets, int count)
 {
   if (!dc || !dc->ih->handle) return;
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
@@ -263,7 +263,7 @@ void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int radius, const
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
 }
 
-void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int x, int y, int w, int h, long color, const char* font, int flags, double text_orientation)
+IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int x, int y, int w, int h, long color, const char* font, int flags, double text_orientation)
 {
   char* text_buffer = NULL;
 
@@ -315,7 +315,7 @@ void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int x, int y, in
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
 }
 
-void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_inactive, const char* bgcolor, long tint, int opacity, int x, int y, int w, int h, int sx, int sy, int sw, int sh, int quality)
+IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_inactive, const char* bgcolor, long tint, int opacity, int x, int y, int w, int h, int sx, int sy, int sw, int sh, int quality)
 {
   if (!dc || !dc->ih->handle) return;
 
@@ -344,7 +344,7 @@ void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_inactive, const
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
 }
 
-void iupdrvDrawSetClipRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2)
+IUP_SDK_API void iupdrvDrawSetClipRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2)
 {
   if (!dc || !dc->ih->handle) return;
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
@@ -361,7 +361,7 @@ void iupdrvDrawSetClipRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2)
   dc->clipped = 1;
 }
 
-void iupdrvDrawSetClipRoundedRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int corner_radius)
+IUP_SDK_API void iupdrvDrawSetClipRoundedRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int corner_radius)
 {
   if (!dc || !dc->ih->handle) return;
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
@@ -378,7 +378,7 @@ void iupdrvDrawSetClipRoundedRect(IdrawCanvas* dc, int x1, int y1, int x2, int y
   dc->clipped = 1;
 }
 
-void iupdrvDrawResetClip(IdrawCanvas* dc)
+IUP_SDK_API void iupdrvDrawResetClip(IdrawCanvas* dc)
 {
   if (!dc || !dc->ih->handle || !dc->clipped) return;
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
@@ -391,7 +391,7 @@ void iupdrvDrawResetClip(IdrawCanvas* dc)
   dc->clipped = 0;
 }
 
-void iupdrvDrawGetClipRect(IdrawCanvas* dc, int* x1, int* y1, int* x2, int* y2)
+IUP_SDK_API void iupdrvDrawGetClipRect(IdrawCanvas* dc, int* x1, int* y1, int* x2, int* y2)
 {
   if (!dc) return;
   if (x1) *x1 = dc->clip_x1;
@@ -400,14 +400,14 @@ void iupdrvDrawGetClipRect(IdrawCanvas* dc, int* x1, int* y1, int* x2, int* y2)
   if (y2) *y2 = dc->clip_y2;
 }
 
-void iupdrvDrawSelectRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2)
+IUP_SDK_API void iupdrvDrawSelectRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2)
 {
   /* Translucent primary-colour fill approximates the native "selected" look. */
   long blue = iupDrawColor(33, 150, 243, 96);
   iupdrvDrawRectangle(dc, x1, y1, x2, y2, blue, IUP_DRAW_FILL, 1);
 }
 
-void iupdrvDrawFocusRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2)
+IUP_SDK_API void iupdrvDrawFocusRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2)
 {
   long color = iupDrawColor(0, 0, 0, 255);
   iupdrvDrawRectangle(dc, x1, y1, x2, y2, color, IUP_DRAW_STROKE_DOT, 1);
@@ -444,7 +444,7 @@ static int androidDrawReadBackBuffer(jobject canvas_view, unsigned char* data, i
   return 1;
 }
 
-int iupdrvDrawGetImageData(IdrawCanvas* dc, unsigned char* data)
+IUP_SDK_API int iupdrvDrawGetImageData(IdrawCanvas* dc, unsigned char* data)
 {
   if (!dc || !dc->ih || !dc->ih->handle) return 0;
   float d = iupAndroid_GetDisplayDensity(); if (d < 1.0f) d = 1.0f;
@@ -453,7 +453,7 @@ int iupdrvDrawGetImageData(IdrawCanvas* dc, unsigned char* data)
   return androidDrawReadBackBuffer((jobject)dc->ih->handle, data, w, h);
 }
 
-int iupdrvCanvasGetImageData(Ihandle* ih, unsigned char* data, int w, int h)
+IUP_SDK_API int iupdrvCanvasGetImageData(Ihandle* ih, unsigned char* data, int w, int h)
 {
   if (!ih || !ih->handle) return 0;
   return androidDrawReadBackBuffer((jobject)ih->handle, data, w, h);

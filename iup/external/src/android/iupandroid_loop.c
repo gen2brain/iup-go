@@ -42,7 +42,7 @@ IUP_SDK_API void iupdrvSetEntryFunction(Icallback func)
   (void)func;
 }
 
-void iupdrvSetIdleFunction(Icallback f)
+IUP_SDK_API void iupdrvSetIdleFunction(Icallback f)
 {
   IFidle prev = android_idle_cb;
   android_idle_cb = (IFidle)f;

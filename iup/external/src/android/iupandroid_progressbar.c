@@ -141,7 +141,7 @@ static int androidProgressBarMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-void iupdrvProgressBarGetMinSize(Ihandle* ih, int* w, int* h)
+IUP_SDK_API void iupdrvProgressBarGetMinSize(Ihandle* ih, int* w, int* h)
 {
   (void)ih;
   /* Logical px; 8dp = Material3 track thickness. */
@@ -149,7 +149,7 @@ void iupdrvProgressBarGetMinSize(Ihandle* ih, int* w, int* h)
   if (h) *h = 8;
 }
 
-void iupdrvProgressBarInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvProgressBarInitClass(Iclass* ic)
 {
   ic->Map = androidProgressBarMapMethod;
   ic->UnMap = iupdrvBaseUnMapMethod;

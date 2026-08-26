@@ -87,7 +87,7 @@ static void androidSetInputCallbacks(int enabled)
   (*env)->DeleteLocalRef(env, cls);
 }
 
-int iupdrvSetGlobal(const char* name, const char* value)
+IUP_SDK_API int iupdrvSetGlobal(const char* name, const char* value)
 {
   if (iupStrEqual(name, "LANGUAGE"))
   {
@@ -109,7 +109,7 @@ int iupdrvSetGlobal(const char* name, const char* value)
   return 1;
 }
 
-char* iupdrvGetGlobal(const char* name)
+IUP_SDK_API char* iupdrvGetGlobal(const char* name)
 {
   if (iupStrEqual(name, "APPID"))          return androidGetStringStatic("getAppId");
   if (iupStrEqual(name, "APPNAME"))        return androidGetStringStatic("getAppName");

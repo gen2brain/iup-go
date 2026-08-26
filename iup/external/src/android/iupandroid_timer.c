@@ -22,7 +22,7 @@
 
 IUPJNI_DECLARE_CLASS_STATIC(IupTimerHelper);
 
-void iupdrvTimerRun(Ihandle* ih)
+IUP_SDK_API void iupdrvTimerRun(Ihandle* ih)
 {
   IUPJNI_DECLARE_METHOD_ID_STATIC(IupTimer_createTimer);
   IUPJNI_DECLARE_METHOD_ID_STATIC(IupTimer_startTimer);
@@ -56,7 +56,7 @@ void iupdrvTimerRun(Ihandle* ih)
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
 }
 
-void iupdrvTimerStop(Ihandle* ih)
+IUP_SDK_API void iupdrvTimerStop(Ihandle* ih)
 {
   IUPJNI_DECLARE_METHOD_ID_STATIC(IupTimer_stopTimer);
 
@@ -84,7 +84,7 @@ static void androidTimerUnMapMethod(Ihandle* ih)
   }
 }
 
-void iupdrvTimerInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvTimerInitClass(Iclass* ic)
 {
   /* UnMap, not Destroy: ih->handle is cleared before Destroy would run */
   ic->UnMap = androidTimerUnMapMethod;

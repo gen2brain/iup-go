@@ -30,24 +30,24 @@ static jclass androidTabsFindHelper(JNIEnv* jni_env)
   return IUPJNI_FindClass(IupTabsHelper, jni_env, "io/github/gen2brain/iupgo/IupTabsHelper");
 }
 
-int iupdrvTabsExtraDecor(Ihandle* ih)
+IUP_SDK_API int iupdrvTabsExtraDecor(Ihandle* ih)
 {
   (void)ih;
   return 0;
 }
 
-int iupdrvTabsExtraMargin(void)
+IUP_SDK_API int iupdrvTabsExtraMargin(void)
 {
   return 0;
 }
 
-int iupdrvTabsGetLineCountAttrib(Ihandle* ih)
+IUP_SDK_API int iupdrvTabsGetLineCountAttrib(Ihandle* ih)
 {
   (void)ih;
   return 1;
 }
 
-void iupdrvTabsSetCurrentTab(Ihandle* ih, int pos)
+IUP_SDK_API void iupdrvTabsSetCurrentTab(Ihandle* ih, int pos)
 {
   if (!ih->handle) return;
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
@@ -58,7 +58,7 @@ void iupdrvTabsSetCurrentTab(Ihandle* ih, int pos)
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
 }
 
-int iupdrvTabsGetCurrentTab(Ihandle* ih)
+IUP_SDK_API int iupdrvTabsGetCurrentTab(Ihandle* ih)
 {
   if (!ih->handle) return 0;
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
@@ -70,7 +70,7 @@ int iupdrvTabsGetCurrentTab(Ihandle* ih)
   return (int)pos;
 }
 
-int iupdrvTabsIsTabVisible(Ihandle* child, int pos)
+IUP_SDK_API int iupdrvTabsIsTabVisible(Ihandle* child, int pos)
 {
   Ihandle* parent = child ? child->parent : NULL;
   if (!parent || !parent->handle) return 1;
@@ -84,7 +84,7 @@ int iupdrvTabsIsTabVisible(Ihandle* child, int pos)
   return v ? 1 : 0;
 }
 
-void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_title, const char* tab_image, int* tab_width, int* tab_height)
+IUP_SDK_API void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_title, const char* tab_image, int* tab_width, int* tab_height)
 {
   int w = 0, h = 0;
   if (tab_title)
@@ -387,7 +387,7 @@ static int androidTabsSetTabTipAttribId(Ihandle* ih, int pos, const char* value)
   return 1;
 }
 
-void iupdrvTabsInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvTabsInitClass(Iclass* ic)
 {
   ic->Map = androidTabsMapMethod;
   ic->UnMap = androidTabsUnMapMethod;

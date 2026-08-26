@@ -150,27 +150,27 @@ static void androidDialogSetBgColor(Ihandle* ih, unsigned char r, unsigned char 
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
 }
 
-int iupdrvDialogIsVisible(Ihandle* ih)
+IUP_SDK_API int iupdrvDialogIsVisible(Ihandle* ih)
 {
   /* An Activity-backed dialog is always "visible" once mapped. */
   (void)ih;
   return 1;
 }
 
-void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* handle, int* w, int* h)
+IUP_SDK_API void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* handle, int* w, int* h)
 {
   (void)handle;
   if (w) *w = ih ? ih->currentwidth : ANDROID_DEFAULT_DIALOG_WIDTH;
   if (h) *h = ih ? ih->currentheight : ANDROID_DEFAULT_DIALOG_HEIGHT;
 }
 
-void iupdrvDialogSetVisible(Ihandle* ih, int visible)
+IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
 {
   /* Show → foreground, Hide → background; teardown is reserved for IupDestroy. */
   androidDialogCallVoidNoArg(ih, visible ? "bringToFront" : "moveToBack");
 }
 
-void iupdrvDialogGetPosition(Ihandle* ih, InativeHandle* handle, int* x, int* y)
+IUP_SDK_API void iupdrvDialogGetPosition(Ihandle* ih, InativeHandle* handle, int* x, int* y)
 {
   (void)ih;
   (void)handle;
@@ -178,7 +178,7 @@ void iupdrvDialogGetPosition(Ihandle* ih, InativeHandle* handle, int* x, int* y)
   if (y) *y = 0;
 }
 
-void iupdrvDialogSetPosition(Ihandle* ih, int x, int y)
+IUP_SDK_API void iupdrvDialogSetPosition(Ihandle* ih, int x, int y)
 {
   /* The window manager owns Activity positioning. */
   (void)ih;
@@ -186,7 +186,7 @@ void iupdrvDialogSetPosition(Ihandle* ih, int x, int y)
   (void)y;
 }
 
-void iupdrvDialogGetDecoration(Ihandle* ih, int* border, int* caption, int* menu)
+IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int* border, int* caption, int* menu)
 {
   /* IupAndroidFixed absorbs system bars as padding; IUP sees no external decoration */
   (void)ih;
@@ -195,7 +195,7 @@ void iupdrvDialogGetDecoration(Ihandle* ih, int* border, int* caption, int* menu
   if (menu) *menu = 0;
 }
 
-int iupdrvDialogSetPlacement(Ihandle* ih)
+IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
 {
   char* placement;
 
@@ -233,7 +233,7 @@ int iupdrvDialogSetPlacement(Ihandle* ih)
   return 1;
 }
 
-void iupdrvDialogSetParent(Ihandle* ih, InativeHandle* parent)
+IUP_SDK_API void iupdrvDialogSetParent(Ihandle* ih, InativeHandle* parent)
 {
   /* Activities stack naturally, so parenting is not independently addressable. */
   (void)ih;
@@ -510,7 +510,7 @@ static void androidDialogLayoutUpdateMethod(Ihandle* ih)
   (void)ih;
 }
 
-void iupdrvDialogInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
 {
   ic->Map = androidDialogMapMethod;
   ic->UnMap = androidDialogUnMapMethod;
