@@ -1014,6 +1014,13 @@ static int gtkTreeSetSpacingAttrib(Ihandle* ih, const char* value)
     if (renderer_chk) g_object_set(G_OBJECT(renderer_chk), "ypad", ih->data->spacing, NULL);
     g_object_set(G_OBJECT(renderer_img), "ypad", ih->data->spacing, NULL);
     g_object_set(G_OBJECT(renderer_txt), "ypad", ih->data->spacing, NULL);
+#if GTK_CHECK_VERSION(2, 8, 0)
+    {
+      /* renderer properties alone do not invalidate the cached row heights */
+      GtkTreeViewColumn* column = (GtkTreeViewColumn*)iupAttribGet(ih, "_IUPGTK_COLUMN");
+      if (column) gtk_tree_view_column_queue_resize(column);
+    }
+#endif
     return 0;
   }
   else
