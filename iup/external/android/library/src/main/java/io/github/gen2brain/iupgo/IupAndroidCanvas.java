@@ -162,6 +162,8 @@ public class IupAndroidCanvas extends IupAndroidFixed
                     int x = (int) e.getX();
                     int y = (int) e.getY();
                     IupCanvasHelper.dispatchGesture(ihandlePtr, GESTURE_LONGPRESS, GESTURE_END, x, y, 0, 0);
+                    /* onTouchEvent never reaches View, so the DRAGSOURCE listener needs this */
+                    if (performLongClick()) return;
                     IupCanvasHelper.dispatchButton(ihandlePtr, 3, 1, x, y, e.getMetaState());
                     IupCanvasHelper.dispatchButton(ihandlePtr, 3, 0, x, y, e.getMetaState());
                 }
