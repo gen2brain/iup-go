@@ -33,7 +33,7 @@
 #   IOS_CERT_P12 / IOS_CERT_PASS / IOS_PROFILE / IOS_ENTITLEMENTS
 #
 # One-time tunnel for iOS 17+ (needed by launch/screenshot/ostrace):
-#   sudo ios tunnel start &
+#   sudo go-ios tunnel start &
 #
 # Examples:
 #   build-ios-cross.sh -i -l -s ../../../examples/mobile_hello
@@ -64,6 +64,10 @@ LOG_DURATION=3
 
 LOGCAT_FILE="/tmp/iossyslog.txt"
 SCREENSHOT_FILE="/tmp/screenshot.png"
+OSTRACE_PIDFILE="/tmp/iup-ios-ostrace.pid"
+
+# an example ipa is a few MB; anything near this is a packaging runaway
+IPA_MAX_BYTES=$((200 * 1024 * 1024))
 
 usage() {
 	awk 'NR==1{next} /^[^#]/{exit} {sub(/^# ?/,""); print}' "$0"
@@ -96,7 +100,7 @@ shift $((OPTIND-1))
 SOURCE_DIR="${1:-}"
 
 if [ "$CLEAN" -eq 1 ]; then
-	echo "==> clean: wiping $BUILD_DIR (build/, .zsign_cache/, all signed bundles)"
+	echo "==> clean: wiping $BUILD_DIR"
 	rm -rf "$BUILD_DIR"
 	if [ -z "$SOURCE_DIR" ]; then
 		echo "==> done"
@@ -125,7 +129,8 @@ fi
 
 [ -z "$BUNDLE_ID" ] && BUNDLE_ID="com.example.${EXEC_NAME}"
 
-APP_DIR="${BUILD_DIR}/Payload/${EXEC_NAME}.app"
+PKG_DIR="${BUILD_DIR}/pkg"
+APP_DIR="${PKG_DIR}/Payload/${EXEC_NAME}.app"
 IPA="${BUILD_DIR}/${EXEC_NAME}.ipa"
 SIM_ZIP="${BUILD_DIR}/${EXEC_NAME}-simulator.zip"
 
@@ -143,7 +148,7 @@ if [ "$CAPTURE_ONLY" -eq 0 ]; then
 	command -v "$IOS_CC" >/dev/null \
 		|| { echo "error: $IOS_CC not on PATH" >&2; exit 1; }
 
-	rm -rf "$BUILD_DIR/Payload"
+	rm -rf "$PKG_DIR"
 	mkdir -p "$BUILD_DIR" "$APP_DIR"
 
 	echo ">>> go build $SOURCE_DIR -> $APP_DIR/$EXEC_NAME"
@@ -177,58 +182,72 @@ if [ "$CAPTURE_ONLY" -eq 0 ]; then
 	done
 
 	if [ "$SIMULATOR" -eq 1 ]; then
-		( cd "$BUILD_DIR/Payload" && rm -f "$SIM_ZIP" && zip -qry "$SIM_ZIP" "${EXEC_NAME}.app" )
+		( cd "$PKG_DIR/Payload" && rm -f "$SIM_ZIP" && zip -qry "$SIM_ZIP" "${EXEC_NAME}.app" )
 		echo ">>> simulator bundle: $SIM_ZIP"
 		echo "    on Mac: unzip + xcrun simctl install booted ${EXEC_NAME}.app"
-	elif [ -n "${IOS_CERT_P12:-}" ] && [ -n "${IOS_PROFILE:-}" ]; then
-		echo ">>> signing with zsign"
-		# zsign writes ./.zsign_cache relative to its cwd; run it from BUILD_DIR
-		# so the cache lands inside build/ and is wiped by -c. Resolve user-
-		# supplied paths to absolute first so the cd doesn't break them.
-		ZS_P12="$(realpath "$IOS_CERT_P12")"
-		ZS_PROFILE="$(realpath "$IOS_PROFILE")"
-		ENT_FLAG=()
-		[ -n "${IOS_ENTITLEMENTS:-}" ] && ENT_FLAG=(-e "$(realpath "$IOS_ENTITLEMENTS")")
-		# zsign must not write into the directory it packages
-		ZS_OUT="$(mktemp -d)/${EXEC_NAME}.ipa"
-		(
-			cd "$BUILD_DIR"
-			zsign -f \
-				-k "$ZS_P12" \
-				${IOS_CERT_PASS:+-p "$IOS_CERT_PASS"} \
-				-m "$ZS_PROFILE" \
-				-b "$BUNDLE_ID" \
-				-o "$ZS_OUT" \
-				"${ENT_FLAG[@]}" \
-				"$APP_DIR"
-		)
-		mv -f "$ZS_OUT" "$IPA"
-		rmdir "$(dirname "$ZS_OUT")" 2>/dev/null || true
 	else
-		echo ">>> IOS_CERT_P12/IOS_PROFILE unset; skipping sign + install"
-		( cd "$BUILD_DIR" && rm -f "$IPA" && zip -qry "$IPA" Payload )
-		echo ">>> unsigned $IPA produced for inspection"
-		INSTALL=0
+		if [ -n "${IOS_CERT_P12:-}" ] && [ -n "${IOS_PROFILE:-}" ]; then
+			echo ">>> signing with zsign"
+			# Resolve user-supplied paths before the cd so they stay valid.
+			ZS_P12="$(realpath "$IOS_CERT_P12")"
+			ZS_PROFILE="$(realpath "$IOS_PROFILE")"
+			ENT_FLAG=()
+			[ -n "${IOS_ENTITLEMENTS:-}" ] && ENT_FLAG=(-e "$(realpath "$IOS_ENTITLEMENTS")")
+			(
+				cd "$PKG_DIR"
+				zsign -f \
+					-k "$ZS_P12" \
+					${IOS_CERT_PASS:+-p "$IOS_CERT_PASS"} \
+					-m "$ZS_PROFILE" \
+					-b "$BUNDLE_ID" \
+					"${ENT_FLAG[@]}" \
+					"Payload/${EXEC_NAME}.app"
+			)
+		else
+			echo ">>> IOS_CERT_P12/IOS_PROFILE unset; skipping sign + install"
+			INSTALL=0
+		fi
+
+		# zsign -o archives its whole working directory, not just the bundle
+		( cd "$PKG_DIR" && rm -f "$IPA" && zip -qry "$IPA" Payload )
+
+		IPA_BYTES=$(stat -c %s "$IPA")
+		if [ "$IPA_BYTES" -gt "$IPA_MAX_BYTES" ]; then
+			echo "error: $IPA is $((IPA_BYTES / 1048576)) MB, refusing it" >&2
+			exit 1
+		fi
+		echo ">>> $IPA ($((IPA_BYTES / 1024)) KB)"
 	fi
 fi
 
 if [ "$INSTALL" -eq 1 ]; then
 	[ -f "$IPA" ] || { echo "error: $IPA not built" >&2; exit 1; }
 	echo ">>> go-ios install $IPA"
-	go-ios install --path="$IPA" >/dev/null 2>&1
+	if ! INSTALL_ERR="$(go-ios install --path="$IPA" 2>&1 >/dev/null)"; then
+		echo "$INSTALL_ERR" >&2
+		exit 1
+	fi
 fi
 
 if [ "$LOGCAP" -eq 1 ]; then
 	# Stream opens BEFORE launch so early IupLog traces are caught.
 	# --match="[Iup " is the only filter; every IupLog call and cgo stdio
 	# emits "[Iup <type>] ..." through os_log.
-	pkill -f 'go-ios ostrace ' 2>/dev/null || true
+	# a stream left behind by an interrupted run keeps holding the device
+	if [ -f "$OSTRACE_PIDFILE" ]; then
+		STALE_PID="$(cat "$OSTRACE_PIDFILE")"
+		if [ -n "$STALE_PID" ] && grep -qs go-ios "/proc/$STALE_PID/cmdline"; then
+			kill "$STALE_PID" 2>/dev/null || true
+		fi
+		rm -f "$OSTRACE_PIDFILE"
+	fi
 
 	cleanup_log() {
 		if [ -n "${LOG_PID:-}" ]; then
 			kill "$LOG_PID" 2>/dev/null || true
 			wait "$LOG_PID" 2>/dev/null || true
 		fi
+		rm -f "$OSTRACE_PIDFILE"
 	}
 	trap cleanup_log EXIT INT TERM
 
@@ -237,6 +256,7 @@ if [ "$LOGCAP" -eq 1 ]; then
 		echo ">>> capturing $LOGCAT_FILE (${LOG_DURATION}s, fresh, pre-launch)"
 		go-ios ostrace --nojson --match="[Iup " 2>/dev/null > "$LOGCAT_FILE" &
 		LOG_PID=$!
+		echo "$LOG_PID" > "$OSTRACE_PIDFILE"
 		sleep 1
 		echo ">>> go-ios launch $BUNDLE_ID --kill-existing"
 		go-ios launch "$BUNDLE_ID" --kill-existing >/dev/null 2>&1 || true
@@ -244,6 +264,7 @@ if [ "$LOGCAP" -eq 1 ]; then
 		echo ">>> capturing $LOGCAT_FILE (${LOG_DURATION}s, append)"
 		go-ios ostrace --nojson --match="[Iup " 2>/dev/null >> "$LOGCAT_FILE" &
 		LOG_PID=$!
+		echo "$LOG_PID" > "$OSTRACE_PIDFILE"
 	fi
 	sleep "$LOG_DURATION"
 	cleanup_log
