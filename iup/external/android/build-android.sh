@@ -7,13 +7,14 @@
 # Gradle to produce the APK, and optionally installs it via adb.
 #
 # Usage:
-#   build-android.sh [-a ABI[,ABI...]] [-A API] [-n NAME] [-x EXEC]
+#   build-android.sh [-a ABI[,ABI...]] [-A API] [-b PKG] [-n NAME] [-x EXEC]
 #                    [-t TASK] [-T TAGS] [-i] SOURCE_DIR
 #
 # Options:
 #   -a ABIS   comma-separated ABI list (default: arm64-v8a)
 #             valid: arm64-v8a, armeabi-v7a, x86, x86_64
 #   -A API    Android API level for the NDK toolchain (default: 22)
+#   -b PKG    applicationId of the built app (default: com.example.iupapp)
 #   -n NAME   user-visible app label (string resource app_name, default: IupApp)
 #   -x EXEC   library name without lib prefix / .so suffix (default: iupapp)
 #             Must match MyIupLaunchActivity.getLibraries()/getEntryPointLibraryName()
@@ -78,8 +79,7 @@ LOGCAT=0
 SCREENSHOT=0
 LOGCAT_FILE="/tmp/logcat.txt"
 SCREENSHOT_FILE="/tmp/screenshot.png"
-PACKAGE="com.example.iupapp"
-ACTIVITY="${PACKAGE}/.MyIupLaunchActivity"
+PACKAGE=""
 LOGCAT_TAGS="Iup:* IupLog:* IupStdout:* IupStderr:* AndroidRuntime:E DEBUG:F libc:F"
 
 usage() {
@@ -91,10 +91,11 @@ usage() {
 CAPTURE_ONLY=0
 RELEASE=0
 
-while getopts "a:A:n:x:t:T:cfilLrsh" opt; do
+while getopts "a:A:b:n:x:t:T:cfilLrsh" opt; do
 	case "$opt" in
 		a) ABIS="$OPTARG" ;;
 		A) API="$OPTARG" ;;
+		b) PACKAGE="$OPTARG" ;;
 		n) APP_NAME="$OPTARG" ;;
 		x) EXEC_NAME="$OPTARG" ;;
 		t) GRADLE_TASK="$OPTARG" ;;
@@ -111,6 +112,8 @@ while getopts "a:A:n:x:t:T:cfilLrsh" opt; do
 	esac
 done
 shift $((OPTIND - 1))
+
+[ -z "$PACKAGE" ] && PACKAGE="com.example.iupapp"
 
 if [[ "$CAPTURE_ONLY" -eq 1 ]]; then
 	adb logcat -d -s $LOGCAT_TAGS > "$LOGCAT_FILE"
@@ -242,7 +245,7 @@ echo "==> gradle: ${GRADLE_TASK}"
 	# in gradle.properties only reaches the daemon, so the native-access
 	# warning on JDK 24+ (from gradle's native-platform JAR) surfaces without
 	# this flag.
-	GRADLE_OPTS="--enable-native-access=ALL-UNNAMED" ./gradlew -PappName="$APP_NAME" "${SIGN_PROPS[@]}" "$GRADLE_TASK"
+	GRADLE_OPTS="--enable-native-access=ALL-UNNAMED" ./gradlew -PappName="$APP_NAME" -PappId="$PACKAGE" "${SIGN_PROPS[@]}" "$GRADLE_TASK"
 )
 
 if [[ "$INSTALL" -eq 1 ]]; then
@@ -266,6 +269,12 @@ if [[ "$INSTALL" -eq 1 ]]; then
 fi
 
 if [[ "$LOGCAT" -eq 1 || "$SCREENSHOT" -eq 1 ]]; then
+	# am start resolves a leading dot against applicationId, not the namespace
+	ACTIVITY="$(adb shell cmd package resolve-activity --brief "$PACKAGE" 2>/dev/null | tail -1 | tr -d '\r')"
+	if [[ -z "$ACTIVITY" || "$ACTIVITY" != */* ]]; then
+		echo "error: no launcher activity for $PACKAGE; is it installed?" >&2
+		exit 1
+	fi
 	echo "==> relaunch ${ACTIVITY}"
 	adb shell am force-stop "$PACKAGE"
 	adb logcat -c

@@ -8,7 +8,7 @@ android {
 	ndkVersion = rootProject.ext.ndkVersion
 
 	defaultConfig {
-		applicationId = "com.example.iupapp"
+		applicationId = project.findProperty("appId") ?: "com.example.iupapp"
 		minSdk = rootProject.ext.minSdk
 		targetSdk = rootProject.ext.targetSdk
 		versionCode = rootProject.ext.versionCode
