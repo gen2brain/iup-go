@@ -66,7 +66,6 @@ LOGCAT_FILE="/tmp/iossyslog.txt"
 SCREENSHOT_FILE="/tmp/screenshot.png"
 OSTRACE_PIDFILE="/tmp/iup-ios-ostrace.pid"
 
-# an example ipa is a few MB; anything near this is a packaging runaway
 IPA_MAX_BYTES=$((200 * 1024 * 1024))
 
 usage() {
@@ -233,7 +232,6 @@ if [ "$LOGCAP" -eq 1 ]; then
 	# Stream opens BEFORE launch so early IupLog traces are caught.
 	# --match="[Iup " is the only filter; every IupLog call and cgo stdio
 	# emits "[Iup <type>] ..." through os_log.
-	# a stream left behind by an interrupted run keeps holding the device
 	if [ -f "$OSTRACE_PIDFILE" ]; then
 		STALE_PID="$(cat "$OSTRACE_PIDFILE")"
 		if [ -n "$STALE_PID" ] && grep -qs go-ios "/proc/$STALE_PID/cmdline"; then
