@@ -143,6 +143,7 @@ if [ "$CAPTURE_ONLY" -eq 0 ]; then
 	command -v "$IOS_CC" >/dev/null \
 		|| { echo "error: $IOS_CC not on PATH" >&2; exit 1; }
 
+	rm -rf "$BUILD_DIR/Payload"
 	mkdir -p "$BUILD_DIR" "$APP_DIR"
 
 	echo ">>> go build $SOURCE_DIR -> $APP_DIR/$EXEC_NAME"
@@ -188,6 +189,8 @@ if [ "$CAPTURE_ONLY" -eq 0 ]; then
 		ZS_PROFILE="$(realpath "$IOS_PROFILE")"
 		ENT_FLAG=()
 		[ -n "${IOS_ENTITLEMENTS:-}" ] && ENT_FLAG=(-e "$(realpath "$IOS_ENTITLEMENTS")")
+		# zsign must not write into the directory it packages
+		ZS_OUT="$(mktemp -d)/${EXEC_NAME}.ipa"
 		(
 			cd "$BUILD_DIR"
 			zsign -f \
@@ -195,10 +198,12 @@ if [ "$CAPTURE_ONLY" -eq 0 ]; then
 				${IOS_CERT_PASS:+-p "$IOS_CERT_PASS"} \
 				-m "$ZS_PROFILE" \
 				-b "$BUNDLE_ID" \
-				-o "$IPA" \
+				-o "$ZS_OUT" \
 				"${ENT_FLAG[@]}" \
 				"$APP_DIR"
 		)
+		mv -f "$ZS_OUT" "$IPA"
+		rmdir "$(dirname "$ZS_OUT")" 2>/dev/null || true
 	else
 		echo ">>> IOS_CERT_P12/IOS_PROFILE unset; skipping sign + install"
 		( cd "$BUILD_DIR" && rm -f "$IPA" && zip -qry "$IPA" Payload )
