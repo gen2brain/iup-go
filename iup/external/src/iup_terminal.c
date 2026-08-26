@@ -580,6 +580,23 @@ static void itermModelBell(void* user)
     cb(ih);
 }
 
+/* OSC 52 lets whatever is running in the terminal write the system clipboard, so it stays opt-in */
+static void itermModelClipboard(void* user, const char* text)
+{
+  Ihandle* ih = (Ihandle*)user;
+  Ihandle* clip;
+
+  if (!iupAttribGetBoolean(ih, "ALLOWOSC52"))
+    return;
+
+  clip = IupClipboard();
+  if (!clip)
+    return;
+
+  IupSetStrAttribute(clip, "TEXT", text);
+  IupDestroy(clip);
+}
+
 static void itermModelTitle(void* user, const char* title)
 {
   Ihandle* ih = (Ihandle*)user;
@@ -1459,6 +1476,7 @@ static int itermCreateMethod(Ihandle* ih, void **params)
   t->cb.response = itermModelResponse;
   t->cb.bell = itermModelBell;
   t->cb.title = itermModelTitle;
+  t->cb.clipboard = itermModelClipboard;
   t->cb_user = ih;
 
   ih->data->blink_on = 1;
@@ -1520,6 +1538,7 @@ Iclass* iupTerminalNewClass(void)
   iupClassRegisterAttribute(ic, "SCROLLONOUTPUT", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SCROLLONKEY", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "OPTIONASMETA", NULL, NULL, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ALLOWOSC52", NULL, NULL, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "RESET", NULL, itermSetResetAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CLEARSCREEN", NULL, itermSetClearScreenAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "EXEC", NULL, itermSetExecAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);

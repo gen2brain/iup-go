@@ -361,6 +361,33 @@ static unsigned int itermParseColorSpec(const char* spec)
   return 0xFFFFFFFF;
 }
 
+static int itermBase64Decode(const char* in, char* out, int out_max)
+{
+  static const char* chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+  int len = 0, bits = 0, acc = 0;
+
+  for (; *in && *in != '='; in++)
+  {
+    const char* p = strchr(chars, *in);
+    if (!p)
+      continue;
+
+    acc = (acc << 6) | (int)(p - chars);
+    bits += 6;
+
+    if (bits >= 8)
+    {
+      bits -= 8;
+      if (len >= out_max - 1)
+        return -1;
+      out[len++] = (char)((acc >> bits) & 0xFF);
+    }
+  }
+
+  out[len] = 0;
+  return len;
+}
+
 static void itermOscDispatch(Iterm* t)
 {
   char buf[64];
@@ -405,6 +432,22 @@ static void itermOscDispatch(Iterm* t)
                 t->cb.palette(t->cb_user, index, c);
             }
           }
+        }
+      }
+    }
+    break;
+  case 52:
+    {
+      /* the payload is base64 and can fill the OSC buffer, so decode in place of the encoded text */
+      char* sep = strchr(t->osc_buf, ';');
+      if (sep && sep[1] != '?' && t->cb.clipboard)
+      {
+        char* text = (char*)malloc(ITERM_OSC_MAX);
+        if (text)
+        {
+          if (itermBase64Decode(sep + 1, text, ITERM_OSC_MAX) >= 0)
+            t->cb.clipboard(t->cb_user, text);
+          free(text);
         }
       }
     }
