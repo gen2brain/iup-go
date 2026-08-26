@@ -99,6 +99,7 @@ static void cocoaTouchUpdateGlobalColors(void)
 
 	if (bg_color)  cocoaTouchGlobalSetFromUIColor("DLGBGCOLOR",  bg_color);
 	else           iupGlobalSetDefaultColorAttrib("DLGBGCOLOR",  237, 237, 237);
+	IupSetStrGlobal("_IUP_SYSTEM_DLGBGCOLOR", IupGetGlobal("DLGBGCOLOR"));
 
 	if (txt_bg)    cocoaTouchGlobalSetFromUIColor("TXTBGCOLOR",  txt_bg);
 	else           iupGlobalSetDefaultColorAttrib("TXTBGCOLOR",  255, 255, 255);

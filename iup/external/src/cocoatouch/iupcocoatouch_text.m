@@ -1065,6 +1065,30 @@ static int cocoaTouchTextSetCueBannerAttrib(Ihandle* ih, const char* value)
 	return 1;
 }
 
+static int cocoaTouchTextSetBgColorAttrib(Ihandle* ih, const char* value)
+{
+	UIColor* color = iupCocoaTouchToNativeColor(value);
+	if (!color) return 0;
+
+	UITextField* field = cocoaTouchTextField(ih);
+	if (field) [field setBackgroundColor:color];
+	UITextView* view = cocoaTouchTextView(ih);
+	if (view) [view setBackgroundColor:color];
+	return 1;
+}
+
+static int cocoaTouchTextSetFgColorAttrib(Ihandle* ih, const char* value)
+{
+	UIColor* color = iupCocoaTouchToNativeColor(value);
+	if (!color) return 0;
+
+	UITextField* field = cocoaTouchTextField(ih);
+	if (field) [field setTextColor:color];
+	UITextView* view = cocoaTouchTextView(ih);
+	if (view) [view setTextColor:color];
+	return 1;
+}
+
 static int cocoaTouchTextSetReadOnlyAttrib(Ihandle* ih, const char* value)
 {
 	BOOL read_only = iupStrBoolean(value) ? YES : NO;
@@ -1738,6 +1762,8 @@ IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
 	ic->UnMap = iupdrvBaseUnMapMethod;
 
 	iupClassRegisterAttribute(ic, "VALUE", cocoaTouchTextGetValueAttrib, cocoaTouchTextSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+	iupClassRegisterAttribute(ic, "BGCOLOR", NULL, cocoaTouchTextSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTBGCOLOR", IUPAF_DEFAULT);
+	iupClassRegisterAttribute(ic, "FGCOLOR", NULL, cocoaTouchTextSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTFGCOLOR", IUPAF_DEFAULT);
 	iupClassRegisterAttribute(ic, "READONLY", cocoaTouchTextGetReadOnlyAttrib, cocoaTouchTextSetReadOnlyAttrib, NULL, NULL, IUPAF_DEFAULT);
 	iupClassRegisterAttribute(ic, "CUEBANNER", NULL, cocoaTouchTextSetCueBannerAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "PASSWORD", NULL, cocoaTouchTextSetPasswordAttrib, NULL, NULL, IUPAF_NO_INHERIT);
