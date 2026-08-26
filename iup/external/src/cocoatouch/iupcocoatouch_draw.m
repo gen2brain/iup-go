@@ -593,16 +593,15 @@ IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x
 	CGContextSaveGState(dc->cgContext);
 	CGContextClipToRect(dc->cgContext, CGRectMake(x1, y1, x2 - x1 + 1, y2 - y1 + 1));
 
-	CGFloat cx = x1 + (x2 - x1) / 2.0;
-	CGFloat cy = y1 + (y2 - y1) / 2.0;
+	/* 0 = left to right, 90 = top to bottom, 180 = right to left, 270 = bottom to top */
+	CGFloat w = (CGFloat)(x2 - x1);
+	CGFloat h = (CGFloat)(y2 - y1);
 	CGFloat rad = angle * M_PI / 180.0;
-	CGFloat dx = cos(rad), dy = sin(rad);
-	CGFloat half_w = (x2 - x1) / 2.0;
-	CGFloat half_h = (y2 - y1) / 2.0;
-	CGFloat half_diag = sqrt(half_w * half_w + half_h * half_h);
 
-	CGPoint start = CGPointMake(cx - dx * half_diag, cy - dy * half_diag);
-	CGPoint end   = CGPointMake(cx + dx * half_diag, cy + dy * half_diag);
+	CGPoint start = CGPointMake(x1 + w / 2.0 - (w * cos(rad)) / 2.0,
+	                            y1 + h / 2.0 - (h * sin(rad)) / 2.0);
+	CGPoint end   = CGPointMake(x1 + w / 2.0 + (w * cos(rad)) / 2.0,
+	                            y1 + h / 2.0 + (h * sin(rad)) / 2.0);
 	CGContextDrawLinearGradient(dc->cgContext, gradient, start, end,
 		kCGGradientDrawsBeforeStartLocation | kCGGradientDrawsAfterEndLocation);
 

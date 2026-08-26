@@ -299,12 +299,11 @@ extern "C" IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, in
   iupDrawCheckSwapCoord(y1, y2);
   BRect r(x1, y1, x2, y2);
 
-  /* Compute gradient endpoints from angle relative to rect centre. */
+  /* 0 = left to right, 90 = top to bottom, 180 = right to left, 270 = bottom to top */
   float cx = (x1 + x2) / 2.0f, cy = (y1 + y2) / 2.0f;
-  float len = (r.Width() > r.Height() ? r.Width() : r.Height());
   float rad = angle * 3.14159265f / 180.0f;
-  float dx = cosf(rad) * len * 0.5f;
-  float dy = sinf(rad) * len * 0.5f;
+  float dx = cosf(rad) * r.Width() * 0.5f;
+  float dy = sinf(rad) * r.Height() * 0.5f;
 
   BGradientLinear grad(BPoint(cx - dx, cy - dy), BPoint(cx + dx, cy + dy));
   for (int i = 0; i < count; i++)

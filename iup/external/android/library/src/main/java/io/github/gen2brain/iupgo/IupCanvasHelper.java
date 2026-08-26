@@ -171,12 +171,13 @@ public final class IupCanvasHelper
     }
 
     @Keep
-    public static void drawLinearGradient(IupAndroidCanvas view, int x1, int y1, int x2, int y2, int[] colors, float[] offsets)
+    public static void drawLinearGradient(IupAndroidCanvas view, int x1, int y1, int x2, int y2,
+                                          int sx, int sy, int ex, int ey, int[] colors, float[] offsets)
     {
         Canvas c = view.getBackCanvas(); if (c == null) return;
         Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
         p.setStyle(Paint.Style.FILL);
-        p.setShader(new LinearGradient(x1, y1, x2, y2, colors, offsets, Shader.TileMode.CLAMP));
+        p.setShader(new LinearGradient(sx, sy, ex, ey, colors, offsets, Shader.TileMode.CLAMP));
         normalize(tmpRect, x1, y1, x2, y2, true);
         c.drawRect(tmpRect.left, tmpRect.top, tmpRect.right, tmpRect.bottom, p);
     }
