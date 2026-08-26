@@ -70,6 +70,12 @@ static jobject androidImageAllocBitmap(JNIEnv* jni_env, int width, int height, u
   return java_bitmap;
 }
 
+/* ARGB_8888 stores premultiplied pixels; IUP image data is straight alpha */
+static unsigned char androidImagePremul(unsigned char c, unsigned char a)
+{
+  return (unsigned char)((c * a + 127) / 255);
+}
+
 static jobject androidImageFinalize(JNIEnv* jni_env, jobject java_bitmap)
 {
   if (java_bitmap == NULL)
@@ -185,9 +191,9 @@ IUP_SDK_API void* iupdrvImageCreateImage(Ihandle* ih, const char* bgcolor, int m
         unsigned char s_a = *src++;
         if (make_inactive)
           iupImageColorMakeInactive(&s_r, &s_g, &s_b, bg_r, bg_g, bg_b);
-        *dst++ = s_r;
-        *dst++ = s_g;
-        *dst++ = s_b;
+        *dst++ = androidImagePremul(s_r, s_a);
+        *dst++ = androidImagePremul(s_g, s_a);
+        *dst++ = androidImagePremul(s_b, s_a);
         *dst++ = s_a;
       }
     }
@@ -230,9 +236,9 @@ IUP_SDK_API void* iupdrvImageCreateImage(Ihandle* ih, const char* bgcolor, int m
         unsigned char s_a = has_alpha ? c->a : 255;
         if (make_inactive)
           iupImageColorMakeInactive(&s_r, &s_g, &s_b, bg_r, bg_g, bg_b);
-        *dst++ = s_r;
-        *dst++ = s_g;
-        *dst++ = s_b;
+        *dst++ = androidImagePremul(s_r, s_a);
+        *dst++ = androidImagePremul(s_g, s_a);
+        *dst++ = androidImagePremul(s_b, s_a);
         *dst++ = s_a;
       }
     }
@@ -332,9 +338,30 @@ IUP_SDK_API void iupdrvImageGetData(void* handle, unsigned char* imgdata)
   /* Driver reports bpp=32; caller buffer is width*height*4. */
   int width = (int)bitmap_info.width;
   int height = (int)bitmap_info.height;
-  int line_size = width * 4;
   for (int y = 0; y < height; y++)
-    memcpy(imgdata + y * line_size, pixels + y * bitmap_info.stride, line_size);
+  {
+    unsigned char* src = pixels + (size_t)y * bitmap_info.stride;
+    unsigned char* dst = imgdata + (size_t)y * width * 4;
+    for (int x = 0; x < width; x++)
+    {
+      unsigned char a = src[3];
+      if (a == 0 || a == 255)
+      {
+        dst[0] = src[0];
+        dst[1] = src[1];
+        dst[2] = src[2];
+      }
+      else
+      {
+        dst[0] = (unsigned char)((src[0] * 255 + a / 2) / a);
+        dst[1] = (unsigned char)((src[1] * 255 + a / 2) / a);
+        dst[2] = (unsigned char)((src[2] * 255 + a / 2) / a);
+      }
+      dst[3] = a;
+      src += 4;
+      dst += 4;
+    }
+  }
 
   AndroidBitmap_unlockPixels(jni_env, java_bitmap);
 }
