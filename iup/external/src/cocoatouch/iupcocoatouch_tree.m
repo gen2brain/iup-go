@@ -51,6 +51,8 @@ static int cocoaTouchTreeIndentation(Ihandle* ih)
 @property(nonatomic, retain) UIImage* image;
 @property(nonatomic, retain) UIImage* imageExpanded;
 @property(nonatomic, assign) BOOL marked;
+@property(nonatomic, assign) int toggleValue;
+@property(nonatomic, assign) BOOL toggleVisible;
 @property(nonatomic, assign) void* userdata;
 @end
 
@@ -63,6 +65,7 @@ static int cocoaTouchTreeIndentation(Ihandle* ih)
 	{
 		_kind = ITREE_LEAF;
 		_expanded = YES;
+		_toggleVisible = YES;
 		_children = [[NSMutableArray alloc] init];
 	}
 	return self;
@@ -160,6 +163,7 @@ static int cocoaTouchTreeIndexInParent(IupCocoaTouchTreeNode* node)
 
 @interface IupCocoaTouchTreeCell : UITableViewCell
 @property(nonatomic, retain) UIButton* disclosure;
+@property(nonatomic, retain) UIButton* toggle;
 @property(nonatomic, retain) UIImageView* icon;
 @property(nonatomic, retain) UILabel* titleLabel;
 @property(nonatomic, assign) IupCocoaTouchTreeView* owner;
@@ -178,6 +182,11 @@ static int cocoaTouchTreeIndexInParent(IupCocoaTouchTreeNode* node)
 		[_disclosure addTarget:self action:@selector(disclosureTapped:) forControlEvents:UIControlEventTouchUpInside];
 		[self.contentView addSubview:_disclosure];
 
+		_toggle = [[UIButton buttonWithType:UIButtonTypeCustom] retain];
+		_toggle.autoresizingMask = UIViewAutoresizingNone;
+		[_toggle addTarget:self action:@selector(toggleTapped:) forControlEvents:UIControlEventTouchUpInside];
+		[self.contentView addSubview:_toggle];
+
 		_icon = [[UIImageView alloc] init];
 		_icon.contentMode = UIViewContentModeScaleAspectFit;
 		[self.contentView addSubview:_icon];
@@ -195,6 +204,7 @@ static int cocoaTouchTreeIndexInParent(IupCocoaTouchTreeNode* node)
 - (void)dealloc
 {
 	[_disclosure release];
+	[_toggle release];
 	[_icon release];
 	[_titleLabel release];
 	[super dealloc];
@@ -217,13 +227,48 @@ static int cocoaTouchTreeIndexInParent(IupCocoaTouchTreeNode* node)
 	CGFloat gap = 6;
 	CGFloat disclosureW = hide_buttons ? 0 : 22;
 	CGFloat iconW = 20;
+	CGFloat toggleW = _toggle.hidden ? 0 : 24;
 
 	_disclosure.hidden = hide_buttons;
 	_disclosure.frame = CGRectMake(indent, 0, disclosureW, h);
-	CGFloat icon_x = indent + disclosureW + (hide_buttons ? 0 : gap);
+	CGFloat toggle_x = indent + disclosureW + (hide_buttons ? 0 : gap);
+	_toggle.frame = CGRectMake(toggle_x, (h - toggleW)/2, toggleW, toggleW);
+	CGFloat icon_x = toggle_x + toggleW + (toggleW > 0 ? gap : 0);
 	_icon.frame = CGRectMake(icon_x, (h - iconW)/2, iconW, iconW);
 	CGFloat text_x = icon_x + iconW + gap;
 	_titleLabel.frame = CGRectMake(text_x, 0, w - text_x - 8, h);
+}
+
+- (void)toggleTapped:(UIButton*)sender
+{
+	(void)sender;
+	if (!_owner || !_node) return;
+	Ihandle* ih = _owner.ihandle;
+	if (!ih) return;
+
+	int id_ = iupTreeFindNodeId(ih, (InodeHandle*)_node);
+	if (id_ < 0) return;
+
+	if (ih->data->show_toggle == 2)
+	{
+		if (_node.toggleValue == 1)       _node.toggleValue = -1;
+		else if (_node.toggleValue == -1) _node.toggleValue = 0;
+		else                              _node.toggleValue = 1;
+	}
+	else
+		_node.toggleValue = (_node.toggleValue == 1) ? 0 : 1;
+
+	IFnii cb = (IFnii)IupGetCallback(ih, "TOGGLEVALUE_CB");
+	if (cb && cb(ih, id_, _node.toggleValue) == IUP_CLOSE)
+		IupExitLoop();
+
+	if (iupAttribGetBoolean(ih, "MARKWHENTOGGLE"))
+		IupSetAttributeId(ih, "MARKED", id_, _node.toggleValue > 0 ? "YES" : "NO");
+
+	int row = cocoaTouchTreeVisibleRow(_owner, _node);
+	if (row >= 0)
+		[_owner.tableView reloadRowsAtIndexPaths:@[[NSIndexPath indexPathForRow:row inSection:0]]
+		                        withRowAnimation:UITableViewRowAnimationNone];
 }
 
 - (void)disclosureTapped:(UIButton*)sender
@@ -381,6 +426,20 @@ static int cocoaTouchTreeIndexInParent(IupCocoaTouchTreeNode* node)
 	else
 		cell.backgroundColor = [UIColor clearColor];
 	cell.contentView.backgroundColor = [UIColor clearColor];
+
+	if (_ihandle && _ihandle->data->show_toggle && node.toggleVisible)
+	{
+		NSString* sym = @"square";
+		if (node.toggleValue == 1) sym = @"checkmark.square.fill";
+		else if (node.toggleValue == -1) sym = @"minus.square.fill";
+		[cell.toggle setImage:[UIImage systemImageNamed:sym] forState:UIControlStateNormal];
+		cell.toggle.hidden = NO;
+	}
+	else
+	{
+		[cell.toggle setImage:nil forState:UIControlStateNormal];
+		cell.toggle.hidden = YES;
+	}
 
 	UIImage* icon = node.image;
 	if (node.kind == ITREE_BRANCH && node.expanded && node.imageExpanded)
@@ -1017,6 +1076,58 @@ static char* cocoaTouchTreeGetMarkedIdAttrib(Ihandle* ih, int id_)
 	IupCocoaTouchTreeNode* node = cocoaTouchTreeNodeFromId(ih, id_);
 	if (!node) return NULL;
 	return iupStrReturnBoolean(node.marked);
+}
+
+static char* cocoaTouchTreeGetToggleValueAttrib(Ihandle* ih, int id_)
+{
+	if (!ih->data->show_toggle) return NULL;
+	IupCocoaTouchTreeNode* node = cocoaTouchTreeNodeFromId(ih, id_);
+	if (!node) return NULL;
+	if (node.toggleValue == -1) return "NOTDEF";
+	return node.toggleValue ? "ON" : "OFF";
+}
+
+static int cocoaTouchTreeSetToggleValueAttrib(Ihandle* ih, int id_, const char* value)
+{
+	if (!ih->data->show_toggle) return 0;
+	IupCocoaTouchTreeNode* node = cocoaTouchTreeNodeFromId(ih, id_);
+	if (!node) return 0;
+
+	if (ih->data->show_toggle == 2 && iupStrEqualNoCase(value, "NOTDEF"))
+		node.toggleValue = -1;
+	else
+		node.toggleValue = iupStrBoolean(value) ? 1 : 0;
+
+	IupCocoaTouchTreeView* view = cocoaTouchTreeGetView(ih);
+	int row = view ? cocoaTouchTreeVisibleRow(view, node) : -1;
+	if (row >= 0)
+		[view.tableView reloadRowsAtIndexPaths:@[[NSIndexPath indexPathForRow:row inSection:0]]
+		                      withRowAnimation:UITableViewRowAnimationNone];
+	return 0;
+}
+
+static char* cocoaTouchTreeGetToggleVisibleAttrib(Ihandle* ih, int id_)
+{
+	if (!ih->data->show_toggle) return NULL;
+	IupCocoaTouchTreeNode* node = cocoaTouchTreeNodeFromId(ih, id_);
+	if (!node) return NULL;
+	return iupStrReturnBoolean(node.toggleVisible);
+}
+
+static int cocoaTouchTreeSetToggleVisibleAttrib(Ihandle* ih, int id_, const char* value)
+{
+	if (!ih->data->show_toggle) return 0;
+	IupCocoaTouchTreeNode* node = cocoaTouchTreeNodeFromId(ih, id_);
+	if (!node) return 0;
+
+	node.toggleVisible = iupStrBoolean(value) ? YES : NO;
+
+	IupCocoaTouchTreeView* view = cocoaTouchTreeGetView(ih);
+	int row = view ? cocoaTouchTreeVisibleRow(view, node) : -1;
+	if (row >= 0)
+		[view.tableView reloadRowsAtIndexPaths:@[[NSIndexPath indexPathForRow:row inSection:0]]
+		                      withRowAnimation:UITableViewRowAnimationNone];
+	return 0;
 }
 
 static void cocoaTouchTreeMarkRange(Ihandle* ih, int from, int to)
@@ -1689,6 +1800,9 @@ IUP_SDK_API void iupdrvTreeInitClass(Iclass* ic)
 	iupClassRegisterAttribute(ic, "MARK", NULL, cocoaTouchTreeSetMarkAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "STARTING", NULL, cocoaTouchTreeSetMarkStartAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "MARKSTART", NULL, cocoaTouchTreeSetMarkStartAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+	iupClassRegisterAttributeId(ic, "TOGGLEVALUE", cocoaTouchTreeGetToggleValueAttrib, cocoaTouchTreeSetToggleValueAttrib, IUPAF_NO_INHERIT);
+	iupClassRegisterAttributeId(ic, "TOGGLEVISIBLE", cocoaTouchTreeGetToggleVisibleAttrib, cocoaTouchTreeSetToggleVisibleAttrib, IUPAF_NO_INHERIT);
+	iupClassRegisterAttribute(ic, "MARKWHENTOGGLE", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "MARKEDNODES", cocoaTouchTreeGetMarkedNodesAttrib, cocoaTouchTreeSetMarkedNodesAttrib, NULL, NULL, IUPAF_NO_SAVE|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "MARKMODE", NULL, cocoaTouchTreeSetMarkModeAttrib, IUPAF_SAMEASSYSTEM, "SINGLE", IUPAF_NOT_MAPPED);
 
@@ -1707,7 +1821,6 @@ IUP_SDK_API void iupdrvTreeInitClass(Iclass* ic)
 	iupClassRegisterAttribute(ic, "INDENTATION", cocoaTouchTreeGetIndentationAttrib, cocoaTouchTreeSetIndentationAttrib, NULL, NULL, IUPAF_DEFAULT);
 	iupClassRegisterAttribute(ic, "HIDELINES", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "HIDEBUTTONS", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-	iupClassRegisterAttribute(ic, "SHOWTOGGLE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "INFOTIP", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "SHOWDRAGDROP", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "SHOWRENAME", NULL, NULL, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NO_INHERIT);
