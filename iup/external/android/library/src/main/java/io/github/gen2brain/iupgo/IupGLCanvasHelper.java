@@ -25,6 +25,46 @@ public final class IupGLCanvasHelper
     }
 
 
+    @Keep
+    public static IupGLBackgroundBoxView createBackgroundBox(final long ihandlePtr)
+    {
+        ContextThemeWrapper ctx = IupCommon.getContextThemeWrapper();
+        return new IupGLBackgroundBoxView(ctx, ihandlePtr);
+    }
+
+
+    /* SurfaceView is not a ViewGroup, and its surface sits behind the window */
+    @android.annotation.SuppressLint("ViewConstructor")
+    public static class IupGLBackgroundBoxView extends IupAndroidFixed
+    {
+        private final IupGLSurfaceView surface;
+
+        public IupGLBackgroundBoxView(Context ctx, long ih)
+        {
+            super(ctx);
+            surface = new IupGLSurfaceView(ctx, ih);
+            addView(surface, new LayoutParams(0, 0, 0, 0));
+            setTag(surface);
+        }
+
+        @Override
+        protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec)
+        {
+            super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+            surface.measure(
+                MeasureSpec.makeMeasureSpec(getMeasuredWidth(), MeasureSpec.EXACTLY),
+                MeasureSpec.makeMeasureSpec(getMeasuredHeight(), MeasureSpec.EXACTLY));
+        }
+
+        @Override
+        protected void onLayout(boolean changed, int left, int top, int right, int bottom)
+        {
+            super.onLayout(changed, left, top, right, bottom);
+            surface.layout(0, 0, right - left, bottom - top);
+        }
+    }
+
+
     /* Programmatic-only; requires an Ihandle so the XML constructors are absent. */
     @android.annotation.SuppressLint("ViewConstructor")
     public static class IupGLSurfaceView extends SurfaceView implements SurfaceHolder.Callback

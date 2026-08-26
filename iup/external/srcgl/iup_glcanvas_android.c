@@ -215,14 +215,22 @@ static EGLSurface androidGLCanvasCreateSurface(Ihandle* ih, IGlControlData* glda
 static int androidGLCanvasMapMethod(Ihandle* ih)
 {
   IUPJNI_DECLARE_METHOD_ID_STATIC(IupGLCanvasHelper_create);
+  IUPJNI_DECLARE_METHOD_ID_STATIC(IupGLCanvasHelper_createBackgroundBox);
 
   IGlControlData* gldata = (IGlControlData*)iupAttribGet(ih, "_IUP_GLCONTROLDATA");
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
   jclass java_class = IUPJNI_FindClass(IupGLCanvasHelper, jni_env, "io/github/gen2brain/iupgo/IupGLCanvasHelper");
-  jmethodID method_id = IUPJNI_GetStaticMethodID(IupGLCanvasHelper_create, jni_env, java_class,
-      "create", "(J)Lio/github/gen2brain/iupgo/IupGLCanvasHelper$IupGLSurfaceView;");
+  jmethodID method_id;
+  jobject view;
 
-  jobject view = (*jni_env)->CallStaticObjectMethod(jni_env, java_class, method_id, (jlong)(intptr_t)ih);
+  if (IupClassMatch(ih, "glbackgroundbox"))
+    method_id = IUPJNI_GetStaticMethodID(IupGLCanvasHelper_createBackgroundBox, jni_env, java_class,
+        "createBackgroundBox", "(J)Lio/github/gen2brain/iupgo/IupGLCanvasHelper$IupGLBackgroundBoxView;");
+  else
+    method_id = IUPJNI_GetStaticMethodID(IupGLCanvasHelper_create, jni_env, java_class,
+        "create", "(J)Lio/github/gen2brain/iupgo/IupGLCanvasHelper$IupGLSurfaceView;");
+
+  view = (*jni_env)->CallStaticObjectMethod(jni_env, java_class, method_id, (jlong)(intptr_t)ih);
   iupAndroid_CheckException(jni_env, "IupGLCanvasHelper.create");
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
 
