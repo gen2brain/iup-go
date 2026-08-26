@@ -358,7 +358,7 @@ IUP_SDK_API void iupdrvActivate(Ihandle* ih)
 
 IUP_SDK_API void iupdrvReparent(Ihandle* ih)
 {
-	(void)ih;
+	iupCocoaTouchAddToParent(ih);
 }
 
 IUP_SDK_API void iupdrvBaseLayoutUpdateMethod(Ihandle* ih)
