@@ -210,7 +210,32 @@ func GetAttribute(ih Ihandle, name string) string {
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
-	return C.GoString(C.IupGetAttribute(ih.ptr(), cName))
+	value := C.IupGetAttribute(ih.ptr(), cName)
+	if value == nil {
+		return ""
+	}
+
+	if attribIsNotString(ih, cName) {
+		return fmt.Sprintf("%p", unsafe.Pointer(value))
+	}
+
+	return C.GoString(value)
+}
+
+// attribIsNotString reports whether name is registered IUPAF_NO_STRING for the
+// class of ih, meaning its value is a native handle and not a C string.
+func attribIsNotString(ih Ihandle, cName *C.char) bool {
+	cClass := C.IupGetClassName(ih.ptr())
+	if cClass == nil {
+		return false
+	}
+
+	var flags C.int
+	if C.IupGetClassAttributeInfo(cClass, cName, nil, nil, &flags) < 0 {
+		return false
+	}
+
+	return flags&C.IUPAF_NO_STRING != 0
 }
 
 // GetAllAttributes returns the names of all attributes of an element that are set in its internal hash table only.

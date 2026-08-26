@@ -71,6 +71,27 @@ func GetGlobalPtr(name string) uintptr {
 	return uintptr(ccall("IupGetGlobal", "number", []interface{}{"string"}, []interface{}{name}).Int())
 }
 
+// attribIsNotString reports whether name is registered IUPAF_NO_STRING for the
+// class of ih, meaning its value is a native handle and not a C string.
+func attribIsNotString(ih Ihandle, name string) bool {
+	className := ccall("IupGetClassName", "string", []interface{}{"number"}, []interface{}{int(ih)}).String()
+	if className == "" {
+		return false
+	}
+
+	pflags := wasmMalloc(4)
+	defer wasmFree(pflags)
+
+	ret := ccall("IupGetClassAttributeInfo", "number",
+		[]interface{}{"string", "string", "number", "number", "number"},
+		[]interface{}{className, name, 0, 0, pflags}).Int()
+	if ret < 0 {
+		return false
+	}
+
+	return wasmGetI32(pflags)&AttribNoString != 0
+}
+
 func GetInt2(ih Ihandle, name string) (count, i1, i2 int) {
 	p1, p2 := wasmMalloc(4), wasmMalloc(4)
 	defer wasmFree(p1)

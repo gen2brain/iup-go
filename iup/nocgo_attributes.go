@@ -160,7 +160,31 @@ func GetAttribute(ih Ihandle, name string) string {
 	attrMu.RLock()
 	defer attrMu.RUnlock()
 
+	if attribIsNotString(ih, name) {
+		ptr := iupGetAttributePtr(uintptr(ih), name)
+		if ptr == 0 {
+			return ""
+		}
+		return fmt.Sprintf("%#x", ptr)
+	}
+
 	return iupGetAttribute(uintptr(ih), name)
+}
+
+// attribIsNotString reports whether name is registered IUPAF_NO_STRING for the
+// class of ih, meaning its value is a native handle and not a C string.
+func attribIsNotString(ih Ihandle, name string) bool {
+	className := iupGetClassName(uintptr(ih))
+	if className == "" {
+		return false
+	}
+
+	var flags int32
+	if iupGetClassAttributeInfo(className, name, nil, nil, &flags) < 0 {
+		return false
+	}
+
+	return flags&AttribNoString != 0
 }
 
 func GetAllAttributes(ih Ihandle) (ret []string) {

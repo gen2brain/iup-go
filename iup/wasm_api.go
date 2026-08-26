@@ -641,6 +641,14 @@ func SetAttributes(ih Ihandle, str string) Ihandle {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
 func GetAttribute(ih Ihandle, name string) string {
+	if attribIsNotString(ih, name) {
+		ptr := ccall("IupGetAttribute", "number", []interface{}{"number", "string"}, []interface{}{int(ih), name}).Int()
+		if ptr == 0 {
+			return ""
+		}
+		return fmt.Sprintf("%#x", ptr)
+	}
+
 	return ccall("IupGetAttribute", "string", []interface{}{"number", "string"}, []interface{}{int(ih), name}).String()
 }
 

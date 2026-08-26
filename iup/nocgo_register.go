@@ -52,6 +52,7 @@ var (
 	iupSetRGBId2            func(ih uintptr, name string, lin, col int32, r, g, b uint8)
 
 	iupGetAttribute         func(ih uintptr, name string) string
+	iupGetAttributePtr      func(ih uintptr, name string) uintptr
 	iupGetAttributeRaw      func(ih uintptr, name string) uintptr
 	iupGetAttributeId       func(ih uintptr, name string, id int32) string
 	iupGetAttributeIdRaw    func(ih uintptr, name string, id int32) uintptr
@@ -539,6 +540,7 @@ func ensureBase() {
 		reg(&iupGetClassCallbacks, "IupGetClassCallbacks")
 		reg(&iupGetClassType, "IupGetClassType")
 		reg(&iupGetClassName, "IupGetClassName")
+		reg(&iupGetAttributePtr, "IupGetAttribute")
 		reg(&iupGetAllGlobals, "IupGetAllGlobals")
 
 		reg(&iupPostMessage, "IupPostMessage")
