@@ -519,7 +519,9 @@ static void cocoaTouchCanvasFireMotion(Ihandle* ih, UITouch* touch, UIEvent* eve
 - (void)touchesBegan:(NSSet<UITouch*>*)touches withEvent:(UIEvent*)event
 {
 	[super touchesBegan:touches withEvent:event];
-	if (_canFocus && !self.isFirstResponder) [self becomeFirstResponder];
+	/* a UIKeyInput first responder raises the soft keyboard */
+	if (_canFocus && !self.isFirstResponder && _ihandle && IupGetCallback(_ihandle, "TEXTINPUT_CB"))
+		[self becomeFirstResponder];
 
 	[self pauseAncestorPanGestures];
 
