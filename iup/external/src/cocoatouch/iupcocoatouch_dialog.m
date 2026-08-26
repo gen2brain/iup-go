@@ -261,8 +261,8 @@ static int cocoaTouchDialogSetBgColorAttrib(Ihandle* ih, const char* value)
 	IupViewController* vc = cocoaTouchDialogVC(ih);
 	if (!vc) return 0;
 
-	/* swap DLGBGCOLOR -> systemBackgroundColor so the bg auto-flips on dark-mode change */
-	if (value && iupStrEqual(value, IupGetGlobal("DLGBGCOLOR")))
+	/* only the untouched system colour auto-flips with dark mode */
+	if (value && iupStrEqual(value, IupGetGlobal("_IUP_SYSTEM_DLGBGCOLOR")))
 	{
 		[[vc view] setBackgroundColor:[UIColor systemBackgroundColor]];
 		return 1;

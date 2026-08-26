@@ -41,6 +41,7 @@ static const void* IUP_COCOATOUCH_LIST_DND_KEY      = "IUP_COCOATOUCH_LIST_DND_K
 @property(nonatomic, retain) NSMutableArray* itemImages;
 @property(nonatomic, assign) NSInteger selectedIndex;  /* 0-based, -1 = none, dropdown only */
 @property(nonatomic, retain) UIColor* cellTextColor;
+@property(nonatomic, retain) UIColor* cellBackgroundColor;
 @property(nonatomic, retain) UIFont* cellFont;
 /* set only when has_editbox */
 @property(nonatomic, assign) UITextField* field;
@@ -171,6 +172,7 @@ static void cocoaTouchListSetDropdownDisplay(UIButton* button, NSString* text, U
 	[_items release];
 	[_itemImages release];
 	[_cellTextColor release];
+	[_cellBackgroundColor release];
 	[_cellFont release];
 	[super dealloc];
 }
@@ -221,7 +223,18 @@ static void cocoaTouchListSetDropdownDisplay(UIButton* button, NSString* text, U
 	}
 
 	cell.textLabel.text = text;
-	if (_cellTextColor) cell.textLabel.textColor = _cellTextColor;
+	if (_cellTextColor)
+	{
+		cell.textLabel.textColor = _cellTextColor;
+		/* the selection fill follows the system appearance, so labelColor contrasts with it */
+		cell.textLabel.highlightedTextColor = [UIColor labelColor];
+	}
+	if (_cellBackgroundColor)
+	{
+		/* contentView sits above selectedBackgroundView and would hide the selection */
+		cell.backgroundColor = _cellBackgroundColor;
+		cell.contentView.backgroundColor = [UIColor clearColor];
+	}
 	if (_cellFont)      cell.textLabel.font      = _cellFont;
 
 	if (img && _ihandle && _ihandle->data && _ihandle->data->fit_image)
@@ -403,7 +416,17 @@ static UITextField* cocoaTouchListGetField(Ihandle* ih)
 static void cocoaTouchListReloadTable(Ihandle* ih)
 {
 	UITableView* table = cocoaTouchListGetTable(ih);
-	if (table) [table reloadData];
+	if (!table) return;
+
+	/* reloadData drops the selection */
+	NSArray<NSIndexPath*>* selected = [[table indexPathsForSelectedRows] copy];
+	[table reloadData];
+	for (NSIndexPath* ip in selected)
+	{
+		if (ip.row < [table numberOfRowsInSection:ip.section])
+			[table selectRowAtIndexPath:ip animated:NO scrollPosition:UITableViewScrollPositionNone];
+	}
+	[selected release];
 }
 
 static int cocoaTouchListConvertXYToPos(Ihandle* ih, int x, int y)
@@ -1116,6 +1139,13 @@ static int cocoaTouchListSetBgColorAttrib(Ihandle* ih, const char* value)
 	if (button) [button setBackgroundColor:color];
 	UITextField* field = cocoaTouchListGetField(ih);
 	if (field) [field setBackgroundColor:color];
+
+	IupCocoaTouchListController* ctrl = cocoaTouchListGetController(ih);
+	if (ctrl)
+	{
+		ctrl.cellBackgroundColor = color;
+		cocoaTouchListReloadTable(ih);
+	}
 	return 1;
 }
 
