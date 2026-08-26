@@ -185,12 +185,13 @@ static int cocoaTouchClipboardSetAddFormatAttrib(Ihandle* ih, const char* value)
 	return 0;
 }
 
-static BOOL cocoaTouchClipboardIsValidUTI(NSString* s)
+/* UIPasteboard takes any type string, and IUP format names are commonly MIME */
+static BOOL cocoaTouchClipboardIsValidType(NSString* s)
 {
 	NSUInteger n = [s length];
 	if (n == 0 || n > 256) return NO;
 	NSCharacterSet* allowed = [NSCharacterSet characterSetWithCharactersInString:
-		@"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.-_+"];
+		@"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.-_+/"];
 	for (NSUInteger i = 0; i < n; i++)
 	{
 		if (![allowed characterIsMember:[s characterAtIndex:i]]) return NO;
@@ -206,7 +207,7 @@ static NSString* cocoaTouchClipboardFormatString(Ihandle* ih)
 		return nil;
 	}
 	NSString* s = [NSString stringWithUTF8String:format];
-	if (!s || !cocoaTouchClipboardIsValidUTI(s)) return nil;
+	if (!s || !cocoaTouchClipboardIsValidType(s)) return nil;
 	return s;
 }
 
