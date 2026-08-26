@@ -453,6 +453,14 @@ public final class IupTreeHelper
                     if (pos == RecyclerView.NO_POSITION) return true;
                     int old = tree.focusIdx;
                     tree.focusIdx = pos;
+                    if (tree.markMultiple)
+                    {
+                        TreeNode tapped = tree.visible.get(pos);
+                        boolean changed = tree.marked.size() != 1 || !tree.marked.contains(tapped);
+                        tree.marked.clear();
+                        tree.marked.add(tapped);
+                        if (changed) tree.adapter.notifyDataSetChanged();
+                    }
                     if (old != pos)
                     {
                         if (old >= 0) tree.adapter.notifyItemChanged(old);
@@ -1197,6 +1205,24 @@ public final class IupTreeHelper
             if (n != null) t.marked.add(n);
         }
         t.adapter.notifyDataSetChanged();
+    }
+
+    @Keep
+    public static void invertNodeMark(View v, int id)
+    {
+        if (!(v instanceof IupTreeView t)) return;
+        TreeNode n = nodeAtId(t, id);
+        if (n == null) return;
+        if (!t.marked.remove(n)) t.marked.add(n);
+        int vis = t.visible.indexOf(n);
+        if (vis >= 0) t.adapter.notifyItemChanged(vis);
+    }
+
+    @Keep
+    public static int getMarkStartId(View v)
+    {
+        if (!(v instanceof IupTreeView t) || t.markStart == null) return -1;
+        return idOfNode(t, t.markStart);
     }
 
     @Keep
