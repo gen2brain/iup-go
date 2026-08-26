@@ -6,6 +6,7 @@
 
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
 
 #include <jni.h>
 
@@ -554,6 +555,7 @@ static char* androidTreeGetMarkedIdAttrib(Ihandle* ih, int id)
 static int androidTreeSetMarkAttrib(Ihandle* ih, const char* value)
 {
   if (!ih->handle || !value) return 0;
+  if (ih->data->mark_mode == ITREE_MARK_SINGLE) return 0;
   JNIEnv* env = iupAndroid_GetEnvThreadSafe();
   jclass cls = androidTreeFindClass(env);
 
@@ -575,12 +577,34 @@ static int androidTreeSetMarkAttrib(Ihandle* ih, const char* value)
     (*env)->CallStaticVoidMethod(env, cls, m, ih->handle);
     iupAndroid_CheckException(env, "invertMarks");
   }
-  else if (iupStrEqualPartial(value, "BLOCK"))
+  else if (iupStrEqualNoCase(value, "BLOCK"))
+  {
+    jmethodID mf = (*env)->GetStaticMethodID(env, cls, "getFocusNodeId", "(Landroid/view/View;)I");
+    jmethodID ms = (*env)->GetStaticMethodID(env, cls, "getMarkStartId", "(Landroid/view/View;)I");
+    jint from_id = (*env)->CallStaticIntMethod(env, cls, mf, ih->handle);
+    jint to_id = (*env)->CallStaticIntMethod(env, cls, ms, ih->handle);
+    iupAndroid_CheckException(env, "getMarkStartId");
+    if (to_id < 0) to_id = from_id;
+    jmethodID m = (*env)->GetStaticMethodID(env, cls, "markBlock", "(Landroid/view/View;II)V");
+    (*env)->CallStaticVoidMethod(env, cls, m, ih->handle, from_id, to_id);
+    iupAndroid_CheckException(env, "markBlock");
+  }
+  else if (iupStrEqualPartial(value, "INVERT"))
+  {
+    int id = -1;
+    if (!iupStrToInt(value + strlen("INVERT"), &id))
+    {
+      jmethodID mf = (*env)->GetStaticMethodID(env, cls, "getFocusNodeId", "(Landroid/view/View;)I");
+      id = (int)(*env)->CallStaticIntMethod(env, cls, mf, ih->handle);
+    }
+    jmethodID m = (*env)->GetStaticMethodID(env, cls, "invertNodeMark", "(Landroid/view/View;I)V");
+    (*env)->CallStaticVoidMethod(env, cls, m, ih->handle, (jint)id);
+    iupAndroid_CheckException(env, "invertNodeMark");
+  }
+  else
   {
     int from_id = -1, to_id = -1;
-    const char* p = value + 5;
-    if (iupStrToIntInt(p, &from_id, &to_id, '-') == 2
-        || iupStrToIntInt(p, &from_id, &to_id, ':') == 2)
+    if (iupStrToIntInt(value, &from_id, &to_id, '-') == 2)
     {
       jmethodID m = (*env)->GetStaticMethodID(env, cls, "markBlock", "(Landroid/view/View;II)V");
       (*env)->CallStaticVoidMethod(env, cls, m, ih->handle, (jint)from_id, (jint)to_id);
