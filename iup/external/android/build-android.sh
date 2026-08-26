@@ -27,7 +27,7 @@
 #             keystore if ANDROID_KEYSTORE/_PASS/KEY_ALIAS are set; otherwise
 #             falls back to the debug key (warns; not Play-ready).
 #   -l        after install, force-stop, relaunch, wait 3s, dump filtered
-#             logs (Iup + AndroidRuntime + native crash) to /tmp/logcat.txt.
+#             logs (Iup + Go + AndroidRuntime + native crash) to /tmp/logcat.txt.
 #             Implies -i.
 #   -s        after install (and -l's relaunch if set), grab a screencap to
 #             /tmp/screenshot.png. Implies -i.
@@ -80,7 +80,7 @@ SCREENSHOT=0
 LOGCAT_FILE="/tmp/logcat.txt"
 SCREENSHOT_FILE="/tmp/screenshot.png"
 PACKAGE=""
-LOGCAT_TAGS="Iup:* IupLog:* IupStdout:* IupStderr:* AndroidRuntime:E DEBUG:F libc:F"
+LOGCAT_TAGS="Iup:* IupLog:* IupStdout:* IupStderr:* Go:* AndroidRuntime:E DEBUG:F libc:F"
 
 usage() {
 	# Print the leading comment block (skip the shebang), stripping the '# '.
