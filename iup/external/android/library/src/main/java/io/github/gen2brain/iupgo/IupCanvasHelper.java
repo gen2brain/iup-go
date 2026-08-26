@@ -265,7 +265,8 @@ public final class IupCanvasHelper
     public static void drawBitmap(IupAndroidCanvas view, Bitmap bmp, int x, int y, int w, int h, int sx, int sy, int sw, int sh, boolean filter, int alpha)
     {
         Canvas c = view.getBackCanvas(); if (c == null || bmp == null) return;
-        Paint p = new Paint(filter ? Paint.FILTER_BITMAP_FLAG : 0);
+        Paint p = new Paint();
+        p.setFilterBitmap(filter);
         p.setAlpha(alpha);
         c.drawBitmap(bmp, new Rect(sx, sy, sx + sw, sy + sh), new Rect(x, y, x + w, y + h), p);
     }
