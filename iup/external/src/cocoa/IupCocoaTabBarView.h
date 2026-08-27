@@ -11,6 +11,7 @@
 
 #define kTabBarViewHeight 32
 #define kWidthOfTabList 24
+#define kTabBarSidePadding 16
 #define kHeightOfTabList 28
 #define kMaxTabCellWidth 180
 #define kMinTabCellWidth 50
