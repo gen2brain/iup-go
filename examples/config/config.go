@@ -2,8 +2,6 @@ package main
 
 import (
 	"fmt"
-	"os"
-	"strings"
 
 	"github.com/gen2brain/iup-go/iup"
 )
@@ -14,10 +12,10 @@ func main() {
 	iup.Open()
 	defer iup.Close()
 
-	// Show current environment
-	fmt.Println("Environment:")
-	fmt.Printf("  HOME=%s\n", os.Getenv("HOME"))
-	fmt.Printf("  XDG_CONFIG_HOME=%s\n", os.Getenv("XDG_CONFIG_HOME"))
+	// Where the per-user directories land on this platform
+	fmt.Println("Directories:")
+	fmt.Printf("  CONFIGDIR=%s\n", iup.GetGlobal("CONFIGDIR"))
+	fmt.Printf("  DATADIR=%s\n", iup.GetGlobal("DATADIR"))
 	fmt.Println()
 
 	// Using APP_NAME attribute on a config handle
@@ -62,6 +60,14 @@ func main() {
 	config5 := iup.Config()
 	config5.SetAttribute("APP_NAME", "XDGTestApp")
 
+	// What a previous run left behind
+	iup.ConfigLoad(config5)
+	fmt.Printf("  Previous run: Title=%q Width=%d Height=%d Volume=%g\n",
+		iup.ConfigGetVariableStr(config5, "Window", "Title"),
+		iup.ConfigGetVariableInt(config5, "Window", "Width"),
+		iup.ConfigGetVariableInt(config5, "Window", "Height"),
+		iup.ConfigGetVariableDouble(config5, "Settings", "Volume"))
+
 	// Save some data
 	iup.ConfigSetVariableStr(config5, "Window", "Title", "My Application")
 	iup.ConfigSetVariableInt(config5, "Window", "Width", 800)
@@ -72,21 +78,16 @@ func main() {
 	filename5 := config5.GetAttribute("FILENAME")
 	fmt.Printf("  Saved to: %s (result=%d)\n", filename5, result)
 
-	// Verify file exists
-	if _, err := os.Stat(filename5); err == nil {
-		fmt.Printf("  File exists: YES\n")
-
-		// Read and display contents
-		data, _ := os.ReadFile(filename5)
-		fmt.Printf("  Contents:\n")
-		fmt.Println("  ---")
-		for _, line := range strings.Split(string(data), "\n") {
-			fmt.Printf("  %s\n", line)
-		}
-		fmt.Println("  ---")
-	} else {
-		fmt.Printf("  File exists: NO (error: %v)\n", err)
-	}
+	// Read it back
+	config6 := iup.Config()
+	config6.SetAttribute("APP_NAME", "XDGTestApp")
+	iup.ConfigLoad(config6)
+	fmt.Printf("  Read back:    Title=%q Width=%d Height=%d Volume=%g\n",
+		iup.ConfigGetVariableStr(config6, "Window", "Title"),
+		iup.ConfigGetVariableInt(config6, "Window", "Width"),
+		iup.ConfigGetVariableInt(config6, "Window", "Height"),
+		iup.ConfigGetVariableDouble(config6, "Settings", "Volume"))
+	config6.Destroy()
 
 	config5.Destroy()
 }
