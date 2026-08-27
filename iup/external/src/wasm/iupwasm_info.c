@@ -80,9 +80,52 @@ IUP_SDK_API int iupdrvScaleNaturalPx(int px)
   return px;
 }
 
+EM_JS(char*, iupwasmJsBrowserVersion, (void), {
+  var s = "";
+  try {
+    var d = navigator.userAgentData;
+    if (d && d.brands && d.brands.length) {
+      for (var i = 0; i < d.brands.length; i++) {
+        var b = d.brands[i];
+        if (b.brand && b.brand.indexOf("Not") !== 0 && b.brand !== "Chromium") { s = b.brand + " " + b.version; break; }
+      }
+      if (!s) s = d.brands[0].brand + " " + d.brands[0].version;
+    }
+    if (!s) {
+      var ua = navigator.userAgent;
+      var names = ["Firefox", "Edg", "Chrome", "Version"];
+      for (var j = 0; j < names.length; j++) {
+        var at = ua.indexOf(names[j] + "\u002f");
+        if (at < 0) continue;
+        var from = at + names[j].length + 1;
+        var to = from;
+        while (to < ua.length && "0123456789.".indexOf(ua.charAt(to)) >= 0) to++;
+        var label = names[j] === "Edg" ? "Edge" : names[j] === "Version" ? "Safari" : names[j];
+        s = label + " " + ua.substring(from, to);
+        break;
+      }
+    }
+  } catch (e) {}
+  var len = lengthBytesUTF8(s) + 1;
+  var ptr = _malloc(len);
+  stringToUTF8(s, ptr, len);
+  return ptr;
+})
+
 IUP_SDK_API char* iupdrvGetSystemVersion(void)
 {
-  return NULL;
+  char* version = iupwasmJsBrowserVersion();
+  char* ret;
+
+  if (!version || !version[0])
+  {
+    free(version);
+    return NULL;
+  }
+
+  ret = iupStrReturnStr(version);
+  free(version);
+  return ret;
 }
 
 IUP_SDK_API char* iupdrvGetSystemName(void)

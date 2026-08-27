@@ -374,6 +374,9 @@ EMSCRIPTEN_KEEPALIVE int iupwasmDispatchKey(int id, int code)
   if (iupStrEqual(IupGetClassName(ih), "tree") && iupwasmTreeKeyNav(ih, code))
     return 1;
 
+  if (iupStrEqual(IupGetClassName(ih), "table") && iupwasmTableKeyNav(ih, code))
+    return 1;
+
   /* DEFAULTENTER / DEFAULTESC: fire the named button's ACTION */
   if (code == K_CR || code == K_ESC)
   {

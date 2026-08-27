@@ -1992,13 +1992,14 @@
           }
           if (lwopts.tagName === 'SELECT') {
             lwopts.addEventListener('change', function () {
+              var lseq = globalThis.__iupKeyPend || 0; globalThis.__iupKeyPend = 0;
               if (c.multiple) {
                 var sel = '';
                 for (var i = 0; i < lwopts.options.length; i++) sel += lwopts.options[i].selected ? '+' : '-';
-                Dt('iupwasmDispatchListMulti', ['number', 'string'], [lid, sel]);
+                Dt('iupwasmDispatchListMulti', ['number', 'string', 'number'], [lid, sel, lseq]);
               } else {
                 var lidx = lwopts.selectedIndex;
-                if (lidx >= 0) Dt('iupwasmDispatchListAction', ['number', 'number', 'number', 'string'], [lid, lidx + 1, 1, lwopts.options[lidx].text]);
+                if (lidx >= 0) Dt('iupwasmDispatchListAction', ['number', 'number', 'number', 'string', 'number'], [lid, lidx + 1, 1, lwopts.options[lidx].text, lseq]);
               }
               D('iupwasmDispatchValueChanged', lid);
             });
@@ -2013,6 +2014,7 @@
         var twr = document.createElement('div');
         twr.style.position = 'absolute'; twr.style.boxSizing = 'border-box'; twr.style.overflow = 'auto';
         twr.style.border = '1px solid var(--iup-bd)'; twr.style.background = 'var(--iup-txtbg)';
+        twr.tabIndex = 0; twr.style.outline = 'none'; twr.__iupCellNav = 1;
         var ttable = document.createElement('table'); ttable.style.borderCollapse = 'collapse'; ttable.style.width = '100%';
         var tthead = document.createElement('thead'); var thr = document.createElement('tr'); tthead.appendChild(thr);
         var ttbody = document.createElement('tbody'); ttable.appendChild(tthead); ttable.appendChild(ttbody); twr.appendChild(ttable);
@@ -3131,7 +3133,7 @@
           Dt('iupwasmDispatchKeyText', ['number', 'number', 'string', 'number'], [id, code, txt, seq]);
         }
         // the driver moves the tree focus itself, the div must not also scroll
-        if (ae && ae.__iupTreeFocus !== undefined && NAVK[k]) e.preventDefault();
+        if (ae && (ae.__iupTreeFocus !== undefined || ae.__iupCellNav) && NAVK[k]) e.preventDefault();
         if (k === 'F1') { e.preventDefault(); D('iupwasmDispatchHelp', id); }  // GTK fires HELP_CB on plain F1
       });
       document.addEventListener('focusin', function (e) { var id = iupId(e.target); if (id) D('iupwasmDispatchFocus', id, 1); });
