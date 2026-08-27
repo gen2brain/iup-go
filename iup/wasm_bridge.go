@@ -144,6 +144,13 @@ func init() {
 	js.Global().Set("iupGoDispatchStr", js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		return dispatchStr(Ihandle(args[0].Int()), args[1].String(), args[2].Int(), args[3].Int())
 	}))
+	js.Global().Set("iupGoDispatchRetD", js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		return dispatchRetD(Ihandle(args[0].Int()), args[1].String(), args[2].Int(), args[3].Int())
+	}))
+	js.Global().Set("iupGoDispatch2sds", js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		return dispatch2sds(Ihandle(args[0].Int()), args[1].String(), args[2].String(), args[3].String(),
+			args[4].Float(), args[5].String())
+	}))
 	js.Global().Set("iupGoDispatchGesture", js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		return dispatchGesture(Ihandle(args[0].Int()), args[1].Int(), args[2].Int(), args[3].Int(), args[4].Int(), args[5].Float(), args[6].Float())
 	}))
@@ -163,6 +170,22 @@ func init() {
 	}))
 }
 
+// dispatchRetD handles the one callback that returns a double.
+func dispatchRetD(ih Ihandle, name string, i1, i2 int) float64 {
+	if f, ok := callbacks[cbKey{ih, name}].(NumericGetValueFunc); ok {
+		return f(ih, i1, i2)
+	}
+	return 0
+}
+
+// dispatch2sds handles the plot tick formatters: two strings, a value and a status.
+func dispatch2sds(ih Ihandle, name, s1, s2 string, d1 float64, s3 string) int {
+	if f, ok := callbacks[cbKey{ih, name}].(PlotTickFormatNumberFunc); ok {
+		return f(ih, s1, s2, d1, s3)
+	}
+	return DEFAULT
+}
+
 // dispatchStr handles callbacks that return a string (table VALUE_CB/IMAGE_CB).
 func dispatchStr(ih Ihandle, name string, i1, i2 int) string {
 	fn := callbacks[cbKey{ih, name}]
@@ -177,6 +200,8 @@ func dispatchStr(ih Ihandle, name string, i1, i2 int) string {
 	case ListValueFunc:
 		return f(ih, i1)
 	case ListImageFunc:
+		return f(ih, i1)
+	case CellFunc:
 		return f(ih, i1)
 	case MatrixFontFunc:
 		return f(ih, i1, i2)

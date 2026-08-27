@@ -1445,11 +1445,11 @@ func intSlice(p uintptr, n int32) []int {
 	return out
 }
 
-type CellFunc func(ih Ihandle, cell int) int
+type CellFunc func(ih Ihandle, cell int) string
 
-var cellCB = purego.NewCallback(func(ih uintptr, cell int32) int {
+var cellCB = purego.NewCallback(func(ih uintptr, cell int32) uintptr {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_CELL_CB").(CellFunc); ok {
-		return f(Ihandle(ih), int(cell))
+		return cReturnStr(f(Ihandle(ih), int(cell)))
 	}
 	return 0
 })

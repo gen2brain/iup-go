@@ -6,7 +6,7 @@ type BgColorFunc func(ih Ihandle, lin, col int) (r, g, b int, ret int)
 type BusyFunc func(ih Ihandle, lin, col int, status string) int
 type CancelFunc func(Ihandle) int
 type CaretFunc func(ih Ihandle, lin, col, pos int) int
-type CellFunc func(ih Ihandle, cell int) int
+type CellFunc func(ih Ihandle, cell int) string
 type CellsDrawFunc func(ih Ihandle, i, j, xmin, xmax, ymin, ymax int) int
 type ChangeFunc func(ih Ihandle, r, g, b uint8) int
 type ColorUpdateFunc func(ih Ihandle) int

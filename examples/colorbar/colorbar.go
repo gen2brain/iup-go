@@ -34,10 +34,18 @@ func main() {
 		return iup.DEFAULT
 	}))
 
+	colorbar.SetCallback("CELL_CB", iup.CellFunc(func(ih iup.Ihandle, cell int) string {
+		if cell%2 == 0 {
+			return ""
+		}
+		return "255 0 255"
+	}))
+
 	dlg := iup.Dialog(
 		iup.Vbox(
 			iup.Label("ColorBar - Click to select colors"),
 			iup.Label("Left-click: primary color, Right-click: secondary color"),
+			iup.Label("Double-click an odd cell to recolor it, even cells ignore the change"),
 			iup.Space().SetAttribute("SIZE", "x10"),
 			iup.Frame(colorbar).SetAttribute("TITLE", "Color Palette"),
 			iup.Space().SetAttribute("SIZE", "x10"),
