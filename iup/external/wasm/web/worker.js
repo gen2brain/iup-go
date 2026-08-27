@@ -11,9 +11,22 @@ self.onmessage = function (e) {
     u8 = new Uint8Array(m.sab);
     boot();
   } else if (m.__iupEv) {
-    dispatchEvent(m.name, m.args, m.types);
+    runEvent(m);
   }
 };
+
+// An event can arrive twice, by postMessage and replayed over the SAB when a modal pump starts;
+// the sequence drops the duplicate and tells main how far this Worker has got.
+var lastEvSeq = 0;
+
+function runEvent(ev) {
+  if (ev.seq) {
+    if (ev.seq <= lastEvSeq) return;
+    lastEvSeq = ev.seq;
+    if (i32) Atomics.store(i32, i32.length - 2, ev.seq);
+  }
+  dispatchEvent(ev.name, ev.args, ev.types);
+}
 
 function dispatchEvent(name, args, types) {
   if (!Module) { eventQueue.push([name, args, types]); return; }
@@ -66,8 +79,7 @@ globalThis.__iupRunPump = function () {
     while (!globalThis.__iupPumpDone[depth]) {
       var ev = globalThis.__iupReadSync({ op: 'modalnext' });
       if (ev === null) break;
-      var d = JSON.parse(ev);
-      dispatchEvent(d.name, d.args, d.types);
+      runEvent(JSON.parse(ev));
     }
   }
   delete globalThis.__iupPumpDone[depth];
@@ -87,6 +99,46 @@ globalThis.__iupExitLoop = function () {
   if (globalThis.iupGoExitLoop) globalThis.iupGoExitLoop();
 };
 
+// CACHEDIR/DATADIR/CONFIGDIR live under the home directory; /tmp stays in memory. syncfs is
+// asynchronous, so the mount has to happen before the app runs.
+var IUP_HOME = '/home/web_user';
+
+function mountPersistentHome() {
+  return new Promise(function (done) {
+    try {
+      Module.FS.mkdirTree(IUP_HOME);
+      Module.FS.mount(Module.IDBFS, {}, IUP_HOME);
+    } catch (e) { done(); return; }
+    Module.FS.syncfs(true, function () {
+      var timer = 0, busy = 0;
+      var flush = function () {
+        timer = 0;
+        if (busy) { timer = setTimeout(flush, 250); return; }
+        busy = 1;
+        Module.FS.syncfs(false, function () { busy = 0; });
+      };
+      var touch = function (path) {
+        if (typeof path !== 'string' || path.indexOf(IUP_HOME) !== 0) return;
+        if (!timer) timer = setTimeout(flush, 250);
+      };
+      // FS.trackingDelegate only exists in an FS_DEBUG build, so the writers are wrapped instead
+      var wrap = function (name, pathOf) {
+        var orig = Module.FS[name];
+        if (typeof orig !== 'function') return;
+        Module.FS[name] = function () {
+          var r = orig.apply(Module.FS, arguments);
+          touch(pathOf.apply(null, arguments));
+          return r;
+        };
+      };
+      wrap('close', function (stream) { return stream && stream.path; });
+      wrap('unlink', function (path) { return path; });
+      wrap('rmdir', function (path) { return path; });
+      done();
+    });
+  });
+}
+
 function boot() {
   importScripts('iup.js');
   // mainScriptUrlOrBlob: lets -pthread workers spawn from inside this Worker
@@ -95,6 +147,8 @@ function boot() {
     globalThis.IupModule = mod;
     var q = eventQueue; eventQueue = [];
     for (var k = 0; k < q.length; k++) dispatchEvent(q[k][0], q[k][1], q[k][2]);
+    return mountPersistentHome();
+  }).then(function () {
     return fetch('app.wasm', { method: 'HEAD' }).then(function (r) {
       if (!r.ok) { Module.callMain([]); return; }  // C app: its main() runs the blocking IupMainLoop
       importScripts('wasm_exec.js');

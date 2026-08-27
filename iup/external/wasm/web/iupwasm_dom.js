@@ -9,7 +9,8 @@
     var D = function (name) { dispatch.call(name, Array.prototype.slice.call(arguments, 1)); };
     var Dr = function (name, ret, types, args) { return dispatch.callRet(name, ret, types, args); };
     var Dt = function (name, types, args) { dispatch.callType(name, types, args); };
-    var mmods = function (e) { return (e.shiftKey ? 1 : 0) | (e.ctrlKey ? 2 : 0) | (e.altKey ? 4 : 0) | ((e.buttons & 1) ? 8 : 0) | ((e.buttons & 2) ? 16 : 0) | ((e.buttons & 4) ? 32 : 0); };
+    // DOM e.buttons: 1 left, 2 right, 4 middle. IUP: button2 is the middle one, button3 the right one.
+    var mmods = function (e) { return (e.shiftKey ? 1 : 0) | (e.ctrlKey ? 2 : 0) | (e.altKey ? 4 : 0) | ((e.buttons & 1) ? 8 : 0) | ((e.buttons & 4) ? 16 : 0) | ((e.buttons & 2) ? 32 : 0) | (e.metaKey ? 64 : 0); };
 
     // 1-based lin/col <-> char-offset over a multiline value
     function iupLcToPos(val, lin, col) {
@@ -25,6 +26,31 @@
       if (pos < 0) pos = 0; if (pos > val.length) pos = val.length;
       var before = val.slice(0, pos);
       return before.split('\n').length + ',' + (pos - before.lastIndexOf('\n'));
+    }
+
+    // beforeinput carries no range for a word or line delete in an <input> and getTargetRanges()
+    // is empty outside contenteditable, so the range is computed here
+    function iupDeleteRange(val, s, en, type) {
+      var ws = function (c) { return c === ' ' || c === '\t' || c === '\n'; };
+      if (s !== en) return { ds: s, de: en };
+      var ls = val.lastIndexOf('\n', s - 1) + 1;
+      var le = val.indexOf('\n', s); if (le < 0) le = val.length;
+      if (type === 'deleteEntireSoftLine') return { ds: ls, de: le };
+      if (type === 'deleteSoftLineBackward' || type === 'deleteHardLineBackward') return { ds: ls, de: s };
+      if (type === 'deleteSoftLineForward' || type === 'deleteHardLineForward') return { ds: s, de: le };
+      if (type === 'deleteWordBackward') {
+        var b = s;
+        while (b > 0 && ws(val.charAt(b - 1))) b--;
+        while (b > 0 && !ws(val.charAt(b - 1))) b--;
+        return { ds: b, de: s };
+      }
+      if (type === 'deleteWordForward') {
+        var f = s;
+        while (f < val.length && ws(val.charAt(f))) f++;
+        while (f < val.length && !ws(val.charAt(f))) f++;
+        return { ds: s, de: f };
+      }
+      return null;
     }
 
     // Shared by node add and copy: rebuilds listeners per row since cloneNode drops them.
@@ -43,9 +69,20 @@
       row.appendChild(indent); row.appendChild(exp);
       if (tree.__iupShowToggle) {
         var chk = document.createElement('input'); chk.type = 'checkbox'; chk.style.margin = '0 3px 0 0';
-        if (tree.__iupShowToggle === 2) chk.indeterminate = true;
+        chk.__iup3Prev = 0;
         chk.addEventListener('mousedown', function (e) { e.stopPropagation(); });
-        chk.addEventListener('change', function (e) { e.stopPropagation(); D('iupwasmTreeToggle', treeId, rowId, chk.indeterminate ? -1 : (chk.checked ? 1 : 0)); });
+        // a click only flips checked/unchecked, so 3STATE drives OFF -> ON -> NOTDEF -> OFF from the stored value
+        chk.addEventListener('change', function (e) {
+          e.stopPropagation();
+          var st;
+          if (tree.__iupShowToggle === 2) {
+            var prev = chk.__iup3Prev || 0;
+            st = (prev === 1) ? -1 : (prev === -1) ? 0 : 1;
+            chk.indeterminate = (st === -1); chk.checked = (st === 1);
+          } else st = chk.checked ? 1 : 0;
+          chk.__iup3Prev = st;
+          D('iupwasmTreeToggle', treeId, rowId, st);
+        });
         row.appendChild(chk); row.__iupChk = chk;
       }
       row.appendChild(icon); row.appendChild(ttl);
@@ -147,14 +184,20 @@
         els[c.id] = el; el.dataset.iupId = c.id;
       } break;
       case 'destroy': {
+        if (el && el.__iupSpin && el.__iupSpin.parentNode) el.__iupSpin.parentNode.removeChild(el.__iupSpin);
         if (el && el.parentNode) el.parentNode.removeChild(el);
         delete els[c.id];
       } break;
       case 'addbody': {
-        if (el) document.body.appendChild(el);
+        if (el) { document.body.appendChild(el); if (el.__iupSpin) document.body.appendChild(el.__iupSpin); }
       } break;
       case 'addchild': {
-        var p = els[c.pid]; if (p && el) p.appendChild(el);
+        var p = els[c.pid];
+        if (p && el) {
+          p.appendChild(el);
+          if (el.__iupSpin) p.appendChild(el.__iupSpin);
+          if (el.dataset.iupMenubar && p.__iupCaptionH) el.style.top = p.__iupCaptionH + 'px';
+        }
       } break;
       case 'zorder': {
         if (el && el.parentNode) { if (c.top) el.parentNode.appendChild(el); else el.parentNode.insertBefore(el, el.parentNode.firstChild); }
@@ -167,6 +210,10 @@
             py = Math.max(0, Math.min(py, (window.innerHeight || c.h) - c.h));
           }
           el.style.left = px + 'px'; el.style.top = py + 'px'; el.style.width = c.w + 'px'; el.style.height = c.h + 'px';
+          if (el.__iupSpin) {
+            var sps = el.__iupSpin.style;
+            sps.left = (px + c.w - 17) + 'px'; sps.top = (py + 1) + 'px'; sps.height = (c.h - 2) + 'px';
+          }
           // a dialog sized to the viewport tracks future window resizes; a fixed-size one does not
           if (el.__iupDlg) el.__iupViewportFill = (c.w >= window.innerWidth && c.h >= window.innerHeight);
         }
@@ -178,6 +225,7 @@
         if (el) {
           if (c.v) { if (el.style.display === 'none') el.style.display = el.__iupDisp || 'block'; }
           else { if (el.style.display !== 'none') el.__iupDisp = el.style.display; el.style.display = 'none'; }
+          if (el.__iupSpin) el.__iupSpin.style.display = c.v ? 'flex' : 'none';
         }
       } break;
       case 'active': {
@@ -185,6 +233,7 @@
           el.__iupActive = !!c.a;
           el.style.pointerEvents = c.a ? 'auto' : 'none';
           if (el.__iupInput) el.__iupInput.disabled = !c.a;
+          if (el.__iupSpin) { el.__iupSpin.style.pointerEvents = c.a ? 'auto' : 'none'; el.__iupSpin.style.opacity = c.a ? '1' : '0.5'; }
           if (el.tagName === 'BUTTON' || el.tagName === 'INPUT') el.disabled = !c.a;
           // an explicit IMINACTIVE image shows at full opacity; otherwise dim the active image
           if (!c.a && el.__iupInactiveBg) { el.style.backgroundImage = el.__iupInactiveBg; el.style.opacity = '1'; }
@@ -322,6 +371,48 @@
       case 'dlgstyle': {
         if (el) { el.style.background = 'var(--iup-bg)'; el.style.border = '1px solid var(--iup-bd-strong)'; el.style.overflow = 'hidden'; el.__iupDlg = 1; }
       } break;
+      case 'dlgcaption': {
+        if (el) {
+          var cap = el.__iupCaption;
+          if (!cap) {
+            var did = c.id;
+            cap = document.createElement('div');
+            cap.style.cssText = 'position:absolute;left:0;top:0;right:0;display:flex;align-items:center;' +
+              'gap:6px;padding:0 6px;box-sizing:border-box;cursor:default;user-select:none;z-index:11;' +
+              'background:var(--iup-face2);border-bottom:1px solid var(--iup-bd-soft);color:var(--iup-fg);';
+            var ctl = document.createElement('span');
+            ctl.style.cssText = 'flex:1 1 auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+            var cbt = document.createElement('span');
+            cbt.style.cssText = 'flex:0 0 auto;width:16px;text-align:center;cursor:default;';
+            cbt.textContent = String.fromCharCode(0x2715);
+            cbt.addEventListener('mousedown', function (e) { e.stopPropagation(); e.preventDefault(); D('iupwasmDialogClosed', did); });
+            cap.appendChild(ctl); cap.appendChild(cbt);
+            cap.__iupTitleEl = ctl; cap.__iupCloseEl = cbt;
+            cap.addEventListener('mousedown', function (e) {
+              if (e.button) return;
+              e.preventDefault();
+              var sx = e.clientX, sy = e.clientY, ox = el.offsetLeft, oy = el.offsetTop;
+              var mv = function (ev) {
+                el.style.left = Math.max(0, ox + ev.clientX - sx) + 'px';
+                el.style.top = Math.max(0, oy + ev.clientY - sy) + 'px';
+              };
+              var up = function () {
+                document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up);
+                D('iupwasmDialogMoved', did, el.offsetLeft, el.offsetTop);
+              };
+              document.addEventListener('mousemove', mv); document.addEventListener('mouseup', up);
+            });
+            cap.dataset.iupCaption = c.id;
+            el.insertBefore(cap, el.firstChild); el.__iupCaption = cap;
+          }
+          cap.style.height = c.h + 'px';
+          cap.__iupTitleEl.textContent = c.title;
+          cap.__iupCloseEl.style.display = c.close ? 'block' : 'none';
+          el.__iupCaptionH = c.h;
+          var mbc = el.querySelector('[data-iup-menubar]');
+          if (mbc) mbc.style.top = c.h + 'px';
+        }
+      } break;
       case 'dlgresize': {
         if (el) {
           if (c.on && !el.__iupResizeGrip) {
@@ -442,6 +533,7 @@
         lab.style.display = 'flex'; lab.style.alignItems = 'center';
         var inp = document.createElement('input');
         inp.type = c.isRadio ? 'radio' : 'checkbox';
+        inp.style.margin = '0';  // the UA margins vary; iupdrvToggleAddCheckBox measures a fixed box
         if (c.isRadio) {
           inp.name = 'iupradio' + c.group;
           if (document.getElementsByName(inp.name).length === 0) inp.checked = true;
@@ -1335,8 +1427,28 @@
             configurable: true
           });
         } else if (c.multiline) { tel = document.createElement('textarea'); tel.wrap = c.wordwrap ? 'soft' : 'off'; }
-        else { tel = document.createElement('input'); tel.type = c.spin ? 'number' : (c.password ? 'password' : 'text'); }
+        else { tel = document.createElement('input'); tel.type = c.password ? 'password' : 'text'; }
         tel.style.position = 'absolute'; tel.style.boxSizing = 'border-box'; tel.style.margin = '0';
+        // <input type=number> has no selection API, and MASK, NC, ACTION and CARET_CB all need
+        // caret positions, so a spin field is a text input with a stepper of our own
+        if (c.spin) {
+          var sp = document.createElement('div');
+          sp.style.cssText = 'position:absolute;display:flex;flex-direction:column;width:16px;';
+          var mkb = function (up) {
+            var b = document.createElement('div');
+            b.style.cssText = 'flex:1 1 0;display:flex;align-items:center;justify-content:center;' +
+              'font-size:7px;line-height:1;cursor:default;user-select:none;' +
+              'background:var(--iup-face);color:var(--iup-fg);border:1px solid var(--iup-bd);';
+            b.textContent = up ? String.fromCharCode(0x25B2) : String.fromCharCode(0x25BC);
+            b.__iupUp = up;
+            return b;
+          };
+          sp.__iupUpBtn = mkb(1); sp.__iupDownBtn = mkb(0);
+          sp.appendChild(sp.__iupUpBtn); sp.appendChild(sp.__iupDownBtn);
+          sp.dataset.iupSpin = c.id;
+          tel.__iupSpin = sp;
+          tel.style.paddingRight = '18px';
+        }
         els[c.id] = tel; tel.dataset.iupId = c.id;
       } break;
       case 'textaddtag': {
@@ -1416,20 +1528,51 @@
         if (el && el.__iupRender) { el.__iupTags.push({ s: c.start, e: c.end, link: c.idx }); el.__iupRender(); }
       } break;
       case 'textspinrange': {
-        if (el) { el.min = c.min; el.max = c.max; el.step = c.step < 1 ? 1 : c.step; }
+        if (el) { el.__iupSpinMin = c.min; el.__iupSpinMax = c.max; el.__iupSpinInc = c.step < 1 ? 1 : c.step; }
+      } break;
+      case 'textspinpos': {
+        if (el) el.__iupSpinPos = c.pos;
       } break;
       case 'textspinwire': {
-        if (el) {
+        if (el && el.__iupSpin) {
           var sid = c.id;
-          el.__iupSpinPrev = parseFloat(el.value) || 0;
-          el.addEventListener('input', function () {
-            var v = parseFloat(el.value);
-            if (!isNaN(v) && v !== el.__iupSpinPrev) { D('iupwasmDispatchSpin', sid, v > el.__iupSpinPrev ? 1 : -1); el.__iupSpinPrev = v; }
+          el.__iupSpinNoAuto = !!c.noauto; el.__iupSpinWrap = !!c.wrap;
+          var step = function (up) {
+            // SPINAUTO=YES keeps the counter in the text, so the step starts from what is shown
+            var cur = el.__iupSpinNoAuto ? (el.__iupSpinPos || 0) : (parseInt(el.value, 10) || 0);
+            var pos = cur + (up ? 1 : -1) * (el.__iupSpinInc || 1);
+            if (el.__iupSpinWrap) {
+              if (pos < el.__iupSpinMin) pos = el.__iupSpinMax;
+              else if (pos > el.__iupSpinMax) pos = el.__iupSpinMin;
+            }
+            if (pos < el.__iupSpinMin) pos = el.__iupSpinMin;
+            if (pos > el.__iupSpinMax) pos = el.__iupSpinMax;
+            if (pos === cur) return;
+            el.__iupSpinPos = pos;
+            if (!el.__iupSpinNoAuto) el.value = String(pos);
+            D('iupwasmDispatchSpin', sid, pos);
+          };
+          var wire = function (b) {
+            b.addEventListener('mousedown', function (e) { e.preventDefault(); step(b.__iupUp); });
+          };
+          wire(el.__iupSpin.__iupUpBtn); wire(el.__iupSpin.__iupDownBtn);
+          el.addEventListener('keydown', function (e) {
+            if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+            e.preventDefault(); step(e.key === 'ArrowUp');
           });
         }
       } break;
       case 'textsetvalue': {
         if (el) el.value = c.value;
+      } break;
+      case 'texteditdone': {
+        if (el) {
+          if (c.fix) {
+            el.value = c.value;
+            try { el.setSelectionRange(c.caret, c.caret); } catch (_) {}
+          }
+          if (el.__iupEditNext) el.__iupEditNext(); else el.__iupEditPending = 0;
+        }
       } break;
       case 'textappend': {
         if (el) {
@@ -1501,31 +1644,76 @@
       case 'textwire': {
         if (el) {
           var wid = c.id;
+          // the edit is applied here and reported with the previous text: cancelling it until the
+          // model answers would make typing wait for the worker. IME keeps browser editing.
           el.addEventListener('beforeinput', function (e) {
-            var v = el.value, s = el.selectionStart || 0, en = el.selectionEnd || 0, ch = 0, nv = v;
-            // OVERWRITE: a collapsed caret not at end replaces the next char
-            if (el.__iupOverwrite && e.inputType === 'insertText' && s === en && s < v.length) { en = s + 1; el.setSelectionRange(s, en); }
-            if (e.inputType === 'insertText' && e.data) { ch = e.data.charCodeAt(0); nv = v.slice(0, s) + e.data + v.slice(en); }
-            else if (e.inputType === 'deleteContentBackward') { nv = v.slice(0, (s === en) ? Math.max(0, s - 1) : s) + v.slice(en); }
-            if (dispatch.sync) {
-              var ret = Dr('iupwasmDispatchTextAction', 'number', ['number', 'number', 'string'], [wid, ch, nv]);
-              if (ret === -1) e.preventDefault();
-              else if (ret > 0 && ret !== ch) {
-                e.preventDefault();
-                el.value = v.slice(0, s) + String.fromCharCode(ret) + v.slice(en);
-                el.selectionStart = el.selectionEnd = s + 1;
-                D('iupwasmDispatchValueChanged', wid);
-              }
-            } else {
-              Dt('iupwasmDispatchTextAction', ['number', 'number', 'string'], [wid, ch, nv]);
+            if (e.isComposing || el.__iupRender) return;
+            var v = el.value, s = el.selectionStart || 0, en = el.selectionEnd || 0;
+            var t = e.inputType, ins = null, rd = 0, del = null;
+            if (t === 'insertText' || t === 'insertFromPaste' || t === 'insertFromDrop' || t === 'insertReplacementText') {
+              ins = (e.data != null) ? e.data : (e.dataTransfer ? e.dataTransfer.getData('text/plain') : '');
+              if (ins == null || ins === '') return;
+              // OVERWRITE: a collapsed caret not at end replaces the next char
+              if (el.__iupOverwrite && t === 'insertText' && s === en && s < v.length) { en = s + 1; el.setSelectionRange(s, en); }
+            } else if (t === 'insertLineBreak' || t === 'insertParagraph') {
+              ins = '\n';
+            } else if (t === 'deleteContentBackward' || t === 'deleteContentForward' ||
+                       t === 'deleteByCut' || t === 'deleteByDrag') {
+              rd = (t === 'deleteContentBackward') ? 1 : 0;
+            } else if (t.indexOf('delete') === 0) {
+              if (!iupDeleteRange(v, s, en, t)) return;
+              del = t;
+            } else return;
+            var kseq = globalThis.__iupKeyPend || 0; globalThis.__iupKeyPend = 0;
+            // while one edit is being arbitrated the next ones wait, so a rejection can never
+            // land on top of text typed after it
+            if (el.__iupEditPending) {
+              e.preventDefault();
+              (el.__iupEditQ = el.__iupEditQ || []).push({ ins: ins, rd: rd, del: del, seq: kseq });
+              return;
             }
+            if (del) {
+              e.preventDefault();
+              var dr = iupDeleteRange(v, s, en, del);
+              el.value = v.slice(0, dr.ds) + v.slice(dr.de);
+              try { el.setSelectionRange(dr.ds, dr.ds); } catch (_) {}
+              s = dr.ds; en = dr.de;
+            }
+            el.__iupEditPending = 1; el.__iupEditVC = 1;
+            Dt('iupwasmDispatchTextEdit', ['number', 'string', 'string', 'number', 'number', 'number', 'number'],
+               [wid, v, ins === null ? '' : ins, s, en, rd, kseq]);
           });
+          el.__iupEditNext = function () {
+            var q = el.__iupEditQ;
+            if (!q || !q.length) { el.__iupEditPending = 0; return; }
+            var it = q.shift(), s2 = el.selectionStart || 0, e2 = el.selectionEnd || 0, v2 = el.value;
+            if (it.ins !== null) {
+              el.value = v2.slice(0, s2) + it.ins + v2.slice(e2);
+              try { el.setSelectionRange(s2 + it.ins.length, s2 + it.ins.length); } catch (_) {}
+            } else {
+              var ds = s2, de = e2;
+              if (it.del) {
+                var qr = iupDeleteRange(v2, s2, e2, it.del);
+                if (!qr) { el.__iupEditNext(); return; }
+                ds = qr.ds; de = qr.de;
+                s2 = ds; e2 = de;
+              }
+              else if (ds === de) { if (it.rd) { if (ds === 0) { el.__iupEditNext(); return; } ds--; } else { if (ds >= v2.length) { el.__iupEditNext(); return; } de = ds + 1; } }
+              el.value = v2.slice(0, ds) + v2.slice(de);
+              try { el.setSelectionRange(ds, ds); } catch (_) {}
+            }
+            el.__iupEditVC = 1;
+            Dt('iupwasmDispatchTextEdit', ['number', 'string', 'string', 'number', 'number', 'number', 'number'],
+               [wid, v2, it.ins === null ? '' : it.ins, s2, e2, it.rd, it.seq || 0]);
+          };
           el.addEventListener('input', function () {
             var m = el.__iupFilter;
             if (m) {
               var v = el.value, nv = m === 'NUMBER' ? v.replace(/[^0-9+\-.eE]/g, '') : m === 'UPPERCASE' ? v.toUpperCase() : m === 'LOWERCASE' ? v.toLowerCase() : v;
               if (nv !== v) { var p = el.selectionStart; el.value = nv; try { el.setSelectionRange(p, p); } catch (_) {} }
             }
+            // an arbitrated edit reports VALUECHANGED from the model, once it is accepted
+            if (el.__iupEditVC) { el.__iupEditVC = 0; return; }
             D('iupwasmDispatchValueChanged', wid);
           });
           var reportCaret = function () {
@@ -1732,7 +1920,7 @@
               var tsel = tn && tn.closest ? tn.closest('select') : null;
               if (!tsel || tsel.__iupListId == null) return;
               if (tsel === s.sel) { if (s.reorder) { var to = LM.hit(tsel, e.clientY); if (to !== s.from) D('iupwasmListReorder', s.id, s.from, to); } }
-              else if (tsel.__iupLDrop && s.dnd) { var tr = tsel.getBoundingClientRect(); D('iupwasmDndTransfer', s.id, tsel.__iupListId, s.fromY, Math.round(e.clientY - tr.top)); }
+              else if (tsel.__iupLDrop && s.dnd) { var tr = tsel.getBoundingClientRect(); D('iupwasmDndTransfer', s.id, tsel.__iupListId, s.fromY, 0, Math.round(e.clientY - tr.top)); }
             });
           }
           lds.__iupListId = c.id;
@@ -1834,24 +2022,12 @@
         ttable.addEventListener('click', function (e) {
           var th = e.target.closest('th'); if (th && th.dataset.col) { D('iupwasmTableHeaderClick', tcid, +th.dataset.col); return; }
           var td = e.target.closest('td'); if (!td || td.dataset.lin === undefined) return;
-          D('iupwasmTableCellClick', tcid, +td.dataset.lin, +td.dataset.col);
+          D('iupwasmTableCellClick', tcid, +td.dataset.lin, +td.dataset.col, mmods(e));
         });
+        // EDITBEGIN_CB can veto, so the model opens the editor through 'tableeditopen'
         ttable.addEventListener('dblclick', function (e) {
           var td = e.target.closest('td'); if (!td || td.__iupEditing) return;
-          var lin = +td.dataset.lin, col = +td.dataset.col;
-          if (!Dr('iupwasmTableEditBegin', 'number', ['number', 'number', 'number'], [tcid, lin, col])) return;
-          var inp = document.createElement('input'); inp.value = td.__iupText || ''; inp.style.width = '100%'; inp.style.boxSizing = 'border-box'; inp.style.font = 'inherit';
-          td.__iupEditing = true; td.textContent = ''; td.appendChild(inp); inp.focus(); inp.select();
-          function commit() {
-            if (!td.__iupEditing) return; td.__iupEditing = false;
-            var applied = Dr('iupwasmTableEditEnd', 'number', ['number', 'number', 'number', 'string', 'number'], [tcid, lin, col, inp.value, 1]);
-            if (!applied) apply({ op: 'tablerender', id: tcid, lin: lin, col: col });  // rejected: restore original
-          }
-          inp.addEventListener('blur', commit);
-          inp.addEventListener('keydown', function (ev) {
-            if (ev.key === 'Enter') { ev.preventDefault(); inp.blur(); }
-            else if (ev.key === 'Escape') { td.__iupEditing = false; Dr('iupwasmTableEditEnd', 'number', ['number', 'number', 'number', 'string', 'number'], [tcid, lin, col, inp.value, 0]); apply({ op: 'tablerender', id: tcid, lin: lin, col: col }); }
-          });
+          D('iupwasmTableEditBegin', tcid, +td.dataset.lin, +td.dataset.col);
         });
       } break;
       case 'tablefeatures': {
@@ -1877,7 +2053,7 @@
               tbth.addEventListener('dragover', function (e) { e.preventDefault(); });
               tbth.addEventListener('drop', function (e) {
                 e.preventDefault(); var from = el.__iupDragCol, to = +this.dataset.col;
-                if (from && to && from !== to && Dr('iupwasmTableReorder', 'number', ['number', 'number', 'number'], [c.id, from, to])) tableReorderCols(el, from, to);
+                if (from && to && from !== to) D('iupwasmTableReorder', c.id, from, to);
               });
             }
             if (el.__iupResize) {
@@ -1920,13 +2096,39 @@
                   var line = tableRowLineOf(el, this);
                   var before = (e.clientY < r.top + r.height / 2) ? line : line + 1;
                   tableClearRowDrop(el);
-                  if (from) Dr('iupwasmTableRowDragDrop', 'number', ['number', 'number', 'number'], [c.id, from, before]);
+                  if (from) D('iupwasmTableRowDragDrop', c.id, from, before);
                 });
                 tbtr.addEventListener('dragend', function () { el.__iupDragRow = 0; tableClearRowDrop(el); });
               }
             }
             while (tbtr.children.length > c.numcol) tbtr.removeChild(tbtr.lastChild);
             while (tbtr.children.length < c.numcol) { var tbtd = document.createElement('td'); tbstyle(tbtd, false); tbtd.dataset.lin = l + 1; tbtd.dataset.col = tbtr.children.length + 1; tbtd.__iupText = ''; tbtr.appendChild(tbtd); }
+          }
+        }
+      } break;
+      case 'tablereordercols': {
+        if (el) tableReorderCols(el, c.from, c.to);
+      } break;
+      case 'tableeditopen': {
+        if (el) {
+          var etr = el.__iupBody.children[c.lin - 1];
+          var etd = etr ? etr.children[c.col - 1] : null;
+          if (etd && !etd.__iupEditing) {
+            var etid = c.id, elin = c.lin, ecol = c.col;
+            var inp = document.createElement('input');
+            inp.value = c.text; inp.style.width = '100%'; inp.style.boxSizing = 'border-box'; inp.style.font = 'inherit';
+            etd.__iupEditing = true; etd.textContent = ''; etd.appendChild(inp); inp.focus(); inp.select();
+            var endEdit = function (ap) {
+              if (!etd.__iupEditing) return;
+              etd.__iupEditing = false;
+              Dt('iupwasmTableEditEnd', ['number', 'number', 'number', 'string', 'number'], [etid, elin, ecol, inp.value, ap]);
+            };
+            inp.addEventListener('blur', function () { endEdit(1); });
+            inp.addEventListener('keydown', function (ev) {
+              if (ev.key === 'Enter') { ev.preventDefault(); inp.blur(); }
+              else if (ev.key === 'Escape') { ev.preventDefault(); endEdit(0); }
+              ev.stopPropagation();
+            });
           }
         }
       } break;
@@ -2059,16 +2261,23 @@
         // 2D container canvas: rendered on the worker, blitted to cccv (no transfer)
       } break;
       case 'canvasscrollable': {
-        if (el) { el.style.overflow = 'auto'; if (el.__iupCanvas) el.__iupCanvas.style.display = 'none'; }
+        if (el) { el.style.overflow = 'auto'; el.__iupCanvasScroll = 1; if (el.__iupCanvas) el.__iupCanvas.style.display = 'none'; }
       } break;
       case 'canvassetup': {
         if (el) {
           var csid = c.id;
           el.style.display = 'block'; el.tabIndex = 0; el.style.outline = 'none';
-          var csro = new ResizeObserver(function () { var r = el.getBoundingClientRect(); D('iupwasmCanvasOnResize', csid, Math.round(r.width), Math.round(r.height)); });
+          // or the browser claims a drag for panning and cancels the pointer after the first move
+          if (!el.__iupCanvasScroll) el.style.touchAction = 'none';
+          // before the first 'pos' the element still has the canvas default size
+          var csro = new ResizeObserver(function () {
+            if (!el.style.width) return;
+            var r = el.getBoundingClientRect();
+            D('iupwasmCanvasOnResize', csid, Math.round(r.width), Math.round(r.height));
+          });
           csro.observe(el); el.__iupRO = csro;
           el.addEventListener('mousemove', function (e) { D('iupwasmCanvasMotion', csid, Math.round(e.offsetX), Math.round(e.offsetY), mmods(e)); });
-          el.addEventListener('wheel', function (e) { D('iupwasmCanvasWheel', csid, e.deltaY < 0 ? 1 : -1, Math.round(e.offsetX), Math.round(e.offsetY)); e.preventDefault(); }, { passive: false });
+          el.addEventListener('wheel', function (e) { D('iupwasmCanvasWheel', csid, e.deltaY < 0 ? 1 : -1, Math.round(e.offsetX), Math.round(e.offsetY), mmods(e)); e.preventDefault(); }, { passive: false });
 
           // raw touch + semantic gesture recognition (touch pointers only; mouse stays BUTTON/MOTION/WHEEL)
           var tpts = {}, g1 = null, g2 = null, lpTimer = null;
@@ -2094,7 +2303,8 @@
             } else if (n0 === 1) {
               clearTimeout(lpTimer); g1 = null;
               var ks = tlist(), a = tpts[ks[0]], b = tpts[ks[1]], dx = b.x - a.x, dy = b.y - a.y;
-              g2 = { d0: Math.hypot(dx, dy) || 1, ang0: Math.atan2(dy, dx), cx0: (a.x + b.x) / 2, cy0: (a.y + b.y) / 2 };
+              g2 = { d0: Math.hypot(dx, dy) || 1, ang0: Math.atan2(dy, dx), cx0: (a.x + b.x) / 2, cy0: (a.y + b.y) / 2,
+                     scale: 1, deg: 0, dx: 0, dy: 0 };
               var cx = (a.x + b.x) / 2 | 0, cy = (a.y + b.y) / 2 | 0;
               fireG(0, 0, cx, cy, 1, 0); fireG(1, 0, cx, cy, 0, 0); fireG(2, 0, cx, cy, 0, 0);
             }
@@ -2108,9 +2318,13 @@
             if (ks.length >= 2 && g2) {
               var a = tpts[ks[0]], b = tpts[ks[1]], dx = b.x - a.x, dy = b.y - a.y;
               var cx = (a.x + b.x) / 2, cy = (a.y + b.y) / 2;
-              fireG(0, 1, cx | 0, cy | 0, Math.hypot(dx, dy) / g2.d0, 0);
-              fireG(1, 1, cx | 0, cy | 0, (Math.atan2(dy, dx) - g2.ang0) * 180 / Math.PI, 0);
-              fireG(2, 1, cx | 0, cy | 0, cx - g2.cx0, cy - g2.cy0);
+              g2.scale = Math.hypot(dx, dy) / g2.d0;
+              g2.deg = (Math.atan2(dy, dx) - g2.ang0) * 180 / Math.PI;
+              g2.dx = cx - g2.cx0; g2.dy = cy - g2.cy0;
+              g2.cx = cx | 0; g2.cy = cy | 0;
+              fireG(0, 1, g2.cx, g2.cy, g2.scale, 0);
+              fireG(1, 1, g2.cx, g2.cy, g2.deg, 0);
+              fireG(2, 1, g2.cx, g2.cy, g2.dx, g2.dy);
             } else if (ks.length === 1 && g1 && (Math.abs(xy[0] - g1.sx) > 8 || Math.abs(xy[1] - g1.sy) > 8)) {
               g1.moved = true;
             }
@@ -2121,7 +2335,12 @@
             fireTouch(e.pointerId, xy[0], xy[1], wasPrimary ? 'UP-PRIMARY' : 'UP');
             fireMulti(e.pointerId, 85);
             delete tpts[e.pointerId];
-            if (g2 && tlist().length < 2) { fireG(0, 2, xy[0], xy[1], 1, 0); fireG(1, 2, xy[0], xy[1], 0, 0); fireG(2, 2, xy[0], xy[1], 0, 0); g2 = null; }
+            // END carries the value accumulated since BEGIN
+            if (g2 && tlist().length < 2) {
+              var ex = g2.cx === undefined ? xy[0] : g2.cx, ey = g2.cy === undefined ? xy[1] : g2.cy;
+              fireG(0, 2, ex, ey, g2.scale, 0); fireG(1, 2, ex, ey, g2.deg, 0); fireG(2, 2, ex, ey, g2.dx, g2.dy);
+              g2 = null;
+            }
             if (g1 && e.pointerId === g1.id) {
               clearTimeout(lpTimer);
               if (!g1.lp) {
@@ -2235,7 +2454,7 @@
             el.__iupDragWired = 1;
             var dsid = c.id;
             el.addEventListener('dragstart', function (e) {
-              e.dataTransfer.setData('text/plain', el.dataset.iupDragType || 'IUPDRAG'); e.dataTransfer.effectAllowed = 'copyMove';
+              e.dataTransfer.setData('text/plain', String(dsid)); e.dataTransfer.effectAllowed = 'copyMove';
               D('iupwasmDndDragBegin', dsid, Math.round(e.offsetX || 0), Math.round(e.offsetY || 0));
             });
             el.addEventListener('dragend', function (e) { D('iupwasmDndDragEnd', dsid, e.dataTransfer.dropEffect === 'move' ? 1 : 0); });
@@ -2246,11 +2465,15 @@
         if (el && c.enable && !el.__iupDropWired) {
           el.__iupDropWired = 1;
           var dtid = c.id;
-          el.addEventListener('dragover', function (e) { e.preventDefault(); D('iupwasmDndDropMotion', dtid, Math.round(e.offsetX || 0), Math.round(e.offsetY || 0)); });
+          el.addEventListener('dragover', function (e) { e.preventDefault(); D('iupwasmDndDropMotion', dtid, Math.round(e.offsetX || 0), Math.round(e.offsetY || 0), mmods(e)); });
           el.addEventListener('drop', function (e) {
             e.preventDefault();
             var s = e.dataTransfer.getData('text/plain') || '';
-            Dt('iupwasmDndDrop', ['number', 'string', 'number', 'number', 'number'], [dtid, s, new TextEncoder().encode(s).length, Math.round(e.offsetX || 0), Math.round(e.offsetY || 0)]);
+            var dx = Math.round(e.offsetX || 0), dy = Math.round(e.offsetY || 0);
+            var sid = parseInt(s, 10);
+            // an inner drag carries its source id; anything else is text dropped from outside
+            if (sid && globalThis.__iup.els[sid]) D('iupwasmDndTransfer', sid, dtid, 0, dx, dy);
+            else Dt('iupwasmDndDrop', ['number', 'string', 'number', 'number', 'number'], [dtid, s, new TextEncoder().encode(s).length, dx, dy]);
           });
         }
       } break;
@@ -2342,7 +2565,7 @@
               if (!tdt.__iupDndDrop) return;
               e.preventDefault();
               var s = globalThis.__iupTreeDnd; globalThis.__iupTreeDnd = null;
-              if (s) D('iupwasmDndTransfer', s.srcId, tdid, s.srcY, Math.round(e.clientY - tdt.getBoundingClientRect().top));
+              if (s) D('iupwasmDndTransfer', s.srcId, tdid, s.srcY, 0, Math.round(e.clientY - tdt.getBoundingClientRect().top));
             });
           }
         }
@@ -2470,7 +2693,11 @@
       } break;
       case 'treetogglevalue': {
         var ttvr = globalThis.__iupTree.nodes[c.rowId];
-        if (ttvr && ttvr.__iupChk) { if (c.state === -1) ttvr.__iupChk.indeterminate = true; else { ttvr.__iupChk.indeterminate = false; ttvr.__iupChk.checked = c.state === 1; } }
+        if (ttvr && ttvr.__iupChk) {
+          if (c.state === -1) ttvr.__iupChk.indeterminate = true;
+          else { ttvr.__iupChk.indeterminate = false; ttvr.__iupChk.checked = c.state === 1; }
+          ttvr.__iupChk.__iup3Prev = c.state;
+        }
       } break;
       case 'treetogglevisible': {
         var ttvisr = globalThis.__iupTree.nodes[c.rowId];
@@ -2538,10 +2765,11 @@
           rttl.textContent = ''; rttl.appendChild(inp);
           inp.focus(); inp.select();
           var done = 0;
+          // RENAME_CB can veto, so the model writes the final title back through 'treesettitle'
           var commit = function () {
             if (done) return; done = 1;
-            var accept = Dr('iupwasmTreeRenameEnd', 'number', ['number', 'number', 'string'], [treeId, rowId, inp.value]);
-            rttl.textContent = accept ? inp.value : old;
+            rttl.textContent = inp.value;
+            Dt('iupwasmTreeRenameEnd', ['number', 'number', 'string'], [treeId, rowId, inp.value]);
           };
           inp.addEventListener('blur', commit);
           inp.addEventListener('keydown', function (e) {
@@ -2801,11 +3029,12 @@
       } break;
       case 'pumpenter': {
         globalThis.__iupModalActive = (globalThis.__iupModalActive || 0) + 1;
+        if (globalThis.__iupPumpEnter) globalThis.__iupPumpEnter();
         return 0;
       } break;
       case 'pumpleave': {
         globalThis.__iupModalActive = Math.max(0, (globalThis.__iupModalActive || 0) - 1);
-        if (globalThis.__iupModalActive === 0) globalThis.__iupModalQueue = [];
+        if (globalThis.__iupModalActive === 0 && globalThis.__iupPumpLeave) globalThis.__iupPumpLeave();
         return 0;
       } break;
       case 'webgethtml': {
@@ -2872,9 +3101,11 @@
         var id = iupId(document.activeElement) || (globalThis.__iupActiveDialog || 0);
         if (id && e.data) textInput(id, e.data);
       }, true);
+      var NAVK = { ArrowUp: 1, ArrowDown: 1, ArrowLeft: 1, ArrowRight: 1, PageUp: 1, PageDown: 1, Home: 1, End: 1 };
       document.addEventListener('keydown', function (e) {
         stashMods(e);
-        var id = iupId(document.activeElement) || (globalThis.__iupActiveDialog || 0);
+        var ae = document.activeElement;
+        var id = iupId(ae) || (globalThis.__iupActiveDialog || 0);
         if (!id) return;
         var k = e.key, code = 0;
         // a single code point that is not a named key is committed text
@@ -2890,12 +3121,17 @@
         if (e.ctrlKey) code |= 0x20000000;
         if (e.altKey) code |= 0x40000000;
         if (e.shiftKey && !(k && k.length === 1)) code |= 0x10000000;
+        // the edit this key causes carries the same sequence, so a K_ANY veto can be matched to it
+        var seq = globalThis.__iupKeySeq = (globalThis.__iupKeySeq || 0) + 1;
+        globalThis.__iupKeyPend = seq;
         if (dispatch.sync) {
-          if (Dr('iupwasmDispatchKeyText', 'number', ['number', 'number', 'string'], [id, code, txt]))
+          if (Dr('iupwasmDispatchKeyText', 'number', ['number', 'number', 'string', 'number'], [id, code, txt, seq]))
             e.preventDefault();
         } else {
-          Dt('iupwasmDispatchKeyText', ['number', 'number', 'string'], [id, code, txt]);
+          Dt('iupwasmDispatchKeyText', ['number', 'number', 'string', 'number'], [id, code, txt, seq]);
         }
+        // the driver moves the tree focus itself, the div must not also scroll
+        if (ae && ae.__iupTreeFocus !== undefined && NAVK[k]) e.preventDefault();
         if (k === 'F1') { e.preventDefault(); D('iupwasmDispatchHelp', id); }  // GTK fires HELP_CB on plain F1
       });
       document.addEventListener('focusin', function (e) { var id = iupId(e.target); if (id) D('iupwasmDispatchFocus', id, 1); });
@@ -2903,12 +3139,14 @@
       document.addEventListener('mousedown', function (e) {
         stashMods(e);
         var id = iupId(e.target); if (!id) return;
-        D('iupwasmDispatchButton', id, 49 + (e.button || 0), 1, Math.round(e.offsetX || 0), Math.round(e.offsetY || 0));
+        D('iupwasmDispatchButton', id, 49 + (e.button || 0), 1, Math.round(e.offsetX || 0), Math.round(e.offsetY || 0),
+          mmods(e), e.detail >= 2 ? 1 : 0);
       });
       document.addEventListener('mouseup', function (e) {
         stashMods(e);
         var id = iupId(e.target); if (!id) return;
-        D('iupwasmDispatchButton', id, 49 + (e.button || 0), 0, Math.round(e.offsetX || 0), Math.round(e.offsetY || 0));
+        D('iupwasmDispatchButton', id, 49 + (e.button || 0), 0, Math.round(e.offsetX || 0), Math.round(e.offsetY || 0),
+          mmods(e), 0);
       });
       // generic MOTION_CB for non-canvas controls (canvas wires its own, avoid double-fire)
       document.addEventListener('mousemove', function (e) {

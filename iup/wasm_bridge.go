@@ -7,8 +7,10 @@
 package iup
 
 import (
+	"fmt"
 	"sync"
 	"syscall/js"
+	"unsafe"
 )
 
 // Ihandle is an opaque handle to an IUP element. Under WebAssembly it holds the
@@ -47,6 +49,30 @@ func wasmFree(ptr int)     { module().Call("_free", ptr) }
 
 func wasmGetI32(ptr int) int { return module().Call("getValue", ptr, "i32").Int() }
 func wasmSetI32(ptr, v int)  { module().Call("setValue", ptr, v, "i32") }
+
+// wasmWriteBytes copies a Go buffer into the module heap.
+func wasmWriteBytes(ptr int, b []byte) {
+	if ptr == 0 || len(b) == 0 {
+		return
+	}
+	h8 := module().Get("HEAPU8")
+	for i, v := range b {
+		h8.SetIndex(ptr+i, int(v))
+	}
+}
+
+// wasmReadBytes copies a buffer out of the module heap; Go cannot address it directly.
+func wasmReadBytes(ptr, size int) []byte {
+	if ptr == 0 || size <= 0 {
+		return nil
+	}
+	out := make([]byte, size)
+	h8 := module().Get("HEAPU8")
+	for i := 0; i < size; i++ {
+		out[i] = byte(h8.Index(ptr + i).Int())
+	}
+	return out
+}
 
 // --- callback registry and dispatch --------------------------------------
 
@@ -100,6 +126,21 @@ func init() {
 		return dispatch6(Ihandle(args[0].Int()), args[1].String(),
 			args[2].Int(), args[3].Int(), args[4].Int(), args[5].Int(), args[6].Int(), args[7].Int())
 	}))
+	js.Global().Set("iupGoDispatch2s", js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		return dispatch2s(Ihandle(args[0].Int()), args[1].String(), args[2].String(), args[3].String())
+	}))
+	js.Global().Set("iupGoDispatchD", js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		return dispatchD(Ihandle(args[0].Int()), args[1].String(),
+			args[2].Int(), args[3].Int(), args[4].Int(), args[5].Int(),
+			args[6].Float(), args[7].Float(), args[8].Float(), args[9].Float(), args[10].String())
+	}))
+	js.Global().Set("iupGoDispatchStrS", js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		return dispatchStrS(Ihandle(args[0].Int()), args[1].String(), args[2].Int(), args[3].Int(), args[4].String())
+	}))
+	js.Global().Set("iupGoDispatch6s", js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		return dispatch6s(Ihandle(args[0].Int()), args[1].String(),
+			args[2].Int(), args[3].Int(), args[4].Int(), args[5].Int(), args[6].Int(), args[7].Int(), args[8].String())
+	}))
 	js.Global().Set("iupGoDispatchStr", js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		return dispatchStr(Ihandle(args[0].Int()), args[1].String(), args[2].Int(), args[3].Int())
 	}))
@@ -137,6 +178,22 @@ func dispatchStr(ih Ihandle, name string, i1, i2 int) string {
 		return f(ih, i1)
 	case ListImageFunc:
 		return f(ih, i1)
+	case MatrixFontFunc:
+		return f(ih, i1, i2)
+	case MatrixTypeFunc:
+		return f(ih, i1, i2)
+	case BgColorFunc:
+		r, g, b, ret := f(ih, i1, i2)
+		if ret == IGNORE {
+			return ""
+		}
+		return fmt.Sprintf("%d %d %d", r, g, b)
+	case FgColorFunc:
+		r, g, b, ret := f(ih, i1, i2)
+		if ret == IGNORE {
+			return ""
+		}
+		return fmt.Sprintf("%d %d %d", r, g, b)
 	}
 	return ""
 }
@@ -148,6 +205,62 @@ func dispatch6(ih Ihandle, name string, i1, i2, i3, i4, i5, i6 int) int {
 	}
 	if f, ok := fn.(CellsDrawFunc); ok {
 		return f(ih, i1, i2, i3, i4, i5, i6)
+	}
+	if f, ok := fn.(ListDrawFunc); ok {
+		return f(ih, i1, i2, i3, i4, i5, i6)
+	}
+	return DEFAULT
+}
+
+func dispatch2s(ih Ihandle, name, s1, s2 string) int {
+	switch f := callbacks[cbKey{ih, name}].(type) {
+	case FileFunc:
+		return f(ih, s1, s2)
+	case PlotPropertiesValidateFunc:
+		return f(ih, s1, s2)
+	}
+	return DEFAULT
+}
+
+func dispatchD(ih Ihandle, name string, i1, i2, i3, i4 int, d1, d2, d3, d4 float64, sarg string) int {
+	switch f := callbacks[cbKey{ih, name}].(type) {
+	case PlotButtonFunc:
+		return f(ih, i1, i2, d1, d2, sarg)
+	case PlotMotionFunc:
+		return f(ih, d1, d2, sarg)
+	case PlotClickSampleFunc:
+		return f(ih, i1, i2, d1, d2, i3)
+	case PlotClickSegmentFunc:
+		return f(ih, i1, i2, d1, d2, i3, d3, d4, i4)
+	case PlotDeleteFunc:
+		return f(ih, i1, i2, d1, d2)
+	case PlotDrawSampleFunc:
+		return f(ih, i1, i2, d1, d2, i3)
+	case PlotEditSampleFunc:
+		return f(ih, i1, i2, d1, d2)
+	case NumericSetValueFunc:
+		return f(ih, i1, i2, d1)
+	}
+	return DEFAULT
+}
+
+func dispatchStrS(ih Ihandle, name string, i1, i2 int, sarg string) string {
+	if f, ok := callbacks[cbKey{ih, name}].(TranslateValueFunc); ok {
+		return f(ih, i1, i2, sarg)
+	}
+	return ""
+}
+
+func dispatch6s(ih Ihandle, name string, i1, i2, i3, i4, i5, i6 int, sarg string) int {
+	fn := callbacks[cbKey{ih, name}]
+	if fn == nil {
+		return DEFAULT
+	}
+	if f, ok := fn.(MouseClickFunc); ok {
+		return f(ih, i1, i2, i3, i4, i5, i6, sarg)
+	}
+	if f, ok := fn.(DropSelectFunc); ok {
+		return f(ih, i1, i2, Ihandle(uint32(i3)), sarg, i4, i5)
 	}
 	return DEFAULT
 }
@@ -279,9 +392,157 @@ func dispatch(ih Ihandle, name string, i1, i2, i3, i4 int, sarg string) int {
 		ret = f(ih, i1, i2, sarg)
 	case DropFilesFunc:
 		ret = f(ih, sarg, i1, i2, i3)
+	case PostMessageFunc:
+		ret = f(ih, sarg, i1, nil)
+	case DestroyFunc:
+		ret = f(ih)
+	case MaskFailFunc:
+		ret = f(ih, sarg)
+	case SwapBuffersFunc:
+		ret = f(ih)
+	case BusyFunc:
+		ret = f(ih, i1, i2, sarg)
+	case ColorUpdateFunc:
+		ret = f(ih)
+	case ColResizeFunc:
+		ret = f(ih, i1)
+	case MatrixDropFunc:
+		ret = f(ih, Ihandle(uint32(i1)), i2, i3)
+	case DropShowFunc:
+		ret = f(ih, i1)
+	case EditClickFunc:
+		ret = f(ih, i1, i2, sarg)
+	case EditMouseMoveFunc:
+		ret = f(ih, i1, i2)
+	case EditReleaseFunc:
+		ret = f(ih, i1, i2, sarg)
+	case HSpanFunc:
+		ret = f(ih, i1, i2)
+	case VSpanFunc:
+		ret = f(ih, i1, i2)
+	case MenuContextFunc:
+		ret = f(ih, Ihandle(uint32(i1)), i2, i3)
+	case MenuContextCloseFunc:
+		ret = f(ih, Ihandle(uint32(i1)), i2, i3)
+	case MenuDropFunc:
+		ret = f(ih, Ihandle(uint32(i1)), i2, i3)
+	case PasteSizeFunc:
+		ret = f(ih, i1, i2)
+	case ResizeMatrixFunc:
+		ret = f(ih, i1, i2)
+	case ScrollingFunc:
+		ret = f(ih, i1, i2)
+	case ScrollTopFunc:
+		ret = f(ih, i1, i2)
+	case SortColumnCompareFunc:
+		ret = f(ih, i1, i2, i3)
+	case TipsFunc:
+		ret = f(ih, i1, i2)
+	case ValueEditFunc:
+		ret = f(ih, i1, i2, sarg)
+	case ExtraButtonFunc:
+		ret = f(ih, i1, i2)
+	case MatrixListActionFunc:
+		ret = f(ih, i1, i2)
+	case ListEditionFunc:
+		ret = f(ih, i1, i2, i3, i4)
+	case ListInsertFunc:
+		ret = f(ih, i1)
+	case ListReleaseFunc:
+		ret = f(ih, i1, i2, sarg)
+	case ListRemoveFunc:
+		ret = f(ih, i1)
+	case PlotDrawFunc:
+		ret = f(ih)
+	case PlotSelectBeginFunc:
+		ret = f(ih)
+	case PlotSelectEndFunc:
+		ret = f(ih)
+	case PlotDeleteBeginFunc:
+		ret = f(ih)
+	case PlotDeleteEndFunc:
+		ret = f(ih)
+	case PlotPropertiesChangedFunc:
+		ret = f(ih)
+	case PlotDSPropertiesChangedFunc:
+		ret = f(ih, i1)
+	case PlotDSPropertiesValidateFunc:
+		ret = f(ih, Ihandle(uint32(i1)), Ihandle(uint32(i2)), i3)
+	case DragDataSizeFunc:
+		ret = f(ih, sarg)
+	case DragDataFunc:
+		buf := make([]byte, i2)
+		var data unsafe.Pointer
+		if len(buf) > 0 {
+			data = unsafe.Pointer(&buf[0])
+		}
+		ret = f(ih, sarg, data, len(buf))
+		wasmWriteBytes(i1, buf)
 	case DropDataFunc:
-		// the payload lives in the module heap, not Go's address space
-		ret = f(ih, sarg, nil, i2, i3, i4)
+		buf := wasmReadBytes(i1, i2)
+		var data unsafe.Pointer
+		if len(buf) > 0 {
+			data = unsafe.Pointer(&buf[0])
+		}
+		ret = f(ih, sarg, data, len(buf), i3, i4)
+	case FlatActionFunc:
+		ret = f(ih)
+	case FlatToggleActionFunc:
+		ret = f(ih, i1)
+	case FlatListActionFunc:
+		ret = f(ih, sarg, i1, i2)
+	case SelectFunc:
+		ret = f(ih, i1, i2)
+	case SwitchFunc:
+		ret = f(ih, i1, i2)
+	case ExtendedFunc:
+		ret = f(ih, i1)
+	case ToggleValueFunc:
+		ret = f(ih, i1, i2)
+	case MatrixToggleValueFunc:
+		ret = f(ih, i1, i2, i3)
+	case OpenCloseFunc:
+		ret = f(ih, i1)
+	case DetachedFunc:
+		ret = f(ih, Ihandle(uint32(i1)), i2, i3)
+	case RestoredFunc:
+		ret = f(ih, Ihandle(uint32(i1)), i2, i3)
+	case EditBeginFunc:
+		ret = f(ih, i1, i2)
+	case EditEndFunc:
+		ret = f(ih, i1, i2, sarg, i3)
+	case MoveFunc:
+		ret = f(ih, i1, i2)
+	case FocusFunc:
+		ret = f(ih, i1)
+	case TrayClickFunc:
+		ret = f(ih, i1, i2, i3)
+	case ThreadFunc:
+		ret = f(ih)
+	case KeyPressFunc:
+		ret = f(ih, i1, i2)
+	case TextLinkFunc:
+		ret = f(ih, sarg)
+	case CancelFunc:
+		ret = f(ih)
+	case LayoutUpdateFunc:
+		ret = f(ih)
+	case ValueChangingFunc:
+		ret = f(ih, i1)
+	case MatrixMouseMoveFunc:
+		ret = f(ih, i1, i2)
+	case LeaveItemFunc:
+		ret = f(ih, i1, i2)
+	case DropCheckFunc:
+		ret = f(ih, i1, i2)
+	case ReleaseFunc:
+		ret = f(ih, i1, i2, sarg)
+	case MarkFunc:
+		ret = f(ih, i1, i2)
+	case MarkEditFunc:
+		ret = f(ih, i1, i2, i3)
+	case MouseMotionFunc:
+		ret = f(ih, i1, i2, i3, i4, sarg)
 	case SelectionFunc:
 		ret = f(ih, i1, i2)
 	case BranchOpenFunc:

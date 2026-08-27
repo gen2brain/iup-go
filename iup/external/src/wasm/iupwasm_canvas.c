@@ -110,6 +110,12 @@ EMSCRIPTEN_KEEPALIVE void iupwasmCanvasOnResize(int cid, int w, int h)
   if (!ih)
     return;
 
+  if (w == iupAttribGetInt(ih, "_IUPWASM_LASTW") && h == iupAttribGetInt(ih, "_IUPWASM_LASTH"))
+    return;
+
+  iupAttribSetInt(ih, "_IUPWASM_LASTW", w);
+  iupAttribSetInt(ih, "_IUPWASM_LASTH", h);
+
   cb = (IFnii)IupGetCallback(ih, "RESIZE_CB");
   if (cb && !iupAttribGet(ih, "_IUPWASM_INRESIZE"))
   {
@@ -136,15 +142,19 @@ EMSCRIPTEN_KEEPALIVE void iupwasmCanvasMotion(int cid, int x, int y, int mods)
   }
 }
 
-EMSCRIPTEN_KEEPALIVE void iupwasmCanvasWheel(int cid, int delta, int x, int y)
+EMSCRIPTEN_KEEPALIVE void iupwasmCanvasWheel(int cid, int delta, int x, int y, int mods)
 {
   Ihandle* ih = iupwasmHandleFromId(cid);
   IFnfiis cb;
+  char status[IUPKEY_STATUS_SIZE];
   if (!ih)
     return;
   cb = (IFnfiis)IupGetCallback(ih, "WHEEL_CB");
   if (cb)
-    cb(ih, (float)delta, x, y, (char*)"");
+  {
+    iupwasmFillStatus(status, mods);
+    cb(ih, (float)delta, x, y, status);
+  }
 }
 
 EMSCRIPTEN_KEEPALIVE void iupwasmCanvasGesture(int cid, int gesture, int state, int x, int y, double v1, double v2)
@@ -224,6 +234,12 @@ static char* wasmCanvasGetDrawSizeAttrib(Ihandle* ih)
   if (id)
     return iupStrReturnIntInt(ih->currentwidth, ih->currentheight, 'x');
   return NULL;
+}
+
+static void wasmCanvasLayoutUpdateMethod(Ihandle* ih)
+{
+  iupdrvBaseLayoutUpdateMethod(ih);
+  iupwasmCanvasOnResize(iupwasmIdOf(ih), ih->currentwidth, ih->currentheight);
 }
 
 static int wasmCanvasMapMethod(Ihandle* ih)
@@ -372,7 +388,7 @@ static int wasmCanvasSetPosYAttrib(Ihandle* ih, const char* value)
 IUP_SDK_API void iupdrvCanvasInitClass(Iclass* ic)
 {
   ic->Map = wasmCanvasMapMethod;
-  ic->LayoutUpdate = iupdrvBaseLayoutUpdateMethod;
+  ic->LayoutUpdate = wasmCanvasLayoutUpdateMethod;
 
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
 

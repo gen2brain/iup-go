@@ -8,6 +8,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include <emscripten.h>
 
@@ -137,31 +140,102 @@ IUP_SDK_API char* iupdrvLocaleInfo(void)
   return iupStrReturnStr("UTF-8");
 }
 
-IUP_SDK_API int iupdrvGetPreferencePath(char *filename, const char *app_name, int use_system)
+static const char* wasmHomeDir(void)
 {
-  (void)app_name;
-  (void)use_system;
-  if (filename) filename[0] = 0;
-  return 0;
+  const char* home = getenv("HOME");
+  return (home && home[0]) ? home : "/home/web_user";
+}
+
+static int wasmMakeDirectoryIfNeeded(const char* path)
+{
+  struct stat st;
+  if (stat(path, &st) == 0)
+    return S_ISDIR(st.st_mode) ? 1 : 0;
+  return mkdir(path, 0700) == 0 ? 1 : 0;
+}
+
+static int wasmMakeDirectoryPath(char* path)
+{
+  char* p;
+  for (p = path + 1; *p; p++)
+  {
+    if (*p != '/')
+      continue;
+    *p = 0;
+    if (!wasmMakeDirectoryIfNeeded(path))
+    {
+      *p = '/';
+      return 0;
+    }
+    *p = '/';
+  }
+  return wasmMakeDirectoryIfNeeded(path);
 }
 
 IUP_SDK_API int iupdrvGetUserDir(char *path, int size, int kind)
 {
-  (void)size;
-  (void)kind;
-  if (path) path[0] = 0;
-  return 0;
+  const char* subdir;
+
+  if (!path || size <= 0)
+    return 0;
+  path[0] = 0;
+
+  if (kind == IUP_USER_DIR_TEMP)
+  {
+    iupStrCopyN(path, size, "/tmp");
+    return 1;
+  }
+
+  switch (kind)
+  {
+    case IUP_USER_DIR_CACHE:  subdir = ".cache";       break;
+    case IUP_USER_DIR_DATA:   subdir = ".local/share"; break;
+    case IUP_USER_DIR_CONFIG: subdir = ".config";      break;
+    default: return 0;
+  }
+
+  snprintf(path, size, "%s/%s", wasmHomeDir(), subdir);
+  return 1;
+}
+
+IUP_SDK_API int iupdrvGetPreferencePath(char *filename, const char *app_name, int use_system)
+{
+  if (!filename)
+    return 0;
+  filename[0] = 0;
+
+  if (!app_name || !app_name[0])
+    return 0;
+
+  if (!use_system)
+  {
+    snprintf(filename, 10240, "%s/.%s", wasmHomeDir(), app_name);
+    return 1;
+  }
+
+  if (!iupdrvGetUserDir(filename, 10240, IUP_USER_DIR_CONFIG))
+    return 0;
+
+  snprintf(filename + strlen(filename), 10240 - strlen(filename), "/%s", app_name);
+  if (!wasmMakeDirectoryPath(filename))
+  {
+    filename[0] = 0;
+    return 0;
+  }
+
+  snprintf(filename + strlen(filename), 10240 - strlen(filename), "/config");
+  return 1;
 }
 
 IUP_SDK_API int iupdrvSetCurrentDirectory(const char* dir)
 {
-  (void)dir;
-  return 0;
+  return (dir && chdir(dir) == 0) ? 1 : 0;
 }
 
 IUP_SDK_API char* iupdrvGetCurrentDirectory(void)
 {
-  return NULL;
+  char* buffer = (char*)iupStrGetMemory(10240);
+  return getcwd(buffer, 10240) ? buffer : NULL;
 }
 
 void IupLogV(const char* type, const char* format, va_list arglist)

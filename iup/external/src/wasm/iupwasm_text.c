@@ -82,11 +82,17 @@ EM_JS(void, iupwasmJsTextAddLinkPos, (int id, int start, int end, int idx), {
   globalThis.__iupApply({ op: 'textaddlinkpos', id: id, start: start, end: end, idx: idx });
 })
 
-EM_JS(void, iupwasmJsTextSpinRange, (int id, int min, int max, int step), {
-  globalThis.__iupApply({ op: 'textspinrange', id: id, min: min, max: max, step: step });
+EM_JS(void, iupwasmJsTextSpinRange, (int id, int min, int max, int step, int noauto), {
+  globalThis.__iupApply({ op: 'textspinrange', id: id, min: min, max: max, step: step, noauto: noauto });
 })
 
-EM_JS(void, iupwasmJsTextSpinWire, (int id), { globalThis.__iupApply({ op: 'textspinwire', id: id }); })
+EM_JS(void, iupwasmJsTextSpinPos, (int id, int pos), {
+  globalThis.__iupApply({ op: 'textspinpos', id: id, pos: pos });
+})
+
+EM_JS(void, iupwasmJsTextSpinWire, (int id, int noauto, int wrap), {
+  globalThis.__iupApply({ op: 'textspinwire', id: id, noauto: noauto, wrap: wrap });
+})
 
 EM_JS(void, iupwasmJsTextSetValue, (int id, const char* v), {
   globalThis.__iupApply({ op: 'textsetvalue', id: id, value: UTF8ToString(v) });
@@ -233,6 +239,60 @@ EM_JS(void, iupwasmJsTextScrollTo, (int id, int lin), {
   globalThis.__iupApply({ op: 'textscrollto', id: id, lin: lin });
 })
 
+/* fix=1 rewrites the text (rejected or replaced edit); either way it releases the edit queue */
+EM_JS(void, iupwasmJsTextEditDone, (int id, int fix, const char* value, int caret), {
+  globalThis.__iupApply({ op: 'texteditdone', id: id, fix: fix, value: UTF8ToString(value), caret: caret });
+})
+
+/* the DOM sends the text as it was before the edit, so MASK, NC and ACTION see the old value */
+EMSCRIPTEN_KEEPALIVE void iupwasmDispatchTextEdit(int id, const char* oldvalue, const char* insert,
+                                                  int start, int end, int remove_dir, int keyseq)
+{
+  Ihandle* ih = iupwasmHandleFromId(id);
+  IFnis cb;
+  Icallback vc;
+  int ret;
+
+  if (!ih)
+    return;
+
+  if (iupwasmKeyIgnored(keyseq))
+  {
+    iupwasmJsTextEditDone(id, 1, oldvalue ? oldvalue : "", start);
+    return;
+  }
+
+  iupAttribSetStr(ih, "_IUPWASM_EDITOLD", oldvalue ? oldvalue : "");
+  cb = (IFnis)IupGetCallback(ih, "ACTION");
+  ret = iupEditCallActionCb(ih, cb, (insert && insert[0]) ? insert : NULL, start, end,
+                            ih->data->mask, ih->data->nc, remove_dir, 1);
+  iupAttribSet(ih, "_IUPWASM_EDITOLD", NULL);
+
+  if (ret == 0)
+  {
+    iupwasmJsTextEditDone(id, 1, oldvalue ? oldvalue : "", start);
+    return;
+  }
+
+  if (ret > 0)
+  {
+    char rep[2];
+    char* fixed;
+    rep[0] = (char)ret;
+    rep[1] = 0;
+    fixed = iupStrInsert(oldvalue ? oldvalue : "", rep, start, end, 1);
+    iupwasmJsTextEditDone(id, 1, fixed ? fixed : "", start + 1);
+    if (fixed && fixed != oldvalue)
+      free(fixed);
+  }
+  else
+    iupwasmJsTextEditDone(id, 0, "", 0);
+
+  vc = IupGetCallback(ih, "VALUECHANGED_CB");
+  if (vc)
+    vc(ih);
+}
+
 EMSCRIPTEN_KEEPALIVE int iupwasmDispatchTextAction(int id, int ch, const char* newvalue)
 {
   Ihandle* ih = iupwasmHandleFromId(id);
@@ -295,6 +355,9 @@ static char* wasmTextGetValueAttrib(Ihandle* ih)
 {
   int id = iupwasmIdOf(ih);
   char* p, *r;
+  char* editing = iupAttribGet(ih, "_IUPWASM_EDITOLD");
+  if (editing)
+    return editing;
   if (!id)
     return NULL;
   p = iupwasmJsTextGetValue(id);
@@ -314,14 +377,27 @@ static int wasmTextSetAppendAttrib(Ihandle* ih, const char* value)
 static int wasmTextSetSpinValueAttrib(Ihandle* ih, const char* value)
 {
   int id = iupwasmIdOf(ih);
-  if (id && iupAttribGetBoolean(ih, "SPIN"))
+  int pos = 0;
+
+  if (!id || !iupAttribGetBoolean(ih, "SPIN"))
+    return 1;
+
+  iupStrToInt(value, &pos);
+  iupwasmJsTextSpinPos(id, pos);
+
+  /* SPINAUTO=NO keeps the counter apart from the text, which the application owns */
+  if (iupAttribGetBoolean(ih, "SPINAUTO"))
     iupwasmJsTextSetValue(id, value ? value : "0");
   return 1;
 }
 
 static char* wasmTextGetSpinValueAttrib(Ihandle* ih)
 {
-  return iupAttribGetBoolean(ih, "SPIN") ? wasmTextGetValueAttrib(ih) : NULL;
+  if (!iupAttribGetBoolean(ih, "SPIN"))
+    return NULL;
+  if (!iupAttribGetBoolean(ih, "SPINAUTO"))
+    return iupAttribGet(ih, "SPINVALUE");
+  return wasmTextGetValueAttrib(ih);
 }
 
 static int wasmTextSetSpinRangeAttrib(Ihandle* ih, const char* value)
@@ -329,7 +405,8 @@ static int wasmTextSetSpinRangeAttrib(Ihandle* ih, const char* value)
   int id = iupwasmIdOf(ih);
   (void)value;
   if (id && iupAttribGetBoolean(ih, "SPIN"))
-    iupwasmJsTextSpinRange(id, iupAttribGetInt(ih, "SPINMIN"), iupAttribGetInt(ih, "SPINMAX"), iupAttribGetInt(ih, "SPININC"));
+    iupwasmJsTextSpinRange(id, iupAttribGetInt(ih, "SPINMIN"), iupAttribGetInt(ih, "SPINMAX"),
+                           iupAttribGetInt(ih, "SPININC"), !iupAttribGetBoolean(ih, "SPINAUTO"));
   return 1;
 }
 
@@ -551,11 +628,19 @@ static int wasmTextMapMethod(Ihandle* ih)
 
   if (spin)
   {
-    iupwasmJsTextSpinRange(id, iupAttribGetInt(ih, "SPINMIN"), iupAttribGetInt(ih, "SPINMAX"), iupAttribGetInt(ih, "SPININC"));
+    int noauto = !iupAttribGetBoolean(ih, "SPINAUTO");
+    iupwasmJsTextSpinRange(id, iupAttribGetInt(ih, "SPINMIN"), iupAttribGetInt(ih, "SPINMAX"),
+                           iupAttribGetInt(ih, "SPININC"), noauto);
     val = iupAttribGet(ih, "SPINVALUE");
     if (val)
-      iupwasmJsTextSetValue(id, val);
-    iupwasmJsTextSpinWire(id);
+    {
+      int pos = 0;
+      iupStrToInt(val, &pos);
+      iupwasmJsTextSpinPos(id, pos);
+      if (!noauto)
+        iupwasmJsTextSetValue(id, val);
+    }
+    iupwasmJsTextSpinWire(id, noauto, iupAttribGetBoolean(ih, "SPINWRAP"));
   }
 
   val = iupAttribGet(ih, "VALUE");

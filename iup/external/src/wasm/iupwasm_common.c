@@ -27,7 +27,8 @@
 #include "iupwasm_drv.h"
 
 
-/* shared DOM applier (web/iupwasm_dom.js, --pre-js): main mutates the DOM, a Worker forwards each command to main */
+/* shared DOM applier (web/iupwasm_dom.js, --pre-js): main mutates the DOM, a Worker forwards each
+   command to main. A command carries no answer back, so nothing may depend on a return value. */
 EM_JS(void, iupwasmJsInstallProxy, (void), {
   if (typeof document === 'undefined') {
     globalThis.__iup = globalThis.__iup || { els: {}, next: 1 };
@@ -119,6 +120,7 @@ const char* iupwasmThemeColorVar(unsigned char r, unsigned char g, unsigned char
     { "DLGFGCOLOR", "var(--iup-fg)", 0 }, { "TXTFGCOLOR", "var(--iup-txtfg)", 0 }, { "MENUFGCOLOR", "var(--iup-menufg)", 0 },
   };
   int i;
+  iupwasmRefreshTheme();
   for (i = 0; i < 6; i++)
   {
     unsigned char gr, gg, gb;
@@ -213,20 +215,6 @@ EMSCRIPTEN_KEEPALIVE void iupwasmDispatchFocus(int id, int getfocus)
     iupCallKillFocusCb(ih);
 }
 
-EMSCRIPTEN_KEEPALIVE void iupwasmDispatchButton(int id, int but, int pressed, int x, int y)
-{
-  Ihandle* ih = iupwasmHandleFromId(id);
-  IFniiiis cb;
-  if (!ih)
-    return;
-  cb = (IFniiiis)IupGetCallback(ih, "BUTTON_CB");
-  if (cb)
-  {
-    if (cb(ih, but, pressed, x, y, (char*)"") == IUP_CLOSE)
-      IupExitLoop();
-  }
-}
-
 void iupwasmFillStatus(char* status, int mods)
 {
   strcpy(status, IUPKEY_STATUS_INIT);
@@ -236,6 +224,30 @@ void iupwasmFillStatus(char* status, int mods)
   if (mods & 8) iupKEY_SETBUTTON1(status);
   if (mods & 16) iupKEY_SETBUTTON2(status);
   if (mods & 32) iupKEY_SETBUTTON3(status);
+  if (mods & 64) iupKEY_SETSYS(status);
+}
+
+EMSCRIPTEN_KEEPALIVE void iupwasmDispatchButton(int id, int but, int pressed, int x, int y, int mods, int dbl)
+{
+  Ihandle* ih = iupwasmHandleFromId(id);
+  IFniiiis cb;
+  char status[IUPKEY_STATUS_SIZE];
+  if (!ih)
+    return;
+  cb = (IFniiiis)IupGetCallback(ih, "BUTTON_CB");
+  if (cb)
+  {
+    iupwasmFillStatus(status, mods);
+    /* a release clears the button in e.buttons, but the event's own button is always flagged */
+    if (but == IUP_BUTTON1) iupKEY_SETBUTTON1(status);
+    else if (but == IUP_BUTTON2) iupKEY_SETBUTTON2(status);
+    else if (but == IUP_BUTTON3) iupKEY_SETBUTTON3(status);
+    else if (but == IUP_BUTTON4) iupKEY_SETBUTTON4(status);
+    else if (but == IUP_BUTTON5) iupKEY_SETBUTTON5(status);
+    if (dbl) iupKEY_SETDOUBLE(status);
+    if (cb(ih, but, pressed, x, y, status) == IUP_CLOSE)
+      IupExitLoop();
+  }
 }
 
 EMSCRIPTEN_KEEPALIVE void iupwasmDispatchMotion(int id, int x, int y, int mods)
@@ -296,12 +308,52 @@ EMSCRIPTEN_KEEPALIVE int iupwasmDispatchTextInput(int id, const char* text)
   return iupKeyCallTextInputCb(ih, text) == IUP_IGNORE;
 }
 
-EMSCRIPTEN_KEEPALIVE int iupwasmDispatchKeyText(int id, int code, const char* text)
+/* a key and the edit it causes share a sequence, so a K_ANY veto that arrives after the DOM already
+   typed can still be matched to it; several keys can be in flight while an edit waits in the queue */
+#define IUPWASM_KEYIGNORE_MAX 8
+static int wasm_key_ignore[IUPWASM_KEYIGNORE_MAX];
+static int wasm_key_ignore_count = 0;
+
+int iupwasmKeyIgnored(int seq)
 {
+  int i, n = 0, hit = 0;
+
+  if (!seq)
+    return 0;
+
+  for (i = 0; i < wasm_key_ignore_count; i++)
+  {
+    if (wasm_key_ignore[i] == seq)
+      hit = 1;
+    else if (wasm_key_ignore[i] > seq)  /* edits arrive in order, older ones can no longer match */
+      wasm_key_ignore[n++] = wasm_key_ignore[i];
+  }
+
+  wasm_key_ignore_count = n;
+  return hit;
+}
+
+EMSCRIPTEN_KEEPALIVE int iupwasmDispatchKeyText(int id, int code, const char* text, int seq)
+{
+  int ret;
   Ihandle* ih = iupwasmHandleFromId(id);
+
   if (ih && text && text[0] && iupKeyCallTextInputCb(ih, text) == IUP_IGNORE)
-    return 1;
-  return iupwasmDispatchKey(id, code);
+    ret = 1;
+  else
+    ret = iupwasmDispatchKey(id, code);
+
+  if (ret && seq)
+  {
+    if (wasm_key_ignore_count == IUPWASM_KEYIGNORE_MAX)
+    {
+      memmove(wasm_key_ignore, wasm_key_ignore + 1, (IUPWASM_KEYIGNORE_MAX - 1) * sizeof(int));
+      wasm_key_ignore_count--;
+    }
+    wasm_key_ignore[wasm_key_ignore_count++] = seq;
+  }
+
+  return ret;
 }
 
 EMSCRIPTEN_KEEPALIVE int iupwasmDispatchKey(int id, int code)
@@ -317,6 +369,9 @@ EMSCRIPTEN_KEEPALIVE int iupwasmDispatchKey(int id, int code)
     return 0;
   }
   if (result == IUP_IGNORE)
+    return 1;
+
+  if (iupStrEqual(IupGetClassName(ih), "tree") && iupwasmTreeKeyNav(ih, code))
     return 1;
 
   /* DEFAULTENTER / DEFAULTESC: fire the named button's ACTION */
