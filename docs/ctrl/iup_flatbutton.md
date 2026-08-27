@@ -68,6 +68,8 @@ without extra configuration (mirroring the HLCOLOR default for solid buttons).
 If not defined, GRADIENT is used automatically darkened.
 
 **GRADIENTANGLE** (non-inheritable): angle in degrees for the gradient direction.
+0 is left to right, 90 is top to bottom, 180 is right to left and 270 is bottom to top.
+The gradient spans the element width for the horizontal component and its height for the vertical one.
 Default: "90" (top to bottom).
 
 **BORDER** (creation-only): the default value is "NO". This is the **IupCanvas** border.

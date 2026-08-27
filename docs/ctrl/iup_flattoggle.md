@@ -236,8 +236,8 @@ Default: NULL (solid color). Used as fallback for both OFF and ON states.
 **SWITCHTRACKONGRADIENT** (non-inheritable): gradient for the track when VALUE=ON, format "color1:color2".
 Default: NULL. If not defined, SWITCHTRACKGRADIENT is used when set.
 
-**SWITCHTRACKGRADIENTANGLE** (non-inheritable): gradient angle in degrees.
-Default: 90 (top to bottom).
+**SWITCHTRACKGRADIENTANGLE** (non-inheritable): gradient angle in degrees, as in
+[GRADIENTANGLE](iup_flatbutton.md). Default: 90 (top to bottom).
 
 **SWITCHTHUMBCOLOR** (non-inheritable): thumb fill color. Default: "255 255 255" (white).
 

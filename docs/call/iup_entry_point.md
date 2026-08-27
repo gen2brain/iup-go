@@ -4,6 +4,7 @@ Global callback for an entry point. Used when main is not possible, such as in i
 
 It is called only once, when the main loop is processed, but after **IupOpen**.
 For regular systems is called right before the actual event loop is started.
+In iOS the application is started when the callback is set. **IupSetFunction** does not return.
 
 ### Callback
 

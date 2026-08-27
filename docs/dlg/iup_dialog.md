@@ -11,7 +11,9 @@ For any interface element to be shown, it must be encapsulated in a dialog.
 
 **Returns:** the identifier of the created element, or NULL if an error occurs.
 
-In WebAssembly the dialog is a region of the browser page. MAXBOX, MINBOX, CUSTOMFRAME, HIDETITLEBAR, HIDETASKBAR and TOPMOST have no effect.
+In WebAssembly the dialog is a region of the browser page. The first dialog has no title bar and its TITLE becomes the document title.
+A dialog with a PARENTDIALOG gets a simulated title bar when TITLE is set or MENUBOX=YES; it can be dragged to move the dialog and carries a close button when MENUBOX=YES.
+MAXBOX, MINBOX, CUSTOMFRAME, HIDETASKBAR and TOPMOST have no effect.
 
 ### Attributes
 
@@ -158,6 +160,7 @@ Used only if PARENTDIALOG is not defined.
 Default: NORMAL. After **IupShow**/**IupPopup** the attribute is set back to "NORMAL".
 FULL is similar to FULLSCREEN, but only the dialog client area covers the screen area, menu and decorations will be there but out of the screen.
 In UNIX there is a chance that the placement won't work correctly, that depends on the Window Manager.
+In WebAssembly FULL and MAXIMIZED both fill the browser viewport, and MINIMIZED has no effect.
 The SHOWNOACTIVATE attribute can be set to YES to prevent the window from being activated [Win32, WinUI, Qt and Cocoa].
 The SHOWMINIMIZENEXT attribute can be set to YES to activate the next top-level window in the Z order when minimizing [Win32 and WinUI].
 
@@ -204,7 +207,7 @@ Not supported in Motif, Android and iOS.
 
 **MINIMIZED** (read-only): indicates if the dialog is minimized.
 Can be YES or NO.
-Not supported in Motif, Android and iOS.
+Not supported in Motif, Android, iOS and WebAssembly.
 
 **OPACITY**: sets the dialog transparency alpha value.
 Valid values range from 0 (completely transparent) to 255 (opaque).
@@ -214,12 +217,12 @@ Not supported in EFL and FLTK.
 
 **OPACITYIMAGE**: sets an RGBA image as the dialog background so it is possible to create a non rectangle window with transparency, but it can not have children.
 Used usually for splash screens. It must be set before map so the native window would be properly initialized when mapped.
-Not supported in GTK4, Motif, WinUI, FLTK, iOS, Android, and Haiku.
+Not supported in GTK4, Motif, WinUI, FLTK, iOS, Android, Haiku and WebAssembly.
 
 **SHAPEIMAGE**: sets an RGBA image as the dialog shape, so it is possible to create a non rectangle window with children.
 Only the fully transparent pixels will be transparent.
 The pixels colors will be ignored, only the alpha channel is used.
-Not supported in GTK4, Motif, iOS, Android, and Haiku.
+Not supported in GTK4, Motif, iOS, Android, Haiku and WebAssembly.
 
 **TOOLBOX** (creation-only): makes the dialog look like a toolbox with a smaller title bar. Default: NO.
 Supported in Win32, WinUI, Qt and Haiku.
