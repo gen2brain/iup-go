@@ -418,6 +418,23 @@ extern "C" IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, in
   }
 }
 
+/* FLTK has no underline or strikeout in its fonts, so the decorations are drawn from the metrics */
+static void fltkDrawTextDecoration(const char* text, int len, int tx, int baseline, int underline, int strikeout)
+{
+  int tw = (int)(fl_width(text, len) + 0.5);
+  int ascent = (int)fl_height() - (int)fl_descent();
+
+  if (tw <= 0)
+    return;
+
+  fl_line_style(FL_SOLID, 1);
+  if (underline)
+    fl_line(tx, baseline + 1, tx + tw - 1, baseline + 1);
+  if (strikeout)
+    fl_line(tx, baseline - ascent / 3, tx + tw - 1, baseline - ascent / 3);
+  fl_line_style(FL_SOLID, 0);
+}
+
 extern "C" IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int x, int y, int w, int h, long color, const char* font, int flags, double text_orientation)
 {
   if (!dc || !text) return;
@@ -427,10 +444,14 @@ extern "C" IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, in
   int fl_font_id = FL_HELVETICA;
   int fl_size = FL_NORMAL_SIZE;
 
+  int underline = 0, strikeout = 0;
+
   if (font)
     iupfltkGetFontFromString(font, &fl_font_id, &fl_size);
   else
     iupfltkGetFont(dc->ih, &fl_font_id, &fl_size);
+
+  iupfltkGetFontDecoration(dc->ih, font, &underline, &strikeout);
 
   fl_font(fl_font_id, fl_size);
 
@@ -440,6 +461,8 @@ extern "C" IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, in
     fl_translate(x, y);
     fl_rotate(-text_orientation);
     fl_draw(text, len, 0, (int)fl_height() - (int)fl_descent());
+    if (underline || strikeout)
+      fltkDrawTextDecoration(text, len, 0, (int)fl_height() - (int)fl_descent(), underline, strikeout);
     fl_pop_matrix();
   }
   else
@@ -458,6 +481,24 @@ extern "C" IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, in
       align |= FL_ALIGN_CLIP;
 
     fl_draw(text, x, y, w, h, align, NULL, 0);
+
+    if ((underline || strikeout) && !(flags & IUP_DRAW_WRAP))
+    {
+      int tw = 0, th = 0;
+      int tx = x, ty = y;
+
+      fl_measure(text, tw, th, 0);
+
+      if (flags & IUP_DRAW_CENTER)
+      {
+        tx = x + (w - tw) / 2;
+        ty = y + (h - th) / 2;
+      }
+      else if (flags & IUP_DRAW_RIGHT)
+        tx = x + w - tw;
+
+      fltkDrawTextDecoration(text, len, tx, ty + (int)fl_height() - (int)fl_descent(), underline, strikeout);
+    }
   }
 }
 

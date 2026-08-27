@@ -98,6 +98,7 @@ IUP_DRV_API void iupfltkFormatCleanup(Ihandle* ih);
 IUP_DRV_API const char* iupfltkFormatGetLinkAtPos(Ihandle* ih, int pos);
 IUP_DRV_API int iupfltkFormatSetRemoveFormattingAttrib(Ihandle* ih, const char* value);
 IUP_DRV_API int iupfltkGetFontFromString(const char* font, int* fl_font, int* fl_size);
+IUP_DRV_API void iupfltkGetFontDecoration(Ihandle* ih, const char* font, int* underline, int* strikeout);
 IUP_DRV_API void iupfltkUpdateWidgetFont(Ihandle *ih, Fl_Widget* widget);
 
 /****************************************************************************
