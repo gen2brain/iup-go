@@ -1430,13 +1430,20 @@ func setKeyPressFunc(ih Ihandle, f KeyPressFunc) {
 
 // CellFunc for CELL_CB callback.
 // Called when the user double clicks a color cell to change its value.
-type CellFunc func(ih Ihandle, cell int) int
+// Returns the new color, or an empty string to ignore the change.
+type CellFunc func(ih Ihandle, cell int) string
 
 //export goIupCellCB
-func goIupCellCB(ih unsafe.Pointer, cell C.int) C.int {
-	f := loadCallback((Ihandle)(ih), "_IUPGO_CELL_CB").Value().(CellFunc)
-
-	return C.int(f((Ihandle)(ih), int(cell)))
+func goIupCellCB(ih unsafe.Pointer, cell C.int) *C.char {
+	ch := loadCallback((Ihandle)(ih), "_IUPGO_CELL_CB")
+	if ch == 0 {
+		return nil
+	}
+	result := ch.Value().(CellFunc)((Ihandle)(ih), int(cell))
+	if result == "" {
+		return nil
+	}
+	return C.CString(result)
 }
 
 // setCellFunc for CELL_CB.

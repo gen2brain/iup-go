@@ -356,7 +356,7 @@ static void goIupSetKeyPressFunc(Ihandle *ih) {
 	IupSetCallback(ih, "KEYPRESS_CB", (Icallback) goIupKeyPressCB);
 }
 
-CGO_EXPORT extern int goIupCellCB(void *ih, int cell);
+CGO_EXPORT extern char *goIupCellCB(void *ih, int cell);
 static void goIupSetCellFunc(Ihandle *ih) {
 	IupSetCallback(ih, "CELL_CB", (Icallback) goIupCellCB);
 }

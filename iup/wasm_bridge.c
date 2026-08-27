@@ -82,11 +82,31 @@ EM_JS(char*, iupwasmGoDispatchStr, (Ihandle* ih, const char* name, int i1, int i
   return ptr;
 })
 
+/* the only double-returning callback (matrix NUMERICGETVALUE_CB) */
+EM_JS(double, iupwasmGoDispatchRetD, (Ihandle* ih, const char* name, int i1, int i2), {
+  if (globalThis.iupGoDispatchRetD)
+    return globalThis.iupGoDispatchRetD(ih, UTF8ToString(name), i1, i2);
+  return 0;
+})
+
+/* two strings, a double and a status string: the plot tick formatters */
+EM_JS(int, iupwasmGoDispatch2sds, (Ihandle* ih, const char* name, const char* s1, const char* s2,
+                                   double d1, const char* s3), {
+  if (globalThis.iupGoDispatch2sds)
+    return globalThis.iupGoDispatch2sds(ih, UTF8ToString(name), s1 ? UTF8ToString(s1) : "",
+      s2 ? UTF8ToString(s2) : "", d1, s3 ? UTF8ToString(s3) : "") | 0;
+  return 0;
+})
+
 static char* wasmCbTableValue(Ihandle* ih, int lin, int col) { return iupwasmGoDispatchStr(ih, "VALUE_CB", lin, col); }
 static char* wasmCbTableImage(Ihandle* ih, int lin, int col) { return iupwasmGoDispatchStr(ih, "IMAGE_CB", lin, col); }
 static int wasmCbTableSort(Ihandle* ih, int col) { return iupwasmGoDispatch(ih, "SORT_CB", col, 0, 0, 0, 0); }
 static char* wasmCbListValue(Ihandle* ih, int pos) { return iupwasmGoDispatchStr(ih, "VALUE_CB", pos, 0); }
 static char* wasmCbListImage(Ihandle* ih, int pos) { return iupwasmGoDispatchStr(ih, "IMAGE_CB", pos, 0); }
+static char* wasmCbCell(Ihandle* ih, int cell) { return iupwasmGoDispatchStr(ih, "CELL_CB", cell, 0); }
+static double wasmCbNumericGetValue(Ihandle* ih, int lin, int col) { return iupwasmGoDispatchRetD(ih, "NUMERICGETVALUE_CB", lin, col); }
+static int wasmCbXTickFormatNumber(Ihandle* ih, char* fmt, char* out, double value, char* status) { return iupwasmGoDispatch2sds(ih, "XTICKFORMATNUMBER_CB", fmt, out, value, status); }
+static int wasmCbYTickFormatNumber(Ihandle* ih, char* fmt, char* out, double value, char* status) { return iupwasmGoDispatch2sds(ih, "YTICKFORMATNUMBER_CB", fmt, out, value, status); }
 
 static int wasmCbScroll(Ihandle* ih, int op, float posx, float posy) { return iupwasmGoDispatchF(ih, "SCROLL_CB", op, posx, posy); }
 static int wasmCbTableClick(Ihandle* ih, int lin, int col, char* status) { return iupwasmGoDispatch(ih, "CLICK_CB", lin, col, 0, 0, status); }
@@ -527,6 +547,14 @@ EMSCRIPTEN_KEEPALIVE void iupwasmGoSetCallback(Ihandle* ih, const char* name)
     IupSetCallback(ih, name, (Icallback)wasmCbSwitch);
   else if (strcmp(name, "EXTENDED_CB") == 0)
     IupSetCallback(ih, name, (Icallback)wasmCbExtended);
+  else if (strcmp(name, "CELL_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbCell);
+  else if (strcmp(name, "NUMERICGETVALUE_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbNumericGetValue);
+  else if (strcmp(name, "XTICKFORMATNUMBER_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbXTickFormatNumber);
+  else if (strcmp(name, "YTICKFORMATNUMBER_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbYTickFormatNumber);
   else if (strcmp(name, "OPENCLOSE_CB") == 0)
     IupSetCallback(ih, name, (Icallback)wasmCbOpenClose);
   else if (strcmp(name, "DETACHED_CB") == 0)
