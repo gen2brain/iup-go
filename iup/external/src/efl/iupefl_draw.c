@@ -603,7 +603,7 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
   if (fontsize <= 0)
     fontsize = 12;
 
-  if (len > 0 && len < (int)strlen(text))
+  if (len > 0)
   {
     text_copy = (char*)malloc(len + 1);
     if (!text_copy)
