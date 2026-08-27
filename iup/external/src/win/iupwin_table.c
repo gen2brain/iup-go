@@ -337,64 +337,38 @@ static void winTableSort(Ihandle* ih, int col)
   if (!data || !list_view || col < 1 || col > ih->data->num_col)
     return;
 
-  /* Toggle sort direction for same column, ascending for new column */
-  if (data->sort_column == col)
-  {
-    /* Same column, toggle direction */
-    if (data->sort_ascending == 1)
-      data->sort_ascending = -1;  /* UP -> DOWN */
-    else
-      data->sort_ascending = 1;   /* DOWN -> UP */
-  }
-  else
-  {
-    /* New column, start with ascending */
-    data->sort_column = col;
-    data->sort_ascending = 1;
-  }
+  int ascending = (data->sort_column == col && data->sort_ascending == 1) ? -1 : 1;
 
-  /* Update header with sort arrow */
+  IFni sort_cb = (IFni)IupGetCallback(ih, "SORT_CB");
+  if (sort_cb && sort_cb(ih, col) == IUP_IGNORE)
+    return;
+
+  data->sort_column = col;
+  data->sort_ascending = ascending;
+
   winTableUpdateSortArrow(ih, col);
 
-  /* Check if user wants to handle sorting */
-  IFni sort_cb = (IFni)IupGetCallback(ih, "SORT_CB");
-  int sort_result = IUP_DEFAULT;
+  if (iupAttribGetBoolean(ih, "VIRTUALMODE"))
+    return;
 
-  if (sort_cb)
-    sort_result = sort_cb(ih, col);
+  winTableSortRows(ih, col, (data->sort_ascending == 1));
 
-  /* If callback returned DEFAULT, perform automatic sorting */
-  /* If callback returned IGNORE, user handled sorting themselves */
-  if (sort_result == IUP_DEFAULT)
+  for (int i = 0; i < ih->data->num_lin; i++)
   {
-    /* Perform automatic internal sorting */
-    char* virtualmode = iupAttribGet(ih, "VIRTUALMODE");
-    if (!iupStrBoolean(virtualmode))
+    for (int j = 0; j < ih->data->num_col; j++)
     {
-      /* In non-virtual mode, perform internal sorting */
-      /* Sort the cell_values array */
-      winTableSortRows(ih, col, (data->sort_ascending == 1));
-
-      /* Update ListView display with sorted data */
-      for (int i = 0; i < ih->data->num_lin; i++)
-      {
-        for (int j = 0; j < ih->data->num_col; j++)
-        {
-          const char* value = data->cell_values[i][j];
-          LVITEM item;
-          ZeroMemory(&item, sizeof(LVITEM));
-          item.mask = LVIF_TEXT;
-          item.iItem = i;
-          item.iSubItem = j + 1;  /* Skip dummy column at index 0 */
-          item.pszText = iupwinStrToSystem(value ? value : "");
-          ListView_SetItem(list_view, &item);
-        }
-      }
-
-      /* Redraw to reflect changes */
-      InvalidateRect(list_view, NULL, TRUE);
+      const char* value = data->cell_values[i][j];
+      LVITEM item;
+      ZeroMemory(&item, sizeof(LVITEM));
+      item.mask = LVIF_TEXT;
+      item.iItem = i;
+      item.iSubItem = j + 1;  /* Skip dummy column at index 0 */
+      item.pszText = iupwinStrToSystem(value ? value : "");
+      ListView_SetItem(list_view, &item);
     }
   }
+
+  InvalidateRect(list_view, NULL, TRUE);
 }
 
 /****************************************************************************

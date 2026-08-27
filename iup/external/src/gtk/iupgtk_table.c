@@ -778,16 +778,18 @@ static void gtkTableColumnClicked(GtkTreeViewColumn* column, Ihandle* ih)
     return;
   }
 
-  /* Toggle direction for the same column, ascending for a new column */
-  if (gtk_data->sort_column == col_index)
-    gtk_data->sort_ascending = !gtk_data->sort_ascending;
-  else
+  int ascending = (gtk_data->sort_column == col_index) ? !gtk_data->sort_ascending : 1;
+
+  IFni sort_cb = (IFni)IupGetCallback(ih, "SORT_CB");
+  if (sort_cb && sort_cb(ih, col_index) == IUP_IGNORE)
   {
-    gtk_data->sort_column = col_index;
-    gtk_data->sort_ascending = 1;
+    g_list_free(columns);
+    return;
   }
 
-  /* Update sort indicators for all columns */
+  gtk_data->sort_column = col_index;
+  gtk_data->sort_ascending = ascending;
+
   {
     GList* l;
     int i = 1;
@@ -807,14 +809,8 @@ static void gtkTableColumnClicked(GtkTreeViewColumn* column, Ihandle* ih)
 
   g_list_free(columns);
 
-  /* Normal mode sorts the backing store directly; virtual mode defers to SORT_CB. */
   if (!gtk_data->is_virtual)
     gtkTableSortStore(ih, col_index, gtk_data->sort_ascending);
-
-  /* Call SORT_CB if it exists */
-  IFni sort_cb = (IFni)IupGetCallback(ih, "SORT_CB");
-  if (sort_cb)
-    sort_cb(ih, col_index);
 }
 
 

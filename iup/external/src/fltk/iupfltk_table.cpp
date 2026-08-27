@@ -905,20 +905,16 @@ static void fltkTableHandleHeaderClick(Ihandle* ih, int col)
   if (!table || !ih->data->sortable)
     return;
 
-  if (table->sort_column == col)
-    table->sort_ascending = !table->sort_ascending;
-  else
-  {
-    table->sort_column = col;
-    table->sort_ascending = 1;
-  }
+  int ascending = (table->sort_column == col) ? !table->sort_ascending : 1;
 
   IFni sort_cb = (IFni)IupGetCallback(ih, "SORT_CB");
-  int ret = IUP_DEFAULT;
-  if (sort_cb)
-    ret = sort_cb(ih, col);
+  if (sort_cb && sort_cb(ih, col) == IUP_IGNORE)
+    return;
 
-  if (ret == IUP_DEFAULT && !table->is_virtual)
+  table->sort_column = col;
+  table->sort_ascending = ascending;
+
+  if (!table->is_virtual)
     fltkTableSortRows(ih, col, table->sort_ascending);
 
   table->redraw();

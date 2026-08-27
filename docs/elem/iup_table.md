@@ -109,7 +109,8 @@ Only used when ALTERNATECOLOR=YES.
 
 **SORTABLE** (non-inheritable): Enables column sorting when the user clicks on a column header.
 Can be "YES" or "NO". Default: "NO".
-The application must handle the actual sorting via SORT_CB.
+A click toggles the direction and shows an arrow in that column header.
+In virtual mode the rows are not sorted, the application must sort its own data from SORT_CB.
 
 **ALLOWREORDER** (non-inheritable): Enables column reordering via drag-and-drop on the header.
 Can be "YES" or "NO". Default: "NO".
@@ -187,6 +188,7 @@ The default value of EXPAND is "YES".
 **col**: column number (1-based).
 
 **Returns:** IUP_IGNORE to suppress the sort operation.
+The rows and the arrow are left unchanged.
 
 **REORDER_CB**: Callback called when the user reorders a column by dragging it to a new position.
 Called only when ALLOWREORDER=YES.
@@ -287,10 +289,6 @@ In virtual mode, the table does not store cell values internally.
 Instead, it calls VALUE_CB (and optionally IMAGE_CB) to retrieve the data to display.
 This is efficient for very large datasets where storing all values would be impractical.
 The application is responsible for maintaining the actual data.
-
-When SORTABLE=YES, clicking a column header fires SORT_CB.
-The application must perform the actual sorting and update the table.
-Sort direction arrows are shown in the column header.
 
 ### Examples
 

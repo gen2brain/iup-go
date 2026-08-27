@@ -108,19 +108,20 @@ JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupTableHelper_dispatchVal
 }
 
 
-JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupTableHelper_dispatchSort(
+JNIEXPORT jboolean JNICALL Java_io_github_gen2brain_iupgo_IupTableHelper_dispatchSort(
     JNIEnv* jni_env, jclass cls, jlong ihandle_ptr, jint col, jint asc)
 {
   (void)jni_env;
   (void)cls;
   (void)asc;
   Ihandle* ih = (Ihandle*)ihandle_ptr;
-  if (!ih) return;
+  if (!ih) return JNI_TRUE;
 
   IFni cb = (IFni)IupGetCallback(ih, "SORT_CB");
-  if (!cb) return;
+  if (!cb) return JNI_TRUE;
   int ret = cb(ih, (int)col);
   if (ret == IUP_CLOSE) IupExitLoop();
+  return (ret == IUP_IGNORE) ? JNI_FALSE : JNI_TRUE;
 }
 
 JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupTableHelper_dispatchReorder(

@@ -1449,7 +1449,7 @@ static void gtk4TableSorterChanged(GtkSorter* sorter, GtkSorterChange change, gp
   Ihandle* ih = (Ihandle*)user_data;
   (void)change;  /* Unused */
 
-  if (!ih || !ih->data->sortable)
+  if (!ih || !ih->data->sortable || iupAttribGet(ih, "_IUP_GTK4_SORTBUSY"))
     return;
 
   /* Called in both virtual and non-virtual mode when column header is clicked */
@@ -1474,9 +1474,19 @@ static void gtk4TableSorterChanged(GtkSorter* sorter, GtkSorterChange change, gp
     if (column == primary_column)
     {
       IFni sort_cb = (IFni)IupGetCallback(ih, "SORT_CB");
-      if (sort_cb)
+      if (sort_cb && sort_cb(ih, (int)i + 1) == IUP_IGNORE)
       {
-        sort_cb(ih, (int)i + 1);  /* 1-based column index */
+        /* put the sorter back where it was; the signal it emits must not run this again */
+        GtkColumnViewColumn* prev = (GtkColumnViewColumn*)iupAttribGet(ih, "_IUP_GTK4_SORTCOL");
+        GtkSortType prev_order = (GtkSortType)iupAttribGetInt(ih, "_IUP_GTK4_SORTORDER");
+        iupAttribSet(ih, "_IUP_GTK4_SORTBUSY", "1");
+        gtk_column_view_sort_by_column(GTK_COLUMN_VIEW(gtk_data->column_view), prev, prev_order);
+        iupAttribSet(ih, "_IUP_GTK4_SORTBUSY", NULL);
+      }
+      else
+      {
+        iupAttribSet(ih, "_IUP_GTK4_SORTCOL", (char*)primary_column);
+        iupAttribSetInt(ih, "_IUP_GTK4_SORTORDER", (int)gtk_column_view_sorter_get_primary_sort_order(view_sorter));
       }
       g_object_unref(column);
       break;

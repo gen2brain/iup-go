@@ -688,12 +688,13 @@ public final class IupTableHelper
 
     static void handleSortTap(IupTableView t, int col)
     {
-        if (t.sortCol == col) t.sortAsc = !t.sortAsc;
-        else { t.sortCol = col; t.sortAsc = true; }
-        sortRowsByColumn(t, col, t.sortAsc);
+        boolean asc = (t.sortCol == col) ? !t.sortAsc : true;
+        if (!dispatchSort(t.ihandlePtr, col, asc ? 1 : 0)) return;
+        t.sortCol = col;
+        t.sortAsc = asc;
         rebuildHeader(t);
+        sortRowsByColumn(t, col, t.sortAsc);
         t.adapter.notifyDataSetChanged();
-        dispatchSort(t.ihandlePtr, col, t.sortAsc ? 1 : 0);
     }
 
     static void sortRowsByColumn(IupTableView t, int col, final boolean asc)
@@ -1786,7 +1787,7 @@ public final class IupTableHelper
     public static native void dispatchEdition(long ihandlePtr, int lin, int col, String text);
     public static native int dispatchEditEnd(long ihandlePtr, int lin, int col, String text, int apply);
     public static native void dispatchValueChanged(long ihandlePtr, int lin, int col);
-    public static native void dispatchSort(long ihandlePtr, int col, int asc);
+    public static native boolean dispatchSort(long ihandlePtr, int col, int asc);
     public static native void dispatchReorder(long ihandlePtr, int fromCol, int toCol);
     public static native int dispatchRowDragDrop(long ihandlePtr, int fromLin, int toLin);
     public static native String dispatchValueRequest(long ihandlePtr, int lin, int col);

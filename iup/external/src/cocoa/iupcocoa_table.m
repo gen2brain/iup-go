@@ -176,8 +176,9 @@ typedef struct _IcocoaTableData {
 #else
   if (self.customBackgroundColor)
   {
+    /* clipsToBounds is NO, so filling dirtyRect would paint over the neighbouring cells */
     [self.customBackgroundColor setFill];
-    NSRectFill(dirtyRect);
+    NSRectFill(NSIntersectionRect(dirtyRect, [self bounds]));
   }
 #endif
   [super drawRect:dirtyRect];
@@ -1128,7 +1129,7 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
 - (void)tableView:(NSTableView*)tableView sortDescriptorsDidChange:(NSArray*)oldDescriptors
 {
   IcocoaTableData* table_data = cocoaTableGetData(ih);
-  if (!table_data)
+  if (!table_data || iupAttribGet(ih, "_IUPCOCOA_SORTBUSY"))
     return;
 
   NSArray* newDescriptors = [tableView sortDescriptors];
@@ -1139,35 +1140,31 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
   NSString* key = [descriptor key];
   int col_index = [key intValue];
 
-  /* Check if user wants to handle sorting */
   IFni sort_cb = (IFni)IupGetCallback(ih, "SORT_CB");
-  int sort_result = IUP_DEFAULT;
-
-  if (sort_cb)
-    sort_result = sort_cb(ih, col_index + 1);  /* Convert to 1-based */
-
-  /* If callback returned DEFAULT, perform automatic sorting */
-  /* If callback returned IGNORE, user handled sorting themselves */
-  if (sort_result == IUP_DEFAULT)
+  if (sort_cb && sort_cb(ih, col_index + 1) == IUP_IGNORE)
   {
-    /* Perform automatic internal sorting */
-    if (!table_data->is_virtual_mode)
-    {
-      /* In non-virtual mode, sort internal data array */
-      [table_data->data_array sortUsingComparator:^NSComparisonResult(NSMutableArray* row1, NSMutableArray* row2) {
-        NSString* val1 = (col_index < [row1 count]) ? [row1 objectAtIndex:col_index] : @"";
-        NSString* val2 = (col_index < [row2 count]) ? [row2 objectAtIndex:col_index] : @"";
-
-        int cmp = iupStrCompare([val1 UTF8String], [val2 UTF8String], 0, 1);
-        if (![descriptor ascending])
-          cmp = -cmp;
-
-        return cmp < 0 ? NSOrderedAscending : (cmp > 0 ? NSOrderedDescending : NSOrderedSame);
-      }];
-
-    [tableView reloadData];
-    }
+    /* NSTableView already moved its own indicator, so put it back */
+    iupAttribSet(ih, "_IUPCOCOA_SORTBUSY", "1");
+    [tableView setSortDescriptors:oldDescriptors];
+    iupAttribSet(ih, "_IUPCOCOA_SORTBUSY", NULL);
+    return;
   }
+
+  if (table_data->is_virtual_mode)
+    return;
+
+  [table_data->data_array sortUsingComparator:^NSComparisonResult(NSMutableArray* row1, NSMutableArray* row2) {
+    NSString* val1 = (col_index < [row1 count]) ? [row1 objectAtIndex:col_index] : @"";
+    NSString* val2 = (col_index < [row2 count]) ? [row2 objectAtIndex:col_index] : @"";
+
+    int cmp = iupStrCompare([val1 UTF8String], [val2 UTF8String], 0, 1);
+    if (![descriptor ascending])
+      cmp = -cmp;
+
+    return cmp < 0 ? NSOrderedAscending : (cmp > 0 ? NSOrderedDescending : NSOrderedSame);
+  }];
+
+  [tableView reloadData];
 }
 
 @end

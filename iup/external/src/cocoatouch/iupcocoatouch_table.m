@@ -650,16 +650,19 @@ static UICollectionViewLayout* cocoaTouchTableMakeLayout(IupCocoaTouchTableContr
 	{
 		if (!_ihandle->data || !_ihandle->data->sortable) return;
 		NSInteger col = ([ip item] % num_col) + 1;
-		if (_sortCol == col) _sortAscending = !_sortAscending;
-		else { _sortCol = col; _sortAscending = YES; }
+		BOOL ascending = (_sortCol == col) ? !_sortAscending : YES;
 
 		IFni cb = (IFni)IupGetCallback(_ihandle, "SORT_CB");
-		int rc = IUP_DEFAULT;
-		if (cb) rc = cb(_ihandle, (int)col);
-		if (rc == IUP_DEFAULT) [self sortByCol:col ascending:_sortAscending];
-		else if (rc == IUP_CLOSE) IupExitLoop();
-		_focusLin = 0;
-		_focusCol = 0;
+		int rc = cb ? cb(_ihandle, (int)col) : IUP_DEFAULT;
+		if (rc == IUP_CLOSE) IupExitLoop();
+		if (rc != IUP_IGNORE)
+		{
+			_sortCol = col;
+			_sortAscending = ascending;
+			[self sortByCol:col ascending:_sortAscending];
+			_focusLin = 0;
+			_focusCol = 0;
+		}
 		for (NSIndexPath* sel in [cv indexPathsForSelectedItems])
 			[cv deselectItemAtIndexPath:sel animated:NO];
 		[cv reloadData];
