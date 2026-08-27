@@ -131,6 +131,7 @@ IUP_DRV_API std::wstring iupwinuiStringToWString(const char* str);
 
 IUP_DRV_API winrt::hstring iupwinuiProcessMnemonic(const char* str, char* c);
 IUP_DRV_API void iupwinuiSetMnemonicText(winrt::Microsoft::UI::Xaml::Controls::TextBlock const& tb, const char* title, char* c);
+IUP_DRV_API void iupwinuiSetAutomationName(Ihandle* ih, const char* title);
 IUP_DRV_API winrt::hstring iupwinuiTextBlockText(winrt::Microsoft::UI::Xaml::Controls::TextBlock const& tb);
 IUP_DRV_API int iupwinuiShowAccelCues(void);
 IUP_DRV_API void iupwinuiRefreshAccelCues(void);
@@ -420,12 +421,14 @@ struct IupWinUITreeAux
 
   winrt::event_token gotFocusToken{};
   winrt::event_token lostFocusToken{};
+  winrt::event_token layoutUpdatedToken{};
+  bool namesDirty;
 
   IupWinUITreeAux() : expandingToken{}, collapsedToken{},
                        itemInvokedToken{}, selectionChangedToken{},
                        rightTappedToken{}, keyDownToken{}, doubleTappedToken{},
                        dragItemsStartingToken{}, dragItemsCompletedToken{},
-                       ignoreChange(false) {}
+                       ignoreChange(false), namesDirty(false) {}
 };
 
 struct IupWinUIMenuAux

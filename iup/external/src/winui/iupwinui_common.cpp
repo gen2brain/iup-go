@@ -854,6 +854,20 @@ extern "C" IUP_SDK_API void iupdrvSetAccessibleTitle(Ihandle* ih, const char* ti
   }
 }
 
+/* a Border content stops UIA deriving the button name from its caption */
+IUP_DRV_API void iupwinuiSetAutomationName(Ihandle* ih, const char* title)
+{
+  char* stripped;
+
+  if (!ih || !ih->handle || iupAttribGet(ih, "ACCESSIBLETITLE"))
+    return;
+
+  stripped = title ? iupStrProcessMnemonic(title, NULL, 0) : NULL;
+  iupdrvSetAccessibleTitle(ih, stripped ? stripped : title);
+  if (stripped && stripped != title)
+    free(stripped);
+}
+
 extern "C" IUP_SDK_API void iupdrvSetAccessibleDescription(Ihandle* ih, const char* description)
 {
   if (!ih || !ih->handle || winuiHandleIsHWND(ih))
