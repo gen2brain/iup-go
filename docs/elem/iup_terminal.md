@@ -36,6 +36,7 @@ Default: "24".
 
 **SCROLLBACKLINES** (non-inheritable): maximum number of history lines kept off screen.
 Setting it discards the existing history. "0" disables scrollback. Default: "5000".
+History lines are not reflowed when the terminal is resized.
 
 **CURSORSTYLE** (non-inheritable): cursor shape. Can be "BLOCK", "BAR" or "UNDERLINE".
 Also changed by the DECSCUSR escape sequence. Default: "BLOCK".

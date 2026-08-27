@@ -317,11 +317,12 @@ The [dialog](../dlg/iup_dialog.md) THEMECHANGED_CB is called on a live light/dar
 ### WINDOWING (read-only)
 
 Returns the native windowing system in use.
-Can be: "DWM", "X11", "WAYLAND", "QUARTZ", "ANDROID" or "HAIKU".
+Can be: "DWM", "X11", "WAYLAND", "QUARTZ", "ANDROID", "HAIKU" or "WEB".
 
 ### COMPUTERNAME (read-only)
 
 Returns the hostname.
+Not available in WebAssembly.
 
 ### TOUCHREADY (read-only)
 
@@ -332,6 +333,7 @@ The other drivers do not detect touch and report NO.
 ### USERNAME (read-only)
 
 Returns the user logged in.
+Not available in WebAssembly.
 
 ### EXEFILENAME (read-only)
 
