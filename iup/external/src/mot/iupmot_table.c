@@ -1050,47 +1050,21 @@ static void motTableInputCallback(Widget w, XtPointer client_data, XtPointer cal
       /* Check if SORTABLE is enabled */
       if (ih->data->sortable)
       {
-        /* Update sort state - toggle direction for same column, ascending for new column */
-        if (mot_data->sort_column == col)
-        {
-          /* Same column - toggle direction */
-          if (mot_data->sort_signs[col-1] == 1)
-            mot_data->sort_signs[col-1] = -1;  /* UP -> DOWN */
-          else
-            mot_data->sort_signs[col-1] = 1;   /* DOWN -> UP */
-        }
-        else
-        {
-          /* New column - clear previous and set ascending */
-          if (mot_data->sort_column > 0 && mot_data->sort_column <= ih->data->num_col)
-            mot_data->sort_signs[mot_data->sort_column - 1] = 0;
+        int sign = (mot_data->sort_column == col && mot_data->sort_signs[col-1] == 1) ? -1 : 1;
 
-          mot_data->sort_column = col;
-          mot_data->sort_signs[col-1] = 1;  /* Start with ascending */
-        }
-
-        /* Check if user wants to handle sorting */
         IFni sort_cb = (IFni)IupGetCallback(ih, "SORT_CB");
-        int sort_result = IUP_DEFAULT;
+        if (sort_cb && sort_cb(ih, col) == IUP_IGNORE)
+          return;
 
-        if (sort_cb)
-          sort_result = sort_cb(ih, col);
+        if (mot_data->sort_column > 0 && mot_data->sort_column <= ih->data->num_col)
+          mot_data->sort_signs[mot_data->sort_column - 1] = 0;
 
-        /* If callback returned DEFAULT, perform automatic sorting */
-        /* If callback returned IGNORE, user handled sorting themselves */
-        if (sort_result == IUP_DEFAULT)
-        {
-          /* Perform automatic internal sorting */
-          /* Check if in virtual mode (has VALUE_CB callback) */
-          sIFnii value_cb = (sIFnii)IupGetCallback(ih, "VALUE_CB");
-          if (!value_cb)
-          {
-            /* In non-virtual mode, perform internal sorting */
-            motTableSortRows(ih, col, (mot_data->sort_signs[col-1] == 1));
-          }
-        }
+        mot_data->sort_column = col;
+        mot_data->sort_signs[col-1] = sign;
 
-        /* Redraw to show updated sort indicators and sorted data */
+        if (!IupGetCallback(ih, "VALUE_CB"))
+          motTableSortRows(ih, col, (sign == 1));
+
         motTableRedraw(ih);
       }
     }

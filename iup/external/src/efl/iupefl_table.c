@@ -678,27 +678,19 @@ static void eflTableDoSort(Ihandle* ih, int col)
   if (!ih->data->sortable)
     return;
 
-  if (col == data->sort_column)
-    data->sort_ascending = !data->sort_ascending;
-  else
-  {
-    data->sort_column = col;
-    data->sort_ascending = 1;
-  }
+  int ascending = (col == data->sort_column) ? !data->sort_ascending : 1;
+
+  cb = (IFni)IupGetCallback(ih, "SORT_CB");
+  if (cb && cb(ih, col) == IUP_IGNORE)
+    return;
+
+  data->sort_column = col;
+  data->sort_ascending = ascending;
 
   eflTableUpdateSortIndicators(ih);
 
-  cb = (IFni)IupGetCallback(ih, "SORT_CB");
-  if (cb)
-  {
-    int ret = cb(ih, col);
-    if (ret == IUP_DEFAULT && !data->is_virtual)
-      eflTableSortRows(ih, col, data->sort_ascending);
-  }
-  else if (!data->is_virtual)
-  {
+  if (!data->is_virtual)
     eflTableSortRows(ih, col, data->sort_ascending);
-  }
 }
 
 static int eflTableFindTargetColumn(Ihandle* ih, int x)

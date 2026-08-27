@@ -242,15 +242,120 @@ EMSCRIPTEN_KEEPALIVE void iupwasmTableVScroll(int id)
     wasmTableVirtualRender(ih);
 }
 
+static void wasmTableSortIndicator(Ihandle* ih, int col, int ascending)
+{
+  int id = iupwasmIdOf(ih);
+  int c;
+
+  for (c = 1; c <= ih->data->num_col; c++)
+  {
+    char* title = iupAttribGetId(ih, "_IUPWASM_COLTITLE", c);
+    if (c == col)
+    {
+      char buf[256];
+      snprintf(buf, sizeof(buf), "%s %s", title ? title : "", ascending ? "\xE2\x96\xB2" : "\xE2\x96\xBC");
+      iupwasmJsTableColTitle(id, c, buf);
+    }
+    else
+      iupwasmJsTableColTitle(id, c, title ? title : "");
+  }
+}
+
+/* moves rows the same way a row drag-drop does, so the per-line attributes follow them */
+static void wasmTableSortRows(Ihandle* ih, int col, int ascending)
+{
+  int id = iupwasmIdOf(ih);
+  int n = ih->data->num_lin;
+  char** values;
+  int *order, *pos, *at;
+  int i, j;
+
+  if (n < 2)
+    return;
+
+  values = (char**)malloc(n * sizeof(char*));
+  order = (int*)malloc(n * sizeof(int));
+  pos = (int*)malloc(n * sizeof(int));
+  at = (int*)malloc(n * sizeof(int));
+
+  for (i = 0; i < n; i++)
+  {
+    char* v = iupdrvTableGetCellValue(ih, i + 1, col);
+    values[i] = iupStrDup(v ? v : "");
+    order[i] = i;
+    pos[i] = i;
+    at[i] = i;
+  }
+
+  for (i = 1; i < n; i++)
+  {
+    int cur = order[i];
+    for (j = i - 1; j >= 0; j--)
+    {
+      int cmp = iupStrCompare(values[order[j]], values[cur], 0, 1);
+      if (!ascending)
+        cmp = -cmp;
+      if (cmp <= 0)
+        break;
+      order[j + 1] = order[j];
+    }
+    order[j + 1] = cur;
+  }
+
+  for (i = 0; i < n; i++)
+  {
+    int want = order[i];
+    int from = pos[want];
+    if (from == i)
+      continue;
+
+    iupTableMoveLinAttribs(ih, from + 1, i + 1);
+    iupwasmJsTableMoveRow(id, from + 1, i + 1);
+
+    for (j = from; j > i; j--)
+    {
+      at[j] = at[j - 1];
+      pos[at[j]] = j;
+    }
+    at[i] = want;
+    pos[want] = i;
+  }
+
+  for (i = 0; i < n; i++)
+    free(values[i]);
+  free(values);
+  free(order);
+  free(pos);
+  free(at);
+}
+
 EMSCRIPTEN_KEEPALIVE void iupwasmTableHeaderClick(int id, int col)
 {
   Ihandle* ih = iupwasmHandleFromId(id);
   IFni sort_cb;
+  int ascending;
+
   if (!ih || !IupGetInt(ih, "SORTABLE"))
     return;
+
+  if (iupAttribGetInt(ih, "_IUPWASM_SORTCOL") == col)
+    ascending = !iupAttribGetInt(ih, "_IUPWASM_SORTASC");
+  else
+    ascending = 1;
+
   sort_cb = (IFni)IupGetCallback(ih, "SORT_CB");
-  if (sort_cb)
-    sort_cb(ih, col);
+  if (sort_cb && sort_cb(ih, col) == IUP_IGNORE)
+    return;
+
+  iupAttribSetInt(ih, "_IUPWASM_SORTCOL", col);
+  iupAttribSetInt(ih, "_IUPWASM_SORTASC", ascending);
+  wasmTableSortIndicator(ih, col, ascending);
+
+  if (!iupAttribGetBoolean(ih, "VIRTUALMODE"))
+  {
+    wasmTableSortRows(ih, col, ascending);
+    wasmTableApplyCellColors(ih);
+  }
 }
 
 static void wasmTableUpdateFocus(Ihandle* ih, int lin, int col)

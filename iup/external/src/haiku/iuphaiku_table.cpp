@@ -1018,7 +1018,9 @@ public:
       if (col)
       {
         IFni cb = (IFni)IupGetCallback(ih, "SORT_CB");
-        if (cb) cb(ih, (int)col->LogicalFieldNum() + 1);
+        /* the list view sorts when it gets the click, so a veto simply withholds it */
+        if (cb && cb(ih, (int)col->LogicalFieldNum() + 1) == IUP_IGNORE)
+          return B_SKIP_MESSAGE;
       }
       return B_DISPATCH_MESSAGE;
     }

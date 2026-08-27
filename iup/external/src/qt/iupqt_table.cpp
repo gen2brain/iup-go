@@ -1072,66 +1072,34 @@ static int qtTableMapMethod(Ihandle* ih)
                          QAbstractItemView::EditKeyPressed |
                          QAbstractItemView::AnyKeyPressed);
 
-  /* Check for SORTABLE attribute (from ih->data) */
-  char* virtualmode = iupAttribGet(ih, "VIRTUALMODE");
   QHeaderView* hHeader = table->horizontalHeader();
 
   if (ih->data->sortable)
   {
-    if (iupStrBoolean(virtualmode))
-    {
-      /* Virtual mode - disable automatic sorting */
-      table->setSortingEnabled(false);
-      hHeader->setSectionsClickable(true);
-      hHeader->setSortIndicatorShown(true);
-    }
-    else
-    {
-      /* Normal mode - enable Qt's automatic sorting */
-      table->setSortingEnabled(true);
-      hHeader->setSectionsClickable(true);
-      hHeader->setSortIndicatorShown(true);
-    }
+    /* SORT_CB can veto, so rows are sorted here and not by the widget */
+    table->setSortingEnabled(false);
+    hHeader->setSectionsClickable(true);
+    hHeader->setSortIndicatorShown(true);
 
-    /* Connect header section clicked for SORT_CB callback */
-    QObject::connect(hHeader, &QHeaderView::sectionClicked, [ih, hHeader](int logicalIndex) {
-      char* virtualmode = iupAttribGet(ih, "VIRTUALMODE");
+    QObject::connect(hHeader, &QHeaderView::sectionClicked, [ih, hHeader, table](int logicalIndex) {
+      int prev_col = iupAttribGetInt(ih, "_QT_SORT_COLUMN");
+      int prev_ascending = iupAttribGetInt(ih, "_QT_SORT_ASCENDING");
+      int ascending = (prev_col == (logicalIndex + 1)) ? !prev_ascending : 1;
 
-      /* Virtual mode - manually track sort state */
-      if (iupStrBoolean(virtualmode))
-      {
-        /* Get current sort state */
-        int current_col = iupAttribGetInt(ih, "_QT_SORT_COLUMN");
-        int ascending = iupAttribGetInt(ih, "_QT_SORT_ASCENDING");
-
-        /* Toggle direction for same column, ascending for new column */
-        if (current_col == (logicalIndex + 1))
-        {
-          /* Same column - toggle direction */
-          ascending = !ascending;
-        }
-        else
-        {
-          /* New column - start with ascending */
-          current_col = logicalIndex + 1;
-          ascending = 1;
-        }
-
-        /* Store new state */
-        iupAttribSetInt(ih, "_QT_SORT_COLUMN", current_col);
-        iupAttribSetInt(ih, "_QT_SORT_ASCENDING", ascending);
-
-        /* Update sort indicator */
-        hHeader->setSortIndicator(logicalIndex,
-          ascending ? Qt::AscendingOrder : Qt::DescendingOrder);
-      }
-
-      /* Call SORT_CB callback if it exists */
       IFni sort_cb = (IFni)IupGetCallback(ih, "SORT_CB");
-      if (sort_cb)
+      if (sort_cb && sort_cb(ih, logicalIndex + 1) == IUP_IGNORE)
       {
-        sort_cb(ih, logicalIndex + 1);  /* Convert to 1-based */
+        /* QHeaderView flips its own indicator before emitting this, so put it back */
+        hHeader->setSortIndicator(prev_col - 1, prev_ascending ? Qt::AscendingOrder : Qt::DescendingOrder);
+        return;
       }
+
+      iupAttribSetInt(ih, "_QT_SORT_COLUMN", logicalIndex + 1);
+      iupAttribSetInt(ih, "_QT_SORT_ASCENDING", ascending);
+      hHeader->setSortIndicator(logicalIndex, ascending ? Qt::AscendingOrder : Qt::DescendingOrder);
+
+      if (!iupAttribGetBoolean(ih, "VIRTUALMODE"))
+        table->sortItems(logicalIndex, ascending ? Qt::AscendingOrder : Qt::DescendingOrder);
     });
   }
   else

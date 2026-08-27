@@ -822,36 +822,22 @@ static void winuiTableSort(Ihandle* ih, int col)
   if (!aux || col < 1 || col > ih->data->num_col)
     return;
 
-  if (aux->sort_column == col)
-  {
-    if (aux->sort_ascending == 1)
-      aux->sort_ascending = -1;
-    else
-      aux->sort_ascending = 1;
-  }
-  else
-  {
-    aux->sort_column = col;
-    aux->sort_ascending = 1;
-  }
+  int ascending = (aux->sort_column == col && aux->sort_ascending == 1) ? -1 : 1;
+
+  IFni sort_cb = (IFni)IupGetCallback(ih, "SORT_CB");
+  if (sort_cb && sort_cb(ih, col) == IUP_IGNORE)
+    return;
+
+  aux->sort_column = col;
+  aux->sort_ascending = ascending;
 
   winuiTableUpdateSortArrow(ih, col);
 
-  IFni sort_cb = (IFni)IupGetCallback(ih, "SORT_CB");
-  int sort_result = IUP_DEFAULT;
+  if (iupAttribGetBoolean(ih, "VIRTUALMODE"))
+    return;
 
-  if (sort_cb)
-    sort_result = sort_cb(ih, col);
-
-  if (sort_result == IUP_DEFAULT)
-  {
-    char* virtualmode = iupAttribGet(ih, "VIRTUALMODE");
-    if (!iupStrBoolean(virtualmode))
-    {
-      winuiTableSortRows(ih, col, (aux->sort_ascending == 1));
-      winuiTableRebuildListViewItems(ih);
-    }
-  }
+  winuiTableSortRows(ih, col, (aux->sort_ascending == 1));
+  winuiTableRebuildListViewItems(ih);
 }
 
 /****************************************************************************
