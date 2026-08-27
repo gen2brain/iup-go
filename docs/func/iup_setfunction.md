@@ -13,4 +13,4 @@ Associates a function to a global callback name, such as IDLE_ACTION, ENTRY_POIN
 
 ### See Also
 
-[IupGetFunction](iup_getfunction.md)
+[IupGetFunction](iup_getfunction.md), [ENTRY_POINT](../call/iup_entry_point.md)

@@ -13,7 +13,7 @@ In Windows, Qt, Android and iOS is a native element. In GTK, GTK 4, macOS, EFL, 
 ### Attributes
 
 **CALENDARWEEKNUMBERS**: Shows the number of the week along the year in the calendar. Default: NO.
-Not supported in Android.
+Not supported in macOS, WinUI, EFL, Android, iOS and WebAssembly.
 
 **FORMAT** [Windows, Qt and Android Only]: Flexible format for the date.
 In Windows, for more information see "About Date and Time Picker Control" in the Windows SDK.
@@ -28,9 +28,11 @@ Must be set before ORDER. Default: NO. Names will be in the language of the syst
 **ORDER**: Day, month and year order. Can be any combination of "D", "M" and "Y" without repetition, and with all three letters.
 It will set the FORMAT attribute in Windows. It will NOT affect the VALUE attribute order.
 Default: "DMY".
+Not supported in iOS and WebAssembly.
 
 **SEPARATOR**: Separator between day, month and year. Must be set before ORDER in Windows.
 Default: "/".
+Not supported in iOS and WebAssembly.
 
 **SHOWDROPDOWN** (write-only): opens or closes the dropdown calendar. Can be "YES" or "NO".
 Ignored if set before map. In Windows, it works only for NO.
@@ -43,6 +45,7 @@ Can be set to "TODAY". Default value is the today date.
 
 **ZEROPRECED**: Day and month numbers will be preceded by a zero. Must be set before ORDER in Windows.
 Default: NO.
+Not supported in iOS and WebAssembly.
 
 ### Callbacks
 

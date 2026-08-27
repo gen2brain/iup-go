@@ -345,14 +345,18 @@ trailing separator.
 
 CACHEDIR is clearable storage; DATADIR is persistent; CONFIGDIR holds settings; TMPDIR is scratch space.
 
-| Driver                       | CACHEDIR                | DATADIR                         | CONFIGDIR               | TMPDIR                   |
-|------------------------------|-------------------------|---------------------------------|-------------------------|--------------------------|
-| Win32, WinUI                 | `%LOCALAPPDATA%`        | `%LOCALAPPDATA%`                | `%LOCALAPPDATA%`        | `GetTempPathA`           |
-| GTK, GTK 4, Motif, EFL, FLTK | `$XDG_CACHE_HOME`       | `$XDG_DATA_HOME`                | `$XDG_CONFIG_HOME`      | `$TMPDIR`, else `/tmp`   |
-| Qt                           | `GenericCacheLocation`  | `GenericDataLocation`           | `GenericConfigLocation` | `TempLocation`           |
-| Cocoa                        | `~/Library/Caches`      | `~/Library/Application Support` | same as DATADIR         | `NSTemporaryDirectory()` |
-| CocoaTouch                   | `Library/Caches`        | `Library/Application Support`   | same as DATADIR         | `NSTemporaryDirectory()` |
-| Android                      | `Context.getCacheDir()` | `Context.getFilesDir()`         | same as DATADIR         | `Context.getCacheDir()`  |
+| Driver                       | CACHEDIR                 | DATADIR                         | CONFIGDIR                   | TMPDIR                    |
+|------------------------------|--------------------------|---------------------------------|-----------------------------|---------------------------|
+| Win32, WinUI                 | `%LOCALAPPDATA%`         | `%LOCALAPPDATA%`                | `%LOCALAPPDATA%`            | `GetTempPathA`            |
+| GTK, GTK 4, Motif, EFL, FLTK | `$XDG_CACHE_HOME`        | `$XDG_DATA_HOME`                | `$XDG_CONFIG_HOME`          | `$TMPDIR`, else `/tmp`    |
+| Qt                           | `GenericCacheLocation`   | `GenericDataLocation`           | `GenericConfigLocation`     | `TempLocation`            |
+| Cocoa                        | `~/Library/Caches`       | `~/Library/Application Support` | same as DATADIR             | `NSTemporaryDirectory()`  |
+| CocoaTouch                   | `Library/Caches`         | `Library/Application Support`   | same as DATADIR             | `NSTemporaryDirectory()`  |
+| Android                      | `Context.getCacheDir()`  | `Context.getFilesDir()`         | same as DATADIR             | `Context.getCacheDir()`   |
+| Haiku                        | `B_USER_CACHE_DIRECTORY` | `B_USER_DATA_DIRECTORY`         | `B_USER_SETTINGS_DIRECTORY` | `B_SYSTEM_TEMP_DIRECTORY` |
+| WebAssembly                  | `$HOME/.cache`           | `$HOME/.local/share`            | `$HOME/.config`             | `/tmp`                    |
+
+In WebAssembly the home directory is backed by IndexedDB, so CACHEDIR, DATADIR and CONFIGDIR survive a page reload. TMPDIR is in memory and does not.
 
 ### GL_VERSION (read-only)
 

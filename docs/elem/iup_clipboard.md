@@ -46,10 +46,10 @@ Only supported in Qt.
 
 **IMAGE** (write-only): name of an image to copy to the clipboard.
 If set to NULL clears the clipboard data.
-Not supported in EFL and Android.
+Not supported in EFL.
 
 **IMAGEAVAILABLE** (read-only): informs if there is an image available at the clipboard.
-Not supported in EFL and Android.
+Not supported in EFL.
 
 **NATIVEIMAGE**: native handle of an image to copy or paste, to or from the clipboard.
 In Win32 and WinUI is a **HANDLE** of a DIB.
@@ -61,10 +61,11 @@ In iOS is a **UIImage***.
 In Qt is a **QPixmap***.
 In FLTK is a **Fl_RGB_Image***.
 In Haiku is a **BBitmap***.
+In Android is an **android.graphics.Bitmap** global reference.
 If set to NULL clears the clipboard data.
 The returned handle in a paste must be released after used.
 After copy, do NOT release the given handle.
-Not supported in EFL, Android and WebAssembly.
+Not supported in EFL and WebAssembly.
 
 **NATIVEVECTORIMAGE**: copy or paste vector image data, a PDF document, to or from the clipboard.
 When set the FORMATDATASIZE attribute must be set before with the data size.

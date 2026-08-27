@@ -18,6 +18,7 @@ Default: the global attribute TXTFGCOLOR.
 Default: TXTHLCOLOR global attribute.
 
 **INDENTATION**: sets the indentation level in pixels.
+When never set, returns the indentation currently in effect.
 The visual effect of changing the indentation is highly system-dependent.
 In GTK it acts as an additional indent value, and the lines do not follow the extra indent.
 In Win32 it is limited to a minimum of 5 pixels.
@@ -41,7 +42,7 @@ Supported in Windows, Qt, macOS and WebAssembly.
 
 **SPACING**: vertical internal padding for each node.
 Notice that the distance between each node will be actually 2x the spacing.
-Not supported in EFL.
+Not supported in Motif and EFL.
 
 **CSPACING**: same as SPACING but using the units of the vertical part of the **SIZE** attribute.
 It will actually set the SPACING attribute.
