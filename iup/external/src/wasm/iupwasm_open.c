@@ -170,6 +170,7 @@ IUP_SDK_API int iupdrvOpen(int *argc, char ***argv)
   (void)argv;
 
   IupSetGlobal("DRIVER", "WASM");
+  IupSetGlobal("WINDOWING", "WEB");
 
   lang = (char*)(intptr_t)iupwasmJsLanguage();
   if (lang)

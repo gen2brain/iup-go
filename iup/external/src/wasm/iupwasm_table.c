@@ -578,6 +578,11 @@ EMSCRIPTEN_KEEPALIVE void iupwasmTableCellClick(int id, int lin, int col, int mo
   }
 }
 
+static int wasmTableCellEditable(Ihandle* ih, int col)
+{
+  return iupAttribGetIntId(ih, "EDITABLE", col) || iupAttribGetBoolean(ih, "EDITABLE");
+}
+
 EMSCRIPTEN_KEEPALIVE void iupwasmTableEditBegin(int id, int lin, int col)
 {
   Ihandle* ih = iupwasmHandleFromId(id);
@@ -586,7 +591,7 @@ EMSCRIPTEN_KEEPALIVE void iupwasmTableEditBegin(int id, int lin, int col)
 
   if (!ih)
     return;
-  if (!iupAttribGetIntId(ih, "EDITABLE", col) && !iupAttribGetBoolean(ih, "EDITABLE"))
+  if (!wasmTableCellEditable(ih, col))
     return;
   cb = (IFnii)IupGetCallback(ih, "EDITBEGIN_CB");
   if (cb && cb(ih, lin, col) == IUP_IGNORE)
@@ -631,6 +636,87 @@ EMSCRIPTEN_KEEPALIVE void iupwasmTableEditEnd(int id, int lin, int col, const ch
   if (vc_cb)
     vc_cb(ih, lin, col);
 }
+
+int iupwasmTableKeyNav(Ihandle* ih, int code)
+{
+  int id = iupwasmIdOf(ih);
+  int lin, col, new_lin, new_col;
+  IFnii cb;
+
+  if (!id)
+    return 0;
+
+  iupdrvTableGetFocusCell(ih, &lin, &col);
+  new_lin = lin;
+  new_col = col;
+
+  switch (code)
+  {
+    case K_UP:    new_lin = lin - 1; break;
+    case K_DOWN:  new_lin = lin + 1; break;
+    case K_LEFT:  new_col = col - 1; break;
+    case K_RIGHT: new_col = col + 1; break;
+    case K_HOME:  new_col = 1; break;
+    case K_END:   new_col = ih->data->num_col; break;
+    case K_PGUP:  new_lin = 1; break;
+    case K_PGDN:  new_lin = ih->data->num_lin; break;
+    case K_TAB:
+      if (col < ih->data->num_col)
+        new_col = col + 1;
+      else if (lin < ih->data->num_lin)
+      {
+        new_lin = lin + 1;
+        new_col = 1;
+      }
+      break;
+    case K_CR:
+    case K_F2:
+      if (wasmTableCellEditable(ih, col))
+        iupwasmTableEditBegin(id, lin, col);
+      return 1;
+    case K_cC:
+    case iup_XkeyCtrl(K_c):
+    {
+      char* value = iupdrvTableGetCellValue(ih, lin, col);
+      if (value && *value)
+        IupStoreGlobal("CLIPBOARD", value);
+      return 1;
+    }
+    case K_cV:
+    case iup_XkeyCtrl(K_v):
+    {
+      char* text = IupGetGlobal("CLIPBOARD");
+      if (text && *text && !iupAttribGetBoolean(ih, "VIRTUALMODE") && wasmTableCellEditable(ih, col))
+      {
+        iupdrvTableSetCellValue(ih, lin, col, text);
+        cb = (IFnii)IupGetCallback(ih, "VALUECHANGED_CB");
+        if (cb)
+          cb(ih, lin, col);
+      }
+      return 1;
+    }
+    default:
+      return 0;
+  }
+
+  if (new_lin < 1) new_lin = 1;
+  if (new_lin > ih->data->num_lin) new_lin = ih->data->num_lin;
+  if (new_col < 1) new_col = 1;
+  if (new_col > ih->data->num_col) new_col = ih->data->num_col;
+
+  if (new_lin == lin && new_col == col)
+    return 1;
+
+  iupdrvTableSetFocusCell(ih, new_lin, new_col);
+  iupdrvTableScrollToCell(ih, new_lin, new_col);
+
+  cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
+  if (cb)
+    cb(ih, new_lin, new_col);
+
+  return 1;
+}
+
 
 EMSCRIPTEN_KEEPALIVE void iupwasmTableReorder(int id, int oldCol, int newCol)
 {

@@ -297,12 +297,29 @@ EMSCRIPTEN_KEEPALIVE int iupwasmDispatchListEdit(int id, int c, const char* afte
   return IUP_DEFAULT;
 }
 
-EMSCRIPTEN_KEEPALIVE int iupwasmDispatchListAction(int id, int item, int state, const char* text)
+/* the browser moves a <select> before the model sees the key, so a vetoed key is undone here */
+static int wasmListKeyVetoed(Ihandle* ih, int id, int seq)
+{
+  if (!iupwasmKeyIgnored(seq))
+    return 0;
+
+  if (iupAttribGetBoolean(ih, "MULTIPLE"))
+    iupwasmJsListSetMulti(id, iupAttribGet(ih, "_IUPWASM_LISTSEL"));
+  else
+    iupwasmJsListSetSelIndex(id, iupAttribGetInt(ih, "_IUPWASM_LISTSEL") - 1);
+
+  return 1;
+}
+
+EMSCRIPTEN_KEEPALIVE int iupwasmDispatchListAction(int id, int item, int state, const char* text, int seq)
 {
   Ihandle* ih = iupwasmHandleFromId(id);
   IFnsii cb;
   if (!ih)
     return IUP_DEFAULT;
+  if (wasmListKeyVetoed(ih, id, seq))
+    return IUP_DEFAULT;
+  iupAttribSetInt(ih, "_IUPWASM_LISTSEL", item);
   cb = (IFnsii)IupGetCallback(ih, "ACTION");
   if (cb)
     return cb(ih, (char*)text, item, state);
@@ -339,7 +356,7 @@ EMSCRIPTEN_KEEPALIVE void iupwasmDispatchListCaret(int id, int pos)
 
 /* sel is the full "+/-" string (one char per item); rebuild the selected-position
    array and route through the core, which fires MULTISELECT_CB or falls back to ACTION. */
-EMSCRIPTEN_KEEPALIVE void iupwasmDispatchListMulti(int id, const char* sel)
+EMSCRIPTEN_KEEPALIVE void iupwasmDispatchListMulti(int id, const char* sel, int seq)
 {
   Ihandle* ih = iupwasmHandleFromId(id);
   IFns multi_cb;
@@ -347,6 +364,9 @@ EMSCRIPTEN_KEEPALIVE void iupwasmDispatchListMulti(int id, const char* sel)
   int i, len, sel_count, *pos;
   if (!ih || !sel)
     return;
+  if (wasmListKeyVetoed(ih, id, seq))
+    return;
+  iupAttribSetStr(ih, "_IUPWASM_LISTSEL", (char*)sel);
   multi_cb = (IFns)IupGetCallback(ih, "MULTISELECT_CB");
   cb = (IFnsii)IupGetCallback(ih, "ACTION");
   if (!multi_cb && !cb)

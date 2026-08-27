@@ -28,6 +28,7 @@ Ihandle* iupwasmHandleFromId(int id);
 void iupwasmFillStatus(char* status, int mods);
 int iupwasmKeyIgnored(int seq);
 int iupwasmTreeKeyNav(Ihandle* ih, int code);
+int iupwasmTableKeyNav(Ihandle* ih, int code);
 char* iupwasmGetScrollVisibleAttrib(Ihandle* ih);
 
 void iupwasmAddToParent(Ihandle* ih);
