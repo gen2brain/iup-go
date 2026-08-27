@@ -12,6 +12,7 @@
 
 #include "iup_object.h"
 #include "iup_attrib.h"
+#include "iup_str.h"
 #include "iup_timer.h"
 
 
@@ -91,7 +92,31 @@ IUP_SDK_API void iupdrvTimerStop(Ihandle* ih)
 	cocoaTouchTimerDestroy(ih);
 }
 
+static int cocoaTouchTimerSetRunAttrib(Ihandle* ih, const char* value)
+{
+	if (iupStrBoolean(value))
+		iupdrvTimerRun(ih);
+	else
+		iupdrvTimerStop(ih);
+
+	return 0;
+}
+
+/* the base getters read ih->serial, the controller lives in ih->handle */
+static char* cocoaTouchTimerGetRunAttrib(Ihandle* ih)
+{
+	return iupStrReturnBoolean(ih->handle != nil);
+}
+
+static char* cocoaTouchTimerGetWidAttrib(Ihandle* ih)
+{
+	return iupStrReturnInt((int)(intptr_t)ih->handle);
+}
+
 IUP_SDK_API void iupdrvTimerInitClass(Iclass* ic)
 {
 	ic->UnMap = cocoaTouchTimerDestroy;
+
+	iupClassRegisterAttribute(ic, "WID", cocoaTouchTimerGetWidAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT|IUPAF_NO_STRING);
+	iupClassRegisterAttribute(ic, "RUN", cocoaTouchTimerGetRunAttrib, cocoaTouchTimerSetRunAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
 }
