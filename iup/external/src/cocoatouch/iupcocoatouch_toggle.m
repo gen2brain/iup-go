@@ -64,6 +64,7 @@ static UIButtonConfiguration* cocoaTouchToggleMakeBaseConfig(void)
 	UIButtonConfiguration* cfg = [UIButtonConfiguration plainButtonConfiguration];
 	cfg.imagePlacement = NSDirectionalRectEdgeLeading;
 	cfg.imagePadding = 8;
+	cfg.contentInsets = NSDirectionalEdgeInsetsZero;
 	return cfg;
 }
 

@@ -83,6 +83,8 @@ func main() {
 	btnToggleSort := iup.Button("Disable Sorting").SetAttribute("PADDING", "5x0")
 	btnToggleReorder := iup.Button("Disable Reordering").SetAttribute("PADDING", "5x0")
 	btnToggleUserResize := iup.Button("Enable User Resize").SetAttribute("PADDING", "5x0")
+	btnToggleVeto := iup.Button("Veto Sorting").SetAttribute("PADDING", "5x0")
+	vetoSort := false
 
 	txtLog := iup.Text()
 	txtLog.SetAttributes("MULTILINE=YES, EXPAND=HORIZONTAL, READONLY=YES, VISIBLELINES=5")
@@ -98,6 +100,18 @@ func main() {
 	iup.SetHandle("btnToggleSort", btnToggleSort)
 	iup.SetHandle("btnToggleReorder", btnToggleReorder)
 	iup.SetHandle("btnToggleUserResize", btnToggleUserResize)
+	iup.SetHandle("btnToggleVeto", btnToggleVeto)
+
+	// SORT_CB returning IGNORE leaves the rows as they are
+	iup.SetCallback(btnToggleVeto, "ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
+		vetoSort = !vetoSort
+		if vetoSort {
+			ih.SetAttribute("TITLE", "Allow Sorting")
+		} else {
+			ih.SetAttribute("TITLE", "Veto Sorting")
+		}
+		return iup.DEFAULT
+	}))
 
 	// Toggle sorting
 	iup.SetCallback(btnToggleSort, "ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
@@ -168,6 +182,10 @@ func main() {
 	iup.SetCallback(table, "SORT_CB", iup.TableSortFunc(func(ih iup.Ihandle, col int) int {
 		log := iup.GetHandle("log")
 		columnTitle := ih.GetAttribute(fmt.Sprintf("TITLE%d", col))
+		if vetoSort {
+			log.SetAttribute("APPEND", fmt.Sprintf("SORT_CB: column %d (%s) vetoed\n", col, columnTitle))
+			return iup.IGNORE
+		}
 		log.SetAttribute("APPEND", fmt.Sprintf("Sorting by column %d (%s)\n", col, columnTitle))
 		return iup.DEFAULT
 	}))
@@ -188,6 +206,7 @@ func main() {
 				btnToggleSort,
 				btnToggleReorder,
 				btnToggleUserResize,
+				btnToggleVeto,
 			).SetAttributes("MARGIN=5x5, GAP=5"),
 			table,
 			iup.Label("Event Log:"),
