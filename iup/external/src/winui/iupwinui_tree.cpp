@@ -23,6 +23,8 @@ extern "C" {
 #include "iup_key.h"
 }
 
+#include <winrt/Microsoft.UI.Xaml.Automation.h>
+
 #include "iupwinui_drv.h"
 
 #include <winrt/Windows.ApplicationModel.DataTransfer.h>
@@ -587,6 +589,49 @@ static void winuiTreeBuildFlat(IVector<TreeViewNode> const& nodes, std::vector<T
   }
 }
 
+/* TreeViewItem takes its name from Content.ToString(), the node type here, and its container only
+   exists after a layout pass, so the names are applied from LayoutUpdated */
+static void winuiTreeSetNodeAutomationName(Ihandle* ih, TreeViewNode const& node, const char* title)
+{
+  TreeView treeView = winuiTreeGetTreeView(ih);
+  if (!treeView || !node)
+    return;
+
+  DependencyObject container = treeView.ContainerFromNode(node);
+  if (!container)
+    return;
+
+  TreeViewItem tvi = container.try_as<TreeViewItem>();
+  if (!tvi)
+    return;
+
+  Automation::AutomationProperties::SetName(tvi, iupwinuiStringToHString(title ? title : ""));
+}
+
+static void winuiTreeMarkAutomationNames(Ihandle* ih)
+{
+  IupWinUITreeAux* aux = winuiGetAux<IupWinUITreeAux>(ih, IUPWINUI_TREE_AUX);
+  if (aux)
+    aux->namesDirty = true;
+}
+
+static void winuiTreeUpdateAutomationNames(Ihandle* ih)
+{
+  for (int i = 0; i < ih->data->node_count; i++)
+  {
+    TreeViewNode node = winuiTreeGetNode(ih, i);
+    if (!node)
+      continue;
+
+    auto ps = node.Content().try_as<Windows::Foundation::Collections::PropertySet>();
+    if (!ps || !ps.HasKey(L"Title"))
+      continue;
+
+    char* title = iupwinuiHStringToString(unbox_value<hstring>(ps.Lookup(L"Title")));
+    winuiTreeSetNodeAutomationName(ih, node, title);
+  }
+}
+
 static void winuiTreeApplyFocusVisual(TreeView const& treeView, TreeViewNode const& node, bool on)
 {
   if (!node)
@@ -735,6 +780,7 @@ static int winuiTreeSetTitleAttrib(Ihandle* ih, int id, const char* value)
       }
       newPs.Insert(L"Title", box_value(iupwinuiStringToHString(value)));
       node.Content(newPs);
+      winuiTreeMarkAutomationNames(ih);
     }
   }
   return 0;
@@ -1890,6 +1936,15 @@ static int winuiTreeMapMethod(Ihandle* ih)
 
   aux->expandingToken = treeView.Expanding([ih](TreeView const&, TreeViewExpandingEventArgs const& args) {
     winuiTreeExpandingHandler(ih, args.Node());
+    winuiTreeMarkAutomationNames(ih);
+  });
+
+  aux->layoutUpdatedToken = treeView.LayoutUpdated([ih](IInspectable const&, IInspectable const&) {
+    IupWinUITreeAux* a = winuiGetAux<IupWinUITreeAux>(ih, IUPWINUI_TREE_AUX);
+    if (!a || !a->namesDirty)
+      return;
+    a->namesDirty = false;
+    winuiTreeUpdateAutomationNames(ih);
   });
 
   aux->collapsedToken = treeView.Collapsed([ih](TreeView const&, TreeViewCollapsedEventArgs const& args) {
@@ -2059,6 +2114,8 @@ static void winuiTreeUnMapMethod(Ihandle* ih)
       token = (event_token*)iupAttribGet(ih, "_IUPWINUI_DROP_TOKEN");
       if (token) { treeView.Drop(*token); delete token; iupAttribSet(ih, "_IUPWINUI_DROP_TOKEN", NULL); }
 
+      if (aux->layoutUpdatedToken)
+        treeView.LayoutUpdated(aux->layoutUpdatedToken);
       if (aux->expandingToken)
         treeView.Expanding(aux->expandingToken);
       if (aux->collapsedToken)
@@ -2174,6 +2231,8 @@ extern "C" IUP_SDK_API void iupdrvTreeAddNode(Ihandle* ih, int id, int kind, con
     iupTreeAddToCache(ih, add, kindPrev, (InodeHandle*)winrt::get_abi(prevNode), (InodeHandle*)nodePtr);
   else
     iupTreeAddToCache(ih, 0, 0, NULL, (InodeHandle*)nodePtr);
+
+  winuiTreeMarkAutomationNames(ih);
 }
 
 extern "C" IUP_SDK_API InodeHandle* iupdrvTreeGetFocusNode(Ihandle* ih)

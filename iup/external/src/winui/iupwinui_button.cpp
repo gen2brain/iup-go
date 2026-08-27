@@ -76,6 +76,8 @@ static int winuiButtonSetTitleAttrib(Ihandle* ih, const char* value)
       }
     }
   }
+
+  iupwinuiSetAutomationName(ih, value);
   return 1;
 }
 
@@ -143,6 +145,8 @@ static void winuiButtonSetImageTextContent(Ihandle* ih, Button btn, Border borde
   {
     border.Child(image);
   }
+
+  iupwinuiSetAutomationName(ih, title);
 }
 
 static void winuiButtonSetImage(Ihandle* ih, const char* name, int make_inactive)
