@@ -411,19 +411,31 @@ func setPlotDSPropertiesValidateFunc(ih Ihandle, f PlotDSPropertiesValidateFunc)
 //--------------------
 
 // PlotTickFormatNumberFunc for XTICKFORMATNUMBER_CB and YTICKFORMATNUMBER_CB callbacks in IupPlot.
-type PlotTickFormatNumberFunc func(ih Ihandle, format, outStr string, value float64, status string) int
+// Returns the tick text and DEFAULT to use it, CONTINUE for the internal formatter, or IGNORE.
+type PlotTickFormatNumberFunc func(ih Ihandle, format string, value float64, decimalSymbol string) (string, int)
+
+func plotTickFormatNumber(ih unsafe.Pointer, name string, buffer, format unsafe.Pointer, value C.double, decimalSymbol unsafe.Pointer) C.int {
+	ch := loadCallback((Ihandle)(ih), name)
+	if ch == 0 {
+		return C.int(CONTINUE)
+	}
+
+	f := ch.Value().(PlotTickFormatNumberFunc)
+	text, ret := f((Ihandle)(ih), C.GoString((*C.char)(format)), float64(value), C.GoString((*C.char)(decimalSymbol)))
+	if ret == IGNORE || ret == CONTINUE {
+		return C.int(ret)
+	}
+
+	buf := (*[128]byte)(buffer)
+	n := copy(buf[:127], text)
+	buf[n] = 0
+
+	return C.int(DEFAULT)
+}
 
 //export goIupPlotXTickFormatNumberCB
-func goIupPlotXTickFormatNumberCB(ih unsafe.Pointer, format, outStr unsafe.Pointer, value C.double, status unsafe.Pointer) C.int {
-	ch := loadCallback((Ihandle)(ih), "_IUPGO_XTICKFORMATNUMBER_CB")
-	if ch == 0 {
-		return C.int(DEFAULT)
-	}
-	f := ch.Value().(PlotTickFormatNumberFunc)
-	goFormat := C.GoString((*C.char)(format))
-	goOutStr := C.GoString((*C.char)(outStr))
-	goStatus := C.GoString((*C.char)(status))
-	return C.int(f((Ihandle)(ih), goFormat, goOutStr, float64(value), goStatus))
+func goIupPlotXTickFormatNumberCB(ih unsafe.Pointer, buffer, format unsafe.Pointer, value C.double, decimalSymbol unsafe.Pointer) C.int {
+	return plotTickFormatNumber(ih, "_IUPGO_XTICKFORMATNUMBER_CB", buffer, format, value, decimalSymbol)
 }
 
 func setPlotXTickFormatNumberFunc(ih Ihandle, f PlotTickFormatNumberFunc) {
@@ -432,16 +444,8 @@ func setPlotXTickFormatNumberFunc(ih Ihandle, f PlotTickFormatNumberFunc) {
 }
 
 //export goIupPlotYTickFormatNumberCB
-func goIupPlotYTickFormatNumberCB(ih unsafe.Pointer, format, outStr unsafe.Pointer, value C.double, status unsafe.Pointer) C.int {
-	ch := loadCallback((Ihandle)(ih), "_IUPGO_YTICKFORMATNUMBER_CB")
-	if ch == 0 {
-		return C.int(DEFAULT)
-	}
-	f := ch.Value().(PlotTickFormatNumberFunc)
-	goFormat := C.GoString((*C.char)(format))
-	goOutStr := C.GoString((*C.char)(outStr))
-	goStatus := C.GoString((*C.char)(status))
-	return C.int(f((Ihandle)(ih), goFormat, goOutStr, float64(value), goStatus))
+func goIupPlotYTickFormatNumberCB(ih unsafe.Pointer, buffer, format unsafe.Pointer, value C.double, decimalSymbol unsafe.Pointer) C.int {
+	return plotTickFormatNumber(ih, "_IUPGO_YTICKFORMATNUMBER_CB", buffer, format, value, decimalSymbol)
 }
 
 func setPlotYTickFormatNumberFunc(ih Ihandle, f PlotTickFormatNumberFunc) {

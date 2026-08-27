@@ -147,9 +147,10 @@ func init() {
 	js.Global().Set("iupGoDispatchRetD", js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		return dispatchRetD(Ihandle(args[0].Int()), args[1].String(), args[2].Int(), args[3].Int())
 	}))
-	js.Global().Set("iupGoDispatch2sds", js.FuncOf(func(this js.Value, args []js.Value) interface{} {
-		return dispatch2sds(Ihandle(args[0].Int()), args[1].String(), args[2].String(), args[3].String(),
-			args[4].Float(), args[5].String())
+	js.Global().Set("iupGoDispatchTick", js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		text, ret := dispatchTick(Ihandle(args[0].Int()), args[1].String(), args[2].String(),
+			args[3].Float(), args[4].String())
+		return map[string]interface{}{"text": text, "ret": ret}
 	}))
 	js.Global().Set("iupGoDispatchGesture", js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		return dispatchGesture(Ihandle(args[0].Int()), args[1].Int(), args[2].Int(), args[3].Int(), args[4].Int(), args[5].Float(), args[6].Float())
@@ -170,7 +171,7 @@ func init() {
 	}))
 }
 
-// dispatchRetD handles the one callback that returns a double.
+// dispatchRetD handles callbacks that return a double (matrix NUMERICGETVALUE_CB).
 func dispatchRetD(ih Ihandle, name string, i1, i2 int) float64 {
 	if f, ok := callbacks[cbKey{ih, name}].(NumericGetValueFunc); ok {
 		return f(ih, i1, i2)
@@ -178,12 +179,12 @@ func dispatchRetD(ih Ihandle, name string, i1, i2 int) float64 {
 	return 0
 }
 
-// dispatch2sds handles the plot tick formatters: two strings, a value and a status.
-func dispatch2sds(ih Ihandle, name, s1, s2 string, d1 float64, s3 string) int {
+// dispatchTick handles the plot tick formatters (XTICKFORMATNUMBER_CB/YTICKFORMATNUMBER_CB).
+func dispatchTick(ih Ihandle, name, format string, value float64, decimalSymbol string) (string, int) {
 	if f, ok := callbacks[cbKey{ih, name}].(PlotTickFormatNumberFunc); ok {
-		return f(ih, s1, s2, d1, s3)
+		return f(ih, format, value, decimalSymbol)
 	}
-	return DEFAULT
+	return "", CONTINUE
 }
 
 // dispatchStr handles callbacks that return a string (table VALUE_CB/IMAGE_CB).

@@ -101,7 +101,7 @@ type PlotPropertiesValidateFunc func(ih Ihandle, name, value string) int
 type PlotSelectBeginFunc func(ih Ihandle) int
 type PlotSelectEndFunc func(ih Ihandle) int
 type PlotSelectFunc func(ih Ihandle, dsIndex, sampleIndex int, x, y float64, selected int) int
-type PlotTickFormatNumberFunc func(ih Ihandle, format, outStr string, value float64, status string) int
+type PlotTickFormatNumberFunc func(ih Ihandle, format string, value float64, decimalSymbol string) (string, int)
 type PostMessageFunc func(Ihandle, string, int, any) int
 type ReleaseFunc func(ih Ihandle, lin, col int, status string) int
 type ResizeMatrixFunc func(ih Ihandle, width, height int) int
