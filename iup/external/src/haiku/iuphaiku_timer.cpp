@@ -5,6 +5,7 @@
  */
 
 #include <cstddef>
+#include <climits>
 
 #include <Application.h>
 #include <Looper.h>
@@ -99,6 +100,13 @@ private:
 };
 
 
+static int haikuTimerNextSerial(void)
+{
+  static int next_serial = 0;
+  if (next_serial == INT_MAX) next_serial = 0;
+  return ++next_serial;
+}
+
 extern "C" IUP_SDK_API void iupdrvTimerRun(Ihandle* ih)
 {
   IupHaikuTimer* t = (IupHaikuTimer*)iupAttribGet(ih, "_IUPHAIKU_TIMER");
@@ -110,12 +118,14 @@ extern "C" IUP_SDK_API void iupdrvTimerRun(Ihandle* ih)
   int time_ms = iupAttribGetInt(ih, "TIME");
   if (time_ms <= 0) time_ms = 100;
   t->Start((bigtime_t)time_ms * 1000);
+  ih->serial = haikuTimerNextSerial();
 }
 
 extern "C" IUP_SDK_API void iupdrvTimerStop(Ihandle* ih)
 {
   IupHaikuTimer* t = (IupHaikuTimer*)iupAttribGet(ih, "_IUPHAIKU_TIMER");
   if (t) t->Stop();
+  ih->serial = -1;
 }
 
 static void haikuTimerDestroy(Ihandle* ih)

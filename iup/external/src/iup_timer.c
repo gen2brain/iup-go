@@ -78,7 +78,7 @@ Iclass* iupTimerNewClass(void)
   iupClassRegisterCallback(ic, "ACTION_CB", "");
 
   /* Attribute functions */
-  iupClassRegisterAttribute(ic, "WID", iTimerGetWidAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT|IUPAF_NO_STRING);
+  iupClassRegisterAttribute(ic, "WID", iTimerGetWidAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "RUN", iTimerGetRunAttrib, iTimerSetRunAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TIME", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
 

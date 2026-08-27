@@ -6,6 +6,7 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include <limits.h>
 
 #include <jni.h>
 #include <android/log.h>
@@ -21,6 +22,13 @@
 
 
 IUPJNI_DECLARE_CLASS_STATIC(IupTimerHelper);
+
+static int androidTimerNextSerial(void)
+{
+  static int next_serial = 0;
+  if (next_serial == INT_MAX) next_serial = 0;
+  return ++next_serial;
+}
 
 IUP_SDK_API void iupdrvTimerRun(Ihandle* ih)
 {
@@ -50,6 +58,7 @@ IUP_SDK_API void iupdrvTimerRun(Ihandle* ih)
     method_id = IUPJNI_GetStaticMethodID(IupTimer_startTimer, jni_env, java_class, "startTimer", "(JLio/github/gen2brain/iupgo/IupTimerHelper$IupTimer;J)V");
     (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, (jlong)(intptr_t)ih, java_widget, (jlong)time_ms);
     iupAndroid_CheckException(jni_env, "IupTimerHelper.startTimer");
+    ih->serial = androidTimerNextSerial();
   }
 
   (*jni_env)->DeleteLocalRef(jni_env, java_widget);
@@ -67,6 +76,7 @@ IUP_SDK_API void iupdrvTimerStop(Ihandle* ih)
     jmethodID method_id = IUPJNI_GetStaticMethodID(IupTimer_stopTimer, jni_env, java_class, "stopTimer", "(JLio/github/gen2brain/iupgo/IupTimerHelper$IupTimer;)V");
     (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, (jlong)(intptr_t)ih, (jobject)ih->handle);
     iupAndroid_CheckException(jni_env, "IupTimerHelper.stopTimer");
+    ih->serial = -1;
 
     (*jni_env)->DeleteLocalRef(jni_env, java_class);
   }

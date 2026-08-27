@@ -5,6 +5,7 @@
  */
 
 #include <stdio.h>
+#include <limits.h>
 
 #ifdef GNUSTEP
 #include <time.h>
@@ -73,6 +74,13 @@ static inline double CACurrentMediaTime(void) {
 @end
 
 
+static int cocoaTimerNextSerial(void)
+{
+  static int next_serial = 0;
+  if (next_serial == INT_MAX) next_serial = 0;
+  return ++next_serial;
+}
+
 IUP_SDK_API void iupdrvTimerRun(Ihandle* ih)
 {
   if (ih->handle != nil)
@@ -109,6 +117,7 @@ IUP_SDK_API void iupdrvTimerRun(Ihandle* ih)
     [timer_controller setStartTime:start_time];
 
     ih->handle = timer_controller;
+    ih->serial = cocoaTimerNextSerial();
   }
 }
 
@@ -123,38 +132,13 @@ IUP_SDK_API void iupdrvTimerStop(Ihandle* ih)
     [timer_controller release];
 
     ih->handle = nil;
+    ih->serial = -1;
   }
-}
-
-static int cocoaSetRunAttrib(Ihandle *ih, const char *value)
-{
-  if (iupStrBoolean(value))
-    iupdrvTimerRun(ih);
-  else
-    iupdrvTimerStop(ih);
-
-  return 0;
-}
-
-/* The base implementation uses ih->serial, but we use ih->handle. */
-static char* cocoaTimerGetRunAttrib(Ihandle *ih)
-{
-  return iupStrReturnBoolean(ih->handle != nil);
-}
-
-static char* cocoaTimerGetWidAttrib(Ihandle *ih)
-{
-  /* WARNING: This truncates the controller pointer on 64-bit architectures.
-     It should only be used to check for a non-NULL value. */
-  return iupStrReturnInt((int)(intptr_t)ih->handle);
 }
 
 IUP_SDK_API void iupdrvTimerInitClass(Iclass* ic)
 {
   ic->UnMap = iupdrvTimerStop;
-
-  iupClassRegisterAttribute(ic, "WID", cocoaTimerGetWidAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT|IUPAF_NO_STRING);
-  iupClassRegisterAttribute(ic, "RUN", cocoaTimerGetRunAttrib, cocoaSetRunAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
 
   /*
    * TOLERANCE is a macOS-specific attribute to improve power consumption by allowing the system to fire the timer later than scheduled.
