@@ -999,7 +999,7 @@ static int itermKAny_CB(Ihandle* ih, int c)
   return IUP_CONTINUE;
 }
 
-/* a run minus a single character cancels the constant padding some drivers add to a measurement */
+/* a run minus a single character recovers the fractional advance that per-string rounding loses */
 static int itermMeasureAdvance(Ihandle* ih, char c, int* height)
 {
   char run_font[128];
