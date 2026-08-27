@@ -736,7 +736,7 @@ static int itermButton_CB(Ihandle* ih, int button, int pressed, int x, int y, ch
   itermXY2Cell(ih, x, y, &col, &vr);
   line_id = itermVisibleLineId(ih, vr);
 
-  if (button == IUP_BUTTON3 && pressed && !itermMouseReporting(ih))
+  if (button == IUP_BUTTON2 && pressed && !itermMouseReporting(ih))
   {
     char* text = itermGetClipboard();
     if (text)
