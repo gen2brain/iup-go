@@ -82,21 +82,49 @@ EM_JS(char*, iupwasmGoDispatchStr, (Ihandle* ih, const char* name, int i1, int i
   return ptr;
 })
 
-/* the only double-returning callback (matrix NUMERICGETVALUE_CB) */
+/* Double-returning dispatch (matrix NUMERICGETVALUE_CB). */
 EM_JS(double, iupwasmGoDispatchRetD, (Ihandle* ih, const char* name, int i1, int i2), {
   if (globalThis.iupGoDispatchRetD)
     return globalThis.iupGoDispatchRetD(ih, UTF8ToString(name), i1, i2);
   return 0;
 })
 
-/* two strings, a double and a status string: the plot tick formatters */
-EM_JS(int, iupwasmGoDispatch2sds, (Ihandle* ih, const char* name, const char* s1, const char* s2,
-                                   double d1, const char* s3), {
-  if (globalThis.iupGoDispatch2sds)
-    return globalThis.iupGoDispatch2sds(ih, UTF8ToString(name), s1 ? UTF8ToString(s1) : "",
-      s2 ? UTF8ToString(s2) : "", d1, s3 ? UTF8ToString(s3) : "") | 0;
-  return 0;
+/* Tick-formatter dispatch: the text returns through the recycled slot, the verdict through
+   iupwasmGoTickVerdict. */
+EM_JS(char*, iupwasmGoDispatchTick, (Ihandle* ih, const char* name, const char* format, double value,
+                                     const char* decimal), {
+  if (!globalThis.iupGoDispatchTick) return 0;
+  var r = globalThis.iupGoDispatchTick(ih, UTF8ToString(name), format ? UTF8ToString(format) : "",
+    value, decimal ? UTF8ToString(decimal) : "");
+  globalThis.__iupTickRet = r.ret | 0;
+  var s = r.text == null ? "" : r.text;
+  if (globalThis.__iupStrRet) _free(globalThis.__iupStrRet);
+  var len = lengthBytesUTF8(s) + 1;
+  var ptr = _malloc(len);
+  stringToUTF8(s, ptr, len);
+  globalThis.__iupStrRet = ptr;
+  return ptr;
 })
+
+EM_JS(int, iupwasmGoTickVerdict, (void), {
+  return globalThis.__iupTickRet | 0;
+})
+
+static int wasmTickFormat(Ihandle* ih, const char* name, char* buffer, char* format, double value, char* decimal)
+{
+  char* text = iupwasmGoDispatchTick(ih, name, format, value, decimal);
+  int ret;
+
+  if (!text)
+    return IUP_CONTINUE;
+
+  ret = iupwasmGoTickVerdict();
+  if (ret == IUP_IGNORE || ret == IUP_CONTINUE)
+    return ret;
+
+  snprintf(buffer, 128, "%s", text ? text : "");
+  return IUP_DEFAULT;
+}
 
 static char* wasmCbTableValue(Ihandle* ih, int lin, int col) { return iupwasmGoDispatchStr(ih, "VALUE_CB", lin, col); }
 static char* wasmCbTableImage(Ihandle* ih, int lin, int col) { return iupwasmGoDispatchStr(ih, "IMAGE_CB", lin, col); }
@@ -105,8 +133,8 @@ static char* wasmCbListValue(Ihandle* ih, int pos) { return iupwasmGoDispatchStr
 static char* wasmCbListImage(Ihandle* ih, int pos) { return iupwasmGoDispatchStr(ih, "IMAGE_CB", pos, 0); }
 static char* wasmCbCell(Ihandle* ih, int cell) { return iupwasmGoDispatchStr(ih, "CELL_CB", cell, 0); }
 static double wasmCbNumericGetValue(Ihandle* ih, int lin, int col) { return iupwasmGoDispatchRetD(ih, "NUMERICGETVALUE_CB", lin, col); }
-static int wasmCbXTickFormatNumber(Ihandle* ih, char* fmt, char* out, double value, char* status) { return iupwasmGoDispatch2sds(ih, "XTICKFORMATNUMBER_CB", fmt, out, value, status); }
-static int wasmCbYTickFormatNumber(Ihandle* ih, char* fmt, char* out, double value, char* status) { return iupwasmGoDispatch2sds(ih, "YTICKFORMATNUMBER_CB", fmt, out, value, status); }
+static int wasmCbXTickFormatNumber(Ihandle* ih, char* buffer, char* format, double value, char* decimal) { return wasmTickFormat(ih, "XTICKFORMATNUMBER_CB", buffer, format, value, decimal); }
+static int wasmCbYTickFormatNumber(Ihandle* ih, char* buffer, char* format, double value, char* decimal) { return wasmTickFormat(ih, "YTICKFORMATNUMBER_CB", buffer, format, value, decimal); }
 
 static int wasmCbScroll(Ihandle* ih, int op, float posx, float posy) { return iupwasmGoDispatchF(ih, "SCROLL_CB", op, posx, posy); }
 static int wasmCbTableClick(Ihandle* ih, int lin, int col, char* status) { return iupwasmGoDispatch(ih, "CLICK_CB", lin, col, 0, 0, status); }

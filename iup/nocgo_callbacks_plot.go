@@ -2,7 +2,11 @@
 
 package iup
 
-import "github.com/ebitengine/purego"
+import (
+	"unsafe"
+
+	"github.com/ebitengine/purego"
+)
 
 type PlotButtonFunc func(ih Ihandle, button, pressed int, x, y float64, status string) int
 
@@ -282,20 +286,32 @@ func setPlotPostDrawFunc(ih Ihandle, f PlotDrawFunc) {
 	iupSetCallback(uintptr(ih), "POSTDRAW_CB", plotPostDrawCB)
 }
 
-type PlotTickFormatNumberFunc func(ih Ihandle, format, outStr string, value float64, status string) int
+type PlotTickFormatNumberFunc func(ih Ihandle, format string, value float64, decimalSymbol string) (string, int)
 
-var plotXTickFormatCB = purego.NewCallback(func(ih, format, outStr uintptr, value float64, status uintptr) int {
-	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_XTICKFORMATNUMBER_CB").(PlotTickFormatNumberFunc); ok {
-		return f(Ihandle(ih), goString(format), goString(outStr), value, goString(status))
+func plotTickFormatNumber(ih uintptr, name string, buffer, format uintptr, value float64, decimalSymbol uintptr) int {
+	f, ok := loadCallback(Ihandle(ih), name).(PlotTickFormatNumberFunc)
+	if !ok {
+		return CONTINUE
 	}
-	return 0
+
+	text, ret := f(Ihandle(ih), goString(format), value, goString(decimalSymbol))
+	if ret == IGNORE || ret == CONTINUE {
+		return ret
+	}
+
+	buf := unsafe.Slice((*byte)(goPtr(buffer)), 128)
+	n := copy(buf[:127], text)
+	buf[n] = 0
+
+	return DEFAULT
+}
+
+var plotXTickFormatCB = purego.NewCallback(func(ih, buffer, format uintptr, value float64, decimalSymbol uintptr) int {
+	return plotTickFormatNumber(ih, "_IUPGO_XTICKFORMATNUMBER_CB", buffer, format, value, decimalSymbol)
 })
 
-var plotYTickFormatCB = purego.NewCallback(func(ih, format, outStr uintptr, value float64, status uintptr) int {
-	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_YTICKFORMATNUMBER_CB").(PlotTickFormatNumberFunc); ok {
-		return f(Ihandle(ih), goString(format), goString(outStr), value, goString(status))
-	}
-	return 0
+var plotYTickFormatCB = purego.NewCallback(func(ih, buffer, format uintptr, value float64, decimalSymbol uintptr) int {
+	return plotTickFormatNumber(ih, "_IUPGO_YTICKFORMATNUMBER_CB", buffer, format, value, decimalSymbol)
 })
 
 func setPlotXTickFormatNumberFunc(ih Ihandle, f PlotTickFormatNumberFunc) {
