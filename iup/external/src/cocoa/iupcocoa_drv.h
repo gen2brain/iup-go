@@ -133,6 +133,9 @@ static inline NSRect iupcocoaClampRect(NSRect r)
 IUP_DRV_API IupCocoaFont* iupcocoaGetFont(Ihandle* ih);
 IUP_DRV_API IupCocoaFont* iupcocoaFindFont(const char *iup_font_name);
 
+/* Horizontal room an NSTextFieldCell needs beyond the text advance. */
+IUP_DRV_API int iupcocoaTextFieldCellInset(void);
+
 IUP_DRV_API NSMutableAttributedString* iupcocoaBuildMarkupAttributedString(Ihandle* ih, const char* value);
 
 /* Image conversion helpers. */

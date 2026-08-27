@@ -346,7 +346,7 @@ static void cocoaFontGetTextSize(IupCocoaFont *iup_font, const char *str, int le
       {
         NSString *line_str = [[NSString alloc] initWithBytes:curstr length:l_len encoding:NSUTF8StringEncoding];
         NSSize line_size = [line_str sizeWithAttributes:[iup_font attributeDictionary]];
-        int line_w = (int)ceil(line_size.width) + 4;
+        int line_w = (int)ceil(line_size.width);
         max_w = iupMAX(max_w, line_w);
         [line_str release];
       }
@@ -370,7 +370,7 @@ IUP_SDK_API void iupdrvFontGetMultiLineStringSize(Ihandle *ih, const char *str, 
       if (attrStr)
       {
         NSSize size = [attrStr size];
-        if (w) *w = (int)ceil(size.width) + 4;
+        if (w) *w = (int)ceil(size.width);
         if (h) *h = (int)ceil(size.height);
         [attrStr release];
         return;
@@ -379,6 +379,32 @@ IUP_SDK_API void iupdrvFontGetMultiLineStringSize(Ihandle *ih, const char *str, 
 
     cocoaFontGetTextSize(iup_font, str, str ? (int)strlen(str) : 0, w, h);
   }
+}
+
+IUP_DRV_API int iupcocoaTextFieldCellInset(void)
+{
+  static int inset = -1;
+
+  if (inset < 0)
+  {
+    NSFont *ns_font = [NSFont systemFontOfSize:0];
+    NSTextField *temp_field = [[NSTextField alloc] initWithFrame:NSZeroRect];
+
+    [temp_field setBezeled:NO];
+    [temp_field setDrawsBackground:NO];
+    [temp_field setEditable:NO];
+    [temp_field setSelectable:NO];
+    [temp_field setFont:ns_font];
+    [temp_field setStringValue:@"WWWWWWWWWW"];
+
+    inset = (int)lround([temp_field fittingSize].width)
+          - (int)ceil([@"WWWWWWWWWW" sizeWithAttributes:@{NSFontAttributeName: ns_font}].width);
+    if (inset < 0) inset = 0;
+
+    [temp_field release];
+  }
+
+  return inset;
 }
 
 IUP_SDK_API void iupdrvFontGetTextSize(const char *font_name, const char *str, int len, int *w, int *h)

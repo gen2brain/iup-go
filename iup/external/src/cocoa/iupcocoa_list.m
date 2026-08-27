@@ -363,7 +363,7 @@ static void cocoaListUpdateColumnWidth(Ihandle* ih)
     if (ih->data->spacing > 0)
       padding = (CGFloat)(ih->data->spacing * 2);
 
-    CGFloat required_width = (CGFloat)max_text_width + padding;
+    CGFloat required_width = (CGFloat)max_text_width + (CGFloat)iupcocoaTextFieldCellInset() + padding;
 
     if (ih->data->show_image && ih->data->maximg_w > 0)
       required_width += ih->data->maximg_w + 4;
