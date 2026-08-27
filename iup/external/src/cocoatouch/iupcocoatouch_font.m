@@ -323,7 +323,7 @@ static void cocoaTouchFontGetTextSize(IupCocoaTouchFont* font, const char* str, 
 		{
 			NSString* line = [[NSString alloc] initWithBytes:cursor length:line_len encoding:NSUTF8StringEncoding];
 			CGSize size = [line sizeWithAttributes:[font attributeDictionary]];
-			int line_w = (int)ceil(size.width) + 4;
+			int line_w = (int)ceil(size.width);
 			if (line_w > max_w) max_w = line_w;
 			[line release];
 		}
