@@ -7,12 +7,12 @@
 #import <UIKit/UIKit.h>
 
 #include <stdio.h>
+#include <limits.h>
 
 #include "iup.h"
 
 #include "iup_object.h"
 #include "iup_attrib.h"
-#include "iup_str.h"
 #include "iup_timer.h"
 
 
@@ -46,6 +46,13 @@
 }
 @end
 
+static int cocoaTouchTimerNextSerial(void)
+{
+	static int next_serial = 0;
+	if (next_serial == INT_MAX) next_serial = 0;
+	return ++next_serial;
+}
+
 IUP_SDK_API void iupdrvTimerRun(Ihandle* ih)
 {
 	if (ih->handle != nil)
@@ -73,6 +80,7 @@ IUP_SDK_API void iupdrvTimerRun(Ihandle* ih)
 	[[NSRunLoop currentRunLoop] addTimer:timer forMode:NSRunLoopCommonModes];
 
 	ih->handle = (void*)controller;
+	ih->serial = cocoaTouchTimerNextSerial();
 }
 
 static void cocoaTouchTimerDestroy(Ihandle* ih)
@@ -85,6 +93,7 @@ static void cocoaTouchTimerDestroy(Ihandle* ih)
 	[[controller theTimer] invalidate];
 	[controller release];
 	ih->handle = nil;
+	ih->serial = -1;
 }
 
 IUP_SDK_API void iupdrvTimerStop(Ihandle* ih)
@@ -92,31 +101,7 @@ IUP_SDK_API void iupdrvTimerStop(Ihandle* ih)
 	cocoaTouchTimerDestroy(ih);
 }
 
-static int cocoaTouchTimerSetRunAttrib(Ihandle* ih, const char* value)
-{
-	if (iupStrBoolean(value))
-		iupdrvTimerRun(ih);
-	else
-		iupdrvTimerStop(ih);
-
-	return 0;
-}
-
-/* the base getters read ih->serial, the controller lives in ih->handle */
-static char* cocoaTouchTimerGetRunAttrib(Ihandle* ih)
-{
-	return iupStrReturnBoolean(ih->handle != nil);
-}
-
-static char* cocoaTouchTimerGetWidAttrib(Ihandle* ih)
-{
-	return iupStrReturnInt((int)(intptr_t)ih->handle);
-}
-
 IUP_SDK_API void iupdrvTimerInitClass(Iclass* ic)
 {
 	ic->UnMap = cocoaTouchTimerDestroy;
-
-	iupClassRegisterAttribute(ic, "WID", cocoaTouchTimerGetWidAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT|IUPAF_NO_STRING);
-	iupClassRegisterAttribute(ic, "RUN", cocoaTouchTimerGetRunAttrib, cocoaTouchTimerSetRunAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
 }
