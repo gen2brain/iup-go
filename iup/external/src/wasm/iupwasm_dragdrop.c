@@ -17,6 +17,7 @@
 #include "iup_str.h"
 #include "iup_class.h"
 #include "iup_classbase.h"
+#include "iup_key.h"
 
 #include "iupwasm_drv.h"
 
@@ -52,13 +53,18 @@ EMSCRIPTEN_KEEPALIVE void iupwasmDndDragEnd(int id, int action)
   if (cb) cb(ih, action);
 }
 
-EMSCRIPTEN_KEEPALIVE void iupwasmDndDropMotion(int id, int x, int y)
+EMSCRIPTEN_KEEPALIVE void iupwasmDndDropMotion(int id, int x, int y, int mods)
 {
   Ihandle* ih = iupwasmHandleFromId(id);
   IFniis cb;
+  char status[IUPKEY_STATUS_SIZE];
   if (!ih) return;
   cb = (IFniis)IupGetCallback(ih, "DROPMOTION_CB");
-  if (cb) cb(ih, x, y, (char*)"");
+  if (cb)
+  {
+    iupwasmFillStatus(status, mods);
+    cb(ih, x, y, status);
+  }
 }
 
 EMSCRIPTEN_KEEPALIVE void iupwasmDndDrop(int id, const char* data, int size, int x, int y)

@@ -66,10 +66,34 @@ void iupwasmFontToCss(const char* iupfont, char* css, int csslen)
   int px;
   const char* fallback = "sans-serif";
 
-  if (!iupfont || !iupGetFontInfo(iupfont, typeface, &size, &bold, &italic, &underline, &strikeout))
+  /* a style-only value ("Bold", "Italic 14") has no face, and the CSS font shorthand needs one,
+     so it is re-parsed against the system face and the system size fills a missing size */
+  if (!iupfont || !iupGetFontInfo(iupfont, typeface, &size, &bold, &italic, &underline, &strikeout) ||
+      !typeface[0] || size == 0)
   {
-    snprintf(css, csslen, "12px sans-serif");
-    return;
+    char sys_face[1024] = "";
+    int sys_size = 0, b, i, u, k;
+    int has_sys = iupGetFontInfo(iupdrvGetSystemFont(), sys_face, &sys_size, &b, &i, &u, &k);
+
+    if (iupfont && iupfont[0] && has_sys && !typeface[0])
+    {
+      char alt[1100];
+      snprintf(alt, sizeof(alt), "%s, %s", sys_face, iupfont);
+      if (!iupGetFontInfo(alt, typeface, &size, &bold, &italic, &underline, &strikeout))
+        typeface[0] = 0;
+    }
+
+    if (!typeface[0])
+    {
+      if (!has_sys)
+      {
+        snprintf(css, csslen, "12px sans-serif");
+        return;
+      }
+      strcpy(typeface, sys_face);
+    }
+    if (size == 0)
+      size = sys_size;
   }
 
   /* IUP size: negative is pixels, positive is points. */

@@ -6,6 +6,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 
 #include <emscripten.h>
 
@@ -29,14 +30,24 @@ IUP_SDK_API void* iupdrvGetDisplay(void)
 
 IUP_SDK_API int iupdrvSetGlobalAppIDAttrib(const char* value)
 {
-  (void)value;
-  return 0;
+  static int appid_set = 0;
+  if (appid_set || !value || !value[0])
+    return 0;
+
+  IupStoreGlobal("_IUP_APPID_INTERNAL", value);
+  appid_set = 1;
+  return 1;
 }
 
 IUP_SDK_API int iupdrvSetGlobalAppNameAttrib(const char* value)
 {
-  (void)value;
-  return 0;
+  static int appname_set = 0;
+  if (appname_set || !value || !value[0])
+    return 0;
+
+  IupStoreGlobal("_IUP_APPNAME_INTERNAL", value);
+  appname_set = 1;
+  return 1;
 }
 
 EM_JS(int, iupwasmJsIsDarkMode, (void), {
@@ -57,6 +68,7 @@ static void wasmUpdateGlobalColors(int dark)
     iupGlobalSetDefaultColorAttrib("MENUFGCOLOR", 230, 230, 230);
     iupGlobalSetDefaultColorAttrib("LINKFGCOLOR", 90, 160, 255);
     iupGlobalSetDefaultColorAttrib("ACCENTCOLOR", 0, 120, 215);
+    iupGlobalSetDefaultColorAttrib("TXTHLCOLOR", 0, 120, 215);
   }
   else
   {
@@ -68,6 +80,7 @@ static void wasmUpdateGlobalColors(int dark)
     iupGlobalSetDefaultColorAttrib("MENUFGCOLOR", 0, 0, 0);
     iupGlobalSetDefaultColorAttrib("LINKFGCOLOR", 0, 0, 238);
     iupGlobalSetDefaultColorAttrib("ACCENTCOLOR", 0, 120, 215);
+    iupGlobalSetDefaultColorAttrib("TXTHLCOLOR", 0, 120, 215);
   }
 }
 
@@ -102,6 +115,32 @@ void iupwasmInstallTheme(void)
     lk[0], lk[1], lk[2], mb[0], mb[1], mb[2], mf[0], mf[1], mf[2], ac[0], ac[1], ac[2]);
 }
 
+/* iup_globalattrib.c short-circuits iupdrvSetGlobal for the registered default colors, so the CSS
+   variables are refreshed from whoever asks for a color next */
+void iupwasmRefreshTheme(void)
+{
+  static const char* names[8] = { "DLGBGCOLOR", "DLGFGCOLOR", "TXTBGCOLOR", "TXTFGCOLOR",
+                                  "LINKFGCOLOR", "MENUBGCOLOR", "MENUFGCOLOR", "ACCENTCOLOR" };
+  static unsigned char last[8][3];
+  static int has_last = 0;
+  unsigned char cur[8][3];
+  int i, changed = 0;
+
+  for (i = 0; i < 8; i++)
+  {
+    wasmRGB(names[i], cur[i]);
+    if (!has_last || cur[i][0] != last[i][0] || cur[i][1] != last[i][1] || cur[i][2] != last[i][2])
+      changed = 1;
+  }
+
+  if (!changed)
+    return;
+
+  memcpy(last, cur, sizeof(last));
+  has_last = 1;
+  iupwasmInstallTheme();
+}
+
 EMSCRIPTEN_KEEPALIVE void iupwasmThemeChanged(void)
 {
   int dark = iupwasmJsIsDarkMode();
@@ -116,12 +155,29 @@ EMSCRIPTEN_KEEPALIVE void iupwasmThemeChanged(void)
   }
 }
 
+EM_JS(int, iupwasmJsLanguage, (void), {
+  var s = (typeof navigator !== 'undefined' && navigator.language) ? navigator.language : "";
+  var len = lengthBytesUTF8(s) + 1;
+  var ptr = _malloc(len);
+  stringToUTF8(s, ptr, len);
+  return ptr;
+})
+
 IUP_SDK_API int iupdrvOpen(int *argc, char ***argv)
 {
+  char* lang;
   (void)argc;
   (void)argv;
 
   IupSetGlobal("DRIVER", "WASM");
+
+  lang = (char*)(intptr_t)iupwasmJsLanguage();
+  if (lang)
+  {
+    if (lang[0])
+      IupStoreGlobal("SYSTEMLANGUAGE", lang);
+    free(lang);
+  }
 
   iupwasmJsInstallProxy();
   iupwasmJsInstallKeyHandler();

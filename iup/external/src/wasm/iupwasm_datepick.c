@@ -65,7 +65,7 @@ static int wasmDatePickSetValueAttrib(Ihandle* ih, const char* value)
   int y, m, d;
 
   if (!id)
-    return 0;
+    return 1;
 
   if (!value || iupStrEqualNoCase(value, "TODAY"))
     wasmDatePickToday(&y, &m, &d);
@@ -161,7 +161,7 @@ Iclass* iupDatePickNewClass(void)
   iupBaseRegisterVisualAttrib(ic);
 
   iupClassRegisterAttribute(ic, "VALUE", wasmDatePickGetValueAttrib, wasmDatePickSetValueAttrib, NULL, "TODAY", IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TODAY", wasmDatePickGetTodayAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TODAY", wasmDatePickGetTodayAttrib, NULL, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_READONLY | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SHOWDROPDOWN", NULL, wasmDatePickSetShowDropdownAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTBGCOLOR", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "FGCOLOR", NULL, iupdrvBaseSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTFGCOLOR", IUPAF_DEFAULT);

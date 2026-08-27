@@ -21,6 +21,7 @@
 #include "iup_drvfont.h"
 #include "iup_image.h"
 #include "iup_table.h"
+#include "iup_key.h"
 
 #include "iupwasm_drv.h"
 
@@ -46,6 +47,14 @@ EM_JS(void, iupwasmJsTableFeatures, (int id, int reorder, int resize, int dragdr
 
 EM_JS(void, iupwasmJsTableMoveRow, (int id, int from, int to), {
   globalThis.__iupApply({ op: 'tablemoverow', id: id, from: from, to: to });
+})
+
+EM_JS(void, iupwasmJsTableReorderCols, (int id, int from, int to), {
+  globalThis.__iupApply({ op: 'tablereordercols', id: id, from: from, to: to });
+})
+
+EM_JS(void, iupwasmJsTableEditOpen, (int id, int lin, int col, const char* text), {
+  globalThis.__iupApply({ op: 'tableeditopen', id: id, lin: lin, col: col, text: UTF8ToString(text) });
 })
 
 EM_JS(void, iupwasmJsTableColTitle, (int id, int col, const char* title), {
@@ -332,18 +341,18 @@ IUP_SDK_API void iupdrvTableSetCellImage(Ihandle* ih, int lin, int col, const ch
     iupwasmJsTableSetCellImage(id, lin, col, (int)(intptr_t)handle);
 }
 
+/* core's TITLE setter returns 0, so attribute replay drops TITLE<col> from the hash: keep our own */
 IUP_SDK_API void iupdrvTableSetColTitle(Ihandle* ih, int col, const char* title)
 {
   int id = iupwasmIdOf(ih);
+  iupAttribSetStrId(ih, "_IUPWASM_COLTITLE", col, title);
   if (id)
     iupwasmJsTableColTitle(id, col, title ? title : "");
 }
 
 IUP_SDK_API char* iupdrvTableGetColTitle(Ihandle* ih, int col)
 {
-  char name[32];
-  snprintf(name, sizeof(name), "TITLE%d", col);
-  return iupAttribGet(ih, name);
+  return iupAttribGetId(ih, "_IUPWASM_COLTITLE", col);
 }
 
 IUP_SDK_API void iupdrvTableSetColWidth(Ihandle* ih, int col, int width)
@@ -440,7 +449,7 @@ static void wasmTableLayoutUpdate(Ihandle* ih)
     iupwasmJsSetPos(id, ih->x, ih->y, ih->currentwidth, h);
 }
 
-EMSCRIPTEN_KEEPALIVE void iupwasmTableCellClick(int id, int lin, int col)
+EMSCRIPTEN_KEEPALIVE void iupwasmTableCellClick(int id, int lin, int col, int mods)
 {
   Ihandle* ih = iupwasmHandleFromId(id);
   IFniis click_cb;
@@ -455,75 +464,92 @@ EMSCRIPTEN_KEEPALIVE void iupwasmTableCellClick(int id, int lin, int col)
     enter_cb(ih, lin, col);
 
   click_cb = (IFniis)IupGetCallback(ih, "CLICK_CB");
-  if (click_cb && click_cb(ih, lin, col, (char*)"") == IUP_CLOSE)
-    IupExitLoop();
+  if (click_cb)
+  {
+    char status[IUPKEY_STATUS_SIZE];
+    iupwasmFillStatus(status, mods);
+    if (click_cb(ih, lin, col, status) == IUP_CLOSE)
+      IupExitLoop();
+  }
 }
 
-EMSCRIPTEN_KEEPALIVE int iupwasmTableEditBegin(int id, int lin, int col)
+EMSCRIPTEN_KEEPALIVE void iupwasmTableEditBegin(int id, int lin, int col)
 {
   Ihandle* ih = iupwasmHandleFromId(id);
   IFnii cb;
+  char* text;
+
   if (!ih)
-    return 0;
+    return;
   if (!iupAttribGetIntId(ih, "EDITABLE", col) && !iupAttribGetBoolean(ih, "EDITABLE"))
-    return 0;
+    return;
   cb = (IFnii)IupGetCallback(ih, "EDITBEGIN_CB");
   if (cb && cb(ih, lin, col) == IUP_IGNORE)
-    return 0;
-  return 1;
+    return;
+
+  text = iupdrvTableGetCellValue(ih, lin, col);
+  iupwasmJsTableEditOpen(id, lin, col, text ? text : "");
 }
 
-EMSCRIPTEN_KEEPALIVE int iupwasmTableEditEnd(int id, int lin, int col, const char* text, int apply)
+EMSCRIPTEN_KEEPALIVE void iupwasmTableEditEnd(int id, int lin, int col, const char* text, int apply)
 {
   Ihandle* ih = iupwasmHandleFromId(id);
   IFniisi editend_cb;
   IFniis edit_cb;
   IFnii vc_cb;
   if (!ih)
-    return 0;
+    return;
 
   editend_cb = (IFniisi)IupGetCallback(ih, "EDITEND_CB");
   if (editend_cb && editend_cb(ih, lin, col, (char*)text, apply) == IUP_IGNORE)
-    return 0;
+  {
+    iupwasmJsTableRender(id, lin, col);
+    return;
+  }
 
   if (!apply)
-    return 0;
+  {
+    iupwasmJsTableRender(id, lin, col);
+    return;
+  }
 
   edit_cb = (IFniis)IupGetCallback(ih, "EDITION_CB");
   if (edit_cb && edit_cb(ih, lin, col, (char*)text) == IUP_IGNORE)
-    return 0;
+  {
+    iupwasmJsTableRender(id, lin, col);
+    return;
+  }
 
   iupdrvTableSetCellValue(ih, lin, col, text);
 
   vc_cb = (IFnii)IupGetCallback(ih, "VALUECHANGED_CB");
   if (vc_cb)
     vc_cb(ih, lin, col);
-  return 1;
 }
 
-EMSCRIPTEN_KEEPALIVE int iupwasmTableReorder(int id, int oldCol, int newCol)
+EMSCRIPTEN_KEEPALIVE void iupwasmTableReorder(int id, int oldCol, int newCol)
 {
   Ihandle* ih = iupwasmHandleFromId(id);
   IFnii cb;
   if (!ih || !ih->data->allow_reorder)
-    return 0;
+    return;
   cb = (IFnii)IupGetCallback(ih, "REORDER_CB");
-  if (cb && cb(ih, oldCol, newCol) == IUP_IGNORE)
-    return 0;
-  return 1;
+  if (cb)
+    cb(ih, oldCol, newCol);
+  iupwasmJsTableReorderCols(id, oldCol, newCol);
 }
 
-EMSCRIPTEN_KEEPALIVE int iupwasmTableRowDragDrop(int id, int from, int before)
+EMSCRIPTEN_KEEPALIVE void iupwasmTableRowDragDrop(int id, int from, int before)
 {
   Ihandle* ih = iupwasmHandleFromId(id);
   int is_ctrl = 0;
   int to;
 
   if (!ih || !ih->data->show_dragdrop)
-    return 0;
+    return;
 
   if (iupTableCallDragDropCb(ih, from - 1, before - 1, &is_ctrl) != IUP_CONTINUE)
-    return 0;
+    return;
 
   to = (before > from) ? before - 1 : before;
   if (to > ih->data->num_lin) to = ih->data->num_lin;
@@ -533,7 +559,6 @@ EMSCRIPTEN_KEEPALIVE int iupwasmTableRowDragDrop(int id, int from, int before)
   iupwasmJsTableMoveRow(id, from, to);
   wasmTableApplyCellColors(ih);
   wasmTableUpdateFocus(ih, to, ih->data->num_col > 0 ? 1 : 0);
-  return 1;
 }
 
 static int wasmTableMapMethod(Ihandle* ih)

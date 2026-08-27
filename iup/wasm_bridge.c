@@ -149,6 +149,151 @@ static int wasmCbEnterWindow(Ihandle* ih) { return iupwasmGoDispatch(ih, "ENTERW
 static int wasmCbLeaveWindow(Ihandle* ih) { return iupwasmGoDispatch(ih, "LEAVEWINDOW_CB", 0, 0, 0, 0, 0); }
 static int wasmCbHelp(Ihandle* ih) { return iupwasmGoDispatch(ih, "HELP_CB", 0, 0, 0, 0, 0); }
 
+EM_JS(int, iupwasmGoDispatch6s, (Ihandle* ih, const char* name, int i1, int i2, int i3, int i4, int i5, int i6, const char* sarg), {
+  if (globalThis.iupGoDispatch6s)
+    return globalThis.iupGoDispatch6s(ih, UTF8ToString(name), i1, i2, i3, i4, i5, i6, sarg ? UTF8ToString(sarg) : "") | 0;
+  return 0;
+})
+
+static int wasmCbFlatAction(Ihandle* ih) { return iupwasmGoDispatch(ih, "FLAT_ACTION", 0, 0, 0, 0, 0); }
+static int wasmCbFlatToggleAction(Ihandle* ih, int state) { return iupwasmGoDispatch(ih, "FLAT_ACTION", state, 0, 0, 0, 0); }
+static int wasmCbFlatListAction(Ihandle* ih, char* t, int item, int state) { return iupwasmGoDispatch(ih, "FLAT_ACTION", item, state, 0, 0, t); }
+static int wasmCbSelect(Ihandle* ih, int cell, int type) { return iupwasmGoDispatch(ih, "SELECT_CB", cell, type, 0, 0, 0); }
+static int wasmCbSwitch(Ihandle* ih, int prim, int sec) { return iupwasmGoDispatch(ih, "SWITCH_CB", prim, sec, 0, 0, 0); }
+static int wasmCbExtended(Ihandle* ih, int cell) { return iupwasmGoDispatch(ih, "EXTENDED_CB", cell, 0, 0, 0, 0); }
+static int wasmCbToggleValue(Ihandle* ih, int id, int state) { return iupwasmGoDispatch(ih, "TOGGLEVALUE_CB", id, state, 0, 0, 0); }
+static int wasmCbMatrixToggleValue(Ihandle* ih, int lin, int col, int value) { return iupwasmGoDispatch(ih, "TOGGLEVALUE_CB", lin, col, value, 0, 0); }
+static int wasmCbOpenClose(Ihandle* ih, int state) { return iupwasmGoDispatch(ih, "OPENCLOSE_CB", state, 0, 0, 0, 0); }
+static int wasmCbDetached(Ihandle* ih, Ihandle* newParent, int x, int y) { return iupwasmGoDispatch(ih, "DETACHED_CB", (int)(intptr_t)newParent, x, y, 0, 0); }
+static int wasmCbRestored(Ihandle* ih, Ihandle* oldParent, int x, int y) { return iupwasmGoDispatch(ih, "RESTORED_CB", (int)(intptr_t)oldParent, x, y, 0, 0); }
+static int wasmCbEditBegin(Ihandle* ih, int lin, int col) { return iupwasmGoDispatch(ih, "EDITBEGIN_CB", lin, col, 0, 0, 0); }
+static int wasmCbEditEnd(Ihandle* ih, int lin, int col, char* value, int apply) { return iupwasmGoDispatch(ih, "EDITEND_CB", lin, col, apply, 0, value); }
+static int wasmCbMove(Ihandle* ih, int x, int y) { return iupwasmGoDispatch(ih, "MOVE_CB", x, y, 0, 0, 0); }
+static int wasmCbFocus(Ihandle* ih, int focus) { return iupwasmGoDispatch(ih, "FOCUS_CB", focus, 0, 0, 0, 0); }
+static int wasmCbTrayClick(Ihandle* ih, int but, int pressed, int dclick) { return iupwasmGoDispatch(ih, "TRAYCLICK_CB", but, pressed, dclick, 0, 0); }
+static int wasmCbThread(Ihandle* ih) { return iupwasmGoDispatch(ih, "THREAD_CB", 0, 0, 0, 0, 0); }
+static int wasmCbKeyPress(Ihandle* ih, int c, int press) { return iupwasmGoDispatch(ih, "KEYPRESS_CB", c, press, 0, 0, 0); }
+static int wasmCbTextLink(Ihandle* ih, char* url) { return iupwasmGoDispatch(ih, "LINK_CB", 0, 0, 0, 0, url); }
+static int wasmCbCancel(Ihandle* ih) { return iupwasmGoDispatch(ih, "CANCEL_CB", 0, 0, 0, 0, 0); }
+static int wasmCbLayoutUpdate(Ihandle* ih) { return iupwasmGoDispatch(ih, "LAYOUTUPDATE_CB", 0, 0, 0, 0, 0); }
+static int wasmCbValueChanging(Ihandle* ih, int start) { return iupwasmGoDispatch(ih, "VALUECHANGING_CB", start, 0, 0, 0, 0); }
+static int wasmCbMatrixMouseMove(Ihandle* ih, int lin, int col) { return iupwasmGoDispatch(ih, "MOUSEMOVE_CB", lin, col, 0, 0, 0); }
+static int wasmCbLeaveItem(Ihandle* ih, int lin, int col) { return iupwasmGoDispatch(ih, "LEAVEITEM_CB", lin, col, 0, 0, 0); }
+static int wasmCbDropCheck(Ihandle* ih, int lin, int col) { return iupwasmGoDispatch(ih, "DROPCHECK_CB", lin, col, 0, 0, 0); }
+static int wasmCbMatrixRelease(Ihandle* ih, int lin, int col, char* status) { return iupwasmGoDispatch(ih, "RELEASE_CB", lin, col, 0, 0, status); }
+static int wasmCbMark(Ihandle* ih, int lin, int col) { return iupwasmGoDispatch(ih, "MARK_CB", lin, col, 0, 0, 0); }
+static int wasmCbMarkEdit(Ihandle* ih, int lin, int col, int marked) { return iupwasmGoDispatch(ih, "MARKEDIT_CB", lin, col, marked, 0, 0); }
+static int wasmCbMouseMotion(Ihandle* ih, int i, int j, int x, int y, char* status) { return iupwasmGoDispatch(ih, "MOUSEMOTION_CB", i, j, x, y, status); }
+static int wasmCbMouseClick(Ihandle* ih, int b, int pressed, int i, int j, int x, int y, char* status) { return iupwasmGoDispatch6s(ih, "MOUSECLICK_CB", b, pressed, i, j, x, y, status); }
+static int wasmCbDragDataSize(Ihandle* ih, char* type) { return iupwasmGoDispatch(ih, "DRAGDATASIZE_CB", 0, 0, 0, 0, type); }
+/* Go fills a buffer of its own and the dispatcher copies it into data, which lives in the module heap */
+static int wasmCbDragData(Ihandle* ih, char* type, void* data, int size) { return iupwasmGoDispatch(ih, "DRAGDATA_CB", (int)(intptr_t)data, size, 0, 0, type); }
+static int wasmCbDestroy(Ihandle* ih) { return iupwasmGoDispatch(ih, "DESTROY_CB", 0, 0, 0, 0, 0); }
+static int wasmCbMaskFail(Ihandle* ih, char* value) { return iupwasmGoDispatch(ih, "MASKFAIL_CB", 0, 0, 0, 0, value); }
+static int wasmCbSwapBuffers(Ihandle* ih) { return iupwasmGoDispatch(ih, "SWAPBUFFERS_CB", 0, 0, 0, 0, 0); }
+static int wasmCbParam(Ihandle* ih, int index, void* userdata) { (void)userdata; return iupwasmGoDispatch(ih, "PARAM_CB", index, 0, 0, 0, 0); }
+
+/* IupMatrix and IupMatrixEx */
+static int wasmCbBusy(Ihandle* ih, int lin, int col, char* status) { return iupwasmGoDispatch(ih, "BUSY_CB", lin, col, 0, 0, status); }
+static int wasmCbColorUpdate(Ihandle* ih) { return iupwasmGoDispatch(ih, "COLORUPDATE_CB", 0, 0, 0, 0, 0); }
+static int wasmCbColResize(Ihandle* ih, int col) { return iupwasmGoDispatch(ih, "COLRESIZE_CB", col, 0, 0, 0, 0); }
+static int wasmCbMatrixDrop(Ihandle* ih, Ihandle* drop, int lin, int col) { return iupwasmGoDispatch(ih, "DROP_CB", (int)(intptr_t)drop, lin, col, 0, 0); }
+static int wasmCbDropSelect(Ihandle* ih, int lin, int col, Ihandle* drop, char* t, int item, int col2) { return iupwasmGoDispatch6s(ih, "DROPSELECT_CB", lin, col, (int)(intptr_t)drop, item, col2, 0, t); }
+static int wasmCbDropShow(Ihandle* ih, int state) { return iupwasmGoDispatch(ih, "DROPSHOW_CB", state, 0, 0, 0, 0); }
+static int wasmCbEditClick(Ihandle* ih, int lin, int col, char* status) { return iupwasmGoDispatch(ih, "EDITCLICK_CB", lin, col, 0, 0, status); }
+static int wasmCbEditMouseMove(Ihandle* ih, int lin, int col) { return iupwasmGoDispatch(ih, "EDITMOUSEMOVE_CB", lin, col, 0, 0, 0); }
+static int wasmCbEditRelease(Ihandle* ih, int lin, int col, char* status) { return iupwasmGoDispatch(ih, "EDITRELEASE_CB", lin, col, 0, 0, status); }
+static int wasmCbHSpan(Ihandle* ih, int lin, int col) { return iupwasmGoDispatch(ih, "HSPAN_CB", lin, col, 0, 0, 0); }
+static int wasmCbVSpan(Ihandle* ih, int lin, int col) { return iupwasmGoDispatch(ih, "VSPAN_CB", lin, col, 0, 0, 0); }
+static int wasmCbMenuContext(Ihandle* ih, Ihandle* menu, int lin, int col) { return iupwasmGoDispatch(ih, "MENUCONTEXT_CB", (int)(intptr_t)menu, lin, col, 0, 0); }
+static int wasmCbMenuContextClose(Ihandle* ih, Ihandle* menu, int lin, int col) { return iupwasmGoDispatch(ih, "MENUCONTEXTCLOSE_CB", (int)(intptr_t)menu, lin, col, 0, 0); }
+static int wasmCbMenuDrop(Ihandle* ih, Ihandle* menu, int lin, int col) { return iupwasmGoDispatch(ih, "MENUDROP_CB", (int)(intptr_t)menu, lin, col, 0, 0); }
+static int wasmCbPasteSize(Ihandle* ih, int numlin, int numcol) { return iupwasmGoDispatch(ih, "PASTESIZE_CB", numlin, numcol, 0, 0, 0); }
+static int wasmCbResizeMatrix(Ihandle* ih, int w, int h) { return iupwasmGoDispatch(ih, "RESIZEMATRIX_CB", w, h, 0, 0, 0); }
+static int wasmCbScrolling(Ihandle* ih, int lin, int col) { return iupwasmGoDispatch(ih, "SCROLLING_CB", lin, col, 0, 0, 0); }
+static int wasmCbScrollTop(Ihandle* ih, int lin, int col) { return iupwasmGoDispatch(ih, "SCROLLTOP_CB", lin, col, 0, 0, 0); }
+static int wasmCbSortColumnCompare(Ihandle* ih, int lin1, int lin2, int col) { return iupwasmGoDispatch(ih, "SORTCOLUMNCOMPARE_CB", lin1, lin2, col, 0, 0); }
+static int wasmCbTips(Ihandle* ih, int x, int y) { return iupwasmGoDispatch(ih, "TIPS_CB", x, y, 0, 0, 0); }
+static int wasmCbValueEdit(Ihandle* ih, int lin, int col, char* newval) { return iupwasmGoDispatch(ih, "VALUE_EDIT_CB", lin, col, 0, 0, newval); }
+static char* wasmCbMatrixFont(Ihandle* ih, int lin, int col) { return iupwasmGoDispatchStr(ih, "FONT_CB", lin, col); }
+static char* wasmCbMatrixType(Ihandle* ih, int lin, int col) { return iupwasmGoDispatchStr(ih, "TYPE_CB", lin, col); }
+static int wasmCbExtraButton(Ihandle* ih, int button, int pressed) { return iupwasmGoDispatch(ih, "EXTRABUTTON_CB", button, pressed, 0, 0, 0); }
+
+/* IupMatrixList */
+static int wasmCbImageValueChanged(Ihandle* ih, int item, int state) { return iupwasmGoDispatch(ih, "IMAGEVALUECHANGED_CB", item, state, 0, 0, 0); }
+static int wasmCbListClick(Ihandle* ih, int lin, int col, char* status) { return iupwasmGoDispatch(ih, "LISTCLICK_CB", lin, col, 0, 0, status); }
+static int wasmCbListDraw(Ihandle* ih, int lin, int col, int x1, int x2, int y1, int y2) { return iupwasmGoDispatch6(ih, "LISTDRAW_CB", lin, col, x1, x2, y1, y2); }
+static int wasmCbListEdition(Ihandle* ih, int lin, int col, int mode, int update) { return iupwasmGoDispatch(ih, "LISTEDITION_CB", lin, col, mode, update, 0); }
+static int wasmCbListInsert(Ihandle* ih, int pos) { return iupwasmGoDispatch(ih, "LISTINSERT_CB", pos, 0, 0, 0, 0); }
+static int wasmCbListRelease(Ihandle* ih, int lin, int col, char* status) { return iupwasmGoDispatch(ih, "LISTRELEASE_CB", lin, col, 0, 0, status); }
+static int wasmCbListRemove(Ihandle* ih, int pos) { return iupwasmGoDispatch(ih, "LISTREMOVE_CB", pos, 0, 0, 0, 0); }
+
+/* IupPlot: the cd canvas argument is not exposed to Go */
+static int wasmCbPlotDraw(Ihandle* ih, void* cnv) { (void)cnv; return iupwasmGoDispatch(ih, "PREDRAW_CB", 0, 0, 0, 0, 0); }
+static int wasmCbPlotPostDraw(Ihandle* ih, void* cnv) { (void)cnv; return iupwasmGoDispatch(ih, "POSTDRAW_CB", 0, 0, 0, 0, 0); }
+static int wasmCbPlotSelectBegin(Ihandle* ih) { return iupwasmGoDispatch(ih, "SELECTBEGIN_CB", 0, 0, 0, 0, 0); }
+static int wasmCbPlotSelectEnd(Ihandle* ih) { return iupwasmGoDispatch(ih, "SELECTEND_CB", 0, 0, 0, 0, 0); }
+static int wasmCbPlotDeleteBegin(Ihandle* ih) { return iupwasmGoDispatch(ih, "DELETEBEGIN_CB", 0, 0, 0, 0, 0); }
+static int wasmCbPlotDeleteEnd(Ihandle* ih) { return iupwasmGoDispatch(ih, "DELETEEND_CB", 0, 0, 0, 0, 0); }
+static int wasmCbPlotPropsChanged(Ihandle* ih) { return iupwasmGoDispatch(ih, "PROPERTIESCHANGED_CB", 0, 0, 0, 0, 0); }
+static int wasmCbPlotDSPropsChanged(Ihandle* ih, int ds) { return iupwasmGoDispatch(ih, "DSPROPERTIESCHANGED_CB", ds, 0, 0, 0, 0); }
+
+EM_JS(int, iupwasmGoDispatch2s, (Ihandle* ih, const char* name, const char* s1, const char* s2), {
+  if (globalThis.iupGoDispatch2s)
+    return globalThis.iupGoDispatch2s(ih, UTF8ToString(name), s1 ? UTF8ToString(s1) : "", s2 ? UTF8ToString(s2) : "") | 0;
+  return 0;
+})
+
+/* widest shape: everything IupPlot's sample callbacks need */
+EM_JS(int, iupwasmGoDispatchD, (Ihandle* ih, const char* name, int i1, int i2, int i3, int i4,
+                                double d1, double d2, double d3, double d4, const char* sarg), {
+  if (globalThis.iupGoDispatchD)
+    return globalThis.iupGoDispatchD(ih, UTF8ToString(name), i1, i2, i3, i4, d1, d2, d3, d4,
+                                     sarg ? UTF8ToString(sarg) : "") | 0;
+  return 0;
+})
+
+EM_JS(char*, iupwasmGoDispatchStrS, (Ihandle* ih, const char* name, int i1, int i2, const char* sarg), {
+  if (!globalThis.iupGoDispatchStrS) return 0;
+  var s = globalThis.iupGoDispatchStrS(ih, UTF8ToString(name), i1, i2, sarg ? UTF8ToString(sarg) : "");
+  if (s == null) s = "";
+  if (globalThis.__iupStrRet2) _free(globalThis.__iupStrRet2);
+  var len = lengthBytesUTF8(s) + 1;
+  var ptr = _malloc(len);
+  stringToUTF8(s, ptr, len);
+  globalThis.__iupStrRet2 = ptr;
+  return ptr;
+})
+
+static int wasmCbFile(Ihandle* ih, char* filename, char* status) { return iupwasmGoDispatch2s(ih, "FILE_CB", filename, status); }
+static int wasmCbPlotPropsValidate(Ihandle* ih, char* name, char* value) { return iupwasmGoDispatch2s(ih, "PROPERTIESVALIDATE_CB", name, value); }
+static int wasmCbPostMessage(Ihandle* ih, char* s, int i, double d, void* p) { (void)d; (void)p; return iupwasmGoDispatch(ih, "POSTMESSAGE_CB", i, 0, 0, 0, s); }
+
+static int wasmCbPlotButton(Ihandle* ih, int button, int pressed, double x, double y, char* status) { return iupwasmGoDispatchD(ih, "PLOTBUTTON_CB", button, pressed, 0, 0, x, y, 0, 0, status); }
+static int wasmCbPlotMotion(Ihandle* ih, double x, double y, char* status) { return iupwasmGoDispatchD(ih, "PLOTMOTION_CB", 0, 0, 0, 0, x, y, 0, 0, status); }
+static int wasmCbPlotClickSample(Ihandle* ih, int ds, int sample, double x, double y, int button) { return iupwasmGoDispatchD(ih, "CLICKSAMPLE_CB", ds, sample, button, 0, x, y, 0, 0, 0); }
+static int wasmCbPlotClickSegment(Ihandle* ih, int ds, int s1, double x1, double y1, int s2, double x2, double y2, int button) { return iupwasmGoDispatchD(ih, "CLICKSEGMENT_CB", ds, s1, s2, button, x1, y1, x2, y2, 0); }
+static int wasmCbPlotDelete(Ihandle* ih, int ds, int sample, double x, double y) { return iupwasmGoDispatchD(ih, "DELETE_CB", ds, sample, 0, 0, x, y, 0, 0, 0); }
+static int wasmCbPlotDrawSample(Ihandle* ih, int ds, int sample, double x, double y, int state) { return iupwasmGoDispatchD(ih, "DRAWSAMPLE_CB", ds, sample, state, 0, x, y, 0, 0, 0); }
+static int wasmCbPlotEditSample(Ihandle* ih, int ds, int sample, double x, double y) { return iupwasmGoDispatchD(ih, "EDITSAMPLE_CB", ds, sample, 0, 0, x, y, 0, 0, 0); }
+
+static char* wasmCbTranslateValue(Ihandle* ih, int lin, int col, char* value) { return iupwasmGoDispatchStrS(ih, "TRANSLATEVALUE_CB", lin, col, value); }
+static int wasmCbNumericSetValue(Ihandle* ih, int lin, int col, double value) { return iupwasmGoDispatchD(ih, "NUMERICSETVALUE_CB", lin, col, 0, 0, value, 0, 0, 0, 0); }
+static int wasmCbPlotDSPropsValidate(Ihandle* ih, Ihandle* p1, Ihandle* p2, int ds) { return iupwasmGoDispatch(ih, "DSPROPERTIESVALIDATE_CB", (int)(intptr_t)p1, (int)(intptr_t)p2, ds, 0, 0); }
+
+/* Go returns the color as "r g b", empty when the cell has none */
+static int wasmCbMatrixColor(Ihandle* ih, const char* name, int lin, int col, int* r, int* g, int* b)
+{
+  char* s = iupwasmGoDispatchStr(ih, name, lin, col);
+  int rr = 0, gg = 0, bb = 0;
+  if (!s || !s[0] || sscanf(s, "%d %d %d", &rr, &gg, &bb) != 3)
+    return IUP_IGNORE;
+  *r = rr; *g = gg; *b = bb;
+  return IUP_DEFAULT;
+}
+static int wasmCbBgColor(Ihandle* ih, int lin, int col, int* r, int* g, int* b) { return wasmCbMatrixColor(ih, "BGCOLOR_CB", lin, col, r, g, b); }
+static int wasmCbFgColor(Ihandle* ih, int lin, int col, int* r, int* g, int* b) { return wasmCbMatrixColor(ih, "FGCOLOR_CB", lin, col, r, g, b); }
+
 EM_JS(int, iupwasmGoDispatchGesture, (Ihandle* ih, int gesture, int state, int x, int y, double v1, double v2), {
   if (globalThis.iupGoDispatchGesture)
     return globalThis.iupGoDispatchGesture(ih, gesture, state, x, y, v1, v2) | 0;
@@ -358,6 +503,194 @@ EMSCRIPTEN_KEEPALIVE void iupwasmGoSetCallback(Ihandle* ih, const char* name)
   }
   else if (strcmp(name, "SORT_CB") == 0)
     IupSetCallback(ih, name, (Icallback)wasmCbTableSort);
+  else if (strcmp(name, "FLAT_ACTION") == 0)
+  {
+    const char* cls = IupGetClassName(ih);
+    if (cls && strcmp(cls, "flattoggle") == 0)
+      IupSetCallback(ih, name, (Icallback)wasmCbFlatToggleAction);
+    else if (cls && strcmp(cls, "flatlist") == 0)
+      IupSetCallback(ih, name, (Icallback)wasmCbFlatListAction);
+    else
+      IupSetCallback(ih, name, (Icallback)wasmCbFlatAction);
+  }
+  else if (strcmp(name, "TOGGLEVALUE_CB") == 0)
+  {
+    const char* cls = IupGetClassName(ih);
+    if (cls && strcmp(cls, "tree") == 0)
+      IupSetCallback(ih, name, (Icallback)wasmCbToggleValue);
+    else
+      IupSetCallback(ih, name, (Icallback)wasmCbMatrixToggleValue);
+  }
+  else if (strcmp(name, "SELECT_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbSelect);
+  else if (strcmp(name, "SWITCH_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbSwitch);
+  else if (strcmp(name, "EXTENDED_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbExtended);
+  else if (strcmp(name, "OPENCLOSE_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbOpenClose);
+  else if (strcmp(name, "DETACHED_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbDetached);
+  else if (strcmp(name, "RESTORED_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbRestored);
+  else if (strcmp(name, "EDITBEGIN_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbEditBegin);
+  else if (strcmp(name, "EDITEND_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbEditEnd);
+  else if (strcmp(name, "MOVE_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbMove);
+  else if (strcmp(name, "FOCUS_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbFocus);
+  else if (strcmp(name, "TRAYCLICK_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbTrayClick);
+  else if (strcmp(name, "THREAD_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbThread);
+  else if (strcmp(name, "KEYPRESS_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbKeyPress);
+  else if (strcmp(name, "LINK_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbTextLink);
+  else if (strcmp(name, "CANCEL_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbCancel);
+  else if (strcmp(name, "LAYOUTUPDATE_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbLayoutUpdate);
+  else if (strcmp(name, "VALUECHANGING_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbValueChanging);
+  else if (strcmp(name, "MOUSEMOVE_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbMatrixMouseMove);
+  else if (strcmp(name, "LEAVEITEM_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbLeaveItem);
+  else if (strcmp(name, "DROPCHECK_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbDropCheck);
+  else if (strcmp(name, "RELEASE_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbMatrixRelease);
+  else if (strcmp(name, "MARK_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbMark);
+  else if (strcmp(name, "MARKEDIT_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbMarkEdit);
+  else if (strcmp(name, "MOUSEMOTION_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbMouseMotion);
+  else if (strcmp(name, "MOUSECLICK_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbMouseClick);
+  else if (strcmp(name, "DRAGDATASIZE_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbDragDataSize);
+  else if (strcmp(name, "DRAGDATA_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbDragData);
+  else if (strcmp(name, "DESTROY_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbDestroy);
+  else if (strcmp(name, "MASKFAIL_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbMaskFail);
+  else if (strcmp(name, "SWAPBUFFERS_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbSwapBuffers);
+  else if (strcmp(name, "PARAM_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbParam);
+  else if (strcmp(name, "BUSY_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbBusy);
+  else if (strcmp(name, "COLORUPDATE_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbColorUpdate);
+  else if (strcmp(name, "COLRESIZE_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbColResize);
+  else if (strcmp(name, "DROP_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbMatrixDrop);
+  else if (strcmp(name, "DROPSELECT_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbDropSelect);
+  else if (strcmp(name, "DROPSHOW_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbDropShow);
+  else if (strcmp(name, "EDITCLICK_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbEditClick);
+  else if (strcmp(name, "EDITMOUSEMOVE_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbEditMouseMove);
+  else if (strcmp(name, "EDITRELEASE_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbEditRelease);
+  else if (strcmp(name, "HSPAN_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbHSpan);
+  else if (strcmp(name, "VSPAN_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbVSpan);
+  else if (strcmp(name, "MENUCONTEXT_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbMenuContext);
+  else if (strcmp(name, "MENUCONTEXTCLOSE_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbMenuContextClose);
+  else if (strcmp(name, "MENUDROP_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbMenuDrop);
+  else if (strcmp(name, "PASTESIZE_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbPasteSize);
+  else if (strcmp(name, "RESIZEMATRIX_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbResizeMatrix);
+  else if (strcmp(name, "SCROLLING_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbScrolling);
+  else if (strcmp(name, "SCROLLTOP_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbScrollTop);
+  else if (strcmp(name, "SORTCOLUMNCOMPARE_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbSortColumnCompare);
+  else if (strcmp(name, "TIPS_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbTips);
+  else if (strcmp(name, "VALUE_EDIT_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbValueEdit);
+  else if (strcmp(name, "FONT_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbMatrixFont);
+  else if (strcmp(name, "TYPE_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbMatrixType);
+  else if (strcmp(name, "EXTRABUTTON_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbExtraButton);
+  else if (strcmp(name, "IMAGEVALUECHANGED_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbImageValueChanged);
+  else if (strcmp(name, "LISTCLICK_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbListClick);
+  else if (strcmp(name, "LISTDRAW_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbListDraw);
+  else if (strcmp(name, "LISTEDITION_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbListEdition);
+  else if (strcmp(name, "LISTINSERT_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbListInsert);
+  else if (strcmp(name, "LISTRELEASE_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbListRelease);
+  else if (strcmp(name, "LISTREMOVE_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbListRemove);
+  else if (strcmp(name, "PREDRAW_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbPlotDraw);
+  else if (strcmp(name, "POSTDRAW_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbPlotPostDraw);
+  else if (strcmp(name, "SELECTBEGIN_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbPlotSelectBegin);
+  else if (strcmp(name, "SELECTEND_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbPlotSelectEnd);
+  else if (strcmp(name, "DELETEBEGIN_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbPlotDeleteBegin);
+  else if (strcmp(name, "DELETEEND_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbPlotDeleteEnd);
+  else if (strcmp(name, "PROPERTIESCHANGED_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbPlotPropsChanged);
+  else if (strcmp(name, "DSPROPERTIESCHANGED_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbPlotDSPropsChanged);
+  else if (strcmp(name, "FILE_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbFile);
+  else if (strcmp(name, "PROPERTIESVALIDATE_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbPlotPropsValidate);
+  else if (strcmp(name, "POSTMESSAGE_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbPostMessage);
+  else if (strcmp(name, "PLOTBUTTON_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbPlotButton);
+  else if (strcmp(name, "PLOTMOTION_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbPlotMotion);
+  else if (strcmp(name, "CLICKSAMPLE_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbPlotClickSample);
+  else if (strcmp(name, "CLICKSEGMENT_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbPlotClickSegment);
+  else if (strcmp(name, "DELETE_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbPlotDelete);
+  else if (strcmp(name, "DRAWSAMPLE_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbPlotDrawSample);
+  else if (strcmp(name, "EDITSAMPLE_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbPlotEditSample);
+  else if (strcmp(name, "TRANSLATEVALUE_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbTranslateValue);
+  else if (strcmp(name, "BGCOLOR_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbBgColor);
+  else if (strcmp(name, "FGCOLOR_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbFgColor);
+  else if (strcmp(name, "NUMERICSETVALUE_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbNumericSetValue);
+  else if (strcmp(name, "DSPROPERTIESVALIDATE_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbPlotDSPropsValidate);
 }
 
 static int wasmCbGetParam(Ihandle* dialog, int param_index, void* user_data)

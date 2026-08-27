@@ -17,6 +17,7 @@ extern "C" {
 int iupwasmIdOf(Ihandle* ih);
 void iupwasmDialogModalShow(Ihandle* ih, int on);
 void iupwasmInstallTheme(void);
+void iupwasmRefreshTheme(void);
 int iupwasmJsIsDarkMode(void);
 const char* iupwasmThemeColorVar(unsigned char r, unsigned char g, unsigned char b, int is_bg);
 
@@ -25,6 +26,8 @@ void iupwasmUnregisterHandle(int id);
 void iupwasmSetVisibleState(int id, int visible);
 Ihandle* iupwasmHandleFromId(int id);
 void iupwasmFillStatus(char* status, int mods);
+int iupwasmKeyIgnored(int seq);
+int iupwasmTreeKeyNav(Ihandle* ih, int code);
 char* iupwasmGetScrollVisibleAttrib(Ihandle* ih);
 
 void iupwasmAddToParent(Ihandle* ih);

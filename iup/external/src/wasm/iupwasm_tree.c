@@ -21,6 +21,8 @@
 #include "iup_image.h"
 #include "iup_tree.h"
 
+#include "iup_key.h"
+
 #include "iupwasm_drv.h"
 
 
@@ -252,19 +254,24 @@ EMSCRIPTEN_KEEPALIVE void iupwasmTreeEvent(int treeId, int rowId, int type)
   }
 }
 
-EMSCRIPTEN_KEEPALIVE int iupwasmTreeRenameEnd(int treeId, int rowId, const char* text)
+EMSCRIPTEN_KEEPALIVE void iupwasmTreeRenameEnd(int treeId, int rowId, const char* text)
 {
   Ihandle* ih = iupwasmHandleFromId(treeId);
   int id, ret = IUP_DEFAULT;
+  char* old_title;
   IFnis cb;
-  (void)treeId;
+
   if (!ih)
-    return 1;
+    return;
+
+  old_title = iupAttribGetId(ih, "_IUPWASM_RENAMEOLD", rowId);
   id = iupTreeFindNodeId(ih, (InodeHandle*)(intptr_t)rowId);
   cb = (IFnis)IupGetCallback(ih, "RENAME_CB");
   if (cb)
     ret = cb(ih, id, (char*)text);
-  return (ret == IUP_IGNORE) ? 0 : 1;
+
+  iupwasmJsTreeSetTitle(rowId, (ret == IUP_IGNORE && old_title) ? old_title : (text ? text : ""));
+  iupAttribSetStrId(ih, "_IUPWASM_RENAMEOLD", rowId, NULL);
 }
 
 IUP_SDK_API void iupdrvTreeAddNode(Ihandle* ih, int id, int kind, const char* title, int add)
@@ -479,6 +486,49 @@ static char* wasmTreeGetValueAttrib(Ihandle* ih)
   return iupStrReturnInt(id < 0 ? 0 : id);
 }
 
+/* a node is reachable only when every branch above it is expanded */
+static int wasmTreeVisibleId(Ihandle* ih, int id)
+{
+  int rowId = (int)(intptr_t)iupTreeGetNode(ih, id);
+  if (!rowId)
+    return 0;
+  for (;;)
+  {
+    int parent = iupwasmJsTreeNav(rowId, 0);
+    if (!parent)
+      return 1;
+    if (!iupwasmJsTreeGetState(parent))
+      return 0;
+    rowId = parent;
+  }
+}
+
+static int wasmTreeStepFocus(Ihandle* ih, int from, int step, int count)
+{
+  int n = ih->data->node_count, id = from, cand = from, moved = 0;
+  while (moved < count)
+  {
+    cand += step;
+    if (cand < 0 || cand >= n)
+      break;
+    if (wasmTreeVisibleId(ih, cand))
+    {
+      id = cand;
+      moved++;
+    }
+  }
+  return id;
+}
+
+static int wasmTreeLastVisibleId(Ihandle* ih)
+{
+  int id;
+  for (id = ih->data->node_count - 1; id > 0; id--)
+    if (wasmTreeVisibleId(ih, id))
+      break;
+  return id;
+}
+
 static int wasmTreeSetValueAttrib(Ihandle* ih, const char* value)
 {
   int treeId = iupwasmIdOf(ih);
@@ -490,6 +540,26 @@ static int wasmTreeSetValueAttrib(Ihandle* ih, const char* value)
 
   if (iupStrEqualNoCase(value, "ROOT") || iupStrEqualNoCase(value, "FIRST"))
     id = 0;
+  else if (iupStrEqualNoCase(value, "LAST"))
+    id = wasmTreeLastVisibleId(ih);
+  else if (iupStrEqualNoCase(value, "NEXT") || iupStrEqualNoCase(value, "PREVIOUS") ||
+           iupStrEqualNoCase(value, "PGDN") || iupStrEqualNoCase(value, "PGUP"))
+  {
+    InodeHandle* focus = iupdrvTreeGetFocusNode(ih);
+    int cur = focus ? iupTreeFindNodeId(ih, focus) : 0;
+    int step = (iupStrEqualNoCase(value, "NEXT") || iupStrEqualNoCase(value, "PGDN")) ? 1 : -1;
+    int count = (iupStrEqualNoCase(value, "PGDN") || iupStrEqualNoCase(value, "PGUP")) ? 10 : 1;
+    if (cur < 0)
+      cur = 0;
+    id = wasmTreeStepFocus(ih, cur, step, count);
+  }
+  else if (iupStrEqualNoCase(value, "CLEAR"))
+  {
+    InodeHandle* focus = iupdrvTreeGetFocusNode(ih);
+    if (focus)
+      iupwasmJsTreeMark(treeId, (int)(intptr_t)focus, 0);
+    return 0;
+  }
   else if (!iupStrToInt(value, &id))
     return 0;
 
@@ -583,27 +653,27 @@ static int wasmTreeSetDelNodeAttrib(Ihandle* ih, int id, const char* value)
   return 0;
 }
 
-static int wasmTreeSetRenameAttrib(Ihandle* ih, const char* value)
+static void wasmTreeStartRename(Ihandle* ih, int treeId, InodeHandle* node)
 {
-  int treeId = iupwasmIdOf(ih);
-  InodeHandle* focus;
   IFni show_cb;
   int id;
-  (void)value;
 
-  if (!treeId)
-    return 0;
+  if (!treeId || !node || !ih->data->show_rename)
+    return;
 
-  focus = iupdrvTreeGetFocusNode(ih);
-  if (!focus)
-    return 0;
-  id = iupTreeFindNodeId(ih, focus);
-
+  id = iupTreeFindNodeId(ih, node);
   show_cb = (IFni)IupGetCallback(ih, "SHOWRENAME_CB");
   if (show_cb && show_cb(ih, id) == IUP_IGNORE)
-    return 0;
+    return;
 
-  iupwasmJsTreeStartRename(treeId, (int)(intptr_t)focus);
+  iupAttribSetStrId(ih, "_IUPWASM_RENAMEOLD", (int)(intptr_t)node, wasmTreeGetTitleAttrib(ih, id));
+  iupwasmJsTreeStartRename(treeId, (int)(intptr_t)node);
+}
+
+static int wasmTreeSetRenameAttrib(Ihandle* ih, const char* value)
+{
+  (void)value;
+  wasmTreeStartRename(ih, iupwasmIdOf(ih), iupdrvTreeGetFocusNode(ih));
   return 0;
 }
 
@@ -817,6 +887,14 @@ EMSCRIPTEN_KEEPALIVE void iupwasmTreeSelect(int treeId, int rowId, int ctrl, int
   id = iupTreeFindNodeId(ih, (InodeHandle*)(intptr_t)rowId);
   if (id < 0)
     return;
+
+  if (!ctrl && !shift && ih->data->show_rename &&
+      iupdrvTreeGetFocusNode(ih) == (InodeHandle*)(intptr_t)rowId)
+  {
+    wasmTreeStartRename(ih, treeId, (InodeHandle*)(intptr_t)rowId);
+    return;
+  }
+
   cb = (IFnii)IupGetCallback(ih, "SELECTION_CB");
 
   if (ih->data->mark_mode == ITREE_MARK_MULTIPLE)
@@ -853,6 +931,65 @@ EMSCRIPTEN_KEEPALIVE void iupwasmTreeSelect(int treeId, int rowId, int ctrl, int
     if (cb) cb(ih, id, 1);
   }
   iupwasmJsTreeFocus(treeId, rowId);
+}
+
+int iupwasmTreeKeyNav(Ihandle* ih, int code)
+{
+  int treeId = iupwasmIdOf(ih);
+  int cur, id, rowId, expanded;
+  InodeHandle* focus;
+
+  if (!treeId)
+    return 0;
+
+  if (code == K_F2)
+  {
+    wasmTreeStartRename(ih, treeId, iupdrvTreeGetFocusNode(ih));
+    return 1;
+  }
+
+  focus = iupdrvTreeGetFocusNode(ih);
+  cur = focus ? iupTreeFindNodeId(ih, focus) : 0;
+  if (cur < 0)
+    cur = 0;
+  rowId = (int)(intptr_t)iupTreeGetNode(ih, cur);
+  expanded = rowId ? iupwasmJsTreeGetState(rowId) : -1;
+
+  switch (code)
+  {
+    case K_UP:   id = wasmTreeStepFocus(ih, cur, -1, 1); break;
+    case K_DOWN: id = wasmTreeStepFocus(ih, cur, 1, 1); break;
+    case K_PGUP: id = wasmTreeStepFocus(ih, cur, -1, 10); break;
+    case K_PGDN: id = wasmTreeStepFocus(ih, cur, 1, 10); break;
+    case K_HOME: id = 0; break;
+    case K_END:  id = wasmTreeLastVisibleId(ih); break;
+    case K_LEFT:
+      if (expanded > 0)
+      {
+        iupwasmTreeEvent(treeId, rowId, 1);
+        return 1;
+      }
+      id = iupTreeFindNodeId(ih, (InodeHandle*)(intptr_t)iupwasmJsTreeNav(rowId, 0));
+      break;
+    case K_RIGHT:
+      if (expanded == 0)
+      {
+        iupwasmTreeEvent(treeId, rowId, 1);
+        return 1;
+      }
+      id = (expanded > 0) ? cur + 1 : cur;
+      break;
+    default:
+      return 0;
+  }
+
+  if (id < 0 || id >= ih->data->node_count || id == cur)
+    return 1;
+
+  rowId = (int)(intptr_t)iupTreeGetNode(ih, id);
+  if (rowId)
+    iupwasmTreeSelect(treeId, rowId, 0, 0);
+  return 1;
 }
 
 static char* wasmTreeGetMarkedAttrib(Ihandle* ih, int id)
@@ -924,6 +1061,17 @@ static int wasmTreeSetMarkAttrib(Ihandle* ih, const char* value)
     {
       int rowId = (int)(intptr_t)iupTreeGetNode(ih, id);
       if (rowId) iupwasmJsTreeMark(treeId, rowId, !iupwasmJsTreeIsMarked(rowId));
+    }
+  }
+  else
+  {
+    int id1, id2;
+    if (iupStrToIntInt(value, &id1, &id2, '-') == 2)
+    {
+      if (id1 > id2) { int t = id1; id1 = id2; id2 = t; }
+      if (id1 < 0) id1 = 0;
+      if (id2 >= n) id2 = n - 1;
+      for (i = id1; i <= id2; i++) wasmTreeMarkId(ih, i, 1);
     }
   }
   return 0;

@@ -19,6 +19,7 @@
 #include "iup_class.h"
 #include "iup_drv.h"
 #include "iup_image.h"
+#include "iup_drvfont.h"
 #define _IUPDLG_PRIVATE
 #include "iup_dialog.h"
 
@@ -56,11 +57,67 @@ EM_JS(void, iupwasmJsDialogResizable, (int id, int on), {
   globalThis.__iupApply({ op: 'dlgresize', id: id, on: on });
 })
 
+EM_JS(void, iupwasmJsDialogCaption, (int id, int h, const char* title, int close), {
+  globalThis.__iupApply({ op: 'dlgcaption', id: id, h: h, title: UTF8ToString(title), close: close });
+})
+
+/* the first dialog is the page itself; only a parented one gets a caption */
+static int wasmDialogHasCaption(Ihandle* ih)
+{
+  if (!iupDialogGetNativeParent(ih) || iupAttribGetBoolean(ih, "HIDETITLEBAR"))
+    return 0;
+  return iupAttribGet(ih, "TITLE") != NULL || iupAttribGetBoolean(ih, "MENUBOX");
+}
+
+static int wasmDialogCaptionHeight(Ihandle* ih)
+{
+  int charheight = 0;
+  iupdrvFontGetCharSize(ih, NULL, &charheight);
+  return charheight + 8;
+}
+
 EMSCRIPTEN_KEEPALIVE void iupwasmDialogModalShow(Ihandle* ih, int on)
 {
   int id = iupwasmIdOf(ih);
   if (id)
     iupwasmJsDialogModal(id, on);
+}
+
+EMSCRIPTEN_KEEPALIVE void iupwasmDialogMoved(int id, int x, int y)
+{
+  Ihandle* ih = iupwasmHandleFromId(id);
+  IFnii cb;
+
+  if (!ih)
+    return;
+
+  iupAttribSetInt(ih, "_IUPWASM_POSX", x);
+  iupAttribSetInt(ih, "_IUPWASM_POSY", y);
+
+  cb = (IFnii)IupGetCallback(ih, "MOVE_CB");
+  if (cb)
+    cb(ih, x, y);
+}
+
+EMSCRIPTEN_KEEPALIVE void iupwasmDialogClosed(int id)
+{
+  Ihandle* ih = iupwasmHandleFromId(id);
+  Icallback cb;
+
+  if (!ih || !iupdrvIsActive(ih))
+    return;
+
+  cb = IupGetCallback(ih, "CLOSE_CB");
+  if (cb)
+  {
+    int ret = cb(ih);
+    if (ret == IUP_IGNORE)
+      return;
+    if (ret == IUP_CLOSE)
+      IupExitLoop();
+  }
+
+  IupHide(ih);
 }
 
 EMSCRIPTEN_KEEPALIVE void iupwasmDialogResize(int id, int w, int h)
@@ -88,7 +145,12 @@ EMSCRIPTEN_KEEPALIVE void iupwasmDialogResize(int id, int w, int h)
 
 static int wasmDialogSetTitleAttrib(Ihandle* ih, const char* value)
 {
-  if (ih->handle && value)
+  int id = iupwasmIdOf(ih);
+  if (!id || !value)
+    return 1;
+  if (wasmDialogHasCaption(ih))
+    iupwasmJsDialogCaption(id, wasmDialogCaptionHeight(ih), value, iupAttribGetBoolean(ih, "MENUBOX"));
+  else
     iupwasmJsSetDocTitle(value);
   return 1;
 }
@@ -201,6 +263,12 @@ static int wasmDialogMapMethod(Ihandle* ih)
 
   iupwasmJsDialogStyle(id);
   iupwasmJsDialogResizable(id, IupGetInt(ih, "RESIZE"));
+  if (wasmDialogHasCaption(ih))
+  {
+    char* title = iupAttribGet(ih, "TITLE");
+    iupwasmJsDialogCaption(id, wasmDialogCaptionHeight(ih), title ? title : "",
+                           iupAttribGetBoolean(ih, "MENUBOX"));
+  }
   iupwasmJsAddToBody(id);
 
   return IUP_NOERROR;
@@ -257,7 +325,37 @@ IUP_SDK_API void iupdrvDialogGetPosition(Ihandle* ih, InativeHandle* handle, int
 
 IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
 {
-  (void)ih;
+  char* placement;
+  int minimized;
+
+  if (iupAttribGetBoolean(ih, "FULLSCREEN"))
+  {
+    ih->data->show_state = IUP_MAXIMIZE;
+    return 1;
+  }
+
+  placement = iupAttribGet(ih, "PLACEMENT");
+
+  if (placement && (iupStrEqualNoCase(placement, "MAXIMIZED") || iupStrEqualNoCase(placement, "FULL")))
+  {
+    /* no taskbar to cover, so FULL is the same as MAXIMIZED */
+    iupDialogCustomFrameMaximize(ih);
+    ih->data->show_state = IUP_MAXIMIZE;
+    iupAttribSet(ih, "PLACEMENT", NULL);
+    return 1;
+  }
+
+  minimized = (placement && iupStrEqualNoCase(placement, "MINIMIZED"));
+  iupAttribSet(ih, "PLACEMENT", NULL);
+
+  ih->data->show_state = IUP_SHOW;
+
+  if (!minimized && iupDialogCustomFrameRestore(ih))
+  {
+    ih->data->show_state = IUP_RESTORE;
+    return 1;
+  }
+
   return 0;
 }
 
@@ -273,14 +371,15 @@ IUP_SDK_API void iupdrvDialogSetPosition(Ihandle *ih, int x, int y)
 IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int *border, int *caption, int *menu)
 {
   int menu_h = (ih->data->menu) ? iupdrvMenuGetMenuBarSize(ih->data->menu) : 0;
+  int caption_h = wasmDialogHasCaption(ih) ? wasmDialogCaptionHeight(ih) : 0;
 
   if (border) *border = 0;
-  if (caption) *caption = 0;
+  if (caption) *caption = caption_h;
   if (menu) *menu = menu_h;
 
-  /* menubar is an absolute overlay with no native chrome; CHILDOFFSET shifts content below it */
-  if (menu_h)
-    iupAttribSetStrf(ih, "CHILDOFFSET", "0x%d", menu_h);
+  /* caption and menubar are absolute overlays with no native chrome; CHILDOFFSET shifts content below */
+  if (caption_h + menu_h)
+    iupAttribSetStrf(ih, "CHILDOFFSET", "0x%d", caption_h + menu_h);
   else if (iupAttribGet(ih, "CHILDOFFSET"))
     iupAttribSet(ih, "CHILDOFFSET", NULL);
 }
@@ -310,11 +409,14 @@ IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "ACTIVEWINDOW", wasmDialogGetActiveWindowAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "RESIZE", NULL, wasmDialogSetResizeAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
 
+  iupClassRegisterAttribute(ic, "MAXIMIZED", NULL, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
+
+  iupClassRegisterAttribute(ic, "MENUBOX", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "HIDETITLEBAR", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+
   /* No OS window manager in a browser tab. */
-  iupClassRegisterAttribute(ic, "MAXIMIZED", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MINIMIZED", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TOPMOST", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "HIDETITLEBAR", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CUSTOMFRAME", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SAVEUNDER", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "COMPOSITED", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
@@ -325,7 +427,6 @@ IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "SHAPEIMAGE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MAXBOX", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MINBOX", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "MENUBOX", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "BORDER", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "HIDETASKBAR", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
 }

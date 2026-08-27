@@ -17,10 +17,16 @@
 #   -y TEXT      type TEXT into SELECTOR (or first input), then screenshot _after.png
 #                (IUP_WAIT=ms overrides the 20s wait for heavy/slow-loading apps)
 #   -K SEQ       scripted sequence, steps split by ';', each "cmd:arg":
-#                click:SEL, type:TEXT (ASCII; uses insertText, fires no keydown),
+#                click:SEL[##x,y] / dblclick:SEL[##x,y] (x,y clicks inside the element),
+#                type:TEXT (ASCII; uses
+#                insertText, fires no keydown),
 #                rawkey:CHAR (trusted keydown carrying any character, incl. non-ASCII),
 #                press:KEY (named keys/chords, e.g. Enter, ArrowUp, Control+c),
-#                wait:MS, shot (writes _stepN.png), drag:SRC##TGT[##x,y], mdrag:SEL##dx,dy
+#                wait:MS, reload[:MS], shot (writes _stepN.png), drag:SRC##TGT[##x,y],
+#                mdrag:SEL##dx,dy,
+#                tap:SEL[##x,y[##holdms]], swipe:SEL##dx,dy, pinch:SEL##scale,
+#                rotate:SEL##degrees (touch is enabled for the
+#                whole run as soon as one of these appears)
 #   -c           wipe the build dir before building; if APP omitted, exit
 #   -f           force-rebuild the emcc C module + full Go rebuild (go build -a)
 #                (the C module is otherwise reused; also use after -T/-O changes)
@@ -145,7 +151,8 @@ case "$APP" in
         -pthread -sPTHREAD_POOL_SIZE=4 \
         -sMODULARIZE=1 -sEXPORT_NAME=createIupModule -sINVOKE_RUN=0 \
         -sERROR_ON_UNDEFINED_SYMBOLS=1 -sNO_EXIT_RUNTIME=1 -sALLOW_MEMORY_GROWTH=1 -sEMULATE_FUNCTION_POINTER_CASTS=1 \
-        -sEXPORTED_RUNTIME_METHODS=ccall,cwrap,callMain,UTF8ToString,stringToUTF8,lengthBytesUTF8,setValue,getValue,HEAPU8 \
+        -sEXPORTED_RUNTIME_METHODS=ccall,cwrap,callMain,UTF8ToString,stringToUTF8,lengthBytesUTF8,setValue,getValue,HEAPU8,FS,IDBFS \
+        -lidbfs.js \
         --pre-js "$PREJS" \
         $CORE "$APP" -o "$BUILD/iup.js"
     else
@@ -158,7 +165,7 @@ case "$APP" in
   *)
     EXPORTS="_IupOpen,_IupClose,_IupMainLoop,_IupShow,_IupShowXY,_IupPopup,_IupLabel,_IupButton,_IupToggle,_IupText,_IupMultiLine,_IupList,_IupTabs,_IupVal,_IupProgressBar,_IupTimer,_IupCanvas,_IupTerminal,_IupCalendar,_IupTable,_IupScrollbar,_IupPopover,_IupTree,_IupSetAttributeId,_IupSetStrAttributeId,_IupGetAttributeId,_IupSetAttributeId2,_IupSetStrAttributeId2,_IupGetAttributeId2,_IupRadio,_IupDestroy,_IupGetGlobal,_IupGetChild,_IupGetFloat,_IupImage,_IupImageRGB,_IupImageRGBA,_IupImageFromHandle,_IupDialog,_IupFrame,_IupFill,_iupwasmTabs0,_IupAppend,_IupGetParent,_IupGetChildPos,_IupGetHandle,_IupGetName,_IupGetInt,_IupSetAttribute,_IupSetStrAttribute,_IupSetAttributeHandle,_IupGetAttribute,_IupSetHandle,_IupSetAttributes,_IupSetGlobal,_IupSetStrGlobal,_IupMessage,_IupMessageError,_IupMessageAlarm,_IupAlarm,_IupNotify,_IupClipboard,_IupHelp,_IupFontDlg,_IupSubmenu,_IupMenuItem,_IupSeparator,_IupMenuSeparator,_iupwasmMenu0,_IupDrawBegin,_IupDrawEnd,_IupDrawGetSize,_IupDrawParentBackground,_IupDrawLine,_IupDrawRectangle,_IupDrawArc,_IupDrawEllipse,_IupDrawPolygon,_IupDrawPixel,_IupDrawRoundedRectangle,_IupDrawBezier,_IupDrawQuadraticBezier,_IupDrawText,_IupDrawImage,_IupDrawSelectRect,_IupDrawFocusRect,_IupDrawSetClipRect,_IupDrawSetClipRoundedRect,_IupDrawResetClip,_IupDrawLinearGradient,_IupDrawRadialGradient,_IupDrawLinearGradientStops,_IupDrawRadialGradientStops,_IupDrawGetTextSize,_IupDrawGetTextMetrics,_iupwasmVbox0,_iupwasmHbox0,_IupSetCallback,_iupwasmGoSetCallback,_iupwasmGoSetIdle,_iupwasmListReorder,_iupwasmDndTransfer,_iupwasmGetParamv,_iupwasmThemeChanged,_IupFileDlg,_IupMessageDlg,_IupColorDlg,_IupColorBrowser,_IupProgressDlg,_IupGetFile,_IupGetColor,_IupGetText,_IupListDialog,_malloc,_free$GL_EXPORTS$WEB_EXPORTS"
     EXPORTS="$EXPORTS,_IupAnimatedLabel,_IupBackgroundBox,_IupClassMatch,_IupConfig,_IupConfigDialogClosed,_IupConfigDialogShow,_IupConfigGetVariableDouble,_IupConfigGetVariableDoubleDef,_IupConfigGetVariableDoubleId,_IupConfigGetVariableDoubleIdDef,_IupConfigGetVariableInt,_IupConfigGetVariableIntDef,_IupConfigGetVariableIntId,_IupConfigGetVariableIntIdDef,_IupConfigGetVariableStr,_IupConfigGetVariableStrDef,_IupConfigGetVariableStrId,_IupConfigGetVariableStrIdDef,_IupConfigLoad,_IupConfigRecentInit,_IupConfigRecentUpdate,_IupConfigSave,_IupConfigSetListVariable,_IupConfigSetVariableDouble,_IupConfigSetVariableDoubleId,_IupConfigSetVariableInt,_IupConfigSetVariableIntId,_IupConfigSetVariableStr,_IupConfigSetVariableStrId,_IupConvertXYToPos,_IupCopyClassAttributes,_IupCreate,_IupDatePick,_IupDetach,_IupDetachBox,_IupDrawGetClipRect,_IupDrawGetImage,_IupDrawGetImageInfo,_IupDrawGetSvg,_IupExecute,_IupExecuteWait,_IupExitLoop,_IupExpander,_IupFlush,_IupGetAllAttributes,_IupGetAllClasses,_IupGetAllDialogs,_IupGetAllFunctions,_IupGetAllGlobals,_IupGetAllNames,_IupGetAttributeHandle,_IupGetAttributeHandleId,_IupGetAttributeHandleId2,_IupGetAttributes,_IupGetBrother,_IupGetCallback,_IupGetChildCount,_IupGetClassAttributeInfo,_IupGetClassAttributes,_IupGetClassCallbackFormat,_IupGetClassCallbacks,_IupGetClassConstructor,_IupGetClassInfo,_IupGetClassName,_IupGetClassType,_IupGetDialog,_IupGetDialogChild,_IupGetDouble,_IupGetDoubleId,_IupGetDoubleId2,_IupGetFloatId,_IupGetFloatId2,_IupGetFocus,_IupGetFunction,_IupGetGlobalInfo,_IupGetIntId,_IupGetIntId2,_IupGetIntInt,_IupGetLanguage,_IupGetLanguageString,_IupGetNextChild,_IupGetRGB,_IupGetRGBA,_IupGetRGBId,_IupGetRGBId2,_IupHide,_IupImageGetHandle,_IupImageSave,_IupImageSaveToBuffer,_IupInsert,_IupLink,_IupLog,_IupLoopStep,_IupLoopStepWait,_IupMainLoopLevel,_IupMap,_IupNextField,_IupParam,_IupPlayInput,_IupPostMessage,_IupPreviousField,_IupRecordInput,_IupRedraw,_IupRefresh,_IupRefreshChildren,_IupReparent,_IupResetAttribute,_IupSaveClassAttributes,_IupSbox,_IupScrollBox,_IupSetAttributeHandleId,_IupSetAttributeHandleId2,_IupSetClassDefaultAttribute,_IupSetFocus,_IupSetLanguage,_IupSetLanguagePack,_IupSetRGB,_IupSetRGBA,_IupSetRGBId,_IupSetRGBId2,_IupSpace,_IupSpin,_IupSpinbox,_IupSplit,_IupStringCompare,_IupTextConvertLinColToPos,_IupTextConvertPosToLinCol,_IupThread,_IupTray,_IupTreeGetId,_IupTreeGetUserId,_IupTreeSetAttributeHandle,_IupTreeSetUserId,_IupUnmap,_IupUpdate,_IupUpdateChildren,_IupUser,_IupVersion,_IupVersionDate,_IupVersionNumber,_IupVersionShow,_IupCbox,_IupZbox,_IupGridBox,_IupMultiBox,_IupNormalizer,_IupParamBox,_IupDial,_IupColorbar,_IupElementPropertiesDialog,_IupClassInfoDialog,_IupGlobalsDialog$CTRL_EXPORTS$PLOT_EXPORTS"
-    RUNTIME="ccall,cwrap,UTF8ToString,stringToUTF8,lengthBytesUTF8,setValue,getValue,HEAPU8"
+    RUNTIME="ccall,cwrap,UTF8ToString,stringToUTF8,lengthBytesUTF8,setValue,getValue,HEAPU8,FS,IDBFS"
     if [ "$MODULE_FRESH" = 1 ]; then
       echo ">>> emcc (Go module): IUP library"
       emcc $CFLAGS $GLFLAGS \
@@ -166,6 +173,7 @@ case "$APP" in
         -sNO_EXIT_RUNTIME=1 -sALLOW_MEMORY_GROWTH=1 -sEMULATE_FUNCTION_POINTER_CASTS=1 \
         -sEXPORTED_FUNCTIONS="$EXPORTS" \
         -sEXPORTED_RUNTIME_METHODS="$RUNTIME" \
+        -lidbfs.js \
         --pre-js "$PREJS" \
         $CORE "$REPO/iup/wasm_bridge.c" -o "$BUILD/iup.js"
     else

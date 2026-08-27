@@ -62,7 +62,13 @@ function serve(dir) {
 
   // new headless renders like a real browser (classic scrollbars, etc.)
   const browser = await chromium.launch(browserLaunchOptions());
-  const page = await browser.newPage({ viewport: { width: 1280, height: 960 }, colorScheme: process.env.IUP_DARK ? 'dark' : 'light' });
+  // touch is opt-in: reporting it changes hover and UA styling for every other test
+  const wantTouch = /(^|;)\s*(tap|swipe|pinch|rotate):/.test(keySeq || '');
+  const page = await browser.newPage({
+    viewport: { width: 1280, height: 960 },
+    colorScheme: process.env.IUP_DARK ? 'dark' : 'light',
+    hasTouch: wantTouch,
+  });
   await page.context().grantPermissions(['clipboard-read', 'clipboard-write'], { origin: 'http://localhost:' + port }).catch(() => {});
 
   const logs = [];
@@ -82,11 +88,12 @@ function serve(dir) {
   // intrinsic from IUP layout). MARGIN is viewport headroom only; capture() clips to the dialog.
   const MARGIN = 24;
   let clip = null;
-  async function fitViewport() {
-    const box = await page.evaluate(() => {
+  async function measure() {
+    return page.evaluate(() => {
       const els = (globalThis.__iup && globalThis.__iup.els) || {};
       let minL = Infinity, minT = Infinity, maxR = -Infinity, maxB = -Infinity;
       const dialogs = [];
+      let fill = false;
       for (const k in els) {
         const el = els[k];
         if (!el || el.nodeType !== 1 || el.parentElement !== document.body) continue;
@@ -94,13 +101,29 @@ function serve(dir) {
         if (cs.display === 'none' || cs.visibility === 'hidden') continue;
         const r = el.getBoundingClientRect();
         if (r.width < 1 || r.height < 1) continue;
+        if (el.__iupViewportFill) fill = true;
         dialogs.push({ k, left: r.left, top: r.top });
         minL = Math.min(minL, r.left); minT = Math.min(minT, r.top);
         maxR = Math.max(maxR, r.right); maxB = Math.max(maxB, r.bottom);
       }
-      return dialogs.length ? { minL, minT, maxR, maxB, dialogs } : null;
+      return dialogs.length ? { minL, minT, maxR, maxB, dialogs, fill } : null;
     });
+  }
+  async function fitViewport() {
+    // a heavy dialog can still be laying out when the first element attaches: settle for two
+    // equal measurements before clipping to it
+    let box = await measure(), stable = 0;
+    for (let i = 0; i < 12 && stable < 1; i++) {
+      await page.waitForTimeout(100);
+      const next = await measure();
+      const same = box && next && box.minL === next.minL && box.minT === next.minT &&
+                   box.maxR === next.maxR && box.maxB === next.maxB;
+      if (same) stable++;
+      box = next;
+    }
     if (!box) { clip = null; return; }
+    // a maximized dialog re-fills the viewport on every resize, so fitting it would chase itself
+    if (box.fill) { clip = null; return; }
     const w = Math.ceil(box.maxR - box.minL), h = Math.ceil(box.maxB - box.minT);
     await page.setViewportSize({ width: Math.min(2400, w + 2 * MARGIN), height: Math.min(2400, h + 2 * MARGIN) });
     await page.evaluate(({ box, MARGIN }) => {
@@ -137,15 +160,19 @@ function serve(dir) {
     logs.push('screenshot after ' + (typeText ? 'type' : 'click') + ': ' + after);
   }
 
-  // Scripted sequence: steps split by ';', each "cmd:arg".
-  // click/type/press/rawkey/wait/shot/drag (drag:srcSel##tgtSel[##x,y]). shot writes _stepN.png.
+  // Scripted sequence: steps split by ';', each "cmd:arg"; see build-wasm.sh -h for the vocabulary.
   if (keySeq) {
     let n = 0;
     for (const st of keySeq.split(';')) {
       const ci = st.indexOf(':');
       const cmd = ci < 0 ? st : st.slice(0, ci);
       const arg = ci < 0 ? '' : st.slice(ci + 1);
-      if (cmd === 'click') await page.click(arg).catch((e) => logs.push('click failed: ' + e.message));
+      if (cmd === 'click' || cmd === 'dblclick') {
+        // x,y clicks inside the element, the only way to reach a canvas-drawn control
+        var cp = arg.split('##'), copt = {};
+        if (cp[1]) { var cxy = cp[1].split(','); copt.position = { x: +cxy[0], y: +cxy[1] }; }
+        await page[cmd](cp[0], copt).catch((e) => logs.push(cmd + ' failed: ' + e.message));
+      }
       else if (cmd === 'type') await page.keyboard.type(arg).catch((e) => logs.push('type failed: ' + e.message));
       else if (cmd === 'press') await page.keyboard.press(arg).catch((e) => logs.push('press failed: ' + e.message));
       else if (cmd === 'rawkey') {
@@ -157,6 +184,51 @@ function serve(dir) {
           await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', key: arg }).catch(() => {});
           await cdp.detach().catch(() => {});
         } else logs.push('rawkey: no CDP session');
+      }
+      else if (cmd === 'tap' || cmd === 'swipe' || cmd === 'pinch' || cmd === 'rotate') {
+        // CDP touch: playwright's touchscreen has no multi-finger or move support
+        const p = arg.split('##');
+        const box = await page.locator(p[0]).boundingBox().catch(() => null);
+        if (!box) { logs.push(cmd + ': element not found: ' + p[0]); continue; }
+        let cx = box.x + box.width / 2, cy = box.y + box.height / 2;
+        if (cmd !== 'pinch' && p[1] && cmd === 'tap') { const xy = p[1].split(','); cx = box.x + (+xy[0]); cy = box.y + (+xy[1]); }
+        const cdp = await page.context().newCDPSession(page).catch(() => null);
+        if (!cdp) { logs.push(cmd + ': no CDP session'); continue; }
+        const send = (type, points) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: points })
+          .catch((e) => logs.push(cmd + ' failed: ' + e.message));
+        if (cmd === 'tap') {
+          await send('touchStart', [{ x: cx, y: cy, id: 1 }]);
+          await page.waitForTimeout(parseInt(p[2]) || 60);
+          await send('touchEnd', []);
+        } else if (cmd === 'swipe') {
+          // one move per frame: Chrome coalesces touch moves sent inside the same frame
+          const d = (p[1] || '0,0').split(','), dx = +d[0], dy = +d[1];
+          await send('touchStart', [{ x: cx, y: cy, id: 1 }]);
+          for (let i = 1; i <= 5; i++) {
+            await page.waitForTimeout(30);
+            await send('touchMove', [{ x: cx + dx * i / 5, y: cy + dy * i / 5, id: 1 }]);
+          }
+          await send('touchEnd', []);
+        } else {
+          const half = Math.min(box.width, box.height) / 4;
+          const scale = cmd === 'pinch' ? (parseFloat(p[1]) || 2) : 1;
+          const turn = cmd === 'rotate' ? (parseFloat(p[1]) || 45) * Math.PI / 180 : 0;
+          const pair = (h, a) => [{ x: cx - h * Math.cos(a), y: cy - h * Math.sin(a), id: 1 },
+                                  { x: cx + h * Math.cos(a), y: cy + h * Math.sin(a), id: 2 }];
+          await send('touchStart', pair(half, 0));
+          for (let i = 1; i <= 5; i++) {
+            await page.waitForTimeout(20);
+            await send('touchMove', pair(half * (1 + (scale - 1) * i / 5), turn * i / 5));
+          }
+          await send('touchEnd', []);
+        }
+        await cdp.detach().catch(() => {});
+      }
+      else if (cmd === 'reload') {
+        await page.reload({ waitUntil: 'load' }).catch((e) => logs.push('reload failed: ' + e.message));
+        await page.waitForSelector('[data-iup-id]', { state: 'attached', timeout: parseInt(process.env.IUP_WAIT) || 20000 })
+          .catch(() => logs.push('(timeout waiting for an IUP element after reload)'));
+        await page.waitForTimeout(parseInt(arg) || 300);
       }
       else if (cmd === 'wait') await page.waitForTimeout(parseInt(arg) || 0);
       else if (cmd === 'drag') {

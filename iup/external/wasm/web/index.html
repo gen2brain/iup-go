@@ -16,20 +16,42 @@
       var SAB = new SharedArrayBuffer(262144);
       var i32 = new Int32Array(SAB), u8 = new Uint8Array(SAB);
       var MS = i32.length - 1;  // modal-event counter slot (Worker blocks on it during a modal Popup)
+      var ACK = i32.length - 2; // highest event sequence the Worker has processed
       var worker = new Worker('worker.js');
 
       // A blocked modal pump can't receive postMessage, so during a modal events queue
       // here and the Worker drains them over the SAB (the counter wakes its wait).
       globalThis.__iupModalActive = 0;
       globalThis.__iupModalQueue = [];
+      // The Worker stops reading postMessage on entering the C call that ends in the pump, before
+      // it can say so, so whatever it has not acknowledged is replayed over the queue at pumpenter.
+      var evSeq = 0, unacked = [];
       function dispatchEv(name, args, types) {
+        var ev = { seq: ++evSeq, name: name, args: args, types: types || null };
         if (globalThis.__iupModalActive) {
-          globalThis.__iupModalQueue.push({ name: name, args: args, types: types || null });
+          globalThis.__iupModalQueue.push(ev);
           Atomics.add(i32, MS, 1); Atomics.notify(i32, MS);
-        } else {
-          worker.postMessage({ __iupEv: 1, name: name, types: types, args: args });
+          return;
         }
+        unacked.push(ev);
+        if (unacked.length > 256) unacked.shift();
+        worker.postMessage({ __iupEv: 1, seq: ev.seq, name: name, types: types, args: args });
       }
+
+      globalThis.__iupPumpEnter = function () {
+        var ack = Atomics.load(i32, ACK);
+        for (var i = 0; i < unacked.length; i++)
+          if (unacked[i].seq > ack) globalThis.__iupModalQueue.push(unacked[i]);
+        unacked.length = 0;
+        Atomics.add(i32, MS, 1); Atomics.notify(i32, MS);
+      };
+
+      globalThis.__iupPumpLeave = function () {
+        var q = globalThis.__iupModalQueue;
+        globalThis.__iupModalQueue = [];
+        for (var i = 0; i < q.length; i++)
+          worker.postMessage({ __iupEv: 1, seq: q[i].seq, name: q[i].name, types: q[i].types, args: q[i].args });
+      };
 
       globalThis.__iupInstallApplier({
         call: function (name, args) { dispatchEv(name, args, null); },

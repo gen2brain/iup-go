@@ -210,7 +210,7 @@ EMSCRIPTEN_KEEPALIVE void iupwasmListReorder(int id, int idDrag, int idDrop)
   }
 }
 
-EMSCRIPTEN_KEEPALIVE void iupwasmDndTransfer(int srcId, int tgtId, int srcY, int tgtY)
+EMSCRIPTEN_KEEPALIVE void iupwasmDndTransfer(int srcId, int tgtId, int srcY, int tgtX, int tgtY)
 {
   Ihandle* src = iupwasmHandleFromId(srcId);
   Ihandle* tgt = iupwasmHandleFromId(tgtId);
@@ -244,7 +244,7 @@ EMSCRIPTEN_KEEPALIVE void iupwasmDndTransfer(int srcId, int tgtId, int srcY, int
   if (dropCb)
   {
     char* dtype = iupAttribGet(tgt, "DROPTYPES");
-    dropCb(tgt, dtype ? dtype : (char*)"", buf, size, 0, tgtY);
+    dropCb(tgt, dtype ? dtype : (char*)"", buf, size, tgtX, tgtY);
   }
 
   endCb = (IFni)IupGetCallback(src, "DRAGEND_CB");
