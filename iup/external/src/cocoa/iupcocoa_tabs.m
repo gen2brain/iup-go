@@ -739,6 +739,14 @@ IUP_SDK_API void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_title, const 
   /* Add right padding: reserve space for close button if present */
   width += 20;
 
+  /* the bar splits its own width evenly, so every tab carries a share of its side padding */
+  {
+    IupCocoaTabBarView* tab_bar_view = cocoaGetTabBarView(ih);
+    int count = tab_bar_view ? (int)[[tab_bar_view tabs] count] : IupGetChildCount(ih);
+    if (count < 1) count = 1;
+    width += (kTabBarSidePadding + count - 1) / count;
+  }
+
   /* Clamp width between kMinTabCellWidth and kMaxTabCellWidth */
   if (width < kMinTabCellWidth)
     width = kMinTabCellWidth;

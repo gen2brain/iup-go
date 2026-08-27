@@ -81,7 +81,7 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
   {
     NSUInteger tabListWidth = self.allowsTabListMenu ? kWidthOfTabList : 0;
     CGFloat leftPadding = 4; /* Add a small padding to disconnect the first tab */
-    CGFloat rightPadding = 12; /* This was the existing implicit padding */
+    CGFloat rightPadding = kTabBarSidePadding - leftPadding;
     NSUInteger totalWidthOfTabBarView = [self frame].size.width - tabListWidth - leftPadding - rightPadding;
     NSUInteger averageWidth = 0;
 
