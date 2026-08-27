@@ -264,9 +264,10 @@ static NSImageView* cocoaLabelGetImageView(Ihandle* ih)
 
 IUP_SDK_API void iupdrvLabelAddExtraPadding(Ihandle* ih, int *x, int *y)
 {
-  (void)ih;
-  (void)x;
   (void)y;
+
+  if (ih->data->type == IUP_LABEL_TEXT && x)
+    *x += iupcocoaTextFieldCellInset();
 }
 
 static int cocoaLabelSetPaddingAttrib(Ihandle* ih, const char* value)
