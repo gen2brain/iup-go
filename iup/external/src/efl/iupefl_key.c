@@ -25,7 +25,7 @@ IUP_SDK_API void iupdrvKeyEncode(int code, unsigned int *keyval, unsigned int *s
   *state = 0;
 }
 
-IUP_DRV_API int iupeflKeyDecodeFromName(const char* keyname, const char* keystr)
+IUP_DRV_API int iupeflKeyDecodeFromName(const char* keyname, const char* keysym, const char* keystr)
 {
   if (!keyname)
     return 0;
@@ -101,6 +101,10 @@ IUP_DRV_API int iupeflKeyDecodeFromName(const char* keyname, const char* keystr)
   if (strcmp(keyname, "dead_grave") == 0) return K_grave;
   if (strcmp(keyname, "dead_circumflex") == 0) return K_circum;
   if (strcmp(keyname, "dead_diaeresis") == 0) return K_diaeresis;
+
+  /* Ctrl+letter leaves the string empty or a control byte, the symbol still names the letter */
+  if (keysym && keysym[0] && !keysym[1])
+    return (int)(unsigned char)keysym[0];
 
   if (keystr && keystr[0] && !keystr[1])
     return (int)(unsigned char)keystr[0];
@@ -206,7 +210,7 @@ IUP_DRV_API void iupeflKeyDownEvent(void* data, const Efl_Event* ev)
   if (eflKeyTextInput(ih, key_event, keystr))
     return;
 
-  code = iupeflKeyDecodeFromName(keyname, keystr);
+  code = iupeflKeyDecodeFromName(keyname, efl_input_key_sym_get(key_event), keystr);
   if (code == 0)
     return;
 
@@ -261,7 +265,7 @@ IUP_DRV_API void iupeflKeyUpEvent(void* data, const Efl_Event* ev)
   {
     const char* keyname = efl_input_key_name_get(key_event);
     const char* keystr = efl_input_key_string_get(key_event);
-    int code = iupeflKeyDecodeFromName(keyname, keystr);
+    int code = iupeflKeyDecodeFromName(keyname, efl_input_key_sym_get(key_event), keystr);
     if (code != 0)
     {
       code = eflKeyApplyModifiers(code, key_event);

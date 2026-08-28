@@ -71,7 +71,7 @@ static Eina_Bool eflGlobalKey(void* data, int type, void* event)
   if (cb)
   {
     Ecore_Event_Key* k = (Ecore_Event_Key*)event;
-    int code = iupeflKeyDecodeFromName(k->keyname, k->string);
+    int code = iupeflKeyDecodeFromName(k->keyname, k->key, k->string);
     if (code != 0)
     {
       code = eflApplyMods(code, k->modifiers);
