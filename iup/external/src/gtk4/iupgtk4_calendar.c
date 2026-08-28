@@ -102,20 +102,34 @@ static char* gtk4CalendarGetTodayAttrib(Ihandle* ih)
   return iupStrReturnStrf("%d/%d/%d", timeinfo->tm_year + 1900, timeinfo->tm_mon + 1, timeinfo->tm_mday);
 }
 
+/* the GTK 4 calendar header does not follow the cell metrics, so only the widget can size itself */
 static void gtk4CalendarComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *children_expand)
 {
+  GtkWidget* calendar = ih->handle;
+  GtkWidget* temp_calendar = NULL;
+  int nat_w = 0, nat_h = 0;
   (void)children_expand; /* unset if not a container */
 
-  iupdrvFontGetMultiLineStringSize(ih, "W8W", w, h);
+  if (!calendar)
+  {
+    temp_calendar = gtk_calendar_new();
+    iupgtk4UpdateWidgetFont(ih, temp_calendar);
+    calendar = temp_calendar;
+  }
 
-  *h += 4; /* for each line */
+  iupgtk4CssFlush();
 
-  (*w) *= 7; /* 7 columns */
-  (*h) *= 8; /* 8 lines */
+  gtk_widget_measure(calendar, GTK_ORIENTATION_HORIZONTAL, -1, NULL, &nat_w, NULL, NULL);
+  gtk_widget_measure(calendar, GTK_ORIENTATION_VERTICAL, nat_w, NULL, &nat_h, NULL, NULL);
 
-  *h += 4; /* for the last or first line */
+  if (temp_calendar)
+  {
+    g_object_ref_sink(temp_calendar);
+    g_object_unref(temp_calendar);
+  }
 
-  iupdrvTextAddBorders(ih, w, h);
+  *w = nat_w;
+  *h = nat_h;
 }
 
 static void gtk4CalendarDaySelected(GtkCalendar *calendar, Ihandle* ih)

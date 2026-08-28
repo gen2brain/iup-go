@@ -54,7 +54,7 @@ static void gtk4ButtonMeasurePadding(void)
   int iup_char_h;
 
   iupgtk4CssAddStaticRule(".iup-button-flat", "padding: 0; margin: 0; border-width: 0; min-width: 0; min-height: 0;");
-  iupgtk4CssAddStaticRule(".iup-measure-zero-pad", "padding: 0; min-width: 0; min-height: 0;");
+  iupgtk4CssAddStaticRule(".iup-measure-zero-pad", "padding: 0;");
   iupgtk4CssAddStaticRule(".iup-measure-no-min", "min-width: 0; min-height: 0;");
   iupgtk4CssFlush();
 
