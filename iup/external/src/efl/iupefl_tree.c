@@ -946,7 +946,10 @@ IUP_SDK_API void iupdrvTreeUpdateMarkMode(Ihandle* ih)
     return;
 
   if (ih->data->mark_mode == ITREE_MARK_MULTIPLE)
+  {
     elm_genlist_multi_select_set(tree, EINA_TRUE);
+    elm_genlist_multi_select_mode_set(tree, ELM_OBJECT_MULTI_SELECT_MODE_WITH_CONTROL);
+  }
   else
     elm_genlist_multi_select_set(tree, EINA_FALSE);
 }
@@ -1597,6 +1600,16 @@ static int eflTreeSetMarkAttrib(Ihandle* ih, const char* value)
       item = elm_genlist_item_next_get(item);
     }
   }
+  else if (iupStrEqualPartial(value, "INVERT"))
+  {
+    /* iupStrEqualPartial allows the use of the "INVERTid" form */
+    InodeHandle* node_handle = iupTreeGetNodeFromString(ih, &value[strlen("INVERT")]);
+    if (node_handle)
+    {
+      Elm_Object_Item* it = (Elm_Object_Item*)node_handle;
+      elm_genlist_item_selected_set(it, elm_genlist_item_selected_get(it) ? EINA_FALSE : EINA_TRUE);
+    }
+  }
   else if (iupStrEqualPartial(value, "BLOCK"))
   {
     InodeHandle* start_node = (InodeHandle*)iupAttribGet(ih, "_IUP_EFL_MARKSTART");
@@ -1624,6 +1637,42 @@ static int eflTreeSetMarkAttrib(Ihandle* ih, const char* value)
         InodeHandle* node_h = iupTreeGetNode(ih, i);
         if (node_h)
           elm_genlist_item_selected_set((Elm_Object_Item*)node_h, mark ? EINA_TRUE : EINA_FALSE);
+      }
+    }
+  }
+  else
+  {
+    char str1[50], str2[50];
+    InodeHandle* node1;
+    InodeHandle* node2;
+
+    if (iupStrToStrStr(value, str1, sizeof(str1), str2, sizeof(str2), '-') != 2)
+    {
+      iupAttribSet(ih, "_IUP_EFL_IGNORE_SELECTION", NULL);
+      return 0;
+    }
+
+    node1 = iupTreeGetNodeFromString(ih, str1);
+    node2 = iupTreeGetNodeFromString(ih, str2);
+
+    if (node1 && node2)
+    {
+      int id1 = iupTreeFindNodeId(ih, node1);
+      int id2 = iupTreeFindNodeId(ih, node2);
+      int i;
+
+      if (id1 > id2)
+      {
+        int tmp = id1;
+        id1 = id2;
+        id2 = tmp;
+      }
+
+      for (i = id1; i <= id2; i++)
+      {
+        InodeHandle* node_h = iupTreeGetNode(ih, i);
+        if (node_h)
+          elm_genlist_item_selected_set((Elm_Object_Item*)node_h, EINA_TRUE);
       }
     }
   }
@@ -2295,10 +2344,7 @@ static char* eflTreeGetToggleVisibleAttrib(Ihandle* ih, int id)
   if (!node)
     return NULL;
 
-  if (node->toggle_visible)
-    return "Yes";
-  else
-    return "No";
+  return iupStrReturnBoolean(node->toggle_visible);
 }
 
 static int eflTreeSetToggleVisibleAttrib(Ihandle* ih, int id, const char* value)
@@ -2611,7 +2657,10 @@ static int eflTreeMapMethod(Ihandle* ih)
   elm_genlist_mode_set(tree, ELM_LIST_SCROLL);
 
   if (ih->data->mark_mode == ITREE_MARK_MULTIPLE)
+  {
     elm_genlist_multi_select_set(tree, EINA_TRUE);
+    elm_genlist_multi_select_mode_set(tree, ELM_OBJECT_MULTI_SELECT_MODE_WITH_CONTROL);
+  }
 
   evas_object_smart_callback_add(tree, "selected", eflTreeSelectedCallback, ih);
   evas_object_smart_callback_add(tree, "unselected", eflTreeUnselectedCallback, ih);
