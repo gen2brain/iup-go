@@ -402,6 +402,48 @@ static int winDialogCheckMinMaxInfo(Ihandle* ih, MINMAXINFO* minmax)
   return 1;
 }
 
+/* Windows has no resize increment hint, the drag rectangle has to be rounded here */
+static int winDialogCheckSizing(Ihandle* ih, WPARAM edge, RECT* rect)
+{
+  int inc_w = 0, inc_h = 0;
+  int min_w = 1, min_h = 1;
+  int width, height, steps;
+
+  if (!iupStrToIntInt(iupAttribGet(ih, "RESIZEINC"), &inc_w, &inc_h, 'x') || (inc_w <= 1 && inc_h <= 1))
+    return 0;
+
+  iupStrToIntInt(iupAttribGet(ih, "MINSIZE"), &min_w, &min_h, 'x');
+
+  width = rect->right - rect->left;
+  height = rect->bottom - rect->top;
+
+  if (inc_w > 1)
+  {
+    steps = (width - min_w) / inc_w;
+    if (steps < 0) steps = 0;
+    width = min_w + steps * inc_w;
+  }
+
+  if (inc_h > 1)
+  {
+    steps = (height - min_h) / inc_h;
+    if (steps < 0) steps = 0;
+    height = min_h + steps * inc_h;
+  }
+
+  if (edge == WMSZ_LEFT || edge == WMSZ_TOPLEFT || edge == WMSZ_BOTTOMLEFT)
+    rect->left = rect->right - width;
+  else
+    rect->right = rect->left + width;
+
+  if (edge == WMSZ_TOP || edge == WMSZ_TOPLEFT || edge == WMSZ_TOPRIGHT)
+    rect->top = rect->bottom - height;
+  else
+    rect->bottom = rect->top + height;
+
+  return 1;
+}
+
 static void winDialogResize(Ihandle* ih, int width, int height)
 {
   IFnii cb;
@@ -745,6 +787,15 @@ static int winDialogBaseProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESUL
       if (winDialogCheckMinMaxInfo(ih, (MINMAXINFO*)lp))
       {
         *result = 0;
+        return 1;
+      }
+      break;
+    }
+  case WM_SIZING:
+    {
+      if (winDialogCheckSizing(ih, wp, (RECT*)lp))
+      {
+        *result = TRUE;
         return 1;
       }
       break;
@@ -1690,6 +1741,7 @@ IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "SAVEUNDER", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MINSIZE", NULL, iupBaseSetMinSizeAttrib, IUPAF_SAMEASSYSTEM, "1x1", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MAXSIZE", NULL, iupBaseSetMaxSizeAttrib, IUPAF_SAMEASSYSTEM, "65535x65535", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "RESIZEINC", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
 
   /* IupDialog Windows Only */
   iupClassRegisterAttribute(ic, "HWND", iupBaseGetWidAttrib, NULL, NULL, NULL, IUPAF_NO_STRING|IUPAF_NO_INHERIT);

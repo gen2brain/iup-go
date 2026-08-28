@@ -142,6 +142,16 @@ func main() {
 			mainDlg().SetAttributes(`MINSIZE=300x220, MAXSIZE=800x600`)
 			setStatus("MINSIZE/MAXSIZE set - drag-resize to test the clamp")
 		}),
+		btn("Toggle RESIZEINC 40x20", func() {
+			d := mainDlg()
+			if d.GetAttribute("RESIZEINC") == "" {
+				d.SetAttributes(`MINSIZE=300x220, RESIZEINC=40x20`)
+				setStatus("RESIZEINC=40x20 - drag-resize snaps to steps counted from MINSIZE")
+			} else {
+				d.SetAttribute("RESIZEINC", nil)
+				setStatus("RESIZEINC cleared - free resizing")
+			}
+		}),
 	).SetAttributes(`NMARGIN=6x6, NGAP=4`)).SetAttribute("TITLE", "Sizing")
 
 	placement := iup.Frame(iup.Vbox(

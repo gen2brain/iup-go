@@ -168,6 +168,11 @@ The SHOWMINIMIZENEXT attribute can be set to YES to activate the next top-level 
 If RESIZE=NO then MAXBOX will be set to NO.
 In Motif the decorations are controlled by the Window Manager and may not be possible to be changed from IUP.
 
+**RESIZEINC**: Size step for the interactive resize, in raster units (pixels). The dialog size changes in multiples of these values, counted from MINSIZE. Default: NULL.
+Not supported in Haiku, Android, iOS and WebAssembly.
+In GTK 4, Qt and FLTK it requires X11.
+In macOS the steps are counted from the current size.
+
 [SHRINK](../attrib/iup_shrink.md): Allows changing the elements’ distribution when the dialog is smaller than the minimum size.
 Default: NO. Android and iOS default to YES.
 
@@ -322,7 +327,7 @@ If set to HIDE force the application button to be hidden from the taskbar, but a
 
 **TITLEBARSTYLE** (non-inheritable): toolbar tonal style. Values: "FLAT" (default), "LIFTED", "PRIMARY".
 
-Not supported: MAXBOX, MINBOX, MENUBOX, RESIZE, BORDER, DIALOGFRAME, CUSTOMFRAME, CUSTOMFRAMESIMULATE, HIDETASKBAR, TASKBARPROGRESS, HELPBUTTON, TOOLBOX, SAVEUNDER, COMPOSITED, TOPMOST, OPACITYIMAGE, SHAPEIMAGE.
+Not supported: MAXBOX, MINBOX, MENUBOX, RESIZE, RESIZEINC, BORDER, DIALOGFRAME, CUSTOMFRAME, CUSTOMFRAMESIMULATE, HIDETASKBAR, TASKBARPROGRESS, HELPBUTTON, TOOLBOX, SAVEUNDER, COMPOSITED, TOPMOST, OPACITYIMAGE, SHAPEIMAGE.
 
 ### Callbacks
 

@@ -37,7 +37,7 @@
 #include "iupgtk_drv.h"
 
 
-static void gtkDialogSetMinMax(Ihandle* ih, int min_w, int min_h, int max_w, int max_h);
+static void gtkDialogSetMinMax(Ihandle* ih, int min_w, int min_h, int max_w, int max_h, const char* resize_inc);
 
 /****************************************************************
                      Utilities
@@ -841,7 +841,7 @@ static int gtkDialogMapMethod(Ihandle* ih)
   if (IupGetCallback(ih, "DROPFILES_CB"))
     iupAttribSet(ih, "DROPFILESTARGET", "YES");
 
-  gtkDialogSetMinMax(ih, 1, 1, 65535, 65535); /* MINSIZE and MAXSIZE default values */
+  gtkDialogSetMinMax(ih, 1, 1, 65535, 65535, NULL); /* MINSIZE and MAXSIZE default values */
 
   /* Ignore VISIBLE before mapping */
   iupAttribSet(ih, "VISIBLE", NULL);
@@ -968,9 +968,11 @@ static void gtkDialogLayoutUpdateMethod(Ihandle *ih)
                                    Attributes
 ****************************************************************************/
 
-static void gtkDialogSetMinMax(Ihandle* ih, int min_w, int min_h, int max_w, int max_h)
+static void gtkDialogSetMinMax(Ihandle* ih, int min_w, int min_h, int max_w, int max_h, const char* resize_inc)
 {
   GdkGeometry geometry;
+  GdkWindowHints hints;
+  int inc_w = 0, inc_h = 0;
   int border = 0, caption = 0, menu = 0;
   int decorwidth = 0, decorheight = 0;
   int has_csd = 0;
@@ -1012,8 +1014,35 @@ static void gtkDialogSetMinMax(Ihandle* ih, int min_w, int min_h, int max_w, int
   if (max_h > decorheight && max_h > geometry.min_height)
     geometry.max_height = max_h - decorheight;
 
-  gtk_window_set_geometry_hints((GtkWindow*)ih->handle, ih->handle,
-                                &geometry, (GdkWindowHints)(GDK_HINT_MIN_SIZE | GDK_HINT_MAX_SIZE));
+  hints = (GdkWindowHints)(GDK_HINT_MIN_SIZE | GDK_HINT_MAX_SIZE);
+
+  if (iupStrToIntInt(resize_inc, &inc_w, &inc_h, 'x') && (inc_w > 1 || inc_h > 1))
+  {
+    geometry.base_width = geometry.min_width;
+    geometry.base_height = geometry.min_height;
+    geometry.width_inc = inc_w > 1? inc_w: 1;
+    geometry.height_inc = inc_h > 1? inc_h: 1;
+    hints = (GdkWindowHints)(hints | GDK_HINT_BASE_SIZE | GDK_HINT_RESIZE_INC);
+  }
+
+  /* a geometry widget makes GTK drop the base and increment hints */
+  gtk_window_set_geometry_hints((GtkWindow*)ih->handle, NULL, &geometry, hints);
+}
+
+static int gtkDialogSetResizeIncAttrib(Ihandle* ih, const char* value)
+{
+  int min_w = 1, min_h = 1;
+  int max_w = 65535, max_h = 65535;
+
+  if (!ih->handle)
+    return 1;
+
+  iupStrToIntInt(iupAttribGet(ih, "MINSIZE"), &min_w, &min_h, 'x');
+  iupStrToIntInt(iupAttribGet(ih, "MAXSIZE"), &max_w, &max_h, 'x');
+
+  gtkDialogSetMinMax(ih, min_w, min_h, max_w, max_h, value);
+
+  return 1;
 }
 
 static int gtkDialogSetMinSizeAttrib(Ihandle* ih, const char* value)
@@ -1025,7 +1054,7 @@ static int gtkDialogSetMinSizeAttrib(Ihandle* ih, const char* value)
   /* if MAXSIZE also set, must be also updated here */
   iupStrToIntInt(iupAttribGet(ih, "MAXSIZE"), &max_w, &max_h, 'x');
 
-  gtkDialogSetMinMax(ih, min_w, min_h, max_w, max_h);
+  gtkDialogSetMinMax(ih, min_w, min_h, max_w, max_h, iupAttribGet(ih, "RESIZEINC"));
 
   return iupBaseSetMinSizeAttrib(ih, value);
 }
@@ -1039,7 +1068,7 @@ static int gtkDialogSetMaxSizeAttrib(Ihandle* ih, const char* value)
   /* if MINSIZE also set, must be also updated here */
   iupStrToIntInt(iupAttribGet(ih, "MINSIZE"), &min_w, &min_h, 'x');
 
-  gtkDialogSetMinMax(ih, min_w, min_h, max_w, max_h);
+  gtkDialogSetMinMax(ih, min_w, min_h, max_w, max_h, iupAttribGet(ih, "RESIZEINC"));
 
   return iupBaseSetMaxSizeAttrib(ih, value);
 }
@@ -1439,6 +1468,7 @@ IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "FULLSCREEN", NULL, gtkDialogSetFullScreenAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MINSIZE", NULL, gtkDialogSetMinSizeAttrib, IUPAF_SAMEASSYSTEM, "1x1", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MAXSIZE", NULL, gtkDialogSetMaxSizeAttrib, IUPAF_SAMEASSYSTEM, "65535x65535", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "RESIZEINC", NULL, gtkDialogSetResizeIncAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SAVEUNDER", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);  /* saveunder not supported in GTK */
   iupClassRegisterAttribute(ic, "MAXIMIZED", NULL, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MINIMIZED", NULL, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);

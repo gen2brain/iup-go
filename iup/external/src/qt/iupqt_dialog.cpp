@@ -414,6 +414,31 @@ extern "C" IUP_SDK_API void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* hand
   }
 }
 
+static void qtDialogSetResizeInc(Ihandle* ih, const char* value, int min_w, int min_h)
+{
+  QWidget* widget = (QWidget*)ih->handle;
+  int inc_w = 0, inc_h = 0;
+
+  if (!widget || !widget->windowHandle())
+    return;
+
+  if (!iupStrToIntInt(value, &inc_w, &inc_h, 'x') || (inc_w <= 1 && inc_h <= 1))
+  {
+    widget->setSizeIncrement(0, 0);
+    return;
+  }
+
+  int border = 0, caption = 0, menu = 0;
+  iupdrvDialogGetDecoration(ih, &border, &caption, &menu);
+
+  int decorwidth = 2*border;
+  int decorheight = 2*border + caption;
+
+  widget->setBaseSize(min_w > decorwidth? min_w - decorwidth: 0,
+                      min_h > decorheight? min_h - decorheight: 0);
+  widget->setSizeIncrement(inc_w > 1? inc_w: 1, inc_h > 1? inc_h: 1);
+}
+
 extern "C" IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
 {
   QWidget* widget = (QWidget*)ih->handle;
@@ -430,6 +455,14 @@ extern "C" IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
         widget->show();
         widget->activateWindow();
         widget->raise();
+      }
+
+      /* Qt keeps the size hints in the widget until the native window exists */
+      if (iupAttribGet(ih, "RESIZEINC"))
+      {
+        int min_w = 1, min_h = 1;
+        iupStrToIntInt(iupAttribGet(ih, "MINSIZE"), &min_w, &min_h, 'x');
+        qtDialogSetResizeInc(ih, iupAttribGet(ih, "RESIZEINC"), min_w, min_h);
       }
     }
     else
@@ -722,6 +755,9 @@ static int qtDialogSetMinSizeAttrib(Ihandle* ih, const char* value)
 
   qtDialogSetMinMax(ih, min_w, min_h, max_w, max_h);
 
+  /* the base follows MINSIZE */
+  qtDialogSetResizeInc(ih, iupAttribGet(ih, "RESIZEINC"), min_w, min_h);
+
   return iupBaseSetMinSizeAttrib(ih, value);
 }
 
@@ -739,6 +775,17 @@ static int qtDialogSetMaxSizeAttrib(Ihandle* ih, const char* value)
   qtDialogSetMinMax(ih, min_w, min_h, max_w, max_h);
 
   return iupBaseSetMaxSizeAttrib(ih, value);
+}
+
+
+static int qtDialogSetResizeIncAttrib(Ihandle* ih, const char* value)
+{
+  int min_w = 1, min_h = 1;
+
+  iupStrToIntInt(iupAttribGet(ih, "MINSIZE"), &min_w, &min_h, 'x');
+  qtDialogSetResizeInc(ih, value, min_w, min_h);
+
+  return 1;
 }
 
 static char* qtDialogGetClientSizeAttrib(Ihandle *ih)
@@ -1277,6 +1324,7 @@ extern "C" IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "ICON", NULL, qtDialogSetIconAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FULLSCREEN", NULL, qtDialogSetFullScreenAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MINSIZE", NULL, qtDialogSetMinSizeAttrib, IUPAF_SAMEASSYSTEM, "1x1", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "RESIZEINC", NULL, qtDialogSetResizeIncAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MAXSIZE", NULL, qtDialogSetMaxSizeAttrib, IUPAF_SAMEASSYSTEM, "65535x65535", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TITLE", NULL, qtDialogSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "RESIZE", NULL, qtDialogSetResizeAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);

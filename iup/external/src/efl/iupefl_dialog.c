@@ -429,6 +429,79 @@ IUP_SDK_API void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* handle, int* w,
   if (h) *h = height;
 }
 
+static Ecore_Evas* eflDialogGetEcoreEvas(Eo* win)
+{
+  Evas* evas = win ? evas_object_evas_get(win) : NULL;
+  return evas ? ecore_evas_ecore_evas_get(evas) : NULL;
+}
+
+static void eflDialogSetMinMax(Ihandle* ih, int min_w, int min_h, int max_w, int max_h)
+{
+  Eo* win = iupeflGetWidget(ih);
+  Ecore_Evas* ee;
+
+  /* the limits go through a resize, and Wayland rejects one before the surface has a role */
+  if (!win || !efl_gfx_entity_visible_get(win))
+    return;
+
+  ee = eflDialogGetEcoreEvas(win);
+  if (!ee)
+    return;
+
+  if (min_w < 1) min_w = 1;
+  if (min_h < 1) min_h = 1;
+
+  ecore_evas_size_min_set(ee, min_w, min_h);
+
+  /* an unset maximum reaches Wayland as the frame size, which is below the minimum */
+  if (max_w > 0 && max_w < 65535 && max_h > 0 && max_h < 65535)
+    ecore_evas_size_max_set(ee, max_w, max_h);
+  else
+    ecore_evas_size_max_set(ee, 65535, 65535);
+}
+
+static void eflDialogSetResizeInc(Ihandle* ih, const char* value, int min_w, int min_h)
+{
+  Eo* win = iupeflGetWidget(ih);
+  Ecore_Evas* ee;
+  int inc_w = 0, inc_h = 0;
+
+  /* the step goes through a resize, and Wayland rejects one before the surface has a role */
+  if (!win || !efl_gfx_entity_visible_get(win))
+    return;
+
+  ee = eflDialogGetEcoreEvas(win);
+  if (!ee)
+    return;
+
+  if (!iupStrToIntInt(value, &inc_w, &inc_h, 'x') || (inc_w <= 1 && inc_h <= 1))
+  {
+    ecore_evas_size_base_set(ee, 0, 0);
+    ecore_evas_size_step_set(ee, 0, 0);
+    return;
+  }
+
+  ecore_evas_size_base_set(ee, min_w, min_h);
+  ecore_evas_size_step_set(ee, inc_w > 1? inc_w: 1, inc_h > 1? inc_h: 1);
+}
+
+/* the limits are applied once the surface is configured, Wayland rejects them before that */
+static void eflDialogSizeLimitsJob(void* data)
+{
+  Ihandle* ih = (Ihandle*)data;
+  int min_w = 1, min_h = 1;
+  int max_w = 65535, max_h = 65535;
+
+  if (!iupObjectCheck(ih) || !ih->handle)
+    return;
+
+  iupStrToIntInt(iupAttribGet(ih, "MINSIZE"), &min_w, &min_h, 'x');
+  iupStrToIntInt(iupAttribGet(ih, "MAXSIZE"), &max_w, &max_h, 'x');
+
+  eflDialogSetMinMax(ih, min_w, min_h, max_w, max_h);
+  eflDialogSetResizeInc(ih, iupAttribGet(ih, "RESIZEINC"), min_w, min_h);
+}
+
 IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
 {
   Eo* win = iupeflGetWidget(ih);
@@ -437,6 +510,9 @@ IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
     return;
 
   iupeflSetVisible(win, visible ? EINA_TRUE : EINA_FALSE);
+
+  if (visible)
+    ecore_job_add(eflDialogSizeLimitsJob, ih);
 }
 
 IUP_SDK_API void iupdrvDialogGetPosition(Ihandle* ih, InativeHandle* handle, int* x, int* y)
@@ -568,31 +644,16 @@ static void* eflDialogGetInnerNativeContainerHandleMethod(Ihandle* ih, Ihandle* 
   return ih->handle;
 }
 
-static Ecore_Evas* eflDialogGetEcoreEvas(Eo* win)
+
+
+static int eflDialogSetResizeIncAttrib(Ihandle* ih, const char* value)
 {
-  Evas* evas = win ? evas_object_evas_get(win) : NULL;
-  return evas ? ecore_evas_ecore_evas_get(evas) : NULL;
-}
+  int min_w = 1, min_h = 1;
 
-static void eflDialogSetMinMax(Ihandle* ih, int min_w, int min_h, int max_w, int max_h)
-{
-  Eo* win = iupeflGetWidget(ih);
-  Ecore_Evas* ee;
+  iupStrToIntInt(iupAttribGet(ih, "MINSIZE"), &min_w, &min_h, 'x');
+  eflDialogSetResizeInc(ih, value, min_w, min_h);
 
-  if (!win)
-    return;
-
-  ee = eflDialogGetEcoreEvas(win);
-  if (!ee)
-    return;
-
-  if (min_w < 1) min_w = 1;
-  if (min_h < 1) min_h = 1;
-
-  ecore_evas_size_min_set(ee, min_w, min_h);
-
-  if (max_w > 0 && max_w < 65535 && max_h > 0 && max_h < 65535)
-    ecore_evas_size_max_set(ee, max_w, max_h);
+  return 1;
 }
 
 static int eflDialogSetHideTitleBarAttrib(Ihandle* ih, const char* value)
@@ -613,6 +674,9 @@ static int eflDialogSetMinSizeAttrib(Ihandle* ih, const char* value)
   iupStrToIntInt(iupAttribGet(ih, "MAXSIZE"), &max_w, &max_h, 'x');
 
   eflDialogSetMinMax(ih, min_w, min_h, max_w, max_h);
+
+  /* the base follows MINSIZE */
+  eflDialogSetResizeInc(ih, iupAttribGet(ih, "RESIZEINC"), min_w, min_h);
 
   return iupBaseSetMinSizeAttrib(ih, value);
 }
@@ -1345,6 +1409,7 @@ IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "ICON", NULL, eflDialogSetIconAttrib, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MINSIZE", NULL, eflDialogSetMinSizeAttrib, IUPAF_SAMEASSYSTEM, "1x1", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MAXSIZE", NULL, eflDialogSetMaxSizeAttrib, IUPAF_SAMEASSYSTEM, "65535x65535", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "RESIZEINC", NULL, eflDialogSetResizeIncAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "BACKGROUND", NULL, eflDialogSetBackgroundAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "BACKIMAGEZOOM", NULL, eflDialogSetBackImageZoomAttrib, NULL, NULL, IUPAF_NO_INHERIT);

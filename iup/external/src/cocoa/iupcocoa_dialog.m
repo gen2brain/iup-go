@@ -928,6 +928,25 @@ static void cocoaDialogSetMinMax(Ihandle* ih, int min_w, int min_h, int max_w, i
   [the_window setContentMaxSize:maxSize];
 }
 
+static int cocoaDialogSetResizeIncAttrib(Ihandle* ih, const char* value)
+{
+  NSWindow* the_window = iupcocoaDialogGetWindow(ih);
+  int inc_w = 0, inc_h = 0;
+
+  if (!the_window)
+    return 1;
+
+  if (!iupStrToIntInt(value, &inc_w, &inc_h, 'x') || (inc_w <= 1 && inc_h <= 1))
+  {
+    [the_window setContentResizeIncrements:NSMakeSize(1, 1)];
+    return 1;
+  }
+
+  [the_window setContentResizeIncrements:NSMakeSize(inc_w > 1? inc_w: 1, inc_h > 1? inc_h: 1)];
+
+  return 1;
+}
+
 static int cocoaDialogSetMinSizeAttrib(Ihandle* ih, const char* value)
 {
   int min_w = 1, min_h = 1;
@@ -1889,6 +1908,7 @@ IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "MENUBOX", NULL, cocoaDialogSetMenuBoxAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MINSIZE", NULL, cocoaDialogSetMinSizeAttrib, IUPAF_SAMEASSYSTEM, "1x1", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MAXSIZE", NULL, cocoaDialogSetMaxSizeAttrib, IUPAF_SAMEASSYSTEM, "65535x65535", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "RESIZEINC", NULL, cocoaDialogSetResizeIncAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FULLSCREEN", cocoaDialogGetFullScreenAttrib, cocoaDialogSetFullScreenAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CUSTOMFRAME", NULL, cocoaDialogSetCustomFrameAttrib, NULL, "NO", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SHOWNOACTIVATE", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);

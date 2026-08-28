@@ -180,6 +180,22 @@ func main() {
 		}))
 	}
 
+	// Primary selection (X11 drivers)
+	var tglPrimary iup.Ihandle
+	switch driver {
+	case "GTK", "GTK4", "Qt", "Motif", "FLTK", "EFL":
+		tglPrimary = iup.Toggle("Use PRIMARY selection").SetCallback("ACTION", iup.ToggleActionFunc(func(ih iup.Ihandle, state int) int {
+			selection := "CLIPBOARD"
+			if state == 1 {
+				selection = "PRIMARY"
+			}
+			clipboard.SetAttribute("SELECTION", selection)
+			logMsg(fmt.Sprintf("Operations now use the %s selection", selection))
+			updateStatus()
+			return iup.DEFAULT
+		}))
+	}
+
 	// Platform-specific controls
 	var platformButtons []iup.Ihandle
 	var platformFrame iup.Ihandle
@@ -362,10 +378,17 @@ func main() {
 		rightCol = iup.Append(rightCol, platformFrame)
 	}
 
+	statusChildren := []iup.Ihandle{btnCheckStatus}
+	if tglPrimary != 0 {
+		statusChildren = append(statusChildren, tglPrimary)
+	}
+	statusChildren = append(statusChildren, lblStatus)
+	statusRow := iup.Hbox(statusChildren...).SetAttribute("GAP", "10")
+
 	vboxMain := iup.Vbox(
 		iup.Label("IUP Clipboard Demo").SetAttributes(`FONT="Sans, Bold 12"`),
 		iup.Hbox(leftCol, rightCol).SetAttributes("GAP=10, ALIGNMENT=ATOP"),
-		iup.Hbox(btnCheckStatus, lblStatus).SetAttribute("GAP", "10"),
+		statusRow,
 		iup.Frame(txtLog).SetAttributes(`TITLE="Event Log", MARGIN=5x5`),
 	)
 

@@ -480,14 +480,10 @@ static int fltkDialogSetResizeAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-static int fltkDialogSetMinSizeAttrib(Ihandle* ih, const char* value)
+static void fltkDialogSetMinMax(Ihandle* ih, int min_w, int min_h, int max_w, int max_h, const char* resize_inc)
 {
-  if (!ih->handle)
-    return iupBaseSetMinSizeAttrib(ih, value);
-
   IupFltkDialog* dialog = (IupFltkDialog*)ih->handle;
-  int min_w = 1, min_h = 1;
-  iupStrToIntInt(value, &min_w, &min_h, 'x');
+  int inc_w = 0, inc_h = 0;
 
   int border = 0, caption = 0, menu = 0;
   iupdrvDialogGetDecoration(ih, &border, &caption, &menu);
@@ -497,12 +493,35 @@ static int fltkDialogSetMinSizeAttrib(Ihandle* ih, const char* value)
   if (cw < 1) cw = 1;
   if (ch < 1) ch = 1;
 
-  int max_w = 0, max_h = 0;
-  iupStrToIntInt(iupAttribGet(ih, "MAXSIZE"), &max_w, &max_h, 'x');
   int mw = max_w > 0 ? max_w - 2 * border : 0;
   int mh = max_h > 0 ? max_h - 2 * border - caption : 0;
 
-  dialog->size_range(cw, ch, mw, mh);
+  /* FLTK sets the hint only when both increments are given */
+  if (iupStrToIntInt(resize_inc, &inc_w, &inc_h, 'x') && (inc_w > 1 || inc_h > 1))
+  {
+    if (inc_w < 1) inc_w = 1;
+    if (inc_h < 1) inc_h = 1;
+  }
+  else
+  {
+    inc_w = 0;
+    inc_h = 0;
+  }
+
+  dialog->size_range(cw, ch, mw, mh, inc_w, inc_h);
+}
+
+static int fltkDialogSetMinSizeAttrib(Ihandle* ih, const char* value)
+{
+  if (!ih->handle)
+    return iupBaseSetMinSizeAttrib(ih, value);
+
+  int min_w = 1, min_h = 1;
+  int max_w = 0, max_h = 0;
+  iupStrToIntInt(value, &min_w, &min_h, 'x');
+  iupStrToIntInt(iupAttribGet(ih, "MAXSIZE"), &max_w, &max_h, 'x');
+
+  fltkDialogSetMinMax(ih, min_w, min_h, max_w, max_h, iupAttribGet(ih, "RESIZEINC"));
 
   return iupBaseSetMinSizeAttrib(ih, value);
 }
@@ -512,26 +531,29 @@ static int fltkDialogSetMaxSizeAttrib(Ihandle* ih, const char* value)
   if (!ih->handle)
     return iupBaseSetMaxSizeAttrib(ih, value);
 
-  IupFltkDialog* dialog = (IupFltkDialog*)ih->handle;
+  int min_w = 1, min_h = 1;
   int max_w = 0, max_h = 0;
   iupStrToIntInt(value, &max_w, &max_h, 'x');
-
-  int border = 0, caption = 0, menu = 0;
-  iupdrvDialogGetDecoration(ih, &border, &caption, &menu);
-
-  int mw = max_w > 0 ? max_w - 2 * border : 0;
-  int mh = max_h > 0 ? max_h - 2 * border - caption : 0;
-
-  int min_w = 1, min_h = 1;
   iupStrToIntInt(iupAttribGet(ih, "MINSIZE"), &min_w, &min_h, 'x');
-  int cmin_w = min_w - 2 * border;
-  int cmin_h = min_h - 2 * border - caption;
-  if (cmin_w < 1) cmin_w = 1;
-  if (cmin_h < 1) cmin_h = 1;
 
-  dialog->size_range(cmin_w, cmin_h, mw, mh);
+  fltkDialogSetMinMax(ih, min_w, min_h, max_w, max_h, iupAttribGet(ih, "RESIZEINC"));
 
   return iupBaseSetMaxSizeAttrib(ih, value);
+}
+
+static int fltkDialogSetResizeIncAttrib(Ihandle* ih, const char* value)
+{
+  if (!ih->handle)
+    return 1;
+
+  int min_w = 1, min_h = 1;
+  int max_w = 0, max_h = 0;
+  iupStrToIntInt(iupAttribGet(ih, "MINSIZE"), &min_w, &min_h, 'x');
+  iupStrToIntInt(iupAttribGet(ih, "MAXSIZE"), &max_w, &max_h, 'x');
+
+  fltkDialogSetMinMax(ih, min_w, min_h, max_w, max_h, value);
+
+  return 1;
 }
 
 static int fltkDialogSetHideTitleBarAttrib(Ihandle* ih, const char* value)
@@ -877,6 +899,7 @@ extern "C" IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "FULLSCREEN", NULL, fltkDialogSetFullScreenAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MINSIZE", NULL, fltkDialogSetMinSizeAttrib, IUPAF_SAMEASSYSTEM, "1x1", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MAXSIZE", NULL, fltkDialogSetMaxSizeAttrib, IUPAF_SAMEASSYSTEM, "65535x65535", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "RESIZEINC", NULL, fltkDialogSetResizeIncAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TITLE", NULL, fltkDialogSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "RESIZE", NULL, fltkDialogSetResizeAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "BORDER", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);

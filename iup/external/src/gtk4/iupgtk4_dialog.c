@@ -71,9 +71,87 @@ IUP_SDK_API void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* handle, int* w,
   if (h) *h = height + 2 * border + caption;
 }
 
+#ifdef GDK_WINDOWING_X11
+static gboolean gtk4DialogResizeIncIdle(gpointer user_data)
+{
+  Ihandle* ih = (Ihandle*)user_data;
+  GdkSurface* surface;
+  int min_w = 1, min_h = 1;
+  int inc_w = 0, inc_h = 0;
+
+  if (!iupObjectCheck(ih) || !ih->handle)
+    return G_SOURCE_REMOVE;
+
+  surface = iupgtk4GetSurface(ih->handle);
+  if (!surface)
+    return G_SOURCE_REMOVE;
+
+  iupStrToIntInt(iupAttribGet(ih, "MINSIZE"), &min_w, &min_h, 'x');
+  if (!iupStrToIntInt(iupAttribGet(ih, "RESIZEINC"), &inc_w, &inc_h, 'x'))
+    inc_w = inc_h = 0;
+
+  iupAttribSet(ih, "_IUPGTK4_RESIZEINC_PENDING", NULL);
+  iupgtk4X11SetResizeInc(surface, min_w, min_h, inc_w, inc_h);
+  return G_SOURCE_REMOVE;
+}
+
+/* GDK rewrites the hints from its own layout idle, so the increments have to be written after it */
+static void gtk4DialogSurfaceLayout(GdkSurface* surface, int width, int height, Ihandle* ih)
+{
+  (void)surface;
+  (void)width;
+  (void)height;
+
+  if (iupAttribGet(ih, "_IUPGTK4_RESIZEINC_PENDING"))
+    return;
+
+  iupAttribSet(ih, "_IUPGTK4_RESIZEINC_PENDING", "1");
+  g_idle_add(gtk4DialogResizeIncIdle, ih);
+}
+#endif
+
+static void gtk4DialogSetResizeInc(Ihandle* ih, const char* value, int min_w, int min_h)
+{
+#ifdef GDK_WINDOWING_X11
+  GdkSurface* surface;
+  int inc_w = 0, inc_h = 0;
+
+  if (!ih->handle || !iupgtk4X11IsBackend())
+    return;
+
+  surface = iupgtk4GetSurface(ih->handle);
+  if (!surface)
+    return;
+
+  if (!iupStrToIntInt(value, &inc_w, &inc_h, 'x'))
+    inc_w = inc_h = 0;
+
+  if ((inc_w > 1 || inc_h > 1) && !iupAttribGet(ih, "_IUPGTK4_RESIZEINC_HANDLER"))
+  {
+    gulong handler_id = g_signal_connect(G_OBJECT(surface), "layout", G_CALLBACK(gtk4DialogSurfaceLayout), ih);
+    iupAttribSet(ih, "_IUPGTK4_RESIZEINC_HANDLER", (char*)(uintptr_t)handler_id);
+  }
+
+  iupgtk4X11SetResizeInc(surface, min_w, min_h, inc_w, inc_h);
+#else
+  (void)ih;
+  (void)value;
+  (void)min_w;
+  (void)min_h;
+#endif
+}
+
 IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
 {
   gtk_widget_set_visible(ih->handle, visible);
+
+  /* the surface, and with it the window manager hints, exists only once shown */
+  if (visible && iupAttribGet(ih, "RESIZEINC"))
+  {
+    int min_w = 1, min_h = 1;
+    iupStrToIntInt(iupAttribGet(ih, "MINSIZE"), &min_w, &min_h, 'x');
+    gtk4DialogSetResizeInc(ih, iupAttribGet(ih, "RESIZEINC"), min_w, min_h);
+  }
 }
 
 IUP_SDK_API void iupdrvDialogGetPosition(Ihandle* ih, InativeHandle* handle, int* x, int* y)
@@ -735,6 +813,17 @@ static void gtk4DialogSetMinMax(Ihandle* ih, int min_w, int min_h, int max_w, in
   gtk_widget_set_size_request(ih->handle, min_w, min_h);
 }
 
+
+static int gtk4DialogSetResizeIncAttrib(Ihandle* ih, const char* value)
+{
+  int min_w = 1, min_h = 1;
+
+  iupStrToIntInt(iupAttribGet(ih, "MINSIZE"), &min_w, &min_h, 'x');
+  gtk4DialogSetResizeInc(ih, value, min_w, min_h);
+
+  return 1;
+}
+
 static int gtk4DialogSetMinSizeAttrib(Ihandle* ih, const char* value)
 {
   int min_w = 1, min_h = 1;
@@ -744,6 +833,9 @@ static int gtk4DialogSetMinSizeAttrib(Ihandle* ih, const char* value)
   iupStrToIntInt(iupAttribGet(ih, "MAXSIZE"), &max_w, &max_h, 'x');
 
   gtk4DialogSetMinMax(ih, min_w, min_h, max_w, max_h);
+
+  /* the base follows MINSIZE */
+  gtk4DialogSetResizeInc(ih, iupAttribGet(ih, "RESIZEINC"), min_w, min_h);
 
   return iupBaseSetMinSizeAttrib(ih, value);
 }
@@ -966,6 +1058,7 @@ IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "MINSIZE", NULL, gtk4DialogSetMinSizeAttrib, IUPAF_SAMEASSYSTEM, "1x1", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MAXSIZE", NULL, gtk4DialogSetMaxSizeAttrib, IUPAF_SAMEASSYSTEM, "65535x65535", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SAVEUNDER", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "RESIZEINC", NULL, gtk4DialogSetResizeIncAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MAXIMIZED", NULL, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "ACTIVEWINDOW", gtk4DialogGetActiveWindowAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);

@@ -64,6 +64,7 @@ IUP_DRV_API int iupgtk4X11MoveWindow(GdkSurface* surface, int x, int y)
   Display* xdisplay;
   Window xwindow;
   XSizeHints hints;
+  long supplied = 0;
 
   if (!surface || !GDK_IS_X11_SURFACE(surface))
     return 0;
@@ -80,7 +81,8 @@ IUP_DRV_API int iupgtk4X11MoveWindow(GdkSurface* surface, int x, int y)
   xwindow = gdk_x11_surface_get_xid(surface);
 
   memset(&hints, 0, sizeof(XSizeHints));
-  hints.flags = PPosition | USPosition;
+  XGetWMNormalHints(xdisplay, xwindow, &hints, &supplied);
+  hints.flags |= PPosition | USPosition;
   hints.x = x;
   hints.y = y;
   XSetWMNormalHints(xdisplay, xwindow, &hints);
@@ -154,6 +156,46 @@ IUP_DRV_API int iupgtk4X11HideFromTaskbar(GdkSurface* surface)
 }
 
 /* Pointer operations */
+
+/* GTK4 dropped the geometry hints, so the resize increments go straight to the window manager */
+IUP_DRV_API int iupgtk4X11SetResizeInc(GdkSurface* surface, int min_w, int min_h, int inc_w, int inc_h)
+{
+  Display* xdisplay;
+  Window xwindow;
+  XSizeHints hints;
+  long supplied = 0;
+
+  if (!surface || !GDK_IS_X11_SURFACE(surface))
+    return 0;
+
+  xdisplay = x11_get_xdisplay();
+  if (!xdisplay)
+    return 0;
+
+#ifdef IUPX11_USE_DLOPEN
+  if (!iupX11Open())
+    return 0;
+#endif
+
+  xwindow = gdk_x11_surface_get_xid(surface);
+
+  memset(&hints, 0, sizeof(XSizeHints));
+  XGetWMNormalHints(xdisplay, xwindow, &hints, &supplied);
+
+  if (inc_w > 1 || inc_h > 1)
+  {
+    hints.flags |= PBaseSize | PResizeInc;
+    hints.base_width = min_w > 0? min_w: 0;
+    hints.base_height = min_h > 0? min_h: 0;
+    hints.width_inc = inc_w > 1? inc_w: 1;
+    hints.height_inc = inc_h > 1? inc_h: 1;
+  }
+  else
+    hints.flags &= ~(PBaseSize | PResizeInc);
+
+  XSetWMNormalHints(xdisplay, xwindow, &hints);
+  return 1;
+}
 
 IUP_DRV_API int iupgtk4X11QueryPointer(int* x, int* y)
 {
