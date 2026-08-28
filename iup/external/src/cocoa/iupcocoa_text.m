@@ -258,6 +258,19 @@ static BOOL cocoaTextHandleShouldChangeText(NSTextField* text_field, NSTextView*
   return [super acceptsFirstResponder];
 }
 
+/* the field editor takes the responder next, so the focus out comes from end editing */
+- (BOOL)becomeFirstResponder
+{
+  BOOL result = [super becomeFirstResponder];
+  if (result)
+  {
+    Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
+    if (ih && iupObjectCheck(ih))
+      iupcocoaFocusIn(ih);
+  }
+  return result;
+}
+
 @end
 
 /* Custom secure text field cell to control text insets */
@@ -363,6 +376,19 @@ static BOOL cocoaTextHandleShouldChangeText(NSTextField* text_field, NSTextView*
     return iupAttribGetBoolean(ih, "CANFOCUS");
   }
   return [super acceptsFirstResponder];
+}
+
+/* the field editor takes the responder next, so the focus out comes from end editing */
+- (BOOL)becomeFirstResponder
+{
+  BOOL result = [super becomeFirstResponder];
+  if (result)
+  {
+    Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
+    if (ih && iupObjectCheck(ih))
+      iupcocoaFocusIn(ih);
+  }
+  return result;
 }
 
 @end
@@ -528,8 +554,20 @@ static void cocoaTextCallCaretCb(Ihandle* ih)
 
 - (void) controlTextDidEndEditing:(NSNotification*)the_notification
 {
-  NSTextField* text_field = [the_notification object];
+  /* the window parks the responder while it swaps the field editor, so check on the next pass */
+  [self performSelector:@selector(checkFocusOut:) withObject:[the_notification object] afterDelay:0];
+}
+
+- (void) checkFocusOut:(NSTextField*)text_field
+{
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(text_field, IHANDLE_ASSOCIATED_OBJ_KEY);
+  id first_responder = [[text_field window] firstResponder];
+
+  if (first_responder == text_field || [text_field currentEditor])
+    return;
+
+  if ([first_responder isKindOfClass:[NSView class]] && [(NSView*)first_responder isDescendantOf:text_field])
+    return;
 
   if (ih && iupObjectCheck(ih))
     iupcocoaFocusOut(ih);
