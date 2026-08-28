@@ -282,7 +282,7 @@ static int eflDialogGetMenuSize(Ihandle* ih)
 #define ECORE_X_MWM_HINT_DECOR_MINIMIZE (1 << 5)
 #define ECORE_X_MWM_HINT_DECOR_MAXIMIZE (1 << 6)
 
-static void eflDialogSetMwmHints(Ihandle* ih, Eo* win, int has_titlebar)
+static void eflDialogSetMwmHints(Ihandle* ih, Eo* win, int has_titlebar, int decorated)
 {
   Ecore_X_Window xwin;
   unsigned int functions = 0;
@@ -324,6 +324,9 @@ static void eflDialogSetMwmHints(Ihandle* ih, Eo* win, int has_titlebar)
     functions |= ECORE_X_MWM_HINT_FUNC_MINIMIZE;
     decorations |= ECORE_X_MWM_HINT_DECOR_MINIMIZE;
   }
+
+  if (!decorated)
+    decorations = 0;
 
   data[0] = ECORE_X_MWM_HINTS_FUNCTIONS | ECORE_X_MWM_HINTS_DECORATIONS;
   data[1] = functions;
@@ -703,14 +706,19 @@ static int eflDialogMapMethod(Ihandle* ih)
   }
 
   if (iupAttribGetBoolean(ih, "HIDETITLEBAR") ||
+      iupAttribGetBoolean(ih, "CUSTOMFRAME") ||
       (!has_titlebar && !iupAttribGetBoolean(ih, "BORDER")))
   {
     efl_ui_win_borderless_set(win, EINA_TRUE);
+#ifdef HAVE_ECORE_X
+    /* borderless alone is not seen by the window manager, the hints are */
+    eflDialogSetMwmHints(ih, win, 0, 0);
+#endif
   }
   else
   {
 #ifdef HAVE_ECORE_X
-    eflDialogSetMwmHints(ih, win, has_titlebar);
+    eflDialogSetMwmHints(ih, win, has_titlebar, 1);
 #endif
   }
 
