@@ -856,17 +856,33 @@ IUP_DRV_API int iupeflCanvasHasSize(Ihandle* ih)
 
 IUP_SDK_API void iupdrvRedrawNow(Ihandle* ih)
 {
+  Ihandle* dialog;
+  Eo* win;
   Eo* widget = iupeflGetWidget(ih);
-  if (widget)
-  {
-    if (ih->iclass->nativetype == IUP_TYPECANVAS && iupeflCanvasHasSize(ih))
-    {
-      IFn cb = (IFn)IupGetCallback(ih, "ACTION");
-      iupeflRedrawClearPending(ih);
-      if (cb)
-        cb(ih);
-    }
 
+  if (!widget)
+    return;
+
+  dialog = IupGetDialog(ih);
+  win = dialog? iupeflGetWidget(dialog): NULL;
+
+  /* Wayland rejects a buffer attached before the surface has a role */
+  if (win && !efl_gfx_entity_visible_get(win))
+  {
+    if (ih->iclass->nativetype == IUP_TYPECANVAS)
+      iupeflRedrawSetPending(ih);
+    return;
+  }
+
+  if (ih->iclass->nativetype == IUP_TYPECANVAS && iupeflCanvasHasSize(ih))
+  {
+    IFn cb = (IFn)IupGetCallback(ih, "ACTION");
+    iupeflRedrawClearPending(ih);
+    if (cb)
+      cb(ih);
+  }
+
+  {
     Evas* evas = evas_object_evas_get(widget);
     if (evas)
       evas_render(evas);
