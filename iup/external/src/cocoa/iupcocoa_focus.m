@@ -10,6 +10,7 @@
 #include "iup_object.h"
 #include "iup_focus.h"
 #include "iup_attrib.h"
+#include "iup_str.h"
 #include "iup_drv.h"
 
 #include "iupcocoa_drv.h"
@@ -25,6 +26,26 @@ IUP_DRV_API void iupcocoaSetCanFocus(Ihandle* ih, int can)
     iupAttribSet(ih, "_IUPCOCOA_CANFOCUS", "YES");
   else
     iupAttribSet(ih, "_IUPCOCOA_CANFOCUS", "NO");
+}
+
+/* the system decides whether a click or Tab focuses the control, IupSetFocus always does */
+IUP_DRV_API int iupcocoaAcceptsFirstResponder(Ihandle* ih, int super_accepts)
+{
+  const char* canfocus;
+
+  if (!ih)
+    return super_accepts;
+
+  canfocus = iupAttribGet(ih, "_IUPCOCOA_CANFOCUS");
+  if (!canfocus)
+    canfocus = iupAttribGet(ih, "CANFOCUS");
+  if (canfocus && !iupStrBoolean(canfocus))
+    return 0;
+
+  if (iupAttribGet(ih, "_IUPCOCOA_FOCUSREQUEST"))
+    return 1;
+
+  return super_accepts;
 }
 
 IUP_SDK_API void iupdrvSetFocus(Ihandle *ih)
@@ -60,6 +81,8 @@ IUP_SDK_API void iupdrvSetFocus(Ihandle *ih)
       [target_window makeKeyAndOrderFront:nil];
     }
 
+    iupAttribSet(ih, "_IUPCOCOA_FOCUSREQUEST", "1");
+
     BOOL accepts = [view_to_focus acceptsFirstResponder];
     if (accepts)
     {
@@ -69,6 +92,8 @@ IUP_SDK_API void iupdrvSetFocus(Ihandle *ih)
         iupcocoaFocusIn(ih);
       }
     }
+
+    iupAttribSet(ih, "_IUPCOCOA_FOCUSREQUEST", NULL);
   }
 }
 
