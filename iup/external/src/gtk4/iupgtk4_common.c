@@ -861,19 +861,21 @@ IUP_DRV_API void iupgtk4SurfaceGetPointer(GdkSurface* surface, double* x, double
 
 IUP_DRV_API int iupgtk4IsSystemDarkMode(void)
 {
-#if GTK_CHECK_VERSION(4, 20, 0)
-  /* GTK 4.20+ has gtk-interface-color-scheme which is the system-wide setting */
-  GtkSettings* settings = gtk_settings_get_default();
-  int color_scheme = 0;
-  g_object_get(settings, "gtk-interface-color-scheme", &color_scheme, NULL);
-  return (color_scheme == 2) ? 1 : 0;  /* GTK_INTERFACE_COLOR_SCHEME_DARK = 2 */
-#else
-  /* Measure foreground luminance, in dark themes, foreground is light */
   GtkWidget* temp_window;
   GdkRGBA fg;
   double fg_lum;
   int is_dark;
 
+#if GTK_CHECK_VERSION(4, 20, 0)
+  /* the system preference stays at DEFAULT when the theme comes from GTK_THEME */
+  GtkSettings* settings = gtk_settings_get_default();
+  int color_scheme = 0;
+  g_object_get(settings, "gtk-interface-color-scheme", &color_scheme, NULL);
+  if (color_scheme == 2)  /* GTK_INTERFACE_COLOR_SCHEME_DARK */
+    return 1;
+#endif
+
+  /* Measure foreground luminance, in dark themes, foreground is light */
   temp_window = gtk_window_new();
   gtk_widget_realize(temp_window);
 
@@ -886,7 +888,6 @@ IUP_DRV_API int iupgtk4IsSystemDarkMode(void)
   gtk_window_destroy(GTK_WINDOW(temp_window));
 
   return is_dark;
-#endif
 }
 
 IUP_SDK_API void iupdrvSleep(int time)
