@@ -166,6 +166,8 @@ cursor (DECSC, DECRC, SCOSC, SCORC), DEC private modes 1, 6, 7, 12, 25, 47, 1047
 OSC 4 palette, OSC 10/11 default colors, OSC 52 clipboard (see ALLOWOSC52), OSC 104 palette reset,
 and the reports DSR, CPR, DA1 and XTWINOPS 18. Unknown sequences are consumed and ignored.
 
+Text with the blink attribute (SGR 5) is not drawn blinking.
+
 Tab is consumed by the terminal and sent to the application; it does not move the focus to the next control.
 
 The scrollbar and the mouse wheel navigate the history. The view snaps to the bottom on new output
