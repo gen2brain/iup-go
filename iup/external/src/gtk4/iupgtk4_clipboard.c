@@ -41,14 +41,21 @@ static void gtk4ClipboardDataClearFunc(gpointer user_data)
   free(clip_info);
 }
 
+static GdkClipboard* gtk4ClipboardGet(Ihandle *ih)
+{
+  GdkDisplay *display = gdk_display_get_default();
+  if (iupStrEqualNoCase(iupAttribGetStr(ih, "SELECTION"), "PRIMARY"))
+    return gdk_display_get_primary_clipboard(display);
+  return gdk_display_get_clipboard(display);
+}
+
 static int gtk4ClipboardSetFormatDataAttrib(Ihandle *ih, const char *value)
 {
   gtk4ClipInfo* clip_info;
   int size;
   const char* mime_type;
   void* data;
-  GdkDisplay *display = gdk_display_get_default();
-  GdkClipboard *clipboard = gdk_display_get_clipboard(display);
+  GdkClipboard *clipboard = gtk4ClipboardGet(ih);
 
   if (!value)
   {
@@ -122,8 +129,7 @@ static void gtk4ClipboardWriteFinished(GObject *source, GAsyncResult *result, gp
 static char* gtk4ClipboardGetFormatDataAttrib(Ihandle *ih)
 {
   const char* mime_type;
-  GdkDisplay *display = gdk_display_get_default();
-  GdkClipboard *clipboard = gdk_display_get_clipboard(display);
+  GdkClipboard *clipboard = gtk4ClipboardGet(ih);
   void *data;
   gsize size = 0;
 
@@ -262,8 +268,7 @@ static int gtk4ClipboardSetFormatDataStringAttrib(Ihandle *ih, const char *value
 
 static int gtk4ClipboardSetTextAttrib(Ihandle *ih, const char *value)
 {
-  GdkDisplay *display = gdk_display_get_default();
-  GdkClipboard *clipboard = gdk_display_get_clipboard(display);
+  GdkClipboard *clipboard = gtk4ClipboardGet(ih);
 
   if (!value)
   {
@@ -273,7 +278,6 @@ static int gtk4ClipboardSetTextAttrib(Ihandle *ih, const char *value)
 
   gdk_clipboard_set_text(clipboard, iupgtk4StrConvertToSystem(value));
 
-  (void)ih;
   return 0;
 }
 
@@ -295,8 +299,7 @@ static void text_ready_cb(GObject *source, GAsyncResult *result, gpointer user_d
 
 static char* gtk4ClipboardGetTextAttrib(Ihandle *ih)
 {
-  GdkDisplay *display = gdk_display_get_default();
-  GdkClipboard *clipboard = gdk_display_get_clipboard(display);
+  GdkClipboard *clipboard = gtk4ClipboardGet(ih);
   gtk4ClipboardTextData data;
 
   /* Synchronous text reading using async API with blocking */
@@ -308,7 +311,6 @@ static char* gtk4ClipboardGetTextAttrib(Ihandle *ih)
   g_main_loop_run(data.loop);
   g_main_loop_unref(data.loop);
 
-  (void)ih;
   if (data.text)
   {
     char* result = iupStrReturnStr(iupgtk4StrConvertFromSystem(data.text));
@@ -321,8 +323,7 @@ static char* gtk4ClipboardGetTextAttrib(Ihandle *ih)
 static int gtk4ClipboardSetImageAttrib(Ihandle *ih, const char *value)
 {
   GdkTexture *texture;
-  GdkDisplay *display = gdk_display_get_default();
-  GdkClipboard *clipboard = gdk_display_get_clipboard(display);
+  GdkClipboard *clipboard = gtk4ClipboardGet(ih);
 
   if (!value)
   {
@@ -340,9 +341,7 @@ static int gtk4ClipboardSetImageAttrib(Ihandle *ih, const char *value)
 
 static int gtk4ClipboardSetNativeImageAttrib(Ihandle *ih, const char *value)
 {
-  GdkDisplay *display = gdk_display_get_default();
-  GdkClipboard *clipboard = gdk_display_get_clipboard(display);
-  (void)ih;
+  GdkClipboard *clipboard = gtk4ClipboardGet(ih);
 
   if (!value)
   {
@@ -373,8 +372,7 @@ static void texture_ready_cb(GObject *source, GAsyncResult *result, gpointer use
 
 static char* gtk4ClipboardGetNativeImageAttrib(Ihandle *ih)
 {
-  GdkDisplay *display = gdk_display_get_default();
-  GdkClipboard *clipboard = gdk_display_get_clipboard(display);
+  GdkClipboard *clipboard = gtk4ClipboardGet(ih);
   gtk4ClipboardTextureData data;
 
   /* Synchronous texture reading using async API with blocking */
@@ -385,37 +383,28 @@ static char* gtk4ClipboardGetNativeImageAttrib(Ihandle *ih)
   g_main_loop_run(data.loop);
   g_main_loop_unref(data.loop);
 
-  (void)ih;
   return (char*)data.texture;
 }
 
 static char* gtk4ClipboardGetTextAvailableAttrib(Ihandle *ih)
 {
-  GdkDisplay *display = gdk_display_get_default();
-  GdkClipboard *clipboard = gdk_display_get_clipboard(display);
+  GdkClipboard *clipboard = gtk4ClipboardGet(ih);
   GdkContentFormats *formats = gdk_clipboard_get_formats(clipboard);
 
-  (void)ih;
-  return iupStrReturnBoolean(gdk_content_formats_contain_mime_type(formats, "text/plain"));
+  return iupStrReturnBoolean(gdk_content_formats_contain_gtype(formats, G_TYPE_STRING));
 }
 
 static char* gtk4ClipboardGetImageAvailableAttrib(Ihandle *ih)
 {
-  GdkDisplay *display = gdk_display_get_default();
-  GdkClipboard *clipboard = gdk_display_get_clipboard(display);
+  GdkClipboard *clipboard = gtk4ClipboardGet(ih);
   GdkContentFormats *formats = gdk_clipboard_get_formats(clipboard);
 
-  (void)ih;
-  /* Check for image MIME types */
-  return iupStrReturnBoolean(gdk_content_formats_contain_mime_type(formats, "image/png") ||
-                             gdk_content_formats_contain_mime_type(formats, "image/jpeg") ||
-                             gdk_content_formats_contain_mime_type(formats, "image/bmp"));
+  return iupStrReturnBoolean(gdk_content_formats_contain_gtype(formats, GDK_TYPE_TEXTURE));
 }
 
 static char* gtk4ClipboardGetFormatAvailableAttrib(Ihandle *ih)
 {
-  GdkDisplay *display = gdk_display_get_default();
-  GdkClipboard *clipboard = gdk_display_get_clipboard(display);
+  GdkClipboard *clipboard = gtk4ClipboardGet(ih);
   const char* mime_type = gtk4ClipboardGetFormatMimeType(ih);
   GdkContentFormats *formats;
 
@@ -464,6 +453,8 @@ Iclass* iupClipboardNewClass(void)
   iupClassRegisterAttribute(ic, "FORMATDATA", gtk4ClipboardGetFormatDataAttrib, gtk4ClipboardSetFormatDataAttrib, NULL, NULL, IUPAF_NO_STRING | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FORMATDATASTRING", gtk4ClipboardGetFormatDataStringAttrib, gtk4ClipboardSetFormatDataStringAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FORMATDATASIZE", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+
+  iupClassRegisterAttribute(ic, "SELECTION", NULL, NULL, "CLIPBOARD", NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
 
   return ic;
 }

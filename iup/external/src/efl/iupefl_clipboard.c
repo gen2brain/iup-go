@@ -28,6 +28,13 @@ static unsigned int eflClipboardGetSeatId(Eo* win)
   return 0;
 }
 
+static Efl_Ui_Cnp_Buffer eflClipboardBuffer(Ihandle* ih)
+{
+  if (iupStrEqualNoCase(iupAttribGetStr(ih, "SELECTION"), "PRIMARY"))
+    return EFL_UI_CNP_BUFFER_SELECTION;
+  return EFL_UI_CNP_BUFFER_COPY_AND_PASTE;
+}
+
 typedef struct {
   void* data;
   size_t size;
@@ -107,8 +114,6 @@ static int eflClipboardSetTextAttrib(Ihandle* ih, const char* value)
   Eina_Content* content;
   Eina_Slice slice;
 
-  (void)ih;
-
   win = iupeflGetMainWindow();
   if (!win)
     return 0;
@@ -120,11 +125,11 @@ static int eflClipboardSetTextAttrib(Ihandle* ih, const char* value)
     slice.len = strlen(value) + 1;
     content = eina_content_new(slice, "text/plain;charset=utf-8");
     if (content)
-      efl_ui_selection_set(win, EFL_UI_CNP_BUFFER_COPY_AND_PASTE, content, seat);
+      efl_ui_selection_set(win, eflClipboardBuffer(ih), content, seat);
   }
   else
   {
-    efl_ui_selection_clear(win, EFL_UI_CNP_BUFFER_COPY_AND_PASTE, eflClipboardGetSeatId(win));
+    efl_ui_selection_clear(win, eflClipboardBuffer(ih), eflClipboardGetSeatId(win));
   }
 
   return 0;
@@ -137,18 +142,21 @@ static char* eflClipboardGetTextAttrib(Ihandle* ih)
   Eina_Iterator* types;
   char* result = NULL;
 
-  (void)ih;
-
   win = iupeflGetMainWindow();
   if (!win)
     return NULL;
 
   types = eina_carray_iterator_new((void*[]){ (void*)"text/plain;charset=utf-8", (void*)"text/plain", NULL });
-  future = efl_ui_selection_get(win, EFL_UI_CNP_BUFFER_COPY_AND_PASTE, eflClipboardGetSeatId(win), types);
+  future = efl_ui_selection_get(win, eflClipboardBuffer(ih), eflClipboardGetSeatId(win), types);
   if (future)
   {
+    Ecore_Timer* timeout;
+    efl_clipboard_timed_out = 0;
+    timeout = ecore_timer_add(2.0, eflClipboardTimeoutCb, NULL);
     eina_future_then(future, eflClipboardTextResolveCb, &result, NULL);
     iupeflModalLoopRun(NULL);
+    if (!efl_clipboard_timed_out && timeout)
+      ecore_timer_del(timeout);
   }
 
   if (result)
@@ -167,13 +175,11 @@ static char* eflClipboardGetTextAvailableAttrib(Ihandle* ih)
 {
   Eo* win;
 
-  (void)ih;
-
   win = iupeflGetMainWindow();
   if (!win)
     return "NO";
 
-  if (efl_ui_selection_has_selection(win, EFL_UI_CNP_BUFFER_COPY_AND_PASTE, eflClipboardGetSeatId(win)))
+  if (efl_ui_selection_has_selection(win, eflClipboardBuffer(ih), eflClipboardGetSeatId(win)))
     return "YES";
 
   return "NO";
@@ -198,7 +204,7 @@ static int eflClipboardSetFormatDataAttrib(Ihandle* ih, const char* value)
 
   if (!value)
   {
-    efl_ui_selection_clear(win, EFL_UI_CNP_BUFFER_COPY_AND_PASTE, eflClipboardGetSeatId(win));
+    efl_ui_selection_clear(win, eflClipboardBuffer(ih), eflClipboardGetSeatId(win));
     free(iupAttribGet(ih, "_IUP_CLIPBOARD_FORMAT_CACHE"));
     iupAttribSet(ih, "_IUP_CLIPBOARD_FORMAT_CACHE", NULL);
     iupAttribSetInt(ih, "_IUP_CLIPBOARD_FORMAT_CACHE_SIZE", 0);
@@ -217,7 +223,7 @@ static int eflClipboardSetFormatDataAttrib(Ihandle* ih, const char* value)
   slice.len = size;
   content = eina_content_new(slice, mime_type);
   if (content)
-    efl_ui_selection_set(win, EFL_UI_CNP_BUFFER_COPY_AND_PASTE, content, eflClipboardGetSeatId(win));
+    efl_ui_selection_set(win, eflClipboardBuffer(ih), content, eflClipboardGetSeatId(win));
 
   /* Cache locally to avoid X11 self-selection deadlock */
   {
@@ -274,7 +280,7 @@ static char* eflClipboardGetFormatDataAttrib(Ihandle* ih)
   if (!result->data)
   {
     types = eina_carray_iterator_new((void*[]){ (void*)mime_type, NULL });
-    future = efl_ui_selection_get(win, EFL_UI_CNP_BUFFER_COPY_AND_PASTE, eflClipboardGetSeatId(win), types);
+    future = efl_ui_selection_get(win, eflClipboardBuffer(ih), eflClipboardGetSeatId(win), types);
     if (future)
     {
       efl_clipboard_timed_out = 0;
@@ -462,7 +468,7 @@ static void* eflClipboardImageFetch(Ihandle* ih, size_t* out_len)
 
   {
     Eina_Iterator* types = eina_carray_iterator_new((void*[]){ (void*)IUPEFL_CLIPBOARD_IMAGE_MIME, NULL });
-    Eina_Future* future = efl_ui_selection_get(win, EFL_UI_CNP_BUFFER_COPY_AND_PASTE, eflClipboardGetSeatId(win), types);
+    Eina_Future* future = efl_ui_selection_get(win, eflClipboardBuffer(ih), eflClipboardGetSeatId(win), types);
     if (future)
     {
       Ecore_Timer* timeout;
@@ -501,7 +507,7 @@ static int eflClipboardSetImageAttrib(Ihandle* ih, const char* value)
 
   if (!value)
   {
-    efl_ui_selection_clear(win, EFL_UI_CNP_BUFFER_COPY_AND_PASTE, eflClipboardGetSeatId(win));
+    efl_ui_selection_clear(win, eflClipboardBuffer(ih), eflClipboardGetSeatId(win));
     eflClipboardImageCacheSet(ih, NULL, 0);
     return 0;
   }
@@ -518,7 +524,7 @@ static int eflClipboardSetImageAttrib(Ihandle* ih, const char* value)
   slice.len = len;
   content = eina_content_new(slice, IUPEFL_CLIPBOARD_IMAGE_MIME);
   if (content)
-    efl_ui_selection_set(win, EFL_UI_CNP_BUFFER_COPY_AND_PASTE, content, eflClipboardGetSeatId(win));
+    efl_ui_selection_set(win, eflClipboardBuffer(ih), content, eflClipboardGetSeatId(win));
 
   /* keep a copy, an X11 client cannot read back its own selection */
   eflClipboardImageCacheSet(ih, png, len);
@@ -583,7 +589,7 @@ static int eflClipboardSetNativeImageAttrib(Ihandle* ih, const char* value)
       slice.len = len;
       content = eina_content_new(slice, IUPEFL_CLIPBOARD_IMAGE_MIME);
       if (content)
-        efl_ui_selection_set(win, EFL_UI_CNP_BUFFER_COPY_AND_PASTE, content, eflClipboardGetSeatId(win));
+        efl_ui_selection_set(win, eflClipboardBuffer(ih), content, eflClipboardGetSeatId(win));
 
       eflClipboardImageCacheSet(ih, png, len);
     }
@@ -601,7 +607,7 @@ static char* eflClipboardGetFormatAvailableAttrib(Ihandle* ih)
   if (!win)
     return "NO";
 
-  if (efl_ui_selection_has_selection(win, EFL_UI_CNP_BUFFER_COPY_AND_PASTE, eflClipboardGetSeatId(win)))
+  if (efl_ui_selection_has_selection(win, eflClipboardBuffer(ih), eflClipboardGetSeatId(win)))
     return "YES";
 
   return "NO";
@@ -632,6 +638,8 @@ Iclass* iupClipboardNewClass(void)
   iupClassRegisterAttribute(ic, "FORMATDATA", eflClipboardGetFormatDataAttrib, eflClipboardSetFormatDataAttrib, NULL, NULL, IUPAF_NO_STRING | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FORMATDATASTRING", eflClipboardGetFormatDataStringAttrib, eflClipboardSetFormatDataStringAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FORMATDATASIZE", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+
+  iupClassRegisterAttribute(ic, "SELECTION", NULL, NULL, "CLIPBOARD", NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
 
   return ic;
 }

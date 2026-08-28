@@ -18,6 +18,7 @@
 extern "C" {
 #include "iup.h"
 #include "iup_object.h"
+#include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_image.h"
 }
@@ -80,7 +81,24 @@ static FltkClipboardReceiver* fltkClipboardGetReceiver(void)
   return fltk_clipboard_receiver;
 }
 
-static void fltkClipboardRequestText(void)
+/* Fl::check does not wait, and the X reply needs time to arrive */
+static void fltkClipboardWaitPaste(void)
+{
+  double remaining = 1.0;
+
+  while (!fltk_clipboard_received && remaining > 0.0)
+  {
+    Fl::wait(0.05);
+    remaining -= 0.05;
+  }
+}
+
+static int fltkClipboardBuffer(Ihandle* ih)
+{
+  return iupStrEqualNoCase(iupAttribGetStr(ih, "SELECTION"), "PRIMARY")? 0: 1;
+}
+
+static void fltkClipboardRequestText(int buffer)
 {
   FltkClipboardReceiver* receiver = fltkClipboardGetReceiver();
 
@@ -91,14 +109,8 @@ static void fltkClipboardRequestText(void)
   }
 
   fltk_clipboard_received = 0;
-  Fl::paste(*receiver, 1, Fl::clipboard_plain_text);
-
-  int timeout = 50;
-  while (!fltk_clipboard_received && timeout > 0)
-  {
-    Fl::check();
-    timeout--;
-  }
+  Fl::paste(*receiver, buffer, Fl::clipboard_plain_text);
+  fltkClipboardWaitPaste();
 }
 
 static void fltkClipboardRequestImage(void)
@@ -113,13 +125,7 @@ static void fltkClipboardRequestImage(void)
 
   fltk_clipboard_received = 0;
   Fl::paste(*receiver, 1, Fl::clipboard_image);
-
-  int timeout = 50;
-  while (!fltk_clipboard_received && timeout > 0)
-  {
-    Fl::check();
-    timeout--;
-  }
+  fltkClipboardWaitPaste();
 }
 
 /****************************************************************************
@@ -128,23 +134,21 @@ static void fltkClipboardRequestImage(void)
 
 static int fltkClipboardSetTextAttrib(Ihandle* ih, const char* value)
 {
-  (void)ih;
+  int buffer = fltkClipboardBuffer(ih);
 
   if (!value)
   {
-    Fl::copy("", 0, 1);
+    Fl::copy("", 0, buffer);
     return 0;
   }
 
-  Fl::copy(value, (int)strlen(value), 1);
+  Fl::copy(value, (int)strlen(value), buffer);
   return 0;
 }
 
 static char* fltkClipboardGetTextAttrib(Ihandle* ih)
 {
-  (void)ih;
-
-  fltkClipboardRequestText();
+  fltkClipboardRequestText(fltkClipboardBuffer(ih));
 
   if (fltk_clipboard_text)
     return iupStrReturnStr(fltk_clipboard_text);
@@ -154,7 +158,13 @@ static char* fltkClipboardGetTextAttrib(Ihandle* ih)
 
 static char* fltkClipboardGetTextAvailableAttrib(Ihandle* ih)
 {
-  (void)ih;
+  if (fltkClipboardBuffer(ih) == 0)
+  {
+    /* Fl::clipboard_contains cannot see the selection, so it has to be fetched */
+    fltkClipboardRequestText(0);
+    return iupStrReturnBoolean(fltk_clipboard_text && fltk_clipboard_text[0]);
+  }
+
   return iupStrReturnBoolean(Fl::clipboard_contains(Fl::clipboard_plain_text));
 }
 
@@ -249,6 +259,8 @@ extern "C" Iclass* iupClipboardNewClass(void)
   iupClassRegisterAttribute(ic, "FORMATDATA", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FORMATDATASTRING", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FORMATDATASIZE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+
+  iupClassRegisterAttribute(ic, "SELECTION", NULL, NULL, "CLIPBOARD", NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
 
   return ic;
 }
