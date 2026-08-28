@@ -74,8 +74,14 @@ static int cocoaClipboardSetImageAttrib(Ihandle* ih, const char* value)
   NSImage* ns_image = (NSImage*)iupImageGetImage(value, ih, 0, NULL);
   if (ns_image)
   {
-    [paste_board clearContents];
-    [paste_board writeObjects:@[ns_image]];
+    /* NSImage is not an NSPasteboardWriting on GNUstep, so writeObjects: would drop it */
+    NSData* tiff_data = [ns_image TIFFRepresentation];
+    if (tiff_data)
+    {
+      [paste_board clearContents];
+      [paste_board declareTypes:@[NSPasteboardTypeTIFF] owner:nil];
+      [paste_board setData:tiff_data forType:NSPasteboardTypeTIFF];
+    }
   }
 
   return 0;
@@ -90,7 +96,12 @@ static int cocoaClipboardSetNativeImageAttrib(Ihandle* ih, const char* value)
   if (value)
   {
     NSImage* ns_image = (NSImage*)value;
-    [paste_board writeObjects:@[ns_image]];
+    NSData* tiff_data = [ns_image TIFFRepresentation];
+    if (tiff_data)
+    {
+      [paste_board declareTypes:@[NSPasteboardTypeTIFF] owner:nil];
+      [paste_board setData:tiff_data forType:NSPasteboardTypeTIFF];
+    }
   }
 
   return 0;
@@ -100,15 +111,13 @@ static char* cocoaClipboardGetNativeImageAttrib(Ihandle* ih)
 {
   (void)ih;
   NSPasteboard* paste_board = [NSPasteboard generalPasteboard];
-  NSArray* valid_classes = @[[NSImage class]];
-  NSDictionary* options_dict = @{};
+  NSData* tiff_data = [paste_board dataForType:NSPasteboardTypeTIFF];
 
-  if ([paste_board canReadObjectForClasses:valid_classes options:options_dict])
+  if (tiff_data)
   {
-    NSArray* array_of_objects = [paste_board readObjectsForClasses:valid_classes options:options_dict];
-    if ([array_of_objects count] > 0)
+    NSImage* ns_image = [[[NSImage alloc] initWithData:tiff_data] autorelease];
+    if (ns_image)
     {
-      NSImage* ns_image = (NSImage*)[array_of_objects firstObject];
       return (char*)ns_image;
     }
   }
@@ -120,8 +129,7 @@ static char* cocoaClipboardGetImageAvailableAttrib(Ihandle* ih)
 {
   (void)ih;
   NSPasteboard* paste_board = [NSPasteboard generalPasteboard];
-  NSString* type_available = [paste_board availableTypeFromArray:[NSImage imageTypes]];
-  return iupStrReturnBoolean(type_available != nil);
+  return iupStrReturnBoolean([NSImage canInitWithPasteboard:paste_board]);
 }
 
 static int cocoaClipboardSetNativeVectorImageAttrib(Ihandle *ih, const char *value)

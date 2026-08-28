@@ -648,7 +648,8 @@ static BOOL cocoaCanvasOptionIsMeta(Ihandle* ih, NSEvent* the_event)
   {
     [self setTextInputConsumed:false];
 #ifdef GNUSTEP
-    [self interpretKeyEvents:[NSArray arrayWithObject:the_event]];
+    /* the input manager never calls back into insertText:, so feed it the characters directly */
+    [self insertText:[the_event characters] replacementRange:NSMakeRange(NSNotFound, 0)];
 #else
     [[self inputContext] handleEvent:the_event];
 #endif

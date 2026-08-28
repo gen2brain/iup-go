@@ -245,6 +245,19 @@ static int cocoaKeyDecode(NSEvent *ns_event, int mac_key_code)
   int iup_base_key = 0;
 
 #ifdef GNUSTEP
+  /* a flagsChanged event has no characters to decode, and the modifier is already resolved */
+  if ([ns_event type] == NSEventTypeFlagsChanged)
+  {
+    switch (mac_key_code)
+    {
+      case kVK_Shift:    return K_LSHIFT;
+      case kVK_Control:  return K_LCTRL;
+      case kVK_Option:   return K_LALT;
+      case kVK_CapsLock: return K_CAPS;
+      default:           return 0;
+    }
+  }
+
   /* the keycode is an X11 one here, so every kVK_ comparison below would match the wrong key */
   iup_base_key = cocoaKeyDecodeCharacter(ns_event);
 #else
@@ -456,6 +469,27 @@ IUP_DRV_API bool iupcocoaModifierEvent(Ihandle *ih, NSEvent *ns_event, int mac_k
 {
   bool is_pressed = false;
   NSEventModifierFlags flags = [ns_event modifierFlags];
+
+#ifdef GNUSTEP
+  /* only the flag bit that changed since the last event identifies the modifier */
+  {
+    static NSEventModifierFlags s_previous_flags = 0;
+    NSEventModifierFlags changed = flags ^ s_previous_flags;
+
+    s_previous_flags = flags;
+
+    if (changed & NSEventModifierFlagShift)
+      mac_key_code = kVK_Shift;
+    else if (changed & NSEventModifierFlagControl)
+      mac_key_code = kVK_Control;
+    else if (changed & NSEventModifierFlagOption)
+      mac_key_code = kVK_Option;
+    else if (changed & NSEventModifierFlagCapsLock)
+      mac_key_code = kVK_CapsLock;
+    else
+      return false;
+  }
+#endif
 
   /* Cocoa sends flagsChanged events for modifier keys. */
   switch (mac_key_code)
