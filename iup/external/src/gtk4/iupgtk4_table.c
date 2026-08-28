@@ -283,10 +283,52 @@ typedef struct _Igtk4TableData
   int current_row;  /* Current focused row (1-based row_index, 0=none) */
   int current_col;  /* Current focused column (1-based, 0=none) */
   int has_focus;    /* 1 if table control has keyboard focus */
+  double saved_scroll;
   GtkWidget* drop_highlight_row;  /* Row widget currently showing the drop indicator */
 } Igtk4TableData;
 
 #define IGTK4_TABLE_DATA(ih) ((Igtk4TableData*)(ih->data->native_data))
+
+/* the sort model reorders the view, so a store row_index is not the position the selection uses */
+static guint gtk4TableViewPos(Igtk4TableData* gtk_data, int lin)
+{
+  GListModel* view = G_LIST_MODEL(gtk_data->selection_model);
+  guint n, i;
+
+  if (!view)
+    return GTK_INVALID_LIST_POSITION;
+
+  n = g_list_model_get_n_items(view);
+  for (i = 0; i < n; i++)
+  {
+    IupTableRow* row = IUP_TABLE_ROW(g_list_model_get_item(view, i));
+    gboolean found = (row && row->row_index == lin);
+    if (row)
+      g_object_unref(row);
+    if (found)
+      return i;
+  }
+
+  return GTK_INVALID_LIST_POSITION;
+}
+
+static int gtk4TableLinFromViewPos(Igtk4TableData* gtk_data, guint pos)
+{
+  GListModel* view = G_LIST_MODEL(gtk_data->selection_model);
+  IupTableRow* row;
+  int lin;
+
+  if (!view || pos == GTK_INVALID_LIST_POSITION)
+    return 0;
+
+  row = IUP_TABLE_ROW(g_list_model_get_item(view, pos));
+  if (!row)
+    return 0;
+
+  lin = row->row_index;
+  g_object_unref(row);
+  return lin;
+}
 
 /* ========================================================================= */
 /* Cell Factory Data                                                         */
@@ -344,10 +386,11 @@ static void on_editing_notify(GObject* object, GParamSpec* pspec, gpointer user_
     /* Update selection to match the row being edited */
     if (GTK_IS_SINGLE_SELECTION(gtk_data->selection_model))
     {
-      guint current_pos = gtk_single_selection_get_selected(GTK_SINGLE_SELECTION(gtk_data->selection_model));
-      if (current_pos != (guint)(lin - 1))
+      guint pos = gtk4TableViewPos(gtk_data, lin);
+      if (pos != GTK_INVALID_LIST_POSITION &&
+          pos != gtk_single_selection_get_selected(GTK_SINGLE_SELECTION(gtk_data->selection_model)))
       {
-        gtk_single_selection_set_selected(GTK_SINGLE_SELECTION(gtk_data->selection_model), lin - 1);
+        gtk_single_selection_set_selected(GTK_SINGLE_SELECTION(gtk_data->selection_model), pos);
         gtk_data->current_row = lin;
       }
     }
@@ -570,7 +613,7 @@ static void gtk4TableMoveRow(Ihandle* ih, int from, int to)
 
   gtk_data->current_row = to;
   if (GTK_IS_SINGLE_SELECTION(gtk_data->selection_model))
-    gtk_single_selection_set_selected(GTK_SINGLE_SELECTION(gtk_data->selection_model), (guint)(to - 1));
+    gtk_single_selection_set_selected(GTK_SINGLE_SELECTION(gtk_data->selection_model), gtk4TableViewPos(gtk_data, to));
 }
 
 static GdkContentProvider* on_row_drag_prepare(GtkDragSource* source, double x, double y, gpointer user_data)
@@ -1272,10 +1315,10 @@ static gboolean on_key_pressed(GtkEventControllerKey* controller, guint keyval, 
 
     if (GTK_IS_SINGLE_SELECTION(gtk_data->selection_model))
     {
-      guint pos = gtk_single_selection_get_selected(GTK_SINGLE_SELECTION(gtk_data->selection_model));
-      if (pos != GTK_INVALID_LIST_POSITION)
+      int lin = gtk4TableLinFromViewPos(gtk_data, gtk_single_selection_get_selected(GTK_SINGLE_SELECTION(gtk_data->selection_model)));
+      if (lin > 0)
       {
-        gtk_data->current_row = pos + 1;
+        gtk_data->current_row = lin;
       }
     }
 
@@ -1296,10 +1339,11 @@ static gboolean on_key_pressed(GtkEventControllerKey* controller, guint keyval, 
       {
         if (row > 0 && row <= ih->data->num_lin)
         {
-          guint current_pos = gtk_single_selection_get_selected(GTK_SINGLE_SELECTION(gtk_data->selection_model));
-          if (current_pos != (guint)(row - 1))
+          guint pos = gtk4TableViewPos(gtk_data, row);
+          if (pos != GTK_INVALID_LIST_POSITION &&
+              pos != gtk_single_selection_get_selected(GTK_SINGLE_SELECTION(gtk_data->selection_model)))
           {
-            gtk_single_selection_set_selected(GTK_SINGLE_SELECTION(gtk_data->selection_model), row - 1);
+            gtk_single_selection_set_selected(GTK_SINGLE_SELECTION(gtk_data->selection_model), pos);
 
             /* Give GTK a moment to update focus after selection change */
             while (g_main_context_pending(NULL))
@@ -1444,6 +1488,31 @@ static int table_sort_func(gconstpointer a, gconstpointer b, gpointer user_data)
 /* GTK4 Signal Callbacks                                                     */
 /* ========================================================================= */
 
+/* GtkListBase keeps its anchor row in place across a sort, every other driver keeps the viewport */
+static gboolean gtk4TableReanchor(GtkWidget* widget, GdkFrameClock* clock, gpointer user_data)
+{
+  Igtk4TableData* gtk_data = (Igtk4TableData*)user_data;
+  GtkAdjustment* vadj = gtk_scrolled_window_get_vadjustment(GTK_SCROLLED_WINDOW(gtk_data->scrolled_win));
+  guint n_items = g_list_model_get_n_items(G_LIST_MODEL(gtk_data->selection_model));
+  double upper;
+  guint top = 0;
+  (void)widget;
+  (void)clock;
+
+  if (!vadj || n_items == 0)
+    return G_SOURCE_REMOVE;
+
+  upper = gtk_adjustment_get_upper(vadj);
+  if (upper > 0)
+    top = (guint)((gtk_data->saved_scroll * n_items) / upper);
+  if (top >= n_items)
+    top = n_items - 1;
+
+  gtk_column_view_scroll_to(GTK_COLUMN_VIEW(gtk_data->column_view), top, NULL, GTK_LIST_SCROLL_NONE, NULL);
+
+  return G_SOURCE_REMOVE;
+}
+
 static void gtk4TableSorterChanged(GtkSorter* sorter, GtkSorterChange change, gpointer user_data)
 {
   Ihandle* ih = (Ihandle*)user_data;
@@ -1485,8 +1554,16 @@ static void gtk4TableSorterChanged(GtkSorter* sorter, GtkSorterChange change, gp
       }
       else
       {
+        GtkAdjustment* vadj = gtk_scrolled_window_get_vadjustment(GTK_SCROLLED_WINDOW(gtk_data->scrolled_win));
+
         iupAttribSet(ih, "_IUP_GTK4_SORTCOL", (char*)primary_column);
         iupAttribSetInt(ih, "_IUP_GTK4_SORTORDER", (int)gtk_column_view_sorter_get_primary_sort_order(view_sorter));
+
+        if (vadj)
+        {
+          gtk_data->saved_scroll = gtk_adjustment_get_value(vadj);
+          gtk_widget_add_tick_callback(gtk_data->column_view, gtk4TableReanchor, gtk_data, NULL);
+        }
       }
       g_object_unref(column);
       break;
@@ -2312,7 +2389,7 @@ IUP_SDK_API void iupdrvTableSetFocusCell(Ihandle* ih, int lin, int col)
 
     /* Set row selection, this will trigger selection changed signal which calls ENTERITEM_CB */
     if (GTK_IS_SINGLE_SELECTION(gtk_data->selection_model))
-      gtk_single_selection_set_selected(GTK_SINGLE_SELECTION(gtk_data->selection_model), lin - 1);
+      gtk_single_selection_set_selected(GTK_SINGLE_SELECTION(gtk_data->selection_model), gtk4TableViewPos(gtk_data, lin));
 
     gtk4TableNotifyRow(gtk_data, old_row);
     if (lin != old_row)

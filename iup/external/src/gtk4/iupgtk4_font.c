@@ -184,10 +184,7 @@ static void gtk4FontUpdateWidget(Ihandle* ih, GtkWidget* widget, PangoFontDescri
 {
   Igtk4Font* gtkfont;
 
-  /* gtk_widget_override_font removed
-     CSS is now the primary way to set fonts, but we can still use Pango contexts */
-
-  /* For labels, we can use Pango attributes */
+  /* only a label needs Pango attributes, for underline and strikeout; CSS font inherits elsewhere */
   gtkfont = gtk4FontGet(ih);
   if (!gtkfont)
     return;
@@ -215,7 +212,7 @@ static void gtk4FontUpdateWidget(Ihandle* ih, GtkWidget* widget, PangoFontDescri
     gtk_label_set_attributes(GTK_LABEL(widget), attrs);
     pango_attr_list_unref(attrs);
   }
-  else if (GTK_IS_TEXT_VIEW(widget) || GTK_IS_EDITABLE(widget))
+  else
   {
     char css_font[512];
     const char *family = pango_font_description_get_family(fontdesc);
