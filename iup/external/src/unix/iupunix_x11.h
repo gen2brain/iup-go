@@ -142,6 +142,9 @@ typedef union _XEvent {
 #define None              0L
 #define PPosition         (1L << 2)
 #define USPosition        (1L << 0)
+#define PMinSize          (1L << 4)
+#define PResizeInc        (1L << 6)
+#define PBaseSize         (1L << 8)
 
 #define KBAutoRepeatMode  (1L << 7)
 #define AutoRepeatModeOff 0
@@ -165,6 +168,7 @@ static int (*iupx11_XMoveWindow)(Display*, Window, int, int) = NULL;
 static int (*iupx11_XSync)(Display*, int) = NULL;
 static Atom (*iupx11_XInternAtom)(Display*, const char*, int) = NULL;
 static int (*iupx11_XSetWMNormalHints)(Display*, Window, XSizeHints*) = NULL;
+static int (*iupx11_XGetWMNormalHints)(Display*, Window, XSizeHints*, long*) = NULL;
 static int (*iupx11_XChangeProperty)(Display*, Window, Atom, Atom, int, int, const unsigned char*, int) = NULL;
 static int (*iupx11_XWarpPointer)(Display*, Window, Window, int, int, unsigned int, unsigned int, int, int) = NULL;
 static Window (*iupx11_XRootWindow)(Display*, int) = NULL;
@@ -185,6 +189,7 @@ static VisualID (*iupx11_XVisualIDFromVisual)(Visual*) = NULL;
 #define XSync iupx11_XSync
 #define XInternAtom iupx11_XInternAtom
 #define XSetWMNormalHints iupx11_XSetWMNormalHints
+#define XGetWMNormalHints iupx11_XGetWMNormalHints
 #define XChangeProperty iupx11_XChangeProperty
 #define XWarpPointer iupx11_XWarpPointer
 #define XRootWindow iupx11_XRootWindow
@@ -217,6 +222,7 @@ static int iupX11Open(void)
   iupx11_XSync = (int (*)(Display*, int))dlsym(iupx11_handle, "XSync");
   iupx11_XInternAtom = (Atom (*)(Display*, const char*, int))dlsym(iupx11_handle, "XInternAtom");
   iupx11_XSetWMNormalHints = (int (*)(Display*, Window, XSizeHints*))dlsym(iupx11_handle, "XSetWMNormalHints");
+  iupx11_XGetWMNormalHints = (int (*)(Display*, Window, XSizeHints*, long*))dlsym(iupx11_handle, "XGetWMNormalHints");
   iupx11_XChangeProperty = (int (*)(Display*, Window, Atom, Atom, int, int, const unsigned char*, int))dlsym(iupx11_handle, "XChangeProperty");
   iupx11_XWarpPointer = (int (*)(Display*, Window, Window, int, int, unsigned int, unsigned int, int, int))dlsym(iupx11_handle, "XWarpPointer");
   iupx11_XRootWindow = (Window (*)(Display*, int))dlsym(iupx11_handle, "XRootWindow");

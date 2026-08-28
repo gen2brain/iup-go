@@ -617,6 +617,7 @@ IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
 	iupClassRegisterAttribute(ic, "OPACITY", NULL, cocoaTouchDialogSetOpacityAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 
 	iupClassRegisterAttribute(ic, "MAXBOX", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+	iupClassRegisterAttribute(ic, "RESIZEINC", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "MINBOX", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "MENUBOX", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "HIDETITLEBAR", NULL, cocoaTouchDialogSetHideTitleBarAttrib, NULL, NULL, IUPAF_NO_INHERIT);

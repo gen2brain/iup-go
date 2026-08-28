@@ -516,6 +516,39 @@ IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
                                    Attributes
 ****************************************************************************/
 
+static void motDialogSetResizeInc(Ihandle* ih, const char* value, int min_w, int min_h)
+{
+  int decorwidth = 0, decorheight = 0;
+  int inc_w = 0, inc_h = 0;
+
+  if (!ih->handle)
+    return;
+
+  if (!iupStrToIntInt(value, &inc_w, &inc_h, 'x') || (inc_w <= 1 && inc_h <= 1))
+  {
+    XtVaSetValues(ih->handle, XmNbaseWidth, 0, XmNbaseHeight, 0,
+                              XmNwidthInc, 1, XmNheightInc, 1, NULL);
+    return;
+  }
+
+  iupDialogGetDecorSize(ih, &decorwidth, &decorheight);
+
+  XtVaSetValues(ih->handle, XmNbaseWidth, min_w > decorwidth? min_w-decorwidth: 0,
+                            XmNbaseHeight, min_h > decorheight? min_h-decorheight: 0,
+                            XmNwidthInc, inc_w > 1? inc_w: 1,
+                            XmNheightInc, inc_h > 1? inc_h: 1, NULL);
+}
+
+static int motDialogSetResizeIncAttrib(Ihandle* ih, const char* value)
+{
+  int min_w = 1, min_h = 1;
+
+  iupStrToIntInt(iupAttribGet(ih, "MINSIZE"), &min_w, &min_h, 'x');
+  motDialogSetResizeInc(ih, value, min_w, min_h);
+
+  return 1;
+}
+
 static int motDialogSetMinSizeAttrib(Ihandle* ih, const char* value)
 {
   int decorwidth = 0, decorheight = 0;
@@ -529,6 +562,9 @@ static int motDialogSetMinSizeAttrib(Ihandle* ih, const char* value)
     XtVaSetValues(ih->handle, XmNminWidth, min_w-decorwidth, NULL);
   if (min_h > decorheight)
     XtVaSetValues(ih->handle, XmNminHeight, min_h-decorheight, NULL);
+
+  /* the base follows MINSIZE */
+  motDialogSetResizeInc(ih, iupAttribGet(ih, "RESIZEINC"), min_w, min_h);
 
   return iupBaseSetMinSizeAttrib(ih, value);
 }
@@ -1253,6 +1289,7 @@ IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "FULLSCREEN", NULL, motDialogSetFullScreenAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MINSIZE", NULL, motDialogSetMinSizeAttrib, IUPAF_SAMEASSYSTEM, "1x1", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MAXSIZE", NULL, motDialogSetMaxSizeAttrib, IUPAF_SAMEASSYSTEM, "65535x65535", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "RESIZEINC", NULL, motDialogSetResizeIncAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SAVEUNDER", NULL, NULL, "YES", NULL, IUPAF_NO_INHERIT);
 
   /* IupDialog X Only */
