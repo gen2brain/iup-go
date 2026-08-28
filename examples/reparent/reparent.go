@@ -82,7 +82,7 @@ func focusPanel() iup.Ihandle {
 		}
 		return "(other control)"
 	}
-	next := iup.Button("Focus next").SetCallback("ACTION", iup.ActionFunc(func(iup.Ihandle) int {
+	next := iup.Button("Focus next").SetAttribute("CANFOCUS", "NO").SetCallback("ACTION", iup.ActionFunc(func(iup.Ihandle) int {
 		cur := iup.GetFocus()
 		if cur == 0 {
 			cur = iup.GetHandle("f1")
@@ -90,7 +90,7 @@ func focusPanel() iup.Ihandle {
 		setStatus("NextField -> %s", label(iup.NextField(cur)))
 		return iup.DEFAULT
 	}))
-	prev := iup.Button("Focus previous").SetCallback("ACTION", iup.ActionFunc(func(iup.Ihandle) int {
+	prev := iup.Button("Focus previous").SetAttribute("CANFOCUS", "NO").SetCallback("ACTION", iup.ActionFunc(func(iup.Ihandle) int {
 		cur := iup.GetFocus()
 		if cur == 0 {
 			cur = iup.GetHandle("f1")
