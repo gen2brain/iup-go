@@ -35,14 +35,7 @@ static const void* IUP_COCOA_SLIDER_RECEIVER_OBJ_KEY = "IUP_COCOA_SLIDER_RECEIVE
 - (BOOL)acceptsFirstResponder
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
-  if (!ih)
-    return [super acceptsFirstResponder];
-
-  const char* canfocus = iupAttribGet(ih, "_IUPCOCOA_CANFOCUS");
-  if (canfocus && iupStrEqualNoCase(canfocus, "NO"))
-    return NO;
-
-  return [super acceptsFirstResponder];
+  return iupcocoaAcceptsFirstResponder(ih, [super acceptsFirstResponder])? YES: NO;
 }
 
 - (BOOL)becomeFirstResponder

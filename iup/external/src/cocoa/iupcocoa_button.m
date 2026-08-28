@@ -313,13 +313,7 @@ static const void* IUP_COCOA_BUTTON_RECEIVER_OBJ_KEY = @"IUP_COCOA_BUTTON_RECEIV
 - (BOOL)acceptsFirstResponder
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
-  if (ih)
-  {
-    if (iupAttribGet(ih, "_IUPCOCOA_CANFOCUS"))
-      return iupAttribGetBoolean(ih, "_IUPCOCOA_CANFOCUS");
-    return iupAttribGetBoolean(ih, "CANFOCUS");
-  }
-  return [super acceptsFirstResponder];
+  return iupcocoaAcceptsFirstResponder(ih, [super acceptsFirstResponder])? YES: NO;
 }
 
 - (BOOL) needsPanelToBecomeKey

@@ -149,6 +149,7 @@ IUP_DRV_API NSWindow* iupcocoaDialogGetWindow(Ihandle* ih);
 
 /* Focus control. */
 IUP_DRV_API void iupcocoaSetCanFocus(Ihandle* ih, int can);
+IUP_DRV_API int iupcocoaAcceptsFirstResponder(Ihandle* ih, int super_accepts);
 IUP_DRV_API void iupcocoaFocusIn(Ihandle* ih);
 IUP_DRV_API void iupcocoaFocusOut(Ihandle* ih);
 
