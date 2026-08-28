@@ -565,6 +565,12 @@ static void* eflDialogGetInnerNativeContainerHandleMethod(Ihandle* ih, Ihandle* 
   return ih->handle;
 }
 
+static Ecore_Evas* eflDialogGetEcoreEvas(Eo* win)
+{
+  Evas* evas = win ? evas_object_evas_get(win) : NULL;
+  return evas ? ecore_evas_ecore_evas_get(evas) : NULL;
+}
+
 static void eflDialogSetMinMax(Ihandle* ih, int min_w, int min_h, int max_w, int max_h)
 {
   Eo* win = iupeflGetWidget(ih);
@@ -573,7 +579,7 @@ static void eflDialogSetMinMax(Ihandle* ih, int min_w, int min_h, int max_w, int
   if (!win)
     return;
 
-  ee = ecore_evas_object_ecore_evas_get(win);
+  ee = eflDialogGetEcoreEvas(win);
   if (!ee)
     return;
 
@@ -650,6 +656,10 @@ static int eflDialogMapMethod(Ihandle* ih)
 
   ih->handle = (InativeHandle*)win;
 
+  /* the ARGB visual has to be requested before the window is shown */
+  if (iupAttribGet(ih, "OPACITYIMAGE"))
+    elm_win_alpha_set(win, EINA_TRUE);
+
   if (!iupeflGetMainWindow())
     iupeflSetMainWindow(win);
 
@@ -709,8 +719,6 @@ static int eflDialogMapMethod(Ihandle* ih)
 
   if (IupGetCallback(ih, "DROPFILES_CB"))
     iupAttribSet(ih, "DROPFILESTARGET", "YES");
-
-  eflDialogSetMinMax(ih, 1, 1, 65535, 65535);
 
   return IUP_NOERROR;
 }
@@ -817,7 +825,7 @@ static void eflDialogLayoutUpdateMethod(Ihandle* ih)
 
   if (!iupAttribGetBoolean(ih, "RESIZE"))
   {
-    Ecore_Evas* ee = ecore_evas_object_ecore_evas_get(win);
+    Ecore_Evas* ee = eflDialogGetEcoreEvas(win);
     if (ee)
     {
       ecore_evas_size_min_set(ee, width, height);
@@ -1061,7 +1069,7 @@ static int eflDialogSetShapeImageAttrib(Ihandle* ih, const char* value)
   if (!win)
     return 0;
 
-  ee = ecore_evas_object_ecore_evas_get(win);
+  ee = eflDialogGetEcoreEvas(win);
   if (!ee)
     return 0;
 
@@ -1119,17 +1127,36 @@ static int eflDialogSetShapeImageAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
+static int eflDialogSetOpacityAttrib(Ihandle* ih, const char* value)
+{
+#ifdef HAVE_ECORE_X
+  Eo* win = iupeflGetWidget(ih);
+  Ecore_X_Window xwin;
+  int opacity;
+
+  if (!win || !iupStrToInt(value, &opacity))
+    return 0;
+
+  /* zero on Wayland, which has no equivalent of the opacity property */
+  xwin = elm_win_xwindow_get(win);
+  if (!xwin)
+    return 0;
+
+  ecore_x_netwm_opacity_set(xwin, (unsigned int)((double)opacity / 255.0 * 0xFFFFFFFF));
+#else
+  (void)ih;
+  (void)value;
+#endif
+
+  return 0;
+}
+
 static int eflDialogSetOpacityImageAttrib(Ihandle* ih, const char* value)
 {
   Eo* win = iupeflGetWidget(ih);
-  Ecore_Evas* ee;
   Ihandle* image;
 
   if (!win)
-    return 0;
-
-  ee = ecore_evas_object_ecore_evas_get(win);
-  if (!ee)
     return 0;
 
   if (!value)
@@ -1140,7 +1167,7 @@ static int eflDialogSetOpacityImageAttrib(Ihandle* ih, const char* value)
       eflDialogFreeCanvasImage(old_img);
       iupAttribSet(ih, "_IUP_EFL_OPACITY_IMAGE", NULL);
     }
-    ecore_evas_alpha_set(ee, EINA_FALSE);
+    elm_win_alpha_set(win, EINA_FALSE);
     efl_gfx_color_set(win, 255, 255, 255, 255);
     return 1;
   }
@@ -1188,7 +1215,8 @@ static int eflDialogSetOpacityImageAttrib(Ihandle* ih, const char* value)
       }
       evas_object_image_filled_set(bg_img, EINA_TRUE);
 
-      ecore_evas_alpha_set(ee, EINA_TRUE);
+      /* elm_win owns the alpha state, a direct ecore_evas_alpha_set is undone on its next apply */
+      elm_win_alpha_set(win, EINA_TRUE);
 
       efl_gfx_entity_size_set(bg_img, EINA_SIZE2D(w, h));
       efl_gfx_entity_position_set(bg_img, EINA_POSITION2D(0, 0));
@@ -1282,7 +1310,7 @@ static int eflDialogSetBringFrontAttrib(Ihandle* ih, const char* value)
     Eo* win = (Eo*)ih->handle;
     if (win)
     {
-      Ecore_Evas* ee = ecore_evas_object_ecore_evas_get(win);
+      Ecore_Evas* ee = eflDialogGetEcoreEvas(win);
       if (ee)
         ecore_evas_activate(ee);
     }
@@ -1317,7 +1345,7 @@ IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "CUSTOMFRAME", NULL, NULL, IUPAF_SAMEASSYSTEM, NULL, IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "HIDETITLEBAR", NULL, eflDialogSetHideTitleBarAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "OPACITY", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "OPACITY", NULL, eflDialogSetOpacityAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "OPACITYIMAGE", NULL, eflDialogSetOpacityImageAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SHAPEIMAGE", NULL, eflDialogSetShapeImageAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CLIENTSIZE", eflDialogGetClientSizeAttrib, iupDialogSetClientSizeAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_SAVE|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
