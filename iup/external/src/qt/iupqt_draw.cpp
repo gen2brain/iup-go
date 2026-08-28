@@ -212,16 +212,16 @@ extern "C" IUP_SDK_API void iupdrvDrawKillCanvas(IdrawCanvas* dc)
 
 extern "C" IUP_SDK_API void iupdrvDrawGetSize(IdrawCanvas* dc, int *w, int *h)
 {
+  int width = 0, height = 0;
+
   if (dc && dc->widget)
   {
-    *w = dc->widget->width();
-    *h = dc->widget->height();
+    width = dc->widget->width();
+    height = dc->widget->height();
   }
-  else
-  {
-    *w = 0;
-    *h = 0;
-  }
+
+  if (w) *w = width;
+  if (h) *h = height;
 }
 
 /****************************************************************************
