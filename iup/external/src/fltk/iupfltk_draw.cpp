@@ -5,7 +5,7 @@
  *
  * Flow: CreateCanvas -> fl_begin_offscreen (push offscreen surface)
  *       Drawing -> all fl_* calls go to offscreen
- *       Flush -> fl_end_offscreen (pop to window surface) + fl_copy_offscreen
+ *       Flush -> fl_end_offscreen (pop to window surface) + present the buffer
  *       Kill -> cleanup (offscreen already ended by Flush)
  *
  * See Copyright Notice in "iup.h"
@@ -15,6 +15,7 @@
 #include <FL/Fl_Widget.H>
 #include <FL/Fl_Window.H>
 #include <FL/fl_draw.H>
+#include <FL/Fl_Image.H>
 #include <FL/platform.H>
 
 #if defined(FLTK_USE_WAYLAND)
@@ -193,7 +194,25 @@ extern "C" IUP_SDK_API void iupdrvDrawFlush(IdrawCanvas* dc)
   if (win && Fl_Window::current() != win)
     win->make_current();
 
-  fl_copy_offscreen(dc->widget->x(), dc->widget->y(), dc->w, dc->h, dc->offscreen, 0, 0);
+#if defined(FLTK_USE_WAYLAND)
+  if (iupfltkIsWayland())
+  {
+    fl_copy_offscreen(dc->widget->x(), dc->widget->y(), dc->w, dc->h, dc->offscreen, 0, 0);
+    return;
+  }
+#endif
+
+  /* on X11 copy_offscreen is a raw XCopyArea, it does not order against the Cairo sibling drawing */
+  fl_begin_offscreen(dc->offscreen);
+  uchar* pixels = fl_read_image(NULL, 0, 0, dc->w, dc->h);
+  fl_end_offscreen();
+
+  if (pixels)
+  {
+    Fl_RGB_Image img(pixels, dc->w, dc->h, 3);
+    img.draw(dc->widget->x(), dc->widget->y());
+    delete[] pixels;
+  }
 }
 
 extern "C" IUP_SDK_API void iupdrvDrawUpdateSize(IdrawCanvas* dc)
