@@ -169,6 +169,12 @@ extern "C" IUP_SDK_API void iupdrvDrawKillCanvas(IdrawCanvas* dc)
 {
   if (!dc) return;
 
+  if (dc->clip_pushed)
+  {
+    fl_pop_clip();
+    dc->clip_pushed = 0;
+  }
+
   if (dc->in_offscreen)
   {
     fl_end_offscreen();
@@ -181,6 +187,13 @@ extern "C" IUP_SDK_API void iupdrvDrawKillCanvas(IdrawCanvas* dc)
 extern "C" IUP_SDK_API void iupdrvDrawFlush(IdrawCanvas* dc)
 {
   if (!dc || !dc->widget) return;
+
+  /* the clip belongs to the offscreen surface, it has to go before that surface does */
+  if (dc->clip_pushed)
+  {
+    fl_pop_clip();
+    dc->clip_pushed = 0;
+  }
 
   if (dc->in_offscreen)
   {
