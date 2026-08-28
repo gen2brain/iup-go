@@ -14,6 +14,7 @@
 #include <QPixmap>
 #include <QBitmap>
 #include <QPainterPath>
+#include <QPainter>
 #include <QPalette>
 
 #include <cstdarg>
@@ -64,6 +65,7 @@ class IupQtDialog : public QMainWindow
 {
 public:
   Ihandle* iup_handle;
+  QPixmap opacity_image;
 
   IupQtDialog(Ihandle* ih) : QMainWindow(nullptr), iup_handle(ih)
   {
@@ -128,6 +130,19 @@ public:
   }
 
 protected:
+  void paintEvent(QPaintEvent* event) override
+  {
+    if (opacity_image.isNull())
+    {
+      QMainWindow::paintEvent(event);
+      return;
+    }
+
+    QPainter painter(this);
+    painter.setCompositionMode(QPainter::CompositionMode_Source);
+    painter.drawPixmap(0, 0, opacity_image);
+  }
+
   void closeEvent(QCloseEvent* event) override
   {
     if (iupqtDialogCloseEvent(this, (QEvent*)event, iup_handle))
@@ -1048,6 +1063,31 @@ static int qtDialogSetShapeImageAttrib(Ihandle *ih, const char *value)
   return 0;
 }
 
+static int qtDialogSetOpacityImageAttrib(Ihandle *ih, const char *value)
+{
+  IupQtDialog* dialog = dynamic_cast<IupQtDialog*>((QWidget*)ih->handle);
+  if (!dialog)
+    return 0;
+
+  if (!value)
+  {
+    dialog->opacity_image = QPixmap();
+    dialog->setAttribute(Qt::WA_TranslucentBackground, false);
+    dialog->update();
+    return 0;
+  }
+
+  QPixmap* pixmap = (QPixmap*)iupImageGetImage(value, ih, 0, NULL);
+  if (!pixmap)
+    return 0;
+
+  dialog->opacity_image = *pixmap;
+  dialog->setAttribute(Qt::WA_TranslucentBackground);
+  dialog->update();
+
+  return 1;
+}
+
 static char* qtDialogGetMaximizedAttrib(Ihandle *ih)
 {
   QWidget* widget = (QWidget*)ih->handle;
@@ -1136,6 +1176,10 @@ extern "C" int qtDialogMapMethod(Ihandle* ih)
 
   /* Configure initial size range */
   qtDialogSetMinMax(ih, 1, 1, 65535, 65535);
+
+  /* the ARGB visual has to be requested before the native window exists */
+  if (iupAttribGet(ih, "OPACITYIMAGE"))
+    dialog->setAttribute(Qt::WA_TranslucentBackground);
 
   /* Ignore VISIBLE before mapping */
   iupAttribSet(ih, "VISIBLE", NULL);
@@ -1246,7 +1290,7 @@ extern "C" IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "TOPMOST", NULL, qtDialogSetTopMostAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DIALOGHINT", NULL, qtDialogSetDialogHintAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "OPACITY", NULL, qtDialogSetOpacityAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "OPACITYIMAGE", NULL, qtDialogSetShapeImageAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "OPACITYIMAGE", NULL, qtDialogSetOpacityImageAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SHAPEIMAGE", NULL, qtDialogSetShapeImageAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "BRINGFRONT", NULL, qtDialogSetBringFrontAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "HIDETITLEBAR", NULL, qtDialogSetHideTitleBarAttrib, NULL, NULL, IUPAF_NO_INHERIT);

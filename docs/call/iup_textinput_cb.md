@@ -17,6 +17,7 @@ is not generated for the originating key.
 ### Notes
 
 In EFL dead keys are delivered as separate characters.
+In GNUstep dead keys and IME composition are not composed; each key commits its own character.
 In macOS the Option modifier produces text according to the keyboard layout.
 In WASM IME composition is reported at composition end.
 In Android and iOS the soft keyboard is shown when a control that defines the callback is touched.
