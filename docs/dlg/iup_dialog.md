@@ -213,10 +213,12 @@ Not supported in Motif, Android, iOS and WebAssembly.
 Valid values range from 0 (completely transparent) to 255 (opaque).
 In Windows (Win32) must be set before map so the native window would be properly initialized when mapped.
 In Motif requires a running compositor.
-Not supported in EFL and FLTK.
+In EFL requires X11 and a running compositor.
+Not supported in FLTK.
 
 **OPACITYIMAGE**: sets an RGBA image as the dialog background so it is possible to create a non rectangle window with transparency, but it can not have children.
 Used usually for splash screens. It must be set before map so the native window would be properly initialized when mapped.
+In GTK and Qt requires a running compositor.
 Not supported in GTK4, Motif, WinUI, FLTK, iOS, Android, Haiku and WebAssembly.
 
 **SHAPEIMAGE**: sets an RGBA image as the dialog shape, so it is possible to create a non rectangle window with children.

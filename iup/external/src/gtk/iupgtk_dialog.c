@@ -759,6 +759,16 @@ static int gtkDialogMapMethod(Ihandle* ih)
   }
 #endif
 
+#if GTK_CHECK_VERSION(3, 0, 0)
+  /* the ARGB visual has to be selected before the window is realized */
+  if (iupAttribGet(ih, "OPACITYIMAGE"))
+  {
+    GdkVisual* visual = gdk_screen_get_rgba_visual(gtk_widget_get_screen(ih->handle));
+    if (visual)
+      gtk_widget_set_visual(ih->handle, visual);
+  }
+#endif
+
   gtk_widget_realize(ih->handle);
 
 #if GTK_CHECK_VERSION(3, 0, 0) && defined(GDK_WINDOWING_X11)
@@ -1153,6 +1163,56 @@ static int gtkDialogSetOpacityAttrib(Ihandle *ih, const char *value)
   return 1;
 }
 
+#if GTK_CHECK_VERSION(3, 0, 0)
+static gboolean gtkDialogOpacityImageDraw(GtkWidget* widget, cairo_t* cr, Ihandle* ih)
+{
+  GdkPixbuf* pixbuf = (GdkPixbuf*)iupAttribGet(ih, "_IUPGTK_OPACITY_IMAGE");
+  if (pixbuf)
+  {
+    gdk_cairo_set_source_pixbuf(cr, pixbuf, 0, 0);
+    cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+    cairo_paint(cr);
+  }
+
+  (void)widget;
+  return FALSE;
+}
+#endif
+
+static int gtkDialogSetOpacityImageAttrib(Ihandle *ih, const char *value)
+{
+#if GTK_CHECK_VERSION(3, 0, 0)
+  GdkPixbuf* pixbuf;
+
+  if (!value)
+  {
+    iupAttribSet(ih, "_IUPGTK_OPACITY_IMAGE", NULL);
+    gtk_widget_queue_draw(ih->handle);
+    return 0;
+  }
+
+  pixbuf = iupImageGetImage(value, ih, 0, NULL);
+  if (!pixbuf)
+    return 0;
+
+  iupAttribSet(ih, "_IUPGTK_OPACITY_IMAGE", (char*)pixbuf);
+
+  if (!iupAttribGet(ih, "_IUPGTK_OPACITY_DRAW_HANDLER"))
+  {
+    gulong handler_id = g_signal_connect(G_OBJECT(ih->handle), "draw", G_CALLBACK(gtkDialogOpacityImageDraw), ih);
+    iupAttribSet(ih, "_IUPGTK_OPACITY_DRAW_HANDLER", (char*)(uintptr_t)handler_id);
+    gtk_widget_set_app_paintable(ih->handle, TRUE);
+  }
+
+  gtk_widget_queue_draw(ih->handle);
+  return 1;
+#else
+  (void)ih;
+  (void)value;
+  return 0;
+#endif
+}
+
 static int gtkDialogSetShapeImageAttrib(Ihandle *ih, const char *value)
 {
   GdkPixbuf* pixbuf = iupImageGetImage(value, ih, 0, NULL);
@@ -1388,7 +1448,7 @@ IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "DIALOGHINT", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "OPACITY", NULL, gtkDialogSetOpacityAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "OPACITYIMAGE", NULL, gtkDialogSetShapeImageAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "OPACITYIMAGE", NULL, gtkDialogSetOpacityImageAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SHAPEIMAGE", NULL, gtkDialogSetShapeImageAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "CUSTOMFRAME", NULL, NULL, IUPAF_SAMEASSYSTEM, NULL, IUPAF_DEFAULT);

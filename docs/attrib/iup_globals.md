@@ -306,7 +306,7 @@ Returns YES or NO if the Windows common controls are using Visual Styles or not.
 
 Returns "YES" if the system is currently in dark mode, "NO" otherwise. Independent of AUTODARKMODE.
 
-### AUTODARKMODE [Windows Only]
+### AUTODARKMODE [Win32 Only]
 
 Follows the system dark mode when "YES": seeds the dark palette (DLGBGCOLOR, TXTBGCOLOR, MENUBGCOLOR and their foregrounds) and dark-themes the native controls. Default: "NO". Must be set after IupOpen, before creating dialogs.
 
