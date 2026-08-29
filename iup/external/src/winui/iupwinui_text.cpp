@@ -1579,11 +1579,13 @@ extern "C" IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int* x, int* y)
 {
   winuiTextMeasureBorderMetrics();
 
+  double scale = iupwinuiGetScale(ih);
+
   if (ih->data && ih->data->is_multiline)
   {
     int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
 
-    *x += winui_border_x;
+    *x += (int)ceil(winui_border_x * scale);
 
     if (visiblelines > 0)
     {
@@ -1593,25 +1595,25 @@ extern "C" IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int* x, int* y)
       float line_height_f = iupwinuiFontGetMultilineLineHeightF(ih);
 
       *y -= char_height * visiblelines;
-      *y += (int)ceil(winui_multiline_border_height + line_height_f * visiblelines);
+      *y += (int)ceil(winui_multiline_border_height * scale + line_height_f * visiblelines);
     }
     else
     {
-      *y += (int)ceil(winui_multiline_border_height);
+      *y += (int)ceil(winui_multiline_border_height * scale);
     }
   }
   else
   {
-    *x += winui_border_x;
-    *y += winui_border_y;
+    *x += (int)ceil(winui_border_x * scale);
+    *y += (int)ceil(winui_border_y * scale);
   }
 }
 
 extern "C" IUP_SDK_API void iupdrvTextAddSpin(Ihandle* ih, int* w, int h)
 {
-  (void)ih;
   (void)h;
-  *w += 64;  /* Two spin buttons at 32px each (from NumberBoxSpinButtonStyle MinWidth) */
+  /* two spin buttons at 32 DIP each, from NumberBoxSpinButtonStyle MinWidth */
+  *w += (int)ceil(64 * iupwinuiGetScale(ih));
 }
 
 static int winuiTextLinColToPos(ITextDocument const& doc, int lin, int col);
@@ -2545,10 +2547,11 @@ static void winuiTextMeasureSingleLineMetrics(void)
 
 extern "C" IUP_SDK_API void iupdrvTextAddExtraPadding(Ihandle* ih, int* x, int* y)
 {
-  (void)ih;
   winuiTextMeasureSingleLineMetrics();
-  *x += winui_singleline_extra_h;
-  *y += winui_singleline_extra_h;
+
+  int extra = (int)ceil(winui_singleline_extra_h * iupwinuiGetScale(ih));
+  *x += extra;
+  *y += extra;
 }
 
 static char* winuiTextGetSelectedTextAttrib(Ihandle* ih)

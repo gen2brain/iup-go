@@ -79,8 +79,9 @@ static void winuiDialogUpdateXamlIsland(Ihandle* ih)
 
   if (aux->rootPanel)
   {
-    aux->rootPanel.Width(static_cast<double>(rect.right));
-    aux->rootPanel.Height(static_cast<double>(rect.bottom));
+    double scale = iupwinuiGetScale(ih);
+    aux->rootPanel.Width((double)rect.right / scale);
+    aux->rootPanel.Height((double)rect.bottom / scale);
   }
 }
 
@@ -680,8 +681,11 @@ static int winuiDialogMapMethod(Ihandle* ih)
   }
 
   aux->rootPanel = Grid();
-  aux->rootPanel.Width(static_cast<double>(rect.right));
-  aux->rootPanel.Height(static_cast<double>(rect.bottom));
+  {
+    double scale = iupwinuiGetScale(ih);
+    aux->rootPanel.Width((double)rect.right / scale);
+    aux->rootPanel.Height((double)rect.bottom / scale);
+  }
 
   RowDefinition menuRow;
   menuRow.Height(GridLengthHelper::Auto());

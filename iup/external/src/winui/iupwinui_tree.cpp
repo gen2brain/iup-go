@@ -8,6 +8,7 @@
 
 #include <cstdlib>
 #include <cstring>
+#include <cmath>
 #include <vector>
 
 extern "C" {
@@ -663,7 +664,7 @@ static void winuiTreeApplyNodeFont(Ihandle* ih, TreeViewNode const& node, TreeVi
 
   char* font = winuiTreeGetNodeFont(node);
   if (font)
-    iupwinuiUpdateTextBlockFontStr(tb, font);
+    iupwinuiUpdateTextBlockFontStr(tb, font, ih);
   else
     iupwinuiUpdateTextBlockFont(ih, tb);
 }
@@ -2748,10 +2749,11 @@ static int winuiTreeSetDragSourceAttrib(Ihandle* ih, const char* value)
 
 extern "C" IUP_SDK_API void iupdrvTreeAddBorders(Ihandle* ih, int *w, int *h)
 {
-  int border = 2 * 2;
+  double scale = iupwinuiGetScale(ih);
+  int border = (int)ceil(4 * scale);
   int sb = iupdrvGetScrollbarSize();
-  int indent_icon = 20 + 24;  /* expander glyph + 1 indent step (XAML defaults are larger) */
-  (void)ih;
+  int indent_icon = (int)ceil(44 * scale);  /* expander glyph + 1 indent step */
+
   *w += border + sb + indent_icon;
   *h += border;
 }

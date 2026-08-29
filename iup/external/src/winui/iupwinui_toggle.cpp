@@ -864,28 +864,33 @@ extern "C" IUP_SDK_API void iupdrvToggleAddBorders(Ihandle* ih, int* x, int* y)
   }
   else
   {
-    *x += 8;
-    *y += 5;
+    double scale = iupwinuiGetScale(ih);
+    *x += (int)ceil(8 * scale);
+    *y += (int)ceil(5 * scale);
   }
 }
 
 extern "C" IUP_SDK_API void iupdrvToggleAddCheckBox(Ihandle* ih, int* x, int* y, const char* str)
 {
-  (void)ih;
-  *x += 20;
-  if (*y < 32)
-    *y = 32;
+  double scale = iupwinuiGetScale(ih);
+  int min_h = (int)ceil(32 * scale);
+
+  *x += (int)ceil(20 * scale);
+  if (*y < min_h)
+    *y = min_h;
 
   if (str && str[0])
-    *x += 8;
+    *x += (int)ceil(8 * scale);
 }
 
 extern "C" IUP_SDK_API void iupdrvToggleAddSwitch(Ihandle* ih, int* x, int* y, const char* str)
 {
-  (void)ih;
-  *x += 44;
-  if (*y < 30)
-    *y = 30;
+  double scale = iupwinuiGetScale(ih);
+  int min_h = (int)ceil(30 * scale);
+
+  *x += (int)ceil(44 * scale);
+  if (*y < min_h)
+    *y = min_h;
 
   if (str && str[0])
     *x += 10;
