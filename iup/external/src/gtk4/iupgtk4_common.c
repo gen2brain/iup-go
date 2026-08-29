@@ -1050,8 +1050,8 @@ IUP_DRV_API void iupgtk4SetupMotionEvents(GtkWidget* widget, Ihandle* ih)
 
 IUP_DRV_API char* iupgtk4StrConvertToSystemLen(const char* str, int *len)
 {
-  /* GTK4 uses UTF-8 like GTK3, no conversion needed */
-  if (len) *len = (int)strlen(str);
+  /* GTK4 uses UTF-8 like GTK3, no conversion needed; len stays the caller's */
+  (void)len;
   return (char*)str;
 }
 
