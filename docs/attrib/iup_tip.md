@@ -48,6 +48,7 @@ Can be "YES" or "NO". Default: "NO". Must be set before setting the TIP attribut
 
 **TIPRECT** (non-inheritable): Specifies a rectangle inside the element where the tip will be activated.
 Format: "%d %d %d %d"="x1 y1 x2 y2". Default: all the element area.
+Not supported in EFL, FLTK, Haiku, Android, iOS and WebAssembly.
 
 **TIPVISIBLE**: Shows or hides the tip under the mouse cursor. Use values "YES" or "NO".
 Returns the current visible state.
