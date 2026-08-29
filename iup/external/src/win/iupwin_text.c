@@ -1005,6 +1005,8 @@ static char* winTextGetLineValueAttrib(Ihandle* ih)
     winTextGetCaret(ih, &lin, &col);
     lin--; /* from IUP to Win */
     len = (int)SendMessage(ih->handle, EM_GETLINE, (WPARAM)lin, (LPARAM)str);
+    while (len > 0 && (str[len-1] == TEXT('\r') || str[len-1] == TEXT('\n')))
+      len--;
     str[len]=0;
     return iupStrReturnStr(iupwinStrFromSystem(str));
   }
