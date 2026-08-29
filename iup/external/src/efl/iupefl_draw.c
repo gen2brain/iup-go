@@ -39,6 +39,11 @@ struct _IdrawCanvas
   int clip_x1, clip_y1, clip_x2, clip_y2;
   int clip_corner_radius;
   Eo* clipper;
+
+  Efl_VG* batch_shape;
+  Efl_VG* batch_root;
+  long batch_color;
+  int batch_width;
 };
 
 /* Evas stacks later objects above earlier ones, so a new layer after each text or image keeps
@@ -88,6 +93,12 @@ static void iDrawGetColor(long color, int* r, int* g, int* b, int* a)
 static int iDrawHasClip(IdrawCanvas* dc)
 {
   return (dc->clip_x1 > 0 || dc->clip_y1 > 0 || dc->clip_x2 < dc->w - 1 || dc->clip_y2 < dc->h - 1);
+}
+
+static int iDrawIsDashed(int style)
+{
+  return style == IUP_DRAW_STROKE_DASH || style == IUP_DRAW_STROKE_DOT ||
+         style == IUP_DRAW_STROKE_DASH_DOT || style == IUP_DRAW_STROKE_DASH_DOT_DOT;
 }
 
 static void iDrawSetDash(Efl_VG* shape, int style)
@@ -236,6 +247,15 @@ IUP_SDK_API void iupdrvDrawLine(IdrawCanvas* dc, int x1, int y1, int x2, int y2,
   Efl_VG* shape;
   int r, g, b, a;
 
+  if (!iDrawIsDashed(style) && iupDrawAlpha(color) == 255 && dc->batch_shape &&
+      dc->batch_root == dc->root && dc->batch_color == color && dc->batch_width == line_width &&
+      dc->batch_shape == eina_list_last_data_get(dc->shapes))
+  {
+    efl_gfx_path_append_move_to(dc->batch_shape, x1, y1);
+    efl_gfx_path_append_line_to(dc->batch_shape, x2, y2);
+    return;
+  }
+
   iDrawGetColor(color, &r, &g, &b, &a);
 
   shape = efl_add(EFL_CANVAS_VG_SHAPE_CLASS, dc->root,
@@ -248,6 +268,11 @@ IUP_SDK_API void iupdrvDrawLine(IdrawCanvas* dc, int x1, int y1, int x2, int y2,
   iDrawSetDash(shape, style);
 
   dc->shapes = eina_list_append(dc->shapes, shape);
+
+  dc->batch_shape = (iDrawIsDashed(style) || iupDrawAlpha(color) != 255) ? NULL : shape;
+  dc->batch_root = dc->root;
+  dc->batch_color = color;
+  dc->batch_width = line_width;
 }
 
 IUP_SDK_API void iupdrvDrawRectangle(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color, int style, int line_width)
