@@ -718,7 +718,6 @@ static ListView winuiTreeFindListView(DependencyObject const& parent)
   return nullptr;
 }
 
-/* containers are recycled, so a realized one carries the previous node's font until it is reset */
 static void winuiTreeHookContainerContentChanging(Ihandle* ih, IupWinUITreeAux* aux)
 {
   if (aux->containerContentChangingToken.value)
@@ -2644,9 +2643,8 @@ static int winuiTreeSetCopyNodeAttrib(Ihandle* ih, int id, const char* value)
 /****************************************************************************
  * Tree-Specific Drag Source
  *
- * TreeView intercepts drag gestures at the item level, so UIElement::CanDrag
- * and UIElement::DragStarting never fire. Use TreeView::CanDragItems and
- * TreeView::DragItemsStarting instead.
+ * TreeView intercepts drag gestures at the item level, so UIElement::CanDrag and
+ * UIElement::DragStarting never fire.
  ****************************************************************************/
 
 static int winuiTreeSetDragSourceAttrib(Ihandle* ih, const char* value)

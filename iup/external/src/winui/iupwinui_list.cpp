@@ -48,9 +48,8 @@ using namespace Microsoft::UI::Input;
 /****************************************************************************
  * Manual Drag Gesture Tracking for ListBox
  *
- * ListBox captures the pointer for selection, preventing UIElement's
- * automatic drag gesture detection from firing DragStarting.
- * We manually detect press+move and call StartDragAsync to initiate drags.
+ * ListBox captures the pointer for selection, so UIElement never detects the
+ * drag gesture and DragStarting never fires.
  ****************************************************************************/
 
 static ListBoxItem s_listDragItem{nullptr};
@@ -841,15 +840,7 @@ static int winuiListSetTopItemAttrib(Ihandle* ih, const char* value)
 /****************************************************************************
  * ListBox Per-Item Drag Support
  *
- * ListBox captures the pointer for selection, preventing UIElement's
- * automatic drag gesture detection (CanDrag) from firing DragStarting.
- * Each item sets CanDrag(true) and hooks PointerPressed for tracking.
- * The ListBox-level PointerMoved handler detects drag threshold and
- * calls StartDragAsync to programmatically initiate the drag, which
- * fires the item's DragStarting handler.
- *
- * ListView (virtual mode) inherits from ListViewBase which supports
- * CanDragItems and DragItemsStarting directly.
+ * ListView in virtual mode uses CanDragItems and DragItemsStarting instead.
  ****************************************************************************/
 
 static void winuiListSetItemDragSource(Ihandle* ih, ListBoxItem const& item)
