@@ -681,6 +681,15 @@ static void fltkCanvasUnMapMethod(Ihandle* ih)
   if (canvas)
     canvas->ih = NULL;
 
+  {
+    Fl_Offscreen offscreen = (Fl_Offscreen)(size_t)iupAttribGet(ih, "_IUP_FLTK_OFFSCREEN");
+    if (offscreen)
+    {
+      fl_delete_offscreen(offscreen);
+      iupAttribSet(ih, "_IUP_FLTK_OFFSCREEN", NULL);
+    }
+  }
+
   iupdrvBaseUnMapMethod(ih);
 }
 
