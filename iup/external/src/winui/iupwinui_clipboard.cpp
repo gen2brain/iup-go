@@ -116,25 +116,42 @@ static int winuiClipboardSetTextAttrib(Ihandle* ih, const char* value)
   }
   else
   {
-    dataPackage.SetText(iupwinuiStringToHString(value));
+    char* dos_str = iupStrToDos(value);
+    dataPackage.SetText(iupwinuiStringToHString(dos_str));
+    if (dos_str != value)
+      free(dos_str);
   }
 
   Clipboard::SetContent(dataPackage);
+  try { Clipboard::Flush(); } catch (...) {}
   return 0;
 }
 
 static char* winuiClipboardGetTextAttrib(Ihandle* ih)
 {
+  HANDLE hHandle;
+  char* str;
+
   (void)ih;
 
-  DataPackageView content = Clipboard::GetContent();
-  if (content.Contains(StandardDataFormats::Text()))
+  if (!OpenClipboard(GetForegroundWindow()))
+    return NULL;
+
+  hHandle = GetClipboardData(CF_UNICODETEXT);
+  if (!hHandle)
   {
-    hstring text = content.GetTextAsync().get();
-    return iupwinuiHStringToString(text);
+    CloseClipboard();
+    return NULL;
   }
 
-  return NULL;
+  str = iupwinuiHStringToString(hstring((wchar_t*)GlobalLock(hHandle)));
+  GlobalUnlock(hHandle);
+  CloseClipboard();
+
+  if (str)
+    iupStrToUnix(str);
+
+  return str;
 }
 
 static char* winuiClipboardGetTextAvailableAttrib(Ihandle* ih)
@@ -200,6 +217,7 @@ static int winuiClipboardSetImageAttrib(Ihandle* ih, const char* value)
   DataPackage dataPackage;
   dataPackage.SetBitmap(streamRef);
   Clipboard::SetContent(dataPackage);
+  try { Clipboard::Flush(); } catch (...) {}
 
   return 0;
 }
