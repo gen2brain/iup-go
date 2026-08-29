@@ -440,6 +440,8 @@ static int motMenuItemMapMethod(Ihandle* ih)
   if (!ih->parent)
     return IUP_ERROR;
 
+  pos = IupGetChildPos(ih->parent, ih);
+
   /* Menu bar can contain only CascadeButtons */
   if (iupMenuIsMenuBar(ih->parent))
   {
@@ -447,6 +449,8 @@ static int motMenuItemMapMethod(Ihandle* ih)
                    iupMenuGetChildIdStr(ih),
                    xmCascadeButtonWidgetClass,
                    ih->parent->handle,
+                   XmNpositionIndex, pos,
+                   XmNtraversalOn, False,
                    NULL);
 
     XtAddCallback(ih->handle, XmNactivateCallback, (XtCallbackProc)motMenuItemActivateCallback, (XtPointer)ih);
@@ -456,6 +460,9 @@ static int motMenuItemMapMethod(Ihandle* ih)
   {
     int num_args = 0;
     Arg args[10];
+
+    iupMOT_SETARG(args, num_args, XmNpositionIndex, pos);
+    iupMOT_SETARG(args, num_args, XmNtraversalOn, False);
 
     if (iupAttribGetBoolean(ih->parent, "RADIO"))
     {
@@ -494,9 +501,6 @@ static int motMenuItemMapMethod(Ihandle* ih)
   if (iupStrBoolean(IupGetGlobal("INPUTCALLBACKS")))
     XtAddEventHandler(ih->handle, PointerMotionMask, False, (XtEventHandler)iupmotDummyPointerMotionEvent, NULL);
 
-  pos = IupGetChildPos(ih->parent, ih);
-  XtVaSetValues(ih->handle, XmNpositionIndex, pos, NULL);   /* RowColumn Constraint */
-
   iupUpdateFontAttrib(ih);
 
   return IUP_NOERROR;
@@ -509,19 +513,20 @@ static int motSubmenuMapMethod(Ihandle* ih)
   if (!ih->parent)
     return IUP_ERROR;
 
+  pos = IupGetChildPos(ih->parent, ih);
+
   ih->handle = XtVaCreateManagedWidget(
                  iupMenuGetChildIdStr(ih),
                  xmCascadeButtonWidgetClass,
                  ih->parent->handle,
+                 XmNpositionIndex, pos,
+                 XmNtraversalOn, False,
                  NULL);
 
   if (!ih->handle)
     return IUP_ERROR;
 
   ih->serial = iupMenuGetChildId(ih); /* must be after using the string */
-
-  pos = IupGetChildPos(ih->parent, ih);
-  XtVaSetValues(ih->handle, XmNpositionIndex, pos, NULL);   /* RowColumn Constraint */
 
   XtAddCallback(ih->handle, XmNcascadingCallback, (XtCallbackProc)motMenuItemArmCallback, (XtPointer)ih);
 
@@ -540,19 +545,20 @@ static int motMenuSeparatorMapMethod(Ihandle* ih)
   if (!ih->parent)
     return IUP_ERROR;
 
+  pos = IupGetChildPos(ih->parent, ih);
+
   ih->handle = XtVaCreateManagedWidget(
                  iupMenuGetChildIdStr(ih),
                  xmSeparatorWidgetClass,
                  ih->parent->handle,
+                 XmNpositionIndex, pos,
+                 XmNtraversalOn, False,
                  NULL);
 
   if (!ih->handle)
     return IUP_ERROR;
 
   ih->serial = iupMenuGetChildId(ih); /* must be after using the string */
-
-  pos = IupGetChildPos(ih->parent, ih);
-  XtVaSetValues(ih->handle, XmNpositionIndex, pos, NULL);  /* RowColumn Constraint */
 
   return IUP_NOERROR;
 }
