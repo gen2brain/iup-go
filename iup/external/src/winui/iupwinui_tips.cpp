@@ -145,7 +145,8 @@ extern "C" IUP_SDK_API int iupdrvBaseSetTipAttrib(Ihandle* ih, const char* value
   {
     int need_styled = iupAttribGet(ih, "TIPFONT") ||
                       iupAttribGet(ih, "TIPBGCOLOR") ||
-                      iupAttribGet(ih, "TIPFGCOLOR");
+                      iupAttribGet(ih, "TIPFGCOLOR") ||
+                      iupAttribGet(ih, "TIPRECT");
 
     IFnii tips_cb = (IFnii)IupGetCallback(ih, "TIPS_CB");
 
@@ -153,20 +154,33 @@ extern "C" IUP_SDK_API int iupdrvBaseSetTipAttrib(Ihandle* ih, const char* value
     {
       ToolTip tip = winuiTipCreateStyled(ih, value);
 
-      if (tips_cb)
+      if (tips_cb || iupAttribGet(ih, "TIPRECT"))
       {
         tip.Opened([ih](IInspectable const&, RoutedEventArgs const&) {
           if (!iupObjectCheck(ih))
             return;
 
+          int x, y;
+          iupdrvGetCursorPos(&x, &y);
+          iupdrvScreenToClient(ih, &x, &y);
+
+          const char* rect = iupAttribGet(ih, "TIPRECT");
+          if (rect)
+          {
+            int x1, y1, x2, y2;
+            if (sscanf(rect, "%d %d %d %d", &x1, &y1, &x2, &y2) == 4 &&
+                (x < x1 || x > x2 || y < y1 || y > y2))
+            {
+              DependencyObject owner = winuiGetHandle<DependencyObject>(ih);
+              if (owner)
+                winuiTipClose(owner);
+              return;
+            }
+          }
+
           IFnii cb = (IFnii)IupGetCallback(ih, "TIPS_CB");
           if (cb)
-          {
-            int x, y;
-            iupdrvGetCursorPos(&x, &y);
-            iupdrvScreenToClient(ih, &x, &y);
             cb(ih, x, y);
-          }
 
           const char* tip_text = iupAttribGet(ih, "TIP");
           if (tip_text)
