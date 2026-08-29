@@ -18,29 +18,6 @@
 #include <FL/Fl_Image.H>
 #include <FL/platform.H>
 
-#if defined(FLTK_USE_WAYLAND)
-#include <FL/wayland.H>
-#endif
-
-#if defined(FLTK_USE_CAIRO) || defined(FLTK_USE_WAYLAND)
-#include <dlfcn.h>
-typedef struct _cairo cairo_t;
-static void (*_cairo_set_source_rgba)(cairo_t*, double, double, double, double) = NULL;
-static int cairo_alpha_loaded = 0;
-
-static void fltkDrawLoadCairo(void)
-{
-  if (cairo_alpha_loaded) return;
-  cairo_alpha_loaded = 1;
-
-  void* lib = dlopen("libcairo.so.2", RTLD_LAZY);
-  if (!lib) lib = dlopen("libcairo.so", RTLD_LAZY);
-  if (!lib) return;
-
-  _cairo_set_source_rgba = (void (*)(cairo_t*, double, double, double, double))dlsym(lib, "cairo_set_source_rgba");
-}
-#endif
-
 #include <cstdlib>
 #include <cmath>
 
@@ -76,34 +53,12 @@ static void fltkDrawSetColor(long color)
   unsigned char b = iupDrawBlue(color);
   unsigned char a = iupDrawAlpha(color);
 
+  /* the colormap entry carries the alpha, a plain fl_color(r,g,b) cannot */
   if (a < 255)
   {
-#if defined(FLTK_USE_CAIRO) || defined(FLTK_USE_WAYLAND)
-    fltkDrawLoadCairo();
-    if (_cairo_set_source_rgba)
-    {
-      cairo_t* cr = NULL;
-#if defined(FLTK_USE_WAYLAND)
-      if (iupfltkIsWayland())
-        cr = fl_wl_gc();
-      else
-#endif
-#if defined(FLTK_USE_X11) && defined(FLTK_USE_CAIRO)
-        cr = fl_cairo_gc();
-#endif
-      if (cr)
-      {
-        _cairo_set_source_rgba(cr, r / 255.0, g / 255.0, b / 255.0, a / 255.0);
-        return;
-      }
-    }
-#endif
-
-    unsigned char bg_r = 255, bg_g = 255, bg_b = 255;
-    Fl::get_color(FL_BACKGROUND_COLOR, bg_r, bg_g, bg_b);
-    r = (unsigned char)((r * a + bg_r * (255 - a)) / 255);
-    g = (unsigned char)((g * a + bg_g * (255 - a)) / 255);
-    b = (unsigned char)((b * a + bg_b * (255 - a)) / 255);
+    Fl::set_color(FL_FREE_COLOR, r, g, b, a);
+    fl_color(FL_FREE_COLOR);
+    return;
   }
 
   fl_color(r, g, b);
@@ -146,12 +101,22 @@ extern "C" IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
   if (dc->w <= 0) dc->w = 1;
   if (dc->h <= 0) dc->h = 1;
 
-  Fl_Offscreen old_offscreen = (Fl_Offscreen)(size_t)iupAttribGet(ih, "_IUP_FLTK_OFFSCREEN");
-  if (old_offscreen)
-    fl_delete_offscreen(old_offscreen);
+  dc->offscreen = (Fl_Offscreen)(size_t)iupAttribGet(ih, "_IUP_FLTK_OFFSCREEN");
+  if (dc->offscreen &&
+      (iupAttribGetInt(ih, "_IUP_FLTK_OFFSCREEN_W") != dc->w || iupAttribGetInt(ih, "_IUP_FLTK_OFFSCREEN_H") != dc->h))
+  {
+    fl_delete_offscreen(dc->offscreen);
+    dc->offscreen = 0;
+  }
 
-  dc->offscreen = fl_create_offscreen(dc->w, dc->h);
-  iupAttribSet(ih, "_IUP_FLTK_OFFSCREEN", (char*)(size_t)dc->offscreen);
+  if (!dc->offscreen)
+  {
+    dc->offscreen = fl_create_offscreen(dc->w, dc->h);
+    iupAttribSet(ih, "_IUP_FLTK_OFFSCREEN", (char*)(size_t)dc->offscreen);
+    iupAttribSetInt(ih, "_IUP_FLTK_OFFSCREEN_W", dc->w);
+    iupAttribSetInt(ih, "_IUP_FLTK_OFFSCREEN_H", dc->h);
+  }
+
   iupAttribSet(ih, "DRAWDRIVER", "FLTK");
 
   fl_begin_offscreen(dc->offscreen);
@@ -207,25 +172,7 @@ extern "C" IUP_SDK_API void iupdrvDrawFlush(IdrawCanvas* dc)
   if (win && Fl_Window::current() != win)
     win->make_current();
 
-#if defined(FLTK_USE_WAYLAND)
-  if (iupfltkIsWayland())
-  {
-    fl_copy_offscreen(dc->widget->x(), dc->widget->y(), dc->w, dc->h, dc->offscreen, 0, 0);
-    return;
-  }
-#endif
-
-  /* on X11 copy_offscreen is a raw XCopyArea, it does not order against the Cairo sibling drawing */
-  fl_begin_offscreen(dc->offscreen);
-  uchar* pixels = fl_read_image(NULL, 0, 0, dc->w, dc->h);
-  fl_end_offscreen();
-
-  if (pixels)
-  {
-    Fl_RGB_Image img(pixels, dc->w, dc->h, 3);
-    img.draw(dc->widget->x(), dc->widget->y());
-    delete[] pixels;
-  }
+  fl_copy_offscreen(dc->widget->x(), dc->widget->y(), dc->w, dc->h, dc->offscreen, 0, 0);
 }
 
 extern "C" IUP_SDK_API void iupdrvDrawUpdateSize(IdrawCanvas* dc)
