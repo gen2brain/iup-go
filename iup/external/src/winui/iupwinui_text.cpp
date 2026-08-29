@@ -880,6 +880,7 @@ static int winuiTextMapMethod(Ihandle* ih)
     nb.MinWidth(0);
     nb.MinHeight(0);
     nb.SpinButtonPlacementMode(NumberBoxSpinButtonPlacementMode::Inline);
+    nb.IsWrapEnabled(iupAttribGetBoolean(ih, "SPINWRAP") ? true : false);
 
     int spinMin = iupAttribGetInt(ih, "SPINMIN");
     int spinMax = iupAttribGetInt(ih, "SPINMAX");
