@@ -218,6 +218,14 @@ static gboolean gtk4ScrollbarKeyPressEvent(GtkEventControllerKey *controller, gu
 /*********************************************************************************************/
 
 
+static GtkRange* gtk4ScrollbarGetRange(GtkWidget* scrollbar)
+{
+  GtkWidget* child = gtk_widget_get_first_child(scrollbar);
+  if (child && GTK_IS_RANGE(child))
+    return GTK_RANGE(child);
+  return NULL;
+}
+
 static int gtk4ScrollbarMapMethod(Ihandle* ih)
 {
   GtkAdjustment* adjustment;
@@ -264,11 +272,16 @@ static int gtk4ScrollbarMapMethod(Ihandle* ih)
 
   iupgtk4SetupKeyEvents(ih->handle, ih);
 
-  g_signal_connect(G_OBJECT(ih->handle), "change-value", G_CALLBACK(gtk4ScrollbarChangeValue), ih);
+  {
+    GtkRange* range = gtk4ScrollbarGetRange(ih->handle);
+    if (range)
+    {
+      g_signal_connect(G_OBJECT(range), "change-value", G_CALLBACK(gtk4ScrollbarChangeValue), ih);
+      if (ih->data->inverted)
+        gtk_range_set_inverted(range, TRUE);
+    }
+  }
   g_signal_connect(G_OBJECT(adjustment), "value-changed", G_CALLBACK(gtk4ScrollbarValueChanged), ih);
-
-  if (ih->data->inverted)
-    gtk_range_set_inverted(GTK_RANGE(ih->handle), TRUE);
 
   gtk_widget_realize(ih->handle);
 
