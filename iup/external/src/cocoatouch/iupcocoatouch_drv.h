@@ -53,6 +53,7 @@ IUP_DRV_API bool iupCocoaTouchIsLaunchPlaceholder(UIViewController* vc);
 /* client-area Fixed of a mapped Dialog, nil otherwise */
 IUP_DRV_API IupCocoaTouchFixed* iupCocoaTouchDialogGetClientArea(Ihandle* dialog_ih);
 
+IUP_DRV_API const char* iupCocoaTouchFontFaceName(const char* face);
 IUP_DRV_API IupCocoaTouchFont* iupCocoaTouchFindFont(const char* iup_font_name);
 IUP_DRV_API IupCocoaTouchFont* iupCocoaTouchGetFont(Ihandle* ih);
 

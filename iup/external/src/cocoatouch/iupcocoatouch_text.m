@@ -422,7 +422,8 @@ static UIFont* cocoaTouchTextTagBuildFont(Ihandle* tag, UIFont* base)
 	BOOL named_face = (face && face[0] != '.' && !iupStrEqualNoCase(face, "System"));
 	if (named_face)
 	{
-		UIFont* named = [UIFont fontWithName:[NSString stringWithUTF8String:face] size:size];
+		const char* mapped = iupCocoaTouchFontFaceName(face);
+		UIFont* named = [UIFont fontWithName:[NSString stringWithUTF8String:mapped ? mapped : face] size:size];
 		if (named) out = named;
 	}
 
