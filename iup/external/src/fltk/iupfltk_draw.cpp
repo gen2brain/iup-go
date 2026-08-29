@@ -19,6 +19,7 @@
 #include <FL/platform.H>
 
 #include <cstdlib>
+#include <cstring>
 #include <cmath>
 
 extern "C" {
@@ -416,7 +417,19 @@ static void fltkDrawTextDecoration(const char* text, int len, int tx, int baseli
 
 extern "C" IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int x, int y, int w, int h, long color, const char* font, int flags, double text_orientation)
 {
+  char stack_buf[512];
+  char* text_buf = stack_buf;
+
   if (!dc || !text) return;
+
+  /* the box fl_draw and fl_measure need a NUL terminated string */
+  if (len < 0)
+    len = (int)strlen(text);
+  if (len >= (int)sizeof(stack_buf))
+    text_buf = (char*)malloc(len + 1);
+  memcpy(text_buf, text, len);
+  text_buf[len] = 0;
+  text = text_buf;
 
   fltkDrawSetColor(color);
 
@@ -479,6 +492,9 @@ extern "C" IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, in
       fltkDrawTextDecoration(text, len, tx, ty + (int)fl_height() - (int)fl_descent(), underline, strikeout);
     }
   }
+
+  if (text_buf != stack_buf)
+    free(text_buf);
 }
 
 extern "C" IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_inactive, const char* bgcolor, long tint, int opacity, int x, int y, int w, int h, int sx, int sy, int sw, int sh, int quality)
