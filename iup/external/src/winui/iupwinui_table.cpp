@@ -11,6 +11,7 @@
 #include <cstring>
 #include <cstdio>
 #include <vector>
+#include <string>
 
 extern "C" {
 #include "iup.h"
@@ -26,6 +27,8 @@ extern "C" {
 }
 
 #include "iupwinui_drv.h"
+
+#include <winrt/Microsoft.UI.Xaml.Automation.h>
 
 using namespace winrt;
 using namespace Microsoft::UI::Xaml;
@@ -60,6 +63,26 @@ static ListView winuiTableGetListView(Ihandle* ih)
     return obj.try_as<ListView>();
   }
   return nullptr;
+}
+
+static void winuiTableSetRowAutomationName(Ihandle* ih, int lin, DependencyObject const& container)
+{
+  if (!container)
+    return;
+
+  std::string name;
+  for (int col = 1; col <= ih->data->num_col; col++)
+  {
+    char* value = iupdrvTableGetCellValue(ih, lin, col);
+    if (!value || !value[0])
+      continue;
+
+    if (!name.empty())
+      name += ", ";
+    name += value;
+  }
+
+  Automation::AutomationProperties::SetName(container, iupwinuiStringToHString(name.c_str()));
 }
 
 static void winuiTableSetVirtualItems(ListView listView, int count)
@@ -2998,6 +3021,7 @@ static int winuiTableMapMethod(Ihandle* ih)
 
         int lin = args.ItemIndex() + 1;
         winuiTablePopulateVirtualContainer(ih, lin, args.ItemContainer());
+        winuiTableSetRowAutomationName(ih, lin, args.ItemContainer());
 
         args.Handled(true);
       });
@@ -3009,6 +3033,15 @@ static int winuiTableMapMethod(Ihandle* ih)
       Grid rowGrid = winuiTableCreateRowGrid(ih, num_col, aux->show_grid);
       listView.Items().Append(rowGrid);
     }
+
+    /* the UIA element is the ListViewItem the ListView generates, and it only exists once realized */
+    aux->containerContentChangingToken = listView.ContainerContentChanging(
+      [ih](ListViewBase const&, ContainerContentChangingEventArgs const& args) {
+        if (args.InRecycleQueue())
+          return;
+
+        winuiTableSetRowAutomationName(ih, args.ItemIndex() + 1, args.ItemContainer());
+      });
   }
 
   aux->selectionChangedToken = listView.SelectionChanged([ih](IInspectable const&, SelectionChangedEventArgs const&) {
