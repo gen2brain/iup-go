@@ -1127,6 +1127,18 @@ static int winuiTextMapMethod(Ihandle* ih)
         args.Handled(true);
         return;
       }
+      if (args.Key() == Windows::System::VirtualKey::Tab && ih->data->is_multiline &&
+          !(GetKeyState(VK_CONTROL) & 0x8000) && !(GetKeyState(VK_MENU) & 0x8000))
+      {
+        if (iupwinuiKeyEvent(ih, (int)args.Key(), 1))
+        {
+          RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
+          if (reb && !reb.IsReadOnly())
+            reb.Document().Selection().SetText(TextSetOptions::None, L"\t");
+        }
+        args.Handled(true);
+        return;
+      }
       if (iupAttribGetBoolean(ih, "OVERWRITE"))
       {
         RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
@@ -1298,6 +1310,24 @@ static int winuiTextMapMethod(Ihandle* ih)
       {
         bool cur = iupAttribGetBoolean(ih, "OVERWRITE");
         iupAttribSet(ih, "OVERWRITE", cur ? "NO" : "YES");
+        args.Handled(true);
+        return;
+      }
+      if (args.Key() == Windows::System::VirtualKey::Tab && ih->data->is_multiline &&
+          !(GetKeyState(VK_CONTROL) & 0x8000) && !(GetKeyState(VK_MENU) & 0x8000))
+      {
+        if (iupwinuiKeyEvent(ih, (int)args.Key(), 1))
+        {
+          TextBox tbox = winuiGetHandle<TextBox>(ih);
+          if (tbox && !tbox.IsReadOnly())
+          {
+            int start = tbox.SelectionStart();
+            std::wstring text(tbox.Text().c_str());
+            text.replace(start, tbox.SelectionLength(), L"\t");
+            tbox.Text(hstring(text));
+            tbox.Select(start + 1, 0);
+          }
+        }
         args.Handled(true);
         return;
       }
