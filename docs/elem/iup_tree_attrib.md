@@ -38,7 +38,7 @@ It uses a wider character size than the one used for the SIZE attribute, so stri
 
 **SCROLLVISIBLE** (read-only): Returns which scrollbars are visible at the moment.
 Can be: YES (both), VERTICAL, HORIZONTAL, NO.
-Supported in Windows, Qt, macOS and WebAssembly.
+Supported in Windows, WinUI, Qt, macOS and WebAssembly.
 
 **SPACING**: vertical internal padding for each node.
 Notice that the distance between each node will be actually 2x the spacing.

@@ -48,8 +48,9 @@ Default: "YES".
 
 **SB_RESIZE** [read-only]: returns if a scrollbar visibility was changed forcing a canvas resize after setting DX or DY.
 
-**SCROLLVISIBLE** (read-only) [Windows Only]: Returns which scrollbars are visible at the moment.
+**SCROLLVISIBLE** (read-only): Returns which scrollbars are visible at the moment.
 Can be: YES (both), VERTICAL, HORIZONTAL, NO.
+The supported drivers are listed on each element page.
 
 ### Notes
 

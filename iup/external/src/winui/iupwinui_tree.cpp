@@ -637,6 +637,11 @@ static void winuiTreeUpdateAutomationNames(Ihandle* ih)
   }
 }
 
+static char* winuiTreeGetScrollVisibleAttrib(Ihandle* ih)
+{
+  return iupwinuiScrollViewerVisible(iupwinuiFindScrollViewer(winuiTreeGetTreeView(ih)));
+}
+
 static void winuiTreeApplyFocusVisual(TreeView const& treeView, TreeViewNode const& node, bool on)
 {
   if (!node)
@@ -1875,6 +1880,13 @@ static int winuiTreeMapMethod(Ihandle* ih)
 
   winuiTreeUpdateSpacingResources(ih, treeView);
 
+  if (iupAttribGetBoolean(ih, "HIDEBUTTONS"))
+  {
+    Style itemStyle{winrt::xaml_typename<TreeViewItem>()};
+    itemStyle.Setters().Append(Setter{TreeViewItem::GlyphOpacityProperty(), box_value(0.0)});
+    treeView.ItemContainerStyle(itemStyle);
+  }
+
   aux->expandingToken = treeView.Expanding([ih](TreeView const&, TreeViewExpandingEventArgs const& args) {
     winuiTreeExpandingHandler(ih, args.Node());
     winuiTreeMarkAutomationNames(ih);
@@ -2667,7 +2679,6 @@ extern "C" IUP_SDK_API void iupdrvTreeInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "DRAGSOURCE", NULL, winuiTreeSetDragSourceAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "EMPTYAS3STATE", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SCROLLVISIBLE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SCROLLVISIBLE", winuiTreeGetScrollVisibleAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "HIDELINES", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "HIDEBUTTONS", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 }
