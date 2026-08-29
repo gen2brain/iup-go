@@ -408,9 +408,12 @@ static int winuiLabelMapMethod(Ihandle* ih)
         int y = (int)point.Position().Y;
         char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
         iupwinuiButtonKeySetStatus(iupwinuiGetModifierKeys(), button, status, 0);
-        cb(ih, button, 1, x, y, status);
+        int ret = cb(ih, button, 1, x, y, status);
+        if (ret == IUP_CLOSE)
+          IupExitLoop();
+        else if (ret == IUP_IGNORE)
+          args.Handled(true);
       }
-      args.Handled(true);
     });
 
     aux->pointerReleasedToken = border.PointerReleased([ih](IInspectable const&, Microsoft::UI::Xaml::Input::PointerRoutedEventArgs const& args) {
@@ -424,9 +427,12 @@ static int winuiLabelMapMethod(Ihandle* ih)
         int y = (int)point.Position().Y;
         char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
         iupwinuiButtonKeySetStatus(iupwinuiGetModifierKeys(), button, status, 0);
-        cb(ih, button, 0, x, y, status);
+        int ret = cb(ih, button, 0, x, y, status);
+        if (ret == IUP_CLOSE)
+          IupExitLoop();
+        else if (ret == IUP_IGNORE)
+          args.Handled(true);
       }
-      args.Handled(true);
     });
 
     aux->pointerEnteredToken = border.PointerEntered([ih](IInspectable const&, Microsoft::UI::Xaml::Input::PointerRoutedEventArgs const&) {
