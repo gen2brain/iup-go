@@ -620,5 +620,7 @@ func ensureBase() {
 			defer func() { recover() }()
 			purego.RegisterLibFunc(&cfree, lib, "free")
 		}()
+
+		registerThreadFunc(lib)
 	})
 }

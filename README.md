@@ -274,6 +274,9 @@ The secondary threads (goroutines) should not directly update the UI; instead, u
 See [example](examples/postmessage/postmessage.go) that uses `PostMessage` to send data to an element, which will be received by a callback when the main loop regains control.
 You can also use [Idle](docs/call/iup_idle_action.md) and [Timer](docs/elem/iup_timer.md).
 
+Once [MainLoop](docs/func/iup_mainloop.md) is running, an attribute call from another goroutine panics instead of crashing inside the toolkit.
+Callbacks of [IupThread](docs/elem/iup_thread.md) are exempt, they run on a thread IUP started itself.
+
 ### Cross-compile (Linux cgo)
 
 To cross-compile for Win32, install [MinGW](https://www.mingw-w64.org/) toolchain.

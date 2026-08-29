@@ -25,3 +25,19 @@ func canonicalLibName(base string) string { return "lib" + base + ".so" }
 func afterOpen(path string) { os.Remove(path) }
 
 func unloadTempLib(h uintptr, path string) {}
+
+var pthreadSelf func() uintptr
+
+func registerThreadFunc(lib uintptr) {
+	defer func() { recover() }()
+
+	purego.RegisterLibFunc(&pthreadSelf, lib, "pthread_self")
+}
+
+func currentThreadID() uint64 {
+	if pthreadSelf == nil {
+		return 0
+	}
+
+	return uint64(pthreadSelf())
+}

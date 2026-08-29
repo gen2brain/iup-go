@@ -609,7 +609,12 @@ func init() {
 		"MENUCLOSE_CB", "MENUOPEN_CB", "SWAPBUFFERS_CB", "THREAD_CB", "UPDATE_CB",
 	} {
 		key := "_IUPGO_" + name
+		isThread := name == "THREAD_CB"
 		ihIntCB[name] = purego.NewCallback(func(ih uintptr) int {
+			if isThread {
+				id := enterIupThread()
+				defer leaveIupThread(id)
+			}
 			if f, ok := loadCallback(Ihandle(ih), key).(func(Ihandle) int); ok {
 				return f(Ihandle(ih))
 			}

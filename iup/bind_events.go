@@ -21,6 +21,8 @@ import "C"
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_mainloop.md
 func MainLoop() (ret int) {
+	markUIThread()
+
 	return int(C.IupMainLoop())
 }
 

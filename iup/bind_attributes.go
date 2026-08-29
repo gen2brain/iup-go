@@ -8,19 +8,63 @@ import (
 	"image/color"
 	"reflect"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"unsafe"
 )
 
 /*
 #include <stdlib.h>
 #include "iup.h"
+
+#ifdef _WIN32
+#include <windows.h>
+static unsigned long long iupgoThreadSelf(void) { return (unsigned long long)GetCurrentThreadId(); }
+#else
+#include <pthread.h>
+static unsigned long long iupgoThreadSelf(void) { return (unsigned long long)pthread_self(); }
+#endif
 */
 import "C"
+
+var uiThread atomic.Uint64
+
+var iupThreads sync.Map
+
+func markUIThread() { uiThread.Store(uint64(C.iupgoThreadSelf())) }
+
+func enterIupThread() uint64 {
+	id := uint64(C.iupgoThreadSelf())
+	iupThreads.Store(id, struct{}{})
+	return id
+}
+
+func leaveIupThread(id uint64) { iupThreads.Delete(id) }
+
+func checkUIThread() {
+	ui := uiThread.Load()
+	if ui == 0 {
+		return
+	}
+
+	id := uint64(C.iupgoThreadSelf())
+	if id == ui {
+		return
+	}
+
+	if _, ok := iupThreads.Load(id); ok {
+		return
+	}
+
+	panic("iup: attribute called from a thread that is not the main one, use PostMessage")
+}
 
 // SetAttribute sets an interface element attribute.
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setattribute.md
 func SetAttribute(ih Ihandle, name string, value interface{}) {
+	checkUIThread()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -66,6 +110,8 @@ func SetAttribute(ih Ihandle, name string, value interface{}) {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setattributes.md
 func SetAttributes(ih Ihandle, str string) Ihandle {
+	checkUIThread()
+
 	cStr := C.CString(str)
 	defer C.free(unsafe.Pointer(cStr))
 
@@ -77,6 +123,8 @@ func SetAttributes(ih Ihandle, str string) Ihandle {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_resetattribute.md
 func ResetAttribute(ih Ihandle, name string) {
+	checkUIThread()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -117,6 +165,8 @@ func SetAttrs(ih Ihandle, args ...string) Ihandle {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setattributehandle.md
 func SetAttributeHandle(ih Ihandle, name string, ihNamed Ihandle) {
+	checkUIThread()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -127,6 +177,8 @@ func SetAttributeHandle(ih Ihandle, name string, ihNamed Ihandle) {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
 func GetAttribute(ih Ihandle, name string) string {
+	checkUIThread()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -162,6 +214,8 @@ func attribIsNotString(ih Ihandle, cName *C.char) bool {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getallattributes.md
 func GetAllAttributes(ih Ihandle) (ret []string) {
+	checkUIThread()
+
 	n := int(C.IupGetAllAttributes(ih.ptr(), nil, 0))
 	if n > 0 {
 		ret = make([]string, n)
@@ -186,6 +240,8 @@ func GetAllAttributes(ih Ihandle) (ret []string) {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattributes.md
 func GetAttributes(ih Ihandle) string {
+	checkUIThread()
+
 	return C.GoString(C.IupGetAttributes(ih.ptr()))
 }
 
@@ -193,6 +249,8 @@ func GetAttributes(ih Ihandle) string {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattributehandle.md
 func GetAttributeHandle(ih Ihandle, name string) Ihandle {
+	checkUIThread()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -203,6 +261,8 @@ func GetAttributeHandle(ih Ihandle, name string) Ihandle {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setattributehandle.md
 func SetAttributeHandleId(ih Ihandle, name string, id int, ihNamed Ihandle) {
+	checkUIThread()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -213,6 +273,8 @@ func SetAttributeHandleId(ih Ihandle, name string, id int, ihNamed Ihandle) {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattributehandle.md
 func GetAttributeHandleId(ih Ihandle, name string, id int) Ihandle {
+	checkUIThread()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -223,6 +285,8 @@ func GetAttributeHandleId(ih Ihandle, name string, id int) Ihandle {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setattributehandle.md
 func SetAttributeHandleId2(ih Ihandle, name string, lin, col int, ihNamed Ihandle) {
+	checkUIThread()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -233,6 +297,8 @@ func SetAttributeHandleId2(ih Ihandle, name string, lin, col int, ihNamed Ihandl
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattributehandle.md
 func GetAttributeHandleId2(ih Ihandle, name string, lin, col int) Ihandle {
+	checkUIThread()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -243,6 +309,8 @@ func GetAttributeHandleId2(ih Ihandle, name string, lin, col int) Ihandle {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setattribute.md
 func SetAttributeId(ih Ihandle, name string, id int, value interface{}) {
+	checkUIThread()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -282,6 +350,8 @@ func SetAttributeId(ih Ihandle, name string, id int, value interface{}) {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
 func GetAttributeId(ih Ihandle, name string, id int) string {
+	checkUIThread()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -292,6 +362,8 @@ func GetAttributeId(ih Ihandle, name string, id int) string {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setattribute.md
 func SetAttributeId2(ih Ihandle, name string, lin, col int, value interface{}) {
+	checkUIThread()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -331,6 +403,8 @@ func SetAttributeId2(ih Ihandle, name string, lin, col int, value interface{}) {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setattribute.md
 func SetRGBId2(ih Ihandle, name string, lin, col int, r, g, b uint8) {
+	checkUIThread()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -341,6 +415,8 @@ func SetRGBId2(ih Ihandle, name string, lin, col int, r, g, b uint8) {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
 func GetAttributeId2(ih Ihandle, name string, lin, col int) string {
+	checkUIThread()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -352,6 +428,8 @@ func GetAttributeId2(ih Ihandle, name string, lin, col int) string {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setglobal.md
 func SetGlobal(name string, value interface{}) {
+	checkUIThread()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -376,6 +454,8 @@ func SetGlobal(name string, value interface{}) {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getglobal.md
 func GetGlobal(name string) string {
+	checkUIThread()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -386,6 +466,8 @@ func GetGlobal(name string) string {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getglobal.md
 func GetGlobalPtr(name string) uintptr {
+	checkUIThread()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -396,6 +478,8 @@ func GetGlobalPtr(name string) uintptr {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getglobal.md
 func GetGlobalIh(name string) Ihandle {
+	checkUIThread()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -423,6 +507,8 @@ func StringCompare(str1, str2 string, caseSensitive, lexicographic bool) int {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setattribute.md
 func SetRGB(ih Ihandle, name string, r, g, b uint8) {
+	checkUIThread()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -433,6 +519,8 @@ func SetRGB(ih Ihandle, name string, r, g, b uint8) {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setattribute.md
 func SetRGBA(ih Ihandle, name string, r, g, b, a uint8) {
+	checkUIThread()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -443,6 +531,8 @@ func SetRGBA(ih Ihandle, name string, r, g, b, a uint8) {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setattribute.md
 func SetRGBId(ih Ihandle, name string, id int, r, g, b uint8) {
+	checkUIThread()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -453,6 +543,8 @@ func SetRGBId(ih Ihandle, name string, id int, r, g, b uint8) {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
 func GetInt(ih Ihandle, name string) int {
+	checkUIThread()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -463,6 +555,8 @@ func GetInt(ih Ihandle, name string) int {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
 func GetInt2(ih Ihandle, name string) (count, i1, i2 int) { // count = 0, 1 or 2
+	checkUIThread()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -504,6 +598,8 @@ func SetBoolId2(ih Ihandle, name string, lin, col int, value bool) {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
 func GetFloat(ih Ihandle, name string) float32 {
+	checkUIThread()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -514,6 +610,8 @@ func GetFloat(ih Ihandle, name string) float32 {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
 func GetDouble(ih Ihandle, name string) float64 {
+	checkUIThread()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -524,6 +622,8 @@ func GetDouble(ih Ihandle, name string) float64 {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
 func GetRGB(ih Ihandle, name string) (r, g, b uint8) {
+	checkUIThread()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -535,6 +635,8 @@ func GetRGB(ih Ihandle, name string) (r, g, b uint8) {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
 func GetRGBA(ih Ihandle, name string) (r, g, b, a uint8) {
+	checkUIThread()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -546,6 +648,8 @@ func GetRGBA(ih Ihandle, name string) (r, g, b, a uint8) {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
 func GetIntId(ih Ihandle, name string, id int) int {
+	checkUIThread()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -556,6 +660,8 @@ func GetIntId(ih Ihandle, name string, id int) int {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
 func GetFloatId(ih Ihandle, name string, id int) float32 {
+	checkUIThread()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -566,6 +672,8 @@ func GetFloatId(ih Ihandle, name string, id int) float32 {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
 func GetDoubleId(ih Ihandle, name string, id int) float64 {
+	checkUIThread()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -576,6 +684,8 @@ func GetDoubleId(ih Ihandle, name string, id int) float64 {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
 func GetRGBId(ih Ihandle, name string, id int) (r, g, b uint8) {
+	checkUIThread()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -596,6 +706,8 @@ func GetBoolId(ih Ihandle, name string, id int) bool {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
 func GetIntId2(ih Ihandle, name string, lin, col int) int {
+	checkUIThread()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -606,6 +718,8 @@ func GetIntId2(ih Ihandle, name string, lin, col int) int {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
 func GetFloatId2(ih Ihandle, name string, lin, col int) float32 {
+	checkUIThread()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -616,6 +730,8 @@ func GetFloatId2(ih Ihandle, name string, lin, col int) float32 {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
 func GetDoubleId2(ih Ihandle, name string, lin, col int) float64 {
+	checkUIThread()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -626,6 +742,8 @@ func GetDoubleId2(ih Ihandle, name string, lin, col int) float64 {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
 func GetRGBId2(ih Ihandle, name string, lin, col int) (r, g, b uint8) {
+	checkUIThread()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
