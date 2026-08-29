@@ -156,6 +156,24 @@ static void androidTreeRefillCacheSlots(Ihandle* ih, int start, int count, JNIEn
   (*env)->DeleteLocalRef(env, cls);
 }
 
+static int androidTreeOpenCacheGap(Ihandle* ih, int id_new, int count)
+{
+  int remain;
+
+  if (id_new < 0 || count <= 0 || id_new + count > ih->data->node_count)
+    return 0;
+
+  iupTreeIncCacheMem(ih);
+
+  remain = ih->data->node_count - (id_new + count);
+  if (remain > 0)
+    memmove(ih->data->node_cache + id_new + count, ih->data->node_cache + id_new, remain * sizeof(InodeData));
+  memset(ih->data->node_cache + id_new, 0, count * sizeof(InodeData));
+
+  iupAttribSet(ih, "LASTADDNODE", NULL);
+  return 1;
+}
+
 static int androidTreeCopyMoveCommon(Ihandle* ih, int id, const char* value, int is_copy)
 {
   if (!ih->handle || !value) return 0;
@@ -177,8 +195,10 @@ static int androidTreeCopyMoveCommon(Ihandle* ih, int id, const char* value, int
   if (is_copy)
   {
     ih->data->node_count += count;
-    iupTreeCopyMoveCache(ih, id, new_id, count, 1);
-    androidTreeRefillCacheSlots(ih, new_id, count, env);
+    if (androidTreeOpenCacheGap(ih, new_id, count))
+      androidTreeRefillCacheSlots(ih, new_id, count, env);
+    else
+      ih->data->node_count -= count;
   }
   else
   {
@@ -217,8 +237,10 @@ IUP_SDK_API void iupdrvTreeDragDropCopyNode(Ihandle* src, Ihandle* dst, InodeHan
   if (new_id < 0) return;
 
   dst->data->node_count = old_count + count;
-  iupTreeCopyMoveCache(dst, dst_id, new_id, count, 1);
-  androidTreeRefillCacheSlots(dst, new_id, count, env);
+  if (androidTreeOpenCacheGap(dst, new_id, count))
+    androidTreeRefillCacheSlots(dst, new_id, count, env);
+  else
+    dst->data->node_count = old_count;
 }
 
 static int androidTreeConvertXYToPos(Ihandle* ih, int x, int y)
