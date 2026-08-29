@@ -153,6 +153,18 @@ static ListView winuiListGetListView(Ihandle* ih)
   return winuiGetHandle<ListView>(ih);
 }
 
+static char* winuiListGetScrollVisibleAttrib(Ihandle* ih)
+{
+  IupWinUIListAux* aux = winuiGetAux<IupWinUIListAux>(ih, IUPWINUI_LIST_AUX);
+  if (!aux || aux->isDropdown)
+    return NULL;
+
+  if (aux->isVirtual)
+    return iupwinuiScrollViewerVisible(iupwinuiFindScrollViewer(winuiListGetListView(ih)));
+
+  return iupwinuiScrollViewerVisible(iupwinuiFindScrollViewer(winuiListGetListBox(ih)));
+}
+
 static TextBox winuiListGetTextBox(Ihandle* ih)
 {
   char* ptr = iupAttribGet(ih, "_IUPWINUI_TEXTBOX");
@@ -2702,5 +2714,5 @@ extern "C" IUP_SDK_API void iupdrvListInitClass(Iclass* ic)
   /* XAML ComboBox dropdown width is bound to the control; not controllable */
   iupClassRegisterAttribute(ic, "DROPEXPAND", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "AUTOREDRAW", NULL, NULL, IUPAF_SAMEASSYSTEM, "Yes", IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SCROLLVISIBLE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SCROLLVISIBLE", winuiListGetScrollVisibleAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
 }

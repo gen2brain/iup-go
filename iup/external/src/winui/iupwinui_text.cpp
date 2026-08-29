@@ -47,23 +47,6 @@ using namespace Windows::Storage::Streams;
 using namespace Microsoft::UI::Dispatching;
 
 
-static ScrollViewer winuiTextFindScrollViewer(DependencyObject parent)
-{
-  int count = VisualTreeHelper::GetChildrenCount(parent);
-  for (int i = 0; i < count; i++)
-  {
-    auto child = VisualTreeHelper::GetChild(parent, i);
-    auto sv = child.try_as<ScrollViewer>();
-    if (sv)
-      return sv;
-
-    sv = winuiTextFindScrollViewer(child);
-    if (sv)
-      return sv;
-  }
-  return nullptr;
-}
-
 static TextBox winuiFindTextBox(DependencyObject parent)
 {
   int count = VisualTreeHelper::GetChildrenCount(parent);
@@ -625,7 +608,7 @@ static int winuiTextSetAppendAttrib(Ihandle* ih, const char* value)
       if (ih->data->append_scroll)
       {
         reb.UpdateLayout();
-        ScrollViewer sv = winuiTextFindScrollViewer(reb);
+        ScrollViewer sv = iupwinuiFindScrollViewer(reb);
         if (sv)
           sv.ChangeView(nullptr, sv.ScrollableHeight(), nullptr);
       }
@@ -648,7 +631,7 @@ static int winuiTextSetAppendAttrib(Ihandle* ih, const char* value)
       if (aux->isMultiline && ih->data->append_scroll)
       {
         tb.UpdateLayout();
-        ScrollViewer sv = winuiTextFindScrollViewer(tb);
+        ScrollViewer sv = iupwinuiFindScrollViewer(tb);
         if (sv)
           sv.ChangeView(nullptr, sv.ScrollableHeight(), nullptr);
       }
@@ -693,21 +676,14 @@ static char* winuiTextGetScrollVisibleAttrib(Ihandle* ih)
   if (aux->isFormatted)
   {
     RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
-    if (reb) sv = winuiTextFindScrollViewer(reb);
+    if (reb) sv = iupwinuiFindScrollViewer(reb);
   }
   else
   {
     TextBox tb = winuiGetHandle<TextBox>(ih);
-    if (tb) sv = winuiTextFindScrollViewer(tb);
+    if (tb) sv = iupwinuiFindScrollViewer(tb);
   }
-  if (!sv) return (char*)"NO";
-
-  int sb_h = (sv.ComputedHorizontalScrollBarVisibility() == Visibility::Visible) ? 1 : 0;
-  int sb_v = (sv.ComputedVerticalScrollBarVisibility()   == Visibility::Visible) ? 1 : 0;
-  if (sb_h && sb_v) return (char*)"YES";
-  if (sb_h) return (char*)"HORIZONTAL";
-  if (sb_v) return (char*)"VERTICAL";
-  return (char*)"NO";
+  return iupwinuiScrollViewerVisible(sv);
 }
 
 static char* winuiTextGetReadOnlyAttrib(Ihandle* ih)
@@ -3403,7 +3379,7 @@ static int winuiTextSetScrollToAttrib(Ihandle* ih, const char* value)
       TextBox tb = winuiGetHandle<TextBox>(ih);
       if (tb)
       {
-        ScrollViewer sv = winuiTextFindScrollViewer(tb);
+        ScrollViewer sv = iupwinuiFindScrollViewer(tb);
         if (sv)
         {
           float lineHeight = iupwinuiFontGetMultilineLineHeightF(ih);
@@ -3459,7 +3435,7 @@ static int winuiTextSetScrollToPosAttrib(Ihandle* ih, const char* value)
         int lin, col;
         hstring text = tb.Text();
         winuiTextStringPosToLinCol(text.c_str(), (int)text.size(), pos, &lin, &col);
-        ScrollViewer sv = winuiTextFindScrollViewer(tb);
+        ScrollViewer sv = iupwinuiFindScrollViewer(tb);
         if (sv)
         {
           float lineHeight = iupwinuiFontGetMultilineLineHeightF(ih);

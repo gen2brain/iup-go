@@ -1126,6 +1126,42 @@ IUP_DRV_API void iupwinuiSetMnemonicText(TextBlock const& tb, const char* title,
     *c = mnemonic;
 }
 
+IUP_DRV_API ScrollViewer iupwinuiFindScrollViewer(DependencyObject const& parent)
+{
+  if (!parent)
+    return nullptr;
+
+  int count = VisualTreeHelper::GetChildrenCount(parent);
+  for (int i = 0; i < count; i++)
+  {
+    DependencyObject child = VisualTreeHelper::GetChild(parent, i);
+
+    ScrollViewer sv = child.try_as<ScrollViewer>();
+    if (sv)
+      return sv;
+
+    sv = iupwinuiFindScrollViewer(child);
+    if (sv)
+      return sv;
+  }
+
+  return nullptr;
+}
+
+IUP_DRV_API char* iupwinuiScrollViewerVisible(ScrollViewer const& sv)
+{
+  if (!sv)
+    return (char*)"NO";
+
+  int sb_h = (sv.ComputedHorizontalScrollBarVisibility() == Visibility::Visible) ? 1 : 0;
+  int sb_v = (sv.ComputedVerticalScrollBarVisibility() == Visibility::Visible) ? 1 : 0;
+
+  if (sb_h && sb_v) return (char*)"YES";
+  if (sb_h) return (char*)"HORIZONTAL";
+  if (sb_v) return (char*)"VERTICAL";
+  return (char*)"NO";
+}
+
 static void winuiRefreshTextBlocks(Windows::Foundation::IInspectable const& node)
 {
   if (!node)
