@@ -720,11 +720,18 @@ IUP_SDK_API void iupdrvTextAddFormatTagStopBulk(Ihandle* ih, void* state)
   (void)state;
 }
 
+static void wasmTextCssCat(char* css, int size, const char* str)
+{
+  int len = (int)strlen(css);
+  if (len < size)
+    iupStrCopyN(css + len, size - len, str);
+}
+
 IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bulk)
 {
   int id = iupwasmIdOf(ih);
   int l1, c1, l2, c2, p1, p2, use_pos = 0;
-  char css[320] = "";
+  char css[512] = "";
   char* sel;
   char* selpos;
   char* v;
@@ -742,9 +749,9 @@ IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bul
 
   v = iupAttribGet(formattag, "WEIGHT");
   if (v && (iupStrEqualNoCase(v, "BOLD") || iupStrEqualNoCase(v, "SEMIBOLD") || iupStrEqualNoCase(v, "HEAVY")))
-    strcat(css, "font-weight:bold;");
+    wasmTextCssCat(css, sizeof(css), "font-weight:bold;");
   if (iupAttribGetBoolean(formattag, "ITALIC"))
-    strcat(css, "font-style:italic;");
+    wasmTextCssCat(css, sizeof(css), "font-style:italic;");
   {
     char deco[40] = "";
     v = iupAttribGet(formattag, "UNDERLINE");
@@ -754,9 +761,9 @@ IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bul
       strcat(deco, "line-through ");
     if (deco[0])
     {
-      strcat(css, "text-decoration:");
-      strcat(css, deco);
-      strcat(css, ";");
+      wasmTextCssCat(css, sizeof(css), "text-decoration:");
+      wasmTextCssCat(css, sizeof(css), deco);
+      wasmTextCssCat(css, sizeof(css), ";");
     }
   }
   v = iupAttribGet(formattag, "FGCOLOR");
@@ -764,14 +771,14 @@ IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bul
   {
     char c[40];
     snprintf(c, sizeof(c), "color:rgb(%d,%d,%d);", r, g, b);
-    strcat(css, c);
+    wasmTextCssCat(css, sizeof(css), c);
   }
   v = iupAttribGet(formattag, "BGCOLOR");
   if (v && iupStrToRGB(v, &r, &g, &b))
   {
     char c[50];
     snprintf(c, sizeof(c), "background-color:rgb(%d,%d,%d);", r, g, b);
-    strcat(css, c);
+    wasmTextCssCat(css, sizeof(css), c);
   }
   v = iupAttribGet(formattag, "FONTSIZE");
   if (v)
@@ -781,7 +788,7 @@ IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bul
     {
       char c[30];
       snprintf(c, sizeof(c), "font-size:%dpt;", sz);
-      strcat(css, c);
+      wasmTextCssCat(css, sizeof(css), c);
     }
   }
   v = iupAttribGet(formattag, "FONTSCALE");  /* Markdown headings scale relative to the base font */
@@ -800,7 +807,7 @@ IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bul
     {
       char c[30];
       snprintf(c, sizeof(c), "font-size:%.3gem;", sc);
-      strcat(css, c);
+      wasmTextCssCat(css, sizeof(css), c);
     }
   }
   v = iupAttribGet(formattag, "FONTFACE");
@@ -808,23 +815,23 @@ IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bul
   {
     char c[100];
     snprintf(c, sizeof(c), "font-family:%s;", v);
-    strcat(css, c);
+    wasmTextCssCat(css, sizeof(css), c);
   }
   v = iupAttribGet(formattag, "RISE");
   if (v)
   {
     int rise = 0;
-    if (iupStrEqualNoCase(v, "SUPERSCRIPT")) strcat(css, "vertical-align:super;");
-    else if (iupStrEqualNoCase(v, "SUBSCRIPT")) strcat(css, "vertical-align:sub;");
+    if (iupStrEqualNoCase(v, "SUPERSCRIPT")) wasmTextCssCat(css, sizeof(css), "vertical-align:super;");
+    else if (iupStrEqualNoCase(v, "SUBSCRIPT")) wasmTextCssCat(css, sizeof(css), "vertical-align:sub;");
     else if (iupStrToInt(v, &rise) && rise != 0)
     {
       char c[40];
       snprintf(c, sizeof(c), "vertical-align:%dpx;", rise);
-      strcat(css, c);
+      wasmTextCssCat(css, sizeof(css), c);
     }
   }
   if (iupAttribGetBoolean(formattag, "SMALLCAPS"))
-    strcat(css, "font-variant:small-caps;");
+    wasmTextCssCat(css, sizeof(css), "font-variant:small-caps;");
 
   v = iupAttribGet(formattag, "IMAGE");
   if (v && v[0])
