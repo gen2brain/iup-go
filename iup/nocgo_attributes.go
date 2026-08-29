@@ -7,78 +7,10 @@ import (
 	"fmt"
 	"image/color"
 	"reflect"
-	"runtime"
 	"strings"
-	"sync"
-	"sync/atomic"
 )
 
-var attrMu reentrantRWMutex
-
-type reentrantRWMutex struct {
-	mu      sync.RWMutex
-	owner   atomic.Int64
-	recurse int32
-}
-
-func goroutineID() int64 {
-	var buf [64]byte
-	n := runtime.Stack(buf[:], false)
-	var id int64
-	for i := len("goroutine "); i < n; i++ {
-		if buf[i] < '0' || buf[i] > '9' {
-			break
-		}
-		id = id*10 + int64(buf[i]-'0')
-	}
-	return id
-}
-
-func (m *reentrantRWMutex) Lock() {
-	gid := goroutineID()
-	if m.owner.Load() == gid {
-		m.recurse++
-		return
-	}
-	m.mu.Lock()
-	m.owner.Store(gid)
-	m.recurse = 1
-}
-
-func (m *reentrantRWMutex) Unlock() {
-	m.recurse--
-	if m.recurse == 0 {
-		m.owner.Store(0)
-		m.mu.Unlock()
-	}
-}
-
-func (m *reentrantRWMutex) RLock() {
-	gid := goroutineID()
-	if m.owner.Load() == gid {
-		m.recurse++
-		return
-	}
-	m.mu.RLock()
-}
-
-func (m *reentrantRWMutex) RUnlock() {
-	gid := goroutineID()
-	if m.owner.Load() == gid {
-		m.recurse--
-		if m.recurse == 0 {
-			m.owner.Store(0)
-			m.mu.Unlock()
-		}
-		return
-	}
-	m.mu.RUnlock()
-}
-
 func SetAttribute(ih Ihandle, name string, value interface{}) {
-	attrMu.Lock()
-	defer attrMu.Unlock()
-
 	switch val := value.(type) {
 	case nil:
 		iupSetAttribute(uintptr(ih), name, 0)
@@ -118,16 +50,10 @@ func SetAttribute(ih Ihandle, name string, value interface{}) {
 }
 
 func SetAttributes(ih Ihandle, str string) Ihandle {
-	attrMu.Lock()
-	defer attrMu.Unlock()
-
 	return mkih(iupSetAttributes(uintptr(ih), str))
 }
 
 func ResetAttribute(ih Ihandle, name string) {
-	attrMu.Lock()
-	defer attrMu.Unlock()
-
 	iupResetAttribute(uintptr(ih), name)
 }
 
@@ -150,16 +76,10 @@ func SetAttrs(ih Ihandle, args ...string) Ihandle {
 }
 
 func SetAttributeHandle(ih Ihandle, name string, ihNamed Ihandle) {
-	attrMu.Lock()
-	defer attrMu.Unlock()
-
 	iupSetAttributeHandle(uintptr(ih), name, uintptr(ihNamed))
 }
 
 func GetAttribute(ih Ihandle, name string) string {
-	attrMu.RLock()
-	defer attrMu.RUnlock()
-
 	if attribIsNotString(ih, name) {
 		ptr := iupGetAttributePtr(uintptr(ih), name)
 		if ptr == 0 {
@@ -188,9 +108,6 @@ func attribIsNotString(ih Ihandle, name string) bool {
 }
 
 func GetAllAttributes(ih Ihandle) (ret []string) {
-	attrMu.RLock()
-	defer attrMu.RUnlock()
-
 	n := int(iupGetAllAttributes(uintptr(ih), nil, 0))
 	if n > 0 {
 		buf := make([]uintptr, n)
@@ -204,51 +121,30 @@ func GetAllAttributes(ih Ihandle) (ret []string) {
 }
 
 func GetAttributes(ih Ihandle) string {
-	attrMu.RLock()
-	defer attrMu.RUnlock()
-
 	return iupGetAttributes(uintptr(ih))
 }
 
 func GetAttributeHandle(ih Ihandle, name string) Ihandle {
-	attrMu.RLock()
-	defer attrMu.RUnlock()
-
 	return mkih(iupGetAttributeHandle(uintptr(ih), name))
 }
 
 func SetAttributeHandleId(ih Ihandle, name string, id int, ihNamed Ihandle) {
-	attrMu.Lock()
-	defer attrMu.Unlock()
-
 	iupSetAttributeHandleId(uintptr(ih), name, int32(id), uintptr(ihNamed))
 }
 
 func GetAttributeHandleId(ih Ihandle, name string, id int) Ihandle {
-	attrMu.RLock()
-	defer attrMu.RUnlock()
-
 	return mkih(iupGetAttributeHandleId(uintptr(ih), name, int32(id)))
 }
 
 func SetAttributeHandleId2(ih Ihandle, name string, lin, col int, ihNamed Ihandle) {
-	attrMu.Lock()
-	defer attrMu.Unlock()
-
 	iupSetAttributeHandleI2(uintptr(ih), name, int32(lin), int32(col), uintptr(ihNamed))
 }
 
 func GetAttributeHandleId2(ih Ihandle, name string, lin, col int) Ihandle {
-	attrMu.RLock()
-	defer attrMu.RUnlock()
-
 	return mkih(iupGetAttributeHandleI2(uintptr(ih), name, int32(lin), int32(col)))
 }
 
 func SetAttributeId(ih Ihandle, name string, id int, value interface{}) {
-	attrMu.Lock()
-	defer attrMu.Unlock()
-
 	switch val := value.(type) {
 	case nil:
 		iupSetAttributeId(uintptr(ih), name, int32(id), 0)
@@ -282,16 +178,10 @@ func SetAttributeId(ih Ihandle, name string, id int, value interface{}) {
 }
 
 func GetAttributeId(ih Ihandle, name string, id int) string {
-	attrMu.RLock()
-	defer attrMu.RUnlock()
-
 	return iupGetAttributeId(uintptr(ih), name, int32(id))
 }
 
 func SetAttributeId2(ih Ihandle, name string, lin, col int, value interface{}) {
-	attrMu.Lock()
-	defer attrMu.Unlock()
-
 	switch val := value.(type) {
 	case nil:
 		iupSetAttributeId2(uintptr(ih), name, int32(lin), int32(col), 0)
@@ -325,16 +215,10 @@ func SetAttributeId2(ih Ihandle, name string, lin, col int, value interface{}) {
 }
 
 func GetAttributeId2(ih Ihandle, name string, lin, col int) string {
-	attrMu.RLock()
-	defer attrMu.RUnlock()
-
 	return iupGetAttributeId2(uintptr(ih), name, int32(lin), int32(col))
 }
 
 func SetGlobal(name string, value interface{}) {
-	attrMu.Lock()
-	defer attrMu.Unlock()
-
 	switch val := value.(type) {
 	case nil:
 		iupSetGlobal(name, 0)
@@ -354,23 +238,14 @@ func SetGlobal(name string, value interface{}) {
 }
 
 func GetGlobal(name string) string {
-	attrMu.RLock()
-	defer attrMu.RUnlock()
-
 	return iupGetGlobal(name)
 }
 
 func GetGlobalPtr(name string) uintptr {
-	attrMu.RLock()
-	defer attrMu.RUnlock()
-
 	return iupGetGlobalRaw(name)
 }
 
 func GetGlobalIh(name string) Ihandle {
-	attrMu.RLock()
-	defer attrMu.RUnlock()
-
 	return Ihandle(iupGetGlobalRaw(name))
 }
 
@@ -379,44 +254,26 @@ func StringCompare(str1, str2 string, caseSensitive, lexicographic bool) int {
 }
 
 func SetRGB(ih Ihandle, name string, r, g, b uint8) {
-	attrMu.Lock()
-	defer attrMu.Unlock()
-
 	iupSetRGB(uintptr(ih), name, r, g, b)
 }
 
 func SetRGBA(ih Ihandle, name string, r, g, b, a uint8) {
-	attrMu.Lock()
-	defer attrMu.Unlock()
-
 	iupSetRGBA(uintptr(ih), name, r, g, b, a)
 }
 
 func SetRGBId(ih Ihandle, name string, id int, r, g, b uint8) {
-	attrMu.Lock()
-	defer attrMu.Unlock()
-
 	iupSetRGBId(uintptr(ih), name, int32(id), r, g, b)
 }
 
 func SetRGBId2(ih Ihandle, name string, lin, col int, r, g, b uint8) {
-	attrMu.Lock()
-	defer attrMu.Unlock()
-
 	iupSetRGBId2(uintptr(ih), name, int32(lin), int32(col), r, g, b)
 }
 
 func GetInt(ih Ihandle, name string) int {
-	attrMu.RLock()
-	defer attrMu.RUnlock()
-
 	return int(iupGetInt(uintptr(ih), name))
 }
 
 func GetInt2(ih Ihandle, name string) (count, i1, i2 int) {
-	attrMu.RLock()
-	defer attrMu.RUnlock()
-
 	var c1, c2 int32
 	count = int(iupGetIntInt(uintptr(ih), name, &c1, &c2))
 	return count, int(c1), int(c2)
@@ -440,60 +297,36 @@ func SetBoolId2(ih Ihandle, name string, lin, col int, value bool) {
 }
 
 func GetFloat(ih Ihandle, name string) float32 {
-	attrMu.RLock()
-	defer attrMu.RUnlock()
-
 	return iupGetFloat(uintptr(ih), name)
 }
 
 func GetDouble(ih Ihandle, name string) float64 {
-	attrMu.RLock()
-	defer attrMu.RUnlock()
-
 	return iupGetDouble(uintptr(ih), name)
 }
 
 func GetRGB(ih Ihandle, name string) (r, g, b uint8) {
-	attrMu.RLock()
-	defer attrMu.RUnlock()
-
 	iupGetRGB(uintptr(ih), name, &r, &g, &b)
 	return
 }
 
 func GetRGBA(ih Ihandle, name string) (r, g, b, a uint8) {
-	attrMu.RLock()
-	defer attrMu.RUnlock()
-
 	iupGetRGBA(uintptr(ih), name, &r, &g, &b, &a)
 	return
 }
 
 func GetIntId(ih Ihandle, name string, id int) int {
-	attrMu.RLock()
-	defer attrMu.RUnlock()
-
 	return int(iupGetIntId(uintptr(ih), name, int32(id)))
 }
 
 func GetFloatId(ih Ihandle, name string, id int) float32 {
-	attrMu.RLock()
-	defer attrMu.RUnlock()
-
 	return iupGetFloatId(uintptr(ih), name, int32(id))
 }
 
 func GetDoubleId(ih Ihandle, name string, id int) float64 {
-	attrMu.RLock()
-	defer attrMu.RUnlock()
-
 	return iupGetDoubleId(uintptr(ih), name, int32(id))
 }
 
 func GetRGBId(ih Ihandle, name string, id int) (r, g, b uint8) {
-	attrMu.RLock()
-	defer attrMu.RUnlock()
-
 	iupGetRGBId(uintptr(ih), name, int32(id), &r, &g, &b)
 	return
 }
@@ -504,30 +337,18 @@ func GetBoolId(ih Ihandle, name string, id int) bool {
 }
 
 func GetIntId2(ih Ihandle, name string, lin, col int) int {
-	attrMu.RLock()
-	defer attrMu.RUnlock()
-
 	return int(iupGetIntId2(uintptr(ih), name, int32(lin), int32(col)))
 }
 
 func GetFloatId2(ih Ihandle, name string, lin, col int) float32 {
-	attrMu.RLock()
-	defer attrMu.RUnlock()
-
 	return iupGetFloatId2(uintptr(ih), name, int32(lin), int32(col))
 }
 
 func GetDoubleId2(ih Ihandle, name string, lin, col int) float64 {
-	attrMu.RLock()
-	defer attrMu.RUnlock()
-
 	return iupGetDoubleId2(uintptr(ih), name, int32(lin), int32(col))
 }
 
 func GetRGBId2(ih Ihandle, name string, lin, col int) (r, g, b uint8) {
-	attrMu.RLock()
-	defer attrMu.RUnlock()
-
 	iupGetRGBId2(uintptr(ih), name, int32(lin), int32(col), &r, &g, &b)
 	return
 }

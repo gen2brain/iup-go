@@ -7,10 +7,7 @@ import (
 	"fmt"
 	"image/color"
 	"reflect"
-	"runtime"
 	"strings"
-	"sync"
-	"sync/atomic"
 	"unsafe"
 )
 
@@ -20,75 +17,10 @@ import (
 */
 import "C"
 
-var attrMu reentrantRWMutex
-
-type reentrantRWMutex struct {
-	mu      sync.RWMutex
-	owner   atomic.Int64
-	recurse int32
-}
-
-func goroutineID() int64 {
-	var buf [64]byte
-	n := runtime.Stack(buf[:], false)
-	var id int64
-	for i := len("goroutine "); i < n; i++ {
-		if buf[i] < '0' || buf[i] > '9' {
-			break
-		}
-		id = id*10 + int64(buf[i]-'0')
-	}
-	return id
-}
-
-func (m *reentrantRWMutex) Lock() {
-	gid := goroutineID()
-	if m.owner.Load() == gid {
-		m.recurse++
-		return
-	}
-	m.mu.Lock()
-	m.owner.Store(gid)
-	m.recurse = 1
-}
-
-func (m *reentrantRWMutex) Unlock() {
-	m.recurse--
-	if m.recurse == 0 {
-		m.owner.Store(0)
-		m.mu.Unlock()
-	}
-}
-
-func (m *reentrantRWMutex) RLock() {
-	gid := goroutineID()
-	if m.owner.Load() == gid {
-		m.recurse++
-		return
-	}
-	m.mu.RLock()
-}
-
-func (m *reentrantRWMutex) RUnlock() {
-	gid := goroutineID()
-	if m.owner.Load() == gid {
-		m.recurse--
-		if m.recurse == 0 {
-			m.owner.Store(0)
-			m.mu.Unlock()
-		}
-		return
-	}
-	m.mu.RUnlock()
-}
-
 // SetAttribute sets an interface element attribute.
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setattribute.md
 func SetAttribute(ih Ihandle, name string, value interface{}) {
-	attrMu.Lock()
-	defer attrMu.Unlock()
-
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -134,9 +66,6 @@ func SetAttribute(ih Ihandle, name string, value interface{}) {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setattributes.md
 func SetAttributes(ih Ihandle, str string) Ihandle {
-	attrMu.Lock()
-	defer attrMu.Unlock()
-
 	cStr := C.CString(str)
 	defer C.free(unsafe.Pointer(cStr))
 
@@ -148,9 +77,6 @@ func SetAttributes(ih Ihandle, str string) Ihandle {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_resetattribute.md
 func ResetAttribute(ih Ihandle, name string) {
-	attrMu.Lock()
-	defer attrMu.Unlock()
-
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -191,9 +117,6 @@ func SetAttrs(ih Ihandle, args ...string) Ihandle {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setattributehandle.md
 func SetAttributeHandle(ih Ihandle, name string, ihNamed Ihandle) {
-	attrMu.Lock()
-	defer attrMu.Unlock()
-
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -204,9 +127,6 @@ func SetAttributeHandle(ih Ihandle, name string, ihNamed Ihandle) {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
 func GetAttribute(ih Ihandle, name string) string {
-	attrMu.RLock()
-	defer attrMu.RUnlock()
-
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -242,9 +162,6 @@ func attribIsNotString(ih Ihandle, cName *C.char) bool {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getallattributes.md
 func GetAllAttributes(ih Ihandle) (ret []string) {
-	attrMu.RLock()
-	defer attrMu.RUnlock()
-
 	n := int(C.IupGetAllAttributes(ih.ptr(), nil, 0))
 	if n > 0 {
 		ret = make([]string, n)
@@ -269,9 +186,6 @@ func GetAllAttributes(ih Ihandle) (ret []string) {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattributes.md
 func GetAttributes(ih Ihandle) string {
-	attrMu.RLock()
-	defer attrMu.RUnlock()
-
 	return C.GoString(C.IupGetAttributes(ih.ptr()))
 }
 
@@ -279,9 +193,6 @@ func GetAttributes(ih Ihandle) string {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattributehandle.md
 func GetAttributeHandle(ih Ihandle, name string) Ihandle {
-	attrMu.RLock()
-	defer attrMu.RUnlock()
-
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -292,9 +203,6 @@ func GetAttributeHandle(ih Ihandle, name string) Ihandle {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setattributehandle.md
 func SetAttributeHandleId(ih Ihandle, name string, id int, ihNamed Ihandle) {
-	attrMu.Lock()
-	defer attrMu.Unlock()
-
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -305,9 +213,6 @@ func SetAttributeHandleId(ih Ihandle, name string, id int, ihNamed Ihandle) {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattributehandle.md
 func GetAttributeHandleId(ih Ihandle, name string, id int) Ihandle {
-	attrMu.RLock()
-	defer attrMu.RUnlock()
-
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -318,9 +223,6 @@ func GetAttributeHandleId(ih Ihandle, name string, id int) Ihandle {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setattributehandle.md
 func SetAttributeHandleId2(ih Ihandle, name string, lin, col int, ihNamed Ihandle) {
-	attrMu.Lock()
-	defer attrMu.Unlock()
-
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -331,9 +233,6 @@ func SetAttributeHandleId2(ih Ihandle, name string, lin, col int, ihNamed Ihandl
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattributehandle.md
 func GetAttributeHandleId2(ih Ihandle, name string, lin, col int) Ihandle {
-	attrMu.RLock()
-	defer attrMu.RUnlock()
-
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -344,9 +243,6 @@ func GetAttributeHandleId2(ih Ihandle, name string, lin, col int) Ihandle {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setattribute.md
 func SetAttributeId(ih Ihandle, name string, id int, value interface{}) {
-	attrMu.Lock()
-	defer attrMu.Unlock()
-
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -386,9 +282,6 @@ func SetAttributeId(ih Ihandle, name string, id int, value interface{}) {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
 func GetAttributeId(ih Ihandle, name string, id int) string {
-	attrMu.RLock()
-	defer attrMu.RUnlock()
-
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -399,9 +292,6 @@ func GetAttributeId(ih Ihandle, name string, id int) string {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setattribute.md
 func SetAttributeId2(ih Ihandle, name string, lin, col int, value interface{}) {
-	attrMu.Lock()
-	defer attrMu.Unlock()
-
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -441,9 +331,6 @@ func SetAttributeId2(ih Ihandle, name string, lin, col int, value interface{}) {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setattribute.md
 func SetRGBId2(ih Ihandle, name string, lin, col int, r, g, b uint8) {
-	attrMu.Lock()
-	defer attrMu.Unlock()
-
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -454,9 +341,6 @@ func SetRGBId2(ih Ihandle, name string, lin, col int, r, g, b uint8) {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
 func GetAttributeId2(ih Ihandle, name string, lin, col int) string {
-	attrMu.RLock()
-	defer attrMu.RUnlock()
-
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -468,9 +352,6 @@ func GetAttributeId2(ih Ihandle, name string, lin, col int) string {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setglobal.md
 func SetGlobal(name string, value interface{}) {
-	attrMu.Lock()
-	defer attrMu.Unlock()
-
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -495,9 +376,6 @@ func SetGlobal(name string, value interface{}) {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getglobal.md
 func GetGlobal(name string) string {
-	attrMu.RLock()
-	defer attrMu.RUnlock()
-
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -508,9 +386,6 @@ func GetGlobal(name string) string {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getglobal.md
 func GetGlobalPtr(name string) uintptr {
-	attrMu.RLock()
-	defer attrMu.RUnlock()
-
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -521,9 +396,6 @@ func GetGlobalPtr(name string) uintptr {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getglobal.md
 func GetGlobalIh(name string) Ihandle {
-	attrMu.RLock()
-	defer attrMu.RUnlock()
-
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -551,9 +423,6 @@ func StringCompare(str1, str2 string, caseSensitive, lexicographic bool) int {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setattribute.md
 func SetRGB(ih Ihandle, name string, r, g, b uint8) {
-	attrMu.Lock()
-	defer attrMu.Unlock()
-
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -564,9 +433,6 @@ func SetRGB(ih Ihandle, name string, r, g, b uint8) {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setattribute.md
 func SetRGBA(ih Ihandle, name string, r, g, b, a uint8) {
-	attrMu.Lock()
-	defer attrMu.Unlock()
-
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -577,9 +443,6 @@ func SetRGBA(ih Ihandle, name string, r, g, b, a uint8) {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setattribute.md
 func SetRGBId(ih Ihandle, name string, id int, r, g, b uint8) {
-	attrMu.Lock()
-	defer attrMu.Unlock()
-
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -590,9 +453,6 @@ func SetRGBId(ih Ihandle, name string, id int, r, g, b uint8) {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
 func GetInt(ih Ihandle, name string) int {
-	attrMu.RLock()
-	defer attrMu.RUnlock()
-
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -603,9 +463,6 @@ func GetInt(ih Ihandle, name string) int {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
 func GetInt2(ih Ihandle, name string) (count, i1, i2 int) { // count = 0, 1 or 2
-	attrMu.RLock()
-	defer attrMu.RUnlock()
-
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -647,9 +504,6 @@ func SetBoolId2(ih Ihandle, name string, lin, col int, value bool) {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
 func GetFloat(ih Ihandle, name string) float32 {
-	attrMu.RLock()
-	defer attrMu.RUnlock()
-
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -660,9 +514,6 @@ func GetFloat(ih Ihandle, name string) float32 {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
 func GetDouble(ih Ihandle, name string) float64 {
-	attrMu.RLock()
-	defer attrMu.RUnlock()
-
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -673,9 +524,6 @@ func GetDouble(ih Ihandle, name string) float64 {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
 func GetRGB(ih Ihandle, name string) (r, g, b uint8) {
-	attrMu.RLock()
-	defer attrMu.RUnlock()
-
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -687,9 +535,6 @@ func GetRGB(ih Ihandle, name string) (r, g, b uint8) {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
 func GetRGBA(ih Ihandle, name string) (r, g, b, a uint8) {
-	attrMu.RLock()
-	defer attrMu.RUnlock()
-
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -701,9 +546,6 @@ func GetRGBA(ih Ihandle, name string) (r, g, b, a uint8) {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
 func GetIntId(ih Ihandle, name string, id int) int {
-	attrMu.RLock()
-	defer attrMu.RUnlock()
-
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -714,9 +556,6 @@ func GetIntId(ih Ihandle, name string, id int) int {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
 func GetFloatId(ih Ihandle, name string, id int) float32 {
-	attrMu.RLock()
-	defer attrMu.RUnlock()
-
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -727,9 +566,6 @@ func GetFloatId(ih Ihandle, name string, id int) float32 {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
 func GetDoubleId(ih Ihandle, name string, id int) float64 {
-	attrMu.RLock()
-	defer attrMu.RUnlock()
-
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -740,9 +576,6 @@ func GetDoubleId(ih Ihandle, name string, id int) float64 {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
 func GetRGBId(ih Ihandle, name string, id int) (r, g, b uint8) {
-	attrMu.RLock()
-	defer attrMu.RUnlock()
-
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -763,9 +596,6 @@ func GetBoolId(ih Ihandle, name string, id int) bool {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
 func GetIntId2(ih Ihandle, name string, lin, col int) int {
-	attrMu.RLock()
-	defer attrMu.RUnlock()
-
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -776,9 +606,6 @@ func GetIntId2(ih Ihandle, name string, lin, col int) int {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
 func GetFloatId2(ih Ihandle, name string, lin, col int) float32 {
-	attrMu.RLock()
-	defer attrMu.RUnlock()
-
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -789,9 +616,6 @@ func GetFloatId2(ih Ihandle, name string, lin, col int) float32 {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
 func GetDoubleId2(ih Ihandle, name string, lin, col int) float64 {
-	attrMu.RLock()
-	defer attrMu.RUnlock()
-
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -802,9 +626,6 @@ func GetDoubleId2(ih Ihandle, name string, lin, col int) float64 {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
 func GetRGBId2(ih Ihandle, name string, lin, col int) (r, g, b uint8) {
-	attrMu.RLock()
-	defer attrMu.RUnlock()
-
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
