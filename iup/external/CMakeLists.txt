@@ -26,6 +26,15 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(GNUInstallDirs)
 
+if(IS_ABSOLUTE "${CMAKE_INSTALL_LIBDIR}")
+  set(IUP_PC_PREFIX "${CMAKE_INSTALL_PREFIX}")
+else()
+  file(RELATIVE_PATH _iup_pc_prefix_rel
+       "${CMAKE_INSTALL_FULL_LIBDIR}/pkgconfig" "${CMAKE_INSTALL_PREFIX}")
+  string(REGEX REPLACE "/+$" "" _iup_pc_prefix_rel "${_iup_pc_prefix_rel}")
+  set(IUP_PC_PREFIX "\${pcfiledir}/${_iup_pc_prefix_rel}")
+endif()
+
 # --- LTO for Release builds ---
 
 include(CheckIPOSupported)
