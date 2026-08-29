@@ -7,6 +7,16 @@ import (
 	"syscall"
 )
 
+var getCurrentThreadID = syscall.NewLazyDLL("kernel32.dll").NewProc("GetCurrentThreadId")
+
+func registerThreadFunc(lib uintptr) {}
+
+func currentThreadID() uint64 {
+	id, _, _ := getCurrentThreadID.Call()
+
+	return uint64(id)
+}
+
 func dlopenRaw(nameOrPath string) uintptr {
 	h, err := syscall.LoadLibrary(nameOrPath)
 	if err != nil {

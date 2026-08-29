@@ -1214,6 +1214,9 @@ type ThreadFunc func(ih Ihandle) int
 
 //export goIupThreadCB
 func goIupThreadCB(ih unsafe.Pointer) C.int {
+	id := enterIupThread()
+	defer leaveIupThread(id)
+
 	f := loadCallback((Ihandle)(ih), "_IUPGO_THREAD_CB").Value().(ThreadFunc)
 
 	return C.int(f((Ihandle)(ih)))

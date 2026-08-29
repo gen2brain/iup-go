@@ -8,9 +8,45 @@ import (
 	"image/color"
 	"reflect"
 	"strings"
+	"sync"
+	"sync/atomic"
 )
 
+var uiThread atomic.Uint64
+
+var iupThreads sync.Map
+
+func markUIThread() { uiThread.Store(currentThreadID()) }
+
+func enterIupThread() uint64 {
+	id := currentThreadID()
+	iupThreads.Store(id, struct{}{})
+	return id
+}
+
+func leaveIupThread(id uint64) { iupThreads.Delete(id) }
+
+func checkUIThread() {
+	ui := uiThread.Load()
+	if ui == 0 {
+		return
+	}
+
+	id := currentThreadID()
+	if id == ui {
+		return
+	}
+
+	if _, ok := iupThreads.Load(id); ok {
+		return
+	}
+
+	panic("iup: attribute called from a thread that is not the main one, use PostMessage")
+}
+
 func SetAttribute(ih Ihandle, name string, value interface{}) {
+	checkUIThread()
+
 	switch val := value.(type) {
 	case nil:
 		iupSetAttribute(uintptr(ih), name, 0)
@@ -50,10 +86,14 @@ func SetAttribute(ih Ihandle, name string, value interface{}) {
 }
 
 func SetAttributes(ih Ihandle, str string) Ihandle {
+	checkUIThread()
+
 	return mkih(iupSetAttributes(uintptr(ih), str))
 }
 
 func ResetAttribute(ih Ihandle, name string) {
+	checkUIThread()
+
 	iupResetAttribute(uintptr(ih), name)
 }
 
@@ -76,10 +116,14 @@ func SetAttrs(ih Ihandle, args ...string) Ihandle {
 }
 
 func SetAttributeHandle(ih Ihandle, name string, ihNamed Ihandle) {
+	checkUIThread()
+
 	iupSetAttributeHandle(uintptr(ih), name, uintptr(ihNamed))
 }
 
 func GetAttribute(ih Ihandle, name string) string {
+	checkUIThread()
+
 	if attribIsNotString(ih, name) {
 		ptr := iupGetAttributePtr(uintptr(ih), name)
 		if ptr == 0 {
@@ -108,6 +152,8 @@ func attribIsNotString(ih Ihandle, name string) bool {
 }
 
 func GetAllAttributes(ih Ihandle) (ret []string) {
+	checkUIThread()
+
 	n := int(iupGetAllAttributes(uintptr(ih), nil, 0))
 	if n > 0 {
 		buf := make([]uintptr, n)
@@ -121,30 +167,44 @@ func GetAllAttributes(ih Ihandle) (ret []string) {
 }
 
 func GetAttributes(ih Ihandle) string {
+	checkUIThread()
+
 	return iupGetAttributes(uintptr(ih))
 }
 
 func GetAttributeHandle(ih Ihandle, name string) Ihandle {
+	checkUIThread()
+
 	return mkih(iupGetAttributeHandle(uintptr(ih), name))
 }
 
 func SetAttributeHandleId(ih Ihandle, name string, id int, ihNamed Ihandle) {
+	checkUIThread()
+
 	iupSetAttributeHandleId(uintptr(ih), name, int32(id), uintptr(ihNamed))
 }
 
 func GetAttributeHandleId(ih Ihandle, name string, id int) Ihandle {
+	checkUIThread()
+
 	return mkih(iupGetAttributeHandleId(uintptr(ih), name, int32(id)))
 }
 
 func SetAttributeHandleId2(ih Ihandle, name string, lin, col int, ihNamed Ihandle) {
+	checkUIThread()
+
 	iupSetAttributeHandleI2(uintptr(ih), name, int32(lin), int32(col), uintptr(ihNamed))
 }
 
 func GetAttributeHandleId2(ih Ihandle, name string, lin, col int) Ihandle {
+	checkUIThread()
+
 	return mkih(iupGetAttributeHandleI2(uintptr(ih), name, int32(lin), int32(col)))
 }
 
 func SetAttributeId(ih Ihandle, name string, id int, value interface{}) {
+	checkUIThread()
+
 	switch val := value.(type) {
 	case nil:
 		iupSetAttributeId(uintptr(ih), name, int32(id), 0)
@@ -178,10 +238,14 @@ func SetAttributeId(ih Ihandle, name string, id int, value interface{}) {
 }
 
 func GetAttributeId(ih Ihandle, name string, id int) string {
+	checkUIThread()
+
 	return iupGetAttributeId(uintptr(ih), name, int32(id))
 }
 
 func SetAttributeId2(ih Ihandle, name string, lin, col int, value interface{}) {
+	checkUIThread()
+
 	switch val := value.(type) {
 	case nil:
 		iupSetAttributeId2(uintptr(ih), name, int32(lin), int32(col), 0)
@@ -215,10 +279,14 @@ func SetAttributeId2(ih Ihandle, name string, lin, col int, value interface{}) {
 }
 
 func GetAttributeId2(ih Ihandle, name string, lin, col int) string {
+	checkUIThread()
+
 	return iupGetAttributeId2(uintptr(ih), name, int32(lin), int32(col))
 }
 
 func SetGlobal(name string, value interface{}) {
+	checkUIThread()
+
 	switch val := value.(type) {
 	case nil:
 		iupSetGlobal(name, 0)
@@ -238,14 +306,20 @@ func SetGlobal(name string, value interface{}) {
 }
 
 func GetGlobal(name string) string {
+	checkUIThread()
+
 	return iupGetGlobal(name)
 }
 
 func GetGlobalPtr(name string) uintptr {
+	checkUIThread()
+
 	return iupGetGlobalRaw(name)
 }
 
 func GetGlobalIh(name string) Ihandle {
+	checkUIThread()
+
 	return Ihandle(iupGetGlobalRaw(name))
 }
 
@@ -254,26 +328,38 @@ func StringCompare(str1, str2 string, caseSensitive, lexicographic bool) int {
 }
 
 func SetRGB(ih Ihandle, name string, r, g, b uint8) {
+	checkUIThread()
+
 	iupSetRGB(uintptr(ih), name, r, g, b)
 }
 
 func SetRGBA(ih Ihandle, name string, r, g, b, a uint8) {
+	checkUIThread()
+
 	iupSetRGBA(uintptr(ih), name, r, g, b, a)
 }
 
 func SetRGBId(ih Ihandle, name string, id int, r, g, b uint8) {
+	checkUIThread()
+
 	iupSetRGBId(uintptr(ih), name, int32(id), r, g, b)
 }
 
 func SetRGBId2(ih Ihandle, name string, lin, col int, r, g, b uint8) {
+	checkUIThread()
+
 	iupSetRGBId2(uintptr(ih), name, int32(lin), int32(col), r, g, b)
 }
 
 func GetInt(ih Ihandle, name string) int {
+	checkUIThread()
+
 	return int(iupGetInt(uintptr(ih), name))
 }
 
 func GetInt2(ih Ihandle, name string) (count, i1, i2 int) {
+	checkUIThread()
+
 	var c1, c2 int32
 	count = int(iupGetIntInt(uintptr(ih), name, &c1, &c2))
 	return count, int(c1), int(c2)
@@ -297,36 +383,52 @@ func SetBoolId2(ih Ihandle, name string, lin, col int, value bool) {
 }
 
 func GetFloat(ih Ihandle, name string) float32 {
+	checkUIThread()
+
 	return iupGetFloat(uintptr(ih), name)
 }
 
 func GetDouble(ih Ihandle, name string) float64 {
+	checkUIThread()
+
 	return iupGetDouble(uintptr(ih), name)
 }
 
 func GetRGB(ih Ihandle, name string) (r, g, b uint8) {
+	checkUIThread()
+
 	iupGetRGB(uintptr(ih), name, &r, &g, &b)
 	return
 }
 
 func GetRGBA(ih Ihandle, name string) (r, g, b, a uint8) {
+	checkUIThread()
+
 	iupGetRGBA(uintptr(ih), name, &r, &g, &b, &a)
 	return
 }
 
 func GetIntId(ih Ihandle, name string, id int) int {
+	checkUIThread()
+
 	return int(iupGetIntId(uintptr(ih), name, int32(id)))
 }
 
 func GetFloatId(ih Ihandle, name string, id int) float32 {
+	checkUIThread()
+
 	return iupGetFloatId(uintptr(ih), name, int32(id))
 }
 
 func GetDoubleId(ih Ihandle, name string, id int) float64 {
+	checkUIThread()
+
 	return iupGetDoubleId(uintptr(ih), name, int32(id))
 }
 
 func GetRGBId(ih Ihandle, name string, id int) (r, g, b uint8) {
+	checkUIThread()
+
 	iupGetRGBId(uintptr(ih), name, int32(id), &r, &g, &b)
 	return
 }
@@ -337,18 +439,26 @@ func GetBoolId(ih Ihandle, name string, id int) bool {
 }
 
 func GetIntId2(ih Ihandle, name string, lin, col int) int {
+	checkUIThread()
+
 	return int(iupGetIntId2(uintptr(ih), name, int32(lin), int32(col)))
 }
 
 func GetFloatId2(ih Ihandle, name string, lin, col int) float32 {
+	checkUIThread()
+
 	return iupGetFloatId2(uintptr(ih), name, int32(lin), int32(col))
 }
 
 func GetDoubleId2(ih Ihandle, name string, lin, col int) float64 {
+	checkUIThread()
+
 	return iupGetDoubleId2(uintptr(ih), name, int32(lin), int32(col))
 }
 
 func GetRGBId2(ih Ihandle, name string, lin, col int) (r, g, b uint8) {
+	checkUIThread()
+
 	iupGetRGBId2(uintptr(ih), name, int32(lin), int32(col), &r, &g, &b)
 	return
 }

@@ -4,6 +4,7 @@ package iup
 
 import (
 	"os"
+	"runtime"
 	"testing"
 	"time"
 	"unsafe"
@@ -394,5 +395,36 @@ func TestMapCallback(t *testing.T) {
 	Destroy(dlg)
 	if !mapped {
 		t.Fatal("MAP_CB did not fire on Show")
+	}
+}
+
+// An attribute call from another goroutine panics instead of reaching the toolkit.
+func TestUIThreadGuard(t *testing.T) {
+	btn := Button("guard")
+	defer Destroy(btn)
+
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+
+	saved := uiThread.Load()
+	markUIThread()
+	defer uiThread.Store(saved)
+
+	btn.SetAttribute("TITLE", "from the main thread")
+
+	done := make(chan any, 1)
+	go func() {
+		defer func() { done <- recover() }()
+		btn.SetAttribute("TITLE", "from a goroutine")
+	}()
+
+	r := <-done
+	if r == nil {
+		t.Fatal("attribute call from a goroutine did not panic")
+	}
+	t.Logf("recovered: %v", r)
+
+	if got := btn.GetAttribute("TITLE"); got != "from the main thread" {
+		t.Fatalf("main thread call broken after the guard fired: got %q", got)
 	}
 }

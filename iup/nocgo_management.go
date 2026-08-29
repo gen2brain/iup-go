@@ -35,6 +35,8 @@ func GetHandle(name string) Ihandle {
 }
 
 func MainLoop() int {
+	markUIThread()
+
 	return int(iupMainLoop())
 }
 
