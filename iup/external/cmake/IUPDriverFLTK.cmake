@@ -67,7 +67,7 @@ elseif(WIN32)
 endif()
 
 set(IUP_PC_REQUIRES "")
-set(IUP_PC_LIBS_PRIVATE "-lfltk -lfltk_images")
+set(IUP_PC_LIBS_PRIVATE "-lfltk -lfltk_images -lstdc++")
 if(UNIX AND NOT APPLE)
   string(APPEND IUP_PC_LIBS_PRIVATE " -ldl -lm -lpthread -lresolv")
 elseif(APPLE)
