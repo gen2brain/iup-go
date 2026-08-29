@@ -25,12 +25,14 @@ extern "C" {
 #include "iup_str.h"
 #include "iup_drvinfo.h"
 #include "iup_class.h"
+#include "iup_image.h"
 }
 
 #include "iupwinui_drv.h"
 
 #include <winrt/Windows.ApplicationModel.DataTransfer.h>
 #include <winrt/Windows.Storage.h>
+#include <winrt/Windows.Graphics.Imaging.h>
 
 using namespace winrt;
 using namespace Microsoft::UI::Xaml;
@@ -174,6 +176,28 @@ void winuiDragSetInProcessData(const char* type, void* data, int size)
   winui_drag_type[sizeof(winui_drag_type) - 1] = '\0';
 }
 
+static void winuiDragSetCursor(Ihandle* ih, DragStartingEventArgs const& e)
+{
+  char* name = iupAttribGet(ih, "DRAGCURSOR");
+  if (!name)
+    return;
+
+  void* handle = iupImageGetImage(name, ih, 0, NULL);
+  auto bitmap = winuiGetBitmapFromHandle(handle);
+  if (!bitmap)
+    return;
+
+  /* the IUP image is already BGRA premultiplied */
+  auto softwareBitmap = Windows::Graphics::Imaging::SoftwareBitmap::CreateCopyFromBuffer(
+    bitmap.PixelBuffer(),
+    Windows::Graphics::Imaging::BitmapPixelFormat::Bgra8,
+    bitmap.PixelWidth(), bitmap.PixelHeight(),
+    Windows::Graphics::Imaging::BitmapAlphaMode::Premultiplied);
+
+  if (softwareBitmap)
+    e.DragUI().SetContentFromSoftwareBitmap(softwareBitmap);
+}
+
 static void winuiDragStartingHandler(Ihandle* ih, DragStartingEventArgs const& e, UIElement const& posRelativeTo)
 {
   IFnii dragbegin_cb = (IFnii)IupGetCallback(ih, "DRAGBEGIN_CB");
@@ -187,6 +211,8 @@ static void winuiDragStartingHandler(Ihandle* ih, DragStartingEventArgs const& e
       return;
     }
   }
+
+  winuiDragSetCursor(ih, e);
 
   IFns datasize_cb = (IFns)IupGetCallback(ih, "DRAGDATASIZE_CB");
   IFnsVi dragdata_cb = (IFnsVi)IupGetCallback(ih, "DRAGDATA_CB");
@@ -378,7 +404,7 @@ extern "C" IUP_SDK_API void iupdrvRegisterDragDropAttrib(Iclass* ic)
   iupClassRegisterAttribute(ic, "DRAGSOURCE", NULL, winuiSetDragSourceAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DROPTARGET", NULL, winuiSetDropTargetAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DRAGSOURCEMOVE", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DRAGCURSOR", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DRAGCURSOR", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DRAGCURSORCOPY", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "DRAGDROP", NULL, winuiSetDropFilesTargetAttrib, NULL, NULL, IUPAF_NO_INHERIT);

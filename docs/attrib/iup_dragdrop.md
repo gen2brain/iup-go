@@ -45,7 +45,7 @@ Must be set.
 **DRAGCURSOR** (non-inheritable): name of an image to be used as cursor during drag.
 Use [IupSetHandle](../func/iup_sethandle.md) or [IupSetAttributeHandle](../func/iup_setattributehandle.md) to associate an image to a name.
 See also [IupImage](../elem/iup_image.md).
-Supported in Win32, GTK, GTK 4, Motif, Cocoa, Qt, EFL, Android and Haiku.
+Supported in Win32, WinUI, GTK, GTK 4, Motif, Cocoa, Qt, EFL, Android and Haiku.
 
 **DRAGCURSORCOPY** (non-inheritable): name of an image used as the drag cursor while the copy action is in effect (for example when Ctrl is held). Falls back to DRAGCURSOR.
 Supported in Win32, Motif, Cocoa, Qt and Haiku.
