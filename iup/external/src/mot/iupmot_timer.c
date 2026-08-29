@@ -27,6 +27,7 @@ static void motTimerProc(XtPointer client_data, XtIntervalId *id)
     return;
 
   ih->serial = -1;
+  iupAttribSet(ih, "_IUPMOT_TIMERID", NULL);
   /* we have to restart the timer every time */
   iupdrvTimerRun(ih);
 
@@ -53,8 +54,11 @@ IUP_SDK_API void iupdrvTimerRun(Ihandle *ih)
   if (time_ms > 0)
   {
     long long start;
+    XtIntervalId id;
 
-    ih->serial = XtAppAddTimeOut(iupmot_appcontext, time_ms, motTimerProc, (XtPointer)ih);
+    id = XtAppAddTimeOut(iupmot_appcontext, time_ms, motTimerProc, (XtPointer)ih);
+    ih->serial = 1;
+    iupAttribSet(ih, "_IUPMOT_TIMERID", (char*)id);
 
     start = (long long)clock();
     iupAttribSetStrf(ih, "STARTCOUNT", "%lld", start);
@@ -65,7 +69,8 @@ IUP_SDK_API void iupdrvTimerStop(Ihandle* ih)
 {
   if (ih->serial > 0)
   {
-    XtRemoveTimeOut(ih->serial);
+    XtRemoveTimeOut((XtIntervalId)iupAttribGet(ih, "_IUPMOT_TIMERID"));
+    iupAttribSet(ih, "_IUPMOT_TIMERID", NULL);
     ih->serial = -1;
   }
 }
