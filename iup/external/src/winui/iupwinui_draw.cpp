@@ -118,6 +118,7 @@ struct _IdrawCanvas
   int w, h;
 
   SurfaceImageSource sis{nullptr};
+  bool sisIsNew{false};
   com_ptr<ISurfaceImageSourceNativeWithD2D> sisNative;
   ID2D1DeviceContext* d2dContext;
   POINT drawOffset;
@@ -237,14 +238,34 @@ extern "C" IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
   dc->clipType = WINUI_CLIP_NONE;
   dc->d2dContext = nullptr;
 
-  dc->sis = SurfaceImageSource(dc->w, dc->h);
+  IupWinUICanvasAux* aux = iupClassMatch(ih->iclass, "canvas")
+    ? winuiGetAux<IupWinUICanvasAux>(ih, IUPWINUI_CANVAS_AUX) : nullptr;
+
+  if (aux && aux->sis && (aux->sisWidth != dc->w || aux->sisHeight != dc->h))
+    aux->sis = nullptr;
+
+  if (aux && aux->sis)
+    dc->sis = aux->sis;
+  else
+  {
+    dc->sis = SurfaceImageSource(dc->w, dc->h);
+    dc->sisIsNew = true;
+
+    if (aux)
+    {
+      aux->sis = dc->sis;
+      aux->sisWidth = dc->w;
+      aux->sisHeight = dc->h;
+    }
+  }
 
   com_ptr<::IUnknown> sisUnknown;
   winrt::copy_to_abi(dc->sis, *sisUnknown.put_void());
   sisUnknown->QueryInterface(IID_ISurfaceImageSourceNativeWithD2D,
     dc->sisNative.put_void());
 
-  dc->sisNative->SetDevice(g_d2dDevice.get());
+  if (dc->sisIsNew)
+    dc->sisNative->SetDevice(g_d2dDevice.get());
 
   if (!winuiDrawBeginSession(dc))
   {
@@ -314,6 +335,18 @@ extern "C" IUP_SDK_API void iupdrvDrawUpdateSize(IdrawCanvas* dc)
 
     dc->sisNative = nullptr;
     dc->sis = SurfaceImageSource(dc->w, dc->h);
+    dc->sisIsNew = true;
+
+    {
+      IupWinUICanvasAux* aux = iupClassMatch(dc->ih->iclass, "canvas")
+        ? winuiGetAux<IupWinUICanvasAux>(dc->ih, IUPWINUI_CANVAS_AUX) : nullptr;
+      if (aux)
+      {
+        aux->sis = dc->sis;
+        aux->sisWidth = dc->w;
+        aux->sisHeight = dc->h;
+      }
+    }
 
     com_ptr<::IUnknown> sisUnknown;
     winrt::copy_to_abi(dc->sis, *sisUnknown.put_void());
@@ -405,7 +438,8 @@ extern "C" IUP_SDK_API void iupdrvDrawFlush(IdrawCanvas* dc)
     IupWinUICanvasAux* aux = winuiGetAux<IupWinUICanvasAux>(dc->ih, IUPWINUI_CANVAS_AUX);
     if (aux && aux->displayImage)
     {
-      aux->displayImage.Source(dc->sis);
+      if (dc->sisIsNew)
+        aux->displayImage.Source(dc->sis);
 
       Canvas canvas = winuiGetHandle<Canvas>(dc->ih);
       if (canvas)
