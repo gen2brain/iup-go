@@ -59,8 +59,8 @@ static WindowsXamlManager winui_xaml_manager = nullptr;
 /****************************************************************************
  * Application Class for XAML Islands
  *
- * WinUI 3 controls require an Application with IXamlMetadataProvider
- * to provide their visual templates and styles via XamlControlsResources.
+ * WinUI 3 controls get their templates and styles from XamlControlsResources,
+ * which needs an Application with IXamlMetadataProvider.
  ****************************************************************************/
 
 class IupWinUIApp : public ApplicationT<IupWinUIApp, IXamlMetadataProvider>

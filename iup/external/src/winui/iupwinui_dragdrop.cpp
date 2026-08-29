@@ -146,8 +146,8 @@ static int winuiSetDropFilesTargetAttrib(Ihandle* ih, const char* value)
 /****************************************************************************
  * Custom Drag and Drop (DRAGSOURCE / DROPTARGET attributes)
  *
- * In-process data transfer: drag data is stored in statics during
- * the drag operation. DataPackage text carries the type string.
+ * Drag data lives in statics for the duration of the drag; the DataPackage text
+ * carries only the type string.
  ****************************************************************************/
 
 static void* winui_drag_data = NULL;

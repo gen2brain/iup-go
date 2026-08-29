@@ -41,12 +41,10 @@ static int winuiCanvasIsGLCanvas(Ihandle* ih)
 }
 
 /***********************************************************************************
- * GL Canvas - Win32 child HWND for OpenGL rendering
+ * GL Canvas
  *
- * When a Canvas is used as the base for a GLCanvas, we create a Win32 child HWND
- * (with CS_OWNDC) instead of a XAML Canvas. This HWND is a sibling to the XAML
- * Island HWND, rendered on top of XAML content.
- * The iup_glcanvas_win.c finds this HWND and creates the WGL context.
+ * A GLCanvas needs a Win32 child HWND with CS_OWNDC, sibling to the Island HWND,
+ * found by iup_glcanvas_win.c.
  ***********************************************************************************/
 
 static LRESULT CALLBACK winuiGLCanvasWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)

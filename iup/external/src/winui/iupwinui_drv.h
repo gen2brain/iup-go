@@ -102,8 +102,8 @@ extern float winui_screen_dpi;
 /****************************************************************************
  * Handle Type Check
  *
- * ih->handle stores raw COM pointers for WinUI controls, but some controls
- * (Dialog, GLCanvas, WebBrowser) use raw HWNDs instead.
+ * ih->handle is a raw COM pointer, except for Dialog, GLCanvas and WebBrowser
+ * which store a raw HWND.
  ****************************************************************************/
 
 inline bool winuiHandleIsHWND(Ihandle* ih)
@@ -123,10 +123,6 @@ IUP_DRV_API std::wstring iupwinuiStringToWString(const char* str);
 
 /****************************************************************************
  * Mnemonic Processing Helper
- *
- * Processes mnemonic markers (&) in text:
- * - Strips & from the text (returns processed string)
- * - Returns the mnemonic character if found (in c parameter)
  ****************************************************************************/
 
 IUP_DRV_API winrt::hstring iupwinuiProcessMnemonic(const char* str, char* c);
@@ -170,9 +166,6 @@ winrt::Microsoft::UI::Xaml::Media::Imaging::WriteableBitmap winuiGetBitmapFromHa
 /****************************************************************************
  * COM Pointer Storage Helpers
  *
- * ih->handle stores raw COM pointers (IUnknown*) for WinUI controls.
- * These helpers manage the pointer lifecycle using WinRT interop.
- *
  *   Map:    winuiStoreHandle(ih, widget)     - stores raw pointer, transfers ownership
  *   Use:    auto w = winuiGetHandle<T>(ih)   - gets temporary wrapper (adds ref)
  *   UnMap:  winuiReleaseHandle<T>(ih)        - releases the stored pointer
@@ -211,8 +204,6 @@ inline void winuiReleaseHandle(Ihandle* ih)
 
 /****************************************************************************
  * Pointer Event Helpers
- *
- * Shared by Canvas, Label, and any control that needs BUTTON_CB support.
  ****************************************************************************/
 
 inline int iupwinuiGetModifierKeys(void)
@@ -260,9 +251,7 @@ inline int iupwinuiGetPointerReleasedButton(winrt::Microsoft::UI::Input::Pointer
 /****************************************************************************
  * Auxiliary Data Structures
  *
- * These structs store data that cannot be stored in ih->handle
- * (event tokens, secondary widgets, flags). They are allocated when needed
- * and stored via IUP attributes.
+ * What does not fit in ih->handle: event tokens, secondary widgets, flags.
  ****************************************************************************/
 
 #define IUPWINUI_DIALOG_AUX "_IUPWINUI_DIALOG_AUX"
