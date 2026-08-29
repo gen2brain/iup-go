@@ -3034,7 +3034,6 @@ static int winuiTableMapMethod(Ihandle* ih)
       listView.Items().Append(rowGrid);
     }
 
-    /* the UIA element is the ListViewItem the ListView generates, and it only exists once realized */
     aux->containerContentChangingToken = listView.ContainerContentChanging(
       [ih](ListViewBase const&, ContainerContentChangingEventArgs const& args) {
         if (args.InRecycleQueue())

@@ -289,6 +289,9 @@ static void winuiTextBeforeTextChanging(Ihandle* ih, TextBox const& sender, Text
   char* temp_new = iupwinuiHStringToString(newHStr);
   char* new_value = iupStrDup(temp_new ? temp_new : "");
 
+  if (ih->data->is_multiline)
+    iupStrToUnix(new_value);
+
   if (ih->data->nc && (int)strlen(new_value) > ih->data->nc)
   {
     free(new_value);
@@ -320,6 +323,8 @@ static void winuiTextBeforeTextChanging(Ihandle* ih, TextBox const& sender, Text
     if (newLen == oldLen + 1 && insertPos < newLen)
     {
       wchar_t wch = newStr[insertPos];
+      if (wch == L'\r')
+        wch = L'\n';
       if (wch > 0 && wch < 128)
         key = (int)wch;
     }
@@ -440,6 +445,20 @@ static void winuiTextSpinValueChanged(Ihandle* ih, NumberBox const& nb, NumberBo
   winuiTextCallValueChanged(ih);
 }
 
+static std::wstring winuiTextToControl(Ihandle* ih, const char* value)
+{
+  if (!value)
+    value = "";
+
+  if (ih->data->is_multiline && strchr(value, '\n') != NULL)
+  {
+    value = iupStrReturnStr(value);
+    iupStrToMac((char*)value);
+  }
+
+  return iupwinuiStringToWString(value);
+}
+
 static int winuiTextSetValueAttrib(Ihandle* ih, const char* value)
 {
   IupWinUITextAux* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
@@ -481,15 +500,10 @@ static int winuiTextSetValueAttrib(Ihandle* ih, const char* value)
     RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
     if (reb)
     {
-      if (value && strchr(value, '\n') != NULL)
-      {
-        value = iupStrReturnStr(value);
-        iupStrToMac((char*)value);
-      }
       bool wasReadOnly = reb.IsReadOnly();
       if (wasReadOnly)
         reb.IsReadOnly(false);
-      reb.Document().SetText(TextSetOptions::None, iupwinuiStringToHString(value ? value : ""));
+      reb.Document().SetText(TextSetOptions::None, hstring(winuiTextToControl(ih, value)));
       if (wasReadOnly)
         reb.IsReadOnly(true);
     }
@@ -497,9 +511,10 @@ static int winuiTextSetValueAttrib(Ihandle* ih, const char* value)
   else
   {
     TextBox tb = winuiGetHandle<TextBox>(ih);
+    std::wstring text = winuiTextToControl(ih, value);
     if (tb)
-      tb.Text(iupwinuiStringToHString(value ? value : ""));
-    aux->savedText = iupwinuiStringToWString(value ? value : "");
+      tb.Text(hstring(text));
+    aux->savedText = text;
   }
 
   ih->data->disable_callbacks = 0;
@@ -594,10 +609,14 @@ static int winuiTextSetAppendAttrib(Ihandle* ih, const char* value)
       hstring currentText;
       reb.Document().GetText(TextGetOptions::None, currentText);
 
+      uint32_t currentLen = currentText.size();
+      if (currentLen > 0 && currentText.c_str()[currentLen - 1] == L'\r')
+        currentLen--;
+
       std::wstring appendStr;
-      if (ih->data->append_newline && currentText.size() > 0)
+      if (ih->data->append_newline && currentLen > 0)
         appendStr = L"\r";
-      appendStr += iupwinuiStringToHString(value).c_str();
+      appendStr += winuiTextToControl(ih, value);
 
       int32_t endPos = (int32_t)currentText.size();
       auto range = reb.Document().GetRange(endPos, endPos);
@@ -622,8 +641,9 @@ static int winuiTextSetAppendAttrib(Ihandle* ih, const char* value)
       if (aux->isMultiline && ih->data->append_newline && !newText.empty())
         newText += L"\r";
 
-      newText += iupwinuiStringToHString(value).c_str();
+      newText += winuiTextToControl(ih, value);
       tb.Text(hstring(newText));
+      aux->savedText = newText;
 
       if (aux->isMultiline && ih->data->append_scroll)
       {
@@ -2540,7 +2560,10 @@ static char* winuiTextGetSelectedTextAttrib(Ihandle* ih)
       {
         hstring text;
         sel.GetText(TextGetOptions::None, text);
-        return iupwinuiHStringToString(text);
+        char* str = iupwinuiHStringToString(text);
+        if (str)
+          iupStrToUnix(str);
+        return str;
       }
     }
   }
@@ -2555,7 +2578,10 @@ static char* winuiTextGetSelectedTextAttrib(Ihandle* ih)
       {
         hstring fullText = tb.Text();
         std::wstring selected(fullText.c_str() + start, len);
-        return iupwinuiHStringToString(hstring(selected));
+        char* str = iupwinuiHStringToString(hstring(selected));
+        if (str && ih->data->is_multiline)
+          iupStrToUnix(str);
+        return str;
       }
     }
   }
@@ -2581,7 +2607,7 @@ static int winuiTextSetSelectedTextAttrib(Ihandle* ih, const char* value)
     {
       auto sel = reb.Document().Selection();
       if (sel.StartPosition() != sel.EndPosition())
-        sel.SetText(TextSetOptions::None, iupwinuiStringToHString(value));
+        sel.SetText(TextSetOptions::None, hstring(winuiTextToControl(ih, value)));
     }
   }
   else
@@ -2594,7 +2620,7 @@ static int winuiTextSetSelectedTextAttrib(Ihandle* ih, const char* value)
       if (len > 0)
       {
         std::wstring fullText(tb.Text().c_str());
-        std::wstring replacement = iupwinuiStringToWString(value);
+        std::wstring replacement = winuiTextToControl(ih, value);
         fullText.replace(start, len, replacement);
         iupAttribSet(ih, "_IUPWINUI_IGNORE_VALUECHANGED", "1");
         tb.Text(hstring(fullText));
@@ -2976,7 +3002,7 @@ static int winuiTextSetInsertAttrib(Ihandle* ih, const char* value)
   {
     RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
     if (reb)
-      reb.Document().Selection().SetText(TextSetOptions::None, iupwinuiStringToHString(value));
+      reb.Document().Selection().SetText(TextSetOptions::None, hstring(winuiTextToControl(ih, value)));
   }
   else
   {
@@ -2986,7 +3012,7 @@ static int winuiTextSetInsertAttrib(Ihandle* ih, const char* value)
       int pos = tb.SelectionStart();
       int len = tb.SelectionLength();
       std::wstring fullText(tb.Text().c_str());
-      std::wstring insertText = iupwinuiStringToWString(value);
+      std::wstring insertText = winuiTextToControl(ih, value);
       fullText.replace(pos, len, insertText);
       iupAttribSet(ih, "_IUPWINUI_IGNORE_VALUECHANGED", "1");
       tb.Text(hstring(fullText));
@@ -3097,14 +3123,29 @@ static void winuiTextCopyToClipboard(const wchar_t* text)
   if (!OpenClipboard(NULL))
     return;
   EmptyClipboard();
-  size_t len = wcslen(text) + 1;
+
+  size_t extra = 0;
+  for (const wchar_t* p = text; *p; p++)
+  {
+    if (*p == L'\r' && p[1] != L'\n')
+      extra++;
+  }
+
+  size_t len = wcslen(text) + extra + 1;
   HGLOBAL hMem = GlobalAlloc(GMEM_MOVEABLE, len * sizeof(wchar_t));
   if (hMem)
   {
     wchar_t* pMem = (wchar_t*)GlobalLock(hMem);
     if (pMem)
     {
-      memcpy(pMem, text, len * sizeof(wchar_t));
+      wchar_t* d = pMem;
+      for (const wchar_t* p = text; *p; p++)
+      {
+        *d++ = *p;
+        if (*p == L'\r' && p[1] != L'\n')
+          *d++ = L'\n';
+      }
+      *d = 0;
       GlobalUnlock(hMem);
       SetClipboardData(CF_UNICODETEXT, hMem);
     }
@@ -3126,7 +3167,16 @@ static wchar_t* winuiTextGetFromClipboard(void)
       size_t len = wcslen(pszText) + 1;
       result = (wchar_t*)malloc(len * sizeof(wchar_t));
       if (result)
-        memcpy(result, pszText, len * sizeof(wchar_t));
+      {
+        wchar_t* d = result;
+        for (const wchar_t* p = pszText; *p; p++)
+        {
+          if (*p == L'\r' && p[1] == L'\n')
+            continue;
+          *d++ = (*p == L'\n')? L'\r': *p;
+        }
+        *d = 0;
+      }
       GlobalUnlock(hData);
     }
   }
