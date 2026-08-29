@@ -531,6 +531,9 @@ struct IupWinUIPopoverAux
 struct IupWinUICanvasAux
 {
   winrt::Microsoft::UI::Xaml::Controls::Image displayImage;
+  winrt::Microsoft::UI::Xaml::Media::Imaging::SurfaceImageSource sis;
+  int sisWidth;
+  int sisHeight;
   winrt::Microsoft::UI::Xaml::Controls::Primitives::ScrollBar sbHoriz;
   winrt::Microsoft::UI::Xaml::Controls::Primitives::ScrollBar sbVert;
   winrt::event_token pointerPressedToken;
@@ -555,7 +558,7 @@ struct IupWinUICanvasAux
   winrt::event_token holdingToken;
   std::shared_ptr<bool> alive;
 
-  IupWinUICanvasAux() : displayImage(nullptr),
+  IupWinUICanvasAux() : displayImage(nullptr), sis(nullptr), sisWidth(0), sisHeight(0),
     sbHoriz(nullptr), sbVert(nullptr),
     pointerPressedToken{}, pointerReleasedToken{}, pointerMovedToken{},
     pointerWheelToken{}, pointerEnteredToken{}, pointerExitedToken{},
