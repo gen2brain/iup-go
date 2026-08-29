@@ -291,7 +291,10 @@ static void eflPostMessageCallback(void* data)
   {
     IFnsidv cb = (IFnsidv)IupGetCallback(msg->ih, "POSTMESSAGE_CB");
     if (cb)
-      cb(msg->ih, msg->s, msg->i, msg->d, msg->p);
+    {
+      if (cb(msg->ih, msg->s, msg->i, msg->d, msg->p) == IUP_CLOSE)
+        IupExitLoop();
+    }
   }
 
   if (msg->s)

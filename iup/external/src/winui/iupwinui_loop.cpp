@@ -292,7 +292,10 @@ extern "C" void IupPostMessage(Ihandle* ih, const char* s, int i, double d, void
     {
       IFnsidv cb = (IFnsidv)IupGetCallback(data->ih, "POSTMESSAGE_CB");
       if (cb)
-        cb(data->ih, data->s, data->i, data->d, data->p);
+      {
+        if (cb(data->ih, data->s, data->i, data->d, data->p) == IUP_CLOSE)
+          IupExitLoop();
+      }
     }
     if (data->s) free(data->s);
     free(data);

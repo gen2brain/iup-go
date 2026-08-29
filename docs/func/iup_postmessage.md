@@ -24,6 +24,8 @@ It is expected to be thread safe.
 **d**: floating point number.\
 **p**: generic pointer.
 
+**Returns**: IUP_CLOSE will be processed.
+
 ### Notes
 
 The variables are stored when the function is called, to be later passed to the callback.

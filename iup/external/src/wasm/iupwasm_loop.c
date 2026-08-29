@@ -160,8 +160,8 @@ EMSCRIPTEN_KEEPALIVE void iupwasmDispatchPost(Ihandle* ih, const char* s, int i,
   if (!iupObjectCheck(ih))
     return;
   cb = (IFnsidv)IupGetCallback(ih, "POSTMESSAGE_CB");
-  if (cb)
-    cb(ih, (char*)s, i, d, p);
+  if (cb && cb(ih, (char*)s, i, d, p) == IUP_CLOSE)
+    IupExitLoop();
 }
 
 #ifdef __EMSCRIPTEN_PTHREADS__
