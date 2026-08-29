@@ -200,11 +200,16 @@ static void winuiTreeApplyItemTemplate(Ihandle* ih, TreeView const& treeView)
     xaml += L" Foreground='{Binding Content[Color]}'";
   }
 
-  xaml += L" FontSize='{Binding Content[NodeFontSize], FallbackValue=";
+  xaml += L" FontSize='";
   xaml += std::to_wstring(fontSize);
-  xaml += L"}'";
+  xaml += L"'";
 
-  xaml += L" FontFamily='{Binding Content[NodeFontFamily]}'";
+  if (!fontFamily.empty())
+  {
+    xaml += L" FontFamily='";
+    xaml += fontFamily;
+    xaml += L"'";
+  }
 
   xaml += L" FontWeight='";
   xaml += isBold ? L"Bold" : L"Normal";
@@ -1395,7 +1400,7 @@ static int winuiTreeSetImageBranchExpandedAttrib(Ihandle* ih, const char* value)
 }
 
 /****************************************************************************
- * Per-Node Styling (COLOR, TITLEFONT)
+ * Per-Node Styling (COLOR)
  ****************************************************************************/
 
 static int winuiTreeSetColorAttrib(Ihandle* ih, int id, const char* value)
@@ -1435,70 +1440,6 @@ static char* winuiTreeGetColorAttrib(Ihandle* ih, int id)
 
   auto color = brush.Color();
   return iupStrReturnRGB(color.R, color.G, color.B);
-}
-
-/* TODO: TITLEFONT per-node font customization
- *
- * The DataTemplate binding infrastructure for per-node fonts IS working:
- * {Binding Content[NodeFontFamily]} and {Binding Content[NodeFontSize]}
- * resolve correctly when NodeFontFamily (Media::FontFamily) and
- * NodeFontSize (box_value(double)) are in the PropertySet at node
- * creation time (confirmed: hardcoding in winuiTreeCreateNodeContent
- * shows all nodes in the specified font).
- *
- * The problem is applying font AFTER node creation:
- * - node.Content(newPs) with a new PropertySet does NOT trigger visual
- *   refresh in TreeView (github.com/microsoft/microsoft-ui-xaml/issues/10002).
- * - In-place PropertySet.Insert() also does not trigger binding re-evaluation.
- * - ContainerFromNode() returns null at attribute-set time because XAML has
- *   not yet realized the containers (tree is shown but layout is pending).
- * - DispatcherQueue.TryEnqueue() callback also gets null from ContainerFromNode.
- *
- * COLOR attribute uses the same node.Content(newPs) pattern via
- * winuiTreeSetNodeProperty and it visually updates. COLOR stores a
- * SolidColorBrush (inherits from DependencyObject). FontFamily and boxed
- * double do not. This may be why XAML binding handles them differently.
- */
-static int winuiTreeSetTitleFontAttrib(Ihandle* ih, int id, const char* value)
-{
-  TreeViewNode node = winuiTreeGetNode(ih, id);
-  if (!node)
-    return 0;
-
-  if (value && value[0] != 0)
-    iupAttribSetStrId(ih, "_IUPWINUI_TREE_TITLEFONT", id, value);
-  else
-    iupAttribSetStrId(ih, "_IUPWINUI_TREE_TITLEFONT", id, NULL);
-
-  if (value && value[0] != 0)
-  {
-    char typeface[1024];
-    int size, is_bold, is_italic, is_underline, is_strikeout;
-    if (!iupGetFontInfo(value, typeface, &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
-      return 0;
-
-    winuiTreeSetNodeProperty(node, L"NodeFontFamily", Media::FontFamily(iupwinuiStringToHString(typeface)));
-    winuiTreeSetNodeProperty(node, L"NodeFontSize", box_value((double)size));
-  }
-  else
-  {
-    auto ps = node.Content().try_as<Windows::Foundation::Collections::PropertySet>();
-    if (ps)
-    {
-      if (ps.HasKey(L"NodeFontFamily"))
-        ps.Remove(L"NodeFontFamily");
-      if (ps.HasKey(L"NodeFontSize"))
-        ps.Remove(L"NodeFontSize");
-      node.Content(ps);
-    }
-  }
-
-  return 0;
-}
-
-static char* winuiTreeGetTitleFontAttrib(Ihandle* ih, int id)
-{
-  return iupAttribGetId(ih, "_IUPWINUI_TREE_TITLEFONT", id);
 }
 
 /****************************************************************************
