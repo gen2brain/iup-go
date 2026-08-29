@@ -214,7 +214,7 @@ The value is limited to the minimum and maximum values.\
 **SPINMIN** (non-inheritable): the minimum value. Default: 0.\
 **SPININC** (non-inheritable): the increment value. Default: 1.\
 **SPINALIGN** (creation-only): the position of the spin. Can be LEFT or RIGHT. Default: RIGHT.
-In GTK is always RIGHT.\
+In GTK and WinUI is always RIGHT.\
 **SPINWRAP** (creation-only): if the position reaches a limit, it continues from the opposite limit.
 Default: NO.\
 **SPINAUTO** (creation-only): enables the automatic update of the text contents.
