@@ -36,6 +36,10 @@ IUP_DRV_API void iupwinuiFocusInOutEvent(Ihandle* ih, int got)
     if (!iupdrvIsActive(ih))
       return;
 
+    Ihandle* dialog = IupGetDialog(ih);
+    if (dialog && ih != dialog)
+      iupAttribSet(dialog, "_IUPWINUI_LASTFOCUS", (char*)ih);
+
     iupCallGetFocusCb(ih);
   }
   else
@@ -177,9 +181,6 @@ extern "C" IUP_SDK_API void iupdrvSetFocus(Ihandle* ih)
   }
 
   Ihandle* dialog = IupGetDialog(ih);
-
-  if (dialog)
-    iupAttribSet(dialog, "_IUPWINUI_LASTFOCUS", (char*)ih);
 
   if (dialog && dialog->handle)
     iupwinuiBringWindowToForeground((HWND)dialog->handle);
