@@ -116,7 +116,7 @@ In GTK, it will be effective only if the parent is expanded. Possible values:
 
 **TITLEFONTid**: the text font of the specified node.
 The format is the same as the [FONT](../attrib/iup_font.md) attribute.
-Not supported in WinUI and Haiku.
+Not supported in Haiku.
 
 **TITLEFONTSTYLEid**: changes the font style of the specified node.
 Actually changes the **TITLEFONTid** attribute.
