@@ -98,7 +98,8 @@ static void haikuDrainPostQueue(void)
     if (iupObjectCheck(node->ih))
     {
       IFnsidv cb = (IFnsidv)IupGetCallback(node->ih, "POSTMESSAGE_CB");
-      if (cb) cb(node->ih, node->s, node->i, node->d, node->p);
+      if (cb && cb(node->ih, node->s, node->i, node->d, node->p) == IUP_CLOSE)
+        IupExitLoop();
     }
     if (node->s) free(node->s);
     free(node);

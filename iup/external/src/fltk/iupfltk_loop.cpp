@@ -224,7 +224,10 @@ static void fltkPostMessageDrain(void*)
     {
       IFnsidv cb = (IFnsidv)IupGetCallback(node->ih, "POSTMESSAGE_CB");
       if (cb)
-        cb(node->ih, node->s, node->i, node->d, node->p);
+      {
+        if (cb(node->ih, node->s, node->i, node->d, node->p) == IUP_CLOSE)
+          IupExitLoop();
+      }
     }
 
     if (node->s)

@@ -181,7 +181,10 @@ static gint gtkPostMessageCallback(void *cb_data)
   {
     IFnsidv cb = (IFnsidv)IupGetCallback(ih, "POSTMESSAGE_CB");
     if (cb)
-      cb(ih, user_data->s, user_data->i, user_data->d, user_data->p);
+    {
+      if (cb(ih, user_data->s, user_data->i, user_data->d, user_data->p) == IUP_CLOSE)
+        IupExitLoop();
+    }
   }
   if (user_data->s) free(user_data->s);
   free(user_data);

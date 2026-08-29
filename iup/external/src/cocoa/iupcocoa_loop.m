@@ -195,7 +195,10 @@ void IupPostMessage(Ihandle* ih, const char* s, int i, double d, void* p)
       {
         IFnsidv cb = (IFnsidv)IupGetCallback(ih, "POSTMESSAGE_CB");
         if (cb)
-          cb(ih, s_copy, i, d, p);
+        {
+          if (cb(ih, s_copy, i, d, p) == IUP_CLOSE)
+            IupExitLoop();
+        }
       }
       free(s_copy);
       }
