@@ -9,6 +9,7 @@
  */
 
 #include <cstring>
+#include <cmath>
 #include <cstdio>
 #include <vector>
 #include <string>
@@ -2056,8 +2057,10 @@ extern "C" IUP_SDK_API int iupdrvTableGetHeaderHeight(Ihandle* ih)
 extern "C" IUP_SDK_API void iupdrvTableAddBorders(Ihandle* ih, int* w, int* h)
 {
   int sb_size = iupdrvGetScrollbarSize();
-  *w += sb_size + 2;
-  *h += 2;
+  int border = (int)ceil(2 * iupwinuiGetScale(ih));
+
+  *w += sb_size + border;
+  *h += border;
 }
 
 /****************************************************************************

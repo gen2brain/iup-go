@@ -677,7 +677,12 @@ static void winuiButtonUnMapMethod(Ihandle* ih)
 
 extern "C" IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int* x, int* y)
 {
-  int border_size = 4;
+  double scale = iupwinuiGetScale(ih);
+  int border_size = (int)ceil(4 * scale);
+  int padding_x = (int)ceil(winui_button_padding_x * scale);
+  int padding_y = (int)ceil(winui_button_padding_y * scale);
+  int struct_x = (int)ceil(winui_button_struct_x * scale);
+  int struct_y = (int)ceil(winui_button_struct_y * scale);
 
   if (ih)
   {
@@ -700,8 +705,8 @@ extern "C" IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int* x, int* y)
     {
       if (has_user_padding || has_user_size)
       {
-        *x += winui_button_struct_x;
-        *y += winui_button_struct_y;
+        *x += struct_x;
+        *y += struct_y;
       }
       else
       {
@@ -713,14 +718,14 @@ extern "C" IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int* x, int* y)
 
     if (has_user_padding || has_user_size)
     {
-      *x += winui_button_struct_x;
-      *y += winui_button_struct_y;
+      *x += struct_x;
+      *y += struct_y;
       return;
     }
   }
 
-  *x += winui_button_padding_x;
-  *y += winui_button_padding_y;
+  *x += padding_x;
+  *y += padding_y;
 }
 
 extern "C" IUP_SDK_API void iupdrvButtonInitClass(Iclass* ic)

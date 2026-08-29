@@ -9,6 +9,7 @@
 
 #include <algorithm>
 #include <cstring>
+#include <cmath>
 #include <cwctype>
 #include <vector>
 
@@ -1962,22 +1963,23 @@ static int winuiListSetFontAttrib(Ihandle* ih, const char* value)
 
 extern "C" IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int* w, int* h)
 {
-  int border = 2;
+  double scale = iupwinuiGetScale(ih);
+  int border = (int)ceil(2 * scale);
 
   *w += 2 * border;
 
   if (ih->data->is_dropdown)
   {
-    *w += 36;
-    *h += 5 + 7 + 2;
+    *w += (int)ceil(36 * scale);
+    *h += (int)ceil(14 * scale);
   }
   else
   {
     *h += 2 * border;
-    *w += 24;
+    *w += (int)ceil(24 * scale);
 
     if (ih->data->has_editbox)
-      *h += 2 * 3;
+      *h += (int)ceil(6 * scale);
   }
 }
 

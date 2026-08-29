@@ -134,6 +134,21 @@ static void winuiUpdateIslandClipRegion(Ihandle* ih)
   SetWindowRgn(aux->islandHwnd, rgn, TRUE);
 }
 
+/* XAML positions and sizes are DIPs, IUP computes physical pixels, and the island rasterizes by the monitor scale on top */
+IUP_DRV_API double iupwinuiGetScale(Ihandle* ih)
+{
+  Ihandle* dialog = ih ? IupGetDialog(ih) : NULL;
+  HWND hwnd = (dialog && dialog->handle) ? (HWND)dialog->handle : NULL;
+  if (!hwnd)
+    return 1.0;
+
+  UINT dpi = GetDpiForWindow(hwnd);
+  if (!dpi)
+    return 1.0;
+
+  return (double)dpi / 96.0;
+}
+
 extern "C" IUP_SDK_API void iupdrvBaseLayoutUpdateMethod(Ihandle* ih)
 {
   if (!ih || !ih->handle)
@@ -156,16 +171,18 @@ extern "C" IUP_SDK_API void iupdrvBaseLayoutUpdateMethod(Ihandle* ih)
   UIElement elem = winuiGetHandle<UIElement>(ih);
   if (elem)
   {
-    Canvas::SetLeft(elem, ih->x);
-    Canvas::SetTop(elem, ih->y);
+    double scale = iupwinuiGetScale(ih);
+
+    Canvas::SetLeft(elem, ih->x / scale);
+    Canvas::SetTop(elem, ih->y / scale);
 
     FrameworkElement fe = elem.try_as<FrameworkElement>();
     if (fe)
     {
       if (ih->currentwidth > 0)
-        fe.Width(ih->currentwidth);
+        fe.Width(ih->currentwidth / scale);
       if (ih->currentheight > 0)
-        fe.Height(ih->currentheight);
+        fe.Height(ih->currentheight / scale);
     }
   }
 }

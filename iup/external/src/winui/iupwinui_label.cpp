@@ -158,16 +158,18 @@ IUP_DRV_API void iupwinuiApplyMarkupToTextBlock(TextBlock textBlock, const char*
   iupMarkupFree(data);
 }
 
-IUP_DRV_API void iupwinuiMeasureMarkupText(const char* markup, int* w, int* h)
+IUP_DRV_API void iupwinuiMeasureMarkupText(Ihandle* ih, const char* markup, int* w, int* h)
 {
   TextBlock tb;
   iupwinuiApplyMarkupToTextBlock(tb, markup);
   tb.TextWrapping(TextWrapping::NoWrap);
   tb.Padding(Thickness{0, 0, 0, 0});
   tb.Measure(Size{100000.0f, 100000.0f});
+
+  double scale = iupwinuiGetScale(ih);
   Size ds = tb.DesiredSize();
-  if (w) *w = (int)ceil(ds.Width);
-  if (h) *h = (int)ceil(ds.Height);
+  if (w) *w = (int)ceil(ds.Width * scale);
+  if (h) *h = (int)ceil(ds.Height * scale);
 }
 
 static int winuiLabelSetTitleAttrib(Ihandle* ih, const char* value)

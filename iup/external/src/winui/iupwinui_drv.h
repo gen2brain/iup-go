@@ -137,16 +137,17 @@ IUP_DRV_API void iupwinuiSetAccelCueAlt(int down);
  * Parent Canvas Helper
  ****************************************************************************/
 
+IUP_DRV_API double iupwinuiGetScale(Ihandle* ih);
 IUP_DRV_API winrt::Microsoft::UI::Xaml::Controls::Canvas iupwinuiGetParentCanvas(Ihandle* ih);
 IUP_DRV_API winrt::Microsoft::UI::Xaml::Controls::ScrollViewer iupwinuiFindScrollViewer(winrt::Microsoft::UI::Xaml::DependencyObject const& parent);
 IUP_DRV_API char* iupwinuiScrollViewerVisible(winrt::Microsoft::UI::Xaml::Controls::ScrollViewer const& sv);
 
 IUP_DRV_API void iupwinuiUpdateControlFont(Ihandle* ih, winrt::Microsoft::UI::Xaml::Controls::Control control);
 IUP_DRV_API void iupwinuiUpdateTextBlockFont(Ihandle* ih, winrt::Microsoft::UI::Xaml::Controls::TextBlock textBlock);
-IUP_DRV_API void iupwinuiUpdateTextBlockFontStr(winrt::Microsoft::UI::Xaml::Controls::TextBlock textBlock, const char* value);
+IUP_DRV_API void iupwinuiUpdateTextBlockFontStr(winrt::Microsoft::UI::Xaml::Controls::TextBlock textBlock, const char* value, Ihandle* ih);
 
 IUP_DRV_API void iupwinuiApplyMarkupToTextBlock(winrt::Microsoft::UI::Xaml::Controls::TextBlock textBlock, const char* value);
-IUP_DRV_API void iupwinuiMeasureMarkupText(const char* markup, int* w, int* h);
+IUP_DRV_API void iupwinuiMeasureMarkupText(Ihandle* ih, const char* markup, int* w, int* h);
 
 void winuiDialogSetMenuBar(Ihandle* ih, winrt::Microsoft::UI::Xaml::Controls::MenuBar menuBar);
 

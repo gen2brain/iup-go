@@ -794,14 +794,16 @@ extern "C" IUP_SDK_API int iupdrvMenuGetMenuBarSize(Ihandle* ih)
   if (!menuBar)
     return 0;
 
+  double scale = iupwinuiGetScale(ih);
+
   double height = menuBar.ActualHeight();
   if (height > 0)
-    return (int)(height + 0.5);
+    return (int)(height * scale + 0.5);
 
   menuBar.Measure(Size{100000.0f, 100000.0f});
   height = menuBar.DesiredSize().Height;
   if (height > 0)
-    return (int)(height + 0.5);
+    return (int)(height * scale + 0.5);
 
   int ch;
   iupdrvFontGetCharSize(ih, NULL, &ch);

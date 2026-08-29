@@ -307,7 +307,7 @@ extern "C" IUP_SDK_API void iupdrvFontGetMultiLineStringSize(Ihandle* ih, const 
 
   if (ih && iupAttribGetBoolean(ih, "MARKUP"))
   {
-    iupwinuiMeasureMarkupText(str, w, h);
+    iupwinuiMeasureMarkupText(ih, str, w, h);
     return;
   }
 
@@ -469,7 +469,7 @@ IUP_DRV_API void iupwinuiUpdateControlFont(Ihandle* ih, winrt::Microsoft::UI::Xa
   if (!winuiGetFontProps(ih, &props))
     return;
 
-  control.FontSize(static_cast<double>(props.fontSize));
+  control.FontSize((double)props.fontSize / iupwinuiGetScale(ih));
   control.FontFamily(winrt::Microsoft::UI::Xaml::Media::FontFamily(props.typeface.c_str()));
 
   if (props.isBold)
@@ -483,7 +483,7 @@ IUP_DRV_API void iupwinuiUpdateControlFont(Ihandle* ih, winrt::Microsoft::UI::Xa
     control.FontStyle(winrt::Windows::UI::Text::FontStyle::Normal);
 }
 
-IUP_DRV_API void iupwinuiUpdateTextBlockFontStr(winrt::Microsoft::UI::Xaml::Controls::TextBlock textBlock, const char* value)
+IUP_DRV_API void iupwinuiUpdateTextBlockFontStr(winrt::Microsoft::UI::Xaml::Controls::TextBlock textBlock, const char* value, Ihandle* ih)
 {
   if (!textBlock || !value || !value[0])
     return;
@@ -504,7 +504,7 @@ IUP_DRV_API void iupwinuiUpdateTextBlockFontStr(winrt::Microsoft::UI::Xaml::Cont
     fontSize = iupWINUI_PT2PIXEL((float)size, winui_screen_dpi);
 
   if (fontSize > 0)
-    textBlock.FontSize((double)fontSize);
+    textBlock.FontSize((double)fontSize / iupwinuiGetScale(ih));
 
   textBlock.FontFamily(winrt::Microsoft::UI::Xaml::Media::FontFamily(iupwinuiStringToHString(typeface)));
 
@@ -535,7 +535,7 @@ IUP_DRV_API void iupwinuiUpdateTextBlockFont(Ihandle* ih, winrt::Microsoft::UI::
   if (!winuiGetFontProps(ih, &props))
     return;
 
-  textBlock.FontSize(static_cast<double>(props.fontSize));
+  textBlock.FontSize((double)props.fontSize / iupwinuiGetScale(ih));
   textBlock.FontFamily(winrt::Microsoft::UI::Xaml::Media::FontFamily(props.typeface.c_str()));
 
   if (props.isBold)
