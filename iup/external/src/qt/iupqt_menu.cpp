@@ -117,6 +117,15 @@ extern "C" IUP_SDK_API int iupdrvMenuGetMenuBarSize(Ihandle* ih)
  * Menu Callbacks
  ****************************************************************************/
 
+static QAction* qtMenuGetNextAction(Ihandle* ih)
+{
+  Ihandle* next;
+  for (next = ih->brother; next; next = next->brother)
+    if (next->handle)
+      return (QAction*)next->handle;
+  return NULL;
+}
+
 static void qtMenuAboutToShow(Ihandle* ih)
 {
   Icallback cb = (Icallback)IupGetCallback(ih, "MENUOPEN_CB");
@@ -482,16 +491,19 @@ static int qtMenuItemMapMethod(Ihandle* ih)
     qtMenuItemTriggered(ih);
   });
 
-  /* Add to parent menu */
-  if (iupMenuIsMenuBar(ih->parent))
+  /* Add to parent menu at the child position */
   {
-    QMenuBar* menubar = (QMenuBar*)ih->parent->handle;
-    menubar->addAction(action);
-  }
-  else
-  {
-    QMenu* menu = (QMenu*)ih->parent->handle;
-    menu->addAction(action);
+    QAction* before = qtMenuGetNextAction(ih);
+    if (iupMenuIsMenuBar(ih->parent))
+    {
+      QMenuBar* menubar = (QMenuBar*)ih->parent->handle;
+      menubar->insertAction(before, action);
+    }
+    else
+    {
+      QMenu* menu = (QMenu*)ih->parent->handle;
+      menu->insertAction(before, action);
+    }
   }
 
   iupUpdateFontAttrib(ih);
@@ -636,16 +648,19 @@ static int qtSubmenuMapMethod(Ihandle* ih)
       free(str);
   }
 
-  /* Add to parent menu */
-  if (iupMenuIsMenuBar(ih->parent))
+  /* Add to parent menu at the child position */
   {
-    QMenuBar* menubar = (QMenuBar*)ih->parent->handle;
-    menubar->addAction(action);
-  }
-  else
-  {
-    QMenu* menu = (QMenu*)ih->parent->handle;
-    menu->addAction(action);
+    QAction* before = qtMenuGetNextAction(ih);
+    if (iupMenuIsMenuBar(ih->parent))
+    {
+      QMenuBar* menubar = (QMenuBar*)ih->parent->handle;
+      menubar->insertAction(before, action);
+    }
+    else
+    {
+      QMenu* menu = (QMenu*)ih->parent->handle;
+      menu->insertAction(before, action);
+    }
   }
 
   iupUpdateFontAttrib(ih);
@@ -699,16 +714,19 @@ static int qtMenuSeparatorMapMethod(Ihandle* ih)
   ih->handle = (InativeHandle*)action;
   ih->serial = iupMenuGetChildId(ih);
 
-  /* Add to parent menu */
-  if (iupMenuIsMenuBar(ih->parent))
+  /* Add to parent menu at the child position */
   {
-    QMenuBar* menubar = (QMenuBar*)ih->parent->handle;
-    menubar->addAction(action);
-  }
-  else
-  {
-    QMenu* menu = (QMenu*)ih->parent->handle;
-    menu->addAction(action);
+    QAction* before = qtMenuGetNextAction(ih);
+    if (iupMenuIsMenuBar(ih->parent))
+    {
+      QMenuBar* menubar = (QMenuBar*)ih->parent->handle;
+      menubar->insertAction(before, action);
+    }
+    else
+    {
+      QMenu* menu = (QMenu*)ih->parent->handle;
+      menu->insertAction(before, action);
+    }
   }
 
   return IUP_NOERROR;
