@@ -238,16 +238,7 @@ static LRESULT CALLBACK winuiDialogWndProc(HWND hwnd, UINT msg, WPARAM wParam, L
             iupCallKillFocusCb(ih);
           }
           else
-          {
-            if (dlgaux->lastFocusedHwnd)
-              SetFocus(dlgaux->lastFocusedHwnd);
-            else if (dlgaux->xamlSource)
-            {
-              XamlSourceFocusNavigationRequest request(XamlSourceFocusNavigationReason::First);
-              dlgaux->xamlSource.NavigateFocus(request);
-            }
             iupCallGetFocusCb(ih);
-          }
         }
       }
       break;
@@ -258,11 +249,18 @@ static LRESULT CALLBACK winuiDialogWndProc(HWND hwnd, UINT msg, WPARAM wParam, L
       if (ih)
       {
         IupWinUIDialogAux* dlgaux = winuiGetAux<IupWinUIDialogAux>(ih, IUPWINUI_DIALOG_AUX);
-        if (dlgaux && !dlgaux->lastFocusedHwnd && dlgaux->xamlSource)
+        if (dlgaux && dlgaux->lastFocusedHwnd && dlgaux->lastFocusedHwnd != hwnd)
+          SetFocus(dlgaux->lastFocusedHwnd);
+        else if (dlgaux && dlgaux->xamlSource)
         {
           XamlSourceFocusNavigationRequest request(XamlSourceFocusNavigationReason::First);
           dlgaux->xamlSource.NavigateFocus(request);
         }
+
+        Ihandle* lastfocus = (Ihandle*)iupAttribGet(ih, "_IUPWINUI_LASTFOCUS");
+        if (iupObjectCheck(lastfocus) && IupGetFocus() != lastfocus &&
+            !iupAttribGetBoolean(ih, "IGNORELASTFOCUS"))
+          IupSetFocus(lastfocus);
       }
       return 0;
     }
