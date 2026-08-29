@@ -217,9 +217,10 @@ static GtkWidget* gtkMenuItemGetLabelWidget(Ihandle* ih)
     GList* children = gtk_container_get_children(GTK_CONTAINER(child));
     GList* l;
     GtkWidget* label = NULL;
+    GtkWidget* accel = (GtkWidget*)g_object_get_data(G_OBJECT(ih->handle), "_IUP_ACCEL_LABEL");
     for (l = children; l; l = l->next)
     {
-      if (GTK_IS_LABEL(l->data))
+      if (GTK_IS_LABEL(l->data) && (GtkWidget*)l->data != accel)
       {
         label = (GtkWidget*)l->data;
         break;
@@ -607,6 +608,64 @@ static void gtkMenuParseAccel(const char* text, guint* accel_key, GdkModifierTyp
 }
 #endif
 
+/* Set/update/remove right-aligned text after '\t' in menu item title */
+static void gtkMenuItemSetAccelTextWidget(Ihandle* ih, const char* text)
+{
+  GtkWidget* child = gtk_bin_get_child(GTK_BIN(ih->handle));
+  GtkWidget* accel = (GtkWidget*)g_object_get_data(G_OBJECT(ih->handle), "_IUP_ACCEL_LABEL");
+
+  if (!text)
+  {
+    if (accel)
+    {
+      gtk_widget_destroy(accel);
+      g_object_set_data(G_OBJECT(ih->handle), "_IUP_ACCEL_LABEL", NULL);
+    }
+    return;
+  }
+
+  if (accel)
+  {
+    gtk_label_set_text(GTK_LABEL(accel), text);
+    return;
+  }
+
+  accel = gtk_label_new(text);
+  gtk_label_set_xalign(GTK_LABEL(accel), 1.0);
+  gtk_style_context_add_class(gtk_widget_get_style_context(accel), "dim-label");
+
+  if (child && GTK_IS_LABEL(child))
+  {
+    GtkWidget* box;
+
+    g_object_ref(child);
+    gtk_container_remove(GTK_CONTAINER(ih->handle), child);
+
+    box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 12);
+    gtk_box_pack_start(GTK_BOX(box), child, TRUE, TRUE, 0);
+    g_object_unref(child);
+    gtk_box_pack_end(GTK_BOX(box), accel, FALSE, FALSE, 0);
+
+    gtk_container_add(GTK_CONTAINER(ih->handle), box);
+    gtk_widget_show_all(box);
+  }
+  else if (child && GTK_IS_BOX(child))
+  {
+    GtkWidget* label = gtkMenuItemGetLabelWidget(ih);
+    gtk_box_pack_end(GTK_BOX(child), accel, FALSE, FALSE, 0);
+    if (label)
+      gtk_box_set_child_packing(GTK_BOX(child), label, TRUE, TRUE, 0, GTK_PACK_START);
+    gtk_widget_show(accel);
+  }
+  else
+  {
+    gtk_widget_destroy(accel);
+    return;
+  }
+
+  g_object_set_data(G_OBJECT(ih->handle), "_IUP_ACCEL_LABEL", accel);
+}
+
 static int gtkMenuItemSetTitleAttrib(Ihandle* ih, const char* value)
 {
   char *str;
@@ -635,17 +694,20 @@ static int gtkMenuItemSetTitleAttrib(Ihandle* ih, const char* value)
     char* label_str = str;
     char* label_copy = NULL;
 
-    if (tab && GTK_IS_ACCEL_LABEL(label))
+    if (tab)
     {
       gtkMenuParseAccel(tab + 1, &accel_key, &accel_mods);
-      if (accel_key)
-      {
-        label_copy = iupStrDup(str);
-        label_copy[tab - str] = 0;
-        label_str = label_copy;
-      }
+      label_copy = iupStrDup(str);
+      label_copy[tab - str] = 0;
+      label_str = label_copy;
     }
 
+    if (tab && !accel_key)
+      gtkMenuItemSetAccelTextWidget(ih, tab + 1);
+    else
+      gtkMenuItemSetAccelTextWidget(ih, NULL);
+
+    label = gtkMenuItemGetLabelWidget(ih);
     iupgtkSetMnemonicTitle(ih, (GtkLabel*)label, label_str);
 
     if (GTK_IS_ACCEL_LABEL(label))
