@@ -141,6 +141,18 @@ static BOOL cocoaTouchFontIsSystemName(const char* name)
 }
 
 /* system font traits go through dedicated factories, not symbolicTraits */
+/* Courier and Courier New have no box drawing glyphs on iOS */
+IUP_DRV_API const char* iupCocoaTouchFontFaceName(const char* face)
+{
+	const char* mapped = iupFontGetMacName(face);
+	const char* name = mapped ? mapped : face;
+
+	if (name && (iupStrEqualNoCase(name, "Courier") || iupStrEqualNoCase(name, "Courier New")))
+		return "Menlo";
+
+	return mapped;
+}
+
 static UIFont* cocoaTouchFontBuildSystem(CGFloat size, int is_bold, int is_italic)
 {
 	if (is_bold && is_italic)
@@ -203,7 +215,7 @@ IUP_DRV_API IupCocoaTouchFont* iupCocoaTouchFindFont(const char* iup_font_name)
 	}
 	if (point_size == 0) return nil;
 
-	const char* mapped = iupFontGetMacName(type_face);
+	const char* mapped = iupCocoaTouchFontFaceName(type_face);
 	if (mapped) strlcpy(type_face, mapped, sizeof(type_face));
 
 	UIFont* ui_font;
