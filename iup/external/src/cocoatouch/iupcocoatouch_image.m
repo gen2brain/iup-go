@@ -136,9 +136,14 @@ IUP_SDK_API void iupdrvImageGetData(void* handle, unsigned char* imgdata)
 	unsigned char* rgba = cocoaTouchImageReadBackRGBA(cg, &w, &h);
 	if (!rgba) return;
 
-	int bpp = (int)CGImageGetBitsPerPixel(cg);
+	int bpp = iupImageNormBpp((int)CGImageGetBitsPerPixel(cg));
 	size_t pixels = (size_t)w * (size_t)h;
-	if (bpp >= 32)
+	if (bpp == 8)
+	{
+		free(rgba);
+		return;
+	}
+	if (bpp == 32)
 	{
 		memcpy(imgdata, rgba, pixels * 4);
 	}
@@ -230,7 +235,7 @@ IUP_SDK_API int iupdrvImageGetInfo(void* handle, int* w, int* h, int* bpp)
 	if (!cg_image) return 0;
 	if (w)   *w   = (int)CGImageGetWidth(cg_image);
 	if (h)   *h   = (int)CGImageGetHeight(cg_image);
-	if (bpp) *bpp = (int)CGImageGetBitsPerPixel(cg_image);
+	if (bpp) *bpp = iupImageNormBpp((int)CGImageGetBitsPerPixel(cg_image));
 	return 1;
 }
 
