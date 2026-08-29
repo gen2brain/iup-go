@@ -620,6 +620,65 @@ static void winuiTreeMarkAutomationNames(Ihandle* ih)
     aux->namesDirty = true;
 }
 
+static TextBlock winuiTreeFindTextBlock(DependencyObject const& parent)
+{
+  if (!parent)
+    return nullptr;
+
+  int count = VisualTreeHelper::GetChildrenCount(parent);
+  for (int i = 0; i < count; i++)
+  {
+    DependencyObject child = VisualTreeHelper::GetChild(parent, i);
+
+    TextBlock tb = child.try_as<TextBlock>();
+    if (tb)
+      return tb;
+
+    tb = winuiTreeFindTextBlock(child);
+    if (tb)
+      return tb;
+  }
+
+  return nullptr;
+}
+
+static char* winuiTreeGetNodeFont(TreeViewNode const& node)
+{
+  auto ps = node ? node.Content().try_as<Windows::Foundation::Collections::PropertySet>() : nullptr;
+  if (!ps || !ps.HasKey(L"NodeFont"))
+    return NULL;
+
+  return iupwinuiHStringToString(unbox_value<hstring>(ps.Lookup(L"NodeFont")));
+}
+
+/* the glyph TextBlocks are siblings of the ContentPresenter, so descend through the template root */
+static void winuiTreeApplyNodeFont(Ihandle* ih, TreeViewNode const& node, TreeViewItem const& tvi)
+{
+  if (!node || !tvi)
+    return;
+
+  TextBlock tb = winuiTreeFindTextBlock(tvi.ContentTemplateRoot().try_as<DependencyObject>());
+  if (!tb)
+    return;
+
+  char* font = winuiTreeGetNodeFont(node);
+  if (font)
+    iupwinuiUpdateTextBlockFontStr(tb, font);
+  else
+    iupwinuiUpdateTextBlockFont(ih, tb);
+}
+
+static void winuiTreeApplyNodeFontNow(Ihandle* ih, TreeViewNode const& node)
+{
+  TreeView treeView = winuiTreeGetTreeView(ih);
+  if (!treeView || !node)
+    return;
+
+  DependencyObject container = treeView.ContainerFromNode(node);
+  if (container)
+    winuiTreeApplyNodeFont(ih, node, container.try_as<TreeViewItem>());
+}
+
 static void winuiTreeUpdateAutomationNames(Ihandle* ih)
 {
   for (int i = 0; i < ih->data->node_count; i++)
@@ -635,6 +694,48 @@ static void winuiTreeUpdateAutomationNames(Ihandle* ih)
     char* title = iupwinuiHStringToString(unbox_value<hstring>(ps.Lookup(L"Title")));
     winuiTreeSetNodeAutomationName(ih, node, title);
   }
+}
+
+static ListView winuiTreeFindListView(DependencyObject const& parent)
+{
+  if (!parent)
+    return nullptr;
+
+  int count = VisualTreeHelper::GetChildrenCount(parent);
+  for (int i = 0; i < count; i++)
+  {
+    DependencyObject child = VisualTreeHelper::GetChild(parent, i);
+
+    ListView lv = child.try_as<ListView>();
+    if (lv)
+      return lv;
+
+    lv = winuiTreeFindListView(child);
+    if (lv)
+      return lv;
+  }
+
+  return nullptr;
+}
+
+/* containers are recycled, so a realized one carries the previous node's font until it is reset */
+static void winuiTreeHookContainerContentChanging(Ihandle* ih, IupWinUITreeAux* aux)
+{
+  if (aux->containerContentChangingToken.value)
+    return;
+
+  ListView listControl = winuiTreeFindListView(winuiTreeGetTreeView(ih));
+  if (!listControl)
+    return;
+
+  aux->containerContentChangingToken = listControl.ContainerContentChanging(
+    [ih](ListViewBase const&, ContainerContentChangingEventArgs const& args) {
+      if (args.InRecycleQueue())
+        return;
+
+      winuiTreeApplyNodeFont(ih, args.Item().try_as<TreeViewNode>(),
+                             args.ItemContainer().try_as<TreeViewItem>());
+    });
 }
 
 static char* winuiTreeGetScrollVisibleAttrib(Ihandle* ih)
@@ -1429,6 +1530,34 @@ static int winuiTreeSetColorAttrib(Ihandle* ih, int id, const char* value)
   return 0;
 }
 
+static int winuiTreeSetTitleFontAttrib(Ihandle* ih, int id, const char* value)
+{
+  TreeViewNode node = winuiTreeGetNode(ih, id);
+  if (!node)
+    return 0;
+
+  if (value && value[0])
+    winuiTreeSetNodeProperty(node, L"NodeFont", box_value(iupwinuiStringToHString(value)));
+  else
+  {
+    auto ps = node.Content().try_as<Windows::Foundation::Collections::PropertySet>();
+    if (ps && ps.HasKey(L"NodeFont"))
+    {
+      ps.Remove(L"NodeFont");
+      node.Content(ps);
+    }
+  }
+
+  winuiTreeApplyNodeFontNow(ih, node);
+
+  return 0;
+}
+
+static char* winuiTreeGetTitleFontAttrib(Ihandle* ih, int id)
+{
+  return winuiTreeGetNodeFont(winuiTreeGetNode(ih, id));
+}
+
 static char* winuiTreeGetColorAttrib(Ihandle* ih, int id)
 {
   TreeViewNode node = winuiTreeGetNode(ih, id);
@@ -1894,7 +2023,12 @@ static int winuiTreeMapMethod(Ihandle* ih)
 
   aux->layoutUpdatedToken = treeView.LayoutUpdated([ih](IInspectable const&, IInspectable const&) {
     IupWinUITreeAux* a = winuiGetAux<IupWinUITreeAux>(ih, IUPWINUI_TREE_AUX);
-    if (!a || !a->namesDirty)
+    if (!a)
+      return;
+
+    winuiTreeHookContainerContentChanging(ih, a);
+
+    if (!a->namesDirty)
       return;
     a->namesDirty = false;
     winuiTreeUpdateAutomationNames(ih);
@@ -2066,6 +2200,13 @@ static void winuiTreeUnMapMethod(Ihandle* ih)
       if (token) { treeView.DragOver(*token); delete token; iupAttribSet(ih, "_IUPWINUI_DRAGOVER_TOKEN", NULL); }
       token = (event_token*)iupAttribGet(ih, "_IUPWINUI_DROP_TOKEN");
       if (token) { treeView.Drop(*token); delete token; iupAttribSet(ih, "_IUPWINUI_DROP_TOKEN", NULL); }
+
+      if (aux->containerContentChangingToken)
+      {
+        ListView listControl = winuiTreeFindListView(treeView);
+        if (listControl)
+          listControl.ContainerContentChanging(aux->containerContentChangingToken);
+      }
 
       if (aux->layoutUpdatedToken)
         treeView.LayoutUpdated(aux->layoutUpdatedToken);
@@ -2662,7 +2803,7 @@ extern "C" IUP_SDK_API void iupdrvTreeInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "IMAGEBRANCHEXPANDED", NULL, winuiTreeSetImageBranchExpandedAttrib, IUPAF_SAMEASSYSTEM, "IMGEXPANDED", IUPAF_IHANDLENAME|IUPAF_NO_INHERIT);
 
   iupClassRegisterAttributeId(ic, "COLOR", winuiTreeGetColorAttrib, winuiTreeSetColorAttrib, IUPAF_NO_INHERIT);
-  iupClassRegisterAttributeId(ic, "TITLEFONT", NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "TITLEFONT", winuiTreeGetTitleFontAttrib, winuiTreeSetTitleFontAttrib, IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, winuiTreeSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTBGCOLOR", IUPAF_NO_SAVE);
   iupClassRegisterAttribute(ic, "FGCOLOR", NULL, winuiTreeSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTFGCOLOR", IUPAF_DEFAULT);

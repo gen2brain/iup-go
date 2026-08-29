@@ -483,6 +483,49 @@ IUP_DRV_API void iupwinuiUpdateControlFont(Ihandle* ih, winrt::Microsoft::UI::Xa
     control.FontStyle(winrt::Windows::UI::Text::FontStyle::Normal);
 }
 
+IUP_DRV_API void iupwinuiUpdateTextBlockFontStr(winrt::Microsoft::UI::Xaml::Controls::TextBlock textBlock, const char* value)
+{
+  if (!textBlock || !value || !value[0])
+    return;
+
+  char typeface[50] = "";
+  int size, is_bold, is_italic, is_underline, is_strikeout;
+  if (!iupGetFontInfo(value, typeface, &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
+    return;
+
+  const char* mapped_name = iupFontGetWinName(typeface);
+  if (mapped_name)
+    iupStrCopyN(typeface, sizeof(typeface), mapped_name);
+
+  float fontSize;
+  if (size < 0)
+    fontSize = (float)(-size);
+  else
+    fontSize = iupWINUI_PT2PIXEL((float)size, winui_screen_dpi);
+
+  if (fontSize > 0)
+    textBlock.FontSize((double)fontSize);
+
+  textBlock.FontFamily(winrt::Microsoft::UI::Xaml::Media::FontFamily(iupwinuiStringToHString(typeface)));
+
+  if (is_bold)
+    textBlock.FontWeight(winrt::Windows::UI::Text::FontWeights::Bold());
+  else
+    textBlock.FontWeight(winrt::Windows::UI::Text::FontWeights::Normal());
+
+  if (is_italic)
+    textBlock.FontStyle(winrt::Windows::UI::Text::FontStyle::Italic);
+  else
+    textBlock.FontStyle(winrt::Windows::UI::Text::FontStyle::Normal);
+
+  auto decorations = winrt::Windows::UI::Text::TextDecorations::None;
+  if (is_underline)
+    decorations = decorations | winrt::Windows::UI::Text::TextDecorations::Underline;
+  if (is_strikeout)
+    decorations = decorations | winrt::Windows::UI::Text::TextDecorations::Strikethrough;
+  textBlock.TextDecorations(decorations);
+}
+
 IUP_DRV_API void iupwinuiUpdateTextBlockFont(Ihandle* ih, winrt::Microsoft::UI::Xaml::Controls::TextBlock textBlock)
 {
   if (!ih || !textBlock)

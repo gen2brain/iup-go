@@ -147,6 +147,7 @@ IUP_DRV_API char* iupwinuiScrollViewerVisible(winrt::Microsoft::UI::Xaml::Contro
 
 IUP_DRV_API void iupwinuiUpdateControlFont(Ihandle* ih, winrt::Microsoft::UI::Xaml::Controls::Control control);
 IUP_DRV_API void iupwinuiUpdateTextBlockFont(Ihandle* ih, winrt::Microsoft::UI::Xaml::Controls::TextBlock textBlock);
+IUP_DRV_API void iupwinuiUpdateTextBlockFontStr(winrt::Microsoft::UI::Xaml::Controls::TextBlock textBlock, const char* value);
 
 IUP_DRV_API void iupwinuiApplyMarkupToTextBlock(winrt::Microsoft::UI::Xaml::Controls::TextBlock textBlock, const char* value);
 IUP_DRV_API void iupwinuiMeasureMarkupText(const char* markup, int* w, int* h);
@@ -424,6 +425,7 @@ struct IupWinUITreeAux
   winrt::event_token gotFocusToken{};
   winrt::event_token lostFocusToken{};
   winrt::event_token layoutUpdatedToken{};
+  winrt::event_token containerContentChangingToken{};
   bool namesDirty;
 
   IupWinUITreeAux() : expandingToken{}, collapsedToken{},
