@@ -695,8 +695,6 @@ IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_ina
   int bpp, img_w, img_h;
   GdkTexture* texture = iupImageGetImageTint(name, dc->ih, make_inactive, bgcolor, tint);
   cairo_surface_t* surface;
-  guchar* pixels;
-  int stride;
 
   if (!texture)
     return;
@@ -713,12 +711,19 @@ IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_ina
   if (w == -1 || w == 0) w = sw;
   if (h == -1 || h == 0) h = sh;
 
-  stride = cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, img_w);
-  pixels = g_malloc((gsize)stride * img_h);
-  gdk_texture_download(texture, pixels, stride);
+  surface = (cairo_surface_t*)g_object_get_data(G_OBJECT(texture), "_IUPGTK4_SURFACE");
+  if (!surface)
+  {
+    static cairo_user_data_key_t pixels_key;
+    int stride = cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, img_w);
+    guchar* pixels = g_malloc((gsize)stride * img_h);
+    gdk_texture_download(texture, pixels, stride);
 
-  surface = cairo_image_surface_create_for_data(pixels, CAIRO_FORMAT_ARGB32,
-                                                 img_w, img_h, stride);
+    surface = cairo_image_surface_create_for_data(pixels, CAIRO_FORMAT_ARGB32,
+                                                   img_w, img_h, stride);
+    cairo_surface_set_user_data(surface, &pixels_key, pixels, g_free);
+    g_object_set_data_full(G_OBJECT(texture), "_IUPGTK4_SURFACE", surface, (GDestroyNotify)cairo_surface_destroy);
+  }
 
   cairo_save (dc->image_cr);
 
@@ -737,9 +742,6 @@ IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_ina
     cairo_paint(dc->image_cr);
 
   cairo_restore(dc->image_cr);
-
-  cairo_surface_destroy(surface);
-  g_free(pixels);
 }
 
 IUP_SDK_API void iupdrvDrawSelectRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2)
