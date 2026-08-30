@@ -2409,14 +2409,13 @@ static int winTextMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT *
   case WM_UNDO:
     {
       IFnis cb = (IFnis)IupGetCallback(ih, "ACTION");
-      if (cb)
+      if (cb || ih->data->mask || ih->data->nc)
       {
-        char* value;
         WNDPROC oldProc = (WNDPROC)IupGetCallback(ih, "_IUPWIN_OLDWNDPROC_CB");
         CallWindowProc(oldProc, ih->handle, WM_UNDO, 0, 0);
 
-        value = winTextGetValueAttrib(ih);
-        cb(ih, 0, (char*)value);
+        if (!iupEditCheckNewValue(ih, cb, winTextGetValueAttrib(ih), ih->data->mask, ih->data->nc))
+          CallWindowProc(oldProc, ih->handle, WM_UNDO, 0, 0);
 
         ret = 1;
       }
