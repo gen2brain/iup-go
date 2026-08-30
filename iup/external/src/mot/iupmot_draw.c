@@ -37,6 +37,7 @@ struct _IdrawCanvas{
 
   Window wnd;
   Pixmap pixmap;
+  int pixmap_fresh;
   GC pixmap_gc, gc;
   Picture pict;
 
@@ -200,17 +201,33 @@ IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
   if (dc->w <= 0) dc->w = 1;
   if (dc->h <= 0) dc->h = 1;
 
-  dc->pixmap = XCreatePixmap(iupmot_display, dc->wnd, dc->w, dc->h, depth);
+  dc->pixmap = (Pixmap)(size_t)iupAttribGet(ih, "_IUPMOT_CANVAS_PIXMAP");
+  if (dc->pixmap &&
+      (iupAttribGetInt(ih, "_IUPMOT_CANVAS_PIXMAP_W") != dc->w ||
+       iupAttribGetInt(ih, "_IUPMOT_CANVAS_PIXMAP_H") != dc->h))
+  {
+    XFreePixmap(iupmot_display, dc->pixmap);
+    iupAttribSet(ih, "_IUPMOT_CANVAS_PIXMAP", NULL);
+    dc->pixmap = None;
+  }
+
   if (!dc->pixmap)
   {
-    free(dc);
-    return NULL;
+    dc->pixmap = XCreatePixmap(iupmot_display, dc->wnd, dc->w, dc->h, depth);
+    if (!dc->pixmap)
+    {
+      free(dc);
+      return NULL;
+    }
+    iupAttribSet(ih, "_IUPMOT_CANVAS_PIXMAP", (char*)(size_t)dc->pixmap);
+    iupAttribSetInt(ih, "_IUPMOT_CANVAS_PIXMAP_W", dc->w);
+    iupAttribSetInt(ih, "_IUPMOT_CANVAS_PIXMAP_H", dc->h);
+    dc->pixmap_fresh = 1;
   }
 
   dc->pixmap_gc = XCreateGC(iupmot_display, dc->pixmap, 0, NULL);
   if (!dc->pixmap_gc)
   {
-    XFreePixmap(iupmot_display, dc->pixmap);
     free(dc);
     return NULL;
   }
@@ -219,7 +236,6 @@ IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
   if (!dc->gc)
   {
     XFreeGC(iupmot_display, dc->pixmap_gc);
-    XFreePixmap(iupmot_display, dc->pixmap);
     free(dc);
     return NULL;
   }
@@ -228,7 +244,8 @@ IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
 
   iupAttribSet(ih, "DRAWDRIVER", "X11");
 
-  motDrawClearBackground(dc);
+  if (dc->pixmap_fresh)
+    motDrawClearBackground(dc);
 
   return dc;
 }
@@ -242,8 +259,6 @@ IUP_SDK_API void iupdrvDrawKillCanvas(IdrawCanvas* dc)
     XRenderFreePicture(iupmot_display, dc->pict);
   if (dc->pixmap_gc)
     XFreeGC(iupmot_display, dc->pixmap_gc);
-  if (dc->pixmap)
-    XFreePixmap(iupmot_display, dc->pixmap);
   if (dc->gc)
     XFreeGC(iupmot_display, dc->gc);
 
@@ -275,6 +290,7 @@ IUP_SDK_API void iupdrvDrawUpdateSize(IdrawCanvas* dc)
       XFreeGC(iupmot_display, dc->pixmap_gc);
     if (dc->pixmap)
       XFreePixmap(iupmot_display, dc->pixmap);
+    iupAttribSet(dc->ih, "_IUPMOT_CANVAS_PIXMAP", NULL);
 
     dc->pixmap = XCreatePixmap(iupmot_display, dc->wnd, dc->w, dc->h, depth);
     if (!dc->pixmap)
@@ -284,6 +300,9 @@ IUP_SDK_API void iupdrvDrawUpdateSize(IdrawCanvas* dc)
       dc->h = 0;
       return;
     }
+    iupAttribSet(dc->ih, "_IUPMOT_CANVAS_PIXMAP", (char*)(size_t)dc->pixmap);
+    iupAttribSetInt(dc->ih, "_IUPMOT_CANVAS_PIXMAP_W", dc->w);
+    iupAttribSetInt(dc->ih, "_IUPMOT_CANVAS_PIXMAP_H", dc->h);
 
     dc->pixmap_gc = XCreateGC(iupmot_display, dc->pixmap, 0, NULL);
     if (!dc->pixmap_gc)

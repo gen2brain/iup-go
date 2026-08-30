@@ -227,17 +227,66 @@ static void gtk4CanvasDraw(GtkDrawingArea *area, cairo_t* cr, int width, int hei
     return;
   }
 
+  buffer = (cairo_surface_t*)iupAttribGet(ih, "_IUPGTK4_CANVAS_BUFFER");
+  if (buffer && (cairo_image_surface_get_width(buffer) != width ||
+                 cairo_image_surface_get_height(buffer) != height))
+  {
+    cairo_surface_destroy(buffer);
+    iupAttribSet(ih, "_IUPGTK4_CANVAS_BUFFER", NULL);
+    buffer = NULL;
+  }
+
+  if (cb && iupAttribGet(ih, "_IUPGTK4_UPDATERECT") && !(ih->data->inside_resize))
+  {
+    int x1, y1, x2, y2;
+    cairo_t* buf_cr;
+
+    if (!buffer ||
+        sscanf(iupAttribGet(ih, "_IUPGTK4_UPDATERECT"), "%d %d %d %d", &x1, &y1, &x2, &y2) != 4)
+    {
+      x1 = 0;
+      y1 = 0;
+      x2 = width - 1;
+      y2 = height - 1;
+    }
+
+    if (!buffer)
+    {
+      buffer = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, width, height);
+      iupAttribSet(ih, "_IUPGTK4_CANVAS_BUFFER", (char*)buffer);
+    }
+
+    buf_cr = cairo_create(buffer);
+    cairo_rectangle(buf_cr, x1, y1, x2 - x1 + 1, y2 - y1 + 1);
+    cairo_clip(buf_cr);
+    iupAttribSetStrf(ih, "CLIPRECT", "%d %d %d %d", x1, y1, x2, y2);
+    iupAttribSet(ih, "CAIRO_CR", (char*)buf_cr);
+    iupAttribSetInt(ih, "_IUPGTK4_DRAW_WIDTH", width);
+    iupAttribSetInt(ih, "_IUPGTK4_DRAW_HEIGHT", height);
+
+    cb(ih);
+
+    iupAttribSet(ih, "CLIPRECT", NULL);
+    iupAttribSet(ih, "CAIRO_CR", NULL);
+    iupAttribSet(ih, "_IUPGTK4_UPDATERECT", NULL);
+    cairo_destroy(buf_cr);
+
+    cairo_set_source_surface(cr, buffer, 0, 0);
+    cairo_paint(cr);
+
+    (void)area;
+    return;
+  }
+
   /* If there's a persistent buffer from drawing outside ACTION (e.g. SCROLL_CB),
      use it. When an ACTION callback exists, consume the buffer so the next
      draw calls ACTION again. Without ACTION, keep the buffer for repaints. */
-  buffer = (cairo_surface_t*)iupAttribGet(ih, "_IUPGTK4_CANVAS_BUFFER");
-  if (buffer && cairo_image_surface_get_width(buffer) == width &&
-      cairo_image_surface_get_height(buffer) == height)
+  if (buffer)
   {
     cairo_set_source_surface(cr, buffer, 0, 0);
     cairo_paint(cr);
 
-    if (cb)
+    if (cb && !iupAttribGet(ih, "_IUPGTK4_RETAIN"))
     {
       cairo_surface_destroy(buffer);
       iupAttribSet(ih, "_IUPGTK4_CANVAS_BUFFER", NULL);
@@ -263,6 +312,32 @@ static void gtk4CanvasDraw(GtkDrawingArea *area, cairo_t* cr, int width, int hei
   (void)area;
   (void)width;
   (void)height;
+}
+
+static int gtk4CanvasSetUpdateRectAttrib(Ihandle* ih, const char* value)
+{
+  int x1, y1, x2, y2;
+  if (value && sscanf(value, "%d %d %d %d", &x1, &y1, &x2, &y2) == 4)
+  {
+    char* pending = iupAttribGet(ih, "_IUPGTK4_UPDATERECT");
+    if (pending)
+    {
+      int px1, py1, px2, py2;
+      if (sscanf(pending, "%d %d %d %d", &px1, &py1, &px2, &py2) == 4)
+      {
+        if (px1 < x1) x1 = px1;
+        if (py1 < y1) y1 = py1;
+        if (px2 > x2) x2 = px2;
+        if (py2 > y2) y2 = py2;
+      }
+    }
+    iupAttribSetStrf(ih, "_IUPGTK4_UPDATERECT", "%d %d %d %d", x1, y1, x2, y2);
+    iupAttribSet(ih, "_IUPGTK4_RETAIN", "1");
+    gtk_widget_queue_draw(ih->handle);
+  }
+  else
+    iupdrvPostRedraw(ih);
+  return 0;
 }
 
 static void gtk4CanvasSizeAllocate(GtkDrawingArea *drawing_area, int width, int height, gpointer user_data)
@@ -982,6 +1057,7 @@ IUP_SDK_API void iupdrvCanvasInitClass(Iclass* ic)
 
   iupClassRegisterAttribute(ic, "CAIRO_CR", NULL, NULL, NULL, NULL, IUPAF_NO_STRING);
   iupClassRegisterAttribute(ic, "CLIPRECT", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "UPDATERECT", NULL, gtk4CanvasSetUpdateRectAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "TOUCH", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "BACKINGSTORE", NULL, NULL, "YES", NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);

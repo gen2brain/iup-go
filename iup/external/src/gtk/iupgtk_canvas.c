@@ -10,6 +10,7 @@
 #include <gdk/gdkwayland.h>
 #endif
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <memory.h>
@@ -427,7 +428,22 @@ static gboolean gtkCanvasExposeEvent(GtkWidget *widget, GdkEventExpose *evt, Iha
 #if GTK_CHECK_VERSION(3, 0, 0)
     {
       GdkRectangle rect;
-      gdk_cairo_get_clip_rectangle(cr, &rect);
+      GdkEvent* event = gtk_get_current_event();
+
+      if (event && event->type == GDK_EXPOSE && event->expose.region &&
+          event->expose.window == gtk_widget_get_window(widget) &&
+          gdk_window_has_native(event->expose.window))
+      {
+        cairo_region_get_extents(event->expose.region, &rect);
+        gdk_cairo_region(cr, event->expose.region);
+        cairo_clip(cr);
+      }
+      else
+        gdk_cairo_get_clip_rectangle(cr, &rect);
+
+      if (event)
+        gdk_event_free(event);
+
       iupAttribSetStrf(ih, "CLIPRECT", "%d %d %d %d", rect.x, rect.y, rect.x+rect.width-1, rect.y+rect.height-1);
       iupAttribSet(ih, "CAIRO_CR", (char*)cr);
       /* Clear dirty flag since ACTION is being called */
@@ -487,6 +503,16 @@ static gboolean gtkCanvasBorderExposeEvent(GtkWidget *widget, GdkEventExpose *ev
 #endif
   (void)user;
   return FALSE;
+}
+
+static int gtkCanvasSetUpdateRectAttrib(Ihandle* ih, const char* value)
+{
+  int x1, y1, x2, y2;
+  if (value && sscanf(value, "%d %d %d %d", &x1, &y1, &x2, &y2) == 4)
+    gtk_widget_queue_draw_area(ih->handle, x1, y1, x2 - x1 + 1, y2 - y1 + 1);
+  else
+    iupdrvPostRedraw(ih);
+  return 0;
 }
 
 static void gtkCanvasLayoutUpdateMethod(Ihandle *ih)
@@ -1279,6 +1305,7 @@ IUP_SDK_API void iupdrvCanvasInitClass(Iclass* ic)
 
   iupClassRegisterAttribute(ic, "DRAWABLE", gtkCanvasGetDrawableAttrib, NULL, NULL, NULL, IUPAF_NO_STRING);
   iupClassRegisterAttribute(ic, "CAIRO_CR", NULL, NULL, NULL, NULL, IUPAF_NO_STRING);
+  iupClassRegisterAttribute(ic, "UPDATERECT", NULL, gtkCanvasSetUpdateRectAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
 
   /* IupCanvas Windows or X only */
   iupClassRegisterAttribute(ic, iupgtkGetNativeWindowHandleName(), iupgtkGetNativeWindowHandleAttrib, NULL, NULL, NULL, IUPAF_NO_STRING | IUPAF_NO_INHERIT);

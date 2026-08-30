@@ -13,6 +13,7 @@
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
+#include "iup_drv.h"
 #include "iup_drvfont.h"
 #include "iup_stdcontrols.h"
 #include "iup_canvas.h"
@@ -71,6 +72,14 @@ static char* iCanvasGetScrollbarAttrib(Ihandle* ih)
     return "VERTICAL";
   else
     return "NO";
+}
+
+static int iCanvasSetUpdateRectAttrib(Ihandle* ih, const char* value)
+{
+  (void)value;
+  if (ih->handle)
+    iupdrvPostRedraw(ih);
+  return 0;
 }
 
 static int iCanvasCreateMethod(Ihandle* ih, void** params)
@@ -193,6 +202,7 @@ Iclass* iupCanvasNewClass(void)
   iupClassRegisterAttribute(ic, "YHIDDEN", NULL, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SB_RESIZE", NULL, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "WHEELDROPFOCUS", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "UPDATERECT", NULL, iCanvasSetUpdateRectAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "BORDER", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
 

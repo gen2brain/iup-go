@@ -268,12 +268,48 @@ static void motCanvasExposeCallback(Widget w, Ihandle *ih, XtPointer call_data)
 
   if (cb && !(ih->data->inside_resize))
   {
+    XmDrawingAreaCallbackStruct* cbs = (XmDrawingAreaCallbackStruct*)call_data;
+
     if (!iupAttribGet(ih, "_IUPMOT_NO_BGCOLOR"))
       motCanvasSetBgColorAttrib(ih, iupAttribGetStr(ih, "BGCOLOR"));  /* reset to update window attributes */
 
+    if (cbs && cbs->event && cbs->event->type == Expose)
+    {
+      XExposeEvent* evt = &cbs->event->xexpose;
+      iupAttribSetStrf(ih, "CLIPRECT", "%d %d %d %d", evt->x, evt->y, evt->x + evt->width - 1, evt->y + evt->height - 1);
+    }
+
     iupAttribSet(ih, "DRAWABLE", (char*)XtWindow(w));
     cb(ih);
+
+    iupAttribSet(ih, "CLIPRECT", NULL);
   }
+}
+
+static int motCanvasSetUpdateRectAttrib(Ihandle* ih, const char* value)
+{
+  int x1, y1, x2, y2;
+  if (value && XtWindow(ih->handle) && sscanf(value, "%d %d %d %d", &x1, &y1, &x2, &y2) == 4)
+  {
+    XExposeEvent evt;
+
+    evt.type = Expose;
+    evt.display = iupmot_display;
+    evt.send_event = True;
+    evt.window = XtWindow(ih->handle);
+
+    evt.x = x1;
+    evt.y = y1;
+    evt.width = x2 - x1 + 1;
+    evt.height = y2 - y1 + 1;
+
+    evt.count = 0;
+
+    XSendEvent(iupmot_display, XtWindow(ih->handle), False, ExposureMask, (XEvent*)&evt);
+  }
+  else
+    iupdrvPostRedraw(ih);
+  return 0;
 }
 
 static void motCanvasInputCallback(Widget w, Ihandle *ih, XtPointer call_data)
@@ -815,10 +851,23 @@ static int motCanvasMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
+static void motCanvasUnMapMethod(Ihandle* ih)
+{
+  Pixmap pixmap = (Pixmap)(size_t)iupAttribGet(ih, "_IUPMOT_CANVAS_PIXMAP");
+  if (pixmap)
+  {
+    XFreePixmap(iupmot_display, pixmap);
+    iupAttribSet(ih, "_IUPMOT_CANVAS_PIXMAP", NULL);
+  }
+
+  iupdrvBaseUnMapMethod(ih);
+}
+
 IUP_SDK_API void iupdrvCanvasInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
   ic->Map = motCanvasMapMethod;
+  ic->UnMap = motCanvasUnMapMethod;
   ic->LayoutUpdate = motCanvasLayoutUpdateMethod;
 
   /* Driver Dependent Attribute functions */
@@ -833,6 +882,8 @@ IUP_SDK_API void iupdrvCanvasInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "DY", NULL, motCanvasSetDYAttrib, NULL, NULL, IUPAF_NO_INHERIT);  /* force new default value */
   iupClassRegisterAttribute(ic, "POSX", iupCanvasGetPosXAttrib, motCanvasSetPosXAttrib, "0", NULL, IUPAF_NO_INHERIT);  /* force new default value */
   iupClassRegisterAttribute(ic, "POSY", iupCanvasGetPosYAttrib, motCanvasSetPosYAttrib, "0", NULL, IUPAF_NO_INHERIT);  /* force new default value */
+
+  iupClassRegisterAttribute(ic, "UPDATERECT", NULL, motCanvasSetUpdateRectAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
 
   /* IupCanvas X only */
   iupClassRegisterAttribute(ic, "XWINDOW", motCanvasGetXWindowAttrib, NULL, NULL, NULL, IUPAF_NO_INHERIT|IUPAF_NO_STRING);
