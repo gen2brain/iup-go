@@ -292,7 +292,10 @@ IUP_DRV_API void iupmotSetMnemonicTitle(Ihandle *ih, Widget w, int pos, const ch
   if (str != value)
   {
     KeySym keysym = iupmotKeyCharToKeySym(c);
-    XtVaSetValues(w, XmNmnemonic, keysym, NULL);   /* works only for menus, but underlines the letter */
+    KeySym cur_keysym = NoSymbol;
+    XtVaGetValues(w, XmNmnemonic, &cur_keysym, NULL);
+    if (cur_keysym != keysym)
+      XtVaSetValues(w, XmNmnemonic, keysym, NULL);   /* works only for menus, but underlines the letter */
 
     if (ih->iclass->nativetype != IUP_TYPEMENU)
       iupKeySetMnemonic(ih, c, pos);
@@ -302,7 +305,10 @@ IUP_DRV_API void iupmotSetMnemonicTitle(Ihandle *ih, Widget w, int pos, const ch
   }
   else
   {
-    XtVaSetValues (w, XmNmnemonic, NULL, NULL);
+    KeySym cur_keysym = NoSymbol;
+    XtVaGetValues(w, XmNmnemonic, &cur_keysym, NULL);
+    if (cur_keysym != NoSymbol)
+      XtVaSetValues (w, XmNmnemonic, NULL, NULL);
     iupmotSetXmString(w, XmNlabelString, str);
   }
 }
@@ -310,6 +316,18 @@ IUP_DRV_API void iupmotSetMnemonicTitle(Ihandle *ih, Widget w, int pos, const ch
 IUP_DRV_API void iupmotSetXmString(Widget w, const char *resource, const char* value)
 {
   XmString xm_str = iupmotStringCreate(value);
+  XmString cur_str = NULL;
+  XtVaGetValues(w, resource, &cur_str, NULL);
+  if (cur_str)
+  {
+    Boolean equal = XmStringCompare(xm_str, cur_str);
+    XmStringFree(cur_str);
+    if (equal)
+    {
+      XmStringFree(xm_str);
+      return;
+    }
+  }
   XtVaSetValues(w, resource, xm_str, NULL);
   XmStringFree(xm_str);
 }

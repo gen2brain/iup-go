@@ -44,12 +44,28 @@ struct _IdrawCanvas{
   int clip_x1, clip_y1, clip_x2, clip_y2;
 };
 
-static int motDrawGetGeometry(Display *dpy, Drawable wnd, int *_w, int *_h, int *_d)
+static int motDrawGetGeometry(Ihandle *ih, Drawable wnd, int *_w, int *_h, int *_d)
 {
   Window root;
   int x, y;
   unsigned int w = 0, h = 0, b = 0, d = 0;
-  Status status = XGetGeometry(dpy, wnd, &root, &x, &y, &w, &h, &b, &d);
+  Status status;
+
+  if (ih && ih->handle && XtIsRealized(ih->handle) && XtWindow(ih->handle) == wnd)
+  {
+    Dimension ww = 0, wh = 0;
+    Cardinal wd = 0;
+    XtVaGetValues(ih->handle, XmNwidth, &ww, XmNheight, &wh, XtNdepth, &wd, NULL);
+    if (ww > 0 && wh > 0 && wd > 0)
+    {
+      *_w = (int)ww;
+      *_h = (int)wh;
+      *_d = (int)wd;
+      return 1;
+    }
+  }
+
+  status = XGetGeometry(iupmot_display, wnd, &root, &x, &y, &w, &h, &b, &d);
   if (status == 0)
   {
     *_w = 0;
@@ -192,7 +208,7 @@ IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
     return NULL;
   }
 
-  if (!motDrawGetGeometry(iupmot_display, dc->wnd, &dc->w, &dc->h, &depth))
+  if (!motDrawGetGeometry(ih, dc->wnd, &dc->w, &dc->h, &depth))
   {
     free(dc);
     return NULL;
@@ -272,7 +288,7 @@ IUP_SDK_API void iupdrvDrawUpdateSize(IdrawCanvas* dc)
   if (!dc || !dc->wnd)
     return;
 
-  if (!motDrawGetGeometry(iupmot_display, dc->wnd, &w, &h, &depth))
+  if (!motDrawGetGeometry(dc->ih, dc->wnd, &w, &h, &depth))
     return;
 
   if (w <= 0 || h <= 0)
