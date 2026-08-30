@@ -667,10 +667,12 @@ extern "C" IUP_SDK_API void iupdrvReparent(Ihandle* ih)
 
     if (old_parent != new_parent)
     {
+      int was_visible = widget->visible();
       if (old_parent)
         old_parent->remove(widget);
       new_parent->add(widget);
-      widget->show();
+      if (was_visible)
+        widget->show();
     }
   }
 }
