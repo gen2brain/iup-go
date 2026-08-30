@@ -659,12 +659,6 @@ static int gtk4DialogMapMethod(Ihandle* ih)
 
   iupgtk4SetupEnterLeaveEvents(GTK_WIDGET(ih->handle), ih);
 
-  /* Build and install menu bar if present */
-  if (ih->data->menu)
-  {
-    iupgtk4DialogSetMenuBar(ih, ih->data->menu);
-  }
-
   return IUP_NOERROR;
 }
 

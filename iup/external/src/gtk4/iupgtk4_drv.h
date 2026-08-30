@@ -96,7 +96,6 @@ IUP_DRV_API GtkWindow* iupgtk4GetTransientFor(Ihandle* ih);
 IUP_DRV_API void iupgtk4ButtonApplyImagePadding(GtkWidget* widget);
 
 /* Menu */
-IUP_DRV_API void iupgtk4DialogSetMenuBar(Ihandle* ih_dialog, Ihandle* ih_menu);
 
 /* Loop */
 IUP_DRV_API void iupgtk4LoopCleanup(void);
