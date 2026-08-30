@@ -261,8 +261,10 @@ IUP_SDK_API void iupdrvDrawUpdateSize(IdrawCanvas* dc)
 IUP_SDK_API void iupdrvDrawFlush(IdrawCanvas* dc)
 {
   const void* src;
-  size_t bytes;
   void* dst;
+  char* updaterect;
+  int x1 = 0, y1 = 0, x2 = dc->w - 1, y2 = dc->h - 1;
+  int img_w = 0, img_h = 0;
 
   ecore_evas_manual_render(dc->frame_ee);
 
@@ -270,13 +272,38 @@ IUP_SDK_API void iupdrvDrawFlush(IdrawCanvas* dc)
   if (!src)
     return;
 
-  bytes = (size_t)dc->w * dc->h * sizeof(unsigned int);
+  evas_object_image_size_get(dc->vg, &img_w, &img_h);
+
+  updaterect = iupAttribGet(dc->ih, "_IUP_EFL_UPDATERECT");
+  if (updaterect && img_w == dc->w && img_h == dc->h &&
+      sscanf(updaterect, "%d %d %d %d", &x1, &y1, &x2, &y2) == 4)
+  {
+    if (x1 < 0) x1 = 0;
+    if (y1 < 0) y1 = 0;
+    if (x2 > dc->w - 1) x2 = dc->w - 1;
+    if (y2 > dc->h - 1) y2 = dc->h - 1;
+    if (x2 < x1 || y2 < y1)
+      return;
+
+    dst = evas_object_image_data_get(dc->vg, EINA_TRUE);
+    if (dst)
+    {
+      int y, stride = evas_object_image_stride_get(dc->vg);
+      for (y = y1; y <= y2; y++)
+        memcpy((unsigned char*)dst + y * stride + x1 * sizeof(unsigned int),
+               (const unsigned char*)src + ((size_t)y * dc->w + x1) * sizeof(unsigned int),
+               (x2 - x1 + 1) * sizeof(unsigned int));
+      evas_object_image_data_set(dc->vg, dst);
+      evas_object_image_data_update_add(dc->vg, x1, y1, x2 - x1 + 1, y2 - y1 + 1);
+    }
+    return;
+  }
 
   evas_object_image_size_set(dc->vg, dc->w, dc->h);
   dst = evas_object_image_data_get(dc->vg, EINA_TRUE);
   if (dst)
   {
-    memcpy(dst, src, bytes);
+    memcpy(dst, src, (size_t)dc->w * dc->h * sizeof(unsigned int));
     evas_object_image_data_set(dc->vg, dst);
     evas_object_image_data_update_add(dc->vg, 0, 0, dc->w, dc->h);
   }

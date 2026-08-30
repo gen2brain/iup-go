@@ -48,7 +48,21 @@ static void eflCanvasRenderPreCallback(void* data, Evas* e, void* event_info)
 
   cb = (IFn)IupGetCallback(ih, "ACTION");
   if (cb)
+  {
+    char* updaterect = iupAttribGet(ih, "_IUP_EFL_UPDATERECT");
+    if (updaterect)
+      iupAttribSetStr(ih, "CLIPRECT", updaterect);
+    else
+    {
+      Eina_Size2D size = efl_gfx_entity_size_get(iupeflGetWidget(ih));
+      iupAttribSetStrf(ih, "CLIPRECT", "%d %d %d %d", 0, 0, size.w - 1, size.h - 1);
+    }
+
     cb(ih);
+
+    iupAttribSet(ih, "CLIPRECT", NULL);
+    iupAttribSet(ih, "_IUP_EFL_UPDATERECT", NULL);
+  }
 }
 
 IUP_DRV_API void iupeflRedrawSetPending(Ihandle* ih)
@@ -838,6 +852,37 @@ static void* eflCanvasGetInnerNativeContainerHandleMethod(Ihandle* ih, Ihandle* 
   return iupeflGetParentWidget(ih);
 }
 
+static int eflCanvasSetUpdateRectAttrib(Ihandle* ih, const char* value)
+{
+  int x1, y1, x2, y2;
+  Eo* widget = iupeflGetWidget(ih);
+  if (widget && value && sscanf(value, "%d %d %d %d", &x1, &y1, &x2, &y2) == 4)
+  {
+    Evas* evas;
+    char* pending = iupAttribGet(ih, "_IUP_EFL_UPDATERECT");
+    if (pending)
+    {
+      int px1, py1, px2, py2;
+      if (sscanf(pending, "%d %d %d %d", &px1, &py1, &px2, &py2) == 4)
+      {
+        if (px1 < x1) x1 = px1;
+        if (py1 < y1) y1 = py1;
+        if (px2 > x2) x2 = px2;
+        if (py2 > y2) y2 = py2;
+      }
+    }
+    iupAttribSetStrf(ih, "_IUP_EFL_UPDATERECT", "%d %d %d %d", x1, y1, x2, y2);
+    iupeflRedrawSetPending(ih);
+
+    evas = evas_object_evas_get(widget);
+    if (evas)
+      evas_damage_rectangle_add(evas, ih->x + x1, ih->y + y1, x2 - x1 + 1, y2 - y1 + 1);
+  }
+  else
+    iupdrvPostRedraw(ih);
+  return 0;
+}
+
 IUP_SDK_API void iupdrvCanvasInitClass(Iclass* ic)
 {
   ic->Map = eflCanvasMapMethod;
@@ -851,6 +896,7 @@ IUP_SDK_API void iupdrvCanvasInitClass(Iclass* ic)
 
   iupClassRegisterAttribute(ic, "DRAWABLE", eflCanvasGetDrawableAttrib, NULL, NULL, NULL, IUPAF_NO_STRING | IUPAF_READONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DRAWSIZE", eflCanvasGetDrawSizeAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "UPDATERECT", NULL, eflCanvasSetUpdateRectAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "DX", NULL, eflCanvasSetDXAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DY", NULL, eflCanvasSetDYAttrib, NULL, NULL, IUPAF_NO_INHERIT);

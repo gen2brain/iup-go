@@ -184,7 +184,7 @@ protected:
 
     /* Qt: First, copy persistent buffer to screen if it exists (for SCROLL_CB drawings) */
     QPixmap* buffer = (QPixmap*)iupAttribGet(ih, "_IUPQT_CANVAS_BUFFER");
-    if (buffer && !buffer->isNull())
+    if (buffer && !buffer->isNull() && !iupAttribGet(ih, "_IUPQT_UPDATERECT"))
     {
       QPainter painter(this);
       painter.drawPixmap(0, 0, *buffer);
@@ -196,6 +196,7 @@ protected:
 
     /* No buffer - call ACTION callback to draw */
     IFn cb = (IFn)IupGetCallback(ih, "ACTION");
+    iupAttribSet(ih, "_IUPQT_UPDATERECT", NULL);
     if (cb && !(ih->data->inside_resize))
     {
       iupAttribSetStrf(ih, "CLIPRECT", "%d %d %d %d",
@@ -1186,6 +1187,20 @@ static char* qtCanvasGetScrollVisibleAttrib(Ihandle* ih)
  * Get Inner Native Container Handle
  ****************************************************************************/
 
+static int qtCanvasSetUpdateRectAttrib(Ihandle* ih, const char* value)
+{
+  QWidget* canvas = iupqtCanvasGetWidget(ih);
+  int x1, y1, x2, y2;
+  if (canvas && value && sscanf(value, "%d %d %d %d", &x1, &y1, &x2, &y2) == 4)
+  {
+    iupAttribSet(ih, "_IUPQT_UPDATERECT", "1");
+    canvas->update(QRect(QPoint(x1, y1), QPoint(x2, y2)));
+  }
+  else
+    iupdrvPostRedraw(ih);
+  return 0;
+}
+
 static void* qtCanvasGetInnerNativeContainerHandleMethod(Ihandle* ih, Ihandle* child)
 {
   (void)child;
@@ -1250,4 +1265,5 @@ extern "C" IUP_SDK_API void iupdrvCanvasInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "HTTRANSPARENT", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "WHEELDROPFOCUS", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CLIPRECT", nullptr, nullptr, nullptr, nullptr, IUPAF_READONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "UPDATERECT", nullptr, qtCanvasSetUpdateRectAttrib, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
 }

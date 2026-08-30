@@ -153,7 +153,13 @@ public:
         iupAttribSet(ih, "CAIRO_CR", (char*)fl_cairo_gc());
 #endif
 
-      iupAttribSetStrf(ih, "CLIPRECT", "%d %d %d %d", 0, 0, w() - 1, h() - 1);
+      int cx, cy, cw, ch;
+      fl_clip_box(x(), y(), w(), h(), cx, cy, cw, ch);
+      if (cw <= 0 || ch <= 0)
+      {
+        cx = x(); cy = y(); cw = w(); ch = h();
+      }
+      iupAttribSetStrf(ih, "CLIPRECT", "%d %d %d %d", cx - x(), cy - y(), cx - x() + cw - 1, cy - y() + ch - 1);
       cb(ih);
       iupAttribSet(ih, "CLIPRECT", NULL);
 
@@ -728,6 +734,17 @@ static void* fltkCanvasGetInnerNativeContainerHandleMethod(Ihandle* ih, Ihandle*
   return ih->handle;
 }
 
+static int fltkCanvasSetUpdateRectAttrib(Ihandle* ih, const char* value)
+{
+  Fl_Widget* widget = (Fl_Widget*)ih->handle;
+  int x1, y1, x2, y2;
+  if (widget && value && sscanf(value, "%d %d %d %d", &x1, &y1, &x2, &y2) == 4)
+    widget->damage(FL_DAMAGE_ALL, widget->x() + x1, widget->y() + y1, x2 - x1 + 1, y2 - y1 + 1);
+  else
+    iupdrvPostRedraw(ih);
+  return 0;
+}
+
 /****************************************************************************
  * Canvas Driver Initialization
  ****************************************************************************/
@@ -746,6 +763,7 @@ extern "C" IUP_SDK_API void iupdrvCanvasInitClass(Iclass* ic)
   if (iupdrvGetDisplay())
     iupClassRegisterAttribute(ic, "XDISPLAY", fltkCanvasGetXDisplayAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT | IUPAF_NO_STRING);
   iupClassRegisterAttribute(ic, "CAIRO_CR", NULL, NULL, NULL, NULL, IUPAF_NO_STRING);
+  iupClassRegisterAttribute(ic, "UPDATERECT", NULL, fltkCanvasSetUpdateRectAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "DX", NULL, fltkCanvasSetDXAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DY", NULL, fltkCanvasSetDYAttrib, NULL, NULL, IUPAF_NO_INHERIT);
