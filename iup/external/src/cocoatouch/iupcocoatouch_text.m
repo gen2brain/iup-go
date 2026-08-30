@@ -403,20 +403,18 @@ static UIFont* cocoaTouchTextTagBuildFont(Ihandle* tag, UIFont* base)
 	if (size_s) { int v = 0; if (iupStrToInt(size_s, &v) && v > 0) size = (CGFloat)v; }
 	if (scale_s) size *= cocoaTouchTextFontScaleFactor(scale_s);
 
-	BOOL is_bold = NO;
-	BOOL is_italic = NO;
+	UIFontDescriptorSymbolicTraits base_traits = base ? base.fontDescriptor.symbolicTraits : 0;
+	BOOL is_bold = (base_traits & UIFontDescriptorTraitBold) ? YES : NO;
+	BOOL is_italic = (base_traits & UIFontDescriptorTraitItalic) ? YES : NO;
 	if (style)
 	{
-		if (iupStrEqualNoCase(style, "BOLD"))          is_bold = YES;
-		else if (iupStrEqualNoCase(style, "ITALIC"))   is_italic = YES;
+		if (iupStrEqualNoCase(style, "BOLD"))          { is_bold = YES; is_italic = NO; }
+		else if (iupStrEqualNoCase(style, "ITALIC"))   { is_bold = NO; is_italic = YES; }
 		else if (iupStrEqualNoCase(style, "BOLD ITALIC") || iupStrEqualNoCase(style, "BOLDITALIC"))
 		{ is_bold = YES; is_italic = YES; }
 	}
 	if (weight)
-	{
-		if (iupStrEqualNoCase(weight, "BOLD") || iupStrEqualNoCase(weight, "SEMIBOLD") || iupStrEqualNoCase(weight, "BLACK"))
-			is_bold = YES;
-	}
+		is_bold = (iupStrEqualNoCase(weight, "BOLD") || iupStrEqualNoCase(weight, "SEMIBOLD") || iupStrEqualNoCase(weight, "BLACK")) ? YES : NO;
 	if (italic) is_italic = iupStrBoolean(italic) ? YES : NO;
 
 	BOOL named_face = (face && face[0] != '.' && !iupStrEqualNoCase(face, "System"));
@@ -705,15 +703,35 @@ IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bul
 		return;
 	}
 
-	NSMutableDictionary* patch = [NSMutableDictionary dictionary];
+	NSMutableArray* sub_ranges = [NSMutableArray array];
+	NSMutableArray* sub_fonts = [NSMutableArray array];
 	if (range.length > 0 && range.location < text_len)
 	{
-		NSDictionary* existing = [attr_string attributesAtIndex:range.location effectiveRange:NULL];
-		UIFont* existing_font = existing[NSFontAttributeName];
-		if (existing_font) patch[NSFontAttributeName] = existing_font;
+		[attr_string enumerateAttribute:NSFontAttributeName inRange:range options:0
+			usingBlock:^(id value, NSRange sub, BOOL* stop) {
+				(void)stop;
+				[sub_ranges addObject:[NSValue valueWithRange:sub]];
+				[sub_fonts addObject:value ? value : (id)[NSNull null]];
+			}];
 	}
-	cocoaTouchTextApplyTagToAttributes(formattag, patch);
-	[attr_string addAttributes:patch range:range];
+
+	if (sub_ranges.count == 0)
+	{
+		NSMutableDictionary* patch = [NSMutableDictionary dictionary];
+		cocoaTouchTextApplyTagToAttributes(formattag, patch);
+		[attr_string addAttributes:patch range:range];
+	}
+	else
+	{
+		for (NSUInteger k = 0; k < sub_ranges.count; k++)
+		{
+			NSMutableDictionary* patch = [NSMutableDictionary dictionary];
+			id sub_font = [sub_fonts objectAtIndex:k];
+			if (sub_font != [NSNull null]) patch[NSFontAttributeName] = sub_font;
+			cocoaTouchTextApplyTagToAttributes(formattag, patch);
+			[attr_string addAttributes:patch range:[[sub_ranges objectAtIndex:k] rangeValue]];
+		}
+	}
 
 	const char* numbering = iupAttribGet(formattag, "NUMBERING");
 	if (numbering && !iupStrEqualNoCase(numbering, "NONE"))
