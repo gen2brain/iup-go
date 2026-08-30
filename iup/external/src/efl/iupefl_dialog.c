@@ -512,7 +512,20 @@ IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
   iupeflSetVisible(win, visible ? EINA_TRUE : EINA_FALSE);
 
   if (visible)
+  {
+    int width = ih->userwidth > 0 ? ih->userwidth : ih->currentwidth;
+    int height = ih->userheight > 0 ? ih->userheight : ih->currentheight;
+
+    if (width > 0 && height > 0 && !iupAttribGet(ih, "_IUP_EFL_SHOWN"))
+    {
+      Ecore_Evas* ee = eflDialogGetEcoreEvas(win);
+      iupAttribSet(ih, "_IUP_EFL_SHOWN", "1");
+      iupeflSetSize(win, width, height);
+      if (ee)
+        ecore_evas_resize(ee, width, height);
+    }
     ecore_job_add(eflDialogSizeLimitsJob, ih);
+  }
 }
 
 IUP_SDK_API void iupdrvDialogGetPosition(Ihandle* ih, InativeHandle* handle, int* x, int* y)

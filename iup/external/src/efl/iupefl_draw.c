@@ -125,11 +125,58 @@ static void iDrawSetDash(Efl_VG* shape, int style)
   }
 }
 
+static void iDrawRecycleFrame(Ihandle* ih)
+{
+  Eina_List* old_objects = (Eina_List*)iupAttribGet(ih, "_IUP_EFL_FRAME_OBJECTS");
+  Eina_List* pool = (Eina_List*)iupAttribGet(ih, "_IUP_EFL_POOL_TEXT");
+  Eina_List* l;
+  Eo* obj;
+
+  EINA_LIST_FOREACH(old_objects, l, obj)
+  {
+    const char* type = evas_object_type_get(obj);
+    if (type && strcmp(type, "text") == 0)
+    {
+      efl_canvas_object_clipper_set(obj, NULL);
+      efl_gfx_entity_visible_set(obj, EINA_FALSE);
+      pool = eina_list_append(pool, obj);
+    }
+  }
+  EINA_LIST_FREE(old_objects, obj)
+  {
+    const char* type = evas_object_type_get(obj);
+    if (!type || strcmp(type, "text") != 0)
+      efl_del(obj);
+  }
+
+  iupAttribSet(ih, "_IUP_EFL_FRAME_OBJECTS", NULL);
+  iupAttribSet(ih, "_IUP_EFL_POOL_TEXT", (char*)pool);
+}
+
+void iupeflDrawReleaseFrame(Ihandle* ih)
+{
+  Ecore_Evas* ee = (Ecore_Evas*)iupAttribGet(ih, "_IUP_EFL_FRAME_EE");
+  Eina_List* objects = (Eina_List*)iupAttribGet(ih, "_IUP_EFL_FRAME_OBJECTS");
+  Eina_List* pool = (Eina_List*)iupAttribGet(ih, "_IUP_EFL_POOL_TEXT");
+
+  if (objects)
+    eina_list_free(objects);
+  if (pool)
+    eina_list_free(pool);
+  if (ee)
+    ecore_evas_free(ee);
+
+  iupAttribSet(ih, "_IUP_EFL_FRAME_OBJECTS", NULL);
+  iupAttribSet(ih, "_IUP_EFL_POOL_TEXT", NULL);
+  iupAttribSet(ih, "_IUP_EFL_FRAME_EE", NULL);
+}
+
 IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
 {
   IdrawCanvas* dc = calloc(1, sizeof(IdrawCanvas));
   Eo* vg;
   Eina_Size2D size;
+  Ecore_Evas* ee;
 
   dc->ih = ih;
 
@@ -148,14 +195,32 @@ IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
   if (dc->w < 1) dc->w = 1;
   if (dc->h < 1) dc->h = 1;
 
-  dc->frame_ee = ecore_evas_buffer_new(dc->w, dc->h);
-  if (!dc->frame_ee)
+  ee = (Ecore_Evas*)iupAttribGet(ih, "_IUP_EFL_FRAME_EE");
+  if (ee && (iupAttribGetInt(ih, "_IUP_EFL_FRAME_EE_W") != dc->w ||
+             iupAttribGetInt(ih, "_IUP_EFL_FRAME_EE_H") != dc->h))
   {
-    free(dc);
-    return NULL;
+    iupeflDrawReleaseFrame(ih);
+    ee = NULL;
   }
-  ecore_evas_alpha_set(dc->frame_ee, EINA_TRUE);
-  dc->frame_evas = ecore_evas_get(dc->frame_ee);
+
+  if (!ee)
+  {
+    ee = ecore_evas_buffer_new(dc->w, dc->h);
+    if (!ee)
+    {
+      free(dc);
+      return NULL;
+    }
+    ecore_evas_alpha_set(ee, EINA_TRUE);
+    iupAttribSet(ih, "_IUP_EFL_FRAME_EE", (char*)ee);
+    iupAttribSetInt(ih, "_IUP_EFL_FRAME_EE_W", dc->w);
+    iupAttribSetInt(ih, "_IUP_EFL_FRAME_EE_H", dc->h);
+  }
+  else
+    iDrawRecycleFrame(ih);
+
+  dc->frame_ee = ee;
+  dc->frame_evas = ecore_evas_get(ee);
 
   dc->clip_x1 = 0;
   dc->clip_y1 = 0;
@@ -174,11 +239,7 @@ IUP_SDK_API void iupdrvDrawKillCanvas(IdrawCanvas* dc)
   if (dc->shapes)
     eina_list_free(dc->shapes);
 
-  if (dc->frame_objects)
-    eina_list_free(dc->frame_objects);
-
-  if (dc->frame_ee)
-    ecore_evas_free(dc->frame_ee);
+  iupAttribSet(dc->ih, "_IUP_EFL_FRAME_OBJECTS", (char*)dc->frame_objects);
 
   free(dc);
 }
@@ -200,7 +261,6 @@ IUP_SDK_API void iupdrvDrawUpdateSize(IdrawCanvas* dc)
 IUP_SDK_API void iupdrvDrawFlush(IdrawCanvas* dc)
 {
   const void* src;
-  unsigned int* pixels;
   size_t bytes;
   void* dst;
 
@@ -221,19 +281,6 @@ IUP_SDK_API void iupdrvDrawFlush(IdrawCanvas* dc)
     evas_object_image_data_update_add(dc->vg, 0, 0, dc->w, dc->h);
   }
 
-  /* keep the frame for iupdrvCanvasGetImageData, which has no IdrawCanvas to render from */
-  pixels = (unsigned int*)malloc(bytes);
-  if (pixels)
-  {
-    unsigned char* old_buffer = (unsigned char*)iupAttribGet(dc->ih, "_IUP_EFL_CANVAS_BUFFER");
-    if (old_buffer)
-      free(old_buffer);
-
-    memcpy(pixels, src, bytes);
-    iupAttribSet(dc->ih, "_IUP_EFL_CANVAS_BUFFER", (char*)pixels);
-    iupAttribSetInt(dc->ih, "_IUP_EFL_CANVAS_BUFFER_W", dc->w);
-    iupAttribSetInt(dc->ih, "_IUP_EFL_CANVAS_BUFFER_H", dc->h);
-  }
 }
 
 IUP_SDK_API void iupdrvDrawGetSize(IdrawCanvas* dc, int *w, int *h)
@@ -675,7 +722,16 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
   {
     Eina_Rect geom;
 
-    text_obj = evas_object_text_add(dc->frame_evas);
+    Eina_List* pool = (Eina_List*)iupAttribGet(dc->ih, "_IUP_EFL_POOL_TEXT");
+    if (pool)
+    {
+      text_obj = (Eo*)eina_list_data_get(pool);
+      pool = eina_list_remove_list(pool, pool);
+      iupAttribSet(dc->ih, "_IUP_EFL_POOL_TEXT", (char*)pool);
+      evas_object_raise(text_obj);
+    }
+    else
+      text_obj = evas_object_text_add(dc->frame_evas);
     evas_object_text_font_set(text_obj, font_with_style, fontsize);
     evas_object_text_text_set(text_obj, text);
     efl_gfx_color_set(text_obj, r, g, b, a);
@@ -1116,18 +1172,24 @@ IUP_SDK_API int iupdrvDrawGetImageData(IdrawCanvas* dc, unsigned char* data)
 
 IUP_SDK_API int iupdrvCanvasGetImageData(Ihandle* ih, unsigned char* data, int w, int h)
 {
-  unsigned int* buffer = (unsigned int*)iupAttribGet(ih, "_IUP_EFL_CANVAS_BUFFER");
+  Ecore_Evas* ee = (Ecore_Evas*)iupAttribGet(ih, "_IUP_EFL_FRAME_EE");
+  const void* src;
   int buf_w, buf_h, copy_w, copy_h;
 
-  if (!buffer)
+  if (!ee)
     return 0;
 
-  buf_w = iupAttribGetInt(ih, "_IUP_EFL_CANVAS_BUFFER_W");
-  buf_h = iupAttribGetInt(ih, "_IUP_EFL_CANVAS_BUFFER_H");
+  ecore_evas_manual_render(ee);
+  src = ecore_evas_buffer_pixels_get(ee);
+  if (!src)
+    return 0;
+
+  buf_w = iupAttribGetInt(ih, "_IUP_EFL_FRAME_EE_W");
+  buf_h = iupAttribGetInt(ih, "_IUP_EFL_FRAME_EE_H");
 
   copy_w = (w < buf_w) ? w : buf_w;
   copy_h = (h < buf_h) ? h : buf_h;
 
-  iDrawUnpackFrame(buffer, buf_w, data, w, copy_w, copy_h);
+  iDrawUnpackFrame((const unsigned int*)src, buf_w, data, w, copy_w, copy_h);
   return 1;
 }

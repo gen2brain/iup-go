@@ -4,6 +4,8 @@
  * See Copyright Notice in "iup.h"
  */
 
+#define EFL_UI_WIDGET_PROTECTED 1
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -697,7 +699,24 @@ IUP_SDK_API int iupdrvIsVisible(Ihandle* ih)
 
 IUP_SDK_API void iupdrvReparent(Ihandle* ih)
 {
-  (void)ih;
+  Eo* new_parent = (Eo*)iupChildTreeGetNativeParentHandle(ih);
+  Eo* widget = (Eo*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
+
+  if (!widget)
+    widget = iupeflGetWidget(ih);
+
+  if (!widget || !new_parent || efl_parent_get(widget) == new_parent)
+    return;
+
+  {
+    Eina_Bool visible = efl_gfx_entity_visible_get(widget);
+
+    if (efl_isa(widget, EFL_UI_WIDGET_CLASS) && efl_isa(new_parent, EFL_UI_WIDGET_CLASS))
+      efl_ui_widget_sub_object_add(new_parent, widget);
+    efl_parent_set(widget, new_parent);
+    evas_object_raise(widget);
+    efl_gfx_entity_visible_set(widget, visible);
+  }
 }
 
 IUP_DRV_API int iupeflIsInsideTabs(Ihandle* ih)
