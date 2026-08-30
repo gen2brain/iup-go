@@ -1209,6 +1209,12 @@ static int qtTabsMapMethod(Ihandle* ih)
   tabs->setTabsClosable(false); /* We handle close buttons manually for per-tab control */
   tabs->setMovable(false); /* Will be set by ALLOWREORDER attribute */
 
+  if (!iupAttribGetBoolean(ih, "CANFOCUS"))
+  {
+    iupqtSetCanFocus(tabs, 0);
+    iupqtSetCanFocus(tabs->tabBar(), 0);
+  }
+
   /* Set tab position */
   qtTabsUpdateTabType(ih);
 
