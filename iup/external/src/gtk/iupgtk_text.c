@@ -1167,7 +1167,7 @@ static char* gtkTextGetSelectedTextAttrib(Ihandle* ih)
     GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
     if (gtk_text_buffer_get_selection_bounds(buffer, &start_iter, &end_iter))
     {
-      char* buf_text = gtk_text_buffer_get_text(buffer, &start_iter, &end_iter, TRUE);
+      char* buf_text = gtk_text_buffer_get_slice(buffer, &start_iter, &end_iter, TRUE);
       char* value = iupStrReturnStr(iupgtkStrConvertFromSystem(buf_text));
       g_free(buf_text);
       return value;
@@ -1363,7 +1363,7 @@ static char* gtkTextGetValueAttrib(Ihandle* ih)
     gtk_text_buffer_get_start_iter(buffer, &start_iter);
     gtk_text_buffer_get_end_iter(buffer, &end_iter);
     {
-      char* buf_text = gtk_text_buffer_get_text(buffer, &start_iter, &end_iter, TRUE);
+      char* buf_text = gtk_text_buffer_get_slice(buffer, &start_iter, &end_iter, TRUE);
       value = iupStrReturnStr(iupgtkStrConvertFromSystem(buf_text));
       g_free(buf_text);
     }
@@ -1390,7 +1390,7 @@ static char* gtkTextGetLineValueAttrib(Ihandle* ih)
     gtk_text_buffer_get_iter_at_line(buffer, &start_iter, lin);
     gtk_text_buffer_get_iter_at_line(buffer, &end_iter, lin);
     gtk_text_iter_forward_to_line_end(&end_iter);
-    buf_text = gtk_text_buffer_get_text(buffer, &start_iter, &end_iter, TRUE);
+    buf_text = gtk_text_buffer_get_slice(buffer, &start_iter, &end_iter, TRUE);
     value = iupStrReturnStr(iupgtkStrConvertFromSystem(buf_text));
     g_free(buf_text);
     return value;
@@ -1930,7 +1930,6 @@ IUP_SDK_API int iupdrvTextGetFormatTags(Ihandle* ih, Ihandle* bulk_tag)
 {
   GtkTextBuffer* buffer;
   GtkTextIter iter, end_iter;
-  int pixbufs = 0;
 
   if (!ih->data->is_multiline || !ih->handle)
     return 0;
@@ -1941,25 +1940,17 @@ IUP_SDK_API int iupdrvTextGetFormatTags(Ihandle* ih, Ihandle* bulk_tag)
 
   while (gtk_text_iter_compare(&iter, &end_iter) < 0)
   {
-    GtkTextIter next_iter = iter, scan;
+    GtkTextIter next_iter = iter;
     GSList *tags, *item;
     Ihandle* formattag;
-    int start, end, span_pixbufs = 0;
+    int start, end;
 
     if (!gtk_text_iter_forward_to_tag_toggle(&next_iter, NULL) ||
         gtk_text_iter_compare(&next_iter, &end_iter) > 0)
       next_iter = end_iter;
 
-    /* buffer offsets count an embedded image, the VALUE string does not */
-    for (scan = iter; gtk_text_iter_compare(&scan, &next_iter) < 0; gtk_text_iter_forward_char(&scan))
-    {
-      if (gtk_text_iter_get_pixbuf(&scan))
-        span_pixbufs++;
-    }
-
-    start = gtk_text_iter_get_offset(&iter) - pixbufs;
-    end = gtk_text_iter_get_offset(&next_iter) - pixbufs - span_pixbufs;
-    pixbufs += span_pixbufs;
+    start = gtk_text_iter_get_offset(&iter);
+    end = gtk_text_iter_get_offset(&next_iter);
     if (end <= start)
       break;
 
