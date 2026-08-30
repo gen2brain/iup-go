@@ -433,9 +433,73 @@ IUP_SDK_API int iupdrvRecentMenuUpdate(Ihandle* menu, const char** filenames, in
 
 /*******************************************************************************************/
 
+static int motMenuAddCreateArgs(Ihandle* ih, Arg* args, int num_args, int has_accel, XmString* xm_label, XmString* xm_accel)
+{
+  char c;
+  char *str, *label;
+  int str_owned = 0;
+  XmFontList fontlist;
+  char* value = iupAttribGet(ih, "TITLE");
+
+  *xm_label = NULL;
+  *xm_accel = NULL;
+
+  if (!value)
+    str = "     ";
+  else
+  {
+    str = iupMenuProcessTitle(ih, value);
+    if (str != value)
+      str_owned = 1;
+  }
+
+  if (has_accel)
+  {
+    char *p = strchr(str, '\t');
+    if (p)
+    {
+      int offset = (int)(p-str);
+      char* new_value = iupStrDup(str);
+      new_value[offset] = 0;
+      *xm_accel = iupmotStringCreate(new_value + offset + 1);
+      iupMOT_SETARG(args, num_args, XmNacceleratorText, *xm_accel);
+      if (str_owned) free(str);
+      str = new_value;
+      str_owned = 1;
+    }
+  }
+
+  label = iupStrProcessMnemonic(str, &c, -1);
+  if (label != str)
+    iupMOT_SETARG(args, num_args, XmNmnemonic, iupmotKeyCharToKeySym(c));
+
+  *xm_label = iupmotStringCreate(label);
+  iupMOT_SETARG(args, num_args, XmNlabelString, *xm_label);
+
+  if (label != str) free(label);
+  if (str_owned) free(str);
+
+  fontlist = (XmFontList)iupmotGetFontListAttrib(ih);
+  if (fontlist)
+  {
+    iupMOT_SETARG(args, num_args, XmNrenderTable, fontlist);
+    iupMOT_SETARG(args, num_args, XmNfontList, fontlist);
+    iupAttribSet(ih, "_IUPMOT_FONTLIST", (char*)fontlist);
+  }
+
+  return num_args;
+}
+
+static void motMenuFreeCreateArgs(XmString xm_label, XmString xm_accel)
+{
+  if (xm_label) XmStringFree(xm_label);
+  if (xm_accel) XmStringFree(xm_accel);
+}
+
 static int motMenuItemMapMethod(Ihandle* ih)
 {
   int pos;
+  XmString xm_label, xm_accel;
 
   if (!ih->parent)
     return IUP_ERROR;
@@ -445,13 +509,21 @@ static int motMenuItemMapMethod(Ihandle* ih)
   /* Menu bar can contain only CascadeButtons */
   if (iupMenuIsMenuBar(ih->parent))
   {
-    ih->handle = XtVaCreateManagedWidget(
+    int num_args = 0;
+    Arg args[10];
+
+    iupMOT_SETARG(args, num_args, XmNpositionIndex, pos);
+    iupMOT_SETARG(args, num_args, XmNtraversalOn, False);
+    num_args = motMenuAddCreateArgs(ih, args, num_args, 0, &xm_label, &xm_accel);
+
+    ih->handle = XtCreateManagedWidget(
                    iupMenuGetChildIdStr(ih),
                    xmCascadeButtonWidgetClass,
                    ih->parent->handle,
-                   XmNpositionIndex, pos,
-                   XmNtraversalOn, False,
-                   NULL);
+                   args,
+                   num_args);
+
+    motMenuFreeCreateArgs(xm_label, xm_accel);
 
     XtAddCallback(ih->handle, XmNactivateCallback, (XtCallbackProc)motMenuItemActivateCallback, (XtPointer)ih);
     XtAddCallback(ih->handle, XmNcascadingCallback, (XtCallbackProc)motMenuItemArmCallback, (XtPointer)ih);
@@ -459,10 +531,11 @@ static int motMenuItemMapMethod(Ihandle* ih)
   else
   {
     int num_args = 0;
-    Arg args[10];
+    Arg args[16];
 
     iupMOT_SETARG(args, num_args, XmNpositionIndex, pos);
     iupMOT_SETARG(args, num_args, XmNtraversalOn, False);
+    num_args = motMenuAddCreateArgs(ih, args, num_args, 1, &xm_label, &xm_accel);
 
     if (iupAttribGetBoolean(ih->parent, "RADIO"))
     {
@@ -487,6 +560,8 @@ static int motMenuItemMapMethod(Ihandle* ih)
                    args,
                    num_args);
 
+    motMenuFreeCreateArgs(xm_label, xm_accel);
+
     XtAddCallback(ih->handle, XmNvalueChangedCallback, (XtCallbackProc)motMenuItemActivateCallback, (XtPointer)ih);
     XtAddCallback(ih->handle, XmNarmCallback, (XtCallbackProc)motMenuItemArmCallback, (XtPointer)ih);
   }
@@ -509,19 +584,27 @@ static int motMenuItemMapMethod(Ihandle* ih)
 static int motSubmenuMapMethod(Ihandle* ih)
 {
   int pos;
+  int num_args = 0;
+  Arg args[10];
+  XmString xm_label, xm_accel;
 
   if (!ih->parent)
     return IUP_ERROR;
 
   pos = IupGetChildPos(ih->parent, ih);
 
-  ih->handle = XtVaCreateManagedWidget(
+  iupMOT_SETARG(args, num_args, XmNpositionIndex, pos);
+  iupMOT_SETARG(args, num_args, XmNtraversalOn, False);
+  num_args = motMenuAddCreateArgs(ih, args, num_args, 0, &xm_label, &xm_accel);
+
+  ih->handle = XtCreateManagedWidget(
                  iupMenuGetChildIdStr(ih),
                  xmCascadeButtonWidgetClass,
                  ih->parent->handle,
-                 XmNpositionIndex, pos,
-                 XmNtraversalOn, False,
-                 NULL);
+                 args,
+                 num_args);
+
+  motMenuFreeCreateArgs(xm_label, xm_accel);
 
   if (!ih->handle)
     return IUP_ERROR;

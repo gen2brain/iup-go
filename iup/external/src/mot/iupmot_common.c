@@ -132,6 +132,8 @@ IUP_SDK_API void iupdrvBaseUnMapMethod(Ihandle* ih)
 
   XtUnrealizeWidget(widget); /* To match the call to XtRealizeWidget */
   XtDestroyWidget(widget);   /* To match the call to XtCreateManagedWidget */
+
+  iupAttribSet(ih, "_IUPMOT_FONTLIST", NULL);
 }
 
 IUP_SDK_API void iupdrvPostRedraw(Ihandle *ih)
@@ -250,16 +252,27 @@ IUP_SDK_API void iupdrvSetVisible(Ihandle* ih, int visible)
   if (!widget) widget = ih->handle;
 
   if (visible)
+  {
     XtMapWidget(widget);
+    iupAttribSet(ih, "_IUPMOT_UNMAPPED", NULL);
+  }
   else
+  {
     XtUnmapWidget(widget);
+    iupAttribSet(ih, "_IUPMOT_UNMAPPED", "1");
+  }
 }
 
 IUP_SDK_API int iupdrvIsVisible(Ihandle* ih)
 {
-  XWindowAttributes wa;
-  XGetWindowAttributes(iupmot_display, XtWindow(ih->handle), &wa);
-  return (wa.map_state == IsViewable);
+  if (XtIsShell(ih->handle))
+  {
+    XWindowAttributes wa;
+    XGetWindowAttributes(iupmot_display, XtWindow(ih->handle), &wa);
+    return (wa.map_state == IsViewable);
+  }
+
+  return XtIsManaged(ih->handle) && !iupAttribGet(ih, "_IUPMOT_UNMAPPED");
 }
 
 IUP_SDK_API int iupdrvIsActive(Ihandle* ih)

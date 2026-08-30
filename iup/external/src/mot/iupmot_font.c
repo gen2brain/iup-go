@@ -548,10 +548,12 @@ IUP_SDK_API int iupdrvSetFontAttrib(Ihandle* ih, const char* value)
 
   /* FONT attribute must be able to be set before mapping,
     so the font is enabled for size calculation. */
-  if (ih->handle && (ih->iclass->nativetype != IUP_TYPEVOID))
+  if (ih->handle && (ih->iclass->nativetype != IUP_TYPEVOID) &&
+      (XmFontList)iupAttribGet(ih, "_IUPMOT_FONTLIST") != motfont->fontlist)
   {
     XtVaSetValues(ih->handle, XmNrenderTable, motfont->fontlist, NULL);
     XtVaSetValues(ih->handle, XmNfontList, motfont->fontlist, NULL);
+    iupAttribSet(ih, "_IUPMOT_FONTLIST", (char*)motfont->fontlist);
   }
 
   return 1;
