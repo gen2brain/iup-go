@@ -1663,6 +1663,17 @@
             } else if (t.indexOf('delete') === 0) {
               if (!iupDeleteRange(v, s, en, t)) return;
               del = t;
+            } else if (t === 'historyUndo' || t === 'historyRedo') {
+              if (el.__iupEditPending) { e.preventDefault(); return; }
+              var hv = v;
+              setTimeout(function () {
+                var after = el.value;
+                if (after === hv || el.__iupEditPending) return;
+                el.__iupEditPending = 1; el.__iupEditVC = 1;
+                Dt('iupwasmDispatchTextEdit', ['number', 'string', 'string', 'number', 'number', 'number', 'number'],
+                   [wid, hv, after, 0, hv.length, 0, 0]);
+              }, 0);
+              return;
             } else return;
             var kseq = globalThis.__iupKeyPend || 0; globalThis.__iupKeyPend = 0;
             // while one edit is being arbitrated the next ones wait, so a rejection can never
