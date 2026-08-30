@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/gen2brain/iup-go/iup"
 )
 
@@ -12,6 +14,7 @@ func main() {
 
 	cv := iup.Canvas().SetAttribute("RASTERSIZE", "300x300")
 	cv.SetCallback("ACTION", iup.ActionFunc(actionCb))
+	cv.SetCallback("TEXTINPUT_CB", iup.TextInputFunc(textInputCb))
 
 	dlg := iup.Dialog(
 		iup.Frame(cv),
@@ -19,6 +22,12 @@ func main() {
 
 	iup.Show(dlg)
 	iup.MainLoop()
+}
+
+// textInputCb reports committed text: a plain character, a dead-key composition or an IME commit.
+func textInputCb(ih iup.Ihandle, text string) int {
+	fmt.Printf("TEXTINPUT_CB(%s)\n", text)
+	return iup.DEFAULT
 }
 
 // actionCb is the callback function that does the drawing on the canvas.
