@@ -167,8 +167,10 @@ extern "C" IUP_SDK_API void iupdrvReparent(Ihandle* ih)
 
     if (old_parent != new_parent)
     {
+      bool hidden = widget->isHidden();
       widget->setParent(new_parent);
-      widget->show();
+      if (!hidden)
+        widget->show();
     }
   }
 }
