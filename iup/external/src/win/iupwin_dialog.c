@@ -1545,7 +1545,14 @@ static int winDialogSetHideTitleBarAttrib(Ihandle *ih, const char *value)
   else
     style |= WS_CAPTION;
   SetWindowLongPtr(ih->handle, GWL_STYLE, style);
+
+  if (!ih->currentwidth)
+    ih->data->ignore_resize = 1;
+
   SetWindowPos(ih->handle, NULL, 0, 0, 0, 0, SWP_NOZORDER | SWP_NOMOVE | SWP_NOSIZE | SWP_FRAMECHANGED);
+
+  ih->data->ignore_resize = 0;
+
   return 1;
 }
 
