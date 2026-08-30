@@ -36,6 +36,66 @@ extern "C" {
 
 typedef std::vector<Fl_Multi_Label*> FltkMenuLabelList;
 
+static void fltkMenuTabLabelDraw(const Fl_Label* o, int X, int Y, int W, int H, Fl_Align a)
+{
+  const char* tab = strchr(o->value, '\t');
+
+  fl_font(o->font, o->size);
+  fl_color((Fl_Color)o->color);
+
+  if (!tab)
+  {
+    fl_draw(o->value, X, Y, W, H, a);
+    return;
+  }
+
+  char* left = (char*)malloc(tab - o->value + 1);
+  memcpy(left, o->value, tab - o->value);
+  left[tab - o->value] = 0;
+
+  fl_draw(left, X, Y, W, H, FL_ALIGN_LEFT);
+  fl_draw(tab + 1, X, Y, W, H, FL_ALIGN_RIGHT);
+
+  free(left);
+}
+
+static void fltkMenuTabLabelMeasure(const Fl_Label* o, int& W, int& H)
+{
+  const char* tab = strchr(o->value, '\t');
+  int w1 = 0, h1 = 0, w2 = 0, h2 = 0;
+
+  fl_font(o->font, o->size);
+
+  if (!tab)
+  {
+    fl_measure(o->value, w1, h1);
+    W = w1;
+    H = h1;
+    return;
+  }
+
+  char* left = (char*)malloc(tab - o->value + 1);
+  memcpy(left, o->value, tab - o->value);
+  left[tab - o->value] = 0;
+
+  fl_measure(left, w1, h1);
+  fl_measure(tab + 1, w2, h2);
+  free(left);
+
+  W = w1 + 24 + w2;
+  H = h1 > h2 ? h1 : h2;
+}
+
+static void fltkMenuTabLabelRegister(void)
+{
+  static int registered = 0;
+  if (!registered)
+  {
+    Fl::set_labeltype(FL_FREE_LABELTYPE, fltkMenuTabLabelDraw, fltkMenuTabLabelMeasure);
+    registered = 1;
+  }
+}
+
 
 /* Escape `/` (FLTK submenu separator); the `\t` shortcut tail is drawn right-aligned by fl_draw_shortcut. */
 static char* fltkMenuBuildLabel(const char* title)
@@ -117,11 +177,21 @@ static void fltkMenuApplyImage(Fl_Menu_* menuwidget, int item_idx, Ihandle* ih, 
   Fl_Multi_Label* ml = new Fl_Multi_Label;
   ml->typea = FL_IMAGE_LABEL;
   ml->labela = (const char*)image;
-  ml->typeb = FL_NORMAL_LABEL;
+  ml->typeb = item->labeltype();
   ml->labelb = item->label();
   item->multi_label(ml);
 
   labels->push_back(ml);
+}
+
+static void fltkMenuApplyTabLabel(Fl_Menu_* menuwidget, int item_idx, const char* title)
+{
+  if (item_idx < 0 || !title || !strchr(title, '\t'))
+    return;
+
+  Fl_Menu_Item* item = (Fl_Menu_Item*)&menuwidget->menu()[item_idx];
+  free((void*)item->text);
+  item->label(FL_FREE_LABELTYPE, strdup(title));
 }
 
 static FltkMenuLabelList* fltkMenuLabelsAttach(Ihandle* ih_menu)
@@ -167,6 +237,9 @@ static void fltkMenuAddItems(Fl_Menu_* menuwidget, Ihandle* ih_menu, const char*
   {
     const char* class_name = child->iclass->name;
 
+    if (!child->handle)
+      continue;
+
     if (iupStrEqual(class_name, "submenu"))
     {
       char* title = iupAttribGet(child, "TITLE");
@@ -195,7 +268,13 @@ static void fltkMenuAddItems(Fl_Menu_* menuwidget, Ihandle* ih_menu, const char*
     else if (iupStrEqual(class_name, "menuitem"))
     {
       char* title = iupAttribGet(child, "TITLE");
-      char* label = fltkMenuBuildLabel(title);
+      char* left = title ? iupStrDup(title) : NULL;
+      char* tab = left ? strchr(left, '\t') : NULL;
+      if (tab)
+        *tab = 0;
+      char* label = fltkMenuBuildLabel(left);
+      if (left)
+        free(left);
 
       char path[512];
       if (path_prefix && *path_prefix)
@@ -226,6 +305,7 @@ static void fltkMenuAddItems(Fl_Menu_* menuwidget, Ihandle* ih_menu, const char*
         flags |= FL_MENU_VALUE;
 
       last_item_idx = menuwidget->add(path, 0, fltkMenuItemActionCb, (void*)child, flags);
+      fltkMenuApplyTabLabel(menuwidget, last_item_idx, title);
       fltkMenuApplyImage(menuwidget, last_item_idx, child, labels);
     }
     else if (iupStrEqual(class_name, "menuseparator"))
@@ -282,6 +362,7 @@ extern "C" IUP_SDK_API int iupdrvMenuPopup(Ihandle* ih, int x, int y)
   Fl_Menu_Button popup(0, 0, 0, 0);
   FltkMenuLabelList labels;
 
+  fltkMenuTabLabelRegister();
   fltkMenuAddItems(&popup, ih, "", &labels);
 
   int ox = Fl::event_x_root() - Fl::event_x();
@@ -316,6 +397,7 @@ static int fltkMenuMapMethod(Ihandle* ih)
   if (iupMenuIsMenuBar(ih))
   {
     int bar_h = iupdrvMenuGetMenuBarSize(ih);
+    fltkMenuTabLabelRegister();
     Fl_Menu_Bar* menubar = new Fl_Menu_Bar(0, 0, 100, bar_h);
     menubar->textsize(FL_NORMAL_SIZE);
     ih->handle = (InativeHandle*)menubar;
@@ -534,6 +616,7 @@ static int fltkMenuItemMapMethod(Ihandle* ih)
 static void fltkMenuItemUnMapMethod(Ihandle* ih)
 {
   ih->handle = NULL;
+  fltkMenuTriggerRebuild(ih);
 }
 
 extern "C" IUP_SDK_API void iupdrvMenuItemInitClass(Iclass* ic)
@@ -575,6 +658,7 @@ static int fltkMenuSeparatorMapMethod(Ihandle* ih)
 static void fltkMenuSeparatorUnMapMethod(Ihandle* ih)
 {
   ih->handle = NULL;
+  fltkMenuTriggerRebuild(ih);
 }
 
 extern "C" IUP_SDK_API void iupdrvMenuSeparatorInitClass(Iclass* ic)
@@ -621,6 +705,7 @@ static int fltkSubmenuMapMethod(Ihandle* ih)
 static void fltkSubmenuUnMapMethod(Ihandle* ih)
 {
   ih->handle = NULL;
+  fltkMenuTriggerRebuild(ih);
 }
 
 extern "C" IUP_SDK_API void iupdrvSubmenuInitClass(Iclass* ic)
