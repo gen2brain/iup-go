@@ -704,14 +704,7 @@ static void eflCanvasUnMapMethod(Ihandle* ih)
     }
   }
 
-  {
-    unsigned char* buffer = (unsigned char*)iupAttribGet(ih, "_IUP_EFL_CANVAS_BUFFER");
-    if (buffer)
-    {
-      free(buffer);
-      iupAttribSet(ih, "_IUP_EFL_CANVAS_BUFFER", NULL);
-    }
-  }
+  iupeflDrawReleaseFrame(ih);
   Eina_List* evas_objects = (Eina_List*)iupAttribGet(ih, "_IUP_EFL_EVAS_OBJECTS");
   Eina_List* vg_images = (Eina_List*)iupAttribGet(ih, "_IUP_EFL_VG_IMAGES");
 
