@@ -15,7 +15,7 @@ func main() {
 	iup.Open()
 	defer iup.Close()
 
-	cv := iup.Canvas().SetAttributes("RASTERSIZE=500x200")
+	cv := iup.Canvas().SetAttributes("RASTERSIZE=600x350")
 	cv.SetCallback("ACTION", iup.ActionFunc(actionCb))
 
 	// Set up a timer to periodically redraw the canvas, creating the animation.
@@ -88,34 +88,25 @@ func actionCb(ih iup.Ihandle) int {
 	frequency1 := 2.5
 	frequency2 := 4.0
 
-	// Calculate points and draw waves segment by segment.
-	var px int
-	var p1y, p2y float64 // Previous y-coordinates for wave 1 and 2
-
-	for x := 0; x < w; x++ {
-		// Calculate current y for wave 1
-		angle1 := (float64(x)/float64(w))*2*math.Pi*frequency1 + tm
-		y1 := midY - math.Sin(angle1)*amplitude1
-
-		// Calculate current y for wave 2
-		angle2 := (float64(x)/float64(w))*2*math.Pi*frequency2 + tm*1.5
-		y2 := midY - math.Cos(angle2)*amplitude2
-
-		if x > 0 {
-			// Draw segment for wave 1 (bright green).
-			ih.SetAttribute("DRAWCOLOR", "50 255 100")
-			iup.DrawLine(ih, px, int(p1y), x, int(y1))
-
-			// Draw segment for wave 2 (light blue).
-			ih.SetAttribute("DRAWCOLOR", "100 150 255")
-			iup.DrawLine(ih, px, int(p2y), x, int(y2))
-		}
-
-		// Update previous points for the next iteration.
-		px = x
-		p1y = y1
-		p2y = y2
-	}
+	// Draw each wave in a single pass, so its color is set once instead of once per segment.
+	drawWave(ih, w, "50 255 100", func(t float64) float64 {
+		return midY - math.Sin(t*2*math.Pi*frequency1+tm)*amplitude1
+	})
+	drawWave(ih, w, "100 150 255", func(t float64) float64 {
+		return midY - math.Cos(t*2*math.Pi*frequency2+tm*1.5)*amplitude2
+	})
 
 	return iup.DEFAULT
+}
+
+// drawWave connects one sample per column into a polyline.
+func drawWave(ih iup.Ihandle, w int, color string, y func(t float64) float64) {
+	ih.SetAttribute("DRAWCOLOR", color)
+
+	prev := y(0)
+	for x := 1; x < w; x++ {
+		cur := y(float64(x) / float64(w))
+		iup.DrawLine(ih, x-1, int(prev), x, int(cur))
+		prev = cur
+	}
 }
