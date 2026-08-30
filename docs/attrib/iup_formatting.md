@@ -116,6 +116,11 @@ Not supported in WinUI.
 
 **FONTSIZE**: the size of the font in pixels or points. Pixel size uses negative values.
 
+**IMAGE**: name of an image to be displayed in place of the selected text. See [IupImage](../elem/iup_image.md).
+Use WIDTH and HEIGHT to set the display size in pixels, both default to the natural size of the image.
+The image occupies a single character position in the VALUE string.
+Not supported in Motif and FLTK.
+
 **ITALIC**: Can be YES or NO. Default NO.
 
 **LANGUAGE** [GTK and EFL Only]: A text with a description of the text language.
