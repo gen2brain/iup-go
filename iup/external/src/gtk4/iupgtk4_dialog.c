@@ -751,26 +751,40 @@ static void gtk4DialogLayoutUpdateMethod(Ihandle* ih)
   if (width <= 0) width = 1;
   if (height <= 0) height = 1;
 
-  gtk_window_set_default_size((GtkWindow*)ih->handle, width, height);
-
-  if (!iupAttribGetBoolean(ih, "RESIZE"))
+  if (!gtk_window_is_maximized((GtkWindow*)ih->handle)
+      && !gtk_window_is_fullscreen((GtkWindow*)ih->handle)
+      && (width != iupAttribGetInt(ih, "_IUPGTK4_LAST_DEFW")
+          || height != iupAttribGetInt(ih, "_IUPGTK4_LAST_DEFH")))
   {
-    int client_width, client_height;
-
-    client_width = ih->currentwidth - 2 * border;
-    client_height = ih->currentheight - caption;
-
-    if (client_width <= 0) client_width = 1;
-    if (client_height <= 0) client_height = 1;
-
-    gtk_widget_set_size_request(ih->handle, client_width, client_height);
+    gtk_window_set_default_size((GtkWindow*)ih->handle, width, height);
+    iupAttribSetInt(ih, "_IUPGTK4_LAST_DEFW", width);
+    iupAttribSetInt(ih, "_IUPGTK4_LAST_DEFH", height);
   }
-  else
+
   {
-    /* GTK4 follows default_width and a content change can collapse it; floor a natural-sized dimension at its natural size */
-    int min_w = (ih->userwidth <= 0 && ih->naturalwidth > 0) ? ih->naturalwidth - 2 * border : -1;
-    int min_h = (ih->userheight <= 0 && ih->naturalheight > 0) ? ih->naturalheight - caption : -1;
-    gtk_widget_set_size_request(ih->handle, min_w, min_h);
+    int min_w, min_h;
+
+    if (!iupAttribGetBoolean(ih, "RESIZE"))
+    {
+      min_w = ih->currentwidth - 2 * border;
+      min_h = ih->currentheight - caption;
+
+      if (min_w <= 0) min_w = 1;
+      if (min_h <= 0) min_h = 1;
+    }
+    else
+    {
+      min_w = (ih->userwidth <= 0 && ih->naturalwidth > 0) ? ih->naturalwidth - 2 * border : -1;
+      min_h = (ih->userheight <= 0 && ih->naturalheight > 0) ? ih->naturalheight - caption : -1;
+    }
+
+    if (min_w != iupAttribGetInt(ih, "_IUPGTK4_LAST_MINW")
+        || min_h != iupAttribGetInt(ih, "_IUPGTK4_LAST_MINH"))
+    {
+      gtk_widget_set_size_request(ih->handle, min_w, min_h);
+      iupAttribSetInt(ih, "_IUPGTK4_LAST_MINW", min_w);
+      iupAttribSetInt(ih, "_IUPGTK4_LAST_MINH", min_h);
+    }
   }
 
   ih->data->ignore_resize = 0;
