@@ -386,6 +386,8 @@ IUP_DRV_API void iupeflBaseRemoveCallbacks(Ihandle* ih, Eo* widget)
   efl_event_callback_del(widget, EFL_EVENT_KEY_DOWN, iupeflKeyDownEvent, ih);
   efl_event_callback_del(widget, EFL_EVENT_KEY_UP, iupeflKeyUpEvent, ih);
 
+  iupeflKeyImfDestroy(ih);
+
   if (efl_isa(widget, EFL_UI_WIDGET_CLASS))
     efl_event_callback_del(widget, EFL_UI_FOCUS_OBJECT_EVENT_FOCUS_CHANGED, iupeflFocusChangedEvent, ih);
 }
