@@ -803,7 +803,7 @@ static char* gtk4TextGetValueAttrib(Ihandle* ih)
     GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
     gtk_text_buffer_get_start_iter(buffer, &start_iter);
     gtk_text_buffer_get_end_iter(buffer, &end_iter);
-    buf_text = gtk_text_buffer_get_text(buffer, &start_iter, &end_iter, TRUE);
+    buf_text = gtk_text_buffer_get_slice(buffer, &start_iter, &end_iter, TRUE);
     value = iupStrReturnStr(iupgtk4StrConvertFromSystem(buf_text));
     g_free(buf_text);
   }
@@ -829,7 +829,7 @@ static char* gtk4TextGetLineValueAttrib(Ihandle* ih)
     gtk_text_buffer_get_iter_at_line(buffer, &start_iter, lin);
     gtk_text_buffer_get_iter_at_line(buffer, &end_iter, lin);
     gtk_text_iter_forward_to_line_end(&end_iter);
-    buf_text = gtk_text_buffer_get_text(buffer, &start_iter, &end_iter, TRUE);
+    buf_text = gtk_text_buffer_get_slice(buffer, &start_iter, &end_iter, TRUE);
     value = iupStrReturnStr(iupgtk4StrConvertFromSystem(buf_text));
     g_free(buf_text);
     return value;
@@ -1140,7 +1140,7 @@ static char* gtk4TextGetSelectedTextAttrib(Ihandle* ih)
 
     if (gtk_text_buffer_get_selection_bounds(buffer, &start_iter, &end_iter))
     {
-      char* buf_text = gtk_text_buffer_get_text(buffer, &start_iter, &end_iter, TRUE);
+      char* buf_text = gtk_text_buffer_get_slice(buffer, &start_iter, &end_iter, TRUE);
       char* value = iupStrReturnStr(iupgtk4StrConvertFromSystem(buf_text));
       g_free(buf_text);
       return value;
