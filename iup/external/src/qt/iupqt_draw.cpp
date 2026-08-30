@@ -820,8 +820,8 @@ extern "C" IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, in
   QColor qcolor;
   qtDrawGetColor(color, qcolor);
 
-  /* Set font */
-  QFont* qfont = iupqtGetQFont(font);
+  int ascent = 0, charheight = 0;
+  QFont* qfont = iupqtGetQFontLine(font, &ascent, &charheight);
   if (qfont)
     dc->painter->setFont(*qfont);
 
@@ -830,6 +830,23 @@ extern "C" IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, in
 
   /* Convert text to QString */
   QString qtext = QString::fromUtf8(text, len > 0 ? len : -1);
+
+  if (!(flags & (IUP_DRAW_WRAP | IUP_DRAW_ELLIPSIS | IUP_DRAW_CENTER | IUP_DRAW_RIGHT))
+      && text_orientation == 0.0 && qfont && h <= charheight
+      && !qtext.contains(QLatin1Char('\n')))
+  {
+    if (flags & IUP_DRAW_CLIP)
+    {
+      dc->painter->save();
+      dc->painter->setClipRect(x, y, w, h);
+    }
+
+    dc->painter->drawText(QPointF(x, y + ascent), qtext);
+
+    if (flags & IUP_DRAW_CLIP)
+      dc->painter->restore();
+    return;
+  }
 
   /* Build alignment flags */
   int align_flags = 0;

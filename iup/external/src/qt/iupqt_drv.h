@@ -131,6 +131,7 @@ IUP_DRV_API void iupqtButtonKeySetStatus(int modifiers, int buttons, int button,
  ****************************************************************************/
 
 IUP_DRV_API QFont* iupqtGetQFont(const char* value);
+IUP_DRV_API QFont* iupqtGetQFontLine(const char* value, int *ascent, int *charheight);
 IUP_DRV_API char* iupqtGetQFontAttrib(Ihandle *ih);
 IUP_DRV_API void iupqtUpdateWidgetFont(Ihandle *ih, QWidget* widget);
 
