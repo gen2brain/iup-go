@@ -225,6 +225,62 @@ static int gtk4MenuSectionIndex(GMenuModel* outer, GMenu* section)
   return -1;
 }
 
+static GMenuItem* gtk4MenuItemBuildEntry(Ihandle* menu, Ihandle* ih, GSimpleActionGroup* action_group, const char* new_title);
+static void gtk4MenuItemAttachCustom(Ihandle* ih);
+
+static int gtk4MenuRootAlive(Ihandle* ih)
+{
+  Ihandle* root = gtk4MenuGetRootMenu(ih->parent ? ih->parent : ih);
+  return root->handle != NULL;
+}
+
+static void gtk4MenuMoveEntries(Ihandle* menu, GMenu* from, int from_pos, GMenu* to)
+{
+  GSimpleActionGroup* action_group = gtk4MenuGetActionGroup(menu);
+  int n = g_menu_model_get_n_items(G_MENU_MODEL(from));
+
+  while (n > from_pos)
+  {
+    GMenuItem* moved = NULL;
+    const char* id = NULL;
+    GVariant* custom = g_menu_model_get_item_attribute_value(G_MENU_MODEL(from), from_pos, "custom", G_VARIANT_TYPE_STRING);
+
+    if (custom)
+    {
+      id = g_variant_get_string(custom, NULL);
+      if (action_group)
+      {
+        Ihandle* child;
+        for (child = menu->firstchild; child; child = child->brother)
+        {
+          if (iupStrEqual(iupAttribGet(child, "_IUPGTK4_CUSTOM_ID"), id))
+          {
+            moved = gtk4MenuItemBuildEntry(menu, child, action_group, NULL);
+            if (moved)
+            {
+              g_menu_append_item(to, moved);
+              g_object_unref(moved);
+              gtk4MenuItemAttachCustom(child);
+            }
+            break;
+          }
+        }
+      }
+      g_variant_unref(custom);
+    }
+
+    if (!moved)
+    {
+      moved = g_menu_item_new_from_model(G_MENU_MODEL(from), from_pos);
+      g_menu_append_item(to, moved);
+      g_object_unref(moved);
+    }
+
+    g_menu_remove(from, from_pos);
+    n--;
+  }
+}
+
 static void gtk4MenuChildInsert(Ihandle* ih, GMenuItem* mitem)
 {
   int pos;
@@ -243,6 +299,72 @@ static void gtk4MenuChildRemove(Ihandle* ih)
   section = gtk4MenuFindEntryPos(ih->parent, ih, &pos);
   g_menu_remove(section, pos);
   iupAttribSet(ih, "_IUPGTK4_ENTRY", NULL);
+}
+
+static void gtk4MenuCustomClicked(GtkWidget* button, gpointer user_data)
+{
+  GtkWidget* popover = gtk_widget_get_ancestor(button, GTK_TYPE_POPOVER);
+  if (popover)
+    gtk_popover_popdown(GTK_POPOVER(popover));
+  (void)user_data;
+}
+
+static GtkWidget* gtk4MenuItemCustomWidget(const char* label_str, const char* accel_str, const char* full_action_name)
+{
+  GtkWidget* button = gtk_button_new();
+  GtkWidget* box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 12);
+  GtkWidget* label = gtk_label_new(NULL);
+  GtkWidget* accel = gtk_label_new(accel_str);
+
+  gtk_label_set_use_underline(GTK_LABEL(label), TRUE);
+  gtk_label_set_label(GTK_LABEL(label), label_str);
+  gtk_label_set_xalign(GTK_LABEL(label), 0);
+  gtk_widget_set_hexpand(label, TRUE);
+  gtk_label_set_xalign(GTK_LABEL(accel), 1);
+  gtk_widget_add_css_class(accel, "dim-label");
+
+  gtk_box_append(GTK_BOX(box), label);
+  gtk_box_append(GTK_BOX(box), accel);
+  gtk_button_set_child(GTK_BUTTON(button), box);
+  gtk_widget_add_css_class(button, "flat");
+  gtk_actionable_set_action_name(GTK_ACTIONABLE(button), full_action_name);
+  g_signal_connect(button, "clicked", G_CALLBACK(gtk4MenuCustomClicked), NULL);
+
+  return button;
+}
+
+static void gtk4MenuItemDetachCustom(Ihandle* ih)
+{
+  GtkWidget* widget = (GtkWidget*)iupAttribGet(ih, "_IUPGTK4_CUSTOM_WIDGET");
+  Ihandle* root;
+
+  if (!widget || !gtk_widget_get_parent(widget))
+    return;
+
+  root = gtk4MenuGetRootMenu(ih->parent);
+  if (iupMenuIsMenuBar(root) && root->handle && GTK_IS_POPOVER_MENU_BAR(root->handle))
+    gtk_popover_menu_bar_remove_child(GTK_POPOVER_MENU_BAR(root->handle), widget);
+  else
+  {
+    GtkWidget* parent = gtk_widget_get_parent(widget);
+    GtkWidget* popover = parent ? gtk_widget_get_ancestor(widget, GTK_TYPE_POPOVER_MENU) : NULL;
+    if (popover)
+      gtk_popover_menu_remove_child(GTK_POPOVER_MENU(popover), widget);
+  }
+}
+
+static void gtk4MenuItemAttachCustom(Ihandle* ih)
+{
+  GtkWidget* widget = (GtkWidget*)iupAttribGet(ih, "_IUPGTK4_CUSTOM_WIDGET");
+  char* id = iupAttribGet(ih, "_IUPGTK4_CUSTOM_ID");
+  Ihandle* root;
+
+  if (!widget || !id)
+    return;
+
+  root = gtk4MenuGetRootMenu(ih->parent);
+  if (iupMenuIsMenuBar(root) && root->handle && GTK_IS_POPOVER_MENU_BAR(root->handle))
+    gtk_popover_menu_bar_add_child(GTK_POPOVER_MENU_BAR(root->handle), widget, id);
 }
 
 static GMenuItem* gtk4MenuItemBuildEntry(Ihandle* menu, Ihandle* ih, GSimpleActionGroup* action_group, const char* new_title)
@@ -317,10 +439,12 @@ static GMenuItem* gtk4MenuItemBuildEntry(Ihandle* menu, Ihandle* ih, GSimpleActi
 
     snprintf(action_name, sizeof(action_name), "item-%p", (void*)ih);
 
-    /* Check if this is a checkable item (VALUE attribute present or HIDEMARK not set) */
     {
       char* value_str = iupAttribGetStr(ih, "VALUE");
-      if (value_str || !iupAttribGetBoolean(ih, "HIDEMARK"))
+      char* hidemark = iupAttribGetStr(ih, "HIDEMARK");
+      if (!hidemark && !value_str)
+        hidemark = (char*)"YES";
+      if (!iupStrBoolean(hidemark))
         is_checkable = 1;
 
       existing = g_action_map_lookup_action(G_ACTION_MAP(action_group), action_name);
@@ -355,12 +479,9 @@ static GMenuItem* gtk4MenuItemBuildEntry(Ihandle* menu, Ihandle* ih, GSimpleActi
     if (tab)
     {
       has_accel = gtk4MenuBuildAccel(tab + 1, accel_buf, sizeof(accel_buf));
-      if (has_accel)
-      {
-        label_copy = iupStrDup(processed_title);
-        label_copy[tab - processed_title] = 0;
-        label_str = label_copy;
-      }
+      label_copy = iupStrDup(processed_title);
+      label_copy[tab - processed_title] = 0;
+      label_str = label_copy;
     }
 
     if (iupMenuIsMenuBar(menu))
@@ -371,6 +492,26 @@ static GMenuItem* gtk4MenuItemBuildEntry(Ihandle* menu, Ihandle* ih, GSimpleActi
       mitem = g_menu_item_new(label_str, NULL);
       g_menu_item_set_submenu(mitem, G_MENU_MODEL(item_submenu));
       g_object_unref(item_submenu);
+    }
+    else if (tab && !has_accel)
+    {
+      static unsigned int custom_serial = 0;
+      char custom_id[64];
+      GtkWidget* widget;
+
+      snprintf(custom_id, sizeof(custom_id), "iup-item-%p-%u", (void*)ih, ++custom_serial);
+      gtk4MenuItemDetachCustom(ih);
+      widget = (GtkWidget*)iupAttribGet(ih, "_IUPGTK4_CUSTOM_WIDGET");
+      if (widget)
+        g_object_unref(widget);
+
+      widget = gtk4MenuItemCustomWidget(label_str, tab + 1, full_action_name);
+      g_object_ref_sink(widget);
+      iupAttribSet(ih, "_IUPGTK4_CUSTOM_WIDGET", (char*)widget);
+      iupAttribSetStr(ih, "_IUPGTK4_CUSTOM_ID", custom_id);
+
+      mitem = g_menu_item_new(label_str, full_action_name);
+      g_menu_item_set_attribute(mitem, "custom", "s", custom_id);
     }
     else
     {
@@ -406,6 +547,27 @@ IUP_SDK_API int iupdrvMenuGetMenuBarSize(Ihandle* ih_menu)
   }
 
   return height;
+}
+
+static void gtk4MenuPopupAttachCustoms(Ihandle* ih_menu, GtkPopoverMenu* popover)
+{
+  Ihandle* child;
+
+  for (child = ih_menu->firstchild; child; child = child->brother)
+  {
+    if (iupStrEqual(child->iclass->name, "menuitem"))
+    {
+      GtkWidget* widget = (GtkWidget*)iupAttribGet(child, "_IUPGTK4_CUSTOM_WIDGET");
+      char* id = iupAttribGet(child, "_IUPGTK4_CUSTOM_ID");
+      if (widget && id)
+      {
+        gtk4MenuItemDetachCustom(child);
+        gtk_popover_menu_add_child(popover, widget, id);
+      }
+    }
+    else if (iupStrEqual(child->iclass->name, "submenu") && child->firstchild)
+      gtk4MenuPopupAttachCustoms(child->firstchild, popover);
+  }
 }
 
 static void gtk4PopoverClosedCb(GtkPopover *popover, gpointer user_data)
@@ -606,6 +768,7 @@ IUP_SDK_API int iupdrvMenuPopup(Ihandle* ih, int x, int y)
       return IUP_ERROR;
 
     gtk4PopoverMenuSetVHomogeneous(popover);
+    gtk4MenuPopupAttachCustoms(ih, GTK_POPOVER_MENU(popover));
 
     /* Insert action group into anchor window */
     gtk_widget_insert_action_group(anchor_window, "menu", G_ACTION_GROUP(action_group));
@@ -697,6 +860,7 @@ IUP_SDK_API int iupdrvMenuPopup(Ihandle* ih, int x, int y)
   }
 
   gtk4PopoverMenuSetVHomogeneous(popover);
+  gtk4MenuPopupAttachCustoms(ih, GTK_POPOVER_MENU(popover));
 
   /* Connect closed signal to quit the nested main loop */
   g_signal_connect(popover, "closed", G_CALLBACK(gtk4PopoverClosedCb), (gpointer)loop);
@@ -1021,6 +1185,8 @@ static int gtk4MenuItemMapMethod(Ihandle* ih)
 
   gtk4MenuChildInsert(ih, mitem);
   g_object_unref(mitem);
+  gtk4MenuItemAttachCustom(ih);
+  iupAttribSetStr(ih, "_IUPGTK4_ENTRY_TITLE", iupAttribGetStr(ih, "TITLE"));
 
   ih->serial = iupMenuGetChildId(ih);
   ih->handle = (GtkWidget*)ih;
@@ -1030,18 +1196,31 @@ static int gtk4MenuItemMapMethod(Ihandle* ih)
 static void gtk4MenuItemUnMapMethod(Ihandle* ih)
 {
   char* action_name = iupAttribGet(ih, "_IUPGTK4_ACTION_NAME");
+  GtkWidget* custom_widget = (GtkWidget*)iupAttribGet(ih, "_IUPGTK4_CUSTOM_WIDGET");
 
-  gtk4MenuChildRemove(ih);
-
-  if (action_name)
+  if (gtk4MenuRootAlive(ih))
   {
-    GSimpleActionGroup* action_group = gtk4MenuGetActionGroup(ih->parent);
-    if (action_group)
-      g_action_map_remove_action(G_ACTION_MAP(action_group), action_name);
-    iupAttribSet(ih, "_IUPGTK4_ACTION_NAME", NULL);
-    iupAttribSet(ih, "_IUPGTK4_CHECKABLE", NULL);
+    gtk4MenuItemDetachCustom(ih);
+    gtk4MenuChildRemove(ih);
+
+    if (action_name)
+    {
+      GSimpleActionGroup* action_group = gtk4MenuGetActionGroup(ih->parent);
+      if (action_group)
+        g_action_map_remove_action(G_ACTION_MAP(action_group), action_name);
+    }
   }
 
+  if (custom_widget)
+  {
+    g_object_unref(custom_widget);
+    iupAttribSet(ih, "_IUPGTK4_CUSTOM_WIDGET", NULL);
+    iupAttribSet(ih, "_IUPGTK4_CUSTOM_ID", NULL);
+  }
+
+  iupAttribSet(ih, "_IUPGTK4_ACTION_NAME", NULL);
+  iupAttribSet(ih, "_IUPGTK4_CHECKABLE", NULL);
+  iupAttribSet(ih, "_IUPGTK4_ENTRY", NULL);
   ih->handle = NULL;
 }
 
@@ -1081,7 +1260,8 @@ static int gtk4SubmenuMapMethod(Ihandle* ih)
 
 static void gtk4SubmenuUnMapMethod(Ihandle* ih)
 {
-  gtk4MenuChildRemove(ih);
+  if (gtk4MenuRootAlive(ih))
+    gtk4MenuChildRemove(ih);
   iupAttribSet(ih, "_IUPGTK4_SUBMENU_GMENU", NULL);
   ih->handle = NULL;
 }
@@ -1103,16 +1283,6 @@ static int gtk4MenuSeparatorMapMethod(Ihandle* ih)
     section = gtk4MenuFindEntryPos(menu, ih, &pos);
     new_section = g_menu_new();
 
-    n = g_menu_model_get_n_items(G_MENU_MODEL(section));
-    while (n > pos)
-    {
-      GMenuItem* moved = g_menu_item_new_from_model(G_MENU_MODEL(section), pos);
-      g_menu_append_item(new_section, moved);
-      g_object_unref(moved);
-      g_menu_remove(section, pos);
-      n--;
-    }
-
     sec_index = gtk4MenuSectionIndex(outer, section);
     g_menu_insert_section((GMenu*)outer, sec_index + 1, NULL, G_MENU_MODEL(new_section));
     g_object_unref(new_section);
@@ -1129,38 +1299,29 @@ static void gtk4MenuSeparatorUnMapMethod(Ihandle* ih)
 {
   GMenu* section = (GMenu*)iupAttribGet(ih, "_IUPGTK4_SECTION");
 
-  if (section)
+  if (section && gtk4MenuRootAlive(ih))
   {
     Ihandle* menu = ih->parent;
     GMenuModel* outer = (GMenuModel*)iupAttribGet(menu, "_IUPGTK4_GMENU");
     GMenu* prev_section;
-    int pos, n, sec_index;
+    int pos, sec_index;
 
     prev_section = gtk4MenuFindEntryPos(menu, ih, &pos);
-
-    n = g_menu_model_get_n_items(G_MENU_MODEL(section));
-    while (n > 0)
-    {
-      GMenuItem* moved = g_menu_item_new_from_model(G_MENU_MODEL(section), 0);
-      g_menu_append_item(prev_section, moved);
-      g_object_unref(moved);
-      g_menu_remove(section, 0);
-      n--;
-    }
+    gtk4MenuMoveEntries(menu, section, 0, prev_section);
 
     sec_index = gtk4MenuSectionIndex(outer, section);
     if (sec_index >= 0)
       g_menu_remove((GMenu*)outer, sec_index);
-
-    iupAttribSet(ih, "_IUPGTK4_SECTION", NULL);
   }
 
+  iupAttribSet(ih, "_IUPGTK4_SECTION", NULL);
   ih->handle = NULL;
 }
 
 static int gtk4MenuItemSetTitleAttrib(Ihandle* ih, const char* value)
 {
-  if (iupAttribGet(ih, "_IUPGTK4_ENTRY"))
+  if (iupAttribGet(ih, "_IUPGTK4_ENTRY")
+      && !iupStrEqual(iupAttribGetStr(ih, "_IUPGTK4_ENTRY_TITLE"), value ? value : ""))
   {
     Ihandle* menu = ih->parent;
     GSimpleActionGroup* action_group = gtk4MenuGetActionGroup(menu);
@@ -1172,12 +1333,14 @@ static int gtk4MenuItemSetTitleAttrib(Ihandle* ih, const char* value)
       return 1;
 
     section = gtk4MenuFindEntryPos(menu, ih, &pos);
+    g_menu_remove(section, pos);
     mitem = gtk4MenuItemBuildEntry(menu, ih, action_group, value);
     if (mitem)
     {
-      g_menu_remove(section, pos);
       g_menu_insert_item(section, pos, mitem);
       g_object_unref(mitem);
+      gtk4MenuItemAttachCustom(ih);
+      iupAttribSetStr(ih, "_IUPGTK4_ENTRY_TITLE", value);
     }
   }
   return 1;
