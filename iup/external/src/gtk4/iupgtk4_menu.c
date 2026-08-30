@@ -177,297 +177,213 @@ static gboolean gtk4MenuBuildAccel(const char* text, char* buffer, size_t bufsiz
   return key != 0;
 }
 
-static GMenu* gtk4BuildMenuModel(Ihandle* ih_menu, GSimpleActionGroup* action_group, int is_root)
+static Ihandle* gtk4MenuGetRootMenu(Ihandle* ih)
 {
-  GMenu* menu;
+  while (ih->parent && ih->parent->iclass->nativetype == IUP_TYPEMENU)
+    ih = ih->parent;
+  return ih;
+}
+
+static GSimpleActionGroup* gtk4MenuGetActionGroup(Ihandle* menu)
+{
+  Ihandle* root = gtk4MenuGetRootMenu(menu);
+  if (iupMenuIsMenuBar(root))
+    return (GSimpleActionGroup*)iupAttribGet(root->parent, "_IUPGTK4_MENU_ACTION_GROUP");
+  return (GSimpleActionGroup*)iupAttribGet(root, "_IUPGTK4_ACTION_GROUP");
+}
+
+static GMenu* gtk4MenuFindEntryPos(Ihandle* menu, Ihandle* child, int *pos)
+{
+  GMenu* section = (GMenu*)iupAttribGet(menu, "_IUPGTK4_SECTION0");
+  Ihandle* c;
+
+  *pos = 0;
+  for (c = menu->firstchild; c && c != child; c = c->brother)
+  {
+    GMenu* sep_section = (GMenu*)iupAttribGet(c, "_IUPGTK4_SECTION");
+    if (sep_section)
+    {
+      section = sep_section;
+      *pos = 0;
+    }
+    else if (iupAttribGet(c, "_IUPGTK4_ENTRY"))
+      (*pos)++;
+  }
+  return section;
+}
+
+static int gtk4MenuSectionIndex(GMenuModel* outer, GMenu* section)
+{
+  int i, n = g_menu_model_get_n_items(outer);
+  for (i = 0; i < n; i++)
+  {
+    GMenuModel* link = g_menu_model_get_item_link(outer, i, G_MENU_LINK_SECTION);
+    if (link) g_object_unref(link);
+    if (link == (GMenuModel*)section)
+      return i;
+  }
+  return -1;
+}
+
+static void gtk4MenuChildInsert(Ihandle* ih, GMenuItem* mitem)
+{
+  int pos;
+  GMenu* section = gtk4MenuFindEntryPos(ih->parent, ih, &pos);
+  g_menu_insert_item(section, pos, mitem);
+  iupAttribSet(ih, "_IUPGTK4_ENTRY", "1");
+}
+
+static void gtk4MenuChildRemove(Ihandle* ih)
+{
+  int pos;
   GMenu* section;
-  Ihandle* child;
 
-  if (!ih_menu)
-    return NULL;
+  if (!iupAttribGet(ih, "_IUPGTK4_ENTRY"))
+    return;
+  section = gtk4MenuFindEntryPos(ih->parent, ih, &pos);
+  g_menu_remove(section, pos);
+  iupAttribSet(ih, "_IUPGTK4_ENTRY", NULL);
+}
 
-  menu = g_menu_new();
-  section = g_menu_new();
+static GMenuItem* gtk4MenuItemBuildEntry(Ihandle* menu, Ihandle* ih, GSimpleActionGroup* action_group, const char* new_title)
+{
+  GMenuItem* mitem;
+  char* title;
+  char* processed_title;
+  char c = '_';
 
-  gboolean is_radio_menu = !is_root && iupAttribGetBoolean(ih_menu, "RADIO");
-  char radio_action_name[64] = {0};
-  Ihandle* radio_initial = NULL;
+  title = (char*)new_title;
+  if (!title) title = iupAttribGet(ih, "TITLE");
+  if (!title) title = "";
 
-  if (is_radio_menu)
+  /* Process mnemonic: convert & to _ for GTK */
+  processed_title = iupStrProcessMnemonic(title, &c, 1);
+
+  if (iupAttribGetBoolean(menu, "RADIO"))
   {
-    Ihandle* c;
-    for (c = ih_menu->firstchild; c; c = c->brother)
+    char target[32];
+    char full_action_name[96];
+    char* radio_action_name = iupAttribGet(menu, "_IUPGTK4_RADIO_ACTION_NAME");
+
+    snprintf(target, sizeof(target), "%p", (void*)ih);
+
+    if (!radio_action_name)
     {
-      if (!iupStrEqual(c->iclass->name, "menuitem"))
-        continue;
-      if (!radio_initial) radio_initial = c;
-      if (iupAttribGetBoolean(c, "VALUE")) { radio_initial = c; break; }
+      char name[64];
+      GSimpleAction* radio_action;
+
+      snprintf(name, sizeof(name), "radio-%p", (void*)menu);
+      radio_action = g_simple_action_new_stateful(name, G_VARIANT_TYPE_STRING, g_variant_new_string(target));
+      g_signal_connect(radio_action, "activate", G_CALLBACK(gtk4MenuRadioActivated), menu);
+      g_action_map_add_action(G_ACTION_MAP(action_group), G_ACTION(radio_action));
+      g_object_unref(radio_action);
+
+      iupAttribSetStr(menu, "_IUPGTK4_RADIO_ACTION_NAME", name);
+      radio_action_name = iupAttribGet(menu, "_IUPGTK4_RADIO_ACTION_NAME");
+      iupAttribSet(ih, "VALUE", "ON");
     }
+    else if (iupAttribGetBoolean(ih, "VALUE"))
+    {
+      GAction* action = g_action_map_lookup_action(G_ACTION_MAP(action_group), radio_action_name);
+      if (action)
+        g_simple_action_set_state(G_SIMPLE_ACTION(action), g_variant_new_string(target));
+    }
+    else
+      iupAttribSet(ih, "VALUE", "OFF");
 
-    snprintf(radio_action_name, sizeof(radio_action_name), "radio-%p", (void*)ih_menu);
+    iupAttribSetStr(ih, "_IUPGTK4_RADIO_TARGET", target);
+    iupAttribSetStr(ih, "_IUPGTK4_RADIO_ACTION_NAME", radio_action_name);
 
-    char init_target[32] = {0};
-    if (radio_initial)
-      snprintf(init_target, sizeof(init_target), "%p", (void*)radio_initial);
+    snprintf(full_action_name, sizeof(full_action_name), "menu.%s", radio_action_name);
 
-    GSimpleAction* radio_action = g_simple_action_new_stateful(
-        radio_action_name, G_VARIANT_TYPE_STRING, g_variant_new_string(init_target));
-    g_signal_connect(radio_action, "activate", G_CALLBACK(gtk4MenuRadioActivated), ih_menu);
-    g_action_map_add_action(G_ACTION_MAP(action_group), G_ACTION(radio_action));
-    g_object_unref(radio_action);
+    mitem = g_menu_item_new(processed_title, NULL);
+    g_menu_item_set_action_and_target(mitem, full_action_name, "s", iupAttribGet(ih, "_IUPGTK4_RADIO_TARGET"));
 
-    iupAttribSetStr(ih_menu, "_IUPGTK4_RADIO_ACTION_NAME", radio_action_name);
+    if (processed_title != title)
+      free(processed_title);
+    return mitem;
   }
 
-  for (child = ih_menu->firstchild; child; child = child->brother)
   {
-    char* title;
-    char* processed_title;
-    char c = '_';
+    GAction* existing;
+    char action_name[64];
+    char full_action_name[96];
+    char accel_buf[128];
+    gboolean has_accel = FALSE;
+    char* tab;
+    char* label_str = processed_title;
+    char* label_copy = NULL;
+    int is_checkable = 0;
 
-    if (iupStrEqual(child->iclass->name, "submenu"))
+    snprintf(action_name, sizeof(action_name), "item-%p", (void*)ih);
+
+    /* Check if this is a checkable item (VALUE attribute present or HIDEMARK not set) */
     {
-      /* Submenu: get title and recursively build submenu */
-      Ihandle* submenu_ih = child->firstchild;  /* The Menu child of Submenu */
-      GMenu* submenu_model;
-
-      title = iupAttribGet(child, "TITLE");
-      if (!title) title = "";
-
-      /* Process mnemonic: convert & to _ for GTK */
-      processed_title = iupStrProcessMnemonic(title, &c, 1);
-
-      if (submenu_ih)
-      {
-        /* Submenus are never at root, so pass FALSE */
-        submenu_model = gtk4BuildMenuModel(submenu_ih, action_group, FALSE);
-        if (submenu_model)
-        {
-          g_menu_append_submenu(section, processed_title, G_MENU_MODEL(submenu_model));
-          /* borrowed pointer for later access (e.g. recent files); the section owns it */
-          iupAttribSet(submenu_ih, "_IUP_RECENT_GMENU", (char*)submenu_model);
-          g_object_unref(submenu_model);
-        }
-      }
-
-      /* Free processed title if it was allocated */
-      if (processed_title != title)
-        free(processed_title);
-    }
-    else if (iupStrEqual(child->iclass->name, "menuitem"))
-    {
-      /* Menu item: create action and add to menu */
-      GSimpleAction* action;
-      char action_name[64];
-      int is_checkable = 0;
-      int is_checked = 0;
-      int is_active = 1;
-
-      title = iupAttribGet(child, "TITLE");
-      if (!title) title = "";
-
-      /* Process mnemonic: convert & to _ for GTK */
-      processed_title = iupStrProcessMnemonic(title, &c, 1);
-
-      if (is_radio_menu)
-      {
-        char target[32];
-        snprintf(target, sizeof(target), "%p", (void*)child);
-        iupAttribSetStr(child, "_IUPGTK4_RADIO_TARGET", target);
-        iupAttribSetStr(child, "_IUPGTK4_RADIO_ACTION_NAME", radio_action_name);
-        iupAttribSet(child, "VALUE", child == radio_initial ? "ON" : "OFF");
-
-        char full_action_name[96];
-        snprintf(full_action_name, sizeof(full_action_name), "menu.%s", radio_action_name);
-
-        GMenuItem* mitem = g_menu_item_new(processed_title, NULL);
-        g_menu_item_set_action_and_target(mitem, full_action_name, "s", target);
-        g_menu_append_item(section, mitem);
-        g_object_unref(mitem);
-
-        if (processed_title != title)
-          free(processed_title);
-        continue;
-      }
-
-      /* Create unique action name using ih pointer */
-      snprintf(action_name, sizeof(action_name), "item-%p", (void*)child);
-
-      /* Check if this is a checkable item (VALUE attribute present or HIDEMARK not set) */
-      char* value_str = iupAttribGetStr(child, "VALUE");
-
-      if (value_str || !iupAttribGetBoolean(child, "HIDEMARK"))
-      {
+      char* value_str = iupAttribGetStr(ih, "VALUE");
+      if (value_str || !iupAttribGetBoolean(ih, "HIDEMARK"))
         is_checkable = 1;
-        is_checked = iupStrBoolean(value_str);
-      }
 
-      if (iupAttribGet(child, "ACTIVE"))
-        is_active = iupAttribGetBoolean(child, "ACTIVE");
-
-      /* Create action with state for checkable items */
-      if (is_checkable)
+      existing = g_action_map_lookup_action(G_ACTION_MAP(action_group), action_name);
+      if (!existing)
       {
-        GVariant* state = g_variant_new_boolean(is_checked);
-        action = g_simple_action_new_stateful(action_name, NULL, state);
+        GSimpleAction* action;
+        int is_active = 1;
 
-        /* Store attributes needed for VALUE get/set, use SetStr to duplicate strings */
-        iupAttribSetStr(child, "_IUPGTK4_CHECKABLE", "1");
-        iupAttribSetStr(child, "_IUPGTK4_ACTION_NAME", action_name);
-      }
-      else
-      {
-        action = g_simple_action_new(action_name, NULL);
-      }
-
-      g_signal_connect(action, "activate", G_CALLBACK(gtk4MenuActionActivated), child);
-      g_action_map_add_action(G_ACTION_MAP(action_group), G_ACTION(action));
-      g_simple_action_set_enabled(action, is_active);
-      g_object_unref(action);  /* action_group takes ownership */
-
-      /* Add to menu with full action name */
-      char full_action_name[96];
-      snprintf(full_action_name, sizeof(full_action_name), "menu.%s", action_name);
-
-      char* tab = strchr(processed_title, '\t');
-      char accel_buf[128];
-      gboolean has_accel = FALSE;
-      char* label_str = processed_title;
-      char* label_copy = NULL;
-
-      if (tab)
-      {
-        has_accel = gtk4MenuBuildAccel(tab + 1, accel_buf, sizeof(accel_buf));
-        if (has_accel)
+        if (is_checkable)
         {
-          label_copy = iupStrDup(processed_title);
-          label_copy[tab - processed_title] = 0;
-          label_str = label_copy;
+          action = g_simple_action_new_stateful(action_name, NULL, g_variant_new_boolean(iupStrBoolean(value_str)));
+          iupAttribSetStr(ih, "_IUPGTK4_CHECKABLE", "1");
         }
-      }
+        else
+          action = g_simple_action_new(action_name, NULL);
 
-      if (is_root)
-      {
-        /* GtkPopoverMenuBar requires submenus at root level; wrap the action in a single-item submenu. */
-        GMenu* item_submenu = g_menu_new();
-        g_menu_append(item_submenu, NULL, full_action_name);
-        g_menu_append_submenu(section, label_str, G_MENU_MODEL(item_submenu));
-        g_object_unref(item_submenu);
-      }
-      else
-      {
-        GMenuItem* mitem = g_menu_item_new(label_str, full_action_name);
-        if (has_accel)
-          g_menu_item_set_attribute(mitem, "accel", "s", accel_buf);
-        g_menu_append_item(section, mitem);
-        g_object_unref(mitem);
-      }
+        iupAttribSetStr(ih, "_IUPGTK4_ACTION_NAME", action_name);
 
-      if (label_copy) free(label_copy);
-      if (processed_title != title)
-        free(processed_title);
+        if (iupAttribGet(ih, "ACTIVE"))
+          is_active = iupAttribGetBoolean(ih, "ACTIVE");
+
+        g_signal_connect(action, "activate", G_CALLBACK(gtk4MenuActionActivated), ih);
+        g_action_map_add_action(G_ACTION_MAP(action_group), G_ACTION(action));
+        g_simple_action_set_enabled(action, is_active);
+        g_object_unref(action);
+      }
     }
-    else if (iupStrEqual(child->iclass->name, "menuseparator"))
+
+    snprintf(full_action_name, sizeof(full_action_name), "menu.%s", action_name);
+
+    tab = strchr(processed_title, '\t');
+    if (tab)
     {
-      if (!is_root)
+      has_accel = gtk4MenuBuildAccel(tab + 1, accel_buf, sizeof(accel_buf));
+      if (has_accel)
       {
-        /* GMenu uses sections for separators, finish the current section and start a new one */
-        g_menu_append_section(menu, NULL, G_MENU_MODEL(section));
-        g_object_unref(section);
-        section = g_menu_new();
+        label_copy = iupStrDup(processed_title);
+        label_copy[tab - processed_title] = 0;
+        label_str = label_copy;
       }
     }
-  }
 
-  /* Append the final section */
-  g_menu_append_section(menu, NULL, G_MENU_MODEL(section));
-  g_object_unref(section);
-
-  return menu;
-}
-
-static void gtk4ApplyPendingRecentMenus(Ihandle* ih_menu)
-{
-  Ihandle* child;
-
-  for (child = ih_menu->firstchild; child; child = child->brother)
-  {
-    if (iupStrEqual(child->iclass->name, "submenu") && child->firstchild)
+    if (iupMenuIsMenuBar(menu))
     {
-      Ihandle* submenu_ih = child->firstchild;
-
-      if (iupAttribGet(submenu_ih, "_IUP_CONFIG") && iupAttribGet(submenu_ih, "_IUP_RECENT_GMENU"))
-      {
-        Icallback map_cb = IupGetCallback(submenu_ih, "MAP_CB");
-        if (map_cb)
-          map_cb(submenu_ih);
-      }
-
-      gtk4ApplyPendingRecentMenus(submenu_ih);
+      /* GtkPopoverMenuBar requires submenus at root level; wrap the action in a single-item submenu. */
+      GMenu* item_submenu = g_menu_new();
+      g_menu_append(item_submenu, NULL, full_action_name);
+      mitem = g_menu_item_new(label_str, NULL);
+      g_menu_item_set_submenu(mitem, G_MENU_MODEL(item_submenu));
+      g_object_unref(item_submenu);
     }
+    else
+    {
+      mitem = g_menu_item_new(label_str, full_action_name);
+      if (has_accel)
+        g_menu_item_set_attribute(mitem, "accel", "s", accel_buf);
+    }
+
+    if (label_copy) free(label_copy);
+    if (processed_title != title)
+      free(processed_title);
+    return mitem;
   }
-}
-
-IUP_DRV_API void iupgtk4DialogSetMenuBar(Ihandle* ih_dialog, Ihandle* ih_menu)
-{
-  GMenu* menubar_model;
-  GSimpleActionGroup* action_group;
-  GtkWidget* menubar_widget;
-  GtkWidget* inner_parent;
-
-
-  if (!ih_dialog || !ih_menu)
-    return;
-
-  /* Create action group for this dialog's menu */
-  action_group = g_simple_action_group_new();
-
-  /* Store action group on dialog for later access by VALUE attribute setter */
-  iupAttribSet(ih_dialog, "_IUPGTK4_MENU_ACTION_GROUP", (char*)action_group);
-
-  /* Build menu model from IUP hierarchy (is_root=TRUE for menu bar) */
-  menubar_model = gtk4BuildMenuModel(ih_menu, action_group, TRUE);
-  if (!menubar_model)
-  {
-    g_object_unref(action_group);
-    return;
-  }
-
-  /* Insert action group into window with "menu" prefix */
-  gtk_widget_insert_action_group(ih_dialog->handle, "menu", G_ACTION_GROUP(action_group));
-  g_object_unref(action_group);  /* window takes ownership */
-
-  /* Apply pending recent files updates now that the action group is available */
-  gtk4ApplyPendingRecentMenus(ih_menu);
-
-  /* Create GtkPopoverMenuBar widget from model */
-  menubar_widget = gtk_popover_menu_bar_new_from_model(G_MENU_MODEL(menubar_model));
-  g_object_unref(menubar_model);  /* menubar_widget takes ownership */
-
-  /* Get menu VBox container */
-  GtkWidget* menu_box = (GtkWidget*)iupAttribGet(ih_dialog, "_IUPGTK4_MENU_BOX");
-  if (!menu_box)
-  {
-    gtk_widget_unparent(menubar_widget);
-    return;
-  }
-
-  /* Configure expansion properties before adding to box. */
-  inner_parent = (GtkWidget*)iupAttribGet(ih_dialog, "_IUPGTK4_INNER_PARENT");
-
-  /* Menu bar should not expand - it wants its natural height only */
-  gtk_widget_set_vexpand(menubar_widget, FALSE);
-  gtk_widget_set_hexpand(menubar_widget, TRUE);  /* But expand horizontally */
-
-  /* inner_parent must expand to fill remaining vertical space */
-  gtk_widget_set_vexpand(inner_parent, TRUE);
-  gtk_widget_set_hexpand(inner_parent, TRUE);
-
-  /* Add menu bar to the top of the menu box (before inner_parent) */
-  gtk_box_prepend(GTK_BOX(menu_box), menubar_widget);
-
-  /* Store the menubar widget handle in the menu Ihandle */
-  ih_menu->handle = menubar_widget;
 }
 
 IUP_SDK_API int iupdrvMenuGetMenuBarSize(Ihandle* ih_menu)
@@ -825,40 +741,82 @@ IUP_SDK_API int iupdrvMenuPopup(Ihandle* ih, int x, int y)
 
 static int gtk4MenuMapMethod(Ihandle* ih)
 {
-  /* Menubars are created in iupgtk4DialogSetMenuBar(), but popup menus need GtkPopoverMenu */
+  GMenu* sec0;
 
   if (iupMenuIsMenuBar(ih))
   {
-    /* Handled in iupgtk4DialogSetMenuBar() when dialog is mapped */
-    return IUP_NOERROR;
-  }
-
-  /* This is a popup menu - store data for deferred creation in iupdrvMenuPopup.
-   * We can't create the popover here because it needs a parent widget to resolve actions.
-   * Store the action group and menu model, create popover when popup is called. */
-  {
-    GMenu* menu_model;
+    Ihandle* dialog = ih->parent;
     GSimpleActionGroup* action_group;
+    GMenu* outer;
+    GtkWidget* menubar_widget;
+    GtkWidget* inner_parent;
+    GtkWidget* menu_box = (GtkWidget*)iupAttribGet(dialog, "_IUPGTK4_MENU_BOX");
 
-    /* Create action group for this popup menu */
-    action_group = g_simple_action_group_new();
-
-    /* Build menu model from IUP hierarchy (is_root=FALSE for popup menus) */
-    menu_model = gtk4BuildMenuModel(ih, action_group, FALSE);
-    if (!menu_model)
-    {
-      g_object_unref(action_group);
+    if (!dialog->handle || !menu_box)
       return IUP_ERROR;
-    }
 
-    /* Store for deferred popover creation */
-    iupAttribSet(ih, "_IUPGTK4_MENU_MODEL", (char*)menu_model);
+    action_group = g_simple_action_group_new();
+    iupAttribSet(dialog, "_IUPGTK4_MENU_ACTION_GROUP", (char*)action_group);
+    gtk_widget_insert_action_group(dialog->handle, "menu", G_ACTION_GROUP(action_group));
+    g_object_unref(action_group);  /* window takes ownership */
+
+    outer = g_menu_new();
+    sec0 = g_menu_new();
+    g_menu_append_section(outer, NULL, G_MENU_MODEL(sec0));
+    g_object_unref(sec0);
+
+    /* Create GtkPopoverMenuBar widget from model */
+    menubar_widget = gtk_popover_menu_bar_new_from_model(G_MENU_MODEL(outer));
+    g_object_unref(outer);  /* menubar_widget takes ownership */
+
+    /* Menu bar should not expand - it wants its natural height only */
+    gtk_widget_set_vexpand(menubar_widget, FALSE);
+    gtk_widget_set_hexpand(menubar_widget, TRUE);
+
+    /* inner_parent must expand to fill remaining vertical space */
+    inner_parent = (GtkWidget*)iupAttribGet(dialog, "_IUPGTK4_INNER_PARENT");
+    gtk_widget_set_vexpand(inner_parent, TRUE);
+    gtk_widget_set_hexpand(inner_parent, TRUE);
+
+    /* Add menu bar to the top of the menu box (before inner_parent) */
+    gtk_box_prepend(GTK_BOX(menu_box), menubar_widget);
+
+    iupAttribSet(ih, "_IUPGTK4_GMENU", (char*)outer);
+    iupAttribSet(ih, "_IUPGTK4_SECTION0", (char*)sec0);
+    ih->handle = menubar_widget;
+  }
+  else if (ih->parent)
+  {
+    GMenu* outer = (GMenu*)iupAttribGet(ih->parent, "_IUPGTK4_SUBMENU_GMENU");
+    if (!outer)
+      return IUP_ERROR;
+
+    sec0 = g_menu_new();
+    g_menu_append_section(outer, NULL, G_MENU_MODEL(sec0));
+    g_object_unref(sec0);
+
+    iupAttribSet(ih, "_IUPGTK4_GMENU", (char*)outer);
+    iupAttribSet(ih, "_IUPGTK4_SECTION0", (char*)sec0);
+    iupAttribSet(ih, "_IUP_RECENT_GMENU", (char*)outer);
+    ih->handle = (GtkWidget*)ih;
+  }
+  else
+  {
+    GSimpleActionGroup* action_group = g_simple_action_group_new();
+    GMenu* outer = g_menu_new();
+
+    sec0 = g_menu_new();
+    g_menu_append_section(outer, NULL, G_MENU_MODEL(sec0));
+    g_object_unref(sec0);
+
+    iupAttribSet(ih, "_IUPGTK4_MENU_MODEL", (char*)outer);
     iupAttribSet(ih, "_IUPGTK4_ACTION_GROUP", (char*)action_group);
-
-    /* Set a placeholder handle so IupMap considers this mapped */
+    iupAttribSet(ih, "_IUPGTK4_GMENU", (char*)outer);
+    iupAttribSet(ih, "_IUPGTK4_SECTION0", (char*)sec0);
     ih->handle = (GtkWidget*)ih;  /* Placeholder, real handle set in iupdrvMenuPopup */
   }
 
+  ih->serial = iupMenuGetChildId(ih);
   return IUP_NOERROR;
 }
 
@@ -914,7 +872,21 @@ static void gtk4MenuUnMapMethod(Ihandle* ih)
   }
 
   if (iupMenuIsMenuBar(ih))
+  {
+    Ihandle* dialog = ih->parent;
+    if (dialog && dialog->handle && GTK_IS_WIDGET(ih->handle))
+    {
+      GtkWidget* menu_box = (GtkWidget*)iupAttribGet(dialog, "_IUPGTK4_MENU_BOX");
+      if (menu_box)
+        gtk_box_remove(GTK_BOX(menu_box), (GtkWidget*)ih->handle);
+      gtk_widget_insert_action_group(dialog->handle, "menu", NULL);
+      iupAttribSet(dialog, "_IUPGTK4_MENU_ACTION_GROUP", NULL);
+    }
     ih->parent = NULL;
+  }
+
+  iupAttribSet(ih, "_IUPGTK4_GMENU", NULL);
+  iupAttribSet(ih, "_IUPGTK4_SECTION0", NULL);
 
   /* For popup menus, handle is the popover which we just cleaned up. */
   ih->handle = NULL;
@@ -1032,24 +1004,236 @@ static char* gtk4MenuItemGetValueAttrib(Ihandle* ih)
 
 static int gtk4MenuItemMapMethod(Ihandle* ih)
 {
-  /* Native menu system handles items in gtk4BuildMenuModel() */
-  /* Items don't need native widgets - they're represented in GMenuModel */
-  (void)ih;
+  Ihandle* menu = ih->parent;
+  GSimpleActionGroup* action_group;
+  GMenuItem* mitem;
+
+  if (!menu || !iupAttribGet(menu, "_IUPGTK4_SECTION0"))
+    return IUP_ERROR;
+
+  action_group = gtk4MenuGetActionGroup(menu);
+  if (!action_group)
+    return IUP_ERROR;
+
+  mitem = gtk4MenuItemBuildEntry(menu, ih, action_group, NULL);
+  if (!mitem)
+    return IUP_ERROR;
+
+  gtk4MenuChildInsert(ih, mitem);
+  g_object_unref(mitem);
+
+  ih->serial = iupMenuGetChildId(ih);
+  ih->handle = (GtkWidget*)ih;
   return IUP_NOERROR;
+}
+
+static void gtk4MenuItemUnMapMethod(Ihandle* ih)
+{
+  char* action_name = iupAttribGet(ih, "_IUPGTK4_ACTION_NAME");
+
+  gtk4MenuChildRemove(ih);
+
+  if (action_name)
+  {
+    GSimpleActionGroup* action_group = gtk4MenuGetActionGroup(ih->parent);
+    if (action_group)
+      g_action_map_remove_action(G_ACTION_MAP(action_group), action_name);
+    iupAttribSet(ih, "_IUPGTK4_ACTION_NAME", NULL);
+    iupAttribSet(ih, "_IUPGTK4_CHECKABLE", NULL);
+  }
+
+  ih->handle = NULL;
 }
 
 static int gtk4SubmenuMapMethod(Ihandle* ih)
 {
-  /* Native menu system handles submenus in gtk4BuildMenuModel() */
-  (void)ih;
+  Ihandle* menu = ih->parent;
+  GMenu* sub;
+  GMenuItem* mitem;
+  char* title;
+  char* processed_title;
+  char c = '_';
+
+  if (!menu || !iupAttribGet(menu, "_IUPGTK4_SECTION0"))
+    return IUP_ERROR;
+
+  title = iupAttribGet(ih, "TITLE");
+  if (!title) title = "";
+  processed_title = iupStrProcessMnemonic(title, &c, 1);
+
+  sub = g_menu_new();
+  mitem = g_menu_item_new(processed_title, NULL);
+  g_menu_item_set_submenu(mitem, G_MENU_MODEL(sub));
+
+  gtk4MenuChildInsert(ih, mitem);
+  g_object_unref(mitem);
+
+  iupAttribSet(ih, "_IUPGTK4_SUBMENU_GMENU", (char*)sub);
+  g_object_unref(sub);
+
+  if (processed_title != title)
+    free(processed_title);
+
+  ih->serial = iupMenuGetChildId(ih);
+  ih->handle = (GtkWidget*)ih;
   return IUP_NOERROR;
+}
+
+static void gtk4SubmenuUnMapMethod(Ihandle* ih)
+{
+  gtk4MenuChildRemove(ih);
+  iupAttribSet(ih, "_IUPGTK4_SUBMENU_GMENU", NULL);
+  ih->handle = NULL;
 }
 
 static int gtk4MenuSeparatorMapMethod(Ihandle* ih)
 {
-  /* Native menu system handles separators in gtk4BuildMenuModel() */
-  (void)ih;
+  Ihandle* menu = ih->parent;
+
+  if (!menu || !iupAttribGet(menu, "_IUPGTK4_SECTION0"))
+    return IUP_ERROR;
+
+  if (!iupMenuIsMenuBar(menu))
+  {
+    GMenuModel* outer = (GMenuModel*)iupAttribGet(menu, "_IUPGTK4_GMENU");
+    GMenu* section;
+    GMenu* new_section;
+    int pos, n, sec_index;
+
+    section = gtk4MenuFindEntryPos(menu, ih, &pos);
+    new_section = g_menu_new();
+
+    n = g_menu_model_get_n_items(G_MENU_MODEL(section));
+    while (n > pos)
+    {
+      GMenuItem* moved = g_menu_item_new_from_model(G_MENU_MODEL(section), pos);
+      g_menu_append_item(new_section, moved);
+      g_object_unref(moved);
+      g_menu_remove(section, pos);
+      n--;
+    }
+
+    sec_index = gtk4MenuSectionIndex(outer, section);
+    g_menu_insert_section((GMenu*)outer, sec_index + 1, NULL, G_MENU_MODEL(new_section));
+    g_object_unref(new_section);
+
+    iupAttribSet(ih, "_IUPGTK4_SECTION", (char*)new_section);
+  }
+
+  ih->serial = iupMenuGetChildId(ih);
+  ih->handle = (GtkWidget*)ih;
   return IUP_NOERROR;
+}
+
+static void gtk4MenuSeparatorUnMapMethod(Ihandle* ih)
+{
+  GMenu* section = (GMenu*)iupAttribGet(ih, "_IUPGTK4_SECTION");
+
+  if (section)
+  {
+    Ihandle* menu = ih->parent;
+    GMenuModel* outer = (GMenuModel*)iupAttribGet(menu, "_IUPGTK4_GMENU");
+    GMenu* prev_section;
+    int pos, n, sec_index;
+
+    prev_section = gtk4MenuFindEntryPos(menu, ih, &pos);
+
+    n = g_menu_model_get_n_items(G_MENU_MODEL(section));
+    while (n > 0)
+    {
+      GMenuItem* moved = g_menu_item_new_from_model(G_MENU_MODEL(section), 0);
+      g_menu_append_item(prev_section, moved);
+      g_object_unref(moved);
+      g_menu_remove(section, 0);
+      n--;
+    }
+
+    sec_index = gtk4MenuSectionIndex(outer, section);
+    if (sec_index >= 0)
+      g_menu_remove((GMenu*)outer, sec_index);
+
+    iupAttribSet(ih, "_IUPGTK4_SECTION", NULL);
+  }
+
+  ih->handle = NULL;
+}
+
+static int gtk4MenuItemSetTitleAttrib(Ihandle* ih, const char* value)
+{
+  if (iupAttribGet(ih, "_IUPGTK4_ENTRY"))
+  {
+    Ihandle* menu = ih->parent;
+    GSimpleActionGroup* action_group = gtk4MenuGetActionGroup(menu);
+    GMenu* section;
+    GMenuItem* mitem;
+    int pos;
+
+    if (!action_group)
+      return 1;
+
+    section = gtk4MenuFindEntryPos(menu, ih, &pos);
+    mitem = gtk4MenuItemBuildEntry(menu, ih, action_group, value);
+    if (mitem)
+    {
+      g_menu_remove(section, pos);
+      g_menu_insert_item(section, pos, mitem);
+      g_object_unref(mitem);
+    }
+  }
+  return 1;
+}
+
+static int gtk4SubmenuSetTitleAttrib(Ihandle* ih, const char* value)
+{
+  if (iupAttribGet(ih, "_IUPGTK4_ENTRY"))
+  {
+    Ihandle* menu = ih->parent;
+    GMenu* sub = (GMenu*)iupAttribGet(ih, "_IUPGTK4_SUBMENU_GMENU");
+    GMenu* section;
+    GMenuItem* mitem;
+    char* title;
+    char* processed_title;
+    char c = '_';
+    int pos;
+
+    if (!sub)
+      return 1;
+
+    title = (char*)value;
+    if (!title) title = "";
+    processed_title = iupStrProcessMnemonic(title, &c, 1);
+
+    section = gtk4MenuFindEntryPos(menu, ih, &pos);
+
+    g_object_ref(sub);
+    g_menu_remove(section, pos);
+
+    mitem = g_menu_item_new(processed_title, NULL);
+    g_menu_item_set_submenu(mitem, G_MENU_MODEL(sub));
+    g_menu_insert_item(section, pos, mitem);
+    g_object_unref(mitem);
+    g_object_unref(sub);
+
+    if (processed_title != title)
+      free(processed_title);
+  }
+  return 1;
+}
+
+static int gtk4MenuItemSetActiveAttrib(Ihandle* ih, const char* value)
+{
+  char* action_name = iupAttribGet(ih, "_IUPGTK4_ACTION_NAME");
+  if (action_name)
+  {
+    GSimpleActionGroup* action_group = gtk4MenuGetActionGroup(ih->parent);
+    if (action_group)
+    {
+      GAction* action = g_action_map_lookup_action(G_ACTION_MAP(action_group), action_name);
+      if (action)
+        g_simple_action_set_enabled(G_SIMPLE_ACTION(action), iupStrBoolean(value));
+    }
+  }
+  return 1;
 }
 
 /*******************************************************************************************/
@@ -1192,14 +1376,14 @@ IUP_SDK_API int iupdrvRecentMenuUpdate(Ihandle* menu, const char** filenames, in
 IUP_SDK_API void iupdrvMenuItemInitClass(Iclass* ic)
 {
   ic->Map = gtk4MenuItemMapMethod;
-  ic->UnMap = iupdrvBaseUnMapMethod;
+  ic->UnMap = gtk4MenuItemUnMapMethod;
 
   iupClassRegisterAttribute(ic, "FONT", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "ACTIVE", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "ACTIVE", NULL, gtk4MenuItemSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "VALUE", gtk4MenuItemGetValueAttrib, gtk4MenuItemSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT|IUPAF_NOT_MAPPED);
-  iupClassRegisterAttribute(ic, "TITLE", NULL, NULL, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TITLE", NULL, gtk4MenuItemSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TITLEIMAGE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "IMAGE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_IHANDLENAME|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "IMPRESS", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_IHANDLENAME|IUPAF_NO_INHERIT);
@@ -1210,18 +1394,18 @@ IUP_SDK_API void iupdrvMenuItemInitClass(Iclass* ic)
 IUP_SDK_API void iupdrvSubmenuInitClass(Iclass* ic)
 {
   ic->Map = gtk4SubmenuMapMethod;
-  ic->UnMap = iupdrvBaseUnMapMethod;
+  ic->UnMap = gtk4SubmenuUnMapMethod;
 
   iupClassRegisterAttribute(ic, "FONT", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ACTIVE", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "TITLE", NULL, NULL, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TITLE", NULL, gtk4SubmenuSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "IMAGE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_IHANDLENAME|IUPAF_NO_INHERIT);
 }
 
 IUP_SDK_API void iupdrvMenuSeparatorInitClass(Iclass* ic)
 {
   ic->Map = gtk4MenuSeparatorMapMethod;
-  ic->UnMap = iupdrvBaseUnMapMethod;
+  ic->UnMap = gtk4MenuSeparatorUnMapMethod;
 }
