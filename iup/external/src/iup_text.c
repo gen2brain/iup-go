@@ -28,6 +28,36 @@
 /* Used by List and Text, implemented in Text
    Can NOT use ih->data
 */
+int iupEditCheckNewValue(Ihandle* ih, IFnis cb, const char* new_value, void *mask, int nc)
+{
+  if (!new_value)
+    return 1;
+
+  if (nc && (int)strlen(new_value) > nc)
+    return 0;
+
+  if (mask && iupMaskCheck((Imask*)mask, new_value)==0)
+  {
+    IFns fail_cb = (IFns)IupGetCallback(ih, "MASKFAIL_CB");
+    if (fail_cb) fail_cb(ih, (char*)new_value);
+    return 0;
+  }
+
+  if (cb)
+  {
+    int cb_ret = cb(ih, 0, (char*)new_value);
+    if (cb_ret==IUP_IGNORE)
+      return 0;
+    if (cb_ret==IUP_CLOSE)
+    {
+      IupExitLoop();
+      return 0;
+    }
+  }
+
+  return 1;
+}
+
 int iupEditCallActionCb(Ihandle* ih, IFnis cb, const char* insert_value, int start, int end, void *mask, int nc, int remove_dir, int utf8)
 {
   char *new_value, *value;

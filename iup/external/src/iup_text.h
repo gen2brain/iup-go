@@ -30,6 +30,7 @@ IUP_SDK_API void iupdrvTextConvertPosToLinCol(Ihandle* ih, int pos, int *lin, in
 
 /* Used by List and Text, implemented in Text */
 int iupEditCallActionCb(Ihandle* ih, IFnis cb, const char* insert_value, int start, int end, void *mask, int nc, int remove_dir, int utf8);
+int iupEditCheckNewValue(Ihandle* ih, IFnis cb, const char* new_value, void *mask, int nc);
 
 void iupTextUpdateFormatTags(Ihandle* ih);
 
