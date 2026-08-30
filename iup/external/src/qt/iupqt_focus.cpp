@@ -46,7 +46,10 @@ IUP_DRV_API void iupqtSetCanFocus(QWidget* widget, int can)
 
 extern "C" IUP_SDK_API void iupdrvSetFocus(Ihandle* ih)
 {
-  QWidget* widget = (QWidget*)ih->handle;
+  QWidget* widget = iupqtCanvasGetWidget(ih);
+
+  if (!widget)
+    widget = (QWidget*)ih->handle;
 
   if (!widget)
     return;
