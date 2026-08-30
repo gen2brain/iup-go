@@ -493,15 +493,7 @@ IUP_SDK_API void iupdrvPostRedraw(Ihandle* ih)
 
 IUP_SDK_API void iupdrvRedrawNow(Ihandle* ih)
 {
-  GdkDisplay* display;
-
-  /* Queue the redraw */
   gtk_widget_queue_draw(ih->handle);
-
-  /* Use gdk_display_sync() to force immediate processing */
-  display = gtk_widget_get_display(ih->handle);
-  if (display)
-    gdk_display_sync(display);
 }
 
 IUP_SDK_API void iupdrvScreenToClient(Ihandle* ih, int* x, int* y)
