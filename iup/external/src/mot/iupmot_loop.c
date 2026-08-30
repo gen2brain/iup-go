@@ -116,8 +116,6 @@ IUP_API int IupMainLoop(void)
 
 IUP_API int IupLoopStepWait(void)
 {
-  while(!XtAppPending(iupmot_appcontext));
-
   return motLoopProcessEvent();
 }
 
