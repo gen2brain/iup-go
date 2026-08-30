@@ -115,7 +115,10 @@ void iupListMultipleCallActionCb(Ihandle* ih, IFnsii cb, IFns multi_cb, int* pos
   memset(str, '-', count);
   str[count]=0;
   for (i=0; i<sel_count; i++)
-    str[pos[i]] = '+';
+  {
+    if (pos[i] >= 0 && pos[i] < count)
+      str[pos[i]] = '+';
+  }
 
   if (old_count != count)
   {
