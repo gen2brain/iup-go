@@ -2110,6 +2110,9 @@ static void iMdEmitInline(Ihandle* ih, iMdBuf* out, const char* text, const int*
     const char* ch = text + choff[i];
     int blen = choff[i + 1] - choff[i];
 
+    if (!f->image && blen == 3 && memcmp(ch, "\xEF\xBF\xBC", 3) == 0)
+      continue;
+
     if (f->image)
     {
       char* alt = iMdGetImageAlt(ih, f->image);
