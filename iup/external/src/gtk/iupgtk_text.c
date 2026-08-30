@@ -1930,6 +1930,7 @@ IUP_SDK_API int iupdrvTextGetFormatTags(Ihandle* ih, Ihandle* bulk_tag)
 {
   GtkTextBuffer* buffer;
   GtkTextIter iter, end_iter;
+  int pixbufs = 0;
 
   if (!ih->data->is_multiline || !ih->handle)
     return 0;
@@ -1940,17 +1941,25 @@ IUP_SDK_API int iupdrvTextGetFormatTags(Ihandle* ih, Ihandle* bulk_tag)
 
   while (gtk_text_iter_compare(&iter, &end_iter) < 0)
   {
-    GtkTextIter next_iter = iter;
+    GtkTextIter next_iter = iter, scan;
     GSList *tags, *item;
     Ihandle* formattag;
-    int start, end;
+    int start, end, span_pixbufs = 0;
 
     if (!gtk_text_iter_forward_to_tag_toggle(&next_iter, NULL) ||
         gtk_text_iter_compare(&next_iter, &end_iter) > 0)
       next_iter = end_iter;
 
-    start = gtk_text_iter_get_offset(&iter);
-    end = gtk_text_iter_get_offset(&next_iter);
+    /* buffer offsets count an embedded image, the VALUE string does not */
+    for (scan = iter; gtk_text_iter_compare(&scan, &next_iter) < 0; gtk_text_iter_forward_char(&scan))
+    {
+      if (gtk_text_iter_get_pixbuf(&scan))
+        span_pixbufs++;
+    }
+
+    start = gtk_text_iter_get_offset(&iter) - pixbufs;
+    end = gtk_text_iter_get_offset(&next_iter) - pixbufs - span_pixbufs;
+    pixbufs += span_pixbufs;
     if (end <= start)
       break;
 
