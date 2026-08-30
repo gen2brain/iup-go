@@ -16,7 +16,9 @@ is not generated for the originating key.
 
 ### Notes
 
-In EFL dead keys are delivered as separate characters.
+In EFL dead keys and IME composition need an Ecore_IMF module: it is selected automatically under
+Wayland, and from the ECORE_IMF_MODULE environment variable on X11. Without a module each key
+commits its own character.
 In GNUstep dead keys and IME composition are not composed; each key commits its own character.
 In macOS the Option modifier produces text according to the keyboard layout.
 In WASM IME composition is reported at composition end.
