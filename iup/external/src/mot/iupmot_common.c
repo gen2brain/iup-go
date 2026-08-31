@@ -16,6 +16,7 @@
 #include <Xm/Cursor.h>
 #endif
 #include <X11/IntrinsicP.h>
+#include <X11/CompositeP.h>
 
 #include "iup.h"
 #include "iupcbs.h"
@@ -63,27 +64,67 @@ static void motSaveAttributesRec(Ihandle* ih)
     motSaveAttributesRec(child);
 }
 
+static Widget motGetShell(Widget widget)
+{
+  while (widget && !XtIsShell(widget))
+    widget = XtParent(widget);
+  return widget;
+}
+
+static int motReparentWidget(Widget widget, Widget new_parent)
+{
+  Widget old_parent = XtParent(widget);
+  Boolean managed;
+
+  if (XtClass(old_parent) != XtClass(new_parent))
+    return 0;
+  if (motGetShell(old_parent) != motGetShell(new_parent))
+    return 0;
+  if (!XtIsComposite(old_parent) || !XtIsComposite(new_parent))
+    return 0;
+  if (XtIsRealized(widget) && !XtIsRealized(new_parent))
+    return 0;
+
+  managed = XtIsManaged(widget);
+  if (managed)
+    XtUnmanageChild(widget);
+
+  (*((CompositeWidgetClass)XtClass(old_parent))->composite_class.delete_child)(widget);
+  widget->core.parent = new_parent;
+  (*((CompositeWidgetClass)XtClass(new_parent))->composite_class.insert_child)(widget);
+
+  if (XtIsWidget(widget) && XtIsRealized(widget))
+    XReparentWindow(iupmot_display, XtWindow(widget), XtWindow(new_parent), widget->core.x, widget->core.y);
+
+  if (managed)
+    XtManageChild(widget);
+
+  return 1;
+}
+
 IUP_SDK_API void iupdrvReparent(Ihandle* ih)
 {
-  /* Intrinsics and Motif do NOT support reparent.
-     XReparentWindow can NOT be used because will reparent only the X-Windows windows.
-     So must unmap and map again to obtain the same effect. */
   Widget new_parent = iupChildTreeGetNativeParentHandle(ih);
-  Widget widget = (Widget)iupAttribGet(ih, "_IUP_EXTRAPARENT");  /* here is used as the native child because is the utmost component of the element */
+  Widget widget = (Widget)iupAttribGet(ih, "_IUP_EXTRAPARENT");
   if (!widget) widget = ih->handle;
 
   if (XtParent(widget) != new_parent)
   {
-    int old_visible = IupGetInt(ih, "VISIBLE");
-    if (old_visible)
-      IupSetAttribute(ih, "VISIBLE", "NO");
+    if (motReparentWidget(widget, new_parent))
+      return;
 
-    motSaveAttributesRec(ih); /* this does not save everything... */
-    IupUnmap(ih);
-    IupMap(ih);
+    {
+      int old_visible = IupGetInt(ih, "VISIBLE");
+      if (old_visible)
+        IupSetAttribute(ih, "VISIBLE", "NO");
 
-    if (old_visible)
-      IupSetAttribute(ih, "VISIBLE", "Yes");
+      motSaveAttributesRec(ih);
+      IupUnmap(ih);
+      IupMap(ih);
+
+      if (old_visible)
+        IupSetAttribute(ih, "VISIBLE", "Yes");
+    }
   }
 }
 
