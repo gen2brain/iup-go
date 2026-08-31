@@ -5,6 +5,7 @@
  */
 
 #include <cstddef>
+#include <cstdio>
 
 #include <InterfaceDefs.h>
 #include <Looper.h>
@@ -691,6 +692,22 @@ static void* haikuCanvasGetInnerNativeContainerMethod(Ihandle* ih, Ihandle* /*ch
   return ih->handle;
 }
 
+static int haikuCanvasSetUpdateRectAttrib(Ihandle* ih, const char* value)
+{
+  int x1, y1, x2, y2;
+  BView* view = (BView*)ih->handle;
+  if (view && value && std::sscanf(value, "%d %d %d %d", &x1, &y1, &x2, &y2) == 4)
+  {
+    BLooper* loop = view->Looper();
+    if (!loop) return 0;
+    LooperLockGuard guard(loop);
+    view->Invalidate(BRect(x1, y1, x2, y2));
+  }
+  else
+    iupdrvPostRedraw(ih);
+  return 0;
+}
+
 extern "C" IUP_SDK_API void iupdrvCanvasInitClass(Iclass* ic)
 {
   ic->Map = haikuCanvasMapMethod;
@@ -699,6 +716,7 @@ extern "C" IUP_SDK_API void iupdrvCanvasInitClass(Iclass* ic)
   ic->GetInnerNativeContainerHandle = haikuCanvasGetInnerNativeContainerMethod;
 
   iupClassRegisterAttribute(ic, "DRAWSIZE", haikuCanvasGetDrawSizeAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "UPDATERECT", NULL, haikuCanvasSetUpdateRectAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "BORDER", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DRAWFONT", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, haikuCanvasSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
