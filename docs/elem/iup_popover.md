@@ -33,14 +33,16 @@ The basic values (BOTTOM, TOP, LEFT, RIGHT) center the popover along the anchor 
 In WinUI all positions map directly to native FlyoutPlacementMode. In GTK 3 and GTK 4 the edge-aligned positions are approximated using the native popover positioning with offsets. In other systems the positions are calculated manually.
 
 **OFFSETX** (non-inheritable): Horizontal pixel offset added to the computed popover position. Can be positive or negative. Default: "0".
-Not supported in WinUI, macOS and iOS.
+Not supported in iOS.
+In macOS the offset is applied only while the resulting position stays inside the dialog.
 
 **OFFSETY** (non-inheritable): Vertical pixel offset added to the computed popover position. Can be positive or negative. Default: "0".
-Not supported in WinUI, macOS and iOS.
+Not supported in iOS.
+In macOS the offset is applied only while the resulting position stays inside the dialog.
 
 **AUTOFLIP** (non-inheritable): When enabled, the popover automatically flips to the opposite side if it would extend beyond the screen boundaries. The alignment is preserved when flipping (e.g. BOTTOMLEFT flips to TOPLEFT).
 Can be "YES" or "NO". Default: "YES".
-Only affects Win32, Qt, FLTK, EFL, Motif, Android and Haiku. In GTK 3 and WinUI the native popover flips at window boundaries. In GTK 4 and macOS the native popover flips at screen boundaries. In all native cases auto-flip is always enabled and this attribute has no effect.
+Only affects Win32, Qt, FLTK, EFL, Motif, Android and Haiku. In GTK 3 the native popover flips at window boundaries. In GTK 4, WinUI and macOS the native popover flips at screen boundaries. In all native cases auto-flip is always enabled and this attribute has no effect.
 
 [VISIBLE](../attrib/iup_visible.md) (non-inheritable): Shows or hides the popover.
 The popover is mapped on the first time VISIBLE is set to "YES".

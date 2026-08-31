@@ -128,6 +128,18 @@ static int qtPopoverSetVisibleAttrib(Ihandle* ih, const char* value)
 
     popover = (IupQtPopover*)ih->handle;
     anchor_widget = (QWidget*)anchor->handle;
+
+    {
+      bool autohide = iupAttribGetBoolean(ih, "AUTOHIDE") != 0;
+      if (autohide != popover->autohide_enabled)
+      {
+        QWidget* anchor_toplevel = autohide ? nullptr : anchor_widget->window();
+        popover->setParent(anchor_toplevel);
+        popover->setWindowFlags(autohide ? (Qt::Popup | Qt::FramelessWindowHint)
+                                         : (Qt::Tool | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint));
+        popover->autohide_enabled = autohide;
+      }
+    }
     anchor_pos = anchor_widget->mapToGlobal(QPoint(0, 0));
     anchor_size = anchor_widget->size();
 
