@@ -5,6 +5,7 @@
  */
 
 
+#include <stdio.h>
 #include <string.h>
 #include <math.h>
 
@@ -325,16 +326,18 @@ static void cocoaCanvasFireGesture(Ihandle* ih, int gesture, int state, int x, i
 
   if (call_back)
   {
-    if (dirty_rect.size.width <= 0 || dirty_rect.size.height <= 0)
+    NSRect clip_rect = NSIntersectionRect(dirty_rect, bounds);
+
+    if (clip_rect.size.width <= 0 || clip_rect.size.height <= 0)
     {
       iupAttribSet(_ih, "CLIPRECT", NULL);
     }
     else
     {
-      double x1 = floor(dirty_rect.origin.x);
-      double y1 = floor(dirty_rect.origin.y);
-      double x2 = ceil(dirty_rect.origin.x + dirty_rect.size.width) - 1;
-      double y2 = ceil(dirty_rect.origin.y + dirty_rect.size.height) - 1;
+      double x1 = floor(clip_rect.origin.x);
+      double y1 = floor(clip_rect.origin.y);
+      double x2 = ceil(clip_rect.origin.x + clip_rect.size.width) - 1;
+      double y2 = ceil(clip_rect.origin.y + clip_rect.size.height) - 1;
 
       if (x2 < x1) x2 = x1;
       if (y2 < y1) y2 = y1;
@@ -1155,6 +1158,19 @@ static int cocoaCanvasSetBgColorAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
+static int cocoaCanvasSetUpdateRectAttrib(Ihandle* ih, const char* value)
+{
+  int x1, y1, x2, y2;
+  if (value && !iupAttribGet(ih, "_IUP_GLCONTROLDATA") && sscanf(value, "%d %d %d %d", &x1, &y1, &x2, &y2) == 4)
+  {
+    IupCocoaCanvasView* canvas_view = cocoaCanvasGetCanvasView(ih);
+    [canvas_view setNeedsDisplayInRect:NSMakeRect(x1, y1, x2 - x1 + 1, y2 - y1 + 1)];
+  }
+  else
+    iupdrvPostRedraw(ih);
+  return 0;
+}
+
 static int cocoaCanvasSetDXAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->sb & IUP_SB_HORIZ)
@@ -1723,6 +1739,7 @@ IUP_SDK_API void iupdrvCanvasInitClass(Iclass* ic)
 
   /* IupCanvas only */
   iupClassRegisterAttribute(ic, "DRAWSIZE", cocoaCanvasGetDrawSizeAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "UPDATERECT", NULL, cocoaCanvasSetUpdateRectAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
 
   /* Scrollbar attributes */
   iupClassRegisterAttribute(ic, "DX", NULL, cocoaCanvasSetDXAttrib, NULL, NULL, IUPAF_NO_INHERIT);
