@@ -57,6 +57,7 @@ func storeCallback(ih Ihandle, key string, f any) {
 }
 
 func loadCallback(ih Ihandle, key string) cgo.Handle {
+	enterIupThread()
 	return strToHandle(ih.GetAttribute(key))
 }
 
