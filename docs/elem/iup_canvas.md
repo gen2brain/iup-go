@@ -31,8 +31,15 @@ Default: NO.
 Available in GTK 3, GTK 4 and FLTK (FLTK only when built with Cairo).
 
 **CLIPRECT** (only during ACTION): Specifies a rectangle that has its region invalidated for painting, it could be used for clipping.
+The application may repaint only this rectangle; pixels outside it are preserved.
 Format: "%d %d %d %d"="x1 y1 x2 y2".
-Not supported in Motif and EFL.
+Not supported in WASM.
+
+**UPDATERECT** (write-only): Requests a redraw limited to a rectangle of the canvas, received in the ACTION callback as CLIPRECT.
+The driver can expand the rectangle; successive values set before the redraw happens are combined into their bounding rectangle.
+Format: "%d %d %d %d"="x1 y1 x2 y2".
+An invalid value or a driver without support redraws the whole canvas.
+Not supported in Win32, WinUI, Cocoa, iOS, Android and WASM.
 
 [CURSOR](../attrib/iup_cursor.md) (non-inheritable): Defines a cursor for the canvas.
 The Windows SDK recommends that cursors and icons should be implemented as resources rather than created at run time.
