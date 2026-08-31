@@ -8,6 +8,7 @@
 #include <Xm/BulletinB.h>
 #include <Xm/MwmUtil.h>
 #include <Xm/Protocols.h>
+#include <X11/Xatom.h>
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -827,6 +828,40 @@ static int motDialogSetOpacityAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
+static char* motDialogGetMaximizedAttrib(Ihandle* ih)
+{
+  Atom actual_type;
+  int actual_format;
+  unsigned long nitems, bytes_after, i;
+  unsigned char* data = NULL;
+  int vert = 0, horz = 0;
+  static Atom wmstate = 0, maxv = 0, maxh = 0;
+
+  if (!ih->handle || !XtWindow(ih->handle))
+    return "NO";
+
+  if (!wmstate)
+  {
+    wmstate = XInternAtom(iupmot_display, "_NET_WM_STATE", False);
+    maxv = XInternAtom(iupmot_display, "_NET_WM_STATE_MAXIMIZED_VERT", False);
+    maxh = XInternAtom(iupmot_display, "_NET_WM_STATE_MAXIMIZED_HORZ", False);
+  }
+
+  if (XGetWindowProperty(iupmot_display, XtWindow(ih->handle), wmstate, 0, 1024, False, XA_ATOM,
+                         &actual_type, &actual_format, &nitems, &bytes_after, &data) == Success && data)
+  {
+    Atom* atoms = (Atom*)data;
+    for (i = 0; i < nitems; i++)
+    {
+      if (atoms[i] == maxv) vert = 1;
+      if (atoms[i] == maxh) horz = 1;
+    }
+    XFree(data);
+  }
+
+  return iupStrReturnBoolean(vert && horz);
+}
+
 static int motDialogSetBringFrontAttrib(Ihandle* ih, const char* value)
 {
   if (!iupStrBoolean(value) || !iupdrvDialogIsVisible(ih))
@@ -1305,6 +1340,7 @@ IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "TOPMOST", NULL, motDialogSetTopMostAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DIALOGHINT", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "BRINGFRONT", NULL, motDialogSetBringFrontAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MAXIMIZED", motDialogGetMaximizedAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "COMPOSITED", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CONTROL", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "HELPBUTTON", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);

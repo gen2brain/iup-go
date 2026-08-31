@@ -538,7 +538,22 @@ static void motTabsButtonPressEvent(Widget w, Ihandle* child, XButtonEvent* evt,
         return;
       }
 
-      iupdrvTabsSetCurrentTab(ih, pos);
+      {
+        int prev_pos = iupdrvTabsGetCurrentTab(ih);
+        iupdrvTabsSetCurrentTab(ih, pos);
+        if (prev_pos != pos)
+        {
+          IFnnn cb = (IFnnn)IupGetCallback(ih, "TABCHANGE_CB");
+          if (cb)
+            cb(ih, IupGetChild(ih, pos), IupGetChild(ih, prev_pos));
+          else
+          {
+            IFnii cb2 = (IFnii)IupGetCallback(ih, "TABCHANGEPOS_CB");
+            if (cb2)
+              cb2(ih, pos, prev_pos);
+          }
+        }
+      }
     }
   }
   else if (evt->type==ButtonPress && evt->button==Button3)
@@ -675,19 +690,6 @@ static void motTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
       iupMOT_SETARG(args, num_args, XmNpageNumber, pos);
       tab_form = XtCreateManagedWidget("tab_form", xmFormWidgetClass, ih->handle, args, num_args);
 
-      tab_label_widget = XtVaCreateManagedWidget(
-        "tab_label",
-        xmLabelWidgetClass,
-        tab_form,
-        XmNlabelType, tabtitle ? XmSTRING : XmPIXMAP,
-        XmNmarginHeight, ih->data->vert_padding,
-        XmNmarginWidth, ih->data->horiz_padding,
-        XmNtopAttachment, XmATTACH_FORM,
-        XmNbottomAttachment, XmATTACH_FORM,
-        XmNleftAttachment, XmATTACH_FORM,
-        NULL
-      );
-
       motTabsInitializeClosePixmap(ih->handle);
       close_button = XtVaCreateManagedWidget(
         "close_btn",
@@ -705,9 +707,22 @@ static void motTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
         XmNtopAttachment, XmATTACH_FORM,
         XmNbottomAttachment, XmATTACH_FORM,
         XmNrightAttachment, XmATTACH_FORM,
-        XmNleftAttachment, XmATTACH_WIDGET,
-        XmNleftWidget, tab_label_widget,
-        XmNleftOffset, 4,
+        NULL
+      );
+
+      tab_label_widget = XtVaCreateManagedWidget(
+        "tab_label",
+        xmLabelWidgetClass,
+        tab_form,
+        XmNlabelType, tabtitle ? XmSTRING : XmPIXMAP,
+        XmNmarginHeight, ih->data->vert_padding,
+        XmNmarginWidth, ih->data->horiz_padding,
+        XmNtopAttachment, XmATTACH_FORM,
+        XmNbottomAttachment, XmATTACH_FORM,
+        XmNleftAttachment, XmATTACH_FORM,
+        XmNrightAttachment, XmATTACH_WIDGET,
+        XmNrightWidget, close_button,
+        XmNrightOffset, 4,
         NULL
       );
 
