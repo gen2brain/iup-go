@@ -39,7 +39,7 @@ Not supported in WASM.
 The driver can expand the rectangle; successive values set before the redraw happens are combined into their bounding rectangle.
 Format: "%d %d %d %d"="x1 y1 x2 y2".
 An invalid value or a driver without support redraws the whole canvas.
-Not supported in Win32, WinUI, Cocoa, iOS, Android and WASM.
+Not supported in iOS, Android and WASM.
 
 [CURSOR](../attrib/iup_cursor.md) (non-inheritable): Defines a cursor for the canvas.
 The Windows SDK recommends that cursors and icons should be implemented as resources rather than created at run time.
