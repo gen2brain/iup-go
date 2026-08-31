@@ -1694,8 +1694,6 @@ void iupMatrixDrawCB(Ihandle* ih)
     /* Note: scrollbar resize early return is disabled - was not working reliably in original code */
   }
 
-  /* Check CLIPRECT and scroll pos before drawing */
-  char* cliprect = iupAttribGet(ih, "CLIPRECT");
   int posx = IupGetInt(ih, "POSX");
   int posy = IupGetInt(ih, "POSY");
   int dx = IupGetInt(ih, "DX");

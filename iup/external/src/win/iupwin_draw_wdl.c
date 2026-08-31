@@ -52,6 +52,11 @@ static WD_HSTROKESTYLE g_strokeDot = NULL;
 static WD_HSTROKESTYLE g_strokeDashDot = NULL;
 static WD_HSTROKESTYLE g_strokeDashDotDot = NULL;
 
+IUP_DRV_API int iupwinDrawPartialSupported(void)
+{
+  return wdBackend() == WD_BACKEND_GDIPLUS;
+}
+
 IUP_DRV_API void iupwinDrawInit(void)
 {
   iupwinDrawThemeInit();
@@ -86,7 +91,7 @@ IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
   IdrawCanvas* dc = calloc(1, sizeof(IdrawCanvas));
   PAINTSTRUCT ps;
   RECT rect;
-  int x, y, w, h;
+  int x1, y1, x2, y2;
   char *rcPaint;
 
   dc->ih = ih;
@@ -111,11 +116,11 @@ IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
   {
     ps.hdc = (HDC)iupAttribGet(ih, "HDC_WMPAINT");
     dc->hDC = NULL;
-    sscanf(rcPaint, "%d %d %d %d", &x, &y, &w, &h);
-    ps.rcPaint.left = x;
-    ps.rcPaint.top = y;
-    ps.rcPaint.right = x + w;
-    ps.rcPaint.bottom = y + h;
+    sscanf(rcPaint, "%d %d %d %d", &x1, &y1, &x2, &y2);
+    ps.rcPaint.left = x1;
+    ps.rcPaint.top = y1;
+    ps.rcPaint.right = x2 + 1;
+    ps.rcPaint.bottom = y2 + 1;
   }
   else
   {

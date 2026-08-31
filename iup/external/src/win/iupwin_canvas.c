@@ -23,6 +23,7 @@
 #include "iup_key.h"
 
 #include "iupwin_drv.h"
+#include "iupwin_draw.h"
 #include "iupwin_handle.h"
 #include "iupwin_brush.h"
 #include "iupwin_info.h"
@@ -446,7 +447,7 @@ static int winCanvasMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT
         PAINTSTRUCT ps;
         HDC hdc = BeginPaint(ih->handle, &ps);
         iupAttribSet(ih, "HDC_WMPAINT", (char*)hdc);
-        iupAttribSetStrf(ih, "CLIPRECT", "%d %d %d %d", ps.rcPaint.left, ps.rcPaint.top, ps.rcPaint.right-ps.rcPaint.left, ps.rcPaint.bottom-ps.rcPaint.top);
+        iupAttribSetStrf(ih, "CLIPRECT", "%d %d %d %d", ps.rcPaint.left, ps.rcPaint.top, ps.rcPaint.right-1, ps.rcPaint.bottom-1);
 
         cb(ih);
 
@@ -741,6 +742,23 @@ static void winCanvasRelease(Iclass* ic)
     UnregisterClass(TEXT("IupCanvas"), iupwin_hinstance);
 }
 
+static int winCanvasSetUpdateRectAttrib(Ihandle* ih, const char* value)
+{
+  int x1, y1, x2, y2;
+  if (value && iupwinDrawPartialSupported() && sscanf(value, "%d %d %d %d", &x1, &y1, &x2, &y2) == 4)
+  {
+    RECT rect;
+    rect.left = x1;
+    rect.top = y1;
+    rect.right = x2 + 1;
+    rect.bottom = y2 + 1;
+    InvalidateRect(ih->handle, &rect, FALSE);
+  }
+  else
+    iupdrvPostRedraw(ih);
+  return 0;
+}
+
 IUP_SDK_API void iupdrvCanvasInitClass(Iclass* ic)
 {
   if (!iupwinClassExist(TEXT("IupCanvas")))
@@ -769,6 +787,7 @@ IUP_SDK_API void iupdrvCanvasInitClass(Iclass* ic)
   /* IupCanvas Windows only */
   iupClassRegisterAttribute(ic, "HWND", iupBaseGetWidAttrib, NULL, NULL, NULL, IUPAF_NO_STRING|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "HDC_WMPAINT", NULL, NULL, NULL, NULL, IUPAF_NO_STRING|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "UPDATERECT", NULL, winCanvasSetUpdateRectAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "HTTRANSPARENT", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DRAWANTIALIAS", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
 
