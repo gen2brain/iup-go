@@ -1,8 +1,7 @@
 /** \file
  * \brief IupPopover control - FLTK implementation
  *
- * Uses Fl_Window with border(0). AUTOHIDE mode uses set_override() for
- * popup-like behavior (auto-dismiss on click outside).
+ * Uses Fl_Window with border(0).
  *
  * See Copyright Notice in "iup.h"
  */
@@ -115,36 +114,25 @@ static int fltkPopoverSetVisibleAttrib(Ihandle* ih, const char* value)
     IupFltkPopover* popover = (IupFltkPopover*)ih->handle;
     Fl_Widget* anchor_widget = (Fl_Widget*)anchor->handle;
 
+    popover->autohide_enabled = iupAttribGetBoolean(ih, "AUTOHIDE");
+
     if (ih->firstchild && ih->firstchild->handle)
     {
       iupLayoutCompute(ih);
       iupLayoutUpdate(ih->firstchild);
     }
 
-    int ax = 0, ay = 0;
-    Fl_Widget* w = anchor_widget;
-    while (w)
+    int ax, ay;
+    if (anchor_widget->as_window())
     {
-      ax += w->x();
-      ay += w->y();
-      Fl_Window* win = w->as_window();
-      if (win)
-      {
-        ax = win->x_root();
-        ay = win->y_root();
-        break;
-      }
-      w = w->parent();
+      ax = ((Fl_Window*)anchor_widget)->x_root();
+      ay = ((Fl_Window*)anchor_widget)->y_root();
     }
-
-    if (!anchor_widget->as_window())
+    else
     {
       Fl_Window* win = anchor_widget->window();
-      if (win)
-      {
-        ax = win->x_root() + anchor_widget->x();
-        ay = win->y_root() + anchor_widget->y();
-      }
+      ax = (win ? win->x_root() : 0) + anchor_widget->x();
+      ay = (win ? win->y_root() : 0) + anchor_widget->y();
     }
 
     int x, y;

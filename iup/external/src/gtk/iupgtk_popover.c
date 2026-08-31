@@ -171,7 +171,11 @@ static int gtkPopoverSetVisibleAttrib(Ihandle* ih, const char* value)
       iupLayoutUpdate(ih);
     }
 
+#if GTK_CHECK_VERSION(3, 22, 0)
     gtk_popover_popup(popover);
+#else
+    gtk_widget_show(GTK_WIDGET(popover));
+#endif
 
     {
       IFni show_cb = (IFni)IupGetCallback(ih, "SHOW_CB");
@@ -182,7 +186,13 @@ static int gtkPopoverSetVisibleAttrib(Ihandle* ih, const char* value)
   else
   {
     if (ih->handle)
+    {
+#if GTK_CHECK_VERSION(3, 22, 0)
+      gtk_popover_popdown((GtkPopover*)ih->handle);
+#else
       gtk_widget_hide(ih->handle);
+#endif
+    }
   }
 
   return 0;

@@ -84,6 +84,7 @@ static int winuiPopoverSetVisibleAttrib(Ihandle* ih, const char* value)
       iupLayoutUpdate(ih);
     }
 
+    int placement = iupPopoverGetPosition(ih);
     aux->flyout.Placement(winuiPopoverGetPlacement(ih));
 
     if (!iupAttribGetBoolean(ih, "AUTOHIDE"))
@@ -97,7 +98,73 @@ static int winuiPopoverSetVisibleAttrib(Ihandle* ih, const char* value)
       }
     }
 
-    aux->flyout.ShowAt(anchorElem);
+    {
+      int offsetx = iupAttribGetInt(ih, "OFFSETX");
+      int offsety = iupAttribGetInt(ih, "OFFSETY");
+
+      if (offsetx != 0 || offsety != 0)
+      {
+        double aw = anchorElem.ActualWidth();
+        double ah = anchorElem.ActualHeight();
+        double px, py;
+
+        switch (placement)
+        {
+        case IUP_POPOVER_LEFT:
+        case IUP_POPOVER_LEFTTOP:
+        case IUP_POPOVER_LEFTBOTTOM:
+          px = 0;
+          break;
+        case IUP_POPOVER_RIGHT:
+        case IUP_POPOVER_RIGHTTOP:
+        case IUP_POPOVER_RIGHTBOTTOM:
+          px = aw;
+          break;
+        case IUP_POPOVER_BOTTOMLEFT:
+        case IUP_POPOVER_TOPLEFT:
+          px = 0;
+          break;
+        case IUP_POPOVER_BOTTOMRIGHT:
+        case IUP_POPOVER_TOPRIGHT:
+          px = aw;
+          break;
+        default:
+          px = aw / 2;
+          break;
+        }
+
+        switch (placement)
+        {
+        case IUP_POPOVER_TOP:
+        case IUP_POPOVER_TOPLEFT:
+        case IUP_POPOVER_TOPRIGHT:
+          py = 0;
+          break;
+        case IUP_POPOVER_LEFTTOP:
+        case IUP_POPOVER_RIGHTTOP:
+          py = 0;
+          break;
+        case IUP_POPOVER_LEFTBOTTOM:
+        case IUP_POPOVER_RIGHTBOTTOM:
+          py = ah;
+          break;
+        case IUP_POPOVER_LEFT:
+        case IUP_POPOVER_RIGHT:
+          py = ah / 2;
+          break;
+        default:
+          py = ah;
+          break;
+        }
+
+        FlyoutShowOptions options;
+        options.Placement(winuiPopoverGetPlacement(ih));
+        options.Position(Point((float)(px + offsetx), (float)(py + offsety)));
+        aux->flyout.ShowAt(anchorElem, options);
+      }
+      else
+        aux->flyout.ShowAt(anchorElem);
+    }
     aux->isVisible = true;
 
     winuiPopoverCallShowCB(ih, 1);
@@ -135,6 +202,8 @@ static int winuiPopoverMapMethod(Ihandle* ih)
 
   aux->flyout.Content(aux->innerCanvas);
   aux->flyout.Placement(winuiPopoverGetPlacement(ih));
+
+  aux->flyout.ShouldConstrainToRootBounds(false);
 
   aux->closedToken = aux->flyout.Closed([ih](IInspectable const&, IInspectable const&) {
     IupWinUIPopoverAux* a = winuiGetAux<IupWinUIPopoverAux>(ih, IUPWINUI_POPOVER_AUX);

@@ -132,40 +132,80 @@ static int iPopoverCalcOverflow(int x, int y, int pw, int ph, int bx, int by, in
   return overflow;
 }
 
+static void iPopoverGetMonitorBounds(int px, int py, int* bx, int* by, int* bw, int* bh)
+{
+  char* info = IupGetGlobal("MONITORSINFO");
+  int sw, sh;
+
+  iupdrvGetScreenSize(&sw, &sh);
+
+  *bx = 0;
+  *by = 0;
+  *bw = sw;
+  *bh = sh;
+
+  while (info)
+  {
+    int x, y, w, h;
+    if (sscanf(info, "%d %d %d %d", &x, &y, &w, &h) != 4)
+      break;
+    if (px >= x && px < x + w && py >= y && py < y + h)
+    {
+      *bx = x;
+      *by = y;
+      *bw = w;
+      *bh = h;
+      break;
+    }
+    info = strchr(info, '\n');
+    if (info)
+      info++;
+  }
+
+  if (*bx == 0 && *by == 0)
+  {
+    if (*bw > sw) *bw = sw;
+    if (*bh > sh) *bh = sh;
+  }
+}
+
 IUP_API void iupPopoverCalcPosition(Ihandle* ih,
   int ax, int ay, int aw, int ah,
   int pw, int ph,
   int* x, int* y)
 {
   int position = iupPopoverGetPosition(ih);
+  int bx, by, bw, bh;
+
+  iPopoverGetMonitorBounds(ax + aw / 2, ay + ah / 2, &bx, &by, &bw, &bh);
 
   iPopoverCalcXY(position, ax, ay, aw, ah, pw, ph, x, y);
 
   if (iupAttribGetBoolean(ih, "AUTOFLIP"))
   {
-    int sw, sh;
-    iupdrvGetScreenSize(&sw, &sh);
-
+    int overflow = iPopoverCalcOverflow(*x, *y, pw, ph, bx, by, bw, bh);
+    if (overflow > 0)
     {
-      int overflow = iPopoverCalcOverflow(*x, *y, pw, ph, 0, 0, sw, sh);
-      if (overflow > 0)
+      int flipped = iPopoverFlipPosition(position);
+      int fx, fy;
+
+      iPopoverCalcXY(flipped, ax, ay, aw, ah, pw, ph, &fx, &fy);
+
+      if (iPopoverCalcOverflow(fx, fy, pw, ph, bx, by, bw, bh) < overflow)
       {
-        int flipped = iPopoverFlipPosition(position);
-        int fx, fy;
-
-        iPopoverCalcXY(flipped, ax, ay, aw, ah, pw, ph, &fx, &fy);
-
-        if (iPopoverCalcOverflow(fx, fy, pw, ph, 0, 0, sw, sh) < overflow)
-        {
-          *x = fx;
-          *y = fy;
-        }
+        *x = fx;
+        *y = fy;
       }
     }
   }
 
   *x += iupAttribGetInt(ih, "OFFSETX");
   *y += iupAttribGetInt(ih, "OFFSETY");
+
+  if (*x + pw > bx + bw) *x = bx + bw - pw;
+  if (*y + ph > by + bh) *y = by + bh - ph;
+  if (*x < bx) *x = bx;
+  if (*y < by) *y = by;
 }
 
 /*****************************************************************************\

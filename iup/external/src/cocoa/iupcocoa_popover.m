@@ -209,6 +209,34 @@ static int cocoaPopoverSetVisibleAttrib(Ihandle* ih, const char* value)
         break;
       }
 
+      NSView* positioning_view = anchor_view;
+
+      {
+        int offsetx = iupAttribGetInt(ih, "OFFSETX");
+        int offsety = iupAttribGetInt(ih, "OFFSETY");
+
+        if (offsetx != 0 || offsety != 0)
+        {
+          NSView* content_view = [[anchor_view window] contentView];
+          if (content_view)
+          {
+            positioning_rect = [anchor_view convertRect:positioning_rect toView:content_view];
+            positioning_view = content_view;
+
+            if ([content_view isFlipped] != [anchor_view isFlipped])
+            {
+              if (edge == NSRectEdgeMinY)
+                edge = NSRectEdgeMaxY;
+              else if (edge == NSRectEdgeMaxY)
+                edge = NSRectEdgeMinY;
+            }
+          }
+
+          positioning_rect.origin.x += offsetx;
+          positioning_rect.origin.y += [positioning_view isFlipped] ? offsety : -offsety;
+        }
+      }
+
       int autohide = iupAttribGetBoolean(ih, "AUTOHIDE");
       [popover setBehavior:autohide ? NSPopoverBehaviorTransient : NSPopoverBehaviorApplicationDefined];
 
@@ -228,7 +256,7 @@ static int cocoaPopoverSetVisibleAttrib(Ihandle* ih, const char* value)
         iupLayoutUpdate(ih);
       }
 
-      [popover showRelativeToRect:positioning_rect ofView:anchor_view preferredEdge:edge];
+      [popover showRelativeToRect:positioning_rect ofView:positioning_view preferredEdge:edge];
     }
   }
   else
