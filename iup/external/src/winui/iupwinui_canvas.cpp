@@ -1260,6 +1260,28 @@ static void winuiCanvasLayoutUpdateMethod(Ihandle* ih)
   }
 }
 
+static int winuiCanvasSetUpdateRectAttrib(Ihandle* ih, const char* value)
+{
+  int x1, y1, x2, y2;
+  if (value && !iupAttribGet(ih, "_IUP_GLCONTROLDATA") && sscanf(value, "%d %d %d %d", &x1, &y1, &x2, &y2) == 4)
+  {
+    int px1, py1, px2, py2;
+    char* pending = iupAttribGet(ih, "_IUPWINUI_UPDATERECT");
+    if (pending && sscanf(pending, "%d %d %d %d", &px1, &py1, &px2, &py2) == 4)
+    {
+      if (px1 < x1) x1 = px1;
+      if (py1 < y1) y1 = py1;
+      if (px2 > x2) x2 = px2;
+      if (py2 > y2) y2 = py2;
+    }
+    iupAttribSetStrf(ih, "_IUPWINUI_UPDATERECT", "%d %d %d %d", x1, y1, x2, y2);
+    iupwinuiCanvasQueueRedraw(ih);
+  }
+  else
+    iupdrvPostRedraw(ih);
+  return 0;
+}
+
 extern "C" IUP_SDK_API void iupdrvCanvasInitClass(Iclass* ic)
 {
   ic->Map = winuiCanvasMapMethod;
@@ -1271,6 +1293,7 @@ extern "C" IUP_SDK_API void iupdrvCanvasInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, winuiCanvasSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
 
   iupClassRegisterAttribute(ic, "DRAWSIZE", winuiCanvasGetDrawSizeAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "UPDATERECT", NULL, winuiCanvasSetUpdateRectAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "DX", NULL, winuiCanvasSetDXAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DY", NULL, winuiCanvasSetDYAttrib, NULL, NULL, IUPAF_NO_INHERIT);

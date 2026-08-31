@@ -411,11 +411,68 @@ extern "C" IUP_SDK_API int iupdrvIsActive(Ihandle* ih)
 IUP_DRV_API void iupwinuiCanvasCallAction(Ihandle* ih)
 {
   IFn cb = (IFn)IupGetCallback(ih, "ACTION");
+  iupAttribSet(ih, "_IUPWINUI_UPDATERECT", NULL);
   if (cb && !(ih->data->inside_resize) && ih->currentwidth > 0 && ih->currentheight > 0)
   {
-    iupAttribSetStrf(ih, "CLIPRECT", "%d %d %d %d", 0, 0, ih->currentwidth, ih->currentheight);
+    iupAttribSetStrf(ih, "CLIPRECT", "%d %d %d %d", 0, 0, ih->currentwidth - 1, ih->currentheight - 1);
     cb(ih);
     iupAttribSet(ih, "CLIPRECT", NULL);
+  }
+}
+
+static void winuiCanvasRedraw(Ihandle* ih)
+{
+  int x1, y1, x2, y2;
+  char* rect = iupAttribGet(ih, "_IUPWINUI_UPDATERECT");
+  IFn cb = (IFn)IupGetCallback(ih, "ACTION");
+  if (rect && cb && !(ih->data->inside_resize) && ih->currentwidth > 0 && ih->currentheight > 0
+      && sscanf(rect, "%d %d %d %d", &x1, &y1, &x2, &y2) == 4)
+  {
+    iupAttribSet(ih, "_IUPWINUI_UPDATERECT", NULL);
+    if (x1 < 0) x1 = 0;
+    if (y1 < 0) y1 = 0;
+    if (x2 > ih->currentwidth - 1) x2 = ih->currentwidth - 1;
+    if (y2 > ih->currentheight - 1) y2 = ih->currentheight - 1;
+    if (x1 > x2 || y1 > y2)
+      return;
+    iupAttribSetStrf(ih, "CLIPRECT", "%d %d %d %d", x1, y1, x2, y2);
+    cb(ih);
+    iupAttribSet(ih, "CLIPRECT", NULL);
+    return;
+  }
+  iupwinuiCanvasCallAction(ih);
+}
+
+IUP_DRV_API void iupwinuiCanvasQueueRedraw(Ihandle* ih)
+{
+  if (iupAttribGet(ih, "_IUPWINUI_REDRAW_PENDING"))
+    return;
+
+  iupAttribSet(ih, "_IUPWINUI_REDRAW_PENDING", "1");
+
+  void* dq_ptr = iupwinuiGetDispatcherQueue();
+  if (dq_ptr)
+  {
+    IupWinUICanvasAux* aux = winuiGetAux<IupWinUICanvasAux>(ih, IUPWINUI_CANVAS_AUX);
+    if (!aux)
+      return;
+    auto alive = aux->alive;
+
+    Windows::Foundation::IInspectable dq_obj{nullptr};
+    winrt::copy_from_abi(dq_obj, dq_ptr);
+    Microsoft::UI::Dispatching::DispatcherQueue dq = dq_obj.as<Microsoft::UI::Dispatching::DispatcherQueue>();
+
+    dq.TryEnqueue([ih, alive]() {
+      if (!*alive)
+        return;
+      iupAttribSet(ih, "_IUPWINUI_REDRAW_PENDING", NULL);
+      winuiCanvasRedraw(ih);
+    });
+  }
+  else
+  {
+    iupAttribSet(ih, "_IUPWINUI_REDRAW_PENDING", NULL);
+    winuiCanvasRedraw(ih);
   }
 }
 
@@ -434,35 +491,8 @@ extern "C" IUP_SDK_API void iupdrvPostRedraw(Ihandle* ih)
 
   if (IupClassMatch(ih, "canvas"))
   {
-    if (iupAttribGet(ih, "_IUPWINUI_REDRAW_PENDING"))
-      return;
-
-    iupAttribSet(ih, "_IUPWINUI_REDRAW_PENDING", "1");
-
-    void* dq_ptr = iupwinuiGetDispatcherQueue();
-    if (dq_ptr)
-    {
-      IupWinUICanvasAux* aux = winuiGetAux<IupWinUICanvasAux>(ih, IUPWINUI_CANVAS_AUX);
-      if (!aux)
-        return;
-      auto alive = aux->alive;
-
-      Windows::Foundation::IInspectable dq_obj{nullptr};
-      winrt::copy_from_abi(dq_obj, dq_ptr);
-      Microsoft::UI::Dispatching::DispatcherQueue dq = dq_obj.as<Microsoft::UI::Dispatching::DispatcherQueue>();
-
-      dq.TryEnqueue([ih, alive]() {
-        if (!*alive)
-          return;
-        iupAttribSet(ih, "_IUPWINUI_REDRAW_PENDING", NULL);
-        iupwinuiCanvasCallAction(ih);
-      });
-    }
-    else
-    {
-      iupAttribSet(ih, "_IUPWINUI_REDRAW_PENDING", NULL);
-      iupwinuiCanvasCallAction(ih);
-    }
+    iupAttribSet(ih, "_IUPWINUI_UPDATERECT", NULL);
+    iupwinuiCanvasQueueRedraw(ih);
     return;
   }
 

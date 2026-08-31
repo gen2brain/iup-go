@@ -154,6 +154,7 @@ void winuiDialogSetMenuBar(Ihandle* ih, winrt::Microsoft::UI::Xaml::Controls::Me
 winrt::Windows::Foundation::Collections::IVector<winrt::Microsoft::UI::Xaml::Controls::MenuFlyoutItemBase> winuiMenuGetItemsCollection(Ihandle* menu);
 
 IUP_DRV_API void iupwinuiCanvasCallAction(Ihandle* ih);
+IUP_DRV_API void iupwinuiCanvasQueueRedraw(Ihandle* ih);
 
 void winuiFrameUpdateBorderColor(Ihandle* ih);
 void winuiTableRefreshThemeColors(Ihandle* ih);

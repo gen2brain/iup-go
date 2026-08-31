@@ -123,6 +123,9 @@ struct _IdrawCanvas
   ID2D1DeviceContext* d2dContext;
   POINT drawOffset;
 
+  bool partial{false};
+  int px1{0}, py1{0}, px2{0}, py2{0};
+
   com_ptr<ID2D1SolidColorBrush> solidBrush;
 
   WinUIClipType clipType;
@@ -199,6 +202,9 @@ static bool winuiDrawBeginSession(IdrawCanvas* dc)
   POINT offset = {};
   ID2D1DeviceContext* ctx = nullptr;
 
+  if (dc->partial)
+    updateRect = {dc->px1, dc->py1, dc->px2 + 1, dc->py2 + 1};
+
   HRESULT hr = dc->sisNative->BeginDraw(
     updateRect,
     __uuidof(ID2D1DeviceContext),
@@ -212,7 +218,12 @@ static bool winuiDrawBeginSession(IdrawCanvas* dc)
   dc->drawOffset = offset;
 
   dc->d2dContext->SetTransform(
-    D2D1::Matrix3x2F::Translation((float)offset.x, (float)offset.y));
+    D2D1::Matrix3x2F::Translation((float)(offset.x - updateRect.left), (float)(offset.y - updateRect.top)));
+
+  if (dc->partial)
+    dc->d2dContext->PushAxisAlignedClip(
+      D2D1::RectF((float)dc->px1, (float)dc->py1, (float)(dc->px2 + 1), (float)(dc->py2 + 1)),
+      D2D1_ANTIALIAS_MODE_ALIASED);
 
   dc->d2dContext->CreateSolidColorBrush(D2D1::ColorF(0, 0, 0), dc->solidBrush.put());
 
@@ -267,6 +278,31 @@ extern "C" IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
   if (dc->sisIsNew)
     dc->sisNative->SetDevice(g_d2dDevice.get());
 
+  if (aux)
+  {
+    int x1, y1, x2, y2;
+    char* clip = iupAttribGet(ih, "CLIPRECT");
+    if (clip && sscanf(clip, "%d %d %d %d", &x1, &y1, &x2, &y2) == 4
+        && !(x1 <= 0 && y1 <= 0 && x2 >= dc->w - 1 && y2 >= dc->h - 1))
+    {
+      if (dc->sisIsNew)
+        iupdrvPostRedraw(ih);
+      else
+      {
+        if (x1 < 0) x1 = 0;
+        if (y1 < 0) y1 = 0;
+        if (x2 > dc->w - 1) x2 = dc->w - 1;
+        if (y2 > dc->h - 1) y2 = dc->h - 1;
+        if (x1 <= x2 && y1 <= y2)
+        {
+          dc->partial = true;
+          dc->px1 = x1; dc->py1 = y1;
+          dc->px2 = x2; dc->py2 = y2;
+        }
+      }
+    }
+  }
+
   if (!winuiDrawBeginSession(dc))
   {
     delete dc;
@@ -289,6 +325,9 @@ extern "C" IUP_SDK_API void iupdrvDrawKillCanvas(IdrawCanvas* dc)
       dc->d2dContext->PopAxisAlignedClip();
     else if (dc->clipType == WINUI_CLIP_LAYER)
       dc->d2dContext->PopLayer();
+
+    if (dc->partial)
+      dc->d2dContext->PopAxisAlignedClip();
 
     dc->solidBrush = nullptr;
     dc->d2dContext->Release();
@@ -322,6 +361,9 @@ extern "C" IUP_SDK_API void iupdrvDrawUpdateSize(IdrawCanvas* dc)
       else if (dc->clipType == WINUI_CLIP_LAYER)
         dc->d2dContext->PopLayer();
 
+      if (dc->partial)
+        dc->d2dContext->PopAxisAlignedClip();
+
       dc->solidBrush = nullptr;
       dc->d2dContext->Release();
       dc->d2dContext = nullptr;
@@ -330,6 +372,7 @@ extern "C" IUP_SDK_API void iupdrvDrawUpdateSize(IdrawCanvas* dc)
 
     dc->w = w;
     dc->h = h;
+    dc->partial = false;
     dc->clipType = WINUI_CLIP_NONE;
     dc->clip_x1 = dc->clip_y1 = dc->clip_x2 = dc->clip_y2 = 0;
 
@@ -367,6 +410,36 @@ static void winuiDrawCopyToBuffer(IdrawCanvas* dc)
   dc->d2dContext->Flush();
 
   ID2D1Bitmap1* oldBuffer = (ID2D1Bitmap1*)iupAttribGet(dc->ih, "_IUPWINUI_CANVAS_BUFFER");
+
+  if (dc->partial)
+  {
+    if (oldBuffer)
+    {
+      D2D1_SIZE_U oldSize = oldBuffer->GetPixelSize();
+      if (oldSize.width == (UINT32)dc->w && oldSize.height == (UINT32)dc->h)
+      {
+        com_ptr<ID2D1Image> target;
+        dc->d2dContext->GetTarget(target.put());
+        if (target)
+        {
+          com_ptr<ID2D1Bitmap1> targetBitmap;
+          target->QueryInterface(targetBitmap.put());
+          if (targetBitmap)
+          {
+            D2D1_POINT_2U destPoint = {(UINT32)dc->px1, (UINT32)dc->py1};
+            D2D1_RECT_U srcRect = {
+              (UINT32)dc->drawOffset.x, (UINT32)dc->drawOffset.y,
+              (UINT32)(dc->drawOffset.x + (dc->px2 - dc->px1 + 1)),
+              (UINT32)(dc->drawOffset.y + (dc->py2 - dc->py1 + 1))
+            };
+            oldBuffer->CopyFromBitmap(&destPoint, targetBitmap.get(), &srcRect);
+          }
+        }
+      }
+    }
+    return;
+  }
+
   if (oldBuffer)
   {
     oldBuffer->Release();
@@ -423,6 +496,9 @@ extern "C" IUP_SDK_API void iupdrvDrawFlush(IdrawCanvas* dc)
     else if (dc->clipType == WINUI_CLIP_LAYER)
       dc->d2dContext->PopLayer();
     dc->clipType = WINUI_CLIP_NONE;
+
+    if (dc->partial)
+      dc->d2dContext->PopAxisAlignedClip();
 
     dc->solidBrush = nullptr;
     dc->d2dContext->Release();
