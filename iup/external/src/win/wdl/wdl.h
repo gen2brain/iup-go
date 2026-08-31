@@ -195,6 +195,7 @@ typedef struct WD_PATH_tag *WD_HPATH;
 #define WD_CANVAS_DOUBLEBUFFER      0x0001
 #define WD_CANVAS_NOGDICOMPAT       0x0002
 #define WD_CANVAS_LAYOUTRTL         0x0004
+#define WD_CANVAS_RETAINCONTENTS    0x0008
 
 WD_HCANVAS wdCreateCanvasWithPaintStruct(HWND hWnd, PAINTSTRUCT* pPS, DWORD dwFlags);
 WD_HCANVAS wdCreateCanvasWithHDC(HDC hDC, const RECT* pRect, DWORD dwFlags);

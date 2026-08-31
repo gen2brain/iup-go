@@ -14,6 +14,7 @@ extern "C" {
 
 IUP_DRV_API void iupwinDrawInit(void);
 IUP_DRV_API int iupwinDrawPartialSupported(void);
+IUP_DRV_API void iupwinDrawReleaseCanvas(Ihandle* ih);
 IUP_DRV_API void iupwinDrawFinish(void);
 
 IUP_DRV_API void iupwinDrawBitmap(HDC hDC, HBITMAP hBitmap, int x, int y, int w, int h, int img_w, int img_h, int bpp);

@@ -42,6 +42,7 @@ struct _IdrawCanvas{
   int clip_x1, clip_y1, clip_x2, clip_y2;
 
   int backend_type;  /* WD_BACKEND_D2D or WD_BACKEND_GDIPLUS */
+  int cached;
 };
 
 /* must be the same in wdInitialize and wdTerminate */
@@ -54,7 +55,17 @@ static WD_HSTROKESTYLE g_strokeDashDotDot = NULL;
 
 IUP_DRV_API int iupwinDrawPartialSupported(void)
 {
-  return wdBackend() == WD_BACKEND_GDIPLUS;
+  return 1;
+}
+
+IUP_DRV_API void iupwinDrawReleaseCanvas(Ihandle* ih)
+{
+  WD_HCANVAS hCanvas = (WD_HCANVAS)iupAttribGet(ih, "_IUPWIN_WDCANVAS");
+  if (hCanvas)
+  {
+    wdDestroyCanvas(hCanvas);
+    iupAttribSet(ih, "_IUPWIN_WDCANVAS", NULL);
+  }
 }
 
 IUP_DRV_API void iupwinDrawInit(void)
@@ -92,6 +103,7 @@ IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
   PAINTSTRUCT ps;
   RECT rect;
   int x1, y1, x2, y2;
+  int fresh = 0;
   char *rcPaint;
 
   dc->ih = ih;
@@ -138,7 +150,48 @@ IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
     return NULL;
   }
 
-  dc->hCanvas = wdCreateCanvasWithPaintStruct(dc->hWnd, &ps, WD_CANVAS_DOUBLEBUFFER | WD_CANVAS_NOGDICOMPAT);
+  if (dc->backend_type == WD_BACKEND_D2D)
+  {
+    dc->hCanvas = (WD_HCANVAS)iupAttribGet(ih, "_IUPWIN_WDCANVAS");
+
+    if (dc->hCanvas && (HWND)iupAttribGet(ih, "_IUPWIN_WDCANVAS_HWND") != dc->hWnd)
+    {
+      wdDestroyCanvas(dc->hCanvas);
+      iupAttribSet(ih, "_IUPWIN_WDCANVAS", NULL);
+      dc->hCanvas = NULL;
+    }
+
+    if (dc->hCanvas)
+    {
+      dc->cached = 1;
+
+      if (iupAttribGetInt(ih, "_IUPWIN_WDCANVAS_W") != dc->w || iupAttribGetInt(ih, "_IUPWIN_WDCANVAS_H") != dc->h)
+      {
+        wdResizeCanvas(dc->hCanvas, dc->w, dc->h);
+        iupAttribSetInt(ih, "_IUPWIN_WDCANVAS_W", dc->w);
+        iupAttribSetInt(ih, "_IUPWIN_WDCANVAS_H", dc->h);
+      }
+    }
+    else if (rcPaint)
+    {
+      dc->hCanvas = wdCreateCanvasWithPaintStruct(dc->hWnd, &ps, WD_CANVAS_DOUBLEBUFFER | WD_CANVAS_NOGDICOMPAT | WD_CANVAS_RETAINCONTENTS);
+      if (dc->hCanvas)
+      {
+        dc->cached = 1;
+        fresh = 1;
+        iupAttribSet(ih, "_IUPWIN_WDCANVAS", (char*)dc->hCanvas);
+        iupAttribSet(ih, "_IUPWIN_WDCANVAS_HWND", (char*)dc->hWnd);
+        iupAttribSetInt(ih, "_IUPWIN_WDCANVAS_W", dc->w);
+        iupAttribSetInt(ih, "_IUPWIN_WDCANVAS_H", dc->h);
+
+        if (ps.rcPaint.left > 0 || ps.rcPaint.top > 0 || ps.rcPaint.right < dc->w || ps.rcPaint.bottom < dc->h)
+          InvalidateRect(dc->hWnd, NULL, FALSE);
+      }
+    }
+  }
+
+  if (!dc->hCanvas)
+    dc->hCanvas = wdCreateCanvasWithPaintStruct(dc->hWnd, &ps, WD_CANVAS_DOUBLEBUFFER | WD_CANVAS_NOGDICOMPAT);
 
   if (!dc->hCanvas)
   {
@@ -159,7 +212,17 @@ IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
   {
     COLORREF bg;
     if (iupwinGetColorRef(ih, "BGCOLOR", &bg))
-      wdClear(dc->hCanvas, WD_RGB(GetRValue(bg), GetGValue(bg), GetBValue(bg)));
+    {
+      if (dc->cached && !fresh)
+      {
+        WD_RECT r = { (float)ps.rcPaint.left, (float)ps.rcPaint.top, (float)ps.rcPaint.right, (float)ps.rcPaint.bottom };
+        wdSetClip(dc->hCanvas, &r, NULL);
+        wdClear(dc->hCanvas, WD_RGB(GetRValue(bg), GetGValue(bg), GetBValue(bg)));
+        wdSetClip(dc->hCanvas, NULL, NULL);
+      }
+      else
+        wdClear(dc->hCanvas, WD_RGB(GetRValue(bg), GetGValue(bg), GetBValue(bg)));
+    }
   }
 
   return dc;
@@ -167,8 +230,12 @@ IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
 
 IUP_SDK_API void iupdrvDrawKillCanvas(IdrawCanvas* dc)
 {
-  wdSetClip(dc->hCanvas, NULL, NULL); /* must reset clip before destroy */
-  wdDestroyCanvas(dc->hCanvas);
+  if (dc->hCanvas)
+  {
+    wdSetClip(dc->hCanvas, NULL, NULL); /* must reset clip before destroy */
+    if (!dc->cached)
+      wdDestroyCanvas(dc->hCanvas);
+  }
 
   if (dc->hDC)
     ReleaseDC(dc->hWnd, dc->hDC);  /* to match GetDC */
@@ -192,12 +259,25 @@ IUP_SDK_API void iupdrvDrawUpdateSize(IdrawCanvas* dc)
     dc->h = h;
 
     wdResizeCanvas(dc->hCanvas, w, h);
+
+    if (dc->cached)
+    {
+      iupAttribSetInt(dc->ih, "_IUPWIN_WDCANVAS_W", w);
+      iupAttribSetInt(dc->ih, "_IUPWIN_WDCANVAS_H", h);
+    }
   }
 }
 
 IUP_SDK_API void iupdrvDrawFlush(IdrawCanvas* dc)
 {
-  wdEndPaint(dc->hCanvas);
+  if (!wdEndPaint(dc->hCanvas) && dc->cached)
+  {
+    wdDestroyCanvas(dc->hCanvas);
+    iupAttribSet(dc->ih, "_IUPWIN_WDCANVAS", NULL);
+    dc->hCanvas = NULL;
+    dc->cached = 0;
+    InvalidateRect(dc->hWnd, NULL, FALSE);
+  }
 }
 
 IUP_SDK_API void iupdrvDrawGetSize(IdrawCanvas* dc, int *w, int *h)

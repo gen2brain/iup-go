@@ -51,7 +51,8 @@ wdCreateCanvasWithPaintStruct(HWND hWnd, PAINTSTRUCT* pPS, DWORD dwFlags)
         props2.hwnd = hWnd;
         props2.pixelSize.width = rect.right - rect.left;
         props2.pixelSize.height = rect.bottom - rect.top;
-        props2.presentOptions = dummy_D2D1_PRESENT_OPTIONS_NONE;
+        props2.presentOptions = (dwFlags & WD_CANVAS_RETAINCONTENTS) ?
+                    dummy_D2D1_PRESENT_OPTIONS_RETAINCONTENTS : dummy_D2D1_PRESENT_OPTIONS_NONE;
 
         wd_lock();
         /* Note ID2D1HwndRenderTarget is implicitly double-buffered. */
