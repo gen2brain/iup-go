@@ -78,6 +78,7 @@ typedef struct dummy_ID2D1DeviceContext_tag             dummy_ID2D1DeviceContext
 
 #define dummy_D2D1_DRAW_TEXT_OPTIONS_CLIP               0x00000002
 #define dummy_D2D1_PRESENT_OPTIONS_NONE                 0x00000000
+#define dummy_D2D1_PRESENT_OPTIONS_RETAINCONTENTS       0x00000001
 #define dummy_D2D1_LAYER_OPTIONS_NONE                   0x00000000
 #define dummy_D2D1_RENDER_TARGET_USAGE_GDI_COMPATIBLE   0x00000002
 
