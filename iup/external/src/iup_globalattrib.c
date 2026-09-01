@@ -212,6 +212,34 @@ IUP_API char* IupGetGlobal(const char *name)
     iupdrvGetKeyState(str);
     return str;
   }
+  if (iupStrEqual(name, "FONTLIST"))
+  {
+    char** families;
+    int i, count = iupdrvFontGetFamilyList(&families);
+    char* str = NULL;
+
+    if (count > 0 && families)
+    {
+      int size = 0;
+      for (i = 0; i < count; i++)
+        size += (int)strlen(families[i]) + 1;
+
+      str = iupStrGetMemory(size + 1);
+      str[0] = 0;
+
+      for (i = 0; i < count; i++)
+      {
+        strcat(str, families[i]);
+        strcat(str, "\n");
+        free(families[i]);
+      }
+    }
+
+    if (families)
+      free(families);
+
+    return str;
+  }
   if (iupStrEqual(name, "SCREENSIZE"))
   {
     int w, h;

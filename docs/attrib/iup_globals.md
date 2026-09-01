@@ -294,6 +294,11 @@ Returns a text with a description of the system language.
 
 Returns a text with a description of the system locale.
 
+### FONTLIST (read-only)
+
+Returns the names of the font families available in the system, sorted alphabetically.
+Each name is terminated by a "\n" character.
+
 ### SCROLLBARSIZE (read-only)
 
 Returns the width of the vertical scrollbar (the same as the height of the horizontal scrollbar).

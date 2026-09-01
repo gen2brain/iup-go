@@ -75,6 +75,7 @@ static const iGlobalRegEntry registry[] = {
   { "EXITLOOP",               0,    ALL },
   { "FLTKTHEME",              0,    F },
   { "FLTKVERSION",            R,    F },
+  { "FONTLIST",               R,    ALL },
   { "FULLSIZE",               R,    ALL },
   { "GLOBALLAYOUTDLGKEY",     0,    ALL },
   { "GLOBALLAYOUTRESIZEKEY",  0,    ALL },
