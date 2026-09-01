@@ -93,10 +93,16 @@ IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
     dc->release_cr = 1;
   }
 
-  /* Create image surface for double-buffering the current operation */
+#if GTK_CHECK_VERSION(3, 0, 0)
+  if (dc->release_cr)
+    dc->image_cr = dc->cr;
+  else
+    dc->image_cr = cairo_create(buffer);
+#else
   surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, dc->w, dc->h);
   dc->image_cr = cairo_create(surface);
   cairo_surface_destroy(surface);
+#endif
 
   iupAttribSet(ih, "DRAWDRIVER", "CAIRO");
 
@@ -105,7 +111,8 @@ IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
 
 IUP_SDK_API void iupdrvDrawKillCanvas(IdrawCanvas* dc)
 {
-  cairo_destroy(dc->image_cr);
+  if (dc->image_cr != dc->cr)
+    cairo_destroy(dc->image_cr);
   if (dc->release_cr)
     cairo_destroy(dc->cr);
 
@@ -129,11 +136,35 @@ IUP_SDK_API void iupdrvDrawUpdateSize(IdrawCanvas* dc)
     dc->w = w;
     dc->h = h;
 
+#if GTK_CHECK_VERSION(3, 0, 0)
+    {
+      cairo_surface_t* buffer = (cairo_surface_t*)iupAttribGet(dc->ih, "_IUPGTK3_CANVAS_BUFFER");
+      if (buffer)
+      {
+        cairo_surface_destroy(buffer);
+        iupAttribSet(dc->ih, "_IUPGTK3_CANVAS_BUFFER", NULL);
+      }
+      buffer = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, dc->w, dc->h);
+      iupAttribSet(dc->ih, "_IUPGTK3_CANVAS_BUFFER", (char*)buffer);
+
+      if (dc->image_cr != dc->cr)
+        cairo_destroy(dc->image_cr);
+      if (dc->release_cr)
+      {
+        cairo_destroy(dc->cr);
+        dc->cr = cairo_create(buffer);
+        dc->image_cr = dc->cr;
+      }
+      else
+        dc->image_cr = cairo_create(buffer);
+    }
+#else
     cairo_destroy(dc->image_cr);
 
     surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, dc->w, dc->h);
     dc->image_cr = cairo_create(surface);
     cairo_surface_destroy(surface);
+#endif
   }
 }
 
@@ -153,13 +184,14 @@ static void gdkDrawFocusRect(Ihandle* ih, int x, int y, int w, int h)
 
 IUP_SDK_API void iupdrvDrawFlush(IdrawCanvas* dc)
 {
-  /* Reset clip on image buffer to ensure clean state for next frame */
   iupdrvDrawResetClip(dc);
 
-  /* Copy the image buffer to the target surface */
-  cairo_set_source_surface(dc->cr, cairo_get_target(dc->image_cr), 0, 0);
-  cairo_set_operator(dc->cr, CAIRO_OPERATOR_OVER);
-  cairo_paint(dc->cr);  /* paints the entire source surface */
+  if (dc->image_cr != dc->cr)
+  {
+    cairo_set_source_surface(dc->cr, cairo_get_target(dc->image_cr), 0, 0);
+    cairo_set_operator(dc->cr, CAIRO_OPERATOR_OVER);
+    cairo_paint(dc->cr);
+  }
 
 #if !GTK_CHECK_VERSION(3, 0, 0)
   if (dc->draw_focus)
@@ -182,35 +214,7 @@ IUP_SDK_API void iupdrvDrawFlush(IdrawCanvas* dc)
 
     gtk_widget_queue_draw(dc->widget);
   }
-  else
-  {
-    /* Inside ACTION: also copy rendered content to persistent buffer */
-    cairo_surface_t* buffer = (cairo_surface_t*)iupAttribGet(dc->ih, "_IUPGTK3_CANVAS_BUFFER");
-    if (buffer)
-    {
-      int buf_w = cairo_image_surface_get_width(buffer);
-      int buf_h = cairo_image_surface_get_height(buffer);
-      if (buf_w != dc->w || buf_h != dc->h)
-      {
-        cairo_surface_destroy(buffer);
-        buffer = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, dc->w, dc->h);
-        iupAttribSet(dc->ih, "_IUPGTK3_CANVAS_BUFFER", (char*)buffer);
-      }
-    }
-    else
-    {
-      buffer = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, dc->w, dc->h);
-      iupAttribSet(dc->ih, "_IUPGTK3_CANVAS_BUFFER", (char*)buffer);
-    }
 
-    {
-      cairo_t* buf_cr = cairo_create(buffer);
-      cairo_set_source_surface(buf_cr, cairo_get_target(dc->image_cr), 0, 0);
-      cairo_set_operator(buf_cr, CAIRO_OPERATOR_SOURCE);
-      cairo_paint(buf_cr);
-      cairo_destroy(buf_cr);
-    }
-  }
 #endif
 }
 
