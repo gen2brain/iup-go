@@ -10,6 +10,7 @@
 
 #include <FL/Fl.H>
 #include <FL/platform.H>
+#include <FL/filename.H>
 #include <FL/Fl_Widget.H>
 #include <FL/Fl_Group.H>
 #include <FL/Fl_Window.H>
@@ -717,10 +718,40 @@ extern "C" IUP_SDK_API void iupdrvSetAccessibleDescription(Ihandle *ih, const ch
   (void)description;
 }
 
+IUP_DRV_API int iupfltkIsUriList(const char* text)
+{
+  int count = 0;
+
+  if (!text)
+    return 0;
+
+  while (*text)
+  {
+    const char* line = text;
+    int len;
+
+    while (*text && *text != '\r' && *text != '\n')
+      text++;
+    len = (int)(text - line);
+    while (*text == '\r' || *text == '\n')
+      text++;
+
+    if (len == 0 || line[0] == '#')
+      continue;
+
+    if (len < 7 || strncmp(line, "file://", 7) != 0)
+      return 0;
+
+    count++;
+  }
+
+  return count;
+}
+
 IUP_DRV_API int iupfltkHandleDropFiles(Ihandle* ih)
 {
   const char* text = Fl::event_text();
-  if (!text || !strstr(text, "file://"))
+  if (!iupfltkIsUriList(text))
     return 0;
 
   Ihandle* cb_ih = ih;
@@ -746,11 +777,10 @@ IUP_DRV_API int iupfltkHandleDropFiles(Ihandle* ih)
 
   while (line)
   {
-    if (line[0])
+    if (line[0] && line[0] != '#' && strncmp(line, "file://", 7) == 0)
     {
-      char* filename = line;
-      if (strncmp(filename, "file://", 7) == 0)
-        filename += 7;
+      char* filename = line + 7;
+      fl_decode_uri(filename);
       cb(cb_ih, filename, count, x, y);
       count++;
     }

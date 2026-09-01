@@ -184,7 +184,7 @@ IUP_DRV_API int iupfltkDragDropHandleEvent(Fl_Widget* widget, Ihandle* ih, int e
 
         if (text && len > 0)
         {
-          if (strstr(text, "file://"))
+          if (iupfltkIsUriList(text))
           {
             iupfltkHandleDropFiles(ih);
             return 1;
@@ -202,7 +202,7 @@ IUP_DRV_API int iupfltkDragDropHandleEvent(Fl_Widget* widget, Ihandle* ih, int e
         }
       }
 
-      if (Fl::event_text() && strstr(Fl::event_text(), "file://"))
+      if (iupfltkIsUriList(Fl::event_text()))
       {
         if (IupGetCallback(ih, "DROPFILES_CB") || IupGetCallback(IupGetDialog(ih), "DROPFILES_CB"))
         {

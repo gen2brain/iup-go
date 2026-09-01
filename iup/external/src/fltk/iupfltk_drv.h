@@ -79,6 +79,7 @@ IUP_DRV_API int iupfltkKeyReleaseEvent(Fl_Widget *widget, Ihandle* ih);
 IUP_DRV_API int iupfltkKeyDecode(void);
 IUP_DRV_API void iupfltkButtonKeySetStatus(int state, int button, char* status, int doubleclick);
 
+IUP_DRV_API int iupfltkIsUriList(const char* text);
 IUP_DRV_API int iupfltkHandleDropFiles(Ihandle* ih);
 IUP_DRV_API int iupfltkDragDropHandleEvent(Fl_Widget* widget, Ihandle* ih, int event);
 
