@@ -34,9 +34,10 @@ IUP_DRV_API int iupwinGetKeyBoardCues(void);
 IUP_DRV_API void iupwinBringWindowToForeground(HWND hwnd);
 
 /* key */
-IUP_DRV_API int iupwinKeyEvent(Ihandle* ih, int wincode, int press);
+IUP_DRV_API int iupwinKeyEvent(Ihandle* ih, int wincode, int extended, int press);
 IUP_DRV_API void iupwinButtonKeySetStatus(WORD keys, char* status, int doubleclick);
-IUP_DRV_API int iupwinKeyDecode(int wincode);
+IUP_DRV_API int iupwinKeyDecode(int wincode, int extended);
+IUP_DRV_API int iupwinKeyIsExtended(int code);
 IUP_DRV_API void iupwinKeyInit(void);
 
 /* tips */

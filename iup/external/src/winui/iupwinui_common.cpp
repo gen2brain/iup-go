@@ -581,6 +581,7 @@ extern "C" IUP_SDK_API void iupdrvSendKey(int key, int press)
   if (state)
     state_scan = (WORD)MapVirtualKey(state, MAPVK_VK_TO_VSC);
   key_scan = (WORD)MapVirtualKey(keyval, MAPVK_VK_TO_VSC);
+  DWORD key_flags = iupwinuiKeyIsExtended(key)? KEYEVENTF_EXTENDEDKEY: 0;
 
   if (press & 0x01)
   {
@@ -592,6 +593,7 @@ extern "C" IUP_SDK_API void iupdrvSendKey(int key, int press)
       input[0].ki.dwExtraInfo = extra_info;
 
       input[1].type = INPUT_KEYBOARD;
+      input[1].ki.dwFlags = key_flags;
       input[1].ki.wVk = (WORD)keyval;
       input[1].ki.wScan = key_scan;
       input[1].ki.dwExtraInfo = extra_info;
@@ -601,6 +603,7 @@ extern "C" IUP_SDK_API void iupdrvSendKey(int key, int press)
     else
     {
       input[0].type = INPUT_KEYBOARD;
+      input[0].ki.dwFlags = key_flags;
       input[0].ki.wVk = (WORD)keyval;
       input[0].ki.wScan = key_scan;
       input[0].ki.dwExtraInfo = extra_info;
@@ -616,7 +619,7 @@ extern "C" IUP_SDK_API void iupdrvSendKey(int key, int press)
     if (state)
     {
       input[0].type = INPUT_KEYBOARD;
-      input[0].ki.dwFlags = KEYEVENTF_KEYUP;
+      input[0].ki.dwFlags = KEYEVENTF_KEYUP | key_flags;
       input[0].ki.wVk = (WORD)keyval;
       input[0].ki.wScan = key_scan;
       input[0].ki.dwExtraInfo = extra_info;
@@ -632,7 +635,7 @@ extern "C" IUP_SDK_API void iupdrvSendKey(int key, int press)
     else
     {
       input[0].type = INPUT_KEYBOARD;
-      input[0].ki.dwFlags = KEYEVENTF_KEYUP;
+      input[0].ki.dwFlags = KEYEVENTF_KEYUP | key_flags;
       input[0].ki.wVk = (WORD)keyval;
       input[0].ki.wScan = key_scan;
       input[0].ki.dwExtraInfo = extra_info;

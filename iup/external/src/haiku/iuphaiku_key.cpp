@@ -60,6 +60,93 @@ static int haikuLookupSpecial(uint8 b)
   return 0;
 }
 
+typedef struct {
+  uint8 scancode;
+  int   iup_code;
+  int   iup_numlock_code;
+} HaikuKeyPadEntry;
+
+static const HaikuKeyPadEntry kKeyPadKeys[] = {
+  { 0x23, K_KP_DIV,    0 },
+  { 0x24, K_KP_MULT,   0 },
+  { 0x25, K_KP_MINUS,  0 },
+  { 0x3a, K_KP_PLUS,   0 },
+  { 0x5b, K_KP_CR,     0 },
+  { 0x6a, K_KP_EQUAL,  0 },
+  { 0x37, K_KP_HOME,   K_KP_7 },
+  { 0x38, K_KP_UP,     K_KP_8 },
+  { 0x39, K_KP_PGUP,   K_KP_9 },
+  { 0x48, K_KP_LEFT,   K_KP_4 },
+  { 0x49, K_KP_MIDDLE, K_KP_5 },
+  { 0x4a, K_KP_RIGHT,  K_KP_6 },
+  { 0x58, K_KP_END,    K_KP_1 },
+  { 0x59, K_KP_DOWN,   K_KP_2 },
+  { 0x5a, K_KP_PGDN,   K_KP_3 },
+  { 0x64, K_KP_INS,    K_KP_0 },
+  { 0x65, K_KP_DEL,    K_KP_DECIMAL },
+};
+
+static int haikuLookupKeyPad(int key, uint8 b)
+{
+  for (size_t i = 0; i < sizeof(kKeyPadKeys)/sizeof(kKeyPadKeys[0]); ++i)
+  {
+    if (kKeyPadKeys[i].scancode != (uint8)key)
+      continue;
+
+    if (!kKeyPadKeys[i].iup_numlock_code)
+      return kKeyPadKeys[i].iup_code;
+
+    if (key == 0x65)
+      return (b == ',')? K_KP_SEP: (b == '.')? K_KP_DECIMAL: K_KP_DEL;
+
+    return (b >= '0' && b <= '9')? kKeyPadKeys[i].iup_numlock_code: kKeyPadKeys[i].iup_code;
+  }
+
+  return 0;
+}
+
+IUP_DRV_API int iuphaikuKeyPadScanCode(int code, int* byte_val)
+{
+  int base = iup_XkeyBase(code);
+
+  for (size_t i = 0; i < sizeof(kKeyPadKeys)/sizeof(kKeyPadKeys[0]); ++i)
+  {
+    if (kKeyPadKeys[i].iup_code != base && kKeyPadKeys[i].iup_numlock_code != base)
+      continue;
+
+    if (byte_val)
+    {
+      switch (base)
+      {
+        case K_KP_DIV:     *byte_val = '/'; break;
+        case K_KP_MULT:    *byte_val = '*'; break;
+        case K_KP_MINUS:   *byte_val = '-'; break;
+        case K_KP_PLUS:    *byte_val = '+'; break;
+        case K_KP_EQUAL:   *byte_val = '='; break;
+        case K_KP_SEP:     *byte_val = ','; break;
+        case K_KP_DECIMAL: *byte_val = '.'; break;
+        case K_KP_CR:      *byte_val = B_RETURN; break;
+        case K_KP_HOME:    *byte_val = B_HOME; break;
+        case K_KP_END:     *byte_val = B_END; break;
+        case K_KP_PGUP:    *byte_val = B_PAGE_UP; break;
+        case K_KP_PGDN:    *byte_val = B_PAGE_DOWN; break;
+        case K_KP_INS:     *byte_val = B_INSERT; break;
+        case K_KP_DEL:     *byte_val = B_DELETE; break;
+        case K_KP_LEFT:    *byte_val = B_LEFT_ARROW; break;
+        case K_KP_RIGHT:   *byte_val = B_RIGHT_ARROW; break;
+        case K_KP_UP:      *byte_val = B_UP_ARROW; break;
+        case K_KP_DOWN:    *byte_val = B_DOWN_ARROW; break;
+        case K_KP_MIDDLE:  *byte_val = '5'; break;
+        default:           *byte_val = '0' + (base - K_KP_0); break;
+      }
+    }
+
+    return kKeyPadKeys[i].scancode;
+  }
+
+  return 0;
+}
+
 static int haikuApplyModifiers(int code, unsigned int modifiers)
 {
   if (modifiers & B_SHIFT_KEY)   code = iup_XkeyShift(code);
@@ -70,11 +157,14 @@ static int haikuApplyModifiers(int code, unsigned int modifiers)
 }
 
 
-IUP_DRV_API int iuphaikuKeyDecode(int byte, int raw_char, unsigned int modifiers)
+IUP_DRV_API int iuphaikuKeyDecode(int byte, int raw_char, int key, unsigned int modifiers)
 {
-  int code = 0;
+  int code = haikuLookupKeyPad(key, (uint8)(byte & 0xFF));
   uint8 b = (uint8)(byte & 0xFF);
   uint8 raw = (uint8)(raw_char & 0xFF);
+
+  if (code)
+    return haikuApplyModifiers(code, modifiers);
 
   /* Special key disambiguation: B_*_KEY bytes also appear as Ctrl-letters.
    * If raw_char matches a special-key value too, it's the special key. */

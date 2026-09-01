@@ -2533,7 +2533,7 @@ static void winuiTableKeyDown(Ihandle* ih, KeyRoutedEventArgs const& args)
       break;
 
     case Windows::System::VirtualKey::Tab:
-      if (!iupwinuiKeyEvent(ih, VK_TAB, 1))
+      if (!iupwinuiKeyEvent(ih, VK_TAB, 0, 1))
         handled = true;
       break;
 

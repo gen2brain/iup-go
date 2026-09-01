@@ -436,7 +436,7 @@ static int winuiTabsMapMethod(Ihandle* ih)
     }
     if (!forTabs)
       return;
-    if (!iupwinuiKeyEvent(ih, (int)args.Key(), 1))
+    if (!iupwinuiKeyEvent(ih, (int)args.Key(), args.KeyStatus().IsExtendedKey? 1: 0, 1))
       args.Handled(true);
   });
 

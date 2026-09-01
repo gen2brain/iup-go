@@ -22,6 +22,8 @@
 #                insertText, fires no keydown),
 #                rawkey:CHAR (trusted keydown carrying any character, incl. non-ASCII),
 #                press:KEY (named keys/chords, e.g. Enter, ArrowUp, Control+c),
+#                kpkey:CODE[##KEY[##TEXT]] (a keypad key: dispatches CODE with
+#                location 3, e.g. kpkey:Numpad7##Home or kpkey:Numpad7##7##7),
 #                wait:MS, reload[:MS], shot (writes _stepN.png), drag:SRC##TGT[##x,y],
 #                mdrag:SEL##dx,dy,
 #                tap:SEL[##x,y[##holdms]], swipe:SEL##dx,dy, pinch:SEL##scale,
@@ -151,6 +153,7 @@ case "$APP" in
         -pthread -sPTHREAD_POOL_SIZE=4 \
         -sMODULARIZE=1 -sEXPORT_NAME=createIupModule -sINVOKE_RUN=0 \
         -sERROR_ON_UNDEFINED_SYMBOLS=1 -sNO_EXIT_RUNTIME=1 -sALLOW_MEMORY_GROWTH=1 -sEMULATE_FUNCTION_POINTER_CASTS=1 \
+        -sEXPORTED_FUNCTIONS=_main,_malloc,_free \
         -sEXPORTED_RUNTIME_METHODS=ccall,cwrap,callMain,UTF8ToString,stringToUTF8,lengthBytesUTF8,setValue,getValue,HEAPU8,FS,IDBFS \
         -lidbfs.js \
         --pre-js "$PREJS" \

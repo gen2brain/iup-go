@@ -2507,7 +2507,7 @@ static int winTableKeyProc(Ihandle* ih, HWND hwnd, UINT msg, WPARAM wp, LPARAM l
         break;
 
       case VK_TAB:
-        if (!iupwinKeyEvent(ih, (int)wp, 1))
+        if (!iupwinKeyEvent(ih, (int)wp, (lp & 0x01000000)? 1: 0, 1))
           handled = TRUE;
         break;
 

@@ -55,8 +55,9 @@ IUP_DRV_API int iupwinuiIsInCurrentTab(Ihandle* ih);
  * Key Input Handling
  ****************************************************************************/
 
-IUP_DRV_API int iupwinuiKeyDecode(int keyval);
-IUP_DRV_API int iupwinuiKeyEvent(Ihandle* ih, int wincode, int press);
+IUP_DRV_API int iupwinuiKeyDecode(int keyval, int extended);
+IUP_DRV_API int iupwinuiKeyIsExtended(int code);
+IUP_DRV_API int iupwinuiKeyEvent(Ihandle* ih, int wincode, int extended, int press);
 IUP_DRV_API void iupwinuiButtonKeySetStatus(int modifiers, int button, char* status, int doubleclick);
 
 /****************************************************************************

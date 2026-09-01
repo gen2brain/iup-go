@@ -84,22 +84,22 @@ static Ifltk2iupkey special_remap[] = {
   { FL_Meta_L,      K_LALT   },
   { FL_Meta_R,      K_RALT   },
 
-  { FL_KP + '0',    K_0      },
-  { FL_KP + '1',    K_1      },
-  { FL_KP + '2',    K_2      },
-  { FL_KP + '3',    K_3      },
-  { FL_KP + '4',    K_4      },
-  { FL_KP + '5',    K_5      },
-  { FL_KP + '6',    K_6      },
-  { FL_KP + '7',    K_7      },
-  { FL_KP + '8',    K_8      },
-  { FL_KP + '9',    K_9      },
-  { FL_KP + '*',    K_asterisk },
-  { FL_KP + '+',    K_plus   },
-  { FL_KP + '-',    K_minus  },
-  { FL_KP + '.',    K_period },
-  { FL_KP + '/',    K_slash  },
-  { FL_KP_Enter,    K_CR     },
+  { FL_KP + '0',    K_KP_0      },
+  { FL_KP + '1',    K_KP_1      },
+  { FL_KP + '2',    K_KP_2      },
+  { FL_KP + '3',    K_KP_3      },
+  { FL_KP + '4',    K_KP_4      },
+  { FL_KP + '5',    K_KP_5      },
+  { FL_KP + '6',    K_KP_6      },
+  { FL_KP + '7',    K_KP_7      },
+  { FL_KP + '8',    K_KP_8      },
+  { FL_KP + '9',    K_KP_9      },
+  { FL_KP + '*',    K_KP_MULT },
+  { FL_KP + '+',    K_KP_PLUS   },
+  { FL_KP + '-',    K_KP_MINUS  },
+  { FL_KP + '.',    K_KP_DECIMAL },
+  { FL_KP + '/',    K_KP_DIV  },
+  { FL_KP_Enter,    K_KP_CR     },
 };
 
 /****************************************************************************
@@ -141,10 +141,40 @@ static int fltkKeyMap2Iup(int key, int state)
  * Key Decoding (FLTK event to IUP code)
  ****************************************************************************/
 
+static int fltkKeyPadCode(int key, int original)
+{
+  if (original < FL_KP || original > FL_KP_Last)
+    return 0;
+
+  if (key == original)
+    return 0;
+
+  switch (key)
+  {
+  case FL_Home:      return K_KP_HOME;
+  case FL_Left:      return K_KP_LEFT;
+  case FL_Up:        return K_KP_UP;
+  case FL_Right:     return K_KP_RIGHT;
+  case FL_Down:      return K_KP_DOWN;
+  case FL_Page_Up:   return K_KP_PGUP;
+  case FL_Page_Down: return K_KP_PGDN;
+  case FL_End:       return K_KP_END;
+  case K_MIDDLE:     return K_KP_MIDDLE;
+  case FL_Insert:    return K_KP_INS;
+  case FL_Delete:    return K_KP_DEL;
+  }
+
+  return 0;
+}
+
 IUP_DRV_API int iupfltkKeyDecode(void)
 {
   int key = Fl::event_key();
   int state = Fl::event_state();
+
+  int padcode = fltkKeyPadCode(key, Fl::event_original_key());
+  if (padcode)
+    return fltkKeyMap2Iup(padcode, state);
 
   int count = sizeof(special_remap) / sizeof(special_remap[0]);
   for (int i = 0; i < count; i++)
@@ -192,6 +222,8 @@ static int fltkKeyTextInput(Ihandle *ih)
   if (!IupGetCallback(ih, "TEXTINPUT_CB"))
     return 0;
   if (Fl::event_state() & (FL_CTRL | FL_ALT | FL_META))
+    return 0;
+  if (iup_isKeyPadXkey(iupfltkKeyDecode()))
     return 0;
   const char* text = Fl::event_text();
   int len = Fl::event_length();

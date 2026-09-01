@@ -229,7 +229,7 @@ static LRESULT CALLBACK winHookGetMessageProc(int hcode, WPARAM gm_wp, LPARAM gm
       if (cb)
       {
         int pressed = (msg==WM_KEYDOWN || msg==WM_SYSKEYDOWN)? 1: 0;
-        int code = iupwinKeyDecode((int)wp);
+        int code = iupwinKeyDecode((int)wp, (lp & 0x01000000)? 1: 0);
         if (code != 0)
           cb(code, pressed);
       }

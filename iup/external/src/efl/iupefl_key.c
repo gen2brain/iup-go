@@ -33,8 +33,11 @@ IUP_DRV_API int iupeflKeyDecodeFromName(const char* keyname, const char* keysym,
   if (!keyname)
     return 0;
 
+  if (keysym && strncmp(keysym, "KP_", 3) == 0)
+    keyname = keysym;
+
   if (strcmp(keyname, "Return") == 0) return K_CR;
-  if (strcmp(keyname, "KP_Enter") == 0) return K_CR;
+  if (strcmp(keyname, "KP_Enter") == 0) return K_KP_CR;
   if (strcmp(keyname, "Escape") == 0) return K_ESC;
   if (strcmp(keyname, "BackSpace") == 0) return K_BS;
   if (strcmp(keyname, "Tab") == 0) return K_TAB;
@@ -67,36 +70,38 @@ IUP_DRV_API int iupeflKeyDecodeFromName(const char* keyname, const char* keysym,
   if (strcmp(keyname, "Pause") == 0) return K_PAUSE;
 
   /* Keypad mappings */
-  if (strcmp(keyname, "KP_0") == 0) return K_0;
-  if (strcmp(keyname, "KP_1") == 0) return K_1;
-  if (strcmp(keyname, "KP_2") == 0) return K_2;
-  if (strcmp(keyname, "KP_3") == 0) return K_3;
-  if (strcmp(keyname, "KP_4") == 0) return K_4;
-  if (strcmp(keyname, "KP_5") == 0) return K_5;
-  if (strcmp(keyname, "KP_6") == 0) return K_6;
-  if (strcmp(keyname, "KP_7") == 0) return K_7;
-  if (strcmp(keyname, "KP_8") == 0) return K_8;
-  if (strcmp(keyname, "KP_9") == 0) return K_9;
-  if (strcmp(keyname, "KP_Multiply") == 0) return K_asterisk;
-  if (strcmp(keyname, "KP_Add") == 0) return K_plus;
-  if (strcmp(keyname, "KP_Subtract") == 0) return K_minus;
-  if (strcmp(keyname, "KP_Decimal") == 0) return K_period;
-  if (strcmp(keyname, "KP_Divide") == 0) return K_slash;
-  if (strcmp(keyname, "KP_Separator") == 0) return K_comma;
-  if (strcmp(keyname, "KP_Equal") == 0) return K_equal;
+  if (strcmp(keyname, "KP_0") == 0) return K_KP_0;
+  if (strcmp(keyname, "KP_1") == 0) return K_KP_1;
+  if (strcmp(keyname, "KP_2") == 0) return K_KP_2;
+  if (strcmp(keyname, "KP_3") == 0) return K_KP_3;
+  if (strcmp(keyname, "KP_4") == 0) return K_KP_4;
+  if (strcmp(keyname, "KP_5") == 0) return K_KP_5;
+  if (strcmp(keyname, "KP_6") == 0) return K_KP_6;
+  if (strcmp(keyname, "KP_7") == 0) return K_KP_7;
+  if (strcmp(keyname, "KP_8") == 0) return K_KP_8;
+  if (strcmp(keyname, "KP_9") == 0) return K_KP_9;
+  if (strcmp(keyname, "KP_Multiply") == 0) return K_KP_MULT;
+  if (strcmp(keyname, "KP_Add") == 0) return K_KP_PLUS;
+  if (strcmp(keyname, "KP_Subtract") == 0) return K_KP_MINUS;
+  if (strcmp(keyname, "KP_Decimal") == 0) return K_KP_DECIMAL;
+  if (strcmp(keyname, "KP_Divide") == 0) return K_KP_DIV;
+  if (strcmp(keyname, "KP_Separator") == 0) return K_KP_SEP;
+  if (strcmp(keyname, "KP_Equal") == 0) return K_KP_EQUAL;
   if (strcmp(keyname, "KP_Space") == 0) return K_SP;
   if (strcmp(keyname, "KP_Tab") == 0) return K_TAB;
-  if (strcmp(keyname, "KP_Home") == 0) return K_HOME;
-  if (strcmp(keyname, "KP_Up") == 0) return K_UP;
-  if (strcmp(keyname, "KP_Page_Up") == 0) return K_PGUP;
-  if (strcmp(keyname, "KP_Left") == 0) return K_LEFT;
-  if (strcmp(keyname, "KP_Begin") == 0) return K_MIDDLE;
-  if (strcmp(keyname, "KP_Right") == 0) return K_RIGHT;
-  if (strcmp(keyname, "KP_End") == 0) return K_END;
-  if (strcmp(keyname, "KP_Down") == 0) return K_DOWN;
-  if (strcmp(keyname, "KP_Page_Down") == 0) return K_PGDN;
-  if (strcmp(keyname, "KP_Insert") == 0) return K_INS;
-  if (strcmp(keyname, "KP_Delete") == 0) return K_DEL;
+  if (strcmp(keyname, "KP_Home") == 0) return K_KP_HOME;
+  if (strcmp(keyname, "KP_Up") == 0) return K_KP_UP;
+  if (strcmp(keyname, "KP_Page_Up") == 0) return K_KP_PGUP;
+  if (strcmp(keyname, "KP_Prior") == 0) return K_KP_PGUP;
+  if (strcmp(keyname, "KP_Left") == 0) return K_KP_LEFT;
+  if (strcmp(keyname, "KP_Begin") == 0) return K_KP_MIDDLE;
+  if (strcmp(keyname, "KP_Right") == 0) return K_KP_RIGHT;
+  if (strcmp(keyname, "KP_End") == 0) return K_KP_END;
+  if (strcmp(keyname, "KP_Down") == 0) return K_KP_DOWN;
+  if (strcmp(keyname, "KP_Page_Down") == 0) return K_KP_PGDN;
+  if (strcmp(keyname, "KP_Next") == 0) return K_KP_PGDN;
+  if (strcmp(keyname, "KP_Insert") == 0) return K_KP_INS;
+  if (strcmp(keyname, "KP_Delete") == 0) return K_KP_DEL;
 
   /* Dead keys */
   if (strcmp(keyname, "dead_tilde") == 0) return K_tilde;
@@ -301,6 +306,8 @@ static int eflKeyImfTextInput(Ihandle* ih, Eo* widget, Efl_Input_Key* key_event,
   Eina_Bool filtered;
 
   if (!IupGetCallback(ih, "TEXTINPUT_CB"))
+    return 0;
+  if (iup_isKeyPadXkey(iupeflKeyDecodeFromName(keyname, efl_input_key_sym_get(key_event), keystr)))
     return 0;
 
   imf = eflKeyImfContext(ih, widget);

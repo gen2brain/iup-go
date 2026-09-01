@@ -120,26 +120,26 @@ static Imac2iupkey s_macKeyMap[] = {
   {kVK_ANSI_RightBracket, K_bracketright},
   {kVK_ANSI_Quote, K_apostrophe},
 
-  {kVK_ANSI_Keypad0, K_0},
-  {kVK_ANSI_Keypad1, K_1},
-  {kVK_ANSI_Keypad2, K_2},
-  {kVK_ANSI_Keypad3, K_3},
-  {kVK_ANSI_Keypad4, K_4},
-  {kVK_ANSI_Keypad5, K_5},
-  {kVK_ANSI_Keypad6, K_6},
-  {kVK_ANSI_Keypad7, K_7},
-  {kVK_ANSI_Keypad8, K_8},
-  {kVK_ANSI_Keypad9, K_9},
-  {kVK_ANSI_KeypadMultiply, K_asterisk},
-  {kVK_ANSI_KeypadPlus, K_plus},
-  {kVK_ANSI_KeypadMinus, K_minus},
-  {kVK_ANSI_KeypadDecimal, K_period},
-  {kVK_ANSI_KeypadDivide, K_slash},
+  {kVK_ANSI_Keypad0, K_KP_0},
+  {kVK_ANSI_Keypad1, K_KP_1},
+  {kVK_ANSI_Keypad2, K_KP_2},
+  {kVK_ANSI_Keypad3, K_KP_3},
+  {kVK_ANSI_Keypad4, K_KP_4},
+  {kVK_ANSI_Keypad5, K_KP_5},
+  {kVK_ANSI_Keypad6, K_KP_6},
+  {kVK_ANSI_Keypad7, K_KP_7},
+  {kVK_ANSI_Keypad8, K_KP_8},
+  {kVK_ANSI_Keypad9, K_KP_9},
+  {kVK_ANSI_KeypadMultiply, K_KP_MULT},
+  {kVK_ANSI_KeypadPlus, K_KP_PLUS},
+  {kVK_ANSI_KeypadMinus, K_KP_MINUS},
+  {kVK_ANSI_KeypadDecimal, K_KP_DECIMAL},
+  {kVK_ANSI_KeypadDivide, K_KP_DIV},
   {kVK_ANSI_KeypadClear, K_CLEAR},
-  {kVK_ANSI_KeypadEquals, K_equal},
-  {kVK_ANSI_KeypadEnter, K_CR},
+  {kVK_ANSI_KeypadEquals, K_KP_EQUAL},
+  {kVK_ANSI_KeypadEnter, K_KP_CR},
 
-  {kVK_JIS_KeypadComma, K_comma}
+  {kVK_JIS_KeypadComma, K_KP_SEP}
 };
 
 static int iupObjectIsNativeContainer(Ihandle* ih)
@@ -210,6 +210,25 @@ static int cocoaKeyDecodeCharacter(NSEvent *ns_event)
 
   if (ch >= NSF1FunctionKey && ch <= NSF20FunctionKey)
     return K_F1 + (int)(ch - NSF1FunctionKey);
+
+  if ([ns_event modifierFlags] & NSEventModifierFlagNumericPad)
+  {
+    if (ch >= '0' && ch <= '9')
+      return K_KP_0 + (int)(ch - '0');
+
+    switch (ch)
+    {
+      case '*':  return K_KP_MULT;
+      case '+':  return K_KP_PLUS;
+      case '-':  return K_KP_MINUS;
+      case '.':  return K_KP_DECIMAL;
+      case ',':  return K_KP_SEP;
+      case '/':  return K_KP_DIV;
+      case '=':  return K_KP_EQUAL;
+      case 0x0D:
+      case 0x03: return K_KP_CR;
+    }
+  }
 
   switch (ch)
   {
@@ -457,6 +476,11 @@ bool iupCocoaKeyUpEvent(Ihandle *ih, NSEvent *ns_event, int mac_key_code)
   }
 
   return false;
+}
+
+IUP_DRV_API int iupcocoaKeyDecodeEvent(NSEvent *ns_event, int mac_key_code)
+{
+  return cocoaKeyDecode(ns_event, mac_key_code);
 }
 
 IUP_DRV_API bool iupcocoaKeyEvent(Ihandle *ih, NSEvent *ns_event, int mac_key_code, bool is_pressed)

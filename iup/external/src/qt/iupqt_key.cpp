@@ -31,42 +31,42 @@ typedef struct _Iqt2iupkey
 } Iqt2iupkey;
 
 static Iqt2iupkey keypad_remap[] = {
-  { Qt::Key_0,        K_0  },
-  { Qt::Key_1,        K_1  },
-  { Qt::Key_2,        K_2  },
-  { Qt::Key_3,        K_3  },
-  { Qt::Key_4,        K_4  },
-  { Qt::Key_5,        K_5  },
-  { Qt::Key_6,        K_6  },
-  { Qt::Key_7,        K_7  },
-  { Qt::Key_8,        K_8  },
-  { Qt::Key_9,        K_9  },
-  { Qt::Key_Asterisk, K_asterisk },
-  { Qt::Key_Plus,     K_plus     },
-  { Qt::Key_Minus,    K_minus    },
-  { Qt::Key_Period,   K_period   },
-  { Qt::Key_Slash,    K_slash    },
-  { Qt::Key_Comma,    K_comma    },
+  { Qt::Key_0,        K_KP_0  },
+  { Qt::Key_1,        K_KP_1  },
+  { Qt::Key_2,        K_KP_2  },
+  { Qt::Key_3,        K_KP_3  },
+  { Qt::Key_4,        K_KP_4  },
+  { Qt::Key_5,        K_KP_5  },
+  { Qt::Key_6,        K_KP_6  },
+  { Qt::Key_7,        K_KP_7  },
+  { Qt::Key_8,        K_KP_8  },
+  { Qt::Key_9,        K_KP_9  },
+  { Qt::Key_Asterisk, K_KP_MULT },
+  { Qt::Key_Plus,     K_KP_PLUS     },
+  { Qt::Key_Minus,    K_KP_MINUS    },
+  { Qt::Key_Period,   K_KP_DECIMAL   },
+  { Qt::Key_Slash,    K_KP_DIV    },
+  { Qt::Key_Comma,    K_KP_SEP    },
   { Qt::Key_F1,       K_F1   },
   { Qt::Key_F2,       K_F2   },
   { Qt::Key_F3,       K_F3   },
   { Qt::Key_F4,       K_F4   },
   { Qt::Key_Space,    K_SP   },
   { Qt::Key_Tab,      K_TAB  },
-  { Qt::Key_Equal,    K_equal},
-  { Qt::Key_Enter,    K_CR   },
-  { Qt::Key_Return,   K_CR   },
-  { Qt::Key_Home,     K_HOME },
-  { Qt::Key_Up,       K_UP   },
-  { Qt::Key_PageUp,   K_PGUP },
-  { Qt::Key_Left,     K_LEFT },
-  { Qt::Key_Clear,    K_MIDDLE},
-  { Qt::Key_Right,    K_RIGHT},
-  { Qt::Key_End,      K_END  },
-  { Qt::Key_Down,     K_DOWN },
-  { Qt::Key_PageDown, K_PGDN },
-  { Qt::Key_Insert,   K_INS  },
-  { Qt::Key_Delete,   K_DEL  },
+  { Qt::Key_Equal,    K_KP_EQUAL},
+  { Qt::Key_Enter,    K_KP_CR   },
+  { Qt::Key_Return,   K_KP_CR   },
+  { Qt::Key_Home,     K_KP_HOME },
+  { Qt::Key_Up,       K_KP_UP   },
+  { Qt::Key_PageUp,   K_KP_PGUP },
+  { Qt::Key_Left,     K_KP_LEFT },
+  { Qt::Key_Clear,    K_KP_MIDDLE},
+  { Qt::Key_Right,    K_KP_RIGHT},
+  { Qt::Key_End,      K_KP_END  },
+  { Qt::Key_Down,     K_KP_DOWN },
+  { Qt::Key_PageDown, K_KP_PGDN },
+  { Qt::Key_Insert,   K_KP_INS  },
+  { Qt::Key_Delete,   K_KP_DEL  },
 };
 
 static Iqt2iupkey other_remap[] = {
@@ -210,25 +210,6 @@ static int qtKeyDecode(QKeyEvent *evt)
   int key = evt->key();
   Qt::KeyboardModifiers modifiers = evt->modifiers();
 
-  if ((modifiers & Qt::KeypadModifier) && !(modifiers & Qt::ShiftModifier))
-  {
-    /* Remap keypad navigation to numeric keys when NumLock is on */
-    switch (key)
-    {
-      case Qt::Key_Home:     key = Qt::Key_7; break;
-      case Qt::Key_Left:     key = Qt::Key_4; break;
-      case Qt::Key_Up:       key = Qt::Key_8; break;
-      case Qt::Key_Right:    key = Qt::Key_6; break;
-      case Qt::Key_Down:     key = Qt::Key_2; break;
-      case Qt::Key_PageUp:   key = Qt::Key_9; break;
-      case Qt::Key_PageDown: key = Qt::Key_3; break;
-      case Qt::Key_End:      key = Qt::Key_1; break;
-      case Qt::Key_Clear:    key = Qt::Key_5; break;
-      case Qt::Key_Insert:   key = Qt::Key_0; break;
-      case Qt::Key_Delete:   key = Qt::Key_Period; break;
-    }
-  }
-
   if (modifiers & Qt::KeypadModifier)
   {
     int count = sizeof(keypad_remap) / sizeof(keypad_remap[0]);
@@ -256,7 +237,7 @@ static int qtKeyDecode(QKeyEvent *evt)
 
   /* If it's a printable ASCII character from text(), use that instead */
   QString text = evt->text();
-  if (text.length() == 1 && !(modifiers & Qt::ControlModifier))
+  if (text.length() == 1 && !(modifiers & (Qt::ControlModifier | Qt::KeypadModifier)))
   {
     QChar ch = text[0];
     if (ch.isPrint() && ch.unicode() < 128)
@@ -286,6 +267,8 @@ static int qtKeyTextInput(QKeyEvent *evt, Ihandle *ih)
   if (!IupGetCallback(ih, "TEXTINPUT_CB"))
     return 0;
   if (evt->modifiers() & (Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier))
+    return 0;
+  if (evt->modifiers() & Qt::KeypadModifier)
     return 0;
   QString text = evt->text();
   if (text.isEmpty())

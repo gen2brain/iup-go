@@ -2083,7 +2083,7 @@ static int winuiTreeMapMethod(Ihandle* ih)
   });
 
   aux->keyDownToken = treeView.KeyDown([ih](IInspectable const&, KeyRoutedEventArgs const& args) {
-    int code = iupwinuiKeyDecode((int)args.Key());
+    int code = iupwinuiKeyDecode((int)args.Key(), args.KeyStatus().IsExtendedKey? 1: 0);
     if (code)
     {
       if (code == K_F2 && ih->data->show_rename)

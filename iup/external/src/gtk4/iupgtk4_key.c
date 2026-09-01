@@ -27,41 +27,12 @@ typedef struct _Igtk2iupkey
 } Igtk2iupkey;
 
 static Igtk2iupkey keypad_remap[] = {
-  { GDK_KEY_KP_0,         K_0  },
-  { GDK_KEY_KP_1,         K_1  },
-  { GDK_KEY_KP_2,         K_2  },
-  { GDK_KEY_KP_3,         K_3  },
-  { GDK_KEY_KP_4,         K_4  },
-  { GDK_KEY_KP_5,         K_5  },
-  { GDK_KEY_KP_6,         K_6  },
-  { GDK_KEY_KP_7,         K_7  },
-  { GDK_KEY_KP_8,         K_8  },
-  { GDK_KEY_KP_9,         K_9  },
-  { GDK_KEY_KP_Multiply,  K_asterisk },
-  { GDK_KEY_KP_Add,       K_plus     },
-  { GDK_KEY_KP_Subtract,  K_minus    },
-  { GDK_KEY_KP_Decimal,   K_period   },
-  { GDK_KEY_KP_Divide,    K_slash    },
-  { GDK_KEY_KP_Separator, K_comma    },
   { GDK_KEY_KP_F1,        K_F1   },
   { GDK_KEY_KP_F2,        K_F2   },
   { GDK_KEY_KP_F3,        K_F3   },
   { GDK_KEY_KP_F4,        K_F4   },
   { GDK_KEY_KP_Space,     K_SP   },
   { GDK_KEY_KP_Tab,       K_TAB  },
-  { GDK_KEY_KP_Equal,     K_equal},
-  { GDK_KEY_KP_Enter,     K_CR   },
-  { GDK_KEY_KP_Home,      K_HOME },
-  { GDK_KEY_KP_Up,        K_UP   },
-  { GDK_KEY_KP_Page_Up,   K_PGUP },
-  { GDK_KEY_KP_Left,      K_LEFT },
-  { GDK_KEY_KP_Begin,     K_MIDDLE},
-  { GDK_KEY_KP_Right,     K_RIGHT},
-  { GDK_KEY_KP_End,       K_END  },
-  { GDK_KEY_KP_Down,      K_DOWN },
-  { GDK_KEY_KP_Page_Down, K_PGDN },
-  { GDK_KEY_KP_Insert,    K_INS  },
-  { GDK_KEY_KP_Delete,    K_DEL  },
 };
 
 static Igtk2iupkey other_remap[] = {
@@ -192,13 +163,15 @@ static void gtk4KeyImCommit(GtkIMContext *context, const char *str, Ihandle *ih)
 }
 
 /* a commit consumed by TEXTINPUT_CB suppresses the K_ANY for that key */
-static gboolean gtk4KeyImFilter(GtkEventControllerKey *controller, Ihandle *ih)
+static gboolean gtk4KeyImFilter(GtkEventControllerKey *controller, guint keyval, GdkModifierType state, Ihandle *ih)
 {
   GtkWidget *widget;
   GtkIMContext *context;
   GdkEvent *event;
 
   if (!IupGetCallback(ih, "TEXTINPUT_CB"))
+    return FALSE;
+  if (iup_isKeyPadXkey(iupgtk4KeyDecode(keyval, state)))
     return FALSE;
 
   widget = gtk_event_controller_get_widget(GTK_EVENT_CONTROLLER(controller));
@@ -231,7 +204,7 @@ IUP_DRV_API gboolean iupgtk4KeyPressEvent(GtkEventControllerKey *controller, gui
 
   (void)keycode;
 
-  if (gtk4KeyImFilter(controller, ih))
+  if (gtk4KeyImFilter(controller, keyval, state, ih))
     return TRUE;
 
   code = iupgtk4KeyDecode(keyval, state);
@@ -302,7 +275,7 @@ IUP_DRV_API gboolean iupgtk4KeyReleaseEvent(GtkEventControllerKey *controller, g
 
   (void)keycode;
 
-  if (gtk4KeyImFilter(controller, ih))
+  if (gtk4KeyImFilter(controller, keyval, state, ih))
     return TRUE;
 
   code = iupgtk4KeyDecode(keyval, state);

@@ -27,6 +27,7 @@ extern "C" {
 #include <string.h>
 
 #include "iup_key.h"
+#include "iupkey.h"
 #include "iup_drv.h"
 #include "iup_canvas.h"
 }
@@ -185,13 +186,15 @@ void iuphaikuCanvasOnMouseMoved(Ihandle* ih, BView* view, BPoint where, unsigned
 }
 
 /* KeyDown bytes are already UTF-8 from the input server, dead keys and IME included */
-static bool haikuCanvasTextInput(Ihandle* ih, const char* bytes, int numBytes, unsigned int mods)
+static bool haikuCanvasTextInput(Ihandle* ih, const char* bytes, int numBytes, int raw_char, int raw_key, unsigned int mods)
 {
   char utf8[16];
 
   if (!IupGetCallback(ih, "TEXTINPUT_CB"))
     return false;
   if (mods & (B_CONTROL_KEY | B_COMMAND_KEY))
+    return false;
+  if (iup_isKeyPadXkey(iuphaikuKeyDecode((int)(unsigned char)bytes[0], raw_char, raw_key, mods)))
     return false;
   if (numBytes < 1 || numBytes > (int)sizeof(utf8) - 1)
     return false;
@@ -210,17 +213,18 @@ bool iuphaikuCanvasOnKeyDown(Ihandle* ih, BView* view, const char* bytes, int nu
 
   BMessage* msg = NULL;
   if (view->Looper()) msg = view->Looper()->CurrentMessage();
-  int32 raw_char = 0, mods = 0;
+  int32 raw_char = 0, mods = 0, raw_key = 0;
   if (msg)
   {
     msg->FindInt32("raw_char", &raw_char);
+    msg->FindInt32("key", &raw_key);
     msg->FindInt32("modifiers", &mods);
   }
 
-  if (haikuCanvasTextInput(ih, bytes, numBytes, (unsigned)mods))
+  if (haikuCanvasTextInput(ih, bytes, numBytes, (int)raw_char, (int)raw_key, (unsigned)mods))
     return true;
 
-  int code = iuphaikuKeyDecode((unsigned char)bytes[0], raw_char, (unsigned)mods);
+  int code = iuphaikuKeyDecode((unsigned char)bytes[0], (int)raw_char, (int)raw_key, (unsigned)mods);
   if (code == 0) return false;
 
   int ret_press = iupKeyCallKeyPressCb(ih, code, 1);
@@ -236,14 +240,15 @@ bool iuphaikuCanvasOnKeyUp(Ihandle* ih, BView* view, const char* bytes, int numB
 
   BMessage* msg = NULL;
   if (view->Looper()) msg = view->Looper()->CurrentMessage();
-  int32 raw_char = 0, mods = 0;
+  int32 raw_char = 0, mods = 0, raw_key = 0;
   if (msg)
   {
     msg->FindInt32("raw_char", &raw_char);
+    msg->FindInt32("key", &raw_key);
     msg->FindInt32("modifiers", &mods);
   }
 
-  int code = iuphaikuKeyDecode((int)(unsigned char)bytes[0], (int)raw_char, (unsigned)mods);
+  int code = iuphaikuKeyDecode((int)(unsigned char)bytes[0], (int)raw_char, (int)raw_key, (unsigned)mods);
   if (code) iupKeyCallKeyPressCb(ih, code, 0);
   return code != 0;
 }

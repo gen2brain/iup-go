@@ -16,6 +16,7 @@ Notice that all of this does not affect the **IupText** and **IupMultiline** tex
 
 The **iup_isprint(key)** macro informs if a key can be directly used as a printable character.
 The **iup_isXkey(key)** macro informs if a given key is an extended code.
+The **iup_isKeyPadXkey(key)** macro informs if a given key is a numeric keypad code.
 The **iup_isShiftXkey(key)** macro informs if a given key is an extended code using the Shift modifier, the **iup_isCtrlXkey(key)** macro for the Ctrl modifier, the **iup_isAltXkey(key)** macro for the Alt modifier, and the **iup_isSysXkey(key)** macro for the Sys modifier.
 To obtain a key code for a generic combination you can start with the base key from the table and combine it repeated times using the macros **iup_XkeyShift(key)**, **iup_XkeyCtrl(key)**, **iup_XkeyAlt(key)** and **iup_XkeySys(key)**.
 
@@ -158,3 +159,41 @@ To obtain a key code for a generic combination you can start with the base key f
 |  Scroll Lock | K_SCROLL        |
 |     Num Lock | K_NUM           |
 |    Caps Lock | K_CAPS          |
+
+The numeric keypad has its own codes, so its keys can be distinguished from the main keyboard.
+When Num Lock is off the navigation codes are reported, when it is on the digit codes are reported.
+Keypad F1 to F4, Keypad Space and Keypad Tab are reported as K_F1 to K_F4, K_SP and K_TAB.
+TEXTINPUT_CB is not called for the keypad keys, they are reported only in K_ANY and KEYPRESS_CB.
+In macOS and iOS the keypad has no navigation keys.
+
+|                Key | Code / Callback |
+|-------------------:|-----------------|
+|       Keypad Enter | K_KP_CR         |
+|        Keypad Home | K_KP_HOME       |
+|  Keypad Left Arrow | K_KP_LEFT       |
+|    Keypad Up Arrow | K_KP_UP         |
+| Keypad Right Arrow | K_KP_RIGHT      |
+|  Keypad Down Arrow | K_KP_DOWN       |
+|        Keypad PgUp | K_KP_PGUP       |
+|        Keypad PgDn | K_KP_PGDN       |
+|         Keypad End | K_KP_END        |
+|      Keypad Middle | K_KP_MIDDLE     |
+|      Keypad Insert | K_KP_INS        |
+|         Keypad Del | K_KP_DEL        |
+|          Keypad \* | K_KP_MULT       |
+|          Keypad \+ | K_KP_PLUS       |
+|          Keypad \, | K_KP_SEP        |
+|          Keypad \- | K_KP_MINUS      |
+|           Keypad . | K_KP_DECIMAL    |
+|           Keypad / | K_KP_DIV        |
+|           Keypad 0 | K_KP_0          |
+|           Keypad 1 | K_KP_1          |
+|           Keypad 2 | K_KP_2          |
+|           Keypad 3 | K_KP_3          |
+|           Keypad 4 | K_KP_4          |
+|           Keypad 5 | K_KP_5          |
+|           Keypad 6 | K_KP_6          |
+|           Keypad 7 | K_KP_7          |
+|           Keypad 8 | K_KP_8          |
+|           Keypad 9 | K_KP_9          |
+|           Keypad = | K_KP_EQUAL      |
