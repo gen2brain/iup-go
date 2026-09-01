@@ -66,6 +66,25 @@ static void cocoaDialogRefreshControlsOnThemeChange(Ihandle* child)
 @interface IupCocoaWindow : NSWindow
 @end
 
+static BOOL cocoaDialogIsMaximized(NSWindow* the_window)
+{
+  NSScreen* the_screen;
+  NSRect window_frame, visible_frame;
+
+  if ([the_window styleMask] & NSWindowStyleMaskFullScreen)
+    return YES;
+
+  the_screen = [the_window screen];
+  if (!the_screen)
+    return NO;
+
+  window_frame = [the_window frame];
+  visible_frame = [the_screen visibleFrame];
+
+  return (fabs(window_frame.size.width - visible_frame.size.width) < 2.0 &&
+          fabs(window_frame.size.height - visible_frame.size.height) < 2.0);
+}
+
 @implementation IupCocoaWindow
 
 - (BOOL)performKeyEquivalent:(NSEvent *)event
@@ -467,7 +486,7 @@ static void cocoaDialogChildDestroyNotification(NSNotification* notification)
   ih->currentheight = new_height;
 
   int new_state = IUP_RESTORE;
-  if ([the_window isZoomed])
+  if (cocoaDialogIsMaximized(the_window))
     new_state = IUP_MAXIMIZE;
 
   if (ih->data->show_state != new_state)
@@ -534,7 +553,7 @@ static void cocoaDialogChildDestroyNotification(NSNotification* notification)
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(the_window, IHANDLE_ASSOCIATED_OBJ_KEY);
   if (!iupObjectCheck(ih)) return;
 
-  int new_state = [the_window isZoomed] ? IUP_MAXIMIZE : IUP_RESTORE;
+  int new_state = cocoaDialogIsMaximized(the_window) ? IUP_MAXIMIZE : IUP_RESTORE;
   if (ih->data->show_state != new_state)
   {
     IFni cb = (IFni)IupGetCallback(ih, "SHOW_CB");
@@ -825,7 +844,7 @@ IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
     if (old_state == IUP_MAXIMIZE || old_state == IUP_MINIMIZE)
       ih->data->show_state = IUP_RESTORE;
 
-    if ([the_window isZoomed])
+    if (cocoaDialogIsMaximized(the_window))
       [the_window zoom:nil];
     if ([the_window isMiniaturized])
       [the_window deminiaturize:nil];
@@ -856,7 +875,7 @@ IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
   else if (iupStrEqualNoCase(placement, "MAXIMIZED"))
   {
     ih->data->show_state = IUP_MAXIMIZE;
-    if (![the_window isZoomed])
+    if (!cocoaDialogIsMaximized(the_window))
       [the_window zoom:nil];
   }
   else if (iupStrEqualNoCase(placement, "FULL"))
@@ -1402,7 +1421,7 @@ static char* cocoaDialogGetMaximizedAttrib(Ihandle *ih)
   if (!the_window)
     return NULL;
 
-  return iupStrReturnBoolean([the_window isZoomed]);
+  return iupStrReturnBoolean(cocoaDialogIsMaximized(the_window));
 }
 
 static char* cocoaDialogGetMinimizedAttrib(Ihandle *ih)
@@ -1602,7 +1621,7 @@ static void cocoaDialogLayoutUpdateMethod(Ihandle *ih)
     return;
   }
 
-  if ([the_window isZoomed])
+  if (cocoaDialogIsMaximized(the_window))
   {
     NSRect zoomed_frame = [the_window frame];
 
