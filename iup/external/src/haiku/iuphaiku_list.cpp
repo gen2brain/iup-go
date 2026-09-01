@@ -251,13 +251,14 @@ public:
     if (fIhandle && !iupdrvIsActive(fIhandle)) return;
     if (fIhandle && numBytes >= 1)
     {
-      int32 raw_char = 0, mods = 0;
+      int32 raw_char = 0, mods = 0, raw_key = 0;
       if (BMessage* m = Window() ? Window()->CurrentMessage() : NULL)
       {
         m->FindInt32("raw_char", &raw_char);
+        m->FindInt32("key", &raw_key);
         m->FindInt32("modifiers", &mods);
       }
-      int code = iuphaikuKeyDecode((int)(unsigned char)bytes[0], (int)raw_char, (unsigned)mods);
+      int code = iuphaikuKeyDecode((int)(unsigned char)bytes[0], (int)raw_char, (int)raw_key, (unsigned)mods);
       if (code)
       {
         int r = iupKeyCallKeyCb(fIhandle, code);

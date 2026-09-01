@@ -962,7 +962,7 @@ static int winuiTextMapMethod(Ihandle* ih)
     });
 
     aux->keyDownToken = nb.PreviewKeyDown([ih](IInspectable const&, KeyRoutedEventArgs const& args) {
-      if (!iupwinuiKeyEvent(ih, (int)args.Key(), 1))
+      if (!iupwinuiKeyEvent(ih, (int)args.Key(), args.KeyStatus().IsExtendedKey? 1: 0, 1))
         args.Handled(true);
     });
 
@@ -1007,7 +1007,7 @@ static int winuiTextMapMethod(Ihandle* ih)
     });
 
     aux->keyDownToken = pb.PreviewKeyDown([ih](IInspectable const&, KeyRoutedEventArgs const& args) {
-      if (!iupwinuiKeyEvent(ih, (int)args.Key(), 1))
+      if (!iupwinuiKeyEvent(ih, (int)args.Key(), args.KeyStatus().IsExtendedKey? 1: 0, 1))
         args.Handled(true);
     });
 
@@ -1107,7 +1107,7 @@ static int winuiTextMapMethod(Ihandle* ih)
       if (args.Key() == Windows::System::VirtualKey::Tab && ih->data->is_multiline &&
           !(GetKeyState(VK_CONTROL) & 0x8000) && !(GetKeyState(VK_MENU) & 0x8000))
       {
-        if (iupwinuiKeyEvent(ih, (int)args.Key(), 1))
+        if (iupwinuiKeyEvent(ih, (int)args.Key(), args.KeyStatus().IsExtendedKey? 1: 0, 1))
         {
           RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
           if (reb && !reb.IsReadOnly())
@@ -1141,7 +1141,7 @@ static int winuiTextMapMethod(Ihandle* ih)
           }
         }
       }
-      if (!iupwinuiKeyEvent(ih, (int)args.Key(), 1))
+      if (!iupwinuiKeyEvent(ih, (int)args.Key(), args.KeyStatus().IsExtendedKey? 1: 0, 1))
         args.Handled(true);
     });
 
@@ -1293,7 +1293,7 @@ static int winuiTextMapMethod(Ihandle* ih)
       if (args.Key() == Windows::System::VirtualKey::Tab && ih->data->is_multiline &&
           !(GetKeyState(VK_CONTROL) & 0x8000) && !(GetKeyState(VK_MENU) & 0x8000))
       {
-        if (iupwinuiKeyEvent(ih, (int)args.Key(), 1))
+        if (iupwinuiKeyEvent(ih, (int)args.Key(), args.KeyStatus().IsExtendedKey? 1: 0, 1))
         {
           TextBox tbox = winuiGetHandle<TextBox>(ih);
           if (tbox && !tbox.IsReadOnly())
@@ -1308,7 +1308,7 @@ static int winuiTextMapMethod(Ihandle* ih)
         args.Handled(true);
         return;
       }
-      if (!iupwinuiKeyEvent(ih, (int)args.Key(), 1))
+      if (!iupwinuiKeyEvent(ih, (int)args.Key(), args.KeyStatus().IsExtendedKey? 1: 0, 1))
         args.Handled(true);
     });
 

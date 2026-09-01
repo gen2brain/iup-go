@@ -706,7 +706,7 @@ static int winuiDialogMapMethod(Ihandle* ih)
     if (args.Handled())
       return;
 
-    int code = iupwinuiKeyDecode((int)args.Key());
+    int code = iupwinuiKeyDecode((int)args.Key(), args.KeyStatus().IsExtendedKey? 1: 0);
     if (code == K_ESC || code == K_CR)
     {
       Ihandle* focus = IupGetFocus();

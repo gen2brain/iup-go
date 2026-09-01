@@ -404,11 +404,12 @@ IUP_DRV_API void iuphaikuFireGlobalInputCB(BMessage* msg)
     {
       IFii cb = (IFii)IupGetFunction("GLOBALKEYPRESS_CB");
       if (!cb) return;
-      int32 byte_val = 0, raw_char = 0, mods = 0;
+      int32 byte_val = 0, raw_char = 0, mods = 0, raw_key = 0;
       msg->FindInt32("byte", &byte_val);
       msg->FindInt32("raw_char", &raw_char);
+      msg->FindInt32("key", &raw_key);
       msg->FindInt32("modifiers", &mods);
-      int code = iuphaikuKeyDecode((int)byte_val, (int)raw_char, (unsigned)mods);
+      int code = iuphaikuKeyDecode((int)byte_val, (int)raw_char, (int)raw_key, (unsigned)mods);
       if (code) cb(code, msg->what == B_KEY_DOWN ? 1 : 0);
       break;
     }
@@ -423,8 +424,22 @@ extern "C" IUP_SDK_API void iupdrvSendKey(int key, int press)
   if (target == (BView*)-1) return;
 
   unsigned int byte_val = 0, state = 0;
-  iupdrvKeyEncode(key, &byte_val, &state);
-  if (!byte_val) return;
+  int pad_byte = 0;
+  int scancode = iuphaikuKeyPadScanCode(key, &pad_byte);
+
+  if (scancode)
+  {
+    byte_val = (unsigned int)pad_byte;
+    if (iup_isShiftXkey(key)) state |= B_SHIFT_KEY;
+    if (iup_isCtrlXkey(key))  state |= B_CONTROL_KEY;
+    if (iup_isAltXkey(key))   state |= B_OPTION_KEY;
+    if (iup_isSysXkey(key))   state |= B_COMMAND_KEY;
+  }
+  else
+  {
+    iupdrvKeyEncode(key, &byte_val, &state);
+    if (!byte_val) return;
+  }
 
   char buf[2] = { (char)byte_val, 0 };
 
@@ -436,7 +451,7 @@ extern "C" IUP_SDK_API void iupdrvSendKey(int key, int press)
     msg.AddInt8("byte", (int8)byte_val);
     msg.AddString("bytes", buf);
     msg.AddInt32("raw_char", (int32)byte_val);
-    msg.AddInt32("key", (int32)byte_val);
+    msg.AddInt32("key", scancode? (int32)scancode: (int32)byte_val);
     BMessenger(target).SendMessage(&msg);
   }
   if (press & 0x02)
@@ -447,7 +462,7 @@ extern "C" IUP_SDK_API void iupdrvSendKey(int key, int press)
     msg.AddInt8("byte", (int8)byte_val);
     msg.AddString("bytes", buf);
     msg.AddInt32("raw_char", (int32)byte_val);
-    msg.AddInt32("key", (int32)byte_val);
+    msg.AddInt32("key", scancode? (int32)scancode: (int32)byte_val);
     BMessenger(target).SendMessage(&msg);
   }
 }

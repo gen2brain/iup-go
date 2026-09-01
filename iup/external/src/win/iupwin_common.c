@@ -17,6 +17,7 @@
 #include "iup_object.h"
 #include "iup_childtree.h"
 #include "iup_key.h"
+#include "iupkey.h"
 #include "iup_str.h"
 #include "iup_class.h"
 #include "iup_attrib.h"
@@ -405,7 +406,7 @@ IUP_DRV_API void iupwinSetStyle(Ihandle* ih, DWORD value, int set)
 
 /* K_ANY comes before WM_CHAR on Windows, so a key that will commit text
    skips K_ANY when the control listens to TEXTINPUT_CB */
-static int winTextInputSkipsKey(Ihandle* ih, int wincode)
+static int winTextInputSkipsKey(Ihandle* ih, int wincode, int extended)
 {
   int has_ctrl, has_alt;
   UINT ch;
@@ -420,6 +421,9 @@ static int winTextInputSkipsKey(Ihandle* ih, int wincode)
   if (has_ctrl && !has_alt)
     return 0;
 
+  if (iup_isKeyPadXkey(iupwinKeyDecode(wincode, extended)))
+    return 0;
+
   ch = MapVirtualKeyA((UINT)wincode, MAPVK_VK_TO_CHAR);
   return (ch & 0xFFFF) >= 0x20;
 }
@@ -429,10 +433,15 @@ static int winTextInputChar(Ihandle* ih, WCHAR wc)
   char utf8[8];
   int len;
   unsigned int cp = wc;
+  int was_keypad = iupAttribGet(ih, "_IUPWIN_KEYPAD")? 1: 0;
+
+  iupAttribSet(ih, "_IUPWIN_KEYPAD", NULL);
 
   if (!IupGetCallback(ih, "TEXTINPUT_CB"))
     return 0;
   if (cp < 0x20 || cp == 0x7F)
+    return 0;
+  if (was_keypad)
     return 0;
 
   if (cp >= 0xD800 && cp <= 0xDBFF)
@@ -579,26 +588,33 @@ IUP_DRV_API int iupwinBaseMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, L
     break;
   case WM_KEYDOWN:
   case WM_SYSKEYDOWN:
-    if (winTextInputSkipsKey(ih, (int)wp))
-      break;
-    if (!iupwinKeyEvent(ih, (int)wp, 1))
     {
-      *result = 0;
-      return 1;   /* abort default processing */
+      int extended = (lp & 0x01000000)? 1: 0;
+
+      iupAttribSet(ih, "_IUPWIN_KEYPAD",
+                   iup_isKeyPadXkey(iupwinKeyDecode((int)wp, extended))? "1": NULL);
+
+      if (winTextInputSkipsKey(ih, (int)wp, extended))
+        break;
+      if (!iupwinKeyEvent(ih, (int)wp, extended, 1))
+      {
+        *result = 0;
+        return 1;   /* abort default processing */
+      }
+      break;
     }
-    break;
   case WM_SYSKEYUP:
   case WM_KEYUP:
     {
       int ret;
       if (wp == VK_SNAPSHOT) /* called only on key up */
       {
-        ret = iupwinKeyEvent(ih, (int)wp, 1);
+        ret = iupwinKeyEvent(ih, (int)wp, (lp & 0x01000000)? 1: 0, 1);
         if (ret && iupObjectCheck(ih))
-          ret = iupwinKeyEvent(ih, (int)wp, 0);
+          ret = iupwinKeyEvent(ih, (int)wp, (lp & 0x01000000)? 1: 0, 0);
       }
       else
-        ret = iupwinKeyEvent(ih, (int)wp, 0);
+        ret = iupwinKeyEvent(ih, (int)wp, (lp & 0x01000000)? 1: 0, 0);
 
       if (!ret)
       {
@@ -1374,6 +1390,7 @@ IUP_SDK_API void iupdrvSendKey(int key, int press)
   unsigned int keyval, state;
   INPUT input[2];
   LPARAM extra_info;
+  DWORD key_flags;
   WORD state_scan = 0, key_scan;
   ZeroMemory(input, 2*sizeof(INPUT));
 
@@ -1385,6 +1402,7 @@ IUP_SDK_API void iupdrvSendKey(int key, int press)
   if (state)
     state_scan = (WORD)MapVirtualKey(state, MAPVK_VK_TO_VSC);
   key_scan = (WORD)MapVirtualKey(keyval, MAPVK_VK_TO_VSC);
+  key_flags = iupwinKeyIsExtended(key)? KEYEVENTF_EXTENDEDKEY: 0;
 
   if (press & 0x01)
   {
@@ -1398,6 +1416,7 @@ IUP_SDK_API void iupdrvSendKey(int key, int press)
 
       /* key second */
       input[1].type = INPUT_KEYBOARD;
+      input[1].ki.dwFlags = key_flags;
       input[1].ki.wVk = (WORD)keyval;
       input[1].ki.wScan = key_scan;
       input[1].ki.dwExtraInfo = extra_info;
@@ -1407,6 +1426,7 @@ IUP_SDK_API void iupdrvSendKey(int key, int press)
     else
     {
       input[0].type = INPUT_KEYBOARD;
+      input[0].ki.dwFlags = key_flags;
       input[0].ki.wVk = (WORD)keyval;
       input[0].ki.wScan = key_scan;
       input[0].ki.dwExtraInfo = extra_info;
@@ -1421,7 +1441,7 @@ IUP_SDK_API void iupdrvSendKey(int key, int press)
     {
       /* key first */
       input[0].type = INPUT_KEYBOARD;
-      input[0].ki.dwFlags = KEYEVENTF_KEYUP;
+      input[0].ki.dwFlags = KEYEVENTF_KEYUP | key_flags;
       input[0].ki.wVk = (WORD)keyval;
       input[0].ki.wScan = key_scan;
       input[0].ki.dwExtraInfo = extra_info;
@@ -1438,7 +1458,7 @@ IUP_SDK_API void iupdrvSendKey(int key, int press)
     else
     {
       input[0].type = INPUT_KEYBOARD;
-      input[0].ki.dwFlags = KEYEVENTF_KEYUP;
+      input[0].ki.dwFlags = KEYEVENTF_KEYUP | key_flags;
       input[0].ki.wVk = (WORD)keyval;
       input[0].ki.wScan = key_scan;
       input[0].ki.dwExtraInfo = extra_info;

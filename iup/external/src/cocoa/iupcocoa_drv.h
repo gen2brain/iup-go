@@ -88,6 +88,7 @@ IUP_DRV_API char* iupcocoaCommonBaseGetContextMenuAttrib(Ihandle* ih);
 
 /* Helpers for keyboard events. */
 IUP_DRV_API bool iupcocoaKeyEvent(Ihandle *ih, NSEvent* ns_event, int mac_key_code, bool is_pressed);
+IUP_DRV_API int iupcocoaKeyDecodeEvent(NSEvent* ns_event, int mac_key_code);
 IUP_DRV_API bool iupcocoaModifierEvent(Ihandle *ih, NSEvent* ns_event, int mac_key_code);
 #ifndef GNUSTEP
 IUP_DRV_API int iupcocoaKeyDecode(CGEventRef event);

@@ -36,6 +36,15 @@
 #define AKEYCODE_INSERT        124
 #define AKEYCODE_F1            131
 #define AKEYCODE_NUM_LOCK      143
+#define AKEYCODE_NUMPAD_0      144
+#define AKEYCODE_NUMPAD_DIVIDE 154
+#define AKEYCODE_NUMPAD_MULTIPLY 155
+#define AKEYCODE_NUMPAD_SUBTRACT 156
+#define AKEYCODE_NUMPAD_ADD    157
+#define AKEYCODE_NUMPAD_DOT    158
+#define AKEYCODE_NUMPAD_COMMA  159
+#define AKEYCODE_NUMPAD_ENTER  160
+#define AKEYCODE_NUMPAD_EQUALS 161
 
 /* android.view.KeyEvent META_* flags. */
 #define AMETA_SHIFT_ON  0x0001
@@ -57,6 +66,8 @@ IUP_SDK_API void iupdrvKeyEncode(int code, unsigned int* keyval, unsigned int* s
     kv = AKEYCODE_0 + (base - K_0);
   else if (base >= K_F1 && base <= K_F12)
     kv = AKEYCODE_F1 + (base - K_F1);
+  else if (base >= K_KP_0 && base <= K_KP_9)
+    kv = AKEYCODE_NUMPAD_0 + (base - K_KP_0);
   else
   {
     switch (base)
@@ -82,6 +93,14 @@ IUP_SDK_API void iupdrvKeyEncode(int code, unsigned int* keyval, unsigned int* s
       case K_NUM:    kv = AKEYCODE_NUM_LOCK;     break;
       case K_CAPS:   kv = AKEYCODE_CAPS_LOCK;    break;
       case K_SCROLL: kv = AKEYCODE_SCROLL_LOCK;  break;
+      case K_KP_DIV:     kv = AKEYCODE_NUMPAD_DIVIDE;   break;
+      case K_KP_MULT:    kv = AKEYCODE_NUMPAD_MULTIPLY; break;
+      case K_KP_MINUS:   kv = AKEYCODE_NUMPAD_SUBTRACT; break;
+      case K_KP_PLUS:    kv = AKEYCODE_NUMPAD_ADD;      break;
+      case K_KP_DECIMAL: kv = AKEYCODE_NUMPAD_DOT;      break;
+      case K_KP_SEP:     kv = AKEYCODE_NUMPAD_COMMA;    break;
+      case K_KP_CR:      kv = AKEYCODE_NUMPAD_ENTER;    break;
+      case K_KP_EQUAL:   kv = AKEYCODE_NUMPAD_EQUALS;   break;
       default:       kv = 0;                     break;
     }
   }
@@ -105,6 +124,8 @@ int iupandroidKeyDecode(int keycode, int meta_state)
     code = K_0 + (keycode - AKEYCODE_0);
   else if (keycode >= AKEYCODE_F1 && keycode < AKEYCODE_F1 + 12)
     code = K_F1 + (keycode - AKEYCODE_F1);
+  else if (keycode >= AKEYCODE_NUMPAD_0 && keycode < AKEYCODE_NUMPAD_0 + 10)
+    code = K_KP_0 + (keycode - AKEYCODE_NUMPAD_0);
   else
   {
     switch (keycode)
@@ -128,6 +149,14 @@ int iupandroidKeyDecode(int keycode, int meta_state)
       case AKEYCODE_SYSRQ:        code = K_Print;  break;
       case AKEYCODE_MENU:         code = K_Menu;   break;
       case AKEYCODE_NUM_LOCK:     code = K_NUM;    break;
+      case AKEYCODE_NUMPAD_DIVIDE:   code = K_KP_DIV;     break;
+      case AKEYCODE_NUMPAD_MULTIPLY: code = K_KP_MULT;    break;
+      case AKEYCODE_NUMPAD_SUBTRACT: code = K_KP_MINUS;   break;
+      case AKEYCODE_NUMPAD_ADD:      code = K_KP_PLUS;    break;
+      case AKEYCODE_NUMPAD_DOT:      code = K_KP_DECIMAL; break;
+      case AKEYCODE_NUMPAD_COMMA:    code = K_KP_SEP;     break;
+      case AKEYCODE_NUMPAD_ENTER:    code = K_KP_CR;      break;
+      case AKEYCODE_NUMPAD_EQUALS:   code = K_KP_EQUAL;   break;
       case AKEYCODE_CAPS_LOCK:    code = K_CAPS;   break;
       case AKEYCODE_SCROLL_LOCK:  code = K_SCROLL; break;
       default:                    return 0;

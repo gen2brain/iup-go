@@ -603,7 +603,7 @@ static int winuiButtonMapMethod(Ihandle* ih)
   });
 
   aux->keyDownToken = btn.PreviewKeyDown([ih](IInspectable const&, Input::KeyRoutedEventArgs const& args) {
-    if (!iupwinuiKeyEvent(ih, (int)args.Key(), 1))
+    if (!iupwinuiKeyEvent(ih, (int)args.Key(), args.KeyStatus().IsExtendedKey? 1: 0, 1))
       args.Handled(true);
   });
 

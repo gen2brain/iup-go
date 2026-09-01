@@ -18,6 +18,7 @@
 #include "iup_drv.h"
 #include "iup_canvas.h"
 #include "iup_key.h"
+#include "iupkey.h"
 #include "iup_class.h"
 #include "iup_focus.h"
 
@@ -647,7 +648,8 @@ static BOOL cocoaCanvasOptionIsMeta(Ihandle* ih, NSEvent* the_event)
 {
   if(![self isEnabled]) return;
 
-  if (IupGetCallback(_ih, "TEXTINPUT_CB") && !cocoaCanvasOptionIsMeta(_ih, the_event))
+  if (IupGetCallback(_ih, "TEXTINPUT_CB") && !cocoaCanvasOptionIsMeta(_ih, the_event) &&
+      !iup_isKeyPadXkey(iupcocoaKeyDecodeEvent(the_event, (int)[the_event keyCode])))
   {
     [self setTextInputConsumed:false];
 #ifdef GNUSTEP

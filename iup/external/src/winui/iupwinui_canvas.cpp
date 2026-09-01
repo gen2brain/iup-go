@@ -17,6 +17,7 @@ extern "C" {
 #include "iup_drv.h"
 #include "iup_canvas.h"
 #include "iup_key.h"
+#include "iupkey.h"
 #include "iup_classbase.h"
 }
 
@@ -149,7 +150,7 @@ static LRESULT CALLBACK winuiGLCanvasWndProc(HWND hwnd, UINT msg, WPARAM wParam,
   case WM_KEYDOWN:
   case WM_SYSKEYDOWN:
   {
-    int code = iupwinuiKeyDecode((int)wParam);
+    int code = iupwinuiKeyDecode((int)wParam, (lParam & 0x01000000)? 1: 0);
     if (code)
     {
       int ret = iupKeyCallKeyPressCb(ih, code, 1);
@@ -176,7 +177,7 @@ static LRESULT CALLBACK winuiGLCanvasWndProc(HWND hwnd, UINT msg, WPARAM wParam,
   case WM_KEYUP:
   case WM_SYSKEYUP:
   {
-    int code = iupwinuiKeyDecode((int)wParam);
+    int code = iupwinuiKeyDecode((int)wParam, (lParam & 0x01000000)? 1: 0);
     if (code)
     {
       int ret = iupKeyCallKeyPressCb(ih, code, 0);
@@ -933,6 +934,8 @@ static int winuiCanvasMapMethod(Ihandle* ih)
       return;
     if (cp < 0x20 || cp == 0x7F)
       return;
+    if (iupAttribGet(ih, "_IUPWINUI_KEYPAD"))
+      return;
 
     if (cp >= 0xD800 && cp <= 0xDBFF)
     {
@@ -982,7 +985,11 @@ static int winuiCanvasMapMethod(Ihandle* ih)
   });
 
   aux->keyDownToken = canvas.KeyDown([ih](IInspectable const&, KeyRoutedEventArgs const& args) {
-    int code;
+    int code = iupwinuiKeyDecode((int)args.Key(), args.KeyStatus().IsExtendedKey? 1: 0);
+    int is_keypad = iup_isKeyPadXkey(code);
+
+    iupAttribSet(ih, "_IUPWINUI_KEYPAD", is_keypad? "1": NULL);
+
     if (IupGetCallback(ih, "TEXTINPUT_CB"))
     {
       int vk = (int)args.Key();
@@ -993,14 +1000,14 @@ static int winuiCanvasMapMethod(Ihandle* ih)
         if (vk >= VK_NUMPAD0 && vk <= VK_NUMPAD9)  /* Alt+numpad composition */
           return;
       }
-      else if (!(has_ctrl && !has_alt))
+      else if (!(has_ctrl && !has_alt) && !is_keypad)
       {
         UINT ch = MapVirtualKeyA((UINT)vk, MAPVK_VK_TO_CHAR);
         if ((ch & 0xFFFF) >= 0x20)
           return;
       }
     }
-    code = iupwinuiKeyDecode((int)args.Key());
+
     if (code)
     {
       int ret = iupKeyCallKeyPressCb(ih, code, 1);
@@ -1032,7 +1039,7 @@ static int winuiCanvasMapMethod(Ihandle* ih)
   });
 
   aux->keyUpToken = canvas.KeyUp([ih](IInspectable const&, KeyRoutedEventArgs const& args) {
-    int code = iupwinuiKeyDecode((int)args.Key());
+    int code = iupwinuiKeyDecode((int)args.Key(), args.KeyStatus().IsExtendedKey? 1: 0);
     if (code)
     {
       int ret = iupKeyCallKeyPressCb(ih, code, 0);

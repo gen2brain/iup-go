@@ -108,7 +108,7 @@ static int winuiLoopProcessMessage(MSG* msg)
             IupGetCallback(ih, "TEXTINPUT_CB") != NULL;
         if (ih && !alt_numpad_compose)
         {
-          if (!iupwinuiKeyEvent(ih, wincode, 1))
+          if (!iupwinuiKeyEvent(ih, wincode, (msg->lParam & 0x01000000)? 1: 0, 1))
           {
             MSG flush;
             while (PeekMessage(&flush, NULL, WM_KEYFIRST, WM_KEYLAST, PM_REMOVE)) {}

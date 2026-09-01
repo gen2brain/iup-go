@@ -235,7 +235,7 @@ static LRESULT CALLBACK winuiHookGetMessageProc(int hcode, WPARAM gm_wp, LPARAM 
       if (cb)
       {
         int pressed = (msg == WM_KEYDOWN || msg == WM_SYSKEYDOWN) ? 1 : 0;
-        int code = iupwinuiKeyDecode((int)wp);
+        int code = iupwinuiKeyDecode((int)wp, (lp & 0x01000000)? 1: 0);
         if (code != 0) cb(code, pressed);
       }
       break;

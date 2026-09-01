@@ -75,20 +75,20 @@ static void winuiKeyInit(void)
   winuiKeyMap[VK_F11] = K_F11;
   winuiKeyMap[VK_F12] = K_F12;
 
-  winuiKeyMap[VK_NUMPAD0] = K_0;
-  winuiKeyMap[VK_NUMPAD1] = K_1;
-  winuiKeyMap[VK_NUMPAD2] = K_2;
-  winuiKeyMap[VK_NUMPAD3] = K_3;
-  winuiKeyMap[VK_NUMPAD4] = K_4;
-  winuiKeyMap[VK_NUMPAD5] = K_5;
-  winuiKeyMap[VK_NUMPAD6] = K_6;
-  winuiKeyMap[VK_NUMPAD7] = K_7;
-  winuiKeyMap[VK_NUMPAD8] = K_8;
-  winuiKeyMap[VK_NUMPAD9] = K_9;
-  winuiKeyMap[VK_MULTIPLY] = K_asterisk;
-  winuiKeyMap[VK_ADD] = K_plus;
-  winuiKeyMap[VK_SUBTRACT] = K_minus;
-  winuiKeyMap[VK_DIVIDE] = K_slash;
+  winuiKeyMap[VK_NUMPAD0] = K_KP_0;
+  winuiKeyMap[VK_NUMPAD1] = K_KP_1;
+  winuiKeyMap[VK_NUMPAD2] = K_KP_2;
+  winuiKeyMap[VK_NUMPAD3] = K_KP_3;
+  winuiKeyMap[VK_NUMPAD4] = K_KP_4;
+  winuiKeyMap[VK_NUMPAD5] = K_KP_5;
+  winuiKeyMap[VK_NUMPAD6] = K_KP_6;
+  winuiKeyMap[VK_NUMPAD7] = K_KP_7;
+  winuiKeyMap[VK_NUMPAD8] = K_KP_8;
+  winuiKeyMap[VK_NUMPAD9] = K_KP_9;
+  winuiKeyMap[VK_MULTIPLY] = K_KP_MULT;
+  winuiKeyMap[VK_ADD] = K_KP_PLUS;
+  winuiKeyMap[VK_SUBTRACT] = K_KP_MINUS;
+  winuiKeyMap[VK_DIVIDE] = K_KP_DIV;
 
   winuiKeyMap['0'] = K_0;
   winuiKeyMap['1'] = K_1;
@@ -159,8 +159,8 @@ static void winuiKeyInit(void)
   winuiKeyMap[VK_OEM_COMMA] = LOWORD(MapVirtualKeyA(VK_OEM_COMMA, MAPVK_VK_TO_CHAR));
   winuiKeyMap[VK_OEM_MINUS] = LOWORD(MapVirtualKeyA(VK_OEM_MINUS, MAPVK_VK_TO_CHAR));
   winuiKeyMap[VK_OEM_PERIOD] = LOWORD(MapVirtualKeyA(VK_OEM_PERIOD, MAPVK_VK_TO_CHAR));
-  winuiKeyMap[VK_DECIMAL] = LOWORD(MapVirtualKeyA(VK_DECIMAL, MAPVK_VK_TO_CHAR));
-  winuiKeyMap[VK_SEPARATOR] = LOWORD(MapVirtualKeyA(VK_SEPARATOR, MAPVK_VK_TO_CHAR));
+  winuiKeyMap[VK_DECIMAL] = K_KP_DECIMAL;
+  winuiKeyMap[VK_SEPARATOR] = K_KP_SEP;
 
   if (!winuiKeyMap[VK_OEM_1]) winuiKeyMap[VK_OEM_1] = LOWORD(MapVirtualKeyA(VK_OEM_1, MAPVK_VK_TO_CHAR));
   if (!winuiKeyMap[VK_OEM_2]) winuiKeyMap[VK_OEM_2] = LOWORD(MapVirtualKeyA(VK_OEM_2, MAPVK_VK_TO_CHAR));
@@ -175,14 +175,14 @@ static void winuiKeyInit(void)
   winui_key_initialized = 1;
 }
 
-IUP_DRV_API int iupwinuiKeyEvent(Ihandle* ih, int wincode, int press)
+IUP_DRV_API int iupwinuiKeyEvent(Ihandle* ih, int wincode, int extended, int press)
 {
   int result, code;
 
   if (!ih->iclass->is_interactive)
     return 1;
 
-  code = iupwinuiKeyDecode(wincode);
+  code = iupwinuiKeyDecode(wincode, extended);
   if (code == 0)
     return 1;
 
@@ -213,7 +213,59 @@ IUP_DRV_API int iupwinuiKeyEvent(Ihandle* ih, int wincode, int press)
   return 1;
 }
 
-IUP_DRV_API int iupwinuiKeyDecode(int wincode)
+static int winuiKeyPadCode(int wincode, int extended)
+{
+  if (wincode == VK_RETURN)
+    return extended? K_KP_CR: 0;
+
+  if (extended)
+    return 0;
+
+  switch (wincode)
+  {
+  case VK_HOME:   return K_KP_HOME;
+  case VK_LEFT:   return K_KP_LEFT;
+  case VK_UP:     return K_KP_UP;
+  case VK_RIGHT:  return K_KP_RIGHT;
+  case VK_DOWN:   return K_KP_DOWN;
+  case VK_PRIOR:  return K_KP_PGUP;
+  case VK_NEXT:   return K_KP_PGDN;
+  case VK_END:    return K_KP_END;
+  case VK_CLEAR:  return K_KP_MIDDLE;
+  case VK_INSERT: return K_KP_INS;
+  case VK_DELETE: return K_KP_DEL;
+  }
+
+  return 0;
+}
+
+IUP_DRV_API int iupwinuiKeyIsExtended(int code)
+{
+  switch (iup_XkeyBase(code))
+  {
+  case K_HOME:
+  case K_LEFT:
+  case K_UP:
+  case K_RIGHT:
+  case K_DOWN:
+  case K_PGUP:
+  case K_PGDN:
+  case K_END:
+  case K_INS:
+  case K_DEL:
+  case K_KP_CR:
+  case K_KP_DIV:
+  case K_RCTRL:
+  case K_RALT:
+  case K_NUM:
+  case K_Print:
+    return 1;
+  }
+
+  return 0;
+}
+
+IUP_DRV_API int iupwinuiKeyDecode(int wincode, int extended)
 {
   int iupcode;
   int has_shift, has_ctrl, has_alt, has_sys;
@@ -228,7 +280,11 @@ IUP_DRV_API int iupwinuiKeyDecode(int wincode)
   has_alt = GetKeyState(VK_MENU) & 0x8000;
   has_sys = (GetKeyState(VK_LWIN) & 0x8000) || (GetKeyState(VK_RWIN) & 0x8000);
 
-  if (wincode == VK_SHIFT && (GetKeyState(VK_RSHIFT) & 0x8000))
+  iupcode = winuiKeyPadCode(wincode, extended);
+
+  if (iupcode)
+    { }
+  else if (wincode == VK_SHIFT && (GetKeyState(VK_RSHIFT) & 0x8000))
     iupcode = K_RSHIFT;
   else if (wincode == VK_CONTROL && (GetKeyState(VK_RCONTROL) & 0x8000))
     iupcode = K_RCTRL;
@@ -328,6 +384,22 @@ extern "C" IUP_SDK_API void iupdrvKeyEncode(int code, unsigned int* wincode, uns
   iupcode = iup_XkeyBase(code);
   *wincode = 0;
   *state = 0;
+
+  switch (iupcode)
+  {
+  case K_KP_CR:     iupcode = K_CR; break;
+  case K_KP_HOME:   iupcode = K_HOME; break;
+  case K_KP_LEFT:   iupcode = K_LEFT; break;
+  case K_KP_UP:     iupcode = K_UP; break;
+  case K_KP_RIGHT:  iupcode = K_RIGHT; break;
+  case K_KP_DOWN:   iupcode = K_DOWN; break;
+  case K_KP_PGUP:   iupcode = K_PGUP; break;
+  case K_KP_PGDN:   iupcode = K_PGDN; break;
+  case K_KP_END:    iupcode = K_END; break;
+  case K_KP_MIDDLE: iupcode = K_MIDDLE; break;
+  case K_KP_INS:    iupcode = K_INS; break;
+  case K_KP_DEL:    iupcode = K_DEL; break;
+  }
 
   for (i = 0; i < 256; i++)
   {

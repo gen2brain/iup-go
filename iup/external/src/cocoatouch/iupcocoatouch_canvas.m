@@ -242,7 +242,16 @@ static void cocoaTouchFireGesture(Ihandle* ih, int gesture, int state, int x, in
 
 - (void)insertText:(NSString*)text
 {
+	int was_keypad;
+
 	if (!_ihandle || [text length] == 0)
+	{
+		return;
+	}
+
+	was_keypad = iupAttribGet(_ihandle, "_IUPCOCOATOUCH_KEYPAD")? 1: 0;
+	iupAttribSet(_ihandle, "_IUPCOCOATOUCH_KEYPAD", NULL);
+	if (was_keypad)
 	{
 		return;
 	}

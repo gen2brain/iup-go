@@ -10,6 +10,7 @@
 
 #include "iup.h"
 #include "iupkey.h"
+#include "iup_attrib.h"
 
 #include "iup_object.h"
 #include "iup_class.h"
@@ -124,23 +125,23 @@ static const IupCocoaTouchKey s_keyMap[] = {
 	{ UIKeyboardHIDUsageKeyboardF20, K_F20 },
 
 	/* Numeric keypad */
-	{ UIKeyboardHIDUsageKeypad0,        K_0 },
-	{ UIKeyboardHIDUsageKeypad1,        K_1 },
-	{ UIKeyboardHIDUsageKeypad2,        K_2 },
-	{ UIKeyboardHIDUsageKeypad3,        K_3 },
-	{ UIKeyboardHIDUsageKeypad4,        K_4 },
-	{ UIKeyboardHIDUsageKeypad5,        K_5 },
-	{ UIKeyboardHIDUsageKeypad6,        K_6 },
-	{ UIKeyboardHIDUsageKeypad7,        K_7 },
-	{ UIKeyboardHIDUsageKeypad8,        K_8 },
-	{ UIKeyboardHIDUsageKeypad9,        K_9 },
-	{ UIKeyboardHIDUsageKeypadAsterisk, K_asterisk },
-	{ UIKeyboardHIDUsageKeypadPlus,     K_plus },
-	{ UIKeyboardHIDUsageKeypadHyphen,   K_minus },
-	{ UIKeyboardHIDUsageKeypadPeriod,   K_period },
-	{ UIKeyboardHIDUsageKeypadSlash,    K_slash },
-	{ UIKeyboardHIDUsageKeypadEqualSign,K_equal },
-	{ UIKeyboardHIDUsageKeypadEnter,    K_CR },
+	{ UIKeyboardHIDUsageKeypad0,        K_KP_0 },
+	{ UIKeyboardHIDUsageKeypad1,        K_KP_1 },
+	{ UIKeyboardHIDUsageKeypad2,        K_KP_2 },
+	{ UIKeyboardHIDUsageKeypad3,        K_KP_3 },
+	{ UIKeyboardHIDUsageKeypad4,        K_KP_4 },
+	{ UIKeyboardHIDUsageKeypad5,        K_KP_5 },
+	{ UIKeyboardHIDUsageKeypad6,        K_KP_6 },
+	{ UIKeyboardHIDUsageKeypad7,        K_KP_7 },
+	{ UIKeyboardHIDUsageKeypad8,        K_KP_8 },
+	{ UIKeyboardHIDUsageKeypad9,        K_KP_9 },
+	{ UIKeyboardHIDUsageKeypadAsterisk, K_KP_MULT },
+	{ UIKeyboardHIDUsageKeypadPlus,     K_KP_PLUS },
+	{ UIKeyboardHIDUsageKeypadHyphen,   K_KP_MINUS },
+	{ UIKeyboardHIDUsageKeypadPeriod,   K_KP_DECIMAL },
+	{ UIKeyboardHIDUsageKeypadSlash,    K_KP_DIV },
+	{ UIKeyboardHIDUsageKeypadEqualSign,K_KP_EQUAL },
+	{ UIKeyboardHIDUsageKeypadEnter,    K_KP_CR },
 	{ UIKeyboardHIDUsageKeypadNumLock,  K_NUM },
 
 	/* modifiers: IUP exposes both L and R */
@@ -257,6 +258,8 @@ IUP_DRV_API bool iupCocoaTouchKeyEvent(Ihandle* ih, UIPress* press, bool is_pres
 	{
 		return false;
 	}
+
+	iupAttribSet(ih, "_IUPCOCOATOUCH_KEYPAD", iup_isKeyPadXkey(code)? "1": NULL);
 
 	if (is_pressed)
 	{

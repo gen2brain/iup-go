@@ -83,7 +83,8 @@ IUP_DRV_API void iuphaikuRecentDispatch(Ihandle* menu, int index);
 
 /* Key decode/encode helpers (used by widget KeyDown / MouseDown overrides).
  * Modifier / button masks are uint32_t to keep this header free of Haiku typedefs. */
-IUP_DRV_API int  iuphaikuKeyDecode(int byte, int raw_char, unsigned int modifiers);
+IUP_DRV_API int  iuphaikuKeyDecode(int byte, int raw_char, int key, unsigned int modifiers);
+IUP_DRV_API int  iuphaikuKeyPadScanCode(int code, int* byte_val);
 IUP_DRV_API void iuphaikuButtonKeySetStatus(unsigned int modifiers, unsigned int buttons, int button, char* status, int doubleclick);
 
 /* Focus helpers. */

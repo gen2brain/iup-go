@@ -29,41 +29,41 @@ typedef struct Imot2iupkey
 } Imot2iupkey;
 
 static Imot2iupkey keypad_remap[] = {
-  { XK_KP_0,   K_0 },
-  { XK_KP_1,   K_1 },
-  { XK_KP_2,   K_2 },
-  { XK_KP_3,   K_3 },
-  { XK_KP_4,   K_4 },
-  { XK_KP_5,   K_5 },
-  { XK_KP_6,   K_6 },
-  { XK_KP_7,   K_7 },
-  { XK_KP_8,   K_8 },
-  { XK_KP_9,   K_9 },
-  { XK_KP_Multiply,  K_asterisk },
-  { XK_KP_Add,       K_plus     },
-  { XK_KP_Subtract,  K_minus    },
-  { XK_KP_Decimal,   K_period   },
-  { XK_KP_Divide,    K_slash    },
-  { XK_KP_Separator, K_comma    },
+  { XK_KP_0,   K_KP_0 },
+  { XK_KP_1,   K_KP_1 },
+  { XK_KP_2,   K_KP_2 },
+  { XK_KP_3,   K_KP_3 },
+  { XK_KP_4,   K_KP_4 },
+  { XK_KP_5,   K_KP_5 },
+  { XK_KP_6,   K_KP_6 },
+  { XK_KP_7,   K_KP_7 },
+  { XK_KP_8,   K_KP_8 },
+  { XK_KP_9,   K_KP_9 },
+  { XK_KP_Multiply,  K_KP_MULT },
+  { XK_KP_Add,       K_KP_PLUS     },
+  { XK_KP_Subtract,  K_KP_MINUS    },
+  { XK_KP_Decimal,   K_KP_DECIMAL   },
+  { XK_KP_Divide,    K_KP_DIV    },
+  { XK_KP_Separator, K_KP_SEP    },
   { XK_KP_F1,  K_F1 },
   { XK_KP_F2,  K_F2 },
   { XK_KP_F3,  K_F3 },
   { XK_KP_F4,  K_F4 },
   { XK_KP_Space,     K_SP     },
   { XK_KP_Tab,       K_TAB    },
-  { XK_KP_Equal,     K_equal  },
-  { XK_KP_Enter,     K_CR     },
-  { XK_KP_Home,      K_HOME   },
-  { XK_KP_Up,        K_UP     },
-  { XK_KP_Page_Up,   K_PGUP   },
-  { XK_KP_Left,      K_LEFT   },
-  { XK_KP_Begin,     K_MIDDLE },
-  { XK_KP_Right,     K_RIGHT  },
-  { XK_KP_End,       K_END    },
-  { XK_KP_Down,      K_DOWN   },
-  { XK_KP_Page_Down, K_PGDN   },
-  { XK_KP_Insert,    K_INS    },
-  { XK_KP_Delete,    K_DEL    },
+  { XK_KP_Equal,     K_KP_EQUAL  },
+  { XK_KP_Enter,     K_KP_CR     },
+  { XK_KP_Home,      K_KP_HOME   },
+  { XK_KP_Up,        K_KP_UP     },
+  { XK_KP_Page_Up,   K_KP_PGUP   },
+  { XK_KP_Left,      K_KP_LEFT   },
+  { XK_KP_Begin,     K_KP_MIDDLE },
+  { XK_KP_Right,     K_KP_RIGHT  },
+  { XK_KP_End,       K_KP_END    },
+  { XK_KP_Down,      K_KP_DOWN   },
+  { XK_KP_Page_Down, K_KP_PGDN   },
+  { XK_KP_Insert,    K_KP_INS    },
+  { XK_KP_Delete,    K_KP_DEL    },
 };
 
 static Imot2iupkey osfmotkey_remap[] = {
@@ -176,6 +176,10 @@ IUP_DRV_API KeySym iupmotKeycodeToKeysym(XKeyEvent *evt)
 
   if (motcode > 0x1004FF00 && motcode <= 0x1004FFFF)
   {
+    KeySym rawcode = XLookupKeysym(evt, 0);
+    if (rawcode >= XK_KP_Space && rawcode <= XK_KP_Equal)
+      return rawcode;
+
     /* remap "osf KeySym" */
     int count = sizeof(osfmotkey_remap)/sizeof(osfmotkey_remap[0]);
     for (i = 0; i < count; i++)
@@ -312,6 +316,8 @@ static int motKeyTextInput(Widget w, XKeyEvent *evt, Ihandle *ih)
   if (!IupGetCallback(ih, "TEXTINPUT_CB"))
     return 0;
   if (evt->state & (ControlMask | Mod1Mask))
+    return 0;
+  if (iup_isKeyPadXkey(iupmotKeyDecode(evt)))
     return 0;
 
   if (!iupAttribGet(ih, "_IUPMOT_IM_REGISTERED"))

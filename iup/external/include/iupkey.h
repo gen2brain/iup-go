@@ -126,6 +126,7 @@
 /* IUP Extended Key Codes, range start at 128      */
 
 #define iup_isXkey(_c)      ((_c) >= 128)
+#define iup_isKeyPadXkey(_c)  (((_c) & 0x0FFFFFFF) >= 0xFF80 && ((_c) & 0x0FFFFFFF) <= 0xFFBD)
 
 /* These use the same definition as X11 and GDK.
    This also means that any X11 or GDK definition can also be used. */
@@ -182,6 +183,38 @@
 #define K_CLEAR    0xFFD2
 /* Help button if anybody has it. Value randomly picked trying to avoid clashing with an existing value. */
 #define K_HELP     0xFFD3
+
+/* Keypad keys, same values as the X11 keysyms */
+
+#define K_KP_CR        0xFF8D
+#define K_KP_HOME      0xFF95
+#define K_KP_LEFT      0xFF96
+#define K_KP_UP        0xFF97
+#define K_KP_RIGHT     0xFF98
+#define K_KP_DOWN      0xFF99
+#define K_KP_PGUP      0xFF9A
+#define K_KP_PGDN      0xFF9B
+#define K_KP_END       0xFF9C
+#define K_KP_MIDDLE    0xFF9D
+#define K_KP_INS       0xFF9E
+#define K_KP_DEL       0xFF9F
+#define K_KP_MULT      0xFFAA
+#define K_KP_PLUS      0xFFAB
+#define K_KP_SEP       0xFFAC
+#define K_KP_MINUS     0xFFAD
+#define K_KP_DECIMAL   0xFFAE
+#define K_KP_DIV       0xFFAF
+#define K_KP_0         0xFFB0
+#define K_KP_1         0xFFB1
+#define K_KP_2         0xFFB2
+#define K_KP_3         0xFFB3
+#define K_KP_4         0xFFB4
+#define K_KP_5         0xFFB5
+#define K_KP_6         0xFFB6
+#define K_KP_7         0xFFB7
+#define K_KP_8         0xFFB8
+#define K_KP_9         0xFFB9
+#define K_KP_EQUAL     0xFFBD
 
 /* Also, these are the same as the Latin-1 definition */
 

@@ -175,6 +175,18 @@ function serve(dir) {
       }
       else if (cmd === 'type') await page.keyboard.type(arg).catch((e) => logs.push('type failed: ' + e.message));
       else if (cmd === 'press') await page.keyboard.press(arg).catch((e) => logs.push('press failed: ' + e.message));
+      else if (cmd === 'kpkey') {
+        const kp = arg.split('##');
+        const cdp = await page.context().newCDPSession(page).catch(() => null);
+        if (cdp) {
+          const ev = { code: kp[0], key: kp[1] || kp[0], location: 3, isKeypad: true };
+          if (kp[2]) ev.text = kp[2];
+          await cdp.send('Input.dispatchKeyEvent', Object.assign({ type: 'keyDown' }, ev))
+            .catch((e) => logs.push('kpkey failed: ' + e.message));
+          await cdp.send('Input.dispatchKeyEvent', Object.assign({ type: 'keyUp' }, ev)).catch(() => {});
+          await cdp.detach().catch(() => {});
+        } else logs.push('kpkey: no CDP session');
+      }
       else if (cmd === 'rawkey') {
         // CDP: dispatch a trusted keydown carrying arbitrary text (playwright press() only knows named keys)
         const cdp = await page.context().newCDPSession(page).catch(() => null);

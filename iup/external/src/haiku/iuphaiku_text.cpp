@@ -78,10 +78,11 @@ public:
 
     /* K_ANY dispatch: walks up the IUP parent chain so dialog-level handlers
        (e.g. autocomplete K_DOWN to shift focus) see the key first. */
-    int32 raw_char = 0, mods = 0;
+    int32 raw_char = 0, mods = 0, raw_key = 0;
     msg->FindInt32("raw_char", &raw_char);
+    msg->FindInt32("key", &raw_key);
     msg->FindInt32("modifiers", &mods);
-    int code = iuphaikuKeyDecode((unsigned char)bytes[0], raw_char, (unsigned)mods);
+    int code = iuphaikuKeyDecode((unsigned char)bytes[0], (int)raw_char, (int)raw_key, (unsigned)mods);
     if (code)
     {
       int r = iupKeyCallKeyCb(fIhandle, code);

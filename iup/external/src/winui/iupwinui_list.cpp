@@ -1466,7 +1466,7 @@ static int winuiListMapMethod(Ihandle* ih)
     });
 
     aux->keyDownToken = comboBox.PreviewKeyDown([ih](IInspectable const&, KeyRoutedEventArgs const& args) {
-      if (!iupwinuiKeyEvent(ih, (int)args.Key(), 1))
+      if (!iupwinuiKeyEvent(ih, (int)args.Key(), args.KeyStatus().IsExtendedKey? 1: 0, 1))
         args.Handled(true);
     });
 
@@ -1577,7 +1577,7 @@ static int winuiListMapMethod(Ihandle* ih)
     });
 
     aux->keyDownToken = grid.PreviewKeyDown([ih](IInspectable const&, KeyRoutedEventArgs const& args) {
-      if (!iupwinuiKeyEvent(ih, (int)args.Key(), 1))
+      if (!iupwinuiKeyEvent(ih, (int)args.Key(), args.KeyStatus().IsExtendedKey? 1: 0, 1))
         args.Handled(true);
     });
 
@@ -1709,7 +1709,7 @@ static int winuiListMapMethod(Ihandle* ih)
     });
 
     aux->keyDownToken = listView.PreviewKeyDown([ih](IInspectable const&, KeyRoutedEventArgs const& args) {
-      if (!iupwinuiKeyEvent(ih, (int)args.Key(), 1))
+      if (!iupwinuiKeyEvent(ih, (int)args.Key(), args.KeyStatus().IsExtendedKey? 1: 0, 1))
         args.Handled(true);
     });
 
@@ -1755,7 +1755,7 @@ static int winuiListMapMethod(Ihandle* ih)
     });
 
     aux->keyDownToken = listBox.PreviewKeyDown([ih](IInspectable const&, KeyRoutedEventArgs const& args) {
-      if (!iupwinuiKeyEvent(ih, (int)args.Key(), 1))
+      if (!iupwinuiKeyEvent(ih, (int)args.Key(), args.KeyStatus().IsExtendedKey? 1: 0, 1))
         args.Handled(true);
     });
 

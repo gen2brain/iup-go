@@ -3097,6 +3097,19 @@
                  ArrowRight: 0xFF53, ArrowDown: 0xFF54, PageUp: 0xFF55, PageDown: 0xFF56,
                  End: 0xFF57, Insert: 0xFF63, Delete: 0xFFFF, Backspace: 8, Tab: 9,
                  Enter: 13, Pause: 0xFF13 };
+      var KPC = { NumpadDivide: 0xFFAF, NumpadMultiply: 0xFFAA, NumpadSubtract: 0xFFAD,
+                  NumpadAdd: 0xFFAB, NumpadEnter: 0xFF8D, NumpadEqual: 0xFFBD, NumpadComma: 0xFFAC };
+      var KPN = { Numpad0: [0xFFB0, 0xFF9E], Numpad1: [0xFFB1, 0xFF9C], Numpad2: [0xFFB2, 0xFF99],
+                  Numpad3: [0xFFB3, 0xFF9B], Numpad4: [0xFFB4, 0xFF96], Numpad5: [0xFFB5, 0xFF9D],
+                  Numpad6: [0xFFB6, 0xFF98], Numpad7: [0xFFB7, 0xFF95], Numpad8: [0xFFB8, 0xFF97],
+                  Numpad9: [0xFFB9, 0xFF9A], NumpadDecimal: [0xFFAE, 0xFF9F] };
+      var kpCode = function (e) {
+        if (e.location !== 3 && !(e.code && e.code.indexOf('Numpad') === 0)) return 0;
+        if (Object.prototype.hasOwnProperty.call(KPC, e.code)) return KPC[e.code];
+        if (Object.prototype.hasOwnProperty.call(KPN, e.code))
+          return KPN[e.code][(e.key && e.key.length === 1) ? 0 : 1];
+        return 0;
+      };
       // shared globals read by iupdrvGetCursorPos / iupdrvGetKeyState over the SAB
       var stashMods = function (e) {
         globalThis.__iupMods = (e.shiftKey ? 1 : 0) | (e.ctrlKey ? 2 : 0) | (e.altKey ? 4 : 0) | (e.metaKey ? 8 : 0);
@@ -3120,14 +3133,15 @@
         var ae = document.activeElement;
         var id = iupId(ae) || (globalThis.__iupActiveDialog || 0);
         if (!id) return;
-        var k = e.key, code = 0;
+        var k = e.key, code = kpCode(e);
         // a single code point that is not a named key is committed text
         var txt = '';
-        if (k && !Object.prototype.hasOwnProperty.call(SP, k) &&
+        if (!code && k && !Object.prototype.hasOwnProperty.call(SP, k) &&
             !e.ctrlKey && !e.altKey && !e.metaKey && !e.isComposing &&
             Array.from(k).length === 1 && k.codePointAt(0) >= 0x20)
           txt = k;
-        if (Object.prototype.hasOwnProperty.call(SP, k)) code = SP[k];
+        if (code) { }
+        else if (Object.prototype.hasOwnProperty.call(SP, k)) code = SP[k];
         else if (k && k.length === 1) code = k.charCodeAt(0);
         else if (/^F([1-9]|1[0-2])$/.test(k)) code = 0xFFBE + (parseInt(k.slice(1)) - 1);
         if (!code && !txt) return;

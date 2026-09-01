@@ -94,23 +94,23 @@ static void winKeyInitXKey(Iwin2iupkey* map)
   map[VK_OEM_MINUS].iupcode = winMapVirtualKeyToChar(VK_OEM_MINUS);  /* Usually is K_minus */
   map[VK_OEM_PERIOD].iupcode = winMapVirtualKeyToChar(VK_OEM_PERIOD); /* Usually is K_period */
 
-  map[VK_NUMPAD0].iupcode =   K_0;
-  map[VK_NUMPAD1].iupcode =   K_1;
-  map[VK_NUMPAD2].iupcode =   K_2;
-  map[VK_NUMPAD3].iupcode =   K_3;
-  map[VK_NUMPAD4].iupcode =   K_4;
-  map[VK_NUMPAD5].iupcode =   K_5;
-  map[VK_NUMPAD6].iupcode =   K_6;
-  map[VK_NUMPAD7].iupcode =   K_7;
-  map[VK_NUMPAD8].iupcode =   K_8;
-  map[VK_NUMPAD9].iupcode =   K_9;
-  map[VK_MULTIPLY].iupcode =  K_asterisk;
-  map[VK_ADD].iupcode =       K_plus;
-  map[VK_SUBTRACT].iupcode =  K_minus;
-  map[VK_DIVIDE].iupcode =    K_slash;
+  map[VK_NUMPAD0].iupcode =   K_KP_0;
+  map[VK_NUMPAD1].iupcode =   K_KP_1;
+  map[VK_NUMPAD2].iupcode =   K_KP_2;
+  map[VK_NUMPAD3].iupcode =   K_KP_3;
+  map[VK_NUMPAD4].iupcode =   K_KP_4;
+  map[VK_NUMPAD5].iupcode =   K_KP_5;
+  map[VK_NUMPAD6].iupcode =   K_KP_6;
+  map[VK_NUMPAD7].iupcode =   K_KP_7;
+  map[VK_NUMPAD8].iupcode =   K_KP_8;
+  map[VK_NUMPAD9].iupcode =   K_KP_9;
+  map[VK_MULTIPLY].iupcode =  K_KP_MULT;
+  map[VK_ADD].iupcode =       K_KP_PLUS;
+  map[VK_SUBTRACT].iupcode =  K_KP_MINUS;
+  map[VK_DIVIDE].iupcode =    K_KP_DIV;
 
-  map[VK_DECIMAL].iupcode =   winMapVirtualKeyToChar(VK_DECIMAL);
-  map[VK_SEPARATOR].iupcode = winMapVirtualKeyToChar(VK_SEPARATOR);
+  map[VK_DECIMAL].iupcode =   K_KP_DECIMAL;
+  map[VK_SEPARATOR].iupcode = K_KP_SEP;
 
   /*
   if (!map[VK_OEM_1].iupcode) map[VK_OEM_1].iupcode = winMapVirtualKeyToChar(VK_OEM_1);
@@ -180,9 +180,79 @@ IUP_DRV_API void iupwinKeyInit(void)
   }
 }
 
+static int winKeyPadCode(int wincode, int extended)
+{
+  if (wincode == VK_RETURN)
+    return extended? K_KP_CR: 0;
+
+  if (extended)
+    return 0;
+
+  switch (wincode)
+  {
+  case VK_HOME:   return K_KP_HOME;
+  case VK_LEFT:   return K_KP_LEFT;
+  case VK_UP:     return K_KP_UP;
+  case VK_RIGHT:  return K_KP_RIGHT;
+  case VK_DOWN:   return K_KP_DOWN;
+  case VK_PRIOR:  return K_KP_PGUP;
+  case VK_NEXT:   return K_KP_PGDN;
+  case VK_END:    return K_KP_END;
+  case VK_CLEAR:  return K_KP_MIDDLE;
+  case VK_INSERT: return K_KP_INS;
+  case VK_DELETE: return K_KP_DEL;
+  }
+
+  return 0;
+}
+
+IUP_DRV_API int iupwinKeyIsExtended(int code)
+{
+  switch (iup_XkeyBase(code))
+  {
+  case K_HOME:
+  case K_LEFT:
+  case K_UP:
+  case K_RIGHT:
+  case K_DOWN:
+  case K_PGUP:
+  case K_PGDN:
+  case K_END:
+  case K_INS:
+  case K_DEL:
+  case K_KP_CR:
+  case K_KP_DIV:
+  case K_RCTRL:
+  case K_RALT:
+  case K_NUM:
+  case K_Print:
+    return 1;
+  }
+
+  return 0;
+}
+
 IUP_SDK_API void iupdrvKeyEncode(int code, unsigned int *wincode, unsigned int *state)
 {
   int i, iupcode = iup_XkeyBase(code);
+
+  *wincode = 0;
+
+  switch (iupcode)
+  {
+  case K_KP_CR:     iupcode = K_CR; break;
+  case K_KP_HOME:   iupcode = K_HOME; break;
+  case K_KP_LEFT:   iupcode = K_LEFT; break;
+  case K_KP_UP:     iupcode = K_UP; break;
+  case K_KP_RIGHT:  iupcode = K_RIGHT; break;
+  case K_KP_DOWN:   iupcode = K_DOWN; break;
+  case K_KP_PGUP:   iupcode = K_PGUP; break;
+  case K_KP_PGDN:   iupcode = K_PGDN; break;
+  case K_KP_END:    iupcode = K_END; break;
+  case K_KP_MIDDLE: iupcode = K_MIDDLE; break;
+  case K_KP_INS:    iupcode = K_INS; break;
+  case K_KP_DEL:    iupcode = K_DEL; break;
+  }
 
   /* Must un-remap always */
   for (i = 0; i < 256; i++)
@@ -294,23 +364,25 @@ static int winKeyAdjust(int wincode)
   }
 }
 
-IUP_DRV_API int iupwinKeyDecode(int wincode)
+IUP_DRV_API int iupwinKeyDecode(int wincode, int extended)
 {
-  int iupcode = winKeyAdjust(wincode);
+  int iupcode = winKeyPadCode(wincode, extended);
+  if (!iupcode)
+    iupcode = winKeyAdjust(wincode);
   if (!iupcode)
     iupcode=wincode;
 
   return winKeyMap2Iup(iupcode);
 }
 
-IUP_DRV_API int iupwinKeyEvent(Ihandle* ih, int wincode, int press)
+IUP_DRV_API int iupwinKeyEvent(Ihandle* ih, int wincode, int extended, int press)
 {
   int result, code;
 
   if (!ih->iclass->is_interactive)
     return 1;
 
-  code = iupwinKeyDecode(wincode);
+  code = iupwinKeyDecode(wincode, extended);
   if (code == 0)
     return 1;
 
