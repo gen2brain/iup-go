@@ -590,9 +590,16 @@ static CGFloat cocoaTabsMaxTabWidth(Ihandle* ih)
       ref_child = IupGetChild(ih, new_pos + 1);
     else
       ref_child = IupGetChild(ih, new_pos);
+    Iarray* visible_array = cocoaTabsGetVisibleArray(ih);
+    int old_visible = ((int*)iupArrayGetData(visible_array))[old_pos];
+
     iupAttribSet(ih, "_IUPTABS_REORDERING", "1");
     IupReparent(child, ih, ref_child);
     iupAttribSet(ih, "_IUPTABS_REORDERING", NULL);
+
+    iupArrayRemove(visible_array, old_pos, 1);
+    iupArrayInsert(visible_array, new_pos, 1);
+    ((int*)iupArrayGetData(visible_array))[new_pos] = old_visible;
   }
 
   return YES;
@@ -822,8 +829,12 @@ static int cocoaTabsCreateAndInsertItem(Ihandle* ih, Ihandle* child, int iup_pos
     [delegate tabWillBeCreated:tab_cell];
   }
 
+  NSUInteger insert_index = (NSUInteger)native_pos;
+  if (insert_index > [[tab_bar_view tabs] count])
+    insert_index = [[tab_bar_view tabs] count];
+
   iupAttribSet(ih, "_IUPCOCOA_IGNORE_CHANGE", "1");
-  [[tab_bar_view tabs] insertObject:tab_cell atIndex:native_pos];
+  [[tab_bar_view tabs] insertObject:tab_cell atIndex:insert_index];
 
   if ([[tab_bar_view tabs] count] == 1)
   {
