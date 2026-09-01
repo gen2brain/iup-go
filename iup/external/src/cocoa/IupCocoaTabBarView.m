@@ -553,7 +553,18 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
 
 - (void)mouseUp:(NSEvent*)event
 {
-  if (enabled && !isDragging)
+  if (isDragging)
+  {
+    [self finishTabDrag];
+
+    NSUInteger i;
+    for (i = 0; i < [tabs count]; i++)
+      [[tabs objectAtIndex:i] setIsPressed:NO];
+    [self redraw];
+    return;
+  }
+
+  if (enabled)
   {
     NSPoint p = [event locationInWindow];
     p = [self convertPoint:p fromView:nil];
@@ -827,6 +838,36 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
   return NSDragOperationNone;
 }
 
+- (void)finishTabDrag
+{
+  IupCocoaTabCell* dragged_tab = draggingTab;
+  NSInteger final_index = dragged_tab? [tabs indexOfObject:dragged_tab]: NSNotFound;
+
+  if (dragged_tab && final_index != NSNotFound && final_index != sourceIndex)
+  {
+    BOOL allow = YES;
+    if (delegate && [delegate respondsToSelector:@selector(tabWillReorderFromIndex:toIndex:)])
+      allow = [delegate tabWillReorderFromIndex:sourceIndex toIndex:final_index];
+
+    if (!allow)
+    {
+      [dragged_tab retain];
+      [tabs removeObjectAtIndex:final_index];
+      [tabs insertObject:dragged_tab atIndex:sourceIndex];
+      [dragged_tab release];
+    }
+  }
+
+  [draggingTab setIsDraggingTab:NO];
+  [draggingTab release];
+  draggingTab = nil;
+  [draggingImage release];
+  draggingImage = nil;
+  isDragging = NO;
+  sourceIndex = -1;
+  destinationIndex = -1;
+}
+
 - (void)mouseDragged:(NSEvent *)theEvent
 {
   if (!self.allowsDragging)
@@ -841,62 +882,39 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
       [[tabs objectAtIndex:i] setIsPressed:NO];
   }
 
-#ifdef GNUSTEP
-  /* GNUstep lacks -beginDraggingSessionWithItems: and the draggedImage: callbacks that
-     reorder the tabs. Without them the tab is removed from the array but never
-     re-inserted, so it disappears. Skip until we wire a manual tracking loop. */
-  (void)theEvent;
-  return;
-#endif
-
   NSPoint p = [theEvent locationInWindow];
   p = [self convertPoint:p fromView:nil];
+
   if (!isDragging)
   {
     [draggingTab release];
     draggingTab = [[self tabCellInPoint:p] retain];
     isDragging = YES;
     if (draggingTab != nil)
-    {
-      [draggingImage release];
-      draggingImage = [[IupCocoaTabImage imageWithIupCocoaTabCell:draggingTab] retain];
-      [draggingTab setIsDraggingTab:YES];
-      /* Save source index */
       sourceIndex = [tabs indexOfObject:draggingTab];
-      [tabs removeObject:draggingTab];
-      [self redraw];
-
-      /* Modern drag-and-drop requires a pasteboard item. */
-      NSPasteboardItem *pbItem = [[[NSPasteboardItem alloc] init] autorelease];
-      /* Set dummy data to satisfy the API. */
-      [pbItem setData:[NSData data] forType:NSPasteboardTypeString];
-
-      NSPasteboard *pasteboard = [NSPasteboard pasteboardWithName:NSPasteboardNameDrag];
-      [pasteboard clearContents];
-      [pasteboard writeObjects:@[pbItem]];
-    }
   }
 
   if (draggingTab == nil)
+    return;
+
   {
-    return ;
+    NSInteger current_index = [tabs indexOfObject:draggingTab];
+    NSInteger new_index = [self destinationCellIndexFromPoint:p];
+
+    if (current_index != NSNotFound && new_index != -1 && new_index != current_index)
+    {
+      if (new_index > (NSInteger)[tabs count] - 1)
+        new_index = (NSInteger)[tabs count] - 1;
+
+      [draggingTab retain];
+      [tabs removeObjectAtIndex:current_index];
+      [tabs insertObject:draggingTab atIndex:new_index];
+      [draggingTab release];
+
+      destinationIndex = new_index;
+      [self redraw];
+    }
   }
-
-  p.x -= (draggingTab.frame.size.width / 2);
-  p.y -= (draggingTab.frame.size.height / 2);
-
-#ifndef GNUSTEP
-  /* Use modern dragging API (beginDraggingSessionWithItems:event:source:) */
-  NSPasteboardItem *pbItem = [[[NSPasteboardItem alloc] init] autorelease];
-  [pbItem setData:[NSData data] forType:NSPasteboardTypeString];
-
-  NSDraggingItem *dragItem = [[[NSDraggingItem alloc] initWithPasteboardWriter:pbItem] autorelease];
-  NSRect dragFrame = NSMakeRect(p.x, p.y, draggingTab.frame.size.width, draggingTab.frame.size.height);
-  [dragItem setDraggingFrame:dragFrame contents:draggingImage];
-
-  NSDraggingSession* dragSession = [self beginDraggingSessionWithItems:@[dragItem] event:theEvent source:self];
-  [dragSession setAnimatesToStartingPositionsOnCancelOrFail:NO];
-#endif
 }
 
 #pragma mark - NSDraggingSource
@@ -904,96 +922,6 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
 - (NSDragOperation)draggingSession:(NSDraggingSession *)session sourceOperationMaskForDraggingContext:(NSDraggingContext)context
 {
   return NSDragOperationMove;
-}
-
-- (void)draggedImage:(NSImage *)image movedTo:(NSPoint)screenPoint
-{
-  if (!self.allowsDragging)
-    return;
-
-  screenPoint.x += (draggingTab.frame.size.width / 2);
-  screenPoint.y += (draggingTab.frame.size.height / 2);
-  NSPoint windowLocation = [[self window] convertScreenToBase:screenPoint];
-  NSPoint viewPoint = [self convertPoint:windowLocation fromView:nil];
-
-  NSRect tabBarViewRect = [self bounds];
-
-  if (!NSPointInRect(viewPoint, tabBarViewRect))
-  {
-    [tabs removeObject:draggingTab];
-    destinationIndex = -1;
-    [self redraw];
-    return ;
-  }
-
-  destinationIndex = [self destinationCellIndexFromPoint:viewPoint];
-  if (destinationIndex == -1) return ;
-
-  [tabs removeObject:draggingTab];
-  [tabs insertObject:draggingTab atIndex:destinationIndex];
-  [self redraw];
-}
-
-- (void)draggedImage:(NSImage *)image endedAt:(NSPoint)screenPoint operation:(NSDragOperation)operation
-{
-  if (!self.allowsDragging)
-    return;
-
-  screenPoint.x += (draggingTab.frame.size.width / 2);
-  screenPoint.y += (draggingTab.frame.size.height / 2);
-  NSPoint windowLocation = [[self window] convertScreenToBase:screenPoint];
-  NSPoint viewPoint = [self convertPoint:windowLocation fromView:nil];
-
-  NSRect tabBarViewRect = [self bounds];
-  if (!NSPointInRect(viewPoint, tabBarViewRect))
-  {
-    [draggingTab setIsDraggingTab:NO];
-    [tabs removeObject:draggingTab];
-    [tabs insertObject:draggingTab atIndex:sourceIndex];
-
-    [draggingTab release];
-    draggingTab = nil;
-    [draggingImage release];
-    draggingImage = nil;
-
-    [self redraw];
-    sourceIndex = -1;
-    destinationIndex = -1;
-    isDragging = NO;
-    return ;
-  }
-
-  destinationIndex = [self destinationCellIndexFromPoint:viewPoint];
-  if (destinationIndex == -1)
-  {
-    /* Dropped in blank area, restore to source index */
-    [tabs removeObject:draggingTab];
-    [tabs insertObject:draggingTab atIndex:sourceIndex];
-  }
-  else
-  {
-    BOOL allow = YES;
-    if (delegate && [delegate respondsToSelector:@selector(tabWillReorderFromIndex:toIndex:)])
-      allow = [delegate tabWillReorderFromIndex:sourceIndex toIndex:destinationIndex];
-
-    [draggingTab setIsDraggingTab:NO];
-    [tabs removeObject:draggingTab];
-    if (allow)
-      [tabs insertObject:draggingTab atIndex:destinationIndex];
-    else
-      [tabs insertObject:draggingTab atIndex:sourceIndex];
-  }
-
-  [draggingTab release];
-  draggingTab = nil;
-  [draggingImage release];
-  draggingImage = nil;
-
-  [self redraw];
-
-  destinationIndex = -1;
-  sourceIndex = -1;
-  isDragging = NO;
 }
 
 - (void)setTabFont:(NSFont *)newFont
