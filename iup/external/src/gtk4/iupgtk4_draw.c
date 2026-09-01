@@ -76,10 +76,14 @@ IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
     dc->release_cr = 1;
   }
 
-  /* Create a fresh image surface for double-buffering */
-  surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, dc->w, dc->h);
-  dc->image_cr = cairo_create(surface);
-  cairo_surface_destroy(surface);
+  if (dc->release_cr || iupAttribGet(ih, "_IUPGTK4_DRAW_DIRECT"))
+    dc->image_cr = dc->cr;
+  else
+  {
+    surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, dc->w, dc->h);
+    dc->image_cr = cairo_create(surface);
+    cairo_surface_destroy(surface);
+  }
 
   iupAttribSet(ih, "DRAWDRIVER", "CAIRO");
 
@@ -88,7 +92,8 @@ IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
 
 IUP_SDK_API void iupdrvDrawKillCanvas(IdrawCanvas* dc)
 {
-  cairo_destroy(dc->image_cr);
+  if (dc->image_cr != dc->cr)
+    cairo_destroy(dc->image_cr);
   if (dc->release_cr)
     cairo_destroy(dc->cr);
 
@@ -109,23 +114,27 @@ IUP_SDK_API void iupdrvDrawUpdateSize(IdrawCanvas* dc)
     dc->w = w;
     dc->h = h;
 
-    cairo_destroy(dc->image_cr);
+    if (dc->image_cr != dc->cr)
+    {
+      cairo_destroy(dc->image_cr);
 
-    surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, dc->w, dc->h);
-    dc->image_cr = cairo_create(surface);
-    cairo_surface_destroy(surface);
+      surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, dc->w, dc->h);
+      dc->image_cr = cairo_create(surface);
+      cairo_surface_destroy(surface);
+    }
   }
 }
 
 IUP_SDK_API void iupdrvDrawFlush(IdrawCanvas* dc)
 {
-  /* Reset clip on image buffer to ensure clean state */
   iupdrvDrawResetClip(dc);
 
-  /* Copy the image buffer to the target surface */
-  cairo_set_source_surface(dc->cr, cairo_get_target(dc->image_cr), 0, 0);
-  cairo_set_operator(dc->cr, CAIRO_OPERATOR_SOURCE);
-  cairo_paint(dc->cr);
+  if (dc->image_cr != dc->cr)
+  {
+    cairo_set_source_surface(dc->cr, cairo_get_target(dc->image_cr), 0, 0);
+    cairo_set_operator(dc->cr, CAIRO_OPERATOR_SOURCE);
+    cairo_paint(dc->cr);
+  }
 
   if (dc->release_cr)
   {

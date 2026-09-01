@@ -261,6 +261,7 @@ static void gtk4CanvasDraw(GtkDrawingArea *area, cairo_t* cr, int width, int hei
     cairo_clip(buf_cr);
     iupAttribSetStrf(ih, "CLIPRECT", "%d %d %d %d", x1, y1, x2, y2);
     iupAttribSet(ih, "CAIRO_CR", (char*)buf_cr);
+    iupAttribSet(ih, "_IUPGTK4_DRAW_DIRECT", "1");
     iupAttribSetInt(ih, "_IUPGTK4_DRAW_WIDTH", width);
     iupAttribSetInt(ih, "_IUPGTK4_DRAW_HEIGHT", height);
 
@@ -268,6 +269,7 @@ static void gtk4CanvasDraw(GtkDrawingArea *area, cairo_t* cr, int width, int hei
 
     iupAttribSet(ih, "CLIPRECT", NULL);
     iupAttribSet(ih, "CAIRO_CR", NULL);
+    iupAttribSet(ih, "_IUPGTK4_DRAW_DIRECT", NULL);
     iupAttribSet(ih, "_IUPGTK4_UPDATERECT", NULL);
     cairo_destroy(buf_cr);
 
