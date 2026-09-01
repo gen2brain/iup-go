@@ -331,9 +331,20 @@ static void gtkDropFileDragDataReceived(GtkWidget* w, GdkDragContext* context, i
 {
   gchar **uris = NULL, *data = NULL;
   int i, count;
-
   Ihandle* cb_ih = ih;
-  IFnsiii cb = (IFnsiii)IupGetCallback(ih, "DROPFILES_CB");
+  IFnsiii cb;
+
+  {
+    GdkAtom target = gtk_selection_data_get_data_type(seldata);
+    gchar* name = gdk_atom_name(target);
+    int is_uri_list = (name && iupStrEqual(name, "text/uri-list"));
+    if (name)
+      g_free(name);
+    if (!is_uri_list)
+      return;
+  }
+
+  cb = (IFnsiii)IupGetCallback(ih, "DROPFILES_CB");
   if (!cb)
   {
     Ihandle* dlg = IupGetDialog(ih);
