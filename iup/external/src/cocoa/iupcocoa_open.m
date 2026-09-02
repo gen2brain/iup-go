@@ -122,17 +122,7 @@ IUP_DRV_API void iupcocoaSetGlobalColors(void)
   cocoaUpdateGlobalColors();
 #else
   /* the dynamic NSColors resolve against the drawing appearance, not the one set on NSApp */
-  NSAppearance* appearance = [NSApp effectiveAppearance];
-
-  if ([appearance respondsToSelector:@selector(performAsCurrentDrawingAppearance:)])
-    [appearance performAsCurrentDrawingAppearance:^{ cocoaUpdateGlobalColors(); }];
-  else
-  {
-    NSAppearance* saved = [NSAppearance currentAppearance];
-    [NSAppearance setCurrentAppearance:appearance];
-    cocoaUpdateGlobalColors();
-    [NSAppearance setCurrentAppearance:saved];
-  }
+  [[NSApp effectiveAppearance] performAsCurrentDrawingAppearance:^{ cocoaUpdateGlobalColors(); }];
 #endif
 }
 
