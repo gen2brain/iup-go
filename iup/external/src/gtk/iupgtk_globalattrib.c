@@ -273,10 +273,6 @@ IUP_SDK_API char *iupdrvGetGlobal(const char *name)
     g_object_get (gtk_settings_get_default (), "gtk-menu-images", &menu_images, NULL);
     return iupStrReturnBoolean(menu_images);
   }
-  if (iupStrEqual(name, "DARKMODE"))
-  {
-    return iupStrReturnBoolean(iupgtkIsSystemDarkMode());
-  }
   if (iupStrEqual(name, "OVERLAYSCROLLBAR"))
   {
 #if GTK_CHECK_VERSION(3, 16, 0)

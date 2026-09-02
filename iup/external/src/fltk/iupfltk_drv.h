@@ -122,7 +122,6 @@ IUP_DRV_API void iupfltkX11SetSkipTaskbar(Fl_Window* window);
  * System Utilities
  ****************************************************************************/
 
-IUP_DRV_API int iupfltkIsSystemDarkMode(void);
 IUP_DRV_API void iupfltkSetGlobalColors(void);
 
 /****************************************************************************

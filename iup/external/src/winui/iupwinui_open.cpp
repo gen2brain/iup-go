@@ -91,7 +91,7 @@ static Application winui_app = nullptr;
  * System Theme Detection
  ****************************************************************************/
 
-IUP_DRV_API int iupwinuiIsSystemDarkMode(void)
+extern "C" IUP_SDK_API int iupdrvIsSystemDarkMode(void)
 {
   using namespace Windows::UI::ViewManagement;
 
@@ -112,25 +112,31 @@ IUP_DRV_API void iupwinuiSetGlobalColors(void)
 
   UISettings settings;
 
-  auto bg = settings.GetColorValue(UIColorType::Background);
-  auto fg = settings.GetColorValue(UIColorType::Foreground);
   auto accent = settings.GetColorValue(UIColorType::Accent);
 
-  int dark_mode = iupwinuiIsSystemDarkMode();
+  int appearance = iupGlobalGetAppearance();
+  int system_dark = iupdrvIsSystemDarkMode();
+  int dark_mode = (appearance == IUP_APPEARANCE_DARK) ||
+                  (appearance == IUP_APPEARANCE_SYSTEM && system_dark);
 
-  iupGlobalSetDefaultColorAttrib("DLGBGCOLOR", bg.R, bg.G, bg.B);
-  iupGlobalSetDefaultColorAttrib("DLGFGCOLOR", fg.R, fg.G, fg.B);
-
-  if (dark_mode)
-    iupGlobalSetDefaultColorAttrib("TXTBGCOLOR", 32, 32, 32);
+  if (dark_mode != system_dark)  /* UISettings only reports the system appearance */
+    iupGlobalSetAppearanceColors(dark_mode);
   else
-    iupGlobalSetDefaultColorAttrib("TXTBGCOLOR", 255, 255, 255);
+  {
+    auto bg = settings.GetColorValue(UIColorType::Background);
+    auto fg = settings.GetColorValue(UIColorType::Foreground);
+    int txt_bg = dark_mode? 32: 255;
 
-  iupGlobalSetDefaultColorAttrib("TXTFGCOLOR", fg.R, fg.G, fg.B);
+    iupGlobalSetDefaultColorAttrib("DLGBGCOLOR", bg.R, bg.G, bg.B);
+    iupGlobalSetDefaultColorAttrib("DLGFGCOLOR", fg.R, fg.G, fg.B);
+    iupGlobalSetDefaultColorAttrib("TXTBGCOLOR", txt_bg, txt_bg, txt_bg);
+    iupGlobalSetDefaultColorAttrib("TXTFGCOLOR", fg.R, fg.G, fg.B);
+    iupGlobalSetDefaultColorAttrib("MENUBGCOLOR", bg.R, bg.G, bg.B);
+    iupGlobalSetDefaultColorAttrib("MENUFGCOLOR", fg.R, fg.G, fg.B);
+  }
+
   iupGlobalSetDefaultColorAttrib("TXTHLCOLOR", accent.R, accent.G, accent.B);
   iupGlobalSetDefaultColorAttrib("ACCENTCOLOR", accent.R, accent.G, accent.B);
-  iupGlobalSetDefaultColorAttrib("MENUBGCOLOR", bg.R, bg.G, bg.B);
-  iupGlobalSetDefaultColorAttrib("MENUFGCOLOR", fg.R, fg.G, fg.B);
   iupGlobalSetDefaultColorAttrib("LINKFGCOLOR", accent.R, accent.G, accent.B);
 }
 
@@ -307,9 +313,6 @@ extern "C" IUP_SDK_API int iupdrvOpen(int *argc, char ***argv)
   iupwinuiSetGlobalColors();
 
   IupSetGlobal("SHOWMENUIMAGES", "YES");
-
-  if (iupwinuiIsSystemDarkMode())
-    IupSetGlobal("DARKMODE", "YES");
 
   iupwinuiProcessPendingMessages();
 

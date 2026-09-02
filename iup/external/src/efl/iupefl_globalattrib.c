@@ -160,7 +160,7 @@ static char* efl_theme_path = NULL;
 static const void* efl_theme_data = NULL;
 static size_t efl_theme_data_len = 0;
 
-IUP_DRV_API int iupeflIsSystemDarkMode(void)
+IUP_SDK_API int iupdrvIsSystemDarkMode(void)
 {
   Evas_Object* temp_win;
   Evas_Object* bg;
@@ -456,10 +456,6 @@ IUP_SDK_API char* iupdrvGetGlobal(const char* name)
       }
     }
     return NULL;
-  }
-  if (iupStrEqual(name, "DARKMODE"))
-  {
-    return iupStrReturnBoolean(iupeflIsSystemDarkMode());
   }
   if (iupStrEqual(name, "SANDBOX"))
   {

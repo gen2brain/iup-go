@@ -72,7 +72,6 @@ IUP_DRV_API float iupwinuiFontGetMultilineLineHeightF(Ihandle* ih);
  * System Utilities
  ****************************************************************************/
 
-IUP_DRV_API int iupwinuiIsSystemDarkMode(void);
 IUP_DRV_API void iupwinuiSetGlobalColors(void);
 
 /****************************************************************************

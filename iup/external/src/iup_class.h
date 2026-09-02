@@ -434,6 +434,9 @@ int   iupClassObjectCurAttribIsInherit(Iclass* ic);
 /* Used in iupObjectCreate and IupMap */
 void iupClassObjectEnsureDefaultAttributes(Ihandle* ih);
 
+/* Re-applies the attributes whose default is a global palette name. */
+IUP_SDK_API void iupClassObjectUpdateGlobalDefaults(Ihandle* ih);
+
 /* Used in iupRegisterUpdateClasses */
 void iupClassUpdate(Iclass* ic);
 

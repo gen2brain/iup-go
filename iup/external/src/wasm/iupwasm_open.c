@@ -141,9 +141,30 @@ void iupwasmRefreshTheme(void)
   iupwasmInstallTheme();
 }
 
+IUP_SDK_API int iupdrvIsSystemDarkMode(void)
+{
+  return iupwasmJsIsDarkMode();
+}
+
+static int wasmAppearanceIsDark(void)
+{
+  int appearance = iupGlobalGetAppearance();
+  if (appearance == IUP_APPEARANCE_SYSTEM)
+    return iupwasmJsIsDarkMode();
+  return appearance == IUP_APPEARANCE_DARK? 1: 0;
+}
+
+IUP_SDK_API void iupdrvSetAppearance(int appearance)
+{
+  (void)appearance;
+
+  wasmUpdateGlobalColors(wasmAppearanceIsDark());
+  iupwasmInstallTheme();
+}
+
 EMSCRIPTEN_KEEPALIVE void iupwasmThemeChanged(void)
 {
-  int dark = iupwasmJsIsDarkMode();
+  int dark = wasmAppearanceIsDark();
   Ihandle* ih;
   wasmUpdateGlobalColors(dark);
   iupwasmInstallTheme();

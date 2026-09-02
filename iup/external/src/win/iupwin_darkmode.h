@@ -12,8 +12,7 @@ extern "C" {
 #endif
 
 IUP_DRV_API void iupwinDarkModeInit(void);     /* from iupdrvOpen, before iupwinSetGlobalColors */
-IUP_DRV_API void iupwinDarkModeSetOptIn(int enable);  /* AUTODARKMODE global; off = classic light */
-IUP_DRV_API int  iupwinDarkModeOptIn(void);
+IUP_DRV_API void iupwinDarkModeSetAppearance(int appearance);
 IUP_DRV_API int  iupwinDarkModeEnabled(void);  /* opt-in on, system dark, high contrast off */
 IUP_DRV_API void iupwinDarkModeRefresh(void);  /* on ImmersiveColorSet */
 IUP_DRV_API void iupwinDarkModeApplyToWindow(HWND hwnd);  /* per control, after creation */

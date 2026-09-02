@@ -26,6 +26,7 @@ extern "C" {
 #include "iup.h"
 #include "iupcbs.h"
 #include "iup_drv.h"
+#include "iup_globalattrib.h"
 #include "iup_key.h"
 #include "iup_object.h"
 #include "iup_class.h"
@@ -181,7 +182,7 @@ public:
     if (msg && msg->what == IUPHAIKU_THEME_CHANGED_MSG && fIhandle && iupObjectCheck(fIhandle))
     {
       IFni cb = (IFni)IupGetCallback(fIhandle, "THEMECHANGED_CB");
-      if (cb) cb(fIhandle, iuphaikuIsSystemDarkMode());
+      if (cb) cb(fIhandle, iupGlobalIsDarkMode());
       return;
     }
     if (msg && (msg->what == B_SIMPLE_DATA || msg->what == B_REFS_RECEIVED)

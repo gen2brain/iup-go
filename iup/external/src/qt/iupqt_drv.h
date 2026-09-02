@@ -157,8 +157,8 @@ IUP_DRV_API QWidget* iupqtGetParentWidget(Ihandle* ih);
  ****************************************************************************/
 
 /* Dark mode detection */
-IUP_DRV_API int iupqtIsSystemDarkMode(void);
 IUP_DRV_API void iupqtSetGlobalColors(void);
+IUP_DRV_API void iupqtUpdateSystemPalette(void);
 
 /* Qt application instance (singleton) */
 IUP_DRV_API QApplication* iupqtGetApplication(void);

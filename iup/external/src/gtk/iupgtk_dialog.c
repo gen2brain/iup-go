@@ -28,6 +28,7 @@
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_drv.h"
+#include "iup_globalattrib.h"
 #include "iup_drvinfo.h"
 #include "iup_str.h"
 #define _IUPDLG_PRIVATE
@@ -638,7 +639,7 @@ static void gtkDialogThemeChanged(GtkSettings* settings, GParamSpec* pspec, Ihan
 
   iupgtkSetGlobalColors();
 
-  dark_mode = iupgtkIsSystemDarkMode();
+  dark_mode = iupGlobalIsDarkMode();
 
   cb = (IFni)IupGetCallback(ih, "THEMECHANGED_CB");
   if (cb)

@@ -39,6 +39,7 @@
 #include "iup_attrib.h"
 #include "iup_key.h"
 #include "iup_drv.h"
+#include "iup_globalattrib.h"
 #include "iup_drvinfo.h"
 #include "iup_str.h"
 #define _IUPDLG_PRIVATE
@@ -203,7 +204,7 @@ static void eflDialogThemeChangedCallback(void* data, const Efl_Event* ev)
 
   iupeflSetGlobalColors();
 
-  dark_mode = iupeflIsSystemDarkMode();
+  dark_mode = iupGlobalIsDarkMode();
 
   cb = (IFni)IupGetCallback(ih, "THEMECHANGED_CB");
   if (cb)

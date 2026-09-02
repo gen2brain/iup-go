@@ -72,6 +72,30 @@ static void iupmotSetGlobalColorFromXrm(const char* resource_name, const char* r
   iupGlobalSetDefaultColorAttrib(iup_name, def_r, def_g, def_b);
 }
 
+/* read from the X resource database (e.g. .Xresources) so users can theme Motif the standard way */
+IUP_DRV_API void iupmotSetGlobalColors(void)
+{
+  iupmotSetGlobalColorFromXrm("*background", "*Background", "DLGBGCOLOR", 192, 192, 192);
+  iupmotSetGlobalColorFromXrm("*foreground", "*Foreground", "DLGFGCOLOR", 0, 0, 0);
+
+  iupmotSetGlobalColorFromXrm("*background", "*Background", "TXTBGCOLOR", 255, 255, 255);
+  iupmotSetGlobalColorFromXrm("*foreground", "*Foreground", "TXTFGCOLOR", 0, 0, 0);
+  iupmotSetGlobalColorFromXrm("*highlightColor", "*HighlightColor", "TXTHLCOLOR", 128, 128, 128);
+  iupmotSetGlobalColorFromXrm("*highlightColor", "*HighlightColor", "ACCENTCOLOR", 128, 128, 128);
+
+  iupGlobalSetDefaultColorAttrib("LINKFGCOLOR", 0, 0, 238);
+}
+
+IUP_SDK_API void iupdrvSetAppearance(int appearance)
+{
+  int dark = (appearance == IUP_APPEARANCE_DARK)? 1: 0;
+
+  iupmotSetGlobalColors();
+
+  if (appearance != IUP_APPEARANCE_SYSTEM && iupdrvIsSystemDarkMode() != dark)
+    iupGlobalSetAppearanceColors(dark);
+}
+
 IUP_SDK_API int iupdrvOpen(int *argc, char ***argv)
 {
   IupSetGlobal("DRIVER", "Motif");
@@ -136,23 +160,7 @@ IUP_SDK_API int iupdrvOpen(int *argc, char ***argv)
 
   iupmotColorInit();
 
-  /* Set default colors from X resources, with fallbacks.
-   * These colors are read from the X resource database (e.g., .Xresources)
-   * allowing users to theme Motif applications via standard X mechanisms. */
-  {
-    /* Dialog colors - use *.background and *.foreground */
-    iupmotSetGlobalColorFromXrm("*background", "*Background", "DLGBGCOLOR", 192, 192, 192);
-    iupmotSetGlobalColorFromXrm("*foreground", "*Foreground", "DLGFGCOLOR", 0, 0, 0);
-
-    /* Text widget colors - also use *.background and *.foreground for consistency */
-    iupmotSetGlobalColorFromXrm("*background", "*Background", "TXTBGCOLOR", 255, 255, 255);
-    iupmotSetGlobalColorFromXrm("*foreground", "*Foreground", "TXTFGCOLOR", 0, 0, 0);
-    iupmotSetGlobalColorFromXrm("*highlightColor", "*HighlightColor", "TXTHLCOLOR", 128, 128, 128);
-    iupmotSetGlobalColorFromXrm("*highlightColor", "*HighlightColor", "ACCENTCOLOR", 128, 128, 128);
-
-    /* Link color - typically blue, but can be themed */
-    iupGlobalSetDefaultColorAttrib("LINKFGCOLOR", 0, 0, 238);
-  }
+  iupmotSetGlobalColors();
 
   /* enable alternative DnD icons as default */
   XtVaSetValues(XmGetXmDisplay(iupmot_display), XmNenableDragIcon, True, NULL);

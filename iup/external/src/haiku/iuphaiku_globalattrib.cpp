@@ -117,9 +117,6 @@ extern "C" IUP_SDK_API char* iupdrvGetGlobal(const char* name)
     return iupStrReturnStr(status);
   }
 
-  if (iupStrEqual(name, "DARKMODE"))
-    return iupStrReturnBoolean(iuphaikuIsSystemDarkMode());
-
   /* "CTRL" in Windows-mode keymap, "ALT" in default Haiku keymap. */
   if (iupStrEqual(name, "SHORTCUTKEY"))
   {

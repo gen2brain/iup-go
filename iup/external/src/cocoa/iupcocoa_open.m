@@ -45,7 +45,43 @@ static bool cocoaGetByteRGBAFromNSColor(NSColor* ns_color, unsigned char* red, u
   }
 }
 
-IUP_DRV_API void iupcocoaSetGlobalColors(void)
+IUP_SDK_API int iupdrvIsSystemDarkMode(void)
+{
+#ifdef GNUSTEP
+  unsigned char r, g, b, a;
+  if (cocoaGetByteRGBAFromNSColor([NSColor windowBackgroundColor], &r, &g, &b, &a))
+    return (0.2126 * r + 0.7152 * g + 0.0722 * b) < 128.0? 1: 0;
+  return 0;
+#else
+  /* the NSApp appearance follows APPEARANCE, the user default does not */
+  NSString* style = [[NSUserDefaults standardUserDefaults] stringForKey:@"AppleInterfaceStyle"];
+  return (style && [style rangeOfString:@"Dark"].location != NSNotFound)? 1: 0;
+#endif
+}
+
+IUP_SDK_API void iupdrvSetAppearance(int appearance)
+{
+#ifndef GNUSTEP
+  if (appearance == IUP_APPEARANCE_DARK)
+    [NSApp setAppearance:[NSAppearance appearanceNamed:NSAppearanceNameDarkAqua]];
+  else if (appearance == IUP_APPEARANCE_LIGHT)
+    [NSApp setAppearance:[NSAppearance appearanceNamed:NSAppearanceNameAqua]];
+  else
+    [NSApp setAppearance:nil];
+#endif
+
+  iupcocoaSetGlobalColors();
+
+#ifdef GNUSTEP
+  {
+    int dark = (appearance == IUP_APPEARANCE_DARK)? 1: 0;
+    if (appearance != IUP_APPEARANCE_SYSTEM && iupdrvIsSystemDarkMode() != dark)
+      iupGlobalSetAppearanceColors(dark);
+  }
+#endif
+}
+
+static void cocoaUpdateGlobalColors(void)
 {
   unsigned char r, g, b, a;
 
@@ -78,6 +114,26 @@ IUP_DRV_API void iupcocoaSetGlobalColors(void)
     iupGlobalSetDefaultColorAttrib("MENUBGCOLOR", r, g, b);
   if (cocoaGetByteRGBAFromNSColor([NSColor labelColor], &r, &g, &b, &a))
     iupGlobalSetDefaultColorAttrib("MENUFGCOLOR", r, g, b);
+}
+
+IUP_DRV_API void iupcocoaSetGlobalColors(void)
+{
+#ifdef GNUSTEP
+  cocoaUpdateGlobalColors();
+#else
+  /* the dynamic NSColors resolve against the drawing appearance, not the one set on NSApp */
+  NSAppearance* appearance = [NSApp effectiveAppearance];
+
+  if ([appearance respondsToSelector:@selector(performAsCurrentDrawingAppearance:)])
+    [appearance performAsCurrentDrawingAppearance:^{ cocoaUpdateGlobalColors(); }];
+  else
+  {
+    NSAppearance* saved = [NSAppearance currentAppearance];
+    [NSAppearance setCurrentAppearance:appearance];
+    cocoaUpdateGlobalColors();
+    [NSAppearance setCurrentAppearance:saved];
+  }
+#endif
 }
 
 static const char* iupCocoaGetSystemLanguage(void)

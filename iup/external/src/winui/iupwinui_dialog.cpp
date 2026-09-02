@@ -22,6 +22,8 @@ extern "C" {
 #include "iup_classbase.h"
 #include "iup_image.h"
 #include "iup_drvinfo.h"
+#include "iup_globalattrib.h"
+#include "iup_dlglist.h"
 #include "iup_key.h"
 }
 
@@ -133,8 +135,42 @@ static void winuiDialogTitleBarThemeColor(HWND hwnd)
 
   if (pDwmSetWindowAttribute)
   {
-    BOOL value = iupwinuiIsSystemDarkMode() ? TRUE : FALSE;
+    BOOL value = iupGlobalIsDarkMode() ? TRUE : FALSE;
     pDwmSetWindowAttribute(hwnd, 20, &value, sizeof(value));
+  }
+}
+
+extern "C" IUP_SDK_API void iupdrvSetAppearance(int appearance)
+{
+  Ihandle* ih;
+
+  iupwinuiSetGlobalColors();
+
+  for (ih = iupDlgListFirst(); ih; ih = iupDlgListNext())
+  {
+    IupWinUIDialogAux* dlgaux = winuiGetAux<IupWinUIDialogAux>(ih, IUPWINUI_DIALOG_AUX);
+    const char* bgcolor;
+
+    if (!dlgaux || !dlgaux->rootPanel)
+      continue;
+
+    if (appearance == IUP_APPEARANCE_SYSTEM)
+      dlgaux->rootPanel.RequestedTheme(ElementTheme::Default);
+    else
+      dlgaux->rootPanel.RequestedTheme(appearance == IUP_APPEARANCE_DARK? ElementTheme::Dark: ElementTheme::Light);
+
+    if (ih->handle)
+      winuiDialogTitleBarThemeColor((HWND)ih->handle);
+
+    bgcolor = IupGetGlobal("DLGBGCOLOR");
+    if (bgcolor)
+    {
+      iupAttribSetStr(ih, "_IUPWINUI_BACKGROUND_COLOR", bgcolor);
+      if (!iupAttribGet(ih, "_IUPWINUI_BACKDROP_ACTIVE"))
+        winuiDialogSetPanelBgColor(dlgaux->rootPanel, bgcolor);
+    }
+
+    winuiDialogRefreshThemeColors(ih);
   }
 }
 
@@ -414,8 +450,7 @@ static LRESULT CALLBACK winuiDialogWndProc(HWND hwnd, UINT msg, WPARAM wParam, L
           winuiDialogTitleBarThemeColor(hwnd);
           iupwinuiSetGlobalColors();
 
-          int dark_mode = iupwinuiIsSystemDarkMode();
-          IupSetGlobal("DARKMODE", dark_mode ? "YES" : NULL);
+          int dark_mode = iupGlobalIsDarkMode();
 
           IupWinUIDialogAux* dlgaux = winuiGetAux<IupWinUIDialogAux>(ih, IUPWINUI_DIALOG_AUX);
           if (dlgaux && dlgaux->rootPanel)
@@ -728,7 +763,7 @@ static int winuiDialogMapMethod(Ihandle* ih)
       cb(ih);
   });
 
-  if (iupwinuiIsSystemDarkMode())
+  if (iupGlobalIsDarkMode())
     aux->rootPanel.RequestedTheme(ElementTheme::Dark);
 
   winuiDialogSetPanelBgColor(aux->rootPanel, IupGetGlobal("DLGBGCOLOR"));

@@ -10,6 +10,8 @@
 
 #include "iup.h"
 #include "iup_str.h"
+#include "iup_drv.h"
+#include "iup_globalattrib.h"
 
 #include "iupwin_info.h"
 #include "iupwin_brush.h"
@@ -58,6 +60,8 @@ enum WinPreferredAppMode
 {
   WIN_APPMODE_DEFAULT,
   WIN_APPMODE_ALLOWDARK,
+  WIN_APPMODE_FORCEDARK,
+  WIN_APPMODE_FORCELIGHT,
 };
 
 typedef enum WinPreferredAppMode (WINAPI *winSetPreferredAppMode)(enum WinPreferredAppMode appmode);  /* ordinal 135 */
@@ -446,30 +450,34 @@ IUP_DRV_API void iupwinDarkModeInit(void)
   }
 
   if (win_darkmode_supported)
-    winDarkModeFixScrollBars();
-}
-
-static int win_darkmode_optin = 0;
-
-IUP_DRV_API void iupwinDarkModeSetOptIn(int enable)
-{
-  win_darkmode_optin = enable? 1: 0;
-  if (win_darkmode_supported)
   {
-    my_SetPreferredAppMode(win_darkmode_optin? WIN_APPMODE_ALLOWDARK: WIN_APPMODE_DEFAULT);
-    my_RefreshImmersiveColorPolicyState();
-    my_FlushMenuThemes();
+    iupwinDarkModeSetAppearance(IUP_APPEARANCE_SYSTEM);
+    winDarkModeFixScrollBars();
   }
 }
 
-IUP_DRV_API int iupwinDarkModeOptIn(void)
+IUP_DRV_API void iupwinDarkModeSetAppearance(int appearance)
 {
-  return win_darkmode_optin;
+  if (!win_darkmode_supported)
+    return;
+
+  if (appearance == IUP_APPEARANCE_DARK)
+    my_SetPreferredAppMode(WIN_APPMODE_FORCEDARK);
+  else if (appearance == IUP_APPEARANCE_LIGHT)
+    my_SetPreferredAppMode(WIN_APPMODE_FORCELIGHT);
+  else
+    my_SetPreferredAppMode(WIN_APPMODE_ALLOWDARK);
+
+  my_RefreshImmersiveColorPolicyState();
+  my_FlushMenuThemes();
 }
 
 IUP_DRV_API int iupwinDarkModeEnabled(void)
 {
-  return (win_darkmode_optin && iupwinIsSystemDarkMode() && !winIsHighContrast()) ? 1 : 0;
+  int appearance = iupGlobalGetAppearance();
+  int dark = (appearance == IUP_APPEARANCE_DARK) ||
+             (appearance == IUP_APPEARANCE_SYSTEM && iupwinIsSystemDarkMode());
+  return (dark && !winIsHighContrast()) ? 1 : 0;
 }
 
 IUP_DRV_API void iupwinDarkModeRefresh(void)

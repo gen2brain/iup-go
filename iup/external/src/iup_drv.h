@@ -127,6 +127,16 @@ IUP_SDK_API int iupdrvSetGlobalAppIDAttrib(const char* value);
  * \ingroup drv */
 IUP_SDK_API int iupdrvSetGlobalAppNameAttrib(const char* value);
 
+enum { IUP_APPEARANCE_SYSTEM, IUP_APPEARANCE_LIGHT, IUP_APPEARANCE_DARK };
+
+/** Returns 1 if the system is set to dark mode, ignoring the APPEARANCE global.
+ * \ingroup drv */
+IUP_SDK_API int iupdrvIsSystemDarkMode(void);
+
+/** Applies the APPEARANCE global to the toolkit and re-seeds the global colors.
+ * \ingroup drv */
+IUP_SDK_API void iupdrvSetAppearance(int appearance);
+
 /** Initializes recent menu structure. Called once during IupConfigRecentInit.
  * \ingroup drv */
 IUP_SDK_API int iupdrvRecentMenuInit(Ihandle* menu, int max_recent, Icallback recent_cb);

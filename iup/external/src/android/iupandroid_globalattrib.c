@@ -47,18 +47,6 @@ static int androidGetIntStatic(const char* method_name)
   return (int)val;
 }
 
-static int androidGetBoolStatic(const char* method_name)
-{
-  JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
-  jclass java_class = (*jni_env)->FindClass(jni_env, "io/github/gen2brain/iupgo/IupCommon");
-  if (!java_class) return 0;
-  jmethodID method_id = (*jni_env)->GetStaticMethodID(jni_env, java_class, method_name, "()Z");
-  jboolean val = (*jni_env)->CallStaticBooleanMethod(jni_env, java_class, method_id);
-  iupAndroid_CheckException(jni_env, method_name);
-  (*jni_env)->DeleteLocalRef(jni_env, java_class);
-  return val ? 1 : 0;
-}
-
 static char* androidGetVirtualScreen(void)
 {
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
@@ -118,7 +106,6 @@ IUP_SDK_API char* iupdrvGetGlobal(const char* name)
   if (iupStrEqual(name, "MONITORSINFO"))   return androidGetStringStatic("getMonitorsInfo");
   if (iupStrEqual(name, "TRUECOLORCANVAS")) return iupStrReturnBoolean(iupdrvGetScreenDepth() > 8);
   if (iupStrEqual(name, "UTF8MODE"))       return iupStrReturnBoolean(1);
-  if (iupStrEqual(name, "DARKMODE"))       return iupStrReturnBoolean(androidGetBoolStatic("isDarkMode"));
   if (iupStrEqual(name, "TOUCHREADY"))     return iupStrReturnBoolean(1);
   return NULL;
 }

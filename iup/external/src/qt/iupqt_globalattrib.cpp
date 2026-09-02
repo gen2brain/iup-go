@@ -334,11 +334,6 @@ extern "C" IUP_SDK_API char *iupdrvGetGlobal(const char *name)
     return iupStrReturnBoolean(1);
   }
 
-  if (iupStrEqual(name, "DARKMODE"))
-  {
-    return iupStrReturnBoolean(iupqtIsSystemDarkMode());
-  }
-
   if (iupStrEqual(name, "SANDBOX"))
   {
     if (getenv("FLATPAK_ID"))

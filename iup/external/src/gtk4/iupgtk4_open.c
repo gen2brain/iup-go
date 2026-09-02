@@ -273,6 +273,78 @@ static void gtkUpdateGlobalColors(GtkWidget* dialog, GtkWidget* text)
 }
 #pragma GCC diagnostic pop
 
+#define IUPGTK4_COLOR_SCHEME_DARK   2
+#define IUPGTK4_COLOR_SCHEME_LIGHT  3
+
+static int gtk4_system_prefer_dark = 0;
+static int gtk4_system_color_scheme = 0;
+static int gtk4_appearance = IUP_APPEARANCE_SYSTEM;
+static int gtk4_setting_color_scheme = 0;
+
+static int gtk4HasColorScheme(void)
+{
+  return g_object_class_find_property(G_OBJECT_GET_CLASS(gtk_settings_get_default()), "gtk-interface-color-scheme") != NULL;
+}
+
+static void gtk4ApplyColorScheme(void)
+{
+  int scheme;
+
+  if (gtk4_appearance == IUP_APPEARANCE_DARK)
+    scheme = IUPGTK4_COLOR_SCHEME_DARK;
+  else if (gtk4_appearance == IUP_APPEARANCE_LIGHT)
+    scheme = IUPGTK4_COLOR_SCHEME_LIGHT;
+  else
+    scheme = gtk4_system_color_scheme;
+
+  gtk4_setting_color_scheme = 1;
+  g_object_set(gtk_settings_get_default(), "gtk-interface-color-scheme", scheme, NULL);
+  gtk4_setting_color_scheme = 0;
+}
+
+static void gtk4ColorSchemeChanged(GtkSettings* settings, GParamSpec* pspec, gpointer data)
+{
+  (void)pspec;
+  (void)data;
+
+  if (gtk4_setting_color_scheme)
+    return;
+
+  g_object_get(settings, "gtk-interface-color-scheme", &gtk4_system_color_scheme, NULL);
+
+  if (gtk4_appearance != IUP_APPEARANCE_SYSTEM)
+    gtk4ApplyColorScheme();
+}
+
+IUP_SDK_API int iupdrvIsSystemDarkMode(void)
+{
+  if (gtk4HasColorScheme())
+    return gtk4_system_color_scheme == IUPGTK4_COLOR_SCHEME_DARK? 1: 0;
+
+  return iupgtk4MeasureDarkMode();
+}
+
+IUP_SDK_API void iupdrvSetAppearance(int appearance)
+{
+  gtk4_appearance = appearance;
+
+  if (gtk4HasColorScheme())
+    gtk4ApplyColorScheme();
+  else
+  {
+    gboolean prefer_dark;
+
+    if (appearance == IUP_APPEARANCE_SYSTEM)
+      prefer_dark = gtk4_system_prefer_dark? TRUE: FALSE;
+    else
+      prefer_dark = (appearance == IUP_APPEARANCE_DARK)? TRUE: FALSE;
+
+    g_object_set(gtk_settings_get_default(), "gtk-application-prefer-dark-theme", prefer_dark, NULL);
+  }
+
+  iupgtk4SetGlobalColors();
+}
+
 IUP_DRV_API void iupgtk4SetGlobalColors(void)
 {
   GtkWidget* dialog = gtk_window_new();
@@ -311,6 +383,21 @@ IUP_SDK_API int iupdrvOpen(int *argc, char ***argv)
     IupStoreGlobal("ARGV0", (*argv)[0]);
 
   gtkSetGlobalAttrib();
+
+  {
+    GtkSettings* settings = gtk_settings_get_default();
+    gboolean prefer_dark;
+
+    g_object_get(settings, "gtk-application-prefer-dark-theme", &prefer_dark, NULL);
+    gtk4_system_prefer_dark = prefer_dark? 1: 0;
+
+    if (gtk4HasColorScheme())
+    {
+      g_object_get(settings, "gtk-interface-color-scheme", &gtk4_system_color_scheme, NULL);
+      g_signal_connect(G_OBJECT(settings), "notify::gtk-interface-color-scheme", G_CALLBACK(gtk4ColorSchemeChanged), NULL);
+    }
+  }
+
   iupgtk4SetGlobalColors();
 
   IupSetGlobal("SHOWMENUIMAGES", "YES");

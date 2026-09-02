@@ -306,10 +306,6 @@ IUP_SDK_API char* iupdrvGetGlobal(const char* name)
   {
     return iupStrReturnBoolean(TRUE);
   }
-  if (iupStrEqual(name, "DARKMODE"))
-  {
-    return iupStrReturnBoolean(iupgtk4IsSystemDarkMode());
-  }
   if (iupStrEqual(name, "OVERLAYSCROLLBAR"))
   {
     gboolean overlay_scrolling;

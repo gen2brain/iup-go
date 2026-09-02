@@ -1122,7 +1122,7 @@ IUP_DRV_API void iupgtkSetMargin(GtkWidget* widget, int horiz_padding, int vert_
 }
 
 
-IUP_DRV_API int iupgtkIsSystemDarkMode(void)
+IUP_SDK_API int iupdrvIsSystemDarkMode(void)
 {
 #if GTK_CHECK_VERSION(3, 0, 0)
   GtkWidget* temp_window;

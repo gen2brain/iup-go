@@ -190,12 +190,42 @@ IUP_DRV_API void iupfltkSetGlobalColors(void)
  * System Theme Detection
  ****************************************************************************/
 
-IUP_DRV_API int iupfltkIsSystemDarkMode(void)
+static unsigned char fltk_system_bg[3] = { 192, 192, 192 };
+static unsigned char fltk_system_fg[3] = { 0, 0, 0 };
+static unsigned char fltk_system_bg2[3] = { 255, 255, 255 };
+
+extern "C" IUP_SDK_API int iupdrvIsSystemDarkMode(void)
 {
-  unsigned char r, g, b;
-  Fl::get_color(FL_BACKGROUND_COLOR, r, g, b);
-  int luminance = (int)(0.299 * r + 0.587 * g + 0.114 * b);
+  int luminance = (int)(0.299 * fltk_system_bg[0] + 0.587 * fltk_system_bg[1] + 0.114 * fltk_system_bg[2]);
   return (luminance < 128) ? 1 : 0;
+}
+
+extern "C" IUP_SDK_API void iupdrvSetAppearance(int appearance)
+{
+  int dark = (appearance == IUP_APPEARANCE_DARK)? 1: 0;
+
+  if (appearance == IUP_APPEARANCE_SYSTEM || iupdrvIsSystemDarkMode() == dark)
+  {
+    Fl::background(fltk_system_bg[0], fltk_system_bg[1], fltk_system_bg[2]);
+    Fl::foreground(fltk_system_fg[0], fltk_system_fg[1], fltk_system_fg[2]);
+    Fl::background2(fltk_system_bg2[0], fltk_system_bg2[1], fltk_system_bg2[2]);
+  }
+  else if (dark)
+  {
+    Fl::background(32, 32, 32);
+    Fl::foreground(255, 255, 255);
+    Fl::background2(45, 45, 45);
+  }
+  else
+  {
+    Fl::background(240, 240, 240);
+    Fl::foreground(0, 0, 0);
+    Fl::background2(255, 255, 255);
+  }
+
+  iupfltkSetGlobalColors();
+
+  Fl::redraw();
 }
 
 /****************************************************************************
@@ -268,10 +298,11 @@ extern "C" IUP_SDK_API int iupdrvOpen(int *argc, char ***argv)
       Fl::scheme(scheme);
   }
 
-  iupfltkSetGlobalColors();
+  Fl::get_color(FL_BACKGROUND_COLOR, fltk_system_bg[0], fltk_system_bg[1], fltk_system_bg[2]);
+  Fl::get_color(FL_FOREGROUND_COLOR, fltk_system_fg[0], fltk_system_fg[1], fltk_system_fg[2]);
+  Fl::get_color(FL_BACKGROUND2_COLOR, fltk_system_bg2[0], fltk_system_bg2[1], fltk_system_bg2[2]);
 
-  if (iupfltkIsSystemDarkMode())
-    IupSetGlobal("DARKMODE", "YES");
+  iupfltkSetGlobalColors();
 
   return IUP_NOERROR;
 }

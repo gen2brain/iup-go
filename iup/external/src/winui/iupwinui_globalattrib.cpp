@@ -359,10 +359,6 @@ extern "C" IUP_SDK_API char* iupdrvGetGlobal(const char* name)
     winrt::hstring hs(filename);
     return iupwinuiHStringToString(hs);
   }
-  if (iupStrEqual(name, "DARKMODE"))
-  {
-    return iupStrReturnBoolean(iupwinuiIsSystemDarkMode());
-  }
   if (iupStrEqual(name, "TOUCHREADY"))
   {
     return iupStrReturnBoolean(GetSystemMetrics(SM_DIGITIZER) & NID_READY);

@@ -21,6 +21,7 @@ extern "C" {
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_drv.h"
+#include "iup_globalattrib.h"
 #include "iup_drvfont.h"
 #include "iup_key.h"
 #include "iup_table.h"
@@ -218,7 +219,7 @@ static void winuiTableSetCell(char** cell, const char* value)
 
 static SolidColorBrush winuiTableGridLineBrush()
 {
-  if (iupwinuiIsSystemDarkMode())
+  if (iupGlobalIsDarkMode())
     return SolidColorBrush(Windows::UI::ColorHelper::FromArgb(255, 60, 60, 60));
   else
     return SolidColorBrush(Windows::UI::ColorHelper::FromArgb(255, 200, 200, 200));
@@ -230,7 +231,7 @@ static SolidColorBrush winuiTableHeaderBgBrush()
   const char* bgcolor = IupGetGlobal("DLGBGCOLOR");
   if (iupStrToRGB(bgcolor, &r, &g, &b))
   {
-    if (iupwinuiIsSystemDarkMode())
+    if (iupGlobalIsDarkMode())
     {
       r = (r + 20 > 255) ? 255 : r + 20;
       g = (g + 20 > 255) ? 255 : g + 20;

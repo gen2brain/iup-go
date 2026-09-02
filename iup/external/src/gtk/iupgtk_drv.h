@@ -90,7 +90,6 @@ IUP_DRV_API void iupgtkReleaseNativeGraphicsContext(GtkWidget* widget, void* gc)
 /* dialog */
 IUP_DRV_API gboolean iupgtkDialogDeleteEvent(GtkWidget *widget, GdkEvent *evt, Ihandle *ih);
 
-IUP_DRV_API int iupgtkIsSystemDarkMode(void);
 IUP_DRV_API void iupgtkSetGlobalColors(void);
 
 /* table */

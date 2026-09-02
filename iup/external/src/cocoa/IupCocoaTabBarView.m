@@ -10,6 +10,7 @@
 #include "IupCocoaTabBarView.h"
 #include "iup.h"
 #include "iupcocoa_drv.h"
+#include "iup_globalattrib.h"
 
 @interface IupCocoaTabAccessibilityElement : NSAccessibilityElement
 @property(nonatomic, assign) IupCocoaTabCell* cell;
@@ -1134,7 +1135,7 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
       }
       else
       {
-        NSColor* fillColor = iupcocoaIsSystemDarkMode() ? [[NSColor whiteColor] colorWithAlphaComponent:0.20] : [NSColor controlBackgroundColor];
+        NSColor* fillColor = iupGlobalIsDarkMode() ? [[NSColor whiteColor] colorWithAlphaComponent:0.20] : [NSColor controlBackgroundColor];
 
         NSGraphicsContext* gc = [NSGraphicsContext currentContext];
         [gc saveGraphicsState];

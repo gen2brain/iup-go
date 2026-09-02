@@ -155,7 +155,6 @@ IUP_DRV_API void iupcocoaFocusIn(Ihandle* ih);
 IUP_DRV_API void iupcocoaFocusOut(Ihandle* ih);
 
 /* System information */
-IUP_DRV_API int iupcocoaIsSystemDarkMode(void);
 IUP_DRV_API void iupcocoaSetGlobalColors(void);
 
 /* Tray support */

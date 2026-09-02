@@ -231,7 +231,6 @@ IUP_DRV_API Elm_Object_Item* iupeflMenuFindMnemonic(Ihandle* ih, char key);
  * System Information
  ****************************************************************************/
 
-IUP_DRV_API int iupeflIsSystemDarkMode(void);
 IUP_DRV_API void iupeflSetGlobalColors(void);
 
 #endif /* __IUPEFL_DRV_H */

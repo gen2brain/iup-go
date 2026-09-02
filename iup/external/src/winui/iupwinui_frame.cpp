@@ -30,6 +30,7 @@ extern "C" {
 #include "iup_drvfont.h"
 #include "iup_frame.h"
 #include "iup_layout.h"
+#include "iup_globalattrib.h"
 }
 
 #include "iupwinui_drv.h"
@@ -79,7 +80,7 @@ static void winuiFrameUpdateTitleBackground(Ihandle* ih)
   if (backdrop)
   {
     unsigned char r, g, b;
-    int dark = iupwinuiIsSystemDarkMode();
+    int dark = iupGlobalIsDarkMode();
     if (iupStrEqualNoCase(backdrop, "MICAALT"))
     {
       r = dark ? 0x2C : 0xF9;

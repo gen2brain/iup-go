@@ -56,6 +56,31 @@ static int iupAndroidQueryDarkMode(void)
   return dark ? 1 : 0;
 }
 
+IUP_SDK_API int iupdrvIsSystemDarkMode(void)
+{
+  JNIEnv* env = iupAndroid_GetEnvThreadSafe();
+  jclass cls = IUPJNI_FindClass(IupCommon, env, "io/github/gen2brain/iupgo/IupCommon");
+  if (!cls) return 0;
+  jmethodID m = (*env)->GetStaticMethodID(env, cls, "isSystemDarkMode", "()Z");
+  jboolean dark = (*env)->CallStaticBooleanMethod(env, cls, m);
+  iupAndroid_CheckException(env, "IupCommon.isSystemDarkMode");
+  (*env)->DeleteLocalRef(env, cls);
+  return dark ? 1 : 0;
+}
+
+IUP_SDK_API void iupdrvSetAppearance(int appearance)
+{
+  JNIEnv* env = iupAndroid_GetEnvThreadSafe();
+  jclass cls = IUPJNI_FindClass(IupCommon, env, "io/github/gen2brain/iupgo/IupCommon");
+  if (!cls) return;
+  jmethodID m = (*env)->GetStaticMethodID(env, cls, "setNightMode", "(I)V");
+  (*env)->CallStaticVoidMethod(env, cls, m, (jint)appearance);
+  iupAndroid_CheckException(env, "IupCommon.setNightMode");
+  (*env)->DeleteLocalRef(env, cls);
+
+  iupAndroidUpdateGlobalColors();
+}
+
 static int iupAndroidParseColorToArgb(const char* rgb)
 {
   int r = 0, g = 0, b = 0;

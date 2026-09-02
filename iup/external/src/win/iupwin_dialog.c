@@ -20,6 +20,8 @@
 #include "iup_attrib.h"
 #include "iup_class.h"
 #include "iup_drv.h"
+#include "iup_globalattrib.h"
+#include "iup_dlglist.h"
 #include "iup_drvinfo.h"
 #include "iup_str.h"
 #define _IUPDLG_PRIVATE
@@ -765,6 +767,24 @@ static void winDialogRefreshThemeColors(Ihandle* ih)
     winDialogRefreshThemeColors(child);
 }
 
+IUP_SDK_API void iupdrvSetAppearance(int appearance)
+{
+  Ihandle* ih;
+
+  iupwinDarkModeSetAppearance(appearance);
+  iupwinSetGlobalColors();
+
+  for (ih = iupDlgListFirst(); ih; ih = iupDlgListNext())
+  {
+    if (!ih->handle)
+      continue;
+
+    iupwinTitleBarThemeColor(ih->handle);
+    winDialogRefreshThemeColors(ih);
+    iupwinDarkModeApplyToTree(ih->handle);
+  }
+}
+
 static int winDialogBaseProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT *result)
 {
   if (iupAttribGetBoolean(ih, "CUSTOMFRAMEDRAW") || iupAttribGetBoolean(ih, "CUSTOMFRAME"))
@@ -982,7 +1002,7 @@ static int winDialogBaseProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESUL
           winDialogRefreshThemeColors(ih);
           iupwinDarkModeApplyToTree(ih->handle);
 
-          int dark_mode = iupwinIsSystemDarkMode();
+          int dark_mode = iupGlobalIsDarkMode();
 
           IFni cb = (IFni)IupGetCallback(ih, "THEMECHANGED_CB");
           if (cb)

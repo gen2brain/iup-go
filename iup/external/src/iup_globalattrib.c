@@ -21,9 +21,12 @@
 #include "iup_str.h"
 #include "iup_strmessage.h"
 #include "iup_attrib.h"
+#include "iup_dlglist.h"
+#include "iup_object.h"
 
 
 static Itable *iglobal_table = NULL;
+static int iglobal_appearance = IUP_APPEARANCE_SYSTEM;
 
 void iupGlobalAttribInit(void)
 {
@@ -34,6 +37,69 @@ void iupGlobalAttribFinish(void)
 {
   iupTableDestroy(iglobal_table);
   iglobal_table = NULL;
+  iglobal_appearance = IUP_APPEARANCE_SYSTEM;
+}
+
+static void iGlobalUpdateThemeTree(Ihandle* ih)
+{
+  Ihandle* child;
+
+  if (ih->handle)
+    iupClassObjectUpdateGlobalDefaults(ih);
+
+  for (child = ih->firstchild; child; child = child->brother)
+    iGlobalUpdateThemeTree(child);
+}
+
+IUP_SDK_API void iupGlobalUpdateThemeColors(void)
+{
+  Ihandle* dialog = iupDlgListFirst();
+  while (dialog)
+  {
+    iGlobalUpdateThemeTree(dialog);
+    IupRedraw(dialog, 1);
+    dialog = iupDlgListNext();
+  }
+}
+
+IUP_SDK_API void iupGlobalSetAppearanceColors(int dark)
+{
+  if (dark)
+  {
+    iupGlobalSetDefaultColorAttrib("DLGBGCOLOR", 32, 32, 32);
+    iupGlobalSetDefaultColorAttrib("DLGFGCOLOR", 255, 255, 255);
+    iupGlobalSetDefaultColorAttrib("TXTBGCOLOR", 45, 45, 45);
+    iupGlobalSetDefaultColorAttrib("TXTFGCOLOR", 255, 255, 255);
+    iupGlobalSetDefaultColorAttrib("MENUBGCOLOR", 43, 43, 43);
+    iupGlobalSetDefaultColorAttrib("MENUFGCOLOR", 255, 255, 255);
+    iupGlobalSetDefaultColorAttrib("LINKFGCOLOR", 100, 180, 255);
+  }
+  else
+  {
+    iupGlobalSetDefaultColorAttrib("DLGBGCOLOR", 240, 240, 240);
+    iupGlobalSetDefaultColorAttrib("DLGFGCOLOR", 0, 0, 0);
+    iupGlobalSetDefaultColorAttrib("TXTBGCOLOR", 255, 255, 255);
+    iupGlobalSetDefaultColorAttrib("TXTFGCOLOR", 0, 0, 0);
+    iupGlobalSetDefaultColorAttrib("MENUBGCOLOR", 240, 240, 240);
+    iupGlobalSetDefaultColorAttrib("MENUFGCOLOR", 0, 0, 0);
+    iupGlobalSetDefaultColorAttrib("LINKFGCOLOR", 0, 0, 238);
+  }
+}
+
+IUP_SDK_API int iupGlobalGetAppearance(void)
+{
+  return iglobal_appearance;
+}
+
+IUP_SDK_API int iupGlobalIsDarkMode(void)
+{
+  unsigned char br, bg, bb, fr, fg, fb;
+
+  if (!iupStrToRGB(IupGetGlobal("DLGBGCOLOR"), &br, &bg, &bb) ||
+      !iupStrToRGB(IupGetGlobal("DLGFGCOLOR"), &fr, &fg, &fb))
+    return 0;
+
+  return (0.2126 * br + 0.7152 * bg + 0.0722 * bb) < (0.2126 * fr + 0.7152 * fg + 0.0722 * fb)? 1: 0;
 }
 
 static int iGlobalChangingDefaultColor(const char *name)
@@ -139,6 +205,30 @@ static void iGlobalSet(const char *name, const char *value, int store)
     char bt;
     if (value && sscanf(value, "%dx%d %c %d", &x, &y, &bt, &status) == 4)
       iupdrvSendMouse(x, y, bt, status);
+    return;
+  }
+  if (iupStrEqual(name, "APPEARANCE"))
+  {
+    int appearance;
+    if (iupStrEqualNoCase(value, "DARK"))
+      appearance = IUP_APPEARANCE_DARK;
+    else if (iupStrEqualNoCase(value, "LIGHT"))
+      appearance = IUP_APPEARANCE_LIGHT;
+    else if (!value || iupStrEqualNoCase(value, "SYSTEM"))
+      appearance = IUP_APPEARANCE_SYSTEM;
+    else
+      return;
+
+    if (appearance != iglobal_appearance)
+    {
+      iglobal_appearance = appearance;
+
+      if (iglobal_table)  /* before IupOpen it is applied by iupdrvOpen */
+      {
+        iupdrvSetAppearance(appearance);
+        iupGlobalUpdateThemeColors();
+      }
+    }
     return;
   }
   if (iupStrEqual(name, "APPID"))
@@ -261,6 +351,16 @@ IUP_API char* IupGetGlobal(const char *name)
   {
     double dpi = iupdrvGetScreenDpi();
     return iupStrReturnDouble(dpi);
+  }
+  if (iupStrEqual(name, "DARKMODE"))
+    return iupStrReturnBoolean(iupGlobalIsDarkMode());
+  if (iupStrEqual(name, "APPEARANCE"))
+  {
+    if (iglobal_appearance == IUP_APPEARANCE_DARK)
+      return "DARK";
+    if (iglobal_appearance == IUP_APPEARANCE_LIGHT)
+      return "LIGHT";
+    return "SYSTEM";
   }
   if (iupStrEqual(name, "SYSTEMLOCALE"))
     return iupdrvLocaleInfo();

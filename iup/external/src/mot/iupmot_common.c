@@ -724,7 +724,7 @@ IUP_SDK_API void iupdrvSetAccessibleDescription(Ihandle *ih, const char* descrip
   (void)ih;
 }
 
-IUP_DRV_API int iupmotIsSystemDarkMode(void)
+IUP_SDK_API int iupdrvIsSystemDarkMode(void)
 {
   unsigned char bg_r, bg_g, bg_b;
   unsigned char fg_r, fg_g, fg_b;

@@ -20,6 +20,7 @@
 #include <QStyle>
 #include <QString>
 #include <QGuiApplication>
+#include <QStyleHints>
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 2, 0)
   #include <QtGui/qguiapplication_platform.h>
@@ -290,9 +291,11 @@ IUP_DRV_API QApplication* iupqtGetApplication(void)
  * System Theme Detection
  ****************************************************************************/
 
-IUP_DRV_API int iupqtIsSystemDarkMode(void)
+static QPalette qt_system_palette;
+static int qt_appearance = IUP_APPEARANCE_SYSTEM;
+
+static int qtPaletteIsDark(const QPalette& palette)
 {
-  QPalette palette = QGuiApplication::palette();
   QColor bg = palette.color(QPalette::Window);
   QColor fg = palette.color(QPalette::WindowText);
 
@@ -302,6 +305,81 @@ IUP_DRV_API int iupqtIsSystemDarkMode(void)
 
   /* Dark theme has lower background luminance than foreground */
   return (bg_lum < fg_lum) ? 1 : 0;
+}
+
+/* same colors the Fusion style uses, for platform themes that ignore the requested scheme */
+static QPalette qtAppearancePalette(int dark)
+{
+  QColor window_text = dark? QColor(240, 240, 240): QColor(Qt::black);
+  QColor background = dark? QColor(50, 50, 50): QColor(239, 239, 239);
+  QColor light = background.lighter(150);
+  QColor mid = background.darker(130);
+  QColor dark_color = background.darker(150);
+  QColor base = dark? background.darker(140): QColor(Qt::white);
+  QColor text = window_text;
+  QColor highlight(48, 140, 198);
+  QColor disabled_text = dark? QColor(130, 130, 130): QColor(190, 190, 190);
+
+  QPalette palette(window_text, background, light, dark_color, mid, text, base);
+
+  palette.setBrush(QPalette::Midlight, mid.lighter(110));
+  palette.setBrush(QPalette::Button, background);
+  palette.setBrush(QPalette::Shadow, dark_color.darker(135));
+  palette.setBrush(QPalette::HighlightedText, dark? window_text: QColor(Qt::white));
+
+  palette.setBrush(QPalette::Disabled, QPalette::Text, disabled_text);
+  palette.setBrush(QPalette::Disabled, QPalette::WindowText, disabled_text);
+  palette.setBrush(QPalette::Disabled, QPalette::ButtonText, disabled_text);
+  palette.setBrush(QPalette::Disabled, QPalette::Base, background);
+  palette.setBrush(QPalette::Disabled, QPalette::Highlight, QColor(145, 145, 145));
+
+  palette.setBrush(QPalette::Active, QPalette::Highlight, highlight);
+  palette.setBrush(QPalette::Inactive, QPalette::Highlight, highlight);
+#if QT_VERSION >= QT_VERSION_CHECK(6, 6, 0)
+  palette.setBrush(QPalette::Active, QPalette::Accent, highlight);
+  palette.setBrush(QPalette::Inactive, QPalette::Accent, highlight);
+#endif
+
+  if (dark)
+    palette.setBrush(QPalette::Link, highlight);
+
+  return palette;
+}
+
+extern "C" IUP_SDK_API void iupdrvSetAppearance(int appearance)
+{
+  qt_appearance = appearance;
+
+#if QT_VERSION >= QT_VERSION_CHECK(6, 8, 0)
+  if (appearance == IUP_APPEARANCE_DARK)
+    QGuiApplication::styleHints()->setColorScheme(Qt::ColorScheme::Dark);
+  else if (appearance == IUP_APPEARANCE_LIGHT)
+    QGuiApplication::styleHints()->setColorScheme(Qt::ColorScheme::Light);
+  else
+    QGuiApplication::styleHints()->unsetColorScheme();
+#endif
+
+  if (appearance == IUP_APPEARANCE_SYSTEM)
+    QApplication::setPalette(qt_system_palette);
+  else
+  {
+    int want_dark = (appearance == IUP_APPEARANCE_DARK)? 1: 0;
+    if (qtPaletteIsDark(QApplication::palette()) != want_dark)
+      QApplication::setPalette(qtAppearancePalette(want_dark));
+  }
+
+  iupqtSetGlobalColors();
+}
+
+IUP_DRV_API void iupqtUpdateSystemPalette(void)
+{
+  if (qt_appearance == IUP_APPEARANCE_SYSTEM)
+    qt_system_palette = QApplication::palette();
+}
+
+extern "C" IUP_SDK_API int iupdrvIsSystemDarkMode(void)
+{
+  return qtPaletteIsDark(qt_system_palette);
 }
 
 /****************************************************************************
@@ -379,12 +457,12 @@ extern "C" IUP_SDK_API int iupdrvOpen(int *argc, char ***argv)
   IupStoreGlobal("SYSTEMLANGUAGE", locale.toUtf8().constData());
 
   qtSetGlobalAttrib();
+
+  qt_system_palette = QApplication::palette();
+
   iupqtSetGlobalColors();
 
   IupSetGlobal("SHOWMENUIMAGES", "YES");
-
-  if (iupqtIsSystemDarkMode())
-    IupSetGlobal("DARKMODE", "YES");
 
 #if QT_VERSION >= QT_VERSION_CHECK(5, 6, 0)
   IupSetGlobal("HIGHDPI_AWARE", "YES");

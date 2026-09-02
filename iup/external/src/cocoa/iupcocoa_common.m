@@ -1512,9 +1512,3 @@ IUP_DRV_API NSWindow* iupcocoaDialogGetWindow(Ihandle* ih)
   return nil;
 }
 
-IUP_DRV_API int iupcocoaIsSystemDarkMode(void)
-{
-  NSAppearance *appearance = [NSApp effectiveAppearance];
-  NSString *appearanceName = [appearance bestMatchFromAppearancesWithNames:@[NSAppearanceNameAqua, NSAppearanceNameDarkAqua]];
-  return [appearanceName isEqualToString:NSAppearanceNameDarkAqua] ? 1 : 0;
-}
