@@ -81,6 +81,9 @@ IUP_DRV_API void iupmotDialogResetVisual(Ihandle* ih)
 
 IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
 {
+  iupAttribSet(ih, "_IUPMOT_DECOR_VALID", NULL);
+  iupAttribSet(ih, "_IUPMOT_MAPPED", visible? "1": NULL);
+
   if (visible)
   {
     XtMapWidget(ih->handle);
@@ -147,17 +150,34 @@ static int motDialogGetWindowDecor(Ihandle* ih, int *border, int *caption)
   /* Use the dialog_manager instead of the handle, so it can use the client offset. */
   Widget dialog_manager = (Widget)iupAttribGet(ih, "_IUPMOT_DLGCONTAINER");
   XWindowAttributes wa;
+
+  if (iupAttribGet(ih, "_IUPMOT_DECOR_VALID"))
+  {
+    *border = iupAttribGetInt(ih, "_IUPMOT_DECOR_BORDER");
+    *caption = iupAttribGetInt(ih, "_IUPMOT_DECOR_CAPTION");
+    return iupAttribGetInt(ih, "_IUPMOT_DECOR_FOUND");
+  }
+
   wa.x = 0; wa.y = 0;
   XGetWindowAttributes(iupmot_display, XtWindow(dialog_manager), &wa);
+  iupAttribSet(ih, "_IUPMOT_DECOR_VALID", "1");
+
   if (wa.x > 0 && wa.y > 0 && wa.y >= wa.x)
   {
     *border = wa.x;
     *caption = wa.y - *border;
+    iupAttribSetInt(ih, "_IUPMOT_DECOR_BORDER", *border);
+    iupAttribSetInt(ih, "_IUPMOT_DECOR_CAPTION", *caption);
+    iupAttribSetInt(ih, "_IUPMOT_DECOR_FOUND", 1);
     return 1;
   }
 
   *border = 0;
   *caption = 0;
+
+  iupAttribSetInt(ih, "_IUPMOT_DECOR_BORDER", 0);
+  iupAttribSetInt(ih, "_IUPMOT_DECOR_CAPTION", 0);
+  iupAttribSetInt(ih, "_IUPMOT_DECOR_FOUND", 0);
 
   return 0;
 }
@@ -179,7 +199,7 @@ IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int *border, int *captio
 
   *menu = motDialogGetMenuSize(ih);
 
-  if (ih->handle && iupdrvDialogIsVisible(ih))
+  if (ih->handle && (iupAttribGet(ih, "_IUPMOT_DECOR_VALID") || iupAttribGet(ih, "_IUPMOT_MAPPED")))
   {
     int win_border, win_caption;
     if (motDialogGetWindowDecor(ih, &win_border, &win_caption))
@@ -939,6 +959,9 @@ static void motDialogConfigureNotify(Widget w, XEvent *evt, String* s, Cardinal 
 
   XtVaGetValues(w, XmNuserData, &ih, NULL);
   if (!ih) return;
+
+  iupAttribSet(ih, "_IUPMOT_DECOR_VALID", NULL);
+  iupAttribSet(ih, "_IUPMOT_MAPPED", "1");
 
   if (ih->data->menu && ih->data->menu->handle)
     XtVaSetValues(ih->data->menu->handle, XmNwidth, (XtArgVal)(cevent->width), NULL);

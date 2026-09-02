@@ -349,14 +349,14 @@ static ImotFont* motFindFont(const char* foundry, const char *font)
     {
       iupStrCopyN(fonts[i].xlfd, sizeof(fonts[i].xlfd), xlfd);
       fonts[i].fontstruct = fontstruct;
-      fonts[i].charwidth = motFontCalcCharWidth(fontstruct);
     }
     else
     {
       fonts[i].xlfd[0] = '\0';
       fonts[i].fontstruct = NULL;
-      fonts[i].charwidth = motFontCalcXftCharWidth(xftfont);
     }
+
+    fonts[i].charwidth = motFontCalcXftCharWidth(xftfont);
 
     fonts[i].charheight = xftfont->ascent + xftfont->descent; /* must match Motif's render table metrics */
 

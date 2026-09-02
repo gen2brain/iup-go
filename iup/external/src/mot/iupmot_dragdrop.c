@@ -561,6 +561,7 @@ static struct {
   Atom XdndTypeList;
   Atom XdndActionCopy;
   Atom text_uri_list;
+  Atom motif_receiver;
   int initialized;
 } xdnd_atoms = {0};
 
@@ -573,20 +574,30 @@ typedef struct _IupmotXdndState {
 
 static void motXdndInitAtoms(void)
 {
+  static char* names[] = {
+    "XdndAware", "XdndEnter", "XdndPosition", "XdndStatus", "XdndLeave",
+    "XdndDrop", "XdndFinished", "XdndSelection", "XdndTypeList",
+    "XdndActionCopy", "text/uri-list", "_MOTIF_DRAG_RECEIVER_INFO"
+  };
+  Atom atoms[12];
+
   if (xdnd_atoms.initialized)
     return;
 
-  xdnd_atoms.XdndAware     = XInternAtom(iupmot_display, "XdndAware", False);
-  xdnd_atoms.XdndEnter     = XInternAtom(iupmot_display, "XdndEnter", False);
-  xdnd_atoms.XdndPosition  = XInternAtom(iupmot_display, "XdndPosition", False);
-  xdnd_atoms.XdndStatus    = XInternAtom(iupmot_display, "XdndStatus", False);
-  xdnd_atoms.XdndLeave     = XInternAtom(iupmot_display, "XdndLeave", False);
-  xdnd_atoms.XdndDrop      = XInternAtom(iupmot_display, "XdndDrop", False);
-  xdnd_atoms.XdndFinished  = XInternAtom(iupmot_display, "XdndFinished", False);
-  xdnd_atoms.XdndSelection = XInternAtom(iupmot_display, "XdndSelection", False);
-  xdnd_atoms.XdndTypeList  = XInternAtom(iupmot_display, "XdndTypeList", False);
-  xdnd_atoms.XdndActionCopy = XInternAtom(iupmot_display, "XdndActionCopy", False);
-  xdnd_atoms.text_uri_list = XInternAtom(iupmot_display, "text/uri-list", False);
+  XInternAtoms(iupmot_display, names, 12, False, atoms);
+
+  xdnd_atoms.XdndAware      = atoms[0];
+  xdnd_atoms.XdndEnter      = atoms[1];
+  xdnd_atoms.XdndPosition   = atoms[2];
+  xdnd_atoms.XdndStatus     = atoms[3];
+  xdnd_atoms.XdndLeave      = atoms[4];
+  xdnd_atoms.XdndDrop       = atoms[5];
+  xdnd_atoms.XdndFinished   = atoms[6];
+  xdnd_atoms.XdndSelection  = atoms[7];
+  xdnd_atoms.XdndTypeList   = atoms[8];
+  xdnd_atoms.XdndActionCopy = atoms[9];
+  xdnd_atoms.text_uri_list  = atoms[10];
+  xdnd_atoms.motif_receiver = atoms[11];
 
   xdnd_atoms.initialized = 1;
 }
@@ -935,11 +946,7 @@ static int motSetDropFilesTargetAttrib(Ihandle* ih, const char* value)
       XChangeProperty(iupmot_display, XtWindow(w), xdnd_atoms.XdndAware, XA_ATOM, 32, PropModeReplace, (unsigned char*)&version, 1);
 
     /* Remove Motif DND receiver info so file managers use XDND instead of Motif DND */
-    {
-      Atom motif_receiver = XInternAtom(iupmot_display, "_MOTIF_DRAG_RECEIVER_INFO", True);
-      if (motif_receiver != None)
-        XDeleteProperty(iupmot_display, xwin, motif_receiver);
-    }
+    XDeleteProperty(iupmot_display, xwin, xdnd_atoms.motif_receiver);
 
     XtAddEventHandler(shell, NoEventMask, True, motXdndEventHandler, (XtPointer)ih);
   }
