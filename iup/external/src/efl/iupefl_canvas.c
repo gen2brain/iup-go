@@ -795,41 +795,28 @@ static void eflCanvasLayoutUpdateMethod(Ihandle* ih)
   Eo* xparent = (Eo*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
   Eo* vg = iupeflGetWidget(ih);
 
-  if (!iupeflIsInsideTabs(ih))
+  if (xparent)
   {
-    if (xparent)
+    int abs_x, abs_y;
+    Eo* clip;
+
+    iupeflGetOrigin(ih, &abs_x, &abs_y);
+    abs_x += ih->x;
+    abs_y += ih->y;
+
+    efl_gfx_entity_position_set(xparent, EINA_POSITION2D(abs_x, abs_y));
+    efl_gfx_entity_size_set(xparent, EINA_SIZE2D(ih->currentwidth, ih->currentheight));
+
+    clip = (Eo*)iupAttribGet(ih, "_IUP_EFL_CANVAS_CLIP");
+    if (clip)
     {
-      Ihandle* parent;
-      int abs_x = ih->x;
-      int abs_y = ih->y;
-
-      parent = ih->parent;
-      while (parent)
-      {
-        if (parent->iclass->nativetype != IUP_TYPEVOID)
-        {
-          abs_x += parent->x;
-          abs_y += parent->y;
-        }
-        parent = parent->parent;
-      }
-
-      efl_gfx_entity_position_set(xparent, EINA_POSITION2D(abs_x, abs_y));
-      efl_gfx_entity_size_set(xparent, EINA_SIZE2D(ih->currentwidth, ih->currentheight));
-
-      {
-        Eo* clip = (Eo*)iupAttribGet(ih, "_IUP_EFL_CANVAS_CLIP");
-        if (clip)
-        {
-          evas_object_move(clip, abs_x, abs_y);
-          evas_object_resize(clip, ih->currentwidth, ih->currentheight);
-        }
-      }
+      evas_object_move(clip, abs_x, abs_y);
+      evas_object_resize(clip, ih->currentwidth, ih->currentheight);
     }
-    else if (vg)
-    {
-      iupeflSetPosSize(ih, ih->x, ih->y, ih->currentwidth, ih->currentheight);
-    }
+  }
+  else if (vg)
+  {
+    iupeflSetPosSize(ih, ih->x, ih->y, ih->currentwidth, ih->currentheight);
   }
 
   {
@@ -876,7 +863,10 @@ static int eflCanvasSetUpdateRectAttrib(Ihandle* ih, const char* value)
 
     evas = evas_object_evas_get(widget);
     if (evas)
-      evas_damage_rectangle_add(evas, ih->x + x1, ih->y + y1, x2 - x1 + 1, y2 - y1 + 1);
+    {
+      Eina_Rect g = efl_gfx_entity_geometry_get(widget);
+      evas_damage_rectangle_add(evas, g.x + x1, g.y + y1, x2 - x1 + 1, y2 - y1 + 1);
+    }
   }
   else
     iupdrvPostRedraw(ih);

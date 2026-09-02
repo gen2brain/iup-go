@@ -691,7 +691,7 @@ static int eflTabsSetTabVisibleAttrib(Ihandle* ih, int pos, const char* value)
                      Methods
 ****************************************************************/
 
-static void eflTabsPositionWidget(Ihandle* ih, int content_x, int content_y, Eina_Bool visible)
+static void eflTabsSetSubtreeVisible(Ihandle* ih, Eina_Bool visible)
 {
   Ihandle* child;
 
@@ -702,25 +702,19 @@ static void eflTabsPositionWidget(Ihandle* ih, int content_x, int content_y, Ein
       widget = iupeflGetWidget(ih);
 
     if (widget)
-    {
-      int x = content_x + ih->x;
-      int y = content_y + ih->y;
-
-      iupeflSetPosition(widget, x, y);
-      iupeflSetSize(widget, ih->currentwidth, ih->currentheight);
-      efl_gfx_entity_visible_set(widget, visible);
-    }
+      efl_gfx_entity_visible_set(widget, visible && !iupAttribGet(ih, "_IUPEFL_HIDDEN"));
   }
 
   for (child = ih->firstchild; child; child = child->brother)
   {
     if (!(child->flags & IUP_FLOATING))
-      eflTabsPositionWidget(child, content_x, content_y, visible);
+      eflTabsSetSubtreeVisible(child, visible);
   }
 }
 
 static void eflTabsLayoutUpdateMethod(Ihandle* ih)
 {
+  Eo* pager = iupeflGetWidget(ih);
   Ihandle* child;
   int current_tab;
   int pos;
@@ -731,20 +725,7 @@ static void eflTabsLayoutUpdateMethod(Ihandle* ih)
 
   pos = 0;
   for (child = ih->firstchild; child; child = child->brother, pos++)
-  {
-    Eina_Bool is_active = (pos == current_tab);
-    Eo* content_box = (Eo*)iupAttribGet(child, "_IUPTAB_CONTAINER");
-    int content_x = 0, content_y = 0;
-
-    if (content_box)
-    {
-      Eina_Rect content_geom = efl_gfx_entity_geometry_get(content_box);
-      content_x = content_geom.x;
-      content_y = content_geom.y;
-    }
-
-    eflTabsPositionWidget(child, content_x, content_y, is_active);
-  }
+    eflTabsSetSubtreeVisible(child, pos == current_tab ? EINA_TRUE : EINA_FALSE);
 }
 
 IUP_SDK_API void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_title, const char* tab_image, int* tab_width, int* tab_height)
