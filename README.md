@@ -1,4 +1,4 @@
-## IUP-Go
+# IUP-Go
 [![Build Status](https://github.com/gen2brain/iup-go/actions/workflows/build.yml/badge.svg)](https://github.com/gen2brain/iup-go/actions)
 [![Go Reference](https://pkg.go.dev/badge/github.com/gen2brain/iup-go.svg)](https://pkg.go.dev/github.com/gen2brain/iup-go/iup)
 
@@ -6,7 +6,7 @@ Go library based on [IUP](https://www.tecgraf.puc-rio.br/iup/), a multi-platform
 
 IUP-Go provides system native UI controls for Windows ([Win32](#win32), [WinUI](#winui)), macOS ([Cocoa](#macos)), 
 Linux/BSD ([GTK](#gtk), [Qt](#qt), [FLTK](#fltk), [EFL](#efl), [Motif](#motif), [GNUstep](#gnustep)), Haiku ([Interface Kit](#haiku)),
-WebAssembly ([Emscripten](#emscripten)), Android ([Android](#android)), and iOS ([CocoaTouch](#ios)).
+WebAssembly ([Emscripten](#emscripten)), Android ([Android](#android)), and iOS ([Cocoa Touch](#ios)).
 
 C/C++/Obj-C source code is included and compiled together with bindings.
 Note that the first build can take a few minutes.
