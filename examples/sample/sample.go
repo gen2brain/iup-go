@@ -13,8 +13,6 @@ func main() {
 	iup.SetGlobal("APPID", "com.example.Sample") // For Wayland/XDG desktop file
 	iup.SetGlobal("APPNAME", "Sample")           // For taskbar/dock/WM
 
-	iup.SetGlobal("AUTODARKMODE", "YES") // Win32: opt in to follow the system dark mode
-
 	iup.SetGlobal("SINGLEINSTANCE", "Sample")
 	if iup.GetGlobal("SINGLEINSTANCE") == "" {
 		return
@@ -222,7 +220,7 @@ func main() {
 	table.SetAttribute("RASTERWIDTH3", "50")
 	table.SetAttribute("ALTERNATECOLOR", "YES")
 
-	if iup.GetGlobal("DARKMODE") == "YES" && iup.GetGlobal("AUTODARKMODE") == "YES" {
+	if iup.GetGlobal("DARKMODE") == "YES" {
 		table.SetAttribute("EVENROWCOLOR", "#3A3A3A")
 		table.SetAttribute("ODDROWCOLOR", "#2D2D2D")
 	} else {
@@ -326,7 +324,7 @@ func main() {
 	}
 
 	dlg.SetCallback("THEMECHANGED_CB", iup.ThemeChangedFunc(func(ih iup.Ihandle, darkMode int) int {
-		if darkMode == 1 && iup.GetGlobal("AUTODARKMODE") == "YES" {
+		if darkMode == 1 {
 			table.SetAttribute("EVENROWCOLOR", "#3A3A3A")
 			table.SetAttribute("ODDROWCOLOR", "#2D2D2D")
 		} else {
