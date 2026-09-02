@@ -309,15 +309,18 @@ Returns YES or NO if the Windows common controls are using Visual Styles or not.
 
 ### DARKMODE (read-only)
 
-Returns "YES" if the system is currently in dark mode, "NO" otherwise. Independent of AUTODARKMODE.
+Returns "YES" when the application is in dark mode, "NO" otherwise. Follows the system setting unless APPEARANCE forces a value.
 
-### AUTODARKMODE [Win32 Only]
+### APPEARANCE
 
-Follows the system dark mode when "YES": seeds the dark palette (DLGBGCOLOR, TXTBGCOLOR, MENUBGCOLOR and their foregrounds) and dark-themes the native controls. Default: "NO". Must be set after IupOpen, before creating dialogs.
+Forces the appearance of the application only, it never changes the system setting.
+Can be: "SYSTEM" (follow the system setting), "LIGHT" or "DARK". Default: "SYSTEM".
 
-Not darkened: IupFontDlg (native font chooser), IupCalendar and IupDatePick (native month-calendar control). IupFileDlg uses the native shell file dialog, which follows the system theme regardless of this setting.
+Re-seeds the global palette (DLGBGCOLOR, TXTBGCOLOR, MENUBGCOLOR and their foregrounds), applies the appearance to the native controls and re-applies the palette to every element that did not set its own BGCOLOR or FGCOLOR. Can be set before or after IupOpen. Set it before creating dialogs for a fully consistent result, some native controls pick their theme when they are created.
 
-The [dialog](../dlg/iup_dialog.md) THEMECHANGED_CB is called on a live light/dark switch.
+In Win32 the native file, font and month-calendar dialogs are not affected. In Qt it needs Qt 6.8 or newer for the platform theme, older versions only get the palette. In GTK and GTK 4 it selects the dark variant of the current theme, so a theme without one keeps its colors. In EFL, GNUstep and Haiku only the IUP palette follows it, the widgets keep the toolkit theme.
+
+The [dialog](../dlg/iup_dialog.md) THEMECHANGED_CB is called on a live system light/dark switch.
 
 ### WINDOWING (read-only)
 
