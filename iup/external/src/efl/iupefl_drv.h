@@ -125,7 +125,7 @@ IUP_DRV_API int iupeflSetFgColorAttrib(Ihandle* ih, const char* value);
 
 IUP_DRV_API void iupeflAddToParent(Ihandle* ih);
 IUP_DRV_API void iupeflSetPosSize(Ihandle* ih, int x, int y, int width, int height);
-IUP_DRV_API int iupeflIsInsideTabs(Ihandle* ih);
+IUP_DRV_API void iupeflGetOrigin(Ihandle* ih, int *x, int *y);
 
 /* Base widget callbacks registration (EO API) */
 IUP_DRV_API void iupeflBaseAddCallbacks(Ihandle* ih, Eo* widget);

@@ -403,9 +403,6 @@ static void eflLabelLayoutUpdateMethod(Ihandle* ih)
   int width = ih->currentwidth;
   int height = ih->currentheight;
 
-  if (iupeflIsInsideTabs(ih))
-    return;
-
   if (ih->data->type == IUP_LABEL_TEXT)
   {
     iupeflTextGetBorder(&border_x, &border_y);

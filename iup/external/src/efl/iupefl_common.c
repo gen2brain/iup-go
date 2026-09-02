@@ -133,32 +133,48 @@ IUP_DRV_API char* iupeflBaseGetActiveAttrib(Ihandle* ih)
  * Position and Size
  ****************************************************************************/
 
-IUP_DRV_API void iupeflSetPosSize(Ihandle* ih, int x, int y, int width, int height)
+IUP_DRV_API void iupeflGetOrigin(Ihandle* ih, int *x, int *y)
 {
-  Eo* widget = (Eo*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
-  Eo* bg_rect;
-
-  if (!widget)
-    widget = iupeflGetWidget(ih);
   Ihandle* parent;
-  int abs_x, abs_y;
+  int abs_x = 0, abs_y = 0;
 
-  if (!widget)
-    return;
-
-  abs_x = x;
-  abs_y = y;
-  parent = ih->parent;
-
-  while (parent)
+  for (parent = ih->parent; parent; parent = parent->parent)
   {
+    Eo* content_box = (Eo*)iupAttribGet(parent, "_IUPTAB_CONTAINER");
+    if (content_box)
+    {
+      Eina_Rect geom = efl_gfx_entity_geometry_get(content_box);
+      abs_x += geom.x;
+      abs_y += geom.y;
+      break;
+    }
+
     if (parent->iclass->nativetype != IUP_TYPEVOID)
     {
       abs_x += parent->x;
       abs_y += parent->y;
     }
-    parent = parent->parent;
   }
+
+  *x = abs_x;
+  *y = abs_y;
+}
+
+IUP_DRV_API void iupeflSetPosSize(Ihandle* ih, int x, int y, int width, int height)
+{
+  Eo* widget = (Eo*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
+  Eo* bg_rect;
+  int abs_x, abs_y;
+
+  if (!widget)
+    widget = iupeflGetWidget(ih);
+
+  if (!widget)
+    return;
+
+  iupeflGetOrigin(ih, &abs_x, &abs_y);
+  abs_x += x;
+  abs_y += y;
 
   iupeflSetPosition(widget, abs_x, abs_y);
   iupeflSetSize(widget, width, height);
@@ -667,6 +683,8 @@ IUP_SDK_API void iupdrvSetVisible(Ihandle* ih, int visible)
   Eo* widget = iupeflGetWidget(ih);
   Eo* container = (Eo*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
 
+  iupAttribSet(ih, "_IUPEFL_HIDDEN", visible ? NULL : "1");
+
   if (container)
     iupeflSetVisible(container, visible ? EINA_TRUE : EINA_FALSE);
 
@@ -721,25 +739,8 @@ IUP_SDK_API void iupdrvReparent(Ihandle* ih)
   }
 }
 
-IUP_DRV_API int iupeflIsInsideTabs(Ihandle* ih)
-{
-  Ihandle* parent = ih->parent;
-  while (parent)
-  {
-    if (iupAttribGet(parent, "_IUPTAB_CONTAINER"))
-      return 1;
-    if (iupStrEqual(parent->iclass->name, "tabs"))
-      return 1;
-    parent = parent->parent;
-  }
-  return 0;
-}
-
 IUP_SDK_API void iupdrvBaseLayoutUpdateMethod(Ihandle* ih)
 {
-  if (iupeflIsInsideTabs(ih))
-    return;
-
   iupeflSetPosSize(ih, ih->x, ih->y, ih->currentwidth, ih->currentheight);
 }
 
@@ -813,7 +814,10 @@ IUP_SDK_API int iupdrvBaseSetCursorAttrib(Ihandle* ih, const char* value)
   Eo* widget = iupeflGetWidget(ih);
   int i, count = sizeof(table) / sizeof(table[0]);
 
-  if (!widget)
+  if (widget && !efl_isa(widget, EFL_UI_WIDGET_CLASS))
+    widget = (Eo*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
+
+  if (!widget || !efl_isa(widget, EFL_UI_WIDGET_CLASS))
     return 0;
 
   if (!value)
