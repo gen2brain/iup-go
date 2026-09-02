@@ -184,8 +184,6 @@
 /* Help button if anybody has it. Value randomly picked trying to avoid clashing with an existing value. */
 #define K_HELP     0xFFD3
 
-/* Keypad keys, same values as the X11 keysyms */
-
 #define K_KP_CR        0xFF8D
 #define K_KP_HOME      0xFF95
 #define K_KP_LEFT      0xFF96
