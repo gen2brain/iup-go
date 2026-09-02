@@ -68,10 +68,28 @@ static bool winuiMenuItemIsCheckable(Ihandle* ih)
   return false;
 }
 
-static hstring winuiMenuGetTitle(const char* title, wchar_t* accessKey)
+static hstring winuiMenuGetTitle(const char* title, wchar_t* accessKey, hstring* accelText)
 {
   char c = 0;
-  hstring result = iupwinuiProcessMnemonic(title, &c);
+  const char* tab = title? strchr(title, '\t'): NULL;
+  hstring result;
+
+  if (tab)
+  {
+    const char* rest = title;
+    char* head = iupStrDupUntil(&rest, '\t');
+    result = iupwinuiProcessMnemonic(head? head: "", &c);
+    if (head)
+      free(head);
+    if (accelText)
+      *accelText = iupwinuiStringToHString(tab + 1);
+  }
+  else
+  {
+    result = iupwinuiProcessMnemonic(title, &c);
+    if (accelText)
+      *accelText = hstring();
+  }
 
   if (accessKey)
     *accessKey = c ? (wchar_t)c : 0;
@@ -308,7 +326,8 @@ static int winuiMenuItemMapMethod(Ihandle* ih)
 
   const char* title = iupAttribGet(ih, "TITLE");
   wchar_t accessKey = 0;
-  hstring text = winuiMenuGetTitle(title, &accessKey);
+  hstring accelText;
+  hstring text = winuiMenuGetTitle(title, &accessKey, &accelText);
 
   aux->isCheckable = winuiMenuItemIsCheckable(ih);
 
@@ -316,6 +335,7 @@ static int winuiMenuItemMapMethod(Ihandle* ih)
   {
     ToggleMenuFlyoutItem item;
     item.Text(text);
+    item.KeyboardAcceleratorTextOverride(accelText);
     item.FontSize(winuiMenuGetIupFontSize(ih));
 
     if (accessKey)
@@ -340,6 +360,7 @@ static int winuiMenuItemMapMethod(Ihandle* ih)
   {
     MenuFlyoutItem item;
     item.Text(text);
+    item.KeyboardAcceleratorTextOverride(accelText);
     item.FontSize(winuiMenuGetIupFontSize(ih));
 
     if (accessKey)
@@ -393,7 +414,7 @@ static int winuiSubmenuMapMethod(Ihandle* ih)
 
   const char* title = iupAttribGet(ih, "TITLE");
   wchar_t accessKey = 0;
-  hstring text = winuiMenuGetTitle(title, &accessKey);
+  hstring text = winuiMenuGetTitle(title, &accessKey, NULL);
 
   if (iupMenuIsMenuBar(parent))
   {
@@ -473,7 +494,8 @@ static int winuiMenuItemSetTitleAttrib(Ihandle* ih, const char* value)
     return 0;
 
   wchar_t accessKey = 0;
-  hstring text = winuiMenuGetTitle(value, &accessKey);
+  hstring accelText;
+  hstring text = winuiMenuGetTitle(value, &accessKey, &accelText);
 
   if (aux->isCheckable)
   {
@@ -481,6 +503,7 @@ static int winuiMenuItemSetTitleAttrib(Ihandle* ih, const char* value)
     if (item)
     {
       item.Text(text);
+      item.KeyboardAcceleratorTextOverride(accelText);
       if (accessKey)
         item.AccessKey(hstring(&accessKey, 1));
     }
@@ -491,6 +514,7 @@ static int winuiMenuItemSetTitleAttrib(Ihandle* ih, const char* value)
     if (item)
     {
       item.Text(text);
+      item.KeyboardAcceleratorTextOverride(accelText);
       if (accessKey)
         item.AccessKey(hstring(&accessKey, 1));
     }
@@ -634,7 +658,7 @@ static int winuiSubmenuSetTitleAttrib(Ihandle* ih, const char* value)
   Ihandle* parent = ih->parent;
 
   wchar_t accessKey = 0;
-  hstring text = winuiMenuGetTitle(value, &accessKey);
+  hstring text = winuiMenuGetTitle(value, &accessKey, NULL);
 
   if (parent && iupMenuIsMenuBar(parent))
   {
