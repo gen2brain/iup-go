@@ -125,7 +125,6 @@ JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupActivity_NotifyThemeCha
   Ihandle* ih = (Ihandle*)(intptr_t)ihandle_ptr;
   if (!ih || !iupObjectCheck(ih)) return;
 
-  /* Mirrors iupqt_dialog.cpp qtDialogRefreshThemeColors. */
   int inherit;
   if (!iupAttribGet(ih, "BGCOLOR"))
     iupClassObjectSetAttribute(ih, "BGCOLOR", NULL, &inherit);

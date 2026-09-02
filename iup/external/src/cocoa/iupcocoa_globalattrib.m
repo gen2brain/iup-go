@@ -404,10 +404,6 @@ IUP_SDK_API char *iupdrvGetGlobal(const char *name)
         return NULL;
     }
   }
-  if (iupStrEqual(name, "DARKMODE"))
-  {
-    return iupStrReturnBoolean(iupcocoaIsSystemDarkMode());
-  }
 #ifdef GNUSTEP
   if (iupStrEqual(name, "GNUSTEPTHEME"))
   {

@@ -112,15 +112,8 @@ IUP_DRV_API COLORREF iupwinGetAccentColor(void)
 
 IUP_DRV_API void iupwinSetGlobalColors(void)
 {
-  if (iupwinDarkModeEnabled())  /* GetSysColor stays light in dark mode; seed the Fluent dark palette */
-  {
-    iupGlobalSetDefaultColorAttrib("DLGBGCOLOR", 32, 32, 32);
-    iupGlobalSetDefaultColorAttrib("DLGFGCOLOR", 255, 255, 255);
-    iupGlobalSetDefaultColorAttrib("TXTBGCOLOR", 45, 45, 45);
-    iupGlobalSetDefaultColorAttrib("TXTFGCOLOR", 255, 255, 255);
-    iupGlobalSetDefaultColorAttrib("MENUBGCOLOR", 43, 43, 43);
-    iupGlobalSetDefaultColorAttrib("MENUFGCOLOR", 255, 255, 255);
-  }
+  if (iupwinDarkModeEnabled())  /* GetSysColor stays light in dark mode */
+    iupGlobalSetAppearanceColors(1);
   else
   {
     winSetGlobalColor(COLOR_BTNFACE, "DLGBGCOLOR");
@@ -141,6 +134,11 @@ IUP_DRV_API void iupwinSetGlobalColors(void)
     else
       winSetGlobalColor(COLOR_HIGHLIGHT, "ACCENTCOLOR");
   }
+}
+
+IUP_SDK_API int iupdrvIsSystemDarkMode(void)
+{
+  return iupwinIsSystemDarkMode();
 }
 
 IUP_SDK_API int iupdrvOpen(int *argc, char ***argv)

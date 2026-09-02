@@ -19,6 +19,7 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.Keep;
+import androidx.appcompat.app.AppCompatDelegate;
 import androidx.appcompat.view.ContextThemeWrapper;
 
 import java.lang.reflect.Field;
@@ -478,6 +479,44 @@ public final class IupCommon
         catch (Throwable t) { return false; }
     }
 
+
+    /** System night-mode setting, ignoring any per-app override. */
+    @Keep
+    public static boolean isSystemDarkMode()
+    {
+        try
+        {
+            int mode = android.content.res.Resources.getSystem().getConfiguration().uiMode
+                       & android.content.res.Configuration.UI_MODE_NIGHT_MASK;
+            return mode == android.content.res.Configuration.UI_MODE_NIGHT_YES;
+        }
+        catch (Throwable t) { return false; }
+    }
+
+    /** APPEARANCE global: 0 = system, 1 = light, 2 = dark. */
+    @Keep
+    public static void setNightMode(int appearance)
+    {
+        try
+        {
+            final int mode = (appearance == 2) ? AppCompatDelegate.MODE_NIGHT_YES
+                           : (appearance == 1) ? AppCompatDelegate.MODE_NIGHT_NO
+                           : AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM;
+
+            IupApplication app = IupApplication.getIupApplication();
+            Activity a = (app != null) ? app.getCurrentActivity() : null;
+            Runnable set = new Runnable() {
+                @Override
+                public void run() { AppCompatDelegate.setDefaultNightMode(mode); }
+            };
+
+            if (a != null)
+                a.runOnUiThread(set);
+            else
+                set.run();
+        }
+        catch (Throwable t) { }
+    }
 
     /* mirrors IUP DLG/TXT/MENU globals; pushed from iupAndroidUpdateGlobalColors() */
     public static volatile int paletteDlgBg    = 0xFFEDEDED;

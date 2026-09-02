@@ -64,6 +64,9 @@ IUP_API int IupOpen(int *argc, char ***argv)
 
     iupdrvFontInit();
 
+    if (iupGlobalGetAppearance() != IUP_APPEARANCE_SYSTEM)
+      iupdrvSetAppearance(iupGlobalGetAppearance());
+
     IupStoreGlobal("SYSTEM", iupdrvGetSystemName());
     IupStoreGlobal("SYSTEMVERSION", iupdrvGetSystemVersion());
     IupStoreGlobal("COMPUTERNAME", iupdrvGetComputerName());

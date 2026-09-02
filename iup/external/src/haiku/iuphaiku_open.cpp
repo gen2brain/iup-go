@@ -55,7 +55,6 @@ public:
         return;
       case B_COLORS_UPDATED:
         iuphaikuSetGlobalColors();
-        IupSetGlobal("DARKMODE", iuphaikuIsSystemDarkMode() ? "YES" : "NO");
         for (Ihandle* dlg = iupDlgListFirst(); dlg; dlg = iupDlgListNext())
         {
           if (!dlg->handle) continue;
@@ -174,11 +173,22 @@ IUP_DRV_API void iuphaikuSetGlobalColors()
   iupGlobalSetDefaultColorAttrib("LINKFGCOLOR", 0, 0, 238);
 }
 
-IUP_DRV_API int iuphaikuIsSystemDarkMode()
+extern "C" IUP_SDK_API int iupdrvIsSystemDarkMode(void)
 {
   rgb_color c = ui_color(B_PANEL_BACKGROUND_COLOR);
   int luminance = (int)(0.299 * c.red + 0.587 * c.green + 0.114 * c.blue);
   return luminance < 128 ? 1 : 0;
+}
+
+/* the Haiku UI colors are system wide, so only the IUP palette can follow APPEARANCE */
+extern "C" IUP_SDK_API void iupdrvSetAppearance(int appearance)
+{
+  int dark = (appearance == IUP_APPEARANCE_DARK)? 1: 0;
+
+  iuphaikuSetGlobalColors();
+
+  if (appearance != IUP_APPEARANCE_SYSTEM && iupdrvIsSystemDarkMode() != dark)
+    iupGlobalSetAppearanceColors(dark);
 }
 
 extern "C" IUP_SDK_API int iupdrvOpen(int *argc, char ***argv)
@@ -226,8 +236,6 @@ extern "C" IUP_SDK_API int iupdrvOpen(int *argc, char ***argv)
     IupStoreGlobal("ARGV0", (*argv)[0]);
 
   iuphaikuSetGlobalColors();
-
-  IupSetGlobal("DARKMODE", iuphaikuIsSystemDarkMode() ? "YES" : "NO");
 
   return IUP_NOERROR;
 }

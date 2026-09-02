@@ -27,6 +27,7 @@ extern "C" {
 #include "iup_attrib.h"
 #include "iup_drv.h"
 #include "iup_drvinfo.h"
+#include "iup_globalattrib.h"
 #include "iup_str.h"
 #define _IUPDLG_PRIVATE
 #include "iup_dialog.h"
@@ -42,25 +43,6 @@ extern "C" {
 
 /* Re-resolve SAMEASSYSTEM color defaults (now pointing at refreshed DLGFGCOLOR/DLGBGCOLOR)
    for every widget that doesn't have a user-set color, so baked palette entries follow the new theme. */
-static void qtDialogRefreshThemeColors(Ihandle* ih)
-{
-  if (ih->handle)
-  {
-    int inherit;
-    if (!iupAttribGet(ih, "FGCOLOR"))
-      iupClassObjectSetAttribute(ih, "FGCOLOR", NULL, &inherit);
-    if (!iupAttribGet(ih, "BGCOLOR"))
-      iupClassObjectSetAttribute(ih, "BGCOLOR", NULL, &inherit);
-  }
-
-  Ihandle* child = ih->firstchild;
-  while (child)
-  {
-    qtDialogRefreshThemeColors(child);
-    child = child->brother;
-  }
-}
-
 class IupQtDialog : public QMainWindow
 {
 public:
@@ -315,14 +297,15 @@ protected:
     {
       if (iup_handle)
       {
+        iupqtUpdateSystemPalette();
         iupqtSetGlobalColors();
 
-        int dark_mode = iupqtIsSystemDarkMode();
+        int dark_mode = iupGlobalIsDarkMode();
         IFni cb = (IFni)IupGetCallback(iup_handle, "THEMECHANGED_CB");
         if (cb)
           cb(iup_handle, dark_mode);
 
-        qtDialogRefreshThemeColors(iup_handle);
+        iupGlobalUpdateThemeColors();
       }
     }
 

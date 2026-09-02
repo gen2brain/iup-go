@@ -66,7 +66,6 @@ IUP_DRV_API char* iuphaikuGetNativeWindowHandleAttrib(Ihandle* ih);
 IUP_DRV_API const char* iuphaikuGetNativeWindowHandleName();
 IUP_DRV_API const char* iuphaikuGetNativeFontIdName();
 
-IUP_DRV_API int iuphaikuIsSystemDarkMode();
 IUP_DRV_API void iuphaikuSetGlobalColors();
 
 IUP_DRV_API void iuphaikuLoopCleanup();

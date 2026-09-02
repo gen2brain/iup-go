@@ -244,6 +244,16 @@ static void eflSetGlobalAttrib(void)
 #endif
 }
 
+IUP_SDK_API void iupdrvSetAppearance(int appearance)
+{
+  int dark = (appearance == IUP_APPEARANCE_DARK)? 1: 0;
+
+  iupeflSetGlobalColors();
+
+  if (appearance != IUP_APPEARANCE_SYSTEM && iupdrvIsSystemDarkMode() != dark)
+    iupGlobalSetAppearanceColors(dark);
+}
+
 IUP_DRV_API void iupeflSetGlobalColors(void)
 {
   Eo* temp_win;

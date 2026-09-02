@@ -195,8 +195,6 @@ IUP_SDK_API char* iupdrvGetGlobal(const char *name)
     }
     return NULL;
   }
-  if (iupStrEqual(name, "DARKMODE"))
-    return iupStrReturnBoolean(iupmotIsSystemDarkMode());
   if (iupStrEqual(name, "SANDBOX"))
   {
     if (getenv("FLATPAK_ID"))

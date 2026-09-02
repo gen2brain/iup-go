@@ -100,7 +100,7 @@ IUP_DRV_API char* iupmotGetXWindowAttrib(Ihandle *ih);
 #define iupMOT_SETARG(_a, _i, _n, _d) ((_a)[(_i)].name = (_n), (_a)[(_i)].value = (XtArgVal)(_d), (_i)++)
 
 /* dark mode */
-IUP_DRV_API int iupmotIsSystemDarkMode(void);
+IUP_DRV_API void iupmotSetGlobalColors(void);
 
 
 #ifdef __cplusplus

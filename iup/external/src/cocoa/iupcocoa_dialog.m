@@ -14,6 +14,7 @@
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_drv.h"
+#include "iup_globalattrib.h"
 #include "iup_str.h"
 #define _IUPDLG_PRIVATE
 #include "iup_dialog.h"
@@ -620,7 +621,7 @@ static void cocoaDialogChildDestroyNotification(NSNotification* notification)
 
     iupcocoaSetGlobalColors();
 
-    int dark_mode = iupcocoaIsSystemDarkMode();
+    int dark_mode = iupGlobalIsDarkMode();
 
     IFni cb = (IFni)IupGetCallback(ih, "THEMECHANGED_CB");
     if (cb)

@@ -1113,6 +1113,26 @@ IUP_API void IupCopyClassAttributes(Ihandle* src_ih, Ihandle* dst_ih)
   }
 }
 
+IUP_SDK_API void iupClassObjectUpdateGlobalDefaults(Ihandle* ih)
+{
+  Iclass* ic = ih->iclass;
+  char* name = iupTableFirst(ic->attrib_func);
+
+  while (name)
+  {
+    IattribFunc* afunc = (IattribFunc*)iupTableGetCurr(ic->attrib_func);
+    if (afunc && afunc->set &&
+        iupClassIsGlobalDefault(afunc->default_value, 1) &&
+        !(afunc->flags & IUPAF_NO_DEFAULTVALUE) &&
+        !(afunc->flags & IUPAF_NO_STRING) &&
+        !(afunc->flags & IUPAF_HAS_ID) &&
+        !iupAttribGet(ih, name))
+      afunc->set(ih, iClassGetDefaultValue(afunc));
+
+    name = iupTableNext(ic->attrib_func);
+  }
+}
+
 void iupClassObjectEnsureDefaultAttributes(Ihandle* ih)
 {
   Iclass* ic;

@@ -180,6 +180,42 @@ static void cocoaTouchFireThemeChangedAll(int dark_mode)
 	}
 }
 
+static int s_cocoatouch_system_dark = -1;
+
+IUP_SDK_API int iupdrvIsSystemDarkMode(void)
+{
+	UIWindow* window = iupCocoaTouchFindCurrentWindow();
+
+	/* the window trait carries the override, so it only reports the system while there is none */
+	if (window && window.overrideUserInterfaceStyle == UIUserInterfaceStyleUnspecified)
+		s_cocoatouch_system_dark = (window.traitCollection.userInterfaceStyle == UIUserInterfaceStyleDark)? 1: 0;
+	else if (s_cocoatouch_system_dark == -1)
+		return ([UITraitCollection currentTraitCollection].userInterfaceStyle == UIUserInterfaceStyleDark)? 1: 0;
+
+	return s_cocoatouch_system_dark;
+}
+
+IUP_SDK_API void iupdrvSetAppearance(int appearance)
+{
+	UIUserInterfaceStyle style = UIUserInterfaceStyleUnspecified;
+
+	if (appearance == IUP_APPEARANCE_DARK)
+		style = UIUserInterfaceStyleDark;
+	else if (appearance == IUP_APPEARANCE_LIGHT)
+		style = UIUserInterfaceStyleLight;
+
+	for (UIScene* scene in [UIApplication sharedApplication].connectedScenes)
+	{
+		if (![scene isKindOfClass:[UIWindowScene class]]) continue;
+		for (UIWindow* window in ((UIWindowScene*)scene).windows)
+			window.overrideUserInterfaceStyle = style;
+	}
+
+	cocoaTouchUpdateGlobalColors();
+	IupSetGlobal("_IUP_RESET_GLOBALCOLORS", "YES");
+	iupCocoaTouchRefreshAllThemes();
+}
+
 void iupCocoaTouchHandleTraitFlip(void)
 {
 	/* dedupe across the multiple VCs that fire on each flip */
@@ -192,8 +228,7 @@ void iupCocoaTouchHandleTraitFlip(void)
 	cocoaTouchUpdateGlobalColors();
 	IupSetGlobal("_IUP_RESET_GLOBALCOLORS", "YES");
 	iupCocoaTouchRefreshAllThemes();
-	int dark_mode = iupStrBoolean(IupGetGlobal("DARKMODE"));
-	cocoaTouchFireThemeChangedAll(dark_mode);
+	cocoaTouchFireThemeChangedAll(iupGlobalIsDarkMode());
 }
 
 IUP_SDK_API int iupdrvOpen(int* argc, char*** argv)

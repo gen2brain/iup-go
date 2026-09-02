@@ -115,7 +115,7 @@ IUP_DRV_API void iupgtk4CssResetWidgetCustom(GtkWidget* widget);
 IUP_DRV_API void iupgtk4CssAddStaticRule(const char* selector, const char* css_rules);
 IUP_DRV_API void iupgtk4CssFlush(void);
 
-IUP_DRV_API int iupgtk4IsSystemDarkMode(void);
+IUP_DRV_API int iupgtk4MeasureDarkMode(void);
 IUP_DRV_API void iupgtk4SetGlobalColors(void);
 
 /* X11 declarations are in iupgtk4_x11.h */

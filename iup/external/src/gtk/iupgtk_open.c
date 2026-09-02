@@ -603,6 +603,28 @@ static void gtkUpdateGlobalColors(GtkWidget* dialog, GtkWidget* text)
   iupGlobalSetDefaultColorAttrib("LINKFGCOLOR", 0, 0, 238);
 }
 
+#if GTK_CHECK_VERSION(3, 0, 0)
+static int gtk_system_prefer_dark = 0;
+#endif
+
+IUP_SDK_API void iupdrvSetAppearance(int appearance)
+{
+#if GTK_CHECK_VERSION(3, 0, 0)
+  gboolean prefer_dark;
+
+  if (appearance == IUP_APPEARANCE_SYSTEM)
+    prefer_dark = gtk_system_prefer_dark? TRUE: FALSE;
+  else
+    prefer_dark = (appearance == IUP_APPEARANCE_DARK)? TRUE: FALSE;
+
+  g_object_set(gtk_settings_get_default(), "gtk-application-prefer-dark-theme", prefer_dark, NULL);
+#else
+  (void)appearance;
+#endif
+
+  iupgtkSetGlobalColors();
+}
+
 IUP_DRV_API void iupgtkSetGlobalColors(void)
 {
   GtkWidget* dialog = gtk_offscreen_window_new();
@@ -709,6 +731,14 @@ IUP_SDK_API int iupdrvOpen(int *argc, char ***argv)
     IupStoreGlobal("ARGV0", (*argv)[0]);
 
   gtkSetGlobalAttrib();
+
+#if GTK_CHECK_VERSION(3, 0, 0)
+  {
+    gboolean prefer_dark;
+    g_object_get(gtk_settings_get_default(), "gtk-application-prefer-dark-theme", &prefer_dark, NULL);
+    gtk_system_prefer_dark = prefer_dark? 1: 0;
+  }
+#endif
 
   iupgtkSetGlobalColors();
 

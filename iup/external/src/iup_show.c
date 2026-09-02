@@ -16,6 +16,8 @@
 #include "iup_menu.h"
 #include "iup_assert.h"
 #include "iup_drvfont.h"
+#include "iup_globalattrib.h"
+#include "iup_drv.h"
 
 
 IUP_API void IupUnmap(Ihandle *ih)
@@ -93,6 +95,10 @@ IUP_API int IupMap(Ihandle* ih)
 
   /* ensure attributes default values, at this time only the ones that need to be set after map */
   iupClassObjectEnsureDefaultAttributes(ih);
+
+  /* a forced APPEARANCE has to reach the elements the palette would not normally be pushed to */
+  if (iupGlobalGetAppearance() != IUP_APPEARANCE_SYSTEM)
+    iupClassObjectUpdateGlobalDefaults(ih);
 
   /* updates the defined attributes from the hash table (this) to the native system (this). */
   iupAttribUpdate(ih);

@@ -37,8 +37,6 @@ IUP_SDK_API int iupdrvSetGlobal(const char* name, const char* value)
 
 IUP_SDK_API char* iupdrvGetGlobal(const char* name)
 {
-  if (iupStrEqual(name, "DARKMODE"))
-    return iupStrReturnBoolean(iupwasmJsIsDarkMode());
   if (iupStrEqual(name, "VIRTUALSCREEN"))
     return iupStrReturnStrf("%d %d %d %d", iupwasmVirtualScreenPart(0), iupwasmVirtualScreenPart(1),
       iupwasmVirtualScreenPart(2), iupwasmVirtualScreenPart(3));
