@@ -55,12 +55,13 @@ static Eina_Bool eflPopoverIsCursorOverAnchor(Ihandle* ih)
   return EINA_FALSE;
 }
 
-static void eflPopoverFocusOutCb(void* data, const Efl_Event* ev)
+static void eflPopoverAutoHide(Ihandle* ih)
 {
-  Ihandle* ih = (Ihandle*)data;
+  Eo* popup_win = iupeflGetWidget(ih);
   IFni show_cb;
 
-  (void)ev;
+  if (!popup_win || !iupeflIsVisible(popup_win))
+    return;
 
   if (!iupAttribGetBoolean(ih, "AUTOHIDE"))
     return;
@@ -68,11 +69,41 @@ static void eflPopoverFocusOutCb(void* data, const Efl_Event* ev)
   if (eflPopoverIsCursorOverAnchor(ih))
     return;
 
-  efl_gfx_entity_visible_set(iupeflGetWidget(ih), EINA_FALSE);
+  efl_gfx_entity_visible_set(popup_win, EINA_FALSE);
 
   show_cb = (IFni)IupGetCallback(ih, "SHOW_CB");
   if (show_cb)
     show_cb(ih, IUP_HIDE);
+}
+
+static void eflPopoverFocusOutCb(void* data, const Efl_Event* ev)
+{
+  (void)ev;
+
+  eflPopoverAutoHide((Ihandle*)data);
+}
+
+static Eina_Bool eflPopoverMouseDownCb(void* data, int type, void* event)
+{
+  Ihandle* ih = (Ihandle*)data;
+  Ecore_Event_Mouse_Button* ev = (Ecore_Event_Mouse_Button*)event;
+  Eo* popup_win = iupeflGetWidget(ih);
+  Eina_Rect geom;
+
+  (void)type;
+
+  if (!popup_win || !iupeflIsVisible(popup_win))
+    return ECORE_CALLBACK_PASS_ON;
+
+  geom = efl_gfx_entity_geometry_get(popup_win);
+
+  if (ev->root.x >= geom.x && ev->root.x < geom.x + geom.w &&
+      ev->root.y >= geom.y && ev->root.y < geom.y + geom.h)
+    return ECORE_CALLBACK_PASS_ON;
+
+  eflPopoverAutoHide(ih);
+
+  return ECORE_CALLBACK_PASS_ON;
 }
 
 static int eflPopoverMapMethod(Ihandle* ih)
@@ -98,7 +129,7 @@ static int eflPopoverMapMethod(Ihandle* ih)
     return IUP_ERROR;
 
   /* Create a borderless popup window */
-  popup_win = efl_add(EFL_UI_WIN_CLASS, parent_win, efl_ui_win_type_set(efl_added, EFL_UI_WIN_TYPE_BASIC));
+  popup_win = efl_add(EFL_UI_WIN_CLASS, parent_win, efl_ui_win_type_set(efl_added, EFL_UI_WIN_TYPE_POPUP_MENU));
   if (!popup_win)
     return IUP_ERROR;
 
@@ -106,6 +137,7 @@ static int eflPopoverMapMethod(Ihandle* ih)
 
   /* Make it borderless and act as popup */
   efl_ui_win_borderless_set(popup_win, EINA_TRUE);
+  elm_win_override_set(popup_win, EINA_TRUE);
 
   /* Create a frame inside the window for visual border */
   frame = efl_add(EFL_UI_FRAME_CLASS, popup_win);
@@ -125,11 +157,8 @@ static int eflPopoverMapMethod(Ihandle* ih)
     iupAttribSet(ih, "_IUP_EFL_INNER", (char*)popup_win);
   }
 
-  /* Connect focus-out for autohide */
-  if (iupAttribGetBoolean(ih, "AUTOHIDE"))
-  {
-    efl_event_callback_add(popup_win, EFL_EVENT_FOCUS_OUT, eflPopoverFocusOutCb, ih);
-  }
+  efl_event_callback_add(popup_win, EFL_EVENT_FOCUS_OUT, eflPopoverFocusOutCb, ih);
+  iupAttribSet(ih, "_IUP_EFL_MOUSEDOWN", (char*)ecore_event_handler_add(ECORE_EVENT_MOUSE_BUTTON_DOWN, eflPopoverMouseDownCb, ih));
 
   return IUP_NOERROR;
 }
@@ -137,6 +166,13 @@ static int eflPopoverMapMethod(Ihandle* ih)
 static void eflPopoverUnMapMethod(Ihandle* ih)
 {
   Eo* popup_win = iupeflGetWidget(ih);
+  Ecore_Event_Handler* handler = (Ecore_Event_Handler*)iupAttribGet(ih, "_IUP_EFL_MOUSEDOWN");
+
+  if (handler)
+  {
+    ecore_event_handler_del(handler);
+    iupAttribSet(ih, "_IUP_EFL_MOUSEDOWN", NULL);
+  }
 
   if (popup_win)
   {
@@ -247,6 +283,12 @@ static int eflPopoverSetVisibleAttrib(Ihandle* ih, const char* value)
 
     /* Activate window for focus handling */
     efl_ui_win_activate(popup_win);
+
+    {
+      Ecore_Evas* ee = ecore_evas_ecore_evas_get(evas_object_evas_get(popup_win));
+      if (ee)
+        ecore_evas_focus_set(ee, EINA_TRUE);
+    }
 
     {
       IFni show_cb = (IFni)IupGetCallback(ih, "SHOW_CB");

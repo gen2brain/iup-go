@@ -31,13 +31,42 @@ static void eflScrollbarDragStopCallback(void* data, const Efl_Event* ev)
   iupAttribSet((Ihandle*)data, "_IUPEFL_SB_DRAGGING", NULL);
 }
 
+static void eflScrollbarUpdateRange(Ihandle* ih)
+{
+  Eo* slider = iupeflGetWidget(ih);
+  double max_pos;
+
+  if (!slider)
+    return;
+
+  iupScrollbarCropValue(ih);
+
+  max_pos = ih->data->vmax - ih->data->pagesize;
+  if (max_pos <= ih->data->vmin)
+    max_pos = ih->data->vmin + 1;
+
+  iupAttribSet(ih, "_IUPEFL_SB_UPDATING", "1");
+
+  efl_ui_range_limits_set(slider, ih->data->vmin, max_pos);
+  efl_ui_range_value_set(slider, ih->data->val);
+  if (ih->data->linestep > 0)
+    efl_ui_range_step_set(slider, ih->data->linestep);
+
+  iupAttribSet(ih, "_IUPEFL_SB_UPDATING", NULL);
+}
+
 static void eflScrollbarChangedCallback(void* data, const Efl_Event* ev)
 {
   Ihandle* ih = (Ihandle*)data;
-  int dragging = iupAttribGet(ih, "_IUPEFL_SB_DRAGGING") != NULL;
-  double old_val = ih->data->val;
+  int dragging;
+  double old_val;
   double val;
 
+  if (iupAttribGet(ih, "_IUPEFL_SB_UPDATING"))
+    return;
+
+  dragging = iupAttribGet(ih, "_IUPEFL_SB_DRAGGING") != NULL;
+  old_val = ih->data->val;
   val = efl_ui_range_value_get(ev->object);
 
   ih->data->val = val;
@@ -86,8 +115,7 @@ static int eflScrollbarSetValueAttrib(Ihandle* ih, const char* value)
   if (iupStrToDouble(value, &val))
   {
     ih->data->val = val;
-    iupScrollbarCropValue(ih);
-    efl_ui_range_value_set(slider, ih->data->val);
+    eflScrollbarUpdateRange(ih);
   }
 
   return 0;
@@ -98,24 +126,22 @@ static int eflScrollbarSetLineStepAttrib(Ihandle* ih, const char* value)
   Eo* slider = iupeflGetWidget(ih);
 
   if (iupStrToDoubleDef(value, &(ih->data->linestep), 0.01))
-  {
-    if (slider && ih->data->linestep > 0)
-      efl_ui_range_step_set(slider, ih->data->linestep);
-  }
+    eflScrollbarUpdateRange(ih);
 
   return 0;
 }
 
 static int eflScrollbarSetPageStepAttrib(Ihandle* ih, const char* value)
 {
-  iupStrToDoubleDef(value, &(ih->data->pagestep), 0.1);
+  if (iupStrToDoubleDef(value, &(ih->data->pagestep), 0.1))
+    eflScrollbarUpdateRange(ih);
   return 0;
 }
 
 static int eflScrollbarSetPageSizeAttrib(Ihandle* ih, const char* value)
 {
   if (iupStrToDoubleDef(value, &(ih->data->pagesize), 0.1))
-    iupScrollbarCropValue(ih);
+    eflScrollbarUpdateRange(ih);
   return 0;
 }
 
@@ -151,11 +177,7 @@ static int eflScrollbarMapMethod(Ihandle* ih)
   }
   efl_ui_layout_orientation_set(slider, dir);
 
-  efl_ui_range_limits_set(slider, ih->data->vmin, ih->data->vmax);
-  efl_ui_range_value_set(slider, ih->data->val);
-
-  if (ih->data->linestep > 0)
-    efl_ui_range_step_set(slider, ih->data->linestep);
+  eflScrollbarUpdateRange(ih);
 
   efl_event_callback_add(slider, EFL_UI_RANGE_EVENT_CHANGED, eflScrollbarChangedCallback, ih);
   efl_event_callback_add(slider, EFL_UI_SLIDER_EVENT_SLIDER_DRAG_START, eflScrollbarDragStartCallback, ih);

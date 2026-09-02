@@ -94,6 +94,8 @@ static void eflDialogFreeCanvasImage(Eo* img)
   efl_unref(img);
 }
 
+static int eflDialogGetMenuSize(Ihandle* ih);
+
 static void eflDialogResizeCallback(void* data, const Efl_Event* ev)
 {
   Ihandle* ih = (Ihandle*)data;
@@ -117,7 +119,7 @@ static void eflDialogResizeCallback(void* data, const Efl_Event* ev)
     ih->currentheight = h;
 
     cb = (IFnii)IupGetCallback(ih, "RESIZE_CB");
-    if (!cb || cb(ih, w, h) != IUP_IGNORE)
+    if (!cb || cb(ih, w, h - eflDialogGetMenuSize(ih)) != IUP_IGNORE)
     {
       ih->data->ignore_resize = 1;
       IupRefresh(ih);
