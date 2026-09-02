@@ -259,6 +259,11 @@ static int motMenuItemSetTitleAttrib(Ihandle* ih, const char* value)
 {
   char *str;
 
+  if (iupStrEqual(value, iupAttribGet(ih, "_IUPMOT_TITLE_APPLIED")))
+    return 1;
+
+  iupAttribSetStr(ih, "_IUPMOT_TITLE_APPLIED", value);
+
   if (!value)
   {
     str = "     ";
@@ -443,6 +448,8 @@ static int motMenuAddCreateArgs(Ihandle* ih, Arg* args, int num_args, int has_ac
 
   *xm_label = NULL;
   *xm_accel = NULL;
+
+  iupAttribSetStr(ih, "_IUPMOT_TITLE_APPLIED", value);
 
   if (!value)
     str = "     ";
