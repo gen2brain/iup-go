@@ -29,11 +29,47 @@ func listActionCb(ih iup.Ihandle, item, state int) int {
 }
 
 func listEditionCb(ih iup.Ihandle, lin, col, mode, update int) int {
-	// Prevent editing column 1 (the COLOR column)
-	if col == 1 {
+	if col == ih.GetInt("COLORCOL") {
 		return iup.IGNORE
 	}
 	return iup.DEFAULT
+}
+
+func listDrawCb(ih iup.Ihandle, lin, col, x1, x2, y1, y2 int) int {
+	if col == ih.GetInt("LABELCOL") && lin%2 == 1 {
+		ih.SetAttributes(`DRAWCOLOR="120 140 160", DRAWSTYLE=STROKE, DRAWLINEWIDTH=1`)
+		iup.DrawLine(ih, x1+2, y2-1, x2-2, y2-1)
+	}
+	return iup.IGNORE
+}
+
+func listInsertCb(ih iup.Ihandle, lin int) int {
+	fmt.Printf("listInsertCb(%d) COUNT=%s\n", lin, ih.GetAttribute("COUNT"))
+	return iup.DEFAULT
+}
+
+func listRemoveCb(ih iup.Ihandle, lin int) int {
+	fmt.Printf("listRemoveCb(%d) COUNT=%s\n", lin, ih.GetAttribute("COUNT"))
+	return iup.DEFAULT
+}
+
+func listReleaseCb(ih iup.Ihandle, lin, col int, status string) int {
+	fmt.Printf("listReleaseCb(%d, %d) FOCUSITEM=%s\n", lin, col, ih.GetAttribute("FOCUSITEM"))
+	return iup.DEFAULT
+}
+
+func addImage() iup.Ihandle {
+	pixels := make([]byte, 16*16)
+	for i := 3; i < 13; i++ {
+		pixels[7*16+i] = 1
+		pixels[8*16+i] = 1
+		pixels[i*16+7] = 1
+		pixels[i*16+8] = 1
+	}
+	img := iup.Image(16, 16, pixels)
+	img.SetAttribute("0", "BGCOLOR")
+	img.SetAttribute("1", "0 128 0")
+	return img
 }
 
 func init() { iup.EntryPoint(main) }
@@ -55,7 +91,14 @@ func main() {
 	mlist.SetCallback("LISTCLICK_CB", iup.ClickFunc(listClickCb))
 	mlist.SetCallback("ACTION_CB", iup.MatrixListActionFunc(listActionCb))
 	mlist.SetCallback("IMAGEVALUECHANGED_CB", iup.MatrixListActionFunc(imageValueChangedCb))
-	// mlist.SetCallback("LISTEDITION_CB", iup.MatrixListEditionFunc(listEditionCb)) // Prevents editing COLOR column
+	mlist.SetCallback("LISTEDITION_CB", iup.ListEditionFunc(listEditionCb))
+	mlist.SetCallback("LISTDRAW_CB", iup.ListDrawFunc(listDrawCb))
+	mlist.SetCallback("LISTINSERT_CB", iup.ListInsertFunc(listInsertCb))
+	mlist.SetCallback("LISTREMOVE_CB", iup.ListRemoveFunc(listRemoveCb))
+	mlist.SetCallback("LISTRELEASE_CB", iup.ListReleaseFunc(listReleaseCb))
+	iup.SetAttributeHandle(mlist, "IMAGEADD", addImage())
+	mlist.SetAttribute("FOCUSITEM", "3")
+	mlist.SetAttribute("FOCUSFGCOLOR", "200 0 0")
 
 	// Column Layout Options:
 	// mlist.SetAttribute("COLUMNORDER", "LABEL:COLOR")    // Only LABEL and COLOR columns
@@ -114,14 +157,28 @@ func main() {
 	mlist.SetAttribute("IMAGEVALUE2", "ON")
 	mlist.SetAttribute("IMAGEVALUE3", "ON")
 
-	dlg := iup.Dialog(iup.Vbox(mlist))
+	columns := iup.Label("").SetAttribute("EXPAND", "HORIZONTAL")
+	showDelete := iup.Toggle("Delete buttons")
+	showDelete.SetCallback("ACTION", iup.ToggleActionFunc(func(ih iup.Ihandle, state int) int {
+		mlist.SetAttribute("SHOWDELETE", map[int]string{0: "NO", 1: "YES"}[state])
+		mlist.SetAttribute("REDRAW", "ALL")
+		return iup.DEFAULT
+	}))
+	remove := iup.Button("Remove focus item").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
+		mlist.SetAttribute("DELLIN", mlist.GetAttribute("FOCUSITEM"))
+		return iup.DEFAULT
+	}))
+
+	dlg := iup.Dialog(iup.Vbox(mlist, iup.Hbox(showDelete, remove).SetAttributes("NGAP=5"), columns))
 	dlg.SetAttribute("TITLE", "IupMatrixList")
 	dlg.SetAttribute("MARGIN", "10x10")
+	dlg.SetAttribute("GAP", "5")
 
 	iup.ShowXY(dlg, iup.CENTER, iup.CENTER)
 
 	// Append item after dialog is shown
 	mlist.SetAttribute("APPENDITEM", "KKK")
+	columns.SetAttribute("TITLE", fmt.Sprintf("LABELCOL=%s COLORCOL=%s IMAGECOL=%s", mlist.GetAttribute("LABELCOL"), mlist.GetAttribute("COLORCOL"), mlist.GetAttribute("IMAGECOL")))
 
 	iup.MainLoop()
 }

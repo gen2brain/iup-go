@@ -314,6 +314,165 @@ func buttonCb(ih iup.Ihandle) int {
 	return iup.DEFAULT
 }
 
+var cells = map[string]string{}
+var marks = map[string]bool{}
+
+func key(lin, col int) string { return fmt.Sprintf("%d:%d", lin, col) }
+
+func cbValueCb(ih iup.Ihandle, lin, col int) string {
+	if v, ok := cells[key(lin, col)]; ok {
+		return v
+	}
+	switch {
+	case lin == 0 && col == 0:
+		return "Callback"
+	case lin == 0:
+		return fmt.Sprintf("Col %d", col)
+	case col == 0:
+		return fmt.Sprintf("Line %d", lin)
+	case col == 3:
+		return fmt.Sprintf("%d", (lin*7)%23-8)
+	case col == 4:
+		return fmt.Sprintf("%d", (lin*13)%100)
+	}
+	return fmt.Sprintf("%d-%d", lin, col)
+}
+
+func valueEditCb(ih iup.Ihandle, lin, col int, newval string) int {
+	fmt.Printf("valueEditCb(%d, %d) = %q edited=%s\n", lin, col, newval, ih.GetAttribute("CELL_EDITED"))
+	cells[key(lin, col)] = newval
+	return iup.DEFAULT
+}
+
+func markCb(ih iup.Ihandle, lin, col int) int {
+	if marks[key(lin, col)] {
+		return 1
+	}
+	return 0
+}
+
+func markEditCb(ih iup.Ihandle, lin, col, marked int) int {
+	fmt.Printf("markEditCb(%d, %d) = %d\n", lin, col, marked)
+	marks[key(lin, col)] = marked == 1
+	return iup.DEFAULT
+}
+
+func bgColorCb(ih iup.Ihandle, lin, col int) (r, g, b int, ret int) {
+	if lin > 0 && col > 0 && lin%2 == 0 {
+		return 235, 242, 255, iup.DEFAULT
+	}
+	return 0, 0, 0, iup.IGNORE
+}
+
+func fgColorCb(ih iup.Ihandle, lin, col int) (r, g, b int, ret int) {
+	if col == 3 && lin > 0 && cbValueCb(ih, lin, col)[0] == '-' {
+		return 200, 0, 0, iup.DEFAULT
+	}
+	return 0, 0, 0, iup.IGNORE
+}
+
+func fontCb(ih iup.Ihandle, lin, col int) string {
+	if lin == 0 || col == 0 {
+		return "Helvetica, Bold 10"
+	}
+	if col == 1 {
+		return "Courier, 10"
+	}
+	return ""
+}
+
+func typeCb(ih iup.Ihandle, lin, col int) string {
+	if col == 4 && lin > 0 {
+		return "FILL"
+	}
+	return ""
+}
+
+func translateValueCb(ih iup.Ihandle, lin, col int, value string) string {
+	if col == 3 && lin > 0 && ih.GetInt("EDITVALUE") == 0 {
+		return value + " °C"
+	}
+	return value
+}
+
+func menuDropCb(ih, menu iup.Ihandle, lin, col int) int {
+	if col != 2 {
+		return iup.IGNORE
+	}
+	fmt.Printf("menuDropCb(%d, %d) previous=%s\n", lin, col, menu.GetAttribute("PREVIOUSVALUE"))
+	menu.SetAttribute("1", "Low")
+	menu.SetAttribute("2", "Medium")
+	menu.SetAttribute("3", "High")
+	menu.SetAttribute("VALUE", "2")
+	return iup.DEFAULT
+}
+
+func colResizeCb(ih iup.Ihandle, col int) int {
+	fmt.Printf("colResizeCb(%d) RASTERWIDTH%d=%s\n", col, col, iup.GetAttributeId(ih, "RASTERWIDTH", col))
+	return iup.DEFAULT
+}
+
+func resizeMatrixCb(ih iup.Ihandle, width, height int) int {
+	fmt.Printf("resizeMatrixCb(%d, %d)\n", width, height)
+	return iup.DEFAULT
+}
+
+func scrollTopCb(ih iup.Ihandle, lin, col int) int {
+	fmt.Printf("scrollTopCb(%d, %d) ORIGIN=%s ORIGINOFFSET=%s\n", lin, col, ih.GetAttribute("ORIGIN"), ih.GetAttribute("ORIGINOFFSET"))
+	return iup.DEFAULT
+}
+
+func editClickCb(ih iup.Ihandle, lin, col int, status string) int {
+	fmt.Printf("editClickCb(%d, %d) EDITCELL=%s\n", lin, col, ih.GetAttribute("EDITCELL"))
+	return iup.DEFAULT
+}
+
+func editReleaseCb(ih iup.Ihandle, lin, col int, status string) int {
+	fmt.Printf("editReleaseCb(%d, %d)\n", lin, col)
+	return iup.DEFAULT
+}
+
+func editMouseMoveCb(ih iup.Ihandle, lin, col int) int {
+	fmt.Printf("editMouseMoveCb(%d, %d)\n", lin, col)
+	return iup.DEFAULT
+}
+
+func createCallbackMat() iup.Ihandle {
+	mat := iup.Matrix()
+	iup.SetHandle("mat3", mat)
+
+	mat.SetAttribute("NUMCOL", "6")
+	mat.SetAttribute("NUMLIN", "30")
+	mat.SetAttribute("NUMCOL_VISIBLE", "6")
+	mat.SetAttribute("NUMLIN_VISIBLE", "8")
+	mat.SetAttribute("RESIZEMATRIX", "YES")
+	mat.SetAttribute("MARKMODE", "CELL")
+	mat.SetAttribute("MARKMULTIPLE", "YES")
+	mat.SetAttribute("EDITHIDEONFOCUS", "NO")
+	mat.SetAttribute("SHOWFILLVALUE", "YES")
+	mat.SetAttribute("USETITLESIZE", "YES")
+	mat.SetAttribute("WIDTH3", "30")
+
+	mat.SetCallback("VALUE_CB", iup.MatrixValueFunc(cbValueCb))
+	mat.SetCallback("VALUE_EDIT_CB", iup.ValueEditFunc(valueEditCb))
+	mat.SetCallback("MARK_CB", iup.MarkFunc(markCb))
+	mat.SetCallback("MARKEDIT_CB", iup.MarkEditFunc(markEditCb))
+	mat.SetCallback("BGCOLOR_CB", iup.BgColorFunc(bgColorCb))
+	mat.SetCallback("FGCOLOR_CB", iup.FgColorFunc(fgColorCb))
+	mat.SetCallback("FONT_CB", iup.MatrixFontFunc(fontCb))
+	mat.SetCallback("TYPE_CB", iup.MatrixTypeFunc(typeCb))
+	mat.SetCallback("TRANSLATEVALUE_CB", iup.TranslateValueFunc(translateValueCb))
+	mat.SetCallback("MENUDROP_CB", iup.MenuDropFunc(menuDropCb))
+	mat.SetCallback("COLRESIZE_CB", iup.ColResizeFunc(colResizeCb))
+	mat.SetCallback("RESIZEMATRIX_CB", iup.ResizeMatrixFunc(resizeMatrixCb))
+	mat.SetCallback("SCROLLTOP_CB", iup.ScrollTopFunc(scrollTopCb))
+	mat.SetCallback("EDITCLICK_CB", iup.EditClickFunc(editClickCb))
+	mat.SetCallback("EDITRELEASE_CB", iup.EditReleaseFunc(editReleaseCb))
+	mat.SetCallback("EDITMOUSEMOVE_CB", iup.EditMouseMoveFunc(editMouseMoveCb))
+
+	return mat
+}
+
 func createMenu() {
 	menu := iup.Menu(
 		iup.Submenu("submenu", iup.Menu(
@@ -362,6 +521,11 @@ func main() {
 					// ), "BGCOLOR=\"0 255 255\", MARGIN=10x10, GAP=10, TABTITLE=Test2, FONT=HELVETICA_ITALIC_14"),
 					// ), "FONT=HELVETICA_NORMAL_12, BGCOLOR=\"0 255 255\", MARGIN=10x10, GAP=10, TABTITLE=Test2"),
 				), "BGCOLOR=\"0 255 255\", MARGIN=10x10, GAP=10, TABTITLE=Test2"),
+			iup.SetAttributes(
+				iup.Vbox(
+					createCallbackMat(),
+					iup.Label("VALUE_CB owns the data; edits, marks, colors, fonts, types and the column 2 menu come from callbacks"),
+				), "MARGIN=10x10, GAP=10, TABTITLE=Callbacks"),
 		))
 
 	dlg.SetAttribute("TITLE", "IupMatrix Callbacks")

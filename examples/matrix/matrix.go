@@ -72,10 +72,38 @@ func toggleValueCb(ih iup.Ihandle, lin, col, value int) int {
 
 func clickCb(ih iup.Ihandle, lin, col int, status string) int {
 	fmt.Printf("clickCb(%d, %d)\n", lin, col)
+	for _, name := range []string{"CELLSIZE", "CELLOFFSET", "CELLTYPE", "CELLALIGNMENT", "CELLBGCOLOR", "CELLFGCOLOR", "CELLFONT", "MERGEDSTART", "MERGEDEND"} {
+		fmt.Printf("  %s%d:%d = %s\n", name, lin, col, iup.GetAttributeId2(ih, name, lin, col))
+	}
 	ih.SetAttribute("MARKED", "")
 	iup.SetAttributeId2(ih, "MARK", lin, 0, "1")
 	ih.SetAttribute("REDRAW", fmt.Sprintf("L%d", lin))
 	return iup.DEFAULT
+}
+
+func editionCb(ih iup.Ihandle, lin, col, mode, update int) int {
+	fmt.Printf("editionCb(%d, %d, mode=%d, update=%d) EDITCELL=%s EDITING=%s EDITTEXT=%s EDITVALUE=%s\n", lin, col, mode, update,
+		ih.GetAttribute("EDITCELL"), ih.GetAttribute("EDITING"), ih.GetAttribute("EDITTEXT"), ih.GetAttribute("EDITVALUE"))
+	return iup.DEFAULT
+}
+
+func toggleImage(on bool) iup.Ihandle {
+	pixels := make([]byte, 16*16)
+	for y := 0; y < 16; y++ {
+		for x := 0; x < 16; x++ {
+			if x == 0 || y == 0 || x == 15 || y == 15 || (on && x >= 4 && x < 12 && y >= 4 && y < 12) {
+				pixels[y*16+x] = 1
+			}
+		}
+	}
+	img := iup.Image(16, 16, pixels)
+	img.SetAttribute("0", "BGCOLOR")
+	if on {
+		img.SetAttribute("1", "0 128 0")
+	} else {
+		img.SetAttribute("1", "128 128 128")
+	}
+	return img
 }
 
 func enterItemCb(ih iup.Ihandle, lin, col int) int {
@@ -86,8 +114,8 @@ func enterItemCb(ih iup.Ihandle, lin, col int) int {
 }
 
 func createMatrix() iup.Ihandle {
-	//mat := iup.Matrix()
-	mat := iup.MatrixEx()
+	mat := iup.Matrix()
+	iup.SetHandle("matrix", mat)
 
 	mat.SetAttribute("NUMLIN", "4")
 	mat.SetAttribute("NUMCOL", "8")
@@ -178,6 +206,26 @@ func createMatrix() iup.Ihandle {
 	mat.SetAttribute("20:8", "The End")
 	mat.SetAttribute("NUMCOL_VISIBLE", "3")
 	mat.SetAttribute("NUMLIN_VISIBLE", "5")
+
+	mat.SetAttribute("MERGE2:5", "3:6")
+	mat.SetAttribute("2:5", "Merged")
+	mat.SetAttribute("TYPE4:4", "TOGGLE")
+	mat.SetAttribute("4:4", "ON")
+	iup.SetAttributeHandle(mat, "TOGGLEIMAGEON", toggleImage(true))
+	iup.SetAttributeHandle(mat, "TOGGLEIMAGEOFF", toggleImage(false))
+	mat.SetAttribute("MASKINT*:5", "0:100")
+	mat.SetAttribute("FITMAXWIDTH2", "120")
+	mat.SetAttribute("RASTERHEIGHT3", "40")
+	mat.SetAttribute("HEIGHTDEF", "10")
+	mat.SetAttribute("MINCOLWIDTHDEF", "30")
+	mat.SetAttribute("ALIGNMENTLIN0", "ALEFT")
+	mat.SetAttribute("FRAMETITLEHIGHLIGHT", "NO")
+	mat.SetAttribute("HLCOLORALPHA", "90")
+	mat.SetAttribute("RESIZEDRAG", "YES")
+	mat.SetAttribute("RESIZEMATRIXCOLOR", "255 0 0")
+	mat.SetAttribute("NUMCOL_NOSCROLL", "1")
+	mat.SetAttribute("NOSCROLLASTITLE", "YES")
+	mat.SetAttribute("MARKATTITLE", "NO")
 
 	// Matrix Size Variants:
 	// mat.SetAttribute("NUMLIN", "3")  // Smaller matrix
@@ -273,8 +321,18 @@ func createMatrix() iup.Ihandle {
 	mat.SetCallback("MOUSEMOVE_CB", iup.MatrixMouseMoveFunc(mouseMoveCb))
 	mat.SetCallback("CLICK_CB", iup.ClickFunc(clickCb))
 	mat.SetCallback("ENTERITEM_CB", iup.EnterItemFunc(enterItemCb))
+	mat.SetCallback("EDITION_CB", iup.EditionFunc(editionCb))
 
 	return mat
+}
+
+func action(title, attr, value string) iup.Ihandle {
+	return iup.Button(title).SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
+		mat := iup.GetHandle("matrix")
+		mat.SetAttribute(attr, value)
+		fmt.Printf("%s = %s -> ORIGINOFFSET=%s\n", attr, value, mat.GetAttribute("ORIGINOFFSET"))
+		return iup.DEFAULT
+	}))
 }
 
 func init() { iup.EntryPoint(main) }
@@ -285,8 +343,21 @@ func main() {
 	defer iup.Close()
 
 	mat := createMatrix()
-	box := iup.Vbox(mat)
+	box := iup.Vbox(
+		mat,
+		iup.Hbox(
+			action("Split merge", "MERGESPLIT", "3:6"),
+			action("Move col 8 to 2", "MOVECOL8", "2"),
+			action("Move line 3 to 1", "MOVELIN3", "1"),
+			action("Copy line 1 to 4", "COPYLIN1", "4"),
+			action("Copy col 1 to 7", "COPYCOL1", "7"),
+			action("Fit col 2", "FITTOTEXT", "C2"),
+			action("Fit line 3", "FITTOTEXT", "L3"),
+			action("Hide focus", "HIDEFOCUS", "YES"),
+		).SetAttributes("GAP=5"),
+	)
 	box.SetAttribute("MARGIN", "10x10")
+	box.SetAttribute("GAP", "10")
 
 	dlg := iup.Dialog(box)
 	dlg.SetAttribute("TITLE", "IupMatrix Simple Test")
