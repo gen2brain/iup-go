@@ -169,6 +169,10 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 			setCloseFunc(ih, v)
 		case NotifyCloseFunc:
 			setNotifyCloseFunc(ih, v)
+		case LocationFunc:
+			setLocationFunc(ih, v)
+		case PermissionFunc:
+			setPermissionFunc(ih, v)
 		}
 	case "HELP_CB":
 		setHelpFunc(ih, fn.(HelpFunc))
@@ -218,6 +222,10 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 		setMultiUnselectionFunc(ih, fn.(MultiUnselectionFunc))
 	case "NOTIFY_CB":
 		setNotifyFunc(ih, fn.(NotifyFunc))
+	case "LOCATION_CB":
+		setLocationFunc(ih, fn.(LocationFunc))
+	case "PERMISSION_CB":
+		setPermissionFunc(ih, fn.(PermissionFunc))
 	case "OPENCLOSE_CB":
 		setOpenCloseFunc(ih, fn.(OpenCloseFunc))
 	case "PARAM_CB":
@@ -1658,6 +1666,34 @@ var notifyCloseCB = purego.NewCallback(func(ih uintptr, reason int32) int {
 func setNotifyCloseFunc(ih Ihandle, f NotifyCloseFunc) {
 	storeCallback(ih, "_IUPGO_NOTIFY_CLOSE_CB", f)
 	iupSetCallback(uintptr(ih), "CLOSE_CB", notifyCloseCB)
+}
+
+type LocationFunc func(ih Ihandle, latitude, longitude float64) int
+
+var locationCB = purego.NewCallback(func(ih uintptr, latitude, longitude float64) int {
+	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_LOCATION_CB").(LocationFunc); ok {
+		return f(Ihandle(ih), latitude, longitude)
+	}
+	return 0
+})
+
+func setLocationFunc(ih Ihandle, f LocationFunc) {
+	storeCallback(ih, "_IUPGO_LOCATION_CB", f)
+	iupSetCallback(uintptr(ih), "LOCATION_CB", locationCB)
+}
+
+type PermissionFunc func(ih Ihandle, granted int) int
+
+var permissionCB = purego.NewCallback(func(ih uintptr, granted int32) int {
+	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_PERMISSION_CB").(PermissionFunc); ok {
+		return f(Ihandle(ih), int(granted))
+	}
+	return 0
+})
+
+func setPermissionFunc(ih Ihandle, f PermissionFunc) {
+	storeCallback(ih, "_IUPGO_PERMISSION_CB", f)
+	iupSetCallback(uintptr(ih), "PERMISSION_CB", permissionCB)
 }
 
 type OpenCloseFunc func(ih Ihandle, state int) int

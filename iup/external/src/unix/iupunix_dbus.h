@@ -19,6 +19,7 @@ typedef struct DBusMessage DBusMessage;
 typedef struct DBusMessageIter DBusMessageIter;
 typedef struct DBusObjectPathVTable DBusObjectPathVTable;
 typedef unsigned int dbus_uint32_t;
+typedef unsigned long long dbus_uint64_t;
 typedef int dbus_int32_t;
 typedef unsigned int dbus_bool_t;
 
@@ -154,6 +155,7 @@ static const char* (*iupdbus_bus_get_unique_name)(DBusConnection*);
 static const char* (*iupdbus_message_get_path)(DBusMessage*);
 static void (*iupdbus_bus_remove_match)(DBusConnection*, const char*, DBusError*);
 static dbus_bool_t (*iupdbus_bus_name_has_owner)(DBusConnection*, const char*, DBusError*);
+static void (*iupdbus_free_string_array)(char**);
 
 #define dbus_error_init iupdbus_error_init
 #define dbus_error_is_set iupdbus_error_is_set
@@ -197,6 +199,7 @@ static dbus_bool_t (*iupdbus_bus_name_has_owner)(DBusConnection*, const char*, D
 #define dbus_message_get_path iupdbus_message_get_path
 #define dbus_bus_remove_match iupdbus_bus_remove_match
 #define dbus_bus_name_has_owner iupdbus_bus_name_has_owner
+#define dbus_free_string_array iupdbus_free_string_array
 
 static inline int iupDBusOpen(void)
 {
@@ -252,6 +255,7 @@ static inline int iupDBusOpen(void)
   iupdbus_message_get_path = dlsym(iupdbus_handle, "dbus_message_get_path");
   iupdbus_bus_remove_match = dlsym(iupdbus_handle, "dbus_bus_remove_match");
   iupdbus_bus_name_has_owner = dlsym(iupdbus_handle, "dbus_bus_name_has_owner");
+  iupdbus_free_string_array = dlsym(iupdbus_handle, "dbus_free_string_array");
 
   if (!iupdbus_error_init || !iupdbus_bus_get || !iupdbus_connection_send)
   {

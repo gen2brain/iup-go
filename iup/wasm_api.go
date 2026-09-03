@@ -147,6 +147,12 @@ type NotifyFunc func(ih Ihandle, actionId int) int
 // NotifyCloseFunc is the type for the IupNotify CLOSE_CB callback.
 type NotifyCloseFunc func(ih Ihandle, reason int) int
 
+// LocationFunc is the type for the IupLocation LOCATION_CB callback.
+type LocationFunc func(ih Ihandle, latitude, longitude float64) int
+
+// PermissionFunc is the type for the PERMISSION_CB callback.
+type PermissionFunc func(ih Ihandle, granted int) int
+
 // ErrorFunc is the type for the ERROR_CB callback.
 type ErrorFunc func(ih Ihandle, url string) int
 
@@ -754,6 +760,11 @@ func Alarm(title, msg, b1, b2, b3 string) int {
 // https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_notify.md
 func Notify() Ihandle {
 	return ccallHandle("IupNotify", nil, nil)
+}
+
+// Location creates a geolocation source.
+func Location() Ihandle {
+	return ccallHandle("IupLocation", nil, nil)
 }
 
 // Clipboard creates a clipboard access element.

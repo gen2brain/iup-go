@@ -299,6 +299,9 @@ func dispatchF(ih Ihandle, name string, op int, posx, posy float64) int {
 	if f, ok := fn.(ScrollFunc); ok {
 		return f(ih, op, posx, posy)
 	}
+	if f, ok := fn.(LocationFunc); ok {
+		return f(ih, posx, posy)
+	}
 	return DEFAULT
 }
 
@@ -379,6 +382,8 @@ func dispatch(ih Ihandle, name string, i1, i2, i3, i4 int, sarg string) int {
 	case CloseFunc:
 		ret = f(ih)
 	case NotifyFunc:
+		ret = f(ih, i1)
+	case PermissionFunc:
 		ret = f(ih, i1)
 	case NotifyCloseFunc:
 		ret = f(ih, i1)

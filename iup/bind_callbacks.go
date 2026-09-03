@@ -2369,6 +2369,50 @@ func setNotifyCloseFunc(ih Ihandle, f NotifyCloseFunc) {
 
 //--------------------
 
+// LocationFunc for LOCATION_CB callback.
+// Called on every position update of an IupLocation element.
+type LocationFunc func(ih Ihandle, latitude, longitude float64) int
+
+//export goIupLocationCB
+func goIupLocationCB(ih unsafe.Pointer, latitude, longitude C.double) C.int {
+	ch := loadCallback((Ihandle)(ih), "_IUPGO_LOCATION_CB")
+	if ch == 0 {
+		return C.int(DEFAULT)
+	}
+	f := ch.Value().(LocationFunc)
+	return C.int(f((Ihandle)(ih), float64(latitude), float64(longitude)))
+}
+
+// setLocationFunc for LOCATION_CB.
+func setLocationFunc(ih Ihandle, f LocationFunc) {
+	storeCallback(ih, "_IUPGO_LOCATION_CB", f)
+	C.goIupSetLocationFunc(ih.ptr())
+}
+
+//--------------------
+
+// PermissionFunc for PERMISSION_CB callback.
+// Called when the user answers a permission request; granted is 1 or 0.
+type PermissionFunc func(ih Ihandle, granted int) int
+
+//export goIupPermissionCB
+func goIupPermissionCB(ih unsafe.Pointer, granted C.int) C.int {
+	ch := loadCallback((Ihandle)(ih), "_IUPGO_PERMISSION_CB")
+	if ch == 0 {
+		return C.int(DEFAULT)
+	}
+	f := ch.Value().(PermissionFunc)
+	return C.int(f((Ihandle)(ih), int(granted)))
+}
+
+// setPermissionFunc for PERMISSION_CB.
+func setPermissionFunc(ih Ihandle, f PermissionFunc) {
+	storeCallback(ih, "_IUPGO_PERMISSION_CB", f)
+	C.goIupSetPermissionFunc(ih.ptr())
+}
+
+//--------------------
+
 // GetParamFunc is the callback for GetParam dialog.
 // It is called when a parameter value changes, a button is pressed, or the dialog is mapped/initialized.
 // The paramIndex is >= 0 for parameter changes, or one of the GETPARAM_* constants for events.

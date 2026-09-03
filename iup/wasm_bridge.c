@@ -54,6 +54,7 @@ static int wasmCbTabClose(Ihandle* ih, int pos) { return iupwasmGoDispatch(ih, "
 static int wasmCbRightClick(Ihandle* ih, int pos) { return iupwasmGoDispatch(ih, "RIGHTCLICK_CB", pos, 0, 0, 0, 0); }
 static int wasmCbActionCb(Ihandle* ih) { return iupwasmGoDispatch(ih, "ACTION_CB", 0, 0, 0, 0, 0); }
 static int wasmCbNotify(Ihandle* ih, int id) { return iupwasmGoDispatch(ih, "NOTIFY_CB", id, 0, 0, 0, 0); }
+static int wasmCbPermission(Ihandle* ih, int granted) { return iupwasmGoDispatch(ih, "PERMISSION_CB", granted, 0, 0, 0, 0); }
 static int wasmCbNotifyClose(Ihandle* ih, int reason) { return iupwasmGoDispatch(ih, "CLOSE_CB", reason, 0, 0, 0, 0); }
 static int wasmCbClose(Ihandle* ih) { return iupwasmGoDispatch(ih, "CLOSE_CB", 0, 0, 0, 0, 0); }
 static int wasmCbError(Ihandle* ih, char* msg) { return iupwasmGoDispatch(ih, "ERROR_CB", 0, 0, 0, 0, msg); }
@@ -67,6 +68,7 @@ EM_JS(int, iupwasmGoDispatchF, (Ihandle* ih, const char* name, int i1, double d1
     return globalThis.iupGoDispatchF(ih, UTF8ToString(name), i1, d1, d2) | 0;
   return 0;
 })
+static int wasmCbLocation(Ihandle* ih, double lat, double lon) { return iupwasmGoDispatchF(ih, "LOCATION_CB", 0, lat, lon); }
 
 /* String-returning dispatch for callbacks that return char* (table VALUE_CB/IMAGE_CB).
    The result lives in a single recycled heap slot, valid until the next such call. */
@@ -461,6 +463,10 @@ EMSCRIPTEN_KEEPALIVE void iupwasmGoSetCallback(Ihandle* ih, const char* name)
     IupSetCallback(ih, name, (Icallback)wasmCbActionCb);
   else if (strcmp(name, "NOTIFY_CB") == 0)
     IupSetCallback(ih, name, (Icallback)wasmCbNotify);
+  else if (strcmp(name, "LOCATION_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbLocation);
+  else if (strcmp(name, "PERMISSION_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbPermission);
   else if (strcmp(name, "ERROR_CB") == 0)
     IupSetCallback(ih, name, (Icallback)wasmCbError);
   else if (strcmp(name, "COMPLETED_CB") == 0)

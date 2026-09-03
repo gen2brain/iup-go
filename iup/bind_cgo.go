@@ -65,7 +65,7 @@ package iup
 #cgo winui LDFLAGS: -lwindowsapp -lruntimeobject -ld2d1 -ldwrite -luuid -loleaut32 -lole32 -luser32 -lshell32 -lgdi32 -ladvapi32 -l:libc++.a -l:libc++abi.a
 
 #cgo darwin,!ios CFLAGS: -Iexternal/src/cocoa -x objective-c
-#cgo darwin,!ios LDFLAGS: -framework SystemConfiguration -framework QuartzCore -framework AppKit -framework UserNotifications
+#cgo darwin,!ios LDFLAGS: -framework SystemConfiguration -framework QuartzCore -framework AppKit -framework UserNotifications -framework CoreLocation
 #cgo darwin,!ios,gl LDFLAGS: -framework OpenGL
 #cgo darwin,!ios,!gtk,!gtk4,!qt,web LDFLAGS: -framework WebKit
 
@@ -78,7 +78,7 @@ package iup
 #cgo darwin,!ios,gtk4,web CFLAGS: -DIUPWEB_USE_DLOPEN
 
 #cgo ios CFLAGS: -Iexternal/src/cocoatouch -x objective-c -DIUP_USE_COCOATOUCH
-#cgo ios LDFLAGS: -framework Foundation -framework UIKit -framework CoreGraphics -framework CoreText -framework QuartzCore -framework ImageIO -framework UserNotifications -framework UniformTypeIdentifiers
+#cgo ios LDFLAGS: -framework Foundation -framework UIKit -framework CoreGraphics -framework CoreText -framework QuartzCore -framework ImageIO -framework UserNotifications -framework UniformTypeIdentifiers -framework CoreLocation
 #cgo ios,web LDFLAGS: -framework WebKit
 #cgo ios,gl LDFLAGS: -framework OpenGLES
 
