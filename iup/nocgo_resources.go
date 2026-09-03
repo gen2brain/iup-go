@@ -77,6 +77,8 @@ func ImageGetHandle(name string) Ihandle {
 }
 
 // ImageFromHandle creates an IUP image from a native image handle (e.g. the IupClipboard NATIVEIMAGE).
+//
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_imagefromhandle.md
 func ImageFromHandle(handle uintptr) Ihandle {
 	return mkih(iupImageFromHandle(handle))
 }

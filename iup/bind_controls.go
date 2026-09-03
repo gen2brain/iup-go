@@ -80,6 +80,8 @@ func DatePick() Ihandle {
 }
 
 // Terminal creates a terminal emulator control.
+//
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_terminal.md
 func Terminal() Ihandle {
 	return mkih(C.IupTerminal())
 }
@@ -301,16 +303,9 @@ func Scrollbar(orientation string) Ihandle {
 	return h
 }
 
-// Popover creates a popover container that displays content anchored to a widget.
+// Popover creates a floating container anchored to another element.
 //
-// Attributes:
-//   - ANCHOR: (Ihandle) The widget to anchor the popover to (required)
-//   - POSITION: "BOTTOM" (default), "TOP", "LEFT", "RIGHT" - position relative to anchor
-//   - ARROW: "YES" (default), "NO" - show arrow pointing to anchor (platform dependent)
-//   - AUTOHIDE: "YES" (default), "NO" - auto-hide when focus is lost
-//
-// Callbacks:
-//   - SHOW_CB: called when popover visibility changes (state: SHOW=0, HIDE=4)
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_popover.md
 func Popover(child Ihandle) Ihandle {
 	h := mkih(C.IupPopover(child.ptr()))
 	return h
