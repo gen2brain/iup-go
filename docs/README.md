@@ -235,6 +235,7 @@ API reference for IUP (Portable User Interface).
 |---------------------------------------|--------------------------------------------------------|
 | [IupClipboard](elem/iup_clipboard.md) | System clipboard access                                |
 | [IupNotify](elem/iup_notify.md)       | Desktop / system notification                          |
+| [IupLocation](elem/iup_location.md)   | Geolocation source                                     |
 | [IupTimer](elem/iup_timer.md)         | Periodic timer firing on the main thread               |
 | [IupThread](elem/iup_thread.md)       | Background thread element                              |
 | [IupTray](elem/iup_tray.md)           | System tray / status icon                              |
