@@ -983,7 +983,7 @@ static void goIupSetPlotDSPropertiesChangedFunc(Ihandle *ih) {
 	IupSetCallback(ih, "DSPROPERTIESCHANGED_CB", (Icallback) goIupPlotDSPropertiesChangedCB);
 }
 
-CGO_EXPORT extern int goIupPlotDSPropertiesValidateCB(void *, void *, void *, int);
+CGO_EXPORT extern int goIupPlotDSPropertiesValidateCB(void *, void *, int);
 static void goIupSetPlotDSPropertiesValidateFunc(Ihandle *ih) {
 	IupSetCallback(ih, "DSPROPERTIESVALIDATE_CB", (Icallback) goIupPlotDSPropertiesValidateCB);
 }

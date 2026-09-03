@@ -501,7 +501,7 @@ func dispatch(ih Ihandle, name string, i1, i2, i3, i4 int, sarg string) int {
 	case PlotDSPropertiesChangedFunc:
 		ret = f(ih, i1)
 	case PlotDSPropertiesValidateFunc:
-		ret = f(ih, Ihandle(uint32(i1)), Ihandle(uint32(i2)), i3)
+		ret = f(ih, Ihandle(uint32(i1)), i2)
 	case DragDataSizeFunc:
 		ret = f(ih, sarg)
 	case DragDataFunc:

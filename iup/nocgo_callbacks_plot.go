@@ -120,11 +120,11 @@ func setPlotDSPropertiesChangedFunc(ih Ihandle, f PlotDSPropertiesChangedFunc) {
 	iupSetCallback(uintptr(ih), "DSPROPERTIESCHANGED_CB", plotDSPropertiesChangedFuncCB)
 }
 
-type PlotDSPropertiesValidateFunc func(ih, param1, param2 Ihandle, dsIndex int) int
+type PlotDSPropertiesValidateFunc func(ih, dialog Ihandle, dsIndex int) int
 
-var plotDSPropertiesValidateFuncCB = purego.NewCallback(func(ih uintptr, param1 uintptr, param2 uintptr, dsIndex int32) int {
+var plotDSPropertiesValidateFuncCB = purego.NewCallback(func(ih uintptr, dialog uintptr, dsIndex int32) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_DSPROPERTIESVALIDATE_CB").(PlotDSPropertiesValidateFunc); ok {
-		return f(Ihandle(ih), Ihandle(param1), Ihandle(param2), int(dsIndex))
+		return f(Ihandle(ih), Ihandle(dialog), int(dsIndex))
 	}
 	return 0
 })

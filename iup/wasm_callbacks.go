@@ -91,7 +91,7 @@ type PlotDeleteFunc func(ih Ihandle, dsIndex, sampleIndex int, x, y float64) int
 type PlotDrawFunc func(ih Ihandle) int
 type PlotDrawSampleFunc func(ih Ihandle, dsIndex, sampleIndex int, x, y float64, state int) int
 type PlotDSPropertiesChangedFunc func(ih Ihandle, dsIndex int) int
-type PlotDSPropertiesValidateFunc func(ih, param1, param2 Ihandle, dsIndex int) int
+type PlotDSPropertiesValidateFunc func(ih, dialog Ihandle, dsIndex int) int
 type PlotEditSampleFunc func(ih Ihandle, dsIndex, sampleIndex int, x, y float64) int
 type PlotMenuContextCloseFunc func(ih, menu Ihandle, x, y int) int
 type PlotMenuContextFunc func(ih, menu Ihandle, x, y int) int
