@@ -329,7 +329,7 @@ IUP_SDK_API int iupdrvLocationStart(Ihandle* ih)
   reply = request? unixLocationCall(loc->connection, request, error_name, sizeof(error_name)): NULL;
   if (!reply || !dbus_message_get_args(reply, NULL, DBUS_TYPE_OBJECT_PATH, &client_path, DBUS_TYPE_INVALID))
   {
-    char text[160];
+    char text[192];
     if (reply) dbus_message_unref(reply);
     else snprintf(text, sizeof(text), "GeoClue2 client not available (%s)", error_name);
     unixLocationRelease(loc);
@@ -372,15 +372,16 @@ IUP_SDK_API int iupdrvLocationStart(Ihandle* ih)
     loc->permission = denied? LOCATION_PERMISSION_DENIED: LOCATION_PERMISSION_PROMPT;
     unixLocationRelease(loc);
     if (denied)
-      unixLocationPostPermission(ih, 0);
-    if (!denied)
     {
-      char text[160];
+      unixLocationPostPermission(ih, 0);
+      unixLocationPostError(ih, "Location access denied");
+    }
+    else
+    {
+      char text[192];
       snprintf(text, sizeof(text), "GeoClue2 client failed to start (%s)", error_name);
       unixLocationPostError(ih, text);
     }
-    else
-      unixLocationPostError(ih, "Location access denied");
     return 0;
   }
   dbus_message_unref(reply);
