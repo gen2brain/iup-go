@@ -4,7 +4,6 @@
  * See Copyright Notice in "iup.h"
  */
 
-#include <cstddef>
 #include <cstring>
 
 #include "iup.h"

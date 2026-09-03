@@ -77,13 +77,10 @@ static int cocoaLocationAuthorized(CLAuthorizationStatus status)
     cocoaLocationPostPermission(self.ih, cocoaLocationAuthorized(status));
   }
 
-  if (self.wantUpdates)
-  {
-    if (cocoaLocationAuthorized(status))
-      [manager startUpdatingLocation];
-    else
-      cocoaLocationPostError(self.ih, "Location access denied");
-  }
+  if (cocoaLocationAuthorized(status))
+    [manager startUpdatingLocation];
+  else
+    cocoaLocationPostError(self.ih, "Location access denied");
 }
 
 - (void)locationManager:(CLLocationManager*)manager didUpdateLocations:(NSArray<CLLocation*>*)locations
