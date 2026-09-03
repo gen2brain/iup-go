@@ -1,4 +1,4 @@
-//go:build plot
+//go:build plot && ctrl
 
 package main
 
@@ -12,7 +12,7 @@ import (
 	"github.com/gen2brain/iup-go/iup"
 )
 
-const maxPlot = 10
+const maxPlot = 12
 
 var (
 	plots [maxPlot]iup.Ihandle
@@ -22,7 +22,14 @@ var (
 	tgg3  iup.Ihandle // Vertical Grid
 	tgg4  iup.Ihandle // Horizontal Grid
 	tgg5  iup.Ihandle // Legend
+	info  iup.Ihandle
 )
+
+func report(format string, args ...any) {
+	text := fmt.Sprintf(format, args...)
+	fmt.Println(text)
+	info.SetAttribute("TITLE", text)
+}
 
 func tabsGetIndex() int {
 	currTab := iup.GetHandle(iup.GetAttribute(tabs, "VALUE"))
@@ -412,6 +419,9 @@ func initPlots() {
 	plots[9].SetAttribute("AXS_YFONTSIZE", "10")
 	plots[9].SetAttribute("AXS_YCOLOR", "255 255 255")
 	plots[9].SetAttribute("DS_PIEHOLE", "0.3")
+	plots[9].SetAttribute("DS_PIERADIUS", "0.8")
+	plots[9].SetAttribute("DS_PIESTARTANGLE", "90")
+	plots[9].SetAttribute("DS_PIESLICELABELPOS", "0.7")
 	plots[9].SetAttribute("DS_COLOR", "255 255 255")
 	plots[9].SetAttribute("DS_LINEWIDTH", "3")
 	plots[9].SetAttribute("DS_MODE", "PIE")
@@ -455,6 +465,187 @@ func initPlots() {
 	plots[9].SetAttribute("DS_AREATRANSPARENCY", "64")
 	plots[9].SetAttribute("DS_LINEWIDTH", "3")
 	plots[9].SetAttribute("HIGHLIGHTMODE", "BOTH")
+}
+
+func initTicksPlot(plot iup.Ihandle) {
+	plot.SetAttribute("TITLE", "Ticks, Legend Box and Minor Grid")
+	plot.SetAttribute("TITLEFONTSTYLE", "BOLD")
+	plot.SetAttribute("TITLEPOSAUTO", "NO")
+	plot.SetAttribute("TITLEPOSXY", "420,300")
+	plot.SetAttribute("MARGINTOP", "40")
+	plot.SetAttribute("AXS_XLABEL", "Distance (km)")
+	plot.SetAttribute("AXS_YLABEL", "Cost")
+	plot.SetAttribute("AXS_XTICKAUTO", "NO")
+	plot.SetAttribute("AXS_XTICKMAJORSPAN", "25")
+	plot.SetAttribute("AXS_XTICKMINORDIVISION", "4")
+	plot.SetAttribute("AXS_XTICKSIZEAUTO", "NO")
+	plot.SetAttribute("AXS_XTICKMAJORSIZE", "12")
+	plot.SetAttribute("AXS_XTICKMINORSIZE", "6")
+	plot.SetAttribute("AXS_XTICKROTATENUMBER", "YES")
+	plot.SetAttribute("AXS_XTICKROTATENUMBERANGLE", "45")
+	plot.SetAttribute("AXS_XTICKFONTSIZE", "8")
+	plot.SetAttribute("AXS_XTICKFONTSTYLE", "ITALIC")
+	plot.SetAttribute("AXS_XLABELSPACING", "12")
+	plot.SetAttribute("AXS_XLINEWIDTH", "2")
+	plot.SetAttribute("AXS_XCOLOR", "0 100 0")
+	plot.SetAttribute("AXS_XARROW", "NO")
+	plot.SetAttribute("AXS_XTIPFORMATPRECISION", "1")
+	plot.SetAttribute("AXS_YTICKFORMATAUTO", "NO")
+	plot.SetAttribute("AXS_YTICKFORMATPRECISION", "1")
+	plot.SetAttribute("AXS_YREVERSETICKSLABEL", "YES")
+	plot.SetAttribute("AXS_YARROW", "NO")
+	plot.SetAttribute("AXS_YTIPFORMAT", "%.3f")
+	plot.SetAttribute("TIPFORMAT", "%s: %s km costs %s")
+	plot.SetAttribute("BOX", "YES")
+	plot.SetAttribute("BOXCOLOR", "0 0 128")
+	plot.SetAttribute("BOXLINESTYLE", "DASHED")
+	plot.SetAttribute("BOXLINEWIDTH", "2")
+	plot.SetAttribute("GRID", "YES")
+	plot.SetAttribute("GRIDLINEWIDTH", "2")
+	plot.SetAttribute("GRIDMINOR", "YES")
+	plot.SetAttribute("GRIDMINORCOLOR", "220 220 220")
+	plot.SetAttribute("GRIDMINORLINESTYLE", "DOTTED")
+	plot.SetAttribute("GRIDMINORLINEWIDTH", "1")
+	plot.SetAttribute("LEGENDSHOW", "YES")
+	plot.SetAttribute("LEGENDBOX", "YES")
+	plot.SetAttribute("LEGENDBOXCOLOR", "128 0 0")
+	plot.SetAttribute("LEGENDBOXBACKCOLOR", "255 255 220")
+	plot.SetAttribute("LEGENDBOXLINESTYLE", "DASH_DOT")
+	plot.SetAttribute("LEGENDBOXLINEWIDTH", "2")
+	plot.SetAttribute("LEGENDFONTSIZE", "8")
+	plot.SetAttribute("LEGENDFONTSTYLE", "BOLD")
+	plot.SetAttribute("LEGENDPOSXY", "60,180")
+	plot.SetAttribute("SHOWCROSSHAIR", "VERTICAL")
+	plot.SetAttribute("SCREENTOLERANCE", "10")
+
+	iup.SetCallback(plot, "XTICKFORMATNUMBER_CB", iup.PlotTickFormatNumberFunc(func(ih iup.Ihandle, format string, value float64, decimal string) (string, int) {
+		return fmt.Sprintf("%.0f km", value), iup.DEFAULT
+	}))
+	iup.SetCallback(plot, "YTICKFORMATNUMBER_CB", iup.PlotTickFormatNumberFunc(func(ih iup.Ihandle, format string, value float64, decimal string) (string, int) {
+		return fmt.Sprintf("$%.1f", value), iup.DEFAULT
+	}))
+
+	iup.PlotBegin(plot, 0)
+	for i := 0; i <= 100; i += 5 {
+		iup.PlotAdd(plot, float64(i), 1.5+0.02*float64(i)+0.3*math.Sin(float64(i)/10))
+	}
+	iup.PlotEnd(plot)
+	plot.SetAttribute("DS_NAME", "Taxi")
+	plot.SetAttribute("DS_MODE", "MARKLINE")
+	plot.SetAttribute("DS_MARKSTYLE", "DIAMOND")
+	plot.SetAttribute("DS_MARKSIZE", "10")
+
+	iup.PlotBegin(plot, 1)
+	for i, label := range []string{"bus", "train", "bike", "walk"} {
+		iup.PlotAddStr(plot, label, 0.5+float64(i)*0.7)
+	}
+	iup.PlotEnd(plot)
+	plot.SetAttribute("DS_NAME", "Fares")
+	plot.SetAttribute("DS_MODE", "BAR")
+	plot.SetAttribute("DS_BARMULTICOLOR", "YES")
+}
+
+func initInteractionPlot(plot iup.Ihandle) {
+	plot.SetAttribute("TITLE", "Interaction")
+	plot.SetAttribute("READONLY", "NO")
+	plot.SetAttribute("EDITABLEVALUES", "YES")
+	plot.SetAttribute("MENUITEMVALUES", "YES")
+	plot.SetAttribute("SCREENTOLERANCE", "10")
+	plot.SetAttribute("HIGHLIGHTMODE", "SAMPLE")
+	plot.SetAttribute("LEGENDSHOW", "YES")
+
+	iup.PlotBegin(plot, 0)
+	for i := 0; i <= 20; i++ {
+		iup.PlotAdd(plot, float64(i), math.Sin(float64(i)/3))
+	}
+	iup.PlotEnd(plot)
+	plot.SetAttribute("DS_NAME", "Wave")
+	plot.SetAttribute("DS_MODE", "MARKLINE")
+
+	iup.PlotBegin(plot, 0)
+	for i := 0; i <= 20; i++ {
+		iup.PlotAdd(plot, float64(i), math.Cos(float64(i)/3))
+	}
+	iup.PlotEnd(plot)
+	plot.SetAttribute("DS_NAME", "Shifted")
+	plot.SetAttribute("DS_MODE", "MARK")
+	plot.SetAttribute("DS_MARKSTYLE", "HOLLOW_BOX")
+
+	iup.SetCallback(plot, "PLOTBUTTON_CB", iup.PlotButtonFunc(func(ih iup.Ihandle, button, pressed int, x, y float64, status string) int {
+		report("PLOTBUTTON_CB button=%d pressed=%d x=%.2f y=%.2f", button, pressed, x, y)
+		return iup.DEFAULT
+	}))
+	iup.SetCallback(plot, "PLOTMOTION_CB", iup.PlotMotionFunc(func(ih iup.Ihandle, x, y float64, status string) int {
+		info.SetAttribute("TITLE", fmt.Sprintf("PLOTMOTION_CB x=%.2f y=%.2f", x, y))
+		return iup.DEFAULT
+	}))
+	iup.SetCallback(plot, "SELECTBEGIN_CB", iup.PlotSelectBeginFunc(func(ih iup.Ihandle) int {
+		report("SELECTBEGIN_CB")
+		return iup.DEFAULT
+	}))
+	iup.SetCallback(plot, "SELECT_CB", iup.PlotSelectFunc(func(ih iup.Ihandle, ds, sample int, x, y float64, selected int) int {
+		report("SELECT_CB ds=%d sample=%d selected=%d", ds, sample, selected)
+		return iup.DEFAULT
+	}))
+	iup.SetCallback(plot, "SELECTEND_CB", iup.PlotSelectEndFunc(func(ih iup.Ihandle) int {
+		report("SELECTEND_CB")
+		return iup.DEFAULT
+	}))
+	iup.SetCallback(plot, "DELETEBEGIN_CB", iup.PlotDeleteBeginFunc(func(ih iup.Ihandle) int {
+		report("DELETEBEGIN_CB")
+		return iup.DEFAULT
+	}))
+	iup.SetCallback(plot, "DELETE_CB", iup.PlotDeleteFunc(func(ih iup.Ihandle, ds, sample int, x, y float64) int {
+		report("DELETE_CB ds=%d sample=%d", ds, sample)
+		return iup.DEFAULT
+	}))
+	iup.SetCallback(plot, "DELETEEND_CB", iup.PlotDeleteEndFunc(func(ih iup.Ihandle) int {
+		report("DELETEEND_CB DS_COUNT=%s", ih.GetAttribute("DS_COUNT"))
+		return iup.DEFAULT
+	}))
+	iup.SetCallback(plot, "DRAWSAMPLE_CB", iup.PlotDrawSampleFunc(func(ih iup.Ihandle, ds, sample int, x, y float64, selected int) int {
+		if selected == 1 {
+			ih.SetAttribute("DRAWCOLOR", "255 0 0")
+			cx, cy := iup.PlotTransform(ih, x, y)
+			iup.DrawRectangle(ih, int(cx)-6, int(cy)-6, int(cx)+6, int(cy)+6)
+		}
+		return iup.DEFAULT
+	}))
+	iup.SetCallback(plot, "EDITSAMPLE_CB", iup.PlotEditSampleFunc(func(ih iup.Ihandle, ds, sample int, x, y float64) int {
+		report("EDITSAMPLE_CB ds=%d sample=%d x=%.2f y=%.2f", ds, sample, x, y)
+		return iup.DEFAULT
+	}))
+	iup.SetCallback(plot, "PROPERTIESVALIDATE_CB", iup.PlotPropertiesValidateFunc(func(ih iup.Ihandle, name, value string) int {
+		report("PROPERTIESVALIDATE_CB %s=%s", name, value)
+		return iup.DEFAULT
+	}))
+	iup.SetCallback(plot, "PROPERTIESCHANGED_CB", iup.PlotPropertiesChangedFunc(func(ih iup.Ihandle) int {
+		report("PROPERTIESCHANGED_CB")
+		return iup.DEFAULT
+	}))
+	iup.SetCallback(plot, "DSPROPERTIESVALIDATE_CB", iup.PlotDSPropertiesValidateFunc(func(ih, dialog iup.Ihandle, ds int) int {
+		report("DSPROPERTIESVALIDATE_CB ds=%d name=%s", ds, iup.Ihandle(iup.GetPtr(dialog, "PARAM0")).GetAttribute("VALUE"))
+		return iup.DEFAULT
+	}))
+	iup.SetCallback(plot, "DSPROPERTIESCHANGED_CB", iup.PlotDSPropertiesChangedFunc(func(ih iup.Ihandle, ds int) int {
+		report("DSPROPERTIESCHANGED_CB ds=%d", ds)
+		return iup.DEFAULT
+	}))
+	iup.SetCallback(plot, "MENUCONTEXT_CB", iup.PlotMenuContextFunc(func(ih, menu iup.Ihandle, x, y int) int {
+		iup.Append(menu, iup.MenuSeparator())
+		iup.Append(menu, iup.MenuItem("Remove last sample").SetCallback("ACTION", iup.ActionFunc(func(item iup.Ihandle) int {
+			ih.SetAttribute("CURRENT", "0")
+			ih.SetAttribute("DS_REMOVE", fmt.Sprint(ih.GetInt("DS_COUNT")-1))
+			ih.SetAttribute("REDRAW", "")
+			report("DS_REMOVE -> DS_COUNT=%s", ih.GetAttribute("DS_COUNT"))
+			return iup.DEFAULT
+		})))
+		return iup.DEFAULT
+	}))
+	iup.SetCallback(plot, "MENUCONTEXTCLOSE_CB", iup.PlotMenuContextCloseFunc(func(ih, menu iup.Ihandle, x, y int) int {
+		report("MENUCONTEXTCLOSE_CB")
+		return iup.DEFAULT
+	}))
 }
 
 func tabsTabChangeCB(self iup.Ihandle, newTab, oldTab iup.Ihandle) int {
@@ -506,6 +697,7 @@ func main() {
 	iup.Open()
 	defer iup.Close()
 
+	iup.ControlsOpen()
 	iup.PlotOpen()
 
 	for i := 0; i < maxPlot; i++ {
@@ -617,7 +809,47 @@ func main() {
 	optionsFrame := iup.Frame(iup.Vbox(tgg5, bt1))
 	optionsFrame.SetAttribute("TITLE", "Options")
 
-	vboxl := iup.Vbox(scaleFrame, gridFrame, optionsFrame)
+	remove := iup.Button("Remove dataset 0")
+	iup.SetCallback(remove, "ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
+		ii := tabsGetIndex()
+		plots[ii].SetAttribute("REMOVE", "0")
+		plots[ii].SetAttribute("REDRAW", "")
+		report("REMOVE 0 -> COUNT=%s", plots[ii].GetAttribute("COUNT"))
+		return iup.DEFAULT
+	}))
+	insert := iup.Button("Insert subplot")
+	iup.SetCallback(insert, "ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
+		ii := tabsGetIndex()
+		plots[ii].SetAttribute("PLOT_INSERT", "")
+		plots[ii].SetAttribute("TITLE", "Inserted")
+		plots[ii].SetAttribute("REDRAW", "")
+		report("PLOT_INSERT -> PLOT_COUNT=%s PLOT_CURRENT=%s", plots[ii].GetAttribute("PLOT_COUNT"), plots[ii].GetAttribute("PLOT_CURRENT"))
+		return iup.DEFAULT
+	}))
+	removePlot := iup.Button("Remove subplot")
+	iup.SetCallback(removePlot, "ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
+		ii := tabsGetIndex()
+		plots[ii].SetAttribute("PLOT_REMOVE", "CURRENT")
+		plots[ii].SetAttribute("REDRAW", "")
+		report("PLOT_REMOVE -> PLOT_COUNT=%s", plots[ii].GetAttribute("PLOT_COUNT"))
+		return iup.DEFAULT
+	}))
+	dsInfo := iup.Button("Dataset info")
+	iup.SetCallback(dsInfo, "ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
+		p := plots[tabsGetIndex()]
+		p.SetAttribute("CURRENT", "0")
+		report("DS_NAME=%s DS_COUNT=%s DS_STRXDATA=%s DS_EXTRA=%s MARGINLEFTAUTO=%s MARGINTOPAUTO=%s",
+			p.GetAttribute("DS_NAME"), p.GetAttribute("DS_COUNT"), p.GetAttribute("DS_STRXDATA"), p.GetAttribute("DS_EXTRA"),
+			p.GetAttribute("MARGINLEFTAUTO"), p.GetAttribute("MARGINTOPAUTO"))
+		return iup.DEFAULT
+	}))
+	editFrame := iup.Frame(iup.Vbox(remove, insert, removePlot, dsInfo))
+	editFrame.SetAttribute("TITLE", "Edit")
+
+	info = iup.Label("")
+	info.SetAttribute("EXPAND", "HORIZONTAL")
+
+	vboxl := iup.Vbox(scaleFrame, gridFrame, optionsFrame, editFrame)
 	vboxl.SetAttribute("GAP", "4")
 	vboxl.SetAttribute("EXPAND", "NO")
 
@@ -635,14 +867,15 @@ func main() {
 	hbox.SetAttribute("MARGIN", "0x0")
 	hbox.SetAttribute("GAP", "10")
 
-	dlg := iup.Dialog(hbox)
+	dlg := iup.Dialog(iup.Vbox(hbox, info).SetAttributes("NMARGIN=5x5, NGAP=5"))
 	dlg.SetAttribute("TITLE", "IupPlot Example")
 
 	initPlots()
+	initTicksPlot(plots[10])
+	initInteractionPlot(plots[11])
 
 	tabsTabChangeCB(tabs, vboxr[0], 0)
 
-	dlg.SetAttribute("RASTERSIZE", "x400")
 	iup.ShowXY(dlg, iup.CENTER, iup.CENTER)
 
 	iup.MainLoop()
