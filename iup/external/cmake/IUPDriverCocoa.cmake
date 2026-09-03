@@ -18,10 +18,11 @@ set(IUP_DRIVER_LINK_LIBRARIES
   "-framework QuartzCore"
   "-framework SystemConfiguration"
   "-framework UserNotifications"
+  "-framework CoreLocation"
 )
 
 set(IUP_DRIVER_COMPILE_OPTIONS "")
 set(IUP_DRIVER_LINK_OPTIONS "")
 
 set(IUP_PC_REQUIRES "")
-set(IUP_PC_LIBS_PRIVATE "-framework AppKit -framework QuartzCore -framework SystemConfiguration -framework UserNotifications")
+set(IUP_PC_LIBS_PRIVATE "-framework AppKit -framework QuartzCore -framework SystemConfiguration -framework UserNotifications -framework CoreLocation")
