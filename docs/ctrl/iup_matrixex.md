@@ -183,10 +183,7 @@ When changed will simply set those attributes to zero or NULL (when setting to N
 
 **MENUCONTEXT**: enable the context menu. Can be YES or NO. Default: YES.
 
-**SHOWCONTEXTMENU***L:C* (write-only): shows the context menu using the L:C cell as reference and its value as screen position in the format "x:y".
-
-**SHOWMENUCONTEXT** (write-only): show the context menu in the given cel.
-Value has the "*L*:*C*" format.
+**SHOWMENUCONTEXT***L:C* (write-only): shows the context menu for the L:C cell at the screen position given by the value, in the format "x,y".
 
 **SHOWDIALOG** (write-only): show the dialog used in the context menus.
 Can be: SETTINGS, EXPORT_TXT, EXPORT_LATEX, EXPORT_HTML, IMPORT_TXT, UNDOLIST, FIND, GOTO, SORT and COPYCOLTO_INTERVAL.
