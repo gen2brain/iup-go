@@ -13,6 +13,7 @@ extern "C" {
 
 int  iupMatrixKeyPress_CB(Ihandle* ih, int c, int press);
 int  iupMatrixProcessKeyPress(Ihandle* ih, int c);
+IFniiiis iupMatrixGetActionCb(Ihandle* ih);
 
 void iupMatrixKeyResetHomeEndCount(Ihandle* ih);
 

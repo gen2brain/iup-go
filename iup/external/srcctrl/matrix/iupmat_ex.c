@@ -277,10 +277,13 @@ static int iMatrixSetSortColumnAttrib(Ihandle* ih, int col, const char* value)
   sort_cb = (IFniii)IupGetCallback(ih, "SORTCOLUMNCOMPARE_CB");
   if (sort_cb)
   {
+    int sort_has_index = ih->data->sort_has_index;
     iMatrixQSort_sort_cb = sort_cb;
     iMatrixQSort_ih = ih;
     iMatrixQSort_col = col;
+    ih->data->sort_has_index = 0;
     qsort(sort_line_index+lin1,lin2-lin1+1,sizeof(int),iMatrixCompareCallbackFunc);
+    ih->data->sort_has_index = sort_has_index;
   }
   else
   {
