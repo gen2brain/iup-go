@@ -502,7 +502,7 @@ bool iupPlotDataSet::SelectSamples(double inMinX, double inMaxX, double inMinY, 
       {
         if (inNotify->cb)
         {
-          int ret = inNotify->cb(inNotify->ih, inNotify->ds, i, theX, theY, (int)theSelected);
+          int ret = inNotify->cb(inNotify->ih, inNotify->ds, i, theX, theY, (int)!theSelected);
           if (ret == IUP_IGNORE)
             continue;
         }
@@ -517,7 +517,7 @@ bool iupPlotDataSet::SelectSamples(double inMinX, double inMaxX, double inMinY, 
       {
         if (inNotify->cb)
         {
-          int ret = inNotify->cb(inNotify->ih, inNotify->ds, i, theX, theY, (int)theSelected);
+          int ret = inNotify->cb(inNotify->ih, inNotify->ds, i, theX, theY, (int)!theSelected);
           if (ret == IUP_IGNORE)
             continue;
         }
@@ -550,7 +550,7 @@ bool iupPlotDataSet::ClearSelection(const iupPlotSampleNotify* inNotify)
       {
         double theX = mDataX->GetSample(i);
         double theY = mDataY->GetSample(i);
-        int ret = inNotify->cb(inNotify->ih, inNotify->ds, i, theX, theY, (int)theSelected);
+        int ret = inNotify->cb(inNotify->ih, inNotify->ds, i, theX, theY, (int)!theSelected);
         if (ret == IUP_IGNORE)
           continue;
       }
@@ -582,7 +582,7 @@ bool iupPlotDataSet::DeleteSelectedSamples(const iupPlotSampleNotify* inNotify)
       {
         double theX = mDataX->GetSample(i);
         double theY = mDataY->GetSample(i);
-        int ret = inNotify->cb(inNotify->ih, inNotify->ds, i, theX, theY, (int)theSelected);
+        int ret = inNotify->cb(inNotify->ih, inNotify->ds, i, theX, theY, (int)!theSelected);
         if (ret == IUP_IGNORE)
           continue;
       }

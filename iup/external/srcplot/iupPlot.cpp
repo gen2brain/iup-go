@@ -301,7 +301,7 @@ void iupPlot::SelectDataSetSamples(double inMinX, double inMaxX, double inMinY, 
   {
     Icallback cb = IupGetCallback(ih, "SELECTEND_CB");
     if (cb)
-      return;
+      cb(ih);
   }
 
   if (theChanged)
@@ -332,7 +332,7 @@ void iupPlot::ClearDataSetSelection()
   {
     Icallback cb = IupGetCallback(ih, "SELECTEND_CB");
     if (cb)
-      return;
+      cb(ih);
   }
 
   if (theChanged)
@@ -363,7 +363,7 @@ void iupPlot::DeleteSelectedDataSetSamples()
   {
     Icallback cb = IupGetCallback(ih, "DELETEEND_CB");
     if (cb)
-      return;
+      cb(ih);
   }
 
   if (theChanged)
