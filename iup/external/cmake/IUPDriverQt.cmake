@@ -26,6 +26,7 @@ elseif(HAIKU)
     "${CMAKE_CURRENT_SOURCE_DIR}/src/haiku/iuphaiku_notify.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/haiku/iuphaiku_tray.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/haiku/iuphaiku_singleinstance.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/haiku/iuphaiku_location.cpp"
   )
   list(APPEND IUP_DRIVER_LINK_LIBRARIES be tracker)
 elseif(APPLE)
@@ -33,11 +34,13 @@ elseif(APPLE)
     "${CMAKE_CURRENT_SOURCE_DIR}/src/cocoa/iupcocoa_tray.m"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/cocoa/iupcocoa_notify.m"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/cocoa/iupcocoa_singleinstance.m"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/cocoa/iupcocoa_location.m"
   )
   set_source_files_properties(
     "${CMAKE_CURRENT_SOURCE_DIR}/src/cocoa/iupcocoa_tray.m"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/cocoa/iupcocoa_notify.m"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/cocoa/iupcocoa_singleinstance.m"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/cocoa/iupcocoa_location.m"
     PROPERTIES LANGUAGE OBJC
   )
   list(APPEND IUP_DRIVER_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/src/cocoa")
@@ -46,6 +49,7 @@ elseif(WIN32)
     "${CMAKE_CURRENT_SOURCE_DIR}/src/win/iupwin_tray.c"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/win/iupwin_notify.c"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/win/iupwin_singleinstance.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/win/iupwin_location.c"
   )
   list(APPEND IUP_DRIVER_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/src/win")
 endif()
@@ -68,5 +72,6 @@ elseif(APPLE)
     "-framework AppKit"
     "-framework SystemConfiguration"
     "-framework UserNotifications"
+    "-framework CoreLocation"
   )
 endif()
