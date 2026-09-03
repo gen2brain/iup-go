@@ -263,7 +263,7 @@ static int wasmCbPasteSize(Ihandle* ih, int numlin, int numcol) { return iupwasm
 static int wasmCbResizeMatrix(Ihandle* ih, int w, int h) { return iupwasmGoDispatch(ih, "RESIZEMATRIX_CB", w, h, 0, 0, 0); }
 static int wasmCbScrolling(Ihandle* ih, int lin, int col) { return iupwasmGoDispatch(ih, "SCROLLING_CB", lin, col, 0, 0, 0); }
 static int wasmCbScrollTop(Ihandle* ih, int lin, int col) { return iupwasmGoDispatch(ih, "SCROLLTOP_CB", lin, col, 0, 0, 0); }
-static int wasmCbSortColumnCompare(Ihandle* ih, int lin1, int lin2, int col) { return iupwasmGoDispatch(ih, "SORTCOLUMNCOMPARE_CB", lin1, lin2, col, 0, 0); }
+static int wasmCbSortColumnCompare(Ihandle* ih, int col, int lin1, int lin2) { return iupwasmGoDispatch(ih, "SORTCOLUMNCOMPARE_CB", col, lin1, lin2, 0, 0); }
 static int wasmCbTips(Ihandle* ih, int x, int y) { return iupwasmGoDispatch(ih, "TIPS_CB", x, y, 0, 0, 0); }
 static int wasmCbValueEdit(Ihandle* ih, int lin, int col, char* newval) { return iupwasmGoDispatch(ih, "VALUE_EDIT_CB", lin, col, 0, 0, newval); }
 static char* wasmCbMatrixFont(Ihandle* ih, int lin, int col) { return iupwasmGoDispatchStr(ih, "FONT_CB", lin, col); }

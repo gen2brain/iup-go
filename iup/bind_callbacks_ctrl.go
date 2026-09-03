@@ -292,10 +292,10 @@ func setNumericSetValueFunc(ih Ihandle, f NumericSetValueFunc) {
 
 // SortColumnCompareFunc for SORTCOLUMNCOMPARE_CB callback in Matrix.
 // Called to compare two rows during column sort.
-type SortColumnCompareFunc func(ih Ihandle, lin1, lin2, col int) int
+type SortColumnCompareFunc func(ih Ihandle, col, lin1, lin2 int) int
 
 //export goIupSortColumnCompareCB
-func goIupSortColumnCompareCB(ih unsafe.Pointer, lin1, lin2, col C.int) C.int {
+func goIupSortColumnCompareCB(ih unsafe.Pointer, col, lin1, lin2 C.int) C.int {
 	ch := loadCallback((Ihandle)(ih), "_IUPGO_SORTCOLUMNCOMPARE_CB")
 	if ch == 0 {
 		return C.IUP_DEFAULT
@@ -303,7 +303,7 @@ func goIupSortColumnCompareCB(ih unsafe.Pointer, lin1, lin2, col C.int) C.int {
 
 	f := ch.Value().(SortColumnCompareFunc)
 
-	return C.int(f((Ihandle)(ih), int(lin1), int(lin2), int(col)))
+	return C.int(f((Ihandle)(ih), int(col), int(lin1), int(lin2)))
 }
 
 // setSortColumnCompareFunc for SORTCOLUMNCOMPARE_CB.
@@ -548,6 +548,20 @@ func goIupClickCB(ih unsafe.Pointer, lin, col C.int, status unsafe.Pointer) C.in
 func setClickFunc(ih Ihandle, f ClickFunc) {
 	storeCallback(ih, "_IUPGO_CLICK_CB", f)
 	C.goIupSetClickFunc(ih.ptr())
+}
+
+//export goIupListClickCB
+func goIupListClickCB(ih unsafe.Pointer, lin, col C.int, status unsafe.Pointer) C.int {
+	f := loadCallback((Ihandle)(ih), "_IUPGO_LISTCLICK_CB").Value().(ClickFunc)
+
+	goStatus := C.GoString((*C.char)(status))
+	return C.int(f((Ihandle)(ih), int(lin), int(col), goStatus))
+}
+
+// setListClickFunc for LISTCLICK_CB in MatrixList.
+func setListClickFunc(ih Ihandle, f ClickFunc) {
+	storeCallback(ih, "_IUPGO_LISTCLICK_CB", f)
+	C.goIupSetListClickFunc(ih.ptr())
 }
 
 //--------------------
@@ -1173,12 +1187,25 @@ func goIupMatrixListActionCB(ih unsafe.Pointer, item, state C.int) C.int {
 	return C.int(f((Ihandle)(ih), int(item), int(state)))
 }
 
+//export goIupImageValueChangedCB
+func goIupImageValueChangedCB(ih unsafe.Pointer, item, state C.int) C.int {
+	ch := loadCallback((Ihandle)(ih), "_IUPGO_IMAGEVALUECHANGED_CB")
+	if ch == 0 {
+		return C.int(DEFAULT)
+	}
+	f := ch.Value().(MatrixListActionFunc)
+	return C.int(f((Ihandle)(ih), int(item), int(state)))
+}
+
 // setMatrixListActionFunc for ACTION_CB and IMAGEVALUECHANGED_CB.
 func setMatrixListActionFunc(ih Ihandle, name string, f MatrixListActionFunc) {
+	if name == "IMAGEVALUECHANGED_CB" {
+		storeCallback(ih, "_IUPGO_IMAGEVALUECHANGED_CB", f)
+		C.goIupSetImageValueChangedFunc(ih.ptr())
+		return
+	}
 	storeCallback(ih, "_IUPGO_MATRIXLIST_ACTION_CB", f)
-	cName := C.CString(name)
-	defer C.free(unsafe.Pointer(cName))
-	C.goIupSetMatrixListActionFunc(ih.ptr(), cName)
+	C.goIupSetMatrixListActionFunc(ih.ptr())
 }
 
 //--------------------

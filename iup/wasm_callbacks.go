@@ -109,7 +109,7 @@ type RestoredFunc func(Ihandle, Ihandle, int, int) int
 type ScrollingFunc func(ih Ihandle, i, j int) int
 type ScrollTopFunc func(ih Ihandle, lin, col int) int
 type SelectFunc func(ih Ihandle, cell, _type int) int
-type SortColumnCompareFunc func(ih Ihandle, lin1, lin2, col int) int
+type SortColumnCompareFunc func(ih Ihandle, col, lin1, lin2 int) int
 type SpinFunc func(ih Ihandle, inc int) int
 type SwapBuffersFunc func(Ihandle) int
 type SwitchFunc func(ih Ihandle, primCell, secCell int) int
