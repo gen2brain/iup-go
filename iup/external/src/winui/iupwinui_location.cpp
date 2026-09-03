@@ -108,8 +108,11 @@ extern "C" IUP_SDK_API int iupdrvLocationStart(Ihandle* ih)
       winuiLocationPostFix(ih, args.Position());
     });
 
-    Geolocator::RequestAccessAsync().Completed([ih, loc](IAsyncOperation<GeolocationAccessStatus> const& op, AsyncStatus status) {
+    Geolocator::RequestAccessAsync().Completed([ih](IAsyncOperation<GeolocationAccessStatus> const& op, AsyncStatus status) {
       GeolocationAccessStatus access = status == AsyncStatus::Completed? op.GetResults(): GeolocationAccessStatus::Unspecified;
+      IupWinUILocation* loc = iupObjectCheck(ih)? winuiLocationGet(ih, 0): NULL;
+      if (!loc)
+        return;
       if (access != GeolocationAccessStatus::Allowed)
       {
         loc->permission = 2;
