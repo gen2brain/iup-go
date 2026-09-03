@@ -391,16 +391,16 @@ func setPlotDSPropertiesChangedFunc(ih Ihandle, f PlotDSPropertiesChangedFunc) {
 //--------------------
 
 // PlotDSPropertiesValidateFunc for DSPROPERTIESVALIDATE_CB callback in IupPlot.
-type PlotDSPropertiesValidateFunc func(ih, param1, param2 Ihandle, dsIndex int) int
+type PlotDSPropertiesValidateFunc func(ih, dialog Ihandle, dsIndex int) int
 
 //export goIupPlotDSPropertiesValidateCB
-func goIupPlotDSPropertiesValidateCB(ih, param1, param2 unsafe.Pointer, dsIndex C.int) C.int {
+func goIupPlotDSPropertiesValidateCB(ih, dialog unsafe.Pointer, dsIndex C.int) C.int {
 	ch := loadCallback((Ihandle)(ih), "_IUPGO_DSPROPERTIESVALIDATE_CB")
 	if ch == 0 {
 		return C.int(DEFAULT)
 	}
 	f := ch.Value().(PlotDSPropertiesValidateFunc)
-	return C.int(f((Ihandle)(ih), (Ihandle)(param1), (Ihandle)(param2), int(dsIndex)))
+	return C.int(f((Ihandle)(ih), (Ihandle)(dialog), int(dsIndex)))
 }
 
 func setPlotDSPropertiesValidateFunc(ih Ihandle, f PlotDSPropertiesValidateFunc) {

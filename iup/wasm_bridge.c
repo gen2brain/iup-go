@@ -330,7 +330,7 @@ static int wasmCbPlotEditSample(Ihandle* ih, int ds, int sample, double x, doubl
 
 static char* wasmCbTranslateValue(Ihandle* ih, int lin, int col, char* value) { return iupwasmGoDispatchStrS(ih, "TRANSLATEVALUE_CB", lin, col, value); }
 static int wasmCbNumericSetValue(Ihandle* ih, int lin, int col, double value) { return iupwasmGoDispatchD(ih, "NUMERICSETVALUE_CB", lin, col, 0, 0, value, 0, 0, 0, 0); }
-static int wasmCbPlotDSPropsValidate(Ihandle* ih, Ihandle* p1, Ihandle* p2, int ds) { return iupwasmGoDispatch(ih, "DSPROPERTIESVALIDATE_CB", (int)(intptr_t)p1, (int)(intptr_t)p2, ds, 0, 0); }
+static int wasmCbPlotDSPropsValidate(Ihandle* ih, Ihandle* dialog, int ds) { return iupwasmGoDispatch(ih, "DSPROPERTIESVALIDATE_CB", (int)(intptr_t)dialog, ds, 0, 0, 0); }
 
 /* Go returns the color as "r g b", empty when the cell has none */
 static int wasmCbMatrixColor(Ihandle* ih, const char* name, int lin, int col, int* r, int* g, int* b)
