@@ -25,6 +25,13 @@
 #include "iupmat_draw.h"
 
 
+IFniiiis iupMatrixGetActionCb(Ihandle* ih)
+{
+  if (!iupStrEqual(iupClassCallbackGetFormat(ih->iclass, "ACTION_CB"), "iiiis"))
+    return NULL;
+  return (IFniiiis)IupGetCallback(ih, "ACTION_CB");
+}
+
 int iupMatrixIsCharacter(int c)
 {
   c = iup_XkeyBase(c);
@@ -249,7 +256,7 @@ int iupMatrixKeyPress_CB(Ihandle* ih, int c, int press)
   if (!press)
     return IUP_DEFAULT;
 
-  cb = (IFniiiis)IupGetCallback(ih, "ACTION_CB");
+  cb = iupMatrixGetActionCb(ih);
   if (cb)
   {
     /* if a valid character is pressed will clear the existing cell value and enter edition mode */

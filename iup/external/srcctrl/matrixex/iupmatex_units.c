@@ -475,7 +475,7 @@ static int iMatrixExSetNumericAddQuantityAttrib(Ihandle* ih, const char* value)
     /* add new quantity if it has space */
     if (imatex_quantity_count < IMATEX_QUANTITY_COUNT+IMATEX_QUANTITY_CUSTOM)
     {
-      imatex_quantities[imatex_quantity_count].q_name = value;
+      imatex_quantities[imatex_quantity_count].q_name = iupStrDup(value);
       imatex_quantities[imatex_quantity_count].units_count = 0;
       imatex_quantities[imatex_quantity_count].units = IMATEX_CUSTOM_UNITS[imatex_quantity_count - IMATEX_QUANTITY_COUNT];
 
@@ -509,7 +509,7 @@ static int iMatrixExSetNumericAddUnitAttrib(Ihandle* ih, const char* value)
       ImatExUnit* units = (ImatExUnit*)(imatex_quantities[quantity].units);
       int unit = imatex_quantities[quantity].units_count;
 
-      units[unit].u_name = value;
+      units[unit].u_name = iupStrDup(value);
       units[unit].symbol = NULL;
       units[unit].factor = 0;
       units[unit].symbol_utf8 = NULL;
@@ -533,7 +533,7 @@ static int iMatrixExSetNumericAddUnitSymbolAttrib(Ihandle* ih, const char* value
     int quantity = imatex_last_addquantity;
     int unit = imatex_last_addunit;
     ImatExUnit* units = (ImatExUnit*)(imatex_quantities[quantity].units);
-    units[unit].symbol = value;
+    units[unit].symbol = iupStrDup(value);
   }
 
   (void)ih;

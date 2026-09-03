@@ -118,6 +118,13 @@ void iupMatrixSetValue(Ihandle* ih, int lin, int col, const char* value, int use
     ih->data->need_calcsize = 1;
 }
 
+static int iMatrixSortedLin(Ihandle* ih, int lin)
+{
+  if (lin != 0 && ih->data->sort_has_index)
+    return ih->data->sort_line_index[lin];
+  return lin;
+}
+
 static char* iMatrixGetValueText(Ihandle* ih, int lin, int col)
 {
   char* value;
@@ -157,7 +164,7 @@ double iupMatrixGetValueNumeric(Ihandle* ih, int lin, int col)
   {
     dIFnii getvalue_cb = (dIFnii)IupGetCallback(ih, "NUMERICGETVALUE_CB");
     if (getvalue_cb)
-      number = getvalue_cb(ih, lin, col);
+      number = getvalue_cb(ih, iMatrixSortedLin(ih, lin), col);
     else
       return 0;
   }
@@ -187,7 +194,7 @@ char* iupMatrixGetValue(Ihandle* ih, int lin, int col)
     if (getvalue_cb)
     {
       /* no formatting and no conversion here */
-      double number = getvalue_cb(ih, lin, col);
+      double number = getvalue_cb(ih, iMatrixSortedLin(ih, lin), col);
       snprintf(ih->data->numeric_buffer_get, sizeof(ih->data->numeric_buffer_get), IUP_DOUBLE2STR, number);
       return ih->data->numeric_buffer_get;
     }
@@ -250,7 +257,7 @@ static char* iMatrixGetValueNumericFormatted(Ihandle* ih, int lin, int col, cons
   {
     dIFnii getvalue_cb = (dIFnii)IupGetCallback(ih, "NUMERICGETVALUE_CB");
     if (getvalue_cb)
-      number = getvalue_cb(ih, lin, col);
+      number = getvalue_cb(ih, iMatrixSortedLin(ih, lin), col);
     else
       return NULL;
   }

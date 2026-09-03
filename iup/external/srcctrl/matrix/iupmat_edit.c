@@ -479,7 +479,7 @@ int iupMatrixEditShowXY(Ihandle* ih, int x, int y)
 static int iMatrixEditTextAction_CB(Ihandle* ih_text, int c, char* after)
 {
   Ihandle* ih = ih_text->parent;
-  IFniiiis cb = (IFniiiis) IupGetCallback(ih, "ACTION_CB");
+  IFniiiis cb = iupMatrixGetActionCb(ih);
 
   if (iupAttribGetBoolean(ih, "EDITFITVALUE"))
   {
@@ -529,7 +529,7 @@ static int iMatrixEditTextAction_CB(Ihandle* ih_text, int c, char* after)
 static int iMatrixEditTextKeyAny_CB(Ihandle* ih_text, int c)
 {
   Ihandle* ih = ih_text->parent;
-  IFniiiis cb = (IFniiiis) IupGetCallback(ih, "ACTION_CB");
+  IFniiiis cb = iupMatrixGetActionCb(ih);
 
   if (cb && !iupMatrixIsCharacter(c)) /* only for keys that are NOT ASCii characters */
   {
@@ -629,7 +629,7 @@ static int iMatrixEditTextKeyAny_CB(Ihandle* ih_text, int c)
 static int iMatrixEditDropDownKeyAny_CB(Ihandle* ih_list, int c)
 {
   Ihandle* ih = ih_list->parent;
-  IFniiiis cb = (IFniiiis)IupGetCallback(ih, "ACTION_CB");
+  IFniiiis cb = iupMatrixGetActionCb(ih);
   if (cb)
   {
     int oldc = c;
