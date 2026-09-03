@@ -120,7 +120,7 @@ func init() {
 		return dispatch(ih, name, i1, i2, i3, i4, sarg)
 	}))
 	js.Global().Set("iupGoDispatchF", js.FuncOf(func(this js.Value, args []js.Value) interface{} {
-		return dispatchF(Ihandle(args[0].Int()), args[1].String(), args[2].Int(), args[3].Float(), args[4].Float())
+		return dispatchF(Ihandle(args[0].Int()), args[1].String(), args[2].Int(), args[3].Float(), args[4].Float(), args[5].Float())
 	}))
 	js.Global().Set("iupGoDispatch6", js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		return dispatch6(Ihandle(args[0].Int()), args[1].String(),
@@ -291,16 +291,19 @@ func dispatch6s(ih Ihandle, name string, i1, i2, i3, i4, i5, i6 int, sarg string
 	return DEFAULT
 }
 
-func dispatchF(ih Ihandle, name string, op int, posx, posy float64) int {
+func dispatchF(ih Ihandle, name string, op int, d1, d2, d3 float64) int {
 	fn := callbacks[cbKey{ih, name}]
 	if fn == nil {
 		return DEFAULT
 	}
 	if f, ok := fn.(ScrollFunc); ok {
-		return f(ih, op, posx, posy)
+		return f(ih, op, d1, d2)
 	}
 	if f, ok := fn.(LocationFunc); ok {
-		return f(ih, posx, posy)
+		return f(ih, d1, d2)
+	}
+	if f, ok := fn.(SensorFunc); ok {
+		return f(ih, d1, d2, d3)
 	}
 	return DEFAULT
 }

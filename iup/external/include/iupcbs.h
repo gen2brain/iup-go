@@ -52,6 +52,7 @@ typedef int (*IFniiiiiis)(Ihandle*, int, int, int, int, int, int, char*);  /* mo
 typedef int (*IFnIi)(Ihandle*, int*, int); /* multiselection_cb, multiunselection_cb */
 typedef int (*IFnd)(Ihandle*, double);  /* mousemove_cb, button_press_cb, button_release_cb */
 typedef int (*IFndd)(Ihandle*, double, double);  /* location_cb */
+typedef int (*IFnddd)(Ihandle*, double, double, double);  /* sensor_cb */
 typedef int (*IFniiIII)(Ihandle*, int, int, int*, int*, int*); /* fgcolor_cb, bgcolor_cb */
 typedef int (*IFniinsii)(Ihandle*, int, int, Ihandle*, char*, int, int); /* dropselect_cb */
 typedef int (*IFnccc)(Ihandle*, unsigned char, unsigned char, unsigned char); /* drag_cb, change_cb */

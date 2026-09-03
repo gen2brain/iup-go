@@ -280,6 +280,7 @@ var (
 	iupUser                     func() uintptr
 	iupNotify                   func() uintptr
 	iupLocation                 func() uintptr
+	iupSensor                   func() uintptr
 	iupGetAllNames              func(names *uintptr, n int32) int32
 	iupGetAllDialogs            func(names *uintptr, n int32) int32
 	iupGetAllFunctions          func(names *uintptr, max int32) int32
@@ -592,6 +593,7 @@ func ensureBase() {
 		reg(&iupUser, "IupUser")
 		reg(&iupNotify, "IupNotify")
 		reg(&iupLocation, "IupLocation")
+		reg(&iupSensor, "IupSensor")
 		reg(&iupGetAllNames, "IupGetAllNames")
 		reg(&iupGetAllDialogs, "IupGetAllDialogs")
 		reg(&iupGetAllFunctions, "IupGetAllFunctions")

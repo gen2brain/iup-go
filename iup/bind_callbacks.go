@@ -2391,6 +2391,28 @@ func setLocationFunc(ih Ihandle, f LocationFunc) {
 
 //--------------------
 
+// SensorFunc for SENSOR_CB callback.
+// Called on every reading of an IupSensor element.
+type SensorFunc func(ih Ihandle, x, y, z float64) int
+
+//export goIupSensorCB
+func goIupSensorCB(ih unsafe.Pointer, x, y, z C.double) C.int {
+	ch := loadCallback((Ihandle)(ih), "_IUPGO_SENSOR_CB")
+	if ch == 0 {
+		return C.int(DEFAULT)
+	}
+	f := ch.Value().(SensorFunc)
+	return C.int(f((Ihandle)(ih), float64(x), float64(y), float64(z)))
+}
+
+// setSensorFunc for SENSOR_CB.
+func setSensorFunc(ih Ihandle, f SensorFunc) {
+	storeCallback(ih, "_IUPGO_SENSOR_CB", f)
+	C.goIupSetSensorFunc(ih.ptr())
+}
+
+//--------------------
+
 // PermissionFunc for PERMISSION_CB callback.
 // Called when the user answers a permission request; granted is 1 or 0.
 type PermissionFunc func(ih Ihandle, granted int) int

@@ -568,6 +568,11 @@ static void goIupSetLocationFunc(Ihandle *ih) {
 	IupSetCallback(ih, "LOCATION_CB", (Icallback) goIupLocationCB);
 }
 
+CGO_EXPORT extern int goIupSensorCB(void *, double x, double y, double z);
+static void goIupSetSensorFunc(Ihandle *ih) {
+	IupSetCallback(ih, "SENSOR_CB", (Icallback) goIupSensorCB);
+}
+
 CGO_EXPORT extern int goIupPermissionCB(void *, int granted);
 static void goIupSetPermissionFunc(Ihandle *ih) {
 	IupSetCallback(ih, "PERMISSION_CB", (Icallback) goIupPermissionCB);

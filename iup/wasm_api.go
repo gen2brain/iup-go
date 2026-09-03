@@ -150,6 +150,9 @@ type NotifyCloseFunc func(ih Ihandle, reason int) int
 // LocationFunc is the type for the IupLocation LOCATION_CB callback.
 type LocationFunc func(ih Ihandle, latitude, longitude float64) int
 
+// SensorFunc is the type for the IupSensor SENSOR_CB callback.
+type SensorFunc func(ih Ihandle, x, y, z float64) int
+
 // PermissionFunc is the type for the PERMISSION_CB callback.
 type PermissionFunc func(ih Ihandle, granted int) int
 
@@ -771,6 +774,13 @@ func Notify() Ihandle {
 // https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_location.md
 func Location() Ihandle {
 	return ccallHandle("IupLocation", nil, nil)
+}
+
+// Sensor creates a motion sensor source.
+//
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_sensor.md
+func Sensor() Ihandle {
+	return ccallHandle("IupSensor", nil, nil)
 }
 
 // Clipboard creates a clipboard access element.

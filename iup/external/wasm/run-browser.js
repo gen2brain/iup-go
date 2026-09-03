@@ -75,6 +75,21 @@ function serve(dir) {
     await page.context().grantPermissions(['geolocation'], { origin: 'http://localhost:' + port }).catch(() => {});
     await page.context().setGeolocation({ latitude: +g[0], longitude: +g[1], accuracy: 25 }).catch(() => {});
   }
+  if (process.env.IUP_SENSOR) {
+    const v = process.env.IUP_SENSOR.split(',').map(Number);
+    await page.context().grantPermissions(['accelerometer', 'gyroscope', 'magnetometer'], { origin: 'http://localhost:' + port }).catch(() => {});
+    const cdp = await page.context().newCDPSession(page);
+    const xyz = { x: v[0], y: v[1], z: v[2] };
+    for (const type of ['accelerometer', 'gravity', 'linear-acceleration', 'gyroscope']) {
+      await cdp.send('Emulation.setSensorOverrideEnabled', { enabled: true, type }).catch(() => {});
+      await cdp.send('Emulation.setSensorOverrideReadings', { type, reading: { xyz } }).catch(() => {});
+    }
+    const half = (v[3] || 0) * Math.PI / 360;
+    for (const type of ['absolute-orientation', 'relative-orientation']) {
+      await cdp.send('Emulation.setSensorOverrideEnabled', { enabled: true, type }).catch(() => {});
+      await cdp.send('Emulation.setSensorOverrideReadings', { type, reading: { quaternion: { x: 0, y: 0, z: Math.sin(half), w: Math.cos(half) } } }).catch(() => {});
+    }
+  }
 
   const logs = [];
   page.on('console', (m) => logs.push(m.text()));

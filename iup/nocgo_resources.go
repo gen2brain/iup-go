@@ -138,6 +138,8 @@ func Notify() Ihandle { return mkih(iupNotify()) }
 
 func Location() Ihandle { return mkih(iupLocation()) }
 
+func Sensor() Ihandle { return mkih(iupSensor()) }
+
 func SetLanguage(lng string) { iupSetLanguage(lng) }
 
 func GetLanguage() string { return iupGetLanguage() }
