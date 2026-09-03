@@ -90,16 +90,16 @@ static HRESULT STDMETHODCALLTYPE winLocationOnLocationChanged(ILocationEvents* T
 
   memset(&msg, 0, sizeof(msg));
   msg.type = IUP_LOCATION_FIX;
-  ILatLongReport_GetLatitude(latlong, &msg.latitude);
-  ILatLongReport_GetLongitude(latlong, &msg.longitude);
-  ILatLongReport_GetErrorRadius(latlong, &msg.accuracy);
+  latlong->lpVtbl->GetLatitude(latlong, &msg.latitude);
+  latlong->lpVtbl->GetLongitude(latlong, &msg.longitude);
+  latlong->lpVtbl->GetErrorRadius(latlong, &msg.accuracy);
   {
     DOUBLE altitude_error;
-    msg.has_altitude = SUCCEEDED(ILatLongReport_GetAltitude(latlong, &msg.altitude)) &&
-                       SUCCEEDED(ILatLongReport_GetAltitudeError(latlong, &altitude_error));
+    msg.has_altitude = SUCCEEDED(latlong->lpVtbl->GetAltitude(latlong, &msg.altitude)) &&
+                       SUCCEEDED(latlong->lpVtbl->GetAltitudeError(latlong, &altitude_error));
   }
 
-  if (SUCCEEDED(ILatLongReport_GetTimestamp(latlong, &st)) && SystemTimeToFileTime(&st, &ft))
+  if (SUCCEEDED(latlong->lpVtbl->GetTimestamp(latlong, &st)) && SystemTimeToFileTime(&st, &ft))
   {
     time.LowPart = ft.dwLowDateTime;
     time.HighPart = ft.dwHighDateTime;
