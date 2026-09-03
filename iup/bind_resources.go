@@ -108,6 +108,8 @@ func ImageGetHandle(name string) Ihandle {
 }
 
 // ImageFromHandle creates an IUP image from a native image handle (e.g. the IupClipboard NATIVEIMAGE).
+//
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_imagefromhandle.md
 func ImageFromHandle(handle uintptr) Ihandle {
 	return mkih(C.IupImageFromHandle(unsafe.Pointer(cih(Ihandle(handle)))))
 }
@@ -368,21 +370,23 @@ func Thread() Ihandle {
 
 // Tray creates a system tray icon element in IUP, which is not associated with any interface element.
 // It allows placing an icon in the system notification area (system tray).
+//
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_tray.md
 func Tray() Ihandle {
 	h := mkih(C.IupTray())
 	return h
 }
 
-// Notify creates a notification control for displaying desktop notifications.
+// Notify creates a desktop notification element.
 //
-// Desktop notifications appear in the system's notification area/center
-// and can include a title, body text, icon, and action buttons.
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_notify.md
 func Notify() Ihandle {
 	h := mkih(C.IupNotify())
 	return h
 }
 
 // Location creates a geolocation source.
+//
 // https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_location.md
 func Location() Ihandle {
 	h := mkih(C.IupLocation())

@@ -240,9 +240,9 @@ func DrawGetImage(ih Ihandle) Ihandle {
 	return mkih(C.IupDrawGetImage(ih.ptr()))
 }
 
-// DrawGetSvg triggers a repaint of the canvas/plot and captures all drawing
-// operations as SVG. Returns the complete SVG document as a string, or empty
-// string on failure. Works with any drawable control (Canvas, Plot, etc.).
+// DrawGetSvg repaints the control and returns the drawing as an SVG document, or an empty string on failure.
+//
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
 func DrawGetSvg(ih Ihandle) string {
 	cStr := C.IupDrawGetSvg(ih.ptr())
 	if cStr == nil {

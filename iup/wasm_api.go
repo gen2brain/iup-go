@@ -736,11 +736,15 @@ func Message(title, msg string) {
 }
 
 // MessageError shows a modal error message dialog.
+//
+// https://github.com/gen2brain/iup-go/blob/main/docs/dlg/iup_messageerror.md
 func MessageError(parent Ihandle, msg string) {
 	ccall("IupMessageError", "", []interface{}{"number", "string"}, []interface{}{int(parent), msg})
 }
 
 // MessageAlarm shows a modal message dialog with the given buttons.
+//
+// https://github.com/gen2brain/iup-go/blob/main/docs/dlg/iup_messagealarm.md
 func MessageAlarm(parent Ihandle, title, msg, buttons string) {
 	ccall("IupMessageAlarm", "", []interface{}{"number", "string", "string", "string"}, []interface{}{int(parent), title, msg, buttons})
 }
@@ -763,6 +767,8 @@ func Notify() Ihandle {
 }
 
 // Location creates a geolocation source.
+//
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_location.md
 func Location() Ihandle {
 	return ccallHandle("IupLocation", nil, nil)
 }
