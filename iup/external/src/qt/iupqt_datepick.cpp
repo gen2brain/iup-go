@@ -4,10 +4,10 @@
  * See Copyright Notice in "iup.h"
  */
 
+#include <QWidget>
 #include <QDateEdit>
 #include <QCalendarWidget>
 #include <QDate>
-#include <QWidget>
 #include <QFocusEvent>
 
 #include <cstdio>
