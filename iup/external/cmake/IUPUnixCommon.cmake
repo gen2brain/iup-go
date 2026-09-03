@@ -4,6 +4,7 @@ set(IUP_UNIX_COMMON_SOURCES
   "${CMAKE_CURRENT_SOURCE_DIR}/src/unix/iupunix_notify.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/unix/iupunix_singleinstance.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/unix/iupunix_location.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/unix/iupunix_sensor.c"
 )
 
 if(NOT IUP_BACKEND MATCHES "^qt")

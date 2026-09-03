@@ -63,12 +63,13 @@ static int wasmCbNavigate(Ihandle* ih, char* url) { return iupwasmGoDispatch(ih,
 static int wasmCbNewWindow(Ihandle* ih, char* url) { return iupwasmGoDispatch(ih, "NEWWINDOW_CB", 0, 0, 0, 0, url); }
 static int wasmCbUpdate(Ihandle* ih) { return iupwasmGoDispatch(ih, "UPDATE_CB", 0, 0, 0, 0, 0); }
 /* Float-carrying dispatch for callbacks with double args (SCROLL_CB). */
-EM_JS(int, iupwasmGoDispatchF, (Ihandle* ih, const char* name, int i1, double d1, double d2), {
+EM_JS(int, iupwasmGoDispatchF, (Ihandle* ih, const char* name, int i1, double d1, double d2, double d3), {
   if (globalThis.iupGoDispatchF)
-    return globalThis.iupGoDispatchF(ih, UTF8ToString(name), i1, d1, d2) | 0;
+    return globalThis.iupGoDispatchF(ih, UTF8ToString(name), i1, d1, d2, d3) | 0;
   return 0;
 })
-static int wasmCbLocation(Ihandle* ih, double lat, double lon) { return iupwasmGoDispatchF(ih, "LOCATION_CB", 0, lat, lon); }
+static int wasmCbLocation(Ihandle* ih, double lat, double lon) { return iupwasmGoDispatchF(ih, "LOCATION_CB", 0, lat, lon, 0); }
+static int wasmCbSensor(Ihandle* ih, double x, double y, double z) { return iupwasmGoDispatchF(ih, "SENSOR_CB", 0, x, y, z); }
 
 /* String-returning dispatch for callbacks that return char* (table VALUE_CB/IMAGE_CB).
    The result lives in a single recycled heap slot, valid until the next such call. */
@@ -138,7 +139,7 @@ static double wasmCbNumericGetValue(Ihandle* ih, int lin, int col) { return iupw
 static int wasmCbXTickFormatNumber(Ihandle* ih, char* buffer, char* format, double value, char* decimal) { return wasmTickFormat(ih, "XTICKFORMATNUMBER_CB", buffer, format, value, decimal); }
 static int wasmCbYTickFormatNumber(Ihandle* ih, char* buffer, char* format, double value, char* decimal) { return wasmTickFormat(ih, "YTICKFORMATNUMBER_CB", buffer, format, value, decimal); }
 
-static int wasmCbScroll(Ihandle* ih, int op, float posx, float posy) { return iupwasmGoDispatchF(ih, "SCROLL_CB", op, posx, posy); }
+static int wasmCbScroll(Ihandle* ih, int op, float posx, float posy) { return iupwasmGoDispatchF(ih, "SCROLL_CB", op, posx, posy, 0); }
 static int wasmCbTableClick(Ihandle* ih, int lin, int col, char* status) { return iupwasmGoDispatch(ih, "CLICK_CB", lin, col, 0, 0, status); }
 static int wasmCbEnterItem(Ihandle* ih, int lin, int col) { return iupwasmGoDispatch(ih, "ENTERITEM_CB", lin, col, 0, 0, 0); }
 static int wasmCbTableEdition(Ihandle* ih, int lin, int col, char* text) { return iupwasmGoDispatch(ih, "EDITION_CB", lin, col, 0, 0, text); }
@@ -465,6 +466,8 @@ EMSCRIPTEN_KEEPALIVE void iupwasmGoSetCallback(Ihandle* ih, const char* name)
     IupSetCallback(ih, name, (Icallback)wasmCbNotify);
   else if (strcmp(name, "LOCATION_CB") == 0)
     IupSetCallback(ih, name, (Icallback)wasmCbLocation);
+  else if (strcmp(name, "SENSOR_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbSensor);
   else if (strcmp(name, "PERMISSION_CB") == 0)
     IupSetCallback(ih, name, (Icallback)wasmCbPermission);
   else if (strcmp(name, "ERROR_CB") == 0)

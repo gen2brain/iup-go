@@ -254,6 +254,8 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 		setNotifyFunc(ih, fn.(NotifyFunc))
 	case "LOCATION_CB":
 		setLocationFunc(ih, fn.(LocationFunc))
+	case "SENSOR_CB":
+		setSensorFunc(ih, fn.(SensorFunc))
 	case "PERMISSION_CB":
 		setPermissionFunc(ih, fn.(PermissionFunc))
 	case "TABCLOSE_CB":

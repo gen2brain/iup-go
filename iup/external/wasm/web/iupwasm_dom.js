@@ -2469,6 +2469,65 @@
         if (L2 && L2[c.ihptr] !== undefined) { navigator.geolocation.clearWatch(L2[c.ihptr]); delete L2[c.ihptr]; }
         break;
       }
+      case 'senstart': {
+        if (!globalThis.__iupSen) globalThis.__iupSen = {};
+        var S = globalThis.__iupSen, sp = c.ihptr, st = c.type, lastS = 0;
+        if (S[sp]) { S[sp].stop(); delete S[sp]; }
+        var emit = function (x, y, z, t) {
+          if (t - lastS < c.interval) return;
+          lastS = t;
+          D('iupwasmSensorReading', sp, x, y, z, t);
+        };
+        var generic = { 0: 'Accelerometer', 1: 'Gyroscope', 2: 'Magnetometer', 3: 'GravitySensor', 4: 'LinearAccelerationSensor' }[st];
+        var run = function () {
+          if (generic && typeof globalThis[generic] === 'function') {
+            var s;
+            try { s = new globalThis[generic]({ frequency: Math.max(1, 1000 / Math.max(c.interval, 1)) }); }
+            catch (e) { D('iupwasmSensorError', sp, 2); return; }
+            s.onreading = function () { emit(s.x, s.y, s.z, performance.timeOrigin + s.timestamp); };
+            s.onerror = function (e) { D('iupwasmSensorError', sp, e.error && e.error.name === 'NotAllowedError' ? 1 : 3); };
+            s.start();
+            S[sp] = { stop: function () { s.stop(); } };
+            return;
+          }
+          if (st === 5 || st === 6) {
+            var oname = 'ondeviceorientationabsolute' in window ? 'deviceorientationabsolute' : 'deviceorientation';
+            var oh = function (e) {
+              if (e.alpha === null && e.webkitCompassHeading === undefined) return;
+              var heading = e.webkitCompassHeading !== undefined ? e.webkitCompassHeading : (360 - e.alpha) % 360;
+              if (st === 5) emit(heading, e.beta, e.gamma, Date.now());
+              else emit(heading, -1, e.webkitCompassAccuracy !== undefined && e.webkitCompassAccuracy >= 0 ? e.webkitCompassAccuracy : -1, Date.now());
+            };
+            window.addEventListener(oname, oh);
+            S[sp] = { stop: function () { window.removeEventListener(oname, oh); } };
+            return;
+          }
+          var mh = function (e) {
+            var g = e.accelerationIncludingGravity, a = e.acceleration, r = e.rotationRate;
+            if (st === 0 && g) emit(g.x, g.y, g.z, Date.now());
+            else if (st === 1 && r) emit(r.beta * Math.PI / 180, r.gamma * Math.PI / 180, r.alpha * Math.PI / 180, Date.now());
+            else if (st === 3 && g && a) emit(g.x - a.x, g.y - a.y, g.z - a.z, Date.now());
+            else if (st === 4 && a) emit(a.x, a.y, a.z, Date.now());
+          };
+          window.addEventListener('devicemotion', mh);
+          S[sp] = { stop: function () { window.removeEventListener('devicemotion', mh); } };
+        };
+        var ask = st === 5 || st === 6 ? globalThis.DeviceOrientationEvent : globalThis.DeviceMotionEvent;
+        if (ask && typeof ask.requestPermission === 'function' && !globalThis.__iupSenGranted) {
+          ask.requestPermission().then(function (p) {
+            var ok = p === 'granted';
+            if (ok) globalThis.__iupSenGranted = true;
+            D('iupwasmSensorPermission', sp, ok ? 1 : 0);
+            if (ok) run(); else D('iupwasmSensorError', sp, 1);
+          }, function () { D('iupwasmSensorPermission', sp, 0); D('iupwasmSensorError', sp, 1); });
+        } else run();
+        break;
+      }
+      case 'senstop': {
+        var S2 = globalThis.__iupSen;
+        if (S2 && S2[c.ihptr]) { S2[c.ihptr].stop(); delete S2[c.ihptr]; }
+        break;
+      }
       case 'notifyshow': {
         if (typeof Notification !== 'undefined') {
           if (!globalThis.__iupNotify) globalThis.__iupNotify = { map: {} };
@@ -2825,7 +2884,16 @@
       }
     };
     apply.__iupReal = true;
-    globalThis.__iupApply = apply;
+    globalThis.__iupSensorAvailable = function (type) {
+  if (typeof window === 'undefined' || (typeof isSecureContext !== 'undefined' && !isSecureContext)) return 0;
+  if (type === -1) return (globalThis.DeviceMotionEvent && typeof DeviceMotionEvent.requestPermission === 'function') ? 1 : 0;
+  var name = { 0: 'Accelerometer', 1: 'Gyroscope', 2: 'Magnetometer', 3: 'GravitySensor', 4: 'LinearAccelerationSensor' }[type];
+  if (name && typeof globalThis[name] === 'function') return 1;
+  if (type === 2) return 0;
+  return (type === 5 || type === 6 ? 'ondeviceorientation' in window : 'ondevicemotion' in window) ? 1 : 0;
+};
+
+globalThis.__iupApply = apply;
 
     if (typeof window !== 'undefined' && !globalThis.__iupResizeWired) {
       globalThis.__iupResizeWired = 1;
@@ -2915,6 +2983,9 @@
       } break;
       case 'locavailable': {
         return (typeof navigator !== 'undefined' && navigator.geolocation && (typeof isSecureContext === 'undefined' || isSecureContext)) ? 1 : 0;
+      } break;
+      case 'senavailable': {
+        return globalThis.__iupSensorAvailable(req.type);
       } break;
       case 'treedepth': {
         var tdn = globalThis.__iupTree && globalThis.__iupTree.nodes[req.rowId]; return tdn ? tdn.__iupDepth : 0;

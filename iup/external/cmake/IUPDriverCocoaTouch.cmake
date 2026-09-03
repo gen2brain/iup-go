@@ -23,10 +23,11 @@ set(IUP_DRIVER_LINK_LIBRARIES
   "-framework UserNotifications"
   "-framework UniformTypeIdentifiers"
   "-framework CoreLocation"
+  "-framework CoreMotion"
 )
 
 set(IUP_DRIVER_COMPILE_OPTIONS "")
 set(IUP_DRIVER_LINK_OPTIONS "")
 
 set(IUP_PC_REQUIRES "")
-set(IUP_PC_LIBS_PRIVATE "-framework Foundation -framework UIKit -framework CoreGraphics -framework CoreText -framework QuartzCore -framework ImageIO -framework UserNotifications -framework UniformTypeIdentifiers -framework CoreLocation")
+set(IUP_PC_LIBS_PRIVATE "-framework Foundation -framework UIKit -framework CoreGraphics -framework CoreText -framework QuartzCore -framework ImageIO -framework UserNotifications -framework UniformTypeIdentifiers -framework CoreLocation -framework CoreMotion")

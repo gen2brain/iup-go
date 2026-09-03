@@ -393,6 +393,14 @@ func Location() Ihandle {
 	return h
 }
 
+// Sensor creates a motion sensor source.
+//
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_sensor.md
+func Sensor() Ihandle {
+	h := mkih(C.IupSensor())
+	return h
+}
+
 // User creates a user element in IUP, which is not associated to any interface element.
 // It is used to map an external element to a IUP element.
 // Its use is usually for additional elements, but you can use it to create an Ihandle to store private attributes.

@@ -171,6 +171,8 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 			setNotifyCloseFunc(ih, v)
 		case LocationFunc:
 			setLocationFunc(ih, v)
+		case SensorFunc:
+			setSensorFunc(ih, v)
 		case PermissionFunc:
 			setPermissionFunc(ih, v)
 		}
@@ -224,6 +226,8 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 		setNotifyFunc(ih, fn.(NotifyFunc))
 	case "LOCATION_CB":
 		setLocationFunc(ih, fn.(LocationFunc))
+	case "SENSOR_CB":
+		setSensorFunc(ih, fn.(SensorFunc))
 	case "PERMISSION_CB":
 		setPermissionFunc(ih, fn.(PermissionFunc))
 	case "OPENCLOSE_CB":
@@ -1680,6 +1684,20 @@ var locationCB = purego.NewCallback(func(ih uintptr, latitude, longitude float64
 func setLocationFunc(ih Ihandle, f LocationFunc) {
 	storeCallback(ih, "_IUPGO_LOCATION_CB", f)
 	iupSetCallback(uintptr(ih), "LOCATION_CB", locationCB)
+}
+
+type SensorFunc func(ih Ihandle, x, y, z float64) int
+
+var sensorCB = purego.NewCallback(func(ih uintptr, x, y, z float64) int {
+	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_SENSOR_CB").(SensorFunc); ok {
+		return f(Ihandle(ih), x, y, z)
+	}
+	return 0
+})
+
+func setSensorFunc(ih Ihandle, f SensorFunc) {
+	storeCallback(ih, "_IUPGO_SENSOR_CB", f)
+	iupSetCallback(uintptr(ih), "SENSOR_CB", sensorCB)
 }
 
 type PermissionFunc func(ih Ihandle, granted int) int

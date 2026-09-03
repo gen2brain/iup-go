@@ -306,6 +306,7 @@ IUP_API Ihandle*  IupTimer(void);
 IUP_API Ihandle*  IupTray(void);
 IUP_API Ihandle*  IupNotify(void);
 IUP_API Ihandle*  IupLocation(void);
+IUP_API Ihandle*  IupSensor(void);
 IUP_API Ihandle*  IupClipboard(void);
 IUP_API Ihandle*  IupProgressBar(void);
 IUP_API Ihandle*  IupVal(const char* type);
