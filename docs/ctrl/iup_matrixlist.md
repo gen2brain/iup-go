@@ -151,8 +151,7 @@ Some attribute defaults were changed:
 **lin**: item line.\
 **imagevalue**: equal to 1 if the image used was IMAGECHECK or to 0 if the image used IMAGEUNCHECK.
 
-**LISTACTION_CB**: Action generated when the state of an item in the list is changed.
-Also provides information on the changed item:
+**ACTION_CB**: Action generated when an item gets or loses the focus.
 
     int function (Ihandle *ih, int item, int state);
 
@@ -170,7 +169,7 @@ Also provides information on the changed item:
 **status**: Status of the mouse buttons and some keyboard keys at the moment the event is generated.
 The same macros used for [BUTTON_CB](../call/iup_button_cb.md) can be used for this status.
 
-**Returns:** To avoid the default processing return IUP_IGNORE.
+**Returns:** IUP_IGNORE continues with the default processing, IUP_DEFAULT draws nothing more.
 
 **LISTDRAW_CB**: Action generated when an item needs to be redrawn.
 It is called before the default processing.

@@ -3,7 +3,7 @@
 Creates a motion sensor source. Reports readings of one device sensor through a callback while active.
 Each element should be destroyed using [IupDestroy](../func/iup_destroy.md).
 
-Supported in Windows, WinUI, Android, iOS and WebAssembly.
+Supported in Win32, WinUI, Android, iOS and WebAssembly.
 
 ### Creation
 
@@ -16,7 +16,7 @@ Supported in Windows, WinUI, Android, iOS and WebAssembly.
 **TYPE** (non-inheritable): Sensor to read. Can be "ACCELEROMETER", "GYROSCOPE", "MAGNETOMETER",
 "GRAVITY", "LINEARACCELERATION", "ORIENTATION" or "COMPASS". Default: "ACCELEROMETER".
 Can be changed only while ACTIVE=NO.
-GRAVITY and LINEARACCELERATION are not supported in Windows.
+GRAVITY and LINEARACCELERATION are not supported in Win32.
 MAGNETOMETER is not supported in WebAssembly.
 
 **ACTIVE** (non-inheritable): Starts readings when "YES" and stops them when "NO". Default: "NO".
