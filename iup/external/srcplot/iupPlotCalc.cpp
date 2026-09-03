@@ -116,7 +116,7 @@ int iupPlot::CalcXTickVerticalMargin(Ihandle* ih) const
     SetFont(ih, mAxisX.mFontStyle, mAxisX.mFontSize);
     iupdrvFontGetFontDim(IupGetAttribute(ih, "DRAWFONT"), NULL, &theXFontHeight, NULL, NULL);
 
-    theXTickVerticalMargin += theXFontHeight + theXFontHeight / 10;
+    theXTickVerticalMargin += theXFontHeight + (mAxisX.mLabelSpacing == -1 ? theXFontHeight / 10 : mAxisX.mLabelSpacing);
   }
 
   return theXTickVerticalMargin;
@@ -140,7 +140,7 @@ int iupPlot::CalcYTickHorizontalMargin(Ihandle* ih) const
     SetFont(ih, mAxisY.mFontStyle, mAxisY.mFontSize);
     iupdrvFontGetFontDim(IupGetAttribute(ih, "DRAWFONT"), NULL, &theYFontHeight, NULL, NULL);
 
-    theYTickHorizontalMargin += theYFontHeight + theYFontHeight / 10;
+    theYTickHorizontalMargin += theYFontHeight + (mAxisY.mLabelSpacing == -1 ? theYFontHeight / 10 : mAxisY.mLabelSpacing);
   }
 
   return theYTickHorizontalMargin;

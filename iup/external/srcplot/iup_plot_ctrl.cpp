@@ -135,6 +135,7 @@ static int iPlotDataSetValuesMatrixNumericSetValue_CB(Ihandle* ih_matrix, int li
     x = sample_index;
 
     IupPlotSetSampleStr(ih, ds, sample_index, str_x, new_value);
+    y = new_value;
   }
   else
   {
@@ -144,6 +145,8 @@ static int iPlotDataSetValuesMatrixNumericSetValue_CB(Ihandle* ih_matrix, int li
       IupPlotSetSample(ih, ds, sample_index, new_value, y);
     else
       IupPlotSetSample(ih, ds, sample_index, x, new_value);
+
+    IupPlotGetSample(ih, ds, sample_index, &x, &y);
   }
 
   IFniidd editsample_cb = (IFniidd)IupGetCallback(ih, "EDITSAMPLE_CB");
@@ -2818,7 +2821,7 @@ static Iclass* iPlotNewClass(void)
   iupClassRegisterCallback(ic, "PROPERTIESCHANGED_CB", "");
   iupClassRegisterCallback(ic, "PROPERTIESVALIDATE_CB", "ss");
   iupClassRegisterCallback(ic, "DSPROPERTIESCHANGED_CB", "i");
-  iupClassRegisterCallback(ic, "DSPROPERTIESVALIDATE_CB", "nni");
+  iupClassRegisterCallback(ic, "DSPROPERTIESVALIDATE_CB", "ni");
   iupClassRegisterCallback(ic, "XTICKFORMATNUMBER_CB", "ssds");
   iupClassRegisterCallback(ic, "YTICKFORMATNUMBER_CB", "ssds");
 
