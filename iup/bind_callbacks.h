@@ -664,7 +664,7 @@ static void goIupSetNumericSetValueFunc(Ihandle *ih) {
 	IupSetCallback(ih, "NUMERICSETVALUE_CB", (Icallback) goIupNumericSetValueCB);
 }
 
-CGO_EXPORT extern int goIupSortColumnCompareCB(void *, int lin1, int lin2, int col);
+CGO_EXPORT extern int goIupSortColumnCompareCB(void *, int col, int lin1, int lin2);
 static void goIupSetSortColumnCompareFunc(Ihandle *ih) {
 	IupSetCallback(ih, "SORTCOLUMNCOMPARE_CB", (Icallback) goIupSortColumnCompareCB);
 }
@@ -727,6 +727,11 @@ static void goIupSetBgColorFunc(Ihandle *ih) {
 CGO_EXPORT extern int goIupClickCB(void *, int lin, int col, void *status);
 static void goIupSetClickFunc(Ihandle *ih) {
 	IupSetCallback(ih, "CLICK_CB", (Icallback) goIupClickCB);
+}
+
+CGO_EXPORT extern int goIupListClickCB(void *, int lin, int col, void *status);
+static void goIupSetListClickFunc(Ihandle *ih) {
+	IupSetCallback(ih, "LISTCLICK_CB", (Icallback) goIupListClickCB);
 }
 
 CGO_EXPORT extern int goIupColResizeCB(void *, int col);
@@ -870,8 +875,13 @@ static void goIupSetValueEditFunc(Ihandle *ih) {
 }
 
 CGO_EXPORT extern int goIupMatrixListActionCB(void *, int item, int state);
-static void goIupSetMatrixListActionFunc(Ihandle *ih, char *name) {
-	IupSetCallback(ih, name, (Icallback) goIupMatrixListActionCB);
+static void goIupSetMatrixListActionFunc(Ihandle *ih) {
+	IupSetCallback(ih, "ACTION_CB", (Icallback) goIupMatrixListActionCB);
+}
+
+CGO_EXPORT extern int goIupImageValueChangedCB(void *, int item, int state);
+static void goIupSetImageValueChangedFunc(Ihandle *ih) {
+	IupSetCallback(ih, "IMAGEVALUECHANGED_CB", (Icallback) goIupImageValueChangedCB);
 }
 
 // ============================================================================

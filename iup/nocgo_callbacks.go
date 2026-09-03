@@ -224,6 +224,8 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 		setMultiUnselectionFunc(ih, fn.(MultiUnselectionFunc))
 	case "NOTIFY_CB":
 		setNotifyFunc(ih, fn.(NotifyFunc))
+	case "IMAGEVALUECHANGED_CB":
+		setImageValueChangedFunc(ih, fn.(MatrixListActionFunc))
 	case "LOCATION_CB":
 		setLocationFunc(ih, fn.(LocationFunc))
 	case "SENSOR_CB":
@@ -423,6 +425,8 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 		setLeaveItemFunc(ih, fn.(LeaveItemFunc))
 	case "LISTDRAW_CB":
 		setListDrawFunc(ih, fn.(ListDrawFunc))
+	case "LISTCLICK_CB":
+		setListClickFunc(ih, fn.(ClickFunc))
 	case "LISTEDITION_CB":
 		setListEditionFunc(ih, fn.(ListEditionFunc))
 	case "LISTINSERT_CB":

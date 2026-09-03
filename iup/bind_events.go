@@ -447,7 +447,7 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 	case "IMAGEVALUECHANGED_CB":
 		setMatrixListActionFunc(ih, "IMAGEVALUECHANGED_CB", fn.(MatrixListActionFunc))
 	case "LISTCLICK_CB":
-		setClickFunc(ih, fn.(ClickFunc))
+		setListClickFunc(ih, fn.(ClickFunc))
 	case "FILE_CB":
 		setFileFunc(ih, fn.(FileFunc))
 	case "LAYOUTUPDATE_CB":

@@ -46,6 +46,18 @@ func setClickFunc(ih Ihandle, f ClickFunc) {
 	iupSetCallback(uintptr(ih), "CLICK_CB", clickFuncCB)
 }
 
+var listClickFuncCB = purego.NewCallback(func(ih uintptr, lin int32, col int32, status uintptr) int {
+	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_LISTCLICK_CB").(ClickFunc); ok {
+		return f(Ihandle(ih), int(lin), int(col), goString(status))
+	}
+	return 0
+})
+
+func setListClickFunc(ih Ihandle, f ClickFunc) {
+	storeCallback(ih, "_IUPGO_LISTCLICK_CB", f)
+	iupSetCallback(uintptr(ih), "LISTCLICK_CB", listClickFuncCB)
+}
+
 type ColResizeFunc func(ih Ihandle, col int) int
 
 var colResizeFuncCB = purego.NewCallback(func(ih uintptr, col int32) int {
@@ -424,6 +436,18 @@ func setMatrixListActionFunc(ih Ihandle, f MatrixListActionFunc) {
 	iupSetCallback(uintptr(ih), "ACTION_CB", matrixListActionFuncCB)
 }
 
+var imageValueChangedFuncCB = purego.NewCallback(func(ih uintptr, item int32, state int32) int {
+	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_IMAGEVALUECHANGED_CB").(MatrixListActionFunc); ok {
+		return f(Ihandle(ih), int(item), int(state))
+	}
+	return 0
+})
+
+func setImageValueChangedFunc(ih Ihandle, f MatrixListActionFunc) {
+	storeCallback(ih, "_IUPGO_IMAGEVALUECHANGED_CB", f)
+	iupSetCallback(uintptr(ih), "IMAGEVALUECHANGED_CB", imageValueChangedFuncCB)
+}
+
 type MatrixMouseMoveFunc func(ih Ihandle, lin, col int) int
 
 var matrixMouseMoveFuncCB = purego.NewCallback(func(ih uintptr, lin int32, col int32) int {
@@ -634,11 +658,11 @@ func setScrollTopFunc(ih Ihandle, f ScrollTopFunc) {
 	iupSetCallback(uintptr(ih), "SCROLLTOP_CB", scrollTopFuncCB)
 }
 
-type SortColumnCompareFunc func(ih Ihandle, lin1, lin2, col int) int
+type SortColumnCompareFunc func(ih Ihandle, col, lin1, lin2 int) int
 
-var sortColumnCompareFuncCB = purego.NewCallback(func(ih uintptr, lin1 int32, lin2 int32, col int32) int {
+var sortColumnCompareFuncCB = purego.NewCallback(func(ih uintptr, col int32, lin1 int32, lin2 int32) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_SORTCOLUMNCOMPARE_CB").(SortColumnCompareFunc); ok {
-		return f(Ihandle(ih), int(lin1), int(lin2), int(col))
+		return f(Ihandle(ih), int(col), int(lin1), int(lin2))
 	}
 	return 0
 })
