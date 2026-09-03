@@ -70,6 +70,11 @@ function serve(dir) {
     hasTouch: wantTouch,
   });
   await page.context().grantPermissions(['clipboard-read', 'clipboard-write'], { origin: 'http://localhost:' + port }).catch(() => {});
+  if (process.env.IUP_GEO) {
+    const g = process.env.IUP_GEO.split(',');
+    await page.context().grantPermissions(['geolocation'], { origin: 'http://localhost:' + port }).catch(() => {});
+    await page.context().setGeolocation({ latitude: +g[0], longitude: +g[1], accuracy: 25 }).catch(() => {});
+  }
 
   const logs = [];
   page.on('console', (m) => logs.push(m.text()));

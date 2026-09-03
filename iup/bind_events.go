@@ -252,6 +252,10 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 		setTrayClickFunc(ih, fn.(TrayClickFunc))
 	case "NOTIFY_CB":
 		setNotifyFunc(ih, fn.(NotifyFunc))
+	case "LOCATION_CB":
+		setLocationFunc(ih, fn.(LocationFunc))
+	case "PERMISSION_CB":
+		setPermissionFunc(ih, fn.(PermissionFunc))
 	case "TABCLOSE_CB":
 		setTabCloseFunc(ih, fn.(TabCloseFunc))
 	case "RIGHTCLICK_CB":

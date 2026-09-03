@@ -5,6 +5,9 @@
 	<uses-permission android:name="android.permission.INTERNET"/>
 	<!-- Required by examples that use IupNotify STYLE=NOTIFICATION on API 33+. -->
 	<uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+	<!-- Required by examples that use IupLocation; FINE is only needed for ACCURACY=FINE. -->
+	<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+	<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
 
 	<application
 		android:allowBackup="true"

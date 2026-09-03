@@ -563,6 +563,16 @@ static void goIupSetNotifyCloseFunc(Ihandle *ih) {
 	IupSetCallback(ih, "CLOSE_CB", (Icallback) goIupNotifyCloseCB);
 }
 
+CGO_EXPORT extern int goIupLocationCB(void *, double latitude, double longitude);
+static void goIupSetLocationFunc(Ihandle *ih) {
+	IupSetCallback(ih, "LOCATION_CB", (Icallback) goIupLocationCB);
+}
+
+CGO_EXPORT extern int goIupPermissionCB(void *, int granted);
+static void goIupSetPermissionFunc(Ihandle *ih) {
+	IupSetCallback(ih, "PERMISSION_CB", (Icallback) goIupPermissionCB);
+}
+
 CGO_EXPORT extern int goIupGetParamCB(void *, int, void *);
 static int goIupGetParamTrampoline(Ihandle *dialog, int param_index, void *user_data) {
 	return goIupGetParamCB((void *)dialog, param_index, user_data);

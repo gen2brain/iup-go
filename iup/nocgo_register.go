@@ -234,34 +234,34 @@ var (
 
 	iupPostMessage func(ih uintptr, s string, i int32, d float64, p uintptr)
 
-	iupDrawBegin              func(ih uintptr)
-	iupDrawEnd                func(ih uintptr)
-	iupDrawSetClipRect        func(ih uintptr, x1, y1, x2, y2 int32)
-	iupDrawSetClipRoundedRect func(ih uintptr, x1, y1, x2, y2, corner int32)
-	iupDrawResetClip          func(ih uintptr)
-	iupDrawGetClipRect        func(ih uintptr, x1, y1, x2, y2 *int32)
-	iupDrawParentBackground   func(ih uintptr)
-	iupDrawLine               func(ih uintptr, x1, y1, x2, y2 int32)
-	iupDrawRectangle          func(ih uintptr, x1, y1, x2, y2 int32)
-	iupDrawArc                func(ih uintptr, x1, y1, x2, y2 int32, a1, a2 float64)
-	iupDrawEllipse            func(ih uintptr, x1, y1, x2, y2 int32)
-	iupDrawPolygon            func(ih uintptr, points []int32, count int32)
-	iupDrawPixel              func(ih uintptr, x, y int32)
-	iupDrawRoundedRectangle   func(ih uintptr, x1, y1, x2, y2, corner int32)
-	iupDrawText               func(ih uintptr, str string, length, x, y, w, h int32)
-	iupDrawImage              func(ih uintptr, name string, x, y, w, h int32)
-	iupDrawSelectRect         func(ih uintptr, x1, y1, x2, y2 int32)
-	iupDrawFocusRect          func(ih uintptr, x1, y1, x2, y2 int32)
-	iupDrawBezier             func(ih uintptr, x1, y1, x2, y2, x3, y3, x4, y4 int32)
-	iupDrawQuadraticBezier    func(ih uintptr, x1, y1, x2, y2, x3, y3 int32)
-	iupDrawGetSize            func(ih uintptr, w, h *int32)
-	iupDrawGetTextSize        func(ih uintptr, str string, length int32, w, h *int32)
-	iupDrawGetTextMetrics     func(ih uintptr, ascent, descent, lineHeight *int32)
-	iupDrawGetImageInfo       func(name string, w, h, bpp *int32)
-	iupDrawGetImage           func(ih uintptr) uintptr
-	iupDrawGetSvg             func(ih uintptr) string
-	iupDrawLinearGradient     func(ih uintptr, x1, y1, x2, y2 int32, angle float32, color1, color2 string)
-	iupDrawRadialGradient     func(ih uintptr, cx, cy, radius int32, colorCenter, colorEdge string)
+	iupDrawBegin               func(ih uintptr)
+	iupDrawEnd                 func(ih uintptr)
+	iupDrawSetClipRect         func(ih uintptr, x1, y1, x2, y2 int32)
+	iupDrawSetClipRoundedRect  func(ih uintptr, x1, y1, x2, y2, corner int32)
+	iupDrawResetClip           func(ih uintptr)
+	iupDrawGetClipRect         func(ih uintptr, x1, y1, x2, y2 *int32)
+	iupDrawParentBackground    func(ih uintptr)
+	iupDrawLine                func(ih uintptr, x1, y1, x2, y2 int32)
+	iupDrawRectangle           func(ih uintptr, x1, y1, x2, y2 int32)
+	iupDrawArc                 func(ih uintptr, x1, y1, x2, y2 int32, a1, a2 float64)
+	iupDrawEllipse             func(ih uintptr, x1, y1, x2, y2 int32)
+	iupDrawPolygon             func(ih uintptr, points []int32, count int32)
+	iupDrawPixel               func(ih uintptr, x, y int32)
+	iupDrawRoundedRectangle    func(ih uintptr, x1, y1, x2, y2, corner int32)
+	iupDrawText                func(ih uintptr, str string, length, x, y, w, h int32)
+	iupDrawImage               func(ih uintptr, name string, x, y, w, h int32)
+	iupDrawSelectRect          func(ih uintptr, x1, y1, x2, y2 int32)
+	iupDrawFocusRect           func(ih uintptr, x1, y1, x2, y2 int32)
+	iupDrawBezier              func(ih uintptr, x1, y1, x2, y2, x3, y3, x4, y4 int32)
+	iupDrawQuadraticBezier     func(ih uintptr, x1, y1, x2, y2, x3, y3 int32)
+	iupDrawGetSize             func(ih uintptr, w, h *int32)
+	iupDrawGetTextSize         func(ih uintptr, str string, length int32, w, h *int32)
+	iupDrawGetTextMetrics      func(ih uintptr, ascent, descent, lineHeight *int32)
+	iupDrawGetImageInfo        func(name string, w, h, bpp *int32)
+	iupDrawGetImage            func(ih uintptr) uintptr
+	iupDrawGetSvg              func(ih uintptr) string
+	iupDrawLinearGradient      func(ih uintptr, x1, y1, x2, y2 int32, angle float32, color1, color2 string)
+	iupDrawRadialGradient      func(ih uintptr, cx, cy, radius int32, colorCenter, colorEdge string)
 	iupDrawLinearGradientStops func(ih uintptr, x1, y1, x2, y2 int32, angle float32, colors *uintptr, offsets *float32, count int32)
 	iupDrawRadialGradientStops func(ih uintptr, cx, cy, radius int32, colors *uintptr, offsets *float32, count int32)
 
@@ -279,6 +279,7 @@ var (
 	iupRecordInput              func(fileName *byte, mode int32) int32
 	iupUser                     func() uintptr
 	iupNotify                   func() uintptr
+	iupLocation                 func() uintptr
 	iupGetAllNames              func(names *uintptr, n int32) int32
 	iupGetAllDialogs            func(names *uintptr, n int32) int32
 	iupGetAllFunctions          func(names *uintptr, max int32) int32
@@ -590,6 +591,7 @@ func ensureBase() {
 		reg(&iupRecordInput, "IupRecordInput")
 		reg(&iupUser, "IupUser")
 		reg(&iupNotify, "IupNotify")
+		reg(&iupLocation, "IupLocation")
 		reg(&iupGetAllNames, "IupGetAllNames")
 		reg(&iupGetAllDialogs, "IupGetAllDialogs")
 		reg(&iupGetAllFunctions, "IupGetAllFunctions")

@@ -2439,6 +2439,36 @@
         document.body.appendChild(da); da.click(); document.body.removeChild(da);
         setTimeout(function () { URL.revokeObjectURL(durl); }, 1000);
       } break;
+      case 'locstart': {
+        if (!globalThis.__iupLoc) globalThis.__iupLoc = {};
+        var L = globalThis.__iupLoc, ihptr = c.ihptr, lastT = 0, lastP = null;
+        if (L[ihptr] !== undefined) navigator.geolocation.clearWatch(L[ihptr]);
+        function dist(a, b) {
+          var R = 6371000, dLat = (b.latitude - a.latitude) * Math.PI / 180, dLon = (b.longitude - a.longitude) * Math.PI / 180;
+          var s = Math.sin(dLat / 2), t = Math.sin(dLon / 2);
+          var h = s * s + Math.cos(a.latitude * Math.PI / 180) * Math.cos(b.latitude * Math.PI / 180) * t * t;
+          return 2 * R * Math.asin(Math.sqrt(h));
+        }
+        L[ihptr] = navigator.geolocation.watchPosition(function (pos) {
+          var p = pos.coords;
+          if (lastP && pos.timestamp - lastT < c.interval) return;
+          if (lastP && c.distance > 0 && dist(lastP, p) < c.distance) return;
+          lastT = pos.timestamp; lastP = p;
+          D('iupwasmLocationGranted', ihptr);
+          D('iupwasmLocationFix', ihptr, p.latitude, p.longitude,
+            p.altitude === null ? 0 : p.altitude, p.altitude === null ? 0 : 1, p.accuracy,
+            p.speed === null ? 0 : p.speed, p.speed === null ? 0 : 1,
+            p.heading === null ? 0 : p.heading, p.heading === null ? 0 : 1, pos.timestamp);
+        }, function (err) {
+          D('iupwasmLocationError', ihptr, err.code);
+        }, { enableHighAccuracy: !!c.fine, maximumAge: c.interval });
+        break;
+      }
+      case 'locstop': {
+        var L2 = globalThis.__iupLoc;
+        if (L2 && L2[c.ihptr] !== undefined) { navigator.geolocation.clearWatch(L2[c.ihptr]); delete L2[c.ihptr]; }
+        break;
+      }
       case 'notifyshow': {
         if (typeof Notification !== 'undefined') {
           if (!globalThis.__iupNotify) globalThis.__iupNotify = { map: {} };
@@ -2882,6 +2912,9 @@
       } break;
       case 'darkmode': {
         return (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 1 : 0;
+      } break;
+      case 'locavailable': {
+        return (typeof navigator !== 'undefined' && navigator.geolocation && (typeof isSecureContext === 'undefined' || isSecureContext)) ? 1 : 0;
       } break;
       case 'treedepth': {
         var tdn = globalThis.__iupTree && globalThis.__iupTree.nodes[req.rowId]; return tdn ? tdn.__iupDepth : 0;
