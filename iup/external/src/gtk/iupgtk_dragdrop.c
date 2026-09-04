@@ -254,28 +254,38 @@ static int gtkSetDropTypesAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
+static GtkWidget* gtkDragDropWidget(Ihandle* ih)
+{
+  GtkWidget* extra = (GtkWidget*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
+  if (extra && !gtk_widget_get_has_window(ih->handle))
+    return extra;
+  return ih->handle;
+}
+
 static int gtkSetDropTargetAttrib(Ihandle* ih, const char* value)
 {
   if(iupStrBoolean(value))
   {
     GtkTargetList *targetlist = (GtkTargetList*)iupAttribGet(ih, "_IUPGTK_DROP_TARGETLIST");
     GtkTargetEntry *drop_types_entry;
+    GtkWidget* widget;
     int targetlist_count;
 
     if(!targetlist)
       return 0;
 
+    widget = gtkDragDropWidget(ih);
     drop_types_entry = gtk_target_table_new_from_list(targetlist, &targetlist_count);
 
-    gtk_drag_dest_set(ih->handle, GTK_DEST_DEFAULT_ALL, drop_types_entry, targetlist_count, GDK_ACTION_MOVE|GDK_ACTION_COPY);
+    gtk_drag_dest_set(widget, GTK_DEST_DEFAULT_ALL, drop_types_entry, targetlist_count, GDK_ACTION_MOVE|GDK_ACTION_COPY);
 
-    g_signal_connect(ih->handle, "drag_motion", G_CALLBACK(gtkDragMotion), ih);
-    g_signal_connect(ih->handle, "drag_data_received", G_CALLBACK(gtkDragDataReceived), ih);
+    g_signal_connect(widget, "drag_motion", G_CALLBACK(gtkDragMotion), ih);
+    g_signal_connect(widget, "drag_data_received", G_CALLBACK(gtkDragDataReceived), ih);
 
     gtk_target_table_free(drop_types_entry, targetlist_count);
   }
   else
-    gtk_drag_dest_unset(ih->handle);
+    gtk_drag_dest_unset(gtkDragDropWidget(ih));
 
   return 1;
 }
@@ -303,24 +313,26 @@ static int gtkSetDragSourceAttrib(Ihandle* ih, const char* value)
   {
     GtkTargetList *targetlist = (GtkTargetList*)iupAttribGet(ih, "_IUPGTK_DRAG_TARGETLIST");
     GtkTargetEntry *drag_types_entry;
+    GtkWidget* widget;
     int targetlist_count;
 
     if(!targetlist)
       return 0;
 
+    widget = gtkDragDropWidget(ih);
     drag_types_entry = gtk_target_table_new_from_list(targetlist, &targetlist_count);
 
-    gtk_drag_source_set(ih->handle, GDK_BUTTON1_MASK, drag_types_entry, targetlist_count,
+    gtk_drag_source_set(widget, GDK_BUTTON1_MASK, drag_types_entry, targetlist_count,
                         iupAttribGetBoolean(ih, "DRAGSOURCEMOVE")? GDK_ACTION_MOVE|GDK_ACTION_COPY: GDK_ACTION_COPY);
 
-    g_signal_connect(ih->handle, "drag_begin", G_CALLBACK(gtkDragBegin), ih);
-    g_signal_connect(ih->handle, "drag_data_get", G_CALLBACK(gtkDragDataGet), ih);
-    g_signal_connect(ih->handle, "drag_end", G_CALLBACK(gtkDragEnd), ih);
+    g_signal_connect(widget, "drag_begin", G_CALLBACK(gtkDragBegin), ih);
+    g_signal_connect(widget, "drag_data_get", G_CALLBACK(gtkDragDataGet), ih);
+    g_signal_connect(widget, "drag_end", G_CALLBACK(gtkDragEnd), ih);
 
     gtk_target_table_free(drag_types_entry, targetlist_count);
   }
   else
-    gtk_drag_source_unset(ih->handle);
+    gtk_drag_source_unset(gtkDragDropWidget(ih));
 
   return 1;
 }
