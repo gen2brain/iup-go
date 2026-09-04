@@ -4048,7 +4048,10 @@ static int iFlatTreeSetExtraTextAttrib(Ihandle* ih, int id, const char* value)
 static void iFlatTreeSetChildrenCurrentSizeMethod(Ihandle* ih, int shrink)
 {
   if (iupFlatScrollBarGet(ih) != IUP_SB_NONE)
+  {
+    iFlatTreeUpdateScrollBar(ih);
     iupFlatScrollBarSetChildrenCurrentSize(ih, shrink);
+  }
 }
 
 static void iFlatTreeSetChildrenPositionMethod(Ihandle* ih, int x, int y)
