@@ -715,11 +715,14 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
   snprintf(font_with_style, sizeof(font_with_style), "%s%s%s",
       typeface, bold ? ":style=Bold" : "", italic ? ":style=Italic" : "");
 
-  if ((flags & IUP_DRAW_WRAP) || (flags & IUP_DRAW_ELLIPSIS))
+  if ((flags & IUP_DRAW_WRAP) || (flags & IUP_DRAW_ELLIPSIS) || strchr(text, '\n'))
   {
     Evas_Textblock_Style* ts;
     char style[512];
+    char* markup;
     const char* align_str = "left";
+    int box_w = w > 0 ? w : dc->w;
+    int box_h = h > 0 ? h : dc->h;
 
     if (flags & IUP_DRAW_RIGHT)
       align_str = "right";
@@ -738,11 +741,15 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
 
     evas_textblock_style_set(ts, style);
     evas_object_textblock_style_set(text_obj, ts);
-    evas_object_textblock_text_markup_set(text_obj, text);
+    markup = evas_textblock_text_utf8_to_markup(text_obj, text);
+    evas_object_textblock_text_markup_set(text_obj, markup);
+    free(markup);
     evas_textblock_style_free(ts);
 
-    tw = w > 0 ? w : dc->w;
-    th = h > 0 ? h : dc->h;
+    efl_gfx_entity_size_set(text_obj, EINA_SIZE2D(box_w, box_h));
+    evas_object_textblock_size_formatted_get(text_obj, &tw, &th);
+    if ((flags & IUP_DRAW_WRAP) || (flags & IUP_DRAW_ELLIPSIS))
+      tw = box_w;
     efl_gfx_entity_size_set(text_obj, EINA_SIZE2D(tw, th));
   }
   else
@@ -780,7 +787,7 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
   draw_x = x;
   draw_y = y;
 
-  if (layout_center && w > 0 && h > 0)
+  if (layout_center && text_orientation != 0 && w > 0 && h > 0)
   {
     draw_x = x + (w - tw) / 2;
     draw_y = y + (h - th) / 2;
@@ -811,7 +818,10 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
   {
     Evas_Map* map = evas_map_new(4);
     evas_map_util_points_populate_from_object(map, text_obj);
-    evas_map_util_rotate(map, -text_orientation, draw_x, draw_y);
+    if (layout_center)
+      evas_map_util_rotate(map, -text_orientation, draw_x + tw / 2, draw_y + th / 2);
+    else
+      evas_map_util_rotate(map, -text_orientation, draw_x, draw_y);
     evas_object_map_set(text_obj, map);
     evas_object_map_enable_set(text_obj, EINA_TRUE);
     evas_map_free(map);
