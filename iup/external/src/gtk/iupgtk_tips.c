@@ -170,26 +170,57 @@ IUP_SDK_API int iupdrvBaseSetTipAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
+#if GTK_CHECK_VERSION(2, 12, 0)
+static GtkWidget* gtkTipDefaultWindow(void)
+{
+  GtkWidget* found = NULL;
+  GList* list = gtk_window_list_toplevels();
+  GList* item;
+
+  for (item = list; item; item = item->next)
+  {
+    GtkWidget* window = (GtkWidget*)item->data;
+
+    if ((iupStrEqual(G_OBJECT_TYPE_NAME(window), "GtkTooltipWindow") ||
+         iupStrEqual(gtk_widget_get_name(window), "gtk-tooltip")) &&
+        iupgtkIsVisible(window))
+    {
+      found = window;
+      break;
+    }
+  }
+
+  g_list_free(list);
+  return found;
+}
+
+static int gtkTipPointerInside(Ihandle* ih)
+{
+  int x, y;
+
+  iupdrvGetCursorPos(&x, &y);
+  iupdrvScreenToClient(ih, &x, &y);
+
+  return x >= 0 && y >= 0 && x < ih->currentwidth && y < ih->currentheight;
+}
+#endif
+
 IUP_SDK_API int iupdrvBaseSetTipVisibleAttrib(Ihandle* ih, const char* value)
 {
 #if GTK_CHECK_VERSION(2, 12, 0)
-  GtkWindow* tip_window;
   GtkWidget* widget = gtkTipGetWidget(ih);
 
   if (!gtk_widget_get_has_tooltip(widget))
     return 0;
 
-  tip_window = gtk_widget_get_tooltip_window(widget);
-
-  if (tip_window && iupgtkIsVisible((GtkWidget*)tip_window))
-  {
-    if (!iupStrBoolean(value)) /* was visible, trigger to not visible */
-      gtk_widget_trigger_tooltip_query(widget);
-  }
+  if (iupStrBoolean(value))
+    gtk_widget_trigger_tooltip_query(widget);
   else
   {
-    if (iupStrBoolean(value)) /* was NOT visible, trigger to visible */
-      gtk_widget_trigger_tooltip_query(widget);
+    /* the query hides the tip only when the widget under the pointer has none */
+    gtk_widget_set_has_tooltip(widget, FALSE);
+    gtk_widget_trigger_tooltip_query(widget);
+    gtk_widget_set_has_tooltip(widget, TRUE);
   }
 #endif
 
@@ -206,7 +237,10 @@ IUP_SDK_API char* iupdrvBaseGetTipVisibleAttrib(Ihandle* ih)
     return NULL;
 
   tip_window = gtk_widget_get_tooltip_window(widget);
-  return iupStrReturnBoolean (tip_window && iupgtkIsVisible((GtkWidget*)tip_window));
+  if (tip_window)
+    return iupStrReturnBoolean(iupgtkIsVisible((GtkWidget*)tip_window));
+
+  return iupStrReturnBoolean(gtkTipDefaultWindow() != NULL && gtkTipPointerInside(ih));
 #else
   return NULL;
 #endif

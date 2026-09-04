@@ -52,6 +52,7 @@ Not supported in EFL, FLTK, Haiku, Android, iOS and WebAssembly.
 
 **TIPVISIBLE**: Shows or hides the tip under the mouse cursor. Use values "YES" or "NO".
 Returns the current visible state.
+Reading the state is not supported in GTK 4.
 
 ### Additional Tip Callbacks
 
