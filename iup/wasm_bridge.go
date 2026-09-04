@@ -381,7 +381,7 @@ func dispatch(ih Ihandle, name string, i1, i2, i3, i4 int, sarg string) int {
 	case HelpFunc:
 		ret = f(ih)
 	case WheelFunc:
-		ret = f(ih, float32(i1), i2, i3, sarg)
+		ret = f(ih, float64(i1), i2, i3, sarg)
 	case CloseFunc:
 		ret = f(ih)
 	case NotifyFunc:

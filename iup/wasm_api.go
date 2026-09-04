@@ -136,7 +136,7 @@ type TextInputFunc func(ih Ihandle, text string) int
 type MotionFunc func(ih Ihandle, x, y int, status string) int
 
 // WheelFunc is the type for the WHEEL_CB callback.
-type WheelFunc func(ih Ihandle, delta float32, x, y int, status string) int
+type WheelFunc func(ih Ihandle, delta float64, x, y int, status string) int
 
 // CloseFunc is the type for the dialog CLOSE_CB callback.
 type CloseFunc func(Ihandle) int

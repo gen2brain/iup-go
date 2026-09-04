@@ -253,9 +253,9 @@ static int wasmCanvasMapMethod(Ihandle* ih)
 
   {
     int is_gl = IupClassMatch(ih, "glcanvas");  /* GL must use the plain transferable canvas */
-    if (!is_gl && ih->iclass->childtype == IUP_CHILDNONE && ih->data->sb != IUP_SB_NONE)
+    if (!is_gl && ih->iclass->childtype == IUP_CHILDNONE && !ih->firstchild && ih->data->sb != IUP_SB_NONE)
       id = iupwasmJsCreateScrollCanvas(ih->data->sb & IUP_SB_HORIZ, ih->data->sb & IUP_SB_VERT);
-    else if (!is_gl && ih->iclass->childtype != IUP_CHILDNONE)
+    else if (!is_gl && (ih->iclass->childtype != IUP_CHILDNONE || ih->firstchild))
       id = iupwasmJsCreateCanvasContainer();
     else
       id = iupwasmJsCreateCanvasEl(is_gl);
@@ -272,7 +272,7 @@ static int wasmCanvasMapMethod(Ihandle* ih)
     iupAttribSet(IupGetDialog(ih), "_IUPWASM_HASSCROLL", "1");
   }
 
-  if (ih->iclass->childtype == IUP_CHILDNONE && ih->data->sb != IUP_SB_NONE)
+  if (ih->iclass->childtype == IUP_CHILDNONE && !ih->firstchild && ih->data->sb != IUP_SB_NONE)
   {
     if (iupAttribGetBoolean(ih, "BORDER"))
       iupwasmJsScrollCanvasBorder(id);
