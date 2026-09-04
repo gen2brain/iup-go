@@ -54,15 +54,18 @@ func main() {
 
 	btnImage.SetAttributes(`IMAGE=imgRelease, IMPRESS=imgPress, IMINACTIVE=imgInactive`)
 
+	btnImageBorder := iup.Button("With IMPRESSBORDER")
+	btnImageBorder.SetAttributes(`IMAGE=imgRelease, IMPRESS=imgPress, IMINACTIVE=imgInactive, IMPRESSBORDER=YES`)
+
 	btnBig := iup.Button("Big useless button").SetAttribute("SIZE", "EIGHTHxEIGHTH")
-	btnExit := iup.Button("Exit")
-	btnOnOff := iup.Button("on/off")
+	btnExit := iup.Button("Exit").SetAttribute("SHOWASDEFAULT", "YES")
+	btnOnOff := iup.Button("on/off").SetAttribute("FOCUSONCLICK", "NO")
 
 	dlg := iup.Dialog(
 		iup.Vbox(
 			iup.Hbox(
-				btnImage, btnOnOff, btnExit,
-			).SetAttributes(`"MARGIN=10x10, GAP=10`),
+				btnImage, btnImageBorder, btnOnOff, btnExit,
+			).SetAttributes(`MARGIN=10x10, GAP=10`),
 			text,
 			btnBig,
 		).SetAttributes(`MARGIN=10x10, GAP=10`),

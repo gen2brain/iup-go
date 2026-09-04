@@ -15,6 +15,7 @@ func main() {
 	cv := iup.Canvas().SetAttribute("RASTERSIZE", "300x300")
 	cv.SetCallback("ACTION", iup.ActionFunc(actionCb))
 	cv.SetCallback("TEXTINPUT_CB", iup.TextInputFunc(textInputCb))
+	cv.SetCallback("WHEEL_CB", iup.WheelFunc(wheelCb))
 
 	dlg := iup.Dialog(
 		iup.Frame(cv),
@@ -27,6 +28,15 @@ func main() {
 // textInputCb reports committed text: a plain character, a dead-key composition or an IME commit.
 func textInputCb(ih iup.Ihandle, text string) int {
 	fmt.Printf("TEXTINPUT_CB(%s)\n", text)
+	return iup.DEFAULT
+}
+
+var zoom int
+
+func wheelCb(ih iup.Ihandle, delta float64, x, y int, status string) int {
+	zoom += int(delta) * 5
+	fmt.Printf("WHEEL_CB delta=%.1f at %d,%d [%s] zoom=%d\n", delta, x, y, status, zoom)
+	iup.Update(ih)
 	return iup.DEFAULT
 }
 
@@ -46,7 +56,7 @@ func actionCb(ih iup.Ihandle) int {
 
 	// Define smiley dimensions, centered with padding
 	cx, cy := w/2, h/2
-	radius := (min(w, h) / 2) - 15
+	radius := (min(w, h) / 2) - 15 + zoom
 
 	// Draw the head
 	// Yellow fill

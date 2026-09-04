@@ -57,6 +57,9 @@ func main() {
 
 	button := wire(iup.Button("Button"), "button")
 
+	noClick := wire(iup.Button("FOCUSONCLICK=NO"), "noclick").SetAttribute("FOCUSONCLICK", "NO")
+	noFocus := wire(iup.Button("CANFOCUS=NO"), "nofocus").SetAttribute("CANFOCUS", "NO")
+
 	toggle := wire(iup.Toggle("Toggle"), "toggle")
 
 	radioA := wire(iup.Toggle("Radio A"), "radioA")
@@ -71,12 +74,12 @@ func main() {
 		"1": "alpha", "2": "beta", "3": "gamma", "VISIBLELINES": "3",
 	})
 
-	slider := wire(iup.Val("HORIZONTAL"), "slider").SetAttribute("EXPAND", "HORIZONTAL")
+	slider := wire(iup.Val("HORIZONTAL"), "slider").SetAttributes("EXPAND=HORIZONTAL, PROPAGATEFOCUS=YES")
 
-	tree := wire(iup.Tree(), "tree").SetAttribute("SIZE", "x60")
+	tree := wire(iup.Tree(), "tree")
 
 	table := wire(iup.Table(), "table").SetAttributes(map[string]string{
-		"NUMCOL": "2", "NUMLIN": "4", "SIZE": "x50",
+		"NUMCOL": "2", "NUMLIN": "4",
 		"TITLE1": "A", "TITLE2": "B", "WIDTH1": "80", "WIDTH2": "80",
 		"SELECTIONMODE": "SINGLE",
 	})
@@ -88,7 +91,7 @@ func main() {
 
 	left := iup.Vbox(
 		iup.Label("Tab through these; watch the log:"),
-		text, spin, button, toggle, radio,
+		text, spin, iup.Hbox(button, noClick, noFocus).SetAttribute("GAP", "4"), toggle, radio,
 		dropdown, listbox, slider, tree, table, tabs,
 		multi,
 	)
@@ -99,6 +102,11 @@ func main() {
 	dlg.SetAttributes(map[string]string{
 		"TITLE": "Tab + Focus test", "MARGIN": "6x6",
 	})
+	text.SetAttribute("PROPAGATEFOCUS", "YES")
+	dlg.SetCallback("FOCUS_CB", iup.FocusFunc(func(ih iup.Ihandle, focus int) int {
+		logf("FOCUS_CB dialog focus=%d (PROPAGATEFOCUS from text or slider)", focus)
+		return iup.DEFAULT
+	}))
 
 	iup.Map(dlg)
 

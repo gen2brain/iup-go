@@ -44,16 +44,27 @@ func main() {
 			//"NUMDIV": "AUTO",
 
 			"ALIGNMENTLIN": "ACENTER",
-			"MARGIN":       "10x10",
-			"GAPLIN":       "5",
-			"GAPCOL":       "5",
+			"ALIGNMENTCOL": "ARIGHT",
+			"NCMARGIN":     "3x2",
+			"NCGAPLIN":     "1",
+			"NCGAPCOL":     "2",
 		}),
 	)
+	gb := iup.GetChild(fr, 0)
+
+	fit := iup.Button("FITTOCHILDREN C1 and L2")
+	fit.SetCallback("ACTION", iup.ActionFunc(func(iup.Ihandle) int {
+		gb.SetAttribute("FITTOCHILDREN", "C1")
+		gb.SetAttribute("FITTOCHILDREN", "L2")
+		iup.Refresh(gb)
+		return iup.DEFAULT
+	}))
 
 	dlg := iup.Dialog(
-		iup.Hbox(
+		iup.Vbox(
 			fr,
-		),
+			fit,
+		).SetAttributes("NMARGIN=5x5, NGAP=5"),
 	)
 
 	iup.ShowXY(dlg, iup.CENTER, iup.CENTER)

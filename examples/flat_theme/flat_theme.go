@@ -131,6 +131,13 @@ func buildContent() iup.Ihandle {
 	list.SetAttributes(`1="Mercury", 2="Venus", 3="Earth", 4="Mars", 5="Jupiter"`)
 	list.SetAttributes("EXPAND=HORIZONTAL, VISIBLELINES=5, VALUE=3")
 
+	emphasis := iup.User()
+	emphasis.SetAttributes("FONTSTYLE=Bold, IUPFLATBUTTON=emphasis_button")
+	iup.SetHandle("emphasis", emphasis)
+	iup.SetHandle("emphasis_button", iup.User().SetAttributes("CORNERRADIUS=12, BORDERWIDTH=2"))
+	btn1.SetAttribute("THEME", "emphasis")
+	label2.SetAttribute("NTHEME", "emphasis")
+
 	frameContent := iup.Vbox(
 		iup.FlatLabel("Content inside a FlatFrame"),
 		iup.FlatButton("Framed Button"),
