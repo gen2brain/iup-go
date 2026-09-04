@@ -361,7 +361,7 @@ func dispatch(ih Ihandle, name string, i1, i2, i3, i4 int, sarg string) int {
 	case ResizeFunc:
 		ret = f(ih, i1, i2)
 	case TerminalInputFunc:
-		ret = f(ih, []byte(sarg))
+		ret = f(ih, wasmReadBytes(i1, i2))
 	case TerminalTitleFunc:
 		ret = f(ih, sarg)
 	case TerminalBellFunc:
