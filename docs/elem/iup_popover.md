@@ -22,7 +22,8 @@ Can be "YES" or "NO". Default: "YES".
 Only supported in GTK 4 and WebAssembly. In GTK 3 and macOS the arrow is always shown. In other systems the popover is displayed without an arrow.
 
 **AUTOHIDE** (non-inheritable): When enabled, the popover is automatically hidden when the user clicks outside of it, when focus leaves, or when the Esc key is pressed.
-Clicks on the anchor element do not trigger auto-hide.
+A click on the anchor element does not trigger auto-hide, so the anchor callback decides whether to hide the popover.
+In GTK 3, Qt and Motif the click hides the popover and is consumed, so it does not reach the anchor.
 Can be "YES" or "NO". Default: "YES".
 
 **POSITION** (non-inheritable): The position of the popover relative to the anchor element.
@@ -73,6 +74,7 @@ The ANCHOR element must be set and mapped before showing the popover.
 
 The popover uses the child's natural size to determine its own size.
 It does not expand and accepts exactly one child element.
+In GTK 3 a popover larger than the dialog is clipped to it.
 
 The ANCHOR attribute must be set before mapping, and the anchor element must already be mapped when the popover is first shown.
 
