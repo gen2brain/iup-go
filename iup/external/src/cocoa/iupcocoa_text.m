@@ -4847,11 +4847,39 @@ static int cocoaTextSetInsertAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
+static void cocoaTextClipboardNoEditor(Ihandle* ih, NSTextField* text_field, const char* value)
+{
+  NSPasteboard* paste_board = [NSPasteboard generalPasteboard];
+
+  if(iupStrEqualNoCase(value, "COPY") || iupStrEqualNoCase(value, "CUT"))
+  {
+    [paste_board clearContents];
+    [paste_board setString:[text_field stringValue] forType:NSPasteboardTypeString];
+
+    if(iupStrEqualNoCase(value, "CUT"))
+      cocoaTextSetValueAttrib(ih, "");
+  }
+  else if(iupStrEqualNoCase(value, "PASTE"))
+  {
+    if([paste_board availableTypeFromArray:@[NSPasteboardTypeString]])
+    {
+      NSString* pasteboard_string = [paste_board stringForType:NSPasteboardTypeString];
+      if(pasteboard_string)
+        cocoaTextSetValueAttrib(ih, [pasteboard_string UTF8String]);
+    }
+  }
+  else if(iupStrEqualNoCase(value, "CLEAR"))
+  {
+    [paste_board clearContents];
+  }
+}
+
 static int cocoaTextSetClipboardAttrib(Ihandle* ih, const char* value)
 {
   ih->data->disable_callbacks = 1;
 
   NSView* the_view = nil;
+  NSTextField* text_field = nil;
 
   IupCocoaTextSubType sub_type = cocoaTextGetSubType(ih);
   switch(sub_type)
@@ -4864,20 +4892,31 @@ static int cocoaTextSetClipboardAttrib(Ihandle* ih, const char* value)
       }
     case IUPCOCOATEXTSUBTYPE_FIELD:
       {
-        NSTextField* text_field = cocoaTextGetTextField(ih);
-        the_view = text_field;
+        text_field = cocoaTextGetTextField(ih);
         break;
       }
     case IUPCOCOATEXTSUBTYPE_STEPPER:
       {
-        NSTextField* text_field = cocoaTextGetStepperTextField(ih);
-        the_view = text_field;
+        text_field = cocoaTextGetStepperTextField(ih);
         break;
       }
     default:
       {
         break;
       }
+  }
+
+  /* NSTextField has no paste:, its field editor edits it; with no editor the whole value is used */
+  if(text_field)
+  {
+    the_view = [text_field currentEditor];
+
+    if(!the_view)
+    {
+      cocoaTextClipboardNoEditor(ih, text_field, value);
+      ih->data->disable_callbacks = 0;
+      return 0;
+    }
   }
 
   if(iupStrEqualNoCase(value, "COPY"))
