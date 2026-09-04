@@ -356,6 +356,4 @@ IUP_SDK_API void iupdrvPopoverInitClass(Iclass* ic)
   /* Override VISIBLE attribute, NOT_MAPPED because setter handles mapping */
   iupClassRegisterAttribute(ic, "VISIBLE", cocoaPopoverGetVisibleAttrib, cocoaPopoverSetVisibleAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "OFFSETX", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "OFFSETY", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
 }

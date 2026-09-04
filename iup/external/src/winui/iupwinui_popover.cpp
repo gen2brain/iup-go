@@ -283,6 +283,4 @@ extern "C" IUP_SDK_API void iupdrvPopoverInitClass(Iclass* ic)
 
   iupClassRegisterAttribute(ic, "VISIBLE", winuiPopoverGetVisibleAttrib, winuiPopoverSetVisibleAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "OFFSETX", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "OFFSETY", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
 }
