@@ -97,6 +97,20 @@ static LRESULT CALLBACK winPopoverProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp
       break;
     }
 
+    case WM_KEYDOWN:
+    {
+      if (wp == VK_ESCAPE)
+      {
+        Ihandle* ih = iupwinHandleGet(hwnd);
+        if (ih && iupAttribGetBoolean(ih, "AUTOHIDE"))
+        {
+          IupSetAttribute(ih, "VISIBLE", "NO");
+          return 0;
+        }
+      }
+      break;
+    }
+
     case WM_CLOSE:
     {
       Ihandle* ih = iupwinHandleGet(hwnd);

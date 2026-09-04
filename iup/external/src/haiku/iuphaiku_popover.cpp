@@ -67,6 +67,21 @@ public:
     BMessenger(this).SendMessage('IuPH');  /* defer hide so the click finishes */
   }
 
+  void DispatchMessage(BMessage* msg, BHandler* handler) override
+  {
+    if (msg && msg->what == B_KEY_DOWN && fIhandle && iupObjectCheck(fIhandle) &&
+        iupAttribGetBoolean(fIhandle, "AUTOHIDE"))
+    {
+      const char* bytes = NULL;
+      if (msg->FindString("bytes", &bytes) == B_OK && bytes && bytes[0] == B_ESCAPE)
+      {
+        IupSetAttribute(fIhandle, "VISIBLE", "NO");
+        return;
+      }
+    }
+    BWindow::DispatchMessage(msg, handler);
+  }
+
   void MessageReceived(BMessage* msg) override
   {
     if (msg && msg->what == 'IuPH' && fIhandle && iupObjectCheck(fIhandle))

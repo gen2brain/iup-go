@@ -5,6 +5,7 @@
  */
 
 #include <stdio.h>
+#include <string.h>
 
 #include "iup.h"
 #include "iupcbs.h"
@@ -55,7 +56,7 @@ static Eina_Bool eflPopoverIsCursorOverAnchor(Ihandle* ih)
   return EINA_FALSE;
 }
 
-static void eflPopoverAutoHide(Ihandle* ih)
+static void eflPopoverHide(Ihandle* ih)
 {
   Eo* popup_win = iupeflGetWidget(ih);
   IFni show_cb;
@@ -63,17 +64,34 @@ static void eflPopoverAutoHide(Ihandle* ih)
   if (!popup_win || !iupeflIsVisible(popup_win))
     return;
 
+  efl_gfx_entity_visible_set(popup_win, EINA_FALSE);
+
+  show_cb = (IFni)IupGetCallback(ih, "SHOW_CB");
+  if (show_cb)
+    show_cb(ih, IUP_HIDE);
+}
+
+static void eflPopoverAutoHide(Ihandle* ih)
+{
   if (!iupAttribGetBoolean(ih, "AUTOHIDE"))
     return;
 
   if (eflPopoverIsCursorOverAnchor(ih))
     return;
 
-  efl_gfx_entity_visible_set(popup_win, EINA_FALSE);
+  eflPopoverHide(ih);
+}
 
-  show_cb = (IFni)IupGetCallback(ih, "SHOW_CB");
-  if (show_cb)
-    show_cb(ih, IUP_HIDE);
+static void eflPopoverKeyDownCb(void* data, const Efl_Event* ev)
+{
+  Ihandle* ih = (Ihandle*)data;
+  const char* keyname = efl_input_key_name_get(ev->info);
+
+  if (!keyname || strcmp(keyname, "Escape") != 0)
+    return;
+
+  if (iupAttribGetBoolean(ih, "AUTOHIDE"))
+    eflPopoverHide(ih);
 }
 
 static void eflPopoverFocusOutCb(void* data, const Efl_Event* ev)
@@ -158,6 +176,7 @@ static int eflPopoverMapMethod(Ihandle* ih)
   }
 
   efl_event_callback_add(popup_win, EFL_EVENT_FOCUS_OUT, eflPopoverFocusOutCb, ih);
+  efl_event_callback_add(popup_win, EFL_EVENT_KEY_DOWN, eflPopoverKeyDownCb, ih);
   iupAttribSet(ih, "_IUP_EFL_MOUSEDOWN", (char*)ecore_event_handler_add(ECORE_EVENT_MOUSE_BUTTON_DOWN, eflPopoverMouseDownCb, ih));
 
   return IUP_NOERROR;
@@ -177,6 +196,7 @@ static void eflPopoverUnMapMethod(Ihandle* ih)
   if (popup_win)
   {
     efl_event_callback_del(popup_win, EFL_EVENT_FOCUS_OUT, eflPopoverFocusOutCb, ih);
+    efl_event_callback_del(popup_win, EFL_EVENT_KEY_DOWN, eflPopoverKeyDownCb, ih);
     iupeflDelete(popup_win);
   }
 

@@ -477,7 +477,19 @@ IUP_SDK_API int iupKeyProcessNavigation(Ihandle* ih, int code, int shift)
   }
   else if (code==K_ESC)
   {
-    Ihandle* bt = IupGetAttributeHandle(IupGetDialog(ih), "DEFAULTESC");
+    Ihandle* elem = ih;
+    Ihandle* bt;
+
+    for (; elem; elem = elem->parent)
+    {
+      if (IupClassMatch(elem, "popover") && iupAttribGetBoolean(elem, "AUTOHIDE") && IupGetInt(elem, "VISIBLE"))
+      {
+        IupSetAttribute(elem, "VISIBLE", "NO");
+        return 1;
+      }
+    }
+
+    bt = IupGetAttributeHandle(IupGetDialog(ih), "DEFAULTESC");
     if (iupObjectCheck(bt) && (IupClassMatch(bt, "button") || IupClassMatch(bt, "flatbutton")))
     {
       iupKeyActivate(bt);
