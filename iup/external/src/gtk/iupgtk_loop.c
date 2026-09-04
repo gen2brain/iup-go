@@ -99,14 +99,14 @@ IUP_API int IupMainLoop(void)
 
 IUP_API int IupLoopStepWait(void)
 {
-  if (gtk_main_iteration_do(TRUE))
+  if (gtk_main_iteration_do(TRUE) && gtk_main_level() > 0)
     return IUP_CLOSE;
   return IUP_DEFAULT;
 }
 
 IUP_API int IupLoopStep(void)
 {
-  if (gtk_main_iteration_do(FALSE))
+  if (gtk_main_iteration_do(FALSE) && gtk_main_level() > 0)
     return IUP_CLOSE;
   return IUP_DEFAULT;
 }
