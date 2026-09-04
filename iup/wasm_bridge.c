@@ -187,12 +187,8 @@ static int wasmCbTextInput(Ihandle* ih, char* text) { return iupwasmGoDispatch(i
 /* INPUT_CB bytes are not NUL terminated */
 static int wasmCbTerminalInput(Ihandle* ih, char* bytes, int len)
 {
-  char buf[64];
   if (len < 0) len = 0;
-  if (len > (int)sizeof(buf) - 1) len = (int)sizeof(buf) - 1;
-  memcpy(buf, bytes, len);
-  buf[len] = 0;
-  return iupwasmGoDispatch(ih, "INPUT_CB", len, 0, 0, 0, buf);
+  return iupwasmGoDispatch(ih, "INPUT_CB", (int)(intptr_t)bytes, len, 0, 0, 0);
 }
 static int wasmCbMotion(Ihandle* ih, int x, int y, char* st) { return iupwasmGoDispatch(ih, "MOTION_CB", x, y, 0, 0, st); }
 static int wasmCbWheel(Ihandle* ih, float delta, int x, int y, char* st) { return iupwasmGoDispatch(ih, "WHEEL_CB", (int)delta, x, y, 0, st); }
