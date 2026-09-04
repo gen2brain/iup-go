@@ -63,8 +63,10 @@ func main() {
 func threadCb(ih iup.Ihandle) int {
 	status := iup.GetHandle("status")
 	steps := 100
+	fmt.Println("THREAD_CB ISCURRENT=" + ih.GetAttribute("ISCURRENT"))
 
 	for i := 0; i <= steps; i++ {
+		ih.SetAttribute("YIELD", "YES")
 		ih.SetAttribute("LOCK", "YES")
 		cancelled := ih.GetAttribute("_CANCELLED")
 		ih.SetAttribute("LOCK", "NO")
@@ -131,6 +133,8 @@ func cancelCb(ih iup.Ihandle) int {
 	thread.SetAttribute("LOCK", "YES")
 	thread.SetAttribute("_CANCELLED", "YES")
 	thread.SetAttribute("LOCK", "NO")
+	thread.SetAttribute("JOIN", "YES")
+	fmt.Println("JOIN returned, ISCURRENT=" + thread.GetAttribute("ISCURRENT"))
 
 	ih.SetAttribute("ACTIVE", "NO")
 	return iup.DEFAULT

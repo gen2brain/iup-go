@@ -1,6 +1,9 @@
 package main
 
 import (
+	"fmt"
+	"math"
+
 	"github.com/gen2brain/iup-go/iup"
 )
 
@@ -10,26 +13,39 @@ func main() {
 	iup.Open()
 	defer iup.Close()
 
-	lblH := iup.Label("0").SetHandle("lblH").SetAttributes("ALIGNMENT=ACENTER, SIZE=100x10")
-	lblV := iup.Label("0").SetHandle("lblV").SetAttributes("ALIGNMENT=ACENTER, SIZE=100x10")
+	lblH := iup.Label("0.0 degrees").SetHandle("lblH").SetAttributes("ALIGNMENT=ACENTER, EXPAND=HORIZONTAL")
+	lblV := iup.Label("0 radians").SetHandle("lblV").SetAttributes("ALIGNMENT=ACENTER, EXPAND=HORIZONTAL")
 
-	dialV := iup.Dial("VERTICAL").SetAttributes("RASTERSIZE=100x100")
+	dialV := iup.Dial("VERTICAL").SetAttributes(`FLAT=YES, FLATCOLOR="200 40 40"`)
 	dialH := iup.Dial("HORIZONTAL").SetAttributes("DENSITY=0.3")
 
+	lblC := iup.Label("VALUE -0.00 rad, -180.0 degrees (Home resets)").SetHandle("lblC").SetAttributes("ALIGNMENT=ACENTER, EXPAND=HORIZONTAL")
+	dialC := iup.Dial("CIRCULAR").SetAttributes("DENSITY=0.5")
+
 	dialV.SetCallback("VALUECHANGED_CB", iup.ValueChangedFunc(dialVCb))
-	dialH.SetCallback("VALUECHANGED_CB", iup.ValueChangedFunc(dialHCb))
+	dialC.SetCallback("VALUECHANGED_CB", iup.ValueChangedFunc(dialCCb))
+	dialH.SetCallback("VALUECHANGED_CB", iup.ValueChangedFunc(func(ih iup.Ihandle) int {
+		iup.GetHandle("lblH").SetAttribute("TITLE", fmt.Sprintf("%.1f degrees", ih.GetFloat("VALUE")*180/math.Pi))
+		return iup.DEFAULT
+	}))
 
 	dlg := iup.Dialog(
-		iup.Vbox(
+		iup.Hbox(
 			iup.Vbox(
-				dialV,
-				lblV,
-			),
+				iup.Vbox(
+					dialV,
+					lblV,
+				),
+				iup.Vbox(
+					dialH,
+					lblH,
+				),
+			).SetAttribute("NGAP", "5"),
 			iup.Vbox(
-				dialH,
-				lblH,
-			),
-		).SetAttributes("MARGIN=10x10, GAP=5"),
+				dialC,
+				lblC,
+			).SetAttributes("NGAP=5, ALIGNMENT=ACENTER"),
+		).SetAttributes("NMARGIN=10x10, NGAP=15"),
 	).SetAttributes(`TITLE="Dial"`)
 
 	iup.ShowXY(dlg, iup.CENTER, iup.CENTER)
@@ -37,11 +53,12 @@ func main() {
 }
 
 func dialVCb(ih iup.Ihandle) int {
-	iup.GetHandle("lblV").SetAttribute("TITLE", ih.GetAttribute("VALUE"))
+	iup.GetHandle("lblV").SetAttribute("TITLE", fmt.Sprintf("%.2f radians", ih.GetFloat("VALUE")))
 	return iup.DEFAULT
 }
 
-func dialHCb(ih iup.Ihandle) int {
-	iup.GetHandle("lblH").SetAttribute("TITLE", ih.GetAttribute("VALUE"))
+func dialCCb(ih iup.Ihandle) int {
+	v := ih.GetFloat("VALUE")
+	iup.GetHandle("lblC").SetAttribute("TITLE", fmt.Sprintf("VALUE %.2f rad, %.1f degrees (Home resets)", v, v*180/math.Pi))
 	return iup.DEFAULT
 }

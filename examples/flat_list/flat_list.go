@@ -17,21 +17,36 @@ func main() {
 
 	iup.ControlsOpen()
 
+	iup.SetHandle("arrow_left", makeImage(60, 140, 220))
+	iup.SetHandle("arrow_right", makeImage(200, 60, 60))
+	iup.SetHandle("arrow_high", makeImage(120, 190, 255))
+	iup.SetHandle("arrow_press", makeImage(20, 70, 140))
+	iup.SetHandle("arrow_gray", makeImage(170, 170, 170))
+
 	hint := iup.Label("Drag any item up or down to reorder. Hold Ctrl to copy.").
 		SetAttribute("EXPAND", "HORIZONTAL")
 
 	list := iup.FlatList().SetAttributes(map[string]string{
-		"1":            "Alpha",
-		"2":            "Bravo",
-		"3":            "Charlie",
-		"4":            "Delta",
-		"5":            "Echo",
-		"6":            "Foxtrot",
-		"7":            "Golf",
-		"8":            "Hotel",
-		"SHOWDRAGDROP": "YES",
-		"EXPAND":       "YES",
-		"VISIBLELINES": "8",
+		"1":              "Alpha",
+		"2":              "Bravo",
+		"3":              "Charlie",
+		"4":              "Delta",
+		"5":              "Echo",
+		"6":              "Foxtrot",
+		"7":              "Golf",
+		"8":              "Hotel",
+		"9":              "India, a much longer item that needs the horizontal scrollbar",
+		"SHOWDRAGDROP":   "YES",
+		"EXPAND":         "VERTICAL",
+		"VISIBLELINES":   "8",
+		"FLATSCROLLBAR":  "YES",
+		"SHOWARROWS":     "YES",
+		"VISIBLECOLUMNS": "20",
+		"ITEMFONT1":      "Sans, Bold 10",
+		"ARROWIMAGES":    "YES",
+		"SB_IMAGELEFT":   "arrow_left", "SB_IMAGELEFTHIGHLIGHT": "arrow_high", "SB_IMAGELEFTPRESS": "arrow_press", "SB_IMAGELEFTINACTIVE": "arrow_gray",
+		"SB_IMAGERIGHT": "arrow_right", "SB_IMAGERIGHTHIGHLIGHT": "arrow_high", "SB_IMAGERIGHTPRESS": "arrow_press", "SB_IMAGERIGHTINACTIVE": "arrow_gray",
+		"SB_IMAGETOP": "arrow_left", "SB_IMAGEBOTTOM": "arrow_right",
 	})
 	iup.SetHandle("list", list)
 
@@ -78,4 +93,19 @@ func currentOrder(list iup.Ihandle) string {
 		items = append(items, list.GetAttribute(fmt.Sprintf("%d", i)))
 	}
 	return strings.Join(items, ", ")
+}
+
+func makeImage(r, g, b byte) iup.Ihandle {
+	const n = 12
+	pixels := make([]byte, n*n*4)
+	for y := 0; y < n; y++ {
+		for x := 0; x < n; x++ {
+			i := (y*n + x) * 4
+			dx, dy := float64(x-6)+0.5, float64(y-6)+0.5
+			if dx*dx+dy*dy <= 25 {
+				pixels[i+0], pixels[i+1], pixels[i+2], pixels[i+3] = r, g, b, 255
+			}
+		}
+	}
+	return iup.ImageRGBA(n, n, pixels)
 }
