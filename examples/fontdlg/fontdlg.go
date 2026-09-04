@@ -12,7 +12,7 @@ func main() {
 	iup.Open()
 	defer iup.Close()
 
-	dlg := iup.FontDlg()
+	dlg := iup.FontDlg().SetAttributes(`PREVIEWTEXT="The quick brown fox jumps over the lazy dog"`)
 	defer dlg.Destroy()
 
 	iup.Popup(dlg, iup.CENTER, iup.CENTER)

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"math"
 
 	"github.com/gen2brain/iup-go/iup"
@@ -40,6 +41,7 @@ func counterInc() bool {
 }
 
 func counterStop() {
+	fmt.Println("PERCENT before finishing:", iup.GetAttribute(counterDlg, "PERCENT"))
 	iup.SetAttribute(counterDlg, "COUNT", iup.GetInt(counterDlg, "TOTALCOUNT"))
 	iup.SetAttribute(counterDlg, "SIMULATEMODAL", "No")
 	iup.Hide(counterDlg)
@@ -69,9 +71,12 @@ func main() {
 	defer iup.Close()
 
 	counterDlg = iup.ProgressDlg().SetAttributes(map[string]string{
-		"TITLE":       "Long Processing Test",
-		"DESCRIPTION": "Description first line\nSecond Line",
-		"RESIZE":      "YES",
+		"TITLE":          "Long Processing Test",
+		"DESCRIPTION":    "Description first line\nSecond Line",
+		"RESIZE":         "YES",
+		"PROGRESSHEIGHT": "40",
+		"MINCLOCK":       "100",
+		"MINPERCENT":     "2",
 	})
 	defer iup.Destroy(counterDlg)
 

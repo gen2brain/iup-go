@@ -45,6 +45,15 @@ func main() {
 		switch paramIndex {
 		case iup.GETPARAM_MAP:
 			fmt.Println("Map")
+			for i := 0; ; i++ {
+				param := iup.Ihandle(iup.GetPtr(dialog, fmt.Sprintf("PARAM%d", i)))
+				if param == 0 {
+					break
+				}
+				fmt.Printf("PARAM%d INDEX=%s DATATYPE=%s TITLE=%q CONTROL=%v AUXCONTROL=%v\n", i,
+					param.GetAttribute("INDEX"), param.GetAttribute("DATATYPE"), param.GetAttribute("TITLE"),
+					iup.GetPtr(param, "CONTROL") != 0, iup.GetPtr(param, "AUXCONTROL") != 0)
+			}
 		case iup.GETPARAM_INIT:
 			fmt.Println("Init")
 		case iup.GETPARAM_OK:

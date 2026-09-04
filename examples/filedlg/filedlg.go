@@ -166,12 +166,14 @@ func main() {
 		filedlg.SetAttribute("DIALOGTYPE", "OPEN")
 		filedlg.SetAttribute("TITLE", "Open File (Default)")
 		filedlg.SetAttribute("EXTFILTER", "Image Files|*.png;*.jpg;*.jpeg;*.gif|All Files|*.*")
+		filedlg.SetAttributes("FILTERUSED=2, ALLOWNEW=YES, SHOWHIDDEN=YES, NOCHANGEDIR=YES")
 
 		iup.Popup(filedlg, iup.CENTER, iup.CENTER)
 
 		status := filedlg.GetInt("STATUS")
 		if status >= 0 {
-			fmt.Printf("Default mode selected: %s\n", filedlg.GetAttribute("VALUE"))
+			fmt.Printf("Default mode selected: %s FILEEXIST=%s FILTERUSED=%s\n", filedlg.GetAttribute("VALUE"),
+				filedlg.GetAttribute("FILEEXIST"), filedlg.GetAttribute("FILTERUSED"))
 		} else {
 			fmt.Println("Default mode: Canceled")
 		}
@@ -189,6 +191,7 @@ func main() {
 		filedlg.SetAttribute("FILTER", "*.txt")
 		filedlg.SetAttribute("FILTERINFO", "Text Files")
 		filedlg.SetAttribute("PORTAL", "YES")
+		filedlg.SetAttribute("NOOVERWRITEPROMPT", "YES")
 
 		iup.Popup(filedlg, iup.CENTER, iup.CENTER)
 
