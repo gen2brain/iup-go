@@ -1022,6 +1022,11 @@ static int iDialogSizeGetScale(const char* sz)
   return 0;
 }
 
+static char* iDialogGetModalAttrib(Ihandle* ih)
+{
+  return iupStrReturnBoolean(iupAttribGetBoolean(ih, "MODAL"));
+}
+
 static int iDialogSetSizeAttrib(Ihandle* ih, const char* value)
 {
   if (!value)
@@ -1436,7 +1441,7 @@ Iclass* iupDialogNewClass(void)
   iupClassRegisterAttribute(ic, "PARENTDIALOG", NULL, iDialogSetParentDialogAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_IHANDLENAME | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SHRINK",       NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "STARTFOCUS",   NULL, NULL, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_IHANDLENAME | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "MODAL",        NULL, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MODAL",        iDialogGetModalAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "PLACEMENT",    NULL, NULL, "NORMAL", NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "NOFLUSH", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SHOWNOFOCUS", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
