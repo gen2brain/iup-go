@@ -29,7 +29,6 @@
 #define M_PI       3.14159265358979323846
 #endif
 
-#define IUP_RAD2DEG  57.295779513   /* radians to degrees (deg = IUP_RAD2DEG * rad) */
 
 #define IDIAL_SPACE 3   /* margin to the contents, includes the focus line */
 #define IDIAL_MARK 4    /* circular mark */
@@ -48,7 +47,6 @@ struct _IcontrolData
   /* attributes */
   double angle;
   int orientation;
-  double unit;
   double density;
 
   /* mouse interaction control */
@@ -689,12 +687,6 @@ static int iDialSetActiveAttrib(Ihandle* ih, const char* value)
   return 0;   /* do not store value in hash table */
 }
 
-static int iDialSetUnitAttrib(Ihandle* ih, const char* value)
-{
-  ih->data->unit = iupStrEqualNoCase(value, "DEGREES") ? IUP_RAD2DEG : 1.0;
-  return 1;
-}
-
 static int iDialSetOrientationAttrib(Ihandle* ih, const char* value)
 {
   /* valid only before map */
@@ -776,7 +768,6 @@ static int iDialCreateMethod(Ihandle* ih, void **params)
   /* default values */
   iDialSetOrientationAttrib(ih, orientation);
   ih->data->density = IDIAL_DEFAULT_DENSITY;
-  ih->data->unit = 1.0;  /* RADIANS */
   ih->data->num_div = 3;
   iDialUpdateFgColors(ih, IDIAL_DEFAULT_FGCOLOR);
   ih->data->flatcolor = iupDrawColor(160, 160, 160, 255);
@@ -822,7 +813,6 @@ Iclass* iupDialNewClass(void)
 
   iupClassRegisterAttribute(ic, "DENSITY", iDialGetDensityAttrib, iDialSetDensityAttrib, NULL, NULL, IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "FGCOLOR", NULL, iDialSetFgColorAttrib, IDIAL_DEFAULT_FGCOLOR, NULL, IUPAF_NOT_MAPPED);
-  iupClassRegisterAttribute(ic, "UNIT", NULL, iDialSetUnitAttrib, IUPAF_SAMEASSYSTEM, "RADIANS", IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "FLAT", iDialGetFlatAttrib, iDialSetFlatAttrib, NULL, NULL, IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "FLATCOLOR", NULL, iDialSetFlatColorAttrib, IUPAF_SAMEASSYSTEM, "160 160 160", IUPAF_NOT_MAPPED);
 
