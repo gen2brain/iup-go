@@ -838,14 +838,166 @@ IUP_SDK_API void iupdrvDrawResetClip(IdrawCanvas* dc)
   dc->clip_y2 = 0;
 }
 
-#ifdef IUP_USE_XFT
-static void iDrawTextXft(IdrawCanvas* dc, const char* text, int len, int x, int y, int w, int h, long color, XftFont* xftfont, int flags)
+typedef int (*ImotTextWidth)(void* font, const char* text, int len);
+
+static int motDrawUtf8Back(const char* text, int n)
 {
-  int num_line, off_x;
+  n--;
+  while (n > 0 && ((unsigned char)text[n] & 0xC0) == 0x80)
+    n--;
+  return n;
+}
+
+static int motDrawFitWidth(ImotTextWidth text_width, void* font, const char* text, int len, int width, int wrap)
+{
+  int n = len;
+  if (text_width(font, text, len) <= width)
+    return len;
+
+  while (n > 0)
+  {
+    n = motDrawUtf8Back(text, n);
+    if (text_width(font, text, n) <= width)
+      break;
+  }
+
+  if (wrap)
+  {
+    int k = n;
+    while (k > 0 && text[k] != ' ')
+      k--;
+    if (k > 0)
+      n = k;
+  }
+
+  if (n == 0)
+  {
+    n = 1;
+    while (n < len && ((unsigned char)text[n] & 0xC0) == 0x80)
+      n++;
+  }
+  return n;
+}
+
+typedef struct _ImotDrawLine
+{
+  char* text;
+  int len;
+} ImotDrawLine;
+
+static int motDrawBreakLines(ImotTextWidth text_width, void* font, const char* text, int len, int w, int flags, ImotDrawLine** lines_ret)
+{
+  int count = 0, cap = 8;
+  ImotDrawLine* lines = (ImotDrawLine*)malloc(cap * sizeof(ImotDrawLine));
+  const char* p = text;
+  const char* end = text + len;
+
+  while (p <= end)
+  {
+    const char* q = (const char*)memchr(p, '\n', end - p);
+    const char* line_end = q ? q : end;
+    const char* seg = p;
+
+    do
+    {
+      int seg_len = (int)(line_end - seg);
+      int take = seg_len;
+      int extra = 0;
+
+      if ((flags & IUP_DRAW_WRAP) && w > 0)
+        take = motDrawFitWidth(text_width, font, seg, seg_len, w, 1);
+      else if ((flags & IUP_DRAW_ELLIPSIS) && w > 0 && text_width(font, seg, seg_len) > w)
+      {
+        int dots = text_width(font, "...", 3);
+        take = motDrawFitWidth(text_width, font, seg, seg_len, w - dots, 0);
+        extra = 3;
+      }
+
+      if (count == cap)
+      {
+        cap *= 2;
+        lines = (ImotDrawLine*)realloc(lines, cap * sizeof(ImotDrawLine));
+      }
+      lines[count].text = (char*)malloc(take + extra + 1);
+      memcpy(lines[count].text, seg, take);
+      if (extra)
+        memcpy(lines[count].text + take, "...", 3);
+      lines[count].text[take + extra] = 0;
+      lines[count].len = take + extra;
+      count++;
+
+      if (extra)
+        break;
+      seg += take;
+      while (seg < line_end && *seg == ' ')
+        seg++;
+    } while (seg < line_end);
+
+    if (!q)
+      break;
+    p = q + 1;
+  }
+
+  *lines_ret = lines;
+  return count;
+}
+
+#ifdef IUP_USE_XFT
+static XftFont* motDrawGetRotatedXftFont(XftFont* xftfont, double angle)
+{
+  static struct { XftFont* base; double angle; XftFont* font; } cache[16];
+  static int next;
+  FcPattern* pattern;
+  FcMatrix matrix;
+  XftFont* rotated;
+  double rad = angle * IUP_DEG2RAD;
+  int i;
+
+  for (i = 0; i < 16; i++)
+  {
+    if (cache[i].base == xftfont && cache[i].angle == angle)
+      return cache[i].font;
+  }
+
+  pattern = FcPatternDuplicate(xftfont->pattern);
+  matrix.xx = cos(rad);
+  matrix.xy = -sin(rad);
+  matrix.yx = sin(rad);
+  matrix.yy = cos(rad);
+  FcPatternDel(pattern, FC_MATRIX);
+  FcPatternAddMatrix(pattern, FC_MATRIX, &matrix);
+  rotated = XftFontOpenPattern(iupmot_display, pattern);
+  if (!rotated)
+  {
+    FcPatternDestroy(pattern);
+    return xftfont;
+  }
+
+  if (cache[next].font)
+    XftFontClose(iupmot_display, cache[next].font);
+  cache[next].base = xftfont;
+  cache[next].angle = angle;
+  cache[next].font = rotated;
+  next = (next + 1) % 16;
+  return rotated;
+}
+
+static int motDrawXftWidth(void* font, const char* text, int len)
+{
+  XGlyphInfo extents;
+  if (len <= 0)
+    return 0;
+  XftTextExtentsUtf8(iupmot_display, (XftFont*)font, (FcChar8*)text, len, &extents);
+  return extents.xOff;
+}
+
+static void iDrawTextXft(IdrawCanvas* dc, const char* text, int len, int x, int y, int w, int h, long color, XftFont* xftfont, int flags, double text_orientation)
+{
   XftDraw* xftdraw;
   XftColor xftcolor;
   XRenderColor rendercolor;
-  XGlyphInfo extents;
+  ImotDrawLine* lines;
+  int count, i, line_height, layout_w = 0, layout_h;
 
   if (!motDrawHasRender())
     color &= 0x00FFFFFF;  /* stored alpha 0 = opaque */
@@ -869,188 +1021,245 @@ static void iDrawTextXft(IdrawCanvas* dc, const char* text, int len, int x, int 
     XftDrawSetClipRectangles(xftdraw, 0, 0, &rect, 1);
   }
 
-  num_line = iupStrLineCount(text, len);
-
-  if (num_line == 1)
+  count = motDrawBreakLines(motDrawXftWidth, xftfont, text, len, w, flags, &lines);
+  line_height = xftfont->ascent + xftfont->descent;
+  layout_h = count * line_height;
+  for (i = 0; i < count; i++)
   {
-    off_x = 0;
-    if (flags & (IUP_DRAW_RIGHT | IUP_DRAW_CENTER))
+    int line_w = motDrawXftWidth(xftfont, lines[i].text, lines[i].len);
+    if (line_w > layout_w)
+      layout_w = line_w;
+  }
+
+  if (text_orientation != 0)
+  {
+    XftFont* rotated = motDrawGetRotatedXftFont(xftfont, text_orientation);
+    double rad = text_orientation * IUP_DEG2RAD, c = cos(rad), sn = sin(rad);
+    double px, py, lx0, ly0;
+
+    if (flags & IUP_DRAW_LAYOUTCENTER)
     {
-      XftTextExtentsUtf8(iupmot_display, xftfont, (FcChar8*)text, len, &extents);
-      if (flags & IUP_DRAW_RIGHT)
-      {
-        off_x = w - extents.xOff;
-        if (off_x < 0) off_x = 0;
-      }
-      else
-      {
-        off_x = (w - extents.xOff) / 2;
-        if (off_x < 0) off_x = 0;
-      }
+      px = x + w / 2.0;
+      py = y + h / 2.0;
+      lx0 = px - layout_w / 2.0;
+      ly0 = py - layout_h / 2.0;
+    }
+    else
+    {
+      px = x;
+      py = y;
+      lx0 = x;
+      ly0 = y;
     }
 
-    XftDrawStringUtf8(xftdraw, &xftcolor, xftfont, x + off_x, y + xftfont->ascent, (FcChar8*)text, len);
+    for (i = 0; i < count; i++)
+    {
+      int line_w = motDrawXftWidth(xftfont, lines[i].text, lines[i].len);
+      double bx = lx0, by = ly0 + i * line_height + xftfont->ascent;
+      double dx, dy;
+      if (flags & IUP_DRAW_CENTER)
+        bx += (layout_w - line_w) / 2.0;
+      else if (flags & IUP_DRAW_RIGHT)
+        bx += layout_w - line_w;
+      dx = bx - px;
+      dy = by - py;
+      XftDrawStringUtf8(xftdraw, &xftcolor, rotated, (int)floor(px + dx * c + dy * sn + 0.5), (int)floor(py - dx * sn + dy * c + 0.5), (FcChar8*)lines[i].text, lines[i].len);
+    }
   }
   else
   {
-    int i, line_height, l_len, sum_len = 0;
-    const char *p, *q;
-
-    line_height = xftfont->ascent + xftfont->descent;
-
-    p = text;
-    for (i = 0; i < num_line; i++)
+    int box_w = w > 0 ? w : layout_w;
+    for (i = 0; i < count; i++)
     {
-      q = strchr(p, '\n');
-      if (q)
-        l_len = (int)(q - p);
-      else
-        l_len = (int)strlen(p);
-
-      if (sum_len + l_len > len)
-        l_len = len - sum_len;
-
-      if (l_len)
+      int off_x = 0;
+      if (flags & (IUP_DRAW_RIGHT | IUP_DRAW_CENTER))
       {
-        off_x = 0;
-        if (flags & (IUP_DRAW_RIGHT | IUP_DRAW_CENTER))
-        {
-          XftTextExtentsUtf8(iupmot_display, xftfont, (FcChar8*)p, l_len, &extents);
-          if (flags & IUP_DRAW_RIGHT)
-          {
-            off_x = w - extents.xOff;
-            if (off_x < 0) off_x = 0;
-          }
-          else
-          {
-            off_x = (w - extents.xOff) / 2;
-            if (off_x < 0) off_x = 0;
-          }
-        }
-
-        XftDrawStringUtf8(xftdraw, &xftcolor, xftfont, x + off_x, y + xftfont->ascent, (FcChar8*)p, l_len);
+        int line_w = motDrawXftWidth(xftfont, lines[i].text, lines[i].len);
+        off_x = (flags & IUP_DRAW_RIGHT) ? box_w - line_w : (box_w - line_w) / 2;
+        if (off_x < 0) off_x = 0;
       }
-
-      if (q)
-        p = q + 1;
-
-      sum_len += l_len;
-      if (sum_len == len)
-        break;
-
-      y += line_height;
+      XftDrawStringUtf8(xftdraw, &xftcolor, xftfont, x + off_x, y + i * line_height + xftfont->ascent, (FcChar8*)lines[i].text, lines[i].len);
     }
   }
+
+  for (i = 0; i < count; i++)
+    free(lines[i].text);
+  free(lines);
 
   XftDrawDestroy(xftdraw);
   XftColorFree(iupmot_display, iupmot_visual, DefaultColormap(iupmot_display, iupmot_screen), &xftcolor);
 }
 #endif
 
-static void iDrawTextX11(IdrawCanvas* dc, const char* text, int len, int x, int y, int w, int h, long color, XFontStruct* xfont, int flags)
+static int motDrawX11Width(void* font, const char* text, int len)
 {
-  int num_line, width, off_x;
+  if (len <= 0)
+    return 0;
+  return XTextWidth((XFontStruct*)font, text, len);
+}
 
-  XSetForeground(iupmot_display, dc->pixmap_gc, iupmotColorGetPixel(iupDrawRed(color), iupDrawGreen(color), iupDrawBlue(color)));
-  XSetFont(iupmot_display, dc->pixmap_gc, xfont->fid);
-
-  if (flags & IUP_DRAW_CLIP)
-  {
-    XRectangle rect;
-    rect.x = (short)x;
-    rect.y = (short)y;
-    rect.width = (unsigned short)w;
-    rect.height = (unsigned short)h;
-    XSetClipRectangles(iupmot_display, dc->pixmap_gc, 0, 0, &rect, 1, Unsorted);
-  }
-
-  num_line = iupStrLineCount(text, len);
-
-  if (num_line == 1)
-  {
+static int motDrawLineOffset(int flags, int box_w, int line_w)
+{
+  int off_x = 0;
+  if (flags & IUP_DRAW_RIGHT)
+    off_x = box_w - line_w;
+  else if (flags & IUP_DRAW_CENTER)
+    off_x = (box_w - line_w) / 2;
+  if (off_x < 0)
     off_x = 0;
-    if (flags & (IUP_DRAW_RIGHT | IUP_DRAW_CENTER))
-    {
-      width = XTextWidth(xfont, text, len);
-      if (flags & IUP_DRAW_RIGHT)
-      {
-        off_x = w - width;
-        if (off_x < 0) off_x = 0;
-      }
-      else
-      {
-        off_x = (w - width) / 2;
-        if (off_x < 0) off_x = 0;
-      }
-    }
+  return off_x;
+}
 
-    XDrawString(iupmot_display, dc->pixmap, dc->pixmap_gc, x + off_x, y + xfont->ascent, text, len);
+/* core fonts have no rotation: the unrotated layout is drawn into a 1-bit mask that XRender composites rotated */
+static void motDrawTextRotatedX11(IdrawCanvas* dc, ImotDrawLine* lines, int count, XFontStruct* xfont, int layout_w, int layout_h, int x, int y, int w, int h, long color, int flags, double angle)
+{
+  Pixmap mask;
+  GC mask_gc;
+  Picture mask_pict, src;
+  XTransform xf;
+  XRenderColor rendercolor;
+  double rad = angle * IUP_DEG2RAD, c = cos(rad), sn = sin(rad);
+  double px, py, lx0, ly0, minx, maxx, miny, maxy;
+  int line_height = xfont->ascent + xfont->descent;
+  int i, dst_x, dst_y, dst_w, dst_h;
+
+  mask = XCreatePixmap(iupmot_display, dc->pixmap, layout_w, layout_h, 1);
+  mask_gc = XCreateGC(iupmot_display, mask, 0, NULL);
+  XSetForeground(iupmot_display, mask_gc, 0);
+  XFillRectangle(iupmot_display, mask, mask_gc, 0, 0, layout_w, layout_h);
+  XSetForeground(iupmot_display, mask_gc, 1);
+  XSetFont(iupmot_display, mask_gc, xfont->fid);
+  for (i = 0; i < count; i++)
+  {
+    int off_x = motDrawLineOffset(flags, layout_w, XTextWidth(xfont, lines[i].text, lines[i].len));
+    XDrawString(iupmot_display, mask, mask_gc, off_x, i * line_height + xfont->ascent, lines[i].text, lines[i].len);
+  }
+  XFreeGC(iupmot_display, mask_gc);
+
+  if (flags & IUP_DRAW_LAYOUTCENTER)
+  {
+    px = x + w / 2.0;
+    py = y + h / 2.0;
+    lx0 = px - layout_w / 2.0;
+    ly0 = py - layout_h / 2.0;
   }
   else
   {
-    int i, line_height, l_len, sum_len = 0;
-    const char *p, *q;
-
-    line_height = xfont->ascent + xfont->descent;
-
-    p = text;
-    for (i = 0; i < num_line; i++)
-    {
-      q = strchr(p, '\n');
-      if (q)
-        l_len = (int)(q - p);
-      else
-        l_len = (int)strlen(p);
-
-      if (sum_len + l_len > len)
-        l_len = len - sum_len;
-
-      if (l_len)
-      {
-        off_x = 0;
-        if (flags & (IUP_DRAW_RIGHT | IUP_DRAW_CENTER))
-        {
-          width = XTextWidth(xfont, p, l_len);
-          if (flags & IUP_DRAW_RIGHT)
-          {
-            off_x = w - width;
-            if (off_x < 0) off_x = 0;
-          }
-          else
-          {
-            off_x = (w - width) / 2;
-            if (off_x < 0) off_x = 0;
-          }
-        }
-
-        XDrawString(iupmot_display, dc->pixmap, dc->pixmap_gc, x + off_x, y + xfont->ascent, p, l_len);
-      }
-
-      if (q)
-        p = q + 1;
-
-      sum_len += l_len;
-      if (sum_len == len)
-        break;
-
-      y += line_height;
-    }
+    px = x;
+    py = y;
+    lx0 = x;
+    ly0 = y;
   }
 
+  /* destination pixel -> mask pixel: undo the rotation around the pivot */
+  memset(&xf, 0, sizeof(xf));
+  xf.matrix[0][0] = XDoubleToFixed(c);
+  xf.matrix[0][1] = XDoubleToFixed(-sn);
+  xf.matrix[0][2] = XDoubleToFixed(px - (c * px - sn * py) - lx0);
+  xf.matrix[1][0] = XDoubleToFixed(sn);
+  xf.matrix[1][1] = XDoubleToFixed(c);
+  xf.matrix[1][2] = XDoubleToFixed(py - (sn * px + c * py) - ly0);
+  xf.matrix[2][2] = XDoubleToFixed(1.0);
+
+  mask_pict = XRenderCreatePicture(iupmot_display, mask, XRenderFindStandardFormat(iupmot_display, PictStandardA1), 0, NULL);
+  XRenderSetPictureTransform(iupmot_display, mask_pict, &xf);
+  XRenderSetPictureFilter(iupmot_display, mask_pict, FilterBilinear, NULL, 0);
+
+  rendercolor = motDrawRenderColor(color);
+  src = XRenderCreateSolidFill(iupmot_display, &rendercolor);
+
+  minx = maxx = px;
+  miny = maxy = py;
+  for (i = 0; i < 4; i++)
+  {
+    double ux = (i == 1 || i == 2) ? lx0 + layout_w : lx0;
+    double uy = (i >= 2) ? ly0 + layout_h : ly0;
+    double dx = ux - px, dy = uy - py;
+    double sx = px + dx * c + dy * sn, sy = py - dx * sn + dy * c;
+    if (sx < minx) minx = sx;
+    if (sx > maxx) maxx = sx;
+    if (sy < miny) miny = sy;
+    if (sy > maxy) maxy = sy;
+  }
+  dst_x = (int)floor(minx) - 1;
+  dst_y = (int)floor(miny) - 1;
+  dst_w = (int)ceil(maxx) + 1 - dst_x;
+  dst_h = (int)ceil(maxy) + 1 - dst_y;
   if (flags & IUP_DRAW_CLIP)
-    XSetClipMask(iupmot_display, dc->pixmap_gc, None);
+  {
+    int x2 = dst_x + dst_w < x + w ? dst_x + dst_w : x + w;
+    int y2 = dst_y + dst_h < y + h ? dst_y + dst_h : y + h;
+    if (dst_x < x) dst_x = x;
+    if (dst_y < y) dst_y = y;
+    dst_w = x2 - dst_x;
+    dst_h = y2 - dst_y;
+  }
+
+  if (dst_w > 0 && dst_h > 0)
+    XRenderComposite(iupmot_display, PictOpOver, src, mask_pict, dc->pict, 0, 0, dst_x, dst_y, dst_x, dst_y, dst_w, dst_h);
+
+  XRenderFreePicture(iupmot_display, src);
+  XRenderFreePicture(iupmot_display, mask_pict);
+  XFreePixmap(iupmot_display, mask);
+}
+
+static void iDrawTextX11(IdrawCanvas* dc, const char* text, int len, int x, int y, int w, int h, long color, XFontStruct* xfont, int flags, double text_orientation)
+{
+  ImotDrawLine* lines;
+  int count, i, line_height, layout_w = 0, layout_h;
+
+  count = motDrawBreakLines(motDrawX11Width, xfont, text, len, w, flags, &lines);
+  line_height = xfont->ascent + xfont->descent;
+  layout_h = count * line_height;
+  for (i = 0; i < count; i++)
+  {
+    int line_w = XTextWidth(xfont, lines[i].text, lines[i].len);
+    if (line_w > layout_w)
+      layout_w = line_w;
+  }
+
+  if (text_orientation != 0 && dc->pict && layout_w > 0 && layout_h > 0)
+    motDrawTextRotatedX11(dc, lines, count, xfont, layout_w, layout_h, x, y, w, h, color, flags, text_orientation);
+  else
+  {
+    int box_w = w > 0 ? w : layout_w;
+
+    XSetForeground(iupmot_display, dc->pixmap_gc, iupmotColorGetPixel(iupDrawRed(color), iupDrawGreen(color), iupDrawBlue(color)));
+    XSetFont(iupmot_display, dc->pixmap_gc, xfont->fid);
+
+    if (flags & IUP_DRAW_CLIP)
+    {
+      XRectangle rect;
+      rect.x = (short)x;
+      rect.y = (short)y;
+      rect.width = (unsigned short)w;
+      rect.height = (unsigned short)h;
+      XSetClipRectangles(iupmot_display, dc->pixmap_gc, 0, 0, &rect, 1, Unsorted);
+    }
+
+    for (i = 0; i < count; i++)
+    {
+      int off_x = motDrawLineOffset(flags, box_w, XTextWidth(xfont, lines[i].text, lines[i].len));
+      XDrawString(iupmot_display, dc->pixmap, dc->pixmap_gc, x + off_x, y + i * line_height + xfont->ascent, lines[i].text, lines[i].len);
+    }
+
+    if (flags & IUP_DRAW_CLIP)
+      XSetClipMask(iupmot_display, dc->pixmap_gc, None);
+  }
+
+  for (i = 0; i < count; i++)
+    free(lines[i].text);
+  free(lines);
 }
 
 IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int x, int y, int w, int h, long color, const char* font, int flags, double text_orientation)
 {
-  (void)text_orientation;
-
 #ifdef IUP_USE_XFT
   {
     XftFont* xftfont = (XftFont*)iupmotGetXftFont(font);
     if (xftfont)
     {
-      iDrawTextXft(dc, text, len, x, y, w, h, color, xftfont, flags);
+      iDrawTextXft(dc, text, len, x, y, w, h, color, xftfont, flags, text_orientation);
       return;
     }
   }
@@ -1059,7 +1268,7 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
   {
     XFontStruct* xfont = (XFontStruct*)iupmotGetFontStruct(font);
     if (xfont)
-      iDrawTextX11(dc, text, len, x, y, w, h, color, xfont, flags);
+      iDrawTextX11(dc, text, len, x, y, w, h, color, xfont, flags, text_orientation);
   }
 }
 

@@ -21,6 +21,8 @@
 #include <cstdlib>
 #include <cstring>
 #include <cmath>
+#include <string>
+#include <vector>
 
 extern "C" {
 #include "iup.h"
@@ -415,6 +417,91 @@ static void fltkDrawTextDecoration(const char* text, int len, int tx, int baseli
   fl_line_style(FL_SOLID, 0);
 }
 
+static std::vector<std::string> fltkDrawSplitLines(const char* text, int len)
+{
+  std::vector<std::string> lines;
+  const char* p = text;
+  const char* end = text + len;
+  while (p <= end)
+  {
+    const char* q = (const char*)memchr(p, '\n', end - p);
+    if (!q)
+    {
+      lines.push_back(std::string(p, end - p));
+      break;
+    }
+    lines.push_back(std::string(p, q - p));
+    p = q + 1;
+  }
+  return lines;
+}
+
+static std::string fltkDrawElide(const std::string& line, int w)
+{
+  if (fl_width(line.c_str(), (int)line.size()) <= w)
+    return line;
+
+  std::string cut = line;
+  while (!cut.empty())
+  {
+    size_t n = cut.size() - 1;
+    while (n > 0 && ((unsigned char)cut[n] & 0xC0) == 0x80)
+      n--;
+    cut.resize(n);
+    std::string candidate = cut + "...";
+    if (fl_width(candidate.c_str(), (int)candidate.size()) <= w)
+      return candidate;
+  }
+  return "...";
+}
+
+static void fltkDrawTextRotated(const char* text, int len, int x, int y, int w, int h, int flags, double angle)
+{
+  std::vector<std::string> lines = fltkDrawSplitLines(text, len);
+  double rad = angle * M_PI / 180.0, c = cos(rad), sn = sin(rad);
+  int line_h = fl_height();
+  int baseline = fl_height() - fl_descent();
+  int layout_w = 0, layout_h = (int)lines.size() * line_h;
+  double px, py, lx0, ly0;
+  size_t i;
+
+  for (i = 0; i < lines.size(); i++)
+  {
+    int line_w = (int)ceil(fl_width(lines[i].c_str(), (int)lines[i].size()));
+    if (line_w > layout_w)
+      layout_w = line_w;
+  }
+
+  if (flags & IUP_DRAW_LAYOUTCENTER)
+  {
+    px = x + w / 2.0;
+    py = y + h / 2.0;
+    lx0 = px - layout_w / 2.0;
+    ly0 = py - layout_h / 2.0;
+  }
+  else
+  {
+    px = x;
+    py = y;
+    lx0 = x;
+    ly0 = y;
+  }
+
+  for (i = 0; i < lines.size(); i++)
+  {
+    double line_w = fl_width(lines[i].c_str(), (int)lines[i].size());
+    double bx = lx0, by = ly0 + i * line_h + baseline;
+    double dx, dy;
+    if (flags & IUP_DRAW_CENTER)
+      bx += (layout_w - line_w) / 2;
+    else if (flags & IUP_DRAW_RIGHT)
+      bx += layout_w - line_w;
+    dx = bx - px;
+    dy = by - py;
+    fl_draw((int)angle, lines[i].c_str(), (int)lines[i].size(), (int)lround(px + dx * c + dy * sn), (int)lround(py - dx * sn + dy * c));
+  }
+}
+
 extern "C" IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int x, int y, int w, int h, long color, const char* font, int flags, double text_orientation)
 {
   char stack_buf[512];
@@ -447,15 +534,27 @@ extern "C" IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, in
 
   fl_font(fl_font_id, fl_size);
 
+  std::string elided;
+  if ((flags & IUP_DRAW_ELLIPSIS) && !(flags & IUP_DRAW_WRAP) && w > 0)
+  {
+    std::vector<std::string> lines = fltkDrawSplitLines(text, len);
+    for (size_t i = 0; i < lines.size(); i++)
+    {
+      if (i)
+        elided += '\n';
+      elided += fltkDrawElide(lines[i], w);
+    }
+    text = elided.c_str();
+    len = (int)elided.size();
+  }
+
   if (text_orientation != 0)
   {
-    fl_push_matrix();
-    fl_translate(x, y);
-    fl_rotate(-text_orientation);
-    fl_draw(text, len, 0, (int)fl_height() - (int)fl_descent());
-    if (underline || strikeout)
-      fltkDrawTextDecoration(text, len, 0, (int)fl_height() - (int)fl_descent(), underline, strikeout);
-    fl_pop_matrix();
+    if (flags & IUP_DRAW_CLIP)
+      fl_push_clip(x, y, w, h);
+    fltkDrawTextRotated(text, len, x, y, w, h, flags, text_orientation);
+    if (flags & IUP_DRAW_CLIP)
+      fl_pop_clip();
   }
   else
   {

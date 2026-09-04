@@ -10,6 +10,7 @@
 #include <QBrush>
 #include <QFont>
 #include <QFontMetrics>
+#include <QStringList>
 #include <QPixmap>
 #include <QImage>
 #include <QPainterPath>
@@ -825,133 +826,64 @@ extern "C" IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, in
   if (qfont)
     dc->painter->setFont(*qfont);
 
-  /* Set text color */
   dc->painter->setPen(qcolor);
 
-  /* Convert text to QString */
   QString qtext = QString::fromUtf8(text, len > 0 ? len : -1);
+  QFontMetrics fm = dc->painter->fontMetrics();
 
-  if (!(flags & (IUP_DRAW_WRAP | IUP_DRAW_ELLIPSIS | IUP_DRAW_CENTER | IUP_DRAW_RIGHT))
-      && text_orientation == 0.0 && qfont && h <= charheight
-      && !qtext.contains(QLatin1Char('\n')))
-  {
-    if (flags & IUP_DRAW_CLIP)
-    {
-      dc->painter->save();
-      dc->painter->setClipRect(x, y, w, h);
-    }
-
-    dc->painter->drawText(QPointF(x, y + ascent), qtext);
-
-    if (flags & IUP_DRAW_CLIP)
-      dc->painter->restore();
-    return;
-  }
-
-  /* Build alignment flags */
-  int align_flags = 0;
-
+  int align = Qt::AlignTop;
   if (flags & IUP_DRAW_CENTER)
-    align_flags |= Qt::AlignHCenter;
+    align |= Qt::AlignHCenter;
   else if (flags & IUP_DRAW_RIGHT)
-    align_flags |= Qt::AlignRight;
+    align |= Qt::AlignRight;
   else
-    align_flags |= Qt::AlignLeft;
+    align |= Qt::AlignLeft;
 
-  /* Vertical alignment - IUP doesn't define vertical alignment flags, default to center */
-  align_flags |= Qt::AlignVCenter;
-
-  /* Handle wrap and ellipsis using QTextLayout for better control */
-  if ((flags & IUP_DRAW_WRAP) || (flags & IUP_DRAW_ELLIPSIS))
+  if (flags & IUP_DRAW_WRAP)
+    align |= Qt::TextWordWrap;
+  else if ((flags & IUP_DRAW_ELLIPSIS) && w > 0)
   {
-    QTextLayout textLayout(qtext, qfont ? *qfont : dc->painter->font());
-    QTextOption option;
+    QStringList lines = qtext.split(QLatin1Char('\n'));
+    for (int i = 0; i < lines.size(); i++)
+      lines[i] = fm.elidedText(lines[i], Qt::ElideRight, w);
+    qtext = lines.join(QLatin1Char('\n'));
+  }
 
-    if (flags & IUP_DRAW_WRAP)
-      option.setWrapMode(QTextOption::WordWrap);
-    else
-      option.setWrapMode(QTextOption::NoWrap);
+  if (!(flags & IUP_DRAW_CLIP))
+    align |= Qt::TextDontClip;
 
-    option.setAlignment((Qt::Alignment)align_flags);
-    textLayout.setTextOption(option);
+  dc->painter->save();
 
-    /* Begin layout */
-    textLayout.beginLayout();
-    qreal y_pos = 0;
-    while (true)
+  if (flags & IUP_DRAW_CLIP)
+    dc->painter->setClipRect(x, y, w, h);
+
+  QRect rect(x, y, w, h);
+  if (w <= 0 || h <= 0)
+    rect = QRect(x, y, 32767, 32767);
+
+  if (text_orientation != 0.0)
+  {
+    if (flags & IUP_DRAW_LAYOUTCENTER)
     {
-      QTextLine line = textLayout.createLine();
-      if (!line.isValid())
-        break;
-
-      line.setLineWidth(w);
-      y_pos += line.height();
-      if (y_pos > h && (flags & IUP_DRAW_ELLIPSIS))
-      {
-        /* Add ellipsis for last visible line */
-        break;
-      }
+      QRect layout = fm.boundingRect(QRect(0, 0, 32767, 32767), Qt::AlignLeft | Qt::AlignTop, qtext);
+      int layout_w = layout.width(), layout_h = layout.height();
+      dc->painter->translate((w - layout_w) / 2.0, (h - layout_h) / 2.0);
+      dc->painter->translate(x + layout_w / 2.0, y + layout_h / 2.0);
+      dc->painter->rotate(-text_orientation);
+      dc->painter->translate(-(x + layout_w / 2.0), -(y + layout_h / 2.0));
+      rect = QRect(x, y, layout_w, layout_h);
     }
-    textLayout.endLayout();
-
-    /* Draw with transformation if rotated */
-    if (text_orientation != 0.0)
+    else
     {
-      dc->painter->save();
       dc->painter->translate(x, y);
-      dc->painter->rotate(-text_orientation);  /* Qt rotates clockwise, IUP counter-clockwise */
-      textLayout.draw(dc->painter, QPointF(0, 0));
-      dc->painter->restore();
-    }
-    else
-    {
-      if (flags & IUP_DRAW_CLIP)
-      {
-        dc->painter->save();
-        dc->painter->setClipRect(x, y, w, h);
-      }
-
-      textLayout.draw(dc->painter, QPointF(x, y));
-
-      if (flags & IUP_DRAW_CLIP)
-        dc->painter->restore();
+      dc->painter->rotate(-text_orientation);
+      dc->painter->translate(-x, -y);
     }
   }
-  else
-  {
-    /* Handle text orientation */
-    if (text_orientation != 0.0)
-    {
-      dc->painter->save();
-      dc->painter->translate(x, y);
-      dc->painter->rotate(-text_orientation);  /* Qt rotates clockwise, IUP counter-clockwise */
-      dc->painter->drawText(QRect(0, 0, w, h), align_flags, qtext);
-      dc->painter->restore();
-    }
-    else
-    {
-      /* Draw text */
-      if (w > 0 && h > 0)
-      {
-        /* Draw in bounded rectangle */
-        if (flags & IUP_DRAW_CLIP)
-        {
-          dc->painter->save();
-          dc->painter->setClipRect(x, y, w, h);
-          dc->painter->drawText(QRect(x, y, w, h), align_flags, qtext);
-          dc->painter->restore();
-        }
-        else
-          dc->painter->drawText(QRect(x, y, w, h), align_flags, qtext);
-      }
-      else
-      {
-        /* Draw at position. Use large rect with AlignTop since
-           QPainter::drawText(x,y,text) uses y as baseline, not top */
-        dc->painter->drawText(QRect(x, y, 32767, 32767), Qt::AlignLeft | Qt::AlignTop, qtext);
-      }
-    }
-  }
+
+  dc->painter->drawText(rect, align, qtext);
+
+  dc->painter->restore();
 }
 
 /****************************************************************************
