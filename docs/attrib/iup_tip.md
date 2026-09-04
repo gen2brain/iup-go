@@ -62,6 +62,8 @@ Returns the current visible state.
 **ih**: identifier of the element that activated the event.\
 **x, y**: cursor position relative to the top-left corner of the element
 
+Not supported in FLTK, Haiku, Android, iOS and WebAssembly.
+
 ### Affects
 
 All controls that have visual representation, except menus.
