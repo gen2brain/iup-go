@@ -24,7 +24,7 @@ func main() {
 		"• Minimize/restore to trigger SHOW_CB\n"+
 		"• Move the mouse in/out of the dialog for ENTERWINDOW_CB/LEAVEWINDOW_CB\n"+
 		"• Drop files onto the dialog for DROPFILES_CB\n"+
-		"• Close the dialog for CLOSE_CB\n"+
+		"• Close the dialog for CLOSE_CB, then UNMAP_CB and DESTROY_CB print to the console\n"+
 		"---\n")
 
 	iup.SetHandle("log", txtLog)
@@ -48,7 +48,23 @@ func main() {
 		).SetAttributes("MARGIN=10x10, GAP=10"),
 	)
 
-	dlg.SetAttributes(`TITLE="IupDialog Callbacks", SIZE=400x300`)
+	dlg.SetAttributes(`TITLE="IupDialog Callbacks"`)
+	iup.SetHandle("dialog", dlg)
+
+	iup.SetCallback(dlg, "MAP_CB", iup.MapFunc(func(ih iup.Ihandle) int {
+		appendLog("MAP_CB - HANDLENAME=" + ih.GetAttribute("HANDLENAME"))
+		return iup.DEFAULT
+	}))
+
+	iup.SetCallback(dlg, "UNMAP_CB", iup.UnmapFunc(func(ih iup.Ihandle) int {
+		fmt.Println("UNMAP_CB")
+		return iup.DEFAULT
+	}))
+
+	iup.SetCallback(dlg, "DESTROY_CB", iup.DestroyFunc(func(ih iup.Ihandle) int {
+		fmt.Println("DESTROY_CB")
+		return iup.DEFAULT
+	}))
 
 	closeTimer = iup.Timer()
 	closeTimer.SetAttribute("TIME", "2000")

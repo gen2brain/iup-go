@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/gen2brain/iup-go/iup"
 )
 
@@ -141,6 +143,12 @@ func main() {
 		btn("MINSIZE 300x220 / MAXSIZE 800x600", func() {
 			mainDlg().SetAttributes(`MINSIZE=300x220, MAXSIZE=800x600`)
 			setStatus("MINSIZE/MAXSIZE set - drag-resize to test the clamp")
+		}),
+		btn("Report sizes", func() {
+			d := mainDlg()
+			setStatus(fmt.Sprintf("RASTERSIZE=%s USERSIZE=%s NATURALSIZE=%s CLIENTSIZE=%s CLIENTOFFSET=%s SCREENPOSITION=%s",
+				d.GetAttribute("RASTERSIZE"), d.GetAttribute("USERSIZE"), d.GetAttribute("NATURALSIZE"),
+				d.GetAttribute("CLIENTSIZE"), d.GetAttribute("CLIENTOFFSET"), d.GetAttribute("SCREENPOSITION")))
 		}),
 		btn("Toggle RESIZEINC 40x20", func() {
 			d := mainDlg()

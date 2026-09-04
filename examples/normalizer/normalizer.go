@@ -26,6 +26,11 @@ func main() {
 
 	iup.Normalizer(btn1c, btn2c, btn3c).SetAttribute("NORMALIZE", "BOTH")
 
+	iup.SetHandle("group", iup.Normalizer().SetAttribute("NORMALIZE", "HORIZONTAL"))
+	btn1d := iup.Button("Yes").SetAttribute("NORMALIZERGROUP", "group")
+	btn2d := iup.Button("No").SetAttribute("NORMALIZERGROUP", "group")
+	btn3d := iup.Button("Ask me later").SetAttribute("NORMALIZERGROUP", "group")
+
 	dlg := iup.Dialog(
 		iup.Vbox(
 			iup.Frame(
@@ -40,10 +45,15 @@ func main() {
 				iup.Vbox(btn1c, btn2c, btn3c).SetAttribute("GAP", "5"),
 			).SetAttribute("TITLE", "With Normalizer (BOTH)"),
 
+			iup.Frame(
+				iup.Hbox(btn1d, btn2d, btn3d).SetAttribute("GAP", "5"),
+			).SetAttribute("TITLE", "Joined through NORMALIZERGROUP"),
+
 			iup.Label("Normalizer makes all buttons the same size."),
 			iup.Label("HORIZONTAL: same width"),
 			iup.Label("VERTICAL: same height"),
 			iup.Label("BOTH: same width and height"),
+			iup.Label("NORMALIZERGROUP: the control adds itself to a named normalizer"),
 		).SetAttributes("MARGIN=10x10, GAP=10"),
 	).SetAttribute("TITLE", "Normalizer Example")
 
