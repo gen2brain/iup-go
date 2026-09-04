@@ -88,12 +88,10 @@ static int wasmButtonSetDefaultAttrib(Ihandle* ih, const char* value)
 
 static int wasmButtonSetPaddingAttrib(Ihandle* ih, const char* value)
 {
-  int id = iupwasmIdOf(ih);
-  int h = 0, v = 0;
-  iupStrToIntInt(value, &h, &v, 'x');
-  if (id)
-    iupwasmJsSetPadding(id, h, v);
-  return 1;
+  iupStrToIntInt(value, &ih->data->horiz_padding, &ih->data->vert_padding, 'x');
+  if (ih->handle)
+    iupwasmJsSetPadding(iupwasmIdOf(ih), ih->data->horiz_padding, ih->data->vert_padding);
+  return 0;
 }
 
 static int wasmButtonSetAlignmentAttrib(Ihandle* ih, const char* value)
@@ -172,7 +170,7 @@ IUP_SDK_API void iupdrvButtonInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "IMPRESS", NULL, wasmButtonSetImpressAttrib, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "IMINACTIVE", NULL, wasmButtonSetImInactiveAttrib, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SHOWASDEFAULT", NULL, wasmButtonSetDefaultAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "PADDING", NULL, wasmButtonSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "PADDING", iupButtonGetPaddingAttrib, wasmButtonSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "ALIGNMENT", NULL, wasmButtonSetAlignmentAttrib, IUPAF_SAMEASSYSTEM, "ACENTER:ACENTER", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MARKUP", NULL, wasmButtonSetMarkupAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, NULL, NULL, IUPAF_DEFAULT);

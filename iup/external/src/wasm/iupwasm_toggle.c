@@ -126,12 +126,10 @@ static int wasmToggleSetImInactiveAttrib(Ihandle* ih, const char* value)
 
 static int wasmToggleSetPaddingAttrib(Ihandle* ih, const char* value)
 {
-  int id = iupwasmIdOf(ih);
-  int h = 0, v = 0;
-  iupStrToIntInt(value, &h, &v, 'x');
-  if (id)
-    iupwasmJsSetPadding(id, h, v);
-  return 1;
+  iupStrToIntInt(value, &ih->data->horiz_padding, &ih->data->vert_padding, 'x');
+  if (ih->handle)
+    iupwasmJsSetPadding(iupwasmIdOf(ih), ih->data->horiz_padding, ih->data->vert_padding);
+  return 0;
 }
 
 static int wasmToggleSetAlignmentAttrib(Ihandle* ih, const char* value)
@@ -237,7 +235,7 @@ IUP_SDK_API void iupdrvToggleInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "IMAGE", NULL, wasmToggleSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "IMPRESS", NULL, wasmToggleSetImpressAttrib, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "IMINACTIVE", NULL, wasmToggleSetImInactiveAttrib, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "PADDING", NULL, wasmToggleSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "PADDING", iupToggleGetPaddingAttrib, wasmToggleSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "ALIGNMENT", NULL, wasmToggleSetAlignmentAttrib, IUPAF_SAMEASSYSTEM, "ACENTER:ACENTER", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "RIGHTBUTTON", NULL, wasmToggleSetRightButtonAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "3STATE", NULL, wasmToggleSet3StateAttrib, NULL, NULL, IUPAF_NO_INHERIT);
