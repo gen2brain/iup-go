@@ -761,7 +761,7 @@ Iclass* iupFlatButtonNewClass(void)
   iupClassRegisterCallback(ic, "FLAT_BUTTON_CB", "iiiis");
   iupClassRegisterCallback(ic, "FLAT_MOTION_CB", "iis");
   iupClassRegisterCallback(ic, "FLAT_FOCUS_CB", "i");
-  iupClassRegisterCallback(ic, "FLAT_ENTERWINDOW_CB", "ii");
+  iupClassRegisterCallback(ic, "FLAT_ENTERWINDOW_CB", "");
   iupClassRegisterCallback(ic, "FLAT_LEAVEWINDOW_CB", "");
   iupClassRegisterCallback(ic, "VALUECHANGED_CB", "");
 

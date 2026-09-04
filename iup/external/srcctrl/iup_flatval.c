@@ -294,15 +294,16 @@ static int iFlatValRedraw_CB(Ihandle* ih)
 
   if (image)
   {
-    int x, y, width = 0, height = 0;
-    iupImageGetInfo(image, &width, &height, NULL);
+    int x, y, width = 0, height = 0, make_inactive;
+    const char* draw_image = iupFlatGetImageName(ih, "IMAGE", image, ih->data->pressed, ih->data->highlighted, active, &make_inactive);
+    iupImageGetInfo(draw_image, &width, &height, NULL);
 
     /* always center the image */
     x = (x2 - x1 + 1 - width) / 2;
     y = (y2 - y1 + 1 - height) / 2;
 
     iupdrvDrawSetClipRect(dc, x1, y1, x2, y2);
-    iupdrvDrawImage(dc, image, active, bgcolor, IUP_DRAW_NO_TINT, 255, x1 + x, y1 + y, -1, -1, 0, 0, -1, -1, IUP_DRAW_IMAGE_LINEAR);
+    iupdrvDrawImage(dc, draw_image, make_inactive, bgcolor, IUP_DRAW_NO_TINT, 255, x1 + x, y1 + y, -1, -1, 0, 0, -1, -1, IUP_DRAW_IMAGE_LINEAR);
     iupdrvDrawResetClip(dc);
   }
   else
@@ -913,7 +914,7 @@ Iclass* iupFlatValNewClass(void)
   /* Callbacks */
   iupClassRegisterCallback(ic, "FLAT_BUTTON_CB", "iiiis");
   iupClassRegisterCallback(ic, "FLAT_MOTION_CB", "iis");
-  iupClassRegisterCallback(ic, "FLAT_ENTERWINDOW_CB", "ii");
+  iupClassRegisterCallback(ic, "FLAT_ENTERWINDOW_CB", "");
   iupClassRegisterCallback(ic, "FLAT_LEAVEWINDOW_CB", "");
   iupClassRegisterCallback(ic, "FLAT_FOCUS_CB", "i");
   iupClassRegisterCallback(ic, "FLAT_WHEEL_CB", "fiis");
