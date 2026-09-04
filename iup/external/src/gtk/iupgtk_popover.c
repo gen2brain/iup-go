@@ -37,6 +37,8 @@ static void gtkPopoverClosedCb(GtkPopover *popover, Ihandle* ih)
 
   (void)popover;
 
+  iupAttribSetInt(ih, "_IUPGTK_POPOVER_SHOWN", 0);
+
   show_cb = (IFni)IupGetCallback(ih, "SHOW_CB");
   if (show_cb)
     show_cb(ih, IUP_HIDE);
@@ -177,6 +179,8 @@ static int gtkPopoverSetVisibleAttrib(Ihandle* ih, const char* value)
     gtk_widget_show(GTK_WIDGET(popover));
 #endif
 
+    iupAttribSetInt(ih, "_IUPGTK_POPOVER_SHOWN", 1);
+
     {
       IFni show_cb = (IFni)IupGetCallback(ih, "SHOW_CB");
       if (show_cb)
@@ -202,7 +206,8 @@ static char* gtkPopoverGetVisibleAttrib(Ihandle* ih)
 {
   if (!ih->handle)
     return "NO";
-  return iupStrReturnBoolean(gtk_widget_get_visible(ih->handle));
+  /* gtk_widget_get_visible stays TRUE until the popdown animation ends */
+  return iupStrReturnBoolean(iupAttribGetInt(ih, "_IUPGTK_POPOVER_SHOWN"));
 }
 
 static void gtkPopoverLayoutUpdateMethod(Ihandle* ih)
