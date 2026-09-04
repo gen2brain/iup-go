@@ -176,6 +176,32 @@ IUP_SDK_API int iupdrvMenuGetMenuBarSize(Ihandle* ih)
 
 /* GTK 3.10+ uses GtkMenuItem + GtkBox instead of deprecated GtkImageMenuItem */
 
+/* Get the label widget from menu item (handles both box and simple structures) */
+static GtkWidget* gtkMenuItemGetLabelWidget(Ihandle* ih)
+{
+  GtkWidget* child = gtk_bin_get_child(GTK_BIN(ih->handle));
+  if (child && GTK_IS_BOX(child))
+  {
+    GList* children = gtk_container_get_children(GTK_CONTAINER(child));
+    GList* l;
+    GtkWidget* label = NULL;
+    GtkWidget* accel = (GtkWidget*)g_object_get_data(G_OBJECT(ih->handle), "_IUP_ACCEL_LABEL");
+    for (l = children; l; l = l->next)
+    {
+      if (GTK_IS_LABEL(l->data) && (GtkWidget*)l->data != accel)
+      {
+        label = (GtkWidget*)l->data;
+        break;
+      }
+    }
+    g_list_free(children);
+    return label;
+  }
+  else if (child && GTK_IS_LABEL(child))
+    return child;
+  return NULL;
+}
+
 #if GTK_CHECK_VERSION(3, 10, 0)
 
 /* Check if menu item has our custom image box structure */
@@ -205,32 +231,6 @@ static GtkWidget* gtkMenuItemGetImageWidget(Ihandle* ih)
     g_list_free(children);
     return image;
   }
-  return NULL;
-}
-
-/* Get the label widget from menu item (handles both box and simple structures) */
-static GtkWidget* gtkMenuItemGetLabelWidget(Ihandle* ih)
-{
-  GtkWidget* child = gtk_bin_get_child(GTK_BIN(ih->handle));
-  if (child && GTK_IS_BOX(child))
-  {
-    GList* children = gtk_container_get_children(GTK_CONTAINER(child));
-    GList* l;
-    GtkWidget* label = NULL;
-    GtkWidget* accel = (GtkWidget*)g_object_get_data(G_OBJECT(ih->handle), "_IUP_ACCEL_LABEL");
-    for (l = children; l; l = l->next)
-    {
-      if (GTK_IS_LABEL(l->data) && (GtkWidget*)l->data != accel)
-      {
-        label = (GtkWidget*)l->data;
-        break;
-      }
-    }
-    g_list_free(children);
-    return label;
-  }
-  else if (child && GTK_IS_LABEL(child))
-    return child;
   return NULL;
 }
 
@@ -276,7 +276,11 @@ static void gtkMenuItemSetImageWidget(Ihandle* ih, GdkPixbuf* pixbuf)
     g_object_ref(child);
     gtk_container_remove(GTK_CONTAINER(ih->handle), child);
 
+#if GTK_CHECK_VERSION(3, 0, 0)
     box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
+#else
+    box = gtk_hbox_new(FALSE, 6);
+#endif
     image = gtk_image_new_from_pixbuf(pixbuf);
 
     gtk_box_pack_start(GTK_BOX(box), image, FALSE, FALSE, 0);
@@ -292,11 +296,19 @@ static void gtkMenuItemSetImageWidget(Ihandle* ih, GdkPixbuf* pixbuf)
 static GtkWidget* gtkMenuItemNewWithImageBox(void)
 {
   GtkWidget* menu_item = gtk_menu_item_new();
+#if GTK_CHECK_VERSION(3, 0, 0)
   GtkWidget* box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
+#else
+  GtkWidget* box = gtk_hbox_new(FALSE, 6);
+#endif
   GtkWidget* label = gtk_label_new("");
 
   gtk_label_set_use_underline(GTK_LABEL(label), TRUE);
+#if GTK_CHECK_VERSION(3, 16, 0)
   gtk_label_set_xalign(GTK_LABEL(label), 0.0);
+#else
+  gtk_misc_set_alignment(GTK_MISC(label), 0.0, 0.5);
+#endif
 
   gtk_box_pack_end(GTK_BOX(box), label, TRUE, TRUE, 0);
   gtk_container_add(GTK_CONTAINER(menu_item), box);
@@ -631,8 +643,12 @@ static void gtkMenuItemSetAccelTextWidget(Ihandle* ih, const char* text)
   }
 
   accel = gtk_label_new(text);
+#if GTK_CHECK_VERSION(3, 16, 0)
   gtk_label_set_xalign(GTK_LABEL(accel), 1.0);
   gtk_style_context_add_class(gtk_widget_get_style_context(accel), "dim-label");
+#else
+  gtk_misc_set_alignment(GTK_MISC(accel), 1.0, 0.5);
+#endif
 
   if (child && GTK_IS_LABEL(child))
   {
@@ -641,7 +657,11 @@ static void gtkMenuItemSetAccelTextWidget(Ihandle* ih, const char* text)
     g_object_ref(child);
     gtk_container_remove(GTK_CONTAINER(ih->handle), child);
 
+#if GTK_CHECK_VERSION(3, 0, 0)
     box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 12);
+#else
+    box = gtk_hbox_new(FALSE, 12);
+#endif
     gtk_box_pack_start(GTK_BOX(box), child, TRUE, TRUE, 0);
     g_object_unref(child);
     gtk_box_pack_end(GTK_BOX(box), accel, FALSE, FALSE, 0);
