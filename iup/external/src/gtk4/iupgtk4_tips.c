@@ -168,7 +168,9 @@ IUP_SDK_API int iupdrvBaseSetTipVisibleAttrib(Ihandle* ih, const char* value)
     gtk_widget_trigger_tooltip_query(widget);
   else
   {
+    /* the query hides the tip only when the widget under the pointer has none */
     gtk_widget_set_has_tooltip(widget, FALSE);
+    gtk_widget_trigger_tooltip_query(widget);
     gtk_widget_set_has_tooltip(widget, TRUE);
   }
 

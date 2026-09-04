@@ -34,11 +34,9 @@ The basic values (BOTTOM, TOP, LEFT, RIGHT) center the popover along the anchor 
 In WinUI all positions map directly to native FlyoutPlacementMode. In GTK 3 and GTK 4 the edge-aligned positions are approximated using the native popover positioning with offsets. In other systems the positions are calculated manually.
 
 **OFFSETX** (non-inheritable): Horizontal pixel offset added to the computed popover position. Can be positive or negative. Default: "0".
-Not supported in iOS.
 In macOS the offset is applied only while the resulting position stays inside the dialog.
 
 **OFFSETY** (non-inheritable): Vertical pixel offset added to the computed popover position. Can be positive or negative. Default: "0".
-Not supported in iOS.
 In macOS the offset is applied only while the resulting position stays inside the dialog.
 
 **AUTOFLIP** (non-inheritable): When enabled, the popover automatically flips to the opposite side if it would extend beyond the screen boundaries. The alignment is preserved when flipping (e.g. BOTTOMLEFT flips to TOPLEFT).
