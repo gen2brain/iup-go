@@ -224,13 +224,66 @@ func main() {
 		btn("NATIVEPARENT child", nativeParentDemo),
 	).SetAttributes(`NMARGIN=6x6, NGAP=4`)).SetAttribute("TITLE", "Modal & focus")
 
+	state := iup.Frame(iup.Vbox(
+		btn("Report state", func() {
+			d := mainDlg()
+			setStatus(fmt.Sprintf("MODAL=%s ACTIVEWINDOW=%s BORDERSIZE=%s NACTIVE=%s",
+				d.GetAttribute("MODAL"), d.GetAttribute("ACTIVEWINDOW"), d.GetAttribute("BORDERSIZE"), d.GetAttribute("NACTIVE")))
+		}),
+		btn("NACTIVE=NO for 2 seconds", func() {
+			mainDlg().SetAttribute("NACTIVE", "NO")
+			setStatus("NACTIVE=NO: the frame is inactive, the buttons still work")
+			t := iup.Timer().SetAttributes("TIME=2000, RUN=YES")
+			t.SetCallback("ACTION_CB", iup.TimerActionFunc(func(ih iup.Ihandle) int {
+				mainDlg().SetAttribute("NACTIVE", "YES")
+				setStatus("NACTIVE=YES")
+				ih.Destroy()
+				return iup.DEFAULT
+			}))
+		}),
+		btn("Child, then BRINGFRONT after 2 seconds", func() {
+			child := newChild("Covers the main dialog", "",
+				iup.Vbox(iup.Label("The main dialog comes to the front in two seconds.")).SetAttributes(`NMARGIN=16x16`))
+			iup.ShowXY(child, iup.CENTERPARENT, iup.CENTERPARENT)
+			t := iup.Timer().SetAttributes("TIME=2000, RUN=YES")
+			t.SetCallback("ACTION_CB", iup.TimerActionFunc(func(ih iup.Ihandle) int {
+				mainDlg().SetAttribute("BRINGFRONT", "YES")
+				setStatus("BRINGFRONT=YES")
+				ih.Destroy()
+				return iup.DEFAULT
+			}))
+		}),
+		btn("DIALOGHINT child", func() {
+			child := newChild("Dialog hint", `DIALOGHINT=YES`,
+				iup.Vbox(iup.Label("Window type hint set to dialog.")).SetAttributes(`NMARGIN=16x16`))
+			iup.ShowXY(child, iup.CENTERPARENT, iup.CENTERPARENT)
+			setStatus("DIALOGHINT child shown")
+		}),
+		btn("HELPBUTTON child (Win32)", func() {
+			child := newChild("Help button", `HELPBUTTON=YES`,
+				iup.Vbox(iup.Label("The help button replaces the maximize button on Win32.")).SetAttributes(`NMARGIN=16x16`))
+			child.SetCallback("HELP_CB", iup.HelpFunc(func(iup.Ihandle) int {
+				setStatus("HELP_CB from the help button")
+				return iup.DEFAULT
+			}))
+			iup.ShowXY(child, iup.CENTERPARENT, iup.CENTERPARENT)
+			setStatus("HELPBUTTON child shown")
+		}),
+		btn("SAVEUNDER child (Win32, Motif)", func() {
+			child := newChild("Save under", `SAVEUNDER=YES`,
+				iup.Vbox(iup.Label("The desktop behind the dialog is saved and restored.")).SetAttributes(`NMARGIN=16x16`))
+			iup.ShowXY(child, iup.CENTERPARENT, iup.CENTERPARENT)
+			setStatus("SAVEUNDER child shown")
+		}),
+	).SetAttributes(`NMARGIN=6x6, NGAP=4`)).SetAttribute("TITLE", "State")
+
 	status := iup.Label("Drive dialog sizing, placement and child windows.").
 		SetAttribute("EXPAND", "HORIZONTAL")
 	iup.SetHandle("status", status)
 
 	dlg := iup.Dialog(
 		iup.Vbox(
-			iup.Hbox(sizing, placement, windows, modes).SetAttributes(`NGAP=10`),
+			iup.Hbox(sizing, placement, windows, modes, state).SetAttributes(`NGAP=10`),
 			status,
 		).SetAttributes(`NMARGIN=12x12, NGAP=8`),
 	).SetAttributes(`TITLE="Dialog sizing and placement"`)

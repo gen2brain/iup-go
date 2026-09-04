@@ -34,6 +34,7 @@ func build() {
 	t.SetAttribute("ADDLEAF1", "Apple")
 	t.SetAttribute("ADDLEAF2", "Banana")
 	t.SetAttribute("ADDLEAF4", "Carrot")
+	t.SetAttribute("IMAGEEXPANDED1", "imgFruitsOpen")
 	t.SetAttribute("STATE1", "EXPANDED")
 	t.SetAttribute("STATE4", "EXPANDED")
 
@@ -76,6 +77,7 @@ func main() {
 	iup.SetHandle("imgCollapsed", icon("40 90 200"))
 	iup.SetHandle("imgExpanded", icon("230 150 40"))
 	iup.SetHandle("imgMarker", icon("210 40 40"))
+	iup.SetHandle("imgFruitsOpen", icon("240 200 60"))
 
 	// HIDELINES/HIDEBUTTONS are creation-only.
 	t := iup.Tree().SetAttributes(`VISIBLELINES=13, VISIBLECOLUMNS=14, EXPAND=YES, HIDELINES=YES,

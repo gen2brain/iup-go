@@ -19,7 +19,7 @@ func main() {
 
 	list := iup.List()
 	iup.SetAttributes(list, "1=Gold, 2=Silver, 3=Bronze, 4=Tecgraf, 5=None,"+
-		"SHOWIMAGE=YES, XXX_SPACING=4, VALUE=4")
+		"SHOWIMAGE=YES, FITIMAGE=YES, VALUE=4")
 
 	loadMedalImages()
 	iup.SetAttribute(list, "IMAGE1", "IMGGOLD")
@@ -40,7 +40,7 @@ func main() {
 
 	listDropdown := iup.List()
 	iup.SetAttributes(listDropdown, "1=\"Less than US$ 1000\", 2=\"US$ 2000\", 3=\"US$ 5000\", 4=\"US$ 10000\", 5=\"US$ 20000\", 6=\"US$ 50000\", 7=\"More than US$ 100000\","+
-		"SHOWIMAGE=YES, DROPDOWN=YES, VISIBLEITEMS=3")
+		"SHOWIMAGE=YES, DROPDOWN=YES, DROPEXPAND=YES, VISIBLEITEMS=3")
 	iup.SetAttributeHandle(listDropdown, "IMAGE1", iup.ImageRGB(20, 20, imageData24))
 	iup.SetAttributeHandle(listDropdown, "IMAGE2", iup.ImageRGB(20, 20, imageData24))
 	iup.SetAttributeHandle(listDropdown, "IMAGE3", loadImageTecgraf())
@@ -48,7 +48,25 @@ func main() {
 	frmPrize := iup.Frame(listDropdown)
 	iup.SetAttribute(frmPrize, "TITLE", "Prizes won")
 
-	dlg := iup.Dialog(iup.Hbox(frmMedal, frmSport, frmPrize))
+	listEdit := iup.List()
+	iup.SetAttributes(listEdit, "1=10, 2=25, 3=50, 4=100, DROPDOWN=YES, EDITBOX=YES, MASK=/d+, MASKNOEMPTY=YES, VALUE=25")
+	iup.SetCallback(listEdit, "MASKFAIL_CB", iup.MaskFailFunc(func(ih iup.Ihandle, value string) int {
+		fmt.Printf("MASKFAIL_CB %q\n", value)
+		return iup.DEFAULT
+	}))
+	btnMasked := iup.Button("VALUEMASKED=7x")
+	iup.SetCallback(btnMasked, "ACTION", iup.ActionFunc(func(iup.Ihandle) int {
+		listEdit.SetAttribute("VALUEMASKED", "7x")
+		fmt.Println("VALUEMASKED=7x rejected, VALUE is", listEdit.GetAttribute("VALUE"))
+		listEdit.SetAttribute("VALUEMASKED", "75")
+		fmt.Println("VALUEMASKED=75 accepted, VALUE is", listEdit.GetAttribute("VALUE"))
+		return iup.DEFAULT
+	}))
+
+	frmEdit := iup.Frame(iup.Vbox(listEdit, btnMasked).SetAttribute("NGAP", "4"))
+	iup.SetAttribute(frmEdit, "TITLE", "EDITBOX with MASK")
+
+	dlg := iup.Dialog(iup.Hbox(frmMedal, frmSport, frmPrize, frmEdit))
 	iup.SetAttribute(dlg, "TITLE", "List")
 	iup.ShowXY(dlg, iup.CENTER, iup.CENTER)
 

@@ -12,7 +12,7 @@ func main() {
 	iup.Open()
 	defer iup.Close()
 
-	valueLabel := iup.Label("Value: 0").SetAttribute("SIZE", "100x")
+	valueLabel := iup.Label("Value: 0").SetAttribute("EXPAND", "HORIZONTAL")
 
 	text := iup.Text()
 	text.SetAttribute("VALUE", "0")
@@ -42,6 +42,16 @@ func main() {
 	text3.SetAttribute("SPINMIN", "0")
 	text3.SetAttribute("SPINMAX", "359")
 
+	text4 := iup.Text()
+	text4.SetAttributes("VALUE=0, SPIN=YES, SPINALIGN=LEFT, SPINMIN=0, SPINMAX=20")
+
+	text5 := iup.Text()
+	text5.SetAttributes("VALUE=\"level 0\", SPIN=YES, SPINAUTO=NO, SPINMIN=0, SPINMAX=9")
+	text5.SetCallback("SPIN_CB", iup.SpinFunc(func(ih iup.Ihandle, pos int) int {
+		ih.SetAttribute("VALUE", fmt.Sprintf("level %d", pos))
+		return iup.DEFAULT
+	}))
+
 	dlg := iup.Dialog(
 		iup.Vbox(
 			iup.Frame(
@@ -67,6 +77,15 @@ func main() {
 					text3,
 				).SetAttribute("GAP", "10"),
 			).SetAttribute("TITLE", "Wrap Mode"),
+
+			iup.Frame(
+				iup.Hbox(
+					iup.Label("SPINALIGN=LEFT:"),
+					text4,
+					iup.Label("SPINAUTO=NO, SPIN_CB sets the text:"),
+					text5,
+				).SetAttribute("GAP", "10"),
+			).SetAttribute("TITLE", "Spin position and manual value"),
 		).SetAttributes("MARGIN=10x10, GAP=10"),
 	).SetAttribute("TITLE", "Spin Example")
 

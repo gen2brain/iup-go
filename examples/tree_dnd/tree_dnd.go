@@ -71,6 +71,7 @@ func main() {
 	// tree1.SetAttribute("DRAGTYPES", "TEXT,STRING")
 	// Tree2Tree DND
 	tree1.SetAttribute("DRAGDROPTREE", "YES")
+	tree1.SetAttribute("DROPEQUALDRAG", "YES")
 	// Common DND Attrib
 	tree1.SetAttribute("DRAGSOURCE", "YES")
 	tree1.SetAttribute("DRAGSOURCEMOVE", "YES")

@@ -12,6 +12,7 @@ func addLeaf(ih iup.Ihandle) int {
 	id := iup.GetInt(tree, "VALUE")
 	attr := fmt.Sprintf("ADDLEAF%d", id)
 	iup.SetAttribute(tree, attr, "")
+	fmt.Println("LASTADDNODE", iup.GetAttribute(tree, "LASTADDNODE"), "FIRST of it", iup.GetAttribute(tree, "FIRST"+iup.GetAttribute(tree, "LASTADDNODE")))
 	return iup.DEFAULT
 }
 
@@ -22,6 +23,7 @@ func addBranch(ih iup.Ihandle) int {
 	id := iup.GetInt(tree, "VALUE")
 	attr := fmt.Sprintf("ADDBRANCH%d", id)
 	iup.SetAttribute(tree, attr, "")
+	fmt.Println("LASTADDNODE", iup.GetAttribute(tree, "LASTADDNODE"), "FIRST of it", iup.GetAttribute(tree, "FIRST"+iup.GetAttribute(tree, "LASTADDNODE")))
 	return iup.DEFAULT
 }
 
@@ -53,6 +55,22 @@ func executeBranchCb(ih iup.Ihandle, id int) int {
 
 func showRenameCb(ih iup.Ihandle, id int) int {
 	fmt.Printf("showRenameCb (%d)\n", id)
+	ih.SetAttribute("RENAMECARET", "1")
+	ih.SetAttribute("RENAMESELECTION", "1:3")
+	return iup.DEFAULT
+}
+
+func markBlock(ih iup.Ihandle) int {
+	tree := iup.GetHandle("tree")
+	fmt.Printf("MARK=BLOCK from MARKSTART=%s to %d\n", iup.GetAttribute(tree, "MARKSTART"), iup.GetInt(tree, "VALUE"))
+	iup.SetAttribute(tree, "MARK", "BLOCK")
+	return iup.DEFAULT
+}
+
+func markStart(ih iup.Ihandle) int {
+	tree := iup.GetHandle("tree")
+	iup.SetAttribute(tree, "MARKSTART", iup.GetAttribute(tree, "VALUE"))
+	fmt.Println("MARKSTART", iup.GetAttribute(tree, "MARKSTART"))
 	return iup.DEFAULT
 }
 
@@ -93,6 +111,9 @@ func rightClickCb(ih iup.Ihandle, id int) int {
 		iup.MenuItem("Add Branch").SetCallback("ACTION", iup.ActionFunc(addBranch)),
 		iup.MenuItem("Rename Node").SetCallback("ACTION", iup.ActionFunc(renameNode)),
 		iup.MenuItem("Remove Node").SetCallback("ACTION", iup.ActionFunc(removeNode)),
+		iup.MenuSeparator(),
+		iup.MenuItem("Set MARKSTART here").SetCallback("ACTION", iup.ActionFunc(markStart)),
+		iup.MenuItem("MARK=BLOCK from MARKSTART").SetCallback("ACTION", iup.ActionFunc(markBlock)),
 	)
 
 	iup.SetAttribute(ih, "VALUE", fmt.Sprintf("%d", id))
@@ -122,6 +143,7 @@ func initTree() {
 	// iup.SetAttribute(tree, "ADDEXPANDED", "NO")
 	// iup.SetAttribute(tree, "SHOWDRAGDROP", "YES")
 	iup.SetAttribute(tree, "SHOWRENAME", "YES")
+	iup.SetAttribute(tree, "MARKMODE", "MULTIPLE")
 
 	iup.SetHandle("tree", tree)
 }
