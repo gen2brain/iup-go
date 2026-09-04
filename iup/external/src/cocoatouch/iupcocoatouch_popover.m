@@ -184,7 +184,10 @@ static int cocoaTouchPopoverSetVisibleAttrib(Ihandle* ih, const char* value)
 		if (ppc)
 		{
 			ppc.sourceView = anchor_view;
-			ppc.sourceRect = cocoaTouchPopoverSourceRect(position, [anchor_view bounds]);
+			CGRect source_rect = cocoaTouchPopoverSourceRect(position, [anchor_view bounds]);
+			source_rect.origin.x += iupAttribGetInt(ih, "OFFSETX");
+			source_rect.origin.y += iupAttribGetInt(ih, "OFFSETY");
+			ppc.sourceRect = source_rect;
 			ppc.permittedArrowDirections = cocoaTouchPopoverArrowDirection(position);
 			ppc.passthroughViews = @[anchor_view];
 			ppc.backgroundColor = [UIColor systemBackgroundColor];
@@ -286,6 +289,4 @@ IUP_SDK_API void iupdrvPopoverInitClass(Iclass* ic)
 
 	iupClassRegisterAttribute(ic, "ARROW", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 
-	iupClassRegisterAttribute(ic, "OFFSETX", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
-	iupClassRegisterAttribute(ic, "OFFSETY", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 }
