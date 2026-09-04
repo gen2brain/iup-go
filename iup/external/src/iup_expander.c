@@ -428,6 +428,8 @@ static int iExpanderAnimateTimer_CB(Ihandle* animate_timer)
     if (closing)
     {
       ih->data->state = IEXPANDER_CLOSE;
+      iExpanderUpdateStateImage(ih);
+      iExpanderUpdateTitleState(ih);
       IupSetAttribute(child, "VISIBLE", "NO");
 
       if (ih->data->state_refresh)
@@ -511,7 +513,7 @@ static void iExpanderOpenCloseChild(Ihandle* ih, int refresh, int callcb, int st
 
   if (child)
   {
-    if (refresh && ih->data->animation && ih->data->position == IEXPANDER_TOP)
+    if (refresh && ih->handle && ih->data->animation && ih->data->position == IEXPANDER_TOP)
       iExpanderAnimateChild(ih, child);
     else
     {
