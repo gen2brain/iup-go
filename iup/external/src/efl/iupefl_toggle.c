@@ -714,6 +714,8 @@ static int eflToggleMapMethod(Ihandle* ih)
     }
   }
 
+  iupAttribSet(ih, "_IUP_EFL_IGNORE_TOGGLE", "1");
+
   value = iupAttribGet(ih, "VALUE");
   if (value && iupStrBoolean(value))
   {
@@ -752,6 +754,8 @@ static int eflToggleMapMethod(Ihandle* ih)
     eflToggleUpdateImage(ih, 1);
     iupAttribSet(radio, "_IUP_EFL_RADIO_IMAGE_ACTIVE", (char*)ih);
   }
+
+  iupAttribSet(ih, "_IUP_EFL_IGNORE_TOGGLE", NULL);
 
   {
     Eo* callback_widget = (Eo*)iupAttribGet(ih, "_IUP_EFL_CHECK");
