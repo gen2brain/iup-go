@@ -970,14 +970,20 @@ static char* iFlatScrollBarGetPosXAttrib(Ihandle* ih)
 
 static int iFlatScrollBarSetShowFloatingAttrib(Ihandle* ih, const char *value)
 {
+  int sb = iupFlatScrollBarGet(ih);
+  if (sb == IUP_SB_NONE)
+    return 1;
+
   if (iupStrBoolean(value))
   {
     Ihandle* timer = (Ihandle*)iupAttribGet(ih, "_IUP_FLOATTIMER");
     Ihandle* sb_vert = iFlatScrollBarGetVertical(ih);
     Ihandle* sb_horiz = iFlatScrollBarGetHorizontal(ih);
 
-    IupSetAttribute(sb_vert, "VISIBLE", "NO");
-    IupSetAttribute(sb_horiz, "VISIBLE", "NO");
+    if (sb & IUP_SB_VERT)
+      IupSetAttribute(sb_vert, "VISIBLE", "NO");
+    if (sb & IUP_SB_HORIZ)
+      IupSetAttribute(sb_horiz, "VISIBLE", "NO");
 
     if (!timer)
     {
@@ -991,7 +997,6 @@ static int iFlatScrollBarSetShowFloatingAttrib(Ihandle* ih, const char *value)
   }
   else
   {
-    int sb = iupFlatScrollBarGet(ih);
     Ihandle* sb_vert = iFlatScrollBarGetVertical(ih);
     Ihandle* sb_horiz = iFlatScrollBarGetHorizontal(ih);
 
