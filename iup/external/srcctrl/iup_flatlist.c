@@ -1842,7 +1842,10 @@ static void iFlatListComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *
 static void iFlatListSetChildrenCurrentSizeMethod(Ihandle* ih, int shrink)
 {
   if (iupFlatScrollBarGet(ih) != IUP_SB_NONE)
+  {
+    iFlatListUpdateScrollBar(ih);
     iupFlatScrollBarSetChildrenCurrentSize(ih, shrink);
+  }
 }
 
 static void iFlatListSetChildrenPositionMethod(Ihandle* ih, int x, int y)
