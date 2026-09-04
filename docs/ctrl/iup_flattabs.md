@@ -130,7 +130,7 @@ Partial values are also accepted, like "ARIGHT" or ":ATOP", the other value will
 Use [IupSetHandle](../func/iup_sethandle.md) or [IupSetAttributeHandle](../func/iup_setattributehandle.md) to associate an image to a name. n starts at 0.
 See also [IupImage](../elem/iup_image.md).
 
-**TABIMAGEHIGHTLIGHTn**: same as TABIMAGEn when in highlight state.
+**TABIMAGEHIGHLIGHTn**: same as TABIMAGEn when in highlight state.
 If not defined TABIMAGEn is used.
 
 **TABIMAGEINACTIVEn**: same as TABIMAGEn when in inactive state.
@@ -211,6 +211,8 @@ Default: "200 225 245".
 
 **EXTRAFONT*****id***: text font of the button. When not defined TABSFONT is used.
 
+**EXTRAALIGNMENT*****id***: horizontal and vertical alignment of the button image+text in the format "horizontal:vertical". When not defined TABSALIGNMENT is used.
+
 **EXTRAIMAGE*****id***: image name to be used in the respective button.
 Use [IupSetHandle](../func/iup_sethandle.md) or [IupSetAttributeHandle](../func/iup_setattributehandle.md) to associate an image to a name. n starts at 0.
 See also [IupImage](../elem/iup_image.md).
@@ -277,7 +279,7 @@ Inherits all callbacks of the [IupCanvas](../elem/iup_canvas.md), but redefines 
 Including BUTTON_CB, MOTION_CB, GETFOCUS_CB, KILLFOCUS_CB and LEAVEWINDOW_CB.
 To allow the application to use those callbacks the same callbacks are exported with the "FLAT_" prefix using the same parameters.
 They are all called before the internal callbacks and if they return IUP_IGNORE the internal callbacks are not processed.
-In FLATBUTTON_CB and FLAT_MOTION_CB use [IupConvertXYToPos](../func/iup_convertxytopos.md) to convert (x,y) coordinates in tab position (same as VALUEPOS).
+In FLAT_BUTTON_CB and FLAT_MOTION_CB use [IupConvertXYToPos](../func/iup_convertxytopos.md) to convert (x,y) coordinates in tab position (same as VALUEPOS).
 
 **TABCHANGE_CB**: Callback called when the user changes the current tab.
 
