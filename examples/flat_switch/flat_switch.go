@@ -59,6 +59,14 @@ func main() {
 	iup.SetCallback(sw7, "FLAT_ACTION", iup.FlatToggleActionFunc(actionCb))
 
 	// Large switch (CHECKSIZE=32)
+	sw7a := iup.FlatToggle("Press Colors")
+	sw7a.SetAttributes(`SWITCH=YES, SWITCHONPSCOLOR="0 100 0", SWITCHOFFPSCOLOR="120 40 40", SWITCHTHUMBPSCOLOR="255 200 0", SWITCHOFFHLCOLOR="230 150 150"`)
+	iup.SetCallback(sw7a, "FLAT_ACTION", iup.FlatToggleActionFunc(actionCb))
+
+	sw7b := iup.FlatToggle("Border Color")
+	sw7b.SetAttributes(`SWITCH=YES, SWITCHBORDERCOLOR="200 40 40", VALUE=ON`)
+	iup.SetCallback(sw7b, "FLAT_ACTION", iup.FlatToggleActionFunc(actionCb))
+
 	sw8 := iup.FlatToggle("Large (32px)")
 	sw8.SetAttributes("SWITCH=YES, CHECKSIZE=32, VALUE=ON")
 	iup.SetCallback(sw8, "FLAT_ACTION", iup.FlatToggleActionFunc(actionCb))
@@ -129,12 +137,12 @@ func main() {
 	sw19b.SetAttributes("SWITCH=YES, VALUE=ON, ACTIVE=NO")
 
 	// Top alignment
-	sw20 := iup.FlatToggle("Align Top")
-	sw20.SetAttributes("SWITCH=YES, CHECKALIGN=ATOP, RASTERSIZE=x50, VALUE=ON")
+	sw20 := iup.FlatToggle("Align Top\nsecond line")
+	sw20.SetAttributes("SWITCH=YES, CHECKALIGN=ATOP, VALUE=ON")
 
 	// Bottom alignment
-	sw21 := iup.FlatToggle("Align Bottom")
-	sw21.SetAttributes("SWITCH=YES, CHECKALIGN=ABOTTOM, RASTERSIZE=x50")
+	sw21 := iup.FlatToggle("Align Bottom\nsecond line")
+	sw21.SetAttributes("SWITCH=YES, CHECKALIGN=ABOTTOM")
 
 	// Combine everything: large, green, gradient, rounded rect
 	sw22 := iup.FlatToggle("Full Custom")
@@ -149,7 +157,7 @@ func main() {
 		sw1, sw2, iup.Hbox(sw2a, sw2b).SetAttributes("GAP=5"), sw3,
 		iup.Separator(),
 		iup.FlatLabel("Track Colors:").SetAttributes("FONTBOLD=YES"),
-		sw4, sw5, sw6, sw7,
+		sw4, sw5, sw6, sw7, sw7a, sw7b,
 	).SetAttributes("GAP=4")
 
 	col2 := iup.Vbox(

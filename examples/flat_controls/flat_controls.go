@@ -15,8 +15,23 @@ func main() {
 	defer iup.Close()
 	iup.ControlsOpen()
 
+	iup.SetHandle("dot_blue", makeImage(60, 140, 220, 16))
+	iup.SetHandle("dot_red", makeImage(200, 60, 60, 16))
+	iup.SetHandle("dot_gray", makeImage(170, 170, 170, 16))
+	iup.SetHandle("check_off", makeImage(220, 220, 220, 14))
+	iup.SetHandle("check_off_high", makeImage(240, 240, 240, 14))
+	iup.SetHandle("check_on", makeImage(40, 160, 60, 14))
+	iup.SetHandle("check_on_high", makeImage(90, 210, 110, 14))
+	iup.SetHandle("check_on_press", makeImage(20, 110, 40, 14))
+	iup.SetHandle("check_notdef", makeImage(230, 170, 40, 14))
+	iup.SetHandle("check_inactive", makeImage(200, 200, 200, 14))
+	iup.SetHandle("arrow_up", makeImage(60, 140, 220, 12))
+	iup.SetHandle("arrow_down", makeImage(200, 60, 60, 12))
+	iup.SetHandle("arrow_high", makeImage(120, 190, 255, 12))
+	iup.SetHandle("arrow_press", makeImage(20, 70, 140, 12))
+
 	statusText := iup.Text()
-	statusText.SetAttributes("READONLY=YES, EXPAND=HORIZONTAL, VALUE=Flat Controls")
+	statusText.SetAttributes(`READONLY=YES, EXPAND=HORIZONTAL, VALUE="Flat Controls"`)
 	iup.SetHandle("statusText", statusText)
 
 	flatTabs := createFlatTabs()
@@ -31,7 +46,7 @@ func main() {
 	).SetAttributes("MARGIN=10x10, GAP=5")
 
 	dlg := iup.Dialog(mainVbox)
-	dlg.SetAttributes(`TITLE="Flat Controls", RASTERSIZE=x600`)
+	dlg.SetAttribute("TITLE", "Flat Controls")
 
 	iup.Show(dlg)
 	iup.MainLoop()
@@ -166,6 +181,48 @@ func createButtonsAndTogglesTab() iup.Ihandle {
 		return iup.DEFAULT
 	}))
 
+	checkColors := iup.FlatToggle("Check colors")
+	checkColors.SetAttributes(`CHECKSIZE=16, CHECKSPACING=10, CHECKBGCOLOR="255 250 220", CHECKFGCOLOR="40 120 210", CHECKHLCOLOR="200 40 40", CHECKPSCOLOR="0 140 60", VALUE=ON`)
+	iup.SetCallback(checkColors, "FLAT_ACTION", iup.FlatToggleActionFunc(func(ih iup.Ihandle, state int) int {
+		updateStatus(fmt.Sprintf("Check colors state: %d", state))
+		return iup.DEFAULT
+	}))
+
+	checkImages := iup.FlatToggle("Check images (3STATE)")
+	checkImages.SetAttributes("CHECKSIZE=16, 3STATE=YES, CHECKIMAGE=check_off, CHECKIMAGEHIGHLIGHT=check_off_high, CHECKIMAGEPRESS=check_on_press, CHECKIMAGEINACTIVE=check_inactive")
+	checkImages.SetAttributes("CHECKIMAGEON=check_on, CHECKIMAGEONHIGHLIGHT=check_on_high, CHECKIMAGEONPRESS=check_on_press, CHECKIMAGEONINACTIVE=check_inactive")
+	checkImages.SetAttributes("CHECKIMAGENOTDEF=check_notdef, CHECKIMAGENOTDEFHIGHLIGHT=check_notdef, CHECKIMAGENOTDEFPRESS=check_on_press, CHECKIMAGENOTDEFINACTIVE=check_inactive")
+	iup.SetCallback(checkImages, "FLAT_ACTION", iup.FlatToggleActionFunc(func(ih iup.Ihandle, state int) int {
+		updateStatus(fmt.Sprintf("Check images state: %d", state))
+		return iup.DEFAULT
+	}))
+
+	radioToggle := func(title string) iup.Ihandle {
+		t := iup.FlatToggle(title)
+		t.SetAttributes("SELECTEDNOTIFY=YES, CHECKSIZE=16")
+		iup.SetCallback(t, "FLAT_ACTION", iup.FlatToggleActionFunc(func(ih iup.Ihandle, state int) int {
+			updateStatus(fmt.Sprintf("Radio %s state: %d", title, state))
+			return iup.DEFAULT
+		}))
+		return t
+	}
+	radioA, radioB, radioC := radioToggle("Radio A"), radioToggle("Radio B"), radioToggle("Not in the radio")
+	radioC.SetAttribute("IGNORERADIO", "YES")
+	radioA.SetAttribute("VALUE", "ON")
+	radio := iup.Radio(iup.Hbox(radioA, radioB, radioC).SetAttribute("GAP", "10"))
+
+	activeToggle := iup.Toggle("Toggles active")
+	activeToggle.SetAttribute("VALUE", "ON")
+	iup.SetCallback(activeToggle, "ACTION", iup.ToggleActionFunc(func(_ iup.Ihandle, state int) int {
+		value := "NO"
+		if state != 0 {
+			value = "YES"
+		}
+		checkColors.SetAttribute("ACTIVE", value)
+		checkImages.SetAttribute("ACTIVE", value)
+		return iup.DEFAULT
+	}))
+
 	vbox := iup.Vbox(
 		iup.FlatLabel("FlatButton Examples:").SetAttributes("FONTBOLD=YES"),
 		iup.Hbox(flatBtn1, flatBtn2, flatBtn3).SetAttributes("GAP=10"),
@@ -185,6 +242,8 @@ func createButtonsAndTogglesTab() iup.Ihandle {
 		flatToggle1,
 		flatToggle2,
 		flatToggle3,
+		iup.Hbox(checkColors, checkImages, activeToggle).SetAttributes("GAP=10"),
+		radio,
 		iup.Fill(),
 	).SetAttributes("MARGIN=10x10, GAP=5")
 
@@ -194,7 +253,8 @@ func createButtonsAndTogglesTab() iup.Ihandle {
 func createListAndTreeTab() iup.Ihandle {
 	flatList := iup.FlatList()
 	flatList.SetAttributes(`1="Item 1", 2="Item 2", 3="Item 3", 4="Item 4", 5="Item 5"`)
-	flatList.SetAttributes("EXPAND=HORIZONTAL, VISIBLELINES=5")
+	flatList.SetAttributes("EXPAND=HORIZONTAL, VISIBLELINES=5, IMAGEPOSITION=RIGHT, ICONSPACING=8")
+	flatList.SetAttributes(`IMAGE1=dot_blue, IMAGE3=dot_red, ITEMFONTSTYLE1=Bold, ITEMFONTSIZE2=14, ITEMTIP1="First item", ITEMTIP2="Bigger font", ITEMTIP3="Red dot"`)
 	iup.SetCallback(flatList, "FLAT_ACTION", iup.FlatListActionFunc(func(ih iup.Ihandle, text string, item, state int) int {
 		updateStatus(fmt.Sprintf("FlatList: Item %d selected (%s), state=%d", item, text, state))
 		return iup.DEFAULT
@@ -202,7 +262,9 @@ func createListAndTreeTab() iup.Ihandle {
 
 	flatTree := iup.FlatTree()
 
-	flatTree.SetAttributes("EXPAND=YES")
+	flatTree.SetAttributes("EXPAND=YES, SHOWTOGGLE=YES, EMPTYTOGGLE=YES, ICONSPACING=4, EXTRATEXTWIDTH=80")
+	flatTree.SetAttributes(`TOGGLEBGCOLOR="255 250 220", TOGGLEFGCOLOR="40 120 210", TOGGLESIZE=14, LINECOLOR="200 60 60"`)
+	flatTree.SetAttributes(`BUTTONBGCOLOR="225 240 255", BUTTONFGCOLOR="0 60 120", BUTTONBRDCOLOR="60 140 220", BUTTONSIZE=12`)
 	iup.SetAttributeId(flatTree, "ADDBRANCH", -1, "Figures")
 	iup.SetAttributeId(flatTree, "ADDLEAF", 0, "Other")
 	iup.SetAttributeId(flatTree, "ADDBRANCH", 0, "Triangle")
@@ -212,6 +274,16 @@ func createListAndTreeTab() iup.Ihandle {
 	iup.SetAttributeId(flatTree, "ADDBRANCH", 0, "Parallelogram")
 	iup.SetAttributeId(flatTree, "ADDLEAF", 6, "Square")
 	iup.SetAttributeId(flatTree, "ADDLEAF", 6, "Diamond")
+	for id, text := range map[int]string{0: "root", 1: "leaf", 2: "3 sides", 6: "4 sides"} {
+		iup.SetAttributeId(flatTree, "EXTRATEXT", id, text)
+	}
+	iup.SetAttributeId(flatTree, "TOGGLEVALUE", 3, "ON")
+	iup.SetAttributeId(flatTree, "TOGGLEVISIBLE", 1, "NO")
+
+	iup.SetCallback(flatTree, "TOGGLEVALUE_CB", iup.ToggleValueFunc(func(ih iup.Ihandle, id, state int) int {
+		updateStatus(fmt.Sprintf("FlatTree: TOGGLEVALUE_CB node %d state=%d", id, state))
+		return iup.DEFAULT
+	}))
 
 	iup.SetCallback(flatTree, "SELECTION_CB", iup.SelectionFunc(func(ih iup.Ihandle, id, status int) int {
 		title := iup.GetAttributeId(ih, "TITLE", id)
@@ -237,7 +309,20 @@ func createValAndOthersTab() iup.Ihandle {
 	iup.SetHandle("valLabel", valLabel)
 
 	flatValH := iup.FlatVal("HORIZONTAL")
-	flatValH.SetAttributes("EXPAND=HORIZONTAL, MIN=0, MAX=100")
+	flatValH.SetAttributes("EXPAND=HORIZONTAL, MIN=0, MAX=100, HANDLERSIZE=24, SLIDERSIZE=8")
+	flatValH.SetAttributes(`SLIDERBORDERCOLOR="40 120 210", BORDERHLCOLOR="200 60 60", BORDERPSCOLOR="140 20 20", FOCUSFEEDBACK=NO`)
+	iup.SetCallback(flatValH, "VALUECHANGING_CB", iup.ValueChangingFunc(func(ih iup.Ihandle, start int) int {
+		updateStatus(fmt.Sprintf("Horizontal FlatVal VALUECHANGING_CB start=%d", start))
+		return iup.DEFAULT
+	}))
+	iup.SetCallback(flatValH, "FLAT_WHEEL_CB", iup.WheelFunc(func(ih iup.Ihandle, delta float64, x, y int, st string) int {
+		updateStatus(fmt.Sprintf("Horizontal FlatVal FLAT_WHEEL_CB delta=%.0f at %d,%d", delta, x, y))
+		return iup.DEFAULT
+	}))
+	iup.SetCallback(flatValH, "FLAT_BUTTON_CB", iup.ButtonFunc(func(ih iup.Ihandle, button, pressed, x, y int, st string) int {
+		fmt.Printf("Horizontal FlatVal FLAT_BUTTON_CB button=%d pressed=%d at %d,%d\n", button, pressed, x, y)
+		return iup.DEFAULT
+	}))
 	iup.SetCallback(flatValH, "VALUECHANGED_CB", iup.ValueChangedFunc(func(ih iup.Ihandle) int {
 		value := ih.GetAttribute("VALUE")
 		iup.GetHandle("valLabel").SetAttribute("VALUE", "Horizontal Value: "+value)
@@ -246,13 +331,22 @@ func createValAndOthersTab() iup.Ihandle {
 	}))
 
 	flatValV := iup.FlatVal("VERTICAL")
-	flatValV.SetAttributes("EXPAND=VERTICAL, MIN=0, MAX=100, RASTERSIZE=50x")
+	flatValV.SetAttributes("EXPAND=VERTICAL, MIN=0, MAX=100, HANDLERSIZE=30, SLIDERSIZE=12, IMAGE=dot_blue, IMAGEHIGHLIGHT=dot_red, IMAGEPRESS=dot_gray, IMAGEINACTIVE=dot_gray")
 
 	flatLabel1 := iup.FlatLabel("This is a FlatLabel")
 	flatLabel1.SetAttributes(`BGCOLOR="220 220 220", PADDING=10x10`)
 
 	flatLabel2 := iup.FlatLabel("FlatLabel with custom styling")
 	flatLabel2.SetAttributes(`BGCOLOR="100 180 255", FGCOLOR="255 255 255", PADDING=10x10, ALIGNMENT=ACENTER`)
+
+	flatLabel3 := iup.FlatLabel("Right aligned\nmulti-line label\nwith an image")
+	flatLabel3.SetAttributes("IMAGE=dot_blue, IMAGEINACTIVE=dot_gray, IMAGEPOSITION=RIGHT, TEXTALIGNMENT=ARIGHT, CPADDING=2x1, CSPACING=2")
+
+	flatLabel4 := iup.FlatLabel("Front image over a back image")
+	flatLabel4.SetAttributes("BACKIMAGE=dot_red, BACKIMAGEZOOM=YES, FRONTIMAGE=dot_blue, FRONTIMAGEINACTIVE=dot_gray, PADDING=10x10")
+
+	flatLabel5 := iup.FlatLabel("Rotated label")
+	flatLabel5.SetAttributes(`TEXTORIENTATION=90, BGCOLOR="220 220 220", PADDING=4x8`)
 
 	separator1 := iup.Separator()
 
@@ -266,6 +360,7 @@ func createValAndOthersTab() iup.Ihandle {
 		iup.FlatLabel("FlatLabel Examples:").SetAttributes("FONTBOLD=YES"),
 		flatLabel1,
 		flatLabel2,
+		iup.Hbox(flatLabel3, flatLabel4, flatLabel5).SetAttributes("GAP=10, ALIGNMENT=ACENTER"),
 		iup.Fill(),
 	).SetAttributes("MARGIN=10x10, GAP=5")
 
@@ -289,7 +384,9 @@ func createContainersTab() iup.Ihandle {
 	).SetAttributes("MARGIN=10x10, GAP=5")
 
 	flatFrame := iup.FlatFrame(innerContent)
-	flatFrame.SetAttributes("TITLE=FlatFrame Example, EXPAND=HORIZONTAL")
+	flatFrame.SetAttributes(`TITLE="FlatFrame Example", EXPAND=HORIZONTAL, FRAMEWIDTH=2, FRAMESPACE=6, TITLELINE=YES, TITLELINEWIDTH=2, TITLEPADDING=6x3`)
+	flatFrame.SetAttributes(`FRAMECOLOR="40 120 210", TITLECOLOR="0 60 120", TITLEBGCOLOR="225 240 255", TITLELINECOLOR="40 120 210", TITLEALIGNMENT=ACENTER`)
+	flatFrame.SetAttributes("TITLEIMAGE=dot_blue, TITLEIMAGEINACTIVE=dot_gray, TITLEIMAGEPOSITION=RIGHT, TITLEIMAGESPACING=8")
 
 	scrollContent := iup.Vbox(
 		iup.FlatLabel("This content is inside a FlatScrollBox."),
@@ -307,17 +404,23 @@ func createContainersTab() iup.Ihandle {
 	).SetAttributes("MARGIN=5x5, GAP=5")
 
 	flatScrollBox := iup.FlatScrollBox(scrollContent)
-	flatScrollBox.SetAttributes("RASTERSIZE=300x200, EXPAND=YES")
+	flatScrollBox.SetAttributes("EXPAND=YES, LAYOUTDRAG=NO, SHOWARROWS=YES, ARROWIMAGES=YES")
+	flatScrollBox.SetAttributes(`SB_BACKCOLOR="240 240 240", SB_FORECOLOR="60 140 220", SB_HIGHCOLOR="120 190 255", SB_PRESSCOLOR="20 70 140"`)
+	flatScrollBox.SetAttributes("SB_IMAGETOP=arrow_up, SB_IMAGEBOTTOM=arrow_down, SB_IMAGETOPHIGHLIGHT=arrow_high, SB_IMAGEBOTTOMHIGHLIGHT=arrow_high")
+	flatScrollBox.SetAttributes("SB_IMAGETOPPRESS=arrow_press, SB_IMAGEBOTTOMPRESS=arrow_press, SB_IMAGETOPINACTIVE=dot_gray, SB_IMAGEBOTTOMINACTIVE=dot_gray")
 
-	vbox := iup.Vbox(
-		iup.FlatLabel("FlatFrame Container:").SetAttributes("FONTBOLD=YES"),
-		flatFrame,
-		iup.Fill(),
-		iup.Separator(),
-		iup.Fill(),
-		iup.FlatLabel("FlatScrollBox Container:").SetAttributes("FONTBOLD=YES"),
-		flatScrollBox,
-	).SetAttributes("MARGIN=10x10, GAP=5")
+	split := iup.Split(
+		iup.Vbox(
+			iup.FlatLabel("FlatFrame Container:").SetAttributes("FONTBOLD=YES"),
+			flatFrame,
+		).SetAttributes("GAP=5"),
+		iup.Vbox(
+			iup.FlatLabel("FlatScrollBox Container (drag the bar down to scroll):").SetAttributes("FONTBOLD=YES"),
+			flatScrollBox,
+		).SetAttributes("GAP=5"),
+	).SetAttributes("ORIENTATION=HORIZONTAL")
+
+	vbox := iup.Vbox(split).SetAttributes("MARGIN=10x10, GAP=5")
 
 	return vbox
 }
@@ -328,4 +431,19 @@ func updateStatus(message string) {
 		statusText.SetAttribute("VALUE", message)
 	}
 	fmt.Println(message)
+}
+
+func makeImage(r, g, b byte, n int) iup.Ihandle {
+	pixels := make([]byte, n*n*4)
+	c := float64(n) / 2
+	for y := 0; y < n; y++ {
+		for x := 0; x < n; x++ {
+			i := (y*n + x) * 4
+			dx, dy := float64(x)-c+0.5, float64(y)-c+0.5
+			if dx*dx+dy*dy <= (c-1)*(c-1) {
+				pixels[i+0], pixels[i+1], pixels[i+2], pixels[i+3] = r, g, b, 255
+			}
+		}
+	}
+	return iup.ImageRGBA(n, n, pixels)
 }
