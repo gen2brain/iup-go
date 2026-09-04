@@ -51,6 +51,11 @@ It will replace MASK using one of the pre-defined masks.
 Defines a floating point mask with limits. Format: "%g:%g" ("min:max").
 It will replace MASK using one of the pre-defined masks.
 
+#### MASKREAL (non-inheritable) (write-only)
+
+Defines a floating point mask without limits. Can be "SIGNED" or "UNSIGNED".
+It will replace MASK using one of the pre-defined masks, honoring MASKDECIMALSYMBOL.
+
 ### Auxiliary Callbacks
 
 **MASKFAIL_CB**: Action generated when the new text fails at the mask check.
