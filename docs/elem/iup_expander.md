@@ -21,7 +21,7 @@ Default: NO. See Notes below.
 Works only for BARPOSITION=TOP and does not work for AUTOSHOW.
 Also the child must be a native container like **IupTabs**, **IupFrame**, **IupBackgroundBox**, or **IupScrollBox,** or it will not work accordantly.
 Values can be SLIDE (child controls slide down), CURTAIN (child controls appears as if a curtain is being pulled) or NO.
-Default: NO. (
+Default: NO.
 
 The attribute **NUMFRAMES** can be used to control the number of frames used for the animation, the default value is 10 frames.
 The time between frames is controlled by the **FRAMETIME** attribute, the default value is 30ms (milliseconds).
@@ -75,6 +75,7 @@ Setting this attribute will automatically change the layout of the entire dialog
 
 **STATEREFRESH** (non-inheritable): when state is changed **IupRefresh** is automatically called.
 Can be YES or NO. Default: YES.
+The dialog size is not changed; reset the dialog RASTERSIZE in OPENCLOSE_CB to have it follow the new natural size.
 
 **TITLE** (non-inheritable): title text, shown in the bar handler near the expand/collapse button.
 When set it will reset TITLEIMAGE. Shown only when BARPOSITION=TOP.

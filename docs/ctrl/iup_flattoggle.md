@@ -86,6 +86,14 @@ The space occupies the image+text area. Default: 5
 **CHECKALIGN** (non-inheritable): vertical alignment of the checkbox. Can be "ATOP", "ACENTER" and "ABOTTOM".
 Default: ACENTER.
 
+**CHECKBGCOLOR** (non-inheritable): background color of the check box. Default: the global attribute TXTBGCOLOR.
+
+**CHECKFGCOLOR** (non-inheritable): check mark and border color of the check box. Default uses FGCOLOR.
+
+**CHECKHLCOLOR** (non-inheritable): check mark and border color when highlighted.
+
+**CHECKPSCOLOR** (non-inheritable): check mark and border color when pressed or selected.
+
 **CHECKIMAGE** (non-inheritable): image name to be used as check box when VALUE=OFF, be sure the image size is equal to CHECKSIZE-2.
 Use [IupSetHandle](../func/iup_sethandle.md) or [IupSetAttributeHandle](../func/iup_setattributehandle.md) to associate an image to a name.
 See also [IupImage](../elem/iup_image.md).
