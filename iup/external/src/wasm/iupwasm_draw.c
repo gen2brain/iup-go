@@ -253,15 +253,52 @@ EM_JS(void, iupwasmJsDrawText, (int cid, const char* txt, int x, int y, int w, i
   ctx.font = f;
   ctx.fillStyle = globalThis.__iupRGBA(r, g, b, a);
   ctx.textBaseline = "middle";  /* box top stays at y, glyph centered in its line box */
-  if (flags & 0x10) { ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip(); }  /* CLIP */
-  if (orient) { ctx.translate(x, y); ctx.rotate(-orient * Math.PI / 180); ctx.translate(-x, -y); }
-  var ax = x, align = "left";
-  if (flags & 0x1) { ax = x + w / 2; align = "center"; }       /* CENTER */
-  else if (flags & 0x2) { ax = x + w; align = "right"; }       /* RIGHT */
-  ctx.textAlign = align;
   var m = f.match(/([0-9]+)px/);
   var lh = Math.round((m ? parseInt(m[1]) : 14) * 1.25);
   var lines = s.split("\n");
+  if (flags & 0x4) {  /* WRAP */
+    var wrapped = [];
+    for (var i = 0; i < lines.length; i++) {
+      var words = lines[i].split(" "), line = "";
+      for (var j = 0; j < words.length; j++) {
+        var test = line ? line + " " + words[j] : words[j];
+        if (line && ctx.measureText(test).width > w) { wrapped.push(line); line = words[j]; }
+        else line = test;
+        while (line.length > 1 && ctx.measureText(line).width > w) {
+          var cut = line.length - 1;
+          while (cut > 1 && ctx.measureText(line.substring(0, cut)).width > w) cut--;
+          wrapped.push(line.substring(0, cut));
+          line = line.substring(cut);
+        }
+      }
+      wrapped.push(line);
+    }
+    lines = wrapped;
+  } else if (flags & 0x8) {  /* ELLIPSIS */
+    for (var i = 0; i < lines.length; i++) {
+      var t = lines[i];
+      if (ctx.measureText(t).width <= w) continue;
+      var n = t.length;
+      while (n > 0 && ctx.measureText(t.substring(0, n) + "\u2026").width > w) n--;
+      lines[i] = t.substring(0, n) + "\u2026";
+    }
+  }
+  var lw = w, lhh = h;
+  if (orient && (flags & 0x20)) {  /* LAYOUTCENTER: rotate the unrotated layout box around the icon center */
+    lw = 0;
+    for (var i = 0; i < lines.length; i++) lw = Math.max(lw, Math.ceil(ctx.measureText(lines[i]).width));
+    lhh = lines.length * lh;
+  }
+  if (flags & 0x10) { ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip(); }  /* CLIP */
+  if (orient) {
+    var cx = x, cy = y;
+    if (flags & 0x20) { ctx.translate((w - lw) / 2, (h - lhh) / 2); cx = x + lw / 2; cy = y + lhh / 2; }
+    ctx.translate(cx, cy); ctx.rotate(-orient * Math.PI / 180); ctx.translate(-cx, -cy);
+  }
+  var ax = x, align = "left";
+  if (flags & 0x1) { ax = x + lw / 2; align = "center"; }      /* CENTER */
+  else if (flags & 0x2) { ax = x + lw; align = "right"; }      /* RIGHT */
+  ctx.textAlign = align;
   for (var i = 0; i < lines.length; i++)
     ctx.fillText(lines[i], ax, y + i * lh + lh / 2);
   ctx.restore();
