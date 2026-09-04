@@ -1625,6 +1625,11 @@ static char iStrToLowerLatin1(char c)
   return c;
 }
 
+static int iStrIsSeparator(char c)
+{
+  return c == ' ' || c == '\n' || c == '\t';
+}
+
 IUP_SDK_API void iupStrChangeCase(char* dstr, const char* sstr, int case_flag, int utf8)
 {
   int first = 1;
@@ -1659,15 +1664,15 @@ IUP_SDK_API void iupStrChangeCase(char* dstr, const char* sstr, int case_flag, i
       }
     case IUP_CASE_TITLE:
       {
-        int first_of_small_word = !first && (dstr[-1] == ' ' && /* first letter of a word */
-                                             ((dstr[+1] != 0 && dstr[+1] == ' ') ||   /* word of 1 */
-                                              (dstr[+2] != 0 && dstr[+2] == ' ') ||   /* word of 2 */
-                                              (dstr[+3] != 0 && dstr[+3] == ' ')));   /* word of 3 */
+        int first_of_small_word = !first && (iStrIsSeparator(dstr[-1]) && /* first letter of a word */
+                                             ((dstr[+1] != 0 && iStrIsSeparator(dstr[+1])) ||   /* word of 1 */
+                                              (dstr[+2] != 0 && iStrIsSeparator(dstr[+2])) ||   /* word of 2 */
+                                              (dstr[+3] != 0 && iStrIsSeparator(dstr[+3]))));   /* word of 3 */
         if (first_of_small_word) /* don't change the first of small words with less than 3 characters */
           break;
 
         /* the first letter of the whole string or the first letter of a word */
-        if (first || (dstr[-1] == ' '))
+        if (first || iStrIsSeparator(dstr[-1]))
           dst = iStrToUpperLatin1(src);
         else
           dst = iStrToLowerLatin1(src);
