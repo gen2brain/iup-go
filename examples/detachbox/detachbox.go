@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/gen2brain/iup-go/iup"
 )
 
@@ -47,7 +49,10 @@ func main() {
 func detachedCb(ih, newParent iup.Ihandle, x, y int) int {
 	newParent.SetAttribute("TITLE", "Close me to restore (RESTORED_CB)")
 
-	iup.GetHandle("status").SetAttribute("TITLE", "DETACHED_CB fired - box detached.")
+	oldParent := iup.GetAttributeHandle(ih, "OLDPARENT_HANDLE")
+	oldBrother := iup.GetAttributeHandle(ih, "OLDBROTHER_HANDLE")
+	iup.GetHandle("status").SetAttribute("TITLE", fmt.Sprintf("DETACHED_CB fired - box detached from a %s, before a %s.",
+		iup.GetClassName(oldParent), iup.GetClassName(oldBrother)))
 	iup.GetHandle("restore").SetAttribute("ACTIVE", "YES")
 	iup.GetHandle("detach").SetAttribute("ACTIVE", "NO")
 

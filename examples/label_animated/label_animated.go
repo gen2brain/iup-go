@@ -34,9 +34,30 @@ func main() {
 	}
 
 	lbl := iup.AnimatedLabel(animation)
-	lbl.SetAttribute("START", "YES")
+	lbl.SetAttributes("START=YES, STOPWHENHIDDEN=YES")
 
-	dlg := iup.Dialog(lbl)
+	info := iup.Label(fmt.Sprintf("FRAMECOUNT=%s FRAMETIME=%s RUNNING=%s", lbl.GetAttribute("FRAMECOUNT"), lbl.GetAttribute("FRAMETIME"), lbl.GetAttribute("RUNNING")))
+	info.SetAttribute("EXPAND", "HORIZONTAL")
+	hide := iup.Button("Hide for two seconds (STOPWHENHIDDEN)")
+	hide.SetCallback("ACTION", iup.ActionFunc(func(iup.Ihandle) int {
+		lbl.SetAttribute("VISIBLE", "NO")
+		check := iup.Timer().SetAttributes("TIME=500, RUN=YES")
+		check.SetCallback("ACTION_CB", iup.TimerActionFunc(func(ih iup.Ihandle) int {
+			info.SetAttribute("TITLE", "hidden: RUNNING="+lbl.GetAttribute("RUNNING"))
+			ih.Destroy()
+			return iup.DEFAULT
+		}))
+		t := iup.Timer().SetAttributes("TIME=2000, RUN=YES")
+		t.SetCallback("ACTION_CB", iup.TimerActionFunc(func(ih iup.Ihandle) int {
+			lbl.SetAttributes("VISIBLE=YES, START=YES")
+			info.SetAttribute("TITLE", "shown again: RUNNING="+lbl.GetAttribute("RUNNING"))
+			ih.Destroy()
+			return iup.DEFAULT
+		}))
+		return iup.DEFAULT
+	}))
+
+	dlg := iup.Dialog(iup.Vbox(lbl, info, hide).SetAttributes("NMARGIN=10x10, NGAP=5"))
 
 	dlg.SetAttribute("TITLE", "Animated Label")
 

@@ -46,7 +46,7 @@ func main() {
 	).SetAttributes("MARGIN=10x10, GAP=5")
 
 	dlg := iup.Dialog(mainVbox)
-	dlg.SetAttribute("TITLE", "Flat Controls")
+	dlg.SetAttributes(`TITLE="Flat Controls", SHRINK=YES`)
 
 	iup.Show(dlg)
 	iup.MainLoop()
@@ -252,7 +252,7 @@ func createButtonsAndTogglesTab() iup.Ihandle {
 
 func createListAndTreeTab() iup.Ihandle {
 	flatList := iup.FlatList()
-	flatList.SetAttributes(`1="Item 1", 2="Item 2", 3="Item 3", 4="Item 4", 5="Item 5"`)
+	flatList.SetAttributes(`1="Item 1", 2="Item 2", 3="Item 3", 4="Item 4", 5="Item 5", 6="Item 6", 7="Item 7", 8="Item 8", FLATSCROLLBAR=YES, SHOWFLOATING=YES, FLOATINGDELAY=1500`)
 	flatList.SetAttributes("EXPAND=HORIZONTAL, VISIBLELINES=5, IMAGEPOSITION=RIGHT, ICONSPACING=8")
 	flatList.SetAttributes(`IMAGE1=dot_blue, IMAGE3=dot_red, ITEMFONTSTYLE1=Bold, ITEMFONTSIZE2=14, ITEMTIP1="First item", ITEMTIP2="Bigger font", ITEMTIP3="Red dot"`)
 	iup.SetCallback(flatList, "FLAT_ACTION", iup.FlatListActionFunc(func(ih iup.Ihandle, text string, item, state int) int {
@@ -265,16 +265,17 @@ func createListAndTreeTab() iup.Ihandle {
 	flatTree.SetAttributes("EXPAND=YES, SHOWTOGGLE=YES, EMPTYTOGGLE=YES, ICONSPACING=4, EXTRATEXTWIDTH=80")
 	flatTree.SetAttributes(`TOGGLEBGCOLOR="255 250 220", TOGGLEFGCOLOR="40 120 210", TOGGLESIZE=14, LINECOLOR="200 60 60"`)
 	flatTree.SetAttributes(`BUTTONBGCOLOR="225 240 255", BUTTONFGCOLOR="0 60 120", BUTTONBRDCOLOR="60 140 220", BUTTONSIZE=12`)
+	flatTree.SetAttributes("BUTTONPLUSIMAGE=arrow_down, BUTTONMINUSIMAGE=arrow_up, AUTOREDRAW=YES")
 	iup.SetAttributeId(flatTree, "ADDBRANCH", -1, "Figures")
-	iup.SetAttributeId(flatTree, "ADDLEAF", 0, "Other")
 	iup.SetAttributeId(flatTree, "ADDBRANCH", 0, "Triangle")
-	iup.SetAttributeId(flatTree, "ADDLEAF", 2, "Equilateral")
-	iup.SetAttributeId(flatTree, "ADDLEAF", 2, "Isosceles")
-	iup.SetAttributeId(flatTree, "ADDLEAF", 2, "Scalene")
+	iup.SetAttributeId(flatTree, "ADDLEAF", 1, "Scalene")
+	iup.SetAttributeId(flatTree, "ADDLEAF", 1, "Isosceles")
+	iup.SetAttributeId(flatTree, "ADDLEAF", 1, "Equilateral")
 	iup.SetAttributeId(flatTree, "ADDBRANCH", 0, "Parallelogram")
-	iup.SetAttributeId(flatTree, "ADDLEAF", 6, "Square")
-	iup.SetAttributeId(flatTree, "ADDLEAF", 6, "Diamond")
-	for id, text := range map[int]string{0: "root", 1: "leaf", 2: "3 sides", 6: "4 sides"} {
+	iup.SetAttributeId(flatTree, "ADDLEAF", 1, "Diamond")
+	iup.SetAttributeId(flatTree, "ADDLEAF", 1, "Square")
+	iup.SetAttributeId(flatTree, "ADDLEAF", 0, "Other")
+	for id, text := range map[int]string{0: "root", 1: "leaf", 2: "4 sides", 5: "3 sides"} {
 		iup.SetAttributeId(flatTree, "EXTRATEXT", id, text)
 	}
 	iup.SetAttributeId(flatTree, "TOGGLEVALUE", 3, "ON")
@@ -331,7 +332,7 @@ func createValAndOthersTab() iup.Ihandle {
 	}))
 
 	flatValV := iup.FlatVal("VERTICAL")
-	flatValV.SetAttributes("EXPAND=VERTICAL, MIN=0, MAX=100, HANDLERSIZE=30, SLIDERSIZE=12, IMAGE=dot_blue, IMAGEHIGHLIGHT=dot_red, IMAGEPRESS=dot_gray, IMAGEINACTIVE=dot_gray")
+	flatValV.SetAttributes("EXPAND=VERTICAL, MIN=0, MAX=100, HANDLERSIZE=24, SLIDERSIZE=8")
 
 	flatLabel1 := iup.FlatLabel("This is a FlatLabel")
 	flatLabel1.SetAttributes(`BGCOLOR="220 220 220", PADDING=10x10`)
@@ -415,10 +416,10 @@ func createContainersTab() iup.Ihandle {
 			flatFrame,
 		).SetAttributes("GAP=5"),
 		iup.Vbox(
-			iup.FlatLabel("FlatScrollBox Container (drag the bar down to scroll):").SetAttributes("FONTBOLD=YES"),
+			iup.FlatLabel("FlatScrollBox Container (drag the bar to resize it):").SetAttributes("FONTBOLD=YES"),
 			flatScrollBox,
 		).SetAttributes("GAP=5"),
-	).SetAttributes("ORIENTATION=HORIZONTAL")
+	).SetAttributes("ORIENTATION=HORIZONTAL, VALUE=600")
 
 	vbox := iup.Vbox(split).SetAttributes("MARGIN=10x10, GAP=5")
 

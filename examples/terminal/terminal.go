@@ -88,6 +88,7 @@ func main() {
 	defer iup.Close()
 
 	term := iup.Terminal().SetAttribute("EXPAND", "YES").SetHandle("terminal")
+	term.SetAttributes("SCROLLBACKLINES=500, SCROLLONOUTPUT=YES, SCROLLONKEY=YES, TERMNAME=xterm-256color, AUTOCOPY=YES, ALLOWOSC52=YES, OPTIONASMETA=YES")
 	statusbar := iup.Label("").SetAttributes("EXPAND=HORIZONTAL, PADDING=10x5").SetHandle("statusbar")
 
 	btn := func(t, tip string, cb iup.ActionFunc) iup.Ihandle {
