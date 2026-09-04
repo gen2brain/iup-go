@@ -50,6 +50,7 @@ extern "C" {
 
 /* Forward declarations */
 static int qtTextKeyPress(Ihandle* ih, QKeyEvent* evt);
+static void qtTextArbitrateHistory(Ihandle* ih, int redo);
 
 /* Custom QLineEdit with additional functionality */
 class IupQtLineEdit : public QLineEdit
@@ -90,27 +91,18 @@ protected:
       return;
     }
 
-    /* Validate input against mask before allowing text change */
-    if (!event->text().isEmpty() && event->text().at(0).isPrint())
+    if (qtTextKeyPress(ih, event))
     {
-      int start = cursorPosition();
-      int end = start;
+      event->accept();
+      return;
+    }
 
-      if (hasSelectedText())
-      {
-        start = selectionStart();
-        end = start + selectedText().length();
-      }
-
-      /* Call mask validation (ACTION callback handled separately by qtTextKeyPress) */
-      int ret = iupEditCallActionCb(ih, NULL, event->text().toUtf8().constData(),
-                                     start, end, ih->data->mask, ih->data->nc, 0, 1);
-      if (ret == 0)
-      {
-        /* Mask validation failed - block the key */
-        event->accept();
-        return;
-      }
+    if (event->matches(QKeySequence::Undo) || event->matches(QKeySequence::Redo))
+    {
+      int redo = event->matches(QKeySequence::Redo);
+      QLineEdit::keyPressEvent(event);
+      qtTextArbitrateHistory(ih, redo);
+      return;
     }
 
     /* Handle overwrite mode */
@@ -124,13 +116,6 @@ protected:
         setText(current);
         setCursorPosition(pos);
       }
-    }
-
-    /* Handle text key press event (includes ACTION callback for single-line) */
-    if (qtTextKeyPress(ih, event))
-    {
-      event->accept();
-      return;
     }
 
     QLineEdit::keyPressEvent(event);
@@ -291,29 +276,18 @@ protected:
     }
 
     /* Validate input against mask before allowing text change */
-    if (!event->text().isEmpty() && event->text().at(0).isPrint())
+    if (qtTextKeyPress(ih, event))
     {
-      QTextCursor cursor = textCursor();
-      int pos = cursor.position();
-      int start = pos;
-      int end = pos;
+      event->accept();
+      return;
+    }
 
-      if (cursor.hasSelection())
-      {
-        int anchor = cursor.anchor();
-        start = qMin(pos, anchor);
-        end = qMax(pos, anchor);
-      }
-
-      /* Call mask validation (ACTION callback handled separately) */
-      int ret = iupEditCallActionCb(ih, NULL, event->text().toUtf8().constData(),
-                                     start, end, ih->data->mask, ih->data->nc, 0, 1);
-      if (ret == 0)
-      {
-        /* Mask validation failed - block the key */
-        event->accept();
-        return;
-      }
+    if (event->matches(QKeySequence::Undo) || event->matches(QKeySequence::Redo))
+    {
+      int redo = event->matches(QKeySequence::Redo);
+      QTextEdit::keyPressEvent(event);
+      qtTextArbitrateHistory(ih, redo);
+      return;
     }
 
     /* Handle overwrite mode */
@@ -325,13 +299,6 @@ protected:
         cursor.deleteChar();
         setTextCursor(cursor);
       }
-    }
-
-    /* Handle text key press event (includes ACTION callback) */
-    if (qtTextKeyPress(ih, event))
-    {
-      event->accept();
-      return;
     }
 
     QTextEdit::keyPressEvent(event);
@@ -658,84 +625,102 @@ static void qtTextCursorPositionChanged(Ihandle* ih)
   }
 }
 
-static int qtTextKeyPress(Ihandle* ih, QKeyEvent* evt)
+static void qtTextGetEditRange(Ihandle* ih, int* start, int* end)
 {
-  int ret = iupqtKeyPressEvent((QWidget*)ih->handle, evt, ih);
-
-  if (ret)
+  if (ih->data->is_multiline)
   {
-    return 1;
+    QTextCursor cursor = ((IupQtTextEdit*)ih->handle)->textCursor();
+    *start = cursor.selectionStart();
+    *end = cursor.selectionEnd();
+  }
+  else
+  {
+    IupQtLineEdit* edit = (IupQtLineEdit*)ih->handle;
+    *start = edit->hasSelectedText() ? edit->selectionStart() : edit->cursorPosition();
+    *end = edit->hasSelectedText() ? *start + (int)edit->selectedText().length() : *start;
+  }
+}
+
+/* the history is applied first, then validated as a whole value and undone again when refused */
+static void qtTextArbitrateHistory(Ihandle* ih, int redo)
+{
+  IFnis cb = (IFnis)IupGetCallback(ih, "ACTION");
+  QString value;
+
+  if (!cb && !ih->data->mask && !ih->data->nc)
+    return;
+
+  if (ih->data->is_multiline)
+    value = ((IupQtTextEdit*)ih->handle)->toPlainText();
+  else
+    value = ((IupQtLineEdit*)ih->handle)->text();
+
+  if (iupEditCheckNewValue(ih, cb, value.toUtf8().constData(), ih->data->mask, ih->data->nc))
+    return;
+
+  ih->data->disable_callbacks = 1;
+
+  if (ih->data->is_multiline)
+  {
+    IupQtTextEdit* edit = (IupQtTextEdit*)ih->handle;
+    if (redo) edit->undo(); else edit->redo();
+  }
+  else
+  {
+    IupQtLineEdit* edit = (IupQtLineEdit*)ih->handle;
+    if (redo) edit->undo(); else edit->redo();
   }
 
-  /* Call ACTION callback */
+  ih->data->disable_callbacks = 0;
+}
+
+static void qtTextInsertKey(Ihandle* ih, const QString& text)
+{
+  ih->data->disable_callbacks = 1;
+
+  if (ih->data->is_multiline)
+    ((IupQtTextEdit*)ih->handle)->textCursor().insertText(text);
+  else
   {
-    IFnis cb = (IFnis)IupGetCallback(ih, "ACTION");
-    if (cb)
-    {
-      QString text = evt->text();
+    IupQtLineEdit* edit = (IupQtLineEdit*)ih->handle;
+    int pos = edit->cursorPosition();
+    QString current = edit->text();
+    current.insert(pos, text);
+    edit->setText(current);
+    edit->setCursorPosition(pos + text.length());
+  }
 
-      if (!text.isEmpty())
-      {
-        QChar ch = text.at(0);
-        if (ch.isPrint() && ch.unicode() >= 32)
-        {
-          int iup_key = ch.toLatin1();
-          const char* value;
-          QString value_str;
+  ih->data->disable_callbacks = 0;
+}
 
-          if (ih->data->is_multiline)
-          {
-            IupQtTextEdit* edit = (IupQtTextEdit*)ih->handle;
-            value_str = edit->toPlainText();
-          }
-          else
-          {
-            IupQtLineEdit* edit = (IupQtLineEdit*)ih->handle;
-            value_str = edit->text();
-          }
-          QByteArray value_utf8 = value_str.toUtf8();
-          value = value_utf8.constData();
+static int qtTextKeyPress(Ihandle* ih, QKeyEvent* evt)
+{
+  IFnis cb;
+  QString text;
+  int start, end, ret;
 
-          int result = cb(ih, iup_key, (char*)value);
+  if (iupqtKeyPressEvent((QWidget*)ih->handle, evt, ih))
+    return 1;
 
-          if (result == IUP_IGNORE)
-          {
-            return 1;
-          }
-          else if (result == IUP_CLOSE)
-          {
-            IupExitLoop();
-            return 1;
-          }
-          else if (result != IUP_DEFAULT && result > 0)
-          {
-            QString replacement = QString(QChar(result));
+  cb = (IFnis)IupGetCallback(ih, "ACTION");
+  if (!cb && !ih->data->mask && !ih->data->nc)
+    return 0;
 
-            ih->data->disable_callbacks = 1;
+  text = evt->text();
+  if (text.isEmpty() || !text.at(0).isPrint() || text.at(0).unicode() < 32)
+    return 0;
 
-            if (ih->data->is_multiline)
-            {
-              IupQtTextEdit* edit = (IupQtTextEdit*)ih->handle;
-              QTextCursor cursor = edit->textCursor();
-              cursor.insertText(replacement);
-            }
-            else
-            {
-              IupQtLineEdit* edit = (IupQtLineEdit*)ih->handle;
-              int pos = edit->cursorPosition();
-              QString current = edit->text();
-              current.insert(pos, replacement);
-              edit->setText(current);
-              edit->setCursorPosition(pos + 1);
-            }
+  qtTextGetEditRange(ih, &start, &end);
 
-            ih->data->disable_callbacks = 0;
+  ret = iupEditCallActionCb(ih, cb, text.toUtf8().constData(), start, end,
+                            ih->data->mask, ih->data->nc, 0, 1);
+  if (ret == 0)
+    return 1;
 
-            return 1;
-          }
-        }
-      }
-    }
+  if (ret != -1)  /* the callback replaced the character */
+  {
+    qtTextInsertKey(ih, QString(QChar(ret)));
+    return 1;
   }
 
   return 0;
@@ -1395,6 +1380,8 @@ static int qtTextSetClipboardAttrib(Ihandle* ih, const char* value)
       ((IupQtTextEdit*)ih->handle)->undo();
     else
       ((IupQtLineEdit*)ih->handle)->undo();
+
+    qtTextArbitrateHistory(ih, 0);
   }
   else if (iupStrEqualNoCase(value, "REDO"))
   {
@@ -1402,6 +1389,8 @@ static int qtTextSetClipboardAttrib(Ihandle* ih, const char* value)
       ((IupQtTextEdit*)ih->handle)->redo();
     else
       ((IupQtLineEdit*)ih->handle)->redo();
+
+    qtTextArbitrateHistory(ih, 1);
   }
   else if (iupStrEqualNoCase(value, "CLEARUNDO"))
   {
