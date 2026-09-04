@@ -647,6 +647,17 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
     pango_layout_set_height(fontlayout, iupGTK4_PIXELS2PANGOUNITS(layout_h));
     pango_layout_set_ellipsize(fontlayout, PANGO_ELLIPSIZE_END);
   }
+  else if (w > 0 && alignment != PANGO_ALIGN_LEFT && !(text_orientation && layout_center))
+  {
+    /* without a layout width Pango aligns the lines against each other, not inside w */
+    int text_w = 0;
+    pango_layout_get_pixel_size(fontlayout, &text_w, NULL);
+
+    if (alignment == PANGO_ALIGN_RIGHT)
+      x += w - text_w;
+    else
+      x += (w - text_w) / 2;
+  }
 
   cairo_set_source_rgba(dc->image_cr, iupgtk4ColorToDouble(iupDrawRed(color)), iupgtk4ColorToDouble(iupDrawGreen(color)), iupgtk4ColorToDouble(iupDrawBlue(color)), iupgtk4ColorToDouble(iupDrawAlpha(color)));
 

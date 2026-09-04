@@ -750,7 +750,8 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
     evas_object_textblock_size_formatted_get(text_obj, &tw, &th);
     if ((flags & IUP_DRAW_WRAP) || (flags & IUP_DRAW_ELLIPSIS))
       tw = box_w;
-    efl_gfx_entity_size_set(text_obj, EINA_SIZE2D(tw, th));
+    /* align is relative to the object width, so it has to stay the box */
+    efl_gfx_entity_size_set(text_obj, EINA_SIZE2D(box_w, th));
   }
   else
   {
@@ -774,8 +775,7 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
     tw = geom.w;
     th = geom.h;
 
-    /* only a clipped box defines the width to align inside */
-    if ((flags & IUP_DRAW_CLIP) && w > 0)
+    if (w > 0)
     {
       if (flags & IUP_DRAW_RIGHT)
         x += w - tw;
