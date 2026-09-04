@@ -120,12 +120,10 @@ static int wasmLabelSetEllipsisAttrib(Ihandle* ih, const char* value)
 
 static int wasmLabelSetPaddingAttrib(Ihandle* ih, const char* value)
 {
-  int id = iupwasmIdOf(ih);
-  int h = 0, v = 0;
-  iupStrToIntInt(value, &h, &v, 'x');
-  if (id)
-    iupwasmJsSetPadding(id, h, v);
-  return 1;
+  iupStrToIntInt(value, &ih->data->horiz_padding, &ih->data->vert_padding, 'x');
+  if (ih->handle)
+    iupwasmJsSetPadding(iupwasmIdOf(ih), ih->data->horiz_padding, ih->data->vert_padding);
+  return 0;
 }
 
 static int wasmLabelMapMethod(Ihandle* ih)
@@ -188,7 +186,7 @@ IUP_SDK_API void iupdrvLabelInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "ELLIPSIS", NULL, wasmLabelSetEllipsisAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SELECTABLE", NULL, wasmLabelSetSelectableAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MARKUP", NULL, wasmLabelSetMarkupAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "PADDING", NULL, wasmLabelSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "PADDING", iupLabelGetPaddingAttrib, wasmLabelSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, NULL, NULL, IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "FGCOLOR", NULL, iupdrvBaseSetFgColorAttrib, NULL, NULL, IUPAF_DEFAULT);
 }

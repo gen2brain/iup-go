@@ -509,11 +509,10 @@ static char* wasmTextGetCountAttrib(Ihandle* ih)
 
 static int wasmTextSetPaddingAttrib(Ihandle* ih, const char* value)
 {
-  int id = iupwasmIdOf(ih), h = 0, v = 0;
-  iupStrToIntInt(value, &h, &v, 'x');
-  if (id)
-    iupwasmJsSetPadding(id, h, v);
-  return 1;
+  iupStrToIntInt(value, &ih->data->horiz_padding, &ih->data->vert_padding, 'x');
+  if (ih->handle)
+    iupwasmJsSetPadding(iupwasmIdOf(ih), ih->data->horiz_padding, ih->data->vert_padding);
+  return 0;
 }
 
 static int wasmTextSetTabSizeAttrib(Ihandle* ih, const char* value)
@@ -1148,7 +1147,7 @@ IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "SELECTEDTEXT", wasmTextGetSelectedTextAttrib, NULL, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "INSERT", NULL, wasmTextSetInsertAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "COUNT", wasmTextGetCountAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "PADDING", NULL, wasmTextSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "PADDING", iupTextGetPaddingAttrib, wasmTextSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "TABSIZE", NULL, wasmTextSetTabSizeAttrib, IUPAF_SAMEASSYSTEM, "8", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CARET", wasmTextGetCaretAttrib, wasmTextSetCaretAttrib, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SELECTION", wasmTextGetSelectionAttrib, wasmTextSetSelectionAttrib, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NO_INHERIT);
