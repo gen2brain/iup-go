@@ -326,6 +326,46 @@ static void goIupSetRightClickFunc(Ihandle *ih) {
 	IupSetCallback(ih, "RIGHTCLICK_CB", (Icallback) goIupRightClickCB);
 }
 
+CGO_EXPORT extern int goIupFlatButtonCB(void *, int button, int pressed, int x, int y, void *status);
+static void goIupSetFlatButtonFunc(Ihandle *ih) {
+	IupSetCallback(ih, "FLAT_BUTTON_CB", (Icallback) goIupFlatButtonCB);
+}
+
+CGO_EXPORT extern int goIupFlatMotionCB(void *, int x, int y, void *status);
+static void goIupSetFlatMotionFunc(Ihandle *ih) {
+	IupSetCallback(ih, "FLAT_MOTION_CB", (Icallback) goIupFlatMotionCB);
+}
+
+CGO_EXPORT extern int goIupFlatWheelCB(void *, float delta, int x, int y, void *status);
+static void goIupSetFlatWheelFunc(Ihandle *ih) {
+	IupSetCallback(ih, "FLAT_WHEEL_CB", (Icallback) goIupFlatWheelCB);
+}
+
+CGO_EXPORT extern int goIupFlatFocusCB(void *, int c);
+static void goIupSetFlatFocusFunc(Ihandle *ih) {
+	IupSetCallback(ih, "FLAT_FOCUS_CB", (Icallback) goIupFlatFocusCB);
+}
+
+CGO_EXPORT extern int goIupFlatGetFocusCB(void *);
+static void goIupSetFlatGetFocusFunc(Ihandle *ih) {
+	IupSetCallback(ih, "FLAT_GETFOCUS_CB", (Icallback) goIupFlatGetFocusCB);
+}
+
+CGO_EXPORT extern int goIupFlatKillFocusCB(void *);
+static void goIupSetFlatKillFocusFunc(Ihandle *ih) {
+	IupSetCallback(ih, "FLAT_KILLFOCUS_CB", (Icallback) goIupFlatKillFocusCB);
+}
+
+CGO_EXPORT extern int goIupFlatEnterWindowCB(void *);
+static void goIupSetFlatEnterWindowFunc(Ihandle *ih) {
+	IupSetCallback(ih, "FLAT_ENTERWINDOW_CB", (Icallback) goIupFlatEnterWindowCB);
+}
+
+CGO_EXPORT extern int goIupFlatLeaveWindowCB(void *);
+static void goIupSetFlatLeaveWindowFunc(Ihandle *ih) {
+	IupSetCallback(ih, "FLAT_LEAVEWINDOW_CB", (Icallback) goIupFlatLeaveWindowCB);
+}
+
 CGO_EXPORT extern int goIupExtraButtonCB(void *, int button, int pressed);
 static void goIupSetExtraButtonFunc(Ihandle *ih) {
 	IupSetCallback(ih, "EXTRABUTTON_CB", (Icallback) goIupExtraButtonCB);

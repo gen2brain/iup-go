@@ -810,3 +810,67 @@ type NumericGetValueFunc func(ih Ihandle, lin, col int) float64
 func setNumericGetValueFunc(ih Ihandle, f NumericGetValueFunc) {
 	storeCallback(ih, "_IUPGO_NUMERICGETVALUE_CB", f)
 }
+
+var flatButtonCB = purego.NewCallback(func(ih uintptr, button, pressed, x, y int32, status uintptr) int {
+	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_FLAT_BUTTON_CB").(ButtonFunc); ok {
+		return f(Ihandle(ih), int(button), int(pressed), int(x), int(y), goString(status))
+	}
+	return 0
+})
+
+func setFlatButtonFunc(ih Ihandle, f ButtonFunc) {
+	storeCallback(ih, "_IUPGO_FLAT_BUTTON_CB", f)
+	iupSetCallback(uintptr(ih), "FLAT_BUTTON_CB", flatButtonCB)
+}
+
+var flatMotionCB = purego.NewCallback(func(ih uintptr, x, y int32, status uintptr) int {
+	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_FLAT_MOTION_CB").(MotionFunc); ok {
+		return f(Ihandle(ih), int(x), int(y), goString(status))
+	}
+	return 0
+})
+
+func setFlatMotionFunc(ih Ihandle, f MotionFunc) {
+	storeCallback(ih, "_IUPGO_FLAT_MOTION_CB", f)
+	iupSetCallback(uintptr(ih), "FLAT_MOTION_CB", flatMotionCB)
+}
+
+var flatWheelCB = purego.NewCallback(func(ih uintptr, delta float32, x, y int32, status uintptr) int {
+	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_FLAT_WHEEL_CB").(WheelFunc); ok {
+		return f(Ihandle(ih), float64(delta), int(x), int(y), goString(status))
+	}
+	return 0
+})
+
+func setFlatWheelFunc(ih Ihandle, f WheelFunc) {
+	storeCallback(ih, "_IUPGO_FLAT_WHEEL_CB", f)
+	iupSetCallback(uintptr(ih), "FLAT_WHEEL_CB", flatWheelCB)
+}
+
+var flatFocusCB = purego.NewCallback(func(ih uintptr, c int32) int {
+	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_FLAT_FOCUS_CB").(FocusFunc); ok {
+		return f(Ihandle(ih), int(c))
+	}
+	return 0
+})
+
+func setFlatFocusFunc(ih Ihandle, f FocusFunc) {
+	storeCallback(ih, "_IUPGO_FLAT_FOCUS_CB", f)
+	iupSetCallback(uintptr(ih), "FLAT_FOCUS_CB", flatFocusCB)
+}
+
+func setFlatGetFocusFunc(ih Ihandle, f GetFocusFunc) {
+	setIhIntFunc(ih, "FLAT_GETFOCUS_CB", (func(Ihandle) int)(f))
+}
+
+func setFlatKillFocusFunc(ih Ihandle, f KillFocusFunc) {
+	setIhIntFunc(ih, "FLAT_KILLFOCUS_CB", (func(Ihandle) int)(f))
+}
+
+func setFlatEnterWindowFunc(ih Ihandle, f EnterWindowFunc) {
+	setIhIntFunc(ih, "FLAT_ENTERWINDOW_CB", (func(Ihandle) int)(f))
+}
+
+func setFlatLeaveWindowFunc(ih Ihandle, f LeaveWindowFunc) {
+	setIhIntFunc(ih, "FLAT_LEAVEWINDOW_CB", (func(Ihandle) int)(f))
+}
