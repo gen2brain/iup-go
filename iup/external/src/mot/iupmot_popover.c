@@ -26,18 +26,14 @@
 #include "iupmot_drv.h"
 
 
-static Ihandle* mot_popover_autohide = NULL;
-static Widget mot_popover_dialog_manager = NULL;
-
 static void motPopoverClickHandler(Widget w, XtPointer client_data, XEvent* evt, Boolean* cont)
 {
-  Ihandle* ih = mot_popover_autohide;
+  Ihandle* ih = (Ihandle*)client_data;
   Widget shell;
   Position sx, sy;
   Dimension sw, sh;
 
   (void)w;
-  (void)client_data;
   (void)cont;
 
   if (!ih || !ih->handle || evt->type != ButtonPress)
@@ -77,11 +73,8 @@ static void motPopoverInstallGlobalHandler(Ihandle* ih)
   Window shell_win = XtWindow(shell);
   Ihandle* anchor = (Ihandle*)iupAttribGet(ih, "_IUP_POPOVER_ANCHOR");
 
-  mot_popover_autohide = ih;
-  mot_popover_dialog_manager = NULL;
-
   XtAddRawEventHandler(shell, ButtonPressMask, False,
-    motPopoverClickHandler, NULL);
+    motPopoverClickHandler, (XtPointer)ih);
 
   XtAddRawEventHandler((Widget)iupAttribGet(ih, "_IUP_MOT_INNER_PARENT"), KeyPressMask, False,
     motPopoverKeyHandler, (XtPointer)ih);
@@ -94,9 +87,9 @@ static void motPopoverInstallGlobalHandler(Ihandle* ih)
       Widget dm = XtNameToWidget(dlg->handle, "*dialog_manager");
       if (dm)
       {
-        mot_popover_dialog_manager = dm;
+        iupAttribSet(ih, "_IUP_MOT_POPOVER_DM", (char*)dm);
         XtAddEventHandler(dm, ButtonPressMask, False,
-          (XtEventHandler)motPopoverClickHandler, NULL);
+          (XtEventHandler)motPopoverClickHandler, (XtPointer)ih);
       }
     }
   }
@@ -110,35 +103,44 @@ static void motPopoverInstallGlobalHandler(Ihandle* ih)
     GrabModeAsync, GrabModeAsync, CurrentTime);
 
   XSetInputFocus(iupmot_display, shell_win, RevertToParent, CurrentTime);
+
+  /* spring-loaded so Xt remaps a press over another widget to the shell */
+  XtAddGrab(shell, True, True);
+
+  iupAttribSet(ih, "_IUP_MOT_POPOVER_GRAB", "1");
 }
 
-static void motPopoverRemoveGlobalHandler(void)
+static void motPopoverRemoveGlobalHandler(Ihandle* ih)
 {
-  if (mot_popover_autohide)
+  Widget shell = (Widget)ih->handle;
+  Widget dm = (Widget)iupAttribGet(ih, "_IUP_MOT_POPOVER_DM");
+
+  if (!iupAttribGet(ih, "_IUP_MOT_POPOVER_GRAB"))
+    return;
+
+  XUngrabPointer(iupmot_display, CurrentTime);
+  XUngrabKeyboard(iupmot_display, CurrentTime);
+
+  if (shell)
+    XtRemoveGrab(shell);
+
+  if (shell)
   {
-    Widget shell = (Widget)mot_popover_autohide->handle;
+    XtRemoveRawEventHandler(shell, ButtonPressMask, False,
+      motPopoverClickHandler, (XtPointer)ih);
 
-    XUngrabPointer(iupmot_display, CurrentTime);
-    XUngrabKeyboard(iupmot_display, CurrentTime);
-
-    if (shell)
-    {
-      XtRemoveRawEventHandler(shell, ButtonPressMask, False,
-        motPopoverClickHandler, NULL);
-
-      XtRemoveRawEventHandler((Widget)iupAttribGet(mot_popover_autohide, "_IUP_MOT_INNER_PARENT"), KeyPressMask, False,
-        motPopoverKeyHandler, (XtPointer)mot_popover_autohide);
-    }
-
-    if (mot_popover_dialog_manager)
-    {
-      XtRemoveEventHandler(mot_popover_dialog_manager, ButtonPressMask, False,
-        (XtEventHandler)motPopoverClickHandler, NULL);
-      mot_popover_dialog_manager = NULL;
-    }
-
-    mot_popover_autohide = NULL;
+    XtRemoveRawEventHandler((Widget)iupAttribGet(ih, "_IUP_MOT_INNER_PARENT"), KeyPressMask, False,
+      motPopoverKeyHandler, (XtPointer)ih);
   }
+
+  if (dm)
+  {
+    XtRemoveEventHandler(dm, ButtonPressMask, False,
+      (XtEventHandler)motPopoverClickHandler, (XtPointer)ih);
+    iupAttribSet(ih, "_IUP_MOT_POPOVER_DM", NULL);
+  }
+
+  iupAttribSet(ih, "_IUP_MOT_POPOVER_GRAB", NULL);
 }
 
 static int motPopoverSetVisibleAttrib(Ihandle* ih, const char* value)
@@ -227,7 +229,7 @@ static int motPopoverSetVisibleAttrib(Ihandle* ih, const char* value)
     {
       shell = (Widget)ih->handle;
 
-      motPopoverRemoveGlobalHandler();
+      motPopoverRemoveGlobalHandler(ih);
 
       XtPopdown(shell);
 
@@ -328,8 +330,7 @@ static void motPopoverUnMapMethod(Ihandle* ih)
 
   if (shell)
   {
-    if (mot_popover_autohide == ih)
-      motPopoverRemoveGlobalHandler();
+    motPopoverRemoveGlobalHandler(ih);
 
     XtPopdown(shell);
     XtDestroyWidget(shell);
