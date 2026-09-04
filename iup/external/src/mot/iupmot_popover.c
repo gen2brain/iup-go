@@ -7,6 +7,7 @@
 #include <Xm/Xm.h>
 #include <Xm/BulletinB.h>
 #include <Xm/MwmUtil.h>
+#include <X11/keysym.h>
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -56,6 +57,20 @@ static void motPopoverClickHandler(Widget w, XtPointer client_data, XEvent* evt,
   IupSetAttribute(ih, "VISIBLE", "NO");
 }
 
+static void motPopoverKeyHandler(Widget w, XtPointer client_data, XEvent* evt, Boolean* cont)
+{
+  Ihandle* ih = (Ihandle*)client_data;
+
+  (void)w;
+  (void)cont;
+
+  if (!ih || !ih->handle || evt->type != KeyPress)
+    return;
+
+  if (XLookupKeysym(&evt->xkey, 0) == XK_Escape)
+    IupSetAttribute(ih, "VISIBLE", "NO");
+}
+
 static void motPopoverInstallGlobalHandler(Ihandle* ih)
 {
   Widget shell = (Widget)ih->handle;
@@ -67,6 +82,9 @@ static void motPopoverInstallGlobalHandler(Ihandle* ih)
 
   XtAddRawEventHandler(shell, ButtonPressMask, False,
     motPopoverClickHandler, NULL);
+
+  XtAddRawEventHandler((Widget)iupAttribGet(ih, "_IUP_MOT_INNER_PARENT"), KeyPressMask, False,
+    motPopoverKeyHandler, (XtPointer)ih);
 
   if (anchor)
   {
@@ -88,6 +106,9 @@ static void motPopoverInstallGlobalHandler(Ihandle* ih)
     GrabModeAsync, GrabModeAsync,
     None, None, CurrentTime);
 
+  XGrabKeyboard(iupmot_display, shell_win, True,
+    GrabModeAsync, GrabModeAsync, CurrentTime);
+
   XSetInputFocus(iupmot_display, shell_win, RevertToParent, CurrentTime);
 }
 
@@ -98,10 +119,16 @@ static void motPopoverRemoveGlobalHandler(void)
     Widget shell = (Widget)mot_popover_autohide->handle;
 
     XUngrabPointer(iupmot_display, CurrentTime);
+    XUngrabKeyboard(iupmot_display, CurrentTime);
 
     if (shell)
+    {
       XtRemoveRawEventHandler(shell, ButtonPressMask, False,
         motPopoverClickHandler, NULL);
+
+      XtRemoveRawEventHandler((Widget)iupAttribGet(mot_popover_autohide, "_IUP_MOT_INNER_PARENT"), KeyPressMask, False,
+        motPopoverKeyHandler, (XtPointer)mot_popover_autohide);
+    }
 
     if (mot_popover_dialog_manager)
     {
@@ -301,6 +328,9 @@ static void motPopoverUnMapMethod(Ihandle* ih)
 
   if (shell)
   {
+    if (mot_popover_autohide == ih)
+      motPopoverRemoveGlobalHandler();
+
     XtPopdown(shell);
     XtDestroyWidget(shell);
   }

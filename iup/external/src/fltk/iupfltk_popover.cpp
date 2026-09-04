@@ -73,6 +73,15 @@ public:
           cb(iup_handle, IUP_SHOW);
         break;
       }
+      case FL_KEYBOARD:
+      {
+        if (autohide_enabled && Fl::event_key() == FL_Escape)
+        {
+          hide();
+          return 1;
+        }
+        break;
+      }
       case FL_UNFOCUS:
       {
         if (autohide_enabled)

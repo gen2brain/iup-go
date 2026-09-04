@@ -887,9 +887,22 @@
               };
               setTimeout(function () { document.addEventListener('mousedown', el.__iupOutside); }, 0);
             }
-          } else if (el.__iupOutside) {
-            document.removeEventListener('mousedown', el.__iupOutside);
-            el.__iupOutside = null;
+            if (!el.__iupEscape) {
+              el.__iupEscape = function (e) {
+                if (e.key !== 'Escape') return;
+                D('iupwasmPopoverAutohide', c.id);
+              };
+              document.addEventListener('keydown', el.__iupEscape);
+            }
+          } else {
+            if (el.__iupOutside) {
+              document.removeEventListener('mousedown', el.__iupOutside);
+              el.__iupOutside = null;
+            }
+            if (el.__iupEscape) {
+              document.removeEventListener('keydown', el.__iupEscape);
+              el.__iupEscape = null;
+            }
           }
         }
       } break;
