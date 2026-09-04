@@ -1632,7 +1632,7 @@ static int iFlatListSetItemFontSizeAttrib(Ihandle* ih, int pos, const char* valu
   if (!iupGetFontInfo(font, typeface, &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
     return 0;
 
-  IupSetfAttributeId(ih, "ITEMFONT", pos, "%s, %s %d", typeface, is_bold ? "Bold " : "", is_italic ? "Italic " : "", is_underline ? "Underline " : "", is_strikeout ? "Strikeout " : "", value);
+  IupSetfAttributeId(ih, "ITEMFONT", pos, "%s, %s%s%s%s%s", typeface, is_bold ? "Bold " : "", is_italic ? "Italic " : "", is_underline ? "Underline " : "", is_strikeout ? "Strikeout " : "", value);
 
   return 0;
 }
