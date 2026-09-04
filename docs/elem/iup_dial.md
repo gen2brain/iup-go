@@ -33,7 +33,6 @@ Default: "HORIZONTAL". Vertical increments when moved up, and decrements when mo
 Horizontal increments when moved right, and decrements when moved left.
 Circular increments when moved counter-clock wise, and decrements when moved clock wise.
 
-**UNIT**: unit of the angle. Can be "DEGREES" or "RADIANS". Default is "RADIANS".
 Used only in the callbacks.
 
 **VALUE** (non-inheritable): The dial angular value in radians always.

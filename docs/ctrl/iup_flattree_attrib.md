@@ -77,7 +77,7 @@ Default: 9 for standard resolution, 16 for high resolution display
 **BUTTONPLUSIMAGE**: the image name that will be shown for all expander button when collapsed.
 By default, the button is drawn. The "IMGPLUS" pre-defined image is a 9x9 image that can be used.
 
-**BUTTONMINUSIMAGE**: the image name that will be shown for all expander button when collapsed.
+**BUTTONMINUSIMAGE**: the image name that will be shown for all expander button when expanded.
 By default, the button is drawn. The "IMGMINUS" pre-defined image is a 9x9 image that can be used.
 
 ### Nodes (non-inheritable)
