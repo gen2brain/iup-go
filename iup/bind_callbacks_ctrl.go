@@ -1268,3 +1268,120 @@ func setFlatToggleActionFunc(ih Ihandle, f FlatToggleActionFunc) {
 
 	C.goIupSetFlatToggleActionFunc(ih.ptr())
 }
+
+//--------------------
+
+//export goIupFlatButtonCB
+func goIupFlatButtonCB(ih unsafe.Pointer, button, pressed, x, y C.int, status unsafe.Pointer) C.int {
+	f := loadCallback((Ihandle)(ih), "_IUPGO_FLAT_BUTTON_CB").Value().(ButtonFunc)
+
+	goStatus := C.GoString((*C.char)(status))
+	return C.int(f((Ihandle)(ih), int(button), int(pressed), int(x), int(y), goStatus))
+}
+
+// setFlatButtonFunc for FLAT_BUTTON_CB.
+func setFlatButtonFunc(ih Ihandle, f ButtonFunc) {
+	storeCallback(ih, "_IUPGO_FLAT_BUTTON_CB", f)
+
+	C.goIupSetFlatButtonFunc(ih.ptr())
+}
+
+//export goIupFlatMotionCB
+func goIupFlatMotionCB(ih unsafe.Pointer, x, y C.int, status unsafe.Pointer) C.int {
+	f := loadCallback((Ihandle)(ih), "_IUPGO_FLAT_MOTION_CB").Value().(MotionFunc)
+
+	goStatus := C.GoString((*C.char)(status))
+	return C.int(f((Ihandle)(ih), int(x), int(y), goStatus))
+}
+
+// setFlatMotionFunc for FLAT_MOTION_CB.
+func setFlatMotionFunc(ih Ihandle, f MotionFunc) {
+	storeCallback(ih, "_IUPGO_FLAT_MOTION_CB", f)
+
+	C.goIupSetFlatMotionFunc(ih.ptr())
+}
+
+//export goIupFlatWheelCB
+func goIupFlatWheelCB(ih unsafe.Pointer, delta C.float, x, y C.int, status unsafe.Pointer) C.int {
+	f := loadCallback((Ihandle)(ih), "_IUPGO_FLAT_WHEEL_CB").Value().(WheelFunc)
+
+	goStatus := C.GoString((*C.char)(status))
+	return C.int(f((Ihandle)(ih), float64(delta), int(x), int(y), goStatus))
+}
+
+// setFlatWheelFunc for FLAT_WHEEL_CB.
+func setFlatWheelFunc(ih Ihandle, f WheelFunc) {
+	storeCallback(ih, "_IUPGO_FLAT_WHEEL_CB", f)
+
+	C.goIupSetFlatWheelFunc(ih.ptr())
+}
+
+//export goIupFlatFocusCB
+func goIupFlatFocusCB(ih unsafe.Pointer, c C.int) C.int {
+	f := loadCallback((Ihandle)(ih), "_IUPGO_FLAT_FOCUS_CB").Value().(FocusFunc)
+
+	return C.int(f((Ihandle)(ih), int(c)))
+}
+
+// setFlatFocusFunc for FLAT_FOCUS_CB.
+func setFlatFocusFunc(ih Ihandle, f FocusFunc) {
+	storeCallback(ih, "_IUPGO_FLAT_FOCUS_CB", f)
+
+	C.goIupSetFlatFocusFunc(ih.ptr())
+}
+
+//export goIupFlatGetFocusCB
+func goIupFlatGetFocusCB(ih unsafe.Pointer) C.int {
+	f := loadCallback((Ihandle)(ih), "_IUPGO_FLAT_GETFOCUS_CB").Value().(GetFocusFunc)
+
+	return C.int(f((Ihandle)(ih)))
+}
+
+// setFlatGetFocusFunc for FLAT_GETFOCUS_CB.
+func setFlatGetFocusFunc(ih Ihandle, f GetFocusFunc) {
+	storeCallback(ih, "_IUPGO_FLAT_GETFOCUS_CB", f)
+
+	C.goIupSetFlatGetFocusFunc(ih.ptr())
+}
+
+//export goIupFlatKillFocusCB
+func goIupFlatKillFocusCB(ih unsafe.Pointer) C.int {
+	f := loadCallback((Ihandle)(ih), "_IUPGO_FLAT_KILLFOCUS_CB").Value().(KillFocusFunc)
+
+	return C.int(f((Ihandle)(ih)))
+}
+
+// setFlatKillFocusFunc for FLAT_KILLFOCUS_CB.
+func setFlatKillFocusFunc(ih Ihandle, f KillFocusFunc) {
+	storeCallback(ih, "_IUPGO_FLAT_KILLFOCUS_CB", f)
+
+	C.goIupSetFlatKillFocusFunc(ih.ptr())
+}
+
+//export goIupFlatEnterWindowCB
+func goIupFlatEnterWindowCB(ih unsafe.Pointer) C.int {
+	f := loadCallback((Ihandle)(ih), "_IUPGO_FLAT_ENTERWINDOW_CB").Value().(EnterWindowFunc)
+
+	return C.int(f((Ihandle)(ih)))
+}
+
+// setFlatEnterWindowFunc for FLAT_ENTERWINDOW_CB.
+func setFlatEnterWindowFunc(ih Ihandle, f EnterWindowFunc) {
+	storeCallback(ih, "_IUPGO_FLAT_ENTERWINDOW_CB", f)
+
+	C.goIupSetFlatEnterWindowFunc(ih.ptr())
+}
+
+//export goIupFlatLeaveWindowCB
+func goIupFlatLeaveWindowCB(ih unsafe.Pointer) C.int {
+	f := loadCallback((Ihandle)(ih), "_IUPGO_FLAT_LEAVEWINDOW_CB").Value().(LeaveWindowFunc)
+
+	return C.int(f((Ihandle)(ih)))
+}
+
+// setFlatLeaveWindowFunc for FLAT_LEAVEWINDOW_CB.
+func setFlatLeaveWindowFunc(ih Ihandle, f LeaveWindowFunc) {
+	storeCallback(ih, "_IUPGO_FLAT_LEAVEWINDOW_CB", f)
+
+	C.goIupSetFlatLeaveWindowFunc(ih.ptr())
+}

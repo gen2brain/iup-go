@@ -262,6 +262,22 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 		setTabCloseFunc(ih, fn.(TabCloseFunc))
 	case "RIGHTCLICK_CB":
 		setRightClickFunc(ih, fn.(RightClickFunc))
+	case "FLAT_BUTTON_CB":
+		setFlatButtonFunc(ih, fn.(ButtonFunc))
+	case "FLAT_MOTION_CB":
+		setFlatMotionFunc(ih, fn.(MotionFunc))
+	case "FLAT_WHEEL_CB":
+		setFlatWheelFunc(ih, fn.(WheelFunc))
+	case "FLAT_FOCUS_CB":
+		setFlatFocusFunc(ih, fn.(FocusFunc))
+	case "FLAT_GETFOCUS_CB":
+		setFlatGetFocusFunc(ih, fn.(GetFocusFunc))
+	case "FLAT_KILLFOCUS_CB":
+		setFlatKillFocusFunc(ih, fn.(KillFocusFunc))
+	case "FLAT_ENTERWINDOW_CB":
+		setFlatEnterWindowFunc(ih, fn.(EnterWindowFunc))
+	case "FLAT_LEAVEWINDOW_CB":
+		setFlatLeaveWindowFunc(ih, fn.(LeaveWindowFunc))
 	case "EXTRABUTTON_CB":
 		setExtraButtonFunc(ih, fn.(ExtraButtonFunc))
 	case "OPENCLOSE_CB":

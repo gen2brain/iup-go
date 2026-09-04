@@ -268,6 +268,14 @@ static int wasmCbTips(Ihandle* ih, int x, int y) { return iupwasmGoDispatch(ih, 
 static int wasmCbValueEdit(Ihandle* ih, int lin, int col, char* newval) { return iupwasmGoDispatch(ih, "VALUE_EDIT_CB", lin, col, 0, 0, newval); }
 static char* wasmCbMatrixFont(Ihandle* ih, int lin, int col) { return iupwasmGoDispatchStr(ih, "FONT_CB", lin, col); }
 static char* wasmCbMatrixType(Ihandle* ih, int lin, int col) { return iupwasmGoDispatchStr(ih, "TYPE_CB", lin, col); }
+static int wasmCbFlatButton(Ihandle* ih, int but, int pressed, int x, int y, char* status) { return iupwasmGoDispatch(ih, "FLAT_BUTTON_CB", but, pressed, x, y, status); }
+static int wasmCbFlatMotion(Ihandle* ih, int x, int y, char* st) { return iupwasmGoDispatch(ih, "FLAT_MOTION_CB", x, y, 0, 0, st); }
+static int wasmCbFlatWheel(Ihandle* ih, float delta, int x, int y, char* st) { return iupwasmGoDispatch(ih, "FLAT_WHEEL_CB", (int)delta, x, y, 0, st); }
+static int wasmCbFlatFocus(Ihandle* ih, int focus) { return iupwasmGoDispatch(ih, "FLAT_FOCUS_CB", focus, 0, 0, 0, 0); }
+static int wasmCbFlatGetFocus(Ihandle* ih) { return iupwasmGoDispatch(ih, "FLAT_GETFOCUS_CB", 0, 0, 0, 0, 0); }
+static int wasmCbFlatKillFocus(Ihandle* ih) { return iupwasmGoDispatch(ih, "FLAT_KILLFOCUS_CB", 0, 0, 0, 0, 0); }
+static int wasmCbFlatEnterWindow(Ihandle* ih) { return iupwasmGoDispatch(ih, "FLAT_ENTERWINDOW_CB", 0, 0, 0, 0, 0); }
+static int wasmCbFlatLeaveWindow(Ihandle* ih) { return iupwasmGoDispatch(ih, "FLAT_LEAVEWINDOW_CB", 0, 0, 0, 0, 0); }
 static int wasmCbExtraButton(Ihandle* ih, int button, int pressed) { return iupwasmGoDispatch(ih, "EXTRABUTTON_CB", button, pressed, 0, 0, 0); }
 
 /* IupMatrixList */
@@ -694,6 +702,22 @@ EMSCRIPTEN_KEEPALIVE void iupwasmGoSetCallback(Ihandle* ih, const char* name)
     IupSetCallback(ih, name, (Icallback)wasmCbMatrixFont);
   else if (strcmp(name, "TYPE_CB") == 0)
     IupSetCallback(ih, name, (Icallback)wasmCbMatrixType);
+  else if (strcmp(name, "FLAT_BUTTON_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbFlatButton);
+  else if (strcmp(name, "FLAT_MOTION_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbFlatMotion);
+  else if (strcmp(name, "FLAT_WHEEL_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbFlatWheel);
+  else if (strcmp(name, "FLAT_FOCUS_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbFlatFocus);
+  else if (strcmp(name, "FLAT_GETFOCUS_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbFlatGetFocus);
+  else if (strcmp(name, "FLAT_KILLFOCUS_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbFlatKillFocus);
+  else if (strcmp(name, "FLAT_ENTERWINDOW_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbFlatEnterWindow);
+  else if (strcmp(name, "FLAT_LEAVEWINDOW_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbFlatLeaveWindow);
   else if (strcmp(name, "EXTRABUTTON_CB") == 0)
     IupSetCallback(ih, name, (Icallback)wasmCbExtraButton);
   else if (strcmp(name, "IMAGEVALUECHANGED_CB") == 0)

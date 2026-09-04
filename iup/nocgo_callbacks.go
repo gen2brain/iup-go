@@ -208,6 +208,22 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 		setDropShowFunc(ih, fn.(DropShowFunc))
 	case "EXTENDED_CB":
 		setExtendedFunc(ih, fn.(ExtendedFunc))
+	case "FLAT_BUTTON_CB":
+		setFlatButtonFunc(ih, fn.(ButtonFunc))
+	case "FLAT_MOTION_CB":
+		setFlatMotionFunc(ih, fn.(MotionFunc))
+	case "FLAT_WHEEL_CB":
+		setFlatWheelFunc(ih, fn.(WheelFunc))
+	case "FLAT_FOCUS_CB":
+		setFlatFocusFunc(ih, fn.(FocusFunc))
+	case "FLAT_GETFOCUS_CB":
+		setFlatGetFocusFunc(ih, fn.(GetFocusFunc))
+	case "FLAT_KILLFOCUS_CB":
+		setFlatKillFocusFunc(ih, fn.(KillFocusFunc))
+	case "FLAT_ENTERWINDOW_CB":
+		setFlatEnterWindowFunc(ih, fn.(EnterWindowFunc))
+	case "FLAT_LEAVEWINDOW_CB":
+		setFlatLeaveWindowFunc(ih, fn.(LeaveWindowFunc))
 	case "EXTRABUTTON_CB":
 		setExtraButtonFunc(ih, fn.(ExtraButtonFunc))
 	case "FILE_CB":
@@ -620,6 +636,7 @@ func init() {
 	for _, name := range []string{
 		"ACTION", "MAP_CB", "UNMAP_CB", "DESTROY_CB",
 		"GETFOCUS_CB", "KILLFOCUS_CB", "ENTERWINDOW_CB", "LEAVEWINDOW_CB",
+		"FLAT_GETFOCUS_CB", "FLAT_KILLFOCUS_CB", "FLAT_ENTERWINDOW_CB", "FLAT_LEAVEWINDOW_CB",
 		"VALUECHANGED_CB", "CLOSE_CB", "HELP_CB",
 		"CANCEL_CB", "COLORUPDATE_CB", "HIGHLIGHT_CB", "LAYOUTUPDATE_CB",
 		"MENUCLOSE_CB", "MENUOPEN_CB", "SWAPBUFFERS_CB", "THREAD_CB", "UPDATE_CB",
