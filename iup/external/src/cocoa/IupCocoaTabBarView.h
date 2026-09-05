@@ -17,6 +17,7 @@
 #define kMinTabCellWidth 50
 #define kTabCellHeight 28
 #define kCloseButtonWidth 8
+#define kTabCellPadding 12
 
 @protocol IupCocoaTabBarViewDelegate;
 @class IupCocoaTabCell;
