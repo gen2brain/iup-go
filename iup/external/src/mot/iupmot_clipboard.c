@@ -539,7 +539,14 @@ static char* motClipboardGetFormatDataAttrib(Ihandle *ih)
   return data;
 }
 
-static int motClipboardIsAvailable(const char* format_name)
+static int motClipboardIsTextFormat(const char* format_name)
+{
+  return iupStrEqualNoCase(format_name, "STRING") ||
+         iupStrEqualNoCase(format_name, "UTF8_STRING") ||
+         iupStrEqualNoCase(format_name, "TEXT");
+}
+
+static int motClipboardIsAvailable(const char* format_name, int any_text)
 {
   Window window = motClipboardGetWindow();
   int count, i;
@@ -556,7 +563,7 @@ static int motClipboardIsAvailable(const char* format_name)
   {
     if (XmClipboardInquireFormat(iupmot_display, window, i, str, max_length+1, &length)==ClipboardSuccess)
     {
-      if (iupStrEqualNoCase(str, format_name))
+      if (iupStrEqualNoCase(str, format_name) || (any_text && motClipboardIsTextFormat(str)))
         return 1;
     }
   }
@@ -569,7 +576,7 @@ static char* motClipboardGetTextAvailableAttrib(Ihandle *ih)
   if (motClipboardIsPrimary(ih))
     return iupStrReturnBoolean (motPrimaryHasTarget(XA_STRING, 1));
 
-  return iupStrReturnBoolean (motClipboardIsAvailable("STRING"));
+  return iupStrReturnBoolean (motClipboardIsAvailable("STRING", 1));
 }
 
 static char* motClipboardGetImageAvailableAttrib(Ihandle *ih)
@@ -577,7 +584,7 @@ static char* motClipboardGetImageAvailableAttrib(Ihandle *ih)
   if (motClipboardIsPrimary(ih))
     return iupStrReturnBoolean (motPrimaryHasTarget(XA_PIXMAP, 0));
 
-  return iupStrReturnBoolean (motClipboardIsAvailable("PIXMAP"));
+  return iupStrReturnBoolean (motClipboardIsAvailable("PIXMAP", 0));
 }
 
 static char* motClipboardGetFormatAvailableAttrib(Ihandle *ih)
@@ -589,7 +596,7 @@ static char* motClipboardGetFormatAvailableAttrib(Ihandle *ih)
   if (motClipboardIsPrimary(ih))
     return iupStrReturnBoolean (motPrimaryHasTarget(XInternAtom(iupmot_display, format, False), 0));
 
-  return iupStrReturnBoolean (motClipboardIsAvailable(format));
+  return iupStrReturnBoolean (motClipboardIsAvailable(format, 0));
 }
 
 static char* motClipboardGetFormatDataStringAttrib(Ihandle *ih)
