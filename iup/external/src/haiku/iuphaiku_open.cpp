@@ -248,6 +248,16 @@ IUP_DRV_API rgb_color iuphaikuColor(color_which which)
   }
 }
 
+static void haikuAppearanceUpdateChildren(Ihandle* ih)
+{
+  for (Ihandle* child = ih->firstchild; child; child = child->brother)
+  {
+    if (child->handle && IupClassMatch(child, "table"))
+      iuphaikuTableUpdateColors(child);
+    haikuAppearanceUpdateChildren(child);
+  }
+}
+
 extern "C" IUP_SDK_API void iupdrvSetAppearance(int appearance)
 {
   int dark = (appearance == IUP_APPEARANCE_DARK)? 1: 0;
@@ -268,6 +278,7 @@ extern "C" IUP_SDK_API void iupdrvSetAppearance(int appearance)
     Ihandle* menu = IupGetAttributeHandle(dlg, "MENU");
     if (menu && menu->handle)
       iuphaikuMenuBarUpdateColors(menu);
+    haikuAppearanceUpdateChildren(dlg);
   }
 }
 

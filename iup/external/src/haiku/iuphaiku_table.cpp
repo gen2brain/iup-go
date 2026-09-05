@@ -151,7 +151,22 @@ public:
   /* Subtle grid/border color, theme-tracked via list-bg. */
   static rgb_color GridLineColor()
   {
-    return tint_color(ui_color(B_LIST_BACKGROUND_COLOR), B_DARKEN_1_TINT);
+    return tint_color(iuphaikuColor(B_LIST_BACKGROUND_COLOR), B_DARKEN_1_TINT);
+  }
+
+  void ApplyColors()
+  {
+    SetColor(B_COLOR_BACKGROUND, iuphaikuColor(B_LIST_BACKGROUND_COLOR));
+    SetColor(B_COLOR_TEXT, iuphaikuColor(B_LIST_ITEM_TEXT_COLOR));
+    SetColor(B_COLOR_ROW_DIVIDER, GridLineColor());
+    SetColor(B_COLOR_SELECTION, iuphaikuColor(B_LIST_SELECTED_BACKGROUND_COLOR));
+    SetColor(B_COLOR_SELECTION_TEXT, iuphaikuColor(B_LIST_SELECTED_ITEM_TEXT_COLOR));
+    SetColor(B_COLOR_NON_FOCUS_SELECTION, iuphaikuColor(B_LIST_SELECTED_BACKGROUND_COLOR));
+    SetColor(B_COLOR_HEADER_BACKGROUND, iuphaikuColor(B_CONTROL_BACKGROUND_COLOR));
+    SetColor(B_COLOR_HEADER_TEXT, iuphaikuColor(B_PANEL_TEXT_COLOR));
+    SetViewColor(iuphaikuColor(B_PANEL_BACKGROUND_COLOR));
+    SetLowColor(iuphaikuColor(B_PANEL_BACKGROUND_COLOR));
+    Invalidate();
   }
 
   void SetSortFilter(BMessageFilter* f) { fSortFilter = f; }
@@ -217,7 +232,7 @@ protected:
   {
     if (!be_control_look) return;
     BRect rect = Bounds();
-    rgb_color base = ui_color(B_PANEL_BACKGROUND_COLOR);
+    rgb_color base = iuphaikuColor(B_PANEL_BACKGROUND_COLOR);
 
     BScrollBar* vsb = dynamic_cast<BScrollBar*>(FindView("vertical_scroll_bar"));
     BScrollBar* hsb = dynamic_cast<BScrollBar*>(FindView("horizontal_scroll_bar"));
@@ -1072,7 +1087,7 @@ private:
 
 static rgb_color haikuTableDimColor(rgb_color c)
 {
-  rgb_color bg = ui_color(B_PANEL_BACKGROUND_COLOR);
+  rgb_color bg = iuphaikuColor(B_PANEL_BACKGROUND_COLOR);
   rgb_color d = { (uint8)((c.red + bg.red) / 2), (uint8)((c.green + bg.green) / 2), (uint8)((c.blue + bg.blue) / 2), 255 };
   return d;
 }
@@ -1214,7 +1229,7 @@ public:
       if (!fr) fr = tv->FocusRow();
       if (fr == row && col == tv->FocusCol())
       {
-        parent->SetHighColor(selected ? ui_color(B_LIST_SELECTED_ITEM_TEXT_COLOR)
+        parent->SetHighColor(selected ? iuphaikuColor(B_LIST_SELECTED_ITEM_TEXT_COLOR)
                                       : ui_color(B_KEYBOARD_NAVIGATION_COLOR));
         parent->StrokeRect(BRect(rect.left + 1, rect.top + 1, rect.right - 1, rect.bottom - 1));
       }
@@ -1719,6 +1734,14 @@ static void haikuTableLayoutUpdateMethod(Ihandle* ih)
   iuphaikuSetPosSize(tv, ih->x, ih->y, width, height);
 }
 
+IUP_DRV_API void iuphaikuTableUpdateColors(Ihandle* ih)
+{
+  IupHaikuTableView* tv = (IupHaikuTableView*)ih->handle;
+  if (!tv) return;
+  LooperLockGuard guard(tv->Looper());
+  tv->ApplyColors();
+}
+
 static int haikuTableMapMethod(Ihandle* ih)
 {
   IupHaikuTableView* tv = new IupHaikuTableView(ih);
@@ -1731,6 +1754,7 @@ static int haikuTableMapMethod(Ihandle* ih)
   iupdrvTableSetNumLin(ih, ih->data->num_lin);
 
   LooperLockGuard guard(tv->Looper());
+  tv->ApplyColors();
   tv->SetSortingEnabled(ih->data->sortable ? true : false);
   {
     /* CLV defaults to MULTIPLE; IUP's default is SINGLE. */

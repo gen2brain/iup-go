@@ -72,6 +72,7 @@ IUP_DRV_API int iuphaikuColorForced();
 IUP_DRV_API void iuphaikuControlLookInstall();
 IUP_DRV_API void iuphaikuControlLookUpdate();
 IUP_DRV_API void iuphaikuMenuBarUpdateColors(Ihandle* ih);
+IUP_DRV_API void iuphaikuTableUpdateColors(Ihandle* ih);
 
 IUP_DRV_API void iuphaikuLoopCleanup();
 

@@ -654,6 +654,7 @@ extern "C" IUP_SDK_API int iupdrvBaseSetBgColorAttrib(Ihandle* ih, const char* v
 
   LooperLockGuard guard(view->Looper());
   view->SetViewColor(color);
+  view->SetLowColor(color);
   view->Invalidate();
   return 1;
 }
