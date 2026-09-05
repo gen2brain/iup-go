@@ -2408,17 +2408,17 @@ extern "C" IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formatt
         InMemoryRandomAccessStream pngStream;
         auto encoder = Windows::Graphics::Imaging::BitmapEncoder::CreateAsync(
             Windows::Graphics::Imaging::BitmapEncoder::PngEncoderId(), pngStream).get();
-        encoder.SetPixelData(
-            Windows::Graphics::Imaging::BitmapPixelFormat::Bgra8,
-            Windows::Graphics::Imaging::BitmapAlphaMode::Premultiplied,
-            width, height, 96.0, 96.0,
-            winrt::array_view<uint8_t const>(pixels, pixels + pixelDataSize));
         if (new_w != width || new_h != height)
         {
           auto transform = encoder.BitmapTransform();
           transform.ScaledWidth(new_w);
           transform.ScaledHeight(new_h);
         }
+        encoder.SetPixelData(
+            Windows::Graphics::Imaging::BitmapPixelFormat::Bgra8,
+            Windows::Graphics::Imaging::BitmapAlphaMode::Premultiplied,
+            width, height, 96.0, 96.0,
+            winrt::array_view<uint8_t const>(pixels, pixels + pixelDataSize));
         encoder.FlushAsync().get();
 
         uint32_t pngSize = (uint32_t)pngStream.Size();
