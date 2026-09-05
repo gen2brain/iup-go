@@ -23,6 +23,8 @@
 #include <QSignalBlocker>
 #include <QStyle>
 #include <QStyleOptionFrame>
+#include <QApplication>
+#include <QClipboard>
 
 #include <cstdlib>
 #include <cstdio>
@@ -51,6 +53,7 @@ extern "C" {
 /* Forward declarations */
 static int qtTextKeyPress(Ihandle* ih, QKeyEvent* evt);
 static void qtTextArbitrateHistory(Ihandle* ih, int redo);
+static int qtTextArbitrateClipboard(Ihandle* ih, int cut);
 
 /* Custom QLineEdit with additional functionality */
 class IupQtLineEdit : public QLineEdit
@@ -102,6 +105,16 @@ protected:
       int redo = event->matches(QKeySequence::Redo);
       QLineEdit::keyPressEvent(event);
       qtTextArbitrateHistory(ih, redo);
+      return;
+    }
+
+    if ((event->matches(QKeySequence::Paste) || event->matches(QKeySequence::Cut)) &&
+        !qtTextArbitrateClipboard(ih, event->matches(QKeySequence::Cut)))
+    {
+      if (event->matches(QKeySequence::Cut))
+        copy();
+
+      event->accept();
       return;
     }
 
@@ -287,6 +300,16 @@ protected:
       int redo = event->matches(QKeySequence::Redo);
       QTextEdit::keyPressEvent(event);
       qtTextArbitrateHistory(ih, redo);
+      return;
+    }
+
+    if ((event->matches(QKeySequence::Paste) || event->matches(QKeySequence::Cut)) &&
+        !qtTextArbitrateClipboard(ih, event->matches(QKeySequence::Cut)))
+    {
+      if (event->matches(QKeySequence::Cut))
+        copy();
+
+      event->accept();
       return;
     }
 
@@ -672,6 +695,38 @@ static void qtTextArbitrateHistory(Ihandle* ih, int redo)
   }
 
   ih->data->disable_callbacks = 0;
+}
+
+/* the clipboard text is known before it is applied, so it is validated like a typed key;
+   a refused cut still copies, only the removal is dropped */
+static int qtTextArbitrateClipboard(Ihandle* ih, int cut)
+{
+  IFnis cb = (IFnis)IupGetCallback(ih, "ACTION");
+  int start, end, ret;
+
+  if (!cb && !ih->data->mask && !ih->data->nc)
+    return 1;
+
+  qtTextGetEditRange(ih, &start, &end);
+
+  if (cut)
+  {
+    if (start == end)
+      return 1;
+
+    ret = iupEditCallActionCb(ih, cb, NULL, start, end, ih->data->mask, ih->data->nc, 0, 1);
+  }
+  else
+  {
+    QString clip = QApplication::clipboard()->text();
+
+    if (clip.isEmpty())
+      return 1;
+
+    ret = iupEditCallActionCb(ih, cb, clip.toUtf8().constData(), start, end, ih->data->mask, ih->data->nc, 0, 1);
+  }
+
+  return ret != 0;
 }
 
 static void qtTextInsertKey(Ihandle* ih, const QString& text)
