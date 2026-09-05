@@ -112,14 +112,15 @@ static void winuiButtonSetImageTextContent(Ihandle* ih, Button btn, Border borde
     TextBlock tb;
     iupwinuiSetMnemonicText(tb, title, &c);
 
+    double spacing = ih->data->spacing / iupwinuiGetScale(ih);
     if (orient == Orientation::Vertical)
     {
-      tb.Margin(ThicknessHelper::FromLengths(0, ih->data->spacing, 0, 0));
+      tb.Margin(ThicknessHelper::FromLengths(0, spacing, 0, 0));
       tb.HorizontalAlignment(HorizontalAlignment::Center);
     }
     else
     {
-      tb.Margin(ThicknessHelper::FromLengths(ih->data->spacing, 0, 0, 0));
+      tb.Margin(ThicknessHelper::FromLengths(spacing, 0, 0, 0));
       tb.VerticalAlignment(VerticalAlignment::Center);
     }
 
@@ -175,15 +176,14 @@ static void winuiButtonSetImage(Ihandle* ih, const char* name, int make_inactive
       }
       if (existingImage)
       {
-        existingImage.Source(bitmap);
+        winuiImageSetSource(ih, existingImage, bitmap);
         return;
       }
     }
   }
 
   Image image;
-  image.Source(bitmap);
-  image.Stretch(Media::Stretch::None);
+  winuiImageSetSource(ih, image, bitmap);
 
   if (!border)
   {
@@ -496,8 +496,7 @@ static int winuiButtonMapMethod(Ihandle* ih)
     if (bitmap)
     {
       Image img = Image();
-      img.Source(bitmap);
-      img.Stretch(Media::Stretch::None);
+      winuiImageSetSource(ih, img, bitmap);
 
       winuiButtonSetImageTextContent(ih, btn, contentBorder, img, title);
     }
@@ -550,8 +549,8 @@ static int winuiButtonMapMethod(Ihandle* ih)
       auto point = args.GetCurrentPoint(b);
       auto props = point.Properties();
       int button = iupwinuiGetPointerButton(props);
-      int x = (int)point.Position().X;
-      int y = (int)point.Position().Y;
+      int x, y;
+      iupwinuiPointerToPixel(ih, point.Position(), &x, &y);
       char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
       iupwinuiButtonKeySetStatus(iupwinuiGetModifierKeys(), button, status, 0);
       int ret = cb(ih, button, 1, x, y, status);
@@ -570,8 +569,8 @@ static int winuiButtonMapMethod(Ihandle* ih)
       auto point = args.GetCurrentPoint(b);
       auto props = point.Properties();
       int button = iupwinuiGetPointerReleasedButton(props);
-      int x = (int)point.Position().X;
-      int y = (int)point.Position().Y;
+      int x, y;
+      iupwinuiPointerToPixel(ih, point.Position(), &x, &y);
       char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
       iupwinuiButtonKeySetStatus(iupwinuiGetModifierKeys(), button, status, 0);
       int ret = cb(ih, button, 0, x, y, status);
@@ -590,8 +589,8 @@ static int winuiButtonMapMethod(Ihandle* ih)
       auto point = args.GetCurrentPoint(b);
       auto props = point.Properties();
       int button = iupwinuiGetPointerReleasedButton(props);
-      int x = (int)point.Position().X;
-      int y = (int)point.Position().Y;
+      int x, y;
+      iupwinuiPointerToPixel(ih, point.Position(), &x, &y);
       char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
       iupwinuiButtonKeySetStatus(iupwinuiGetModifierKeys(), button, status, 0);
       int ret = cb(ih, button, 0, x, y, status);

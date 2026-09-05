@@ -355,6 +355,13 @@ static LRESULT CALLBACK winuiDialogWndProc(HWND hwnd, UINT msg, WPARAM wParam, L
       break;
     }
 
+    case WM_DPICHANGED:
+    {
+      if (ih)
+        IupRefresh(ih);
+      break;
+    }
+
     case WM_GETMINMAXINFO:
     {
       if (ih)

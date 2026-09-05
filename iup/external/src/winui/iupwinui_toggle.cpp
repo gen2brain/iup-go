@@ -235,8 +235,7 @@ static void winuiToggleSetImageContent(Ihandle* ih, const char* name, int make_i
     return;
 
   Image image;
-  image.Source(bitmap);
-  image.Stretch(Media::Stretch::None);
+  winuiImageSetSource(ih, image, bitmap);
 
   winuiToggleSetImageTextContent(ih, tb, image, iupAttribGet(ih, "TITLE"));
 }
@@ -355,8 +354,6 @@ static char* winuiToggleGetTitleAttrib(Ihandle* ih)
     TextBlock tb = content.try_as<TextBlock>();
     if (tb)
       return iupwinuiHStringToString(iupwinuiTextBlockText(tb));
-
-    return iupwinuiHStringToString(unbox_value<hstring>(content));
   }
 
   return NULL;
@@ -589,8 +586,7 @@ static int winuiToggleMapMethod(Ihandle* ih)
       if (bitmap)
       {
         Image img;
-        img.Source(bitmap);
-        img.Stretch(Media::Stretch::None);
+        winuiImageSetSource(ih, img, bitmap);
 
         winuiToggleSetImageTextContent(ih, tb, img, title);
       }

@@ -121,21 +121,23 @@ static void winuiProgressBarLayoutUpdateMethod(Ihandle* ih)
   if (!pb)
     return;
 
+  double scale = iupwinuiGetScale(ih);
+
   if (iupAttribGet(ih, "_IUPWINUI_PB_VERTICAL"))
   {
-    Canvas::SetLeft(pb, ih->x);
-    Canvas::SetTop(pb, ih->y + ih->currentheight);
-    pb.Width(ih->currentheight);
-    pb.Height(ih->currentwidth);
+    Canvas::SetLeft(pb, ih->x / scale);
+    Canvas::SetTop(pb, (ih->y + ih->currentheight) / scale);
+    pb.Width(ih->currentheight / scale);
+    pb.Height(ih->currentwidth / scale);
   }
   else
   {
-    Canvas::SetLeft(pb, ih->x);
-    Canvas::SetTop(pb, ih->y);
+    Canvas::SetLeft(pb, ih->x / scale);
+    Canvas::SetTop(pb, ih->y / scale);
     if (ih->currentwidth > 0)
-      pb.Width(ih->currentwidth);
+      pb.Width(ih->currentwidth / scale);
     if (ih->currentheight > 0)
-      pb.Height(ih->currentheight);
+      pb.Height(ih->currentheight / scale);
   }
 }
 

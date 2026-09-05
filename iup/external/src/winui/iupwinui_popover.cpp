@@ -158,8 +158,9 @@ static int winuiPopoverSetVisibleAttrib(Ihandle* ih, const char* value)
         }
 
         FlyoutShowOptions options;
+        double scale = iupwinuiGetScale(ih);
         options.Placement(winuiPopoverGetPlacement(ih));
-        options.Position(Point((float)(px + offsetx), (float)(py + offsety)));
+        options.Position(Point((float)(px + offsetx / scale), (float)(py + offsety / scale)));
         aux->flyout.ShowAt(anchorElem, options);
       }
       else
@@ -258,8 +259,9 @@ static void winuiPopoverLayoutUpdateMethod(Ihandle* ih)
   if (!aux || !aux->innerCanvas)
     return;
 
-  aux->innerCanvas.Width(ih->currentwidth);
-  aux->innerCanvas.Height(ih->currentheight);
+  double scale = iupwinuiGetScale(ih);
+  aux->innerCanvas.Width(ih->currentwidth / scale);
+  aux->innerCanvas.Height(ih->currentheight / scale);
 
   if (ih->firstchild)
   {

@@ -330,14 +330,15 @@ static Grid winuiTableCreateRowGrid(Ihandle* ih, int num_col, bool show_grid)
   IupWinUITableAux* aux = winuiTableGetAux(ih);
   Grid grid;
 
+  double scale = iupwinuiGetScale(ih);
   int row_height = iupdrvTableGetRowHeight(ih);
-  grid.Height((double)row_height);
+  grid.Height(row_height / scale);
 
   for (int i = 0; i < num_col; i++)
   {
     ColumnDefinition colDef;
     int width = (aux && aux->col_widths) ? aux->col_widths[i] : 100;
-    colDef.Width(GridLength{(double)width, GridUnitType::Pixel});
+    colDef.Width(GridLength{width / scale, GridUnitType::Pixel});
     grid.ColumnDefinitions().Append(colDef);
   }
 
@@ -393,7 +394,7 @@ static void winuiTableUpdateHeaderCell(Ihandle* ih, Border headerBorder, int col
     return;
 
   int width = aux->col_widths[col];
-  headerBorder.Width((double)width);
+  headerBorder.Width(width / iupwinuiGetScale(ih));
 
   auto tb = headerBorder.Child().try_as<TextBlock>();
   if (tb)
@@ -409,9 +410,10 @@ static Border winuiTableCreateHeaderCell(Ihandle* ih, int col)
   IupWinUITableAux* aux = winuiTableGetAux(ih);
   Border border;
 
+  double scale = iupwinuiGetScale(ih);
   int width = (aux && aux->col_widths) ? aux->col_widths[col] : 100;
-  border.Width((double)width);
-  border.Height((double)iupdrvTableGetHeaderHeight(ih));
+  border.Width(width / scale);
+  border.Height(iupdrvTableGetHeaderHeight(ih) / scale);
   border.Padding(ThicknessHelper::FromLengths(4, 4, 4, 4));
   border.BorderThickness(ThicknessHelper::FromLengths(0, 0, 1, 1));
   border.BorderBrush(winuiTableGridLineBrush());
@@ -458,23 +460,14 @@ static void winuiTableSetCellImageFromName(Ihandle* ih, Grid rowGrid, int col, c
     return;
   }
 
-  if (ih->data->fit_image)
   {
-    int row_height = iupdrvTableGetRowHeight(ih);
-    int available_height = row_height - 5;
     int img_w = bitmap.PixelWidth();
     int img_h = bitmap.PixelHeight();
-    if (img_h > available_height && available_height > 0)
-    {
-      int scaled_width = (img_w * available_height) / img_h;
-      img.Width((double)scaled_width);
-      img.Height((double)available_height);
-    }
+    int available_height = iupdrvTableGetRowHeight(ih) - (int)ceil(5 * iupwinuiGetScale(ih));
+    if (ih->data->fit_image && img_h > available_height && available_height > 0)
+      winuiImageSetPixelSize(ih, img, (img_w * available_height) / img_h, available_height);
     else
-    {
-      img.Width((double)img_w);
-      img.Height((double)img_h);
-    }
+      winuiImageSetPixelSize(ih, img, img_w, img_h);
   }
 
   img.Source(bitmap);
@@ -522,6 +515,13 @@ static void winuiTablePopulateVirtualRow(Ihandle* ih, int lin, Grid rowGrid)
   winuiTablePopulateCellImages(ih, lin, rowGrid);
 }
 
+static void winuiTableApplyColumnWidthsToRowGrid(Ihandle* ih, Grid rowGrid, IupWinUITableAux* aux, int num_col)
+{
+  double scale = iupwinuiGetScale(ih);
+  for (int c = 0; c < num_col && (uint32_t)c < rowGrid.ColumnDefinitions().Size(); c++)
+    rowGrid.ColumnDefinitions().GetAt(c).Width(GridLength{aux->col_widths[c] / scale, GridUnitType::Pixel});
+}
+
 static void winuiTablePopulateVirtualContainer(Ihandle* ih, int lin, Primitives::SelectorItem lvi)
 {
   IupWinUITableAux* aux = winuiTableGetAux(ih);
@@ -541,8 +541,7 @@ static void winuiTablePopulateVirtualContainer(Ihandle* ih, int lin, Primitives:
     presenter.Content(rowGrid);
   }
 
-  for (int c = 0; c < num_col && (uint32_t)c < rowGrid.ColumnDefinitions().Size(); c++)
-    rowGrid.ColumnDefinitions().GetAt(c).Width(GridLength{(double)aux->col_widths[c], GridUnitType::Pixel});
+  winuiTableApplyColumnWidthsToRowGrid(ih, rowGrid, aux, num_col);
 
   winuiTablePopulateVirtualRow(ih, lin, rowGrid);
 
@@ -585,12 +584,6 @@ static void winuiTablePopulateVirtualContainer(Ihandle* ih, int lin, Primitives:
 /****************************************************************************
  * Column Width Adjustment
  ****************************************************************************/
-
-static void winuiTableApplyColumnWidthsToRowGrid(Grid rowGrid, IupWinUITableAux* aux, int num_col)
-{
-  for (int c = 0; c < num_col && (uint32_t)c < rowGrid.ColumnDefinitions().Size(); c++)
-    rowGrid.ColumnDefinitions().GetAt(c).Width(GridLength{(double)aux->col_widths[c], GridUnitType::Pixel});
-}
 
 static int winuiTableCalculateColumnWidth(Ihandle* ih, int col_index)
 {
@@ -693,7 +686,7 @@ static void winuiTableAdjustColumnWidths(Ihandle* ih)
     {
       auto border = header.Children().GetAt(i).try_as<Border>();
       if (border)
-        border.Width((double)aux->col_widths[i]);
+        border.Width(aux->col_widths[i] / iupwinuiGetScale(ih));
     }
   }
 
@@ -716,7 +709,7 @@ static void winuiTableAdjustColumnWidths(Ihandle* ih)
         continue;
       Grid rowGrid = presenter.Content().try_as<Grid>();
       if (rowGrid)
-        winuiTableApplyColumnWidthsToRowGrid(rowGrid, aux, num_col);
+        winuiTableApplyColumnWidthsToRowGrid(ih, rowGrid, aux, num_col);
     }
   }
   else
@@ -725,7 +718,7 @@ static void winuiTableAdjustColumnWidths(Ihandle* ih)
     {
       auto rowGrid = listView.Items().GetAt(r).try_as<Grid>();
       if (rowGrid)
-        winuiTableApplyColumnWidthsToRowGrid(rowGrid, aux, num_col);
+        winuiTableApplyColumnWidthsToRowGrid(ih, rowGrid, aux, num_col);
     }
   }
 }
@@ -1803,7 +1796,7 @@ extern "C" IUP_SDK_API void iupdrvTableSetColWidth(Ihandle* ih, int col, int wid
   {
     auto border = header.Children().GetAt(col - 1).try_as<Border>();
     if (border)
-      border.Width((double)width);
+      border.Width(width / iupwinuiGetScale(ih));
   }
 
   winuiTableAdjustColumnWidths(ih);
@@ -2017,8 +2010,7 @@ extern "C" IUP_SDK_API void iupdrvTableSetShowGrid(Ihandle* ih, int show)
 
 extern "C" IUP_SDK_API int iupdrvTableGetBorderWidth(Ihandle* ih)
 {
-  (void)ih;
-  return 2;
+  return (int)ceil(2 * iupwinuiGetScale(ih));
 }
 
 static int winuiTableMeasureTextHeight(Ihandle* ih)
@@ -2032,15 +2024,16 @@ static int winuiTableMeasureTextHeight(Ihandle* ih)
 
 extern "C" IUP_SDK_API int iupdrvTableGetRowHeight(Ihandle* ih)
 {
+  double scale = iupwinuiGetScale(ih);
   int text_height = winuiTableMeasureTextHeight(ih);
   /* Cell Border: Padding(4,2,4,2) + BorderThickness(0,0,1,1) = 2 top + 2 bottom + 1 grid bottom = 5 */
-  int row_height = text_height + 5;
+  int row_height = (int)ceil((text_height + 5) * scale);
 
   if (ih->data->show_image)
   {
     int charheight;
     iupdrvFontGetCharSize(ih, NULL, &charheight);
-    int image_height = charheight + 8;
+    int image_height = charheight + (int)ceil(8 * scale);
     if (image_height > row_height)
       row_height = image_height;
   }
@@ -2052,13 +2045,13 @@ extern "C" IUP_SDK_API int iupdrvTableGetHeaderHeight(Ihandle* ih)
 {
   int text_height = winuiTableMeasureTextHeight(ih);
   /* Header Border: Padding(4,4,4,4) + BorderThickness(0,0,1,1) = 4 top + 4 bottom + 1 grid bottom = 9 */
-  return text_height + 9;
+  return (int)ceil((text_height + 9) * iupwinuiGetScale(ih));
 }
 
 extern "C" IUP_SDK_API void iupdrvTableAddBorders(Ihandle* ih, int* w, int* h)
 {
   int sb_size = iupdrvGetScrollbarSize();
-  int border = (int)ceil(2 * iupwinuiGetScale(ih));
+  int border = iupdrvTableGetBorderWidth(ih);
 
   *w += sb_size + border;
   *h += border;
@@ -2707,15 +2700,17 @@ static int winuiTableSetActiveAttrib(Ihandle* ih, const char* value)
 
 static void winuiTableLayoutUpdateMethod(Ihandle* ih)
 {
+  double scale = iupwinuiGetScale(ih);
   int width = ih->currentwidth;
   int height = ih->currentheight;
   int header_height = iupdrvTableGetHeaderHeight(ih);
+  int border = iupdrvTableGetBorderWidth(ih);
 
   int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
   if (visiblelines > 0)
   {
     int row_height = iupdrvTableGetRowHeight(ih);
-    int max_height = header_height + (row_height * visiblelines) + 2;
+    int max_height = header_height + (row_height * visiblelines) + border;
     if (height > max_height)
       height = max_height;
   }
@@ -2737,7 +2732,7 @@ static void winuiTableLayoutUpdateMethod(Ihandle* ih)
       int sb_size = iupdrvGetScrollbarSize();
       int need_vert_sb = (visiblelines > 0 && ih->data->num_lin > visiblelines);
       int vert_sb_width = need_vert_sb ? sb_size : 0;
-      int max_width = cols_width + vert_sb_width + 2;
+      int max_width = cols_width + vert_sb_width + border;
 
       if (width > max_width)
         width = max_width;
@@ -2747,17 +2742,17 @@ static void winuiTableLayoutUpdateMethod(Ihandle* ih)
   Grid containerGrid = winuiGetHandle<Grid>(ih);
   if (containerGrid)
   {
-    Canvas::SetLeft(containerGrid, ih->x);
-    Canvas::SetTop(containerGrid, ih->y);
+    Canvas::SetLeft(containerGrid, ih->x / scale);
+    Canvas::SetTop(containerGrid, ih->y / scale);
     if (width > 0)
-      containerGrid.Width((double)width);
+      containerGrid.Width(width / scale);
     if (height > 0)
-      containerGrid.Height((double)height);
+      containerGrid.Height(height / scale);
   }
 
   StackPanel headerPanel = winuiTableGetHeader(ih);
   if (headerPanel)
-    headerPanel.Height((double)header_height);
+    headerPanel.Height(header_height / scale);
 
   winuiTableAdjustColumnWidths(ih);
 }
@@ -2880,8 +2875,9 @@ static int winuiTableMapMethod(Ihandle* ih)
 
     if (a->resize_col != 0)
     {
+      double scale = iupwinuiGetScale(ih);
       double delta = x - a->resize_start_x;
-      int new_width = a->resize_start_width + (int)delta;
+      int new_width = a->resize_start_width + (int)(delta * scale);
       if (new_width < 20)
         new_width = 20;
 
@@ -2893,7 +2889,7 @@ static int winuiTableMapMethod(Ihandle* ih)
         {
           auto transform = border.TransformToVisual(containerGrid);
           auto pt = transform.TransformPoint(Point{0, 0});
-          winuiTableUpdateResizeIndicator(ih, pt.X + new_width);
+          winuiTableUpdateResizeIndicator(ih, pt.X + new_width / scale);
         }
       }
       return;
@@ -2943,7 +2939,7 @@ static int winuiTableMapMethod(Ihandle* ih)
 
       auto point = args.GetCurrentPoint(header);
       double delta = point.Position().X - a->resize_start_x;
-      int new_width = a->resize_start_width + (int)delta;
+      int new_width = a->resize_start_width + (int)(delta * iupwinuiGetScale(ih));
       if (new_width < 20)
         new_width = 20;
 

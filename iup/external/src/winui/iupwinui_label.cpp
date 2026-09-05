@@ -243,7 +243,7 @@ static int winuiLabelSetImageAttrib(Ihandle* ih, const char* value)
       void* imghandle = iupImageGetImage(value, ih, make_inactive, NULL);
       WriteableBitmap bitmap = winuiGetBitmapFromHandle(imghandle);
       if (bitmap)
-        image.Source(bitmap);
+        winuiImageSetSource(ih, image, bitmap);
     }
   }
   return 1;
@@ -267,7 +267,7 @@ static int winuiLabelSetActiveAttrib(Ihandle* ih, const char* value)
             void* imghandle = iupImageGetImage(name, ih, 1, NULL);
             WriteableBitmap bitmap = winuiGetBitmapFromHandle(imghandle);
             if (bitmap)
-              image.Source(bitmap);
+              winuiImageSetSource(ih, image, bitmap);
           }
         }
       }
@@ -279,7 +279,7 @@ static int winuiLabelSetActiveAttrib(Ihandle* ih, const char* value)
           void* imghandle = iupImageGetImage(name, ih, 0, NULL);
           WriteableBitmap bitmap = winuiGetBitmapFromHandle(imghandle);
           if (bitmap)
-            image.Source(bitmap);
+            winuiImageSetSource(ih, image, bitmap);
         }
       }
     }
@@ -294,7 +294,7 @@ static int winuiLabelSetActiveAttrib(Ihandle* ih, const char* value)
           void* imghandle = iupImageGetImage(name, ih, 0, NULL);
           WriteableBitmap bitmap = winuiGetBitmapFromHandle(imghandle);
           if (bitmap)
-            image.Source(bitmap);
+            winuiImageSetSource(ih, image, bitmap);
         }
       }
     }
@@ -362,12 +362,11 @@ static int winuiLabelMapMethod(Ihandle* ih)
     ih->data->type = IUP_LABEL_IMAGE;
 
     Image image = Image();
-    image.Stretch(Media::Stretch::None);
 
     void* imghandle = iupImageGetImage(imagename, ih, 0, NULL);
     WriteableBitmap bitmap = winuiGetBitmapFromHandle(imghandle);
     if (bitmap)
-      image.Source(bitmap);
+      winuiImageSetSource(ih, image, bitmap);
 
     border.Child(image);
 
@@ -406,8 +405,8 @@ static int winuiLabelMapMethod(Ihandle* ih)
         auto point = args.GetCurrentPoint(winuiGetHandle<Border>(ih));
         auto props = point.Properties();
         int button = iupwinuiGetPointerButton(props);
-        int x = (int)point.Position().X;
-        int y = (int)point.Position().Y;
+        int x, y;
+        iupwinuiPointerToPixel(ih, point.Position(), &x, &y);
         char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
         iupwinuiButtonKeySetStatus(iupwinuiGetModifierKeys(), button, status, 0);
         int ret = cb(ih, button, 1, x, y, status);
@@ -425,8 +424,8 @@ static int winuiLabelMapMethod(Ihandle* ih)
         auto point = args.GetCurrentPoint(winuiGetHandle<Border>(ih));
         auto props = point.Properties();
         int button = iupwinuiGetPointerReleasedButton(props);
-        int x = (int)point.Position().X;
-        int y = (int)point.Position().Y;
+        int x, y;
+        iupwinuiPointerToPixel(ih, point.Position(), &x, &y);
         char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
         iupwinuiButtonKeySetStatus(iupwinuiGetModifierKeys(), button, status, 0);
         int ret = cb(ih, button, 0, x, y, status);

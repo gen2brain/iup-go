@@ -107,17 +107,25 @@ static void winuiTreeSetNodeProperty(TreeViewNode const& node, hstring const& ke
  * Node Content Helpers
  ****************************************************************************/
 
+static void winuiTreeInsertImage(Ihandle* ih, Windows::Foundation::Collections::PropertySet const& ps, void* imghandle)
+{
+  WriteableBitmap bitmap = winuiGetBitmapFromHandle(imghandle);
+  if (!bitmap)
+    return;
+
+  double scale = iupwinuiGetScale(ih);
+  ps.Insert(L"ImageSource", bitmap);
+  ps.Insert(L"ImageWidth", box_value(bitmap.PixelWidth() / scale));
+  ps.Insert(L"ImageHeight", box_value(bitmap.PixelHeight() / scale));
+}
+
 static IInspectable winuiTreeCreateNodeContent(Ihandle* ih, const char* title, void* imghandle)
 {
   Windows::Foundation::Collections::PropertySet ps;
   ps.Insert(L"Title", box_value(iupwinuiStringToHString(title ? title : "")));
 
   if (imghandle)
-  {
-    IInspectable obj{nullptr};
-    winrt::copy_from_abi(obj, imghandle);
-    ps.Insert(L"ImageSource", obj);
-  }
+    winuiTreeInsertImage(ih, ps, imghandle);
 
   if (ih->data->show_toggle)
   {
@@ -128,7 +136,7 @@ static IInspectable winuiTreeCreateNodeContent(Ihandle* ih, const char* title, v
   return ps;
 }
 
-static void winuiTreeSetNodeImage(TreeViewNode const& node, void* imghandle)
+static void winuiTreeSetNodeImage(Ihandle* ih, TreeViewNode const& node, void* imghandle)
 {
   auto content = node.Content();
   auto oldPs = content.try_as<Windows::Foundation::Collections::PropertySet>();
@@ -138,16 +146,12 @@ static void winuiTreeSetNodeImage(TreeViewNode const& node, void* imghandle)
   Windows::Foundation::Collections::PropertySet newPs;
   for (auto const& pair : oldPs)
   {
-    if (pair.Key() != L"ImageSource")
+    if (pair.Key() != L"ImageSource" && pair.Key() != L"ImageWidth" && pair.Key() != L"ImageHeight")
       newPs.Insert(pair.Key(), pair.Value());
   }
 
   if (imghandle)
-  {
-    IInspectable obj{nullptr};
-    winrt::copy_from_abi(obj, imghandle);
-    newPs.Insert(L"ImageSource", obj);
-  }
+    winuiTreeInsertImage(ih, newPs, imghandle);
 
   node.Content(newPs);
 }
@@ -181,7 +185,7 @@ static void winuiTreeApplyItemTemplate(Ihandle* ih, TreeView const& treeView)
     xaml += L"/>";
   }
 
-  xaml += L"<Image Source='{Binding Content[ImageSource]}' Stretch='None' VerticalAlignment='Center'/>"
+  xaml += L"<Image Source='{Binding Content[ImageSource]}' Width='{Binding Content[ImageWidth]}' Height='{Binding Content[ImageHeight]}' Stretch='Fill' VerticalAlignment='Center'/>"
           L"<TextBlock Text='{Binding Content[Title]}' VerticalAlignment='Center'";
 
   unsigned char fr, fg, fb;
@@ -245,18 +249,18 @@ static void winuiTreeUpdateImages(Ihandle* ih, int mode)
       if (node.IsExpanded())
       {
         if (mode == ITREE_UPDATEIMAGE_EXPANDED)
-          winuiTreeSetNodeImage(node, ih->data->def_image_expanded);
+          winuiTreeSetNodeImage(ih, node, ih->data->def_image_expanded);
       }
       else
       {
         if (mode == ITREE_UPDATEIMAGE_COLLAPSED)
-          winuiTreeSetNodeImage(node, ih->data->def_image_collapsed);
+          winuiTreeSetNodeImage(ih, node, ih->data->def_image_collapsed);
       }
     }
     else
     {
       if (mode == ITREE_UPDATEIMAGE_LEAF)
-        winuiTreeSetNodeImage(node, ih->data->def_image_leaf);
+        winuiTreeSetNodeImage(ih, node, ih->data->def_image_leaf);
     }
   }
 }
@@ -290,10 +294,10 @@ static void winuiTreeExpandingHandler(Ihandle* ih, TreeViewNode const& node)
   {
     void* imghandle = iupImageGetImage(expanded_img, ih, 0, NULL);
     if (imghandle)
-      winuiTreeSetNodeImage(node, imghandle);
+      winuiTreeSetNodeImage(ih, node, imghandle);
   }
   else if (ih->data->def_image_expanded)
-    winuiTreeSetNodeImage(node, ih->data->def_image_expanded);
+    winuiTreeSetNodeImage(ih, node, ih->data->def_image_expanded);
 }
 
 static void winuiTreeCollapsedHandler(Ihandle* ih, TreeViewNode const& node)
@@ -307,7 +311,7 @@ static void winuiTreeCollapsedHandler(Ihandle* ih, TreeViewNode const& node)
     cb(ih, id);
 
   if (ih->data->def_image_collapsed)
-    winuiTreeSetNodeImage(node, ih->data->def_image_collapsed);
+    winuiTreeSetNodeImage(ih, node, ih->data->def_image_collapsed);
 }
 
 static void winuiTreeItemInvokedHandler(Ihandle* ih, TreeViewNode const& node)
@@ -1450,7 +1454,7 @@ static int winuiTreeSetImageAttrib(Ihandle* ih, int id, const char* value)
   {
     void* imghandle = iupImageGetImage(value, ih, 0, NULL);
     if (imghandle)
-      winuiTreeSetNodeImage(node, imghandle);
+      winuiTreeSetNodeImage(ih, node, imghandle);
   }
   else
   {
@@ -1460,7 +1464,7 @@ static int winuiTreeSetImageAttrib(Ihandle* ih, int id, const char* value)
       def_image = node.IsExpanded() ? ih->data->def_image_expanded : ih->data->def_image_collapsed;
     else
       def_image = ih->data->def_image_leaf;
-    winuiTreeSetNodeImage(node, def_image);
+    winuiTreeSetNodeImage(ih, node, def_image);
   }
 
   return 1;
@@ -1478,7 +1482,7 @@ static int winuiTreeSetImageExpandedAttrib(Ihandle* ih, int id, const char* valu
   {
     void* imghandle = iupImageGetImage(value, ih, 0, NULL);
     if (imghandle)
-      winuiTreeSetNodeImage(node, imghandle);
+      winuiTreeSetNodeImage(ih, node, imghandle);
   }
 
   return 1;
@@ -1720,7 +1724,7 @@ static int winuiTreeSetIndentationAttrib(Ihandle* ih, const char* value)
   if (treeView)
   {
     auto key = box_value(L"TreeViewItemIndentation");
-    treeView.Resources().Insert(key, box_value((double)indent));
+    treeView.Resources().Insert(key, box_value(indent / iupwinuiGetScale(ih)));
   }
 
   return 0;
@@ -1738,7 +1742,7 @@ static char* winuiTreeGetIndentationAttrib(Ihandle* ih)
     auto val = treeView.Resources().Lookup(key);
     auto ref = val.try_as<Windows::Foundation::IReference<double>>();
     if (ref)
-      return iupStrReturnInt((int)ref.Value());
+      return iupStrReturnInt((int)(ref.Value() * iupwinuiGetScale(ih) + 0.5));
   }
 
   return NULL;
@@ -1746,9 +1750,9 @@ static char* winuiTreeGetIndentationAttrib(Ihandle* ih)
 
 static void winuiTreeUpdateSpacingResources(Ihandle* ih, TreeView treeView)
 {
-  int spacing = ih->data->spacing;
-  double minHeight = spacing > 0 ? (double)(spacing * 2) : 0.0;
-  Thickness margin = {0, (double)spacing, 0, (double)spacing};
+  double spacing = ih->data->spacing / iupwinuiGetScale(ih);
+  double minHeight = spacing > 0 ? spacing * 2 : 0.0;
+  Thickness margin = {0, spacing, 0, spacing};
   Thickness padding = {0, 0, 0, 0};
 
   treeView.Resources().Insert(box_value(L"TreeViewItemMinHeight"), box_value(minHeight));

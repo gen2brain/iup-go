@@ -8,6 +8,7 @@
 
 #include <cstdlib>
 #include <cstring>
+#include <cmath>
 
 extern "C" {
 #include "iup.h"
@@ -145,18 +146,10 @@ static void winuiTabsSetItemIcon(Ihandle* child, const char* tabimage, Ihandle* 
   iupTabsScaleImageSize(ih, raw_w, raw_h, &dst_w, &dst_h);
 
   img.Source(bitmap);
-  if (dst_w > 0 && dst_h > 0 && (dst_w != raw_w || dst_h != raw_h))
-  {
-    img.Width(dst_w);
-    img.Height(dst_h);
-    img.Stretch(Stretch::Uniform);
-  }
+  if (dst_w > 0 && dst_h > 0)
+    winuiImageSetPixelSize(ih, img, dst_w, dst_h);
   else
-  {
-    img.ClearValue(FrameworkElement::WidthProperty());
-    img.ClearValue(FrameworkElement::HeightProperty());
-    img.Stretch(Stretch::None);
-  }
+    winuiImageSetPixelSize(ih, img, raw_w, raw_h);
   img.Visibility(Visibility::Visible);
 }
 
@@ -252,7 +245,10 @@ static void winuiTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
   tabLabel.VerticalAlignment(VerticalAlignment::Center);
 
   if (ih->data->horiz_padding || ih->data->vert_padding)
-    tabLabel.Margin(ThicknessHelper::FromLengths(ih->data->horiz_padding, ih->data->vert_padding, ih->data->horiz_padding, ih->data->vert_padding));
+  {
+    double scale = iupwinuiGetScale(ih);
+    tabLabel.Margin(ThicknessHelper::FromLengths(ih->data->horiz_padding / scale, ih->data->vert_padding / scale, ih->data->horiz_padding / scale, ih->data->vert_padding / scale));
+  }
 
   tabLabel.FontWeight(Windows::UI::Text::FontWeights::SemiBold());
   tabLabel.Measure(Size(10000.0f, 10000.0f));
@@ -674,11 +670,13 @@ extern "C" IUP_SDK_API void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_ti
     }
   }
 
-  w += 24;
-  h += 10;
+  double scale = iupwinuiGetScale(ih);
 
-  if (w < 90) w = 90;
-  if (h < 32) h = 32;
+  w += (int)ceil(24 * scale);
+  h += (int)ceil(10 * scale);
+
+  if (w < (int)ceil(90 * scale)) w = (int)ceil(90 * scale);
+  if (h < (int)ceil(32 * scale)) h = (int)ceil(32 * scale);
 
   *tab_width = w;
   *tab_height = h;
@@ -687,7 +685,8 @@ extern "C" IUP_SDK_API void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_ti
 static void winuiTabsUpdatePagePadding(Ihandle* ih)
 {
   Ihandle* child;
-  Thickness margin = ThicknessHelper::FromLengths(ih->data->horiz_padding, ih->data->vert_padding, ih->data->horiz_padding, ih->data->vert_padding);
+  double scale = iupwinuiGetScale(ih);
+  Thickness margin = ThicknessHelper::FromLengths(ih->data->horiz_padding / scale, ih->data->vert_padding / scale, ih->data->horiz_padding / scale, ih->data->vert_padding / scale);
 
   for (child = ih->firstchild; child; child = child->brother)
   {

@@ -428,30 +428,37 @@ static void winuiCanvasUpdateChildLayout(Ihandle* ih)
   if (!aux)
     return;
 
-  int width = ih->currentwidth;
-  int height = ih->currentheight;
-  int sb_size = iupdrvGetScrollbarSize();
-  int sb_vert_width = 0, sb_horiz_height = 0;
+  double scale = iupwinuiGetScale(ih);
+  double width = ih->currentwidth / scale;
+  double height = ih->currentheight / scale;
+  double sb_size = iupdrvGetScrollbarSize() / scale;
+  double sb_vert_width = 0, sb_horiz_height = 0;
 
   if (aux->sbVert && aux->sbVert.Visibility() == Visibility::Visible)
     sb_vert_width = sb_size;
   if (aux->sbHoriz && aux->sbHoriz.Visibility() == Visibility::Visible)
     sb_horiz_height = sb_size;
 
+  if (aux->displayImage)
+  {
+    aux->displayImage.Width(width - sb_vert_width);
+    aux->displayImage.Height(height - sb_horiz_height);
+  }
+
   if (aux->sbVert && aux->sbVert.Visibility() == Visibility::Visible)
   {
-    Canvas::SetLeft(aux->sbVert, (double)(width - sb_vert_width));
+    Canvas::SetLeft(aux->sbVert, width - sb_vert_width);
     Canvas::SetTop(aux->sbVert, 0.0);
-    aux->sbVert.Width((double)sb_vert_width);
-    aux->sbVert.Height((double)(height - sb_horiz_height));
+    aux->sbVert.Width(sb_vert_width);
+    aux->sbVert.Height(height - sb_horiz_height);
   }
 
   if (aux->sbHoriz && aux->sbHoriz.Visibility() == Visibility::Visible)
   {
     Canvas::SetLeft(aux->sbHoriz, 0.0);
-    Canvas::SetTop(aux->sbHoriz, (double)(height - sb_horiz_height));
-    aux->sbHoriz.Width((double)(width - sb_vert_width));
-    aux->sbHoriz.Height((double)sb_horiz_height);
+    Canvas::SetTop(aux->sbHoriz, height - sb_horiz_height);
+    aux->sbHoriz.Width(width - sb_vert_width);
+    aux->sbHoriz.Height(sb_horiz_height);
   }
 }
 
@@ -707,11 +714,21 @@ static void winuiScrollBarForceVisible(ScrollBar sb)
   });
 }
 
-static void winuiCanvasFireGesture(Ihandle* ih, int gesture, int state, int x, int y, double v1, double v2)
+static void winuiCanvasFireGesture(Ihandle* ih, int gesture, int state, Point const& pos, double v1, double v2)
 {
   IFniiiidd cb = (IFniiiidd)IupGetCallback(ih, "GESTURE_CB");
   if (cb)
+  {
+    int x, y;
+    iupwinuiPointerToPixel(ih, pos, &x, &y);
+    if (gesture == IUP_GESTURE_PAN)
+    {
+      double scale = iupwinuiGetScale(ih);
+      v1 *= scale;
+      v2 *= scale;
+    }
     cb(ih, gesture, state, x, y, v1, v2);
+  }
 }
 
 static int winuiCanvasMapMethod(Ihandle* ih)
@@ -733,7 +750,7 @@ static int winuiCanvasMapMethod(Ihandle* ih)
     canvas.IsTabStop(true);
 
   Image displayImage;
-  displayImage.Stretch(Stretch::None);
+  displayImage.Stretch(Stretch::Fill);
   canvas.Children().Append(displayImage);
   aux->displayImage = displayImage;
 
@@ -777,8 +794,8 @@ static int winuiCanvasMapMethod(Ihandle* ih)
       auto point = args.GetCurrentPoint(c);
       auto props = point.Properties();
       int button = iupwinuiGetPointerButton(props);
-      int x = (int)point.Position().X;
-      int y = (int)point.Position().Y;
+      int x, y;
+      iupwinuiPointerToPixel(ih, point.Position(), &x, &y);
       char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
       iupwinuiButtonKeySetStatus(iupwinuiGetModifierKeys(), button, status, 0);
       int ret = cb(ih, button, 1, x, y, status);
@@ -827,8 +844,8 @@ static int winuiCanvasMapMethod(Ihandle* ih)
       auto point = args.GetCurrentPoint(c);
       auto props = point.Properties();
       int button = iupwinuiGetPointerReleasedButton(props);
-      int x = (int)point.Position().X;
-      int y = (int)point.Position().Y;
+      int x, y;
+      iupwinuiPointerToPixel(ih, point.Position(), &x, &y);
       char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
       iupwinuiButtonKeySetStatus(iupwinuiGetModifierKeys(), button, status, 0);
       int ret = cb(ih, button, 0, x, y, status);
@@ -851,8 +868,8 @@ static int winuiCanvasMapMethod(Ihandle* ih)
       Canvas c = winuiGetHandle<Canvas>(ih);
       auto point = args.GetCurrentPoint(c);
       auto props = point.Properties();
-      int x = (int)point.Position().X;
-      int y = (int)point.Position().Y;
+      int x, y;
+      iupwinuiPointerToPixel(ih, point.Position(), &x, &y);
       char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
       int button = 0;
       if (props.IsLeftButtonPressed()) button = IUP_BUTTON1;
@@ -898,8 +915,8 @@ static int winuiCanvasMapMethod(Ihandle* ih)
     IFnfiis cb = (IFnfiis)IupGetCallback(ih, "WHEEL_CB");
     if (cb)
     {
-      int x = (int)point.Position().X;
-      int y = (int)point.Position().Y;
+      int x, y;
+      iupwinuiPointerToPixel(ih, point.Position(), &x, &y);
       char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
       iupwinuiButtonKeySetStatus(iupwinuiGetModifierKeys(), 0, status, 0);
       cb(ih, (float)delta / 120.0f, x, y, status);
@@ -1085,37 +1102,37 @@ static int winuiCanvasMapMethod(Ihandle* ih)
 
   aux->manipulationStartedToken = canvas.ManipulationStarted([ih](IInspectable const&, ManipulationStartedRoutedEventArgs const& args) {
     auto p = args.Position();
-    winuiCanvasFireGesture(ih, IUP_GESTURE_PINCH, IUP_GESTURE_BEGIN, (int)p.X, (int)p.Y, 1.0, 0);
-    winuiCanvasFireGesture(ih, IUP_GESTURE_ROTATE, IUP_GESTURE_BEGIN, (int)p.X, (int)p.Y, 0, 0);
-    winuiCanvasFireGesture(ih, IUP_GESTURE_PAN, IUP_GESTURE_BEGIN, (int)p.X, (int)p.Y, 0, 0);
+    winuiCanvasFireGesture(ih, IUP_GESTURE_PINCH, IUP_GESTURE_BEGIN, p, 1.0, 0);
+    winuiCanvasFireGesture(ih, IUP_GESTURE_ROTATE, IUP_GESTURE_BEGIN, p, 0, 0);
+    winuiCanvasFireGesture(ih, IUP_GESTURE_PAN, IUP_GESTURE_BEGIN, p, 0, 0);
   });
 
   aux->manipulationDeltaToken = canvas.ManipulationDelta([ih](IInspectable const&, ManipulationDeltaRoutedEventArgs const& args) {
     auto p = args.Position();
     auto c = args.Cumulative();
-    winuiCanvasFireGesture(ih, IUP_GESTURE_PINCH, IUP_GESTURE_CHANGED, (int)p.X, (int)p.Y, c.Scale, 0);
-    winuiCanvasFireGesture(ih, IUP_GESTURE_ROTATE, IUP_GESTURE_CHANGED, (int)p.X, (int)p.Y, c.Rotation, 0);
-    winuiCanvasFireGesture(ih, IUP_GESTURE_PAN, IUP_GESTURE_CHANGED, (int)p.X, (int)p.Y, c.Translation.X, c.Translation.Y);
+    winuiCanvasFireGesture(ih, IUP_GESTURE_PINCH, IUP_GESTURE_CHANGED, p, c.Scale, 0);
+    winuiCanvasFireGesture(ih, IUP_GESTURE_ROTATE, IUP_GESTURE_CHANGED, p, c.Rotation, 0);
+    winuiCanvasFireGesture(ih, IUP_GESTURE_PAN, IUP_GESTURE_CHANGED, p, c.Translation.X, c.Translation.Y);
   });
 
   aux->manipulationCompletedToken = canvas.ManipulationCompleted([ih](IInspectable const&, ManipulationCompletedRoutedEventArgs const& args) {
     auto p = args.Position();
     auto c = args.Cumulative();
-    winuiCanvasFireGesture(ih, IUP_GESTURE_PINCH, IUP_GESTURE_END, (int)p.X, (int)p.Y, c.Scale, 0);
-    winuiCanvasFireGesture(ih, IUP_GESTURE_ROTATE, IUP_GESTURE_END, (int)p.X, (int)p.Y, c.Rotation, 0);
-    winuiCanvasFireGesture(ih, IUP_GESTURE_PAN, IUP_GESTURE_END, (int)p.X, (int)p.Y, c.Translation.X, c.Translation.Y);
+    winuiCanvasFireGesture(ih, IUP_GESTURE_PINCH, IUP_GESTURE_END, p, c.Scale, 0);
+    winuiCanvasFireGesture(ih, IUP_GESTURE_ROTATE, IUP_GESTURE_END, p, c.Rotation, 0);
+    winuiCanvasFireGesture(ih, IUP_GESTURE_PAN, IUP_GESTURE_END, p, c.Translation.X, c.Translation.Y);
   });
 
   aux->tappedToken = canvas.Tapped([ih](IInspectable const&, TappedRoutedEventArgs const& args) {
     Canvas c = winuiGetHandle<Canvas>(ih);
     auto p = args.GetPosition(c);
-    winuiCanvasFireGesture(ih, IUP_GESTURE_TAP, IUP_GESTURE_END, (int)p.X, (int)p.Y, 1, 0);
+    winuiCanvasFireGesture(ih, IUP_GESTURE_TAP, IUP_GESTURE_END, p, 1, 0);
   });
 
   aux->doubleTappedToken = canvas.DoubleTapped([ih](IInspectable const&, DoubleTappedRoutedEventArgs const& args) {
     Canvas c = winuiGetHandle<Canvas>(ih);
     auto p = args.GetPosition(c);
-    winuiCanvasFireGesture(ih, IUP_GESTURE_TAP, IUP_GESTURE_END, (int)p.X, (int)p.Y, 2, 0);
+    winuiCanvasFireGesture(ih, IUP_GESTURE_TAP, IUP_GESTURE_END, p, 2, 0);
   });
 
   aux->holdingToken = canvas.Holding([ih](IInspectable const&, HoldingRoutedEventArgs const& args) {
@@ -1123,7 +1140,7 @@ static int winuiCanvasMapMethod(Ihandle* ih)
       return;
     Canvas c = winuiGetHandle<Canvas>(ih);
     auto p = args.GetPosition(c);
-    winuiCanvasFireGesture(ih, IUP_GESTURE_LONGPRESS, IUP_GESTURE_END, (int)p.X, (int)p.Y, 0, 0);
+    winuiCanvasFireGesture(ih, IUP_GESTURE_LONGPRESS, IUP_GESTURE_END, p, 0, 0);
   });
 
   canvas.Loaded([ih](IInspectable const&, RoutedEventArgs const&) {
@@ -1236,15 +1253,16 @@ static void winuiCanvasLayoutUpdateMethod(Ihandle* ih)
   if (!canvas)
     return;
 
+  double scale = iupwinuiGetScale(ih);
   double dw = canvas.Width(), dh = canvas.Height();
-  int old_w = std::isnan(dw) ? 0 : (int)dw;
-  int old_h = std::isnan(dh) ? 0 : (int)dh;
+  int old_w = std::isnan(dw) ? 0 : (int)(dw * scale + 0.5);
+  int old_h = std::isnan(dh) ? 0 : (int)(dh * scale + 0.5);
 
   iupdrvBaseLayoutUpdateMethod(ih);
   winuiCanvasUpdateChildLayout(ih);
 
   RectangleGeometry clip;
-  clip.Rect({ 0, 0, (float)ih->currentwidth, (float)ih->currentheight });
+  clip.Rect({ 0, 0, (float)(ih->currentwidth / scale), (float)(ih->currentheight / scale) });
   canvas.Clip(clip);
 
   int new_w = ih->currentwidth;

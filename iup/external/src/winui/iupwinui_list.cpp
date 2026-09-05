@@ -261,22 +261,6 @@ static void winuiListGetScaledImageSize(Ihandle* ih, void* imghandle, int* w, in
   }
 }
 
-static void winuiListApplyImageSize(Image const& img, int draw_w, int draw_h, int img_w, int img_h)
-{
-  if (draw_w != img_w || draw_h != img_h)
-  {
-    img.Width(draw_w);
-    img.Height(draw_h);
-    img.Stretch(Stretch::Uniform);
-  }
-  else
-  {
-    img.ClearValue(FrameworkElement::WidthProperty());
-    img.ClearValue(FrameworkElement::HeightProperty());
-    img.Stretch(Stretch::None);
-  }
-}
-
 static void winuiListSetItemImage(Ihandle* ih, ListBoxItem const& item, void* imghandle)
 {
   hstring text;
@@ -298,8 +282,6 @@ static void winuiListSetItemImage(Ihandle* ih, ListBoxItem const& item, void* im
   if (!bitmap)
     return;
 
-  int img_w = bitmap.PixelWidth();
-  int img_h = bitmap.PixelHeight();
   int draw_w, draw_h;
   winuiListGetScaledImageSize(ih, imghandle, &draw_w, &draw_h);
 
@@ -312,7 +294,7 @@ static void winuiListSetItemImage(Ihandle* ih, ListBoxItem const& item, void* im
       if (img)
       {
         img.Source(bitmap);
-        winuiListApplyImageSize(img, draw_w, draw_h, img_w, img_h);
+        winuiImageSetPixelSize(ih, img, draw_w, draw_h);
         item.Tag(box_value((int64_t)(intptr_t)imghandle));
         return;
       }
@@ -324,7 +306,7 @@ static void winuiListSetItemImage(Ihandle* ih, ListBoxItem const& item, void* im
 
   Image img;
   img.Source(bitmap);
-  winuiListApplyImageSize(img, draw_w, draw_h, img_w, img_h);
+  winuiImageSetPixelSize(ih, img, draw_w, draw_h);
   img.VerticalAlignment(VerticalAlignment::Center);
   sp.Children().Append(img);
 
@@ -354,8 +336,6 @@ static void winuiListSetComboItemImage(Ihandle* ih, ComboBox const& comboBox, in
   if (!bitmap)
     return;
 
-  int img_w = bitmap.PixelWidth();
-  int img_h = bitmap.PixelHeight();
   int draw_w, draw_h;
   winuiListGetScaledImageSize(ih, imghandle, &draw_w, &draw_h);
 
@@ -368,7 +348,7 @@ static void winuiListSetComboItemImage(Ihandle* ih, ComboBox const& comboBox, in
       if (img)
       {
         img.Source(bitmap);
-        winuiListApplyImageSize(img, draw_w, draw_h, img_w, img_h);
+        winuiImageSetPixelSize(ih, img, draw_w, draw_h);
         existingSp.Tag(box_value((int64_t)(intptr_t)imghandle));
         return;
       }
@@ -380,7 +360,7 @@ static void winuiListSetComboItemImage(Ihandle* ih, ComboBox const& comboBox, in
 
   Image img;
   img.Source(bitmap);
-  winuiListApplyImageSize(img, draw_w, draw_h, img_w, img_h);
+  winuiImageSetPixelSize(ih, img, draw_w, draw_h);
   img.VerticalAlignment(VerticalAlignment::Center);
   sp.Children().Append(img);
 
@@ -930,7 +910,7 @@ static int winuiListSetSpacingAttrib(Ihandle* ih, const char* value)
     ListBox listBox = winuiListGetListBox(ih);
     if (listBox)
     {
-      double sp = (double)ih->data->spacing;
+      double sp = ih->data->spacing / iupwinuiGetScale(ih);
       auto items = listBox.Items();
       uint32_t n = items.Size();
       for (uint32_t i = 0; i < n; i++)
@@ -953,7 +933,7 @@ static ListBoxItem winuiListCreateItem(Ihandle* ih, const char* value)
   winuiListUpdateTextBlockFont(ih, tb);
   item.Content(tb);
 
-  double sp = (double)ih->data->spacing;
+  double sp = ih->data->spacing / iupwinuiGetScale(ih);
   item.Padding(ThicknessHelper::FromLengths(4 + sp, 2 + sp, 4 + sp, 2 + sp));
   item.MinHeight(0);
   item.MinWidth(0);
@@ -1309,8 +1289,8 @@ static void winuiListAttachPointerEvents(Ihandle* ih, UIElement const& widget, I
       auto point = args.GetCurrentPoint(element);
       auto props = point.Properties();
       int button = iupwinuiGetPointerButton(props);
-      int x = (int)point.Position().X;
-      int y = (int)point.Position().Y;
+      int x, y;
+      iupwinuiPointerToPixel(ih, point.Position(), &x, &y);
       char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
       iupwinuiButtonKeySetStatus(iupwinuiGetModifierKeys(), button, status, 0);
       int ret = cb(ih, button, 1, x, y, status);
@@ -1329,8 +1309,8 @@ static void winuiListAttachPointerEvents(Ihandle* ih, UIElement const& widget, I
       auto point = args.GetCurrentPoint(element);
       auto props = point.Properties();
       int button = iupwinuiGetPointerReleasedButton(props);
-      int x = (int)point.Position().X;
-      int y = (int)point.Position().Y;
+      int x, y;
+      iupwinuiPointerToPixel(ih, point.Position(), &x, &y);
       char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
       iupwinuiButtonKeySetStatus(iupwinuiGetModifierKeys(), button, status, 0);
       int ret = cb(ih, button, 0, x, y, status);
@@ -1348,8 +1328,8 @@ static void winuiListAttachPointerEvents(Ihandle* ih, UIElement const& widget, I
       auto element = sender.as<UIElement>();
       auto point = args.GetCurrentPoint(element);
       auto props = point.Properties();
-      int x = (int)point.Position().X;
-      int y = (int)point.Position().Y;
+      int x, y;
+      iupwinuiPointerToPixel(ih, point.Position(), &x, &y);
       int button = 0;
       if (props.IsLeftButtonPressed()) button = IUP_BUTTON1;
       else if (props.IsRightButtonPressed()) button = IUP_BUTTON3;
@@ -1665,17 +1645,15 @@ static int winuiListMapMethod(Ihandle* ih)
             WriteableBitmap bitmap = winuiGetBitmapFromHandle(imghandle);
             if (bitmap)
             {
-              int img_w = 0, img_h = 0;
               int draw_w, draw_h;
               winuiListGetScaledImageSize(ih, imghandle, &draw_w, &draw_h);
-              iupdrvImageGetInfo(imghandle, &img_w, &img_h, NULL);
 
               StackPanel sp;
               sp.Orientation(Orientation::Horizontal);
 
               Image img;
               img.Source(bitmap);
-              winuiListApplyImageSize(img, draw_w, draw_h, img_w, img_h);
+              winuiImageSetPixelSize(ih, img, draw_w, draw_h);
               img.VerticalAlignment(VerticalAlignment::Center);
               sp.Children().Append(img);
 
@@ -1985,10 +1963,12 @@ extern "C" IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int* w, int* h)
 
 extern "C" IUP_SDK_API void iupdrvListAddItemSpace(Ihandle* ih, int* h)
 {
+  double scale = iupwinuiGetScale(ih);
+
   if (ih->data->is_dropdown)
-    *h += 5 + 7;
+    *h += (int)ceil((5 + 7) * scale);
   else
-    *h += 2 + 2;
+    *h += (int)ceil((2 + 2) * scale);
 }
 
 extern "C" IUP_SDK_API int iupdrvListGetCount(Ihandle* ih)
@@ -2602,7 +2582,10 @@ static int winuiListSetPaddingAttrib(Ihandle* ih, const char* value)
 
   TextBox tb = winuiListGetTextBox(ih);
   if (tb)
-    tb.Padding(ThicknessHelper::FromLengths(ih->data->horiz_padding, ih->data->vert_padding, ih->data->horiz_padding, ih->data->vert_padding));
+  {
+    double scale = iupwinuiGetScale(ih);
+    tb.Padding(ThicknessHelper::FromLengths(ih->data->horiz_padding / scale, ih->data->vert_padding / scale, ih->data->horiz_padding / scale, ih->data->vert_padding / scale));
+  }
   return 0;
 }
 
@@ -2620,7 +2603,7 @@ static void winuiListLayoutUpdateMethod(Ihandle* ih)
 
     ComboBox comboBox = winuiGetHandle<ComboBox>(ih);
     if (comboBox)
-      comboBox.MaxDropDownHeight((double)((voptions + 1) * charheight));
+      comboBox.MaxDropDownHeight((voptions + 1) * charheight / iupwinuiGetScale(ih));
   }
 
   iupdrvBaseLayoutUpdateMethod(ih);
