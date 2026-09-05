@@ -180,7 +180,7 @@ public:
 
     if (!over_gl && !fHasFgColor && !rightButton) { Base::Draw(updateRect); return; }
 
-    rgb_color base = over_gl ? ui_color(B_PANEL_BACKGROUND_COLOR) : this->ViewColor();
+    rgb_color base = over_gl ? iuphaikuColor(B_PANEL_BACKGROUND_COLOR) : this->ViewColor();
     font_height fh;
     this->GetFontHeight(&fh);
     uint32 flags = be_control_look->Flags(this);
@@ -345,8 +345,8 @@ public:
     {
       font_height fh; GetFontHeight(&fh);
       rgb_color text = fHasFgColor ? fForeColor
-                       : fEnabled ? ui_color(B_PANEL_TEXT_COLOR)
-                                  : tint_color(ui_color(B_PANEL_TEXT_COLOR), B_DISABLED_LABEL_TINT);
+                       : fEnabled ? iuphaikuColor(B_PANEL_TEXT_COLOR)
+                                  : tint_color(iuphaikuColor(B_PANEL_TEXT_COLOR), B_DISABLED_LABEL_TINT);
       float gap = be_control_look ? be_control_look->DefaultLabelSpacing() : (float)kGap;
       float text_x = track.right + gap + 1;
       float text_y = (b.Height() - (fh.ascent + fh.descent)) / 2.0f + fh.ascent;

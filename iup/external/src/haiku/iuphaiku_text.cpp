@@ -957,6 +957,40 @@ static char* haikuTextGetScrollVisibleAttrib(Ihandle* ih)
   return (char*)"NO";
 }
 
+static int haikuTextSetBgColorAttrib(Ihandle* ih, const char* value)
+{
+  BTextView* tv = haikuTextGetEditor(ih);
+  unsigned char r, g, b;
+  if (!tv || !iupStrToRGB(value, &r, &g, &b)) return 1;
+
+  rgb_color c = { r, g, b, 255 };
+  LooperLockGuard guard(haikuTextGetLooper(ih));
+  tv->SetViewColor(c);
+  tv->SetLowColor(c);
+  if (ih->data->is_multiline)
+  {
+    BView* container = (BView*)ih->handle;
+    container->SetViewColor(c);
+    container->Invalidate();
+  }
+  tv->Invalidate();
+  return 1;
+}
+
+static int haikuTextSetFgColorAttrib(Ihandle* ih, const char* value)
+{
+  BTextView* tv = haikuTextGetEditor(ih);
+  unsigned char r, g, b;
+  if (!tv || !iupStrToRGB(value, &r, &g, &b)) return 1;
+
+  rgb_color c = { r, g, b, 255 };
+  LooperLockGuard guard(haikuTextGetLooper(ih));
+  tv->SetHighColor(c);
+  tv->SetFontAndColor(0, tv->TextLength(), NULL, 0, &c);
+  tv->Invalidate();
+  return 1;
+}
+
 static int haikuTextSetActiveAttrib(Ihandle* ih, const char* value)
 {
   if (ih->handle)
@@ -973,6 +1007,11 @@ static int haikuTextSetActiveAttrib(Ihandle* ih, const char* value)
         tc->SetEnabled(iupStrBoolean(value));
       if (IupHaikuSpinWrap* sw = haikuTextGetSpinWrap(ih))
         sw->SetButtonsEnabled(iupStrBoolean(value));
+      if (iupStrBoolean(value))
+      {
+        haikuTextSetBgColorAttrib(ih, iupAttribGetStr(ih, "BGCOLOR"));
+        haikuTextSetFgColorAttrib(ih, iupAttribGetStr(ih, "FGCOLOR"));
+      }
     }
   }
   return iupBaseSetActiveAttrib(ih, value);
@@ -1601,7 +1640,7 @@ static int haikuTextSetRemoveFormattingAttrib(Ihandle* ih, const char* value)
 
   /* Reset to system default font + view's standard text color. */
   BFont base_font(be_plain_font);
-  rgb_color base_col = ui_color(B_DOCUMENT_TEXT_COLOR);
+  rgb_color base_col = iuphaikuColor(B_DOCUMENT_TEXT_COLOR);
   tv->SetFontAndColor(s, e, &base_font, B_FONT_ALL, &base_col);
   ((IupHaikuTextView*)tv)->ClearBgRanges(s, e);
   ((IupHaikuTextView*)tv)->ClearImageRanges(s, e);
@@ -2025,8 +2064,8 @@ extern "C" IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
   ic->UnMap = haikuTextUnMapMethod;
 
   iupClassRegisterAttribute(ic, "FONT", NULL, iupdrvSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTBGCOLOR", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, iupdrvBaseSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTFGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, haikuTextSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, haikuTextSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTFGCOLOR", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "ACTIVE", iupBaseGetActiveAttrib, haikuTextSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
 
   iupClassRegisterAttribute(ic, "VALUE", haikuTextGetValueAttrib, haikuTextSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);

@@ -140,6 +140,45 @@ static void haikuItemApplyKey(BMenuItem* item, const char* value)
 }
 
 
+static void haikuMenuApplyColors(BMenu* menu)
+{
+  if (iuphaikuColorForced())
+  {
+    menu->SetViewColor(iuphaikuColor(B_MENU_BACKGROUND_COLOR));
+    menu->SetLowColor(iuphaikuColor(B_MENU_BACKGROUND_COLOR));
+    menu->SetHighColor(iuphaikuColor(B_MENU_ITEM_TEXT_COLOR));
+  }
+  else
+  {
+    menu->SetViewUIColor(B_MENU_BACKGROUND_COLOR);
+    menu->SetLowUIColor(B_MENU_BACKGROUND_COLOR);
+    menu->SetHighUIColor(B_MENU_ITEM_TEXT_COLOR);
+  }
+  menu->Invalidate();
+}
+
+class IupHaikuMenuBar : public BMenuBar
+{
+public:
+  explicit IupHaikuMenuBar(BRect frame)
+    : BMenuBar(frame, "iup_menubar", B_FOLLOW_LEFT_RIGHT | B_FOLLOW_TOP, B_ITEMS_IN_ROW, false) {}
+
+  void AttachedToWindow() override
+  {
+    BMenuBar::AttachedToWindow();
+    haikuMenuApplyColors(this);
+  }
+};
+
+IUP_DRV_API void iuphaikuMenuBarUpdateColors(Ihandle* ih)
+{
+  BMenuBar* menubar = (BMenuBar*)ih->handle;
+  if (!menubar || !menubar->Window())
+    return;
+  LooperLockGuard guard(menubar->Window());
+  haikuMenuApplyColors(menubar);
+}
+
 class IupHaikuMenu : public BMenu
 {
 public:
@@ -150,6 +189,7 @@ public:
   void AttachedToWindow() override
   {
     BMenu::AttachedToWindow();
+    haikuMenuApplyColors(this);
     if (fIhandle) haikuMenuPostCallback(fIhandle, "MENUOPEN_CB");
   }
 
@@ -194,6 +234,8 @@ protected:
   void DrawContent() override
   {
     BMenu* menu = Menu();
+    if (menu && iuphaikuColorForced() && IsEnabled())
+      menu->SetHighColor(iuphaikuColor(IsSelected() ? B_MENU_SELECTED_ITEM_TEXT_COLOR : B_MENU_ITEM_TEXT_COLOR));
     if (fIcon && menu)
     {
       BPoint loc = ContentLocation();
@@ -418,11 +460,7 @@ static int haikuMenuMapMethod(Ihandle* ih)
     {
       LooperLockGuard guard(win);
       BRect b = win->Bounds();
-      menubar = new BMenuBar(BRect(0, 0, b.Width(), (float)(menu_h - 1)),
-                             "iup_menubar",
-                             B_FOLLOW_LEFT_RIGHT | B_FOLLOW_TOP,
-                             B_ITEMS_IN_ROW,
-                             false);
+      menubar = new IupHaikuMenuBar(BRect(0, 0, b.Width(), (float)(menu_h - 1)));
       win->AddChild(menubar);
 
       /* B_FOLLOW_ALL_SIDES on the root view preserves menu_h top offset on resize. */

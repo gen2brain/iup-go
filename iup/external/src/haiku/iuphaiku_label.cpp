@@ -118,11 +118,11 @@ public:
     bool inactive = (fIhandle && !iupdrvIsActive(fIhandle));
     if (inactive)
     {
-      rgb_color bg = ui_color(B_PANEL_BACKGROUND_COLOR);
+      rgb_color bg = iuphaikuColor(B_PANEL_BACKGROUND_COLOR);
       rgb_color dim = { (uint8)((hc.red + bg.red) / 2), (uint8)((hc.green + bg.green) / 2), (uint8)((hc.blue + bg.blue) / 2), 255 };
       SetHighColor(dim);
     }
-    if (!over_gl && LowUIColor() == B_NO_COLOR)
+    if (!over_gl && LowColor() != ViewColor())
       SetLowColor(ViewColor());
 
     font_height fh;
@@ -230,7 +230,7 @@ public:
   {
     iuphaikuPaintGLBackgroundSlice(this, fIhandle);
     BRect b = Bounds();
-    rgb_color base = ui_color(B_PANEL_BACKGROUND_COLOR);
+    rgb_color base = iuphaikuColor(B_PANEL_BACKGROUND_COLOR);
     rgb_color dark = tint_color(base, B_DARKEN_2_TINT);
     rgb_color light = tint_color(base, B_LIGHTEN_2_TINT);
 

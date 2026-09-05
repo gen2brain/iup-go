@@ -759,6 +759,7 @@ static int haikuDialogSetBgColorAttrib(Ihandle* ih, const char* value)
   rgb_color c = { r, g, b, 255 };
   LooperLockGuard guard(win);
   win->RootView()->SetViewColor(c);
+  win->RootView()->SetHighColor(iuphaikuColor(B_PANEL_TEXT_COLOR));
   win->RootView()->Invalidate();
   return 1;
 }

@@ -37,6 +37,19 @@ public:
   {
     iuphaikuPaintGLBackgroundSlice(this, fIhandle);
     BBox::Draw(update);
+
+    const char* label = Label();
+    rgb_color text = HighColor();
+    if (label && label[0] && text != ui_color(B_PANEL_TEXT_COLOR))
+    {
+      font_height fh;
+      GetFontHeight(&fh);
+      float yOffset = roundf((fh.ascent + fh.descent) / 6.0f);
+      BRect r(10.0f, 0.0f, 10.0f + StringWidth(label), fh.ascent + fh.descent);
+      FillRect(r, B_SOLID_LOW);
+      SetHighColor(text);
+      DrawString(label, BPoint(10.0f, fh.ascent - yOffset));
+    }
   }
 private:
   Ihandle* fIhandle;
@@ -190,9 +203,38 @@ extern "C" IUP_SDK_API int iupdrvFrameGetDecorSize(Ihandle* ih, int *w, int *h)
 
 static int haikuFrameSetBgColorAttrib(Ihandle* ih, const char* value)
 {
-  if (!iupAttribGet(ih, "_IUPFRAME_HAS_BGCOLOR"))
+  BView* inner = (BView*)iupAttribGet(ih, "_IUPHAIKU_FRAME_INNER");
+  BView* box = (BView*)ih->handle;
+  unsigned char r, g, b;
+
+  if (!box || !inner)
+    return 1;
+
+  LooperLockGuard guard(box->Looper());
+  if (!iupAttribGet(ih, "_IUPFRAME_HAS_BGCOLOR") && !iuphaikuColorForced())
+  {
+    box->SetViewUIColor(B_PANEL_BACKGROUND_COLOR);
+    box->SetLowUIColor(B_PANEL_BACKGROUND_COLOR);
+    box->SetHighUIColor(B_PANEL_TEXT_COLOR);
+    inner->SetViewUIColor(B_PANEL_BACKGROUND_COLOR);
+    inner->SetLowUIColor(B_PANEL_BACKGROUND_COLOR);
+    inner->SetHighUIColor(B_PANEL_TEXT_COLOR);
+    box->Invalidate();
+    inner->Invalidate();
     return 0;
-  return iupdrvBaseSetBgColorAttrib(ih, value);
+  }
+  if (!iupStrToRGB(value, &r, &g, &b))
+    return 1;
+
+  rgb_color color = { r, g, b, 255 };
+  box->SetViewColor(color);
+  box->SetLowColor(color);
+  inner->SetViewColor(color);
+  inner->SetLowColor(color);
+  inner->SetHighColor(iuphaikuColor(B_PANEL_TEXT_COLOR));
+  box->Invalidate();
+  inner->Invalidate();
+  return 1;
 }
 
 extern "C" IUP_SDK_API void iupdrvFrameInitClass(Iclass* ic)

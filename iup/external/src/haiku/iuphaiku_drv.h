@@ -67,6 +67,11 @@ IUP_DRV_API const char* iuphaikuGetNativeWindowHandleName();
 IUP_DRV_API const char* iuphaikuGetNativeFontIdName();
 
 IUP_DRV_API void iuphaikuSetGlobalColors();
+IUP_DRV_API rgb_color iuphaikuColor(color_which which);
+IUP_DRV_API int iuphaikuColorForced();
+IUP_DRV_API void iuphaikuControlLookInstall();
+IUP_DRV_API void iuphaikuControlLookUpdate();
+IUP_DRV_API void iuphaikuMenuBarUpdateColors(Ihandle* ih);
 
 IUP_DRV_API void iuphaikuLoopCleanup();
 

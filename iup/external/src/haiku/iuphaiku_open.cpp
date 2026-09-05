@@ -54,7 +54,8 @@ public:
         iuphaikuSingleInstanceDispatch(msg);
         return;
       case B_COLORS_UPDATED:
-        iuphaikuSetGlobalColors();
+        iupdrvSetAppearance(iupGlobalGetAppearance());
+        iupGlobalUpdateThemeColors();
         for (Ihandle* dlg = iupDlgListFirst(); dlg; dlg = iupDlgListNext())
         {
           if (!dlg->handle) continue;
@@ -180,15 +181,94 @@ extern "C" IUP_SDK_API int iupdrvIsSystemDarkMode(void)
   return luminance < 128 ? 1 : 0;
 }
 
-/* the Haiku UI colors are system wide, so only the IUP palette can follow APPEARANCE */
+static int iuphaiku_forced_dark = -1;
+
+static rgb_color haikuGlobalColor(const char* name)
+{
+  rgb_color c = { 0, 0, 0, 255 };
+  iupStrToRGB(IupGetGlobal(name), &c.red, &c.green, &c.blue);
+  return c;
+}
+
+static rgb_color haikuMixColor(rgb_color a, rgb_color b, float t)
+{
+  rgb_color c;
+  c.red = (uint8)(a.red + (b.red - a.red) * t);
+  c.green = (uint8)(a.green + (b.green - a.green) * t);
+  c.blue = (uint8)(a.blue + (b.blue - a.blue) * t);
+  c.alpha = 255;
+  return c;
+}
+
+IUP_DRV_API int iuphaikuColorForced()
+{
+  return iuphaiku_forced_dark >= 0;
+}
+
+/* the UI colors are system wide; a forced APPEARANCE maps them onto the IUP palette per application */
+IUP_DRV_API rgb_color iuphaikuColor(color_which which)
+{
+  if (iuphaiku_forced_dark < 0)
+    return ui_color(which);
+
+  switch (which)
+  {
+    case B_PANEL_BACKGROUND_COLOR:
+      return haikuGlobalColor("DLGBGCOLOR");
+    case B_PANEL_TEXT_COLOR:
+    case B_CONTROL_TEXT_COLOR:
+    case B_WINDOW_TEXT_COLOR:
+      return haikuGlobalColor("DLGFGCOLOR");
+    case B_CONTROL_BACKGROUND_COLOR:
+      return tint_color(haikuGlobalColor("DLGBGCOLOR"), iuphaiku_forced_dark ? B_LIGHTEN_1_TINT : B_LIGHTEN_2_TINT);
+    case B_CONTROL_BORDER_COLOR:
+      return haikuMixColor(haikuGlobalColor("DLGBGCOLOR"), haikuGlobalColor("DLGFGCOLOR"), 0.4f);
+    case B_SCROLL_BAR_THUMB_COLOR:
+      return haikuMixColor(haikuGlobalColor("DLGBGCOLOR"), haikuGlobalColor("DLGFGCOLOR"), 0.25f);
+    case B_DOCUMENT_BACKGROUND_COLOR:
+    case B_LIST_BACKGROUND_COLOR:
+      return haikuGlobalColor("TXTBGCOLOR");
+    case B_DOCUMENT_TEXT_COLOR:
+    case B_LIST_ITEM_TEXT_COLOR:
+    case B_LIST_SELECTED_ITEM_TEXT_COLOR:
+      return haikuGlobalColor("TXTFGCOLOR");
+    case B_LIST_SELECTED_BACKGROUND_COLOR:
+      return haikuMixColor(haikuGlobalColor("TXTBGCOLOR"), haikuGlobalColor("TXTFGCOLOR"), 0.3f);
+    case B_MENU_BACKGROUND_COLOR:
+      return haikuGlobalColor("MENUBGCOLOR");
+    case B_MENU_ITEM_TEXT_COLOR:
+    case B_MENU_SELECTED_ITEM_TEXT_COLOR:
+      return haikuGlobalColor("MENUFGCOLOR");
+    case B_MENU_SELECTED_BACKGROUND_COLOR:
+      return haikuMixColor(haikuGlobalColor("MENUBGCOLOR"), haikuGlobalColor("MENUFGCOLOR"), 0.3f);
+    case B_LINK_TEXT_COLOR:
+      return haikuGlobalColor("LINKFGCOLOR");
+    default:
+      return ui_color(which);
+  }
+}
+
 extern "C" IUP_SDK_API void iupdrvSetAppearance(int appearance)
 {
   int dark = (appearance == IUP_APPEARANCE_DARK)? 1: 0;
 
   iuphaikuSetGlobalColors();
+  iuphaiku_forced_dark = -1;
 
   if (appearance != IUP_APPEARANCE_SYSTEM && iupdrvIsSystemDarkMode() != dark)
+  {
     iupGlobalSetAppearanceColors(dark);
+    iuphaiku_forced_dark = dark;
+  }
+
+  iuphaikuControlLookUpdate();
+
+  for (Ihandle* dlg = iupDlgListFirst(); dlg; dlg = iupDlgListNext())
+  {
+    Ihandle* menu = IupGetAttributeHandle(dlg, "MENU");
+    if (menu && menu->handle)
+      iuphaikuMenuBarUpdateColors(menu);
+  }
 }
 
 extern "C" IUP_SDK_API int iupdrvOpen(int *argc, char ***argv)
@@ -236,6 +316,7 @@ extern "C" IUP_SDK_API int iupdrvOpen(int *argc, char ***argv)
     IupStoreGlobal("ARGV0", (*argv)[0]);
 
   iuphaikuSetGlobalColors();
+  iuphaikuControlLookInstall();
 
   return IUP_NOERROR;
 }
