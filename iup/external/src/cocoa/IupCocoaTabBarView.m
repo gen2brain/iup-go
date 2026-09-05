@@ -76,6 +76,40 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
 }
 
 @implementation IupCocoaTabBarView (Expose)
+- (CGFloat)naturalWidthOfTabAtIndex:(NSUInteger)index
+{
+  IupCocoaTabCell* tab = [tabs objectAtIndex:index];
+  CGFloat width = 0;
+
+  if ([tab titleAttributedString])
+    width = [[tab titleAttributedString] size].width;
+  else if ([tab title])
+    width = [[tab title] sizeWithAttributes:@{NSFontAttributeName: (tabFont ? tabFont : [NSFont systemFontOfSize:0])}].width;
+
+  if ([tab image])
+    width += [[tab image] size].width + 4;
+
+  width += 2 * kTabCellPadding;
+
+  if (width < kMinTabCellWidth)
+    width = kMinTabCellWidth;
+  if (width > kMaxTabCellWidth)
+    width = kMaxTabCellWidth;
+
+  return ceil(width);
+}
+
+- (CGFloat)totalWidthOfTabs
+{
+  CGFloat total = 0;
+  NSUInteger i;
+
+  for (i = 0; i < [tabs count]; i++)
+    total += [self naturalWidthOfTabAtIndex:i];
+
+  return total;
+}
+
   - (NSRect)tabRectFromIndex:(NSUInteger)index
 {
   if (self.orientation == IupCocoaTabBarHorizontal)
@@ -83,27 +117,27 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
     NSUInteger tabListWidth = self.allowsTabListMenu ? kWidthOfTabList : 0;
     CGFloat leftPadding = 4; /* Add a small padding to disconnect the first tab */
     CGFloat rightPadding = kTabBarSidePadding - leftPadding;
-    NSUInteger totalWidthOfTabBarView = [self frame].size.width - tabListWidth - leftPadding - rightPadding;
-    NSUInteger averageWidth = 0;
-
-    if ([tabs count] > 0)
-    {
-      averageWidth = (NSUInteger)(totalWidthOfTabBarView / [tabs count]);
-      averageWidth = averageWidth <= kMinTabCellWidth ? kMinTabCellWidth : averageWidth;
-      averageWidth = averageWidth >= kMaxTabCellWidth ? kMaxTabCellWidth : averageWidth;
-    }
-
-    CGFloat x = tabListWidth + leftPadding + (index * averageWidth);
+    CGFloat available = [self frame].size.width - tabListWidth - leftPadding - rightPadding;
+    CGFloat total = [self totalWidthOfTabs];
+    CGFloat scale = (total > available && total > 0) ? available / total : 1.0;
+    CGFloat x = tabListWidth + leftPadding;
     CGFloat y = 0; /* Default for IupCocoaTabPositionTop */
+    NSUInteger i;
+
+    /* NSTabView centers the tabs when they all fit */
+    if (scale == 1.0)
+      x += (available - total) / 2.0;
+
+    for (i = 0; i < index; i++)
+      x += floor([self naturalWidthOfTabAtIndex:i] * scale);
+
     /* If position is bottom, tabs are aligned to the top of the bar */
     if (self.tabPosition == IupCocoaTabPositionBottom)
     {
       y = [self frame].size.height - kTabCellHeight;
     }
-    CGFloat width = averageWidth;
-    CGFloat height = kTabCellHeight;
 
-    NSRect rect = NSMakeRect(x, y, width, height);
+    NSRect rect = NSMakeRect(x, y, floor([self naturalWidthOfTabAtIndex:index] * scale), kTabCellHeight);
     return rect;
   }
   else /* IupCocoaTabBarVertical */
@@ -656,6 +690,8 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
   }
 
   /* Drawing border line */
+  if (!usesMaterialBackground)
+  {
   NSPoint start;
   NSPoint end;
   [NSBezierPath setDefaultLineWidth:1.0];
@@ -685,6 +721,34 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
       break;
   }
   [NSBezierPath strokeLineFromPoint:start toPoint:end];
+  }
+
+  /* the group sits on a rounded track, with a separator between plain neighbours */
+  if (usesMaterialBackground && self.orientation == IupCocoaTabBarHorizontal && [tabs count] > 0)
+  {
+    NSRect first = [self tabRectFromIndex:0];
+    NSRect last = [self tabRectFromIndex:[tabs count] - 1];
+    NSRect track = NSMakeRect(NSMinX(first), NSMinY(first) + 3.0,
+                              NSMaxX(last) - NSMinX(first), NSHeight(first) - 6.0);
+    NSUInteger i;
+
+    [[NSColor quaternaryLabelColor] set];
+    [[NSBezierPath bezierPathWithRoundedRect:track xRadius:7.0 yRadius:7.0] fill];
+
+    [[NSColor separatorColor] set];
+
+    for (i = 1; i < [tabs count]; i++)
+    {
+      NSRect tabRect;
+
+      if ([[tabs objectAtIndex:i - 1] isActived] || [[tabs objectAtIndex:i] isActived])
+        continue;
+
+      tabRect = [self tabRectFromIndex:i];
+      NSRectFillUsingOperation(NSMakeRect(floor(NSMinX(tabRect)), NSMidY(tabRect) - 6.5, 1.0, 13.0),
+                               NSCompositingOperationSourceOver);
+    }
+  }
 
   /* Reset all tool tips */
   [self removeAllToolTips];
