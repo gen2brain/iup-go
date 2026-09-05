@@ -1641,7 +1641,7 @@
           el.focus();
           var act = c.action.toUpperCase();
           if (act === 'CLEAR') { var cs = el.selectionStart || 0, ce = el.selectionEnd || 0; el.value = el.value.slice(0, cs) + el.value.slice(ce); el.setSelectionRange(cs, cs); }
-          else { try { document.execCommand(act === 'CUT' ? 'cut' : act === 'PASTE' ? 'paste' : 'copy'); } catch (e) {} }
+          else if (act === 'CUT' || act === 'COPY' || act === 'PASTE') { try { document.execCommand(act.toLowerCase()); } catch (e) {} }
         }
       } break;
       case 'textscrolltopos': {
