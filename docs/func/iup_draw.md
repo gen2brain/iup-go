@@ -185,6 +185,7 @@ Returns the drawing area size. In C unwanted values can be NULL.
 
 Returns the given text size using the font defined by DRAWFONT, if not defined then use [FONT](../attrib/iup_font.md).
 In C, unwanted values can be NULL, and if len is -1 the string must be 0 terminated, and len will be calculated using strlen.
+In WinUI the size can differ from the natural size of a control with the same text.
 
     void IupDrawGetTextMetrics(Ihandle* ih, int *ascent, int *descent, int *line_height);
 

@@ -961,7 +961,7 @@ extern "C" IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, in
   float flh = (layout_h > 0) ? (float)layout_h : (float)dc->h;
 
   com_ptr<IDWriteTextLayout> textLayout;
-  g_dwriteFactory->CreateTextLayout(wtext, wlen, textFormat.get(), flw, flh, textLayout.put());
+  g_dwriteFactory->CreateGdiCompatibleTextLayout(wtext, wlen, textFormat.get(), flw, flh, 1.0f, nullptr, FALSE, textLayout.put());
   if (textLayout)
   {
     if (is_underline || is_strikeout)

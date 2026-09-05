@@ -213,11 +213,11 @@ dwrite_create_text_layout(dummy_IDWriteTextFormat* tf, const WD_RECT* rect,
     if(len < 0)
         len = wcslen(str);
 
-    hr = dummy_IDWriteFactory_CreateTextLayout(dwrite_factory, str, len, tf,
-                rect->x1 - rect->x0, rect->y1 - rect->y0, &layout);
+    hr = dummy_IDWriteFactory_CreateGdiCompatibleTextLayout(dwrite_factory, str, len, tf,
+                rect->x1 - rect->x0, rect->y1 - rect->y0, 1.0f, NULL, FALSE, &layout);
     if(FAILED(hr)) {
         WD_TRACE_HR("dwrite_create_text_layout: "
-                    "IDWriteFactory::CreateTextLayout() failed.");
+                    "IDWriteFactory::CreateGdiCompatibleTextLayout() failed.");
         return NULL;
     }
 

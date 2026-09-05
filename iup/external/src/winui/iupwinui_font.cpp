@@ -31,6 +31,7 @@ struct IwinuiFont
   int charwidth;
   int charheight;
   float charheight_f;
+  int drawcharheight;
   int ascent;
   int descent;
 };
@@ -41,7 +42,7 @@ float winui_screen_dpi = 96.0f;
 
 #define iupWINUI_PIXEL2PT(_px, _dpi) ((_px) * 72.0f / (_dpi))
 
-static void winuiDWriteMeasureText(IDWriteTextFormat* format, const wchar_t* text, int len, float* width, float* height)
+static void winuiDWriteMeasureText(IDWriteTextFormat* format, const wchar_t* text, int len, int gdi, float* width, float* height)
 {
   if (!winui_dwrite_factory || !format || !text || len == 0)
   {
@@ -51,8 +52,11 @@ static void winuiDWriteMeasureText(IDWriteTextFormat* format, const wchar_t* tex
   }
 
   IDWriteTextLayout* layout = NULL;
-  HRESULT hr = winui_dwrite_factory->CreateTextLayout(
-    text, len, format, 100000.0f, 100000.0f, &layout);
+  HRESULT hr;
+  if (gdi)
+    hr = winui_dwrite_factory->CreateGdiCompatibleTextLayout(text, len, format, 100000.0f, 100000.0f, 1.0f, NULL, FALSE, &layout);
+  else
+    hr = winui_dwrite_factory->CreateTextLayout(text, len, format, 100000.0f, 100000.0f, &layout);
 
   if (SUCCEEDED(hr) && layout)
   {
@@ -138,10 +142,13 @@ static IwinuiFont* winuiFindFont(const char* font)
   newfont.fontSize = fontSize;
 
   float charW, charH;
-  winuiDWriteMeasureText(textFormat, L"abcdefghijklmnopqrstuvwxyz", 26, &charW, &charH);
+  winuiDWriteMeasureText(textFormat, L"abcdefghijklmnopqrstuvwxyz", 26, 0, &charW, &charH);
   newfont.charwidth = (int)ceil(charW / 26.0f);
   newfont.charheight = (int)ceil(charH);
   newfont.charheight_f = charH;
+
+  winuiDWriteMeasureText(textFormat, L"abcdefghijklmnopqrstuvwxyz", 26, 1, &charW, &charH);
+  newfont.drawcharheight = (int)ceil(charH);
 
   /* Get font metrics for ascent/descent */
   IDWriteFontCollection* fontCollection = NULL;
@@ -283,7 +290,7 @@ extern "C" IUP_SDK_API int iupdrvFontGetStringWidth(Ihandle* ih, const char* str
   MultiByteToWideChar(CP_UTF8, 0, str, len, &wstr[0], wlen);
 
   float width;
-  winuiDWriteMeasureText(winfont->textFormat, wstr.c_str(), wlen, &width, NULL);
+  winuiDWriteMeasureText(winfont->textFormat, wstr.c_str(), wlen, 0, &width, NULL);
 
   return (int)ceil(width);
 }
@@ -329,7 +336,7 @@ extern "C" IUP_SDK_API void iupdrvFontGetMultiLineStringSize(Ihandle* ih, const 
         MultiByteToWideChar(CP_UTF8, 0, curstr, l_len, &wstr[0], wlen);
 
         float width;
-        winuiDWriteMeasureText(winfont->textFormat, wstr.c_str(), wlen, &width, NULL);
+        winuiDWriteMeasureText(winfont->textFormat, wstr.c_str(), wlen, 0, &width, NULL);
         if ((int)ceil(width) > max_w)
           max_w = (int)ceil(width);
       }
@@ -365,7 +372,7 @@ extern "C" IUP_SDK_API void iupdrvFontGetTextSize(const char* font, const char* 
   if (!str || len == 0)
   {
     if (w) *w = 0;
-    if (h) *h = winfont->charheight;
+    if (h) *h = winfont->drawcharheight;
     return;
   }
 
@@ -375,10 +382,10 @@ extern "C" IUP_SDK_API void iupdrvFontGetTextSize(const char* font, const char* 
   MultiByteToWideChar(CP_UTF8, 0, str, actual_len, &wstr[0], wlen);
 
   float width, height;
-  winuiDWriteMeasureText(winfont->textFormat, wstr.c_str(), wlen, &width, &height);
+  winuiDWriteMeasureText(winfont->textFormat, wstr.c_str(), wlen, 1, &width, &height);
 
   if (w) *w = (int)ceil(width);
-  if (h) *h = winfont->charheight;
+  if (h) *h = winfont->drawcharheight;
 }
 
 extern "C" IUP_SDK_API void iupdrvFontGetFontDim(const char* font, int* max_width, int* line_height, int* ascent, int* descent)
@@ -400,7 +407,7 @@ extern "C" IUP_SDK_API void iupdrvFontGetFontDim(const char* font, int* max_widt
   if (max_width)
     *max_width = winfont->charwidth;
   if (line_height)
-    *line_height = winfont->charheight;
+    *line_height = winfont->drawcharheight;
   if (ascent)
     *ascent = winfont->ascent;
   if (descent)
