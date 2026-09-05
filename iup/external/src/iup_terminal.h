@@ -53,7 +53,18 @@ typedef struct _ItermCell
   unsigned int cp;
   unsigned int fg, bg;
   unsigned short flags;
+  unsigned short combo;
 } ItermCell;
+
+#define ITERM_MAX_COMBINING 4
+#define ITERM_CELL_TEXT_MAX (4 * (1 + ITERM_MAX_COMBINING))
+
+typedef struct _ItermCombo
+{
+  unsigned int cps[ITERM_MAX_COMBINING];
+  int count;
+  int next_free;
+} ItermCombo;
 
 typedef struct _ItermLine
 {
@@ -87,6 +98,11 @@ typedef struct _Iterm
   int sb_max, sb_count, sb_head;
   int sb_disabled;
   int sb_pushed;
+
+  ItermCombo* combos;
+  int combos_count;
+  int combos_alloc;
+  int combos_free;
 
   int cx, cy;
   int pending_wrap;
@@ -140,6 +156,8 @@ void iupTermScreenReset(Iterm* t);
 ItermLine* iupTermScreenLine(Iterm* t, int row);
 ItermLine* iupTermScreenHistoryLine(Iterm* t, int index);
 void iupTermScreenPutChar(Iterm* t, unsigned int cp);
+int  iupTermUtf8Encode(unsigned int cp, char* out);
+int  iupTermCellText(Iterm* t, ItermCell* cell, char* out);
 void iupTermScreenLineFeed(Iterm* t);
 void iupTermScreenReverseLineFeed(Iterm* t);
 void iupTermScreenCarriageReturn(Iterm* t);
