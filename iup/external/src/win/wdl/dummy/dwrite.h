@@ -203,7 +203,8 @@ struct dummy_IDWriteFactoryVtbl_tag {
     STDMETHOD(GetGdiInterop)(dummy_IDWriteFactory*, dummy_IDWriteGdiInterop**);
     STDMETHOD(CreateTextLayout)(dummy_IDWriteFactory*, WCHAR const*, UINT32, dummy_IDWriteTextFormat*,
             FLOAT, FLOAT, dummy_IDWriteTextLayout**);
-    STDMETHOD(dummy_CreateGdiCompatibleTextLayout)(void);
+    STDMETHOD(CreateGdiCompatibleTextLayout)(dummy_IDWriteFactory*, WCHAR const*, UINT32, dummy_IDWriteTextFormat*,
+            FLOAT, FLOAT, FLOAT, void const*, BOOL, dummy_IDWriteTextLayout**);
     STDMETHOD(CreateEllipsisTrimmingSign)(dummy_IDWriteFactory*, dummy_IDWriteTextFormat*, dummy_IDWriteInlineObject**);
     STDMETHOD(dummy_CreateTextAnalyzer)(void);
     STDMETHOD(dummy_CreateNumberSubstitution)(void);
@@ -221,6 +222,7 @@ struct dummy_IDWriteFactory_tag {
 #define dummy_IDWriteFactory_GetGdiInterop(self,a)                      (self)->vtbl->GetGdiInterop(self,a)
 #define dummy_IDWriteFactory_CreateTextFormat(self,a,b,c,d,e,f,g,h)     (self)->vtbl->CreateTextFormat(self,a,b,c,d,e,f,g,h)
 #define dummy_IDWriteFactory_CreateTextLayout(self,a,b,c,d,e,f)         (self)->vtbl->CreateTextLayout(self,a,b,c,d,e,f)
+#define dummy_IDWriteFactory_CreateGdiCompatibleTextLayout(self,a,b,c,d,e,f,g,h,i)  (self)->vtbl->CreateGdiCompatibleTextLayout(self,a,b,c,d,e,f,g,h,i)
 #define dummy_IDWriteFactory_CreateEllipsisTrimmingSign(self,a,b)       (self)->vtbl->CreateEllipsisTrimmingSign(self,a,b)
 
 
