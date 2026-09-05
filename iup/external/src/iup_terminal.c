@@ -127,30 +127,6 @@ static long itermDrawColor(unsigned int rgb)
   return iupDrawColor((unsigned char)(rgb >> 16), (unsigned char)(rgb >> 8), (unsigned char)rgb, 255);
 }
 
-static int itermUtf8Encode(unsigned int cp, char* out)
-{
-  if (cp == 0) { out[0] = ' '; return 1; }
-  if (cp < 0x80) { out[0] = (char)cp; return 1; }
-  if (cp < 0x800)
-  {
-    out[0] = (char)(0xC0 | (cp >> 6));
-    out[1] = (char)(0x80 | (cp & 0x3F));
-    return 2;
-  }
-  if (cp < 0x10000)
-  {
-    out[0] = (char)(0xE0 | (cp >> 12));
-    out[1] = (char)(0x80 | ((cp >> 6) & 0x3F));
-    out[2] = (char)(0x80 | (cp & 0x3F));
-    return 3;
-  }
-  out[0] = (char)(0xF0 | (cp >> 18));
-  out[1] = (char)(0x80 | ((cp >> 12) & 0x3F));
-  out[2] = (char)(0x80 | ((cp >> 6) & 0x3F));
-  out[3] = (char)(0x80 | (cp & 0x3F));
-  return 4;
-}
-
 #define ITERM_SEL_CHAR 0
 #define ITERM_SEL_WORD 1
 #define ITERM_SEL_LINE 2
@@ -260,7 +236,7 @@ static char* itermSelectionText(Ihandle* ih)
     return NULL;
 
   itermSelBounds(ih, &l0, &c0, &l1, &c1);
-  cap = (l1 - l0 + 1) * (t->cols * 4 + 2) + 1;
+  cap = (l1 - l0 + 1) * (t->cols * ITERM_CELL_TEXT_MAX + 2) + 1;
   out = (char*)malloc(cap);
   if (!out)
     return NULL;
@@ -284,7 +260,7 @@ static char* itermSelectionText(Ihandle* ih)
     {
       if (line->cells[c].flags & ITERM_FL_WIDECONT)
         continue;
-      len += itermUtf8Encode(line->cells[c].cp, out + len);
+      len += iupTermCellText(t, &line->cells[c], out + len);
     }
 
     if (line_id != l1 && !line->wrapped)
@@ -340,7 +316,6 @@ static ItermLine* itermVisibleLine(Ihandle* ih, int vr)
   return iupTermScreenLine(t, g - t->sb_count);
 }
 
-
 static void itermRunFont(Ihandle* ih, unsigned short flags, char* font)
 {
   sprintf(font, "%s, %s%s%s%s%d", ih->data->font_face,
@@ -394,12 +369,12 @@ static void itermDrawCursor(Ihandle* ih, IdrawCanvas* dc)
   default:
     {
       int w = (cell->flags & ITERM_FL_WIDE) ? 2 * ih->data->ch_w : ih->data->ch_w;
-      char text[8], font[128];
+      char text[ITERM_CELL_TEXT_MAX + 1], font[128];
       int len;
       iupdrvDrawRectangle(dc, x, y, x + w - 1, y + ih->data->ch_h - 1, color, IUP_DRAW_FILL, 1);
       if (cell->cp)
       {
-        len = itermUtf8Encode(cell->cp, text);
+        len = iupTermCellText(t, cell, text);
         text[len] = 0;
         itermRunFont(ih, cell->flags, font);
         iupdrvDrawText(dc, text, len, x, y, w, ih->data->ch_h,
@@ -429,7 +404,7 @@ static int itermRedraw_CB(Ihandle* ih)
   iupdrvDrawGetSize(dc, &w, &h);
   iupdrvDrawRectangle(dc, 0, 0, w - 1, h - 1, itermDrawColor(t->def_bg), IUP_DRAW_FILL, 1);
 
-  text = (char*)malloc(t->cols * 4 + 1);
+  text = (char*)malloc(t->cols * ITERM_CELL_TEXT_MAX + 1);
   if (!text)
   {
     iupdrvDrawKillCanvas(dc);
@@ -476,7 +451,7 @@ static int itermRedraw_CB(Ihandle* ih)
           break;
         if (!(rc->flags & ITERM_FL_WIDECONT))
         {
-          len += itermUtf8Encode(rc->cp, text + len);
+          len += iupTermCellText(t, rc, text + len);
           if (rc->cp)
             has_glyph = 1;
         }
@@ -1070,9 +1045,7 @@ static void itermUpdateFontInfo(Ihandle* ih, const char* font_value)
   if (ih->data->ch_h <= 0) ih->data->ch_h = 16;
 }
 
-
 /*****************************************************************************/
-
 
 static int itermSetWriteAttrib(Ihandle* ih, const char* value)
 {
@@ -1302,9 +1275,7 @@ static int itermSetFontAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-
 /*****************************************************************************/
-
 
 static void itermPtyDetach(Ihandle* ih)
 {

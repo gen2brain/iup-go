@@ -14,9 +14,101 @@ static const unsigned int iterm_def_palette[16] = {
   0x7F7F7F, 0xFF0000, 0x00FF00, 0xFFFF00, 0x5C5CFF, 0xFF00FF, 0x00FFFF, 0xFFFFFF
 };
 
+static void itermComboRelease(Iterm* t, ItermCell* cell)
+{
+  if (!cell->combo)
+    return;
+  t->combos[cell->combo - 1].next_free = t->combos_free;
+  t->combos_free = cell->combo;
+  cell->combo = 0;
+}
+
+static void itermComboAppend(Iterm* t, ItermCell* cell, unsigned int cp)
+{
+  ItermCombo* combo;
+
+  if (!cell->combo)
+  {
+    int index;
+    if (t->combos_free)
+    {
+      index = t->combos_free;
+      t->combos_free = t->combos[index - 1].next_free;
+    }
+    else
+    {
+      if (t->combos_count == 0xFFFF)
+        return;
+      if (t->combos_count == t->combos_alloc)
+      {
+        t->combos_alloc = t->combos_alloc ? t->combos_alloc * 2 : 64;
+        t->combos = (ItermCombo*)realloc(t->combos, t->combos_alloc * sizeof(ItermCombo));
+      }
+      index = ++t->combos_count;
+    }
+    cell->combo = (unsigned short)index;
+    t->combos[index - 1].count = 0;
+  }
+
+  combo = &t->combos[cell->combo - 1];
+  if (combo->count < ITERM_MAX_COMBINING)
+    combo->cps[combo->count++] = cp;
+}
+
+static void itermCellsRelease(Iterm* t, ItermCell* cells, int count)
+{
+  int i;
+  for (i = 0; i < count; i++)
+    itermComboRelease(t, &cells[i]);
+}
+
+static void itermLineFree(Iterm* t, ItermLine* line)
+{
+  itermCellsRelease(t, line->cells, line->ncells);
+  free(line->cells);
+}
+
+int iupTermUtf8Encode(unsigned int cp, char* out)
+{
+  if (cp == 0) { out[0] = ' '; return 1; }
+  if (cp < 0x80) { out[0] = (char)cp; return 1; }
+  if (cp < 0x800)
+  {
+    out[0] = (char)(0xC0 | (cp >> 6));
+    out[1] = (char)(0x80 | (cp & 0x3F));
+    return 2;
+  }
+  if (cp < 0x10000)
+  {
+    out[0] = (char)(0xE0 | (cp >> 12));
+    out[1] = (char)(0x80 | ((cp >> 6) & 0x3F));
+    out[2] = (char)(0x80 | (cp & 0x3F));
+    return 3;
+  }
+  out[0] = (char)(0xF0 | (cp >> 18));
+  out[1] = (char)(0x80 | ((cp >> 12) & 0x3F));
+  out[2] = (char)(0x80 | ((cp >> 6) & 0x3F));
+  out[3] = (char)(0x80 | (cp & 0x3F));
+  return 4;
+}
+
+int iupTermCellText(Iterm* t, ItermCell* cell, char* out)
+{
+  int len = iupTermUtf8Encode(cell->cp, out);
+  if (cell->combo)
+  {
+    ItermCombo* combo = &t->combos[cell->combo - 1];
+    int i;
+    for (i = 0; i < combo->count; i++)
+      len += iupTermUtf8Encode(combo->cps[i], out + len);
+  }
+  return len;
+}
+
 static void itermBlankCell(Iterm* t, ItermCell* cell)
 {
   cell->cp = 0;
+  cell->combo = 0;
   cell->fg = t->pen.fg;
   cell->bg = t->pen.bg;
   cell->flags = (unsigned short)(t->pen.flags & (ITERM_FL_FG_DEFAULT|ITERM_FL_BG_DEFAULT));
@@ -40,7 +132,10 @@ static void itermLineClear(Iterm* t, ItermLine* line, int from, int to)
   if (from < 0) from = 0;
   if (to >= line->ncells) to = line->ncells - 1;
   for (i = from; i <= to; i++)
+  {
+    itermComboRelease(t, &line->cells[i]);
     itermBlankCell(t, &line->cells[i]);
+  }
 }
 
 static ItermLine* itermActiveLines(Iterm* t)
@@ -89,12 +184,12 @@ static void itermPushScrollback(Iterm* t, ItermLine* line)
 {
   if (t->sb_max <= 0 || t->sb_disabled || (t->modes & ITERM_MODE_ALTSCREEN))
   {
-    free(line->cells);
+    itermLineFree(t, line);
     return;
   }
 
   if (t->sb_count == t->sb_max)
-    free(t->sb[t->sb_head].cells);
+    itermLineFree(t, &t->sb[t->sb_head]);
   else
     t->sb_count++;
 
@@ -126,7 +221,7 @@ void iupTermScreenScroll(Iterm* t, int count)
       if (full)
         itermPushScrollback(t, &top);
       else
-        free(top.cells);
+        itermLineFree(t, &top);
       itermLineAlloc(t, &lines[t->scroll_bot], t->cols);
     }
   }
@@ -138,7 +233,7 @@ void iupTermScreenScroll(Iterm* t, int count)
       ItermLine bot = lines[t->scroll_bot];
       memmove(&lines[t->scroll_top + 1], &lines[t->scroll_top],
               (region - 1) * sizeof(ItermLine));
-      free(bot.cells);
+      itermLineFree(t, &bot);
       itermLineAlloc(t, &lines[t->scroll_top], t->cols);
     }
   }
@@ -147,16 +242,18 @@ void iupTermScreenScroll(Iterm* t, int count)
 }
 
 /* clear leftover halves when a write lands on part of a wide pair */
-static void itermFixWideOverlap(ItermLine* line, int col)
+static void itermFixWideOverlap(Iterm* t, ItermLine* line, int col)
 {
   ItermCell* cell = &line->cells[col];
   if ((cell->flags & ITERM_FL_WIDECONT) && col > 0)
   {
+    itermComboRelease(t, &line->cells[col - 1]);
     line->cells[col - 1].cp = 0;
     line->cells[col - 1].flags &= (unsigned short)~ITERM_FL_WIDE;
   }
   if ((cell->flags & ITERM_FL_WIDE) && col + 1 < line->ncells)
   {
+    itermComboRelease(t, &line->cells[col + 1]);
     line->cells[col + 1].cp = 0;
     line->cells[col + 1].flags &= (unsigned short)~ITERM_FL_WIDECONT;
   }
@@ -169,7 +266,21 @@ void iupTermScreenPutChar(Iterm* t, unsigned int cp)
   int width = iupTermCharWidth(cp);
 
   if (width == 0)
+  {
+    int col = t->pending_wrap ? t->cx : t->cx - 1;
+    if (col < 0)
+      return;
+    line = iupTermScreenLine(t, t->cy);
+    cell = &line->cells[col];
+    if ((cell->flags & ITERM_FL_WIDECONT) && col > 0)
+      cell--;
+    if (cell->cp)
+    {
+      itermComboAppend(t, cell, cp);
+      itermDamageRow(t, t->cy);
+    }
     return;
+  }
 
   if (t->pending_wrap && (t->modes & ITERM_MODE_AUTOWRAP))
   {
@@ -192,11 +303,12 @@ void iupTermScreenPutChar(Iterm* t, unsigned int cp)
   }
 
   line = iupTermScreenLine(t, t->cy);
-  itermFixWideOverlap(line, t->cx);
+  itermFixWideOverlap(t, line, t->cx);
   if (width == 2 && t->cx + 1 < t->cols)
-    itermFixWideOverlap(line, t->cx + 1);
+    itermFixWideOverlap(t, line, t->cx + 1);
 
   cell = &line->cells[t->cx];
+  itermComboRelease(t, cell);
   cell->cp = cp;
   cell->fg = t->pen.fg;
   cell->bg = t->pen.bg;
@@ -207,8 +319,10 @@ void iupTermScreenPutChar(Iterm* t, unsigned int cp)
     if (t->cx + 1 < t->cols)
     {
       ItermCell* cont = &line->cells[t->cx + 1];
+      itermComboRelease(t, cont);
       *cont = *cell;
       cont->cp = 0;
+      cont->combo = 0;
       cont->flags = (unsigned short)((cont->flags & ~ITERM_FL_WIDE) | ITERM_FL_WIDECONT);
     }
   }
@@ -428,11 +542,15 @@ void iupTermScreenInsertChars(Iterm* t, int count)
 {
   ItermLine* line = iupTermScreenLine(t, t->cy);
   int room = t->cols - t->cx;
+  int i;
   t->pending_wrap = 0;
   if (count < 1) count = 1;
   if (count > room) count = room;
+  itermCellsRelease(t, &line->cells[t->cols - count], count);
   memmove(&line->cells[t->cx + count], &line->cells[t->cx],
           (room - count) * sizeof(ItermCell));
+  for (i = 0; i < count; i++)
+    line->cells[t->cx + i].combo = 0;
   itermLineClear(t, line, t->cx, t->cx + count - 1);
   itermDamageRow(t, t->cy);
 }
@@ -441,11 +559,15 @@ void iupTermScreenDeleteChars(Iterm* t, int count)
 {
   ItermLine* line = iupTermScreenLine(t, t->cy);
   int room = t->cols - t->cx;
+  int i;
   t->pending_wrap = 0;
   if (count < 1) count = 1;
   if (count > room) count = room;
+  itermCellsRelease(t, &line->cells[t->cx], count);
   memmove(&line->cells[t->cx], &line->cells[t->cx + count],
           (room - count) * sizeof(ItermCell));
+  for (i = 0; i < count; i++)
+    line->cells[t->cols - count + i].combo = 0;
   itermLineClear(t, line, t->cols - count, t->cols - 1);
   itermDamageRow(t, t->cy);
 }
@@ -544,7 +666,7 @@ void iupTermScreenClearScrollback(Iterm* t)
 {
   int i;
   for (i = 0; i < t->sb_count; i++)
-    free(iupTermScreenHistoryLine(t, i)->cells);
+    itermLineFree(t, iupTermScreenHistoryLine(t, i));
   t->sb_count = 0;
   t->sb_head = 0;
 }
@@ -599,6 +721,8 @@ void iupTermScreenResize(Iterm* t, int cols, int rows)
           if (cols != ol->ncells)
           {
             int c;
+            if (cols < ol->ncells)
+              itermCellsRelease(t, &ol->cells[cols], ol->ncells - cols);
             new_lines[r].cells = (ItermCell*)realloc(ol->cells, cols * sizeof(ItermCell));
             for (c = ol->ncells; c < cols; c++)
               itermBlankCell(t, &new_lines[r].cells[c]);
@@ -609,7 +733,7 @@ void iupTermScreenResize(Iterm* t, int cols, int rows)
           itermLineAlloc(t, &new_lines[r], cols);
       }
       for (r = rows; r < t->rows; r++)
-        free(old[r].cells);
+        itermLineFree(t, &old[r]);
       free(old);
       if (i == 0) t->lines = new_lines;
       else t->alt_lines = new_lines;
@@ -711,14 +835,15 @@ void iupTermScreenRelease(Iterm* t)
   int i;
   iupTermScreenClearScrollback(t);
   for (i = 0; i < t->rows; i++)
-    free(t->lines[i].cells);
+    itermLineFree(t, &t->lines[i]);
   free(t->lines);
   if (t->alt_lines)
   {
     for (i = 0; i < t->rows; i++)
-      free(t->alt_lines[i].cells);
+      itermLineFree(t, &t->alt_lines[i]);
     free(t->alt_lines);
   }
+  free(t->combos);
   free(t->sb);
   free(t->tabs);
   free(t->dirty);
