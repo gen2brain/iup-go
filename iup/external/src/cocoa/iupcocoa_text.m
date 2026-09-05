@@ -4951,6 +4951,9 @@ static int cocoaTextSetClipboardAttrib(Ihandle* ih, const char* value)
       case IUPCOCOATEXTSUBTYPE_FIELD:
     case IUPCOCOATEXTSUBTYPE_STEPPER:
         {
+          /* the field editor keeps the history of the field being edited */
+          NSUndoManager* undo_manager = [the_view undoManager];
+          [undo_manager undo];
           break;
         }
     default:
@@ -4973,6 +4976,8 @@ static int cocoaTextSetClipboardAttrib(Ihandle* ih, const char* value)
       case IUPCOCOATEXTSUBTYPE_FIELD:
     case IUPCOCOATEXTSUBTYPE_STEPPER:
         {
+          NSUndoManager* undo_manager = [the_view undoManager];
+          [undo_manager redo];
           break;
         }
     default:
@@ -4995,6 +5000,8 @@ static int cocoaTextSetClipboardAttrib(Ihandle* ih, const char* value)
       case IUPCOCOATEXTSUBTYPE_FIELD:
     case IUPCOCOATEXTSUBTYPE_STEPPER:
         {
+          NSUndoManager* undo_manager = [the_view undoManager];
+          [undo_manager removeAllActions];
           break;
         }
     default:
