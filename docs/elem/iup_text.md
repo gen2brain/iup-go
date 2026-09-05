@@ -261,6 +261,7 @@ If never set, the default system context menu (Cut/Copy/Paste) is shown.
 
 [ACTION](../call/iup_action.md): Action generated when the text is edited, but before its value is actually changed.
 Can be generated when using the keyboard, undo system or from the clipboard.
+Setting the CLIPBOARD attribute does not generate it, the same way setting VALUE does not.
 
     int function(Ihandle *ih, int c, char *new_value);
 
