@@ -181,7 +181,6 @@ public final class IupTextHelper
         applyTextPalette(tv);
         sThemableTexts.put(tv, Boolean.TRUE);
         tv.savedKeyListener = tv.getKeyListener();
-        installCallbacks(tv);
         return tv;
     }
 
@@ -210,6 +209,7 @@ public final class IupTextHelper
         /* the TIL draws the box, the EditText background would add a second underline */
         tv.setBackground(null);
         applyTilPalette(til);
+        installCallbacks(tv);
         return til;
     }
 
@@ -265,6 +265,7 @@ public final class IupTextHelper
         tv.setBackground(null);
         sThemableBoxes.put(sv, Boolean.TRUE);
         applyBoxPalette(sv);
+        installCallbacks(tv);
         return sv;
     }
 
@@ -319,6 +320,7 @@ public final class IupTextHelper
         up.setOnClickListener(v -> spinStep(tv, ihandlePtr, +1));
 
         box.setTag(tv);
+        installCallbacks(tv);
         return box;
     }
 
@@ -1004,7 +1006,7 @@ public final class IupTextHelper
                 .toString();
 
             int result = dispatchAction(tv.ihandlePtr, key, newValue);
-            if (result == 0) return "";
+            if (result == 0) return dest.subSequence(dstart, dend);
             if (result > 0 && key != 0)
                 return String.valueOf((char) result);
             return null;
