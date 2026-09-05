@@ -121,6 +121,44 @@ IUP_DRV_API int iupfltkEditCheckMask(Ihandle* ih, Fl_Input_* input, int event, c
 }
 
 
+static int fltkTextHistoryKey(void)
+{
+  int key = Fl::event_key();
+  int mods = Fl::event_state() & (FL_SHIFT|FL_CTRL|FL_ALT|FL_META);
+
+  if (key == 'z' && mods == FL_COMMAND)
+    return 1;
+  if (key == 'z' && mods == (FL_COMMAND|FL_SHIFT))
+    return 2;
+  if (key == 'y' && mods == FL_COMMAND)
+    return 2;
+  return 0;
+}
+
+static void fltkTextArbitrateHistory(Ihandle* ih, Fl_Input_* input, Fl_Text_Buffer* buf, int redo, char* before)
+{
+  IFnis cb = (IFnis)IupGetCallback(ih, "ACTION");
+  char* value = iupStrDup(IupGetAttribute(ih, "VALUE"));
+
+  if (value && !iupStrEqual(before, value) && (cb || ih->data->mask || ih->data->nc) &&
+      !iupEditCheckNewValue(ih, cb, value, ih->data->mask, ih->data->nc))
+  {
+    ih->data->disable_callbacks = 1;
+    if (buf)
+    {
+      if (redo) buf->undo(); else buf->redo();
+    }
+    else if (input)
+    {
+      if (redo) input->undo(); else input->redo();
+    }
+    ih->data->disable_callbacks = 0;
+  }
+
+  free(value);
+  free(before);
+}
+
 static void fltkTextCallCaretCb(Ihandle* ih)
 {
   IFniii cb = (IFniii)IupGetCallback(ih, "CARET_CB");
@@ -281,6 +319,17 @@ public:
           return 1;
         if (iupfltkEditCheckMask(iup_handle, this, event, "ACTION", iup_handle->data->mask, iup_handle->data->nc))
           return 1;
+        {
+          int history = fltkTextHistoryKey();
+          if (history)
+          {
+            char* before = iupStrDup(IupGetAttribute(iup_handle, "VALUE"));
+            int ret = Fl_Input::handle(event);
+            fltkTextArbitrateHistory(iup_handle, this, NULL, history == 2, before);
+            fltkTextCallCaretCb(iup_handle);
+            return ret;
+          }
+        }
         break;
     }
     int ret = Fl_Input::handle(event);
@@ -440,6 +489,17 @@ public:
                 return 1;
               }
             }
+          }
+        }
+        {
+          int history = fltkTextHistoryKey();
+          if (history)
+          {
+            char* before = iupStrDup(IupGetAttribute(iup_handle, "VALUE"));
+            int ret = Fl_Text_Editor::handle(event);
+            fltkTextArbitrateHistory(iup_handle, NULL, text_buffer, history == 2, before);
+            fltkTextCallCaretCb(iup_handle);
+            return ret;
           }
         }
         break;
@@ -1427,29 +1487,28 @@ static int fltkTextSetClipboardAttrib(Ihandle* ih, const char* value)
         input->cut(1);
     }
   }
-  else if (iupStrEqualNoCase(value, "UNDO"))
+  else if (iupStrEqualNoCase(value, "UNDO") || iupStrEqualNoCase(value, "REDO"))
   {
-    if (ih->data->is_multiline)
+    int redo = iupStrEqualNoCase(value, "REDO");
+    Fl_Text_Buffer* buf = fltkTextGetBuffer(ih);
+    Fl_Input* input = fltkTextGetInputWidget(ih);
+    char* before = iupStrDup(IupGetAttribute(ih, "VALUE"));
+
+    if (buf)
     {
-      Fl_Text_Buffer* buf = fltkTextGetBuffer(ih);
-      if (buf)
-        buf->undo();
+      if (redo) buf->redo(); else buf->undo();
+    }
+    else if (input)
+    {
+      if (redo) input->redo(); else input->undo();
     }
     else
     {
-      Fl_Input* input = fltkTextGetInputWidget(ih);
-      if (input)
-        input->undo();
+      free(before);
+      return 0;
     }
-  }
-  else if (iupStrEqualNoCase(value, "REDO"))
-  {
-    if (ih->data->is_multiline)
-    {
-      Fl_Text_Buffer* buf = fltkTextGetBuffer(ih);
-      if (buf)
-        buf->redo();
-    }
+
+    fltkTextArbitrateHistory(ih, input, buf, redo, before);
   }
 
   return 0;
