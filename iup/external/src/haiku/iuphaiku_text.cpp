@@ -159,13 +159,66 @@ private:
 };
 
 
+static void haikuTextUndo(Ihandle* ih, BTextView* tv, bool want_redo)
+{
+  IFnis action_cb = (IFnis)IupGetCallback(ih, "ACTION");
+  bool is_redo = false;
+  char* before;
+
+  if (tv->UndoState(&is_redo) == B_UNDO_UNAVAILABLE || is_redo != want_redo)
+    return;
+
+  before = iupStrDup(tv->Text());
+  tv->Undo(be_clipboard);
+
+  if ((action_cb || ih->data->mask || ih->data->nc) && !iupStrEqual(before, tv->Text()))
+  {
+    char* value = iupStrDup(tv->Text());
+    if (!iupEditCheckNewValue(ih, action_cb, value, ih->data->mask, ih->data->nc))
+    {
+      ih->data->disable_callbacks = 1;
+      tv->Undo(be_clipboard);
+      ih->data->disable_callbacks = 0;
+    }
+    free(value);
+  }
+
+  free(before);
+}
+
+class IupHaikuTextUndoFilter : public BMessageFilter
+{
+public:
+  explicit IupHaikuTextUndoFilter(Ihandle* ih)
+    : BMessageFilter(B_ANY_DELIVERY, B_ANY_SOURCE, B_UNDO),
+      fIhandle(ih) {}
+
+  filter_result Filter(BMessage* msg, BHandler** target) override
+  {
+    BTextView* tv = dynamic_cast<BTextView*>(*target);
+    (void)msg;
+    if (!tv || !fIhandle || !fIhandle->handle || fIhandle->data->disable_callbacks)
+      return B_DISPATCH_MESSAGE;
+
+    bool is_redo = false;
+    if (tv->UndoState(&is_redo) == B_UNDO_UNAVAILABLE)
+      return B_DISPATCH_MESSAGE;
+
+    haikuTextUndo(fIhandle, tv, is_redo);
+    return B_SKIP_MESSAGE;
+  }
+
+private:
+  Ihandle* fIhandle;
+};
+
 class IupHaikuTextControl : public BTextControl
 {
 public:
   explicit IupHaikuTextControl(Ihandle* ih)
     : BTextControl(BRect(0, 0, 0, 0), "iup_text", NULL, "",
                    NULL, B_FOLLOW_NONE),
-      fIhandle(ih), fKeyFilter(NULL), fMute(false)
+      fIhandle(ih), fKeyFilter(NULL), fUndoFilter(NULL), fMute(false)
   {
     BTextControl::SetDivider(0);
     /* Keep B_NAVIGABLE: SetFlags syncs it to the inner view, else Tab skips it. */
@@ -177,6 +230,9 @@ public:
     if (fKeyFilter && TextView())
       TextView()->RemoveFilter(fKeyFilter);
     delete fKeyFilter;
+    if (fUndoFilter && TextView())
+      TextView()->RemoveFilter(fUndoFilter);
+    delete fUndoFilter;
   }
 
   void AttachedToWindow() override
@@ -191,6 +247,8 @@ public:
     {
       fKeyFilter = new IupHaikuTextKeyFilter(fIhandle);
       TextView()->AddFilter(fKeyFilter);
+      fUndoFilter = new IupHaikuTextUndoFilter(fIhandle);
+      TextView()->AddFilter(fUndoFilter);
     }
   }
 
@@ -295,6 +353,7 @@ public:
 private:
   Ihandle* fIhandle;
   IupHaikuTextKeyFilter* fKeyFilter;
+  IupHaikuTextUndoFilter* fUndoFilter;
   bool fMute;
   bool fLastFocus = false;
 };
@@ -1208,14 +1267,7 @@ static int haikuTextSetClipboardAttrib(Ihandle* ih, const char* value)
   else if (iupStrEqualNoCase(value, "PASTE")) tv->Paste(be_clipboard);
   else if (iupStrEqualNoCase(value, "CLEAR")) tv->Clear();
   else if (iupStrEqualNoCase(value, "UNDO") || iupStrEqualNoCase(value, "REDO"))
-  {
-    /* BTextView::Undo toggles direction; UndoState(isRedo) reports which way the next call goes */
-    bool is_redo = false;
-    undo_state st = tv->UndoState(&is_redo);
-    if (st == B_UNDO_UNAVAILABLE) return 0;
-    bool want_redo = iupStrEqualNoCase(value, "REDO") ? true : false;
-    if (is_redo == want_redo) tv->Undo(be_clipboard);
-  }
+    haikuTextUndo(ih, tv, iupStrEqualNoCase(value, "REDO") ? true : false);
   return 0;
 }
 
