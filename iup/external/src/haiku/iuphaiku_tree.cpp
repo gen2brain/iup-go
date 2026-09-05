@@ -55,8 +55,8 @@ public:
       fHasFgColor(false), fHasBgColor(false), fHasFont(false), fFont(*be_plain_font),
       fShowToggle(0), fToggleValue(0), fToggleVisible(true), fFocused(false)
   {
-    fFgColor = ui_color(B_LIST_ITEM_TEXT_COLOR);
-    fBgColor = ui_color(B_LIST_BACKGROUND_COLOR);
+    fFgColor = iuphaikuColor(B_LIST_ITEM_TEXT_COLOR);
+    fBgColor = iuphaikuColor(B_LIST_BACKGROUND_COLOR);
   }
 
   int Kind() const { return fKind; }
@@ -110,13 +110,13 @@ public:
 
   void DrawItem(BView* owner, BRect frame, bool /*complete*/) override
   {
-    rgb_color bg = fHasBgColor ? fBgColor : ui_color(B_LIST_BACKGROUND_COLOR);
-    rgb_color fg = fHasFgColor ? fFgColor : ui_color(B_LIST_ITEM_TEXT_COLOR);
+    rgb_color bg = fHasBgColor ? fBgColor : iuphaikuColor(B_LIST_BACKGROUND_COLOR);
+    rgb_color fg = fHasFgColor ? fFgColor : iuphaikuColor(B_LIST_ITEM_TEXT_COLOR);
 
     if (IsSelected())
     {
-      bg = ui_color(B_LIST_SELECTED_BACKGROUND_COLOR);
-      fg = ui_color(B_LIST_SELECTED_ITEM_TEXT_COLOR);
+      bg = iuphaikuColor(B_LIST_SELECTED_BACKGROUND_COLOR);
+      fg = iuphaikuColor(B_LIST_SELECTED_ITEM_TEXT_COLOR);
     }
 
     owner->SetLowColor(bg);

@@ -101,8 +101,8 @@ public:
       return;
     }
 
-    rgb_color base = ui_color(B_PANEL_BACKGROUND_COLOR);
-    rgb_color textcolor = fHasFgColor ? fFgColor : ui_color(B_PANEL_TEXT_COLOR);
+    rgb_color base = iuphaikuColor(B_PANEL_BACKGROUND_COLOR);
+    rgb_color textcolor = fHasFgColor ? fFgColor : iuphaikuColor(B_PANEL_TEXT_COLOR);
     uint32 flags = IsEnabled() ? 0 : BControlLook::B_DISABLED;
     BAlignment center(B_ALIGN_HORIZONTAL_CENTER, B_ALIGN_VERTICAL_CENTER);
 
@@ -148,7 +148,7 @@ public:
       {
         owner->SetHighColor(tint_color(base, B_DARKEN_2_TINT));
         owner->FillRect(close);
-        cross = ui_color(B_DOCUMENT_BACKGROUND_COLOR);
+        cross = iuphaikuColor(B_DOCUMENT_BACKGROUND_COLOR);
       }
       owner->SetHighColor(cross);
       float inset = 3.0f;
@@ -536,7 +536,9 @@ static void haikuTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
   int pos = IupGetChildPos(ih, child);
 
   BView* page = new BView(BRect(0, 0, 0, 0), "iup_tab_page", B_FOLLOW_ALL_SIDES, B_WILL_DRAW);
-  page->SetViewUIColor(B_PANEL_BACKGROUND_COLOR);
+  page->SetViewColor(tabs->ViewColor());
+  page->SetLowColor(tabs->ViewColor());
+  page->SetHighColor(tabs->HighColor());
 
   IupHaikuTab* tab = new IupHaikuTab();
   tab->SetView(page);
@@ -745,6 +747,31 @@ static int haikuTabsSetShowCloseAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
+static int haikuTabsSetBgColorAttrib(Ihandle* ih, const char* value)
+{
+  IupHaikuTabView* tabs = (IupHaikuTabView*)ih->handle;
+  unsigned char r, g, b;
+  if (!tabs || !iupStrToRGB(value, &r, &g, &b)) return 1;
+
+  rgb_color c = { r, g, b, 255 };
+  LooperLockGuard guard(tabs->Looper());
+  tabs->SetViewColor(c);
+  tabs->SetLowColor(c);
+  for (int32 i = 0; i < tabs->CountTabs(); i++)
+  {
+    BView* page = tabs->TabAt(i)->View();
+    if (page)
+    {
+      page->SetViewColor(c);
+      page->SetLowColor(c);
+      page->SetHighColor(iuphaikuColor(B_PANEL_TEXT_COLOR));
+      page->Invalidate();
+    }
+  }
+  tabs->Invalidate();
+  return 1;
+}
+
 static int haikuTabsSetFgColorAttrib(Ihandle* ih, const char* value)
 {
   unsigned char r, g, b;
@@ -787,7 +814,7 @@ extern "C" IUP_SDK_API void iupdrvTabsInitClass(Iclass* ic)
   iupClassRegisterCallback(ic, "REORDER_CB", "ii");
 
   iupClassRegisterAttribute(ic, "FONT", NULL, iupdrvSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, haikuTabsSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "FGCOLOR", NULL, haikuTabsSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
 
   iupClassRegisterAttributeId(ic, "TABTITLE", iupTabsGetTitleAttrib, haikuTabsSetTabTitleAttribId, IUPAF_NO_INHERIT);

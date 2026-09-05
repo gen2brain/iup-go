@@ -98,8 +98,8 @@ public:
     if (has_text)
     {
       SetDrawingMode(B_OP_OVER);
-      SetHighColor(fEnabled ? ui_color(B_PANEL_TEXT_COLOR)
-                            : tint_color(ui_color(B_PANEL_TEXT_COLOR), B_DISABLED_LABEL_TINT));
+      SetHighColor(fEnabled ? iuphaikuColor(B_PANEL_TEXT_COLOR)
+                            : tint_color(iuphaikuColor(B_PANEL_TEXT_COLOR), B_DISABLED_LABEL_TINT));
       float text_x = origin_x + img_w + spacing;
       float text_y = origin_y + (total_h - text_h) / 2 + fh.ascent;
       DrawString(text, BPoint(text_x, text_y));

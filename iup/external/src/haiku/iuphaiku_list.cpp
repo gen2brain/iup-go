@@ -176,7 +176,27 @@ public:
 
     BRect text_frame = frame;
     if (col_w > 0) text_frame.left += col_w + 6;
-    BStringItem::DrawItem(owner, text_frame, complete);
+
+    rgb_color low = owner->LowColor();
+    if (IsSelected())
+    {
+      owner->SetLowColor(iuphaikuColor(B_LIST_SELECTED_BACKGROUND_COLOR));
+      owner->FillRect(text_frame, B_SOLID_LOW);
+    }
+    else if (complete)
+    {
+      owner->SetLowColor(owner->ViewColor());
+      owner->FillRect(text_frame, B_SOLID_LOW);
+    }
+    else
+      owner->SetLowColor(owner->ViewColor());
+
+    if (Text())
+    {
+      owner->MovePenTo(text_frame.left + be_control_look->DefaultLabelSpacing(), text_frame.top + BaselineOffset());
+      owner->DrawString(Text());
+    }
+    owner->SetLowColor(low);
   }
 
   void Update(BView* owner, const BFont* font) override
@@ -244,6 +264,24 @@ public:
       fIhandle(ih) {}
 
   void SetIhandle(Ihandle* ih) { fIhandle = ih; }
+
+  void DrawItem(BListItem* item, BRect itemRect, bool complete) override
+  {
+    rgb_color text;
+    unsigned char r, g, b;
+    if (item->IsSelected())
+      text = iuphaikuColor(B_LIST_SELECTED_ITEM_TEXT_COLOR);
+    else if (fIhandle && iupStrToRGB(iupAttribGetStr(fIhandle, "FGCOLOR"), &r, &g, &b))
+    {
+      text.red = r; text.green = g; text.blue = b; text.alpha = 255;
+    }
+    else
+      text = iuphaikuColor(B_LIST_ITEM_TEXT_COLOR);
+    if (!item->IsEnabled())
+      text = tint_color(text, B_DISABLED_LABEL_TINT);
+    SetHighColor(text);
+    item->DrawItem(this, itemRect, complete);
+  }
 
   /* iupKeyCallKeyCb walks up to dialog K_ANY; IGNORE swallows the key */
   void KeyDown(const char* bytes, int32 numBytes) override
@@ -1131,6 +1169,53 @@ static int haikuListSetValueAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
+static int haikuListSetBgColorAttrib(Ihandle* ih, const char* value)
+{
+  IupHaikuListView* lv = haikuListGetListView(ih);
+  IupHaikuListEditCtrl* edit = haikuListGetEdit(ih);
+  unsigned char r, g, b;
+  if (!ih->handle || !iupStrToRGB(value, &r, &g, &b)) return 1;
+
+  rgb_color c = { r, g, b, 255 };
+  BView* container = (BView*)ih->handle;
+  LooperLockGuard guard(container->Looper());
+  if (lv)
+  {
+    lv->SetViewColor(c);
+    lv->SetLowColor(c);
+    lv->Invalidate();
+    container->SetViewColor(c);
+    container->Invalidate();
+  }
+  if (edit)
+  {
+    edit->TextView()->SetViewColor(c);
+    edit->TextView()->SetLowColor(c);
+    edit->Invalidate();
+  }
+  return 1;
+}
+
+static int haikuListSetFgColorAttrib(Ihandle* ih, const char* value)
+{
+  IupHaikuListView* lv = haikuListGetListView(ih);
+  IupHaikuListEditCtrl* edit = haikuListGetEdit(ih);
+  unsigned char r, g, b;
+  if (!ih->handle || !iupStrToRGB(value, &r, &g, &b)) return 1;
+
+  rgb_color c = { r, g, b, 255 };
+  BView* container = (BView*)ih->handle;
+  LooperLockGuard guard(container->Looper());
+  if (lv)
+    lv->Invalidate();
+  if (edit)
+  {
+    edit->TextView()->SetFontAndColor(0, edit->TextView()->TextLength(), NULL, 0, &c);
+    edit->Invalidate();
+  }
+  return 1;
+}
+
 static char* haikuListGetValueAttrib(Ihandle* ih)
 {
   if (ih->data->is_dropdown && !ih->data->has_editbox)
@@ -1434,8 +1519,8 @@ extern "C" IUP_SDK_API void iupdrvListInitClass(Iclass* ic)
   ic->UnMap = haikuListUnMapMethod;
 
   iupClassRegisterAttribute(ic, "FONT", NULL, iupdrvSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTBGCOLOR", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, iupdrvBaseSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTFGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, haikuListSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, haikuListSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTFGCOLOR", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "ACTIVE", iupBaseGetActiveAttrib, haikuListSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
 
   iupClassRegisterAttribute(ic, "VALUE", haikuListGetValueAttrib, haikuListSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);

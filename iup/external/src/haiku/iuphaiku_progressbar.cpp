@@ -89,7 +89,7 @@ public:
   void Draw(BRect dirty) override
   {
     BRect b = Bounds();
-    rgb_color bg  = fHasBgColor  ? fBgColor  : ui_color(B_PANEL_BACKGROUND_COLOR);
+    rgb_color bg  = fHasBgColor  ? fBgColor  : iuphaikuColor(B_PANEL_BACKGROUND_COLOR);
     rgb_color bar = fHasBarColor ? fBarColor : ui_color(B_STATUS_BAR_COLOR);
 
     if (fMarquee)
