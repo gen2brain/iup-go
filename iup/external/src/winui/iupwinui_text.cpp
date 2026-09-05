@@ -209,6 +209,42 @@ static void winuiTextBoxTextChanged(Ihandle* ih)
   winuiTextCallValueChanged(ih);
 }
 
+static void winuiTextRichTextChanged(Ihandle* ih)
+{
+  IFnis cb = (IFnis)IupGetCallback(ih, "ACTION");
+  char* saved = iupAttribGet(ih, "_IUPWINUI_RICH_SAVED");
+  char* current = IupGetAttribute(ih, "VALUE");
+
+  if (!current)
+    current = (char*)"";
+
+  if (!saved)
+  {
+    iupAttribSetStr(ih, "_IUPWINUI_RICH_SAVED", "");
+    saved = iupAttribGet(ih, "_IUPWINUI_RICH_SAVED");
+  }
+
+  if (iupStrEqual(saved, current))
+    return;
+
+  if (!ih->data->disable_callbacks && (cb || ih->data->mask || ih->data->nc))
+  {
+    char* new_value = iupStrDup(current);
+
+    if (!iupEditCheckNewValue(ih, cb, new_value, ih->data->mask, ih->data->nc))
+    {
+      free(new_value);
+      IupSetStrAttribute(ih, "VALUE", saved);
+      return;
+    }
+
+    free(new_value);
+  }
+
+  iupAttribSetStr(ih, "_IUPWINUI_RICH_SAVED", current);
+  winuiTextCallValueChanged(ih);
+}
+
 static void winuiTextBeforeTextChanging(Ihandle* ih, TextBox const& sender, TextBoxBeforeTextChangingEventArgs const& args)
 {
   if (ih->data->disable_callbacks)
@@ -1058,7 +1094,7 @@ static int winuiTextMapMethod(Ihandle* ih)
       ScrollViewer::SetVerticalScrollBarVisibility(reb, ScrollBarVisibility::Disabled);
 
     aux->textChangedToken = reb.TextChanged([ih](IInspectable const&, RoutedEventArgs const&) {
-      winuiTextCallValueChanged(ih);
+      winuiTextRichTextChanged(ih);
     });
 
     aux->selectionChangedToken = reb.SelectionChanged([ih](IInspectable const&, RoutedEventArgs const&) {
