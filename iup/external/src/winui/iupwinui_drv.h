@@ -164,6 +164,8 @@ void winuiDragSetInProcessData(const char* type, void* data, int size);
 void winuiDragDataCleanup(void);
 
 winrt::Microsoft::UI::Xaml::Media::Imaging::WriteableBitmap winuiGetBitmapFromHandle(void* handle);
+void winuiImageSetPixelSize(Ihandle* ih, winrt::Microsoft::UI::Xaml::Controls::Image const& img, int w, int h);
+void winuiImageSetSource(Ihandle* ih, winrt::Microsoft::UI::Xaml::Controls::Image const& img, winrt::Microsoft::UI::Xaml::Media::Imaging::WriteableBitmap const& bitmap);
 
 /****************************************************************************
  * COM Pointer Storage Helpers
@@ -248,6 +250,13 @@ inline int iupwinuiGetPointerReleasedButton(winrt::Microsoft::UI::Input::Pointer
   if (!props.IsRightButtonPressed())
     return IUP_BUTTON3;
   return IUP_BUTTON1;
+}
+
+inline void iupwinuiPointerToPixel(Ihandle* ih, winrt::Windows::Foundation::Point const& pos, int* x, int* y)
+{
+  double scale = iupwinuiGetScale(ih);
+  *x = (int)(pos.X * scale);
+  *y = (int)(pos.Y * scale);
 }
 
 /****************************************************************************

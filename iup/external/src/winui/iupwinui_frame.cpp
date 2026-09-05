@@ -48,7 +48,7 @@ static int winui_frame_border_width = 1;
 static int winui_frame_title_height = 0;
 static int winui_frame_measured = 0;
 
-static void winuiFrameMeasureDecor(Ihandle* ih)
+static void winuiFrameMeasureDecor(void)
 {
   if (winui_frame_measured)
     return;
@@ -58,7 +58,7 @@ static void winuiFrameMeasureDecor(Ihandle* ih)
   tempText.Measure(Size(10000, 10000));
 
   Size textSize = tempText.DesiredSize();
-  winui_frame_title_height = (int)ceil(textSize.Height * iupwinuiGetScale(ih));
+  winui_frame_title_height = (int)ceil(textSize.Height);
 
   if (winui_frame_title_height < 16)
     winui_frame_title_height = 16;
@@ -224,7 +224,7 @@ void winuiFrameUpdateBorderColor(Ihandle* ih)
 
 static int winuiFrameMapMethod(Ihandle* ih)
 {
-  winuiFrameMeasureDecor(ih);
+  winuiFrameMeasureDecor();
 
   const char* title = iupAttribGet(ih, "TITLE");
 
@@ -308,15 +308,18 @@ static void winuiFrameLayoutUpdateMethod(Ihandle* ih)
   if (!outerCanvas)
     return;
 
-  Canvas::SetLeft(outerCanvas, ih->x);
-  Canvas::SetTop(outerCanvas, ih->y);
+  double scale = iupwinuiGetScale(ih);
+  double width = ih->currentwidth / scale;
+  double height = ih->currentheight / scale;
+  int titleOffset = aux->hasTitle ? winui_frame_title_height / 2 : 0;
+
+  Canvas::SetLeft(outerCanvas, ih->x / scale);
+  Canvas::SetTop(outerCanvas, ih->y / scale);
 
   if (ih->currentwidth > 0)
-    outerCanvas.Width(ih->currentwidth);
+    outerCanvas.Width(width);
   if (ih->currentheight > 0)
-    outerCanvas.Height(ih->currentheight);
-
-  int titleOffset = aux->hasTitle ? winui_frame_title_height / 2 : 0;
+    outerCanvas.Height(height);
 
   if (aux->frameBorder)
   {
@@ -324,9 +327,9 @@ static void winuiFrameLayoutUpdateMethod(Ihandle* ih)
     Canvas::SetTop(aux->frameBorder, titleOffset);
 
     if (ih->currentwidth > 0)
-      aux->frameBorder.Width(ih->currentwidth);
-    if (ih->currentheight > titleOffset)
-      aux->frameBorder.Height(ih->currentheight - titleOffset);
+      aux->frameBorder.Width(width);
+    if (height > titleOffset)
+      aux->frameBorder.Height(height - titleOffset);
   }
 
   if (aux->hasTitle && aux->titleBorder)
@@ -371,25 +374,31 @@ extern "C" IUP_SDK_API int iupdrvFrameHasClientOffset(Ihandle* ih)
   return 1;
 }
 
+static int winuiFrameGetPadding(Ihandle* ih)
+{
+  return (int)ceil((winui_frame_border_width + 4) * iupwinuiGetScale(ih));
+}
+
 extern "C" IUP_SDK_API void iupdrvFrameGetDecorOffset(Ihandle* ih, int* x, int* y)
 {
-  (void)ih;
-  *x = winui_frame_border_width + 4;
-  *y = winui_frame_border_width + 4;
+  *x = winuiFrameGetPadding(ih);
+  *y = winuiFrameGetPadding(ih);
 }
 
 extern "C" IUP_SDK_API int iupdrvFrameGetDecorSize(Ihandle* ih, int* w, int* h)
 {
-  if (!winui_frame_measured)
-    winuiFrameMeasureDecor(ih);
+  int padding = winuiFrameGetPadding(ih);
 
-  *w = 2 * (winui_frame_border_width + 4);
+  if (!winui_frame_measured)
+    winuiFrameMeasureDecor();
+
+  *w = 2 * padding;
 
   const char* title = iupAttribGet(ih, "TITLE");
   if (title && title[0])
-    *h = winui_frame_title_height / 2 + 2 * (winui_frame_border_width + 4);
+    *h = (int)ceil((winui_frame_title_height / 2) * iupwinuiGetScale(ih)) + 2 * padding;
   else
-    *h = 2 * (winui_frame_border_width + 4);
+    *h = 2 * padding;
 
   return 1;
 }
@@ -404,9 +413,9 @@ extern "C" IUP_SDK_API int iupdrvFrameGetTitleHeight(Ihandle* ih, int* h)
   }
 
   if (!winui_frame_measured)
-    winuiFrameMeasureDecor(ih);
+    winuiFrameMeasureDecor();
 
-  *h = winui_frame_title_height / 2;
+  *h = (int)ceil((winui_frame_title_height / 2) * iupwinuiGetScale(ih));
   return 1;
 }
 

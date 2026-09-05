@@ -11,6 +11,7 @@ extern "C" {
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_drv.h"
+#include "iup_drvinfo.h"
 #include "iup_class.h"
 #include "iup_childtree.h"
 #include "iup_canvas.h"
@@ -869,8 +870,9 @@ extern "C" IUP_SDK_API int iupdrvBaseSetCursorAttrib(Ihandle* ih, const char* va
 
 extern "C" IUP_SDK_API int iupdrvGetScrollbarSize(void)
 {
-  int xv = GetSystemMetrics(SM_CXVSCROLL);
-  int yh = GetSystemMetrics(SM_CYHSCROLL);
+  UINT dpi = (UINT)iupdrvGetScreenDpi();
+  int xv = GetSystemMetricsForDpi(SM_CXVSCROLL, dpi);
+  int yh = GetSystemMetricsForDpi(SM_CYHSCROLL, dpi);
   return xv > yh ? xv : yh;
 }
 

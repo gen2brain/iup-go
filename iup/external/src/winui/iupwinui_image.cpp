@@ -369,6 +369,20 @@ WriteableBitmap winuiGetBitmapFromHandle(void* handle)
   return obj.try_as<WriteableBitmap>();
 }
 
+void winuiImageSetPixelSize(Ihandle* ih, Microsoft::UI::Xaml::Controls::Image const& img, int w, int h)
+{
+  double scale = iupwinuiGetScale(ih);
+  img.Width(w / scale);
+  img.Height(h / scale);
+  img.Stretch(Microsoft::UI::Xaml::Media::Stretch::Fill);
+}
+
+void winuiImageSetSource(Ihandle* ih, Microsoft::UI::Xaml::Controls::Image const& img, WriteableBitmap const& bitmap)
+{
+  img.Source(bitmap);
+  winuiImageSetPixelSize(ih, img, bitmap.PixelWidth(), bitmap.PixelHeight());
+}
+
 extern "C" IUP_SDK_API int iupdrvImageGetInfo(void* handle, int *w, int *h, int *bpp)
 {
   WriteableBitmap bitmap = winuiGetBitmapFromHandle(handle);

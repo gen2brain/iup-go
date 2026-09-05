@@ -3618,8 +3618,9 @@ static int winuiTextSetPaddingAttrib(Ihandle* ih, const char* value)
   if (!aux || aux->isSpin || aux->isPassword)
     return 0;
 
-  Thickness padding = {(double)ih->data->horiz_padding, (double)ih->data->vert_padding,
-                       (double)ih->data->horiz_padding, (double)ih->data->vert_padding};
+  double scale = iupwinuiGetScale(ih);
+  Thickness padding = {ih->data->horiz_padding / scale, ih->data->vert_padding / scale,
+                       ih->data->horiz_padding / scale, ih->data->vert_padding / scale};
 
   if (aux->isFormatted)
   {
