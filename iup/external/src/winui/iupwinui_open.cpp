@@ -87,6 +87,25 @@ private:
 
 static Application winui_app = nullptr;
 
+/* the default ResourceManager fails without a resources.pri before Windows App SDK 1.8.11, the path constructor never did */
+static void winuiResourceManagerRequested(IInspectable const&, ResourceManagerRequestedEventArgs const& args)
+{
+  using namespace winrt::Microsoft::Windows::ApplicationModel::Resources;
+
+  wchar_t path[MAX_PATH];
+  DWORD len = GetModuleFileNameW(NULL, path, MAX_PATH);
+  wchar_t* sep = (len > 0 && len < MAX_PATH) ? wcsrchr(path, L'\\') : NULL;
+  if (!sep)
+    return;
+  wcscpy_s(sep + 1, MAX_PATH - (sep + 1 - path), L"resources.pri");
+
+  IResourceManagerFactory factory = get_activation_factory<ResourceManager, IResourceManagerFactory>();
+  hstring file(path);
+  IResourceManager manager{ nullptr };
+  check_hresult(static_cast<impl::abi_t<IResourceManagerFactory>*>(get_abi(factory))->CreateInstance(get_abi(file), put_abi(manager)));
+  args.CustomResourceManager(manager);
+}
+
 /****************************************************************************
  * System Theme Detection
  ****************************************************************************/
@@ -292,6 +311,7 @@ extern "C" IUP_SDK_API int iupdrvOpen(int *argc, char ***argv)
   winui_dispatcher_controller = DispatcherQueueController::CreateOnCurrentThread();
 
   winui_app = make<IupWinUIApp>();
+  winui_app.ResourceManagerRequested(winuiResourceManagerRequested);
 
   winui_xaml_manager = WindowsXamlManager::InitializeForCurrentThread();
 
