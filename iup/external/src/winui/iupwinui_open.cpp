@@ -43,6 +43,15 @@ static MddBootstrapInitialize2Func winui_bootstrap_init2 = NULL;
 static MddBootstrapInitializeFunc winui_bootstrap_init = NULL;
 static MddBootstrapShutdownFunc winui_bootstrap_shutdown = NULL;
 
+/* appmodel.h hides these under the driver's NTDDI_VERSION */
+typedef HRESULT (WINAPI *TryCreatePackageDependencyFunc)(PSID, PCWSTR, PACKAGE_VERSION_T, INT32, INT32, PCWSTR, INT32, PWSTR*);
+typedef HRESULT (WINAPI *AddPackageDependencyFunc)(PCWSTR, INT32, INT32, void**, PWSTR*);
+typedef HRESULT (WINAPI *RemovePackageDependencyFunc)(void*);
+typedef HRESULT (WINAPI *DeletePackageDependencyFunc)(PCWSTR);
+
+static PWSTR winui_dependency_id = NULL;
+static void* winui_dependency_context = NULL;
+
 extern "C" {
 #include "iup.h"
 #include "iup_drv.h"
@@ -196,8 +205,68 @@ static int iupwinuiBootstrapTryVersions(void)
   return 0;
 }
 
+/* what the bootstrap DLL does on Windows 11 24H1+ for runtime 1.7+ */
+static int iupwinuiInitDependency(void)
+{
+  HMODULE kernelbase = GetModuleHandleW(L"kernelbase.dll");
+  if (!kernelbase || !GetProcAddress(kernelbase, "TryCreatePackageDependency2"))
+    return 0;
+
+  TryCreatePackageDependencyFunc tryCreate = (TryCreatePackageDependencyFunc)GetProcAddress(kernelbase, "TryCreatePackageDependency");
+  AddPackageDependencyFunc add = (AddPackageDependencyFunc)GetProcAddress(kernelbase, "AddPackageDependency");
+  DeletePackageDependencyFunc del = (DeletePackageDependencyFunc)GetProcAddress(kernelbase, "DeletePackageDependency");
+  if (!tryCreate || !add || !del)
+    return 0;
+
+  PACKAGE_VERSION_T minVersion = {};
+  UINT32 versions[] = { 0x00010008, 0x00010007 };
+  for (int i = 0; i < 2; i++)
+  {
+    wchar_t family[128];
+    swprintf(family, 128, L"Microsoft.WindowsAppRuntime.%u.%u_8wekyb3d8bbwe", versions[i] >> 16, versions[i] & 0xFFFF);
+
+    PWSTR id = NULL;
+    if (FAILED(tryCreate(NULL, family, minVersion, 0, 0, NULL, 0, &id)))
+      continue;
+
+    void* context = NULL;
+    if (SUCCEEDED(add(id, 0, 0, &context, NULL)))
+    {
+      winui_dependency_id = id;
+      winui_dependency_context = context;
+      return 1;
+    }
+
+    del(id);
+    HeapFree(GetProcessHeap(), 0, id);
+  }
+  return 0;
+}
+
+static void iupwinuiShutdownDependency(void)
+{
+  HMODULE kernelbase = GetModuleHandleW(L"kernelbase.dll");
+  RemovePackageDependencyFunc remove = kernelbase ? (RemovePackageDependencyFunc)GetProcAddress(kernelbase, "RemovePackageDependency") : NULL;
+  DeletePackageDependencyFunc del = kernelbase ? (DeletePackageDependencyFunc)GetProcAddress(kernelbase, "DeletePackageDependency") : NULL;
+
+  if (winui_dependency_context && remove)
+    remove(winui_dependency_context);
+  winui_dependency_context = NULL;
+
+  if (winui_dependency_id)
+  {
+    if (del)
+      del(winui_dependency_id);
+    HeapFree(GetProcessHeap(), 0, winui_dependency_id);
+    winui_dependency_id = NULL;
+  }
+}
+
 static int iupwinuiInitBootstrap(void)
 {
+  if (iupwinuiInitDependency())
+    return 1;
+
   winui_bootstrap_module = LoadLibraryW(L"Microsoft.WindowsAppRuntime.Bootstrap.dll");
   if (!winui_bootstrap_module)
   {
@@ -398,10 +467,9 @@ extern "C" IUP_SDK_API void iupdrvClose(void)
     winui_content_pretranslate = NULL;
 
     if (winui_bootstrap_initialized && winui_bootstrap_shutdown)
-    {
       winui_bootstrap_shutdown();
-      winui_bootstrap_initialized = false;
-    }
+    iupwinuiShutdownDependency();
+    winui_bootstrap_initialized = false;
 
     if (winui_bootstrap_module)
     {
