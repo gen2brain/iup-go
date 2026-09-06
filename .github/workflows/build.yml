@@ -500,6 +500,26 @@ jobs:
         cmake -S iup/external -B build/win32 -G Ninja -DBUILD_SHARED_LIBS=ON -DIUP_BACKEND=win32 -DIUP_BUILD_GL=ON -DIUP_BUILD_WEB=ON -DIUP_BUILD_CTRL=ON -DIUP_BUILD_PLOT=ON -DCMAKE_COMPILE_WARNING_AS_ERROR=ON
         cmake --build build/win32 --parallel
 
+  windows-msvc:
+    runs-on: windows-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: Setup MSVC
+      uses: ilammy/msvc-dev-cmd@v1
+      with:
+        arch: x64
+    - name: CMake WinUI
+      run: |
+        cmake --preset winui-full -G Ninja -DCMAKE_COMPILE_WARNING_AS_ERROR=ON
+        cmake --build build/winui-full --parallel
+      working-directory: iup/external
+    - name: CMake WinUI shared
+      run: |
+        cmake -S . -B build/winui-shared -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DIUP_BACKEND=winui -DIUP_BUILD_GL=ON -DIUP_BUILD_WEB=ON -DIUP_BUILD_CTRL=ON -DIUP_BUILD_PLOT=ON -DCMAKE_COMPILE_WARNING_AS_ERROR=ON
+        cmake --build build/winui-shared --parallel
+      working-directory: iup/external
+
   linux-android:
     runs-on: ubuntu-latest
     steps:
