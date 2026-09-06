@@ -1235,7 +1235,7 @@ static int winTreeSetTitleFontAttrib(Ihandle* ih, int id, const char* value)
 
   if (value)
   {
-    itemData->hFont = iupwinGetHFont(value);
+    itemData->hFont = iupwinGetHFont(ih, value);
     if (itemData->hFont)
     {
       TCHAR* title = malloc(iupAttribGetInt(ih, "_IUP_MAXTITLE_SIZE")*sizeof(TCHAR));

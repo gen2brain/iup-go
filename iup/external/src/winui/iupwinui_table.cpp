@@ -1092,6 +1092,23 @@ static void winuiTableMoveColumn(Ihandle* ih, int source, int target)
     aux->current_col++;
 }
 
+void winuiTableUpdateDpi(Ihandle* ih)
+{
+  StackPanel header = winuiTableGetHeader(ih);
+  if (header)
+  {
+    double height = iupdrvTableGetHeaderHeight(ih) / iupwinuiGetScale(ih);
+    for (uint32_t i = 0; i < header.Children().Size(); i++)
+    {
+      auto border = header.Children().GetAt(i).try_as<Border>();
+      if (border)
+        border.Height(height);
+    }
+  }
+
+  winuiTableRebuildListViewItems(ih);
+}
+
 static void winuiTableRefreshAfterReorder(Ihandle* ih)
 {
   IupWinUITableAux* aux = winuiTableGetAux(ih);

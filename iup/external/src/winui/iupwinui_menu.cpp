@@ -45,12 +45,9 @@ static double winuiMenuGetIupFontSize(Ihandle* ih)
     return 14.0;
 
   if (size < 0)
-    return (double)(-size);
+    return (double)(-size) / iupwinuiGetScale(ih);
 
-  HDC hdc = GetDC(NULL);
-  double dpi = (double)GetDeviceCaps(hdc, LOGPIXELSY);
-  ReleaseDC(NULL, hdc);
-  return (double)size * dpi / 72.0;
+  return (double)size * 96.0 / 72.0;
 }
 
 static bool winuiMenuItemIsCheckable(Ihandle* ih)

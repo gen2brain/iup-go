@@ -153,7 +153,7 @@ IUP_DRV_API void iupwinTipsUpdateInfo(Ihandle* ih, HWND tips_hwnd)
       if (iupStrEqualNoCase(value, "SYSTEM"))
         hfont = NULL;
       else
-        hfont = iupwinGetHFont(value);
+        hfont = iupwinGetHFont(ih, value);
     }
     else
       hfont = (HFONT)iupwinGetHFontAttrib(ih);

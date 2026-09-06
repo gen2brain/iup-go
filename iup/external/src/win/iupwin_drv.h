@@ -53,7 +53,8 @@ IUP_DRV_API int iupwinGestureProcessInfo(Ihandle* ih, void* lp);
 
 /* font */
 IUP_DRV_API char* iupwinGetHFontAttrib(Ihandle *ih);
-IUP_DRV_API HFONT iupwinGetHFont(const char* value);
+IUP_DRV_API HFONT iupwinGetHFont(Ihandle* ih, const char* value);
+IUP_DRV_API void iupwinFontUpdateDpi(Ihandle* ih);
 IUP_DRV_API char* iupwinFindHFont(HFONT hFont);
 
 /* DnD */

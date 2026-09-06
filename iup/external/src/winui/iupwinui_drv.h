@@ -138,6 +138,7 @@ IUP_DRV_API void iupwinuiSetAccelCueAlt(int down);
  ****************************************************************************/
 
 IUP_DRV_API double iupwinuiGetScale(Ihandle* ih);
+IUP_DRV_API UINT iupwinuiGetDpi(Ihandle* ih);
 IUP_DRV_API winrt::Microsoft::UI::Xaml::Controls::Canvas iupwinuiGetParentCanvas(Ihandle* ih);
 IUP_DRV_API winrt::Microsoft::UI::Xaml::Controls::ScrollViewer iupwinuiFindScrollViewer(winrt::Microsoft::UI::Xaml::DependencyObject const& parent);
 IUP_DRV_API char* iupwinuiScrollViewerVisible(winrt::Microsoft::UI::Xaml::Controls::ScrollViewer const& sv);
@@ -166,6 +167,9 @@ void winuiDragDataCleanup(void);
 winrt::Microsoft::UI::Xaml::Media::Imaging::WriteableBitmap winuiGetBitmapFromHandle(void* handle);
 void winuiImageSetPixelSize(Ihandle* ih, winrt::Microsoft::UI::Xaml::Controls::Image const& img, int w, int h);
 void winuiImageSetSource(Ihandle* ih, winrt::Microsoft::UI::Xaml::Controls::Image const& img, winrt::Microsoft::UI::Xaml::Media::Imaging::WriteableBitmap const& bitmap);
+void winuiImageUpdateScale(winrt::Microsoft::UI::Xaml::DependencyObject const& root, double scale);
+void winuiTableUpdateDpi(Ihandle* ih);
+void winuiTreeUpdateDpi(Ihandle* ih);
 
 /****************************************************************************
  * COM Pointer Storage Helpers

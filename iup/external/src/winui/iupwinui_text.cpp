@@ -2456,34 +2456,10 @@ extern "C" IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formatt
             width, height, 96.0, 96.0,
             winrt::array_view<uint8_t const>(pixels, pixels + pixelDataSize));
         encoder.FlushAsync().get();
-
-        uint32_t pngSize = (uint32_t)pngStream.Size();
         pngStream.Seek(0);
-        Buffer pngBuf(pngSize);
-        pngStream.ReadAsync(pngBuf, pngSize, InputStreamOptions::None).get();
-        uint8_t* pngData = pngBuf.data();
 
-        double dpi = iupdrvGetScreenDpi();
-        int twips_w = (int)(new_w * 1440.0 / dpi);
-        int twips_h = (int)(new_h * 1440.0 / dpi);
-
-        size_t rtfBufSize = 256 + pngSize * 2;
-        char* rtf = (char*)malloc(rtfBufSize);
-        int pos = snprintf(rtf, rtfBufSize, "{\\rtf1{\\pict\\pngblip\\picw%d\\pich%d\\picwgoal%d\\pichgoal%d ",
-                          new_w, new_h, twips_w, twips_h);
-
-        static constexpr char hexChars[] = "0123456789abcdef";
-        for (uint32_t i = 0; i < pngSize; i++)
-        {
-          rtf[pos++] = hexChars[pngData[i] >> 4];
-          rtf[pos++] = hexChars[pngData[i] & 0x0f];
-        }
-        rtf[pos++] = '}';
-        rtf[pos++] = '}';
-        rtf[pos] = '\0';
-
-        sel.SetText(TextSetOptions::FormatRtf, winrt::to_hstring(rtf));
-        free(rtf);
+        double scale = iupwinuiGetScale(ih);
+        sel.InsertImage((int)(new_w / scale + 0.5), (int)(new_h / scale + 0.5), 0, VerticalCharacterAlignment::Baseline, iupwinuiStringToHString(image_name), pngStream);
       }
 
       sel.SetRange(save_start, save_end);

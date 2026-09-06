@@ -985,6 +985,7 @@ static int winDialogBaseProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESUL
     }
   case WM_DPICHANGED:
     {
+      iupwinFontUpdateDpi(ih);
       IupRefresh(ih);
       break;
     }
