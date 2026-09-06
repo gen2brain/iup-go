@@ -7,6 +7,7 @@
 #include <clocale>
 #include "pch.h"
 #include <shobjidl.h>
+#include <appmodel.h>
 
 using namespace winrt;
 using namespace Microsoft::UI::Dispatching;
@@ -20,37 +21,24 @@ using namespace Windows::Foundation::Collections;
 using namespace Windows::UI::Xaml::Interop;
 
 
-/* PACKAGE_VERSION structure for Windows App SDK Bootstrap */
-typedef struct {
-  union {
-    UINT64 Version;
-    struct {
-      USHORT Revision;
-      USHORT Build;
-      USHORT Minor;
-      USHORT Major;
-    };
-  };
-} PACKAGE_VERSION_T;
-
-/* Dynamic loading of Windows App SDK Bootstrap */
-typedef HRESULT (WINAPI *MddBootstrapInitialize2Func)(UINT32, PCWSTR, PACKAGE_VERSION_T, INT32);
-typedef HRESULT (WINAPI *MddBootstrapInitializeFunc)(UINT32, PCWSTR, PACKAGE_VERSION_T);
-typedef void (WINAPI *MddBootstrapShutdownFunc)(void);
-
-static HMODULE winui_bootstrap_module = NULL;
-static MddBootstrapInitialize2Func winui_bootstrap_init2 = NULL;
-static MddBootstrapInitializeFunc winui_bootstrap_init = NULL;
-static MddBootstrapShutdownFunc winui_bootstrap_shutdown = NULL;
-
-/* appmodel.h hides these under the driver's NTDDI_VERSION */
-typedef HRESULT (WINAPI *TryCreatePackageDependencyFunc)(PSID, PCWSTR, PACKAGE_VERSION_T, INT32, INT32, PCWSTR, INT32, PWSTR*);
+/* appmodel.h hides the OS ones under the driver's NTDDI_VERSION; the runtime DLL exports them as Mdd* */
+typedef HRESULT (WINAPI *TryCreatePackageDependencyFunc)(PSID, PCWSTR, PACKAGE_VERSION, INT32, INT32, PCWSTR, INT32, PWSTR*);
 typedef HRESULT (WINAPI *AddPackageDependencyFunc)(PCWSTR, INT32, INT32, void**, PWSTR*);
 typedef HRESULT (WINAPI *RemovePackageDependencyFunc)(void*);
 typedef HRESULT (WINAPI *DeletePackageDependencyFunc)(PCWSTR);
+typedef void (WINAPI *MddDeletePackageDependencyFunc)(PCWSTR);
+
+#if defined(_M_X64) || defined(__x86_64__)
+#define WINUI_ARCH PROCESSOR_ARCHITECTURE_AMD64
+#elif defined(_M_ARM64) || defined(__aarch64__)
+#define WINUI_ARCH PROCESSOR_ARCHITECTURE_ARM64
+#else
+#define WINUI_ARCH PROCESSOR_ARCHITECTURE_INTEL
+#endif
 
 static PWSTR winui_dependency_id = NULL;
 static void* winui_dependency_context = NULL;
+static HMODULE winui_runtime_module = NULL;
 
 extern "C" {
 #include "iup.h"
@@ -187,22 +175,28 @@ IUP_DRV_API void* iupwinuiGetDispatcherQueue(void)
  * Driver Initialization
  ****************************************************************************/
 
-static int iupwinuiBootstrapTryVersions(void)
+static void winuiFrameworkFamily(UINT32 version, wchar_t* family, size_t length)
 {
-  PACKAGE_VERSION_T minVersion = {};
-  minVersion.Major = 1;
-  minVersion.Minor = 0;
+  swprintf(family, length, L"Microsoft.WindowsAppRuntime.%u.%u_8wekyb3d8bbwe", version >> 16, version & 0xFFFF);
+}
 
-  /* Try Windows App SDK versions from newest to oldest */
-  UINT32 versions[] = { 0x00010008, 0x00010007, 0x00010006, 0x00010005, 0x00010004, 0x00010003, 0x00010002, 0x00010001 };
-  for (int i = 0; i < 8; i++)
+static int winuiAddDependency(TryCreatePackageDependencyFunc tryCreate, AddPackageDependencyFunc add, PCWSTR family)
+{
+  PACKAGE_VERSION minVersion = {};
+  PWSTR id = NULL;
+  if (FAILED(tryCreate(NULL, family, minVersion, 0, 0, NULL, 0, &id)))
+    return 0;
+
+  void* context = NULL;
+  if (FAILED(add(id, 0, 0, &context, NULL)))
   {
-    HRESULT hr = winui_bootstrap_init2 ? winui_bootstrap_init2(versions[i], NULL, minVersion, 0)
-                                       : winui_bootstrap_init(versions[i], NULL, minVersion);
-    if (SUCCEEDED(hr))
-      return 1;
+    HeapFree(GetProcessHeap(), 0, id);
+    return 0;
   }
-  return 0;
+
+  winui_dependency_id = id;
+  winui_dependency_context = context;
+  return 1;
 }
 
 /* what the bootstrap DLL does on Windows 11 24H1+ for runtime 1.7+ */
@@ -214,40 +208,127 @@ static int iupwinuiInitDependency(void)
 
   TryCreatePackageDependencyFunc tryCreate = (TryCreatePackageDependencyFunc)GetProcAddress(kernelbase, "TryCreatePackageDependency");
   AddPackageDependencyFunc add = (AddPackageDependencyFunc)GetProcAddress(kernelbase, "AddPackageDependency");
-  DeletePackageDependencyFunc del = (DeletePackageDependencyFunc)GetProcAddress(kernelbase, "DeletePackageDependency");
-  if (!tryCreate || !add || !del)
+  if (!tryCreate || !add)
     return 0;
 
-  PACKAGE_VERSION_T minVersion = {};
   UINT32 versions[] = { 0x00010008, 0x00010007 };
   for (int i = 0; i < 2; i++)
   {
     wchar_t family[128];
-    swprintf(family, 128, L"Microsoft.WindowsAppRuntime.%u.%u_8wekyb3d8bbwe", versions[i] >> 16, versions[i] & 0xFFFF);
+    winuiFrameworkFamily(versions[i], family, 128);
+    if (winuiAddDependency(tryCreate, add, family))
+      return 1;
+  }
+  return 0;
+}
 
-    PWSTR id = NULL;
-    if (FAILED(tryCreate(NULL, family, minVersion, 0, 0, NULL, 0, &id)))
+static int winuiFindFrameworkPath(PCWSTR family, wchar_t* path, UINT32 path_length)
+{
+  UINT32 count = 0, length = 0;
+  if (FindPackagesByPackageFamily(family, PACKAGE_FILTER_HEAD | PACKAGE_FILTER_DIRECT, &count, NULL, &length, NULL, NULL) != ERROR_INSUFFICIENT_BUFFER || count == 0)
+    return 0;
+
+  PWSTR* names = (PWSTR*)malloc(count * sizeof(PWSTR));
+  wchar_t* buffer = (wchar_t*)malloc(length * sizeof(wchar_t));
+  PCWSTR best = NULL;
+  UINT64 bestVersion = 0;
+  if (FindPackagesByPackageFamily(family, PACKAGE_FILTER_HEAD | PACKAGE_FILTER_DIRECT, &count, names, &length, buffer, NULL) == ERROR_SUCCESS)
+  {
+    for (UINT32 i = 0; i < count; i++)
+    {
+      BYTE idBuffer[1024];
+      UINT32 idLength = sizeof(idBuffer);
+      if (PackageIdFromFullName(names[i], PACKAGE_INFORMATION_BASIC, &idLength, idBuffer) != ERROR_SUCCESS)
+        continue;
+      PACKAGE_ID* id = (PACKAGE_ID*)idBuffer;
+      if (id->processorArchitecture == WINUI_ARCH && id->version.Version > bestVersion)
+      {
+        bestVersion = id->version.Version;
+        best = names[i];
+      }
+    }
+  }
+
+  int ok = best && GetPackagePathByFullName(best, &path_length, path) == ERROR_SUCCESS;
+  free(names);
+  free(buffer);
+  return ok;
+}
+
+static void winuiPathPrepend(PCWSTR dir)
+{
+  DWORD length = GetEnvironmentVariableW(L"PATH", NULL, 0);
+  wchar_t* path = (wchar_t*)malloc((wcslen(dir) + 1 + length + 1) * sizeof(wchar_t));
+  wcscpy(path, dir);
+  if (length)
+  {
+    wcscat(path, L";");
+    GetEnvironmentVariableW(L"PATH", path + wcslen(path), length);
+  }
+  SetEnvironmentVariableW(L"PATH", path);
+  free(path);
+}
+
+/* MddAddPackageDependency prepends its own copy of the directory, so only the leading one goes */
+static void winuiPathRemove(PCWSTR dir)
+{
+  DWORD length = GetEnvironmentVariableW(L"PATH", NULL, 0);
+  if (!length)
+    return;
+  wchar_t* path = (wchar_t*)malloc(length * sizeof(wchar_t));
+  GetEnvironmentVariableW(L"PATH", path, length);
+
+  size_t dir_length = wcslen(dir);
+  if (_wcsnicmp(path, dir, dir_length) == 0 && (path[dir_length] == L';' || path[dir_length] == 0))
+    SetEnvironmentVariableW(L"PATH", path[dir_length] == L';' ? path + dir_length + 1 : NULL);
+  free(path);
+}
+
+/* the runtime's own dependency API, loaded straight from the framework package; no lifetime manager process */
+static int iupwinuiInitFramework(void)
+{
+  UINT32 versions[] = { 0x00010008, 0x00010007 };
+  for (int i = 0; i < 2; i++)
+  {
+    wchar_t family[128];
+    winuiFrameworkFamily(versions[i], family, 128);
+
+    wchar_t dir[1024];
+    if (!winuiFindFrameworkPath(family, dir, 1024))
       continue;
 
-    void* context = NULL;
-    if (SUCCEEDED(add(id, 0, 0, &context, NULL)))
+    DLL_DIRECTORY_COOKIE cookie = AddDllDirectory(dir);
+    winuiPathPrepend(dir);
+
+    wchar_t filename[1024];
+    swprintf(filename, 1024, L"%s\\Microsoft.WindowsAppRuntime.dll", dir);
+    HMODULE runtime = LoadLibraryExW(filename, NULL, LOAD_WITH_ALTERED_SEARCH_PATH);
+    TryCreatePackageDependencyFunc tryCreate = runtime ? (TryCreatePackageDependencyFunc)GetProcAddress(runtime, "MddTryCreatePackageDependency") : NULL;
+    AddPackageDependencyFunc add = runtime ? (AddPackageDependencyFunc)GetProcAddress(runtime, "MddAddPackageDependency") : NULL;
+    int ok = tryCreate && add && winuiAddDependency(tryCreate, add, family);
+
+    winuiPathRemove(dir);
+    if (cookie)
+      RemoveDllDirectory(cookie);
+
+    if (ok)
     {
-      winui_dependency_id = id;
-      winui_dependency_context = context;
+      winui_runtime_module = runtime;
       return 1;
     }
-
-    del(id);
-    HeapFree(GetProcessHeap(), 0, id);
+    if (runtime)
+      FreeLibrary(runtime);
   }
   return 0;
 }
 
 static void iupwinuiShutdownDependency(void)
 {
-  HMODULE kernelbase = GetModuleHandleW(L"kernelbase.dll");
-  RemovePackageDependencyFunc remove = kernelbase ? (RemovePackageDependencyFunc)GetProcAddress(kernelbase, "RemovePackageDependency") : NULL;
-  DeletePackageDependencyFunc del = kernelbase ? (DeletePackageDependencyFunc)GetProcAddress(kernelbase, "DeletePackageDependency") : NULL;
+  HMODULE module = winui_runtime_module ? winui_runtime_module : GetModuleHandleW(L"kernelbase.dll");
+  const char* remove_name = winui_runtime_module ? "MddRemovePackageDependency" : "RemovePackageDependency";
+  const char* delete_name = winui_runtime_module ? "MddDeletePackageDependency" : "DeletePackageDependency";
+  RemovePackageDependencyFunc remove = module ? (RemovePackageDependencyFunc)GetProcAddress(module, remove_name) : NULL;
+  FARPROC del = module ? GetProcAddress(module, delete_name) : NULL;
 
   if (winui_dependency_context && remove)
     remove(winui_dependency_context);
@@ -255,63 +336,24 @@ static void iupwinuiShutdownDependency(void)
 
   if (winui_dependency_id)
   {
-    if (del)
-      del(winui_dependency_id);
+    if (del && winui_runtime_module)
+      ((MddDeletePackageDependencyFunc)del)(winui_dependency_id);
+    else if (del)
+      ((DeletePackageDependencyFunc)del)(winui_dependency_id);
     HeapFree(GetProcessHeap(), 0, winui_dependency_id);
     winui_dependency_id = NULL;
+  }
+
+  if (winui_runtime_module)
+  {
+    FreeLibrary(winui_runtime_module);
+    winui_runtime_module = NULL;
   }
 }
 
 static int iupwinuiInitBootstrap(void)
 {
-  if (iupwinuiInitDependency())
-    return 1;
-
-  winui_bootstrap_module = LoadLibraryW(L"Microsoft.WindowsAppRuntime.Bootstrap.dll");
-  if (!winui_bootstrap_module)
-  {
-    return 0;
-  }
-
-  winui_bootstrap_init2 = (MddBootstrapInitialize2Func)
-    GetProcAddress(winui_bootstrap_module, "MddBootstrapInitialize2");
-  winui_bootstrap_init = (MddBootstrapInitializeFunc)
-    GetProcAddress(winui_bootstrap_module, "MddBootstrapInitialize");
-  winui_bootstrap_shutdown = (MddBootstrapShutdownFunc)
-    GetProcAddress(winui_bootstrap_module, "MddBootstrapShutdown");
-
-  if (!winui_bootstrap_init2 && !winui_bootstrap_init)
-  {
-    FreeLibrary(winui_bootstrap_module);
-    winui_bootstrap_module = NULL;
-    return 0;
-  }
-
-  /* AppExtension DDLM activation avoids the ~5s startup busy cursor; needs 20H1+ */
-  typedef LONG (WINAPI *RtlGetVersionFunc)(OSVERSIONINFOW*);
-  RtlGetVersionFunc getVersion = (RtlGetVersionFunc)
-    GetProcAddress(GetModuleHandleW(L"ntdll.dll"), "RtlGetVersion");
-  OSVERSIONINFOW osvi = { sizeof(osvi) };
-  int use_appext = getVersion && getVersion(&osvi) == 0 && osvi.dwBuildNumber >= 19041;
-
-  if (use_appext)
-    SetEnvironmentVariableW(L"MICROSOFT_WINDOWSAPPRUNTIME_DDLM_ALGORITHM", L"1");
-
-  int ok = iupwinuiBootstrapTryVersions();
-  if (use_appext)
-  {
-    SetEnvironmentVariableW(L"MICROSOFT_WINDOWSAPPRUNTIME_DDLM_ALGORITHM", NULL);
-    if (!ok)
-      ok = iupwinuiBootstrapTryVersions();
-  }
-
-  if (!ok)
-  {
-    FreeLibrary(winui_bootstrap_module);
-    winui_bootstrap_module = NULL;
-    return 0;
-  }
-  return 1;
+  return iupwinuiInitDependency() || iupwinuiInitFramework();
 }
 
 typedef BOOL (__stdcall *ContentPreTranslateMessageFunc)(const MSG*);
@@ -466,15 +508,7 @@ extern "C" IUP_SDK_API void iupdrvClose(void)
 
     winui_content_pretranslate = NULL;
 
-    if (winui_bootstrap_initialized && winui_bootstrap_shutdown)
-      winui_bootstrap_shutdown();
     iupwinuiShutdownDependency();
     winui_bootstrap_initialized = false;
-
-    if (winui_bootstrap_module)
-    {
-      FreeLibrary(winui_bootstrap_module);
-      winui_bootstrap_module = NULL;
-    }
   }
 }
