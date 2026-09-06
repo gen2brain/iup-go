@@ -7,6 +7,7 @@
 #include <clocale>
 #include "pch.h"
 #include <shobjidl.h>
+#include <shellapi.h>
 #include <appmodel.h>
 
 using namespace winrt;
@@ -175,9 +176,16 @@ IUP_DRV_API void* iupwinuiGetDispatcherQueue(void)
  * Driver Initialization
  ****************************************************************************/
 
+/* the driver is built against the 1.6 headers; 2.x runs it too and has no minor in its family name */
+static const UINT32 winui_runtime_versions[] = { 0x00010008, 0x00010007, 0x00010006, 0x00010005, 0x00020000 };
+#define WINUI_RUNTIME_VERSIONS 5
+
 static void winuiFrameworkFamily(UINT32 version, wchar_t* family, size_t length)
 {
-  swprintf(family, length, L"Microsoft.WindowsAppRuntime.%u.%u_8wekyb3d8bbwe", version >> 16, version & 0xFFFF);
+  if (version >= 0x00020000)
+    swprintf(family, length, L"Microsoft.WindowsAppRuntime.%u_8wekyb3d8bbwe", version >> 16);
+  else
+    swprintf(family, length, L"Microsoft.WindowsAppRuntime.%u.%u_8wekyb3d8bbwe", version >> 16, version & 0xFFFF);
 }
 
 static int winuiAddDependency(TryCreatePackageDependencyFunc tryCreate, AddPackageDependencyFunc add, PCWSTR family)
@@ -211,11 +219,10 @@ static int iupwinuiInitDependency(void)
   if (!tryCreate || !add)
     return 0;
 
-  UINT32 versions[] = { 0x00010008, 0x00010007 };
-  for (int i = 0; i < 2; i++)
+  for (int i = 0; i < WINUI_RUNTIME_VERSIONS; i++)
   {
     wchar_t family[128];
-    winuiFrameworkFamily(versions[i], family, 128);
+    winuiFrameworkFamily(winui_runtime_versions[i], family, 128);
     if (winuiAddDependency(tryCreate, add, family))
       return 1;
   }
@@ -287,11 +294,10 @@ static void winuiPathRemove(PCWSTR dir)
 /* the runtime's own dependency API, loaded straight from the framework package; no lifetime manager process */
 static int iupwinuiInitFramework(void)
 {
-  UINT32 versions[] = { 0x00010008, 0x00010007 };
-  for (int i = 0; i < 2; i++)
+  for (int i = 0; i < WINUI_RUNTIME_VERSIONS; i++)
   {
     wchar_t family[128];
-    winuiFrameworkFamily(versions[i], family, 128);
+    winuiFrameworkFamily(winui_runtime_versions[i], family, 128);
 
     wchar_t dir[1024];
     if (!winuiFindFrameworkPath(family, dir, 1024))
@@ -351,9 +357,25 @@ static void iupwinuiShutdownDependency(void)
   }
 }
 
+static void winuiRuntimeMissing(void)
+{
+  wchar_t caption[MAX_PATH + 64];
+  wchar_t module[MAX_PATH];
+  DWORD len = GetModuleFileNameW(NULL, module, MAX_PATH);
+  wchar_t* sep = (len > 0 && len < MAX_PATH) ? wcsrchr(module, L'\\') : NULL;
+  swprintf(caption, MAX_PATH + 64, L"%s - This application could not be started", sep ? sep + 1 : L"IUP");
+
+  if (MessageBoxW(NULL, L"The Windows App Runtime is missing.\n    Version 1.5 to 1.8 or 2.x\n\nDo you want to install the Windows App Runtime now?", caption, MB_YESNO | MB_ICONERROR) == IDYES)
+    ShellExecuteW(NULL, L"open", L"https://learn.microsoft.com/windows/apps/windows-app-sdk/downloads", NULL, NULL, SW_SHOWNORMAL);
+}
+
 static int iupwinuiInitBootstrap(void)
 {
-  return iupwinuiInitDependency() || iupwinuiInitFramework();
+  if (iupwinuiInitDependency() || iupwinuiInitFramework())
+    return 1;
+
+  winuiRuntimeMissing();
+  return 0;
 }
 
 typedef BOOL (__stdcall *ContentPreTranslateMessageFunc)(const MSG*);
