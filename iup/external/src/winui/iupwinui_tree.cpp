@@ -234,6 +234,24 @@ static void winuiTreeApplyItemTemplate(Ihandle* ih, TreeView const& treeView)
  * Image Update Helpers
  ****************************************************************************/
 
+void winuiTreeUpdateDpi(Ihandle* ih)
+{
+  for (int i = 0; i < ih->data->node_count; i++)
+  {
+    TreeViewNode node = winuiTreeGetNode(ih, i);
+    if (!node)
+      continue;
+
+    auto ps = node.Content().try_as<Windows::Foundation::Collections::PropertySet>();
+    if (!ps || !ps.HasKey(L"ImageSource"))
+      continue;
+
+    WriteableBitmap bitmap = ps.Lookup(L"ImageSource").try_as<WriteableBitmap>();
+    if (bitmap)
+      winuiTreeSetNodeImage(ih, node, winrt::get_abi(bitmap));
+  }
+}
+
 static void winuiTreeUpdateImages(Ihandle* ih, int mode)
 {
   for (int i = 0; i < ih->data->node_count; i++)

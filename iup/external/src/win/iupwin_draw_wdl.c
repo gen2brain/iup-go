@@ -666,7 +666,7 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
   WD_HBRUSH brush = wdCreateSolidBrush(dc->hCanvas, iupColor2ARGB(color));
   int layout_center = flags & IUP_DRAW_LAYOUTCENTER;
 
-  HFONT hFont = (HFONT)iupwinGetHFont(font);
+  HFONT hFont = (HFONT)iupwinGetHFont(NULL, font);
   WD_HFONT wdFont = wdCreateFontWithGdiHandle(hFont);
   int layout_w = w, layout_h = h;
 

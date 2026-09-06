@@ -119,6 +119,23 @@ static void winuiDialogRefreshThemeColors(Ihandle* ih)
   }
 }
 
+static void winuiDialogUpdateDpi(Ihandle* ih)
+{
+  Ihandle* child = ih->firstchild;
+  while (child)
+  {
+    iupBaseUpdateAttribFromFont(child);
+
+    if (winuiGetAux<IupWinUITableAux>(child, IUPWINUI_TABLE_AUX))
+      winuiTableUpdateDpi(child);
+    else if (winuiGetAux<IupWinUITreeAux>(child, IUPWINUI_TREE_AUX))
+      winuiTreeUpdateDpi(child);
+
+    winuiDialogUpdateDpi(child);
+    child = child->brother;
+  }
+}
+
 static void winuiDialogTitleBarThemeColor(HWND hwnd)
 {
   typedef HRESULT(STDAPICALLTYPE *PtrDwmSetWindowAttribute)(HWND, DWORD, LPCVOID, DWORD);
@@ -357,8 +374,15 @@ static LRESULT CALLBACK winuiDialogWndProc(HWND hwnd, UINT msg, WPARAM wParam, L
 
     case WM_DPICHANGED:
     {
-      if (ih)
+      IupWinUIDialogAux* dlgaux = ih ? winuiGetAux<IupWinUIDialogAux>(ih, IUPWINUI_DIALOG_AUX) : NULL;
+      if (dlgaux)
+      {
+        iupBaseUpdateAttribFromFont(ih);
+        winuiDialogUpdateDpi(ih);
+        if (dlgaux->rootPanel)
+          winuiImageUpdateScale(dlgaux->rootPanel, iupwinuiGetScale(ih));
         IupRefresh(ih);
+      }
       break;
     }
 

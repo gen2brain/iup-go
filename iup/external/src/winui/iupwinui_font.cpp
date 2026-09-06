@@ -26,6 +26,7 @@ extern "C" {
 struct IwinuiFont
 {
   char font[200];
+  float dpi;
   IDWriteTextFormat* textFormat;
   float fontSize;
   int charwidth;
@@ -76,7 +77,7 @@ static void winuiDWriteMeasureText(IDWriteTextFormat* format, const wchar_t* tex
   }
 }
 
-static IwinuiFont* winuiFindFont(const char* font)
+static IwinuiFont* winuiFindFont(const char* font, float dpi)
 {
   char typeface[50] = "";
   int size = 9;
@@ -87,7 +88,7 @@ static IwinuiFont* winuiFindFont(const char* font)
 
   for (size_t i = 0; i < winui_fonts.size(); i++)
   {
-    if (iupStrEqualNoCase(font, winui_fonts[i].font))
+    if (winui_fonts[i].dpi == dpi && iupStrEqualNoCase(font, winui_fonts[i].font))
       return &winui_fonts[i];
   }
 
@@ -102,7 +103,7 @@ static IwinuiFont* winuiFindFont(const char* font)
   if (size < 0)
     fontSize = (float)(-size);
   else
-    fontSize = iupWINUI_PT2PIXEL((float)size, winui_screen_dpi);
+    fontSize = iupWINUI_PT2PIXEL((float)size, dpi);
 
   if (fontSize <= 0)
     return NULL;
@@ -138,6 +139,7 @@ static IwinuiFont* winuiFindFont(const char* font)
 
   IwinuiFont newfont = {};
   strncpy(newfont.font, font, sizeof(newfont.font) - 1);
+  newfont.dpi = dpi;
   newfont.textFormat = textFormat;
   newfont.fontSize = fontSize;
 
@@ -192,11 +194,12 @@ static IwinuiFont* winuiFindFont(const char* font)
 
 static IwinuiFont* winuiFontGet(Ihandle* ih)
 {
-  IwinuiFont* winfont = winuiFindFont(iupGetFontValue(ih));
+  float dpi = (float)iupwinuiGetDpi(ih);
+  IwinuiFont* winfont = winuiFindFont(iupGetFontValue(ih), dpi);
   if (!winfont)
-    winfont = winuiFindFont(IupGetGlobal("DEFAULTFONT"));
+    winfont = winuiFindFont(IupGetGlobal("DEFAULTFONT"), dpi);
   if (!winfont)
-    winfont = winuiFindFont("Segoe UI, 9");
+    winfont = winuiFindFont("Segoe UI, 9", dpi);
   return winfont;
 }
 
@@ -240,7 +243,7 @@ extern "C" IUP_SDK_API int iupdrvSetFontAttrib(Ihandle* ih, const char* value)
   if (!value || !value[0])
     value = "Segoe UI, 9";
 
-  IwinuiFont* winfont = winuiFindFont(value);
+  IwinuiFont* winfont = winuiFindFont(value, (float)iupwinuiGetDpi(ih));
   if (!winfont)
     return 0;
 
@@ -357,10 +360,10 @@ extern "C" IUP_SDK_API void iupdrvFontGetMultiLineStringSize(Ihandle* ih, const 
 
 extern "C" IUP_SDK_API void iupdrvFontGetTextSize(const char* font, const char* str, int len, int* w, int* h)
 {
-  IwinuiFont* winfont = winuiFindFont(font);
+  IwinuiFont* winfont = winuiFindFont(font, winui_screen_dpi);
   if (!winfont)
   {
-    winfont = winuiFindFont("Segoe UI, 9");
+    winfont = winuiFindFont("Segoe UI, 9", winui_screen_dpi);
     if (!winfont)
     {
       if (w) *w = str ? (int)strlen(str) * 8 : 0;
@@ -390,10 +393,10 @@ extern "C" IUP_SDK_API void iupdrvFontGetTextSize(const char* font, const char* 
 
 extern "C" IUP_SDK_API void iupdrvFontGetFontDim(const char* font, int* max_width, int* line_height, int* ascent, int* descent)
 {
-  IwinuiFont* winfont = winuiFindFont(font);
+  IwinuiFont* winfont = winuiFindFont(font, winui_screen_dpi);
   if (!winfont)
   {
-    winfont = winuiFindFont("Segoe UI, 9");
+    winfont = winuiFindFont("Segoe UI, 9", winui_screen_dpi);
     if (!winfont)
     {
       if (max_width) *max_width = 8;
@@ -508,7 +511,7 @@ IUP_DRV_API void iupwinuiUpdateTextBlockFontStr(winrt::Microsoft::UI::Xaml::Cont
   if (size < 0)
     fontSize = (float)(-size);
   else
-    fontSize = iupWINUI_PT2PIXEL((float)size, winui_screen_dpi);
+    fontSize = iupWINUI_PT2PIXEL((float)size, (float)iupwinuiGetDpi(ih));
 
   if (fontSize > 0)
     textBlock.FontSize((double)fontSize / iupwinuiGetScale(ih));

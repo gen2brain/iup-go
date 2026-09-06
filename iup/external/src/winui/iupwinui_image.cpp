@@ -375,6 +375,27 @@ void winuiImageSetPixelSize(Ihandle* ih, Microsoft::UI::Xaml::Controls::Image co
   img.Width(w / scale);
   img.Height(h / scale);
   img.Stretch(Microsoft::UI::Xaml::Media::Stretch::Fill);
+  img.Tag(box_value(Size((float)w, (float)h)));
+}
+
+void winuiImageUpdateScale(Microsoft::UI::Xaml::DependencyObject const& root, double scale)
+{
+  int count = Microsoft::UI::Xaml::Media::VisualTreeHelper::GetChildrenCount(root);
+  for (int i = 0; i < count; i++)
+  {
+    Microsoft::UI::Xaml::DependencyObject child = Microsoft::UI::Xaml::Media::VisualTreeHelper::GetChild(root, i);
+    Microsoft::UI::Xaml::Controls::Image img = child.try_as<Microsoft::UI::Xaml::Controls::Image>();
+    if (img)
+    {
+      auto size = img.Tag().try_as<IReference<Size>>();
+      if (size)
+      {
+        img.Width(size.Value().Width / scale);
+        img.Height(size.Value().Height / scale);
+      }
+    }
+    winuiImageUpdateScale(child, scale);
+  }
 }
 
 void winuiImageSetSource(Ihandle* ih, Microsoft::UI::Xaml::Controls::Image const& img, WriteableBitmap const& bitmap)

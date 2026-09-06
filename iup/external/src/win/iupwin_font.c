@@ -26,6 +26,7 @@
 typedef struct IwinFont_
 {
   char font[200];
+  int res;
   HFONT hFont;
   int charwidth, charheight;
   int max_width, ascent, descent;
@@ -33,7 +34,32 @@ typedef struct IwinFont_
 
 static Iarray* win_fonts = NULL;
 
-static IwinFont* winFindFont(const char *font)
+typedef UINT (WINAPI *PtrGetDpiForWindow)(HWND hwnd);
+
+static int winFontGetRes(Ihandle* ih)
+{
+  static PtrGetDpiForWindow getDpiForWindow = NULL;
+  static int initialized = 0;
+  Ihandle* dialog = ih ? IupGetDialog(ih) : NULL;
+
+  if (!initialized)
+  {
+    HMODULE user32 = GetModuleHandle(TEXT("user32.dll"));
+    if (user32)
+      getDpiForWindow = (PtrGetDpiForWindow)GetProcAddress(user32, "GetDpiForWindow");
+    initialized = 1;
+  }
+
+  if (getDpiForWindow && dialog && dialog->handle)
+  {
+    UINT dpi = getDpiForWindow((HWND)dialog->handle);
+    if (dpi)
+      return (int)dpi;
+  }
+  return iupwinGetScreenRes();
+}
+
+static IwinFont* winFindFont(const char *font, int res)
 {
   HFONT hFont;
   int height_pixels;  /* negative value */
@@ -43,7 +69,6 @@ static IwinFont* winFindFont(const char *font)
     is_italic = 0,
     is_underline = 0,
     is_strikeout = 0;
-  int res = iupwinGetScreenRes();
   int i, count = iupArrayCount(win_fonts);
   const char* mapped_name;
 
@@ -51,7 +76,7 @@ static IwinFont* winFindFont(const char *font)
   IwinFont* fonts = (IwinFont*)iupArrayGetData(win_fonts);
   for (i = 0; i < count; i++)
   {
-    if (iupStrEqualNoCase(font, fonts[i].font))
+    if (fonts[i].res == res && iupStrEqualNoCase(font, fonts[i].font))
       return &fonts[i];
   }
 
@@ -87,6 +112,7 @@ static IwinFont* winFindFont(const char *font)
   fonts = (IwinFont*)iupArrayInc(win_fonts);
 
   iupStrCopyN(fonts[i].font, sizeof(fonts[i].font), font);
+  fonts[i].res = res;
   fonts[i].hFont = hFont;
 
   {
@@ -163,9 +189,9 @@ IUP_DRV_API char* iupwinFindHFont(HFONT hFont)
   return NULL;
 }
 
-IUP_DRV_API HFONT iupwinGetHFont(const char* value)
+IUP_DRV_API HFONT iupwinGetHFont(Ihandle* ih, const char* value)
 {
-  IwinFont* winfont = winFindFont(value);
+  IwinFont* winfont = winFindFont(value, winFontGetRes(ih));
   if (!winfont)
     return NULL;
   else
@@ -174,7 +200,7 @@ IUP_DRV_API HFONT iupwinGetHFont(const char* value)
 
 static IwinFont* winFontCreateNativeFont(Ihandle *ih, const char* value)
 {
-  IwinFont* winfont = winFindFont(value);
+  IwinFont* winfont = winFindFont(value, winFontGetRes(ih));
   if (!winfont)
   {
     iupERROR1("Failed to create Font: %s", value);
@@ -187,9 +213,10 @@ static IwinFont* winFontCreateNativeFont(Ihandle *ih, const char* value)
 
 static IwinFont* winFontGet(Ihandle *ih)
 {
-  IwinFont* winfont = winFindFont(iupGetFontValue(ih));
+  int res = winFontGetRes(ih);
+  IwinFont* winfont = winFindFont(iupGetFontValue(ih), res);
   if (!winfont)
-    winfont = winFindFont(IupGetGlobal("DEFAULTFONT"));
+    winfont = winFindFont(IupGetGlobal("DEFAULTFONT"), res);
   return winfont;
 }
 
@@ -200,6 +227,20 @@ IUP_DRV_API char* iupwinGetHFontAttrib(Ihandle *ih)
     return NULL;
   else
     return (char*)winfont->hFont;
+}
+
+IUP_DRV_API void iupwinFontUpdateDpi(Ihandle* ih)
+{
+  Ihandle* child;
+  IwinFont* winfont = winFontGet(ih);
+
+  if (winfont && ih->handle && ih->iclass->nativetype != IUP_TYPEVOID)
+    SendMessage(ih->handle, WM_SETFONT, (WPARAM)winfont->hFont, MAKELPARAM(TRUE,0));
+
+  iupBaseUpdateAttribFromFont(ih);
+
+  for (child = ih->firstchild; child; child = child->brother)
+    iupwinFontUpdateDpi(child);
 }
 
 IUP_SDK_API int iupdrvSetFontAttrib(Ihandle* ih, const char* value)
@@ -312,14 +353,14 @@ IUP_SDK_API void iupdrvFontGetMultiLineStringSize(Ihandle* ih, const char* str, 
 
 IUP_SDK_API void iupdrvFontGetTextSize(const char* font, const char* str, int len, int *w, int *h)
 {
-  IwinFont* winfont = winFindFont(font);
+  IwinFont* winfont = winFindFont(font, iupwinGetScreenRes());
   if (winfont)
     winFontGetTextSize(NULL, winfont, str, len, w, h);
 }
 
 IUP_SDK_API void iupdrvFontGetFontDim(const char* font, int *max_width, int *line_height, int *ascent, int *descent)
 {
-  IwinFont* winfont = winFindFont(font);
+  IwinFont* winfont = winFindFont(font, iupwinGetScreenRes());
   if (winfont)
   {
     if (max_width) *max_width = winfont->max_width;

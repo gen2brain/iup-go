@@ -1935,7 +1935,7 @@ static int winTableNotifyCallback(Ihandle* ih, void* msg_info, int* result)
           int font_changed = 0;
           if (font && *font)
           {
-            hFont = iupwinGetHFont(font);
+            hFont = iupwinGetHFont(ih, font);
             if (hFont)
               font_changed = 1;
           }

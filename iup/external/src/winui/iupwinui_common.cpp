@@ -136,6 +136,14 @@ static void winuiUpdateIslandClipRegion(Ihandle* ih)
 }
 
 /* XAML positions and sizes are DIPs, IUP computes physical pixels, and the island rasterizes by the monitor scale on top */
+IUP_DRV_API UINT iupwinuiGetDpi(Ihandle* ih)
+{
+  Ihandle* dialog = ih ? IupGetDialog(ih) : NULL;
+  HWND hwnd = (dialog && dialog->handle) ? (HWND)dialog->handle : NULL;
+  UINT dpi = hwnd ? GetDpiForWindow(hwnd) : 0;
+  return dpi ? dpi : (UINT)iupdrvGetScreenDpi();
+}
+
 IUP_DRV_API double iupwinuiGetScale(Ihandle* ih)
 {
   Ihandle* dialog = ih ? IupGetDialog(ih) : NULL;
