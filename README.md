@@ -47,10 +47,9 @@ then install `pacman -S mingw-w64-clang-x86_64-go mingw-w64-clang-x86_64-clang` 
 
 You can also use [LLVM MinGW](https://github.com/mstorsjo/llvm-mingw).
 
-The requirement is to have `Microsoft.WindowsAppRuntime.Bootstrap.dll` and `resources.pri` files next to the `.exe` file.
-You can find those files in `Microsoft.WindowsAppSDK` that you can install with `nuget install Microsoft.WindowsAppSDK`. Use Windows App SDK 1.8 or newer.
+The Windows App Runtime must be installed, any of 1.5 to 1.8 or 2.x.
 
-Add `-ldflags "-s -w"` to strip symbols and DWARF info; the C++/WinRT headers generate huge amounts of debug info, dropping it shrinks a typical `.exe` from ~30 MB to ~4 MB.
+Add `-ldflags "-s -w"` to strip symbols and DWARF info; the C++/WinRT headers generate huge amounts of debug info, dropping it shrinks a typical `.exe` from ~30 MB to ~5 MB.
 
 [<img src="examples/sample/sample_winui.png" width="700"/>](examples/sample/sample_winui.png)
 
@@ -167,7 +166,6 @@ Also, several bugs in `gnustep-base`, `gnustep-gui`, `libs-opal` and `libs-coreb
 Tarball with the required patches is at [gnustep.tar.gz](https://gist.github.com/gen2brain/eaa0a38d0fb099d3601e6d1bc9d3b07d).
 
 `-fobjc-runtime=gnustep-2.2` - tells Clang to emit Objective-C 2 ABI metadata compatible with libobjc2.
-`gnustep-config --objc-flags` expands to this plus include paths; the Makefiles pick it up automatically, but cgo does not.
 
 Cgo sanitizes compiler/linker flags by default, so you have to pass the flag and unblock it via the env vars:
 
@@ -184,7 +182,7 @@ go build -tags gnustep
 
 #### Haiku
 
-Native `Interface Kit` driver. Requires a Haiku nightly (or `beta6` once released). `haiku_devel` ships with a stock Haiku install, no extra packages needed.
+Native `Interface Kit` driver. Requires a Haiku beta6, `haiku_devel` ships with a stock Haiku install, no extra packages needed.
 
 * For `WebBrowser`, install `haikuwebkit_devel` via `pkgman install haikuwebkit_devel`.
 * You can also build for Qt, with the `qt` build tag. Install deps with `pkgman install qt6_base_devel`.
