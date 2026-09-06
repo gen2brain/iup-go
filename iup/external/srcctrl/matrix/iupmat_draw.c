@@ -89,6 +89,13 @@ static void iMatrixSetDrawColorLong(Ihandle* ih, long color)
   iMatrixSetDrawColor(ih, r, g, b);
 }
 
+static long iMatrixGetFrameColor(Ihandle* ih)
+{
+  unsigned char r = 0, g = 0, b = 0;
+  iupStrToRGB(iupAttribGetStr(ih, "FRAMECOLOR"), &r, &g, &b);
+  return ((long)r << 16) | ((long)g << 8) | (long)b;
+}
+
 #define IMAT_FEEDBACK_SIZE 16
 
 static unsigned char imatrix_toggleoff_alpha[IMAT_FEEDBACK_SIZE * IMAT_FEEDBACK_SIZE] =
@@ -891,18 +898,12 @@ static void iMatrixDrawTitleCorner(Ihandle* ih)
 {
   if (ih->data->lines.dt[0].size && ih->data->columns.dt[0].size)
   {
-    const char* framecolor_str = iupAttribGetStr(ih, "FRAMECOLOR");
     int active = iupdrvIsActive(ih);
     IFniiiiii draw_cb = (IFniiiiii)IupGetCallback(ih, "DRAW_CB");
     int col_alignment = iupMatrixGetColAlignmentLin0(ih);
     int lin_alignment = iupMatrixGetLinAlignment(ih, 0);
     int framehighlight = iupAttribGetInt(ih, "FRAMETITLEHIGHLIGHT");
-    long framecolor;
-    unsigned char r, g, b;
-
-    /* Convert framecolor_str to long RGB value */
-    iupStrToRGB(framecolor_str, &r, &g, &b);
-    framecolor = ((long)r << 16) | ((long)g << 8) | (long)b;
+    long framecolor = iMatrixGetFrameColor(ih);
 
     iMatrixDrawBackground(ih, 0, ih->data->columns.dt[0].size, 0, ih->data->lines.dt[0].size, 0, active, 0, 0);
 
@@ -1112,7 +1113,7 @@ static void iMatrixDrawTitleLines(Ihandle* ih, int lin1, int lin2)
       y1 -= ih->data->lines.dt[lin].size;
   }
 
-  const char* framecolor_str = iupAttribGetStr(ih, "FRAMECOLOR");
+  framecolor = iMatrixGetFrameColor(ih);
   framehighlight = iupAttribGetInt(ih, "FRAMETITLEHIGHLIGHT");
   active = iupdrvIsActive(ih);
   draw_cb = (IFniiiiii)IupGetCallback(ih, "DRAW_CB");
@@ -1227,7 +1228,7 @@ static void iMatrixDrawTitleColumns(Ihandle* ih, int col1, int col2)
       x1 -= ih->data->columns.dt[col].size;
   }
 
-  const char* framecolor_str = iupAttribGetStr(ih, "FRAMECOLOR");
+  framecolor = iMatrixGetFrameColor(ih);
   framehighlight = iupAttribGetInt(ih, "FRAMETITLEHIGHLIGHT");
   active = iupdrvIsActive(ih);
   draw_cb = (IFniiiiii)IupGetCallback(ih, "DRAW_CB");
@@ -1433,7 +1434,7 @@ static void iMatrixDrawCells(Ihandle* ih, int lin1, int col1, int lin2, int col2
 
   /***** Draw the cell values and frame */
   old_y1 = y1;
-  const char* framecolor_str = iupAttribGetStr(ih, "FRAMECOLOR");
+  framecolor = iMatrixGetFrameColor(ih);
   framehighlight = iupAttribGetInt(ih, "FRAMETITLEHIGHLIGHT");
   active = iupdrvIsActive(ih);
 
