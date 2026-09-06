@@ -556,11 +556,11 @@ static void iSvgParseFontAttrs(iSvgBuffer* buf, const char* font)
         }
         word[wlen] = '\0';
 
-        if (strcasecmp(word, "Bold") == 0)
+        if (iupStrEqualNoCase(word, "Bold"))
           iupStrCopyN(weight, sizeof(weight), "bold");
-        else if (strcasecmp(word, "Italic") == 0)
+        else if (iupStrEqualNoCase(word, "Italic"))
           iupStrCopyN(style, sizeof(style), "italic");
-        else if (strcasecmp(word, "Oblique") == 0)
+        else if (iupStrEqualNoCase(word, "Oblique"))
           iupStrCopyN(style, sizeof(style), "oblique");
       }
     }

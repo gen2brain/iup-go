@@ -470,7 +470,7 @@ static int iFontFindStyleName(const char *name, int len, int *style)
   {
     /* Case-insensitive comparison to handle formats like "COURIER_NORMAL_14" */
     if (strlen(style_names[i].name) == (size_t)len &&
-        strncasecmp(style_names[i].name, name, len) == 0)
+        iupStrEqualNoCasePartial(name, style_names[i].name))
     {
       *style = style_names[i].style;
       return 1;
