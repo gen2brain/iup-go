@@ -232,6 +232,34 @@
     __class* obj = IUP_CLASS_GET_OBJECT(ih, __class); \
     return obj->__cb(ih, i1, i2, s); \
   }
+#define IUP_CLASS_DECLARECALLBACK_IFniiV(__class, __cb) \
+  int __cb(Ihandle* ih, int i1, int i2, void* v); \
+  static int CB_##__cb(Ihandle* ih, int i1, int i2, void* v) \
+  { \
+    __class* obj = IUP_CLASS_GET_OBJECT(ih, __class); \
+    return obj->__cb(ih, i1, i2, v); \
+  }
+#define IUP_CLASS_DECLARECALLBACK_IFndd(__class, __cb) \
+  int __cb(Ihandle* ih, double d1, double d2); \
+  static int CB_##__cb(Ihandle* ih, double d1, double d2) \
+  { \
+    __class* obj = IUP_CLASS_GET_OBJECT(ih, __class); \
+    return obj->__cb(ih, d1, d2); \
+  }
+#define IUP_CLASS_DECLARECALLBACK_IFnddd(__class, __cb) \
+  int __cb(Ihandle* ih, double d1, double d2, double d3); \
+  static int CB_##__cb(Ihandle* ih, double d1, double d2, double d3) \
+  { \
+    __class* obj = IUP_CLASS_GET_OBJECT(ih, __class); \
+    return obj->__cb(ih, d1, d2, d3); \
+  }
+#define IUP_CLASS_DECLARECALLBACK_IFniiiidd(__class, __cb) \
+  int __cb(Ihandle* ih, int i1, int i2, int i3, int i4, double d1, double d2); \
+  static int CB_##__cb(Ihandle* ih, int i1, int i2, int i3, int i4, double d1, double d2) \
+  { \
+    __class* obj = IUP_CLASS_GET_OBJECT(ih, __class); \
+    return obj->__cb(ih, i1, i2, i3, i4, d1, d2); \
+  }
 
 #define IUP_CLASS_DECLARECALLBACK_IFniiis(__class, __cb) \
   int __cb(Ihandle* ih, int i1, int i2, int i3, char* s); \
