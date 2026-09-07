@@ -68,6 +68,15 @@ func wasmReadBytes(ptr, size int) []byte {
 	return out
 }
 
+func wasmReadInt16(ptr, count int) []int16 {
+	if ptr == 0 || count <= 0 {
+		return nil
+	}
+	out := make([]int16, count)
+	js.CopyBytesToGo(unsafe.Slice((*byte)(unsafe.Pointer(&out[0])), count*2), module().Get("HEAPU8").Call("subarray", ptr, ptr+count*2))
+	return out
+}
+
 // --- callback registry and dispatch --------------------------------------
 
 type cbKey struct {
@@ -360,6 +369,8 @@ func dispatch(ih Ihandle, name string, i1, i2, i3, i4 int, sarg string) int {
 		ret = f(ih)
 	case FrameFunc:
 		ret = f(ih, i1, i2, wasmReadBytes(i3, i1*i2*3))
+	case SamplesFunc:
+		ret = f(ih, i1, i2, wasmReadInt16(i3, i1*i2))
 	case TerminalTitleFunc:
 		ret = f(ih, sarg)
 	case TerminalBellFunc:

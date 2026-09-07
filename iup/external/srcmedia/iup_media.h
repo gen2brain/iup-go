@@ -15,6 +15,10 @@ extern "C" {
 
 Iclass* iupAudioNewClass(void);
 Iclass* iupCameraNewClass(void);
+Iclass* iupMicrophoneNewClass(void);
+
+int iupandroidMediaPermissionState(const char* permission);
+void iupandroidMediaRequestPermission(const char* permission, Ihandle* ih);
 
 #ifdef __cplusplus
 }

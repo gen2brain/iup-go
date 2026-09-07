@@ -1063,7 +1063,7 @@ static void goIupSetNewWindowFunc(Ihandle *ih) {
 }
 
 // ============================================================================
-// MEDIA CALLBACKS (Audio, Camera)
+// MEDIA CALLBACKS (Audio, Camera, Microphone)
 // ============================================================================
 
 CGO_EXPORT extern int goIupPlayEndCB(void *);
@@ -1074,6 +1074,11 @@ static void goIupSetPlayEndFunc(Ihandle *ih) {
 CGO_EXPORT extern int goIupFrameCB(void *, int width, int height, void *data);
 static void goIupSetFrameFunc(Ihandle *ih) {
 	IupSetCallback(ih, "FRAME_CB", (Icallback) goIupFrameCB);
+}
+
+CGO_EXPORT extern int goIupSamplesCB(void *, int frames, int channels, void *samples);
+static void goIupSetSamplesFunc(Ihandle *ih) {
+	IupSetCallback(ih, "SAMPLES_CB", (Icallback) goIupSamplesCB);
 }
 
 #endif /* BIND_CALLBACKS_H */

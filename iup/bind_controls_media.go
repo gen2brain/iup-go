@@ -28,3 +28,10 @@ func Audio() Ihandle {
 func Camera() Ihandle {
 	return mkih(C.IupCamera())
 }
+
+// Microphone creates an audio capture source.
+//
+// https://github.com/gen2brain/iup-go/blob/main/docs/ctrl/iup_microphone.md
+func Microphone() Ihandle {
+	return mkih(C.IupMicrophone())
+}

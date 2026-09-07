@@ -566,6 +566,8 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 		setPlayEndFunc(ih, fn.(PlayEndFunc))
 	case "FRAME_CB":
 		setFrameFunc(ih, fn.(FrameFunc))
+	case "SAMPLES_CB":
+		setSamplesFunc(ih, fn.(SamplesFunc))
 	}
 }
 
