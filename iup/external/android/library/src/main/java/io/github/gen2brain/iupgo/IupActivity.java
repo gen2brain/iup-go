@@ -584,5 +584,6 @@ public class IupActivity extends AppCompatActivity
     {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         IupLocationHelper.onPermissionResult(requestCode, grantResults);
+        IupCameraHelper.onPermissionResult(requestCode, grantResults);
     }
 }
