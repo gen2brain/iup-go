@@ -61,7 +61,7 @@ jobs:
     - name: Install dependencies
       run: sudo apt-get update -y && sudo apt-get install -y libgtk-3-dev libgl1-mesa-dev
     - name: Build examples
-      run: go build -tags ctrl,plot,web,gl ./...
+      run: go build -tags ctrl,plot,web,gl,media ./...
       working-directory: examples
 
   linux-gtk4:
@@ -262,6 +262,21 @@ jobs:
       run: go build -tags web
       working-directory: iup
 
+  linux-gtk3-media:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: Install Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: stable
+    - name: Install dependencies
+      run: sudo apt-get update -y && sudo apt-get install -y libgtk-3-dev
+    - name: Build
+      run: go build -tags media
+      working-directory: iup
+
   linux-gtk4-web:
     runs-on: ubuntu-latest
     steps:
@@ -316,6 +331,19 @@ jobs:
         go-version: stable
     - name: Build
       run: go build -tags web
+      working-directory: iup
+
+  macos-cocoa-media:
+    runs-on: macos-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: Install Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: stable
+    - name: Build
+      run: go build -tags media
       working-directory: iup
 
   macos-gtk3:
@@ -428,6 +456,19 @@ jobs:
       run: go build -tags web
       working-directory: iup
 
+  windows-win32-media:
+    runs-on: windows-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: Install Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: stable
+    - name: Build
+      run: go build -tags media
+      working-directory: iup
+
   windows-gtk3:
     runs-on: windows-latest
     defaults:
@@ -497,7 +538,7 @@ jobs:
       uses: actions/checkout@v4
     - name: CMake Win32
       run: |
-        cmake -S iup/external -B build/win32 -G Ninja -DBUILD_SHARED_LIBS=ON -DIUP_BACKEND=win32 -DIUP_BUILD_GL=ON -DIUP_BUILD_WEB=ON -DIUP_BUILD_CTRL=ON -DIUP_BUILD_PLOT=ON -DCMAKE_COMPILE_WARNING_AS_ERROR=ON
+        cmake -S iup/external -B build/win32 -G Ninja -DBUILD_SHARED_LIBS=ON -DIUP_BACKEND=win32 -DIUP_BUILD_GL=ON -DIUP_BUILD_WEB=ON -DIUP_BUILD_CTRL=ON -DIUP_BUILD_PLOT=ON -DIUP_BUILD_MEDIA=ON -DCMAKE_COMPILE_WARNING_AS_ERROR=ON
         cmake --build build/win32 --parallel
 
   windows-msvc:
@@ -516,7 +557,7 @@ jobs:
       working-directory: iup/external
     - name: CMake WinUI shared
       run: |
-        cmake -S . -B build/winui-shared -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DIUP_BACKEND=winui -DIUP_BUILD_GL=ON -DIUP_BUILD_WEB=ON -DIUP_BUILD_CTRL=ON -DIUP_BUILD_PLOT=ON -DCMAKE_COMPILE_WARNING_AS_ERROR=ON
+        cmake -S . -B build/winui-shared -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DIUP_BACKEND=winui -DIUP_BUILD_GL=ON -DIUP_BUILD_WEB=ON -DIUP_BUILD_CTRL=ON -DIUP_BUILD_PLOT=ON -DIUP_BUILD_MEDIA=ON -DCMAKE_COMPILE_WARNING_AS_ERROR=ON
         cmake --build build/winui-shared --parallel
       working-directory: iup/external
 
@@ -594,7 +635,7 @@ jobs:
       working-directory: iup
     - name: CMake Wasm
       run: |
-        emcmake cmake -S iup/external -B build/wasm -DIUP_BACKEND=wasm -DIUP_BUILD_GL=ON -DIUP_BUILD_WEB=ON -DIUP_BUILD_CTRL=ON -DIUP_BUILD_PLOT=ON
+        emcmake cmake -S iup/external -B build/wasm -DIUP_BACKEND=wasm -DIUP_BUILD_GL=ON -DIUP_BUILD_WEB=ON -DIUP_BUILD_CTRL=ON -DIUP_BUILD_PLOT=ON -DIUP_BUILD_MEDIA=ON
         cmake --build build/wasm --parallel
 
   linux-cmake:
@@ -622,26 +663,26 @@ jobs:
         sudo cmake --install /tmp/fltk-build
     - name: CMake GTK3
       run: |
-        cmake -S iup/external -B build/gtk3 -DBUILD_SHARED_LIBS=ON -DIUP_BACKEND=gtk3 -DIUP_BUILD_GL=ON -DIUP_BUILD_WEB=ON -DIUP_BUILD_CTRL=ON -DIUP_BUILD_PLOT=ON -DCMAKE_COMPILE_WARNING_AS_ERROR=ON
+        cmake -S iup/external -B build/gtk3 -DBUILD_SHARED_LIBS=ON -DIUP_BACKEND=gtk3 -DIUP_BUILD_GL=ON -DIUP_BUILD_WEB=ON -DIUP_BUILD_CTRL=ON -DIUP_BUILD_PLOT=ON -DIUP_BUILD_MEDIA=ON -DCMAKE_COMPILE_WARNING_AS_ERROR=ON
         cmake --build build/gtk3 --parallel
     - name: CMake GTK4
       run: |
-        cmake -S iup/external -B build/gtk4 -DBUILD_SHARED_LIBS=ON -DIUP_BACKEND=gtk4 -DIUP_BUILD_GL=ON -DIUP_BUILD_WEB=ON -DIUP_BUILD_CTRL=ON -DIUP_BUILD_PLOT=ON -DCMAKE_COMPILE_WARNING_AS_ERROR=ON
+        cmake -S iup/external -B build/gtk4 -DBUILD_SHARED_LIBS=ON -DIUP_BACKEND=gtk4 -DIUP_BUILD_GL=ON -DIUP_BUILD_WEB=ON -DIUP_BUILD_CTRL=ON -DIUP_BUILD_PLOT=ON -DIUP_BUILD_MEDIA=ON -DCMAKE_COMPILE_WARNING_AS_ERROR=ON
         cmake --build build/gtk4 --parallel
     - name: CMake Qt6
       run: |
-        cmake -S iup/external -B build/qt6 -DBUILD_SHARED_LIBS=ON -DIUP_BACKEND=qt6 -DIUP_BUILD_WEB=ON -DIUP_BUILD_CTRL=ON -DIUP_BUILD_PLOT=ON -DCMAKE_COMPILE_WARNING_AS_ERROR=ON
+        cmake -S iup/external -B build/qt6 -DBUILD_SHARED_LIBS=ON -DIUP_BACKEND=qt6 -DIUP_BUILD_WEB=ON -DIUP_BUILD_CTRL=ON -DIUP_BUILD_PLOT=ON -DIUP_BUILD_MEDIA=ON -DCMAKE_COMPILE_WARNING_AS_ERROR=ON
         cmake --build build/qt6 --parallel
     - name: CMake FLTK
       run: |
-        cmake -S iup/external -B build/fltk -DBUILD_SHARED_LIBS=ON -DIUP_BACKEND=fltk -DIUP_BUILD_GL=ON -DIUP_BUILD_CTRL=ON -DIUP_BUILD_PLOT=ON -DCMAKE_COMPILE_WARNING_AS_ERROR=ON
+        cmake -S iup/external -B build/fltk -DBUILD_SHARED_LIBS=ON -DIUP_BACKEND=fltk -DIUP_BUILD_GL=ON -DIUP_BUILD_CTRL=ON -DIUP_BUILD_PLOT=ON -DIUP_BUILD_MEDIA=ON -DCMAKE_COMPILE_WARNING_AS_ERROR=ON
         cmake --build build/fltk --parallel
     - name: CMake EFL
       run: |
         sudo mkdir -p /usr/include/ector-1
-        cmake -S iup/external -B build/efl -DBUILD_SHARED_LIBS=ON -DIUP_BACKEND=efl -DIUP_BUILD_GL=ON -DIUP_BUILD_CTRL=ON -DIUP_BUILD_PLOT=ON -DCMAKE_COMPILE_WARNING_AS_ERROR=ON
+        cmake -S iup/external -B build/efl -DBUILD_SHARED_LIBS=ON -DIUP_BACKEND=efl -DIUP_BUILD_GL=ON -DIUP_BUILD_CTRL=ON -DIUP_BUILD_PLOT=ON -DIUP_BUILD_MEDIA=ON -DCMAKE_COMPILE_WARNING_AS_ERROR=ON
         cmake --build build/efl --parallel
     - name: CMake Motif
       run: |
-        cmake -S iup/external -B build/motif -DBUILD_SHARED_LIBS=ON -DIUP_BACKEND=motif -DIUP_BUILD_GL=ON -DIUP_BUILD_CTRL=ON -DIUP_BUILD_PLOT=ON -DCMAKE_COMPILE_WARNING_AS_ERROR=ON
+        cmake -S iup/external -B build/motif -DBUILD_SHARED_LIBS=ON -DIUP_BACKEND=motif -DIUP_BUILD_GL=ON -DIUP_BUILD_CTRL=ON -DIUP_BUILD_PLOT=ON -DIUP_BUILD_MEDIA=ON -DCMAKE_COMPILE_WARNING_AS_ERROR=ON
         cmake --build build/motif --parallel

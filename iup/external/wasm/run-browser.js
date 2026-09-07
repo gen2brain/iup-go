@@ -13,6 +13,8 @@ const { chromium } = require('playwright-core');
 // Prefer an explicit binary, then the first Chrome/Chromium found on PATH, else the chrome channel.
 function browserLaunchOptions() {
   const opts = { headless: false, args: ['--headless=new'] };
+  // IUP_MEDIA: a fake camera stream, no permission prompt, and audio playback without a user gesture
+  if (process.env.IUP_MEDIA) opts.args.push('--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream', '--autoplay-policy=no-user-gesture-required');
   if (process.env.IUP_BROWSER) { opts.executablePath = process.env.IUP_BROWSER; return opts; }
   for (const bin of ['google-chrome', 'google-chrome-stable', 'chromium', 'chromium-browser']) {
     try { opts.executablePath = execSync('command -v ' + bin, { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim(); return opts; }
@@ -70,6 +72,7 @@ function serve(dir) {
     hasTouch: wantTouch,
   });
   await page.context().grantPermissions(['clipboard-read', 'clipboard-write'], { origin: 'http://localhost:' + port }).catch(() => {});
+  if (process.env.IUP_MEDIA) await page.context().grantPermissions(['camera'], { origin: 'http://localhost:' + port }).catch(() => {});
   if (process.env.IUP_GEO) {
     const g = process.env.IUP_GEO.split(',');
     await page.context().grantPermissions(['geolocation'], { origin: 'http://localhost:' + port }).catch(() => {});
@@ -96,11 +99,14 @@ function serve(dir) {
   page.on('pageerror', (e) => logs.push('PAGEERROR: ' + e.message));
   page.on('dialog', (d) => { logs.push('DIALOG[' + d.type() + ']: ' + d.message()); d.accept().catch(() => {}); });
 
-  // feed an IupFileDlg OPEN a tiny valid PNG headlessly, written only when a chooser actually opens
+  // feed an IupFileDlg OPEN the IUP_FILE path, else a tiny valid PNG written only when a chooser actually opens
   page.on('filechooser', (fc) => {
     logs.push('FILECHOOSER');
-    const testFile = path.join(require('os').tmpdir(), 'iup_filechooser_test.png');
-    fs.writeFileSync(testFile, Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', 'base64'));
+    let testFile = process.env.IUP_FILE;
+    if (!testFile) {
+      testFile = path.join(require('os').tmpdir(), 'iup_filechooser_test.png');
+      fs.writeFileSync(testFile, Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', 'base64'));
+    }
     fc.setFiles(testFile).catch((e) => logs.push('setFiles failed: ' + e.message));
   });
 

@@ -183,6 +183,8 @@ static int wasmCbTerminalBell(Ihandle* ih) { return iupwasmGoDispatch(ih, "BELL_
 static int wasmCbTerminalSize(Ihandle* ih, int cols, int lines) { return iupwasmGoDispatch(ih, "TERMSIZE_CB", cols, lines, 0, 0, 0); }
 static int wasmCbTerminalExit(Ihandle* ih, int status) { return iupwasmGoDispatch(ih, "EXIT_CB", status, 0, 0, 0, 0); }
 static int wasmCbTextInput(Ihandle* ih, char* text) { return iupwasmGoDispatch(ih, "TEXTINPUT_CB", 0, 0, 0, 0, text); }
+static int wasmCbPlayEnd(Ihandle* ih) { return iupwasmGoDispatch(ih, "PLAYEND_CB", 0, 0, 0, 0, 0); }
+static int wasmCbFrame(Ihandle* ih, int width, int height, void* data) { return iupwasmGoDispatch(ih, "FRAME_CB", width, height, (int)(intptr_t)data, 0, 0); }
 
 /* INPUT_CB bytes are not NUL terminated */
 static int wasmCbTerminalInput(Ihandle* ih, char* bytes, int len)
@@ -516,6 +518,10 @@ EMSCRIPTEN_KEEPALIVE void iupwasmGoSetCallback(Ihandle* ih, const char* name)
     IupSetCallback(ih, name, (Icallback)wasmCbTerminalExit);
   else if (strcmp(name, "TEXTINPUT_CB") == 0)
     IupSetCallback(ih, name, (Icallback)wasmCbTextInput);
+  else if (strcmp(name, "PLAYEND_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbPlayEnd);
+  else if (strcmp(name, "FRAME_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbFrame);
   else if (strcmp(name, "SCROLL_CB") == 0)
     IupSetCallback(ih, name, (Icallback)wasmCbScroll);
   else if (strcmp(name, "MOTION_CB") == 0)

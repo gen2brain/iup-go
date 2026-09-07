@@ -55,10 +55,7 @@ func wasmWriteBytes(ptr int, b []byte) {
 	if ptr == 0 || len(b) == 0 {
 		return
 	}
-	h8 := module().Get("HEAPU8")
-	for i, v := range b {
-		h8.SetIndex(ptr+i, int(v))
-	}
+	js.CopyBytesToJS(module().Get("HEAPU8").Call("subarray", ptr, ptr+len(b)), b)
 }
 
 // wasmReadBytes copies a buffer out of the module heap; Go cannot address it directly.
@@ -67,10 +64,7 @@ func wasmReadBytes(ptr, size int) []byte {
 		return nil
 	}
 	out := make([]byte, size)
-	h8 := module().Get("HEAPU8")
-	for i := 0; i < size; i++ {
-		out[i] = byte(h8.Index(ptr + i).Int())
-	}
+	js.CopyBytesToGo(out, module().Get("HEAPU8").Call("subarray", ptr, ptr+size))
 	return out
 }
 
@@ -362,6 +356,10 @@ func dispatch(ih Ihandle, name string, i1, i2, i3, i4 int, sarg string) int {
 		ret = f(ih, i1, i2)
 	case TerminalInputFunc:
 		ret = f(ih, wasmReadBytes(i1, i2))
+	case PlayEndFunc:
+		ret = f(ih)
+	case FrameFunc:
+		ret = f(ih, i1, i2, wasmReadBytes(i3, i1*i2*3))
 	case TerminalTitleFunc:
 		ret = f(ih, sarg)
 	case TerminalBellFunc:

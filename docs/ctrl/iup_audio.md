@@ -5,7 +5,7 @@ It is not a visual element. Each element should be destroyed using [IupDestroy](
 
 Decodes WAV, FLAC, MP3 and Ogg Vorbis files.
 
-Not supported in WebAssembly.
+In WebAssembly the page must be a secure context, and output is silent until the first click or key press when the page was not opened from a user gesture.
 
 ### Initialization and Usage
 

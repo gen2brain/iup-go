@@ -191,7 +191,7 @@ Haiku uses BGLView from `libGL` (ships with the OS).
 
 **Media** (`IUP_BUILD_MEDIA`):
 No extra dependencies. Audio uses the bundled miniaudio, which loads PulseAudio, ALSA or JACK at runtime on Linux
-and the system audio API elsewhere. The camera uses Video4Linux2, Media Foundation, AVFoundation or the Camera2 NDK.
+and the system audio API elsewhere. The camera uses Video4Linux2, Media Foundation, AVFoundation, the Camera2 NDK or getUserMedia.
 
 ### Using IUP from CMake
 

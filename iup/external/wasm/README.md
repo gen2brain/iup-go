@@ -43,7 +43,7 @@ Build and serve:
 cd serve && go run . -dir ../build -port 8000    # open http://localhost:8000/
 ```
 
-The argument is an example directory, a `*.go` file, or a `*.c`/`*.cpp` app. Pass `-O` for a release build, `-T` for build tags (`gl`, `web`, `ctrl`, `plot`), and `-f` to force a rebuild after C changes.
+The argument is an example directory, a `*.go` file, or a `*.c`/`*.cpp` app. Pass `-O` for a release build, `-T` for build tags (`gl`, `web`, `ctrl`, `plot`, `media`), and `-f` to force a rebuild after C changes.
 To build and screenshot in headless Chrome:
 
 ```sh
@@ -75,3 +75,4 @@ A `*.c`/`*.cpp` app is built together with IUP and run directly:
 
 * Blocking, value-returning modals (`IupAlarm`, custom `IupPopup`) show but do not pause the page, since a browser cannot block synchronously. `IupFileDlg` opens only from a real user gesture.
 * `IupGLCanvas` works over WebGL2 with `-T gl`. The standalone go-gl examples cannot target wasm; use `gl_web` instead.
+* `IupAudio` plays through an `AudioWorklet` and `IupCamera` captures with `getUserMedia` (`-T media`). Both need a secure context; audio stays silent until the first click or key press when the page was not opened from a user gesture.

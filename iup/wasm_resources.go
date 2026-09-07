@@ -61,13 +61,7 @@ func ImageSaveToBuffer(ih Ihandle, format string) []byte {
 	if ptr == 0 {
 		return nil
 	}
-	size := wasmGetI32(psize)
-	out := make([]byte, size)
-	h8 := module().Get("HEAPU8")
-	for i := 0; i < size; i++ {
-		out[i] = byte(h8.Index(ptr + i).Int())
-	}
-	return out
+	return wasmReadBytes(ptr, wasmGetI32(psize))
 }
 
 func ImageToImage(ih Ihandle) *image.RGBA {
@@ -83,11 +77,7 @@ func ImageToImage(ih Ihandle) *image.RGBA {
 	if ptr == 0 {
 		return nil
 	}
-	src := make([]byte, size)
-	h8 := module().Get("HEAPU8")
-	for i := 0; i < size; i++ {
-		src[i] = byte(h8.Index(ptr + i).Int())
-	}
+	src := wasmReadBytes(ptr, size)
 	img := image.NewRGBA(image.Rect(0, 0, width, height))
 	if bpp == 32 {
 		copy(img.Pix, src)

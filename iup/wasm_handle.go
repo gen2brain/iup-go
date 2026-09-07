@@ -106,13 +106,31 @@ func (ih Ihandle) SetAttribute(name string, value ...interface{}) Ihandle {
 // GetAttribute returns an interface element attribute value.
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
-func (ih Ihandle) GetAttribute(name string) string {
-	return GetAttribute(ih, name)
+func (ih Ihandle) GetAttribute(name string, ids ...interface{}) string {
+	switch len(ids) {
+	case 0:
+		return GetAttribute(ih, name)
+	case 1:
+		return GetAttributeId(ih, name, ids[0].(int))
+	case 2:
+		return GetAttributeId2(ih, name, ids[0].(int), ids[1].(int))
+	default:
+		panic("bad arguments passed to GetAttribute")
+	}
 }
 
 // GetInt returns an attribute value as an integer.
-func (ih Ihandle) GetInt(name string) int {
-	return GetInt(ih, name)
+func (ih Ihandle) GetInt(name string, ids ...interface{}) int {
+	switch len(ids) {
+	case 0:
+		return GetInt(ih, name)
+	case 1:
+		return GetIntId(ih, name, ids[0].(int))
+	case 2:
+		return GetIntId2(ih, name, ids[0].(int), ids[1].(int))
+	default:
+		panic("bad arguments passed to GetInt")
+	}
 }
 
 // Destroy destroys the element and its children.
@@ -121,8 +139,17 @@ func (ih Ihandle) Destroy() {
 }
 
 // GetFloat returns an attribute value as a float32.
-func (ih Ihandle) GetFloat(name string) float32 {
-	return GetFloat(ih, name)
+func (ih Ihandle) GetFloat(name string, ids ...interface{}) float32 {
+	switch len(ids) {
+	case 0:
+		return GetFloat(ih, name)
+	case 1:
+		return GetFloatId(ih, name, ids[0].(int))
+	case 2:
+		return GetFloatId2(ih, name, ids[0].(int), ids[1].(int))
+	default:
+		panic("bad arguments passed to GetFloat")
+	}
 }
 
 // SetHandle associates a name with an interface element.
