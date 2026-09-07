@@ -1,5 +1,5 @@
-// goroutines2 is a responsiveness test: many background goroutines drive a
-// wide variety of controls at modest rates. Sibling to goroutines (throughput).
+// goroutines_controls is a responsiveness test: many background goroutines drive a
+// wide variety of controls at modest rates. Sibling to goroutines_stress (throughput).
 package main
 
 import (
