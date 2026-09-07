@@ -170,12 +170,17 @@ public final class IupTextHelper
     }
 
 
-    private static IupEditText newEditText(long ihandlePtr, int maxLines, boolean materialContext)
+    private static TextInputLayout newTextInputLayout()
     {
-        Context ctx = materialContext
-            ? IupCommon.getContextThemeWrapper()
-            : new ContextThemeWrapper(IupCommon.getContextThemeWrapper(),
-                android.R.style.Theme_DeviceDefault);
+        TextInputLayout til = new TextInputLayout(new ContextThemeWrapper(IupCommon.getContextThemeWrapper(), R.style.IupTextInputTheme));
+        til.setBoxBackgroundMode(TextInputLayout.BOX_BACKGROUND_OUTLINE);
+        til.setHintEnabled(false);
+        til.setBoxCollapsedPaddingTop(0);
+        return til;
+    }
+
+    private static IupEditText newEditText(long ihandlePtr, int maxLines, Context ctx)
+    {
         IupEditText tv = new IupEditText(ctx, ihandlePtr);
         if (maxLines > 0) tv.setMaxLines(maxLines);
         applyTextPalette(tv);
@@ -187,18 +192,13 @@ public final class IupTextHelper
     @Keep
     public static View createSingleLineText(final long ihandlePtr)
     {
-        IupEditText tv = newEditText(ihandlePtr, 1, true);
+        TextInputLayout til = newTextInputLayout();
+        IupEditText tv = newEditText(ihandlePtr, 1, til.getContext());
         tv.setSingleLine(true);
         /* NO_SUGGESTIONS so filter sees per-key, not composition batches. */
         tv.setInputType(InputType.TYPE_CLASS_TEXT
             | InputType.TYPE_TEXT_VARIATION_NORMAL
             | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
-
-        /* M3 textInputStyle is FilledBox; hint stays off until CUEBANNER is set. */
-        TextInputLayout til = new TextInputLayout(IupCommon.getContextThemeWrapper());
-        til.setBoxBackgroundMode(TextInputLayout.BOX_BACKGROUND_OUTLINE);
-        til.setHintEnabled(false);
-        til.setBoxCollapsedPaddingTop(0);
         tv.setMinHeight(0);
         tv.setMinimumHeight(0);
         til.addView(tv, new LinearLayout.LayoutParams(
@@ -216,7 +216,7 @@ public final class IupTextHelper
     @Keep
     public static View createMultiLineText(final long ihandlePtr, boolean wordWrap, boolean autoHide)
     {
-        IupEditText tv = newEditText(ihandlePtr, 0, false);
+        IupEditText tv = newEditText(ihandlePtr, 0, new ContextThemeWrapper(IupCommon.getContextThemeWrapper(), android.R.style.Theme_DeviceDefault));
         tv.setInputType(InputType.TYPE_CLASS_TEXT
             | InputType.TYPE_TEXT_VARIATION_NORMAL
             | InputType.TYPE_TEXT_FLAG_MULTI_LINE
@@ -276,16 +276,12 @@ public final class IupTextHelper
     @Keep
     public static View createSpinnerText(final long ihandlePtr)
     {
-        final IupEditText tv = newEditText(ihandlePtr, 1, true);
+        Context ctx = IupCommon.getContextThemeWrapper();
+        TextInputLayout til = newTextInputLayout();
+        final IupEditText tv = newEditText(ihandlePtr, 1, til.getContext());
         tv.setSingleLine(true);
         tv.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_SIGNED);
         tv.setGravity(Gravity.CENTER_VERTICAL | Gravity.START);
-
-        Context ctx = IupCommon.getContextThemeWrapper();
-        TextInputLayout til = new TextInputLayout(ctx);
-        til.setBoxBackgroundMode(TextInputLayout.BOX_BACKGROUND_OUTLINE);
-        til.setHintEnabled(false);
-        til.setBoxCollapsedPaddingTop(0);
         tv.setMinHeight(0);
         tv.setMinimumHeight(0);
         til.addView(tv, new LinearLayout.LayoutParams(
@@ -1055,8 +1051,34 @@ public final class IupTextHelper
         sEditTextPadV = probe.getCompoundPaddingTop() + probe.getCompoundPaddingBottom();
     }
 
-    @Keep public static int getTextInputLayoutBorderH() { return (int)(32f * IupCommon.getDisplayDensity()); }
-    @Keep public static int getTextInputLayoutBorderV() { return (int)(20f * IupCommon.getDisplayDensity()); }
+    private static int sTilPadH = -1;
+    private static int sTilPadV = -1;
+
+    @Keep
+    public static int getTextInputLayoutBorderH()
+    {
+        if (sTilPadH < 0) measureTextInputLayoutPadding();
+        return sTilPadH;
+    }
+
+    @Keep
+    public static int getTextInputLayoutBorderV()
+    {
+        if (sTilPadV < 0) measureTextInputLayoutPadding();
+        return sTilPadV;
+    }
+
+    private static synchronized void measureTextInputLayoutPadding()
+    {
+        if (sTilPadH >= 0) return;
+        TextInputLayout til = newTextInputLayout();
+        TextInputEditText probe = new TextInputEditText(til.getContext());
+        probe.setSingleLine(true);
+        til.addView(probe, new LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        sTilPadH = probe.getCompoundPaddingLeft() + probe.getCompoundPaddingRight() + til.getPaddingLeft() + til.getPaddingRight();
+        sTilPadV = probe.getCompoundPaddingTop() + probe.getCompoundPaddingBottom() + til.getPaddingTop() + til.getPaddingBottom();
+    }
 
     /** Fires LINK_CB(url); no return value (IUP LINK_CB ignores result for the span path). */
     public static native void dispatchLinkClick(long ihandlePtr, String url);
