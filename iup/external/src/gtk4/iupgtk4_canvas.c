@@ -5,6 +5,7 @@
  */
 
 #include <stdarg.h>
+#include <stdlib.h>
 #include <math.h>
 
 #include "iup.h"
@@ -741,25 +742,57 @@ static void gtk4CanvasRotateEnd(GtkGesture* gesture, GdkEventSequence* seq, Ihan
   gtk4CanvasFireGesture(ih, IUP_GESTURE_ROTATE, state, x, y, deg, 0);
 }
 
+#define IUPGTK_SWIPE_MIN_VELOCITY 50.0
+
+static int gtk4CanvasMoved(Ihandle* ih, int x, int y)
+{
+  int threshold = 8;
+  g_object_get(gtk_widget_get_settings(ih->handle), "gtk-dnd-drag-threshold", &threshold, NULL);
+  return abs(x - iupAttribGetInt(ih, "_IUPGTK_SWIPE_X")) >= threshold || abs(y - iupAttribGetInt(ih, "_IUPGTK_SWIPE_Y")) >= threshold;
+}
+
+static void gtk4CanvasSwipeBegin(GtkGesture* gesture, GdkEventSequence* seq, Ihandle* ih)
+{
+  double x = 0, y = 0;
+  gtk_gesture_get_point(gesture, seq, &x, &y);
+  iupAttribSetInt(ih, "_IUPGTK_SWIPE_X", (int)x);
+  iupAttribSetInt(ih, "_IUPGTK_SWIPE_Y", (int)y);
+  iupAttribSet(ih, "_IUPGTK_LONGPRESSED", NULL);
+}
+
+/* GtkGestureSwipe reports every release, a click included */
 static void gtk4CanvasSwipe(GtkGestureSwipe* gesture, double vx, double vy, Ihandle* ih)
 {
-  double cx = 0, cy = 0;
+  double x = 0, y = 0;
+  double min_velocity = IUPGTK_SWIPE_MIN_VELOCITY * gtk_widget_get_scale_factor(ih->handle);
   int dir;
-  gtk_gesture_get_bounding_box_center(GTK_GESTURE(gesture), &cx, &cy);
+
+  if (iupAttribGet(ih, "_IUPGTK_LONGPRESSED"))
+    return;
+
+  gtk_gesture_get_point(GTK_GESTURE(gesture), gtk_gesture_get_last_updated_sequence(GTK_GESTURE(gesture)), &x, &y);
+  if (!gtk4CanvasMoved(ih, (int)x, (int)y))
+    return;
+  if (fabs(vx) < min_velocity && fabs(vy) < min_velocity)
+    return;
+
   if (fabs(vx) > fabs(vy)) dir = vx > 0 ? IUP_GESTURE_SWIPE_RIGHT : IUP_GESTURE_SWIPE_LEFT;
   else                     dir = vy > 0 ? IUP_GESTURE_SWIPE_DOWN : IUP_GESTURE_SWIPE_UP;
-  gtk4CanvasFireGesture(ih, IUP_GESTURE_SWIPE, IUP_GESTURE_END, (int)cx, (int)cy, dir, 0);
+  gtk4CanvasFireGesture(ih, IUP_GESTURE_SWIPE, IUP_GESTURE_END, (int)x, (int)y, dir, 0);
 }
 
 static void gtk4CanvasLongPress(GtkGestureLongPress* gesture, double x, double y, Ihandle* ih)
 {
   (void)gesture;
+  iupAttribSet(ih, "_IUPGTK_LONGPRESSED", "1");
   gtk4CanvasFireGesture(ih, IUP_GESTURE_LONGPRESS, IUP_GESTURE_END, (int)x, (int)y, 0, 0);
 }
 
 static void gtk4CanvasTap(GtkGestureClick* gesture, int n_press, double x, double y, Ihandle* ih)
 {
   (void)gesture;
+  if (iupAttribGet(ih, "_IUPGTK_LONGPRESSED") || gtk4CanvasMoved(ih, (int)x, (int)y))
+    return;
   gtk4CanvasFireGesture(ih, IUP_GESTURE_TAP, IUP_GESTURE_END, (int)x, (int)y, (double)n_press, 0);
 }
 
@@ -778,6 +811,7 @@ static void gtk4CanvasSetupGestures(Ihandle* ih)
   gtk_widget_add_controller(ih->handle, GTK_EVENT_CONTROLLER(rotate));
 
   GtkGesture* swipe = gtk_gesture_swipe_new();
+  g_signal_connect(swipe, "begin", G_CALLBACK(gtk4CanvasSwipeBegin), ih);
   g_signal_connect(swipe, "swipe", G_CALLBACK(gtk4CanvasSwipe), ih);
   gtk_widget_add_controller(ih->handle, GTK_EVENT_CONTROLLER(swipe));
 
