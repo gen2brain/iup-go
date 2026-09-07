@@ -83,6 +83,7 @@ IDEs automatically pick up both files. See [example](https://gist.github.com/gen
 | `IUP_BUILD_WEB`      | `OFF`            | Build `iupweb` (Web browser control)                            |
 | `IUP_BUILD_CTRL`     | `OFF`            | Build `iupctrl` (Matrix, Cells, and Flat* controls)             |
 | `IUP_BUILD_PLOT`     | `OFF`            | Build `iupplot` (Plot control)                                  |
+| `IUP_BUILD_MEDIA`    | `OFF`            | Build `iupmedia` (Audio player and Camera controls)             |
 | `IUP_BUILD_EXAMPLES` | `OFF`            | Build example programs (C and C++)                              |
 | `IUP_USE_XEMBED`     | `OFF`            | Use XEmbed tray protocol instead of SNI (GTK3/Motif)            |
 | `IUP_EMBED_MANIFEST` | `ON`             | Embed the application manifest into built executables (Windows) |
@@ -104,7 +105,7 @@ cmake -B build -DIUP_BACKEND=fltk
 cmake --build build
 
 # Everything as shared libraries
-cmake -B build -DBUILD_SHARED_LIBS=ON -DIUP_BUILD_GL=ON -DIUP_BUILD_WEB=ON -DIUP_BUILD_CTRL=ON -DIUP_BUILD_PLOT=ON
+cmake -B build -DBUILD_SHARED_LIBS=ON -DIUP_BUILD_GL=ON -DIUP_BUILD_WEB=ON -DIUP_BUILD_CTRL=ON -DIUP_BUILD_PLOT=ON -DIUP_BUILD_MEDIA=ON
 cmake --build build
 ```
 
@@ -188,6 +189,10 @@ Android uses EGL + GLES v3 from the NDK (no extra deps).
 iOS uses EAGL + CAEAGLLayer from OpenGLES framework (no extra deps).
 Haiku uses BGLView from `libGL` (ships with the OS).
 
+**Media** (`IUP_BUILD_MEDIA`):
+No extra dependencies. Audio uses the bundled miniaudio, which loads PulseAudio, ALSA or JACK at runtime on Linux
+and the system audio API elsewhere. The camera uses Video4Linux2, Media Foundation, AVFoundation or the Camera2 NDK.
+
 ### Using IUP from CMake
 
 After installing, use `find_package` in your project:
@@ -201,6 +206,7 @@ target_link_libraries(myapp PRIVATE IUP::iupgl)
 target_link_libraries(myapp PRIVATE IUP::iupweb)
 target_link_libraries(myapp PRIVATE IUP::iupctrl)
 target_link_libraries(myapp PRIVATE IUP::iupplot)
+target_link_libraries(myapp PRIVATE IUP::iupmedia)
 ```
 
 ### Source Tarball
@@ -229,10 +235,11 @@ This produces `iup-docs-<version>.tar.gz` in the build directory.
 
 ## Libraries
 
-| Library   | Description                       |
-|-----------|-----------------------------------|
-| `iup`     | Core library (always built)       |
-| `iupgl`   | OpenGL canvas control             |
-| `iupweb`  | Web browser control               |
-| `iupplot` | Plot/charting control             |
-| `iupctrl` | Matrix, Cells, and Flat* controls |
+| Library    | Description                       |
+|------------|-----------------------------------|
+| `iup`      | Core library (always built)       |
+| `iupgl`    | OpenGL canvas control             |
+| `iupweb`   | Web browser control               |
+| `iupplot`  | Plot/charting control             |
+| `iupctrl`  | Matrix, Cells, and Flat* controls |
+| `iupmedia` | Audio player and Camera controls  |

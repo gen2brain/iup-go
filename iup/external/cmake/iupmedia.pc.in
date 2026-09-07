@@ -1,0 +1,12 @@
+prefix=@IUP_PC_PREFIX@
+exec_prefix=${prefix}
+libdir=${prefix}/@CMAKE_INSTALL_LIBDIR@
+includedir=${prefix}/@CMAKE_INSTALL_INCLUDEDIR@
+
+Name: IUP Media
+Description: IUP Media controls (@IUP_BACKEND@ backend)
+Version: @_IUP_VERSION_RAW@
+Requires: iup
+Cflags: -I${includedir}/iup
+Libs: -L${libdir} -liupmedia
+Libs.private: @IUPMEDIA_PC_LIBS_PRIVATE@

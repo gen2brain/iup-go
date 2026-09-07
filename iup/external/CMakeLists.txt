@@ -76,6 +76,7 @@ option(IUP_BUILD_GL        "Build iupgl (OpenGL canvas)"     OFF)
 option(IUP_BUILD_WEB       "Build iupweb (Web browser)"      OFF)
 option(IUP_BUILD_PLOT      "Build iupplot (Plot control)"    OFF)
 option(IUP_BUILD_CTRL      "Build iupctrl (Matrix/Controls)" OFF)
+option(IUP_BUILD_MEDIA     "Build iupmedia (Audio player)"   OFF)
 option(IUP_BUILD_EXAMPLES  "Build example programs"          OFF)
 option(IUP_USE_XEMBED      "Use XEmbed tray protocol instead of SNI (GTK3/Motif on Linux)" OFF)
 option(IUP_BUILD_FRAMEWORK "Build iup as a .framework bundle (requires IUP_BACKEND=cocoatouch)" OFF)
@@ -248,6 +249,9 @@ if(IUP_BUILD_FRAMEWORK)
   if(IUP_BUILD_PLOT)
     list(APPEND IUP_FRAMEWORK_PUBLIC_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/include/iupplot.h")
   endif()
+  if(IUP_BUILD_MEDIA)
+    list(APPEND IUP_FRAMEWORK_PUBLIC_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/include/iupmedia.h")
+  endif()
 
   set_target_properties(iup PROPERTIES
     FRAMEWORK TRUE
@@ -306,6 +310,10 @@ if(IUP_BUILD_PLOT)
   include(IUPOptionalPlot)
 endif()
 
+if(IUP_BUILD_MEDIA)
+  include(IUPOptionalMedia)
+endif()
+
 # Framework mode is consumed via build-framework.sh -> xcodebuild -create-xcframework, not cmake --install.
 if(IUP_BUILD_FRAMEWORK)
   return()
@@ -330,7 +338,7 @@ endif()
 include(CMakePackageConfigHelpers)
 
 set(_IUP_INSTALL_TARGETS iup)
-foreach(_opt_target iupgl iupweb iupctrl iupplot)
+foreach(_opt_target iupgl iupweb iupctrl iupplot iupmedia)
   if(TARGET ${_opt_target})
     list(APPEND _IUP_INSTALL_TARGETS ${_opt_target})
   endif()

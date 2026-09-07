@@ -155,7 +155,8 @@
         "IUP_BUILD_GL": "ON",
         "IUP_BUILD_WEB": "ON",
         "IUP_BUILD_CTRL": "ON",
-        "IUP_BUILD_PLOT": "ON"
+        "IUP_BUILD_PLOT": "ON",
+        "IUP_BUILD_MEDIA": "ON"
       }
     },
     {
@@ -166,7 +167,8 @@
         "IUP_BUILD_GL": "ON",
         "IUP_BUILD_WEB": "ON",
         "IUP_BUILD_CTRL": "ON",
-        "IUP_BUILD_PLOT": "ON"
+        "IUP_BUILD_PLOT": "ON",
+        "IUP_BUILD_MEDIA": "ON"
       }
     },
     {
@@ -177,7 +179,8 @@
         "IUP_BUILD_GL": "ON",
         "IUP_BUILD_WEB": "ON",
         "IUP_BUILD_CTRL": "ON",
-        "IUP_BUILD_PLOT": "ON"
+        "IUP_BUILD_PLOT": "ON",
+        "IUP_BUILD_MEDIA": "ON"
       }
     },
     {
@@ -188,7 +191,8 @@
         "IUP_BUILD_GL": "ON",
         "IUP_BUILD_WEB": "ON",
         "IUP_BUILD_CTRL": "ON",
-        "IUP_BUILD_PLOT": "ON"
+        "IUP_BUILD_PLOT": "ON",
+        "IUP_BUILD_MEDIA": "ON"
       }
     },
     {
@@ -199,7 +203,8 @@
         "IUP_BUILD_GL": "ON",
         "IUP_BUILD_WEB": "ON",
         "IUP_BUILD_CTRL": "ON",
-        "IUP_BUILD_PLOT": "ON"
+        "IUP_BUILD_PLOT": "ON",
+        "IUP_BUILD_MEDIA": "ON"
       }
     },
     {
@@ -210,7 +215,8 @@
         "IUP_BUILD_GL": "ON",
         "IUP_BUILD_WEB": "ON",
         "IUP_BUILD_CTRL": "ON",
-        "IUP_BUILD_PLOT": "ON"
+        "IUP_BUILD_PLOT": "ON",
+        "IUP_BUILD_MEDIA": "ON"
       }
     },
     {
@@ -221,7 +227,8 @@
         "IUP_BUILD_GL": "ON",
         "IUP_BUILD_WEB": "ON",
         "IUP_BUILD_CTRL": "ON",
-        "IUP_BUILD_PLOT": "ON"
+        "IUP_BUILD_PLOT": "ON",
+        "IUP_BUILD_MEDIA": "ON"
       }
     },
     {
@@ -232,7 +239,8 @@
         "IUP_BUILD_GL": "ON",
         "IUP_BUILD_WEB": "ON",
         "IUP_BUILD_CTRL": "ON",
-        "IUP_BUILD_PLOT": "ON"
+        "IUP_BUILD_PLOT": "ON",
+        "IUP_BUILD_MEDIA": "ON"
       }
     },
     {
@@ -243,7 +251,8 @@
         "IUP_BUILD_GL": "ON",
         "IUP_BUILD_WEB": "ON",
         "IUP_BUILD_CTRL": "ON",
-        "IUP_BUILD_PLOT": "ON"
+        "IUP_BUILD_PLOT": "ON",
+        "IUP_BUILD_MEDIA": "ON"
       }
     },
     {
@@ -254,7 +263,8 @@
         "IUP_BUILD_GL": "ON",
         "IUP_BUILD_WEB": "ON",
         "IUP_BUILD_CTRL": "ON",
-        "IUP_BUILD_PLOT": "ON"
+        "IUP_BUILD_PLOT": "ON",
+        "IUP_BUILD_MEDIA": "ON"
       }
     },
     {
@@ -265,7 +275,8 @@
         "IUP_BUILD_GL": "ON",
         "IUP_BUILD_WEB": "ON",
         "IUP_BUILD_CTRL": "ON",
-        "IUP_BUILD_PLOT": "ON"
+        "IUP_BUILD_PLOT": "ON",
+        "IUP_BUILD_MEDIA": "ON"
       }
     },
     {
@@ -276,7 +287,8 @@
         "IUP_BUILD_GL": "ON",
         "IUP_BUILD_WEB": "ON",
         "IUP_BUILD_CTRL": "ON",
-        "IUP_BUILD_PLOT": "ON"
+        "IUP_BUILD_PLOT": "ON",
+        "IUP_BUILD_MEDIA": "ON"
       }
     },
     {
@@ -287,7 +299,8 @@
         "IUP_BUILD_GL": "ON",
         "IUP_BUILD_WEB": "ON",
         "IUP_BUILD_CTRL": "ON",
-        "IUP_BUILD_PLOT": "ON"
+        "IUP_BUILD_PLOT": "ON",
+        "IUP_BUILD_MEDIA": "ON"
       }
     },
     {
@@ -298,7 +311,8 @@
         "IUP_BUILD_GL": "ON",
         "IUP_BUILD_WEB": "ON",
         "IUP_BUILD_CTRL": "ON",
-        "IUP_BUILD_PLOT": "ON"
+        "IUP_BUILD_PLOT": "ON",
+        "IUP_BUILD_MEDIA": "ON"
       }
     },
     {
@@ -309,7 +323,8 @@
         "IUP_BUILD_GL": "ON",
         "IUP_BUILD_WEB": "ON",
         "IUP_BUILD_CTRL": "ON",
-        "IUP_BUILD_PLOT": "ON"
+        "IUP_BUILD_PLOT": "ON",
+        "IUP_BUILD_MEDIA": "ON"
       }
     },
     {
@@ -326,11 +341,12 @@
     },
     {
       "name": "android-full",
-      "displayName": "Android with GL and Web optional libraries",
+      "displayName": "Android with GL, Web and Media optional libraries",
       "inherits": "android",
       "cacheVariables": {
         "IUP_BUILD_GL": "ON",
-        "IUP_BUILD_WEB": "ON"
+        "IUP_BUILD_WEB": "ON",
+        "IUP_BUILD_MEDIA": "ON"
       }
     },
     {
@@ -349,7 +365,8 @@
         "IUP_BUILD_GL": "ON",
         "IUP_BUILD_WEB": "ON",
         "IUP_BUILD_CTRL": "ON",
-        "IUP_BUILD_PLOT": "ON"
+        "IUP_BUILD_PLOT": "ON",
+        "IUP_BUILD_MEDIA": "ON"
       }
     },
     {
@@ -369,7 +386,8 @@
         "IUP_BUILD_GL": "ON",
         "IUP_BUILD_WEB": "ON",
         "IUP_BUILD_CTRL": "ON",
-        "IUP_BUILD_PLOT": "ON"
+        "IUP_BUILD_PLOT": "ON",
+        "IUP_BUILD_MEDIA": "ON"
       }
     },
     {

@@ -58,6 +58,8 @@
 	<!-- Required by examples that use IupLocation. -->
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Shows your position in the example.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Shows the camera picture in the example.</string>
 	<key>UILaunchScreen</key>
 	<dict/>
 	<key>UIRequiredDeviceCapabilities</key>
