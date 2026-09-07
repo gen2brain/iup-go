@@ -17,6 +17,7 @@
 #include "iup_config.h"
 #include "iupplot.h"
 #include "iupweb.h"
+#include "iupmedia.h"
 
 
 
@@ -34,6 +35,7 @@ namespace Iup
   inline char* Version() { return IupVersion(); }
   inline char* VersionDate() { return IupVersionDate(); }
   inline int VersionNumber() { return IupVersionNumber(); }
+  inline void VersionShow() { IupVersionShow(); }
 
   inline int Open(int &argc, char **&argv) { return IupOpen(&argc, &argv); }
   inline void Close() { IupClose(); }
@@ -312,6 +314,11 @@ namespace Iup
     Image(Ihandle* _ih) : Element(_ih) {}
     Image(const Element& elem) : Element(elem.GetHandle()) {}
     Image(const char* name) : Element(IupImageGetHandle(name)) {}
+    Image(int width, int height, const unsigned char* pixels) : Element(IupImage(width, height, pixels)) {}
+
+    static Image RGB(int width, int height, const unsigned char* pixels) { return Image(IupImageRGB(width, height, pixels)); }
+    static Image RGBA(int width, int height, const unsigned char* pixels) { return Image(IupImageRGBA(width, height, pixels)); }
+    static Image FromHandle(void* handle) { return Image(IupImageFromHandle(handle)); }
 
     int Save(const char* filename, const char* format) { return IupImageSave(ih, filename, format); }
     unsigned char* SaveToBuffer(const char* format, int* size) { return IupImageSaveToBuffer(ih, format, size); }
@@ -364,6 +371,20 @@ namespace Iup
     Notify() : Element(IupNotify()) {}
     Notify(Ihandle* _ih) : Element(_ih) {}
     Notify(const Element& elem) : Element(elem.GetHandle()) {}
+  };
+  class Location : public Element
+  {
+  public:
+    Location() : Element(IupLocation()) {}
+    Location(Ihandle* _ih) : Element(_ih) {}
+    Location(const Element& elem) : Element(elem.GetHandle()) {}
+  };
+  class Sensor : public Element
+  {
+  public:
+    Sensor() : Element(IupSensor()) {}
+    Sensor(Ihandle* _ih) : Element(_ih) {}
+    Sensor(const Element& elem) : Element(elem.GetHandle()) {}
   };
   class MenuSeparator : public Control
   {
@@ -589,6 +610,13 @@ namespace Iup
     Text() : Control(IupText()) {}
     Text(Ihandle* _ih) : Control(_ih) {}
     Text(const Element& elem) : Control(elem.GetHandle()) {}
+  };
+  class Terminal : public Control
+  {
+  public:
+    Terminal() : Control(IupTerminal()) {}
+    Terminal(Ihandle* _ih) : Control(_ih) {}
+    Terminal(const Element& elem) : Control(elem.GetHandle()) {}
   };
 
   class Split : public Container
@@ -873,6 +901,7 @@ namespace Iup
     void UseFont(int first, int count, int list_base) { IupGLUseFont(ih, first, count, list_base); }
 
     static void Wait(int gl) { IupGLWait(gl); }
+    static void* GetProcAddress(const char* name) { return IupGLGetProcAddress(name); }
   };
   class GLBackgroundBox : public Container
   {
@@ -959,6 +988,33 @@ namespace Iup
     WebBrowser(const Element& elem) : Control(elem.GetHandle()) {}
 
     static void Open() { IupWebBrowserOpen(); }
+  };
+
+  class Media
+  {
+  public:
+    static int Open() { return IupMediaOpen(); }
+  };
+  class Audio : public Element
+  {
+  public:
+    Audio() : Element(IupAudio()) {}
+    Audio(Ihandle* _ih) : Element(_ih) {}
+    Audio(const Element& elem) : Element(elem.GetHandle()) {}
+  };
+  class Camera : public Control
+  {
+  public:
+    Camera() : Control(IupCamera()) {}
+    Camera(Ihandle* _ih) : Control(_ih) {}
+    Camera(const Element& elem) : Control(elem.GetHandle()) {}
+  };
+  class Microphone : public Element
+  {
+  public:
+    Microphone() : Element(IupMicrophone()) {}
+    Microphone(Ihandle* _ih) : Element(_ih) {}
+    Microphone(const Element& elem) : Element(elem.GetHandle()) {}
   };
   class Plot : public Control
   {
