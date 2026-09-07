@@ -177,6 +177,9 @@ type PlayEndFunc func(ih Ihandle) int
 // FrameFunc is the type for the IupCamera FRAME_CB callback. The data slice holds packed RGB pixels.
 type FrameFunc func(ih Ihandle, width, height int, data []byte) int
 
+// SamplesFunc is the type for the IupMicrophone SAMPLES_CB callback. The samples slice holds 16-bit interleaved frames.
+type SamplesFunc func(ih Ihandle, frames, channels int, samples []int16) int
+
 // Open initializes the IUP toolkit.
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_open.md

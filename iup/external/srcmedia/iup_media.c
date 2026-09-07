@@ -21,6 +21,7 @@ IUPMEDIA_API int IupMediaOpen(void)
 
   iupRegisterClass(iupAudioNewClass());
   iupRegisterClass(iupCameraNewClass());
+  iupRegisterClass(iupMicrophoneNewClass());
 
   IupSetGlobal("_IUP_MEDIA_OPEN", "1");
   return IUP_NOERROR;

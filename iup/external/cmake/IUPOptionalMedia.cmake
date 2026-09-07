@@ -1,13 +1,17 @@
-# iupmedia - Audio player
+# iupmedia - Audio player, Camera and Microphone
 
 set(_MEDIA_SOURCES
   "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iup_media.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iup_audio.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iup_miniaudio.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iup_camera.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iup_microphone.c"
 )
 if(NOT IUP_BACKEND STREQUAL "haiku" AND NOT EMSCRIPTEN)
-  list(APPEND _MEDIA_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iup_audio_device.c")
+  list(APPEND _MEDIA_SOURCES
+    "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iup_audio_device.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iup_microphone_device.c"
+  )
 endif()
 set(_MEDIA_LIBS "")
 set(_MEDIA_DEFS "")
@@ -17,26 +21,35 @@ if(WIN32)
   set(_MEDIA_LIBS mfuuid ole32)
 
 elseif(APPLE AND IUP_BACKEND STREQUAL "cocoatouch")
-  list(APPEND _MEDIA_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iupapple_camera.m")
+  list(APPEND _MEDIA_SOURCES
+    "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iupapple_camera.m"
+    "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iupapple_microphone.m"
+  )
   set_source_files_properties(
     "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iup_miniaudio.c"
     "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iupapple_camera.m"
+    "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iupapple_microphone.m"
     PROPERTIES LANGUAGE OBJC
   )
   set(_MEDIA_LIBS "-framework CoreFoundation" "-framework CoreAudio" "-framework AudioToolbox" "-framework AVFoundation" "-framework CoreMedia" "-framework CoreVideo")
 
 elseif(APPLE)
-  list(APPEND _MEDIA_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iupapple_camera.m")
+  list(APPEND _MEDIA_SOURCES
+    "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iupapple_camera.m"
+    "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iupapple_microphone.m"
+  )
   set_source_files_properties(
     "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iupapple_camera.m"
+    "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iupapple_microphone.m"
     PROPERTIES LANGUAGE OBJC
   )
   set(_MEDIA_LIBS "-framework CoreFoundation" "-framework CoreAudio" "-framework AudioToolbox" "-framework AVFoundation" "-framework CoreMedia" "-framework CoreVideo")
 
 elseif(IUP_BACKEND STREQUAL "android")
   list(APPEND _MEDIA_SOURCES
+    "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iupandroid_media.c"
     "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iupandroid_camera.c"
-    "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iupandroid_camera_jni.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iupandroid_microphone.c"
   )
   set(_MEDIA_LIBS android)
 
@@ -44,6 +57,7 @@ elseif(IUP_BACKEND STREQUAL "haiku")
   list(APPEND _MEDIA_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iuphaiku_audio.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iuphaiku_camera.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iuphaiku_microphone.cpp"
   )
   set(_MEDIA_LIBS media)
 
@@ -51,6 +65,7 @@ elseif(EMSCRIPTEN)
   list(APPEND _MEDIA_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iupwasm_audio.c"
     "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iupwasm_camera.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iupwasm_microphone.c"
   )
 
 else()

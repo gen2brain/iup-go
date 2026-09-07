@@ -7,7 +7,6 @@
 #ifndef __IUP_MINIAUDIO_H
 #define __IUP_MINIAUDIO_H
 
-#define MA_NO_ENCODING
 #define MA_NO_GENERATION
 #define MA_NO_RESOURCE_MANAGER
 #if defined(__APPLE__)

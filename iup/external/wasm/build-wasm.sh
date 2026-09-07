@@ -139,8 +139,8 @@ fi
 MEDIA_EXPORTS=""
 if has_tag media; then
   CFLAGS="$CFLAGS -I$EXTERNAL/srcmedia -isystem $EXTERNAL/srcmedia/bundled"
-  CORE="$CORE $EXTERNAL/srcmedia/iup_media.c $EXTERNAL/srcmedia/iup_audio.c $EXTERNAL/srcmedia/iup_miniaudio.c $EXTERNAL/srcmedia/iup_camera.c $EXTERNAL/srcmedia/iupwasm_audio.c $EXTERNAL/srcmedia/iupwasm_camera.c"
-  MEDIA_EXPORTS=",_IupMediaOpen,_IupAudio,_IupCamera"
+  CORE="$CORE $EXTERNAL/srcmedia/iup_media.c $EXTERNAL/srcmedia/iup_audio.c $EXTERNAL/srcmedia/iup_miniaudio.c $EXTERNAL/srcmedia/iup_camera.c $EXTERNAL/srcmedia/iup_microphone.c $EXTERNAL/srcmedia/iupwasm_audio.c $EXTERNAL/srcmedia/iupwasm_camera.c $EXTERNAL/srcmedia/iupwasm_microphone.c"
+  MEDIA_EXPORTS=",_IupMediaOpen,_IupAudio,_IupCamera,_IupMicrophone"
 fi
 
 PLOT_EXPORTS=""

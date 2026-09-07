@@ -83,7 +83,7 @@ IDEs automatically pick up both files. See [example](https://gist.github.com/gen
 | `IUP_BUILD_WEB`      | `OFF`            | Build `iupweb` (Web browser control)                            |
 | `IUP_BUILD_CTRL`     | `OFF`            | Build `iupctrl` (Matrix, Cells, and Flat* controls)             |
 | `IUP_BUILD_PLOT`     | `OFF`            | Build `iupplot` (Plot control)                                  |
-| `IUP_BUILD_MEDIA`    | `OFF`            | Build `iupmedia` (Audio player and Camera controls)             |
+| `IUP_BUILD_MEDIA`    | `OFF`            | Build `iupmedia` (Audio, Camera and Microphone controls)        |
 | `IUP_BUILD_EXAMPLES` | `OFF`            | Build example programs (C and C++)                              |
 | `IUP_USE_XEMBED`     | `OFF`            | Use XEmbed tray protocol instead of SNI (GTK3/Motif)            |
 | `IUP_EMBED_MANIFEST` | `ON`             | Embed the application manifest into built executables (Windows) |
@@ -191,7 +191,7 @@ Haiku uses BGLView from `libGL` (ships with the OS).
 
 **Media** (`IUP_BUILD_MEDIA`):
 No extra dependencies. Audio uses the bundled miniaudio, which loads PulseAudio, ALSA or JACK at runtime on Linux
-and the system audio API elsewhere. The camera uses Video4Linux2, Media Foundation, AVFoundation, the Camera2 NDK or getUserMedia.
+and the system audio API elsewhere; the microphone captures through the same backends. The camera uses Video4Linux2, Media Foundation, AVFoundation, the Camera2 NDK or getUserMedia.
 
 ### Using IUP from CMake
 
@@ -242,4 +242,4 @@ This produces `iup-docs-<version>.tar.gz` in the build directory.
 | `iupweb`   | Web browser control               |
 | `iupplot`  | Plot/charting control             |
 | `iupctrl`  | Matrix, Cells, and Flat* controls |
-| `iupmedia` | Audio player and Camera controls  |
+| `iupmedia` | Audio player, Camera and Microphone controls |

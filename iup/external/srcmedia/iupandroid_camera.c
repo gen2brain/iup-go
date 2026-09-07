@@ -9,7 +9,6 @@
 #include <string.h>
 #include <dlfcn.h>
 #include <pthread.h>
-#include <jni.h>
 #include <camera/NdkCameraManager.h>
 #include <camera/NdkCameraDevice.h>
 #include <camera/NdkCameraMetadata.h>
@@ -22,11 +21,10 @@
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
+#include "iup_media.h"
 #include "iup_camera.h"
 
 #include "iupandroid_drv.h"
-#include "iupandroid_jnimacros.h"
-#include "iupandroid_jnicacheglobals.h"
 
 typedef ACameraManager* (*ACameraManager_createFunc)(void);
 typedef void (*ACameraManager_deleteFunc)(ACameraManager*);
@@ -122,13 +120,6 @@ typedef struct _IandroidCamera
   pthread_mutex_t lock;
   int closing;
 } IandroidCamera;
-
-IUPJNI_DECLARE_CLASS_STATIC(IupCameraHelper);
-
-static jclass androidCameraClass(JNIEnv* jni_env)
-{
-  return IUPJNI_FindClass(IupCameraHelper, jni_env, "io/github/gen2brain/iupgo/IupCameraHelper");
-}
 
 #define IANDROID_CAMERA_SYM(lib, name) \
   ndk.name = (name##Func)dlsym(lib, #name); \
@@ -256,24 +247,14 @@ char* iupdrvCameraGetDeviceName(int index)
 
 char* iupdrvCameraGetPermission(Ihandle* ih)
 {
-  JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
-  jclass cls;
-  jmethodID m;
-  jint state;
+  int state;
   (void)ih;
 
   if (!androidCameraLoad())
     return "UNAVAILABLE";
 
-  cls = androidCameraClass(jni_env);
-  if (!cls)
-    return "UNAVAILABLE";
-  m = (*jni_env)->GetStaticMethodID(jni_env, cls, "permissionState", "()I");
-  state = (*jni_env)->CallStaticIntMethod(jni_env, cls, m);
-  iupAndroid_CheckException(jni_env, "IupCameraHelper.permissionState");
-  (*jni_env)->DeleteLocalRef(jni_env, cls);
-
-  return state == 1 ? "GRANTED" : state == 2 ? "DENIED" : "PROMPT";
+  state = iupandroidMediaPermissionState("android.permission.CAMERA");
+  return state == 1 ? "GRANTED" : state == 2 ? "DENIED" : state == 0 ? "PROMPT" : "UNAVAILABLE";
 }
 
 static unsigned char androidCameraClamp(int value)
@@ -555,10 +536,7 @@ static int androidCameraStart(Ihandle* ih, int device, int* width, int* height, 
 
 int iupdrvCameraStart(Ihandle* ih, int device, int* width, int* height, int* fps)
 {
-  JNIEnv* jni_env;
-  jclass cls;
-  jmethodID m;
-  jint state;
+  int state;
 
   if (!androidCameraLoad())
   {
@@ -566,31 +544,17 @@ int iupdrvCameraStart(Ihandle* ih, int device, int* width, int* height, int* fps
     return 0;
   }
 
-  jni_env = iupAndroid_GetEnvThreadSafe();
-  cls = androidCameraClass(jni_env);
-  if (!cls)
-    return 0;
-  m = (*jni_env)->GetStaticMethodID(jni_env, cls, "permissionState", "()I");
-  state = (*jni_env)->CallStaticIntMethod(jni_env, cls, m);
-  iupAndroid_CheckException(jni_env, "IupCameraHelper.permissionState");
-
+  state = iupandroidMediaPermissionState("android.permission.CAMERA");
   if (state == 1)
-  {
-    (*jni_env)->DeleteLocalRef(jni_env, cls);
     return androidCameraStart(ih, device, width, height, fps);
-  }
 
-  if (state == 2)
+  if (state != 0)
   {
-    (*jni_env)->DeleteLocalRef(jni_env, cls);
     iupCameraError(ih, "Camera access denied");
     return 0;
   }
 
-  m = (*jni_env)->GetStaticMethodID(jni_env, cls, "requestPermission", "(J)V");
-  (*jni_env)->CallStaticVoidMethod(jni_env, cls, m, (jlong)(intptr_t)ih);
-  iupAndroid_CheckException(jni_env, "IupCameraHelper.requestPermission");
-  (*jni_env)->DeleteLocalRef(jni_env, cls);
+  iupandroidMediaRequestPermission("android.permission.CAMERA", ih);
   iupAttribSetStrf(ih, "_IUP_CAMERA_PENDING", "%d %d %d %d", device, *width, *height, *fps);
   return 1;
 }

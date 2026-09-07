@@ -39,3 +39,19 @@ func setFrameFunc(ih Ihandle, f FrameFunc) {
 	storeCallback(ih, "_IUPGO_FRAME_CB", f)
 	iupSetCallback(uintptr(ih), "FRAME_CB", frameCB)
 }
+
+// SamplesFunc for SAMPLES_CB callback.
+// Called for every block of captured audio. The samples slice holds 16-bit interleaved frames and is valid only during the callback.
+type SamplesFunc func(ih Ihandle, frames, channels int, samples []int16) int
+
+var samplesCB = purego.NewCallback(func(ih uintptr, frames, channels int32, samples uintptr) int {
+	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_SAMPLES_CB").(SamplesFunc); ok {
+		return f(Ihandle(ih), int(frames), int(channels), unsafe.Slice((*int16)(goPtr(samples)), int(frames)*int(channels)))
+	}
+	return 0
+})
+
+func setSamplesFunc(ih Ihandle, f SamplesFunc) {
+	storeCallback(ih, "_IUPGO_SAMPLES_CB", f)
+	iupSetCallback(uintptr(ih), "SAMPLES_CB", samplesCB)
+}

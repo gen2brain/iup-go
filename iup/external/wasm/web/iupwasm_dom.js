@@ -2584,11 +2584,7 @@
           var n = e && e.name;
           D('iupwasmCameraError', cp, n === 'NotAllowedError' || n === 'SecurityError' ? 1 : n === 'NotFoundError' || n === 'OverconstrainedError' ? 2 : n === 'NotReadableError' || n === 'AbortError' ? 3 : 0);
         };
-        navigator.mediaDevices.enumerateDevices().then(function (list) {
-          var cams = list.filter(function (d) { return d.kind === 'videoinput'; });
-          if (cams[c.device] && cams[c.device].deviceId) return { deviceId: { exact: cams[c.device].deviceId } };
-          return c.device === 0 ? {} : null;
-        }).then(function (vc) {
+        globalThis.__iupMediaPick('videoinput', c.device).then(function (vc) {
           if (!vc) throw { name: 'NotFoundError' };
           vc.width = { ideal: c.w }; vc.height = { ideal: c.h }; vc.frameRate = { ideal: c.fps };
           return navigator.mediaDevices.getUserMedia({ video: vc, audio: false });
@@ -2634,6 +2630,54 @@
       case 'camstop': {
         var CM2 = globalThis.__iupCam;
         if (CM2 && CM2[c.ihptr]) { CM2[c.ihptr].stop(); delete CM2[c.ihptr]; }
+      } break;
+      case 'micstart': {
+        var mctx = globalThis.__iupMicCtx && globalThis.__iupMicCtx[c.ihptr];
+        if (!mctx) break;
+        if (!globalThis.__iupMics) globalThis.__iupMics = {};
+        var MS = globalThis.__iupMics, mp = c.ihptr, mhdr = new Int32Array(c.sab, 0, 8);
+        if (MS[mp]) { MS[mp].stop(); delete MS[mp]; }
+        var mic = { stream: null, src: null, node: null, done: 0 };
+        mic.stop = function () {
+          mic.done = 1;
+          if (mic.node) { mic.node.disconnect(); mic.node = null; }
+          if (mic.src) { mic.src.disconnect(); mic.src = null; }
+          if (mic.stream) { mic.stream.getTracks().forEach(function (t) { t.stop(); }); mic.stream = null; }
+        };
+        MS[mp] = mic;
+        var merr = function (e) {
+          var n = e && e.name;
+          D('iupwasmMicrophoneError', mp, n === 'NotAllowedError' || n === 'SecurityError' ? 1 : n === 'NotFoundError' || n === 'OverconstrainedError' ? 2 : n === 'NotReadableError' || n === 'AbortError' ? 3 : 0);
+        };
+        globalThis.__iupMediaPick('audioinput', c.device).then(function (ac) {
+          if (!ac) throw { name: 'NotFoundError' };
+          ac.channelCount = { ideal: mhdr[3] };
+          return navigator.mediaDevices.getUserMedia({ audio: ac, video: false });
+        }).then(function (stream) {
+          if (mic.done) { stream.getTracks().forEach(function (t) { t.stop(); }); return; }
+          D('iupwasmMicrophonePermission', mp, 1);
+          mic.stream = stream;
+          if (!mctx.__iupCapture) mctx.__iupCapture = mctx.audioWorklet.addModule(URL.createObjectURL(new Blob([globalThis.__iupCaptureWorklet], { type: 'text/javascript' })));
+          mctx.__iupCapture.then(function () {
+            if (mic.done) return;
+            mic.src = mctx.createMediaStreamSource(stream);
+            mic.node = new AudioWorkletNode(mctx, 'iup-capture', { numberOfInputs: 1, numberOfOutputs: 1, outputChannelCount: [1], channelCount: mhdr[3], channelCountMode: 'explicit', processorOptions: { sab: c.sab } });
+            mic.node.port.onmessage = function () { D('iupwasmMicrophoneSamples', mp); };
+            mic.src.connect(mic.node);
+            mic.node.connect(mctx.destination);
+            mctx.resume().catch(function () {});
+          }).catch(merr);
+          stream.getAudioTracks()[0].addEventListener('ended', function () { if (!mic.done) D('iupwasmMicrophoneError', mp, 3); });
+        }).catch(function (e) {
+          if (mic.done) return;
+          if (e && (e.name === 'NotAllowedError' || e.name === 'SecurityError')) D('iupwasmMicrophonePermission', mp, 0);
+          merr(e);
+        });
+      } break;
+      case 'micstop': {
+        var MS2 = globalThis.__iupMics, MC2 = globalThis.__iupMicCtx;
+        if (MS2 && MS2[c.ihptr]) { MS2[c.ihptr].stop(); delete MS2[c.ihptr]; }
+        if (MC2 && MC2[c.ihptr]) { MC2[c.ihptr].close().catch(function () {}); delete MC2[c.ihptr]; }
       } break;
       case 'notifyshow': {
         if (typeof Notification !== 'undefined') {
@@ -3034,6 +3078,62 @@ globalThis.__iupCameraAvailable = function () {
   return (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) ? 1 : 0;
 };
 
+globalThis.__iupMicrophoneAvailable = function () {
+  if (!globalThis.__iupCameraAvailable() || typeof AudioWorkletNode === 'undefined') return 0;
+  return (globalThis.AudioContext || globalThis.webkitAudioContext) ? 1 : 0;
+};
+
+globalThis.__iupMicrophoneOpen = function (ihptr, rate) {
+  var AC = globalThis.AudioContext || globalThis.webkitAudioContext, ctx;
+  if (!AC) return 0;
+  try { ctx = new AC({ sampleRate: rate }); } catch (e) { try { ctx = new AC(); } catch (e2) { return 0; } }
+  if (!ctx.audioWorklet) { ctx.close(); return 0; }
+  if (!globalThis.__iupMicCtx) globalThis.__iupMicCtx = {};
+  if (globalThis.__iupMicCtx[ihptr]) globalThis.__iupMicCtx[ihptr].close().catch(function () {});
+  globalThis.__iupMicCtx[ihptr] = ctx;
+  return ctx.sampleRate | 0;
+};
+
+// runs inside the AudioWorklet: fills the shared ring with 16-bit frames, tells the app every 2048 frames
+globalThis.__iupCaptureWorklet = "class IupCapture extends AudioWorkletProcessor {\n" +
+  "constructor(o) { super(); var sab = o.processorOptions.sab; this.hdr = new Int32Array(sab, 0, 8); this.buf = new Int16Array(sab, 32); this.acc = 0; }\n" +
+  "process(inputs) {\n" +
+  "  var inp = inputs[0]; if (!inp || !inp.length) return true;\n" +
+  "  var ch = this.hdr[3], cap = this.hdr[2], n = inp[0].length;\n" +
+  "  var r = Atomics.load(this.hdr, 0), w = Atomics.load(this.hdr, 1), take = Math.min(n, cap - ((w - r) | 0)), i, k;\n" +
+  "  for (i = 0; i < take; i++) { var p = ((w + i) & (cap - 1)) * ch; for (k = 0; k < ch; k++) { var v = inp[k < inp.length ? k : inp.length - 1][i]; this.buf[p + k] = (v < -1 ? -1 : v > 1 ? 1 : v) * 32767; } }\n" +
+  "  Atomics.store(this.hdr, 1, (w + take) | 0);\n" +
+  "  this.acc += take;\n" +
+  "  if (this.acc >= 2048) { this.acc = 0; this.port.postMessage(0); }\n" +
+  "  return true;\n" +
+  "}\n" +
+  "}\n" +
+  "registerProcessor('iup-capture', IupCapture);\n";
+
+globalThis.__iupMediaDevices = function (kind, label) {
+  return navigator.mediaDevices.enumerateDevices().then(function (list) {
+    var names = [];
+    for (var i = 0; i < list.length; i++)
+      if (list[i].kind === kind) names.push(list[i].label || (label + ' ' + (names.length + 1)));
+    return names.length ? names.join('\n') : null;
+  }).catch(function () { return null; });
+};
+
+globalThis.__iupMediaPermission = function (name) {
+  if (!navigator.permissions || !navigator.permissions.query) return 'PROMPT';
+  return navigator.permissions.query({ name: name }).then(function (st) {
+    return st.state === 'granted' ? 'GRANTED' : st.state === 'denied' ? 'DENIED' : 'PROMPT';
+  }).catch(function () { return 'PROMPT'; });
+};
+
+globalThis.__iupMediaPick = function (kind, index) {
+  return navigator.mediaDevices.enumerateDevices().then(function (list) {
+    var devs = list.filter(function (d) { return d.kind === kind; });
+    if (devs[index] && devs[index].deviceId) return { deviceId: { exact: devs[index].deviceId } };
+    return index === 0 ? {} : null;
+  });
+};
+
     if (typeof window !== 'undefined' && !globalThis.__iupResizeWired) {
       globalThis.__iupResizeWired = 1;
       window.addEventListener('resize', function () {
@@ -3134,18 +3234,23 @@ globalThis.__iupCameraAvailable = function () {
       } break;
       case 'camdevices': {
         if (!globalThis.__iupCameraAvailable()) return null;
-        return navigator.mediaDevices.enumerateDevices().then(function (list) {
-          var names = [];
-          for (var i = 0; i < list.length; i++)
-            if (list[i].kind === 'videoinput') names.push(list[i].label || ('Camera ' + (names.length + 1)));
-          return names.length ? names.join('\n') : null;
-        }).catch(function () { return null; });
+        return globalThis.__iupMediaDevices('videoinput', 'Camera');
       } break;
       case 'campermission': {
-        if (!navigator.permissions || !navigator.permissions.query) return 'PROMPT';
-        return navigator.permissions.query({ name: 'camera' }).then(function (st) {
-          return st.state === 'granted' ? 'GRANTED' : st.state === 'denied' ? 'DENIED' : 'PROMPT';
-        }).catch(function () { return 'PROMPT'; });
+        return globalThis.__iupMediaPermission('camera');
+      } break;
+      case 'micavailable': {
+        return globalThis.__iupMicrophoneAvailable();
+      } break;
+      case 'micopen': {
+        return globalThis.__iupMicrophoneOpen(req.ihptr, req.rate);
+      } break;
+      case 'micdevices': {
+        if (!globalThis.__iupMicrophoneAvailable()) return null;
+        return globalThis.__iupMediaDevices('audioinput', 'Microphone');
+      } break;
+      case 'micpermission': {
+        return globalThis.__iupMediaPermission('microphone');
       } break;
       case 'treedepth': {
         var tdn = globalThis.__iupTree && globalThis.__iupTree.nodes[req.rowId]; return tdn ? tdn.__iupDepth : 0;

@@ -3,7 +3,8 @@
 package iup
 
 /*
+#include "external/srcmedia/iupandroid_media.c"
 #include "external/srcmedia/iupandroid_camera.c"
-#include "external/srcmedia/iupandroid_camera_jni.c"
+#include "external/srcmedia/iupandroid_microphone.c"
 */
 import "C"

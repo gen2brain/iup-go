@@ -166,13 +166,16 @@ Unset, the default is all four ABIs (`armeabi-v7a arm64-v8a x86 x86_64`).
 
 The library's `AndroidManifest.xml` declares **no** `<uses-permission>` entries. IUP features that need Android permissions list them below; the consumer app declares only what its code actually uses.
 
-| IUP feature                                                | Permission                              | Notes                                                                                                                                                                  |
-|------------------------------------------------------------|-----------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `IupNotify` with `STYLE="NOTIFICATION"`                    | `android.permission.POST_NOTIFICATIONS` | API 33+ runtime permission. On earlier APIs the declaration is harmless. Without it, `iupdrvNotifyShow` fires `ERROR_CB` with `"Notification permission denied"`.      |
-| `IupNotify` with `STYLE="TOAST"`                           | none                                    | No permission needed.                                                                                                                                                  |
-| Network-using examples (`postmessage`, web controls, etc.) | `android.permission.INTERNET`           | Standard Android requirement.                                                                                                                                          |
-| `IupFileDlg` (SAF pickers)                                 | none                                    | No permission needed; SAF grants per-document access automatically. `takePersistableUriPermission` is called on the returned URI so recent-files work across sessions. |
-| `IupHelp` / `IupExecute` opening URLs                      | none                                    | Covered by `<queries>` entries in the library manifest (merged into the app).                                                                                          |
+| IUP feature                                                | Permission                                  | Notes                                                                                                                                                                    |
+|------------------------------------------------------------|---------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `IupNotify` with `STYLE="NOTIFICATION"`                    | `android.permission.POST_NOTIFICATIONS`     | API 33+ runtime permission. On earlier APIs the declaration is harmless. Without it, `iupdrvNotifyShow` fires `ERROR_CB` with `"Notification permission denied"`.        |
+| `IupNotify` with `STYLE="TOAST"`                           | none                                        | No permission needed.                                                                                                                                                    |
+| Network-using examples (`postmessage`, web controls, etc.) | `android.permission.INTERNET`               | Standard Android requirement.                                                                                                                                            |
+| `IupFileDlg` (SAF pickers)                                 | none                                        | No permission needed; SAF grants per-document access automatically. `takePersistableUriPermission` is called on the returned URI so recent-files work across sessions.   |
+| `IupHelp` / `IupExecute` opening URLs                      | none                                        | Covered by `<queries>` entries in the library manifest (merged into the app).                                                                                            |
+| `IupLocation`                                              | `android.permission.ACCESS_COARSE_LOCATION` | Runtime permission, prompted by IUP on the first `RUN=YES`; the answer arrives in `PERMISSION_CB`. `ACCURACY=FINE` also needs `android.permission.ACCESS_FINE_LOCATION`. |
+| `IupCamera`                                                | `android.permission.CAMERA`                 | Runtime permission, prompted by IUP on the first `RUN=YES`; the answer arrives in `PERMISSION_CB`.                                                                       |
+| `IupMicrophone`                                            | `android.permission.RECORD_AUDIO`           | Runtime permission, prompted by IUP on the first `RUN=YES`; the answer arrives in `PERMISSION_CB`.                                                                       |
 
 Add permissions to your app's `AndroidManifest.xml`, i.e.:
 
@@ -184,4 +187,4 @@ Add permissions to your app's `AndroidManifest.xml`, i.e.:
 </manifest>
 ```
 
-The bundled `iupapp/` test declares both because the shipped examples exercise both features.
+The bundled `iupapp/` test declares all of them because the shipped examples exercise every feature.

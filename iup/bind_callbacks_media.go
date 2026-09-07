@@ -46,3 +46,21 @@ func setFrameFunc(ih Ihandle, f FrameFunc) {
 
 	C.goIupSetFrameFunc(ih.ptr())
 }
+
+// SamplesFunc for SAMPLES_CB callback.
+// Called for every block of captured audio. The samples slice holds 16-bit interleaved frames and is valid only during the callback.
+type SamplesFunc func(ih Ihandle, frames, channels int, samples []int16) int
+
+//export goIupSamplesCB
+func goIupSamplesCB(ih unsafe.Pointer, frames, channels C.int, samples unsafe.Pointer) C.int {
+	f := loadCallback((Ihandle)(ih), "_IUPGO_SAMPLES_CB").Value().(SamplesFunc)
+
+	return C.int(f((Ihandle)(ih), int(frames), int(channels), unsafe.Slice((*int16)(samples), int(frames)*int(channels))))
+}
+
+// setSamplesFunc for SAMPLES_CB.
+func setSamplesFunc(ih Ihandle, f SamplesFunc) {
+	storeCallback(ih, "_IUPGO_SAMPLES_CB", f)
+
+	C.goIupSetSamplesFunc(ih.ptr())
+}
