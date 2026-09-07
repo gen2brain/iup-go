@@ -103,4 +103,4 @@ On iOS and Android the frames are rotated to the interface orientation in effect
 
 ### See Also
 
-[IupCanvas](../elem/iup_canvas.md), [IupAudio](iup_audio.md)
+[IupCanvas](../elem/iup_canvas.md), [IupAudio](iup_audio.md), [IupMicrophone](iup_microphone.md)
