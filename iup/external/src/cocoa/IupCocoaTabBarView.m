@@ -50,6 +50,12 @@ static BOOL iupCocoaTabsLiquidGlass(void)
 #endif
 }
 
+static NSColor* iupCocoaTabTrackColor(void)
+{
+  NSColor* label = [[NSColor labelColor] colorUsingColorSpace:[NSColorSpace genericRGBColorSpace]];
+  return [label colorWithAlphaComponent:0.1];
+}
+
 static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
 {
 #ifdef GNUSTEP
@@ -277,8 +283,7 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
   NSInteger index = 0;
   for (index = 0; index < [tabs count]; index++)
   {
-    IupCocoaTabCell *tab = [tabs objectAtIndex:index];
-    NSRect rect = [tab frame];
+    NSRect rect = [self tabRectFromIndex:index];
 
     if (self.orientation == IupCocoaTabBarHorizontal)
     {
@@ -433,6 +438,7 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
     destinationIndex = -1;
     sourceIndex = -1;
     isDragging = NO;
+    isSettling = NO;
 
     orientation = IupCocoaTabBarHorizontal; /* Default orientation */
     tabPosition = IupCocoaTabPositionTop; /* Default position */
@@ -477,8 +483,8 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
   [tabListControlPath release];
   [trackingArea release];
   [menu release];
+  [dragTimer invalidate];
   [draggingTab release];
-  [draggingImage release];
 
   [selectedTab release];
   [accessibilityElements release];
@@ -723,6 +729,18 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
   [NSBezierPath strokeLineFromPoint:start toPoint:end];
   }
 
+  NSInteger index = 0;
+  for (index = 0; index < [tabs count]; ++index)
+  {
+    IupCocoaTabCell *tab = [tabs objectAtIndex:index];
+    NSRect rect = [self tabRectFromIndex:index];
+    if (tab == draggingTab)
+      rect.origin = dragOrigin;
+    else if ([tab hasDisplayOrigin])
+      rect.origin = [tab displayOrigin];
+    [tab setFrame:rect];
+  }
+
   /* the group sits on a rounded track, with a separator between plain neighbours */
   if (usesMaterialBackground && self.orientation == IupCocoaTabBarHorizontal && [tabs count] > 0)
   {
@@ -732,19 +750,21 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
                               NSMaxX(last) - NSMinX(first), NSHeight(first) - 6.0);
     NSUInteger i;
 
-    [[NSColor quaternaryLabelColor] set];
+    [iupCocoaTabTrackColor() set];
     [[NSBezierPath bezierPathWithRoundedRect:track xRadius:7.0 yRadius:7.0] fill];
 
     [[NSColor separatorColor] set];
 
     for (i = 1; i < [tabs count]; i++)
     {
+      IupCocoaTabCell* before = [tabs objectAtIndex:i - 1];
+      IupCocoaTabCell* tab = [tabs objectAtIndex:i];
       NSRect tabRect;
 
-      if ([[tabs objectAtIndex:i - 1] isActived] || [[tabs objectAtIndex:i] isActived])
+      if ([before isActived] || [tab isActived] || before == draggingTab || tab == draggingTab)
         continue;
 
-      tabRect = [self tabRectFromIndex:i];
+      tabRect = [tab frame];
       NSRectFillUsingOperation(NSMakeRect(floor(NSMinX(tabRect)), NSMidY(tabRect) - 6.5, 1.0, 13.0),
                                NSCompositingOperationSourceOver);
     }
@@ -752,15 +772,25 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
 
   /* Reset all tool tips */
   [self removeAllToolTips];
-  NSInteger index = 0;
   for (index = 0; index < [tabs count]; ++index)
   {
-    NSRect rect = [self tabRectFromIndex:index];
     IupCocoaTabCell *tab = [tabs objectAtIndex:index];
-    [tab setFrame:rect];
     [self setToolTip:[tab title]];
     [self addToolTipRect:[tab frame] owner:[tab title] userData:nil];
-    [tab draw];
+    if (tab != draggingTab)
+      [tab draw];
+  }
+
+  if (draggingTab)
+  {
+    NSShadow* shadow = [[[NSShadow alloc] init] autorelease];
+    [NSGraphicsContext saveGraphicsState];
+    [shadow setShadowOffset:NSMakeSize(0, -1)];
+    [shadow setShadowBlurRadius:4.0];
+    [shadow setShadowColor:[NSColor colorWithCalibratedWhite:0.0 alpha:0.3]];
+    [shadow set];
+    [draggingTab draw];
+    [NSGraphicsContext restoreGraphicsState];
   }
 
   [self syncAccessibilityElements];
@@ -923,14 +953,76 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
     }
   }
 
+  isDragging = NO;
+  isSettling = YES;
+  sourceIndex = -1;
+  destinationIndex = -1;
+  [self startDragAnimation];
+}
+
+static CGFloat cocoaTabBarEase(CGFloat from, CGFloat to, BOOL* done)
+{
+  CGFloat delta = to - from;
+  if (fabs(delta) < 0.5)
+    return to;
+  *done = NO;
+  return from + delta * 0.35;
+}
+
+- (void)startDragAnimation
+{
+  if (dragTimer)
+    return;
+  dragTimer = [NSTimer timerWithTimeInterval:1.0 / 60.0 target:self selector:@selector(dragAnimationTick:) userInfo:nil repeats:YES];
+  [[NSRunLoop currentRunLoop] addTimer:dragTimer forMode:NSRunLoopCommonModes];
+}
+
+- (void)stopDragAnimation
+{
+  NSUInteger i;
+  [dragTimer invalidate];
+  dragTimer = nil;
+  for (i = 0; i < [tabs count]; i++)
+    [[tabs objectAtIndex:i] setHasDisplayOrigin:NO];
   [draggingTab setIsDraggingTab:NO];
   [draggingTab release];
   draggingTab = nil;
-  [draggingImage release];
-  draggingImage = nil;
-  isDragging = NO;
-  sourceIndex = -1;
-  destinationIndex = -1;
+  isSettling = NO;
+  [self redraw];
+}
+
+- (void)dragAnimationTick:(NSTimer*)timer
+{
+  BOOL done = YES;
+  NSUInteger i;
+  (void)timer;
+
+  for (i = 0; i < [tabs count]; i++)
+  {
+    IupCocoaTabCell* tab = [tabs objectAtIndex:i];
+    NSPoint target = [self tabRectFromIndex:i].origin;
+    NSPoint origin;
+
+    if (tab == draggingTab)
+    {
+      if (!isSettling)
+        continue;
+      dragOrigin.x = cocoaTabBarEase(dragOrigin.x, target.x, &done);
+      dragOrigin.y = cocoaTabBarEase(dragOrigin.y, target.y, &done);
+      continue;
+    }
+
+    origin = [tab hasDisplayOrigin] ? [tab displayOrigin] : target;
+    origin.x = cocoaTabBarEase(origin.x, target.x, &done);
+    origin.y = cocoaTabBarEase(origin.y, target.y, &done);
+    [tab setDisplayOrigin:origin];
+    [tab setHasDisplayOrigin:YES];
+  }
+
+  if (done && isSettling)
+    [self stopDragAnimation];
+  else
+    [self setNeedsDisplay:YES];
 }
 
 - (void)mouseDragged:(NSEvent *)theEvent
@@ -952,11 +1044,26 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
 
   if (!isDragging)
   {
+    if (isSettling)
+      [self stopDragAnimation];
     [draggingTab release];
     draggingTab = [[self tabCellInPoint:p] retain];
     isDragging = YES;
     if (draggingTab != nil)
+    {
+      NSUInteger i;
       sourceIndex = [tabs indexOfObject:draggingTab];
+      dragOrigin = [self tabRectFromIndex:sourceIndex].origin;
+      dragGrabOffset = (self.orientation == IupCocoaTabBarHorizontal) ? p.x - dragOrigin.x : p.y - dragOrigin.y;
+      [draggingTab setIsDraggingTab:YES];
+      for (i = 0; i < [tabs count]; i++)
+      {
+        IupCocoaTabCell* tab = [tabs objectAtIndex:i];
+        [tab setDisplayOrigin:[self tabRectFromIndex:i].origin];
+        [tab setHasDisplayOrigin:YES];
+      }
+      [self startDragAnimation];
+    }
   }
 
   if (draggingTab == nil)
@@ -965,6 +1072,22 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
   {
     NSInteger current_index = [tabs indexOfObject:draggingTab];
     NSInteger new_index = [self destinationCellIndexFromPoint:p];
+    NSRect first = [self tabRectFromIndex:0];
+    NSRect last = [self tabRectFromIndex:[tabs count] - 1];
+    NSRect mine = [self tabRectFromIndex:current_index];
+
+    if (self.orientation == IupCocoaTabBarHorizontal)
+    {
+      dragOrigin.x = p.x - dragGrabOffset;
+      if (dragOrigin.x < NSMinX(first)) dragOrigin.x = NSMinX(first);
+      if (dragOrigin.x > NSMaxX(last) - NSWidth(mine)) dragOrigin.x = NSMaxX(last) - NSWidth(mine);
+    }
+    else
+    {
+      dragOrigin.y = p.y - dragGrabOffset;
+      if (dragOrigin.y < NSMinY(last)) dragOrigin.y = NSMinY(last);
+      if (dragOrigin.y > NSMaxY(first) - NSHeight(mine)) dragOrigin.y = NSMaxY(first) - NSHeight(mine);
+    }
 
     if (current_index != NSNotFound && new_index != -1 && new_index != current_index)
     {
@@ -977,8 +1100,8 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
       [draggingTab release];
 
       destinationIndex = new_index;
-      [self redraw];
     }
+    [self setNeedsDisplay:YES];
   }
 }
 
@@ -1092,6 +1215,8 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
 @synthesize titleAttributedString;
 @synthesize canDrawCloseButton;
 @synthesize isDraggingTab;
+@synthesize displayOrigin;
+@synthesize hasDisplayOrigin;
 @synthesize image;
 @synthesize hasCloseButton;
 
@@ -1168,9 +1293,6 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
 /* tab cell draw itself in this method, called in TabBarView's drawRect method */
 - (void)draw
 {
-  if (isDraggingTab)
-    return;
-
   NSRect rect = [self frame];
   [path release];
   path = [[NSBezierPath bezierPathWithRect:rect] retain];
@@ -1215,7 +1337,7 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
     }
     else if (isHovered)
     {
-      [[NSColor quaternaryLabelColor] set];
+      [iupCocoaTabTrackColor() set];
       [pill fill];
     }
 
@@ -1235,7 +1357,7 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
 
     if (isHovered && ![self isActived])
     {
-      [[NSColor quaternaryLabelColor] set];
+      [iupCocoaTabTrackColor() set];
       [path fill];
     }
 
@@ -1558,42 +1680,3 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
 @end
 
 
-@implementation IupCocoaTabImage
-@synthesize tab;
-
-- (void)dealloc
-{
-  [tab release];
-  [super dealloc];
-}
-
-+ (id)imageWithIupCocoaTabCell:(IupCocoaTabCell*)tabCell
-{
-  NSRect rect = NSMakeRect(0, 0, tabCell.frame.size.width, tabCell.frame.size.height);
-  IupCocoaTabImage *image = [[[IupCocoaTabImage alloc] initWithSize:rect.size] autorelease];
-  [image setTab:tabCell];
-
-  /* Reset tab cell's frame */
-  [[image tab] setFrame:rect];
-
-  [image lockFocus];
-
-  /* Transparent */
-  [[NSColor clearColor] set];
-  NSRectFill(rect);
-
-  [[image tab] draw];
-
-  [image unlockFocus];
-  return image;
-}
-
-- (void)setTab:(IupCocoaTabCell *)newTab
-{
-  if (tab != newTab)
-  {
-    [tab release];
-    tab = [newTab retain];
-  }
-}
-@end
