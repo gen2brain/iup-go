@@ -172,6 +172,7 @@ API reference for IUP (Portable User Interface).
 | [IupWebBrowser](ctrl/iup_web.md)                                                                                      | Embedded web browser view                               |
 | [IupAudio](ctrl/iup_audio.md)                                                                                         | Audio file player                                       |
 | [IupCamera](ctrl/iup_camera.md)                                                                                       | Live camera picture                                     |
+| [IupMicrophone](ctrl/iup_microphone.md)                                                                               | Audio capture and WAV recording                         |
 | [IupMatrix](ctrl/iup_matrix.md) ([Attributes](ctrl/iup_matrix_attrib.md), [Callbacks](ctrl/iup_matrix_cb.md))         | Custom-drawn matrix of alphanumeric cells               |
 | [IupMatrixEx](ctrl/iup_matrixex.md)                                                                                   | IupMatrix extension (clipboard, undo, find, sort, ...)  |
 | [IupMatrixList](ctrl/iup_matrixlist.md)                                                                               | List built on IupMatrix; adds color and check boxes     |
