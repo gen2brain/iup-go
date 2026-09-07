@@ -61,6 +61,8 @@ For example, for one double click all the following calls are made:
 Between press and release all mouse events are redirected only to this control, even if the cursor moves outside the element.
 So the BUTTON_CB callback when released and the MOTION_CB callback can be called with coordinates outside the element rectangle.
 
+In iOS and Android a touch is IUP_BUTTON1, and a long press on an IupCanvas also reports IUP_BUTTON3, pressed then released, with the button 3 flag in **status**, before the touch is released.
+
 ### Affects
 
 [IupCanvas](../elem/iup_canvas.md), [IupButton](../elem/iup_button.md), [IupText](../elem/iup_text.md), [IupList](../elem/iup_list.md), [IupGLCanvas](../ctrl/iup_glcanvas.md)

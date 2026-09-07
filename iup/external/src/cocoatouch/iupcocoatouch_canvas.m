@@ -182,7 +182,7 @@ static void cocoaTouchFireGesture(Ihandle* ih, int gesture, int state, int x, in
 	IFniiiis cb = (IFniiiis)IupGetCallback(_ihandle, "BUTTON_CB");
 	if (!cb) return;
 	char status[IUPKEY_STATUS_SIZE];
-	iupCocoaTouchButtonKeySetStatus(nil, 0, 1, 0, status);
+	iupCocoaTouchButtonKeySetStatus(nil, 0, 3, 0, status);
 	if (cb(_ihandle, IUP_BUTTON3, 1, (int)p.x, (int)p.y, status) == IUP_CLOSE) IupExitLoop();
 	iupCocoaTouchButtonKeySetStatus(nil, 0, 0, 0, status);
 	if (cb(_ihandle, IUP_BUTTON3, 0, (int)p.x, (int)p.y, status) == IUP_CLOSE) IupExitLoop();
