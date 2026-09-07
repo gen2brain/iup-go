@@ -1,4 +1,4 @@
-//go:build (linux || freebsd || dragonfly) && media && !android
+//go:build (aix || dragonfly || freebsd || linux || netbsd || openbsd || solaris || illumos) && media && !android
 
 package iup
 
