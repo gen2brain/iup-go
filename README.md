@@ -230,6 +230,7 @@ See [iup/external/ios/README.md](iup/external/ios/README.md) for prerequisites, 
 
 * `gl` - build with support for `GLCanvas` control
 * `web` - build with support for `WebBrowser` control
+* `media` - build with support for `Audio` and `Camera` controls
 * `plot` - build with support for `Plot` control
 * `ctrl` - build with support for `Matrix`, `Cells`, and `Flat*` controls
 * `gtk` - use GTK in macOS or Windows

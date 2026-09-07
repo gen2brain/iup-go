@@ -7,6 +7,7 @@ package iup
 #cgo ctrl CFLAGS: -Iexternal/srcctrl
 #cgo gl CFLAGS: -Iexternal/srcgl
 #cgo web CFLAGS: -Iexternal/srcweb
+#cgo media CFLAGS: -Iexternal/srcmedia -isystem ${SRCDIR}/external/srcmedia/bundled
 
 #cgo CXXFLAGS: -Iexternal/include -Iexternal/src
 #cgo plot CXXFLAGS: -Iexternal/srcplot
@@ -14,6 +15,7 @@ package iup
 
 #cgo linux,!android LDFLAGS: -ldl
 #cgo !windows,!darwin,!android,!haiku LDFLAGS: -lm
+#cgo !windows,!darwin,!android,!haiku,media LDFLAGS: -lpthread
 
 #cgo !windows,!darwin,!android,!haiku CFLAGS: -Iexternal/src/unix -DIUPDBUS_USE_DLOPEN -DIUPX11_USE_DLOPEN
 #cgo !windows,!darwin,!android,!haiku CXXFLAGS: -Iexternal/src/unix -DIUPDBUS_USE_DLOPEN -DIUPX11_USE_DLOPEN
@@ -53,6 +55,7 @@ package iup
 #cgo windows,!gtk,!gtk4,!qt,!winui,!efl,!fltk CFLAGS: -D_WIN32_WINNT=0x0601 -DWINVER=0x0601 -DCOBJMACROS -DNOTREEVIEW -DUNICODE -D_UNICODE
 #cgo windows,!winui LDFLAGS: -lgdi32 -lcomdlg32 -lcomctl32 -luuid -loleaut32 -lole32
 #cgo windows,gl LDFLAGS: -lopengl32
+#cgo windows,media LDFLAGS: -lmfuuid -lole32
 
 #cgo windows,gtk CFLAGS: -Iexternal/src/gtk -Iexternal/src/unix -DIUP_USE_GTK3
 #cgo windows,gtk,!nopkgconfig pkg-config: gtk+-3.0 gdk-3.0
@@ -68,6 +71,7 @@ package iup
 #cgo darwin,!ios LDFLAGS: -framework SystemConfiguration -framework QuartzCore -framework AppKit -framework UserNotifications -framework CoreLocation
 #cgo darwin,!ios,gl LDFLAGS: -framework OpenGL
 #cgo darwin,!ios,!gtk,!gtk4,!qt,web LDFLAGS: -framework WebKit
+#cgo darwin,!ios,media LDFLAGS: -framework CoreFoundation -framework CoreAudio -framework AudioToolbox -framework AVFoundation -framework CoreMedia -framework CoreVideo
 
 #cgo darwin,!ios,gtk CFLAGS: -Iexternal/src/gtk -Iexternal/src/unix -DIUP_USE_GTK3 -x objective-c
 #cgo darwin,!ios,gtk,!nopkgconfig pkg-config: gtk+-3.0 gdk-3.0
@@ -80,6 +84,7 @@ package iup
 #cgo ios CFLAGS: -Iexternal/src/cocoatouch -x objective-c -DIUP_USE_COCOATOUCH
 #cgo ios LDFLAGS: -framework Foundation -framework UIKit -framework CoreGraphics -framework CoreText -framework QuartzCore -framework ImageIO -framework UserNotifications -framework UniformTypeIdentifiers -framework CoreLocation -framework CoreMotion
 #cgo ios,web LDFLAGS: -framework WebKit
+#cgo ios,media LDFLAGS: -framework CoreFoundation -framework CoreAudio -framework AudioToolbox -framework AVFoundation -framework CoreMedia -framework CoreVideo
 #cgo ios,gl LDFLAGS: -framework OpenGLES
 
 #cgo efl CFLAGS: -Iexternal/src/efl -DIUP_USE_EFL -DEFL_BETA_API_SUPPORT=1 -DEFL_EO_API_SUPPORT=1
@@ -104,6 +109,7 @@ package iup
 #cgo android CFLAGS: -Iexternal/src/android -DIUP_USE_ANDROID
 #cgo android CXXFLAGS: -Iexternal/src/android -DIUP_USE_ANDROID
 #cgo android LDFLAGS: -llog -ljnigraphics -ldl -lm
+#cgo android,media LDFLAGS: -landroid
 #cgo android,gl LDFLAGS: -lEGL -lGLESv3 -landroid
 #cgo android,plot LDFLAGS: -static-libstdc++
 

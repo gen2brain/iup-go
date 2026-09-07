@@ -28,6 +28,8 @@ import (
 	_ "github.com/gen2brain/iup-go/iup/external/srcctrl/matrix"
 	_ "github.com/gen2brain/iup-go/iup/external/srcctrl/matrixex"
 	_ "github.com/gen2brain/iup-go/iup/external/srcgl"
+	_ "github.com/gen2brain/iup-go/iup/external/srcmedia"
+	_ "github.com/gen2brain/iup-go/iup/external/srcmedia/bundled"
 	_ "github.com/gen2brain/iup-go/iup/external/srcplot"
 	_ "github.com/gen2brain/iup-go/iup/external/srcweb"
 )
