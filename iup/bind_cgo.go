@@ -12,6 +12,7 @@ package iup
 #cgo CXXFLAGS: -Iexternal/include -Iexternal/src
 #cgo plot CXXFLAGS: -Iexternal/srcplot
 #cgo web CXXFLAGS: -Iexternal/srcweb
+#cgo media CXXFLAGS: -Iexternal/srcmedia -isystem ${SRCDIR}/external/srcmedia/bundled
 
 #cgo linux,!android LDFLAGS: -ldl
 #cgo !windows,!darwin,!android,!haiku LDFLAGS: -lm
@@ -120,5 +121,6 @@ package iup
 #cgo haiku,!qt,gl LDFLAGS: -lGL
 #cgo haiku,!qt,web CXXFLAGS: -I/boot/system/develop/headers/private/netservices
 #cgo haiku,!qt,web LDFLAGS: -lWebKitLegacy -lJavaScriptCore
+#cgo haiku,media LDFLAGS: -lmedia
 */
 import "C"

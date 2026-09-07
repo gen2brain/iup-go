@@ -18,4 +18,15 @@
 #include "stb_vorbis.c"
 #include "miniaudio.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+ma_device* iupdrvAudioDeviceInit(ma_engine* engine);
+void iupdrvAudioDeviceRelease(void);
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif

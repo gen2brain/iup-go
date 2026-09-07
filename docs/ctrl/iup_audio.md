@@ -5,7 +5,7 @@ It is not a visual element. Each element should be destroyed using [IupDestroy](
 
 Decodes WAV, FLAC, MP3 and Ogg Vorbis files.
 
-Not supported in Haiku and WebAssembly.
+Not supported in WebAssembly.
 
 ### Initialization and Usage
 

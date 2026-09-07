@@ -31,11 +31,18 @@ static int iaudio_engine_ready = 0;
 
 static int iAudioEngineInit(void)
 {
+  ma_engine_config config;
+
   if (iaudio_engine_ready)
     return 1;
 
-  if (ma_engine_init(NULL, &iaudio_engine) != MA_SUCCESS)
+  config = ma_engine_config_init();
+  config.pDevice = iupdrvAudioDeviceInit(&iaudio_engine);
+  if (ma_engine_init(&config, &iaudio_engine) != MA_SUCCESS)
+  {
+    iupdrvAudioDeviceRelease();
     return 0;
+  }
 
   iaudio_engine_ready = 1;
   return 1;
@@ -47,6 +54,7 @@ static void iAudioEngineRelease(Iclass* ic)
   if (iaudio_engine_ready)
   {
     ma_engine_uninit(&iaudio_engine);
+    iupdrvAudioDeviceRelease();
     iaudio_engine_ready = 0;
   }
 }

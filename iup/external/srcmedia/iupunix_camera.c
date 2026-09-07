@@ -7,6 +7,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include "iup.h"
+#include "iup_object.h"
+#include "iup_attrib.h"
+#include "iup_str.h"
+#include "iup_camera.h"
+
+#if defined(__linux__) || defined(__FreeBSD__) || defined(__DragonFly__)
+
 #include <errno.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -20,12 +29,6 @@
 #define STBI_ONLY_JPEG
 #define STBI_NO_STDIO
 #include "stb_image.h"
-
-#include "iup.h"
-#include "iup_object.h"
-#include "iup_attrib.h"
-#include "iup_str.h"
-#include "iup_camera.h"
 
 #define IUNIX_CAMERA_MAX_DEVICES 64
 #define IUNIX_CAMERA_BUFFERS 4
@@ -601,6 +604,44 @@ void iupdrvCameraStop(Ihandle* ih)
   iunixCameraRelease(camera);
   iupAttribSet(ih, "_IUP_CAMERA", NULL);
 }
+
+#else
+
+int iupdrvCameraIsAvailable(void)
+{
+  return 0;
+}
+
+int iupdrvCameraGetDeviceCount(void)
+{
+  return 0;
+}
+
+char* iupdrvCameraGetDeviceName(int index)
+{
+  (void)index;
+  return NULL;
+}
+
+char* iupdrvCameraGetPermission(Ihandle* ih)
+{
+  (void)ih;
+  return "UNAVAILABLE";
+}
+
+int iupdrvCameraStart(Ihandle* ih, int device, int* width, int* height, int* fps)
+{
+  (void)device; (void)width; (void)height; (void)fps;
+  iupCameraError(ih, "Camera not supported");
+  return 0;
+}
+
+void iupdrvCameraStop(Ihandle* ih)
+{
+  (void)ih;
+}
+
+#endif
 
 void iupdrvCameraInitClass(Iclass* ic)
 {

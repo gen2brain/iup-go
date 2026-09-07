@@ -6,6 +6,9 @@ set(_MEDIA_SOURCES
   "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iup_miniaudio.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iup_camera.c"
 )
+if(NOT IUP_BACKEND STREQUAL "haiku")
+  list(APPEND _MEDIA_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iup_audio_device.c")
+endif()
 set(_MEDIA_LIBS "")
 set(_MEDIA_DEFS "")
 
@@ -37,8 +40,15 @@ elseif(IUP_BACKEND STREQUAL "android")
   )
   set(_MEDIA_LIBS android)
 
-elseif(IUP_BACKEND STREQUAL "haiku" OR EMSCRIPTEN)
-  list(APPEND _MEDIA_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iup_camera_none.c")
+elseif(IUP_BACKEND STREQUAL "haiku")
+  list(APPEND _MEDIA_SOURCES
+    "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iuphaiku_audio.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iuphaiku_camera.cpp"
+  )
+  set(_MEDIA_LIBS media)
+
+elseif(EMSCRIPTEN)
+  list(APPEND _MEDIA_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iupunix_camera.c")
 
 else()
   list(APPEND _MEDIA_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iupunix_camera.c")
@@ -92,7 +102,9 @@ if(WIN32)
   set(IUPMEDIA_PC_LIBS_PRIVATE "-lmfuuid -lole32")
 elseif(APPLE)
   set(IUPMEDIA_PC_LIBS_PRIVATE "-framework CoreFoundation -framework CoreAudio -framework AudioToolbox -framework AVFoundation -framework CoreMedia -framework CoreVideo")
-elseif(NOT WIN32 AND NOT IUP_BACKEND STREQUAL "android" AND NOT IUP_BACKEND STREQUAL "haiku" AND NOT EMSCRIPTEN)
+elseif(IUP_BACKEND STREQUAL "haiku")
+  set(IUPMEDIA_PC_LIBS_PRIVATE "-lmedia")
+elseif(NOT WIN32 AND NOT IUP_BACKEND STREQUAL "android" AND NOT EMSCRIPTEN)
   set(IUPMEDIA_PC_LIBS_PRIVATE "-lpthread -ldl -lm")
 endif()
 
