@@ -66,6 +66,9 @@ static ma_device_info* iMicDeviceInfos(ma_uint32* count)
   for (i = 0; i < n; i++)
     if (infos[i].isDefault) has_default = 1;
 
+  if (n == 0)
+    return NULL;
+
   list = (ma_device_info*)realloc(imic_devices, (n + 1) * sizeof(ma_device_info));
   if (!list)
     return NULL;
@@ -147,7 +150,7 @@ int iupMicrophoneDeviceStart(Ihandle* ih, int device, int* channels, int* sample
     return 0;
   }
 
-  if (device > 0 && (!infos || (ma_uint32)device >= count))
+  if (!infos || (ma_uint32)device >= count)
   {
     iupMicrophoneError(ih, "Microphone not found");
     return 0;
@@ -159,7 +162,7 @@ int iupMicrophoneDeviceStart(Ihandle* ih, int device, int* channels, int* sample
   mic->ih = ih;
 
   config = ma_device_config_init(ma_device_type_capture);
-  if (infos && (ma_uint32)device < count && !(device == 0 && imic_default_synthetic))
+  if (!(device == 0 && imic_default_synthetic))
     config.capture.pDeviceID = &infos[device].id;
   config.capture.format = ma_format_s16;
   config.capture.channels = (ma_uint32)*channels;
