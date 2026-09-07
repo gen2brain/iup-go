@@ -21,7 +21,6 @@
 
 @protocol IupCocoaTabBarViewDelegate;
 @class IupCocoaTabCell;
-@class IupCocoaTabImage;
 
 typedef NS_ENUM(NSUInteger, IupCocoaTabBarOrientation) {
   IupCocoaTabBarHorizontal,
@@ -50,10 +49,13 @@ typedef NS_ENUM(NSUInteger, IupCocoaTabTextOrientation) {
   NSMenu* menu;
 
   BOOL isDragging;
+  BOOL isSettling;
   NSInteger destinationIndex;
   NSInteger sourceIndex;
   IupCocoaTabCell* draggingTab;
-  IupCocoaTabImage* draggingImage;
+  NSPoint dragOrigin;
+  CGFloat dragGrabOffset;
+  NSTimer* dragTimer;
 
   IupCocoaTabCell* selectedTab;
   NSFont* tabFont;
@@ -158,6 +160,8 @@ typedef NS_ENUM(NSUInteger, IupCocoaTabTextOrientation) {
   BOOL hasCloseButton;
   BOOL isHovered;
   BOOL isPressed;
+  NSPoint displayOrigin;
+  BOOL hasDisplayOrigin;
 }
 
 @property(nonatomic, assign) BOOL canDrawCloseButton;
@@ -170,6 +174,8 @@ typedef NS_ENUM(NSUInteger, IupCocoaTabTextOrientation) {
 @property(nonatomic, assign) BOOL isActived;
 @property(nonatomic, assign) BOOL isDraggingTab;
 @property(nonatomic, assign) BOOL hasCloseButton;
+@property(nonatomic, assign) NSPoint displayOrigin;
+@property(nonatomic, assign) BOOL hasDisplayOrigin;
 
 + (id)tabCellWithTabBarView:(IupCocoaTabBarView*)tabBarView title:(NSString*)aTittle image:(NSImage*)anImage;
 - (void)setAsActiveTab;
@@ -182,11 +188,3 @@ typedef NS_ENUM(NSUInteger, IupCocoaTabTextOrientation) {
 - (void)setIsPressed:(BOOL)flag;
 @end
 
-@interface IupCocoaTabImage : NSImage
-{
-  IupCocoaTabCell* tab;
-}
-
-@property(nonatomic, retain) IupCocoaTabCell* tab;
-+ (id)imageWithIupCocoaTabCell:(IupCocoaTabCell*)tabCell;
-@end
