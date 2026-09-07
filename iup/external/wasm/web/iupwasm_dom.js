@@ -2541,6 +2541,100 @@
         if (S2 && S2[c.ihptr]) { S2[c.ihptr].stop(); delete S2[c.ihptr]; }
         break;
       }
+      case 'audiostart': {
+        var A = globalThis.__iupAudio;
+        if (!A || !A.ctx) break;
+        var ahdr = new Int32Array(c.sab, 0, 8);
+        if (!A.module) A.module = A.ctx.audioWorklet.addModule(URL.createObjectURL(new Blob([globalThis.__iupAudioWorklet], { type: 'text/javascript' })));
+        A.module.then(function () {
+          if (A.node) { A.node.disconnect(); A.node = null; }
+          A.node = new AudioWorkletNode(A.ctx, 'iup-audio', { numberOfInputs: 0, numberOfOutputs: 1, outputChannelCount: [ahdr[3]], processorOptions: { sab: c.sab } });
+          A.node.port.onmessage = function () { D('iupwasmAudioFill'); };
+          A.node.connect(A.ctx.destination);
+          D('iupwasmAudioFill');
+        });
+        // autoplay policy: a context created outside a user gesture stays suspended until one
+        var aresume = function () {
+          if (A.ctx.state !== 'suspended') return;
+          A.ctx.resume().catch(function () {});
+          if (A.armed) return;
+          A.armed = 1;
+          var once = function () { A.armed = 0; window.removeEventListener('pointerdown', once, true); window.removeEventListener('keydown', once, true); aresume(); };
+          window.addEventListener('pointerdown', once, true); window.addEventListener('keydown', once, true);
+        };
+        aresume();
+      } break;
+      case 'audiostop': {
+        var A2 = globalThis.__iupAudio;
+        if (A2 && A2.node) { A2.node.disconnect(); A2.node = null; }
+      } break;
+      case 'camstart': {
+        if (!globalThis.__iupCam) globalThis.__iupCam = {};
+        var CM = globalThis.__iupCam, cp = c.ihptr, chdr = new Int32Array(c.sab, 0, 4), cu8 = new Uint8Array(c.sab, 16);
+        if (CM[cp]) { CM[cp].stop(); delete CM[cp]; }
+        var cam = { stream: null, video: null, raf: 0, done: 0 };
+        cam.stop = function () {
+          cam.done = 1;
+          if (cam.raf) { if (cam.video && cam.video.cancelVideoFrameCallback) cam.video.cancelVideoFrameCallback(cam.raf); else cancelAnimationFrame(cam.raf); cam.raf = 0; }
+          if (cam.stream) { cam.stream.getTracks().forEach(function (t) { t.stop(); }); cam.stream = null; }
+          if (cam.video) { cam.video.srcObject = null; if (cam.video.parentNode) cam.video.parentNode.removeChild(cam.video); cam.video = null; }
+        };
+        CM[cp] = cam;
+        var cerr = function (e) {
+          var n = e && e.name;
+          D('iupwasmCameraError', cp, n === 'NotAllowedError' || n === 'SecurityError' ? 1 : n === 'NotFoundError' || n === 'OverconstrainedError' ? 2 : n === 'NotReadableError' || n === 'AbortError' ? 3 : 0);
+        };
+        navigator.mediaDevices.enumerateDevices().then(function (list) {
+          var cams = list.filter(function (d) { return d.kind === 'videoinput'; });
+          if (cams[c.device] && cams[c.device].deviceId) return { deviceId: { exact: cams[c.device].deviceId } };
+          return c.device === 0 ? {} : null;
+        }).then(function (vc) {
+          if (!vc) throw { name: 'NotFoundError' };
+          vc.width = { ideal: c.w }; vc.height = { ideal: c.h }; vc.frameRate = { ideal: c.fps };
+          return navigator.mediaDevices.getUserMedia({ video: vc, audio: false });
+        }).then(function (stream) {
+          if (cam.done) { stream.getTracks().forEach(function (t) { t.stop(); }); return; }
+          D('iupwasmCameraPermission', cp, 1);
+          cam.stream = stream;
+          var v = cam.video = document.createElement('video');
+          v.muted = true; v.playsInline = true; v.style.position = 'absolute'; v.style.width = '1px'; v.style.height = '1px'; v.style.opacity = '0'; v.style.pointerEvents = 'none';
+          document.body.appendChild(v);
+          v.srcObject = stream;
+          var cvs = document.createElement('canvas'), ctx = cvs.getContext('2d', { willReadFrequently: true });
+          var cap = c.w * c.h, last = 0, gap = 1000 / Math.max(c.fps, 1) - 2;
+          var grab = function (now) {
+            cam.raf = 0;
+            if (cam.done) return;
+            if (v.videoWidth && now - last >= gap) {
+              last = now;
+              var fw = v.videoWidth, fh = v.videoHeight;
+              if (fw * fh > cap) { var sc = Math.sqrt(cap / (fw * fh)); fw = Math.floor(fw * sc); fh = Math.floor(fh * sc); }
+              if (cvs.width !== fw || cvs.height !== fh) { cvs.width = fw; cvs.height = fh; }
+              ctx.drawImage(v, 0, 0, fw, fh);
+              var px = ctx.getImageData(0, 0, fw, fh).data, n = fw * fh;
+              var st = Atomics.compareExchange(chdr, 0, 0, 1);
+              if (st === 2) st = Atomics.compareExchange(chdr, 0, 2, 1);
+              if (st === 0 || st === 2) {
+                for (var i = 0, o = 0; i < n; i++, o += 3) { cu8[o] = px[i * 4]; cu8[o + 1] = px[i * 4 + 1]; cu8[o + 2] = px[i * 4 + 2]; }
+                chdr[1] = fw; chdr[2] = fh;
+                Atomics.store(chdr, 0, 2);
+                D('iupwasmCameraFrame', cp);
+              }
+            }
+            cam.raf = v.requestVideoFrameCallback ? v.requestVideoFrameCallback(grab) : requestAnimationFrame(grab);
+          };
+          v.play().then(function () { cam.raf = v.requestVideoFrameCallback ? v.requestVideoFrameCallback(grab) : requestAnimationFrame(grab); }).catch(cerr);
+          stream.getVideoTracks()[0].addEventListener('ended', function () { if (!cam.done) D('iupwasmCameraError', cp, 3); });
+        }).catch(function (e) {
+          if (cam.done) return;
+          if (e && (e.name === 'NotAllowedError' || e.name === 'SecurityError')) D('iupwasmCameraPermission', cp, 0);
+          cerr(e);
+        });
+      } break;
+      case 'camstop': {
+        var CM2 = globalThis.__iupCam;
+        if (CM2 && CM2[c.ihptr]) { CM2[c.ihptr].stop(); delete CM2[c.ihptr]; }
+      } break;
       case 'notifyshow': {
         if (typeof Notification !== 'undefined') {
           if (!globalThis.__iupNotify) globalThis.__iupNotify = { map: {} };
@@ -2908,6 +3002,38 @@
 
 globalThis.__iupApply = apply;
 
+globalThis.__iupAudioOpen = function () {
+  var A = globalThis.__iupAudio = globalThis.__iupAudio || {};
+  if (A.ctx) return A.ctx.sampleRate | 0;
+  var AC = globalThis.AudioContext || globalThis.webkitAudioContext;
+  if (!AC || typeof AudioWorkletNode === 'undefined' || typeof SharedArrayBuffer === 'undefined') return 0;
+  try { A.ctx = new AC(); } catch (e) { return 0; }
+  if (!A.ctx.audioWorklet) { A.ctx.close(); A.ctx = null; return 0; }
+  return A.ctx.sampleRate | 0;
+};
+
+// runs inside the AudioWorklet: drains the shared ring, asks the app for more when half empty
+globalThis.__iupAudioWorklet = "class IupAudio extends AudioWorkletProcessor {\n" +
+  "constructor(o) { super(); var sab = o.processorOptions.sab; this.hdr = new Int32Array(sab, 0, 8); this.buf = new Float32Array(sab, 32); this.asked = -1; this.seen = 0; }\n" +
+  "process(inputs, outputs) {\n" +
+  "  var out = outputs[0], ch = this.hdr[3], cap = this.hdr[2], n = out[0].length;\n" +
+  "  var r = Atomics.load(this.hdr, 0), w = Atomics.load(this.hdr, 1), avail = (w - r) | 0, take = Math.min(avail, n), i, k;\n" +
+  "  for (i = 0; i < take; i++) { var p = ((r + i) & (cap - 1)) * ch; for (k = 0; k < out.length; k++) out[k][i] = this.buf[p + (k < ch ? k : ch - 1)]; }\n" +
+  "  for (; i < n; i++) for (k = 0; k < out.length; k++) out[k][i] = 0;\n" +
+  "  Atomics.store(this.hdr, 0, (r + take) | 0);\n" +
+  "  if (w !== this.seen) { this.seen = w; this.asked = -1; }\n" +
+  "  if (avail - take < cap / 2 && (this.asked < 0 || currentTime - this.asked > 0.1)) { this.asked = currentTime; this.port.postMessage(0); }\n" +
+  "  return true;\n" +
+  "}\n" +
+  "}\n" +
+  "registerProcessor('iup-audio', IupAudio);\n";
+
+globalThis.__iupCameraAvailable = function () {
+  if (typeof navigator === 'undefined' || typeof SharedArrayBuffer === 'undefined') return 0;
+  if (typeof isSecureContext !== 'undefined' && !isSecureContext) return 0;
+  return (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) ? 1 : 0;
+};
+
     if (typeof window !== 'undefined' && !globalThis.__iupResizeWired) {
       globalThis.__iupResizeWired = 1;
       window.addEventListener('resize', function () {
@@ -2999,6 +3125,27 @@ globalThis.__iupApply = apply;
       } break;
       case 'senavailable': {
         return globalThis.__iupSensorAvailable(req.type);
+      } break;
+      case 'audioopen': {
+        return globalThis.__iupAudioOpen();
+      } break;
+      case 'camavailable': {
+        return globalThis.__iupCameraAvailable();
+      } break;
+      case 'camdevices': {
+        if (!globalThis.__iupCameraAvailable()) return null;
+        return navigator.mediaDevices.enumerateDevices().then(function (list) {
+          var names = [];
+          for (var i = 0; i < list.length; i++)
+            if (list[i].kind === 'videoinput') names.push(list[i].label || ('Camera ' + (names.length + 1)));
+          return names.length ? names.join('\n') : null;
+        }).catch(function () { return null; });
+      } break;
+      case 'campermission': {
+        if (!navigator.permissions || !navigator.permissions.query) return 'PROMPT';
+        return navigator.permissions.query({ name: 'camera' }).then(function (st) {
+          return st.state === 'granted' ? 'GRANTED' : st.state === 'denied' ? 'DENIED' : 'PROMPT';
+        }).catch(function () { return 'PROMPT'; });
       } break;
       case 'treedepth': {
         var tdn = globalThis.__iupTree && globalThis.__iupTree.nodes[req.rowId]; return tdn ? tdn.__iupDepth : 0;

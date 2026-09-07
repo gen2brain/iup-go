@@ -6,7 +6,7 @@ set(_MEDIA_SOURCES
   "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iup_miniaudio.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iup_camera.c"
 )
-if(NOT IUP_BACKEND STREQUAL "haiku")
+if(NOT IUP_BACKEND STREQUAL "haiku" AND NOT EMSCRIPTEN)
   list(APPEND _MEDIA_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iup_audio_device.c")
 endif()
 set(_MEDIA_LIBS "")
@@ -48,7 +48,10 @@ elseif(IUP_BACKEND STREQUAL "haiku")
   set(_MEDIA_LIBS media)
 
 elseif(EMSCRIPTEN)
-  list(APPEND _MEDIA_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iupunix_camera.c")
+  list(APPEND _MEDIA_SOURCES
+    "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iupwasm_audio.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iupwasm_camera.c"
+  )
 
 else()
   list(APPEND _MEDIA_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iupunix_camera.c")

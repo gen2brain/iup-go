@@ -116,7 +116,11 @@
           if (m.req.op === 'fileopen') doFileOpen(m.req);
           else if (m.req.op === 'clipimageavailable') doClipRead();
           else if (m.req.op === 'fileopenchunk') fileChunk(m.req);
-          else writeResult(globalThis.__iupRead(m.req));
+          else {
+            var v = globalThis.__iupRead(m.req);
+            if (v && typeof v.then === 'function') v.then(writeResult, function () { writeResult(null); });
+            else writeResult(v);
+          }
         }
         else if (m.__iupPost) {
           dispatchEv('iupwasmDispatchPost', [m.ih, m.s, m.i, m.d, m.p], ['number', 'string', 'number', 'number', 'number']);

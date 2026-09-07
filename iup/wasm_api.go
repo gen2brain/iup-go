@@ -171,6 +171,12 @@ type NewWindowFunc func(ih Ihandle, url string) int
 // UpdateFunc is the type for the IupWebBrowser UPDATE_CB callback.
 type UpdateFunc func(ih Ihandle) int
 
+// PlayEndFunc is the type for the IupAudio PLAYEND_CB callback.
+type PlayEndFunc func(ih Ihandle) int
+
+// FrameFunc is the type for the IupCamera FRAME_CB callback. The data slice holds packed RGB pixels.
+type FrameFunc func(ih Ihandle, width, height int, data []byte) int
+
 // Open initializes the IUP toolkit.
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_open.md
