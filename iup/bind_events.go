@@ -548,6 +548,10 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 		setPlotXTickFormatNumberFunc(ih, fn.(PlotTickFormatNumberFunc))
 	case "YTICKFORMATNUMBER_CB":
 		setPlotYTickFormatNumberFunc(ih, fn.(PlotTickFormatNumberFunc))
+	case "PLAYEND_CB":
+		setPlayEndFunc(ih, fn.(PlayEndFunc))
+	case "FRAME_CB":
+		setFrameFunc(ih, fn.(FrameFunc))
 	}
 }
 

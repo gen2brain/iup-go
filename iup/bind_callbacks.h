@@ -646,7 +646,7 @@ static void goIupPostMessageHandle(Ihandle *ih, const char *s, int i, uintptr_t 
 }
 
 // ============================================================================
-// CTL CALLBACKS (Cells, Matrix, MatrixList, MatrixEx)
+// CTRL CALLBACKS (Cells, Matrix, MatrixList, MatrixEx)
 // ============================================================================
 
 CGO_EXPORT extern int goIupListReleaseCB(void *, int lin, int col, char *status);
@@ -1060,6 +1060,20 @@ static void goIupSetNavigateFunc(Ihandle *ih) {
 CGO_EXPORT extern int goIupNewWindowCB(void *, void *url);
 static void goIupSetNewWindowFunc(Ihandle *ih) {
 	IupSetCallback(ih, "NEWWINDOW_CB", (Icallback) goIupNewWindowCB);
+}
+
+// ============================================================================
+// MEDIA CALLBACKS (Audio, Camera)
+// ============================================================================
+
+CGO_EXPORT extern int goIupPlayEndCB(void *);
+static void goIupSetPlayEndFunc(Ihandle *ih) {
+	IupSetCallback(ih, "PLAYEND_CB", (Icallback) goIupPlayEndCB);
+}
+
+CGO_EXPORT extern int goIupFrameCB(void *, int width, int height, void *data);
+static void goIupSetFrameFunc(Ihandle *ih) {
+	IupSetCallback(ih, "FRAME_CB", (Icallback) goIupFrameCB);
 }
 
 #endif /* BIND_CALLBACKS_H */

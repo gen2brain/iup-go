@@ -562,6 +562,10 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 		case TableImageFunc:
 			setTableImageFunc(ih, v)
 		}
+	case "PLAYEND_CB":
+		setPlayEndFunc(ih, fn.(PlayEndFunc))
+	case "FRAME_CB":
+		setFrameFunc(ih, fn.(FrameFunc))
 	}
 }
 
