@@ -141,4 +141,4 @@ Here are some common Drag&Drop types defined by existing applications:
 
 ### Examples
 
-[list_dnd](../../examples/list_dnd/list_dnd.go), [tree_dnd](../../examples/tree_dnd/tree_dnd.go)
+[Browse for Example Files](../../examples/)

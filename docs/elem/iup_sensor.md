@@ -90,7 +90,7 @@ Win32 uses the Windows Sensor API, deprecated since Windows 8 but present throug
 
 ### Examples
 
-[sensor.go](../../examples/sensor/sensor.go)
+[Browse for Example Files](../../examples/)
 
 ### See Also
 

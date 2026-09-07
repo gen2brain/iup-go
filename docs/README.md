@@ -170,6 +170,8 @@ API reference for IUP (Portable User Interface).
 | [IupGLBackgroundBox](ctrl/iup_glbackgroundbox.md)                                                                     | Background container with OpenGL enabled                |
 | [IupPlot](ctrl/iup_plot.md)                                                                                           | 2D plot of one or more data sets                        |
 | [IupWebBrowser](ctrl/iup_web.md)                                                                                      | Embedded web browser view                               |
+| [IupAudio](ctrl/iup_audio.md)                                                                                         | Audio file player                                       |
+| [IupCamera](ctrl/iup_camera.md)                                                                                       | Live camera picture                                     |
 | [IupMatrix](ctrl/iup_matrix.md) ([Attributes](ctrl/iup_matrix_attrib.md), [Callbacks](ctrl/iup_matrix_cb.md))         | Custom-drawn matrix of alphanumeric cells               |
 | [IupMatrixEx](ctrl/iup_matrixex.md)                                                                                   | IupMatrix extension (clipboard, undo, find, sort, ...)  |
 | [IupMatrixList](ctrl/iup_matrixlist.md)                                                                               | List built on IupMatrix; adds color and check boxes     |
@@ -207,7 +209,7 @@ API reference for IUP (Portable User Interface).
 | Element / Function                                    | Description                                                |
 |-------------------------------------------------------|------------------------------------------------------------|
 | [IupImage](elem/iup_image.md)                         | In-memory bitmap image (also IupImageRGB and IupImageRGBA) |
-| [IupDraw](func/iup_draw.md)                           | Cross-driver immediate-mode drawing API on IupCanvas       |
+| [IupDraw](func/iup_draw.md)                           | Drawing API on IupCanvas, painted from the ACTION callback |
 | [IupImageGetHandle](func/iup_imagegethandle.md)       | Decodes raw image data into an IupImage                    |
 | [IupImageFromHandle](func/iup_imagefromhandle.md)     | Creates an IupImage from a native image handle             |
 | [IupImageSave](func/iup_imagesave.md)                 | Writes an IupImage to a file                               |

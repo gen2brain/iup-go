@@ -58,7 +58,7 @@ Does not depend on current locale.
 
 **CLIPBOARD** (write-only): clear, cut, copy or paste the selection to or from the clipboard.
 Values: "CLEAR", "CUT", "COPY", "PASTE", "UNDO", "REDO", "CLEARUNDO".
-UNDO and REDO are not supported in GTK 2, GTK 3, Motif and EFL. In Win32 REDO requires FORMATTING=YES.
+UNDO and REDO are not supported in GTK 2, GTK 3, Motif, EFL and WebAssembly. In Win32 REDO requires FORMATTING=YES.
 CLEARUNDO empties the undo and redo history; only in Win32, WinUI, GTK 4, Qt, macOS and iOS.
 WinUI CLEARUNDO requires FORMATTING=YES. Qt CLEARUNDO requires MULTILINE=YES.
 
@@ -134,6 +134,7 @@ When set to YES will also reset the SCROLLBAR attribute to YES.
 **NC**: Maximum number of **characters** allowed for keyboard input, a larger text can still be set using attributes.
 The maximum value is the limit of the VALUE attribute. The "0" value is the same as maximum.
 Default: maximum.
+A paste that would exceed the limit is refused. It is truncated instead in Win32, Motif and WebAssembly, and in single line texts in GTK, Qt, WinUI, FLTK and Haiku.
 
 **NOHIDESEL** [Windows Only]: do not hide the selection when the control loses its focus.
 Default: YES.
