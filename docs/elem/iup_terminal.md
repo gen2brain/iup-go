@@ -3,9 +3,9 @@
 Creates a terminal emulator control.
 It inherits from [IupCanvas](../elem/iup_canvas.md).
 
-The control implements a VT100/xterm compatible screen: UTF-8 text, ANSI colors (16, 256 and
-truecolor), text attributes, scroll regions, alternate screen, scrollback history and
-keyboard input encoding. Applications feed output bytes through WRITE and receive encoded
+The control implements a VT100/xterm compatible screen: UTF-8 text with wide and combining
+characters (up to 4 combining marks per cell), ANSI colors (16, 256 and truecolor), text
+attributes, scroll regions, alternate screen, scrollback history and keyboard input encoding. Applications feed output bytes through WRITE and receive encoded
 user input through INPUT_CB. The terminal identifies itself as **xterm-256color**.
 
 EXEC runs a command on a pseudo-terminal instead. The control then writes the command output

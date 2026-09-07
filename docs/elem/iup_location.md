@@ -85,7 +85,7 @@ Win32 uses the Windows Location API, deprecated since Windows 8 but present thro
 
 ### Examples
 
-[location.go](../../examples/location/location.go)
+[Browse for Example Files](../../examples/)
 
 ### See Also
 
