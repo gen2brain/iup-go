@@ -200,6 +200,7 @@ In Win32 must set TOUCH=YES to receive this event; in GTK, GTK 4, Qt, iOS and An
 Not supported in Motif, FLTK and Haiku.
 On Win32 only PINCH, ROTATE and PAN are reported, and only when TOUCH is not set.
 On Cocoa only PINCH, ROTATE and SWIPE are reported.
+From a mouse, GTK, GTK 4 and EFL report SWIPE, TAP and LONGPRESS, Qt reports LONGPRESS and WinUI reports TAP; the other gestures need a touch screen or a trackpad.
 
     int function(Ihandle* ih, int gesture, int state, int x, int y, double v1, double v2);
 
