@@ -3171,8 +3171,17 @@ static bool cocoaTextInsertImage(Ihandle* ih, NSTextView* text_view, Ihandle* fo
   (void)img_h;
 #endif
 
-  NSAttributedString* attr_str = [NSAttributedString attributedStringWithAttachment:attachment];
+  NSMutableAttributedString* attr_str = [[[NSAttributedString attributedStringWithAttachment:attachment] mutableCopy] autorelease];
   NSTextStorage* text_storage = [text_view textStorage];
+
+  if (range.location < [text_storage length])
+  {
+    NSDictionary* at = [text_storage attributesAtIndex:range.location effectiveRange:NULL];
+    NSMutableDictionary* keep = [NSMutableDictionary dictionary];
+    if (at[NSFontAttributeName]) keep[NSFontAttributeName] = at[NSFontAttributeName];
+    if (at[NSParagraphStyleAttributeName]) keep[NSParagraphStyleAttributeName] = at[NSParagraphStyleAttributeName];
+    [attr_str addAttributes:keep range:NSMakeRange(0, [attr_str length])];
+  }
 
   NSUndoManager* undo_manager = [[text_view delegate] undoManagerForTextView:text_view];
   [undo_manager beginUndoGrouping];
