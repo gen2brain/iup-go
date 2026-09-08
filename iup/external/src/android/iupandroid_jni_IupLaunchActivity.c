@@ -29,9 +29,9 @@ JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupLaunchActivity_IupEntry
 
   /* Poll ENTRY_POINT for up to ~500ms: cold start races Go c-shared init. */
   IFentry entry_callback = (IFentry)IupGetFunction("ENTRY_POINT");
-  for (int i = 0; entry_callback == NULL && i < 50; i++)
+  for (int i = 0; entry_callback == NULL && i < 500; i++)
   {
-    usleep(10000);
+    usleep(1000);
     entry_callback = (IFentry)IupGetFunction("ENTRY_POINT");
   }
 
