@@ -140,6 +140,7 @@ IUP_DRV_API QWidget* iupqtGetParentWidget(Ihandle* ih);
 
 IUP_DRV_API void iupqtSetGlobalColors(void);
 IUP_DRV_API void iupqtUpdateSystemPalette(void);
+IUP_DRV_API int iupqtSystemPaletteChanged(void);
 
 IUP_DRV_API QApplication* iupqtGetApplication(void);
 
