@@ -330,7 +330,6 @@ IUP_SDK_API void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_title, const 
   int text_height = 0;
   int is_vertical = (ih->data->orientation == ITABS_VERTICAL);
 
-  /* Measure text dimensions */
   if (tab_title)
   {
     text_width = iupdrvFontGetStringWidth(ih, tab_title);
@@ -339,12 +338,12 @@ IUP_SDK_API void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_title, const 
     /* LEFT/RIGHT tabs have vertical text (rotated 90 degrees) */
     if (is_vertical)
     {
-      width = text_height;   /* text rotated: tab width = text height */
-      height = text_width;   /* text rotated: tab height = text width */
+      width = text_height;
+      height = text_width;
     }
     else
     {
-      width = text_width;    /* horizontal text */
+      width = text_width;
       height = text_height;
     }
   }
@@ -523,19 +522,16 @@ static void winTabGetPageWindowRect(Ihandle* ih, RECT *rect)
 
   if (ih->data->type == ITABS_LEFT || ih->data->type == ITABS_RIGHT)
   {
-    /* For vertical tabs, measure the actual tab strip width */
     int tab_count = (int)SendMessage(ih->handle, TCM_GETITEMCOUNT, 0, 0);
     int tab_width = 0;
 
     if (tab_count > 0)
     {
       RECT tab_rect;
-      /* Get the rectangle of the first tab to measure tab strip width */
       SendMessage(ih->handle, TCM_GETITEMRECT, 0, (LPARAM)&tab_rect);
 
       if (ih->data->type == ITABS_LEFT)
       {
-        /* Tabs on left: content starts after tab strip width */
         tab_width = tab_rect.right - tab_rect.left;
         rect->left = tab_width + 4;  /* 4px border */
         rect->top = 4;
@@ -544,7 +540,6 @@ static void winTabGetPageWindowRect(Ihandle* ih, RECT *rect)
       }
       else  /* ITABS_RIGHT */
       {
-        /* Content ends before tab strip */
         tab_width = tab_rect.right - tab_rect.left;
         rect->left = 4;
         rect->top = 4;
@@ -563,7 +558,6 @@ static void winTabGetPageWindowRect(Ihandle* ih, RECT *rect)
   }
   else
   {
-    /* Horizontal tabs */
     SendMessage(ih->handle, TCM_ADJUSTRECT, FALSE, (LPARAM)rect);
   }
 }
@@ -574,7 +568,6 @@ static void winTabSetPageWindowPos(HWND tab_container, RECT *rect)
       rect->left >= rect->right || rect->top >= rect->bottom)
     return;
 
-  /* Only position visible pages. Hidden pages should not be positioned at all. */
   LONG style = GetWindowLong(tab_container, GWL_STYLE);
   BOOL has_visible_style = (style & WS_VISIBLE) != 0;
 
@@ -583,7 +576,6 @@ static void winTabSetPageWindowPos(HWND tab_container, RECT *rect)
     return;
   }
 
-  /* Position the IupTabsPage window */
   SetWindowPos(tab_container, NULL,
                 rect->left, rect->top,
                 rect->right - rect->left, rect->bottom - rect->top,
@@ -734,13 +726,11 @@ static void winTabsInsertItem(Ihandle* ih, Ihandle* child, int pos, HWND tab_con
 
   if (old_num_tabs == 0)
   {
-    /* First page - show it */
     ShowWindow(tab_container, SW_SHOWNOACTIVATE);
     SendMessage(ih->handle, TCM_SETCURSEL, 0, 0);
   }
   else
   {
-    /* All other pages - hide */
     ShowWindow(tab_container, SW_HIDE);
   }
 
@@ -1023,7 +1013,6 @@ static void winTabsReorderTab(Ihandle* ih, int source_index, int target_index)
 
   current_sel = (int)SendMessage(ih->handle, TCM_GETCURSEL, 0, 0);
 
-  /* Hide the previously active tab's container */
   if (current_sel >= 0 && current_sel < (int)SendMessage(ih->handle, TCM_GETITEMCOUNT, 0, 0))
   {
     int prev_active_pos = winTabsPosFixFromWin(ih, current_sel);
@@ -1032,10 +1021,8 @@ static void winTabsReorderTab(Ihandle* ih, int source_index, int target_index)
       ShowWindow(prev_tab_container, SW_HIDE);
   }
 
-  /* Always activate the moved tab after reordering */
   SendMessage(ih->handle, TCM_SETCURSEL, insert_index, 0);
 
-  /* Show the newly active (moved) tab's container */
   {
     HWND new_tab_container = winTabsGetPageWindow(ih, target_index);
     if (new_tab_container)
@@ -1157,7 +1144,6 @@ static int winTabsWmNotify(Ihandle* ih, NMHDR* msg_info, int *result)
         cb2(ih, pos, prev_pos);
     }
 
-    /* Show the new page and position it, hide all others. */
     RECT rect;
     winTabGetPageWindowRect(ih, &rect);
 
@@ -1168,16 +1154,13 @@ static int winTabsWmNotify(Ihandle* ih, NMHDR* msg_info, int *result)
       HWND page = (HWND)iupAttribGet(child, "_IUPTAB_PAGE");
       if (page) {
         if (i == pos) {
-          /* Position the page FIRST */
           SetWindowPos(page, NULL,
                         rect.left, rect.top,
                         rect.right - rect.left, rect.bottom - rect.top,
                         SWP_NOACTIVATE | SWP_NOZORDER);
 
-          /* Then show it */
           ShowWindow(page, SW_SHOWNA);
 
-          /* Bring to front */
           SetWindowPos(page, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
         } else {
           ShowWindow(page, SW_HIDE);
@@ -1888,7 +1871,6 @@ static int winTabsMapMethod(Ihandle* ih)
       iupAttribSet(ih, "_IUPTABS_VALUE_HANDLE", NULL);
     }
 
-    /* Hide all pages except the currently active one. */
     int current_tab = iupdrvTabsGetCurrentTab(ih);
 
     int pos = 0;

@@ -38,7 +38,6 @@ static int gtkLabelSetBgColorAttrib(Ihandle* ih, const char* value)
   if (!iupStrToRGB(value, &r, &g, &b))
     return 0;
 
-  /* Set background on the eventbox wrapper */
   if (eventbox)
   {
 #if GTK_CHECK_VERSION(2, 2, 0) && !GTK_CHECK_VERSION(3, 0, 0)
@@ -47,7 +46,6 @@ static int gtkLabelSetBgColorAttrib(Ihandle* ih, const char* value)
     iupgtkSetBgColor(eventbox, r, g, b);
   }
 
-  /* Also set on the inner label widget */
   if (ih->handle)
     iupgtkSetBgColor(ih->handle, r, g, b);
 
@@ -161,7 +159,6 @@ static int gtkLabelSetAlignmentAttrib(Ihandle* ih, const char* value)
       yalign = 0.5f;
 
 #if GTK_CHECK_VERSION(3, 16, 0)
-    /* Use gtk_label_set_xalign/yalign */
     if (ih->data->type == IUP_LABEL_TEXT)
     {
       GtkLabel* label = (GtkLabel*)ih->handle;
@@ -170,7 +167,6 @@ static int gtkLabelSetAlignmentAttrib(Ihandle* ih, const char* value)
       gtk_label_set_xalign(label, xalign);
       gtk_label_set_yalign(label, yalign);
 
-      /* Convert PangoAlignment to GtkJustification */
       if (alignment == PANGO_ALIGN_RIGHT)
         justify = GTK_JUSTIFY_RIGHT;
       else if (alignment == PANGO_ALIGN_CENTER)
@@ -188,7 +184,6 @@ static int gtkLabelSetAlignmentAttrib(Ihandle* ih, const char* value)
       gtk_widget_set_valign(ih->handle, yalign == 0 ? GTK_ALIGN_START : (yalign == 1.0f ? GTK_ALIGN_END : GTK_ALIGN_CENTER));
     }
 #else
-    /* Use deprecated GtkMisc */
     GtkMisc* misc = (GtkMisc*)ih->handle;
     gtk_misc_set_alignment(misc, xalign, yalign);
 

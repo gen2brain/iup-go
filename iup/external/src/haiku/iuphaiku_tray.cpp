@@ -60,8 +60,7 @@ static int haikuTrayStubMap(Ihandle* ih)
 #define IUPHAIKU_TRAY_PULSE_MSG 'IuTp'
 
 
-/* Per-tray handler installed in our app's looper. The replicant view in
- * Deskbar's process posts messages to this via BMessenger. */
+/* The replicant view runs in Deskbar's process and posts here via BMessenger. */
 class IupHaikuTrayHandler : public BHandler
 {
 public:
@@ -79,8 +78,7 @@ public:
 
       int btn = (buttons & 0x01) ? 1 : (buttons & 0x02) ? 3 : 2;
 
-      /* Right-click pops up the bound menu (if any) at the cursor before
-       * the user callback fires - matches Win32 / Cocoa convention. */
+      /* Right-click pops up the bound menu at the cursor before the user callback fires. */
       Ihandle* menu = (Ihandle*)iupAttribGet(fIhandle, "_IUPHAIKU_TRAY_MENU");
       if (btn == 3 && menu)
         IupPopup(menu, sx, sy);
@@ -268,7 +266,7 @@ static int haikuTrayInstall(Ihandle* ih)
   BDeskbar deskbar;
   if (!deskbar.IsRunning()) { delete view; return 0; }
 
-  /* Sweep any leftover from a crashed previous run before we add ourselves. */
+  /* Sweep leftovers from a crashed previous run. */
   deskbar.RemoveItem(haikuTrayUniqueName(ih));
 
   int32 id = 0;
@@ -282,8 +280,6 @@ static int haikuTrayInstall(Ihandle* ih)
   }
   return 0;
 }
-
-/* Driver hooks */
 
 extern "C" IUP_SDK_API int iupdrvTraySetVisible(Ihandle* ih, int visible)
 {
@@ -317,8 +313,7 @@ extern "C" IUP_SDK_API int iupdrvTraySetTip(Ihandle* ih, const char* value)
 
 extern "C" IUP_SDK_API int iupdrvTraySetMenu(Ihandle* ih, Ihandle* menu)
 {
-  /* Menu lives in our process; right-click message comes from the replicant
-   * and the handler IupPopups it at the cursor. */
+  /* The menu lives in this process; the replicant's right-click message drives IupPopup. */
   iupAttribSet(ih, "_IUPHAIKU_TRAY_MENU", (char*)menu);
   return 1;
 }

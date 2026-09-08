@@ -92,7 +92,6 @@ protected:
       }
     }
 
-    /* Handle Ctrl+Arrows for page stepping */
     if (event->modifiers() & Qt::ControlModifier)
     {
       if (event->key() == Qt::Key_Left || event->key() == Qt::Key_Up)
@@ -494,7 +493,6 @@ static void qtValUnMapMethod(Ihandle* ih)
 
     iupqtTipsDestroy(ih);
 
-    /* Delete the slider - Qt will automatically disconnect signals */
     delete slider;
     ih->handle = nullptr;
   }
@@ -524,7 +522,6 @@ extern "C" IUP_SDK_API void iupdrvValInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "PAGESTEP", iupValGetPageStepAttrib, qtValSetPageStepAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "STEP", iupValGetStepAttrib, qtValSetStepAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 
-  /* Tick marks */
   iupClassRegisterAttribute(ic, "SHOWTICKS", iupValGetShowTicksAttrib, qtValSetShowTicksAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "TICKSPOS", NULL, qtValSetTicksPosAttrib, "NORMAL", NULL, IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "STEPONTICKS", qtValGetStepOnTicksAttrib, qtValSetStepOnTicksAttrib, IUPAF_SAMEASSYSTEM, "NO", IUPAF_DEFAULT);

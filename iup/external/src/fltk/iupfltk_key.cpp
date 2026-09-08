@@ -186,7 +186,6 @@ IUP_DRV_API int iupfltkKeyDecode(void)
     }
   }
 
-  /* Printable ASCII characters */
   const char* text = Fl::event_text();
   int text_len = Fl::event_length();
   if (text_len == 1 && !(state & FL_CTRL))

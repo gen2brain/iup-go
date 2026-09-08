@@ -45,7 +45,6 @@ static LRESULT CALLBACK winPopoverProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp
         rect.left = 0;
         rect.top = 0;
 
-        /* Draw border using system button shadow color */
         HPEN hPen = CreatePen(PS_SOLID, 1, GetSysColor(COLOR_BTNSHADOW));
         HPEN hOldPen = (HPEN)SelectObject(hdc, hPen);
         HBRUSH hOldBrush = (HBRUSH)SelectObject(hdc, GetStockObject(NULL_BRUSH));
@@ -72,7 +71,6 @@ static LRESULT CALLBACK winPopoverProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp
           HWND anchor_hwnd = anchor ? (HWND)anchor->handle : NULL;
           HWND parent_hwnd = anchor ? GetAncestor((HWND)anchor->handle, GA_ROOT) : NULL;
 
-          /* Don't auto-hide if clicking on popover itself or its children */
           if (new_hwnd && (IsChild(hwnd, new_hwnd) || new_hwnd == hwnd))
             break;
 
@@ -80,13 +78,11 @@ static LRESULT CALLBACK winPopoverProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp
           if (anchor_hwnd && (new_hwnd == anchor_hwnd || IsChild(anchor_hwnd, new_hwnd)))
             break;
 
-          /* Check if clicking on parent dialog, need to find actual clicked control */
           if (parent_hwnd && (new_hwnd == parent_hwnd || IsChild(parent_hwnd, new_hwnd)))
           {
             POINT pt;
             GetCursorPos(&pt);
             HWND clicked = WindowFromPoint(pt);
-            /* If clicked on anchor or its children, let anchor handle it */
             if (clicked && anchor_hwnd && (clicked == anchor_hwnd || IsChild(anchor_hwnd, clicked)))
               break;
           }
@@ -169,7 +165,6 @@ static int winPopoverSetVisibleAttrib(Ihandle* ih, const char* value)
     if (!anchor || !anchor->handle)
       return 0;
 
-    /* Map if not yet mapped */
     if (!ih->handle)
     {
       if (IupMap(ih) == IUP_ERROR)
@@ -307,6 +302,6 @@ IUP_SDK_API void iupdrvPopoverInitClass(Iclass* ic)
   ic->LayoutUpdate = winPopoverLayoutUpdateMethod;
   ic->GetInnerNativeContainerHandle = winPopoverGetInnerNativeContainerHandleMethod;
 
-  /* Override VISIBLE attribute, NOT_MAPPED because setter handles mapping */
+  /* NOT_MAPPED because the setter does the mapping */
   iupClassRegisterAttribute(ic, "VISIBLE", winPopoverGetVisibleAttrib, winPopoverSetVisibleAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
 }

@@ -74,7 +74,6 @@ IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
   dc->h = ih->currentheight;
   dc->clipped = 0;
 
-  /* Make sure the Java-side Bitmap exists and matches the widget size. */
   if (ih->handle)
   {
     JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();

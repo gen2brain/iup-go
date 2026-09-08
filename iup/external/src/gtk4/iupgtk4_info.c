@@ -83,7 +83,7 @@ IUP_SDK_API double iupdrvGetScreenDpi(void)
     return dpi * scale_factor;
   }
 
-  return 96.0;  /* Default DPI */
+  return 96.0;
 }
 
 IUP_SDK_API int iupdrvScaleNaturalPx(int px)

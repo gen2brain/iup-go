@@ -1283,8 +1283,7 @@ static void eflListTopItemDoScroll(Ihandle* ih)
   first = efl_pack_content_get(list, 0);
   if (!item) return;
 
-  /* efl_ui_collection_item_scroll NULL-derefs in EFL 1.28 when called before
-     items have non-zero size; force layout, then defer to the next frame if not yet measured */
+  /* efl_ui_collection_item_scroll NULL-derefs in EFL 1.28 before items have a non-zero size */
   efl_canvas_group_calculate(list);
   efl_canvas_group_calculate(item);
   if (first) efl_canvas_group_calculate(first);
@@ -1546,7 +1545,6 @@ static void eflListDropCb(void *data, const Efl_Event *ev)
   drop_y = drop_ev->dnd.position.y;
   idDrop = eflListConvertXYToPos(ih, drop_x, drop_y);  /* 1-based or -1 */
 
-  /* Lower half of the hit row means insert AFTER it. */
   if (idDrop > 0 && !ih->data->is_virtual)
   {
     Eo* list = iupeflGetWidget(ih);
@@ -1559,7 +1557,6 @@ static void eflListDropCb(void *data, const Efl_Event *ev)
     }
   }
 
-  /* shift to 0-based for the callback */
   idDrag--;
   idDrop--;
 
@@ -2126,7 +2123,6 @@ IUP_SDK_API int iupdrvListGetCount(Ihandle* ih)
   return efl_content_count(list);
 }
 
-/* SORT: ascending insert position. */
 static int eflListSortPos(Eo* list, const char* value)
 {
   int n = efl_content_count(list);
@@ -2542,18 +2538,15 @@ IUP_SDK_API void iupdrvListInitClass(Iclass* ic)
   ic->Map = eflListMapMethod;
   ic->UnMap = eflListUnMapMethod;
 
-  /* Core List Attributes */
   iupClassRegisterAttributeId(ic, "IDVALUE", eflListGetIdValueAttrib, iupListSetIdValueAttrib, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "VALUE", eflListGetValueAttrib, eflListSetValueAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TOPITEM", NULL, eflListSetTopItemAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "COUNT", eflListGetCountAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
 
-  /* Dropdown */
   iupClassRegisterAttribute(ic, "SHOWDROPDOWN", eflListGetShowDropdownAttrib, eflListSetShowDropdownAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "VISIBLEITEMS", NULL, NULL, IUPAF_SAMEASSYSTEM, "5", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "SPACING", iupListGetSpacingAttrib, eflListSetSpacingAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NOT_MAPPED);
 
-  /* Editbox Attributes */
   iupClassRegisterAttribute(ic, "READONLY", eflListGetReadOnlyAttrib, eflListSetReadOnlyAttrib, NULL, NULL, IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "CARET", eflListGetCaretAttrib, eflListSetCaretAttrib, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CARETPOS", eflListGetCaretPosAttrib, eflListSetCaretPosAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_SAVE | IUPAF_NO_INHERIT);
@@ -2568,7 +2561,6 @@ IUP_SDK_API void iupdrvListInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "SCROLLTOPOS", NULL, eflListSetScrollToPosAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CUEBANNER", eflListGetCueBannerAttrib, eflListSetCueBannerAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 
-  /* Colors */
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, eflListSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTBGCOLOR", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "FGCOLOR", NULL, eflListSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTFGCOLOR", IUPAF_DEFAULT);
 

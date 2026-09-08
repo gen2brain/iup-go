@@ -90,7 +90,6 @@ typedef struct
 	[card.contentView addSubview:vibrancyView];
 	[vibrancyView release];
 
-	/* lone_font fires when only title OR only message is set */
 	UIFont* lone_font      = [UIFont systemFontOfSize:[UIFont buttonFontSize]];
 	UIFont* title_font     = [UIFont systemFontOfSize:[UIFont buttonFontSize] weight:UIFontWeightSemibold];
 	UIFont* message_font   = [UIFont systemFontOfSize:[UIFont smallSystemFontSize] + 1];

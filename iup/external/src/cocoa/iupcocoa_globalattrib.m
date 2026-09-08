@@ -78,7 +78,6 @@ static int cocoaGlobalMapButton(int64_t button_number)
 
 static CGEventRef iupCocoaGlobalEventCallback(CGEventTapProxy proxy, CGEventType type, CGEventRef event, void *refcon)
 {
-  /* Handle event tap being disabled by the system due to timeout */
   if (type == kCGEventTapDisabledByTimeout)
   {
     if (eventTap)
@@ -283,9 +282,7 @@ IUP_SDK_API int iupdrvSetGlobal(const char *name, const char *value)
       GSTheme* theme = [GSTheme loadThemeNamed:theme_name];
       if (theme)
       {
-        /* Persist under the GSTheme defaults key so +[GSTheme defaultsDidChange:]
-           keeps our selection when NSUserDefaultsDidChangeNotification fires
-           (e.g. when the user drags a floating menu, which writes NSMenuLocations). */
+        /* persist under the GSTheme defaults key so +[GSTheme defaultsDidChange:] keeps the selection */
         [defaults setObject:theme_name forKey:@"GSTheme"];
         [GSTheme setTheme:theme];
         iupcocoaSetGlobalColors();

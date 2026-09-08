@@ -77,8 +77,7 @@ public class IupAndroidCanvas extends IupAndroidFixed
                 return true;
             }
 
-            /* the IME skips backspace when it believes there is nothing before the cursor,
-               and the dummy editable is always empty */
+            /* the IME skips backspace when it believes nothing precedes the cursor, and the dummy editable is always empty */
             @Override
             public CharSequence getTextBeforeCursor(int length, int flags)
             {
@@ -243,7 +242,7 @@ public class IupAndroidCanvas extends IupAndroidFixed
         return (float) Math.toDegrees(Math.atan2(dy, dx));
     }
 
-    /* Android has no rotation detector; accumulate the two-finger axis delta ourselves */
+    /* Android has no rotation detector; accumulate the two-finger axis delta. */
     private void handleRotation(MotionEvent ev)
     {
         int action = ev.getActionMasked();
@@ -299,7 +298,6 @@ public class IupAndroidCanvas extends IupAndroidFixed
     @Override
     protected void onDraw(@NonNull Canvas canvas)
     {
-        /* Let IUP repaint the back buffer via ACTION, then blit it. */
         if (ihandlePtr != 0)
         {
             Rect clip = canvas.getClipBounds();

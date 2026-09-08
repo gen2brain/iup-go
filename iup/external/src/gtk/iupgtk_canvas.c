@@ -366,7 +366,7 @@ static gboolean gtkCanvasExposeEvent(GtkWidget *widget, GdkEventExpose *evt, Iha
     return FALSE;
   }
 
-  /* Check if there's a persistent buffer from SCROLL_CB or other drawing outside ACTION */
+  /* a buffer painted outside ACTION (SCROLL_CB) is reused until the next ACTION */
   if (iupAttribGet(ih, "_IUPGTK3_BUFFER_DIRTY"))
   {
     cairo_surface_t* buffer = (cairo_surface_t*)iupAttribGet(ih, "_IUPGTK3_CANVAS_BUFFER");
@@ -379,13 +379,11 @@ static gboolean gtkCanvasExposeEvent(GtkWidget *widget, GdkEventExpose *evt, Iha
       int buf_w = cairo_image_surface_get_width(buffer);
       int buf_h = cairo_image_surface_get_height(buffer);
 
-      /* If buffer exists and matches size, use it instead of calling ACTION */
       if (buf_w == rect.width && buf_h == rect.height)
       {
         cairo_set_source_surface(cr, buffer, 0, 0);
         cairo_paint(cr);
-        /* Keep dirty flag set - continue using buffer until ACTION is called */
-        return TRUE;  /* Don't call ACTION callback */
+        return TRUE;
       }
     }
   }
@@ -446,7 +444,6 @@ static gboolean gtkCanvasExposeEvent(GtkWidget *widget, GdkEventExpose *evt, Iha
 
       iupAttribSetStrf(ih, "CLIPRECT", "%d %d %d %d", rect.x, rect.y, rect.x+rect.width-1, rect.y+rect.height-1);
       iupAttribSet(ih, "CAIRO_CR", (char*)cr);
-      /* Clear dirty flag since ACTION is being called */
       iupAttribSet(ih, "_IUPGTK3_BUFFER_DIRTY", NULL);
     }
 #else
@@ -837,7 +834,6 @@ static int gtkCanvasSetBgColorAttrib(Ihandle* ih, const char* value)
     }
 
 #if !GTK_CHECK_VERSION(3, 14, 0)
-    /* enable automatic double buffering (deprecated in GTK 3.14, always enabled) */
     gtk_widget_set_double_buffered(ih->handle, TRUE);
     gtk_widget_set_double_buffered(sb_win, TRUE);
 #endif
@@ -1155,7 +1151,6 @@ static int gtkCanvasMapMethod(Ihandle* ih)
 
   /* canvas is also a container */
   /* use a window to be a full native container */
-  /* Check if this is a GL canvas to determine Wayland window handling */
 #if GTK_CHECK_VERSION(3, 0, 0)
   if (iupAttribGet(ih, "_IUP_GLCONTROLDATA") && !IupClassMatch(ih, "glbackgroundbox"))
 #else

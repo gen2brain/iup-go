@@ -20,9 +20,7 @@
 
 IUP_SDK_API void iupdrvLabelAddExtraPadding(Ihandle* ih, int* x, int* y)
 {
-  /* GTK4 GtkLabel has internal padding beyond what Pango reports.
-   * Testing shows GtkLabel requests 5px more width than Pango measures.
-   * Add this difference to prevent text clipping. */
+  /* GtkLabel requests 5px more width than Pango measures */
   if (ih->data->type == IUP_LABEL_TEXT)
     *x += 5;
 
@@ -36,7 +34,6 @@ static int gtk4LabelSetBgColorAttrib(Ihandle* ih, const char* value)
   if (!iupStrToRGB(value, &r, &g, &b))
     return 0;
 
-  /* Set background on the label widget */
   if (ih->handle)
     iupgtk4SetBgColor(ih->handle, r, g, b);
 
@@ -191,10 +188,8 @@ static void gtk4LabelSetPaintable(Ihandle* ih, const char* name, int make_inacti
       int pw = gdk_paintable_get_intrinsic_width(paintable);
       int ph = gdk_paintable_get_intrinsic_height(paintable);
 
-      /* Use GtkPicture which renders paintable at exact pixel size */
       gtk_picture_set_paintable(picture, paintable);
 
-      /* Set size request to ensure widget requests the image's size */
       gtk_widget_set_size_request(GTK_WIDGET(picture), pw, ph);
 
       return;
@@ -294,9 +289,7 @@ static int gtk4LabelMapMethod(Ihandle* ih)
     if (value)
     {
       ih->data->type = IUP_LABEL_IMAGE;
-      /* Use GtkPicture instead of GtkImage for exact pixel-perfect rendering */
       label = gtk_picture_new();
-      /* Set picture to not be resizable - keep original size */
       gtk_picture_set_can_shrink(GTK_PICTURE(label), FALSE);
     }
     else
@@ -311,9 +304,6 @@ static int gtk4LabelMapMethod(Ihandle* ih)
 
   ih->handle = label;
 
-  /* Unlike GTK3 which used GtkEventBox wrapper for event handling,
-   * GTK4 allows event controllers directly on any widget (all widgets receive events).
-   * Attach controllers directly to label for proper sizing like GTK3's GtkEventBox. */
   iupgtk4SetupButtonEvents(label, ih);
   iupgtk4SetupMotionEvents(label, ih);
   iupgtk4SetupEnterLeaveEvents(label, ih);

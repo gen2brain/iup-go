@@ -21,7 +21,6 @@ IUP_SDK_API int iupGlobalIsPointer(const char* name);
 /* The APPEARANCE global, one of IUP_APPEARANCE_*. */
 IUP_SDK_API int iupGlobalGetAppearance(void);
 
-/* Whether the global palette is dark. */
 IUP_SDK_API int iupGlobalIsDarkMode(void);
 
 /* Seeds the palette for a forced appearance, for drivers with no native theme switch. */

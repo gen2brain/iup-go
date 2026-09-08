@@ -166,14 +166,12 @@ IUP_DRV_API int iuphaikuKeyDecode(int byte, int raw_char, int key, unsigned int 
   if (code)
     return haikuApplyModifiers(code, modifiers);
 
-  /* Special key disambiguation: B_*_KEY bytes also appear as Ctrl-letters.
-   * If raw_char matches a special-key value too, it's the special key. */
+  /* B_*_KEY bytes also appear as Ctrl-letters; a matching raw_char means the special key. */
   if (raw == b)
     code = haikuLookupSpecial(b);
 
   if (!code)
   {
-    /* Printable ASCII. */
     if (b >= 0x20 && b < 0x7f)
       code = b;
     else if (b == B_BACKSPACE || b == B_TAB || b == B_RETURN ||
@@ -211,8 +209,6 @@ IUP_DRV_API void iuphaikuButtonKeySetStatus(unsigned int modifiers, unsigned int
   if (doubleclick) iupKEY_SETDOUBLE(status);
 }
 
-/* IupSendKey: IUP code -> Haiku byte + modifier mask. */
-
 extern "C" IUP_SDK_API void iupdrvKeyEncode(int code, unsigned int *keyval, unsigned int *state)
 {
   if (keyval) *keyval = 0;
@@ -221,7 +217,6 @@ extern "C" IUP_SDK_API void iupdrvKeyEncode(int code, unsigned int *keyval, unsi
 
   int base = iup_XkeyBase(code);
 
-  /* Reverse map specials by scanning the same table. */
   uint8 native = 0;
   for (size_t i = 0; i < sizeof(kSpecialKeys)/sizeof(kSpecialKeys[0]); ++i)
   {

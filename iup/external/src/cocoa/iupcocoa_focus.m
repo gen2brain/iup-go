@@ -21,7 +21,6 @@ IUP_DRV_API void iupcocoaSetCanFocus(Ihandle* ih, int can)
   if (!ih)
     return;
 
-  /* Controls check this in acceptsFirstResponder */
   if (can)
     iupAttribSet(ih, "_IUPCOCOA_CANFOCUS", "YES");
   else

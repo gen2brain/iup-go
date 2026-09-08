@@ -62,7 +62,7 @@ static int iTableSetNumLinAttrib(Ihandle* ih, const char* value)
     if (ih->handle)
       iupdrvTableSetNumLin(ih, num_lin);
     else
-      ih->data->num_lin = num_lin;  /* Before map, just store */
+      ih->data->num_lin = num_lin;
   }
   return 0;
 }
@@ -83,7 +83,7 @@ static int iTableSetNumColAttrib(Ihandle* ih, const char* value)
     if (ih->handle)
       iupdrvTableSetNumCol(ih, num_col);
     else
-      ih->data->num_col = num_col;  /* Before map, just store */
+      ih->data->num_col = num_col;
   }
   return 0;
 }
@@ -255,7 +255,6 @@ static char* iTableGetTitleIdAttrib(Ihandle* ih, int col)
 
   if (!ih->handle)
   {
-    /* Return from hash table if not mapped */
     char name[50];
     snprintf(name, sizeof(name), "TITLE%d", col);
     return iupAttribGet(ih, name);
@@ -271,7 +270,6 @@ static int iTableSetTitleIdAttrib(Ihandle* ih, int col, const char* value)
 
   if (!ih->handle)
   {
-    /* Store in hash table if not mapped */
     char name[50];
     snprintf(name, sizeof(name), "TITLE%d", col);
     iupAttribSetStr(ih, name, value);
@@ -290,13 +288,11 @@ static char* iTableGetWidthIdAttrib(Ihandle* ih, int col)
   if (col < 1 || col > ih->data->num_col)
     return NULL;
 
-  /* Always check hash table first */
   snprintf(name, sizeof(name), "WIDTH%d", col);
   value = iupAttribGet(ih, name);
   if (value)
     return value;
 
-  /* If mapped and no stored value, get from driver */
   if (ih->handle)
     return iupStrReturnInt(iupdrvTableGetColWidth(ih, col));
 
@@ -328,7 +324,6 @@ static int iTableSetWidthIdAttrib(Ihandle* ih, int col, const char* value)
   snprintf(name, sizeof(name), "WIDTH%d", col);
   iupAttribSetStr(ih, name, scaled_str);
 
-  /* If mapped, also apply to native widget */
   if (ih->handle)
   {
     iupdrvTableSetColWidth(ih, col, width);
@@ -345,19 +340,16 @@ static char* iTableGetRasterWidthIdAttrib(Ihandle* ih, int col)
   if (col < 1 || col > ih->data->num_col)
     return NULL;
 
-  /* Check for RASTERWIDTH first, then fall back to WIDTH */
   snprintf(name, sizeof(name), "RASTERWIDTH%d", col);
   value = iupAttribGet(ih, name);
   if (value)
     return value;
 
-  /* Try WIDTH attribute */
   snprintf(name, sizeof(name), "WIDTH%d", col);
   value = iupAttribGet(ih, name);
   if (value)
     return value;
 
-  /* If mapped and no stored value, get from driver */
   if (ih->handle)
     return iupStrReturnInt(iupdrvTableGetColWidth(ih, col));
 
@@ -366,7 +358,6 @@ static char* iTableGetRasterWidthIdAttrib(Ihandle* ih, int col)
 
 static int iTableSetRasterWidthIdAttrib(Ihandle* ih, int col, const char* value)
 {
-  /* For now, treat RASTERWIDTH the same as WIDTH (in pixels) */
   return iTableSetWidthIdAttrib(ih, col, value);
 }
 
@@ -381,7 +372,7 @@ static char* iTableGetFocusCellAttrib(Ihandle* ih)
     char* value = iupAttribGet(ih, "FOCUSCELL");
     if (value)
       return value;
-    return "1:1";  /* Default */
+    return "1:1";
   }
 
   int lin, col;
@@ -394,12 +385,10 @@ static int iTableSetFocusCellAttrib(Ihandle* ih, const char* value)
   int lin, col;
   int num_parsed;
 
-  /* Check for column-only syntax ":col" */
   if (value[0] == ':')
   {
-    /* Column-only syntax like ":3" - keep current row, only change column */
     if (!iupStrToInt(value + 1, &col) || col < 1)
-      return 0;  /* Invalid column */
+      return 0;
 
     if (ih->handle)
     {
@@ -409,29 +398,24 @@ static int iTableSetFocusCellAttrib(Ihandle* ih, const char* value)
     }
     else
     {
-      /* Not mapped yet, parse stored FOCUSCELL to get row, or default to 1 */
       char* stored = iupAttribGet(ih, "FOCUSCELL");
       int stored_lin, stored_col;
       if (stored && iupStrToIntInt(stored, &stored_lin, &stored_col, ':') >= 1)
       {
-        /* Keep the stored row */
         lin = stored_lin;
       }
       else
       {
-        /* No stored value, default to row 1 */
         lin = 1;
       }
     }
   }
   else
   {
-    /* Parse value - supports "row:col" and "row:" (row-only) */
     num_parsed = iupStrToIntInt(value, &lin, &col, ':');
 
     if (num_parsed == 1)
     {
-      /* Row-only syntax like "2:" - keep current column, only change row */
       if (ih->handle)
       {
         int current_lin, current_col;
@@ -440,24 +424,20 @@ static int iTableSetFocusCellAttrib(Ihandle* ih, const char* value)
       }
       else
       {
-        /* Not mapped yet, parse stored FOCUSCELL to get column, or default to 1 */
         char* stored = iupAttribGet(ih, "FOCUSCELL");
         int stored_lin, stored_col;
         if (stored && iupStrToIntInt(stored, &stored_lin, &stored_col, ':') >= 1)
         {
-          /* Keep the stored column */
           col = stored_col;
         }
         else
         {
-          /* No stored value, default to column 1 */
           col = 1;
         }
       }
     }
     else if (num_parsed != 2)
     {
-      /* Invalid format */
       return 0;
     }
   }
@@ -467,7 +447,6 @@ static int iTableSetFocusCellAttrib(Ihandle* ih, const char* value)
 
   if (!ih->handle)
   {
-    /* Store for later */
     iupAttribSetStr(ih, "FOCUSCELL", value);
     return 0;
   }
@@ -478,7 +457,6 @@ static int iTableSetFocusCellAttrib(Ihandle* ih, const char* value)
 
 static char* iTableGetValueAttrib(Ihandle* ih)
 {
-  /* VALUE is the value of the focused cell */
   if (!ih->handle)
     return NULL;
 
@@ -493,7 +471,6 @@ static char* iTableGetValueAttrib(Ihandle* ih)
 
 static int iTableSetValueAttrib(Ihandle* ih, const char* value)
 {
-  /* Set value of focused cell */
   if (!ih->handle)
     return 0;
 
@@ -547,7 +524,7 @@ static int iTableSetShowGridAttrib(Ihandle* ih, const char* value)
     int show = iupStrBoolean(value);
     iupdrvTableSetShowGrid(ih, show);
   }
-  return 1;  /* Store in hash */
+  return 1;
 }
 
 /* ========================================================================= */
@@ -558,20 +535,17 @@ static int iTableCreateMethod(Ihandle* ih, void** params)
 {
   (void)params;
 
-  /* Allocate control data */
   ih->data = iupALLOCCTRLDATA();
 
-  /* Initialize default values */
   ih->data->num_lin = 0;
   ih->data->num_col = 0;
-  ih->data->sortable = 0;  /* Sorting disabled by default */
-  ih->data->allow_reorder = 0;  /* Column reordering disabled by default */
-  ih->data->user_resize = 0;  /* User column resizing disabled by default */
-  ih->data->stretch_last = 1;  /* Last column stretching enabled by default */
+  ih->data->sortable = 0;
+  ih->data->allow_reorder = 0;
+  ih->data->user_resize = 0;
+  ih->data->stretch_last = 1;
   ih->data->show_image = 0;
   ih->data->fit_image = 1;
 
-  /* Default EXPAND is YES */
   ih->expand = IUP_EXPAND_BOTH;
 
   return IUP_NOERROR;
@@ -585,23 +559,18 @@ static void iTableComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *chi
   int visiblecolumns, visiblelines;
   int max_col, visible_lines;
 
-  /* Tell parent container about our expand settings */
   *children_expand = ih->expand;
 
-  /* Get font metrics */
   iupdrvFontGetCharSize(ih, &charwidth, &charheight);
 
-  /* Get VISIBLECOLUMNS and VISIBLELINES attributes */
   visiblecolumns = iupAttribGetInt(ih, "VISIBLECOLUMNS");
   visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
 
-  /* Determine how many columns to include in width calculation */
   if (visiblecolumns > 0 && ih->data->num_col > 0)
     max_col = (visiblecolumns < ih->data->num_col) ? visiblecolumns : ih->data->num_col;
   else
     max_col = ih->data->num_col;
 
-  /* Calculate width from column widths */
   if (max_col > 0)
   {
     for (col = 1; col <= max_col; col++)
@@ -609,7 +578,6 @@ static void iTableComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *chi
       int col_width = 0;
       char* value;
 
-      /* Check if WIDTH or RASTERWIDTH is set (these are ID-based attributes) */
       char name[50];
       snprintf(name, sizeof(name), "RASTERWIDTH%d", col);
       value = iupAttribGet(ih, name);
@@ -635,14 +603,13 @@ static void iTableComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *chi
         }
       }
 
-      /* No explicit width set, use a reasonable default. */
       col_width = 100;
       natural_w += col_width;
     }
   }
   else
   {
-    natural_w = 80 * charwidth;  /* Default for no columns */
+    natural_w = 80 * charwidth;
   }
 
   if (visiblelines > 0)
@@ -650,30 +617,24 @@ static void iTableComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *chi
   else
     visible_lines = 8;
 
-  /* Get row heights from driver */
   int row_height = iupdrvTableGetRowHeight(ih);
   int header_height = iupdrvTableGetHeaderHeight(ih);
 
-  /* Calculate height: header + visible data rows */
   natural_h = header_height + (row_height * visible_lines);
 
-  /* Add space for grid lines, dummy column */
   int grid_lines = 0;
   int dummy_column = 0;
 
-  /* Only account for grid lines if SHOWGRID is enabled (default is YES) */
   char* showgrid = iupAttribGetStr(ih, "SHOWGRID");
   if (iupStrBoolean(showgrid) && max_col > 0)
-    grid_lines = max_col - 1;  /* 1px grid line between each visible column */
+    grid_lines = max_col - 1;
 
-  /* Check if drivers will add dummy column (when STRETCHLAST=NO or last column has explicit width) */
   if (!ih->data->stretch_last)
   {
     dummy_column = 1; /* GTK3/GTK4 add 1px dummy column when STRETCHLAST=NO */
   }
   else if (ih->data->num_col > 0)
   {
-    /* Check if last column has explicit width */
     char name[50];
     snprintf(name, sizeof(name), "RASTERWIDTH%d", ih->data->num_col);
     char* width_str = iupAttribGet(ih, name);
@@ -691,7 +652,6 @@ static void iTableComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *chi
 
   natural_w += grid_lines + dummy_column;
 
-  /* Add driver-specific borders (scrollbar, frame) */
   iupdrvTableAddBorders(ih, &natural_w, &natural_h);
 
   *w = natural_w;
@@ -709,7 +669,7 @@ static int iTableSetSortableAttrib(Ihandle* ih, const char* value)
     ih->data->sortable = 1;
   else
     ih->data->sortable = 0;
-  return 0; /* do not store in hash table */
+  return 0;
 }
 
 int iupTableCallDragDropCb(Ihandle* ih, int drag_id, int drop_id, int *is_ctrl)
@@ -802,7 +762,7 @@ static int iTableSetAllowReorderAttrib(Ihandle* ih, const char* value)
     ih->data->allow_reorder = 1;
   else
     ih->data->allow_reorder = 0;
-  return 0; /* do not store in hash table */
+  return 0;
 }
 
 static char* iTableGetUserResizeAttrib(Ihandle* ih)
@@ -816,7 +776,7 @@ static int iTableSetUserResizeAttrib(Ihandle* ih, const char* value)
     ih->data->user_resize = 1;
   else
     ih->data->user_resize = 0;
-  return 0; /* do not store in hash table */
+  return 0;
 }
 
 static char* iTableGetStretchLastAttrib(Ihandle* ih)
@@ -830,12 +790,11 @@ static int iTableSetStretchLastAttrib(Ihandle* ih, const char* value)
     ih->data->stretch_last = 1;
   else
     ih->data->stretch_last = 0;
-  return 0; /* do not store in hash table */
+  return 0;
 }
 
 static void iTableDestroyMethod(Ihandle* ih)
 {
-  /* Nothing to free in core, native widget handles cleanup */
   (void)ih;
 }
 
@@ -848,13 +807,12 @@ Iclass* iupTableNewClass(void)
   Iclass* ic = iupClassNew(NULL);
 
   ic->name = "table";
-  ic->format = NULL;  /* No creation parameters */
+  ic->format = NULL;
   ic->nativetype = IUP_TYPECONTROL;
   ic->childtype = IUP_CHILDNONE;
   ic->is_interactive = 1;
-  ic->has_attrib_id = 2;  /* Has attributes with IDs (both single and double) */
+  ic->has_attrib_id = 2;
 
-  /* Class methods */
   ic->New = iupTableNewClass;
   ic->Create = iTableCreateMethod;
   ic->Destroy = iTableDestroyMethod;
@@ -864,15 +822,15 @@ Iclass* iupTableNewClass(void)
   /* IupTable Callbacks */
   iupClassRegisterCallback(ic, "CLICK_CB", "iis");
   iupClassRegisterCallback(ic, "ENTERITEM_CB", "ii");
-  iupClassRegisterCallback(ic, "SORT_CB", "i");  /* col, called when user clicks column header to sort */
+  iupClassRegisterCallback(ic, "SORT_CB", "i");
   iupClassRegisterCallback(ic, "VALUECHANGED_CB", "ii");
-  iupClassRegisterCallback(ic, "EDITBEGIN_CB", "ii");  /* lin, col, called when editing starts, return IUP_IGNORE to block */
-  iupClassRegisterCallback(ic, "EDITEND_CB", "iisi");  /* lin, col, new_value, apply (1=accepted, 0=cancelled), return IUP_IGNORE to reject */
-  iupClassRegisterCallback(ic, "EDITION_CB", "iis");  /* lin, col, new_text */
-  iupClassRegisterCallback(ic, "VALUE_CB", "ii=s");  /* lin, col, returns string value for virtual mode */
-  iupClassRegisterCallback(ic, "IMAGE_CB", "ii=s");  /* lin, col, returns image name for virtual mode */
+  iupClassRegisterCallback(ic, "EDITBEGIN_CB", "ii");
+  iupClassRegisterCallback(ic, "EDITEND_CB", "iisi");
+  iupClassRegisterCallback(ic, "EDITION_CB", "iis");
+  iupClassRegisterCallback(ic, "VALUE_CB", "ii=s");
+  iupClassRegisterCallback(ic, "IMAGE_CB", "ii=s");
   iupClassRegisterCallback(ic, "REORDER_CB", "ii");
-  iupClassRegisterCallback(ic, "DRAGDROP_CB", "iiii");  /* row drag-reorder: drag_id, drop_id, isshift, isctrl */
+  iupClassRegisterCallback(ic, "DRAGDROP_CB", "iiii");
 
   /* Common Callbacks */
   iupBaseRegisterCommonCallbacks(ic);

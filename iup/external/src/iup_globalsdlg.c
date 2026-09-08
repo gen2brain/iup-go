@@ -19,7 +19,6 @@
 #include "iup_names.h"
 
 
-/* Map IupGetGlobal("DRIVER") to its IUPDRV_* bit. */
 static int iGlobalsCurrentDriverBit(void)
 {
   const char* drv = IupGetGlobal("DRIVER");

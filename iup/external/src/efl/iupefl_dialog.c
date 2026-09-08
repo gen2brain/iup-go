@@ -469,7 +469,6 @@ static void eflDialogSetResizeInc(Ihandle* ih, const char* value, int min_w, int
   Ecore_Evas* ee;
   int inc_w = 0, inc_h = 0;
 
-  /* the step goes through a resize, and Wayland rejects one before the surface has a role */
   if (!win || !efl_gfx_entity_visible_get(win))
     return;
 
@@ -560,8 +559,7 @@ IUP_SDK_API void iupdrvDialogSetPosition(Ihandle* ih, int x, int y)
 
 IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int* border, int* caption, int* menu)
 {
-  /* EFL windows handle decorations internally.
-     Only menu bar height needs to be tracked since IUP positions content below it. */
+  /* EFL windows handle decorations internally */
   *menu = eflDialogGetMenuSize(ih);
   *border = 0;
   *caption = 0;
@@ -691,7 +689,6 @@ static int eflDialogSetMinSizeAttrib(Ihandle* ih, const char* value)
 
   eflDialogSetMinMax(ih, min_w, min_h, max_w, max_h);
 
-  /* the base follows MINSIZE */
   eflDialogSetResizeInc(ih, iupAttribGet(ih, "RESIZEINC"), min_w, min_h);
 
   return iupBaseSetMinSizeAttrib(ih, value);

@@ -455,7 +455,6 @@ static int xGLCanvasMapMethod(Ihandle* ih)
         for (i = 0; i < nelements; i++)
         {
           int visual_id = 0;
-          /* Find the FBConfig that matches the VisualID of our chosen XVisualInfo */
           glXGetFBConfigAttrib(gldata->display, configs[i], GLX_VISUAL_ID, &visual_id);
           if (visual_id == gldata->vinfo->visualid)
           {

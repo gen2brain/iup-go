@@ -56,7 +56,7 @@ public:
         BPath p(&ref);
         fPaths.push_back(BString(p.Path()));
       }
-      if (!fPaths.empty()) fStatus = 0;  /* selected entries exist */
+      if (!fPaths.empty()) fStatus = 0;
     }
     else if (msg->what == B_SAVE_REQUESTED)
     {
@@ -87,7 +87,7 @@ public:
 
   void WaitDone()
   {
-    /* Blocked here, so repaint the caller's window like BAlert::Go does. */
+    /* Blocked here, so repaint the caller's window. */
     BWindow* window = dynamic_cast<BWindow*>(BLooper::LooperForThread(find_thread(NULL)));
     for (;;)
     {
@@ -160,7 +160,6 @@ static int haikuFileDlgPopup(Ihandle* ih, int /*x*/, int /*y*/)
   recv->SetMultiple(multiple && !is_save);
   recv->Run();
 
-  /* DIR: open panel that lets you Choose a directory. */
   uint32 node_flavors = is_dir ? B_DIRECTORY_NODE : (B_FILE_NODE | B_SYMLINK_NODE);
 
   /* TFilePanel copies the messenger by value; stack is fine. */

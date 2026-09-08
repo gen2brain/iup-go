@@ -262,7 +262,6 @@ static int motKeyDiscardKeypressRepeat(XEvent *evt)
     {
       /* Pop off the repeated KeyPress and ignore */
       XNextEvent(iupmot_display, evt);
-      /* Ignore the auto-repeated KeyRelease/KeyPress pair */
       return 1;
     }
   }

@@ -1,13 +1,6 @@
 /** \file
  * \brief Drawing Functions - FLTK Implementation
  *
- * Uses FLTK's offscreen drawing (fl_begin_offscreen / fl_end_offscreen).
- *
- * Flow: CreateCanvas -> fl_begin_offscreen (push offscreen surface)
- *       Drawing -> all fl_* calls go to offscreen
- *       Flush -> fl_end_offscreen (pop to window surface) + present the buffer
- *       Kill -> cleanup (offscreen already ended by Flush)
- *
  * See Copyright Notice in "iup.h"
  */
 

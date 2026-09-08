@@ -29,8 +29,8 @@ class BBitmap;
 struct rgb_color;
 
 /* IupHaikuApp / IupHaikuWindow MessageReceived 'what' codes. */
-#define IUPHAIKU_APP_DRAIN_MSG     'IuPM'  /* drain IupPostMessage queue */
-#define IUPHAIKU_APP_IDLE_TICK     'IuIT'  /* idle-cb tick */
+#define IUPHAIKU_APP_DRAIN_MSG     'IuPM'
+#define IUPHAIKU_APP_IDLE_TICK     'IuIT'
 #define IUPHAIKU_APP_SHOW_WIN      'IuSW'  /* deferred Show during launch */
 #define IUPHAIKU_MENU_ITEM_MSG     'IupM'  /* IupItem ACTION dispatch */
 #define IUPHAIKU_MENU_RECENT_MSG   'IuRM'  /* IupConfigRecent item; "menu" Ihandle*, "index" int32 */
@@ -48,7 +48,6 @@ IUP_DRV_API BApplication* iuphaikuGetApplication();
 IUP_DRV_API void iuphaikuAddToParent(Ihandle* ih);
 IUP_DRV_API void iuphaikuSetPosSize(BView* widget, int x, int y, int width, int height);
 
-/* Plain BView container for Frame/Tabs/etc */
 IUP_DRV_API BView* iuphaikuNativeContainerNew();
 IUP_DRV_API void iuphaikuNativeContainerAdd(BView* container, BView* widget);
 
@@ -76,7 +75,6 @@ IUP_DRV_API void iuphaikuTableUpdateColors(Ihandle* ih);
 
 IUP_DRV_API void iuphaikuLoopCleanup();
 
-/* Wake be_app to re-check the visible-dialog count. */
 IUP_DRV_API void iuphaikuPostAppWake();
 
 IUP_DRV_API void iuphaikuAppDrainPosts();
@@ -86,13 +84,11 @@ IUP_DRV_API void iuphaikuAppStopIdleRunner();
 
 IUP_DRV_API void iuphaikuRecentDispatch(Ihandle* menu, int index);
 
-/* Key decode/encode helpers (used by widget KeyDown / MouseDown overrides).
- * Modifier / button masks are uint32_t to keep this header free of Haiku typedefs. */
+/* Modifier / button masks are uint32_t to keep this header free of Haiku typedefs. */
 IUP_DRV_API int  iuphaikuKeyDecode(int byte, int raw_char, int key, unsigned int modifiers);
 IUP_DRV_API int  iuphaikuKeyPadScanCode(int code, int* byte_val);
 IUP_DRV_API void iuphaikuButtonKeySetStatus(unsigned int modifiers, unsigned int buttons, int button, char* status, int doubleclick);
 
-/* Focus helpers. */
 IUP_DRV_API void iuphaikuSetCanFocus(BView* widget, int can);
 IUP_DRV_API void iuphaikuFocusInOutEvent(Ihandle* ih, int focus_in);
 
@@ -109,7 +105,6 @@ IUP_DRV_API void iuphaikuFireGlobalInputCB(BMessage* msg);
 /* `*owned` set true when the BCursor was new'd and the caller must delete. */
 IUP_DRV_API BCursor* iuphaikuGetCursor(Ihandle* ih, const char* name, bool* owned);
 
-/* GLBackgroundBox: mark a child transparent over the GL, and paint its GL slice in Draw. */
 IUP_DRV_API void iuphaikuSetGLBackgroundChild(Ihandle* ih, BView* view);
 IUP_DRV_API bool iuphaikuPaintGLBackgroundSlice(BView* view, Ihandle* ih);
 
@@ -141,7 +136,6 @@ bool iuphaikuDnDMouseMoved(Ihandle* ih, BView* view, BPoint where, unsigned int 
 bool iuphaikuDnDMessageReceived(Ihandle* ih, BView* view, BMessage* msg);
 bool iuphaikuDnDInitiateDrag(Ihandle* ih, BView* view, BPoint where);
 
-/* Canvas event handlers, shared by IupCanvas (BView) and IupGLCanvas (BGLView). */
 void iuphaikuCanvasOnDraw(Ihandle* ih, BView* view, BRect dirty);
 void iuphaikuCanvasOnFrameResized(Ihandle* ih, BView* view, float new_w, float new_h);
 void iuphaikuCanvasOnAttachedToWindow(Ihandle* ih, BView* view);

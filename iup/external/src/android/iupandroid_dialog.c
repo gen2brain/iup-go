@@ -32,7 +32,6 @@ IUPJNI_DECLARE_CLASS_STATIC(IupDialogHelper);
 #define ANDROID_DEFAULT_DIALOG_WIDTH 1024
 #define ANDROID_DEFAULT_DIALOG_HEIGHT 1920
 
-/* uncached JNI lookup; dialog attr changes are cold enough */
 static void androidDialogCallVoidWithString(Ihandle* ih, const char* method_name, const char* utf8)
 {
   if (!ih || !ih->handle)
@@ -166,7 +165,6 @@ IUP_SDK_API void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* handle, int* w,
 
 IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
 {
-  /* Show → foreground, Hide → background; teardown is reserved for IupDestroy. */
   androidDialogCallVoidNoArg(ih, visible ? "bringToFront" : "moveToBack");
 }
 
@@ -223,7 +221,7 @@ IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
     androidDialogCallVoidWithBool(ih, "setFullscreen", 1);
     ih->data->show_state = IUP_MAXIMIZE;
   }
-  else  /* NORMAL or anything else */
+  else
   {
     androidDialogCallVoidWithBool(ih, "setFullscreen", 0);
     ih->data->show_state = IUP_SHOW;
@@ -247,7 +245,6 @@ static char* androidDialogGetClientSizeAttrib(Ihandle* ih)
 
 static char* androidDialogGetClientOffsetAttrib(Ihandle* ih)
 {
-  /* IupAndroidFixed already eats insets, so (0,0) is the safe area */
   (void)ih;
   return iupStrReturnIntInt(0, 0, 'x');
 }
@@ -433,7 +430,6 @@ void iupAndroid_DialogActivityCreated(Ihandle* ih)
   if (value)
     androidDialogSetOpacityAttrib(ih, value);
 
-  /* Re-attach the menu bar now that ih->handle is the real Activity. */
   if (ih->data && ih->data->menu && ih->data->menu->handle)
     iupAndroid_MenuAttachActivity(ih, ih->data->menu);
 
@@ -516,7 +512,7 @@ IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
   ic->UnMap = androidDialogUnMapMethod;
   ic->LayoutUpdate = androidDialogLayoutUpdateMethod;
 
-  /* Touch-UI defaults: shrink content to viewport width (height overflows for vertical scroll), and skip auto-focus so requestFocus doesn't silently land on a text field. */
+  /* Touch-UI defaults: shrink to viewport width; no auto-focus so requestFocus cannot land on a text field. */
   iupClassRegisterReplaceAttribDef(ic, "SHRINK", "YES", NULL);
   iupClassRegisterReplaceAttribDef(ic, "SHOWNOFOCUS", "YES", NULL);
 
@@ -535,7 +531,6 @@ IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "HIDETITLEBAR", NULL, androidDialogSetHideTitleBarAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "BRINGFRONT", NULL, androidDialogSetBringFrontAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
 
-  /* Android-specific: activity requested orientation */
   iupClassRegisterAttribute(ic, "ORIENTATION", NULL, androidDialogSetOrientationAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 
   /* Android-specific: NavigationDrawer menu; independent of MENU. */
@@ -544,7 +539,6 @@ IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "MINSIZE", NULL, androidDialogSetMinSizeAttrib, IUPAF_SAMEASSYSTEM, "1x1", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MAXSIZE", NULL, androidDialogSetMaxSizeAttrib, IUPAF_SAMEASSYSTEM, "65535x65535", IUPAF_NO_INHERIT);
 
-  /* Not applicable on Android. */
   iupClassRegisterAttribute(ic, "MAXIMIZED", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "RESIZEINC", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MINIMIZED", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
@@ -576,7 +570,6 @@ IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "TITLECENTERED", NULL, androidDialogSetTitleCenteredAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TITLEBARSTYLE", NULL, androidDialogSetTitleBarStyleAttrib, IUPAF_SAMEASSYSTEM, "FLAT", IUPAF_NO_INHERIT);
 
-  /* Tray (no tray on Android). */
   iupClassRegisterAttribute(ic, "TRAY", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TRAYIMAGE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TRAYTIP", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);

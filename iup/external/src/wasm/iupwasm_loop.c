@@ -117,8 +117,7 @@ static void wasmModalBackdropPop(void)
     iupwasmDialogModalShow(ih, 0);
 }
 
-/* Blocks: top-level for a C app, every modal for both. Go keeps its top-level
-   loop on the async JS event loop and never calls this. */
+/* Blocks: top level for a C app, every modal for both. Go never calls this. */
 int IupMainLoop(void)
 {
   static int called_entry = 0;

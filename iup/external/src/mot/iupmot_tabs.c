@@ -118,7 +118,6 @@ IUP_SDK_API void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_title, const 
   int text_width = 0;
   int text_height = 0;
 
-  /* Measure text dimensions */
   if (tab_title)
   {
     text_width = iupdrvFontGetStringWidth(ih, tab_title);
@@ -127,7 +126,6 @@ IUP_SDK_API void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_title, const 
     height = text_height;
   }
 
-  /* Add image dimensions */
   if (tab_image)
   {
     void* img = iupImageGetImage(tab_image, ih, 0, NULL);
@@ -988,7 +986,6 @@ IUP_SDK_API void iupdrvTabsInitClass(Iclass* ic)
     XtAppAddActions(iupmot_appcontext, &rec, 1);
   }
 
-  /* Register TABCLOSE_CB callback */
   iupClassRegisterCallback(ic, "TABCLOSE_CB", "i");
 
   /* Driver Dependent Attribute functions */

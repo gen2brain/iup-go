@@ -47,35 +47,29 @@ static COLORREF winTableFocusRectColor(COLORREF bg_color)
  ****************************************************************************/
 
 typedef struct _IwinTableData {
-  HWND list_view;              /* Main ListView control */
+  HWND list_view;
 
-  /* Column metadata */
   int* col_widths;             /* Width of each column (pixels) */
   BOOL* col_width_set;         /* TRUE if column has explicit RASTERWIDTH set */
-  char** col_titles;           /* Column header texts */
+  char** col_titles;
 
   /* Cell storage (normal mode) */
   char*** cell_values;         /* [num_lin][num_col] -> string */
 
-  /* Current cell tracking */
   int current_row;             /* Currently focused row (1-based, 0=none) */
   int current_col;             /* Currently focused column (1-based, 0=none) */
 
-  /* Sorting state */
   int sort_column;             /* Currently sorted column (1-based, 0=none) */
   char sort_ascending;         /* Sort direction: 1=ascending, -1=descending, 0=not sorted */
 
-  /* UI state */
-  BOOL show_grid;              /* Grid lines visible */
-  HFONT hfont;                 /* Current font */
+  BOOL show_grid;
+  HFONT hfont;
 
-  /* Editing state */
-  HWND edit_control;           /* Edit control for cell editing */
+  HWND edit_control;
   int edit_row;                /* Row being edited (1-based) */
   int edit_col;                /* Column being edited (1-based) */
   BOOL edit_ending;            /* Flag to prevent WM_KILLFOCUS interference */
 
-  /* Suppress callbacks during programmatic changes */
   int suppress_callbacks;
 
   /* Column reorder drag state */
@@ -153,7 +147,6 @@ static void winTableAutoSizeColumns(Ihandle* ih)
     int iup_col = i + 1;
     int max_width = 0;
 
-    /* Measure column title */
     if (data->col_titles[i])
     {
       SIZE size;
@@ -161,7 +154,6 @@ static void winTableAutoSizeColumns(Ihandle* ih)
         max_width = size.cx + 20;
     }
 
-    /* Measure cell content */
     for (int lin = 1; lin <= max_rows_to_check; lin++)
     {
       int cell_width = 0;
@@ -244,7 +236,6 @@ static void winTableAdjustColumnWidths(Ihandle* ih)
  * Sorting
  ****************************************************************************/
 
-/* Update header column with sort arrow indicator */
 static void winTableUpdateSortArrow(Ihandle* ih, int col)
 {
   IwinTableData* data = IWIN_TABLE_DATA(ih);
@@ -257,20 +248,16 @@ static void winTableUpdateSortArrow(Ihandle* ih, int col)
   if (!header)
     return;
 
-  /* Update all column headers (skip dummy column at index 0) */
   for (int i = 1; i <= ih->data->num_col; i++)
   {
     HDITEM hdi;
     ZeroMemory(&hdi, sizeof(HDITEM));
     hdi.mask = HDI_FORMAT;
 
-    /* Get current format */
     if (Header_GetItem(header, i, &hdi))
     {
-      /* Clear existing sort arrows */
       hdi.fmt &= ~(HDF_SORTUP | HDF_SORTDOWN);
 
-      /* Add sort arrow if this is the sorted column */
       if (i == col)
       {
         if (data->sort_ascending == 1)
@@ -279,13 +266,11 @@ static void winTableUpdateSortArrow(Ihandle* ih, int col)
           hdi.fmt |= HDF_SORTDOWN;
       }
 
-      /* Apply updated format */
       Header_SetItem(header, i, &hdi);
     }
   }
 }
 
-/* Sort rows in cell_values array based on specified column */
 static void winTableSortRows(Ihandle* ih, int col, int ascending)
 {
   IwinTableData* data = IWIN_TABLE_DATA(ih);
@@ -295,7 +280,6 @@ static void winTableSortRows(Ihandle* ih, int col, int ascending)
   if (!data->cell_values || num_rows < 2 || col < 1 || col > num_cols)
     return;
 
-  /* Simple bubble sort */
   for (int i = 0; i < num_rows - 1; i++)
   {
     for (int j = 0; j < num_rows - i - 1; j++)
@@ -304,14 +288,11 @@ static void winTableSortRows(Ihandle* ih, int col, int ascending)
       const char* val2 = data->cell_values[j + 1][col - 1];
       int should_swap = 0;
 
-      /* Handle NULL values (treat as empty string) */
       if (!val1) val1 = "";
       if (!val2) val2 = "";
 
-      /* Compare strings */
       int cmp = iupStrCompare(val1, val2, 0, 1);
 
-      /* Determine if swap is needed based on sort direction */
       if (ascending)
         should_swap = (cmp > 0);  /* Ascending: swap if val1 > val2 */
       else
@@ -319,7 +300,6 @@ static void winTableSortRows(Ihandle* ih, int col, int ascending)
 
       if (should_swap)
       {
-        /* Swap entire rows (all columns) */
         char** temp_row = data->cell_values[j];
         data->cell_values[j] = data->cell_values[j + 1];
         data->cell_values[j + 1] = temp_row;
@@ -328,7 +308,6 @@ static void winTableSortRows(Ihandle* ih, int col, int ascending)
   }
 }
 
-/* Perform sorting on the table */
 static void winTableSort(Ihandle* ih, int col)
 {
   IwinTableData* data = IWIN_TABLE_DATA(ih);
@@ -772,15 +751,12 @@ IUP_SDK_API void iupdrvTableSetCellValue(Ihandle* ih, int lin, int col, const ch
   if (lin < 1 || lin > ih->data->num_lin || col < 1 || col > ih->data->num_col)
     return;
 
-  /* Check if in virtual mode */
   char* virtualmode = iupAttribGet(ih, "VIRTUALMODE");
   if (!iupStrBoolean(virtualmode))
   {
-    /* Normal mode: store in cell_values */
     winTableSetCell(&data->cell_values[lin-1][col-1], value);
   }
 
-  /* Update ListView display */
   LVITEM item;
   ZeroMemory(&item, sizeof(LVITEM));
   item.mask = LVIF_TEXT;
@@ -804,7 +780,6 @@ IUP_SDK_API char* iupdrvTableGetCellValue(Ihandle* ih, int lin, int col)
   char* virtualmode = iupAttribGet(ih, "VIRTUALMODE");
   if (iupStrBoolean(virtualmode))
   {
-    /* Virtual mode: call VALUE_CB */
     sIFnii value_cb = (sIFnii)IupGetCallback(ih, "VALUE_CB");
     if (value_cb)
       return value_cb(ih, lin, col);
@@ -812,7 +787,6 @@ IUP_SDK_API char* iupdrvTableGetCellValue(Ihandle* ih, int lin, int col)
   }
   else
   {
-    /* Normal mode: return from cell_values */
     return data->cell_values[lin-1][col-1];
   }
 }
@@ -847,20 +821,16 @@ IUP_SDK_API void iupdrvTableSetColTitle(Ihandle* ih, int col, const char* title)
   if (col < 1 || col > ih->data->num_col)
     return;
 
-  /* Store title */
   if (data->col_titles[col-1])
     free(data->col_titles[col-1]);
   data->col_titles[col-1] = title ? iupStrDup(title) : NULL;
 
-  /* Update ListView column header with alignment */
   LVCOLUMN lvc;
   ZeroMemory(&lvc, sizeof(LVCOLUMN));
   lvc.mask = LVCF_TEXT | LVCF_FMT;
   lvc.pszText = iupwinStrToSystem(title ? title : "");
 
-  /* Apply alignment from ALIGNMENT attribute */
   {
-    /* Check for ALIGNMENT attribute */
     char name[50];
     snprintf(name, sizeof(name), "ALIGNMENT%d", col);
     char* align_str = iupAttribGet(ih, name);
@@ -876,7 +846,6 @@ IUP_SDK_API void iupdrvTableSetColTitle(Ihandle* ih, int col, const char* title)
     }
     else
     {
-      /* Default: left-aligned */
       lvc.fmt = LVCFMT_LEFT;
     }
   }
@@ -908,14 +877,11 @@ IUP_SDK_API void iupdrvTableSetColWidth(Ihandle* ih, int col, int width)
   if (col < 1 || col > ih->data->num_col)
     return;
 
-  /* Mark column as having explicit width set */
   data->col_widths[col-1] = width;
   data->col_width_set[col-1] = TRUE;
 
-  /* Set fixed width */
   ListView_SetColumnWidth(list_view, col, width);
 
-  /* Re-adjust last column if needed */
   winTableAdjustColumnWidths(ih);
 }
 
@@ -961,7 +927,6 @@ IUP_SDK_API void iupdrvTableSetFocusCell(Ihandle* ih, int lin, int col)
   if (lin > ih->data->num_lin || col > ih->data->num_col)
     return;
 
-  /* Invalidate old focused cell to remove focus rect */
   winTableInvalidateCell(list_view, data->current_row, data->current_col);
 
   data->current_row = lin;
@@ -969,21 +934,16 @@ IUP_SDK_API void iupdrvTableSetFocusCell(Ihandle* ih, int lin, int col)
 
   if (lin == 0 || col == 0)
   {
-    /* Clear selection */
     ListView_SetItemState(list_view, -1, 0, LVIS_SELECTED | LVIS_FOCUSED);
     return;
   }
 
-  /* Suppress ENTERITEM_CB during programmatic selection */
   data->suppress_callbacks = 1;
 
-  /* Set focus and selection on the row */
   ListView_SetItemState(list_view, lin - 1, LVIS_FOCUSED | LVIS_SELECTED, LVIS_FOCUSED | LVIS_SELECTED);
 
-  /* Ensure visible */
   ListView_EnsureVisible(list_view, lin - 1, FALSE);
 
-  /* Invalidate new focused cell to draw focus rect */
   winTableInvalidateCell(list_view, lin, col);
 
   data->suppress_callbacks = 0;
@@ -1043,7 +1003,6 @@ IUP_SDK_API void iupdrvTableSetShowGrid(Ihandle* ih, int show)
 
   data->show_grid = show ? TRUE : FALSE;
 
-  /* Invalidate to redraw with/without custom grid lines */
   InvalidateRect(list_view, NULL, TRUE);
 }
 
@@ -1062,7 +1021,6 @@ static void winTableMeasureRowMetrics(Ihandle* ih)
   if (win_table_row_height >= 0)
     return;
 
-  /* Create temporary ListView to measure */
   HWND temp_list = CreateWindowEx(
     WS_EX_CLIENTEDGE,
     WC_LISTVIEW,
@@ -1077,7 +1035,6 @@ static void winTableMeasureRowMetrics(Ihandle* ih)
 
   if (!temp_list)
   {
-    /* Fallback to font metrics */
     int charheight;
     iupdrvFontGetCharSize(ih, NULL, &charheight);
     win_table_row_height = charheight + 4;
@@ -1085,7 +1042,6 @@ static void winTableMeasureRowMetrics(Ihandle* ih)
     return;
   }
 
-  /* Add a column */
   LVCOLUMN col;
   ZeroMemory(&col, sizeof(LVCOLUMN));
   col.mask = LVCF_TEXT | LVCF_WIDTH;
@@ -1093,7 +1049,6 @@ static void winTableMeasureRowMetrics(Ihandle* ih)
   col.cx = 100;
   ListView_InsertColumn(temp_list, 0, &col);
 
-  /* Add an item */
   LVITEM item;
   ZeroMemory(&item, sizeof(LVITEM));
   item.mask = LVIF_TEXT;
@@ -1101,7 +1056,6 @@ static void winTableMeasureRowMetrics(Ihandle* ih)
   item.pszText = TEXT("WWWWWWWWWW");
   ListView_InsertItem(temp_list, &item);
 
-  /* Get item rectangle */
   RECT rect;
   if (ListView_GetItemRect(temp_list, 0, &rect, LVIR_BOUNDS))
     win_table_row_height = rect.bottom - rect.top;
@@ -1112,7 +1066,6 @@ static void winTableMeasureRowMetrics(Ihandle* ih)
     win_table_row_height = charheight + 4;
   }
 
-  /* Get header height */
   HWND header = ListView_GetHeader(temp_list);
   if (header)
   {
@@ -1134,7 +1087,6 @@ IUP_SDK_API int iupdrvTableGetRowHeight(Ihandle* ih)
   HWND list_view = winTableGetListView(ih);
   (void)data;
 
-  /* If table is mapped and has items, measure directly */
   if (list_view && ih->data->num_lin > 0)
   {
     RECT rect;
@@ -1146,7 +1098,6 @@ IUP_SDK_API int iupdrvTableGetRowHeight(Ihandle* ih)
     }
   }
 
-  /* Fallback to pre-measured value */
   winTableMeasureRowMetrics(ih);
   return win_table_row_height;
 }
@@ -1176,16 +1127,12 @@ IUP_SDK_API void iupdrvTableAddBorders(Ihandle* ih, int* w, int* h)
 {
   int sb_size = iupdrvGetScrollbarSize();
 
-  /* ListView border from system metrics */
   int border = GetSystemMetrics(SM_CXEDGE) * 2;
 
-  /* ListView: add scrollbar width + border */
   *w += sb_size + border;
 
-  /* Vertical border */
   *h += border;
 
-  /* Add horizontal scrollbar height when VISIBLECOLUMNS causes it to appear */
   int visiblecolumns = iupAttribGetInt(ih, "VISIBLECOLUMNS");
   if (visiblecolumns > 0 && ih->data->num_col > visiblecolumns)
     *h += sb_size;
@@ -1208,25 +1155,20 @@ IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
   if (num_lin == old_num_lin)
     return;
 
-  /* Check if in virtual mode */
   char* virtualmode = iupAttribGet(ih, "VIRTUALMODE");
   if (iupStrBoolean(virtualmode))
   {
-    /* Virtual mode: just update item count */
     ListView_SetItemCountEx(list_view, num_lin, LVSICF_NOINVALIDATEALL);
   }
   else
   {
-    /* Normal mode: add/remove actual items */
     if (num_lin < old_num_lin)
     {
-      /* Delete excess rows */
       for (int i = num_lin; i < old_num_lin; i++)
         ListView_DeleteItem(list_view, num_lin);
     }
     else
     {
-      /* Add new rows */
       for (int i = old_num_lin; i < num_lin; i++)
       {
         LVITEM item;
@@ -1239,7 +1181,6 @@ IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
     }
   }
 
-  /* Reallocate cell storage if in normal mode */
   if (!iupStrBoolean(virtualmode))
   {
     char*** new_cell_values = (char***)calloc(num_lin, sizeof(char**));
@@ -1250,13 +1191,11 @@ IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
 
       if (i < old_num_lin)
       {
-        /* Copy existing rows */
         for (int j = 0; j < ih->data->num_col; j++)
           new_cell_values[i][j] = data->cell_values[i][j];
       }
     }
 
-    /* Free old rows that are removed */
     for (int i = num_lin; i < old_num_lin; i++)
     {
       for (int j = 0; j < ih->data->num_col; j++)
@@ -1270,7 +1209,6 @@ IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
     data->cell_values = new_cell_values;
   }
 
-  /* Update the core structure's num_lin */
   ih->data->num_lin = num_lin;
 }
 
@@ -1289,26 +1227,23 @@ IUP_SDK_API void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
 
   if (num_col < old_num_col)
   {
-    /* Delete excess columns (skip dummy column at index 0) */
     for (int i = num_col; i < old_num_col; i++)
       ListView_DeleteColumn(list_view, num_col + 1);
   }
   else
   {
-    /* Add new columns (account for dummy column at index 0) */
     for (int i = old_num_col; i < num_col; i++)
     {
       LVCOLUMN lvc;
       ZeroMemory(&lvc, sizeof(LVCOLUMN));
       lvc.mask = LVCF_TEXT | LVCF_WIDTH | LVCF_FMT;
       lvc.pszText = iupwinStrToSystem("");
-      lvc.cx = 100;  /* Default width */
-      lvc.fmt = LVCFMT_LEFT;  /* Default alignment */
+      lvc.cx = 100;
+      lvc.fmt = LVCFMT_LEFT;
       ListView_InsertColumn(list_view, i + 1, &lvc);
     }
   }
 
-  /* Reallocate column metadata */
   int* new_col_widths = (int*)calloc(num_col, sizeof(int));
   BOOL* new_col_width_set = (BOOL*)calloc(num_col, sizeof(BOOL));
   char** new_col_titles = (char**)calloc(num_col, sizeof(char*));
@@ -1329,7 +1264,6 @@ IUP_SDK_API void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
     }
   }
 
-  /* Free removed column titles */
   for (int i = num_col; i < old_num_col; i++)
   {
     if (data->col_titles[i])
@@ -1347,7 +1281,6 @@ IUP_SDK_API void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
   data->col_width_set = new_col_width_set;
   data->col_titles = new_col_titles;
 
-  /* Reallocate cell storage if in normal mode */
   char* virtualmode = iupAttribGet(ih, "VIRTUALMODE");
   if (!iupStrBoolean(virtualmode))
   {
@@ -1363,7 +1296,6 @@ IUP_SDK_API void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
           new_row[j] = NULL;
       }
 
-      /* Free removed cells */
       for (int j = num_col; j < old_num_col; j++)
         winTableFreeCell(&data->cell_values[i][j]);
 
@@ -1392,12 +1324,10 @@ IUP_SDK_API void iupdrvTableAddLin(Ihandle* ih, int pos)
   char* virtualmode = iupAttribGet(ih, "VIRTUALMODE");
   if (iupStrBoolean(virtualmode))
   {
-    /* Virtual mode: just update item count */
     ListView_SetItemCountEx(list_view, ih->data->num_lin + 1, LVSICF_NOINVALIDATEALL);
   }
   else
   {
-    /* Normal mode: insert actual item at position */
     LVITEM item;
     ZeroMemory(&item, sizeof(LVITEM));
     item.mask = LVIF_TEXT;
@@ -1405,7 +1335,6 @@ IUP_SDK_API void iupdrvTableAddLin(Ihandle* ih, int pos)
     item.pszText = iupwinStrToSystem("");
     ListView_InsertItem(list_view, &item);
 
-    /* Reallocate cell storage */
     int new_num_lin = ih->data->num_lin + 1;
     char*** new_cell_values = (char***)calloc(new_num_lin, sizeof(char**));
 
@@ -1415,13 +1344,11 @@ IUP_SDK_API void iupdrvTableAddLin(Ihandle* ih, int pos)
 
       if (i < pos)
       {
-        /* Copy rows before insertion point */
         for (int j = 0; j < ih->data->num_col; j++)
           new_cell_values[i][j] = data->cell_values[i][j];
       }
       else if (i > pos)
       {
-        /* Copy rows after insertion point (shifted down by 1) */
         for (int j = 0; j < ih->data->num_col; j++)
           new_cell_values[i][j] = data->cell_values[i - 1][j];
       }
@@ -1437,7 +1364,6 @@ IUP_SDK_API void iupdrvTableAddLin(Ihandle* ih, int pos)
     data->cell_values = new_cell_values;
   }
 
-  /* Update line count */
   ih->data->num_lin++;
 }
 
@@ -1455,19 +1381,15 @@ IUP_SDK_API void iupdrvTableDelLin(Ihandle* ih, int pos)
   char* virtualmode = iupAttribGet(ih, "VIRTUALMODE");
   if (iupStrBoolean(virtualmode))
   {
-    /* Virtual mode: just update item count */
     ListView_SetItemCountEx(list_view, ih->data->num_lin - 1, LVSICF_NOINVALIDATEALL);
   }
   else
   {
-    /* Normal mode: delete actual item */
     ListView_DeleteItem(list_view, pos - 1);
 
-    /* Free cells in the deleted row */
     for (int j = 0; j < ih->data->num_col; j++)
       winTableFreeCell(&data->cell_values[pos - 1][j]);
 
-    /* Reallocate cell storage */
     int new_num_lin = ih->data->num_lin - 1;
     char*** new_cell_values = (char***)calloc(new_num_lin, sizeof(char**));
 
@@ -1477,13 +1399,11 @@ IUP_SDK_API void iupdrvTableDelLin(Ihandle* ih, int pos)
 
       if (i < pos - 1)
       {
-        /* Copy rows before deletion point */
         for (int j = 0; j < ih->data->num_col; j++)
           new_cell_values[i][j] = data->cell_values[i][j];
       }
       else
       {
-        /* Copy rows after deletion point (shifted up by 1) */
         for (int j = 0; j < ih->data->num_col; j++)
           new_cell_values[i][j] = data->cell_values[i + 1][j];
       }
@@ -1499,7 +1419,6 @@ IUP_SDK_API void iupdrvTableDelLin(Ihandle* ih, int pos)
     data->cell_values = new_cell_values;
   }
 
-  /* Update line count */
   ih->data->num_lin--;
 }
 
@@ -1546,13 +1465,11 @@ static int winTableSetSortableAttrib(Ihandle* ih, const char* value)
   {
     ih->data->sortable = 0;
 
-    /* Clear sort state and arrows when disabling sorting */
     if (data && list_view)
     {
       data->sort_column = 0;
       data->sort_ascending = 0;
 
-      /* Remove all sort arrows from headers */
       HWND header = ListView_GetHeader(list_view);
       if (header)
       {
@@ -1564,7 +1481,6 @@ static int winTableSetSortableAttrib(Ihandle* ih, const char* value)
 
           if (Header_GetItem(header, i, &hdi))
           {
-            /* Clear sort arrow flags */
             hdi.fmt &= ~(HDF_SORTUP | HDF_SORTDOWN);
             Header_SetItem(header, i, &hdi);
           }
@@ -1595,7 +1511,6 @@ static int winTableSetUserResizeAttrib(Ihandle* ih, const char* value)
   else
     ih->data->user_resize = 0;
 
-  /* Apply HDS_NOSIZING style to header control */
   if (list_view)
   {
     HWND header = ListView_GetHeader(list_view);
@@ -1605,12 +1520,10 @@ static int winTableSetUserResizeAttrib(Ihandle* ih, const char* value)
 
       if (ih->data->user_resize)
       {
-        /* Enable resizing: remove HDS_NOSIZING */
         style &= ~HDS_NOSIZING;
       }
       else
       {
-        /* Disable resizing: add HDS_NOSIZING */
         style |= HDS_NOSIZING;
       }
 
@@ -1628,7 +1541,6 @@ static int winTableSetAlignmentAttrib(Ihandle* ih, int col, const char* value)
   if (!list_view || col < 1 || col > ih->data->num_col)
     return 0;
 
-  /* Get current column format to preserve other flags */
   LVCOLUMN lvc;
   ZeroMemory(&lvc, sizeof(LVCOLUMN));
   lvc.mask = LVCF_FMT;
@@ -1636,10 +1548,8 @@ static int winTableSetAlignmentAttrib(Ihandle* ih, int col, const char* value)
   if (!ListView_GetColumn(list_view, col, &lvc))
     return 0;
 
-  /* Clear alignment bits (LVCFMT_LEFT, LVCFMT_RIGHT, LVCFMT_CENTER) */
   lvc.fmt &= ~(LVCFMT_LEFT | LVCFMT_RIGHT | LVCFMT_CENTER);
 
-  /* Set new alignment */
   if (iupStrEqualNoCase(value, "ARIGHT") || iupStrEqualNoCase(value, "RIGHT"))
     lvc.fmt |= LVCFMT_RIGHT;
   else if (iupStrEqualNoCase(value, "ACENTER") || iupStrEqualNoCase(value, "CENTER"))
@@ -1731,7 +1641,6 @@ static int winTableNotifyCallback(Ihandle* ih, void* msg_info, int* result)
   if (!data)
     return 0;
 
-  /* Handle ListView notifications */
   switch (nmhdr->code)
   {
     case LVN_BEGINDRAG:
@@ -1748,14 +1657,12 @@ static int winTableNotifyCallback(Ihandle* ih, void* msg_info, int* result)
 
     case LVN_GETDISPINFO:
     {
-      /* Virtual mode: provide text on demand */
       NMLVDISPINFO* plvdi = (NMLVDISPINFO*)msg_info;
 
       if (plvdi->item.mask & LVIF_TEXT)
       {
         if (plvdi->item.iSubItem == 0)
         {
-          /* Dummy column - return empty string */
           plvdi->item.pszText[0] = 0;
           break;
         }
@@ -1763,12 +1670,10 @@ static int winTableNotifyCallback(Ihandle* ih, void* msg_info, int* result)
         int lin = plvdi->item.iItem + 1;  /* Convert to 1-based */
         int col = plvdi->item.iSubItem;  /* Already matches IUP column (dummy at 0) */
 
-        /* Get text from VALUE_CB or cell storage */
         char* value = iupdrvTableGetCellValue(ih, lin, col);
 
         if (value && *value)
         {
-          /* Copy to display buffer */
           TCHAR* tvalue = iupwinStrToSystem(value);
           lstrcpyn(plvdi->item.pszText, tvalue, plvdi->item.cchTextMax);
         }
@@ -1784,7 +1689,6 @@ static int winTableNotifyCallback(Ihandle* ih, void* msg_info, int* result)
     {
       LPNMLISTVIEW pnmv = (LPNMLISTVIEW)msg_info;
 
-      /* Check if selection changed */
       if ((pnmv->uChanged & LVIF_STATE) && (pnmv->uNewState & LVIS_SELECTED) && !(pnmv->uOldState & LVIS_SELECTED))
       {
         int lin = pnmv->iItem + 1;  /* Convert to 1-based */
@@ -1804,27 +1708,21 @@ static int winTableNotifyCallback(Ihandle* ih, void* msg_info, int* result)
         int lin = pnmia->iItem + 1;  /* Convert to 1-based */
         int col = pnmia->iSubItem;  /* Already matches IUP column (dummy at 0) */
 
-        /* Update focused cell */
         if (lin != data->current_row || col != data->current_col)
         {
-          /* Invalidate old focused cell */
           winTableInvalidateCell(winTableGetListView(ih), data->current_row, data->current_col);
 
-          /* Update focus position */
           data->current_row = lin;
           data->current_col = col;
 
-          /* Invalidate new focused cell */
           winTableInvalidateCell(winTableGetListView(ih), lin, col);
         }
 
         char status[IUPKEY_STATUS_SIZE] = "";
         iupwinButtonKeySetStatus(0, status, 0);
 
-        /* Call CLICK_CB */
         winTableCallClickCB(ih, lin, col, status);
 
-        /* Call ENTERITEM_CB on every click (not suppressed) */
         if (!data->suppress_callbacks)
           winTableCallEnterItemCB(ih, lin, col);
       }
@@ -1855,7 +1753,6 @@ static int winTableNotifyCallback(Ihandle* ih, void* msg_info, int* result)
 
         int col = pnmv->iSubItem;  /* Already matches IUP column (dummy at 0) */
 
-        /* Perform sorting (updates sort state, sorts ListView, updates arrow) */
         winTableSort(ih, col);
       }
       break;
@@ -1888,7 +1785,6 @@ static int winTableNotifyCallback(Ihandle* ih, void* msg_info, int* result)
           int lin = (int)lplvcd->nmcd.dwItemSpec + 1;  /* Convert to 1-based */
           int col = lplvcd->iSubItem;  /* iSubItem already matches IUP column (dummy at 0) */
 
-          /* Check if this row is selected (selection takes priority over custom colors) */
           UINT itemState = ListView_GetItemState(data->list_view, lplvcd->nmcd.dwItemSpec, LVIS_SELECTED);
           int is_row_selected = (itemState & LVIS_SELECTED) != 0;
 
@@ -1899,7 +1795,6 @@ static int winTableNotifyCallback(Ihandle* ih, void* msg_info, int* result)
           if (!bgcolor)
             bgcolor = iupAttribGetId2(ih, "BGCOLOR", lin, 0);
 
-          /* Check for alternating row colors */
           if (!bgcolor)
           {
             char* alternate_color = iupAttribGet(ih, "ALTERNATECOLOR");
@@ -1930,7 +1825,6 @@ static int winTableNotifyCallback(Ihandle* ih, void* msg_info, int* result)
           if (!font)
             font = iupAttribGetId2(ih, "FONT", lin, 0);
 
-          /* Resolve font handle */
           HFONT hFont = NULL;
           int font_changed = 0;
           if (font && *font)
@@ -1945,14 +1839,12 @@ static int winTableNotifyCallback(Ihandle* ih, void* msg_info, int* result)
             HDC hdc = lplvcd->nmcd.hdc;
             RECT rc = lplvcd->nmcd.rc;
 
-            /* Get cell rect via ListView for accurate bounds */
             RECT sub_rc;
             sub_rc.top = col;
             sub_rc.left = LVIR_BOUNDS;
             SendMessage(data->list_view, LVM_GETSUBITEMRECT, (WPARAM)lplvcd->nmcd.dwItemSpec, (LPARAM)&sub_rc);
             rc = sub_rc;
 
-            /* Draw background */
             COLORREF bg_color;
             if (is_row_selected)
             {
@@ -1974,7 +1866,6 @@ static int winTableNotifyCallback(Ihandle* ih, void* msg_info, int* result)
             SetDCBrushColor(hdc, bg_color);
             FillRect(hdc, &rc, (HBRUSH)GetStockObject(DC_BRUSH));
 
-            /* Resolve text color */
             COLORREF fg_color;
             if (is_row_selected)
             {
@@ -1995,7 +1886,6 @@ static int winTableNotifyCallback(Ihandle* ih, void* msg_info, int* result)
 
             int img_offset = 0;
 
-            /* Get image name: virtual mode uses IMAGE_CB, normal mode uses stored attribute */
             char* image_name = NULL;
             char* virtualmode = iupAttribGet(ih, "VIRTUALMODE");
             if (iupStrBoolean(virtualmode))
@@ -2035,7 +1925,6 @@ static int winTableNotifyCallback(Ihandle* ih, void* msg_info, int* result)
               }
             }
 
-            /* Draw text */
             char* value = iupdrvTableGetCellValue(ih, lin, col);
             if (value && *value)
             {
@@ -2055,7 +1944,6 @@ static int winTableNotifyCallback(Ihandle* ih, void* msg_info, int* result)
               SelectObject(hdc, hOldFont);
             }
 
-            /* Draw grid lines */
             if (data->show_grid && lin <= ih->data->num_lin && col <= ih->data->num_col)
             {
               HPEN hPen = CreatePen(PS_SOLID, 1, GetSysColor(COLOR_3DFACE));
@@ -2075,12 +1963,10 @@ static int winTableNotifyCallback(Ihandle* ih, void* msg_info, int* result)
             return 1;
           }
 
-          /* Non-image mode: let ListView draw text, customize colors/font */
           HFONT hOldFont = NULL;
           if (font_changed)
             hOldFont = (HFONT)SelectObject(lplvcd->nmcd.hdc, hFont);
 
-          /* Apply background color (but not when row is selected) */
           if (!is_row_selected)
           {
             if (bgcolor && *bgcolor)
@@ -2110,18 +1996,15 @@ static int winTableNotifyCallback(Ihandle* ih, void* msg_info, int* result)
             }
           }
 
-          /* Need postpaint for grid lines or font restoration */
           int needs_postpaint = 0;
           if (data->show_grid)
             needs_postpaint = 1;
           else if (font_changed)
             needs_postpaint = 1;
 
-          /* Store old font for restoration in postpaint */
           if (font_changed)
             data->hfont = hOldFont;
 
-          /* Determine return value */
           if (needs_postpaint && font_changed)
             *result = CDRF_NOTIFYPOSTPAINT | CDRF_NEWFONT;
           else if (needs_postpaint)
@@ -2146,17 +2029,14 @@ static int winTableNotifyCallback(Ihandle* ih, void* msg_info, int* result)
           HDC hdc = lplvcd->nmcd.hdc;
           RECT rc = lplvcd->nmcd.rc;
 
-          /* Draw custom grid lines (only for actual items) */
           if (data->show_grid && lin <= ih->data->num_lin && col <= ih->data->num_col)
           {
             HPEN hPen = CreatePen(PS_SOLID, 1, GetSysColor(COLOR_3DFACE));
             HPEN hOldPen = (HPEN)SelectObject(hdc, hPen);
 
-            /* Draw right border */
             MoveToEx(hdc, rc.right - 1, rc.top, NULL);
             LineTo(hdc, rc.right - 1, rc.bottom);
 
-            /* Draw bottom border */
             MoveToEx(hdc, rc.left, rc.bottom - 1, NULL);
             LineTo(hdc, rc.right, rc.bottom - 1);
 
@@ -2164,7 +2044,6 @@ static int winTableNotifyCallback(Ihandle* ih, void* msg_info, int* result)
             DeleteObject(hPen);
           }
 
-          /* Restore original font if it was changed */
           if (data->hfont)
           {
             SelectObject(hdc, data->hfont);
@@ -2234,7 +2113,7 @@ static int winTableNotifyCallback(Ihandle* ih, void* msg_info, int* result)
     }
   }
 
-  return 0;  /* Not handled */
+  return 0;
 }
 
 /****************************************************************************
@@ -2270,14 +2149,12 @@ static void winTableEndEdit(Ihandle* ih, BOOL save)
   char buffer[4096];
   GetWindowTextA(data->edit_control, buffer, sizeof(buffer));
 
-  /* Call EDITEND_CB, allow application to validate/reject edit */
   IFniisi editend_cb = (IFniisi)IupGetCallback(ih, "EDITEND_CB");
   if (editend_cb)
   {
     int ret = editend_cb(ih, lin, col, buffer, save ? 1 : 0);
     if (ret == IUP_IGNORE && save)
     {
-      /* Application rejected the edit, keep editor open */
       data->edit_ending = FALSE;
       SetFocus(data->edit_control);
       SendMessage(data->edit_control, EM_SETSEL, 0, -1);
@@ -2310,12 +2187,11 @@ static void winTableEndEdit(Ihandle* ih, BOOL save)
 
     iupdrvTableSetCellValue(ih, lin, col, buffer);
 
-    /* Call VALUECHANGED_CB only if text actually changed */
     int text_changed = 0;
     if (!old_text && *buffer)
-      text_changed = 1;  /* NULL → non-empty */
+      text_changed = 1;
     else if (old_text && strcmp(old_text, buffer) != 0)
-      text_changed = 1;  /* different text */
+      text_changed = 1;
 
     if (text_changed)
     {
@@ -2385,13 +2261,12 @@ static void winTableStartEdit(Ihandle* ih, int lin, int col)
   if (!winTableIsCellEditable(ih, lin, col))
     return;
 
-  /* Call EDITBEGIN_CB, allow application to block editing */
   IFnii editbegin_cb = (IFnii)IupGetCallback(ih, "EDITBEGIN_CB");
   if (editbegin_cb)
   {
     int ret = editbegin_cb(ih, lin, col);
     if (ret == IUP_IGNORE)
-      return;  /* Block editing */
+      return;
   }
 
   if (data->edit_control)
@@ -2443,14 +2318,12 @@ static int winTableKeyProc(Ihandle* ih, HWND hwnd, UINT msg, WPARAM wp, LPARAM l
     int col = data->current_col;
     BOOL handled = FALSE;
 
-    /* If editing, let edit control handle keys */
     if (data->edit_control)
       return 0;
 
     switch (wp)
     {
       case VK_UP:
-        /* Move to previous row */
         if (lin > 1)
         {
           iupdrvTableSetFocusCell(ih, lin - 1, col);
@@ -2464,7 +2337,6 @@ static int winTableKeyProc(Ihandle* ih, HWND hwnd, UINT msg, WPARAM wp, LPARAM l
         break;
 
       case VK_DOWN:
-        /* Move to next row */
         if (lin < ih->data->num_lin)
         {
           iupdrvTableSetFocusCell(ih, lin + 1, col);
@@ -2479,7 +2351,6 @@ static int winTableKeyProc(Ihandle* ih, HWND hwnd, UINT msg, WPARAM wp, LPARAM l
 
 
       case VK_LEFT:
-        /* Move to previous column */
         if (col > 1)
         {
           iupdrvTableSetFocusCell(ih, lin, col - 1);
@@ -2493,7 +2364,6 @@ static int winTableKeyProc(Ihandle* ih, HWND hwnd, UINT msg, WPARAM wp, LPARAM l
         break;
 
       case VK_RIGHT:
-        /* Move to next column */
         if (col < ih->data->num_col)
         {
           iupdrvTableSetFocusCell(ih, lin, col + 1);
@@ -2517,13 +2387,11 @@ static int winTableKeyProc(Ihandle* ih, HWND hwnd, UINT msg, WPARAM wp, LPARAM l
         break;
 
       case VK_F2:
-        /* Also start editing with F2 */
         winTableStartEdit(ih, lin, col);
         handled = TRUE;
         break;
 
       case 'C':
-        /* Copy current cell to clipboard */
         if (GetKeyState(VK_CONTROL) & 0x8000)
         {
           const char* value = iupdrvTableGetCellValue(ih, lin, col);
@@ -2536,10 +2404,8 @@ static int winTableKeyProc(Ihandle* ih, HWND hwnd, UINT msg, WPARAM wp, LPARAM l
         break;
 
       case 'V':
-        /* Paste from clipboard to current cell */
         if (GetKeyState(VK_CONTROL) & 0x8000)
         {
-          /* Check if cell is editable */
           char name[50];
           snprintf(name, sizeof(name), "EDITABLE%d", col);
           char* editable = iupAttribGet(ih, name);
@@ -2555,17 +2421,15 @@ static int winTableKeyProc(Ihandle* ih, HWND hwnd, UINT msg, WPARAM wp, LPARAM l
               char* old_text_ptr = iupdrvTableGetCellValue(ih, lin, col);
               char* old_text = old_text_ptr ? iupStrDup(old_text_ptr) : NULL;
 
-              /* Set the cell value */
               iupdrvTableSetCellValue(ih, lin, col, text);
 
-              /* Call VALUECHANGED_CB only if text actually changed */
               int text_changed = 0;
               if (!old_text && text && *text)
-                text_changed = 1;  /* NULL -> non-empty */
+                text_changed = 1;
               else if (old_text && !text)
-                text_changed = 1;  /* non-empty -> NULL */
+                text_changed = 1;
               else if (old_text && text && strcmp(old_text, text) != 0)
-                text_changed = 1;  /* different text */
+                text_changed = 1;
 
               if (text_changed)
               {
@@ -2606,21 +2470,17 @@ static LRESULT CALLBACK winTableListViewWndProc(HWND hwnd, UINT msg, WPARAM wp, 
   if (!iupObjectCheck(ih))
     return DefWindowProc(hwnd, msg, wp, lp);
 
-  /* Retrieve the control previous procedure for subclassing */
   oldProc = (WNDPROC)IupGetCallback(ih, "_IUPWIN_LISTVIEWOLDPROC_CB");
 
-  /* Handle focus changes to redraw FOCUSRECT */
   if (msg == WM_SETFOCUS || msg == WM_KILLFOCUS)
   {
     IwinTableData* data = IWIN_TABLE_DATA(ih);
     if (data && data->current_row > 0 && data->current_col > 0)
     {
-      /* Invalidate focused cell to redraw/remove FOCUSRECT */
       winTableInvalidateCell(hwnd, data->current_row, data->current_col);
     }
   }
 
-  /* Row drag-reorder tracking */
   {
     IwinTableData* data = IWIN_TABLE_DATA(ih);
     if (data && data->row_dragging && (msg == WM_MOUSEMOVE || msg == WM_LBUTTONUP))
@@ -2663,11 +2523,9 @@ static LRESULT CALLBACK winTableListViewWndProc(HWND hwnd, UINT msg, WPARAM wp, 
     }
   }
 
-  /* Handle keyboard messages */
   if (winTableKeyProc(ih, hwnd, msg, wp, lp, &result))
     return result;
 
-  /* Call original ListView window procedure */
   return CallWindowProc(oldProc, hwnd, msg, wp, lp);
 }
 
@@ -2682,27 +2540,22 @@ static int winTableMapMethod(Ihandle* ih)
   if (!ih->parent)
     return IUP_ERROR;
 
-  /* Allocate driver data */
   IwinTableData* data = (IwinTableData*)calloc(1, sizeof(IwinTableData));
   ih->data->native_data = data;
 
-  /* Get initial dimensions */
   int num_col = ih->data->num_col;
   int num_lin = ih->data->num_lin;
 
-  /* Allocate column metadata */
   data->col_widths = (int*)calloc(num_col, sizeof(int));
   data->col_width_set = (BOOL*)calloc(num_col, sizeof(BOOL));
   data->col_titles = (char**)calloc(num_col, sizeof(char*));
 
-  /* Initialize with default widths (will be auto-sized later) */
   for (int i = 0; i < num_col; i++)
   {
-    data->col_widths[i] = 100;  /* Default width */
-    data->col_width_set[i] = FALSE;  /* No explicit width set yet */
+    data->col_widths[i] = 100;
+    data->col_width_set[i] = FALSE;
   }
 
-  /* Allocate cell storage if not in virtual mode */
   char* virtualmode = iupAttribGet(ih, "VIRTUALMODE");
   if (!iupStrBoolean(virtualmode))
   {
@@ -2711,20 +2564,17 @@ static int winTableMapMethod(Ihandle* ih)
       data->cell_values[i] = (char**)calloc(num_col, sizeof(char*));
   }
 
-  /* Initialize state */
   data->current_row = 0;
   data->current_col = 0;
   data->sort_column = 0;
-  data->sort_ascending = 0;  /* 0 = not sorted */
-  data->show_grid = iupAttribGetBoolean(ih, "SHOWGRID");  /* Read from attribute (default YES) */
+  data->sort_ascending = 0;
+  data->show_grid = iupAttribGetBoolean(ih, "SHOWGRID");
   data->suppress_callbacks = 0;
   data->hfont = NULL;
 
-  /* Create ListView control */
-  /* Note: NOT adding WS_VISIBLE initially, will show after first layout */
+  /* no WS_VISIBLE initially, shown after the first layout */
   dwStyle = WS_CHILD | WS_BORDER | WS_TABSTOP | LVS_REPORT | LVS_SINGLESEL | LVS_SHOWSELALWAYS;
 
-  /* Add LVS_OWNERDATA for virtual mode */
   if (iupStrBoolean(virtualmode))
     dwStyle |= LVS_OWNERDATA;
 
@@ -2739,7 +2589,7 @@ static int winTableMapMethod(Ihandle* ih)
   ListView_SetTextBkColor(data->list_view, winTableDefaultColor("TXTBGCOLOR", COLOR_WINDOW));
   ListView_SetTextColor(data->list_view, winTableDefaultColor("TXTFGCOLOR", COLOR_WINDOWTEXT));
 
-  /* Set extended styles (no LVS_EX_GRIDLINES - we'll draw custom grid) */
+  /* no LVS_EX_GRIDLINES, the grid is custom drawn */
   DWORD exStyle = LVS_EX_FULLROWSELECT;
   ListView_SetExtendedListViewStyle(data->list_view, exStyle);
 
@@ -2759,7 +2609,6 @@ static int winTableMapMethod(Ihandle* ih)
   lvc_dummy.cx = 0;
   ListView_InsertColumn(data->list_view, 0, &lvc_dummy);
 
-  /* Create real columns at indices 1..num_col */
   for (int i = 0; i < num_col; i++)
   {
     LVCOLUMN lvc;
@@ -2768,21 +2617,17 @@ static int winTableMapMethod(Ihandle* ih)
     lvc.pszText = iupwinStrToSystem("");
     lvc.cx = data->col_widths[i];
 
-    /* Default: left-aligned (alignment will be set later when titles are set) */
     lvc.fmt = LVCFMT_LEFT;
 
     ListView_InsertColumn(data->list_view, i + 1, &lvc);
   }
 
-  /* Create rows */
   if (iupStrBoolean(virtualmode))
   {
-    /* Virtual mode: set item count, don't insert items */
     ListView_SetItemCountEx(data->list_view, num_lin, LVSICF_NOINVALIDATEALL);
   }
   else
   {
-    /* Normal mode: insert actual items */
     for (int i = 0; i < num_lin; i++)
     {
       LVITEM item;
@@ -2794,32 +2639,26 @@ static int winTableMapMethod(Ihandle* ih)
     }
   }
 
-  /* Register notify callback for WM_NOTIFY messages */
   IupSetCallback(ih, "_IUPWIN_NOTIFY_CB", (Icallback)winTableNotifyCallback);
   IupSetCallback(ih, "_IUPWIN_CTRLMSGPROC_CB", (Icallback)winTableCtrlMsgProc);
 
-  /* Subclass the ListView control for keyboard handling */
   iupwinHandleAdd(ih, data->list_view);
   IupSetCallback(ih, "_IUPWIN_LISTVIEWOLDPROC_CB", (Icallback)GetWindowLongPtr(data->list_view, GWLP_WNDPROC));
   SetWindowLongPtr(data->list_view, GWLP_WNDPROC, (LONG_PTR)winTableListViewWndProc);
 
-  /* Apply initial USERRESIZE state to header control */
   HWND header = ListView_GetHeader(data->list_view);
   if (header)
   {
     SetWindowSubclass(header, winTableHeaderWndProc, 0, (DWORD_PTR)ih);
 
-    /* Apply user_resize state (default is 0 = disabled) */
     if (!ih->data->user_resize)
     {
-      /* Disable resizing by default */
       DWORD style = GetWindowLong(header, GWL_STYLE);
       style |= HDS_NOSIZING;
       SetWindowLong(header, GWL_STYLE, style);
     }
   }
 
-  /* Process FOCUSCELL attribute if set before mapping */
   char* focuscell = iupAttribGet(ih, "FOCUSCELL");
   if (focuscell)
   {
@@ -2828,7 +2667,6 @@ static int winTableMapMethod(Ihandle* ih)
     {
       iupdrvTableSetFocusCell(ih, lin, col);
 
-      /* Call ENTERITEM_CB for initial focus */
       winTableCallEnterItemCB(ih, lin, col);
     }
   }
@@ -2844,10 +2682,8 @@ static void winTableLayoutUpdateMethod(Ihandle* ih)
   HWND list_view = winTableGetListView(ih);
   BOOL was_visible = list_view ? IsWindowVisible(list_view) : FALSE;
 
-  /* Call base implementation to position and size the control */
   iupdrvBaseLayoutUpdateMethod(ih);
 
-  /* Enforce VISIBLELINES/VISIBLECOLUMNS constraints */
   if (list_view)
   {
     RECT window_rect;
@@ -2858,7 +2694,6 @@ static void winTableLayoutUpdateMethod(Ihandle* ih)
     int new_height = current_height;
     int need_resize = 0;
 
-    /* VISIBLELINES height constraint */
     int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
     if (visiblelines > 0)
     {
@@ -2867,7 +2702,6 @@ static void winTableLayoutUpdateMethod(Ihandle* ih)
       int sb_size = iupdrvGetScrollbarSize();
       int border = GetSystemMetrics(SM_CXEDGE) * 2;
 
-      /* Only add horizontal scrollbar height if it will actually be visible */
       int visiblecolumns = iupAttribGetInt(ih, "VISIBLECOLUMNS");
       int need_horiz_sb = (visiblecolumns > 0 && ih->data->num_col > visiblecolumns);
       int horiz_sb_height = need_horiz_sb ? sb_size : 0;
@@ -2881,7 +2715,6 @@ static void winTableLayoutUpdateMethod(Ihandle* ih)
       }
     }
 
-    /* VISIBLECOLUMNS width constraint */
     int visiblecolumns = iupAttribGetInt(ih, "VISIBLECOLUMNS");
     if (visiblecolumns > 0)
     {
@@ -2895,14 +2728,13 @@ static void winTableLayoutUpdateMethod(Ihandle* ih)
         /* Skip dummy column at index 0 - real columns start at index 1 */
         int col_width = ListView_GetColumnWidth(list_view, c + 1);
         if (col_width <= 0)
-          col_width = 80;  /* fallback to default */
+          col_width = 80;
         cols_width += col_width;
       }
 
       int sb_size = iupdrvGetScrollbarSize();
       int border = GetSystemMetrics(SM_CXEDGE) * 2;
 
-      /* Only add vertical scrollbar width if it will actually be visible */
       int need_vert_sb = (visiblelines > 0 && ih->data->num_lin > visiblelines);
       int vert_sb_width = need_vert_sb ? sb_size : 0;
 
@@ -2932,7 +2764,6 @@ static void winTableLayoutUpdateMethod(Ihandle* ih)
     GetClientRect(list_view, &rect);
     int width = rect.right - rect.left;
 
-    /* Only adjust if width is reasonable (> 100px) */
     if (width > 100)
     {
       if (!was_visible)
@@ -2959,7 +2790,6 @@ static void winTableUnMapMethod(Ihandle* ih)
     return;
   }
 
-  /* Free cell storage */
   if (data->cell_values)
   {
     for (int i = 0; i < ih->data->num_lin; i++)
@@ -2974,7 +2804,6 @@ static void winTableUnMapMethod(Ihandle* ih)
     free(data->cell_values);
   }
 
-  /* Free column metadata */
   if (data->col_titles)
   {
     for (int i = 0; i < ih->data->num_col; i++)
@@ -2991,14 +2820,12 @@ static void winTableUnMapMethod(Ihandle* ih)
   if (data->col_width_set)
     free(data->col_width_set);
 
-  /* Destroy edit control if active */
   if (data->edit_control)
   {
     DestroyWindow(data->edit_control);
     data->edit_control = NULL;
   }
 
-  /* Destroy image list used for row height adjustment */
   if (data->list_view)
   {
     HIMAGELIST hImgList = ListView_GetImageList(data->list_view, LVSIL_SMALL);
@@ -3006,11 +2833,9 @@ static void winTableUnMapMethod(Ihandle* ih)
       ImageList_Destroy(hImgList);
   }
 
-  /* Destroy ListView */
   if (data->list_view)
     DestroyWindow(data->list_view);
 
-  /* Free driver data */
   free(data);
   ih->data->native_data = NULL;
 
@@ -3023,20 +2848,16 @@ static void winTableUnMapMethod(Ihandle* ih)
 
 IUP_SDK_API void iupdrvTableInitClass(Iclass* ic)
 {
-  /* Set Map/UnMap/LayoutUpdate methods */
   ic->Map = winTableMapMethod;
   ic->UnMap = winTableUnMapMethod;
   ic->LayoutUpdate = winTableLayoutUpdateMethod;
 
-  /* Replace core SET handlers */
   iupClassRegisterReplaceAttribFunc(ic, "SORTABLE", NULL, winTableSetSortableAttrib);
   iupClassRegisterReplaceAttribFunc(ic, "ALLOWREORDER", NULL, winTableSetAllowReorderAttrib);
   iupClassRegisterReplaceAttribFunc(ic, "USERRESIZE", NULL, winTableSetUserResizeAttrib);
 
-  /* Register FOCUSRECT attribute */
   iupClassRegisterAttribute(ic, "FOCUSRECT", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
 
-  /* Register ALIGNMENT attribute (per-column: ALIGNMENT1, ALIGNMENT2, etc.) */
-  /* Allow before and after mapping, alignment is applied when titles are set */
+  /* the alignment is applied when the titles are set */
   iupClassRegisterAttributeId(ic, "ALIGNMENT", NULL, (IattribSetIdFunc)winTableSetAlignmentAttrib, IUPAF_NO_INHERIT);
 }

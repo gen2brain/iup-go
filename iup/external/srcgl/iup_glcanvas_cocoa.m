@@ -92,16 +92,12 @@ static int cocoaGLCanvasDefaultResize_CB(Ihandle *ih, int width, int height)
   if (gldata && gldata->context) {
 
     NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
-
-    /* Make sure context is current before calling GL functions */
     if ([NSOpenGLContext currentContext] != gldata->context)
     {
       [gldata->context makeCurrentContext];
     }
 
     [gldata->context update];
-
-    /* Set viewport to match view size */
     glViewport(0, 0, width, height);
 
     [pool drain];
@@ -126,21 +122,13 @@ static int cocoaGLCanvasCreateMethod(Ihandle* ih, void** params)
 static void buildSoftwareAttributes(Ihandle* ih, NSOpenGLPixelFormatAttribute* attrs, int* n_ptr, BOOL request_core, NSOpenGLPixelFormatAttribute rendererID)
 {
   int n = 0;
-
-  /* When using software rendering, NSOpenGLPFANoRecovery prevents automatic renderer switching */
   attrs[n++] = NSOpenGLPFANoRecovery;
-
-  /* Allow offline renderers */
   attrs[n++] = NSOpenGLPFAAllowOfflineRenderers;
-
-  /* Renderer ID if specified */
   if (rendererID != 0)
   {
     attrs[n++] = NSOpenGLPFARendererID;
     attrs[n++] = rendererID;
   }
-
-  /* Profile selection */
   attrs[n++] = NSOpenGLPFAOpenGLProfile;
   if (request_core)
   {
@@ -161,9 +149,8 @@ static void buildSoftwareAttributes(Ihandle* ih, NSOpenGLPixelFormatAttribute* a
       }
     }
 
-    if (core_profile == 0 && !version_attr) /* No version, or unsupported, default to best available */
+    if (core_profile == 0 && !version_attr)
     {
-      /* Default Core: Prefer 4.1 if available, otherwise 3.2 */
       if (@available(macOS 10.10, *))
         core_profile = NSOpenGLProfileVersion4_1Core;
       else if (@available(macOS 10.7, *))
@@ -176,7 +163,7 @@ static void buildSoftwareAttributes(Ihandle* ih, NSOpenGLPixelFormatAttribute* a
     }
     else
     {
-      /* Core profile requested but not available. Force failure by using an invalid profile ID. */
+      /* an invalid profile id makes the pixel format fail */
       attrs[n++] = 0x9999;
     }
   }
@@ -184,9 +171,6 @@ static void buildSoftwareAttributes(Ihandle* ih, NSOpenGLPixelFormatAttribute* a
   {
     attrs[n++] = NSOpenGLProfileVersionLegacy;
   }
-
-  /* Check for indexed color mode */
-  /* NOTE: Software renderer also doesn't support indexed color on macOS */
   if (iupStrEqualNoCase(iupAttribGetStr(ih, "COLOR"), "INDEX"))
   {
     iupAttribSet(ih, "ERROR", "WARNING: Indexed color mode not supported on macOS. Using RGBA instead.");
@@ -254,21 +238,15 @@ static NSOpenGLPixelFormat* cocoaGLCreatePixelFormatSoftware(Ihandle* ih)
   {
     core_requested = YES;
   }
-  /* else: core_requested remains NO (default) */
 
   if (core_requested)
   {
-    /* Try modern software renderer (kCGLRendererGenericFloatID) */
     buildSoftwareAttributes(ih, attrs, &n, YES, (NSOpenGLPixelFormatAttribute)kCGLRendererGenericFloatID);
     pixelFormat = [[NSOpenGLPixelFormat alloc] initWithAttributes:attrs];
     if (pixelFormat) return pixelFormat;
-
-    /* If Core was requested and failed, try any software renderer (rendererID=0) that supports Core. */
     buildSoftwareAttributes(ih, attrs, &n, YES, 0);
     pixelFormat = [[NSOpenGLPixelFormat alloc] initWithAttributes:attrs];
     if (pixelFormat) return pixelFormat;
-
-    /* All Core software fallbacks failed */
     if (!iupAttribGet(ih, "ERROR"))
     {
       iupAttribSet(ih, "ERROR", "Failed to create Core software OpenGL context.");
@@ -277,25 +255,18 @@ static NSOpenGLPixelFormat* cocoaGLCreatePixelFormatSoftware(Ihandle* ih)
   }
   else
   {
-    /* Legacy profile: Try older renderer first. */
 #ifdef kCGLRendererAppleSWID
     buildSoftwareAttributes(ih, attrs, &n, NO, (NSOpenGLPixelFormatAttribute)kCGLRendererAppleSWID);
     pixelFormat = [[NSOpenGLPixelFormat alloc] initWithAttributes:attrs];
     if (pixelFormat) return pixelFormat;
 #endif
-
-    /* If old one fails or isn't defined, try modern one (kCGLRendererGenericFloatID) */
     buildSoftwareAttributes(ih, attrs, &n, NO, (NSOpenGLPixelFormatAttribute)kCGLRendererGenericFloatID);
     pixelFormat = [[NSOpenGLPixelFormat alloc] initWithAttributes:attrs];
     if (pixelFormat) return pixelFormat;
-
-    /* Last resort: any available software renderer without specific ID */
     buildSoftwareAttributes(ih, attrs, &n, NO, 0);
     pixelFormat = [[NSOpenGLPixelFormat alloc] initWithAttributes:attrs];
     if (pixelFormat) return pixelFormat;
   }
-
-  /* All software fallbacks failed */
   if (!iupAttribGet(ih, "ERROR"))
   {
     iupAttribSet(ih, "ERROR", "Failed to create Legacy software OpenGL context.");
@@ -341,7 +312,6 @@ static NSOpenGLPixelFormat* cocoaGLCreatePixelFormat(Ihandle* ih)
   {
     request_core = YES;
   }
-  /* else: request_core remains NO (default) */
 
 
   const char* env_force_software = getenv("IUP_GL_FORCE_SOFTWARE");
@@ -369,7 +339,7 @@ static NSOpenGLPixelFormat* cocoaGLCreatePixelFormat(Ihandle* ih)
         core_profile = NSOpenGLProfileVersion3_2Core;
     }
 
-    if (core_profile == 0) /* No version, or unsupported, default to best available */
+    if (core_profile == 0)
     {
       if (@available(macOS 10.10, *))
         core_profile = NSOpenGLProfileVersion4_1Core;
@@ -394,19 +364,10 @@ static NSOpenGLPixelFormat* cocoaGLCreatePixelFormat(Ihandle* ih)
 
   if (iupAttribGetBoolean(ih, "STEREO"))
     attrs[n++] = NSOpenGLPFAStereo;
-
-  /* Check for indexed color mode (rare, mostly for legacy compatibility) */
-  /* NOTE: Modern macOS/NSOpenGL doesn't support indexed color mode.
-   * We'll accept the attribute but force RGBA mode. */
   if (iupStrEqualNoCase(iupAttribGetStr(ih, "COLOR"), "INDEX"))
   {
-    /* Indexed color not supported on modern macOS OpenGL.
-     * Fall back to RGBA with warning in ERROR attribute. */
     iupAttribSet(ih, "ERROR", "WARNING: Indexed color mode not supported on macOS. Using RGBA instead.");
-    /* BUFFER_SIZE attribute is ignored in RGBA mode */
   }
-
-  /* RGBA color setup (default and only supported mode on macOS) */
   attrs[n++] = NSOpenGLPFAColorSize;
   number = 24;
 
@@ -482,7 +443,6 @@ static NSOpenGLPixelFormat* cocoaGLCreatePixelFormat(Ihandle* ih)
 
   if (!pixelFormat && iupAttribGetBoolean(ih, "STEREO"))
   {
-    /* try removing stereo */
     int i;
     BOOL found = NO;
     for (i = 0; i < n; i++)
@@ -509,7 +469,6 @@ static NSOpenGLPixelFormat* cocoaGLCreatePixelFormat(Ihandle* ih)
 
   if (!pixelFormat)
   {
-    /* try software rendering as a fallback */
     pixelFormat = cocoaGLCreatePixelFormatSoftware(ih);
   }
 
@@ -531,9 +490,7 @@ static int cocoaGLCanvasMapMethod(Ihandle* ih)
 
   iupAttribSet(ih, "ERROR", NULL);
 
-  /* Get the canvas view, use generic shim to support all drivers.
-     On macOS, the view may not be available at map time (children map before dialog).
-     NSOpenGL context can be created without a view, so we proceed and set the view later. */
+  /* children map before the dialog, so the view may not exist yet; the context is attached to it later */
   {
     IGlNativeInfo info;
     if (iupGLGetNativeInfo(ih, &info))
@@ -577,8 +534,6 @@ static int cocoaGLCanvasMapMethod(Ihandle* ih)
     [pool drain];
     return IUP_NOERROR;
   }
-
-  /* Create OpenGL context; view may not be available yet, that's OK on macOS. */
   gldata->context = [[IupGLContext alloc] initWithFormat:gldata->pixel_format shareContext:nil];
 
   if (!gldata->context)
@@ -589,23 +544,16 @@ static int cocoaGLCanvasMapMethod(Ihandle* ih)
     [pool drain];
     return IUP_NOERROR;
   }
-
-  /* Attach context to view if available, then make current */
   if (gldata->canvas_view)
     [gldata->context setView:gldata->canvas_view];
 
   [gldata->context makeCurrentContext];
-
-  /* Set vsync based on attribute, default to ON */
   GLint swapInt = 1;
   char* vsync = iupAttribGetStr(ih, "VSYNC");
   if (vsync)
     swapInt = iupStrBoolean(vsync) ? 1 : 0;
 
   [gldata->context setValues:&swapInt forParameter:NSOpenGLCPSwapInterval];
-
-  /* TODO: Handle SHAREDCONTEXT attribute if needed in the future */
-
   iupAttribSet(ih, "CONTEXT", (char*)gldata->context);
 
   [pool drain];
@@ -819,7 +767,7 @@ IUPGL_API void* IupGLGetProcAddress(const char* name)
 
 IUPGL_API void IupGLPalette(Ihandle* ih, int index, float r, float g, float b)
 {
-  /* Palette/indexed color mode is not supported on modern macOS/OpenGL */
+  /* NSOpenGL has no indexed color mode */
   (void)ih;
   (void)index;
   (void)r;
@@ -829,7 +777,7 @@ IUPGL_API void IupGLPalette(Ihandle* ih, int index, float r, float g, float b)
 
 IUPGL_API void IupGLUseFont(Ihandle* ih, int first, int count, int list_base)
 {
-  /* Display list fonts are deprecated in modern OpenGL/macOS and not supported in Core Profile. */
+  /* display-list fonts do not exist in Core Profile */
   (void)ih;
   (void)first;
   (void)count;

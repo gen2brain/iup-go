@@ -126,7 +126,6 @@ IUP_SDK_API void iupdrvGetKeyState(char* key)
   if (keymap)
     aModifierType = gdk_keymap_get_modifier_state(keymap);
 #else
-  /* Fallback for GTK2 and GTK < 3.4 */
   /* gdk_display_get_pointer is deprecated in GTK3 but is the only option here */
   gdk_display_get_pointer(gdk_display_get_default(), NULL, NULL, NULL, &aModifierType);
 #endif

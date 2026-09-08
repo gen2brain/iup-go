@@ -51,7 +51,6 @@ static UINT WM_DRAGLISTMSG = 0;
 #define WS_EX_COMPOSITED 0x02000000L
 #endif
 
-/* Walk up the parent chain to the box that owns the background bitmap (handles nesting in frames). */
 static Ihandle* winFindBgBitmapBox(HWND child, HWND* box_hwnd)
 {
   HWND p;
@@ -751,7 +750,6 @@ static int winCheckParent(Ihandle* child, Ihandle* ih)
     return 1;
   else
   {
-    /* Check if child was reparented from this container */
     HWND oldParent = (HWND)iupAttribGet(child, "_IUPWIN_REPARENT");
     if (oldParent && oldParent==ih->handle)
       return 1;

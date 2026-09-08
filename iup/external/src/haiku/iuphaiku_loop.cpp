@@ -186,7 +186,6 @@ IUP_DRV_API void iuphaikuAppDrainPosts(void)
 {
   haikuDrainPostQueue();
 
-  /* Last dialog gone: quit be_app so Run() returns. */
   if (haiku_main_loop_level == 1 && iupDlgListVisibleCount() <= 0)
   {
     if (be_app) be_app->Quit();
@@ -263,7 +262,7 @@ extern "C" IUP_API int IupMainLoop(void)
   }
   else
   {
-    /* Nested: Run() is single-shot, so spin our own pump. */
+    /* Nested: Run() is single-shot, so spin a private pump. */
     BLooper* self_looper = BLooper::LooperForThread(find_thread(NULL));
     BWindow* self_window = dynamic_cast<BWindow*>(self_looper);
     sem_id sem = haikuWakeSem();

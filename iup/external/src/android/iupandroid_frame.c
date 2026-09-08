@@ -88,7 +88,6 @@ IUP_SDK_API int iupdrvFrameGetTitleHeight(Ihandle* ih, int* h)
   }
   else
   {
-    /* Pre-map fallback so natural size is close to final. */
     int char_h = 0;
     iupdrvFontGetCharSize(ih, NULL, &char_h);
     if (h) *h = char_h;
@@ -165,7 +164,6 @@ static int androidFrameSetFrameColorAttrib(Ihandle* ih, const char* value)
 
 static int androidFrameSetFontAttrib(Ihandle* ih, const char* value)
 {
-  /* Inheritance to children is handled by the core path. */
   if (!iupdrvSetFontAttrib(ih, value)) return 0;
   if (!ih->handle) return 1;
 
@@ -242,7 +240,6 @@ static int androidFrameMapMethod(Ihandle* ih)
 
   ih->handle = (jobject)((*jni_env)->NewGlobalRef(jni_env, frame));
 
-  /* GlobalRef the inner Fixed once so GetInnerNativeContainerHandle skips JNI on repeats */
   jmethodID inner_id = IUPJNI_GetStaticMethodID(IupFrameHelper_getInner, jni_env, java_class, "getInner", "(Lio/github/gen2brain/iupgo/IupAndroidFrame;)Lio/github/gen2brain/iupgo/IupAndroidFixed;");
   jobject inner = (*jni_env)->CallStaticObjectMethod(jni_env, java_class, inner_id, ih->handle);
   iupAndroid_CheckException(jni_env, "IupFrameHelper.getInner");
@@ -292,7 +289,6 @@ IUP_SDK_API void iupdrvFrameInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "BACKCOLOR", iupFrameGetBgColorAttrib, androidFrameSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FRAMECOLOR", NULL, androidFrameSetFrameColorAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 
-  /* FONT inherits to children (core handles this); driver pushes it to the title TextPaint too. */
   iupClassRegisterAttribute(ic, "FONT", NULL, androidFrameSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "SUNKEN", NULL, androidFrameSetSunkenAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 }

@@ -473,5 +473,5 @@ IUP_SDK_API void iupdrvTabsInitClass(Iclass* ic)
   iupClassRegisterAttributeId(ic, "SHOWCLOSE", wasmTabsGetShowCloseId, wasmTabsSetShowCloseId, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ALLOWREORDER", NULL, wasmTabsSetAllowReorderAttrib, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterCallback(ic, "TABCLOSE_CB", "i");
-  iupClassRegisterAttribute(ic, "MULTILINE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED);  /* single tab row only, as in GTK */
+  iupClassRegisterAttribute(ic, "MULTILINE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED);  /* single tab row only */
 }

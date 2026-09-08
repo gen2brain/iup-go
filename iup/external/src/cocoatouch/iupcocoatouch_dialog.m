@@ -204,7 +204,6 @@ static char* cocoaTouchDialogGetClientOffsetAttrib(Ihandle* ih)
 	return iupStrReturnIntInt(0, 0, 'x');
 }
 
-/* swap titleView to [icon][title] stack when ICON is set, else fall back to vc.title */
 static void cocoaTouchDialogRefreshTitleView(Ihandle* ih, const char* icon_name)
 {
 	IupViewController* vc = cocoaTouchDialogVC(ih);
@@ -307,7 +306,6 @@ static int cocoaTouchDialogSetBackgroundAttrib(Ihandle* ih, const char* value)
 
 	if (iupAttribGetBoolean(ih, "BACKIMAGEZOOM"))
 	{
-		/* autoresizing keeps the bg in sync with root through rotation/resize */
 		UIImageView* iv = [[UIImageView alloc] initWithFrame:root.bounds];
 		iv.image = image;
 		iv.contentMode = UIViewContentModeScaleToFill;
@@ -550,7 +548,6 @@ static int cocoaTouchDialogMapMethod(Ihandle* ih)
 		[nav release];
 	}
 
-	/* hold IupDestroy off until the user dismisses the sheet */
 	iupAttribSet(ih, "_IUP_DIALOG_DEFER_DESTROY", "1");
 
 	return IUP_NOERROR;

@@ -56,7 +56,6 @@ public:
     {
       if (const QStyleOptionTab *tab = qstyleoption_cast<const QStyleOptionTab*>(option))
       {
-        /* Check if this is a vertical tab (West or East position) */
         bool isVerticalTab = (tab->shape == QTabBar::RoundedWest ||
                               tab->shape == QTabBar::RoundedEast ||
                               tab->shape == QTabBar::TriangularWest ||
@@ -67,22 +66,18 @@ public:
           QStyleOptionTab opt(*tab);
           painter->save();
 
-          /* Get text and icon */
           QString text = opt.text;
           QIcon icon = opt.icon;
           QRect rect = opt.rect;
 
-          /* Calculate text size */
           QFontMetrics fm(painter->font());
           QSize textSize = fm.size(Qt::TextSingleLine, text);
 
-          /* Icon size (if present) */
           int iconSize = 16;
           QRect iconRect, textRect;
 
           if (!icon.isNull())
           {
-            /* Position icon above text */
             int totalHeight = iconSize + 4 + textSize.height();
             int startY = rect.center().y() - totalHeight / 2;
 
@@ -91,27 +86,23 @@ public:
           }
           else
           {
-            /* Center text */
             textRect = QRect(rect.left(), rect.center().y() - textSize.height() / 2, rect.width(), textSize.height());
           }
 
-          /* Draw icon if present */
           if (!icon.isNull())
           {
             icon.paint(painter, iconRect);
           }
 
-          /* Draw text horizontally */
           Qt::Alignment alignment = Qt::AlignCenter;
           painter->drawText(textRect, alignment, text);
 
           painter->restore();
-          return; /* Skip default drawing */
+          return;
         }
       }
     }
 
-    /* For all other cases (horizontal tabs or TABORIENTATION=VERTICAL), use default drawing */
     QProxyStyle::drawControl(element, option, painter, widget);
   }
 };
@@ -160,7 +151,6 @@ protected:
 
     if (do_show_close)
     {
-      /* Create close button */
       QToolButton* close_btn = new QToolButton();
       close_btn->setIcon(style()->standardIcon(QStyle::SP_TitleBarCloseButton));
       close_btn->setAutoRaise(true);
@@ -185,7 +175,6 @@ protected:
     }
     else
     {
-      /* Remove close button if exists */
       QWidget* button = tabButton(index, QTabBar::RightSide);
       if (button)
       {
@@ -199,26 +188,20 @@ protected:
   {
     QSize size = QTabBar::tabSizeHint(index);
 
-    /* For vertical tabs (West/East), Qt calculates size assuming rotated text */
-    /* Only swap dimensions when TABORIENTATION=HORIZONTAL (custom horizontal text drawing) */
-    /* For TABORIENTATION=VERTICAL, let Qt use natural size for rotated text */
+    /* Qt sizes a vertical tab for rotated text; horizontal text needs the sides swapped */
     QTabBar::Shape tabShape = shape();
     if (tabShape == RoundedWest || tabShape == RoundedEast ||
         tabShape == TriangularWest || tabShape == TriangularEast)
     {
-      /* Only swap when drawing horizontal text in vertical tabs */
       if (ih && ih->data->orientation == ITABS_HORIZONTAL)
       {
-        /* Swap width and height to account for horizontal text */
-        /* This gives us wider tabs that can fit horizontal text */
         return QSize(size.height(), size.width());
       }
     }
 
 #ifdef Q_OS_MAC
-    /* QMacStyle::tabLayout() reserves icon space on BOTH sides of the text rect
-       for centering, but tabSizeHint() only accounts for icon width once.
-       We compensate by adding extra width for the icon. */
+    /* QMacStyle::tabLayout() reserves icon space on both sides of the text rect,
+       while tabSizeHint() counts the icon width once. */
     QIcon icon = tabIcon(index);
     if (!icon.isNull())
     {
@@ -252,10 +235,8 @@ public:
  * Custom Tab Widget
  ****************************************************************************/
 
-/* Forward declaration */
 class IupQtTabWidget;
 
-/* Forward declarations for static callback functions */
 static void qtTabsHandleCurrentChanged(IupQtTabWidget* tabs, int index, Ihandle* ih, int* prev_index);
 static void qtTabsHandleTabCloseRequested(IupQtTabWidget* tabs, int index, Ihandle* ih);
 static void qtTabsHandleTabMoved(int from, int to, Ihandle* ih);
@@ -269,16 +250,13 @@ private:
 public:
   IupQtTabWidget(Ihandle* ih_param) : QTabWidget(), ih(ih_param), prev_index(-1)
   {
-    /* Replace tab bar with custom one */
     IupQtTabBar* custom_bar = new IupQtTabBar(ih);
     setTabBar(custom_bar);
 
-    /* Set close button callback */
     custom_bar->setCloseCallback([this, ih_param](int index) {
       qtTabsHandleTabCloseRequested(this, index, ih_param);
     });
 
-    /* Connect tab change signal using lambda */
     QObject::connect(this, &QTabWidget::currentChanged, [this, ih_param](int index) {
       qtTabsHandleCurrentChanged(this, index, ih_param, &prev_index);
     });
@@ -296,7 +274,6 @@ public:
     {
       tab_bar->setIhandle(ih_param);
 
-      /* Update close callback with new ih */
       tab_bar->setCloseCallback([this, ih_param](int index) {
         qtTabsHandleTabCloseRequested(this, index, ih_param);
       });
@@ -325,11 +302,9 @@ static void qtTabsHandleCurrentChanged(IupQtTabWidget* tabs, int index, Ihandle*
   if (index < 0)
     return;
 
-  /* Get page widgets at visual positions (handles tab reordering) */
   QWidget* current_page = tabs->widget(index);
   QWidget* prev_page = *prev_index >= 0 ? tabs->widget(*prev_index) : nullptr;
 
-  /* Find which children correspond to these page widgets */
   Ihandle* child = nullptr;
   Ihandle* prev_child = nullptr;
 
@@ -342,7 +317,6 @@ static void qtTabsHandleCurrentChanged(IupQtTabWidget* tabs, int index, Ihandle*
       prev_child = c;
   }
 
-  /* Show/hide page containers */
   if (prev_child)
   {
     QWidget* prev_container = (QWidget*)iupAttribGet(prev_child, "_IUPTAB_CONTAINER");
@@ -357,7 +331,6 @@ static void qtTabsHandleCurrentChanged(IupQtTabWidget* tabs, int index, Ihandle*
       container->show();
   }
 
-  /* Fire callbacks, except on a programmatic tab change */
   if (!iupAttribGet(ih, "_IUPQT_IGNORE_CHANGE"))
   {
     IFnnn cb = (IFnnn)IupGetCallback(ih, "TABCHANGE_CB");
@@ -388,7 +361,6 @@ static void qtTabsHandleTabCloseRequested(IupQtTabWidget* tabs, int index, Ihand
 
   if (ret == IUP_CONTINUE)
   {
-    /* Destroy tab and children */
     Ihandle* child = IupGetChild(ih, index);
     if (child)
     {
@@ -398,7 +370,6 @@ static void qtTabsHandleTabCloseRequested(IupQtTabWidget* tabs, int index, Ihand
   }
   else if (ret == IUP_DEFAULT)
   {
-    /* Hide tab */
     Ihandle* child = IupGetChild(ih, index);
     if (child)
     {
@@ -411,7 +382,6 @@ static void qtTabsHandleTabCloseRequested(IupQtTabWidget* tabs, int index, Ihand
       }
     }
   }
-  /* IUP_IGNORE - do nothing */
 }
 
 static void qtTabsHandleTabMoved(int from, int to, Ihandle* ih)
@@ -493,14 +463,12 @@ extern "C" IUP_SDK_API void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_ti
   int width = 0;
   int height = 0;
 
-  /* When mapped, find the matching tab and return its actual size from Qt */
   if (ih->handle)
   {
     QTabWidget* tabWidget = (QTabWidget*)ih->handle;
     QTabBar* tabBar = tabWidget->tabBar();
     if (tabBar && tabBar->count() > 0)
     {
-      /* Find the tab that matches this title/image combination */
       QString searchTitle = QString::fromUtf8(tab_title ? tab_title : "");
 
       for (int i = 0; i < tabBar->count(); i++)
@@ -523,7 +491,6 @@ extern "C" IUP_SDK_API void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_ti
         }
       }
 
-      /* Fallback: use tabBar sizeHint divided by count */
       QSize barSize = tabBar->sizeHint();
       width = barSize.width() / tabBar->count();
       height = barSize.height();
@@ -534,7 +501,6 @@ extern "C" IUP_SDK_API void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_ti
     }
   }
 
-  /* Not mapped: calculate based on text + image + Qt style metrics */
   int text_width = 0;
   int text_height = 0;
 
@@ -561,14 +527,12 @@ extern "C" IUP_SDK_API void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_ti
     }
   }
 
-  /* Query Qt application style for tab metrics */
   QStyle* style = QApplication::style();
   if (style)
   {
     int hspace = style->pixelMetric(QStyle::PM_TabBarTabHSpace, nullptr, nullptr);
     int vspace = style->pixelMetric(QStyle::PM_TabBarTabVSpace, nullptr, nullptr);
 
-    /* Use sizeFromContents to get the full tab size including all style padding */
     QStyleOptionTab opt;
     opt.text = QString::fromUtf8(tab_title ? tab_title : "");
     opt.shape = QTabBar::RoundedNorth;
@@ -581,7 +545,6 @@ extern "C" IUP_SDK_API void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_ti
   }
   else
   {
-    /* Fallback if no style available */
     width += 24;
     height += 8;
   }
@@ -594,7 +557,7 @@ extern "C" IUP_SDK_API int iupdrvTabsIsTabVisible(Ihandle* child, int pos)
 {
   Ihandle* ih = IupGetParent(child);
   if (!ih || !ih->handle)
-    return 1; /* Before mapping, all tabs are visible by default */
+    return 1;
 
   QTabWidget* tabs = (QTabWidget*)ih->handle;
   QWidget* tab_page = (QWidget*)iupAttribGet(child, "_IUPTAB_PAGE");
@@ -654,7 +617,6 @@ static void qtTabsUpdateTabType(Ihandle* ih)
 {
   QTabWidget* tabs = (QTabWidget*)ih->handle;
 
-  /* Map IUP tab types to Qt tab positions */
   switch (ih->data->type)
   {
     case ITABS_BOTTOM:
@@ -690,7 +652,6 @@ static int qtTabsSetTabPaddingAttrib(Ihandle* ih, const char* value)
     QTabWidget* tabs = (QTabWidget*)ih->handle;
     QString styleSheet = tabs->tabBar()->styleSheet();
 
-    /* Remove any existing padding rules */
     QStringList lines = styleSheet.split(';');
     QStringList filtered;
     for (const QString& line : lines)
@@ -700,7 +661,6 @@ static int qtTabsSetTabPaddingAttrib(Ihandle* ih, const char* value)
     }
     styleSheet = filtered.join(";");
 
-    /* Add new padding rule */
     styleSheet += QString("QTabBar::tab { padding: %1px %2px; }").arg(vert_padding).arg(horiz_padding);
     tabs->tabBar()->setStyleSheet(styleSheet);
     return 0;
@@ -726,7 +686,7 @@ static int qtTabsSetMultilineAttrib(Ihandle* ih, const char* value)
     if (ih->data->type == ITABS_BOTTOM || ih->data->type == ITABS_TOP)
       ih->data->is_multiline = 0;
     else
-      ih->data->is_multiline = 1; /* Always true if left/right */
+      ih->data->is_multiline = 1;
   }
 
   return 0;
@@ -742,19 +702,18 @@ static int qtTabsSetTabTypeAttrib(Ihandle* ih, const char* value)
   if (ih->handle) /* Allow to set only before mapping */
     return 0;
 
-  /* TABTYPE and TABORIENTATION are independent */
-  /* TABTYPE only sets the tab position, not the text orientation */
+  /* TABTYPE sets only the tab position, not the text orientation */
   if (iupStrEqualNoCase(value, "BOTTOM"))
     ih->data->type = ITABS_BOTTOM;
   else if (iupStrEqualNoCase(value, "LEFT"))
   {
     ih->data->type = ITABS_LEFT;
-    ih->data->is_multiline = 1; /* LEFT/RIGHT tabs work better with MULTILINE */
+    ih->data->is_multiline = 1;
   }
   else if (iupStrEqualNoCase(value, "RIGHT"))
   {
     ih->data->type = ITABS_RIGHT;
-    ih->data->is_multiline = 1; /* LEFT/RIGHT tabs work better with MULTILINE */
+    ih->data->is_multiline = 1;
   }
   else /* "TOP" */
     ih->data->type = ITABS_TOP;
@@ -875,7 +834,6 @@ static int qtTabsSetTabVisibleAttrib(Ihandle* ih, int pos, const char* value)
       {
         if (index < 0)
         {
-          /* Re-add the tab */
           char* tabtitle = iupAttribGet(child, "TABTITLE");
           char* tabimage = iupAttribGet(child, "TABIMAGE");
 
@@ -896,7 +854,6 @@ static int qtTabsSetTabVisibleAttrib(Ihandle* ih, int pos, const char* value)
       {
         if (index >= 0)
         {
-          /* Hide tab */
           iupTabsCheckCurrentTab(ih, pos, 0);
           tabs->removeTab(index);
         }
@@ -923,7 +880,6 @@ static int qtTabsSetShowCloseAttrib(Ihandle* ih, int pos, const char* value)
   }
   else
   {
-    /* Per-tab attribute */
     Ihandle* child = IupGetChild(ih, pos);
     if (child)
       iupAttribSetStr(child, "SHOWCLOSE", value);
@@ -935,13 +891,11 @@ static int qtTabsSetShowCloseAttrib(Ihandle* ih, int pos, const char* value)
 
       if (iupStrBoolean(value))
       {
-        /* Create close button */
         QToolButton* close_btn = new QToolButton();
         close_btn->setIcon(tabs->style()->standardIcon(QStyle::SP_TitleBarCloseButton));
         close_btn->setAutoRaise(true);
         close_btn->setFixedSize(16, 16);
 
-        /* Look up current tab index at click time to handle reordering */
         QObject::connect(close_btn, &QToolButton::clicked, [tabs, close_btn, ih]() {
           IupQtTabBar* bar = (IupQtTabBar*)tabs->tabBar();
           for (int i = 0; i < bar->count(); i++)
@@ -958,7 +912,6 @@ static int qtTabsSetShowCloseAttrib(Ihandle* ih, int pos, const char* value)
       }
       else
       {
-        /* Remove close button */
         QWidget* button = tab_bar->tabButton(pos, QTabBar::RightSide);
         if (button)
         {
@@ -1037,7 +990,6 @@ static char* qtTabsGetClientSizeAttrib(Ihandle* ih)
     int width = content_rect.width();
     int height = content_rect.height();
 
-    /* Subtract tab bar height/width depending on orientation */
     if (tabs->tabPosition() == QTabWidget::North || tabs->tabPosition() == QTabWidget::South)
       height -= tab_bar->height();
     else
@@ -1058,7 +1010,6 @@ static char* qtTabsGetClientOffsetAttrib(Ihandle* ih)
 
     int x = 0, y = 0;
 
-    /* Offset depends on tab position */
     if (tabs->tabPosition() == QTabWidget::North)
       y = tab_bar->height();
     else if (tabs->tabPosition() == QTabWidget::West)
@@ -1079,7 +1030,6 @@ static void qtTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
   if (iupAttribGet(ih, "_IUPTABS_REORDERING"))
     return;
 
-  /* Make sure it has at least one name */
   if (!iupAttribGetHandleName(child))
     iupAttribSetHandleName(child);
 
@@ -1095,18 +1045,15 @@ static void qtTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
 
     pos = IupGetChildPos(ih, child);
 
-    /* Create page widget with layout to auto-resize container */
     tab_page = new QWidget();
     QVBoxLayout* pageLayout = new QVBoxLayout(tab_page);
     pageLayout->setContentsMargins(0, 0, 0, 0);
     pageLayout->setSpacing(0);
 
-    /* Create container for child widgets, layout will expand it to fill tab_page */
     tab_container = new QWidget();
     pageLayout->addWidget(tab_container);
     tab_container->show();
 
-    /* Get tab title */
     tabtitle = iupAttribGet(child, "TABTITLE");
     if (!tabtitle)
     {
@@ -1115,7 +1062,6 @@ static void qtTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
         iupAttribSetStr(child, "TABTITLE", tabtitle);
     }
 
-    /* Get tab image */
     tabimage = iupAttribGet(child, "TABIMAGE");
     if (!tabimage)
     {
@@ -1129,7 +1075,6 @@ static void qtTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
 
     iupAttribSet(ih, "_IUPQT_IGNORE_CHANGE", "1");
 
-    /* Insert tab */
     QString title = QString::fromUtf8(tabtitle ? tabtitle : "");
 
     if (tabimage)
@@ -1143,11 +1088,9 @@ static void qtTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
     else
       tabs->insertTab(pos, tab_page, title);
 
-    /* Store references */
     iupAttribSet(child, "_IUPTAB_CONTAINER", (char*)tab_container);
     iupAttribSet(child, "_IUPTAB_PAGE", (char*)tab_page);
 
-    /* Set background color */
     iupStrToRGB(IupGetAttribute(ih, "BGCOLOR"), &r, &g, &b);
     QPalette palette = tab_container->palette();
     palette.setColor(QPalette::Window, QColor(r, g, b));
@@ -1156,7 +1099,6 @@ static void qtTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
 
     iupAttribSet(ih, "_IUPQT_IGNORE_CHANGE", nullptr);
 
-    /* Hide container if not current tab */
     if (pos != iupdrvTabsGetCurrentTab(ih))
       tab_container->hide();
   }
@@ -1205,9 +1147,8 @@ static int qtTabsMapMethod(Ihandle* ih)
   ih->handle = (InativeHandle*)tabs;
   tabs->setIhandle(ih);
 
-  /* Set tab bar properties */
-  tabs->setTabsClosable(false); /* We handle close buttons manually for per-tab control */
-  tabs->setMovable(false); /* Will be set by ALLOWREORDER attribute */
+  tabs->setTabsClosable(false); /* close buttons are added per tab */
+  tabs->setMovable(false);
 
   if (!iupAttribGetBoolean(ih, "CANFOCUS"))
   {
@@ -1215,7 +1156,6 @@ static int qtTabsMapMethod(Ihandle* ih)
     iupqtSetCanFocus(tabs->tabBar(), 0);
   }
 
-  /* Set tab position */
   qtTabsUpdateTabType(ih);
 
   {
@@ -1225,8 +1165,7 @@ static int qtTabsMapMethod(Ihandle* ih)
       tabs->setIconSize(QSize(icon_w, icon_h));
   }
 
-  /* Set multiline behavior (limited support in Qt) */
-  /* Qt doesn't have traditional multiline tabs, but we can control scroll buttons */
+  /* Qt has no multiline tabs, only scroll buttons */
   if (ih->data->is_multiline)
   {
     tabs->tabBar()->setUsesScrollButtons(false);
@@ -1234,12 +1173,10 @@ static int qtTabsMapMethod(Ihandle* ih)
   }
   else
   {
-    /* Enable scrollable tabs by default (matches GTK behavior) */
     tabs->tabBar()->setUsesScrollButtons(true);
     tabs->tabBar()->setExpanding(false);
   }
 
-  /* Apply tab padding if set */
   if (ih->data->horiz_padding != 0 || ih->data->vert_padding != 0)
   {
     QString styleSheet = QString(
@@ -1248,7 +1185,6 @@ static int qtTabsMapMethod(Ihandle* ih)
     tabs->tabBar()->setStyleSheet(styleSheet);
   }
 
-  /* Add to parent */
   iupqtAddToParent(ih);
 
   /* Create pages and tabs */
@@ -1313,7 +1249,6 @@ extern "C" IUP_SDK_API void iupdrvTabsInitClass(Iclass* ic)
   iupClassRegisterAttributeId(ic, "TABVISIBLE", iupTabsGetTabVisibleAttrib, qtTabsSetTabVisibleAttrib, IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "SHOWCLOSE", nullptr, qtTabsSetShowCloseAttrib, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
 
-  /* Read-only attributes */
   iupClassRegisterAttribute(ic, "CLIENTSIZE", qtTabsGetClientSizeAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CLIENTOFFSET", qtTabsGetClientOffsetAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY | IUPAF_NO_INHERIT);
 

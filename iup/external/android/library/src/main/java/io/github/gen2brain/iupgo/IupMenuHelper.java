@@ -223,7 +223,6 @@ public final class IupMenuHelper
             int type = nativeGetType(childIh);
             if (type == TYPE_ITEM) addItem(menu, childIh, picked);
             else if (type == TYPE_SUBMENU) addSubmenu(menu, childIh, picked);
-            /* Native Menu has no separator pre API 28; ignore. */
         }
 
         boolean[] done = { false };
@@ -373,7 +372,6 @@ public final class IupMenuHelper
                 else
                 {
                     pw.dismiss();
-                    /* pw.dismiss() detaches v; main-looper Handler so the post survives. */
                     new Handler(Looper.getMainLooper()).post(() -> nativeDispatchAction(childIh));
                 }
             });
@@ -851,7 +849,6 @@ public final class IupMenuHelper
     public static native void nativeDispatchRecent(long ih, int index);
 
 
-    /* Resolves IMAGE to Drawable via the IupImage to Bitmap pipeline. */
     private static Drawable resolveItemIcon(long ih, android.content.Context ctx)
     {
         Bitmap bmp = nativeGetImage(ih);

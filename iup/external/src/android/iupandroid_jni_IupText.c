@@ -118,7 +118,6 @@ JNIEXPORT jboolean JNICALL Java_io_github_gen2brain_iupgo_IupTextHelper_dispatch
   int shift = (meta_state & 0x01) ? 1 : 0;
 
   int kany_consumed = 0;
-  /* Walk up the parent chain so a K_ANY on the dialog sees the event. */
   int ret = iupKeyCallKeyCb(ih, iup_key);
   if (ret == IUP_CLOSE) IupExitLoop();
   if (ret == IUP_IGNORE) kany_consumed = 1;

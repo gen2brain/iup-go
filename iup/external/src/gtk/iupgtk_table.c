@@ -32,14 +32,13 @@
 /* GTK-specific data structure                                              */
 /* ========================================================================= */
 
-/* Custom virtual tree model for VIRTUALMODE */
 typedef struct _IupGtkVirtualModel IupGtkVirtualModel;
 typedef struct _IupGtkVirtualModelClass IupGtkVirtualModelClass;
 
 struct _IupGtkVirtualModel
 {
   GObject parent;
-  Ihandle* ih;  /* Reference to IUP handle */
+  Ihandle* ih;
   gint stamp;   /* Random integer to check whether an iter belongs to our model */
 };
 
@@ -58,8 +57,8 @@ typedef struct _IgtkTableData
   GtkWidget* tree_view;
   GtkListStore* store;  /* Used in normal mode */
   IupGtkVirtualModel* virtual_model;  /* Used in VIRTUALMODE */
-  GType* column_types;  /* Array of column types */
-  int is_virtual;  /* TRUE if using virtual model */
+  GType* column_types;
+  int is_virtual;
 
   /* Sorting state for virtual mode */
   int sort_column;      /* Currently sorted column (1-based, 0=none) */
@@ -68,7 +67,6 @@ typedef struct _IgtkTableData
 
 #define IGTK_TABLE_DATA(ih) ((IgtkTableData*)(ih->data->native_data))
 
-/* Forward declarations for model column mapping */
 static int gtkTableModelColCount(Ihandle* ih);
 static int gtkTableTextModelCol(Ihandle* ih, int iup_col);
 static int gtkTableImageModelCol(int iup_col);
@@ -84,12 +82,11 @@ G_DEFINE_TYPE_WITH_CODE(IupGtkVirtualModel, iup_gtk_virtual_model, G_TYPE_OBJECT
 
 static void iup_gtk_virtual_model_init(IupGtkVirtualModel *model)
 {
-  model->stamp = g_random_int();  /* Random stamp to detect invalid iters */
+  model->stamp = g_random_int();
 }
 
 static void iup_gtk_virtual_model_class_init(IupGtkVirtualModelClass *klass)
 {
-  /* Nothing special needed */
 }
 
 /* GtkTreeModel interface implementation */
@@ -120,14 +117,13 @@ static gboolean iup_gtk_virtual_model_get_iter(GtkTreeModel *tree_model, GtkTree
   gint *indices = gtk_tree_path_get_indices(path);
   gint depth = gtk_tree_path_get_depth(path);
 
-  if (depth != 1)  /* We only have one level */
+  if (depth != 1)
     return FALSE;
 
   gint row = indices[0];
   if (row < 0 || row >= model->ih->data->num_lin)
     return FALSE;
 
-  /* Store row index in iter */
   iter->stamp = model->stamp;
   iter->user_data = GINT_TO_POINTER(row);
   iter->user_data2 = NULL;
@@ -225,7 +221,6 @@ static gboolean iup_gtk_virtual_model_iter_children(GtkTreeModel *tree_model, Gt
 {
   IupGtkVirtualModel *model = IUP_GTK_VIRTUAL_MODEL(tree_model);
 
-  /* Only root has children in a flat list */
   if (parent != NULL)
     return FALSE;
 
@@ -233,7 +228,7 @@ static gboolean iup_gtk_virtual_model_iter_children(GtkTreeModel *tree_model, Gt
     return FALSE;
 
   iter->stamp = model->stamp;
-  iter->user_data = GINT_TO_POINTER(0);  /* First row */
+  iter->user_data = GINT_TO_POINTER(0);
   return TRUE;
 }
 
@@ -246,11 +241,9 @@ static gint iup_gtk_virtual_model_iter_n_children(GtkTreeModel *tree_model, GtkT
 {
   IupGtkVirtualModel *model = IUP_GTK_VIRTUAL_MODEL(tree_model);
 
-  /* If iter is NULL, return root level child count (total rows) */
   if (iter == NULL)
     return model->ih->data->num_lin;
 
-  /* Rows have no children */
   return 0;
 }
 
@@ -258,7 +251,6 @@ static gboolean iup_gtk_virtual_model_iter_nth_child(GtkTreeModel *tree_model, G
 {
   IupGtkVirtualModel *model = IUP_GTK_VIRTUAL_MODEL(tree_model);
 
-  /* Only root can have children */
   if (parent != NULL)
     return FALSE;
 
@@ -302,7 +294,6 @@ static IupGtkVirtualModel *iup_gtk_virtual_model_new(Ihandle *ih)
 /* Utility Functions                                                         */
 /* ========================================================================= */
 
-/* Forward declarations */
 static void gtkTableColumnClicked(GtkTreeViewColumn* column, Ihandle* ih);
 
 static int gtkTableModelColCount(Ihandle* ih)
@@ -432,7 +423,6 @@ static void gtkTableUpdateColumns(Ihandle* ih)
 {
   IgtkTableData* gtk_data = IGTK_TABLE_DATA(ih);
 
-  /* Remove all existing columns */
   GList* columns = gtk_tree_view_get_columns(GTK_TREE_VIEW(gtk_data->tree_view));
   GList* iter;
   for (iter = columns; iter != NULL; iter = g_list_next(iter))
@@ -441,7 +431,6 @@ static void gtkTableUpdateColumns(Ihandle* ih)
   }
   g_list_free(columns);
 
-  /* Add new columns */
   int col;
   for (col = 0; col < ih->data->num_col; col++)
   {
@@ -459,19 +448,16 @@ static void gtkTableUpdateColumns(Ihandle* ih)
     gtk_tree_view_column_pack_start(column, renderer, TRUE);
     gtk_tree_view_column_add_attribute(column, renderer, "text", text_model_col);
 
-    /* Check if sorting is allowed */
     if (ih->data->sortable)
     {
       if (gtk_data->is_virtual)
       {
-        /* Virtual mode - disable GTK automatic sorting, use manual handling */
         gtk_tree_view_column_set_sort_column_id(column, -1);
         gtk_tree_view_column_set_clickable(column, TRUE);
         g_signal_connect(G_OBJECT(column), "clicked", G_CALLBACK(gtkTableColumnClicked), ih);
       }
       else
       {
-        /* Normal mode - sort manually on click (no GtkTreeSortable auto-sort) */
         gtk_tree_view_column_set_sort_column_id(column, -1);
         gtk_tree_view_column_set_clickable(column, TRUE);
         g_signal_connect(G_OBJECT(column), "clicked", G_CALLBACK(gtkTableColumnClicked), ih);
@@ -483,13 +469,10 @@ static void gtkTableUpdateColumns(Ihandle* ih)
       gtk_tree_view_column_set_clickable(column, FALSE);
     }
 
-    /* Check if column reordering is allowed */
     gtk_tree_view_column_set_reorderable(column, ih->data->allow_reorder);
 
-    /* Handle column expansion and sizing */
     if (col == ih->data->num_col - 1)
     {
-      /* Last column, expand to fill ONLY if STRETCHLAST=YES */
       if (ih->data->stretch_last)
       {
         gtk_tree_view_column_set_sizing(column, GTK_TREE_VIEW_COLUMN_AUTOSIZE);
@@ -498,7 +481,6 @@ static void gtkTableUpdateColumns(Ihandle* ih)
       }
       else
       {
-        /* Fit to content, don't stretch */
         gtk_tree_view_column_set_sizing(column, GTK_TREE_VIEW_COLUMN_AUTOSIZE);
         gtk_tree_view_column_set_expand(column, FALSE);
         gtk_tree_view_column_set_resizable(column, FALSE);
@@ -506,7 +488,6 @@ static void gtkTableUpdateColumns(Ihandle* ih)
     }
     else
     {
-      /* Non-last columns never expand */
       gtk_tree_view_column_set_sizing(column, GTK_TREE_VIEW_COLUMN_AUTOSIZE);
       gtk_tree_view_column_set_expand(column, FALSE);
       gtk_tree_view_column_set_resizable(column, FALSE);
@@ -537,7 +518,6 @@ static void gtkTableCellEditingStarted(GtkCellRenderer* renderer, GtkCellEditabl
   int lin = indices[0] + 1;  /* 1-based */
   gtk_tree_path_free(path);
 
-  /* Find which column this renderer belongs to */
   GList* columns = gtk_tree_view_get_columns(GTK_TREE_VIEW(gtk_data->tree_view));
   int col = 0;
   GList* iter;
@@ -559,14 +539,12 @@ static void gtkTableCellEditingStarted(GtkCellRenderer* renderer, GtkCellEditabl
   if (col < 1)
     return;
 
-  /* Call EDITBEGIN_CB - allow application to block editing */
   IFnii editbegin_cb = (IFnii)IupGetCallback(ih, "EDITBEGIN_CB");
   if (editbegin_cb)
   {
     int ret = editbegin_cb(ih, lin, col);
     if (ret == IUP_IGNORE)
     {
-      /* Block editing by making the cell non-editable temporarily */
       gtk_cell_renderer_stop_editing(renderer, TRUE);
     }
   }
@@ -579,7 +557,6 @@ static void gtkTableCellEditingCanceled(GtkCellRenderer* renderer, gpointer user
   Ihandle* ih = (Ihandle*)user_data;
   IgtkTableData* gtk_data = IGTK_TABLE_DATA(ih);
 
-  /* Get the currently focused cell */
   GtkTreePath* path;
   GtkTreeViewColumn* column;
   gtk_tree_view_get_cursor(GTK_TREE_VIEW(gtk_data->tree_view), &path, &column);
@@ -593,15 +570,12 @@ static void gtkTableCellEditingCanceled(GtkCellRenderer* renderer, gpointer user
   int* indices = gtk_tree_path_get_indices(path);
   int lin = indices[0] + 1;  /* 1-based */
 
-  /* Find column index */
   GList* columns = gtk_tree_view_get_columns(GTK_TREE_VIEW(gtk_data->tree_view));
   int col = g_list_index(columns, column) + 1;  /* 1-based */
   g_list_free(columns);
 
-  /* Get current cell value */
   char* value = iupdrvTableGetCellValue(ih, lin, col);
 
-  /* Call EDITEND_CB with apply=0 (cancelled) */
   IFniisi editend_cb = (IFniisi)IupGetCallback(ih, "EDITEND_CB");
   if (editend_cb)
   {
@@ -621,7 +595,6 @@ static void gtkTableCellEdited(GtkCellRendererText* renderer, gchar* path_string
   int lin = indices[0] + 1;  /* 1-based */
   gtk_tree_path_free(path);
 
-  /* Find which column this renderer belongs to */
   GList* columns = gtk_tree_view_get_columns(GTK_TREE_VIEW(gtk_data->tree_view));
   int col = 0;
   GList* iter;
@@ -647,7 +620,6 @@ static void gtkTableCellEdited(GtkCellRendererText* renderer, gchar* path_string
   char* old_text_ptr = iupdrvTableGetCellValue(ih, lin, col);
   char* old_text = old_text_ptr ? iupStrDup(old_text_ptr) : NULL;
 
-  /* Call EDITEND_CB - allow application to validate/reject edit */
   IFniisi editend_cb = (IFniisi)IupGetCallback(ih, "EDITEND_CB");
   if (editend_cb)
   {
@@ -659,7 +631,6 @@ static void gtkTableCellEdited(GtkCellRendererText* renderer, gchar* path_string
     }
   }
 
-  /* Call edition callback */
   IFniis cb = (IFniis)IupGetCallback(ih, "EDITION_CB");
   if (cb)
   {
@@ -671,17 +642,15 @@ static void gtkTableCellEdited(GtkCellRendererText* renderer, gchar* path_string
     }
   }
 
-  /* Update cell value */
   iupdrvTableSetCellValue(ih, lin, col, new_text);
 
-  /* Call value changed callback only if text actually changed */
   int text_changed = 0;
   if (!old_text && new_text && *new_text)
-    text_changed = 1;  /* NULL -> non-empty */
+    text_changed = 1;
   else if (old_text && !new_text)
-    text_changed = 1;  /* non-empty -> NULL */
+    text_changed = 1;
   else if (old_text && new_text && strcmp(old_text, new_text) != 0)
-    text_changed = 1;  /* different text */
+    text_changed = 1;
 
   if (text_changed)
   {
@@ -759,7 +728,6 @@ static gboolean gtkTableButtonEvent(GtkWidget* widget, GdkEventButton* evt, Ihan
 
 static void gtkTableColumnClicked(GtkTreeViewColumn* column, Ihandle* ih)
 {
-  /* Called when user clicks a sortable column header */
   if (!ih->data->sortable)
     return;
 
@@ -767,7 +735,6 @@ static void gtkTableColumnClicked(GtkTreeViewColumn* column, Ihandle* ih)
   if (!gtk_data)
     return;
 
-  /* Get column index */
   GtkTreeView* tree_view = GTK_TREE_VIEW(gtk_tree_view_column_get_tree_view(column));
   GList* columns = gtk_tree_view_get_columns(tree_view);
   int col_index = g_list_index(columns, column) + 1;  /* 1-based */
@@ -877,16 +844,13 @@ static void gtkTableColumnsChanged(GtkTreeView* tree_view, Ihandle* ih)
 
 static void gtkTableCursorChanged(GtkTreeView* tree_view, Ihandle* ih)
 {
-  /* Called when cursor position changes (row or column) */
   GtkTreePath* path = NULL;
   GtkTreeViewColumn* column = NULL;
   gtk_tree_view_get_cursor(tree_view, &path, &column);
 
-  /* If cursor moved to dummy column, move it back to last real column */
   GtkTreeViewColumn* dummy_column = (GtkTreeViewColumn*)iupAttribGet(ih, "_IUPGTK_DUMMY_COLUMN");
   if (dummy_column && column == dummy_column && path)
   {
-    /* Get the last real column (one before dummy) */
     GtkTreeViewColumn* last_real_col = gtk_tree_view_get_column(tree_view, ih->data->num_col - 1);
     if (last_real_col)
     {
@@ -909,7 +873,6 @@ static void gtkTableCursorChanged(GtkTreeView* tree_view, Ihandle* ih)
     gint* indices = gtk_tree_path_get_indices(path);
     int lin = indices[0] + 1;  /* Convert to 1-based */
 
-    /* Find column index */
     int col = 1;
     GList* columns = gtk_tree_view_get_columns(tree_view);
     for (GList* l = columns; l != NULL; l = l->next, col++)
@@ -936,11 +899,9 @@ static void gtkTableSelectionChanged(GtkTreeSelection* selection, Ihandle* ih)
 
   if (mode == GTK_SELECTION_MULTIPLE)
   {
-    /* For multiple selection, get list of selected rows */
     GList* rows = gtk_tree_selection_get_selected_rows(selection, NULL);
     if (rows)
     {
-      /* Call callback for the first selected row (most recently selected) */
       GtkTreePath* path = (GtkTreePath*)rows->data;
       int* indices = gtk_tree_path_get_indices(path);
       int lin = indices[0] + 1;  /* 1-based */
@@ -956,7 +917,6 @@ static void gtkTableSelectionChanged(GtkTreeSelection* selection, Ihandle* ih)
   }
   else
   {
-    /* For single selection, use get_selected */
     GtkTreeModel* model;
     GtkTreeIter iter;
 
@@ -992,32 +952,26 @@ static void gtkTableCellDataFunc(GtkTreeViewColumn* column, GtkCellRenderer* ren
   Ihandle* ih = info->ih;
   int col = info->col;
 
-  /* Get row number (1-based) */
   GtkTreePath* path = gtk_tree_model_get_path(model, iter);
   int* indices = gtk_tree_path_get_indices(path);
   int lin = indices[0] + 1;  /* 1-based */
   gtk_tree_path_free(path);
 
-  /* In virtual mode, text values come from the virtual model's get_value() method.
-   * This cell data function only needs to handle colors.
-   * In normal mode, the text is already in the GtkListStore. */
+  /* the text comes from the model or the store, this only sets colors */
 
   /* Hierarchy: per-cell (L:C) > per-column (:C) > per-row (L:*) > alternating > default */
 
-  /* Background color */
-  char* bgcolor = iupAttribGetId2(ih, "BGCOLOR", lin, col);  /* Try L:C */
+  char* bgcolor = iupAttribGetId2(ih, "BGCOLOR", lin, col);
   if (!bgcolor)
-    bgcolor = iupAttribGetId2(ih, "BGCOLOR", 0, col);  /* Try :C (per-column) */
+    bgcolor = iupAttribGetId2(ih, "BGCOLOR", 0, col);
   if (!bgcolor)
-    bgcolor = iupAttribGetId2(ih, "BGCOLOR", lin, 0);  /* Try L:* (per-row) */
+    bgcolor = iupAttribGetId2(ih, "BGCOLOR", lin, 0);
 
-  /* Check for alternating row colors if no explicit color is set */
   if (!bgcolor)
   {
     char* alternate_color = iupAttribGet(ih, "ALTERNATECOLOR");
     if (iupStrBoolean(alternate_color))
     {
-      /* Use EVENROWCOLOR or ODDROWCOLOR based on row number */
       if (lin % 2 == 0)
         bgcolor = iupAttribGet(ih, "EVENROWCOLOR");
       else
@@ -1053,12 +1007,11 @@ static void gtkTableCellDataFunc(GtkTreeViewColumn* column, GtkCellRenderer* ren
   }
 #endif
 
-  /* Foreground color */
-  char* fgcolor = iupAttribGetId2(ih, "FGCOLOR", lin, col);  /* Try L:C */
+  char* fgcolor = iupAttribGetId2(ih, "FGCOLOR", lin, col);
   if (!fgcolor)
-    fgcolor = iupAttribGetId2(ih, "FGCOLOR", 0, col);  /* Try :C (per-column) */
+    fgcolor = iupAttribGetId2(ih, "FGCOLOR", 0, col);
   if (!fgcolor)
-    fgcolor = iupAttribGetId2(ih, "FGCOLOR", lin, 0);  /* Try L:* (per-row) */
+    fgcolor = iupAttribGetId2(ih, "FGCOLOR", lin, 0);
 
 #if GTK_CHECK_VERSION(3, 0, 0)
   if (fgcolor && *fgcolor)
@@ -1088,26 +1041,22 @@ static void gtkTableCellDataFunc(GtkTreeViewColumn* column, GtkCellRenderer* ren
   }
 #endif
 
-  /* Font */
-  char* font = iupAttribGetId2(ih, "FONT", lin, col);  /* Try L:C */
+  char* font = iupAttribGetId2(ih, "FONT", lin, col);
   if (!font)
-    font = iupAttribGetId2(ih, "FONT", 0, col);  /* Try :C (per-column) */
+    font = iupAttribGetId2(ih, "FONT", 0, col);
   if (!font)
-    font = iupAttribGetId2(ih, "FONT", lin, 0);  /* Try L:* (per-row) */
+    font = iupAttribGetId2(ih, "FONT", lin, 0);
 
   if (font && *font)
   {
-    /* Get cached Pango font description */
     PangoFontDescription* fontdesc = iupgtkGetPangoFontDesc(font);
     if (fontdesc)
     {
-      /* Set font, g_object_set will ref-count internally */
       g_object_set(renderer, "font-desc", fontdesc, NULL);
     }
   }
   else
   {
-    /* Reset to default font by passing NULL */
     g_object_set(renderer, "font-desc", NULL, NULL);
   }
 }
@@ -1123,7 +1072,6 @@ static gboolean gtkTableKeyPressEvent(GtkWidget* widget, GdkEventKey* event, Iha
   GtkTreePath* path = NULL;
   GtkTreeViewColumn* column = NULL;
 
-  /* Get current cursor position */
   gtk_tree_view_get_cursor(GTK_TREE_VIEW(gtk_data->tree_view), &path, &column);
 
   if (!path)
@@ -1132,8 +1080,7 @@ static gboolean gtkTableKeyPressEvent(GtkWidget* widget, GdkEventKey* event, Iha
   gint* indices = gtk_tree_path_get_indices(path);
   int lin = indices[0] + 1;  /* Convert 0-based to 1-based */
 
-  /* Find current column index */
-  int col = 1;  /* Default to first column */
+  int col = 1;
   GList* columns = gtk_tree_view_get_columns(GTK_TREE_VIEW(gtk_data->tree_view));
   for (GList* l = columns; l != NULL; l = l->next, col++)
   {
@@ -1144,11 +1091,9 @@ static gboolean gtkTableKeyPressEvent(GtkWidget* widget, GdkEventKey* event, Iha
 
   gboolean handled = FALSE;
 
-  /* Handle navigation keys */
   switch (event->keyval)
   {
     case GDK_KEY_Left:
-      /* Move to previous column */
       if (col > 1)
       {
         GtkTreeViewColumn* prev_col = gtk_tree_view_get_column(GTK_TREE_VIEW(gtk_data->tree_view), col - 2);
@@ -1161,7 +1106,6 @@ static gboolean gtkTableKeyPressEvent(GtkWidget* widget, GdkEventKey* event, Iha
       break;
 
     case GDK_KEY_Right:
-      /* Move to next column */
       if (col < ih->data->num_col)
       {
         GtkTreeViewColumn* next_col = gtk_tree_view_get_column(GTK_TREE_VIEW(gtk_data->tree_view), col);
@@ -1174,15 +1118,12 @@ static gboolean gtkTableKeyPressEvent(GtkWidget* widget, GdkEventKey* event, Iha
       break;
 
     case GDK_KEY_Escape:
-      /* Just let it propagate */
       break;
 
     case GDK_KEY_c:
     case GDK_KEY_C:
-      /* Copy current cell to clipboard */
       if (event->state & GDK_CONTROL_MASK)
       {
-        /* Get value from GTK model */
         IgtkTableData* gtk_data = IGTK_TABLE_DATA(ih);
         GtkTreeIter iter;
         gchar* value = NULL;
@@ -1210,10 +1151,8 @@ static gboolean gtkTableKeyPressEvent(GtkWidget* widget, GdkEventKey* event, Iha
 
     case GDK_KEY_v:
     case GDK_KEY_V:
-      /* Paste from clipboard to current cell */
       if (event->state & GDK_CONTROL_MASK)
       {
-        /* Check if cell is editable */
         char name[50];
         snprintf(name, sizeof(name), "EDITABLE%d", col);
         char* editable = iupAttribGet(ih, name);
@@ -1233,16 +1172,13 @@ static gboolean gtkTableKeyPressEvent(GtkWidget* widget, GdkEventKey* event, Iha
           {
             GtkTreeIter iter;
 
-            /* Set the cell value */
             iupAttribSetId2(ih, "", lin, col, text);
 
-            /* Update the GTK model */
             if (gtk_tree_model_iter_nth_child(GTK_TREE_MODEL(gtk_data->store), &iter, NULL, lin - 1))
             {
               gtk_list_store_set(gtk_data->store, &iter, gtkTableTextModelCol(ih, col - 1), text, -1);
             }
 
-            /* Call VALUECHANGED_CB if defined */
             IFnii value_cb = (IFnii)IupGetCallback(ih, "VALUECHANGED_CB");
             if (value_cb)
               value_cb(ih, lin, col);
@@ -1256,14 +1192,12 @@ static gboolean gtkTableKeyPressEvent(GtkWidget* widget, GdkEventKey* event, Iha
 
   gtk_tree_path_free(path);
 
-  /* Call standard IUP key press event for K_ANY callback */
   if (!handled)
     return iupgtkKeyPressEvent(widget, event, ih);
 
   return handled;  /* TRUE = stop event propagation, FALSE = continue */
 }
 
-/* Draw callback to overlay dashed border around focused cell */
 #if GTK_CHECK_VERSION(3, 0, 0)
 static gboolean gtkTableDrawFocusRect(GtkWidget* widget, cairo_t* cr, Ihandle* ih)
 #else
@@ -1275,7 +1209,6 @@ static gboolean gtkTableDrawFocusRect(GtkWidget* widget, GdkEventExpose* event, 
   if (!gtk_data)
     return FALSE;
 
-  /* Check if FOCUSRECT is enabled */
   if (!iupAttribGetBoolean(ih, "FOCUSRECT"))
     return FALSE;
 
@@ -1286,7 +1219,6 @@ static gboolean gtkTableDrawFocusRect(GtkWidget* widget, GdkEventExpose* event, 
   if (!path || !column)
     return FALSE;
 
-  /* Don't draw focus rect on dummy column */
   GtkTreeViewColumn* dummy_column = (GtkTreeViewColumn*)iupAttribGet(ih, "_IUPGTK_DUMMY_COLUMN");
   if (dummy_column && column == dummy_column)
   {
@@ -1294,16 +1226,13 @@ static gboolean gtkTableDrawFocusRect(GtkWidget* widget, GdkEventExpose* event, 
     return FALSE;
   }
 
-  /* Get cell area */
   GdkRectangle cell_area;
   gtk_tree_view_get_cell_area(GTK_TREE_VIEW(gtk_data->tree_view), path, column, &cell_area);
   gtk_tree_path_free(path);
 
-  /* Convert to widget coordinates */
   gtk_tree_view_convert_bin_window_to_widget_coords(GTK_TREE_VIEW(gtk_data->tree_view), cell_area.x, cell_area.y, &cell_area.x, &cell_area.y);
 
 #if GTK_CHECK_VERSION(3, 0, 0)
-  /* Get theme border color for subtle focus indicator */
   GtkStyleContext* context = gtk_widget_get_style_context(widget);
   GdkRGBA color;
 #if GTK_CHECK_VERSION(3, 16, 0)
@@ -1316,19 +1245,15 @@ static gboolean gtkTableDrawFocusRect(GtkWidget* widget, GdkEventExpose* event, 
   gtk_style_context_get_border_color(context, gtk_widget_get_state_flags(widget), &color);
 #endif
 
-  /* Draw dashed border */
-  cairo_set_source_rgba(cr, color.red, color.green, color.blue, 0.5);  /* More subtle with lower opacity */
+  cairo_set_source_rgba(cr, color.red, color.green, color.blue, 0.5);
   cairo_set_line_width(cr, 1.0);
 
-  /* Set dash pattern */
   double dashes[] = {2.0, 2.0};
   cairo_set_dash(cr, dashes, 2, 0);
 
-  /* Draw rectangle with minimal inset, closer to cell edge */
   cairo_rectangle(cr, cell_area.x + 0.5, cell_area.y + 0.5, cell_area.width - 1, cell_area.height - 1);
   cairo_stroke(cr);
 #else
-  /* GTK2 */
   GtkStyle* style = gtk_widget_get_style(widget);
   GdkWindow* window = gtk_tree_view_get_bin_window(GTK_TREE_VIEW(gtk_data->tree_view));
 
@@ -1343,7 +1268,6 @@ static gboolean gtkTableDrawFocusRect(GtkWidget* widget, GdkEventExpose* event, 
   {
     GdkGC* gc = gdk_gc_new(window);
 
-    /* Set dashed line style */
     gint8 dashes[2] = {2, 2};
     gdk_gc_set_dashes(gc, 0, dashes, 2);
 
@@ -1352,7 +1276,6 @@ static gboolean gtkTableDrawFocusRect(GtkWidget* widget, GdkEventExpose* event, 
     gcval.line_width = 1;
     gdk_gc_set_values(gc, &gcval, GDK_GC_LINE_STYLE | GDK_GC_LINE_WIDTH);
 
-    /* Use subtle dark color */
     GdkColor* border_color = &style->dark[GTK_STATE_NORMAL];
     gdk_gc_set_rgb_fg_color(gc, border_color);
 
@@ -1366,16 +1289,13 @@ static gboolean gtkTableDrawFocusRect(GtkWidget* widget, GdkEventExpose* event, 
     if (!cr)
       return FALSE;
 
-    /* Use subtle dark color */
     GdkColor* border_color = &style->dark[GTK_STATE_NORMAL];
     gdk_cairo_set_source_color(cr, border_color);
     cairo_set_line_width(cr, 1.0);
 
-    /* Set dash pattern */
     double dashes[] = {2.0, 2.0};
     cairo_set_dash(cr, dashes, 2, 0);
 
-    /* Draw rectangle */
     cairo_rectangle(cr, bin_x + 0.5, bin_y + 0.5, cell_area.width - 1, cell_area.height - 1);
     cairo_stroke(cr);
 
@@ -1406,7 +1326,6 @@ static int gtk3TableCalculateColumnWidth(Ihandle* ih, int col_index)
     image_extra = charheight + 4;
   }
 
-  /* Measure column title */
   GtkTreeViewColumn* column = gtk_tree_view_get_column(GTK_TREE_VIEW(gtk_data->tree_view), col_index);
   if (column)
   {
@@ -1419,7 +1338,6 @@ static int gtk3TableCalculateColumnWidth(Ihandle* ih, int col_index)
     }
   }
 
-  /* Measure cell content in first N rows */
   GtkTreeModel* model = gtk_tree_view_get_model(GTK_TREE_VIEW(gtk_data->tree_view));
   if (model)
   {
@@ -1470,12 +1388,10 @@ static void gtkTableLayoutUpdateMethod(Ihandle* ih)
   int width = ih->currentwidth;
   int height = ih->currentheight;
 
-  /* If VISIBLELINES is set, clamp height to target */
   int target_height = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(widget), "iup-table-target-height"));
   if (target_height > 0 && height > target_height)
     height = target_height;
 
-  /* If VISIBLECOLUMNS is set, clamp width to show exactly N columns */
   int visible_columns = iupAttribGetInt(ih, "VISIBLECOLUMNS");
   if (visible_columns > 0 && gtk_data->tree_view)
   {
@@ -1489,11 +1405,9 @@ static void gtkTableLayoutUpdateMethod(Ihandle* ih)
       GtkTreeViewColumn* column = gtk_tree_view_get_column(GTK_TREE_VIEW(gtk_data->tree_view), c);
       if (column)
       {
-        /* Try rendered width first (works after display) */
         int col_width = gtk_tree_view_column_get_width(column);
         if (col_width <= 0)
         {
-          /* Calculate from content */
           col_width = gtk3TableCalculateColumnWidth(ih, c);
         }
         cols_width += col_width;
@@ -1503,7 +1417,6 @@ static void gtkTableLayoutUpdateMethod(Ihandle* ih)
     int sb_size = iupdrvGetScrollbarSize();
     int border = 2;
 
-    /* Only add vertical scrollbar width if it will actually be visible */
     int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
     int need_vert_sb = (visiblelines > 0 && ih->data->num_lin > visiblelines);
     int vert_sb_width = need_vert_sb ? sb_size : 0;
@@ -1513,7 +1426,6 @@ static void gtkTableLayoutUpdateMethod(Ihandle* ih)
       width = target_width;
   }
 
-  /* Get the GtkFixed parent container */
   GtkWidget* parent = gtk_widget_get_parent(widget);
   while (parent && !GTK_IS_FIXED(parent))
     parent = gtk_widget_get_parent(parent);
@@ -1626,25 +1538,21 @@ static int gtkTableMapMethod(Ihandle* ih)
   GtkListStore* store;
   int i, col;
 
-  /* Allocate GTK-specific data */
   IgtkTableData* gtk_data = (IgtkTableData*)malloc(sizeof(IgtkTableData));
   memset(gtk_data, 0, sizeof(IgtkTableData));
   ih->data->native_data = gtk_data;
 
-  /* Check if using virtual mode */
   gtk_data->is_virtual = iupAttribGetBoolean(ih, "VIRTUALMODE");
 
   GtkTreeModel* model = NULL;
 
   if (gtk_data->is_virtual)
   {
-    /* Create virtual model, no data storage, queries via VALUE_CB */
     gtk_data->virtual_model = iup_gtk_virtual_model_new(ih);
     model = GTK_TREE_MODEL(gtk_data->virtual_model);
   }
   else
   {
-    /* Create standard GtkListStore */
     if (ih->data->num_col > 0)
     {
       int model_cols = gtkTableModelColCount(ih);
@@ -1667,7 +1575,6 @@ static int gtkTableMapMethod(Ihandle* ih)
     }
     else
     {
-      /* Create empty store with one column as placeholder */
       GType type = G_TYPE_STRING;
       gtk_data->column_types = (GType*)malloc(sizeof(GType));
       gtk_data->column_types[0] = G_TYPE_STRING;
@@ -1678,17 +1585,14 @@ static int gtkTableMapMethod(Ihandle* ih)
     model = GTK_TREE_MODEL(store);
   }
 
-  /* Create scrolled window */
   gtk_data->scrolled_win = gtk_scrolled_window_new(NULL, NULL);
   /* AUTOMATIC shows scrollbars only when needed */
   gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(gtk_data->scrolled_win), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
 
-  /* Create tree view with model */
   gtk_data->tree_view = gtk_tree_view_new_with_model(model);
   if (!gtk_data->is_virtual)
     g_object_unref(store);  /* Tree view holds reference */
 
-  /* Set tree view properties */
   gtk_tree_view_set_headers_visible(GTK_TREE_VIEW(gtk_data->tree_view), TRUE);
   gtk_tree_view_set_enable_search(GTK_TREE_VIEW(gtk_data->tree_view), FALSE);
 
@@ -1696,43 +1600,38 @@ static int gtkTableMapMethod(Ihandle* ih)
   if (gtk_data->is_virtual)
     gtk_tree_view_set_fixed_height_mode(GTK_TREE_VIEW(gtk_data->tree_view), TRUE);
 
-  /* Ensure tree view can receive focus and events */
   gtk_widget_set_can_focus(gtk_data->tree_view, TRUE);
 #if GTK_CHECK_VERSION(3, 0, 0)
   gtk_widget_set_focus_on_click(gtk_data->tree_view, TRUE);
 #endif
 
-  /* Set selection mode */
   GtkTreeSelection* selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(gtk_data->tree_view));
   char* selmode = iupAttribGetStr(ih, "SELECTIONMODE");
   if (!selmode)
-    selmode = "SINGLE";  /* Default */
+    selmode = "SINGLE";
 
   if (iupStrEqualNoCase(selmode, "NONE"))
     gtk_tree_selection_set_mode(selection, GTK_SELECTION_NONE);
   else if (iupStrEqualNoCase(selmode, "MULTIPLE"))
     gtk_tree_selection_set_mode(selection, GTK_SELECTION_MULTIPLE);
-  else  /* SINGLE or anything else */
+  else
     gtk_tree_selection_set_mode(selection, GTK_SELECTION_SINGLE);
 
-  /* Create columns if we have any */
   if (ih->data->num_col > 0)
   {
     for (col = 0; col < ih->data->num_col; col++)
     {
       GtkCellRenderer* renderer = gtk_cell_renderer_text_new();
 
-      /* Store renderer pointer for later access */
       char renderer_name[50];
       snprintf(renderer_name, sizeof(renderer_name), "_IUPGTK_RENDERER_%d", col);
       iupAttribSet(ih, renderer_name, (char*)renderer);
 
-      /* Check if column should be editable */
       char name[50];
       snprintf(name, sizeof(name), "EDITABLE%d", col + 1);
       char* editable_str = iupAttribGet(ih, name);
       if (!editable_str)
-        editable_str = iupAttribGet(ih, "EDITABLE");  /* Global editable */
+        editable_str = iupAttribGet(ih, "EDITABLE");
 
       if (iupStrBoolean(editable_str))
       {
@@ -1742,23 +1641,20 @@ static int gtkTableMapMethod(Ihandle* ih)
         g_object_get(G_OBJECT(renderer), "editable", &is_editable, NULL);
       }
 
-      /* Check if column has alignment set (applies to entire column: header + cells) */
       snprintf(name, sizeof(name), "ALIGNMENT%d", col + 1);
       char* align_str = iupAttribGet(ih, name);
-      float xalign = 0.0f;  /* Default: left */
+      float xalign = 0.0f;
 
       if (align_str)
       {
         if (iupStrEqualNoCase(align_str, "ARIGHT") || iupStrEqualNoCase(align_str, "RIGHT"))
-          xalign = 1.0f;  /* Right */
+          xalign = 1.0f;
         else if (iupStrEqualNoCase(align_str, "ACENTER") || iupStrEqualNoCase(align_str, "CENTER"))
-          xalign = 0.5f;  /* Center */
+          xalign = 0.5f;
 
-        /* Apply alignment to cell renderer (for cell content) */
         g_object_set(G_OBJECT(renderer), "xalign", xalign, NULL);
       }
 
-      /* Connect signals for cell editing */
       g_signal_connect(G_OBJECT(renderer), "editing-started", G_CALLBACK(gtkTableCellEditingStarted), ih);
       g_signal_connect(G_OBJECT(renderer), "edited", G_CALLBACK(gtkTableCellEdited), ih);
       g_signal_connect(G_OBJECT(renderer), "editing-canceled", G_CALLBACK(gtkTableCellEditingCanceled), ih);
@@ -1780,13 +1676,11 @@ static int gtkTableMapMethod(Ihandle* ih)
 
       gtk_tree_view_column_set_reorderable(column, ih->data->allow_reorder);
 
-      /* Set up cell data function for colors */
       IgtkCellDataInfo* data_info = (IgtkCellDataInfo*)malloc(sizeof(IgtkCellDataInfo));
       data_info->ih = ih;
       data_info->col = col + 1;  /* 1-based */
       gtk_tree_view_column_set_cell_data_func(column, renderer, gtkTableCellDataFunc, data_info, free);  /* free as destroy notify */
 
-      /* Check if width was set before mapping */
       snprintf(name, sizeof(name), "RASTERWIDTH%d", col + 1);
       char* width_str = iupAttribGet(ih, name);
       if (!width_str)
@@ -1798,27 +1692,23 @@ static int gtkTableMapMethod(Ihandle* ih)
       int col_width = 0;
       int has_explicit_width = (width_str && iupStrToInt(width_str, &col_width) && col_width > 0);
 
-      /* Handle last column */
       if (col == ih->data->num_col - 1)
       {
         if (has_explicit_width)
         {
-          /* Explicit width set, use FIXED sizing */
           gtk_tree_view_column_set_sizing(column, GTK_TREE_VIEW_COLUMN_FIXED);
           gtk_tree_view_column_set_fixed_width(column, col_width);
           gtk_tree_view_column_set_expand(column, FALSE);
         }
         else if (ih->data->stretch_last && !gtk_data->is_virtual)
         {
-          /* No explicit width and stretching enabled, expand to fill (not in virtual mode) */
           gtk_tree_view_column_set_sizing(column, GTK_TREE_VIEW_COLUMN_AUTOSIZE);
           gtk_tree_view_column_set_expand(column, TRUE);
         }
         else
         {
-          /* No explicit width and stretching disabled (or virtual mode), use FIXED mode */
           const char* title = gtk_tree_view_column_get_title(column);
-          int fixed_width = 80;  /* Default minimum */
+          int fixed_width = 80;
 
           if (title && title[0])
           {
@@ -1835,7 +1725,6 @@ static int gtkTableMapMethod(Ihandle* ih)
       }
       else
       {
-        /* Non-last columns */
         if (has_explicit_width)
         {
           gtk_tree_view_column_set_sizing(column, GTK_TREE_VIEW_COLUMN_FIXED);
@@ -1853,21 +1742,17 @@ static int gtkTableMapMethod(Ihandle* ih)
         gtk_tree_view_column_set_expand(column, FALSE);
       }
 
-      /* Check if column should be sortable (from ih->data) */
       IgtkTableData* gtk_data = IGTK_TABLE_DATA(ih);
       if (ih->data->sortable)
       {
         if (gtk_data->is_virtual)
         {
-          /* Virtual mode - disable GTK automatic sorting, use manual handling */
           gtk_tree_view_column_set_sort_column_id(column, -1);
           gtk_tree_view_column_set_clickable(column, TRUE);
-          /* Connect clicked signal for manual sort handling */
           g_signal_connect(G_OBJECT(column), "clicked", G_CALLBACK(gtkTableColumnClicked), ih);
         }
         else
         {
-          /* Normal mode - sort manually on click (no GtkTreeSortable auto-sort) */
           gtk_tree_view_column_set_sort_column_id(column, -1);
           gtk_tree_view_column_set_clickable(column, TRUE);
           g_signal_connect(G_OBJECT(column), "clicked", G_CALLBACK(gtkTableColumnClicked), ih);
@@ -1879,8 +1764,7 @@ static int gtkTableMapMethod(Ihandle* ih)
         gtk_tree_view_column_set_clickable(column, FALSE);
       }
 
-      /* Apply alignment to column header AFTER making it clickable
-       * (clickable adds a button widget which has its own default alignment) */
+      /* clickable adds a button widget with its own alignment, so align the header after */
       if (align_str)
         gtk_tree_view_column_set_alignment(column, xalign);
 
@@ -1894,9 +1778,7 @@ static int gtkTableMapMethod(Ihandle* ih)
 #endif
     }
 
-    /* if ALL columns have expand=FALSE, it gives extra space to the LAST column.
-     * To prevent this when STRETCHLAST=NO, add a visible dummy column with expand=TRUE to absorb the extra space.
-     * Also add dummy if last column has explicit width, in that case it shouldn't stretch even if STRETCHLAST=YES */
+    /* GTK gives the extra space to the LAST column when all have expand=FALSE, so a dummy column absorbs it */
     int last_col_has_width = 0;
     {
       char name[50];
@@ -1941,15 +1823,12 @@ static int gtkTableMapMethod(Ihandle* ih)
       }
 #endif
 
-      /* Store dummy column pointer so we can check for it in event handlers */
       iupAttribSet(ih, "_IUPGTK_DUMMY_COLUMN", (char*)dummy_column);
     }
   }
 
-  /* Add tree view to scrolled window */
   gtk_container_add(GTK_CONTAINER(gtk_data->scrolled_win), gtk_data->tree_view);
 
-  /* Set the main handle to tree view, scrolled window as extra parent */
   ih->handle = gtk_data->tree_view;
   iupAttribSet(ih, "_IUP_EXTRAPARENT", (char*)gtk_data->scrolled_win);
 
@@ -1963,7 +1842,6 @@ static int gtkTableMapMethod(Ihandle* ih)
   }
 #endif
 
-  /* Connect signals */
   g_signal_connect(gtk_data->tree_view, "button-press-event", G_CALLBACK(gtkTableButtonEvent), ih);
   g_signal_connect(gtk_data->tree_view, "focus-in-event", G_CALLBACK(iupgtkFocusInOutEvent), ih);
   g_signal_connect(gtk_data->tree_view, "focus-out-event", G_CALLBACK(iupgtkFocusInOutEvent), ih);
@@ -1979,20 +1857,14 @@ static int gtkTableMapMethod(Ihandle* ih)
   g_signal_connect_after(gtk_data->tree_view, "expose-event", G_CALLBACK(gtkTableDrawFocusRect), ih);
 #endif
 
-  /* Show all widgets */
   gtk_widget_show(gtk_data->tree_view);
   gtk_widget_show(gtk_data->scrolled_win);
 
-  /* Add to parent */
   iupgtkAddToParent(ih);
 
-  /* Ensure TreeView can receive focus for cell editing */
   if (iupAttribGetBoolean(ih, "CANFOCUS"))
-    iupgtkSetCanFocus(ih->handle, 1);  /* Explicitly enable if CANFOCUS=YES */
+    iupgtkSetCanFocus(ih->handle, 1);
 
-  /* Apply stored attributes that need widget to be created */
-
-  /* Set column titles */
   for (col = 1; col <= ih->data->num_col; col++)
   {
     char name[50];
@@ -2002,16 +1874,12 @@ static int gtkTableMapMethod(Ihandle* ih)
       iupdrvTableSetColTitle(ih, col, title);
   }
 
-  /* Set number of rows */
   if (ih->data->num_lin > 0)
     iupdrvTableSetNumLin(ih, ih->data->num_lin);
 
-  /* Set show grid */
   iupdrvTableSetShowGrid(ih, iupAttribGetBoolean(ih, "SHOWGRID"));
 
-  /* Set height constraint when VISIBLELINES is set.
-     Store target height in widget data for size-allocate handler to clamp.
-     GtkFixed ignores vexpand/valign, so we must use size-allocate clamping. */
+  /* GtkFixed ignores vexpand/valign, so VISIBLELINES clamps in the size-allocate handler */
   int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
   if (visiblelines > 0)
   {
@@ -2044,7 +1912,6 @@ static void gtkTableUnMapMethod(Ihandle* ih)
       gtk_tree_view_set_model(GTK_TREE_VIEW(gtk_data->tree_view), NULL);
     }
 
-    /* Clean up virtual model if it was used */
     if (gtk_data->virtual_model)
     {
       g_object_unref(gtk_data->virtual_model);
@@ -2071,7 +1938,6 @@ static void iupgtkTableDetachVirtualModelsRecursive(Ihandle* ih)
   if (!ih)
     return;
 
-  /* Check if this element is a virtual table */
   if (iupStrEqual(ih->iclass->name, "table"))
   {
     IgtkTableData* gtk_data = IGTK_TABLE_DATA(ih);
@@ -2082,7 +1948,6 @@ static void iupgtkTableDetachVirtualModelsRecursive(Ihandle* ih)
     }
   }
 
-  /* Recursively process all children */
   child = ih->firstchild;
   while (child)
   {
@@ -2107,10 +1972,8 @@ IUP_SDK_API void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
 
   ih->data->num_col = num_col;
 
-  /* Recreate store with new number of columns */
   gtkTableEnsureStore(ih);
 
-  /* Update columns in tree view */
   gtkTableUpdateColumns(ih);
 }
 
@@ -2126,7 +1989,6 @@ IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
 
   ih->data->num_lin = num_lin;
 
-  /* In virtual mode, just trigger redraw */
   if (gtk_data->is_virtual)
   {
     if (gtk_data->tree_view)
@@ -2134,7 +1996,6 @@ IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
     return;
   }
 
-  /* Normal mode: manage actual rows in GtkListStore */
   if (!gtk_data->store)
     return;
 
@@ -2142,14 +2003,12 @@ IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
 
   if (num_lin > current_rows)
   {
-    /* Add rows */
     int i;
     for (i = current_rows; i < num_lin; i++)
     {
       GtkTreeIter iter;
       gtk_list_store_append(gtk_data->store, &iter);
 
-      /* Initialize all cells to empty string */
       int col;
       for (col = 0; col < ih->data->num_col; col++)
       {
@@ -2159,7 +2018,6 @@ IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
   }
   else if (num_lin < current_rows)
   {
-    /* Remove rows */
     while (current_rows > num_lin)
     {
       GtkTreeIter iter;
@@ -2202,7 +2060,6 @@ IUP_SDK_API void iupdrvTableAddLin(Ihandle* ih, int pos)
 
   if (pos <= 0 || pos > ih->data->num_lin + 1)
   {
-    /* Append */
     gtk_list_store_append(gtk_data->store, &iter);
   }
   else
@@ -2223,7 +2080,6 @@ IUP_SDK_API void iupdrvTableAddLin(Ihandle* ih, int pos)
     gtk_tree_path_free(path);
   }
 
-  /* Initialize all cells to empty string */
   int col;
   for (col = 0; col < ih->data->num_col; col++)
   {
@@ -2551,21 +2407,18 @@ static void gtk3TableMeasureRowMetrics(Ihandle* ih, int with_grid)
   GtkListStore* store = gtk_list_store_new(1, G_TYPE_STRING);
   GtkWidget* tree_view = gtk_tree_view_new_with_model(GTK_TREE_MODEL(store));
 
-  /* Add a column with text renderer */
   GtkCellRenderer* renderer = gtk_cell_renderer_text_new();
   (void)renderer;
   GtkTreeViewColumn* column = gtk_tree_view_column_new_with_attributes(
     "Test", renderer, "text", 0, NULL);
   gtk_tree_view_append_column(GTK_TREE_VIEW(tree_view), column);
 
-  /* Add two rows, measure height as Y difference between them */
   GtkTreeIter iter;
   gtk_list_store_append(store, &iter);
   gtk_list_store_set(store, &iter, 0, "X", -1);
   gtk_list_store_append(store, &iter);
   gtk_list_store_set(store, &iter, 0, "X", -1);
 
-  /* Match grid lines setting */
   if (with_grid)
     gtk_tree_view_set_grid_lines(GTK_TREE_VIEW(tree_view), GTK_TREE_VIEW_GRID_LINES_BOTH);
 
@@ -2589,7 +2442,6 @@ static void gtk3TableMeasureRowMetrics(Ihandle* ih, int with_grid)
     gtk_tree_path_free(path1);
   }
 
-  /* Fallback if measurement didn't work */
   if (*row_height_ptr <= 0)
   {
     int charheight;
@@ -2597,7 +2449,6 @@ static void gtk3TableMeasureRowMetrics(Ihandle* ih, int with_grid)
     *row_height_ptr = charheight + 4 + (with_grid ? 1 : 0);
   }
 
-  /* Measure header height */
   if (gtk3_table_header_height < 0)
   {
 #if GTK_CHECK_VERSION(3, 0, 0)
@@ -2628,7 +2479,6 @@ IUP_SDK_API int iupdrvTableGetRowHeight(Ihandle* ih)
 {
   IgtkTableData* gtk_data = IGTK_TABLE_DATA(ih);
 
-  /* If table is mapped and has at least 2 rows, measure pitch between rows */
   if (gtk_data && gtk_data->tree_view)
   {
     GtkTreeModel* model = gtk_tree_view_get_model(GTK_TREE_VIEW(gtk_data->tree_view));
@@ -2653,7 +2503,6 @@ IUP_SDK_API int iupdrvTableGetRowHeight(Ihandle* ih)
     }
   }
 
-  /* Fallback to pre-measured value */
   int with_grid = iupAttribGetBoolean(ih, "SHOWGRID");
   gtk3TableMeasureRowMetrics(ih, with_grid);
   return with_grid ? gtk3_table_row_height_grid : gtk3_table_row_height_nogrid;
@@ -2664,7 +2513,6 @@ IUP_SDK_API int iupdrvTableGetHeaderHeight(Ihandle* ih)
   IgtkTableData* gtk_data = IGTK_TABLE_DATA(ih);
 
 #if GTK_CHECK_VERSION(3, 0, 0)
-  /* If table is mapped, measure from actual header */
   if (gtk_data && gtk_data->tree_view)
   {
     GList* columns = gtk_tree_view_get_columns(GTK_TREE_VIEW(gtk_data->tree_view));
@@ -2694,10 +2542,8 @@ IUP_SDK_API void iupdrvTableAddBorders(Ihandle* ih, int* w, int* h)
 {
   int sb_size = iupdrvGetScrollbarSize();
 
-  /* GtkScrolledWindow: add vertical scrollbar width */
   *w += sb_size;
 
-  /* GtkScrolledWindow frame border */
   *h += 2;
 
   /* Add horizontal scrollbar height when VISIBLECOLUMNS causes it to appear */
@@ -2712,13 +2558,11 @@ IUP_SDK_API void iupdrvTableAddBorders(Ihandle* ih, int* w, int* h)
 
 static int gtkTableSetSortableAttrib(Ihandle* ih, const char* value)
 {
-  /* Store value in ih->data first (like IupTree SHOWRENAME pattern) */
   if (iupStrBoolean(value))
     ih->data->sortable = 1;
   else
     ih->data->sortable = 0;
 
-  /* Apply to native widget if it exists */
   if (ih->handle)
   {
     IgtkTableData* gtk_data = IGTK_TABLE_DATA(ih);
@@ -2752,13 +2596,11 @@ static int gtkTableSetSortableAttrib(Ihandle* ih, const char* value)
 
 static int gtkTableSetAllowReorderAttrib(Ihandle* ih, const char* value)
 {
-  /* Store value in ih->data first (like IupTree SHOWRENAME pattern) */
   if (iupStrBoolean(value))
     ih->data->allow_reorder = 1;
   else
     ih->data->allow_reorder = 0;
 
-  /* Apply to native widget if it exists */
   if (ih->handle)
   {
     IgtkTableData* gtk_data = IGTK_TABLE_DATA(ih);
@@ -2782,7 +2624,6 @@ static int gtkTableSetUserResizeAttrib(Ihandle* ih, const char* value)
 {
   IgtkTableData* gtk_data = IGTK_TABLE_DATA(ih);
 
-  /* First, update ih->data->user_resize flag */
   if (iupStrBoolean(value))
     ih->data->user_resize = 1;
   else
@@ -2791,7 +2632,6 @@ static int gtkTableSetUserResizeAttrib(Ihandle* ih, const char* value)
   if (!gtk_data || !gtk_data->tree_view)
     return 0;
 
-  /* Update resize modes for all existing columns */
   int col;
   for (col = 0; col < ih->data->num_col; col++)
   {
@@ -2800,13 +2640,11 @@ static int gtkTableSetUserResizeAttrib(Ihandle* ih, const char* value)
     {
       if (ih->data->user_resize)
       {
-        /* AUTOSIZE with resizable for all columns */
         gtk_tree_view_column_set_sizing(column, GTK_TREE_VIEW_COLUMN_AUTOSIZE);
         gtk_tree_view_column_set_resizable(column, TRUE);
       }
       else
       {
-        /* Return to FIXED/AUTOSIZE based on whether width was set */
         if (gtk_tree_view_column_get_fixed_width(column) > 0)
         {
           gtk_tree_view_column_set_sizing(column, GTK_TREE_VIEW_COLUMN_FIXED);
@@ -2835,16 +2673,13 @@ IUP_SDK_API void iupdrvTableInitClass(Iclass* ic)
   ic->UnMap = gtkTableUnMapMethod;
   ic->LayoutUpdate = gtkTableLayoutUpdateMethod;
 
-  /* Register GTK-specific attributes */
   iupClassRegisterAttribute(ic, "FONT", NULL, iupdrvSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NO_SAVE | IUPAF_NOT_MAPPED);
 
   /* Visual */
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, NULL, IUPAF_SAMEASSYSTEM, "TXTBGCOLOR", IUPAF_DEFAULT);
 
-  /* Native size */
   iupClassRegisterAttribute(ic, "SIZE", NULL, NULL, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NOT_MAPPED);
 
-  /* Replace core SET handlers to update native widget */
   iupClassRegisterReplaceAttribFunc(ic, "SORTABLE", NULL, gtkTableSetSortableAttrib);
   iupClassRegisterReplaceAttribFunc(ic, "ALLOWREORDER", NULL, gtkTableSetAllowReorderAttrib);
   iupClassRegisterReplaceAttribFunc(ic, "USERRESIZE", NULL, gtkTableSetUserResizeAttrib);

@@ -30,7 +30,6 @@
 
 IUPJNI_DECLARE_CLASS_STATIC(IupDragDropHelper);
 
-/* Comma-separated DRAGTYPES/DROPTYPES into a Java String[]. */
 static jobjectArray androidDragDropParseTypes(JNIEnv* jni_env, const char* value)
 {
   jclass string_cls = (*jni_env)->FindClass(jni_env, "java/lang/String");
@@ -72,7 +71,7 @@ static jobjectArray androidDragDropParseTypes(JNIEnv* jni_env, const char* value
   return arr;
 }
 
-/* touch arrives in HW px, canvas callbacks are in logical px like BUTTON_CB */
+/* touch arrives in HW px, canvas callbacks are in logical px */
 static int androidDragDropCanvasPx(int v)
 {
   float d = iupAndroid_GetDisplayDensity();
@@ -213,7 +212,6 @@ JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupDragDropHelper_dispatch
   if (cb(ih, (int)action) == IUP_CLOSE) IupExitLoop();
 }
 
-/* True if `type` is in this widget's DROPTYPES. */
 JNIEXPORT jboolean JNICALL Java_io_github_gen2brain_iupgo_IupDragDropHelper_acceptsType(
     JNIEnv* jni_env, jclass cls, jlong ihandle_ptr, jstring j_type)
 {
@@ -309,7 +307,6 @@ IUP_SDK_API void iupdrvRegisterDragDropAttrib(Iclass* ic)
   iupClassRegisterAttribute(ic, "DRAGCURSOR",     NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DRAGCURSORCOPY", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
 
-  /* DROPFILESTARGET / DRAGDROP (alias) accept cross-app file URIs. */
   iupClassRegisterAttribute(ic, "DROPFILESTARGET", NULL, androidSetDropFilesTargetAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DRAGDROP",        NULL, androidSetDropFilesTargetAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 }

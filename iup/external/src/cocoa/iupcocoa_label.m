@@ -38,10 +38,8 @@ typedef NS_ENUM(NSUInteger, IUPTextVerticalAlignment)
 
 - (NSRect)titleRectForBounds:(NSRect)cellFrame
 {
-  /* Get the default rect for drawing the text. */
   NSRect titleRect = [super titleRectForBounds:cellFrame];
 
-  /* Top alignment is the default Cocoa behavior, so we can exit early. */
   if (self.alignmentMode == IUPTextVerticalAlignmentTop) {
     return titleRect;
   }
@@ -51,22 +49,17 @@ typedef NS_ENUM(NSUInteger, IUPTextVerticalAlignment)
     return titleRect;
   }
 
-  /* Calculate the actual height of the text given the available width. */
-  /* The attributed string respects the cell's lineBreakMode property. */
   NSRect textBoundingRect = [attrString boundingRectWithSize:NSMakeSize(titleRect.size.width, CGFLOAT_MAX)
                                                      options:NSStringDrawingUsesLineFragmentOrigin | NSStringDrawingUsesFontLeading];
 
   CGFloat textHeight = NSHeight(textBoundingRect);
 
-  /* If the text is taller than or fits perfectly in the available space, no alignment is needed. */
   if (textHeight >= titleRect.size.height) {
     return titleRect;
   }
 
-  /* Create a new rect to position the text. */
   NSRect newTitleRect = titleRect;
 
-  /* Adjust the vertical origin based on the desired alignment. */
   switch (self.alignmentMode) {
     case IUPTextVerticalAlignmentCenter:
       newTitleRect.origin.y += (newTitleRect.size.height - textHeight) / 2.0;
@@ -78,9 +71,7 @@ typedef NS_ENUM(NSUInteger, IUPTextVerticalAlignment)
       break;
   }
 
-  /* When a field is selected, a "field editor" (an NSTextView) is placed over the cell. */
-  /* By setting the height of our drawing rect to the text's actual height, we ensure */
-  /* the field editor is created with a tight frame. */
+  /* a field editor (an NSTextView) overlays the cell, so a tight rect keeps its frame tight */
   newTitleRect.size.height = textHeight;
 
   return newTitleRect;
@@ -94,7 +85,6 @@ typedef NS_ENUM(NSUInteger, IUPTextVerticalAlignment)
 
 - (void)selectWithFrame:(NSRect)rect inView:(NSView *)controlView editor:(NSText *)editor delegate:(id)delegate start:(NSInteger)start length:(NSInteger)length
 {
-  /* Pass our vertically-aligned rect to the superclass to position the field editor. */
   [super selectWithFrame:[self titleRectForBounds:rect] inView:controlView editor:editor delegate:delegate start:start length:length];
 }
 
@@ -403,7 +393,6 @@ static int cocoaLabelSetTitleAttrib(Ihandle* ih, const char* value)
     char* stripped_str = iupStrProcessMnemonic(value, NULL, 0);
     ns_string = [NSString stringWithUTF8String:stripped_str];
 
-    /* Check if value contains newlines for multi-line support */
     has_newlines = (strchr(value, '\n') != NULL);
 
     if (stripped_str && stripped_str != value)
@@ -423,7 +412,6 @@ static int cocoaLabelSetTitleAttrib(Ihandle* ih, const char* value)
   unsigned char r, g, b;
   BOOL need_attributed = [iup_font usesAttributes] || (fgcolor && iupStrToRGB(fgcolor, &r, &g, &b));
 
-  /* Get alignment setting to apply to paragraph style */
   NSTextAlignment text_alignment = [the_label alignment];
 
   if (need_attributed)
@@ -452,7 +440,6 @@ static int cocoaLabelSetTitleAttrib(Ihandle* ih, const char* value)
       [attr_str addAttribute:NSForegroundColorAttributeName value:color range:range];
     }
 
-    /* Apply paragraph style for text alignment (required for attributed strings) */
     NSMutableParagraphStyle* paragraph_style = [[NSMutableParagraphStyle alloc] init];
     [paragraph_style setAlignment:text_alignment];
     [attr_str addAttribute:NSParagraphStyleAttributeName value:paragraph_style range:NSMakeRange(0, [ns_string length])];
@@ -901,12 +888,11 @@ static int cocoaLabelSetSelectable(Ihandle* ih, const char* value)
   {
     NSTextField* the_label = (NSTextField*)the_view;
 
-    /* Note: In older macOS versions, setSelectable:YES may cause visual glitches with vertical alignment. */
+    /* setSelectable:YES glitches vertical alignment on older macOS */
     [the_label setSelectable:is_active];
   }
   else if ([the_view isKindOfClass:[NSImageView class]])
   {
-    /* Not supported for image views */
   }
 
   return 1;
@@ -924,7 +910,6 @@ static char* cocoaLabelGetSelectable(Ihandle* ih)
   }
   else if ([the_view isKindOfClass:[NSImageView class]])
   {
-    /* Not supported for image views */
   }
 
   return iupStrReturnBoolean(is_active);
@@ -1009,7 +994,6 @@ static int cocoaLabelMapMethod(Ihandle* ih)
       [the_actual_label setSelectable:NO];
       [the_actual_label setFont:[NSFont systemFontOfSize:[NSFont systemFontSize]]];
 
-      /* Set initial alignment based on ALIGNMENT attribute if already set */
       char* alignment = iupAttribGet(ih, "ALIGNMENT");
       if (alignment)
       {
@@ -1042,12 +1026,10 @@ static int cocoaLabelMapMethod(Ihandle* ih)
       {
         NSString* ns_string = [NSString stringWithUTF8String:title];
 
-        /* Check if title contains newlines for multi-line support */
         BOOL has_newlines = (strchr(title, '\n') != NULL);
 
         if (has_newlines)
         {
-          /* Configure for multi-line display */
           [(NSTextField*)the_actual_label setUsesSingleLineMode:NO];
           [[(NSTextField*)the_actual_label cell] setScrollable:NO];
           [[(NSTextField*)the_actual_label cell] setWraps:YES];

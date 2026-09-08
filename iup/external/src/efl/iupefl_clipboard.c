@@ -169,8 +169,7 @@ static char* eflClipboardGetTextAttrib(Ihandle* ih)
   return NULL;
 }
 
-/* EFL has_selection only checks if the buffer has any content,
-   not whether the content is specifically text. */
+/* EFL has_selection only reports that the buffer has content, not that it is text */
 static char* eflClipboardGetTextAvailableAttrib(Ihandle* ih)
 {
   Eo* win;
@@ -262,7 +261,6 @@ static char* eflClipboardGetFormatDataAttrib(Ihandle* ih)
   if (!mime_type)
     return NULL;
 
-  /* Use local cache to avoid X11 self-selection deadlock */
   {
     const char* cached = iupAttribGet(ih, "_IUP_CLIPBOARD_FORMAT_CACHE");
     int cached_size = iupAttribGetInt(ih, "_IUP_CLIPBOARD_FORMAT_CACHE_SIZE");
@@ -325,9 +323,6 @@ static int eflClipboardSetFormatDataStringAttrib(Ihandle* ih, const char* value)
   else
     return eflClipboardSetFormatDataAttrib(ih, NULL);
 }
-
-/* EFL has_selection only checks if the buffer has any content,
-   not whether the specific format is available. */
 
 #define IUPEFL_CLIPBOARD_IMAGE_MIME "image/png"
 

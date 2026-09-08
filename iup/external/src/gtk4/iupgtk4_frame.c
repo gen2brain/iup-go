@@ -80,7 +80,6 @@ IUP_SDK_API int iupdrvFrameGetTitleHeight(Ihandle* ih, int* h)
     return 1;
   }
 
-  /* If frame is mapped, measure the actual label widget */
   if (ih->handle)
   {
     GtkFrame* frame = (GtkFrame*)ih->handle;
@@ -94,7 +93,6 @@ IUP_SDK_API int iupdrvFrameGetTitleHeight(Ihandle* ih, int* h)
     }
   }
 
-  /* Fallback: Create a temporary GtkLabel to measure title height */
   GtkWidget* temp_label = gtk_label_new(title);
 
   int min_height, nat_height;
@@ -102,7 +100,6 @@ IUP_SDK_API int iupdrvFrameGetTitleHeight(Ihandle* ih, int* h)
 
   *h = nat_height;
 
-  /* Cleanup */
   g_object_ref_sink(temp_label);
   g_object_unref(temp_label);
 

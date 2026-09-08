@@ -748,8 +748,7 @@ static int winDialogCustomFrameProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp,
   return 0;
 }
 
-/* Re-run BGCOLOR/FGCOLOR setters with the resolved global so controls that cached a color at map
-   time follow a light/dark switch. iupClassObjectSetAttribute does not store, keeping the default. */
+/* iupClassObjectSetAttribute re-runs the setter without storing, so cached map-time colors follow the switch */
 static void winDialogRefreshThemeColors(Ihandle* ih)
 {
   Ihandle* child;

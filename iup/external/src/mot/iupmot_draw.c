@@ -526,8 +526,7 @@ IUP_SDK_API void iupdrvDrawEllipse(IdrawCanvas* dc, int x1, int y1, int x2, int 
 
   XSetForeground(iupmot_display, dc->pixmap_gc, iupmotColorGetPixel(iupDrawRed(color),iupDrawGreen(color),iupDrawBlue(color)));
 
-  /* Draw full ellipse using X11 arc with 360 degree span */
-  /* angle in X11 is 1/64ths of a degree, so 360*64 = 23040 */
+  /* X11 angles are in 1/64ths of a degree */
   if (style == IUP_DRAW_FILL)
   {
     XSetArcMode(iupmot_display, dc->pixmap_gc, ArcPieSlice);
@@ -543,13 +542,11 @@ IUP_SDK_API void iupdrvDrawEllipse(IdrawCanvas* dc, int x1, int y1, int x2, int 
 IUP_SDK_API void iupdrvDrawPolygon(IdrawCanvas* dc, int* points, int count, long color, int style, int line_width)
 {
   int i;
-  XPoint stack_pnt[256]; /* Stack buffer for small polygons - avoid malloc overhead */
+  XPoint stack_pnt[256];
   XPoint* pnt;
   int use_heap = 0;
   int pnt_count;
 
-  /* Use stack buffer for small polygons, heap for large ones */
-  /* For stroked polygons, we need count+1 points to close the path */
   pnt_count = (style == IUP_DRAW_FILL) ? count : count + 1;
 
   if (pnt_count <= 256)
@@ -566,7 +563,6 @@ IUP_SDK_API void iupdrvDrawPolygon(IdrawCanvas* dc, int* points, int count, long
     pnt[i].y = (short)points[2*i+1];
   }
 
-  /* For stroked polygons, close the path by adding first point at the end */
   if (style != IUP_DRAW_FILL)
   {
     pnt[count].x = pnt[0].x;
@@ -639,7 +635,6 @@ IUP_SDK_API void iupdrvDrawRoundedRectangle(IdrawCanvas* dc, int x1, int y1, int
   iupDrawCheckSwapCoord(x1, x2);
   iupDrawCheckSwapCoord(y1, y2);
 
-  /* Clamp radius to prevent oversized corners */
   max_radius = ((x2 - x1) < (y2 - y1)) ? (x2 - x1) / 2 : (y2 - y1) / 2;
   if (corner_radius > max_radius)
     corner_radius = max_radius;
@@ -663,45 +658,27 @@ IUP_SDK_API void iupdrvDrawRoundedRectangle(IdrawCanvas* dc, int x1, int y1, int
 
   if (style == IUP_DRAW_FILL)
   {
-    /* Fill rounded rectangle by drawing filled arcs and rectangles */
-    /* Top-right arc */
     XFillArc(iupmot_display, target, gc, x2 - diameter, y1, diameter, diameter, 0 * 64, 90 * 64);
-    /* Bottom-right arc */
     XFillArc(iupmot_display, target, gc, x2 - diameter, y2 - diameter, diameter, diameter, 270 * 64, 90 * 64);
-    /* Bottom-left arc */
     XFillArc(iupmot_display, target, gc, x1, y2 - diameter, diameter, diameter, 180 * 64, 90 * 64);
-    /* Top-left arc */
     XFillArc(iupmot_display, target, gc, x1, y1, diameter, diameter, 90 * 64, 90 * 64);
 
-    /* Fill center rectangle */
     XFillRectangle(iupmot_display, target, gc, x1 + corner_radius, y1, x2 - x1 - diameter + 1, y2 - y1 + 1);
-    /* Fill left rectangle */
     XFillRectangle(iupmot_display, target, gc, x1, y1 + corner_radius, corner_radius, y2 - y1 - diameter + 1);
-    /* Fill right rectangle */
     XFillRectangle(iupmot_display, target, gc, x2 - corner_radius + 1, y1 + corner_radius, corner_radius, y2 - y1 - diameter + 1);
   }
   else
   {
     iDrawSetLineStyleAndWidth(gc, style, line_width);
 
-    /* Draw rounded rectangle by drawing arcs and lines */
-    /* Top-right arc */
     XDrawArc(iupmot_display, target, gc, x2 - diameter, y1, diameter, diameter, 0 * 64, 90 * 64);
-    /* Bottom-right arc */
     XDrawArc(iupmot_display, target, gc, x2 - diameter, y2 - diameter, diameter, diameter, 270 * 64, 90 * 64);
-    /* Bottom-left arc */
     XDrawArc(iupmot_display, target, gc, x1, y2 - diameter, diameter, diameter, 180 * 64, 90 * 64);
-    /* Top-left arc */
     XDrawArc(iupmot_display, target, gc, x1, y1, diameter, diameter, 90 * 64, 90 * 64);
 
-    /* Draw connecting lines */
-    /* Top line */
     XDrawLine(iupmot_display, target, gc, x1 + corner_radius, y1, x2 - corner_radius, y1);
-    /* Right line */
     XDrawLine(iupmot_display, target, gc, x2, y1 + corner_radius, x2, y2 - corner_radius);
-    /* Bottom line */
     XDrawLine(iupmot_display, target, gc, x2 - corner_radius, y2, x1 + corner_radius, y2);
-    /* Left line */
     XDrawLine(iupmot_display, target, gc, x1, y2 - corner_radius, x1, y1 + corner_radius);
   }
 
@@ -764,16 +741,12 @@ IUP_SDK_API void iupdrvDrawSetClipRoundedRect(IdrawCanvas* dc, int x1, int y1, i
   iupDrawCheckSwapCoord(x1, x2);
   iupDrawCheckSwapCoord(y1, y2);
 
-  /* Clamp radius to prevent oversized corners */
   max_radius = ((x2 - x1) < (y2 - y1)) ? (x2 - x1) / 2 : (y2 - y1) / 2;
   if (corner_radius > max_radius)
     corner_radius = max_radius;
 
-  /* Create a polygon approximation going clockwise from top-left */
-  /* 8 points per corner arc */
   step = 90.0 / 8.0;
 
-  /* Top-left corner arc: from top edge (270) to left edge (180) going clockwise */
   for (i = 0; i <= 8; i++)
   {
     angle = (270.0 - i * step) * pi / 180.0;
@@ -782,7 +755,6 @@ IUP_SDK_API void iupdrvDrawSetClipRoundedRect(IdrawCanvas* dc, int x1, int y1, i
     num_points++;
   }
 
-  /* Bottom-left corner arc: from left edge (180) to bottom edge (90) going clockwise */
   for (i = 1; i <= 8; i++)
   {
     angle = (180.0 - i * step) * pi / 180.0;
@@ -791,7 +763,6 @@ IUP_SDK_API void iupdrvDrawSetClipRoundedRect(IdrawCanvas* dc, int x1, int y1, i
     num_points++;
   }
 
-  /* Bottom-right corner arc: from bottom edge (90) to right edge (0) going clockwise */
   for (i = 1; i <= 8; i++)
   {
     angle = (90.0 - i * step) * pi / 180.0;
@@ -800,7 +771,6 @@ IUP_SDK_API void iupdrvDrawSetClipRoundedRect(IdrawCanvas* dc, int x1, int y1, i
     num_points++;
   }
 
-  /* Top-right corner arc: from right edge (0) to top edge (270 = -90) going clockwise */
   for (i = 1; i <= 8; i++)
   {
     angle = (0.0 - i * step) * pi / 180.0;
@@ -809,7 +779,6 @@ IUP_SDK_API void iupdrvDrawSetClipRoundedRect(IdrawCanvas* dc, int x1, int y1, i
     num_points++;
   }
 
-  /* Create X11 region from polygon */
   region = XPolygonRegion(points, num_points, WindingRule);
   XSetRegion(iupmot_display, dc->pixmap_gc, region);
   if (dc->pict)
@@ -1373,14 +1342,13 @@ IUP_SDK_API void iupdrvDrawFocusRect(IdrawCanvas* dc, int x1, int y1, int x2, in
 IUP_SDK_API void iupdrvDrawBezier(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int x3, int y3, int x4, int y4, long color, int style, int line_width)
 {
   /* X11/Motif does not have native Bezier support - use line approximation */
-  XPoint points[21]; /* 20 segments should give smooth curve */
+  XPoint points[21];
   int i, num_segments = 20;
   int use_alpha;
   ImotAlphaMask m;
   Drawable target;
   GC gc;
 
-  /* Generate points along Bezier curve using parametric equation */
   for (i = 0; i <= num_segments; i++)
   {
     double t = (double)i / num_segments;
@@ -1435,7 +1403,6 @@ IUP_SDK_API void iupdrvDrawBezier(IdrawCanvas* dc, int x1, int y1, int x2, int y
 
 IUP_SDK_API void iupdrvDrawQuadraticBezier(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int x3, int y3, long color, int style, int line_width)
 {
-  /* Convert quadratic Bezier to cubic Bezier using the 2/3 formula */
   int cx1, cy1, cx2, cy2;
 
   cx1 = x1 + ((2 * (x2 - x1)) / 3);
@@ -1484,7 +1451,6 @@ IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x
   iupDrawCheckSwapCoord(x1, x2);
   iupDrawCheckSwapCoord(y1, y2);
 
-  /* Calculate gradient direction */
   float rad = angle * 3.14159265359f / 180.0f;
   dx = (float)cos(rad);
   dy = (float)sin(rad);
@@ -1525,13 +1491,11 @@ IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x
     }
   }
 
-  /* Number of steps for smooth gradient */
   length = (float)sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
   steps = (int)length;
   if (steps < 2) steps = 2;
   if (steps > 256) steps = 256;
 
-  /* Draw gradient strips */
   for (i = 0; i < steps; i++)
   {
     frac = (float)i / (float)(steps - 1);
@@ -1540,15 +1504,14 @@ IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x
     pixel = iupmotColorGetPixel(iupDrawRed(color), iupDrawGreen(color), iupDrawBlue(color));
     XSetForeground(iupmot_display, dc->pixmap_gc, pixel);
 
-    /* Calculate strip position */
-    if (fabs(dx) > fabs(dy))  /* More horizontal */
+    if (fabs(dx) > fabs(dy))
     {
       px1 = x1 + (int)(frac * (x2 - x1));
       px2 = x1 + (int)((frac + 1.0f / steps) * (x2 - x1));
       py1 = y1;
       py2 = y2;
     }
-    else  /* More vertical */
+    else
     {
       px1 = x1;
       px2 = x2;
@@ -1598,12 +1561,10 @@ IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int r
     }
   }
 
-  /* Number of steps for smooth gradient */
   steps = radius;
   if (steps < 2) steps = 2;
   if (steps > 256) steps = 256;
 
-  /* Draw from outside to inside */
   for (i = steps - 1; i >= 0; i--)
   {
     t = (float)i / (float)(steps - 1);

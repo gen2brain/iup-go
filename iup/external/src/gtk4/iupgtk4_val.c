@@ -22,7 +22,6 @@ IUP_SDK_API void iupdrvValGetMinSize(Ihandle* ih, int *w, int *h)
   static int horiz_min_w = -1, horiz_min_h = -1;
   static int vert_min_w = -1, vert_min_h = -1;
 
-  /* Measure the minimum sizes required by GtkScale */
   if (horiz_min_w < 0)
   {
     GtkAdjustment* adj = GTK_ADJUSTMENT(gtk_adjustment_new(0, 0, 1.0, 0.01, 0.1, 0));

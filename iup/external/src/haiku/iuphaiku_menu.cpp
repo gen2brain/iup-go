@@ -40,7 +40,6 @@ extern "C" {
 #include "iuphaiku_drv.h"
 
 
-/* BMessage what + field for IupItem dispatch (constant in drv.h). */
 static const char* kIupMenuItemField = "ih";
 
 /* Hop off menu_tracking / BMenuWindow loopers onto the dialog looper. */
@@ -64,7 +63,6 @@ static BMenu* haikuMenuParentBMenu(Ihandle* ih)
 
 static BWindow* haikuMenuOwningWindow(Ihandle* ih)
 {
-  /* Walk up to the dialog Ihandle (TYPEDIALOG holds BWindow*). */
   Ihandle* dlg = IupGetDialog(ih);
   if (!dlg || !dlg->handle)
     return NULL;
@@ -95,8 +93,7 @@ static char* haikuItemSplitTitle(const char* value, const char** shortcut)
   return stripped;
 }
 
-/* Parse "Ctrl+S" / "Shift+Alt+F1" / "Cmd+Q" / "S" into BeOS char + modifier mask.
- * Returns 0 if the trailing token can't fit BMenuItem::SetShortcut (only printable chars are supported by that API). */
+/* Returns 0 when the trailing token can't fit BMenuItem::SetShortcut (printable chars only). */
 static int haikuMenuItemParseShortcut(const char* str, char* out_ch, uint32* out_mods)
 {
   if (!*str) return 0;
@@ -203,16 +200,12 @@ private:
   Ihandle* fIhandle;
 };
 
-/* Custom BMenuItem subclass: per-item icon + HIGHLIGHT_CB hook. */
-
 class IupHaikuMenuItem : public BMenuItem
 {
 public:
   IupHaikuMenuItem(Ihandle* ih, const char* label, BMessage* msg)
     : BMenuItem(label, msg), fIhandle(ih), fIcon(NULL) {}
 
-  /* Submenu superitem flavour: BMenuItem(BMenu*) is the canonical "this item
-   * opens that submenu" constructor. */
   IupHaikuMenuItem(Ihandle* ih, BMenu* submenu)
     : BMenuItem(submenu, NULL), fIhandle(ih), fIcon(NULL) {}
 
@@ -275,8 +268,6 @@ static void haikuItemRefreshIcon(IupHaikuMenuItem* item, Ihandle* ih)
   item->SetIcon(haikuItemBitmapByName(ih, name));
   if (item->Menu()) item->Menu()->InvalidateLayout();
 }
-
-/* IupItem */
 
 static int haikuItemMapMethod(Ihandle* ih)
 {
@@ -376,8 +367,6 @@ static int haikuItemSetActiveAttrib(Ihandle* ih, const char* value)
   return iupBaseSetActiveAttrib(ih, value);
 }
 
-/* IupSeparator */
-
 static int haikuSeparatorMapMethod(Ihandle* ih)
 {
   BMenu* parent = haikuMenuParentBMenu(ih);
@@ -388,8 +377,6 @@ static int haikuSeparatorMapMethod(Ihandle* ih)
   ih->handle = (InativeHandle*)sep;
   return IUP_NOERROR;
 }
-
-/* IupSubmenu */
 
 static int haikuSubmenuMapMethod(Ihandle* ih)
 {
@@ -402,8 +389,6 @@ static int haikuSubmenuMapMethod(Ihandle* ih)
   IupHaikuMenu* submenu = new IupHaikuMenu(stripped ? stripped : "");
   if (stripped) free(stripped);
 
-  /* Use our custom-item flavor as the superitem so per-submenu IMAGE/
-   * TITLEIMAGE support comes along for free. */
   IupHaikuMenuItem* super = new IupHaikuMenuItem(ih, submenu);
   char* image = iupAttribGet(ih, "IMAGE");
   if (image) super->SetIcon(haikuItemBitmapByName(ih, image));
@@ -446,8 +431,6 @@ static int haikuSubmenuSetImageAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-/* IupMenu */
-
 static int haikuMenuMapMethod(Ihandle* ih)
 {
   if (iupMenuIsMenuBar(ih))
@@ -476,13 +459,11 @@ static int haikuMenuMapMethod(Ihandle* ih)
     return IUP_NOERROR;
   }
 
-  /* Menu under Submenu: alias the parent submenu's BMenu so children
-   * (Items / Separators / further Submenus) attach to the same node. */
+  /* Menu under Submenu aliases the parent submenu's BMenu so children attach to the same node. */
   if (ih->parent && ih->parent->handle &&
       ih->parent->iclass && iupStrEqual(ih->parent->iclass->name, "submenu"))
   {
     ih->handle = ih->parent->handle;
-    /* Bind the IupMenu Ihandle so MENUOPEN_CB / MENUCLOSE_CB find their target. */
     if (IupHaikuMenu* m = dynamic_cast<IupHaikuMenu*>((BMenu*)ih->handle))
       m->SetIhandle(ih);
     if (iupAttribGetBoolean(ih, "RADIO"))
@@ -490,7 +471,6 @@ static int haikuMenuMapMethod(Ihandle* ih)
     return IUP_NOERROR;
   }
 
-  /* Standalone Menu (used by IupPopup). */
   BPopUpMenu* popup = new BPopUpMenu("iup_popup", false, false);
   if (iupAttribGetBoolean(ih, "RADIO"))
     popup->SetRadioMode(true);
@@ -501,7 +481,7 @@ static int haikuMenuMapMethod(Ihandle* ih)
 static int haikuMenuSetRadioAttrib(Ihandle* ih, const char* value)
 {
   if (!ih->handle) return 1;
-  if (iupMenuIsMenuBar(ih)) return 0;  /* meaningless for menubar */
+  if (iupMenuIsMenuBar(ih)) return 0;
   BMenu* m = (BMenu*)ih->handle;
   m->SetRadioMode(iupStrBoolean(value) ? true : false);
   return 1;
@@ -539,7 +519,6 @@ static void haikuMenuUnMapMethod(Ihandle* ih)
   }
   else
   {
-    /* Standalone popup. */
     delete (BPopUpMenu*)ih->handle;
   }
   ih->handle = NULL;
@@ -551,13 +530,12 @@ static void haikuItemUnMapMethod(Ihandle* ih)
   ih->handle = NULL;
 }
 
-/* iupdrvMenuPopup: show standalone menu at screen coords. */
 extern "C" IUP_SDK_API int iupdrvMenuPopup(Ihandle* ih, int x, int y)
 {
   BPopUpMenu* popup = (BPopUpMenu*)ih->handle;
   if (!popup) return IUP_ERROR;
 
-  /* autoInvoke=false: we dispatch ACTION synchronously to avoid racing with iup.Destroy after IupPopup. */
+  /* autoInvoke=false: ACTION dispatches synchronously to avoid racing IupDestroy after IupPopup. */
   BMenuItem* sel = popup->Go(BPoint((float)x, (float)y), false, false, false);
   if (!sel) return IUP_NOERROR;
 
@@ -584,8 +562,6 @@ extern "C" IUP_SDK_API int iupdrvMenuGetMenuBarSize(Ihandle* ih)
   iupdrvFontGetCharSize(ih, NULL, &ch);
   return 4 + ch + 4;
 }
-
-/* Class registration */
 
 extern "C" IUP_SDK_API void iupdrvMenuInitClass(Iclass* ic)
 {
@@ -633,8 +609,6 @@ extern "C" IUP_SDK_API void iupdrvSubmenuInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "IMAGE", NULL, haikuSubmenuSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TITLEIMAGE", NULL, haikuSubmenuSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 }
-
-/* IupConfigRecent: dynamic BMenuItems posting IUPHAIKU_MENU_RECENT_MSG */
 
 extern "C" IUP_SDK_API int iupdrvRecentMenuInit(Ihandle* menu, int max_recent, Icallback recent_cb)
 {

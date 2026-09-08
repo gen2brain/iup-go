@@ -38,7 +38,6 @@ extern "C" {
 #include "iup_webbrowser.h"
 }
 
-/* Forward declare Qt driver function we need */
 /* This avoids including iupqt_drv.h and keeps web browser code independent */
 void iupqtAddToParent(Ihandle* ih);
 
@@ -55,7 +54,6 @@ struct _IcontrolData
  * JavaScript Helper Functions
  ****************************************************************************/
 
-/* Escape a string for safe inclusion in JavaScript code */
 static char* qtWebBrowserEscapeJavaScript(const char* str)
 {
   if (!str)
@@ -136,7 +134,6 @@ static char* qtWebBrowserTakeResult(JavaScriptResult* async)
   return ret;
 }
 
-/* Run JavaScript asynchronously (fire and forget) */
 static void qtWebBrowserRunJavaScript(Ihandle* ih, const char* format, ...)
 {
   QWebEngineView* webview = (QWebEngineView*)ih->handle;
@@ -184,7 +181,6 @@ static char* qtWebBrowserExecJavaScriptSync(Ihandle* ih, const char* js)
   return qtWebBrowserTakeResult(async);
 }
 
-/* Run JavaScript synchronously and return the result */
 static char* qtWebBrowserRunJavaScriptSync(Ihandle* ih, const char* format, ...)
 {
   char js[4096];
@@ -297,8 +293,6 @@ static int qtWebBrowserSetHTMLAttrib(Ihandle* ih, const char* value)
 
   webview->setHtml(QString::fromUtf8(value));
 
-  /* No need to initialize document - script is injected automatically */
-
   iupAttribSet(ih, "_IUPWEB_IGNORE_NAVIGATE", nullptr);
   return 0;
 }
@@ -309,14 +303,12 @@ static char* qtWebBrowserGetHTMLAttrib(Ihandle* ih)
   if (!webview)
     return nullptr;
 
-  /* For editable content, use JavaScript to get the HTML */
   if (iupAttribGet(ih, "_IUPWEB_EDITABLE"))
   {
     return qtWebBrowserRunJavaScriptSync(ih,
       "'<html><head>' + document.head.innerHTML + '</head><body>' + document.body.innerHTML + '</body></html>';");
   }
 
-  /* For non-editable content, we need to use toHtml() asynchronously */
   JavaScriptResult* async = new JavaScriptResult();
 
   webview->page()->toHtml([async](const QString &html) {
@@ -373,7 +365,6 @@ static char* qtWebBrowserGetStatusAttrib(Ihandle* ih)
   if (!webview)
     return nullptr;
 
-  /* Check if we're currently loading */
   /* Qt5 doesn't have isLoading(), so we track via internal attribute */
   const char* loading = iupAttribGet(ih, "_IUPQT_WEB_LOADING");
   if (loading && iupStrEqualNoCase(loading, "YES"))
@@ -493,7 +484,6 @@ static int qtWebBrowserSetSaveAttrib(Ihandle* ih, const char* value)
   if (!value)
     return 0;
 
-  /* Get HTML content */
   char* html = qtWebBrowserGetHTMLAttrib(ih);
   if (!html)
     return 0;
@@ -520,8 +510,6 @@ static int qtWebBrowserSetOpenAttrib(Ihandle* ih, const char* value)
   iupAttribSet(ih, "_IUPWEB_IGNORE_NAVIGATE", "1");
 
   webview->setHtml(html);
-
-  /* No need to initialize document - script is injected automatically */
 
   iupAttribSet(ih, "_IUPWEB_IGNORE_NAVIGATE", nullptr);
   return 1;
@@ -646,12 +634,9 @@ static int qtWebBrowserSetPrintAttrib(Ihandle* ih, const char* value)
   if (dialog.exec() == QDialog::Accepted)
   {
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-    /* Qt6: Use printToPdf() instead of print() */
     webview->page()->printToPdf([](const QByteArray &) {
-      /* Printing completed */
     });
 #else
-    /* Qt5: Use print() */
     webview->page()->print(&printer, [](bool success) {
       (void)success;
     });
@@ -674,12 +659,9 @@ static int qtWebBrowserSetPrintPreviewAttrib(Ihandle* ih, const char* value)
   QObject::connect(&preview, &QPrintPreviewDialog::paintRequested,
     [webview](QPrinter *printer) {
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-      /* Qt6: Use printToPdf() instead of print() */
       webview->page()->printToPdf([](const QByteArray &) {
-        /* Printing completed */
       });
 #else
-      /* Qt5: Use print() */
       webview->page()->print(printer, [](bool success) {
         (void)success;
       });
@@ -720,7 +702,6 @@ static char* qtWebBrowserGetEditableAttrib(Ihandle* ih)
   if (!webview)
     return nullptr;
 
-  /* Query the actual state from the browser, like Windows does */
   char* result = qtWebBrowserRunJavaScriptSync(ih, "document.body.contentEditable == 'true';");
   if (result)
   {
@@ -1027,7 +1008,6 @@ static int qtWebBrowserSetInsertHtmlAttrib(Ihandle* ih, const char* value)
   return qtWebBrowserExecCommandWithParamAttrib(ih, "insertHTML", value);
 }
 
-/* Forward declaration */
 static int qtWebBrowserSetInsertImageAttrib(Ihandle* ih, const char* value);
 
 static int qtWebBrowserSetInsertImageFileAttrib(Ihandle* ih, const char* value)
@@ -1035,7 +1015,6 @@ static int qtWebBrowserSetInsertImageFileAttrib(Ihandle* ih, const char* value)
   if (!value)
     return 0;
 
-  /* Read image file and convert to base64 data URL */
   QFile file(QString::fromUtf8(value));
   if (!file.open(QIODevice::ReadOnly))
     return 0;
@@ -1045,7 +1024,6 @@ static int qtWebBrowserSetInsertImageFileAttrib(Ihandle* ih, const char* value)
 
   QString base64 = data.toBase64();
 
-  /* Determine MIME type from file extension */
   QString filename = QString::fromUtf8(value);
   QString mime = "image/png";
   if (filename.endsWith(".jpg", Qt::CaseInsensitive) || filename.endsWith(".jpeg", Qt::CaseInsensitive))
@@ -1057,7 +1035,6 @@ static int qtWebBrowserSetInsertImageFileAttrib(Ihandle* ih, const char* value)
   else if (filename.endsWith(".webp", Qt::CaseInsensitive))
     mime = "image/webp";
 
-  /* Create data URL and use INSERTIMAGE (like Windows does) */
   QString dataUrl = QString("data:%1;base64,%2").arg(mime).arg(base64);
 
   return qtWebBrowserSetInsertImageAttrib(ih, dataUrl.toUtf8().constData());
@@ -1078,8 +1055,6 @@ static int qtWebBrowserSetNewAttrib(Ihandle* ih, const char* value)
   iupAttribSet(ih, "_IUPWEB_IGNORE_NAVIGATE", "1");
   webview->setHtml("<html><body></body></html>");
   iupAttribSet(ih, "_IUPWEB_IGNORE_NAVIGATE", nullptr);
-
-  /* No need to initialize document - script is injected automatically */
 
   return 0;
 }
@@ -1119,7 +1094,6 @@ static int qtWebBrowserSetInsertTextAttrib(Ihandle* ih, const char* value)
 
 static char* qtWebBrowserGetPasteAttrib(Ihandle* ih)
 {
-  /* Get clipboard content via JavaScript */
   return qtWebBrowserRunJavaScriptSync(ih,
     "(async function() {"
     "  try {"
@@ -1250,7 +1224,6 @@ static char* qtWebBrowserGetCommandValueAttrib(Ihandle* ih)
 
 static char* qtWebBrowserGetCommandTextAttrib(Ihandle* ih)
 {
-  /* Command text is the same as command value for most commands */
   return qtWebBrowserGetCommandValueAttrib(ih);
 }
 
@@ -1334,7 +1307,6 @@ static int qtWebBrowserSetFindAttrib(Ihandle* ih, const char* value)
 
 static char* qtWebBrowserGetDirtyAttrib(Ihandle* ih)
 {
-  /* Check if editing mode is enabled */
   if (!iupAttribGet(ih, "_IUPWEB_EDITABLE"))
     return iupStrReturnStr("NO");
 
@@ -1356,13 +1328,11 @@ public:
 
   IupQtWebBrowser(Ihandle* ih_param) : QWebEngineView(), ih(ih_param)
   {
-    /* Connect signals for callbacks */
     connect(this, &QWebEngineView::loadStarted, this, &IupQtWebBrowser::onLoadStarted);
     connect(this, &QWebEngineView::loadFinished, this, &IupQtWebBrowser::onLoadFinished);
     connect(this, &QWebEngineView::loadProgress, this, &IupQtWebBrowser::onLoadProgress);
     connect(this, &QWebEngineView::urlChanged, this, &IupQtWebBrowser::onUrlChanged);
 
-    /* Connect page signals */
     connect(page(), &QWebEnginePage::windowCloseRequested, this, &IupQtWebBrowser::onWindowCloseRequested);
   }
 
@@ -1372,7 +1342,6 @@ private:
     if (!ih || iupAttribGet(ih, "_IUPWEB_IGNORE_NAVIGATE"))
       return;
 
-    /* Set loading flag for STATUS attribute */
     iupAttribSet(ih, "_IUPQT_WEB_LOADING", "YES");
 
     IFns cb = (IFns)IupGetCallback(ih, "NAVIGATE_CB");
@@ -1384,7 +1353,6 @@ private:
       int result = cb(ih, (char*)url_str.toUtf8().constData());
       if (result == IUP_IGNORE)
       {
-        /* Stop navigation */
         this->stop();
       }
     }
@@ -1397,12 +1365,10 @@ private:
     if (!ih || iupAttribGet(ih, "_IUPWEB_IGNORE_NAVIGATE"))
       return;
 
-    /* Clear loading flag for STATUS attribute */
     iupAttribSet(ih, "_IUPQT_WEB_LOADING", nullptr);
 
     if (ok)
     {
-      /* Always set contentEditable based on EDITABLE state (like Windows NavigationCompleted) */
       if (iupAttribGet(ih, "_IUPWEB_EDITABLE"))
         page()->runJavaScript("document.body.contentEditable = 'true';");
       else
@@ -1429,7 +1395,6 @@ private:
 
     qtWebBrowserUpdateHistory(ih);
 
-    /* Call UPDATE_CB like Windows does */
     IFn update_cb = (IFn)IupGetCallback(ih, "UPDATE_CB");
     if (update_cb)
       update_cb(ih);
@@ -1437,7 +1402,6 @@ private:
 
   void onLoadProgress(int progress)
   {
-    /* Can be used for progress reporting in future */
     (void)progress;
   }
 
@@ -1449,7 +1413,6 @@ private:
 
   void onWindowCloseRequested()
   {
-    /* NEWWINDOW_CB equivalent - close request from JavaScript */
     IFns cb = (IFns)IupGetCallback(ih, "NEWWINDOW_CB");
     if (cb)
     {
@@ -1479,7 +1442,6 @@ protected:
   {
     (void)type;
 
-    /* Call NEWWINDOW_CB callback */
     IFns cb = (IFns)IupGetCallback(ih, "NEWWINDOW_CB");
     if (cb)
     {
@@ -1489,12 +1451,10 @@ protected:
       int result = cb(ih, (char*)url_str.toUtf8().constData());
       if (result == IUP_IGNORE)
       {
-        /* Don't open new window */
         return nullptr;
       }
     }
 
-    /* Default: open in same window */
     return this;
   }
 };
@@ -1505,20 +1465,16 @@ protected:
 
 static int qtWebBrowserMapMethod(Ihandle* ih)
 {
-  /* Create WebBrowser widget */
   IupQtWebBrowser* webview = new IupQtWebBrowser(ih);
 
-  /* Create custom page for new window handling */
   IupQtWebPage* page = new IupQtWebPage(QWebEngineProfile::defaultProfile(), ih);
   webview->setPage(page);
 
-  /* Configure settings */
   QWebEngineSettings* settings = page->settings();
   settings->setAttribute(QWebEngineSettings::JavascriptEnabled, true);
   settings->setAttribute(QWebEngineSettings::LocalStorageEnabled, true);
   settings->setAttribute(QWebEngineSettings::PluginsEnabled, true);
 
-  /* Install initialization script that runs on every page load (like Windows AddScriptToExecuteOnDocumentCreated) */
   const char* init_script =
     "(function() {"
     "  var iupSavedRange = null;"
@@ -1562,13 +1518,10 @@ static int qtWebBrowserMapMethod(Ihandle* ih)
 
   ih->handle = (InativeHandle*)webview;
 
-  /* Add to parent container */
   iupqtAddToParent(ih);
 
-  /* Set initial size policy */
   webview->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
-  /* Load initial URL if specified */
   char* value = iupAttribGet(ih, "VALUE");
   if (value)
     qtWebBrowserSetValueAttrib(ih, value);
@@ -1590,7 +1543,6 @@ static void qtWebBrowserUnMapMethod(Ihandle* ih)
     if (iup_page)
       iup_page->ih = nullptr;
 
-    /* Delete the widget - Qt will automatically disconnect signals */
     delete webview;
 
     if (page)
@@ -1608,7 +1560,6 @@ static int qtWebBrowserCreateMethod(Ihandle* ih, void **params)
 {
   (void)params;
 
-  /* Set default expand to fill available space like Canvas */
   ih->expand = IUP_EXPAND_BOTH;
 
   return IUP_NOERROR;
@@ -1623,8 +1574,6 @@ static void qtWebBrowserComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, in
   int natural_w = 0, natural_h = 0;
   (void)children_expand;
 
-  /* Get character size from font - WebBrowser has minimal natural size */
-  /* This matches Windows and GTK implementations */
   iupdrvFontGetCharSize(ih, &natural_w, &natural_h);
 
   *w = natural_w;
@@ -1633,15 +1582,12 @@ static void qtWebBrowserComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, in
 
 static void qtWebBrowserLayoutUpdateMethod(Ihandle* ih)
 {
-  /* Update base layout first */
   iupdrvBaseLayoutUpdateMethod(ih);
 
-  /* Resize the QWebEngineView to fill the parent widget */
   if (ih->handle)
   {
     QWebEngineView* webview = (QWebEngineView*)ih->handle;
 
-    /* Explicitly resize to match current size */
     webview->resize(ih->currentwidth, ih->currentheight);
   }
 }
@@ -1676,21 +1622,14 @@ extern "C" Iclass* iupWebBrowserNewClass(void)
   iupClassRegisterCallback(ic, "ERROR_CB", "s");
   iupClassRegisterCallback(ic, "COMPLETED_CB", "s");
 
-  /* Common callbacks */
   iupBaseRegisterCommonCallbacks(ic);
 
-  /* Common attributes */
   iupBaseRegisterCommonAttrib(ic);
 
-  /* Visual attributes */
   iupBaseRegisterVisualAttrib(ic);
 
-  /* Default EXPAND to YES - WebBrowser should fill available space like Canvas */
   iupClassRegisterReplaceAttribDef(ic, "EXPAND", IUPAF_SAMEASSYSTEM, "YES");
 
-  /* WebBrowser specific attributes */
-
-  /* Core navigation */
   iupClassRegisterAttribute(ic, "VALUE", qtWebBrowserGetValueAttrib, qtWebBrowserSetValueAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "GOBACK", nullptr, qtWebBrowserSetGoBackAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "GOFORWARD", nullptr, qtWebBrowserSetGoForwardAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
@@ -1698,15 +1637,12 @@ extern "C" Iclass* iupWebBrowserNewClass(void)
   iupClassRegisterAttribute(ic, "RELOAD", nullptr, qtWebBrowserSetReloadAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "BACKFORWARD", nullptr, qtWebBrowserSetBackForwardAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
 
-  /* HTML content */
   iupClassRegisterAttribute(ic, "HTML", qtWebBrowserGetHTMLAttrib, qtWebBrowserSetHTMLAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "INNERTEXT", qtWebBrowserGetInnerTextAttrib, qtWebBrowserSetInnerTextAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
 
-  /* File operations */
   iupClassRegisterAttribute(ic, "OPENFILE", nullptr, qtWebBrowserSetOpenAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SAVEFILE", nullptr, qtWebBrowserSetSaveAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
 
-  /* Status and history */
   iupClassRegisterAttribute(ic, "STATUS", qtWebBrowserGetStatusAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CANGOBACK", qtWebBrowserGetCanGoBackAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CANGOFORWARD", qtWebBrowserGetCanGoForwardAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
@@ -1714,17 +1650,13 @@ extern "C" Iclass* iupWebBrowserNewClass(void)
   iupClassRegisterAttribute(ic, "FORWARDCOUNT", qtWebBrowserGetForwardCountAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "ITEMHISTORY", qtWebBrowserGetItemHistoryAttrib, nullptr, IUPAF_READONLY | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
 
-  /* Zoom */
   iupClassRegisterAttribute(ic, "ZOOM", qtWebBrowserGetZoomAttrib, qtWebBrowserSetZoomAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
 
-  /* Print */
   iupClassRegisterAttribute(ic, "PRINT", nullptr, qtWebBrowserSetPrintAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "PRINTPREVIEW", nullptr, qtWebBrowserSetPrintPreviewAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
 
-  /* Editing mode */
   iupClassRegisterAttribute(ic, "EDITABLE", qtWebBrowserGetEditableAttrib, qtWebBrowserSetEditableAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
 
-  /* Clipboard operations */
   iupClassRegisterAttribute(ic, "COPY", nullptr, qtWebBrowserSetCopyAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CUT", nullptr, qtWebBrowserSetCutAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "PASTE", nullptr, qtWebBrowserSetPasteAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
@@ -1732,53 +1664,41 @@ extern "C" Iclass* iupWebBrowserNewClass(void)
   iupClassRegisterAttribute(ic, "UNDO", nullptr, qtWebBrowserSetUndoAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "REDO", nullptr, qtWebBrowserSetRedoAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
 
-  /* Generic execCommand interface */
   iupClassRegisterAttribute(ic, "EXECCOMMAND", nullptr, qtWebBrowserExecCommandAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
 
-  /* Font attributes */
   iupClassRegisterAttribute(ic, "FONTNAME", qtWebBrowserGetFontNameAttrib, qtWebBrowserSetFontNameAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FONTSIZE", qtWebBrowserGetFontSizeAttrib, qtWebBrowserSetFontSizeAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FORMATBLOCK", qtWebBrowserGetFormatBlockAttrib, qtWebBrowserSetFormatBlockAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
 
-  /* Text style commands */
   iupClassRegisterAttribute(ic, "BOLD", nullptr, qtWebBrowserSetBoldAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ITALIC", nullptr, qtWebBrowserSetItalicAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "UNDERLINE", nullptr, qtWebBrowserSetUnderlineAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "STRIKETHROUGH", nullptr, qtWebBrowserSetStrikethroughAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
 
-  /* List commands */
   iupClassRegisterAttribute(ic, "INSERTORDEREDLIST", nullptr, qtWebBrowserSetInsertOrderedListAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "INSERTUNORDEREDLIST", nullptr, qtWebBrowserSetInsertUnorderedListAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "INDENT", nullptr, qtWebBrowserSetIndentAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "OUTDENT", nullptr, qtWebBrowserSetOutdentAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
 
-  /* Color commands */
   iupClassRegisterAttribute(ic, "FORECOLOR", nullptr, qtWebBrowserSetForeColorAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "BACKCOLOR", nullptr, qtWebBrowserSetBackColorAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
 
-  /* Insert commands */
   iupClassRegisterAttribute(ic, "INSERTHTML", nullptr, qtWebBrowserSetInsertHtmlAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "INSERTIMAGEFILE", nullptr, qtWebBrowserSetInsertImageFileAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
 
-  /* Dirty flag */
   iupClassRegisterAttribute(ic, "DIRTY", qtWebBrowserGetDirtyAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
 
-  /* New document */
   iupClassRegisterAttribute(ic, "NEW", nullptr, qtWebBrowserSetNewAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
 
-  /* Paste getter */
   iupClassRegisterAttribute(ic, "PASTE", qtWebBrowserGetPasteAttrib, qtWebBrowserSetPasteAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
 
-  /* Insert commands */
   iupClassRegisterAttribute(ic, "INSERTIMAGE", nullptr, qtWebBrowserSetInsertImageAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CREATELINK", nullptr, qtWebBrowserSetCreateLinkAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "INSERTTEXT", nullptr, qtWebBrowserSetInsertTextAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
 
-  /* Color getters/setters */
   iupClassRegisterAttribute(ic, "FORECOLOR", qtWebBrowserGetForeColorAttrib, qtWebBrowserSetForeColorAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "BACKCOLOR", qtWebBrowserGetBackColorAttrib, qtWebBrowserSetBackColorAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
 
-  /* Command query attributes */
   iupClassRegisterAttribute(ic, "COMMAND", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "COMMANDSHOWUI", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "COMMANDSTATE", qtWebBrowserGetCommandStateAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
@@ -1786,13 +1706,11 @@ extern "C" Iclass* iupWebBrowserNewClass(void)
   iupClassRegisterAttribute(ic, "COMMANDTEXT", qtWebBrowserGetCommandTextAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "COMMANDVALUE", qtWebBrowserGetCommandValueAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
 
-  /* DOM manipulation attributes */
   iupClassRegisterAttribute(ic, "ELEMENT_ID", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ATTRIBUTE_NAME", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ATTRIBUTE", qtWebBrowserGetAttributeAttrib, qtWebBrowserSetAttributeAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "JAVASCRIPT", qtWebBrowserGetJavascriptAttrib, qtWebBrowserSetJavascriptAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
 
-  /* Find text */
   iupClassRegisterAttribute(ic, "FIND", nullptr, qtWebBrowserSetFindAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
 
   return ic;

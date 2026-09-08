@@ -58,11 +58,9 @@ IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
 #endif
 
 #if GTK_CHECK_VERSION(3, 0, 0)
-  /* Check if we have persistent offscreen buffer */
   buffer = (cairo_surface_t*)iupAttribGet(ih, "_IUPGTK3_CANVAS_BUFFER");
   if (buffer)
   {
-    /* Check if size changed - recreate buffer if needed */
     int buf_w = cairo_image_surface_get_width(buffer);
     int buf_h = cairo_image_surface_get_height(buffer);
     if (buf_w != dc->w || buf_h != dc->h)
@@ -72,7 +70,6 @@ IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
     }
   }
 
-  /* Create new buffer if needed */
   if (!buffer)
   {
     buffer = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, dc->w, dc->h);
@@ -85,7 +82,6 @@ IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
   if (!dc->cr)
   {
 #if GTK_CHECK_VERSION(3, 0, 0)
-    /* Outside ACTION callback - draw to persistent buffer */
     dc->cr = cairo_create(buffer);
 #else
     dc->cr = gdk_cairo_create(dc->wnd);
@@ -441,7 +437,6 @@ IUP_SDK_API void iupdrvDrawEllipse(IdrawCanvas* dc, int x1, int y1, int x2, int 
 
   if (w == h)
   {
-    /* Circle: simple arc */
     cairo_new_path(dc->image_cr);
     cairo_arc(dc->image_cr, xc, yc, 0.5*w, 0, 2*G_PI);
 
@@ -452,7 +447,6 @@ IUP_SDK_API void iupdrvDrawEllipse(IdrawCanvas* dc, int x1, int y1, int x2, int 
   }
   else
   {
-    /* Ellipse: use scale transform to create from circle */
     cairo_save(dc->image_cr);
 
     cairo_new_path(dc->image_cr);
@@ -490,7 +484,7 @@ IUP_SDK_API void iupdrvDrawPolygon(IdrawCanvas* dc, int* points, int count, long
   for (i=1; i<count; i++)  /* Start at 1 to avoid redundant line to first point */
     cairo_line_to(dc->image_cr, points[2*i], points[2*i+1]);
 
-  cairo_close_path(dc->image_cr);  /* Close polygon by connecting last point to first */
+  cairo_close_path(dc->image_cr);
 
   if (style==IUP_DRAW_FILL)
     cairo_fill(dc->image_cr);
@@ -516,28 +510,24 @@ IUP_SDK_API void iupdrvDrawRoundedRectangle(IdrawCanvas* dc, int x1, int y1, int
   double radius = (double)corner_radius;
   double degrees = IUP_DEG2RAD;
 
-  /* Set color */
   cairo_set_source_rgba(dc->image_cr,
                         iupgtkColorToDouble(iupDrawRed(color)),
                         iupgtkColorToDouble(iupDrawGreen(color)),
                         iupgtkColorToDouble(iupDrawBlue(color)),
                         iupgtkColorToDouble(iupDrawAlpha(color)));
 
-  /* Set line style for stroked rectangles */
   if (style != IUP_DRAW_FILL)
   {
     iDrawSetLineWidth(dc, line_width);
     iDrawSetLineStyle(dc, style);
   }
 
-  /* Clamp radius to prevent oversized corners */
   iupDrawCheckSwapCoord(x1, x2);
   iupDrawCheckSwapCoord(y1, y2);
   double max_radius = ((x2 - x1) < (y2 - y1)) ? (x2 - x1) / 2.0 : (y2 - y1) / 2.0;
   if (radius > max_radius)
     radius = max_radius;
 
-  /* Draw path with rounded corners */
   cairo_new_path(dc->image_cr);
   cairo_arc(dc->image_cr, x2 - radius, y1 + radius, radius, -90 * degrees, 0 * degrees);
   cairo_line_to(dc->image_cr, x2, y2 - radius);
@@ -556,21 +546,18 @@ IUP_SDK_API void iupdrvDrawRoundedRectangle(IdrawCanvas* dc, int x1, int y1, int
 
 IUP_SDK_API void iupdrvDrawBezier(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int x3, int y3, int x4, int y4, long color, int style, int line_width)
 {
-  /* Set color */
   cairo_set_source_rgba(dc->image_cr,
                         iupgtkColorToDouble(iupDrawRed(color)),
                         iupgtkColorToDouble(iupDrawGreen(color)),
                         iupgtkColorToDouble(iupDrawBlue(color)),
                         iupgtkColorToDouble(iupDrawAlpha(color)));
 
-  /* Set line style for stroked curves */
   if (style != IUP_DRAW_FILL)
   {
     iDrawSetLineWidth(dc, line_width);
     iDrawSetLineStyle(dc, style);
   }
 
-  /* Draw cubic Bezier curve */
   cairo_move_to(dc->image_cr, x1, y1);
   cairo_curve_to(dc->image_cr, x2, y2, x3, y3, x4, y4);
 
@@ -593,13 +580,11 @@ IUP_SDK_API void iupdrvDrawQuadraticBezier(IdrawCanvas* dc, int x1, int y1, int 
    */
   int cx1, cy1, cx2, cy2;
 
-  /* Calculate cubic control points from quadratic */
   cx1 = x1 + ((2 * (x2 - x1)) / 3);
   cy1 = y1 + ((2 * (y2 - y1)) / 3);
   cx2 = x3 + ((2 * (x2 - x3)) / 3);
   cy2 = y3 + ((2 * (y2 - y3)) / 3);
 
-  /* Draw as cubic Bezier */
   iupdrvDrawBezier(dc, x1, y1, cx1, cy1, cx2, cy2, x3, y3, color, style, line_width);
 }
 
@@ -646,7 +631,6 @@ IUP_SDK_API void iupdrvDrawSetClipRoundedRect(IdrawCanvas* dc, int x1, int y1, i
     return;
   }
 
-  /* Clamp radius to prevent oversized corners */
   iupDrawCheckSwapCoord(x1, x2);
   iupDrawCheckSwapCoord(y1, y2);
   max_radius = ((x2 - x1) < (y2 - y1)) ? (x2 - x1) / 2.0 : (y2 - y1) / 2.0;
@@ -655,7 +639,6 @@ IUP_SDK_API void iupdrvDrawSetClipRoundedRect(IdrawCanvas* dc, int x1, int y1, i
 
   iupdrvDrawResetClip(dc);
 
-  /* Draw rounded rectangle path with arcs at corners */
   cairo_new_path(dc->image_cr);
   cairo_arc(dc->image_cr, x2 - radius, y1 + radius, radius, -90 * degrees, 0 * degrees);
   cairo_line_to(dc->image_cr, x2, y2 - radius);
@@ -856,11 +839,9 @@ IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x
   w = (float)(x2 - x1);
   h = (float)(y2 - y1);
 
-  /* Calculate gradient endpoints based on angle */
   /* 0 = left to right, 90 = top to bottom, 180 = right to left, 270 = bottom to top */
   rad = angle * G_PI / 180.0f;
 
-  /* Start point (x0, y0) and end point (x3, y3) */
   x0 = x1 + w / 2.0f - (w * cos(rad)) / 2.0f;
   y0 = y1 + h / 2.0f - (h * sin(rad)) / 2.0f;
   x3 = x1 + w / 2.0f + (w * cos(rad)) / 2.0f;
@@ -966,7 +947,6 @@ IUP_SDK_API int iupdrvCanvasGetImageData(Ihandle* ih, unsigned char* data, int w
   iCairoCopyBgraPremulToRgba(data, src, w, h, stride);
   return 1;
 #else
-  /* GTK2: read from window drawable */
   GdkDrawable* drawable = (GdkDrawable*)IupGetAttribute(ih, "DRAWABLE");
   GdkPixbuf* pixbuf;
   unsigned char* pixels;

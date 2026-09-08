@@ -613,7 +613,7 @@ public final class IupTextHelper
         return e == null ? 0 : e.length();
     }
 
-    /* Logical line count: number of '\n' + 1; matches gtk_text_buffer_get_line_count. */
+    /* Logical line count: number of '\n' + 1. */
     @Keep
     public static int getLineCount(View v)
     {
@@ -1083,7 +1083,6 @@ public final class IupTextHelper
     /** Fires LINK_CB(url); no return value (IUP LINK_CB ignores result for the span path). */
     public static native void dispatchLinkClick(long ihandlePtr, String url);
 
-    /* ClickableSpan that routes taps to the IUP LINK_CB callback. */
     private static final class IupLinkSpan extends ClickableSpan
     {
         final long ihandlePtr;
@@ -1170,8 +1169,7 @@ public final class IupTextHelper
         }
     }
 
-    /* One run per line for the Markdown exporter:
-       "start<TAB>end<TAB>bold<TAB>italic<TAB>strike<TAB>scale<TAB>sizePt<TAB>face<TAB>indent<TAB>url". */
+    /* One run per line for the Markdown exporter: "start<TAB>end<TAB>bold<TAB>italic<TAB>strike<TAB>scale<TAB>sizePt<TAB>face<TAB>indent<TAB>url". */
     @Keep
     public static String getFormatRuns(View v)
     {

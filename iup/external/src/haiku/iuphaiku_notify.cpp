@@ -48,14 +48,10 @@ extern "C" IUP_SDK_API int iupdrvNotifyShow(Ihandle* ih)
   const char* title = iupAttribGet(ih, "TITLE");
   if (title) n.SetTitle(title);
 
-  /* IUP standardized on BODY for notification text; older code may still set
-   * MESSAGE - fall back to that. */
   const char* body = iupAttribGet(ih, "BODY");
   if (!body) body = iupAttribGet(ih, "MESSAGE");
   if (body) n.SetContent(body);
 
-  /* IMAGE first (user-supplied IUP image handle), fall back to ICON
-   * (stock-name lookup via the registered image table). */
   const char* image = iupAttribGet(ih, "IMAGE");
   BBitmap* bm = image ? (BBitmap*)iupImageGetImage(image, ih, 0, NULL) : NULL;
   if (!bm)

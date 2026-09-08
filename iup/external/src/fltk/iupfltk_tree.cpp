@@ -1886,7 +1886,6 @@ extern "C" IUP_SDK_API void iupdrvTreeInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "MARKEDNODES", fltkTreeGetMarkedNodesAttrib, fltkTreeSetMarkedNodesAttrib, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "VALUE", fltkTreeGetValueAttrib, fltkTreeSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
 
-  /* IupTree Attributes - TOGGLE */
   iupClassRegisterAttribute(ic, "SHOWTOGGLE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "TOGGLEVALUE", NULL, NULL, IUPAF_NOT_SUPPORTED);
   iupClassRegisterAttributeId(ic, "TOGGLEVISIBLE", NULL, NULL, IUPAF_NOT_SUPPORTED);

@@ -27,8 +27,7 @@
 #include "iupwasm_drv.h"
 
 
-/* shared DOM applier (web/iupwasm_dom.js, --pre-js): main mutates the DOM, a Worker forwards each
-   command to main. A command carries no answer back, so nothing may depend on a return value. */
+/* a DOM command carries no answer back, so nothing may depend on a return value */
 EM_JS(void, iupwasmJsInstallProxy, (void), {
   if (typeof document === 'undefined') {
     globalThis.__iup = globalThis.__iup || { els: {}, next: 1 };
@@ -377,7 +376,6 @@ EMSCRIPTEN_KEEPALIVE int iupwasmDispatchKey(int id, int code)
   if (iupStrEqual(IupGetClassName(ih), "table") && iupwasmTableKeyNav(ih, code))
     return 1;
 
-  /* DEFAULTENTER / DEFAULTESC: fire the named button's ACTION */
   if (code == K_CR || code == K_ESC)
   {
     Ihandle* dlg = IupGetDialog(ih);

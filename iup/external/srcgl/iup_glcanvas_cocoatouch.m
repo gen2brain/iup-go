@@ -136,7 +136,6 @@ static void cocoaTouchGLDeleteFramebuffer(IGlControlData* gldata)
 	gldata->has_stencil = 0;
 }
 
-/* Lazy framebuffer (re)creation tracking the layer's drawable size. */
 static void cocoaTouchGLEnsureFramebuffer(Ihandle* ih, IGlControlData* gldata)
 {
 	if (!gldata->context || !gldata->view) return;

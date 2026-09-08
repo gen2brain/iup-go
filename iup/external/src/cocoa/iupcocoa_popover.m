@@ -141,7 +141,6 @@ static int cocoaPopoverSetVisibleAttrib(Ihandle* ih, const char* value)
     if (!anchor || !anchor->handle)
       return 0;
 
-    /* Map if not yet mapped */
     if (!ih->handle)
     {
       if (IupMap(ih) == IUP_ERROR)
@@ -353,7 +352,6 @@ IUP_SDK_API void iupdrvPopoverInitClass(Iclass* ic)
   ic->LayoutUpdate = cocoaPopoverLayoutUpdateMethod;
   ic->GetInnerNativeContainerHandle = cocoaPopoverGetInnerNativeContainerHandleMethod;
 
-  /* Override VISIBLE attribute, NOT_MAPPED because setter handles mapping */
   iupClassRegisterAttribute(ic, "VISIBLE", cocoaPopoverGetVisibleAttrib, cocoaPopoverSetVisibleAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
 
 }

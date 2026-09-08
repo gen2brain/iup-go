@@ -23,7 +23,6 @@
 #include "iupcocoatouch_drv.h"
 
 
-/* keys for associated objects holding drag/drop helpers; tied to the UIView's lifetime */
 static const void* IUPCOCOATOUCH_DRAG_SOURCE_OBJ_KEY  = "IUPCOCOATOUCH_DRAG_SOURCE_OBJ_KEY";
 static const void* IUPCOCOATOUCH_DROP_TARGET_OBJ_KEY  = "IUPCOCOATOUCH_DROP_TARGET_OBJ_KEY";
 static const void* IUPCOCOATOUCH_DRAG_INTERACTION_KEY = "IUPCOCOATOUCH_DRAG_INTERACTION_KEY";
@@ -140,7 +139,6 @@ NSArray<NSString*>* iupCocoaTouchDragParseTypes(const char* value)
 	IFni end_cb = (IFni)IupGetCallback(_ihandle, "DRAGEND_CB");
 	if (!end_cb) return;
 
-	/* DRAGEND_CB action: 1=move, 0=copy, -1=cancel */
 	int action;
 	switch (operation)
 	{
@@ -180,7 +178,6 @@ NSArray<NSString*>* iupCocoaTouchDragParseTypes(const char* value)
 	return [self firstMatchingUTI:session] != nil;
 }
 
-/* checks if the source marked the drag as move-capable (DRAGSOURCEMOVE) */
 static BOOL cocoaTouchDropSessionWantsMove(id<UIDropSession> session)
 {
 	id<UIDragSession> local = session.localDragSession;
@@ -211,7 +208,6 @@ static BOOL cocoaTouchDropSessionWantsMove(id<UIDropSession> session)
 	return [[[UIDropProposal alloc] initWithDropOperation:op] autorelease];
 }
 
-/* dispatches file-URL items through DROPFILES_CB; YES if handled, NO to fall through */
 - (BOOL)handleFileDrop:(id<UIDropSession>)session interaction:(UIDropInteraction*)interaction
 {
 	if (!iupAttribGetBoolean(_ihandle, "DROPFILESTARGET")) return NO;
@@ -413,7 +409,6 @@ static int cocoaTouchDragSetDropTypesAttrib(Ihandle* ih, const char* value)
 	return 1;
 }
 
-/* DRAGDROP and DROPFILESTARGET both enable a file-URL drop target firing DROPFILES_CB */
 static int cocoaTouchDragSetDropFilesTargetAttrib(Ihandle* ih, const char* value)
 {
 	UIView* view = cocoaTouchDragGetView(ih);
@@ -431,7 +426,6 @@ static int cocoaTouchDragSetDropFilesTargetAttrib(Ihandle* ih, const char* value
 
 	IupCocoaTouchDropTarget* tgt = cocoaTouchDragEnsureTarget(view);
 	tgt.ihandle = ih;
-	/* accept plain + security-scoped file URLs */
 	NSMutableArray<NSString*>* types = [NSMutableArray arrayWithArray:(tgt.types ?: @[])];
 	NSString* file_uti = IUPCOCOATOUCH_UTI_FILE_URL;
 	if (![types containsObject:file_uti]) [types addObject:file_uti];

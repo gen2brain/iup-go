@@ -27,7 +27,6 @@ typedef NS_ENUM(NSUInteger, IupCocoaTabBarOrientation) {
   IupCocoaTabBarVertical
 };
 
-/* New enum for border position */
 typedef NS_ENUM(NSUInteger, IupCocoaTabPosition) {
   IupCocoaTabPositionTop,
   IupCocoaTabPositionBottom,
@@ -35,10 +34,9 @@ typedef NS_ENUM(NSUInteger, IupCocoaTabPosition) {
   IupCocoaTabPositionRight
 };
 
-/* Enum for tab text orientation (TABORIENTATION attribute) */
 typedef NS_ENUM(NSUInteger, IupCocoaTabTextOrientation) {
-  IupCocoaTabTextHorizontal,  /* Text drawn horizontally (default) */
-  IupCocoaTabTextVertical     /* Text drawn rotated 90 degrees */
+  IupCocoaTabTextHorizontal,
+  IupCocoaTabTextVertical
 };
 
 @interface IupCocoaTabBarView : NSView<NSMenuDelegate, NSDraggingSource>
@@ -119,21 +117,9 @@ typedef NS_ENUM(NSUInteger, IupCocoaTabTextOrientation) {
 - (void)exchangeTabWithIndex:(NSUInteger)One withTabIndex:(NSUInteger)two;
 @end
 
-/* IupCocoaTabBarView Delegates methods */
-/* Implement these methods to intercept your code */
-/*  */
 @protocol IupCocoaTabBarViewDelegate <NSObject>
 
 @optional
-
-/*
- * Usually we store tabs (IupCocoaTabCell*) as a key in a NSDictionary,
- * And other object as a value to identify which tab in the following events.
- * If you need to know the tab index(order), you can get it like
- * this:
- * NSInteger index = [[tabBarView tabs] indexOfObject:tab]];
- * Here **tabBarView** is an instance of IupCocoaTabBarView
- */
 
 - (void)tabWillActive:(IupCocoaTabCell*)tab;
 - (void)tabDidActived:(IupCocoaTabCell*)tab;
@@ -181,7 +167,6 @@ typedef NS_ENUM(NSUInteger, IupCocoaTabTextOrientation) {
 - (void)setAsActiveTab;
 - (void)draw;
 
-/* forward mouse event to tab */
 - (void)mouseDown:(NSEvent*)theEvent;
 - (void)mouseMoved:(NSEvent*)theEvent;
 - (void)setIsHovered:(BOOL)flag;

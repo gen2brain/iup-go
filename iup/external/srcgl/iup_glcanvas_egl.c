@@ -12,7 +12,6 @@
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 
-/* Backend selection */
 #if defined(IUP_USE_GTK3)
   #define IUP_EGL_USE_GTK3
 #elif defined(IUP_USE_GTK4)
@@ -47,7 +46,6 @@
 #define EGL_PLATFORM_X11_KHR 0x31D5
 #endif
 
-/* Function pointer type for eglGetPlatformDisplay/EXT. */
 typedef PFNEGLGETPLATFORMDISPLAYPROC PFN_eglGetPlatformDisplay;
 
 /* Definitions for ARB context creation if not present in system headers (EGL 1.5 or EGL_KHR_create_context) */
@@ -109,7 +107,6 @@ typedef PFNEGLGETPLATFORMDISPLAYPROC PFN_eglGetPlatformDisplay;
 #define EGL_OPENGL_API 0x30A2
 #endif
 
-/* Forward declarations for Wayland types (used in struct as opaque pointers) */
 struct wl_egl_window;
 struct wl_surface;
 struct wl_subsurface;
@@ -118,8 +115,6 @@ struct wl_subcompositor;
 struct wl_registry;
 struct wl_event_queue;
 
-/* GL control data, common across all backends.
- * Backend-specific native handles stored as void* in backend_handle/backend_handle2. */
 typedef struct _IGlControlData
 {
   EGLDisplay display;
@@ -153,7 +148,6 @@ typedef struct _IGlControlData
   struct wl_event_queue* event_queue;
 } IGlControlData;
 
-/* Forward declaration of common function used by backends */
 static void eGLCanvasGetActualSize(Ihandle* ih, IGlControlData* gldata, int* physical_width, int* physical_height);
 
 #ifndef GL_FRAMEBUFFER
@@ -640,16 +634,13 @@ static int eGLCanvasMapMethod(Ihandle* ih)
   char* requested_profile = NULL;
   int target_visual_id = 0;
 
-  /* Initialize backend-specific native handles */
   if (!iupEGLBackendMapInit(ih, gldata))
     return IUP_NOERROR;
 
-  /* Try to load eglGetPlatformDisplay (EGL 1.5 core) or eglGetPlatformDisplayEXT (extension) */
   eglGetPlatformDisplay_func = (PFN_eglGetPlatformDisplay)eglGetProcAddress("eglGetPlatformDisplay");
   if (!eglGetPlatformDisplay_func)
       eglGetPlatformDisplay_func = (PFN_eglGetPlatformDisplay)eglGetProcAddress("eglGetPlatformDisplayEXT");
 
-  /* Get EGL display from backend */
   gldata->display = iupEGLBackendGetEGLDisplay(ih, gldata, eglGetPlatformDisplay_func, &native_window, &target_visual_id);
 
   if (gldata->display == EGL_NO_DISPLAY) {
@@ -682,7 +673,6 @@ static int eGLCanvasMapMethod(Ihandle* ih)
   if (!eGLCanvasChooseConfig(ih, gldata, gldata->use_composite ? 0 : target_visual_id))
     return IUP_NOERROR;
 
-  /* Post-config: get native window or setup lazy init */
   {
     int skip_rest = 0;
     EGLNativeWindowType post_native = iupEGLBackendPostConfig(ih, gldata, &skip_rest);
@@ -736,7 +726,6 @@ static int eGLCanvasMapMethod(Ihandle* ih)
     }
   }
 
-  /* Create context */
   {
     EGLint context_attribs[15];
     int a = 0;
@@ -900,7 +889,6 @@ static void eGLCanvasUnMapMethod(Ihandle* ih)
   if (!gldata || gldata->display == EGL_NO_DISPLAY)
     return;
 
-  /* Check if backend owns the context (e.g., Qt may own it) */
   if (iupAttribGet(ih, "_IUP_GLCANVAS_QT_CONTEXT"))
   {
     gldata->context = EGL_NO_CONTEXT;
@@ -1054,7 +1042,6 @@ IUPGL_API void IupGLMakeCurrent(Ihandle* ih)
   if (gldata->display == EGL_NO_DISPLAY)
     return;
 
-  /* Lazy initialization: create native window + EGL surface + context on first call */
   if (gldata->surface == EGL_NO_SURFACE && iupAttribGet(ih, "_IUP_EGL_LAZY_INIT"))
   {
     EGLNativeWindowType native_window = (EGLNativeWindowType)NULL;
@@ -1090,7 +1077,6 @@ IUPGL_API void IupGLMakeCurrent(Ihandle* ih)
       }
     }
 
-    /* Create context */
     {
       EGLContext shared_ctx = EGL_NO_CONTEXT;
       Ihandle* ih_shared = IupGetAttributeHandle(ih, "SHAREDCONTEXT");
@@ -1113,7 +1099,6 @@ IUPGL_API void IupGLMakeCurrent(Ihandle* ih)
     iupAttribSet(ih, "_IUP_EGL_LAZY_INIT", NULL);
   }
 
-  /* Check if surface needs recreation (1x1 workaround) */
   {
     EGLNativeWindowType recreate_window = iupEGLBackendCheckSurfaceRecreation(ih, gldata);
 
@@ -1147,7 +1132,6 @@ IUPGL_API void IupGLMakeCurrent(Ihandle* ih)
     return;
   }
 
-  /* Check if Wayland EGL window needs resize */
 #ifdef IUP_EGL_HAS_WAYLAND
   if (gldata->egl_window) {
     int max_pw = 0, max_ph = 0;

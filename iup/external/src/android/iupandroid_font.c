@@ -38,7 +38,7 @@ static int androidFontKindForIhandle(Ihandle* ih)
   return IUPANDROID_FONT_KIND_DEFAULT;
 }
 
-/* android.graphics.Rect width()/height() accessors. Safe on NULL j_rect. */
+/* Safe on NULL j_rect. */
 static void androidFontRectGetSize(JNIEnv* jni_env, jobject j_rect, jint* w, jint* h)
 {
   *w = 0;
@@ -94,7 +94,6 @@ IUP_SDK_API char* iupdrvGetSystemFont(void)
 #define ANDROID_COMPLEX_UNIT_SP 2
 #define ANDROID_COMPLEX_UNIT_PT 3
 
-/* Pack an IUP font string into Java parameters: family + style + sizeUnit + size. */
 static void androidFontParse(const char* font, char family[1024], int* style, int* size_unit, float* size_value)
 {
   int size = 0, is_bold = 0, is_italic = 0, is_underline = 0, is_strikeout = 0;

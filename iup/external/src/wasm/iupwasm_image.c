@@ -200,7 +200,7 @@ IUP_SDK_API int iupdrvImageGetRawInfo(void* handle, int *w, int *h, int *bpp, iu
 
 /* PNG/JPEG via the browser canvas encoder; returns a _malloc'd buffer (caller frees). */
 EM_JS(int, iupwasmJsEncodeImage, (int ptr, int w, int h, int bpp, const char* mimeStr, int sizePtr), {
-  if (typeof document === 'undefined') { HEAP32[sizePtr >> 2] = 0; return 0; }  /* worker: not yet routed */
+  if (typeof document === 'undefined') { HEAP32[sizePtr >> 2] = 0; return 0; }
   var cv = document.createElement('canvas'); cv.width = w; cv.height = h;
   var ctx = cv.getContext('2d');
   var img = ctx.createImageData(w, h), n = w * h, i;

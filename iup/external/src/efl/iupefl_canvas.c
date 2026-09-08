@@ -589,7 +589,6 @@ static int eflCanvasMapMethod(Ihandle* ih)
 
   ih->data->sb = iupBaseGetScrollbar(ih);
 
-  /* the range is in application units, so IUP owns the scrollbars and the surface is the viewport */
   if (ih->data->sb)
   {
     wrap = efl_add(EFL_UI_BOX_CLASS, parent, efl_gfx_entity_visible_set(efl_added, EINA_TRUE));
@@ -614,7 +613,6 @@ static int eflCanvasMapMethod(Ihandle* ih)
   vg_parent = row ? row : parent;
 
   {
-    /* the frame is composited off-screen and pushed here as pixels */
     Evas* evas = evas_object_evas_get(vg_parent);
     vg = evas_object_image_filled_add(evas);
     if (vg)

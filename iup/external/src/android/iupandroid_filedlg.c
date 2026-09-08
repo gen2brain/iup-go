@@ -24,7 +24,6 @@
 
 IUPJNI_DECLARE_CLASS_STATIC(IupFileDlgHelper);
 
-/* Glob filter to MIME, first extension wins. Unknown falls to any. */
 static const char* androidFileDlgFilterToMime(const char* filter)
 {
   if (!filter || !*filter) return "*/*";
@@ -67,7 +66,6 @@ static const char* androidFileDlgExtFilterToMime(const char* extfilter)
   const char* first_bar = strchr(extfilter, '|');
   if (!first_bar) return androidFileDlgFilterToMime(extfilter);
   const char* second_bar = strchr(first_bar + 1, '|');
-  /* Name|Pattern[|Name|Pattern...]; pattern starts after first '|'. */
   size_t len = second_bar ? (size_t)(second_bar - first_bar - 1) : strlen(first_bar + 1);
   char buf[256];
   if (len >= sizeof(buf)) len = sizeof(buf) - 1;

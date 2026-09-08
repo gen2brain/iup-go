@@ -187,8 +187,7 @@ IUP_SDK_API int iupdrvOpen(int* argc, char*** argv)
     }
   }
 
-  /* Backend is loaded now; verify and upgrade the seeds if Sans
-     isn't actually installed. fontWithName:size: is silent on miss. */
+  /* fontWithName:size: is silent on a miss, so verify the seeds once the backend is up */
   {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     NSString *current = [defaults stringForKey:@"NSFont"];
@@ -238,19 +237,16 @@ IUP_SDK_API int iupdrvOpen(int* argc, char*** argv)
   }
 #endif
 
-  /* Ensure the application is treated as a foreground application capable of showing UI. */
   if ([NSApp activationPolicy] == NSApplicationActivationPolicyProhibited)
   {
     [NSApp setActivationPolicy:NSApplicationActivationPolicyRegular];
   }
 
-  /* Manually finish the launch process. This is normally handled by [NSApp run], but IUP uses a custom event loop. */
+  /* [NSApp run] would do this, but IUP runs its own event loop */
   [NSApp finishLaunching];
 
-  /* This sets a default menu at startup. It will be replaced later if an IUP dialog with a menu is shown. */
   iupcocoaEnsureDefaultApplicationMenu();
 
-  /* Disable automatic window tabbing */
   if ([NSWindow respondsToSelector:@selector(setAllowsAutomaticWindowTabbing:)])
   {
     [NSWindow setAllowsAutomaticWindowTabbing:NO];
@@ -267,7 +263,6 @@ IUP_SDK_API int iupdrvOpen(int* argc, char*** argv)
   iupcocoaSetGlobalColors();
   IupSetGlobal("_IUP_RESET_GLOBALCOLORS", "YES");
 
-  /* All NSStrings in this implementation use UTF-8. */
   IupSetInt(NULL, "UTF8MODE", 1);
 
   return IUP_NOERROR;
@@ -298,16 +293,8 @@ IUP_SDK_API int iupdrvSetGlobalAppNameAttrib(const char* value)
 
 IUP_SDK_API void iupdrvClose(void)
 {
-  /* This cleans up the default menu instance and the IUP menu tracking. */
   iupcocoaMenuCleanupApplicationMenu();
 
-  /*
-   * Draining the autorelease pool here can cause a crash, especially when the app
-   * is quit by closing the last window. The system seems to require the pool
-   * to exist longer than the IupClose call. We accept a minor memory leak at
-   * program termination, which is standard practice for modern applications,
-   * rather than risk a crash. The pool is not set to nil to prevent re-allocation
-   * if IupOpen/IupClose are called multiple times.
-   */
+  /* draining here crashes when the last window closes; the pool must outlive IupClose */
   /* [s_autoreleasePool drain]; */
 }

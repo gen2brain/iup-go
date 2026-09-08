@@ -264,19 +264,16 @@ static char* qtFileCheckExt(Ihandle* ih, const char* filename)
     int len = (int)strlen(filename);
     int ext_len = (int)strlen(ext);
 
-    /* Check if filename already has the extension */
     if (len > ext_len && filename[len - ext_len - 1] == '.')
     {
       if (strcmp(filename + len - ext_len, ext) == 0)
-        return (char*)filename; /* already has extension */
+        return (char*)filename;
     }
 
-    /* Check if filename has any extension */
     const char* dot = strrchr(filename, '.');
     const char* slash = strrchr(filename, '/');
     const char* backslash = strrchr(filename, '\\');
 
-    /* If no dot, or dot is before last separator, add extension */
     if (!dot || (slash && dot < slash) || (backslash && dot < backslash))
     {
       int new_len = len + ext_len + 2;
@@ -306,7 +303,6 @@ static void qtFileDlgGetMultipleFiles(Ihandle* ih, const QStringList& files)
 
   int dir_len = dirBytes.length();
 
-  /* Check if just one file is selected */
   if (files.count() == 1)
   {
     iupAttribSetStrId(ih, "MULTIVALUE", 0, dirBytes.constData());
@@ -326,7 +322,6 @@ static void qtFileDlgGetMultipleFiles(Ihandle* ih, const QStringList& files)
     char* all_names;
     int cur_len, count = 0;
 
-    /* Add directory to array */
     int len = dir_len;
     if (dirBytes[len - 1] == '/' || dirBytes[len - 1] == '\\')
       len--; /* remove last separator */
@@ -386,7 +381,6 @@ static int qtFileDlgPopup(Ihandle* ih, int x, int y)
   iupAttribSetInt(ih, "_IUPDLG_X", x);
   iupAttribSetInt(ih, "_IUPDLG_Y", y);
 
-  /* Check if preview mode is requested */
   if (iupAttribGetBoolean(ih, "SHOWPREVIEW") && file_cb)
   {
     preview_dialog = new IupQtFileDialogWithPreview(ih, parent);
@@ -394,26 +388,18 @@ static int qtFileDlgPopup(Ihandle* ih, int x, int y)
   }
   else
   {
-    /* Create standard dialog */
     dialog = new QFileDialog(parent);
 
-    /* Handle PORTAL attribute:
-       PORTAL=YES: Use native/portal dialog (default Qt behavior on Linux with XDG portal)
-       PORTAL=NO: Force Qt's widget-based dialog (DontUseNativeDialog)
-       When PORTAL is not set: use native/portal in sandbox, otherwise Qt decides based on platform */
     value = iupAttribGet(ih, "PORTAL");
     if (value)
     {
       if (!iupStrBoolean(value))
       {
-        /* PORTAL=NO: Force Qt's built-in widget dialog */
         dialog->setOption(QFileDialog::DontUseNativeDialog, true);
       }
-      /* PORTAL=YES: Let Qt use native/portal (default behavior, no action needed) */
     }
   }
 
-  /* Determine dialog type */
   value = iupAttribGetStr(ih, "DIALOGTYPE");
   if (iupStrEqualNoCase(value, "SAVE"))
   {
@@ -427,7 +413,7 @@ static int qtFileDlgPopup(Ihandle* ih, int x, int y)
     file_mode = QFileDialog::Directory;
     dialogtype = 2; /* DIR */
   }
-  else /* OPEN */
+  else
   {
     accept_mode = QFileDialog::AcceptOpen;
     file_mode = QFileDialog::ExistingFile;
@@ -441,15 +427,12 @@ static int qtFileDlgPopup(Ihandle* ih, int x, int y)
   if (value)
     dialog->setWindowTitle(QString::fromUtf8(value));
 
-  /* Show hidden files */
   if (iupAttribGetBoolean(ih, "SHOWHIDDEN"))
     dialog->setFilter(dialog->filter() | QDir::Hidden);
 
-  /* Multiple files */
   if (iupAttribGetBoolean(ih, "MULTIPLEFILES") && accept_mode == QFileDialog::AcceptOpen)
     dialog->setFileMode(QFileDialog::ExistingFiles);
 
-  /* Overwrite prompt */
   if (!iupAttribGetBoolean(ih, "NOOVERWRITEPROMPT") && accept_mode == QFileDialog::AcceptSave)
   {
     QFileDialog::Options options = dialog->options();
@@ -457,7 +440,6 @@ static int qtFileDlgPopup(Ihandle* ih, int x, int y)
     dialog->setOptions(options);
   }
 
-  /* Handle FILE attribute - check if it contains a path */
   value = iupAttribGet(ih, "FILE");
   if (value && value[0] != 0 && (value[0] == '/' || value[1] == ':'))
   {
@@ -480,7 +462,6 @@ static int qtFileDlgPopup(Ihandle* ih, int x, int y)
       dialog->selectFile(QString::fromUtf8(value));
     else
     {
-      /* For open, only set if file exists */
       if (qtIsFile(QString::fromUtf8(value)))
         dialog->selectFile(QString::fromUtf8(value));
     }
@@ -504,10 +485,8 @@ static int qtFileDlgPopup(Ihandle* ih, int x, int y)
     {
       char* pattern = name + strlen(name) + 1;
 
-      /* Convert semicolons to spaces for Qt format */
       iupStrReplace(pattern, ';', ' ');
 
-      /* Build Qt filter string: `Description (*.ext1 *.ext2)` */
       QString filter = QString::fromUtf8(name) + " (" + QString::fromUtf8(pattern) + ")";
       filterList << filter;
 
@@ -540,7 +519,6 @@ static int qtFileDlgPopup(Ihandle* ih, int x, int y)
     }
   }
 
-  /* Add Help button if HELP_CB exists (feature parity with Windows, GTK, Cocoa) */
   if (IupGetCallback(ih, "HELP_CB"))
   {
     QPushButton* help_button = dialog->findChild<QPushButton*>("qt_custom_help_button");
@@ -555,7 +533,6 @@ static int qtFileDlgPopup(Ihandle* ih, int x, int y)
           dialog->reject();
       });
 
-      /* Add help button to dialog button box */
       QList<QPushButton*> buttons = dialog->findChildren<QPushButton*>();
       if (!buttons.isEmpty())
       {
@@ -569,13 +546,11 @@ static int qtFileDlgPopup(Ihandle* ih, int x, int y)
     }
   }
 
-  /* Position dialog */
   QDialog* exec_dialog = preview_dialog ? (QDialog*)preview_dialog : (QDialog*)dialog;
   ih->handle = (InativeHandle*)exec_dialog;
   iupDialogUpdatePosition(ih);
   ih->handle = NULL;
 
-  /* Set window title on preview dialog if needed */
   if (preview_dialog)
   {
     value = iupAttribGet(ih, "TITLE");
@@ -586,7 +561,6 @@ static int qtFileDlgPopup(Ihandle* ih, int x, int y)
   if (file_cb)
     file_cb(ih, nullptr, (char*)"INIT");
 
-  /* Show dialog */
   int result;
   for (;;)
   {
@@ -625,13 +599,11 @@ static int qtFileDlgPopup(Ihandle* ih, int x, int y)
     break;
   }
 
-  /* Call FINISH callback */
   if (file_cb)
   {
     file_cb(ih, nullptr, (char*)"FINISH");
   }
 
-  /* Process result */
   if (result == QDialog::Accepted)
   {
     QStringList selectedFiles = dialog->selectedFiles();
@@ -647,7 +619,6 @@ static int qtFileDlgPopup(Ihandle* ih, int x, int y)
       return IUP_NOERROR;
     }
 
-    /* Handle filter tracking */
     value = iupAttribGet(ih, "EXTFILTER");
     if (value)
     {
@@ -664,7 +635,6 @@ static int qtFileDlgPopup(Ihandle* ih, int x, int y)
       }
     }
 
-    /* Handle ALLOWNEW validation (feature parity with GTK) */
     if (dialogtype == 0) /* OPEN */
     {
       QString filename = selectedFiles[0];
@@ -673,7 +643,6 @@ static int qtFileDlgPopup(Ihandle* ih, int x, int y)
 
       if (dir_exist)
       {
-        /* File is actually a directory */
         QMessageBox::critical(exec_dialog, QString::fromUtf8(IupGetLanguageString("IUP_ERROR")),
                             QString::fromUtf8(IupGetLanguageString("IUP_FILEISDIR")));
         if (preview_dialog)
@@ -687,10 +656,9 @@ static int qtFileDlgPopup(Ihandle* ih, int x, int y)
 
       if (!file_exist && !iupAttribGetBoolean(ih, "MULTIPLEFILES"))
       {
-        /* Check ALLOWNEW */
         value = iupAttribGet(ih, "ALLOWNEW");
         if (!value)
-          value = "NO"; /* Default for OPEN is NO */
+          value = "NO";
 
         if (!iupStrBoolean(value))
         {
@@ -717,7 +685,6 @@ static int qtFileDlgPopup(Ihandle* ih, int x, int y)
       QString filename = selectedFiles[0];
       QByteArray filenameBytes = filename.toUtf8();
 
-      /* Check and add extension if needed */
       char* final_filename = qtFileCheckExt(ih, filenameBytes.constData());
       iupAttribSetStr(ih, "VALUE", final_filename);
 
@@ -726,12 +693,10 @@ static int qtFileDlgPopup(Ihandle* ih, int x, int y)
       if (final_filename != filenameBytes.constData())
         free(final_filename);
 
-      /* Store directory */
       QFileInfo fileInfo(final_path);
       QByteArray dirBytes = fileInfo.absolutePath().toUtf8();
       iupAttribSetStr(ih, "DIRECTORY", dirBytes.constData());
 
-      /* Check existence using the final filename (with extension) */
       int file_exist = qtIsFile(final_path);
       int dir_exist = qtIsDirectory(final_path);
 
@@ -755,7 +720,6 @@ static int qtFileDlgPopup(Ihandle* ih, int x, int y)
       }
     }
 
-    /* Change current directory if needed */
     if (file_mode != QFileDialog::Directory && !iupAttribGetBoolean(ih, "NOCHANGEDIR"))
     {
       QDir::setCurrent(dialog->directory().absolutePath());

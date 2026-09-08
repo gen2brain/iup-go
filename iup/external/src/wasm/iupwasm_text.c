@@ -651,7 +651,7 @@ static int wasmTextMapMethod(Ihandle* ih)
   if (val)
     iupwasmJsTextSetPlaceholder(id, val);
 
-  if (ih->data->has_formatting)  /* apply format tags added before map */
+  if (ih->data->has_formatting)
     iupTextUpdateFormatTags(ih);
 
   iupwasmJsTextWire(id);

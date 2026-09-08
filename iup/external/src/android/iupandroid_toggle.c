@@ -60,7 +60,7 @@ void iupAndroid_ToggleActionFromJava(Ihandle* ih, int state)
 
 IUP_SDK_API void iupdrvToggleAddBorders(Ihandle* ih, int* x, int* y)
 {
-  /* IMAGE-only. Override IUP's raw-pixel size with our 32dp icon + 16dp pad. */
+  /* IMAGE-only: override IUP's raw-pixel size with a 32dp icon + 16dp pad. */
   (void)ih;
   int icon_box = iupAndroid_DpToPx(32.0f);
   int padding = iupAndroid_DpToPx(16.0f);
@@ -126,7 +126,7 @@ static int androidToggleSetTitleAttrib(Ihandle* ih, const char* value)
 
 static int androidToggleSetMarkupAttrib(Ihandle* ih, const char* value)
 {
-  /* Update hash first so the title setter reads the new MARKUP value, then re-render. */
+  /* Update hash first so the title setter reads the new MARKUP value. */
   iupAttribSetStr(ih, "MARKUP", value);
   if (ih->handle && ih->data->type != IUP_TOGGLE_IMAGE)
   {
@@ -324,7 +324,6 @@ static int androidToggleMapMethod(Ihandle* ih)
   if (radio)
   {
     ih->data->is_radio = 1;
-    /* First radio in the group starts checked. */
     if (!iupAttribGet(radio, "_IUPANDROID_RADIO_FIRST_SEEN"))
     {
       iupAttribSet(radio, "_IUPANDROID_RADIO_FIRST_SEEN", "1");

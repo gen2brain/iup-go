@@ -215,7 +215,6 @@ JNIEXPORT jstring JNICALL Java_io_github_gen2brain_iupgo_IupMenuHelper_nativeGet
   return (*jni_env)->NewStringUTF(jni_env, path);
 }
 
-/* Re-stage content:// URIs to cache and fire RECENT_CB with RECENTFILENAME on config. */
 JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupMenuHelper_nativeDispatchRecent(
     JNIEnv* jni_env, jclass cls, jlong ihandle_ptr, jint index)
 {

@@ -48,10 +48,8 @@ static int motLabelSetBgColorAttrib(Ihandle* ih, const char* value)
 {
   unsigned char r, g, b;
 
-  /* Try to use provided value first */
   if (!iupStrToRGB(value, &r, &g, &b))
   {
-    /* Fall back to parent's background if no valid color provided */
     value = iupBaseNativeParentGetBgColor(ih);
   }
 
@@ -64,10 +62,8 @@ static int motLabelSetBackgroundAttrib(Ihandle* ih, const char* value)
 {
   unsigned char r, g, b;
 
-  /* Try to use provided value first */
   if (!value || !iupStrToRGB(value, &r, &g, &b))
   {
-    /* Check if it's an image name */
     Pixmap pixmap = value ? (Pixmap)iupImageGetImage(value, ih, 0, NULL) : 0;
     if (pixmap)
     {
@@ -75,7 +71,6 @@ static int motLabelSetBackgroundAttrib(Ihandle* ih, const char* value)
       return 1;
     }
 
-    /* Fall back to parent's background */
     value = iupAttribGetInheritNativeParent(ih, "BACKGROUND");
   }
 

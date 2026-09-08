@@ -57,7 +57,6 @@ IUP_API Icallback IupSetFunction(const char *name, Icallback func)
   else
     iupTableSetFunc(ifunc_table, name, (Ifunc)func);
 
-  /* notifies the driver if changing the Idle or the entry point */
   if (iupStrEqual(name, "IDLE_ACTION"))
     iupdrvSetIdleFunction(func);
   else if (iupStrEqual(name, "ENTRY_POINT"))
@@ -66,7 +65,6 @@ IUP_API Icallback IupSetFunction(const char *name, Icallback func)
   return old_func;
 }
 
-/* Well-known names IUP itself dispatches through the function table. */
 static const char* known_functions[] = {
   "ENTRY_POINT",
   "IDLE_ACTION",

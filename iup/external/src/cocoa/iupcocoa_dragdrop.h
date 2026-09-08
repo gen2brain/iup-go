@@ -14,7 +14,7 @@ extern const void* IUPTARGETDROP_ASSOCIATED_OBJ_KEY;
 @property(nonatomic, copy) NSArray<NSString*>* dropRegisteredTypes;
 @property(nonatomic, assign, getter=isDropTargetEnabled) bool dropTargetEnabled;
 
-/* These must be weak references because we don't want to create a retain cycle back to the view we are operating on. */
+/* weak, to avoid a retain cycle back to the view */
 @property(nonatomic, assign) NSView* mainView;
 @property(nonatomic, assign) NSView* rootView;
 
@@ -29,10 +29,10 @@ extern const void* IUPTARGETDROP_ASSOCIATED_OBJ_KEY;
 /* Used to distinguish between needing copy or if drag is actually enabled. Setting the types assumes copy is active. */
 @property(nonatomic, assign, getter=isDragSourceEnabled) bool dragSourceEnabled;
 @property(nonatomic, copy) NSArray<NSString*>* dragRegisteredTypes;
-@property(nonatomic, copy) NSString* defaultFilePromiseName; /* Used for when the user doesn't define a callback. */
+@property(nonatomic, copy) NSString* defaultFilePromiseName;
 - (bool) usesFilePromise;
 
-/* These must be weak references because we don't want to create a retain cycle back to the view we are operating on. */
+/* weak, to avoid a retain cycle back to the view */
 @property(nonatomic, assign) NSView* mainView;
 @property(nonatomic, assign) NSView* rootView;
 
@@ -71,7 +71,6 @@ IupSourceDragAssociatedData* cocoaSourceDragCreateAssociatedData(Ihandle* ih, NS
 void cocoaTargetDropDestroyAssociatedData(Ihandle* ih);
 void cocoaSourceDragDestroyAssociatedData(Ihandle* ih);
 
-/* These functions are called by the widget's NSView(DraggingDestination) implementation */
 int cocoaTargetDropBasePerformDropCallback(Ihandle* ih, id<NSDraggingInfo> the_sender, NSPasteboard* paste_board, NSPoint drop_point);
 NSDragOperation cocoaTargetDropBaseDraggingUpdated(Ihandle* ih, id<NSDraggingInfo> the_sender);
 

@@ -36,7 +36,6 @@
 
 extern "C" IUP_SDK_API void iupdrvAddScreenOffset(int *x, int *y, int add)
 {
-  /* Qt handles coordinates correctly, no offset needed */
   (void)x;
   (void)y;
   (void)add;
@@ -54,7 +53,6 @@ extern "C" IUP_SDK_API void iupdrvGetScreenSize(int *width, int *height)
   }
   else
   {
-    /* Fallback */
     *width = 800;
     *height = 600;
   }
@@ -72,7 +70,6 @@ extern "C" IUP_SDK_API void iupdrvGetFullSize(int *width, int *height)
   }
   else
   {
-    /* Fallback */
     *width = 800;
     *height = 600;
   }
@@ -85,7 +82,7 @@ extern "C" IUP_SDK_API int iupdrvGetScreenDepth(void)
   if (screen)
     return screen->depth();
 
-  return 24;  /* Fallback */
+  return 24;
 }
 
 extern "C" IUP_SDK_API double iupdrvGetScreenDpi(void)
@@ -94,18 +91,14 @@ extern "C" IUP_SDK_API double iupdrvGetScreenDpi(void)
 
   if (screen)
   {
-    /* Use logical DPI instead of physical DPI.
-     * Qt's logicalDotsPerInch() returns the DPI setting (typically 96),
-     * while physicalDotsPerInch() returns actual screen DPI (e.g., 264 on HiDPI).
-     * IUP expects logical DPI for size calculations to match other platforms. */
+    /* IUP sizes want the logical DPI setting, not the panel's physical DPI */
     qreal dpi_x = screen->logicalDotsPerInchX();
     qreal dpi_y = screen->logicalDotsPerInchY();
 
-    /* Return average */
     return (dpi_x + dpi_y) / 2.0;
   }
 
-  return 96.0;  /* Fallback */
+  return 96.0;
 }
 
 extern "C" IUP_SDK_API int iupdrvScaleNaturalPx(int px)
@@ -135,7 +128,6 @@ extern "C" IUP_SDK_API void iupdrvGetKeyState(char* key)
   else
     key[0] = ' ';
 
-  /* Control */
   if (modifiers & Qt::ControlModifier)
     key[1] = 'C';
   else
@@ -147,13 +139,12 @@ extern "C" IUP_SDK_API void iupdrvGetKeyState(char* key)
   else
     key[2] = ' ';
 
-  /* Meta/Super/Windows key */
   if (modifiers & Qt::MetaModifier)
     key[3] = 'Y';
   else
     key[3] = ' ';
 
-  key[4] = 0;  /* NULL terminate */
+  key[4] = 0;
 }
 
 /****************************************************************************
@@ -169,19 +160,16 @@ extern "C" IUP_SDK_API char *iupdrvGetComputerName(void)
 extern "C" IUP_SDK_API char *iupdrvGetUserName(void)
 {
 #ifdef _WIN32
-  /* Windows */
   QString username = qgetenv("USERNAME");
   if (username.isEmpty())
     username = qgetenv("USER");
 
   return iupStrReturnStr(username.toUtf8().constData());
 #else
-  /* Unix/Linux/macOS */
   const char* username = getenv("USER");
 
   if (!username)
   {
-    /* Try getpwuid as fallback */
     struct passwd* pwd = getpwuid(getuid());
     if (pwd)
       username = pwd->pw_name;
@@ -200,14 +188,12 @@ extern "C" IUP_SDK_API char *iupdrvGetUserName(void)
 
 extern "C" IUP_SDK_API char *iupdrvGetSystemName(void)
 {
-  /* Return OS name */
   QString os_name = QSysInfo::productType();
   return iupStrReturnStr(os_name.toUtf8().constData());
 }
 
 extern "C" IUP_SDK_API char *iupdrvGetSystemVersion(void)
 {
-  /* Return OS version */
   QString os_version = QSysInfo::productVersion();
   return iupStrReturnStr(os_version.toUtf8().constData());
 }
@@ -310,10 +296,8 @@ extern "C" IUP_SDK_API int iupdrvGetUserDir(char* path, int size, int kind)
 extern "C" IUP_SDK_API char* iupdrvLocaleInfo(void)
 {
 #ifndef _WIN32
-  /* Unix/Linux - use nl_langinfo */
   return iupStrReturnStr(nl_langinfo(CODESET));
 #else
-  /* Windows - Qt6 uses UTF-8 everywhere */
   return iupStrReturnStr("UTF-8");
 #endif
 }
@@ -327,7 +311,6 @@ extern "C" IUP_API void IupLogV(const char* type, const char* format, va_list ar
   char buffer[2048];
   vsnprintf(buffer, sizeof(buffer), format, arglist);
 
-  /* Use Qt's logging system */
   QtMsgType msg_type = QtDebugMsg;
 
   if (iupStrEqualNoCase(type, "DEBUG"))

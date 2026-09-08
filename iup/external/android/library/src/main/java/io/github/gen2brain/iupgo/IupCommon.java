@@ -42,7 +42,7 @@ public final class IupCommon
         RetainIhandle(widget, ihandlePtr);
     }
 
-    /* Html.fromHtml ignores Pango span attrs (foreground, font_family, etc.); walk + span ourselves */
+    /* Html.fromHtml ignores Pango span attrs (foreground, font_family, etc.); walk and span manually */
     public static CharSequence parseMarkup(String text)
     {
         if (text == null) return "";
@@ -90,7 +90,7 @@ public final class IupCommon
         nativeIupAttribSetInt(ihandlePtr, key, value);
     }
 
-    /** IUP callbacks return -1...-4; we return -15 to signal "no callback registered". */
+    /** IUP callbacks return -1...-4; -15 signals "no callback registered". */
     public native static int HandleIupCallback(long ihandlePtr, String key);
     public native static int HandleIupCallbackInt(long ihandlePtr, String key, int arg);
     public native static int DoResize(long ihandlePtr, int x, int y, int width, int height);
@@ -728,7 +728,7 @@ public final class IupCommon
     {
         if (Looper.myLooper() != Looper.getMainLooper()) return;
         if (IupActivity.currentActivity() == null) return;
-        /* Fire-and-forget vsync nudge; we cannot block waiting since the frame runs on this same thread. */
+        /* Fire-and-forget vsync nudge; the frame runs on this same thread, so blocking would deadlock. */
         Choreographer.getInstance().postFrameCallback(t -> {});
     }
 

@@ -125,11 +125,9 @@ IUP_SDK_API void iupdrvToggleAddSwitch(Ihandle* ih, int* x, int* y, const char* 
 
     g_object_ref_sink(temp_switch);
 
-    /* Get natural and minimum sizes using gtk_widget_measure */
     gtk_widget_measure(temp_switch, GTK_ORIENTATION_HORIZONTAL, -1, &min_w, &nat_w, NULL, NULL);
     gtk_widget_measure(temp_switch, GTK_ORIENTATION_VERTICAL, -1, &min_h, &nat_h, NULL, NULL);
 
-    /* Use natural size with fallback */
     switch_w = (nat_w > 0) ? nat_w : 48;
     switch_h = (nat_h > 0) ? nat_h : 24;
 
@@ -494,7 +492,6 @@ static int gtk4ToggleSetFontAttrib(Ihandle* ih, const char* value)
 
 static int gtk4ToggleSetImageAttrib(Ihandle* ih, const char* value)
 {
-  /* When IMAGE is set, change type to IMAGE toggle */
   if (value)
   {
     if (ih->data->type != IUP_TOGGLE_IMAGE)
@@ -742,7 +739,6 @@ static int gtk4ToggleMapMethod(Ihandle* ih)
       {
         ih->handle = gtk_switch_new();
 
-        /* Prevent SWITCH from expanding beyond its natural size */
         gtk_widget_set_hexpand(ih->handle, FALSE);
         gtk_widget_set_vexpand(ih->handle, FALSE);
         gtk_widget_set_halign(ih->handle, GTK_ALIGN_START);
@@ -755,7 +751,6 @@ static int gtk4ToggleMapMethod(Ihandle* ih)
     }
     else
     {
-      /* Use GtkToggleButton for IMAGE toggles (same as GTK3) */
       ih->handle = gtk_toggle_button_new();
     }
   }
@@ -763,17 +758,13 @@ static int gtk4ToggleMapMethod(Ihandle* ih)
   if (!ih->handle)
     return IUP_ERROR;
 
-  /* Set picture child for IMAGE toggles (GtkToggleButton inherits from GtkButton) */
   if (ih->data->type == IUP_TOGGLE_IMAGE && !iupAttribGetBoolean(ih, "SWITCH"))
   {
-    /* Use GtkPicture for image rendering */
     GtkWidget* image = gtk_picture_new();
 
-    /* Keep image at natural size */
     gtk_picture_set_can_shrink(GTK_PICTURE(image), TRUE);
     gtk_picture_set_content_fit(GTK_PICTURE(image), GTK_CONTENT_FIT_SCALE_DOWN);
 
-    /* Center the image in the button */
     gtk_widget_set_halign(image, GTK_ALIGN_CENTER);
     gtk_widget_set_valign(image, GTK_ALIGN_CENTER);
 

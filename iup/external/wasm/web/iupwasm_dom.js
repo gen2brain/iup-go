@@ -28,8 +28,7 @@
       return before.split('\n').length + ',' + (pos - before.lastIndexOf('\n'));
     }
 
-    // beforeinput carries no range for a word or line delete in an <input> and getTargetRanges()
-    // is empty outside contenteditable, so the range is computed here
+    // beforeinput carries no range for a word or line delete in an <input>, and getTargetRanges() is empty outside contenteditable
     function iupDeleteRange(val, s, en, type) {
       var ws = function (c) { return c === ' ' || c === '\t' || c === '\n'; };
       if (s !== en) return { ds: s, de: en };
@@ -53,7 +52,7 @@
       return null;
     }
 
-    // Shared by node add and copy: rebuilds listeners per row since cloneNode drops them.
+    // cloneNode drops listeners, so they are rebuilt per row.
     function buildTreeRow(tree, treeId, rowId, isBranch, title) {
       var row = document.createElement('div');
       row.style.display = 'flex'; row.style.alignItems = 'center'; row.style.whiteSpace = 'nowrap'; row.style.cursor = 'default'; row.style.padding = '1px 4px';
@@ -94,7 +93,7 @@
       return row;
     }
 
-    // Renumbers dataset.col after the move: IUP logical col follows visual order, like GTK.
+    // IUP logical col follows visual order.
     function tableReorderCols(el, from, to) {
       var rows = [el.__iupHead].concat(Array.prototype.slice.call(el.__iupBody.children));
       rows.forEach(function (row) {
@@ -1442,8 +1441,7 @@
         } else if (c.multiline) { tel = document.createElement('textarea'); tel.wrap = c.wordwrap ? 'soft' : 'off'; }
         else { tel = document.createElement('input'); tel.type = c.password ? 'password' : 'text'; }
         tel.style.position = 'absolute'; tel.style.boxSizing = 'border-box'; tel.style.margin = '0';
-        // <input type=number> has no selection API, and MASK, NC, ACTION and CARET_CB all need
-        // caret positions, so a spin field is a text input with a stepper of our own
+        // <input type=number> has no selection API, so a spin field is a text input with a stepper of our own
         if (c.spin) {
           var sp = document.createElement('div');
           sp.style.cssText = 'position:absolute;display:flex;flex-direction:column;width:16px;';
@@ -1657,8 +1655,7 @@
       case 'textwire': {
         if (el) {
           var wid = c.id;
-          // the edit is applied here and reported with the previous text: cancelling it until the
-          // model answers would make typing wait for the worker. IME keeps browser editing.
+          // the edit is applied here and reported with the previous text, so typing never waits for the worker
           el.addEventListener('beforeinput', function (e) {
             if (e.isComposing || el.__iupRender) return;
             var v = el.value, s = el.selectionStart || 0, en = el.selectionEnd || 0;
@@ -1689,8 +1686,7 @@
               return;
             } else return;
             var kseq = globalThis.__iupKeyPend || 0; globalThis.__iupKeyPend = 0;
-            // while one edit is being arbitrated the next ones wait, so a rejection can never
-            // land on top of text typed after it
+            // while one edit is arbitrated the next ones wait, so a rejection can never land on text typed after it
             if (el.__iupEditPending) {
               e.preventDefault();
               (el.__iupEditQ = el.__iupEditQ || []).push({ ins: ins, rd: rd, del: del, seq: kseq });
@@ -3528,7 +3524,7 @@ globalThis.__iupMediaPick = function (kind, index) {
         }
         // the driver moves the tree focus itself, the div must not also scroll
         if (ae && (ae.__iupTreeFocus !== undefined || ae.__iupCellNav) && NAVK[k]) e.preventDefault();
-        if (k === 'F1') { e.preventDefault(); D('iupwasmDispatchHelp', id); }  // GTK fires HELP_CB on plain F1
+        if (k === 'F1') { e.preventDefault(); D('iupwasmDispatchHelp', id); }
       });
       document.addEventListener('focusin', function (e) { var id = iupId(e.target); if (id) D('iupwasmDispatchFocus', id, 1); });
       document.addEventListener('focusout', function (e) { var id = iupId(e.target); if (id) D('iupwasmDispatchFocus', id, 0); });

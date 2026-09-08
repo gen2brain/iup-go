@@ -297,7 +297,6 @@ static void cocoaTouchButtonRefresh(Ihandle* ih)
 
 IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int* x, int* y)
 {
-	/* PADDING overrides native insets; reserve them only if PADDING is unset */
 	if (iupAttribGet(ih, "PADDING")) return;
 
 	BOOL flat = iupAttribGetBoolean(ih, "FLAT");

@@ -702,7 +702,7 @@ static char* androidWebBrowserGetCommandValueAttrib(Ihandle* ih)
 
 static char* androidWebBrowserGetCommandTextAttrib(Ihandle* ih)
 {
-  /* queryCommandText is obsolete in every modern engine; mirror GTK/Cocoa. */
+  /* queryCommandText is obsolete in every modern engine */
   const char* cmd = iupAttribGet(ih, "COMMAND");
   if (!cmd) return NULL;
   return androidWebBrowserQueryCommand(ih, "Text", cmd);

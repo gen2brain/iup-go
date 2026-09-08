@@ -320,7 +320,6 @@ static int iListGetCount(Ihandle* ih)
 {
   int count;
 
-  /* Virtual mode: return item_count */
   if (ih->data->is_virtual)
     return ih->data->item_count;
 
@@ -483,7 +482,6 @@ static int iListSetItemCountAttrib(Ihandle* ih, const char* value)
 {
   int count;
 
-  /* Only valid in virtual mode */
   if (!ih->data->is_virtual)
     return 0;
 
@@ -494,7 +492,6 @@ static int iListSetItemCountAttrib(Ihandle* ih, const char* value)
 
     ih->data->item_count = count;
 
-    /* Update driver if mapped */
     if (ih->handle)
       iupdrvListSetItemCount(ih, count);
   }
@@ -804,7 +801,6 @@ static int iListDropData_CB(Ihandle *ih, char* type, void* data, int len, int x,
   if (pos < 1)
     return IUP_DEFAULT;
 
-  /* Convert from 1-based IUP index to 0-based driver index */
   pos--;
 
   /* A copy operation is enabled with the CTRL key pressed, or else a move operation will occur.

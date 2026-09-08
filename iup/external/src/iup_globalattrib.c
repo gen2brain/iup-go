@@ -185,7 +185,7 @@ static void iGlobalSet(const char *name, const char *value, int store)
   if (iupStrEqual(name, "LANGUAGE"))
   {
     char* old_language = (char*)iupTableGet(iglobal_table, "LANGUAGE");
-    if (!iupStrEqualNoCase(old_language, value))  /* if different from the current */
+    if (!iupStrEqualNoCase(old_language, value))
     {
       iGlobalTableSet(name, value, store);
       iupStrMessageUpdateLanguage(value);

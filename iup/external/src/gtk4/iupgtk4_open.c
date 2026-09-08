@@ -184,9 +184,7 @@ static void gtkSetGlobalColorAttrib(const char* name, GdkRGBA *color)
     (int)(color->blue * 255.0));
 }
 
-/* Suppress deprecation warnings for gtk_style_context_lookup_color.
-   This function is used only to READ theme colors at startup.
-   There is no GTK4 replacement for querying theme color values. */
+/* no GTK4 replacement exists for querying theme color values */
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 static void gtkUpdateGlobalColors(GtkWidget* dialog, GtkWidget* text)

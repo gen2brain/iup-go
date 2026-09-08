@@ -121,13 +121,13 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
   if (self.orientation == IupCocoaTabBarHorizontal)
   {
     NSUInteger tabListWidth = self.allowsTabListMenu ? kWidthOfTabList : 0;
-    CGFloat leftPadding = 4; /* Add a small padding to disconnect the first tab */
+    CGFloat leftPadding = 4;
     CGFloat rightPadding = kTabBarSidePadding - leftPadding;
     CGFloat available = [self frame].size.width - tabListWidth - leftPadding - rightPadding;
     CGFloat total = [self totalWidthOfTabs];
     CGFloat scale = (total > available && total > 0) ? available / total : 1.0;
     CGFloat x = tabListWidth + leftPadding;
-    CGFloat y = 0; /* Default for IupCocoaTabPositionTop */
+    CGFloat y = 0;
     NSUInteger i;
 
     /* NSTabView centers the tabs when they all fit */
@@ -137,7 +137,6 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
     for (i = 0; i < index; i++)
       x += floor([self naturalWidthOfTabAtIndex:i] * scale);
 
-    /* If position is bottom, tabs are aligned to the top of the bar */
     if (self.tabPosition == IupCocoaTabPositionBottom)
     {
       y = [self frame].size.height - kTabCellHeight;
@@ -146,7 +145,7 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
     NSRect rect = NSMakeRect(x, y, floor([self naturalWidthOfTabAtIndex:index] * scale), kTabCellHeight);
     return rect;
   }
-  else /* IupCocoaTabBarVertical */
+  else
   {
     NSUInteger tabListHeight = self.allowsTabListMenu ? kHeightOfTabList : 0;
     CGFloat viewHeight = [self frame].size.height;
@@ -154,7 +153,6 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
 
     CGFloat preferredTabHeight = (self.textOrientation == IupCocoaTabTextVertical) ? kMinTabCellWidth : kTabCellHeight;
 
-    /* Calculate actual tab height to fit all tabs in available space (like horizontal does for width) */
     CGFloat tabHeight = preferredTabHeight;
     if ([tabs count] > 0)
     {
@@ -167,9 +165,8 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
 
     CGFloat x = 0;
     /* Since the view is NOT flipped, y=0 is at the bottom. */
-    /* We must calculate the y-origin (bottom-left) from the top. */
     CGFloat y = viewHeight - tabListHeight - ((index + 1) * tabHeight);
-    CGFloat width = [self frame].size.width; /* Use the full width of the tab bar */
+    CGFloat width = [self frame].size.width;
     CGFloat height = tabHeight;
 
     NSRect rect = NSMakeRect(x, y, width, height);
@@ -177,7 +174,6 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
   }
 }
 
-/* Rect for left most (horizontal) or top (vertical) tab list control */
 - (NSRect)rectForTabListControl
 {
   if (!self.allowsTabListMenu)
@@ -203,7 +199,6 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
 {
   if (self.allowsTabListMenu)
   {
-    /* Check tab list control */
     NSRect rect = [self rectForTabListControl];
     if (NSPointInRect(p, rect))
     {
@@ -211,7 +206,6 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
     }
   }
 
-  /* Check all tabs path */
   NSUInteger index = 0;
   for (index = 0; index < [tabs count]; ++index)
   {
@@ -236,7 +230,7 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
     IupCocoaTabCell *tab = [tabs objectAtIndex:index];
     [menu insertItemWithTitle:[tab title] action:@selector(popupMenuDidChoosed:) keyEquivalent:@"" atIndex:index];
   }
-  return menu; /* Return the retained ivar */
+  return menu;
 }
 
 - (void)popupMenuDidChoosed:(NSMenuItem*)item
@@ -247,8 +241,6 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
     IupCocoaTabCell *tab = [tabs objectAtIndex:index];
     NSRect tabRect = [tab frame];
     NSRect tabBarViewRect = [self bounds];
-    /* If the selected tab is not fully shown in the tabbar view, we */
-    /* then exchange it with first(0 index) tab, and then active it. */
     if (!CGRectContainsRect(tabBarViewRect, tabRect))
     {
       NSUInteger tabIndex = [[self tabs] indexOfObject:tab];
@@ -299,7 +291,7 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
       NSRect secondeRect = NSMakeRect(midX, minY, w/2, h);
       if (NSPointInRect(p, firstRect))
       {
-        ret = index; /* Use current index, not index-1, to ensure correct insertion point */
+        ret = index;
         ret = ret >= 0 ? ret : 0;
         if (destinationIndex != -1 && index == destinationIndex)
         {
@@ -333,7 +325,7 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
         }
       }
     }
-    else /* Vertical */
+    else
     {
       CGFloat midY = NSMidY(rect);
       CGFloat minY = NSMinY(rect);
@@ -420,19 +412,16 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
   self = [super initWithFrame:frame];
   if (self)
   {
-    tabs = [[NSMutableArray alloc] init]; /* Alloc and retain */
+    tabs = [[NSMutableArray alloc] init];
 
-    /* Give all colors a default value if none given */
-    /* Use system-adaptive colors for dark/light mode */
     bgColor = [[NSColor controlBackgroundColor] retain];
-    tabBGColor = [[NSColor underPageBackgroundColor] retain]; /* Use for inactive tabs */
+    tabBGColor = [[NSColor underPageBackgroundColor] retain];
     tabActivedBGColor = [[NSColor windowBackgroundColor] retain];
     tabBorderColor = [[NSColor separatorColor] retain];
     tabTitleColor = [[NSColor secondaryLabelColor] retain];
     tabActivedTitleColor = [[NSColor labelColor] retain];
     smallControlColor = [[NSColor secondaryLabelColor] retain];
 
-    /* Font */
     tabFont = [[NSFont systemFontOfSize:[NSFont systemFontSize]] retain];
 
     destinationIndex = -1;
@@ -440,13 +429,13 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
     isDragging = NO;
     isSettling = NO;
 
-    orientation = IupCocoaTabBarHorizontal; /* Default orientation */
-    tabPosition = IupCocoaTabPositionTop; /* Default position */
-    textOrientation = IupCocoaTabTextHorizontal; /* Default text orientation */
-    allowsDragging = NO; /* Disabled by default */
-    allowsTabListMenu = NO; /* Disabled by default */
-    showsCloseButtonOnHover = NO; /* Default to persistent close buttons */
-    allowsAddingTabsByDoubleClick = NO; /* Disabled by default */
+    orientation = IupCocoaTabBarHorizontal;
+    tabPosition = IupCocoaTabPositionTop;
+    textOrientation = IupCocoaTabTextHorizontal;
+    allowsDragging = NO;
+    allowsTabListMenu = NO;
+    showsCloseButtonOnHover = NO;
+    allowsAddingTabsByDoubleClick = NO;
     enabled = YES;
     usesMaterialBackground = YES;
 
@@ -504,9 +493,6 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
 
 - (void)resizeWithOldSuperviewSize:(NSSize)oldSize
 {
-  /* The frame is now managed by the IupTabsRootView's layout method, */
-  /* which correctly positions the bar based on TABTYPE. */
-  /* We just need to mark for display and layout. */
   [self setNeedsDisplay:YES];
   [self setNeedsLayout:YES];
 }
@@ -622,7 +608,7 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
   if (!enabled)
     return;
 
-  if (self.allowsAddingTabsByDoubleClick && event.clickCount == 2) /* We capture user double-click on tabbar view */
+  if (self.allowsAddingTabsByDoubleClick && event.clickCount == 2)
   {
     NSPoint p =[event locationInWindow];
     p = [self convertPoint:p fromView:nil];
@@ -639,7 +625,6 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
 {
   [super drawRect:dirtyRect];
 
-  /* Drawing background color of Tab bar view. */
   NSRect rect = [self frame];
   rect.origin = NSZeroPoint;
   if (!usesMaterialBackground)
@@ -649,7 +634,6 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
   }
 
 
-  /* Draw tab list control */
   if (self.allowsTabListMenu)
   {
     NSRect tabListRect = [self rectForTabListControl];
@@ -695,7 +679,6 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
     }
   }
 
-  /* Drawing border line */
   if (!usesMaterialBackground)
   {
   NSPoint start;
@@ -706,22 +689,18 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
   switch(self.tabPosition)
   {
     case IupCocoaTabPositionTop:
-      /* Border at bottom of view */
       start = NSMakePoint(0, 1);
       end = NSMakePoint(NSMaxX(rect), 1);
       break;
     case IupCocoaTabPositionBottom:
-      /* Border at top of view */
       start = NSMakePoint(0, NSMaxY(rect) - 1);
       end = NSMakePoint(NSMaxX(rect), NSMaxY(rect) - 1);
       break;
     case IupCocoaTabPositionLeft:
-      /* Border at right of view */
       start = NSMakePoint(NSMaxX(rect) - 1, 0);
       end = NSMakePoint(NSMaxX(rect) - 1, NSMaxY(rect));
       break;
     case IupCocoaTabPositionRight:
-      /* Border at left of view */
       start = NSMakePoint(1, 0);
       end = NSMakePoint(1, NSMaxY(rect));
       break;
@@ -770,7 +749,6 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
     }
   }
 
-  /* Reset all tool tips */
   [self removeAllToolTips];
   for (index = 0; index < [tabs count]; ++index)
   {
@@ -812,8 +790,6 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
 
   [tabs addObject:tab];
 
-  /* If the new tab(add it to last) is not fully shown in the tabbar view, we */
-  /* then exchange it with first(0 index) tab, and then set it as active. */
   NSUInteger tabIndex = [[self tabs] indexOfObject:tab];
   NSRect tabBarViewRect = [self bounds];
   NSRect tabRect = [self tabRectFromIndex:tabIndex];
@@ -841,7 +817,6 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
   NSPoint p = [theEvent locationInWindow];
   p = [self convertPoint:p fromView:nil];
 
-  /* Check if tabs list control clicked */
   if (self.allowsTabListMenu)
   {
     NSRect rectOfTabList;
@@ -865,10 +840,9 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
   for (index = 0; index < [tabs count]; ++ index)
   {
     IupCocoaTabCell *tab = [tabs objectAtIndex:index];
-    BOOL inside = NSPointInRect(p, [tab frame]); /* Use frame, not path */
+    BOOL inside = NSPointInRect(p, [tab frame]);
     [tab setIsPressed:inside];
 
-    /* forward mouse down to tab cell */
     [tab mouseDown:theEvent];
   };
 
@@ -885,12 +859,10 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
   NSPoint p = [theEvent locationInWindow];
   p = [self convertPoint:p fromView:nil];
 
-  /* Switch active tab */
   NSUInteger index = 0;
   for (index = 0; index < [tabs count]; ++ index)
   {
     IupCocoaTabCell *tab = [tabs objectAtIndex:index];
-    /* forward mouse moved to tab cell */
     [tab mouseMoved:theEvent];
   };
 
@@ -913,7 +885,7 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
   [trackingArea release];
 
   NSTrackingAreaOptions options = (NSTrackingActiveAlways | NSTrackingInVisibleRect | NSTrackingMouseEnteredAndExited | NSTrackingMouseMoved);
-  trackingArea = [[NSTrackingArea alloc] initWithRect:[self frame] options:options owner:self userInfo:nil]; /* Create and retain new one */
+  trackingArea = [[NSTrackingArea alloc] initWithRect:[self frame] options:options owner:self userInfo:nil];
   [self addTrackingArea:trackingArea];
 }
 
@@ -924,7 +896,7 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
   [trackingArea release];
 
   NSTrackingAreaOptions options = (NSTrackingActiveAlways | NSTrackingInVisibleRect | NSTrackingMouseEnteredAndExited | NSTrackingMouseMoved);
-  trackingArea = [[NSTrackingArea alloc] initWithRect:[self bounds] options:options owner:self userInfo:nil]; /* Create and retain new one */
+  trackingArea = [[NSTrackingArea alloc] initWithRect:[self bounds] options:options owner:self userInfo:nil];
   [self addTrackingArea:trackingArea];
 }
 
@@ -1255,7 +1227,7 @@ static CGFloat cocoaTabBarEase(CGFloat from, CGFloat to, BOOL* done)
   {
     rect = NSMakeRect(maxX - buttonAreaSize, midY - buttonAreaSize / 2.0, buttonAreaSize, buttonAreaSize);
   }
-  else /* Vertical */
+  else
   {
     rect = NSMakeRect(maxX - buttonAreaSize, midY - buttonAreaSize / 2.0, buttonAreaSize, buttonAreaSize);
   }
@@ -1290,7 +1262,6 @@ static CGFloat cocoaTabBarEase(CGFloat from, CGFloat to, BOOL* done)
   [closeButtonPath stroke];
 }
 
-/* tab cell draw itself in this method, called in TabBarView's drawRect method */
 - (void)draw
 {
   NSRect rect = [self frame];
@@ -1423,7 +1394,6 @@ static CGFloat cocoaTabBarEase(CGFloat from, CGFloat to, BOOL* done)
     fontColor = [[self tabBarView] tabTitleColor];
   NSMutableParagraphStyle* p = [[[NSMutableParagraphStyle alloc] init] autorelease];
 
-  /* Both horizontal and vertical tabs use centered text */
   p.alignment = NSTextAlignmentCenter;
   p.lineBreakMode = NSLineBreakByTruncatingTail;
 
@@ -1452,7 +1422,6 @@ static CGFloat cocoaTabBarEase(CGFloat from, CGFloat to, BOOL* done)
     imageRect.size = NSMakeSize(imageSize, imageSize);
 
     /* The layout *within* a tab is always horizontal (Image | Text | Close) */
-    /* regardless of the tab bar's orientation. */
     imageRect.origin.x = tabFrame.origin.x + 4.0;
     imageRect.origin.y = tabFrame.origin.y + (tabFrame.size.height - imageSize) / 2.0;
     leftOffset = 4.0 + imageSize + imagePadding;
@@ -1471,7 +1440,6 @@ static CGFloat cocoaTabBarEase(CGFloat from, CGFloat to, BOOL* done)
 
   if (isVerticalText)
   {
-    /* Draw rotated text for TABORIENTATION=VERTICAL in vertical tab bars */
     NSGraphicsContext *context = [NSGraphicsContext currentContext];
     [context saveGraphicsState];
 
@@ -1479,15 +1447,14 @@ static CGFloat cocoaTabBarEase(CGFloat from, CGFloat to, BOOL* done)
     CGFloat centerX = NSMidX(tabFrame);
     CGFloat centerY = NSMidY(tabFrame);
 
-    /* Rotate 90 counterclockwise around center of tab cell */
     NSAffineTransform *transform = [NSAffineTransform transform];
     [transform translateXBy:centerX yBy:centerY];
     [transform rotateByDegrees:90];
     [transform translateXBy:-centerX yBy:-centerY];
     [transform concat];
 
-    CGFloat drawWidth = tabFrame.size.height;   /* 80 - maps to screen vertical */
-    CGFloat drawHeight = tabFrame.size.width;   /* 28 - maps to screen horizontal */
+    CGFloat drawWidth = tabFrame.size.height;
+    CGFloat drawHeight = tabFrame.size.width;
 
     NSRect drawRect;
     drawRect.origin.x = centerX - drawWidth / 2.0;
@@ -1495,18 +1462,14 @@ static CGFloat cocoaTabBarEase(CGFloat from, CGFloat to, BOOL* done)
     drawRect.size.width = drawWidth;
     drawRect.size.height = drawHeight;
 
-    /* Apply screen top/bottom margins (affects drawing X) */
     CGFloat screenVerticalMargin = 6.0;
     drawRect.origin.x += screenVerticalMargin;
     drawRect.size.width -= 2 * screenVerticalMargin;
 
-    /* Apply screen left/right margins (affects drawing Y) */
     CGFloat screenHorizontalMargin = 2.0;
     drawRect.origin.y += screenHorizontalMargin;
     drawRect.size.height -= 2 * screenHorizontalMargin;
 
-    /* Text is horizontally centered due to paragraph style (NSTextAlignmentCenter) */
-    /* Vertically center in screen coords = center in drawing Y */
     CGFloat textHeight = self.titleAttributedString.size.height;
     CGFloat yOffset = (drawRect.size.height - textHeight) / 2.0;
     if (yOffset > 0)
@@ -1521,8 +1484,6 @@ static CGFloat cocoaTabBarEase(CGFloat from, CGFloat to, BOOL* done)
   }
   else
   {
-    /* Standard horizontal text drawing */
-    /* The text is vertically centered and positioned between the image and the close button. */
     int yOffset = (titleRect.size.height - fontHeight) / 2.0;
     titleRect.size.height = fontHeight;
     titleRect.origin.y += yOffset;
@@ -1576,7 +1537,6 @@ static CGFloat cocoaTabBarEase(CGFloat from, CGFloat to, BOOL* done)
     [tab setIsActived:NO];
   }
 
-  /* Call delegate protocol methods */
   if ([[[self tabBarView] delegate] respondsToSelector:@selector(tabWillActive:)])
   {
     [[[self tabBarView] delegate] tabWillActive:self];
@@ -1604,7 +1564,6 @@ static CGFloat cocoaTabBarEase(CGFloat from, CGFloat to, BOOL* done)
 
   if (NSPointInRect(p ,[self closeButtonRect]))
   {
-    /* Delete this tab cell */
     id delegate = [[self tabBarView] delegate];
     BOOL shouldClose = YES;
     if ([delegate respondsToSelector:@selector(tabWillClose:)])

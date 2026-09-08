@@ -27,21 +27,11 @@
 #include "iupcocoa_dragdrop.h"
 
 
-/* Forward declarations */
 static void cocoaCanvasLayoutUpdateMethod(Ihandle *ih);
 static int cocoaCanvasSetDXAttrib(Ihandle* ih, const char* value);
 static int cocoaCanvasSetDYAttrib(Ihandle* ih, const char* value);
 static void cocoaCanvasComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *expand);
 
-/**
- * @brief Custom NSControl subclass for IupCanvas.
- *
- * This view serves as the core drawing and event-handling surface for the IupCanvas element.
- *
- * This view is designed to be used either standalone or as the `documentView` within an NSScrollView to support scrolling.
- * When used with an NSScrollView, it relies on NSViewBoundsDidChangeNotification from the parent NSClipView
- * to update IUP's scroll position attributes and trigger the SCROLL_CB callback.
- */
 @interface IupCocoaCanvasView : NSControl <NSTextInputClient>
 
 @property(nonatomic, assign) Ihandle* ih;
@@ -63,21 +53,11 @@ static void cocoaCanvasComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int
 
 - (instancetype) initWithFrame:(NSRect)frame_rect ih:(Ihandle*)ih;
 
-/**
- * @brief Triggers the GETFOCUS_CB or KILLFOCUS_CB callback based on the view's focus state.
- */
 - (void) updateFocus;
 
 @end
 
 
-/**
- * @brief Custom NSView subclass for absolute positioning of child views.
- *
- * This view is flipped (origin at top-left, like IUP's coordinate system)
- * and allows child views to be positioned with setFrameOrigin/setFrame.
- * Used as _IUP_EXTRAPARENT for canvas controls.
- */
 @interface IupCocoaFixedView : NSView
 @end
 
@@ -98,15 +78,12 @@ static void cocoaCanvasComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int
 
 - (void) setBoundsOrigin:(NSPoint)newOrigin
 {
-  /* Prevent NSScrollView from physically moving the clip view.
-   * Always keep bounds origin at (0,0) so the document view never moves.
-   * Scrolling is handled logically through POSX/POSY and redrawing. */
+  /* the clip view never moves; scrolling is logical through POSX/POSY */
   [super setBoundsOrigin:NSZeroPoint];
 }
 
 - (NSRect) constrainBoundsRect:(NSRect)proposedBounds
 {
-  /* Always constrain to origin (0,0) */
   NSRect constrained = proposedBounds;
   constrained.origin = NSZeroPoint;
   return constrained;
@@ -220,13 +197,12 @@ static void cocoaCanvasFireGesture(Ihandle* ih, int gesture, int state, int x, i
 - (BOOL) isFlipped
 {
   if (iupAttribGet(_ih, "_IUP_GLCONTROLDATA"))
-    return NO;  /* OpenGL: bottom-left origin */
-  return YES;   /* Regular canvas: top-left origin */
+    return NO;
+  return YES;
 }
 
 - (BOOL) isOpaque
 {
-  /* OpenGL canvases are opaque and will draw their entire bounds */
   if (iupAttribGet(_ih, "_IUP_GLCONTROLDATA"))
     return YES;
   return NO;
@@ -236,7 +212,6 @@ static void cocoaCanvasFireGesture(Ihandle* ih, int gesture, int state, int x, i
 {
   [super viewWillMoveToWindow:newWindow];
 
-  /* Remove observers from the old window before moving to a new one (or to nil). */
   NSNotificationCenter* notification_center = [NSNotificationCenter defaultCenter];
   if([self window])
   {
@@ -249,7 +224,6 @@ static void cocoaCanvasFireGesture(Ihandle* ih, int gesture, int state, int x, i
 {
   [super viewDidMoveToWindow];
 
-  /* Add observers to the new window. */
   NSNotificationCenter* notification_center = [NSNotificationCenter defaultCenter];
   if([self window])
   {
@@ -264,9 +238,7 @@ static void cocoaCanvasFireGesture(Ihandle* ih, int gesture, int state, int x, i
                               object:[self window]
     ];
 
-    /* Trigger initial tracking area setup when view is added to window.
-       updateTrackingAreas is not called automatically until frame changes,
-       so we need to ensure the tracking area is set up for hover events. */
+    /* updateTrackingAreas is not called until the frame changes */
     [self updateTrackingAreas];
   }
 }
@@ -275,7 +247,6 @@ static void cocoaCanvasFireGesture(Ihandle* ih, int gesture, int state, int x, i
 {
   NSRect bounds = [self bounds];
 
-  /* For OpenGL canvases, use clearDrawable + setView pattern before calling ACTION */
   if (iupAttribGet(_ih, "_IUP_GLCONTROLDATA"))
   {
 #pragma clang diagnostic push
@@ -292,7 +263,6 @@ static void cocoaCanvasFireGesture(Ihandle* ih, int gesture, int state, int x, i
     IFn cb = (IFn)IupGetCallback(_ih, "ACTION");
     if (cb && !(_ih->data->inside_resize))
     {
-      /* Set CLIPRECT for the damaged area */
       iupAttribSetStrf(_ih, "CLIPRECT", "%.0f %.0f %.0f %.0f",
                        dirty_rect.origin.x, dirty_rect.origin.y,
                        dirty_rect.origin.x + dirty_rect.size.width - 1,
@@ -306,7 +276,6 @@ static void cocoaCanvasFireGesture(Ihandle* ih, int gesture, int state, int x, i
   if (bounds.size.width <= 0 || bounds.size.height <= 0)
     return;
 
-  /* Check if there's a pending buffer to display (filled outside drawRect, e.g. by SCROLL_CB). */
   if (iupAttribGet(_ih, "_IUPCOCOA_BUFFER_PENDING"))
   {
     NSBitmapImageRep* buffer = (NSBitmapImageRep*)iupAttribGet(_ih, "_IUPCOCOA_CANVAS_BUFFER");
@@ -354,8 +323,6 @@ static void cocoaCanvasFireGesture(Ihandle* ih, int gesture, int state, int x, i
     iupAttribSet(_ih, "CGCONTEXT", NULL);
     iupAttribSet(_ih, "CLIPRECT", NULL);
 
-    /* ACTION filled a buffer via IupDrawBegin/DrawFlush/DrawEnd.
-       Display the buffer immediately (single-pass). */
     {
       NSBitmapImageRep* buffer = (NSBitmapImageRep*)iupAttribGet(_ih, "_IUPCOCOA_CANVAS_BUFFER");
       if (buffer)
@@ -364,8 +331,6 @@ static void cocoaCanvasFireGesture(Ihandle* ih, int gesture, int state, int x, i
   }
   else
   {
-    /* If there is no ACTION callback, we are responsible for drawing the background.
-       Clip to bounds to avoid drawing outside the view. */
     if ([self backgroundColor])
     {
       NSRect fill_rect = NSIntersectionRect(dirty_rect, [self bounds]);
@@ -383,21 +348,15 @@ static void cocoaCanvasFireGesture(Ihandle* ih, int gesture, int state, int x, i
   NSRect view_rect = NSZeroRect;
   id notification_object = [the_notification object];
 
-  /* The RESIZE_CB should report the size of the visible area.
-     The notification object is either the IupCocoaCanvasView itself (standalone)
-     or the NSClipView (when inside an NSScrollView), as configured in cocoaCanvasMapMethod. */
-
   if ([notification_object isKindOfClass:[NSView class]])
   {
-    /* When inside a scroll view (observing NSClipView), we must use its bounds size,
-       as it correctly represents the visible area regardless of scrollbar presence (tiling). */
+    /* the clip view bounds are the visible area regardless of scrollbar tiling */
     if ([notification_object isKindOfClass:[NSClipView class]])
     {
       view_rect.size = [(NSClipView*)notification_object bounds].size;
     }
     else
     {
-      /* Standalone canvas, use the frame size. */
       view_rect = [(NSView*)notification_object frame];
     }
   }
@@ -410,13 +369,11 @@ static void cocoaCanvasFireGesture(Ihandle* ih, int gesture, int state, int x, i
 
   if(CGSizeEqualToSize(previous_size, view_rect.size))
   {
-    /* The view was moved, but not resized, OR the resize was already handled synchronously by cocoaCanvasLayoutUpdateMethod. */
     return;
   }
 
   [self setPreviousSize:view_rect.size];
 
-  /* For GL canvases, attach view to context on first resize (before any user callbacks) */
   if (iupAttribGet(_ih, "_IUP_GLCONTROLDATA") && !iupAttribGet(_ih, "_IUPCOCOA_GL_VIEW_ATTACHED"))
   {
     if (view_rect.size.width > 0 && view_rect.size.height > 0)
@@ -442,7 +399,6 @@ static void cocoaCanvasFireGesture(Ihandle* ih, int gesture, int state, int x, i
     _ih->data->inside_resize = 1;
 
     int width, height;
-    /* For GL canvases, pass actual drawable size in pixels, not view size in points */
     if (iupAttribGet(_ih, "_IUP_GLCONTROLDATA"))
     {
       NSRect backing_bounds = [self convertRectToBacking:[self bounds]];
@@ -451,7 +407,6 @@ static void cocoaCanvasFireGesture(Ihandle* ih, int gesture, int state, int x, i
     }
     else
     {
-      /* Regular canvas, use view size in points */
       width = iupROUND(view_rect.size.width);
       height = iupROUND(view_rect.size.height);
     }
@@ -887,11 +842,9 @@ static BOOL cocoaCanvasOptionIsMeta(Ihandle* ih, NSEvent* the_event)
 {
   if (!_ih) return;
 
-  /* Calculate POSX/POSY from scroller doubleValue */
   NSScrollView* scroll_view = [self enclosingScrollView];
   if (![scroll_view isKindOfClass:[NSScrollView class]]) return;
 
-  /* Skip if we're setting the position programmatically */
   if (iupAttribGet(_ih, "_IUPCOCOA_UPDATING_SCROLL_POS"))
   {
     return;
@@ -914,7 +867,6 @@ static BOOL cocoaCanvasOptionIsMeta(Ihandle* ih, NSEvent* the_event)
   double new_posx = old_posx;
   double new_posy = old_posy;
 
-  /* Calculate POSX from horizontal scroller */
   if (_ih->data->sb & IUP_SB_HORIZ)
   {
     NSScroller* h_scroller = [scroll_view horizontalScroller];
@@ -931,7 +883,6 @@ static BOOL cocoaCanvasOptionIsMeta(Ihandle* ih, NSEvent* the_event)
     }
   }
 
-  /* Calculate POSY from vertical scroller */
   if (_ih->data->sb & IUP_SB_VERT)
   {
     NSScroller* v_scroller = [scroll_view verticalScroller];
@@ -1106,7 +1057,6 @@ static BOOL cocoaCanvasOptionIsMeta(Ihandle* ih, NSEvent* the_event)
 
 - (void) scrollerAction:(id)sender
 {
-  /* map the clicked part to a line/page op; knob drag falls through to position */
   NSScrollView* scroll_view = [self enclosingScrollView];
   if ([scroll_view isKindOfClass:[NSScrollView class]] && [sender isKindOfClass:[NSScroller class]])
   {
@@ -1311,8 +1261,6 @@ static int cocoaCanvasSetPosXAttrib(Ihandle* ih, const char* value)
   NSScroller* scroller = [scroll_view horizontalScroller];
   if (scroller && content_width > dx && dx > 0)
   {
-    /* Calculate scroller position: doubleValue ranges from 0.0 to 1.0
-       0.0 = at XMIN, 1.0 = at XMAX-DX */
     double scrollable_range = content_width - dx;
     CGFloat double_value = (CGFloat)((posx - xmin) / scrollable_range);
 
@@ -1323,7 +1271,6 @@ static int cocoaCanvasSetPosXAttrib(Ihandle* ih, const char* value)
     [scroller setDoubleValue:double_value];
     iupAttribSet(ih, "_IUPCOCOA_UPDATING_SCROLL_POS", NULL);
 
-    /* Mark canvas as dirty to trigger redraw */
     IupCocoaCanvasView* canvas_view = cocoaCanvasGetCanvasView(ih);
     [canvas_view setNeedsDisplay:YES];
   }
@@ -1365,8 +1312,6 @@ static int cocoaCanvasSetPosYAttrib(Ihandle* ih, const char* value)
   NSScroller* scroller = [scroll_view verticalScroller];
   if (scroller && content_height > dy && dy > 0)
   {
-    /* Calculate scroller position: doubleValue ranges from 0.0 to 1.0
-       0.0 = at YMIN, 1.0 = at YMAX-DY */
     double scrollable_range = content_height - dy;
     CGFloat double_value = (CGFloat)((posy - ymin) / scrollable_range);
 
@@ -1377,7 +1322,6 @@ static int cocoaCanvasSetPosYAttrib(Ihandle* ih, const char* value)
     [scroller setDoubleValue:double_value];
     iupAttribSet(ih, "_IUPCOCOA_UPDATING_SCROLL_POS", NULL);
 
-    /* Mark canvas as dirty to trigger redraw */
     IupCocoaCanvasView* canvas_view = cocoaCanvasGetCanvasView(ih);
     [canvas_view setNeedsDisplay:YES];
   }
@@ -1399,7 +1343,6 @@ static char* cocoaCanvasGetDrawableAttrib(Ihandle* ih)
 
 static char* cocoaCanvasGetNSViewAttrib(Ihandle* ih)
 {
-  /* Return the canvas view (IupCocoaCanvasView) - needed by GLCanvas */
   IupCocoaCanvasView* canvas_view = cocoaCanvasGetCanvasView(ih);
   return (char*)canvas_view;
 }
@@ -1454,7 +1397,6 @@ static int cocoaCanvasSetNativeFocusRingAttrib(Ihandle* ih, const char* value)
 
 static int cocoaCanvasMapMethod(Ihandle* ih)
 {
-  /* Create extra parent for absolute positioning of IUP children */
   IupCocoaFixedView* extra_parent = [[IupCocoaFixedView alloc] initWithFrame:NSZeroRect];
 
   NSView* root_view = nil;
@@ -1476,22 +1418,17 @@ static int cocoaCanvasMapMethod(Ihandle* ih)
   {
     NSScrollView* scroll_view = [[NSScrollView alloc] initWithFrame:NSZeroRect];
 
-    /* Replace default NSClipView with our custom one that prevents physical scrolling */
     IupLogicalScrollClipView* clip_view = [[IupLogicalScrollClipView alloc] initWithFrame:NSZeroRect];
     [clip_view setDocumentView:nil];
     [scroll_view setContentView:clip_view];
     [clip_view release];
 
-    /* Explicitly prevent the document view from resizing automatically with the scroll view.
-       Its size is managed manually in cocoaCanvasLayoutUpdateMethod based on XMAX/YMAX.
-       If the document view resizes to fit the content area, scrolling will not occur. */
+    /* the document view size is managed from XMAX/YMAX; autoresizing it would leave nothing to scroll */
     [canvas_view setAutoresizingMask:NSViewNotSizable];
 
     [scroll_view setDocumentView:canvas_view];
     [canvas_view release];
 
-    /* Disable automatic scrollbar hiding and let IUP manage it explicitly
-       based on DX/DY and AUTOHIDE attributes. */
     [scroll_view setAutohidesScrollers:NO];
 
 
@@ -1502,7 +1439,6 @@ static int cocoaCanvasMapMethod(Ihandle* ih)
     [scroll_view setBorderType:iupAttribGetBoolean(ih, "BORDER") ? NSBezelBorder : NSNoBorder];
     [scroll_view setDrawsBackground:NO];
 
-    /* Set up scroller action handlers to detect user dragging */
     if (ih->data->sb & IUP_SB_HORIZ)
     {
       NSScroller* h_scroller = [scroll_view horizontalScroller];
@@ -1516,15 +1452,12 @@ static int cocoaCanvasMapMethod(Ihandle* ih)
       [v_scroller setAction:@selector(scrollerAction:)];
     }
 
-    /* For logical scrolling, DON'T observe clip view frame changes.
-       Instead, observe the scroll view frame changes (window resize only) */
     [scroll_view setPostsFrameChangedNotifications:YES];
     [notification_center addObserver:canvas_view
                             selector:@selector(frameDidChangeNotification:)
                                 name:NSViewFrameDidChangeNotification
                               object:scroll_view];
 
-    /* Register for window move/screen changes (for OpenGL context updates) */
     [notification_center addObserver:canvas_view
                             selector:@selector(globalFrameDidChangeNotification:)
                                 name:NSWindowDidMoveNotification
@@ -1534,7 +1467,6 @@ static int cocoaCanvasMapMethod(Ihandle* ih)
                                 name:NSWindowDidChangeScreenNotification
                               object:nil];
 
-    /* Register for scroll notifications to trigger SCROLL_CB. */
     [clip_view setPostsBoundsChangedNotifications:YES];
     [notification_center addObserver:canvas_view
                             selector:@selector(boundsDidChangeNotification:)
@@ -1546,15 +1478,12 @@ static int cocoaCanvasMapMethod(Ihandle* ih)
   }
   else
   {
-    /* Standalone canvas setup.
-       Observe frame changes on the canvas_view itself (RESIZE_CB). */
     [canvas_view setPostsFrameChangedNotifications:YES];
     [notification_center addObserver:canvas_view
                             selector:@selector(frameDidChangeNotification:)
                                 name:NSViewFrameDidChangeNotification
                               object:canvas_view];
 
-    /* Register for window move/screen changes (for OpenGL context updates) */
     [notification_center addObserver:canvas_view
                             selector:@selector(globalFrameDidChangeNotification:)
                                 name:NSWindowDidMoveNotification
@@ -1568,10 +1497,8 @@ static int cocoaCanvasMapMethod(Ihandle* ih)
     root_view = canvas_view;
   }
 
-  /* Add the root_view (canvas or scrollview) as subview of extra_parent */
   [extra_parent addSubview:root_view];
 
-  /* ih->handle is the extra_parent (for layout positioning). The actual canvas/scrollview is stored in the attributes. */
   ih->handle = extra_parent;
   iupAttribSet(ih, "_IUP_EXTRAPARENT", (char*)extra_parent);
   iupAttribSet(ih, "_IUPCOCOA_CANVAS_ROOT", (char*)root_view);
@@ -1580,15 +1507,12 @@ static int cocoaCanvasMapMethod(Ihandle* ih)
 
   iupcocoaAddToParent(ih);
 
-  /* Setup Drag and Drop */
   IupSourceDragAssociatedData* source_drag = cocoaSourceDragCreateAssociatedData(ih, canvas_view, root_view);
   cocoaTargetDropCreateAssociatedData(ih, canvas_view, root_view);
   [source_drag setDefaultFilePromiseName:@"IupCanvas.png"];
 
-  /* Set initial BGCOLOR */
   cocoaCanvasSetBgColorAttrib(ih, iupAttribGet(ih, "BGCOLOR"));
 
-  /* Set initial Scrollbar state */
   cocoaCanvasSetDXAttrib(ih, NULL);
   cocoaCanvasSetDYAttrib(ih, NULL);
 
@@ -1641,7 +1565,6 @@ static void cocoaCanvasUnMapMethod(Ihandle* ih)
   iupcocoaRemoveFromParent(ih);
   iupcocoaSetAssociatedViews(ih, nil, nil);
 
-  /* ih->handle is the extra_parent which contains the canvas_root */
   NSView* extra_parent = (NSView*)ih->handle;
   if (extra_parent)
   {
@@ -1656,17 +1579,13 @@ static void cocoaCanvasUnMapMethod(Ihandle* ih)
 
 static void cocoaCanvasLayoutUpdateMethod(Ihandle *ih)
 {
-  /* First call the base layout update to position the extra_parent */
   iupdrvBaseLayoutUpdateMethod(ih);
 
-  /* Now resize the canvas_root to fill the extra_parent */
   NSView* canvas_root = (NSView*)iupAttribGet(ih, "_IUPCOCOA_CANVAS_ROOT");
 
   if (ih->data->sb)
   {
-    /* For scrollbar canvases, size the document view (canvas_view) BEFORE
-       the scroll_view. Setting the scroll_view frame triggers
-       frameDidChangeNotification: which calls RESIZE_CB. */
+    /* the document view must be sized first; setting the scroll view frame fires RESIZE_CB */
     IupCocoaCanvasView* canvas_view = cocoaCanvasGetCanvasView(ih);
     if (canvas_view)
     {
@@ -1689,14 +1608,9 @@ static void cocoaCanvasLayoutUpdateMethod(Ihandle *ih)
 
 static void cocoaCanvasComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *expand)
 {
-  /*
-     IUP core layout computes natural size from SIZE and RASTERSIZE
-     and stores it in ih->naturalwidth, ih->naturalheight.
-     */
   int natural_w = ih->naturalwidth;
   int natural_h = ih->naturalheight;
 
-  /* If no size is specified, use a default minimum size */
   if (natural_w == 0) natural_w = 1;
   if (natural_h == 0) natural_h = 1;
 
@@ -1704,7 +1618,6 @@ static void cocoaCanvasComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int
   *h = natural_h;
   *expand = iupAttribGetBoolean(ih, "EXPAND");
 
-  /* Add space for scrollbars if they are visible */
   if (ih->data->sb)
   {
     int sb_size = iupdrvGetScrollbarSize();
@@ -1718,7 +1631,6 @@ static void cocoaCanvasComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int
 static void* cocoaCanvasGetInnerNativeContainerHandleMethod(Ihandle* ih, Ihandle* child)
 {
   (void)child;
-  /* Return the extra_parent view for absolute positioning of child elements */
   NSView* extra_parent = (NSView*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
   if (extra_parent)
     return (void*)extra_parent;
@@ -1743,7 +1655,6 @@ IUP_SDK_API void iupdrvCanvasInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "DRAWSIZE", cocoaCanvasGetDrawSizeAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "UPDATERECT", NULL, cocoaCanvasSetUpdateRectAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
 
-  /* Scrollbar attributes */
   iupClassRegisterAttribute(ic, "DX", NULL, cocoaCanvasSetDXAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DY", NULL, cocoaCanvasSetDYAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "POSX", iupCanvasGetPosXAttrib, cocoaCanvasSetPosXAttrib, "0", NULL, IUPAF_NO_INHERIT);
@@ -1752,12 +1663,10 @@ IUP_SDK_API void iupdrvCanvasInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "YAUTOHIDE", NULL, NULL, "YES", NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SCROLLVISIBLE", cocoaCanvasGetScrollVisibleAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
 
-  /* Platform specific */
   iupClassRegisterAttribute(ic, "DRAWABLE", cocoaCanvasGetDrawableAttrib, NULL, NULL, NULL, IUPAF_NO_STRING|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CGCONTEXT", cocoaCanvasGetCGContextAttrib, NULL, NULL, NULL, IUPAF_NO_STRING|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "NSVIEW", cocoaCanvasGetNSViewAttrib, NULL, NULL, NULL, IUPAF_NO_STRING|IUPAF_NO_INHERIT|IUPAF_READONLY);
 
-  /* Focus ring support */
   iupClassRegisterAttribute(ic, "NATIVEFOCUSRING", cocoaCanvasGetNativeFocusRingAttrib, cocoaCanvasSetNativeFocusRingAttrib, "NO", NULL, IUPAF_NO_INHERIT);
 
   /* Not Supported */

@@ -132,7 +132,7 @@ public final class IupMessageDialogHelper
     }
 
 
-    /* swap AlertDialog's borderless AppCompatButtons for our standard MaterialButton look */
+    /* swap AlertDialog's borderless AppCompatButtons for the standard MaterialButton look */
     private static void styleActionButtons(AlertDialog dialog, int buttonDefault, String buttonStyle, String cornerStyle)
     {
         int defaultWhich;

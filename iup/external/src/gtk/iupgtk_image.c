@@ -603,7 +603,6 @@ IUP_SDK_API int iupdrvGetIconPixels(Ihandle* ih, const char* value, int* width, 
       guchar* pixel = src + y * rowstride + x * n_channels;
       int offset = (y * w + x) * 4;
 
-      /* Convert to ARGB format */
       dst[offset + 0] = has_alpha ? pixel[3] : 0xff;  /* A */
       dst[offset + 1] = pixel[0];                      /* R */
       dst[offset + 2] = pixel[1];                      /* G */

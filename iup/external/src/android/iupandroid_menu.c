@@ -44,7 +44,6 @@ static void androidMenuReleaseMarker(Ihandle* ih)
   ih->handle = NULL;
 }
 
-/* Notifies the hosting Activity that its menu hierarchy has changed. */
 static void androidMenuInvalidateActivity(Ihandle* menu_ih)
 {
   Ihandle* dlg = menu_ih->parent;
@@ -216,7 +215,6 @@ static Ihandle* androidRecentFindMenuBar(Ihandle* menu)
   while (cur)
   {
     if (iupMenuIsMenuBar(cur)) return cur;
-    /* menu -> submenu -> menu -> ... */
     Ihandle* p = cur->parent;
     if (!p) return NULL;
     cur = p->parent;
@@ -258,7 +256,6 @@ IUP_SDK_API int iupdrvRecentMenuUpdate(Ihandle* menu, const char** filenames, in
 
   iupAttribSetInt(menu, "_IUP_RECENT_COUNT", count);
 
-  /* Rebuild the action-bar if attached to a menu bar; popup menus rebuild on show. */
   Ihandle* bar = androidRecentFindMenuBar(menu);
   if (bar) androidMenuInvalidateActivity(bar);
 

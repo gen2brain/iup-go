@@ -48,7 +48,6 @@ enum{IUP_IMGPOS_LEFT, IUP_IMGPOS_RIGHT, IUP_IMGPOS_TOP, IUP_IMGPOS_BOTTOM};
  * Custom Qt Toggle Widgets with Event Handling
  ****************************************************************************/
 
-/* Base class for toggle event handling */
 template<typename BaseWidget>
 class IupQtToggleBase : public BaseWidget
 {
@@ -72,12 +71,10 @@ public:
     BaseWidget::enterEvent(event);
     iupqtEnterLeaveEvent(this, event, iup_handle);
 
-    /* Handle FLAT mode for image toggles (QToolButton only) */
     if constexpr (std::is_same<BaseWidget, QToolButton>::value)
     {
       if (iup_handle->data->type == IUP_TOGGLE_IMAGE && iup_handle->data->flat)
       {
-        /* Show button when mouse enters, regardless of checked state */
         this->setAutoRaise(false);
       }
     }
@@ -88,12 +85,10 @@ public:
     BaseWidget::leaveEvent(event);
     iupqtEnterLeaveEvent(this, event, iup_handle);
 
-    /* Handle FLAT mode (QToolButton only) */
     if constexpr (std::is_same<BaseWidget, QToolButton>::value)
     {
       if (iup_handle->data->type == IUP_TOGGLE_IMAGE && iup_handle->data->flat)
       {
-        /* Hide button when mouse leaves and not checked */
         if (!this->isChecked())
           this->setAutoRaise(true);
       }
@@ -124,7 +119,6 @@ public:
 
   void mouseDoubleClickEvent(QMouseEvent* event) override
   {
-    /* Handle IGNOREDOUBLECLICK */
     if (iupAttribGetBoolean(iup_handle, "IGNOREDOUBLECLICK"))
     {
       event->ignore();
@@ -157,14 +151,12 @@ public:
 
       constexpr bool isRadio = std::is_same_v<BaseWidget, QRadioButton>;
 
-      /* Draw the indicator */
       QStyleOptionButton subopt = opt;
       subopt.rect = this->style()->subElementRect(
         isRadio ? QStyle::SE_RadioButtonIndicator : QStyle::SE_CheckBoxIndicator, &opt, this);
       p.drawPrimitive(
         isRadio ? QStyle::PE_IndicatorRadioButton : QStyle::PE_IndicatorCheckBox, subopt);
 
-      /* Draw rich text in the contents rect */
       QRect contentsRect = this->style()->subElementRect(
         isRadio ? QStyle::SE_RadioButtonContents : QStyle::SE_CheckBoxContents, &opt, this);
 
@@ -181,7 +173,6 @@ public:
       doc.drawContents(&p);
       p.restore();
 
-      /* Draw focus rect */
       if (opt.state & QStyle::State_HasFocus)
       {
         QStyleOptionFocusRect fropt;
@@ -198,7 +189,6 @@ public:
   }
 };
 
-/* Specific toggle types */
 class IupQtCheckBox : public IupQtToggleBase<QCheckBox>
 {
 public:
@@ -236,13 +226,11 @@ private:
   int animation_duration;  /* milliseconds */
   bool is_hovered;
 
-  /* Switch dimensions */
   static constexpr int TRACK_WIDTH = 50;
   static constexpr int TRACK_HEIGHT = 26;
   static constexpr int THUMB_SIZE = 22;
   static constexpr int THUMB_MARGIN = 2;
 
-  /* Easing function: Quad in-out */
   static qreal easeInOutQuad(qreal t)
   {
     if (t < 0.5)
@@ -259,47 +247,38 @@ public:
     setCheckable(true);
     setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 
-    /* Create timer for animation */
     animation_timer = new QTimer(this);
     animation_timer->setInterval(16);  /* ~60 FPS */
 
-    /* Connect timer to animation step */
     connect(animation_timer, &QTimer::timeout, this, [this]() {
       qint64 elapsed = elapsed_timer.elapsed();
 
       if (elapsed >= animation_duration)
       {
-        /* Animation complete */
         thumb_position = animation_end;
         animation_timer->stop();
       }
       else
       {
-        /* Interpolate with easing */
         qreal t = (qreal)elapsed / (qreal)animation_duration;
         qreal eased_t = easeInOutQuad(t);
         thumb_position = animation_start + (animation_end - animation_start) * eased_t;
       }
 
-      update();  /* Trigger repaint */
+      update();
     });
 
-    /* Connect toggled signal to trigger animation */
     connect(this, &QAbstractButton::toggled, this, [this](bool checked) {
-      /* Start animation from current position to target position */
       animation_start = thumb_position;
       animation_end = checked ? 1.0 : 0.0;
 
-      /* Always restart timer */
       elapsed_timer.start();
       animation_timer->start();
     });
   }
 
-  /* Call this after the widget is fully constructed and VALUE is set */
   void initializeThumbPosition()
   {
-    /* Set initial thumb position without animation */
     thumb_position = isChecked() ? 1.0 : 0.0;
     update();
   }
@@ -313,11 +292,10 @@ public:
     }
   }
 
-  /* Direct setter for programmatic changes (no animation) */
   void setThumbPosition(qreal pos)
   {
     thumb_position = pos;
-    update();  /* Trigger repaint */
+    update();
   }
 
   QSize sizeHint() const override
@@ -338,14 +316,14 @@ public:
   {
     IupQtToggleBase<QAbstractButton>::enterEvent(event);
     is_hovered = true;
-    update();  /* Trigger repaint to show hover effect */
+    update();
   }
 
   void leaveEvent(QEvent* event) override
   {
     IupQtToggleBase<QAbstractButton>::leaveEvent(event);
     is_hovered = false;
-    update();  /* Trigger repaint to remove hover effect */
+    update();
   }
 
   void paintEvent(QPaintEvent* event) override
@@ -355,31 +333,26 @@ public:
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);
 
-    /* Get colors from palette for theme adaptation */
     QPalette pal = palette();
     QColor track_color, thumb_color, border_color;
 
     if (!isEnabled())
     {
-      /* Disabled state - use muted colors */
       track_color = pal.color(QPalette::Disabled, QPalette::Mid);
       thumb_color = pal.color(QPalette::Disabled, QPalette::Base);
       border_color = pal.color(QPalette::Disabled, QPalette::Dark);
     }
     else
     {
-      /* Interpolate track color based on thumb position for smooth animation */
       QColor track_off_color = pal.color(QPalette::Active, QPalette::Mid);
 #if QT_VERSION >= QT_VERSION_CHECK(6, 6, 0)
-      /* Use Accent if it's a real color (macOS sets it to controlAccentColor).
-         If Accent is white/near-white, it wasn't set properly - use Highlight instead. */
+      /* macOS sets Accent to controlAccentColor; a near-white Accent means it was never set */
       QColor accent = pal.color(QPalette::Active, QPalette::Accent);
       QColor track_on_color = (accent.lightness() > 250) ? pal.color(QPalette::Active, QPalette::Highlight) : accent;
 #else
       QColor track_on_color = pal.color(QPalette::Active, QPalette::Highlight);
 #endif
 
-      /* Blend colors based on thumb position */
       track_color = QColor(
         track_off_color.red() + (track_on_color.red() - track_off_color.red()) * thumb_position,
         track_off_color.green() + (track_on_color.green() - track_off_color.green()) * thumb_position,
@@ -390,21 +363,17 @@ public:
       border_color = track_color.darker(120);
     }
 
-    /* Draw track (rounded rectangle) with border */
-    /* Use slightly reduced radius and inset rect for smoother rounded ends */
     QRectF track_rect(0.5, 0.5, TRACK_WIDTH - 1, TRACK_HEIGHT - 1);
     qreal radius = (TRACK_HEIGHT - 1) / 2.0;
     painter.setBrush(track_color);
     painter.setPen(QPen(border_color, 1));
     painter.drawRoundedRect(track_rect, radius, radius);
 
-    /* Calculate thumb position (interpolate between left and right) */
     int thumb_x_min = THUMB_MARGIN;
     int thumb_x_max = TRACK_WIDTH - THUMB_SIZE - THUMB_MARGIN;
     int thumb_x = thumb_x_min + (thumb_x_max - thumb_x_min) * thumb_position;
     int thumb_y = (TRACK_HEIGHT - THUMB_SIZE) / 2;
 
-    /* Draw shadow for thumb (subtle depth effect) */
     if (isEnabled())
     {
       painter.setBrush(QColor(0, 0, 0, 30));
@@ -412,11 +381,9 @@ public:
       painter.drawEllipse(thumb_x + 1, thumb_y + 1, THUMB_SIZE, THUMB_SIZE);
     }
 
-    /* Draw thumb (circle) with border */
     QColor thumb_border = border_color.lighter(110);
     if (is_hovered && isEnabled())
     {
-      /* Highlight border on hover */
       thumb_border = track_color.lighter(130);
     }
     painter.setBrush(thumb_color);
@@ -547,7 +514,6 @@ static int qtToggleGetCheck(Ihandle* ih)
   if (!button)
     return 0;
 
-  /* Check for 3-state checkbox */
   QCheckBox* checkbox = qobject_cast<QCheckBox*>(button);
   if (checkbox && checkbox->isTristate())
   {
@@ -560,7 +526,6 @@ static int qtToggleGetCheck(Ihandle* ih)
       return 0;
   }
 
-  /* Regular checkbox or radio button */
   return button->isChecked() ? 1 : 0;
 }
 
@@ -634,7 +599,6 @@ static void qtToggleUpdateLayout(Ihandle* ih)
   if (!button)
     return;
 
-  /* Get IMAGEPOSITION attribute */
   int img_position = IUP_IMGPOS_LEFT;
   char* value = iupAttribGetStr(ih, "IMAGEPOSITION");
   if (value)
@@ -647,7 +611,6 @@ static void qtToggleUpdateLayout(Ihandle* ih)
       img_position = IUP_IMGPOS_BOTTOM;
   }
 
-  /* Update layout direction based on image position */
   switch (img_position)
   {
     case IUP_IMGPOS_LEFT:
@@ -658,11 +621,10 @@ static void qtToggleUpdateLayout(Ihandle* ih)
       break;
     case IUP_IMGPOS_TOP:
     case IUP_IMGPOS_BOTTOM:
-      /* Qt doesn't support top/bottom easily, would need custom widget */
+      /* Qt has no top/bottom image placement */
       break;
   }
 
-  /* Set spacing */
   int spacing = iupAttribGetInt(ih, "SPACING");
   if (spacing > 0)
   {
@@ -682,19 +644,16 @@ static int qtToggleSetValueAttrib(Ihandle* ih, const char* value)
   if (!button)
     return 0;
 
-  /* Block signals during programmatic change */
   button->blockSignals(true);
 
   if (iupStrEqualNoCase(value, "NOTDEF"))
   {
-    /* Set 3-state indeterminate */
     QCheckBox* checkbox = qobject_cast<QCheckBox*>(button);
     if (checkbox && checkbox->isTristate())
       checkbox->setCheckState(Qt::PartiallyChecked);
   }
   else if (iupStrEqualNoCase(value, "TOGGLE"))
   {
-    /* Toggle current state */
     button->setChecked(!button->isChecked());
 
     if (ih->data->type == IUP_TOGGLE_IMAGE)
@@ -702,7 +661,6 @@ static int qtToggleSetValueAttrib(Ihandle* ih, const char* value)
   }
   else
   {
-    /* Set specific value */
     int check = iupStrBoolean(value);
     button->setChecked(check);
 
@@ -712,7 +670,6 @@ static int qtToggleSetValueAttrib(Ihandle* ih, const char* value)
 
   button->blockSignals(false);
 
-  /* For switch widgets, update thumb position without animation when set programmatically */
   if (ih->data->type == IUP_TOGGLE_TEXT && !ih->data->is_radio && iupAttribGetBoolean(ih, "SWITCH"))
   {
     IupQtSwitch* switch_widget = static_cast<IupQtSwitch*>(button);
@@ -744,11 +701,9 @@ static int qtToggleSetTitleAttrib(Ihandle* ih, const char* value)
         char* html = iupMarkupToHtml(value ? value : "");
         char* stripped = iupMarkupStripTags(value ? value : "");
 
-        /* Set stripped text for correct sizeHint calculation */
         button->setText(QString::fromUtf8(stripped));
         free(stripped);
 
-        /* Store HTML for custom paintEvent rendering */
         IupQtCheckBox* cb = dynamic_cast<IupQtCheckBox*>(button);
         IupQtRadioButton* rb = dynamic_cast<IupQtRadioButton*>(button);
         if (cb)
@@ -761,13 +716,11 @@ static int qtToggleSetTitleAttrib(Ihandle* ih, const char* value)
       }
       else
       {
-        /* Clear markup rendering if switching from markup */
         if (dynamic_cast<IupQtCheckBox*>(button))
           static_cast<IupQtCheckBox*>(button)->clearMarkupHtml();
         else if (dynamic_cast<IupQtRadioButton*>(button))
           static_cast<IupQtRadioButton*>(button)->clearMarkupHtml();
 
-        /* Process mnemonic and set text */
         char c = '&';
         char* str = iupStrProcessMnemonic(value, &c, 1);
 
@@ -859,7 +812,6 @@ static char* qtToggleGetBgColorAttrib(Ihandle* ih)
     return iupBaseNativeParentGetBgColorAttrib(ih);
   else
   {
-    /* For image toggles, return dialog background */
     unsigned char r, g, b;
     char* color = iupBaseNativeParentGetBgColorAttrib(ih);
     if (iupStrToRGB(color, &r, &g, &b))
@@ -903,7 +855,6 @@ static int qtToggleSetMarkupAttrib(Ihandle* ih, const char* value)
 
 static int qtToggleSetRightButtonAttrib(Ihandle* ih, const char* value)
 {
-  /* Qt checkboxes can be laid out with checkbox on right using setLayoutDirection */
   if (ih->data->type == IUP_TOGGLE_TEXT && ih->handle)
   {
     QAbstractButton* button = (QAbstractButton*)ih->handle;
@@ -962,7 +913,6 @@ static int qtToggleSetImPressAttrib(Ihandle* ih, const char* value)
 
 static int qtToggleSetActiveAttrib(Ihandle* ih, const char* value)
 {
-  /* Update inactive image if necessary */
   if (ih->data->type == IUP_TOGGLE_IMAGE)
     qtToggleUpdateImage(ih, iupStrBoolean(value), qtToggleGetCheck(ih));
 
@@ -975,22 +925,18 @@ static int qtToggleSetActiveAttrib(Ihandle* ih, const char* value)
 
 static void qtToggleToggled(Ihandle* ih, bool checked)
 {
-  /* Check if we should ignore this toggle event */
   if (iupAttribGet(ih, "_IUPQT_IGNORE_TOGGLE"))
     return;
 
   int check = checked ? 1 : 0;
 
-  /* Update image if needed */
   if (ih->data->type == IUP_TOGGLE_IMAGE)
     qtToggleUpdateImage(ih, iupdrvIsActive(ih), check);
 
-  /* Call ACTION callback */
   IFni cb = (IFni)IupGetCallback(ih, "ACTION");
   if (cb && cb(ih, check) == IUP_CLOSE)
     IupExitLoop();
 
-  /* Call VALUECHANGED_CB */
   if (iupObjectCheck(ih))
     iupBaseCallValueChangedCb(ih);
 }
@@ -1007,38 +953,31 @@ static int qtToggleMapMethod(Ihandle* ih)
   if (!ih->parent)
     return IUP_ERROR;
 
-  /* Determine toggle type */
   char* value = iupAttribGet(ih, "IMAGE");
   if (value)
     ih->data->type = IUP_TOGGLE_IMAGE;
   else
     ih->data->type = IUP_TOGGLE_TEXT;
 
-  /* Create appropriate widget */
   if (radio)
   {
-    /* Radio button - use QToolButton for image toggles, QRadioButton for text */
     if (ih->data->type == IUP_TOGGLE_IMAGE)
     {
-      /* Image radio button uses QToolButton with auto-exclusive mode */
       IupQtToolButton* tool_btn = new IupQtToolButton(ih);
-      tool_btn->setAutoExclusive(true);  /* Makes it behave like a radio button */
+      tool_btn->setAutoExclusive(true);
       button = tool_btn;
     }
     else
     {
-      /* Text radio button uses QRadioButton */
       IupQtRadioButton* radio_btn = new IupQtRadioButton(ih);
       button = radio_btn;
 
-      /* Set first radio button as checked by default */
       Ihandle* last_toggle = (Ihandle*)iupAttribGet(radio, "_IUPQT_LASTRADIOBUTTON");
       if (!last_toggle)
         radio_btn->setChecked(true);
       iupAttribSet(radio, "_IUPQT_LASTRADIOBUTTON", (char*)ih);
     }
 
-    /* Make sure it has at least one name */
     if (!iupAttribGetHandleName(ih))
       iupAttribSetHandleName(ih);
 
@@ -1048,27 +987,22 @@ static int qtToggleMapMethod(Ihandle* ih)
   {
     if (ih->data->type == IUP_TOGGLE_TEXT)
     {
-      /* Check if SWITCH control is requested */
       if (iupAttribGetBoolean(ih, "SWITCH"))
       {
-        /* Create custom switch widget */
         IupQtSwitch* switch_widget = new IupQtSwitch(ih);
         button = switch_widget;
       }
       else
       {
-        /* Regular checkbox */
         IupQtCheckBox* checkbox = new IupQtCheckBox(ih);
         button = checkbox;
 
-        /* Enable 3-state if requested */
         if (iupAttribGetBoolean(ih, "3STATE"))
           checkbox->setTristate(true);
       }
     }
     else
     {
-      /* Image toggle button */
       IupQtToolButton* tool_btn = new IupQtToolButton(ih);
       button = tool_btn;
     }
@@ -1076,7 +1010,6 @@ static int qtToggleMapMethod(Ihandle* ih)
 
   ih->handle = (InativeHandle*)button;
 
-  /* Set initial title/image */
   if (ih->data->type == IUP_TOGGLE_TEXT)
   {
     char* title = iupAttribGet(ih, "TITLE");
@@ -1090,14 +1023,11 @@ static int qtToggleMapMethod(Ihandle* ih)
       qtToggleUpdateImage(ih, 1, 0);
   }
 
-  /* Add to parent */
   iupqtAddToParent(ih);
 
-  /* Configure focus */
   if (!iupAttribGetBoolean(ih, "CANFOCUS"))
     iupqtSetCanFocus(button, 0);
 
-  /* Configure FLAT style for image toggles */
   if (ih->data->type == IUP_TOGGLE_IMAGE && iupAttribGetBoolean(ih, "FLAT"))
   {
     ih->data->flat = 1;
@@ -1106,34 +1036,27 @@ static int qtToggleMapMethod(Ihandle* ih)
       tool_btn->setAutoRaise(true);
   }
 
-  /* Connect toggled signal */
   QObject::connect(button, &QAbstractButton::toggled, [ih](bool checked) {
     qtToggleToggled(ih, checked);
   });
 
-  /* Set padding if specified */
   value = iupAttribGet(ih, "PADDING");
   if (value)
     qtToggleSetPaddingAttrib(ih, value);
 
-  /* Set RIGHTBUTTON if specified */
   if (iupAttribGetBoolean(ih, "RIGHTBUTTON"))
     qtToggleSetRightButtonAttrib(ih, "YES");
 
-  /* Set SPACING if specified */
   value = iupAttribGet(ih, "SPACING");
   if (value)
     qtToggleSetSpacingAttrib(ih, value);
 
-  /* Set IMAGEPOSITION if specified */
   value = iupAttribGet(ih, "IMAGEPOSITION");
   if (value)
     qtToggleSetImagePositionAttrib(ih, value);
 
-  /* Update mnemonic */
   iupqtUpdateMnemonic(ih);
 
-  /* Initialize thumb position for switch widgets after all setup is complete */
   if (ih->data->type == IUP_TOGGLE_TEXT && !ih->data->is_radio && iupAttribGetBoolean(ih, "SWITCH"))
   {
     IupQtSwitch* switch_widget = static_cast<IupQtSwitch*>(button);
@@ -1176,13 +1099,11 @@ extern "C" IUP_SDK_API void iupdrvToggleInitClass(Iclass* ic)
 
   iupClassRegisterAttribute(ic, "PADDING", iupToggleGetPaddingAttrib, qtToggleSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
 
-  /* Additional attributes */
   iupClassRegisterAttribute(ic, "SPACING", NULL, qtToggleSetSpacingAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "IMAGEPOSITION", NULL, qtToggleSetImagePositionAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MARKUP", NULL, qtToggleSetMarkupAttrib, NULL, NULL, IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "RIGHTBUTTON", NULL, qtToggleSetRightButtonAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "IGNOREDOUBLECLICK", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
 
-  /* Only for QCheckBox with 3STATE */
   iupClassRegisterAttribute(ic, "3STATE", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
 }

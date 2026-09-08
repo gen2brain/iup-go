@@ -390,7 +390,6 @@ public final class IupButtonHelper
             return;
         }
 
-        /* Image-only: center the icon (no text to anchor it). */
         CharSequence txt = button.getText();
         if (txt == null || txt.length() == 0)
         {

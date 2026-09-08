@@ -57,7 +57,6 @@ static char* cocoaTouchCalendarFormatDate(NSDate* date)
 		(long)[comps year], (long)[comps month], (long)[comps day]);
 }
 
-/* parse "YYYY/MM/DD" or "TODAY"; nil on fail */
 static NSDate* cocoaTouchCalendarParseDate(const char* value)
 {
 	if (!value) return nil;
@@ -160,7 +159,6 @@ static void cocoaTouchCalendarComputeNaturalSize(Ihandle* ih, int* w, int* h, in
 		}
 	}
 
-	/* pre-map estimate, cached so we don't spawn a probe picker per IUP_CALENDAR */
 	static int cached_w = -1;
 	static int cached_h = -1;
 	if (cached_w < 0)
@@ -242,11 +240,9 @@ Iclass* iupCalendarNewClass(void)
 	iupClassRegisterAttribute(ic, "VALUE", cocoaTouchCalendarGetValueAttrib, cocoaTouchCalendarSetValueAttrib, NULL, "TODAY", IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "TODAY", cocoaTouchCalendarGetTodayAttrib, NULL, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_READONLY|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 
-	/* MINDATE/MAXDATE -> min/maximumDate (cocoatouch extension) */
 	iupClassRegisterAttribute(ic, "MINDATE", cocoaTouchCalendarGetMinDateAttrib, cocoaTouchCalendarSetMinDateAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "MAXDATE", cocoaTouchCalendarGetMaxDateAttrib, cocoaTouchCalendarSetMaxDateAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 
-	/* STYLE: INLINE (default), COMPACT, WHEELS, AUTOMATIC */
 	iupClassRegisterAttribute(ic, "STYLE", NULL, cocoaTouchCalendarSetStyleAttrib, IUPAF_SAMEASSYSTEM, "INLINE", IUPAF_NO_INHERIT);
 
 	/* no week-numbers mode on UIDatePicker */

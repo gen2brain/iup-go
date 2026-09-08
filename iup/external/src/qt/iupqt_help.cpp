@@ -44,9 +44,9 @@ extern "C" IUP_API int IupExecute(const char* filename, const char* parameters)
     {
       QProcess::ProcessError error = test.error();
       if (error == QProcess::FailedToStart)
-        return -2;  /* File not found or failed to start */
+        return -2;
       else
-        return -1;  /* Other error */
+        return -1;
     }
     return -1;  /* Generic error */
   }
@@ -73,11 +73,11 @@ extern "C" IUP_API int IupExecuteWait(const char* filename, const char* paramete
   int exitCode = QProcess::execute(program, arguments);
 
   if (exitCode == -2)
-    return -2;  /* Process failed to start (file not found) */
+    return -2;
   else if (exitCode == -1)
-    return -1;  /* Process crashed */
+    return -1;
   else
-    return 1;  /* Success (exit code 0 or positive) */
+    return 1;
 }
 
 /****************************************************************************

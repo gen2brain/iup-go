@@ -10,7 +10,6 @@ const path = require('path');
 const { execSync } = require('child_process');
 const { chromium } = require('playwright-core');
 
-// Prefer an explicit binary, then the first Chrome/Chromium found on PATH, else the chrome channel.
 function browserLaunchOptions() {
   const opts = { headless: false, args: ['--headless=new'] };
   // IUP_MEDIA: a fake camera stream, no permission prompt, and audio playback without a user gesture
@@ -110,8 +109,7 @@ function serve(dir) {
     fc.setFiles(testFile).catch((e) => logs.push('setFiles failed: ' + e.message));
   });
 
-  // Measure the rendered dialog(s) and size the viewport to them (the dialog's pixel size is
-  // intrinsic from IUP layout). MARGIN is viewport headroom only; capture() clips to the dialog.
+  // MARGIN is viewport headroom only; capture() clips to the dialog.
   const MARGIN = 24;
   let clip = null;
   async function measure() {
@@ -136,8 +134,7 @@ function serve(dir) {
     });
   }
   async function fitViewport() {
-    // a heavy dialog can still be laying out when the first element attaches: settle for two
-    // equal measurements before clipping to it
+    // a heavy dialog can still be laying out when the first element attaches: settle for two equal measurements
     let box = await measure(), stable = 0;
     for (let i = 0; i < 12 && stable < 1; i++) {
       await page.waitForTimeout(100);

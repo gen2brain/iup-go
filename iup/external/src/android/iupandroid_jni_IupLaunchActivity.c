@@ -46,7 +46,7 @@ JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupLaunchActivity_IupEntry
   {
     entry_callback = (IFentry)dlsym(RTLD_DEFAULT, "IupEntryPoint");
 
-    /* Fallback: Android 7.0+ hardening can blank RTLD_DEFAULT for our own symbols. */
+    /* Android 7.0+ hardening can blank RTLD_DEFAULT for app-owned symbols. */
     if (entry_callback == NULL && j_library_name != NULL)
     {
       const char* c_entry_library_name = (*jni_env)->GetStringUTFChars(jni_env, j_library_name, NULL);

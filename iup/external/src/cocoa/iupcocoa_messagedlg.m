@@ -67,7 +67,6 @@ static int cocoaMessageDlgPopup(Ihandle* ih, int x, int y)
     parentWindow = iupcocoaDialogGetWindow(parent_ih);
   }
 
-  /* If no parent found, find the current key window that is an IUP dialog. */
   if (!parent_ih)
   {
     NSWindow* keyWindow = [NSApp keyWindow];
@@ -102,7 +101,7 @@ static int cocoaMessageDlgPopup(Ihandle* ih, int x, int y)
       [alert setAlertStyle:NSAlertStyleCritical];
     else if (iupStrEqualNoCase(icon_str, "WARNING"))
       [alert setAlertStyle:NSAlertStyleWarning];
-    else /* INFORMATION, QUESTION */
+    else
       [alert setAlertStyle:NSAlertStyleInformational];
 
     if (button_def == 0)
@@ -142,32 +141,26 @@ static int cocoaMessageDlgPopup(Ihandle* ih, int x, int y)
     if(responseMap) [responseMap release];
     responseMap = [[NSMutableDictionary dictionary] retain];
 
-    /* Add buttons in their natural IUP order (1, 2, 3...) */
     for (int i = 0; i < [titles count]; i++)
     {
         [alert addButtonWithTitle:titles[i]];
-        /* Map the sequentially assigned Cocoa response code to our IUP response value. */
         [responseMap setObject:responses[i] forKey:@(NSAlertFirstButtonReturn + i)];
     }
 
-    /* By default, the first button added gets the Return key equivalent. */
-    /* We need to manually move this designation to the button specified by BUTTONDEFAULT. */
+    /* the first button added gets the Return key equivalent */
     int default_idx = button_def - 1;
     if (default_idx >= 0 && default_idx < [[alert buttons] count])
     {
-        NSButton* firstButton = [[alert buttons] objectAtIndex:0]; /* The button added first. */
+        NSButton* firstButton = [[alert buttons] objectAtIndex:0];
 
         if (default_idx != 0)
         {
-            /* If the default is not the first button, remove the default status from the first button */
             [firstButton setKeyEquivalent:@""];
-            /* And assign it to the correct button. */
             NSButton* defaultButton = [[alert buttons] objectAtIndex:default_idx];
             [defaultButton setKeyEquivalent:@"\r"];
         }
         else
         {
-            /* If the default IS the first button, ensure it has the Return key equivalent. This is normally the default behavior. */
             [firstButton setKeyEquivalent:@"\r"];
         }
     }

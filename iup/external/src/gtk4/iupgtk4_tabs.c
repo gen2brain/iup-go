@@ -202,7 +202,6 @@ static void gtk4TabsUpdatePagePadding(Ihandle* ih)
     GtkWidget* tab_label = (GtkWidget*)iupAttribGet(child, "_IUPGTK4_TABLABEL");
     if (tab_label)
     {
-      /* GTK4: Use margin properties (no mandatory_gtk3 param needed) */
       iupgtk4SetMargin(tab_label, ih->data->horiz_padding, ih->data->vert_padding);
     }
   }
@@ -511,7 +510,6 @@ static void gtk4TabsButtonPressed(GtkGestureClick *gesture, int n_press, double 
     cb(ih, pos);
   }
 
-  /* Call standard button press handler for BUTTON_CB support */
   iupgtk4ButtonPressed(gesture, n_press, x, y, ih);
 }
 
@@ -679,7 +677,6 @@ static void gtk4TabsChildAddedMethod(Ihandle* ih, Ihandle* child)
     tab_page = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
     gtk_widget_set_visible(tab_page, TRUE);
 
-    /* Use iupGtk4Fixed (custom container) for proper sizing and positioning */
     tab_container = iupgtk4NativeContainerNew();
     gtk_widget_set_visible(tab_container, TRUE);
     gtk_widget_set_hexpand(tab_container, TRUE);
@@ -786,7 +783,6 @@ static void gtk4TabsChildAddedMethod(Ihandle* ih, Ihandle* child)
       tab_widget = tab_label;
     }
 
-    /* Add gesture controller for right-click */
     GtkGesture* gesture = gtk_gesture_click_new();
     gtk_gesture_single_set_button(GTK_GESTURE_SINGLE(gesture), 0); /* all buttons */
     gtk_widget_add_controller(tab_widget, GTK_EVENT_CONTROLLER(gesture));
@@ -886,8 +882,7 @@ static int gtk4TabsMapMethod(Ihandle* ih)
   if (!ih->handle)
     return IUP_ERROR;
 
-  /* Prevent GTK4 from expanding notebook beyond its natural size.
-   * Content inside can still expand, this only prevents unnecessary expansion. */
+  /* keep GTK4 from expanding the notebook past its natural size */
   gtk_widget_set_hexpand(ih->handle, FALSE);
   gtk_widget_set_vexpand(ih->handle, FALSE);
   gtk_widget_set_halign(ih->handle, GTK_ALIGN_FILL);
@@ -900,7 +895,6 @@ static int gtk4TabsMapMethod(Ihandle* ih)
   /* add to the parent, all GTK controls must call this. */
   iupgtk4AddToParent(ih);
 
-  /* Event controllers instead of signals */
   iupgtk4SetupEnterLeaveEvents(ih->handle, ih);
   iupgtk4SetupFocusEvents(ih->handle, ih);
   iupgtk4SetupKeyEvents(ih->handle, ih);

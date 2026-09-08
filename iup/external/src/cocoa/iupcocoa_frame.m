@@ -20,8 +20,7 @@
 
 IUP_SDK_API void iupdrvFrameGetDecorOffset(Ihandle* ih, int *x, int *y)
 {
-  /* NSBox automatically positions its contentView to accommodate border and title.
-     Children are laid out relative to contentView, so offset is (0,0). */
+  /* NSBox lays children out inside its contentView, so the offset is (0,0) */
   (void)ih;
   *x = 0;
   *y = 0;
@@ -44,16 +43,16 @@ IUP_SDK_API int iupdrvFrameGetTitleHeight(Ihandle* ih, int *h)
       if (title_font)
       {
         CGFloat font_height = [title_font boundingRectForFont].size.height;
-        *h = (int)(font_height + 4);  /* Add some padding */
+        *h = (int)(font_height + 4);
       }
       else
       {
-        *h = 16;  /* Default title height */
+        *h = 16;
       }
     }
     else
     {
-      *h = 16; /* Default/estimate if handle not created yet */
+      *h = 16;
     }
   }
   else
@@ -149,8 +148,7 @@ static int cocoaFrameSetBgColorAttrib(Ihandle* ih, const char* value)
     return 0;
   }
 
-  /* has_custom_color is TRUE */
-  /* value might be NULL if called from Map, so we must fetch it */
+  /* value can be NULL when called from Map, so fetch it */
   if (!value)
     value = iupAttribGet(ih, "BGCOLOR");
   if (!value)
@@ -248,7 +246,6 @@ static int cocoaFrameMapMethod(Ihandle* ih)
 
   if (iupAttribGet(ih, "_IUPFRAME_HAS_TITLE"))
   {
-    /* Show title at top */
     if (title && *title)
     {
       [the_frame setTitle:[NSString stringWithUTF8String:title]];
@@ -259,7 +256,6 @@ static int cocoaFrameMapMethod(Ihandle* ih)
     }
     [the_frame setTitlePosition:NSAtTop];
 
-    /* Apply font to title if specified */
     IupCocoaFont* iup_font = iupcocoaGetFont(ih);
     if (iup_font)
     {
@@ -272,7 +268,6 @@ static int cocoaFrameMapMethod(Ihandle* ih)
   }
   else
   {
-    /* Box frame: no title */
     [the_frame setTitle:@""];
     [the_frame setTitlePosition:NSNoTitle];
   }

@@ -181,7 +181,6 @@ IUP_SDK_API void iupdrvPopoverInitClass(Iclass* ic)
   ic->LayoutUpdate = androidPopoverLayoutUpdateMethod;
   ic->GetInnerNativeContainerHandle = androidPopoverGetInnerNativeContainerHandleMethod;
 
-  /* Setter maps on demand, VISIBLE is per-widget. */
   iupClassRegisterAttribute(ic, "VISIBLE",
     androidPopoverGetVisibleAttrib, androidPopoverSetVisibleAttrib,
     NULL, NULL,

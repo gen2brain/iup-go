@@ -20,8 +20,7 @@ extern "C" {
 }
 
 
-/* BeOS canonical clipboard MIME for archived BBitmap. Used by Tracker / Wonder
- * Brush / Icon-O-Matic / etc. */
+/* BeOS canonical clipboard MIME for an archived BBitmap. */
 #define IUPHAIKU_CLIP_BITMAP_MIME "image/x-vnd.Be-bitmap"
 
 static int haikuClipSetText(Ihandle* /*ih*/, const char* value)

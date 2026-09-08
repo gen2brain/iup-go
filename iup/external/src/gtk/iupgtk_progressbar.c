@@ -73,7 +73,6 @@ IUP_SDK_API void iupdrvProgressBarGetMinSize(Ihandle* ih, int* w, int* h)
     *h = horiz_min_h;
   }
 #else
-  /* GTK2 fallback */
   if (iupStrEqualNoCase(iupAttribGetStr(ih, "ORIENTATION"), "VERTICAL"))
   {
     *w = 7;

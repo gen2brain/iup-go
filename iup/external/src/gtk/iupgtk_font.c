@@ -217,8 +217,7 @@ static void gtkFontUpdateWidget(Ihandle* ih, GtkWidget* widget, PangoFontDescrip
     gtk_entry_set_attributes(GTK_ENTRY(widget), attrs);
     pango_attr_list_unref(attrs);
 #else
-    /* gtk_entry_set_attributes() not available in GTK < 3.6.
-       Modifying the internal layout doesn't work as GTK recreates it. */
+    /* gtk_entry_set_attributes() needs GTK 3.6, and GTK recreates the internal layout */
     (void)gtkfont;
 #endif
   }
@@ -342,9 +341,7 @@ IUP_DRV_API char* iupgtkGetFontIdAttrib(Ihandle *ih)
   else
   {
 #if GTK_CHECK_VERSION(3, 0, 0) || defined(GDK_DISABLE_DEPRECATED)
-    /* Not available in GTK3+ or when GDK deprecated APIs are disabled:
-       Pango/Cairo fonts do not expose X11 Font IDs needed for glXUseXFont().
-       Display list fonts (glXUseXFont/wglUseFontBitmaps) are deprecated in modern OpenGL. */
+    /* Pango/Cairo fonts do not expose the X11 Font IDs glXUseXFont() needs */
     return NULL;
 #else
     /* both functions are marked as deprecated in GDK (since 2.22) */

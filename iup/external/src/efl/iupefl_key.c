@@ -69,7 +69,6 @@ IUP_DRV_API int iupeflKeyDecodeFromName(const char* keyname, const char* keysym,
   if (strcmp(keyname, "Print") == 0) return K_Print;
   if (strcmp(keyname, "Pause") == 0) return K_PAUSE;
 
-  /* Keypad mappings */
   if (strcmp(keyname, "KP_0") == 0) return K_KP_0;
   if (strcmp(keyname, "KP_1") == 0) return K_KP_1;
   if (strcmp(keyname, "KP_2") == 0) return K_KP_2;
@@ -103,7 +102,6 @@ IUP_DRV_API int iupeflKeyDecodeFromName(const char* keyname, const char* keysym,
   if (strcmp(keyname, "KP_Insert") == 0) return K_KP_INS;
   if (strcmp(keyname, "KP_Delete") == 0) return K_KP_DEL;
 
-  /* Dead keys */
   if (strcmp(keyname, "dead_tilde") == 0) return K_tilde;
   if (strcmp(keyname, "dead_acute") == 0) return K_acute;
   if (strcmp(keyname, "dead_grave") == 0) return K_grave;

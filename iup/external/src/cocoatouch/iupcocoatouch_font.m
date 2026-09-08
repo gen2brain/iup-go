@@ -90,7 +90,6 @@ static IupCocoaTouchFont* cocoaTouchCreateFontFromUIFont(UIFont* ui_font)
 	[font setTypeFace:[ui_font fontName]];
 	[font setIupFontName:[NSString stringWithFormat:@"%@, %d", [ui_font fontName], font_size]];
 
-	/* UIFont.lineHeight = ascender + descender + leading */
 	[font setCharHeight:(int)ceil([ui_font lineHeight])];
 
 	int char_width = (int)ceil([@"x" sizeWithAttributes:attrs].width);
@@ -140,7 +139,6 @@ static BOOL cocoaTouchFontIsSystemName(const char* name)
 	return iupStrEqualNoCase(name, "System") ? YES : NO;
 }
 
-/* system font traits go through dedicated factories, not symbolicTraits */
 /* Courier and Courier New have no box drawing glyphs on iOS */
 IUP_DRV_API const char* iupCocoaTouchFontFaceName(const char* face)
 {
@@ -186,7 +184,6 @@ IUP_DRV_API IupCocoaTouchFont* iupCocoaTouchFindFont(const char* iup_font_name)
 {
 	if (!iup_font_name) return nil;
 
-	/* lazy-init guards pre-iupdrvFontInit calls */
 	if (s_fontCache == nil) s_fontCache = [[NSMutableDictionary alloc] init];
 
 	NSString* key = [NSString stringWithUTF8String:iup_font_name];
@@ -347,7 +344,6 @@ static void cocoaTouchFontGetTextSize(IupCocoaTouchFont* font, const char* str, 
 	if (h) *h = [font charHeight] * line_count;
 }
 
-/* CTLine measures the parsed-markup string by typographic advance */
 static BOOL cocoaTouchFontGetMarkupSize(Ihandle* ih, const char* str, int* w, int* h)
 {
 	if (!ih || !str || !iupAttribGetBoolean(ih, "MARKUP")) return NO;
@@ -383,7 +379,6 @@ IUP_SDK_API int iupdrvFontGetStringWidth(Ihandle* ih, const char* str)
 	IupCocoaTouchFont* font = iupCocoaTouchGetFont(ih);
 	if (!font) return 0;
 
-	/* first line only; multi-line variant exists for wrapped width */
 	const char* newline = strchr(str, '\n');
 	int len = newline ? (int)(newline - str) : (int)strlen(str);
 	cocoaTouchFontGetTextSize(font, str, len, &w, NULL);
@@ -439,7 +434,6 @@ IUP_SDK_API int iupdrvFontGetFamilyList(char*** list)
 	}
 }
 
-/* drops cached system font on Dynamic Type / content-size-category change */
 static id s_contentSizeObserver = nil;
 
 IUP_SDK_API void iupdrvFontInit(void)

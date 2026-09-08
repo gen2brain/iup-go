@@ -1424,7 +1424,7 @@ Iclass* iupMatrixListNewClass(void)
 
   /* IupMatrixList Attributes */
 
-  /* IMPORTANT: these two will hide the IupMatrix VALUE and L:C attributes */
+  /* these two hide the IupMatrix VALUE and L:C attributes */
   iupClassRegisterAttributeId(ic, "IDVALUE", iMatrixListGetIdValueAttrib, iMatrixListSetIdValueAttrib, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "VALUE", iMatrixListGetValueAttrib, iMatrixListSetValueAttrib, NULL, NULL, IUPAF_NO_SAVE|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TITLE", iMatrixListGetTitleAttrib, iMatrixListSetTitleAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);

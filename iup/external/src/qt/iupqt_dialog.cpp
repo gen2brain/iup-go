@@ -67,7 +67,6 @@ public:
 
     Qt::WindowFlags flags = iupDialogGetNativeParent(iup_handle) ? Qt::Dialog : Qt::Window;
 
-    /* Check for BORDER/title bar */
     int has_titlebar = iupAttribGet(iup_handle, "TITLE") ||
                        iupAttribGetBoolean(iup_handle, "RESIZE") ||
                        iupAttribGetBoolean(iup_handle, "MAXBOX") ||
@@ -80,7 +79,6 @@ public:
     if (has_titlebar)
       flags |= Qt::WindowTitleHint;
 
-    /* Window buttons */
     if (!iupAttribGetBoolean(iup_handle, "MENUBOX"))
       flags |= Qt::WindowSystemMenuHint;
     else
@@ -92,7 +90,6 @@ public:
     if (iupAttribGetBoolean(iup_handle, "MAXBOX"))
       flags |= Qt::WindowMaximizeButtonHint;
 
-    /* Other hints */
     if (iupAttribGetBoolean(iup_handle, "DIALOGHINT"))
       flags |= Qt::Dialog;
 
@@ -158,7 +155,6 @@ protected:
     if (!iup_handle)
       return;
 
-    /* On first show, move window to the position set by IUP */
     if (iupAttribGet(iup_handle, "_IUPQT_FIRST_SHOW_DONE") == NULL)
     {
       iupAttribSet(iup_handle, "_IUPQT_FIRST_SHOW_DONE", "1");
@@ -180,7 +176,6 @@ protected:
     if (iup_handle->data->ignore_resize)
       return;
 
-    /* Update IUP size tracking */
     int border = 0, caption = 0, menu = 0;
     iupdrvDialogGetDecoration(iup_handle, &border, &caption, &menu);
 
@@ -190,7 +185,6 @@ protected:
     iup_handle->currentwidth = new_width;
     iup_handle->currentheight = new_height;
 
-    /* Call RESIZE_CB */
     IFnii cb = (IFnii)IupGetCallback(iup_handle, "RESIZE_CB");
     if (!cb || cb(iup_handle, event->size().width(), event->size().height() - menu) != IUP_IGNORE)
     {
@@ -219,14 +213,12 @@ protected:
     if (!iup_handle)
       return;
 
-    /* Call MOVE_CB */
     IFnii cb = (IFnii)IupGetCallback(iup_handle, "MOVE_CB");
     if (cb)
     {
       cb(iup_handle, event->pos().x(), event->pos().y());
     }
 
-    /* Save position for retrieval when hidden */
     iupAttribSetInt(iup_handle, "_IUPQT_OLD_X", event->pos().x());
     iupAttribSetInt(iup_handle, "_IUPQT_OLD_Y", event->pos().y());
   }
@@ -249,7 +241,7 @@ protected:
       else if (new_state & Qt::WindowMaximized)
         iup_state = IUP_MAXIMIZE;
       else if (new_state & Qt::WindowFullScreen)
-        iup_state = IUP_MAXIMIZE;  /* Treat fullscreen as maximize */
+        iup_state = IUP_MAXIMIZE;
       else
         iup_state = IUP_RESTORE;
 
@@ -265,7 +257,6 @@ protected:
     {
       if (isActiveWindow())
       {
-        /* Focus handling */
         iupqtDialogSetFocus(iup_handle);
       }
     }
@@ -290,9 +281,7 @@ protected:
 
   bool event(QEvent* event) override
   {
-    /* StyleChange fires after qApp->palette() is swapped; PaletteChange arrives with the
-       stale palette and is kept as a fallback. User callback runs before the tree walk
-       so it can update per-control attributes (e.g. EVENROWCOLOR) first. */
+    /* StyleChange fires after qApp->palette() is swapped; PaletteChange still carries the stale one */
     if (event->type() == QEvent::StyleChange || event->type() == QEvent::PaletteChange)
     {
       if (iup_handle)
@@ -325,21 +314,21 @@ IUP_DRV_API int iupqtDialogCloseEvent(QWidget *widget, QEvent *evt, Ihandle *ih)
 
   /* Even when ACTIVE=NO the dialog gets this event */
   if (!iupdrvIsActive(ih))
-    return 1;  /* Ignore close */
+    return 1;
 
   cb = IupGetCallback(ih, "CLOSE_CB");
   if (cb)
   {
     int ret = cb(ih);
     if (ret == IUP_IGNORE)
-      return 1;  /* Prevent close */
+      return 1;
     if (ret == IUP_CLOSE)
       IupExitLoop();
   }
 
-  IupHide(ih); /* Default: close the window */
+  IupHide(ih);
 
-  return 0;  /* Allow close */
+  return 0;
 }
 
 /****************************************************************************
@@ -472,7 +461,6 @@ extern "C" IUP_SDK_API void iupdrvDialogGetPosition(Ihandle *ih, InativeHandle* 
   }
   else if (ih)
   {
-    /* Return saved position if window is not visible */
     if (x) *x = iupAttribGetInt(ih, "_IUPQT_OLD_X");
     if (y) *y = iupAttribGetInt(ih, "_IUPQT_OLD_Y");
   }
@@ -486,7 +474,6 @@ extern "C" IUP_SDK_API void iupdrvDialogSetPosition(Ihandle *ih, int x, int y)
   {
     widget->move(x, y);
 
-    /* Save position for later retrieval when hidden */
     iupAttribSetInt(ih, "_IUPQT_OLD_X", x);
     iupAttribSetInt(ih, "_IUPQT_OLD_Y", y);
   }
@@ -512,7 +499,6 @@ extern "C" IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int *border, 
   *menu = qtDialogGetMenuSize(ih);
 #endif
 
-  /* CUSTOMFRAME or HIDETITLEBAR means no native window decorations */
   if (iupAttribGetBoolean(ih, "CUSTOMFRAME") || iupAttribGetBoolean(ih, "HIDETITLEBAR"))
   {
     *border = 0;
@@ -533,8 +519,7 @@ extern "C" IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int *border, 
                    iupAttribGetBoolean(ih, "RESIZE") ||
                    iupAttribGetBoolean(ih, "BORDER");
 
-  /* If we have cached values, prefer them to avoid race conditions during window resize.
-   * Only query actual window decorations if we don't have cached values yet. */
+  /* prefer the cache; the live frame query races with a window resize */
   if (native_border > 0 && native_caption > 0)
   {
     *border = has_border ? native_border : 0;
@@ -542,7 +527,6 @@ extern "C" IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int *border, 
     return;
   }
 
-  /* Try to get actual decorations from window (only on first call) */
   if (ih->handle && iupdrvDialogIsVisible(ih))
   {
     QWidget* widget = (QWidget*)ih->handle;
@@ -550,18 +534,15 @@ extern "C" IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int *border, 
 
     if (window)
     {
-      /* Get window geometry vs frame geometry to calculate decorations */
       QRect frame_geom = window->frameGeometry();
       QRect window_geom = window->geometry();
 
-      /* Qt may report identical frame and window geometry when window is first shown
-       * This means decorations aren't ready yet - fall through to use estimates */
+      /* Qt reports identical frame and window geometry until the decorations exist */
       if (frame_geom.width() != window_geom.width() || frame_geom.height() != window_geom.height())
       {
         int win_border = (frame_geom.width() - window_geom.width()) / 2;
         int win_caption = frame_geom.height() - window_geom.height() - win_border;
 
-        /* Sanity check: reasonable decoration sizes */
         if (win_border >= 0 && win_border < 100 && win_caption >= 0 && win_caption < 200)
         {
           *border = has_border ? win_border : 0;
@@ -575,7 +556,6 @@ extern "C" IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int *border, 
             ih->currentheight += 2 * (*border - est_b) + (*caption - est_c);
           }
 
-          /* Cache values for later use - only cache valid non-zero values */
           if (win_border > 0)
             iupAttribSetInt(ih, "_IUPQT_NATIVE_BORDER", win_border);
           if (win_caption > 0)
@@ -587,7 +567,6 @@ extern "C" IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int *border, 
     }
   }
 
-  /* Estimate when not visible or invalid values */
   *border = 0;
   if (has_border)
     *border = native_border ? native_border : est_border;
@@ -635,7 +614,6 @@ extern "C" IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
     if (old_state == IUP_MAXIMIZE || old_state == IUP_MINIMIZE)
       ih->data->show_state = IUP_RESTORE;
 
-    /* Only change window state if widget is already visible */
     if (widget->isVisible())
       widget->setWindowState(widget->windowState() & ~(Qt::WindowMaximized | Qt::WindowMinimized | Qt::WindowFullScreen));
 
@@ -676,12 +654,10 @@ extern "C" IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
     x = -(border);
     y = -(border+caption+menu);
 
-    /* The dialog client area will cover the task bar */
     iupdrvGetFullSize(&width, &height);
 
     height += menu; /* menu is inside the client area */
 
-    /* Set the new size and position */
     iupdrvDialogSetPosition(ih, x, y);
     widget->resize(width, height);
 
@@ -865,7 +841,6 @@ static int qtDialogSetFullScreenAttrib(Ihandle* ih, const char* value)
   {
     if (!iupAttribGet(ih, "_IUPQT_FS_STYLE"))
     {
-      /* Save current state */
       iupAttribSetStr(ih, "_IUPQT_FS_MAXBOX", iupAttribGet(ih, "MAXBOX"));
       iupAttribSetStr(ih, "_IUPQT_FS_MINBOX", iupAttribGet(ih, "MINBOX"));
       iupAttribSetStr(ih, "_IUPQT_FS_MENUBOX", iupAttribGet(ih, "MENUBOX"));
@@ -873,7 +848,6 @@ static int qtDialogSetFullScreenAttrib(Ihandle* ih, const char* value)
       iupAttribSetStr(ih, "_IUPQT_FS_BORDER", iupAttribGet(ih, "BORDER"));
       iupAttribSetStr(ih, "_IUPQT_FS_TITLE", iupAttribGet(ih, "TITLE"));
 
-      /* Remove decorations */
       iupAttribSet(ih, "MAXBOX", "NO");
       iupAttribSet(ih, "MINBOX", "NO");
       iupAttribSet(ih, "MENUBOX", "NO");
@@ -892,7 +866,6 @@ static int qtDialogSetFullScreenAttrib(Ihandle* ih, const char* value)
     {
       iupAttribSet(ih, "_IUPQT_FS_STYLE", NULL);
 
-      /* Restore decorations */
       iupAttribSetStr(ih, "MAXBOX", iupAttribGet(ih, "_IUPQT_FS_MAXBOX"));
       iupAttribSetStr(ih, "MINBOX", iupAttribGet(ih, "_IUPQT_FS_MINBOX"));
       iupAttribSetStr(ih, "MENUBOX", iupAttribGet(ih, "_IUPQT_FS_MENUBOX"));
@@ -1047,7 +1020,6 @@ static int qtDialogSetBackgroundAttrib(Ihandle* ih, const char* value)
   }
   else
   {
-    /* Try to use as image */
     QPixmap* pixmap = (QPixmap*)iupImageGetImage(value, ih, 0, NULL);
     if (pixmap)
     {
@@ -1171,23 +1143,19 @@ extern "C" int qtDialogMapMethod(Ihandle* ih)
 
   ih->handle = (InativeHandle*)dialog;
 
-  /* Handle CUSTOMFRAME */
   if (iupAttribGetBoolean(ih, "CUSTOMFRAME"))
   {
     dialog->setWindowFlags(dialog->windowFlags() | Qt::FramelessWindowHint);
     iupDialogCustomFrameSimulateCheckCallbacks(ih);
   }
 
-  /* Create central widget for content */
   QWidget* central = iupqtNativeContainerNew(0);
   dialog->setCentralWidget(central);
 
-  /* Set initial properties */
   const char* title = iupAttribGetStr(ih, "TITLE");
   if (title)
     dialog->setWindowTitle(QString::fromUtf8(title));
 
-  /* Setup menu if present */
   if (ih->data->menu && !ih->data->menu->handle)
   {
     ih->data->menu->parent = ih;
@@ -1195,16 +1163,13 @@ extern "C" int qtDialogMapMethod(Ihandle* ih)
     IupMap(ih->data->menu);
   }
 
-  /* Configure for DRAG&DROP */
   if (IupGetCallback(ih, "DROPFILES_CB"))
     iupAttribSet(ih, "DROPFILESTARGET", "YES");
 
-  /* Set parent dialog */
   InativeHandle* parent = iupDialogGetNativeParent(ih);
   if (parent)
     iupdrvDialogSetParent(ih, parent);
 
-  /* Configure initial size range */
   qtDialogSetMinMax(ih, 1, 1, 65535, 65535);
 
   /* the ARGB visual has to be requested before the native window exists */
@@ -1223,7 +1188,6 @@ extern "C" void qtDialogUnMapMethod(Ihandle* ih)
 
   if (widget)
   {
-    /* Cleanup menu */
     if (ih->data->menu)
     {
       ih->data->menu->handle = NULL;
@@ -1231,7 +1195,6 @@ extern "C" void qtDialogUnMapMethod(Ihandle* ih)
       ih->data->menu = NULL;
     }
 
-    /* Reset first show flag so dialog can be remapped */
     iupAttribSet(ih, "_IUPQT_FIRST_SHOW_DONE", NULL);
 
     /* Qt will handle widget deletion */
@@ -1268,7 +1231,6 @@ extern "C" void qtDialogLayoutUpdateMethod(Ihandle *ih)
     widget->resize(width, height);
   }
 
-  /* Update min/max constraints for non-resizable dialogs */
   if (!iupAttribGetBoolean(ih, "RESIZE"))
   {
     qtDialogSetMinMax(ih, ih->currentwidth, ih->currentheight,
@@ -1331,7 +1293,6 @@ extern "C" IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
   /* Native Window Handle (platform-specific: XWINDOW, WL_SURFACE, HWND, NSVIEW) */
   iupClassRegisterAttribute(ic, iupqtGetNativeWindowHandleName(), iupqtGetNativeWindowHandleAttrib, NULL, NULL, NULL, IUPAF_NO_STRING|IUPAF_NO_INHERIT);
 
-  /* IupDialog Windows and GTK Only - not implemented yet */
   iupClassRegisterAttribute(ic, "COMPOSITED", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TOOLBOX", NULL, qtDialogSetToolBoxAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "HELPBUTTON", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);

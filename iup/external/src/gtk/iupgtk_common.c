@@ -30,7 +30,6 @@
 
 #include "iupgtk_drv.h"
 
-/* Global state variables for GTK Fixed container */
 static int iupGtkFixedIsGLCanvas = 0;
 
 #if GTK_CHECK_VERSION(3, 0, 0)
@@ -66,7 +65,7 @@ static void iup_gtk_fixed_init (iupGtkFixed *fixed)
   GdkDisplay* display = gdk_display_get_default();
   if (display && GDK_IS_WAYLAND_DISPLAY(display) && iupGtkFixedWindow && iupGtkFixedIsGLCanvas)
   {
-    /* For GL canvas on Wayland, use has_window=FALSE and create subsurface manually */
+    /* a Wayland GL canvas gets a manual subsurface, not a GdkWindow */
     return;
   }
 #endif
@@ -106,8 +105,7 @@ IUP_DRV_API GtkWidget* iupgtkNativeContainerNew(int has_window)
 #endif
 
 #if GTK_CHECK_VERSION(2, 18, 0)
-  /* On Wayland, GL canvas containers should NOT have their own GdkWindow.
-   * We create a manual subsurface instead. */
+  /* a Wayland GL canvas gets a manual subsurface, not a GdkWindow */
 #ifdef GDK_WINDOWING_WAYLAND
   {
     GdkDisplay* display = gdk_display_get_default();
@@ -204,14 +202,11 @@ IUP_DRV_API void iupgtkSetPosSize(GtkContainer* parent, GtkWidget* widget, int x
 
   if (width > 0 && height > 0)
   {
-    /* Check if VISIBLELINES is set, if so, use IUP's calculated height directly */
     const char* visiblelines_set = (const char*)g_object_get_data(G_OBJECT(widget), "iup-visiblelines-set");
     if (visiblelines_set)
     {
-      /* IUP's calculated height includes proper borders */
       gtk_widget_set_size_request(widget, width, height);
 
-      /* For editbox lists (VBox container), also find and set size_request on scrolled_window child */
       if (GTK_IS_BOX(widget))
       {
         GList* children = gtk_container_get_children(GTK_CONTAINER(widget));
@@ -221,7 +216,6 @@ IUP_DRV_API void iupgtkSetPosSize(GtkContainer* parent, GtkWidget* widget, int x
           const char* sw_flag = (const char*)g_object_get_data(G_OBJECT(child), "iup-visiblelines-scrolled");
           if (sw_flag)
           {
-            /* Calculate scrolled_window height (total - entry height) */
             int entry_h = 0;
             for (GList* le = children; le != NULL; le = le->next)
             {
@@ -290,7 +284,6 @@ IUP_SDK_API void iupdrvRedrawNow(Ihandle *ih)
   gtk_widget_queue_draw(ih->handle);
 
 #if !GTK_CHECK_VERSION(3, 22, 0)
-  /* Force a REDRAW (deprecated in GTK 3.22, no replacement needed) */
   if (window)
     gdk_window_process_updates(window, TRUE);
 #endif
@@ -1144,11 +1137,10 @@ IUP_SDK_API int iupdrvIsSystemDarkMode(void)
 #endif
   gtk_style_context_get_color(style, GTK_STATE_FLAG_NORMAL, &fg);
 
-  /* Calculate relative luminance using standard formula (ITU-R BT.709) */
+  /* ITU-R BT.709 luminance */
   bg_lum = 0.2126 * bg.red + 0.7152 * bg.green + 0.0722 * bg.blue;
   fg_lum = 0.2126 * fg.red + 0.7152 * fg.green + 0.0722 * fg.blue;
 
-  /* Dark theme has lower background luminance than foreground */
   is_dark = (bg_lum < fg_lum) ? 1 : 0;
 
   gtk_widget_destroy(temp_window);

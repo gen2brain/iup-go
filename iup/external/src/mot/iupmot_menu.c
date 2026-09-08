@@ -61,8 +61,7 @@ IUP_SDK_API int iupdrvMenuPopup(Ihandle* ih, int x, int y)
       ev.y_root -= height / 2;
   }
 
-  /* Wait for any active button release before showing the popup,
-     otherwise Motif's MenuShell dismisses on release. */
+  /* Motif's MenuShell dismisses on release, so wait for an active button release */
   {
     Window root_ret, child_ret;
     int rx, ry, wx, wy;

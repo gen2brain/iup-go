@@ -279,12 +279,12 @@ typedef struct _Igtk4TableData
   GtkEventController* key_controller;
   GtkEventController* focus_controller;
   int is_virtual;
-  int num_columns;  /* Number of GtkColumnViewColumn objects created */
+  int num_columns;
   int current_row;  /* Current focused row (1-based row_index, 0=none) */
   int current_col;  /* Current focused column (1-based, 0=none) */
-  int has_focus;    /* 1 if table control has keyboard focus */
+  int has_focus;
   double saved_scroll;
-  GtkWidget* drop_highlight_row;  /* Row widget currently showing the drop indicator */
+  GtkWidget* drop_highlight_row;
 } Igtk4TableData;
 
 #define IGTK4_TABLE_DATA(ih) ((Igtk4TableData*)(ih->data->native_data))
@@ -346,7 +346,6 @@ typedef struct _IupCellFactoryData
 
 static GtkWidget* currently_editing_label = NULL;
 
-/* Key handler to track Escape key for cancelling edits */
 static gboolean on_text_key_pressed(GtkEventControllerKey* controller, guint keyval, guint keycode, GdkModifierType state, gpointer user_data)
 {
   GtkWidget* label = GTK_WIDGET(user_data);
@@ -383,7 +382,6 @@ static void on_editing_notify(GObject* object, GParamSpec* pspec, gpointer user_
 
     gint lin = row->row_index;
 
-    /* Update selection to match the row being edited */
     if (GTK_IS_SINGLE_SELECTION(gtk_data->selection_model))
     {
       guint pos = gtk4TableViewPos(gtk_data, lin);
@@ -395,17 +393,13 @@ static void on_editing_notify(GObject* object, GParamSpec* pspec, gpointer user_
       }
     }
 
-    /* Remember this label as currently editing */
     currently_editing_label = GTK_WIDGET(object);
 
-    /* Store original value for comparison when editing ends */
     char* original_value = iupdrvTableGetCellValue(ih, lin, col + 1);
     g_object_set_data_full(object, "original_value", original_value ? g_strdup(original_value) : NULL, g_free);
 
-    /* Clear edit_canceled flag - default is accepted unless Escape is pressed */
     g_object_set_data(object, "edit_canceled", GINT_TO_POINTER(0));
 
-    /* Connect to GtkText to monitor Escape key */
     GtkEditable* editable = GTK_EDITABLE(object);
     GtkWidget* delegate = GTK_WIDGET(gtk_editable_get_delegate(editable));
     if (delegate && GTK_IS_TEXT(delegate))
@@ -416,7 +410,6 @@ static void on_editing_notify(GObject* object, GParamSpec* pspec, gpointer user_
       g_object_set_data(object, "key_controller", key_controller);
     }
 
-    /* Call EDITBEGIN_CB - allow application to block editing */
     IFnii editbegin_cb = (IFnii)IupGetCallback(ih, "EDITBEGIN_CB");
     if (editbegin_cb)
     {
@@ -430,7 +423,6 @@ static void on_editing_notify(GObject* object, GParamSpec* pspec, gpointer user_
   }
   else
   {
-    /* Editing ended */
     GtkListItem* list_item = g_object_get_data(object, "list_item");
     if (!list_item)
       return;
@@ -442,14 +434,11 @@ static void on_editing_notify(GObject* object, GParamSpec* pspec, gpointer user_
     gint lin = row->row_index;
     const char* current_text = gtk_editable_get_text(GTK_EDITABLE(label));
 
-    /* Get original value that was stored when editing started */
     const char* old_text = g_object_get_data(object, "original_value");
 
-    /* Check if Escape was pressed - default is accepted (1) unless canceled (0) */
     int edit_canceled = GPOINTER_TO_INT(g_object_get_data(object, "edit_canceled"));
     int apply = edit_canceled ? 0 : 1;
 
-    /* Remove key controller */
     GtkEventController* key_controller = g_object_get_data(object, "key_controller");
     if (key_controller)
     {
@@ -460,21 +449,19 @@ static void on_editing_notify(GObject* object, GParamSpec* pspec, gpointer user_
       g_object_set_data(object, "key_controller", NULL);
     }
 
-    /* Call EDITEND_CB */
     IFniisi editend_cb = (IFniisi)IupGetCallback(ih, "EDITEND_CB");
     if (editend_cb)
       editend_cb(ih, lin, col + 1, (char*)current_text, apply);
 
-    /* Call VALUECHANGED_CB only if edit was accepted AND text actually changed */
     if (apply)
     {
       int text_changed = 0;
       if (!old_text && current_text && *current_text)
-        text_changed = 1;  /* NULL -> non-empty */
+        text_changed = 1;
       else if (old_text && !current_text)
-        text_changed = 1;  /* non-empty -> NULL */
+        text_changed = 1;
       else if (old_text && current_text && strcmp(old_text, current_text) != 0)
-        text_changed = 1;  /* different text */
+        text_changed = 1;
 
       if (text_changed)
       {
@@ -484,11 +471,9 @@ static void on_editing_notify(GObject* object, GParamSpec* pspec, gpointer user_
       }
     }
 
-    /* Clean up stored data */
     g_object_set_data(object, "edit_canceled", NULL);
     g_object_set_data(object, "original_value", NULL);
 
-    /* Clear currently_editing_label if it's this widget */
     if (currently_editing_label == GTK_WIDGET(object))
       currently_editing_label = NULL;
   }
@@ -513,9 +498,6 @@ static void on_edit_done(GtkEditable* editable, gpointer user_data)
   gint lin = row->row_index;
   const char* new_text = gtk_editable_get_text(editable);
 
-  /* Note: EDITEND_CB is called from on_editing_notify when editing ends, not here */
-  /* This "changed" signal is for EDITION_CB callback */
-
   IFniis edition_cb = (IFniis)IupGetCallback(ih, "EDITION_CB");
   if (edition_cb)
   {
@@ -531,7 +513,6 @@ static void on_label_click_pressed(GtkGestureClick* gesture, int n_press, double
 {
   GtkWidget* widget = gtk_event_controller_get_widget(GTK_EVENT_CONTROLLER(gesture));
 
-  /* Stop editing on the previously active cell */
   if (currently_editing_label && currently_editing_label != widget &&
       GTK_IS_EDITABLE_LABEL(currently_editing_label) &&
       gtk_editable_label_get_editing(GTK_EDITABLE_LABEL(currently_editing_label)))
@@ -1023,24 +1004,20 @@ static void cell_factory_bind(GtkSignalListItemFactory* factory, GtkListItem* li
 
   if (bgcolor && *bgcolor)
   {
-    /* Generate a CSS class name from the color value */
     char class_name[64];
     snprintf(class_name, sizeof(class_name), "iup-cell-bg-%s", bgcolor);
-    /* Replace non-alphanumeric characters that aren't valid in CSS class names */
     for (char* p = class_name; *p; p++)
     {
       if (!g_ascii_isalnum(*p) && *p != '-')
         *p = '-';
     }
 
-    /* Remove old color class if any */
     const char* old_class = g_object_get_data(G_OBJECT(box), "iup-bgcolor-class");
     if (old_class)
     {
       gtk_widget_remove_css_class(box, old_class);
     }
 
-    /* Add static CSS rule for this color (only done once per unique color) */
     /* Use row:not(:selected) so selection highlight shows through */
     char css_rules[128];
     char selector[96];
@@ -1048,13 +1025,11 @@ static void cell_factory_bind(GtkSignalListItemFactory* factory, GtkListItem* li
     snprintf(selector, sizeof(selector), "row:not(:selected) .%s", class_name);
     iupgtk4CssAddStaticRule(selector, css_rules);
 
-    /* Apply the class to this cell */
     gtk_widget_add_css_class(box, class_name);
     g_object_set_data_full(G_OBJECT(box), "iup-bgcolor-class", g_strdup(class_name), g_free);
   }
   else
   {
-    /* Remove old color class if any */
     const char* old_class = g_object_get_data(G_OBJECT(box), "iup-bgcolor-class");
     if (old_class)
     {
@@ -1110,7 +1085,6 @@ static void cell_factory_unbind(GtkSignalListItemFactory* factory, GtkListItem* 
     gtk_widget_remove_css_class(box, "iup-table-focus-rect");
     gtk_widget_remove_css_class(box, "iup-table-focus-rect-unfocused");
 
-    /* Clear global editing pointer if this list item contains the editing widget */
     if (currently_editing_label)
     {
       GtkWidget* child = gtk_widget_get_first_child(box);
@@ -1198,7 +1172,6 @@ static int gtk4TableFindClickedCell(Ihandle* ih, GtkWidget* column_view, double 
   if (!picked)
     return 0;
 
-  /* Walk up from picked widget to find our cell box with factory data */
   GtkWidget* w = picked;
   while (w && w != column_view)
   {
@@ -1253,7 +1226,6 @@ static gboolean on_key_pressed(GtkEventControllerKey* controller, guint keyval, 
 
   if (keyval == GDK_KEY_Left || keyval == GDK_KEY_Right)
   {
-    /* Check if currently editing, if so, let arrow keys move cursor in text */
     GtkWidget* current = gtk_data->column_view;
     while (current)
     {
@@ -1267,7 +1239,6 @@ static gboolean on_key_pressed(GtkEventControllerKey* controller, guint keyval, 
       current = gtk_widget_get_focus_child(current);
     }
 
-    /* Not editing, navigate between cells */
     if (keyval == GDK_KEY_Left && gtk_data->current_col > 1)
     {
       int old_col = gtk_data->current_col;
@@ -1299,7 +1270,6 @@ static gboolean on_key_pressed(GtkEventControllerKey* controller, guint keyval, 
   }
   else if (keyval == GDK_KEY_Return || keyval == GDK_KEY_KP_Enter)
   {
-    /* First check if we're already editing, if so, let Enter end the edit */
     GtkWidget* current = gtk_data->column_view;
     while (current)
     {
@@ -1334,7 +1304,6 @@ static gboolean on_key_pressed(GtkEventControllerKey* controller, guint keyval, 
 
     if (iupStrBoolean(editable_str))
     {
-      /* First, ensure the correct row is selected */
       if (GTK_IS_SINGLE_SELECTION(gtk_data->selection_model))
       {
         if (row > 0 && row <= ih->data->num_lin)
@@ -1345,17 +1314,14 @@ static gboolean on_key_pressed(GtkEventControllerKey* controller, guint keyval, 
           {
             gtk_single_selection_set_selected(GTK_SINGLE_SELECTION(gtk_data->selection_model), pos);
 
-            /* Give GTK a moment to update focus after selection change */
             while (g_main_context_pending(NULL))
               g_main_context_iteration(NULL, FALSE);
           }
         }
       }
 
-      /* Find the GtkEditableLabel for the target column by searching the row */
       GtkWidget* editable_label = NULL;
 
-      /* Walk down focus chain to the row widget */
       GtkWidget* row_widget = NULL;
       GtkWidget* walk = gtk_data->column_view;
       while (walk)
@@ -1371,18 +1337,15 @@ static gboolean on_key_pressed(GtkEventControllerKey* controller, guint keyval, 
 
       if (row_widget)
       {
-        /* Iterate through all cell widgets in the row to find the right column */
         GtkWidget* cell = gtk_widget_get_first_child(row_widget);
         while (cell && !editable_label)
         {
-          /* Each cell contains a GtkBox which contains the GtkEditableLabel */
           GtkWidget* box = gtk_widget_get_first_child(cell);
           if (box)
           {
             GtkWidget* label = gtk_widget_get_first_child(box);
             if (label && GTK_IS_EDITABLE_LABEL(label))
             {
-              /* Check if this is the correct column */
               IupCellFactoryData* factory_data = g_object_get_data(G_OBJECT(box), "iup-factory-data");
               if (factory_data && factory_data->col_index + 1 == col)
               {
@@ -1463,11 +1426,9 @@ static int table_sort_func(gconstpointer a, gconstpointer b, gpointer user_data)
   if (!gtk_data)
     return GTK_ORDERING_EQUAL;
 
-  /* In virtual mode, don't perform automatic sorting */
   if (gtk_data->is_virtual)
     return GTK_ORDERING_EQUAL;
 
-  /* Normal mode - perform automatic sorting */
   IupTableRow* row_a = IUP_TABLE_ROW((gpointer)a);
   IupTableRow* row_b = IUP_TABLE_ROW((gpointer)b);
   gint col = sort_data->col;
@@ -1516,24 +1477,21 @@ static gboolean gtk4TableReanchor(GtkWidget* widget, GdkFrameClock* clock, gpoin
 static void gtk4TableSorterChanged(GtkSorter* sorter, GtkSorterChange change, gpointer user_data)
 {
   Ihandle* ih = (Ihandle*)user_data;
-  (void)change;  /* Unused */
+  (void)change;
 
   if (!ih || !ih->data->sortable || iupAttribGet(ih, "_IUP_GTK4_SORTBUSY"))
     return;
 
-  /* Called in both virtual and non-virtual mode when column header is clicked */
   Igtk4TableData* gtk_data = IGTK4_TABLE_DATA(ih);
   if (!gtk_data || !gtk_data->column_view)
     return;
 
-  /* Get the primary sort column (the one that was just clicked) */
   GtkColumnViewSorter* view_sorter = GTK_COLUMN_VIEW_SORTER(sorter);
   GtkColumnViewColumn* primary_column = gtk_column_view_sorter_get_primary_sort_column(view_sorter);
 
   if (!primary_column)
     return;
 
-  /* Find the index of this column */
   GListModel* columns = gtk_column_view_get_columns(GTK_COLUMN_VIEW(gtk_data->column_view));
   guint n_columns = g_list_model_get_n_items(columns);
 
@@ -1584,7 +1542,6 @@ static void gtk4TableLayoutUpdateMethod(Ihandle* ih)
   int width = ih->currentwidth;
   int height = ih->currentheight;
 
-  /* If VISIBLELINES is set, clamp height to target */
   int target_height = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(widget), "iup-table-target-height"));
   if (target_height > 0)
   {
@@ -1592,7 +1549,6 @@ static void gtk4TableLayoutUpdateMethod(Ihandle* ih)
       height = target_height;
   }
 
-  /* If VISIBLECOLUMNS is set, clamp width to show exactly N columns */
   int visible_columns = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(widget), "iup-table-visible-columns"));
   if (visible_columns > 0 && gtk_data->column_view)
   {
@@ -1611,7 +1567,7 @@ static void gtk4TableLayoutUpdateMethod(Ihandle* ih)
       {
         int col_width = gtk_column_view_column_get_fixed_width(column);
         if (col_width <= 0)
-          col_width = 80;  /* fallback to default */
+          col_width = 80;
         cols_width += col_width;
         g_object_unref(column);
       }
@@ -1620,7 +1576,6 @@ static void gtk4TableLayoutUpdateMethod(Ihandle* ih)
     int sb_size = iupdrvGetScrollbarSize();
     int border = 2;
 
-    /* Only add vertical scrollbar width if it will actually be visible */
     int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
     int need_vert_sb = (visiblelines > 0 && ih->data->num_lin > visiblelines);
     int vert_sb_width = need_vert_sb ? sb_size : 0;
@@ -1630,7 +1585,6 @@ static void gtk4TableLayoutUpdateMethod(Ihandle* ih)
       width = target_width;
   }
 
-  /* Get the parent container and position the widget */
   GtkWidget* parent = gtk_widget_get_parent(widget);
   if (parent)
     iupgtk4NativeContainerSetBounds(parent, widget, ih->x, ih->y, width, height);
@@ -1731,7 +1685,6 @@ static int gtk4TableMapMethod(Ihandle* ih)
     GtkColumnViewColumn* column = gtk_column_view_column_new("", factory);
     gtk_column_view_column_set_resizable(column, ih->data->user_resize);
 
-    /* Check if width was set before mapping */
     char name[50];
     snprintf(name, sizeof(name), "RASTERWIDTH%d", col + 1);
     char* width_str = iupAttribGet(ih, name);
@@ -1744,29 +1697,24 @@ static int gtk4TableMapMethod(Ihandle* ih)
     int col_width = 0;
     int has_explicit_width = (width_str && iupStrToInt(width_str, &col_width) && col_width > 0);
 
-    /* Handle last column */
     if (col == ih->data->num_col - 1)
     {
       if (has_explicit_width)
       {
-        /* Explicit width set, use fixed width, don't stretch */
         gtk_column_view_column_set_fixed_width(column, col_width);
         gtk_column_view_column_set_expand(column, FALSE);
       }
       else if (ih->data->stretch_last)
       {
-        /* No explicit width and stretching enabled, expand to fill */
         gtk_column_view_column_set_expand(column, TRUE);
       }
       else
       {
-        /* No explicit width and stretching disabled, fit to content */
         gtk_column_view_column_set_expand(column, FALSE);
       }
     }
     else
     {
-      /* Non-last columns */
       if (has_explicit_width)
       {
         gtk_column_view_column_set_fixed_width(column, col_width);
@@ -1778,7 +1726,6 @@ static int gtk4TableMapMethod(Ihandle* ih)
     {
       if (gtk_data->is_virtual)
       {
-        /* Virtual mode: Use NULL sorter (get_order returns NONE) */
         /* This makes header clickable but doesn't fetch items */
         GtkCustomSorter* sorter = gtk_custom_sorter_new(NULL, NULL, NULL);
         g_object_set_data_full(G_OBJECT(column), "iup-sorter", g_object_ref(sorter), g_object_unref);
@@ -1789,7 +1736,6 @@ static int gtk4TableMapMethod(Ihandle* ih)
       }
       else
       {
-        /* Non-virtual mode: Use real sort function */
         IupSortData* sort_data = g_new0(IupSortData, 1);
         sort_data->ih = ih;
         sort_data->col = col;
@@ -1808,9 +1754,7 @@ static int gtk4TableMapMethod(Ihandle* ih)
     gtk_data->num_columns++;
   }
 
-  /* Check if we need a dummy expanding column to prevent GTK4 scrollbar errors.
-   * GTK4 requires at least one expanding column or scrollbar calculations fail.
-   */
+  /* GTK4 needs at least one expanding column or scrollbar calculations fail */
   int last_col_has_width = 0;
   {
     char name[50];
@@ -1838,11 +1782,9 @@ static int gtk4TableMapMethod(Ihandle* ih)
 
   if (gtk_data->is_virtual)
   {
-    /* Virtual mode - use model directly (no GtkSortListModel) */
     /* Sorters return EQUAL so no actual sorting happens */
     model_for_selection = gtk_data->model;
 
-    /* Connect sorter changed signal for SORT_CB callback */
     if (ih->data->sortable)
     {
       GtkSorter* sorter = gtk_column_view_get_sorter(GTK_COLUMN_VIEW(gtk_data->column_view));
@@ -1851,12 +1793,10 @@ static int gtk4TableMapMethod(Ihandle* ih)
   }
   else
   {
-    /* Normal mode - use GtkSortListModel for automatic sorting */
     GtkSorter* sorter = gtk_column_view_get_sorter(GTK_COLUMN_VIEW(gtk_data->column_view));
     GtkSortListModel* sort_model = gtk_sort_list_model_new(gtk_data->model, g_object_ref(sorter));
     model_for_selection = G_LIST_MODEL(sort_model);
 
-    /* Connect sorter changed signal for SORT_CB callback */
     if (ih->data->sortable)
     {
       g_signal_connect(G_OBJECT(sorter), "changed", G_CALLBACK(gtk4TableSorterChanged), ih);
@@ -1885,7 +1825,6 @@ static int gtk4TableMapMethod(Ihandle* ih)
 
   gtk_column_view_set_model(GTK_COLUMN_VIEW(gtk_data->column_view), gtk_data->selection_model);
 
-  /* Clear initial selection after model is attached to view */
   if (GTK_IS_SINGLE_SELECTION(gtk_data->selection_model))
   {
     gtk_single_selection_set_selected(GTK_SINGLE_SELECTION(gtk_data->selection_model), GTK_INVALID_LIST_POSITION);
@@ -1993,7 +1932,6 @@ static int gtk4TableMapMethod(Ihandle* ih)
 
   iupdrvTableSetShowGrid(ih, iupAttribGetBoolean(ih, "SHOWGRID"));
 
-  /* Store target height for VISIBLELINES clamping in LayoutUpdate */
   int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
   if (visiblelines > 0)
   {
@@ -2001,7 +1939,6 @@ static int gtk4TableMapMethod(Ihandle* ih)
     int header_height = iupdrvTableGetHeaderHeight(ih);
     int sb_size = iupdrvGetScrollbarSize();
 
-    /* Only add horizontal scrollbar height if it will actually be visible */
     int visiblecolumns = iupAttribGetInt(ih, "VISIBLECOLUMNS");
     int need_horiz_sb = (visiblecolumns > 0 && ih->data->num_col > visiblecolumns);
     int horiz_sb_height = need_horiz_sb ? sb_size : 0;
@@ -2010,7 +1947,6 @@ static int gtk4TableMapMethod(Ihandle* ih)
     g_object_set_data(G_OBJECT(gtk_data->scrolled_win), "iup-table-target-height", GINT_TO_POINTER(content_height));
   }
 
-  /* Store VISIBLECOLUMNS for width clamping in LayoutUpdate */
   int visiblecolumns = iupAttribGetInt(ih, "VISIBLECOLUMNS");
   if (visiblecolumns > 0)
     g_object_set_data(G_OBJECT(gtk_data->scrolled_win), "iup-table-visible-columns", GINT_TO_POINTER(visiblecolumns));
@@ -2212,7 +2148,6 @@ IUP_SDK_API void iupdrvTableSetCellImage(Ihandle* ih, int lin, int col, const ch
 /* Driver Functions - Column Operations                                     */
 /* ========================================================================= */
 
-/* Calculate optimal column width based on header and cell content */
 static int gtk4TableCalculateColumnWidth(Ihandle* ih, int col_index)
 {
   Igtk4TableData* gtk_data = IGTK4_TABLE_DATA(ih);
@@ -2228,7 +2163,6 @@ static int gtk4TableCalculateColumnWidth(Ihandle* ih, int col_index)
     image_extra = charheight + 4;
   }
 
-  /* Measure column title */
   GListModel* columns = gtk_column_view_get_columns(GTK_COLUMN_VIEW(gtk_data->column_view));
   GtkColumnViewColumn* column = g_list_model_get_item(columns, col_index);
   if (column)
@@ -2244,7 +2178,6 @@ static int gtk4TableCalculateColumnWidth(Ihandle* ih, int col_index)
     g_object_unref(column);
   }
 
-  /* Measure cell content (check first N rows for performance) */
   for (int lin = 1; lin <= max_rows_to_check; lin++)
   {
     int cell_width = 0;
@@ -2283,10 +2216,8 @@ IUP_SDK_API void iupdrvTableSetColTitle(Ihandle* ih, int col, const char* title)
   {
     gtk_column_view_column_set_title(column, title ? title : "");
 
-    /* Calculate and set width for columns without explicit width */
     int col_index = col - 1;
 
-    /* Check if this column has explicit width */
     char width_name[50];
     snprintf(width_name, sizeof(width_name), "RASTERWIDTH%d", col);
     char* width_str = iupAttribGet(ih, width_name);
@@ -2296,7 +2227,6 @@ IUP_SDK_API void iupdrvTableSetColTitle(Ihandle* ih, int col, const char* title)
       width_str = iupAttribGet(ih, width_name);
     }
 
-    /* Only calculate width for columns without explicit width and not the last column (which may stretch) */
     if (!width_str && (col_index < ih->data->num_col - 1 || !ih->data->stretch_last))
     {
       /* When using GtkSortListModel (normal mode sortable), don't set fixed width */
@@ -2387,7 +2317,6 @@ IUP_SDK_API void iupdrvTableSetFocusCell(Ihandle* ih, int lin, int col)
     gtk_data->current_row = lin;
     gtk_data->current_col = col;
 
-    /* Set row selection, this will trigger selection changed signal which calls ENTERITEM_CB */
     if (GTK_IS_SINGLE_SELECTION(gtk_data->selection_model))
       gtk_single_selection_set_selected(GTK_SINGLE_SELECTION(gtk_data->selection_model), gtk4TableViewPos(gtk_data, lin));
 
@@ -2436,7 +2365,6 @@ IUP_SDK_API void iupdrvTableRedraw(Ihandle* ih)
 
   if (gtk_data->is_virtual)
   {
-    /* In virtual mode, invalidate only first 100 items to refresh visible content */
     /* This avoids fetching all items while still updating the display */
     guint n_items = g_list_model_get_n_items(gtk_data->model);
     guint invalidate_count = (n_items > 100) ? 100 : n_items;
@@ -2448,7 +2376,6 @@ IUP_SDK_API void iupdrvTableRedraw(Ihandle* ih)
   }
   else
   {
-    /* In non-virtual mode, reset factories to trigger rebind */
     GListModel* columns = gtk_column_view_get_columns(GTK_COLUMN_VIEW(gtk_data->column_view));
     guint n_columns = g_list_model_get_n_items(columns);
 
@@ -2496,31 +2423,25 @@ static void gtk4TableMeasureRowMetrics(Ihandle* ih)
 
   GtkWidget* temp_window = gtk_window_new();
 
-  /* Create a label like the one used in table cells */
   GtkWidget* temp_label = gtk_label_new("Wg");
 
-  /* Create a box like the cell container */
   GtkWidget* temp_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
   gtk_box_append(GTK_BOX(temp_box), temp_label);
 
   gtk_window_set_child(GTK_WINDOW(temp_window), temp_box);
 
-  /* Realize to get accurate measurements */
   gtk_widget_realize(temp_window);
 
-  /* Measure the box (cell container) */
   int min_h, nat_h;
   gtk_widget_measure(temp_box, GTK_ORIENTATION_VERTICAL, -1, &min_h, &nat_h, NULL, NULL);
 
   /* GtkColumnView adds padding around each row */
   gtk4_table_row_height = nat_h + 6;
 
-  /* Header */
   GtkWidget* temp_header_label = gtk_label_new("Header");
   GtkWidget* temp_header_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
   gtk_box_append(GTK_BOX(temp_header_box), temp_header_label);
 
-  /* Measure header */
   int header_min, header_nat;
   gtk_widget_measure(temp_header_label, GTK_ORIENTATION_VERTICAL, -1, &header_min, &header_nat, NULL, NULL);
   gtk4_table_header_height = header_nat + 10;
@@ -2535,10 +2456,8 @@ IUP_SDK_API int iupdrvTableGetRowHeight(Ihandle* ih)
 {
   Igtk4TableData* gtk_data = IGTK4_TABLE_DATA(ih);
 
-  /* If table is mapped and has rows, try to measure actual row */
   if (gtk_data && gtk_data->column_view && ih->data->num_lin > 0)
   {
-    /* Get the selection model to access items */
     GtkSelectionModel* model = gtk_column_view_get_model(GTK_COLUMN_VIEW(gtk_data->column_view));
     if (model)
     {
@@ -2546,11 +2465,9 @@ IUP_SDK_API int iupdrvTableGetRowHeight(Ihandle* ih)
       guint n_items = g_list_model_get_n_items(list_model);
       if (n_items > 0)
       {
-        /* Measure the column view's natural height and calculate row height */
         int min_h, nat_h;
         gtk_widget_measure(gtk_data->column_view, GTK_ORIENTATION_VERTICAL, -1, &min_h, &nat_h, NULL, NULL);
 
-        /* Subtract header height and divide by number of items */
         gtk4TableMeasureRowMetrics(ih);
         int content_height = nat_h - gtk4_table_header_height;
         if (content_height > 0 && n_items > 0)
@@ -2563,7 +2480,6 @@ IUP_SDK_API int iupdrvTableGetRowHeight(Ihandle* ih)
     }
   }
 
-  /* Fallback to pre-measured value */
   gtk4TableMeasureRowMetrics(ih);
   return gtk4_table_row_height;
 }
@@ -2579,7 +2495,6 @@ IUP_SDK_API void iupdrvTableAddBorders(Ihandle* ih, int* w, int* h)
   (void)ih;
   int sb_size = iupdrvGetScrollbarSize();
 
-  /* GtkScrolledWindow: add scrollbar width */
   *w += sb_size;
 
   /* GtkScrolledWindow frame border */

@@ -402,7 +402,6 @@ static int motCalendarCreateMethod(Ihandle* ih, void** params)
   IupSetAttribute(vbox, "MARGIN", "4x4");
   IupSetAttribute(vbox, "GAP", "0");
 
-  /* Day name headers */
   {
     Ihandle* row = IupHbox(NULL);
     Ihandle* spacer = IupLabel("");
@@ -425,7 +424,6 @@ static int motCalendarCreateMethod(Ihandle* ih, void** params)
     IupAppend(vbox, row);
   }
 
-  /* Day grid, 6 rows */
   for (r = 0; r < 6; r++)
   {
     Ihandle* row = IupHbox(NULL);

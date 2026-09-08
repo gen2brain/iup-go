@@ -21,22 +21,19 @@ extern "C" {
 
 struct _IcontrolData
 {
-  /* Table dimensions */
-  int num_lin;  /* Number of rows */
-  int num_col;  /* Number of columns */
+  int num_lin;
+  int num_col;
 
-  /* Table behavior */
-  int sortable;       /* Enable/disable column sorting */
-  int allow_reorder;  /* Enable/disable column reordering */
-  int user_resize;    /* Enable/disable user column resizing */
-  int stretch_last;   /* Enable/disable last column stretching to fill space */
+  int sortable;
+  int allow_reorder;
+  int user_resize;
+  int stretch_last;
 
-  int show_image;     /* Enable image display, set before map only */
-  int fit_image;      /* Scale images to fit row height, default 1 (YES) */
-  int show_dragdrop;  /* Enable interactive row drag-reorder, set before map only */
+  int show_image;     /* set before map only */
+  int fit_image;      /* default 1 */
+  int show_dragdrop;  /* set before map only */
 
-  /* Platform-specific data */
-  void* native_data;  /* Platform-specific data (GtkTreeView, QTableWidget, etc.) */
+  void* native_data;
 };
 
 /* ========================================================================= */

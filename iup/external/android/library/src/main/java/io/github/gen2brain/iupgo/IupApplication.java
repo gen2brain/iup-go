@@ -43,7 +43,6 @@ public class IupApplication extends Application
         Log.i(TAG, "IupApplication.onCreate pkg=" + getPackageName());
     }
 
-    /* Fires IUP exit callback when the last Activity is destroyed. */
     private final class IupActivityLifecycleHandler implements ActivityLifecycleCallbacks
     {
         private int resumedCount;

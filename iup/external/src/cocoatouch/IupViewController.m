@@ -39,7 +39,6 @@
 	_scrollView.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
 	/* default 150ms hold made buttons feel like they needed a double-tap */
 	_scrollView.delaysContentTouches = NO;
-	/* swipe-down dismisses the keyboard so focusing Text on map doesn't trap the user */
 	_scrollView.keyboardDismissMode = UIScrollViewKeyboardDismissModeInteractive;
 	[root addSubview:_scrollView];
 
@@ -56,7 +55,6 @@
 	[nc addObserver:self selector:@selector(keyboardWillHide:)        name:UIKeyboardWillHideNotification        object:nil];
 }
 
-/* keyboard overlap as bottom inset, so interactive dismiss engages when content otherwise fits */
 - (void)keyboardWillChangeFrame:(NSNotification*)note
 {
 	CGRect kb_screen = [note.userInfo[UIKeyboardFrameEndUserInfoKey] CGRectValue];

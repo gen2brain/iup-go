@@ -1,20 +1,6 @@
 /** \file
  * \brief macOS Single Instance Support - CFMessagePort Implementation
  *
- * This file provides single instance detection using CFMessagePort
- * for the Cocoa driver and for GTK/Qt/EFL running on macOS.
- *
- * When the first instance calls iupdrvSingleInstanceSet(), it creates
- * a local CFMessagePort with a well-known name and installs it in the
- * run loop to receive data from subsequent instances.
- *
- * When a second instance calls iupdrvSingleInstanceSet(), it detects
- * that the port name is already in use, sends the command-line arguments
- * via the existing remote port, and returns 1.
- *
- * The first instance delivers received data to the first dialog
- * that has COPYDATA_CB registered, matching the Windows behavior.
- *
  * See Copyright Notice in "iup.h"
  */
 

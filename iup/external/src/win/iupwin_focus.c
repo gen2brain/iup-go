@@ -80,8 +80,7 @@ IUP_DRV_API void iupwinWmSetFocus(Ihandle *ih)
   Ihandle* dialog = IupGetDialog(ih);
   if (!dialog)
   {
-    /* Element is not inside a dialog (e.g., inside a Popover).
-       Just call the focus callback without tracking last focus. */
+    /* Element is not inside a dialog (e.g. inside a Popover) */
     iupCallGetFocusCb(ih);
     return;
   }

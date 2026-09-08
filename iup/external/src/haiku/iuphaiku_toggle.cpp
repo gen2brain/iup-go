@@ -137,8 +137,6 @@ static void haikuToggleDispatchClick(Ihandle* ih)
   if (ret == IUP_CLOSE) IupExitLoop();
 }
 
-/* Wiring for BControl-derived toggles (BCheckBox / BRadioButton). */
-
 template <typename Base>
 class IupHaikuToggleT : public Base
 {
@@ -169,7 +167,7 @@ public:
     Base::MessageReceived(msg);
   }
 
-  /* Custom draw needed for explicit textColor (DrawLabel ignores our HighColor) and for box-on-right */
+  /* DrawLabel ignores the view's HighColor, and the box can sit on the right */
   void Draw(BRect updateRect) override
   {
     bool over_gl = iuphaikuPaintGLBackgroundSlice(this, fIhandle);
@@ -224,7 +222,6 @@ typedef IupHaikuToggleT<BCheckBox>    IupHaikuCheckBox;
 typedef IupHaikuToggleT<BRadioButton> IupHaikuRadioButton;
 
 
-/* Image toggle: BButton in B_TOGGLE_BEHAVIOR mode. */
 class IupHaikuImageToggle : public BButton
 {
 public:
@@ -265,7 +262,6 @@ private:
 };
 
 
-/* SWITCH toggle: squared inset track with be_control_look->DrawSliderThumb on top. */
 class IupHaikuSwitchToggle : public BView
 {
 public:
@@ -512,8 +508,6 @@ static char* haikuStrippedMnemonic(const char* title)
   return iupStrProcessMnemonic(title, NULL, 0);
 }
 
-/* Attribute setters */
-
 static int haikuToggleSetValueAttrib(Ihandle* ih, const char* value)
 {
   BView* v = (BView*)ih->handle;
@@ -642,8 +636,6 @@ static int haikuToggleSetImInactiveAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-/* Map */
-
 static int haikuToggleMapMethod(Ihandle* ih)
 {
   if (iupAttribGet(ih, "IMAGE"))
@@ -711,8 +703,6 @@ static void haikuToggleUnMapMethod(Ihandle* ih)
   }
   iupdrvBaseUnMapMethod(ih);
 }
-
-/* Driver hooks */
 
 extern "C" IUP_SDK_API void iupdrvToggleAddBorders(Ihandle* ih, int *x, int *y)
 {

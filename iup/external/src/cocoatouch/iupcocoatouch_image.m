@@ -85,7 +85,6 @@ static unsigned char* cocoaTouchImageToRGBA(
 	return out;
 }
 
-/* renders cg_image through a scratch context for straight (un-premultiplied) RGBA */
 static unsigned char* cocoaTouchImageReadBackRGBA(CGImageRef cg_image, int* out_w, int* out_h)
 {
 	if (!cg_image) return NULL;
@@ -108,7 +107,6 @@ static unsigned char* cocoaTouchImageReadBackRGBA(CGImageRef cg_image, int* out_
 	CGContextDrawImage(ctx, CGRectMake(0, 0, w, h), cg_image);
 	CGContextRelease(ctx);
 
-	/* un-premultiply for straight channel data */
 	for (size_t i = 0; i < (size_t)w * h; i++)
 	{
 		unsigned char a = buf[i * 4 + 3];
@@ -207,7 +205,6 @@ IUP_SDK_API void* iupdrvImageLoad(const char* name, int type)
 	if (!name) return NULL;
 	NSString* ns_name = [NSString stringWithUTF8String:name];
 
-	/* try raw path, then bundle-relative, then asset catalog, then SF symbol */
 	UIImage* ui_image = [[UIImage alloc] initWithContentsOfFile:ns_name];
 	if (ui_image) return ui_image;
 
@@ -261,7 +258,6 @@ IUP_SDK_API int iupdrvGetIconPixels(Ihandle* ih, const char* value, int* width, 
 	unsigned char* rgba = cocoaTouchImageReadBackRGBA(cg, &w, &h);
 	if (!rgba) return 0;
 
-	/* repack as AARRGGBB */
 	size_t total = (size_t)w * (size_t)h;
 	unsigned char* out = (unsigned char*)malloc(total * 4);
 	if (!out) { free(rgba); return 0; }

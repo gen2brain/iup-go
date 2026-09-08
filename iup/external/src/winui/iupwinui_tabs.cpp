@@ -516,8 +516,6 @@ static void winuiTabsChildRemovedMethod(Ihandle* ih, Ihandle* child, int pos)
   if (!tabView)
     return;
 
-  /* tooltip cleanup handled by XAML */
-
   iupTabsCheckCurrentTab(ih, pos, 1);
 
   IupWinUITabsAux* aux = winuiGetAux<IupWinUITabsAux>(ih, IUPWINUI_TABS_AUX);

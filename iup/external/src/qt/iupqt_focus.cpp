@@ -31,7 +31,6 @@ IUP_DRV_API void iupqtSetCanFocus(QWidget* widget, int can)
 
   if (can)
   {
-    /* Qt::StrongFocus allows both tab and click focus */
     widget->setFocusPolicy(Qt::StrongFocus);
   }
   else
@@ -86,7 +85,7 @@ IUP_DRV_API int iupqtFocusInOutEvent(QWidget* widget, QEvent* evt, Ihandle* ih)
   (void)widget;
 
   if (!iupObjectCheck(ih))
-    return 1; /* TRUE - event handled */
+    return 1;
 
   if (evt->type() == QEvent::FocusIn)
   {
@@ -105,14 +104,13 @@ IUP_DRV_API int iupqtFocusInOutEvent(QWidget* widget, QEvent* evt, Ihandle* ih)
     iupCallKillFocusCb(ih);
   }
 
-  return 0; /* FALSE - allow event to propagate */
+  return 0;
 }
 
 /****************************************************************************
  * Dialog Focus Management
  ****************************************************************************/
 
-/* Called when dialog gets focus - restore focus to last focused control */
 IUP_DRV_API void iupqtDialogSetFocus(Ihandle* ih)
 {
   Ihandle* dialog = IupGetDialog(ih);
@@ -123,7 +121,6 @@ IUP_DRV_API void iupqtDialogSetFocus(Ihandle* ih)
   }
   else
   {
-    /* If a control inside the dialog had focus, restore it */
     Ihandle* lastfocus = (Ihandle*)iupAttribGet(ih, "_IUPQT_LASTFOCUS");
 
     if (iupObjectCheck(lastfocus))

@@ -88,18 +88,15 @@ static void gtkSwitchDrawCairo(Ihandle* ih, IupGtkSwitchData* switch_data, cairo
     border_color = style->dark[GTK_STATE_ACTIVE];
   }
 
-  /* Draw track (filled rectangle) */
   gdk_cairo_set_source_color(cr, &track_color);
   cairo_rectangle(cr, 0, 0, SWITCH_TRACK_WIDTH, SWITCH_TRACK_HEIGHT);
   cairo_fill(cr);
 
-  /* Draw track border */
   gdk_cairo_set_source_color(cr, &border_color);
   cairo_rectangle(cr, 0.5, 0.5, SWITCH_TRACK_WIDTH - 1, SWITCH_TRACK_HEIGHT - 1);
   cairo_set_line_width(cr, 1.0);
   cairo_stroke(cr);
 
-  /* Calculate thumb position */
   if (is_checked)
     thumb_x = SWITCH_TRACK_WIDTH - SWITCH_THUMB_WIDTH - SWITCH_THUMB_MARGIN;
   else
@@ -107,12 +104,10 @@ static void gtkSwitchDrawCairo(Ihandle* ih, IupGtkSwitchData* switch_data, cairo
 
   thumb_y = (SWITCH_TRACK_HEIGHT - SWITCH_THUMB_HEIGHT) / 2;
 
-  /* Draw thumb (filled rectangle) */
   gdk_cairo_set_source_color(cr, &thumb_color);
   cairo_rectangle(cr, thumb_x, thumb_y, SWITCH_THUMB_WIDTH, SWITCH_THUMB_HEIGHT);
   cairo_fill(cr);
 
-  /* Draw thumb border */
   gdk_cairo_set_source_color(cr, &border_color);
   cairo_rectangle(cr, thumb_x + 0.5, thumb_y + 0.5, SWITCH_THUMB_WIDTH - 1, SWITCH_THUMB_HEIGHT - 1);
   cairo_stroke(cr);
@@ -154,15 +149,12 @@ static void gtkSwitchDrawGdk(Ihandle* ih, IupGtkSwitchData* switch_data, GdkWind
   gdk_colormap_alloc_color(colormap, &thumb_color, FALSE, TRUE);
   gdk_colormap_alloc_color(colormap, &border_color, FALSE, TRUE);
 
-  /* Draw track (filled rectangle) */
   gdk_gc_set_foreground(gc, &track_color);
   gdk_draw_rectangle(window, gc, TRUE, 0, 0, SWITCH_TRACK_WIDTH, SWITCH_TRACK_HEIGHT);
 
-  /* Draw track border */
   gdk_gc_set_foreground(gc, &border_color);
   gdk_draw_rectangle(window, gc, FALSE, 0, 0, SWITCH_TRACK_WIDTH - 1, SWITCH_TRACK_HEIGHT - 1);
 
-  /* Calculate thumb position */
   if (is_checked)
     thumb_x = SWITCH_TRACK_WIDTH - SWITCH_THUMB_WIDTH - SWITCH_THUMB_MARGIN;
   else
@@ -170,11 +162,9 @@ static void gtkSwitchDrawGdk(Ihandle* ih, IupGtkSwitchData* switch_data, GdkWind
 
   thumb_y = (SWITCH_TRACK_HEIGHT - SWITCH_THUMB_HEIGHT) / 2;
 
-  /* Draw thumb (filled rectangle) */
   gdk_gc_set_foreground(gc, &thumb_color);
   gdk_draw_rectangle(window, gc, TRUE, thumb_x, thumb_y, SWITCH_THUMB_WIDTH, SWITCH_THUMB_HEIGHT);
 
-  /* Draw thumb border */
   gdk_gc_set_foreground(gc, &border_color);
   gdk_draw_rectangle(window, gc, FALSE, thumb_x, thumb_y, SWITCH_THUMB_WIDTH - 1, SWITCH_THUMB_HEIGHT - 1);
 }
@@ -346,20 +336,16 @@ IUP_SDK_API void iupdrvToggleAddSwitch(Ihandle* ih, int *x, int *y, const char* 
     GtkAllocation allocation;
     int min_w, nat_w, min_h, nat_h;
 
-    /* Add to window, show, and realize to get actual allocated size */
     gtk_container_add(GTK_CONTAINER(temp_window), temp_switch);
     gtk_widget_show_all(temp_window);
     gtk_widget_realize(temp_window);
     gtk_widget_realize(temp_switch);
 
-    /* Force size allocation */
     gtk_widget_get_preferred_width(temp_switch, &min_w, &nat_w);
     gtk_widget_get_preferred_height(temp_switch, &min_h, &nat_h);
 
-    /* Get the actual allocated size after realization */
     gtk_widget_get_allocation(temp_switch, &allocation);
 
-    /* Use allocated size with fallback */
     switch_w = (allocation.width > 0) ? allocation.width : 48;
     switch_h = (allocation.height > 0) ? allocation.height : 24;
 
@@ -373,7 +359,6 @@ IUP_SDK_API void iupdrvToggleAddSwitch(Ihandle* ih, int *x, int *y, const char* 
   if (str && str[0])
     (*x) += 8;
 #else
-  /* GTK2: Use fixed dimensions matching our custom drawing */
   (void)ih;
 
   (*x) += 2 + SWITCH_TRACK_WIDTH + 2;
@@ -939,7 +924,6 @@ static int gtkToggleMapMethod(Ihandle* ih)
   {
     GtkRadioButton* last_tg = (GtkRadioButton*)iupAttribGet(radio, "_IUPGTK_LASTRADIOBUTTON");
 
-    /* Disable SWITCH for radio toggles */
     if (iupAttribGetBoolean(ih, "SWITCH"))
       iupAttribSet(ih, "SWITCH", "NO");
 
@@ -964,7 +948,6 @@ static int gtkToggleMapMethod(Ihandle* ih)
 #if GTK_CHECK_VERSION(3, 0, 0)
         ih->handle = gtk_switch_new();
 #else
-        /* GTK2: Create custom switch using GtkDrawingArea */
         IupGtkSwitchData* switch_data;
 
         switch_data = (IupGtkSwitchData*)calloc(1, sizeof(IupGtkSwitchData));
@@ -982,16 +965,13 @@ static int gtkToggleMapMethod(Ihandle* ih)
           return IUP_ERROR;
         }
 
-        /* Set up events */
         gtk_widget_add_events(ih->handle, GDK_BUTTON_PRESS_MASK | GDK_EXPOSURE_MASK);
 
-        /* Add to parent */
         iupgtkAddToParent(ih);
 
         if (!iupAttribGetBoolean(ih, "CANFOCUS"))
           iupgtkSetCanFocus(ih->handle, 0);
 
-        /* Connect signals */
         g_signal_connect(G_OBJECT(ih->handle), "expose-event", G_CALLBACK(gtkSwitchExposeEvent), switch_data);
         g_signal_connect(G_OBJECT(ih->handle), "button-press-event", G_CALLBACK(gtkSwitchButtonPressEvent), ih);
         g_signal_connect(G_OBJECT(ih->handle), "enter-notify-event", G_CALLBACK(iupgtkEnterLeaveEvent), ih);
@@ -1002,7 +982,6 @@ static int gtkToggleMapMethod(Ihandle* ih)
         g_signal_connect(G_OBJECT(ih->handle), "show-help", G_CALLBACK(iupgtkShowHelp), ih);
         g_signal_connect(G_OBJECT(ih->handle), "destroy", G_CALLBACK(gtkSwitchDestroyCallback), ih);
 
-        /* Set initial value */
         value = iupAttribGet(ih, "VALUE");
         if (value && iupStrBoolean(value))
           switch_data->checked_state = 1;

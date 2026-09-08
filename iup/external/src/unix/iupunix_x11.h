@@ -13,7 +13,6 @@ extern "C" {
 
 #include <dlfcn.h>
 
-/* Type definitions, only when real X11 headers are not included */
 #ifndef _X11_XLIB_H_
 
 typedef struct _XDisplay Display;

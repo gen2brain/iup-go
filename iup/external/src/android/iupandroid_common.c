@@ -45,7 +45,6 @@ IUPJNI_DECLARE_CLASS_GLOBAL(IupFontHelper);
 
 static void iupAndroid_ThreadDestroyed(void* user_data)
 {
-  /* fires when an attached pthread exits; detach + clear TLS to avoid double-detach */
   JNIEnv* jni_env = (JNIEnv*)user_data;
   if (jni_env != NULL)
   {
@@ -60,7 +59,6 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM* java_vm, void* reserved)
 
   s_javaVM = java_vm;
 
-  /* TLS JNIEnv per thread so we can detach on thread exit. */
   if (pthread_key_create(&s_attachThreadKey, iupAndroid_ThreadDestroyed) != 0)
   {
     __android_log_print(ANDROID_LOG_ERROR, "Iup", "Error initializing pthread key");
@@ -70,7 +68,6 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM* java_vm, void* reserved)
 
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
 
-  /* Seed the cache from the correct class loader; later lookups are hits. */
   jclass tmp;
   tmp = IUPJNI_FindClass(IupApplication, jni_env, "io/github/gen2brain/iupgo/IupApplication");
   (*jni_env)->DeleteLocalRef(jni_env, tmp);
@@ -84,7 +81,6 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM* java_vm, void* reserved)
   return JNI_VERSION_1_6;
 }
 
-/* Attaches the calling thread if needed; TLS key detaches on thread exit. */
 JNIEnv* iupAndroid_GetEnvThreadSafe(void)
 {
   JNIEnv* jni_env = NULL;
@@ -160,7 +156,6 @@ jobject iupAndroid_GetApplication(JNIEnv* jni_env)
     ret_object = (*jni_env)->NewLocalRef(jni_env, s_applicationObject);
   }
 
-  /* Caller owns the returned LocalRef and must DeleteLocalRef when done. */
   return ret_object;
 }
 
@@ -569,7 +564,6 @@ IUP_SDK_API void iupdrvWarpPointer(int x, int y)
   (void)y;
 }
 
-/* Lives here (not iupandroid_loop.c) so the class pre-cache in JNI_OnLoad is unconditional. */
 void IupPostMessage(Ihandle* ih, const char* s, int i, double d, void* p)
 {
   IUPJNI_DECLARE_METHOD_ID_STATIC(IupPostMessage_postMessage);
@@ -579,7 +573,6 @@ void IupPostMessage(Ihandle* ih, const char* s, int i, double d, void* p)
   jclass java_class = IUPJNI_FindClass(IupPostMessage, jni_env, "io/github/gen2brain/iupgo/IupPostMessage");
   jmethodID method_id = IUPJNI_GetStaticMethodID(IupPostMessage_postMessage, jni_env, java_class, "postMessage", "(Landroid/content/Context;JJLjava/lang/String;JD)V");
 
-  /* Skip the Java String allocation in the common empty-payload case. */
   jstring j_string = (s && *s) ? (*jni_env)->NewStringUTF(jni_env, s) : NULL;
   (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, app_context, (jlong)(intptr_t)ih, (jlong)(intptr_t)p, j_string, (jlong)i, (jdouble)d);
   iupAndroid_CheckException(jni_env, "IupPostMessage.postMessage");

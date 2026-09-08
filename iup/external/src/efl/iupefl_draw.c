@@ -46,8 +46,7 @@ struct _IdrawCanvas
   int batch_width;
 };
 
-/* Evas stacks later objects above earlier ones, so a new layer after each text or image keeps
-   draw order */
+/* Evas stacks later objects above earlier ones, so a new layer preserves draw order */
 static void iDrawNewLayer(IdrawCanvas* dc)
 {
   Eo* layer = efl_add(EFL_CANVAS_VG_OBJECT_CLASS, dc->frame_evas);

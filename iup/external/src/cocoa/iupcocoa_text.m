@@ -36,13 +36,9 @@ typedef enum
   IUPCOCOATEXTSUBTYPE_STEPPER,
 } IupCocoaTextSubType;
 
-/* Forward declaration */
 static bool cocoaTextComputeLineColumnFromRangeForTextView(NSTextView* text_view, NSRange native_selection_range,
               NSUInteger* out_start_line, NSUInteger* out_start_column, NSUInteger* out_end_line, NSUInteger* out_end_column);
 
-/* Each IUP text subtype requires a completely different Cocoa native widget.
-   This function provides a consistent and centralized way to distinguish which subtype we need.
-   */
 static IupCocoaTextSubType cocoaTextGetSubType(Ihandle* ih)
 {
   if(ih->data->is_multiline)
@@ -94,7 +90,6 @@ static NSTextField* cocoaTextGetStepperTextField(Ihandle* ih)
   return (NSTextField*)iupcocoaGetMainView(ih);
 }
 
-/* Custom text field cell to control text insets */
 @interface IupCocoaTextFieldCell : NSTextFieldCell
 {
   CGFloat _horizPadding;
@@ -273,7 +268,6 @@ static BOOL cocoaTextHandleShouldChangeText(NSTextField* text_field, NSTextView*
 
 @end
 
-/* Custom secure text field cell to control text insets */
 @interface IupCocoaSecureTextFieldCell : NSSecureTextFieldCell
 {
   CGFloat _horizPadding;
@@ -643,7 +637,7 @@ static void cocoaTextCallCaretCb(Ihandle* ih)
     if (menu_ih && menu_ih->handle)
       return (NSMenu*)menu_ih->handle;
     else
-      return nil;  /* Disable context menu */
+      return nil;
   }
   return menu;
 }
@@ -860,17 +854,14 @@ IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int *x, int *y)
   {
     case IUPCOCOATEXTSUBTYPE_VIEW:
       {
-        /* Multiline text view with NSScrollView */
         if (cocoa_scrollview_border_w < 0)
         {
-          /* Measure NSScrollView with bezel border */
           NSScrollView* temp_scroll = [[NSScrollView alloc] initWithFrame:NSZeroRect];
           NSTextView* temp_text = [[NSTextView alloc] initWithFrame:NSZeroRect];
           [temp_scroll setDocumentView:temp_text];
           [temp_scroll setBorderType:NSBezelBorder];
           [temp_scroll setHasVerticalScroller:YES];
 
-          /* Get the content insets */
           NSSize content_size = [temp_scroll contentSize];
 #ifdef GNUSTEP
           NSSize frame_size = [NSScrollView frameSizeForContentSize:content_size
@@ -898,7 +889,6 @@ IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int *x, int *y)
 
         *x += cocoa_scrollview_border_w;
 
-        /* For VISIBLELINES, we need to account for NSTextView's actual line height */
         int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
         if (visiblelines > 0)
         {
@@ -906,7 +896,6 @@ IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int *x, int *y)
 
           if (cocoa_line_height < 0.0)
           {
-            /* Measure actual NSTextView line height */
             IupCocoaFont* iup_font = iupcocoaGetFont(ih);
             NSFont* font = [iup_font nativeFont];
             if (!font)
@@ -916,7 +905,6 @@ IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int *x, int *y)
               font = iup_font ? [iup_font nativeFont] : [NSFont systemFontOfSize:13];
             }
 
-            /* NSLayoutManager calculates the actual line height used by NSTextView */
             NSLayoutManager* layoutManager = [[NSLayoutManager alloc] init];
             cocoa_line_height = [layoutManager defaultLineHeightForFont:font];
             [layoutManager release];
@@ -925,12 +913,10 @@ IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int *x, int *y)
           int char_height;
           iupdrvFontGetCharSize(ih, NULL, &char_height);
 
-          /* Calculate the difference per line */
           int line_spacing = (int)lroundf(cocoa_line_height) - char_height;
           if (line_spacing < 0)
             line_spacing = 0;
 
-          /* Add the total spacing for all visible lines */
           int total_spacing = line_spacing * visiblelines;
           *y += total_spacing;
         }
@@ -941,28 +927,22 @@ IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int *x, int *y)
     case IUPCOCOATEXTSUBTYPE_FIELD:
     case IUPCOCOATEXTSUBTYPE_STEPPER:
       {
-        /* Single line text field (NSTextField) with border */
         if (cocoa_textfield_border_w < 0)
         {
-          /* Measure NSTextField with border */
           NSTextField* temp_field = [[NSTextField alloc] initWithFrame:NSZeroRect];
           [temp_field setBordered:YES];
           [temp_field setBezeled:YES];
           [temp_field setStringValue:@"W"];
 
-          /* Get font metrics */
           NSFont* font = [temp_field font];
           if (!font)
             font = [NSFont systemFontOfSize:13];
 
-          /* Measure text size using font */
           NSDictionary* attrs = @{NSFontAttributeName: font};
           NSSize text_size = [@"W" sizeWithAttributes:attrs];
 
-          /* Get intrinsic content size of the text field */
           NSSize intrinsic_size = [temp_field intrinsicContentSize];
 
-          /* Border is intrinsic size minus text size */
           cocoa_textfield_border_w = (int)lroundf(intrinsic_size.width - text_size.width);
           cocoa_textfield_border_h = (int)lroundf(intrinsic_size.height - text_size.height);
 
@@ -990,7 +970,6 @@ IUP_SDK_API void iupdrvTextAddExtraPadding(Ihandle* ih, int *w, int *h)
 
   if (cocoa_textfield_extra_w < 0)
   {
-    /* Measure the difference between bordered and non-bordered NSTextField */
     NSTextField* temp_bordered = [[NSTextField alloc] initWithFrame:NSZeroRect];
     NSTextField* temp_noframe = [[NSTextField alloc] initWithFrame:NSZeroRect];
 
@@ -1002,11 +981,9 @@ IUP_SDK_API void iupdrvTextAddExtraPadding(Ihandle* ih, int *w, int *h)
     [temp_noframe setBezeled:NO];
     [temp_noframe setStringValue:@"W"];
 
-    /* Get intrinsic sizes - bordered vs non-bordered */
     NSSize bordered_size = [temp_bordered intrinsicContentSize];
     NSSize noframe_size = [temp_noframe intrinsicContentSize];
 
-    /* Get font metrics */
     NSFont* font = [temp_noframe font];
     if (!font)
       font = [NSFont systemFontOfSize:13];
@@ -1014,13 +991,11 @@ IUP_SDK_API void iupdrvTextAddExtraPadding(Ihandle* ih, int *w, int *h)
     NSDictionary* attrs = @{NSFontAttributeName: font};
     NSSize text_size = [@"W" sizeWithAttributes:attrs];
 
-    /* The bezel adds extra size. The internal padding is what remains in no-frame version */
     int extra_from_noframe_w = (int)lroundf(noframe_size.width - text_size.width);
     int extra_from_noframe_h = (int)lroundf(noframe_size.height - text_size.height);
 
     if (extra_from_noframe_w <= 0 || extra_from_noframe_h <= 0)
     {
-      /* Fallback: Use a fraction of the border size as internal padding estimate */
       int bezel_w = (int)lroundf(bordered_size.width - noframe_size.width);
       int bezel_h = (int)lroundf(bordered_size.height - noframe_size.height);
 
@@ -1061,7 +1036,6 @@ static NSUInteger cocoaTextCountGlyphsInString(NSString* text_string)
   return glyph_count;
 }
 
-/* Custom formatter to support UPPERCASE/LOWERCASE filters */
 @interface IupCaseFormatter : NSFormatter
 @property(nonatomic, assign) BOOL uppercase;
 @property(nonatomic, assign) BOOL lowercase;
@@ -1099,14 +1073,13 @@ static NSUInteger cocoaTextCountGlyphsInString(NSString* text_string)
 
 - (BOOL)isPartialStringValid:(NSString**)partial_string proposedSelectedRange:(NSRangePointer)proposed_sel_range originalString:(NSString*)orig_string originalSelectedRange:(NSRange)orig_sel_range errorDescription:(NSString**)the_error
 {
-  /* Transform the string in real-time as the user types */
   if ([self uppercase] && partial_string && *partial_string)
   {
     NSString* upper = [*partial_string uppercaseString];
     if (![*partial_string isEqualToString:upper])
     {
       *partial_string = upper;
-      return NO; /* Force the field to update */
+      return NO;
     }
   }
   else if ([self lowercase] && partial_string && *partial_string)
@@ -1115,11 +1088,10 @@ static NSUInteger cocoaTextCountGlyphsInString(NSString* text_string)
     if (![*partial_string isEqualToString:lower])
     {
       *partial_string = lower;
-      return NO; /* Force the field to update */
+      return NO;
     }
   }
 
-  /* Check NC limit if applicable */
   Ihandle* ih = [self ihandle];
   if (ih && ih->data->nc > 0)
   {
@@ -1135,7 +1107,6 @@ static NSUInteger cocoaTextCountGlyphsInString(NSString* text_string)
 
 @end
 
-/* This formatter supports the NC feature. */
 @interface IupFormatter : NSFormatter
 @property(nonatomic, assign) Ihandle* ihandle;
 @end
@@ -1143,13 +1114,11 @@ static NSUInteger cocoaTextCountGlyphsInString(NSString* text_string)
 /* I only use isPartialStringValid for "NC" */
 @implementation IupFormatter
 
-/* Required. Pass-through behavior */
 - (NSString*) stringForObjectValue:(id)obj_val
 {
   return obj_val;
 }
 
-/* Required. Pass-through behavior */
 - (BOOL)getObjectValue:(id*)out_obj_result forString:(NSString*)the_string errorDescription:(NSString**)the_error
 {
   if(the_error)
@@ -1174,7 +1143,6 @@ static NSUInteger cocoaTextCountGlyphsInString(NSString* text_string)
     *the_error = nil;
   }
 
-  /* Empty string is okay */
   if([partial_string length] == 0)
   {
     return YES;
@@ -1213,7 +1181,6 @@ static NSUInteger cocoaTextCountGlyphsInString(NSString* text_string)
     *the_error = nil;
   }
 
-  /* Empty string is okay */
   if([partial_string length] == 0)
   {
     return YES;
@@ -1231,7 +1198,6 @@ static NSUInteger cocoaTextCountGlyphsInString(NSString* text_string)
 
   NSMutableCharacterSet* allowed_character_set = [[NSCharacterSet decimalDigitCharacterSet] mutableCopy];
   [allowed_character_set autorelease];
-  /* Allow scientific notation, decimal points, and positive and negative. */
   if(NSNumberFormatterNoStyle == [self numberStyle])
   {
     [allowed_character_set addCharactersInString:@"-"];
@@ -1521,13 +1487,12 @@ static int cocoaTextSetTabSizeAttrib(Ihandle* ih, const char* value)
         if(value) iupStrToInt(value, &tab_size);
 
         CGFloat char_width = [[iup_font nativeFont] maximumAdvancement].width;
-        if (char_width == 0) char_width = 8; /* fallback */
+        if (char_width == 0) char_width = 8;
         CGFloat tab_width = tab_size * char_width;
 
         NSMutableParagraphStyle* paragraph_style = [[NSMutableParagraphStyle defaultParagraphStyle] mutableCopy];
         [paragraph_style autorelease];
 
-        /* Create tab stops */
         NSMutableArray* tab_stops = [NSMutableArray array];
         for (int i = 1; i <= 32; i++)
         {
@@ -1538,10 +1503,8 @@ static int cocoaTextSetTabSizeAttrib(Ihandle* ih, const char* value)
         [paragraph_style setTabStops:tab_stops];
         [paragraph_style setDefaultTabInterval:tab_width];
 
-        /* Apply to the text view */
         [text_view setDefaultParagraphStyle:paragraph_style];
 
-        /* Update typing attributes */
         NSMutableDictionary* typing_attributes = [[text_view typingAttributes] mutableCopy];
         [typing_attributes autorelease];
         [typing_attributes setObject:paragraph_style forKey:NSParagraphStyleAttributeName];
@@ -1593,8 +1556,6 @@ static int cocoaTextSetValueAttrib(Ihandle* ih, const char* value)
 
         NSMutableDictionary* attributes = [[iup_font attributeDictionary] mutableCopy];
 
-        /* Ensure a foreground color is present. If a user-defined FGCOLOR exists, it will be used. */
-        /* Otherwise, default to the system's adaptive text color to support dark/light mode. */
         if (![attributes objectForKey:NSForegroundColorAttributeName])
         {
           NSColor* fg_color = cocoaTextColorFromStr(iupAttribGet(ih, "FGCOLOR"));
@@ -1788,10 +1749,8 @@ static int cocoaTextSetFgColorAttrib(Ihandle* ih, const char* value)
         if (!the_color)
           the_color = [NSColor textColor];
 
-        /* This sets typing attributes for new text. */
         [text_view setTextColor:the_color];
 
-        /* This applies the color to all existing text. */
         if ([text_storage length] > 0)
         {
           [text_storage addAttribute:NSForegroundColorAttributeName value:the_color range:full_range];
@@ -1832,7 +1791,6 @@ static int cocoaTextSetFgColorAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-/* For the provided start_line, start_column, end_line, end_column, get the native NSRange for the selection. */
 static bool cocoaTextComputeRangeFromLineColumnForTextView(NSTextView* text_view, NSUInteger start_line, NSUInteger start_column, NSUInteger end_line, NSUInteger end_column, NSRange* out_range)
 {
   *out_range = NSMakeRange(0, 0);
@@ -1852,8 +1810,7 @@ static bool cocoaTextComputeRangeFromLineColumnForTextView(NSTextView* text_view
     return false;
   }
 
-  /* Use logical lines (paragraphs delimited by newlines), matching GTK's
-     gtk_text_buffer_get_iter_at_line() behavior. */
+  /* lines are logical paragraphs delimited by newlines, not wrapped display lines */
   NSUInteger current_line = 1;
   NSUInteger line_start = 0;
   NSUInteger i;
@@ -1887,7 +1844,6 @@ static bool cocoaTextComputeRangeFromLineColumnForTextView(NSTextView* text_view
     }
   }
 
-  /* Find end of end_line to clamp end_column */
   NSUInteger end_line_end = text_length;
   for(NSUInteger j = end_line_start; j < text_length; j++)
   {
@@ -1910,7 +1866,6 @@ static bool cocoaTextComputeRangeFromLineColumnForTextView(NSTextView* text_view
   return true;
 }
 
-/* For a provided native_selection_range, get the start_line, start_column, end_line, end_column */
 static bool cocoaTextComputeLineColumnFromRangeForTextView(NSTextView* text_view, NSRange native_selection_range, NSUInteger* out_start_line, NSUInteger* out_start_column, NSUInteger* out_end_line, NSUInteger* out_end_column)
 {
   *out_start_line = 1;
@@ -1931,7 +1886,6 @@ static bool cocoaTextComputeLineColumnFromRangeForTextView(NSTextView* text_view
   NSUInteger start_pos = native_selection_range.location;
   NSUInteger end_pos = start_pos + native_selection_range.length;
 
-  /* Use logical lines (paragraphs delimited by newlines), matching GTK's behavior. */
   NSUInteger line = 1;
   NSUInteger line_start = 0;
 
@@ -2672,7 +2626,7 @@ static bool cocoaTextParseBulletNumberListFormat(Ihandle* ih, Ihandle* formattag
       [text_view didChangeText];
 
     }
-    else /* We attempt to remove list formatting */
+    else
     {
       NSTextStorage* text_storage = [text_view textStorage];
       NSString* all_string = [text_storage string];
@@ -3125,7 +3079,7 @@ static NSMutableDictionary* cocoaTextParseCharacterFormat(Ihandle* ih, Ihandle* 
 
       attribute_dict = nil;
     }
-    else /* For setTypingAttributes: */
+    else
     {
       NSDictionary<NSAttributedStringKey, id>* current_substring_attributes = [text_view typingAttributes];
 
@@ -4929,8 +4883,6 @@ static int cocoaTextSetClipboardAttrib(Ihandle* ih, const char* value)
   }
   else if(iupStrEqualNoCase(value, "PASTE"))
   {
-    /* Pasting is handled by the shouldChangeTextInRange: delegate methods. */
-    /* Programmatically triggering paste: will be validated by the delegate. */
     [[NSApplication sharedApplication] sendAction:@selector(paste:) to:the_view from:nil];
   }
   else if(iupStrEqualNoCase(value, "CLEAR"))
@@ -5349,8 +5301,7 @@ static int cocoaTextMapMethod(Ihandle* ih)
     [text_view setAllowsUndo:YES];
     [text_view setUsesRuler:NO];
 
-    /* Set text container inset - NSSize(width, height) where width=left+right, height=top+bottom
-     * Use 4.0 for width (2px left + 2px right) and 2.0 for height (1px top + 1px bottom) */
+    /* the inset width is left+right and the height top+bottom */
     [text_view setTextContainerInset:NSMakeSize(4.0, 2.0)];
 
     NSTextContainer* text_container = [text_view textContainer];

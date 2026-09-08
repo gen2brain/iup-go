@@ -45,13 +45,13 @@
 typedef struct _IupWinSwitchData
 {
   double thumb_position;      /* 0.0 = left (off), 1.0 = right (on) */
-  double animation_start;     /* Animation start position */
-  double animation_end;       /* Animation end position */
+  double animation_start;
+  double animation_end;
   DWORD animation_start_time; /* GetTickCount() when animation started */
-  UINT_PTR timer_id;          /* Timer ID for animation */
-  int is_animating;           /* 1 if animation in progress */
+  UINT_PTR timer_id;
+  int is_animating;
   int checked_state;          /* Current checked state (BST_CHECKED or BST_UNCHECKED) */
-  int is_hovering;            /* 1 if mouse is over the control */
+  int is_hovering;
 } IupWinSwitchData;
 
 static double winSwitchEaseOut(double t)
@@ -68,7 +68,6 @@ static void winSwitchAnimationStep(Ihandle* ih, IupWinSwitchData* switch_data)
 
   if (elapsed >= SWITCH_ANIMATION_DURATION)
   {
-    /* Animation complete */
     switch_data->thumb_position = switch_data->animation_end;
     switch_data->is_animating = 0;
 
@@ -80,14 +79,12 @@ static void winSwitchAnimationStep(Ihandle* ih, IupWinSwitchData* switch_data)
   }
   else
   {
-    /* Interpolate with easing */
     double t = (double)elapsed / (double)SWITCH_ANIMATION_DURATION;
     double eased_t = winSwitchEaseOut(t);
     switch_data->thumb_position = switch_data->animation_start +
                                    (switch_data->animation_end - switch_data->animation_start) * eased_t;
   }
 
-  /* Trigger repaint */
   InvalidateRect(ih->handle, NULL, FALSE);
 }
 
@@ -119,19 +116,16 @@ static void winSwitchStartAnimation(Ihandle* ih, IupWinSwitchData* switch_data, 
 
   if (switch_data->timer_id == 0)
   {
-    /* Use a unique timer ID and callback function */
     UINT_PTR timer_id = SetTimer(ih->handle, (UINT_PTR)ih->handle, SWITCH_ANIMATION_INTERVAL, winSwitchTimerProc);
     switch_data->timer_id = timer_id;
   }
   else
   {
-    /* Update animation parameters for new click */
     switch_data->animation_start = switch_data->thumb_position;
     switch_data->animation_end = checked ? 1.0 : 0.0;
     switch_data->animation_start_time = GetTickCount();
   }
 
-  /* Trigger immediate repaint for first frame */
   InvalidateRect(ih->handle, NULL, FALSE);
 }
 
@@ -152,20 +146,17 @@ static void winSwitchCustomDraw(Ihandle* ih, HDC hDC, RECT* rect, UINT itemState
   int is_checked = (switch_data->checked_state == BST_CHECKED);
   int is_disabled = (itemState & ODS_DISABLED) != 0;
 
-  /* Get theme colors - interpolate during animation for smooth transition */
   COLORREF track_color_ref, thumb_color_ref;
   COLORREF track_off_color = GetSysColor(COLOR_BTNSHADOW);
   COLORREF track_on_color = iupwinGetAccentColor();
 
   if (is_disabled)
   {
-    /* Disabled: use consistent gray regardless of checked state */
     track_color_ref = GetSysColor(COLOR_BTNSHADOW);
     thumb_color_ref = GetSysColor(COLOR_BTNFACE);
   }
   else
   {
-    /* Interpolate track color based on thumb position for smooth transition */
     float pos = (float)switch_data->thumb_position;
     track_color_ref = RGB(
       (int)(GetRValue(track_off_color) * (1.0f - pos) + GetRValue(track_on_color) * pos),
@@ -645,7 +636,6 @@ static int winToggleSetValueAttrib(Ihandle* ih, const char* value)
 
     winToggleSetCheck(ih, check);
 
-    /* Start animation if value changed */
     if (switch_data && oldcheck != check)
       winSwitchStartAnimation(ih, switch_data, check);
 
@@ -888,10 +878,8 @@ static int winToggleSwitchMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, L
   switch (msg)
   {
   case WM_MOUSEMOVE:
-    /* Track mouse hover for thumb expansion */
     if (switch_data && !switch_data->is_hovering)
     {
-      /* Enable mouse leave tracking */
       iupwinTrackMouseLeave(ih);
 
       switch_data->is_hovering = 1;
@@ -899,7 +887,6 @@ static int winToggleSwitchMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, L
     }
     break;
   case WM_MOUSELEAVE:
-    /* Remove hover state */
     if (switch_data && switch_data->is_hovering)
     {
       switch_data->is_hovering = 0;
@@ -907,12 +894,10 @@ static int winToggleSwitchMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, L
     }
     break;
   case WM_LBUTTONDOWN:
-    /* Capture mouse to ensure we get WM_LBUTTONUP */
     SetCapture(ih->handle);
     *result = 0;
     return 0;
   case WM_LBUTTONUP:
-    /* Release mouse capture */
     ReleaseCapture();
 
     {
@@ -920,13 +905,10 @@ static int winToggleSwitchMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, L
       int check = switch_data->checked_state;
       int new_check = (check == BST_CHECKED) ? BST_UNCHECKED : BST_CHECKED;
 
-      /* Store the new checked state */
       switch_data->checked_state = new_check;
 
-      /* Update the underlying button state (but this doesn't affect custom drawing) */
       SendMessage(ih->handle, BM_SETCHECK, new_check, 0L);
 
-      /* Start animation (this triggers InvalidateRect internally) */
       if (switch_data)
         winSwitchStartAnimation(ih, switch_data, new_check);
 
@@ -941,7 +923,6 @@ static int winToggleSwitchMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, L
     return 1;
   case WM_THEMECHANGED:
   case WM_SYSCOLORCHANGE:
-    /* Redraw on theme change */
     InvalidateRect(ih->handle, NULL, TRUE);
     break;
   }
@@ -985,11 +966,10 @@ static int winToggleWmCommand(Ihandle* ih, WPARAM wp, LPARAM lp)
       {
         IupWinSwitchData* switch_data = (IupWinSwitchData*)iupAttribGet(ih, "_IUPWIN_SWITCHDATA");
 
-        /* Manually toggle the state (BS_OWNERDRAW doesn't auto-toggle) */
+        /* BS_OWNERDRAW does not auto-toggle */
         int new_check = (check == BST_CHECKED) ? BST_UNCHECKED : BST_CHECKED;
         winToggleSetCheck(ih, new_check);
 
-        /* Start animation */
         if (switch_data)
           winSwitchStartAnimation(ih, switch_data, new_check);
 
@@ -1000,7 +980,6 @@ static int winToggleWmCommand(Ihandle* ih, WPARAM wp, LPARAM lp)
         if (iupObjectCheck(ih))
           iupBaseCallValueChangedCb(ih);
 
-        /* Redraw immediately */
         InvalidateRect(ih->handle, NULL, FALSE);
 
         return 0;
@@ -1118,29 +1097,24 @@ static int winToggleMapMethod(Ihandle* ih)
     dwStyle |= BS_OWNERDRAW | BS_CHECKBOX;
     ownerdraw = 1;
 
-    /* Add tabstop if can focus */
     if (iupAttribGetBoolean(ih, "CANFOCUS"))
       dwStyle |= WS_TABSTOP;
 
-    /* Allocate switch data */
     switch_data = (IupWinSwitchData*)malloc(sizeof(IupWinSwitchData));
     memset(switch_data, 0, sizeof(IupWinSwitchData));
     iupAttribSet(ih, "_IUPWIN_SWITCHDATA", (char*)switch_data);
 
-    /* Create the window */
     if (!iupwinCreateWindow(ih, WC_BUTTON, 0, dwStyle, NULL))
     {
       free(switch_data);
       return IUP_ERROR;
     }
 
-    /* Set up switch-specific callbacks */
     IupSetCallback(ih, "_IUPWIN_COMMAND_CB", (Icallback)winToggleWmCommand);
     IupSetCallback(ih, "_IUPWIN_CTLCOLOR_CB", (Icallback)winToggleCtlColor);
     IupSetCallback(ih, "_IUPWIN_DRAWITEM_CB", (Icallback)winToggleSwitchDrawItem);
     IupSetCallback(ih, "_IUPWIN_CTRLMSGPROC_CB", (Icallback)winToggleSwitchMsgProc);
 
-    /* Initialize thumb position and checked state based on initial value */
     value = iupAttribGet(ih, "VALUE");
     if (value && (iupStrEqualNoCase(value, "ON") || iupStrEqualNoCase(value, "YES") || iupStrEqual(value, "1")))
     {
@@ -1155,7 +1129,6 @@ static int winToggleMapMethod(Ihandle* ih)
       winToggleSetCheck(ih, BST_UNCHECKED);
     }
 
-    /* Force initial paint */
     InvalidateRect(ih->handle, NULL, TRUE);
 
     return IUP_NOERROR;

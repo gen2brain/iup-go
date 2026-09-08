@@ -82,7 +82,6 @@ static char* iConfigSetFilename(Ihandle* ih)
   }
   else
   {
-    /* APP_CONFIG mode: use APP_PATH as base directory */
     if (!app_path)
       return NULL;
 

@@ -1,10 +1,7 @@
 #ifndef IUPMAC_KEYCODES_H
 #define IUPMAC_KEYCODES_H
 
-/*
- * These constants were copied from Carbon's <HIToolbox/Events.h> to avoid
- * dependencies on the deprecated Carbon framework.
- */
+/* Copied from Carbon's <HIToolbox/Events.h> to avoid the deprecated framework. */
 
 /*
  * Virtual keycodes

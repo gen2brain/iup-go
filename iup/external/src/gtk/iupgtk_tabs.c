@@ -603,7 +603,6 @@ static void gtkTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
     iupAttribSet(child, "_IUPTAB_CONTAINER", (char*)tab_container);
     iupAttribSet(child, "_IUPTAB_PAGE", (char*)tab_page);
 
-    /* check if tab reordering is allowed */
     char* allow_reorder = iupAttribGet(ih, "ALLOWREORDER");
     if (iupStrBoolean(allow_reorder))
       gtk_notebook_set_tab_reorderable((GtkNotebook*)ih->handle, tab_page, TRUE);
@@ -733,8 +732,7 @@ IUP_SDK_API void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_title, const 
 #if GTK_CHECK_VERSION(3, 0, 0)
   if (ih->handle)
   {
-    /* Measure first tab's evtbox to derive label overhead,
-       add tab + header CSS (padding + border) */
+    /* measure the first tab evtbox for label overhead, then add tab + header CSS */
     GtkNotebook* notebook = (GtkNotebook*)ih->handle;
     GtkWidget* page = gtk_notebook_get_nth_page(notebook, 0);
     GtkWidget* evtbox = page ? gtk_notebook_get_tab_label(notebook, page) : NULL;
@@ -811,7 +809,6 @@ static void gtkTabsSizeAllocateCallback(GtkWidget* widget, GdkRectangle* allocat
   gboolean scrollable = gtk_notebook_get_scrollable(notebook);
   int i;
 
-  /* Calculate total width needed for all tabs */
   if (n_pages > 0 && (ih->data->type == ITABS_TOP || ih->data->type == ITABS_BOTTOM))
   {
     int total_tabs_width = 0;
@@ -819,11 +816,9 @@ static void gtkTabsSizeAllocateCallback(GtkWidget* widget, GdkRectangle* allocat
     int i;
     int m, s;
 
-    /* Get decoration margins and spacing */
     m = 4;
     s = 2;
 
-    /* Sum up all tab widths and show actual allocations */
     for (i = 0; i < n_pages; i++)
     {
       GtkWidget* page = gtk_notebook_get_nth_page(notebook, i);
@@ -858,7 +853,6 @@ static void gtkTabsSizeAllocateCallback(GtkWidget* widget, GdkRectangle* allocat
   }
   else if (n_pages > 0 && (ih->data->type == ITABS_LEFT || ih->data->type == ITABS_RIGHT))
   {
-    /* Similar logic for LEFT/RIGHT tabs but checking height instead */
     int total_tabs_height = 0;
     int total_allocated_height = 0;
     int total_tabs_width = 0;

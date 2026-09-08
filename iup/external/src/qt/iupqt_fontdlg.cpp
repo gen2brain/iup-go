@@ -66,11 +66,9 @@ static int qtFontDlgPopup(Ihandle* ih, int x, int y)
       if (mapped_name)
         iupStrCopyN(typeface, sizeof(typeface), mapped_name);
 
-      /* Convert size to pixels if negative (already in pixels) */
       int point_size = size;
       if (size < 0)
       {
-        /* Size is in pixels, convert to points */
         int dpi = 96; /* default */
         if (parent)
         {
@@ -103,7 +101,7 @@ static int qtFontDlgPopup(Ihandle* ih, int x, int y)
   QFontDialog* dialog = new QFontDialog(parent);
   dialog->setCurrentFont(initial_font);
 
-  /* To support PREVIEWTEXT, SHOWCOLOR, or HELP_CB, we need the non-native dialog */
+  /* PREVIEWTEXT, SHOWCOLOR and HELP_CB need the non-native dialog */
   const char* preview_text = iupAttribGet(ih, "PREVIEWTEXT");
   bool has_help = (IupGetCallback(ih, "HELP_CB") != nullptr);
 
@@ -118,11 +116,9 @@ static int qtFontDlgPopup(Ihandle* ih, int x, int y)
 
   if (preview_text && strcmp(preview_text, "NONE") != 0)
   {
-    /* Find the sample text edit widget and set preview text */
     QList<QLineEdit*> lineEdits = dialog->findChildren<QLineEdit*>();
     for (QLineEdit* edit : lineEdits)
     {
-      /* The sample text is typically in a read-only line edit */
       if (edit && edit->objectName().contains("sampleEdit", Qt::CaseInsensitive))
       {
         edit->setText(QString::fromUtf8(preview_text));
@@ -130,7 +126,6 @@ static int qtFontDlgPopup(Ihandle* ih, int x, int y)
       }
     }
 
-    /* Also try text edits */
     QList<QTextEdit*> textEdits = dialog->findChildren<QTextEdit*>();
     for (QTextEdit* edit : textEdits)
     {
@@ -142,10 +137,8 @@ static int qtFontDlgPopup(Ihandle* ih, int x, int y)
     }
   }
 
-  /* Add help button if HELP_CB exists */
   if (has_help)
   {
-    /* Find the button box and add help button */
     QDialogButtonBox* button_box = dialog->findChild<QDialogButtonBox*>();
     if (button_box)
     {
@@ -171,13 +164,11 @@ static int qtFontDlgPopup(Ihandle* ih, int x, int y)
     QFont selected_font = dialog->selectedFont();
     QFontInfo font_info(selected_font);
 
-    /* Build font string in IUP format */
     QString family = font_info.family();
     int point_size = font_info.pointSize();
     bool is_bold = font_info.bold();
     bool is_italic = font_info.italic();
 
-    /* Get underline and strikeout from the font directly */
     bool is_underline = selected_font.underline();
     bool is_strikeout = selected_font.strikeOut();
 
@@ -214,7 +205,6 @@ extern "C" IUP_SDK_API void iupdrvFontDlgInitClass(Iclass* ic)
 {
   ic->DlgPopup = qtFontDlgPopup;
 
-  /* IupFontDialog Attributes */
   iupClassRegisterAttribute(ic, "COLOR", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SHOWCOLOR", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "PREVIEWTEXT", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);

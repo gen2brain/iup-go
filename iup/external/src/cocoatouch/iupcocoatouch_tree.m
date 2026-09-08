@@ -998,7 +998,6 @@ static int cocoaTouchTreeSetValueAttrib(Ihandle* ih, const char* value)
 	IupCocoaTouchTreeNode* node = cocoaTouchTreeNodeFromId(ih, id_);
 	if (!node) return 0;
 
-	/* expand ancestors so the row is visible */
 	IupCocoaTouchTreeNode* a = node.parent;
 	while (a) { a.expanded = YES; a = a.parent; }
 	cocoaTouchTreeRebuildFlat(view);

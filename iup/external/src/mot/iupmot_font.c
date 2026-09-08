@@ -782,7 +782,6 @@ IUP_SDK_API int iupdrvFontGetFamilyList(char*** list)
 
   qsort(temp, count, sizeof(char*), motFontFamilyCompare);
 
-  /* remove duplicates after sorting */
   {
     int j = 0;
     for (i = 1; i < count; i++)
@@ -835,7 +834,6 @@ IUP_SDK_API int iupdrvFontGetFamilyList(char*** list)
 
   qsort(temp, count, sizeof(char*), motFontFamilyCompare);
 
-  /* remove duplicates after sorting */
   {
     int j = 0;
     for (i = 1; i < count; i++)

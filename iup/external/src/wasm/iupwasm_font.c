@@ -66,8 +66,7 @@ void iupwasmFontToCss(const char* iupfont, char* css, int csslen)
   int px;
   const char* fallback = "sans-serif";
 
-  /* a style-only value ("Bold", "Italic 14") has no face, and the CSS font shorthand needs one,
-     so it is re-parsed against the system face and the system size fills a missing size */
+  /* a style-only value ("Bold", "Italic 14") has no face, and the CSS font shorthand needs one */
   if (!iupfont || !iupGetFontInfo(iupfont, typeface, &size, &bold, &italic, &underline, &strikeout) ||
       !typeface[0] || size == 0)
   {

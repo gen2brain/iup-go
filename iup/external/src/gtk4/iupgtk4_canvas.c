@@ -36,7 +36,6 @@ static void gtk4CanvasUpdateChildLayout(Ihandle *ih, int flush)
   if (sb_horiz && iupgtk4IsVisible(sb_horiz))
     sb_horiz_height = iupdrvGetScrollbarSize();
 
-  /* Scrollbars need explicit sizing, but canvas should use preferred size for expansion */
   if (sb_vert_width)
     iupgtk4NativeContainerSetBounds(GTK_WIDGET(sb_win), sb_vert,
                                      width-sb_vert_width-border, border,
@@ -76,8 +75,7 @@ static void gtk4CanvasAdjustHorizValueChanged(GtkAdjustment* adjustment, Ihandle
   if (cb)
   {
     cb(ih, IUP_SBPOSH, (float)posx, (float)posy);
-    /* SCROLL_CB uses IupDraw* which calls iupdrvDrawFlush,
-     * which already calls gtk_widget_queue_draw to trigger ACTION callback */
+    /* iupdrvDrawFlush already queues the redraw */
   }
   else
   {
@@ -103,8 +101,7 @@ static void gtk4CanvasAdjustVertValueChanged(GtkAdjustment* adjustment, Ihandle*
   if (cb)
   {
     cb(ih, IUP_SBPOSV, (float)posx, (float)posy);
-    /* SCROLL_CB uses IupDraw* which calls iupdrvDrawFlush,
-     * which already calls gtk_widget_queue_draw to trigger ACTION callback */
+    /* iupdrvDrawFlush already queues the redraw */
   }
   else
   {
@@ -281,9 +278,7 @@ static void gtk4CanvasDraw(GtkDrawingArea *area, cairo_t* cr, int width, int hei
     return;
   }
 
-  /* If there's a persistent buffer from drawing outside ACTION (e.g. SCROLL_CB),
-     use it. When an ACTION callback exists, consume the buffer so the next
-     draw calls ACTION again. Without ACTION, keep the buffer for repaints. */
+  /* with an ACTION the buffer is consumed so the next draw calls ACTION again; without one it persists for repaints */
   if (buffer)
   {
     cairo_set_source_surface(cr, buffer, 0, 0);
@@ -422,7 +417,6 @@ static int gtk4CanvasSetDXAttrib(Ihandle* ih, const char *value)
     else
       linex = iupAttribGetDouble(ih,"LINEX");
 
-    /* GtkScrollbar no longer inherits from GtkRange, use gtk_scrollbar_get_adjustment */
     sb_horiz_adjust = gtk_scrollbar_get_adjustment(GTK_SCROLLBAR(sb_horiz));
 
     if (dx >= (xmax-xmin))
@@ -463,7 +457,6 @@ static int gtk4CanvasSetDXAttrib(Ihandle* ih, const char *value)
 
       iupAttribSet(ih, "XHIDDEN", "NO");
 
-      /* gtk_adjustment_value_changed removed, changes propagate automatically */
       (void)value_changed;
     }
   }
@@ -498,7 +491,6 @@ static int gtk4CanvasSetDYAttrib(Ihandle* ih, const char *value)
     else
       liney = iupAttribGetDouble(ih,"LINEY");
 
-    /* GtkScrollbar no longer inherits from GtkRange, use gtk_scrollbar_get_adjustment */
     sb_vert_adjust = gtk_scrollbar_get_adjustment(GTK_SCROLLBAR(sb_vert));
 
     if (dy >= (ymax-ymin))
@@ -539,7 +531,6 @@ static int gtk4CanvasSetDYAttrib(Ihandle* ih, const char *value)
 
       iupAttribSet(ih, "YHIDDEN", "NO");
 
-      /* gtk_adjustment_value_changed removed, changes propagate automatically */
       (void)value_changed;
     }
   }
@@ -568,7 +559,6 @@ static int gtk4CanvasSetPosXAttrib(Ihandle* ih, const char *value)
 
       ih->data->posx = (float)posx;
 
-      /* GtkScrollbar no longer inherits from GtkRange, use gtk_scrollbar_get_adjustment */
     sb_horiz_adjust = gtk_scrollbar_get_adjustment(GTK_SCROLLBAR(sb_horiz));
       gtk4CanvasAdjustmentSetValue(ih, sb_horiz_adjust, posx);
     }
@@ -599,7 +589,6 @@ static int gtk4CanvasSetPosYAttrib(Ihandle* ih, const char *value)
 
       ih->data->posy = (float)posy;
 
-      /* GtkScrollbar no longer inherits from GtkRange, use gtk_scrollbar_get_adjustment */
       sb_vert_adjust = gtk_scrollbar_get_adjustment(GTK_SCROLLBAR(sb_vert));
       gtk4CanvasAdjustmentSetValue(ih, sb_vert_adjust, posy);
     }
@@ -633,7 +622,6 @@ static void gtk4CanvasLayoutUpdateMethod(Ihandle* ih)
   int sb_vert_width = 0, sb_horiz_height = 0;
   int width, height;
 
-  /* Validate handle before attempting to set size */
   if (!ih->handle || !GTK_IS_DRAWING_AREA(ih->handle))
     return;
 
@@ -648,12 +636,11 @@ static void gtk4CanvasLayoutUpdateMethod(Ihandle* ih)
       sb_horiz_height = iupdrvGetScrollbarSize();
   }
 
-  /* Calculate content size accounting for scrollbars only (NOT border).
-     The border is drawn by the container's snapshot method and naturally creates spacing. */
+  /* the border is drawn by the container snapshot, not part of the content size */
   width = ih->currentwidth - sb_vert_width;
   height = ih->currentheight - sb_horiz_height;
 
-  /* GTK4 DrawingArea REQUIRES content_width/height to have any size. */
+  /* a GtkDrawingArea has no size without content_width/height */
   gtk_drawing_area_set_content_width(GTK_DRAWING_AREA(ih->handle), width);
   gtk_drawing_area_set_content_height(GTK_DRAWING_AREA(ih->handle), height);
 
@@ -967,8 +954,6 @@ static int gtk4CanvasMapMethod(Ihandle* ih)
 
   if (iupAttribGetBoolean(ih, "BORDER"))
   {
-    /* Border is drawn using snapshot method on iupGtk4Fixed container,
-     * and canvas size is reduced in LayoutUpdateMethod (same approach as GTK3). */
     iupAttribSetInt(ih, "_IUPGTK4_BORDER", 1);
     iupgtk4NativeContainerSetBorder(sb_win, 1);
   }
@@ -977,15 +962,12 @@ static int gtk4CanvasMapMethod(Ihandle* ih)
 
   if (ih->data->sb & IUP_SB_HORIZ)
   {
-    /* Create adjustment first */
     GtkAdjustment* sb_horiz_adjust = gtk_adjustment_new(0.0, 0.0, 100.0, 1.0, 10.0, 10.0);
 
-    /* Create scrollbar with the adjustment */
     GtkWidget* sb_horiz = gtk_scrollbar_new(GTK_ORIENTATION_HORIZONTAL, sb_horiz_adjust);
     iupgtk4NativeContainerAdd(sb_win, sb_horiz);
     gtk_widget_set_visible(sb_horiz, TRUE);
 
-    /* Connect to adjustment's value-changed signal BEFORE realize */
     g_signal_connect(G_OBJECT(sb_horiz_adjust), "value-changed", G_CALLBACK(gtk4CanvasAdjustHorizValueChanged), ih);
 
     gtk_widget_realize(sb_horiz);
@@ -995,15 +977,12 @@ static int gtk4CanvasMapMethod(Ihandle* ih)
 
   if (ih->data->sb & IUP_SB_VERT)
   {
-    /* Create adjustment first */
     GtkAdjustment* sb_vert_adjust = gtk_adjustment_new(0.0, 0.0, 100.0, 1.0, 10.0, 10.0);
 
-    /* Create scrollbar with the adjustment */
     GtkWidget* sb_vert = gtk_scrollbar_new(GTK_ORIENTATION_VERTICAL, sb_vert_adjust);
     iupgtk4NativeContainerAdd(sb_win, sb_vert);
     gtk_widget_set_visible(sb_vert, TRUE);
 
-    /* Connect to adjustment's value-changed signal BEFORE realize */
     g_signal_connect(G_OBJECT(sb_vert_adjust), "value-changed", G_CALLBACK(gtk4CanvasAdjustVertValueChanged), ih);
 
     gtk_widget_realize(sb_vert);
@@ -1013,10 +992,7 @@ static int gtk4CanvasMapMethod(Ihandle* ih)
 
   gtk_widget_realize(ih->handle);
 
-  /* Set initial content size BEFORE any subsystem (like EGL) tries to access the GdkSurface.
-     On Wayland, the wl_surface won't be properly accessible until content size is set.
-     We use RASTERSIZE if available, otherwise a minimal default.
-     The LayoutUpdate method will update this to the final calculated size later. */
+  /* on Wayland the wl_surface is not usable by EGL until a content size is set */
   {
     int init_width = ih->userwidth > 0 ? ih->userwidth : (ih->naturalwidth > 0 ? ih->naturalwidth : 1);
     int init_height = ih->userheight > 0 ? ih->userheight : (ih->naturalheight > 0 ? ih->naturalheight : 1);

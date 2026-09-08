@@ -59,7 +59,6 @@ static int gtk4ClipboardSetFormatDataAttrib(Ihandle *ih, const char *value)
 
   if (!value)
   {
-    /* Clear clipboard by setting empty content */
     gdk_clipboard_set_content(clipboard, NULL);
     return 0;
   }
@@ -87,7 +86,6 @@ static int gtk4ClipboardSetFormatDataAttrib(Ihandle *ih, const char *value)
   clip_info->size = size;
   clip_info->mime_type = mime_type;
 
-  /* Use GdkContentProvider for custom formats */
   GBytes *bytes = g_bytes_new_with_free_func(data, size, gtk4ClipboardDataClearFunc, clip_info);
   GdkContentProvider *provider = gdk_content_provider_new_for_bytes(mime_type, bytes);
   g_bytes_unref(bytes);
@@ -99,7 +97,6 @@ static int gtk4ClipboardSetFormatDataAttrib(Ihandle *ih, const char *value)
   return 0;
 }
 
-/* Async callback data for synchronous clipboard read */
 typedef struct {
   GInputStream *stream;
   GError *error;
@@ -139,9 +136,7 @@ static char* gtk4ClipboardGetFormatDataAttrib(Ihandle *ih)
 
   if (gdk_clipboard_is_local(clipboard))
   {
-    /* Local clipboard: read directly from content provider to avoid deadlock.
-       gdk_clipboard_read_async with a nested main loop deadlocks because the
-       provider's async write needs the same main loop that we're blocking. */
+    /* a local provider's async write needs the main loop a nested read would block */
     GdkContentProvider *content = gdk_clipboard_get_content(clipboard);
     if (content)
     {
@@ -177,7 +172,6 @@ static char* gtk4ClipboardGetFormatDataAttrib(Ihandle *ih)
     }
   }
 
-  /* Remote clipboard: use async API with nested main loop */
   {
     const char* mime_types[2];
     gtk4ClipboardReadData read_data;
@@ -281,7 +275,6 @@ static int gtk4ClipboardSetTextAttrib(Ihandle *ih, const char *value)
   return 0;
 }
 
-/* Callback data structure for text clipboard reading */
 typedef struct {
   char *text;
   GMainLoop *loop;
@@ -302,8 +295,6 @@ static char* gtk4ClipboardGetTextAttrib(Ihandle *ih)
   GdkClipboard *clipboard = gtk4ClipboardGet(ih);
   gtk4ClipboardTextData data;
 
-  /* Synchronous text reading using async API with blocking */
-  /* We need to use the async API but wait for it */
   data.text = NULL;
   data.loop = g_main_loop_new(NULL, FALSE);
 
@@ -331,7 +322,6 @@ static int gtk4ClipboardSetImageAttrib(Ihandle *ih, const char *value)
     return 0;
   }
 
-  /* GdkPixbuf → GdkTexture for clipboard */
   texture = (GdkTexture*)iupImageGetImage(value, ih, 0, NULL);
   if (texture)
     gdk_clipboard_set_texture(clipboard, texture);
@@ -354,7 +344,6 @@ static int gtk4ClipboardSetNativeImageAttrib(Ihandle *ih, const char *value)
   return 0;
 }
 
-/* Callback data structure for texture clipboard reading */
 typedef struct {
   GdkTexture *texture;
   GMainLoop *loop;
@@ -375,7 +364,6 @@ static char* gtk4ClipboardGetNativeImageAttrib(Ihandle *ih)
   GdkClipboard *clipboard = gtk4ClipboardGet(ih);
   gtk4ClipboardTextureData data;
 
-  /* Synchronous texture reading using async API with blocking */
   data.texture = NULL;
   data.loop = g_main_loop_new(NULL, FALSE);
 
@@ -417,7 +405,6 @@ static char* gtk4ClipboardGetFormatAvailableAttrib(Ihandle *ih)
 
 static int gtk4ClipboardSetAddFormatAttrib(Ihandle *ih, const char *value)
 {
-  /* No pre-registration needed for MIME types */
   (void)ih;
   (void)value;
   return 0;

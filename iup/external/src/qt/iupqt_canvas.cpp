@@ -39,22 +39,16 @@ public:
 
   IupQtCanvas(QWidget* parent = nullptr) : QWidget(parent), ih(nullptr)
   {
-    /* Enable mouse tracking for motion events */
     setMouseTracking(true);
 
-    /* Accept focus */
     setFocusPolicy(Qt::StrongFocus);
 
-    /* Set size policy */
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
-    /* Accept drops for DROPFILES_CB */
     setAcceptDrops(true);
 
-    /* Use opaque painting - we handle all drawing */
     setAttribute(Qt::WA_OpaquePaintEvent, true);
 
-    /* Enable touch events */
     setAttribute(Qt::WA_AcceptTouchEvents, true);
     setAttribute(Qt::WA_InputMethodEnabled, true);
 
@@ -90,7 +84,6 @@ public:
   {
     if (QGesture* g = ge->gesture(Qt::PinchGesture))
     {
-      /* QPinchGesture carries scale and rotation together; totals are cumulative since start */
       QPinchGesture* p = static_cast<QPinchGesture*>(g);
       int st = gestureState(p->state());
       fireGesture(IUP_GESTURE_PINCH, st, p->centerPoint(), p->totalScaleFactor(), 0.0);
@@ -127,15 +120,13 @@ public:
     }
   }
 
-  /* Override paintEngine() to return nullptr for OpenGL canvases */
   QPaintEngine* paintEngine() const override
   {
     if (ih && iupAttribGet(ih, "_IUP_GLCONTROLDATA"))
     {
-      /* For OpenGL canvases, return nullptr - we're using EGL, not Qt's paint system */
+      /* GL canvases render through EGL; a null paint engine keeps Qt from painting them */
       return nullptr;
     }
-    /* For normal canvases, use the default paint engine */
     return QWidget::paintEngine();
   }
 
@@ -145,7 +136,6 @@ protected:
     if (!ih)
       return;
 
-    /* For EGL/OpenGL canvases, ACTION callback handles everything */
     if (iupAttribGet(ih, "_IUP_GLCONTROLDATA"))
     {
       IFn cb = (IFn)IupGetCallback(ih, "ACTION");
@@ -182,19 +172,16 @@ protected:
       return;
     }
 
-    /* Qt: First, copy persistent buffer to screen if it exists (for SCROLL_CB drawings) */
     QPixmap* buffer = (QPixmap*)iupAttribGet(ih, "_IUPQT_CANVAS_BUFFER");
     if (buffer && !buffer->isNull() && !iupAttribGet(ih, "_IUPQT_UPDATERECT"))
     {
       QPainter painter(this);
       painter.drawPixmap(0, 0, *buffer);
-      /* Qt: Buffer already contains drawing from SCROLL_CB, don't call ACTION callback
-       * because it would redraw at position 0,0 and overwrite the scrolled content */
+      /* a buffer left by SCROLL_CB is shown as is; ACTION would redraw at 0,0 over the scrolled content */
       event->accept();
       return;
     }
 
-    /* No buffer - call ACTION callback to draw */
     IFn cb = (IFn)IupGetCallback(ih, "ACTION");
     iupAttribSet(ih, "_IUPQT_UPDATERECT", NULL);
     if (cb && !(ih->data->inside_resize))
@@ -207,7 +194,6 @@ protected:
 
       iupAttribSet(ih, "CLIPRECT", NULL);
 
-      /* After ACTION draws to buffer, display it */
       buffer = (QPixmap*)iupAttribGet(ih, "_IUPQT_CANVAS_BUFFER");
       if (buffer && !buffer->isNull())
       {
@@ -217,7 +203,6 @@ protected:
     }
     else
     {
-      /* Fallback for regular canvas with no buffer/action */
       QPainter painter(this);
       unsigned char r = 255, g = 255, b = 255;
       char* bgcolor = iupAttribGet(ih, "BGCOLOR");
@@ -236,13 +221,10 @@ protected:
     if (!ih)
       return;
 
-    /* Qt6: Ignore spurious resize events with invalid (0x0) size that occur during window initialization.
-     * These cause the EGL window to collapse to 1x1 minimum size.
-     * Only process resize events with valid dimensions. */
+    /* Qt6 sends 0x0 resize events during window setup; they would collapse the EGL window to 1x1 */
     if (event->size().width() <= 0 || event->size().height() <= 0)
       return;
 
-    /* Invalidate the buffer when canvas size changes - forces ACTION callback to redraw at new size */
     QPixmap* buffer = (QPixmap*)iupAttribGet(ih, "_IUPQT_CANVAS_BUFFER");
     if (buffer)
     {
@@ -258,7 +240,6 @@ protected:
       ih->data->inside_resize = 0;
     }
 
-    /* Trigger repaint after resize */
     update();
   }
 
@@ -299,7 +280,7 @@ protected:
     if (cb)
     {
       QPoint numDegrees = event->angleDelta() / 8;
-      int delta = numDegrees.y() / 15;  /* Number of notches */
+      int delta = numDegrees.y() / 15;
 
 #if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
       int x = event->position().x();
@@ -418,7 +399,6 @@ protected:
 
     if (IupGetCallback(ih, "DROPFILES_CB"))
     {
-      /* Accept drops if they contain URLs (files) */
       if (event->mimeData()->hasUrls())
       {
         event->acceptProposedAction();
@@ -488,7 +468,6 @@ protected:
         int count = points.size();
         if (count > 0)
         {
-          /* fires TOUCH_CB per point + one MULTITOUCH_CB; first point is the primary */
           QVarLengthArray<int> ids(count), xs(count), ys(count), states(count);
 
           for (int i = 0; i < count; i++)
@@ -564,10 +543,10 @@ protected:
 
 struct IupQtCanvasContainer
 {
-  QWidget* container;      /* Main container widget */
-  IupQtCanvas* canvas;     /* Canvas widget */
-  QScrollBar* sb_horiz;    /* Horizontal scrollbar */
-  QScrollBar* sb_vert;     /* Vertical scrollbar */
+  QWidget* container;
+  IupQtCanvas* canvas;
+  QScrollBar* sb_horiz;
+  QScrollBar* sb_vert;
 };
 
 /****************************************************************************
@@ -609,7 +588,6 @@ static void qtCanvasScrollCallback(Ihandle* ih, QScrollBar* scrollbar, int orien
   }
 }
 
-/* SliderAction -> op; drag/programmatic stay position */
 static int qtCanvasSliderActionToIup(int action, int is_vert)
 {
   switch (action)
@@ -656,7 +634,6 @@ static void qtCanvasProcessScroll(Ihandle* ih, QScrollBar* scrollbar, int orient
     op = IUP_SBPOSH;
   }
 
-  /* Calculate new position from scrollbar */
   int scrollbar_val = scrollbar->value();
   int scrollbar_max = scrollbar->maximum();
 
@@ -681,7 +658,6 @@ static void qtCanvasProcessScroll(Ihandle* ih, QScrollBar* scrollbar, int orient
     }
   }
 
-  /* Call scroll callback */
   qtCanvasScrollCallback(ih, scrollbar, orientation, op);
 }
 
@@ -801,15 +777,12 @@ static int qtCanvasMapMethod(Ihandle* ih)
 {
   IupQtCanvasContainer* container_data = new IupQtCanvasContainer();
 
-  /* Create extra parent for absolute positioning of IUP children.
-     This widget has NO layout, allowing child widgets to be positioned with move(). */
+  /* the extra parent has no layout, so IUP children can be placed with move() */
   QWidget* extra_parent = iupqtNativeContainerNew(0);
 
-  /* Create main container widget for canvas and its scrollbars */
   QWidget* container = new QWidget(extra_parent);
   container_data->container = container;
 
-  /* IupQtCanvas handles ACTION callback and paintEvent for both */
   IupQtCanvas* canvas = new IupQtCanvas();
   canvas->ih = ih;
   container_data->canvas = canvas;
@@ -817,7 +790,7 @@ static int qtCanvasMapMethod(Ihandle* ih)
 
   if (iupAttribGet(ih, "_IUP_GLCONTROLDATA") && !IupClassMatch(ih, "glbackgroundbox"))
   {
-    /* Wayland: our GL renders into a subsurface on the dialog's wl_surface, not a canvas-owned one. */
+    /* Wayland: GL renders into a subsurface on the dialog's wl_surface, not a canvas-owned one */
     const char* windowing = IupGetGlobal("WINDOWING");
     if (!(windowing && strcmp(windowing, "WAYLAND") == 0))
     {
@@ -829,14 +802,12 @@ static int qtCanvasMapMethod(Ihandle* ih)
     iupAttribSet(ih, "_IUPQT_CANVAS_WIDGET", (char*)canvas_widget);
   }
 
-  /* Get scrollbar flags, required for DX/DY attribute setters */
   ih->data->sb = iupBaseGetScrollbar(ih);
 
   int has_sb = (ih->data->sb != IUP_SB_NONE);
 
   if (has_sb)
   {
-    /* Create layout */
     QVBoxLayout* vbox = new QVBoxLayout(container);
     vbox->setContentsMargins(0, 0, 0, 0);
     vbox->setSpacing(0);
@@ -847,7 +818,6 @@ static int qtCanvasMapMethod(Ihandle* ih)
 
     hbox->addWidget(canvas_widget);
 
-    /* Vertical scrollbar */
     if (ih->data->sb & IUP_SB_VERT)
     {
       QScrollBar* sb_vert = new QScrollBar(Qt::Vertical);
@@ -868,7 +838,6 @@ static int qtCanvasMapMethod(Ihandle* ih)
 
     vbox->addLayout(hbox);
 
-    /* Horizontal scrollbar */
     if (ih->data->sb & IUP_SB_HORIZ)
     {
       QScrollBar* sb_horiz = new QScrollBar(Qt::Horizontal);
@@ -889,7 +858,6 @@ static int qtCanvasMapMethod(Ihandle* ih)
   }
   else
   {
-    /* No scrollbars - simple layout */
     QHBoxLayout* layout = new QHBoxLayout(container);
     layout->setContentsMargins(0, 0, 0, 0);
     layout->addWidget(canvas_widget);
@@ -900,8 +868,6 @@ static int qtCanvasMapMethod(Ihandle* ih)
 
   iupAttribSet(ih, "_IUPQT_CANVAS_CONTAINER", (char*)container_data);
 
-  /* ih->handle is the container with layout (for canvas drawing)
-     _IUP_EXTRAPARENT is the outer container without layout (for absolute child positioning) */
   ih->handle = (InativeHandle*)container;
   iupAttribSet(ih, "_IUP_EXTRAPARENT", (char*)extra_parent);
 
@@ -922,7 +888,6 @@ static int qtCanvasMapMethod(Ihandle* ih)
 
 static void qtCanvasUnMapMethod(Ihandle* ih)
 {
-  /* Clean up the persistent buffer */
   QPixmap* buffer = (QPixmap*)iupAttribGet(ih, "_IUPQT_CANVAS_BUFFER");
   if (buffer)
   {
@@ -943,7 +908,6 @@ static void qtCanvasUnMapMethod(Ihandle* ih)
     iupAttribSet(ih, "_IUPQT_CANVAS_CONTAINER", nullptr);
   }
 
-  /* Delete the extra parent (which will also delete ih->handle as its child) */
   QWidget* extra_parent = (QWidget*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
   if (extra_parent)
   {
@@ -961,10 +925,8 @@ static void qtCanvasUnMapMethod(Ihandle* ih)
 
 static void qtCanvasLayoutUpdateMethod(Ihandle* ih)
 {
-  /* First call the base layout update to position the extra_parent */
   iupdrvBaseLayoutUpdateMethod(ih);
 
-  /* Now resize the container (ih->handle) to fill the extra_parent */
   QWidget* container = (QWidget*)ih->handle;
   if (container)
   {
@@ -993,7 +955,6 @@ void qtCanvasUpdate(Ihandle* ih)
 
 IUP_DRV_API void* iupqtCanvasGetContext(Ihandle* ih)
 {
-  /* Return the IupQtCanvas widget for both normal canvas and GLCanvas */
   IupQtCanvasContainer* container_data = qtCanvasGetContainer(ih);
 
   if (container_data && container_data->canvas)
@@ -1153,7 +1114,6 @@ static char* qtCanvasGetDrawSizeAttrib(Ihandle* ih)
 
 static char* qtCanvasGetDrawableAttrib(Ihandle* ih)
 {
-  /* Return the native graphics context */
   return (char*)iupqtCanvasGetContext(ih);
 }
 
@@ -1204,7 +1164,6 @@ static int qtCanvasSetUpdateRectAttrib(Ihandle* ih, const char* value)
 static void* qtCanvasGetInnerNativeContainerHandleMethod(Ihandle* ih, Ihandle* child)
 {
   (void)child;
-  /* Return the extra_parent widget for absolute positioning of child elements */
   QWidget* extra_parent = (QWidget*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
   if (extra_parent)
     return (void*)extra_parent;
@@ -1223,13 +1182,11 @@ extern "C" IUP_SDK_API void iupdrvCanvasInitClass(Iclass* ic)
   ic->LayoutUpdate = qtCanvasLayoutUpdateMethod;
   ic->GetInnerNativeContainerHandle = qtCanvasGetInnerNativeContainerHandleMethod;
 
-  /* Canvas specific */
   iupClassRegisterAttribute(ic, "BGCOLOR", nullptr, qtCanvasSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "BORDER", nullptr, qtCanvasSetBorderAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "DRAWSIZE", qtCanvasGetDrawSizeAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DRAWABLE", qtCanvasGetDrawableAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY|IUPAF_NO_INHERIT);
 
-  /* Scrollbar attributes */
   iupClassRegisterAttribute(ic, "DX", nullptr, qtCanvasSetDXAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DY", nullptr, qtCanvasSetDYAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "POSX", iupCanvasGetPosXAttrib, qtCanvasSetPosXAttrib, "0", nullptr, IUPAF_NO_INHERIT);
@@ -1245,22 +1202,18 @@ extern "C" IUP_SDK_API void iupdrvCanvasInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "XHIDDEN", nullptr, nullptr, nullptr, nullptr, IUPAF_READONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "YHIDDEN", nullptr, nullptr, nullptr, nullptr, IUPAF_READONLY|IUPAF_NO_INHERIT);
 
-  /* Scrollbar state */
   iupClassRegisterAttribute(ic, "SCROLLVISIBLE", qtCanvasGetScrollVisibleAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY|IUPAF_NO_INHERIT);
 
-  /* Touch (always enabled via WA_AcceptTouchEvents) */
   iupClassRegisterCallback(ic, "TOUCH_CB", "iiis");
   iupClassRegisterCallback(ic, "MULTITOUCH_CB", "iIII");
   iupClassRegisterCallback(ic, "GESTURE_CB", "iiiidd");
 
-  /* Native window handle (platform-specific: XWINDOW, WL_SURFACE, HWND, NSVIEW) */
   iupClassRegisterAttribute(ic, iupqtGetNativeWindowHandleName(), iupqtGetNativeWindowHandleAttrib, nullptr, nullptr, nullptr, IUPAF_NO_STRING|IUPAF_NO_INHERIT);
 
   /* Not supported */
   iupClassRegisterAttribute(ic, "TOUCH", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "BACKINGSTORE", nullptr, nullptr, "YES", nullptr, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 
-  /* Other attributes */
   iupClassRegisterAttribute(ic, "DROPFILESTARGET", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "HTTRANSPARENT", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "WHEELDROPFOCUS", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);

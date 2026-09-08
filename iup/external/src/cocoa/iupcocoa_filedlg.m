@@ -31,7 +31,6 @@ static void cocoaFileDlgUpdatePreviewGLCanvas(Ihandle* ih)
   }
 }
 
-/* Helper to get the next string in a list of null-separated strings. */
 static char* iupCocoaFileDlgGetNextStr(char* str)
 {
   int len = (int)strlen(str);
@@ -91,7 +90,6 @@ static void cocoaPreviewSetButtonStatus(int button, char* status)
   NSString* path_str = [self previewPath];
   BOOL is_dir;
 
-  /* Mirror IupCanvas drawRect: run PAINT, then blit the buffer it filled. */
   iupAttribSet(ih, "CGCONTEXT", (char*)[[NSGraphicsContext currentContext] CGContext]);
 
   if (path_str && [[NSFileManager defaultManager] fileExistsAtPath:path_str isDirectory:&is_dir] && !is_dir)
@@ -595,14 +593,12 @@ static int cocoaFileDlgPopup(Ihandle *ih, int x, int y)
 
             if (use_full_path)
             {
-              /* Append the full path for both VALUE and MULTIVALUE. */
               [value_str appendString:path_str];
               [value_str appendString:@"|"];
               iupAttribSetStrId(ih, "MULTIVALUE", multivalue_idx, [path_str UTF8String]);
             }
             else
             {
-              /* Append just the filename for both VALUE and MULTIVALUE. */
               NSString* filename_str = [path_str lastPathComponent];
               [value_str appendString:filename_str];
               [value_str appendString:@"|"];
@@ -679,7 +675,6 @@ IUP_SDK_API void iupdrvFileDlgInitClass(Iclass* ic)
 {
   ic->DlgPopup = cocoaFileDlgPopup;
 
-  /* IupFileDialog common */
   iupClassRegisterAttribute(ic, "EXTFILTER", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FILTERINFO", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FILTERUSED", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);

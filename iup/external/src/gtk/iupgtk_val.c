@@ -78,7 +78,6 @@ IUP_SDK_API void iupdrvValGetMinSize(Ihandle* ih, int *w, int *h)
     *h = vert_min_h;
   }
 #else
-  /* GTK2 fallback */
   if (ih->data->orientation == IVAL_HORIZONTAL)
   {
     *w = 100;

@@ -93,10 +93,10 @@ static int gtk4KeyMap2Iup(guint keyval, GdkModifierType state)
   if (state & GDK_CONTROL_MASK)
     code = iup_XkeyCtrl(code);
 
-  if (state & GDK_ALT_MASK)       /* Alt: consolidated from MOD1/MOD5 */
+  if (state & GDK_ALT_MASK)
     code = iup_XkeyAlt(code);
 
-  if (state & GDK_SUPER_MASK)     /* Apple/Win: renamed from MOD4 */
+  if (state & GDK_SUPER_MASK)
     code = iup_XkeySys(code);
 
   return code;
@@ -106,7 +106,7 @@ IUP_DRV_API int iupgtk4KeyDecode(guint keyval, GdkModifierType state)
 {
   int i;
 
-  if ((state & GDK_LOCK_MASK) && /* NumLock: GDK_MOD2_MASK → GDK_LOCK_MASK */
+  if ((state & GDK_LOCK_MASK) &&
       (keyval >= GDK_KEY_KP_Home) &&
       (keyval <= GDK_KEY_KP_Delete))
   {
@@ -211,7 +211,6 @@ IUP_DRV_API gboolean iupgtk4KeyPressEvent(GtkEventControllerKey *controller, gui
   if (code == 0)
     return FALSE;
 
-  /* Get the widget that this controller is attached to */
   widget = gtk_event_controller_get_widget(GTK_EVENT_CONTROLLER(controller));
 
   /* Avoid duplicate calls if a child of a native container contains the focus.
@@ -319,7 +318,6 @@ IUP_DRV_API void iupgtk4ButtonKeySetStatus(GdkModifierType state, unsigned int b
   if (but==5)
     iupKEY_SETBUTTON5(status);
 
-  /* If button parameter is 0 (motion events), check button masks in state */
   if (but == 0)
   {
     if (state & GDK_BUTTON1_MASK)
@@ -338,10 +336,10 @@ IUP_DRV_API void iupgtk4ButtonKeySetStatus(GdkModifierType state, unsigned int b
       iupKEY_SETBUTTON5(status);
   }
 
-  if (state & GDK_ALT_MASK) /* Alt: consolidated */
+  if (state & GDK_ALT_MASK)
     iupKEY_SETALT(status);
 
-  if (state & GDK_SUPER_MASK) /* Apple/Win: renamed */
+  if (state & GDK_SUPER_MASK)
     iupKEY_SETSYS(status);
 
   if (doubleclick)

@@ -226,7 +226,7 @@ static int iPopoverSetAnchorAttrib(Ihandle* ih, const char* value)
       iupAttribSet(ih, "_IUP_POPOVER_ANCHOR", (char*)anchor);
   }
 
-  return 1; /* store the name */
+  return 1;
 }
 
 static char* iPopoverGetExpandAttrib(Ihandle* ih)
@@ -240,14 +240,13 @@ static int iPopoverSetExpandAttrib(Ihandle* ih, const char* value)
 {
   (void)ih;
   (void)value;
-  return 0;  /* do not store, popover does not expand */
+  return 0;
 }
 
 static void iPopoverComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *children_expand)
 {
   if (ih->firstchild)
   {
-    /* update child natural size first */
     iupBaseComputeNaturalSize(ih->firstchild);
 
     *w = ih->firstchild->naturalwidth;
@@ -266,7 +265,6 @@ static void iPopoverSetChildrenCurrentSizeMethod(Ihandle* ih, int shrink)
 {
   if (ih->firstchild)
   {
-    /* Child fills the popover content area */
     iupBaseSetCurrentSize(ih->firstchild, ih->currentwidth, ih->currentheight, shrink);
   }
 }
@@ -299,9 +297,9 @@ Iclass* iupPopoverNewClass(void)
 
   ic->name = "popover";
   ic->cons = "Popover";
-  ic->format = "h";   /* one Ihandle* */
+  ic->format = "h";
   ic->nativetype = IUP_TYPECONTROL;
-  ic->childtype = IUP_CHILDMANY+1;  /* 1 child */
+  ic->childtype = IUP_CHILDMANY+1;
   ic->is_interactive = 0;
 
   /* Class functions */
@@ -321,7 +319,6 @@ Iclass* iupPopoverNewClass(void)
   /* Driver initializes Map/UnMap and attributes (including VISIBLE override) */
   iupdrvPopoverInitClass(ic);
 
-  /* Override EXPAND, popover does not expand */
   iupClassRegisterAttribute(ic, "EXPAND", iPopoverGetExpandAttrib, iPopoverSetExpandAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
 
   /* Popover specific attributes */

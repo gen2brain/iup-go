@@ -83,7 +83,7 @@ extern "C" IUP_API int IupExecuteWait(const char* filename, const char* paramete
 
 extern "C" IUP_API int IupHelp(const char* url)
 {
-  /* Haiku's /bin/open dispatches by MIME type, same as macOS. */
+  /* /bin/open dispatches by MIME type. */
   const char* browser = getenv("IUP_HELPAPP");
   if (!browser)
     browser = IupGetGlobal("HELPAPP");

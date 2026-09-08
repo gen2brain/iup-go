@@ -10,7 +10,7 @@
 #include <clocale>
 
 #if defined(__linux__)
-#include <unistd.h>  /* for readlink() */
+#include <unistd.h>
 #endif
 
 #include <QApplication>
@@ -80,11 +80,7 @@ IUP_DRV_API char* iupqtGetNativeWidgetHandle(QWidget *widget)
 
   QString platform = QGuiApplication::platformName();
 
-  /* winId() returns the platform-native handle:
-   *   xcb     -> X Window ID (XID)
-   *   windows -> HWND
-   *   cocoa   -> NSView*
-   *   wayland -> wl_surface* (Qt 6.9+; undefined before that)
+  /* winId() is the native handle: XID on xcb, HWND, NSView*, wl_surface* only on Qt 6.9+
    */
   if (platform == "wayland")
   {
@@ -128,7 +124,6 @@ IUP_DRV_API const char* iupqtGetNativeFontIdName(void)
   if (strcmp(platform, "windows") == 0)
     return "HFONT";
 
-  /* Wayland and macOS use Qt's font system */
   return NULL;
 }
 
@@ -153,13 +148,11 @@ IUP_DRV_API void iupqtStrRelease(void)
 
 IUP_DRV_API char* iupqtStrConvertToSystem(const char* str)
 {
-  /* Qt uses UTF-8 internally, so no conversion needed */
   return (char*)str;
 }
 
 IUP_DRV_API char* iupqtStrConvertToSystemLen(const char* str, int *len)
 {
-  /* Qt uses UTF-8 internally */
   if (len)
     *len = (int)strlen(str);
   return (char*)str;
@@ -167,31 +160,26 @@ IUP_DRV_API char* iupqtStrConvertToSystemLen(const char* str, int *len)
 
 IUP_DRV_API char* iupqtStrConvertFromSystem(const char* str)
 {
-  /* Qt uses UTF-8 internally */
   return (char*)str;
 }
 
 IUP_DRV_API char* iupqtStrConvertFromFilename(const char* str)
 {
-  /* Qt handles filenames correctly across platforms */
   return (char*)str;
 }
 
 IUP_DRV_API char* iupqtStrConvertToFilename(const char* str)
 {
-  /* Qt handles filenames correctly across platforms */
   return (char*)str;
 }
 
 IUP_DRV_API void iupqtStrSetUTF8Mode(int utf8mode)
 {
-  /* Qt is always UTF-8 */
   (void)utf8mode;
 }
 
 IUP_DRV_API int iupqtStrGetUTF8Mode(void)
 {
-  /* Qt is always UTF-8 */
   return 1;
 }
 
@@ -299,11 +287,10 @@ static int qtPaletteIsDark(const QPalette& palette)
   QColor bg = palette.color(QPalette::Window);
   QColor fg = palette.color(QPalette::WindowText);
 
-  /* Calculate relative luminance using standard formula (ITU-R BT.709) */
+  /* ITU-R BT.709 relative luminance */
   double bg_lum = 0.2126 * bg.redF() + 0.7152 * bg.greenF() + 0.0722 * bg.blueF();
   double fg_lum = 0.2126 * fg.redF() + 0.7152 * fg.greenF() + 0.0722 * fg.blueF();
 
-  /* Dark theme has lower background luminance than foreground */
   return (bg_lum < fg_lum) ? 1 : 0;
 }
 
@@ -390,11 +377,9 @@ extern "C" IUP_SDK_API int iupdrvOpen(int *argc, char ***argv)
 {
   if (!QApplication::instance())
   {
-    /* QApplication requires valid argc/argv */
-    /* Qt WebEngine (Chromium) requires a proper executable path in argv[0] */
-    /* NOTE: QApplication modifies argc, so we keep separate variables */
-    static int original_argc = 1;   /* Never modified */
-    static int default_argc = 1;    /* May be modified by QApplication */
+    /* Qt WebEngine needs a real executable path in argv[0], and QApplication modifies argc */
+    static int original_argc = 1;
+    static int default_argc = 1;
     static char exe_path[4096] = {0};
     static char* default_argv_data[2] = { exe_path, NULL };
     static char** default_argv = default_argv_data;
@@ -426,7 +411,6 @@ extern "C" IUP_SDK_API int iupdrvOpen(int *argc, char ***argv)
   }
   else
   {
-    /* QApplication already exists (created by user) */
     qt_application = qobject_cast<QApplication*>(QApplication::instance());
 
     if (!qt_application)

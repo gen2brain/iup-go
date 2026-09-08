@@ -115,8 +115,7 @@ static gboolean gtk4QueryTooltip(GtkWidget *widget, gint _x, gint _y, gboolean k
     }
     else
     {
-      /* Set tooltip text on the GtkTooltip object, not the widget.
-         Setting it on the widget from within query-tooltip causes infinite recursion */
+      /* setting the text on the widget from within query-tooltip recurses */
       gtk_tooltip_set_custom(tooltip, NULL);
       if (value)
       {
@@ -179,8 +178,7 @@ IUP_SDK_API int iupdrvBaseSetTipVisibleAttrib(Ihandle* ih, const char* value)
 
 IUP_SDK_API char* iupdrvBaseGetTipVisibleAttrib(Ihandle* ih)
 {
-  /* Cannot determine if tooltip is currently visible.
-     gtk_widget_get_tooltip_window was removed and tooltip internals are hidden. */
+  /* tooltip visibility is unreadable: gtk_widget_get_tooltip_window was removed */
   (void)ih;
   return NULL;
 }

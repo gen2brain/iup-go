@@ -187,7 +187,6 @@ static int qtClipboardSetNativeVectorImageAttrib(Ihandle *ih, const char *value)
     QMimeData *mimeData = new QMimeData();
     QByteArray byteArray((const char*)value, data_size);
 
-    /* Qt supports PDF in clipboard */
     mimeData->setData("application/pdf", byteArray);
     clipboard->setMimeData(mimeData, mode);
   }
@@ -449,25 +448,20 @@ extern "C" Iclass* iupClipboardNewClass(void)
 
   ic->New = iupClipboardNewClass;
 
-  /* TEXT attributes */
   iupClassRegisterAttribute(ic, "TEXT", qtClipboardGetTextAttrib, qtClipboardSetTextAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TEXTAVAILABLE", qtClipboardGetTextAvailableAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
 
-  /* IMAGE attributes */
   iupClassRegisterAttribute(ic, "NATIVEIMAGE", qtClipboardGetNativeImageAttrib, qtClipboardSetNativeImageAttrib, nullptr, nullptr, IUPAF_NO_STRING|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "IMAGE", nullptr, qtClipboardSetImageAttrib, nullptr, nullptr, IUPAF_IHANDLENAME|IUPAF_WRITEONLY|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "IMAGEAVAILABLE", qtClipboardGetImageAvailableAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
 
-  /* PDF/Vector image attributes (similar to Cocoa) */
   iupClassRegisterAttribute(ic, "NATIVEVECTORIMAGE", qtClipboardGetNativeVectorImageAttrib, qtClipboardSetNativeVectorImageAttrib, nullptr, nullptr, IUPAF_NO_STRING|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "PDFAVAILABLE", qtClipboardGetPDFAvailableAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SAVENATIVEVECTORIMAGE", nullptr, qtClipboardSetSaveNativeVectorImageAttrib, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
 
-  /* HTML attributes (Qt-specific) */
   iupClassRegisterAttribute(ic, "HTML", qtClipboardGetHTMLAttrib, qtClipboardSetHTMLAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "HTMLAVAILABLE", qtClipboardGetHTMLAvailableAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
 
-  /* CUSTOM FORMAT attributes */
   iupClassRegisterAttribute(ic, "ADDFORMAT", nullptr, qtClipboardSetAddFormatAttrib, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FORMAT", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FORMATAVAILABLE", qtClipboardGetFormatAvailableAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);

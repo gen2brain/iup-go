@@ -123,7 +123,6 @@ int IupMainLoop(void)
   return IUP_NOERROR;
 }
 
-/* Pumps the main Looper until currently-queued messages are dispatched. */
 static void androidLoopFlush(void)
 {
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();

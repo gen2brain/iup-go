@@ -36,8 +36,7 @@ static void eflFrameMeasureDecorStyle(const char* style, int* decor_w, int* deco
   if (!temp_win)
     return;
 
-  /* Use legacy API which allows style changes after construction.
-     The EO API loads the theme during constructor before style can be set. */
+  /* the EO API loads the theme in the constructor, so the style needs the legacy API */
   temp_frame = elm_frame_add(temp_win);
   if (!temp_frame)
   {
@@ -222,7 +221,6 @@ static int eflFrameMapMethod(Ihandle* ih)
 
   if (title && title[0])
   {
-    /* Frame with title, use default style */
     frame = efl_add(EFL_UI_FRAME_CLASS, parent);
     if (!frame)
       return IUP_ERROR;
@@ -237,8 +235,6 @@ static int eflFrameMapMethod(Ihandle* ih)
   }
   else
   {
-    /* Frame without title, use legacy API with "outline" style.
-       Legacy API allows style changes after construction. */
     frame = elm_frame_add(parent);
     if (!frame)
       return IUP_ERROR;

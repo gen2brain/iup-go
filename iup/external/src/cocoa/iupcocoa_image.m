@@ -18,7 +18,7 @@
 #include "iupcocoa_drv.h"
 
 
-/* Calculate the pad-aligned scanline width of a surface. Surfaces are 4-byte aligned for performance. */
+/* scanlines are 4-byte aligned */
 static int CalculateBytesPerRow(int width, int bytes_per_pixel)
 {
   int pitch = width * bytes_per_pixel;
@@ -43,8 +43,7 @@ IUP_DRV_API int iupcocoaImageCalculateBytesPerRow(int width, int bytes_per_pixel
 }
 
 #ifdef GNUSTEP
-/* Opal's NSBitmapImageRep has no -CGImage, so read the interleaved samples and premultiply the
-   way CGContextDrawImage into a premultiplied context would. */
+/* Opal's NSBitmapImageRep has no -CGImage, so read the samples and premultiply by hand */
 static int cocoaImageBitmapToRGBA(NSBitmapImageRep* bitmap, unsigned char* rgba, int w, int h)
 {
   const unsigned char* data = [bitmap bitmapData];
@@ -122,12 +121,11 @@ IUP_SDK_API void iupdrvImageGetData(void* handle, unsigned char* out_img_data)
 
   NSInteger w = [bitmap pixelsWide];
   NSInteger h = [bitmap pixelsHigh];
-  int channels = (int)([bitmap bitsPerPixel] / 8);   /* matches the bpp iupdrvImageGetInfo reports */
+  int channels = (int)([bitmap bitsPerPixel] / 8);
 
   if (channels < 3)
     return;
 
-  /* Normalize any source layout to packed RGBA before packing to dest. */
   size_t rgba_stride = (size_t)w * 4;
   unsigned char* rgba = (unsigned char*)calloc(rgba_stride * h, 1);
   if (!rgba)
@@ -218,8 +216,7 @@ static NSImage* cocoaImageWrapBitmapRep(NSBitmapImageRep* bitmap, int width, int
 
 IUP_SDK_API int iupdrvImageGetRawInfo(void* handle, int *w, int *h, int *bpp, iupColor* colors, int *colors_count)
 {
-  /* Getting the color palette from a native Cocoa image is not straightforward,
-     as indexed color images are often converted to RGB(A) automatically. */
+  /* indexed images are converted to RGB(A) automatically, so there is no palette to read */
   (void)colors;
   (void)colors_count;
   return iupdrvImageGetInfo(handle, w, h, bpp);
