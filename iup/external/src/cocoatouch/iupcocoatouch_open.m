@@ -151,35 +151,6 @@ void iupCocoaTouchRefreshAllThemes(void)
 	}
 }
 
-static void cocoaTouchFireThemeChangedRecursive(UIViewController* vc, int dark_mode)
-{
-	if (!vc) return;
-	if ([vc isKindOfClass:[IupViewController class]])
-	{
-		Ihandle* ih = ((IupViewController*)vc).ihandle;
-		if (ih && iupObjectCheck(ih))
-		{
-			IFni cb = (IFni)IupGetCallback(ih, "THEMECHANGED_CB");
-			if (cb) cb(ih, dark_mode);
-		}
-	}
-	if ([vc isKindOfClass:[UINavigationController class]])
-		for (UIViewController* child in ((UINavigationController*)vc).viewControllers)
-			cocoaTouchFireThemeChangedRecursive(child, dark_mode);
-	if (vc.presentedViewController)
-		cocoaTouchFireThemeChangedRecursive(vc.presentedViewController, dark_mode);
-}
-
-static void cocoaTouchFireThemeChangedAll(int dark_mode)
-{
-	for (UIScene* scene in [UIApplication sharedApplication].connectedScenes)
-	{
-		if (![scene isKindOfClass:[UIWindowScene class]]) continue;
-		for (UIWindow* window in ((UIWindowScene*)scene).windows)
-			cocoaTouchFireThemeChangedRecursive(window.rootViewController, dark_mode);
-	}
-}
-
 static int s_cocoatouch_system_dark = -1;
 
 IUP_SDK_API int iupdrvIsSystemDarkMode(void)
@@ -228,7 +199,7 @@ void iupCocoaTouchHandleTraitFlip(void)
 	cocoaTouchUpdateGlobalColors();
 	IupSetGlobal("_IUP_RESET_GLOBALCOLORS", "YES");
 	iupCocoaTouchRefreshAllThemes();
-	cocoaTouchFireThemeChangedAll(iupGlobalIsDarkMode());
+	iupGlobalNotifyThemeChanged();
 }
 
 IUP_SDK_API int iupdrvOpen(int* argc, char*** argv)

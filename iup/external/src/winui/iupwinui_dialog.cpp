@@ -495,12 +495,7 @@ static LRESULT CALLBACK winuiDialogWndProc(HWND hwnd, UINT msg, WPARAM wParam, L
               winuiDialogSetPanelBgColor(dlgaux->rootPanel, bgcolor);
           }
 
-          IFni cb = (IFni)IupGetCallback(ih, "THEMECHANGED_CB");
-          if (cb)
-          {
-            if (cb(ih, dark_mode) == IUP_CLOSE)
-              IupExitLoop();
-          }
+          iupGlobalNotifyThemeChanged();
 
           winuiDialogRefreshThemeColors(ih);
 

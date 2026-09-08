@@ -452,9 +452,6 @@ void gtk4DialogSizeAllocate(GtkWidget* widget, int width, int height, int baseli
 
 static void gtk4DialogThemeChanged(GtkSettings* settings, GParamSpec* pspec, Ihandle* ih)
 {
-  int dark_mode;
-  IFni cb;
-
   (void)settings;
   (void)pspec;
 
@@ -463,11 +460,7 @@ static void gtk4DialogThemeChanged(GtkSettings* settings, GParamSpec* pspec, Iha
 
   iupgtk4SetGlobalColors();
 
-  dark_mode = iupGlobalIsDarkMode();
-
-  cb = (IFni)IupGetCallback(ih, "THEMECHANGED_CB");
-  if (cb)
-    cb(ih, dark_mode);
+  iupGlobalNotifyThemeChanged();
 }
 
 /****************************************************************

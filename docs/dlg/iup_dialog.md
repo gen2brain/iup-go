@@ -385,14 +385,14 @@ If returns IUP_IGNORE the dialog layout is NOT recalculated.
 
 [SHOW_CB](../call/iup_show_cb.md): Called right after the dialog is shown, hidden, maximized, minimized or restored from minimized/maximized.
 
-**THEMECHANGED_CB**: Called when the system theme or color scheme changes (e.g., switching between light and dark mode).
+**THEMECHANGED_CB**: Called when the appearance changes, either from a system theme or color scheme switch or from the [APPEARANCE](../attrib/iup_globals.md) global. It is not called when the new appearance resolves to the same colors as the current one.
 
     int function(Ihandle *ih, int dark_mode);
 
 **ih**: identifier of the element that activated the event.\
-**dark_mode**: is non-zero if the system is now in dark mode, zero if in light mode.
+**dark_mode**: is non-zero if the appearance is now dark, zero if light.
 
-Not supported in Motif and FLTK.
+In Motif and FLTK only an APPEARANCE change calls it, there is no system theme notification.
 
 >
 >

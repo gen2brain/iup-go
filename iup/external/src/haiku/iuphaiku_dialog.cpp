@@ -179,8 +179,7 @@ public:
     }
     if (msg && msg->what == IUPHAIKU_THEME_CHANGED_MSG && fIhandle && iupObjectCheck(fIhandle))
     {
-      IFni cb = (IFni)IupGetCallback(fIhandle, "THEMECHANGED_CB");
-      if (cb) cb(fIhandle, iupGlobalIsDarkMode());
+      iupGlobalNotifyThemeChanged();
       return;
     }
     if (msg && (msg->what == B_SIMPLE_DATA || msg->what == B_REFS_RECEIVED)

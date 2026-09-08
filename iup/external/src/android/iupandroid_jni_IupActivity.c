@@ -14,6 +14,7 @@
 #include "iup_attrib.h"
 #include "iup_class.h"
 #include "iup_str.h"
+#include "iup_globalattrib.h"
 
 #include "iupandroid_drv.h"
 
@@ -130,10 +131,6 @@ JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupActivity_NotifyThemeCha
 
   if (ih->firstchild) androidThemeRefreshChildren(ih->firstchild);
 
-  IFni cb = (IFni)IupGetCallback(ih, "THEMECHANGED_CB");
-  if (cb)
-  {
-    int ret = cb(ih, (int)dark_mode);
-    if (ret == IUP_CLOSE) IupExitLoop();
-  }
+  (void)dark_mode;
+  iupGlobalNotifyThemeChanged();
 }
