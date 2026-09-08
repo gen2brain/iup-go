@@ -300,6 +300,15 @@ static int androidButtonMapMethod(Ihandle* ih)
   iupAndroid_AddWidgetToParent(jni_env, ih);
   androidButtonUpdateChrome(ih);
 
+  if (iupAttribGetBoolean(ih, "FLAT"))
+  {
+    jclass jc = androidButtonFindHelper(jni_env);
+    jmethodID m = (*jni_env)->GetStaticMethodID(jni_env, jc, "setFlat", "(Landroid/widget/Button;Z)V");
+    (*jni_env)->CallStaticVoidMethod(jni_env, jc, m, ih->handle, (jboolean)1);
+    iupAndroid_CheckException(jni_env, "IupButtonHelper.setFlat");
+    (*jni_env)->DeleteLocalRef(jni_env, jc);
+  }
+
   if (iupAttribGet(ih, "PADDING"))
   {
     jclass jc = androidButtonFindHelper(jni_env);
@@ -309,10 +318,11 @@ static int androidButtonMapMethod(Ihandle* ih)
     (*jni_env)->DeleteLocalRef(jni_env, jc);
   }
 
-  /* Borderless image buttons: core skips AddBorders, floor to 48dp touch target. */
+  /* Borderless and flat image buttons: floor to the 48dp touch target. */
   int borderless = iupAttribGet(ih, "IMPRESS") != NULL
                 && !iupAttribGetBoolean(ih, "IMPRESSBORDER");
-  if (borderless && !iupAttribGet(ih, "MINSIZE"))
+  if ((borderless || (iupAttribGetBoolean(ih, "FLAT") && !(ih->data->type & IUP_BUTTON_TEXT)))
+      && !iupAttribGet(ih, "MINSIZE"))
     iupAttribSetStr(ih, "MINSIZE", "48x48");
 
   return IUP_NOERROR;

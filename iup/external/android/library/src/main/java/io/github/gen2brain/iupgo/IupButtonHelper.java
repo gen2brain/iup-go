@@ -39,7 +39,8 @@ public final class IupButtonHelper
             if (b instanceof IupMaterialButton iup)
             {
                 if (iup.isBorderless) continue;
-                if (iup.buttonStyle != null) { applyButtonStyle(iup, iup.buttonStyle); continue; }
+                applyChrome(iup, Boolean.TRUE.equals(e.getValue()));
+                continue;
             }
             applyShowAsDefault(b, Boolean.TRUE.equals(e.getValue()));
         }
@@ -60,6 +61,7 @@ public final class IupButtonHelper
         int materialPaddingL, materialPaddingR;
         int iupPaddingH = -1, iupPaddingV = -1;
         boolean isBorderless;
+        boolean isFlat;
         String buttonStyle;
 
         public IupMaterialButton(Context ctx, long ih)
@@ -268,7 +270,7 @@ public final class IupButtonHelper
     {
         if (!(button instanceof IupMaterialButton mb)) return;
         if (mb.isBorderless) return;
-        applyShowAsDefault(mb, show);
+        applyChrome(mb, show);
     }
 
     @Keep
@@ -278,8 +280,33 @@ public final class IupButtonHelper
         if (mb.isBorderless) return;
         mb.buttonStyle = (style == null || style.isEmpty()) ? null
             : style.toUpperCase(java.util.Locale.ROOT);
-        if (mb.buttonStyle == null) applyShowAsDefault(mb, false);
-        else                        applyButtonStyle(mb, mb.buttonStyle);
+        applyChrome(mb, Boolean.TRUE.equals(sThemableButtons.get(mb)));
+    }
+
+    @Keep
+    public static void setFlat(Button button, boolean flat)
+    {
+        if (!(button instanceof IupMaterialButton mb)) return;
+        mb.isFlat = flat;
+        if (mb.isBorderless) return;
+        applyChrome(mb, Boolean.TRUE.equals(sThemableButtons.get(mb)));
+    }
+
+    /* BUTTONSTYLE, then SHOWASDEFAULT, then FLAT as the Material text button */
+    private static void applyChrome(IupMaterialButton mb, boolean show)
+    {
+        if (mb.buttonStyle != null)
+        {
+            applyButtonStyle(mb, mb.buttonStyle);
+            sThemableButtons.put(mb, show);
+        }
+        else if (!show && mb.isFlat)
+        {
+            applyButtonStyle(mb, "TEXT");
+            sThemableButtons.put(mb, false);
+        }
+        else
+            applyShowAsDefault(mb, show);
     }
 
     @Keep
