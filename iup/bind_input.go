@@ -144,6 +144,49 @@ const (
 	K_F10    = 0xFFC7
 	K_F11    = 0xFFC8
 	K_F12    = 0xFFC9
+	K_F13    = 0xFFCA
+	K_F14    = 0xFFCB
+	K_F15    = 0xFFCC
+	K_F16    = 0xFFCD
+	K_F17    = 0xFFCE
+	K_F18    = 0xFFCF
+	K_F19    = 0xFFD0
+	K_F20    = 0xFFD1
+	K_CLEAR  = 0xFFD2
+	K_HELP   = 0xFFD3
+)
+
+// Keypad keys
+const (
+	K_KP_CR      = 0xFF8D
+	K_KP_HOME    = 0xFF95
+	K_KP_LEFT    = 0xFF96
+	K_KP_UP      = 0xFF97
+	K_KP_RIGHT   = 0xFF98
+	K_KP_DOWN    = 0xFF99
+	K_KP_PGUP    = 0xFF9A
+	K_KP_PGDN    = 0xFF9B
+	K_KP_END     = 0xFF9C
+	K_KP_MIDDLE  = 0xFF9D
+	K_KP_INS     = 0xFF9E
+	K_KP_DEL     = 0xFF9F
+	K_KP_MULT    = 0xFFAA
+	K_KP_PLUS    = 0xFFAB
+	K_KP_SEP     = 0xFFAC
+	K_KP_MINUS   = 0xFFAD
+	K_KP_DECIMAL = 0xFFAE
+	K_KP_DIV     = 0xFFAF
+	K_KP_0       = 0xFFB0
+	K_KP_1       = 0xFFB1
+	K_KP_2       = 0xFFB2
+	K_KP_3       = 0xFFB3
+	K_KP_4       = 0xFFB4
+	K_KP_5       = 0xFFB5
+	K_KP_6       = 0xFFB6
+	K_KP_7       = 0xFFB7
+	K_KP_8       = 0xFFB8
+	K_KP_9       = 0xFFB9
+	K_KP_EQUAL   = 0xFFBD
 )
 
 // No Shift/Ctrl/Alt
