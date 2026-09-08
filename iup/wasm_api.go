@@ -991,9 +991,6 @@ func DrawLinearGradient(ih Ihandle, x1, y1, x2, y2 int, angle float32, color1, c
 	ccall("IupDrawLinearGradient", "", []interface{}{"number", "number", "number", "number", "number", "number", "string", "string"}, []interface{}{int(ih), x1, y1, x2, y2, float64(angle), color1, color2})
 }
 
-// DrawRadialGradient draws a radial gradient from center to edge.
-//
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
 func drawGradientStopArgs(colors []string, offsets []float32) (colorsPtr, offsetsPtr, n int, free func()) {
 	n = len(colors)
 	colorsPtr, freeColors := wasmStrArray(colors)
