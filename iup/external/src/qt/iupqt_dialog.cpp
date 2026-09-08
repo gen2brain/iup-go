@@ -281,10 +281,10 @@ protected:
 
   bool event(QEvent* event) override
   {
-    /* StyleChange fires after qApp->palette() is swapped; PaletteChange still carries the stale one */
-    if (event->type() == QEvent::StyleChange || event->type() == QEvent::PaletteChange)
+    /* not PaletteChange, it also fires when the application sets a widget color */
+    if (event->type() == QEvent::StyleChange)
     {
-      if (iup_handle)
+      if (iup_handle && iupqtSystemPaletteChanged())
       {
         iupqtUpdateSystemPalette();
         iupqtSetGlobalColors();

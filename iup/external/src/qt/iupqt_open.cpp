@@ -192,10 +192,27 @@ static void qtSetGlobalColorAttrib(const char* name, const QColor &color)
   iupGlobalSetDefaultColorAttrib(name, color.red(), color.green(), color.blue());
 }
 
+static QPalette qt_last_palette;
+static int qt_last_palette_set = 0;
+
+IUP_DRV_API int iupqtSystemPaletteChanged(void)
+{
+  QPalette palette = QApplication::palette();
+
+  if (qt_last_palette_set && palette == qt_last_palette)
+    return 0;
+
+  qt_last_palette = palette;
+  qt_last_palette_set = 1;
+  return 1;
+}
+
 IUP_DRV_API void iupqtSetGlobalColors(void)
 {
   QWidget dialog;
   QPalette palette = dialog.palette();
+
+  iupqtSystemPaletteChanged();
 
   qtSetGlobalColorAttrib("DLGBGCOLOR", palette.color(QPalette::Window));
   qtSetGlobalColorAttrib("DLGFGCOLOR", palette.color(QPalette::WindowText));
@@ -203,10 +220,11 @@ IUP_DRV_API void iupqtSetGlobalColors(void)
   qtSetGlobalColorAttrib("TXTFGCOLOR", palette.color(QPalette::Text));
   qtSetGlobalColorAttrib("TXTHLCOLOR", palette.color(QPalette::Highlight));
 #if QT_VERSION >= QT_VERSION_CHECK(6, 6, 0)
-  qtSetGlobalColorAttrib("ACCENTCOLOR", palette.color(QPalette::Accent));
-#else
-  qtSetGlobalColorAttrib("ACCENTCOLOR", palette.color(QPalette::Highlight));
+  if (palette.isBrushSet(QPalette::Active, QPalette::Accent))
+    qtSetGlobalColorAttrib("ACCENTCOLOR", palette.color(QPalette::Accent));
+  else
 #endif
+    qtSetGlobalColorAttrib("ACCENTCOLOR", palette.color(QPalette::Highlight));
   qtSetGlobalColorAttrib("MENUBGCOLOR", palette.color(QPalette::Window));
   qtSetGlobalColorAttrib("MENUFGCOLOR", palette.color(QPalette::WindowText));
   qtSetGlobalColorAttrib("LINKFGCOLOR", palette.color(QPalette::Link));
