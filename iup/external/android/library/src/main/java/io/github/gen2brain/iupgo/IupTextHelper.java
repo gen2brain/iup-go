@@ -787,24 +787,9 @@ public final class IupTextHelper
         }
     }
 
-    /* TIL hint doubles as the floating label; multi-line/spin keep the hint on the EditText. */
     @Keep
     public static void setCueBanner(final long ihandlePtr, View v, String text)
     {
-        if (v instanceof TextInputLayout til)
-        {
-            if (text == null || text.isEmpty())
-            {
-                til.setHintEnabled(false);
-                til.setHint(null);
-            }
-            else
-            {
-                til.setHintEnabled(true);
-                til.setHint(text);
-            }
-            return;
-        }
         IupEditText tv = resolve(v);
         if (tv != null) tv.setHint(text);
     }
@@ -1053,6 +1038,8 @@ public final class IupTextHelper
 
     private static int sTilPadH = -1;
     private static int sTilPadV = -1;
+    private static int sTilOuterH = -1;
+    private static int sTilOuterV = -1;
 
     @Keep
     public static int getTextInputLayoutBorderH()
@@ -1068,6 +1055,20 @@ public final class IupTextHelper
         return sTilPadV;
     }
 
+    @Keep
+    public static int getTextInputLayoutOuterH()
+    {
+        if (sTilOuterH < 0) measureTextInputLayoutPadding();
+        return sTilOuterH;
+    }
+
+    @Keep
+    public static int getTextInputLayoutOuterV()
+    {
+        if (sTilOuterV < 0) measureTextInputLayoutPadding();
+        return sTilOuterV;
+    }
+
     private static synchronized void measureTextInputLayoutPadding()
     {
         if (sTilPadH >= 0) return;
@@ -1076,8 +1077,10 @@ public final class IupTextHelper
         probe.setSingleLine(true);
         til.addView(probe, new LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-        sTilPadH = probe.getCompoundPaddingLeft() + probe.getCompoundPaddingRight() + til.getPaddingLeft() + til.getPaddingRight();
-        sTilPadV = probe.getCompoundPaddingTop() + probe.getCompoundPaddingBottom() + til.getPaddingTop() + til.getPaddingBottom();
+        sTilOuterH = til.getPaddingLeft() + til.getPaddingRight();
+        sTilOuterV = til.getPaddingTop() + til.getPaddingBottom();
+        sTilPadH = probe.getCompoundPaddingLeft() + probe.getCompoundPaddingRight() + sTilOuterH;
+        sTilPadV = probe.getCompoundPaddingTop() + probe.getCompoundPaddingBottom() + sTilOuterV;
     }
 
     /** Fires LINK_CB(url); no return value (IUP LINK_CB ignores result for the span path). */

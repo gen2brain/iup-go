@@ -70,27 +70,34 @@ IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int* x, int* y)
   IUPJNI_DECLARE_METHOD_ID_STATIC(IupTextHelper_getEditTextBorderV);
   IUPJNI_DECLARE_METHOD_ID_STATIC(IupTextHelper_getTextInputLayoutBorderH);
   IUPJNI_DECLARE_METHOD_ID_STATIC(IupTextHelper_getTextInputLayoutBorderV);
+  IUPJNI_DECLARE_METHOD_ID_STATIC(IupTextHelper_getTextInputLayoutOuterH);
+  IUPJNI_DECLARE_METHOD_ID_STATIC(IupTextHelper_getTextInputLayoutOuterV);
 
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
   jclass java_class = IUPJNI_FindClass(IupTextHelper, jni_env, "io/github/gen2brain/iupgo/IupTextHelper");
 
   int has_til = ih && ih->data && !ih->data->is_multiline;
+  int has_padding = ih && iupAttribGet(ih, "PADDING") != NULL;
 
   if (has_til)
   {
-    /* TIL probe already includes the inner TIET's compound padding. */
+    /* PADDING replaces the inner field's compound padding, only the layout's own remains */
     if (x)
     {
-      jmethodID mh = IUPJNI_GetStaticMethodID(IupTextHelper_getTextInputLayoutBorderH, jni_env, java_class, "getTextInputLayoutBorderH", "()I");
+      jmethodID mh = has_padding
+        ? IUPJNI_GetStaticMethodID(IupTextHelper_getTextInputLayoutOuterH, jni_env, java_class, "getTextInputLayoutOuterH", "()I")
+        : IUPJNI_GetStaticMethodID(IupTextHelper_getTextInputLayoutBorderH, jni_env, java_class, "getTextInputLayoutBorderH", "()I");
       *x += (int)(*jni_env)->CallStaticIntMethod(jni_env, java_class, mh);
     }
     if (y)
     {
-      jmethodID mv = IUPJNI_GetStaticMethodID(IupTextHelper_getTextInputLayoutBorderV, jni_env, java_class, "getTextInputLayoutBorderV", "()I");
+      jmethodID mv = has_padding
+        ? IUPJNI_GetStaticMethodID(IupTextHelper_getTextInputLayoutOuterV, jni_env, java_class, "getTextInputLayoutOuterV", "()I")
+        : IUPJNI_GetStaticMethodID(IupTextHelper_getTextInputLayoutBorderV, jni_env, java_class, "getTextInputLayoutBorderV", "()I");
       *y += (int)(*jni_env)->CallStaticIntMethod(jni_env, java_class, mv);
     }
   }
-  else
+  else if (!has_padding)
   {
     if (x)
     {
