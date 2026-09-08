@@ -194,8 +194,6 @@ static void eflDialogMaximizedCallback(void* data, const Efl_Event* ev)
 static void eflDialogThemeChangedCallback(void* data, const Efl_Event* ev)
 {
   Ihandle* ih = (Ihandle*)data;
-  int dark_mode;
-  IFni cb;
 
   (void)ev;
 
@@ -204,11 +202,7 @@ static void eflDialogThemeChangedCallback(void* data, const Efl_Event* ev)
 
   iupeflSetGlobalColors();
 
-  dark_mode = iupGlobalIsDarkMode();
-
-  cb = (IFni)IupGetCallback(ih, "THEMECHANGED_CB");
-  if (cb)
-    cb(ih, dark_mode);
+  iupGlobalNotifyThemeChanged();
 }
 
 static void eflDialogKeyDownCallback(void* data, const Efl_Event* event)

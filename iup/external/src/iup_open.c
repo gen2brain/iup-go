@@ -78,6 +78,8 @@ IUP_API int IupOpen(int *argc, char ***argv)
 
     iupRegisterInternalClasses();
 
+    iupGlobalSeedThemeState();
+
     value = getenv("IUP_QUIET");
     if (value && !iupStrBoolean(value)) /* if not defined do NOT print */
       printf("IUP %s %s\n", IupVersion(), IUP_COPYRIGHT);

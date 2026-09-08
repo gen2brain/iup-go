@@ -9,6 +9,7 @@
 #include <string.h>
 
 #include "iup.h"
+#include "iupcbs.h"
 
 #include "iup_hashtable.h"
 #include "iup_globalattrib.h"
@@ -27,6 +28,8 @@
 
 static Itable *iglobal_table = NULL;
 static int iglobal_appearance = IUP_APPEARANCE_SYSTEM;
+static int iglobal_appearance_applying = 0;
+static char iglobal_theme_state[256] = "";
 
 void iupGlobalAttribInit(void)
 {
@@ -38,6 +41,7 @@ void iupGlobalAttribFinish(void)
   iupTableDestroy(iglobal_table);
   iglobal_table = NULL;
   iglobal_appearance = IUP_APPEARANCE_SYSTEM;
+  iglobal_theme_state[0] = 0;
 }
 
 static void iGlobalUpdateThemeTree(Ihandle* ih)
@@ -49,6 +53,50 @@ static void iGlobalUpdateThemeTree(Ihandle* ih)
 
   for (child = ih->firstchild; child; child = child->brother)
     iGlobalUpdateThemeTree(child);
+}
+
+static void iGlobalThemeState(char* state, int size)
+{
+  static const char* names[] = {"DLGBGCOLOR", "DLGFGCOLOR", "TXTBGCOLOR", "TXTFGCOLOR",
+                                "MENUBGCOLOR", "MENUFGCOLOR", "LINKFGCOLOR", "ACCENTCOLOR"};
+  int i, count = sizeof(names)/sizeof(names[0]);
+  int len = snprintf(state, size, "%d", iupGlobalIsDarkMode());
+
+  for (i = 0; i < count && len < size; i++)
+  {
+    char* color = IupGetGlobal(names[i]);
+    len += snprintf(state + len, size - len, "|%s", color ? color : "");
+  }
+}
+
+IUP_SDK_API void iupGlobalSeedThemeState(void)
+{
+  iGlobalThemeState(iglobal_theme_state, sizeof(iglobal_theme_state));
+}
+
+IUP_SDK_API void iupGlobalNotifyThemeChanged(void)
+{
+  char state[256];
+  int dark;
+  Ihandle* dialog;
+
+  if (iglobal_appearance_applying)
+    return;
+
+  iGlobalThemeState(state, sizeof(state));
+  if (iupStrEqual(state, iglobal_theme_state))
+    return;
+  iupStrCopyN(iglobal_theme_state, sizeof(iglobal_theme_state), state);
+
+  dark = iupGlobalIsDarkMode();
+  dialog = iupDlgListFirst();
+  while (dialog)
+  {
+    IFni cb = (IFni)IupGetCallback(dialog, "THEMECHANGED_CB");
+    if (cb && cb(dialog, dark) == IUP_CLOSE)
+      IupExitLoop();
+    dialog = iupDlgListNext();
+  }
 }
 
 IUP_SDK_API void iupGlobalUpdateThemeColors(void)
@@ -225,8 +273,12 @@ static void iGlobalSet(const char *name, const char *value, int store)
 
       if (iglobal_table)  /* before IupOpen it is applied by iupdrvOpen */
       {
+        iglobal_appearance_applying = 1;
         iupdrvSetAppearance(appearance);
+        iglobal_appearance_applying = 0;
+
         iupGlobalUpdateThemeColors();
+        iupGlobalNotifyThemeChanged();
       }
     }
     return;

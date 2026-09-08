@@ -616,9 +616,6 @@ static gboolean gtkDialogWindowStateEvent(GtkWidget *widget, GdkEventWindowState
 
 static void gtkDialogThemeChanged(GtkSettings* settings, GParamSpec* pspec, Ihandle* ih)
 {
-  int dark_mode;
-  IFni cb;
-
   (void)settings;
   (void)pspec;
 
@@ -627,11 +624,7 @@ static void gtkDialogThemeChanged(GtkSettings* settings, GParamSpec* pspec, Ihan
 
   iupgtkSetGlobalColors();
 
-  dark_mode = iupGlobalIsDarkMode();
-
-  cb = (IFni)IupGetCallback(ih, "THEMECHANGED_CB");
-  if (cb)
-    cb(ih, dark_mode);
+  iupGlobalNotifyThemeChanged();
 }
 
 /****************************************************************

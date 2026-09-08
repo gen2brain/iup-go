@@ -1002,11 +1002,7 @@ static int winDialogBaseProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESUL
           winDialogRefreshThemeColors(ih);
           iupwinDarkModeApplyToTree(ih->handle);
 
-          int dark_mode = iupGlobalIsDarkMode();
-
-          IFni cb = (IFni)IupGetCallback(ih, "THEMECHANGED_CB");
-          if (cb)
-            cb(ih, dark_mode);
+          iupGlobalNotifyThemeChanged();
         }
       }
       break;

@@ -289,11 +289,7 @@ protected:
         iupqtUpdateSystemPalette();
         iupqtSetGlobalColors();
 
-        int dark_mode = iupGlobalIsDarkMode();
-        IFni cb = (IFni)IupGetCallback(iup_handle, "THEMECHANGED_CB");
-        if (cb)
-          cb(iup_handle, dark_mode);
-
+        iupGlobalNotifyThemeChanged();
         iupGlobalUpdateThemeColors();
       }
     }

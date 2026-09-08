@@ -320,7 +320,7 @@ Re-seeds the global palette (DLGBGCOLOR, TXTBGCOLOR, MENUBGCOLOR and their foreg
 
 In Win32 the native file, font and month-calendar dialogs are not affected. In Qt it needs Qt 6.8 or newer for the platform theme, older versions only get the palette. In GTK and GTK 4 it selects the dark variant of the current theme, so a theme without one keeps its colors. In EFL and GNUstep only the IUP palette follows it, the widgets keep the toolkit theme. In Haiku the controls and menus of the IUP dialogs draw with the palette; the native dialogs, tooltips and the window frame keep the system colors.
 
-The [dialog](../dlg/iup_dialog.md) THEMECHANGED_CB is called on a live system light/dark switch.
+The [dialog](../dlg/iup_dialog.md) THEMECHANGED_CB is called when the appearance changes, whether from a live system switch or from this attribute.
 
 ### WINDOWING (read-only)
 

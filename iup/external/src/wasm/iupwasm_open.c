@@ -164,15 +164,9 @@ IUP_SDK_API void iupdrvSetAppearance(int appearance)
 EMSCRIPTEN_KEEPALIVE void iupwasmThemeChanged(void)
 {
   int dark = wasmAppearanceIsDark();
-  Ihandle* ih;
   wasmUpdateGlobalColors(dark);
   iupwasmInstallTheme();
-  for (ih = iupDlgListFirst(); ih; ih = iupDlgListNext())
-  {
-    IFni cb = (IFni)IupGetCallback(ih, "THEMECHANGED_CB");
-    if (cb)
-      cb(ih, dark);
-  }
+  iupGlobalNotifyThemeChanged();
 }
 
 EM_JS(int, iupwasmJsLanguage, (void), {

@@ -621,11 +621,7 @@ static void cocoaDialogChildDestroyNotification(NSNotification* notification)
 
     iupcocoaSetGlobalColors();
 
-    int dark_mode = iupGlobalIsDarkMode();
-
-    IFni cb = (IFni)IupGetCallback(ih, "THEMECHANGED_CB");
-    if (cb)
-    cb(ih, dark_mode);
+    iupGlobalNotifyThemeChanged();
 
     if (ih->firstchild)
       cocoaDialogRefreshControlsOnThemeChange(ih->firstchild);
