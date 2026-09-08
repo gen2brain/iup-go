@@ -18,7 +18,7 @@ func (c *Counter) GetValue() int {
 
 func (c *Counter) SetValue(v int) {
 	c.value = v
-	c.valueLabel.SetAttribute("TITLE", fmt.Sprintf("%d", v))
+	c.valueLabel.SetAttribute("TITLE", v)
 }
 
 func (c *Counter) Handle() iup.Ihandle {

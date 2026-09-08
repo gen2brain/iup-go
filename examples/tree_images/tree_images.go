@@ -60,7 +60,7 @@ func bump(name string, delta int) int {
 	if v < 0 {
 		v = 0
 	}
-	t.SetAttribute(name, fmt.Sprintf("%d", v))
+	t.SetAttribute(name, v)
 	setStatus("%s=%d", name, v)
 	return updateInfo()
 }

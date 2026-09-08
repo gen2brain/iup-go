@@ -35,7 +35,7 @@ func applyTag(ih iup.Ihandle, set func(tag iup.Ihandle)) {
 	if sel := editor.GetAttribute("_SAVEDSEL"); sel != "" {
 		tag.SetAttribute("SELECTION", sel)
 	}
-	iup.SetAttributeHandle(editor, "ADDFORMATTAG", tag)
+	editor.SetAttributeHandle("ADDFORMATTAG", tag)
 	iup.SetFocus(editor)
 }
 

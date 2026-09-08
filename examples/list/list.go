@@ -25,7 +25,7 @@ func main() {
 	iup.SetAttribute(list, "IMAGE1", "IMGGOLD")
 	iup.SetAttribute(list, "IMAGE2", "IMGSILVER")
 	iup.SetAttribute(list, "IMAGE3", "IMGBRONZE")
-	iup.SetAttributeHandle(list, "IMAGE4", loadImageTecgraf())
+	list.SetAttributeHandle("IMAGE", loadImageTecgraf(), 4)
 
 	frmMedal := iup.Frame(list)
 	iup.SetAttribute(frmMedal, "TITLE", "Best medal")
@@ -41,9 +41,9 @@ func main() {
 	listDropdown := iup.List()
 	iup.SetAttributes(listDropdown, "1=\"Less than US$ 1000\", 2=\"US$ 2000\", 3=\"US$ 5000\", 4=\"US$ 10000\", 5=\"US$ 20000\", 6=\"US$ 50000\", 7=\"More than US$ 100000\","+
 		"SHOWIMAGE=YES, DROPDOWN=YES, DROPEXPAND=YES, VISIBLEITEMS=3")
-	iup.SetAttributeHandle(listDropdown, "IMAGE1", iup.ImageRGB(20, 20, imageData24))
-	iup.SetAttributeHandle(listDropdown, "IMAGE2", iup.ImageRGB(20, 20, imageData24))
-	iup.SetAttributeHandle(listDropdown, "IMAGE3", loadImageTecgraf())
+	listDropdown.SetAttributeHandle("IMAGE", iup.ImageRGB(20, 20, imageData24), 1)
+	listDropdown.SetAttributeHandle("IMAGE", iup.ImageRGB(20, 20, imageData24), 2)
+	listDropdown.SetAttributeHandle("IMAGE", loadImageTecgraf(), 3)
 
 	frmPrize := iup.Frame(listDropdown)
 	iup.SetAttribute(frmPrize, "TITLE", "Prizes won")

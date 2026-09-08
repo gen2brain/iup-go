@@ -313,7 +313,7 @@ func buildTable() iup.Ihandle {
 
 	headers := []string{"Name", "Age", "City"}
 	for i, h := range headers {
-		table.SetAttribute(fmt.Sprintf("TITLE%d", i+1), h)
+		table.SetAttributeId("TITLE", i+1, h)
 	}
 
 	rows := [][3]string{
@@ -388,7 +388,7 @@ func canvasDraw(ih iup.Ihandle) int {
 
 	w, h := iup.DrawGetSize(ih)
 
-	dark := iup.GetGlobal("DARKMODE") == "YES"
+	dark := iup.GetGlobalBool("DARKMODE")
 	base, baseline, title := "230 230 235", "120 120 140", "60 60 100"
 	if dark {
 		base, baseline, title = "60 60 70", "180 180 200", "220 220 240"

@@ -102,7 +102,7 @@ func main() {
 	}))
 
 	btnPasteText := iup.Button("Paste Text").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
-		if clipboard.GetAttribute("TEXTAVAILABLE") == "YES" {
+		if clipboard.GetBool("TEXTAVAILABLE") {
 			text := clipboard.GetAttribute("TEXT")
 			txtOutput.SetAttribute("VALUE", text)
 			logMsg(fmt.Sprintf("Pasted text from clipboard: '%s'", text))
@@ -144,7 +144,7 @@ func main() {
 		formatName := txtFormatName.GetAttribute("VALUE")
 		clipboard.SetAttribute("FORMAT", formatName)
 
-		if clipboard.GetAttribute("FORMATAVAILABLE") == "YES" {
+		if clipboard.GetBool("FORMATAVAILABLE") {
 			data := clipboard.GetAttribute("FORMATDATASTRING")
 			size := clipboard.GetAttribute("FORMATDATASIZE")
 			txtFormatData.SetAttribute("VALUE", data)
@@ -168,7 +168,7 @@ func main() {
 		}))
 
 		btnPasteHTML = iup.Button("Paste HTML").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
-			if clipboard.GetAttribute("HTMLAVAILABLE") == "YES" {
+			if clipboard.GetBool("HTMLAVAILABLE") {
 				html := clipboard.GetAttribute("HTML")
 				txtHTML.SetAttribute("VALUE", html)
 				logMsg(fmt.Sprintf("Pasted HTML from clipboard: '%s'", html))
@@ -228,7 +228,7 @@ func main() {
 		}))
 
 		btnGetPDF := iup.Button("Get PDF Info").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
-			if clipboard.GetAttribute("PDFAVAILABLE") == "YES" {
+			if clipboard.GetBool("PDFAVAILABLE") {
 				pdfData := clipboard.GetAttribute("NATIVEVECTORIMAGE")
 				size := clipboard.GetAttribute("FORMATDATASIZE")
 				if pdfData != "" {
@@ -247,7 +247,7 @@ func main() {
 		}))
 
 		btnSavePDF := iup.Button("Save to File").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
-			if clipboard.GetAttribute("PDFAVAILABLE") == "YES" {
+			if clipboard.GetBool("PDFAVAILABLE") {
 				filepath := txtPDFFile.GetAttribute("VALUE")
 				clipboard.SetAttribute("SAVENATIVEVECTORIMAGE", filepath)
 				logMsg(fmt.Sprintf("Saved PDF vector image to: %s", filepath))
@@ -303,7 +303,7 @@ func main() {
 	}))
 
 	btnPasteImage := iup.Button("Paste Image").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
-		if clipboard.GetAttribute("IMAGEAVAILABLE") != "YES" {
+		if !clipboard.GetBool("IMAGEAVAILABLE") {
 			logMsg("No image available in clipboard")
 			updateStatus()
 			return iup.DEFAULT

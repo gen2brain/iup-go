@@ -36,7 +36,7 @@ func drawCb(ih iup.Ihandle, i, j, xmin, xmax, ymin, ymax int) int {
 	g := j * 100
 	b := i + 100
 
-	ih.SetAttribute("DRAWCOLOR", fmt.Sprintf("%d %d %d", r, g, b))
+	ih.SetRGB("DRAWCOLOR", uint8(r), uint8(g), uint8(b))
 
 	// Draw filled rectangle
 	ih.SetAttribute("DRAWSTYLE", "FILL")
@@ -101,7 +101,7 @@ func main() {
 	boxed := iup.Button("BUFFERIZE, toggle BOXED, then REPAINT")
 	boxed.SetCallback("ACTION", iup.ActionFunc(func(iup.Ihandle) int {
 		cells.SetAttribute("BUFFERIZE", "YES")
-		if cells.GetAttribute("BOXED") == "YES" {
+		if cells.GetBool("BOXED") {
 			cells.SetAttribute("BOXED", "NO")
 		} else {
 			cells.SetAttribute("BOXED", "YES")

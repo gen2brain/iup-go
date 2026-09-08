@@ -142,7 +142,7 @@ func cancelCb(ih iup.Ihandle) int {
 
 func timerCb(ih iup.Ihandle) int {
 	startBtn := iup.GetHandle("startbtn")
-	if startBtn.GetAttribute("ACTIVE") == "NO" {
+	if !startBtn.GetBool("ACTIVE") {
 		elapsed := time.Since(startTime)
 		dlg := iup.GetDialog(startBtn)
 		dlg.SetAttribute("TITLE", fmt.Sprintf("Thread - %.1fs", elapsed.Seconds()))

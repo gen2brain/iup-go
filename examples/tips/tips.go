@@ -72,8 +72,7 @@ func main() {
 	dlg.SetAttribute("TITLE", "Tips")
 
 	iup.Map(dlg)
-	var w, h int
-	fmt.Sscanf(half.GetAttribute("RASTERSIZE"), "%dx%d", &w, &h)
+	_, w, h := half.GetIntInt("RASTERSIZE")
 	half.SetAttribute("TIPRECT", fmt.Sprintf("0 0 %d %d", w/2, h))
 
 	iup.Show(dlg)

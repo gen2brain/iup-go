@@ -56,7 +56,7 @@ func updateCount() {
 func setAll(value string) int {
 	t := tree()
 	for i, n := 0, iup.GetInt(t, "COUNT"); i < n; i++ {
-		t.SetAttribute(fmt.Sprintf("TOGGLEVALUE%d", i), value)
+		t.SetAttributeId("TOGGLEVALUE", i, value)
 	}
 	updateCount()
 	setStatus("set all toggles to %s", value)

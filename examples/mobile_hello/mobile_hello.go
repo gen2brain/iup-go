@@ -70,7 +70,7 @@ func main() {
 
 func toggleFullscreen(ih iup.Ihandle) int {
 	dlg := iup.GetDialog(ih)
-	if dlg.GetAttribute("FULLSCREEN") == "YES" {
+	if dlg.GetBool("FULLSCREEN") {
 		dlg.SetAttribute("FULLSCREEN", "NO")
 	} else {
 		dlg.SetAttribute("FULLSCREEN", "YES")
@@ -80,7 +80,7 @@ func toggleFullscreen(ih iup.Ihandle) int {
 
 func toggleTitleBar(ih iup.Ihandle) int {
 	dlg := iup.GetDialog(ih)
-	if dlg.GetAttribute("HIDETITLEBAR") == "YES" {
+	if dlg.GetBool("HIDETITLEBAR") {
 		dlg.SetAttribute("HIDETITLEBAR", "NO")
 	} else {
 		dlg.SetAttribute("HIDETITLEBAR", "YES")

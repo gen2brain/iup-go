@@ -530,7 +530,7 @@ func main() {
 
 	dlg.SetAttribute("TITLE", "IupMatrix Callbacks")
 	dlg.SetAttribute("MENU", "mymenu")
-	iup.SetAttributeHandle(dlg, "DEFAULTENTER", bt)
+	dlg.SetAttributeHandle("DEFAULTENTER", bt)
 	// dlg.SetAttribute("BGCOLOR", "255 0 255")
 
 	// Example: Composited window with transparency

@@ -95,6 +95,12 @@ func main() {
 	fmt.Printf("  MENUBGCOLOR:     %s\n", g("MENUBGCOLOR"))
 	fmt.Printf("  LINKFGCOLOR:     %s\n", g("LINKFGCOLOR"))
 
+	fmt.Println("\nTyped:")
+	_, w, h := iup.GetGlobalIntInt("SCREENSIZE")
+	r, gr, b := iup.GetGlobalRGB("DLGBGCOLOR")
+	fmt.Printf("  screen %dx%d at %d dpi, dialog background %d,%d,%d, dark mode %v\n",
+		w, h, iup.GetGlobalInt("SCREENDPI"), r, gr, b, iup.GetGlobalBool("DARKMODE"))
+
 	fmt.Println("\nSettings:")
 	fmt.Printf("  UTF8MODE:        %s\n", g("UTF8MODE"))
 	fmt.Printf("  LANGUAGE:        %s\n", g("LANGUAGE"))

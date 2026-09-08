@@ -66,7 +66,7 @@ func main() {
 
 	// Enable alternating row colors by default
 	table.SetAttribute("ALTERNATECOLOR", "YES")
-	if iup.GetGlobal("DARKMODE") == "YES" {
+	if iup.GetGlobalBool("DARKMODE") {
 		table.SetAttribute("EVENROWCOLOR", "#3A3A3A")
 		table.SetAttribute("ODDROWCOLOR", "#2D2D2D")
 	} else {
@@ -102,7 +102,7 @@ func main() {
 		t := iup.GetHandle("table")
 		numlin := t.GetInt("NUMLIN")
 		if numlin > 0 {
-			t.SetAttribute("DELLIN", fmt.Sprintf("%d", numlin)) // Delete last
+			t.SetAttribute("DELLIN", numlin) // Delete last
 			log := iup.GetHandle("log")
 			log.SetAttribute("APPEND", fmt.Sprintf("Deleted row %d\n", numlin))
 		}
@@ -220,6 +220,7 @@ func main() {
 	iup.Show(dlg)
 	iup.MainLoop()
 }
+
 var imgGopher = []byte{
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 6, 6, 12, 6, 6, 6, 37, 6, 6, 6, 46, 6, 6, 6, 46, 6, 6, 6, 47, 6, 6, 6, 45, 6, 6, 6, 46, 6, 6, 6, 29, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 6, 6, 15, 6, 6, 6, 51, 6, 6, 6, 47, 6, 6, 6, 34, 6, 6, 6, 9, 6, 6, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 6, 6, 19, 6, 6, 6, 49, 6, 6, 6, 37, 0, 0, 0, 0, 6, 6, 6, 20, 6, 6, 6, 27, 5, 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,

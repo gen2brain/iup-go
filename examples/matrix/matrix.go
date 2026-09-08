@@ -186,7 +186,7 @@ func createMatrix() iup.Ihandle {
 	// Image type in cell (4,3)
 	image := iup.ImageRGBA(TestImageSize, TestImageSize, imageData32)
 	mat.SetAttribute("TYPE4:3", "IMAGE")
-	iup.SetAttributeHandle(mat, "4:3", image)
+	mat.SetAttributeHandle("4:3", image)
 
 	// Toggle cell configuration
 	mat.SetAttribute("TOGGLECENTERED", "Yes")

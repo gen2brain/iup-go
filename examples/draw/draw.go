@@ -161,9 +161,9 @@ func drawLinesSection(ih iup.Ihandle, x, y, maxW int) {
 		for px := 0; px < 8; px++ {
 			// Checkerboard pattern with colors
 			if (px+py)%2 == 0 {
-				ih.SetAttribute("DRAWCOLOR", fmt.Sprintf("%d %d %d", 255-px*20, 100+py*15, 150))
+				ih.SetAttribute("DRAWCOLOR", 255-px*20, 100+py*15, 150)
 			} else {
-				ih.SetAttribute("DRAWCOLOR", fmt.Sprintf("%d %d %d", 100+px*15, 255-py*20, 200))
+				ih.SetAttribute("DRAWCOLOR", 100+px*15, 255-py*20, 200)
 			}
 			// Draw multiple pixels for visibility
 			for dy := 0; dy < pixelSize; dy++ {
@@ -197,7 +197,7 @@ func drawRectanglesSection(ih iup.Ihandle, x, y, maxW int) {
 	for i, c := range colors {
 		rectX := x + i*80
 		// Filled rectangle
-		ih.SetAttribute("DRAWCOLOR", fmt.Sprintf("%d %d %d", c.r, c.g, c.b))
+		ih.SetAttribute("DRAWCOLOR", c.r, c.g, c.b)
 		iup.DrawRectangle(ih, rectX, y, rectX+60, y+40)
 		// Label
 		ih.SetAttribute("DRAWCOLOR", "80 80 80")
@@ -222,7 +222,7 @@ func drawRectanglesSection(ih iup.Ihandle, x, y, maxW int) {
 			iup.DrawText(ih, "Gradient", rectX+2, roundedY+45, -1, -1)
 		} else {
 			// Filled rounded rectangle
-			ih.SetAttribute("DRAWCOLOR", fmt.Sprintf("%d %d %d", 255-i*50, 150, 100+i*50))
+			ih.SetAttribute("DRAWCOLOR", 255-i*50, 150, 100+i*50)
 			ih.SetAttribute("DRAWSTYLE", "FILL")
 			iup.DrawRoundedRectangle(ih, rectX, roundedY, rectX+70, roundedY+40, radius)
 			// Label
@@ -241,7 +241,7 @@ func drawRectanglesSection(ih iup.Ihandle, x, y, maxW int) {
 	for i := 0; i < 3; i++ {
 		rectX := x + i*90
 		lineWidth := i + 1
-		ih.SetAttribute("DRAWLINEWIDTH", fmt.Sprintf("%d", lineWidth))
+		ih.SetAttribute("DRAWLINEWIDTH", lineWidth)
 		iup.DrawRectangle(ih, rectX, y, rectX+70, y+20)
 		ih.SetAttribute("DRAWCOLOR", "80 80 80")
 		label := fmt.Sprintf("%dpx", lineWidth)
@@ -255,7 +255,7 @@ func drawRectanglesSection(ih iup.Ihandle, x, y, maxW int) {
 		lineWidth := (i + 1) * 2
 		ih.SetAttribute("DRAWCOLOR", "50 150 200")
 		ih.SetAttribute("DRAWSTYLE", "STROKE")
-		ih.SetAttribute("DRAWLINEWIDTH", fmt.Sprintf("%d", lineWidth))
+		ih.SetAttribute("DRAWLINEWIDTH", lineWidth)
 		iup.DrawRoundedRectangle(ih, rectX, y, rectX+70, y+20, 8)
 		ih.SetAttribute("DRAWCOLOR", "80 80 80")
 		ih.SetAttribute("DRAWTEXTALIGNMENT", "ACENTER")
