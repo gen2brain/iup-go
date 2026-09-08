@@ -169,7 +169,11 @@ func (ih Ihandle) SetAttribute(name string, value ...interface{}) Ihandle {
 	case 2:
 		SetAttribute(ih, name, fmt.Sprintf("%vx%v", value[0], value[1]))
 	case 3:
-		SetAttribute(ih, name, [3]byte{value[0].(byte), value[1].(byte), value[2].(byte)})
+		rgb, ok := rgbBytes(value)
+		if !ok {
+			panic("bad argument passed to SetAttribute")
+		}
+		SetAttribute(ih, name, rgb)
 	default:
 		panic("bad argument passed to SetAttribute")
 	}

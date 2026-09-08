@@ -819,16 +819,12 @@ func SetGlobal(name string, value interface{}) {
 		ccall("IupSetGlobal", "", []interface{}{"string", "number"}, []interface{}{name, int(v)})
 	case string:
 		ccall("IupSetStrGlobal", "", []interface{}{"string", "string"}, []interface{}{name, v})
-	case bool:
-		s := "NO"
-		if v {
-			s = "YES"
-		}
-		SetGlobal(name, s)
-	case int:
-		SetGlobal(name, strconv.Itoa(v))
 	default:
-		SetGlobal(name, fmt.Sprintf("%v", v))
+		str, ok := attribValueString(value)
+		if !ok {
+			panic("bad argument passed to SetGlobal")
+		}
+		SetGlobal(name, str)
 	}
 }
 
