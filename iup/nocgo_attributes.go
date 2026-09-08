@@ -301,7 +301,11 @@ func SetGlobal(name string, value interface{}) {
 	case uintptr:
 		iupSetGlobal(name, val)
 	default:
-		panic("bad argument passed to SetGlobal")
+		str, ok := attribValueString(value)
+		if !ok {
+			panic("bad argument passed to SetGlobal")
+		}
+		SetGlobal(name, str)
 	}
 }
 
