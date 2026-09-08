@@ -821,9 +821,12 @@ public final class IupTextHelper
     public static void setReadOnlyMultiLine(final long ihandlePtr, View v, boolean readOnly)
     {
         IupEditText tv = resolve(v);
-        if (tv != null) setReadOnly(tv, readOnly, InputType.TYPE_CLASS_TEXT
+        if (tv == null) return;
+        setReadOnly(tv, readOnly, InputType.TYPE_CLASS_TEXT
             | InputType.TYPE_TEXT_VARIATION_NORMAL
             | InputType.TYPE_TEXT_FLAG_MULTI_LINE);
+        /* setTextIsSelectable installs ArrowKeyMovementMethod, which drops ClickableSpan taps. */
+        tv.setMovementMethod(LinkMovementMethod.getInstance());
     }
 
     @Keep

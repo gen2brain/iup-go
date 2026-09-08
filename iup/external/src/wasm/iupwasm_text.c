@@ -953,7 +953,15 @@ EMSCRIPTEN_KEEPALIVE void iupwasmTextLinkClick(int id, int idx)
     return;
   cb = (IFns)IupGetCallback(ih, "LINK_CB");
   if (cb)
-    cb(ih, url);
+  {
+    int ret = cb(ih, url);
+    if (ret == IUP_CLOSE)
+      IupExitLoop();
+    else if (ret == IUP_DEFAULT)
+      IupHelp(url);
+  }
+  else
+    IupHelp(url);
 }
 
 static int wasmTextSetRemoveFormattingAttrib(Ihandle* ih, const char* value)

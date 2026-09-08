@@ -58,6 +58,7 @@ public final class IupButtonHelper
         ColorStateList defaultTextColors;
         int defaultPaddingL, defaultPaddingT, defaultPaddingR, defaultPaddingB;
         int materialPaddingL, materialPaddingR;
+        int iupPaddingH = -1, iupPaddingV = -1;
         boolean isBorderless;
         String buttonStyle;
 
@@ -148,7 +149,20 @@ public final class IupButtonHelper
     @Keep
     public static void setPadding(Button button, int horiz, int vert)
     {
+        if (button instanceof IupMaterialButton mb)
+        {
+            mb.iupPaddingH = horiz;
+            mb.iupPaddingV = vert;
+        }
         button.setPadding(horiz, vert, horiz, vert);
+    }
+
+    private static void applyPadding(IupMaterialButton button, int left, int right)
+    {
+        if (button.iupPaddingH >= 0)
+            button.setPadding(button.iupPaddingH, button.iupPaddingV, button.iupPaddingH, button.iupPaddingV);
+        else
+            button.setPadding(left, button.defaultPaddingT, right, button.defaultPaddingB);
     }
 
     @Keep
@@ -227,7 +241,10 @@ public final class IupButtonHelper
             mb.setStrokeWidth(0);
             mb.setRippleColor(null);
             mb.setElevation(0);
-            mb.setPadding(0, 0, 0, 0);
+            if (mb.iupPaddingH >= 0)
+                mb.setPadding(mb.iupPaddingH, mb.iupPaddingV, mb.iupPaddingH, mb.iupPaddingV);
+            else
+                mb.setPadding(0, 0, 0, 0);
             /* Filled-button text is white; unreadable on the app background. */
             android.util.TypedValue tv = new android.util.TypedValue();
             if (mb.getContext().getTheme().resolveAttribute(android.R.attr.textColorPrimary, tv, true))
@@ -240,8 +257,7 @@ public final class IupButtonHelper
         else
         {
             mb.setBackgroundTintList(mb.defaultBackgroundTint);
-            mb.setPadding(mb.defaultPaddingL, mb.defaultPaddingT,
-                mb.defaultPaddingR, mb.defaultPaddingB);
+            applyPadding(mb, mb.defaultPaddingL, mb.defaultPaddingR);
             if (mb.defaultTextColors != null) mb.setTextColor(mb.defaultTextColors);
         }
     }
@@ -386,7 +402,7 @@ public final class IupButtonHelper
         {
             button.setIcon(null);
             if (!button.isBorderless)
-                button.setPadding(0, button.defaultPaddingT, 0, button.defaultPaddingB);
+                applyPadding(button, 0, 0);
             return;
         }
 
@@ -399,8 +415,7 @@ public final class IupButtonHelper
 
         /* Compound-drawable layout needs paddingStart to center icon+text. */
         if (!button.isBorderless)
-            button.setPadding(button.materialPaddingL, button.defaultPaddingT,
-                              button.materialPaddingR, button.defaultPaddingB);
+            applyPadding(button, button.materialPaddingL, button.materialPaddingR);
 
         /* Keep bitmap's own colors (theme tint would recolor pixmaps). */
         button.setIconTint(null);

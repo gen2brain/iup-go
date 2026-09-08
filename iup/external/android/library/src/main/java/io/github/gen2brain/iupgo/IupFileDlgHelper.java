@@ -126,7 +126,7 @@ public final class IupFileDlgHelper
 
         String displayName = queryDisplayName(a, sResultUri);
         if (displayName == null || displayName.isEmpty()) displayName = "file";
-        File cache = new File(a.getCacheDir(), "iup_filedlg_" + System.currentTimeMillis() + "_" + displayName);
+        File cache = stageFile(a, displayName);
         try
         {
             cache.createNewFile();
@@ -165,6 +165,7 @@ public final class IupFileDlgHelper
             Log.e(TAG, "FileDlg commitSave failed: " + e);
         }
         f.delete();
+        f.getParentFile().delete();
         sPendingSaveUri   = null;
         sPendingCachePath = null;
     }
@@ -251,7 +252,7 @@ public final class IupFileDlgHelper
         Uri uri = Uri.parse(uriString);
         String name = queryDisplayName(a, uri);
         if (name == null || name.isEmpty()) name = "file";
-        File cache = new File(a.getCacheDir(), "iup_filedlg_" + System.currentTimeMillis() + "_" + name);
+        File cache = stageFile(a, name);
         try (InputStream in = a.getContentResolver().openInputStream(uri);
              OutputStream out = new FileOutputStream(cache))
         {
@@ -304,11 +305,18 @@ public final class IupFileDlgHelper
         return s;
     }
 
+    private static File stageFile(Activity a, String name)
+    {
+        File dir = new File(a.getCacheDir(), "iup_filedlg_" + System.currentTimeMillis());
+        dir.mkdirs();
+        return new File(dir, name);
+    }
+
     private static String copyUriToCache(Activity a, Uri uri)
     {
         String name = queryDisplayName(a, uri);
         if (name == null || name.isEmpty()) name = "file";
-        File cache = new File(a.getCacheDir(), "iup_filedlg_" + System.currentTimeMillis() + "_" + name);
+        File cache = stageFile(a, name);
         try (InputStream in = a.getContentResolver().openInputStream(uri);
              OutputStream out = new FileOutputStream(cache))
         {

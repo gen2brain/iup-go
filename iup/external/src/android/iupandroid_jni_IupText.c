@@ -177,7 +177,10 @@ JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupTextHelper_dispatchLink
   {
     int ret = cb(ih, (char*)utf);
     if (ret == IUP_CLOSE) IupExitLoop();
+    else if (ret == IUP_DEFAULT) IupHelp(utf);
   }
+  else
+    IupHelp(utf);
   (*jni_env)->ReleaseStringUTFChars(jni_env, url, utf);
 }
 

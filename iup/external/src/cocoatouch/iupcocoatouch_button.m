@@ -153,6 +153,16 @@ static UIControlContentVerticalAlignment cocoaTouchButtonVAlign(int vert)
 	}
 }
 
+static const char* cocoatouch_button_override_name = NULL;
+static const char* cocoatouch_button_override_value = NULL;
+
+static const char* cocoaTouchButtonAttrib(Ihandle* ih, const char* name)
+{
+	if (cocoatouch_button_override_name && iupStrEqual(name, cocoatouch_button_override_name))
+		return cocoatouch_button_override_value;
+	return iupAttribGet(ih, name);
+}
+
 static UIImage* cocoaTouchButtonLoadImage(Ihandle* ih, const char* name, int make_inactive)
 {
 	if (!name) return nil;
@@ -166,7 +176,9 @@ static NSAttributedString* cocoaTouchButtonAttributedTitle(Ihandle* ih, IupCocoa
 	const char* display = stripped ? stripped : value;
 	NSString* ns = [NSString stringWithUTF8String:display];
 
-	IupCocoaTouchFont* iup_font = iupCocoaTouchGetFont(ih);
+	const char* font_name = cocoaTouchButtonAttrib(ih, "FONT");
+	IupCocoaTouchFont* iup_font = font_name ? iupCocoaTouchFindFont(font_name) : NULL;
+	if (!iup_font) iup_font = iupCocoaTouchGetFont(ih);
 	UIFont* font = (iup_font && iup_font.nativeFont) ? iup_font.nativeFont : [UIFont systemFontOfSize:UIFont.buttonFontSize];
 
 	NSAttributedString* result = nil;
@@ -183,11 +195,11 @@ static NSAttributedString* cocoaTouchButtonAttributedTitle(Ihandle* ih, IupCocoa
 static UIButtonConfiguration* cocoaTouchButtonMakeConfig(Ihandle* ih)
 {
 	BOOL flat          = iupAttribGetBoolean(ih, "FLAT");
-	BOOL show_default  = iupAttribGetBoolean(ih, "SHOWASDEFAULT");
+	BOOL show_default  = iupStrBoolean(cocoaTouchButtonAttrib(ih, "SHOWASDEFAULT"));
 	BOOL borderless    = (ih->data->type & IUP_BUTTON_IMAGE) &&
-	                     iupAttribGet(ih, "IMPRESS") &&
+	                     cocoaTouchButtonAttrib(ih, "IMPRESS") &&
 	                     !iupAttribGetBoolean(ih, "IMPRESSBORDER");
-	const char* style  = iupAttribGet(ih, "BUTTONSTYLE");
+	const char* style  = cocoaTouchButtonAttrib(ih, "BUTTONSTYLE");
 
 	UIButtonConfiguration* cfg;
 	if (style)
@@ -205,7 +217,7 @@ static UIButtonConfiguration* cocoaTouchButtonMakeConfig(Ihandle* ih)
 	else
 		cfg = [UIButtonConfiguration tintedButtonConfiguration];
 
-	const char* corner = iupAttribGet(ih, "CORNERSTYLE");
+	const char* corner = cocoaTouchButtonAttrib(ih, "CORNERSTYLE");
 	if      (iupStrEqualNoCase(corner, "SMALL"))   cfg.cornerStyle = UIButtonConfigurationCornerStyleSmall;
 	else if (iupStrEqualNoCase(corner, "MEDIUM"))  cfg.cornerStyle = UIButtonConfigurationCornerStyleMedium;
 	else if (iupStrEqualNoCase(corner, "LARGE"))   cfg.cornerStyle = UIButtonConfigurationCornerStyleLarge;
@@ -234,14 +246,14 @@ static UIButtonConfiguration* cocoaTouchButtonMakeConfig(Ihandle* ih)
 		default:               cfg.titleAlignment = UIButtonConfigurationTitleAlignmentCenter;   break;
 	}
 
-	const char* fg = iupAttribGet(ih, "FGCOLOR");
-	if (fg)
+	const char* fg = cocoaTouchButtonAttrib(ih, "FGCOLOR");
+	if (fg && !iupStrEqualNoCase(fg, IupGetGlobal("DLGFGCOLOR")))
 	{
 		UIColor* c = iupCocoaTouchToNativeColor(fg);
 		if (c) cfg.baseForegroundColor = c;
 	}
-	const char* bg = iupAttribGet(ih, "BGCOLOR");
-	if (bg)
+	const char* bg = cocoaTouchButtonAttrib(ih, "BGCOLOR");
+	if (bg && !iupStrEqualNoCase(bg, IupGetGlobal("DLGBGCOLOR")))
 	{
 		UIColor* c = iupCocoaTouchToNativeColor(bg);
 		if (c) cfg.baseBackgroundColor = c;
@@ -250,10 +262,19 @@ static UIButtonConfiguration* cocoaTouchButtonMakeConfig(Ihandle* ih)
 	return cfg;
 }
 
+static void cocoaTouchButtonRefreshWith(Ihandle* ih, const char* name, const char* value);
+
 static void cocoaTouchButtonRefresh(Ihandle* ih)
+{
+	cocoaTouchButtonRefreshWith(ih, NULL, NULL);
+}
+
+static void cocoaTouchButtonRefreshWith(Ihandle* ih, const char* name, const char* value)
 {
 	IupCocoaTouchButton* button = cocoaTouchButtonGet(ih);
 	if (!button) return;
+	cocoatouch_button_override_name = name;
+	cocoatouch_button_override_value = value;
 
 	UIButtonConfiguration* cfg = cocoaTouchButtonMakeConfig(ih);
 
@@ -265,7 +286,7 @@ static void cocoaTouchButtonRefresh(Ihandle* ih)
 
 	if (ih->data->type & IUP_BUTTON_IMAGE)
 	{
-		const char* img = iupAttribGet(ih, "IMAGE");
+		const char* img = cocoaTouchButtonAttrib(ih, "IMAGE");
 		if (img) cfg.image = cocoaTouchButtonLoadImage(ih, img, 0);
 	}
 
@@ -274,13 +295,14 @@ static void cocoaTouchButtonRefresh(Ihandle* ih)
 	[button setContentHorizontalAlignment:cocoaTouchButtonHAlign(ih->data->horiz_alignment)];
 	[button setContentVerticalAlignment:cocoaTouchButtonVAlign(ih->data->vert_alignment)];
 
-	const char* impress  = iupAttribGet(ih, "IMPRESS");
-	const char* inactive = iupAttribGet(ih, "IMINACTIVE");
+	const char* image    = cocoaTouchButtonAttrib(ih, "IMAGE");
+	const char* impress  = cocoaTouchButtonAttrib(ih, "IMPRESS");
+	const char* inactive = cocoaTouchButtonAttrib(ih, "IMINACTIVE");
 	UIImage* impress_img  = impress ? cocoaTouchButtonLoadImage(ih, impress, 0) : nil;
 	UIImage* inactive_img = inactive ? cocoaTouchButtonLoadImage(ih, inactive, 0)
-	                       : ((ih->data->type & IUP_BUTTON_IMAGE) && iupAttribGet(ih, "IMAGE")
-	                          ? cocoaTouchButtonLoadImage(ih, iupAttribGet(ih, "IMAGE"), 1) : nil);
-	UIImage* normal_img   = (ih->data->type & IUP_BUTTON_IMAGE) ? cocoaTouchButtonLoadImage(ih, iupAttribGet(ih, "IMAGE"), 0) : nil;
+	                       : ((ih->data->type & IUP_BUTTON_IMAGE) && image
+	                          ? cocoaTouchButtonLoadImage(ih, image, 1) : nil);
+	UIImage* normal_img   = (ih->data->type & IUP_BUTTON_IMAGE) ? cocoaTouchButtonLoadImage(ih, image, 0) : nil;
 
 	button.configurationUpdateHandler = ^(UIButton* b) {
 		UIButtonConfiguration* updated = [b.configuration copy];
@@ -293,6 +315,8 @@ static void cocoaTouchButtonRefresh(Ihandle* ih)
 		b.configuration = updated;
 		[updated release];
 	};
+	cocoatouch_button_override_name = NULL;
+	cocoatouch_button_override_value = NULL;
 }
 
 IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int* x, int* y)
@@ -323,8 +347,7 @@ static int cocoaTouchButtonSetTitleAttrib(Ihandle* ih, const char* value)
 
 static int cocoaTouchButtonSetFontAttrib(Ihandle* ih, const char* value)
 {
-	(void)value;
-	cocoaTouchButtonRefresh(ih);
+	cocoaTouchButtonRefreshWith(ih, "FONT", value);
 	return 1;
 }
 
@@ -384,53 +407,46 @@ static int cocoaTouchButtonSetImagePositionAttrib(Ihandle* ih, const char* value
 
 static int cocoaTouchButtonSetFgColorAttrib(Ihandle* ih, const char* value)
 {
-	(void)value;
-	cocoaTouchButtonRefresh(ih);
+	cocoaTouchButtonRefreshWith(ih, "FGCOLOR", value);
 	return 1;
 }
 
 static int cocoaTouchButtonSetBgColorAttrib(Ihandle* ih, const char* value)
 {
-	(void)value;
-	cocoaTouchButtonRefresh(ih);
+	cocoaTouchButtonRefreshWith(ih, "BGCOLOR", value);
 	return 1;
 }
 
 static int cocoaTouchButtonSetButtonStyleAttrib(Ihandle* ih, const char* value)
 {
-	iupAttribSetStr(ih, "BUTTONSTYLE", value);
-	cocoaTouchButtonRefresh(ih);
-	return 0;
+	cocoaTouchButtonRefreshWith(ih, "BUTTONSTYLE", value);
+	return 1;
 }
 
 static int cocoaTouchButtonSetCornerStyleAttrib(Ihandle* ih, const char* value)
 {
-	iupAttribSetStr(ih, "CORNERSTYLE", value);
-	cocoaTouchButtonRefresh(ih);
-	return 0;
+	cocoaTouchButtonRefreshWith(ih, "CORNERSTYLE", value);
+	return 1;
 }
 
 static int cocoaTouchButtonSetImageAttrib(Ihandle* ih, const char* value)
 {
-	(void)value;
 	if (!(ih->data->type & IUP_BUTTON_IMAGE)) return 0;
-	cocoaTouchButtonRefresh(ih);
+	cocoaTouchButtonRefreshWith(ih, "IMAGE", value);
 	return 1;
 }
 
 static int cocoaTouchButtonSetImInactiveAttrib(Ihandle* ih, const char* value)
 {
-	(void)value;
 	if (!(ih->data->type & IUP_BUTTON_IMAGE)) return 0;
-	cocoaTouchButtonRefresh(ih);
+	cocoaTouchButtonRefreshWith(ih, "IMINACTIVE", value);
 	return 1;
 }
 
 static int cocoaTouchButtonSetImpressAttrib(Ihandle* ih, const char* value)
 {
-	(void)value;
 	if (!(ih->data->type & IUP_BUTTON_IMAGE)) return 0;
-	cocoaTouchButtonRefresh(ih);
+	cocoaTouchButtonRefreshWith(ih, "IMPRESS", value);
 	return 1;
 }
 
@@ -443,8 +459,7 @@ static int cocoaTouchButtonSetActiveAttrib(Ihandle* ih, const char* value)
 
 static int cocoaTouchButtonSetShowAsDefaultAttrib(Ihandle* ih, const char* value)
 {
-	(void)value;
-	cocoaTouchButtonRefresh(ih);
+	cocoaTouchButtonRefreshWith(ih, "SHOWASDEFAULT", value);
 	return 1;
 }
 

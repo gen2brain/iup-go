@@ -696,7 +696,13 @@ IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bul
 		NSAttributedString* img_attr = cocoaTouchTextBuildImageAttachment(ih, formattag);
 		if (img_attr)
 		{
-			[attr_string replaceCharactersInRange:range withAttributedString:img_attr];
+			NSMutableAttributedString* img_mut = [[img_attr mutableCopy] autorelease];
+			NSDictionary* at = [attr_string attributesAtIndex:range.location effectiveRange:NULL];
+			NSMutableDictionary* keep = [NSMutableDictionary dictionary];
+			if (at[NSFontAttributeName]) keep[NSFontAttributeName] = at[NSFontAttributeName];
+			if (at[NSParagraphStyleAttributeName]) keep[NSParagraphStyleAttributeName] = at[NSParagraphStyleAttributeName];
+			[img_mut addAttributes:keep range:NSMakeRange(0, img_mut.length)];
+			[attr_string replaceCharactersInRange:range withAttributedString:img_mut];
 			if (!is_bulk_path) tv.attributedText = attr_string;
 		}
 		return;
