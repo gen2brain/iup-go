@@ -1,11 +1,6 @@
 /** \file
  * \brief GNUstep compatibility shim for the Cocoa driver.
  *
- * Included by iupcocoa_drv.h under #ifdef GNUSTEP. Provides enum/class renames,
- * missing typedef/#define constants, informal category declarations for AppKit
- * methods GNUstep's public headers don't export, and NSLog-based log macros.
- * Implementations (mostly no-ops) live in iupcocoa_common.m.
- *
  * See Copyright Notice in "iup.h"
  */
 
@@ -20,8 +15,6 @@
 #import <AppKit/AppKit.h>
 #import <CoreGraphics/CoreGraphics.h>
 
-
-/* Enum renames: macOS 10.12+ modernized constants mapped to legacy GNUstep names. */
 
 #define NSAlertStyleCritical                        NSCriticalAlertStyle
 #define NSAlertStyleWarning                         NSWarningAlertStyle
@@ -77,8 +70,6 @@
 #define NSBitmapFormatAlphaNonpremultiplied         NSAlphaNonpremultipliedBitmapFormat
 
 
-/* Missing typedefs / constants. */
-
 /* Pasteboard type alias (10.13+ on Apple; plain NSString* on GNUstep). */
 typedef NSString* NSPasteboardType;
 
@@ -106,7 +97,7 @@ typedef NSString* NSPasteboardType;
 #define NSImageNameFolder          @"NSFolder"
 #endif
 
-/* Window title visibility values; the property isn't on GNUstep and sites are #ifndef-gated. */
+/* window title visibility values; the property does not exist on GNUstep */
 #ifndef NSWindowTitleVisible
 #define NSWindowTitleVisible       0
 #endif
@@ -114,7 +105,6 @@ typedef NSString* NSPasteboardType;
 #define NSWindowTitleHidden        1
 #endif
 
-/* Fullscreen notification name placeholders; actual observer sites are gated. */
 #ifndef NSWindowWillEnterFullScreenNotification
 #define NSWindowWillEnterFullScreenNotification @"NSWindowWillEnterFullScreenNotification"
 #endif
@@ -132,8 +122,7 @@ typedef NSString* NSPasteboardType;
 #endif
 
 
-/* Informal category declarations for methods GNUstep's public headers omit.
-   Implementations (mostly no-ops) live in iupcocoa_common.m. */
+/* categories for methods GNUstep's headers omit; implementations live in iupcocoa_common.m */
 
 @interface NSView (IupGnustepShim)
 - (NSSize)fittingSize;
@@ -228,8 +217,7 @@ typedef NSString* NSPasteboardType;
 + (NSColor*)unemphasizedSelectedContentBackgroundColor;
 @end
 
-/* Accessibility setters GNUstep omits; no-ops on NSObject so any receiver
-   (views and NSAccessibilityElement) stays safe. */
+/* accessibility setters GNUstep omits; no-ops on NSObject so any receiver is safe */
 @interface NSObject (IupGnustepAccessibility)
 - (void)setAccessibilityRole:(NSString*)role;
 - (void)setAccessibilityParent:(id)parent;
@@ -260,8 +248,6 @@ typedef NSString* NSPasteboardType;
 + (void)setAllowsAutomaticWindowTabbing:(BOOL)flag;
 @end
 
-
-/* Log macros: NSLog-based replacements for Apple's os_log family. */
 
 #define iupcocoaLog(...)           NSLog(@__VA_ARGS__)
 #define iupcocoaLogDebug(...)      ((void)0)

@@ -20,7 +20,6 @@ static IFidle gtk_idle_cb = NULL;
 static guint gtk_idle_id;
 
 /* Track main loop manually since gtk_main_level() was removed */
-/* Use a stack to handle nested loops (e.g., modal dialogs) */
 #define MAX_LOOP_DEPTH 10
 static GMainLoop *gtk4_loop_stack[MAX_LOOP_DEPTH] = {NULL};
 static int gtk4_loop_level = 0;
@@ -70,7 +69,6 @@ IUP_API void IupExitLoop(void)
   char* exit_loop = IupGetGlobal("EXITLOOP");
   GMainLoop* current_loop = (gtk4_loop_level > 0) ? gtk4_loop_stack[gtk4_loop_level - 1] : NULL;
 
-  /* Use manual loop level tracking with stack */
   if (gtk4_loop_level > 0 && (gtk4_loop_level > 1 || !exit_loop || iupStrBoolean(exit_loop)))
   {
     if (current_loop && g_main_loop_is_running(current_loop))
@@ -80,7 +78,6 @@ IUP_API void IupExitLoop(void)
 
 IUP_API int IupMainLoopLevel(void)
 {
-  /* Return manual loop level */
   return gtk4_loop_level;
 }
 
@@ -93,8 +90,6 @@ IUP_API int IupMainLoop(void)
     iupLoopCallEntryCb();
   }
 
-  /* Use GMainLoop instead of deprecated gtk_main() */
-  /* Push new loop onto stack to handle nested loops (modal dialogs) */
   if (gtk4_loop_level >= MAX_LOOP_DEPTH)
   {
     fprintf(stderr, "ERROR: Maximum loop nesting depth (%d) exceeded!\n", MAX_LOOP_DEPTH);
@@ -107,7 +102,6 @@ IUP_API int IupMainLoop(void)
 
   g_main_loop_run(new_loop);
 
-  /* Pop loop from stack */
   gtk4_loop_level--;
   gtk4_loop_stack[gtk4_loop_level] = NULL;
   g_main_loop_unref(new_loop);
@@ -212,7 +206,6 @@ IUP_DRV_API void iupgtk4LoopCleanup(void)
     gtk_idle_cb = NULL;
   }
 
-  /* Exit all running loops in the stack. */
   while (gtk4_loop_level > 0)
   {
     gtk4_loop_level--;
@@ -224,7 +217,6 @@ IUP_DRV_API void iupgtk4LoopCleanup(void)
     }
   }
 
-  /* Process pending events to clean up any stale event sources */
   GMainContext *context = g_main_context_default();
   int count = 0;
   while (count < 100 && g_main_context_pending(context))

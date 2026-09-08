@@ -115,7 +115,6 @@ static IwinuiFont* winuiFindFont(const char* font, float dpi)
   DWRITE_FONT_WEIGHT weight = is_bold ? DWRITE_FONT_WEIGHT_BOLD : DWRITE_FONT_WEIGHT_NORMAL;
   DWRITE_FONT_STYLE style = is_italic ? DWRITE_FONT_STYLE_ITALIC : DWRITE_FONT_STYLE_NORMAL;
 
-  /* Get user locale for proper text measurement */
   wchar_t localeName[LOCALE_NAME_MAX_LENGTH];
   if (GetUserDefaultLocaleName(localeName, LOCALE_NAME_MAX_LENGTH) == 0)
     wcscpy(localeName, L"en-US");
@@ -152,7 +151,6 @@ static IwinuiFont* winuiFindFont(const char* font, float dpi)
   winuiDWriteMeasureText(textFormat, L"abcdefghijklmnopqrstuvwxyz", 26, 1, &charW, &charH);
   newfont.drawcharheight = (int)ceil(charH);
 
-  /* Get font metrics for ascent/descent */
   IDWriteFontCollection* fontCollection = NULL;
   winui_dwrite_factory->GetSystemFontCollection(&fontCollection, FALSE);
   if (fontCollection)
@@ -235,7 +233,6 @@ extern "C" IUP_SDK_API char* iupdrvGetSystemFont(void)
 
 extern "C" IUP_SDK_API int iupdrvSetFontAttrib(Ihandle* ih, const char* value)
 {
-  /* If value is NULL, get the effective font (inherited or default) */
   if (!value || !value[0])
     value = iupGetFontValue(ih);
   if (!value || !value[0])

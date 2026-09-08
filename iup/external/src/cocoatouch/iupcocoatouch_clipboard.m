@@ -185,7 +185,6 @@ static int cocoaTouchClipboardSetAddFormatAttrib(Ihandle* ih, const char* value)
 	return 0;
 }
 
-/* UIPasteboard takes any type string, and IUP format names are commonly MIME */
 static BOOL cocoaTouchClipboardIsValidType(NSString* s)
 {
 	NSUInteger n = [s length];

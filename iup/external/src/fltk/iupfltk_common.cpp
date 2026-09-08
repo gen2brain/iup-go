@@ -154,9 +154,7 @@ extern "C" IUP_SDK_API void iupdrvBaseLayoutUpdateMethod(Ihandle *ih)
   if (!widget)
     return;
 
-  /* IUP ih->x, ih->y are parent-relative coordinates.
-     FLTK widget->resize() expects window-relative coordinates.
-     Get the parent group's window position and add it. */
+  /* ih->x, ih->y are parent-relative, FLTK resize() wants window-relative */
   int x = ih->x;
   int y = ih->y;
 

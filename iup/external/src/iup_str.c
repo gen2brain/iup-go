@@ -1468,7 +1468,6 @@ IUP_SDK_API int iupStrCompare(const char *l, const char *r, int casesensitive, i
         char l_char = *l,
              r_char = *r;
 
-        /* check if these are digit characters */
         int l_digit = iup_isdigit(l_char),
             r_digit = iup_isdigit(r_char);
 
@@ -1510,7 +1509,6 @@ IUP_SDK_API int iupStrCompare(const char *l, const char *r, int casesensitive, i
       const char *l_start = l, *r_start = r;
       int l_len = 0, r_len = 0;
 
-      /* skip leading zeros */
       while (*l == '0') { ++l; }
       while (*r == '0') { ++r; }
 

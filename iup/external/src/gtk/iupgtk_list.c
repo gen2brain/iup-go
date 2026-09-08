@@ -40,7 +40,6 @@ enum
 static void gtkListSelectionChanged(GtkTreeSelection* selection, Ihandle* ih);
 static void gtkListComboBoxChanged(GtkComboBox* widget, Ihandle* ih);
 
-/* Custom Virtual List Model for VIRTUALMODE */
 typedef struct _IupGtkVirtualListModel IupGtkVirtualListModel;
 typedef struct _IupGtkVirtualListModelClass IupGtkVirtualListModelClass;
 
@@ -163,7 +162,6 @@ static void iup_gtk_virtual_list_model_get_value(GtkTreeModel *tree_model, GtkTr
         GdkPixbuf* pixImage = (GdkPixbuf*)iupImageGetImage(image_name, model->ih, 0, NULL);
         if (pixImage)
         {
-          /* Scale image down if needed to fit item height */
           int charheight;
           iupdrvFontGetCharSize(model->ih, NULL, &charheight);
           int available_height = charheight + 2 * model->ih->data->spacing;
@@ -306,18 +304,16 @@ static IupGtkVirtualListModel *iup_gtk_virtual_list_model_new(Ihandle *ih)
 {
   IupGtkVirtualListModel *model = g_object_new(IUP_TYPE_GTK_VIRTUAL_LIST_MODEL, NULL);
   model->ih = ih;
-  model->count = ih->data->item_count;  /* Use count set before mapping */
+  model->count = ih->data->item_count;
   return model;
 }
 
-/* Notify the view that model item count has changed. */
 static void iup_gtk_virtual_list_model_notify_count_changed(IupGtkVirtualListModel *model, Ihandle* ih, int new_count)
 {
   GtkTreeView* tree_view;
 
   if (!ih->handle || !GTK_IS_TREE_VIEW(ih->handle))
   {
-    /* Not mapped yet, just update count and stamp */
     model->count = new_count;
     model->stamp = g_random_int();
     return;
@@ -328,11 +324,9 @@ static void iup_gtk_virtual_list_model_notify_count_changed(IupGtkVirtualListMod
   /* Detach model, model->count still has old value so GTK can unref correctly */
   gtk_tree_view_set_model(tree_view, NULL);
 
-  /* Now set new count and invalidate iterators */
   model->count = new_count;
   model->stamp = g_random_int();
 
-  /* Reattach model, GTK will build tree with new count */
   gtk_tree_view_set_model(tree_view, GTK_TREE_MODEL(model));
 }
 
@@ -352,7 +346,6 @@ static void gtkListVirtualCellDataFunc(GtkTreeViewColumn* column, GtkCellRendere
   g_object_set(renderer, "text", text ? text : "", NULL);
 }
 
-/* Cached measurement for list item space */
 static int iupgtk_list_item_space = -1;
 static int iupgtk_list_row_height = -1;
 
@@ -404,7 +397,6 @@ static void iupgtkListMeasureItemMetrics(void)
     pango_layout_get_pixel_size(layout, NULL, &char_height);
     g_object_unref(layout);
 
-    /* item_space = actual_row_height - char_height */
     iupgtk_list_item_space = iupgtk_list_row_height - char_height;
     if (iupgtk_list_item_space < 0) iupgtk_list_item_space = 2;
 
@@ -430,7 +422,6 @@ IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
   static int editbox_border_y = -1;
   static int scrolled_window_border = -1;
 
-  /* Measure scrolled_window border for plain lists */
   if (scrolled_window_border == -1)
   {
     GtkWidget *temp_window = gtk_offscreen_window_new();
@@ -450,11 +441,9 @@ IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
     gtk_widget_get_preferred_size(temp_label, &label_min, &label_nat);
     gtk_widget_get_preferred_size(temp_scrolled, &sw_min, &sw_nat);
 
-    /* Border is the difference between scrolled_window and its child */
     scrolled_window_border = sw_nat.height - label_nat.height;
-    if (scrolled_window_border < 0) scrolled_window_border = 10; /* fallback to safe default */
+    if (scrolled_window_border < 0) scrolled_window_border = 10;
 #else
-    /* GTK2: Use size_request instead */
     gtk_widget_size_request(temp_label, &label_nat);
     gtk_widget_size_request(temp_scrolled, &sw_nat);
 
@@ -469,7 +458,6 @@ IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
   (*x) += 10;
   (*y) += scrolled_window_border;
 
-  /* Measure plain GtkEntry for non-dropdown editbox list */
   if (editbox_border_y == -1)
   {
     GtkWidget *temp_window = gtk_offscreen_window_new();
@@ -521,7 +509,6 @@ IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
       gtk_list_store_append(temp_store, &iter);
       gtk_list_store_set(temp_store, &iter, 0, "X", -1);
 
-      /* Measure regular dropdown (no editbox) */
       GtkWidget* temp_combo = gtk_combo_box_new_with_model(GTK_TREE_MODEL(temp_store));
       GtkCellRenderer *renderer = gtk_cell_renderer_text_new();
       gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(temp_combo), renderer, TRUE);
@@ -552,7 +539,6 @@ IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
 
       gtk_widget_destroy(temp_window);
 
-      /* Measure dropdown with editbox */
       temp_window = gtk_offscreen_window_new();
 #if GTK_CHECK_VERSION(2, 24, 0)
       GtkWidget* temp_combo_entry = gtk_combo_box_new_with_model_and_entry(GTK_TREE_MODEL(temp_store));
@@ -623,7 +609,6 @@ IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
       /* For EDITBOX: VISIBLELINES includes the entry line */
       if (visiblelines > 0)
       {
-        /* Remove one item's height since entry takes one "line" of VISIBLELINES */
         int char_width, char_height;
         iupdrvFontGetCharSize(ih, &char_width, &char_height);
         int item_height = char_height;
@@ -863,8 +848,7 @@ static int gtkListSetBgColorAttrib(Ihandle* ih, const char* value)
        there will be an invalid background outside the dropdown */
   }
 
-  /* When dropdown=yes the color is not set for the popup menu,
-     so we avoid setting it to prevent inconsistent appearance. */
+  /* the color does not reach the dropdown popup menu */
   if (!ih->data->is_dropdown)
   {
     GtkCellRenderer* renderer = (GtkCellRenderer*)iupAttribGet(ih, "_IUPGTK_RENDERER");
@@ -899,7 +883,6 @@ static int gtkListSetFgColorAttrib(Ihandle* ih, const char* value)
     iupgtkSetFgColor(entry, r, g, b);
   }
 
-  /* Same dropdown limitation as BGCOLOR */
   if (!ih->data->is_dropdown)
   {
     GtkCellRenderer* renderer = (GtkCellRenderer*)iupAttribGet(ih, "_IUPGTK_RENDERER");
@@ -1484,7 +1467,6 @@ static int gtkListSetImageAttrib(Ihandle* ih, int id, const char* value)
   if (!ih->data->show_image || !gtk_tree_model_iter_nth_child(model, &iter, NULL, pos))
     return 0;
 
-  /* Scale image down if needed to fit font height */
   if (pixImage)
   {
     int charheight;
@@ -1495,7 +1477,6 @@ static int gtkListSetImageAttrib(Ihandle* ih, int id, const char* value)
 
     if (ih->data->fit_image && img_height > available_height)
     {
-      /* Scale down proportionally to fit available height */
       int scaled_width = (img_width * available_height) / img_height;
       GdkPixbuf* scaled = gdk_pixbuf_scale_simple(pixImage, scaled_width, available_height, GDK_INTERP_BILINEAR);
       gtk_list_store_set(GTK_LIST_STORE(model), &iter, IUPGTK_LIST_IMAGE, scaled, -1);
@@ -2060,7 +2041,6 @@ static gboolean gtkListComboEnterLeaveEvent(GtkWidget *widget, GdkEventCrossing 
 
 /*********************************************************************************/
 
-/* Callback to track scrolled window size allocation and clamp if needed */
 static void gtkListScrolledWindowSizeAllocate(GtkWidget* widget, GdkRectangle* allocation, gpointer user_data)
 {
   Ihandle* ih = (Ihandle*)user_data;
@@ -2068,24 +2048,19 @@ static void gtkListScrolledWindowSizeAllocate(GtkWidget* widget, GdkRectangle* a
 
   gtk_widget_get_size_request(widget, &sw_req_w, &sw_req_h);
 
-  /* If VISIBLELINES is set, and we have a size_request height, clamp allocation to it */
   int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
   if (visiblelines > 0 && sw_req_h > 0 && allocation->height > sw_req_h)
   {
-    /* Create a new clamped allocation and apply it */
     GtkAllocation clamped = *allocation;
     clamped.height = sw_req_h;
 
     /* Block this signal handler to prevent recursion */
     g_signal_handlers_block_by_func(widget, gtkListScrolledWindowSizeAllocate, user_data);
 
-    /* Apply the clamped allocation - this will allocate children correctly */
     gtk_widget_size_allocate(widget, &clamped);
 
-    /* Unblock the signal handler */
     g_signal_handlers_unblock_by_func(widget, gtkListScrolledWindowSizeAllocate, user_data);
 
-    /* Update the allocation parameter to reflect what we actually did */
     *allocation = clamped;
   }
 }
@@ -2240,13 +2215,12 @@ static int gtkListMapMethod(Ihandle* ih)
     GtkPolicyType scrollbar_policy;
     GtkTreeModel* model;
 
-    /* Virtual mode: use custom virtual model instead of GtkListStore */
     if (ih->data->is_virtual)
     {
       IupGtkVirtualListModel* virtual_model = iup_gtk_virtual_list_model_new(ih);
       model = GTK_TREE_MODEL(virtual_model);
       iupAttribSet(ih, "_IUPGTK_VIRTUAL_MODEL", (char*)virtual_model);
-      g_object_unref(store);  /* Don't need the regular store */
+      g_object_unref(store);
     }
     else
     {
@@ -2262,7 +2236,6 @@ static int gtkListMapMethod(Ihandle* ih)
 
     scrolled_window = (GtkScrolledWindow*)gtk_scrolled_window_new(NULL, NULL);
 
-    /* Track scrolled window size allocation for VISIBLELINES clamping */
     g_signal_connect(G_OBJECT(scrolled_window), "size-allocate", G_CALLBACK(gtkListScrolledWindowSizeAllocate), ih);
 
     if (ih->data->has_editbox)
@@ -2288,7 +2261,6 @@ static int gtkListMapMethod(Ihandle* ih)
 
       gtk_widget_show((GtkWidget*)vbox);
 
-      /* Pack scrolled_window into vbox */
 #if GTK_CHECK_VERSION(3, 0, 0)
       gtk_widget_set_vexpand((GtkWidget*)scrolled_window, TRUE);
 #endif
@@ -2350,8 +2322,7 @@ static int gtkListMapMethod(Ihandle* ih)
       /* Use FIXED sizing to prevent GTK from measuring all rows for column width */
       gtk_tree_view_column_set_sizing(column, GTK_TREE_VIEW_COLUMN_FIXED);
 
-      /* Enable fixed height mode, requires all columns to be FIXED type.
-         This prevents GTK from iterating all rows during validation. */
+      /* fixed height mode requires all columns FIXED, and stops GTK iterating every row */
       gtk_tree_view_set_fixed_height_mode(GTK_TREE_VIEW(ih->handle), TRUE);
     }
     else
@@ -2375,7 +2346,6 @@ static int gtkListMapMethod(Ihandle* ih)
 
     if (visiblelines > 0)
     {
-      /* GTK3 only applies min/max_content_height when policy is AUTOMATIC (not NEVER or ALWAYS) */
       scrollbar_policy = GTK_POLICY_AUTOMATIC;
     }
     else if (ih->data->sb)
@@ -2399,15 +2369,12 @@ static int gtkListMapMethod(Ihandle* ih)
       {
         GtkWidget* container;
 
-        /* Get the container that IUP's layout will call iupgtkSetPosSize on */
         container = (GtkWidget*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
         if (!container)
           container = (GtkWidget*)scrolled_window;
 
-        /* Mark container so iupgtkSetPosSize will use IUP's calculated height directly */
         g_object_set_data(G_OBJECT(container), "iup-visiblelines-set", (gpointer)"1");
 
-        /* For editbox lists, also mark the scrolled_window */
         if (ih->data->has_editbox)
         {
           GtkWidget* sw = (GtkWidget*)iupAttribGet(ih, "_IUPGTK_SCROLLED_WINDOW");
@@ -2464,7 +2431,6 @@ static int gtkListMapMethod(Ihandle* ih)
 
   IupSetCallback(ih, "_IUP_XY2POS_CB", (Icallback)gtkListConvertXYToPos);
 
-  /* Don't populate items in virtual mode */
   if (!ih->data->is_virtual)
     iupListSetInitialItems(ih);
 

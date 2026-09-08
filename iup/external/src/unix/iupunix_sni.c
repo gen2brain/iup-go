@@ -179,7 +179,6 @@ static const char dbusmenu_introspection_xml[] =
   "  </interface>\n"
   "</node>\n";
 
-/* Menu item tracking for dbusmenu */
 #define MAX_MENU_ITEMS 256
 
 typedef struct _IupUnixSNIMenuItem {
@@ -192,7 +191,6 @@ typedef struct _IupUnixSNI {
   char* bus_name;
   Ihandle* ih;
 
-  /* Icon data */
   int icon_width;
   int icon_height;
   unsigned char* icon_pixels;
@@ -206,14 +204,12 @@ typedef struct _IupUnixSNI {
   int cleanup_in_progress;
   int ref_count;
 
-  /* Menu (dbusmenu) */
   Ihandle* menu_ih;
   int menu_revision;
   int next_menu_id;
   IupUnixSNIMenuItem menu_items[MAX_MENU_ITEMS];
   int menu_item_count;
 
-  /* IUP Timer for dbus dispatch */
   Ihandle* timer;
 } IupUnixSNI;
 
@@ -364,7 +360,6 @@ static void sniAppendMenuItemProperties(DBusMessageIter* dict_iter, Ihandle* ite
 
   class_name = IupGetClassName(item);
 
-  /* Check if separator */
   if (iupStrEqual(class_name, "menuseparator"))
   {
     const char* prop_name = "type";
@@ -378,7 +373,7 @@ static void sniAppendMenuItemProperties(DBusMessageIter* dict_iter, Ihandle* ite
     return;
   }
 
-  /* Label - convert & to _ for accelerator */
+  /* dbusmenu marks the mnemonic with _ */
   title = IupGetAttribute(item, "TITLE");
   if (title && title[0])
   {
@@ -402,7 +397,6 @@ static void sniAppendMenuItemProperties(DBusMessageIter* dict_iter, Ihandle* ite
     free(label);
   }
 
-  /* Submenu indicator */
   if (is_submenu)
   {
     const char* prop_name = "children-display";
@@ -415,7 +409,6 @@ static void sniAppendMenuItemProperties(DBusMessageIter* dict_iter, Ihandle* ite
     dbus_message_iter_close_container(dict_iter, &dict_entry_iter);
   }
 
-  /* Enabled state */
   {
     const char* active = IupGetAttribute(item, "ACTIVE");
     if (active && iupStrEqualNoCase(active, "NO"))
@@ -431,15 +424,11 @@ static void sniAppendMenuItemProperties(DBusMessageIter* dict_iter, Ihandle* ite
     }
   }
 
-  /* Toggle state - only for checkable items */
   {
     const char* hidemark = iupAttribGetStr(item, "HIDEMARK");
     const char* value_attr = iupAttribGet(item, "VALUE");
     int is_checkable = 0;
 
-    /* Item is checkable if:
-       - VALUE was explicitly set, OR
-       - HIDEMARK is explicitly set to NO */
     if (value_attr)
       is_checkable = 1;
     else if (hidemark && !iupStrBoolean(hidemark))
@@ -447,7 +436,6 @@ static void sniAppendMenuItemProperties(DBusMessageIter* dict_iter, Ihandle* ite
 
     if (is_checkable)
     {
-      /* Toggle type */
       {
         const char* prop_name = "toggle-type";
         const char* toggle_type = "checkmark";
@@ -458,7 +446,6 @@ static void sniAppendMenuItemProperties(DBusMessageIter* dict_iter, Ihandle* ite
         dbus_message_iter_close_container(&dict_entry_iter, &variant_iter);
         dbus_message_iter_close_container(dict_iter, &dict_entry_iter);
       }
-      /* Toggle state */
       {
         const char* prop_name = "toggle-state";
         dbus_int32_t state = (value_attr && iupStrEqualNoCase(value_attr, "ON")) ? 1 : 0;
@@ -489,7 +476,6 @@ static void sniAppendMenuChildren(DBusMessageIter* children_iter, IupUnixSNI* sn
 
     if (iupStrEqual(class_name, "submenu"))
     {
-      /* Submenu: get the child menu */
       Ihandle* submenu = child->firstchild;
       int item_id = sniAddMenuItem(sni, child);
       if (item_id < 0) continue;
@@ -497,10 +483,8 @@ static void sniAppendMenuChildren(DBusMessageIter* children_iter, IupUnixSNI* sn
       dbus_message_iter_open_container(children_iter, DBUS_TYPE_VARIANT, "(ia{sv}av)", &variant_iter);
       dbus_message_iter_open_container(&variant_iter, DBUS_TYPE_STRUCT, NULL, &child_struct_iter);
 
-      /* Item ID */
       dbus_message_iter_append_basic(&child_struct_iter, DBUS_TYPE_INT32, &item_id);
 
-      /* Properties */
       {
         DBusMessageIter props_iter;
         dbus_message_iter_open_container(&child_struct_iter, DBUS_TYPE_ARRAY, "{sv}", &props_iter);
@@ -508,7 +492,6 @@ static void sniAppendMenuChildren(DBusMessageIter* children_iter, IupUnixSNI* sn
         dbus_message_iter_close_container(&child_struct_iter, &props_iter);
       }
 
-      /* Children (recursive) */
       {
         DBusMessageIter sub_children_iter;
         dbus_message_iter_open_container(&child_struct_iter, DBUS_TYPE_ARRAY, "v", &sub_children_iter);
@@ -522,17 +505,14 @@ static void sniAppendMenuChildren(DBusMessageIter* children_iter, IupUnixSNI* sn
     }
     else if (iupStrEqual(class_name, "menuitem") || iupStrEqual(class_name, "menuseparator"))
     {
-      /* Regular item or separator */
       int item_id = sniAddMenuItem(sni, child);
       if (item_id < 0) continue;
 
       dbus_message_iter_open_container(children_iter, DBUS_TYPE_VARIANT, "(ia{sv}av)", &variant_iter);
       dbus_message_iter_open_container(&variant_iter, DBUS_TYPE_STRUCT, NULL, &child_struct_iter);
 
-      /* Item ID */
       dbus_message_iter_append_basic(&child_struct_iter, DBUS_TYPE_INT32, &item_id);
 
-      /* Properties */
       {
         DBusMessageIter props_iter;
         dbus_message_iter_open_container(&child_struct_iter, DBUS_TYPE_ARRAY, "{sv}", &props_iter);
@@ -540,7 +520,6 @@ static void sniAppendMenuChildren(DBusMessageIter* children_iter, IupUnixSNI* sn
         dbus_message_iter_close_container(&child_struct_iter, &props_iter);
       }
 
-      /* Empty children array */
       {
         DBusMessageIter sub_children_iter;
         dbus_message_iter_open_container(&child_struct_iter, DBUS_TYPE_ARRAY, "v", &sub_children_iter);
@@ -559,14 +538,11 @@ static void sniAppendMenuLayout(DBusMessageIter* parent_iter, IupUnixSNI* sni, I
 
   dbus_message_iter_open_container(parent_iter, DBUS_TYPE_STRUCT, NULL, &struct_iter);
 
-  /* Parent ID (0 for root) */
   dbus_message_iter_append_basic(&struct_iter, DBUS_TYPE_INT32, &parent_id);
 
-  /* Properties (empty for root) */
   dbus_message_iter_open_container(&struct_iter, DBUS_TYPE_ARRAY, "{sv}", &props_iter);
   if (parent_id == 0 && menu)
   {
-    /* Root menu might have children-display property */
     const char* prop_name = "children-display";
     const char* value = "submenu";
     DBusMessageIter dict_entry_iter, variant_iter;
@@ -579,7 +555,6 @@ static void sniAppendMenuLayout(DBusMessageIter* parent_iter, IupUnixSNI* sni, I
   }
   dbus_message_iter_close_container(&struct_iter, &props_iter);
 
-  /* Children */
   dbus_message_iter_open_container(&struct_iter, DBUS_TYPE_ARRAY, "v", &children_iter);
   if (menu && depth > 0)
     sniAppendMenuChildren(&children_iter, sni, menu, depth);
@@ -621,7 +596,6 @@ static DBusHandlerResult sniDBusMenuHandler(DBusConnection* connection, DBusMess
 
     dbus_message_get_args(message, NULL, DBUS_TYPE_INT32, &parent_id, DBUS_TYPE_INT32, &recursion_depth, DBUS_TYPE_INVALID);
 
-    /* Rebuild menu item ID mapping */
     sniClearMenuItems(sni);
 
     reply = dbus_message_new_method_return(message);
@@ -630,7 +604,6 @@ static DBusHandlerResult sniDBusMenuHandler(DBusConnection* connection, DBusMess
     revision = (dbus_uint32_t)sni->menu_revision;
     dbus_message_iter_append_basic(&iter, DBUS_TYPE_UINT32, &revision);
 
-    /* Layout structure */
     if (recursion_depth < 0)
       recursion_depth = 10;
 
@@ -659,10 +632,8 @@ static DBusHandlerResult sniDBusMenuHandler(DBusConnection* connection, DBusMess
       Ihandle* item = sniFindMenuItemById(sni, id);
       if (item)
       {
-        /* First call TRAYCLICK_CB with button 3 */
         sniInvokeCallback(sni, 3, 1, 0, 0);
 
-        /* Then trigger the item's action callback */
         IFn cb = (IFn)IupGetCallback(item, "ACTION");
         if (cb)
         {
@@ -685,7 +656,6 @@ static DBusHandlerResult sniDBusMenuHandler(DBusConnection* connection, DBusMess
 
     dbus_message_get_args(message, NULL, DBUS_TYPE_INT32, &id, DBUS_TYPE_INVALID);
 
-    /* Call TRAYCLICK_CB before showing menu */
     if (id == 0)
       sniInvokeCallback(sni, 3, 1, 0, 0);
 
@@ -740,7 +710,6 @@ static DBusHandlerResult sniDBusMenuHandler(DBusConnection* connection, DBusMess
     reply = dbus_message_new_method_return(message);
     dbus_message_iter_init_append(reply, &iter);
 
-    /* Return empty string as default */
     {
       const char* value = "";
       dbus_message_iter_open_container(&iter, DBUS_TYPE_VARIANT, "s", &variant_iter);
@@ -931,8 +900,7 @@ static DBusHandlerResult sniMessageHandler(DBusConnection* connection, DBusMessa
     dbus_connection_send(connection, reply, NULL);
     dbus_message_unref(reply);
 
-    /* If menu is set, tray host will use dbusmenu protocol instead */
-    /* This method is called only when dbusmenu is not available or menu not set */
+    /* with a menu set the host uses dbusmenu and never calls ContextMenu */
     if (!sni->menu_ih)
       sniInvokeCallback(sni, 3, 1, x, y);
 
@@ -1338,7 +1306,7 @@ static void sniUnregisterFromWatcher(IupUnixSNI* sni)
   if (!sni->registered)
     return;
 
-  /* Release our bus name, this effectively unregisters us from the watcher */
+  /* releasing the bus name unregisters the item from the watcher */
   if (sni->connection && sni->bus_name)
   {
     dbus_bus_release_name(sni->connection, sni->bus_name, NULL);
@@ -1489,12 +1457,10 @@ static int sniCreate(Ihandle* ih)
     return 0;
   }
 
-  /* Register dbusmenu object path */
   dbus_connection_register_object_path(sni->connection, DBUSMENU_OBJECT_PATH, &menu_vtable, sni);
 
   sniRegisterToWatcher(sni);
 
-  /* Create IUP timer for DBus dispatch */
   sni->timer = IupTimer();
   IupSetAttribute(sni->timer, "TIME", "50");
   IupSetAttribute(sni->timer, "_IUPUNIX_SNI", (char*)sni);
@@ -1517,7 +1483,6 @@ static void sniDestroy(Ihandle* ih)
     sni->cleanup_in_progress = 1;
     sni->ih = NULL;
 
-    /* Stop timer */
     if (sni->timer)
     {
       IupSetAttribute(sni->timer, "RUN", "NO");
@@ -1617,7 +1582,6 @@ IUP_SDK_API int iupdrvTraySetImage(Ihandle* ih, const char* value)
   if (!sni)
     return 0;
 
-  /* Free previous icon */
   if (sni->icon_pixels)
   {
     free(sni->icon_pixels);
@@ -1626,7 +1590,6 @@ IUP_SDK_API int iupdrvTraySetImage(Ihandle* ih, const char* value)
   sni->icon_width = 0;
   sni->icon_height = 0;
 
-  /* Get new icon pixels from driver */
   if (value && iupdrvGetIconPixels(ih, value, &width, &height, &pixels))
   {
     sni->icon_width = width;

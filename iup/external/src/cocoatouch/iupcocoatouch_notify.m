@@ -266,7 +266,6 @@ static int cocoaTouchToastShow(Ihandle* ih)
 			icon_image = (UIImage*)raw;
 	}
 
-	/* drop any in-flight toast for this Ihandle, no animation */
 	IupCocoaTouchToastView* prior = (IupCocoaTouchToastView*)iupAttribGet(ih, IUPCOCOATOUCH_TOAST_KEY);
 	if (prior)
 	{
@@ -644,6 +643,4 @@ IUP_SDK_API void iupdrvNotifyInitClass(Iclass* ic)
 
 	/* STYLE=TOAST is an in-app overlay; default routes through UNUserNotificationCenter */
 	iupClassRegisterAttribute(ic, "STYLE", NULL, NULL, IUPAF_SAMEASSYSTEM, "NOTIFICATION", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
-
-	/* TIMEOUT is TOAST-only; UNUserNotificationCenter doesn't expose it */
 }

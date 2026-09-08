@@ -238,7 +238,6 @@ IUP_DRV_API void iupeflModalLoopRun(Eo* modal_win)
     ecore_main_loop_iterate_may_block(EINA_TRUE);
   }
 
-  /* Process remaining messages after modal loop exits. */
   iupeflMessagePendingFlush(loop);
   for (i = 0; i < 10; i++)
     ecore_main_loop_iterate_may_block(EINA_FALSE);

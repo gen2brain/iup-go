@@ -74,7 +74,7 @@ public final class IupDragDropHelper
     }
 
 
-    /* IupDialog hands us the Activity; attach at its root fixed instead. */
+    /* IupDialog passes the Activity; attach at its root fixed instead. */
     private static View resolveView(Object widget)
     {
         if (widget instanceof View v) return v;
@@ -223,7 +223,6 @@ public final class IupDragDropHelper
         v.setOnDragListener((view, event) -> dispatchDragEvent(view, event, f));
     }
 
-    /* Delegate for widgets that own their OnDragListener. */
     public static boolean handleDragEvent(View view, DragEvent event)
     {
         Facade f = sFacades.get(view);
@@ -345,7 +344,6 @@ public final class IupDragDropHelper
         return false;
     }
 
-    /* First source-published type that target accepts (target order). */
     private static String firstMatchingType(Payload p, long targetIh)
     {
         for (String t : p.types)

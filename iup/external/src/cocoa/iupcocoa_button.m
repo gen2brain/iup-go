@@ -130,8 +130,7 @@ static const void* IUP_COCOA_BUTTON_RECEIVER_OBJ_KEY = @"IUP_COCOA_BUTTON_RECEIV
   if (ih)
     iupcocoaCommonBaseHandleMouseButtonCallback(ih, event, self, true);
 
-  /* GNUstep -[NSButton highlight:] dives into drawWithFrame: without lockFocus; outside a
-     draw cycle there's no CGContext and Opal crashes. Wrap in lockFocus/unlockFocus. */
+  /* GNUstep -[NSButton highlight:] draws with no CGContext outside a draw cycle and Opal crashes */
 #ifdef GNUSTEP
 #  define IUP_BUTTON_HIGHLIGHT(v, flag) do { [(v) lockFocus]; [(v) highlight:(flag)]; [(v) unlockFocus]; } while (0)
 #else
@@ -181,7 +180,6 @@ static const void* IUP_COCOA_BUTTON_RECEIVER_OBJ_KEY = @"IUP_COCOA_BUTTON_RECEIV
 
 - (void)mouseUp:(NSEvent *)event
 {
-  /* This method is kept for right and other mouse buttons which don't use custom tracking */
   [super mouseUp:event];
 
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
@@ -246,7 +244,6 @@ static const void* IUP_COCOA_BUTTON_RECEIVER_OBJ_KEY = @"IUP_COCOA_BUTTON_RECEIV
   {
     int mac_key_code = [event keyCode];
 
-    /* Enter activates the button when it has focus */
     if (mac_key_code == kVK_Return)
     {
       [self performClick:nil];
@@ -409,7 +406,7 @@ static void cocoaButtonMeasureBorders(Ihandle* ih, int has_image, int has_text, 
       int iup_text_w = iupdrvFontGetStringWidth(ih, "Test");
       int iup_text_h;
       iupdrvFontGetCharSize(ih, NULL, &iup_text_h);
-      int content_w = 16 + 2 + iup_text_w;  /* image + spacing + text */
+      int content_w = 16 + 2 + iup_text_w;
       int content_h = (16 > iup_text_h) ? 16 : iup_text_h;
 
       *border_x = (int)lroundf(fitting_size.width) - content_w;
@@ -547,7 +544,6 @@ static int cocoaButtonSetTitleAttrib(Ihandle* ih, const char* value)
           [the_button setContentTintColor:[NSColor labelColor]];
       }
 
-      /* Prevent text wrapping */
       [[the_button cell] setLineBreakMode:NSLineBreakByClipping];
 
       if(ih->data->type & IUP_BUTTON_IMAGE)

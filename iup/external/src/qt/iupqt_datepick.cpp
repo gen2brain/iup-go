@@ -354,7 +354,7 @@ extern "C" Iclass* iupDatePickNewClass(void)
   iupClassRegisterAttribute(ic, "MONTHSHORTNAMES", NULL, qtDatePickSetMonthshortnamesAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FORMAT", NULL, qtDatePickSetFormatAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 
-  /* Not supported: SHOWDROPDOWN - Qt has no API to programmatically open/close the calendar popup */
+  /* Qt has no API to open or close the calendar popup */
   iupClassRegisterAttribute(ic, "SHOWDROPDOWN", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
 
   return ic;

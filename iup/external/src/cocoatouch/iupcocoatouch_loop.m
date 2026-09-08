@@ -95,7 +95,6 @@ IUP_SDK_API void iupdrvSetEntryFunction(Icallback func)
 	exit(0);
 }
 
-/* break the modal pump if active, otherwise dismiss the topmost presented sheet */
 void IupExitLoop(void)
 {
 	if (s_modal_loop_level > 0)

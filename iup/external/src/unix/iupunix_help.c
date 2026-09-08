@@ -32,7 +32,6 @@ static int iupUnixSpawn(const char *filename, const char* parameters, int wait)
     char* token;
     char* rest = params_copy;
 
-    /* count tokens */
     {
       char* tmp = iupStrDup(parameters);
       char* tmp_rest = tmp;

@@ -71,7 +71,6 @@ static int wasmCalendarDow(int y, int m, int d)
   return (y + y / 4 - y / 100 + y / 400 + t[m - 1] + d) % 7;
 }
 
-/* ISO 8601 week number for a date */
 static int wasmCalendarIsoWeek(int y, int m, int d)
 {
   int doy, jan1dow, week;

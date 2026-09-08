@@ -27,8 +27,7 @@ extern "C" {
 #include "iuphaiku_drv.h"
 
 
-/* A timer's "handle" is a BLooper-derived BHandler that owns a BMessageRunner.
- * MessageReceived dispatches IUP's ACTION_CB. */
+/* A timer's "handle" is a BHandler that owns a BMessageRunner. */
 
 #define IUPHAIKU_TIMER_TICK 'IupT'
 
@@ -42,8 +41,7 @@ public:
   {
     if (msg && msg->what == IUPHAIKU_TIMER_TICK && fIhandle)
     {
-      /* Hop ACTION_CB to a visible dialog so its setters recurse locally; the
-         play timer stays on be_app because its sleep would freeze the dialog. */
+      /* the play timer stays on be_app because its sleep would freeze the dialog */
       BWindow* target = NULL;
       if (!iupAttribGet(fIhandle, "_IUP_PLAYFILE"))
       {

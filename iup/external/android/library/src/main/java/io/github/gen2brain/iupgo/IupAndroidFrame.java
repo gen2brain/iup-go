@@ -169,7 +169,6 @@ public class IupAndroidFrame extends ViewGroup
         {
             int prevColor = strokePaint.getColor();
             float prevWidth = strokePaint.getStrokeWidth();
-            /* Inset look: full-opacity neutral grey, double thickness, sharp corners. */
             strokePaint.setColor((IupCommon.paletteDlgFg & 0x00FFFFFF) | 0x90000000);
             strokePaint.setStrokeWidth(effStroke);
             c.drawRect(halfStroke, titleH + halfStroke, getWidth() - halfStroke, getHeight() - halfStroke, strokePaint);

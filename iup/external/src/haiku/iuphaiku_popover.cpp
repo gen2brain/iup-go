@@ -152,8 +152,6 @@ static void haikuPopoverLayoutUpdateMethod(Ihandle* ih)
   popover->ResizeTo((float)(w - 1), (float)(h - 1));
 }
 
-/* SetVisible drives placement: SHOW reads ANCHOR via core helper, otherwise Hide(). */
-
 static void haikuPopoverSetVisible(Ihandle* ih, int visible)
 {
   if (!visible)
@@ -199,7 +197,6 @@ static void haikuPopoverSetVisible(Ihandle* ih, int visible)
   if (pw < 1) pw = 1;
   if (ph < 1) ph = 1;
 
-  /* Core helper handles all 12 POSITION variants + AUTOFLIP + OFFSETX/Y. */
   int px = 0, py = 0;
   iupPopoverCalcPosition(ih, ax, ay, aw, ah, pw, ph, &px, &py);
 

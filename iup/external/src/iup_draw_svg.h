@@ -26,7 +26,6 @@ const char* iupSvgDrawGetString(iSvgCanvas* dc);
 int         iupSvgDrawGetStringLength(iSvgCanvas* dc);
 void        iupSvgDrawGetSize(iSvgCanvas* dc, int* w, int* h);
 
-/* style: IUP_DRAW_FILL, IUP_DRAW_STROKE, IUP_DRAW_STROKE_DASH, etc. */
 /* color is passed as "r g b" or "r g b a" string */
 
 void iupSvgDrawLine(iSvgCanvas* dc, int x1, int y1, int x2, int y2, const char* color, int style, int line_width);

@@ -89,12 +89,9 @@ static IqtFont* qtFindFont(const char* font)
   if (mapped_name)
     iupStrCopyN(typeface, sizeof(typeface), mapped_name);
 
-  /* Convert size to pixels if negative (already in pixels) */
   int point_size = size;
   if (size < 0)
   {
-    /* Size is in pixels, convert to points */
-    /* Qt uses point size by default */
     QWidget* widget = QApplication::activeWindow();
     if (!widget)
       widget = QApplication::allWidgets().isEmpty() ? nullptr : QApplication::allWidgets().first();
@@ -109,7 +106,6 @@ static IqtFont* qtFindFont(const char* font)
 #endif
     }
 
-    /* points = (pixels * 72) / dpi */
     point_size = (-size * 72) / dpi;
   }
 
@@ -132,10 +128,7 @@ static IqtFont* qtFindFont(const char* font)
   fonts[i].is_strikeout = is_strikeout;
 
   fonts[i].charheight = metrics.height();
-  /* Use 'x' character width to match Cocoa/GTK/Windows behavior.
-   * Qt's averageCharWidth() returns actual average (e.g., 11 pixels for 10pt font)
-   * which is too large for IUP's SIZE calculation (SIZE uses 1/4 char units).
-   * Other platforms use approximate/narrower values. */
+  /* averageCharWidth() is too wide for SIZE, which counts 1/4 char units */
 #if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
   fonts[i].charwidth = metrics.horizontalAdvance('x');
 #else
@@ -205,7 +198,6 @@ IUP_DRV_API char* iupqtGetQFontAttrib(Ihandle* ih)
 
 IUP_DRV_API char* iupqtFindQFont(QFont* qfont)
 {
-  /* Find font string from QFont pointer (similar to Windows iupwinFindHFont) */
   if (!qt_fonts || !qfont)
     return nullptr;
 
@@ -224,13 +216,10 @@ IUP_DRV_API char* iupqtFindQFont(QFont* qfont)
 IUP_DRV_API char* iupqtGetFontIdAttrib(Ihandle* ih)
 {
   /* Used by IupGLCanvas for IupGLUseFont */
-  /* Qt doesn't have a direct equivalent to X Font ID or HFONT */
-  /* Return the QFont pointer as a string representation */
   IqtFont* qtfont = qtFontGet(ih);
   if (!qtfont)
     return nullptr;
 
-  /* Return pointer as string - not ideal but matches the pattern */
   static char buffer[64];
   snprintf(buffer, sizeof(buffer), "%p", (void*)qtfont->qfont);
   return buffer;
@@ -255,7 +244,7 @@ IUP_DRV_API void iupqtUpdateWidgetFont(Ihandle* ih, QWidget* widget)
 
 extern "C" IUP_SDK_API char* iupdrvGetSystemFont(void)
 {
-  static char str[200]; /* must return a static string */
+  static char str[200];
 
   QFont font = QApplication::font();
   QFontInfo info(font);
@@ -265,7 +254,6 @@ extern "C" IUP_SDK_API char* iupdrvGetSystemFont(void)
   bool is_bold = info.bold();
   bool is_italic = info.italic();
 
-  /* Build font string in IUP format (Pango-like) */
   snprintf(str, sizeof(str), "%s, %s%s%d",
            family.toUtf8().constData(),
            is_bold ? "Bold " : "",
@@ -284,8 +272,7 @@ extern "C" IUP_SDK_API int iupdrvSetFontAttrib(Ihandle* ih, const char* value)
   /* If FONT is changed, must update the SIZE attribute */
   iupBaseUpdateAttribFromFont(ih);
 
-  /* FONT attribute must be able to be set before mapping */
-  /* Skip for TYPEVOID (no widget) and TYPEMENU (QAction, not QWidget) */
+  /* TYPEMENU is a QAction, not a QWidget */
   if (ih->handle &&
       (ih->iclass->nativetype != IUP_TYPEVOID) &&
       (ih->iclass->nativetype != IUP_TYPEMENU))
@@ -338,10 +325,8 @@ static void qtFontGetTextSize(Ihandle* ih, IqtFont* qtfont, const char* str, int
     }
     else
     {
-      /* Plain text measurement */
       QFontMetrics metrics(*qtfont->qfont);
 
-      /* Handle multi-line text */
       const char* curstr = str;
       const char* nextstr;
       int l_len;
@@ -419,7 +404,6 @@ extern "C" IUP_SDK_API int iupdrvFontGetStringWidth(Ihandle* ih, const char* str
     return 0;
   }
 
-  /* Do it only for the first line */
   line_end = strchr(str, '\n');
   if (line_end)
     len = (int)(line_end - str);
@@ -440,7 +424,6 @@ extern "C" IUP_SDK_API int iupdrvFontGetStringWidth(Ihandle* ih, const char* str
   }
   else
   {
-    /* Plain text */
     QFontMetrics metrics(*qtfont->qfont);
     QString text = QString::fromUtf8(str, len);
 #if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)

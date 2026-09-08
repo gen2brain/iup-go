@@ -149,7 +149,6 @@ public final class IupTableHelper
             applyThemeColors();
         }
 
-        /* Read cell/header/grid/highlight defaults from the IUP palette. */
         void applyThemeColors()
         {
             this.defaultFg = IupCommon.paletteTxtFg;
@@ -1602,8 +1601,6 @@ public final class IupTableHelper
     }
 
 
-    /* Images: Bitmap or null to clear. */
-
     @Keep
     public static void setShowImage(View v, boolean show)
     {
@@ -1647,8 +1644,6 @@ public final class IupTableHelper
         }
     }
 
-
-    /* Focus and selection. */
 
     @Keep
     public static void setFocusCell(View v, int lin, int col)
@@ -1696,8 +1691,6 @@ public final class IupTableHelper
     }
 
 
-    /* Editing. */
-
     @Keep
     public static void setEditableAll(View v, boolean editable)
     {
@@ -1712,8 +1705,6 @@ public final class IupTableHelper
         ((IupTableView) v).editableCol.put(col, editable);
     }
 
-
-    /* Sort / resize / reorder. */
 
     @Keep
     public static void setSortable(View v, boolean on)

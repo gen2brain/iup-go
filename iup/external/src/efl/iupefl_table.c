@@ -30,33 +30,31 @@ typedef struct _IeflTableData
   Evas_Object* table;          /* elm_table - grid layout (normal mode) */
   Evas_Object* top_spacer;     /* Spacer above visible cells (virtual mode) */
   Evas_Object* bottom_spacer;  /* Spacer below visible cells (virtual mode) */
-  Evas_Object** header_labels; /* Array of column header labels */
+  Evas_Object** header_labels;
   Evas_Object** header_bgs;    /* Background rectangles for headers (drive column width) */
   Evas_Object** cell_labels;   /* 2D array (flattened): [(lin-1) * num_col + (col-1)] */
-  Evas_Object** cell_bgs;      /* Background rectangles for cells (for colors) */
+  Evas_Object** cell_bgs;
   Evas_Object** cell_images;   /* Image widgets per cell (only when show_image) */
   Evas_Object** cell_containers; /* Box containers per cell (only when show_image, packed into table) */
   int focus_cell_lin;          /* Currently focus-painted cell (1-based, 0 = none) */
   int focus_cell_col;
-  int header_height;           /* Height of header row */
-  int row_height;              /* Height of data rows */
-  int* col_widths;             /* Array of column widths */
+  int header_height;
+  int row_height;
+  int* col_widths;
   int alloc_num_col;           /* Allocated size of header_labels and col_widths */
   int alloc_num_lin;           /* Allocated rows for cell_labels/cell_bgs */
   int selected_lin;            /* Currently selected row (1-based, 0 = none) */
   int selected_col;            /* Currently selected column (1-based, 0 = none) */
   int target_height;           /* Target height for VISIBLELINES constraint (0 = no constraint) */
   int is_virtual;              /* 1 if VIRTUALMODE=YES */
-  int has_focus;               /* 1 if table control has keyboard focus */
-  unsigned char sel_r, sel_g, sel_b;  /* Selection color (queried or default) */
+  int has_focus;
+  unsigned char sel_r, sel_g, sel_b;
   int editing_lin;             /* Row being edited (1-based, 0 = not editing) */
   int editing_col;             /* Column being edited (1-based, 0 = not editing) */
   char* original_value;        /* Value before editing started (for cancel) */
-  /* Virtual mode specific */
   int first_visible_row;       /* First visible row (1-based) in virtual mode */
-  int visible_row_count;       /* Number of visible rows in virtual mode */
-  Ecore_Job* scroll_job;       /* Pending scroll update job (for debouncing) */
-  /* Sorting */
+  int visible_row_count;
+  Ecore_Job* scroll_job;
   int sort_column;             /* Currently sorted column (1-based, 0=none) */
   int sort_ascending;          /* 1=ascending, 0=descending */
 } IeflTableData;
@@ -70,7 +68,6 @@ typedef struct _IeflTableData
 #define RESIZE_ZONE 5
 #define MIN_COL_WIDTH 20
 
-/* Forward declarations */
 static void eflTableUpdateVisibleRows(Ihandle* ih, int force);
 static void eflTableRebuildVirtualCells(Ihandle* ih);
 static void eflTableUpdateSortIndicators(Ihandle* ih);
@@ -135,7 +132,6 @@ static void eflTableGetCellBgColor(Ihandle* ih, int lin, int col, unsigned char*
   char* bgcolor = NULL;
   char* alternate_color;
 
-  /* Priority: per-cell > per-column > per-row > alternating > global */
   if (lin > 0 && col > 0)
     bgcolor = iupAttribGetId2(ih, "BGCOLOR", lin, col);
 
@@ -170,7 +166,6 @@ static char* eflTableGetCellFont(Ihandle* ih, int lin, int col)
 {
   char* font = NULL;
 
-  /* Priority: per-cell > per-column > per-row > global */
   if (lin > 0 && col > 0)
     font = iupAttribGetId2(ih, "FONT", lin, col);
 
@@ -190,7 +185,6 @@ static void eflTableGetCellFgColor(Ihandle* ih, int lin, int col, unsigned char*
 {
   char* fgcolor = NULL;
 
-  /* Priority: per-cell > per-column > per-row > global */
   if (lin > 0 && col > 0)
     fgcolor = iupAttribGetId2(ih, "FGCOLOR", lin, col);
 
@@ -363,7 +357,6 @@ static int eflTableCalculateColumnWidth(Ihandle* ih, int col)
 
   max_rows_to_check = (ih->data->num_lin > 100) ? 100 : ih->data->num_lin;
 
-  /* Measure header title */
   snprintf(name, sizeof(name), "COLTITLE%d", col);
   title = iupAttribGet(ih, name);
   if (title)
@@ -381,7 +374,6 @@ static int eflTableCalculateColumnWidth(Ihandle* ih, int col)
     image_extra = charheight + 4;
   }
 
-  /* Measure cell content */
   for (lin = 1; lin <= max_rows_to_check; lin++)
   {
     int cell_width;
@@ -482,7 +474,6 @@ static void eflTableSwapRows(Ihandle* ih, int lin1, int lin2)
   }
 }
 
-/* Apply alignment, color, font and text to a cell textbox. */
 static void eflTableApplyCellText(Ihandle* ih, Evas_Object* txt, int lin, int col, const char* text, int is_header)
 {
   int align = eflTableGetColumnAlignment(ih, col);
@@ -823,7 +814,6 @@ static void eflTableSwapColumns(Ihandle* ih, int col1, int col2)
   }
 }
 
-/* Visual indicator for column reordering */
 static Evas_Object* efl_table_drag_indicator = NULL;
 
 static void eflTableHideDragIndicator(Ihandle* ih)
@@ -1246,7 +1236,6 @@ static void eflTableResizeCallback(void* data, const Efl_Event* ev)
   if (!iupObjectCheck(ih))
     return;
 
-  /* Force table to fill viewport when viewport is wider than table's natural minimum */
   if (table_data && table_data->scroller && table_data->table)
   {
     Evas_Coord vp_w, vp_h, table_w, table_h;
@@ -1261,7 +1250,6 @@ static void eflTableResizeCallback(void* data, const Efl_Event* ev)
       efl_gfx_entity_size_set(table_data->table, EINA_SIZE2D(vp_w, table_h));
   }
 
-  /* Update focus rect position after layout */
   eflTableUpdateFocusCell(ih);
 }
 
@@ -1551,7 +1539,6 @@ static void eflTableHeaderClickCallback(void* cb_data, const Efl_Event* ev)
     }
   }
 
-  /* If ALLOWREORDER is enabled, start drag tracking */
   if (iupAttribGetBoolean(ih, "ALLOWREORDER") && efl_input_pointer_button_get(pointer) == 1)
   {
     Eina_Position2D pointer_pos = efl_input_pointer_position_get(pointer);
@@ -1562,7 +1549,6 @@ static void eflTableHeaderClickCallback(void* cb_data, const Efl_Event* ev)
     return;
   }
 
-  /* Normal sorting behavior */
   eflTableDoSort(ih, col);
 }
 
@@ -1589,7 +1575,6 @@ static void eflTableCellClickCallback(void* data, const Efl_Event* ev)
 
   max_lin = table_data->is_virtual ? table_data->alloc_num_lin : ih->data->num_lin;
 
-  /* Find which cell was clicked */
   for (i = 0; i < max_lin * num_col; i++)
   {
     if (table_data->cell_labels[i] == ev->object)
@@ -1619,11 +1604,9 @@ static void eflTableCellClickCallback(void* data, const Efl_Event* ev)
   int prev_lin = table_data->selected_lin;
   int prev_col = table_data->selected_col;
 
-  /* Update selection */
   table_data->selected_lin = lin;
   table_data->selected_col = col;
 
-  /* Update row highlight for all cells in each row */
   if (table_data->cell_bgs)
   {
     int row, c;
@@ -1651,10 +1634,8 @@ static void eflTableCellClickCallback(void* data, const Efl_Event* ev)
     }
   }
 
-  /* Update focus rectangle */
   eflTableUpdateFocusCell(ih);
 
-  /* Ensure scroller has focus for keyboard navigation */
   if (table_data->scroller)
   {
     elm_object_focus_set(table_data->scroller, EINA_TRUE);
@@ -1668,14 +1649,12 @@ static void eflTableCellClickCallback(void* data, const Efl_Event* ev)
       enteritem_cb(ih, lin, col);
   }
 
-  /* Handle double-click: start editing if cell is editable */
   if (is_double_click && eflTableIsCellEditable(ih, col))
   {
     eflTableStartCellEdit(ih, lin, col);
     return;
   }
 
-  /* Fire callback */
   cb = (IFniis)IupGetCallback(ih, "CLICK_CB");
   if (cb)
     cb(ih, lin, col, "l");
@@ -1720,7 +1699,6 @@ static void eflTableClearCells(Ihandle* ih)
   alloc_col = data->alloc_num_col;
   alloc_lin = data->alloc_num_lin;
 
-  /* Clear header labels */
   if (data->header_labels)
   {
     for (i = 0; i < alloc_col; i++)
@@ -1749,7 +1727,6 @@ static void eflTableClearCells(Ihandle* ih)
     data->header_bgs = NULL;
   }
 
-  /* Clear cell containers (boxes containing image + entry, when show_image) */
   if (data->cell_containers)
   {
     for (i = 0; i < alloc_lin * alloc_col; i++)
@@ -1783,7 +1760,6 @@ static void eflTableClearCells(Ihandle* ih)
     data->cell_labels = NULL;
   }
 
-  /* Clear cell backgrounds */
   if (data->cell_bgs)
   {
     for (i = 0; i < alloc_lin * alloc_col; i++)
@@ -1816,13 +1792,11 @@ static void eflTableRebuildCells(Ihandle* ih)
   if (!data || !data->table)
     return;
 
-  /* Clear existing cells */
   eflTableClearCells(ih);
 
   if (num_col <= 0)
     return;
 
-  /* Allocate column widths array if needed */
   if (!data->col_widths)
   {
     data->col_widths = (int*)calloc(num_col, sizeof(int));
@@ -1852,12 +1826,10 @@ static void eflTableRebuildCells(Ihandle* ih)
     }
   }
 
-  /* Allocate header labels */
   data->header_labels = (Evas_Object**)calloc(num_col, sizeof(Evas_Object*));
   data->header_bgs = (Evas_Object**)calloc(num_col, sizeof(Evas_Object*));
   data->alloc_num_col = num_col;
 
-  /* Create header row (row 0 in table) */
   for (col = 0; col < num_col; col++)
   {
     char name[50];
@@ -1875,7 +1847,6 @@ static void eflTableRebuildCells(Ihandle* ih)
 
     col_width = data->col_widths[col];
 
-    /* Create header background */
     bg = efl_add(EFL_CANVAS_RECTANGLE_CLASS, evas_object_evas_get(data->table));
     eflTableGetCellBgColor(ih, 0, col + 1, &bg_r, &bg_g, &bg_b);
     efl_gfx_color_set(bg, bg_r, bg_g, bg_b, 255);
@@ -1886,7 +1857,6 @@ static void eflTableRebuildCells(Ihandle* ih)
     elm_table_pack(data->table, bg, col, 0, 1, 1);
     data->header_bgs[col] = bg;
 
-    /* Create header label on top */
     label = eflTableCreateCellWidget(ih, data->table, text, 1, 0, col + 1);
     efl_gfx_hint_size_min_set(label, EINA_SIZE2D(col_width, data->header_height));
     efl_gfx_hint_weight_set(label, should_stretch ? EVAS_HINT_EXPAND : 0.0, 0.0);
@@ -1900,7 +1870,6 @@ static void eflTableRebuildCells(Ihandle* ih)
   if (num_lin <= 0)
     return;
 
-  /* Allocate cell labels and cell backgrounds */
   data->cell_labels = (Evas_Object**)calloc(num_lin * num_col, sizeof(Evas_Object*));
   data->cell_bgs = (Evas_Object**)calloc(num_lin * num_col, sizeof(Evas_Object*));
   if (ih->data->show_image)
@@ -1910,14 +1879,11 @@ static void eflTableRebuildCells(Ihandle* ih)
   }
   data->alloc_num_lin = num_lin;
 
-  /* Determine if last column should stretch (only compute once) */
   {
     int should_stretch_last = ih->data->stretch_last && !eflTableColHasExplicitWidth(ih, num_col);
 
-    /* Create data rows (rows 1+ in table) */
     for (lin = 1; lin <= num_lin; lin++)
     {
-      /* Create cell backgrounds and labels for this row */
       for (col = 1; col <= num_col; col++)
       {
         int idx = (lin - 1) * num_col + (col - 1);
@@ -1927,7 +1893,6 @@ static void eflTableRebuildCells(Ihandle* ih)
 
         col_width = data->col_widths[col - 1];
 
-        /* Create cell background - query with proper (lin, col) for full hierarchy support */
         bg = efl_add(EFL_CANVAS_RECTANGLE_CLASS, evas_object_evas_get(data->table));
         eflTableGetCellBgColor(ih, lin, col, &bg_r, &bg_g, &bg_b);
         efl_gfx_color_set(bg, bg_r, bg_g, bg_b, 255);
@@ -1941,7 +1906,6 @@ static void eflTableRebuildCells(Ihandle* ih)
         elm_table_pack(data->table, bg, col - 1, lin, 1, 1);
         data->cell_bgs[idx] = bg;
 
-        /* Create cell label on top of background */
         text = eflTableGetCellText(ih, lin, col);
         label = eflTableCreateCellWidget(ih, data->table, text, 0, lin, col);
 
@@ -2004,9 +1968,6 @@ static void eflTableRebuildCells(Ihandle* ih)
     }
   }
 
-  /* Add dummy expanding column to absorb extra space when:
-   * - STRETCHLAST=NO (last column shouldn't expand), OR
-   * - Last column has explicit width (shouldn't stretch even if STRETCHLAST=YES) */
   {
     int need_dummy = !ih->data->stretch_last || eflTableColHasExplicitWidth(ih, num_col);
     if (need_dummy)
@@ -2014,7 +1975,6 @@ static void eflTableRebuildCells(Ihandle* ih)
       Evas_Object* dummy;
       unsigned char bg_r, bg_g, bg_b;
 
-      /* Add dummy to header row */
       dummy = efl_add(EFL_CANVAS_RECTANGLE_CLASS, evas_object_evas_get(data->table));
       eflTableGetCellBgColor(ih, 0, num_col + 1, &bg_r, &bg_g, &bg_b);
       efl_gfx_color_set(dummy, bg_r, bg_g, bg_b, 255);
@@ -2024,7 +1984,6 @@ static void eflTableRebuildCells(Ihandle* ih)
       efl_gfx_entity_visible_set(dummy, EINA_TRUE);
       elm_table_pack(data->table, dummy, num_col, 0, 1, 1);
 
-      /* Add dummy to each data row */
       for (lin = 1; lin <= num_lin; lin++)
       {
         dummy = efl_add(EFL_CANVAS_RECTANGLE_CLASS, evas_object_evas_get(data->table));
@@ -2075,7 +2034,6 @@ static void eflTableVirtualScrollCallback(void* cb_data, Evas_Object* obj, void*
   if (!data)
     return;
 
-  /* schedule job if not already pending */
   if (!data->scroll_job)
     data->scroll_job = ecore_job_add(eflTableScrollJobCallback, ih);
 }
@@ -2106,7 +2064,6 @@ static void eflTableRebuildVirtualCells(Ihandle* ih)
 
   row_height = data->row_height > 0 ? data->row_height : DEFAULT_ROW_HEIGHT;
 
-  /* Determine visible rows, use VISIBLELINES, or calculate based on screen height */
   visible_rows = iupAttribGetInt(ih, "VISIBLELINES");
   if (visible_rows <= 0)
   {
@@ -2121,7 +2078,6 @@ static void eflTableRebuildVirtualCells(Ihandle* ih)
   if (visible_rows > num_lin)
     visible_rows = num_lin;
 
-  /* Allocate column widths if needed */
   if (!data->col_widths)
   {
     data->col_widths = (int*)calloc(num_col, sizeof(int));
@@ -2151,7 +2107,6 @@ static void eflTableRebuildVirtualCells(Ihandle* ih)
     }
   }
 
-  /* Create headers at row 0 */
   data->header_labels = (Evas_Object**)calloc(num_col, sizeof(Evas_Object*));
   data->header_bgs = (Evas_Object**)calloc(num_col, sizeof(Evas_Object*));
   data->alloc_num_col = num_col;
@@ -2196,7 +2151,6 @@ static void eflTableRebuildVirtualCells(Ihandle* ih)
   if (num_lin <= 0)
     return;
 
-  /* Allocate cell arrays for visible rows only */
   data->cell_labels = (Evas_Object**)calloc(visible_rows * num_col, sizeof(Evas_Object*));
   data->cell_bgs = (Evas_Object**)calloc(visible_rows * num_col, sizeof(Evas_Object*));
   if (ih->data->show_image)
@@ -2208,7 +2162,6 @@ static void eflTableRebuildVirtualCells(Ihandle* ih)
 
   value_cb = (sIFnii)IupGetCallback(ih, "VALUE_CB");
 
-  /* Create top spacer at row 1 (between headers and cells) - initially 0 height */
   {
     Evas_Object* spacer = efl_add(EFL_CANVAS_RECTANGLE_CLASS, evas_object_evas_get(table));
     efl_gfx_color_set(spacer, 0, 0, 0, 0);
@@ -2218,7 +2171,6 @@ static void eflTableRebuildVirtualCells(Ihandle* ih)
     data->top_spacer = spacer;
   }
 
-  /* Create visible data rows at rows 2 to visible_rows+1 */
   {
     int should_stretch_last = ih->data->stretch_last && !eflTableColHasExplicitWidth(ih, num_col);
 
@@ -2244,7 +2196,6 @@ static void eflTableRebuildVirtualCells(Ihandle* ih)
         elm_table_pack(table, bg, col - 1, table_row, 1, 1);
         data->cell_bgs[idx] = bg;
 
-        /* Get text from VALUE_CB */
         text = NULL;
         if (value_cb)
           text = value_cb(ih, lin, col);
@@ -2298,7 +2249,6 @@ static void eflTableRebuildVirtualCells(Ihandle* ih)
     }
   }
 
-  /* Create bottom spacer for remaining virtual rows */
   if (num_lin > visible_rows)
   {
     int spacer_height = (num_lin - visible_rows) * row_height;
@@ -2310,9 +2260,6 @@ static void eflTableRebuildVirtualCells(Ihandle* ih)
     data->bottom_spacer = spacer;
   }
 
-  /* Add dummy expanding column to absorb extra space when:
-   * - STRETCHLAST=NO (last column shouldn't expand), OR
-   * - Last column has explicit width (shouldn't stretch even if STRETCHLAST=YES) */
   {
     int need_dummy = !ih->data->stretch_last || eflTableColHasExplicitWidth(ih, num_col);
     if (need_dummy)
@@ -2320,7 +2267,6 @@ static void eflTableRebuildVirtualCells(Ihandle* ih)
       Evas_Object* dummy;
       unsigned char bg_r, bg_g, bg_b;
 
-      /* Add dummy to header row */
       dummy = efl_add(EFL_CANVAS_RECTANGLE_CLASS, evas_object_evas_get(table));
       eflTableGetCellBgColor(ih, 0, num_col + 1, &bg_r, &bg_g, &bg_b);
       efl_gfx_color_set(dummy, bg_r, bg_g, bg_b, 255);
@@ -2330,7 +2276,6 @@ static void eflTableRebuildVirtualCells(Ihandle* ih)
       efl_gfx_entity_visible_set(dummy, EINA_TRUE);
       elm_table_pack(table, dummy, num_col, 0, 1, 1);
 
-      /* Add dummy to top spacer row */
       dummy = efl_add(EFL_CANVAS_RECTANGLE_CLASS, evas_object_evas_get(table));
       efl_gfx_color_set(dummy, bg_r, bg_g, bg_b, 255);
       efl_gfx_hint_size_min_set(dummy, EINA_SIZE2D(1, 1));
@@ -2339,7 +2284,6 @@ static void eflTableRebuildVirtualCells(Ihandle* ih)
       efl_gfx_entity_visible_set(dummy, EINA_TRUE);
       elm_table_pack(table, dummy, num_col, 1, 1, 1);
 
-      /* Add dummy to each visible data row */
       for (lin = 1; lin <= visible_rows; lin++)
       {
         int table_row = lin + 1;
@@ -2353,7 +2297,6 @@ static void eflTableRebuildVirtualCells(Ihandle* ih)
         elm_table_pack(table, dummy, num_col, table_row, 1, 1);
       }
 
-      /* Add dummy to bottom spacer row if exists */
       if (num_lin > visible_rows)
       {
         dummy = efl_add(EFL_CANVAS_RECTANGLE_CLASS, evas_object_evas_get(table));
@@ -2394,7 +2337,6 @@ static void eflTableUpdateVisibleRows(Ihandle* ih, int force)
   value_cb = (sIFnii)IupGetCallback(ih, "VALUE_CB");
   row_height = data->row_height > 0 ? data->row_height : DEFAULT_ROW_HEIGHT;
 
-  /* Get first data row from scroll position */
   if (data->scroller)
   {
     int scroll_x;
@@ -2414,7 +2356,6 @@ static void eflTableUpdateVisibleRows(Ihandle* ih, int force)
   if (!force && first_data_row == data->first_visible_row)
     return;
 
-  /* Update spacer heights to keep cells in visible viewport */
   if (data->top_spacer)
   {
     int top_height = (first_data_row - 1) * row_height;
@@ -2428,7 +2369,6 @@ static void eflTableUpdateVisibleRows(Ihandle* ih, int force)
     efl_gfx_hint_size_min_set(data->bottom_spacer, EINA_SIZE2D(1, bottom_height));
   }
 
-  /* Update each visible cell content based on which data row it represents */
   for (pool_row = 1; pool_row <= data->alloc_num_lin; pool_row++)
   {
     int data_row = first_data_row + pool_row - 1;
@@ -2446,13 +2386,11 @@ static void eflTableUpdateVisibleRows(Ihandle* ih, int force)
       if (!entry)
         continue;
 
-      /* Get cell value from VALUE_CB callback with correct data row */
       if (value_cb)
         text = value_cb(ih, data_row, col);
 
       eflTableApplyCellText(ih, entry, data_row, col, text, 0);
 
-      /* Update background color */
       if (bg)
       {
         eflTableGetCellBgColor(ih, data_row, col, &bg_r, &bg_g, &bg_b);
@@ -2488,7 +2426,6 @@ IUP_SDK_API void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
 
   ih->data->num_col = num_col;
 
-  /* Reallocate column widths if needed */
   if (data && num_col != old_num_col)
   {
     if (data->col_widths)
@@ -2550,7 +2487,6 @@ IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
 
   if (data && data->is_virtual)
   {
-    /* Virtual mode: update visible rows */
     eflTableUpdateVisibleRows(ih, 1);
   }
   else
@@ -2669,7 +2605,6 @@ IUP_SDK_API void iupdrvTableSetColWidth(Ihandle* ih, int col, int width)
     if (data->header_bgs && data->header_bgs[col - 1])
       efl_gfx_hint_size_min_set(data->header_bgs[col - 1], EINA_SIZE2D(width, data->header_height));
 
-    /* Update all cells in this column */
     {
       int max_lin = data->is_virtual ? data->alloc_num_lin : ih->data->num_lin;
       for (lin = 1; lin <= max_lin; lin++)
@@ -2713,7 +2648,6 @@ IUP_SDK_API void iupdrvTableSetFocusCell(Ihandle* ih, int lin, int col)
 
   max_lin = data->is_virtual ? data->alloc_num_lin : ih->data->num_lin;
 
-  /* Update row highlight for all cells in each row */
   if (data->cell_bgs)
   {
     int row, c;
@@ -2739,10 +2673,8 @@ IUP_SDK_API void iupdrvTableSetFocusCell(Ihandle* ih, int lin, int col)
     }
   }
 
-  /* Update focus rectangle */
   eflTableUpdateFocusCell(ih);
 
-  /* Scroll to cell */
   iupdrvTableScrollToCell(ih, lin, col);
 }
 
@@ -2771,14 +2703,12 @@ IUP_SDK_API void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col)
   if (!data || !data->scroller)
     return;
 
-  /* Calculate x position based on column widths */
   if (data->col_widths)
   {
     for (i = 0; i < col - 1 && i < ih->data->num_col; i++)
       total_x += data->col_widths[i] + CELL_PADDING;
   }
 
-  /* Calculate y position */
   y = data->header_height + (lin - 1) * (data->row_height + CELL_PADDING);
   x = total_x;
   w = (col <= ih->data->num_col && data->col_widths) ? data->col_widths[col - 1] : DEFAULT_COL_WIDTH;
@@ -2799,7 +2729,6 @@ IUP_SDK_API void iupdrvTableRedraw(Ihandle* ih)
 
   if (data->is_virtual)
   {
-    /* Virtual mode: just update visible rows (cells are reused) */
     eflTableUpdateVisibleRows(ih, 1);
     return;
   }
@@ -2807,7 +2736,6 @@ IUP_SDK_API void iupdrvTableRedraw(Ihandle* ih)
   if (!data->cell_labels)
     return;
 
-  /* Normal mode: update all visible cells */
   for (lin = 1; lin <= num_lin; lin++)
   {
     for (col = 1; col <= num_col; col++)
@@ -2853,13 +2781,10 @@ IUP_SDK_API void iupdrvTableAddBorders(Ihandle* ih, int* w, int* h)
   int visiblelines;
   int grid_padding = 0;
 
-  /* Add vertical scrollbar width + horizontal border */
   *w += sb + 2;
 
-  /* Add frame border */
   *h += 2;
 
-  /* Add grid line spacing if SHOWGRID is enabled */
   if (iupAttribGetBoolean(ih, "SHOWGRID"))
   {
     visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
@@ -2869,7 +2794,7 @@ IUP_SDK_API void iupdrvTableAddBorders(Ihandle* ih, int* w, int* h)
     {
       grid_padding = ih->data->num_lin;
       if (grid_padding > 15)
-        grid_padding = 15;  /* Cap at 15 like natural size calculation */
+        grid_padding = 15;
     }
 
     *h += grid_padding;
@@ -2901,7 +2826,6 @@ static void eflTableKeyDownCallback(void* data, const Efl_Event* ev)
   new_lin = lin;
   new_col = col;
 
-  /* Convert key to IUP key code and handle navigation */
   if (!strcmp(keyname, "Up"))
   {
     key = K_UP;
@@ -3033,7 +2957,6 @@ static void eflTableKeyDownCallback(void* data, const Efl_Event* ev)
     efl_input_processed_set(key_ev, EINA_TRUE);
   }
 
-  /* Fire K_ANY callback */
   if (key != 0)
   {
     kany_cb = (IFni)IupGetCallback(ih, "K_ANY");
@@ -3050,12 +2973,10 @@ static void eflTableKeyDownCallback(void* data, const Efl_Event* ev)
     }
   }
 
-  /* Update focus if position changed */
   if (new_lin != lin || new_col != col)
   {
     iupdrvTableSetFocusCell(ih, new_lin, new_col);
 
-    /* Fire ENTERITEM_CB */
     enteritem_cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
     if (enteritem_cb)
       enteritem_cb(ih, new_lin, new_col);
@@ -3074,7 +2995,6 @@ static int eflTableMapMethod(Ihandle* ih)
   if (!parent)
     return IUP_ERROR;
 
-  /* Allocate EFL-specific data */
   data = (IeflTableData*)calloc(1, sizeof(IeflTableData));
   if (!data)
     return IUP_ERROR;
@@ -3089,11 +3009,9 @@ static int eflTableMapMethod(Ihandle* ih)
   data->sort_column = 0;
   data->sort_ascending = 1;
 
-  /* Check for virtual mode */
   is_virtual = iupAttribGetBoolean(ih, "VIRTUALMODE");
   data->is_virtual = is_virtual;
 
-  /* Calculate target height if VISIBLELINES is set */
   {
     int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
     if (visiblelines > 0)
@@ -3105,7 +3023,6 @@ static int eflTableMapMethod(Ihandle* ih)
     }
   }
 
-  /* Get selection color from global TXTHLCOLOR */
   {
     char* hlcolor = IupGetGlobal("TXTHLCOLOR");
     if (hlcolor)
@@ -3121,9 +3038,7 @@ static int eflTableMapMethod(Ihandle* ih)
   if (is_virtual)
   {
     /*
-     * Virtual mode: Same scroller+table as normal mode, but with spacer sandwich.
      * Layout: scroller -> table -> [top_spacer, header, visible_cells, bottom_spacer]
-     * On scroll: resize spacers to keep cells in view, update cell content.
      */
     scroller = elm_scroller_add(parent);
     if (!scroller)
@@ -3178,18 +3093,15 @@ static int eflTableMapMethod(Ihandle* ih)
     iupeflAddToParent(ih);
     efl_gfx_entity_visible_set(scroller, EINA_TRUE);
 
-    /* Initialize visible row tracking */
     data->first_visible_row = 1;
     data->visible_row_count = 0;
     data->top_spacer = NULL;
     data->bottom_spacer = NULL;
 
-    /* Build cells with spacer sandwich */
     eflTableRebuildVirtualCells(ih);
   }
   else
   {
-    /* Normal mode: scroller + elm_table */
     scroller = elm_scroller_add(parent);
     if (!scroller)
     {
@@ -3243,11 +3155,9 @@ static int eflTableMapMethod(Ihandle* ih)
     iupeflAddToParent(ih);
     efl_gfx_entity_visible_set(scroller, EINA_TRUE);
 
-    /* Normal mode: create all cells */
     eflTableRebuildCells(ih);
   }
 
-  /* Apply pre-set FOCUSCELL attribute */
   {
     char* focuscell = iupAttribGet(ih, "FOCUSCELL");
     if (focuscell)
@@ -3260,7 +3170,6 @@ static int eflTableMapMethod(Ihandle* ih)
         {
           iupdrvTableSetFocusCell(ih, lin, col);
 
-          /* Schedule deferred focus rect update after layout is computed */
           if (!iupAttribGet(ih, "_IUP_EFL_FOCUSRECT_JOB"))
           {
             Ecore_Job* job = ecore_job_add(eflTableFocusRectJob, ih);
@@ -3280,31 +3189,26 @@ static void eflTableUnMapMethod(Ihandle* ih)
 
   if (data)
   {
-    /* Cancel any active editing */
     if (data->editing_lin > 0)
     {
       data->editing_lin = 0;
       data->editing_col = 0;
     }
 
-    /* Free original value if allocated */
     if (data->original_value)
     {
       free(data->original_value);
       data->original_value = NULL;
     }
 
-    /* Cancel pending scroll job */
     if (data->scroll_job)
     {
       ecore_job_del(data->scroll_job);
       data->scroll_job = NULL;
     }
 
-    /* Clear all cells */
     eflTableClearCells(ih);
 
-    /* Free column widths */
     if (data->col_widths)
     {
       free(data->col_widths);
@@ -3340,13 +3244,11 @@ static void eflTableLayoutUpdateMethod(Ihandle* ih)
   IeflTableData* data = IEFL_TABLE_DATA(ih);
   int height = ih->currentheight;
 
-  /* If VISIBLELINES is set, clamp height to target */
   if (data && data->target_height > 0 && height > data->target_height)
     height = data->target_height;
 
   iupeflSetPosSize(ih, ih->x, ih->y, ih->currentwidth, height);
 
-  /* Also set max size hint on scroller to prevent expansion */
   if (data && data->scroller && data->target_height > 0)
     efl_gfx_hint_size_max_set(data->scroller, EINA_SIZE2D(-1, data->target_height));
 }

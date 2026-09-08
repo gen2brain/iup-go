@@ -80,7 +80,6 @@ IUP_SDK_API void iupdrvTextAddSpin(Ihandle* ih, int *w, int h)
   *w += spin_arrow_width;
 }
 
-/* Cached measurements for text widget borders */
 static int iupgtk_multiline_line_height = -1;
 static int iupgtk_multiline_border_height = -1;
 static int iupgtk_multiline_border_width = -1;
@@ -109,13 +108,11 @@ static void iupgtkTextMeasureEntryBorders(void)
 #endif
     gtk_container_add(GTK_CONTAINER(temp_window), vbox);
 
-    /* Create entry with frame */
     temp_entry = gtk_entry_new();
     gtk_entry_set_width_chars(GTK_ENTRY(temp_entry), 1);
     gtk_entry_set_has_frame(GTK_ENTRY(temp_entry), TRUE);
     gtk_box_pack_start(GTK_BOX(vbox), temp_entry, FALSE, FALSE, 0);
 
-    /* Create separate entry without frame */
     temp_entry_noframe = gtk_entry_new();
     gtk_entry_set_width_chars(GTK_ENTRY(temp_entry_noframe), 1);
     gtk_entry_set_has_frame(GTK_ENTRY(temp_entry_noframe), FALSE);
@@ -128,11 +125,9 @@ static void iupgtkTextMeasureEntryBorders(void)
     pango_layout_set_text(layout, "W", -1);
     pango_layout_get_pixel_size(layout, &char_width, &char_height);
 
-    /* Measure with frame */
 #if GTK_CHECK_VERSION(3, 0, 0)
     gtk_widget_get_preferred_width(temp_entry, NULL, &entry_w);
     gtk_widget_get_preferred_height(temp_entry, NULL, &entry_h);
-    /* Measure without frame, get minimum size */
     gtk_widget_get_preferred_height(temp_entry_noframe, &entry_noframe_h, NULL);
 #else
     {
@@ -145,7 +140,6 @@ static void iupgtkTextMeasureEntryBorders(void)
     }
 #endif
 
-    /* Border = total size - content size */
     iupgtk_entry_border_x = entry_w - char_width;
     iupgtk_entry_border_y = entry_h - char_height;
     iupgtk_entry_noframe_border_y = entry_noframe_h - char_height;
@@ -215,7 +209,6 @@ static void iupgtkTextMeasureMultilineMetrics(void)
     if (iupgtk_multiline_line_height <= 0)
       iupgtk_multiline_line_height = 16;
 
-    /* Measure scrolled window with empty text view */
 #if GTK_CHECK_VERSION(3, 0, 0)
     {
       GtkStyleContext* sw_ctx = gtk_widget_get_style_context(temp_sw);
@@ -2412,7 +2405,6 @@ static void gtkTextChanged(void* dummy, Ihandle* ih)
 
 /**********************************************************************************************************/
 
-/* Callback to track scrolled window size allocation and clamp if needed */
 static void gtkTextScrolledWindowSizeAllocate(GtkWidget* widget, GdkRectangle* allocation, gpointer user_data)
 {
   Ihandle* ih = (Ihandle*)user_data;
@@ -2497,7 +2489,6 @@ static int gtkTextMapMethod(Ihandle* ih)
 
     gtk_scrolled_window_set_policy(scrolled_window, hscrollbar_policy, vscrollbar_policy);
 
-    /* Track scrolled window size allocation for VISIBLELINES clamping */
     g_signal_connect(G_OBJECT(scrolled_window), "size-allocate", G_CALLBACK(gtkTextScrolledWindowSizeAllocate), ih);
 
     /* Mark scrolled_window with VISIBLELINES flag so iupgtkSetPosSize can set size correctly */
@@ -2505,7 +2496,6 @@ static int gtkTextMapMethod(Ihandle* ih)
       int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
       if (visiblelines > 0)
       {
-        /* Mark scrolled_window so iupgtkSetPosSize will use IUP's calculated height directly */
         g_object_set_data(G_OBJECT(scrolled_window), "iup-visiblelines-set", (gpointer)"1");
       }
     }
@@ -2529,7 +2519,6 @@ static int gtkTextMapMethod(Ihandle* ih)
     ih->data->has_formatting = 0;
 
 #if GTK_CHECK_VERSION(3, 0, 0)
-    /* Set natural alignment */
     gtk_widget_set_hexpand(ih->handle, FALSE);
     gtk_widget_set_vexpand(ih->handle, FALSE);
     gtk_widget_set_halign(ih->handle, GTK_ALIGN_FILL);

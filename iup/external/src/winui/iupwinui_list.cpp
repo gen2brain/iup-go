@@ -1253,7 +1253,6 @@ static int winuiListSetDragSourceAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-/* True when focus is currently on the widget or any of its descendants. */
 static bool winuiListFocusIsInside(UIElement const& widget)
 {
   if (!widget)
@@ -2522,7 +2521,6 @@ static int winuiListSetFilterAttrib(Ihandle* ih, const char* value)
   if (!ih->data->has_editbox)
     return 0;
 
-  /* Actual transform runs in the TextChanged handler via winuiListApplyFilter. */
   TextBox tb = winuiListGetTextBox(ih);
   if (tb && value)
   {
@@ -2551,7 +2549,6 @@ static int winuiListSetScrollToAttrib(Ihandle* ih, const char* value)
   iupStrToInt(value, &lin);
   if (lin < 1) lin = 1;
 
-  /* Single-line list editbox: move caret to start of that line (always 0 here). */
   tb.Select(0, 0);
   return 0;
 }

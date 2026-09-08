@@ -70,7 +70,6 @@ public:
           int press = (event->type() != QEvent::MouseButtonRelease) ? 1 : 0;
           int doubleclick = (event->type() == QEvent::MouseButtonDblClick) ? 1 : 0;
 
-          /* Convert Qt button to IUP button */
           int button = IUP_BUTTON1;
           if (mouse_evt->button() == Qt::LeftButton)
             button = IUP_BUTTON1;
@@ -79,11 +78,9 @@ public:
           else if (mouse_evt->button() == Qt::RightButton)
             button = IUP_BUTTON3;
 
-          /* Build status string */
           char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
           iupqtButtonKeySetStatus(mouse_evt->modifiers(), mouse_evt->buttons(), button, status, doubleclick);
 
-          /* Handle double click like GTK (send release before double click) */
           if (doubleclick)
           {
             status[5] = ' '; /* clear double click */
@@ -125,11 +122,9 @@ public:
         {
           QWheelEvent* wheel_evt = static_cast<QWheelEvent*>(event);
 
-          /* Get delta (Qt uses 1/8 degree increments, typical mouse wheel is 15 degrees per notch) */
           QPoint angle_delta = wheel_evt->angleDelta();
           float delta = angle_delta.y() / 120.0f;  /* Normalize to notches (120 units per notch) */
 
-          /* Get global position */
 #if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
           QPoint global_pos = wheel_evt->globalPosition().toPoint();
 #else
@@ -166,7 +161,6 @@ public:
       break;
     }
 
-    /* Continue processing the event */
     return false;
   }
 };
@@ -188,14 +182,12 @@ extern "C" IUP_SDK_API int iupdrvSetGlobal(const char *name, const char *value)
   {
     if (iupStrBoolean(value))
     {
-      /* Install global event filter */
       QApplication* app = iupqtGetApplication();
       if (app)
         app->installEventFilter(IupQtEventFilter::instance());
     }
     else
     {
-      /* Remove global event filter */
       QApplication* app = iupqtGetApplication();
       if (app)
         app->removeEventFilter(IupQtEventFilter::instance());
@@ -217,8 +209,7 @@ extern "C" IUP_SDK_API int iupdrvSetGlobal(const char *name, const char *value)
 
   if (iupStrEqual(name, "SHOWMENUIMAGES"))
   {
-    /* Qt doesn't have a global setting for menu images */
-    /* This would need to be handled per-menu if needed */
+    /* Qt has no global setting for menu images */
     return 1;
   }
 
@@ -240,7 +231,6 @@ extern "C" IUP_SDK_API char *iupdrvGetGlobal(const char *name)
 {
   if (iupStrEqual(name, "VIRTUALSCREEN"))
   {
-    /* Get the virtual screen geometry (all monitors combined) */
     QScreen* primary_screen = QGuiApplication::primaryScreen();
     if (primary_screen)
     {
@@ -285,12 +275,11 @@ extern "C" IUP_SDK_API char *iupdrvGetGlobal(const char *name)
 
   if (iupStrEqual(name, "TRUECOLORCANVAS"))
   {
-    /* Qt always uses true color in modern systems */
     QScreen* screen = QGuiApplication::primaryScreen();
     if (screen)
       return iupStrReturnBoolean(screen->depth() > 8);
 
-    return iupStrReturnBoolean(1);  /* Assume true color */
+    return iupStrReturnBoolean(1);
   }
 
   if (iupStrEqual(name, "UTF8MODE"))
@@ -362,7 +351,6 @@ IUP_DRV_API int iupqtKeyDecode(QEvent *evt)
   int qt_key = key_evt->key();
   int iup_key = 0;
 
-  /* Map Qt keys to IUP keys */
   switch(qt_key)
   {
   case Qt::Key_Escape:       iup_key = K_ESC; break;
@@ -372,7 +360,6 @@ IUP_DRV_API int iupqtKeyDecode(QEvent *evt)
   case Qt::Key_Tab:          iup_key = K_TAB; break;
   case Qt::Key_Space:        iup_key = K_SP; break;
 
-  /* Navigation */
   case Qt::Key_Home:         iup_key = K_HOME; break;
   case Qt::Key_End:          iup_key = K_END; break;
   case Qt::Key_Left:         iup_key = K_LEFT; break;
@@ -382,7 +369,6 @@ IUP_DRV_API int iupqtKeyDecode(QEvent *evt)
   case Qt::Key_PageUp:       iup_key = K_PGUP; break;
   case Qt::Key_PageDown:     iup_key = K_PGDN; break;
 
-  /* Function keys */
   case Qt::Key_F1:           iup_key = K_F1; break;
   case Qt::Key_F2:           iup_key = K_F2; break;
   case Qt::Key_F3:           iup_key = K_F3; break;
@@ -400,13 +386,11 @@ IUP_DRV_API int iupqtKeyDecode(QEvent *evt)
   case Qt::Key_Insert:       iup_key = K_INS; break;
   case Qt::Key_Delete:       iup_key = K_DEL; break;
 
-  /* Modifiers (when pressed alone) */
-  case Qt::Key_Shift:        iup_key = 0; break;  /* Ignore */
+  case Qt::Key_Shift:        iup_key = 0; break;
   case Qt::Key_Control:      iup_key = 0; break;
   case Qt::Key_Alt:          iup_key = 0; break;
   case Qt::Key_Meta:         iup_key = 0; break;
 
-  /* Numpad */
   case Qt::Key_multiply:     iup_key = K_asterisk; break;
   case Qt::Key_Plus:         iup_key = K_plus; break;
   case Qt::Key_Minus:        iup_key = K_minus; break;
@@ -414,7 +398,6 @@ IUP_DRV_API int iupqtKeyDecode(QEvent *evt)
   case Qt::Key_Slash:        iup_key = K_slash; break;
 
   default:
-    /* Try to get the text character */
     QString text = key_evt->text();
     if (!text.isEmpty())
     {

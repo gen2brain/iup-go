@@ -253,8 +253,7 @@ static int iMdIsEscapable(char c)
 }
 
 
-/* Find matching closing delimiter for emphasis.
-   Returns position after the closing delimiter, or -1 if not found. */
+/* returns the position after the closing delimiter, or -1 */
 static int iMdFindClosingDelimiter(const char* text, int len, char delim, int count)
 {
   int i = 0;
@@ -312,14 +311,12 @@ static int iMdParseInlineCode(iMdState* s, const char* text, int len)
   if (bt == 0)
     return 0;
 
-  /* Find closing backticks */
   i = bt;
   while (i < len)
   {
     int ct = iMdCountLeadingChar(text + i, len - i, '`');
     if (ct == bt)
     {
-      /* Found matching close */
       start = s->text.charlen;
       iMdBufAppend(&s->text, text + bt, i - bt);
       end = s->text.charlen;
@@ -348,7 +345,6 @@ static int iMdParseLink(iMdState* s, const char* text, int len)
   if (len < 4 || text[0] != '[')
     return 0;
 
-  /* Find closing ] */
   i = 1;
   depth = 1;
   while (i < len && depth > 0)
@@ -368,13 +364,11 @@ static int iMdParseLink(iMdState* s, const char* text, int len)
   text_start = 1;
   text_end = i - 1;
 
-  /* Expect ( immediately */
   if (i >= len || text[i] != '(')
     return 0;
   i++;
   url_start = i;
 
-  /* Find closing ) */
   depth = 1;
   while (i < len && depth > 0)
   {
@@ -386,7 +380,6 @@ static int iMdParseLink(iMdState* s, const char* text, int len)
     return 0;
   url_end = i - 1;
 
-  /* Emit link text and create tag */
   {
     int content_len = text_end - text_start;
     int is_image_link = (content_len >= 5 && text[text_start] == '!' && text[text_start + 1] == '[');
@@ -446,7 +439,6 @@ static int iMdParseImage(iMdState* s, const char* text, int len)
   if (len < 5 || text[0] != '!' || text[1] != '[')
     return 0;
 
-  /* Find closing ] for alt text */
   i = 2;
   depth = 1;
   while (i < len && depth > 0)
@@ -466,13 +458,11 @@ static int iMdParseImage(iMdState* s, const char* text, int len)
   alt_start = 2;
   alt_end = i - 1;
 
-  /* Expect ( immediately */
   if (i >= len || text[i] != '(')
     return 0;
   i++;
   name_start = i;
 
-  /* Find closing ) */
   depth = 1;
   while (i < len && depth > 0)
   {
@@ -505,9 +495,7 @@ static int iMdParseImage(iMdState* s, const char* text, int len)
   return i;
 }
 
-/* Extract an HTML attribute value from a tag string.
-   Searches for attr="value" or attr='value', copies value into buf.
-   Returns 1 if found, 0 otherwise. */
+/* copies attr="value" or attr='value' into buf; returns 1 if found */
 static int iMdGetHtmlAttr(const char* tag, int tag_len, const char* attr, char* buf, int buf_size)
 {
   int attr_len = (int)strlen(attr);
@@ -521,7 +509,6 @@ static int iMdGetHtmlAttr(const char* tag, int tag_len, const char* attr, char* 
       char quote;
       i += attr_len + 1;
 
-      /* Skip optional quote */
       if (i < tag_len && (tag[i] == '"' || tag[i] == '\''))
       {
         quote = tag[i];
@@ -552,8 +539,7 @@ static int iMdGetHtmlAttr(const char* tag, int tag_len, const char* attr, char* 
   return 0;
 }
 
-/* Parse HTML img tag: <img src="path"> with optional width/height.
-   Returns chars consumed or 0. */
+/* returns chars consumed or 0 */
 static int iMdParseHtmlImg(iMdState* s, const char* text, int len)
 {
   int i, tag_end, tag_start;
@@ -562,13 +548,11 @@ static int iMdParseHtmlImg(iMdState* s, const char* text, int len)
   if (len < 10 || text[0] != '<')
     return 0;
 
-  /* Check for <img (case-insensitive) */
   if (!iupStrEqualNoCasePartial(text + 1, "img"))
     return 0;
   if (text[4] != ' ' && text[4] != '\t')
     return 0;
 
-  /* Find closing > */
   i = 5;
   while (i < len && text[i] != '>')
     i++;
@@ -576,7 +560,6 @@ static int iMdParseHtmlImg(iMdState* s, const char* text, int len)
     return 0;
   tag_end = i + 1;
 
-  /* Extract src attribute */
   if (!iMdGetHtmlAttr(text, tag_end, "src", src, sizeof(src)))
     return 0;
   if (src[0] == 0)
@@ -649,7 +632,6 @@ static int iMdParseEmphasis(iMdState* s, const char* text, int len, int text_off
       return 0;
   }
 
-  /* Parse inner content */
   inner_start = s->text.charlen;
   iMdParseInline(s, text + count, close_pos - count);
   inner_end = s->text.charlen;
@@ -687,7 +669,6 @@ static void iMdParseInline(iMdState* s, const char* text, int len)
 
   while (i < len)
   {
-    /* Backslash escape */
     if (text[i] == '\\' && i + 1 < len)
     {
       if (iMdIsEscapable(text[i + 1]))
@@ -699,7 +680,6 @@ static void iMdParseInline(iMdState* s, const char* text, int len)
       /* Backslash at end of line = hard break (handled at block level) */
     }
 
-    /* Inline code */
     if (text[i] == '`')
     {
       int consumed = iMdParseInlineCode(s, text + i, len - i);
@@ -721,7 +701,6 @@ static void iMdParseInline(iMdState* s, const char* text, int len)
       }
     }
 
-    /* Link */
     if (text[i] == '[')
     {
       int consumed = iMdParseLink(s, text + i, len - i);
@@ -732,7 +711,6 @@ static void iMdParseInline(iMdState* s, const char* text, int len)
       }
     }
 
-    /* HTML img tag */
     if (text[i] == '<')
     {
       int consumed = iMdParseHtmlImg(s, text + i, len - i);
@@ -743,7 +721,6 @@ static void iMdParseInline(iMdState* s, const char* text, int len)
       }
     }
 
-    /* Strikethrough */
     if (text[i] == '~')
     {
       int consumed = iMdParseStrike(s, text + i, len - i);
@@ -754,7 +731,6 @@ static void iMdParseInline(iMdState* s, const char* text, int len)
       }
     }
 
-    /* Emphasis */
     if (text[i] == '*' || text[i] == '_')
     {
       int consumed = iMdParseEmphasis(s, text + i, len - i, i);
@@ -765,7 +741,6 @@ static void iMdParseInline(iMdState* s, const char* text, int len)
       }
     }
 
-    /* Regular character */
     iMdBufAppendChar(&s->text, text[i]);
     i++;
   }
@@ -824,7 +799,6 @@ static void iMdParseCodeBlock(iMdState* s, const char** p_input)
   {
     const char* next = iupStrNextLine(input, &line_len);
 
-    /* Check for closing fence */
     if (line_len >= 3 && input[0] == '`' && input[1] == '`' && input[2] == '`')
     {
       *p_input = next;
@@ -861,7 +835,6 @@ static void iMdParseBlockquote(iMdState* s, const char* line, int len)
   int start;
   Ihandle* tag;
 
-  /* Skip '>' and optional space */
   line++;
   len--;
   if (len > 0 && line[0] == ' ')
@@ -1449,8 +1422,7 @@ static int iMdParseTable(iMdState* s, const char** p_input)
   return 1;
 }
 
-/* Collect continuation lines for a paragraph until a blank line or new block.
-   Returns pointer to after the paragraph. */
+/* returns a pointer to after the paragraph */
 static const char* iMdCollectParagraph(const char* input, iMdBuf* para)
 {
   int first = 1;
@@ -1463,7 +1435,6 @@ static const char* iMdCollectParagraph(const char* input, iMdBuf* para)
     if (iMdIsBlankLine(input, line_len))
       break;
 
-    /* Check for block-level markers that would break the paragraph */
     if (line_len > 0 && input[0] == '#')
       break;
     if (line_len >= 3 && input[0] == '`' && input[1] == '`' && input[2] == '`')
@@ -1492,7 +1463,6 @@ static const char* iMdCollectParagraph(const char* input, iMdBuf* para)
         break;
     }
 
-    /* Handle hard line break: backslash at end of line */
     if (!first)
     {
       if (para->len > 0 && para->data[para->len - 1] == '\\')
@@ -1521,7 +1491,6 @@ static void iMdParseDocument(iMdState* s, const char* input)
     int line_len;
     const char* next = iupStrNextLine(input, &line_len);
 
-    /* Skip blank lines, mark block separation */
     if (iMdIsBlankLine(input, line_len))
     {
       if (s->text.len > 0)
@@ -1530,7 +1499,6 @@ static void iMdParseDocument(iMdState* s, const char* input)
       continue;
     }
 
-    /* Fenced code block */
     if (line_len >= 3 && input[0] == '`' && input[1] == '`' && input[2] == '`')
     {
       input = next;
@@ -1538,7 +1506,6 @@ static void iMdParseDocument(iMdState* s, const char* input)
       continue;
     }
 
-    /* Heading */
     if (input[0] == '#')
     {
       int level = iMdCountLeadingChar(input, line_len, '#');
@@ -1550,7 +1517,6 @@ static void iMdParseDocument(iMdState* s, const char* input)
       }
     }
 
-    /* Horizontal rule */
     if (iMdIsHorizontalRule(input, line_len))
     {
       iMdParseHorizontalRule(s);
@@ -1558,7 +1524,6 @@ static void iMdParseDocument(iMdState* s, const char* input)
       continue;
     }
 
-    /* Blockquote */
     if (input[0] == '>' && (line_len == 1 || input[1] == ' '))
     {
       iMdParseBlockquote(s, input, line_len);
@@ -1566,7 +1531,6 @@ static void iMdParseDocument(iMdState* s, const char* input)
       continue;
     }
 
-    /* Lists */
     {
       int num_end, depth;
 
@@ -1585,11 +1549,9 @@ static void iMdParseDocument(iMdState* s, const char* input)
       }
     }
 
-    /* Table: a row followed by a delimiter row */
     if (iMdTableLineIsRow(input, line_len) && iMdParseTable(s, &input))
       continue;
 
-    /* Paragraph (collect continuation lines), or its setext underline */
     {
       iMdBuf para;
       int under_len, level;

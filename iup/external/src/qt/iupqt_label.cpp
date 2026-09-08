@@ -72,7 +72,6 @@ protected:
   {
     if (ht_transparent)
     {
-      /* Let events pass through */
       event->ignore();
       return false;
     }
@@ -236,16 +235,13 @@ static int qtLabelSetTitleAttrib(Ihandle* ih, const char* value)
         }
         else
         {
-          /* Process mnemonics manually: remove & and underline the next character */
           char c;
-          char* str = iupStrProcessMnemonic(value, &c, -1); /* action=-1: remove & and return mnemonic in c */
+          char* str = iupStrProcessMnemonic(value, &c, -1);
 
           if (str && str != value)
           {
-            /* Found a mnemonic - convert to HTML with underline */
             QString text = QString::fromUtf8(str);
 
-            /* Find the mnemonic character and wrap it in <u> tags */
             int idx = text.indexOf(QChar(c), 0, Qt::CaseInsensitive);
             if (idx >= 0)
             {
@@ -357,7 +353,6 @@ static char* qtLabelGetAlignmentAttrib(Ihandle* ih)
     int horiz = ih->data->horiz_alignment;
     int vert = ih->data->vert_alignment;
 
-    /* Validate indices */
     if (horiz < IUP_ALIGN_ALEFT || horiz > IUP_ALIGN_ARIGHT)
       horiz = IUP_ALIGN_ALEFT;
     if (vert < IUP_ALIGN_ATOP || vert > IUP_ALIGN_ABOTTOM)
@@ -462,7 +457,6 @@ static int qtLabelSetBgColorAttrib(Ihandle* ih, const char* value)
     QPalette palette;
     QColor color(r, g, b);
 
-    /* Set background for both wrapper and inner widget */
     palette = wrapper->palette();
     palette.setColor(QPalette::Window, color);
     wrapper->setPalette(palette);
@@ -533,7 +527,6 @@ static int qtLabelSetImageAttrib(Ihandle* ih, const char* value)
     {
       if (!iupAttribGet(ih, "IMINACTIVE"))
       {
-        /* If not active and IMINACTIVE not defined, create inactive version */
         qtLabelSetPixmap(ih, value, 1);
       }
     }
@@ -566,7 +559,6 @@ static int qtLabelSetImInactiveAttrib(Ihandle* ih, const char* value)
 
 static int qtLabelSetActiveAttrib(Ihandle* ih, const char* value)
 {
-  /* Update the inactive image if necessary */
   if (ih->data->type == IUP_LABEL_IMAGE)
   {
     if (!iupStrBoolean(value))
@@ -576,7 +568,6 @@ static int qtLabelSetActiveAttrib(Ihandle* ih, const char* value)
         qtLabelSetPixmap(ih, name, 0);
       else
       {
-        /* Create inactive version from IMAGE */
         name = iupAttribGet(ih, "IMAGE");
         qtLabelSetPixmap(ih, name, 1);
       }
@@ -663,7 +654,6 @@ static int qtLabelMapMethod(Ihandle* ih)
   char* value;
   QWidget* inner_widget = nullptr;
 
-  /* Determine label type */
   value = iupAttribGet(ih, "SEPARATOR");
   if (value)
   {
@@ -681,7 +671,6 @@ static int qtLabelMapMethod(Ihandle* ih)
       ih->data->type = IUP_LABEL_TEXT;
   }
 
-  /* Create inner widget based on type */
   if (ih->data->type == IUP_LABEL_SEP_HORIZ)
   {
     QFrame* frame = new QFrame();
@@ -696,7 +685,7 @@ static int qtLabelMapMethod(Ihandle* ih)
     frame->setLineWidth(1);
     inner_widget = frame;
   }
-  else /* TEXT or IMAGE */
+  else
   {
     QLabel* label = new IupQtLabel();
     label->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
@@ -706,16 +695,13 @@ static int qtLabelMapMethod(Ihandle* ih)
       char* title = iupAttribGet(ih, "TITLE");
       if (title)
       {
-        /* Process mnemonics: remove & and underline the mnemonic character */
         char c;
-        char* str = iupStrProcessMnemonic(title, &c, -1); /* action=-1: remove & and return mnemonic in c */
+        char* str = iupStrProcessMnemonic(title, &c, -1);
 
         if (str && str != title)
         {
-          /* Found a mnemonic - convert to HTML with underline */
           QString text = QString::fromUtf8(str);
 
-          /* Find the mnemonic character and wrap it in <u> tags */
           int idx = text.indexOf(QChar(c), 0, Qt::CaseInsensitive);
           if (idx >= 0)
           {
@@ -748,28 +734,22 @@ static int qtLabelMapMethod(Ihandle* ih)
   if (!inner_widget)
     return IUP_ERROR;
 
-  /* Create event wrapper */
   IupQtEventWrapper* wrapper = new IupQtEventWrapper(ih);
   wrapper->setChildWidget(inner_widget);
 
   ih->handle = (InativeHandle*)wrapper;
 
-  /* Add to parent */
   iupqtAddToParent(ih);
 
-  /* Configure focus */
-  iupqtSetCanFocus(wrapper, 0);  /* Labels are not focusable */
+  iupqtSetCanFocus(wrapper, 0);
 
-  /* Set padding if specified */
   value = iupAttribGet(ih, "PADDING");
   if (value)
     qtLabelSetPaddingAttrib(ih, value);
 
-  /* Update mnemonic */
   if (ih->data->type == IUP_LABEL_TEXT)
     iupqtUpdateMnemonic(ih);
 
-  /* Set HTTRANSPARENT if specified */
   value = iupAttribGet(ih, "HTTRANSPARENT");
   if (value)
     qtLabelSetHtTransparentAttrib(ih, value);

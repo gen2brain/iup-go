@@ -27,7 +27,6 @@ typedef struct _IupCocoaTouchKey
 } IupCocoaTouchKey;
 
 static const IupCocoaTouchKey s_keyMap[] = {
-	/* Letters */
 	{ UIKeyboardHIDUsageKeyboardA, K_a },
 	{ UIKeyboardHIDUsageKeyboardB, K_b },
 	{ UIKeyboardHIDUsageKeyboardC, K_c },
@@ -55,7 +54,6 @@ static const IupCocoaTouchKey s_keyMap[] = {
 	{ UIKeyboardHIDUsageKeyboardY, K_y },
 	{ UIKeyboardHIDUsageKeyboardZ, K_z },
 
-	/* Digit row */
 	{ UIKeyboardHIDUsageKeyboard1, K_1 },
 	{ UIKeyboardHIDUsageKeyboard2, K_2 },
 	{ UIKeyboardHIDUsageKeyboard3, K_3 },
@@ -67,7 +65,6 @@ static const IupCocoaTouchKey s_keyMap[] = {
 	{ UIKeyboardHIDUsageKeyboard9, K_9 },
 	{ UIKeyboardHIDUsageKeyboard0, K_0 },
 
-	/* Whitespace, editing, navigation */
 	{ UIKeyboardHIDUsageKeyboardReturnOrEnter, K_CR },
 	{ UIKeyboardHIDUsageKeyboardEscape,        K_ESC },
 	{ UIKeyboardHIDUsageKeyboardDeleteOrBackspace, K_BS },
@@ -89,7 +86,6 @@ static const IupCocoaTouchKey s_keyMap[] = {
 	{ UIKeyboardHIDUsageKeyboardHelp,          K_HELP },
 	{ UIKeyboardHIDUsageKeyboardScrollLock,    K_SCROLL },
 
-	/* punctuation: base ASCII; modifiers via cocoaTouchKeyApplyModifiers */
 	{ UIKeyboardHIDUsageKeyboardHyphen,      K_minus },
 	{ UIKeyboardHIDUsageKeyboardEqualSign,   K_equal },
 	{ UIKeyboardHIDUsageKeyboardOpenBracket, K_bracketleft },
@@ -102,7 +98,6 @@ static const IupCocoaTouchKey s_keyMap[] = {
 	{ UIKeyboardHIDUsageKeyboardPeriod,      K_period },
 	{ UIKeyboardHIDUsageKeyboardSlash,       K_slash },
 
-	/* Function keys */
 	{ UIKeyboardHIDUsageKeyboardF1,  K_F1 },
 	{ UIKeyboardHIDUsageKeyboardF2,  K_F2 },
 	{ UIKeyboardHIDUsageKeyboardF3,  K_F3 },
@@ -124,7 +119,6 @@ static const IupCocoaTouchKey s_keyMap[] = {
 	{ UIKeyboardHIDUsageKeyboardF19, K_F19 },
 	{ UIKeyboardHIDUsageKeyboardF20, K_F20 },
 
-	/* Numeric keypad */
 	{ UIKeyboardHIDUsageKeypad0,        K_KP_0 },
 	{ UIKeyboardHIDUsageKeypad1,        K_KP_1 },
 	{ UIKeyboardHIDUsageKeypad2,        K_KP_2 },
@@ -144,7 +138,6 @@ static const IupCocoaTouchKey s_keyMap[] = {
 	{ UIKeyboardHIDUsageKeypadEnter,    K_KP_CR },
 	{ UIKeyboardHIDUsageKeypadNumLock,  K_NUM },
 
-	/* modifiers: IUP exposes both L and R */
 	{ UIKeyboardHIDUsageKeyboardLeftShift,    K_LSHIFT },
 	{ UIKeyboardHIDUsageKeyboardRightShift,   K_RSHIFT },
 	{ UIKeyboardHIDUsageKeyboardLeftControl,  K_LCTRL },
@@ -320,7 +313,6 @@ IUP_DRV_API bool iupCocoaTouchKeyEvent(Ihandle* ih, UIPress* press, bool is_pres
 		return false;
 	}
 
-	/* release: canvas-only KEYPRESS_CB(press=0) */
 	if (ih->iclass->nativetype == IUP_TYPECANVAS)
 	{
 		int result = iupKeyCallKeyPressCb(ih, code, 0);
@@ -339,7 +331,6 @@ IUP_DRV_API bool iupCocoaTouchKeyEvent(Ihandle* ih, UIPress* press, bool is_pres
 
 
 
-/* SDK stub; iOS has no synthesized-key API so iupdrvSendKey is a no-op. */
 IUP_SDK_API void iupdrvKeyEncode(int code, unsigned int* keyval, unsigned int* state)
 {
 	if (keyval) *keyval = (unsigned int)iup_XkeyBase(code);

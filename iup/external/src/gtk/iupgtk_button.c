@@ -262,7 +262,6 @@ IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
   GtkRequisition button_size, child_size;
   int border_x, border_y;
 
-  /* Check if we need to measure for image+text button, image-only, or text-only button */
   int has_image = 0;
   int has_text = 0;
   int has_bgcolor = 0;
@@ -286,7 +285,6 @@ IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
 
   if (has_image && has_text)
   {
-    /* Create button with both image and text to match actual structure */
     GdkPixbuf* temp_pixbuf = gdk_pixbuf_new(GDK_COLORSPACE_RGB, TRUE, 8, 32, 32);
     GtkWidget* temp_image = gtk_image_new_from_pixbuf(temp_pixbuf);
 
@@ -296,7 +294,6 @@ IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
     gtk_button_set_image(GTK_BUTTON(temp_button), temp_image);
     gtk_button_set_label(GTK_BUTTON(temp_button), "Test");
 
-    /* Get the alignment child that contains the box */
     child = gtk_bin_get_child(GTK_BIN(temp_button));
 
     gtk_widget_size_request(temp_button, &button_size);
@@ -306,7 +303,6 @@ IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
   }
   else if (has_image)
   {
-    /* Image-only button */
     GdkPixbuf* temp_pixbuf = gdk_pixbuf_new(GDK_COLORSPACE_RGB, TRUE, 8, 32, 32);
     GtkWidget* temp_image = gtk_image_new_from_pixbuf(temp_pixbuf);
 
@@ -315,7 +311,7 @@ IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
     gtk_button_set_alignment(GTK_BUTTON(temp_button), 0.5f, 0.5f);
     gtk_button_set_image(GTK_BUTTON(temp_button), temp_image);
 
-    /* For image-only buttons, we need to measure the GtkAlignment, not the image */
+    /* measure the GtkAlignment, not the image */
     child = gtk_bin_get_child(GTK_BIN(temp_button));
 
     gtk_widget_size_request(temp_button, &button_size);
@@ -325,7 +321,6 @@ IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
   }
   else
   {
-    /* Text-only button */
     temp_button = gtk_button_new_with_label("Test");
     gtk_widget_set_can_focus(temp_button, TRUE);
     gtk_button_set_alignment(GTK_BUTTON(temp_button), 0.5f, 0.5f);
@@ -339,14 +334,12 @@ IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
   GtkAllocation alloc = {0, 0, button_size.width, button_size.height};
   gtk_widget_size_allocate(temp_button, &alloc);
 
-  /* Now get the ACTUAL allocated size of the child */
   GtkWidget* allocated_child = gtk_bin_get_child(GTK_BIN(temp_button));
   GtkAllocation child_alloc;
   if (allocated_child)
   {
     gtk_widget_get_allocation(allocated_child, &child_alloc);
 
-    /* Calculate border from allocated child size */
     border_x = button_size.width - child_alloc.width;
     border_y = button_size.height - child_alloc.height;
 
@@ -365,7 +358,6 @@ IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
   }
   else
   {
-    /* Fallback to requested size if no child */
     border_x = button_size.width - child_size.width;
     border_y = button_size.height - child_size.height;
   }
@@ -400,7 +392,6 @@ static GtkLabel* gtkButtonGetLabel(Ihandle* ih)
   {
     if (iupAttribGet(ih, "_IUPGTK_EVENTBOX"))
     {
-      /* Borderless IMAGE+TEXT */
       GtkWidget* box = gtk_bin_get_child((GtkBin*)ih->handle);
       if (box && GTK_IS_BOX(box))
       {
@@ -425,20 +416,17 @@ static GtkLabel* gtkButtonGetLabel(Ihandle* ih)
 
 static void gtkButtonFixVerticalAlignment(Ihandle* ih)
 {
-  /* GTK3 uses BASELINE alignment for image+text buttons, which doesn't vertically
-     center the image and text relative to each other. Fix this by setting CENTER alignment. */
+  /* GTK3 uses BASELINE alignment for image+text buttons, which does not center them */
   if (ih->data->type == IUP_BUTTON_BOTH)
   {
     GtkWidget* box = NULL;
 
     if (iupAttribGet(ih, "_IUPGTK_EVENTBOX"))
     {
-      /* Borderless IMAGE+TEXT */
       box = gtk_bin_get_child((GtkBin*)ih->handle);
     }
     else
     {
-      /* Normal button */
       GtkWidget* align = gtk_bin_get_child((GtkBin*)ih->handle);
       if (align && GTK_IS_BIN(align))
         box = gtk_bin_get_child((GtkBin*)align);
@@ -621,7 +609,6 @@ static gboolean gtkButtonColorExposeAfter(GtkWidget* widget, GdkEventExpose* evt
 
   gtk_widget_get_allocation(widget, &allocation);
 
-  /* Draw inside the button frame (just inside xthickness/ythickness) */
   xthickness = GTK_WIDGET(widget)->style->xthickness;
   ythickness = GTK_WIDGET(widget)->style->ythickness;
 
@@ -649,7 +636,6 @@ static int gtkButtonSetBgColorAttrib(Ihandle* ih, const char* value)
 #if GTK_CHECK_VERSION(3, 0, 0)
   if (ih->data->type == IUP_BUTTON_TEXT)
   {
-    /* Color button with frame+drawarea */
     GtkWidget* frame = gtk_bin_get_child(GTK_BIN(ih->handle));
     if (frame && GTK_IS_FRAME(frame))
     {
@@ -1005,7 +991,6 @@ static int gtkButtonMapMethod(Ihandle* ih)
           g_object_unref(provider);
         }
 #else
-        /* GTK2: Draw directly on button via expose-event */
         g_signal_connect_after(G_OBJECT(ih->handle), "expose-event", G_CALLBACK(gtkButtonColorExposeAfter), ih);
 #endif
       }
@@ -1079,7 +1064,6 @@ static int gtkButtonMapMethod(Ihandle* ih)
 
   gtk_widget_realize(ih->handle);
 
-  /* Fix vertical alignment for image+text buttons */
   gtkButtonFixVerticalAlignment(ih);
 
 

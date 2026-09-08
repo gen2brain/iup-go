@@ -26,7 +26,6 @@
 #include "iupcocoatouch_draw.h"
 
 
-/* canvas drives its own drag when BUTTON_CB+MOTION_CB are both set; pause ancestor scroll then */
 static BOOL cocoaTouchCanvasIsDragHandle(Ihandle* ih)
 {
 	if (!ih) return NO;
@@ -113,7 +112,6 @@ static void cocoaTouchFireGesture(Ihandle* ih, int gesture, int state, int x, in
 		cocoaTouchCanvasPrepGesture(_rotateGesture, self);
 		[self addGestureRecognizer:_rotateGesture];
 
-		/* two fingers: one-finger drag stays BUTTON_CB+MOTION_CB */
 		_panGesture = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(onPan:)];
 		_panGesture.minimumNumberOfTouches = 2;
 		_panGesture.maximumNumberOfTouches = 2;
@@ -151,7 +149,6 @@ static void cocoaTouchFireGesture(Ihandle* ih, int gesture, int state, int x, in
 
 - (BOOL)gestureRecognizer:(UIGestureRecognizer*)a shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer*)b
 {
-	/* pinch, rotate and two-finger pan must run together; tap/long-press/swipe stay exclusive */
 	NSArray* combo = @[_pinchGesture, _rotateGesture, _panGesture];
 	return ([combo containsObject:a] && [combo containsObject:b]) ? YES : NO;
 }
@@ -197,7 +194,6 @@ static void cocoaTouchFireGesture(Ihandle* ih, int gesture, int state, int x, in
 - (void)onRotate:(UIRotationGestureRecognizer*)g
 {
 	CGPoint p = [g locationInView:self];
-	/* degrees, clockwise-positive to match the Android two-finger angle */
 	double deg = (double)g.rotation * 180.0 / M_PI;
 	cocoaTouchFireGesture(_ihandle, IUP_GESTURE_ROTATE, cocoaTouchGestureState(g.state), (int)p.x, (int)p.y, deg, 0.0);
 }
@@ -234,7 +230,6 @@ static void cocoaTouchFireGesture(Ihandle* ih, int gesture, int state, int x, in
 	return _canFocus && _ihandle != NULL;
 }
 
-/* UIKeyInput: the soft keyboard commits text here, dead keys and IME already composed */
 - (BOOL)hasText
 {
 	return YES;
@@ -338,7 +333,6 @@ static void cocoaTouchFireGesture(Ihandle* ih, int gesture, int state, int x, in
 	if (CGSizeEqualToSize(size, _previousSize)) return;
 	_previousSize = size;
 
-	/* bounds changed; cached CGBitmapContext is stale */
 	iupCocoaTouchCanvasReleaseBuffer(_ihandle);
 
 	if (!_ihandle) return;
@@ -402,7 +396,6 @@ static void cocoaTouchFireGesture(Ihandle* ih, int gesture, int state, int x, in
 		}
 	}
 
-	/* no buffer yet: paint background so the view isn't transparent */
 	if (_customBackground && view_ctx)
 	{
 		CGContextSetFillColorWithColor(view_ctx, [_customBackground CGColor]);
@@ -439,7 +432,6 @@ static void cocoaTouchCanvasFireMotion(Ihandle* ih, UITouch* touch, UIEvent* eve
 	if (cb(ih, (int)p.x, (int)p.y, status) == IUP_CLOSE) IupExitLoop();
 }
 
-/* fires TOUCH_CB per touch + one MULTITOUCH_CB for the batch; phase is 'D'/'U'/'M' */
 - (void)dispatchTouchBatch:(NSSet<UITouch*>*)touches phase:(char)phase_char
 {
 	if (!_ihandle) return;
@@ -489,7 +481,6 @@ static void cocoaTouchCanvasFireMotion(Ihandle* ih, UITouch* touch, UIEvent* eve
 	}
 }
 
-/* disable every ancestor UIPanGestureRecognizer so the canvas owns the drag gesture */
 - (void)pauseAncestorPanGestures
 {
 	if (_pausedAncestorPans) return;
@@ -604,7 +595,6 @@ static void cocoaTouchCanvasFireMotion(Ihandle* ih, UITouch* touch, UIEvent* eve
 
 	CGPoint t = [gr translationInView:self];
 	CGPoint p = [gr locationInView:self];
-	/* reset translation after each fire so we get per-tick deltas */
 	[gr setTranslation:CGPointZero inView:self];
 
 	/* IUP delta is positive = forward/up; UIPan y grows down */
@@ -646,7 +636,6 @@ static char* cocoaTouchCanvasGetDrawSizeAttrib(Ihandle* ih)
 	return iupStrReturnIntInt((int)s.width, (int)s.height, 'x');
 }
 
-/* No native canvas scrollbar on iOS; the setters track POSX/POSY and fire SCROLL_CB on a position change. */
 static int cocoaTouchCanvasSetDXAttrib(Ihandle* ih, const char* value)
 {
 	(void)ih; (void)value;
@@ -716,7 +705,6 @@ static int cocoaTouchCanvasSetBorderAttrib(Ihandle* ih, const char* value)
 
 static char* cocoaTouchCanvasGetCgContextAttrib(Ihandle* ih)
 {
-	/* Pointer-as-string, same shape desktop drivers use for HDC/CGContextRef. */
 	CGContextRef ctx = (CGContextRef)iupAttribGet(ih, "_IUPCOCOATOUCH_CANVAS_CGCONTEXT");
 	return iupStrReturnStrf("%p", ctx);
 }
@@ -744,7 +732,6 @@ static int cocoaTouchCanvasMapMethod(Ihandle* ih)
 
 	iupCocoaTouchAddToParent(ih);
 
-	/* VoiceOver: pass touches through to custom canvas interactions */
 	view.accessibilityTraits = UIAccessibilityTraitAllowsDirectInteraction;
 
 	iupCocoaTouchRegisterThemeRefresh(view, ^(UIView* v) { [v setNeedsDisplay]; });
@@ -784,7 +771,6 @@ IUP_SDK_API void iupdrvCanvasInitClass(Iclass* ic)
 
 	iupClassRegisterAttribute(ic, "CANFOCUS", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
 
-	/* Native handle access, parallel to HDC on Win32 and CGContext on Cocoa. */
 	iupClassRegisterAttribute(ic, "CGCONTEXT", cocoaTouchCanvasGetCgContextAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "UIVIEW", cocoaTouchCanvasGetUiViewAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "DRAWABLE", cocoaTouchCanvasGetDrawableAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);

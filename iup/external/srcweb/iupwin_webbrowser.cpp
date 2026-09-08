@@ -1236,8 +1236,7 @@ static char* winWebBrowserGetBackCountAttrib(Ihandle* ih)
   if (!ih->data->webviewWindow)
     return iupStrReturnInt(0);
 
-  /* WebView2 API limitation: cannot get actual history count.
-     Return 1 if back is possible, 0 otherwise. */
+  /* WebView2 API limitation: cannot get actual history count */
   BOOL canGoBack = FALSE;
   ih->data->webviewWindow->get_CanGoBack(&canGoBack);
   return iupStrReturnInt(canGoBack ? 1 : 0);
@@ -1248,8 +1247,7 @@ static char* winWebBrowserGetForwardCountAttrib(Ihandle* ih)
   if (!ih->data->webviewWindow)
     return iupStrReturnInt(0);
 
-  /* WebView2 API limitation: cannot get actual history count.
-     Return 1 if forward is possible, 0 otherwise. */
+  /* WebView2 API limitation: cannot get actual history count */
   BOOL canGoForward = FALSE;
   ih->data->webviewWindow->get_CanGoForward(&canGoForward);
   return iupStrReturnInt(canGoForward ? 1 : 0);

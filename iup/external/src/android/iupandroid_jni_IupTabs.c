@@ -94,6 +94,5 @@ JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupTabsHelper_dispatchTabC
     return;
   }
 
-  /* IUP_DEFAULT or no callback: hide the tab via the indexed setter. */
   IupSetAttributeId(ih, "TABVISIBLE", pos, "NO");
 }

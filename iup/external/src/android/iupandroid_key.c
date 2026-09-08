@@ -26,7 +26,7 @@
 #define AKEYCODE_PAGE_UP       92
 #define AKEYCODE_PAGE_DOWN     93
 #define AKEYCODE_ESCAPE        111
-#define AKEYCODE_FORWARD_DEL   112  /* delete forward */
+#define AKEYCODE_FORWARD_DEL   112
 #define AKEYCODE_CAPS_LOCK     115
 #define AKEYCODE_SCROLL_LOCK   116
 #define AKEYCODE_SYSRQ         120  /* print screen */

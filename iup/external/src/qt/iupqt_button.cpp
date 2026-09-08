@@ -173,8 +173,7 @@ static void qtButtonUpdateLayout(Ihandle* ih)
         break;
       case IUP_IMGPOS_TOP:
       case IUP_IMGPOS_BOTTOM:
-        /* Qt doesn't directly support top/bottom positioning
-         * Would need custom layout - for now use default */
+        /* Qt has no top/bottom image placement; falls back to the default */
         button->setLayoutDirection(Qt::LeftToRight);
         break;
     }
@@ -286,7 +285,6 @@ static int qtButtonSetTitleAttrib(Ihandle* ih, const char* value)
       }
       else
       {
-        /* Process mnemonic and set text */
         char c = '&';
         char* str = iupStrProcessMnemonic(value, &c, 1);
 
@@ -476,7 +474,6 @@ static int qtButtonSetImageAttrib(Ihandle* ih, const char* value)
     {
       if (!iupAttribGet(ih, "IMINACTIVE"))
       {
-        /* If not active and IMINACTIVE not defined, create inactive version */
         qtButtonSetPixmap(ih, value, 1);
       }
     }

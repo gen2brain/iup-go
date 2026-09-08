@@ -36,7 +36,6 @@
 #include "iup_table.h"
 
 
-/* Default sizes */
 #define MOT_TABLE_DEF_ROW_HEIGHT    20
 #define MOT_TABLE_DEF_COL_WIDTH     80
 #define MOT_TABLE_HEADER_HEIGHT     24
@@ -48,37 +47,32 @@
 
 typedef struct _ImotTableData
 {
-  /* Widgets */
   Widget container;          /* XmBulletinBoard parent */
   Widget drawing_area;       /* XmDrawingArea for table */
-  Widget sb_horiz;           /* Horizontal scrollbar */
-  Widget sb_vert;            /* Vertical scrollbar */
+  Widget sb_horiz;
+  Widget sb_vert;
   Widget edit_text;          /* XmTextField for cell editing (created on demand) */
 
-  /* X11 graphics */
-  GC gc;                     /* Graphics context */
-  XFontStruct* font_struct;  /* Current font (old X11) */
-  int font_struct_owned;     /* 1 if we loaded font_struct ourselves, 0 if from cache */
+  GC gc;
+  XFontStruct* font_struct;
+  int font_struct_owned;     /* 1 if loaded here, 0 if from the cache */
 
 #ifdef IUP_USE_XFT
-  XftDraw* xft_draw;         /* XFT drawing context */
-  XftFont* xft_font;         /* XFT font */
+  XftDraw* xft_draw;
+  XftFont* xft_font;
 #endif
 
-  /* Table geometry */
-  int row_height;            /* Height of each row */
-  int header_height;         /* Height of header row */
+  int row_height;
+  int header_height;
   int* col_widths;           /* Array of column widths [num_col] - displayed width (includes stretch) */
   int* col_natural_widths;   /* Array of natural column widths [num_col] - from auto-sizing, before stretch */
   int* col_width_set;        /* Array of flags: 1 if width explicitly set, 0 if auto [num_col] */
 
-  /* Scroll state */
   int scroll_x;              /* Horizontal scroll position (pixels) */
   int scroll_y;              /* Vertical scroll position (pixels) */
   int first_visible_row;     /* First visible row (0-based) */
   int first_visible_col;     /* First visible column (0-based) */
 
-  /* Selection/focus */
   int current_row;           /* Current focused row (1-based, 0=none) */
   int current_col;           /* Current focused column (1-based, 0=none) */
 
@@ -89,30 +83,24 @@ typedef struct _ImotTableData
   int drag_start_x;
   int drag_start_y;
 
-  /* Cell data storage (2D array) */
   char*** cell_values;       /* [num_lin][num_col] -> string */
   char** col_titles;         /* [num_col] -> string */
 
-  /* Cell editing state */
   int edit_lin;              /* Row being edited (1-based, 0=not editing) */
   int edit_col;              /* Column being edited (1-based, 0=not editing) */
 
-  /* Show grid flag */
-  int show_grid;             /* 1 = show grid lines, 0 = no grid */
+  int show_grid;
 
-  /* Auto-sizing flag */
-  int columns_autosized;     /* 1 = columns have been auto-sized, 0 = not yet */
+  int columns_autosized;
 
-  /* Sort state */
   int sort_column;           /* Currently sorted column (1-based, 0=none) */
-  char* sort_signs;          /* Array of sort signs for each column [num_col] ("UP", "DOWN", or NULL) */
+  char* sort_signs;
 
-  /* Motif theme colors */
-  Pixel bg_pixel;            /* Widget background color */
-  Pixel fg_pixel;            /* Widget foreground color */
-  Pixel header_bg_pixel;     /* Header background (derived from bg) */
-  Pixel grid_pixel;          /* Grid line color (derived from bg) */
-  Pixel select_bg_pixel;     /* Selection background color */
+  Pixel bg_pixel;
+  Pixel fg_pixel;
+  Pixel header_bg_pixel;
+  Pixel grid_pixel;
+  Pixel select_bg_pixel;
 
   /* VISIBLELINES/VISIBLECOLUMNS constraints (0 = no constraint) */
   int target_height;
@@ -142,7 +130,6 @@ static void motTableRowDragMotion(Widget w, XtPointer client_data, XEvent* event
 /* Helper Functions - Sort Indicators                                       */
 /* ========================================================================= */
 
-/* Draw a simple triangle arrow for sort indicator */
 static void motTableDrawSortArrow(Display* display, Window window, GC gc, int x, int y, int is_up)
 {
   XPoint points[3];
@@ -150,24 +137,20 @@ static void motTableDrawSortArrow(Display* display, Window window, GC gc, int x,
 
   if (is_up)
   {
-    /* Up arrow: triangle pointing up */
     points[0].x = x;                    points[0].y = y + arrow_size;
     points[1].x = x + arrow_size;       points[1].y = y + arrow_size;
     points[2].x = x + arrow_size / 2;   points[2].y = y;
   }
   else
   {
-    /* Down arrow: triangle pointing down */
     points[0].x = x;                    points[0].y = y;
     points[1].x = x + arrow_size;       points[1].y = y;
     points[2].x = x + arrow_size / 2;   points[2].y = y + arrow_size;
   }
 
-  /* Fill the triangle */
   XFillPolygon(display, window, gc, points, 3, Convex, CoordModeOrigin);
 }
 
-/* Sort rows based on the specified column */
 static void motTableSortRows(Ihandle* ih, int col, int ascending)
 {
   ImotTableData* mot_data = IMOT_TABLE_DATA(ih);
@@ -178,7 +161,6 @@ static void motTableSortRows(Ihandle* ih, int col, int ascending)
   if (!mot_data->cell_values || num_rows < 2 || col < 1 || col > num_cols)
     return;
 
-  /* Simple bubble sort */
   for (i = 0; i < num_rows - 1; i++)
   {
     for (j = 0; j < num_rows - i - 1; j++)
@@ -187,14 +169,11 @@ static void motTableSortRows(Ihandle* ih, int col, int ascending)
       const char* val2 = mot_data->cell_values[j + 1][col - 1];
       int should_swap = 0;
 
-      /* Handle NULL values (treat as empty string) */
       if (!val1) val1 = "";
       if (!val2) val2 = "";
 
-      /* Compare strings */
       int cmp = iupStrCompare(val1, val2, 0, 1);
 
-      /* Determine if swap is needed based on sort direction */
       if (ascending)
         should_swap = (cmp > 0);  /* Ascending: swap if val1 > val2 */
       else
@@ -202,7 +181,6 @@ static void motTableSortRows(Ihandle* ih, int col, int ascending)
 
       if (should_swap)
       {
-        /* Swap entire rows (all columns) */
         char** temp_row = mot_data->cell_values[j];
         mot_data->cell_values[j] = mot_data->cell_values[j + 1];
         mot_data->cell_values[j + 1] = temp_row;
@@ -229,7 +207,6 @@ static char* motTableGetCellValueInternal(Ihandle* ih, int lin, int col)
     return value_cb(ih, lin, col);
   }
 
-  /* Non-virtual mode: Use internal storage */
   if (!mot_data || !mot_data->cell_values)
     return NULL;
 
@@ -246,14 +223,12 @@ static void motTableSetCellValueInternal(Ihandle* ih, int lin, int col, const ch
   if (lin < 1 || lin > ih->data->num_lin || col < 1 || col > ih->data->num_col)
     return;
 
-  /* Free old value */
   if (mot_data->cell_values[lin-1][col-1])
   {
     free(mot_data->cell_values[lin-1][col-1]);
     mot_data->cell_values[lin-1][col-1] = NULL;
   }
 
-  /* Store new value */
   if (value)
     mot_data->cell_values[lin-1][col-1] = iupStrDup(value);
 }
@@ -267,14 +242,11 @@ static void motTableCellToPixel(Ihandle* ih, int lin, int col, int* px, int* py,
   ImotTableData* mot_data = IMOT_TABLE_DATA(ih);
   int x = 0, y = 0, c;
 
-  /* Calculate X position (sum of column widths before this column) */
   for (c = 0; c < col - 1 && c < ih->data->num_col; c++)
     x += mot_data->col_widths[c];
 
-  /* Calculate Y position */
   y = mot_data->header_height + (lin - 1) * mot_data->row_height;
 
-  /* Apply scroll offset */
   x -= mot_data->scroll_x;
   y -= mot_data->scroll_y;
 
@@ -289,11 +261,9 @@ static void motTablePixelToCell(Ihandle* ih, int px, int py, int* lin, int* col)
   ImotTableData* mot_data = IMOT_TABLE_DATA(ih);
   int x, c, row;
 
-  /* Apply scroll offset */
   px += mot_data->scroll_x;
   py += mot_data->scroll_y;
 
-  /* Find column */
   *col = 0;
   x = 0;
   for (c = 0; c < ih->data->num_col; c++)
@@ -306,7 +276,6 @@ static void motTablePixelToCell(Ihandle* ih, int px, int py, int* lin, int* col)
     x += mot_data->col_widths[c];
   }
 
-  /* Find row */
   *lin = 0;
   if (py < mot_data->header_height)
   {
@@ -408,7 +377,6 @@ static void motTableDrawCell(Ihandle* ih, int lin, int col, int is_header)
   int is_focused_cell = (lin == mot_data->current_row && col == mot_data->current_col);
   int is_focused_row = (lin == mot_data->current_row && !is_header);
 
-  /* Get cell bounds */
   if (is_header)
   {
     int c, cell_x = 0;
@@ -428,25 +396,22 @@ static void motTableDrawCell(Ihandle* ih, int lin, int col, int is_header)
     text = motTableGetCellValueInternal(ih, lin, col);
   }
 
-  /* Draw cell background */
   char* bgcolor = NULL;
 
   /* Get background color with hierarchy: per-cell > per-column > per-row > alternating > default */
   if (!is_header)
   {
-    bgcolor = iupAttribGetId2(ih, "BGCOLOR", lin, col);  /* Try L:C */
+    bgcolor = iupAttribGetId2(ih, "BGCOLOR", lin, col);
     if (!bgcolor)
-      bgcolor = iupAttribGetId2(ih, "BGCOLOR", 0, col);  /* Try :C (per-column) */
+      bgcolor = iupAttribGetId2(ih, "BGCOLOR", 0, col);
     if (!bgcolor)
-      bgcolor = iupAttribGetId2(ih, "BGCOLOR", lin, 0);  /* Try L:* (per-row) */
+      bgcolor = iupAttribGetId2(ih, "BGCOLOR", lin, 0);
 
-    /* Check for alternating row colors if no explicit color is set */
     if (!bgcolor)
     {
       char* alternate_color = iupAttribGet(ih, "ALTERNATECOLOR");
       if (iupStrEqualNoCase(alternate_color, "YES"))
       {
-        /* Use EVENROWCOLOR for even rows, ODDROWCOLOR for odd rows */
         if (lin % 2 == 0)
           bgcolor = iupAttribGetStr(ih, "EVENROWCOLOR");
         else
@@ -457,28 +422,23 @@ static void motTableDrawCell(Ihandle* ih, int lin, int col, int is_header)
 
   if (is_focused_row)
   {
-    /* Focused row, highlight entire row with selection color */
     XSetForeground(display, mot_data->gc, mot_data->select_bg_pixel);
   }
   else if (is_header)
   {
-    /* Header background */
     XSetForeground(display, mot_data->gc, mot_data->header_bg_pixel);
   }
   else if (bgcolor && *bgcolor)
   {
-    /* Custom cell background color */
     XSetForeground(display, mot_data->gc, iupmotColorGetPixelStr(bgcolor));
   }
   else
   {
-    /* Default cell background */
     XSetForeground(display, mot_data->gc, mot_data->bg_pixel);
   }
 
   XFillRectangle(display, window, mot_data->gc, x, y, w, h);
 
-  /* Draw grid lines */
   if (mot_data->show_grid)
   {
     XSetForeground(display, mot_data->gc, mot_data->grid_pixel);
@@ -486,7 +446,6 @@ static void motTableDrawCell(Ihandle* ih, int lin, int col, int is_header)
     XDrawLine(display, window, mot_data->gc, x + w - 1, y, x + w - 1, y + h); /* Right */
   }
 
-  /* Draw cell text */
   if (text && text[0])
   {
     char* fgcolor = NULL;
@@ -494,11 +453,11 @@ static void motTableDrawCell(Ihandle* ih, int lin, int col, int is_header)
     /* Get foreground color with hierarchy: per-cell > per-column > per-row > default */
     if (!is_header)
     {
-      fgcolor = iupAttribGetId2(ih, "FGCOLOR", lin, col);  /* Try L:C */
+      fgcolor = iupAttribGetId2(ih, "FGCOLOR", lin, col);
       if (!fgcolor)
-        fgcolor = iupAttribGetId2(ih, "FGCOLOR", 0, col);  /* Try :C (per-column) */
+        fgcolor = iupAttribGetId2(ih, "FGCOLOR", 0, col);
       if (!fgcolor)
-        fgcolor = iupAttribGetId2(ih, "FGCOLOR", lin, 0);  /* Try L:* (per-row) */
+        fgcolor = iupAttribGetId2(ih, "FGCOLOR", lin, 0);
     }
 
     unsigned char tr, tg, tb;
@@ -518,7 +477,6 @@ static void motTableDrawCell(Ihandle* ih, int lin, int col, int is_header)
 
     text_len = strlen(text);
 
-    /* Calculate text width */
 #ifdef IUP_USE_XFT
     if (mot_data->xft_font)
     {
@@ -531,32 +489,26 @@ static void motTableDrawCell(Ihandle* ih, int lin, int col, int is_header)
     if (mot_data->font_struct)
       text_width = XTextWidth(mot_data->font_struct, text, text_len);
     else
-      text_width = text_len * 7; /* Fallback */
+      text_width = text_len * 7;
 
-    /* Get column alignment (for both headers and cells) */
     char align_attr[64];
     char* align_str = NULL;
     snprintf(align_attr, sizeof(align_attr), "ALIGNMENT%d", col);
     align_str = iupAttribGet(ih, align_attr);
 
-    /* Calculate text X position based on alignment */
     if (align_str && (iupStrEqualNoCase(align_str, "ARIGHT") || iupStrEqualNoCase(align_str, "RIGHT")))
     {
-      /* Right align */
       text_x = x + w - text_width - MOT_TABLE_CELL_PADDING;
     }
     else if (align_str && (iupStrEqualNoCase(align_str, "ACENTER") || iupStrEqualNoCase(align_str, "CENTER")))
     {
-      /* Center align */
       text_x = x + (w - text_width) / 2;
     }
     else
     {
-      /* Left align (default) */
       text_x = x + MOT_TABLE_CELL_PADDING;
     }
 
-    /* Calculate text Y position */
 #ifdef IUP_USE_XFT
     if (mot_data->xft_font)
       text_y = y + h / 2 + mot_data->xft_font->ascent / 2;
@@ -564,7 +516,6 @@ static void motTableDrawCell(Ihandle* ih, int lin, int col, int is_header)
 #endif
       text_y = y + h / 2 + (mot_data->font_struct ? mot_data->font_struct->ascent / 2 : 6);
 
-    /* Draw text */
 #ifdef IUP_USE_XFT
     if (mot_data->xft_draw && mot_data->xft_font)
     {
@@ -584,19 +535,16 @@ static void motTableDrawCell(Ihandle* ih, int lin, int col, int is_header)
 #endif
       XDrawString(display, window, mot_data->gc, text_x, text_y, text, text_len);
 
-    /* Draw sort arrow for sorted column headers (only if sorting is enabled) */
     if (is_header && ih->data->sortable && mot_data->sort_column == col && mot_data->sort_signs)
     {
       int arrow_x;
-      int arrow_y = y + (h - 6) / 2;  /* Center vertically */
+      int arrow_y = y + (h - 6) / 2;
 
-      /* Position arrow based on alignment */
       if (align_str && (iupStrEqualNoCase(align_str, "ARIGHT") || iupStrEqualNoCase(align_str, "RIGHT")))
-        arrow_x = x + MOT_TABLE_CELL_PADDING;  /* Left side for right-aligned text */
+        arrow_x = x + MOT_TABLE_CELL_PADDING;
       else
-        arrow_x = x + w - 12;  /* Right side for left/center-aligned text */
+        arrow_x = x + w - 12;
 
-      /* Draw arrow based on sort direction */
       if (mot_data->sort_signs[col-1] == 1)  /* Ascending */
       {
         XSetForeground(display, mot_data->gc, mot_data->fg_pixel);
@@ -610,21 +558,18 @@ static void motTableDrawCell(Ihandle* ih, int lin, int col, int is_header)
     }
   }
 
-  /* Draw focus rectangle around the specific focused cell if FOCUSRECT=YES */
   if (is_focused_cell && iupAttribGetBoolean(ih, "FOCUSRECT"))
   {
     /* Use XOR mode for focus rectangle, always creates contrast by inverting pixels */
     XSetFunction(display, mot_data->gc, GXxor);
     XSetForeground(display, mot_data->gc, mot_data->fg_pixel ^ mot_data->bg_pixel);
 
-    /* Set dashed line style */
     char dash_list[] = {2, 2};  /* 2 pixels on, 2 pixels off */
     XSetLineAttributes(display, mot_data->gc, 1, LineOnOffDash, CapButt, JoinMiter);
     XSetDashes(display, mot_data->gc, 0, dash_list, 2);
 
     XDrawRectangle(display, window, mot_data->gc, x + 1, y + 1, w - 3, h - 3);
 
-    /* Reset to normal drawing mode and solid line */
     XSetFunction(display, mot_data->gc, GXcopy);
     XSetLineAttributes(display, mot_data->gc, 1, LineSolid, CapButt, JoinMiter);
   }
@@ -641,7 +586,6 @@ static void motTableDrawTable(Ihandle* ih)
   if (!window)
     return;
 
-  /* Auto-size columns on first draw (when data is accessible) */
   if (!mot_data->columns_autosized)
   {
     int c, lin1;
@@ -649,17 +593,14 @@ static void motTableDrawTable(Ihandle* ih)
 
     for (c = 0; c < ih->data->num_col; c++)
     {
-      int max_width = MOT_TABLE_DEF_COL_WIDTH;  /* Start with default */
+      int max_width = MOT_TABLE_DEF_COL_WIDTH;
       int title_width, cell_width;
 
-      /* Check if user set explicit width for this column (via RASTERWIDTH or WIDTH) */
       if (mot_data->col_width_set[c])
       {
-        /* User set explicit width, skip auto-sizing for this column */
         continue;
       }
 
-      /* Measure column title */
       if (mot_data->col_titles[c])
       {
 #ifdef IUP_USE_XFT
@@ -677,10 +618,8 @@ static void motTableDrawTable(Ihandle* ih)
           max_width = title_width;
       }
 
-      /* Measure cell content (check first N rows for performance) */
       for (lin1 = 0; lin1 < max_rows_to_check; lin1++)
       {
-        /* Use IupGetAttributeId2 to access cell values through the attribute system */
         const char* cell_value = IupGetAttributeId2(ih, "", lin1 + 1, c + 1);
         if (cell_value && cell_value[0])
         {
@@ -700,7 +639,6 @@ static void motTableDrawTable(Ihandle* ih)
         }
       }
 
-      /* Update column width if it needs to be wider */
       if (max_width > mot_data->col_widths[c])
       {
         mot_data->col_widths[c] = max_width;
@@ -708,40 +646,32 @@ static void motTableDrawTable(Ihandle* ih)
       }
     }
 
-    /* Mark as done */
     mot_data->columns_autosized = 1;
 
-    /* Update scrollbars since column widths may have changed */
     motTableUpdateScrollbars(ih);
   }
 
-  /* Get widget size */
   XtVaGetValues(mot_data->drawing_area, XmNwidth, &width, XmNheight, &height, NULL);
 
   /* Clear background */
   XSetForeground(display, mot_data->gc, mot_data->bg_pixel);
   XFillRectangle(display, window, mot_data->gc, 0, 0, width, height);
 
-  /* Draw header row */
   for (col = 1; col <= ih->data->num_col; col++)
   {
     motTableDrawCell(ih, 0, col, 1);
   }
 
-  /* Draw data cells - ONLY VISIBLE ROWS for virtual rendering */
   {
     int first_visible_row, last_visible_row;
     int visible_height = height - mot_data->header_height;
 
-    /* Calculate which rows are actually visible on screen */
     first_visible_row = (mot_data->scroll_y / mot_data->row_height) + 1;
     last_visible_row = ((mot_data->scroll_y + visible_height) / mot_data->row_height) + 1;
 
-    /* Clamp to valid range */
     if (first_visible_row < 1) first_visible_row = 1;
     if (last_visible_row > ih->data->num_lin) last_visible_row = ih->data->num_lin;
 
-    /* Only draw visible rows */
     for (lin = first_visible_row; lin <= last_visible_row; lin++)
     {
       for (col = 1; col <= ih->data->num_col; col++)
@@ -750,7 +680,6 @@ static void motTableDrawTable(Ihandle* ih)
       }
     }
 
-    /* Fill the area right of the last column with header/row backgrounds and grid */
     {
       int content_right = -mot_data->scroll_x;
       for (col = 0; col < ih->data->num_col; col++)
@@ -796,7 +725,6 @@ static void motTableDrawTable(Ihandle* ih)
     }
   }
 
-  /* Row drag-reorder drop indicator */
   if (mot_data->row_dragging && mot_data->drag_target_row >= 0 &&
       mot_data->drag_target_row != mot_data->drag_source_row - 1 &&
       mot_data->drag_target_row != mot_data->drag_source_row)
@@ -829,19 +757,17 @@ static void motTableStartCellEdit(Ihandle* ih, int lin, int col)
   int x, y, w, h;
   const char* value;
 
-  /* Call EDITBEGIN_CB - allow application to block editing */
   IFnii editbegin_cb = (IFnii)IupGetCallback(ih, "EDITBEGIN_CB");
   if (editbegin_cb)
   {
     int ret = editbegin_cb(ih, lin, col);
     if (ret == IUP_IGNORE)
-      return;  /* Block editing */
+      return;
   }
 
   if (mot_data->edit_lin != 0)
-    motTableEndCellEdit(ih, 1); /* End previous edit */
+    motTableEndCellEdit(ih, 1);
 
-  /* Create edit widget if needed */
   if (!mot_data->edit_text)
   {
     int num_args = 0;
@@ -856,7 +782,6 @@ static void motTableStartCellEdit(Ihandle* ih, int lin, int col)
     iupMOT_SETARG(args, num_args, XmNmarginWidth, 2);
     iupMOT_SETARG(args, num_args, XmNhighlightThickness, 0);
 
-    /* Set font on edit widget to match the table's drawing font */
     fontlist_for_edit = (XmFontList)iupmotGetFontListAttrib(ih);
     if (fontlist_for_edit)
     {
@@ -866,19 +791,15 @@ static void motTableStartCellEdit(Ihandle* ih, int lin, int col)
 
     mot_data->edit_text = XmCreateText(mot_data->container, "edit_text", args, num_args);
 
-    /* Add key event handler for Enter/Escape */
     XtAddEventHandler(mot_data->edit_text, KeyPressMask, False, (XtEventHandler)motTableEditKeyPressCallback, (XtPointer)ih);
   }
 
-  /* Position edit widget over cell */
   motTableCellToPixel(ih, lin, col, &x, &y, &w, &h);
   XtVaSetValues(mot_data->edit_text, XmNx, x, XmNy, y, XmNwidth, w, XmNheight, h, NULL);
 
-  /* Set initial value */
   value = motTableGetCellValueInternal(ih, lin, col);
   XmTextSetString(mot_data->edit_text, (char*)(value ? value : ""));
 
-  /* Show and focus edit widget */
   XtManageChild(mot_data->edit_text);
   XmProcessTraversal(mot_data->edit_text, XmTRAVERSE_CURRENT);
   XmTextSetSelection(mot_data->edit_text, 0, XmTextGetLastPosition(mot_data->edit_text), CurrentTime);
@@ -902,13 +823,11 @@ static void motTableEditKeyPressCallback(Widget w, XtPointer client_data, XEvent
 
   if (keysym == XK_Return || keysym == XK_KP_Enter)
   {
-    /* Apply changes and end editing */
     motTableEndCellEdit(ih, 1);
     *cont = False;  /* Stop event propagation */
   }
   else if (keysym == XK_Escape)
   {
-    /* Cancel editing without applying changes */
     motTableEndCellEdit(ih, 0);
     *cont = False;  /* Stop event propagation */
   }
@@ -925,14 +844,12 @@ static void motTableEndCellEdit(Ihandle* ih, int apply)
 
   char* text = XmTextGetString(mot_data->edit_text);
 
-  /* Call EDITEND_CB - allow application to validate/reject edit */
   IFniisi editend_cb = (IFniisi)IupGetCallback(ih, "EDITEND_CB");
   if (editend_cb)
   {
     int ret = editend_cb(ih, lin, col, text, apply ? 1 : 0);
     if (ret == IUP_IGNORE && apply)
     {
-      /* Application rejected the edit, keep editor open */
       XtFree(text);
       XmProcessTraversal(mot_data->edit_text, XmTRAVERSE_CURRENT);
       XmTextSetSelection(mot_data->edit_text, 0, XmTextGetLastPosition(mot_data->edit_text), CurrentTime);
@@ -948,19 +865,17 @@ static void motTableEndCellEdit(Ihandle* ih, int apply)
 
     motTableSetCellValueInternal(ih, lin, col, text);
 
-    /* Call VALUE_CB callback to update data source */
     IFniis value_cb = (IFniis)IupGetCallback(ih, "VALUE_CB");
     if (value_cb)
       value_cb(ih, lin, col, text);
 
-    /* Call VALUECHANGED_CB only if text actually changed */
     int text_changed = 0;
     if (!old_text && text && *text)
-      text_changed = 1;  /* NULL -> non-empty */
+      text_changed = 1;
     else if (old_text && !text)
-      text_changed = 1;  /* non-empty -> NULL */
+      text_changed = 1;
     else if (old_text && text && strcmp(old_text, text) != 0)
-      text_changed = 1;  /* different text */
+      text_changed = 1;
 
     if (text_changed)
     {
@@ -979,7 +894,6 @@ static void motTableEndCellEdit(Ihandle* ih, int apply)
   mot_data->edit_lin = 0;
   mot_data->edit_col = 0;
 
-  /* Restore focus to the table's drawing area */
   XmProcessTraversal(mot_data->drawing_area, XmTRAVERSE_CURRENT);
 
   motTableRedraw(ih);
@@ -1022,21 +936,19 @@ static void motTableInputCallback(Widget w, XtPointer client_data, XtPointer cal
     /* Handle mouse wheel scrolling (Button4 = scroll up, Button5 = scroll down) */
     if (button_event->button == Button4 || button_event->button == Button5)
     {
-      int scroll_amount = mot_data->row_height * 3;  /* Scroll 3 rows at a time */
+      int scroll_amount = mot_data->row_height * 3;
       int new_scroll_y = mot_data->scroll_y;
 
-      if (button_event->button == Button4)  /* Scroll up */
+      if (button_event->button == Button4)
         new_scroll_y -= scroll_amount;
-      else  /* Button5: Scroll down */
+      else
         new_scroll_y += scroll_amount;
 
-      /* Clamp to valid range */
       if (new_scroll_y < 0)
         new_scroll_y = 0;
 
       mot_data->scroll_y = new_scroll_y;
 
-      /* Update scrollbars (which will clamp scroll_y properly) and redraw */
       motTableUpdateScrollbars(ih);
       motTableRedraw(ih);
       return;
@@ -1044,10 +956,8 @@ static void motTableInputCallback(Widget w, XtPointer client_data, XtPointer cal
 
     motTablePixelToCell(ih, button_event->x, button_event->y, &lin, &col);
 
-    /* Check for column header click (sorting) */
     if (lin == 0 && col > 0)
     {
-      /* Check if SORTABLE is enabled */
       if (ih->data->sortable)
       {
         int sign = (mot_data->sort_column == col && mot_data->sort_signs[col-1] == 1) ? -1 : 1;
@@ -1070,15 +980,12 @@ static void motTableInputCallback(Widget w, XtPointer client_data, XtPointer cal
     }
     else if (lin > 0 && col > 0)
     {
-      /* End any active edit */
       if (mot_data->edit_lin != 0)
         motTableEndCellEdit(ih, 1);
 
-      /* Update focus */
       mot_data->current_row = lin;
       mot_data->current_col = col;
 
-      /* Arm row drag-reorder */
       if (ih->data->show_dragdrop && button_event->button == Button1)
       {
         mot_data->drag_source_row = lin;
@@ -1088,19 +995,16 @@ static void motTableInputCallback(Widget w, XtPointer client_data, XtPointer cal
         mot_data->drag_start_y = button_event->y;
       }
 
-      /* Call CLICK_CB */
       IFniis cb = (IFniis)IupGetCallback(ih, "CLICK_CB");
       if (cb)
         cb(ih, lin, col, "1");
 
-      /* Call ENTERITEM_CB for cell selection change */
       IFnii enteritem_cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
       if (enteritem_cb)
         enteritem_cb(ih, lin, col);
 
       motTableRedraw(ih);
 
-      /* Double-click handling */
       if (button_event->type == ButtonPress && button_event->button == Button1)
       {
         static Time last_click_time = 0;
@@ -1168,7 +1072,6 @@ static void motTableKeyPressCallback(Widget w, XtPointer client_data, XEvent* ev
 
   *cont = True;
 
-  /* If editing, let edit widget handle keys except Escape/Enter */
   if (mot_data->edit_lin != 0)
   {
     if (keysym == XK_Escape)
@@ -1181,10 +1084,9 @@ static void motTableKeyPressCallback(Widget w, XtPointer client_data, XEvent* ev
       motTableEndCellEdit(ih, 1);
       return;
     }
-    return; /* Let edit widget handle other keys */
+    return;
   }
 
-  /* Arrow key navigation */
   if (keysym == XK_Up && mot_data->current_row > 1)
   {
     mot_data->current_row--;
@@ -1238,7 +1140,6 @@ static void motTableKeyPressCallback(Widget w, XtPointer client_data, XEvent* ev
   }
   else if ((keysym == XK_c || keysym == XK_C) && (((XKeyEvent*)event)->state & ControlMask))
   {
-    /* Ctrl+C: Copy current cell to clipboard */
     if (mot_data->current_row > 0 && mot_data->current_col > 0)
     {
       char* value = motTableGetCellValueInternal(ih, mot_data->current_row, mot_data->current_col);
@@ -1250,10 +1151,8 @@ static void motTableKeyPressCallback(Widget w, XtPointer client_data, XEvent* ev
   }
   else if ((keysym == XK_v || keysym == XK_V) && (((XKeyEvent*)event)->state & ControlMask))
   {
-    /* Ctrl+V: Paste from clipboard to current cell */
     if (mot_data->current_row > 0 && mot_data->current_col > 0)
     {
-      /* Check if cell is editable */
       char name[50];
       char* editable;
       snprintf(name, sizeof(name), "EDITABLE%d", mot_data->current_col);
@@ -1270,22 +1169,19 @@ static void motTableKeyPressCallback(Widget w, XtPointer client_data, XEvent* ev
           char* old_text_ptr = iupdrvTableGetCellValue(ih, mot_data->current_row, mot_data->current_col);
           char* old_text = old_text_ptr ? iupStrDup(old_text_ptr) : NULL;
 
-          /* Set the cell value internally */
           motTableSetCellValueInternal(ih, mot_data->current_row, mot_data->current_col, text);
 
-          /* Call VALUE_CB to update data source (if it exists) */
           IFniis value_cb = (IFniis)IupGetCallback(ih, "VALUE_CB");
           if (value_cb)
             value_cb(ih, mot_data->current_row, mot_data->current_col, text);
 
-          /* Trigger VALUECHANGED_CB callback only if text actually changed */
           int text_changed = 0;
           if (!old_text && text && *text)
-            text_changed = 1;  /* NULL -> non-empty */
+            text_changed = 1;
           else if (old_text && !text)
-            text_changed = 1;  /* non-empty -> NULL */
+            text_changed = 1;
           else if (old_text && text && strcmp(old_text, text) != 0)
-            text_changed = 1;  /* different text */
+            text_changed = 1;
 
           if (text_changed)
           {
@@ -1342,23 +1238,19 @@ static void motTableUpdateScrollbars(Ihandle* ih)
   if (!mot_data->sb_horiz || !mot_data->sb_vert)
     return;
 
-  /* Get drawable area size */
   XtVaGetValues(mot_data->drawing_area, XmNwidth, &width, XmNheight, &height, NULL);
 
-  /* Calculate natural total content size (before stretch) */
   for (c = 0; c < ih->data->num_col; c++)
   {
     natural_total_width += mot_data->col_natural_widths[c];
   }
 
-  /* Handle STRETCHLAST: adjust last column to fill available space */
   if (ih->data->num_col > 0 && !mot_data->col_width_set[ih->data->num_col - 1] && ih->data->stretch_last)
   {
     int last_col = ih->data->num_col - 1;
     int other_cols_width = natural_total_width - mot_data->col_natural_widths[last_col];
     int available_for_last = width - other_cols_width;
 
-    /* Use natural width as minimum */
     if (available_for_last < mot_data->col_natural_widths[last_col])
       available_for_last = mot_data->col_natural_widths[last_col];
 
@@ -1367,7 +1259,6 @@ static void motTableUpdateScrollbars(Ihandle* ih)
   }
   else
   {
-    /* No stretch, use natural widths */
     total_width = natural_total_width;
     for (c = 0; c < ih->data->num_col; c++)
       mot_data->col_widths[c] = mot_data->col_natural_widths[c];
@@ -1375,7 +1266,6 @@ static void motTableUpdateScrollbars(Ihandle* ih)
 
   total_height = mot_data->header_height + ih->data->num_lin * mot_data->row_height;
 
-  /* Horizontal scrollbar */
   page_width = width;
   max_scroll_x = total_width - page_width;
   if (max_scroll_x < 0) max_scroll_x = 0;
@@ -1384,11 +1274,9 @@ static void motTableUpdateScrollbars(Ihandle* ih)
   if (page_width > total_width)
     page_width = total_width;
 
-  /* Clamp scroll position BEFORE setting it in the scrollbar */
   if (mot_data->scroll_x > max_scroll_x)
     mot_data->scroll_x = max_scroll_x;
 
-  /* Show/hide horizontal scrollbar based on whether scrolling is needed */
   if (max_scroll_x > 0)
   {
     XtVaSetValues(mot_data->sb_horiz,
@@ -1407,7 +1295,6 @@ static void motTableUpdateScrollbars(Ihandle* ih)
     XtUnmanageChild(mot_data->sb_horiz);
   }
 
-  /* Vertical scrollbar */
   page_height = height;
   max_scroll_y = total_height - page_height;
   if (max_scroll_y < 0) max_scroll_y = 0;
@@ -1416,11 +1303,9 @@ static void motTableUpdateScrollbars(Ihandle* ih)
   if (page_height > total_height)
     page_height = total_height;
 
-  /* Clamp scroll position BEFORE setting it in the scrollbar */
   if (mot_data->scroll_y > max_scroll_y)
     mot_data->scroll_y = max_scroll_y;
 
-  /* Show/hide vertical scrollbar based on whether scrolling is needed */
   if (max_scroll_y > 0)
   {
     XtVaSetValues(mot_data->sb_vert,
@@ -1457,24 +1342,20 @@ static int motTableMapMethod(Ihandle* ih)
   if (!parent)
     return IUP_ERROR;
 
-  /* Allocate Motif-specific data */
   mot_data = (ImotTableData*)calloc(1, sizeof(ImotTableData));
   if (!mot_data)
     return IUP_ERROR;
 
   ih->data->native_data = mot_data;
 
-  /* Initialize geometry */
   mot_data->row_height = MOT_TABLE_DEF_ROW_HEIGHT;
   mot_data->header_height = MOT_TABLE_HEADER_HEIGHT;
   mot_data->show_grid = iupAttribGetBoolean(ih, "SHOWGRID");
 
-  /* Allocate column widths */
   mot_data->col_widths = (int*)calloc(ih->data->num_col, sizeof(int));
   mot_data->col_natural_widths = (int*)calloc(ih->data->num_col, sizeof(int));
   mot_data->col_width_set = (int*)calloc(ih->data->num_col, sizeof(int));
 
-  /* Initialize column widths, checking for explicit RASTERWIDTH/WIDTH */
   for (c = 0; c < ih->data->num_col; c++)
   {
     char name[50];
@@ -1501,11 +1382,9 @@ static int motTableMapMethod(Ihandle* ih)
     }
   }
 
-  /* Initialize sort state */
   mot_data->sort_signs = (char*)calloc(ih->data->num_col, sizeof(char));
   mot_data->sort_column = 0;
 
-  /* Allocate cell storage (skip in virtual mode) */
   if (!iupAttribGetBoolean(ih, "VIRTUALMODE"))
   {
     mot_data->cell_values = (char***)calloc(ih->data->num_lin, sizeof(char**));
@@ -1520,7 +1399,6 @@ static int motTableMapMethod(Ihandle* ih)
     mot_data->cell_values = NULL;
   }
 
-  /* Allocate column titles */
   mot_data->col_titles = (char**)calloc(ih->data->num_col, sizeof(char*));
   for (c = 0; c < ih->data->num_col; c++)
   {
@@ -1529,7 +1407,6 @@ static int motTableMapMethod(Ihandle* ih)
     mot_data->col_titles[c] = iupStrDup(default_title);
   }
 
-  /* Create container (XmBulletinBoard) */
   num_args = 0;
   iupMOT_SETARG(args, num_args, XmNmappedWhenManaged, False);
   iupMOT_SETARG(args, num_args, XmNshadowThickness, 0);
@@ -1547,10 +1424,8 @@ static int motTableMapMethod(Ihandle* ih)
 
   ih->serial = iupDialogGetChildId(ih);
 
-  /* Store container for layout updates */
   iupAttribSet(ih, "_IUP_EXTRAPARENT", (char*)mot_data->container);
 
-  /* Create drawing area */
   num_args = 0;
   iupMOT_SETARG(args, num_args, XmNmarginHeight, 0);
   iupMOT_SETARG(args, num_args, XmNmarginWidth, 0);
@@ -1574,19 +1449,16 @@ static int motTableMapMethod(Ihandle* ih)
 
   ih->handle = mot_data->drawing_area;
 
-  /* Create horizontal scrollbar */
   mot_data->sb_horiz = XtVaCreateManagedWidget("sb_horiz", xmScrollBarWidgetClass, mot_data->container, XmNorientation, XmHORIZONTAL, NULL);
 
   XtAddCallback(mot_data->sb_horiz, XmNvalueChangedCallback, motTableScrollCallback, (XtPointer)ih);
   XtAddCallback(mot_data->sb_horiz, XmNdragCallback, motTableScrollCallback, (XtPointer)ih);
 
-  /* Create vertical scrollbar */
   mot_data->sb_vert = XtVaCreateManagedWidget("sb_vert", xmScrollBarWidgetClass, mot_data->container, XmNorientation, XmVERTICAL, NULL);
 
   XtAddCallback(mot_data->sb_vert, XmNvalueChangedCallback, motTableScrollCallback, (XtPointer)ih);
   XtAddCallback(mot_data->sb_vert, XmNdragCallback, motTableScrollCallback, (XtPointer)ih);
 
-  /* Add callbacks to drawing area */
   XtAddCallback(mot_data->drawing_area, XmNexposeCallback, motTableExposeCallback, (XtPointer)ih);
   XtAddCallback(mot_data->drawing_area, XmNresizeCallback, motTableResizeCallback, (XtPointer)ih);
   XtAddCallback(mot_data->drawing_area, XmNinputCallback, motTableInputCallback, (XtPointer)ih);
@@ -1597,19 +1469,15 @@ static int motTableMapMethod(Ihandle* ih)
   XtAddEventHandler(mot_data->drawing_area, EnterWindowMask, False, (XtEventHandler)iupmotEnterLeaveWindowEvent, (XtPointer)ih);
   XtAddEventHandler(mot_data->drawing_area, LeaveWindowMask, False, (XtEventHandler)iupmotEnterLeaveWindowEvent, (XtPointer)ih);
 
-  /* Realize widgets */
   XtRealizeWidget(mot_data->container);
 
-  /* Query Motif widget colors */
   {
     unsigned char bg_r, bg_g, bg_b;
 
     XtVaGetValues(mot_data->container, XmNbackground, &mot_data->bg_pixel, XmNforeground, &mot_data->fg_pixel, NULL);
 
-    /* Get RGB components of background color */
     iupmotColorGetRGB(mot_data->bg_pixel, &bg_r, &bg_g, &bg_b);
 
-    /* Derive header color (slightly darker than background) */
     {
       unsigned char header_r = (bg_r > 20) ? bg_r - 20 : 0;
       unsigned char header_g = (bg_g > 20) ? bg_g - 20 : 0;
@@ -1617,7 +1485,6 @@ static int motTableMapMethod(Ihandle* ih)
       mot_data->header_bg_pixel = iupmotColorGetPixel(header_r, header_g, header_b);
     }
 
-    /* Derive grid color (darker than background) */
     {
       unsigned char grid_r = (bg_r > 40) ? bg_r - 40 : 0;
       unsigned char grid_g = (bg_g > 40) ? bg_g - 40 : 0;
@@ -1625,7 +1492,6 @@ static int motTableMapMethod(Ihandle* ih)
       mot_data->grid_pixel = iupmotColorGetPixel(grid_r, grid_g, grid_b);
     }
 
-    /* Derive selection color (tinted blue version of background) */
     {
       unsigned char select_r = (unsigned char)((bg_r * 3 + 200) / 4);
       unsigned char select_g = (unsigned char)((bg_g * 3 + 220) / 4);
@@ -1634,17 +1500,14 @@ static int motTableMapMethod(Ihandle* ih)
     }
   }
 
-  /* Create graphics context */
   gcvalues.foreground = BlackPixel(iupmot_display, iupmot_screen);
   gcvalues.background = WhitePixel(iupmot_display, iupmot_screen);
   mot_data->gc = XCreateGC(iupmot_display, XtWindow(mot_data->drawing_area), GCForeground | GCBackground, &gcvalues);
 
-  /* Load font */
 #ifdef IUP_USE_XFT
   mot_data->xft_font = (XftFont*)iupmotGetXftFontAttrib(ih);
   if (mot_data->xft_font)
   {
-    /* Create XFT drawing context */
     mot_data->xft_draw = XftDrawCreate(iupmot_display, XtWindow(mot_data->drawing_area),
                                        DefaultVisual(iupmot_display, iupmot_screen),
                                        DefaultColormap(iupmot_display, iupmot_screen));
@@ -1657,21 +1520,19 @@ static int motTableMapMethod(Ihandle* ih)
     if (!mot_data->font_struct)
     {
       mot_data->font_struct = XLoadQueryFont(iupmot_display, "fixed");
-      mot_data->font_struct_owned = 1;  /* We loaded it, we own it */
+      mot_data->font_struct_owned = 1;
     }
     else
     {
-      mot_data->font_struct_owned = 0;  /* From cache, don't free */
+      mot_data->font_struct_owned = 0;
     }
     if (mot_data->font_struct)
       XSetFont(iupmot_display, mot_data->gc, mot_data->font_struct->fid);
   }
 
-  /* Set initial focus - no row/col selected on start (0 = none) */
   mot_data->current_row = 0;
   mot_data->current_col = 0;
 
-  /* Initialize auto-sizing flag (will run on first expose) */
   mot_data->columns_autosized = 0;
 
   /* Store constraints for VISIBLELINES/VISIBLECOLUMNS clamping in LayoutUpdate */
@@ -1683,8 +1544,7 @@ static int motTableMapMethod(Ihandle* ih)
     int border = iupdrvTableGetBorderWidth(ih);
     int sb_size = iupdrvGetScrollbarSize();
 
-    /* Include horizontal scrollbar height, motTableSetSize reserves space for it,
-       and vertical scrollbar (from VISIBLELINES) can trigger horizontal scrollbar */
+    /* motTableSetSize reserves horizontal scrollbar space, and VISIBLELINES can trigger it */
     mot_data->target_height = header_height + (row_height * visiblelines) + border + sb_size;
   }
   else
@@ -1692,10 +1552,8 @@ static int motTableMapMethod(Ihandle* ih)
     mot_data->target_height = 0;
   }
 
-  /* Store VISIBLECOLUMNS constraint */
   mot_data->visible_columns = iupAttribGetInt(ih, "VISIBLECOLUMNS");
 
-  /* Update scrollbars */
   motTableUpdateScrollbars(ih);
 
   return IUP_NOERROR;
@@ -1712,31 +1570,24 @@ static void motTableSetSize(Ihandle* ih, Widget container, int setsize, int use_
   Dimension border = 0;
   int sb_size = iupdrvGetScrollbarSize();
 
-  /* Get border width */
   XtVaGetValues(container, XmNborderWidth, &border, NULL);
   width = use_width - 2*(int)border;
   height = use_height - 2*(int)border;
 
-  /* Ensure minimum size */
   if (width <= 0) width = 1;
   if (height <= 0) height = 1;
 
-  /* Set container size */
   if (setsize)
   {
     XtVaSetValues(container, XmNwidth, (XtArgVal)width, XmNheight, (XtArgVal)height, NULL);
   }
 
-  /* Position and size the drawing area */
   XtVaSetValues(mot_data->drawing_area, XmNx, 0, XmNy, 0, XmNwidth, width - sb_size, XmNheight, height - sb_size, NULL);
 
-  /* Position and size the horizontal scrollbar */
   XtVaSetValues(mot_data->sb_horiz, XmNx, 0, XmNy, height - sb_size, XmNwidth, width - sb_size, XmNheight, sb_size, NULL);
 
-  /* Position and size the vertical scrollbar */
   XtVaSetValues(mot_data->sb_vert, XmNx, width - sb_size, XmNy, 0, XmNwidth, sb_size, XmNheight, height - sb_size, NULL);
 
-  /* Update scrollbars */
   motTableUpdateScrollbars(ih);
 }
 
@@ -1747,14 +1598,12 @@ static void motTableLayoutUpdateMethod(Ihandle* ih)
   int width = ih->currentwidth;
   int height = ih->currentheight;
 
-  /* If VISIBLELINES is set, clamp height to target */
   if (mot_data && mot_data->target_height > 0)
   {
     if (height > mot_data->target_height)
       height = mot_data->target_height;
   }
 
-  /* If VISIBLECOLUMNS is set, clamp width to show exactly N columns */
   if (mot_data && mot_data->visible_columns > 0 && mot_data->col_widths)
   {
     int c, cols_width = 0;
@@ -1762,14 +1611,12 @@ static void motTableLayoutUpdateMethod(Ihandle* ih)
     if (num_cols > ih->data->num_col)
       num_cols = ih->data->num_col;
 
-    /* Sum up the widths of the visible columns */
     for (c = 0; c < num_cols; c++)
       cols_width += mot_data->col_widths[c];
 
     int sb_size = iupdrvGetScrollbarSize();
     int border = iupdrvTableGetBorderWidth(ih);
 
-    /* Only add vertical scrollbar width if it will actually be visible */
     int visiblelines = mot_data->target_height > 0 ? 1 : 0;  /* target_height > 0 means VISIBLELINES was set */
     int need_vert_sb = (visiblelines && ih->data->num_lin > iupAttribGetInt(ih, "VISIBLELINES"));
     int vert_sb_width = need_vert_sb ? sb_size : 0;
@@ -1796,21 +1643,17 @@ static void motTableUnMapMethod(Ihandle* ih)
   if (!mot_data)
     return;
 
-  /* Free graphics context */
   if (mot_data->gc)
     XFreeGC(iupmot_display, mot_data->gc);
 
-  /* Free XFT resources */
 #ifdef IUP_USE_XFT
   if (mot_data->xft_draw)
     XftDrawDestroy(mot_data->xft_draw);
 #endif
 
-  /* Free font only if we loaded it ourselves (not from cache) */
   if (mot_data->font_struct && mot_data->font_struct_owned)
     XFreeFont(iupmot_display, mot_data->font_struct);
 
-  /* Free cell storage */
   if (mot_data->cell_values)
   {
     for (i = 0; i < ih->data->num_lin; i++)
@@ -1828,7 +1671,6 @@ static void motTableUnMapMethod(Ihandle* ih)
     free(mot_data->cell_values);
   }
 
-  /* Free column titles */
   if (mot_data->col_titles)
   {
     for (c = 0; c < ih->data->num_col; c++)
@@ -1839,7 +1681,6 @@ static void motTableUnMapMethod(Ihandle* ih)
     free(mot_data->col_titles);
   }
 
-  /* Free column widths */
   if (mot_data->col_widths)
     free(mot_data->col_widths);
 
@@ -1849,11 +1690,9 @@ static void motTableUnMapMethod(Ihandle* ih)
   if (mot_data->col_width_set)
     free(mot_data->col_width_set);
 
-  /* Free sort signs array */
   if (mot_data->sort_signs)
     free(mot_data->sort_signs);
 
-  /* Destroy widgets */
   if (mot_data->edit_text)
     XtDestroyWidget(mot_data->edit_text);
 
@@ -1880,7 +1719,6 @@ IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
   if (num_lin == old_num_lin)
     return;
 
-  /* Free rows being removed when shrinking */
   for (i = num_lin; i < old_num_lin; i++)
   {
     for (col = 0; col < ih->data->num_col; col++)
@@ -1921,7 +1759,6 @@ IUP_SDK_API void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
   if (num_col == old_num_col)
     return;
 
-  /* Reallocate column widths */
   mot_data->col_widths = (int*)realloc(mot_data->col_widths, num_col * sizeof(int));
   mot_data->col_natural_widths = (int*)realloc(mot_data->col_natural_widths, num_col * sizeof(int));
   mot_data->col_width_set = (int*)realloc(mot_data->col_width_set, num_col * sizeof(int));
@@ -1934,22 +1771,18 @@ IUP_SDK_API void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
     mot_data->sort_signs[i] = 0;
   }
 
-  /* Reallocate column titles */
   mot_data->col_titles = (char**)realloc(mot_data->col_titles, num_col * sizeof(char*));
   for (i = old_num_col; i < num_col; i++)
     mot_data->col_titles[i] = NULL;
 
-  /* Reallocate cell_values for each row */
   for (i = 0; i < ih->data->num_lin; i++)
   {
     mot_data->cell_values[i] = (char**)realloc(mot_data->cell_values[i], num_col * sizeof(char*));
-    /* Initialize new cells to NULL */
     int j;
     for (j = old_num_col; j < num_col; j++)
       mot_data->cell_values[i][j] = NULL;
   }
 
-  /* Update num_col */
   ih->data->num_col = num_col;
 
   motTableUpdateScrollbars(ih);
@@ -1972,19 +1805,15 @@ IUP_SDK_API void iupdrvTableAddLin(Ihandle* ih, int pos)
 
   new_num_lin = ih->data->num_lin + 1;
 
-  /* Reallocate cell_values array */
   mot_data->cell_values = (char***)realloc(mot_data->cell_values, new_num_lin * sizeof(char**));
 
-  /* Shift rows down to make room for new row */
   for (lin = new_num_lin - 1; lin > pos; lin--)
   {
     mot_data->cell_values[lin] = mot_data->cell_values[lin - 1];
   }
 
-  /* Allocate new row */
   mot_data->cell_values[pos] = (char**)calloc(ih->data->num_col, sizeof(char*));
 
-  /* Update num_lin */
   ih->data->num_lin = new_num_lin;
 
   motTableUpdateScrollbars(ih);
@@ -2008,7 +1837,6 @@ IUP_SDK_API void iupdrvTableDelLin(Ihandle* ih, int pos)
   if (pos < 0 || pos >= ih->data->num_lin)
     return;
 
-  /* Free cell values in the row being deleted */
   for (col = 0; col < ih->data->num_col; col++)
   {
     if (mot_data->cell_values[pos][col])
@@ -2016,14 +1844,12 @@ IUP_SDK_API void iupdrvTableDelLin(Ihandle* ih, int pos)
   }
   free(mot_data->cell_values[pos]);
 
-  /* Shift rows up */
   new_num_lin = ih->data->num_lin - 1;
   for (lin = pos; lin < new_num_lin; lin++)
   {
     mot_data->cell_values[lin] = mot_data->cell_values[lin + 1];
   }
 
-  /* Reallocate to smaller size */
   if (new_num_lin > 0)
     mot_data->cell_values = (char***)realloc(mot_data->cell_values, new_num_lin * sizeof(char**));
   else
@@ -2032,7 +1858,6 @@ IUP_SDK_API void iupdrvTableDelLin(Ihandle* ih, int pos)
     mot_data->cell_values = NULL;
   }
 
-  /* Update num_lin */
   ih->data->num_lin = new_num_lin;
 
   motTableUpdateScrollbars(ih);
@@ -2055,12 +1880,10 @@ IUP_SDK_API void iupdrvTableAddCol(Ihandle* ih, int pos)
 
   new_num_col = ih->data->num_col + 1;
 
-  /* Reallocate column widths */
   mot_data->col_widths = (int*)realloc(mot_data->col_widths, new_num_col * sizeof(int));
   mot_data->col_natural_widths = (int*)realloc(mot_data->col_natural_widths, new_num_col * sizeof(int));
   mot_data->col_width_set = (int*)realloc(mot_data->col_width_set, new_num_col * sizeof(int));
   mot_data->sort_signs = (char*)realloc(mot_data->sort_signs, new_num_col * sizeof(char));
-  /* Shift widths to make room */
   for (col = new_num_col - 1; col > pos; col--)
   {
     mot_data->col_widths[col] = mot_data->col_widths[col - 1];
@@ -2073,20 +1896,16 @@ IUP_SDK_API void iupdrvTableAddCol(Ihandle* ih, int pos)
   mot_data->col_width_set[pos] = 0;
   mot_data->sort_signs[pos] = 0;
 
-  /* Reallocate column titles */
   mot_data->col_titles = (char**)realloc(mot_data->col_titles, new_num_col * sizeof(char*));
-  /* Shift titles to make room */
   for (col = new_num_col - 1; col > pos; col--)
   {
     mot_data->col_titles[col] = mot_data->col_titles[col - 1];
   }
   mot_data->col_titles[pos] = NULL;
 
-  /* Add column to each row */
   for (lin = 0; lin < ih->data->num_lin; lin++)
   {
     mot_data->cell_values[lin] = (char**)realloc(mot_data->cell_values[lin], new_num_col * sizeof(char*));
-    /* Shift cells to make room */
     for (col = new_num_col - 1; col > pos; col--)
     {
       mot_data->cell_values[lin][col] = mot_data->cell_values[lin][col - 1];
@@ -2094,7 +1913,6 @@ IUP_SDK_API void iupdrvTableAddCol(Ihandle* ih, int pos)
     mot_data->cell_values[lin][pos] = NULL;
   }
 
-  /* Update num_col */
   ih->data->num_col = new_num_col;
 
   motTableUpdateScrollbars(ih);
@@ -2120,23 +1938,19 @@ IUP_SDK_API void iupdrvTableDelCol(Ihandle* ih, int pos)
 
   new_num_col = ih->data->num_col - 1;
 
-  /* Free column title */
   if (mot_data->col_titles[pos])
     free(mot_data->col_titles[pos]);
 
-  /* Free cell values in column and shift */
   for (lin = 0; lin < ih->data->num_lin; lin++)
   {
     if (mot_data->cell_values[lin][pos])
       free(mot_data->cell_values[lin][pos]);
 
-    /* Shift cells left */
     for (col = pos; col < new_num_col; col++)
     {
       mot_data->cell_values[lin][col] = mot_data->cell_values[lin][col + 1];
     }
 
-    /* Reallocate row to smaller size */
     if (new_num_col > 0)
       mot_data->cell_values[lin] = (char**)realloc(mot_data->cell_values[lin], new_num_col * sizeof(char*));
     else
@@ -2146,7 +1960,6 @@ IUP_SDK_API void iupdrvTableDelCol(Ihandle* ih, int pos)
     }
   }
 
-  /* Shift column widths left */
   for (col = pos; col < new_num_col; col++)
   {
     mot_data->col_widths[col] = mot_data->col_widths[col + 1];
@@ -2169,7 +1982,6 @@ IUP_SDK_API void iupdrvTableDelCol(Ihandle* ih, int pos)
     mot_data->col_width_set = NULL;
   }
 
-  /* Shift column titles left */
   for (col = pos; col < new_num_col; col++)
   {
     mot_data->col_titles[col] = mot_data->col_titles[col + 1];
@@ -2182,7 +1994,6 @@ IUP_SDK_API void iupdrvTableDelCol(Ihandle* ih, int pos)
     mot_data->col_titles = NULL;
   }
 
-  /* Update num_col */
   ih->data->num_col = new_num_col;
 
   motTableUpdateScrollbars(ih);
@@ -2304,13 +2115,11 @@ IUP_SDK_API void iupdrvTableRedraw(Ihandle* ih)
 
 static int motTableSetSortableAttrib(Ihandle* ih, const char* value)
 {
-  /* Store value in ih->data first */
   if (iupStrBoolean(value))
     ih->data->sortable = 1;
   else
     ih->data->sortable = 0;
 
-  /* Redraw to show/hide sort arrows */
   if (ih->handle)
   {
     motTableRedraw(ih);
@@ -2357,7 +2166,6 @@ IUP_SDK_API int iupdrvTableGetRowHeight(Ihandle* ih)
   if (mot_data && mot_data->row_height > 0)
     return mot_data->row_height;
 
-  /* Fallback before mapping */
   return MOT_TABLE_DEF_ROW_HEIGHT;
 }
 
@@ -2367,7 +2175,6 @@ IUP_SDK_API int iupdrvTableGetHeaderHeight(Ihandle* ih)
   if (mot_data && mot_data->header_height > 0)
     return mot_data->header_height;
 
-  /* Fallback before mapping */
   return MOT_TABLE_HEADER_HEIGHT;
 }
 
@@ -2378,28 +2185,20 @@ IUP_SDK_API void iupdrvTableAddBorders(Ihandle* ih, int* w, int* h)
   int visiblecolumns = iupAttribGetInt(ih, "VISIBLECOLUMNS");
   int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
 
-  /* Motif: add scrollbar width + border */
   *w += sb_size + border;
 
-  /* Vertical border */
   *h += border;
 
-  /* Add horizontal scrollbar height when it will be needed.
-     motTableSetSize always reserves space for horizontal scrollbar,
-     so we must account for it in natural size calculation. */
+  /* motTableSetSize always reserves horizontal scrollbar space */
   if (visiblecolumns > 0 && ih->data->num_col > visiblecolumns)
   {
-    /* VISIBLECOLUMNS will cause horizontal scrollbar */
     *h += sb_size;
   }
   else if (visiblelines == 0)
   {
-    /* No VISIBLELINES constraint - natural size must account for
-       the horizontal scrollbar space that motTableSetSize reserves */
     *h += sb_size;
   }
-  /* When VISIBLELINES is set (without VISIBLECOLUMNS causing scrollbar),
-     target_height in MapMethod already includes sb_size and will clamp the height */
+  /* with VISIBLELINES the target_height from MapMethod already includes sb_size */
 }
 
 /* ========================================================================= */
@@ -2413,17 +2212,14 @@ IUP_SDK_API void iupdrvTableInitClass(Iclass* ic)
   ic->UnMap = motTableUnMapMethod;
   ic->LayoutUpdate = motTableLayoutUpdateMethod;
 
-  /* Register FONT attribute */
   iupClassRegisterAttribute(ic, "FONT", NULL, iupdrvSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NO_SAVE | IUPAF_NOT_MAPPED);
 
-  /* Mark unsupported features */
   iupClassRegisterAttribute(ic, "ALLOWREORDER", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "USERRESIZE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SHOWIMAGE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FITIMAGE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId2(ic, "IMAGE", NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 
-  /* Replace core SET handlers to update native widget */
   iupClassRegisterReplaceAttribFunc(ic, "SORTABLE", NULL, motTableSetSortableAttrib);
   iupClassRegisterReplaceAttribFunc(ic, "ACTIVE", iupBaseGetActiveAttrib, motTableSetActiveAttrib);
 }

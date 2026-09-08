@@ -646,8 +646,6 @@ static HGLOBAL winFileDlgCreatePreviewTemplate(int preview_height)
   WORD* pw;
   int templateSize;
 
-  /* Calculate size: DLGTEMPLATE + menu(2) + class(2) + title(2) + font size(2) + font name */
-  /* Plus DLGITEMTEMPLATE + extra data for the static control */
   templateSize = sizeof(DLGTEMPLATE) + 2 + 2 + 2 + 2 + 24 +  /* dialog header + "MS Shell Dlg" */
                  sizeof(DLGITEMTEMPLATE) + 2 + 14 + 2 + 2;    /* item + "STATIC" class + creation data */
   templateSize = (templateSize + 3) & ~3;  /* DWORD align */
@@ -663,7 +661,6 @@ static HGLOBAL winFileDlgCreatePreviewTemplate(int preview_height)
     return NULL;
   }
 
-  /* DLGTEMPLATE structure */
   {
     DLGTEMPLATE* pDlg = (DLGTEMPLATE*)p;
     pDlg->style = WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | DS_3DLOOK | DS_CONTROL | DS_SETFONT;
@@ -700,7 +697,6 @@ static HGLOBAL winFileDlgCreatePreviewTemplate(int preview_height)
   p = (BYTE*)pw;
   p = (BYTE*)(((ULONG_PTR)p + 3) & ~3);
 
-  /* DLGITEMTEMPLATE for the static control */
   {
     DLGITEMTEMPLATE* pItem = (DLGITEMTEMPLATE*)p;
     pItem->style = WS_CHILD | WS_VISIBLE | SS_OWNERDRAW;

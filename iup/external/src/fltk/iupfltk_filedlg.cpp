@@ -73,10 +73,7 @@ static char* fltkFileCheckExt(Ihandle* ih, const char* filename)
   return (char*)filename;
 }
 
-/* Convert a semicolon-separated pattern to fl_filename_match format.
-   "*.png;*.jpg" -> "{*.png,*.jpg}"
-   "*.*" -> "*"
-   Single pattern stays as-is. */
+/* "*.png;*.jpg" -> "{*.png,*.jpg}", "*.*" -> "*", a single pattern stays as-is */
 static void fltkConvertPattern(const char* pattern, char* out, int out_size)
 {
   if (strcmp(pattern, "*.*") == 0 || strcmp(pattern, "*") == 0)
@@ -87,12 +84,10 @@ static void fltkConvertPattern(const char* pattern, char* out, int out_size)
 
   if (!strchr(pattern, ';'))
   {
-    /* Single pattern, check for *.* */
     iupStrCopyN(out, out_size, pattern);
     return;
   }
 
-  /* Multiple patterns: wrap in {} and replace ; with , */
   int oi = 0;
   out[oi++] = '{';
   for (int i = 0; pattern[i] && oi < out_size - 2; i++)
@@ -106,9 +101,7 @@ static void fltkConvertPattern(const char* pattern, char* out, int out_size)
   out[oi] = '\0';
 }
 
-/* Convert IUP EXTFILTER format to Fl_File_Chooser filter format.
-   IUP:  "Label|*.png;*.jpg|Label2|*.*"
-   FLTK: "Label ({*.png,*.jpg})\tLabel2 (*)" tab-separated */
+/* "Label|*.png;*.jpg|Label2|*.*" -> "Label ({*.png,*.jpg})\tLabel2 (*)" */
 static char* fltkConvertExtFilter(const char* extfilter)
 {
   if (!extfilter || !extfilter[0])
@@ -162,9 +155,7 @@ static char* fltkConvertExtFilter(const char* extfilter)
   return out;
 }
 
-/* Convert IUP FILTER format to Fl_File_Chooser format.
-   IUP:  "*.png;*.jpg" or "*.*"
-   FLTK: "{*.png,*.jpg}" or "*" */
+/* "*.png;*.jpg" -> "{*.png,*.jpg}", "*.*" -> "*" */
 static char* fltkConvertFilter(const char* filter)
 {
   if (!filter || !filter[0])

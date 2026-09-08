@@ -32,7 +32,6 @@ IUP_DRV_API void iuphaikuSetCanFocus(BView* widget, int can)
   widget->SetFlags(flags);
 }
 
-/* Fired from widget MakeFocus overrides (Canvas, Toggle, ...). */
 IUP_DRV_API void iuphaikuFocusInOutEvent(Ihandle* ih, int focus_in)
 {
   if (!ih) return;
@@ -47,8 +46,7 @@ extern "C" IUP_SDK_API void iupdrvSetFocus(Ihandle* ih)
   if (!ih || !ih->handle) return;
   if (!ih->iclass) return;
 
-  /* TYPEVOID children (Vbox/Hbox/Fill/Space) have ih->handle = (void*)-1;
-   * TYPEMENU items have no focusable native handle. */
+  /* TYPEVOID handle is (void*)-1; TYPEMENU items have no focusable native handle. */
   if (ih->iclass->nativetype == IUP_TYPEVOID ||
       ih->iclass->nativetype == IUP_TYPEMENU)
     return;
@@ -63,14 +61,12 @@ extern "C" IUP_SDK_API void iupdrvSetFocus(Ihandle* ih)
 
   BView* view = (BView*)ih->handle;
 
-  /* Ensure the owning window is active before grabbing focus, otherwise the
-   * MakeFocus call gets queued until activation - matches GTK's pattern. */
+  /* MakeFocus stays queued until the owning window is active. */
   BWindow* win = view->Window();
   if (win)
   {
     LooperLockGuard guard(win);
     if (!win->IsActive()) win->Activate(true);
-    /* find the inner focusable view inside wrap containers */
     BTextControl* tc = dynamic_cast<BTextControl*>(view);
     BView* inner = NULL;
     if (tc) inner = tc->TextView();

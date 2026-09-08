@@ -49,7 +49,6 @@ static void gtk4TextMeasureEntryBorders(void)
     gtk_editable_set_max_width_chars(GTK_EDITABLE(temp_entry), 1);
     g_object_ref_sink(temp_entry);
 
-    /* Create separate entry without frame */
     temp_entry_noframe = gtk_entry_new();
     gtk_entry_set_has_frame(GTK_ENTRY(temp_entry_noframe), FALSE);
     g_object_ref_sink(temp_entry_noframe);
@@ -63,7 +62,6 @@ static void gtk4TextMeasureEntryBorders(void)
     gtk_widget_measure(temp_entry, GTK_ORIENTATION_HORIZONTAL, -1, &entry_w, NULL, NULL, NULL);
     gtk_widget_measure(temp_entry, GTK_ORIENTATION_VERTICAL, -1, NULL, &entry_h, NULL, NULL);
 
-    /* Measure without frame, get minimum size */
     gtk_widget_measure(temp_entry_noframe, GTK_ORIENTATION_VERTICAL, -1, &entry_noframe_h, NULL, NULL, NULL);
 
     gtk4_entry_border_x = entry_w - char_width;
@@ -1808,7 +1806,6 @@ static int gtk4TextMapMethod(Ihandle* ih)
 
     ih->data->has_formatting = 0;
 
-    /* Set natural alignment, prevent entry from expanding vertically beyond its natural height */
     gtk_widget_set_vexpand(ih->handle, FALSE);
     gtk_widget_set_valign(ih->handle, GTK_ALIGN_CENTER);
 
@@ -1881,7 +1878,7 @@ static int gtk4TextMapMethod(Ihandle* ih)
   }
   else
   {
-    /* GtkEntry uses a delegate for text editing. We need to connect signals to the delegate, not the entry itself */
+    /* GtkEntry edits through a delegate, so the signals must be connected there */
     GtkEditable *editable_delegate = gtk_editable_get_delegate(GTK_EDITABLE(ih->handle));
     g_signal_connect(G_OBJECT(editable_delegate), "delete-text", G_CALLBACK(gtk4TextEntryDeleteText), ih);
     g_signal_connect(G_OBJECT(editable_delegate), "insert-text", G_CALLBACK(gtk4TextFilterInsertEntry), ih);

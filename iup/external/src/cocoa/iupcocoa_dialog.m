@@ -92,7 +92,7 @@ static BOOL cocoaDialogIsMaximized(NSWindow* the_window)
 {
   if ([event type] == NSEventTypeKeyDown)
   {
-    Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY); /* this is the dialog handle */
+    Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
     if (iupObjectCheck(ih))
     {
       NSResponder* first_responder = [self firstResponder];
@@ -787,19 +787,13 @@ IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int *border, int *captio
     style_mask = NSWindowStyleMaskBorderless;
   }
 
-  /* Using a sample content rectangle, we ask Cocoa for the corresponding frame rectangle. */
-  /* The difference between them gives us the total size of the decorations. */
   NSRect sample_content_rect = NSMakeRect(0, 0, 100, 100);
   NSRect sample_frame_rect = [NSWindow frameRectForContentRect:sample_content_rect styleMask:style_mask];
 
   int total_decor_width = (int)round(sample_frame_rect.size.width - sample_content_rect.size.width);
   int total_decor_height = (int)round(sample_frame_rect.size.height - sample_content_rect.size.height);
 
-  /* Translate these total decoration sizes into IUP's `border` and `caption` model. */
-  /* The IUP layout engine formulas assume: */
-  /* total_decor_width = 2 * border */
-  /* total_decor_height = caption + 2 * border */
-  /* We derive our values to satisfy these formulas. */
+  /* the layout engine assumes total_decor_width = 2 * border and total_decor_height = caption + 2 * border */
 
   *border = total_decor_width / 2;
   *caption = total_decor_height - (2 * (*border));
@@ -1576,7 +1570,6 @@ static void cocoaDialogUnMapMethod(Ihandle* ih)
   }
   @catch (NSException *exception)
   {
-    /* Observer might not have been added, ignore */
   }
 
   [[NSNotificationCenter defaultCenter] removeObserver:[the_window delegate] name:nil object:the_window];
@@ -1626,22 +1619,16 @@ static void cocoaDialogLayoutUpdateMethod(Ihandle *ih)
   {
     NSRect zoomed_frame = [the_window frame];
 
-    /* Compare the desired total size from IUP with the current zoomed frame size. */
-    /* If they differ significantly, we should unzoom before applying the new size. */
     if (abs(ih->currentwidth - (int)zoomed_frame.size.width) > 10 ||
         abs(ih->currentheight - (int)zoomed_frame.size.height) > 10)
     {
-      /* Unzoom before resizing */
       [the_window setStyleMask:[the_window styleMask] & ~NSWindowStyleMaskFullScreen];
       [the_window zoom:nil];
-      /* Clear the zoom restore frame */
       objc_setAssociatedObject(the_window, &IUPCocoaZoomRestoreFrameKey, nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-      /* Update show state */
       ih->data->show_state = IUP_RESTORE;
     }
     else
     {
-      /* Size is similar to zoomed size, don't unzoom */
       ih->data->ignore_resize = 0;
       return;
     }
@@ -1649,9 +1636,7 @@ static void cocoaDialogLayoutUpdateMethod(Ihandle *ih)
 
   if (iupAttribGetBoolean(ih, "CUSTOMFRAME"))
   {
-    /* With CUSTOMFRAME + FullSizeContentView, the content view fills the entire
-       window frame. Set the frame directly so the window size matches exactly
-       what IUP calculated (which has no decoration space). */
+    /* with CUSTOMFRAME the content view fills the whole window frame, so IUP's size carries no decoration */
     [the_window setContentMinSize:NSMakeSize(1, 1)];
     [the_window setContentMaxSize:NSMakeSize(65535, 65535)];
 
@@ -1674,7 +1659,6 @@ static void cocoaDialogLayoutUpdateMethod(Ihandle *ih)
 
     NSSize content_size = NSMakeSize(width, height);
 
-    /* Clear any existing size constraints before resizing */
     [the_window setContentMinSize:NSMakeSize(1, 1)];
     [the_window setContentMaxSize:NSMakeSize(65535, 65535)];
 

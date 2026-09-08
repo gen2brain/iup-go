@@ -1,9 +1,8 @@
 /** \file
  * \brief Clipboard for the FLTK Driver
  *
- * FLTK clipboard is async (paste triggers FL_PASTE event on a widget).
- * We use a hidden helper widget to receive paste events synchronously
- * by calling Fl::paste() then pumping events until FL_PASTE arrives.
+ * FLTK paste is async, so a hidden helper widget calls Fl::paste() and pumps
+ * events until its FL_PASTE arrives.
  *
  * See Copyright Notice in "iup.h"
  */

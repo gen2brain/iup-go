@@ -21,9 +21,6 @@
 #include "iupgtk4_drv.h"
 
 
-/* Note: GTK4 uses event controllers (GtkDragSource/GtkDropTarget) which work better than GTK3's signal-based approach.
-   Each widget can have multiple controllers for different drag-drop scenarios. */
-
 static int gtk4SetDragSourceAttrib(Ihandle* ih, const char* value);
 static int gtk4SetDropTargetAttrib(Ihandle* ih, const char* value);
 
@@ -51,7 +48,6 @@ static gboolean gtk4DropTargetDrop(GtkDropTarget *target, const GValue *value, d
   if (!cbDropData)
     return FALSE;
 
-  /* Get bytes directly from GValue - no stream reading! */
   if (!G_VALUE_HOLDS(value, G_TYPE_BYTES))
     return FALSE;
 
@@ -63,7 +59,6 @@ static gboolean gtk4DropTargetDrop(GtkDropTarget *target, const GValue *value, d
   if (!data || size == 0)
     return FALSE;
 
-  /* Get the drop type from stored attribute */
   type = iupAttribGet(ih, "_IUPGTK4_DROP_TYPE");
   if (!type)
     return FALSE;
@@ -71,7 +66,6 @@ static gboolean gtk4DropTargetDrop(GtkDropTarget *target, const GValue *value, d
   if (size > (gsize)INT_MAX)
     return FALSE;
 
-  /* Call the drop data callback with the data */
   cbDropData(ih, type, (void*)data, (int)size, (int)x, (int)y);
 
   return TRUE;
@@ -86,7 +80,6 @@ static GdkDragAction gtk4DropTargetMotion(GtkDropTarget *target, double x, doubl
     char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
     GdkModifierType mask;
 
-    /* Get modifier state from the event controller */
     mask = gtk_event_controller_get_current_event_state(GTK_EVENT_CONTROLLER(target));
 
     iupgtk4ButtonKeySetStatus(mask, 0, status, 0);
@@ -188,7 +181,6 @@ static GdkContentProvider* gtk4DragSourcePrepare(GtkDragSource *source, double x
   if (!cbDragData || !cbDragDataSize)
     return NULL;
 
-  /* Get the first drag type */
   type = iupAttribGet(ih, "_IUPGTK4_DRAG_TYPE");
   if (!type)
     return NULL;
@@ -205,7 +197,6 @@ static GdkContentProvider* gtk4DragSourcePrepare(GtkDragSource *source, double x
 
   bytes = g_bytes_new_take(sourceData, size);
 
-  /* Create content provider for custom type */
   provider = gdk_content_provider_new_for_bytes(type, bytes);
   g_bytes_unref(bytes);
 
@@ -266,7 +257,6 @@ static int gtk4SetDropTypesAttrib(Ihandle* ih, const char* value)
   formats = gtk4CreateContentFormats(value);
   iupAttribSet(ih, "_IUPGTK4_DROP_FORMATS", (char*)formats);
 
-  /* Store first type for later use */
   char valueTemp1[256], valueTemp2[256];
   char valueCopy[256];
   iupStrCopyN(valueCopy, sizeof(valueCopy), value);
@@ -279,7 +269,6 @@ static int gtk4SetDropTypesAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-/* Helper to read stream chunk asynchronously */
 typedef struct {
   GdkContentDeserializer *deserializer;
   GByteArray *array;
@@ -295,18 +284,14 @@ static void gtk4BytesDeserializerReadCallback(GObject *source, GAsyncResult *res
   GBytes *bytes;
   gssize read_bytes;
 
-  /* This is actually synchronous in callback context but won't block main loop */
   read_bytes = g_input_stream_read_finish(stream, result, &error);
 
   if (read_bytes > 0)
   {
     g_byte_array_append(data->array, data->buffer, read_bytes);
-    /* Continue reading next chunk */
     g_input_stream_read_async(stream, data->buffer, 8192, G_PRIORITY_DEFAULT, NULL, gtk4BytesDeserializerReadCallback, data);
     return;
   }
-
-  /* EOF or error - finish deserialization */
 
   if (error)
   {
@@ -317,12 +302,9 @@ static void gtk4BytesDeserializerReadCallback(GObject *source, GAsyncResult *res
     return;
   }
 
-  /* Convert byte array to GBytes */
   bytes = g_byte_array_free_to_bytes(data->array);
 
-  /* Get the value to populate from the deserializer */
   value = gdk_content_deserializer_get_value(data->deserializer);
-  /* Value is already initialized by GTK4 - just set it */
   g_value_set_boxed(value, bytes);
   g_bytes_unref(bytes);  /* Unref since g_value_set_boxed copies */
 
@@ -340,7 +322,6 @@ static void gtk4BytesDeserializer(GdkContentDeserializer *deserializer)
   data->array = g_byte_array_new();
   data->buffer = g_malloc(8192);
 
-  /* Start async read - this won't block the main loop */
   g_input_stream_read_async(stream, data->buffer, 8192, G_PRIORITY_DEFAULT, NULL, gtk4BytesDeserializerReadCallback, data);
 }
 
@@ -363,14 +344,10 @@ static int gtk4SetDropTargetAttrib(Ihandle* ih, const char* value)
     if (!formats || !ih->handle)
       return 0;
 
-    /* Register custom deserializer for our MIME type to G_TYPE_BYTES */
     type = iupAttribGet(ih, "_IUPGTK4_DROP_TYPE");
     if (type)
       gdk_content_register_deserializer(type, G_TYPE_BYTES, gtk4BytesDeserializer, NULL, NULL);
 
-    /* Create GtkDropTarget with G_TYPE_BYTES
-       This works for custom binary data without needing stream reading!
-       The bytes are delivered directly via GValue in the drop callback. */
     drop_target = gtk_drop_target_new(G_TYPE_BYTES, GDK_ACTION_MOVE | GDK_ACTION_COPY);
 
     g_signal_connect(drop_target, "drop", G_CALLBACK(gtk4DropTargetDrop), ih);
@@ -398,7 +375,6 @@ static int gtk4SetDragTypesAttrib(Ihandle* ih, const char* value)
   formats = gtk4CreateContentFormats(value);
   iupAttribSet(ih, "_IUPGTK4_DRAG_FORMATS", (char*)formats);
 
-  /* Store first type for later use */
   char valueTemp1[256], valueTemp2[256];
   char valueCopy[256];
   iupStrCopyN(valueCopy, sizeof(valueCopy), value);

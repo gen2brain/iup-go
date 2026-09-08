@@ -43,8 +43,6 @@ typedef struct _IhaikuFont {
 
 static Iarray* haiku_fonts = NULL;
 
-/* Font Resolution */
-
 static bool haikuFamilyContains(const char* haystack, const char* needle)
 {
   size_t hlen = strlen(haystack), nlen = strlen(needle);
@@ -54,8 +52,7 @@ static bool haikuFamilyContains(const char* haystack, const char* needle)
   return false;
 }
 
-/* Match Pango-style family aliases against Haiku's actual families. Standard
- * names normalize via iupFontGetPangoName before reaching here. */
+/* Standard names normalize via iupFontGetPangoName before reaching here. */
 static const char* haikuResolveAlias(const char* typeface)
 {
   if (strcasecmp(typeface, "sans") == 0 ||
@@ -107,7 +104,6 @@ IUP_DRV_API bool iuphaikuFindFontFamily(const char* typeface, font_family out_fa
   if (alias && haikuFindFamilyExact(alias, out_family))
     return true;
 
-  /* Substring fallback for unknown typefaces (covers "Noto Sans Display" given "Display" etc.). */
   int32 family_count = count_font_families();
   for (int32 i = 0; i < family_count; ++i)
   {
@@ -119,7 +115,6 @@ IUP_DRV_API bool iuphaikuFindFontFamily(const char* typeface, font_family out_fa
     }
   }
 
-  /* Last resort: use the system plain/fixed family for sans/mono families that the alias map didn't catch. */
   font_family sysfam;
   font_style sysst;
   if (haikuFamilyContains(typeface, "mono") || haikuFamilyContains(typeface, "fixed") ||
@@ -143,7 +138,6 @@ static void haikuFindStyle(const font_family family, uint16 want_face, font_styl
 
   int32 style_count = count_font_styles((char*)family);
 
-  /* exact face match */
   for (int32 j = 0; j < style_count; ++j)
   {
     font_style st;
@@ -158,7 +152,6 @@ static void haikuFindStyle(const font_family family, uint16 want_face, font_styl
     }
   }
 
-  /* face bits subset match */
   for (int32 j = 0; j < style_count; ++j)
   {
     font_style st;
@@ -173,7 +166,6 @@ static void haikuFindStyle(const font_family family, uint16 want_face, font_styl
     }
   }
 
-  /* fallback: first style */
   if (style_count > 0)
   {
     font_style st;
@@ -233,8 +225,6 @@ static void haikuComputeMetrics(IhaikuFont* hf)
   if (hf->max_width  < 1) hf->max_width  = hf->charwidth;
 }
 
-/* Cache Lookup */
-
 static IhaikuFont* haikuFindFont(const char* font)
 {
   if (!haiku_fonts || !font || !*font)
@@ -248,7 +238,6 @@ static IhaikuFont* haikuFindFont(const char* font)
       return &fonts[i];
   }
 
-  /* not cached - parse and add */
   char typeface[1024] = {0};
   int size = 0;
   int is_bold = 0, is_italic = 0, is_underline = 0, is_strikeout = 0;
@@ -284,8 +273,6 @@ static IhaikuFont* haikuFontGet(Ihandle* ih)
   return hf;
 }
 
-/* Driver Hooks - lifecycle */
-
 extern "C" IUP_SDK_API void iupdrvFontInit(void)
 {
   haiku_fonts = iupArrayCreate(8, sizeof(IhaikuFont));
@@ -307,8 +294,6 @@ extern "C" IUP_SDK_API void iupdrvFontFinish(void)
   haiku_fonts = NULL;
 }
 
-/* System default font */
-
 extern "C" IUP_SDK_API char* iupdrvGetSystemFont(void)
 {
   static char def[128];
@@ -320,8 +305,6 @@ extern "C" IUP_SDK_API char* iupdrvGetSystemFont(void)
   snprintf(def, sizeof(def), "%s, %s %d", family, style, size);
   return def;
 }
-
-/* Per-widget FONT setter */
 
 extern "C" IUP_SDK_API int iupdrvSetFontAttrib(Ihandle* ih, const char* value)
 {
@@ -339,8 +322,6 @@ extern "C" IUP_SDK_API int iupdrvSetFontAttrib(Ihandle* ih, const char* value)
   iuphaikuUpdateWidgetFont(ih, (BView*)ih->handle);
   return 1;
 }
-
-/* Helpers exposed via drv.h */
 
 IUP_DRV_API BFont* iuphaikuGetBFont(const char* value)
 {
@@ -381,13 +362,10 @@ IUP_DRV_API void iuphaikuUpdateWidgetFont(Ihandle* ih, BView* widget)
   LooperLockGuard guard(widget->Looper());
   widget->SetFont(hf->bfont);
 
-  /* BTextView/BTextControl don't re-style rendered text from BView::SetFont;
-     push the font through SetFontAndColor over the existing range. */
+  /* BTextView/BTextControl don't re-style rendered text from BView::SetFont. */
   if (BTextView* tv = (BTextView*)iupAttribGet(ih, "_IUPHAIKU_TEXT_INNER"))
     tv->SetFontAndColor(0, INT32_MAX, hf->bfont, B_FONT_FAMILY_AND_STYLE | B_FONT_SIZE | B_FONT_FACE, NULL);
 }
-
-/* Measurement */
 
 extern "C" IUP_SDK_API void iupdrvFontGetCharSize(Ihandle* ih, int* charwidth, int* charheight)
 {
@@ -408,7 +386,6 @@ extern "C" IUP_SDK_API int iupdrvFontGetStringWidth(Ihandle* ih, const char* str
   IhaikuFont* hf = haikuFontGet(ih);
   if (!hf) return 0;
 
-  /* first line only */
   const char* nl = strchr(str, '\n');
   int len = nl ? (int)(nl - str) : (int)strlen(str);
   if (len <= 0) return 0;
@@ -499,8 +476,6 @@ extern "C" IUP_SDK_API void iupdrvFontGetFontDim(const char* font, int* max_widt
   if (ascent)      *ascent = hf->ascent;
   if (descent)     *descent = hf->descent;
 }
-
-/* Family enumeration */
 
 static int haikuFamilyCompare(const void* a, const void* b)
 {

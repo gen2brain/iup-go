@@ -54,7 +54,6 @@ static void qtIdleFunc(void)
   }
   else
   {
-    /* No callback, stop the timer */
     if (qt_idle_timer)
       qt_idle_timer->stop();
   }
@@ -79,10 +78,9 @@ extern "C" IUP_SDK_API void iupdrvSetIdleFunction(Icallback f)
   if (qt_idle_cb)
   {
     qt_idle_timer = new QTimer();
-    qt_idle_timer->setInterval(0);  /* Fire as soon as event loop is idle */
-    qt_idle_timer->setSingleShot(false);  /* Repeat until stopped */
+    qt_idle_timer->setInterval(0);
+    qt_idle_timer->setSingleShot(false);
 
-    /* Use lambda to avoid MOC - lambda captures are supported in Qt 5+ */
     QObject::connect(qt_idle_timer, &QTimer::timeout, qtIdleFunc);
 
     qt_idle_timer->start();
@@ -93,7 +91,6 @@ extern "C" IUP_SDK_API void iupdrvSetIdleFunction(Icallback f)
  * Main Loop Management
  ****************************************************************************/
 
-/* Track main loop nesting level and exit flags */
 static int qt_main_loop_level = 0;
 static bool qt_loop_exit_flag[10] = {false}; /* Support up to 10 nested levels */
 
@@ -102,10 +99,8 @@ extern "C" IUP_API void IupExitLoop(void)
 {
   char* exit_loop = IupGetGlobal("EXITLOOP");
 
-  /* Exit if nested or EXITLOOP is not explicitly disabled */
   if (qt_main_loop_level > 1 || !exit_loop || iupStrBoolean(exit_loop))
   {
-    /* Set exit flag for current loop level */
     if (qt_main_loop_level > 0 && qt_main_loop_level <= 10)
       qt_loop_exit_flag[qt_main_loop_level - 1] = true;
   }
@@ -120,7 +115,6 @@ extern "C" IUP_API int IupMainLoop(void)
 {
   static int has_done_entry = 0;
 
-  /* Call entry callbacks once */
   if (has_done_entry == 0)
   {
     has_done_entry = 1;
@@ -138,17 +132,13 @@ extern "C" IUP_API int IupMainLoop(void)
 
   qt_loop_exit_flag[current_level] = false;
 
-  /* Manually pump events */
   QApplication* app = iupqtGetApplication();
   if (app)
   {
-    /* Process events in a loop until exit flag is set */
     while (!qt_loop_exit_flag[current_level] && !app->closingDown())
     {
-      /* Wait for and process events */
       QCoreApplication::processEvents(QEventLoop::WaitForMoreEvents | QEventLoop::AllEvents);
 
-      /* Also call idle callback if set */
       if (qt_idle_cb)
       {
         int ret = qt_idle_cb();
@@ -167,7 +157,6 @@ extern "C" IUP_API int IupMainLoop(void)
   qt_loop_exit_flag[current_level] = false;
   qt_main_loop_level--;
 
-  /* Call exit callbacks when returning from top-level loop */
   if (qt_main_loop_level == 0)
     iupLoopCallExitCb();
 
@@ -196,7 +185,6 @@ extern "C" IUP_API int IupLoopStep(void)
 
   QCoreApplication::processEvents(QEventLoop::AllEvents);
 
-  /* Also call idle callback if looping manually */
   if (qt_idle_cb)
   {
     int ret = qt_idle_cb();
@@ -219,7 +207,6 @@ extern "C" IUP_API void IupFlush(void)
 {
   int count = 0;
 
-  /* Temporarily disable idle callback to avoid interference */
   IFidle old_qt_idle_cb = NULL;
   if (qt_idle_cb)
   {
@@ -227,7 +214,6 @@ extern "C" IUP_API void IupFlush(void)
     iupdrvSetIdleFunction(NULL);
   }
 
-  /* Process pending events (process several rounds to ensure all queued events are handled) */
   for (int i = 0; i < 10 && count < 100; i++, count++)
   {
     QCoreApplication::processEvents(QEventLoop::AllEvents);
@@ -241,7 +227,6 @@ extern "C" IUP_API void IupFlush(void)
  * PostMessage Support
  ****************************************************************************/
 
-/* User data structure for PostMessage */
 typedef struct {
   Ihandle* ih;
   char* s;
@@ -282,8 +267,7 @@ extern "C" IUP_API void IupPostMessage(Ihandle* ih, const char* s, int i, double
   user_data->d = d;
   user_data->p = p;
 
-  /* Use QTimer::singleShot with QApplication context to ensure cross-thread safety
-   * QTimer::singleShot(0, ...) queues the lambda to run in the next event loop iteration */
+  /* the QApplication context makes the post safe from another thread */
   QTimer::singleShot(0, QApplication::instance(), [user_data]() {
     qtPostMessageExecute(user_data);
   });

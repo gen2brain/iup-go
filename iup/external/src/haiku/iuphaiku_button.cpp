@@ -359,7 +359,6 @@ static int haikuButtonSetActiveAttrib(Ihandle* ih, const char* value)
     else if (IupHaikuImageButton* ib = dynamic_cast<IupHaikuImageButton*>(view)) ib->SetEnabled(enable);
   }
 
-  /* swap to IMINACTIVE / auto-greyed IMAGE when going inactive */
   if (ih->data->type & IUP_BUTTON_IMAGE)
   {
     char* image = iupAttribGet(ih, "IMAGE");

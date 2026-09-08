@@ -1,11 +1,7 @@
 /** \file
  * \brief FLTK Driver - Common Function Declarations
  *
- * This header provides the interface for the FLTK-based IUP driver.
- *
- * Minimum Requirements:
- * - FLTK 1.4.x
- * - C++17 compiler
+ * Requires FLTK 1.4.
  *
  * See Copyright Notice in "iup.h"
  */

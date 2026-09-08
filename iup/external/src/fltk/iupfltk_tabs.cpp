@@ -99,14 +99,12 @@ protected:
 
     if (is_dragging && drag_source >= 0 && drag_target >= 0 && drag_source != drag_target)
     {
-      /* Draw insertion indicator */
       int th = tab_height();
       int ind_y, ind_h;
 
       if (th > 0) { ind_y = y(); ind_h = th; }
       else { ind_y = y() + h() + th; ind_h = -th; }
 
-      /* Find x position of target tab by querying tab_positions */
       tab_positions();
 
       int ind_x = x();
@@ -183,7 +181,6 @@ public:
 
       if (is_dragging)
       {
-        /* Find target using tab_positions */
         tab_positions();
 
         int mx = Fl::event_x() - x();
@@ -223,8 +220,7 @@ public:
 
       if (was_dragging && src >= 0 && tgt >= 0)
       {
-        /* tgt is the insertion point index (where the line was drawn)
-           Skip if dropping at the same position or right after source */
+        /* tgt is the insertion point index, not a tab index */
         int dst = tgt > src ? tgt - 1 : tgt;
 
         if (dst != src)
@@ -265,7 +261,6 @@ public:
 
       redraw();
       redraw_tabs();
-      /* Don't pass FL_RELEASE to Fl_Tabs if we were dragging */
       if (was_dragging)
         return 1;
     }

@@ -57,7 +57,6 @@ extern "C" {
 
 static void haikuListReorder(Ihandle* ih, int src, int drop, int is_ctrl);
 
-/* BMenuItem with optional icon (DROPDOWN list). */
 class IupHaikuDropdownItem : public BMenuItem
 {
 public:
@@ -137,7 +136,7 @@ public:
 
   void DrawItem(BView* owner, BRect frame, bool complete) override
   {
-    /* Virtual mode: refetch text + icon on every draw. IUP positions are 1-based. */
+    /* IUP positions are 1-based. */
     if (fIhandle && iupListIsVirtual(fIhandle))
     {
       const char* virt_text = iupListGetItemValueCb(fIhandle, fPos + 1);
@@ -220,8 +219,7 @@ private:
 
 class IupHaikuListView;
 
-/* AUTOHIDE-aware BListView + BScrollBar container (BScrollView reserves
- * scrollbar width even when hidden, so we manage the layout ourselves). */
+/* BScrollView reserves scrollbar width even when hidden. */
 class IupHaikuListWrap : public BView
 {
 public:
@@ -667,7 +665,7 @@ public:
     BTextControl::MessageReceived(msg);
   }
 
-  /* the inner BTextView holds the focus and invalidates us on focus change */
+  /* the inner BTextView holds the focus and invalidates on focus change */
   void Draw(BRect updateRect) override
   {
     BTextControl::Draw(updateRect);
@@ -718,7 +716,6 @@ public:
 
     if (fDropdown)
     {
-      /* DROPDOWN+EDITBOX layout. */
       const float btn_w = 22.0f;
       if (fEdit)
         fEdit->MoveTo(0, 0), fEdit->ResizeTo(b.Width() - btn_w - 1, edit_h);
@@ -727,7 +724,6 @@ public:
     }
     else
     {
-      /* LIST+EDITBOX layout. */
       if (fEdit)
         fEdit->MoveTo(0, 0), fEdit->ResizeTo(b.Width(), edit_h);
       if (fScroll)
@@ -800,7 +796,6 @@ static IupHaikuListDropHandler* haikuListGetDropHandler(Ihandle* ih)
   return (IupHaikuListDropHandler*)iupAttribGet(ih, "_IUPHAIKU_LIST_DROPHANDLER");
 }
 
-/* SORT: ascending insert position. */
 static int haikuListMenuSortPos(BMenu* m, const char* value)
 {
   int n = m->CountItems();
@@ -827,7 +822,7 @@ static int haikuListViewSortPos(BListView* lv, const char* value)
 
 extern "C" IUP_SDK_API void iupdrvListAppendItem(Ihandle* ih, const char* value)
 {
-  if (iupAttribGetBoolean(ih, "SORT"))  /* delegate so the insert/renumber path is reused */
+  if (iupAttribGetBoolean(ih, "SORT"))
   {
     iupdrvListInsertItem(ih, 0, value);
     return;
@@ -873,7 +868,6 @@ extern "C" IUP_SDK_API void iupdrvListInsertItem(Ihandle* ih, int pos, const cha
 
     LooperLockGuard guard(((BView*)ih->handle)->Looper());
     m->AddItem(item, pos);
-    /* Renumber items after pos. */
     for (int32 i = pos + 1; i < m->CountItems(); ++i)
     {
       BMessage* mm = m->ItemAt(i)->Message();
@@ -1030,7 +1024,6 @@ static int haikuListSetImageAttribId(Ihandle* ih, int id, const char* value)
 
 extern "C" IUP_SDK_API void iupdrvListSetItemCount(Ihandle* ih, int count)
 {
-  /* Placeholder items; DrawItem refetches via VALUE_CB/IMAGE_CB. */
   IupHaikuListView* lv = haikuListGetListView(ih);
   if (!lv) return;
   LooperLockGuard guard(lv->Looper());
@@ -1095,7 +1088,7 @@ extern "C" IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int *w, int *h)
 
 extern "C" IUP_SDK_API void iupdrvListAddItemSpace(Ihandle* ih, int *h)
 {
-  /* ceil per font-component + 4 px so natural height matches the row height BListView actually uses when it lays items in. */
+  /* ceil per font-component + 4 px matches the row height BListView uses. */
   if (!h) return;
   BFont* bf = ih ? iuphaikuGetBFont(iupGetFontValue(ih)) : NULL;
   if (!bf) { *h += 4; return; }
@@ -1109,7 +1102,6 @@ extern "C" IUP_SDK_API void iupdrvListAddItemSpace(Ihandle* ih, int *h)
 
 static int haikuListSetValueAttrib(Ihandle* ih, const char* value)
 {
-  /* DROPDOWN: VALUE = 1-based item index */
   if (ih->data->is_dropdown && !ih->data->has_editbox)
   {
     BMenu* m = haikuListGetMenu(ih);
@@ -1122,7 +1114,6 @@ static int haikuListSetValueAttrib(Ihandle* ih, const char* value)
     return 0;
   }
 
-  /* DROPDOWN+EDITBOX: VALUE is the text */
   if (ih->data->is_dropdown && ih->data->has_editbox)
   {
     IupHaikuListEditCtrl* e = haikuListGetEdit(ih);
@@ -1132,7 +1123,6 @@ static int haikuListSetValueAttrib(Ihandle* ih, const char* value)
     return 0;
   }
 
-  /* LIST+EDITBOX: VALUE is the text */
   if (!ih->data->is_dropdown && ih->data->has_editbox)
   {
     IupHaikuListEditCtrl* e = haikuListGetEdit(ih);
@@ -1142,7 +1132,6 @@ static int haikuListSetValueAttrib(Ihandle* ih, const char* value)
     return 0;
   }
 
-  /* Plain LIST */
   IupHaikuListView* lv = haikuListGetListView(ih);
   if (!lv) return 0;
   LooperLockGuard guard(lv->Looper());
@@ -1304,7 +1293,7 @@ static void haikuListReorder(Ihandle* ih, int src, int drop, int is_ctrl)
 
   int count = lv->CountItems();
   int insert_at = drop;
-  if (drop < 0 || drop >= count) insert_at = count; /* append at end */
+  if (drop < 0 || drop >= count) insert_at = count;
 
   iupdrvListInsertItem(ih, insert_at, text_copy);
   if (img) iupdrvListSetImageHandle(ih, insert_at, img);
@@ -1317,7 +1306,6 @@ static void haikuListReorder(Ihandle* ih, int src, int drop, int is_ctrl)
     if (adj_src < insert_at) new_pos = insert_at - 1;
   }
 
-  /* Suppress the post-reorder VALUECHANGED_CB. */
   iupAttribSetInt(ih, "_IUPLIST_OLDVALUE", new_pos + 1);
   IupSetInt(ih, "VALUE", new_pos + 1);
   free(text_copy);
@@ -1373,7 +1361,6 @@ static int haikuListMapMethod(Ihandle* ih)
     return IUP_NOERROR;
   }
 
-  /* DROPDOWN + EDITBOX: composite text + chevron. */
   if (ih->data->is_dropdown && ih->data->has_editbox)
   {
     IupHaikuListContainer* cont = new IupHaikuListContainer(ih, true);
@@ -1395,7 +1382,6 @@ static int haikuListMapMethod(Ihandle* ih)
     iuphaikuAddToParent(ih);
     iuphaikuUpdateWidgetFont(ih, edit);
 
-    /* Chevron click routes to the container's MessageReceived. */
     {
       LooperLockGuard guard(cont->Looper());
       chevron->SetTarget(BMessenger(cont));
@@ -1405,7 +1391,6 @@ static int haikuListMapMethod(Ihandle* ih)
     return IUP_NOERROR;
   }
 
-  /* LIST + EDITBOX: composite text + scrolled list. */
   if (!ih->data->is_dropdown && ih->data->has_editbox)
   {
     IupHaikuListContainer* cont = new IupHaikuListContainer(ih, false);
@@ -1436,7 +1421,6 @@ static int haikuListMapMethod(Ihandle* ih)
     return IUP_NOERROR;
   }
 
-  /* Plain LIST. */
   list_view_type t = ih->data->is_multiple ? B_MULTIPLE_SELECTION_LIST : B_SINGLE_SELECTION_LIST;
   IupHaikuListView* lv = new IupHaikuListView(ih, t);
   BScrollBar* sb = new BScrollBar(BRect(0, 0, 14, 0), "_vsb_", lv, 0, 1000, B_VERTICAL);

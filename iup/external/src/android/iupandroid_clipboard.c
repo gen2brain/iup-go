@@ -221,8 +221,7 @@ Iclass* iupClipboardNewClass(void)
   iupClassRegisterAttribute(ic, "TEXT", androidClipboardGetTextAttrib, androidClipboardSetTextAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TEXTAVAILABLE", androidClipboardGetTextAvailableAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
 
-  /* custom string formats ride a ClipData with a custom MIME (FORMAT) on a text item; images and
-     binary FORMATDATA would need a content-URI/ContentProvider, so they stay unsupported */
+  /* custom FORMAT strings ride a ClipData custom MIME on a text item; image and binary FORMATDATA would need a ContentProvider */
   iupClassRegisterAttribute(ic, "NATIVEIMAGE", androidClipboardGetNativeImageAttrib, androidClipboardSetNativeImageAttrib, NULL, NULL, IUPAF_NO_STRING|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "IMAGE", NULL, androidClipboardSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_WRITEONLY|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "IMAGEAVAILABLE", androidClipboardGetImageAvailableAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);

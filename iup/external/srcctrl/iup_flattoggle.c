@@ -81,11 +81,9 @@ static void iFlatToggleDrawSwitch(IdrawCanvas* dc, Ihandle* ih, int check_left, 
 
   iupdrvDrawGetSize(dc, NULL, &draw_h);
 
-  /* track dimensions */
   track_height = effective_size - 2 * ITOGGLE_MARGIN;
   track_width = iFlatToggleGetSwitchTrackWidth(ih) - 2 * ITOGGLE_MARGIN;
 
-  /* track position */
   track_xmin = check_left + ITOGGLE_MARGIN;
   if (check_alig == IUP_ALIGN_ABOTTOM)
     track_ymin = draw_h - ITOGGLE_MARGIN - track_height;
@@ -101,7 +99,6 @@ static void iFlatToggleDrawSwitch(IdrawCanvas* dc, Ihandle* ih, int check_left, 
   else
     corner_radius = track_height / 2;
 
-  /* resolve track fill color based on state */
   {
     char* track_color;
     if (selected > 0)
@@ -137,7 +134,6 @@ static void iFlatToggleDrawSwitch(IdrawCanvas* dc, Ihandle* ih, int check_left, 
       }
     }
 
-    /* draw track fill */
     {
       char* gradient = NULL;
       if (selected > 0)
@@ -169,7 +165,6 @@ static void iFlatToggleDrawSwitch(IdrawCanvas* dc, Ihandle* ih, int check_left, 
                        track_color, bgcolor, active);
     }
 
-    /* draw track border on top */
     {
       char* border_color = iupAttribGet(ih, "SWITCHBORDERCOLOR");
       if (!border_color)
@@ -199,7 +194,6 @@ static void iFlatToggleDrawSwitch(IdrawCanvas* dc, Ihandle* ih, int check_left, 
     }
   }
 
-  /* draw thumb */
   {
     int thumb_size, thumb_grow = 2;
     char* thumb_str = iupAttribGet(ih, "SWITCHTHUMBSIZE");
@@ -234,7 +228,6 @@ static void iFlatToggleDrawSwitch(IdrawCanvas* dc, Ihandle* ih, int check_left, 
       else
         thumb_corner_radius = thumb_size / 2;
 
-      /* resolve thumb color */
       thumb_color = iupAttribGetStr(ih, "SWITCHTHUMBCOLOR");
       if (ih->data->pressed && ih->data->highlighted)
       {
@@ -1179,7 +1172,6 @@ Iclass* iupFlatToggleNewClass(void)
   iupClassRegisterAttribute(ic, "CHECKIMAGENOTDEFHIGHLIGHT", NULL, NULL, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CHECKIMAGENOTDEFINACTIVE", NULL, NULL, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
 
-  /* Switch mode */
   iupClassRegisterAttribute(ic, "SWITCH", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SWITCHTRACKWIDTH", NULL, iFlatToggleSetAttribPostRedraw, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SWITCHOFFCOLOR", NULL, NULL, IUPAF_SAMEASSYSTEM, "190 190 190", IUPAF_NO_INHERIT);

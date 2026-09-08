@@ -1194,7 +1194,6 @@ static int motDialogMapMethod(Ihandle* ih)
   /* initialize the widget */
   XtRealizeWidget(ih->handle);
 
-  /* Apply APPID and APPNAME if set */
   {
     const char* appid = IupGetGlobal("_IUP_APPID_INTERNAL");
     const char* appname = IupGetGlobal("_IUP_APPNAME_INTERNAL");

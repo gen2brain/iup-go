@@ -77,7 +77,6 @@ static char* androidCallStringStatic(const char* method_name)
 
 IUP_SDK_API void iupdrvAddScreenOffset(int* x, int* y, int add)
 {
-  /* Only X11 supports desktop origin offsets. */
   (void)x;
   (void)y;
   (void)add;
@@ -126,7 +125,7 @@ IUP_SDK_API void iupdrvGetCursorPos(int* x, int* y)
 
   jmethodID mx = (*env)->GetStaticMethodID(env, cls, "getLastTouchX", "()I");
   jmethodID my = (*env)->GetStaticMethodID(env, cls, "getLastTouchY", "()I");
-  /* Device px to match the IUP layout coord space (currentwidth/height, ih->data->w/h on Android are device px). */
+  /* Device px, matching the IUP layout coord space on Android. */
   if (mx && x) *x = (int)(*env)->CallStaticIntMethod(env, cls, mx);
   if (my && y) *y = (int)(*env)->CallStaticIntMethod(env, cls, my);
   iupAndroid_CheckException(env, "IupActivity.getLastTouch");
@@ -155,7 +154,6 @@ IUP_SDK_API char* iupdrvGetSystemVersion(void)
 
 IUP_SDK_API char* iupdrvGetComputerName(void)
 {
-  /* Use Manufacturer + Model as the device identifier. */
   return androidCallStringStatic("getDeviceName");
 }
 

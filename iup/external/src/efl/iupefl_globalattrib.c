@@ -220,62 +220,48 @@ static void eflApplyGlobalFontOverlays(const char* font)
   else
     strncpy(efl_font, typeface, sizeof(efl_font) - 1);
 
-  /* Apply to ALL text classes used by Elementary default theme.
-     Note: Default button/check/frame have NO text_class - hardcoded fonts. */
+  /* the default button, check and frame have no text_class, their fonts are hardcoded */
 
-  /* Entry/Text widgets */
   elm_config_font_overlay_set("entry_text", efl_font, size);
   elm_config_font_overlay_set("entry_text_disabled", efl_font, size);
   elm_config_font_overlay_set("entry_guide_text", efl_font, size);
 
-  /* List/Genlist */
   elm_config_font_overlay_set("list_item", efl_font, size);
   elm_config_font_overlay_set("list_item_sub", efl_font, size);
   elm_config_font_overlay_set("list_item_selected", efl_font, size);
   elm_config_font_overlay_set("list_group_item", efl_font, size);
   elm_config_font_overlay_set("grid_item", efl_font, size);
 
-  /* Toolbar/Tabs */
   elm_config_font_overlay_set("toolbar_item", efl_font, size);
 
-  /* Menu */
   elm_config_font_overlay_set("menu_item", efl_font, size);
 
-  /* Title bar */
   elm_config_font_overlay_set("title_bar", efl_font, size);
   elm_config_font_overlay_set("title_bar_sub", efl_font, size);
 
-  /* Toggle switch style (not default checkbox) */
   elm_config_font_overlay_set("check_off_text", efl_font, size);
   elm_config_font_overlay_set("check_on_text", efl_font, size);
   elm_config_font_overlay_set("radio", efl_font, size);
 
-  /* Slider */
   elm_config_font_overlay_set("slider", efl_font, size);
   elm_config_font_overlay_set("slider_text", efl_font, size);
   elm_config_font_overlay_set("slider_indicator", efl_font, size);
 
-  /* Spinner */
   elm_config_font_overlay_set("spinner", efl_font, size);
 
-  /* Progress */
   elm_config_font_overlay_set("progressbar", efl_font, size);
   elm_config_font_overlay_set("progress_status", efl_font, size);
 
-  /* Bubble */
   elm_config_font_overlay_set("bubble", efl_font, size);
   elm_config_font_overlay_set("bubble_info", efl_font, size);
 
-  /* Index */
   elm_config_font_overlay_set("index_item_text", efl_font, size);
   elm_config_font_overlay_set("index_highlight_text", efl_font, size);
 
-  /* Hoversel/Button variants */
   elm_config_font_overlay_set("butt", efl_font, size);
   elm_config_font_overlay_set("button", efl_font, size);
   elm_config_font_overlay_set("label", efl_font, size);
 
-  /* Calendar */
   elm_config_font_overlay_set("calendar_weekday_text", efl_font, size);
   elm_config_font_overlay_set("calendar_day_text", efl_font, size);
 

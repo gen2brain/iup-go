@@ -306,7 +306,6 @@ IUP_SDK_API int iupdrvSetFontAttrib(Ihandle* ih, const char* value)
 
   eflFontMeasure(family, size, is_bold, is_italic, &font->charwidth, &font->charheight, &font->ascent, &font->descent);
 
-  /* If FONT is changed after mapping, must update the widget */
   if (ih->handle && (ih->iclass->nativetype != IUP_TYPEVOID))
   {
     Evas_Object* widget = iupeflGetWidget(ih);
@@ -657,9 +656,7 @@ IUP_DRV_API void iupeflApplyTextStyle(Ihandle* ih, Eo* widget)
 
   iupeflBuildTextStyle(ih, style, sizeof(style));
 
-  /* EFL_UI_CHECK and EFL_UI_RADIO use TEXT parts which don't support font customization.
-     Edje recalc resets any font changes, and the part API doesn't implement Efl.Text_Font_Properties.
-     Only FGCOLOR is supported via color classes. */
+  /* EFL_UI_CHECK and EFL_UI_RADIO text parts reject font changes, only FGCOLOR applies */
   if (efl_isa(widget, EFL_UI_CHECK_CLASS) || efl_isa(widget, EFL_UI_RADIO_CLASS))
   {
     fgcolor = iupAttribGetStr(ih, "FGCOLOR");
@@ -673,7 +670,6 @@ IUP_DRV_API void iupeflApplyTextStyle(Ihandle* ih, Eo* widget)
     return;
   }
 
-  /* Legacy widgets use TEXTBLOCK with elm.text part */
   edje_object_part_text_style_user_pop(edje, "elm.text");
   edje_object_part_text_style_user_push(edje, "elm.text", style);
 

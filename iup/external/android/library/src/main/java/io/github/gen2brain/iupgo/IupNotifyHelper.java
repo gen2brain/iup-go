@@ -185,7 +185,6 @@ public final class IupNotifyHelper
             b.setStyle(bps);
         }
 
-        /* Content tap -> Activity (fixes AS warning). */
         b.setContentIntent(makeContentIntent(ctx, ihandlePtr, notifyId));
         b.setDeleteIntent(makeDeleteIntent(ctx, ihandlePtr, notifyId));
 

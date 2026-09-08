@@ -286,7 +286,6 @@ IUP_SDK_API void iupdrvDrawGetSize(IdrawCanvas* dc, int *w, int *h)
   if (h) *h = dc->h;
 }
 
-/* Helper macros */
 #define iupInt2Float(_x) ((float)_x)
 #define iupInt2FloatW(_x) ((float)_x)
 #define iupColor2ARGB(_c) WD_ARGB(iupDrawAlpha(_c), iupDrawRed(_c), iupDrawGreen(_c), iupDrawBlue(_c))
@@ -434,14 +433,11 @@ IUP_SDK_API void iupdrvDrawPolygon(IdrawCanvas* dc, int* points, int count, long
   path = wdCreatePath(dc->hCanvas);
   wdOpenPathSink(&sink, path);
 
-  /* Begin at first point */
   wdBeginFigure(&sink, iupInt2Float(points[0]), iupInt2Float(points[1]));
 
-  /* Add lines to all other points (starting from point 1, which is at index 2 in the array) */
   for (i = 2; i < count * 2; i = i + 2)
     wdAddLine(&sink, iupInt2Float(points[i]), iupInt2Float(points[i + 1]));
 
-  /* Close the figure - this connects the last point back to the first */
   wdEndFigure(&sink, TRUE);
   wdClosePathSink(&sink);
 
@@ -487,7 +483,6 @@ IUP_SDK_API void iupdrvDrawRoundedRectangle(IdrawCanvas* dc, int x1, int y1, int
   x1f = iupInt2Float(x2);
   y1f = iupInt2Float(y2);
 
-  /* Calculate radius - clamp to half of smaller dimension */
   max_radius = (width < height) ? (float)width / 2.0f : (float)height / 2.0f;
   radius = (float)corner_radius;
   if (radius > max_radius)
@@ -627,19 +622,16 @@ IUP_SDK_API void iupdrvDrawSetClipRoundedRect(IdrawCanvas* dc, int x1, int y1, i
   width = x2 - x1;
   height = y2 - y1;
 
-  /* Calculate radius - clamp to half of smaller dimension */
   max_radius = (width < height) ? (float)width / 2.0f : (float)height / 2.0f;
   radius = (float)corner_radius;
   if (radius > max_radius)
     radius = max_radius;
 
-  /* Set up rectangle for path */
   rect.x0 = iupInt2Float(x1);
   rect.y0 = iupInt2Float(y1);
   rect.x1 = iupInt2Float(x2);
   rect.y1 = iupInt2Float(y2);
 
-  /* Create rounded rectangle path and set as clip */
   path = wdCreateRoundedRectPath(dc->hCanvas, &rect, radius);
   if (path)
   {
@@ -835,7 +827,6 @@ IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x
   }
   else
   {
-    /* Fallback for GDI+ backend - manual color interpolation */
     int i, steps;
     float t, length;
     int px1, py1, px2, py2;
@@ -886,7 +877,6 @@ IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int r
   }
   else
   {
-    /* Fallback for GDI+ backend - manual color interpolation */
     int i, steps;
     float t, r;
 

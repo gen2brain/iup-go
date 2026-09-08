@@ -41,7 +41,6 @@ extern "C" {
 #include "iupqt_drv.h"
 
 
-/* Forward declarations */
 static void qtTableConfigureItem(Ihandle* ih, QTableWidgetItem* item, int lin, int col);
 static void qtTableApplyCellColors(Ihandle* ih, QTableWidgetItem* item, int lin, int col);
 
@@ -98,18 +97,14 @@ public:
   {
     (void)locale;
 
-    /* Check if virtual mode is enabled */
     char* virtualmode = iupAttribGet(ih, "VIRTUALMODE");
     if (!iupStrBoolean(virtualmode))
       return QStyledItemDelegate::displayText(value, locale);
 
-    /* In virtual mode, we need to get the row/column. This is called during painting, so we get the index from the model. */
-    /* However, we don't have direct access to the index here. So we'll rely on the item's display role being set correctly */
     return value.toString();
   }
 
-  /* Read row/cell colors live so ALTERNATECOLOR/EVEN-ODDROWCOLOR/BGCOLOR/FGCOLOR changes
-     take effect without re-baking QTableWidgetItem brushes. */
+  /* colors are read live, so a change needs no re-baked QTableWidgetItem brushes */
   void initStyleOption(QStyleOptionViewItem* option, const QModelIndex& index) const override
   {
     QStyledItemDelegate::initStyleOption(option, index);
@@ -148,14 +143,11 @@ public:
 
   void paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const override
   {
-    /* Check if this item has focus */
     bool hasFocus = (option.state & QStyle::State_HasFocus);
 
-    /* Remove default focus rectangle by clearing the focus state */
     QStyleOptionViewItem opt = option;
     opt.state &= ~QStyle::State_HasFocus;
 
-    /* Draw the item without Qt's default focus rectangle */
     QStyledItemDelegate::paint(painter, opt, index);
 
     if (hasFocus && iupAttribGetBoolean(ih, "FOCUSRECT"))
@@ -182,26 +174,22 @@ public:
     int lin = index.row() + 1;  /* 1-based */
     int col = index.column() + 1;  /* 1-based */
 
-    /* Call EDITBEGIN_CB - allow application to block editing */
     IFnii editbegin_cb = (IFnii)IupGetCallback(ih, "EDITBEGIN_CB");
     if (editbegin_cb)
     {
       int ret = editbegin_cb(ih, lin, col);
       if (ret == IUP_IGNORE)
-        return nullptr;  /* Block editing by not creating editor */
+        return nullptr;
     }
 
-    /* Create custom QLineEdit editor with overridden sizeHint */
     IupQtFixedLineEdit* fixedLineEdit = new IupQtFixedLineEdit(parent);
     fixedLineEdit->setFrame(false);
     fixedLineEdit->setTextMargins(0, 0, 0, 0);
     fixedLineEdit->setContentsMargins(0, 0, 0, 0);
 
     fixedLineEdit->installEventFilter(const_cast<IupQtTableDelegate*>(this));
-    /* Store index in editor for later retrieval in eventFilter */
     fixedLineEdit->setProperty("iup_row", lin);
     fixedLineEdit->setProperty("iup_col", col);
-    /* Store pointer for later retrieval */
     fixedLineEdit->setProperty("iup_fixed_lineedit_ptr", QVariant::fromValue((void*)fixedLineEdit));
 
     return fixedLineEdit;
@@ -217,18 +205,14 @@ public:
     QLineEdit* lineEdit = qobject_cast<QLineEdit*>(editor);
     if (lineEdit)
     {
-      /* NOTE: setTextMargins() triggers updateGeometry() which will override
-       * any size we set before this! So we must set fixed size AFTER. */
+      /* setTextMargins() calls updateGeometry(), so the fixed size has to come after it */
       lineEdit->setTextMargins(0, 0, 0, 0);
     }
 
-    /* Set geometry first */
     editor->setGeometry(editorRect);
 
-    /* THEN set fixed size hint and fixed size */
     if (lineEdit)
     {
-      /* Retrieve the IupQtFixedLineEdit pointer */
       QVariant ptrVariant = lineEdit->property("iup_fixed_lineedit_ptr");
       if (ptrVariant.isValid())
       {
@@ -251,18 +235,15 @@ protected:
       QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
       if (keyEvent->key() == Qt::Key_Escape)
       {
-        /* ESC key pressed - editing canceled */
         QWidget* editor = qobject_cast<QWidget*>(object);
         if (editor)
         {
           int lin = editor->property("iup_row").toInt();
           int col = editor->property("iup_col").toInt();
 
-          /* Get current cell value before cancel */
           QVariant value = editor->property("text");
           QString current_text = value.toString();
 
-          /* Call EDITEND_CB with apply=0 (canceled) */
           IFniisi editend_cb = (IFniisi)IupGetCallback(ih, "EDITEND_CB");
           if (editend_cb)
           {
@@ -280,20 +261,17 @@ public:
     int lin = index.row() + 1;  /* 1-based */
     int col = index.column() + 1;  /* 1-based */
 
-    /* Get the new value from editor */
     QVariant value = editor->property("text");
     QString new_text = value.toString();
 
-    /* Call EDITEND_CB - allow application to validate/reject edit */
     IFniisi editend_cb = (IFniisi)IupGetCallback(ih, "EDITEND_CB");
     if (editend_cb)
     {
       int ret = editend_cb(ih, lin, col, (char*)new_text.toUtf8().constData(), 1);  /* 1 = accepted */
       if (ret == IUP_IGNORE)
-        return;  /* Reject edit - don't update model */
+        return;
     }
 
-    /* Update model data */
     QStyledItemDelegate::setModelData(editor, model, index);
   }
 };
@@ -313,9 +291,7 @@ public:
   explicit IupQtTableWidget(Ihandle* ih_param, QWidget* parent = nullptr)
     : QTableWidget(parent), ih(ih_param), firstShow(true)
   {
-    /* Minimal size hints to let IUP control sizing */
-    /* Block signals during initialization to prevent VALUECHANGED_CB during cell population */
-    /* Signals will be unblocked when table receives focus (first user interaction) */
+    /* signals stay blocked until the first focus, so populating cells fires no VALUECHANGED_CB */
     blockSignals(true);
     setupCallbacks();
   }
@@ -326,7 +302,6 @@ public:
     blockSignals(false);
   }
 
-  /* Populate virtual cells when they become visible */
   void populateVirtualCells(int firstRow, int lastRow, int firstCol, int lastCol)
   {
     char* virtualmode = iupAttribGet(ih, "VIRTUALMODE");
@@ -337,11 +312,9 @@ public:
     if (!value_cb)
       return;
 
-    /* Block signals during virtual cell population, save previous state */
     bool wasBlocked = signalsBlocked();
     blockSignals(true);
 
-    /* Populate visible cells */
     for (int row = firstRow; row <= lastRow && row < rowCount(); row++)
     {
       for (int col = firstCol; col <= lastCol && col < columnCount(); col++)
@@ -353,7 +326,6 @@ public:
           setItem(row, col, existingItem);
         }
 
-        /* Query VALUE_CB for cell content (1-based indices) */
         char* value = value_cb(ih, row + 1, col + 1);
         if (value)
         {
@@ -364,7 +336,6 @@ public:
           existingItem->setText(QString());
         }
 
-        /* Query IMAGE_CB for cell image (1-based indices) */
         if (ih->data->show_image)
         {
           char* image_name = iupTableGetCellImageCb(ih, row + 1, col + 1);
@@ -396,18 +367,13 @@ public:
             existingItem->setIcon(QIcon());
         }
 
-        /* Configure item with alignment, colors, fonts, editable flags */
         qtTableConfigureItem(ih, existingItem, row + 1, col + 1);
       }
     }
 
-    /* Restore previous signal blocking state */
     blockSignals(wasBlocked);
   }
 
-  /* Override sizeHint to return minimal size.
-   * This prevents Qt from using its default larger size hint, allowing IUP's
-   * natural size calculation to control the widget size. */
   QSize sizeHint() const override
   {
     QFontMetrics fm(font());
@@ -418,7 +384,6 @@ public:
 #endif
     int charHeight = fm.height();
 
-    /* Return minimal size: 10 chars wide, 3 lines tall (similar to List) */
     int w = charWidth * 10;
     int h = charHeight * 3;
 
@@ -435,7 +400,6 @@ public:
 #endif
     int charHeight = fm.height();
 
-    /* Return minimal size: 5 chars wide, 2 lines tall */
     return QSize(charWidth * 5, charHeight * 2);
   }
 
@@ -444,13 +408,11 @@ protected:
   {
     QTableWidget::showEvent(event);
 
-    /* Populate virtual cells when table is first shown */
     updateVirtualCells();
   }
 
   void focusInEvent(QFocusEvent* event) override
   {
-    /* Unblock signals on first focus (user is about to interact) */
     if (firstShow && signalsBlocked())
     {
       enableChangeNotifications();
@@ -468,14 +430,12 @@ protected:
   void scrollContentsBy(int dx, int dy) override
   {
     QTableWidget::scrollContentsBy(dx, dy);
-    /* Populate virtual cells after scrolling */
     updateVirtualCells();
   }
 
   void resizeEvent(QResizeEvent* event) override
   {
     QTableWidget::resizeEvent(event);
-    /* Populate virtual cells after resizing */
     updateVirtualCells();
   }
 
@@ -546,7 +506,6 @@ protected:
       return;
     }
 
-    /* Handle copy/paste */
     if (event->matches(QKeySequence::Copy))
     {
       copySelection();
@@ -559,7 +518,6 @@ protected:
       event->accept();
       return;
     }
-    /* Handle Enter/Return to activate cell editing */
     else if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter)
     {
       QModelIndex index = currentIndex();
@@ -693,20 +651,17 @@ protected:
 
   void updateVirtualCells()
   {
-    /* Get visible range */
     QRect visibleRect = viewport()->rect();
     int firstRow = rowAt(visibleRect.top());
     int lastRow = rowAt(visibleRect.bottom());
     int firstCol = columnAt(visibleRect.left());
     int lastCol = columnAt(visibleRect.right());
 
-    /* Handle edge cases */
     if (firstRow < 0) firstRow = 0;
     if (lastRow < 0) lastRow = rowCount() - 1;
     if (firstCol < 0) firstCol = 0;
     if (lastCol < 0) lastCol = columnCount() - 1;
 
-    /* Populate visible cells */
     populateVirtualCells(firstRow, lastRow, firstCol, lastCol);
   }
 
@@ -726,7 +681,6 @@ protected:
     if (!item)
       return;
 
-    /* Check if cell is editable */
     if (!(item->flags() & Qt::ItemIsEditable))
       return;
 
@@ -745,14 +699,12 @@ private:
 
   void onCellClicked(int row, int column)
   {
-    /* Convert to 1-based IUP indices */
     int lin = row + 1;
     int col = column + 1;
 
     IFniis cb = (IFniis)IupGetCallback(ih, "CLICK_CB");
     if (cb)
     {
-      /* Get button and status info (simple left-click) */
       cb(ih, lin, col, (char*)"1");  /* "1" = left button, single click */
     }
   }
@@ -768,7 +720,6 @@ private:
     (void)previousRow;
     (void)previousColumn;
 
-    /* Convert to 1-based IUP indices */
     int lin = currentRow + 1;
     int col = currentColumn + 1;
 
@@ -781,7 +732,6 @@ private:
 
   void onCellChanged(int row, int column)
   {
-    /* Convert to 1-based IUP indices */
     int lin = row + 1;
     int col = column + 1;
 
@@ -808,7 +758,6 @@ static void qtTableReapplyAllColors(Ihandle* ih)
   if (!table)
     return;
 
-  /* Reapply colors to all existing cells */
   for (int row = 0; row < table->rowCount(); row++)
   {
     for (int col = 0; col < table->columnCount(); col++)
@@ -816,7 +765,6 @@ static void qtTableReapplyAllColors(Ihandle* ih)
       QTableWidgetItem* item = table->item(row, col);
       if (item)
       {
-        /* Reapply colors (lin and col are 1-based) */
         qtTableApplyCellColors(ih, item, row + 1, col + 1);
       }
     }
@@ -825,7 +773,6 @@ static void qtTableReapplyAllColors(Ihandle* ih)
 
 static Qt::Alignment qtTableGetColumnAlignment(Ihandle* ih, int col)
 {
-  /* Check for column-specific alignment (1-based col index) */
   char name[50];
   snprintf(name, sizeof(name), "ALIGNMENT%d", col);
   char* align_str = iupAttribGet(ih, name);
@@ -837,26 +784,24 @@ static Qt::Alignment qtTableGetColumnAlignment(Ihandle* ih, int col)
     return Qt::AlignRight | Qt::AlignVCenter;
   else if (iupStrEqualNoCase(align_str, "ACENTER") || iupStrEqualNoCase(align_str, "CENTER"))
     return Qt::AlignCenter;
-  else  /* ALEFT, LEFT, or anything else */
+  else
     return Qt::AlignLeft | Qt::AlignVCenter;
 }
 
 static int qtTableIsColumnEditable(Ihandle* ih, int col)
 {
-  /* Check for column-specific editable (1-based col index) */
   char name[50];
   snprintf(name, sizeof(name), "EDITABLE%d", col);
   char* editable_str = iupAttribGet(ih, name);
 
   if (!editable_str)
-    editable_str = iupAttribGet(ih, "EDITABLE");  /* Global editable */
+    editable_str = iupAttribGet(ih, "EDITABLE");
 
   return iupStrBoolean(editable_str);
 }
 
 static void qtTableEnsureItem(QTableWidget* table, int row, int col)
 {
-  /* Qt uses 0-based indices */
   if (!table->item(row, col))
   {
     QTableWidgetItem* item = new IupQtTableItem();
@@ -866,35 +811,30 @@ static void qtTableEnsureItem(QTableWidget* table, int row, int col)
 
 static void qtTableApplyCellColors(Ihandle* ih, QTableWidgetItem* item, int lin, int col)
 {
-  /* Check for cell-specific bgcolor (L:C), then per-column (:C), then per-row (L:*) */
   char* bgcolor = iupAttribGetId2(ih, "BGCOLOR", lin, col);
   if (!bgcolor)
     bgcolor = iupAttribGetId2(ih, "BGCOLOR", 0, col);  /* Per-column */
   if (!bgcolor)
     bgcolor = iupAttribGetId2(ih, "BGCOLOR", lin, 0);  /* Per-row */
 
-  /* If no specific bgcolor set, check for alternating row colors */
   if (!bgcolor)
   {
     char* alternate = iupAttribGet(ih, "ALTERNATECOLOR");
 
     if (iupStrBoolean(alternate))
     {
-      /* Determine if this is an even or odd row (lin is 1-based) */
       if (lin % 2 == 0)
       {
-        /* Even row */
         bgcolor = iupAttribGet(ih, "EVENROWCOLOR");
       }
       else
       {
-        /* Odd row */
         bgcolor = iupAttribGet(ih, "ODDROWCOLOR");
       }
     }
   }
 
-  if (bgcolor && *bgcolor)  /* Check for non-NULL and non-empty */
+  if (bgcolor && *bgcolor)
   {
     unsigned char r, g, b;
     if (iupStrToRGB(bgcolor, &r, &g, &b))
@@ -904,18 +844,16 @@ static void qtTableApplyCellColors(Ihandle* ih, QTableWidgetItem* item, int lin,
   }
   else
   {
-    /* Reset to default background if no color is set or empty string */
     item->setData(Qt::BackgroundRole, QVariant());
   }
 
-  /* Check for cell-specific fgcolor (L:C), then per-column (:C), then per-row (L:*) */
   char* fgcolor = iupAttribGetId2(ih, "FGCOLOR", lin, col);
   if (!fgcolor)
     fgcolor = iupAttribGetId2(ih, "FGCOLOR", 0, col);  /* Per-column */
   if (!fgcolor)
     fgcolor = iupAttribGetId2(ih, "FGCOLOR", lin, 0);  /* Per-row */
 
-  if (fgcolor && *fgcolor)  /* Check for non-NULL and non-empty */
+  if (fgcolor && *fgcolor)
   {
     unsigned char r, g, b;
     if (iupStrToRGB(fgcolor, &r, &g, &b))
@@ -925,14 +863,12 @@ static void qtTableApplyCellColors(Ihandle* ih, QTableWidgetItem* item, int lin,
   }
   else
   {
-    /* Reset to default foreground if no color is set or empty string */
     item->setData(Qt::ForegroundRole, QVariant());
   }
 }
 
 static void qtTableApplyCellFont(Ihandle* ih, QTableWidgetItem* item, int lin, int col)
 {
-  /* Check for cell-specific font (L:C), then per-column (:C), then per-row (L:*) */
   char* font = iupAttribGetId2(ih, "FONT", lin, col);
   if (!font)
     font = iupAttribGetId2(ih, "FONT", 0, col);  /* Per-column */
@@ -955,11 +891,9 @@ static void qtTableConfigureItem(Ihandle* ih, QTableWidgetItem* item, int lin, i
   if (!item)
     return;
 
-  /* Set alignment */
   Qt::Alignment alignment = qtTableGetColumnAlignment(ih, col);
   item->setTextAlignment(alignment);
 
-  /* Set editable flag */
   int editable = qtTableIsColumnEditable(ih, col);
   Qt::ItemFlags flags = item->flags();
 
@@ -970,7 +904,6 @@ static void qtTableConfigureItem(Ihandle* ih, QTableWidgetItem* item, int lin, i
 
   item->setFlags(flags);
 
-  /* Apply colors and font */
   qtTableApplyCellColors(ih, item, lin, col);
   qtTableApplyCellFont(ih, item, lin, col);
 }
@@ -988,7 +921,6 @@ static void qtTableLayoutUpdateMethod(Ihandle* ih)
   int width = ih->currentwidth;
   int height = ih->currentheight;
 
-  /* If VISIBLELINES is set, clamp height to target */
   QVariant targetVar = table->property("iup-table-target-height");
   if (targetVar.isValid())
   {
@@ -997,7 +929,6 @@ static void qtTableLayoutUpdateMethod(Ihandle* ih)
       height = target_height;
   }
 
-  /* If VISIBLECOLUMNS is set, clamp width to show exactly N columns */
   QVariant visColVar = table->property("iup-table-visible-columns");
   if (visColVar.isValid())
   {
@@ -1013,14 +944,13 @@ static void qtTableLayoutUpdateMethod(Ihandle* ih)
       {
         int col_width = table->columnWidth(c);
         if (col_width <= 0)
-          col_width = 80;  /* fallback to default */
+          col_width = 80;
         cols_width += col_width;
       }
 
       int sb_size = iupdrvGetScrollbarSize();
       int frame_width = table->frameWidth();
 
-      /* Only add vertical scrollbar width if it will actually be visible */
       int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
       int need_vert_sb = (visiblelines > 0 && ih->data->num_lin > visiblelines);
       int vert_sb_width = need_vert_sb ? sb_size : 0;
@@ -1031,12 +961,10 @@ static void qtTableLayoutUpdateMethod(Ihandle* ih)
     }
   }
 
-  /* Position and size the widget */
   QWidget* parent = table->parentWidget();
   if (parent)
     iupqtSetPosSize(parent, table, ih->x, ih->y, width, height);
 
-  /* Reset scroll position to top-left */
   table->horizontalScrollBar()->setValue(0);
   table->verticalScrollBar()->setValue(0);
 }
@@ -1046,27 +974,20 @@ static int qtTableMapMethod(Ihandle* ih)
   if (!ih->parent)
     return IUP_ERROR;
 
-  /* Get initial dimensions */
   int num_col = ih->data->num_col;
   int num_lin = ih->data->num_lin;
 
-  /* Create custom table widget */
   IupQtTableWidget* table = new IupQtTableWidget(ih, nullptr);
 
-  /* Install custom delegate to handle focus rectangle drawing */
   IupQtTableDelegate* delegate = new IupQtTableDelegate(ih, table);
   table->setItemDelegate(delegate);
 
-  /* Set dimensions */
   table->setRowCount(num_lin);
   table->setColumnCount(num_col);
 
-  /* Configure basic properties */
   table->setShowGrid(iupAttribGetBoolean(ih, "SHOWGRID"));
-  table->setSelectionBehavior(QAbstractItemView::SelectRows);  /* Select rows by default */
-  table->setSelectionMode(QAbstractItemView::SingleSelection);  /* Single selection by default */
-
-  /* Virtual mode: cells are populated on-demand via VALUE_CB */
+  table->setSelectionBehavior(QAbstractItemView::SelectRows);
+  table->setSelectionMode(QAbstractItemView::SingleSelection);
 
   table->setEditTriggers(QAbstractItemView::DoubleClicked |
                          QAbstractItemView::EditKeyPressed |
@@ -1108,7 +1029,6 @@ static int qtTableMapMethod(Ihandle* ih)
     hHeader->setSectionsClickable(false);
   }
 
-  /* Check for ALLOWREORDER attribute (from ih->data) */
   hHeader->setSectionsMovable(ih->data->allow_reorder);
 
   QObject::connect(hHeader, &QHeaderView::sectionMoved, [ih](int logicalIndex, int oldVisualIndex, int newVisualIndex) {
@@ -1118,7 +1038,6 @@ static int qtTableMapMethod(Ihandle* ih)
       cb(ih, oldVisualIndex + 1, newVisualIndex + 1);
   });
 
-  /* Check if last column has explicit width set */
   bool last_col_has_width = false;
   {
     char name[50];
@@ -1135,15 +1054,12 @@ static int qtTableMapMethod(Ihandle* ih)
     last_col_has_width = (width_str && iupStrToInt(width_str, &width) && width > 0);
   }
 
-  /* Set header height to match Qt's natural sizing (includes bold font and style margins) */
   {
     int header_height = hHeader->sizeHint().height();
     if (header_height > 0)
       hHeader->setFixedHeight(header_height);
   }
 
-  /* Set per-column resize modes and widths.
-     Last column gets Stretch, columns with explicit width get Fixed, others get ResizeToContents. */
   bool stretch_last = (ih->data->stretch_last && !last_col_has_width);
   hHeader->setStretchLastSection(false);
 
@@ -1154,19 +1070,16 @@ static int qtTableMapMethod(Ihandle* ih)
     char* width_str = NULL;
     int width = 0;
 
-    /* Check RASTERWIDTH first */
     snprintf(name, sizeof(name), "RASTERWIDTH%d", col);
     width_str = iupAttribGet(ih, name);
     if (!width_str)
     {
-      /* Then check WIDTH */
       snprintf(name, sizeof(name), "WIDTH%d", col);
       width_str = iupAttribGet(ih, name);
     }
 
     if (width_str && iupStrToInt(width_str, &width) && width > 0)
     {
-      /* Column has explicit width */
       table->setColumnWidth(qt_col, width);
 
       if (ih->data->user_resize)
@@ -1176,24 +1089,20 @@ static int qtTableMapMethod(Ihandle* ih)
     }
     else if (col == num_col && stretch_last)
     {
-      /* Last column without explicit width, Stretch to fill remaining space */
       hHeader->setSectionResizeMode(qt_col, QHeaderView::Stretch);
     }
     else
     {
-      /* Auto-size to content */
       hHeader->setSectionResizeMode(qt_col, QHeaderView::ResizeToContents);
     }
   }
 
-  /* Check for SELECTIONMODE attribute */
   char* sel_mode = iupAttribGetStr(ih, "SELECTIONMODE");
   if (sel_mode)
   {
     if (iupStrEqualNoCase(sel_mode, "MULTIPLE") || iupStrEqualNoCase(sel_mode, "EXTENDED"))
     {
-      /* Both MULTIPLE and EXTENDED use ExtendedSelection in Qt */
-      /* This requires Ctrl for multiple selection, Shift for range selection */
+      /* Qt has one ExtendedSelection for both MULTIPLE and EXTENDED */
       table->setSelectionMode(QAbstractItemView::ExtendedSelection);
     }
     else if (iupStrEqualNoCase(sel_mode, "NONE"))
@@ -1202,17 +1111,14 @@ static int qtTableMapMethod(Ihandle* ih)
     }
   }
 
-  /* Hide row numbers (vertical header) */
   QHeaderView* vHeader = table->verticalHeader();
   vHeader->setVisible(false);
 
-  /* Set default row height using style-aware margin (DPI-scaled) */
   QFontMetrics fm(table->font());
   int margin = table->style()->pixelMetric(QStyle::PM_HeaderMargin, nullptr, table);
   int row_height = fm.height() + 2 * margin;
   vHeader->setDefaultSectionSize(row_height);
 
-  /* Clear any default selection - no cell should be selected on start */
   table->clearSelection();
   table->setCurrentCell(-1, -1);
 
@@ -1226,13 +1132,10 @@ static int qtTableMapMethod(Ihandle* ih)
     table->setDefaultDropAction(Qt::MoveAction);
   }
 
-  /* Store widget handle */
   ih->handle = (InativeHandle*)table;
 
-  /* Add to parent */
   iupqtAddToParent(ih);
 
-  /* Store target height for VISIBLELINES clamping in LayoutUpdate */
   int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
   if (visiblelines > 0)
   {
@@ -1241,7 +1144,6 @@ static int qtTableMapMethod(Ihandle* ih)
     int sb_size = iupdrvGetScrollbarSize();
     int frame_width = table->frameWidth();
 
-    /* Only add horizontal scrollbar height if it will actually be visible */
     int visiblecolumns = iupAttribGetInt(ih, "VISIBLECOLUMNS");
     int need_horiz_sb = (visiblecolumns > 0 && ih->data->num_col > visiblecolumns);
     int horiz_sb_height = need_horiz_sb ? sb_size : 0;
@@ -1250,7 +1152,6 @@ static int qtTableMapMethod(Ihandle* ih)
     table->setProperty("iup-table-target-height", target_height);
   }
 
-  /* Store VISIBLECOLUMNS for width clamping in LayoutUpdate */
   int visiblecolumns = iupAttribGetInt(ih, "VISIBLECOLUMNS");
   if (visiblecolumns > 0)
     table->setProperty("iup-table-visible-columns", visiblecolumns);
@@ -1315,7 +1216,7 @@ IUP_SDK_API void iupdrvTableAddCol(Ihandle* ih, int pos)
   if (pos < 1 || pos > ih->data->num_col + 1)
     return;
 
-  int qt_col = pos - 1;  /* Convert to 0-based */
+  int qt_col = pos - 1;
   table->insertColumn(qt_col);
   ih->data->num_col++;
 }
@@ -1329,7 +1230,7 @@ IUP_SDK_API void iupdrvTableDelCol(Ihandle* ih, int pos)
   if (pos < 1 || pos > ih->data->num_col)
     return;
 
-  int qt_col = pos - 1;  /* Convert to 0-based */
+  int qt_col = pos - 1;
   table->removeColumn(qt_col);
   ih->data->num_col--;
 }
@@ -1347,7 +1248,7 @@ IUP_SDK_API void iupdrvTableAddLin(Ihandle* ih, int pos)
   if (pos < 1 || pos > ih->data->num_lin + 1)
     return;
 
-  int qt_row = pos - 1;  /* Convert to 0-based */
+  int qt_row = pos - 1;
   table->insertRow(qt_row);
   ih->data->num_lin++;
 }
@@ -1361,7 +1262,7 @@ IUP_SDK_API void iupdrvTableDelLin(Ihandle* ih, int pos)
   if (pos < 1 || pos > ih->data->num_lin)
     return;
 
-  int qt_row = pos - 1;  /* Convert to 0-based */
+  int qt_row = pos - 1;
   table->removeRow(qt_row);
   ih->data->num_lin--;
 }
@@ -1376,7 +1277,6 @@ IUP_SDK_API void iupdrvTableSetCellValue(Ihandle* ih, int lin, int col, const ch
   if (!table)
     return;
 
-  /* Convert to 0-based indices */
   int qt_row = lin - 1;
   int qt_col = col - 1;
 
@@ -1384,24 +1284,19 @@ IUP_SDK_API void iupdrvTableSetCellValue(Ihandle* ih, int lin, int col, const ch
       qt_col < 0 || qt_col >= table->columnCount())
     return;
 
-  /* Ensure item exists */
   qtTableEnsureItem(table, qt_row, qt_col);
 
   QTableWidgetItem* item = table->item(qt_row, qt_col);
   if (item)
   {
-    /* Block signals during ALL programmatic updates to prevent VALUECHANGED_CB */
-    /* VALUECHANGED_CB should only fire for interactive user changes */
+    /* VALUECHANGED_CB must fire only for interactive changes */
     bool wasBlocked = table->signalsBlocked();
     table->blockSignals(true);
 
-    /* Configure item with alignment and editable flags (this modifies the item!) */
     qtTableConfigureItem(ih, item, lin, col);
 
-    /* Set the text value */
     item->setText(value ? QString::fromUtf8(value) : QString());
 
-    /* Restore previous signal blocking state */
     table->blockSignals(wasBlocked);
   }
 }
@@ -1412,7 +1307,6 @@ IUP_SDK_API char* iupdrvTableGetCellValue(Ihandle* ih, int lin, int col)
   if (!table)
     return nullptr;
 
-  /* Convert to 0-based indices */
   int qt_row = lin - 1;
   int qt_col = col - 1;
 
@@ -1487,7 +1381,7 @@ IUP_SDK_API void iupdrvTableSetColTitle(Ihandle* ih, int col, const char* title)
   if (!table)
     return;
 
-  int qt_col = col - 1;  /* Convert to 0-based */
+  int qt_col = col - 1;
 
   if (qt_col < 0 || qt_col >= table->columnCount())
     return;
@@ -1502,7 +1396,7 @@ IUP_SDK_API char* iupdrvTableGetColTitle(Ihandle* ih, int col)
   if (!table)
     return nullptr;
 
-  int qt_col = col - 1;  /* Convert to 0-based */
+  int qt_col = col - 1;
 
   if (qt_col < 0 || qt_col >= table->columnCount())
     return nullptr;
@@ -1524,25 +1418,21 @@ IUP_SDK_API void iupdrvTableSetColWidth(Ihandle* ih, int col, int width)
   if (!table)
     return;
 
-  int qt_col = col - 1;  /* Convert to 0-based */
+  int qt_col = col - 1;
 
   if (qt_col < 0 || qt_col >= table->columnCount())
     return;
 
   QHeaderView* hHeader = table->horizontalHeader();
 
-  /* Set the explicit width first */
   table->setColumnWidth(qt_col, width);
 
-  /* Determine resize mode based on USERRESIZE setting */
   if (ih->data->user_resize)
   {
-    /* USERRESIZE=YES: Allow user to manually resize */
     hHeader->setSectionResizeMode(qt_col, QHeaderView::Interactive);
   }
   else
   {
-    /* Default: Fixed width when explicit width is set */
     hHeader->setSectionResizeMode(qt_col, QHeaderView::Fixed);
   }
 }
@@ -1553,7 +1443,7 @@ IUP_SDK_API int iupdrvTableGetColWidth(Ihandle* ih, int col)
   if (!table)
     return 0;
 
-  int qt_col = col - 1;  /* Convert to 0-based */
+  int qt_col = col - 1;
 
   if (qt_col < 0 || qt_col >= table->columnCount())
     return 0;
@@ -1591,8 +1481,8 @@ IUP_SDK_API void iupdrvTableGetFocusCell(Ihandle* ih, int* lin, int* col)
     return;
   }
 
-  *lin = table->currentRow() + 1;  /* Convert to 1-based */
-  *col = table->currentColumn() + 1;  /* Convert to 1-based */
+  *lin = table->currentRow() + 1;
+  *col = table->currentColumn() + 1;
 }
 
 IUP_SDK_API void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col)
@@ -1624,11 +1514,9 @@ IUP_SDK_API void iupdrvTableRedraw(Ihandle* ih)
     char* virtualmode = iupAttribGet(ih, "VIRTUALMODE");
     if (iupStrBoolean(virtualmode))
     {
-      /* In virtual mode, repopulate all visible cells from VALUE_CB */
       sIFnii value_cb = (sIFnii)IupGetCallback(ih, "VALUE_CB");
       if (value_cb)
       {
-        /* Block signals during redraw, save previous state */
         bool wasBlocked = table->signalsBlocked();
         table->blockSignals(true);
 
@@ -1639,7 +1527,6 @@ IUP_SDK_API void iupdrvTableRedraw(Ihandle* ih)
             QTableWidgetItem* existingItem = table->item(row, col);
             if (existingItem)
             {
-              /* Query VALUE_CB for cell content (1-based indices) */
               char* value = value_cb(ih, row + 1, col + 1);
               if (value)
                 existingItem->setText(QString::fromUtf8(value));
@@ -1649,15 +1536,12 @@ IUP_SDK_API void iupdrvTableRedraw(Ihandle* ih)
           }
         }
 
-        /* Restore previous signal blocking state */
         table->blockSignals(wasBlocked);
       }
     }
 
-    /* Reapply colors to all cells before redrawing */
     qtTableReapplyAllColors(ih);
 
-    /* Then trigger visual update */
     table->viewport()->update();
   }
 }
@@ -1677,13 +1561,11 @@ IUP_SDK_API void iupdrvTableSetShowGrid(Ihandle* ih, int show)
 
 static int qtTableSetSortableAttrib(Ihandle* ih, const char* value)
 {
-  /* Store value in ih->data first */
   if (iupStrBoolean(value))
     ih->data->sortable = 1;
   else
     ih->data->sortable = 0;
 
-  /* Apply to native widget if it exists */
   if (ih->handle)
   {
     QTableWidget* table = qtTableGetWidget(ih);
@@ -1694,8 +1576,6 @@ static int qtTableSetSortableAttrib(Ihandle* ih, const char* value)
 
       if (ih->data->sortable)
       {
-        /* Virtual mode: disable automatic sorting (callback handles it)
-           Normal mode: enable Qt's automatic sorting */
         table->setSortingEnabled(!iupStrBoolean(virtualmode));
         hHeader->setSectionsClickable(true);
         hHeader->setSortIndicatorShown(true);
@@ -1712,13 +1592,11 @@ static int qtTableSetSortableAttrib(Ihandle* ih, const char* value)
 
 static int qtTableSetAllowReorderAttrib(Ihandle* ih, const char* value)
 {
-  /* Store value in ih->data first */
   if (iupStrBoolean(value))
     ih->data->allow_reorder = 1;
   else
     ih->data->allow_reorder = 0;
 
-  /* Apply to native widget if it exists */
   if (ih->handle)
   {
     QTableWidget* table = qtTableGetWidget(ih);
@@ -1733,7 +1611,6 @@ static int qtTableSetUserResizeAttrib(Ihandle* ih, const char* value)
 {
   QTableWidget* table = qtTableGetWidget(ih);
 
-  /* First, update ih->data->user_resize flag */
   if (iupStrBoolean(value))
     ih->data->user_resize = 1;
   else
@@ -1742,7 +1619,6 @@ static int qtTableSetUserResizeAttrib(Ihandle* ih, const char* value)
   if (!table)
     return 0;
 
-  /* Check if last column should stretch */
   bool last_col_has_width = false;
   {
     char name[50];
@@ -1754,7 +1630,6 @@ static int qtTableSetUserResizeAttrib(Ihandle* ih, const char* value)
   }
   bool stretch_last = (ih->data->stretch_last && !last_col_has_width);
 
-  /* Update resize modes for all existing columns */
   QHeaderView* hHeader = table->horizontalHeader();
 
   for (int col = 0; col < ih->data->num_col; col++)
@@ -1789,7 +1664,6 @@ extern "C" {
 IUP_SDK_API int iupdrvTableGetBorderWidth(Ihandle* ih)
 {
   (void)ih;
-  /* QTableView doesn't add extra border width */
   return 0;
 }
 
@@ -1804,16 +1678,13 @@ static void qtTableMeasureRowMetrics(Ihandle* ih)
   QTableWidget* temp_table = new QTableWidget(1, 1);
   temp_table->setItem(0, 0, new QTableWidgetItem("WWWWWWWWWW"));
 
-  /* Calculate row height using style-aware margin (DPI-scaled) */
   QFontMetrics fm(temp_table->font());
   int margin = temp_table->style()->pixelMetric(QStyle::PM_HeaderMargin, nullptr, temp_table);
   int calculated_height = fm.height() + 2 * margin;
 
-  /* Set row height the same way map does */
   temp_table->verticalHeader()->setDefaultSectionSize(calculated_height);
   qt_table_row_height = calculated_height;
 
-  /* Measure header from Qt's natural sizing (includes bold font and style margins) */
   qt_table_header_height = temp_table->horizontalHeader()->sizeHint().height();
   if (qt_table_header_height <= 0)
     qt_table_header_height = calculated_height;
@@ -1827,7 +1698,6 @@ IUP_SDK_API int iupdrvTableGetRowHeight(Ihandle* ih)
 {
   QTableWidget* table = qtTableGetWidget(ih);
 
-  /* If table is mapped and has rows, use rowHeight */
   if (table && table->rowCount() > 0)
   {
     int row_height = table->rowHeight(0);
@@ -1835,7 +1705,6 @@ IUP_SDK_API int iupdrvTableGetRowHeight(Ihandle* ih)
       return row_height;
   }
 
-  /* Fallback to pre-measured value */
   qtTableMeasureRowMetrics(ih);
   return qt_table_row_height;
 }
@@ -1866,13 +1735,10 @@ IUP_SDK_API void iupdrvTableAddBorders(Ihandle* ih, int* w, int* h)
 
   int sb_size = iupdrvGetScrollbarSize();
 
-  /* Add vertical scrollbar width + frame border */
   *w += sb_size + 2 * frame_width;
 
-  /* Frame border */
   *h += 2 * frame_width;
 
-  /* Add horizontal scrollbar height when VISIBLECOLUMNS causes it to appear */
   int visiblecolumns = iupAttribGetInt(ih, "VISIBLECOLUMNS");
   if (visiblecolumns > 0 && ih->data->num_col > visiblecolumns)
     *h += sb_size;
@@ -1884,7 +1750,6 @@ IUP_SDK_API void iupdrvTableInitClass(Iclass* ic)
   ic->UnMap = qtTableUnMapMethod;
   ic->LayoutUpdate = qtTableLayoutUpdateMethod;
 
-  /* Replace core SET handlers to update native widget */
   iupClassRegisterReplaceAttribFunc(ic, "SORTABLE", NULL, qtTableSetSortableAttrib);
   iupClassRegisterReplaceAttribFunc(ic, "ALLOWREORDER", NULL, qtTableSetAllowReorderAttrib);
   iupClassRegisterReplaceAttribFunc(ic, "USERRESIZE", NULL, qtTableSetUserResizeAttrib);

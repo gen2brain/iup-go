@@ -87,7 +87,6 @@ static IupCocoaTouchFrameView* cocoaTouchFrameGet(Ihandle* ih)
 	return nil;
 }
 
-/* subtle stroke that follows the theme: label color at 25% alpha */
 static UIColor* cocoaTouchFrameDefaultStrokeColor(void)
 {
 	return [[UIColor labelColor] colorWithAlphaComponent:0.25];

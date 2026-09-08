@@ -177,7 +177,6 @@ static int cocoaTouchMarkupSpanAttr(char* tag_buf, const char* key, char* out_bu
 	return 1;
 }
 
-/* Pango family aliases -> iOS font families */
 static NSString* cocoaTouchMarkupResolveFamily(const char* family)
 {
 	if (!family || !*family) return nil;
@@ -190,7 +189,6 @@ static NSString* cocoaTouchMarkupResolveFamily(const char* family)
 	return [NSString stringWithUTF8String:family];
 }
 
-/* per-tag markup state (span/big/small/sub/sup/b/i/u/s) */
 typedef struct {
 	UIFontDescriptorSymbolicTraits traits;
 	int underline;
@@ -281,7 +279,6 @@ IUP_DRV_API NSAttributedString* iupCocoaTouchParseMarkup(const char* raw, UIFont
 		memcpy(tag_buf, tag_start, tag_len);
 		tag_buf[tag_len] = '\0';
 
-		/* span/big/small/sub/sup push a frame; b/i/u/s flip a flag in the current frame */
 		if (iupStrEqualNoCase(tag_buf, "b"))      { if (closing) stack[sp].traits &= ~UIFontDescriptorTraitBold;   else stack[sp].traits |= UIFontDescriptorTraitBold; }
 		else if (iupStrEqualNoCase(tag_buf, "i")) { if (closing) stack[sp].traits &= ~UIFontDescriptorTraitItalic; else stack[sp].traits |= UIFontDescriptorTraitItalic; }
 		else if (iupStrEqualNoCase(tag_buf, "u")) { stack[sp].underline = closing ? 0 : 1; }
@@ -458,7 +455,6 @@ IUP_SDK_API int iupdrvIsVisible(Ihandle* ih)
 
 IUP_SDK_API int iupdrvIsActive(Ihandle* ih)
 {
-	/* shadow attrib written by iupdrvSetActive; default active when unset */
 	const char* v = iupAttribGet(ih, "_IUPCOCOATOUCH_ACTIVE");
 	return (!v) ? 1 : iupStrBoolean(v);
 }
@@ -549,7 +545,6 @@ IUP_SDK_API void iupdrvSendMouse(int x, int y, int bt, int status)
 
 IUP_SDK_API void iupdrvSleep(int time)
 {
-	/* time is ms per IUP spec */
 	if (time > 0) usleep((useconds_t)time * 1000);
 }
 

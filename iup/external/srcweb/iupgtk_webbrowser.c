@@ -29,7 +29,6 @@
 #include "iup_webbrowser.h"
 #include "iup_drvfont.h"
 
-/* Include correct GTK driver header based on version */
 #if GTK_CHECK_VERSION(4, 0, 0)
   #include "iupgtk4_drv.h"
   /* Create aliases for GTK4 functions to match GTK3 names used below */
@@ -43,7 +42,6 @@
 
 #ifndef IUPWEB_USE_DLOPEN
 #if GTK_CHECK_VERSION(4, 0, 0)
-  /* GTK4 uses WebKit6 */
   #if defined(IUPWEB_USE_WEBKIT6)
     #include <webkit/webkit.h>
     #include <jsc/jsc.h>
@@ -51,7 +49,6 @@
       #define IUPWEB_USE_WEBKIT2
     #endif
   #else
-    /* Default to WebKit6 for GTK4 */
     #include <webkit/webkit.h>
     #include <jsc/jsc.h>
     #if !defined(IUPWEB_USE_WEBKIT2)
@@ -62,7 +59,6 @@
     #endif
   #endif
 #elif GTK_CHECK_VERSION(3, 0, 0)
-  /* GTK3 uses WebKit2 or WebKit1 */
   #if defined(IUPWEB_USE_WEBKIT2)
     #include <webkit2/webkit2.h>
     #include <JavaScriptCore/JavaScript.h>
@@ -78,7 +74,6 @@
     #endif
   #endif
 #else
-  /* GTK2 uses WebKit1 */
   #include <webkit/webkit.h>
   #include <JavaScriptCore/JavaScript.h>
   #if !defined(IUPWEB_USE_WEBKIT1)
@@ -161,7 +156,6 @@ int IupGtkWebBrowserDLOpen()
   iupgtkWebBrowser_ClearDLSymbols();
 
 #if GTK_CHECK_VERSION(4, 0, 0)
-  /* GTK4: Only try WebKit6 (libwebkitgtk-6.0) */
   for(i=0; i<2; i++)  /* First two entries are WebKit6 */
   {
     s_webKitLibrary = dlopen(listOfWebKit2Names[i], mode_flags);
@@ -178,7 +172,6 @@ int IupGtkWebBrowserDLOpen()
     }
   }
 #elif GTK_CHECK_VERSION(3, 0, 0)
-  /* GTK3: Try WebKit2 (libwebkit2gtk-4.x), skip WebKit6 */
   for(i=2; i<WEBKIT2_NAMES_ARRAY_LENGTH; i++)  /* Start at index 2 to skip WebKit6 entries */
   {
     s_webKitLibrary = dlopen(listOfWebKit2Names[i], mode_flags);
@@ -198,7 +191,6 @@ int IupGtkWebBrowserDLOpen()
     }
   }
 
-  /* GTK3: Fallback to WebKit1 if WebKit2 not found */
   if(NULL == s_webKitLibrary)
   {
     for(i=0; i<WEBKIT1_GTK3_NAMES_ARRAY_LENGTH; i++)
@@ -221,7 +213,6 @@ int IupGtkWebBrowserDLOpen()
     }
   }
 #else
-  /* GTK2: Only WebKit1 */
   for(i=0; i<WEBKIT1_GTK2_NAMES_ARRAY_LENGTH; i++)
   {
     s_webKitLibrary = dlopen(listOfWebKit1Gtk2Names[i], mode_flags);
@@ -1121,7 +1112,6 @@ static void gtkWebBrowserJavaScriptFinished(GObject* object, GAsyncResult* resul
   #if defined(IUPWEB_USE_DLOPEN)
   if (s_use_webkit6)
   {
-    /* WebKit6: Use JSCore GObject API */
     JSCValue* js_value = webkit_web_view_evaluate_javascript_finish((WebKitWebView*)object, result, &error);
 
     if (js_value && !jsc_value_is_null(js_value) && !jsc_value_is_undefined(js_value))
@@ -1137,7 +1127,6 @@ static void gtkWebBrowserJavaScriptFinished(GObject* object, GAsyncResult* resul
   else
   #elif defined(IUPWEB_USE_WEBKIT6)
   {
-    /* WebKit6: Use JSCore GObject API */
     JSCValue* js_value = webkit_web_view_evaluate_javascript_finish((WebKitWebView*)object, result, &error);
 
     if (js_value && !jsc_value_is_null(js_value) && !jsc_value_is_undefined(js_value))
@@ -1161,7 +1150,6 @@ static void gtkWebBrowserJavaScriptFinished(GObject* object, GAsyncResult* resul
 #ifdef IUPWEB_USE_DLOPEN
       if (webkit_javascript_result_get_js_value && jsc_value_to_string)
       {
-        /* WebKit2GTK 2.22+: Use JSC GObject API */
         JSCValue* jsc_val = webkit_javascript_result_get_js_value(js_value);
         if (jsc_val && !jsc_value_is_null(jsc_val) && !jsc_value_is_undefined(jsc_val))
         {
@@ -1176,7 +1164,6 @@ static void gtkWebBrowserJavaScriptFinished(GObject* object, GAsyncResult* resul
       else
 #endif
       {
-        /* Old WebKit2: Use JSCore C API */
         JSGlobalContextRef context = webkit_javascript_result_get_global_context(js_value);
         JSValueRef value = webkit_javascript_result_get_value(js_value);
 
@@ -2473,9 +2460,8 @@ static int gtkWebBrowserMapMethod(Ihandle* ih)
   /* GTK4 uses event controllers instead of signals for these events */
   iupgtk4SetupEnterLeaveEvents(ih->handle, ih);
   iupgtk4SetupFocusEvents(ih->handle, ih);
-  /* Note: GTK4 doesn't have "show-help" signal, and query-tooltip has incompatible signature */
+  /* GTK4 has no "show-help" signal, and query-tooltip has an incompatible signature */
 #else
-  /* GTK3 uses signals for events */
   g_signal_connect(G_OBJECT(ih->handle), "enter-notify-event", G_CALLBACK(iupgtkEnterLeaveEvent), ih);
   g_signal_connect(G_OBJECT(ih->handle), "leave-notify-event", G_CALLBACK(iupgtkEnterLeaveEvent), ih);
   g_signal_connect(G_OBJECT(ih->handle), "focus-in-event",     G_CALLBACK(iupgtkFocusInOutEvent), ih);
@@ -2537,7 +2523,6 @@ static void gtkWebBrowserUnMapMethod(Ihandle* ih)
     WebKitUserContentManager* manager = webkit_web_view_get_user_content_manager((WebKitWebView*)ih->handle);
     if (manager)
     {
-      /* Unregister script message handlers to release references */
       #if defined(IUPWEB_USE_DLOPEN)
       if (s_use_webkit6)
       {
@@ -2562,7 +2547,6 @@ static void gtkWebBrowserUnMapMethod(Ihandle* ih)
   }
 #endif
 
-  /* Call base unmap to destroy the widget */
   iupdrvBaseUnMapMethod(ih);
 }
 

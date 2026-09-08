@@ -87,7 +87,6 @@ globalThis.__iupRunPump = function () {
   globalThis.__iupReadSync({ op: 'pumpleave' });
 };
 
-// End the innermost pump level; with no pump active, end the Go keep-alive.
 globalThis.__iupExitLoop = function () {
   var depth = globalThis.__iupPumpDepth;
   if (depth > 0) {

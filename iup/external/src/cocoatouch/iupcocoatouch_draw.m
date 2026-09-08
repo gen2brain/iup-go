@@ -788,7 +788,6 @@ IUP_SDK_API void iupdrvDrawSelectRect(IdrawCanvas* dc, int x1, int y1, int x2, i
 	iupDrawCheckSwapCoord(y1, y2);
 
 	CGContextSaveGState(dc->cgContext);
-	/* translucent tint, blended so content shows through */
 	CGContextSetRGBFillColor(dc->cgContext, 0.0, 0.47, 0.85, 0.25);
 	CGContextFillRect(dc->cgContext, CGRectMake(x1, y1, x2 - x1 + 1, y2 - y1 + 1));
 	CGContextRestoreGState(dc->cgContext);

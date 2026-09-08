@@ -18,7 +18,6 @@
 #include "iupandroid_drv.h"
 
 
-/* Pings Java refreshTheme() on custom-drawn classes (table/tree/frame). */
 static void androidThemeCallJavaRefresh(Ihandle* c)
 {
   if (!c || !c->handle || !c->iclass || !c->iclass->name) return;
@@ -49,7 +48,6 @@ static void androidThemeCallJavaRefresh(Ihandle* c)
   (*env)->DeleteLocalRef(env, cls);
 }
 
-/* Re-resolves inherited BGCOLOR/FGCOLOR on every mapped descendant (Qt-style walk). */
 static void androidThemeRefreshChildren(Ihandle* ih)
 {
   for (Ihandle* c = ih; c; c = c->brother)
@@ -114,7 +112,6 @@ JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupActivity_FinalizeDialog
   iupAttribSet(ih, "_IUP_DIALOG_DEFER_DESTROY", NULL);
 }
 
-/* Dark-mode flip: refresh color defaults + THEMECHANGED_CB (called from onConfigurationChanged). */
 JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupActivity_NotifyThemeChanged(JNIEnv* jni_env, jobject thiz, jlong ihandle_ptr, jint dark_mode)
 {
   (void)jni_env;

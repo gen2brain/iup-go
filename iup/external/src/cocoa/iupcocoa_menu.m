@@ -24,9 +24,7 @@
 #include "iupcocoa_drv.h"
 
 
-/* Global application menu reference (IUP managed) */
 static Ihandle* s_currentIupApplicationMenu = NULL;
-/* Global default application menu (Native, created if no IUP menu is provided) */
 static NSMenu* s_defaultApplicationMenu = NULL;
 
 static const void* MENUITEM_TARGET_ASSOCIATED_OBJ_KEY = &MENUITEM_TARGET_ASSOCIATED_OBJ_KEY;
@@ -104,7 +102,6 @@ static char* cocoaMenuItemGetActiveAttrib(Ihandle* ih);
   if (!_ih) return;
 
   Icallback cb = IupGetCallback(_ih, "MENUCLOSE_CB");
-  /* Check also in the Submenu parent */
   if (!cb && _ih->parent)
     cb = (Icallback)IupGetCallback(_ih->parent, "MENUCLOSE_CB");
 
@@ -219,14 +216,12 @@ static void cocoaMenuItemUpdateRadioGroup(Ihandle* ih)
 
 static int cocoaMenuSetBgColorAttrib(Ihandle* ih, const char* value)
 {
-  /* NSMenu does not support custom background colors on macOS.
-     Menu appearance is controlled by the system. */
+  /* NSMenu has no custom background colour on macOS */
   (void)ih;
   (void)value;
   return 0;
 }
 
-/* Checks if a given menu contains the standard "Quit" application item. */
 static BOOL cocoaMenuContainsQuitItem(NSMenu* menu)
 {
   if (!menu) return NO;
@@ -240,7 +235,6 @@ static BOOL cocoaMenuContainsQuitItem(NSMenu* menu)
   return NO;
 }
 
-/* Finds an NSMenuItem with a specific title (case-insensitive) within a menu. */
 static NSMenuItem* cocoaMenuFindTitledItem(NSMenu* menu, NSString* title)
 {
   if (!menu || !title) return nil;
@@ -248,7 +242,6 @@ static NSMenuItem* cocoaMenuFindTitledItem(NSMenu* menu, NSString* title)
   {
     NSString* itemTitle = [item title];
 
-    /* If the item title is empty (common for the App Menu wrapper at index 0, or IupMenuItem wrappers), check the submenu title. */
     if ((!itemTitle || [itemTitle length] == 0) && [item submenu]) {
       itemTitle = [[item submenu] title];
     }
@@ -481,7 +474,6 @@ IUP_SDK_API int iupdrvMenuGetMenuBarSize(Ihandle* ih)
 /* Application Menu Functions                                                              */
 /*******************************************************************************************/
 
-/* Creates the standard macOS "Application" menu (About, Services, Hide, Quit) */
 static void cocoaMenuCreateAppMenu(NSMenu* main_menu)
 {
   NSString* app_name = [[NSProcessInfo processInfo] processName];
@@ -513,7 +505,6 @@ static void cocoaMenuCreateAppMenu(NSMenu* main_menu)
 
   [app_menu addItemWithTitle:[NSString stringWithFormat:@"Quit %@", app_name] action:@selector(terminate:) keyEquivalent:@"q"];
 
-  /* Attach the submenu and insert into the main menu at the beginning */
   [app_item setSubmenu:app_menu];
   [main_menu insertItem:app_item atIndex:0];
 
@@ -521,7 +512,6 @@ static void cocoaMenuCreateAppMenu(NSMenu* main_menu)
   [app_item release];
 }
 
-/* Creates a placeholder "File" menu. */
 static void cocoaMenuCreateFileMenu(NSMenu* main_menu)
 {
   NSMenuItem* file_item = [[NSMenuItem alloc] initWithTitle:@"File" action:nil keyEquivalent:@""];
@@ -540,7 +530,6 @@ static void cocoaMenuCreateFileMenu(NSMenu* main_menu)
   [file_item release];
 }
 
-/* Creates a standard macOS "Edit" menu (Undo, Redo, Cut, Copy, Paste). */
 static void cocoaMenuCreateEditMenu(NSMenu* main_menu)
 {
   NSMenuItem* edit_item = [[NSMenuItem alloc] initWithTitle:@"Edit" action:nil keyEquivalent:@""];
@@ -561,7 +550,6 @@ static void cocoaMenuCreateEditMenu(NSMenu* main_menu)
   [edit_item release];
 }
 
-/* Creates the standard macOS "Window" menu (Minimize, Zoom, etc.) */
 static void cocoaMenuCreateWindowMenu(NSMenu* main_menu)
 {
   NSMenuItem* window_item = [[NSMenuItem alloc] initWithTitle:@"Window" action:nil keyEquivalent:@""];
@@ -579,7 +567,6 @@ static void cocoaMenuCreateWindowMenu(NSMenu* main_menu)
   [window_item release];
 }
 
-/* Creates a standard macOS "Help" menu. */
 static void cocoaMenuCreateHelpMenu(NSMenu* main_menu)
 {
   NSMenuItem* help_item = [[NSMenuItem alloc] initWithTitle:@"Help" action:nil keyEquivalent:@""];
@@ -596,7 +583,6 @@ static void cocoaMenuCreateHelpMenu(NSMenu* main_menu)
   [help_item release];
 }
 
-/* Synchronizes the NSApplication's standard Window and Help menus with the provided menu bar. */
 static void cocoaMenuSynchronizeStandardMenus(NSMenu* menuBar)
 {
   if (!menuBar) {
@@ -620,7 +606,6 @@ static void cocoaMenuSynchronizeStandardMenus(NSMenu* menuBar)
   }
 }
 
-/* Ensures that a default application menu exists and is set if no other menu is active. */
 IUP_DRV_API void iupcocoaEnsureDefaultApplicationMenu(void)
 {
   if (s_defaultApplicationMenu == nil)
@@ -653,14 +638,12 @@ IUP_DRV_API Ihandle* iupcocoaMenuGetApplicationMenu(void)
   return s_currentIupApplicationMenu;
 }
 
-/* Checks if the given Ihandle is the currently active application menu bar. */
 IUP_DRV_API int iupcocoaMenuIsApplicationBar(Ihandle* ih)
 {
   int result = (ih != NULL && ih == s_currentIupApplicationMenu);
   return result;
 }
 
-/* Called during iupdrvClose to clean up resources. */
 IUP_DRV_API void iupcocoaMenuCleanupApplicationMenu(void)
 {
   s_currentIupApplicationMenu = NULL;
@@ -676,28 +659,24 @@ IUP_DRV_API void iupcocoaMenuCleanupApplicationMenu(void)
   }
 }
 
-/* Sets the given Ihandle (IupMenu) as the application's main menu bar.
-   This is the central function for switching the application menu. */
 IUP_DRV_API void iupcocoaMenuSetApplicationMenu(Ihandle* ih)
 {
   if (ih && s_currentIupApplicationMenu == ih) {
     return;
   }
 
-  /* Restore the default menu. */
   if (!ih)
   {
-    iupcocoaEnsureDefaultApplicationMenu(); /* Ensure it exists */
+    iupcocoaEnsureDefaultApplicationMenu();
     if ([[NSApplication sharedApplication] mainMenu] != s_defaultApplicationMenu)
     {
       cocoaMenuSynchronizeStandardMenus(s_defaultApplicationMenu);
       [[NSApplication sharedApplication] setMainMenu:s_defaultApplicationMenu];
     }
-    s_currentIupApplicationMenu = NULL; /* Update IUP tracking */
+    s_currentIupApplicationMenu = NULL;
     return;
   }
 
-  /* Set a new IUP menu. */
   if (!ih->handle) {
     IupMap(ih);
   }
@@ -728,9 +707,7 @@ IUP_DRV_API void iupcocoaMenuSetApplicationMenu(Ihandle* ih)
     s_currentIupApplicationMenu = ih;
 
 #ifdef GNUSTEP
-    /* On GNUstep menus are floating windows. -[NSMenu setMain:NO] only drops the
-       window level; it does not hide it. Order the fallback menu out explicitly
-       so the user only sees the active IUP menu. */
+    /* GNUstep menus are windows; -[NSMenu setMain:NO] only lowers the level, so order it out */
     if (s_defaultApplicationMenu && s_defaultApplicationMenu != menu)
     {
       NSWindow* default_win = [s_defaultApplicationMenu window];

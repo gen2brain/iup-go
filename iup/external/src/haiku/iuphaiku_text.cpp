@@ -53,8 +53,7 @@ extern "C" {
 
 static void haikuTextFireCaretCb(Ihandle* ih, BTextView* tv);
 
-/* B_KEY_DOWN filter on the inner BTextView for ACTION char-by-char dispatch
- * (abort / replace key via iupEditCallActionCb). */
+/* B_KEY_DOWN filter on the inner BTextView for char-by-char ACTION dispatch. */
 class IupHaikuTextKeyFilter : public BMessageFilter
 {
 public:
@@ -76,8 +75,7 @@ public:
     if (target && *target) tv = dynamic_cast<BTextView*>(*target);
     if (!tv) return B_DISPATCH_MESSAGE;
 
-    /* K_ANY dispatch: walks up the IUP parent chain so dialog-level handlers
-       (e.g. autocomplete K_DOWN to shift focus) see the key first. */
+    /* K_ANY dispatch walks up the IUP parent chain so dialog-level handlers see the key first. */
     int32 raw_char = 0, mods = 0, raw_key = 0;
     msg->FindInt32("raw_char", &raw_char);
     msg->FindInt32("key", &raw_key);
@@ -252,7 +250,7 @@ public:
     }
   }
 
-  /* the inner BTextView holds the focus and invalidates us on focus change */
+  /* the inner BTextView holds the focus and invalidates on focus change */
   void Draw(BRect updateRect) override
   {
     BTextControl::Draw(updateRect);
@@ -333,8 +331,7 @@ public:
     DrawString(cue, p);
   }
 
-  /* Clear modification message around programmatic SetText so the queued
-   * InvokeNotify doesn't fire VALUECHANGED_CB for non-user edits. */
+  /* Clear the modification message around programmatic SetText so VALUECHANGED_CB stays user-only. */
   void MuteBegin()
   {
     if (fMute) return;
@@ -705,7 +702,6 @@ static void haikuTextFireCaretCb(Ihandle* ih, BTextView* tv)
   int col = s - ls + 1;
   int pos = s;
 
-  /* Suppress duplicates within the same caret position. */
   int last = iupAttribGetInt(ih, "_IUPHAIKU_LAST_CARET");
   if (last == pos + 1) return;
   iupAttribSetInt(ih, "_IUPHAIKU_LAST_CARET", pos + 1);
@@ -1032,7 +1028,6 @@ static int haikuTextSetNCAttrib(Ihandle* ih, const char* value)
       tc->TextView()->SetMaxBytes(nc);
     }
   }
-  /* Multi-line NC is enforced inside our InsertText override. */
   return 0;
 }
 
@@ -1432,7 +1427,6 @@ static void haikuTextApplyFormatTagFont(BFont& bfont, Ihandle* tag, uint32* mode
     }
   }
 
-  /* Granular per-attribute overrides. */
   char* fontsize = iupAttribGet(tag, "FONTSIZE");
   if (fontsize)
   {
@@ -1588,7 +1582,6 @@ extern "C" IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* tag, in
     }
   }
 
-  /* Record LINK range + URL; click hit-test is in IupHaikuTextView::MouseDown. */
   char* link_url = iupAttribGet(tag, "LINK");
   if (link_url && start != end)
   {
@@ -1611,7 +1604,6 @@ extern "C" IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* tag, in
   if (mode == 0) mode = B_FONT_ALL;
   tv->SetFontAndColor(start, end, &bfont, mode, color_changed ? &color : NULL);
 
-  /* Per-range BGCOLOR: overlay rect painted in IupHaikuTextView::Draw. */
   char* bg = iupAttribGet(tag, "BGCOLOR");
   if (bg)
   {
@@ -1638,7 +1630,6 @@ static int haikuTextSetRemoveFormattingAttrib(Ihandle* ih, const char* value)
   if (!iupStrEqualNoCase(value, "ALL"))
     tv->GetSelection(&s, &e);
 
-  /* Reset to system default font + view's standard text color. */
   BFont base_font(be_plain_font);
   rgb_color base_col = iuphaikuColor(B_DOCUMENT_TEXT_COLOR);
   tv->SetFontAndColor(s, e, &base_font, B_FONT_ALL, &base_col);
@@ -1801,7 +1792,6 @@ static char* haikuTextGetLineValueAttrib(Ihandle* ih)
   int32 line_start = tv->OffsetAt(ln);
   int32 line_end   = tv->OffsetAt(ln + 1);
   int32 len = line_end - line_start;
-  /* Trim trailing newline from intermediate lines. */
   if (len > 0)
   {
     char last = tv->ByteAt(line_end - 1);

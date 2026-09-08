@@ -296,7 +296,6 @@ static void cocoaTouchToggleApplyValue(Ihandle* ih, IupCocoaTouchToggleValue new
 	}
 }
 
-/* fires ACTION + VALUECHANGED_CB, plus radio-sibling deactivate on turn-on */
 static void cocoaTouchToggleFireCallbacks(Ihandle* ih, IupCocoaTouchToggleValue new_value)
 {
 	int state = (new_value == IupCocoaTouchToggleOn) ? 1 : 0;
@@ -346,7 +345,6 @@ static void cocoaTouchToggleFireCallbacks(Ihandle* ih, IupCocoaTouchToggleValue 
 	{
 		if (button.isRadio)
 		{
-			/* radio: tapping a selected one stays on, tapping another flips on */
 			if (current != IupCocoaTouchToggleOn)
 			{
 				new_value = IupCocoaTouchToggleOn;
@@ -411,7 +409,6 @@ static int cocoaTouchToggleSetValueAttrib(Ihandle* ih, const char* value)
 	IupCocoaTouchToggleValue new_value = cocoaTouchToggleValueFromStr(value, current, three_state);
 	cocoaTouchToggleApplyValue(ih, new_value);
 
-	/* turning a radio ON via VALUE also flips its siblings off */
 	if (new_value == IupCocoaTouchToggleOn && ih->data->is_radio
 	    && !iupAttribGetBoolean(ih, "IGNORERADIO"))
 	{
@@ -687,7 +684,6 @@ static void cocoaTouchToggleUnMapMethod(Ihandle* ih)
 		objc_setAssociatedObject((id)ih->handle, IHANDLE_ASSOCIATED_OBJ_KEY, nil, OBJC_ASSOCIATION_ASSIGN);
 		objc_setAssociatedObject((id)ih->handle, IUP_COCOATOUCH_TOGGLE_TARGET_OBJ_KEY, nil, OBJC_ASSOCIATION_ASSIGN);
 
-		/* Drop radio-active pointer if this toggle owned it. */
 		Ihandle* radio = iupRadioFindToggleParent(ih);
 		if (radio && iupAttribGet(radio, "_IUPCOCOATOUCH_RADIO_ACTIVE") == (char*)ih)
 		{

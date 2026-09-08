@@ -88,8 +88,7 @@ static int cocoaFontDlgPopup(Ihandle* ih, int x, int y)
 
   NSFont* font = nil;
 
-  /* System font names starting with '.' are internal and cannot be used with fontWithName:.
-     Use the proper system font API instead. */
+  /* system font names starting with '.' are internal and fontWithName: rejects them */
   if (typeface[0] == '.' || strcmp(typeface, "System") == 0 || strlen(typeface) == 0)
   {
     font = [NSFont systemFontOfSize:(CGFloat)size];

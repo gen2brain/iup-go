@@ -25,8 +25,7 @@
 #include "iupcocoa_drv.h"
 
 #ifdef GNUSTEP
-/* No-op category stubs for AppKit methods GNUstep doesn't implement. Degradation is
-   "feature does nothing" rather than a crash. */
+/* No-op stubs for AppKit methods GNUstep lacks; the feature does nothing instead of crashing */
 
 @implementation NSControl (IupGnustepShimImpl)
 - (void)setUsesSingleLineMode:(BOOL)flag       { (void)flag; }
@@ -35,8 +34,7 @@
 - (void)setControlSize:(NSInteger)size         { (void)size; }
 @end
 
-/* NSCell base doesn't declare setTextColor: (only subclasses do). Some call sites
-   get a plain NSCell (e.g. NSBox titleCell); no-op keeps them safe. */
+/* NSCell base does not declare setTextColor:, and some call sites get a plain NSCell */
 @implementation NSCell (IupGnustepShimImpl)
 - (void)setTextColor:(NSColor*)color { (void)color; }
 @end
@@ -52,8 +50,7 @@
 /* fittingSize: callers size the temp widget first, so returning -frame is fine. */
 - (NSSize)fittingSize { return [self frame].size; }
 - (NSRect)convertRectToBacking:(NSRect)rect { return rect; }
-/* Tracking areas: accepted but not wired on GNUstep; empty array + no-ops keep
-   remove-then-add call patterns safe. */
+/* Tracking areas are accepted but never wired on GNUstep */
 - (void)updateTrackingAreas { }
 - (NSArray*)trackingAreas { return @[]; }
 - (void)addTrackingArea:(NSTrackingArea*)area { (void)area; }
@@ -95,8 +92,7 @@
 - (void)setContentTintColor:(NSColor*)color { (void)color; }
 @end
 
-/* GNUstep stops at the primitive attributesAtIndex:effectiveRange:, so walk the range with it.
-   The reverse option is not honored; no caller in the driver asks for it. */
+/* GNUstep has only the primitive attributesAtIndex:effectiveRange: and ignores the reverse option */
 @implementation NSAttributedString (IupGnustepShimImpl)
 - (void)enumerateAttributesInRange:(NSRange)range
                            options:(NSUInteger)options
@@ -327,7 +323,6 @@ IUP_DRV_API void iupcocoaRemoveFromParent(Ihandle* ih)
 
 IUP_DRV_API int iupcocoaComputeCartesianScreenHeightFromIup(int iup_height)
 {
-  /* This function converts from IUP's top-left based system to Cocoa's global bottom-left based system. */
   NSRect main_screen_frame = [[NSScreen mainScreen] frame];
   CGFloat main_screen_top = main_screen_frame.origin.y + main_screen_frame.size.height;
   CGFloat cartesian_y = main_screen_top - iup_height;
@@ -336,8 +331,6 @@ IUP_DRV_API int iupcocoaComputeCartesianScreenHeightFromIup(int iup_height)
 
 IUP_DRV_API int iupcocoaComputeIupScreenHeightFromCartesian(int cartesian_height)
 {
-  /* This function converts from Cocoa's global bottom-left coordinate system
-     to IUP's top-left based system, where (0,0) is the top-left of the main screen. */
   NSRect main_screen_frame = [[NSScreen mainScreen] frame];
   CGFloat main_screen_top = main_screen_frame.origin.y + main_screen_frame.size.height;
   CGFloat iup_y = main_screen_top - cartesian_height;
@@ -363,7 +356,6 @@ IUP_SDK_API void iupdrvReparent(Ihandle* ih)
 
   if (old_parent_view != new_parent_view && new_parent_view)
   {
-    /* Retain the view to prevent it from being deallocated when removed */
     [child_view retain];
     [child_view removeFromSuperview];
     [new_parent_view addSubview:child_view];
@@ -546,7 +538,7 @@ IUP_SDK_API void iupdrvScreenToClient(Ihandle* ih, int *x, int *y)
 {
   NSRect main_screen = [[NSScreen mainScreen] frame];
   CGFloat main_screen_top = main_screen.origin.y + main_screen.size.height;
-  NSPoint screen_point = { *x, main_screen_top - *y }; /* IUP screen to Cocoa screen (bottom-left) */
+  NSPoint screen_point = { *x, main_screen_top - *y };
 
   NSView* main_view = iupcocoaGetMainView(ih);
   if (!main_view) return;
@@ -560,8 +552,6 @@ IUP_SDK_API void iupdrvScreenToClient(Ihandle* ih, int *x, int *y)
   NSPoint window_point = window_rect.origin;
   NSPoint view_point = [main_view convertPoint:window_point fromView:nil];
 
-  /* If the view is not flipped, its coordinate system has the origin at the bottom-left.
-     We must convert the y-coordinate to IUP's top-left based system. For flipped views, the coordinate is already correct. */
   if (![main_view isFlipped])
   {
     NSRect view_bounds = [main_view bounds];
@@ -582,8 +572,6 @@ IUP_SDK_API void iupdrvClientToScreen(Ihandle* ih, int *x, int *y)
 
   NSPoint start_point = { *x, *y };
 
-  /* If the view is not flipped, we must convert from IUP's top-left
-     coordinate system to Cocoa's bottom-left system before converting to screen coordinates. */
   if (![main_view isFlipped])
   {
     NSRect view_bounds = [main_view bounds];
@@ -599,7 +587,7 @@ IUP_SDK_API void iupdrvClientToScreen(Ihandle* ih, int *x, int *y)
   CGFloat main_screen_top = main_screen.origin.y + main_screen.size.height;
 
   *x = screen_rect.origin.x;
-  *y = main_screen_top - screen_rect.origin.y; /* convert from cocoa screen coords to IUP screen coords */
+  *y = main_screen_top - screen_rect.origin.y;
 }
 
 IUP_SDK_API int iupdrvBaseSetZorderAttrib(Ihandle* ih, const char* value)
@@ -756,14 +744,12 @@ IUP_SDK_API int iupdrvBaseSetFgColorAttrib(Ihandle* ih, const char* value)
   CGFloat blue = b/255.0;
   NSColor* the_color = [NSColor colorWithSRGBRed:red green:green blue:blue alpha:1.0];
 
-  /* For NSTextField, NSTextView, etc. */
   if ([main_view respondsToSelector:@selector(setTextColor:)])
   {
     [main_view setTextColor:the_color];
     return 1;
   }
 
-  /* For NSButton */
   if ([main_view isKindOfClass:[NSButton class]])
   {
     NSButton* button = (NSButton*)main_view;
@@ -775,14 +761,13 @@ IUP_SDK_API int iupdrvBaseSetFgColorAttrib(Ihandle* ih, const char* value)
     return 1;
   }
 
-  /* For NSBox (used by IupFrame) */
   if ([main_view respondsToSelector:@selector(setTitleColor:)])
   {
     [main_view setTitleColor:the_color];
     return 1;
   }
 
-  return 0; /* Control does not support changing foreground color */
+  return 0;
 }
 
 @interface IUPCursorTrackingDelegate : NSObject
@@ -880,7 +865,7 @@ IUP_SDK_API int iupdrvBaseSetCursorAttrib(Ihandle* ih, const char* value)
                                                        userInfo:nil];
     [main_view addTrackingArea:area];
 
-    /* Store delegate and area to be cleaned up later. The view retains the area. */
+    /* the view retains the tracking area */
     iupAttribSet(ih, "_IUPCOCOA_CURSOR_DELEGATE", (char*)delegate);
     iupAttribSet(ih, "_IUPCOCOA_TRACKINGAREA", (char*)area);
     [area release];
@@ -1285,8 +1270,7 @@ IUP_DRV_API void iupcocoaCommonBaseAppendDefaultMenuItemsForClassType(NSMenu* ds
 
 IUP_DRV_API void iupcocoaCommonBaseSetContextMenuForWidget(Ihandle* ih, id widget_to_attach_menu_to, Ihandle* menu_ih)
 {
-  /* Mark that the user has configured this attribute. This allows delegate methods
-     to distinguish between "never set" (use default behavior) and "set to nil" (disable menu). */
+  /* separates "never set" from "set to nil" in the delegate methods */
   iupAttribSet(ih, "_IUPCOCOA_CONTEXTMENU_SET", "1");
   iupAttribSet(ih, "_COCOA_CONTEXT_MENU_IH", (const char*)menu_ih);
 
@@ -1333,7 +1317,7 @@ IUP_DRV_API int iupcocoaCommonBaseIupButtonForCocoaButton(NSInteger which_cocoa_
   if(3 == which_cocoa_button) return IUP_BUTTON4;
   if(4 == which_cocoa_button) return IUP_BUTTON5;
 #endif
-  return (int)(which_cocoa_button + '0'); /* Other buttons */
+  return (int)(which_cocoa_button + '0');
 }
 
 IUP_DRV_API bool iupcocoaCommonBaseHandleMouseButtonCallback(Ihandle* ih, NSEvent* the_event, NSView* represented_view, bool is_pressed)
@@ -1351,8 +1335,6 @@ IUP_DRV_API bool iupcocoaCommonBaseHandleMouseButtonCallback(Ihandle* ih, NSEven
     NSPoint converted_point = [represented_view convertPoint:the_point fromView:nil];
     CGFloat final_y = converted_point.y;
 
-    /* Convert from Cocoa's coordinate system (origin bottom-left) to IUP's (origin top-left),
-       but only if the view is not already flipped (which would mean it is already top-left). */
     if(![represented_view isFlipped])
     {
       NSRect view_bounds = [represented_view bounds];
@@ -1389,8 +1371,7 @@ IUP_DRV_API bool iupcocoaCommonBaseHandleMouseButtonCallback(Ihandle* ih, NSEven
       caller_should_propagate = false;
     }
 
-    /* Discard pending mouse-up events that may have been queued during
-       a modal dialog run inside the callback. */
+    /* a modal run inside the callback queues mouse-up events that must be discarded */
     if(is_pressed)
     {
       NSUInteger mask;
@@ -1425,8 +1406,6 @@ IUP_DRV_API bool iupcocoaCommonBaseHandleMouseMotionCallback(Ihandle* ih, NSEven
     NSPoint converted_point = [represented_view convertPoint:the_point fromView:nil];
     CGFloat final_y = converted_point.y;
 
-    /* Convert from Cocoa's coordinate system (origin bottom-left) to IUP's (origin top-left),
-       but only if the view is not already flipped (which would mean it is already top-left). */
     if(![represented_view isFlipped])
     {
       NSRect view_bounds = [represented_view bounds];
@@ -1453,15 +1432,8 @@ IUP_DRV_API bool iupcocoaCommonBaseScrollWheelCallback(Ihandle* ih, NSEvent* the
     NSPoint converted_point = [represented_view convertPoint:the_point fromView:nil];
     CGFloat final_y = converted_point.y;
 
-    /* IUP's WHEEL_CB 'delta' corresponds to vertical scrolling.
-       On macOS, deltaY > 0 means scroll up (content should move up, showing content above).
-       This matches the IUP convention where positive delta means scroll up. */
     CGFloat delta = [the_event deltaY];
 
-    /* IUP does not have a separate parameter for horizontal scrolling (deltaX). */
-
-    /* Convert from Cocoa's coordinate system (origin bottom-left) to IUP's (origin top-left),
-       but only if the view is not already flipped (which would mean it is already top-left). */
     if(![represented_view isFlipped])
     {
       NSRect view_bounds = [represented_view bounds];

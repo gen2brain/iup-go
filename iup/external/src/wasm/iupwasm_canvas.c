@@ -77,7 +77,7 @@ EM_JS(void, iupwasmJsScrollCanvasLine, (int id, int linex, int liney), {
   globalThis.__iupApply({ op: 'scrollcanvasline', id: id, x: linex, y: liney });
 })
 
-/* honor explicit LINEX/LINEY only; 0 leaves the browser default wheel step (mirrors gtk's per-step delta) */
+/* honor explicit LINEX/LINEY only; 0 leaves the browser default wheel step */
 static void wasmCanvasUpdateLineStep(Ihandle* ih)
 {
   int id = iupwasmIdOf(ih);

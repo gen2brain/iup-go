@@ -626,7 +626,6 @@ static int iColorDlgSetShowAlphaAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-/* Compact (mobile) layout: rebuild as a single column. */
 static int iColorDlgSetShowCompactAttrib(Ihandle* ih, const char* value)
 {
   IcolorDlgData* d = (IcolorDlgData*)iupAttribGetInherit(ih, "_IUP_GC_DATA");
@@ -658,7 +657,6 @@ static int iColorDlgSetShowCompactAttrib(Ihandle* ih, const char* value)
   if (ih->handle) return 1;
   if (!iupStrBoolean(value)) return 1;
 
-  /* lin2 = Hbox(Fill, ok, cancel, help). */
   lin2 = IupGetParent(d->help_bt);
   for (c = lin2->firstchild; c; c = c->brother)
   {
@@ -668,7 +666,6 @@ static int iColorDlgSetShowCompactAttrib(Ihandle* ih, const char* value)
     else if (!cancel_bt) cancel_bt = c;
   }
 
-  /* Detach leaves we reuse, then destroy the desktop tree. */
   IupDetach(d->color_browser);
   IupDetach(d->color_cnv);
   IupDetach(d->colorhex_txt);
@@ -687,12 +684,11 @@ static int iColorDlgSetShowCompactAttrib(Ihandle* ih, const char* value)
 
   IupDestroy(ih->firstchild);
 
-  /* Touch sizing: square wheel; clear slider SIZE to use the driver's natural height. */
+  /* clear the slider SIZE so the driver's natural height is used */
   IupSetAttribute(d->color_browser, "RASTERSIZE", "220x220");
   IupSetAttribute(d->color_browser, "EXPAND", "NO");
   IupSetAttribute(d->alpha_val, "SIZE", NULL);
 
-  /* Palette: 5x2 grayscale + primaries, taller cells for touch. */
   IupSetAttribute(d->colortable_cbar, "NUM_CELLS", "10");
   IupSetAttribute(d->colortable_cbar, "SIZE", NULL);
   IupSetAttribute(d->colortable_cbar, "RASTERSIZE", "x60");
@@ -748,7 +744,7 @@ static int iColorDlgSetShowCompactAttrib(Ihandle* ih, const char* value)
   IupSetAttribute(lin2c, "MARGIN", "0x0");
   IupSetAttribute(lin2c, "NORMALIZESIZE", "HORIZONTAL");
 
-  /* Park unused widgets so they aren't leaked. */
+  /* park the unused widgets so they are not leaked */
   hidden = IupVbox(d->hue_txt, d->saturation_txt, d->intensity_txt, d->help_bt, NULL);
   IupSetAttribute(hidden, "FLOATING", "YES");
   IupSetAttribute(hidden, "VISIBLE", "NO");

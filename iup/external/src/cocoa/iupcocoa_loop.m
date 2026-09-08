@@ -120,7 +120,7 @@ int IupMainLoop(void)
     }
   }
 
-  /* If we are exiting a nested loop, reset the quit flag so the parent loop can continue execution. */
+  /* reset the quit flag when leaving a nested loop so the parent loop continues */
   if (mac_main_loop_level > 1 && mac_main_loop_should_quit)
   {
     mac_main_loop_should_quit = 0;

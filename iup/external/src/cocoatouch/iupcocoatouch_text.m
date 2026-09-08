@@ -29,7 +29,6 @@
 
 static const void* IUPCOCOATOUCH_TEXT_DELEGATE_KEY = "IUPCOCOATOUCH_TEXT_DELEGATE";
 
-/* hardware-keyboard presses route to iupCocoaTouchKeyEvent for KEYPRESS_CB / K_ANY */
 @interface IupCocoaTouchTextField : UITextField
 @property(nonatomic, assign) Ihandle* ihandle;
 @end

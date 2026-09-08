@@ -41,7 +41,6 @@ static void cocoaTouchLabelFireButtonCb(UIView* view, NSSet<UITouch*>* touches, 
 }
 
 
-/* UILabel + IUP padding + independent H/V alignment, re-anchored in drawTextInRect */
 @interface IupCocoaTouchLabelView : UILabel
 @property(nonatomic, assign) UIEdgeInsets textInsets;
 /* IUP_ALIGN_ATOP / ACENTER / ABOTTOM */
@@ -125,7 +124,6 @@ static void cocoaTouchLabelFireButtonCb(UIView* view, NSSet<UITouch*>* touches, 
 @end
 
 
-/* image label gets the same BUTTON_CB dispatch as the text label */
 @interface IupCocoaTouchLabelImageView : UIImageView
 @property(nonatomic, assign) UITouch* activeTouch;
 @end
@@ -159,7 +157,6 @@ static void cocoaTouchLabelFireButtonCb(UIView* view, NSSet<UITouch*>* touches, 
 @end
 
 
-/* SELECTABLE=YES long-press target -> copy text to pasteboard */
 @interface IupCocoaTouchLabelSelectTarget : NSObject
 @property(nonatomic, assign) Ihandle* ihandle;
 @property(nonatomic, assign) UILongPressGestureRecognizer* recognizer;
@@ -761,13 +758,11 @@ IUP_SDK_API void iupdrvLabelInitClass(Iclass* ic)
 	ic->Map   = cocoaTouchLabelMapMethod;
 	ic->UnMap = iupdrvBaseUnMapMethod;
 
-	/* Common overrides */
 	iupClassRegisterAttribute(ic, "ACTIVE", iupBaseGetActiveAttrib, cocoaTouchLabelSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
 	iupClassRegisterAttribute(ic, "BGCOLOR", iupBaseNativeParentGetBgColorAttrib, cocoaTouchLabelSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
 	iupClassRegisterAttribute(ic, "FGCOLOR", NULL, cocoaTouchLabelSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
 	iupClassRegisterAttribute(ic, "FONT", NULL, cocoaTouchLabelSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
 
-	/* IupLabel core */
 	iupClassRegisterAttribute(ic, "TITLE", NULL, cocoaTouchLabelSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "ALIGNMENT", cocoaTouchLabelGetAlignmentAttrib, cocoaTouchLabelSetAlignmentAttrib, IUPAF_SAMEASSYSTEM, "ALEFT:ACENTER", IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "IMAGE", NULL, cocoaTouchLabelSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
@@ -779,6 +774,5 @@ IUP_SDK_API void iupdrvLabelInitClass(Iclass* ic)
 	/* MARKUP=YES wires a Pango subset: b/i/u/s + <span foreground="#..."> */
 	iupClassRegisterAttribute(ic, "MARKUP", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);
 
-	/* SELECTABLE=YES installs a long-press that copies title to the pasteboard */
 	iupClassRegisterAttribute(ic, "SELECTABLE", NULL, cocoaTouchLabelSetSelectableAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 }

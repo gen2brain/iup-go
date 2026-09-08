@@ -268,7 +268,6 @@ extern "C" IUP_SDK_API int iupdrvNotifyShow(Ihandle* ih)
     if (silent)
       builder.MuteAudio();
 
-    /* Icon */
     if (icon && icon[0])
     {
       int img_width, img_height;
@@ -331,16 +330,13 @@ extern "C" IUP_SDK_API int iupdrvNotifyShow(Ihandle* ih)
       }
     }
 
-    /* Tag */
     char tag_buf[64];
     snprintf(tag_buf, sizeof(tag_buf), "iup_notify_%d", winui_notify_tag_counter++);
     hstring tag(iupwinuiStringToHString(tag_buf));
 
-    /* Default body-click arguments */
     builder.AddArgument(L"action", L"0");
     builder.AddArgument(L"tag", tag);
 
-    /* Action buttons */
     const char* action_attrs[] = { "ACTION1", "ACTION2", "ACTION3", "ACTION4" };
     for (int i = 0; i < 4; i++)
     {
@@ -359,7 +355,6 @@ extern "C" IUP_SDK_API int iupdrvNotifyShow(Ihandle* ih)
     auto notification = builder.BuildNotification();
     notification.Tag(tag);
 
-    /* Remove previous tag mapping for this Ihandle */
     if (!aux->tag.empty())
     {
       std::lock_guard<std::mutex> lock(winui_notify_map_mutex);

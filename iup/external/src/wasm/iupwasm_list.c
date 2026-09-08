@@ -354,8 +354,7 @@ EMSCRIPTEN_KEEPALIVE void iupwasmDispatchListCaret(int id, int pos)
   }
 }
 
-/* sel is the full "+/-" string (one char per item); rebuild the selected-position
-   array and route through the core, which fires MULTISELECT_CB or falls back to ACTION. */
+/* sel is the full "+/-" string, one char per item */
 EMSCRIPTEN_KEEPALIVE void iupwasmDispatchListMulti(int id, const char* sel, int seq)
 {
   Ihandle* ih = iupwasmHandleFromId(id);

@@ -318,7 +318,6 @@ static int cocoaTouchProgressBarSetValueAttrib(Ihandle* ih, const char* value)
 	return 0;
 }
 
-/* tileable stripe used as progressImage for DASHED=YES */
 static UIImage* cocoaTouchProgressBarDashedImage(UIColor* color)
 {
 	if (!color) return nil;

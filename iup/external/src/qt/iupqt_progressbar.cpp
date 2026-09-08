@@ -196,7 +196,6 @@ static int qtProgressBarSetShowTextAttrib(Ihandle* ih, const char* value)
     {
       pbar->setTextVisible(true);
 
-      /* Use custom text if available, otherwise percentage */
       const char* text = iupAttribGet(ih, "TEXT");
       if (text)
         pbar->setFormat(QString::fromUtf8(text));
@@ -224,7 +223,7 @@ static int qtProgressBarSetTextAttrib(Ihandle* ih, const char* value)
     if (value)
       pbar->setFormat(QString::fromUtf8(value));
     else
-      pbar->setFormat("%p%");  /* Default to percentage */
+      pbar->setFormat("%p%");
   }
 
   return 1;
@@ -290,7 +289,6 @@ static int qtProgressBarMapMethod(Ihandle* ih)
 
   ih->handle = (InativeHandle*)pbar;
 
-  /* Set range [0, 1000] for better precision with double values */
   pbar->setRange(0, 1000);
   pbar->setValue(0);
 
@@ -298,7 +296,6 @@ static int qtProgressBarMapMethod(Ihandle* ih)
   {
     pbar->setOrientation(Qt::Vertical);
 
-    /* Swap width/height if needed */
     if (ih->userheight < ih->userwidth)
     {
       int tmp = ih->userheight;
@@ -306,14 +303,12 @@ static int qtProgressBarMapMethod(Ihandle* ih)
       ih->userwidth = tmp;
     }
 
-    /* Vertical progress bars typically don't expand horizontally */
     ih->expand = ih->expand & ~IUP_EXPAND_WIDTH;
   }
   else
   {
     pbar->setOrientation(Qt::Horizontal);
 
-    /* Horizontal progress bars typically don't expand vertically */
     ih->expand = ih->expand & ~IUP_EXPAND_HEIGHT;
   }
 
@@ -328,7 +323,6 @@ static int qtProgressBarMapMethod(Ihandle* ih)
     ih->data->marquee = 0;
   }
 
-  /* Progress bars should not accept focus */
   pbar->setFocusPolicy(Qt::NoFocus);
 
   iupqtAddToParent(ih);
@@ -399,7 +393,6 @@ extern "C" IUP_SDK_API void iupdrvProgressBarInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "ORIENTATION", NULL, NULL, IUPAF_SAMEASSYSTEM, "HORIZONTAL", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MARQUEE", NULL, qtProgressBarSetMarqueeAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 
-  /* Text display */
   iupClassRegisterAttribute(ic, "SHOWTEXT", NULL, qtProgressBarSetShowTextAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TEXT", qtProgressBarGetTextAttrib, qtProgressBarSetTextAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 }

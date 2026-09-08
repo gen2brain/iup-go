@@ -391,7 +391,6 @@ static int androidTreeSetValueAttrib(Ihandle* ih, const char* value)
   int id = -1;
   if (iupStrToInt(value, &id))
   {
-    /* numeric id */
   }
   else
   {
@@ -1052,7 +1051,6 @@ static void androidTreeUnMapMethod(Ihandle* ih)
 
   JNIEnv* env = iupAndroid_GetEnvThreadSafe();
 
-  /* Release all per-node global refs. */
   if (ih->data && ih->data->node_cache)
   {
     for (int i = 0; i < ih->data->node_count; i++)

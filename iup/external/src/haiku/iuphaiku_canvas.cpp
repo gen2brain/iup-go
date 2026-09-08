@@ -276,8 +276,7 @@ bool iuphaikuCanvasOnMessageReceived(Ihandle* ih, BView* view, BMessage* msg)
     IFnfiis cb = (IFnfiis)IupGetCallback(ih, "WHEEL_CB");
     if (cb) cb(ih, -dy, (int)pt.x, (int)pt.y, status);
 
-    /* Drive the vertical scrollbar so SCROLL_CB-based scrollers (ScrollBox)
-       get wheel scrolling without each app wiring WHEEL_CB manually. */
+    /* drive the vertical scrollbar so SCROLL_CB-based scrollers get wheel scrolling */
     if (ih->data && (ih->data->sb & IUP_SB_VERT) && dy != 0.0f)
     {
       double ymin = iupAttribGetDouble(ih, "YMIN");
@@ -308,7 +307,6 @@ public:
             B_WILL_DRAW | B_FRAME_EVENTS | B_FULL_UPDATE_ON_RESIZE | B_NAVIGABLE),
       fIhandle(ih)
   {
-    /* Track theme; SetViewColor() override happens in BGCOLOR setter. */
     SetViewUIColor(B_PANEL_BACKGROUND_COLOR);
   }
 

@@ -132,10 +132,9 @@ bool iuphaikuDnDInitiateDrag(Ihandle* ih, BView* view, BPoint where)
   drag.AddInt32("be:actions", drag_modes);
   drag.AddString("_iup_dragtypes", iupAttribGet(ih, "DRAGTYPES"));
 
-  /* Cursor bitmap: DRAGCURSOR (per spec). DragMessage takes ownership of the bitmap. */
+  /* DragMessage takes ownership of the bitmap. */
   BBitmap* dragImg = haikuDnDLoadCursorBitmap(ih, iupAttribGet(ih, "DRAGCURSOR"));
 
-  /* The reply messenger lets the target send back IUPHAIKU_DD_END_REPLY. */
   BHandler* replyTo = view;
 
   if (dragImg)
@@ -189,7 +188,6 @@ static void haikuDnDClearDragCursor(Ihandle* ih)
   if (!prev) return;
   bool prev_owned = iupAttribGet(ih, "_IUPHAIKU_DD_CURSOR_OWNED") != NULL;
 
-  /* Restore whatever the widget had set via CURSOR (or system default). */
   if (BView* view = (BView*)ih->handle)
   {
     BCursor* base = (BCursor*)iupAttribGet(ih, "_IUPHAIKU_CURSOR");
@@ -273,7 +271,6 @@ bool iuphaikuDnDMessageReceived(Ihandle* ih, BView* view, BMessage* msg)
   haikuDnDClearDragCursor(ih);
 
   std::vector<std::string> srcTypes = haikuDnDParseTypes(msg->FindString("_iup_dragtypes"));
-  /* Fallback: enumerate names actually present in the message as B_MIME_TYPE data. */
   if (srcTypes.empty())
   {
     char* name = NULL;
@@ -300,7 +297,6 @@ bool iuphaikuDnDMessageReceived(Ihandle* ih, BView* view, BMessage* msg)
   if (cbDrop)
     cbDrop(ih, (char*)common.c_str(), (void*)data, (int)size, (int)dropPt.x, (int)dropPt.y);
 
-  /* Reply for DRAGEND_CB. */
   int32 mods = 0;
   msg->FindInt32("modifiers", &mods);
   int32 team = 0;

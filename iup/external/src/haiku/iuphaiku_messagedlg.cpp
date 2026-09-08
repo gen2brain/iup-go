@@ -17,8 +17,7 @@ extern "C" {
 }
 
 
-/* BAlert::Go() is itself blocking and modal - perfect fit for IupMessageDlg's
- * DlgPopup contract. No nested run loop / window subset needed. */
+/* BAlert::Go() is blocking and modal, so no nested run loop or window subset is needed. */
 
 static alert_type haikuAlertType(const char* dialog_type)
 {

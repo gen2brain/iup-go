@@ -182,7 +182,6 @@ public final class IupListHelper
     /* Compound-drawable padding (gap between image and text) so the driver can include it in natural_w. */
     @Keep public static int getRowIconPaddingPx() { return (int)(8 * IupCommon.getDisplayDensity()); }
 
-    /* Mirror the selected dropdown item's image as the MACTV's leading compound drawable. */
     private static void updateDropdownLeadingImage(MaterialAutoCompleteTextView actv, int position)
     {
         Drawable d = (actv.getAdapter() instanceof ThemedAdapter ta) ? ta.images.get(position) : null;
@@ -489,7 +488,6 @@ public final class IupListHelper
         actv.setOnItemClickListener((parent, view, position, id) -> {
             String text = String.valueOf(parent.getItemAtPosition(position));
             actv.currentPosition = position + 1;
-            /* setText(.., false) bypasses the autocomplete filter so editable mode does not re-open. */
             actv.setText(text, false);
             updateDropdownLeadingImage(actv, position);
             /* Defer: synchronous Activity launch races ListPopupWindow's Surface teardown, MTE-traps libutils Looper. */

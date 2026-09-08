@@ -220,7 +220,7 @@ public final class IupTabsHelper
             addView(title);
 
             closeBtn = new TextView(ctx);
-            closeBtn.setText("✕");  /* ✕ */
+            closeBtn.setText("✕");
             closeBtn.setGravity(Gravity.CENTER);
             closeBtn.setClickable(true);
             int closeSz = (int)(20 * density);

@@ -221,7 +221,6 @@ static Widget motTreeCopyMoveNode(Ihandle* ih, Widget wItemSrc, Widget wItemDst,
     ih->data->node_count = old_count;
   }
 
-  /* Rebuild entire node_handle cache from root */
   motTreeRebuildNodeCache(ih, 0, ih->data->node_cache[0].node_handle);
 
   return wItemNew;
@@ -650,7 +649,6 @@ IUP_SDK_API void iupdrvTreeAddNode(Ihandle* ih, int id, int kind, const char* ti
 
   itemTitle = iupmotStringCreate(title);
 
-  /* Get default colors and font */
   XtVaGetValues(ih->handle, XmNforeground, &fgcolor, NULL);
   XtVaGetValues(ih->handle, XmNbackground, &bgcolor, NULL);
   fontlist = (XmFontList)iupmotGetFontListAttrib(ih);
@@ -2765,7 +2763,6 @@ IUP_SDK_API void iupdrvTreeDragDropCopyNode(Ihandle* src, Ihandle* dst, InodeHan
   count = dst->data->node_count - old_count;
   iupTreeCopyMoveCache(dst, id_dst, id_new, count, 1);  /* update only the dst control cache */
 
-  /* Rebuild entire node_handle cache from root */
   motTreeRebuildNodeCache(dst, 0, dst->data->node_cache[0].node_handle);
 }
 
@@ -3046,7 +3043,6 @@ static int motTreeMapMethod(Ihandle* ih)
   iupMOT_SETARG(args, num_args, XmNselectionPolicy, XmSINGLE_SELECT);
   iupMOT_SETARG(args, num_args, XmNoutlineIndentation, 20);
 
-  /* Set the font for the tree widget */
   {
     XmFontList fontlist = (XmFontList)iupmotGetFontListAttrib(ih);
     if (fontlist)
@@ -3075,7 +3071,6 @@ static int motTreeMapMethod(Ihandle* ih)
   if (!ih->handle)
     return IUP_ERROR;
 
-  /* Force font to be applied AFTER widget creation */
   {
     char* font_value = iupAttribGetStr(ih, "FONT");
     if (!font_value)

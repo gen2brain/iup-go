@@ -32,7 +32,7 @@
 
 @end
 
-/* We keep all the fonts in a data structure so we can release them on shutdown. */
+/* fonts are kept so they can be released on shutdown */
 static NSMutableDictionary<NSString *, IupCocoaFont *> *s_mapOfFonts = nil;
 /* This is for easy access to our system font since it is used so often. */
 static IupCocoaFont *s_systemFont = nil;
@@ -57,7 +57,6 @@ static IupCocoaFont *cocoaCreateIupCocoaFontFromNSFont(NSFont *ns_font)
   [the_font setFontSize:font_size];
   [the_font setTypeFace:ns_font_name];
 
-  /* Use NSTextFieldCell to get the actual line height it uses for rendering. */
   NSTextFieldCell* tempCell = [[NSTextFieldCell alloc] initTextCell:@"Wj"];
   [tempCell setFont:ns_font];
   [tempCell setWraps:YES];
@@ -66,14 +65,12 @@ static IupCocoaFont *cocoaCreateIupCocoaFontFromNSFont(NSFont *ns_font)
   int char_height = iupROUND(singleLineSize.height);
   [the_font setCharHeight:char_height];
 
-  /* For average char width, use the advancement of a common character like 'x'.
-     This is a better approximation than using the font's bounding box. */
+  /* average char width is the advance of 'x', closer than the font bounding box */
   NSGlyph x_glyph = [ns_font glyphWithName:@"x"];
   NSSize x_size = [ns_font advancementForGlyph:x_glyph];
   int char_width = iupROUND(x_size.width);
   [the_font setCharWidth:char_width];
 
-  /* Get dimensions for iupdrvFontGetFontDim */
   int max_width = iupROUND([ns_font maximumAdvancement].width);
   [the_font setMaxWidth:max_width];
 
@@ -145,7 +142,6 @@ IUP_DRV_API IupCocoaFont *iupcocoaFindFont(const char *iup_font_name)
 
   NSString *ns_iup_font_name = [NSString stringWithUTF8String:iup_font_name];
 
-  /* Check our cache first */
   IupCocoaFont *the_font = [s_mapOfFonts objectForKey:ns_iup_font_name];
   if (nil != the_font)
   {
@@ -157,13 +153,9 @@ IUP_DRV_API IupCocoaFont *iupcocoaFindFont(const char *iup_font_name)
     return NULL;
   }
 
-  /* In IUP, a negative size indicates a value in pixels.
-     NSFont works with points, which are resolution-independent.
-     Positive sizes are already in points, so we use them directly.
-     Negative sizes (pixels) need conversion to points based on DPI. */
+  /* a negative IUP size is in pixels, NSFont works in points */
   if (font_size < 0)
   {
-    /* Convert pixels to points: (pixels × 72) / DPI */
     double dpi = iupdrvGetScreenDpi();
     final_font_size = (CGFloat)((-font_size * 72.0) / dpi);
   }
@@ -172,7 +164,6 @@ IUP_DRV_API IupCocoaFont *iupcocoaFindFont(const char *iup_font_name)
     final_font_size = (CGFloat)font_size;
   }
 
-  /* A size of 0 is invalid for creating a new font. */
   if (final_font_size == 0)
   {
     return NULL;
@@ -225,7 +216,6 @@ IUP_DRV_API IupCocoaFont *iupcocoaFindFont(const char *iup_font_name)
 
   if (trait_mask)
   {
-    /* Apply bold/italic traits. The font manager will find the correct variant or synthesize one. */
     ns_font = [[NSFontManager sharedFontManager] convertFont:ns_font toHaveTrait:trait_mask];
   }
 
@@ -234,9 +224,8 @@ IUP_DRV_API IupCocoaFont *iupcocoaFindFont(const char *iup_font_name)
     return NULL;
   }
 
-  /* Create the IupCocoaFont wrapper and compute its properties */
   the_font = cocoaCreateIupCocoaFontFromNSFont(ns_font);
-  [the_font setIupFontName:ns_iup_font_name]; /* Use original IUP name for the key */
+  [the_font setIupFontName:ns_iup_font_name];
 
   BOOL uses_attributes = NO;
   NSMutableDictionary *attribute_dict = [the_font attributeDictionary];
@@ -253,7 +242,6 @@ IUP_DRV_API IupCocoaFont *iupcocoaFindFont(const char *iup_font_name)
   }
   [the_font setUsesAttributes:uses_attributes];
 
-  /* Add to cache */
   [s_mapOfFonts setObject:the_font forKey:ns_iup_font_name];
 
   return the_font;
@@ -328,7 +316,6 @@ static void cocoaFontGetTextSize(IupCocoaFont *iup_font, const char *str, int le
     return;
   }
 
-  /* Use iupStrLineCount for accurate line counting (same as GTK driver) */
   if (h)
     line_count = iupStrLineCount(str, len);
 
@@ -442,7 +429,6 @@ IUP_SDK_API int iupdrvFontGetStringWidth(Ihandle *ih, const char *str)
     return 0;
   }
 
-  /* Measure only the first line */
   const char *line_end = strchr(str, '\n');
   int len = (line_end) ? (int)(line_end - str) : (int)strlen(str);
 

@@ -122,7 +122,6 @@ IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
   dc->w = bounds_rect.size.width;
   dc->h = bounds_rect.size.height;
 
-  /* OpenGL canvases don't use IUP's draw buffer - OpenGL manages its own buffers */
   if (iupAttribGet(ih, "_IUP_GLCONTROLDATA"))
   {
     free(dc);
@@ -135,13 +134,11 @@ IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
     return NULL;
   }
 
-  /* Always draw to persistent buffer first, then copy to screen in DrawFlush */
   {
     NSBitmapImageRep* buffer = (NSBitmapImageRep*)iupAttribGet(ih, "_IUPCOCOA_CANVAS_BUFFER");
 
     if (buffer)
     {
-      /* Check if size changed - recreate buffer if needed */
       if ([buffer pixelsWide] != (NSInteger)dc->w || [buffer pixelsHigh] != (NSInteger)dc->h)
       {
         [buffer release];
@@ -149,7 +146,6 @@ IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
       }
     }
 
-    /* Create new buffer if needed */
     if (!buffer)
     {
       buffer = [[NSBitmapImageRep alloc]
@@ -167,11 +163,9 @@ IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
       iupAttribSet(ih, "_IUPCOCOA_CANVAS_BUFFER", (char*)buffer);
     }
 
-    /* Create graphics context from bitmap with FLIPPED coordinate system
-     * to match the flipped view coordinate system */
+    /* the bitmap context is flipped to match the flipped view */
     CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
 
-    /* Use proper CGBitmapInfo for RGBA with premultiplied alpha */
     CGBitmapInfo bitmapInfo = kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big;
 
     CGContextRef cgContext = CGBitmapContextCreate(
@@ -252,7 +246,6 @@ IUP_SDK_API void iupdrvDrawFlush(IdrawCanvas* dc)
 {
   if (dc->draw_focus)
   {
-    /* Context is Y-flipped, so IUP coordinates work directly */
     CGRect cocoa_rect = CGRectMake(dc->focus_x1, dc->focus_y1,
                                    dc->focus_x2 - dc->focus_x1 + 1,
                                    dc->focus_y2 - dc->focus_y1 + 1);
@@ -269,8 +262,7 @@ IUP_SDK_API void iupdrvDrawFlush(IdrawCanvas* dc)
   CGContextFlush(dc->cgContext);
 
 #ifdef GNUSTEP
-  /* Opal's fast-path only applies to ARGB; our RGBA context makes cairo draw into its own
-     surface. CGBitmapContextGetData triggers the flush + color-convert into the user buffer. */
+  /* Opal's fast path is ARGB only; CGBitmapContextGetData forces the flush and colour convert into the user buffer */
   CGBitmapContextGetData(dc->cgContext);
 #endif
 
@@ -315,7 +307,6 @@ IUP_SDK_API void iupdrvDrawRectangle(IdrawCanvas* dc, int x1, int y1, int x2, in
     }
     else
     {
-      /* Use direct CGContextStrokeRect for wider lines - simpler and faster */
       CGContextStrokeRect(cg_context, iup_rect);
     }
   }
@@ -490,11 +481,10 @@ IUP_SDK_API void iupdrvDrawPolygon(IdrawCanvas* dc, int* points, int count, long
   CGContextBeginPath(cg_context);
   CGContextMoveToPoint(cg_context, (CGFloat)points[0], (CGFloat)points[1]);
 
-  /* Start at i=1 to avoid redundant line to first point */
   for (int i = 1; i < count; i++)
     CGContextAddLineToPoint(cg_context, (CGFloat)points[2*i], (CGFloat)points[2*i+1]);
 
-  CGContextClosePath(cg_context);  /* Close polygon by connecting last point to first */
+  CGContextClosePath(cg_context);
 
   if (style == IUP_DRAW_FILL)
     CGContextFillPath(cg_context);
@@ -520,12 +510,10 @@ IUP_SDK_API void iupdrvDrawRoundedRectangle(IdrawCanvas* dc, int x1, int y1, int
   iupDrawCheckSwapCoord(x1, x2);
   iupDrawCheckSwapCoord(y1, y2);
 
-  /* Clamp radius to prevent oversized corners */
   CGFloat max_radius = ((x2 - x1) < (y2 - y1)) ? (CGFloat)(x2 - x1) / 2.0f : (CGFloat)(y2 - y1) / 2.0f;
   if (radius > max_radius)
     radius = max_radius;
 
-  /* Set color and line properties */
   if (style == IUP_DRAW_FILL)
     CGContextSetFillColorWithColor(cg_context, the_color);
   else
@@ -535,11 +523,9 @@ IUP_SDK_API void iupdrvDrawRoundedRectangle(IdrawCanvas* dc, int x1, int y1, int
     iupCocoaSetLineStyle(cg_context, style);
   }
 
-  /* Create rounded rectangle path */
   CGRect rect = CGRectMake((CGFloat)x1, (CGFloat)y1, (CGFloat)(x2 - x1 + 1), (CGFloat)(y2 - y1 + 1));
   CGPathRef path = CGPathCreateWithRoundedRect(rect, radius, radius, NULL);
 
-  /* Draw the path */
   CGContextBeginPath(cg_context);
   CGContextAddPath(cg_context, path);
 
@@ -556,7 +542,6 @@ IUP_SDK_API void iupdrvDrawBezier(IdrawCanvas* dc, int x1, int y1, int x2, int y
   CGContextRef cg_context = dc->cgContext;
   CGColorRef the_color = iupCocoaDrawCreateColor(color);
 
-  /* Set color and line properties */
   if (style == IUP_DRAW_FILL)
     CGContextSetFillColorWithColor(cg_context, the_color);
   else
@@ -566,15 +551,13 @@ IUP_SDK_API void iupdrvDrawBezier(IdrawCanvas* dc, int x1, int y1, int x2, int y
     iupCocoaSetLineStyle(cg_context, style);
   }
 
-  /* Create cubic Bezier path */
   CGContextBeginPath(cg_context);
   CGContextMoveToPoint(cg_context, (CGFloat)x1, (CGFloat)y1);
   CGContextAddCurveToPoint(cg_context,
-                           (CGFloat)x2, (CGFloat)y2,  /* First control point */
-                           (CGFloat)x3, (CGFloat)y3,  /* Second control point */
-                           (CGFloat)x4, (CGFloat)y4); /* End point */
+                           (CGFloat)x2, (CGFloat)y2,
+                           (CGFloat)x3, (CGFloat)y3,
+                           (CGFloat)x4, (CGFloat)y4);
 
-  /* Draw the path */
   if (style == IUP_DRAW_FILL)
     CGContextFillPath(cg_context);
   else
@@ -583,24 +566,14 @@ IUP_SDK_API void iupdrvDrawBezier(IdrawCanvas* dc, int x1, int y1, int x2, int y
 
 IUP_SDK_API void iupdrvDrawQuadraticBezier(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int x3, int y3, long color, int style, int line_width)
 {
-  /* Convert quadratic Bezier to cubic Bezier using the 2/3 formula:
-   * Given quadratic: Q(t) with control points q0, q1, q2
-   * Convert to cubic: C(t) with control points c0, c1, c2, c3
-   *
-   * c0 = q0                        (start point)
-   * c1 = q0 + (2/3) * (q1 - q0)   (first control point)
-   * c2 = q2 + (2/3) * (q1 - q2)   (second control point)
-   * c3 = q2                        (end point)
-   */
+  /* quadratic to cubic: c1 = q0 + 2/3 (q1 - q0), c2 = q2 + 2/3 (q1 - q2) */
   int cx1, cy1, cx2, cy2;
 
-  /* Calculate cubic control points from quadratic */
   cx1 = x1 + ((2 * (x2 - x1)) / 3);
   cy1 = y1 + ((2 * (y2 - y1)) / 3);
   cx2 = x3 + ((2 * (x2 - x3)) / 3);
   cy2 = y3 + ((2 * (y2 - y3)) / 3);
 
-  /* Draw as cubic Bezier */
   iupdrvDrawBezier(dc, x1, y1, cx1, cy1, cx2, cy2, x3, y3, color, style, line_width);
 }
 
@@ -650,11 +623,9 @@ IUP_SDK_API void iupdrvDrawSetClipRoundedRect(IdrawCanvas* dc, int x1, int y1, i
   iupDrawCheckSwapCoord(x1, x2);
   iupDrawCheckSwapCoord(y1, y2);
 
-  /* IUP coordinates: use width + 1 and height + 1 */
   CGFloat w = (CGFloat)(x2 - x1 + 1);
   CGFloat h = (CGFloat)(y2 - y1 + 1);
 
-  /* Clamp radius to prevent oversized corners */
   CGFloat max_radius = (w < h) ? w / 2.0f : h / 2.0f;
   if (radius > max_radius)
     radius = max_radius;
@@ -664,7 +635,6 @@ IUP_SDK_API void iupdrvDrawSetClipRoundedRect(IdrawCanvas* dc, int x1, int y1, i
   CGContextSaveGState(dc->cgContext);
   dc->clip_state = 1;
 
-  /* Create rounded rectangle path and use as clip */
   CGRect rect = CGRectMake((CGFloat)x1, (CGFloat)y1, w, h);
   CGPathRef path = CGPathCreateWithRoundedRect(rect, radius, radius, NULL);
 
@@ -779,8 +749,7 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
     }
 
 #ifdef GNUSTEP
-    /* Opal's NSLayoutManager path yields zero glyphs; use the Quartz text API directly
-       (CGContextShowText → cairo_show_text). */
+    /* Opal's NSLayoutManager path yields zero glyphs; use the Quartz text API directly */
     {
       CGFloat draw_x = x;
       CGFloat draw_y = y;
@@ -880,10 +849,7 @@ IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_ina
     CGContextRef cg_context = dc->cgContext;
 
 #ifdef GNUSTEP
-    /* GNUstep's -[NSImage drawInRect:] caches into a window-backed NSCachedImageRep
-       and composites through Opal in a way that silently yields nothing on our
-       CGBitmapContext. Build a CGImage from the first NSBitmapImageRep and draw it
-       directly via CGContextDrawImage, which Opal handles reliably. */
+    /* GNUstep's -[NSImage drawInRect:] composites through Opal and yields nothing on a CGBitmapContext, so build a CGImage and draw that */
     {
       NSBitmapImageRep* rep = nil;
       for (NSImageRep* r in [user_image representations])
@@ -925,8 +891,7 @@ IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_ina
           }
         }
 
-        /* Our CTM is Y-down (IUP convention); CGContextDrawImage draws with the image's
-           top-left at rect origin on a Y-up context. Flip locally so the image lands upright. */
+        /* the CTM is Y-down while CGContextDrawImage assumes Y-up, so flip locally */
         CGContextSaveGState(cg_context);
         CGContextSetInterpolationQuality(cg_context, quality == IUP_DRAW_IMAGE_NEAREST ? kCGInterpolationNone : kCGInterpolationDefault);
         if (opacity < 255)
@@ -941,7 +906,6 @@ IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_ina
 #else
     CGContextSaveGState(cg_context);
 
-    /* Use flipped NSGraphicsContext to correctly draw image in y-down coordinate system */
     NSGraphicsContext* temp_ns_context = [NSGraphicsContext graphicsContextWithCGContext:cg_context flipped:YES];
     [NSGraphicsContext saveGraphicsState];
     [NSGraphicsContext setCurrentContext:temp_ns_context];
@@ -978,7 +942,6 @@ IUP_SDK_API void iupdrvDrawFocusRect(IdrawCanvas* dc, int x1, int y1, int x2, in
 
   if (iupAttribGetBoolean(dc->ih, "NATIVEFOCUSRING"))
   {
-    /* Defer focus ring drawing to flush for native macOS appearance */
     dc->draw_focus = 1;
     dc->focus_x1 = x1;
     dc->focus_y1 = y1;
@@ -987,7 +950,6 @@ IUP_SDK_API void iupdrvDrawFocusRect(IdrawCanvas* dc, int x1, int y1, int x2, in
   }
   else
   {
-    /* Draw a simple dotted rectangle for focus indication */
     CGContextRef cg_context = dc->cgContext;
     CGContextSaveGState(cg_context);
 
@@ -1012,7 +974,6 @@ IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x
   iupDrawCheckSwapCoord(x1, x2);
   iupDrawCheckSwapCoord(y1, y2);
 
-  /* Create gradient colors */
   CGFloat components[IUP_GRADIENT_MAX_STOPS * 4];
   CGFloat locations[IUP_GRADIENT_MAX_STOPS];
   for (int i = 0; i < count; i++)
@@ -1026,11 +987,9 @@ IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x
 
   CGGradientRef gradient = CGGradientCreateWithColorComponents(colorSpace, components, locations, count);
 
-  /* Calculate gradient endpoints based on angle */
   /* 0 = left to right, 90 = top to bottom, 180 = right to left, 270 = bottom to top */
   CGFloat rad = angle * M_PI / 180.0f;
 
-  /* IUP coordinates: use width + 1 and height + 1 */
   CGFloat w = (CGFloat)(x2 - x1 + 1);
   CGFloat h = (CGFloat)(y2 - y1 + 1);
   CGFloat cx_ = x1 + w / 2.0f;
@@ -1040,9 +999,7 @@ IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x
   CGPoint end = CGPointMake(cx_ + (w * cos(rad)) / 2.0f, cy_ + (h * sin(rad)) / 2.0f);
 
 #ifdef GNUSTEP
-  /* Opal's CGContextDrawLinearGradient is cairo_paint, which fills the whole source with
-     the gradient pattern; the CGContextClipToRect does not restrict it, so the gradient leaks over the entire canvas.
-     Render into a rect-sized off-screen CGBitmapContext and composite the result as an image. */
+  /* Opal's CGContextDrawLinearGradient ignores the clip and floods the whole canvas, so render off-screen and composite */
   {
     int iw = (int)w, ih = (int)h;
     if (iw > 0 && ih > 0)
@@ -1077,14 +1034,10 @@ IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x
     }
   }
 #else
-  /* Clip to rectangle */
   CGContextSaveGState(cg_context);
   CGContextClipToRect(cg_context, CGRectMake(x1, y1, w, h));
 
-  /* Draw gradient */
-  /* Use kCGGradientDrawsBeforeStartLocation | kCGGradientDrawsAfterEndLocation
-     to ensure the gradient fills the entire clipped area, otherwise corners that fall
-     outside the projected start/end planes (common in diagonal gradients) will be cut off. */
+  /* the before/after-location flags keep diagonal gradients from cutting off the corners */
   CGContextDrawLinearGradient(cg_context, gradient, start, end, kCGGradientDrawsBeforeStartLocation | kCGGradientDrawsAfterEndLocation);
 
   CGContextRestoreGState(cg_context);
@@ -1118,8 +1071,7 @@ IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int r
   CGRect circleRect = CGRectMake(cx - radius, cy - radius, 2 * radius, 2 * radius);
 
 #ifdef GNUSTEP
-  /* See iupdrvDrawLinearGradient: Opal's cairo_paint under a CGContextDrawRadialGradient
-     bleeds the edge color across the whole surface. Render into a 2r x 2r off-screen buffer and composite. */
+  /* Opal bleeds the radial edge colour across the whole surface, so render off-screen and composite */
   {
     int iw = 2 * radius;
     int ih = 2 * radius;
@@ -1170,9 +1122,7 @@ IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int r
 #else
   CGContextSaveGState(cg_context);
 
-  /* First draw the circle with solid fill to get anti-aliased edges
-   * Gradients don't anti-alias their edges, but filled paths do.
-   * Use the edge color as the fill color for the circle boundary. */
+  /* gradients do not anti-alias their edges, a solid filled path underneath does */
   CGContextBeginPath(cg_context);
   CGContextAddEllipseInRect(cg_context, circleRect);
   CGContextSetRGBFillColor(cg_context,
@@ -1182,7 +1132,6 @@ IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int r
                            iupDrawAlpha(colorEdge) / 255.0f);
   CGContextFillPath(cg_context);
 
-  /* Now draw the gradient on top - it will have smooth edges from the solid fill underneath */
   CGContextDrawRadialGradient(cg_context, gradient, center, 0, center, radius, 0);
 
   CGContextRestoreGState(cg_context);

@@ -569,9 +569,7 @@ IUP_SDK_API int iupdrvTraySetImage(Ihandle* ih, const char* value)
 
 IUP_SDK_API int iupdrvTraySetMenu(Ihandle* ih, Ihandle* menu)
 {
-  /* XEmbed tray protocol doesn't support automatic menu popup via MENU attribute.
-   * The XEmbed protocol has no mechanism for the tray host to request context menu.
-   * Applications should use TRAYCLICK_CB callback to show menu manually via IupPopup(). */
+  /* the XEmbed protocol has no way for the host to request a context menu, use TRAYCLICK_CB */
   (void)ih;
   (void)menu;
   return 0;

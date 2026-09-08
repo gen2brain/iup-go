@@ -211,8 +211,7 @@ IUP_SDK_API void iupdrvDialogSetPosition(Ihandle* ih, int x, int y)
 
 static int gtk4DialogGetMenuSize(Ihandle* ih)
 {
-  /* Menu bar is inside the window content area (in VBox), not external decoration.
-   * GTK4 VBox automatically positions inner_parent below the menu bar. */
+  /* the menu bar is inside the content area, not external decoration */
   (void)ih;
   return 0;
 }
@@ -277,8 +276,7 @@ IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int* border, int* captio
 
     if (has_csd && !has_solid_csd)
     {
-      /* CSD with shadow: currentheight is Fixed container (content area).
-       * Return caption=0 so IUP doesn't subtract it again for children. */
+      /* with a CSD shadow currentheight is already the content area, so caption must be 0 */
       *border = 0;
       *caption = 0;
       return;
@@ -435,7 +433,6 @@ void gtk4DialogSizeAllocate(GtkWidget* widget, int width, int height, int baseli
   if (ih->data->ignore_resize)
     return;
 
-  /* Get decoration sizes - we need menu height for total size calculation */
   iupdrvDialogGetDecoration(ih, &border, &caption, &menu);
 
   ih->currentwidth = width;
@@ -584,7 +581,6 @@ static int gtk4DialogMapMethod(Ihandle* ih)
 
   inner_parent = iupgtk4NativeContainerNew();
 
-  /* If dialog has menu, wrap inner_parent in a VBox to hold menu bar + content */
   if (ih->data->menu)
   {
     GtkWidget* vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
@@ -599,10 +595,8 @@ static int gtk4DialogMapMethod(Ihandle* ih)
     gtk_window_set_child((GtkWindow*)ih->handle, inner_parent);
   }
 
-  /* Set dialog handle in container for resize notifications */
   iupgtk4NativeContainerSetIhandle(inner_parent, ih);
 
-  /* Store inner_parent for menu bar installation */
   iupAttribSet(ih, "_IUPGTK4_INNER_PARENT", (char*)inner_parent);
 
   gtk_widget_realize(ih->handle);
@@ -649,7 +643,6 @@ static int gtk4DialogMapMethod(Ihandle* ih)
   handler_id = g_signal_connect(G_OBJECT(ih->handle), "realize", G_CALLBACK(gtk4DialogRealize), ih);
   iupAttribSet(ih, "_IUPGTK4_REALIZE_HANDLER", (char*)(uintptr_t)handler_id);
 
-  /* Add key controller for DEFAULTENTER/DEFAULTESC support */
   {
     GtkEventController* key_controller = gtk_event_controller_key_new();
     g_signal_connect(key_controller, "key-pressed", G_CALLBACK(iupgtk4KeyPressEvent), ih);
@@ -700,9 +693,7 @@ static void gtk4DialogUnMapMethod(Ihandle* ih)
   if (!ih->handle || !GTK_IS_WIDGET(ih->handle))
     return;
 
-  /* gtk_window_destroy() handles all child cleanup automatically.
-   * Do not manually unrealize or unparent children - this causes crashes
-   * as gtk_window_destroy() will try to clean them up again. */
+  /* gtk_window_destroy cleans up the children; unparenting them here crashes */
   gtk_window_destroy((GtkWindow*)ih->handle);
 }
 
@@ -720,27 +711,17 @@ static void gtk4DialogLayoutUpdateMethod(Ihandle* ih)
 
   iupdrvDialogGetDecoration(ih, &border, &caption, &menu);
 
-  /* Check if we have CSD (Client-Side Decorations) */
   gboolean has_csd = gtk_widget_has_css_class(GTK_WIDGET(ih->handle), "csd");
 
   width = ih->currentwidth - 2 * border;
 
-  /*
-   * GTK4 HEIGHT calculation (titlebar):
-   * The titlebar is a child widget of the window. GTK's measure function
-   * calculates window height as: titlebar_height + content_height.
-   *
-   * - With SSD: No titlebar widget, caption=0. Window height = content height.
-   * - With CSD: Titlebar widget exists. We must ADD caption to get total window height.
-   */
+  /* with CSD the titlebar is a child widget, so its height adds to the window height */
   if (has_csd && caption > 0)
   {
-    /* CSD with measured caption: Add caption to get correct window size */
     height = ih->currentheight + caption;
   }
   else if (has_csd && caption == 0)
   {
-    /* CSD before window visible: Estimate caption */
     int estimated_caption = 37;
     height = ih->currentheight + estimated_caption;
   }
@@ -878,8 +859,7 @@ static int gtk4DialogSetIconAttrib(Ihandle* ih, const char* value)
     return 0;
   }
 
-  /* GTK4 only supports named theme icons for window icons.
-     Try it as a theme icon name. */
+  /* GTK4 window icons can only be named theme icons */
   gtk_window_set_icon_name(GTK_WINDOW(ih->handle), value);
   return 1;
 }
@@ -951,7 +931,6 @@ static int gtk4DialogSetOpacityAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-/* Helper function to convert GdkTexture to base64-encoded PNG data URI for CSS */
 static char* gtk4DialogTextureToDataURI(GdkTexture* texture)
 {
   GBytes* bytes = gdk_texture_save_to_png_bytes(texture);
@@ -993,7 +972,6 @@ static int gtk4DialogSetBackgroundAttrib(Ihandle* ih, const char* value)
     GdkTexture* texture = (GdkTexture*)iupImageGetImage(value, ih, 0, NULL);
     if (texture)
     {
-      /* Use CSS with data: URI for background image */
       gchar* data_uri = gtk4DialogTextureToDataURI(texture);
       if (data_uri)
       {

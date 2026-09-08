@@ -19,8 +19,8 @@
 
 typedef struct _Imac2iupkey
 {
-  int maccode; /* The native virtual keycode, from iupcocoa_keycodes.h */
-  int iupcode; /* The IUP equivalent base keycode */
+  int maccode;
+  int iupcode;
 } Imac2iupkey;
 
 static Imac2iupkey s_macKeyMap[] = {
@@ -183,21 +183,8 @@ static int cocoaKeyApplyModifiers(int iup_key, int has_shift, int has_ctrl, int 
   return iup_key;
 }
 
-/*
- * Decodes an NSEvent to its corresponding IUP key code.
- *
- * For printable ASCII keys without Ctrl/Alt/Sys modifiers:
- * - Uses the actual character from the event
- * - This respects keyboard layout, Shift state, and CapsLock automatically
- *
- * For special keys or when Ctrl/Alt/Sys modifiers are present:
- * - Applies IUP modifier encoding systematically
- * - Converts lowercase to uppercase when modifiers are present
- * - Handles CapsLock inverting Shift state for letters
- */
 #ifdef GNUSTEP
-/* GNUstep reports X11 keycodes where Cocoa reports virtual key codes, so the table above does not
-   apply, but the characters follow Apple's convention including the function-key range */
+/* GNUstep reports X11 keycodes, not Cocoa virtual key codes, so the table above does not apply */
 static int cocoaKeyDecodeCharacter(NSEvent *ns_event)
 {
   NSString* chars = [ns_event charactersIgnoringModifiers];
@@ -283,7 +270,6 @@ static int cocoaKeyDecode(NSEvent *ns_event, int mac_key_code)
   const size_t array_length = sizeof(s_macKeyMap) / sizeof(s_macKeyMap[0]);
   size_t i;
 
-  /* Handle modifier keys directly */
   if (mac_key_code == kVK_Shift)
     return K_LSHIFT;
   if (mac_key_code == kVK_RightShift)
@@ -301,7 +287,6 @@ static int cocoaKeyDecode(NSEvent *ns_event, int mac_key_code)
   if (mac_key_code == kVK_CapsLock)
     return K_CAPS;
 
-  /* Look up base key code from virtual key code */
   for (i = 0; i < array_length; i++)
   {
     if (s_macKeyMap[i].maccode == mac_key_code)
@@ -315,7 +300,6 @@ static int cocoaKeyDecode(NSEvent *ns_event, int mac_key_code)
   if (iup_base_key == 0)
     return 0;
 
-  /* Get modifier states */
   int has_shift = ([ns_event modifierFlags] & NSEventModifierFlagShift) != 0;
   int has_ctrl = ([ns_event modifierFlags] & NSEventModifierFlagControl) != 0;
   int has_alt = ([ns_event modifierFlags] & NSEventModifierFlagOption) != 0;
@@ -324,12 +308,7 @@ static int cocoaKeyDecode(NSEvent *ns_event, int mac_key_code)
 
   int iup_result_key = iup_base_key;
 
-  /* For printable keys without Ctrl/Alt/Sys, use the actual character.
-   * This automatically handles keyboard layout, Shift, and CapsLock.
-   * The range K_exclam to K_tilde covers all printable ASCII except space.
-   * Space (K_SP) is intentionally excluded because it should get Shift
-   * encoding when combined with Shift, allowing applications to distinguish
-   * Space from Shift+Space if needed. */
+  /* space is left out of the printable range so Shift+Space stays distinguishable from Space */
   if ((iup_base_key >= K_exclam && iup_base_key <= K_tilde) &&
       ([ns_event type] == NSEventTypeKeyDown || [ns_event type] == NSEventTypeKeyUp) &&
       !(has_ctrl || has_alt || has_sys))
@@ -380,9 +359,7 @@ bool iupCocoaKeyDownEvent(Ihandle *ih, NSEvent *ns_event, int mac_key_code)
         Ihandle* focused_ih = (Ihandle*)objc_getAssociatedObject(first_responder, IHANDLE_ASSOCIATED_OBJ_KEY);
         if (iupObjectCheck(focused_ih) && focused_ih != ih)
         {
-          /* This event is for the container (ih), but a child control has focus. */
-          /* If the child has its own K_ANY handler, let it process the event first. */
-          /* The container should not process it to avoid duplication. */
+          /* the event is for the container, but a child with its own K_ANY must see it first */
           if (IupGetCallback(focused_ih, "K_ANY") != NULL)
           {
             return false;
@@ -456,7 +433,6 @@ bool iupCocoaKeyUpEvent(Ihandle *ih, NSEvent *ns_event, int mac_key_code)
   if (!ih->iclass->is_interactive)
     return false;
 
-  /* Call KEYPRESS_CB for canvas elements with press=0 */
   if (ih->iclass->nativetype == IUP_TYPECANVAS)
   {
     iup_key_code = cocoaKeyDecode(ns_event, mac_key_code);
@@ -515,7 +491,6 @@ IUP_DRV_API bool iupcocoaModifierEvent(Ihandle *ih, NSEvent *ns_event, int mac_k
   }
 #endif
 
-  /* Cocoa sends flagsChanged events for modifier keys. */
   switch (mac_key_code)
   {
     case kVK_Shift:
@@ -551,7 +526,6 @@ IUP_DRV_API void iupcocoaButtonKeySetStatus(NSEvent *ns_event, char *out_status)
 {
   NSEventModifierFlags flags = [ns_event modifierFlags];
 
-  /* Set modifier key states */
   if (flags & NSEventModifierFlagShift)
     iupKEY_SETSHIFT(out_status);
   if (flags & NSEventModifierFlagControl)
@@ -561,7 +535,6 @@ IUP_DRV_API void iupcocoaButtonKeySetStatus(NSEvent *ns_event, char *out_status)
   if (flags & NSEventModifierFlagCommand)
     iupKEY_SETSYS(out_status);
 
-  /* Check for double-click on mouse events */
   NSEventType event_type = [ns_event type];
   if (event_type == NSEventTypeLeftMouseDown ||
       event_type == NSEventTypeRightMouseDown ||
@@ -572,9 +545,7 @@ IUP_DRV_API void iupcocoaButtonKeySetStatus(NSEvent *ns_event, char *out_status)
   }
 
 #ifdef GNUSTEP
-  /* +[NSEvent pressedMouseButtons] is a stub on GNUstep that returns 0, so motion
-     handlers that gate on iup_isbutton1(status) never enter the drag branch. Infer the
-     pressed button from the event type, NSLeftMouseDragged etc. encode it. */
+  /* +[NSEvent pressedMouseButtons] returns 0 on GNUstep, so infer the button from the event type */
   if (event_type == NSEventTypeLeftMouseDown || event_type == NSEventTypeLeftMouseDragged)
     iupKEY_SETBUTTON1(out_status);
   else if (event_type == NSEventTypeRightMouseDown || event_type == NSEventTypeRightMouseDragged)
@@ -587,7 +558,6 @@ IUP_DRV_API void iupcocoaButtonKeySetStatus(NSEvent *ns_event, char *out_status)
     else if (btn == 5) iupKEY_SETBUTTON5(out_status);
   }
 #else
-  /* Get current state of pressed mouse buttons */
   NSUInteger pressed_buttons = [NSEvent pressedMouseButtons];
 
   if (pressed_buttons & (1 << 0))
@@ -612,10 +582,8 @@ IUP_DRV_API int iupcocoaKeyDecode(CGEventRef event)
   const size_t array_length = sizeof(s_macKeyMap) / sizeof(s_macKeyMap[0]);
   size_t i;
 
-  /* This function is used for simulating key events via iupdrvSendKey.
-   * It only has the virtual key code and flags, not the actual character. */
+  /* only the virtual key code and flags are available here, not the character */
 
-  /* Look up base key code */
   for (i = 0; i < array_length; i++)
   {
     if (s_macKeyMap[i].maccode == mac_key_code)
@@ -646,7 +614,6 @@ IUP_SDK_API void iupdrvKeyEncode(int code, unsigned int *maccode, unsigned int *
   *maccode = 0;
   *state = 0;
 
-  /* Look up macOS virtual key code from IUP key code */
   for (i = 0; i < array_length; i++)
   {
     if (s_macKeyMap[i].iupcode == iup_base_key)
@@ -659,7 +626,6 @@ IUP_SDK_API void iupdrvKeyEncode(int code, unsigned int *maccode, unsigned int *
   if (*maccode == 0)
     return;
 
-  /* Encode modifier flags */
   if (iup_isShiftXkey(code))
     *state |= NSEventModifierFlagShift;
   if (iup_isCtrlXkey(code))

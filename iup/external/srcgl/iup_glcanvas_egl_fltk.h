@@ -157,7 +157,6 @@ static int iupEGLBackendCreateLazyNativeWindow(Ihandle* ih, IGlControlData* glda
     return -1;
   }
 
-  /* X11: use the dialog/canvas XID directly */
   if (info.has_own_window)
     *native_window = (EGLNativeWindowType)(uintptr_t)info.canvas_window;
   else

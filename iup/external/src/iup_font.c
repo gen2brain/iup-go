@@ -468,7 +468,6 @@ static int iFontFindStyleName(const char *name, int len, int *style)
   int i;
   for (i = 0; i < STYLE_NUM_NAMES; i++)
   {
-    /* Case-insensitive comparison to handle formats like "COURIER_NORMAL_14" */
     if (strlen(style_names[i].name) == (size_t)len &&
         iupStrEqualNoCasePartial(name, style_names[i].name))
     {
@@ -611,7 +610,7 @@ IUP_SDK_API int iupFontParseWin(const char *value, char *typeface, int *size, in
     value++;       /* skip separator */
   else
   {
-    while (strlen(value)) /* extract style (bold/italic etc.) */
+    while (strlen(value))
     {
       char style[30];
       int copy_len;

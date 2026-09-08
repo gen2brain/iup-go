@@ -258,7 +258,6 @@ IUP_SDK_API ImarkupData* iupMarkupParse(const char* markup)
       char tag_name[64];
       int i = 0;
 
-      /* flush accumulated text */
       if (text_len > 0)
       {
         iMarkupAddRun(data, text_buf, text_len, &current);
@@ -278,7 +277,6 @@ IUP_SDK_API ImarkupData* iupMarkupParse(const char* markup)
 
       if (is_closing)
       {
-        /* closing tag, pop style */
         while (*p && *p != '>')
           p++;
         if (*p == '>')
@@ -294,7 +292,6 @@ IUP_SDK_API ImarkupData* iupMarkupParse(const char* markup)
       }
       else
       {
-        /* opening tag, push style */
         if (stack.top < IUP_MARKUP_MAX_DEPTH)
         {
           iMarkupStyleInit(&stack.styles[stack.top]);
@@ -326,7 +323,6 @@ IUP_SDK_API ImarkupData* iupMarkupParse(const char* markup)
           {
             iupMarkupFree(data);
             iMarkupStyleFreeStrings(&current);
-            /* free remaining stack entries */
             while (stack.top > 0)
             {
               stack.top--;
@@ -336,12 +332,10 @@ IUP_SDK_API ImarkupData* iupMarkupParse(const char* markup)
           }
         }
 
-        /* skip self-closing slash */
         p = iMarkupSkipSpaces(p);
         if (*p == '/')
           p++;
 
-        /* skip closing '>' */
         while (*p && *p != '>')
           p++;
         if (*p == '>')
@@ -373,7 +367,6 @@ IUP_SDK_API ImarkupData* iupMarkupParse(const char* markup)
     }
   }
 
-  /* flush remaining text */
   if (text_len > 0)
     iMarkupAddRun(data, text_buf, text_len, &current);
 
@@ -525,7 +518,6 @@ IUP_SDK_API char* iupMarkupToHtml(const char* markup)
     int close_count = 0;
     char* close_tags[16];
 
-    /* open style tags */
     if (run->font_family || run->font_size || run->fg_color || run->bg_color ||
         run->font_weight || run->font_style || run->big || run->small_size)
     {
@@ -612,7 +604,6 @@ IUP_SDK_API char* iupMarkupToHtml(const char* markup)
 
     iMarkupAppendHtmlEscaped(&html, &html_len, &html_alloc, run->text);
 
-    /* close in reverse order */
     while (close_count > 0)
     {
       close_count--;
@@ -786,7 +777,6 @@ IUP_SDK_API char* iupMarkupToEfl(const char* markup)
 
     /* EFL uses tags like <b>, <i>, and inline attributes like font_size=N */
 
-    /* span-like attributes via EFL format string */
     if (run->font_family || run->font_size || run->fg_color || run->bg_color ||
         run->font_weight || run->font_style || run->big || run->small_size)
     {

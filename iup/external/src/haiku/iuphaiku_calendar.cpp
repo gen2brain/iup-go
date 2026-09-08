@@ -29,8 +29,7 @@ extern "C" {
 #include "iuphaiku_drv.h"
 
 
-/* BCalendarView is in BPrivate (private/shared headers, libshared.a).
- * Same widget Tracker / Deskbar uses for the tray clock's drop-down. */
+/* BCalendarView is in BPrivate (private/shared headers, libshared.a). */
 
 #define IUPHAIKU_CAL_MSG         'IupC'
 #define IUPHAIKU_CAL_MONTH_PREV  'mDn0'
@@ -243,8 +242,6 @@ static int haikuCalendarParseValue(const char* value, int* y, int* m, int* d)
   return sscanf(value, "%d/%d/%d", y, m, d) == 3;
 }
 
-/* Attribute setters */
-
 static int haikuCalendarSetValueAttrib(Ihandle* ih, const char* value)
 {
   IupHaikuCalendar* cal = (IupHaikuCalendar*)ih->handle;
@@ -276,7 +273,7 @@ static char* haikuCalendarGetWeekDayAttrib(Ihandle* ih)
   IupHaikuCalendar* cal = (IupHaikuCalendar*)ih->handle;
   if (!cal) return NULL;
   IupHaikuCalendarGrid* g = cal->Grid();
-  /* IUP weekday: 1=Sun..7=Sat; BDate::DayOfWeek: 1=Mon..7=Sun. Remap. */
+  /* IUP weekday: 1=Sun..7=Sat; BDate::DayOfWeek: 1=Mon..7=Sun */
   BDate d(g->Year(), g->Month(), g->Day());
   int dow = d.DayOfWeek();
   int iup_dow = (dow == 7) ? 1 : dow + 1;
@@ -291,8 +288,6 @@ static int haikuCalendarSetWeekNumbersAttrib(Ihandle* ih, const char* value)
   cal->Grid()->SetWeekNumberHeaderVisible(iupStrBoolean(value) ? true : false);
   return 1;
 }
-
-/* Map */
 
 static void haikuCalendarComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* /*children_expand*/)
 {
@@ -314,7 +309,6 @@ static void haikuCalendarComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, i
     *h = (int)ceilf(gh + nav_h + IupHaikuCalendar::kGap + 2 * IupHaikuCalendar::kPad);
     return;
   }
-  /* Pre-handle fallback: header row + 7-row grid. */
   int cw, ch;
   iupdrvFontGetCharSize(ih, &cw, &ch);
   *w = cw * 3 * 8 + 16;

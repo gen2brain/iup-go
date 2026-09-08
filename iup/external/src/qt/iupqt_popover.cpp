@@ -119,7 +119,6 @@ static int qtPopoverSetVisibleAttrib(Ihandle* ih, const char* value)
     if (!anchor || !anchor->handle)
       return 0;
 
-    /* Map if not yet mapped */
     if (!ih->handle)
     {
       if (IupMap(ih) == IUP_ERROR)
@@ -249,7 +248,6 @@ IUP_SDK_API void iupdrvPopoverInitClass(Iclass* ic)
   ic->LayoutUpdate = qtPopoverLayoutUpdateMethod;
   ic->ChildAdded = qtPopoverChildAddedMethod;
 
-  /* Override VISIBLE attribute, NOT_MAPPED because setter handles mapping */
   iupClassRegisterAttribute(ic, "VISIBLE", qtPopoverGetVisibleAttrib, qtPopoverSetVisibleAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
 }
 

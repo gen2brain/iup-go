@@ -115,8 +115,7 @@ void iupwasmInstallTheme(void)
     lk[0], lk[1], lk[2], mb[0], mb[1], mb[2], mf[0], mf[1], mf[2], ac[0], ac[1], ac[2]);
 }
 
-/* iup_globalattrib.c short-circuits iupdrvSetGlobal for the registered default colors, so the CSS
-   variables are refreshed from whoever asks for a color next */
+/* iup_globalattrib.c short-circuits iupdrvSetGlobal for the registered default colors */
 void iupwasmRefreshTheme(void)
 {
   static const char* names[8] = { "DLGBGCOLOR", "DLGFGCOLOR", "TXTBGCOLOR", "TXTFGCOLOR",

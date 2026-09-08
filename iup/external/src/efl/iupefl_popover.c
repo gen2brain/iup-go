@@ -146,22 +146,18 @@ static int eflPopoverMapMethod(Ihandle* ih)
   if (!parent_win)
     return IUP_ERROR;
 
-  /* Create a borderless popup window */
   popup_win = efl_add(EFL_UI_WIN_CLASS, parent_win, efl_ui_win_type_set(efl_added, EFL_UI_WIN_TYPE_POPUP_MENU));
   if (!popup_win)
     return IUP_ERROR;
 
   ih->handle = (InativeHandle*)popup_win;
 
-  /* Make it borderless and act as popup */
   efl_ui_win_borderless_set(popup_win, EINA_TRUE);
   elm_win_override_set(popup_win, EINA_TRUE);
 
-  /* Create a frame inside the window for visual border */
   frame = efl_add(EFL_UI_FRAME_CLASS, popup_win);
   if (frame)
   {
-    /* Hide frame title, just use for border effect */
     efl_text_set(frame, "");
     efl_gfx_hint_weight_set(frame, EFL_GFX_HINT_EXPAND, EFL_GFX_HINT_EXPAND);
     efl_gfx_hint_align_set(frame, -1.0, -1.0);
@@ -171,7 +167,6 @@ static int eflPopoverMapMethod(Ihandle* ih)
   }
   else
   {
-    /* Fallback to window directly if frame creation fails */
     iupAttribSet(ih, "_IUP_EFL_INNER", (char*)popup_win);
   }
 
@@ -215,7 +210,6 @@ static void eflPopoverLayoutUpdateMethod(Ihandle* ih)
   if (!popup_win)
     return;
 
-  /* Resize frame to fill window */
   if (frame)
     efl_gfx_entity_size_set(frame, EINA_SIZE2D(ih->currentwidth, ih->currentheight));
 
@@ -258,19 +252,15 @@ static int eflPopoverSetVisibleAttrib(Ihandle* ih, const char* value)
     popup_win = iupeflGetWidget(ih);
     anchor_widget = iupeflGetWidget(anchor);
 
-    /* Compute layout */
     if (ih->firstchild)
       iupLayoutCompute(ih);
 
-    /* Get anchor position in screen coordinates */
     {
       Eo* anchor_win;
       int win_x = 0, win_y = 0;
 
       anchor_geom = efl_gfx_entity_geometry_get(anchor_widget);
 
-      /* Get anchor's parent window screen position.
-         Fall back to the IUP dialog handle. */
       anchor_win = efl_provider_find(anchor_widget, EFL_UI_WIN_CLASS);
       if (!anchor_win)
       {
@@ -281,7 +271,6 @@ static int eflPopoverSetVisibleAttrib(Ihandle* ih, const char* value)
       if (anchor_win)
         elm_win_screen_position_get(anchor_win, &win_x, &win_y);
 
-      /* Convert to screen coordinates */
       anchor_geom.x += win_x;
       anchor_geom.y += win_y;
     }
@@ -291,17 +280,14 @@ static int eflPopoverSetVisibleAttrib(Ihandle* ih, const char* value)
       ih->currentwidth, ih->currentheight,
       &x, &y);
 
-    /* Set window size and position */
     efl_gfx_entity_size_set(popup_win, EINA_SIZE2D(ih->currentwidth, ih->currentheight));
     efl_gfx_entity_position_set(popup_win, EINA_POSITION2D(x, y));
 
-    /* Position children, they use window-relative coordinates (0,0 based) */
     if (ih->firstchild)
       eflPopoverLayoutUpdateMethod(ih);
 
     efl_gfx_entity_visible_set(popup_win, EINA_TRUE);
 
-    /* Activate window for focus handling */
     efl_ui_win_activate(popup_win);
 
     {

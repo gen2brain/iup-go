@@ -47,8 +47,6 @@ extern "C" {
  * Native Container (for absolute positioning like GTK's GtkFixed)
  ****************************************************************************/
 
-/* Qt doesn't have a native "fixed" container like GTK, so we use QWidget with manual layout management */
-
 IUP_DRV_API QWidget* iupqtNativeContainerNew(int has_window)
 {
   QWidget* widget = new QWidget();
@@ -84,9 +82,6 @@ IUP_DRV_API void iupqtNativeContainerMove(QWidget* container, QWidget* widget, i
 
 static QWidget* qtGetNativeParent(Ihandle* ih)
 {
-  /* iupChildTreeGetNativeParentHandle returns the appropriate container for absolute positioning.
-     For canvas-based controls, this returns the _IUP_EXTRAPARENT (a QWidget without layout).
-     For other controls, it returns the appropriate native container. */
   return (QWidget*)iupChildTreeGetNativeParentHandle(ih);
 }
 
@@ -96,7 +91,6 @@ IUP_DRV_API QWidget* iupqtGetParentWidget(Ihandle* ih)
   if (parent)
     return (QWidget*)parent;
 
-  /* Try to find parent from focused element */
   {
     Ihandle* ih_focus = IupGetFocus();
     if (ih_focus)
@@ -107,7 +101,6 @@ IUP_DRV_API QWidget* iupqtGetParentWidget(Ihandle* ih)
     }
   }
 
-  /* Fallback: find first visible IUP dialog */
   {
     Ihandle* dlg_iter = iupDlgListFirst();
     while (dlg_iter)
@@ -123,7 +116,7 @@ IUP_DRV_API QWidget* iupqtGetParentWidget(Ihandle* ih)
 
 IUP_DRV_API void iupqtUpdateMnemonic(Ihandle* ih)
 {
-  /* Qt handles mnemonics automatically through & in text */
+  /* Qt handles & mnemonics itself */
   (void)ih;
 }
 
@@ -185,13 +178,10 @@ IUP_DRV_API void iupqtAddToParent(Ihandle* ih)
 
   if (parent && widget)
   {
-    /* Special handling for QMenuBar - must use setMenuBar() not container add */
+    /* a QMenuBar goes on the QMainWindow via setMenuBar(); the parent here may be its central widget */
     QMenuBar* menubar = qobject_cast<QMenuBar*>(widget);
     if (menubar)
     {
-      /* Walk up parent chain to find QMainWindow.
-       * qtGetNativeParent might return the central widget, not the QMainWindow itself.
-       * QMenuBar must be set on the QMainWindow, not on its central widget. */
       QWidget* window_parent = parent;
       while (window_parent)
       {
@@ -199,7 +189,6 @@ IUP_DRV_API void iupqtAddToParent(Ihandle* ih)
         if (mainwindow)
         {
           mainwindow->setMenuBar(menubar);
-          /* Don't call show() here - it's already called in qtMenuMapMethod. */
           menubar->adjustSize();
 
           return;
@@ -253,7 +242,6 @@ extern "C" IUP_SDK_API void iupdrvBaseLayoutUpdateMethod(Ihandle *ih)
 
 extern "C" IUP_SDK_API void iupdrvBaseUnMapMethod(Ihandle* ih)
 {
-  /* Skip for types that don't have proper widgets or are managed elsewhere */
   if (ih->iclass->nativetype == IUP_TYPEVOID ||
       ih->iclass->nativetype == IUP_TYPEMENU)
     return;
@@ -269,12 +257,10 @@ extern "C" IUP_SDK_API void iupdrvBaseUnMapMethod(Ihandle* ih)
   {
     widget->hide();
 
-    /* Only delete if not already being deleted and has no parent
-     * (Qt parent-child ownership will delete children automatically) */
     if (!widget->parent())
       delete widget;
     else
-      widget->setParent(nullptr);  /* Detach from parent to prevent double-delete */
+      widget->setParent(nullptr);
   }
 
   ih->handle = nullptr;
@@ -380,15 +366,12 @@ IUP_DRV_API int iupqtSetMnemonicTitle(Ihandle* ih, QWidget* widget, const char* 
   if (!value)
     value = "";
 
-  /* IUP uses & for mnemonics, Qt also uses &, so just pass through */
   str = iupStrProcessMnemonic(value, &c, 1);
 
   if (str != value)
   {
-    /* Has mnemonic */
     QString text = QString::fromUtf8(str);
 
-    /* Set text with mnemonic on appropriate widget type */
     if (qobject_cast<QPushButton*>(widget))
       qobject_cast<QPushButton*>(widget)->setText(text);
     else if (qobject_cast<QLabel*>(widget))
@@ -399,7 +382,6 @@ IUP_DRV_API int iupqtSetMnemonicTitle(Ihandle* ih, QWidget* widget, const char* 
   }
   else
   {
-    /* No mnemonic */
     QString text = QString::fromUtf8(str);
 
     if (qobject_cast<QPushButton*>(widget))
@@ -432,7 +414,6 @@ extern "C" IUP_SDK_API int iupdrvBaseSetZorderAttrib(Ihandle* ih, const char* va
 
 extern "C" IUP_SDK_API void iupdrvSetVisible(Ihandle* ih, int visible)
 {
-  /* Skip for types that don't have a QWidget handle (TYPEVOID, TYPEMENU) */
   if (ih->iclass->nativetype == IUP_TYPEVOID || ih->iclass->nativetype == IUP_TYPEMENU)
     return;
 
@@ -453,9 +434,8 @@ extern "C" IUP_SDK_API void iupdrvSetVisible(Ihandle* ih, int visible)
 
 extern "C" IUP_SDK_API int iupdrvIsVisible(Ihandle* ih)
 {
-  /* Skip for types that don't have a QWidget handle (TYPEVOID, TYPEMENU) */
   if (ih->iclass->nativetype == IUP_TYPEVOID || ih->iclass->nativetype == IUP_TYPEMENU)
-    return 1;  /* Return 1 (visible) for non-widget types */
+    return 1;
 
   QWidget* widget = (QWidget*)ih->handle;
 
@@ -464,7 +444,6 @@ extern "C" IUP_SDK_API int iupdrvIsVisible(Ihandle* ih)
 
   if (widget->isVisible())
   {
-    /* Check parents too */
     Ihandle* parent = ih->parent;
     while (parent)
     {
@@ -485,9 +464,8 @@ extern "C" IUP_SDK_API int iupdrvIsVisible(Ihandle* ih)
 
 extern "C" IUP_SDK_API int iupdrvIsActive(Ihandle *ih)
 {
-  /* Skip for types that don't have a QWidget handle (TYPEVOID, TYPEMENU) */
   if (ih->iclass->nativetype == IUP_TYPEVOID || ih->iclass->nativetype == IUP_TYPEMENU)
-    return 1;  /* Return 1 (active) for non-widget types */
+    return 1;
 
   QWidget* widget = (QWidget*)ih->handle;
   return widget ? widget->isEnabled() : 0;
@@ -495,7 +473,6 @@ extern "C" IUP_SDK_API int iupdrvIsActive(Ihandle *ih)
 
 extern "C" IUP_SDK_API void iupdrvSetActive(Ihandle* ih, int enable)
 {
-  /* Skip for types that don't have a QWidget handle (TYPEVOID, TYPEMENU) */
   if (ih->iclass->nativetype == IUP_TYPEVOID || ih->iclass->nativetype == IUP_TYPEMENU)
     return;
 
@@ -524,7 +501,6 @@ IUP_DRV_API int iupqtMouseMoveEvent(QWidget *widget, QEvent *evt, Ihandle *ih)
   if (cb)
   {
     char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
-    /* Use buttons() to get the state of all pressed buttons during mouse move */
     iupqtButtonKeySetStatus(mouse_evt->modifiers(), mouse_evt->buttons(), 0, status, 0);
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     cb(ih, (int)mouse_evt->position().x(), (int)mouse_evt->position().y(), status);
@@ -565,7 +541,6 @@ IUP_DRV_API int iupqtMouseButtonEvent(QWidget *widget, QEvent *evt, Ihandle *ih)
 
     iupqtButtonKeySetStatus(mouse_evt->modifiers(), mouse_evt->button(), button, status, doubleclick);
 
-    /* Handle double click like GTK (send release before double click) */
     if (doubleclick)
     {
       status[5] = ' '; /* clear double click */
@@ -700,7 +675,6 @@ extern "C" IUP_SDK_API int iupdrvBaseSetFgColorAttrib(Ihandle* ih, const char* v
 
 extern "C" IUP_SDK_API void iupdrvBaseRegisterCommonAttrib(Iclass* ic)
 {
-  /* Qt-specific common attributes can be registered here */
   (void)ic;
 }
 
@@ -720,7 +694,7 @@ extern "C" IUP_SDK_API int iupdrvGetScrollbarSize(void)
   if (style)
   {
     int size = style->pixelMetric(QStyle::PM_ScrollBarExtent);
-    return size > 0 ? size : 16;  /* Default fallback */
+    return size > 0 ? size : 16;
   }
 
   return 16;
@@ -728,7 +702,6 @@ extern "C" IUP_SDK_API int iupdrvGetScrollbarSize(void)
 
 extern "C" IUP_SDK_API void iupdrvWarpPointer(int x, int y)
 {
-  /* Move the mouse cursor to absolute screen coordinates */
   QCursor::setPos(x, y);
 }
 

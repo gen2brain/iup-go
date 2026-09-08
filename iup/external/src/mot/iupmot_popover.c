@@ -160,7 +160,6 @@ static int motPopoverSetVisibleAttrib(Ihandle* ih, const char* value)
     if (!anchor || !anchor->handle)
       return 0;
 
-    /* Map if not yet mapped */
     if (!ih->handle)
     {
       if (IupMap(ih) == IUP_ERROR)
@@ -171,11 +170,9 @@ static int motPopoverSetVisibleAttrib(Ihandle* ih, const char* value)
     anchor_widget = (Widget)anchor->handle;
     inner_parent = (Widget)iupAttribGet(ih, "_IUP_MOT_INNER_PARENT");
 
-    /* Compute layout to get proper sizes */
     if (ih->firstchild)
       iupLayoutCompute(ih);
 
-    /* Get computed size, with fallback to avoid zero size */
     width = ih->currentwidth > 0 ? ih->currentwidth : 100;
     height = ih->currentheight > 0 ? ih->currentheight : 50;
 
@@ -191,7 +188,6 @@ static int motPopoverSetVisibleAttrib(Ihandle* ih, const char* value)
       width, height,
       &x, &y);
 
-    /* Set size and position on shell first */
     XtVaSetValues(shell,
       XmNx, x,
       XmNy, y,
@@ -199,7 +195,6 @@ static int motPopoverSetVisibleAttrib(Ihandle* ih, const char* value)
       XmNheight, height,
       NULL);
 
-    /* Now set size on inner container (after shell is sized) */
     if (inner_parent)
     {
       XtVaSetValues(inner_parent,
@@ -208,7 +203,6 @@ static int motPopoverSetVisibleAttrib(Ihandle* ih, const char* value)
         NULL);
     }
 
-    /* Now update children positions with proper container size */
     if (ih->firstchild)
       iupLayoutUpdate(ih);
 
@@ -313,12 +307,10 @@ static int motPopoverMapMethod(Ihandle* ih)
   iupAttribSet(ih, "_IUP_MOT_INNER_PARENT", (char*)inner_parent);
 
 
-  /* Set initial size to avoid error during realize.
-     Actual size will be set in SetVisibleAttrib before showing. */
+  /* a zero size errors during realize */
   XtVaSetValues(shell, XmNwidth, 1, XmNheight, 1, NULL);
 
-  /* Realize the shell so children can create their X windows.
-     The shell won't be visible because mappedWhenManaged is False. */
+  /* realize so children get their X windows; mappedWhenManaged False keeps it hidden */
   XtRealizeWidget(shell);
 
   return IUP_NOERROR;
@@ -352,6 +344,6 @@ IUP_SDK_API void iupdrvPopoverInitClass(Iclass* ic)
   ic->LayoutUpdate = motPopoverLayoutUpdateMethod;
   ic->GetInnerNativeContainerHandle = motPopoverGetInnerNativeContainerHandleMethod;
 
-  /* Override VISIBLE attribute, NOT_MAPPED because setter handles mapping */
+  /* NOT_MAPPED because the setter handles mapping */
   iupClassRegisterAttribute(ic, "VISIBLE", motPopoverGetVisibleAttrib, motPopoverSetVisibleAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
 }

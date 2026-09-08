@@ -44,7 +44,6 @@ IUP_DRV_API void iupmotSetGlobalColorAttrib(Widget w, const char* xmname, const 
   iupGlobalSetDefaultColorAttrib(name, r, g, b);
 }
 
-/* Set IUP global color from X resource database, with fallback to default */
 static void iupmotSetGlobalColorFromXrm(const char* resource_name, const char* resource_class, const char* iup_name,
                                          unsigned char def_r, unsigned char def_g, unsigned char def_b)
 {
@@ -68,7 +67,6 @@ static void iupmotSetGlobalColorFromXrm(const char* resource_name, const char* r
     }
   }
 
-  /* Fallback to default values */
   iupGlobalSetDefaultColorAttrib(iup_name, def_r, def_g, def_b);
 }
 

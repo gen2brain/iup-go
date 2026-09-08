@@ -211,7 +211,6 @@ static gpointer iup_list_item_get_user_data(IupListItem* item)
   return item ? item->user_data : NULL;
 }
 
-/* Virtual GListModel for VIRTUALMODE */
 typedef struct _IupGtk4VirtualListModel IupGtk4VirtualListModel;
 typedef struct _IupGtk4VirtualListModelClass IupGtk4VirtualListModelClass;
 
@@ -278,11 +277,9 @@ static gpointer iup_gtk4_virtual_list_model_get_item(GListModel *list, guint pos
   if (!model->ih || position >= model->count)
     return NULL;
 
-  /* Create a new IupListItem with data from VALUE_CB */
   text = iupListGetItemValueCb(model->ih, position + 1);  /* 1-based */
   item = iup_list_item_new(text ? text : "");
 
-  /* Set image from IMAGE_CB if SHOWIMAGE is enabled */
   if (model->ih->data->show_image)
   {
     char* image_name = iupListGetItemImageCb(model->ih, position + 1);
@@ -311,7 +308,7 @@ static IupGtk4VirtualListModel *iup_gtk4_virtual_list_model_new(Ihandle *ih)
 {
   IupGtk4VirtualListModel *model = g_object_new(IUP_TYPE_GTK4_VIRTUAL_LIST_MODEL, NULL);
   model->ih = ih;
-  model->count = ih->data->item_count;  /* Use count set before mapping */
+  model->count = ih->data->item_count;
   return model;
 }
 
@@ -337,7 +334,6 @@ static void gtk4ListSetGListStore(Ihandle* ih, GListStore* store)
   iupAttribSet(ih, "_IUPGTK4_GLISTSTORE", (char*)store);
 }
 
-/* Get the GListModel - works for both normal and virtual mode */
 static GListModel* gtk4ListGetListModel(Ihandle* ih)
 {
   if (ih->data->is_virtual)
@@ -391,24 +387,21 @@ IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
   static int scrolled_window_frame_border = -1;
   static int css_frame_border_compensation = -1;
 
-  int border_size = 2 * 5;  /* Base border: 2 * 5px */
+  int border_size = 2 * 5;
   int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
 
-  /* Initialize constants once */
   if (scrolled_window_frame_border == -1)
   {
     /* GTK4 scrolled_window has no internal overhead, only external CSS border */
-    scrolled_window_frame_border = 2;  /* CSS border, same for all scrolled_window types */
+    scrolled_window_frame_border = 2;
   }
   if (css_frame_border_compensation == -1)
   {
-    /* CSS .frame border compensation for plain lists */
     css_frame_border_compensation = 2;  /* 1px top + 1px bottom */
   }
 
   (*x) += border_size;
 
-  /* For plain lists with VISIBLELINES, add CSS border compensation */
   if (!ih->data->is_dropdown && !ih->data->has_editbox && visiblelines > 0)
   {
     (*y) += css_frame_border_compensation;
@@ -521,7 +514,7 @@ IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
         gtk_widget_measure(temp_entry, GTK_ORIENTATION_VERTICAL, -1, &min_h, &nat_h, NULL, NULL);
 
         editbox_entry_natural_height = nat_h;
-        editbox_border_x = 0;  /* No extra X needed */
+        editbox_border_x = 0;
         /* Entry height + small gap for VBox spacing between entry and list */
         int entry_gap = 3;
         editbox_border_y = editbox_entry_natural_height + entry_gap;
@@ -532,30 +525,20 @@ IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
 
       (*x) += editbox_border_x;
 
-      /* For VISIBLELINES, use different border logic */
       if (visiblelines > 0)
       {
-        /* For EDITBOX, VISIBLELINES includes the entry line.
-         * So for VISIBLELINES=3: 1 entry line + 2 list items
-         */
+        /* with EDITBOX, VISIBLELINES counts the entry line */
         int char_width, char_height;
         iupdrvFontGetCharSize(ih, &char_width, &char_height);
 
-        /* What IUP calculated for one item */
         int iup_item_height = char_height;
         iupdrvListAddItemSpace(ih, &iup_item_height);
 
-        /* For EDITBOX list, number of list items shown */
         int list_items = visiblelines - 1;
         if (list_items < 1) list_items = 1;
 
-        /* What IUP calculated for all items (visiblelines worth) */
         int iup_total = iup_item_height * visiblelines;
 
-        /* - Entry: editbox_entry_natural_height
-         * - List items: IUP's calculation for the list part
-         * - Frame: scrolled_window_frame_border
-         */
         int list_part_h = iup_item_height * list_items;
         int needed_total = editbox_entry_natural_height + list_part_h + scrolled_window_frame_border;
 
@@ -626,7 +609,7 @@ static int gtk4ListConvertXYToPos(Ihandle* ih, int x, int y)
 
           current = gtk_widget_get_parent(current);
           depth++;
-          if (depth > 20) break;  /* Safety limit */
+          if (depth > 20) break;
         }
       }
       return -1;
@@ -804,7 +787,6 @@ static char* gtk4ListGetIdValueAttrib(Ihandle* ih, int id)
   {
     if (ih->data->is_virtual)
     {
-      /* Virtual mode: get text from VALUE_CB */
       char* text = iupListGetItemValueCb(ih, pos + 1);  /* 1-based */
       return text;
     }
@@ -1653,7 +1635,6 @@ static void gtk4ListEditChanged(void* dummy, Ihandle* ih)
 
 static gboolean gtk4ListSimpleKeyPressEvent(GtkEventControllerKey *controller, guint keyval, guint keycode, GdkModifierType state, Ihandle *ih)
 {
-  /* First, propagate to parent callbacks (K_ANY, etc.) */
   if (iupgtk4KeyPressEvent(controller, keyval, keycode, state, ih) == TRUE)
     return TRUE;
 
@@ -1855,7 +1836,6 @@ static void gtk4ListItem_onPropertyUpdate(GObject* object, GParamSpec* pspec, gp
   if (!list_item || !item)
     return;
 
-  /* Update widgets based on current item properties */
   GtkWidget* box = gtk_list_item_get_child(list_item);
   if (!box)
     return;
@@ -1899,7 +1879,6 @@ static void gtk4ListFactory_bind(GtkListItemFactory* factory, GtkListItem* list_
   const char* text = iup_list_item_get_text(item);
   gtk_label_set_text(GTK_LABEL(label), text ? text : "");
 
-  /* Set content fit based on FITIMAGE attribute */
   if (ih->data->fit_image)
     gtk_picture_set_content_fit(GTK_PICTURE(picture), GTK_CONTENT_FIT_SCALE_DOWN);
   else
@@ -1922,7 +1901,6 @@ static void gtk4ListFactory_bind(GtkListItemFactory* factory, GtkListItem* list_
 
   g_object_set_data(G_OBJECT(box), "iup-list-item", list_item);
 
-  /* Connect to item's property update signal to handle dynamic changes */
   gulong handler_id = g_signal_connect(item, "notify::update", G_CALLBACK(gtk4ListItem_onPropertyUpdate), list_item);
   g_object_set_data(G_OBJECT(item), "iup-notify-handler", GSIZE_TO_POINTER((gsize)handler_id));
 
@@ -1935,7 +1913,6 @@ static void gtk4ListFactory_unbind(GtkListItemFactory* factory, GtkListItem* lis
 
   if (item)
   {
-    /* Disconnect property update signal */
     gulong handler_id = (gulong)GPOINTER_TO_SIZE(g_object_get_data(G_OBJECT(item), "iup-notify-handler"));
     if (handler_id)
     {
@@ -2062,8 +2039,7 @@ static void gtk4ListUpdateMinSize(Ihandle* ih)
 {
   if (!ih->data->is_dropdown)
   {
-    /* For plain lists, size calculation is handled by core's ComputeNaturalSize.
-       Only set min_content for non-virtual lists without VISIBLELINES. */
+    /* plain lists are sized by the core ComputeNaturalSize */
     if (!ih->data->has_editbox && !ih->data->is_virtual)
     {
       int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
@@ -2132,7 +2108,6 @@ static void gtk4ListUpdateMinSize(Ihandle* ih)
   }
   else
   {
-    /* Dropdown: set size_request for the widget */
     int natural_w = 0, natural_h = 0;
     int char_height;
     int visiblecolumns, item_count;
@@ -2261,7 +2236,6 @@ static int gtk4ListMapMethod(Ihandle* ih)
   GtkListItemFactory* factory;
   GtkSelectionModel* selection_model;
 
-  /* Virtual mode: create virtual model for plain lists only */
   if (ih->data->is_virtual && !ih->data->is_dropdown && !ih->data->has_editbox)
   {
     IupGtk4VirtualListModel* virtual_model = iup_gtk4_virtual_list_model_new(ih);
@@ -2269,7 +2243,6 @@ static int gtk4ListMapMethod(Ihandle* ih)
     /* Keep a reference so the model survives even when selection model takes ownership */
     g_object_ref(virtual_model);
     iupAttribSet(ih, "_IUPGTK4_VIRTUAL_MODEL", (char*)virtual_model);
-    /* Initialize old count tracker for item count changes */
     iupAttribSetInt(ih, "_IUPGTK4_VIRTUAL_OLD_COUNT", ih->data->item_count);
   }
   else
@@ -2341,8 +2314,7 @@ static int gtk4ListMapMethod(Ihandle* ih)
 
       if (ih->data->has_editbox)
       {
-        /* For EDITBOX+DROPDOWN, don't set size on GtkDropDown alone.
-           The VBox will be sized by the core layout. Store width for entry sizing. */
+        /* the VBox is sized by the core layout, so only the width is stored for the entry */
         iupAttribSetInt(ih, "_IUP_DROPDOWN_NATURAL_W", natural_w);
       }
       else
@@ -2449,7 +2421,6 @@ static int gtk4ListMapMethod(Ihandle* ih)
 
     scrolled_window = (GtkScrolledWindow*)gtk_scrolled_window_new();
 
-    /* Set minimum height based on VISIBLELINES */
     {
       int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
       if (visiblelines > 0 && !ih->data->has_editbox)
@@ -2495,9 +2466,7 @@ static int gtk4ListMapMethod(Ihandle* ih)
 
       if (visiblelines > 0)
       {
-        /* VISIBLELINES: Use GtkFixed for exact positioning */
 
-        /* Set size_request for scrolled_window */
         /* For EDITBOX, VISIBLELINES includes the entry line, so list shows (visiblelines - 1) items */
         int list_items = visiblelines - 1;
         if (list_items < 1) list_items = 1;
@@ -2510,26 +2479,20 @@ static int gtk4ListMapMethod(Ihandle* ih)
         content_h += 2 * ih->data->spacing;
         content_h = content_h * list_items;
 
-        /* Total height: content + CSS border compensation (2px) */
         int scrolled_window_frame = 2;  /* CSS border, same as plain list and multiline text */
         int total_h = content_h + scrolled_window_frame;
 
-        /* Set height with size_request - width will be set later in LayoutUpdate when ih->currentwidth is known */
         gtk_widget_set_size_request(GTK_WIDGET(scrolled_window), -1, total_h);
         gtk_widget_set_vexpand(GTK_WIDGET(scrolled_window), FALSE);
         gtk_widget_set_valign(GTK_WIDGET(scrolled_window), GTK_ALIGN_START);
 
-        /* Measure entry height for positioning */
         int entry_min_h, entry_nat_h;
         gtk_widget_measure(entry, GTK_ORIENTATION_VERTICAL, -1, &entry_min_h, &entry_nat_h, NULL, NULL);
 
-        /* Position widgets in GtkFixed */
         gtk_fixed_put(GTK_FIXED(container), entry, 0, 0);
 
-        /* Scrolled_window below entry */
         gtk_fixed_put(GTK_FIXED(container), GTK_WIDGET(scrolled_window), 0, entry_nat_h);
 
-        /* Store entry natural height for LayoutUpdate */
         iupAttribSetInt(ih, "_IUPGTK4_ENTRY_HEIGHT", entry_nat_h);
 
         /* Mark container and scrolled_window so layout manager doesn't enforce GTK's minimums */
@@ -2538,7 +2501,6 @@ static int gtk4ListMapMethod(Ihandle* ih)
       }
       else
       {
-        /* Normal EDITBOX: Use GtkBox */
         gtk_box_append(GTK_BOX(container), entry);
         gtk_widget_set_vexpand((GtkWidget*)scrolled_window, TRUE);
         gtk_box_append(GTK_BOX(container), (GtkWidget*)scrolled_window);
@@ -2603,8 +2565,7 @@ static int gtk4ListMapMethod(Ihandle* ih)
     }
     else
     {
-      /* GTK4's max_content_height only works when scrollbar policy != NEVER
-         So when VISIBLELINES is set, use AUTOMATIC to enable max_content_height clamping */
+      /* max_content_height only clamps when the scrollbar policy is not NEVER */
       int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
       if (visiblelines > 0)
         scrollbar_policy = GTK_POLICY_AUTOMATIC;
@@ -2634,11 +2595,9 @@ static int gtk4ListMapMethod(Ihandle* ih)
 
   IupSetCallback(ih, "_IUP_XY2POS_CB", (Icallback)gtk4ListConvertXYToPos);
 
-  /* Don't populate items in virtual mode */
   if (!ih->data->is_virtual)
     iupListSetInitialItems(ih);
 
-  /* Tell GTK widgets the computed size */
   gtk4ListUpdateMinSize(ih);
 
   iupgtk4UpdateMnemonic(ih);

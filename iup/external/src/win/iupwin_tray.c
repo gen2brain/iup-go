@@ -233,7 +233,6 @@ static LRESULT CALLBACK winTrayWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp
         if (ret == IUP_CLOSE)
           IupExitLoop();
 
-        /* Show popup menu on right-click press if menu is set and callback didn't handle it */
         if (button == 3 && pressed && ret != IUP_IGNORE)
         {
           Ihandle* menu = (Ihandle*)iupAttribGet(ih, "_IUPWIN_TRAYMENU");
@@ -387,7 +386,6 @@ IUP_SDK_API int iupdrvTraySetTip(Ihandle* ih, const char* value)
 {
   IupWinTray* tray = winGetTray(ih, 1);
 
-  /* Store the tip for later use when tray becomes visible */
   iupAttribSetStr(ih, "_IUPWIN_TRAYTIP", value);
 
   if (!tray || !tray->visible)
@@ -402,7 +400,6 @@ IUP_SDK_API int iupdrvTraySetImage(Ihandle* ih, const char* value)
   IupWinTray* tray = winGetTray(ih, 1);
   HICON hIcon = NULL;
 
-  /* Store the image name for later use when tray becomes visible */
   iupAttribSetStr(ih, "_IUPWIN_TRAYIMAGE", value);
 
   if (!tray || !tray->visible)
@@ -430,7 +427,6 @@ IUP_SDK_API int iupdrvTraySetImage(Ihandle* ih, const char* value)
 
 IUP_SDK_API int iupdrvTraySetMenu(Ihandle* ih, Ihandle* menu)
 {
-  /* Store the menu handle, it will be shown via IupPopup on right-click */
   iupAttribSet(ih, "_IUPWIN_TRAYMENU", (char*)menu);
   return 1;
 }

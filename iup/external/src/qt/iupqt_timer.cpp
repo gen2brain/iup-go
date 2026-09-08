@@ -69,13 +69,11 @@ extern "C" IUP_SDK_API void iupdrvTimerRun(Ihandle *ih)
 
     timer_data->qtimer->setInterval(time_ms);
 
-    /* Set priority if requested - PRIORITY_HIGH uses PreciseTimer for better accuracy */
     if (iupAttribGetBoolean(ih, "PRIORITY_HIGH"))
       timer_data->qtimer->setTimerType(Qt::PreciseTimer);
     else
       timer_data->qtimer->setTimerType(Qt::CoarseTimer);
 
-    /* Lambda captures timer_data and calls the callback function */
     QObject::connect(timer_data->qtimer, &QTimer::timeout, [timer_data]() {
       qtTimerProc(timer_data);
     });
@@ -83,8 +81,7 @@ extern "C" IUP_SDK_API void iupdrvTimerRun(Ihandle *ih)
     timer_data->elapsed_timer->start();
     timer_data->qtimer->start();
 
-    /* Store pointer in serial field (cast to int) */
-    ih->serial = 1; /* Mark as active */
+    ih->serial = 1;
     iupAttribSet(ih, "_IUP_QTTIMER", (char*)timer_data);
   }
 }

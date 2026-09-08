@@ -638,7 +638,6 @@ static int winuiFileDlgPopup(Ihandle* ih, int x, int y)
       return IUP_ERROR;
     }
 
-    /* event handler */
     winuiFileDlgEventHandler* pfde = new (std::nothrow) winuiFileDlgEventHandler(ih);
     if (!pfde)
     {
@@ -659,7 +658,6 @@ static int winuiFileDlgPopup(Ihandle* ih, int x, int y)
       return IUP_ERROR;
     }
 
-    /* flags */
     DWORD dwFlags;
     pfd->GetOptions(&dwFlags);
 
@@ -685,24 +683,20 @@ static int winuiFileDlgPopup(Ihandle* ih, int x, int y)
 
     pfd->SetOptions(dwFlags | FOS_FORCEFILESYSTEM);
 
-    /* default extension */
     value = iupAttribGet(ih, "EXTDEFAULT");
     if (value)
       pfd->SetDefaultExtension(iupwinuiStringToWString(value).c_str());
 
-    /* filters */
     char* extfilter = iupAttribGet(ih, "EXTFILTER");
     char* filter = iupAttribGet(ih, "FILTER");
     char* filterinfo = iupAttribGet(ih, "FILTERINFO");
     winuiFileDlgSetFilters(pfd, extfilter, filter, filterinfo);
 
-    /* initial filter index */
     int filterIndex;
     value = iupAttribGet(ih, "FILTERUSED");
     if (iupStrToInt(value, &filterIndex))
       pfd->SetFileTypeIndex(filterIndex);
 
-    /* initial directory and file */
     winuiFileDlgSetFileAndDir(pfd, ih);
 
     /* title */
@@ -710,7 +704,6 @@ static int winuiFileDlgPopup(Ihandle* ih, int x, int y)
     if (value)
       pfd->SetTitle(iupwinuiStringToWString(value).c_str());
 
-    /* help button */
     if (IupGetCallback(ih, "HELP_CB"))
     {
       IFileDialogCustomize* pfdc = NULL;
@@ -723,15 +716,12 @@ static int winuiFileDlgPopup(Ihandle* ih, int x, int y)
       }
     }
 
-    /* INIT callback */
     IFnss file_cb = (IFnss)IupGetCallback(ih, "FILE_CB");
     if (file_cb)
       file_cb(ih, NULL, (char*)"INIT");
 
-    /* show */
     hr = winuiFileDlgShow(pfd, parent, ih);
 
-    /* FINISH callback */
     if (file_cb)
       file_cb(ih, NULL, (char*)"FINISH");
 

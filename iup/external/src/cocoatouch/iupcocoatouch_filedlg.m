@@ -79,7 +79,6 @@ static void cocoaTouchFileDlgPumpUntil(int* state)
 	}
 }
 
-/* first "*.ext" pattern from EXTFILTER or FILTER */
 static NSArray<UTType*>* cocoaTouchFileDlgContentTypes(Ihandle* ih)
 {
 	const char* pattern = NULL;

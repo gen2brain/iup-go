@@ -143,7 +143,6 @@ static HRESULT WINAPI winDarkModeGetThemeColor(HTHEME hTheme, int part, int stat
   return hr;
 }
 
-/* The real panel fills from the dark TaskDialog theme; falls back to the Fluent palette. */
 static COLORREF winDarkModeTaskDlgFill(int secondary)
 {
   static int queried = 0;
@@ -284,7 +283,6 @@ static PIMAGE_THUNK_DATA winDarkModeFindStaticImport(HMODULE hMod, LPCSTR dll, L
   return NULL;
 }
 
-/* Match by name, or by ordinal when func_name is NULL. */
 static PIMAGE_THUNK_DATA winDarkModeFindComctlThunk(HMODULE hComctl, LPCSTR func_name, WORD ordinal)
 {
   PIMAGE_DOS_HEADER dos = (PIMAGE_DOS_HEADER)hComctl;
@@ -570,7 +568,6 @@ IUP_DRV_API void iupwinDarkModeApplyToTree(HWND root)
   RedrawWindow(root, NULL, NULL, RDW_INVALIDATE | RDW_ERASE | RDW_ALLCHILDREN | RDW_UPDATENOW);
 }
 
-/* Grid list views (IupTable) keep the default theme (no Explorer row hover) in both modes. */
 IUP_DRV_API void iupwinDarkModeSetNoHover(HWND hwnd)
 {
   if (!win_darkmode_supported || !hwnd)

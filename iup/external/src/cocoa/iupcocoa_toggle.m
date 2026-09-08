@@ -203,7 +203,6 @@ static void cocoaToggleDeselectRadio(Ihandle* radio, Ihandle* ih)
 
   if ([the_sender isKindOfClass:[NSSwitch class]])
   {
-    /* NSSwitch is simple, no 3-state, no radio, no image */
   }
   else if (!radio && ih->data->type == IUP_TOGGLE_TEXT && [the_sender allowsMixedState])
   {
@@ -431,7 +430,6 @@ static int cocoaToggleSetValueAttrib(Ihandle* ih, const char* value)
   }
   else
   {
-    /* Existing NSButton logic */
     if (iupStrEqualNoCase(value, "NOTDEF"))
     {
       [the_toggle setAllowsMixedState:YES];
@@ -677,7 +675,7 @@ static int cocoaToggleMapMethod(Ihandle* ih)
 {
   Ihandle* radio = iupRadioFindToggleParent(ih);
   char* value;
-  id the_toggle; /* Use id to hold either NSButton or NSSwitch */
+  id the_toggle;
   NSRect initialFrame = NSMakeRect(0, 0, 0, 0);
   int initial_checked = 0;
   int is_switch = 0;
@@ -701,10 +699,8 @@ static int cocoaToggleMapMethod(Ihandle* ih)
   if (is_switch)
   {
     the_toggle = [[NSSwitch alloc] initWithFrame:initialFrame];
-    /* NSSwitch is only available on 10.10+ but that should be fine */
 #ifdef GNUSTEP
-    /* GNUstep NSSwitch has no initWithFrame: override, _enabled defaults to 0 and
-       mouseDown bails on !isEnabled, making the switch a static image. */
+    /* GNUstep NSSwitch leaves _enabled at 0 and mouseDown bails, making it a static image */
     [the_toggle setEnabled:YES];
 #endif
   }
@@ -729,7 +725,7 @@ static int cocoaToggleMapMethod(Ihandle* ih)
       [[the_toggle cell] setImagePosition:NSImageOnly];
       [the_toggle setTitle:@""];
     }
-    else /* IUP_TOGGLE_TEXT and not a switch */
+    else
     {
       if (radio)
       {
@@ -747,7 +743,7 @@ static int cocoaToggleMapMethod(Ihandle* ih)
       }
       else
       {
-        [the_toggle setButtonType:NSButtonTypeSwitch]; /* This is the checkbox style */
+        [the_toggle setButtonType:NSButtonTypeSwitch];
 
         if (iupAttribGetBoolean(ih, "3STATE"))
         {

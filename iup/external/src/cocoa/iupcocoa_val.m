@@ -167,7 +167,6 @@ static int cocoaValSetValueAttrib(Ihandle* ih, const char* value)
 
   if (!value)
   {
-    /* If value is NULL, use current value (e.g., when MIN/MAX changed) */
     new_iup_val = ih->data->val;
   }
   else if (!iupStrToDouble(value, &new_iup_val))
@@ -252,7 +251,6 @@ static int cocoaValSetPageStepAttrib(Ihandle* ih, const char* value)
 {
   if (iupStrToDoubleDef(value, &(ih->data->pagestep), 0.1))
   {
-    /* PAGESTEP is a fraction of the total range. Convert to an absolute value. */
     double page_inc_size = ih->data->pagestep * (ih->data->vmax - ih->data->vmin);
     NSSlider* slider = ih->handle;
     /* altIncrementValue is used when holding Option key, which is the closest available behavior to PAGESTEP on macOS. */
@@ -279,7 +277,7 @@ static int cocoaValSetStepOnTicksAttrib(Ihandle* ih, const char* value)
 {
   NSSlider* slider = ih->handle;
   [slider setAllowsTickMarkValuesOnly:(BOOL)iupStrBoolean(value)];
-  return 1; /* Store value */
+  return 1;
 }
 
 static char* cocoaValGetStepOnTicksAttrib(Ihandle* ih)
@@ -387,7 +385,6 @@ IUP_SDK_API void iupdrvValInitClass(Iclass* ic)
   /* Common */
   iupClassRegisterAttribute(ic, "TIP", NULL, iupdrvBaseSetTipAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 
-  /* IupVal */
   iupClassRegisterAttribute(ic, "VALUE", iupValGetValueAttrib, cocoaValSetValueAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MAX", cocoaValGetMaxAttrib, cocoaValSetMaxAttrib, IUPAF_SAMEASSYSTEM, "1", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MIN", cocoaValGetMinAttrib, cocoaValSetMinAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
@@ -395,7 +392,6 @@ IUP_SDK_API void iupdrvValInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "PAGESTEP", iupValGetPageStepAttrib, cocoaValSetPageStepAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "INVERTED", cocoaValGetInvertedAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
 
-  /* Ticks */
   iupClassRegisterAttribute(ic, "SHOWTICKS", iupValGetShowTicksAttrib, cocoaValSetShowTicksAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "TICKSPOS", NULL, cocoaValSetTicksPosAttrib, "NORMAL", NULL, IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "STEPONTICKS", cocoaValGetStepOnTicksAttrib, cocoaValSetStepOnTicksAttrib, IUPAF_SAMEASSYSTEM, "NO", IUPAF_DEFAULT);

@@ -48,7 +48,6 @@ IUP_SDK_API void iupdrvAddScreenOffset(int *x, int *y, int add)
     NSRect frame = [screen frame];
     NSRect visibleFrame = [screen visibleFrame];
 
-    /* In IUP's top-left coordinate system, the offset is the top-left corner of the visible area (work area). */
     int offset_x = visibleFrame.origin.x;
     /* The y-offset is the height of the main menu bar. */
     int offset_y = frame.size.height - (visibleFrame.origin.y + visibleFrame.size.height);
@@ -69,7 +68,6 @@ IUP_SDK_API void iupdrvAddScreenOffset(int *x, int *y, int add)
 
 IUP_SDK_API void iupdrvGetScreenSize(int *width, int *height)
 {
-  /* Returns the usable screen area, excluding the menu bar and dock. */
   NSRect screen_rect = [[NSScreen mainScreen] visibleFrame];
   if (width) *width = (int)screen_rect.size.width;
   if (height) *height = (int)screen_rect.size.height;
@@ -120,7 +118,6 @@ IUP_SDK_API void iupdrvGetCursorPos(int *x, int *y)
   /* [NSEvent mouseLocation] origin is bottom-left of the primary screen. */
   NSPoint mouse_point = [NSEvent mouseLocation];
 
-  /* Invert the y-axis for IUP's top-left origin system. */
   NSRect screen_rect = [[NSScreen mainScreen] frame];
   CGFloat inverted_y = screen_rect.size.height - mouse_point.y;
 
@@ -136,8 +133,8 @@ IUP_SDK_API void iupdrvGetKeyState(char* key)
 
   key[0] = (flags & NSEventModifierFlagShift)   ? 'S' : ' ';
   key[1] = (flags & NSEventModifierFlagControl) ? 'C' : ' ';
-  key[2] = (flags & NSEventModifierFlagOption)  ? 'A' : ' '; /* Alt Key */
-  key[3] = (flags & NSEventModifierFlagCommand) ? 'Y' : ' '; /* System Key */
+  key[2] = (flags & NSEventModifierFlagOption)  ? 'A' : ' ';
+  key[3] = (flags & NSEventModifierFlagCommand) ? 'Y' : ' ';
   key[4] = 0;
 }
 
@@ -160,7 +157,6 @@ IUP_SDK_API char *iupdrvGetSystemName(void)
       case 11: codename = "Big Sur"; break;
     }
   }
-  /* For older macOS versions (10.x), check the minor version. */
   else if (version.majorVersion == 10)
   {
     switch (version.minorVersion)
@@ -201,7 +197,6 @@ IUP_SDK_API char *iupdrvGetSystemVersion(void)
   NSOperatingSystemVersion version = [[NSProcessInfo processInfo] operatingSystemVersion];
   snprintf(str, 100, "%ld.%ld.%ld", (long)version.majorVersion, (long)version.minorVersion, (long)version.patchVersion);
 
-  /* Append architecture info. */
   struct utsname systemInfo;
   if (uname(&systemInfo) == 0)
   {
@@ -346,7 +341,7 @@ IUP_API void IupLogV(const char* type, const char* format, va_list arglist)
   else if (iupStrEqualNoCase(type, "CRITICAL") || iupStrEqualNoCase(type, "ALERT") || iupStrEqualNoCase(type, "EMERGENCY"))
     log_type = OS_LOG_TYPE_FAULT;
 
-  /* os_log requires a static format string for privacy, so we must mark dynamic content as public. */
+  /* os_log needs a static format string, so dynamic content must be marked public */
   os_log_with_type(OS_LOG_DEFAULT, log_type, "%{public}s", buffer);
 #else
   fprintf(stderr, "[%s] %s\n", type ? type : "LOG", buffer);

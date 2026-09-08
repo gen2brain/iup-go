@@ -144,7 +144,6 @@ static void iSvgParseColor(const char* color, int* r, int* g, int* b, int* a)
   if (sscanf(color, "%d %d %d %d", r, g, b, a) >= 3)
     return;
 
-  /* fallback: all zeros */
   *r = 0; *g = 0; *b = 0; *a = 255;
 }
 
@@ -506,8 +505,6 @@ void iupSvgDrawRadialGradient(iSvgCanvas* dc, int cx, int cy, int radius, const 
 
 static void iSvgParseFontAttrs(iSvgBuffer* buf, const char* font)
 {
-  /* IUP font format: "Family, Style Size" or "Family, Size" or just "Family"
-     Examples: "Helvetica, Bold 16", "Arial, 12", "Courier" */
   char family[128] = "";
   char weight[32] = "";
   char style[32] = "";
@@ -530,7 +527,6 @@ static void iSvgParseFontAttrs(iSvgBuffer* buf, const char* font)
     p = comma + 1;
     while (*p == ' ') p++;
 
-    /* Parse style words and size from remainder */
     while (*p)
     {
       while (*p == ' ') p++;
@@ -567,7 +563,6 @@ static void iSvgParseFontAttrs(iSvgBuffer* buf, const char* font)
   }
   else
   {
-    /* No comma, could be "Family Size" or just "Family" */
     const char* last_space = strrchr(font, ' ');
     if (last_space && last_space[1] >= '0' && last_space[1] <= '9')
     {

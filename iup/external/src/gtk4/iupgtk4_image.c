@@ -151,7 +151,6 @@ IUP_SDK_API void* iupdrvImageCreateCursor(Ihandle *ih)
 
   iupStrToIntInt(iupAttribGet(ih, "HOTSPOT"), &hx, &hy, ':');
 
-  /* Always use texture-based cursor */
   texture = iupdrvImageCreateImage(ih, NULL, 0);
   cursor = gdk_cursor_new_from_texture(texture, hx, hy, NULL);
   g_object_unref(texture);
@@ -170,7 +169,6 @@ IUP_SDK_API void* iupdrvImageLoad(const char* name, int type)
     GtkIconPaintable *paintable;
     int stock_size = iupImageStockGetSize();
 
-    /* Use GtkIconTheme to load icon */
     icon_theme = gtk_icon_theme_get_for_display(gdk_display_get_default());
     if (icon_theme && gtk_icon_theme_has_icon(icon_theme, name))
     {
@@ -191,7 +189,6 @@ IUP_SDK_API void* iupdrvImageLoad(const char* name, int type)
       }
     }
 
-    /* Try removing "gtk-" prefix for stock icons */
     if (!texture && iupStrEqualPartial(name, "gtk-"))
     {
       if (icon_theme && gtk_icon_theme_has_icon(icon_theme, name + 4))
@@ -213,7 +210,6 @@ IUP_SDK_API void* iupdrvImageLoad(const char* name, int type)
         }
       }
 
-      /* Try new names for old stock icons */
       if (!texture)
       {
 #define IUP_GTK_STOCK_NAMES 6
@@ -249,7 +245,6 @@ IUP_SDK_API void* iupdrvImageLoad(const char* name, int type)
       }
     }
 
-    /* Try loading from file */
     if (!texture)
     {
       texture = gdk_texture_new_from_filename(iupgtk4StrConvertToSystem(name), NULL);
@@ -454,8 +449,7 @@ IUP_SDK_API int iupdrvGetIconPixels(Ihandle* ih, const char* value, int* width, 
   w = gdk_texture_get_width(texture);
   h = gdk_texture_get_height(texture);
 
-  /* gdk_texture_download always returns CAIRO_FORMAT_ARGB32
-   * which is native-endian ARGB, meaning BGRA in memory on little-endian systems */
+  /* gdk_texture_download returns CAIRO_FORMAT_ARGB32, which is BGRA in memory on little-endian */
   src = (guchar*)g_malloc((gsize)w * h * 4);
   gdk_texture_download(texture, src, (gsize)w * 4);
 

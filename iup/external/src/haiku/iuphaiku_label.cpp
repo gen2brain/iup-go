@@ -176,7 +176,7 @@ private:
   Ihandle* fIhandle;
 };
 
-/* Image label: custom BView that blits a BBitmap (weak ref into IUP image cache). */
+/* Image label: weak ref into the IUP image cache. */
 
 class IupHaikuLabelImage : public BView
 {
@@ -213,8 +213,6 @@ private:
   Ihandle* fIhandle;
   BBitmap* fBitmap;
 };
-
-/* Separator: 2px etched line (dark + light tint). */
 
 class IupHaikuLabelSeparator : public BView
 {
@@ -285,8 +283,6 @@ static void haikuLabelApplyImage(Ihandle* ih, const char* name, int make_inactiv
   view->SetBitmap(bm);
 }
 
-/* Attribute Setters */
-
 static int haikuLabelSetTitleAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->type != IUP_LABEL_TEXT)
@@ -348,7 +344,6 @@ static int haikuLabelSetActiveAttrib(Ihandle* ih, const char* value)
 {
   /* BStringView does not dim visually; iupBaseSetActiveAttrib gates input via iupdrvIsActive */
 
-  /* For image labels, swap to IMINACTIVE / generated grayscale on inactive. */
   if (ih->data->type == IUP_LABEL_IMAGE)
   {
     char* image = iupAttribGet(ih, "IMAGE");
@@ -403,8 +398,6 @@ static int haikuLabelSetImInactiveAttrib(Ihandle* ih, const char* value)
   }
   return 1;
 }
-
-/* Map */
 
 static int haikuLabelMapMethod(Ihandle* ih)
 {
@@ -464,8 +457,6 @@ static int haikuLabelMapMethod(Ihandle* ih)
 
   return IUP_NOERROR;
 }
-
-/* Driver hooks */
 
 extern "C" IUP_SDK_API void iupdrvLabelAddExtraPadding(Ihandle* ih, int *x, int *y)
 {

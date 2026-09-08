@@ -76,8 +76,6 @@ private:
   bool fSuppress;
 };
 
-/* helpers */
-
 /* BSlider vertical (bottom-min/top-max) already matches IUP default INVERTED=YES. */
 static bool haikuValShouldFlip(Ihandle* ih)
 {
@@ -121,8 +119,6 @@ void IupHaikuSlider::Dispatch()
     if (ret == IUP_CLOSE) IupExitLoop();
   }
 }
-
-/* Attribute setters */
 
 static int haikuValSetValueAttrib(Ihandle* ih, const char* value)
 {
@@ -202,8 +198,6 @@ static int haikuValSetTicksPosAttrib(Ihandle* ih, const char* /*value*/)
   return 1;
 }
 
-/* Map */
-
 static int haikuValMapMethod(Ihandle* ih)
 {
   orientation o = (ih->data->orientation == IVAL_VERTICAL) ? B_VERTICAL : B_HORIZONTAL;
@@ -214,7 +208,6 @@ static int haikuValMapMethod(Ihandle* ih)
   iuphaikuAddToParent(ih);
   iuphaikuUpdateWidgetFont(ih, slider);
 
-  /* Push core state to the native slider. */
   {
     LooperLockGuard guard(slider->Looper());
     slider->SetSuppress(true);
@@ -237,8 +230,6 @@ static void haikuValUnMapMethod(Ihandle* ih)
   if (s) s->SetIhandle(NULL);
   iupdrvBaseUnMapMethod(ih);
 }
-
-/* Driver hooks */
 
 extern "C" IUP_SDK_API void iupdrvValGetMinSize(Ihandle* ih, int *w, int *h)
 {

@@ -42,7 +42,6 @@ public final class IupFileDlgHelper
     private static Uri   sResultUri;
     private static Uri[] sResultUris;
 
-    /* SAVE flush state. */
     private static Uri    sPendingSaveUri;
     private static String sPendingCachePath;
 
@@ -171,7 +170,6 @@ public final class IupFileDlgHelper
     }
 
 
-    /* Dispatched from IupActivity.onActivityResult. */
     public static void deliverResult(int requestCode, int resultCode, Intent data)
     {
         if (resultCode == Activity.RESULT_OK && data != null)

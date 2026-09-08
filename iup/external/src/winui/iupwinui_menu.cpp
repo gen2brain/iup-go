@@ -597,7 +597,7 @@ static char* winuiMenuItemGetValueAttrib(Ihandle* ih)
     if (item)
       return item.IsChecked() ? (char*)"ON" : (char*)"OFF";
   }
-  return NULL;  /* fall back to hash for non-checkable items */
+  return NULL;
 }
 
 static int winuiMenuItemSetActiveAttrib(Ihandle* ih, const char* value)

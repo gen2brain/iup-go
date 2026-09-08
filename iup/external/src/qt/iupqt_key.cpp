@@ -80,14 +80,12 @@ static Iqt2iupkey other_remap[] = {
   { Qt::Key_Menu,       K_Menu },
   { Qt::Key_Help,       K_HELP },
 
-  /* Dead keys (compose keys) */
   { Qt::Key_Dead_Tilde,      K_tilde },
   { Qt::Key_Dead_Acute,      K_acute },
   { Qt::Key_Dead_Grave,      K_grave },
   { Qt::Key_Dead_Circumflex, K_circum },
   { Qt::Key_Dead_Diaeresis,  K_diaeresis },
 
-  /* Function keys */
   { Qt::Key_F1,  K_F1  },
   { Qt::Key_F2,  K_F2  },
   { Qt::Key_F3,  K_F3  },
@@ -109,7 +107,6 @@ static Iqt2iupkey other_remap[] = {
   { Qt::Key_F19, K_F19 },
   { Qt::Key_F20, K_F20 },
 
-  /* Navigation */
   { Qt::Key_Home,     K_HOME },
   { Qt::Key_Left,     K_LEFT },
   { Qt::Key_Up,       K_UP   },
@@ -122,16 +119,14 @@ static Iqt2iupkey other_remap[] = {
   { Qt::Key_Delete,   K_DEL  },
   { Qt::Key_Clear,    K_MIDDLE },
 
-  /* Lock keys */
   { Qt::Key_NumLock,    K_NUM    },
   { Qt::Key_ScrollLock, K_SCROLL },
   { Qt::Key_CapsLock,   K_CAPS   },
 
-  /* Modifier keys */
   { Qt::Key_Shift,   K_LSHIFT },
   { Qt::Key_Control, K_LCTRL  },
   { Qt::Key_Alt,     K_LALT   },
-  { Qt::Key_Meta,    K_LALT   }, /* Some systems */
+  { Qt::Key_Meta,    K_LALT   },
   { Qt::Key_AltGr,   K_RALT   },
 };
 
@@ -172,7 +167,6 @@ static int qtKeyMap2Iup(int keyval, Qt::KeyboardModifiers modifiers)
 {
   int code = keyval;
 
-  /* If it has modifiers (except Shift alone), convert to uppercase */
   if (modifiers & (Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier))
   {
     if (keyval >= K_a && keyval <= K_z)
@@ -194,7 +188,6 @@ static int qtKeyMap2Iup(int keyval, Qt::KeyboardModifiers modifiers)
   if (modifiers & Qt::AltModifier)
     code = iup_XkeyAlt(code);
 
-  /* Add Meta/Super/Cmd modifier */
   if (modifiers & Qt::MetaModifier)
     code = iup_XkeySys(code);
 
@@ -235,7 +228,6 @@ static int qtKeyDecode(QKeyEvent *evt)
     }
   }
 
-  /* If it's a printable ASCII character from text(), use that instead */
   QString text = evt->text();
   if (text.length() == 1 && !(modifiers & (Qt::ControlModifier | Qt::KeypadModifier)))
   {
@@ -244,7 +236,6 @@ static int qtKeyDecode(QKeyEvent *evt)
       key = ch.unicode();
   }
 
-  /* Map to IUP code with modifiers */
   return qtKeyMap2Iup(key, modifiers);
 }
 
@@ -294,13 +285,11 @@ IUP_DRV_API int iupqtKeyPressEvent(QWidget *widget, QKeyEvent *evt, Ihandle *ih)
   /* Avoid duplicate calls if a child of a native container has focus */
   if (iupObjectIsNativeContainer(ih))
   {
-    /* For Qt, get the focused widget from the window */
     QWidget* focused = QApplication::focusWidget();
     if (focused && focused != widget)
       return 0;
   }
 
-  /* Call K_ANY and K_<key> callbacks */
   result = iupKeyCallKeyCb(ih, code);
   if (result == IUP_CLOSE)
   {
@@ -326,7 +315,6 @@ IUP_DRV_API int iupqtKeyPressEvent(QWidget *widget, QKeyEvent *evt, Ihandle *ih)
         return 1;
     }
 
-    /* Handle Alt+key for mnemonics (similar to Windows implementation) */
     if (evt->modifiers() & Qt::AltModifier)
     {
       int base_code = iup_XkeyBase(code);
@@ -334,11 +322,9 @@ IUP_DRV_API int iupqtKeyPressEvent(QWidget *widget, QKeyEvent *evt, Ihandle *ih)
         return 1;
     }
 
-    /* Process navigation keys (Tab, arrows, etc.) */
     if (iupKeyProcessNavigation(ih, code, evt->modifiers() & Qt::ShiftModifier))
       return 1;
 
-    /* Handle F1 for help - Qt doesn't have special help key handling like GTK */
     if (code == K_F1)
     {
       Icallback cb = IupGetCallback(ih, "HELP_CB");

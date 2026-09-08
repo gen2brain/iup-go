@@ -240,7 +240,6 @@ static int motButtonMapMethod(Ihandle* ih)
   {
     ih->data->type = IUP_BUTTON_IMAGE;
 
-    /* Check if we have both image and text */
     if (title && *title != 0)
     {
       ih->data->type |= IUP_BUTTON_TEXT;  /* IUP_BUTTON_BOTH */

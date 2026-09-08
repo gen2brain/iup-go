@@ -41,7 +41,6 @@ IUP_SDK_API int iupdrvNotifyShow(Ihandle* ih)
   const char* title = IupGetAttribute(ih, "TITLE");
   const char* body = IupGetAttribute(ih, "BODY");
 
-  /* STYLE=TOAST: custom in-app overlay with optional ICON bitmap. */
   const char* style = IupGetAttribute(ih, "STYLE");
   if (style && iupStrEqualNoCase(style, "TOAST"))
   {

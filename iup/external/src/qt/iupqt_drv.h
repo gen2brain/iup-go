@@ -1,21 +1,7 @@
 /** \file
  * \brief Qt Driver - Common Function Declarations
  *
- * This header provides the interface for the Qt-based IUP driver.
- *
- * Minimum Requirements:
- * - Qt 5.0 or later (Qt 5.x and Qt 6.x supported)
- * - C++11 compiler (for lambda support)
- *
- * Platform notes:
- * - XDISPLAY global attribute requires Qt 6.2+ (QX11Application)
- * - WL_DISPLAY global attribute requires Qt 6.5+ (QWaylandApplication)
- * - Wayland wl_surface retrieval requires Qt 6.9+ (winId() returns wl_surface);
- *   older Qt versions have undefined behaviour and return NULL
- *
- * Key features:
- * - MOC-free implementation (uses lambdas, no Q_OBJECT/signals/slots)
- * - Cross-platform Qt support (X11, Wayland, Windows, macOS)
+ * XDISPLAY needs Qt 6.2+, WL_DISPLAY Qt 6.5+, and a Wayland wl_surface from winId() Qt 6.9+.
  *
  * See Copyright Notice in "iup.h"
  */
@@ -24,20 +10,18 @@
 #define __IUPQT_DRV_H
 
 #ifndef __IUP_OBJECT_H
-#include "iup_object.h"  /* Defines InativeHandle and Ihandle */
+#include "iup_object.h"
 #endif
 
 /****************************************************************************
  * Macros and Type Definitions
  ****************************************************************************/
 
-/* Color conversion macros */
 #define iupqtColorFromDouble(_x) ((int)((_x)*255.0))
 #define iupqtColorToDouble(_x) ((double)(_x)/255.0)
 
-/* Forward declarations for Qt types */
 #ifdef __cplusplus
-#include <QtCore/qnamespace.h>  /* For Qt::KeyboardModifiers, Qt::MouseButtons */
+#include <QtCore/qnamespace.h>
 class QWidget;
 class QApplication;
 class QFont;
@@ -59,7 +43,6 @@ typedef struct _QMouseEvent QMouseEvent;
  * Event Handlers
  ****************************************************************************/
 
-/* Mouse and keyboard events */
 IUP_DRV_API int iupqtEnterLeaveEvent(QWidget *widget, QEvent *evt, Ihandle* ih);
 IUP_DRV_API int iupqtMouseMoveEvent(QWidget *widget, QEvent *evt, Ihandle *ih);
 IUP_DRV_API int iupqtMouseButtonEvent(QWidget *widget, QEvent *evt, Ihandle *ih);
@@ -139,7 +122,6 @@ IUP_DRV_API void iupqtUpdateWidgetFont(Ihandle *ih, QWidget* widget);
  * Native Handle Access
  ****************************************************************************/
 
-/* Platform-specific native handles (X11, Wayland, Windows, macOS) */
 IUP_DRV_API char* iupqtGetNativeWidgetHandle(QWidget *widget);
 IUP_DRV_API char* iupqtGetNativeWindowHandleAttrib(Ihandle* ih);
 IUP_DRV_API const char* iupqtGetNativeWindowHandleName(void);
@@ -156,11 +138,9 @@ IUP_DRV_API QWidget* iupqtGetParentWidget(Ihandle* ih);
  * System Utilities
  ****************************************************************************/
 
-/* Dark mode detection */
 IUP_DRV_API void iupqtSetGlobalColors(void);
 IUP_DRV_API void iupqtUpdateSystemPalette(void);
 
-/* Qt application instance (singleton) */
 IUP_DRV_API QApplication* iupqtGetApplication(void);
 
 /****************************************************************************

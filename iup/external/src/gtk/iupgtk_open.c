@@ -73,7 +73,6 @@ IUP_DRV_API char* iupgtkGetNativeWidgetHandle(GtkWidget *widget)
     return NULL;
 
 #if GTK_CHECK_VERSION(3, 0, 0)
-  /* GTK3+: Use runtime checks for backend detection */
 
 #ifdef GDK_WINDOWING_X11
   if (GDK_IS_X11_WINDOW(window))
@@ -85,7 +84,6 @@ IUP_DRV_API char* iupgtkGetNativeWidgetHandle(GtkWidget *widget)
 #ifdef GDK_WINDOWING_WAYLAND
   if (GDK_IS_WAYLAND_WINDOW(window))
   {
-    /* Return wl_surface. */
     return (char*)gdk_wayland_window_get_wl_surface(window);
   }
 #endif
@@ -105,7 +103,6 @@ IUP_DRV_API char* iupgtkGetNativeWidgetHandle(GtkWidget *widget)
 #endif
 
 #else
-  /* GTK2: Use compile-time detection since runtime checks are not available */
 
 #ifdef GDK_WINDOWING_X11
   return (char*)IUPGTK_GDK_WINDOW_XID(window);
@@ -117,7 +114,6 @@ IUP_DRV_API char* iupgtkGetNativeWidgetHandle(GtkWidget *widget)
 
 #endif /* GTK_CHECK_VERSION(3, 0, 0) */
 
-  /* Fallback or unsupported backend */
   return NULL;
 }
 
@@ -156,7 +152,6 @@ IUP_DRV_API const char* iupgtkGetNativeWindowHandleName(void)
 #endif
 
 #else
-  /* GTK2: Use compile-time detection */
 
 #ifdef GDK_WINDOWING_X11
   return "XWINDOW";
@@ -192,7 +187,6 @@ IUP_DRV_API const char* iupgtkGetNativeFontIdName(void)
 #endif
 
 #else
-  /* GTK2: Use compile-time detection */
 
 #ifdef GDK_WINDOWING_X11
   return "XFONTID";
@@ -241,7 +235,6 @@ IUP_DRV_API void* iupgtkGetNativeGraphicsContext(GtkWidget* widget)
 #endif
 
 #else
-  /* GTK2: Use compile-time backend detection */
 
 #ifdef GDK_WINDOWING_X11
   Display* xdisplay = GDK_DISPLAY_XDISPLAY(gdk_display_get_default());
@@ -302,7 +295,6 @@ IUP_DRV_API void iupgtkReleaseNativeGraphicsContext(GtkWidget* widget, void* gc)
 #endif
 
 #else
-  /* GTK2: Use compile-time backend detection */
 
 #ifdef GDK_WINDOWING_X11
   Display* xdisplay = GDK_DISPLAY_XDISPLAY(gdk_display_get_default());
@@ -351,7 +343,6 @@ IUP_SDK_API void* iupdrvGetDisplay(void)
 #endif
 
 #else
-  /* GTK2: Use compile-time detection */
 
 #ifdef GDK_WINDOWING_X11
   return IUPGTK_GDK_DISPLAY_XDISPLAY(display);
@@ -457,7 +448,6 @@ static void gtkSetGlobalAttrib(void)
 #endif
 
 #else
-  /* GTK2: Set X11 attributes if on X11 */
 
 #ifdef GDK_WINDOWING_X11
   Display* xdisplay = IUPGTK_GDK_DISPLAY_XDISPLAY(display);
@@ -513,7 +503,6 @@ static void gtkUpdateGlobalColors(GtkWidget* dialog, GtkWidget* text)
   }
   else
   {
-    /* Light gray background for dialogs */
     color.red = 0.94; color.green = 0.94; color.blue = 0.94; color.alpha = 1.0;
     gtkSetGlobalColorAttrib("DLGBGCOLOR", &color);
   }
@@ -529,7 +518,6 @@ static void gtkUpdateGlobalColors(GtkWidget* dialog, GtkWidget* text)
   }
   else
   {
-    /* White background for text entries */
     color.red = 1.0; color.green = 1.0; color.blue = 1.0; color.alpha = 1.0;
     gtkSetGlobalColorAttrib("TXTBGCOLOR", &color);
   }
@@ -540,7 +528,6 @@ static void gtkUpdateGlobalColors(GtkWidget* dialog, GtkWidget* text)
   }
   else
   {
-    /* Blue highlight color */
     color.red = 0.2; color.green = 0.4; color.blue = 0.8; color.alpha = 1.0;
     gtkSetGlobalColorAttrib("TXTHLCOLOR", &color);
   }
@@ -568,7 +555,6 @@ static void gtkUpdateGlobalColors(GtkWidget* dialog, GtkWidget* text)
   }
   else
   {
-    /* Light gray background */
     color.red = 0.94; color.green = 0.94; color.blue = 0.94; color.alpha = 1.0;
     gtkSetGlobalColorAttrib("MENUBGCOLOR", &color);
   }
@@ -685,12 +671,10 @@ static GLogWriterOutput gtkLogWriter(GLogLevelFlags log_level, const GLogField *
     if (strcmp(fields[i].key, "MESSAGE") == 0 && fields[i].value)
     {
       const char* msg = (const char*)fields[i].value;
-      /* Suppress Ubuntu 24 GTK warning about dbus properties on non-Wayland windows.
-         This happens on Ubuntu's patched GTK when windows are created, but causes no issues. */
+      /* Ubuntu's patched GTK warns about dbus properties on non-Wayland windows */
       if (strstr(msg, "gdk_wayland_window_set_dbus_properties_libgtk_only"))
         return G_LOG_WRITER_HANDLED;
-      /* Suppress GTK3 CSS gadget errors when scrollbars get negative size during resize.
-         This happens on Wayland during window resize when widgets temporarily get invalid sizes. */
+      /* GTK3 CSS gadget errors when scrollbars get a negative size during resize */
       if (strstr(msg, "gtk_box_gadget_distribute") && strstr(msg, "size >= 0"))
         return G_LOG_WRITER_HANDLED;
     }
@@ -711,7 +695,6 @@ IUP_SDK_API int iupdrvOpen(int *argc, char ***argv)
   setlocale(LC_NUMERIC, "C");
 
 #if GTK_CHECK_VERSION(3, 0, 0) && GLIB_CHECK_VERSION(2, 50, 0)
-  /* Install log writer to suppress warnings */
   g_log_set_writer_func(gtkLogWriter, NULL, NULL);
 #endif
 

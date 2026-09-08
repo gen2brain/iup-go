@@ -39,7 +39,6 @@ extern "C" {
 #include "iupqt_drv.h"
 
 
-/* Forward declaration */
 static int qtTreeFindNodeId(Ihandle* ih, QTreeWidgetItem* item);
 
 /* HIDELINES/HIDEBUTTONS via the branch indicator state. */
@@ -240,8 +239,7 @@ protected:
 
   void mouseMoveEvent(QMouseEvent* event) override
   {
-    /* All drag-drop handling is done by the universal event filter system in iupqt_dragdrop.cpp
-     * Do not implement drag initiation here as it conflicts with the event filter approach. */
+    /* the universal event filter in iupqt_dragdrop.cpp owns drag initiation */
     QTreeWidget::mouseMoveEvent(event);
   }
 
@@ -453,7 +451,6 @@ static QTreeWidgetItem* qtTreeGetPreviousItem(Ihandle* ih, QTreeWidgetItem* item
       prev = tree->topLevelItem(index - 1);
     }
 
-    /* Get last descendant */
     while (prev->childCount() > 0)
       prev = prev->child(prev->childCount() - 1);
 
@@ -522,17 +519,14 @@ extern "C" IUP_SDK_API void iupdrvTreeAddNode(Ihandle* ih, int id, int kind, con
       kindPrev = qtTreeGetNodeKind(ref_item);
   }
 
-  /* Create the new item */
   new_item = new QTreeWidgetItem();
   if (title)
     new_item->setText(0, QString::fromUtf8(title));
   qtTreeSetNodeKind(new_item, kind);
 
-  /* Enable editing if show_rename */
   if (ih->data->show_rename)
     new_item->setFlags(new_item->flags() | Qt::ItemIsEditable);
 
-  /* Set default image */
   QPixmap* def_image = nullptr;
   if (kind == ITREE_BRANCH)
     def_image = (QPixmap*)ih->data->def_image_collapsed;
@@ -542,24 +536,20 @@ extern "C" IUP_SDK_API void iupdrvTreeAddNode(Ihandle* ih, int id, int kind, con
   if (def_image)
     new_item->setIcon(0, QIcon(*def_image));
 
-  /* default OFF */
   if (ih->data->show_toggle)
   {
     new_item->setData(0, Qt::UserRole + 3, (int)Qt::Unchecked);
     new_item->setCheckState(0, Qt::Unchecked);
   }
 
-  /* Insert the item into the Qt tree widget */
   if (ref_item)
   {
     if (kindPrev == ITREE_BRANCH && add)
     {
-      /* Add as first child of ref_item */
       ref_item->insertChild(0, new_item);
     }
     else
     {
-      /* Add as sibling after ref_item */
       QTreeWidgetItem* parent = ref_item->parent();
       if (parent)
       {
@@ -572,22 +562,18 @@ extern "C" IUP_SDK_API void iupdrvTreeAddNode(Ihandle* ih, int id, int kind, con
         tree->insertTopLevelItem(index + 1, new_item);
       }
     }
-    /* Update the IUP cache */
     iupTreeAddToCache(ih, add, kindPrev, (InodeHandle*)ref_item, (InodeHandle*)new_item);
   }
   else
   {
-    /* Add as root node (prepend or append) */
     if (id == -1) /* Prepend */
       tree->insertTopLevelItem(0, new_item);
     else /* Append (first node in empty tree) */
       tree->addTopLevelItem(new_item);
 
-    /* Update the IUP cache */
     iupTreeAddToCache(ih, 0, 0, NULL, (InodeHandle*)new_item);
   }
 
-  /* Handle ADDEXPANDED attribute for the parent */
   QTreeWidgetItem* parent = new_item->parent();
   if (parent && parent->childCount() == 1)
   {
@@ -597,7 +583,6 @@ extern "C" IUP_SDK_API void iupdrvTreeAddNode(Ihandle* ih, int id, int kind, con
       parent->setExpanded(false);
   }
 
-  /* Handle setting focus on the first node */
   if (ih->data->node_count == 1)
   {
     tree->setMarkStartNode(new_item);
@@ -608,7 +593,6 @@ extern "C" IUP_SDK_API void iupdrvTreeAddNode(Ihandle* ih, int id, int kind, con
     iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", NULL);
   }
 
-  /* After adding, we must sync the cache with the tree's visual order */
   qtTreeRebuildEntireCache(ih);
 }
 
@@ -620,7 +604,6 @@ static QTreeWidgetItem* qtTreeCopyNode(Ihandle* ih, QTreeWidgetItem* src, QTreeW
 {
   QTreeWidgetItem* new_item = new QTreeWidgetItem();
 
-  /* Copy visual properties */
   new_item->setText(0, src->text(0));
   new_item->setIcon(0, src->icon(0));
   new_item->setFont(0, src->font(0));
@@ -628,7 +611,6 @@ static QTreeWidgetItem* qtTreeCopyNode(Ihandle* ih, QTreeWidgetItem* src, QTreeW
   new_item->setBackground(0, src->background(0));
   new_item->setData(0, Qt::UserRole + 1, src->data(0, Qt::UserRole + 1));
 
-  /* Enable editing if show_rename */
   if (ih->data->show_rename)
     new_item->setFlags(new_item->flags() | Qt::ItemIsEditable);
 
@@ -638,10 +620,8 @@ static QTreeWidgetItem* qtTreeCopyNode(Ihandle* ih, QTreeWidgetItem* src, QTreeW
     new_item->setCheckState(0, src->checkState(0));
   }
 
-  /* Increment node count for the destination tree */
   ih->data->node_count++;
 
-  /* Insert into destination */
   if (dst_parent)
     dst_parent->insertChild(dst_index, new_item);
   else
@@ -650,7 +630,6 @@ static QTreeWidgetItem* qtTreeCopyNode(Ihandle* ih, QTreeWidgetItem* src, QTreeW
     tree->insertTopLevelItem(dst_index, new_item);
   }
 
-  /* Recursively copy children */
   for (int i = 0; i < src->childCount(); i++)
   {
     qtTreeCopyNode(ih, src->child(i), new_item, i);
@@ -664,18 +643,14 @@ static QTreeWidgetItem* qtTreeDragDropCopyItem(Ihandle* src_ih, Ihandle* dst_ih,
 {
   QTreeWidgetItem* new_item = new QTreeWidgetItem();
 
-  /* Copy visual properties from source item */
   new_item->setText(0, src_item->text(0));
   new_item->setIcon(0, src_item->icon(0));
   new_item->setFont(0, src_item->font(0));
   new_item->setForeground(0, src_item->foreground(0));
   new_item->setBackground(0, src_item->background(0));
-  /* Copy KIND */
   new_item->setData(0, Qt::UserRole + 1, src_item->data(0, Qt::UserRole + 1));
-  /* Copy IMAGEEXPANDED */
   new_item->setData(0, Qt::UserRole + 2, src_item->data(0, Qt::UserRole + 2));
 
-  /* Enable editing if show_rename */
   if (dst_ih->data->show_rename)
     new_item->setFlags(new_item->flags() | Qt::ItemIsEditable);
 
@@ -685,10 +660,8 @@ static QTreeWidgetItem* qtTreeDragDropCopyItem(Ihandle* src_ih, Ihandle* dst_ih,
     new_item->setCheckState(0, src_item->checkState(0));
   }
 
-  /* Increment node count for the destination tree */
   dst_ih->data->node_count++;
 
-  /* Insert into destination tree */
   if (dst_parent)
     dst_parent->insertChild(dst_index, new_item);
   else
@@ -732,19 +705,16 @@ static int qtTreeSetCopyNodeAttrib(Ihandle* ih, int id_src, const char* name_dst
     if (!dst)
       return 0;
 
-    /* Determine insertion point */
     QTreeWidgetItem* dst_parent;
     int dst_index;
 
     if (qtTreeGetNodeKind(dst) == ITREE_BRANCH && dst->isExpanded())
     {
-      /* Insert as first child */
       dst_parent = dst;
       dst_index = 0;
     }
     else
     {
-      /* Insert after dst */
       dst_parent = dst->parent();
       if (dst_parent)
         dst_index = dst_parent->indexOfChild(dst) + 1;
@@ -755,13 +725,11 @@ static int qtTreeSetCopyNodeAttrib(Ihandle* ih, int id_src, const char* name_dst
       }
     }
 
-    /* Copy node */
     int old_count = ih->data->node_count;
     QTreeWidgetItem* new_item = qtTreeCopyNode(ih, src, dst_parent, dst_index);
 
-    /* Update cache */
     int count = 1 + iupdrvTreeTotalChildCount(ih, (InodeHandle*)src);
-    ih->data->node_count = old_count + count; /* Update count based on old_count + added */
+    ih->data->node_count = old_count + count;
 
     int id_new = id_dst + 1;
     if (qtTreeGetNodeKind(dst) == ITREE_BRANCH && !dst->isExpanded())
@@ -789,7 +757,6 @@ static int qtTreeSetMoveNodeAttrib(Ihandle* ih, int id_src, const char* name_dst
     if (!dst || src == dst)
       return 0;
 
-    /* Cannot move to own descendant */
     QTreeWidgetItem* parent = dst->parent();
     while (parent)
     {
@@ -798,7 +765,6 @@ static int qtTreeSetMoveNodeAttrib(Ihandle* ih, int id_src, const char* name_dst
       parent = parent->parent();
     }
 
-    /* Remove from old position */
     QTreeWidgetItem* src_parent = src->parent();
     if (src_parent)
       src_parent->removeChild(src);
@@ -809,7 +775,6 @@ static int qtTreeSetMoveNodeAttrib(Ihandle* ih, int id_src, const char* name_dst
       tree->takeTopLevelItem(index);
     }
 
-    /* Determine insertion point */
     QTreeWidgetItem* dst_parent;
     int dst_index;
     int id_new;
@@ -838,7 +803,6 @@ static int qtTreeSetMoveNodeAttrib(Ihandle* ih, int id_src, const char* name_dst
       }
     }
 
-    /* Insert at new position */
     if (dst_parent)
       dst_parent->insertChild(dst_index, src);
     else
@@ -847,7 +811,6 @@ static int qtTreeSetMoveNodeAttrib(Ihandle* ih, int id_src, const char* name_dst
       tree->insertTopLevelItem(dst_index, src);
     }
 
-    /* Update cache */
     int count = 1 + iupdrvTreeTotalChildCount(ih, (InodeHandle*)src);
     if (id_new > id_src)
       id_new -= count;
@@ -895,7 +858,6 @@ static int qtTreeSetImageAttrib(Ihandle* ih, int id, const char* value)
   }
   else
   {
-    /* Set default image based on node kind */
     int kind = qtTreeGetNodeKind(item);
     QPixmap* def_image = nullptr;
 
@@ -922,10 +884,8 @@ static int qtTreeSetImageExpandedAttrib(Ihandle* ih, int id, const char* value)
   if (!item)
     return 0;
 
-  /* Store expanded image reference */
   item->setData(0, Qt::UserRole + 2, QString::fromUtf8(value ? value : ""));
 
-  /* Update current icon if expanded */
   if (item->isExpanded() && value)
   {
     QPixmap* pixmap = (QPixmap*)iupImageGetImage(value, ih, 0, nullptr);
@@ -1032,32 +992,26 @@ static int qtTreeSetTitleAttrib(Ihandle* ih, int id, const char* value)
 {
   QTreeWidgetItem* item = qtTreeFindNode(ih, id);
 
-  /* If tree is empty and setting TITLE0, create the root node */
   if (!item && id == 0 && ih->data->node_count == 0)
   {
     IupQtTree* tree = (IupQtTree*)ih->handle;
     if (tree)
     {
-      /* Create root node */
       item = new QTreeWidgetItem(tree);
       tree->addTopLevelItem(item);
-      qtTreeSetNodeKind(item, ITREE_BRANCH);  /* Root is typically a branch */
+      qtTreeSetNodeKind(item, ITREE_BRANCH);
 
-      /* Enable editing if show_rename */
       if (ih->data->show_rename)
         item->setFlags(item->flags() | Qt::ItemIsEditable);
 
-      /* Initialize cache for node 0 */
       ih->data->node_count = 1;
       ih->data->node_cache[0].node_handle = (InodeHandle*)item;
       item->setData(0, Qt::UserRole, QVariant::fromValue((void*)(size_t)0));
 
-      /* Set default image for branch */
       QPixmap* def_image = (QPixmap*)ih->data->def_image_collapsed;
       if (def_image)
         item->setIcon(0, QIcon(*def_image));
 
-      /* Set as mark start */
       tree->setMarkStartNode(item);
     }
   }
@@ -1410,7 +1364,6 @@ static int qtTreeSetMarkAttrib(Ihandle* ih, const char* value)
 
   if (iupStrEqualNoCase(value, "BLOCK"))
   {
-    /* Mark from markstart to current */
     QTreeWidgetItem* mark_start = tree->getMarkStartNode();
     QTreeWidgetItem* current = tree->currentItem();
 
@@ -1510,13 +1463,11 @@ static int qtTreeSetMarkedNodesAttrib(Ihandle* ih, const char* value)
 {
   IupQtTree* tree = (IupQtTree*)ih->handle;
 
-  /* Clear current selection */
   tree->clearSelection();
 
   if (!value)
     return 0;
 
-  /* Parse marked list */
   QString str = QString::fromUtf8(value);
   QStringList ids = str.split(':', Qt::SkipEmptyParts);
 
@@ -1590,13 +1541,11 @@ static int qtTreeSetToggleVisibleAttrib(Ihandle* ih, int id, const char* value)
 
   if (iupStrBoolean(value))
   {
-    /* Show checkbox */
-    if (item->checkState(0) == Qt::Unchecked)  /* Might be hidden */
+    if (item->checkState(0) == Qt::Unchecked)
       item->setCheckState(0, Qt::Unchecked);
   }
   else
   {
-    /* Hide checkbox by clearing check state role */
     item->setData(0, Qt::CheckStateRole, QVariant());
   }
 
@@ -1612,7 +1561,6 @@ static char* qtTreeGetToggleVisibleAttrib(Ihandle* ih, int id)
   if (!item)
     return nullptr;
 
-  /* Check if checkbox is visible */
   return iupStrReturnBoolean(item->data(0, Qt::CheckStateRole).isValid());
 }
 
@@ -1652,7 +1600,6 @@ static int qtTreeSetShowRenameAttrib(Ihandle* ih, const char* value)
     else
       tree->setEditTriggers(QAbstractItemView::NoEditTriggers);
 
-    /* Update ItemIsEditable flag on all existing items */
     for (int i = 0; i < ih->data->node_count; i++)
     {
       QTreeWidgetItem* item = (QTreeWidgetItem*)ih->data->node_cache[i].node_handle;
@@ -1752,7 +1699,6 @@ static int qtTreeSetDelNodeAttrib(Ihandle* ih, int id, const char* value)
     IFns cb = (IFns)IupGetCallback(ih, "NODEREMOVED_CB");
     if (cb)
     {
-      /* Call for all descendants + self */
       std::function<void(QTreeWidgetItem*)> call_rec = [&](QTreeWidgetItem* it) {
         int it_id = qtTreeFindNodeId(ih, it);
         if (it_id != -1)
@@ -1782,7 +1728,6 @@ static int qtTreeSetDelNodeAttrib(Ihandle* ih, int id, const char* value)
     delete item;
     iupTreeDelFromCache(ih, id, count);
 
-    /* After deletion, the cache is shifted. We must rebuild it. */
     qtTreeRebuildEntireCache(ih);
 
     iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", nullptr);
@@ -1824,7 +1769,6 @@ static int qtTreeSetDelNodeAttrib(Ihandle* ih, int id, const char* value)
       iupTreeDelFromCache(ih, child_id, count);
     }
 
-    /* After deletion, the cache is shifted. We must rebuild it. */
     qtTreeRebuildEntireCache(ih);
 
     iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", nullptr);
@@ -1835,8 +1779,7 @@ static int qtTreeSetDelNodeAttrib(Ihandle* ih, int id, const char* value)
   {
     iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", "1");
 
-    /* Collect selected items, filtering out descendants of other selected items
-       to avoid use-after-free when deleting a parent also frees its children */
+    /* deleting a parent frees its children, so selected descendants must be dropped first */
     QList<QTreeWidgetItem*> items_to_delete;
     QSet<QTreeWidgetItem*> selected_set;
     for (int i = 0; i < ih->data->node_count; i++)
@@ -1846,7 +1789,6 @@ static int qtTreeSetDelNodeAttrib(Ihandle* ih, int id, const char* value)
         selected_set.insert(item);
     }
 
-    /* Keep only top-level selected items (those with no selected ancestor) */
     for (QTreeWidgetItem* item : selected_set)
     {
       bool has_selected_ancestor = false;
@@ -1864,7 +1806,6 @@ static int qtTreeSetDelNodeAttrib(Ihandle* ih, int id, const char* value)
         items_to_delete.append(item);
     }
 
-    /* Now delete collected items; no child will be in the list. */
     for (QTreeWidgetItem* item : items_to_delete)
     {
       int item_id = qtTreeFindNodeId(ih, item);
@@ -1904,14 +1845,12 @@ static int qtTreeSetDelNodeAttrib(Ihandle* ih, int id, const char* value)
       iupTreeDelFromCache(ih, item_id, count);
     }
 
-    /* After all deletions are done, rebuild the cache once. */
     qtTreeRebuildEntireCache(ih);
 
     iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", nullptr);
     return 1;
   }
 
-  /* Default case: delete the single node specified by id */
   iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", "1");
 
   QTreeWidgetItem* item = qtTreeFindNode(ih, id);
@@ -1947,7 +1886,6 @@ static int qtTreeSetDelNodeAttrib(Ihandle* ih, int id, const char* value)
     delete item;
     iupTreeDelFromCache(ih, id, count);
 
-    /* After deletion, the cache is shifted. We must rebuild it. */
     qtTreeRebuildEntireCache(ih);
   }
 
@@ -1991,7 +1929,6 @@ static void qtTreeSelectionChanged(Ihandle* ih)
     }
   }
 
-  /* Update markstart if in single selection mode */
   if (ih->data->mark_mode == ITREE_MARK_SINGLE && selected.count() > 0)
     tree->setMarkStartNode(selected.first());
 }
@@ -2014,7 +1951,6 @@ static void qtTreeItemCollapsed(Ihandle* ih, QTreeWidgetItem* item)
 {
   int id = qtTreeFindNodeId(ih, item);
 
-  /* Update image to collapsed version */
   QPixmap* def_image = (QPixmap*)ih->data->def_image_collapsed;
   if (def_image)
     item->setIcon(0, QIcon(*def_image));
@@ -2032,13 +1968,12 @@ static void qtTreeItemChanged(Ihandle* ih, QTreeWidgetItem* item, int column)
   if (column != 0)
     return;
 
-  /* Check if this is a toggle change */
   if (ih->data->show_toggle)
   {
     Qt::CheckState state = item->checkState(0);
     QVariant last = item->data(0, Qt::UserRole + 3);
     if (last.isValid() && last.toInt() == (int)state)
-      return; /* not a user toggle */
+      return;
     item->setData(0, Qt::UserRole + 3, (int)state);
 
     int id = qtTreeFindNodeId(ih, item);
@@ -2049,7 +1984,6 @@ static void qtTreeItemChanged(Ihandle* ih, QTreeWidgetItem* item, int column)
       cb(ih, id, value);
     }
 
-    /* Auto-mark if MARKWHENTOGGLE */
     if (iupAttribGetBoolean(ih, "MARKWHENTOGGLE"))
     {
       item->setSelected(state == Qt::Checked);
@@ -2087,11 +2021,9 @@ static int qtTreeMapMethod(Ihandle* ih)
 
   ih->handle = (InativeHandle*)tree;
 
-  /* Configure tree */
   tree->setColumnCount(1);
   tree->setHeaderHidden(true);
 
-  /* Set indentation */
   int indent = iupAttribGetInt(ih, "INDENTATION");
   if (indent > 0)
     tree->setIndentation(indent);
@@ -2112,17 +2044,14 @@ static int qtTreeMapMethod(Ihandle* ih)
     }
   }
 
-  /* Enable editing if show_rename */
   if (ih->data->show_rename)
     tree->setEditTriggers(QAbstractItemView::SelectedClicked | QAbstractItemView::EditKeyPressed);
   else
     tree->setEditTriggers(QAbstractItemView::NoEditTriggers);
 
-  /* Set custom delegate for rename callbacks */
   IupQtTreeDelegate* delegate = new IupQtTreeDelegate(ih, tree);
   tree->setItemDelegate(delegate);
 
-  /* Set selection mode */
   iupdrvTreeUpdateMarkMode(ih);
 
   if (IupGetCallback(ih, "TIPS_CB"))
@@ -2149,14 +2078,12 @@ static int qtTreeMapMethod(Ihandle* ih)
   if (iupAttribGetBoolean(ih, "ADDROOT"))
     iupdrvTreeAddNode(ih, -1, ITREE_BRANCH, "", 0);
 
-  /* Load default images from system icons */
   {
     char* img_name = iupAttribGetStr(ih, "IMAGELEAF");
     if (img_name && !iupStrEqualNoCase(img_name, "IMGLEAF"))
       ih->data->def_image_leaf = iupImageGetImage(img_name, ih, 0, nullptr);
     else
     {
-      /* Load system icon for leaf nodes (file icon) */
       ih->data->def_image_leaf = qtTreeGetThemeIcon(ih, "text-x-generic", 16);
       if (ih->data->def_image_leaf)
         iupAttribSet(ih, "_IUPQT_THEMED_LEAF", (char*)ih->data->def_image_leaf);
@@ -2169,7 +2096,6 @@ static int qtTreeMapMethod(Ihandle* ih)
       ih->data->def_image_collapsed = iupImageGetImage(img_name, ih, 0, nullptr);
     else
     {
-      /* Load system icon for collapsed branches (folder icon) */
       ih->data->def_image_collapsed = qtTreeGetThemeIcon(ih, "folder", 16);
       if (ih->data->def_image_collapsed)
         iupAttribSet(ih, "_IUPQT_THEMED_COLLAPSED", (char*)ih->data->def_image_collapsed);
@@ -2182,7 +2108,6 @@ static int qtTreeMapMethod(Ihandle* ih)
       ih->data->def_image_expanded = iupImageGetImage(img_name, ih, 0, nullptr);
     else
     {
-      /* Load system icon for expanded branches (open folder icon) */
       ih->data->def_image_expanded = qtTreeGetThemeIcon(ih, "folder-open", 16);
       if (!ih->data->def_image_expanded)
         ih->data->def_image_expanded = qtTreeGetThemeIcon(ih, "folder", 16);
@@ -2191,7 +2116,6 @@ static int qtTreeMapMethod(Ihandle* ih)
     }
   }
 
-  /* Register XY to position converter for drag-drop support */
   IupSetCallback(ih, "_IUP_XY2POS_CB", (Icallback)qtTreeConvertXYToPos);
 
   if (IupGetCallback(ih, "DROPFILES_CB"))
@@ -2206,7 +2130,6 @@ static void qtTreeUnMapMethod(Ihandle* ih)
 
   if (tree)
   {
-    /* Free themed icons if they were created */
     QPixmap* pixmap = (QPixmap*)iupAttribGet(ih, "_IUPQT_THEMED_LEAF");
     if (pixmap)
     {
@@ -2228,7 +2151,6 @@ static void qtTreeUnMapMethod(Ihandle* ih)
       iupAttribSet(ih, "_IUPQT_THEMED_EXPANDED", nullptr);
     }
 
-    /* Delete the tree widget */
     delete tree;
     ih->handle = nullptr;
   }
@@ -2313,7 +2235,6 @@ extern "C" IUP_SDK_API void iupdrvTreeInitClass(Iclass* ic)
   iupClassRegisterAttributeId(ic, "COPYNODE", nullptr, qtTreeSetCopyNodeAttrib, IUPAF_NOT_MAPPED | IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "MOVENODE", nullptr, qtTreeSetMoveNodeAttrib, IUPAF_NOT_MAPPED | IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
 
-  /* Selection/Drag */
   iupClassRegisterAttribute(ic, "RUBBERBAND", nullptr, nullptr, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SCROLLVISIBLE", qtTreeGetScrollVisibleAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY|IUPAF_NO_INHERIT);
 }

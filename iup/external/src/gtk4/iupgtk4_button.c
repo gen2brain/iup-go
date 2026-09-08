@@ -20,7 +20,6 @@
 
 #include "iupgtk4_drv.h"
 
-/* Store measured button padding for different button types */
 static int gtk4_button_padding_text_x = 0;
 static int gtk4_button_padding_text_y = 0;
 static int gtk4_button_padding_image_x = 0;
@@ -58,7 +57,6 @@ static void gtk4ButtonMeasurePadding(void)
   iupgtk4CssAddStaticRule(".iup-measure-no-min", "min-width: 0; min-height: 0;");
   iupgtk4CssFlush();
 
-  /* Text-only button */
   temp_window = gtk_window_new();
   temp_button = gtk_button_new_with_label("Test");
   gtk_window_set_child(GTK_WINDOW(temp_window), temp_button);
@@ -81,7 +79,6 @@ static void gtk4ButtonMeasurePadding(void)
 
   gtk_window_destroy(GTK_WINDOW(temp_window));
 
-  /* Image-only button: remove min-width/min-height to get true padding+border */
   temp_window = gtk_window_new();
   temp_button = gtk_button_new();
   gtk_widget_add_css_class(temp_button, "iup-measure-no-min");
@@ -96,11 +93,9 @@ static void gtk4ButtonMeasurePadding(void)
   gtk4_button_padding_image_x = button_size.width - child_size.width;
   gtk4_button_padding_image_y = button_size.height - child_size.height;
 
-  /* Balance: use vertical (smaller) value for both axes */
   if (gtk4_button_padding_image_x > gtk4_button_padding_image_y)
     gtk4_button_padding_image_x = gtk4_button_padding_image_y;
 
-  /* Compute the CSS padding per side for map-time override */
   gtk4_button_image_css_pad = (gtk4_button_padding_image_y - 2) / 2;  /* subtract border (1px each side) */
   if (gtk4_button_image_css_pad < 0) gtk4_button_image_css_pad = 0;
 
@@ -115,7 +110,6 @@ static void gtk4ButtonMeasurePadding(void)
   g_object_unref(temp_paintable);
   gtk_window_destroy(GTK_WINDOW(temp_window));
 
-  /* Image+text button (use spacing=2) */
   temp_window = gtk_window_new();
   temp_button = gtk_button_new();
   temp_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 2);
@@ -171,7 +165,6 @@ IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int* x, int* y)
   char* image;
   char* title;
 
-  /* Measure padding on first call */
   if (!gtk4_button_padding_measured)
     gtk4ButtonMeasurePadding();
 
@@ -416,7 +409,6 @@ static void gtk4ButtonSetPaintable(Ihandle* ih, const char* name, int make_inact
   GtkWidget* child = NULL;
   GtkPicture* picture = NULL;
 
-  /* Get child - either from GtkButton or GtkBox (for IMAGE+IMPRESS) */
   if (GTK_IS_BUTTON(ih->handle))
     child = gtk_button_get_child(GTK_BUTTON(ih->handle));
   else if (GTK_IS_BOX(ih->handle))
@@ -520,7 +512,6 @@ static int gtk4ButtonSetActiveAttrib(Ihandle* ih, const char* value)
 
 static void gtk4ButtonPressed(GtkGestureClick* gesture, int n_press, double x, double y, Ihandle* ih)
 {
-  /* Handle IMPRESS image swap on press */
   if (ih->data->type == IUP_BUTTON_IMAGE)
   {
     char* impress = iupAttribGet(ih, "IMPRESS");
@@ -528,7 +519,6 @@ static void gtk4ButtonPressed(GtkGestureClick* gesture, int n_press, double x, d
       gtk4ButtonSetPaintable(ih, impress, 0);
   }
 
-  /* Call BUTTON_CB with pressed=1 */
   IFniiiis cb = (IFniiiis)IupGetCallback(ih, "BUTTON_CB");
   if (cb)
   {
@@ -540,7 +530,7 @@ static void gtk4ButtonPressed(GtkGestureClick* gesture, int n_press, double x, d
 
     iupgtk4ButtonKeySetStatus(state, button, status, doubleclick);
 
-    int ret = cb(ih, b, 1, (int)x, (int)y, status);  /* pressed = 1 */
+    int ret = cb(ih, b, 1, (int)x, (int)y, status);
     if (ret == IUP_CLOSE)
       IupExitLoop();
     else if (ret == IUP_IGNORE)
@@ -550,7 +540,6 @@ static void gtk4ButtonPressed(GtkGestureClick* gesture, int n_press, double x, d
 
 static void gtk4ButtonReleased(GtkGestureClick* gesture, int n_press, double x, double y, Ihandle* ih)
 {
-  /* Handle IMPRESS image restore on release */
   if (ih->data->type == IUP_BUTTON_IMAGE)
   {
     char* impress = iupAttribGet(ih, "IMPRESS");
@@ -561,7 +550,6 @@ static void gtk4ButtonReleased(GtkGestureClick* gesture, int n_press, double x, 
     }
   }
 
-  /* Call BUTTON_CB with pressed=0 */
   IFniiiis cb = (IFniiiis)IupGetCallback(ih, "BUTTON_CB");
   if (cb)
   {
@@ -582,7 +570,7 @@ static void gtk4ButtonReleased(GtkGestureClick* gesture, int n_press, double x, 
     }
   }
 
-  /* For borderless image buttons (GtkBox), fire ACTION here since there's no "clicked" signal */
+  /* a GtkBox has no "clicked" signal */
   if (iupAttribGet(ih, "_IUPGTK4_EVENTBOX"))
   {
     Icallback action_cb = IupGetCallback(ih, "ACTION");
@@ -607,7 +595,6 @@ static void gtk4ButtonClicked(GtkButton* widget, Ihandle* ih)
 
 static void gtk4ButtonMotionEnter(GtkEventControllerMotion* controller, double x, double y, Ihandle* ih)
 {
-  /* Add visual feedback on hover - reduce opacity slightly */
   if (ih->data->type == IUP_BUTTON_IMAGE && iupAttribGet(ih, "IMPRESS"))
   {
     gtk_widget_set_opacity(ih->handle, 0.7);
@@ -620,7 +607,6 @@ static void gtk4ButtonMotionEnter(GtkEventControllerMotion* controller, double x
 
 static void gtk4ButtonMotionLeave(GtkEventControllerMotion* controller, Ihandle* ih)
 {
-  /* Restore full opacity when mouse leaves */
   if (ih->data->type == IUP_BUTTON_IMAGE && iupAttribGet(ih, "IMPRESS"))
   {
     gtk_widget_set_opacity(ih->handle, 1.0);
@@ -645,7 +631,6 @@ static int gtk4ButtonMapMethod(Ihandle* ih)
   else
     ih->data->type = IUP_BUTTON_TEXT;
 
-  /* Check if button should have no border (IMPRESS without IMPRESSBORDER) */
   if (ih->data->type == IUP_BUTTON_IMAGE &&
       iupAttribGet(ih, "IMPRESS") &&
       !iupAttribGetBoolean(ih, "IMPRESSBORDER"))
@@ -653,8 +638,7 @@ static int gtk4ButtonMapMethod(Ihandle* ih)
     has_border = 0;
   }
 
-  /* For borderless image buttons (IMPRESS without border), use a box instead of GtkButton
-     This avoids GtkButton's minimum size constraints */
+  /* a GtkBox escapes GtkButton's minimum size */
   if (!has_border)
   {
     ih->handle = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
@@ -666,11 +650,9 @@ static int gtk4ButtonMapMethod(Ihandle* ih)
 
     if (iupAttribGet(ih, "IMPRESS") && !iupAttribGetBoolean(ih, "IMPRESSBORDER"))
     {
-      /* IMPRESS without border: no padding since AddBorders is not called for these */
       gtk_widget_add_css_class(ih->handle, "iup-button-flat");
     }
 
-    /* Handle FLAT attribute for buttons with borders */
     if (iupAttribGetBoolean(ih, "FLAT"))
     {
       gtk_widget_add_css_class(ih->handle, "flat");
@@ -682,10 +664,8 @@ static int gtk4ButtonMapMethod(Ihandle* ih)
 
   if (ih->data->type & IUP_BUTTON_IMAGE)
   {
-    /* Use GtkPicture for exact pixel-size rendering */
     GtkWidget* image = gtk_picture_new();
     gtk_picture_set_can_shrink(GTK_PICTURE(image), FALSE);
-    /* Use SCALE_DOWN to show at natural size, never scale up */
     gtk_picture_set_content_fit(GTK_PICTURE(image), GTK_CONTENT_FIT_SCALE_DOWN);
 
     if (ih->data->type & IUP_BUTTON_TEXT)
@@ -712,7 +692,6 @@ static int gtk4ButtonMapMethod(Ihandle* ih)
     }
     else
     {
-      /* IMAGE-only button (no text) */
       if (GTK_IS_BUTTON(ih->handle))
       {
         gtk_button_set_child(GTK_BUTTON(ih->handle), image);
@@ -722,7 +701,6 @@ static int gtk4ButtonMapMethod(Ihandle* ih)
         gtk_box_append(GTK_BOX(ih->handle), image);
     }
 
-    /* Load and size the picture immediately after creating the widget */
     value = iupAttribGet(ih, "IMAGE");
     if (value)
     {
@@ -768,29 +746,23 @@ static int gtk4ButtonMapMethod(Ihandle* ih)
   iupgtk4SetupKeyEvents(ih->handle, ih);
   iupgtk4SetupEnterLeaveEvents(ih->handle, ih);
 
-  /* Setup click handler - attach gesture directly to button with CAPTURE phase */
   if (GTK_IS_BUTTON(ih->handle))
   {
-    /* Create GtkGestureClick for press/release events */
     GtkGesture* gesture = gtk_gesture_click_new();
-    gtk_gesture_single_set_button(GTK_GESTURE_SINGLE(gesture), 0);  /* 0 = all buttons */
+    gtk_gesture_single_set_button(GTK_GESTURE_SINGLE(gesture), 0);
 
-    /* Set propagation phase to CAPTURE to intercept events BEFORE GtkButton's internal gesture claims them */
+    /* CAPTURE runs before GtkButton's own gesture claims the press */
     gtk_event_controller_set_propagation_phase(GTK_EVENT_CONTROLLER(gesture), GTK_PHASE_CAPTURE);
 
-    /* Attach gesture to the button widget itself */
     gtk_widget_add_controller(ih->handle, GTK_EVENT_CONTROLLER(gesture));
 
-    /* Connect both pressed and released signals */
     g_signal_connect(gesture, "pressed", G_CALLBACK(gtk4ButtonPressed), ih);
     g_signal_connect(gesture, "released", G_CALLBACK(gtk4ButtonReleased), ih);
 
-    /* Also connect "clicked" signal for ACTION callback */
     g_signal_connect(G_OBJECT(ih->handle), "clicked", G_CALLBACK(gtk4ButtonClicked), ih);
   }
   else
   {
-    /* For GtkBox (borderless image button), add a gesture click controller */
     GtkGesture* gesture = gtk_gesture_click_new();
     gtk_gesture_single_set_button(GTK_GESTURE_SINGLE(gesture), GDK_BUTTON_PRIMARY);
 
@@ -799,7 +771,6 @@ static int gtk4ButtonMapMethod(Ihandle* ih)
 
     gtk_widget_add_controller(ih->handle, GTK_EVENT_CONTROLLER(gesture));
 
-    /* Add motion controller for hover indication on IMAGE+IMPRESS buttons */
     if (ih->data->type == IUP_BUTTON_IMAGE && iupAttribGet(ih, "IMPRESS"))
     {
       GtkEventController* motion = gtk_event_controller_motion_new();

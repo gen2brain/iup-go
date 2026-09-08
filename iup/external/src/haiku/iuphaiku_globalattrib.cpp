@@ -59,8 +59,7 @@ extern "C" IUP_SDK_API char* iupdrvGetGlobal(const char* name)
 
   if (iupStrEqual(name, "FULLSIZE"))
   {
-    /* Same as SCREENSIZE on Haiku - the desktop has no taskbar reservation
-     * since BDeskbar floats over windows. */
+    /* the desktop has no taskbar reservation, BDeskbar floats over windows */
     BScreen s(B_MAIN_SCREEN_ID);
     BRect f = s.Frame();
     return iupStrReturnStrf("%dx%d", (int)(f.Width() + 1), (int)(f.Height() + 1));

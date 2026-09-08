@@ -16,7 +16,6 @@
 #include "iupandroid_drv.h"
 
 
-/* Implemented in iup_glcanvas_android.c. */
 extern void iupAndroidGLCanvas_handleSurfaceCreated(Ihandle* ih, ANativeWindow* window);
 extern void iupAndroidGLCanvas_handleSurfaceChanged(Ihandle* ih, int width, int height);
 extern void iupAndroidGLCanvas_handleSurfaceDestroyed(Ihandle* ih);

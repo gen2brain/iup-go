@@ -117,7 +117,6 @@ static Igtk4Font* gtk4FindFont(const char *font)
           GdkMonitor *monitor = g_list_model_get_item(monitors, 0);
           if (monitor)
           {
-            /* Apply scale factor to base DPI */
             int scale_factor = gdk_monitor_get_scale_factor(monitor);
             res = 96.0 * scale_factor;
             g_object_unref(monitor);

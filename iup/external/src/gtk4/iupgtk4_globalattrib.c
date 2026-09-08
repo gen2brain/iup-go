@@ -219,7 +219,6 @@ IUP_SDK_API char* iupdrvGetGlobal(const char* name)
       gdk_monitor_get_geometry(monitor, &rect);
       g_object_unref(monitor);
 
-      /* For multi-monitor setup, calculate bounding box */
       int min_x = rect.x;
       int min_y = rect.y;
       int max_x = rect.x + rect.width;
@@ -273,17 +272,14 @@ IUP_SDK_API char* iupdrvGetGlobal(const char* name)
   }
   if (iupStrEqual(name, "TRUECOLORCANVAS"))
   {
-    /* Always true color */
     return iupStrReturnBoolean(1);
   }
   if (iupStrEqual(name, "UTF8MODE"))
   {
-    /* Always UTF-8 */
     return iupStrReturnBoolean(1);
   }
   if (iupStrEqual(name, "UTF8AUTOCONVERT"))
   {
-    /* No conversion needed */
     return iupStrReturnBoolean(0);
   }
 #ifndef WIN32

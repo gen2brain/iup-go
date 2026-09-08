@@ -383,7 +383,6 @@ public class IupActivity extends AppCompatActivity
             FinalizeDialogDestroy(ihandlePtr);
         }
 
-        /* Releases the IupMainLoop nested pump from iup.Popup, if one is active. */
         IupCommon.modalPumpExitTopmost();
 
         super.onDestroy();
@@ -409,7 +408,6 @@ public class IupActivity extends AppCompatActivity
             scrollView.invalidate();
         }
 
-        /* dark-mode flip: applyDayNight, refresh palette + THEMECHANGED_CB, then invalidate */
         if (oldNight != newNight)
         {
             getDelegate().applyDayNight();
@@ -530,7 +528,7 @@ public class IupActivity extends AppCompatActivity
 
         activity.finish();
 
-        /* release here, not in onDestroy: we can't tell explicit Destroy from OS kill there */
+        /* release here, not in onDestroy: explicit Destroy is indistinguishable from an OS kill there */
         IupCommon.releaseIhandle(ihandlePtr);
 
         /* clear the extra so onDestroy doesn't fire CLOSE_CB for a disposed dialog */

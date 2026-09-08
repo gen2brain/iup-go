@@ -128,7 +128,6 @@ static int androidMessageDlgPopup(Ihandle* ih, int x, int y)
     }
   } while (response == ANDROID_MSGDLG_HELP);
 
-  /* Fallback to the rightmost button on unexpected dismissal. */
   if (response == ANDROID_MSGDLG_CANCELED)
   {
     if (iupStrEqualNoCase(buttons, "YESNOCANCEL"))

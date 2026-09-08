@@ -37,7 +37,6 @@ IUP_SDK_API void iupdrvProgressBarGetMinSize(Ihandle* ih, int* w, int* h)
     vert_min_w = (int)ceilf(vert_size.width);
     vert_min_h = (int)ceilf(vert_size.height);
 
-    /* NSProgressIndicator has flexible width, so use reasonable defaults */
     if (horiz_min_w < 1) horiz_min_w = 100;
     if (horiz_min_h < 1) horiz_min_h = 20;
     if (vert_min_w < 1) vert_min_w = 20;
@@ -85,9 +84,7 @@ static void cocoaProgressBarUpdateVerticalLayout(NSView* container_view, NSProgr
   CGFloat container_w = container_bounds.size.width;
   CGFloat container_h = container_bounds.size.height;
 
-  /* The progress indicator is horizontal but rotated -90 degrees via setFrameCenterRotation.
-     Set it with swapped dimensions, centered in the container.
-     After rotation the visual width becomes container_w and visual height becomes container_h. */
+  /* the indicator is rotated -90 degrees, so it is set up with swapped dimensions */
   CGFloat indicator_w = container_h;
   CGFloat indicator_h = container_w;
   CGFloat x = (container_w - indicator_w) / 2.0;

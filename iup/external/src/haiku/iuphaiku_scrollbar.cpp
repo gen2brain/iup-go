@@ -147,7 +147,6 @@ private:
   }
 };
 
-/* Push ih->data state down to the native BScrollBar in scaled-int space. */
 static void haikuSbUpdateNative(Ihandle* ih)
 {
   IupHaikuScrollBar* sb = (IupHaikuScrollBar*)ih->handle;
@@ -180,8 +179,6 @@ static void haikuSbUpdateNative(Ihandle* ih)
   sb->SetValue((float)ipos);
   sb->SetSuppress(false);
 }
-
-/* Attribute setters */
 
 static int haikuSbSetValueAttrib(Ihandle* ih, const char* value)
 {
@@ -217,8 +214,6 @@ static int haikuSbSetPageSizeAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-/* Map */
-
 static int haikuSbMapMethod(Ihandle* ih)
 {
   orientation o = (ih->data->orientation == ISCROLLBAR_HORIZONTAL) ? B_HORIZONTAL : B_VERTICAL;
@@ -237,8 +232,6 @@ static void haikuSbUnMapMethod(Ihandle* ih)
   if (sb) sb->SetIhandle(NULL);
   iupdrvBaseUnMapMethod(ih);
 }
-
-/* Driver hooks */
 
 extern "C" IUP_SDK_API void iupdrvScrollbarGetMinSize(Ihandle* ih, int* w, int* h)
 {

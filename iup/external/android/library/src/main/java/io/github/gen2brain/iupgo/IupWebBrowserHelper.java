@@ -35,7 +35,6 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 
 
-/* android.webkit.WebView + WebViewClient/WebChromeClient wiring. */
 public final class IupWebBrowserHelper
 {
     private static final String TAG = "Iup";

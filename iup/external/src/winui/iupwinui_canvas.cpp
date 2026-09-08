@@ -1097,7 +1097,6 @@ static int winuiCanvasMapMethod(Ihandle* ih)
     iupwinuiCanvasCallAction(ih);
   });
 
-  /* ManipulationDelta carries scale, rotation and translation together (cumulative since start) */
   canvas.ManipulationMode(ManipulationModes::Scale | ManipulationModes::Rotate | ManipulationModes::TranslateX | ManipulationModes::TranslateY);
 
   aux->manipulationStartedToken = canvas.ManipulationStarted([ih](IInspectable const&, ManipulationStartedRoutedEventArgs const& args) {

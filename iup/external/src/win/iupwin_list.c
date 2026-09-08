@@ -128,7 +128,6 @@ static void winListUpdateShowImageItemHeight(Ihandle* ih, winListItemData* itemd
     int scaled_w, scaled_h;
     iupdrvImageGetInfo(itemdata->hBitmap, &img_w, &img_h, NULL);
 
-    /* Calculate scaled dimensions (same logic as drawing) */
     if (ih->data->fit_image && img_h > available_height)
     {
       scaled_w = (img_w * available_height) / img_h;
@@ -490,7 +489,6 @@ static int winListSetValueAttrib(Ihandle* ih, const char* value)
   else if (ih->data->is_virtual)
   {
     int pos;
-    /* Clear current selection */
     int old_pos = (int)SendMessage(ih->handle, LVM_GETNEXTITEM, (WPARAM)-1, LVNI_SELECTED);
     if (old_pos >= 0)
       ListView_SetItemState(ih->handle, old_pos, 0, LVIS_SELECTED | LVIS_FOCUSED);
@@ -1827,14 +1825,12 @@ static int winListVirtualNotifyCallback(Ihandle* ih, void* msg_info, int *result
             UINT itemState;
             int isSelected, hasFocus;
 
-            /* Query actual item state from ListView */
             itemState = ListView_GetItemState(ih->handle, pnmcd->nmcd.dwItemSpec, LVIS_SELECTED | LVIS_FOCUSED);
             isSelected = (itemState & LVIS_SELECTED) != 0;
             hasFocus = (itemState & LVIS_FOCUSED) != 0;
 
             ListView_GetItemRect(ih->handle, pnmcd->nmcd.dwItemSpec, &rc, LVIR_BOUNDS);
 
-            /* Draw background */
             if (isSelected)
               bgcolor = GetSysColor(COLOR_HIGHLIGHT);
             else if (!iupwinGetColorRef(ih, "BGCOLOR", &bgcolor))
@@ -1842,7 +1838,6 @@ static int winListVirtualNotifyCallback(Ihandle* ih, void* msg_info, int *result
             SetDCBrushColor(pnmcd->nmcd.hdc, bgcolor);
             FillRect(pnmcd->nmcd.hdc, &rc, (HBRUSH)GetStockObject(DC_BRUSH));
 
-            /* Get text color */
             if (iupdrvIsActive(ih))
             {
               if (isSelected)
@@ -1853,7 +1848,6 @@ static int winListVirtualNotifyCallback(Ihandle* ih, void* msg_info, int *result
             else
               fgcolor = GetSysColor(COLOR_GRAYTEXT);
 
-            /* Draw image */
             if (image_name)
             {
               HBITMAP hBitmap = iupImageGetImage(image_name, ih, 0, NULL);
@@ -1869,7 +1863,6 @@ static int winListVirtualNotifyCallback(Ihandle* ih, void* msg_info, int *result
                 iupdrvFontGetCharSize(ih, NULL, &charheight);
                 available_height = charheight + 2 * ih->data->spacing;
 
-                /* Scale image down if needed to fit item height */
                 if (ih->data->fit_image && bmp_h > available_height)
                 {
                   draw_w = (bmp_w * available_height) / bmp_h;
@@ -1888,11 +1881,10 @@ static int winListVirtualNotifyCallback(Ihandle* ih, void* msg_info, int *result
               }
             }
 
-            /* Draw text with offset for image */
             if (text && *text)
             {
               RECT textRc = rc;
-              textRc.left += img_w + 6;  /* offset for image + spacing */
+              textRc.left += img_w + 6;
 
               SetBkMode(pnmcd->nmcd.hdc, TRANSPARENT);
               SetTextColor(pnmcd->nmcd.hdc, fgcolor);
@@ -1901,7 +1893,6 @@ static int winListVirtualNotifyCallback(Ihandle* ih, void* msg_info, int *result
               SelectObject(pnmcd->nmcd.hdc, oldFont);
             }
 
-            /* Draw focus rectangle */
             if (hasFocus)
               iupwinDrawFocusRect(pnmcd->nmcd.hdc, rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top);
 
@@ -2048,7 +2039,6 @@ static void winListDrawItem(Ihandle* ih, DRAWITEMSTRUCT *drawitem)
   /* Get the bitmap associated with the item */
   if (ih->data->is_virtual)
   {
-    /* Virtual mode: query IMAGE_CB for the image */
     char* image_name = iupListGetItemImageCb(ih, drawitem->itemID + 1);  /* 1-based */
     if (image_name)
       hBitmap = iupImageGetImage(image_name, ih, 0, NULL);
@@ -2082,7 +2072,6 @@ static void winListDrawItem(Ihandle* ih, DRAWITEMSTRUCT *drawitem)
     iupdrvFontGetCharSize(ih, NULL, &charheight);
     available_height = charheight + 2 * ih->data->spacing;
 
-    /* Scale image down if needed to fit item height */
     if (ih->data->fit_image && img_h > available_height)
     {
       draw_w = (img_w * available_height) / img_h;
@@ -2190,25 +2179,20 @@ static int winListMapMethod(Ihandle* ih)
     if (!iupwinCreateWindow(ih, WC_LISTVIEW, dwExStyle, dwStyle, NULL))
       return IUP_ERROR;
 
-    /* Set extended styles */
     ListView_SetExtendedListViewStyle(ih->handle, LVS_EX_FULLROWSELECT | LVS_EX_DOUBLEBUFFER);
 
-    /* Add single column to fill width */
     ZeroMemory(&lvc, sizeof(LVCOLUMN));
     lvc.mask = LVCF_WIDTH;
     lvc.cx = 1000;
     ListView_InsertColumn(ih->handle, 0, &lvc);
 
-    /* Register notify callback for WM_NOTIFY */
     IupSetCallback(ih, "_IUPWIN_NOTIFY_CB", (Icallback)winListVirtualNotifyCallback);
 
-    /* Subclass for keyboard handling */
     IupSetCallback(ih, "_IUPWIN_LISTVIEWOLDPROC_CB", (Icallback)GetWindowLongPtr(ih->handle, GWLP_WNDPROC));
     SetWindowLongPtr(ih->handle, GWLP_WNDPROC, (LONG_PTR)winListVirtualWndProc);
 
     IupSetCallback(ih, "_IUP_XY2POS_CB", (Icallback)winListVirtualConvertXYToPos);
 
-    /* Set item count */
     if (ih->data->item_count > 0)
       ListView_SetItemCountEx(ih->handle, ih->data->item_count, LVSICF_NOINVALIDATEALL);
 

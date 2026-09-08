@@ -44,8 +44,6 @@ struct _IdrawCanvas
   int h;
 };
 
-/* helpers */
-
 static rgb_color haikuColorFromLong(long c)
 {
   rgb_color rc;
@@ -61,8 +59,6 @@ static void haikuApplyStroke(BView* v, long color, int line_width, int /*style*/
   v->SetHighColor(haikuColorFromLong(color));
   v->SetPenSize(line_width > 0 ? (float)line_width : 1.0f);
 }
-
-/* Canvas lifecycle */
 
 extern "C" IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
 {
@@ -138,8 +134,6 @@ extern "C" IUP_SDK_API void iupdrvDrawGetSize(IdrawCanvas* dc, int *w, int *h)
   if (w) *w = dc ? dc->w : 0;
   if (h) *h = dc ? dc->h : 0;
 }
-
-/* primitives */
 
 extern "C" IUP_SDK_API void iupdrvDrawLine(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color, int style, int line_width)
 {
@@ -284,7 +278,7 @@ extern "C" IUP_SDK_API void iupdrvDrawBezier(IdrawCanvas* dc, int x1, int y1, in
 
 extern "C" IUP_SDK_API void iupdrvDrawQuadraticBezier(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int x3, int y3, long color, int style, int line_width)
 {
-  /* Promote quadratic to cubic so we reuse BView's StrokeBezier. */
+  /* BView has no quadratic bezier; promote to cubic. */
   int cx1 = x1 + (2 * (x2 - x1)) / 3;
   int cy1 = y1 + (2 * (y2 - y1)) / 3;
   int cx2 = x3 + (2 * (x2 - x3)) / 3;
@@ -350,14 +344,13 @@ extern "C" IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, in
 
   if (text_orientation != 0.0)
   {
-    /* IUP angle is degrees CCW; BAffineTransform::RotateBy takes radians.
-     * Rotate around (x, y) so text origin stays put. */
+    /* IUP angle is degrees CCW; BAffineTransform::RotateBy takes radians. */
     BAffineTransform trans;
     trans.RotateBy(BPoint((float)x, (float)y), -text_orientation * 3.14159265358979323846 / 180.0);
     dc->view->SetTransform(trans);
   }
 
-  /* Iterate lines (BView::DrawString is single-line). */
+  /* BView::DrawString is single-line. */
   int line_h = (int)(fh.ascent + fh.descent + fh.leading + 0.5f);
   int total_len = (len < 0) ? (int)strlen(text) : len;
   const char* line = text;
@@ -386,7 +379,7 @@ extern "C" IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, in
   }
 
   if (text_orientation != 0.0)
-    dc->view->SetTransform(BAffineTransform());  /* identity */
+    dc->view->SetTransform(BAffineTransform());
 
   if (flags & IUP_DRAW_CLIP)
     dc->view->ConstrainClippingRegion(NULL);
@@ -443,8 +436,6 @@ extern "C" IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, i
   delete faded;
 }
 
-/* clipping */
-
 extern "C" IUP_SDK_API void iupdrvDrawSetClipRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2)
 {
   if (!dc || !dc->bm) return;
@@ -488,7 +479,6 @@ extern "C" IUP_SDK_API void iupdrvDrawGetClipRect(IdrawCanvas* dc, int *x1, int 
 
 extern "C" IUP_SDK_API void iupdrvDrawSelectRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2)
 {
-  /* Selection rectangle: 50/50 stipple in inverted colors. */
   if (!dc || !dc->bm) return;
   iupDrawCheckSwapCoord(x1, x2);
   iupDrawCheckSwapCoord(y1, y2);
@@ -501,7 +491,6 @@ extern "C" IUP_SDK_API void iupdrvDrawSelectRect(IdrawCanvas* dc, int x1, int y1
 
 extern "C" IUP_SDK_API void iupdrvDrawFocusRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2)
 {
-  /* Dotted focus outline. */
   if (!dc || !dc->bm) return;
   iupDrawCheckSwapCoord(x1, x2);
   iupDrawCheckSwapCoord(y1, y2);
@@ -511,21 +500,18 @@ extern "C" IUP_SDK_API void iupdrvDrawFocusRect(IdrawCanvas* dc, int x1, int y1,
   dc->bm->Unlock();
 }
 
-/* image-data export */
-
 extern "C" IUP_SDK_API int iupdrvDrawGetImageData(IdrawCanvas* dc, unsigned char* data)
 {
   if (!dc || !dc->bm || !data) return 0;
   dc->bm->Lock();
   dc->view->Sync();
   dc->bm->Unlock();
-  iupdrvImageGetData(dc->bm, data);  /* reuses image.cpp's BGRA->RGBA path */
+  iupdrvImageGetData(dc->bm, data);
   return 1;
 }
 
 extern "C" IUP_SDK_API int iupdrvCanvasGetImageData(Ihandle* ih, unsigned char* data, int /*w*/, int /*h*/)
 {
-  /* Persistent buffer reads aren't tracked yet. */
   (void)ih; (void)data;
   return 0;
 }

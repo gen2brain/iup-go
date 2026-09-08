@@ -183,7 +183,6 @@ static int androidTabsMapMethod(Ihandle* ih)
 
   iupAndroid_AddWidgetToParent(jni_env, ih);
 
-  /* Append any children that were added to the IUP tree before mapping. */
   Ihandle* child = ih->firstchild;
   int pos = 0;
   while (child)
@@ -203,7 +202,6 @@ static void androidTabsUnMapMethod(Ihandle* ih)
 
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
 
-  /* Release per-child page global refs. */
   Ihandle* child = ih->firstchild;
   while (child)
   {

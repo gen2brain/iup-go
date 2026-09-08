@@ -50,7 +50,6 @@ static BBitmap* haikuBuildBitmap(int width, int height, int bpp, iupColor* color
 
   if (bpp == 8)
   {
-    /* Optionally fold the bg color into transparent palette entries before inactive blend. */
     iupColor pal[256];
     if (colors_count > 256) colors_count = 256;
     memcpy(pal, colors, colors_count * sizeof(iupColor));
@@ -116,8 +115,6 @@ static BBitmap* haikuBuildBitmap(int width, int height, int bpp, iupColor* color
   return bm;
 }
 
-/* Driver hooks - create */
-
 extern "C" IUP_SDK_API void* iupdrvImageCreateImage(Ihandle *ih, const char* bgcolor, int make_inactive)
 {
   int bpp = iupAttribGetInt(ih, "BPP");
@@ -164,8 +161,6 @@ extern "C" IUP_SDK_API void iupdrvImageDestroy(void* handle, int type)
     delete (BBitmap*)handle;
 }
 
-/* Driver hooks - introspection */
-
 extern "C" IUP_SDK_API int iupdrvImageGetInfo(void* handle, int *w, int *h, int *bpp)
 {
   BBitmap* bm = (BBitmap*)handle;
@@ -207,22 +202,19 @@ extern "C" IUP_SDK_API void iupdrvImageGetData(void* handle, unsigned char* imgd
     unsigned char* dst = imgdata + y * w * 4;
     for (int x = 0; x < w; ++x)
     {
-      dst[x*4 + 0] = line[x*4 + 2];  /* R */
-      dst[x*4 + 1] = line[x*4 + 1];  /* G */
-      dst[x*4 + 2] = line[x*4 + 0];  /* B */
-      dst[x*4 + 3] = line[x*4 + 3];  /* A */
+      dst[x*4 + 0] = line[x*4 + 2];
+      dst[x*4 + 1] = line[x*4 + 1];
+      dst[x*4 + 2] = line[x*4 + 0];
+      dst[x*4 + 3] = line[x*4 + 3];
     }
   }
 }
 
 
-/* Driver hooks - load */
-
 extern "C" IUP_SDK_API void* iupdrvImageLoad(const char* name, int type)
 {
   if (!name) return NULL;
 
-  /* Try resource first, then file path. BTranslationUtils handles both PNG/JPEG/BMP/etc. */
   BBitmap* bm = BTranslationUtils::GetBitmap(name);
   if (!bm)
     bm = BTranslationUtils::GetBitmapFile(name);
@@ -237,8 +229,6 @@ extern "C" IUP_SDK_API void* iupdrvImageLoad(const char* name, int type)
   }
   return bm;
 }
-
-/* Driver hooks - save (BTranslatorRoster) */
 
 static uint32 haikuFormatId(const char* format)
 {
@@ -281,8 +271,6 @@ extern "C" IUP_SDK_API int iupdrvImageSave(unsigned char* imgdata, int width, in
   delete bm;
   return ok;
 }
-
-/* Driver hooks - icon pixels (used by dialog ICON setter) */
 
 extern "C" IUP_SDK_API int iupdrvGetIconPixels(Ihandle* ih, const char* value, int* width, int* height, unsigned char** pixels)
 {

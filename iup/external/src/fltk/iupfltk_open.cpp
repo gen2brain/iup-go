@@ -83,8 +83,7 @@ IUP_DRV_API char* iupfltkGetNativeWindowHandle(Fl_Window* window)
     void* xid = (void*)fl_xid(window);
     if (xid)
     {
-      /* fl_xid() on macOS returns FLWindow (NSWindow*), not NSView*.
-         Use the ObjC runtime to call [nswindow contentView]. */
+      /* fl_xid() on macOS returns FLWindow (NSWindow*), not NSView* */
       void* nsview = ((void* (*)(void*, void*))objc_msgSend)(xid, sel_getUid("contentView"));
       return (char*)nsview;
     }

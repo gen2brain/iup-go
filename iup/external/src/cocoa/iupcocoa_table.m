@@ -24,7 +24,6 @@
 #include "iupcocoa_drv.h"
 
 
-/* Forward declarations */
 @class IupCocoaTableDataSource;
 @class IupCocoaTableDelegate;
 @class IupCocoaTableView;
@@ -32,7 +31,6 @@
 static const void* IUP_COCOA_TABLE_DATASOURCE_KEY = "IUP_COCOA_TABLE_DATASOURCE_KEY";
 static const void* IUP_COCOA_TABLE_DELEGATE_KEY = "IUP_COCOA_TABLE_DELEGATE_KEY";
 
-/* Static keys for associated objects to track editing state */
 static char kEditingRowKey;
 static char kEditingColKey;
 static char kEditEndedKey;
@@ -55,13 +53,13 @@ typedef struct _IcocoaTableColumnInfo {
 } IcocoaTableColumnInfo;
 
 typedef struct _IcocoaTableData {
-  NSMutableArray* data_array;           /* Array of row arrays */
-  NSMutableDictionary* column_info;     /* Column metadata by index */
-  NSMutableDictionary* cell_attributes; /* Cell-specific attributes (colors, fonts, images) */
+  NSMutableArray* data_array;
+  NSMutableDictionary* column_info;
+  NSMutableDictionary* cell_attributes;
   BOOL is_virtual_mode;                 /* Using VALUE_CB callback */
-  BOOL editable;                        /* Cells are editable */
+  BOOL editable;
   int sort_column;                      /* Currently sorted column (-1 = none) */
-  BOOL sort_ascending;                  /* Sort order */
+  BOOL sort_ascending;
   int current_row;                      /* Currently focused row (1-based, 0=none) */
   int current_col;                      /* Currently focused column (1-based, 0=none) */
   int previous_selected_row;            /* Previously selected row (0-based, -1=none) for redraw */
@@ -103,7 +101,6 @@ typedef struct _IcocoaTableData {
 
   CGFloat cellWidth = self.bounds.size.width;
 
-  /* Get the table view and ask for current cell frame */
   NSTableView* tableView = (NSTableView*)[self superview];
   if (tableView && [tableView isKindOfClass:[NSTableView class]])
   {
@@ -119,7 +116,6 @@ typedef struct _IcocoaTableData {
   CGFloat cellHeight = self.bounds.size.height;
   CGFloat xStart = 2.0;
 
-  /* Position image view if visible */
   if (self.imageView && ![self.imageView isHidden])
   {
     CGFloat imgSize = 16.0;
@@ -128,7 +124,6 @@ typedef struct _IcocoaTableData {
     xStart += imgSize + 4.0;
   }
 
-  /* Position text field centered vertically */
   if (self.textField)
   {
     CGFloat textHeight = [self.textField intrinsicContentSize].height;
@@ -183,22 +178,18 @@ typedef struct _IcocoaTableData {
 #endif
   [super drawRect:dirtyRect];
 
-  /* Draw dashed focus rectangle if this is the focused cell and FOCUSRECT=YES */
   if (isFocusedCell && ih && iupAttribGetBoolean(ih, "FOCUSRECT"))
   {
-    /* Get the table view - in view-based table: cell -> row view -> table view */
-    NSView* rowView = [self superview];  /* NSTableRowView */
+    NSView* rowView = [self superview];
     NSTableView* tableView = nil;
     if (rowView)
-      tableView = (NSTableView*)[rowView superview];  /* NSTableView */
+      tableView = (NSTableView*)[rowView superview];
 
     if (tableView && [tableView isKindOfClass:[NSTableView class]])
     {
-      /* Only draw if the table control (or one of its subviews) has focus */
       NSWindow* window = [self window];
       NSResponder* firstResp = [window firstResponder];
 
-      /* Check if first responder is the table or a descendant of it */
       BOOL tableHasFocus = NO;
       if ([firstResp isEqual:tableView])
         tableHasFocus = YES;
@@ -206,7 +197,6 @@ typedef struct _IcocoaTableData {
         tableHasFocus = YES;
       else if ([firstResp isKindOfClass:[NSText class]])
       {
-        /* Check if first responder is a field editor (NSText) with delegate inside table */
         NSText* text = (NSText*)firstResp;
         id textDelegate = [text delegate];
         if (textDelegate && [textDelegate isKindOfClass:[NSView class]])
@@ -220,12 +210,10 @@ typedef struct _IcocoaTableData {
       {
         NSBezierPath* path = [NSBezierPath bezierPathWithRect:NSInsetRect(self.bounds, 1.5, 1.5)];
 
-        /* Set dash pattern */
         CGFloat dashPattern[] = {2.0, 2.0};
         [path setLineDash:dashPattern count:2 phase:0.0];
         [path setLineWidth:1.0];
 
-        /* Use labelColor, adapts to light/dark mode automatically */
         [[NSColor labelColor] setStroke];
         [path stroke];
       }
@@ -334,11 +322,11 @@ static void cocoaTableInitializeData(Ihandle* ih)
   table_data->editable = NO;
   table_data->sort_column = -1;
   table_data->sort_ascending = YES;
-  table_data->current_row = 0;   /* No focus at start */
-  table_data->current_col = 0;   /* No focus at start */
-  table_data->previous_selected_row = -1;  /* No previous selection */
-  table_data->previous_focused_row = 0;    /* No previous focus */
-  table_data->previous_focused_col = 0;    /* No previous focus */
+  table_data->current_row = 0;
+  table_data->current_col = 0;
+  table_data->previous_selected_row = -1;
+  table_data->previous_focused_row = 0;
+  table_data->previous_focused_col = 0;
 
   ih->data->native_data = table_data;
 }
@@ -356,7 +344,6 @@ static void cocoaTableFreeData(Ihandle* ih)
   }
 }
 
-/* Forward declaration */
 static NSString* cocoaTableGetCellValue(Ihandle* ih, int lin, int col);
 
 static BOOL cocoaTableIsCellEditable(Ihandle* ih, int col_1based)
@@ -400,10 +387,9 @@ static int cocoaTableValueChanged(const char* old_value, const char* new_value)
 static CGFloat cocoaTableCalculateColumnWidth(Ihandle* ih, int col_index, NSFont* font)
 {
   IcocoaTableData* table_data = cocoaTableGetData(ih);
-  CGFloat max_width = 0.0;  /* Will be calculated from content */
-  int max_rows_to_check = (ih->data->num_lin > 100) ? 100 : ih->data->num_lin;  /* Limit for performance */
+  CGFloat max_width = 0.0;
+  int max_rows_to_check = (ih->data->num_lin > 100) ? 100 : ih->data->num_lin;
 
-  /* Measure column title */
   NSTableView* tableView = cocoaTableGetTableView(ih);
   if (tableView)
   {
@@ -425,12 +411,10 @@ static CGFloat cocoaTableCalculateColumnWidth(Ihandle* ih, int col_index, NSFont
     }
   }
 
-  /* Account for image width if SHOWIMAGE is enabled */
   CGFloat image_extra = 0.0;
   if (ih->data->show_image)
-    image_extra = 16.0 + 4.0;  /* 16px image + 4px gap */
+    image_extra = 16.0 + 4.0;
 
-  /* Measure cell content (check first N rows) */
   for (int lin = 0; lin < max_rows_to_check; lin++)
   {
     NSString* cell_value = cocoaTableGetCellValue(ih, lin, col_index);
@@ -438,7 +422,7 @@ static CGFloat cocoaTableCalculateColumnWidth(Ihandle* ih, int col_index, NSFont
     {
       NSDictionary* attrs = @{NSFontAttributeName: font};
       NSSize cell_size = [cell_value sizeWithAttributes:attrs];
-      CGFloat cell_width = cell_size.width + 16.0 + image_extra;  /* Add padding + image space */
+      CGFloat cell_width = cell_size.width + 16.0 + image_extra;
       if (cell_width > max_width)
       {
         max_width = cell_width;
@@ -453,20 +437,18 @@ static NSString* cocoaTableGetCellValue(Ihandle* ih, int lin, int col)
 {
   IcocoaTableData* table_data = cocoaTableGetData(ih);
 
-  /* Check virtual mode first */
   if (table_data->is_virtual_mode)
   {
     sIFnii value_cb = (sIFnii)IupGetCallback(ih, "VALUE_CB");
     if (value_cb)
     {
-      char* value = value_cb(ih, lin + 1, col + 1);  /* IUP uses 1-based indices */
+      char* value = value_cb(ih, lin + 1, col + 1);
       if (value)
         return [NSString stringWithUTF8String:value];
       return @"";
     }
   }
 
-  /* Use internal storage */
   if (lin >= 0 && lin < [table_data->data_array count])
   {
     NSMutableArray* row = [table_data->data_array objectAtIndex:lin];
@@ -485,7 +467,6 @@ static void cocoaTableSetCellValue(Ihandle* ih, int lin, int col, const char* va
 {
   IcocoaTableData* table_data = cocoaTableGetData(ih);
 
-  /* Ensure row exists */
   while (lin >= [table_data->data_array count])
   {
     NSMutableArray* row = [[NSMutableArray alloc] init];
@@ -495,7 +476,6 @@ static void cocoaTableSetCellValue(Ihandle* ih, int lin, int col, const char* va
 
   NSMutableArray* row = [table_data->data_array objectAtIndex:lin];
 
-  /* Ensure column exists in this row */
   while (col >= [row count])
   {
     [row addObject:@""];
@@ -510,17 +490,13 @@ static NSColor* cocoaTableGetRowBackgroundColor(Ihandle* ih, int row)
   /* row is 0-based NSTableView row index, lin is 1-based IUP index */
   int lin = row + 1;
 
-  /* Check per-row background color */
   char* bgcolor = iupAttribGetId2(ih, "BGCOLOR", lin, 0);
 
-  /* If no specific bgcolor, check for alternating row colors */
   if (!bgcolor)
   {
-    /* Check ALTERNATECOLOR flag first */
     char* alternate = iupAttribGet(ih, "ALTERNATECOLOR");
     if (iupStrBoolean(alternate))
     {
-      /* ALTERNATECOLOR is YES - use EVENROWCOLOR or ODDROWCOLOR based on row number */
       char* even_color = iupAttribGet(ih, "EVENROWCOLOR");
       char* odd_color = iupAttribGet(ih, "ODDROWCOLOR");
 
@@ -529,8 +505,6 @@ static NSColor* cocoaTableGetRowBackgroundColor(Ihandle* ih, int row)
       else
         bgcolor = odd_color;
 
-      /* If custom colors are defined, return them */
-      /* If no custom colors, return nil to use native NSTableView alternating colors */
     }
   }
 
@@ -543,7 +517,7 @@ static NSColor* cocoaTableGetRowBackgroundColor(Ihandle* ih, int row)
     }
   }
 
-  return nil;  /* No background color */
+  return nil;
 }
 
 static void cocoaTableApplyCellColors(Ihandle* ih, NSTableCellView* cellView, int lin, int col, BOOL isSelected)
@@ -551,14 +525,13 @@ static void cocoaTableApplyCellColors(Ihandle* ih, NSTableCellView* cellView, in
   /* lin and col are 1-based IUP indices */
   NSTextField* textField = cellView.textField;
 
-  /* Background color, only apply if row is NOT selected */
   IupCocoaTableCellView* iupCellView = (IupCocoaTableCellView*)cellView;
   if (!isSelected)
   {
     /* Background color - hierarchy: L:C > :C > L:0 */
-    char* bgcolor = iupAttribGetId2(ih, "BGCOLOR", lin, col);  /* Per-cell */
+    char* bgcolor = iupAttribGetId2(ih, "BGCOLOR", lin, col);
     if (!bgcolor)
-      bgcolor = iupAttribGetId2(ih, "BGCOLOR", 0, col);  /* Per-column */
+      bgcolor = iupAttribGetId2(ih, "BGCOLOR", 0, col);
 
     if (bgcolor && *bgcolor)
     {
@@ -582,9 +555,9 @@ static void cocoaTableApplyCellColors(Ihandle* ih, NSTableCellView* cellView, in
   /* Foreground color - hierarchy: L:C > :C > L:0 */
   char* fgcolor = iupAttribGetId2(ih, "FGCOLOR", lin, col);
   if (!fgcolor)
-    fgcolor = iupAttribGetId2(ih, "FGCOLOR", 0, col);  /* Per-column */
+    fgcolor = iupAttribGetId2(ih, "FGCOLOR", 0, col);
   if (!fgcolor)
-    fgcolor = iupAttribGetId2(ih, "FGCOLOR", lin, 0);  /* Per-row */
+    fgcolor = iupAttribGetId2(ih, "FGCOLOR", lin, 0);
 
   if (fgcolor && *fgcolor)
   {
@@ -604,13 +577,11 @@ static void cocoaTableApplyCellColors(Ihandle* ih, NSTableCellView* cellView, in
 /* Apply cell font - hierarchy: L:C > 0:C > L:0 */
 static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin, int col)
 {
-  /* lin and col are 1-based IUP indices */
-
   char* font = iupAttribGetId2(ih, "FONT", lin, col);
   if (!font)
-    font = iupAttribGetId2(ih, "FONT", 0, col);  /* Per-column */
+    font = iupAttribGetId2(ih, "FONT", 0, col);
   if (!font)
-    font = iupAttribGetId2(ih, "FONT", lin, 0);  /* Per-row */
+    font = iupAttribGetId2(ih, "FONT", lin, 0);
 
   if (font && *font)
   {
@@ -624,7 +595,6 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
   }
   else
   {
-    /* Reset to default font when no FONT attribute found */
     char* default_font = iupAttribGetStr(ih, "FONT");
     if (default_font && *default_font)
     {
@@ -638,7 +608,6 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
     }
     else
     {
-      /* Use system font as final fallback */
       [textField setFont:[NSFont systemFontOfSize:[NSFont systemFontSize]]];
     }
   }
@@ -653,7 +622,6 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
 
 @implementation IupNarrowTableHeaderView
 
-/* Override headerRectOfColumn to make the last column stretch to fill remaining space */
 - (NSRect)headerRectOfColumn:(NSInteger)column
 {
   NSRect rect = [super headerRectOfColumn:column];
@@ -664,18 +632,14 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
 
   NSInteger numColumns = [tableView numberOfColumns];
 
-  /* If this is the last column, extend it ONLY if no explicit width was set */
   if (column == numColumns - 1)
   {
-    /* Get Ihandle from associated object */
     Ihandle* ih = (Ihandle*)objc_getAssociatedObject(tableView, "_IUPCOCOA_IHANDLE");
     if (ih)
     {
-      /* Check if last column has explicit width set OR if stretching is disabled */
       const char* last_col_width_set = iupAttribGet(ih, "_IUP_TABLE_LAST_COL_WIDTH_SET");
       if ((last_col_width_set && iupStrBoolean(last_col_width_set)) || !ih->data->stretch_last)
       {
-        /* Explicit width set or stretching disabled */
         return rect;
       }
     }
@@ -683,7 +647,6 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
     CGFloat headerWidth = NSWidth([self bounds]);
     CGFloat rectMaxX = NSMaxX(rect);
 
-    /* Extend the header rect to fill remaining space */
     if (rectMaxX < headerWidth)
     {
       rect.size.width += (headerWidth - rectMaxX);
@@ -718,15 +681,12 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
   return self;
 }
 
-/* Override mouseDown to capture clicked column */
 - (void)mouseDown:(NSEvent*)event
 {
-  /* Get the column that was clicked BEFORE calling super, which changes selection */
   NSPoint point = [self convertPoint:[event locationInWindow] fromView:nil];
   NSInteger clickedCol = [self columnAtPoint:point];
   NSInteger clickedRow = [self rowAtPoint:point];
 
-  /* Save old focused cell for redraw */
   IcocoaTableData* table_data = ICOCOA_TABLE_DATA(ih);
   int old_focused_col = 0;
   int old_focused_row = 0;
@@ -736,19 +696,14 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
     old_focused_row = table_data->current_row;
   }
 
-  /* Store the clicked column in our data structure so tableViewSelectionDidChange can use it */
   if (table_data)
   {
-    /* Store as 1-based (IUP convention) */
     table_data->current_col = (clickedCol >= 0) ? (int)(clickedCol + 1) : 1;
     table_data->current_row = (clickedRow >= 0) ? (int)(clickedRow + 1) : 0;
   }
 
-  /* If column changed but row stayed the same, we need to reload cells for focus rectangle
-   * AND trigger ENTERITEM_CB since tableViewSelectionDidChange won't be called */
   if (table_data && old_focused_row == table_data->current_row && old_focused_col != table_data->current_col)
   {
-    /* Same row, different column - reload just the old and new focused cells */
     if (old_focused_row > 0)
     {
       NSMutableIndexSet* colsToReload = [NSMutableIndexSet indexSet];
@@ -764,7 +719,6 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
       }
     }
 
-    /* Trigger ENTERITEM_CB since we changed column within the same row */
     IFnii enteritem_cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
     if (enteritem_cb)
     {
@@ -772,39 +726,31 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
     }
   }
 
-  /* Let NSTableView handle the click normally */
   [super mouseDown:event];
 }
 
-/* Override frameOfCellAtColumn to make last column cells stretch to fill remaining space */
 - (NSRect)frameOfCellAtColumn:(NSInteger)column row:(NSInteger)row
 {
   NSRect rect = [super frameOfCellAtColumn:column row:row];
 
   NSInteger numColumns = [self numberOfColumns];
 
-  /* If this is the last column, extend it ONLY if no explicit width was set */
   if (column == numColumns - 1)
   {
-    /* Get Ihandle from associated object */
     Ihandle* table_ih = (Ihandle*)objc_getAssociatedObject(self, "_IUPCOCOA_IHANDLE");
     if (table_ih)
     {
-      /* Check if last column has explicit width set OR if stretching is disabled */
       const char* last_col_width_set = iupAttribGet(table_ih, "_IUP_TABLE_LAST_COL_WIDTH_SET");
       if ((last_col_width_set && iupStrBoolean(last_col_width_set)) || !table_ih->data->stretch_last)
       {
-        /* Explicit width set or stretching disabled */
         return rect;
       }
     }
 
-    /* Get scroll view and use documentVisibleRect for consistent width */
     NSScrollView* scrollView = [self enclosingScrollView];
     CGFloat tableWidth = scrollView ? NSWidth(scrollView.documentVisibleRect) : NSWidth([self visibleRect]);
     CGFloat rectMaxX = NSMaxX(rect);
 
-    /* Extend the cell rect to fill remaining space */
     if (rectMaxX < tableWidth)
     {
       rect.size.width += (tableWidth - rectMaxX);
@@ -814,7 +760,6 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
   return rect;
 }
 
-/* Override performKeyEquivalent to handle Cmd+C and Cmd+V shortcuts */
 - (BOOL)performKeyEquivalent:(NSEvent*)event
 {
   NSString* chars = [event charactersIgnoringModifiers];
@@ -824,10 +769,8 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
   unichar ch = [chars characterAtIndex:0];
   NSUInteger modifiers = [event modifierFlags];
 
-  /* Handle Cmd+C */
   if ((modifiers & NSEventModifierFlagCommand) && (ch == 'c' || ch == 'C'))
   {
-    /* Use tracked column from our data structure */
     IcocoaTableData* table_data = ICOCOA_TABLE_DATA(ih);
     NSInteger selectedRow = [self selectedRow];
     int selectedColumn = (table_data && table_data->current_col > 0) ? table_data->current_col - 1 : 0;
@@ -839,20 +782,17 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
       [pasteboard clearContents];
       [pasteboard setString:value forType:NSPasteboardTypeString];
     }
-    return YES;  /* We handled the event */
+    return YES;
   }
 
-  /* Handle Cmd+V */
   if ((modifiers & NSEventModifierFlagCommand) && (ch == 'v' || ch == 'V'))
   {
-    /* Use tracked column from our data structure */
     IcocoaTableData* table_data = ICOCOA_TABLE_DATA(ih);
     NSInteger selectedRow = [self selectedRow];
     int selectedColumn = (table_data && table_data->current_col > 0) ? table_data->current_col - 1 : 0;
 
     if (selectedRow >= 0 && selectedColumn >= 0)
     {
-      /* Check if cell is editable */
       int col_1based = selectedColumn + 1;
       if (cocoaTableIsCellEditable(ih, col_1based))
       {
@@ -862,13 +802,11 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
         {
           const char* new_value = [text UTF8String];
 
-          /* Get old value for comparison - must copy before it gets modified */
           char* old_value_ptr = iupdrvTableGetCellValue(ih, (int)selectedRow + 1, col_1based);
           char* old_value = old_value_ptr ? iupStrDup(old_value_ptr) : NULL;
 
           cocoaTableSetCellValue(ih, (int)selectedRow, selectedColumn, new_value);
 
-          /* Reload cell */
           NSIndexSet* rowSet = [NSIndexSet indexSetWithIndex:selectedRow];
           NSIndexSet* colSet = [NSIndexSet indexSetWithIndex:selectedColumn];
           [self reloadDataForRowIndexes:rowSet columnIndexes:colSet];
@@ -885,10 +823,9 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
         }
       }
     }
-    return YES;  /* We handled the event */
+    return YES;
   }
 
-  /* Let default handling process other key equivalents */
   return [super performKeyEquivalent:event];
 }
 
@@ -904,7 +841,6 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
   unichar ch = [chars characterAtIndex:0];
   IcocoaTableData* table_data = ICOCOA_TABLE_DATA(ih);
 
-  /* Tab/Shift+Tab: move focus to the next/previous control (IUP field navigation) */
   if (ch == NSTabCharacter || ch == NSBackTabCharacter)
   {
     int mac_key_code = [event keyCode];
@@ -913,13 +849,12 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
     return;
   }
 
-  /* Handle Enter key */
   if (ch == NSCarriageReturnCharacter || ch == NSEnterCharacter)
   {
     IcocoaTableData* table_data = ICOCOA_TABLE_DATA(ih);
     NSInteger selectedRow = [self selectedRow];
     int col_1based = (table_data && table_data->current_col > 0) ? table_data->current_col : 1;
-    NSInteger selectedColumn = col_1based - 1;  /* Convert to 0-based */
+    NSInteger selectedColumn = col_1based - 1;
 
     if (selectedRow >= 0 && selectedColumn >= 0)
     {
@@ -928,7 +863,6 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
         NSTableColumn* column = [[self tableColumns] objectAtIndex:selectedColumn];
         if (column)
         {
-          /* Call EDITBEGIN_CB before starting edit */
           int lin = (int)selectedRow + 1;
           IFnii editbegin_cb = (IFnii)IupGetCallback(ih, "EDITBEGIN_CB");
           if (editbegin_cb)
@@ -938,7 +872,6 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
               return;
           }
 
-          /* Store edit position for EndEditing */
           objc_setAssociatedObject(self, &kEditingRowKey, @(selectedRow), OBJC_ASSOCIATION_RETAIN);
           objc_setAssociatedObject(self, &kEditingColKey, @(selectedColumn), OBJC_ASSOCIATION_RETAIN);
           objc_setAssociatedObject(self, &kEditEndedKey, @(NO), OBJC_ASSOCIATION_RETAIN);
@@ -951,7 +884,6 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
     return;
   }
 
-  /* Handle Left/Right arrow keys for column navigation */
   if (table_data)
   {
     int num_cols = ih->data->num_col;
@@ -961,7 +893,6 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
 
     if (ch == NSLeftArrowFunctionKey)
     {
-      /* Move to previous column */
       if (table_data->current_col > 1)
       {
         table_data->current_col--;
@@ -970,7 +901,6 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
     }
     else if (ch == NSRightArrowFunctionKey)
     {
-      /* Move to next column */
       if (table_data->current_col < num_cols)
       {
         table_data->current_col++;
@@ -978,14 +908,13 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
       }
     }
 
-    /* If column changed, reload cells to update focus rectangle */
     if (col_changed && currentRow >= 0)
     {
       NSMutableIndexSet* colsToReload = [NSMutableIndexSet indexSet];
       if (old_focused_col > 0)
-        [colsToReload addIndex:(old_focused_col - 1)];  /* Old focused column */
+        [colsToReload addIndex:(old_focused_col - 1)];
       if (table_data->current_col > 0)
-        [colsToReload addIndex:(table_data->current_col - 1)];  /* New focused column */
+        [colsToReload addIndex:(table_data->current_col - 1)];
 
       if ([colsToReload count] > 0)
       {
@@ -993,18 +922,15 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
         [self reloadDataForRowIndexes:rowSet columnIndexes:colsToReload];
       }
 
-      /* Trigger ENTERITEM_CB */
       IFnii enteritem_cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
       if (enteritem_cb)
       {
         enteritem_cb(ih, (int)currentRow + 1, table_data->current_col);
       }
-      /* Don't call super, we've handled the arrow key */
       return;
     }
   }
 
-  /* Let NSTableView handle Up/Down arrow keys */
   [super keyDown:event];
 }
 
@@ -1064,7 +990,6 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
   return cocoaTableGetCellValue(ih, (int)row, (int)col);
 }
 
-/* Row drag-reorder (SHOWDRAGDROP) */
 - (id<NSPasteboardWriting>)tableView:(NSTableView*)tableView pasteboardWriterForRow:(NSInteger)row
 {
   if (!ih->data->show_dragdrop)
@@ -1117,7 +1042,7 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
   iupTableMoveLinAttribs(ih, from + 1, to + 1);
 
   if (table_data && table_data->current_row > 0)
-    table_data->current_row = to + 1;   /* focus follows the dropped row */
+    table_data->current_row = to + 1;
 
   [tableView reloadData];
   [tableView selectRowIndexes:[NSIndexSet indexSetWithIndex:to] byExtendingSelection:NO];
@@ -1125,7 +1050,6 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
   return YES;
 }
 
-/* Sorting support */
 - (void)tableView:(NSTableView*)tableView sortDescriptorsDidChange:(NSArray*)oldDescriptors
 {
   IcocoaTableData* table_data = cocoaTableGetData(ih);
@@ -1202,7 +1126,6 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
 
 - (void)drawBackgroundInRect:(NSRect)dirtyRect
 {
-  /* Only draw custom background if row is NOT selected */
   if (customBackgroundColor && ![self isSelected])
   {
     [customBackgroundColor setFill];
@@ -1210,14 +1133,12 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
   }
   else if (![self isSelected])
   {
-    /* Not selected, no custom color - use default */
     [super drawBackgroundInRect:dirtyRect];
   }
 }
 
 - (void)drawSelectionInRect:(NSRect)dirtyRect
 {
-  /* Draw selection highlight when row is selected */
   if (self.selectionHighlightStyle != NSTableViewSelectionHighlightStyleNone)
   {
     [[NSColor selectedContentBackgroundColor] setFill];
@@ -1247,7 +1168,6 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
   {
     ih = ihandle;
 
-    /* Register for NSControl text editing notifications */
     NSNotificationCenter* center = [NSNotificationCenter defaultCenter];
     [center addObserver:self
                selector:@selector(controlTextDidBeginEditing:)
@@ -1267,12 +1187,10 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
   [super dealloc];
 }
 
-/* View-based table: create cell view */
 - (NSView*)tableView:(NSTableView*)tableView
     viewForTableColumn:(NSTableColumn*)tableColumn
     row:(NSInteger)row
 {
-  /* Reuse cell views with identifier */
   NSString* identifier = [tableColumn identifier];
   IupCocoaTableCellView* cellView = (IupCocoaTableCellView*)[tableView makeViewWithIdentifier:identifier owner:self];
 
@@ -1282,7 +1200,6 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
     [cellView setIdentifier:identifier];
     [cellView setIh:ih];
 
-    /* Create image view for cell images */
     NSImageView* imageView = [[NSImageView alloc] initWithFrame:NSZeroRect];
     [imageView setImageFrameStyle:NSImageFrameNone];
     [imageView setImageAlignment:NSImageAlignCenter];
@@ -1293,7 +1210,6 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
     [cellView addSubview:imageView];
     [imageView release];
 
-    /* Create text field, positioned via layout method */
     NSTextField* textField = [[NSTextField alloc] initWithFrame:NSZeroRect];
     [textField setBordered:NO];
     [textField setDrawsBackground:NO];
@@ -1301,8 +1217,7 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
     [[textField cell] setLineBreakMode:NSLineBreakByTruncatingTail];
     [textField setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
 #ifdef GNUSTEP
-    /* GNUstep NSTextField mouseDown: swallows clicks (becomes first responder) when selectable;
-       NSTableView then never sees them for row selection. Keep non-selectable. */
+    /* a selectable NSTextField swallows clicks on GNUstep and the table never sees them */
     [textField setSelectable:NO];
 #endif
 
@@ -1313,12 +1228,10 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
     [cellView autorelease];
   }
 
-  /* Get cell value */
   NSInteger col = [identifier integerValue];
   NSString* value = cocoaTableGetCellValue(ih, (int)row, (int)col);
   cellView.textField.stringValue = value;
 
-  /* Set cell image if SHOWIMAGE is enabled */
   int col_1based = (int)col + 1;
   int row_1based = (int)row + 1;
   BOOL hasImage = NO;
@@ -1364,13 +1277,11 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
     [[cellView imageView] setHidden:YES];
   }
 
-  /* Check if cell is editable */
   [cellView.textField setEditable:cocoaTableIsCellEditable(ih, col_1based)];
 
   /* Set delegate every time due to cell reuse */
   [cellView.textField setDelegate:self];
 
-  /* Apply column alignment - MUST be set every time due to cell reuse */
   IcocoaTableData* table_data = cocoaTableGetData(ih);
   NSNumber* colKey = @(col);
   NSValue* colInfoValue = [table_data->column_info objectForKey:colKey];
@@ -1379,15 +1290,13 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
 
   if (colInfoValue)
   {
-    /* Column info exists - use it */
     IcocoaTableColumnInfo colInfo;
     [colInfoValue getValue:&colInfo];
     alignment = colInfo.alignment;
   }
   else
   {
-    /* Column info doesn't exist yet (early rendering before NUMCOL completes).
-     * Read alignment attribute directly from IUP attributes as fallback. */
+    /* early rendering happens before NUMCOL completes, so read the attribute directly */
     char align_name[50];
     snprintf(align_name, sizeof(align_name), "ALIGNMENT%d", col_1based);
     char* align_str = iupAttribGet(ih, align_name);
@@ -1405,26 +1314,21 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
 
   cellView.textField.alignment = alignment;
 
-  /* Check if this cell is the focused cell (1-based coordinates in table_data) */
   BOOL isFocused = (table_data->current_row == row_1based && table_data->current_col == col_1based);
 
-  /* Always explicitly set the flag (not just when focused) to handle cell reuse. */
   if ([cellView isFocusedCell] != isFocused)
   {
     [cellView setIsFocusedCell:isFocused];
-    [cellView setNeedsDisplay:YES];  /* Only redraw if focus state actually changed */
+    [cellView setNeedsDisplay:YES];
   }
 
-  /* Apply cell-specific colors and fonts (1-based indices for IUP, 0-based row for NSTableView) */
   BOOL isSelected = [tableView isRowSelected:row];
   cocoaTableApplyCellColors(ih, cellView, (int)row + 1, col_1based, isSelected);
   cocoaTableApplyCellFont(ih, cellView.textField, (int)row + 1, col_1based);
 
-  /* Explicitly set frames based on CURRENT cell frame */
   NSRect cellFrame = [tableView frameOfCellAtColumn:col row:row];
   CGFloat xStart = 2.0;
 
-  /* Position image view if visible */
   if (hasImage)
   {
     CGFloat imgSize = 16.0;
@@ -1456,16 +1360,13 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
   return cellView;
 }
 
-/* Row view for custom row backgrounds */
 - (NSTableRowView*)tableView:(NSTableView*)tableView rowViewForRow:(NSInteger)row
 {
   NSColor* bgcolor = cocoaTableGetRowBackgroundColor(ih, (int)row);
 
-  /* If no background color, return nil to use default row view */
   if (!bgcolor)
     return nil;
 
-  /* Use row view reuse pattern with identifier */
   static NSString* const kRowViewIdentifier = @"IupCocoaTableRowView";
   IupCocoaTableRowView* rowView = [tableView makeViewWithIdentifier:kRowViewIdentifier owner:self];
 
@@ -1480,21 +1381,17 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
   return rowView;
 }
 
-/* Selection changed callback */
 - (void)tableViewSelectionDidChange:(NSNotification*)notification
 {
   NSTableView* tableView = [notification object];
   NSInteger selectedRow = [tableView selectedRow];
 
-  /* Get the tracked column from our data structure.
-   * This was set by mouseDown when the user clicked, or by keyDown when using arrow keys.
-   * NSTableView doesn't track "current column" in row-selection mode, so we track it manually. */
+  /* NSTableView tracks no current column in row-selection mode, so it is tracked manually */
   IcocoaTableData* table_data = ICOCOA_TABLE_DATA(ih);
-  int col = 1;  /* Default to first column */
+  int col = 1;
   if (table_data && table_data->current_col > 0)
     col = table_data->current_col;
 
-  /* Save previous focused cell BEFORE updating current */
   int old_focused_row = 0;
   int old_focused_col = 0;
   if (table_data)
@@ -1503,20 +1400,16 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
     old_focused_col = table_data->current_col;
   }
 
-  /* Update current row */
   if (table_data)
     table_data->current_row = (int)(selectedRow + 1);
 
-  /* Reload affected rows and cells. Do this FIRST before setting selection */
   if (table_data)
   {
     NSMutableIndexSet* rowsToReload = [NSMutableIndexSet indexSet];
 
-    /* Reload previous selected row to restore custom backgrounds */
     if (table_data->previous_selected_row >= 0 && table_data->previous_selected_row < [tableView numberOfRows])
       [rowsToReload addIndex:table_data->previous_selected_row];
 
-    /* Reload old and new focused cells for dashed border */
     if (old_focused_row > 0)
     {
       int old_focused_row_0based = old_focused_row - 1;
@@ -1530,7 +1423,6 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
         [rowsToReload addIndex:current_row_0based];
     }
 
-    /* Perform reload */
     if ([rowsToReload count] > 0)
     {
       NSIndexSet* colIndexes = [NSIndexSet indexSetWithIndexesInRange:NSMakeRange(0, [tableView numberOfColumns])];
@@ -1551,13 +1443,11 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
       });
     }
 
-    /* Update tracking variables */
     table_data->previous_selected_row = (int)selectedRow;
     table_data->previous_focused_row = old_focused_row;
     table_data->previous_focused_col = old_focused_col;
   }
 
-  /* Trigger ENTERITEM_CB callback with correct row and column */
   IFnii enteritem_cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
   if (enteritem_cb)
   {
@@ -1565,10 +1455,8 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
   }
 }
 
-/* Control cell editing based on EDITABLE attribute */
 - (BOOL)tableView:(NSTableView*)tableView shouldEditTableColumn:(NSTableColumn*)tableColumn row:(NSInteger)row
 {
-  /* Check if the cell is editable */
   NSInteger colIndex = [[tableView tableColumns] indexOfObject:tableColumn];
   int col_1based = (int)colIndex + 1;
 
@@ -1577,7 +1465,6 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
     return NO;
   }
 
-  /* Call EDITBEGIN_CB here - allows blocking the edit */
   int lin = (int)row + 1;
   IFnii editbegin_cb = (IFnii)IupGetCallback(ih, "EDITBEGIN_CB");
   if (editbegin_cb)
@@ -1585,38 +1472,32 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
     int ret = editbegin_cb(ih, lin, col_1based);
     if (ret == IUP_IGNORE)
     {
-      return NO;  /* Block editing */
+      return NO;
     }
   }
 
-  /* Store edit position */
   objc_setAssociatedObject(tableView, &kEditingRowKey, @(row), OBJC_ASSOCIATION_RETAIN);
   objc_setAssociatedObject(tableView, &kEditingColKey, @(colIndex), OBJC_ASSOCIATION_RETAIN);
-  objc_setAssociatedObject(tableView, &kEditEndedKey, @(NO), OBJC_ASSOCIATION_RETAIN);  /* Reset flag for new edit */
+  objc_setAssociatedObject(tableView, &kEditEndedKey, @(NO), OBJC_ASSOCIATION_RETAIN);
 
   return YES;
 }
 
-/* Action triggered when user double-clicks on table */
 - (void)tableViewAction:(id)sender
 {
   NSTableView* tableView = (NSTableView*)sender;
 
-  /* Get the currently selected row and column */
   NSInteger clickedRow = [tableView clickedRow];
   NSInteger clickedCol = [tableView clickedColumn];
 
-  /* Convert to 1-based indices (IUP convention) */
   int lin = (clickedRow >= 0) ? (int)(clickedRow + 1) : 0;
   int col = (clickedCol >= 0) ? (int)(clickedCol + 1) : 0;
 
-  /* Call CLICK_CB callback if registered */
   IFniis click_cb = (IFniis)IupGetCallback(ih, "CLICK_CB");
   if (click_cb && lin > 0 && col > 0)
   {
     char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
 
-    /* Get current event to extract modifier keys and button state */
     NSEvent* currentEvent = [NSApp currentEvent];
     if (currentEvent)
       iupcocoaButtonKeySetStatus(currentEvent, status);
@@ -1624,12 +1505,10 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
     click_cb(ih, lin, col, status);
   }
 
-  /* Check if cell is editable and start editing */
   if (clickedRow >= 0 && clickedCol >= 0)
   {
     if (cocoaTableIsCellEditable(ih, col))
     {
-      /* Call EDITBEGIN_CB before starting edit */
       IFnii editbegin_cb = (IFnii)IupGetCallback(ih, "EDITBEGIN_CB");
       if (editbegin_cb)
       {
@@ -1638,25 +1517,20 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
           return;
       }
 
-      /* Store edit position for EndEditing */
       objc_setAssociatedObject(tableView, &kEditingRowKey, @(clickedRow), OBJC_ASSOCIATION_RETAIN);
       objc_setAssociatedObject(tableView, &kEditingColKey, @(clickedCol), OBJC_ASSOCIATION_RETAIN);
       objc_setAssociatedObject(tableView, &kEditEndedKey, @(NO), OBJC_ASSOCIATION_RETAIN);
       objc_setAssociatedObject(tableView, &kEditBeginCalledKey, @(YES), OBJC_ASSOCIATION_RETAIN);
 
-      /* Start editing programmatically */
       [tableView editColumn:clickedCol row:clickedRow withEvent:nil select:YES];
     }
   }
 }
 
-/* NSControlTextEditingDelegate methods - these receive the NSControl directly */
 - (BOOL)control:(NSControl*)control textShouldBeginEditing:(NSText*)fieldEditor
 {
-  /* This method is reliably called for view-based tables when editing starts */
   NSTableView* tableView = cocoaTableGetTableView(ih);
 
-  /* Check if we already handled this in tableView:shouldEditTableColumn:row: */
   NSNumber* existingRow = objc_getAssociatedObject(tableView, &kEditingRowKey);
   if (existingRow)
       return YES;
@@ -1664,7 +1538,6 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
   NSInteger row = [tableView rowForView:control];
   NSInteger col = [tableView columnForView:control];
 
-  /* Fallback: If rowForView failed (view hierarchy in flux), try to use tracked selection */
   if (row < 0 || col < 0) {
       IcocoaTableData* table_data = ICOCOA_TABLE_DATA(ih);
       if (table_data && table_data->current_row > 0 && table_data->current_col > 0) {
@@ -1673,7 +1546,6 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
       }
   }
 
-  /* Valid row/col? */
   if (row < 0 || col < 0) return YES;
 
   int lin = (int)row + 1;
@@ -1682,12 +1554,10 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
   IFnii editbegin_cb = (IFnii)IupGetCallback(ih, "EDITBEGIN_CB");
   if (editbegin_cb)
   {
-    /* If callback returns IGNORE, return NO to prevent editing */
     if (editbegin_cb(ih, lin, col_1based) == IUP_IGNORE)
       return NO;
   }
 
-  /* Store context for EndEditing */
   objc_setAssociatedObject(tableView, &kEditingRowKey, @(row), OBJC_ASSOCIATION_RETAIN);
   objc_setAssociatedObject(tableView, &kEditingColKey, @(col), OBJC_ASSOCIATION_RETAIN);
   objc_setAssociatedObject(tableView, &kEditEndedKey, @(NO), OBJC_ASSOCIATION_RETAIN);
@@ -1698,11 +1568,9 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
 
 - (BOOL)control:(NSControl*)control textShouldEndEditing:(NSText*)fieldEditor
 {
-  /* We handle validation and callbacks in controlTextDidEndEditing: */
   return YES;
 }
 
-/* Intercept Escape key to handle edit cancellation */
 - (BOOL)control:(NSControl*)control textView:(NSTextView*)textView doCommandBySelector:(SEL)commandSelector
 {
   if (commandSelector == @selector(cancelOperation:))
@@ -1710,11 +1578,9 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
     NSTableView* tableView = cocoaTableGetTableView(ih);
     NSTextField* textField = (NSTextField*)control;
 
-    /* Get row/col for this edit */
     NSInteger row = [tableView rowForView:textField];
     NSInteger col = [tableView columnForView:textField];
 
-    /* Fallback to stored keys */
     if (row < 0 || col < 0) {
       NSNumber *nRow = objc_getAssociatedObject(tableView, &kEditingRowKey);
       NSNumber *nCol = objc_getAssociatedObject(tableView, &kEditingColKey);
@@ -1729,59 +1595,48 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
       int lin = (int)row + 1;
       int col_1based = (int)col + 1;
 
-      /* Get current value */
       NSString* currentValue = [textField stringValue];
       const char* value = [currentValue UTF8String];
 
-      /* Only call EDITEND_CB if EDITBEGIN_CB was previously called */
       NSNumber* editBeginCalled = objc_getAssociatedObject(tableView, &kEditBeginCalledKey);
 
       if (editBeginCalled && [editBeginCalled boolValue])
       {
-        /* Call EDITEND_CB with apply=0 (canceled) */
         IFniisi editend_cb = (IFniisi)IupGetCallback(ih, "EDITEND_CB");
         if (editend_cb)
           editend_cb(ih, lin, col_1based, (char*)value, 0);
       }
 
-      /* Mark edit as ended to prevent duplicate callback */
       objc_setAssociatedObject(tableView, &kEditEndedKey, @(YES), OBJC_ASSOCIATION_RETAIN);
 
-      /* Clear keys */
       objc_setAssociatedObject(tableView, &kEditingRowKey, nil, OBJC_ASSOCIATION_RETAIN);
       objc_setAssociatedObject(tableView, &kEditingColKey, nil, OBJC_ASSOCIATION_RETAIN);
       objc_setAssociatedObject(tableView, &kEditBeginCalledKey, nil, OBJC_ASSOCIATION_RETAIN);
 
-      /* Revert to original value */
       NSString* original = cocoaTableGetCellValue(ih, (int)row, (int)col);
       if (original) [textField setStringValue:original];
     }
 
-    /* Let Cocoa end the editing */
-    return NO;  /* Let default behavior proceed */
+    return NO;
   }
 
-  return NO;  /* Let Cocoa handle other commands */
+  return NO;
 }
 
-/* Notification methods */
 - (void)controlTextDidBeginEditing:(NSNotification*)notification
 {
   NSTableView* tableView = cocoaTableGetTableView(ih);
 
-  /* Verify the text field belongs to this table */
   NSTextField* textField = [notification object];
   NSInteger row = [tableView rowForView:textField];
   NSInteger col = [tableView columnForView:textField];
   if (row < 0 || col < 0)
     return;
 
-  /* Check if keys already set (by delegate methods). If so, we are good. */
   NSNumber* existingRow = objc_getAssociatedObject(tableView, &kEditingRowKey);
   if (existingRow)
       return;
 
-  /* Call EDITBEGIN_CB */
   int lin = (int)row + 1;
   int col_1based = (int)col + 1;
 
@@ -1791,7 +1646,6 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
     editbegin_cb(ih, lin, col_1based);
   }
 
-  /* Store keys for EndEditing */
   objc_setAssociatedObject(tableView, &kEditingRowKey, @(row), OBJC_ASSOCIATION_RETAIN);
   objc_setAssociatedObject(tableView, &kEditingColKey, @(col), OBJC_ASSOCIATION_RETAIN);
   objc_setAssociatedObject(tableView, &kEditEndedKey, @(NO), OBJC_ASSOCIATION_RETAIN);
@@ -1803,13 +1657,10 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
   NSTableView* tableView = cocoaTableGetTableView(ih);
   NSTextField* textField = [notification object];
 
-  /* Verify the text field belongs to this table */
   NSInteger row = [tableView rowForView:textField];
   NSInteger col = [tableView columnForView:textField];
   if (row < 0 || col < 0)
   {
-    /* Text field is not in this table. If we had an active edit session that was
-       interrupted (e.g. user clicked outside), clean up the editing state. */
     NSNumber* editBeginCalled = objc_getAssociatedObject(tableView, &kEditBeginCalledKey);
     if (editBeginCalled && [editBeginCalled boolValue])
     {
@@ -1821,13 +1672,10 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
     return;
   }
 
-  /* Check if we've already processed this edit end */
   NSNumber* editEnded = objc_getAssociatedObject(tableView, &kEditEndedKey);
   if (editEnded && [editEnded boolValue])
       return;
 
-  /* Use stored keys as fallback if view lookup returned valid but different position
-     (e.g. scrolling/recycling caused cell reuse) */
   NSNumber *nRow = objc_getAssociatedObject(tableView, &kEditingRowKey);
   NSNumber *nCol = objc_getAssociatedObject(tableView, &kEditingColKey);
   if (nRow && nCol) {
@@ -1835,10 +1683,8 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
       col = [nCol integerValue];
   }
 
-  /* Mark that we've processed this edit end */
   objc_setAssociatedObject(tableView, &kEditEndedKey, @(YES), OBJC_ASSOCIATION_RETAIN);
 
-  /* Clear keys immediately to reset state */
   objc_setAssociatedObject(tableView, &kEditingRowKey, nil, OBJC_ASSOCIATION_RETAIN);
   objc_setAssociatedObject(tableView, &kEditingColKey, nil, OBJC_ASSOCIATION_RETAIN);
   objc_setAssociatedObject(tableView, &kEditBeginCalledKey, nil, OBJC_ASSOCIATION_RETAIN);
@@ -1848,12 +1694,10 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
   int lin = (int)row + 1;
   int col_1based = (int)col + 1;
 
-  /* Get value from the NSTextField directly */
   NSString* newValStr = [textField stringValue];
   const char* value = [newValStr UTF8String];
 
-  /* Check cancellation (ESC key) */
-  int apply = 1; /* Default: accepted */
+  int apply = 1;
   NSDictionary* userInfo = [notification userInfo];
   if (userInfo) {
       NSNumber* movement = [userInfo objectForKey:@"NSTextMovement"];
@@ -1862,30 +1706,24 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
           apply = 0;
   }
 
-  /* Call EDITEND_CB - allow application to validate/reject edit */
   IFniisi editend_cb = (IFniisi)IupGetCallback(ih, "EDITEND_CB");
   if (editend_cb)
   {
     int ret = editend_cb(ih, lin, col_1based, (char*)value, apply);
     if (ret == IUP_IGNORE)
     {
-      /* Application rejected the edit.
-         Since this is 'DidEnd', the field editor is already closing.
-         We revert the visual value to what it was before. */
+      /* the field editor is already closing here, so only the visual value can be reverted */
        NSString* original = cocoaTableGetCellValue(ih, (int)row, (int)col);
        if (original) [textField setStringValue:original];
        return;
     }
   }
 
-  /* Only update cell if edit was accepted (not canceled with ESC) */
   if (apply)
   {
-    /* Get old value for comparison - must copy before it gets modified */
     char* old_value_ptr = iupdrvTableGetCellValue(ih, lin, col_1based);
     char* old_value = old_value_ptr ? iupStrDup(old_value_ptr) : NULL;
 
-    /* Update cell value in data model */
     cocoaTableSetCellValue(ih, (int)row, (int)col, value);
 
     if (cocoaTableValueChanged(old_value, value))
@@ -1943,14 +1781,12 @@ static int cocoaTableSetNumColAttrib(Ihandle* ih, const char* value)
     IcocoaTableData* table_data = cocoaTableGetData(ih);
     NSTableView* tableView = cocoaTableGetTableView(ih);
 
-    /* Remove all existing columns */
     NSArray* columns = [tableView tableColumns];
     for (NSTableColumn* col in columns)
     {
       [tableView removeTableColumn:col];
     }
 
-    /* Create new columns */
     for (int i = 0; i < num_col; i++)
     {
       NSString* identifier = [NSString stringWithFormat:@"%d", i];
@@ -1960,7 +1796,6 @@ static int cocoaTableSetNumColAttrib(Ihandle* ih, const char* value)
       [column setHeaderCell:headerCell];
       [headerCell release];
 
-      /* Read ALIGNMENTn attribute to apply to entire column (header + cells) */
       char align_name[50];
       snprintf(align_name, sizeof(align_name), "ALIGNMENT%d", i + 1);
       char* align_str = iupAttribGet(ih, align_name);
@@ -1976,10 +1811,8 @@ static int cocoaTableSetNumColAttrib(Ihandle* ih, const char* value)
           alignment = NSTextAlignmentLeft;
       }
 
-      /* Apply alignment to header cell */
       [column.headerCell setAlignment:alignment];
 
-      /* Check if this column has explicit width set (RASTERWIDTHn or WIDTHn) */
       char width_name[50];
       snprintf(width_name, sizeof(width_name), "RASTERWIDTH%d", i + 1);
       char* width_str = iupAttribGet(ih, width_name);
@@ -1994,20 +1827,17 @@ static int cocoaTableSetNumColAttrib(Ihandle* ih, const char* value)
       snprintf(expwidth_name, sizeof(expwidth_name), "_IUP_TABLE_EXPWIDTH%d", i + 1);
       iupAttribSetStr(ih, expwidth_name, width_str ? "1" : NULL);
 
-      /* Last column: stretch ONLY if no explicit width was set AND STRETCHLAST=YES */
       if (i == num_col - 1)
       {
         if (width_str || !ih->data->stretch_last)
         {
-          /* Explicit width set or stretching disabled, don't stretch */
           iupAttribSet(ih, "_IUP_TABLE_LAST_COL_WIDTH_SET", "YES");
 
           if (ih->data->user_resize)
-            [column setResizingMask:NSTableColumnUserResizingMask];  /* Fixed but user can resize */
+            [column setResizingMask:NSTableColumnUserResizingMask];
           else
-            [column setResizingMask:NSTableColumnNoResizing];  /* Fixed and locked */
+            [column setResizingMask:NSTableColumnNoResizing];
 
-          /* Set the explicit width if provided */
           if (width_str)
           {
             int width_val = 0;
@@ -2017,22 +1847,20 @@ static int cocoaTableSetNumColAttrib(Ihandle* ih, const char* value)
         }
         else
         {
-          /* No explicit width and stretching enabled, stretch to fill */
           iupAttribSet(ih, "_IUP_TABLE_LAST_COL_WIDTH_SET", "NO");
 
           if (ih->data->user_resize)
             [column setResizingMask:NSTableColumnUserResizingMask | NSTableColumnAutoresizingMask];
           else
-            [column setResizingMask:NSTableColumnAutoresizingMask];  /* Stretch but not user-resizable */
+            [column setResizingMask:NSTableColumnAutoresizingMask];
         }
       }
       else if (width_str)
       {
-        /* Column has explicit width: FIXED size, no auto-resize, optionally user-resizable */
         if (ih->data->user_resize)
-          [column setResizingMask:NSTableColumnUserResizingMask];  /* Fixed but user can resize */
+          [column setResizingMask:NSTableColumnUserResizingMask];
         else
-          [column setResizingMask:NSTableColumnNoResizing];  /* Fixed and locked */
+          [column setResizingMask:NSTableColumnNoResizing];
 
         int width_val = 0;
         if (iupStrToInt(width_str, &width_val) && width_val > 0)
@@ -2040,8 +1868,6 @@ static int cocoaTableSetNumColAttrib(Ihandle* ih, const char* value)
       }
       else
       {
-        /* Column without explicit width: Size to fit header initially, no auto-resize */
-        /* Will auto-adjust when data is added via reloadData */
         [column setResizingMask:NSTableColumnNoResizing];
         [column sizeToFit];
       }
@@ -2057,11 +1883,10 @@ static int cocoaTableSetNumColAttrib(Ihandle* ih, const char* value)
       objc_setAssociatedObject(column, "iup_col", [NSNumber numberWithInt:i + 1], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
       [column release];
 
-      /* Store column info with correct alignment */
       IcocoaTableColumnInfo colInfo;
       colInfo.title = [[NSString stringWithFormat:@"Col %d", i + 1] retain];
       colInfo.width = 80.0;
-      colInfo.alignment = alignment;  /* Reuse alignment from header setup */
+      colInfo.alignment = alignment;
       colInfo.sortable = ih->data->sortable ? YES : NO;
       colInfo.resizable = ih->data->user_resize ? YES : NO;
 
@@ -2108,7 +1933,6 @@ static int cocoaTableSetSortableAttrib(Ihandle* ih, const char* value)
 
   NSTableView* tableView = cocoaTableGetTableView(ih);
 
-  /* Update all columns to enable/disable sorting */
   NSArray* columns = [tableView tableColumns];
   for (NSTableColumn* column in columns)
   {
@@ -2138,14 +1962,12 @@ static int cocoaTableSetUserResizeAttrib(Ihandle* ih, const char* value)
 
   NSTableView* tableView = cocoaTableGetTableView(ih);
 
-  /* Apply to all columns */
   NSArray* columns = [tableView tableColumns];
   NSUInteger col_count = [columns count];
   for (NSUInteger i = 0; i < col_count; i++)
   {
     NSTableColumn* column = [columns objectAtIndex:i];
 
-    /* Last column always has auto resizing for stretch */
     if (i == col_count - 1)
     {
       if (resizable)
@@ -2241,10 +2063,8 @@ IUP_SDK_API void iupdrvTableSetCellValue(Ihandle* ih, int lin, int col, const ch
   if (lin < 1 || lin > ih->data->num_lin || col < 1 || col > ih->data->num_col)
     return;
 
-  /* Store in internal data (convert to 0-based) */
   cocoaTableSetCellValue(ih, lin - 1, col - 1, value);
 
-  /* Update the view */
   NSTableView* tableView = cocoaTableGetTableView(ih);
   if (tableView)
   {
@@ -2263,7 +2083,6 @@ IUP_SDK_API char* iupdrvTableGetCellValue(Ihandle* ih, int lin, int col)
   if (lin < 1 || lin > ih->data->num_lin || col < 1 || col > ih->data->num_col)
     return NULL;
 
-  /* Get from internal data (convert to 0-based) */
   NSString* value = cocoaTableGetCellValue(ih, lin - 1, col - 1);
   if (value && [value length] > 0)
   {
@@ -2322,7 +2141,6 @@ IUP_SDK_API void iupdrvTableSetColTitle(Ihandle* ih, int col, const char* title)
     snprintf(expwidth_name, sizeof(expwidth_name), "_IUP_TABLE_EXPWIDTH%d", col);
     int has_explicit_width = iupAttribGet(ih, expwidth_name) != NULL;
 
-    /* Only auto-size columns without an explicit width, and not the last column (which stretches) */
     if (!has_explicit_width && col_index < ih->data->num_col - 1)
     {
       NSFont* font = [NSFont systemFontOfSize:[NSFont systemFontSize]];
@@ -2512,24 +2330,20 @@ static void cocoaTableMeasureRowMetrics(Ihandle* ih)
 
   NSTableView* temp_table = [[NSTableView alloc] initWithFrame:NSMakeRect(0, 0, 200, 200)];
 
-  /* Add a column */
   NSTableColumn* column = [[NSTableColumn alloc] initWithIdentifier:@"test"];
   [column setWidth:100];
   [[column headerCell] setStringValue:@"Test"];
   [temp_table addTableColumn:column];
 
-  /* Get row height */
   cocoa_table_row_height = (int)[temp_table rowHeight];
 
   if (cocoa_table_row_height <= 0)
   {
-    /* Fallback: use font metrics */
     int charheight;
     iupdrvFontGetCharSize(ih, NULL, &charheight);
     cocoa_table_row_height = charheight + 4;
   }
 
-  /* Measure header height */
   NSTableHeaderView* header = [temp_table headerView];
   if (header)
   {
@@ -2558,7 +2372,6 @@ IUP_SDK_API int iupdrvTableGetRowHeight(Ihandle* ih)
 {
   NSTableView* table_view = cocoaTableGetTableView(ih);
 
-  /* If table is mapped, get actual row height */
   if (table_view)
   {
     CGFloat row_height = [table_view rowHeight];
@@ -2609,19 +2422,16 @@ IUP_SDK_API void iupdrvTableAddBorders(Ihandle* ih, int* w, int* h)
     }
     else
     {
-      /* Fallback for border */
       *w += sb_size + 2;
       *h += 2;
     }
   }
   else
   {
-    /* Fallback */
     *w += sb_size + 2;
     *h += 2;
   }
 
-  /* Add horizontal scrollbar height when VISIBLECOLUMNS causes it to appear */
   int visiblecolumns = iupAttribGetInt(ih, "VISIBLECOLUMNS");
   if (visiblecolumns > 0 && ih->data->num_col > visiblecolumns)
     *h += sb_size;
@@ -2635,54 +2445,41 @@ static int cocoaTableMapMethod(Ihandle* ih)
 {
   char* value;
 
-  /* Initialize internal data structure */
   cocoaTableInitializeData(ih);
 
-  /* Check for virtual mode */
   value = iupAttribGet(ih, "VIRTUALMODE");
   IcocoaTableData* table_data = cocoaTableGetData(ih);
   if (iupStrBoolean(value))
     table_data->is_virtual_mode = YES;
 
-  /* Create NSScrollView */
   NSScrollView* scrollView = [[NSScrollView alloc] initWithFrame:NSMakeRect(0, 0, 100, 100)];
   [scrollView setHasVerticalScroller:YES];
   [scrollView setHasHorizontalScroller:NO];
   [scrollView setAutohidesScrollers:YES];
   [scrollView setBorderType:NSBezelBorder];
 
-  /* Create custom NSTableView with keyboard support */
   IupCocoaTableView* tableView = [[IupCocoaTableView alloc] initWithIhandle:ih];
 
-  /* Set custom header view to eliminate empty space at end of headers */
   IupNarrowTableHeaderView* headerView = [[IupNarrowTableHeaderView alloc] init];
 #ifdef GNUSTEP
-  /* GNUstep -[NSTableView setHeaderView:] doesn't size a custom header (only the default one gets
-     22pt). Without a non-zero height NSScrollView tiles the header clip view at 0 tall. */
+  /* GNUstep does not size a custom header view, and a zero height collapses the header clip view */
   [headerView setFrameSize:NSMakeSize(0, 22)];
 #endif
   [tableView setHeaderView:headerView];
   [headerView release];
 
-  /* Remove intercell spacing */
   [tableView setIntercellSpacing:NSMakeSize(0, 0)];
 #ifdef GNUSTEP
-  /* Table has per-column widths, so autoresizesAllColumnsToFit would override them.
-     iupdrvTableSetShowGrid re-enables drawsGrid if the user asks. */
+  /* per-column widths would be overridden by autoresizesAllColumnsToFit */
   [tableView setDrawsGrid:NO];
 #endif
 
-  /* Configure table view */
-  /* Only use native alternating row colors if ALTERNATECOLOR=YES and no custom colors are set */
-  /* If custom EVENROWCOLOR/ODDROWCOLOR are defined, the cell rendering code will handle them */
   char* alternate_color = iupAttribGetStr(ih, "ALTERNATECOLOR");
   if (iupStrBoolean(alternate_color))
   {
-    /* Check if custom row colors are defined */
     char* even_color = iupAttribGetStr(ih, "EVENROWCOLOR");
     char* odd_color = iupAttribGetStr(ih, "ODDROWCOLOR");
 
-    /* Use native alternating colors only if no custom colors are specified */
     if (!even_color && !odd_color)
       [tableView setUsesAlternatingRowBackgroundColors:YES];
     else
@@ -2695,7 +2492,6 @@ static int cocoaTableMapMethod(Ihandle* ih)
 
   [tableView setAllowsColumnReordering:(ih->data->allow_reorder ? YES : NO)];
 
-  /* Set selection mode */
   char* selmode = iupAttribGetStr(ih, "SELECTIONMODE");
   if (!selmode)
     selmode = "SINGLE";  /* Default */
@@ -2704,14 +2500,11 @@ static int cocoaTableMapMethod(Ihandle* ih)
     [tableView setAllowsEmptySelection:NO];
   else if (iupStrEqualNoCase(selmode, "MULTIPLE"))
     [tableView setAllowsMultipleSelection:YES];
-  else  /* SINGLE */
+  else
     [tableView setAllowsMultipleSelection:NO];
 
-  /* Last column fills available space */
-  /* Use UniformColumnAutoresizingStyle as the base, then override per-column */
   [tableView setColumnAutoresizingStyle:NSTableViewNoColumnAutoresizing];
 
-  /* Create DataSource and Delegate */
   IupCocoaTableDataSource* dataSource = [[IupCocoaTableDataSource alloc] initWithIhandle:ih];
   IupCocoaTableDelegate* delegate = [[IupCocoaTableDelegate alloc] initWithIhandle:ih];
 
@@ -2726,7 +2519,6 @@ static int cocoaTableMapMethod(Ihandle* ih)
     [tableView setDraggingSourceOperationMask:NSDragOperationMove forLocal:YES];
   }
 
-  /* Store references */
   objc_setAssociatedObject(tableView, IUP_COCOA_TABLE_DATASOURCE_KEY, dataSource, OBJC_ASSOCIATION_RETAIN);
   objc_setAssociatedObject(tableView, IUP_COCOA_TABLE_DELEGATE_KEY, delegate, OBJC_ASSOCIATION_RETAIN);
   objc_setAssociatedObject(tableView, "_IUPCOCOA_IHANDLE", (void*)ih, OBJC_ASSOCIATION_ASSIGN);
@@ -2734,7 +2526,6 @@ static int cocoaTableMapMethod(Ihandle* ih)
   [dataSource release];
   [delegate release];
 
-  /* Connect table to scroll view */
   [scrollView setDocumentView:tableView];
   [tableView release];
 
@@ -2742,24 +2533,19 @@ static int cocoaTableMapMethod(Ihandle* ih)
   ih->handle = scrollView;
   iupAttribSet(ih, "_IUPCOCOA_TABLEVIEW", (char*)tableView);
 
-  /* Set associated views so iupcocoaGetMainView returns the NSTableView for focus */
   iupcocoaSetAssociatedViews(ih, tableView, scrollView);
 
   /* Set SHOWGRID - must be after tableView is stored in attribute */
   iupdrvTableSetShowGrid(ih, iupAttribGetBoolean(ih, "SHOWGRID"));
 
-  /* Configure initial number of columns from ih->data (set by core before mapping) */
   if (ih->data->num_col > 0)
     iupdrvTableSetNumCol(ih, ih->data->num_col);
 
-  /* Configure initial number of rows from ih->data (set by core before mapping) */
   if (ih->data->num_lin > 0)
     iupdrvTableSetNumLin(ih, ih->data->num_lin);
 
-  /* Add to parent */
   iupcocoaAddToParent(ih);
 
-  /* Store target height for VISIBLELINES clamping in LayoutUpdate */
   int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
   if (visiblelines > 0)
   {
@@ -2767,7 +2553,6 @@ static int cocoaTableMapMethod(Ihandle* ih)
     int header_height = iupdrvTableGetHeaderHeight(ih);
     int sb_size = iupdrvGetScrollbarSize();
 
-    /* Only add horizontal scrollbar height if it will actually be visible */
     int visiblecolumns = iupAttribGetInt(ih, "VISIBLECOLUMNS");
     int need_horiz_sb = (visiblecolumns > 0 && ih->data->num_col > visiblecolumns);
     int horiz_sb_height = need_horiz_sb ? sb_size : 0;
@@ -2776,7 +2561,6 @@ static int cocoaTableMapMethod(Ihandle* ih)
     objc_setAssociatedObject(scrollView, &kTargetHeightKey, @(target_height), OBJC_ASSOCIATION_RETAIN);
   }
 
-  /* Store VISIBLECOLUMNS for width clamping in LayoutUpdate */
   int visiblecolumns = iupAttribGetInt(ih, "VISIBLECOLUMNS");
   if (visiblecolumns > 0)
     objc_setAssociatedObject(scrollView, &kVisibleColumnsKey, @(visiblecolumns), OBJC_ASSOCIATION_RETAIN);
@@ -2786,10 +2570,8 @@ static int cocoaTableMapMethod(Ihandle* ih)
 
 static void cocoaTableUnMapMethod(Ihandle* ih)
 {
-  /* Free internal data */
   cocoaTableFreeData(ih);
 
-  /* Clear associated views */
   iupcocoaSetAssociatedViews(ih, nil, nil);
 
   /* Manually destroy the scroll view - don't call base method which expects simple NSView */
@@ -2813,7 +2595,6 @@ static void cocoaTableUnMapMethod(Ihandle* ih)
 
 static void cocoaTableLayoutUpdateMethod(Ihandle* ih)
 {
-  /* Table handles its own layout through NSTableView/NSScrollView */
   NSScrollView* scroll_view = (NSScrollView*)ih->handle;
   if (!scroll_view) return;
 
@@ -2823,7 +2604,6 @@ static void cocoaTableLayoutUpdateMethod(Ihandle* ih)
   int width = ih->currentwidth;
   int height = ih->currentheight;
 
-  /* If VISIBLELINES is set, clamp height to target */
   NSNumber* targetHeightNum = objc_getAssociatedObject(scroll_view, &kTargetHeightKey);
   if (targetHeightNum)
   {
@@ -2832,7 +2612,6 @@ static void cocoaTableLayoutUpdateMethod(Ihandle* ih)
       height = target_height;
   }
 
-  /* If VISIBLECOLUMNS is set, clamp width to show exactly N columns */
   NSNumber* visColNum = objc_getAssociatedObject(scroll_view, &kVisibleColumnsKey);
   if (visColNum)
   {
@@ -2853,23 +2632,20 @@ static void cocoaTableLayoutUpdateMethod(Ihandle* ih)
           NSTableColumn* column = [columns objectAtIndex:c];
           CGFloat col_width = [column width];
           if (col_width <= 0)
-            col_width = 80;  /* fallback to default */
+            col_width = 80;
           cols_width += col_width;
         }
 
         int sb_size = iupdrvGetScrollbarSize();
 
-        /* Get actual border from scroll view */
         NSSize contentSz = [scroll_view contentSize];
         NSRect frameSz = [scroll_view frame];
         int border_w = (int)(NSWidth(frameSz) - contentSz.width);
 
-        /* Only add vertical scrollbar width if it will actually be visible */
         int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
         int need_vert_sb = (visiblelines > 0 && ih->data->num_lin > visiblelines);
         int vert_sb_width = need_vert_sb ? sb_size : 0;
 
-        /* Use ceiling to ensure we have enough space for columns */
         int cols_width_int = (int)ceil(cols_width);
         int target_width = cols_width_int + vert_sb_width + border_w;
         if (width > target_width)
@@ -2907,7 +2683,6 @@ static void cocoaTableLayoutUpdateMethod(Ihandle* ih)
 
     [scroll_view setHasHorizontalScroller:(total_width > documentVisibleRect.size.width)];
 
-    /* Update NSTableView frame to match the available content area width. */
     NSRect newDocumentVisibleRect = [scroll_view documentVisibleRect];
     NSRect tableFrame = [tableView frame];
     tableFrame.size.width = newDocumentVisibleRect.size.width;
@@ -2942,7 +2717,6 @@ IUP_SDK_API void iupdrvTableInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, NULL, IUPAF_SAMEASSYSTEM, "TXTBGCOLOR", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "FOCUSRECT", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
 
-  /* Replace core SET handlers to update native widget */
   iupClassRegisterReplaceAttribFunc(ic, "SORTABLE", NULL, cocoaTableSetSortableAttrib);
   iupClassRegisterReplaceAttribFunc(ic, "ALLOWREORDER", NULL, cocoaTableSetReorderAttrib);
   iupClassRegisterReplaceAttribFunc(ic, "USERRESIZE", NULL, cocoaTableSetUserResizeAttrib);

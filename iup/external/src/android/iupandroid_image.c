@@ -29,7 +29,7 @@ IUPJNI_DECLARE_METHOD_ID_STATIC(IupImageHelper_loadBitmap);
 IUPJNI_DECLARE_METHOD_ID_STATIC(IupImageHelper_saveBitmap);
 IUPJNI_DECLARE_METHOD_ID_STATIC(IupImageHelper_saveBitmapToBuffer);
 
-/* allocates an android.graphics.Bitmap via Java and locks its pixel buffer; NULL on failure */
+/* locks the Bitmap pixel buffer; NULL on failure */
 static jobject androidImageAllocBitmap(JNIEnv* jni_env, int width, int height, unsigned char** out_pixels, int* out_stride)
 {
   jclass java_class;

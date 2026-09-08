@@ -77,7 +77,6 @@ static int32 haikuSiReaderThread(void* /*arg*/)
   return 0;
 }
 
-/* be_app delegates IUPHAIKU_SI_MSG to this via IupHaikuApp::MessageReceived. */
 IUP_DRV_API void iuphaikuSingleInstanceDispatch(BMessage* msg)
 {
   if (!msg) return;

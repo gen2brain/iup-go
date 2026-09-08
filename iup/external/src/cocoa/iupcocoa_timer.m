@@ -117,8 +117,7 @@ IUP_SDK_API void iupdrvTimerRun(Ihandle* ih)
     }
 
 #ifdef GNUSTEP
-    /* GNUstep treats NSRunLoopCommonModes as a literal mode name, not
-       a set; timers there never fire from the default-mode main loop. */
+    /* GNUstep takes NSRunLoopCommonModes as a literal mode name, so timers never fire from the default mode */
     [[NSRunLoop currentRunLoop] addTimer:ns_timer forMode:NSDefaultRunLoopMode];
 #else
     [[NSRunLoop currentRunLoop] addTimer:ns_timer forMode:NSRunLoopCommonModes];
@@ -151,9 +150,5 @@ IUP_SDK_API void iupdrvTimerInitClass(Iclass* ic)
 {
   ic->UnMap = iupdrvTimerStop;
 
-  /*
-   * TOLERANCE is a macOS-specific attribute to improve power consumption by allowing the system to fire the timer later than scheduled.
-   * The value is a float in seconds.
-   */
   iupClassRegisterAttribute(ic, "TOLERANCE", NULL, NULL, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
 }

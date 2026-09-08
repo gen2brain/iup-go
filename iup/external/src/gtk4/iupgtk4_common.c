@@ -28,14 +28,13 @@
 #include "iupgtk4_x11.h"
 
 
-/* Custom Fixed container for absolute positioning */
 typedef struct _iupGtk4Fixed
 {
   GtkFixed parent_instance;
-  Ihandle* ih;  /* Associated IUP dialog handle for resize notifications */
-  int last_width;   /* Cached width to prevent redundant size-allocate notifications */
-  int last_height;  /* Cached height to prevent redundant size-allocate notifications */
-  int draw_border;  /* Flag to draw themed border frame (for canvas BORDER attribute) */
+  Ihandle* ih;
+  int last_width;
+  int last_height;
+  int draw_border;
 } iupGtk4Fixed;
 
 typedef struct _iupGtk4FixedClass
@@ -49,7 +48,6 @@ static void iup_gtk4_fixed_snapshot(GtkWidget* widget, GtkSnapshot* snapshot)
 {
   iupGtk4Fixed* fixed = (iupGtk4Fixed*)widget;
 
-  /* Draw border frame if enabled (for canvas BORDER=YES) */
   if (fixed->draw_border)
   {
     int width = gtk_widget_get_width(widget);
@@ -68,7 +66,6 @@ static void iup_gtk4_fixed_snapshot(GtkWidget* widget, GtkSnapshot* snapshot)
     }
   }
 
-  /* Chain up to parent to draw children */
   GTK_WIDGET_CLASS(iup_gtk4_fixed_parent_class)->snapshot(widget, snapshot);
 }
 
@@ -76,7 +73,6 @@ static void iup_gtk4_fixed_class_init(iupGtk4FixedClass* klass)
 {
   GtkWidgetClass* widget_class = GTK_WIDGET_CLASS(klass);
 
-  /* Override snapshot to draw themed border frame */
   widget_class->snapshot = iup_gtk4_fixed_snapshot;
 }
 
@@ -85,8 +81,7 @@ static void iup_gtk4_fixed_layout_allocate(GtkWidget* widget, int width, int hei
   GtkWidget* child;
   iupGtk4Fixed* fixed = (iupGtk4Fixed*)widget;
 
-  /* Notify IUP dialog of size change for layout recalculation.
-     Only call for dialogs, other containers (like popover) don't have ih->data. */
+  /* only a dialog ih has the data the resize path reads */
   if (fixed->ih && iupStrEqual(fixed->ih->iclass->name, "dialog") &&
       (fixed->last_width != width || fixed->last_height != height))
   {
@@ -99,14 +94,12 @@ static void iup_gtk4_fixed_layout_allocate(GtkWidget* widget, int width, int hei
 
   (void)baseline;
 
-  /* Present any popover children */
   for (child = gtk_widget_get_first_child(widget); child != NULL; child = gtk_widget_get_next_sibling(child))
   {
     if (GTK_IS_POPOVER(child))
       gtk_popover_present(GTK_POPOVER(child));
   }
 
-  /* Allocate children manually with IUP-specified sizes and positions */
   for (child = gtk_widget_get_first_child(widget); child != NULL; child = gtk_widget_get_next_sibling(child))
   {
     int child_x, child_y;
@@ -115,17 +108,14 @@ static void iup_gtk4_fixed_layout_allocate(GtkWidget* widget, int width, int hei
     if (!gtk_widget_get_visible(child))
       continue;
 
-    /* Skip native widgets like popovers, they manage their own allocation */
     if (GTK_IS_NATIVE(child))
       continue;
 
-    /* Get position and size from widget data */
     child_x = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(child), "_iup_x"));
     child_y = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(child), "_iup_y"));
     child_width = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(child), "_iup_width"));
     child_height = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(child), "_iup_height"));
 
-    /* If no IUP size set, use preferred size */
     if (child_width <= 0 || child_height <= 0)
     {
       GtkRequisition child_req;
@@ -134,8 +124,7 @@ static void iup_gtk4_fixed_layout_allocate(GtkWidget* widget, int width, int hei
       if (child_height <= 0) child_height = child_req.height;
     }
 
-    /* Enforce minimum widget size requirements */
-    /* Except for widgets with VISIBLELINES, they need to be smaller than GTK's scrollbar minimum */
+    /* VISIBLELINES widgets may be smaller than GTK's scrolled window minimum */
     {
       const char* visiblelines_set = (const char*)g_object_get_data(G_OBJECT(child), "iup-visiblelines-set");
       if (!visiblelines_set)
@@ -149,7 +138,6 @@ static void iup_gtk4_fixed_layout_allocate(GtkWidget* widget, int width, int hei
       }
     }
 
-    /* Allocate child */
     gtk_widget_allocate(child, child_width, child_height, -1, gsk_transform_translate(NULL, &GRAPHENE_POINT_INIT(child_x, child_y)));
   }
 }
@@ -164,7 +152,6 @@ static void iup_gtk4_fixed_layout_measure(GtkWidget* widget, GtkOrientation orie
 
   (void)for_size;
 
-  /* If this Fixed is associated with a dialog, return minimal size. */
   if (fixed->ih && iupStrEqual(fixed->ih->iclass->name, "dialog"))
   {
     *minimum = 1;
@@ -174,24 +161,19 @@ static void iup_gtk4_fixed_layout_measure(GtkWidget* widget, GtkOrientation orie
     return;
   }
 
-  /* Measure all children and return the maximum extent in the requested orientation.
-   * This ensures the container gets allocated enough space to display its children. */
   for (child = gtk_widget_get_first_child(widget); child != NULL; child = gtk_widget_get_next_sibling(child))
   {
     if (!gtk_widget_get_visible(child))
       continue;
 
-    /* Skip nested iupGtk4Fixed wrappers (canvas sb_win, frame inner_parent). */
     if (G_TYPE_CHECK_INSTANCE_TYPE(child, iup_gtk4_fixed_get_type()))
       continue;
 
     int child_pos, child_size;
     int child_min, child_nat;
 
-    /* Get child's requested size in this orientation */
     gtk_widget_measure(child, orientation, -1, &child_min, &child_nat, NULL, NULL);
 
-    /* Get child's position in this orientation */
     if (orientation == GTK_ORIENTATION_HORIZONTAL)
     {
       child_pos = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(child), "_iup_x"));
@@ -203,16 +185,13 @@ static void iup_gtk4_fixed_layout_measure(GtkWidget* widget, GtkOrientation orie
       child_size = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(child), "_iup_height"));
     }
 
-    /* Use IUP size if set, but cap at reasonable size relative to natural. */
     if (child_size <= 0 || child_size > child_nat * 3)
       child_size = child_nat;
 
-    /* Enforce minimum size just like allocate does, unless VISIBLELINES is set */
     const char* visiblelines_set = (const char*)g_object_get_data(G_OBJECT(child), "iup-visiblelines-set");
     if (!visiblelines_set && child_size < child_min)
       child_size = child_min;
 
-    /* Calculate total extent needed (position + size) */
     int extent = child_pos + child_size;
     if (extent > max_size)
       max_size = extent;
@@ -243,10 +222,8 @@ static void iup_gtk4_fixed_init(iupGtk4Fixed* fixed)
 
 static void iup_gtk4_fixed_put(iupGtk4Fixed* fixed, GtkWidget* widget, int x, int y)
 {
-  /* Since we use custom layout manager, manually set parent and store position */
   gtk_widget_set_parent(widget, GTK_WIDGET(fixed));
 
-  /* Store position in widget data */
   g_object_set_data(G_OBJECT(widget), "_iup_x", GINT_TO_POINTER(x));
   g_object_set_data(G_OBJECT(widget), "_iup_y", GINT_TO_POINTER(y));
 }
@@ -255,13 +232,11 @@ static void iup_gtk4_fixed_move(iupGtk4Fixed* fixed, GtkWidget* widget, int x, i
 {
   (void)fixed;
 
-  /* Store position and size in widget data for custom layout manager */
   g_object_set_data(G_OBJECT(widget), "_iup_x", GINT_TO_POINTER(x));
   g_object_set_data(G_OBJECT(widget), "_iup_y", GINT_TO_POINTER(y));
   g_object_set_data(G_OBJECT(widget), "_iup_width", GINT_TO_POINTER(width));
   g_object_set_data(G_OBJECT(widget), "_iup_height", GINT_TO_POINTER(height));
 
-  /* Trigger layout update */
   gtk_widget_queue_allocate(GTK_WIDGET(fixed));
 }
 
@@ -283,7 +258,6 @@ IUP_DRV_API void iupgtk4NativeContainerAdd(GtkWidget* container, GtkWidget* widg
 
 IUP_DRV_API void iupgtk4NativeContainerMove(GtkWidget* container, GtkWidget* widget, int x, int y)
 {
-  /* Call with width=0, height=0 which means use preferred size */
   iup_gtk4_fixed_move((iupGtk4Fixed*)container, widget, x, y, 0, 0);
 }
 
@@ -303,7 +277,6 @@ IUP_DRV_API void iupgtk4NativeContainerSetBorder(GtkWidget* container, int enabl
   {
     iupGtk4Fixed* fixed = (iupGtk4Fixed*)container;
     fixed->draw_border = enable;
-    /* Queue redraw to show/hide border */
     gtk_widget_queue_draw(container);
   }
 }
@@ -318,7 +291,6 @@ static GtkWidget* gtk4GetNativeParent(Ihandle* ih)
   GtkWidget* widget = iupChildTreeGetNativeParentHandle(ih);
   int step = 0;
 
-  /* Special case: If widget is the menu VBox wrapper, get inner_parent from dialog */
   if (widget && G_TYPE_CHECK_INSTANCE_TYPE(widget, GTK_TYPE_BOX))
   {
     Ihandle* dialog = ih->parent;
@@ -373,14 +345,12 @@ IUP_SDK_API void iupdrvReparent(Ihandle* ih)
     return;
   }
 
-  /* Check for extra parent, validate it separately */
   extraparent = (GtkWidget*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
   if (extraparent && GTK_IS_WIDGET(extraparent))
     widget = extraparent;
   else
     widget = ih->handle;
 
-  /* Validate new_parent pointer */
   if (!new_parent || !GTK_IS_WIDGET(new_parent))
   {
     return;
@@ -390,10 +360,8 @@ IUP_SDK_API void iupdrvReparent(Ihandle* ih)
 
   if (old_parent != new_parent)
   {
-    /* Use gtk_widget_unparent/set_parent instead of reparent */
     if (old_parent)
     {
-      /* Add reference before unparenting to prevent widget destruction */
       g_object_ref(widget);
       gtk_widget_unparent(widget);
     }
@@ -402,7 +370,6 @@ IUP_SDK_API void iupdrvReparent(Ihandle* ih)
 
     if (old_parent)
     {
-      /* Remove the reference we added earlier */
       g_object_unref(widget);
     }
   }
@@ -419,7 +386,6 @@ IUP_DRV_API void iupgtk4AddToParent(Ihandle* ih)
 
 IUP_DRV_API void iupgtk4SetPosSize(GtkWidget* parent, GtkWidget* widget, int x, int y, int width, int height)
 {
-  /* Store both position and size in the Fixed container's child info */
   if (width > 0 && height > 0)
     iupgtk4NativeContainerSetBounds(parent, widget, x, y, width, height);
   else
@@ -435,7 +401,6 @@ IUP_SDK_API void iupdrvBaseLayoutUpdateMethod(Ihandle* ih)
   int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
   if (visiblelines > 0)
   {
-    /* For EDITBOX with VISIBLELINES using GtkFixed, set widget widths now that currentwidth is known */
     if (GTK_IS_FIXED(widget))
     {
       GtkWidget* entry = (GtkWidget*)iupAttribGet(ih, "_IUPGTK4_ENTRY");
@@ -447,7 +412,6 @@ IUP_SDK_API void iupdrvBaseLayoutUpdateMethod(Ihandle* ih)
 
         gtk_widget_set_size_request(entry, ih->currentwidth, entry_height);
 
-        /* Get scrolled_window current height from size_request */
         int sw_width, sw_height;
         gtk_widget_get_size_request(scrolled_window, &sw_width, &sw_height);
         gtk_widget_set_size_request(scrolled_window, ih->currentwidth, sw_height);
@@ -466,12 +430,10 @@ IUP_SDK_API void iupdrvBaseUnMapMethod(Ihandle* ih)
   if (!widget)
     return;
 
-  /* Try to get parent first - if this fails, widget is already destroyed */
   GtkWidget* parent = NULL;
   if (GTK_IS_WIDGET(widget))
     parent = gtk_widget_get_parent(widget);
 
-  /* If widget doesn't have a parent and isn't a toplevel, it's already been cleaned up */
   if (!parent && GTK_IS_WIDGET(widget) && !GTK_IS_WINDOW(widget))
     return;
 
@@ -481,7 +443,6 @@ IUP_SDK_API void iupdrvBaseUnMapMethod(Ihandle* ih)
   if (GTK_IS_WIDGET(widget))
     gtk_widget_unrealize(widget);
 
-  /* Need to unparent before destroying */
   if (GTK_IS_WIDGET(widget) && parent)
     gtk_widget_unparent(widget);
 }
@@ -604,7 +565,6 @@ IUP_SDK_API void iupdrvSetVisible(Ihandle* ih, int visible)
 
 IUP_SDK_API int iupdrvIsVisible(Ihandle* ih)
 {
-  /* Validate handle before querying visibility */
   if (!ih->handle || !GTK_IS_WIDGET(ih->handle))
     return 0;
 
@@ -717,13 +677,11 @@ static GdkCursor* gtk4GetCursor(Ihandle* ih, const char* name)
   char str[200];
   int i, count = sizeof(table) / sizeof(table[0]);
 
-  /* Check cursor cache first (per control) */
   snprintf(str, sizeof(str), "_IUPGTK4_CURSOR_%s", name);
   cur = (GdkCursor*)iupAttribGet(ih, str);
   if (cur)
     return cur;
 
-  /* Check pre-defined IUP names */
   for (i = 0; i < count; i++)
   {
     if (iupStrEqualNoCase(name, table[i].iupname))
@@ -739,11 +697,9 @@ static GdkCursor* gtk4GetCursor(Ihandle* ih, const char* name)
 
   if (i == count)
   {
-    /* Check for a name defined cursor */
     cur = iupImageGetCursor(name);
   }
 
-  /* Save cursor in cache */
   iupAttribSet(ih, str, (char*)cur);
 
   return cur;
@@ -802,14 +758,12 @@ IUP_SDK_API void iupdrvWarpPointer(int x, int y)
 
 IUP_SDK_API void iupdrvSendKey(int key, int press)
 {
-  /* Event synthesis not supported */
   (void)key;
   (void)press;
 }
 
 IUP_SDK_API void iupdrvSendMouse(int x, int y, int bt, int status)
 {
-  /* Event synthesis not supported */
   (void)x;
   (void)y;
   (void)bt;
@@ -858,13 +812,12 @@ IUP_DRV_API int iupgtk4MeasureDarkMode(void)
   double fg_lum;
   int is_dark;
 
-  /* Measure foreground luminance, in dark themes, foreground is light */
+  /* a dark theme has a light foreground */
   temp_window = gtk_window_new();
   gtk_widget_realize(temp_window);
 
   gtk_widget_get_color(temp_window, &fg);
 
-  /* Calculate relative luminance (ITU-R BT.709) */
   fg_lum = 0.2126 * fg.red + 0.7152 * fg.green + 0.0722 * fg.blue;
   is_dark = (fg_lum > 0.5) ? 1 : 0;
 
@@ -875,7 +828,7 @@ IUP_DRV_API int iupgtk4MeasureDarkMode(void)
 
 IUP_SDK_API void iupdrvSleep(int time)
 {
-  g_usleep(time*1000);  /* milli to micro */
+  g_usleep(time*1000);
 }
 
 IUP_SDK_API void iupdrvSetAccessibleTitle(Ihandle *ih, const char* title)
@@ -887,7 +840,6 @@ IUP_SDK_API void iupdrvSetAccessibleTitle(Ihandle *ih, const char* title)
   if (!widget || !GTK_IS_WIDGET(widget))
     return;
 
-  /* Set accessible label for screen readers */
   if (!title || title[0] == 0)
     gtk_accessible_update_property(GTK_ACCESSIBLE(widget), GTK_ACCESSIBLE_PROPERTY_LABEL, "", -1);
   else
@@ -966,12 +918,11 @@ IUP_DRV_API void iupgtk4ButtonPressed(GtkGestureClick* gesture, int n_press, dou
 
     iupgtk4ButtonKeySetStatus(state, button, status, doubleclick);
 
-    int ret = cb(ih, b, 1, (int)x, (int)y, status);  /* press = 1 */
+    int ret = cb(ih, b, 1, (int)x, (int)y, status);
     if (ret == IUP_CLOSE)
       IupExitLoop();
     else if (ret == IUP_IGNORE)
     {
-      /* Claiming the gesture prevents further event propagation */
       gtk_gesture_set_state(GTK_GESTURE(gesture), GTK_EVENT_SEQUENCE_CLAIMED);
     }
   }
@@ -989,7 +940,7 @@ static void gtk4ButtonReleased(GtkGestureClick* gesture, int n_press, double x, 
 
     iupgtk4ButtonKeySetStatus(state, button, status, 0);
 
-    int ret = cb(ih, b, 0, (int)x, (int)y, status);  /* press = 0 */
+    int ret = cb(ih, b, 0, (int)x, (int)y, status);
     if (ret == IUP_CLOSE)
       IupExitLoop();
     else if (ret == IUP_IGNORE)
@@ -1016,7 +967,7 @@ static void gtk4MotionNotify(GtkEventControllerMotion* controller, double x, dou
 IUP_DRV_API void iupgtk4SetupButtonEvents(GtkWidget* widget, Ihandle* ih)
 {
   GtkGesture* click_gesture = gtk_gesture_click_new();
-  gtk_gesture_single_set_button(GTK_GESTURE_SINGLE(click_gesture), 0);  /* 0 = all buttons */
+  gtk_gesture_single_set_button(GTK_GESTURE_SINGLE(click_gesture), 0);
   gtk_widget_add_controller(widget, GTK_EVENT_CONTROLLER(click_gesture));
 
   g_signal_connect(click_gesture, "pressed", G_CALLBACK(iupgtk4ButtonPressed), ih);
@@ -1033,26 +984,22 @@ IUP_DRV_API void iupgtk4SetupMotionEvents(GtkWidget* widget, Ihandle* ih)
 
 IUP_DRV_API char* iupgtk4StrConvertToSystemLen(const char* str, int *len)
 {
-  /* GTK4 uses UTF-8 like GTK3, no conversion needed; len stays the caller's */
   (void)len;
   return (char*)str;
 }
 
 IUP_DRV_API char* iupgtk4StrConvertFromFilename(const char* str)
 {
-  /* GTK4 file names are already in UTF-8 */
   return (char*)str;
 }
 
 IUP_DRV_API char* iupgtk4StrConvertToFilename(const char* str)
 {
-  /* GTK4 file names are already in UTF-8 */
   return (char*)str;
 }
 
 IUP_DRV_API const char* iupgtk4GetNativeFontIdName(void)
 {
-  /* GTK4 uses Pango fonts like GTK3 */
   return "PANGOFONTDESC";
 }
 
@@ -1062,7 +1009,6 @@ IUP_DRV_API GtkWindow* iupgtk4GetTransientFor(Ihandle* ih)
   if (parent)
     return (GtkWindow*)parent;
 
-  /* Try to find parent from focused element */
   {
     Ihandle* ih_focus = IupGetFocus();
     if (ih_focus)
@@ -1073,7 +1019,6 @@ IUP_DRV_API GtkWindow* iupgtk4GetTransientFor(Ihandle* ih)
     }
   }
 
-  /* Fallback: find first visible IUP dialog */
   {
     Ihandle* dlg_iter = iupDlgListFirst();
     while (dlg_iter)

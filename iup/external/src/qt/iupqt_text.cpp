@@ -50,12 +50,10 @@ extern "C" {
  * Custom Widgets with Event Handling
  ****************************************************************************/
 
-/* Forward declarations */
 static int qtTextKeyPress(Ihandle* ih, QKeyEvent* evt);
 static void qtTextArbitrateHistory(Ihandle* ih, int redo);
 static int qtTextArbitrateClipboard(Ihandle* ih, int cut);
 
-/* Custom QLineEdit with additional functionality */
 class IupQtLineEdit : public QLineEdit
 {
 private:
@@ -65,28 +63,23 @@ private:
 public:
   explicit IupQtLineEdit(Ihandle* ihandle) : QLineEdit(), ih(ihandle), overwrite_mode(false)
   {
-    /* Accept drops for DROPFILES_CB */
     setAcceptDrops(true);
   }
 
   void setIupOverwriteMode(bool mode) { overwrite_mode = mode; }
   bool isIupOverwriteMode() const { return overwrite_mode; }
 
-  /* Override sizeHint to return minimal size (like GTK's gtk_entry_set_width_chars(1))
-   * This prevents Qt from using its default larger size hint, allowing IUP's
-   * natural size calculation to control the widget size. */
   QSize sizeHint() const override
   {
     QFontMetrics fm(font());
-    int h = fm.height() + 2;  /* Minimal height based on font */
-    int w = fm.horizontalAdvance('X');  /* 1 character width minimum */
+    int h = fm.height() + 2;
+    int w = fm.horizontalAdvance('X');
     return QSize(w, h);
   }
 
 protected:
   void keyPressEvent(QKeyEvent* event) override
   {
-    /* Handle INSERT key for overwrite mode */
     if (event->key() == Qt::Key_Insert && event->modifiers() == Qt::NoModifier)
     {
       overwrite_mode = !overwrite_mode;
@@ -118,7 +111,6 @@ protected:
       return;
     }
 
-    /* Handle overwrite mode */
     if (overwrite_mode && !event->text().isEmpty() && !hasSelectedText())
     {
       int pos = cursorPosition();
@@ -192,7 +184,6 @@ protected:
   }
 };
 
-/* Custom QSpinBox that supports SPINAUTO=NO mode */
 class IupQtSpinBox : public QSpinBox
 {
 public:
@@ -216,7 +207,6 @@ protected:
   {
     if (!spinauto)
     {
-      /* When spinauto is off, preserve whatever text is in the line edit */
       return lineEdit()->text();
     }
     return QSpinBox::textFromValue(value);
@@ -259,7 +249,6 @@ protected:
   }
 };
 
-/* Custom QTextEdit with additional functionality */
 class IupQtTextEdit : public QTextEdit
 {
 private:
@@ -279,7 +268,6 @@ public:
 protected:
   void keyPressEvent(QKeyEvent* event) override
   {
-    /* Handle INSERT key for overwrite mode */
     if (event->key() == Qt::Key_Insert && event->modifiers() == Qt::NoModifier)
     {
       overwrite_mode = !overwrite_mode;
@@ -288,7 +276,6 @@ protected:
       return;
     }
 
-    /* Validate input against mask before allowing text change */
     if (qtTextKeyPress(ih, event))
     {
       event->accept();
@@ -313,7 +300,6 @@ protected:
       return;
     }
 
-    /* Handle overwrite mode */
     if (overwrite_mode && !event->text().isEmpty())
     {
       QTextCursor cursor = textCursor();
@@ -461,7 +447,6 @@ extern "C" IUP_SDK_API void iupdrvTextAddSpin(Ihandle* ih, int *w, int h)
     *w = spin_min_width;
 }
 
-/* Cached measurements for text widget borders */
 static int iupqt_entry_border_x = -1;
 static int iupqt_entry_border_y = -1;
 static int iupqt_multiline_border_x = -1;
@@ -512,11 +497,9 @@ static void iupqtTextMeasureMultilineBorders(void)
 
     int doc_margin = (int)temp_text->document()->documentMargin();
 
-    /* Total border includes frame width on both sides + document margin on both sides */
     iupqt_multiline_border_x = 2 * frame_width + 2 * doc_margin;
     iupqt_multiline_border_y = 2 * frame_width + 2 * doc_margin;
 
-    /* Ensure minimum reasonable border */
     if (iupqt_multiline_border_x < 4) iupqt_multiline_border_x = 4;
     if (iupqt_multiline_border_y < 4) iupqt_multiline_border_y = 4;
 
@@ -789,7 +772,6 @@ static int qtTextSetValueAttrib(Ihandle* ih, const char* value)
 {
   if (!value) value = "";
 
-  /* Safety check - widget must be mapped before setting value */
   if (!ih->handle)
     return 0;
 
@@ -819,7 +801,6 @@ static int qtTextSetValueAttrib(Ihandle* ih, const char* value)
     }
     else
     {
-      /* Regular line edit */
       IupQtLineEdit* edit = (IupQtLineEdit*)ih->handle;
       edit->setText(QString::fromUtf8(value));
     }
@@ -850,7 +831,6 @@ static char* qtTextGetValueAttrib(Ihandle* ih)
     }
     else
     {
-      /* Regular line edit */
       IupQtLineEdit* edit = (IupQtLineEdit*)ih->handle;
       value = edit->text();
     }
@@ -1680,7 +1660,6 @@ static int qtTextSetTabSizeAttrib(Ihandle* ih, const char* value)
 
     IupQtTextEdit* text = (IupQtTextEdit*)ih->handle;
 
-    /* Calculate tab stop in pixels based on font */
     QFontMetrics metrics(text->font());
     int tabStopWidth = tabsize * metrics.horizontalAdvance(' ');
 
@@ -1716,12 +1695,10 @@ static int qtTextSetVisibleColumnsAttrib(Ihandle* ih, const char* value)
 {
   if (!ih->data->is_multiline)
   {
-    /* Like GTK's gtk_entry_set_width_chars(1), set minimum width to 1 character.
-     * VISIBLECOLUMNS is used by IUP's platform-independent code to calculate
-     * natural size, but Qt's widget minimum should not constrain IUP's layout. */
+    /* Qt's widget minimum must not constrain the IUP layout */
     IupQtLineEdit* edit = (IupQtLineEdit*)ih->handle;
     QFontMetrics metrics(edit->font());
-    int min_width = metrics.horizontalAdvance('X');  /* 1 character minimum */
+    int min_width = metrics.horizontalAdvance('X');
     edit->setMinimumWidth(min_width);
   }
 
@@ -1737,7 +1714,6 @@ static int qtTextSetVisibleLinesAttrib(Ihandle* ih, const char* value)
     {
       IupQtTextEdit* text = (IupQtTextEdit*)ih->handle;
 
-      /* Calculate height based on font metrics */
       QFontMetrics metrics(text->font());
       int height = lines * metrics.lineSpacing();
       text->setMinimumHeight(height);
@@ -1859,10 +1835,8 @@ static void qtTextUnMapMethod(Ihandle* ih)
   {
     QWidget* widget = (QWidget*)ih->handle;
 
-    /* Destroy tooltip if any */
     iupqtTipsDestroy(ih);
 
-    /* Delete the widget - Qt will automatically disconnect signals */
     delete widget;
     ih->handle = nullptr;
   }
@@ -1880,7 +1854,6 @@ static int qtTextMapMethod(Ihandle* ih)
   {
     IupQtTextEdit* text = new IupQtTextEdit(ih);
 
-    /* Configure multiline text */
     text->setAcceptRichText(false);
     if (iupAttribGetBoolean(ih, "WORDWRAP"))
     {
@@ -1904,7 +1877,6 @@ static int qtTextMapMethod(Ihandle* ih)
     else
       text->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
-    /* Connect signals */
     QObject::connect(text, &QTextEdit::textChanged, [ih]() {
       qtTextApplyFilter(ih);
       qtTextValueChanged(ih);
@@ -1961,7 +1933,6 @@ static int qtTextMapMethod(Ihandle* ih)
   {
     IupQtLineEdit* edit = new IupQtLineEdit(ih);
 
-    /* Connect signals */
     QObject::connect(edit, &QLineEdit::textChanged, [ih]() {
       qtTextApplyFilter(ih);
       qtTextValueChanged(ih);
@@ -2006,15 +1977,13 @@ static int qtTextSetPaddingAttrib(Ihandle* ih, const char* value)
     if (ih->data->is_multiline)
     {
       QTextEdit* text = (QTextEdit*)ih->handle;
-      /* Set document margin for padding */
       text->document()->setDocumentMargin(ih->data->horiz_padding);
-      /* Note: Qt's QTextEdit doesn't support separate vertical padding easily */
+      /* QTextEdit has no separate vertical padding */
       ih->data->vert_padding = 0;
     }
     else
     {
       QLineEdit* edit = (QLineEdit*)ih->handle;
-      /* Set text margins for padding */
       edit->setTextMargins(ih->data->horiz_padding, ih->data->vert_padding,
                            ih->data->horiz_padding, ih->data->vert_padding);
     }
@@ -2067,7 +2036,6 @@ extern "C" IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "ALIGNMENT", nullptr, qtTextSetAlignmentAttrib, IUPAF_SAMEASSYSTEM, "ALEFT", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "PASSWORD", qtTextGetPasswordAttrib, qtTextSetPasswordAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
 
-  /* Additional attributes */
   iupClassRegisterAttribute(ic, "CUEBANNER", qtTextGetCueBannerAttrib, qtTextSetCueBannerAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FILTER", nullptr, qtTextSetFilterAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "OVERWRITE", qtTextGetOverwriteAttrib, qtTextSetOverwriteAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
@@ -2078,15 +2046,12 @@ extern "C" IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "SCROLLVISIBLE", qtTextGetScrollVisibleAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DROPFILESTARGET", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
 
-  /* Rich text formatting (Qt, GTK and Windows) */
   iupClassRegisterAttribute(ic, "ADDFORMATTAG", nullptr, iupTextSetAddFormatTagAttrib, nullptr, nullptr, IUPAF_IHANDLENAME|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ADDFORMATTAG_HANDLE", nullptr, iupTextSetAddFormatTagHandleAttrib, nullptr, nullptr, IUPAF_IHANDLE | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FORMATTING", iupTextGetFormattingAttrib, iupTextSetFormattingAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TABSARRAY", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "REMOVEFORMATTING", nullptr, qtTextSetRemoveFormattingAttrib, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
 }
-
-/* Format tag functions for rich text support */
 
 static bool qtTextParseSelectionPos(const char* selectionpos, int* start, int* end)
 {

@@ -97,7 +97,6 @@ static void cocoaTouchMenuFireActionDirect(Ihandle* item_ih)
 	if (cb && cb(item_ih) == IUP_CLOSE) IupExitLoop();
 }
 
-/* fired by action-sheet button tap; flips the pump's done flag */
 static void cocoaTouchMenuFireActionAfterDismiss(Ihandle* item_ih)
 {
 	Ihandle* menu_ih = item_ih ? item_ih->parent : NULL;
@@ -581,7 +580,6 @@ static void cocoaTouchMenuPresentSheet(Ihandle* menu_ih, UIViewController* host,
 }
 
 
-/* tracks which menu_ih owns each bar-button slot for targeted refresh */
 static const void* IUPCOCOATOUCH_BARBUTTON_MENU_IH_KEY = "IUPCOCOATOUCH_BARBUTTON_MENU_IH_KEY";
 
 static UIBarButtonItem* cocoaTouchMenuMakeBarButton(Ihandle* menu_ih, NSString* iconName)
@@ -688,7 +686,6 @@ static int cocoaTouchMenuItemMapMethod(Ihandle* ih)
 	return IUP_NOERROR;
 }
 
-/* rebuild the bar-button UIMenu after any item attribute change so disables/VALUE flips show */
 static void cocoaTouchMenuInvalidateAncestor(Ihandle* item_ih)
 {
 	Ihandle* menu = item_ih ? item_ih->parent : NULL;

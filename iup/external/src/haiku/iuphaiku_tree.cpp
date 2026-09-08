@@ -41,9 +41,6 @@ extern "C" {
 #include "iuphaiku_drv.h"
 
 
-/* Custom BListItem holding the IUP per-node state. Each item knows its kind
- * (branch/leaf), its title, its optional images and per-node colors so DrawItem
- * can render without a hash lookup back to attributes. */
 static int haikuTreeExtraItemHeight(BView* owner);
 
 class IupHaikuTreeItem : public BListItem
@@ -293,7 +290,6 @@ public:
 
 class IupHaikuTreeView;
 
-/* In-place rename editor. BTextView so Enter/Escape land in our KeyDown directly. */
 class IupHaikuTreeEditor : public BTextView
 {
 public:
@@ -380,7 +376,6 @@ protected:
 
     BOutlineListView::ExpandOrCollapse(super, expand);
 
-    /* Swap branch image when collapsed/expanded image differs. */
     IupHaikuTreeItem* it = dynamic_cast<IupHaikuTreeItem*>(super);
     if (it) InvalidateItem(IndexOf(super));
   }
@@ -418,7 +413,6 @@ public:
       IupHaikuTreeItem* tit = dynamic_cast<IupHaikuTreeItem*>(item);
       int id = item ? iupTreeFindNodeId(fIhandle, (InodeHandle*)item) : -1;
 
-      /* toggle checkbox click */
       if (tit && tit->ShowToggle() && tit->ToggleVisible() && id >= 0
           && !(buttons & B_SECONDARY_MOUSE_BUTTON) && tit->ToggleBox().Contains(where))
       {
@@ -1549,7 +1543,6 @@ extern "C" IUP_SDK_API void iupdrvTreeInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, haikuTreeSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTBGCOLOR", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "FGCOLOR", NULL, haikuTreeSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTFGCOLOR", IUPAF_DEFAULT);
 
-  /* General */
   iupClassRegisterAttribute(ic, "COUNT", haikuTreeGetCountAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TOPITEM", NULL, haikuTreeSetTopItemAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "EXPANDALL", NULL, haikuTreeSetExpandAllAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
@@ -1561,7 +1554,6 @@ extern "C" IUP_SDK_API void iupdrvTreeInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "IMAGEBRANCHCOLLAPSED", NULL, haikuTreeSetImageBranchCollapsedAttrib, IUPAF_SAMEASSYSTEM, "IMGCOLLAPSED", IUPAF_IHANDLENAME | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "IMAGEBRANCHEXPANDED", NULL, haikuTreeSetImageBranchExpandedAttrib, IUPAF_SAMEASSYSTEM, "IMGEXPANDED", IUPAF_IHANDLENAME | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
 
-  /* Per-node */
   iupClassRegisterAttributeId(ic, "STATE", haikuTreeGetStateAttrib, haikuTreeSetStateAttrib, IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "DEPTH", haikuTreeGetDepthAttrib, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "KIND", haikuTreeGetKindAttrib, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
@@ -1572,7 +1564,6 @@ extern "C" IUP_SDK_API void iupdrvTreeInitClass(Iclass* ic)
   iupClassRegisterAttributeId(ic, "IMAGE", NULL, haikuTreeSetImageAttrib, IUPAF_IHANDLENAME | IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "IMAGEEXPANDED", NULL, haikuTreeSetImageExpandedAttrib, IUPAF_IHANDLENAME | IUPAF_NO_INHERIT);
 
-  /* Marks / selection */
   iupClassRegisterAttributeId(ic, "MARKED", haikuTreeGetMarkedAttrib, haikuTreeSetMarkedAttrib, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ROOTCOUNT", haikuTreeGetRootCountAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MARK", NULL, haikuTreeSetMarkAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
@@ -1583,13 +1574,11 @@ extern "C" IUP_SDK_API void iupdrvTreeInitClass(Iclass* ic)
   iupClassRegisterAttributeId(ic, "TOGGLEVISIBLE", haikuTreeGetToggleVisibleAttrib, haikuTreeSetToggleVisibleAttrib, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "VALUE", haikuTreeGetValueAttrib, haikuTreeSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
 
-  /* Action */
   iupClassRegisterAttribute(ic, "ADDROOT", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "DELNODE", NULL, haikuTreeSetDelNodeAttrib, IUPAF_NOT_MAPPED | IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "COPYNODE", NULL, haikuTreeSetCopyNodeAttrib, IUPAF_NOT_MAPPED | IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "MOVENODE", NULL, haikuTreeSetMoveNodeAttrib, IUPAF_NOT_MAPPED | IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
 
-  /* Not yet supported on Haiku */
   iupClassRegisterAttribute(ic, "RUBBERBAND", NULL, NULL, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "HIDELINES", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "RENAME", NULL, haikuTreeSetRenameAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);

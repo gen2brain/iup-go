@@ -33,17 +33,16 @@ extern "C" {
 #include "iuphaiku_drv.h"
 
 
-/* Compositing tab: icon (TABIMAGE) + label + close box (SHOWCLOSE). */
 class IupHaikuTab : public BTab
 {
 public:
-  static constexpr int kIconPad   = 4;  /* gap between icon and label */
-  static constexpr int kClosePad  = 4;  /* gap between label and close box */
-  static constexpr int kCloseSize = 12; /* close box side */
+  static constexpr int kIconPad   = 4;
+  static constexpr int kClosePad  = 4;
+  static constexpr int kCloseSize = 12;
 
   IupHaikuTab() : fIcon(NULL), fIconW(0), fIconH(0), fShowClose(false), fCloseHot(false), fHasFgColor(false) {}
 
-  /* bm is a weak ref into the IUP image cache; draw_w/draw_h are the size to render at */
+  /* bm is a weak ref into the IUP image cache */
   void SetIcon(BBitmap* bm, int draw_w, int draw_h)
   {
     fIcon = bm;
@@ -271,7 +270,6 @@ public:
       if (ret == IUP_CONTINUE && child) IupDestroy(child);
       else if (child)
       {
-        /* IUP_DEFAULT: detach the BTab, stash for later re-show. */
         BTab* tab = RemoveTab(btab_idx);
         if (tab)
         {
@@ -365,7 +363,6 @@ public:
     BTabView::MouseUp(where);
   }
 
-  /* Draw the reorder indicator (vertical line) on top of the strip. */
   void Draw(BRect updateRect) override
   {
     BTabView::Draw(updateRect);
@@ -393,7 +390,7 @@ public:
     if (!dragged) return;
 
     /* BTabView has no insert-at-pos; RemoveTab dragged + tail from tgt, append, restore tail.
-     * tgt is the FINAL index of the moved tab (Fl_Group::insert semantics, matches IUP order). */
+     * tgt is the FINAL index of the moved tab. */
     int prev_selection = (int)Selection();
     fSuppressSelectCallbacks = true;
     BTab* moving = RemoveTab(src_btab_pos);
@@ -420,7 +417,6 @@ public:
     IupReparent(dragged, fIhandle, ref_child);
     iupAttribSet(fIhandle, "_IUPTABS_REORDERING", NULL);
 
-    /* Track the selection across the move: follows the dragged tab or shifts. */
     int new_selection = prev_selection;
     if (prev_selection == src_btab_pos) new_selection = tgt_btab_pos;
     else if (src_btab_pos < tgt_btab_pos && prev_selection > src_btab_pos && prev_selection <= tgt_btab_pos) new_selection--;
@@ -506,8 +502,7 @@ static void haikuTabsAssignIcon(IupHaikuTab* tab, Ihandle* ih, BBitmap* bm)
   tab->SetIcon(bm, dst_w, dst_h);
 }
 
-/* Native BTabView strip height = font + 8; grow it to fit the tallest
-   tab icon so scaled images don't clip vertically. */
+/* Native BTabView strip height = font + 8; grow it to fit the tallest tab icon. */
 static void haikuTabsUpdateStripHeight(IupHaikuTabView* tabs)
 {
   if (!tabs) return;
@@ -599,8 +594,6 @@ static void haikuTabsChildRemovedMethod(Ihandle* ih, Ihandle* child, int pos)
   iupAttribSet(child, "_IUPTAB_CONTAINER", NULL);
 }
 
-/* Map */
-
 static int haikuTabsMapMethod(Ihandle* ih)
 {
   IupHaikuTabView* tabs = new IupHaikuTabView(ih);
@@ -636,8 +629,6 @@ static void haikuTabsUnMapMethod(Ihandle* ih)
   if (tabs) tabs->SetIhandle(NULL);
   iupdrvBaseUnMapMethod(ih);
 }
-
-/* Driver hooks */
 
 extern "C" IUP_SDK_API int iupdrvTabsExtraDecor(Ihandle* /*ih*/) { return 0; }
 extern "C" IUP_SDK_API int iupdrvTabsExtraMargin(void) { return 0; }

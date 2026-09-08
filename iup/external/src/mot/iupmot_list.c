@@ -39,9 +39,7 @@
 static void motListComboBoxSelectionCallback(Widget w, Ihandle* ih, XmComboBoxCallbackStruct* call_data);
 
 
-/* Motif XmList does not support per-item images.
-   IMAGE_CB callback is not supported for virtual mode.
-   Use IupFlatList for image support on Motif. */
+/* Motif XmList has no per-item images, and no IMAGE_CB in virtual mode */
 IUP_SDK_API void* iupdrvListGetImageHandle(Ihandle* ih, int id)
 {
   (void)ih;
@@ -226,34 +224,28 @@ IUP_SDK_API void iupdrvListSetItemCount(Ihandle* ih, int count)
   if (!ih->data->is_virtual)
     return;
 
-  /* Get the list widget */
   if (ih->data->is_dropdown || ih->data->has_editbox)
     XtVaGetValues(ih->handle, XmNlist, &list_widget, NULL);
   else
     list_widget = ih->handle;
 
-  /* Delete all existing items */
   XmListDeleteAllItems(list_widget);
 
   if (count <= 0)
     return;
 
-  /* Allocate array for all items */
   items = (XmString*)malloc(count * sizeof(XmString));
   if (!items)
     return;
 
-  /* Build all XmStrings from VALUE_CB */
   for (i = 0; i < count; i++)
   {
     char* text = iupListGetItemValueCb(ih, i + 1);
     items[i] = XmStringCreateLocalized(text ? (char*)text : "");
   }
 
-  /* Add all items in a single batch operation */
   XmListAddItems(list_widget, items, count, 0);
 
-  /* Free all XmStrings */
   for (i = 0; i < count; i++)
     XmStringFree(items[i]);
 

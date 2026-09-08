@@ -107,7 +107,6 @@ JNIEXPORT jstring JNICALL Java_io_github_gen2brain_iupgo_IupListHelper_dispatchL
   return value ? (*jni_env)->NewStringUTF(jni_env, value) : NULL;
 }
 
-/* VIRTUALMODE per-row image: IMAGE_CB returns an image name; resolve to a Bitmap. */
 JNIEXPORT jobject JNICALL Java_io_github_gen2brain_iupgo_IupListHelper_dispatchListImageCb(JNIEnv* jni_env, jclass cls, jlong ihandle_ptr, jint pos)
 {
   (void)jni_env; (void)cls;

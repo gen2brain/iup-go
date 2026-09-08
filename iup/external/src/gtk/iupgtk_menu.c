@@ -176,7 +176,6 @@ IUP_SDK_API int iupdrvMenuGetMenuBarSize(Ihandle* ih)
 
 /* GTK 3.10+ uses GtkMenuItem + GtkBox instead of deprecated GtkImageMenuItem */
 
-/* Get the label widget from menu item (handles both box and simple structures) */
 static GtkWidget* gtkMenuItemGetLabelWidget(Ihandle* ih)
 {
   GtkWidget* child = gtk_bin_get_child(GTK_BIN(ih->handle));
@@ -204,14 +203,12 @@ static GtkWidget* gtkMenuItemGetLabelWidget(Ihandle* ih)
 
 #if GTK_CHECK_VERSION(3, 10, 0)
 
-/* Check if menu item has our custom image box structure */
 static int gtkMenuItemHasImageBox(Ihandle* ih)
 {
   GtkWidget* child = gtk_bin_get_child(GTK_BIN(ih->handle));
   return (child && GTK_IS_BOX(child));
 }
 
-/* Get the image widget from our box structure */
 static GtkWidget* gtkMenuItemGetImageWidget(Ihandle* ih)
 {
   GtkWidget* child = gtk_bin_get_child(GTK_BIN(ih->handle));
@@ -234,14 +231,12 @@ static GtkWidget* gtkMenuItemGetImageWidget(Ihandle* ih)
   return NULL;
 }
 
-/* Set/update/remove image in menu item with box structure */
 static void gtkMenuItemSetImageWidget(Ihandle* ih, GdkPixbuf* pixbuf)
 {
   GtkWidget* child = gtk_bin_get_child(GTK_BIN(ih->handle));
 
   if (!pixbuf)
   {
-    /* Remove image if present */
     if (child && GTK_IS_BOX(child))
     {
       GtkWidget* image = gtkMenuItemGetImageWidget(ih);
@@ -253,7 +248,6 @@ static void gtkMenuItemSetImageWidget(Ihandle* ih, GdkPixbuf* pixbuf)
 
   if (child && GTK_IS_BOX(child))
   {
-    /* Box exists, update or add image */
     GtkWidget* image = gtkMenuItemGetImageWidget(ih);
     if (image)
     {
@@ -269,7 +263,6 @@ static void gtkMenuItemSetImageWidget(Ihandle* ih, GdkPixbuf* pixbuf)
   }
   else if (child && GTK_IS_LABEL(child))
   {
-    /* Convert from simple label to box structure */
     GtkWidget* box;
     GtkWidget* image;
 
@@ -292,7 +285,6 @@ static void gtkMenuItemSetImageWidget(Ihandle* ih, GdkPixbuf* pixbuf)
   }
 }
 
-/* Create a menu item with box structure for image support */
 static GtkWidget* gtkMenuItemNewWithImageBox(void)
 {
   GtkWidget* menu_item = gtk_menu_item_new();
@@ -620,7 +612,6 @@ static void gtkMenuParseAccel(const char* text, guint* accel_key, GdkModifierTyp
 }
 #endif
 
-/* Set/update/remove right-aligned text after '\t' in menu item title */
 static void gtkMenuItemSetAccelTextWidget(Ihandle* ih, const char* text)
 {
   GtkWidget* child = gtk_bin_get_child(GTK_BIN(ih->handle));

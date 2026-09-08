@@ -42,10 +42,8 @@ extern "C" {
 #include "iupqt_drv.h"
 
 
-/* Declare QPixmap* as a Qt metatype for Qt5 compatibility */
 Q_DECLARE_METATYPE(QPixmap*)
 
-/* Custom QListWidget that returns minimal sizeHint and supports drag-and-drop */
 class IupQtListWidget : public QListWidget
 {
 private:
@@ -59,8 +57,8 @@ public:
   QSize sizeHint() const override
   {
     QFontMetrics fm(font());
-    int h = fm.height() * 3;  /* 3 lines minimum height */
-    int w = fm.horizontalAdvance('X') * 10;  /* 10 character minimum width */
+    int h = fm.height() * 3;
+    int w = fm.horizontalAdvance('X') * 10;
     return QSize(w, h);
   }
 
@@ -119,12 +117,10 @@ protected:
 
     if (result == 0)
     {
-      /* Not handled by IUP - let Qt's native list widget handle it */
       QListWidget::keyPressEvent(event);
     }
     else
     {
-      /* IUP handled it (returned 1) - accept the event */
       event->accept();
     }
   }
@@ -161,21 +157,15 @@ protected:
 
   void dropEvent(QDropEvent *event) override
   {
-    /* Get the dragged item id from IUP attribute */
     int drag_id = iupAttribGetInt(ih, "_IUPLIST_DRAGITEM");
 
-    /* If drag_id is not set, this is a universal drag-drop (from another widget)
-     * In this case, the event filter (iupqt_dragdrop.cpp) has already handled it.
-     * We just accept the event and return. */
+    /* no drag_id means a universal drag-drop, already handled by the event filter */
     if (drag_id < 1)
     {
       event->accept();
       return;
     }
 
-    /* Internal drag-drop: dragging within this list */
-
-    /* Get the drop position */
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     QPoint drop_pos = event->position().toPoint();
 #else
@@ -196,11 +186,9 @@ protected:
       drop_id = -1;  /* Drop at end */
     }
 
-    /* Call the IUP drag-drop callback (uses 0-based indexing internally) */
     int is_ctrl = 0;
     if (iupListCallDragDropCb(ih, drag_id - 1, drop_id - 1, &is_ctrl) == IUP_CONTINUE)
     {
-      /* Get the item data before any modifications */
       QListWidgetItem* drag_item = this->item(drag_id - 1);
       if (!drag_item)
       {
@@ -211,13 +199,11 @@ protected:
       QString text = drag_item->text();
       QVariant image_var = drag_item->data(Qt::UserRole + 1);
 
-      /* Insert the item at drop position */
       int final_drop_id;
       if (drop_id > 0 && drop_id <= count())
       {
         iupdrvListInsertItem(ih, drop_id - 1, "");  /* 0-based insert before */
         final_drop_id = drop_id - 1;  /* 0-based */
-        /* Adjust drag_id if we inserted before it */
         if (drag_id > drop_id)
           drag_id++;
       }
@@ -227,7 +213,6 @@ protected:
         final_drop_id = count() - 1;  /* 0-based, after append */
       }
 
-      /* Set the text and image for the dropped item */
       QListWidgetItem* dropped_item = this->item(final_drop_id);
       if (dropped_item)
       {
@@ -235,10 +220,8 @@ protected:
         dropped_item->setData(Qt::UserRole + 1, image_var);
       }
 
-      /* Select the dropped item */
       setCurrentRow(final_drop_id);
 
-      /* Remove the dragged item if moving (not copying) */
       if (!is_ctrl)
       {
         iupdrvListRemoveItem(ih, drag_id - 1);  /* 0-based */
@@ -371,7 +354,6 @@ public:
     QStyleOptionViewItem opt = option;
     int image_width = 0;
 
-    /* Draw image if show_image is enabled */
     if (ih && ih->data->show_image)
     {
       QVariant img_var = index.data(Qt::UserRole + 1);
@@ -381,14 +363,12 @@ public:
         if (pixmap && !pixmap->isNull())
         {
           QRect rect = option.rect;
-          /* Calculate available height based on font metrics, not rect height */
           QFont font = option.font;
           QFontMetrics fm(font);
           int font_height = fm.height();
           int available_height = font_height + 2 * ih->data->spacing;
           int img_x = rect.left() + ih->data->spacing;
 
-          /* Scale images proportionally down to fit font-based row height if FITIMAGE=YES */
           QPixmap scaled_pixmap;
           if (ih->data->fit_image && pixmap->height() > available_height)
           {
@@ -405,13 +385,11 @@ public:
             image_width = pixmap->width() + 2 * ih->data->spacing;
           }
 
-          /* Adjust the rect for text to start after the image */
           opt.rect.setLeft(opt.rect.left() + image_width);
         }
       }
     }
 
-    /* Draw text and background with adjusted rect */
     QStyledItemDelegate::paint(painter, opt, index);
   }
 
@@ -420,17 +398,14 @@ public:
   {
     QSize size = QStyledItemDelegate::sizeHint(option, index);
 
-    /* Use font-based height with small fixed padding for consistency */
     QFontMetrics fm(option.font);
-    int normalized_height = fm.height() + 4;  /* font height + 4px padding (2px top + 2px bottom) */
+    int normalized_height = fm.height() + 4;
     if (size.height() > normalized_height)
       size.setHeight(normalized_height);
 
     if (ih && ih->data->show_image)
     {
-      /* Add space for image width, but do NOT expand row height for images.
-       * Images should be scaled down to fit the font-based row height.
-       * Only add horizontal space for the image width. */
+      /* images scale down to the font-based row height, so only the width adds space */
       size.setWidth(size.width() + ih->data->maximg_w + 2 * ih->data->spacing);
     }
 
@@ -438,7 +413,6 @@ public:
   }
 };
 
-/* Virtual List Model for VIRTUALMODE */
 class IupQtVirtualListModel : public QAbstractListModel
 {
 public:
@@ -506,7 +480,6 @@ public:
 
 };
 
-/* Custom QListView for virtual mode */
 class IupQtVirtualListView : public QListView
 {
 private:
@@ -571,11 +544,9 @@ protected:
  * Driver Functions
  ****************************************************************************/
 
-/* Cached measurements for list widget metrics */
 static int iupqt_list_item_space = -1;
 static int iupqt_list_row_height = -1;
 
-/* Cached item horizontal padding */
 static int iupqt_list_item_padding_x = -1;
 
 static void iupqtListMeasureItemMetrics(Ihandle* ih)
@@ -608,7 +579,6 @@ extern "C" IUP_SDK_API void iupdrvListAddItemSpace(Ihandle* ih, int *h)
   *h += iupqt_list_item_space;
 }
 
-/* Cached measurements for list borders */
 static int iupqt_list_border_x = -1;
 static int iupqt_list_border_y = -1;
 static int iupqt_dropdown_border_x = -1;
@@ -655,11 +625,8 @@ static void iupqtListMeasureBorders(Ihandle* ih)
 
     iupqt_dropdown_border_x = total_decor - sb_size + fm.horizontalAdvance('X');
 
-    /* Windows11 style's CE_ComboBoxLabel shrinks the combo rect by 4px per side
-       (newOption.rect.adjust(4, 0, -4, 0)) before delegating to QCommonStyle,
-       which then applies its own 2px-per-side drawItemText adjustment. Neither
-       adjustment is captured by SC_ComboBoxEditField, so SC_remove under-reports
-       the real inset by 12px. See /tmp/qt/src/plugins/styles/modernwindows/qwindows11style.cpp. */
+    /* Windows11 CE_ComboBoxLabel shrinks the rect 4px per side and QCommonStyle 2px more;
+       SC_ComboBoxEditField misses both, so SC_remove under-reports the inset by 12px. */
     QString style_name = style->objectName();
     if (style_name.compare(QLatin1String("windows11"), Qt::CaseInsensitive) == 0)
     {
@@ -695,11 +662,9 @@ extern "C" IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
   {
     int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
 
-    /* Add base list borders + item horizontal padding */
     (*x) += iupqt_list_border_x + iupqt_list_item_padding_x;
     (*y) += iupqt_list_border_y;
 
-    /* Handle EDITBOX composite widget */
     if (ih->data->has_editbox)
     {
       if (visiblelines > 0)
@@ -713,7 +678,6 @@ extern "C" IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
         (*y) -= item_height;
       }
 
-      /* Add entry widget height */
       (*y) += iupqt_editbox_height;
     }
   }
@@ -737,7 +701,6 @@ extern "C" IUP_SDK_API int iupdrvListGetCount(Ihandle* ih)
   }
   else if (ih->data->has_editbox)
   {
-    /* Composite widget: get list from stored attribute */
     QListWidget* list = (QListWidget*)iupAttribGet(ih, "_IUPQT_LIST");
     if (list)
       return list->count();
@@ -750,7 +713,6 @@ extern "C" IUP_SDK_API int iupdrvListGetCount(Ihandle* ih)
   }
 }
 
-/* SORT: ascending insert position. */
 static int qtListSortPos(QComboBox* w, const char* value)
 {
   int n = w->count();
@@ -815,7 +777,6 @@ extern "C" IUP_SDK_API void iupdrvListRemoveItem(Ihandle* ih, int pos)
   {
     QComboBox* combo = (QComboBox*)ih->handle;
 
-    /* Check if removing current item */
     if (!ih->data->has_editbox)
     {
       int curpos = combo->currentIndex();
@@ -842,7 +803,6 @@ extern "C" IUP_SDK_API void iupdrvListRemoveItem(Ihandle* ih, int pos)
   }
   else if (ih->data->has_editbox)
   {
-    /* Composite widget: get list from stored attribute */
     QListWidget* list = (QListWidget*)iupAttribGet(ih, "_IUPQT_LIST");
     if (list)
     {
@@ -873,7 +833,6 @@ extern "C" IUP_SDK_API void iupdrvListRemoveAllItems(Ihandle* ih)
   }
   else if (ih->data->has_editbox)
   {
-    /* Composite widget: get list from stored attribute */
     QListWidget* list = (QListWidget*)iupAttribGet(ih, "_IUPQT_LIST");
     if (list)
       list->clear();
@@ -1025,13 +984,11 @@ static char* qtListGetValueAttrib(Ihandle* ih)
     QLineEdit* edit = NULL;
     if (ih->data->is_dropdown)
     {
-      /* Dropdown with editbox */
       QComboBox* combo = (QComboBox*)ih->handle;
       edit = combo->lineEdit();
     }
     else
     {
-      /* Composite widget: editbox without dropdown */
       edit = (QLineEdit*)iupAttribGet(ih, "_IUPQT_EDIT");
     }
 
@@ -1059,7 +1016,6 @@ static char* qtListGetValueAttrib(Ihandle* ih)
     }
     else
     {
-      /* Multiple selection - return string with +/- for each item */
       int count = list->count();
       char* str = iupStrGetMemory(count + 1);
       memset(str, '-', count);
@@ -1085,7 +1041,6 @@ static int qtListSetValueAttrib(Ihandle* ih, const char* value)
     QLineEdit* edit = NULL;
     if (ih->data->is_dropdown)
     {
-      /* Dropdown with editbox */
       QComboBox* combo = (QComboBox*)ih->handle;
       if (!combo || !combo->isEditable())
         return 0;
@@ -1093,7 +1048,6 @@ static int qtListSetValueAttrib(Ihandle* ih, const char* value)
     }
     else
     {
-      /* Composite widget: editbox without dropdown */
       edit = (QLineEdit*)iupAttribGet(ih, "_IUPQT_EDIT");
     }
 
@@ -1156,7 +1110,6 @@ static int qtListSetValueAttrib(Ihandle* ih, const char* value)
     }
     else
     {
-      /* Multiple selection */
       int i, len, count;
 
       iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", "1");
@@ -1176,7 +1129,6 @@ static int qtListSetValueAttrib(Ihandle* ih, const char* value)
       if (len < count)
         count = len;
 
-      /* Update selection */
       for (i = 0; i < count; i++)
       {
         if (value[i] == '+')
@@ -1211,7 +1163,6 @@ static int qtListSetImageAttrib(Ihandle* ih, int id, const char* value)
       if (pixmap && !pixmap->isNull())
       {
         combo->setItemIcon(pos, QIcon(*pixmap));
-        /* Store pixmap pointer in itemData for iupdrvListGetImageHandle() */
         combo->setItemData(pos, QVariant::fromValue(pixmap), Qt::UserRole + 1);
       }
       else
@@ -1220,7 +1171,6 @@ static int qtListSetImageAttrib(Ihandle* ih, int id, const char* value)
         combo->setItemData(pos, QVariant(), Qt::UserRole + 1);
       }
 
-      /* Update max image size */
       if (pixmap)
       {
         if (pixmap->width() > ih->data->maximg_w)
@@ -1245,8 +1195,7 @@ static int qtListSetImageAttrib(Ihandle* ih, int id, const char* value)
       {
         if (pixmap && !pixmap->isNull())
         {
-          /* Don't use setIcon() - the custom delegate handles all image rendering
-           * to support proper scaling. Only store the pixmap pointer in user data. */
+          /* the delegate renders and scales the images; setIcon() would bypass it */
           item->setData(Qt::UserRole + 1, QVariant::fromValue(pixmap));
         }
         else
@@ -1254,7 +1203,6 @@ static int qtListSetImageAttrib(Ihandle* ih, int id, const char* value)
           item->setData(Qt::UserRole + 1, QVariant());
         }
 
-        /* Update max image size */
         if (pixmap)
         {
           if (pixmap->width() > ih->data->maximg_w)
@@ -1565,7 +1513,6 @@ static int qtListSetSpacingAttrib(Ihandle* ih, const char* value)
   {
     if (ih->handle && ih->data->show_image)
     {
-      /* Update delegate to use new spacing */
       if (!ih->data->is_dropdown)
       {
         QListWidget* list = qtListGetListWidget(ih);
@@ -1592,8 +1539,7 @@ static int qtListSetPaddingAttrib(Ihandle* ih, const char* value)
   {
     if (ih->data->is_dropdown)
     {
-      /* Qt doesn't have direct padding control for combo box */
-      /* Could use style sheets */
+      /* Qt has no padding control for a combo box */
     }
     else
     {
@@ -1615,7 +1561,6 @@ static int qtListSetFilterAttrib(Ihandle* ih, const char* value)
 
     if (value && iupStrBoolean(value))
     {
-      /* Enable filtering */
       combo->setInsertPolicy(QComboBox::NoInsert);
       QCompleter* completer = new QCompleter(combo->model(), combo);
       completer->setCompletionMode(QCompleter::PopupCompletion);
@@ -1750,7 +1695,6 @@ static void qtListWidgetItemSelectionChanged(QListWidget* list, Ihandle* ih)
   }
   else
   {
-    /* Multiple selection callback */
     IFns multi_cb = (IFns)IupGetCallback(ih, "MULTISELECT_CB");
     if (multi_cb)
     {
@@ -1786,7 +1730,7 @@ static void qtListCaretChanged(QLineEdit* edit, Ihandle* ih)
   if (cb)
   {
     int pos = edit->cursorPosition() + 1;  /* IUP starts at 1 */
-    int col = 0;  /* Single line */
+    int col = 0;
     cb(ih, pos, col);
   }
 }
@@ -1822,33 +1766,26 @@ static int qtListMapMethod(Ihandle* ih)
 {
   if (ih->data->is_dropdown)
   {
-    /* Create ComboBox for dropdown lists */
     IupQtComboBox* combo = new IupQtComboBox(ih);
 
     ih->handle = (InativeHandle*)combo;
 
-    /* Remove minimum size constraints - similar to GTK's iupgtkClearSizeStyleCSS
-     * This allows IUP's layout system to control sizing without Qt enforcing minimums */
+    /* Qt's minimum size would override the IUP layout */
     combo->setMinimumSize(0, 0);
 
-    /* Set editable mode */
     combo->setEditable(ih->data->has_editbox ? true : false);
 
-    /* Set visible items */
     char* value = iupAttribGetStr(ih, "VISIBLEITEMS");
     if (value)
       qtListSetVisibleItemsAttrib(ih, value);
 
-    /* Set size policy - Expanding allows widget to grow beyond minimal sizeHint
-     * IUP's layout system will set the actual size based on natural size calculation */
+    /* Expanding lets the IUP layout size the widget past its sizeHint */
     combo->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 
-    /* Connect signals */
     QObject::connect(combo, QOverload<int>::of(&QComboBox::currentIndexChanged), [combo, ih](int index) {
       qtListComboBoxChanged(combo, ih, index);
     });
 
-    /* For editbox */
     if (ih->data->has_editbox)
     {
       combo->setLineEdit(new IupQtListLineEdit(ih));
@@ -1865,51 +1802,38 @@ static int qtListMapMethod(Ihandle* ih)
       }
     }
 
-    /* Set initial items */
     iupListSetInitialItems(ih);
 
-    /* Qt automatically selects the first item when items are added to a ComboBox.
-     * Windows/Motif ComboBox starts with no selection. Clear selection to match. */
+    /* Qt selects the first item as soon as a ComboBox gets items */
     iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", "1");
     combo->setCurrentIndex(-1);
     iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", NULL);
   }
   else if (ih->data->has_editbox)
   {
-    /* EDITBOX without DROPDOWN (CBS_SIMPLE style)
-     * Create a composite widget with QLineEdit on top and QListWidget below
-     * These matches GTK and Windows CBS_SIMPLE behavior */
 
     QWidget* container = new QWidget();
     QVBoxLayout* layout = new QVBoxLayout(container);
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(0);
 
-    /* Create edit box */
     QLineEdit* edit = new IupQtListLineEdit(ih);
-    /* Set fixed height for edit box to match IUP's edit_line_size calculation */
     QFontMetrics fm(edit->font());
-    int edit_height = fm.height() + 8;  /* Add some padding like IUP does */
+    int edit_height = fm.height() + 8;
     edit->setFixedHeight(edit_height);
     layout->addWidget(edit, 0);  /* 0 stretch - fixed height */
 
-    /* Create list widget with drag-drop support */
     IupQtListWidget* list = new IupQtListWidget(ih);
-    list->setMinimumSize(0, 0);  /* Remove size constraints like GTK */
+    list->setMinimumSize(0, 0);
     layout->addWidget(list, 1);  /* 1 stretch - take remaining space */
 
-    /* Store the container as the main handle */
     ih->handle = (InativeHandle*)container;
 
-    /* Store references to the edit and list for attribute access */
     iupAttribSet(ih, "_IUPQT_EDIT", (char*)edit);
     iupAttribSet(ih, "_IUPQT_LIST", (char*)list);
 
-    /* Set selection mode */
     list->setSelectionMode(QAbstractItemView::SingleSelection);
 
-    /* Set scrollbar policy based on SCROLLBAR attribute
-     * Default is to show scrollbars when needed (AUTOHIDE=YES) */
     if (ih->data->sb)
     {
       if (iupAttribGetBoolean(ih, "AUTOHIDE"))
@@ -1929,29 +1853,24 @@ static int qtListMapMethod(Ihandle* ih)
       list->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     }
 
-    /* Set size policy to allow the list to expand naturally */
     list->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
-    /* For EDITBOX with VISIBLELINES, constrain the list height to show exactly (VISIBLELINES-1) items */
     int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
     if (visiblelines > 0)
     {
-      /* Calculate list height: items + borders */
       int char_width, char_height;
       iupdrvFontGetCharSize(ih, &char_width, &char_height);
       int item_height = char_height;
       iupdrvListAddItemSpace(ih, &item_height);
 
-      int num_items_in_list = visiblelines - 1;  /* Subtract 1 for the entry */
+      int num_items_in_list = visiblelines - 1;
       int list_content_height = num_items_in_list * item_height;
 
-      /* Add list borders */
       int list_total_height = list_content_height + 4;
 
       list->setMaximumHeight(list_total_height);
     }
 
-    /* Connect edit box signals */
     QObject::connect(edit, &QLineEdit::textChanged, [edit, ih]() {
       qtListEditTextChanged(edit, ih);
     });
@@ -1960,11 +1879,9 @@ static int qtListMapMethod(Ihandle* ih)
       qtListCaretChanged(edit, ih);
     });
 
-    /* Connect list selection changed */
     QObject::connect(list, &QListWidget::itemSelectionChanged, [list, edit, ih]() {
       qtListWidgetItemSelectionChanged(list, ih);
 
-      /* Update edit box with selected item text */
       if (!iupAttribGet(ih, "_IUPLIST_IGNORE_ACTION"))
       {
         QListWidgetItem* item = list->currentItem();
@@ -1986,38 +1903,30 @@ static int qtListMapMethod(Ihandle* ih)
       }
     });
 
-    /* Use custom delegate to normalize item heights across platforms. The delegate also handles images. */
     IupQtListItemDelegate* delegate = new IupQtListItemDelegate(ih);
     list->setItemDelegate(delegate);
 
-    /* Set initial items */
     iupListSetInitialItems(ih);
   }
   else if (ih->data->is_virtual)
   {
-    /* Virtual mode: Create QListView with custom model */
     IupQtVirtualListView* view = new IupQtVirtualListView(ih);
 
     ih->handle = (InativeHandle*)view;
 
-    /* Create and set the virtual model */
     IupQtVirtualListModel* model = new IupQtVirtualListModel(ih, view);
     view->setModel(model);
     iupAttribSet(ih, "_IUPQT_VIRTUAL_MODEL", (char*)model);
 
-    /* Enable uniform item sizes. This tells Qt all items have the same size, avoiding per-item measurement. */
     view->setUniformItemSizes(true);
 
-    /* Remove minimum size constraints */
     view->setMinimumSize(0, 0);
 
-    /* Set selection mode */
     if (ih->data->is_multiple)
       view->setSelectionMode(QAbstractItemView::ExtendedSelection);
     else
       view->setSelectionMode(QAbstractItemView::SingleSelection);
 
-    /* Set scrollbar policy based on AUTOHIDE attribute */
     int autohide = iupAttribGetBoolean(ih, "AUTOHIDE");
 
     if (ih->data->sb)
@@ -2039,11 +1948,9 @@ static int qtListMapMethod(Ihandle* ih)
       view->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     }
 
-    /* Use custom delegate to normalize item heights across platforms. The delegate also handles images. */
     IupQtListItemDelegate* delegate = new IupQtListItemDelegate(ih);
     view->setItemDelegate(delegate);
 
-    /* Connect selection signals */
     QObject::connect(view->selectionModel(), &QItemSelectionModel::selectionChanged,
       [view, ih](const QItemSelection& selected, const QItemSelection& deselected) {
         (void)selected;
@@ -2073,50 +1980,41 @@ static int qtListMapMethod(Ihandle* ih)
   }
   else
   {
-    /* Create ListWidget for plain list with drag-drop support */
     IupQtListWidget* list = new IupQtListWidget(ih);
 
     ih->handle = (InativeHandle*)list;
 
-    /* Remove minimum size constraints - similar to GTK's iupgtkClearSizeStyleCSS */
     list->setMinimumSize(0, 0);
 
-    /* Set selection mode */
     if (ih->data->is_multiple)
       list->setSelectionMode(QAbstractItemView::ExtendedSelection);
     else
       list->setSelectionMode(QAbstractItemView::SingleSelection);
 
-    /* Set scrollbar policy based on AUTOHIDE attribute */
     int autohide = iupAttribGetBoolean(ih, "AUTOHIDE");
 
     if (ih->data->sb)
     {
       if (autohide)
       {
-        /* Auto-hide scrollbars - show only when needed */
         list->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
         list->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
       }
       else
       {
-        /* Always show scrollbars */
         list->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
         list->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
       }
     }
     else
     {
-      /* No scrollbars */
       list->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
       list->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     }
 
-    /* Use custom delegate to normalize item heights across platforms. The delegate also handles images. */
     IupQtListItemDelegate* delegate = new IupQtListItemDelegate(ih);
     list->setItemDelegate(delegate);
 
-    /* Connect signals */
     QObject::connect(list, &QListWidget::itemSelectionChanged, [list, ih]() {
       qtListWidgetItemSelectionChanged(list, ih);
     });
@@ -2130,24 +2028,19 @@ static int qtListMapMethod(Ihandle* ih)
       }
     });
 
-    /* Set initial items */
     iupListSetInitialItems(ih);
 
-    /* Enable internal drag and drop support - same conditions as GTK */
     if (ih->data->show_dragdrop && !ih->data->is_dropdown && !ih->data->is_multiple)
     {
       list->enableDragDrop();
     }
   }
 
-  /* Add to parent */
   iupqtAddToParent(ih);
 
-  /* Configure for DRAG&DROP of files */
   if (IupGetCallback(ih, "DROPFILES_CB"))
     iupAttribSet(ih, "DROPFILESTARGET", "YES");
 
-  /* Configure focus */
   if (!iupAttribGetBoolean(ih, "CANFOCUS"))
   {
     if (ih->data->is_dropdown)
@@ -2156,7 +2049,6 @@ static int qtListMapMethod(Ihandle* ih)
       iupqtSetCanFocus((QWidget*)ih->handle, 0);
   }
 
-  /* Register XY to position converter for drag-drop support */
   IupSetCallback(ih, "_IUP_XY2POS_CB", (Icallback)qtListConvertXYToPos);
 
   return IUP_NOERROR;
@@ -2193,7 +2085,6 @@ extern "C" IUP_SDK_API void iupdrvListInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "NC", iupListGetNCAttrib, qtListSetNCAttrib, NULL, NULL, IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "SCROLLBAR", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NOT_MAPPED);
 
-  /* Editbox attributes */
   iupClassRegisterAttribute(ic, "SELECTEDTEXT", qtListGetSelectedTextAttrib, qtListSetSelectedTextAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SELECTION", qtListGetSelectionAttrib, qtListSetSelectionAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CARET", qtListGetCaretAttrib, qtListSetCaretAttrib, NULL, NULL, IUPAF_NO_SAVE|IUPAF_NO_INHERIT);
@@ -2206,7 +2097,6 @@ extern "C" IUP_SDK_API void iupdrvListInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "FILTER", NULL, qtListSetFilterAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SCROLLVISIBLE", qtListGetScrollVisibleAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY|IUPAF_NO_INHERIT);
 
-  /* Image support */
   iupClassRegisterAttributeId(ic, "IMAGE", NULL, qtListSetImageAttrib, IUPAF_IHANDLENAME|IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "IMAGENATIVEHANDLE", qtListGetImageNativeHandleAttribId, NULL, IUPAF_NO_STRING|IUPAF_READONLY|IUPAF_NO_INHERIT);
 }

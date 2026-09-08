@@ -54,7 +54,6 @@ static int gtkPopoverSetVisibleAttrib(Ihandle* ih, const char* value)
     if (!anchor || !anchor->handle)
       return 0;
 
-    /* Map if not yet mapped */
     if (!ih->handle)
     {
       if (IupMap(ih) == IUP_ERROR)
@@ -63,7 +62,6 @@ static int gtkPopoverSetVisibleAttrib(Ihandle* ih, const char* value)
 
     popover = (GtkPopover*)ih->handle;
 
-    /* Set position based on POSITION attribute */
     {
       int position = iupPopoverGetPosition(ih);
       GtkPositionType gtk_pos;
@@ -156,7 +154,6 @@ static int gtkPopoverSetVisibleAttrib(Ihandle* ih, const char* value)
         gtk_popover_set_pointing_to(popover, &pointing_to);
     }
 
-    /* Set autohide (modal in GTK3 terms) */
     {
       int autohide = iupAttribGetBoolean(ih, "AUTOHIDE");
       gtk_popover_set_modal(popover, autohide);
@@ -166,7 +163,6 @@ static int gtkPopoverSetVisibleAttrib(Ihandle* ih, const char* value)
     gtk_popover_set_constrain_to(popover, GTK_POPOVER_CONSTRAINT_NONE);
 #endif
 
-    /* Layout the child before showing */
     if (ih->firstchild)
     {
       iupLayoutCompute(ih);
@@ -246,7 +242,6 @@ static int gtkPopoverMapMethod(Ihandle* ih)
 
   ih->handle = popover;
 
-  /* Create inner container for IUP children */
   inner_parent = iupgtkNativeContainerNew(0);
   if (!inner_parent)
   {
@@ -259,7 +254,6 @@ static int gtkPopoverMapMethod(Ihandle* ih)
   gtk_widget_show(inner_parent);
   iupAttribSet(ih, "_IUP_GTK_INNER_PARENT", (char*)inner_parent);
 
-  /* Connect closed signal */
   g_signal_connect(G_OBJECT(popover), "closed", G_CALLBACK(gtkPopoverClosedCb), ih);
 
   /* Keep a reference to prevent destruction */
@@ -297,7 +291,6 @@ static gboolean gtkPopoverButtonPressEvent(GtkWidget* widget, GdkEventButton* ev
   if (!iupAttribGetBoolean(ih, "AUTOHIDE"))
     return FALSE;
 
-  /* Check if click is outside the popup */
   gtk_widget_get_allocation(ih->handle, &alloc);
   gdk_window_get_origin(gtk_widget_get_window(ih->handle), &px, &py);
   pw = alloc.width;
@@ -495,6 +488,6 @@ IUP_SDK_API void iupdrvPopoverInitClass(Iclass* ic)
   ic->LayoutUpdate = gtkPopoverLayoutUpdateMethod;
   ic->GetInnerNativeContainerHandle = gtkPopoverGetInnerNativeContainerHandleMethod;
 
-  /* Override VISIBLE attribute, NOT_MAPPED because setter handles mapping */
+  /* NOT_MAPPED because the setter handles mapping */
   iupClassRegisterAttribute(ic, "VISIBLE", gtkPopoverGetVisibleAttrib, gtkPopoverSetVisibleAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
 }

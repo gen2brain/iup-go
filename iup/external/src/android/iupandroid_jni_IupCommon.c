@@ -181,7 +181,6 @@ JNIEXPORT jint JNICALL Java_io_github_gen2brain_iupgo_IupCommon_HandleIupCallbac
   return ret_val;
 }
 
-/* int-argument variant for IFni callbacks (SHOW_CB state, FOCUS_CB 0/1, etc.) */
 JNIEXPORT jint JNICALL Java_io_github_gen2brain_iupgo_IupCommon_HandleIupCallbackInt(JNIEnv* jni_env, jclass cls, jlong ihandle_ptr, jstring j_key_string, jint arg)
 {
   (void)cls;

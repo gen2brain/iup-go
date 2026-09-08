@@ -262,7 +262,7 @@ static int androidLabelSetPaddingAttrib(Ihandle* ih, const char* value)
 
 static int androidLabelSetMarkupAttrib(Ihandle* ih, const char* value)
 {
-  /* Update hash first so the title setter reads the new MARKUP value, then re-render. */
+  /* Update hash first so the title setter reads the new MARKUP value. */
   iupAttribSetStr(ih, "MARKUP", value);
   if (ih->handle && androidLabelGetSubType(ih) == IUPANDROIDLABELSUBTYPE_TEXT)
   {

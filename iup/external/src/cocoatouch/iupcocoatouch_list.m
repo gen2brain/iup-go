@@ -49,7 +49,6 @@ static const void* IUP_COCOATOUCH_LIST_DND_KEY      = "IUP_COCOATOUCH_LIST_DND_K
 @property(nonatomic, assign) BOOL suppressEditCb;
 @end
 
-/* EDITBOX standalone: vertical [UITextField, UITableView] container */
 @interface IupCocoaTouchListEditView : UIView
 @property(nonatomic, retain) UITextField* field;
 @property(nonatomic, retain) UITableView* table;
@@ -110,7 +109,6 @@ static const void* IUP_COCOATOUCH_LIST_DND_KEY      = "IUP_COCOATOUCH_LIST_DND_K
 }
 @end
 
-/* scale src so its longest side = target_pt, preserving aspect (FITIMAGE=YES) */
 static UIImage* cocoaTouchListFitImage(UIImage* src, CGFloat target_pt)
 {
 	if (!src || target_pt <= 0) return src;
@@ -271,7 +269,6 @@ static void cocoaTouchListSetDropdownDisplay(UIButton* button, NSString* text, U
 	if (!_ihandle || !iupObjectCheck(_ihandle)) return;
 	int pos_1based = (int)[indexPath row] + 1;
 
-	/* EDITBOX standalone: row tap mirrors text into the entry without firing EDIT_CB */
 	if (_field && _ihandle->data && _ihandle->data->has_editbox)
 	{
 		NSString* text = (NSUInteger)[indexPath row] < [_items count]
@@ -822,7 +819,6 @@ IUP_SDK_API int iupdrvListGetCount(Ihandle* ih)
 	return ctrl ? (int)[ctrl.items count] : 0;
 }
 
-/* SORT: ascending insert position. */
 static NSUInteger cocoaTouchListSortPos(NSArray* items, const char* value)
 {
 	NSUInteger n = [items count];
@@ -1286,7 +1282,6 @@ static UIView* cocoaTouchListCreateTable(Ihandle* ih, IupCocoaTouchListControlle
 
 	if (!ih->data->has_editbox) return table;
 
-	/* Hand both subviews to the wrapper, drop our +1 refs. */
 	IupCocoaTouchListEditView* wrapper = [[IupCocoaTouchListEditView alloc] initWithFrame:CGRectZero];
 	UITextField* field = cocoaTouchListBuildEditField(ih, ctrl);
 	wrapper.field = field;

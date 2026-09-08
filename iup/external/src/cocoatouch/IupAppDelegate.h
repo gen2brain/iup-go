@@ -6,7 +6,6 @@
 
 #import <UIKit/UIKit.h>
 
-/* host-app delegate hook so IUP can locate the active UIWindow */
 @protocol IupAppDelegateProtocol <UIApplicationDelegate>
 - (UIWindow*)currentWindow;
 @end

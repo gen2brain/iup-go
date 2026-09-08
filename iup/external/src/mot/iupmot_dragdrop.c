@@ -484,7 +484,6 @@ static int motSetDropTargetAttrib(Ihandle* ih, const char* value)
     iupMOT_SETARG(args, num_args, XmNdropProc, motDropProc);
     iupMOT_SETARG(args, num_args, XmNdragProc, motDragProc);
 
-    /* register the site unless the control already has one (e.g. list) */
     if (iupAttribGet(ih, "_IUPMOT_DROPSITE"))
       XmDropSiteUpdate(w, args, num_args);
     else
@@ -940,7 +939,6 @@ static int motSetDropFilesTargetAttrib(Ihandle* ih, const char* value)
     state->shell = shell;
     iupAttribSet(ih, "_IUPMOT_XDND_STATE", (char*)state);
 
-    /* Set XdndAware on both widget window and shell window */
     XChangeProperty(iupmot_display, xwin, xdnd_atoms.XdndAware, XA_ATOM, 32, PropModeReplace, (unsigned char*)&version, 1);
     if (XtWindow(w) != xwin)
       XChangeProperty(iupmot_display, XtWindow(w), xdnd_atoms.XdndAware, XA_ATOM, 32, PropModeReplace, (unsigned char*)&version, 1);

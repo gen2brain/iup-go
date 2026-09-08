@@ -37,13 +37,11 @@ static UIView* cocoaTouchFocusViewFromHandle(Ihandle* ih)
 	return nil;
 }
 
-/* DFS for first CANFOCUS descendant whose view can become first responder */
 static Ihandle* cocoaTouchFocusFirstFocusable(Ihandle* ih)
 {
 	if (!ih) return NULL;
 	for (Ihandle* child = ih->firstchild; child; child = child->brother)
 	{
-		/* skip null and the TYPEVOID sentinel; recurse through them */
 		if (!child->handle || child->handle == (void*)-1)
 		{
 			Ihandle* nested = cocoaTouchFocusFirstFocusable(child);
@@ -77,7 +75,6 @@ IUP_SDK_API void iupdrvSetFocus(Ihandle* ih)
 
 	if (![view canBecomeFirstResponder])
 	{
-		/* dialogs/containers delegate to first focusable descendant */
 		Ihandle* next = cocoaTouchFocusFirstFocusable(ih);
 		if (next && next != ih) iupdrvSetFocus(next);
 		return;

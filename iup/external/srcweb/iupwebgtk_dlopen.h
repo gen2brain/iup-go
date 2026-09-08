@@ -186,10 +186,10 @@ static int (*JSValueIsNull)(JSGlobalContextRef ctx, JSValueRef value);
 static int (*JSValueIsUndefined)(JSGlobalContextRef ctx, JSValueRef value);
 
 /* --- WebKit6 Function Pointers (GTK4) --- */
-/* Note: webkit_web_view_evaluate_javascript replaces webkit_web_view_run_javascript */
+/* webkit_web_view_evaluate_javascript replaces webkit_web_view_run_javascript */
 static void (*webkit_web_view_evaluate_javascript)(WebKitWebView *web_view, const char *script, gssize length, const char *world_name, const char *source_uri, GCancellable *cancellable, GAsyncReadyCallback callback, gpointer user_data);
 static JSCValue* (*webkit_web_view_evaluate_javascript_finish)(WebKitWebView *web_view, GAsyncResult *result, GError **error);
-/* Note: WebKit6 changed signature - basic function now takes world_name (3 params vs 2 in WK2) */
+/* WebKit6 basic function takes world_name (3 params vs 2 in WK2) */
 static gboolean (*webkit_user_content_manager_register_script_message_handler_wk6)(WebKitUserContentManager *manager, const char *name, const char *world_name);
 static void (*webkit_user_content_manager_unregister_script_message_handler_wk6)(WebKitUserContentManager *manager, const char *name, const char *world_name);
 
@@ -231,7 +231,6 @@ static WebKitWebNavigationAction* (*webkit_web_policy_decision_get_navigation_ac
 
 static void iupgtkWebBrowser_ClearDLSymbols()
 {
-  /* Clear Common */
   webkit_web_view_new = NULL;
   webkit_web_view_get_uri = NULL;
   webkit_web_view_load_uri = NULL;
@@ -247,7 +246,6 @@ static void iupgtkWebBrowser_ClearDLSymbols()
   webkit_network_request_get_uri = NULL;
   webkit_web_view_get_back_forward_list = NULL;
 
-  /* Clear WK2 */
   webkit_web_view_new_with_context = NULL;
   webkit_back_forward_list_get_nth_item = NULL;
   webkit_back_forward_list_item_get_uri = NULL;
@@ -275,7 +273,6 @@ static void iupgtkWebBrowser_ClearDLSymbols()
   webkit_navigation_action_get_request = NULL;
   webkit_uri_request_get_uri = NULL;
 
-  /* Clear JSCore */
   webkit_web_frame_get_global_context = NULL;
   JSStringCreateWithUTF8CString = NULL;
   JSEvaluateScript = NULL;
@@ -286,13 +283,11 @@ static void iupgtkWebBrowser_ClearDLSymbols()
   JSValueIsNull = NULL;
   JSValueIsUndefined = NULL;
 
-  /* Clear WK6 */
   webkit_web_view_evaluate_javascript = NULL;
   webkit_web_view_evaluate_javascript_finish = NULL;
   webkit_user_content_manager_register_script_message_handler_wk6 = NULL;
   webkit_user_content_manager_unregister_script_message_handler_wk6 = NULL;
 
-  /* Clear JSCore GObject (WebKit6) */
   jsc_value_to_string = NULL;
   jsc_value_is_null = NULL;
   jsc_value_is_undefined = NULL;
@@ -303,7 +298,6 @@ static void iupgtkWebBrowser_ClearDLSymbols()
   jsc_context_get_exception = NULL;
   jsc_exception_get_message = NULL;
 
-  /* Clear WK1 */
   webkit_web_back_forward_list_get_nth_item = NULL;
   webkit_web_history_item_get_uri = NULL;
   webkit_web_back_forward_list_get_forward_length = NULL;
@@ -330,7 +324,6 @@ static void iupgtkWebBrowser_ClearDLSymbols()
 
 static int iupgtkWebBrowser_SetDLSymbolsWK2(void* webkit_library)
 {
-  /* Load Common Symbols */
   webkit_web_view_new = (GtkWidget* (*)(void))dlsym(webkit_library, "webkit_web_view_new");
   webkit_web_view_get_uri = (const gchar* (*)(WebKitWebView*))dlsym(webkit_library, "webkit_web_view_get_uri");
   webkit_web_view_load_uri = (void (*)(WebKitWebView*, const gchar*))dlsym(webkit_library, "webkit_web_view_load_uri");
@@ -346,7 +339,6 @@ static int iupgtkWebBrowser_SetDLSymbolsWK2(void* webkit_library)
   webkit_network_request_get_uri = (const gchar* (*)(WebKitNetworkRequest*))dlsym(webkit_library, "webkit_network_request_get_uri");
   webkit_web_view_get_back_forward_list = (WebKitBackForwardList* (*)(WebKitWebView*))dlsym(webkit_library, "webkit_web_view_get_back_forward_list");
 
-  /* Load WK2 Specific Symbols */
   webkit_web_view_new_with_context = (WebKitWebView* (*)(void*))dlsym(webkit_library, "webkit_web_view_new_with_context");
   webkit_back_forward_list_get_nth_item = (WebKitBackForwardListItem* (*)(WebKitBackForwardList*, gint))dlsym(webkit_library, "webkit_back_forward_list_get_nth_item");
   webkit_back_forward_list_item_get_uri = (const gchar* (*)(WebKitBackForwardListItem*))dlsym(webkit_library, "webkit_back_forward_list_item_get_uri");
@@ -398,7 +390,6 @@ static int iupgtkWebBrowser_SetDLSymbolsWK2(void* webkit_library)
   JSValueIsNull = (int (*)(JSGlobalContextRef, JSValueRef))dlsym(webkit_library, "JSValueIsNull");
   JSValueIsUndefined = (int (*)(JSGlobalContextRef, JSValueRef))dlsym(webkit_library, "JSValueIsUndefined");
 
-  /* Check for a few critical symbols */
   if (!webkit_web_view_new || !webkit_web_view_load_html ||
       !webkit_navigation_policy_decision_get_navigation_action || !webkit_navigation_action_get_request || !webkit_uri_request_get_uri)
     return 0;
@@ -408,7 +399,6 @@ static int iupgtkWebBrowser_SetDLSymbolsWK2(void* webkit_library)
 
 static int iupgtkWebBrowser_SetDLSymbolsWK1(void* webkit_library)
 {
-  /* Load Common Symbols */
   webkit_web_view_new = (GtkWidget* (*)(void))dlsym(webkit_library, "webkit_web_view_new");
   webkit_web_view_get_uri = (const gchar* (*)(WebKitWebView*))dlsym(webkit_library, "webkit_web_view_get_uri");
   webkit_web_view_load_uri = (void (*)(WebKitWebView*, const gchar*))dlsym(webkit_library, "webkit_web_view_load_uri");
@@ -424,7 +414,6 @@ static int iupgtkWebBrowser_SetDLSymbolsWK1(void* webkit_library)
   webkit_network_request_get_uri = (const gchar* (*)(WebKitNetworkRequest*))dlsym(webkit_library, "webkit_network_request_get_uri");
   webkit_web_view_get_back_forward_list = (WebKitBackForwardList* (*)(WebKitWebView*))dlsym(webkit_library, "webkit_web_view_get_back_forward_list");
 
-  /* Load WK1 Specific Symbols */
   webkit_web_back_forward_list_get_nth_item = (WebKitWebHistoryItem* (*)(WebKitWebBackForwardList*, gint))dlsym(webkit_library, "webkit_web_back_forward_list_get_nth_item");
   webkit_web_history_item_get_uri = (const gchar* (*)(WebKitWebHistoryItem*))dlsym(webkit_library, "webkit_web_history_item_get_uri");
   webkit_web_back_forward_list_get_forward_length = (gint (*)(WebKitWebBackForwardList*))dlsym(webkit_library, "webkit_web_back_forward_list_get_forward_length");
@@ -458,7 +447,6 @@ static int iupgtkWebBrowser_SetDLSymbolsWK1(void* webkit_library)
   JSValueIsNull = (int (*)(JSGlobalContextRef, JSValueRef))dlsym(webkit_library, "JSValueIsNull");
   JSValueIsUndefined = (int (*)(JSGlobalContextRef, JSValueRef))dlsym(webkit_library, "JSValueIsUndefined");
 
-  /* Check for a few critical symbols */
   if (!webkit_web_view_new || !webkit_web_view_load_string || !webkit_web_view_get_main_frame)
     return 0;
 
@@ -467,7 +455,6 @@ static int iupgtkWebBrowser_SetDLSymbolsWK1(void* webkit_library)
 
 static int iupgtkWebBrowser_SetDLSymbolsWK6(void* webkit_library)
 {
-  /* Load Common Symbols */
   webkit_web_view_new = (GtkWidget* (*)(void))dlsym(webkit_library, "webkit_web_view_new");
   webkit_web_view_get_uri = (const gchar* (*)(WebKitWebView*))dlsym(webkit_library, "webkit_web_view_get_uri");
   webkit_web_view_load_uri = (void (*)(WebKitWebView*, const gchar*))dlsym(webkit_library, "webkit_web_view_load_uri");
@@ -508,14 +495,12 @@ static int iupgtkWebBrowser_SetDLSymbolsWK6(void* webkit_library)
   webkit_user_script_unref = (void (*)(WebKitUserScript*))dlsym(webkit_library, "webkit_user_script_unref");
   webkit_web_view_get_user_content_manager = (WebKitUserContentManager* (*)(WebKitWebView*))dlsym(webkit_library, "webkit_web_view_get_user_content_manager");
 
-  /* Load WK6 Specific Symbols */
   webkit_web_view_evaluate_javascript = (void (*)(WebKitWebView*, const char*, gssize, const char*, const char*, GCancellable*, GAsyncReadyCallback, gpointer))dlsym(webkit_library, "webkit_web_view_evaluate_javascript");
   webkit_web_view_evaluate_javascript_finish = (JSCValue* (*)(WebKitWebView*, GAsyncResult*, GError**))dlsym(webkit_library, "webkit_web_view_evaluate_javascript_finish");
   /* WebKit6 uses 3-parameter version (with world_name) */
   webkit_user_content_manager_register_script_message_handler_wk6 = (gboolean (*)(WebKitUserContentManager*, const char*, const char*))dlsym(webkit_library, "webkit_user_content_manager_register_script_message_handler");
   webkit_user_content_manager_unregister_script_message_handler_wk6 = (void (*)(WebKitUserContentManager*, const char*, const char*))dlsym(webkit_library, "webkit_user_content_manager_unregister_script_message_handler");
 
-  /* Load JSCore GObject Symbols */
   jsc_value_to_string = (char* (*)(JSCValue*))dlsym(webkit_library, "jsc_value_to_string");
   jsc_value_is_null = (gboolean (*)(JSCValue*))dlsym(webkit_library, "jsc_value_is_null");
   jsc_value_is_undefined = (gboolean (*)(JSCValue*))dlsym(webkit_library, "jsc_value_is_undefined");
@@ -526,7 +511,6 @@ static int iupgtkWebBrowser_SetDLSymbolsWK6(void* webkit_library)
   jsc_context_get_exception = (JSCException* (*)(JSCContext*))dlsym(webkit_library, "jsc_context_get_exception");
   jsc_exception_get_message = (char* (*)(JSCException*))dlsym(webkit_library, "jsc_exception_get_message");
 
-  /* Check for a few critical WK6 symbols */
   if (!webkit_web_view_new || !webkit_web_view_load_html ||
       !webkit_web_view_evaluate_javascript || !jsc_value_to_string ||
       !webkit_navigation_policy_decision_get_navigation_action || !webkit_navigation_action_get_request || !webkit_uri_request_get_uri)

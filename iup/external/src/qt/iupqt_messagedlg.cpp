@@ -20,7 +20,6 @@ extern "C" {
 #include "iupqt_drv.h"
 
 
-/* Custom response codes to avoid conflicts */
 #define IUP_RESPONSE_1    1
 #define IUP_RESPONSE_2    2
 #define IUP_RESPONSE_3    3
@@ -116,7 +115,6 @@ static int qtMessageDlgPopup(Ihandle* ih, int x, int y)
     button1 = dialog->addButton(QString::fromUtf8(ok_text), QMessageBox::AcceptRole);
   }
 
-  /* Add Help button if HELP_CB exists */
   if (IupGetCallback(ih, "HELP_CB"))
   {
     help_button = dialog->addButton(QString::fromUtf8(help_text), QMessageBox::HelpRole);
@@ -151,7 +149,6 @@ static int qtMessageDlgPopup(Ihandle* ih, int x, int y)
       Icallback cb = IupGetCallback(ih, "HELP_CB");
       if (cb && cb(ih) == IUP_CLOSE)
       {
-        /* User wants to close from help callback */
         if (iupStrEqualNoCase(buttons, "YESNOCANCEL"))
           response = IUP_RESPONSE_3;
         else if (iupStrEqualNoCase(buttons, "OK"))
@@ -168,7 +165,6 @@ static int qtMessageDlgPopup(Ihandle* ih, int x, int y)
       response = IUP_RESPONSE_3;
     else
     {
-      /* Dialog closed without button click (e.g., X button or Escape key) */
       if (iupStrEqualNoCase(buttons, "YESNOCANCEL"))
         response = IUP_RESPONSE_3; /* Cancel */
       else if (iupStrEqualNoCase(buttons, "OK"))

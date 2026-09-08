@@ -97,8 +97,7 @@ static float haikuTableRowHeight(BColumnListView* tv)
   return h < 18.0f ? 18.0f : h;
 }
 
-/* Single sentinel BField shared by every cell in virtual mode; no-op operator delete
- * keeps the static alive through ~BRow's `delete field` loop. */
+/* No-op operator delete keeps the shared sentinel alive through ~BRow's `delete field` loop. */
 class IupHaikuVirtualField : public BField
 {
 public:
@@ -110,7 +109,6 @@ static IupHaikuVirtualField g_virtual_field;
 
 class IupHaikuTableView;
 
-/* In-place cell editor. Plain BTextView so we own Enter/Escape directly. */
 class IupHaikuTableEditor : public BTextView
 {
 public:
@@ -148,7 +146,6 @@ public:
   bool IsVirtual() const { return fIsVirtual; }
   void SetVirtual(bool v) { fIsVirtual = v; }
 
-  /* Subtle grid/border color, theme-tracked via list-bg. */
   static rgb_color GridLineColor()
   {
     return tint_color(iuphaikuColor(B_LIST_BACKGROUND_COLOR), B_DARKEN_1_TINT);
@@ -280,7 +277,6 @@ protected:
       return;
     }
 
-    /* F2 / Enter on focused cell starts in-place edit. */
     bool is_f2 = (bytes[0] == B_FUNCTION_KEY && raw_char == B_F2_KEY);
     if (bytes[0] == B_RETURN || is_f2)
     {
@@ -371,7 +367,6 @@ public:
 
   void ItemInvoked() override
   {
-    /* Double-click on a row also starts editing the focused cell. */
     BRow* r = FocusRow();
     if (r) StartEdit((int)IndexOf(r) + 1, fFocusCol);
   }
@@ -431,7 +426,6 @@ public:
     RepositionTrail();
   }
 
-  /* Repaint the trailing area and extend SHOWGRID dividers across the full outline. */
   void DrawAfterChildren(BRect /*updateRect*/) override
   {
     if (!fIhandle) return;
@@ -447,7 +441,7 @@ public:
     rgb_color base = Color(B_COLOR_BACKGROUND);
 
     /* CLV advances fieldLeftEdge by Width()+1 per column, so include +1 per visible column. */
-    float total_w = 15.0f;  /* latch */
+    float total_w = 15.0f;
     int nc = (int)CountColumns();
     for (int i = 0; i < nc; i++)
     {
@@ -546,11 +540,10 @@ public:
       if (row) total_h += row->Height() + 1.0f;
     }
 
-    /* Don't overshoot the FANCY_BORDER inset. */
     float hsb_h = be_control_look ? be_control_look->GetScrollBarWidth(B_HORIZONTAL) : 14.0f;
     float vsb_w = be_control_look ? be_control_look->GetScrollBarWidth(B_VERTICAL)   : 14.0f;
 
-    /* IsHidden(self) ignores window visibility; we only care about explicit hide. */
+    /* IsHidden(self) ignores window visibility; only an explicit hide counts. */
     bool h_hidden = hsb->IsHidden(hsb);
     bool v_hidden = vsb->IsHidden(vsb);
 
@@ -569,8 +562,7 @@ public:
     float target_bottom = Bounds().Height() - 2.0f;
     float target_right  = Bounds().Width()  - 2.0f;
 
-    /* Extend the still-visible scrollbar across the corner the hidden one vacated,
-     * otherwise CLV's frame paint leaves a stray patch (most visible when focused). */
+    /* CLV's frame paint leaves a stray patch in the corner a hidden scrollbar vacated. */
     if (h_now_hidden && !v_now_hidden)
     {
       BRect r = vsb->Frame();
@@ -622,7 +614,6 @@ public:
     }
   }
 
-  /* ALTERNATECOLOR + SHOWGRID divider in the latch column. */
   void DrawLatch(BView* view, BRect frame, LatchType type, BRow* row) override
   {
     if (!view || !row)
@@ -705,7 +696,6 @@ private:
 };
 
 
-/* Overlay over the empty trail right of the last column. */
 class IupHaikuTrailDividers : public BView
 {
 public:
@@ -836,7 +826,6 @@ void IupHaikuTableEditor::KeyDown(const char* bytes, int32 numBytes)
 void IupHaikuTableEditor::MakeFocus(bool focused)
 {
   BTextView::MakeFocus(focused);
-  /* Lost focus = commit. */
   if (!focused && !fEnded && fTv) fTv->EndEdit(true);
 }
 
@@ -949,8 +938,7 @@ static void haikuTableFillStatus(const BMessage* msg, char status[11])
   if (mods & B_COMMAND_KEY)             status[6] = 'A';
 }
 
-/* Window-level mouse filter: title=SORT_CB, outline=CLICK_CB, MOUSE_MOVED keeps
- * the trail overlay aligned while CLV does its offscreen-buffered column resize. */
+/* MOUSE_MOVED keeps the trail overlay aligned while CLV does its offscreen column resize. */
 class IupHaikuTableSortFilter : public BMessageFilter
 {
 public:
@@ -1040,7 +1028,6 @@ public:
       return B_DISPATCH_MESSAGE;
     }
 
-    /* Outline area: find row by Y and column by X, update focus + fire CLICK_CB. */
     if (col) fTv->SetFocusCol(col->LogicalFieldNum() + 1);
 
     BView* outline = fTv->ScrollView();
@@ -1098,7 +1085,6 @@ public:
   IupHaikuTableColumn(Ihandle* ih, const char* title, float width, alignment align)
     : BTitledColumn(title ? title : "", width, 40.0f, 4096.0f, align), fIhandle(ih) {}
 
-  /* Scales icons to row height when FITIMAGE is on. */
   void IconDrawSize(BBitmap* icon, float row_h, float* w, float* h) const
   {
     float img_w = icon->Bounds().Width() + 1.0f;
@@ -1801,8 +1787,7 @@ static void haikuTableUnMapMethod(Ihandle* ih)
 
     tv->SetIhandle(NULL);
 
-    /* Drain rows + columns we own. BColumnListView::Clear() does NOT delete
-     * rows (header note); RemoveColumn / RemoveRow leave items to caller. */
+    /* BColumnListView::Clear() does NOT delete rows; RemoveColumn / RemoveRow leave items to the caller. */
     while (tv->CountRows(NULL) > 0)
     {
       BRow* r = const_cast<BRow*>(tv->RowAt(0, NULL));
@@ -1821,7 +1806,6 @@ static void haikuTableUnMapMethod(Ihandle* ih)
   iupdrvBaseUnMapMethod(ih);
 }
 
-/* Setter for BGCOLOR/FGCOLOR/FONT: store in core hash, redraw; DrawField does the lookup. */
 static int haikuTableSetCellRedrawAttrib(Ihandle* ih, int /*lin*/, int /*col*/, const char* /*value*/)
 {
   IupHaikuTableView* tv = haikuTableGetView(ih);

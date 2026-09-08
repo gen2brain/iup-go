@@ -159,7 +159,6 @@ static char* gtk4FileCheckExt(Ihandle* ih, const char* filename)
   return (char*)filename;
 }
 
-/* Context for blocking async dialog */
 typedef struct {
   Ihandle* ih;
   GFile* result_file;
@@ -265,7 +264,6 @@ static GtkWindow* gtk4FileDlgGetParentWindow(Ihandle* ih)
       return (GtkWindow*)dlg->handle;
   }
 
-  /* Fallback: find first visible IUP dialog */
   {
     Ihandle* dlg_iter = iupDlgListFirst();
     while (dlg_iter)
@@ -279,7 +277,6 @@ static GtkWindow* gtk4FileDlgGetParentWindow(Ihandle* ih)
   return NULL;
 }
 
-/* Default mode implementation using GtkFileDialog (GTK 4.10+) */
 static int gtk4FileDlgPopupDefault(Ihandle* ih, int x, int y)
 {
   GtkWindow* parent;

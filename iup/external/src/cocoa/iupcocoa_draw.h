@@ -17,15 +17,13 @@ struct _IdrawCanvas
   Ihandle* ih;
   NSView* canvasView;
 
-  CGContextRef cgContext;         /* bitmap buffer context (drawing target) */
+  CGContextRef cgContext;
   int release_context;
-  CGFloat w, h;                   /* canvas size */
+  CGFloat w, h;
 
-  /* clip region */
   CGFloat clip_x1, clip_y1, clip_x2, clip_y2;
   int clip_state;                 /* 0=no clip, 1=clip active */
 
-  /* deferred focus rect drawing */
   int draw_focus;
   CGFloat focus_x1, focus_y1, focus_x2, focus_y2;
 };

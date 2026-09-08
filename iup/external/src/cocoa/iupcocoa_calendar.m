@@ -108,7 +108,6 @@ static void cocoaCalendarLayoutUpdateMethod(Ihandle* ih)
   NSSize intrinsic_size = [date_picker intrinsicContentSize];
   NSRect child_rect;
 
-  /* Check if parent is a popover - if so, center the calendar */
   Ihandle* ih_parent = ih->parent;
   int is_in_popover = (ih_parent && ih_parent->iclass &&
                        ih_parent->iclass->name &&
@@ -116,7 +115,6 @@ static void cocoaCalendarLayoutUpdateMethod(Ihandle* ih)
 
   if (is_in_popover)
   {
-    /* Center the date picker within the popover */
     CGFloat x = (parent_bounds.size.width - intrinsic_size.width) / 2;
     CGFloat y = (parent_bounds.size.height - intrinsic_size.height) / 2;
     child_rect = NSMakeRect(x, y, intrinsic_size.width, intrinsic_size.height);
@@ -125,7 +123,6 @@ static void cocoaCalendarLayoutUpdateMethod(Ihandle* ih)
   }
   else
   {
-    /* Normal layout, use IUP computed position and size */
     if ([parent_view isFlipped])
     {
       child_rect = NSMakeRect(ih->x, ih->y, ih->currentwidth, ih->currentheight);
@@ -137,7 +134,6 @@ static void cocoaCalendarLayoutUpdateMethod(Ihandle* ih)
 
     [date_picker setFrame:child_rect];
 
-    /* If frame is larger than intrinsic size, scale content */
     if (child_rect.size.width > intrinsic_size.width || child_rect.size.height > intrinsic_size.height)
     {
       [date_picker setBoundsSize:intrinsic_size];

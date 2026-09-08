@@ -47,7 +47,6 @@ IUP_DRV_API UIWindow* iupCocoaTouchFindCurrentWindow(void);
 IUP_DRV_API UIViewController* iupCocoaTouchFindCurrentRootViewController(void);
 IUP_DRV_API UIViewController* iupCocoaTouchFindTopPresentedViewController(void);
 
-/* true while no IupDialog has replaced the launch placeholder rootVC */
 IUP_DRV_API bool iupCocoaTouchIsLaunchPlaceholder(UIViewController* vc);
 
 /* client-area Fixed of a mapped Dialog, nil otherwise */
@@ -80,7 +79,6 @@ IUP_DRV_API void iupCocoaTouchRefreshAllThemes(void);
 IUP_DRV_API NSString* iupCocoaTouchDragTypeToUTI(const char* iup_type);
 IUP_DRV_API NSArray<NSString*>* iupCocoaTouchDragParseTypes(const char* csv);
 
-/* single Light/Dark flip entry; called from IupViewController.traitCollectionDidChange: */
 IUP_DRV_API void iupCocoaTouchHandleTraitFlip(void);
 
 #endif /* __OBJC__ */
@@ -91,7 +89,6 @@ IUP_DRV_API int iupCocoaTouchSetBgColorAttrib(Ihandle* ih, const char* value);
 /* IupAppDelegate flips this once ENTRY_POINT returns; before then IupMainLoop returns IUP_OPENED */
 IUP_DRV_API void iupCocoaTouchMarkEntryFinished(void);
 
-/* Apple-documented public UTIs */
 #define IUPCOCOATOUCH_UTI_PDF        @"com.adobe.pdf"
 #define IUPCOCOATOUCH_UTI_PNG        @"public.png"
 #define IUPCOCOATOUCH_UTI_JPEG       @"public.jpeg"

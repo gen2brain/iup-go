@@ -18,7 +18,6 @@
 
 IUPJNI_DECLARE_CLASS_STATIC(IupHelpHelper);
 
-/* True if the string starts with an RFC-3986 scheme followed by ':'. */
 static int androidHelpLooksLikeUrl(const char* s)
 {
   for (const char* p = s; *p; p++)
@@ -74,7 +73,6 @@ int IupExecute(const char* filename, const char* parameters)
 
   if (androidHelpLooksLikeUrl(filename))
   {
-    /* Tack parameters on as a query suffix. */
     if (parameters && *parameters)
     {
       size_t len = strlen(filename) + strlen(parameters) + 2;
@@ -89,7 +87,6 @@ int IupExecute(const char* filename, const char* parameters)
     return androidHelpOpenUrl(filename);
   }
 
-  /* Otherwise treat as a package name. */
   return androidHelpLaunchPackage(filename);
 }
 

@@ -34,7 +34,6 @@ static void gtk4PopoverAnchorDestroyCb(GtkWidget* anchor, Ihandle* ih)
 {
   (void)anchor;
 
-  /* Anchor is being destroyed, unparent the popover first */
   if (ih->handle && GTK_IS_WIDGET(ih->handle))
   {
     gtk_widget_unparent((GtkWidget*)ih->handle);
@@ -52,7 +51,6 @@ static int gtk4PopoverSetVisibleAttrib(Ihandle* ih, const char* value)
     if (!anchor || !anchor->handle)
       return 0;
 
-    /* Map if not yet mapped */
     if (!ih->handle)
     {
       if (IupMap(ih) == IUP_ERROR)
@@ -61,7 +59,6 @@ static int gtk4PopoverSetVisibleAttrib(Ihandle* ih, const char* value)
 
     popover = (GtkPopover*)ih->handle;
 
-    /* Set arrow visibility */
     {
       int show_arrow = iupAttribGetBoolean(ih, "ARROW");
       gtk_popover_set_has_arrow(popover, show_arrow);
@@ -74,7 +71,6 @@ static int gtk4PopoverSetVisibleAttrib(Ihandle* ih, const char* value)
       iupLayoutUpdate(ih->firstchild);
     }
 
-    /* Set position based on POSITION attribute */
     {
       int position = iupPopoverGetPosition(ih);
       GtkPositionType gtk_pos;
@@ -233,16 +229,13 @@ static int gtk4PopoverMapMethod(Ihandle* ih)
 
   ih->handle = popover;
 
-  /* Set autohide before parenting */
   {
     int autohide = iupAttribGetBoolean(ih, "AUTOHIDE");
     gtk_popover_set_autohide(GTK_POPOVER(popover), autohide);
   }
 
-  /* Parent to anchor, required before children can be mapped */
   gtk_widget_set_parent(popover, (GtkWidget*)anchor->handle);
 
-  /* Create inner container for IUP children */
   inner_parent = iupgtk4NativeContainerNew();
   if (!inner_parent)
   {
@@ -254,7 +247,6 @@ static int gtk4PopoverMapMethod(Ihandle* ih)
   gtk_popover_set_child(GTK_POPOVER(popover), inner_parent);
   iupAttribSet(ih, "_IUP_GTK4_INNER_PARENT", (char*)inner_parent);
 
-  /* Connect closed signal */
   g_signal_connect(G_OBJECT(popover), "closed", G_CALLBACK(gtk4PopoverClosedCb), ih);
 
   /* Connect to anchor's destroy signal to unparent popover before anchor is finalized */
@@ -268,7 +260,6 @@ static void gtk4PopoverUnMapMethod(Ihandle* ih)
   GtkWidget* popover = (GtkWidget*)ih->handle;
   Ihandle* anchor = (Ihandle*)iupAttribGet(ih, "_IUP_POPOVER_ANCHOR");
 
-  /* Disconnect from anchor's destroy signal */
   if (anchor && anchor->handle && GTK_IS_WIDGET(anchor->handle))
     g_signal_handlers_disconnect_by_func(anchor->handle, gtk4PopoverAnchorDestroyCb, ih);
 

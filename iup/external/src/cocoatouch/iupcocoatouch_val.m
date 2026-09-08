@@ -292,7 +292,6 @@ static int cocoaTouchValMapMethod(Ihandle* ih)
 
 	[slider applyOrientationTransform];
 
-	/* seed native min/max/value from ih->data after MIN/MAX/VALUE replay */
 	cocoaTouchValSyncFromData(ih);
 
 	IupCocoaTouchValTarget* target = [[IupCocoaTouchValTarget alloc] init];

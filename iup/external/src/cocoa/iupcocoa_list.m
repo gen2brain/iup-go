@@ -24,8 +24,7 @@
 #include "iupcocoa_drv.h"
 
 
-/* Pasteboard type for internal list reordering (SHOWDRAGDROP=YES). */
-/* It must be a valid UTI string, preferably in reverse-DNS format. */
+/* pasteboard type for internal list reordering (SHOWDRAGDROP=YES) */
 static NSPasteboardType const IupListPasteboardType = @"io.github.gen2brain.iupgo.list";
 
 /* Pasteboard type for cross-list DND (DRAGDROPLIST=YES), carrying Ihandle pointer. */
@@ -42,10 +41,8 @@ static const void* IUP_COCOA_LIST_POPUPBUTTON_RECEIVER_OBJ_KEY = @"IUP_COCOA_LIS
 static const void* IUP_COCOA_LIST_DELEGATE_OBJ_KEY = @"IUP_COCOA_LIST_DELEGATE_OBJ_KEY";
 static const void* IUP_COCOA_LIST_TABLEVIEW_RECEIVER_OBJ_KEY = @"IUP_COCOA_LIST_TABLEVIEW_RECEIVER_OBJ_KEY";
 
-/* Shared row height for lists */
 static CGFloat s_cocoa_measured_row_height = -1.0;
 
-/* Forward declaration */
 static char* cocoaListGetValueAttrib(Ihandle* ih);
 
 @interface IupCocoaListTableViewReceiver : NSObject <NSTableViewDelegate, NSTableViewDataSource>
@@ -263,7 +260,6 @@ static NSFont* cocoaGetNativeFont(Ihandle* ih)
 
   if (!iup_font)
   {
-    /* Fallback to DEFAULTFONT */
     const char* default_font = IupGetGlobal("DEFAULTFONT");
     iup_font = iupcocoaFindFont(default_font);
   }
@@ -295,7 +291,6 @@ static void cocoaListCaretNotification(NSNotification* notification, Ihandle* ih
 
 static CGFloat cocoaListGetScrollbarSize(void)
 {
-  /* Get the width of a standard vertical scrollbar */
   NSScroller* scroller = [[NSScroller alloc] initWithFrame:NSMakeRect(0, 0, 100, 100)];
   [scroller setScrollerStyle:NSScrollerStyleLegacy];
 #ifdef GNUSTEP
@@ -337,8 +332,7 @@ static void cocoaListUpdateDropExpand(Ihandle* ih)
   }
   else if (sub_type == IUPCOCOALISTSUBTYPE_EDITBOXDROPDOWN)
   {
-    /* NSComboBox dropdown width is controlled by the combo box frame width.
-       This is a limitation of the Cocoa NSComboBox API. */
+    /* the NSComboBox dropdown width follows the combo box frame width */
   }
 }
 
@@ -460,7 +454,6 @@ static void cocoaListCallCaretCbForTextView(Ihandle* ih, NSTextView* textView)
   if (ih)
   {
     int mac_key_code = [event keyCode];
-    /* iupcocoaKeyEvent will internally bubble the event up to the dialog if needed. */
     BOOL handled = iupcocoaKeyEvent(ih, event, mac_key_code, true);
 
     if (!handled)
@@ -506,8 +499,7 @@ static void cocoaListCallCaretCbForTextView(Ihandle* ih, NSTextView* textView)
 
 @end
 
-/* Mouse button helper for list controls.
-   IUP_DEFAULT propagates the event so the widget handles selection normally, IUP_IGNORE consumes it. */
+/* IUP_DEFAULT lets the widget handle selection normally, IUP_IGNORE consumes the event */
 static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* represented_view, bool is_pressed)
 {
   IFniiiis cb = (IFniiiis)IupGetCallback(ih, "BUTTON_CB");
@@ -546,8 +538,7 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
 }
 
 #ifdef GNUSTEP
-/* Replaces NSStackView for EDITBOX on GNUstep, NSStackView's _layoutViewsWithOrientation
-   mutates its own frame and never sizes children, so subviews stay at NSZeroRect. */
+/* NSStackView never sizes its children on GNUstep, subviews stay at NSZeroRect */
 @interface IupCocoaListEditBoxContainer : NSView
 @property (nonatomic, retain) NSTextField* topTextField;
 @property (nonatomic, retain) NSScrollView* bottomScrollView;
@@ -795,24 +786,19 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
 
-  /* Check if the user has ever configured the CONTEXTMENU attribute. */
   if (!iupAttribGet(ih, "_IUPCOCOA_CONTEXTMENU_SET"))
   {
-    /* If not, allow the default system menu to appear. */
     return the_menu;
   }
 
-  /* The attribute has been configured. Check its value. */
   Ihandle* menu_ih = (Ihandle*)iupAttribGet(ih, "_COCOA_CONTEXT_MENU_IH");
 
   if(menu_ih && menu_ih->handle)
   {
-    /* A valid custom menu is set; return it. */
     return (NSMenu*)menu_ih->handle;
   }
   else
   {
-    /* The attribute was set to NULL; disable the context menu. */
     return nil;
   }
 }
@@ -859,7 +845,6 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
   if (ih)
   {
     int mac_key_code = [event keyCode];
-    /* iupcocoaKeyEvent will internally bubble the event up to the dialog if needed. */
     BOOL handled = iupcocoaKeyEvent(ih, event, mac_key_code, true);
 
     if (!handled)
@@ -1101,31 +1086,24 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(control, IHANDLE_ASSOCIATED_OBJ_KEY);
   if (!ih) return NO;
 
-  /* Give IUP key handler first chance at any command key (arrows, page up/down, delete, etc.) */
-  /* This allows K_ANY callbacks to intercept any key, not just text input keys */
   NSEvent* current_event = [NSApp currentEvent];
   if (current_event && [current_event type] == NSEventTypeKeyDown)
   {
     int mac_key_code = [current_event keyCode];
 
-    /* First, let the control itself try to handle the key event. */
     BOOL handled = iupcocoaKeyEvent(ih, current_event, mac_key_code, true);
     if (handled)
-      return YES; /* Returning YES prevents the default command. */
+      return YES;
 
-    /* If not handled, allow the parent dialog's K_ANY to intercept it. */
-    /* This is needed because some controls (like NSTextView) consume navigation */
-    /* keys and do not propagate them up the responder chain, preventing the */
-    /* dialog's window-level handler from ever seeing the event. */
+    /* NSTextView consumes navigation keys instead of passing them up the responder chain */
     Ihandle* dialog_ih = IupGetDialog(ih);
     if (dialog_ih && dialog_ih != ih)
     {
       if (iupcocoaKeyEvent(dialog_ih, current_event, mac_key_code, true))
-        return YES; /* Handled by dialog's K_ANY. Prevents default command. */
+        return YES;
     }
   }
 
-  /* If not handled by IUP, apply NC (max length) constraint for non-deletion commands */
   if (ih->data->nc > 0)
   {
     NSString* current_text = [textView string];
@@ -1257,16 +1235,14 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
   self = [super initWithFrame:frameRect];
   if (self)
   {
-    /* Use standard NSImageView via superclass property.
-       It must be set as non-editable so it does not interfere with dragging. */
+    /* non-editable, or it interferes with dragging */
     self.imageView = [[[NSImageView alloc] initWithFrame:NSZeroRect] autorelease];
     [self.imageView setImageFrameStyle:NSImageFrameNone];
     [self.imageView setImageAlignment:NSImageAlignCenter];
     [self.imageView setImageScaling:NSImageScaleProportionallyDown];
     [self.imageView setEditable:NO];
 
-    /* Use custom NSTextField with controlled text insets.
-       It must be non-editable and non-selectable so it does not interfere with dragging. */
+    /* non-editable and non-selectable, or it interferes with dragging */
     NSTextField* textField = [[[IupCocoaListTextField alloc] initWithFrame:NSZeroRect] autorelease];
     [textField setBezeled:NO];
     [textField setDrawsBackground:NO];
@@ -1275,8 +1251,7 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
     [textField setLineBreakMode:NSLineBreakByClipping];
 
 #ifdef GNUSTEP
-    /* Auto Layout on view-based NSTableCellView leaves subviews at zero frame on GNUstep;
-       use frame + autoresizing masks (-layout override does the real work). */
+    /* Auto Layout leaves subviews at zero frame on GNUstep; use frames and autoresizing masks */
     [self.imageView setTranslatesAutoresizingMaskIntoConstraints:YES];
     [self.imageView setAutoresizingMask:NSViewMaxXMargin | NSViewHeightSizable];
     [self addSubview:self.imageView];
@@ -1298,9 +1273,7 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
 }
 
 #ifdef GNUSTEP
-/* Mirrors H:|-padding-[imageView(16)]-4-[textField]-padding-|. All sizes clamped ≥ 0 ,
-   a negative frame triggers an NSView warning and feeds cairo/Opal a zero-determinant CTM
-   that locks it in a permanent error state. */
+/* sizes are clamped to zero; a negative frame feeds Opal a zero-determinant CTM it never recovers from */
 - (void) layout
 {
   NSRect b = [self bounds];
@@ -1327,8 +1300,7 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
   }
 }
 
-/* -[NSTableView viewAtColumn:row:] passes tableView-absolute Y; _drawCellViewRow only
-   zeroes it for newly-added views, so cached cellViews drift off the rowView on redraw. */
+/* cached cellViews keep a tableView-absolute Y and drift off the rowView on redraw */
 - (void) setFrame:(NSRect)frame
 {
   frame = iupcocoaClampRect(frame);
@@ -1386,7 +1358,6 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
     return;
 
 #ifdef GNUSTEP
-  /* Frame-based path, our -layout override reads these ivars. */
   lastPadding = padding;
   lastShowImage = showImage;
   constraintsApplied = YES;
@@ -1478,7 +1449,6 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(table_view, IHANDLE_ASSOCIATED_OBJ_KEY);
 
-  /* Virtual mode: return item_count from ih->data */
   if (ih && ih->data && ih->data->is_virtual)
     return ih->data->item_count;
 
@@ -1492,19 +1462,17 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
   NSString* string_item = nil;
   NSImage* image_item = nil;
 
-  /* Virtual mode: fetch from VALUE_CB and IMAGE_CB */
   if (ih && ih->data && ih->data->is_virtual)
   {
     if (the_row < 0 || the_row >= ih->data->item_count)
       return nil;
 
-    char* text = iupListGetItemValueCb(ih, (int)the_row + 1);  /* 1-based */
+    char* text = iupListGetItemValueCb(ih, (int)the_row + 1);
     string_item = [NSString stringWithUTF8String:(text ? text : "")];
 
-    /* Query IMAGE_CB for the image if SHOWIMAGE is enabled */
     if (ih->data->show_image)
     {
-      char* image_name = iupListGetItemImageCb(ih, (int)the_row + 1);  /* 1-based */
+      char* image_name = iupListGetItemImageCb(ih, (int)the_row + 1);
       if (image_name)
       {
         void* handle = iupImageGetImage(image_name, ih, 0, NULL);
@@ -1570,7 +1538,6 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
 
   if (ih && ih->data->show_image && image_item)
   {
-    /* Set scaling mode based on FITIMAGE attribute */
     if (ih->data->fit_image)
       [[cell_view imageView] setImageScaling:NSImageScaleProportionallyDown];
     else
@@ -1743,7 +1710,6 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
   return YES;
 }
 
-/* Drag Source */
 - (id<NSPasteboardWriting>)tableView:(NSTableView *)tableView pasteboardWriterForRow:(NSInteger)row
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(tableView, IHANDLE_ASSOCIATED_OBJ_KEY);
@@ -1816,7 +1782,6 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
   return pboardItem;
 }
 
-/* Drop Target - VALIDATION */
 - (NSDragOperation)tableView:(NSTableView *)tableView validateDrop:(id <NSDraggingInfo>)info proposedRow:(NSInteger)row proposedDropOperation:(NSTableViewDropOperation)dropOperation
 {
   if (dropOperation != NSTableViewDropAbove)
@@ -1882,7 +1847,6 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
   return NSDragOperationNone;
 }
 
-/* Drop Target - ACCEPTANCE */
 - (BOOL)tableView:(NSTableView *)tableView acceptDrop:(id <NSDraggingInfo>)info row:(NSInteger)row dropOperation:(NSTableViewDropOperation)dropOperation
 {
   NSPasteboard *pboard = [info draggingPasteboard];
@@ -2161,19 +2125,16 @@ IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
 
         if (popup_decor_w == -1)
         {
-          /* Measure NSPopUpButton decorations dynamically */
           NSPopUpButton* tempButton = [[NSPopUpButton alloc] initWithFrame:NSZeroRect pullsDown:NO];
           NSFont* font = cocoaGetNativeFont(ih);
           if (font)
             [tempButton setFont:font];
 
-          /* Add a test item to measure with content */
           [tempButton addItemWithTitle:@"WWWWWWWWWW"];
 
           NSSize intrinsic_size = [tempButton intrinsicContentSize];
           popup_decor_h = (int)lroundf(intrinsic_size.height);
 
-          /* Measure the width decoration: intrinsic width for "WWWWWWWWWW" minus text width. */
           int text_width = iupdrvFontGetStringWidth(ih, "WWWWWWWWWW");
           int sb_size = iupdrvGetScrollbarSize();
           popup_decor_w = (int)lroundf(intrinsic_size.width) - text_width - sb_size;
@@ -2208,19 +2169,16 @@ IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
 
         if (combo_decor_w == -1)
         {
-          /* Measure NSComboBox decorations dynamically */
           NSComboBox* tempComboBox = [[NSComboBox alloc] initWithFrame:NSZeroRect];
           NSFont* font = cocoaGetNativeFont(ih);
           if (font)
             [tempComboBox setFont:font];
 
-          /* Set test string value to measure with content */
           [tempComboBox setStringValue:@"WWWWWWWWWW"];
 
           NSSize intrinsic_size = [tempComboBox intrinsicContentSize];
           combo_decor_h = (int)lroundf(intrinsic_size.height);
 
-          /* Measure the width decoration: intrinsic width minus text width. */
           int text_width = iupdrvFontGetStringWidth(ih, "WWWWWWWWWW");
           int sb_size = iupdrvGetScrollbarSize();
           combo_decor_w = (int)lroundf(intrinsic_size.width) - text_width - sb_size;
@@ -2251,14 +2209,11 @@ IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
     case IUPCOCOALISTSUBTYPE_MULTIPLELIST:
     case IUPCOCOALISTSUBTYPE_SINGLELIST:
       {
-        /* Measure NSScrollView borders dynamically.
-         * We measure the actual border by comparing widget size with content size. */
         static int cocoa_scroll_border_x = -1;
         static int cocoa_scroll_border_y = -1;
 
         if (cocoa_scroll_border_x == -1)
         {
-          /* Create temporary scroll view to measure borders */
           NSScrollView* temp_scroll = [[NSScrollView alloc] initWithFrame:NSMakeRect(0, 0, 200, 100)];
           [temp_scroll setBorderType:NSBezelBorder];
           [temp_scroll setHasVerticalScroller:NO];
@@ -2273,11 +2228,10 @@ IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
           [temp_scroll release];
         }
 
-        /* Add measured borders */
         *x += cocoa_scroll_border_x;
         *y += cocoa_scroll_border_y;
 
-        /* In Cocoa, scrollbars overlay the content (unlike GTK/Windows where they add to width). */
+        /* scrollbars overlay the content, they add no width */
         if (ih->data->sb)
         {
           int sb_size = iupdrvGetScrollbarSize();
@@ -2290,17 +2244,14 @@ IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
 
           if (visiblelines > 0)
           {
-            /* For EDITBOX with VISIBLELINES: VISIBLELINES includes the entry line.
-             * We need to subtract the content of (visiblelines-1) items and add back the text entry height instead. */
+            /* VISIBLELINES includes the entry line */
             int char_width, char_height;
             iupdrvFontGetCharSize(ih, &char_width, &char_height);
             int item_height = char_height;
             iupdrvListAddItemSpace(ih, &item_height);
 
-            /* Subtract one item height (since visiblelines includes the entry) */
             *y -= item_height;
 
-            /* Add text entry natural height (measured from NSTextField) */
             NSTextField* temp_text = [[NSTextField alloc] initWithFrame:NSZeroRect];
 #ifdef GNUSTEP
             int text_height = iupcocoaGnustepIntrinsicHeight(temp_text, 22);
@@ -2312,7 +2263,6 @@ IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
             *y += text_height;
           }
 
-          /* Add NSStackView spacing (3px between text and list) */
           *y += 2*3;
         }
 
@@ -2355,8 +2305,6 @@ IUP_SDK_API int iupdrvListGetCount(Ihandle* ih)
             return 0;
           }
 
-          /* Query the data model directly to ensure the count is always accurate, */
-          /* avoiding potential timing issues with NSTableView's numberOfRows property after a reload. */
           IupCocoaListTableViewReceiver* list_receiver = objc_getAssociatedObject(table_view, IUP_COCOA_LIST_TABLEVIEW_RECEIVER_OBJ_KEY);
           if (list_receiver)
           {
@@ -3018,9 +2966,9 @@ static int cocoaListSetShowDragDropAttrib(Ihandle* ih, const char* value)
   if (ih->handle)
   {
     cocoaListUpdateDragDrop(ih);
-    return 0; /* Applied */
+    return 0;
   }
-  return 1; /* Will be updated in Map */
+  return 1;
 }
 
 static int cocoaListSetShowDropdownAttrib(Ihandle* ih, const char* value)
@@ -3037,9 +2985,7 @@ static int cocoaListSetShowDropdownAttrib(Ihandle* ih, const char* value)
   }
   else if (sub_type == IUPCOCOALISTSUBTYPE_EDITBOXDROPDOWN)
   {
-    /* NSComboBox does not provide a public API to programmatically show or hide
-       the dropdown menu. This is a limitation of NSComboBox on macOS.
-       The SHOWDROPDOWN attribute is only supported for DROPDOWN without EDITBOX. */
+    /* NSComboBox has no API to show the dropdown, so SHOWDROPDOWN works only without EDITBOX */
   }
 
   return 0;
@@ -3634,8 +3580,6 @@ static int cocoaListSetFilterAttrib(Ihandle* ih, const char* value)
   if (!ih->data->has_editbox)
     return 0;
 
-  /* Store filter for use in controlTextDidChange: delegate method.
-     The actual filtering is applied in the text change handler. */
   iupAttribSet(ih, "FILTER", value);
   return 1;
 }
@@ -3854,12 +3798,9 @@ static int cocoaListMapMethod(Ihandle* ih)
         [[scroll_view.widthAnchor constraintEqualToAnchor:stack_view.widthAnchor] setActive:YES];
 #endif
 
-        /* Set height constraint for scroll_view based on VISIBLELINES */
         int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
         if (visiblelines > 0)
         {
-          /* Calculate scroll view height: (visiblelines-1) items worth of space.
-           * VISIBLELINES includes the text entry, so subtract 1 for list items. */
           int char_width, char_height;
           iupdrvFontGetCharSize(ih, &char_width, &char_height);
           int item_height = char_height;
@@ -3931,7 +3872,6 @@ static int cocoaListMapMethod(Ihandle* ih)
         else
           [table_view setAllowsMultipleSelection:NO];
 
-        /* Virtual mode: set fixed row height for better performance */
         if (ih->data->is_virtual)
         {
           int char_height;
@@ -3989,7 +3929,6 @@ static int cocoaListMapMethod(Ihandle* ih)
   if (iupAttribGetBoolean(ih, "SORT"))
     iupAttribSet(ih, "_IUPLIST_SORT_ENABLED", "1");
 
-  /* Don't populate items in virtual mode */
   if (!ih->data->is_virtual)
     iupListSetInitialItems(ih);
 
@@ -4007,7 +3946,6 @@ static int cocoaListMapMethod(Ihandle* ih)
   {
     cocoaListUpdateColumnWidth(ih);
 
-    /* Disable drag-drop in virtual mode */
     if (!ih->data->is_virtual)
       cocoaListUpdateDragDrop(ih);
 

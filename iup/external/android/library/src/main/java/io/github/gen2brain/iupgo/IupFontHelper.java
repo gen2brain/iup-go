@@ -198,12 +198,10 @@ public final class IupFontHelper
     }
 
 
-    /* Plain text paint for non-button widgets. */
     private static TextPaint sDefaultPaint;
 
     private static TextPaint resolveTextPaint(Object nativeObject, Typeface typeface)
     {
-        /* NestedScrollView (multi-line) and TextInputLayout (single-line) both stash the inner EditText as tag. */
         if (nativeObject instanceof androidx.core.widget.NestedScrollView)
         {
             Object tag = ((androidx.core.widget.NestedScrollView)nativeObject).getTag();
@@ -348,7 +346,6 @@ public final class IupFontHelper
         }
         catch (Throwable t)
         {
-            /* fall through to fallback */
         }
         if (families.isEmpty())
         {

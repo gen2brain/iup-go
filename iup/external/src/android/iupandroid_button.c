@@ -34,7 +34,6 @@ IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int* x, int* y)
 {
   int bw = 0, bh = 0;
 
-  /* No user PADDING: widget keeps theme padding, reserve it as border. */
   if (!iupAttribGet(ih, "PADDING"))
     iupAndroid_GetButtonBorderSize(&bw, &bh);
 
@@ -80,7 +79,7 @@ static int androidButtonSetTitleAttrib(Ihandle* ih, const char* value)
 
 static int androidButtonSetMarkupAttrib(Ihandle* ih, const char* value)
 {
-  /* Update hash first so the title setter reads the new MARKUP value, then re-render. */
+  /* Update hash first so the title setter reads the new MARKUP value. */
   iupAttribSetStr(ih, "MARKUP", value);
   if (ih->handle)
   {
@@ -100,7 +99,6 @@ static int androidButtonSetPaddingAttrib(Ihandle* ih, const char* value)
   else
   {
     iupStrToIntInt(value, &ih->data->horiz_padding, &ih->data->vert_padding, 'x');
-    /* Logical dp → HW. */
     ih->data->horiz_padding = iupdrvScaleNaturalPx(ih->data->horiz_padding);
     ih->data->vert_padding  = iupdrvScaleNaturalPx(ih->data->vert_padding);
   }
@@ -289,7 +287,6 @@ static int androidButtonMapMethod(Ihandle* ih)
   ih->handle = (jobject)((*jni_env)->NewGlobalRef(jni_env, widget));
   (*jni_env)->DeleteLocalRef(jni_env, widget);
 
-  /* Record the final button type so the core's natural-size calc matches. */
   const char* image = iupAttribGet(ih, "IMAGE");
   const char* title = iupAttribGet(ih, "TITLE");
   if (image && *image)
@@ -303,7 +300,6 @@ static int androidButtonMapMethod(Ihandle* ih)
   iupAndroid_AddWidgetToParent(jni_env, ih);
   androidButtonUpdateChrome(ih);
 
-  /* Replay PADDING only if user set it; default keeps Material3 theme padding. */
   if (iupAttribGet(ih, "PADDING"))
   {
     jclass jc = androidButtonFindHelper(jni_env);
@@ -332,7 +328,6 @@ IUP_SDK_API void iupdrvButtonInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "PADDING", iupButtonGetPaddingAttrib, androidButtonSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "ALIGNMENT", NULL, androidButtonSetAlignmentAttrib, IUPAF_SAMEASSYSTEM, "ACENTER:ACENTER", IUPAF_NO_INHERIT);
 
-  /* Material3's primary tint wins unless explicitly overridden. */
   iupClassRegisterAttribute(ic, "FGCOLOR", NULL, androidButtonSetFgColorAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, androidButtonSetBgColorAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 

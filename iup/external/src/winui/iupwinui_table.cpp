@@ -600,7 +600,6 @@ static int winuiTableCalculateColumnWidth(Ihandle* ih, int col_index)
     image_extra = charheight + 4;
   }
 
-  /* Measure column title */
   if (aux->col_titles && aux->col_titles[col_index])
   {
     int title_width = iupdrvFontGetStringWidth(ih, aux->col_titles[col_index]);
@@ -611,7 +610,6 @@ static int winuiTableCalculateColumnWidth(Ihandle* ih, int col_index)
       max_width = title_width;
   }
 
-  /* Measure cell content */
   for (int lin = 1; lin <= max_rows_to_check; lin++)
   {
     int cell_width = 0;

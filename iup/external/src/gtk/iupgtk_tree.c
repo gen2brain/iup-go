@@ -536,7 +536,6 @@ static void gtkTreeSetFocus(Ihandle* ih, GtkTreePath* pathFocus, GtkTreeIter* it
   if (gtkTreeIsNodeSelected(model, iterItemFocus))
     old_select = 1;
 
-  /* Need to pass the column when starting edit mode */
   if (edit)
     column = (GtkTreeViewColumn*)iupAttribGet(ih, "_IUPGTK_COLUMN");
 
@@ -1177,7 +1176,6 @@ static GdkPixbuf* gtkTreeGetThemeIcon(Ihandle* ih, const char* icon_name, int si
   GdkPixbuf* pixbuf = NULL;
 
 #if GTK_CHECK_VERSION(3, 0, 0)
-  /* GTK 3: Use icon theme */
   GtkIconTheme* icon_theme = gtk_icon_theme_get_default();
   GError* error = NULL;
 
@@ -1190,7 +1188,6 @@ static GdkPixbuf* gtkTreeGetThemeIcon(Ihandle* ih, const char* icon_name, int si
   }
   (void)ih;
 #else
-  /* GTK 2: Use stock icons - convert icon name to stock id */
   const char* stock_id = NULL;
 
   if (strcmp(icon_name, "text-x-generic") == 0)
@@ -3244,7 +3241,6 @@ static void gtkTreeUnMapMethod(Ihandle* ih)
 
   ih->data->node_count = 0;
 
-  /* Free themed icons if they were created */
   pixbuf = (GdkPixbuf*)iupAttribGet(ih, "_IUPGTK_THEMED_LEAF");
   if (pixbuf)
     g_object_unref(pixbuf);

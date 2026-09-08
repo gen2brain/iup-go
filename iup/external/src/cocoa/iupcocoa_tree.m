@@ -41,8 +41,7 @@
 }
 
 #ifdef GNUSTEP
-/* Frame-based layout replacing Auto Layout on GNUstep. Mirrors the Apple constraint
-   layout, vertically centered. */
+/* frame-based layout replacing Auto Layout on GNUstep, vertically centered */
 - (void) layout
 {
   NSRect b = [self bounds];
@@ -62,8 +61,7 @@
   }
 }
 
-/* GNUstep NSView -layout doesn't fire without Auto Layout; drive it from setFrame.
-   Also clamp Y=0 to undo tableView-absolute Y leaking through on cached cellViews. */
+/* NSView -layout never fires without Auto Layout on GNUstep; drive it from setFrame and clamp Y to 0 */
 - (void) setFrame:(NSRect)frame
 {
   frame = iupcocoaClampRect(frame);
@@ -172,7 +170,6 @@ static NSOutlineView* cocoaTreeGetOutlineView(Ihandle* ih)
   return outline_view;
 }
 
-/* Custom row view to handle HLCOLOR attribute for selection */
 @interface IupCocoaTreeRowView : NSTableRowView
 @property(nonatomic, assign) Ihandle* ih;
 @property(nonatomic, assign) BOOL iupFocused;
@@ -212,7 +209,6 @@ static NSOutlineView* cocoaTreeGetOutlineView(Ihandle* ih)
       }
     }
   }
-  /* Fallback to default selection drawing if HLCOLOR is not set or ih is nil */
   [super drawSelectionInRect:dirtyRect];
 }
 @end
@@ -265,7 +261,7 @@ static NSOutlineView* cocoaTreeGetOutlineView(Ihandle* ih)
   NSImage* collapsedImage;
   NSColor* textColor;
   IupCocoaFont* font;
-  IupCocoaTreeToggleReceiver* toggleReceiver; /* For TOGGLE_CB callbacks. */
+  IupCocoaTreeToggleReceiver* toggleReceiver;
 }
 
 @property(nonatomic, assign) int kind;
@@ -285,7 +281,6 @@ static NSOutlineView* cocoaTreeGetOutlineView(Ihandle* ih)
 
 @end
 
-/* Forward declaration needed */
 static void cocoaTreeReloadItem(IupCocoaTreeItem* tree_item, NSOutlineView* outline_view);
 static void cocoaTreeSetFocus(Ihandle* ih, int id);
 
@@ -417,9 +412,7 @@ static void cocoaTreeSetFocus(Ihandle* ih, int id);
 }
 
 #ifdef GNUSTEP
-/* GNUstep -[NSOutlineView setDelegate:] overrides NSTableView's version without calling super,
-   so the _viewBased probe never runs, the outline falls back to cell-based drawing (empty
-   rows). Force YES; our delegate always implements outlineView:viewForTableColumn:item:. */
+/* GNUstep's -[NSOutlineView setDelegate:] skips the _viewBased probe, so force view-based drawing */
 - (void) setDelegate:(id)anObject
 {
   [super setDelegate:anObject];
@@ -436,25 +429,20 @@ static void cocoaTreeSetFocus(Ihandle* ih, int id);
 
 - (NSMenu *)menuForEvent:(NSEvent *)event
 {
-  /* Check if CONTEXTMENU attribute has been configured by the user */
   if (!iupAttribGet(self.ih, "_IUPCOCOA_CONTEXTMENU_SET"))
   {
-    /* Allow default system menu */
     return [super menuForEvent:event];
   }
 
-  /* Retrieve the custom menu */
   Ihandle* menu_ih = (Ihandle*)iupAttribGet(self.ih, "_COCOA_CONTEXT_MENU_IH");
   if (menu_ih && menu_ih->handle)
   {
     return (NSMenu*)menu_ih->handle;
   }
 
-  /* CONTEXTMENU was explicitly set to NULL, disable menu */
   return nil;
 }
 
-/* Intercept right-click to handle RIGHTCLICK_CB */
 - (void) rightMouseDown:(NSEvent *)event
 {
   NSPoint point = [self convertPoint:[event locationInWindow] fromView:nil];
@@ -468,7 +456,7 @@ static void cocoaTreeSetFocus(Ihandle* ih, int id);
       IupCocoaTreeItem *item = [self itemAtRow:row];
       int item_id = iupTreeFindNodeId(self.ih, (InodeHandle*)item);
       cb(self.ih, item_id);
-      return; /* Don't call super to prevent context menu */
+      return;
     }
   }
 
@@ -527,7 +515,6 @@ static void cocoaTreeSetFocus(Ihandle* ih, int id);
 {
   Ihandle* ih = [self ih];
 
-  /* Handle Enter key for EXECUTELEAF/BRANCH callbacks */
   NSString *chars = [the_event characters];
   if ([chars length] > 0)
   {
@@ -538,7 +525,7 @@ static void cocoaTreeSetFocus(Ihandle* ih, int id);
       if ([delegate respondsToSelector:@selector(iupCocoaTreeDoubleClickAction:)])
       {
         [delegate performSelector:@selector(iupCocoaTreeDoubleClickAction:) withObject:self];
-        return; /* Consume event */
+        return;
       }
     }
   }
@@ -675,7 +662,6 @@ static void cocoaTreeSetFocus(Ihandle* ih, int id);
     return (NSMenu*)menu_ih->handle;
   }
 
-  /* CONTEXTMENU was explicitly set to NULL, disable menu */
   return nil;
 }
 
@@ -700,7 +686,6 @@ static void cocoaTreeSetFocus(Ihandle* ih, int id);
   NSString* oldTitle = [item title];
   NSString* newTitle = [self stringValue];
 
-  /* No change, nothing to do */
   if ([oldTitle isEqualToString:newTitle])
     return;
 
@@ -710,13 +695,11 @@ static void cocoaTreeSetFocus(Ihandle* ih, int id);
     int ret = cb(ih, iupTreeFindNodeId(ih, (InodeHandle*)item), (char*)[newTitle UTF8String]);
     if (ret == IUP_IGNORE)
     {
-      /* Revert to old title */
       [self setStringValue:oldTitle];
       return;
     }
   }
 
-  /* Update the title */
   [item setTitle:newTitle];
 }
 
@@ -940,7 +923,6 @@ static NSInteger Helper_FindFlatIndexofTreeItemInOutlineView(IupCocoaTreeDelegat
     NSMutableArray* children_array = [tree_item_parent childrenArray];
     NSUInteger prev_index = [children_array indexOfObject:tree_item_prev];
 
-    /* Always insert after the sibling */
     NSUInteger target_index = prev_index + 1;
 
     if(target_index > [children_array count])
@@ -960,12 +942,10 @@ static NSInteger Helper_FindFlatIndexofTreeItemInOutlineView(IupCocoaTreeDelegat
     NSUInteger target_index;
     if(prev_index != NSNotFound)
     {
-      /* Always insert after the sibling */
       target_index = prev_index + 1;
     }
     else
     {
-      /* Fallback: append if reference node not found */
       target_index = [treeRootTopLevelObjects count];
     }
 
@@ -1097,8 +1077,7 @@ static NSInteger Helper_FindFlatIndexofTreeItemInOutlineView(IupCocoaTreeDelegat
   IupCocoaTreeItem* tree_item = (IupCocoaTreeItem*)the_item;
   NSCAssert([tree_item isKindOfClass:[IupCocoaTreeItem class]], @"Expected IupCocoaTreeItem");
 
-  /* IUP requires explicitly defining nodes as branches, so we can assume all branches */
-  /* are expandable, even if they currently have no children. This allows dropping items into an empty branch. */
+  /* every IUP branch is expandable even with no children, so an empty branch accepts drops */
   if([tree_item kind] == ITREE_BRANCH)
   {
     return YES;
@@ -1165,7 +1144,7 @@ static NSImage* helperGetActiveImageForTreeItem(IupCocoaTreeItem* tree_item, Iup
 {
   Ihandle* ih = [(IupCocoaOutlineView*)outline_view ih];
   IupCocoaTreeItem* tree_item = (IupCocoaTreeItem*)the_item;
-  CGFloat text_height = 17.0; /* Default height */
+  CGFloat text_height = 17.0;
 
   CGFloat image_width = 0.0;
   CGFloat image_height = 0.0;
@@ -1292,7 +1271,6 @@ static NSImage* helperGetActiveImageForTreeItem(IupCocoaTreeItem* tree_item, Iup
       table_cell_view = [[[IupCocoaTreeTableCellView alloc] initWithFrame:NSZeroRect] autorelease];
       [table_cell_view setIdentifier:@"IupCocoaTreeTableCellView"];
 
-      /* Initialize ImageView */
       NSImageView* image_view = [[NSImageView alloc] initWithFrame:NSZeroRect];
       [image_view setImageScaling:NSImageScaleProportionallyUpOrDown];
 #ifdef GNUSTEP
@@ -1305,21 +1283,18 @@ static NSImage* helperGetActiveImageForTreeItem(IupCocoaTreeItem* tree_item, Iup
       [table_cell_view setImageView:image_view];
       [image_view release]; /* Retained by superview and property */
 
-      /* Initialize TextField */
       IupCocoaTreeTextField* text_field = [[IupCocoaTreeTextField alloc] initWithFrame:NSZeroRect];
       [text_field setBezeled:NO];
       [text_field setDrawsBackground:NO];
       [text_field setEditable:NO];
 #ifdef GNUSTEP
-      /* See IupCocoaTreeToggleTableCellView, selectable textField swallows clicks. */
       [text_field setSelectable:NO];
       [text_field setTranslatesAutoresizingMaskIntoConstraints:YES];
       [text_field setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
 #else
-      [text_field setSelectable:YES]; /* Good practice for standard cells */
+      [text_field setSelectable:YES];
       [text_field setTranslatesAutoresizingMaskIntoConstraints:NO];
 
-      /* Increase compression resistance to prevent the text field from collapsing when space is tight. */
       [text_field setContentCompressionResistancePriority:NSLayoutPriorityRequired forOrientation:NSLayoutConstraintOrientationHorizontal];
 #endif
 
@@ -1328,15 +1303,12 @@ static NSImage* helperGetActiveImageForTreeItem(IupCocoaTreeItem* tree_item, Iup
       [text_field release]; /* Retained by superview and property */
 
 #ifndef GNUSTEP
-      /* Center vertically */
       [NSLayoutConstraint constraintWithItem:image_view attribute:NSLayoutAttributeCenterY relatedBy:NSLayoutRelationEqual toItem:table_cell_view attribute:NSLayoutAttributeCenterY multiplier:1.0 constant:0.0].active = YES;
       [NSLayoutConstraint constraintWithItem:text_field attribute:NSLayoutAttributeCenterY relatedBy:NSLayoutRelationEqual toItem:table_cell_view attribute:NSLayoutAttributeCenterY multiplier:1.0 constant:0.0].active = YES;
 
-      /* Set a standard size constraint for the image view (e.g., 16x16). */
       [NSLayoutConstraint constraintWithItem:image_view attribute:NSLayoutAttributeWidth relatedBy:NSLayoutRelationEqual toItem:nil attribute:NSLayoutAttributeNotAnAttribute multiplier:1.0 constant:16.0].active = YES;
       [NSLayoutConstraint constraintWithItem:image_view attribute:NSLayoutAttributeHeight relatedBy:NSLayoutRelationEqual toItem:nil attribute:NSLayoutAttributeNotAnAttribute multiplier:1.0 constant:16.0].active = YES;
 
-      /* Horizontal layout: |-[Image]-[Text]-| */
       [NSLayoutConstraint constraintWithItem:image_view attribute:NSLayoutAttributeLeading relatedBy:NSLayoutRelationEqual toItem:table_cell_view attribute:NSLayoutAttributeLeading multiplier:1.0 constant:2.0].active = YES;
       [NSLayoutConstraint constraintWithItem:text_field attribute:NSLayoutAttributeLeading relatedBy:NSLayoutRelationEqual toItem:image_view attribute:NSLayoutAttributeTrailing multiplier:1.0 constant:5.0].active = YES;
       [NSLayoutConstraint constraintWithItem:text_field attribute:NSLayoutAttributeTrailing relatedBy:NSLayoutRelationEqual toItem:table_cell_view attribute:NSLayoutAttributeTrailing multiplier:1.0 constant:-2.0].active = YES;
@@ -1355,21 +1327,17 @@ static NSImage* helperGetActiveImageForTreeItem(IupCocoaTreeItem* tree_item, Iup
     [text_field setStringValue:string_item];
 
 #ifdef GNUSTEP
-    /* GNUstep NSCell -isSelectable returns is_selectable || is_editable, so setEditable:YES
-       re-enables click swallowing (I-beam cursor stuck). Keep editable off on GNUstep;
-       in-place rename needs a separate trigger. */
+    /* GNUstep -isSelectable is is_selectable || is_editable, so setEditable:YES brings click swallowing back */
     [text_field setEditable:NO];
     [text_field setDelegate:nil];
 #else
     [text_field setEditable:(BOOL)ih->data->show_rename];
     if (ih->data->show_rename)
     {
-      /* The text field handles its own editing callbacks. */
       [text_field setDelegate:text_field];
     }
     else
     {
-      /* Clear delegate when recycling a view if rename is off. */
       [text_field setDelegate:nil];
     }
 #endif
@@ -1387,7 +1355,6 @@ static NSImage* helperGetActiveImageForTreeItem(IupCocoaTreeItem* tree_item, Iup
   if (image_view)
   {
     NSImage* active_image = helperGetActiveImageForTreeItem(tree_item, (IupCocoaOutlineView*)outline_view, NULL, NULL);
-    /* Hide the image view if the new item doesn't have an image. */
     [image_view setHidden:(nil == active_image)];
     [image_view setImage:active_image];
     [image_view setEnabled:is_enabled];
@@ -1410,7 +1377,6 @@ static NSImage* helperGetActiveImageForTreeItem(IupCocoaTreeItem* tree_item, Iup
   NSImage* expanded_image = [tree_item bitmapImage] ?: [outline_view expandedImage];
   NSImage* collapsed_image = [tree_item collapsedImage] ?: [outline_view collapsedImage];
 
-  /* Only reload if the images are different to avoid flicker. */
   if(![expanded_image isEqual:collapsed_image])
   {
     cocoaTreeReloadItem(tree_item, outline_view);
@@ -1652,12 +1618,10 @@ static NSImage* helperGetActiveImageForTreeItem(IupCocoaTreeItem* tree_item, Iup
     cbTips(ih, x, y);
   }
 
-  /* Check for custom TIP attribute set by TIPS_CB or user */
   char* tip = iupAttribGet(ih, "TIP");
   if (tip)
     return [NSString stringWithUTF8String:tip];
 
-  /* If INFOTIP is not enabled, don't show automatic tooltips */
   if (!iupAttribGetBoolean(ih, "INFOTIP"))
     return nil;
 
@@ -1667,7 +1631,6 @@ static NSImage* helperGetActiveImageForTreeItem(IupCocoaTreeItem* tree_item, Iup
   if (!title)
     return nil;
 
-  /* Calculate if text is truncated */
   NSTableCellView* cellView = [outlineView viewAtColumn:[outlineView columnWithIdentifier:@"MainColumn"] row:[outlineView rowForItem:item] makeIfNecessary:NO];
   if (!cellView)
     return title;
@@ -1679,7 +1642,6 @@ static NSImage* helperGetActiveImageForTreeItem(IupCocoaTreeItem* tree_item, Iup
   NSSize textSize = [[textField stringValue] sizeWithAttributes:@{NSFontAttributeName: [textField font]}];
   NSRect textRect = [textField frame];
 
-  /* Show tooltip only if text is truncated */
   if (textSize.width > textRect.size.width)
     return title;
 
@@ -1697,48 +1659,35 @@ static void cocoaTreeUpdateDragDrop(Ihandle* ih)
   NSOutlineView* outline_view = cocoaTreeGetOutlineView(ih);
   if (!outline_view) return;
 
-  /* Internal DND (SHOWDRAGDROP=YES) */
   BOOL enable_internal_dnd = ih->data->show_dragdrop;
-  /* Cross-tree DND (DRAGDROPTREE=YES) */
   BOOL enable_crosstree_dnd = iupAttribGetBoolean(ih, "DRAGDROPTREE");
 
-  /* DRAGSOURCE: Enabled if internal DND is on OR (cross-tree DND is on AND DRAGSOURCE=YES). */
   BOOL enable_drag_source = enable_internal_dnd || (enable_crosstree_dnd && iupAttribGetBoolean(ih, "DRAGSOURCE"));
-  /* DROPTARGET: Enabled if internal DND is on OR (cross-tree DND is on AND DROPTARGET=YES). */
   BOOL enable_drop_target = enable_internal_dnd || (enable_crosstree_dnd && iupAttribGetBoolean(ih, "DROPTARGET"));
 
   if (enable_drag_source)
   {
     NSDragOperation source_mask = NSDragOperationMove | NSDragOperationCopy;
-    /* Enable for local drags (within the application, including between different trees). */
     [outline_view setDraggingSourceOperationMask:source_mask forLocal:YES];
 
-    /* Disable for external drags (to other applications), as we use internal types. */
     [outline_view setDraggingSourceOperationMask:NSDragOperationNone forLocal:NO];
 
-    /* Allow dragging to start. */
     [outline_view setVerticalMotionCanBeginDrag:YES];
   }
   else
   {
-    /* Disable drag source entirely. */
     [outline_view setDraggingSourceOperationMask:NSDragOperationNone forLocal:YES];
     [outline_view setDraggingSourceOperationMask:NSDragOperationNone forLocal:NO];
     [outline_view setVerticalMotionCanBeginDrag:NO];
   }
 
-  /* Configure Drop Target */
-  /* Register only if the target role is enabled AND DND is active. */
   if (enable_drop_target && (enable_internal_dnd || enable_crosstree_dnd))
   {
-    /* Register for the custom IUP tree DND type. */
     [outline_view registerForDraggedTypes:[NSArray arrayWithObjects:IUPCOCOA_OUTLINEVIEW_DRAGANDDROP_TYPE, nil]];
-    /* Use standard feedback style for outline views. */
     [outline_view setDraggingDestinationFeedbackStyle:NSTableViewDraggingDestinationFeedbackStyleRegular];
   }
   else
   {
-    /* Disable drop target entirely. */
     [outline_view unregisterDraggedTypes];
   }
 }
@@ -1758,7 +1707,6 @@ static int cocoaTreeSetShowDragDropAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-/* Generic handler for DRAGDROPTREE, DRAGSOURCE, DROPTARGET */
 static int cocoaTreeSetDndControlAttrib(Ihandle* ih, const char* value)
 {
   (void)value;
@@ -1832,8 +1780,6 @@ static int helperCallDragDropCb(Ihandle* ih, IupCocoaTreeItem* tree_item_drag, I
   if(drag_drop_cb)
   {
     int drag_id = iupTreeFindNodeId(ih, (InodeHandle*)tree_item_drag);
-    /* The drop_id is the identifier of the node where the item was dropped. */
-    /* The actual position (as child or sibling) is determined later. */
     int drop_id = iupTreeFindNodeId(ih, (InodeHandle*)tree_item_drop);
     return drag_drop_cb(ih, drag_id, drop_id, is_shift, (int)is_copy);
   }
@@ -2079,7 +2025,6 @@ static int cocoaTreeSetDragDropTreeAttrib(Ihandle* ih, const char* value)
 {
   if (iupStrBoolean(value))
   {
-    /* Register callbacks to enable drag and drop between trees */
     IupSetCallback(ih, "DRAGBEGIN_CB",    (Icallback)cocoaTreeDragBegin_CB);
     IupSetCallback(ih, "DRAGDATASIZE_CB", (Icallback)cocoaTreeDragDataSize_CB);
     IupSetCallback(ih, "DRAGDATA_CB",     (Icallback)cocoaTreeDragData_CB);
@@ -2096,7 +2041,6 @@ static int cocoaTreeSetDragDropTreeAttrib(Ihandle* ih, const char* value)
     IupSetCallback(ih, "DROPDATA_CB",     NULL);
   }
 
-  /* Update DND configuration if already mapped */
   if (ih->handle)
   {
     cocoaTreeUpdateDragDrop(ih);
@@ -2201,7 +2145,6 @@ static void iupCocoaTreeMoveCache(Ihandle* ih, int flat_index_before, int flat_i
 }
 
 /* iupTreeCopyMoveCache doesn't work for Cocoa. */
-/* (See comments in iupCocoaTreeMoveCache for rationale.) */
 static void iupCocoaTreeCopyCache(Ihandle* ih, int flat_index_source, int flat_index_target, int count_of_nodes_to_copy, IupCocoaTreeItem* new_copy_tree_item)
 {
   /*
@@ -2250,7 +2193,6 @@ Algorithm:
 }
 
 /* iupTreeCopyMoveCache doesn't work for Cocoa. */
-/* (See comments in iupCocoaTreeMoveCache for rationale.) */
 static void iupCocoaTreeCrossInsertCache(Ihandle* source_ih, Ihandle* target_ih, int flat_index_source, int flat_index_target, int count_of_nodes_to_copy, IupCocoaTreeItem* new_copy_tree_item)
 {
   int original_node_count = target_ih->data->node_count;
@@ -2348,7 +2290,7 @@ static void helperExpandedItemArrayRecursive(IupCocoaTreeItem* original_item, NS
 {
   if([original_tree isExpandable:original_item])
   {
-    /* Note: Cocoa returns NO for expanded state if parent is collapsed, but restores child state when parent is expanded */
+    /* Cocoa reports NO for a child's expanded state while the parent is collapsed, and restores it on expand */
     BOOL is_expanded = [original_tree isItemExpanded:original_item];
     [expanded_info_array addObject:[NSNumber numberWithBool:is_expanded]];
   }
@@ -2463,10 +2405,8 @@ static void helperCrossCopyNode(NSOutlineView* source_outline_view, IupCocoaTree
 
   IupCocoaTreeItem* new_copy_tree_item = [source_tree_item cloneWithNewParentItem:parent_target_tree_item ihandle:target_ih];
 
-  /* Save expanded state before inserting to maintain visual consistency */
   NSArray<NSNumber*>* array_of_expanded_info = helperExpandedItemArray(source_tree_item, source_outline_view);
 
-  /* Handle empty target tree special case */
   if((-1 == target_child_index) && (nil == parent_target_tree_item) && (0 == [[target_data_delegate treeRootTopLevelObjects] count]))
   {
     [target_data_delegate insertAtRoot:new_copy_tree_item];
@@ -2484,7 +2424,6 @@ static void helperCrossCopyNode(NSOutlineView* source_outline_view, IupCocoaTree
     [target_outline_view insertItemsAtIndexes:index_set inParent:parent_target_tree_item withAnimation:copy_insert_animation];
   }
 
-  /* Apply saved expanded state to maintain visual appearance */
   helperSyncExpandedItems(array_of_expanded_info, new_copy_tree_item, target_outline_view);
 
   NSInteger flat_index_target = 0;
@@ -2527,14 +2466,12 @@ static IupCocoaTreeItem* helperIsPointerValid(intptr_t look_for_pointer, IupCoco
   return NULL;
 }
 
-/* Need forward declaration */
 static void cocoaTreeRemoveNodeData(Ihandle* ih, IupCocoaTreeItem* tree_item, int call_cb);
 
 - (BOOL) outlineView:(NSOutlineView *)outline_view acceptDrop:(id <NSDraggingInfo>)drag_info item:(id)parent_target_tree_item childIndex:(NSInteger)target_child_index
 {
   if([drag_info draggingSource] == outline_view)
   {
-    /* Same tree drag and drop */
     [self setItemBeingDragged:nil];
 
     NSPasteboard* paste_board = [drag_info draggingPasteboard];
@@ -2577,7 +2514,6 @@ static void cocoaTreeRemoveNodeData(Ihandle* ih, IupCocoaTreeItem* tree_item, in
 
     [outline_view endUpdates];
 
-    /* Update selection and focus for the new item */
     if (new_tree_item)
     {
       IupCocoaOutlineView* iup_outline_view = (IupCocoaOutlineView*)outline_view;
@@ -2590,11 +2526,9 @@ static void cocoaTreeRemoveNodeData(Ihandle* ih, IupCocoaTreeItem* tree_item, in
         iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", "1");
         [outline_view deselectAll:nil];
 
-        /* Select the new item */
         NSIndexSet* index_set = [NSIndexSet indexSetWithIndex:new_row];
         [outline_view selectRowIndexes:index_set byExtendingSelection:NO];
 
-        /* Scroll to make it visible */
         [outline_view scrollRowToVisible:new_row];
 
         iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", NULL);
@@ -2605,7 +2539,6 @@ static void cocoaTreeRemoveNodeData(Ihandle* ih, IupCocoaTreeItem* tree_item, in
   }
   else
   {
-    /* Cross-tree drag and drop */
     NSPasteboard* paste_board = [drag_info draggingPasteboard];
     NSData* data_value = [paste_board dataForType:IUPCOCOA_OUTLINEVIEW_DRAGANDDROP_TYPE];
     if(nil == data_value || [data_value length] < sizeof(intptr_t))
@@ -2655,7 +2588,6 @@ static void cocoaTreeRemoveNodeData(Ihandle* ih, IupCocoaTreeItem* tree_item, in
     helperCrossCopyNode(source_outline_view, tree_item, outline_view, parent_target_tree_item, target_child_index, NSTableViewAnimationEffectGap);
     [outline_view endUpdates];
 
-    /* Get the newly created item */
     IupCocoaTreeDelegate* dest_delegate = (IupCocoaTreeDelegate*)[outline_view dataSource];
     if ((-1 == target_child_index) && (nil == parent_target_tree_item) && (0 < [[dest_delegate treeRootTopLevelObjects] count]))
     {
@@ -2670,7 +2602,6 @@ static void cocoaTreeRemoveNodeData(Ihandle* ih, IupCocoaTreeItem* tree_item, in
       new_tree_item = parent_target_tree_item ? [[parent_target_tree_item childrenArray] objectAtIndex:adjusted_index] : [[dest_delegate treeRootTopLevelObjects] objectAtIndex:adjusted_index];
     }
 
-    /* Update selection and focus for the new item in destination tree */
     if (new_tree_item)
     {
       NSInteger new_row = [outline_view rowForItem:new_tree_item];
@@ -2691,7 +2622,6 @@ static void cocoaTreeRemoveNodeData(Ihandle* ih, IupCocoaTreeItem* tree_item, in
 
     if (!is_copy)
     {
-      /* Remove node from source tree for move operation */
       [source_iup_outline_view beginUpdates];
 
       cocoaTreeRemoveNodeData(source_ih, tree_item, 1);
@@ -2865,10 +2795,6 @@ IUP_SDK_API void iupdrvTreeUpdateMarkMode(Ihandle *ih)
 
 IUP_SDK_API void iupdrvTreeDragDropCopyNode(Ihandle* src, Ihandle* dst, InodeHandle* item_src, InodeHandle* item_dst)
 {
-  /* This function copies a node from one tree to another.
-     The native Cocoa implementation handles this differently through
-     the drag and drop delegate methods, so we need to bridge the concepts. */
-
   if (!src || !dst || !item_src || !item_dst)
     return;
 
@@ -2878,26 +2804,21 @@ IUP_SDK_API void iupdrvTreeDragDropCopyNode(Ihandle* src, Ihandle* dst, InodeHan
   NSOutlineView* dst_outline_view = cocoaTreeGetOutlineView(dst);
   IupCocoaTreeDelegate* dst_delegate = (IupCocoaTreeDelegate*)[dst_outline_view dataSource];
 
-  /* Clone the source item with the destination ihandle */
   IupCocoaTreeItem* new_copy = [source_item cloneWithNewParentItem:nil ihandle:dst];
 
-  /* Determine where to insert based on the destination item type */
   int dest_kind = [dest_item kind];
   IupCocoaTreeItem* parent_item = nil;
   NSInteger insert_index = 0;
 
   if (dest_kind == ITREE_BRANCH)
   {
-    /* Check if branch is expanded */
     if ([dst_outline_view isItemExpanded:dest_item])
     {
-      /* Insert as first child of expanded branch */
       parent_item = dest_item;
       insert_index = 0;
     }
     else
     {
-      /* Insert as sibling after the collapsed branch */
       parent_item = [dest_item parentItem];
       if (parent_item)
       {
@@ -2906,7 +2827,6 @@ IUP_SDK_API void iupdrvTreeDragDropCopyNode(Ihandle* src, Ihandle* dst, InodeHan
       }
       else
       {
-        /* Destination is a root-level collapsed branch */
         NSArray* roots = [dst_delegate treeRootTopLevelObjects];
         insert_index = [roots indexOfObject:dest_item] + 1;
       }
@@ -2914,7 +2834,6 @@ IUP_SDK_API void iupdrvTreeDragDropCopyNode(Ihandle* src, Ihandle* dst, InodeHan
   }
   else
   {
-    /* Destination is a leaf - insert as sibling after it */
     parent_item = [dest_item parentItem];
     if (parent_item)
     {
@@ -2923,27 +2842,22 @@ IUP_SDK_API void iupdrvTreeDragDropCopyNode(Ihandle* src, Ihandle* dst, InodeHan
     }
     else
     {
-      /* Destination is a root-level leaf */
       NSArray* roots = [dst_delegate treeRootTopLevelObjects];
       insert_index = [roots indexOfObject:dest_item] + 1;
     }
   }
 
-  /* Insert the node */
   if (parent_item)
   {
     [dst_delegate insertChild:new_copy withParent:parent_item targetChildIndex:insert_index];
   }
   else
   {
-    /* Insert at root level */
     [[dst_delegate treeRootTopLevelObjects] insertObject:new_copy atIndex:insert_index];
   }
 
-  /* Update the view */
   [dst_outline_view reloadData];
 
-  /* Update the cache */
   int id_dst = iupTreeFindNodeId(dst, dest_item);
   int id_new = id_dst + 1;
   int count = (int)Helper_RecursivelyCountItems(new_copy);
@@ -2959,21 +2873,15 @@ static void cocoaTreeReloadItem(IupCocoaTreeItem* tree_item, NSOutlineView* outl
     return;
   }
 
-  /* Find the row index for the given item. */
-  /* If the item is not visible (e.g., its parent is collapsed), this will be a negative number. */
+  /* rowForItem is negative when the item is not visible */
   NSInteger row = [outline_view rowForItem:tree_item];
 
-  /* Only proceed if the row is valid and visible. */
   if (row >= 0)
   {
-    /* Create an index set for the specific row we want to reload. */
     NSIndexSet* row_index_set = [NSIndexSet indexSetWithIndex:row];
 
-    /* Create an index set for the column. Our tree only has one column at index 0. */
     NSIndexSet* column_index_set = [NSIndexSet indexSetWithIndex:0];
 
-    /* Tell the outline view to reload the data for the specific cell, */
-    /* which will cause it to be redrawn with any updated properties. */
     [outline_view reloadDataForRowIndexes:row_index_set columnIndexes:column_index_set];
   }
 }
@@ -3525,7 +3433,6 @@ static int cocoaTreeSetTitleFontAttrib(Ihandle* ih, int id, const char* value)
   }
   else
   {
-    /* Setting to nil reverts to the default font handled by viewForTableColumn. */
     [tree_item setFont:nil];
     cocoaTreeReloadItem(tree_item, outline_view);
   }
@@ -4022,8 +3929,6 @@ static void cocoaTreeCallNodeRemoved(Ihandle* ih, IupCocoaTreeDelegate* tree_del
   (void)tree_delegate;
 }
 
-/* Load replacement default images if needed */
-/* This is primarily for consistent look across platforms */
 static void helperReplaceDefaultImages(Ihandle* ih, IupCocoaOutlineView* outline_view)
 {
   NSImage* leaf_image = nil;
@@ -4150,7 +4055,6 @@ static int cocoaTreeSetToggleVisibleAttrib(Ihandle* ih, int item_id, const char*
 
   [tree_item setCheckBoxHidden:check_box_hidden];
 
-  /* Reload the item to reflect the change in visibility. */
   NSOutlineView* outline_view = cocoaTreeGetOutlineView(ih);
   cocoaTreeReloadItem(tree_item, outline_view);
 
@@ -4411,7 +4315,6 @@ static int cocoaTreeSetExpandAllAttrib(Ihandle* ih, const char* value)
 
 static int cocoaTreeSetRenameAttrib(Ihandle* ih, const char* value)
 {
-  /* This is an ACTION attribute to start editing */
   if (ih->handle && ih->data->show_rename)
   {
     NSOutlineView* outline_view = cocoaTreeGetOutlineView(ih);
@@ -4424,7 +4327,7 @@ static int cocoaTreeSetRenameAttrib(Ihandle* ih, const char* value)
       [outline_view editColumn:0 row:selected_row withEvent:nil select:YES];
     }
   }
-  (void)value; /* value is not used for this action */
+  (void)value;
   return 0;
 }
 
@@ -4698,20 +4601,16 @@ IUP_SDK_API void iupdrvTreeInitClass(Iclass* ic)
   iupClassRegisterAttributeId(ic, "MOVENODE", NULL, cocoaTreeSetMoveNodeAttrib, IUPAF_NOT_MAPPED|IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "COPYNODE", NULL, cocoaTreeSetCopyNodeAttrib, IUPAF_NOT_MAPPED|IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
 
-  /* IupTree Attributes - macOS specific */
   iupClassRegisterAttribute(ic, "RUBBERBAND", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "HIDELINES", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "INFOTIP", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
 
-  /* Tooltip attributes */
   iupClassRegisterAttribute(ic, "TIP", cocoaTreeGetTipAttrib, cocoaTreeSetTipAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 
-  /* New API for view specific contextual menus */
   iupClassRegisterAttribute(ic, "CONTEXTMENU", iupcocoaCommonBaseGetContextMenuAttrib, cocoaTreeSetContextMenuAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 
   iupClassRegisterReplaceAttribFunc(ic, "ACTIVE", cocoaTreeGetActiveAttrib, cocoaTreeSetActiveAttrib);
 
-  /* Drag and Drop attributes */
   iupClassRegisterReplaceAttribFunc(ic, "SHOWDRAGDROP", NULL, cocoaTreeSetShowDragDropAttrib);
   iupClassRegisterAttribute(ic, "DRAGDROPTREE", NULL, cocoaTreeSetDragDropTreeAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterReplaceAttribFunc(ic, "DRAGSOURCE", NULL, cocoaTreeSetDndControlAttrib);

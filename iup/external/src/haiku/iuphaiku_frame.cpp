@@ -70,14 +70,11 @@ private:
 
 static border_style haikuFrameResolveBorder(Ihandle* ih)
 {
-  /* IUP convention: BORDER=NO removes the border; default is bordered. */
   char* border = iupAttribGet(ih, "BORDER");
   if (border && !iupStrBoolean(border))
     return B_NO_BORDER;
   return B_FANCY_BORDER;
 }
-
-/* Map */
 
 static int haikuFrameMapMethod(Ihandle* ih)
 {
@@ -127,8 +124,6 @@ static void* haikuFrameGetInnerNativeContainerHandleMethod(Ihandle* ih, Ihandle*
   return iupAttribGet(ih, "_IUPHAIKU_FRAME_INNER");
 }
 
-/* Attribute Setters */
-
 static int haikuFrameSetTitleAttrib(Ihandle* ih, const char* value)
 {
   BBox* box = (BBox*)ih->handle;
@@ -150,8 +145,6 @@ static int haikuFrameSetBorderAttrib(Ihandle* ih, const char* value)
   box->SetBorder(iupStrBoolean(value) ? B_FANCY_BORDER : B_NO_BORDER);
   return 1;
 }
-
-/* Driver hooks */
 
 extern "C" IUP_SDK_API int iupdrvFrameHasClientOffset(Ihandle* ih)
 {
@@ -182,7 +175,6 @@ extern "C" IUP_SDK_API int iupdrvFrameGetTitleHeight(Ihandle* ih, int *h)
     return 1;
   }
 
-  /* Pre-map estimate. */
   if (h) *h = 16;
   return 1;
 }

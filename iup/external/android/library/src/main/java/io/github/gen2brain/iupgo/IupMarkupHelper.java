@@ -22,9 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 
-/* Pango-style parser for MARKUP=YES: b/i/u/s/strike/del/tt/code/sub/sup/small/big, span with
-   foreground/background/font_family/font_size/font_weight/font_style/underline/strikethrough,
-   plus &lt;/&gt;/&amp;/&quot;/&apos; and numeric &#NN;/&#xHH; entities. */
+/* Pango-style parser for MARKUP=YES: inline tags, span attributes and XML entities. */
 final class IupMarkupHelper
 {
     private IupMarkupHelper() {}
@@ -201,7 +199,7 @@ final class IupMarkupHelper
         }
     }
 
-    /* Pango font_size: 1/1024 pt or "Npt"; we also accept plain ints as pt */
+    /* Pango font_size: 1/1024 pt or "Npt"; plain ints are read as pt */
     private static int absoluteSizePx(String s)
     {
         s = s.trim().toLowerCase();

@@ -47,7 +47,6 @@ IUP_DRV_API unsigned char* iupCocoaTouchCanvasEnsurePixels(Ihandle* ih, UIView* 
 /* cached pixel buffer without resizing; NULL if not allocated */
 IUP_DRV_API unsigned char* iupCocoaTouchCanvasGetPixels(Ihandle* ih, size_t* out_pixel_w, size_t* out_pixel_h, CGFloat* out_scale);
 
-/* free the pixel buffer; called from layoutSubviews and UnMap */
 IUP_DRV_API void iupCocoaTouchCanvasReleaseBuffer(Ihandle* ih);
 
 #endif /* __OBJC__ */

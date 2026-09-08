@@ -91,7 +91,7 @@ IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int* x, int* y)
   if (x) *x += extra_x;
   if (y) *y += extra_y;
 
-  /* core uses maximg_w in raw px; we render scaled-to-row-height and need extra slack for the gap */
+  /* core uses maximg_w in raw px; images render scaled to row height and need slack for the gap */
   if (x && ih->data->show_image && (ih->data->maximg_h > 0 || iupAttribGetBoolean(ih, "DROPTARGET")))
   {
     JNIEnv* env2 = iupAndroid_GetEnvThreadSafe();
@@ -382,7 +382,6 @@ static int androidListSetValueAttrib(Ihandle* ih, const char* value)
 
 void iupAndroidListDispatchSelection(Ihandle* ih, int item)
 {
-  /* Skip the no-change emit Spinner sends after setSelection. */
   int oldpos = 0;
   char* old_str = iupAttribGet(ih, "_IUPLIST_OLDVALUE");
   if (old_str) iupStrToInt(old_str, &oldpos);
@@ -587,7 +586,7 @@ static int androidListConvertXYToPos(Ihandle* ih, int x, int y)
   iupAndroid_CheckException(jni_env, "IupListHelper.pointToPosition");
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
   if (pos < 0) return -1;
-  return (int)pos + 1;  /* 1-based for IUP */
+  return (int)pos + 1;
 }
 
 
@@ -804,14 +803,13 @@ static int androidListMapMethod(Ihandle* ih)
 
   IupSetCallback(ih, "_IUP_XY2POS_CB", (Icallback)androidListConvertXYToPos);
 
-  /* Replay pre-map items stored in "" attribs. */
   iupListSetInitialItems(ih);
 
   /* VIRTUALMODE: ITEMCOUNT setter is a no-op pre-map; apply it now. */
   if (ih->data->is_virtual && ih->data->item_count > 0)
     iupdrvListSetItemCount(ih, ih->data->item_count);
 
-  /* VIRTUALMODE auto-promotes FASTSCROLL to YES; explicit values flow through the setter via attribute replay. */
+  /* VIRTUALMODE auto-promotes FASTSCROLL; explicit values arrive through attribute replay. */
   if (!ih->data->is_dropdown && ih->data->is_virtual && !iupAttribGet(ih, "FASTSCROLL"))
     androidListSetFastScrollAttrib(ih, "YES");
 

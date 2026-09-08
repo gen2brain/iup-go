@@ -67,7 +67,6 @@ static void androidDatePickPushValue(Ihandle* ih, int y, int m, int d)
   (*env)->DeleteLocalRef(env, cls);
 }
 
-/* Builds a java.text.SimpleDateFormat pattern from ORDER/SEPARATOR/ZEROPRECED/MONTHSHORTNAMES. */
 static void androidDatePickBuildPattern(Ihandle* ih, char* out, size_t out_size)
 {
   const char* order = iupAttribGetStr(ih, "ORDER");

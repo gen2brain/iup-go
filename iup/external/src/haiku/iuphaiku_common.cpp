@@ -34,7 +34,7 @@ extern "C" {
 #include "iuphaiku_drv.h"
 
 
-/* Native Container - plain BView, no BLayout (IUP positions children itself). */
+/* plain BView, no BLayout: IUP positions children itself */
 IUP_DRV_API BView* iuphaikuNativeContainerNew(void)
 {
   BView* container = new BView(BRect(0, 0, 0, 0), "iup_container",
@@ -51,8 +51,6 @@ IUP_DRV_API void iuphaikuNativeContainerAdd(BView* container, BView* widget)
   LooperLockGuard guard(container->Looper());
   container->AddChild(widget);
 }
-
-/* Widget Management */
 
 IUP_DRV_API void iuphaikuAddToParent(Ihandle* ih)
 {
@@ -118,8 +116,6 @@ IUP_DRV_API void iuphaikuStubComputeNaturalSize(Ihandle* ih, int *w, int *h, int
   if (h && *h == 0) *h = 1;
 }
 
-/* Coordinate Conversion */
-
 extern "C" IUP_SDK_API void iupdrvScreenToClient(Ihandle* ih, int *x, int *y)
 {
   if (!ih || !ih->handle) return;
@@ -161,8 +157,6 @@ extern "C" IUP_SDK_API void iupdrvClientToScreen(Ihandle* ih, int *x, int *y)
   if (x) *x += (int)origin.x;
   if (y) *y += (int)origin.y;
 }
-
-/* Visibility / Active State */
 
 extern "C" IUP_SDK_API int iupdrvIsVisible(Ihandle* ih)
 {
@@ -317,8 +311,7 @@ extern "C" IUP_SDK_API int iupdrvGetScrollbarSize(void)
   return 14;
 }
 
-/* Walk parent's view tree top-down and return the deepest descendant whose
- * frame contains pt (which is given in parent's coord system). */
+/* pt is given in the parent coordinate system */
 static BView* haikuViewAtPoint(BView* parent, BPoint pt)
 {
   if (!parent) return NULL;
@@ -567,8 +560,6 @@ extern "C" IUP_SDK_API void iupdrvSetAccessibleDescription(Ihandle *ih, const ch
   (void)description;
 }
 
-/* Base Class Methods */
-
 extern "C" IUP_SDK_API void iupdrvBaseLayoutUpdateMethod(Ihandle *ih)
 {
   if (!ih || !ih->handle)
@@ -791,8 +782,6 @@ extern "C" IUP_SDK_API int iupdrvBaseSetZorderAttrib(Ihandle* ih, const char* va
   return 0;
 }
 
-/* Common Attribute Registration */
-
 extern "C" IUP_SDK_API void iupdrvBaseRegisterCommonAttrib(Iclass* ic)
 {
   const char* font_id_name = iuphaikuGetNativeFontIdName();
@@ -806,8 +795,6 @@ extern "C" IUP_SDK_API void iupdrvBaseRegisterVisualAttrib(Iclass* ic)
   iupClassRegisterAttribute(ic, "ACCESSIBLETITLE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "ACCESSIBLEDESCRIPTION", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_DEFAULT);
 }
-
-/* Native Handle Access */
 
 IUP_DRV_API char* iuphaikuGetNativeWindowHandleAttrib(Ihandle* ih)
 {

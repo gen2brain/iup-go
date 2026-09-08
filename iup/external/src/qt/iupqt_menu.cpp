@@ -75,8 +75,7 @@ extern "C" IUP_SDK_API int iupdrvMenuPopup(Ihandle* ih, int x, int y)
   }
   else
   {
-    /* Auto-adjust position like Win32's TrackPopupMenu.
-       If menu would extend beyond screen edge, flip to other side */
+    /* flip the popup when it would extend past the screen edge */
     QScreen* screen = QGuiApplication::screenAt(pos);
     if (screen)
     {
@@ -167,8 +166,7 @@ static void qtMenuItemTriggered(Ihandle* ih)
     action->blockSignals(false);
   }
 
-  /* Checkable items are auto-toggled by QAction::activate; only non-checkable
-     AUTOTOGGLE items need a manual VALUE flip and icon swap here. */
+  /* QAction::activate auto-toggles checkable items; only AUTOTOGGLE ones need a manual flip */
   if (!action->isCheckable() && iupAttribGetBoolean(ih, "AUTOTOGGLE"))
   {
     if (iupAttribGetBoolean(ih, "VALUE"))
@@ -187,7 +185,6 @@ static void qtMenuItemTriggered(Ihandle* ih)
       action->setIcon(QIcon(*pixbuf));
   }
 
-  /* Call ACTION callback */
   Icallback cb = (Icallback)IupGetCallback(ih, "ACTION");
   if (cb && cb(ih) == IUP_CLOSE)
     IupExitLoop();
@@ -221,35 +218,28 @@ static int qtMenuMapMethod(Ihandle* ih)
 {
   if (iupMenuIsMenuBar(ih))
   {
-    /* Top level menu used for MENU attribute in IupDialog (a menu bar) */
     QMenuBar* menubar = new QMenuBar();
 
-    /* Set size policy to expand horizontally to fill the window width.
-     * By default, QMenuBar has a preferred size based on its contents, but
-     * we want it to always span the full width of the QMainWindow. */
+    /* QMenuBar sizes to its contents; it has to span the whole window width */
     menubar->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
     ih->handle = (InativeHandle*)menubar;
 
-    /* Don't add children here - they will be mapped later by IUP and will
-     * add themselves to this menu bar when they are mapped. */
+    /* children add themselves to the bar when IUP maps them */
 
     iupqtAddToParent(ih);
   }
   else
   {
-    /* Popup menu or submenu */
     QMenu* menu = new QMenu();
 
     ih->handle = (InativeHandle*)menu;
 
     if (ih->parent)
     {
-      /* Parent is a submenu - set this as submenu */
       QAction* parent_action = (QAction*)ih->parent->handle;
       parent_action->setMenu(menu);
 
-      /* Connect signals */
       QObject::connect(menu, &QMenu::aboutToShow, [ih]() {
         qtMenuAboutToShow(ih);
       });
@@ -259,7 +249,6 @@ static int qtMenuMapMethod(Ihandle* ih)
     }
     else
     {
-      /* Top level popup menu */
       QObject::connect(menu, &QMenu::aboutToShow, [ih]() {
         qtMenuAboutToShow(ih);
       });
@@ -365,14 +354,11 @@ static int qtMenuItemSetTitleAttrib(Ihandle* ih, const char* value)
   else
     str = iupMenuProcessTitle(ih, value);
 
-  /* Convert & to && for Qt (Qt uses && for mnemonic, IUP uses single &) */
   QString title = QString::fromUtf8(str);
 
-  /* Extract mnemonic if present */
   int mnemonic_pos = title.indexOf('&');
   if (mnemonic_pos >= 0 && mnemonic_pos < title.length() - 1)
   {
-    /* Qt uses single & for mnemonic */
     action->setText(title);
   }
   else
@@ -400,7 +386,6 @@ static int qtMenuItemSetValueAttrib(Ihandle* ih, const char* value)
   }
   else
   {
-    /* Update image based on value */
     qtMenuItemUpdateImage(ih, value, iupAttribGet(ih, "IMAGE"), iupAttribGet(ih, "IMPRESS"));
     return 1;
   }
@@ -422,8 +407,6 @@ static int qtMenuItemSetKeyAttrib(Ihandle* ih, const char* value)
 
   if (value)
   {
-    /* Convert IUP key string to Qt key sequence */
-    /* QKeySequence handles standard formats like "Ctrl+S", "Shift+Alt+K", etc. */
     QString key_str = QString::fromUtf8(value);
     action->setShortcut(QKeySequence(key_str));
   }
@@ -449,16 +432,13 @@ static int qtMenuItemMapMethod(Ihandle* ih)
   ih->handle = (InativeHandle*)action;
   ih->serial = iupMenuGetChildId(ih);
 
-  /* Determine item type */
   bool is_radio = iupAttribGetBoolean(ih->parent, "RADIO");
   bool has_image = (iupAttribGet(ih, "IMAGE") != nullptr || iupAttribGet(ih, "TITLEIMAGE") != nullptr);
 
   if (is_radio)
   {
-    /* Radio item */
     action->setCheckable(true);
 
-    /* Get or create radio group for this menu */
     QActionGroup* radio_group = (QActionGroup*)iupAttribGet(ih->parent, "_IUPQT_RADIOGROUP");
     if (!radio_group)
     {
@@ -470,19 +450,16 @@ static int qtMenuItemMapMethod(Ihandle* ih)
   }
   else if (!has_image)
   {
-    /* Check if HIDEMARK is set */
     const char* hidemark = iupAttribGetStr(ih, "HIDEMARK");
     if (!hidemark && !iupAttribGet(ih, "VALUE"))
-      hidemark = "YES"; /* Default to YES if no VALUE */
+      hidemark = "YES";
 
     if (!iupStrBoolean(hidemark))
     {
-      /* Checkable item */
       action->setCheckable(true);
     }
   }
 
-  /* Connect signals */
   QObject::connect(action, &QAction::hovered, [ih]() {
     qtMenuItemHighlight(ih);
   });
@@ -491,7 +468,6 @@ static int qtMenuItemMapMethod(Ihandle* ih)
     qtMenuItemTriggered(ih);
   });
 
-  /* Add to parent menu at the child position */
   {
     QAction* before = qtMenuGetNextAction(ih);
     if (iupMenuIsMenuBar(ih->parent))
@@ -627,18 +603,15 @@ static int qtSubmenuMapMethod(Ihandle* ih)
   if (!ih->parent)
     return IUP_ERROR;
 
-  /* Create action for submenu */
   QAction* action = new QAction();
 
   ih->handle = (InativeHandle*)action;
   ih->serial = iupMenuGetChildId(ih);
 
-  /* Connect highlight signal */
   QObject::connect(action, &QAction::hovered, [ih]() {
     qtMenuItemHighlight(ih);
   });
 
-  /* Set initial title from TITLE attribute. */
   char* title = iupAttribGet(ih, "TITLE");
   if (title)
   {
@@ -648,7 +621,6 @@ static int qtSubmenuMapMethod(Ihandle* ih)
       free(str);
   }
 
-  /* Add to parent menu at the child position */
   {
     QAction* before = qtMenuGetNextAction(ih);
     if (iupMenuIsMenuBar(ih->parent))
@@ -707,14 +679,12 @@ static int qtMenuSeparatorMapMethod(Ihandle* ih)
   if (!ih->parent)
     return IUP_ERROR;
 
-  /* Create separator action */
   QAction* action = new QAction();
   action->setSeparator(true);
 
   ih->handle = (InativeHandle*)action;
   ih->serial = iupMenuGetChildId(ih);
 
-  /* Add to parent menu at the child position */
   {
     QAction* before = qtMenuGetNextAction(ih);
     if (iupMenuIsMenuBar(ih->parent))

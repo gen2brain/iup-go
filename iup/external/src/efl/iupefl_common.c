@@ -262,8 +262,6 @@ IUP_DRV_API unsigned int iupeflGetDefaultSeat(Eo* widget)
 /****************************************************************************
  * Fixed Container (for absolute positioning)
  *
- * Concrete Efl.Ui.Widget subclass with no layout logic. Children stay
- * exactly where IUP positions them, no automatic layout interference.
  ****************************************************************************/
 
 static const Efl_Class_Description _iup_fixed_class_desc = {

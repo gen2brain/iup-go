@@ -574,7 +574,7 @@ static int wasmTreeSetValueAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-/* fires NODEREMOVED_CB deepest-child-first then the node, mirroring gtkTreeCallNodeRemovedRec */
+/* fires NODEREMOVED_CB deepest-child-first, then the node */
 static void wasmTreeCallNodeRemovedRec(Ihandle* ih, IFns cb, int id, int depth)
 {
   int child = id + 1;
@@ -828,7 +828,7 @@ static int wasmTreeCollectMarked(Ihandle* ih, int** ids)
   return count;
 }
 
-/* mirrors gtkTreeCallMultiUnSelectionCb: reports nodes being cleared, excluding the new one */
+/* reports the nodes being cleared, excluding the new one */
 static void wasmTreeCallMultiUnselection(Ihandle* ih, int new_select_id)
 {
   IFnIi cbMulti = (IFnIi)IupGetCallback(ih, "MULTIUNSELECTION_CB");

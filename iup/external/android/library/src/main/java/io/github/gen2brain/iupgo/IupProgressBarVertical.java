@@ -27,7 +27,7 @@ public class IupProgressBarVertical extends ProgressBar
     @SuppressWarnings("SuspiciousNameCombination")
     protected synchronized void onMeasure(int widthMeasureSpec, int heightMeasureSpec)
     {
-        /* swap: super is still horizontal; our long axis is height */
+        /* swap: super is still horizontal; the long axis is height */
         super.onMeasure(heightMeasureSpec, widthMeasureSpec);
         setMeasuredDimension(getMeasuredHeight(), getMeasuredWidth());
     }

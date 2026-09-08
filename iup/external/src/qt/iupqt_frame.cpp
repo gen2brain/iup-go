@@ -92,7 +92,6 @@ extern "C" IUP_SDK_API int iupdrvFrameGetTitleHeight(Ihandle* ih, int *h)
   static int measured = 0;
   static int cached_title_h = 0;
 
-  /* If frame is mapped, measure the actual widget */
   if (ih->handle)
   {
     QGroupBox* groupbox = qobject_cast<QGroupBox*>((QWidget*)ih->handle);
@@ -104,7 +103,6 @@ extern "C" IUP_SDK_API int iupdrvFrameGetTitleHeight(Ihandle* ih, int *h)
     }
   }
 
-  /* Fallback: use cached measurement */
   if (!measured)
   {
     int decor_w, decor_h, offset_x, offset_y;
@@ -201,13 +199,11 @@ static int qtFrameSetSunkenAttrib(Ihandle* ih, const char* value)
     {
       if (iupStrBoolean(value))
       {
-        /* Sunken style - inset border */
         groupbox->setStyleSheet("QGroupBox { border: 1px inset gray; padding: 2px; margin-top: 0px; }");
         iupAttribSet(ih, "_IUPFRAME_SUNKEN", "1");
       }
       else
       {
-        /* Raised/normal style - solid border */
         groupbox->setStyleSheet("QGroupBox { border: 1px solid gray; padding: 2px; margin-top: 0px; }");
         iupAttribSet(ih, "_IUPFRAME_SUNKEN", NULL);
       }
@@ -354,16 +350,13 @@ static int qtFrameMapMethod(Ihandle* ih)
     groupbox->setTitle(QString::fromUtf8(title));
     iupAttribSet(ih, "_IUPFRAME_HAS_TITLE", "1");
 
-    /* Stylesheet for titled frame */
     groupbox->setStyleSheet("QGroupBox { border: 1px solid gray; padding: 2px; margin-top: 0.5em; } "
                            "QGroupBox::title { subcontrol-origin: margin; subcontrol-position: top left; padding: 0 3px; }");
   }
   else
   {
-    /* Leave title empty for untitled frame */
     groupbox->setTitle(QString());
 
-    /* Stylesheet for untitled frame */
     groupbox->setStyleSheet("QGroupBox { border: 1px solid gray; padding: 2px; margin-top: 0px; }");
 
     if (iupAttribGet(ih, "BGCOLOR") || iupAttribGet(ih, "BACKCOLOR"))

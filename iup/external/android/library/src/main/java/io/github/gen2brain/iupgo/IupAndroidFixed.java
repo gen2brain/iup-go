@@ -6,7 +6,7 @@ import android.view.View;
 import android.view.ViewGroup;
 
 
-/* Absolute-position ViewGroup (GtkFixed analog); sized to max(child, parent). */
+/* Absolute-position ViewGroup; sized to max(child, parent). */
 public class IupAndroidFixed extends ViewGroup
 {
     public IupAndroidFixed(Context context)
@@ -75,7 +75,6 @@ public class IupAndroidFixed extends ViewGroup
         }
     }
 
-    /* Called from IupCommon. */
     public void setChildBounds(View child, int x, int y, int width, int height)
     {
         ViewGroup.LayoutParams raw = child.getLayoutParams();
@@ -124,7 +123,6 @@ public class IupAndroidFixed extends ViewGroup
     }
 
 
-    /* (x, y) + (width, height). */
     public static class LayoutParams extends ViewGroup.LayoutParams
     {
         public int x;

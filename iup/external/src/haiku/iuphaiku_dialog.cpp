@@ -79,7 +79,7 @@ public:
   void AttachedToWindow() override
   {
     BView::AttachedToWindow();
-    /* all moves, even over children, so we track the window edge not per-view transit */
+    /* all moves, even over children, so it tracks the window edge, not per-view transit */
     SetEventMask(B_POINTER_EVENTS, B_NO_POINTER_HISTORY);
   }
 
@@ -140,8 +140,7 @@ public:
     AddChild(fRootView);
   }
 
-  /* Detach common filters: BMenuField::~BMenuField deletes its own filter without
-     unlinking it, and ~BLooper would then double-free it. */
+  /* BMenuField::~BMenuField deletes its own filter without unlinking it; ~BLooper would double-free */
   ~IupHaikuWindow() override
   {
     delete fMoveRunner;
@@ -152,7 +151,6 @@ public:
 
   bool QuitRequested() override
   {
-    /* WM_CLOSE pattern: CLOSE_CB + IupHide inline, always veto the auto-quit. */
     if (!fIhandle || !iupObjectCheck(fIhandle))
       return false;
 
@@ -330,7 +328,6 @@ public:
   {
     BWindow::Zoom(origin, width, height);
     if (!fIhandle || !iupObjectCheck(fIhandle)) return;
-    /* Native zoom-tab toggles; flip the hash flag the MAXIMIZED getter reads. */
     iupAttribSet(fIhandle, "MAXIMIZED", iupAttribGetBoolean(fIhandle, "MAXIMIZED") ? NULL : (char*)"Yes");
   }
 
@@ -601,7 +598,6 @@ extern "C" IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
       LooperLockGuard guard(win);
       if (!win->IsHidden()) win->Hide();
 
-      /* Restore the pre-modal feel for the next Show. */
       char* saved = iupAttribGet(ih, "_IUPHAIKU_SAVED_FEEL");
       if (saved)
       {
@@ -985,7 +981,6 @@ extern "C" IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
 
   iupClassRegisterAttribute(ic, "WORKSPACES", NULL, haikuDialogSetWorkspacesAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 
-  /* Override core's HIDETASKBAR: also remove our team icon from Deskbar while hidden. */
   iupClassRegisterAttribute(ic, "HIDETASKBAR", NULL, haikuDialogSetHideTaskbarAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, iuphaikuGetNativeWindowHandleName(), iuphaikuGetNativeWindowHandleAttrib, NULL, NULL, NULL, IUPAF_NO_INHERIT | IUPAF_NO_STRING);

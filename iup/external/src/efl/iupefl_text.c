@@ -2346,7 +2346,6 @@ static void eflTextApplyNumbering(Eo* entry, int* p_start_pos, int* p_end_pos,
       efl_text_cursor_object_text_insert(cursor, prefix);
   }
 
-  /* Update positions to cover the full range including inserted prefixes */
   efl_text_cursor_object_line_number_set(cursor, start_line);
   efl_text_cursor_object_move(cursor, EFL_TEXT_CURSOR_MOVE_TYPE_LINE_START);
   *p_start_pos = efl_text_cursor_object_position_get(cursor);

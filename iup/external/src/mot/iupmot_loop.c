@@ -155,7 +155,7 @@ static motPostMessageNode* mot_postmsg_tail = NULL;
 static void* mot_postmsg_mutex = NULL;
 static int mot_postmsg_pipe[2] = { -1, -1 };
 
-/* a cross-thread work proc can not interrupt Xt's idle select(), so posts wake us via the pipe */
+/* a cross-thread work proc can not interrupt Xt's idle select(), so posts wake it via the pipe */
 static void motPostMessageInputProc(XtPointer client_data, int* source, XtInputId* id)
 {
   char buf[256];

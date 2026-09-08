@@ -303,12 +303,10 @@ static int iupEGLBackendCreateLazyNativeWindow(Ihandle* ih, IGlControlData* glda
       return -1;
     }
 
-    /* If created at 1x1, mark for recreation when properly sized */
     if (surf_w <= 1 || surf_h <= 1) {
       iupAttribSet(ih, "_IUP_EGL_SURFACE_1x1", "1");
     }
 
-    /* Parse context attributes from IUP attributes */
     {
       int ctx_idx = 0;
       int requested_major = 0, requested_minor = 0;
