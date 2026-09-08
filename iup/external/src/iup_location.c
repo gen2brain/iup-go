@@ -48,7 +48,10 @@ static int iLocationPostMessage(Ihandle* ih, const char* s, int i, double d, voi
     return IUP_DEFAULT;
 
   if (msg->type == IUP_LOCATION_FIX)
-    iLocationFix(ih, msg);
+  {
+    if (iupAttribGetBoolean(ih, "_IUP_LOCATION_ACTIVE"))
+      iLocationFix(ih, msg);
+  }
   else if (msg->type == IUP_LOCATION_PERMISSION)
   {
     IFni cb = (IFni)IupGetCallback(ih, "PERMISSION_CB");
