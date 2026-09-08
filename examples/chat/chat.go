@@ -3,6 +3,9 @@ package main
 import (
 	"fmt"
 	"math"
+	"os"
+	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -68,15 +71,48 @@ var conversations = []conversation{
 	{name: "Marco Bianchi", people: 2, stamp: "8/26/26", preview: "Thanks!", msgs: []message{
 		{day: "Wednesday, August 26", from: "Marco Bianchi", body: "Thanks!", stamp: "4:05 PM"},
 	}},
+	{name: "Hana Sato", people: 2, stamp: "8/25/26", preview: "The photos are uploaded", msgs: []message{
+		{day: "Tuesday, August 25", from: "Hana Sato", body: "The photos are uploaded, have a look when you can", stamp: "9:12 PM"},
+	}},
+	{name: "Book Club", people: 6, stamp: "8/24/26", preview: "Omar: Chapter twelve next week", msgs: []message{
+		{day: "Monday, August 24", from: "Omar Haddad", body: "Chapter **twelve** next week, not eleven", stamp: "6:30 PM"},
+		{body: "Got it, thanks :)", stamp: "6:32 PM"},
+	}},
+	{name: "Elif Demir", people: 2, stamp: "8/23/26", preview: "Happy birthday!", msgs: []message{
+		{day: "Sunday, August 23", from: "Elif Demir", body: "Happy birthday! <3", stamp: "8:00 AM"},
+	}},
+	{name: "Parking Garage", people: 2, stamp: "8/22/26", preview: "Your permit expires on Friday", msgs: []message{
+		{day: "Saturday, August 22", from: "Parking Garage", body: "Your permit expires on Friday.", stamp: "10:00 AM"},
+	}},
+	{name: "Niamh Byrne", people: 2, stamp: "8/21/26", preview: "Did you find the keys?", msgs: []message{
+		{day: "Friday, August 21", from: "Niamh Byrne", body: "Did you find the keys?", stamp: "7:45 PM"},
+		{body: "In the other jacket, of course :D", stamp: "7:50 PM"},
+	}},
+	{name: "Running Group", people: 9, stamp: "8/20/26", preview: "Sofia: 7am at the bridge", msgs: []message{
+		{day: "Thursday, August 20", from: "Sofia Petrova", body: "7am at the bridge, bring water", stamp: "9:30 PM"},
+	}},
+	{name: "Kwame Mensah", people: 2, stamp: "8/19/26", preview: "Sent the invoice", msgs: []message{
+		{day: "Wednesday, August 19", from: "Kwame Mensah", body: "Sent the invoice, let me know if the address is right", stamp: "2:15 PM"},
+	}},
+	{name: "Ingrid Larsen", people: 2, stamp: "8/18/26", preview: "See you at the station", msgs: []message{
+		{day: "Tuesday, August 18", from: "Ingrid Larsen", body: "See you at the station ;)", stamp: "5:05 PM"},
+	}},
 }
 
 var emoticons = []string{":)", ":D", ";)", ":(", "<3"}
+
+const visibleRows = 10
 
 type palette struct {
 	bg, panel, rowSel, rowHover  string
 	text, dim                    string
 	bubbleIn, bubbleOut          string
 	accent, accentText, onAccent string
+}
+
+type pointer struct {
+	y, pos          int
+	active, dragged bool
 }
 
 func global(name, fallback string) string {
@@ -101,11 +137,14 @@ var (
 	convCv                   iup.Ihandle
 	thread, search, composer iup.Ihandle
 	title, subtitle          iup.Ihandle
-	dlg                      iup.Ihandle
+	dlg, screens             iup.Ihandle
+	location                 iup.Ihandle
+	mobile                   bool
 
 	shown    []int
 	selected int
 	hovered  = -1
+	press    pointer
 
 	images  []iup.Ihandle
 	imaged  = map[iup.Ihandle]string{}
@@ -115,6 +154,10 @@ var (
 func main() {
 	iup.Open()
 	defer iup.Close()
+
+	driver := iup.GetGlobal("DRIVER")
+	mobile = driver == "Android" || driver == "CocoaTouch"
+	iup.SetGlobal("APPID", "com.example.Chat")
 
 	setPalette()
 	makeIcons()
@@ -127,7 +170,7 @@ func main() {
 		"SCROLLBAR": "VERTICAL",
 		"YAUTOHIDE": "YES",
 		"CANFOCUS":  "NO",
-		"SIZE":      fmt.Sprintf("x%d", 3*8*len(conversations)),
+		"SIZE":      fmt.Sprintf("x%d", 3*8*visibleRows),
 	})
 	convCv.SetCallback("ACTION", iup.ActionFunc(drawConversations))
 	convCv.SetCallback("RESIZE_CB", iup.ResizeFunc(resized))
@@ -146,10 +189,16 @@ func main() {
 		"EXPAND":     "YES",
 		"PADDING":    "10x8",
 	})
-	thread.SetCallback("TEXTLINK_CB", iup.TextLinkFunc(linkClicked))
+
+	columns := func(desktop, phone string) string {
+		if mobile {
+			return phone
+		}
+		return desktop
+	}
 
 	search = iup.Text().SetAttributes(map[string]string{
-		"VISIBLECOLUMNS": "20",
+		"VISIBLECOLUMNS": columns("20", "12"),
 		"EXPAND":         "HORIZONTAL",
 		"PADDING":        "6x5",
 		"CUEBANNER":      "Search",
@@ -157,7 +206,7 @@ func main() {
 	search.SetCallback("VALUECHANGED_CB", iup.ValueChangedFunc(searchChanged))
 
 	composer = iup.Text().SetAttributes(map[string]string{
-		"VISIBLECOLUMNS": "40",
+		"VISIBLECOLUMNS": columns("40", "8"),
 		"EXPAND":         "HORIZONTAL",
 		"PADDING":        "8x6",
 		"CUEBANNER":      "Type a message, **bold** and :) work",
@@ -167,43 +216,73 @@ func main() {
 	sendBtn.SetHandle("sendButton")
 	smile := iconButton("smile", "Emoticon", nil)
 	emoticonPopover(smile)
+	attach := iconButton("plus", "Attach", nil)
+	attachPopover(attach)
+	makeLocation()
 
 	title = iup.Label("").SetAttributes("FONTSTYLE=Bold, EXPAND=HORIZONTAL")
 	subtitle = iup.Label("").SetAttributes(map[string]string{"FGCOLOR": pal.accent, "EXPAND": "HORIZONTAL"})
 
-	sidebar := iup.Vbox(
-		iup.Hbox(search, iconButton("compose", "New chat", nil)).SetAttributes("MARGIN=10x10, GAP=6, ALIGNMENT=ACENTER"),
-		convCv,
-	).SetAttribute("EXPAND", "VERTICAL")
-
-	right := iup.Vbox(
+	list := iup.Vbox(
 		iup.Hbox(
-			iup.Vbox(title, subtitle).SetAttribute("EXPAND", "HORIZONTAL"),
-			iconButton("search", "Search in conversation", nil),
-			iconButton("person", "Add participant", nil),
-			iconButton("call", "Call", nil),
-			iconButton("info", "Details", nil),
+			search,
+			iconButton("compose", "New chat", nil),
 			iconButton("theme", "Light or dark", iup.ActionFunc(toggleAppearance)),
-		).SetAttributes("MARGIN=12x10, GAP=4, ALIGNMENT=ACENTER"),
+		).SetAttributes("MARGIN=10x10, GAP=6, ALIGNMENT=ACENTER"),
+		convCv,
+	)
+
+	header := iup.Hbox().SetAttributes("MARGIN=12x10, GAP=4, ALIGNMENT=ACENTER")
+	if mobile {
+		iup.Append(header, iconButton("back", "Back", iup.ActionFunc(back)))
+	}
+	iup.Append(header, iup.Vbox(title, subtitle).SetAttribute("EXPAND", "HORIZONTAL"))
+	if !mobile {
+		iup.Append(header, iconButton("search", "Search in conversation", nil))
+		iup.Append(header, iconButton("person", "Add participant", nil))
+	}
+	iup.Append(header, iconButton("call", "Call", nil))
+	iup.Append(header, iconButton("info", "Details", nil))
+
+	room := iup.Vbox(
+		header,
 		thread,
 		iup.Hbox(
-			iconButton("plus", "Attach", nil),
+			attach,
 			smile,
 			composer,
 			sendBtn,
 		).SetAttributes("MARGIN=12x12, GAP=8, ALIGNMENT=ACENTER"),
 	).SetAttributes("EXPAND=YES, GAP=4")
 
-	dlg = iup.Dialog(iup.Hbox(sidebar, right)).SetAttributes(map[string]string{
+	var content iup.Ihandle
+	if mobile {
+		screens = iup.Zbox(list, room)
+		content = screens
+	} else {
+		list.SetAttribute("EXPAND", "VERTICAL")
+		content = iup.Hbox(list, room)
+	}
+
+	dlg = iup.Dialog(content).SetAttributes(map[string]string{
 		"TITLE":        "Chat",
 		"DEFAULTENTER": "sendButton",
 	})
 	dlg.SetCallback("THEMECHANGED_CB", iup.ThemeChangedFunc(themeChanged))
 
+	iup.SetAttributeHandle(dlg, "STARTFOCUS", composer)
+
 	iup.Show(dlg)
-	open(0)
-	iup.SetFocus(composer)
+	if !mobile {
+		open(0)
+	}
 	iup.MainLoop()
+}
+
+func back(ih iup.Ihandle) int {
+	screens.SetAttribute("VALUEPOS", "0")
+	iup.Update(convCv)
+	return iup.DEFAULT
 }
 
 func accentText(accent, bg, fg string) string {
@@ -245,7 +324,6 @@ func toggleAppearance(ih iup.Ihandle) int {
 	} else {
 		iup.SetGlobal("APPEARANCE", "DARK")
 	}
-	retheme()
 	return iup.DEFAULT
 }
 
@@ -294,15 +372,22 @@ func open(idx int) {
 	}
 	thread.SetAttribute("READONLY", "YES")
 	thread.SetAttribute("SCROLLTO", fmt.Sprintf("%d:1", thread.GetInt("LINECOUNT")))
+	if mobile {
+		screens.SetAttribute("VALUEPOS", "1")
+	}
 	iup.Update(convCv)
 }
 
 func appendMessage(m *message) {
+	base := strconv.Itoa(fontSize(thread))
+	small := strconv.Itoa(fontSize(thread) * 4 / 5)
+
+	// every paragraph ends in a plain space: an append inherits the last character's format
 	if m.day != "" {
-		ln := appendLine(m.day)
+		ln := appendLine(m.day + " ")
 		tag(ln, 1, len([]rune(m.day))+1, map[string]string{
-			"ALIGNMENT": "CENTER", "FGCOLOR": pal.dim,
-			"FONTSCALE": "SMALL", "SPACEBEFORE": "10", "SPACEAFTER": "6",
+			"ALIGNMENT": "CENTER", "FGCOLOR": pal.dim, "FONTSIZE": small,
+			"SPACEBEFORE": "10", "SPACEAFTER": "6",
 		})
 	}
 
@@ -313,38 +398,58 @@ func appendMessage(m *message) {
 	}
 	head := who + "   " + m.stamp
 
-	ln := appendLine(head)
+	ln := appendLine(head + " ")
 	tag(ln, 1, len([]rune(who))+1, map[string]string{
-		"WEIGHT": "BOLD", "FGCOLOR": pal.accentText, "ALIGNMENT": align, "SPACEBEFORE": "8",
+		"WEIGHT": "BOLD", "FGCOLOR": pal.accentText, "FONTSIZE": base,
+		"ALIGNMENT": align, "SPACEBEFORE": "8",
 	})
 	tag(ln, len([]rune(who))+1, len([]rune(head))+1, map[string]string{
-		"FGCOLOR": pal.dim, "FONTSCALE": "SMALL", "ALIGNMENT": align,
+		"FGCOLOR": pal.dim, "FONTSIZE": small, "ALIGNMENT": align,
 	})
 
 	first := thread.GetInt("LINECOUNT") + 1
 	thread.SetAttribute("APPENDMARKDOWN", m.body)
-	last := thread.GetInt("LINECOUNT")
-	if last < first {
+	if thread.GetInt("LINECOUNT") < first {
 		thread.SetAttribute("APPEND", plain(m.body))
-		last = thread.GetInt("LINECOUNT")
 	}
+	thread.SetAttribute("APPENDNEWLINE", "NO")
+	thread.SetAttribute("APPEND", " ")
+	thread.SetAttribute("APPENDNEWLINE", "YES")
+	last := thread.GetInt("LINECOUNT")
 
 	bubble := pal.bubbleIn
 	if mine {
 		bubble = pal.bubbleOut
 	}
+	emoSize := strconv.Itoa(fontSize(thread) * 4 / 3)
 	for l := first; l <= last; l++ {
 		body := lineText(l)
-		tag(l, 1, len([]rune(body))+1, map[string]string{
+		end := len([]rune(body)) + 1
+		if l == last {
+			end--
+		}
+		tag(l, 1, end, map[string]string{
 			"BGCOLOR": bubble, "ALIGNMENT": align, "SPACEAFTER": "4", "INDENT": "6",
 		})
 		for _, e := range emoticons {
 			cols := columns(body, e)
 			for i := len(cols) - 1; i >= 0; i-- {
-				tag(l, cols[i], cols[i]+len([]rune(e)), map[string]string{"IMAGE": "emo" + e})
+				tag(l, cols[i], cols[i]+len([]rune(e)), map[string]string{
+					"IMAGE": "emo" + e, "WIDTH": emoSize, "HEIGHT": emoSize,
+				})
 			}
 		}
 	}
+}
+
+func fontSize(ih iup.Ihandle) int {
+	f := strings.Fields(ih.GetAttribute("FONT"))
+	if len(f) > 0 {
+		if n, err := strconv.Atoi(f[len(f)-1]); err == nil && n > 0 {
+			return n
+		}
+	}
+	return 12
 }
 
 func appendLine(s string) int {
@@ -380,11 +485,6 @@ func tag(line, col, endCol int, attrs map[string]string) {
 	}
 	ft.SetAttribute("SELECTION", fmt.Sprintf("%d,%d:%d,%d", line, col, line, endCol))
 	iup.SetAttributeHandle(thread, "ADDFORMATTAG", ft)
-}
-
-func linkClicked(ih iup.Ihandle, url string) int {
-	iup.Message("Link", url)
-	return iup.DEFAULT
 }
 
 func filter(q string) {
@@ -563,24 +663,42 @@ func scrolled(ih iup.Ihandle, op int, posx, posy float64) int {
 
 func wheel(ih iup.Ihandle, delta float64, x, y int, status string) int {
 	_, _, line := iup.DrawGetTextMetrics(ih)
-	max := float64(ih.GetInt("YMAX") - ih.GetInt("DY"))
-	pos := float64(ih.GetInt("POSY")) - delta*3*float64(line)
-	ih.SetAttribute("POSY", math.Max(0, math.Min(pos, math.Max(0, max))))
-	iup.Update(ih)
+	scrollTo(ih, float64(ih.GetInt("POSY"))-delta*3*float64(line))
 	return iup.DEFAULT
 }
 
+func scrollTo(ih iup.Ihandle, pos float64) {
+	max := math.Max(0, float64(ih.GetInt("YMAX")-ih.GetInt("DY")))
+	ih.SetAttribute("POSY", math.Max(0, math.Min(pos, max)))
+	iup.Update(ih)
+}
+
 func convClick(ih iup.Ihandle, button, pressed, x, y int, status string) int {
-	if button != iup.BUTTON1 || pressed == 0 {
+	if button != iup.BUTTON1 {
 		return iup.DEFAULT
 	}
-	if i := rowAt(ih, y); i >= 0 {
-		open(shown[i])
+	if pressed != 0 {
+		press = pointer{y: y, pos: ih.GetInt("POSY"), active: true}
+		return iup.DEFAULT
 	}
+	if press.active && !press.dragged {
+		if i := rowAt(ih, press.y); i >= 0 {
+			open(shown[i])
+		}
+	}
+	press.active = false
 	return iup.DEFAULT
 }
 
 func convHover(ih iup.Ihandle, x, y int, status string) int {
+	if press.active {
+		m := metricsOf(ih)
+		if dy := press.y - y; press.dragged || dy > m.pad || dy < -m.pad {
+			press.dragged = true
+			scrollTo(ih, float64(press.pos+dy))
+		}
+		return iup.DEFAULT
+	}
 	if i := rowAt(ih, y); i != hovered {
 		hovered = i
 		iup.Update(ih)
@@ -628,7 +746,10 @@ func emoticonPopover(anchor iup.Ihandle) {
 	}))
 }
 
+var link = regexp.MustCompile(`\[([^\]]*)\]\([^)]*\)`)
+
 func plain(s string) string {
+	s = link.ReplaceAllString(s, "$1")
 	s = strings.ReplaceAll(s, "\n", " ")
 	for _, mark := range []string{"**", "__", "```", "`", "*", "_"} {
 		s = strings.ReplaceAll(s, mark, "")
@@ -641,18 +762,106 @@ func send(ih iup.Ihandle) int {
 	if body == "" {
 		return iup.DEFAULT
 	}
+	composer.SetAttribute("VALUE", "")
+	sendBody(body)
+	return iup.DEFAULT
+}
+
+func sendBody(body string) {
 	c := &conversations[selected]
 	c.msgs = append(c.msgs, message{body: body, stamp: time.Now().Format("3:04 PM")})
 	c.preview = plain(body)
 	c.stamp = "now"
 
-	composer.SetAttribute("VALUE", "")
 	thread.SetAttribute("READONLY", "NO")
 	appendMessage(&c.msgs[len(c.msgs)-1])
 	thread.SetAttribute("READONLY", "YES")
 	thread.SetAttribute("SCROLLTO", fmt.Sprintf("%d:1", thread.GetInt("LINECOUNT")))
 	iup.Update(convCv)
-	return iup.DEFAULT
+}
+
+func attachPopover(anchor iup.Ihandle) {
+	var pop iup.Ihandle
+	item := func(icon, label string, cb func()) iup.Ihandle {
+		b := iup.Button(label).SetAttributes(map[string]string{
+			"IMAGE": iconName(icon), "FLAT": "YES", "CANFOCUS": "NO", "PADDING": "8x5",
+		})
+		imaged[b] = icon
+		b.SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
+			pop.SetAttribute("VISIBLE", "NO")
+			cb()
+			return iup.DEFAULT
+		}))
+		return b
+	}
+	pop = iup.Popover(iup.Vbox(
+		item("file", "File", sendFile),
+		item("pin", "Location", sendLocation),
+	).SetAttributes("MARGIN=6x6, GAP=2"))
+	pop.SetAttribute("POSITION", "TOP")
+	iup.SetAttributeHandle(pop, "ANCHOR", anchor)
+	anchor.SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
+		pop.SetAttribute("VISIBLE", "YES")
+		return iup.DEFAULT
+	}))
+}
+
+func sendFile() {
+	d := iup.FileDlg().SetAttributes("DIALOGTYPE=OPEN, TITLE=\"Send a file\"")
+	iup.SetAttributeHandle(d, "PARENTDIALOG", dlg)
+	iup.Popup(d, iup.CENTER, iup.CENTER)
+	if d.GetInt("STATUS") != -1 {
+		path := d.GetAttribute("VALUE")
+		body := "**" + filepath.Base(path) + "**"
+		if st, err := os.Stat(path); err == nil {
+			body += " (" + fileSize(st.Size()) + ")"
+		}
+		sendBody(body)
+	}
+	iup.Destroy(d)
+}
+
+func fileSize(n int64) string {
+	units := []string{"B", "KB", "MB", "GB"}
+	v := float64(n)
+	i := 0
+	for v >= 1024 && i < len(units)-1 {
+		v /= 1024
+		i++
+	}
+	if i == 0 {
+		return fmt.Sprintf("%d %s", n, units[i])
+	}
+	return fmt.Sprintf("%.1f %s", v, units[i])
+}
+
+func makeLocation() {
+	location = iup.Location()
+	location.SetCallback("LOCATION_CB", iup.LocationFunc(func(ih iup.Ihandle, lat, lon float64) int {
+		ih.SetAttribute("ACTIVE", "NO")
+		sendBody(fmt.Sprintf("[My location](https://maps.google.com/?q=%.5f,%.5f)", lat, lon))
+		return iup.DEFAULT
+	}))
+	location.SetCallback("PERMISSION_CB", iup.PermissionFunc(func(ih iup.Ihandle, granted int) int {
+		if granted == 0 {
+			ih.SetAttribute("ACTIVE", "NO")
+			iup.Message("Location", "Location access was denied")
+		}
+		return iup.DEFAULT
+	}))
+	location.SetCallback("ERROR_CB", iup.ErrorFunc(func(ih iup.Ihandle, msg string) int {
+		ih.SetAttribute("ACTIVE", "NO")
+		iup.Message("Location", msg)
+		return iup.DEFAULT
+	}))
+}
+
+func sendLocation() {
+	if location.GetAttribute("AVAILABLE") != "YES" {
+		iup.Message("Location", "No location service on this system")
+		return
+	}
+	location.SetAttribute("ACTIVE", "YES")
 }
 
 type sdf func(x, y float64) float64
@@ -673,6 +882,12 @@ func union(fs ...sdf) sdf {
 			d = math.Min(d, f(x, y))
 		}
 		return d
+	}
+}
+
+func box(x0, y0, x1, y1 float64) sdf {
+	return func(x, y float64) float64 {
+		return math.Max(math.Max(x0-x, x-x1), math.Max(y0-y, y-y1))
 	}
 }
 
@@ -747,6 +962,9 @@ func makeIcons() {
 		"smile":   union(ring(0.5, 0.5, 0.38, 0.09), disc(0.37, 0.40, 0.06), disc(0.63, 0.40, 0.06), arc(0.5, 0.50, 0.22, 0.09, 0.15*math.Pi, 0.85*math.Pi)),
 		"send":    wedge(0.14, 0.14, 0.90, 0.5, 0.14, 0.86),
 		"theme":   cut(disc(0.5, 0.5, 0.36), disc(0.68, 0.34, 0.32)),
+		"back":    union(bar(0.62, 0.20, 0.32, 0.50, 0.11), bar(0.32, 0.50, 0.62, 0.80, 0.11)),
+		"file":    union(cut(box(0.24, 0.14, 0.76, 0.86), box(0.33, 0.23, 0.67, 0.77)), bar(0.40, 0.44, 0.60, 0.44, 0.08), bar(0.40, 0.58, 0.60, 0.58, 0.08)),
+		"pin":     cut(union(disc(0.5, 0.40, 0.26), wedge(0.27, 0.50, 0.73, 0.50, 0.5, 0.92)), disc(0.5, 0.40, 0.10)),
 	}
 	for name, shape := range icons {
 		img := iup.ImageRGBA(size, size, raster(size, layer{shape, pal.text}))
