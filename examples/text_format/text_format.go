@@ -256,14 +256,14 @@ func textTest() {
 		iup.SetAttribute(formattag, "SPACEAFTER", "10")
 		iup.SetAttribute(formattag, "FONTSIZE", "24")
 		iup.SetAttribute(formattag, "SELECTION", "3,1:3,50")
-		iup.SetAttributeHandle(mltline, "ADDFORMATTAG", formattag)
+		mltline.SetAttributeHandle("ADDFORMATTAG", formattag)
 
 		formattag = iup.User()
 		iup.SetAttribute(formattag, "BGCOLOR", "255 128 64")
 		iup.SetAttribute(formattag, "UNDERLINE", "SINGLE")
 		iup.SetAttribute(formattag, "WEIGHT", "BOLD")
 		iup.SetAttribute(formattag, "SELECTION", "3,7:3,11")
-		iup.SetAttributeHandle(mltline, "ADDFORMATTAG", formattag)
+		mltline.SetAttributeHandle("ADDFORMATTAG", formattag)
 	}
 
 	btnAppend := iup.Button("&APPEND")
@@ -319,8 +319,8 @@ func textTest() {
 	iup.SetAttribute(dlg, "TITLE", "IupText Test")
 	iup.SetAttribute(dlg, "MARGIN", "10x10")
 	iup.SetAttribute(dlg, "GAP", "5")
-	iup.SetAttributeHandle(dlg, "DEFAULTENTER", btnDefEnter)
-	iup.SetAttributeHandle(dlg, "DEFAULTESC", btnDefEsc)
+	dlg.SetAttributeHandle("DEFAULTENTER", btnDefEnter)
+	dlg.SetAttributeHandle("DEFAULTESC", btnDefEsc)
 	iup.SetAttribute(dlg, "SHRINK", "YES")
 
 	if formatting {
@@ -330,7 +330,7 @@ func textTest() {
 		iup.SetAttribute(formattag, "ITALIC", "YES")
 		iup.SetAttribute(formattag, "STRIKEOUT", "YES")
 		iup.SetAttribute(formattag, "SELECTION", "2,1:2,12")
-		iup.SetAttributeHandle(mltline, "ADDFORMATTAG", formattag)
+		mltline.SetAttributeHandle("ADDFORMATTAG", formattag)
 	}
 
 	iup.ShowXY(dlg, iup.CENTER, iup.CENTER)

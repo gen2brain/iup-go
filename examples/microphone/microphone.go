@@ -44,7 +44,7 @@ func main() {
 	devices := iup.List().SetAttributes(`DROPDOWN=YES, EXPAND=HORIZONTAL`)
 	count := microphone.GetInt("DEVICECOUNT")
 	for i := 0; i < count; i++ {
-		devices.SetAttribute(fmt.Sprintf("%d", i+1), microphone.GetAttribute("DEVICENAME", i))
+		devices.SetAttributeId("", i+1, microphone.GetAttribute("DEVICENAME", i))
 	}
 	if count > 0 {
 		devices.SetAttribute("VALUE", "1")

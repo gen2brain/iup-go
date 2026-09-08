@@ -185,7 +185,7 @@ func main() {
 		}),
 		btn("Toggle FULLSCREEN", func() {
 			d := mainDlg()
-			if d.GetAttribute("FULLSCREEN") == "YES" {
+			if d.GetBool("FULLSCREEN") {
 				d.SetAttribute("FULLSCREEN", "NO")
 				setStatus("FULLSCREEN off")
 			} else {

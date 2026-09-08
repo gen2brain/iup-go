@@ -108,8 +108,8 @@ func main() {
 
 	swapChild := iup.Button("Swap the drop child of the first button")
 	swapChild.SetCallback("ACTION", iup.ActionFunc(func(iup.Ihandle) int {
-		if iup.GetAttributeHandle(options, "DROPCHILD_HANDLE") == colorList {
-			iup.SetAttributeHandle(options, "DROPCHILD_HANDLE", optionList)
+		if options.GetAttributeHandle("DROPCHILD_HANDLE") == colorList {
+			options.SetAttributeHandle("DROPCHILD_HANDLE", optionList)
 		} else {
 			options.SetAttribute("DROPCHILD", "color_list")
 		}

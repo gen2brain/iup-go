@@ -15,7 +15,7 @@ func main() {
 	// Toggle popover visibility on button click
 	togglePopover := func(p iup.Ihandle) iup.ActionFunc {
 		return func(ih iup.Ihandle) int {
-			if p.GetAttribute("VISIBLE") == "YES" {
+			if p.GetBool("VISIBLE") {
 				p.SetAttribute("VISIBLE", "NO")
 			} else {
 				p.SetAttribute("VISIBLE", "YES")
@@ -35,7 +35,7 @@ func main() {
 		)
 		popover.SetAttribute("POSITION", position)
 		popover.SetAttribute("ARROW", "NO")
-		iup.SetAttributeHandle(popover, "ANCHOR", btn)
+		popover.SetAttributeHandle("ANCHOR", btn)
 		btn.SetCallback("ACTION", togglePopover(popover))
 		return btn
 	}
@@ -97,7 +97,7 @@ func main() {
 		).SetAttributes("MARGIN=4x4, GAP=1"),
 	)
 	menuPopover.SetAttribute("POSITION", "BOTTOMLEFT")
-	iup.SetAttributeHandle(menuPopover, "ANCHOR", menuBtn)
+	menuPopover.SetAttributeHandle("ANCHOR", menuBtn)
 	menuBtn.SetCallback("ACTION", togglePopover(menuPopover))
 
 	// Practical: Form popover (BOTTOMRIGHT)
@@ -122,7 +122,7 @@ func main() {
 		).SetAttributes("MARGIN=10x10, GAP=8"),
 	)
 	formPopover.SetAttribute("POSITION", "BOTTOMRIGHT")
-	iup.SetAttributeHandle(formPopover, "ANCHOR", formBtn)
+	formPopover.SetAttributeHandle("ANCHOR", formBtn)
 	formBtn.SetCallback("ACTION", togglePopover(formPopover))
 
 	// Practical: Color picker (RIGHTTOP, no autohide)
@@ -158,7 +158,7 @@ func main() {
 	)
 	colorPopover.SetAttribute("POSITION", "RIGHTTOP")
 	colorPopover.SetAttribute("AUTOHIDE", "NO")
-	iup.SetAttributeHandle(colorPopover, "ANCHOR", colorBtn)
+	colorPopover.SetAttributeHandle("ANCHOR", colorBtn)
 	colorBtn.SetCallback("ACTION", togglePopover(colorPopover))
 
 	// Practical: Help tooltip (TOPLEFT)
@@ -171,7 +171,7 @@ func main() {
 		).SetAttributes("MARGIN=10x8, GAP=4"),
 	)
 	infoPopover.SetAttribute("POSITION", "TOPLEFT")
-	iup.SetAttributeHandle(infoPopover, "ANCHOR", infoBtn)
+	infoPopover.SetAttributeHandle("ANCHOR", infoBtn)
 	infoBtn.SetCallback("ACTION", togglePopover(infoPopover))
 
 	// Practical: Offset demo (BOTTOM with gap)
@@ -184,7 +184,7 @@ func main() {
 	)
 	offsetPopover.SetAttribute("POSITION", "BOTTOM")
 	offsetPopover.SetAttribute("OFFSETY", "10")
-	iup.SetAttributeHandle(offsetPopover, "ANCHOR", offsetBtn)
+	offsetPopover.SetAttributeHandle("ANCHOR", offsetBtn)
 	offsetBtn.SetCallback("ACTION", togglePopover(offsetPopover))
 
 	useCasesFrame := iup.Frame(

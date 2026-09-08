@@ -153,7 +153,7 @@ func main() {
 }
 
 func isActive(name string) bool {
-	return iup.GetHandle(name).GetAttribute("ACTIVE") != "NO"
+	return iup.GetHandle(name).GetBool("ACTIVE")
 }
 
 func doRecord(ih iup.Ihandle) int {

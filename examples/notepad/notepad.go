@@ -411,7 +411,7 @@ func copyActionCb(ih iup.Ihandle) int {
 func pasteActionCb(ih iup.Ihandle) int {
 	cb := iup.Clipboard()
 	defer cb.Destroy()
-	if cb.GetAttribute("TEXTAVAILABLE") == "YES" {
+	if cb.GetBool("TEXTAVAILABLE") {
 		multitext.SetAttribute("INSERT", cb.GetAttribute("TEXT"))
 	}
 	return iup.DEFAULT
@@ -718,8 +718,8 @@ func gotoActionCb(ih iup.Ihandle) int {
 	if gotoDlg.GetInt("STATUS") == 1 {
 		line := txt.GetInt("VALUE")
 		pos := iup.TextConvertLinColToPos(multitext, line, 0)
-		multitext.SetAttribute("CARETPOS", fmt.Sprintf("%d", pos))
-		multitext.SetAttribute("SCROLLTOPOS", fmt.Sprintf("%d", pos))
+		multitext.SetAttribute("CARETPOS", pos)
+		multitext.SetAttribute("SCROLLTOPOS", pos)
 		iup.SetFocus(multitext)
 	}
 	gotoDlg.Destroy()

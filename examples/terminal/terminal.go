@@ -100,7 +100,7 @@ func main() {
 	}
 
 	run := btn("Run Shell", "Start a shell on a pseudo terminal", execCb)
-	if iup.GetAttribute(term, "PTYSUPPORT") != "YES" {
+	if !iup.GetBool(term, "PTYSUPPORT") {
 		run.SetAttributes("ACTIVE=NO").SetAttribute("TIP", "No pseudo terminal on this platform")
 	}
 

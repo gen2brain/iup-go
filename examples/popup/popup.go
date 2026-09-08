@@ -113,8 +113,8 @@ func main() {
 	// Button that shows popup at button position
 	btn2 := iup.Button("Edit Menu (at button)")
 	btn2.SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
-		_, x, y := iup.GetInt2(ih, "SCREENPOSITION")
-		_, _, h := iup.GetInt2(ih, "RASTERSIZE")
+		_, x, y := ih.GetIntInt("SCREENPOSITION")
+		_, _, h := ih.GetIntInt("RASTERSIZE")
 		iup.Popup(menu2, x, y+h)
 		return iup.DEFAULT
 	}))

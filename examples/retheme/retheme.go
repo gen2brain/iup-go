@@ -55,7 +55,7 @@ func setGlobals(p palette) {
 }
 
 func retheme(ih iup.Ihandle, p palette) {
-	if ih == 0 || ih.GetAttribute("NORETHEME") == "YES" {
+	if ih == 0 || ih.GetBool("NORETHEME") {
 		return
 	}
 	switch iup.GetClassName(ih) {

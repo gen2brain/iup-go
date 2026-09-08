@@ -89,7 +89,7 @@ func main() {
 		case "dial":
 			iup.GetHandle("dial").SetAttribute("VALUE", fmt.Sprintf("%g", float64(i)/1000.0))
 		case "spin":
-			iup.GetHandle("spin").SetAttribute("VALUE", fmt.Sprintf("%d", i))
+			iup.GetHandle("spin").SetAttribute("VALUE", i)
 		case "toggle":
 			v := "OFF"
 			if i == 1 {
@@ -97,7 +97,7 @@ func main() {
 			}
 			iup.GetHandle("toggle").SetAttribute("VALUE", v)
 		case "tabs":
-			iup.GetHandle("tabs").SetAttribute("VALUEPOS", fmt.Sprintf("%d", i))
+			iup.GetHandle("tabs").SetAttribute("VALUEPOS", i)
 		case "color":
 			rgb, _ := p.(string)
 			iup.GetHandle("colorbr").SetAttribute("RGB", rgb)
@@ -109,7 +109,7 @@ func main() {
 			line, _ := p.(string)
 			lst := iup.GetHandle("listBox")
 			n := lst.GetInt("COUNT")
-			lst.SetAttribute(fmt.Sprintf("INSERTITEM%d", n+1), line)
+			lst.SetAttributeId("INSERTITEM", n+1, line)
 			if n+1 > 50 {
 				lst.SetAttribute("REMOVEITEM", "1")
 			}

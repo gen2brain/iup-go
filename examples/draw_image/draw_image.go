@@ -79,12 +79,12 @@ func draw(ih iup.Ihandle) int {
 	card(ih, 370, 290, 700, 500, "DRAWIMAGEOPACITY: fade cascade and pulse")
 	ih.SetAttribute("DRAWIMAGEQUALITY", "LINEAR")
 	for i, opacity := range []int{255, 170, 100, 45} {
-		ih.SetAttribute("DRAWIMAGEOPACITY", fmt.Sprintf("%d", opacity))
+		ih.SetAttribute("DRAWIMAGEOPACITY", opacity)
 		iup.DrawImage(ih, "sunset", 390+i*58, 315, 80, 80)
 	}
 	label(ih, "255 .. 45", 390, 400, 222)
 	pulse := 40 + int(215*(0.5+0.5*math.Sin(float64(tick)*0.35)))
-	ih.SetAttribute("DRAWIMAGEOPACITY", fmt.Sprintf("%d", pulse))
+	ih.SetAttribute("DRAWIMAGEOPACITY", pulse)
 	ih.SetAttribute("DRAWIMAGEQUALITY", "NEAREST")
 	iup.DrawImage(ih, "alien", 585, 415, 66, 48)
 	ih.SetAttribute("DRAWIMAGEOPACITY", "255")

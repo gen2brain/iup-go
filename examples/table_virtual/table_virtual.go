@@ -146,7 +146,7 @@ func main() {
 
 	// Enable alternating colors for better readability
 	table.SetAttribute("ALTERNATECOLOR", "YES")
-	if iup.GetGlobal("DARKMODE") == "YES" {
+	if iup.GetGlobalBool("DARKMODE") {
 		table.SetAttribute("EVENROWCOLOR", "#3A3A3A")
 		table.SetAttribute("ODDROWCOLOR", "#2D2D2D")
 	} else {

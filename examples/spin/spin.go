@@ -19,7 +19,7 @@ func main() {
 	bareSpin := iup.Spin()
 	bareSpin.SetCallback("SPIN_CB", iup.SpinFunc(func(ih iup.Ihandle, inc int) int {
 		count += inc
-		counter.SetAttribute("TITLE", fmt.Sprintf("%d", count))
+		counter.SetAttribute("TITLE", count)
 		return iup.DEFAULT
 	}))
 
@@ -37,7 +37,7 @@ func main() {
 	numBox.SetCallback("SPIN_CB", iup.SpinFunc(func(ih iup.Ihandle, inc int) int {
 		v := iup.GetInt(numText, "VALUE")
 		v += inc
-		numText.SetAttribute("VALUE", fmt.Sprintf("%d", v))
+		numText.SetAttribute("VALUE", v)
 		return iup.DEFAULT
 	}))
 

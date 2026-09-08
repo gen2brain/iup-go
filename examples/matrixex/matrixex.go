@@ -212,7 +212,7 @@ func main() {
 		button("Hide line 3", func(mat iup.Ihandle) { mat.SetAttribute("VISIBLELIN3", "NO") }),
 		button("Show line 3", func(mat iup.Ihandle) { mat.SetAttribute("VISIBLELIN3", "YES") }),
 		button("Toggle col 4", func(mat iup.Ihandle) {
-			visible := mat.GetAttribute("VISIBLECOL4") == "YES"
+			visible := mat.GetBool("VISIBLECOL4")
 			mat.SetAttribute("VISIBLECOL4", map[bool]string{true: "NO", false: "YES"}[visible])
 		}),
 		button("Context 2:2", func(mat iup.Ihandle) {

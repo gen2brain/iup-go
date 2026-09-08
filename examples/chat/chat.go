@@ -270,7 +270,7 @@ func main() {
 	})
 	dlg.SetCallback("THEMECHANGED_CB", iup.ThemeChangedFunc(themeChanged))
 
-	iup.SetAttributeHandle(dlg, "STARTFOCUS", composer)
+	dlg.SetAttributeHandle("STARTFOCUS", composer)
 
 	iup.Show(dlg)
 	if !mobile {
@@ -319,7 +319,7 @@ func themeChanged(ih iup.Ihandle, darkMode int) int {
 }
 
 func toggleAppearance(ih iup.Ihandle) int {
-	if iup.GetGlobal("DARKMODE") == "YES" {
+	if iup.GetGlobalBool("DARKMODE") {
 		iup.SetGlobal("APPEARANCE", "LIGHT")
 	} else {
 		iup.SetGlobal("APPEARANCE", "DARK")
@@ -484,7 +484,7 @@ func tag(line, col, endCol int, attrs map[string]string) {
 		ft.SetAttribute(k, v)
 	}
 	ft.SetAttribute("SELECTION", fmt.Sprintf("%d,%d:%d,%d", line, col, line, endCol))
-	iup.SetAttributeHandle(thread, "ADDFORMATTAG", ft)
+	thread.SetAttributeHandle("ADDFORMATTAG", ft)
 }
 
 func filter(q string) {
@@ -739,7 +739,7 @@ func emoticonPopover(anchor iup.Ihandle) {
 	}
 	pop = iup.Popover(iup.Hbox(keys...).SetAttributes("MARGIN=6x6, GAP=4, ALIGNMENT=ACENTER"))
 	pop.SetAttribute("POSITION", "TOP")
-	iup.SetAttributeHandle(pop, "ANCHOR", anchor)
+	pop.SetAttributeHandle("ANCHOR", anchor)
 	anchor.SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
 		pop.SetAttribute("VISIBLE", "YES")
 		return iup.DEFAULT
@@ -799,7 +799,7 @@ func attachPopover(anchor iup.Ihandle) {
 		item("pin", "Location", sendLocation),
 	).SetAttributes("MARGIN=6x6, GAP=2"))
 	pop.SetAttribute("POSITION", "TOP")
-	iup.SetAttributeHandle(pop, "ANCHOR", anchor)
+	pop.SetAttributeHandle("ANCHOR", anchor)
 	anchor.SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
 		pop.SetAttribute("VISIBLE", "YES")
 		return iup.DEFAULT
@@ -808,7 +808,7 @@ func attachPopover(anchor iup.Ihandle) {
 
 func sendFile() {
 	d := iup.FileDlg().SetAttributes("DIALOGTYPE=OPEN, TITLE=\"Send a file\"")
-	iup.SetAttributeHandle(d, "PARENTDIALOG", dlg)
+	d.SetAttributeHandle("PARENTDIALOG", dlg)
 	iup.Popup(d, iup.CENTER, iup.CENTER)
 	if d.GetInt("STATUS") != -1 {
 		path := d.GetAttribute("VALUE")
@@ -857,7 +857,7 @@ func makeLocation() {
 }
 
 func sendLocation() {
-	if location.GetAttribute("AVAILABLE") != "YES" {
+	if !location.GetBool("AVAILABLE") {
 		iup.Message("Location", "No location service on this system")
 		return
 	}
@@ -981,10 +981,7 @@ func makeIcons() {
 }
 
 func imageSize() int {
-	size := 0
-	if n, err := strconv.Atoi(iup.GetGlobal("DEFAULTFONTSIZE")); err == nil {
-		size = 2 * n
-	}
+	size := 2 * iup.GetGlobalInt("DEFAULTFONTSIZE")
 	if size < 16 {
 		size = 16
 	}

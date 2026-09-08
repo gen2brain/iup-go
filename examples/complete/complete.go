@@ -131,8 +131,7 @@ func messageCb(ih iup.Ihandle, s string, i int, p any) int {
 		iup.SetAttributeId(list, "", idx+1, res)
 	}
 
-	var w, h int
-	fmt.Sscanf(text.GetAttribute("RASTERSIZE"), "%dx%d", &w, &h)
+	_, w, h := text.GetIntInt("RASTERSIZE")
 
 	list.SetAttribute("VALUE", 0)
 	list.SetAttribute("RASTERSIZE", fmt.Sprintf("%dx%d", w, h*5))
