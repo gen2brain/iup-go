@@ -126,49 +126,74 @@ static void gtk4MenuRadioActivated(GSimpleAction* action, GVariant* parameter, g
     IupExitLoop();
 }
 
-/* Convert IUP accelerator text ("Ctrl+N") to a GTK accel string ("<Control>n") for the menu "accel" attribute. */
-static gboolean gtk4MenuBuildAccel(const char* text, char* buffer, size_t bufsize)
+static gboolean gtk4MenuShortcutActivate(GtkWidget* widget, GVariant* args, gpointer user_data)
 {
-  guint key = 0;
-  GdkModifierType mods = 0;
-  const char* p = text;
+  Ihandle* ih = (Ihandle*)user_data;
+  Ihandle* dialog = IupGetDialog(ih);
+  char* action_name = iupAttribGet(ih, "_IUPGTK4_ACTION_NAME");
+  GSimpleActionGroup* action_group = dialog ? (GSimpleActionGroup*)iupAttribGet(dialog, "_IUPGTK4_MENU_ACTION_GROUP") : NULL;
+  GAction* action = (action_group && action_name) ? g_action_map_lookup_action(G_ACTION_MAP(action_group), action_name) : NULL;
+  (void)widget;
+  (void)args;
 
-  buffer[0] = 0;
-  while (*p)
+  if (!action || !g_action_get_enabled(action))
+    return FALSE;
+
+  g_action_activate(action, NULL);
+  return TRUE;
+}
+
+static void gtk4MenuItemSetShortcut(Ihandle* ih, guint keyval, GdkModifierType mods)
+{
+  Ihandle* dialog = IupGetDialog(ih);
+  GtkShortcutController* controller;
+  GtkShortcut* shortcut = (GtkShortcut*)iupAttribGet(ih, "_IUPGTK4_SHORTCUT");
+
+  if (!dialog || !dialog->handle)
+    return;
+
+  controller = (GtkShortcutController*)g_object_get_data(G_OBJECT(dialog->handle), "_IUP_SHORTCUTS");
+  if (!controller)
   {
-    char token[48];
-    const char* plus = strchr(p, '+');
-    int len = plus ? (int)(plus - p) : (int)strlen(p);
-    if (len <= 0 || len >= (int)sizeof(token) || strlen(buffer) + sizeof(token) >= (size_t)bufsize)
-      return FALSE;
-    memcpy(token, p, len);
-    token[len] = 0;
-
-    if (plus)
-    {
-      if (iupStrEqualNoCase(token, "Ctrl") || iupStrEqualNoCase(token, "Control"))
-        strcat(buffer, "<Control>");
-      else if (iupStrEqualNoCase(token, "Shift"))
-        strcat(buffer, "<Shift>");
-      else if (iupStrEqualNoCase(token, "Alt"))
-        strcat(buffer, "<Alt>");
-      else if (iupStrEqualNoCase(token, "Meta") || iupStrEqualNoCase(token, "Super") || iupStrEqualNoCase(token, "Cmd"))
-        strcat(buffer, "<Super>");
-      else
-        return FALSE;
-      p = plus + 1;
-    }
-    else
-    {
-      if (len == 1 && token[0] >= 'A' && token[0] <= 'Z')
-        token[0] = (char)(token[0] + 32);
-      strcat(buffer, token);
-      break;
-    }
+    controller = GTK_SHORTCUT_CONTROLLER(gtk_shortcut_controller_new());
+    gtk_event_controller_set_propagation_phase(GTK_EVENT_CONTROLLER(controller), GTK_PHASE_CAPTURE);
+    gtk_shortcut_controller_set_scope(controller, GTK_SHORTCUT_SCOPE_GLOBAL);
+    gtk_widget_add_controller(GTK_WIDGET(dialog->handle), GTK_EVENT_CONTROLLER(controller));
+    g_object_set_data(G_OBJECT(dialog->handle), "_IUP_SHORTCUTS", controller);
   }
 
-  gtk_accelerator_parse(buffer, &key, &mods);
-  return key != 0;
+  if (shortcut && iupAttribGet(ih, "_IUPGTK4_SHORTCUT_CONTROLLER") == (char*)controller)
+    gtk_shortcut_controller_remove_shortcut(controller, shortcut);
+  iupAttribSet(ih, "_IUPGTK4_SHORTCUT", NULL);
+  iupAttribSet(ih, "_IUPGTK4_SHORTCUT_CONTROLLER", NULL);
+
+  if (keyval)
+  {
+    shortcut = gtk_shortcut_new(gtk_keyval_trigger_new(keyval, mods), gtk_callback_action_new(gtk4MenuShortcutActivate, ih, NULL));
+    gtk_shortcut_controller_add_shortcut(controller, shortcut);
+    iupAttribSet(ih, "_IUPGTK4_SHORTCUT", (char*)shortcut);
+    iupAttribSet(ih, "_IUPGTK4_SHORTCUT_CONTROLLER", (char*)controller);
+  }
+}
+
+static gboolean gtk4MenuBuildAccel(Ihandle* ih, const char* title, char* buffer, size_t bufsize)
+{
+  int code = iupMenuGetAccel(title);
+  unsigned int keyval = 0, state = 0;
+
+  buffer[0] = 0;
+  if (code)
+    iupdrvKeyEncode(code, &keyval, &state);
+
+  gtk4MenuItemSetShortcut(ih, keyval, (GdkModifierType)state);
+
+  if (keyval)
+  {
+    char* name = gtk_accelerator_name(keyval, (GdkModifierType)state);
+    iupStrCopyN(buffer, (int)bufsize, name);
+    g_free(name);
+  }
+  return keyval != 0;
 }
 
 static Ihandle* gtk4MenuGetRootMenu(Ihandle* ih)
@@ -361,18 +386,27 @@ static void gtk4MenuItemAttachCustom(Ihandle* ih)
     gtk_popover_menu_bar_add_child(GTK_POPOVER_MENU_BAR(root->handle), widget, id);
 }
 
+static char* gtk4MenuProcessTitle(Ihandle* ih, const char* title)
+{
+  char c = '_';
+  char* keyed = iupMenuProcessTitle(ih, title);
+  char* processed = iupStrProcessMnemonic(keyed, &c, 1);
+  if (processed == keyed) processed = iupStrDup(keyed);
+  if (keyed != title) free(keyed);
+  return processed;
+}
+
 static GMenuItem* gtk4MenuItemBuildEntry(Ihandle* menu, Ihandle* ih, GSimpleActionGroup* action_group, const char* new_title)
 {
   GMenuItem* mitem;
   char* title;
   char* processed_title;
-  char c = '_';
 
   title = (char*)new_title;
   if (!title) title = iupAttribGet(ih, "TITLE");
   if (!title) title = "";
 
-  processed_title = iupStrProcessMnemonic(title, &c, 1);
+  processed_title = gtk4MenuProcessTitle(ih, title);
 
   if (iupAttribGetBoolean(menu, "RADIO"))
   {
@@ -414,8 +448,7 @@ static GMenuItem* gtk4MenuItemBuildEntry(Ihandle* menu, Ihandle* ih, GSimpleActi
     mitem = g_menu_item_new(processed_title, NULL);
     g_menu_item_set_action_and_target(mitem, full_action_name, "s", iupAttribGet(ih, "_IUPGTK4_RADIO_TARGET"));
 
-    if (processed_title != title)
-      free(processed_title);
+    free(processed_title);
     return mitem;
   }
 
@@ -469,9 +502,9 @@ static GMenuItem* gtk4MenuItemBuildEntry(Ihandle* menu, Ihandle* ih, GSimpleActi
     snprintf(full_action_name, sizeof(full_action_name), "menu.%s", action_name);
 
     tab = strchr(processed_title, '\t');
+    has_accel = gtk4MenuBuildAccel(ih, processed_title, accel_buf, sizeof(accel_buf));
     if (tab)
     {
-      has_accel = gtk4MenuBuildAccel(tab + 1, accel_buf, sizeof(accel_buf));
       label_copy = iupStrDup(processed_title);
       label_copy[tab - processed_title] = 0;
       label_str = label_copy;
@@ -514,8 +547,7 @@ static GMenuItem* gtk4MenuItemBuildEntry(Ihandle* menu, Ihandle* ih, GSimpleActi
     }
 
     if (label_copy) free(label_copy);
-    if (processed_title != title)
-      free(processed_title);
+    free(processed_title);
     return mitem;
   }
 }
@@ -1175,6 +1207,9 @@ static void gtk4MenuItemUnMapMethod(Ihandle* ih)
     iupAttribSet(ih, "_IUPGTK4_CUSTOM_ID", NULL);
   }
 
+  if (gtk4MenuRootAlive(ih))
+    gtk4MenuItemSetShortcut(ih, 0, 0);
+
   iupAttribSet(ih, "_IUPGTK4_ACTION_NAME", NULL);
   iupAttribSet(ih, "_IUPGTK4_CHECKABLE", NULL);
   iupAttribSet(ih, "_IUPGTK4_ENTRY", NULL);
@@ -1188,14 +1223,13 @@ static int gtk4SubmenuMapMethod(Ihandle* ih)
   GMenuItem* mitem;
   char* title;
   char* processed_title;
-  char c = '_';
 
   if (!menu || !iupAttribGet(menu, "_IUPGTK4_SECTION0"))
     return IUP_ERROR;
 
   title = iupAttribGet(ih, "TITLE");
   if (!title) title = "";
-  processed_title = iupStrProcessMnemonic(title, &c, 1);
+  processed_title = gtk4MenuProcessTitle(ih, title);
 
   sub = g_menu_new();
   mitem = g_menu_item_new(processed_title, NULL);
@@ -1207,8 +1241,7 @@ static int gtk4SubmenuMapMethod(Ihandle* ih)
   iupAttribSet(ih, "_IUPGTK4_SUBMENU_GMENU", (char*)sub);
   g_object_unref(sub);
 
-  if (processed_title != title)
-    free(processed_title);
+  free(processed_title);
 
   ih->serial = iupMenuGetChildId(ih);
   ih->handle = (GtkWidget*)ih;
@@ -1313,7 +1346,6 @@ static int gtk4SubmenuSetTitleAttrib(Ihandle* ih, const char* value)
     GMenuItem* mitem;
     char* title;
     char* processed_title;
-    char c = '_';
     int pos;
 
     if (!sub)
@@ -1321,7 +1353,7 @@ static int gtk4SubmenuSetTitleAttrib(Ihandle* ih, const char* value)
 
     title = (char*)value;
     if (!title) title = "";
-    processed_title = iupStrProcessMnemonic(title, &c, 1);
+    processed_title = gtk4MenuProcessTitle(ih, title);
 
     section = gtk4MenuFindEntryPos(menu, ih, &pos);
 
@@ -1334,8 +1366,7 @@ static int gtk4SubmenuSetTitleAttrib(Ihandle* ih, const char* value)
     g_object_unref(mitem);
     g_object_unref(sub);
 
-    if (processed_title != title)
-      free(processed_title);
+    free(processed_title);
   }
   return 1;
 }

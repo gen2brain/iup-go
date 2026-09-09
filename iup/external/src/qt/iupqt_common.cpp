@@ -23,6 +23,7 @@
 #include <QAbstractButton>
 #include <QLabel>
 #include <QMenuBar>
+#include <QAction>
 #include <QMainWindow>
 #include <QPixmap>
 
@@ -473,8 +474,15 @@ extern "C" IUP_SDK_API int iupdrvIsActive(Ihandle *ih)
 
 extern "C" IUP_SDK_API void iupdrvSetActive(Ihandle* ih, int enable)
 {
-  if (ih->iclass->nativetype == IUP_TYPEVOID || ih->iclass->nativetype == IUP_TYPEMENU)
+  if (ih->iclass->nativetype == IUP_TYPEVOID)
     return;
+
+  if (ih->iclass->nativetype == IUP_TYPEMENU)
+  {
+    if (ih->handle && (iupStrEqual(ih->iclass->name, "menuitem") || iupStrEqual(ih->iclass->name, "submenu")))
+      ((QAction*)ih->handle)->setEnabled(enable);
+    return;
+  }
 
   QWidget* container = (QWidget*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
   QWidget* widget = (QWidget*)ih->handle;

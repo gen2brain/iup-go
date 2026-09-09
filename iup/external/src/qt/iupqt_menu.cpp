@@ -306,19 +306,6 @@ static char* qtMenuItemGetActiveAttrib(Ihandle* ih)
   return iupStrReturnBoolean(action->isEnabled());
 }
 
-static char* qtMenuItemGetTitleAttrib(Ihandle* ih)
-{
-  QAction* action = (QAction*)ih->handle;
-  if (!action)
-    return nullptr;
-
-  QString title = action->text();
-  if (!title.isEmpty())
-    return iupStrReturnStr(title.toUtf8().constData());
-
-  return nullptr;
-}
-
 /****************************************************************************
  * Item Attribute Setters
  ****************************************************************************/
@@ -341,6 +328,21 @@ static int qtMenuItemSetImpressAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
+static void qtMenuItemSetAccel(Ihandle* ih, QAction* action, const char* title)
+{
+  int code = iupMenuGetAccel(title);
+  unsigned int keyval, state;
+
+  if (!code || !IupGetDialog(ih))
+  {
+    action->setShortcut(QKeySequence());
+    return;
+  }
+
+  iupdrvKeyEncode(code, &keyval, &state);
+  action->setShortcut(QKeySequence((int)(keyval | state)));
+}
+
 static int qtMenuItemSetTitleAttrib(Ihandle* ih, const char* value)
 {
   QAction* action = (QAction*)ih->handle;
@@ -354,17 +356,8 @@ static int qtMenuItemSetTitleAttrib(Ihandle* ih, const char* value)
   else
     str = iupMenuProcessTitle(ih, value);
 
-  QString title = QString::fromUtf8(str);
-
-  int mnemonic_pos = title.indexOf('&');
-  if (mnemonic_pos >= 0 && mnemonic_pos < title.length() - 1)
-  {
-    action->setText(title);
-  }
-  else
-  {
-    action->setText(title);
-  }
+  action->setText(QString::fromUtf8(str));
+  qtMenuItemSetAccel(ih, action, str);
 
   if (str != value)
     free(str);
@@ -399,23 +392,6 @@ static char* qtMenuItemGetValueAttrib(Ihandle* ih)
     return iupStrReturnChecked(action->isChecked());
   else
     return nullptr;
-}
-
-static int qtMenuItemSetKeyAttrib(Ihandle* ih, const char* value)
-{
-  QAction* action = (QAction*)ih->handle;
-
-  if (value)
-  {
-    QString key_str = QString::fromUtf8(value);
-    action->setShortcut(QKeySequence(key_str));
-  }
-  else
-  {
-    action->setShortcut(QKeySequence());
-  }
-
-  return 1;
 }
 
 /****************************************************************************
@@ -513,11 +489,10 @@ extern "C" IUP_SDK_API void iupdrvMenuItemInitClass(Iclass* ic)
 
   /* IupMenuItem only */
   iupClassRegisterAttribute(ic, "VALUE", qtMenuItemGetValueAttrib, qtMenuItemSetValueAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TITLE", qtMenuItemGetTitleAttrib, qtMenuItemSetTitleAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TITLE", nullptr, qtMenuItemSetTitleAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TITLEIMAGE", nullptr, qtMenuItemSetTitleImageAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "IMAGE", nullptr, qtMenuItemSetImageAttrib, nullptr, nullptr, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "IMPRESS", nullptr, qtMenuItemSetImpressAttrib, nullptr, nullptr, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "KEY", nullptr, qtMenuItemSetKeyAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
 
   /* IupMenuItem specific */
   iupClassRegisterAttribute(ic, "HIDEMARK", nullptr, nullptr, nullptr, nullptr, IUPAF_DEFAULT);
@@ -535,19 +510,6 @@ static char* qtSubmenuGetActiveAttrib(Ihandle* ih)
     return iupBaseGetActiveAttrib(ih);
 
   return iupStrReturnBoolean(action->isEnabled());
-}
-
-static char* qtSubmenuGetTitleAttrib(Ihandle* ih)
-{
-  QAction* action = (QAction*)ih->handle;
-  if (!action)
-    return nullptr;
-
-  QString title = action->text();
-  if (!title.isEmpty())
-    return iupStrReturnStr(title.toUtf8().constData());
-
-  return nullptr;
 }
 
 /****************************************************************************
@@ -617,6 +579,7 @@ static int qtSubmenuMapMethod(Ihandle* ih)
   {
     char* str = iupMenuProcessTitle(ih, title);
     action->setText(QString::fromUtf8(str));
+    qtMenuItemSetAccel(ih, action, str);
     if (str != title)
       free(str);
   }
@@ -665,7 +628,7 @@ extern "C" IUP_SDK_API void iupdrvSubmenuInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "BGCOLOR", nullptr, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
 
   /* IupSubmenu only */
-  iupClassRegisterAttribute(ic, "TITLE", qtSubmenuGetTitleAttrib, qtSubmenuSetTitleAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TITLE", nullptr, qtSubmenuSetTitleAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "IMAGE", nullptr, qtSubmenuSetImageAttrib, nullptr, nullptr, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TITLEIMAGE", nullptr, qtSubmenuSetImageAttrib, nullptr, nullptr, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
 }

@@ -14,6 +14,7 @@ extern "C" {
 #include "iup_key.h"
 #include "iup_str.h"
 #include "iup_drv.h"
+#include "iup_menu.h"
 }
 
 #include "iupfltk_drv.h"
@@ -252,6 +253,13 @@ IUP_DRV_API int iupfltkKeyPressEvent(Fl_Widget *widget, Ihandle *ih)
       return 0;
   }
 
+  {
+    Ihandle* dialog = IupGetDialog(ih);
+    Ihandle* menu = dialog ? IupGetAttributeHandle(dialog, "MENU") : NULL;
+    if (menu && iupMenuFindAccel(menu, code))
+      return 0;
+  }
+
   result = iupKeyCallKeyCb(ih, code);
   if (result == IUP_CLOSE)
   {
@@ -327,6 +335,7 @@ extern "C" IUP_SDK_API void iupdrvKeyEncode(int code, unsigned int *keyval, unsi
 {
   *keyval = (unsigned int)iup_XkeyBase(code);
 
+  if (*keyval >= K_A && *keyval <= K_Z) *keyval = (unsigned int)iup_tolower(*keyval);
   if (*keyval == K_BS)  *keyval = FL_BackSpace;
   if (*keyval == K_TAB) *keyval = FL_Tab;
   if (*keyval == K_CR)  *keyval = FL_Enter;

@@ -136,14 +136,35 @@ static Iqt2iupkey other_remap[] = {
 
 extern "C" IUP_SDK_API void iupdrvKeyEncode(int code, unsigned int *keyval, unsigned int *state)
 {
-  *keyval = (unsigned int)iup_XkeyBase(code);
+  int base = iup_XkeyBase(code);
+  int i, count;
 
-  if (*keyval == K_BS)  *keyval = Qt::Key_Backspace;
-  if (*keyval == K_TAB) *keyval = Qt::Key_Tab;
-  if (*keyval == K_CR)  *keyval = Qt::Key_Return;
-  if (*keyval == K_ESC) *keyval = Qt::Key_Escape;
-
+  *keyval = (unsigned int)base;
   *state = 0;
+
+  if (base >= K_a && base <= K_z)
+    *keyval = (unsigned int)iup_toupper(base);
+
+  count = sizeof(other_remap) / sizeof(other_remap[0]);
+  for (i = 0; i < count; i++)
+  {
+    if (other_remap[i].iupcode == base)
+    {
+      *keyval = other_remap[i].qtkey;
+      break;
+    }
+  }
+
+  count = sizeof(keypad_remap) / sizeof(keypad_remap[0]);
+  for (i = 0; i < count; i++)
+  {
+    if (keypad_remap[i].iupcode == base && base >= K_KP_CR && base <= K_KP_EQUAL)
+    {
+      *keyval = keypad_remap[i].qtkey;
+      *state |= Qt::KeypadModifier;
+      break;
+    }
+  }
 
   if (iup_isCtrlXkey(code))
     *state |= Qt::ControlModifier;

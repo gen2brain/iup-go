@@ -565,53 +565,6 @@ static int gtkMenuItemSetImpressAttrib(Ihandle* ih, const char* value)
     return 0;
 }
 
-#if GTK_CHECK_VERSION(3, 6, 0)
-static void gtkMenuParseAccel(const char* text, guint* accel_key, GdkModifierType* accel_mods)
-{
-  char buffer[128];
-  const char* p = text;
-
-  *accel_key = 0;
-  *accel_mods = 0;
-  buffer[0] = 0;
-
-  while (*p)
-  {
-    char token[48];
-    const char* plus = strchr(p, '+');
-    int len = plus ? (int)(plus - p) : (int)strlen(p);
-    if (len <= 0 || len >= (int)sizeof(token) || strlen(buffer) + sizeof(token) >= sizeof(buffer))
-      return;
-    memcpy(token, p, len);
-    token[len] = 0;
-
-    if (plus)
-    {
-      if (iupStrEqualNoCase(token, "Ctrl") || iupStrEqualNoCase(token, "Control"))
-        strcat(buffer, "<Control>");
-      else if (iupStrEqualNoCase(token, "Shift"))
-        strcat(buffer, "<Shift>");
-      else if (iupStrEqualNoCase(token, "Alt"))
-        strcat(buffer, "<Alt>");
-      else if (iupStrEqualNoCase(token, "Meta") || iupStrEqualNoCase(token, "Super") || iupStrEqualNoCase(token, "Cmd"))
-        strcat(buffer, "<Super>");
-      else
-        return;
-      p = plus + 1;
-    }
-    else
-    {
-      if (len == 1 && token[0] >= 'A' && token[0] <= 'Z')
-        token[0] = (char)(token[0] + 32);
-      strcat(buffer, token);
-      break;
-    }
-  }
-
-  gtk_accelerator_parse(buffer, accel_key, accel_mods);
-}
-#endif
-
 static void gtkMenuItemSetAccelTextWidget(Ihandle* ih, const char* text)
 {
   GtkWidget* child = gtk_bin_get_child(GTK_BIN(ih->handle));
@@ -677,6 +630,41 @@ static void gtkMenuItemSetAccelTextWidget(Ihandle* ih, const char* text)
   g_object_set_data(G_OBJECT(ih->handle), "_IUP_ACCEL_LABEL", accel);
 }
 
+static void gtkMenuItemSetAccel(Ihandle* ih, int code, guint* accel_key, GdkModifierType* accel_mods)
+{
+  Ihandle* dialog = IupGetDialog(ih);
+  GtkAccelGroup* group;
+  unsigned int keyval = 0, state = 0;
+
+  if (code)
+    iupdrvKeyEncode(code, &keyval, &state);
+  *accel_key = keyval;
+  *accel_mods = (GdkModifierType)state;
+
+  if (!dialog || !dialog->handle)
+    return;
+
+  group = (GtkAccelGroup*)g_object_get_data(G_OBJECT(dialog->handle), "_IUP_ACCEL_GROUP");
+  if (!group)
+  {
+    group = gtk_accel_group_new();
+    gtk_window_add_accel_group(GTK_WINDOW(dialog->handle), group);
+    g_object_set_data_full(G_OBJECT(dialog->handle), "_IUP_ACCEL_GROUP", group, g_object_unref);
+  }
+
+  if (iupAttribGet(ih, "_IUPGTK_ACCEL") == (char*)ih->handle)
+    gtk_widget_remove_accelerator(ih->handle, group, iupAttribGetInt(ih, "_IUPGTK_ACCEL_KEY"), (GdkModifierType)iupAttribGetInt(ih, "_IUPGTK_ACCEL_MODS"));
+  iupAttribSet(ih, "_IUPGTK_ACCEL", NULL);
+
+  if (keyval)
+  {
+    gtk_widget_add_accelerator(ih->handle, "activate", group, keyval, (GdkModifierType)state, GTK_ACCEL_VISIBLE);
+    iupAttribSet(ih, "_IUPGTK_ACCEL", (char*)ih->handle);
+    iupAttribSetInt(ih, "_IUPGTK_ACCEL_KEY", (int)keyval);
+    iupAttribSetInt(ih, "_IUPGTK_ACCEL_MODS", (int)state);
+  }
+}
+
 static int gtkMenuItemSetTitleAttrib(Ihandle* ih, const char* value)
 {
   char *str;
@@ -705,9 +693,10 @@ static int gtkMenuItemSetTitleAttrib(Ihandle* ih, const char* value)
     char* label_str = str;
     char* label_copy = NULL;
 
+    gtkMenuItemSetAccel(ih, iupMenuGetAccel(str), &accel_key, &accel_mods);
+
     if (tab)
     {
-      gtkMenuParseAccel(tab + 1, &accel_key, &accel_mods);
       label_copy = iupStrDup(str);
       label_copy[tab - str] = 0;
       label_str = label_copy;
@@ -726,7 +715,19 @@ static int gtkMenuItemSetTitleAttrib(Ihandle* ih, const char* value)
 
     if (label_copy) free(label_copy);
 #else
-    iupgtkSetMnemonicTitle(ih, (GtkLabel*)label, str);
+    guint accel_key;
+    GdkModifierType accel_mods;
+    char* tab = strchr(str, '\t');
+    gtkMenuItemSetAccel(ih, iupMenuGetAccel(str), &accel_key, &accel_mods);
+    if (tab && accel_key)
+    {
+      char* label_copy = iupStrDup(str);
+      label_copy[tab - str] = 0;
+      iupgtkSetMnemonicTitle(ih, (GtkLabel*)label, label_copy);
+      free(label_copy);
+    }
+    else
+      iupgtkSetMnemonicTitle(ih, (GtkLabel*)label, str);
 #endif
   }
 

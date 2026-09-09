@@ -20,6 +20,7 @@
 #include "iup_class.h"
 #include "iup_classbase.h"
 #include "iup_drv.h"
+#include "iup_menu.h"
 #include "iup_focus.h"
 #include "iup_key.h"
 #include "iupkey.h"
@@ -298,6 +299,7 @@ EMSCRIPTEN_KEEPALIVE void iupwasmDispatchHelp(int id)
 }
 
 EMSCRIPTEN_KEEPALIVE int iupwasmDispatchKey(int id, int code);
+EMSCRIPTEN_KEEPALIVE void iupwasmDispatchAction(int id);
 
 EMSCRIPTEN_KEEPALIVE int iupwasmDispatchTextInput(int id, const char* text)
 {
@@ -361,6 +363,18 @@ EMSCRIPTEN_KEEPALIVE int iupwasmDispatchKey(int id, int code)
   int result;
   if (!ih)
     return 0;
+
+  {
+    Ihandle* dialog = IupGetDialog(ih);
+    Ihandle* menu = dialog ? IupGetAttributeHandle(dialog, "MENU") : NULL;
+    Ihandle* item = menu ? iupMenuFindAccel(menu, code) : NULL;
+    if (item)
+    {
+      iupwasmDispatchAction(iupwasmIdOf(item));
+      return 1;
+    }
+  }
+
   result = iupKeyCallKeyCb(ih, code);
   if (result == IUP_CLOSE)
   {

@@ -1323,12 +1323,15 @@ static int iDialogSetMenuAttrib(Ihandle* ih, const char* value)
   else
   {
     Ihandle* menu = IupGetHandle(value);
-    if (!menu || menu->iclass->nativetype != IUP_TYPEMENU || menu->parent)
+    if (!menu || menu->iclass->nativetype != IUP_TYPEMENU)
       return 0;
 
     /* already the current menu and it is mapped */
     if (ih->data->menu && ih->data->menu==menu && menu->handle)
       return 1;
+
+    if (menu->parent)
+      return 0;
 
     /* the current menu is mapped, so unmap it */
     if (ih->data->menu && ih->data->menu->handle && ih->data->menu!=menu)

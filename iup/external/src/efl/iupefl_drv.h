@@ -198,6 +198,9 @@ IUP_DRV_API unsigned int iupeflGetDefaultSeat(Eo* widget);
 IUP_DRV_API void iupeflKeyEncode(int key, const char** keyname, const char** keystr);
 IUP_DRV_API void iupeflButtonKeySetStatus(Evas_Modifier* modifiers, unsigned int button, char* status, int doubleclick);
 IUP_DRV_API int iupeflKeyDecodeFromName(const char* keyname, const char* keysym, const char* keystr);
+IUP_DRV_API int iupeflKeyDecodeEvent(Efl_Input_Key* key_event);
+IUP_DRV_API int iupeflKeyIsMenuAccel(Ihandle* ih, int code);
+IUP_DRV_API int iupeflMenuActivateAccel(Ihandle* ih, int code);
 
 /****************************************************************************
  * Menu Mnemonic Support

@@ -10,6 +10,7 @@
 #include <memory.h>
 
 #include "iup.h"
+#include "iupkey.h"
 
 #include "iup_object.h"
 #include "iup_attrib.h"
@@ -139,6 +140,100 @@ char* iupMenuProcessTitle(Ihandle* ih, const char* title)
   }
 
   return (char*)title;
+}
+
+static int iMenuAccelKey(const char* name)
+{
+  static const struct { const char* name; int code; } keys[] = {
+    { "Esc", K_ESC }, { "Tab", K_TAB }, { "Space", K_SP }, { "Enter", K_CR }, { "Backspace", K_BS },
+    { "Del", K_DEL }, { "Ins", K_INS }, { "Home", K_HOME }, { "End", K_END }, { "PgUp", K_PGUP },
+    { "PgDn", K_PGDN }, { "Left", K_LEFT }, { "Right", K_RIGHT }, { "Up", K_UP }, { "Down", K_DOWN } };
+  int i, fn;
+
+  if (name[0] > K_SP && name[0] < 127 && !name[1])
+    return name[0];
+
+  if ((name[0] == 'F' || name[0] == 'f') && iupStrToInt(name + 1, &fn) && fn >= 1 && fn <= 20)
+    return K_F1 + (fn - 1);
+
+  for (i = 0; i < (int)(sizeof(keys) / sizeof(keys[0])); i++)
+  {
+    if (iupStrEqualNoCase(name, keys[i].name))
+      return keys[i].code;
+  }
+
+  return 0;
+}
+
+int iupMenuGetAccel(const char* title)
+{
+  const char* p = title ? strchr(title, '\t') : NULL;
+  int code, ctrl = 0, shift = 0, alt = 0, sys = 0;
+
+  if (!p)
+    return 0;
+
+  for (p++; ; )
+  {
+    char token[16];
+    const char* plus = strchr(p, '+');
+    int len = plus ? (int)(plus - p) : 0;
+
+    if (!plus || !plus[1])
+      break;
+    if (len <= 0 || len >= (int)sizeof(token))
+      return 0;
+    memcpy(token, p, len);
+    token[len] = 0;
+
+    if (iupStrEqualNoCase(token, "Ctrl")) ctrl = 1;
+    else if (iupStrEqualNoCase(token, "Shift")) shift = 1;
+    else if (iupStrEqualNoCase(token, "Alt")) alt = 1;
+    else if (iupStrEqualNoCase(token, "Sys")) sys = 1;
+    else return 0;
+
+    p = plus + 1;
+  }
+
+  code = iMenuAccelKey(p);
+  if (!code || (code < 127 && !(ctrl || shift || alt || sys)))
+    return 0;
+
+  if ((code >= K_a && code <= K_z) || (code >= K_A && code <= K_Z))
+  {
+    code = (ctrl || shift || alt || sys) ? iup_toupper(code) : iup_tolower(code);
+    if (shift && (ctrl || alt || sys))
+      code = iup_XkeyShift(code);
+  }
+  else if (shift)
+    code = iup_XkeyShift(code);
+
+  if (ctrl) code = iup_XkeyCtrl(code);
+  if (alt) code = iup_XkeyAlt(code);
+  if (sys) code = iup_XkeySys(code);
+  return code;
+}
+
+Ihandle* iupMenuFindAccel(Ihandle* ih, int code)
+{
+  Ihandle* child;
+  for (child = ih->firstchild; child; child = child->brother)
+  {
+    if (!IupGetInt(child, "ACTIVE"))
+      continue;
+
+    if (iupStrEqual(child->iclass->name, "submenu"))
+    {
+      Ihandle* found = child->firstchild ? iupMenuFindAccel(child->firstchild, code) : NULL;
+      if (found) return found;
+    }
+    else if (iupStrEqual(child->iclass->name, "menuitem"))
+    {
+      if (iupMenuGetAccel(iupAttribGet(child, "TITLE")) == code)
+        return child;
+    }
+  }
+  return NULL;
 }
 
 int iupMenuPopup(Ihandle* ih, int x, int y)

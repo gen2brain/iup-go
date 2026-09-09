@@ -215,6 +215,12 @@ static void eflDialogKeyDownCallback(void* data, const Efl_Event* event)
   if (!iupObjectCheck(ih))
     return;
 
+  {
+    int code = iupeflKeyDecodeEvent(ev);
+    if (code && iupeflMenuActivateAccel(ih, code))
+      return;
+  }
+
   keyname = efl_input_key_name_get(ev);
   if (keyname)
   {

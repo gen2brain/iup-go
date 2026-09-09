@@ -10,6 +10,7 @@
 #include <ctype.h>
 
 #include "iup.h"
+#include "iupkey.h"
 #include "iupcbs.h"
 
 #include "iup_object.h"
@@ -874,70 +875,52 @@ IUP_SDK_API void iupdrvMenuSeparatorInitClass(Iclass* ic)
 /* ITEM (IupMenuItem)                                                                          */
 /*******************************************************************************************/
 
-static void cocoaMenuItemSetShortcutFromString(NSMenuItem* item, const char* shortcut_string)
+static void cocoaMenuItemSetShortcut(NSMenuItem* item, int code)
 {
-    if (!item) return;
+  int base = iup_XkeyBase(code);
+  NSUInteger mask = 0;
+  unichar ch = 0;
 
-    if (!shortcut_string || shortcut_string[0] == '\0')
-    {
-        [item setKeyEquivalent:@""];
-        [item setKeyEquivalentModifierMask:0];
-        return;
-    }
+  if (!item) return;
 
-    NSUInteger mask = 0;
-    const char* key_token = NULL;
-    char* current_part = iupStrDup(shortcut_string);
-    char* next_token = current_part;
+  if (base >= K_F1 && base <= K_F20)
+    ch = (unichar)(NSF1FunctionKey + (base - K_F1));
+  else switch (base)
+  {
+  case 0: break;
+  case K_ESC:  ch = 0x1B; break;
+  case K_TAB:  ch = '\t'; break;
+  case K_CR:   ch = '\r'; break;
+  case K_BS:   ch = NSBackspaceCharacter; break;
+  case K_DEL:  ch = NSDeleteFunctionKey; break;
+  case K_INS:  ch = NSInsertFunctionKey; break;
+  case K_HOME: ch = NSHomeFunctionKey; break;
+  case K_END:  ch = NSEndFunctionKey; break;
+  case K_PGUP: ch = NSPageUpFunctionKey; break;
+  case K_PGDN: ch = NSPageDownFunctionKey; break;
+  case K_LEFT: ch = NSLeftArrowFunctionKey; break;
+  case K_RIGHT: ch = NSRightArrowFunctionKey; break;
+  case K_UP:   ch = NSUpArrowFunctionKey; break;
+  case K_DOWN: ch = NSDownArrowFunctionKey; break;
+  default:
+    if (base >= K_SP && base < 127)
+      ch = (unichar)(iup_isShiftXkey(code) ? iup_toupper(base) : iup_tolower(base));
+    break;
+  }
 
-    while(next_token)
-    {
-        char* plus_pos = strchr(next_token, '+');
-        if (plus_pos) {
-            *plus_pos = '\0';
-        }
+  if (!ch)
+  {
+    [item setKeyEquivalent:@""];
+    [item setKeyEquivalentModifierMask:0];
+    return;
+  }
 
-        if (iupStrEqualNoCase(next_token, "Ctrl"))
-            mask |= NSEventModifierFlagCommand;
-        else if (iupStrEqualNoCase(next_token, "Shift"))
-            mask |= NSEventModifierFlagShift;
-        else if (iupStrEqualNoCase(next_token, "Alt"))
-            mask |= NSEventModifierFlagOption;
-        else if (iupStrEqualNoCase(next_token, "Sys"))
-            mask |= NSEventModifierFlagCommand;
-        else if (next_token[0] != '\0')
-            key_token = next_token;
+  if (iup_isCtrlXkey(code) || iup_isSysXkey(code)) mask |= NSEventModifierFlagCommand;
+  if (iup_isShiftXkey(code)) mask |= NSEventModifierFlagShift;
+  if (iup_isAltXkey(code)) mask |= NSEventModifierFlagOption;
 
-        if (plus_pos) {
-            next_token = plus_pos + 1;
-        } else {
-            next_token = NULL;
-        }
-    }
-
-    NSString* key_str = nil;
-    int fn = 0;
-    if (key_token && (key_token[0] == 'F' || key_token[0] == 'f') && iupStrToInt(key_token + 1, &fn) && fn >= 1 && fn <= 35)
-    {
-        unichar fk = (unichar)(NSF1FunctionKey + (fn - 1));
-        key_str = [NSString stringWithCharacters:&fk length:1];
-    }
-    else if (key_token && strlen(key_token) == 1)
-    {
-        key_str = [[NSString stringWithFormat:@"%c", key_token[0]] lowercaseString];
-    }
-    free(current_part);
-
-    if (key_str)
-    {
-        [item setKeyEquivalent:key_str];
-        [item setKeyEquivalentModifierMask:mask];
-    }
-    else
-    {
-        [item setKeyEquivalent:@""];
-        [item setKeyEquivalentModifierMask:0];
-    }
+  [item setKeyEquivalent:[NSString stringWithCharacters:&ch length:1]];
+  [item setKeyEquivalentModifierMask:mask];
 }
 
 static int cocoaMenuItemSetTitleAttrib(Ihandle* ih, const char* value)
@@ -948,29 +931,15 @@ static int cocoaMenuItemSetTitleAttrib(Ihandle* ih, const char* value)
     if (!value) value = "";
 
     const char* tab_pos = strchr(value, '\t');
-    char* title_part;
-    const char* shortcut_part = NULL;
+    char* title_part = iupStrDup(value);
 
     if (tab_pos)
-    {
-        int len = tab_pos - value;
-        title_part = (char*)malloc(len + 1);
-        strncpy(title_part, value, len);
-        title_part[len] = '\0';
-        shortcut_part = tab_pos + 1;
-    }
-    else
-    {
-        title_part = iupStrDup(value);
-    }
+        title_part[tab_pos - value] = '\0';
 
     cocoaMenuSetTitle(ih, item, title_part);
     free(title_part);
 
-    if (tab_pos)
-    {
-        cocoaMenuItemSetShortcutFromString(item, shortcut_part);
-    }
+    cocoaMenuItemSetShortcut(item, IupGetDialog(ih) ? iupMenuGetAccel(value) : 0);
 
     return 1;
 }
@@ -1037,16 +1006,6 @@ static int cocoaMenuItemSetHideMarkAttrib(Ihandle* ih, const char* value)
 {
   (void)value;
   cocoaMenuUpdateImage(ih);
-  return 1;
-}
-
-static int cocoaMenuItemSetKeyAttrib(Ihandle* ih, const char* value)
-{
-  NSMenuItem* item = (NSMenuItem*)ih->handle;
-  if (!item) return 0;
-
-  cocoaMenuItemSetShortcutFromString(item, value);
-
   return 1;
 }
 
@@ -1129,7 +1088,6 @@ IUP_SDK_API void iupdrvMenuItemInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "FONT", NULL, cocoaMenuItemSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "ACTIVE", cocoaMenuItemGetActiveAttrib, cocoaMenuItemSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, NULL, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "KEY", NULL, cocoaMenuItemSetKeyAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "IMAGE", NULL, cocoaMenuItemSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "IMPRESS", NULL, cocoaMenuItemSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TITLEIMAGE", NULL, cocoaMenuItemSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);

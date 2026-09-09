@@ -17,6 +17,7 @@
 #include <stdint.h>
 
 #include "iup.h"
+#include "iupkey.h"
 
 #include "iup_object.h"
 #include "iup_childtree.h"
@@ -254,6 +255,35 @@ IUP_SDK_API void iupdrvMenuInitClass(Iclass* ic)
 
 /*******************************************************************************************/
 
+static char* motMenuGetAccel(Ihandle* ih, const char* title)
+{
+  static char accel[64];
+  int code = IupGetDialog(ih) ? iupMenuGetAccel(title) : 0;
+  KeySym keysym;
+  char* name;
+
+  if (!code)
+    return NULL;
+
+  keysym = (KeySym)iup_XkeyBase(code);
+  if (keysym == K_BS)  keysym = XK_BackSpace;
+  else if (keysym == K_TAB) keysym = XK_Tab;
+  else if (keysym == K_CR)  keysym = XK_Return;
+  else if (keysym >= K_A && keysym <= K_Z) keysym = (KeySym)iup_tolower(keysym);
+
+  name = XKeysymToString(keysym);
+  if (!name)
+    return NULL;
+
+  snprintf(accel, sizeof(accel), "%s%s%s%s<Key>%s",
+           iup_isCtrlXkey(code) ? "Ctrl " : "",
+           iup_isShiftXkey(code) ? "Shift " : "",
+           iup_isAltXkey(code) ? "Alt " : "",
+           iup_isSysXkey(code) ? "Mod4 " : "",
+           name);
+  return accel;
+}
+
 static int motMenuItemSetTitleAttrib(Ihandle* ih, const char* value)
 {
   char *str;
@@ -271,7 +301,6 @@ static int motMenuItemSetTitleAttrib(Ihandle* ih, const char* value)
   else
     str = iupMenuProcessTitle(ih, value);
 
-  if (XmIsToggleButton(ih->handle))
   {
     char *p = strchr(str, '\t');
     if (p)
@@ -280,8 +309,10 @@ static int motMenuItemSetTitleAttrib(Ihandle* ih, const char* value)
       char* new_value = iupStrDup(str);
       char* acc_value = new_value + offset + 1;
       new_value[offset] = 0;
+      char* accel = motMenuGetAccel(ih, str);
       iupmotSetMnemonicTitle(ih, NULL, 0, new_value);
       iupmotSetXmString(ih->handle, XmNacceleratorText, acc_value);
+      XtVaSetValues(ih->handle, XmNaccelerator, accel ? accel : "", NULL);
       free(new_value);
 
       if (str != value) free(str);
@@ -466,9 +497,12 @@ static int motMenuAddCreateArgs(Ihandle* ih, Arg* args, int num_args, int has_ac
     {
       int offset = (int)(p-str);
       char* new_value = iupStrDup(str);
+      char* accel = motMenuGetAccel(ih, str);
       new_value[offset] = 0;
       *xm_accel = iupmotStringCreate(new_value + offset + 1);
       iupMOT_SETARG(args, num_args, XmNacceleratorText, *xm_accel);
+      if (accel)
+        iupMOT_SETARG(args, num_args, XmNaccelerator, accel);
       if (str_owned) free(str);
       str = new_value;
       str_owned = 1;

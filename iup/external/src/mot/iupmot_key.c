@@ -18,6 +18,7 @@
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_drv.h"
+#include "iup_menu.h"
 
 #include "iupmot_drv.h"
 
@@ -351,6 +352,13 @@ IUP_DRV_API void iupmotKeyPressEvent(Widget w, Ihandle *ih, XEvent *evt, Boolean
   code = iupmotKeyDecode((XKeyEvent*)evt);
   if (code == 0)
       return;
+
+  {
+    Ihandle* dialog = IupGetDialog(ih);
+    Ihandle* menu = dialog ? IupGetAttributeHandle(dialog, "MENU") : NULL;
+    if (menu && iupMenuFindAccel(menu, code))
+      return;
+  }
 
   result = iupKeyCallKeyCb(ih, code);
   if (result == IUP_CLOSE)

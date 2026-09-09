@@ -276,6 +276,16 @@ static void eflMenuItemActivateCb(void* data, Evas_Object* obj, void* event_info
   }
 }
 
+IUP_DRV_API int iupeflMenuActivateAccel(Ihandle* ih, int code)
+{
+  Ihandle* menu = IupGetAttributeHandle(ih, "MENU");
+  Ihandle* item = menu ? iupMenuFindAccel(menu, code) : NULL;
+  if (!item)
+    return 0;
+  eflMenuItemActivateCb(item, NULL, NULL);
+  return 1;
+}
+
 static void eflMenuDismissedCallback(void* data, Evas_Object* obj, void* event_info)
 {
   Ihandle* ih = (Ihandle*)data;
@@ -497,6 +507,7 @@ static int eflSubmenuMapMethod(Ihandle* ih)
   Elm_Object_Item* parent_item;
   Elm_Object_Item* item;
   char* title;
+  char* keyed;
   char* display_title;
   char mnemonic;
 
@@ -513,13 +524,16 @@ static int eflSubmenuMapMethod(Ihandle* ih)
   if (!menu)
     return IUP_ERROR;
 
-  display_title = eflMenuGetDisplayTitle(title);
-  mnemonic = eflMenuExtractMnemonic(title);
+  keyed = iupMenuProcessTitle(ih, title);
+  display_title = eflMenuGetDisplayTitle(keyed);
+  mnemonic = eflMenuExtractMnemonic(keyed);
 
   item = elm_menu_item_add(menu, parent_item, NULL, display_title, NULL, NULL);
 
-  if (display_title != title)
+  if (display_title != keyed)
     free(display_title);
+  if (keyed != title)
+    free(keyed);
 
   if (!item)
     return IUP_ERROR;

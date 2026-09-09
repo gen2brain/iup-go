@@ -85,6 +85,26 @@ static int winuiLoopProcessMessage(MSG* msg)
     if (wincode != VK_SHIFT && wincode != VK_CONTROL && wincode != VK_MENU &&
         wincode != VK_LWIN && wincode != VK_RWIN)
     {
+      Ihandle* focus = IupGetFocus();
+      Ihandle* dlg = focus ? IupGetDialog(focus) : NULL;
+      if (!dlg)
+      {
+        HWND active = GetActiveWindow();
+        Ihandle* ih = active ? (Ihandle*)GetWindowLongPtr(active, GWLP_USERDATA) : NULL;
+        if (ih && iupObjectCheck(ih))
+          dlg = IupGetDialog(ih);
+      }
+      if (dlg)
+      {
+        int code = iupwinuiKeyDecode(wincode, (msg->lParam & 0x01000000)? 1: 0);
+        if (code && iupwinuiMenuActivateAccel(dlg, code))
+        {
+          MSG flush;
+          while (PeekMessage(&flush, NULL, WM_KEYFIRST, WM_KEYLAST, PM_REMOVE)) {}
+          return IUP_DEFAULT;
+        }
+      }
+
       int has_modifier = (GetKeyState(VK_CONTROL) & 0x8000) ||
                          (GetKeyState(VK_MENU) & 0x8000) ||
                          (GetKeyState(VK_LWIN) & 0x8000) ||

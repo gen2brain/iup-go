@@ -11,6 +11,7 @@
 #include <memory.h>
 
 #include "iup.h"
+#include "iupkey.h"
 
 #include "iup_object.h"
 #include "iup_attrib.h"
@@ -105,12 +106,93 @@ static void winMenuItemCheckToggle(Ihandle* ih)
   }
 }
 
+static int winMenuAccelCount(Ihandle* menu, ACCEL* accel, int count, int max)
+{
+  Ihandle* child;
+  for (child = menu->firstchild; child; child = child->brother)
+  {
+    if (!IupGetInt(child, "ACTIVE"))
+      continue;
+
+    if (iupStrEqual(child->iclass->name, "submenu"))
+    {
+      if (child->firstchild)
+        count = winMenuAccelCount(child->firstchild, accel, count, max);
+    }
+    else if (iupStrEqual(child->iclass->name, "menuitem"))
+    {
+      int code = iupMenuGetAccel(iupAttribGet(child, "TITLE"));
+      if (code && count < max)
+      {
+        unsigned int vk = 0, state = 0;
+        int base = iup_XkeyBase(code);
+        iupdrvKeyEncode(code, &vk, &state);
+        if (vk)
+        {
+          accel[count].fVirt = FVIRTKEY;
+          if (iup_isCtrlXkey(code)) accel[count].fVirt |= FCONTROL;
+          if (iup_isAltXkey(code)) accel[count].fVirt |= FALT;
+          if (iup_isShiftXkey(code) || (state == VK_SHIFT && !(base >= K_A && base <= K_Z))) accel[count].fVirt |= FSHIFT;
+          accel[count].key = (WORD)vk;
+          accel[count].cmd = (WORD)child->serial;
+          count++;
+        }
+      }
+    }
+  }
+  return count;
+}
+
+IUP_DRV_API void iupwinMenuUpdateAccel(Ihandle* ih_dialog)
+{
+  HACCEL haccel = (HACCEL)iupAttribGet(ih_dialog, "_IUPWIN_HACCEL");
+  Ihandle* menu = IupGetAttributeHandle(ih_dialog, "MENU");
+  ACCEL accel[128];
+  int count = 0;
+
+  if (haccel)
+  {
+    DestroyAcceleratorTable(haccel);
+    iupAttribSet(ih_dialog, "_IUPWIN_HACCEL", NULL);
+  }
+  iupAttribSet(ih_dialog, "_IUPWIN_HACCEL_DIRTY", NULL);
+
+  if (menu && menu->handle)
+    count = winMenuAccelCount(menu, accel, 0, 128);
+
+  if (count)
+    iupAttribSet(ih_dialog, "_IUPWIN_HACCEL", (char*)CreateAcceleratorTable(accel, count));
+}
+
+static void winMenuItemUpdateAccel(Ihandle* ih)
+{
+  Ihandle* dialog = IupGetDialog(ih);
+  if (dialog)
+    iupAttribSet(dialog, "_IUPWIN_HACCEL_DIRTY", "1");
+}
+
 IUP_DRV_API void iupwinMenuDialogProc(Ihandle* ih_dialog, UINT msg, WPARAM wp, LPARAM lp)
 {
   /* called only from winDialogBaseProc */
 
   switch (msg)
   {
+  case WM_COMMAND:
+    if (HIWORD(wp) == 1 && lp == 0)
+    {
+      Ihandle* menu = IupGetAttributeHandle(ih_dialog, "MENU");
+      Ihandle* ih = (menu && menu->handle) ? iupwinMenuGetItemHandle((HMENU)menu->handle, LOWORD(wp)) : NULL;
+      Icallback cb;
+      if (!ih)
+        break;
+
+      winMenuItemCheckToggle(ih);
+
+      cb = IupGetCallback(ih, "ACTION");
+      if (cb && cb(ih) == IUP_CLOSE)
+        IupExitLoop();
+    }
+    break;
   case WM_INITMENUPOPUP:
     {
       HMENU hMenu = (HMENU)wp;
@@ -356,6 +438,7 @@ static int winSubmenuAddToParent(Ihandle* ih)
 static void winMenuChildUnMapMethod(Ihandle* ih)
 {
   RemoveMenu((HMENU)ih->handle, (UINT)ih->serial, MF_BYCOMMAND);
+  winMenuItemUpdateAccel(ih);
 }
 
 static void winMenuUnMapMethod(Ihandle* ih)
@@ -519,6 +602,8 @@ static int winMenuItemSetTitleAttrib(Ihandle* ih, const char* value)
 
   if (str != value) free(str);
 
+  winMenuItemUpdateAccel(ih);
+
   winMenuUpdateBar(ih);
 
   return 1;
@@ -559,6 +644,7 @@ static int winMenuItemSetActiveAttrib(Ihandle* ih, const char* value)
     EnableMenuItem((HMENU)ih->handle, (UINT)ih->serial, MF_GRAYED|MF_BYCOMMAND);
 
   winMenuUpdateBar(ih);
+  winMenuItemUpdateAccel(ih);
 
   return 0;
 }
@@ -626,6 +712,7 @@ static int winMenuItemMapMethod(Ihandle* ih)
 
   ih->handle = ih->parent->handle; /* gets the HMENU of the parent */
   winMenuUpdateBar(ih);
+  winMenuItemUpdateAccel(ih);
 
   return IUP_NOERROR;
 }

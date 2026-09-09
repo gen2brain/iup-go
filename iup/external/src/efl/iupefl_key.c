@@ -16,6 +16,7 @@
 #include "iup_str.h"
 #include "iup_attrib.h"
 #include "iup_drv.h"
+#include "iup_menu.h"
 
 #include <Ecore_IMF.h>
 
@@ -336,6 +337,21 @@ static int eflKeyImfTextInput(Ihandle* ih, Eo* widget, Efl_Input_Key* key_event,
   return eflKeyTextInput(ih, key_event, keystr);
 }
 
+IUP_DRV_API int iupeflKeyDecodeEvent(Efl_Input_Key* key_event)
+{
+  int code = iupeflKeyDecodeFromName(efl_input_key_name_get(key_event), efl_input_key_sym_get(key_event), efl_input_key_string_get(key_event));
+  if (code == 0)
+    return 0;
+  return eflKeyApplyModifiers(code, key_event);
+}
+
+IUP_DRV_API int iupeflKeyIsMenuAccel(Ihandle* ih, int code)
+{
+  Ihandle* dialog = IupGetDialog(ih);
+  Ihandle* menu = dialog ? IupGetAttributeHandle(dialog, "MENU") : NULL;
+  return menu && iupMenuFindAccel(menu, code);
+}
+
 IUP_DRV_API void iupeflKeyDownEvent(void* data, const Efl_Event* ev)
 {
   Ihandle* ih = (Ihandle*)data;
@@ -354,6 +370,9 @@ IUP_DRV_API void iupeflKeyDownEvent(void* data, const Efl_Event* ev)
     return;
 
   code = eflKeyApplyModifiers(code, key_event);
+
+  if (iupeflKeyIsMenuAccel(ih, code))
+    return;
 
   has_shift = efl_input_modifier_enabled_get(key_event, EFL_INPUT_MODIFIER_SHIFT, NULL);
 
