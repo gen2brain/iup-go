@@ -71,22 +71,18 @@ static void cocoaCanvasComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int
 @end
 
 
-@interface IupLogicalScrollClipView : NSClipView
+@interface IupCocoaCanvasContainer : IupCocoaFixedView
+@property(nonatomic, assign) BOOL drawsBorder;
 @end
 
-@implementation IupLogicalScrollClipView
+@implementation IupCocoaCanvasContainer
 
-- (void) setBoundsOrigin:(NSPoint)newOrigin
+- (void) drawRect:(NSRect)dirty_rect
 {
-  /* the clip view never moves; scrolling is logical through POSX/POSY */
-  [super setBoundsOrigin:NSZeroPoint];
-}
-
-- (NSRect) constrainBoundsRect:(NSRect)proposedBounds
-{
-  NSRect constrained = proposedBounds;
-  constrained.origin = NSZeroPoint;
-  return constrained;
+  (void)dirty_rect;
+  if (!_drawsBorder) return;
+  [[NSColor gridColor] set];
+  NSFrameRectWithWidth([self bounds], 1.0);
 }
 
 @end
@@ -348,22 +344,11 @@ static void cocoaCanvasFireGesture(Ihandle* ih, int gesture, int state, int x, i
   NSRect view_rect = NSZeroRect;
   id notification_object = [the_notification object];
 
-  if ([notification_object isKindOfClass:[NSView class]])
-  {
-    /* the clip view bounds are the visible area regardless of scrollbar tiling */
-    if ([notification_object isKindOfClass:[NSClipView class]])
-    {
-      view_rect.size = [(NSClipView*)notification_object bounds].size;
-    }
-    else
-    {
-      view_rect = [(NSView*)notification_object frame];
-    }
-  }
-  else
+  if (![notification_object isKindOfClass:[NSView class]])
   {
     return;
   }
+  view_rect = [(NSView*)notification_object frame];
 
   CGSize previous_size = [self previousSize];
 
@@ -842,14 +827,6 @@ static BOOL cocoaCanvasOptionIsMeta(Ihandle* ih, NSEvent* the_event)
 {
   if (!_ih) return;
 
-  NSScrollView* scroll_view = [self enclosingScrollView];
-  if (![scroll_view isKindOfClass:[NSScrollView class]]) return;
-
-  if (iupAttribGet(_ih, "_IUPCOCOA_UPDATING_SCROLL_POS"))
-  {
-    return;
-  }
-
   double old_posx = _ih->data->posx;
   double old_posy = _ih->data->posy;
 
@@ -869,7 +846,7 @@ static BOOL cocoaCanvasOptionIsMeta(Ihandle* ih, NSEvent* the_event)
 
   if (_ih->data->sb & IUP_SB_HORIZ)
   {
-    NSScroller* h_scroller = [scroll_view horizontalScroller];
+    NSScroller* h_scroller = (NSScroller*)iupAttribGet(_ih, "_IUPCOCOA_CANVAS_SBHORIZ");
     if (h_scroller && content_width > dx)
     {
       CGFloat double_value = [h_scroller doubleValue];
@@ -885,7 +862,7 @@ static BOOL cocoaCanvasOptionIsMeta(Ihandle* ih, NSEvent* the_event)
 
   if (_ih->data->sb & IUP_SB_VERT)
   {
-    NSScroller* v_scroller = [scroll_view verticalScroller];
+    NSScroller* v_scroller = (NSScroller*)iupAttribGet(_ih, "_IUPCOCOA_CANVAS_SBVERT");
     if (v_scroller && content_height > dy)
     {
       CGFloat double_value = [v_scroller doubleValue];
@@ -897,14 +874,6 @@ static BOOL cocoaCanvasOptionIsMeta(Ihandle* ih, NSEvent* the_event)
       if (new_posy < ymin) new_posy = ymin;
       if (new_posy > max_posy) new_posy = max_posy;
     }
-  }
-
-  /* op from a scroller click; cleared so a later move can't reuse it */
-  int forced_op = -1;
-  if (iupAttribGet(_ih, "_IUPCOCOA_SBOP"))
-  {
-    forced_op = iupAttribGetInt(_ih, "_IUPCOCOA_SBOP");
-    iupAttribSet(_ih, "_IUPCOCOA_SBOP", NULL);
   }
 
   double delta_x = new_posx - old_posx;
@@ -921,7 +890,7 @@ static BOOL cocoaCanvasOptionIsMeta(Ihandle* ih, NSEvent* the_event)
   IFniff scroll_cb = (IFniff)IupGetCallback(_ih, "SCROLL_CB");
   if (scroll_cb)
   {
-    int op = (forced_op >= 0) ? forced_op : ((fabs(delta_y) >= fabs(delta_x)) ? IUP_SBPOSV : IUP_SBPOSH);
+    int op = (fabs(delta_y) >= fabs(delta_x)) ? IUP_SBPOSV : IUP_SBPOSH;
     scroll_cb(_ih, op, (float)_ih->data->posx, (float)_ih->data->posy);
   }
   else
@@ -1050,44 +1019,53 @@ static BOOL cocoaCanvasOptionIsMeta(Ihandle* ih, NSEvent* the_event)
   return YES;
 }
 
-- (void) boundsDidChangeNotification:(NSNotification*)notification
-{
-  [self _updateIupScrollState];
-}
-
 - (void) scrollerAction:(id)sender
 {
-  NSScrollView* scroll_view = [self enclosingScrollView];
-  if ([scroll_view isKindOfClass:[NSScrollView class]] && [sender isKindOfClass:[NSScroller class]])
+  if (![sender isKindOfClass:[NSScroller class]]) return;
+
+  NSScroller* scroller = (NSScroller*)sender;
+  int is_vert = (scroller == (NSScroller*)iupAttribGet(_ih, "_IUPCOCOA_CANVAS_SBVERT"));
+  double page = iupAttribGetDouble(_ih, is_vert ? "DY" : "DX");
+#ifdef GNUSTEP
+  double line = page / 10;
+  if (iupAttribGet(_ih, is_vert ? "LINEY" : "LINEX"))
+    line = iupAttribGetDouble(_ih, is_vert ? "LINEY" : "LINEX");
+  if (line == 0) line = 1;
+#endif
+
+  double step;
+  int op;
+  switch ([scroller hitPart])
   {
-    NSScroller* scroller = (NSScroller*)sender;
-    int is_vert = (scroller == [scroll_view verticalScroller]);
-    int op = -1;
-    /* track click = page op; macOS has no scroller arrows */
-    switch ([scroller hitPart])
-    {
-      case NSScrollerDecrementPage: op = is_vert ? IUP_SBPGUP : IUP_SBPGLEFT; break;
-      case NSScrollerIncrementPage: op = is_vert ? IUP_SBPGDN : IUP_SBPGRIGHT; break;
-      default: break;
-    }
-    if (op >= 0)
-      iupAttribSetInt(_ih, "_IUPCOCOA_SBOP", op);
+    case NSScrollerDecrementPage: step = -page; op = is_vert ? IUP_SBPGUP : IUP_SBPGLEFT; break;
+    case NSScrollerIncrementPage: step = page;  op = is_vert ? IUP_SBPGDN : IUP_SBPGRIGHT; break;
+#ifdef GNUSTEP
+    case NSScrollerDecrementLine: step = -line; op = is_vert ? IUP_SBUP : IUP_SBLEFT; break;
+    case NSScrollerIncrementLine: step = line;  op = is_vert ? IUP_SBDN : IUP_SBRIGHT; break;
+#endif
+    default:
+      [self _updateIupScrollState];
+      return;
   }
-  [self _updateIupScrollState];
+
+  double old_pos = is_vert ? _ih->data->posy : _ih->data->posx;
+  IupSetDouble(_ih, is_vert ? "POSY" : "POSX", old_pos + step);
+  double new_pos = is_vert ? _ih->data->posy : _ih->data->posx;
+  if (new_pos == old_pos) return;
+
+  IFniff scroll_cb = (IFniff)IupGetCallback(_ih, "SCROLL_CB");
+  if (scroll_cb)
+    scroll_cb(_ih, op, (float)_ih->data->posx, (float)_ih->data->posy);
+  else if (IupGetCallback(_ih, "ACTION"))
+    iupdrvRedrawNow(_ih);
 }
 
 @end
 
 
-static NSScrollView* cocoaCanvasGetScrollView(Ihandle* ih)
+static NSScroller* cocoaCanvasGetScroller(Ihandle* ih, int vert)
 {
-  if(iupAttribGetBoolean(ih, "_IUPCOCOA_CANVAS_HAS_SCROLLBAR"))
-  {
-    NSScrollView* scroll_view = (NSScrollView*)iupAttribGet(ih, "_IUPCOCOA_CANVAS_ROOT");
-    NSCAssert([scroll_view isKindOfClass:[NSScrollView class]], @"Expected NSScrollView");
-    return scroll_view;
-  }
-  return nil;
+  return (NSScroller*)iupAttribGet(ih, vert ? "_IUPCOCOA_CANVAS_SBVERT" : "_IUPCOCOA_CANVAS_SBHORIZ");
 }
 
 static IupCocoaCanvasView* cocoaCanvasGetCanvasView(Ihandle* ih)
@@ -1095,6 +1073,30 @@ static IupCocoaCanvasView* cocoaCanvasGetCanvasView(Ihandle* ih)
   IupCocoaCanvasView* canvas_view = (IupCocoaCanvasView*)iupAttribGet(ih, "_IUPCOCOA_CANVAS_VIEW");
   NSCAssert([canvas_view isKindOfClass:[IupCocoaCanvasView class]], @"Expected IupCocoaCanvasView");
   return canvas_view;
+}
+
+static void cocoaCanvasUpdateChildLayout(Ihandle* ih)
+{
+  IupCocoaCanvasView* canvas_view = cocoaCanvasGetCanvasView(ih);
+  NSScroller* sb_horiz = cocoaCanvasGetScroller(ih, 0);
+  NSScroller* sb_vert = cocoaCanvasGetScroller(ih, 1);
+  int width = ih->currentwidth;
+  int height = ih->currentheight;
+  int border = iupAttribGetInt(ih, "_IUPCOCOA_CANVAS_BORDER");
+  int sb_vert_width = 0, sb_horiz_height = 0;
+  if (width <= 0 || height <= 0) return;
+
+  if (sb_vert && ![sb_vert isHidden])
+    sb_vert_width = iupdrvGetScrollbarSize();
+  if (sb_horiz && ![sb_horiz isHidden])
+    sb_horiz_height = iupdrvGetScrollbarSize();
+
+  if (sb_vert_width)
+    [sb_vert setFrame:NSMakeRect(width - sb_vert_width - border, border, sb_vert_width, height - sb_horiz_height - 2 * border)];
+  if (sb_horiz_height)
+    [sb_horiz setFrame:NSMakeRect(border, height - sb_horiz_height - border, width - sb_vert_width - 2 * border, sb_horiz_height)];
+
+  [canvas_view setFrame:NSMakeRect(border, border, width - sb_vert_width - 2 * border, height - sb_horiz_height - 2 * border)];
 }
 
 static int cocoaCanvasSetBgColorAttrib(Ihandle* ih, const char* value)
@@ -1123,37 +1125,12 @@ static int cocoaCanvasSetUpdateRectAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-static void cocoaCanvasUpdateDocumentSize(Ihandle* ih)
-{
-  NSScrollView* scroll_view = cocoaCanvasGetScrollView(ih);
-  IupCocoaCanvasView* canvas_view = cocoaCanvasGetCanvasView(ih);
-  if (!scroll_view || !canvas_view) return;
-  if (ih->currentwidth <= 0 || ih->currentheight <= 0) return;
-
-  NSSize frame_size = NSMakeSize(ih->currentwidth, ih->currentheight);
-#ifdef GNUSTEP
-  NSSize content_size = [NSScrollView contentSizeForFrameSize:frame_size
-                                        hasHorizontalScroller:[scroll_view hasHorizontalScroller]
-                                          hasVerticalScroller:[scroll_view hasVerticalScroller]
-                                                   borderType:[scroll_view borderType]];
-#else
-  NSSize content_size = [NSScrollView contentSizeForFrameSize:frame_size
-                                      horizontalScrollerClass:([scroll_view hasHorizontalScroller] ? [NSScroller class] : nil)
-                                        verticalScrollerClass:([scroll_view hasVerticalScroller] ? [NSScroller class] : nil)
-                                                   borderType:[scroll_view borderType]
-                                                  controlSize:NSControlSizeRegular
-                                                scrollerStyle:[NSScroller preferredScrollerStyle]];
-#endif
-  if (!NSEqualSizes([canvas_view frame].size, content_size))
-    [canvas_view setFrameSize:content_size];
-}
-
 static int cocoaCanvasSetDXAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->sb & IUP_SB_HORIZ)
   {
-    NSScrollView* scroll_view = cocoaCanvasGetScrollView(ih);
-    if (!scroll_view) return 0;
+    NSScroller* scroller = cocoaCanvasGetScroller(ih, 0);
+    if (!scroller) return 0;
 
     double dx;
     if (value) iupStrToDouble(value, &dx);
@@ -1167,36 +1144,29 @@ static int cocoaCanvasSetDXAttrib(Ihandle* ih, const char* value)
     {
       if (iupAttribGetBoolean(ih, "XAUTOHIDE"))
       {
-        [scroll_view setHasHorizontalScroller:NO];
+        [scroller setHidden:YES];
         iupAttribSet(ih, "SB_RESIZE", "YES");
       }
       else
       {
-        [scroll_view setHasHorizontalScroller:YES];
-        [[scroll_view horizontalScroller] setEnabled:NO];
+        [scroller setHidden:NO];
+        [scroller setEnabled:NO];
       }
       iupAttribSet(ih, "XHIDDEN", "YES");
       if (ih->data->posx != xmin) IupSetDouble(ih, "POSX", xmin);
     }
     else
     {
-      [scroll_view setHasHorizontalScroller:YES];
-      [[scroll_view horizontalScroller] setEnabled:YES];
+      [scroller setHidden:NO];
+      [scroller setEnabled:YES];
       iupAttribSet(ih, "SB_RESIZE", "YES");
       iupAttribSet(ih, "XHIDDEN", "NO");
 
-      [scroll_view tile];
-
-      NSScroller* scroller = [scroll_view horizontalScroller];
-      if (scroller && content_width > 0)
-      {
-        CGFloat knob_proportion = (CGFloat)(dx / content_width);
-        [scroller setKnobProportion:knob_proportion];
-      }
-
-      [scroll_view setNeedsDisplay:YES];
+      if (content_width > 0)
+        [scroller setKnobProportion:(CGFloat)(dx / content_width)];
     }
-    cocoaCanvasUpdateDocumentSize(ih);
+    cocoaCanvasUpdateChildLayout(ih);
+    [scroller setNeedsDisplay:YES];
   }
   return 1;
 }
@@ -1205,8 +1175,8 @@ static int cocoaCanvasSetDYAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->sb & IUP_SB_VERT)
   {
-    NSScrollView* scroll_view = cocoaCanvasGetScrollView(ih);
-    if (!scroll_view) return 0;
+    NSScroller* scroller = cocoaCanvasGetScroller(ih, 1);
+    if (!scroller) return 0;
 
     double dy;
     if (value) iupStrToDouble(value, &dy);
@@ -1220,36 +1190,29 @@ static int cocoaCanvasSetDYAttrib(Ihandle* ih, const char* value)
     {
       if (iupAttribGetBoolean(ih, "YAUTOHIDE"))
       {
-        [scroll_view setHasVerticalScroller:NO];
+        [scroller setHidden:YES];
         iupAttribSet(ih, "SB_RESIZE", "YES");
       }
       else
       {
-        [scroll_view setHasVerticalScroller:YES];
-        [[scroll_view verticalScroller] setEnabled:NO];
+        [scroller setHidden:NO];
+        [scroller setEnabled:NO];
       }
       iupAttribSet(ih, "YHIDDEN", "YES");
       if (ih->data->posy != ymin) IupSetDouble(ih, "POSY", ymin);
     }
     else
     {
-      [scroll_view setHasVerticalScroller:YES];
-      [[scroll_view verticalScroller] setEnabled:YES];
+      [scroller setHidden:NO];
+      [scroller setEnabled:YES];
       iupAttribSet(ih, "SB_RESIZE", "YES");
       iupAttribSet(ih, "YHIDDEN", "NO");
 
-      [scroll_view tile];
-
-      NSScroller* scroller = [scroll_view verticalScroller];
-      if (scroller && content_height > 0)
-      {
-        CGFloat knob_proportion = (CGFloat)(dy / content_height);
-        [scroller setKnobProportion:knob_proportion];
-      }
-
-      [scroll_view setNeedsDisplay:YES];
+      if (content_height > 0)
+        [scroller setKnobProportion:(CGFloat)(dy / content_height)];
     }
-    cocoaCanvasUpdateDocumentSize(ih);
+    cocoaCanvasUpdateChildLayout(ih);
+    [scroller setNeedsDisplay:YES];
   }
   return 1;
 }
@@ -1258,8 +1221,8 @@ static int cocoaCanvasSetPosXAttrib(Ihandle* ih, const char* value)
 {
   if (!(ih->data->sb & IUP_SB_HORIZ)) return 1;
 
-  NSScrollView* scroll_view = cocoaCanvasGetScrollView(ih);
-  if (!scroll_view) return 0;
+  NSScroller* scroller = cocoaCanvasGetScroller(ih, 0);
+  if (!scroller) return 0;
 
   double posx;
   if (!iupStrToDouble(value, &posx)) return 1;
@@ -1285,8 +1248,7 @@ static int cocoaCanvasSetPosXAttrib(Ihandle* ih, const char* value)
 
   ih->data->posx = posx;
 
-  NSScroller* scroller = [scroll_view horizontalScroller];
-  if (scroller && content_width > dx && dx > 0)
+  if (content_width > dx && dx > 0)
   {
     double scrollable_range = content_width - dx;
     CGFloat double_value = (CGFloat)((posx - xmin) / scrollable_range);
@@ -1294,9 +1256,7 @@ static int cocoaCanvasSetPosXAttrib(Ihandle* ih, const char* value)
     if (double_value < 0.0) double_value = 0.0;
     if (double_value > 1.0) double_value = 1.0;
 
-    iupAttribSet(ih, "_IUPCOCOA_UPDATING_SCROLL_POS", "1");
     [scroller setDoubleValue:double_value];
-    iupAttribSet(ih, "_IUPCOCOA_UPDATING_SCROLL_POS", NULL);
 
     IupCocoaCanvasView* canvas_view = cocoaCanvasGetCanvasView(ih);
     [canvas_view setNeedsDisplay:YES];
@@ -1309,8 +1269,8 @@ static int cocoaCanvasSetPosYAttrib(Ihandle* ih, const char* value)
 {
   if (!(ih->data->sb & IUP_SB_VERT)) return 1;
 
-  NSScrollView* scroll_view = cocoaCanvasGetScrollView(ih);
-  if (!scroll_view) return 0;
+  NSScroller* scroller = cocoaCanvasGetScroller(ih, 1);
+  if (!scroller) return 0;
 
   double posy;
   if (!iupStrToDouble(value, &posy)) return 1;
@@ -1336,8 +1296,7 @@ static int cocoaCanvasSetPosYAttrib(Ihandle* ih, const char* value)
 
   ih->data->posy = posy;
 
-  NSScroller* scroller = [scroll_view verticalScroller];
-  if (scroller && content_height > dy && dy > 0)
+  if (content_height > dy && dy > 0)
   {
     double scrollable_range = content_height - dy;
     CGFloat double_value = (CGFloat)((posy - ymin) / scrollable_range);
@@ -1345,9 +1304,7 @@ static int cocoaCanvasSetPosYAttrib(Ihandle* ih, const char* value)
     if (double_value < 0.0) double_value = 0.0;
     if (double_value > 1.0) double_value = 1.0;
 
-    iupAttribSet(ih, "_IUPCOCOA_UPDATING_SCROLL_POS", "1");
     [scroller setDoubleValue:double_value];
-    iupAttribSet(ih, "_IUPCOCOA_UPDATING_SCROLL_POS", NULL);
 
     IupCocoaCanvasView* canvas_view = cocoaCanvasGetCanvasView(ih);
     [canvas_view setNeedsDisplay:YES];
@@ -1391,14 +1348,10 @@ static char* cocoaCanvasGetNativeFocusRingAttrib(Ihandle* ih)
 
 static char* cocoaCanvasGetScrollVisibleAttrib(Ihandle* ih)
 {
-  NSScrollView* scroll_view = cocoaCanvasGetScrollView(ih);
-  if (!scroll_view)
-    return "NO";
-
   int scroll_visible = 0;
 
-  NSScroller* horiz_scroller = [scroll_view horizontalScroller];
-  NSScroller* vert_scroller = [scroll_view verticalScroller];
+  NSScroller* horiz_scroller = cocoaCanvasGetScroller(ih, 0);
+  NSScroller* vert_scroller = cocoaCanvasGetScroller(ih, 1);
 
   if (horiz_scroller && ![horiz_scroller isHidden])
     scroll_visible |= 1;
@@ -1422,11 +1375,23 @@ static int cocoaCanvasSetNativeFocusRingAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
+static NSScroller* cocoaCanvasCreateScroller(IupCocoaCanvasView* canvas_view, int vert)
+{
+  CGFloat sb_size = iupdrvGetScrollbarSize();
+  NSRect initial_frame = vert ? NSMakeRect(0, 0, sb_size, 3 * sb_size) : NSMakeRect(0, 0, 3 * sb_size, sb_size);
+  NSScroller* scroller = [[NSScroller alloc] initWithFrame:initial_frame];
+  [scroller setScrollerStyle:NSScrollerStyleLegacy];
+  [scroller setEnabled:YES];
+  [scroller setDoubleValue:0.0];
+  [scroller setTarget:canvas_view];
+  [scroller setAction:@selector(scrollerAction:)];
+  return scroller;
+}
+
 static int cocoaCanvasMapMethod(Ihandle* ih)
 {
-  IupCocoaFixedView* extra_parent = [[IupCocoaFixedView alloc] initWithFrame:NSZeroRect];
+  IupCocoaCanvasContainer* extra_parent = [[IupCocoaCanvasContainer alloc] initWithFrame:NSZeroRect];
 
-  NSView* root_view = nil;
   IupCocoaCanvasView* canvas_view = [[IupCocoaCanvasView alloc] initWithFrame:NSZeroRect ih:ih];
   iupAttribSet(ih, "_IUPCOCOA_CANVAS_VIEW", (char*)canvas_view);
 
@@ -1441,101 +1406,57 @@ static int cocoaCanvasMapMethod(Ihandle* ih)
 
   NSNotificationCenter* notification_center = [NSNotificationCenter defaultCenter];
 
+  [canvas_view setPostsFrameChangedNotifications:YES];
+  [notification_center addObserver:canvas_view
+                          selector:@selector(frameDidChangeNotification:)
+                              name:NSViewFrameDidChangeNotification
+                            object:canvas_view];
+
+  [notification_center addObserver:canvas_view
+                          selector:@selector(globalFrameDidChangeNotification:)
+                              name:NSWindowDidMoveNotification
+                            object:nil];
+  [notification_center addObserver:canvas_view
+                          selector:@selector(globalFrameDidChangeNotification:)
+                              name:NSWindowDidChangeScreenNotification
+                            object:nil];
+
+  [extra_parent addSubview:canvas_view];
+  [canvas_view release];
+
   if (ih->data->sb)
   {
-    NSScrollView* scroll_view = [[NSScrollView alloc] initWithFrame:NSZeroRect];
-
-    IupLogicalScrollClipView* clip_view = [[IupLogicalScrollClipView alloc] initWithFrame:NSZeroRect];
-    [clip_view setDocumentView:nil];
-    [scroll_view setContentView:clip_view];
-    [clip_view release];
-
-    /* the document view size is managed from XMAX/YMAX; autoresizing it would leave nothing to scroll */
-    [canvas_view setAutoresizingMask:NSViewNotSizable];
-
-    [scroll_view setDocumentView:canvas_view];
-    [canvas_view release];
-
-    [scroll_view setAutohidesScrollers:NO];
-
-
-    [scroll_view setHasHorizontalScroller:(ih->data->sb & IUP_SB_HORIZ)];
-    [scroll_view setHorizontalScrollElasticity:NSScrollElasticityNone];
-    [scroll_view setHasVerticalScroller:(ih->data->sb & IUP_SB_VERT)];
-    [scroll_view setVerticalScrollElasticity:NSScrollElasticityNone];
-    [scroll_view setBorderType:iupAttribGetBoolean(ih, "BORDER") ? NSBezelBorder : NSNoBorder];
-    [scroll_view setDrawsBackground:NO];
+    if (iupAttribGetBoolean(ih, "BORDER"))
+    {
+      [extra_parent setDrawsBorder:YES];
+      iupAttribSet(ih, "_IUPCOCOA_CANVAS_BORDER", "1");
+    }
 
     if (ih->data->sb & IUP_SB_HORIZ)
     {
-      NSScroller* h_scroller = [scroll_view horizontalScroller];
-      [h_scroller setTarget:canvas_view];
-      [h_scroller setAction:@selector(scrollerAction:)];
+      NSScroller* h_scroller = cocoaCanvasCreateScroller(canvas_view, 0);
+      [extra_parent addSubview:h_scroller];
+      [h_scroller release];
+      iupAttribSet(ih, "_IUPCOCOA_CANVAS_SBHORIZ", (char*)h_scroller);
     }
     if (ih->data->sb & IUP_SB_VERT)
     {
-      NSScroller* v_scroller = [scroll_view verticalScroller];
-      [v_scroller setTarget:canvas_view];
-      [v_scroller setAction:@selector(scrollerAction:)];
+      NSScroller* v_scroller = cocoaCanvasCreateScroller(canvas_view, 1);
+      [extra_parent addSubview:v_scroller];
+      [v_scroller release];
+      iupAttribSet(ih, "_IUPCOCOA_CANVAS_SBVERT", (char*)v_scroller);
     }
-
-    [scroll_view setPostsFrameChangedNotifications:YES];
-    [notification_center addObserver:canvas_view
-                            selector:@selector(frameDidChangeNotification:)
-                                name:NSViewFrameDidChangeNotification
-                              object:scroll_view];
-
-    [notification_center addObserver:canvas_view
-                            selector:@selector(globalFrameDidChangeNotification:)
-                                name:NSWindowDidMoveNotification
-                              object:nil];
-    [notification_center addObserver:canvas_view
-                            selector:@selector(globalFrameDidChangeNotification:)
-                                name:NSWindowDidChangeScreenNotification
-                              object:nil];
-
-    [clip_view setPostsBoundsChangedNotifications:YES];
-    [notification_center addObserver:canvas_view
-                            selector:@selector(boundsDidChangeNotification:)
-                                name:NSViewBoundsDidChangeNotification
-                              object:clip_view];
-
-    root_view = scroll_view;
-    iupAttribSet(ih, "_IUPCOCOA_CANVAS_HAS_SCROLLBAR", "1");
   }
-  else
-  {
-    [canvas_view setPostsFrameChangedNotifications:YES];
-    [notification_center addObserver:canvas_view
-                            selector:@selector(frameDidChangeNotification:)
-                                name:NSViewFrameDidChangeNotification
-                              object:canvas_view];
-
-    [notification_center addObserver:canvas_view
-                            selector:@selector(globalFrameDidChangeNotification:)
-                                name:NSWindowDidMoveNotification
-                              object:nil];
-    [notification_center addObserver:canvas_view
-                            selector:@selector(globalFrameDidChangeNotification:)
-                                name:NSWindowDidChangeScreenNotification
-                              object:nil];
-
-    [canvas_view setPostsBoundsChangedNotifications:YES];
-    root_view = canvas_view;
-  }
-
-  [extra_parent addSubview:root_view];
 
   ih->handle = extra_parent;
   iupAttribSet(ih, "_IUP_EXTRAPARENT", (char*)extra_parent);
-  iupAttribSet(ih, "_IUPCOCOA_CANVAS_ROOT", (char*)root_view);
 
   iupcocoaSetAssociatedViews(ih, canvas_view, extra_parent);
 
   iupcocoaAddToParent(ih);
 
-  IupSourceDragAssociatedData* source_drag = cocoaSourceDragCreateAssociatedData(ih, canvas_view, root_view);
-  cocoaTargetDropCreateAssociatedData(ih, canvas_view, root_view);
+  IupSourceDragAssociatedData* source_drag = cocoaSourceDragCreateAssociatedData(ih, canvas_view, canvas_view);
+  cocoaTargetDropCreateAssociatedData(ih, canvas_view, canvas_view);
   [source_drag setDefaultFilePromiseName:@"IupCanvas.png"];
 
   cocoaCanvasSetBgColorAttrib(ih, iupAttribGet(ih, "BGCOLOR"));
@@ -1558,18 +1479,13 @@ static void cocoaCanvasUnMapMethod(Ihandle* ih)
     [[NSNotificationCenter defaultCenter] removeObserver:canvas_view];
   }
 
-  if (ih->data->sb)
   {
-    NSScrollView* scroll_view = cocoaCanvasGetScrollView(ih);
-    if (scroll_view)
-    {
-      NSScroller* h_scroller = [scroll_view horizontalScroller];
-      NSScroller* v_scroller = [scroll_view verticalScroller];
-      if (h_scroller)
-        [h_scroller setTarget:nil];
-      if (v_scroller)
-        [v_scroller setTarget:nil];
-    }
+    NSScroller* h_scroller = cocoaCanvasGetScroller(ih, 0);
+    NSScroller* v_scroller = cocoaCanvasGetScroller(ih, 1);
+    if (h_scroller)
+      [h_scroller setTarget:nil];
+    if (v_scroller)
+      [v_scroller setTarget:nil];
   }
 
   cocoaTargetDropDestroyAssociatedData(ih);
@@ -1601,25 +1517,15 @@ static void cocoaCanvasUnMapMethod(Ihandle* ih)
   ih->handle = NULL;
   iupAttribSet(ih, "_IUPCOCOA_CANVAS_VIEW", NULL);
   iupAttribSet(ih, "_IUP_EXTRAPARENT", NULL);
-  iupAttribSet(ih, "_IUPCOCOA_CANVAS_ROOT", NULL);
+  iupAttribSet(ih, "_IUPCOCOA_CANVAS_SBHORIZ", NULL);
+  iupAttribSet(ih, "_IUPCOCOA_CANVAS_SBVERT", NULL);
 }
 
 static void cocoaCanvasLayoutUpdateMethod(Ihandle *ih)
 {
   iupdrvBaseLayoutUpdateMethod(ih);
 
-  NSView* canvas_root = (NSView*)iupAttribGet(ih, "_IUPCOCOA_CANVAS_ROOT");
-
-  if (ih->data->sb)
-  {
-    /* the document view must be sized first; setting the scroll view frame fires RESIZE_CB */
-    cocoaCanvasUpdateDocumentSize(ih);
-  }
-
-  if (canvas_root)
-  {
-    [canvas_root setFrame:NSMakeRect(0, 0, ih->currentwidth, ih->currentheight)];
-  }
+  cocoaCanvasUpdateChildLayout(ih);
 
   if (ih->data->sb)
   {
