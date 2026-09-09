@@ -14,8 +14,8 @@ func main() {
 		iup.Submenu("File",
 			iup.Menu(
 				iup.MenuItem("Save\tCtrl+S").SetCallback("ACTION", iup.ActionFunc(itemSaveCb)),
-				iup.MenuItem("&Auto Save").SetHandle("itemAutosave").SetAttributes(`VALUE=ON`).SetCallback("ACTION", iup.ActionFunc(itemAutosaveCb)),
-				iup.MenuItem("Exit").SetAttributes(`KEY="x"`).SetCallback("ACTION", iup.ActionFunc(itemExitCb)),
+				iup.MenuItem("&Auto Save\tCtrl+A").SetHandle("itemAutosave").SetAttributes(`VALUE=ON`).SetCallback("ACTION", iup.ActionFunc(itemAutosaveCb)),
+				iup.MenuItem("Exit\tCtrl+X").SetAttributes(`KEY="x"`).SetCallback("ACTION", iup.ActionFunc(itemExitCb)),
 			),
 		),
 	).SetHandle("menu")
@@ -35,25 +35,8 @@ func main() {
 		"MENU":   "menu",
 	})
 
-	dlg.SetCallback("K_ANY", iup.KAnyFunc(kAny))
-
 	iup.Show(dlg)
 	iup.MainLoop()
-}
-
-func kAny(ih iup.Ihandle, c int) int {
-	if iup.IsCtrlXKey(c) {
-		if iup.XKeyCtrl(iup.K_S) == c {
-			itemSaveCb(ih)
-			return iup.DEFAULT
-		} else if iup.XKeyCtrl(iup.K_A) == c {
-			itemAutosaveCb(ih)
-			return iup.DEFAULT
-		} else if iup.XKeyCtrl(iup.K_X) == c {
-			return iup.CLOSE
-		}
-	}
-	return iup.DEFAULT
 }
 
 func itemSaveCb(ih iup.Ihandle) int {

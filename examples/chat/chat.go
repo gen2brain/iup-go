@@ -642,10 +642,8 @@ func drawConversations(ih iup.Ihandle) int {
 	}
 
 	total := len(shown) * rowH
-	if ih.GetInt("YMAX") != total {
+	if ih.GetInt("YMAX") != total || ih.GetInt("DY") != h {
 		ih.SetAttribute("YMAX", total)
-	}
-	if ih.GetInt("DY") != h {
 		ih.SetAttribute("DY", h)
 	}
 	return iup.DEFAULT

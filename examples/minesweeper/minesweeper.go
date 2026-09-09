@@ -70,13 +70,6 @@ func main() {
 	dlg = iup.Dialog(iup.Vbox(cv)).SetAttributes(`TITLE="Minesweeper", RESIZE=NO, MAXBOX=NO`)
 	dlg.SetHandle("dlg")
 	iup.SetAttributeHandle(dlg, "MENU", buildMenu())
-	dlg.SetCallback("K_ANY", iup.KAnyFunc(func(ih iup.Ihandle, c int) int {
-		if c == iup.K_F2 {
-			newGame(cur)
-			return iup.IGNORE
-		}
-		return iup.CONTINUE
-	}))
 
 	newGame(cur)
 

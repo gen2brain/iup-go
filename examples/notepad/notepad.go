@@ -93,13 +93,6 @@ func buildMainDialog() {
 	iup.SetAttributeHandle(dlg, "MENU", mainMenu)
 	dlg.SetCallback("CLOSE_CB", iup.CloseFunc(closeCb))
 	dlg.SetCallback("DROPFILES_CB", iup.DropFilesFunc(dropFilesCb))
-	dlg.SetCallback("K_cN", iup.ActionFunc(newActionCb))
-	dlg.SetCallback("K_cO", iup.ActionFunc(openActionCb))
-	dlg.SetCallback("K_cS", iup.ActionFunc(saveActionCb))
-	dlg.SetCallback("K_cF", iup.ActionFunc(findActionCb))
-	dlg.SetCallback("K_cH", iup.ActionFunc(replaceActionCb))
-	dlg.SetCallback("K_cG", iup.ActionFunc(gotoActionCb))
-	dlg.SetCallback("K_F3", iup.ActionFunc(findNextCb))
 
 	iup.SetAttributeHandle(iup.Ihandle(0), "PARENTDIALOG", dlg)
 
