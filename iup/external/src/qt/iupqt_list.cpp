@@ -335,6 +335,57 @@ protected:
     QLineEdit::focusOutEvent(event);
     iupqtFocusInOutEvent(this, event, ih);
   }
+
+  void keyPressEvent(QKeyEvent* event) override
+  {
+    IFnis cb = (IFnis)IupGetCallback(ih, "EDIT_CB");
+    if (cb || ih->data->mask || ih->data->nc)
+    {
+      int start = hasSelectedText() ? selectionStart() : cursorPosition();
+      int end = hasSelectedText() ? start + (int)selectedText().length() : start;
+      int ret = -1;
+      int checked = 0;
+
+      if ((event->key() == Qt::Key_Backspace || event->key() == Qt::Key_Delete) && !(event->modifiers() & (Qt::ControlModifier | Qt::AltModifier)))
+      {
+        int remove_dir = event->key() == Qt::Key_Delete ? 1 : -1;
+        if (start != end || (remove_dir == 1 && start < (int)text().length()) || (remove_dir == -1 && start > 0))
+        {
+          ret = iupEditCallActionCb(ih, cb, NULL, start, end, ih->data->mask, ih->data->nc, remove_dir, 1);
+          checked = 1;
+        }
+      }
+      else
+      {
+        QString typed = event->text();
+        if (!typed.isEmpty() && typed.at(0).isPrint() && typed.at(0).unicode() >= 32)
+        {
+          ret = iupEditCallActionCb(ih, cb, typed.toUtf8().constData(), start, end, ih->data->mask, ih->data->nc, 0, 1);
+          checked = 1;
+          if (ret != 0 && ret != -1)
+          {
+            iupAttribSet(ih, "_IUPQT_LIST_KEYCHECKED", "1");
+            insert(QString(QChar(ret)));
+            iupAttribSet(ih, "_IUPQT_LIST_KEYCHECKED", NULL);
+            return;
+          }
+        }
+      }
+
+      if (ret == 0)
+        return;
+
+      if (checked)
+      {
+        iupAttribSet(ih, "_IUPQT_LIST_KEYCHECKED", "1");
+        QLineEdit::keyPressEvent(event);
+        iupAttribSet(ih, "_IUPQT_LIST_KEYCHECKED", NULL);
+        return;
+      }
+    }
+
+    QLineEdit::keyPressEvent(event);
+  }
 };
 
 /****************************************************************************
@@ -1714,12 +1765,8 @@ static void qtListEditTextChanged(QLineEdit* edit, Ihandle* ih)
     return;
 
   IFnis cb = (IFnis)IupGetCallback(ih, "EDIT_CB");
-  if (cb || ih->data->mask || ih->data->nc)
-  {
-    QByteArray utf8 = edit->text().toUtf8();
-    int byte_len = utf8.size();
-    iupEditCallActionCb(ih, cb, utf8.constData(), 0, byte_len, ih->data->mask, ih->data->nc, 0, 0);
-  }
+  if ((cb || ih->data->mask || ih->data->nc) && !iupAttribGet(ih, "_IUPQT_LIST_KEYCHECKED"))
+    iupEditCheckNewValue(ih, cb, edit->text().toUtf8().constData(), ih->data->mask, ih->data->nc);
 
   iupBaseCallValueChangedCb(ih);
 }

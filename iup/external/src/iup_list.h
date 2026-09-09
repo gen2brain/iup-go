@@ -29,6 +29,7 @@ IUP_SDK_API void iupdrvListSetItemCount(Ihandle* ih, int count);
 
 /* Used by List and Text, implemented in Text */
 int iupEditCallActionCb(Ihandle* ih, IFnis cb, const char* insert_value, int start, int end, void *mask, int nc, int remove_dir, int utf8);
+int iupEditCheckNewValue(Ihandle* ih, IFnis cb, const char* new_value, void *mask, int nc);
 
 int iupListGetPosAttrib(Ihandle* ih, int id);
 int iupListSetIdValueAttrib(Ihandle* ih, int id, const char* value);

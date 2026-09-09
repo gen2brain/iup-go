@@ -437,30 +437,20 @@ static gboolean gtk4TextButtonEvent(GtkGestureClick *gesture, int n_press, doubl
   return FALSE;
 }
 
-static void gtk4TextBufferDeleteRange(GtkTextBuffer *buffer, GtkTextIter *start, GtkTextIter *end, Ihandle* ih)
+static void gtk4TextBufferDeleteRange(GtkTextBuffer *buffer, GtkTextIter *start_iter, GtkTextIter *end_iter, Ihandle* ih)
 {
-  if (!ih->data->disable_callbacks)
-  {
-    IFnis cb = (IFnis)IupGetCallback(ih, "ACTION");
-    if (cb)
-    {
-      int ret;
-      int start_pos = gtk_text_iter_get_offset(start);
+  IFnis cb = (IFnis)IupGetCallback(ih, "ACTION");
+  int start, end, ret;
 
-      char *text = gtk_text_buffer_get_text(buffer, start, end, FALSE);
+  if (ih->data->disable_callbacks)
+    return;
 
-      ret = cb(ih, start_pos + 1, (char*)iupgtk4StrConvertFromSystem(text));
-      g_free(text);
+  start = gtk_text_iter_get_offset(start_iter);
+  end = gtk_text_iter_get_offset(end_iter);
 
-      if (ret == IUP_IGNORE)
-      {
-        g_signal_stop_emission_by_name(buffer, "delete_range");
-        return;
-      }
-    }
-  }
-
-  (void)buffer;
+  ret = iupEditCallActionCb(ih, cb, NULL, start, end, ih->data->mask, ih->data->nc, 1, 1);
+  if (ret == 0)
+    g_signal_stop_emission_by_name(buffer, "delete_range");
 }
 
 static void gtk4TextFilterInsertEntry(GtkEditable *editable, const gchar *text, gint length, gint *position, Ihandle* ih)
@@ -656,34 +646,17 @@ static void gtk4TextLinkMotion(GtkEventControllerMotion *controller, double x, d
   (void)ih;
 }
 
-static void gtk4TextEntryDeleteText(GtkEditable *editable, gint start_pos, gint end_pos, Ihandle* ih)
+static void gtk4TextEntryDeleteText(GtkEditable *editable, gint start, gint end, Ihandle* ih)
 {
-  if (!ih->data->disable_callbacks)
-  {
-    IFnis cb = (IFnis)IupGetCallback(ih, "ACTION");
-    if (cb)
-    {
-      int ret;
-      char *text;
-      const char* entry_text = gtk_editable_get_text(editable);
+  IFnis cb = (IFnis)IupGetCallback(ih, "ACTION");
+  int ret;
 
-      text = iupStrDup(entry_text);
+  if (ih->data->disable_callbacks)
+    return;
 
-      text[end_pos] = 0;
-
-      ret = cb(ih, start_pos + 1, &text[start_pos]);
-
-      free(text);
-
-      if (ret == IUP_IGNORE)
-      {
-        g_signal_stop_emission_by_name(editable, "delete_text");
-        return;
-      }
-    }
-  }
-
-  (void)editable;
+  ret = iupEditCallActionCb(ih, cb, NULL, start, end, ih->data->mask, ih->data->nc, 1, 1);
+  if (ret == 0)
+    g_signal_stop_emission_by_name(editable, "delete_text");
 }
 
 static void gtk4TextEntryInsertText(GtkEditable *editable, const gchar *text, gint len, gint *pos, Ihandle* ih)

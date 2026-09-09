@@ -199,6 +199,9 @@ IUP_DRV_API void iupeflKeyEncode(int key, const char** keyname, const char** key
 IUP_DRV_API void iupeflButtonKeySetStatus(Evas_Modifier* modifiers, unsigned int button, char* status, int doubleclick);
 IUP_DRV_API int iupeflKeyDecodeFromName(const char* keyname, const char* keysym, const char* keystr);
 IUP_DRV_API int iupeflKeyDecodeEvent(Efl_Input_Key* key_event);
+IUP_DRV_API void iupeflTextSetCursor(Eo* entry, int pos);
+IUP_DRV_API void iupeflTextDeleteRange(Eo* entry, int start, int end);
+IUP_DRV_API void iupeflTextInsertAt(Eo* entry, int pos, const char* text);
 IUP_DRV_API int iupeflKeyIsMenuAccel(Ihandle* ih, int code);
 IUP_DRV_API int iupeflMenuActivateAccel(Ihandle* ih, int code);
 

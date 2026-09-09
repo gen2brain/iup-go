@@ -275,7 +275,7 @@ static void eflListEditChangedCallback(void* data, const Efl_Event* ev)
 
   edit_cb = (IFnis)IupGetCallback(ih, "EDIT_CB");
 
-  if (edit_cb || ih->data->nc)
+  if (edit_cb || ih->data->mask || ih->data->nc)
   {
     const char* insert_value = NULL;
     int start, end;
@@ -290,33 +290,43 @@ static void eflListEditChangedCallback(void* data, const Efl_Event* ev)
     }
     else
     {
+      Efl_Text_Cursor_Object* main_cur = efl_text_interactive_main_cursor_get(ev->object);
       start = (int)info->position;
+      if (main_cur && efl_text_cursor_object_position_get(main_cur) < start)
+        start = efl_text_cursor_object_position_get(main_cur);
       end = start + (int)info->length;
       remove_dir = 1;
     }
 
+    iupAttribSet(ih, "_IUPEFL_DISABLE_TEXT_CB", "1");
+    if (insert_value)
+      iupeflTextDeleteRange(ev->object, start, start + (int)info->length);
+    else
+      iupeflTextInsertAt(ev->object, start, info->content);
+    iupAttribSet(ih, "_IUPEFL_DISABLE_TEXT_CB", NULL);
+
     ret = iupEditCallActionCb(ih, edit_cb, insert_value, start, end, ih->data->mask, ih->data->nc, remove_dir, 1);
 
+    iupAttribSet(ih, "_IUPEFL_DISABLE_TEXT_CB", "1");
     if (ret == 0)
+      iupeflTextSetCursor(ev->object, insert_value ? start : end);
+    else if (insert_value)
     {
-      Eo* entry = ev->object;
-      iupAttribSet(ih, "_IUPEFL_DISABLE_TEXT_CB", "1");
-
-      if (info->type == EFL_TEXT_CHANGE_TYPE_INSERT)
+      char replacement[2];
+      if (ret != -1 && info->length == 1)
       {
-        Efl_Text_Cursor_Object* cur_start = efl_ui_textbox_cursor_create(entry);
-        Efl_Text_Cursor_Object* cur_end = efl_ui_textbox_cursor_create(entry);
-
-        if (cur_start && cur_end)
-        {
-          efl_text_cursor_object_position_set(cur_start, (int)info->position);
-          efl_text_cursor_object_position_set(cur_end, (int)(info->position + info->length));
-          efl_text_cursor_object_range_delete(cur_start, cur_end);
-        }
+        replacement[0] = (char)ret;
+        replacement[1] = 0;
+        insert_value = replacement;
       }
-
-      iupAttribSet(ih, "_IUPEFL_DISABLE_TEXT_CB", NULL);
+      iupeflTextInsertAt(ev->object, start, insert_value);
     }
+    else
+      iupeflTextDeleteRange(ev->object, start, end);
+    iupAttribSet(ih, "_IUPEFL_DISABLE_TEXT_CB", NULL);
+
+    if (ret == 0)
+      return;
   }
 
   iupBaseCallValueChangedCb(ih);
