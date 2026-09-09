@@ -773,6 +773,7 @@ IUP_SDK_API int iupdrvBaseSetFgColorAttrib(Ihandle* ih, const char* value)
 @interface IUPCursorTrackingDelegate : NSObject
 {
   NSCursor* _cursor;
+  BOOL _hidden;
 }
 @property(nonatomic, retain) NSCursor* cursor;
 - (void)mouseEntered:(NSEvent *)event;
@@ -782,11 +783,69 @@ IUP_SDK_API int iupdrvBaseSetFgColorAttrib(Ihandle* ih, const char* value)
 
 @implementation IUPCursorTrackingDelegate
 @synthesize cursor = _cursor;
-- (void)mouseEntered:(NSEvent *)event { [self.cursor set]; }
-- (void)mouseExited:(NSEvent *)event { [[NSCursor arrowCursor] set]; }
-- (void)dealloc { self.cursor = nil; [super dealloc]; }
+
+- (void)mouseEntered:(NSEvent *)event
+{
+  if (self.cursor)
+    [self.cursor set];
+  else if (!_hidden)
+  {
+    [NSCursor hide];
+    _hidden = YES;
+  }
+}
+
+- (void)mouseExited:(NSEvent *)event
+{
+  if (_hidden)
+  {
+    [NSCursor unhide];
+    _hidden = NO;
+  }
+  [[NSCursor arrowCursor] set];
+}
+
+- (void)dealloc
+{
+  if (_hidden)
+    [NSCursor unhide];
+  self.cursor = nil;
+  [super dealloc];
+}
 @end
 
+
+#ifndef GNUSTEP
+static NSCursor* cocoaGetResizeCursor(const char* name)
+{
+  if (@available(macOS 15.0, *))
+  {
+    static struct {
+      const char* iupname;
+      NSCursorFrameResizePosition position;
+    } frame[] = {
+      {"RESIZE_N",  NSCursorFrameResizePositionTop},
+      {"RESIZE_S",  NSCursorFrameResizePositionBottom},
+      {"RESIZE_W",  NSCursorFrameResizePositionLeft},
+      {"RESIZE_E",  NSCursorFrameResizePositionRight},
+      {"RESIZE_NE", NSCursorFrameResizePositionTopRight},
+      {"RESIZE_NW", NSCursorFrameResizePositionTopLeft},
+      {"RESIZE_SE", NSCursorFrameResizePositionBottomRight},
+      {"RESIZE_SW", NSCursorFrameResizePositionBottomLeft},
+    };
+    for (int i = 0; i < sizeof(frame)/sizeof(frame[0]); i++)
+    {
+      if (iupStrEqualNoCase(name, frame[i].iupname))
+        return [NSCursor frameResizeCursorFromPosition:frame[i].position inDirections:NSCursorFrameResizeDirectionsAll];
+    }
+    if (iupStrEqualNoCase(name, "RESIZE_NS") || iupStrEqualNoCase(name, "SPLITTER_HORIZ"))
+      return [NSCursor rowResizeCursor];
+    if (iupStrEqualNoCase(name, "RESIZE_WE") || iupStrEqualNoCase(name, "SPLITTER_VERT"))
+      return [NSCursor columnResizeCursor];
+  }
+  return nil;
+}
+#endif
 
 static NSCursor* iupCocoaGetCursor(Ihandle* ih, const char* name)
 {
@@ -821,6 +880,14 @@ static NSCursor* iupCocoaGetCursor(Ihandle* ih, const char* name)
   if (iupStrEqualNoCase(name, "NONE") || iupStrEqualNoCase(name, "NULL"))
     return nil;
 
+#ifndef GNUSTEP
+  {
+    NSCursor* cursor = cocoaGetResizeCursor(name);
+    if (cursor)
+      return cursor;
+  }
+#endif
+
   for (int i = 0; i < sizeof(table)/sizeof(table[0]); i++)
   {
     if (iupStrEqualNoCase(name, table[i].iupname))
@@ -854,7 +921,8 @@ IUP_SDK_API int iupdrvBaseSetCursorAttrib(Ihandle* ih, const char* value)
   }
 
   NSCursor* cursor = iupCocoaGetCursor(ih, value);
-  if (cursor)
+  int hide = iupStrEqualNoCase(value, "NONE") || iupStrEqualNoCase(value, "NULL");
+  if (cursor || hide)
   {
     IUPCursorTrackingDelegate* delegate = [[IUPCursorTrackingDelegate alloc] init];
     delegate.cursor = cursor;
@@ -869,6 +937,14 @@ IUP_SDK_API int iupdrvBaseSetCursorAttrib(Ihandle* ih, const char* value)
     iupAttribSet(ih, "_IUPCOCOA_CURSOR_DELEGATE", (char*)delegate);
     iupAttribSet(ih, "_IUPCOCOA_TRACKINGAREA", (char*)area);
     [area release];
+
+    NSWindow* window = [main_view window];
+    if (window)
+    {
+      NSPoint point = [main_view convertPoint:[window mouseLocationOutsideOfEventStream] fromView:nil];
+      if (NSPointInRect(point, [main_view bounds]))
+        [delegate mouseEntered:nil];
+    }
   }
 
   return 1;
