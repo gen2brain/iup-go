@@ -152,6 +152,7 @@ IUP_SDK_API int iupdrvOpen(int* argc, char*** argv)
   /* Seed NSFont defaults before sharedApplication. */
   {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    [defaults registerDefaults:@{@"NSScrollViewInterfaceStyle": @"NSMacintoshInterfaceStyle"}];
     if (![defaults stringForKey:@"NSFont"])
     {
       NSArray *regular_keys = @[

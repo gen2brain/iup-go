@@ -1123,6 +1123,31 @@ static int cocoaCanvasSetUpdateRectAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
+static void cocoaCanvasUpdateDocumentSize(Ihandle* ih)
+{
+  NSScrollView* scroll_view = cocoaCanvasGetScrollView(ih);
+  IupCocoaCanvasView* canvas_view = cocoaCanvasGetCanvasView(ih);
+  if (!scroll_view || !canvas_view) return;
+  if (ih->currentwidth <= 0 || ih->currentheight <= 0) return;
+
+  NSSize frame_size = NSMakeSize(ih->currentwidth, ih->currentheight);
+#ifdef GNUSTEP
+  NSSize content_size = [NSScrollView contentSizeForFrameSize:frame_size
+                                        hasHorizontalScroller:[scroll_view hasHorizontalScroller]
+                                          hasVerticalScroller:[scroll_view hasVerticalScroller]
+                                                   borderType:[scroll_view borderType]];
+#else
+  NSSize content_size = [NSScrollView contentSizeForFrameSize:frame_size
+                                      horizontalScrollerClass:([scroll_view hasHorizontalScroller] ? [NSScroller class] : nil)
+                                        verticalScrollerClass:([scroll_view hasVerticalScroller] ? [NSScroller class] : nil)
+                                                   borderType:[scroll_view borderType]
+                                                  controlSize:NSControlSizeRegular
+                                                scrollerStyle:[NSScroller preferredScrollerStyle]];
+#endif
+  if (!NSEqualSizes([canvas_view frame].size, content_size))
+    [canvas_view setFrameSize:content_size];
+}
+
 static int cocoaCanvasSetDXAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->sb & IUP_SB_HORIZ)
@@ -1171,6 +1196,7 @@ static int cocoaCanvasSetDXAttrib(Ihandle* ih, const char* value)
 
       [scroll_view setNeedsDisplay:YES];
     }
+    cocoaCanvasUpdateDocumentSize(ih);
   }
   return 1;
 }
@@ -1223,6 +1249,7 @@ static int cocoaCanvasSetDYAttrib(Ihandle* ih, const char* value)
 
       [scroll_view setNeedsDisplay:YES];
     }
+    cocoaCanvasUpdateDocumentSize(ih);
   }
   return 1;
 }
@@ -1586,12 +1613,7 @@ static void cocoaCanvasLayoutUpdateMethod(Ihandle *ih)
   if (ih->data->sb)
   {
     /* the document view must be sized first; setting the scroll view frame fires RESIZE_CB */
-    IupCocoaCanvasView* canvas_view = cocoaCanvasGetCanvasView(ih);
-    if (canvas_view)
-    {
-      NSSize canvas_size = NSMakeSize(ih->currentwidth, ih->currentheight);
-      [canvas_view setFrameSize:canvas_size];
-    }
+    cocoaCanvasUpdateDocumentSize(ih);
   }
 
   if (canvas_root)

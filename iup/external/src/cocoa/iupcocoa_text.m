@@ -1023,16 +1023,14 @@ IUP_SDK_API void iupdrvTextAddExtraPadding(Ihandle* ih, int *w, int *h)
 /* Characters may be multiple bytes (e.g. emoji characters). */
 static NSUInteger cocoaTextCountGlyphsInString(NSString* text_string)
 {
-  NSRange full_range = NSMakeRange(0, [text_string length]);
-  __block int glyph_count = 0;
-  [text_string enumerateSubstringsInRange:full_range
-                                  options:NSStringEnumerationByComposedCharacterSequences
-                               usingBlock:^(NSString* substring, NSRange substring_range,
-                                   NSRange enclosing_range, BOOL* stop)
-                               {
-                                 glyph_count++;
-                               }
-  ];
+  NSUInteger length = [text_string length];
+  NSUInteger index = 0;
+  NSUInteger glyph_count = 0;
+  while (index < length)
+  {
+    index = NSMaxRange([text_string rangeOfComposedCharacterSequenceAtIndex:index]);
+    glyph_count++;
+  }
   return glyph_count;
 }
 
