@@ -485,6 +485,8 @@ static void fltkListInputChoiceCallback(Fl_Widget* w, void* data)
   if (index < 0)
     return;
 
+  iupAttribSetStr(ih, "_IUPFLTK_EDIT_LAST", input_choice->value());
+
   int pos = index + 1;
   IFnsii cb = (IFnsii)IupGetCallback(ih, "ACTION");
   if (cb)
@@ -525,6 +527,7 @@ static void fltkListBrowserCallback(Fl_Widget* w, void* data)
           iupAttribSet(ih, "_IUPFLTK_DISABLE_TEXT_CB", "1");
           edit->value(text);
           iupAttribSet(ih, "_IUPFLTK_DISABLE_TEXT_CB", NULL);
+          iupAttribSetStr(ih, "_IUPFLTK_EDIT_LAST", text);
         }
       }
     }
@@ -573,15 +576,44 @@ static void fltkListEditCallback(Fl_Widget* w, void* data)
     return;
 
   Fl_Input* edit = (Fl_Input*)w;
-
   IFnis cb = (IFnis)IupGetCallback(ih, "EDIT_CB");
-  if (cb)
+  const char* value = edit->value();
+  const char* typed = Fl::event_text();
+  int key = (typed && typed[0] >= 32 && !typed[1]) ? typed[0] : 0;
+  int ret = 1;
+
+  if (ih->data->nc && (int)strlen(value) > ih->data->nc)
+    ret = 0;
+  else if (ih->data->mask && iupMaskCheck((Imask*)ih->data->mask, value) == 0)
   {
-    const char* value = edit->value();
-    int pos = edit->insert_position();
-    iupEditCallActionCb(ih, cb, value, pos, pos, ih->data->mask, ih->data->nc, 0, 1);
+    IFns fail_cb = (IFns)IupGetCallback(ih, "MASKFAIL_CB");
+    if (fail_cb) fail_cb(ih, (char*)value);
+    ret = 0;
+  }
+  else if (cb)
+  {
+    int cb_ret = cb(ih, key, (char*)value);
+    if (cb_ret == IUP_IGNORE)
+      ret = 0;
+    else if (cb_ret == IUP_CLOSE)
+    {
+      IupExitLoop();
+      ret = 0;
+    }
   }
 
+  if (ret == 0)
+  {
+    char* last = iupAttribGet(ih, "_IUPFLTK_EDIT_LAST");
+    int pos = edit->insert_position();
+    iupAttribSet(ih, "_IUPFLTK_DISABLE_TEXT_CB", "1");
+    edit->value(last ? last : "");
+    edit->insert_position(pos > 0 ? pos - 1 : 0);
+    iupAttribSet(ih, "_IUPFLTK_DISABLE_TEXT_CB", NULL);
+    return;
+  }
+
+  iupAttribSetStr(ih, "_IUPFLTK_EDIT_LAST", value);
   iupBaseCallValueChangedCb(ih);
 }
 
@@ -1105,6 +1137,7 @@ static int fltkListSetValueAttrib(Ihandle* ih, const char* value)
       iupAttribSet(ih, "_IUPFLTK_DISABLE_TEXT_CB", "1");
       edit->value(value ? value : "");
       iupAttribSet(ih, "_IUPFLTK_DISABLE_TEXT_CB", NULL);
+      iupAttribSetStr(ih, "_IUPFLTK_EDIT_LAST", value);
     }
   }
   else if (ih->data->is_dropdown)

@@ -96,12 +96,23 @@ IUP_DRV_API int iupfltkEditCheckMask(Ihandle* ih, Fl_Input_* input, int event, c
   if (event != FL_KEYBOARD)
     return 0;
 
-  const char* text = Fl::event_text();
-  if (!text || !text[0] || text[0] < 32)
-    return 0;
-
   IFnis cb = (IFnis)IupGetCallback(ih, cb_name);
   if (!cb && !mask && nc == 0)
+    return 0;
+
+  int key = Fl::event_key();
+  if ((key == FL_BackSpace || key == FL_Delete) && !(Fl::event_state() & (FL_CTRL | FL_ALT | FL_META)))
+  {
+    int start = input->insert_position();
+    int end = input->mark();
+    if (start > end) { int t = start; start = end; end = t; }
+    if (start == end && ((key == FL_BackSpace && start == 0) || (key == FL_Delete && start >= input->size())))
+      return 0;
+    return iupEditCallActionCb(ih, cb, NULL, start, end, mask, nc, key == FL_Delete ? 1 : -1, 1) == 0;
+  }
+
+  const char* text = Fl::event_text();
+  if (!text || !text[0] || text[0] < 32)
     return 0;
 
   int pos = input->insert_position();
@@ -467,6 +478,22 @@ public:
         fltkEditorOverwriteHook(iup_handle, this);
         if (fltkApplyFilterEditor(iup_handle, this, Fl::event_text()))
           return 1;
+        {
+          int key = Fl::event_key();
+          if ((key == FL_BackSpace || key == FL_Delete) && !(Fl::event_state() & (FL_CTRL | FL_ALT | FL_META)) && !iup_handle->data->disable_callbacks)
+          {
+            IFnis cb = (IFnis)IupGetCallback(iup_handle, "ACTION");
+            if (cb || iup_handle->data->mask || iup_handle->data->nc > 0)
+            {
+              int start, end;
+              if (!text_buffer->selection_position(&start, &end))
+                start = end = insert_position();
+              if (!(start == end && ((key == FL_BackSpace && start == 0) || (key == FL_Delete && start >= text_buffer->length()))) &&
+                  iupEditCallActionCb(iup_handle, cb, NULL, start, end, iup_handle->data->mask, iup_handle->data->nc, key == FL_Delete ? 1 : -1, 1) == 0)
+                return 1;
+            }
+          }
+        }
         {
           const char* text = Fl::event_text();
           if (text && text[0] && text[0] >= 32 && !iup_handle->data->disable_callbacks)

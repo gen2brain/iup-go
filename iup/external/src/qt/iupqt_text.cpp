@@ -744,11 +744,21 @@ static int qtTextKeyPress(Ihandle* ih, QKeyEvent* evt)
   if (!cb && !ih->data->mask && !ih->data->nc)
     return 0;
 
+  qtTextGetEditRange(ih, &start, &end);
+
+  if ((evt->key() == Qt::Key_Backspace || evt->key() == Qt::Key_Delete) && !(evt->modifiers() & (Qt::ControlModifier | Qt::AltModifier)))
+  {
+    int remove_dir = evt->key() == Qt::Key_Delete ? 1 : -1;
+    int len = ih->data->is_multiline ? (int)((IupQtTextEdit*)ih->handle)->toPlainText().length() : (int)((IupQtLineEdit*)ih->handle)->text().length();
+    if (start == end && ((remove_dir == -1 && start == 0) || (remove_dir == 1 && start >= len)))
+      return 0;
+    ret = iupEditCallActionCb(ih, cb, NULL, start, end, ih->data->mask, ih->data->nc, remove_dir, 1);
+    return ret == 0;
+  }
+
   text = evt->text();
   if (text.isEmpty() || !text.at(0).isPrint() || text.at(0).unicode() < 32)
     return 0;
-
-  qtTextGetEditRange(ih, &start, &end);
 
   ret = iupEditCallActionCb(ih, cb, text.toUtf8().constData(), start, end,
                             ih->data->mask, ih->data->nc, 0, 1);

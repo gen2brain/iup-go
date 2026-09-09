@@ -139,6 +139,40 @@ static void eflTextDestroyImageOverlays(Ihandle* ih)
                      Callbacks
 ****************************************************************/
 
+IUP_DRV_API void iupeflTextSetCursor(Eo* entry, int pos)
+{
+  Efl_Text_Cursor_Object* main_cur = efl_text_interactive_main_cursor_get(entry);
+  if (main_cur)
+    efl_text_cursor_object_position_set(main_cur, pos);
+}
+
+IUP_DRV_API void iupeflTextDeleteRange(Eo* entry, int start, int end)
+{
+  Efl_Text_Cursor_Object* cur_start = efl_ui_textbox_cursor_create(entry);
+  Efl_Text_Cursor_Object* cur_end = efl_ui_textbox_cursor_create(entry);
+  if (cur_start && cur_end)
+  {
+    efl_text_cursor_object_position_set(cur_start, start);
+    efl_text_cursor_object_position_set(cur_end, end);
+    efl_text_cursor_object_range_delete(cur_start, cur_end);
+  }
+  if (cur_start) efl_del(cur_start);
+  if (cur_end) efl_del(cur_end);
+  iupeflTextSetCursor(entry, start);
+}
+
+IUP_DRV_API void iupeflTextInsertAt(Eo* entry, int pos, const char* text)
+{
+  Efl_Text_Cursor_Object* cur = efl_ui_textbox_cursor_create(entry);
+  if (cur)
+  {
+    efl_text_cursor_object_position_set(cur, pos);
+    efl_text_cursor_object_text_insert(cur, text);
+    efl_del(cur);
+  }
+  iupeflTextSetCursor(entry, pos + (int)eina_unicode_utf8_get_len(text));
+}
+
 static void eflTextChangedCallback(void* data, const Efl_Event* ev)
 {
   Ihandle* ih = (Ihandle*)data;
@@ -146,6 +180,7 @@ static void eflTextChangedCallback(void* data, const Efl_Event* ev)
   IFnis action_cb;
   IFn value_cb;
   int ret;
+  const char* content = info->content;
 
   if (ih->data->disable_callbacks)
     return;
@@ -233,9 +268,12 @@ static void eflTextChangedCallback(void* data, const Efl_Event* ev)
         if (cur_start) efl_del(cur_start);
         if (cur_end) efl_del(cur_end);
         ih->data->disable_callbacks = 0;
-        free(xform);
         if (reject)
+        {
+          free(xform);
           return;
+        }
+        content = xform;
       }
     }
   }
@@ -250,89 +288,55 @@ static void eflTextChangedCallback(void* data, const Efl_Event* ev)
 
     if (info->type == EFL_TEXT_CHANGE_TYPE_INSERT)
     {
-      insert_value = info->content;
+      insert_value = content;
       start = (int)info->position;
       end = start;
     }
     else
     {
+      Efl_Text_Cursor_Object* main_cur = efl_text_interactive_main_cursor_get(ev->object);
       start = (int)info->position;
+      if (main_cur && efl_text_cursor_object_position_get(main_cur) < start)
+        start = efl_text_cursor_object_position_get(main_cur);
       end = start + (int)info->length;
       remove_dir = 1;
     }
 
+    ih->data->disable_callbacks = 1;
+    if (insert_value)
+      iupeflTextDeleteRange(ev->object, start, start + (int)info->length);
+    else
+      iupeflTextInsertAt(ev->object, start, info->content);
+    ih->data->disable_callbacks = 0;
+
     ret = iupEditCallActionCb(ih, action_cb, insert_value, start, end, ih->data->mask, ih->data->nc, remove_dir, 1);
+
+    ih->data->disable_callbacks = 1;
+    if (ret == 0)
+      iupeflTextSetCursor(ev->object, insert_value ? start : end);
+    else if (insert_value)
+    {
+      char replacement[2];
+      if (ret != -1 && info->length == 1)
+      {
+        replacement[0] = (char)ret;
+        replacement[1] = 0;
+        insert_value = replacement;
+      }
+      iupeflTextInsertAt(ev->object, start, insert_value);
+    }
+    else
+      iupeflTextDeleteRange(ev->object, start, end);
+    ih->data->disable_callbacks = 0;
 
     if (ret == 0)
     {
-      ih->data->disable_callbacks = 1;
-
-      if (info->type == EFL_TEXT_CHANGE_TYPE_INSERT)
-      {
-        Eo* entry = ev->object;
-        Efl_Text_Cursor_Object* cur_start = efl_ui_textbox_cursor_create(entry);
-        Efl_Text_Cursor_Object* cur_end = efl_ui_textbox_cursor_create(entry);
-
-        if (cur_start && cur_end)
-        {
-          efl_text_cursor_object_position_set(cur_start, (int)info->position);
-          efl_text_cursor_object_position_set(cur_end, (int)(info->position + info->length));
-          efl_text_cursor_object_range_delete(cur_start, cur_end);
-        }
-
-        if (cur_start) efl_del(cur_start);
-        if (cur_end) efl_del(cur_end);
-      }
-      else
-      {
-        Eo* entry = ev->object;
-        Efl_Text_Cursor_Object* cur = efl_text_interactive_main_cursor_get(entry);
-        if (cur)
-        {
-          efl_text_cursor_object_position_set(cur, (int)info->position);
-          efl_text_cursor_object_text_insert(cur, info->content);
-        }
-      }
-
-      ih->data->disable_callbacks = 0;
+      if (content != info->content) free((char*)content);
       return;
     }
-    else if (ret != -1 && info->type == EFL_TEXT_CHANGE_TYPE_INSERT && info->length == 1)
-    {
-      Eo* entry = ev->object;
-      Efl_Text_Cursor_Object* cur_start;
-      Efl_Text_Cursor_Object* cur_end;
-      char replacement[2];
-
-      ih->data->disable_callbacks = 1;
-
-      cur_start = efl_ui_textbox_cursor_create(entry);
-      cur_end = efl_ui_textbox_cursor_create(entry);
-
-      if (cur_start && cur_end)
-      {
-        Efl_Text_Cursor_Object* main_cur;
-
-        efl_text_cursor_object_position_set(cur_start, (int)info->position);
-        efl_text_cursor_object_position_set(cur_end, (int)(info->position + info->length));
-        efl_text_cursor_object_range_delete(cur_start, cur_end);
-
-        replacement[0] = (char)ret;
-        replacement[1] = 0;
-        efl_text_cursor_object_position_set(cur_start, (int)info->position);
-        efl_text_cursor_object_text_insert(cur_start, replacement);
-
-        main_cur = efl_text_interactive_main_cursor_get(entry);
-        if (main_cur)
-          efl_text_cursor_object_position_set(main_cur, (int)info->position + 1);
-      }
-
-      if (cur_start) efl_del(cur_start);
-      if (cur_end) efl_del(cur_end);
-
-      ih->data->disable_callbacks = 0;
-    }
   }
+
+  if (content != info->content) free((char*)content);
 
   value_cb = (IFn)IupGetCallback(ih, "VALUECHANGED_CB");
   if (value_cb)
@@ -469,10 +473,7 @@ static char* eflTextGetValueAttrib(Ihandle* ih)
   }
 
   const char* text = iupeflGetText(widget);
-  if (!text || !text[0])
-    return NULL;
-
-  return iupStrReturnStr(text);
+  return iupStrReturnStr(text ? text : "");
 }
 
 static int eflTextSetSpinValueAttrib(Ihandle* ih, const char* value)
