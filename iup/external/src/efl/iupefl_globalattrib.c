@@ -400,10 +400,6 @@ IUP_SDK_API char* iupdrvGetGlobal(const char* name)
   {
     return iupdrvLocaleInfo();
   }
-  if (iupStrEqual(name, "DWM_COMPOSITION"))
-  {
-    return "YES";
-  }
 #ifndef _WIN32
   if (iupStrEqual(name, "EXEFILENAME"))
   {
