@@ -14,10 +14,12 @@
 #include "iupcbs.h"
 
 #include "iup_object.h"
+#include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_loop.h"
 
 #include "iupwin_drv.h"
+#include "iupwin_handle.h"
 
 
 /* This just needs to be a random unique number not used by the OS */
@@ -87,13 +89,37 @@ IUP_DRV_API int iupwinPostMessageFilter(MSG* msg)
   return 0;
 }
 
+static int winLoopTranslateAccelerator(MSG* msg)
+{
+  HWND active;
+  Ihandle* dialog;
+  HACCEL haccel;
+
+  if (msg->message != WM_KEYDOWN && msg->message != WM_SYSKEYDOWN)
+    return 0;
+
+  active = GetActiveWindow();
+  dialog = active ? iupwinHandleGet(active) : NULL;
+  if (!iupObjectCheck(dialog))
+    return 0;
+
+  if (iupAttribGet(dialog, "_IUPWIN_HACCEL_DIRTY"))
+    iupwinMenuUpdateAccel(dialog);
+
+  haccel = (HACCEL)iupAttribGet(dialog, "_IUPWIN_HACCEL");
+  if (!haccel)
+    return 0;
+
+  return TranslateAccelerator(active, haccel, msg) != 0;
+}
+
 static int winLoopProcessMessage(MSG* msg)
 {
   if (msg->message == win_quit_message)  /* IUP_CLOSE returned in a callback or IupHide in a popup dialog or all dialogs closed */
     return IUP_CLOSE;
   else
   {
-    if (!iupwinPostMessageFilter(msg))
+    if (!winLoopTranslateAccelerator(msg) && !iupwinPostMessageFilter(msg))
     {
       TranslateMessage(msg);
       DispatchMessage(msg);

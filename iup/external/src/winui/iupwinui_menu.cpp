@@ -65,9 +65,10 @@ static bool winuiMenuItemIsCheckable(Ihandle* ih)
   return false;
 }
 
-static hstring winuiMenuGetTitle(const char* title, wchar_t* accessKey, hstring* accelText)
+static hstring winuiMenuGetTitle(Ihandle* ih, const char* raw, wchar_t* accessKey, hstring* accelText)
 {
   char c = 0;
+  char* title = raw? iupMenuProcessTitle(ih, raw): NULL;
   const char* tab = title? strchr(title, '\t'): NULL;
   hstring result;
 
@@ -90,6 +91,9 @@ static hstring winuiMenuGetTitle(const char* title, wchar_t* accessKey, hstring*
 
   if (accessKey)
     *accessKey = c ? (wchar_t)c : 0;
+
+  if (title != raw)
+    free(title);
 
   return result;
 }
@@ -189,6 +193,16 @@ static void winuiMenuItemClickHandler(Ihandle* ih)
     if (ret == IUP_CLOSE)
       IupExitLoop();
   }
+}
+
+IUP_DRV_API int iupwinuiMenuActivateAccel(Ihandle* ih_dialog, int code)
+{
+  Ihandle* menu = IupGetAttributeHandle(ih_dialog, "MENU");
+  Ihandle* item = menu ? iupMenuFindAccel(menu, code) : NULL;
+  if (!item)
+    return 0;
+  winuiMenuItemClickHandler(item);
+  return 1;
 }
 
 winrt::Windows::Foundation::Collections::IVector<MenuFlyoutItemBase> winuiMenuGetItemsCollection(Ihandle* menu)
@@ -324,7 +338,7 @@ static int winuiMenuItemMapMethod(Ihandle* ih)
   const char* title = iupAttribGet(ih, "TITLE");
   wchar_t accessKey = 0;
   hstring accelText;
-  hstring text = winuiMenuGetTitle(title, &accessKey, &accelText);
+  hstring text = winuiMenuGetTitle(ih, title, &accessKey, &accelText);
 
   aux->isCheckable = winuiMenuItemIsCheckable(ih);
 
@@ -411,7 +425,7 @@ static int winuiSubmenuMapMethod(Ihandle* ih)
 
   const char* title = iupAttribGet(ih, "TITLE");
   wchar_t accessKey = 0;
-  hstring text = winuiMenuGetTitle(title, &accessKey, NULL);
+  hstring text = winuiMenuGetTitle(ih, title, &accessKey, NULL);
 
   if (iupMenuIsMenuBar(parent))
   {
@@ -492,7 +506,7 @@ static int winuiMenuItemSetTitleAttrib(Ihandle* ih, const char* value)
 
   wchar_t accessKey = 0;
   hstring accelText;
-  hstring text = winuiMenuGetTitle(value, &accessKey, &accelText);
+  hstring text = winuiMenuGetTitle(ih, value, &accessKey, &accelText);
 
   if (aux->isCheckable)
   {
@@ -517,33 +531,7 @@ static int winuiMenuItemSetTitleAttrib(Ihandle* ih, const char* value)
     }
   }
 
-  return 0;
-}
-
-static char* winuiMenuItemGetTitleAttrib(Ihandle* ih)
-{
-  IupWinUIItemAux* aux = winuiGetAux<IupWinUIItemAux>(ih, IUPWINUI_ITEM_AUX);
-  if (!aux)
-    return NULL;
-
-  hstring text;
-  if (aux->isCheckable)
-  {
-    ToggleMenuFlyoutItem item = winuiGetHandle<ToggleMenuFlyoutItem>(ih);
-    if (item)
-      text = item.Text();
-  }
-  else
-  {
-    MenuFlyoutItem item = winuiGetHandle<MenuFlyoutItem>(ih);
-    if (item)
-      text = item.Text();
-  }
-
-  if (!text.empty())
-    return iupwinuiHStringToString(text);
-
-  return NULL;
+  return 1;
 }
 
 static int winuiMenuItemSetImageAttrib(Ihandle* ih, const char* value)
@@ -655,7 +643,7 @@ static int winuiSubmenuSetTitleAttrib(Ihandle* ih, const char* value)
   Ihandle* parent = ih->parent;
 
   wchar_t accessKey = 0;
-  hstring text = winuiMenuGetTitle(value, &accessKey, NULL);
+  hstring text = winuiMenuGetTitle(ih, value, &accessKey, NULL);
 
   if (parent && iupMenuIsMenuBar(parent))
   {
@@ -898,7 +886,7 @@ extern "C" IUP_SDK_API void iupdrvMenuItemInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "FONT", NULL, winuiMenuItemSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, NULL, IUPAF_SAMEASSYSTEM, "MENUBGCOLOR", IUPAF_DEFAULT);
 
-  iupClassRegisterAttribute(ic, "TITLE", winuiMenuItemGetTitleAttrib, winuiMenuItemSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TITLE", NULL, winuiMenuItemSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "VALUE", winuiMenuItemGetValueAttrib, winuiMenuItemSetValueAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ACTIVE", NULL, winuiMenuItemSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "IMAGE", NULL, winuiMenuItemSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);

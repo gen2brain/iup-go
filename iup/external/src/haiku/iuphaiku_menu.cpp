@@ -26,6 +26,7 @@
 
 extern "C" {
 #include "iup.h"
+#include "iupkey.h"
 #include "iup_drv.h"
 #include "iup_drvfont.h"
 #include "iup_object.h"
@@ -69,71 +70,73 @@ static BWindow* haikuMenuOwningWindow(Ihandle* ih)
   return (BWindow*)dlg->handle;
 }
 
-static char* haikuStrippedMnemonic(const char* title)
+static char* haikuMenuLabel(Ihandle* ih, const char* title, char* trigger)
 {
-  if (!title) return NULL;
-  if (!strchr(title, '&')) return iupStrDup(title);
-  return iupStrProcessMnemonic(title, NULL, 0);
+  if (!title) title = "";
+  char* processed = iupMenuProcessTitle(ih, title);
+  *trigger = 0;
+  char* label = iupStrProcessMnemonic(processed, trigger, -1);
+  if (label == processed) label = iupStrDup(processed);
+  if (processed != title) free(processed);
+  return label;
 }
 
-/* "Label\tShortcut": label gets the mnemonic pass, shortcut goes to SetShortcut. */
-static char* haikuItemSplitTitle(const char* value, const char** shortcut)
+static char* haikuItemSplitTitle(Ihandle* ih, const char* value, char* trigger)
 {
-  *shortcut = NULL;
-  if (!value) return iupStrDup("");
+  if (!value) value = "";
   const char* sep = strchr(value, '\t');
-  if (!sep) return haikuStrippedMnemonic(value);
-  *shortcut = sep + 1;
+  if (!sep) return haikuMenuLabel(ih, value, trigger);
   int len = (int)(sep - value);
-  char* label = (char*)malloc(len + 1);
-  memcpy(label, value, len);
-  label[len] = '\0';
-  char* stripped = haikuStrippedMnemonic(label);
-  free(label);
-  return stripped;
+  char* title = (char*)malloc(len + 1);
+  memcpy(title, value, len);
+  title[len] = '\0';
+  char* label = haikuMenuLabel(ih, title, trigger);
+  free(title);
+  return label;
 }
 
-/* Returns 0 when the trailing token can't fit BMenuItem::SetShortcut (printable chars only). */
-static int haikuMenuItemParseShortcut(const char* str, char* out_ch, uint32* out_mods)
+static void haikuItemApplyKey(Ihandle* ih, BMenuItem* item, const char* title)
 {
-  if (!*str) return 0;
+  int code = IupGetDialog(ih) ? iupMenuGetAccel(title) : 0;
+  int base = iup_XkeyBase(code);
   uint32 mods = 0;
-  char* tmp = iupStrDup(str);
-  char* tok = tmp;
   char ch = 0;
 
-  while (tok && *tok)
-  {
-    char* plus = strchr(tok, '+');
-    if (plus) *plus = '\0';
-
-    while (*tok == ' ' || *tok == '\t') tok++;
-
-    if      (iupStrEqualNoCase(tok, "Ctrl"))     mods |= B_CONTROL_KEY;
-    else if (iupStrEqualNoCase(tok, "Shift"))    mods |= B_SHIFT_KEY;
-    else if (iupStrEqualNoCase(tok, "Alt"))      mods |= B_OPTION_KEY;
-    else if (iupStrEqualNoCase(tok, "Cmd") ||
-             iupStrEqualNoCase(tok, "Sys") ||
-             iupStrEqualNoCase(tok, "Meta"))     mods |= B_COMMAND_KEY;
-    else if (tok[0] && !tok[1])                  ch = tok[0];
-
-    tok = plus ? plus + 1 : NULL;
-  }
-  free(tmp);
-
-  if (!ch) return 0;
-  *out_ch = ch;
-  *out_mods = mods;
-  return 1;
-}
-
-static void haikuItemApplyKey(BMenuItem* item, const char* value)
-{
   if (!item) return;
-  if (!value || !*value) { item->SetShortcut(0, 0); return; }
-  char ch; uint32 mods;
-  if (haikuMenuItemParseShortcut(value, &ch, &mods))
-    item->SetShortcut(ch, mods);
+
+  switch (base)
+  {
+  case 0: break;
+  case K_ESC:  ch = B_ESCAPE; break;
+  case K_TAB:  ch = B_TAB; break;
+  case K_SP:   ch = B_SPACE; break;
+  case K_CR:   ch = B_ENTER; break;
+  case K_BS:   ch = B_BACKSPACE; break;
+  case K_DEL:  ch = B_DELETE; break;
+  case K_INS:  ch = B_INSERT; break;
+  case K_HOME: ch = B_HOME; break;
+  case K_END:  ch = B_END; break;
+  case K_PGUP: ch = B_PAGE_UP; break;
+  case K_PGDN: ch = B_PAGE_DOWN; break;
+  case K_LEFT: ch = B_LEFT_ARROW; break;
+  case K_RIGHT: ch = B_RIGHT_ARROW; break;
+  case K_UP:   ch = B_UP_ARROW; break;
+  case K_DOWN: ch = B_DOWN_ARROW; break;
+  default:
+    if (base > K_SP && base < 127)
+      ch = (char)iup_tolower(base);
+    break;
+  }
+
+  if (!ch)
+  {
+    item->SetShortcut(0, 0);
+    return;
+  }
+
+  if (iup_isShiftXkey(code)) mods |= B_SHIFT_KEY;
+  if (iup_isAltXkey(code)) mods |= B_OPTION_KEY;
+  item->SetShortcut(ch, mods);
 }
 
 
@@ -274,14 +277,15 @@ static int haikuItemMapMethod(Ihandle* ih)
   BMenu* parent = haikuMenuParentBMenu(ih);
   if (!parent) return IUP_ERROR;
 
-  const char* shortcut = NULL;
-  char* label = haikuItemSplitTitle(iupAttribGet(ih, "TITLE"), &shortcut);
+  char trigger;
+  char* label = haikuItemSplitTitle(ih, iupAttribGet(ih, "TITLE"), &trigger);
 
   BMessage* msg = new BMessage(IUPHAIKU_MENU_ITEM_MSG);
   msg->AddPointer(kIupMenuItemField, ih);
 
-  IupHaikuMenuItem* item = new IupHaikuMenuItem(ih, label ? label : "", msg);
-  if (label) free(label);
+  IupHaikuMenuItem* item = new IupHaikuMenuItem(ih, label, msg);
+  free(label);
+  if (trigger) item->SetTrigger(trigger);
 
   BWindow* win = haikuMenuOwningWindow(ih);
   if (win) item->SetTarget(BMessenger(win));
@@ -296,9 +300,7 @@ static int haikuItemMapMethod(Ihandle* ih)
 
   haikuItemRefreshIcon(item, ih);
 
-  char* key = iupAttribGet(ih, "KEY");
-  if (key) haikuItemApplyKey(item, key);
-  else if (shortcut) haikuItemApplyKey(item, shortcut);
+  haikuItemApplyKey(ih, item, iupAttribGet(ih, "TITLE"));
 
   parent->AddItem(item);
   ih->handle = (InativeHandle*)item;
@@ -307,25 +309,16 @@ static int haikuItemMapMethod(Ihandle* ih)
 
 /* No LooperLockGuard on item->Menu()->Window(): cross-window inversion with menu_tracking. */
 
-static int haikuItemSetKeyAttrib(Ihandle* ih, const char* value)
-{
-  BMenuItem* item = (BMenuItem*)ih->handle;
-  if (!item) return 1;
-  haikuItemApplyKey(item, value);
-  return 1;
-}
-
 static int haikuItemSetTitleAttrib(Ihandle* ih, const char* value)
 {
   BMenuItem* item = (BMenuItem*)ih->handle;
   if (!item) return 1;
-  const char* shortcut = NULL;
-  char* label = haikuItemSplitTitle(value, &shortcut);
-  item->SetLabel(label ? label : "");
-  if (label) free(label);
-  /* KEY wins; otherwise the title's "Label\tShortcut" tail sets (or clears) the binding. */
-  if (!iupAttribGet(ih, "KEY"))
-    haikuItemApplyKey(item, shortcut);
+  char trigger;
+  char* label = haikuItemSplitTitle(ih, value, &trigger);
+  item->SetLabel(label);
+  free(label);
+  item->SetTrigger(trigger);
+  haikuItemApplyKey(ih, item, value);
   return 1;
 }
 
@@ -383,13 +376,14 @@ static int haikuSubmenuMapMethod(Ihandle* ih)
   BMenu* parent = haikuMenuParentBMenu(ih);
   if (!parent) return IUP_ERROR;
 
-  char* title = iupAttribGet(ih, "TITLE");
-  char* stripped = haikuStrippedMnemonic(title);
+  char trigger;
+  char* label = haikuMenuLabel(ih, iupAttribGet(ih, "TITLE"), &trigger);
 
-  IupHaikuMenu* submenu = new IupHaikuMenu(stripped ? stripped : "");
-  if (stripped) free(stripped);
+  IupHaikuMenu* submenu = new IupHaikuMenu(label);
+  free(label);
 
   IupHaikuMenuItem* super = new IupHaikuMenuItem(ih, submenu);
+  if (trigger) super->SetTrigger(trigger);
   char* image = iupAttribGet(ih, "IMAGE");
   if (image) super->SetIcon(haikuItemBitmapByName(ih, image));
 
@@ -407,11 +401,16 @@ static int haikuSubmenuSetTitleAttrib(Ihandle* ih, const char* value)
 {
   BMenu* m = (BMenu*)ih->handle;
   if (!m) return 1;
-  char* stripped = haikuStrippedMnemonic(value);
+  char trigger;
+  char* label = haikuMenuLabel(ih, value, &trigger);
   /* BMenu::SetName isn't exposed; reach through the superitem instead. */
   BMenuItem* super = m->Superitem();
-  if (super) super->SetLabel(stripped ? stripped : "");
-  if (stripped) free(stripped);
+  if (super)
+  {
+    super->SetLabel(label);
+    super->SetTrigger(trigger);
+  }
+  free(label);
   return 1;
 }
 
@@ -582,7 +581,6 @@ extern "C" IUP_SDK_API void iupdrvMenuItemInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "TITLE", NULL, haikuItemSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "VALUE", NULL, haikuItemSetValueAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ACTIVE", iupBaseGetActiveAttrib, haikuItemSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "KEY", NULL, haikuItemSetKeyAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "IMAGE", NULL, haikuItemSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TITLEIMAGE", NULL, haikuItemSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);

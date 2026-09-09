@@ -12,6 +12,7 @@
 #include "iup_object.h"
 #include "iup_key.h"
 #include "iup_str.h"
+#include "iup_menu.h"
 
 #include "iupcocoa_drv.h"
 #include "iupcocoa_keycodes.h"
@@ -331,6 +332,25 @@ static int cocoaKeyDecode(NSEvent *ns_event, int mac_key_code)
   return iup_result_key;
 }
 
+static bool cocoaKeyIsMenuAccel(Ihandle* ih, int code)
+{
+  Ihandle* dialog = IupGetDialog(ih);
+  Ihandle* menu = dialog ? IupGetAttributeHandle(dialog, "MENU") : NULL;
+
+  if (!menu)
+    return false;
+  if (iupMenuFindAccel(menu, code))
+    return true;
+  if (iup_isSysXkey(code))
+  {
+    int ctrl = iup_XkeyCtrl(iup_XkeyBase(code));
+    if (iup_isShiftXkey(code)) ctrl = iup_XkeyShift(ctrl);
+    if (iup_isAltXkey(code)) ctrl = iup_XkeyAlt(ctrl);
+    return iupMenuFindAccel(menu, ctrl) != NULL;
+  }
+  return false;
+}
+
 bool iupCocoaKeyDownEvent(Ihandle *ih, NSEvent *ns_event, int mac_key_code)
 {
   int result;
@@ -344,6 +364,11 @@ bool iupCocoaKeyDownEvent(Ihandle *ih, NSEvent *ns_event, int mac_key_code)
   iup_key_code = cocoaKeyDecode(ns_event, mac_key_code);
 
   if (iup_key_code == 0)
+  {
+    return false;
+  }
+
+  if (cocoaKeyIsMenuAccel(ih, iup_key_code))
   {
     return false;
   }

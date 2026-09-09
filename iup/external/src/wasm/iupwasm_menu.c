@@ -333,14 +333,18 @@ static int wasmMenuItemSetTitleAttrib(Ihandle* ih, const char* value)
   {
     char mnem = 0;
     char mnemstr[2];
+    char* keyed;
     char* clean;
     char* tab;
     const char* accel = "";
     if (!value)
       value = "";
-    clean = iupStrProcessMnemonic(value, &mnem, -1);
-    if (clean == value)
-      clean = iupStrDup(value);
+    keyed = iupMenuProcessTitle(ih, value);
+    clean = iupStrProcessMnemonic(keyed, &mnem, -1);
+    if (clean == keyed)
+      clean = iupStrDup(keyed);
+    if (keyed != value)
+      free(keyed);
     tab = strchr(clean, '\t');
     if (tab)
     {

@@ -1274,6 +1274,13 @@ static int winDialogMapMethod(Ihandle* ih)
 
 static void winDialogUnMapMethod(Ihandle* ih)
 {
+  HACCEL haccel = (HACCEL)iupAttribGet(ih, "_IUPWIN_HACCEL");
+  if (haccel)
+  {
+    DestroyAcceleratorTable(haccel);
+    iupAttribSet(ih, "_IUPWIN_HACCEL", NULL);
+  }
+
   if (ih->data->menu)
   {
     ih->data->menu->handle = NULL; /* the dialog will destroy the native menu */

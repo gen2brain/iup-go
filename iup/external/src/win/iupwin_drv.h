@@ -67,6 +67,7 @@ IUP_DRV_API HBITMAP iupwinWdlLoadImageFile(const TCHAR* filename);
 
 /* menu */
 IUP_DRV_API void iupwinMenuDialogProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp);
+IUP_DRV_API void iupwinMenuUpdateAccel(Ihandle* ih_dialog);
 IUP_DRV_API Ihandle* iupwinMenuGetItemHandle(HMENU hmenu, int menuId);
 IUP_DRV_API Ihandle* iupwinMenuGetHandle(HMENU hMenu);
 

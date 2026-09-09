@@ -27,6 +27,8 @@ IUP_SDK_API void iupdrvSubmenuInitClass(Iclass* ic);
 /** @} */
 
 char* iupMenuProcessTitle(Ihandle* ih, const char* title);
+int iupMenuGetAccel(const char* title);
+Ihandle* iupMenuFindAccel(Ihandle* ih, int code);
 int iupMenuGetChildId(Ihandle* ih);
 char* iupMenuGetChildIdStr(Ihandle* ih);
 int iupMenuIsMenuBar(Ihandle* ih);

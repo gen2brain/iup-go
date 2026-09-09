@@ -3508,11 +3508,13 @@ globalThis.__iupMediaPick = function (kind, index) {
         if (code) { }
         else if (Object.prototype.hasOwnProperty.call(SP, k)) code = SP[k];
         else if (k && k.length === 1) code = k.charCodeAt(0);
-        else if (/^F([1-9]|1[0-2])$/.test(k)) code = 0xFFBE + (parseInt(k.slice(1)) - 1);
+        else if (/^F([1-9]|1[0-9]|20)$/.test(k)) code = 0xFFBE + (parseInt(k.slice(1)) - 1);
         if (!code && !txt) return;
+        var mod = e.ctrlKey || e.altKey || e.metaKey;
+        if (mod && code >= 0x61 && code <= 0x7a) code -= 32;
         if (e.ctrlKey) code |= 0x20000000;
         if (e.altKey) code |= 0x40000000;
-        if (e.shiftKey && !(k && k.length === 1)) code |= 0x10000000;
+        if (e.shiftKey && (mod || !(k && k.length === 1))) code |= 0x10000000;
         // the edit this key causes carries the same sequence, so a K_ANY veto can be matched to it
         var seq = globalThis.__iupKeySeq = (globalThis.__iupKeySeq || 0) + 1;
         globalThis.__iupKeyPend = seq;
