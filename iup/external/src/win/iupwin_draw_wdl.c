@@ -72,10 +72,6 @@ IUP_DRV_API void iupwinDrawInit(void)
 {
   iupwinDrawThemeInit();
 
-#if 0
-  wdPreInitialize(NULL, NULL, WD_DISABLE_D2D);  /* to force GDI+ */
-#endif
-
   wdInitialize(wdl_flags);
 
   iupwinWdlImageInit();
