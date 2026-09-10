@@ -339,13 +339,24 @@ static void eflDialogSetMwmHints(Ihandle* ih, Eo* win, int has_titlebar, int dec
 }
 #endif
 
+static void eflDialogDestroyJob(void* data)
+{
+  Ihandle* ih = (Ihandle*)data;
+  if (iupObjectCheck(ih))
+    IupDestroy(ih);
+}
+
 static void eflDialogParentDestroyCallback(void* data, const Efl_Event* ev)
 {
   Ihandle* ih = (Ihandle*)data;
   (void)ev;
 
   if (IupMainLoopLevel() > 0 && iupObjectCheck(ih))
-    IupDestroy(ih);
+  {
+    iupAttribSet(ih, "PARENTDIALOG", NULL);
+    iupAttribSet(ih, "NATIVEPARENT", NULL);
+    ecore_job_add(eflDialogDestroyJob, ih);
+  }
 }
 
 IUP_SDK_API void iupdrvDialogSetParent(Ihandle* ih, InativeHandle* parent)

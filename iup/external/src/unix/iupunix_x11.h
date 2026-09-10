@@ -176,6 +176,7 @@ static int (*iupx11_XTranslateCoordinates)(Display*, Window, Window, int, int, i
 static int (*iupx11_XChangeKeyboardControl)(Display*, unsigned long, XKeyboardControl*) = NULL;
 static int (*iupx11_XDeleteProperty)(Display*, Window, Atom) = NULL;
 static int (*iupx11_XSendEvent)(Display*, Window, int, long, XEvent*) = NULL;
+static int (*iupx11_XSetTransientForHint)(Display*, Window, Window) = NULL;
 static int (*iupx11_XGetWindowAttributes)(Display*, Window, XWindowAttributes*) = NULL;
 static VisualID (*iupx11_XVisualIDFromVisual)(Visual*) = NULL;
 
@@ -197,6 +198,7 @@ static VisualID (*iupx11_XVisualIDFromVisual)(Visual*) = NULL;
 #define XChangeKeyboardControl iupx11_XChangeKeyboardControl
 #define XDeleteProperty iupx11_XDeleteProperty
 #define XSendEvent iupx11_XSendEvent
+#define XSetTransientForHint iupx11_XSetTransientForHint
 #define XGetWindowAttributes iupx11_XGetWindowAttributes
 #define XVisualIDFromVisual iupx11_XVisualIDFromVisual
 
@@ -230,6 +232,7 @@ static int iupX11Open(void)
   iupx11_XChangeKeyboardControl = (int (*)(Display*, unsigned long, XKeyboardControl*))dlsym(iupx11_handle, "XChangeKeyboardControl");
   iupx11_XDeleteProperty = (int (*)(Display*, Window, Atom))dlsym(iupx11_handle, "XDeleteProperty");
   iupx11_XSendEvent = (int (*)(Display*, Window, int, long, XEvent*))dlsym(iupx11_handle, "XSendEvent");
+  iupx11_XSetTransientForHint = (int (*)(Display*, Window, Window))dlsym(iupx11_handle, "XSetTransientForHint");
   iupx11_XGetWindowAttributes = (int (*)(Display*, Window, XWindowAttributes*))dlsym(iupx11_handle, "XGetWindowAttributes");
   iupx11_XVisualIDFromVisual = (VisualID (*)(Visual*))dlsym(iupx11_handle, "XVisualIDFromVisual");
 

@@ -18,6 +18,7 @@
 #include "iup_str.h"
 #define _IUPDLG_PRIVATE
 #include "iup_dialog.h"
+#include "iup_dlglist.h"
 #include "iup_image.h"
 
 #include "iupcocoa_drv.h"
@@ -1535,9 +1536,26 @@ static int cocoaDialogMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
+static void cocoaDialogDestroyChildDialogs(Ihandle* ih)
+{
+  Ihandle* dlg = iupDlgListFirst();
+  while (dlg)
+  {
+    if (dlg != ih && dlg->handle && iupDialogGetNativeParent(dlg) == ih->handle)
+    {
+      IupDestroy(dlg);
+      dlg = iupDlgListFirst();
+    }
+    else
+      dlg = iupDlgListNext();
+  }
+}
+
 static void cocoaDialogUnMapMethod(Ihandle* ih)
 {
   if (!ih->handle) return;
+
+  cocoaDialogDestroyChildDialogs(ih);
 
   if (ih->data->menu)
   {

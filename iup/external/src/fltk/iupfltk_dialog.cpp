@@ -26,6 +26,7 @@ extern "C" {
 #include "iup_str.h"
 #define _IUPDLG_PRIVATE
 #include "iup_dialog.h"
+#include "iup_dlglist.h"
 #include "iup_image.h"
 }
 
@@ -321,6 +322,21 @@ extern "C" IUP_SDK_API void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* hand
   }
 }
 
+static void fltkDialogSetTransient(Fl_Window* dialog, Fl_Window* parent)
+{
+#if defined(FLTK_USE_X11)
+  if (iupfltkIsX11() && fl_xid(dialog) && fl_xid(parent)
+#ifdef IUPX11_USE_DLOPEN
+      && iupX11Open()
+#endif
+      )
+    XSetTransientForHint(fl_display, fl_xid(dialog), fl_xid(parent));
+#else
+  (void)dialog;
+  (void)parent;
+#endif
+}
+
 extern "C" IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
 {
   IupFltkDialog* dialog = (IupFltkDialog*)ih->handle;
@@ -348,7 +364,10 @@ extern "C" IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
 #endif
 
     if (iupDialogGetNativeParent(ih))
+    {
       iupfltkX11SetSkipTaskbar(dialog);
+      fltkDialogSetTransient(dialog, (Fl_Window*)iupDialogGetNativeParent(ih));
+    }
 
     const char* cursor = iupAttribGetStr(ih, "CURSOR");
     if (cursor)
@@ -448,7 +467,10 @@ extern "C" IUP_SDK_API void iupdrvDialogSetParent(Ihandle* ih, InativeHandle* pa
     return;
 
   if (parent)
+  {
     dialog->set_non_modal();
+    fltkDialogSetTransient(dialog, (Fl_Window*)parent);
+  }
   else
     dialog->clear_modal_states();
 }
@@ -815,11 +837,28 @@ static int fltkDialogMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
+static void fltkDialogDestroyChildDialogs(Ihandle* ih)
+{
+  Ihandle* dlg = iupDlgListFirst();
+  while (dlg)
+  {
+    if (dlg != ih && dlg->handle && iupDialogGetNativeParent(dlg) == ih->handle)
+    {
+      IupDestroy(dlg);
+      dlg = iupDlgListFirst();
+    }
+    else
+      dlg = iupDlgListNext();
+  }
+}
+
 static void fltkDialogUnMapMethod(Ihandle* ih)
 {
   IupFltkDialog* dialog = (IupFltkDialog*)ih->handle;
   if (dialog)
   {
+    fltkDialogDestroyChildDialogs(ih);
+
     if (ih->data->menu)
     {
       ih->data->menu->handle = NULL;
