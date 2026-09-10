@@ -63,6 +63,12 @@ public:
           BMessenger((BWindow*)dlg->handle).SendMessage(&tc);
         }
         break;
+      case IUPHAIKU_APP_DESTROY_DLG: {
+        Ihandle* dlg = NULL;
+        if (msg->FindPointer("ih", (void**)&dlg) == B_OK && dlg && iupObjectCheck(dlg))
+          IupDestroy(dlg);
+        return;
+      }
       case IUPHAIKU_APP_SHOW_WIN: {
         BWindow* win = NULL;
         if (msg->FindPointer("win", (void**)&win) == B_OK && win)

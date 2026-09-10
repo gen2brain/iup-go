@@ -32,6 +32,7 @@ struct rgb_color;
 #define IUPHAIKU_APP_DRAIN_MSG     'IuPM'
 #define IUPHAIKU_APP_IDLE_TICK     'IuIT'
 #define IUPHAIKU_APP_SHOW_WIN      'IuSW'  /* deferred Show during launch */
+#define IUPHAIKU_APP_DESTROY_DLG   'IuDD'  /* deferred child dialog destroy after parent teardown */
 #define IUPHAIKU_MENU_ITEM_MSG     'IupM'  /* IupItem ACTION dispatch */
 #define IUPHAIKU_MENU_RECENT_MSG   'IuRM'  /* IupConfigRecent item; "menu" Ihandle*, "index" int32 */
 #define IUPHAIKU_MENU_CB_MSG       'IumC'  /* menu cb hop to dialog looper; "ih" ptr, "cb" string */

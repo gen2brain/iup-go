@@ -493,9 +493,16 @@ static void* gtk4DialogGetInnerNativeContainerHandleMethod(Ihandle* ih, Ihandle*
 
 static void gtk4DialogSurfaceStateChanged(GObject* surface, GParamSpec* pspec, Ihandle* ih)
 {
-  GdkToplevelState surface_state = gdk_toplevel_get_state(GDK_TOPLEVEL(surface));
+  GdkToplevelState surface_state = gdk_toplevel_get_state(GDK_TOPLEVEL(surface)) & (GDK_TOPLEVEL_STATE_MINIMIZED | GDK_TOPLEVEL_STATE_MAXIMIZED | GDK_TOPLEVEL_STATE_FULLSCREEN);
   int state;
   (void)pspec;
+
+  if (surface_state == (GdkToplevelState)iupAttribGetInt(ih, "_IUPGTK4_SURFACE_STATE"))
+    return;
+  iupAttribSetInt(ih, "_IUPGTK4_SURFACE_STATE", (int)surface_state);
+
+  if (!gtk_widget_get_visible(ih->handle))
+    return;
 
   iupAttribSet(ih, "MAXIMIZED", NULL);
   iupAttribSet(ih, "MINIMIZED", NULL);
@@ -635,6 +642,8 @@ static int gtk4DialogMapMethod(Ihandle* ih)
 
   handler_id = g_signal_connect(G_OBJECT(ih->handle), "realize", G_CALLBACK(gtk4DialogRealize), ih);
   iupAttribSet(ih, "_IUPGTK4_REALIZE_HANDLER", (char*)(uintptr_t)handler_id);
+  if (gtk_widget_get_realized(ih->handle))
+    gtk4DialogRealize(ih->handle, ih);
 
   {
     GtkEventController* key_controller = gtk_event_controller_key_new();

@@ -33,6 +33,7 @@ extern "C" {
 #include "iup_attrib.h"
 #include "iup_image.h"
 #include "iup_str.h"
+#include "iup_dlglist.h"
 #define _IUPDLG_PRIVATE
 #include "iup_dialog.h"
 }
@@ -147,6 +148,26 @@ public:
     if (BList* list = CommonFilterList())
       for (int32 i = list->CountItems() - 1; i >= 0; --i)
         BLooper::RemoveCommonFilter((BMessageFilter*)list->ItemAt(i));
+  }
+
+  void Minimize(bool minimize) override
+  {
+    BWindow* children[64];
+    int count = 0;
+
+    BWindow::Minimize(minimize);
+
+    for (Ihandle* dlg = iupDlgListFirst(); dlg && count < 64; dlg = iupDlgListNext())
+    {
+      if (dlg->handle && dlg->handle != (InativeHandle*)this && iupDialogGetNativeParent(dlg) == (InativeHandle*)this)
+        children[count++] = (BWindow*)dlg->handle;
+    }
+
+    for (int i = 0; i < count; i++)
+    {
+      LooperLockGuard guard(children[i]);
+      children[i]->Minimize(minimize);
+    }
   }
 
   bool QuitRequested() override
@@ -411,12 +432,33 @@ static int haikuDialogMapMethod(Ihandle* ih)
   IupHaikuWindow* win = new IupHaikuWindow(BRect(0, 0, 99, 99),
                                            title, look, feel, flags, ih);
   ih->handle = (InativeHandle*)win;
+
+  {
+    InativeHandle* parent = iupDialogGetNativeParent(ih);
+    if (parent)
+      iupdrvDialogSetParent(ih, parent);
+  }
+
   return IUP_NOERROR;
 }
 
 static void haikuDialogUnMapMethod(Ihandle* ih)
 {
   IupHaikuWindow* win = (IupHaikuWindow*)ih->handle;
+
+  if (win && be_app)
+  {
+    for (Ihandle* dlg = iupDlgListFirst(); dlg; dlg = iupDlgListNext())
+    {
+      if (dlg != ih && dlg->handle && iupDialogGetNativeParent(dlg) == (InativeHandle*)win)
+      {
+        BMessage destroy(IUPHAIKU_APP_DESTROY_DLG);
+        destroy.AddPointer("ih", dlg);
+        BMessenger(be_app).SendMessage(&destroy);
+      }
+    }
+  }
+
   if (win && win->Lock())
   {
     win->SetIhandle(NULL);

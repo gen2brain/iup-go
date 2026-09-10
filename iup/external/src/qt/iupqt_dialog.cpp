@@ -7,6 +7,7 @@
 #include <QMainWindow>
 #include <QDialog>
 #include <QWindow>
+#include <QTimer>
 #include <QApplication>
 #include <QMoveEvent>
 #include <QString>
@@ -331,6 +332,17 @@ IUP_DRV_API int iupqtDialogCloseEvent(QWidget *widget, QEvent *evt, Ihandle *ih)
  * Dialog Utilities
  ****************************************************************************/
 
+static void qtDialogDisconnectParent(Ihandle* ih)
+{
+  QMetaObject::Connection* conn = (QMetaObject::Connection*)iupAttribGet(ih, "_IUPQT_PARENT_DESTROYED");
+  if (conn)
+  {
+    QObject::disconnect(*conn);
+    delete conn;
+    iupAttribSet(ih, "_IUPQT_PARENT_DESTROYED", NULL);
+  }
+}
+
 extern "C" IUP_SDK_API void iupdrvDialogSetParent(Ihandle* ih, InativeHandle* parent)
 {
   IupQtDialog* dialog = (IupQtDialog*)ih->handle;
@@ -338,6 +350,7 @@ extern "C" IUP_SDK_API void iupdrvDialogSetParent(Ihandle* ih, InativeHandle* pa
     return;
 
   dialog->updateWindowFlags();
+  qtDialogDisconnectParent(ih);
 
   if (parent)
   {
@@ -349,6 +362,17 @@ extern "C" IUP_SDK_API void iupdrvDialogSetParent(Ihandle* ih, InativeHandle* pa
     QWindow* pw = parent_widget->windowHandle();
     if (dw && pw)
       dw->setTransientParent(pw);
+
+    QMetaObject::Connection conn = QObject::connect(parent_widget, &QObject::destroyed, [ih]() {
+      qtDialogDisconnectParent(ih);
+      iupAttribSet(ih, "PARENTDIALOG", NULL);
+      iupAttribSet(ih, "NATIVEPARENT", NULL);
+      QTimer::singleShot(0, [ih]() {
+        if (iupObjectCheck(ih))
+          IupDestroy(ih);
+      });
+    });
+    iupAttribSet(ih, "_IUPQT_PARENT_DESTROYED", (char*)new QMetaObject::Connection(conn));
   }
 }
 
@@ -1192,6 +1216,7 @@ extern "C" void qtDialogUnMapMethod(Ihandle* ih)
     }
 
     iupAttribSet(ih, "_IUPQT_FIRST_SHOW_DONE", NULL);
+    qtDialogDisconnectParent(ih);
 
     /* Qt will handle widget deletion */
     delete widget;
