@@ -2177,7 +2177,7 @@ Iclass* iupMatrixNewClass(void)
   iupClassRegisterCallback(ic, "MENUDROP_CB", "nii");
   iupClassRegisterCallback(ic, "DROP_CB", "nii");
   iupClassRegisterCallback(ic, "DROPSELECT_CB", "iinsii");
-  iupClassRegisterCallback(ic, "EDITION_CB", "iii");
+  iupClassRegisterCallback(ic, "EDITION_CB", "iiii");
   iupClassRegisterCallback(ic, "VALUECHANGED_CB", "");
   /* --- Callback Mode --- */
   iupClassRegisterCallback(ic, "VALUE_CB", "ii=s");
