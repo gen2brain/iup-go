@@ -465,6 +465,8 @@ static int gtkSetDropFilesTargetAttrib(Ihandle* ih, const char* value)
 
     if (GTK_IS_TEXT_VIEW(ih->handle) || GTK_IS_ENTRY(ih->handle) || GTK_IS_TREE_VIEW(ih->handle))
     {
+      if (!gtk_drag_dest_get_target_list(ih->handle))
+        gtk_drag_dest_set(ih->handle, (GtkDestDefaults)0, NULL, 0, GDK_ACTION_COPY);
       gtk_drag_dest_add_uri_targets(ih->handle);
       g_signal_connect(G_OBJECT(ih->handle), "drag-motion", G_CALLBACK(gtkDropFilesInterceptDragMotion), ih);
       g_signal_connect(G_OBJECT(ih->handle), "drag-drop", G_CALLBACK(gtkDropFilesInterceptDragDrop), ih);
