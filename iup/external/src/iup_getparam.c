@@ -2011,7 +2011,7 @@ Iclass* iupParamBoxNewClass(void)
 
   iupClassRegisterAttribute(ic, "USERDATA", NULL, NULL, NULL, NULL, IUPAF_NO_STRING | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "LABELALIGN", NULL, iParamBoxSetLabelAlignAttrib, IUPAF_SAMEASSYSTEM, "ALEFT", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "MODIFIABLE", NULL, iParamBoxSetModifiableAttrib, IUPAF_SAMEASSYSTEM, "ALEFT", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MODIFIABLE", NULL, iParamBoxSetModifiableAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
 
   /* ATTENTION: can NOT set IUPAF_READONLY if get is not defined when attribute is used before map.
      In iupAttribUpdate (called by IupMap) store will be 0 for read-only attributes, then attribute will be removed from the hash table.
