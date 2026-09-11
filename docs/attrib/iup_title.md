@@ -16,7 +16,9 @@ The "&" character can be used to define a MNEMONIC, use "&&" to show the "&" cha
 
 If a mnemonic is defined, the character relative to it is underlined and Alt+key activates the control.
 Supported in Win32, WinUI, GTK, GTK 4, Qt, FLTK, EFL and Motif.
-On macOS, Android, iOS and Haiku the "&" is stripped from the displayed text and no shortcut is registered (these platforms have no Alt-mnemonic convention). On iOS an external keyboard with an Alt key still triggers the mnemonic.
+In Haiku the shortcut is activated with Command+key (the physical Alt key on the default keymap), but the character is not underlined.
+On iOS the character is underlined and an external keyboard with an Alt key activates the control.
+On macOS and Android the "&" is stripped from the displayed text and no shortcut is registered.
 
 In GTK, if you define a mnemonic using "&" and the string has an underscore, then make sure that the mnemonic comes before the underscore.
 

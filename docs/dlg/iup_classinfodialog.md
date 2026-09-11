@@ -27,7 +27,7 @@ Check the [IupDialog](iup_dialog.md) callbacks.
 
     IupShow(IupClassInfoDialog());  
 
-The dialog is displayed next. The Help button shows the Iup class documentation page on the Tecgraf web site.
+The dialog is displayed next. The Help button opens the class documentation page in the iup-go GitHub repository.
 
 ![](../images/iupclassinfodialog_gtk3.png)
 

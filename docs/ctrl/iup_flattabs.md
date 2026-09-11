@@ -173,7 +173,7 @@ Default: "IMGFLATCLOSEPRESS".
 If it is not defined then the CLOSEIMAGE is used and its colors will be replaced by a modified version creating the disabled effect.
 
 **CLOSEPRESSCOLOR**: background color of the close button in pressed state.
-Default: "50 150 255".
+Default: "150 200 235".
 
 **CLOSEHIGHCOLOR**: background color of the close button in highlight state. Default: "200 225 245".
 

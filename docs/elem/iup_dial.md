@@ -25,7 +25,7 @@ Can be YES or NO. Default: NO.
 [FGCOLOR](../attrib/iup_fgcolor.md): foreground color.
 The default value is "64 64 64".
 
-[SIZE](../attrib/iup_size.md) (non-inheritable): the initial size is "16x80", "80x16" or "40x35" according to the dial orientation.
+[SIZE](../attrib/iup_size.md) (non-inheritable): the initial size is "16x80", "80x16" or "40x36" according to the dial orientation.
 Set to NULL to allow the automatic layout to use smaller values.
 
 **ORIENTATION** (creation-only) (non-inheritable): dial layout configuration "VERTICAL", "HORIZONTAL" or "CIRCULAR".

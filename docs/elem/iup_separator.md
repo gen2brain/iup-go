@@ -2,7 +2,7 @@
 
 Creates an interface element that is a Separator, but it does not have native decorations.
 
-It inherits from [IupCanvas](http://webserver2.tecgraf.puc-rio.br/iup/en/elem/iup_canvas.md).
+It inherits from [IupCanvas](../elem/iup_canvas.md).
 
 ### Creation
 
@@ -51,6 +51,4 @@ The **IupSeparator** is used internally in [IupSplit](iup_split.md) and in [IupS
 |--------------------------------------|------------------------------------|-------------------------------------|-------------------------------------|
 | GTK                                  | Qt                                 | Win32                               | macOS                               |
 | ![](../images/iupseparator_gtk3.png) | ![](../images/iupseparator_qt.png) | ![](../images/iupseparator_win.png) | ![](../images/iupseparator_mac.png) |
-
-Styles: LINE, SUNKENLINE, DUALLINES, GRIP, FILLCOLOR="255 0 128".
 

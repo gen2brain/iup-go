@@ -61,7 +61,7 @@ Can have negative values to indicate specific situations:\
     IUP_GETPARAM_BUTTON2 (-3) = if the user pressed the button 2;\
     IUP_GETPARAM_BUTTON3 (-4) = if the user pressed the button 3, if any;\
     IUP_GETPARAM_CLOSE (-5) = if the user clicked on the **IupGetParam** dialog close button. Not called when **IupParamBox** is directly used;\
-    IUP_GETPARAM_MAP (-5) = before the **IupGetParam** dialog is mapped. Not called when **IupParamBox** is directly used;\
+    IUP_GETPARAM_MAP (-6) = before the **IupGetParam** dialog is mapped. Not called when **IupParamBox** is directly used;\
 **user_data**: a user pointer that is passed in the function call.
 
 **Returns:** You can reject the change or the button action by returning 0 in the callback, otherwise you must return 1.

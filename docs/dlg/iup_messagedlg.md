@@ -40,7 +40,7 @@ If not defined in Motif the dialog could not be modal.
 ### Callbacks
 
 [HELP_CB](../call/iup_help_cb.md): Action generated when the Help button is pressed.
-Not supported in WinUI, GTK 4, FLTK and Haiku.
+Not supported in WinUI, GTK 4, FLTK, Haiku and WebAssembly.
 
 ### Notes
 
@@ -56,7 +56,7 @@ In Win32, each different DIALOGTYPE plays a different system beep, and PARENTDIA
 
 The underlying native widget per driver:
 
-- **Win32**: MessageBoxIndirect.
+- **Win32**: TaskDialogIndirect.
 - **WinUI**: ContentDialog hosted on the parent dialog's XamlRoot.
 - **GTK 3**: gtk_message_dialog (gtk_dialog_run).
 - **GTK 4**: GtkAlertDialog (4.10+).

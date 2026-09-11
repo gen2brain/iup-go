@@ -74,7 +74,7 @@ In Windows the button will respect CANFOCUS in opposite to the other controls. D
 Default: YES.
 
 **CHECKSIZE** (non-inheritable): size of the checkbox when visible.
-Default depends on the resolution: 16 (dpi <= 120), or 24 (dpi > 120). Set it to 0 to hide the check box.
+Default depends on the resolution: 16, or 24 in high resolution (DPI above 144). Set it to 0 to hide the check box.
 When the check box is shown the borders are not shown, and the background is not highlighted.
 
 **CHECKRIGHT** (non-inheritable): place the checkbox at the right. Can be "YES" or "NO".
@@ -210,11 +210,11 @@ Default: "NO". Incompatible with SWITCH=YES.
 Can be "YES" or "NO". Default: "NO". Incompatible with 3STATE.
 When SWITCH=YES, the check area draws a track with a sliding thumb instead of a checkbox or radio dot.
 The attributes CHECKSIZE, CHECKSPACING, CHECKRIGHT, CHECKALIGN, CHECKIMAGE and CHECKIMAGEON are reused for the switch.
-When SWITCH=YES and CHECKSIZE is not explicitly set, a larger default size is used: 20 (dpi <= 120) or 26 (dpi > 120), instead of the checkbox defaults of 16/24.
+When SWITCH=YES and CHECKSIZE is not explicitly set, a fixed default size of 26 is used, instead of the checkbox defaults.
 The thumb grows slightly on mouse hover to provide visual feedback.
 
 **SWITCHTRACKWIDTH** (non-inheritable): width of the switch track in pixels.
-Default: effective CHECKSIZE * 2 (40 at standard DPI, 52 at high DPI). The track height is controlled by CHECKSIZE.
+Default: effective CHECKSIZE * 2 (52). The track height is controlled by CHECKSIZE.
 
 **SWITCHOFFCOLOR** (non-inheritable): track fill color when VALUE=OFF. Default: "190 190 190".
 

@@ -106,8 +106,9 @@ Ignored if set before map.
 
 **REMOVEITEM** (write-only): removes the given item from the list.
 
-**SHOWDELETE**: Shows only the **IMAGEDEL** image and ignores **IMAGECHECK** and **IMAGEUNCHECK.
-TITLE**: title of the list. When not NULL the list will display a non scrollable title.
+**SHOWDELETE**: Shows only the **IMAGEDEL** image and ignores **IMAGECHECK** and **IMAGEUNCHECK**.
+
+**TITLE**: title of the list. When not NULL the list will display a non scrollable title.
 
 **TOPITEM** (write-only): position the given item at the top of the list or near to make it visible.
 

@@ -54,7 +54,7 @@ Notice that the drawing area size is not the same as RASTERSIZE.
 The SCROLLBAR and BORDER attributes affect the size of the drawing area.
 
 **DRAWDRIVER** (read-only): returns the name of the draw driver in use by the IupDraw API.
-Can be: D2D, GDI+ (Windows), CAIRO (GTK), COCOA (macOS), QT, EFL_VG (EFL), or X11 (Motif).
+Can be: D2D, GDI+ (Windows), CAIRO (GTK), COCOA (macOS), COCOATOUCH (iOS), QT, EFL_VG (EFL), FLTK, HAIKU, ANDROID, or X11 (Motif).
 
 **DRAWIMAGE** (read-only): returns the offscreen drawing buffer as an [IupImage](iup_image.md) handle name.
 Must be used between IupDrawBegin and IupDrawEnd.
@@ -70,7 +70,7 @@ The natural size is the size of 1 character.
 Valid only during the ACTION callback.
 
 **HWND** [Windows Only] (non-inheritable, read-only): Returns the Windows Window handle.
-Available in any driver when running on Windows (Win32, WinUI, GTK, GTK 4, Qt, FLTK and EFL).
+Available in any driver when running on Windows (Win32, GTK, GTK 4, Qt, FLTK and EFL).
 
 [SCROLLBAR](../attrib/iup_scrollbar.md) (creation-only): Associates a horizontal and/or vertical scrollbar to the canvas.
 Default: "NO". The secondary attributes are all non-inheritable.
@@ -105,7 +105,7 @@ Accepts only the NO value.
 
 **WHEELDROPFOCUS** (non-inheritable): when the wheel is used the focus control receives a SHOWDROPDOWN=NO.
 
-**CGCONTEXT** [macOS Only] (non-inheritable, read-only): Returns the CoreGraphics context (CGContextRef).
+**CGCONTEXT** [macOS and iOS Only] (non-inheritable, read-only): Returns the CoreGraphics context (CGContextRef).
 
 **NSVIEW** [macOS Only] (non-inheritable, read-only): Returns the NSView handle.
 
@@ -113,15 +113,15 @@ Accepts only the NO value.
 Can be "YES" or "NO". Default: "NO".
 
 **XDISPLAY** [Unix Only] (non-inheritable, read-only): Returns the X-Windows Display.
-Available in Motif and GTK on X11.
+Available in Motif, GTK and FLTK on X11.
 
 **XWINDOW** [Unix Only] (non-inheritable, read-only): Returns the X-Windows Window (Drawable).
-Available in Motif, GTK, GTK 4, Qt and EFL on X11.
+Available in Motif, GTK, GTK 4, Qt, EFL and FLTK on X11.
 
 **XSCREEN** [Motif Only] (non-inheritable, read-only): Returns the X-Windows Screen.
 
 **WL_SURFACE** [Unix Only] (non-inheritable, read-only): Returns the Wayland surface handle.
-Available in GTK, GTK 4, Qt and EFL on Wayland.
+Available in GTK, GTK 4, Qt, EFL and FLTK on Wayland.
 
 > 
 >

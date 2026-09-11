@@ -2,7 +2,7 @@
 
 Creates a date editing interface element, which can displays a calendar for selecting a date.
 
-In Windows, Qt, Android and iOS is a native element. In GTK, GTK 4, macOS, EFL, FLTK and Motif is a custom element built with IUP controls.
+In Windows, Qt, Android, iOS and WebAssembly it is a native element. In GTK, GTK 4, WinUI, macOS, EFL, FLTK, Motif and Haiku it is a custom element built with IUP controls.
 
 ### Creation
 
@@ -36,7 +36,7 @@ Not supported in iOS and WebAssembly.
 
 **SHOWDROPDOWN** (write-only): opens or closes the dropdown calendar. Can be "YES" or "NO".
 Ignored if set before map. In Windows, it works only for NO.
-Not supported in Qt.
+Not supported in Qt and iOS.
 
 **TODAY** (read-only): Returns the date corresponding to today in VALUE format.
 
@@ -63,7 +63,7 @@ Not supported in iOS and WebAssembly.
 
 ### Notes
 
-In GTK, GTK 4, macOS, EFL and Motif it is a custom control built with IUP elements.
+In GTK, GTK 4, WinUI, macOS, EFL, FLTK, Motif and Haiku it is a custom control built with IUP elements.
 
 In iOS, the label uses the system locale's date format; ORDER, SEPARATOR, ZEROPRECED, MONTHSHORTNAMES and FORMAT are not supported.
 

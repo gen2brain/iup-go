@@ -17,7 +17,7 @@ It can also be displayed as a switch control.
 **ALIGNMENT** (non-inheritable): horizontal and vertical alignment when IMAGE is defined.
 Possible values: "ALEFT", "ACENTER" and "ARIGHT",  combined to "ATOP", "ACENTER" and "ABOTTOM".
 Default: "ACENTER:ACENTER". Partial values are also accepted, like "ARIGHT" or ":ATOP", the other value will be obtained from the default value.
-In Motif and Android, vertical alignment is restricted to "ACENTER". In Windows works only when Visual Styles is active.
+In Motif, vertical alignment is restricted to "ACENTER". In Windows it is applied only with Visual Styles or when FLAT is set.
 Text is always left aligned.
 Not supported in Qt, Cocoa, EFL and Haiku.
 
@@ -33,7 +33,7 @@ In Windows the control will still get the focus when clicked. Default: YES.
 Default: NO.
 
 [FGCOLOR](../attrib/iup_fgcolor.md): Color of the text shown on the toggle.
-In Windows, when using Visual Styles FGCOLOR is ignored. Default: the global attribute DLGFGCOLOR.
+In Windows, when using Visual Styles FGCOLOR is ignored, except in dark mode. Default: the global attribute DLGFGCOLOR.
 
 **FLAT** (creation-only): Hides the toggle borders until the mouse enter the toggle area when the toggle is not checked.
 If the toggle is checked, then the borders will be shown even if flat is enabled.
@@ -87,6 +87,7 @@ The toggle can be activated from any control in the dialog using the "Alt+key" c
 
 **SWITCH** (creation-only): displays the toggle as a switch control instead of a checkbox.
 Can be "YES" or "NO". Default: "NO".
+Ignored when the toggle is inside an IupRadio.
 
 **3STATE** (creation-only): Enable a three state toggle.
 Valid for toggles with text only, and that do not belong to a radio. Can be "YES" or "NO".

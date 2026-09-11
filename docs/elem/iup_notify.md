@@ -22,7 +22,7 @@ Use [IupSetHandle](../func/iup_sethandle.md) or [IupSetAttributeHandle](../func/
 See also [IupImage](iup_image.md).
 On iOS, ICON is honored only with STYLE=TOAST.
 
-**IMAGE** [Android / iOS Only] (non-inheritable): Image name shown as the expanded content/preview image.
+**IMAGE** [Android, iOS and Haiku Only] (non-inheritable): Image name shown as the expanded content/preview image.
 Use [IupSetHandle](../func/iup_sethandle.md) or [IupSetAttributeHandle](../func/iup_setattributehandle.md) to associate an image to a name.
 On Android, TITLE and BODY are reused as the expanded title and summary.
 
@@ -53,12 +53,12 @@ All content attributes (TITLE, BODY, ICON, etc.) should be set before showing.
 
 #### Platform-Specific
 
-**URGENCY** [Linux/Unix Only] (non-inheritable): Notification urgency level.
+**URGENCY** [Linux/Unix and Android Only] (non-inheritable): Notification urgency level.
 Can be "0" (low), "1" (normal), or "2" (high). Default: "1".
 
-**APPICON** [Linux/Unix and WebAssembly Only] (non-inheritable): Application icon name used as a fallback when ICON is not set.
+**APPICON** [Linux/Unix, Android and WebAssembly Only] (non-inheritable): Application icon name used as a fallback when ICON is not set.
 
-**TRANSIENT** [Linux/Unix Only] (non-inheritable): When set, the notification is transient and may be skipped from the notification history.
+**TRANSIENT** [Linux/Unix and Android Only] (non-inheritable): When set, the notification is transient and may be skipped from the notification history.
 
 **PERMISSION** [macOS / iOS Only] (read-only) (non-inheritable): Returns the current notification permission status.
 Can be "GRANTED", "DENIED", or "NOTDETERMINED".

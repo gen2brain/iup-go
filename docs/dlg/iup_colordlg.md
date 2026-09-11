@@ -82,7 +82,7 @@ It is a regular **IupDialog** that can be shown with [IupShow](../func/iup_show.
     if (IupGetInt(dlg, "STATUS"))
     {
       printf("OK\n");
-      printf("  COLOR(%s)\n", IupGetAttribute(dlg, "COLOR"));
+      printf("  VALUE(%s)\n", IupGetAttribute(dlg, "VALUE"));
       printf("  COLORTABLE(%s)\n", IupGetAttribute(dlg, "COLORTABLE"));
     }
     else

@@ -31,18 +31,16 @@ The native handle can be obtained using the "**HFONT**" attribute.
 
 #### WinUI
 
-The DEFAULTFONT is retrieved from the Windows System Settings, "Segoe UI Variable, 9" is assumed otherwise.
-
-XAML Islands render text via DirectWrite. The native handle can be obtained using the "**HFONT**" attribute (used for IUP layout metrics).
+The DEFAULTFONT is retrieved from the Windows System Settings, "Segoe UI, 9" is assumed otherwise.
 
 #### Motif
 
 The DEFAULTFONT is retrieved from the user resource file (see below), if failed, then "Fixed, 11" is assumed.
+When compiled with XFT support, it is retrieved from fontconfig, "Sans, 10" assumed otherwise.
 
 The X-Windows Logical Font Description format (XLFD) is also supported.
 
-When compiled with XFT support, TrueType fonts are rendered using the Xft library for improved text quality and Unicode/UTF-8 support.
-The native handle can be obtained using the "**XMFONTLIST**" and "**XFONTSTRUCT**" attributes (or "**XFTFONT**" when using XFT).
+The native handle can be obtained using the "**XMFONTLIST**", "**XFONTSTRUCT**" and "**XFONTID**" attributes.
 The selected X Logical Font Description string can be obtained from the attribute "**XLFD**".
 
 You can use the **xfontsel** program to obtain a string in the X-Windows Logical Font Description format (XLFD).
@@ -68,47 +66,44 @@ The native handle can be obtained using the "**PANGOFONTDESC**" attribute.
 
 #### macOS
 
-The DEFAULTFONT is retrieved from the system font (NSFont systemFontOfSize).
-The default is typically "Helvetica Neue" or "San Francisco" depending on the macOS version.
+The DEFAULTFONT is the system font at the system size.
 
-Uses CoreText for font rendering with full Unicode/UTF-8 support.
+In GNUstep, the DEFAULTFONT is the NSFont user default, seeded with "DejaVu Sans" when not set.
 
 #### CocoaTouch
 
-The DEFAULTFONT is `[UIFont systemFontOfSize: [UIFont labelFontSize]]` (system font at the platform's standard label size, typically 17pt).
-
-Uses CoreText for rendering. The native handle can be obtained using the "**UIFONT**" attribute.
+The DEFAULTFONT is the system font at the label size.
 
 #### Qt
 
-The DEFAULTFONT is retrieved from QApplication::font().
-
-Uses the Qt font engine (QFont/QFontInfo) for font rendering.
-Supports all fonts available to the Qt platform.
+The DEFAULTFONT is retrieved from QApplication::font(), "Sans, 10" assumed otherwise.
 
 #### EFL
 
-The DEFAULTFONT is retrieved from the Elementary font overlay configuration, if failed "Sans, 10" is assumed.
-
-Uses the EFL/Evas text rendering engine.
+The DEFAULTFONT is retrieved from the Elementary font configuration, "Sans, 11" assumed otherwise.
 
 #### FLTK
 
-FLTK uses an internal `Fl_Font` enum; there is no system-derived DEFAULTFONT. Defaults to FL_HELVETICA at the size of the system menu font.
+The DEFAULTFONT is "Sans, 10".
 
-The face names `Helvetica`, `Courier` and `Times` map to `FL_HELVETICA`, `FL_COURIER` and `FL_TIMES`; other names fall back to FL_HELVETICA.
+Helvetica, Arial and Sans map to FL_HELVETICA, Courier to FL_COURIER and Times to FL_TIMES.
+Other names are searched among the installed fonts, FL_HELVETICA is used when not found.
 
 #### Android
 
-The DEFAULTFONT reflects the Material theme's default body font (Roboto on stock Android).
+The DEFAULTFONT is retrieved from the application theme, "sans-serif, 14" assumed otherwise.
 
-Uses `android.graphics.Typeface`. `Helvetica`, `Courier` and `Times` map to `Typeface.SANS_SERIF`, `Typeface.MONOSPACE` and `Typeface.SERIF`.
+Font faces other than sans-serif, serif and monospace are mapped with the table below.
 
 #### Haiku
 
-The DEFAULTFONT is `be_plain_font` from the Interface Kit (typically "Noto Sans" on stock Haiku R1).
+The DEFAULTFONT is the system plain font, "Sans, 10" assumed otherwise.
 
-Uses `BFont`. The native handle can be obtained using the "**BFONT**" attribute.
+The native handle can be obtained using the "**BFONT**" attribute.
+
+#### WebAssembly
+
+The DEFAULTFONT is "Helvetica, 9". Font faces are CSS font families.
 
 #### Examples:
 
@@ -130,11 +125,13 @@ Those names always have a native system name equivalent.
 If you use those names, IUP will automatically map to the native system equivalent.
 See the table below:
 
-| Recommended/Motif | Windows         | GTK       | macOS           | Description                     |
-|-------------------|-----------------|-----------|-----------------|---------------------------------|
-| **Helvetica**     | Arial           | Sans      | Helvetica Neue  | without serif, variable spacing |
-| **Courier**       | Courier New     | Monospace | Courier New     | with serif, fixed spacing       |
-| **Times**         | Times New Roman | Serif     | Times New Roman | with serif, variable spacing    |
+| Recommended/Motif | Windows         | GTK       | macOS, iOS      | Android    | Description                     |
+|-------------------|-----------------|-----------|-----------------|------------|---------------------------------|
+| **Helvetica**     | Arial           | Sans      | Helvetica Neue  | sans-serif | without serif, variable spacing |
+| **Courier**       | Courier New     | Monospace | Courier New     | monospace  | with serif, fixed spacing       |
+| **Times**         | Times New Roman | Serif     | Times New Roman | serif      | with serif, variable spacing    |
+
+The GTK names are also used by Qt, EFL, FLTK and Haiku.
 
 ### Auxiliary Attributes
 
@@ -179,7 +176,7 @@ The advantage is that any charset can be used, and localization is usually done 
 
 IUP supports UTF-8 (ISO10646-1) encoding in all drivers.
 To specify a string in UTF-8 encoding set the global attribute "[UTF8MODE](iup_globals.md#utf8mode)" to "YES".
-In GTK, GTK 4, macOS, CocoaTouch, Qt, EFL, FLTK, Android and Haiku, UTF-8 is the native encoding.
+In GTK, GTK 4, macOS, CocoaTouch, Qt, EFL, FLTK, Android, Haiku and WebAssembly, UTF-8 is the native encoding.
 In Windows, WinUI and Motif (with XFT), UTF-8 strings are converted to the native encoding as needed.
 
 #### ISO8859-1 and Windows-1252 Displayable Characters

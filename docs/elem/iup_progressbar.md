@@ -19,7 +19,7 @@ In Android the platform theme background is used.
 
 **DASHED** (creation-only in Windows): Changes the style of the progress bar for a dashed pattern.
 Default is "NO". In Windows, it is not supported when using Visual Styles.
-Supported in Win32 (without Visual Styles), GTK 2, GTK 3, GTK 4, Qt and iOS.
+Supported in Win32 (without Visual Styles), GTK 2, GTK 3, GTK 4, Qt, WebAssembly and iOS.
 
 [FGCOLOR](../attrib/iup_fgcolor.md): Controls the bar color.
 By default the native/system bar color is used.

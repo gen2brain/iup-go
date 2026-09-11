@@ -24,7 +24,7 @@ In GTK it acts as an additional indent value, and the lines do not follow the ex
 In Win32 it is limited to a minimum of 5 pixels.
 Not supported in EFL.
 
-**INFOTIP** [Windows Only]: the TIP is shown every time a node is highlighted.
+**INFOTIP** [Win32, Qt and macOS Only]: the TIP is shown every time a node is highlighted.
 This is the default behavior for TIPs in native tree controls in Windows, if set to NO then it will use the regular TIP behavior.
 Default: YES.
 
@@ -42,7 +42,7 @@ Supported in Windows, WinUI, Qt, macOS and WebAssembly.
 
 **SPACING**: vertical internal padding for each node.
 Notice that the distance between each node will be actually 2x the spacing.
-Not supported in Motif and EFL.
+Not supported in EFL.
 
 **CSPACING**: same as SPACING but using the units of the vertical part of the **SIZE** attribute.
 It will actually set the SPACING attribute.
@@ -60,7 +60,7 @@ If any parent node is collapsed then they are automatically expanded.
 
 **HIDEBUTTONS** (creation-only): hide the expand and collapse buttons.
 In GTK, branches will be only expanded programmatically.
-Not supported in EFL, WinUI and WebAssembly.
+Not supported in EFL, macOS, iOS and WebAssembly.
 
 **HIDELINES** (creation-only): hide the lines that connect the nodes in the hierarchy.
 Supported in GTK, Motif, Win32, Qt and FLTK.
@@ -132,7 +132,7 @@ Actually changes the **TITLEFONTid** attribute.
 Can be "YES", "3STATE" or "NO". Default: "NO".
 Not supported in Motif and FLTK.
 
-**EMPTYAS3STATE** (non-inheritable) [Win32 Only]: when SHOWTOGGLE=YES, the empty space left in nodes that TOGGLEVISIBLEid=NO is filled with the image of the 3state toggle.
+**EMPTYAS3STATE** (non-inheritable) [Win32 and Qt Only]: when SHOWTOGGLE=YES, the empty space left in nodes that TOGGLEVISIBLEid=NO is filled with the image of the 3state toggle.
 Can be YES or NO. Default: NO.
 
 **TOGGLEVALUEid** (non-inheritable): defines the toggle state. Values can be "ON" or "OFF".
@@ -212,6 +212,9 @@ The value must be the node identifier. Default: 0 (first node).
 
 **MARKWHENTOGGLE** (non-inheritable): selects or clears the selection of a node when its toggle is changed.
 Works only if the node has a toggle. Default: NO.
+
+**RUBBERBAND** (non-inheritable): allows selecting several nodes with a rubber band when MARKMODE=MULTIPLE. Can be YES or NO. Default: YES.
+Supported in GTK, GTK 4 and Qt. In GTK it works only when SHOWDRAGDROP=NO.
 
 ### Hierarchy  (non-inheritable)
 

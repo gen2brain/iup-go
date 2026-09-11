@@ -20,8 +20,8 @@ A recommended size would be 16x16 to fit the image in the menu item.
 In Windows, if larger than the check mark area it will be cropped.
 Not supported in GTK 4, Motif, EFL.
 
-[KEY](../attrib/iup_key.md) (non-inheritable): Underlines a key character in the submenu title.
-It is updated only when TITLE is updated.  Deprecated**, use the mnemonic support directly in the TITLE attribute.**
+[KEY](../attrib/iup_key.md) (non-inheritable): Underlines a character of the submenu title.
+It is applied when TITLE is set. Deprecated, use the "&" in TITLE.
 
 [TITLE](../attrib/iup_title.md) (non-inheritable): Submenu Text.
 The "&" character can be used to define a mnemonic, the next character will be used as a key.

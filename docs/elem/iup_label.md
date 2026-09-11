@@ -20,8 +20,7 @@ Possible values: "ALEFT", "ACENTER" and "ARIGHT", combined to "ATOP", "ACENTER" 
 Default: "ALEFT:ACENTER". Partial values are also accepted, like "ARIGHT" or ":ATOP", the other value will be obtained from the default value.
 In Motif, vertical alignment is restricted to "ACENTER".
 
-[BGCOLOR](../attrib/iup_bgcolor.md): ignored, transparent in all systems.
-Will use the background color of the native parent.
+[BGCOLOR](../attrib/iup_bgcolor.md): background color. When not defined uses the background color of the native parent, which is transparent.
 
 **DROPFILESTARGET** (non-inheritable): Enable or disable the drop of files.
 Default: NO, but if DROPFILES_CB is defined when the element is mapped then it will be automatically enabled.
@@ -39,7 +38,6 @@ See also [IupImage](iup_image.md).
 
 **IMINACTIVE** (non-inheritable): Image name of the element when inactive.
 If it is not defined then the IMAGE is used and the colors will be replaced by a modified version of the background color creating the disabled effect.
-Not supported in Win32 and WinUI.
 
 **MARKUP**: allows the title string to contain markup commands.
 Supports a Pango-like subset: `<b>`, `<i>`, `<u>`, `<s>`, `<sub>`, `<sup>`, `<big>`, `<small>`, and `<span>` with `foreground`, `background`, `font_family`, `font_size`, `font_weight`, `font_style` attributes. GTK uses Pango markup natively; other drivers convert to their native format.
@@ -64,7 +62,7 @@ The '\n' character is accepted for line change.
 The "&" character can be used to define a mnemonic, the next character will be used as key.
 Use "&&" to show the "&" character instead of defining a mnemonic.
 The next control from the label will be activated from any control in the dialog using the "Alt+key" combination.
-The "&" is always consumed (so "&&" shows "&" in all drivers), but the "Alt+key" activation of the next control is only available in Win32, GTK, GTK 4 and Motif.
+The "&" is always consumed (so "&&" shows "&" in all drivers), but the "Alt+key" activation of the next control is only available in Win32, GTK, GTK 4, Motif, EFL and Haiku.
 
 **WORDWRAP**: enables or disable the wrapping of lines that does not fit in the label.
 Can be "YES" or "NO". Default: "NO". Can only set WORDWRAP=YES if ALIGNMENT=ALEFT.

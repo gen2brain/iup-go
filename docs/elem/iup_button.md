@@ -34,6 +34,7 @@ Default: NO.
 
 **FLAT** (creation-only): Hides the button borders until the mouse cursor enters the button area.
 The border space is always there. Can be YES or NO. Default: NO.
+On Android and iOS the button has no background; on Android an image-only flat button keeps the 48dp touch target.
 
 [FGCOLOR](../attrib/iup_fgcolor.md): Text color. Default: the global attribute DLGFGCOLOR.
 

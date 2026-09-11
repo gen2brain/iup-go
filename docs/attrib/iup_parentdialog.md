@@ -12,14 +12,14 @@ Default: NULL.
 
 This dialog will always be in front of the parent dialog.
 If the parent is minimized, this dialog is automatically minimized.
-The parent dialog must be mapped before mapping the child dialog.
+The parent dialog must be mapped; an unmapped parent is ignored.
 
 If PARENTDIALOG is not defined, then the NATIVEPARENT attribute is consulted.
 This one must be a native handle of an existing dialog.
 
-It can be changed after the dialog is mapped, but only if already set before map.
+It can be set or changed after the dialog is mapped.
 
-Not supported in Android and iOS, where dialogs have no independent parent-child window relationship.
+Not supported in WebAssembly, Android and iOS.
 
 Use [IupSetHandle](../func/iup_sethandle.md) or [IupSetAttributeHandle](../func/iup_setattributehandle.md) to associate a dialog to a name.
 

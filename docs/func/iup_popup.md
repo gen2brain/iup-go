@@ -31,7 +31,7 @@ The following definitions can also be used:
 **y**: vertical position of the top-left corner of the window or menu, relative to the origin of the main screen.
 The following definitions can also be used:
 
-- IUP_TOP: Positions the element on the top borderoffthe main screenthe main screen
+- IUP_TOP: Positions the element on the top border of the main screen
 - IUP_CENTER: Vertically centers the element on the main screen
 - IUP_BOTTOM: Positions the element on the bottom border of the main screen
 - IUP_MOUSEPOS: Positions the element on the mouse cursor

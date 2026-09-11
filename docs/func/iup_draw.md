@@ -1,9 +1,9 @@
 ## IupDraw
 
-A group of functions to draw in a [IupCanvas](../elem/iup_canvas.md) or a [IupBackgroundBox](../elem/iup_backgroundbox.md).
-They are simple functions designed to help the drawing of custom controls based on these two controls.
+Functions to draw in an [IupCanvas](../elem/iup_canvas.md) or an [IupBackgroundBox](../elem/iup_backgroundbox.md), from inside their ACTION callback.
+To redraw at any other time, call [IupUpdate](../func/iup_update.md) or [IupRedraw](../func/iup_redraw.md).
 
-To use the functions in C/C++, you must include the "iupdraw.h" header.
+In C/C++ the functions are declared in "iupdraw.h".
 
 Internally, IupDraw uses several drawing APIs depending on the platform:
 - **Windows (Win32)**: Direct2D or GDI+ via WinDrawLib
@@ -24,9 +24,6 @@ In Windows, Direct2D and GDI+ are accessed using the [WinDrawLib](https://github
 This library is embedded in IUP source code and uses run-time dynamic linking, so no extra libraries need to be linked by the application.
 
 The canvas has a read-only attribute called **DRAWDRIVER** that returns the active backend: D2D, GDI+, CAIRO, COCOA, COCOATOUCH, QT, FLTK, EFL_VG, X11, ANDROID or HAIKU.
-
-IMPORTANT: all functions can be used only in **IupCanvas** or **IupBackgroundBox** and inside the ACTION callback.
-To force a redraw anytime, use the functions [IupUpdate](../func/iup_update.md) or [IupRedraw](iup_draw.md).
 
 ### Control
 

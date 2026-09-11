@@ -18,14 +18,12 @@ When this size is smaller than a minimum limit in which all elements still fit t
 Actually, the virtual size of the dialog remains larger than its actual size on the screen, and some elements to the right and bottom are hidden by the borders of the dialog.
 
 The SHRINK attribute offers an alternative to this behavior.
-It makes the elements continue to rearrange, even if they must overlapi
+It makes the elements continue to rearrange, even if they must overlap.
 
 The results of this new rearrangement may vary according to the elements' distribution on the dialog.
 
 Shrink will be effective only for containers.
 For regular elements the current size will be set for a smaller value only if EXPAND is set.
-
-See the [Layout Guide](../layout.md#layout-guide) for more details on sizes.
 
 ### Affects
 

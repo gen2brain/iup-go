@@ -42,7 +42,7 @@ Application identifier used by the desktop environment.
 In GTK/Wayland, it maps to the XDG desktop file ID.
 On Haiku, it becomes the `BApplication` MIME signature.
 Also used by [IupConfig](../func/iup_config.md) as a last fallback when neither APP_NAME nor APPNAME is set.
-Supported in GTK, GTK 4, Qt, FLTK, EFL, WinUI and Haiku.
+Can be set once. Used by the desktop environment in GTK, GTK 4, Qt, FLTK and Haiku; only stored in the other drivers.
 On Android it is read-only and reflects the app's manifest application id.
 On iOS, it is read-only and reflects `CFBundleIdentifier` from the app's Info.plist.
 
@@ -51,7 +51,7 @@ On iOS, it is read-only and reflects `CFBundleIdentifier` from the app's Info.pl
 Application name used by the system.
 In Windows, it is used for the taskbar and tray. In macOS, it is used for the dock.
 Also used by [IupConfig](../func/iup_config.md) as a fallback when APP_NAME is not set (APPNAME is checked first, then APPID).
-Supported in Windows, macOS, Qt, EFL and WinUI.
+Used by the system in Win32, WinUI, macOS, Qt and EFL; only stored in the other drivers.
 On Android it is read-only and reflects the app's manifest label.
 On iOS, it is read-only and reflects `CFBundleDisplayName` (or `CFBundleName` if not set) from the app's Info.plist.
 
@@ -82,12 +82,17 @@ Available in Win32 and WinUI.
 
 By default, IUP uses strings in the current locale (See [FONT](iup_font.md) attribute).
 To use UTF-8 strings, set this attribute to YES. Default: NO.
-Not supported in Motif and WinUI.
+Not supported in iOS.
 
-### UTF8MODE_FILE [Windows Only]
+### UTF8AUTOCONVERT
+
+The inverse of UTF8MODE. Default: YES.
+Supported in GTK, GTK 4, Qt, FLTK, WinUI, macOS, iOS, Haiku and WebAssembly.
+
+### UTF8MODE_FILE [Win32 and Motif Only]
 
 By default, IUP uses file names in the current locale, even when UTF8MODE=YES.
-To use UTF-8 file names in Windows, set this attribute to YES. Default: NO.
+To use UTF-8 file names, set this attribute to YES. Default: NO.
 
 The main places affected by this attribute are **IupFileDlg** attributes, such as VALUE, FILE and DIRECTORY, and the DROPFILES_CB callback.
 
@@ -136,11 +141,10 @@ This affects **IupCanvas**, **IupList**, **IupText** and **IupTree**.
 Force the display of images in menus. Default: YES.
 Supported in GTK, GTK 4, Qt, EFL and WinUI.
 
-### OVERLAYSCROLLBAR [GTK Only]
+### OVERLAYSCROLLBAR [GTK, GTK 4 Only]
 
 Allow the overlay scrollbar in **IupCanvas** to use a minimum space.
 By default, IUP will use a regular scrollbar space even when overlay scrollbar is enabled in the system.
-Supported in GTK 3 and GTK 4.
 
 ### GLOBALMENU [GTK Only]
 
@@ -173,6 +177,10 @@ Force the size for stock images by controlling the image height.
 If that image size is not available, the stock image is resized to match the given size.
 By default, the size will be automatically calculated from the screen resolution: if res <= 144 DPI size = 24, if 192 DPI size = 32, else size = 48.
 The minimum resulted size when automatically resized is 24 pixels height.
+
+### TREEIMAGE24
+
+Forces the 24x24 default images in [IupFlatTree](../ctrl/iup_flattree.md). Default: NO.
 
 ### PROCESSWINDOWSGHOSTING [Windows Only]
 
@@ -348,6 +356,21 @@ Not available in WebAssembly.
 Returns the filename of the executable with full path.
 Depending on how the program is executed the argv[0] not always has the full executable path.
 
+### ARGV0 (read-only)
+
+The program path as received in argv[0].
+Supported in GTK, GTK 4, Qt, EFL, FLTK, WinUI and Haiku.
+
+### HELPAPP
+
+The browser used by [IupHelp](../func/iup_help.md). The IUP_HELPAPP environment variable takes precedence.
+Supported in GTK, GTK 4, Motif, EFL, FLTK and Haiku.
+
+### SANDBOX (read-only)
+
+Returns "FLATPAK", "SNAP" or "APPIMAGE" when the application runs inside one of those, NULL otherwise.
+Supported in GTK, GTK 4, Motif, Qt, EFL and FLTK.
+
 ### CACHEDIR, DATADIR, CONFIGDIR, TMPDIR (read-only)
 
 Per-user standard directories. The returned path is absolute and has no
@@ -393,17 +416,15 @@ Available in GTK, GTK 4, Qt, FLTK, EFL and Motif.
 
 ## Toolkit Versions and Themes
 
-### GTKVERSION (read-only) [GTK Only]
+### GTKVERSION (read-only) [GTK, GTK 4 Only]
 
 Returns the run time version of the GTK toolkit.
 This is the version being used at the time of the IupOpen function was called by the application.
-Available in GTK 3 and GTK 4.
 
-### GTKDEVVERSION (read-only) [GTK Only]
+### GTKDEVVERSION (read-only) [GTK, GTK 4 Only]
 
 Returns the development version of the GTK toolkit.
 This is the version at the time the IUP library was compiled.
-Available in GTK 3 and GTK 4.
 
 ### GSKRENDERER [GTK4 Only]
 
@@ -429,6 +450,10 @@ Returns the run time version of the Qt toolkit.
 
 Returns the development version of the Qt toolkit.
 This is the version at the time the IUP library was compiled.
+
+### QTBUILDTYPE (read-only) [Qt Only]
+
+Returns "Debug" or "Release", the build type of the Qt toolkit.
 
 ### QTSTYLE [Qt Only]
 
@@ -605,12 +630,10 @@ Usually is "0 0 0" - black.
 ### MENUBGCOLOR
 
 The default menu background color. Usually is "255 255 255" - white.
-Supported in Windows, macOS, Qt, EFL and WinUI.
 
 ### MENUFGCOLOR
 
 The system default menu foreground color. Usually is "0 0 0" - black.
-Supported in Windows, macOS, Qt, EFL and WinUI.
 
 ### TXTBGCOLOR
 

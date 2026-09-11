@@ -1,28 +1,24 @@
 ## KEY
 
-Associates a key to a menu item or submenu.
-Such key works as a shortcut when the menu is open, this is not a hot key.
+Underlines a character of the TITLE of a menu item or submenu.
+Pressing that character while the parent menu is open activates the item.
+For a submenu in the menu bar, Alt+character opens it from any control in the dialog.
+Same as writing "&" before that character in TITLE, see [IupMenuItem](../elem/iup_menuitem.md).
+Deprecated, use the "&" in TITLE.
+
+Not supported in Cocoa, EFL, Android and iOS.
+In Haiku the underline and the key are active when the system menu preference shows triggers, and Alt+character does not open a menu bar submenu.
 
 ### Value
 
-String containing a key description. It is a string representation of an IUP key code.
-Please refer to the [Keyboard Codes](iup_keyboard_codes.md) table for a list of the possible values.
+A single character. The first occurrence of it in TITLE is underlined.
+When the character is not in TITLE nothing is underlined.
 
 Default: NULL
 
 ### Notes
 
-IUP automatically underlines the first appearance of the chosen menu letter.
-For such, the chosen letter must necessarily be a part of the menu text.
-
-In Windows, when used will also set an underscore on the respective letter of the submenu title.
-
-The key will be used when navigating in the parent menu that contains the item.
-If the same character key is present in the title, then it will be underlined.
-
-In the menu bar, some systems automatically associate the ALT+<letter> combination for the chosen letter.
-
-Be careful not to misuse this attribute in relation to [K_ANY](../call/iup_k_any.md) or K_* callbacks.
+It is applied when TITLE is set. After mapping, a new KEY takes effect when TITLE is set again.
 
 ### Affects
 

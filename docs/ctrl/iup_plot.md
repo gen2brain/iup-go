@@ -175,12 +175,8 @@ Notice that if it fails during data read, but after the fist line, the datasets 
 ------------------------------------------------------------------------
 
     void IupPlotInsert(Ihandle *ih, int ds_index, int sample_index, double x, double y);
-    void IupPlotInsertSegment(Ihandle *ih, int ds_index, int sample_index, const char* x, double y);
+    void IupPlotInsertSegment(Ihandle *ih, int ds_index, int sample_index, double x, double y);
     void IupPlotInsertStr(Ihandle *ih, int ds_index, int sample_index, const char* x, double y);
-    iup.PlotInsertSegment(ih: ihandle, ds_index, sample_index: number, x: string, y: number)
-    or ih:InsertSegment(ds_index, sample_index: number, x: string, y: number)
-    iup.PlotInsertStr(ih: ihandle, ds_index, sample_index: number, x: string, y: number)
-    or ih:InsertStr(ds_index, sample_index: number, x: string, y: number)
 
 Inserts a sample in a dataset at the given **sample_index**.
 Can be used only after the dataset is added to the plot.
@@ -189,8 +185,6 @@ Can be used only after the dataset is added to the plot.
 
     void IupPlotInsertSamples(Ihandle *ih, int ds_index, int sample_index, double* x, double* y, int count);
     void IupPlotInsertStrSamples(Ihandle *ih, int ds_index, int sample_index, const char** x, double* y, int count);
-    iup.PlotInsertStrSamples(ih: ihandle, ds_index, sample_index: number, x, y: table of number, count: number)
-    or ih:InsertStrSamples(ds_index, sample_index: number, x, y: table of number, count: number)
 
 Inserts an array of samples in a dataset at the given **sample_index**.
 Can be used only after the dataset is added to the plot.
@@ -199,8 +193,6 @@ Can be used only after the dataset is added to the plot.
 
     void IupPlotAddSamples(Ihandle *ih, int ds_index, double* x, double* y, int count);
     void IupPlotAddStrSamples(Ihandle *ih, int ds_index, const char** x, double* y, int count);
-    iup.PlotAddStrSamples(ih: ihandle, ds_index: number, x, y: table of number, count: number)
-    or ih:AddStrSamples(ds_index: number, x, y: table of number, count: number)
 
 Adds an array of samples in a dataset at the end.
 Can be used only after the dataset is added to the plot.
@@ -209,8 +201,6 @@ Can be used only after the dataset is added to the plot.
 
     void IupPlotGetSample(Ihandle *ih, int ds_index, int sample_index, double *x, double *y);
     void IupPlotGetSampleStr(Ihandle *ih, int ds_index, int sample_index, const char* *x, double *y);
-    iup.PlotGetSampleStr(ih: ihandle, ds_index, sample_index: number) -> (x: string, y: number)
-    or ih:GetSampleStr(ds_index, sample_index: number) -> (x: string, y: number)
 
 Returns the sample value in a dataset at the given **sample_index**.
 Can be used only after the dataset is added to the plot.
@@ -290,9 +280,9 @@ Only works when DS_MODE is LINE, MARKLINE, AREA, STEP or ERRORBAR.
 
 ### Attributes (All non-inheritable, except when noted)
 
-**ANTIALIAS**: Enable or disable the anti-aliasing support when available. Default: YES.
+**ANTIALIAS**: Deprecated and ignored. Anti-aliasing is handled by the IupDraw API.
 
-**READONLY**: allow the selected samples to be removed when the Del key is pressed.
+**READONLY**: when NO, the user can remove the selected samples with the Del key; when YES, interactive editing and removal are disabled. Default: YES.
 
 **REDRAW** (write-only): redraw all plots and update the display.
 All other attributes will **NOT** update the display, so you can set many attributes without visual output.

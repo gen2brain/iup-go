@@ -32,7 +32,7 @@ Default: 0x0.
 
 [EXPAND](../attrib/iup_expand.md) (non-inheritable): The default value is "YES".
 
-**LAYOUTDRAG** (non-inheritable) [Windows Only]: When the scrollbar is moved automatically update the children layout.
+**LAYOUTDRAG** (non-inheritable) [Windows and Motif Only]: When the scrollbar is moved automatically update the children layout.
 Default: YES. If set to NO then the layout will be updated only when the mouse drag is released.
 
 [SCROLLBAR](../attrib/iup_scrollbar.md) (creation-only): the default value is "YES".

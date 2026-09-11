@@ -10,8 +10,7 @@ Values should be between 0 and 255, separated by a blank space.
 For example, "255 0 128", red=255 blue=0 green=128.
 
 Alpha is optional and assumed to be 255 if not specified.
-It is only used by custom controls drawn by IUP, such as IupGauge, IupDial, and all IupFlat* controls.
-Not supported by the Motif driver; in FLTK only when built with Cairo.
+It is used only by the controls drawn with [IupDraw](../func/iup_draw.md), such as IupGauge, IupDial and the IupFlat* controls, with the driver limits listed there.
 
 **Default**: It is the value of the DLGBGCOLOR or TXTBGCOLOR global attributes.
 TXTBGCOLOR is used on IupText, IupList, and IupTree (Usually is "255 255 255" - white.).

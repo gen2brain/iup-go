@@ -10,8 +10,7 @@ Values should be between 0 and 255, separated by a blank space.
 For example, "255 0 128", red=255 blue=0 green=128.
 
 Alpha is optional and assumed to be 255 if not specified.
-But it is only supported in custom controls drawn by IUP, example IupGauge, IupDial, all IupFlat* controls, and only when using OpenGL, Cairo or Direct2D draw drivers.
-It is never supported when using X11, GDI or GDK draw drivers.
+It is used only by the controls drawn with [IupDraw](../func/iup_draw.md), such as IupGauge, IupDial and the IupFlat* controls, with the driver limits listed there.
 
 **Default**: It is the value of the DLGFGCOLOR or TXTFGCOLOR global attribute.
 TXTFGCOLOR is used on IupText, IupList, and IupTree.  Usually is "0 0 0" - black.

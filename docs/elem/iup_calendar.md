@@ -17,7 +17,7 @@ Creates a month calendar interface element, where the user can select a date.
 Can be set to "TODAY". Default value is the today date.
 
 **WEEKNUMBERS**: Shows the number of the week along the year. Default: NO.
-Not supported in WinUI, macOS, Android and iOS.
+Not supported in WinUI, macOS, EFL, Android and iOS.
 
 ### Callbacks
 

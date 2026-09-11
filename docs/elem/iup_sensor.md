@@ -17,7 +17,6 @@ Supported in Win32, WinUI, Android, iOS and WebAssembly.
 "GRAVITY", "LINEARACCELERATION", "ORIENTATION" or "COMPASS". Default: "ACCELEROMETER".
 Can be changed only while ACTIVE=NO.
 GRAVITY and LINEARACCELERATION are not supported in Win32.
-MAGNETOMETER is not supported in WebAssembly.
 
 **ACTIVE** (non-inheritable): Starts readings when "YES" and stops them when "NO". Default: "NO".
 Readings are stopped when the element is destroyed.
