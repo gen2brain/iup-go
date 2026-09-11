@@ -101,7 +101,7 @@ static int qtFontDlgPopup(Ihandle* ih, int x, int y)
   QFontDialog* dialog = new QFontDialog(parent);
   dialog->setCurrentFont(initial_font);
 
-  /* PREVIEWTEXT, SHOWCOLOR and HELP_CB need the non-native dialog */
+  /* PREVIEWTEXT and HELP_CB need the non-native dialog */
   const char* preview_text = iupAttribGet(ih, "PREVIEWTEXT");
   bool has_help = (IupGetCallback(ih, "HELP_CB") != nullptr);
 
@@ -188,7 +188,6 @@ static int qtFontDlgPopup(Ihandle* ih, int x, int y)
   else
   {
     iupAttribSet(ih, "VALUE", nullptr);
-    iupAttribSet(ih, "COLOR", nullptr);
     iupAttribSet(ih, "STATUS", nullptr);
   }
 
@@ -205,7 +204,5 @@ extern "C" IUP_SDK_API void iupdrvFontDlgInitClass(Iclass* ic)
 {
   ic->DlgPopup = qtFontDlgPopup;
 
-  iupClassRegisterAttribute(ic, "COLOR", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SHOWCOLOR", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "PREVIEWTEXT", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
 }
