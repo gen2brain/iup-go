@@ -67,6 +67,21 @@ func main() {
 		return iup.DEFAULT
 	}))
 
+	btnBalloon := iup.Button("Show Balloon")
+	btnBalloon.SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
+		tray := iup.GetHandle("tray")
+		tray.SetAttributes(map[string]string{
+			"TIPBALLOONTITLE":     "IupTray",
+			"TIPBALLOONTITLEICON": "1",
+			"TIPBALLOON":          "YES",
+		})
+		tray.SetAttribute("TIP", "Balloon notification at "+time.Now().Format("15:04:05"))
+		tray.SetAttribute("TIPBALLOON", "NO")
+		tray.SetAttribute("TIP", "IupTray - Right-click for menu")
+		appendLog("Balloon shown")
+		return iup.DEFAULT
+	}))
+
 	btnHideTray := iup.Button("Hide Tray")
 	btnHideTray.SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
 		tray := iup.GetHandle("tray")
@@ -94,6 +109,7 @@ func main() {
 				btnShowTray,
 				btnHideTray,
 				btnChangeTip,
+				btnBalloon,
 				btnClearLog,
 			).SetAttributes("GAP=5"),
 			iup.Label("Event Log:"),
