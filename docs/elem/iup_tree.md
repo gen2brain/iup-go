@@ -175,7 +175,7 @@ It is the default operation mode (MARKMODE=SINGLE). In this mode, only one node 
 
 IupTree allows marking several nodes simultaneously using the Shift and Control keys.
 To use multiple marking set MARKMODE=MULTIPLE.
-In GTK, Motif and EFL, multiple nodes can also be selected using a rubber band if SHOWDRAGDROP=NO.
+In GTK, GTK 4 and Qt, when MARKMODE=MULTIPLE multiple nodes can also be selected using a rubber band, controlled by the RUBBERBAND attribute. In GTK this requires SHOWDRAGDROP=NO.
 
 When a user keeps the Control key pressed, the individual marking mode is used.
 This way, the focus node can be modified without changing the marked node.

@@ -150,6 +150,16 @@ To obtain a key code for a generic combination you can start with the base key f
 |          F10 | K_F10           |
 |          F11 | K_F11           |
 |          F12 | K_F12           |
+|          F13 | K_F13           |
+|          F14 | K_F14           |
+|          F15 | K_F15           |
+|          F16 | K_F16           |
+|          F17 | K_F17           |
+|          F18 | K_F18           |
+|          F19 | K_F19           |
+|          F20 | K_F20           |
+|        Clear | K_CLEAR         |
+|         Help | K_HELP          |
 |   Left Shift | K_LSHIFT        |
 |  Right Shift | K_RSHIFT        |
 |    Left Ctrl | K_LCTRL         |
@@ -159,6 +169,8 @@ To obtain a key code for a generic combination you can start with the base key f
 |  Scroll Lock | K_SCROLL        |
 |     Num Lock | K_NUM           |
 |    Caps Lock | K_CAPS          |
+
+K_CLEAR is reported in Win32, WinUI and macOS. K_HELP is reported in macOS, iOS, Qt and FLTK.
 
 The numeric keypad has its own codes, so its keys can be distinguished from the main keyboard.
 When Num Lock is off the navigation codes are reported, when it is on the digit codes are reported.

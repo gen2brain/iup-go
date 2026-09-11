@@ -40,7 +40,7 @@ Can be set to NULL. If NULL, BORDERCOLOR will be used instead.
 
 **BORDERWIDTH**: line width used for borders. Default: "1".
 Any borders can be hidden by simply setting this value to 0.
-This is for the **IupFlatButton** drawn border.
+This is for the **IupFlatVal** drawn border.
 
 **CANFOCUS** (creation-only) (non-inheritable): enables the focus traversal of the control.
 In Windows the control will still get the focus when clicked. Default: YES.

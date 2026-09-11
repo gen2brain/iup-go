@@ -272,7 +272,7 @@ Can be YES or NO. The Window client area is expanded to include the whole window
 Notice that the dialog attributes like BORDER, RESIZE, MAXBOX, MINBOX and TITLE must still be defined.
 But maximize, minimize and close buttons must be manually implemented in the BUTTON_CB callback.
 One drawback is that menu bars will not work.
-Uses GDI drawing in the callback, which has no WinUI equivalent; for WinUI use CUSTOMFRAME instead.
+Not available in WinUI, use CUSTOMFRAME instead.
 
 **CUSTOMFRAMECAPTIONHEIGHT** [Win32, WinUI Only] (non-inheritable): height of the caption area.
 If not defined it will use the system size.

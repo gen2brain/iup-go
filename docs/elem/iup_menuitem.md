@@ -15,8 +15,9 @@ Creates an item of the menu interface element. When selected, it generates an ac
 **AUTOTOGGLE** (non-inheritable): enables the automatic toggle of VALUE state when the item is activated.
 Default: NO.
 
-[KEY](../attrib/iup_key.md) (non-inheritable): Underlines a key character in the submenu title.
-It is updated only when TITLE is updated.  Deprecated**, use the mnemonic support directly in the TITLE attribute.
+[KEY](../attrib/iup_key.md) (non-inheritable): Underlines a character of the item title.
+It is applied when TITLE is set. Deprecated, use the "&" in TITLE.
+
 **HIDEMARK**: If enabled the item cannot be checked, since the checkbox will not be shown.
 If all items in a menu enable it, then no empty space will be shown in front of the items.
 If your item will not be marked you must set HIDEMARK=YES, but if VALUE is defined the default goes back to NO.
@@ -36,9 +37,15 @@ The "&" character can be used to define a mnemonic, the next character will be u
 Use "&&" to show the "&" character instead on defining a mnemonic.
 When in a menu bar an item that has a mnemonic can be activated from any control in the dialog using the "Alt+key" combination.
 
-The text also accepts the control character '\t' to force text alignment to the right after this character.
-This is used to add shortcut keys to the menu, aligned to the right, ex: "Save\tCtrl+S", but notice that the shortcut key (also known as Accelerator or Hot Key) still has to be implemented.
-To implement a shortcut, use the K_* callbacks in the dialog.
+The text after a '\t' is the shortcut of the item, shown right-aligned, ex: "Save\tCtrl+S".
+When it is a key description and the item is in the menu bar of a dialog, pressing the key in that dialog activates the item like a click, from any control, and the key is not delivered to the K_* callbacks.
+A key description is zero or more of "Ctrl+", "Shift+", "Alt+" and "Sys+" followed by a letter, a digit, a printable character, F1 to F20, Esc, Tab, Space, Enter, Backspace, Del, Ins, Home, End, PgUp, PgDn, Left, Right, Up or Down.
+A letter, digit or printable character without a modifier is not a key description.
+Any other text is only shown. In a popup menu the shortcut is only shown.
+In Qt and FLTK a key the focused text control edits with stays with the text control.
+In Cocoa and Haiku, Ctrl and Sys are shown and bound as the Command key, and text that is not a key description is not shown.
+In Haiku, F1 to F20 are not bound and not shown.
+Not bound in Android and iOS. Not shown in EFL.
 
 **TITLEIMAGE** (non-inheritable): Image name of the title image.
 In Windows, it appears before of the title text and after the check mark area (so both title and title image can be visible).

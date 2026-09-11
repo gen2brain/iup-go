@@ -16,13 +16,13 @@ All elements that are containers, except menus.
 
 ### Notes
 
-In GTK 3, Motif and EFL, for the **IupDialog**, the dy value is negative when there is a menu.
-This occurs because in those systems the menu is placed inside the Client Area and all children must be placed below the menu.
-In Windows and macOS, it will return 0x0, except when CUSTOMFRAMEDRAW is used.
-In GTK 4, returns positive border on dx and border+caption+menu on dy.
+For the **IupDialog**: in GTK 3, Motif and EFL, dy is minus the menu height when there is a menu.
+In GTK 4 and WebAssembly, dx is the border and dy is border+caption+menu.
+In Win32 and macOS the same values are returned when CUSTOMFRAMEDRAW=YES, "0x0" otherwise.
+In the other drivers it is "0x0".
 
-In Windows, for the **IupFrame**, the value is always "0x0" the position of the child is still relative to the top-left corner of the frame.
-This is automatically compensated in calculation of the POSITION attribute.
+For the **IupFrame**: in Win32, WinUI, EFL, iOS and WebAssembly the value is "0x0" and the POSITION of a child is already relative to the top-left corner of the frame.
+In the other drivers it is the frame border plus the title height.
 
 ### See Also
 

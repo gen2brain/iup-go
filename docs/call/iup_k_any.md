@@ -29,6 +29,7 @@ If the callback does not exists it is automatically propagated to the parent of 
 All defined keys are also callbacks of any element, called when the respective key is activated.
 For example: "K_cC" is also a callback activated when the user press Ctrl+C, when the focus is at the element or at a children with focus.
 This is the way an application can create shortcut keys, also called hot keys.
+A key bound as the shortcut of a menu bar item ([IupMenuItem](../elem/iup_menuitem.md) TITLE) activates the item and is not delivered to these callbacks.
 
 ### Affects
 

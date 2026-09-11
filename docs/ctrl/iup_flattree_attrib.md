@@ -6,7 +6,7 @@
 Set to NO to change many nodes without updating the display. Default: "YES".
 
 [BGCOLOR](../attrib/iup_bgcolor.md): Background color of the tree.
-Default: the global attribute TXTBGCOLOR.
+Default: "255 255 255".
 
 [EXPAND](../attrib/iup_expand.md) (non-inheritable): The default value is "YES".
 
@@ -21,7 +21,7 @@ It is drawn inside the canvas, so inside the scrollbars.
 
 **FGCOLOR**: default text foreground color.
 Once each node is created it will not change its color when FGCOLOR is changed.
-Default: the global attribute TXTFGCOLOR.
+Default: "0 0 0".
 
 **HLCOLOR** (non-inheritable): the color of a filled box drawn over the selected node.
 Default: TXTHLCOLOR global attribute.
@@ -40,7 +40,7 @@ If not defined FORECOLORid will be used.
 **INDENTATION**: sets the indentation level in pixels.
 Default: 16 for standard resolution, 24 for high resolution display
 
-[RASTERSIZE](../attrib/iup_rastersize.md) (non-inheritable): the initial size is "400x200".
+[RASTERSIZE](../attrib/iup_rastersize.md) (non-inheritable): there is no fixed initial size; set SIZE or RASTERSIZE.
 Set to NULL to allow the automatic layout use smaller values.
 
 **SPACING**: vertical space between nodes. Notice that this is not the same as the IupTree.
@@ -153,7 +153,7 @@ Default: "NO".
 **EMPTYTOGGLE**: when SHOWTOGGLE=YES, the empty space left in nodes that TOGGLEVISIBLEid=NO is filled with a blank space.
 Can be YES or NO. Default: NO.
 
-**TOGGLEVALUEid**: defines the toggle state. Values can be "ON" or "OFF". If SHOW3STATE=YES then can also be "NOTDEF".
+**TOGGLEVALUEid**: defines the toggle state. Values can be "ON" or "OFF". If SHOWTOGGLE=3STATE then can also be "NOTDEF".
 Default: "OFF".
 
 **TOGGLEVISIBLEid**: defines the toggle visible state. Values can be "YES" or "NO". Default: "YES".

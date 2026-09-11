@@ -154,7 +154,7 @@ Not available on EGL, macOS, and Haiku (indexed color mode not supported).
 
 Creates a bitmap display list from the current FONT attribute.
 See the documentation of the wglUseFontBitmaps (Windows) and glXUseXFont (GLX) functions.
-Not available on EGL or Haiku. On macOS, this function uses Core Text to rasterize glyphs into bitmaps.
+Not available on EGL, macOS or Haiku.
 
     void IupGLWait(int gl)
 

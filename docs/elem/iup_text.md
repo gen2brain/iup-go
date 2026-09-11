@@ -290,6 +290,16 @@ For single line controls, **lin** is always 1, and **pos** is always "**col**-1"
 
 [DROPFILES_CB](../call/iup_dropfiles_cb.md): Action generated when one or more files are dropped in the element.
 
+**LINK_CB**: Action generated when text carrying a LINK format tag is clicked, see [FORMATTING](../attrib/iup_formatting.md).
+Markdown links set that tag.
+
+    int function(Ihandle *ih, const char *url);
+
+**ih**: identifier of the element that activated the event.\
+**url**: the value of the LINK tag.
+
+**Returns**: IUP_DEFAULT opens the URL with [IupHelp](../func/iup_help.md), which is also what happens when the callback is not defined. IUP_IGNORE leaves the URL alone. IUP_CLOSE will be processed.
+
 [MOTION_CB](../call/iup_motion_cb.md): Action generated when the mouse is moved.
 Use [IupConvertXYToPos](../func/iup_convertxytopos.md) to convert (x,y) coordinates in character positioning.
 

@@ -6,7 +6,8 @@ Element identifier in the native interface system.
 
 The native handle type depends on the driver:
 
-- **Windows (Win32 and WinUI)**: returns the **HWND** handle.
+- **Win32**: returns the **HWND** handle.
+- **WinUI**: returns the XAML **UIElement** (as void*) for controls, and the window **HWND** for the dialog.
 - **GTK 2, GTK 3 and GTK 4**: returns the **GtkWidget*** handle.
 - **Motif**: returns the **Widget** handle.
 - **macOS**: returns the **NSView*** or **NSWindow*** handle (as void*).

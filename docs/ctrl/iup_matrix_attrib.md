@@ -80,7 +80,7 @@ When type is FILL, the cell value is interpreted as percentage and a rectangle s
 When type is IMAGE, the cell value is interpreted as an image name, and if an image exists with that name is drawn (the name cannot be of a Windows resource or GTK stock image).
 Only TEXT and IMAGE are affected by alignment attributes. Default: TEXT.
 
-**BGCOLOR**: Background color of the matrix. (inheritable)\
+**BGCOLOR**: Background color of the matrix. (non-inheritable)\
 **BGCOLOR**`*:C`: Background color of column C.\
 **BGCOLOR**`L:*`: Background color of line L.\
 **BGCOLOR**`L:C`: Background color of the cell in line L and column C.
@@ -89,7 +89,7 @@ When more than one attribute are defined, the background color will be selected 
 Default BGCOLOR is the global attribute TXTBGCOLOR for cells and the parent's BGCOLOR for titles.\
 Since the matrix control can be larger than the matrix itself, the empty area will always be filled with the parent's BGCOLOR.
 
-**FGCOLOR**: Text color. (inheritable)\
+**FGCOLOR**: Text color. (non-inheritable)\
 **FGCOLOR**`*:C`: Text color of column C.\
 **FGCOLOR**`L:*`: Text color of line L.\
 **FGCOLOR**`L:C`: Text color of the cell in line L and column C.
@@ -97,7 +97,7 @@ Since the matrix control can be larger than the matrix itself, the empty area wi
 When more than one attribute are defined, the text color of a cell will be selected following this priority: `FGCOLORL:C`, `FGCOLORL:*`, `FGCOLOR*:C`, and last FGCOLOR. (L or C >= 0)\
 Default FGCOLOR is the global attribute TXTFGCOLOR for cells or the global attribute DLGFGCOLOR for titles.
 
-**[FONT](../attrib/iup_font.md)**: Character font of the text. (inheritable)\
+**[FONT](../attrib/iup_font.md)**: Character font of the text. (non-inheritable)\
 **FONT**`L:*`: Text font of the cells in line L.\
 **FONT**`*:C`: Text font of the cells in column C.\
 **FONT**`L:C`: Text font of the cell in line L and column C.
@@ -107,7 +107,7 @@ It affects the calculation of the size of all the matrix cells.
 The cell size is always calculated from the base FONT attribute.
 `FONTSTYLEL:C` and `FONTSIZEL:C` can also be used to set FONT changing only the font style or size.
 
-**FRAMECOLOR**: Sets the color to be used in the frame lines. (inheritable)\
+**FRAMECOLOR**: Sets the color to be used in the frame lines. (non-inheritable)\
 **FRAMEVERTCOLOR**`L:C`: Color of the vertical right frame line of the cell.
 When not defined the `FRAMEVERTCOLOR*:C` is used.
 For a title column cell (col=0) defines right and left frames, except if `FRAMETITLEVERTCOLORL:C` is defined.
@@ -215,9 +215,9 @@ When this is possible, the user can change the size of a column by dragging the 
 Possible values: "YES" or "NO". Default: "NO" (does not allow interactive width change).
 The minimum size is 0 by default, the column is then hidden, but it can be controlled by the MINCOLWIDTHid and MINCOLWIDTHDEF attributes.
 
-**RESIZEDRAG**: Resize the column while dragging.
-By default, the column is resized only when the mouse button is released, the resize feedback is a simple vertical line.
-Works only when RESIZEMATRIX=YES. Default: NO.
+**RESIZEDRAG**: Resize the column interactively while dragging.
+When NO, the column is resized only when the mouse button is released, and the resize feedback is a simple vertical line.
+Works only when RESIZEMATRIX=YES. Default: YES.
 
 **ALLOWREORDER** (non-inheritable): enables the user to reorder columns by dragging a column title.
 Can be "YES" or "NO". Default: "NO".

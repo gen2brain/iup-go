@@ -52,7 +52,7 @@ If it is not defined then the ARROWIMAGE is used and its colors will be replaced
 If it is not defined then the ARROWIMAGE is used.
 
 **ARROWPADDING** (non-inheritable): internal margin for the arrow. It is inside ARROWSIZE.
-Default: 5.
+Default: 4.
 
 **ARROWSIZE** (non-inheritable): size of the area occupied by the arrow, even when using images.
 Default: 24

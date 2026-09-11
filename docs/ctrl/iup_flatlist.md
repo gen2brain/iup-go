@@ -45,7 +45,7 @@ See also [IupImage](../elem/iup_image.md).
 Aspect ratio is NOT preserved. Can be YES or NO. Default: NO.
 
 [BGCOLOR](../attrib/iup_bgcolor.md): Background color of the text.
-Default: the global attribute TXTBGCOLOR.
+Default: "255 255 255".
 
 **BORDER** (creation-only): the default value is "NO". This is the **IupCanvas** border.
 It is displayed around the scrollbars.
@@ -66,7 +66,7 @@ Default: NO.
 **DROPFILESTARGET** (non-inheritable): Enable or disable the drop of files.
 Default: NO, but if DROPFILES_CB is defined when the element is mapped then it will be automatically enabled.
 
-[FGCOLOR](../attrib/iup_fgcolor.md): Text color. Default: the global attribute TXTFGCOLOR.
+[FGCOLOR](../attrib/iup_fgcolor.md): Text color. Default: "0 0 0".
 
 **FOCUSFEEDBACK** (non-inheritable): draw the focus feedback. Can be YES or NO. Default: YES.
 
@@ -129,12 +129,12 @@ Default: "NO".
 
 **REMOVEITEM** (write-only): removes the given value. value starts at 1.
 If value is NULL or "ALL" removes all the items. Different from IupList, can be set before map.
-
+[SCROLLBAR](../attrib/iup_scrollbar.md): Default: YES. When FLATSCROLLBAR is enabled it is automatically set to NO, hiding the native scrollbars.
 [SCROLLBAR](../attrib/iup_scrollbar.md) (read-only): is always "NO". So the IupCanvas native scrollbars are hidden.
 See the FLATSCROLLBAR attribute below. YAUTOHIDE and XAUTOHIDE will always be YES.
 
 [FLATSCROLLBAR](iup_flatscrollbar.md): Can be YES, Vertical or Horizontal.
-Can be set only before map. Default: YES.
+Can be set only before map. Default: NO.
 
 **SHOWDRAGDROP** (creation-only) (non-inheritable): enables the internal drag and drop of items in the same list, and enables the **DRAGDROP_CB** callback.
 Default: "NO". Works only if MULTIPLE=NO.

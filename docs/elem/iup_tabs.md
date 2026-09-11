@@ -36,7 +36,7 @@ Same value returned by **IupGetChildCount**.
 
 [FGCOLOR](../attrib/iup_fgcolor.md): Tabs title color.
 Not supported in EFL.
-In Win32 it is applied only when SHOWCLOSE=YES; in FLTK only the selected tab title is colored.
+In Win32 it is applied only when SHOWCLOSE=YES or in dark mode; in FLTK only the selected tab title is colored.
 Default: the global attribute DLGFGCOLOR.
 
 **ALLOWREORDER** (non-inheritable): enables the user to reorder tabs by dragging them.
@@ -62,7 +62,7 @@ Can be "YES" or "NO". Default: "NO".
 All child elements are considered even invisible ones.
 
 **TABORIENTATION** (non-inheritable): Indicates the orientation of tab text, which can be "HORIZONTAL" or "VERTICAL".
-Default is "HORIZONTAL". VERTICAL can be set in GTK, GTK 4, Qt and macOS.
+Default is "HORIZONTAL". VERTICAL can be set in GTK, GTK 4, Qt, macOS and WebAssembly.
 In Win32 and Haiku VERTICAL is also available but is not set directly: it follows the TABTYPE attribute, with TABTYPE=LEFT or TABTYPE=RIGHT giving VERTICAL and TABTYPE=TOP or TABTYPE=BOTTOM giving HORIZONTAL.
 
 **TABPADDING** (non-inheritable): internal margin of the tab title.
@@ -71,8 +71,8 @@ Default value: "0x0".
 
 **TABTYPE** (non-inheritable): Indicates the type of tab, which can be "TOP", "BOTTOM", "LEFT" or "RIGHT".
 Default is "TOP".
-LEFT and RIGHT are supported in Win32, GTK, GTK 4, Motif, Qt, macOS and Haiku. In iOS and FLTK only TOP and BOTTOM are supported. In EFL, WinUI and Android only TOP is supported.
-It can be changed after map only in macOS and iOS; in the other drivers it is set only before mapping.
+LEFT and RIGHT are supported in Win32, GTK, GTK 4, Motif, Qt, macOS and Haiku. In iOS, FLTK and Android only TOP and BOTTOM are supported. In EFL and WinUI only TOP is supported.
+It can be changed after map in GTK, GTK 4, Motif, macOS, iOS, Android and WebAssembly; in Win32, Qt, FLTK and Haiku it is set only before mapping.
 In Win32, TABTYPE=LEFT or TABTYPE=RIGHT also sets MULTILINE=YES and TABORIENTATION=VERTICAL, and TABTYPE=TOP or TABTYPE=BOTTOM sets TABORIENTATION=HORIZONTAL.
 In Win32, when not TOP the visual style is removed from the tabs.
 

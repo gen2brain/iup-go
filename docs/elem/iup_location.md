@@ -14,6 +14,7 @@ Not supported in Haiku.
 ### Attributes
 
 **ACTIVE** (non-inheritable): Starts position updates when "YES" and stops them when "NO". Default: "NO".
+No LOCATION_CB is called after it is set to "NO", not even for a fix already received.
 Starting asks the user for permission if the platform requires it, see PERMISSION_CB.
 Updates are stopped when the element is destroyed.
 

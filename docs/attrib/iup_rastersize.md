@@ -11,7 +11,7 @@ See the [Layout Guide](../layout.md#layout-guide) for more details on sizes.
 You can also set only one of the parameters by removing the other one and maintaining the separator "x", but this is the equivalent of setting the other value to 0.
 For example, "x40" (height only = "0x40") or "40x" (width only = "40x0").
 
-When this attribute is consulted, the **Current** size of the control is returned.
+When consulted after the element is mapped, the **Current** size is returned; before mapping, the **User** size is returned.
 If both values are 0, then NULL is returned.
 
 ### Affects

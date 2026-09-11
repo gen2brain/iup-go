@@ -38,7 +38,7 @@ Not supported in Android and iOS.
 Set to NO to add many items to the list without updating the display. Default: "YES".
 
 [BGCOLOR](../attrib/iup_bgcolor.md): Background color of the text. Default: the global attribute TXTBGCOLOR.
-In GTK does nothing when DROPDOWN=YES.
+In GTK when DROPDOWN=YES it does not reach the dropdown popup menu.
 
 **CANFOCUS** (creation-only) (non-inheritable): enables the focus traversal of the control.
 In Windows the control will still get the focus when clicked. Default: YES.
@@ -64,7 +64,7 @@ Default: NO, but if DROPFILES_CB is defined when the element is mapped then it w
 To select another option, the user must press this button, which displays all items in the list.
 Can be "YES" or "NO". Default "NO".
 
-**DROPEXPAND** [Win32, macOS, GTK and Qt Only]: When DROPDOWN=YES, the size of the dropped list will expand to include the largest text.
+**DROPEXPAND** [Win32, macOS, GTK, Qt and WebAssembly Only]: When DROPDOWN=YES, the size of the dropped list will expand to include the largest text.
 Can be "YES" or "NO". Default: "YES".
 
 **EDITBOX** (creation-only): Adds an edit box to the list. Can be "YES" or "NO". Default "NO".
@@ -156,7 +156,7 @@ If not, does nothing. Works only when EDITBOX=YES.
 
 **VISIBLEITEMS**: Number of items that are visible when DROPDOWN=YES is used for the dropdown list.
 Default: 5.
-Not supported in GTK, GTK 4, FLTK, iOS and Haiku.
+Not supported in GTK, GTK 4, FLTK, WebAssembly, iOS and Haiku.
 
 **VISIBLECOLUMNS**: Defines the number of visible columns for the **Natural Size**, this means that will act also as minimum number of visible columns.
 It uses a wider character size then the one used for the SIZE attribute, so strings will fit better without the need of extra columns.

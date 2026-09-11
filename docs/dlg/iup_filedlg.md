@@ -117,9 +117,8 @@ VALUE0 contains the path (same value returned in DIRECTORY), and VALUE1, VALUE2,
 **MULTIVALUEPATH**: force a full path in MULTIVALUE and VALUE attributes when MULTIPLEFILES=YES (id=0 will still contain the path of the first file).
 In Windows and Motif, only files in the same folder may be selected, but in GTK when using the "Recent Files" files from different folders can be selected.
 
-**VALUE_URI** [Android Only] (read-only) (non-inheritable): SAF `content://` URI of the last successful pick.
-VALUE keeps a cache-staged path for fopen compatibility; VALUE_URI is the stable identifier to persist for recent-files (`IupConfigRecentUpdate`).
-The driver calls `takePersistableUriPermission` on the URI so it survives app restarts, no manifest permission needed.
+**VALUE_URI** [Android Only] (read-only) (non-inheritable): the `content://` URI of the selected file. Use it with `IupConfigRecentUpdate`.
+The URI stays valid after the application restarts.
 
 ### Callbacks
 
@@ -203,7 +202,7 @@ The underlying native widget per driver:
 - **Haiku**: BFilePanel.
 - **WebAssembly**: the browser file picker; OPEN reads one file, SAVE downloads. No directory selection or filesystem paths. EXTFILTER and FILTER are mapped to the picker extension list, `*.*` accepting everything.
 
-On Android, SAF returns `content://` URIs rather than filesystem paths. The driver stages the picked URI into the app's `getCacheDir()` so VALUE stays fopen-able for the session, and in SAVE mode the cache file is flushed back to the URI when the FileDlg is destroyed. VALUE_URI exposes the raw SAF URI for persistent use (recent-files). DIALOGTYPE=DIR is not supported (SAF tree URIs are not filesystem paths). EXTFILTER and FILTER are mapped to MIME types for the Intent; only the first pattern is used.
+On Android, VALUE is a copy of the selected file in a directory under the application cache, named as the file. In SAVE mode the copy is written back to the selected document when the dialog is destroyed. DIALOGTYPE=DIR is not supported. Only the first pattern of EXTFILTER or FILTER is used, as a MIME type.
 
 ### Examples
 

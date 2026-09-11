@@ -19,7 +19,7 @@ Inherits all attributes and callbacks of the [IupLabel](iup_label.md), but redef
 
 [FGCOLOR](../attrib/iup_fgcolor.md): Text color. Default: the global attribute LINKFGCOLOR.
 
-**URL**: the default value is "YES".
+**URL**: the destination address of the link, set from the *url* creation parameter. It can be any text.
 
 ### Callbacks
 

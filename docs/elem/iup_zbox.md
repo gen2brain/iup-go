@@ -69,7 +69,7 @@ Default: "NO".
 
 The box can be created with no elements and be dynamic filled using [IupAppend](../func/iup_append.md) or [IupInsert](../func/iup_insert.md).
 
-Its children automatically receive a name when the child is appended or inserted into the tabs.
+Its children automatically receive a name when the child is appended or inserted into the zbox.
 
 The ZBOX relies on the VISIBLE attribute.
 If a child that is hidden by the zbox has its VISIBLE attribute changed then it can be made visible regardless of the zbox configuration.

@@ -95,8 +95,7 @@ Cell specification is always "lin:col".
 
 Color values are in the "R G B A" format. Each component from 0 to 255.
 Alpha is optional and assumed to be 255 if not specified.
-But it is only supported in custom controls drawn by IUP, example IupGauge, IupDial, all IupFlat* controls, and only when using OpenGL, Cairo or Direct2D draw drivers.
-Alpha is never supported when using X11, GDI or GDK draw drivers.
+It is used only by the controls drawn with [IupDraw](func/iup_draw.md), such as IupGauge, IupDial and the IupFlat* controls, with the driver limits listed there.
 Color values can also be specified in hexadecimal notation in the format "#RRGGBBAA".
 
 With **IupSetAttribute** you can also store application pointers that can be strings or not.

@@ -32,7 +32,7 @@ The canvas is automatically redrawn only if this callback is NOT defined.
 
 ### Notes
 
-Line and page operations are reported in Win32, Motif, GTK, Qt, WinUI and Cocoa; the drag operations IUP_SBDRAGH/IUP_SBDRAGV only in Win32 and Motif (the others use IUP_SBPOSH/IUP_SBPOSV during a drag). GTK 4, FLTK, EFL, Haiku, Android and iOS report only IUP_SBPOSH/IUP_SBPOSV. For portability prefer reading POSX and POSY.
+Line and page operations are reported in Win32, Motif, GTK, Qt, WinUI and Cocoa; the drag operations IUP_SBDRAGH/IUP_SBDRAGV only in Win32 and Motif (the others use IUP_SBPOSH/IUP_SBPOSV during a drag). GTK 4, FLTK, EFL, Haiku and iOS report only IUP_SBPOSH/IUP_SBPOSV. For portability prefer reading POSX and POSY.
 
 ### Affects
 

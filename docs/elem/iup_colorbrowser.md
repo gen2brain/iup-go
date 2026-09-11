@@ -27,10 +27,10 @@ For a dialog that simply returns the selected color, you can use function [IupGe
 [RASTERSIZE](../attrib/iup_rastersize.md) (non-inheritable): the initial size is "181x181".
 Set to NULL to allow the automatic layout to use smaller values.
 
-**RGB** (non-inheritable): the color selected in the control, in the "r g b"? format; r, g and b are integers ranging from 0 to 255.
+**RGB** (non-inheritable): the color selected in the control, in the "r g b" format; r, g and b are integers ranging from 0 to 255.
 Default: "255 0 0".
 
-**HSI** (non-inheritable): the color selected in the control, in the "h s i"? format; h, s and i are floating point numbers ranging from 0-360, 0-1 and 0-1 respectively.
+**HSI** (non-inheritable): the color selected in the control, in the "h s i" format; h, s and i are floating point numbers ranging from 0-360, 0-1 and 0-1 respectively.
 
 > 
 >

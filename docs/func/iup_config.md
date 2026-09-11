@@ -7,7 +7,7 @@ To use the functions in C/C++, you must include the "iup_config.h" header.
 
 Each variable has a key name, a value and a group that it belongs to.
 The file is based on a simple configuration file like ".ini" or ".cfg".
-Each ground can have more than one key, but all keys in the same group must have different names.
+Each group can have more than one key, but all keys in the same group must have different names.
 Group and Key names cannot have a period ".". The file syntax is such as:
 
     [Group]

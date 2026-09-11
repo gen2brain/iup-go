@@ -3,7 +3,7 @@
 When enabled, allows the use of text formatting attributes. Only works when MULTILINE=YES.
 Default: NO.
 
-On GTK it is always enabled when MULTILINE=YES, regardless of this attribute.
+On GTK and GTK 4 it is always enabled when MULTILINE=YES, regardless of this attribute.
 
 Not supported in Motif.
 
@@ -60,8 +60,7 @@ If the **IupText** attribute is also not defined then the current position will 
 Different tags that use the same selection interval are combined.
 Setting these attributes here will not change the current setting in **IupText**.
 
-**UNITS** [Windows Only]: By default, all distance units are integers in pixels, but in Windows you can also specify integer units in TWIPs (one twip is 1/1440 of an inch).
-Can be TWIP or PIXELS. Default: PIXELS.
+**UNITS** [Win32 and WinUI Only]: unit of the distance attributes. Can be TWIP (1/1440 of an inch) or PIXELS. Default: PIXELS.
 
 #### Paragraph Format Tag Attributes
 
@@ -69,11 +68,13 @@ Can be TWIP or PIXELS. Default: PIXELS.
 Not supported in FLTK and Haiku.
 
 **INDENT**: paragraph indentation, the distance between the margin and the paragraph.
-In Windows the right indentation, and the indentation of the second and subsequent lines (relative to the indentation of the first line) can be independently set using the **INDENTRIGHT** and **INDENTOFFSET** attributes, but only when **INDENT** is set.
 Not supported in Haiku.
 
+**INDENTRIGHT**, **INDENTOFFSET**: the right indentation, and the indentation of the second and subsequent lines relative to the first line. Used only when INDENT is set.
+Not supported in iOS, FLTK, Haiku, Android and WebAssembly. INDENTOFFSET is also not supported in EFL.
+
 **LINESPACING**: the distance between lines of the same paragraph.
-In Windows, the values SINGLE, ONEHALF and DOUBLE can be used.
+The values SINGLE, ONEHALF and DOUBLE are also accepted in Win32, WinUI, Qt, macOS and WebAssembly.
 Not supported in FLTK and Haiku.
 
 **NUMBERING**: Can be BULLET (bullet symbol), ARABIC (arabic numbers - 1,2,3...), LCLETTER (lower case letters - a,b,c...), UCLETTER (upper case letters - A,B,C...), LCROMAN (lower case Roman numerals - i,ii,iii...), UCROMAN (upper case Roman numerals - I,II,III...) and NONE.
@@ -112,19 +113,21 @@ Values smaller than 1 will shrink the font. Default: 1.0.
 The following values are also accepted: "XX-SMALL" (0.58), "X-SMALL" (0.64), "SMALL" (0.83), "MEDIUM" (1.0), "LARGE" (1.2), "X-LARGE" (1.44), "XX-LARGE" (1.73).
 
 **FONTFACE**: the face name of the font.
-Not supported in WinUI.
 
 **FONTSIZE**: the size of the font in pixels or points. Pixel size uses negative values.
 
 **IMAGE**: name of an image to be displayed in place of the selected text. See [IupImage](../elem/iup_image.md).
 Use WIDTH and HEIGHT to set the display size in pixels, both default to the natural size of the image.
-The image occupies a single character position in the VALUE string.
+The image occupies a single character position in the VALUE string and takes the paragraph formatting of that position.
 Not supported in Motif and FLTK.
 
 **ITALIC**: Can be YES or NO. Default NO.
 
-**LANGUAGE** [GTK and EFL Only]: A text with a description of the text language.
+**LANGUAGE** [GTK, GTK 4 and EFL Only]: A text with a description of the text language.
 The same value can be used in the "SYSTEMLANGUAGE" global attribute.
+
+**LINK**: URL passed to the LINK_CB callback of [IupText](../elem/iup_text.md) when the selected text is clicked.
+Unless FGCOLOR or UNDERLINE are also set, the text is shown in blue and underlined.
 
 **RISE**: the distance, positive or negative from the base line.
 Can also use the values SUPERSCRIPT and SUBSCRIPT, but this values will also reduce the size of the font.
@@ -136,7 +139,7 @@ Not supported in Win32, FLTK, EFL, Android and Haiku.
 **PROTECTED**: Can be YES or NO. Default NO. When set to YES the selected text cannot be edited.
 Supported in GTK, GTK 4, Qt, Win32 and WinUI.
 
-**STRETCH** [GTK and EFL Only]: Can be EXTRA_CONDENSED, CONDENSED, SEMI_CONDENSED, NORMAL, SEMI_EXPANDED, EXPANDED and EXTRA_EXPANDED.
+**STRETCH** [GTK, GTK 4 and EFL Only]: Can be EXTRA_CONDENSED, CONDENSED, SEMI_CONDENSED, NORMAL, SEMI_EXPANDED, EXPANDED and EXTRA_EXPANDED.
 Default NORMAL. (Does not work always, depends on the font)
 
 **STRIKEOUT**: Can be YES or NO. Default NO.

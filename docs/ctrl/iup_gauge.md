@@ -11,7 +11,7 @@ It inherits from [IupCanvas](../elem/iup_canvas.md).
 
 ### Attributes
 
-**BACKCOLOR** (non-inheritable): color of the background inside the borders. Predefined to "220 220 220.
+**BACKCOLOR** (non-inheritable): color of the background inside the borders. Predefined to "220 220 220".
 Can be NULL. When NULL it will use the parent's background color.
 
 **CANFOCUS:** enables the focus traversal of the control. Default: NO. (different from IupCanvas)

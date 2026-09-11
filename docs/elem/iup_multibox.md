@@ -94,4 +94,4 @@ The same for elements in a column when ORIENTATION=VERTICAL.
 
 ### See Also
 
-[IupGridBox](iup_gridbox.md)[IupVbox](iup_vbox.md), [IupHbox](iup_hbox.md)
+[IupGridBox](iup_gridbox.md), [IupVbox](iup_vbox.md), [IupHbox](iup_hbox.md)

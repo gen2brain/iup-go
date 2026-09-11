@@ -52,7 +52,7 @@ Used only when DECORATION=YES.
 [EXPAND](../attrib/iup_expand.md) (non-inheritable):  behaves as a container.
 See CANVASBOX attribute.
 
-**CANFOCUS**> (non-inheritable): the default is changed to NO.
+**CANFOCUS** (non-inheritable): the default is changed to NO.
 But it can receive the focus.
 
 > 

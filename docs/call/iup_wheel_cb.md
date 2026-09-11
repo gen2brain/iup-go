@@ -15,9 +15,9 @@ The same macros used for [BUTTON_CB](../call/iup_button_cb.md) can be used for t
 
 ### Notes
 
-In GTK, GTK 4, Motif, Qt, FLTK, EFL and Haiku, delta is always 1 or -1.
-In Windows and WinUI, delta is normalized in WHEEL_DELTA units (1 per notch typical, 2 or more on some devices).
-In macOS, iOS and Android, delta can be fractional (precision/trackpad scrolling reports sub-notch values).
+In GTK, GTK 4, Motif, FLTK, EFL and Haiku, delta is always 1 or -1.
+In Windows, WinUI and Qt, delta is normalized in WHEEL_DELTA units (1 per notch typical, 2 or more on some devices).
+In macOS and iOS, delta can be fractional (precision or trackpad scrolling reports sub-notch values).
 
 ### Affects
 

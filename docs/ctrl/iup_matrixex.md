@@ -108,9 +108,6 @@ Can be YES or NO. Default: YES.
 **FINDMATCHWHOLECELL**: defines if the whole cell is used for comparison, or it will search for the first occurrence of the text inside the cell.
 Can be YES or NO. Default: YES.
 
-**FINDMATCHSELECTION**: defines if the whole matrix is searched or just the selected cells.
-Can be YES or NO. Default: NO.
-
 #### Undo/Redo
 
 **UNDOREDO**: Enable or disable the Undo/Redo support. Can be YES or NO. Default: NO.
@@ -347,9 +344,8 @@ The application can change the NUMLIN and NUMCOL attributes to receive the new d
     int function(Ihandle* ih, int num_lin, int num_col);
 
 **ih**: identifier of the element that activated the event.\
-**status**: can be 1=process started, 2=iteration, 0=process finished.\
-**count**: when status=1 is the total number of iterations. when status=2 is the current iteration. ignored when status=0.\
-**name**: valid only when status=1, otherwise is NULL. Can be "PASTE", "PASTEDATA", "PASTEFILE".
+**num_lin**: number of lines in the pasted data.\
+**num_col**: number of columns in the pasted data.
 
 **Returns**: if returns IUP_IGNORE the process will be aborted. if returns IUP_CONTINUE, the NUMLIN and NUMCOL attributes will be automatically changed to the given values.
 Otherwise and if the callback does not exist, the matrix size is not changed, and the exceeding data will be discarded.

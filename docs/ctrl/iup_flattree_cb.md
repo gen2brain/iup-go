@@ -143,7 +143,7 @@ The callback also receives the new toggle's state.
 **ih**: identifier of the element that activated the event.\
 **id**: node identifier.\
 **state**: 1 if the toggle's state was shifted to ON; 0 if it was shifted to OFF.
-If SHOW3STATE=YES, −1 if it was shifted to NOTDEF.
+If SHOWTOGGLE=3STATE, −1 if it was shifted to NOTDEF.
 
 ------------------------------------------------------------------------
 
