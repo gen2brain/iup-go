@@ -138,7 +138,7 @@ static int cocoaTouchFontDlgPopup(Ihandle* ih, int x, int y)
 	UIViewController* host = cocoaTouchFontDlgResolveHost(ih);
 	if (!host)
 	{
-		iupAttribSet(ih, "STATUS", "-1");
+		iupAttribSet(ih, "STATUS", "0");
 		return IUP_NOERROR;
 	}
 
@@ -179,7 +179,7 @@ static int cocoaTouchFontDlgPopup(Ihandle* ih, int x, int y)
 
 	if (state == IUPCOCOATOUCH_FONTDLG_CANCEL)
 	{
-		iupAttribSet(ih, "STATUS", "-1");
+		iupAttribSet(ih, "STATUS", "0");
 		return IUP_NOERROR;
 	}
 
@@ -194,7 +194,7 @@ static int cocoaTouchFontDlgPopup(Ihandle* ih, int x, int y)
 	if (!size_host) size_host = host;
 	if (!cocoaTouchFontDlgShowSizeAlert(size_host, initial_size, &final_size))
 	{
-		iupAttribSet(ih, "STATUS", "-1");
+		iupAttribSet(ih, "STATUS", "0");
 		return IUP_NOERROR;
 	}
 
