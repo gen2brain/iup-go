@@ -165,8 +165,7 @@ Stock distro packages are currently insufficient.
 Also, several bugs in `gnustep-base`, `gnustep-gui`, `libs-opal` and `libs-corebase` must be patched.
 Tarball with the required patches is at [gnustep.tar.gz](https://gist.github.com/gen2brain/eaa0a38d0fb099d3601e6d1bc9d3b07d).
 
-`-fobjc-runtime=gnustep-2.2` - tells Clang to emit Objective-C 2 ABI metadata compatible with libobjc2.
-
+`-fobjc-runtime=gnustep-2.2` tells Clang to emit Objective-C 2 ABI metadata compatible with libobjc2.
 Cgo sanitizes compiler/linker flags by default, so you have to pass the flag and unblock it via the env vars:
 
 ```
@@ -201,7 +200,7 @@ See [iup/external/wasm/README.md](iup/external/wasm/README.md) for prerequisites
 
 The same `main()` compiles as a desktop binary, an Android shared library, and an iOS executable. Every example under [examples/](examples/) builds unchanged on all three.
 Most examples are laid out for desktop windows and will overflow a phone screen though; production mobile apps need a layout tuned for small screens.
-See [mobile_sample](examples/mobile_sample) and [mobile_hello](examples/mobile_hello) for examples designed for mobile.
+See [mobile_sample](examples/mobile_sample) and [mobile_hello](examples/mobile_hello) for examples designed for mobile. Also check [chat](examples/chat) that handles both desktop and mobile layouts.
 
 `iup.EntryPoint(main)` registers `main` as the callback the platform fires after launch; on desktop it is a no-op and the Go runtime calls `main` directly.
 `iup.Close()` and `iup.MainLoop()` are no-ops on mobile (the host platform owns the lifecycle), so avoid scheduling cleanup after `iup.MainLoop()`.
@@ -230,7 +229,7 @@ See [iup/external/ios/README.md](iup/external/ios/README.md) for prerequisites, 
 
 * `gl` - build with support for `GLCanvas` control
 * `web` - build with support for `WebBrowser` control
-* `media` - build with support for `Audio` and `Camera` controls
+* `media` - build with support for `Audio`, `Camera` and `Microphone` controls
 * `plot` - build with support for `Plot` control
 * `ctrl` - build with support for `Matrix`, `Cells`, and `Flat*` controls
 * `gtk` - use GTK in macOS or Windows
