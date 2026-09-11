@@ -149,7 +149,7 @@ static LRESULT CALLBACK winuiTrayWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM 
   return DefWindowProc(hwnd, msg, wp, lp);
 }
 
-static void winuiTrayMessage(HWND hwnd, DWORD dwMessage, HICON hIcon, const char* value)
+static void winuiTrayMessage(HWND hwnd, Ihandle* ih, DWORD dwMessage, HICON hIcon, const char* value)
 {
   NOTIFYICONDATAW tnd;
   memset(&tnd, 0, sizeof(NOTIFYICONDATAW));
@@ -173,9 +173,26 @@ static void winuiTrayMessage(HWND hwnd, DWORD dwMessage, HICON hIcon, const char
 
     if (value)
     {
-      tnd.uFlags |= NIF_TIP;
-      MultiByteToWideChar(CP_UTF8, 0, value, -1, tnd.szTip, 128);
-      tnd.szTip[127] = L'\0';
+      if (ih && IupGetInt(ih, "TIPBALLOON"))
+      {
+        char* title = IupGetAttribute(ih, "TIPBALLOONTITLE");
+        tnd.uFlags |= NIF_INFO;
+        MultiByteToWideChar(CP_UTF8, 0, value, -1, tnd.szInfo, 256);
+        tnd.szInfo[255] = L'\0';
+        if (title)
+        {
+          MultiByteToWideChar(CP_UTF8, 0, title, -1, tnd.szInfoTitle, 64);
+          tnd.szInfoTitle[63] = L'\0';
+        }
+        tnd.dwInfoFlags = (DWORD)IupGetInt(ih, "TIPBALLOONTITLEICON");
+        tnd.uTimeout = (UINT)IupGetInt(ih, "TIPDELAY");
+      }
+      else
+      {
+        tnd.uFlags |= NIF_TIP;
+        MultiByteToWideChar(CP_UTF8, 0, value, -1, tnd.szTip, 128);
+        tnd.szTip[127] = L'\0';
+      }
     }
   }
 
@@ -232,7 +249,7 @@ extern "C" IUP_SDK_API int iupdrvTraySetVisible(Ihandle* ih, int visible)
   {
     if (!visible)
     {
-      winuiTrayMessage(tray->hwnd, NIM_DELETE, NULL, NULL);
+      winuiTrayMessage(tray->hwnd, ih, NIM_DELETE, NULL, NULL);
       tray->visible = 0;
     }
   }
@@ -244,7 +261,7 @@ extern "C" IUP_SDK_API int iupdrvTraySetVisible(Ihandle* ih, int visible)
       char* image;
       char* tip;
 
-      winuiTrayMessage(tray->hwnd, NIM_ADD, NULL, NULL);
+      winuiTrayMessage(tray->hwnd, ih, NIM_ADD, NULL, NULL);
       tray->visible = 1;
 
       image = iupAttribGet(ih, "_IUPWINUI_TRAYIMAGE");
@@ -252,12 +269,12 @@ extern "C" IUP_SDK_API int iupdrvTraySetVisible(Ihandle* ih, int visible)
       {
         hIcon = (HICON)iupImageGetIcon(image);
         if (hIcon)
-          winuiTrayMessage(tray->hwnd, NIM_MODIFY, hIcon, NULL);
+          winuiTrayMessage(tray->hwnd, ih, NIM_MODIFY, hIcon, NULL);
       }
 
       tip = iupAttribGet(ih, "_IUPWINUI_TRAYTIP");
       if (tip)
-        winuiTrayMessage(tray->hwnd, NIM_MODIFY, NULL, tip);
+        winuiTrayMessage(tray->hwnd, ih, NIM_MODIFY, NULL, tip);
     }
   }
 
@@ -273,7 +290,7 @@ extern "C" IUP_SDK_API int iupdrvTraySetTip(Ihandle* ih, const char* value)
   if (!tray || !tray->visible)
     return 0;
 
-  winuiTrayMessage(tray->hwnd, NIM_MODIFY, NULL, value);
+  winuiTrayMessage(tray->hwnd, ih, NIM_MODIFY, NULL, value);
   return 1;
 }
 
@@ -289,7 +306,7 @@ extern "C" IUP_SDK_API int iupdrvTraySetImage(Ihandle* ih, const char* value)
 
   hIcon = (HICON)iupImageGetIcon(value);
   if (hIcon)
-    winuiTrayMessage(tray->hwnd, NIM_MODIFY, hIcon, NULL);
+    winuiTrayMessage(tray->hwnd, ih, NIM_MODIFY, hIcon, NULL);
 
   return 1;
 }
@@ -307,7 +324,7 @@ extern "C" IUP_SDK_API void iupdrvTrayDestroy(Ihandle* ih)
   if (tray)
   {
     if (tray->visible)
-      winuiTrayMessage(tray->hwnd, NIM_DELETE, NULL, NULL);
+      winuiTrayMessage(tray->hwnd, ih, NIM_DELETE, NULL, NULL);
 
     if (tray->hwnd)
       DestroyWindow(tray->hwnd);
