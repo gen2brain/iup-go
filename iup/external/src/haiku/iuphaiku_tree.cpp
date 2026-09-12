@@ -389,6 +389,7 @@ protected:
 
   void MessageReceived(BMessage* msg) override
   {
+    if (fIhandle && iuphaikuHandleDropFiles(fIhandle, this, msg)) return;
     if (fIhandle && iuphaikuDnDMessageReceived(fIhandle, this, msg)) return;
     BOutlineListView::MessageReceived(msg);
   }

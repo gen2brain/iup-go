@@ -15,6 +15,8 @@
 #include "iup_str.h"
 #include "iup_image.h"
 #include "iup_tree.h"
+
+#import "iupcocoa_dragdrop.h"
 #include "iup_drv.h"
 #include "iup_drvinfo.h"
 
@@ -1681,9 +1683,18 @@ static void cocoaTreeUpdateDragDrop(Ihandle* ih)
     [outline_view setVerticalMotionCanBeginDrag:NO];
   }
 
+  BOOL enable_dropfiles = (IupGetCallback(ih, "DROPFILES_CB") != NULL);
+
+  NSMutableArray* registered_types = [NSMutableArray array];
   if (enable_drop_target && (enable_internal_dnd || enable_crosstree_dnd))
+    [registered_types addObject:IUPCOCOA_OUTLINEVIEW_DRAGANDDROP_TYPE];
+
+  if (enable_dropfiles)
+    [registered_types addObject:NSPasteboardTypeFileURL];
+
+  if ([registered_types count] > 0)
   {
-    [outline_view registerForDraggedTypes:[NSArray arrayWithObjects:IUPCOCOA_OUTLINEVIEW_DRAGANDDROP_TYPE, nil]];
+    [outline_view registerForDraggedTypes:registered_types];
     [outline_view setDraggingDestinationFeedbackStyle:NSTableViewDraggingDestinationFeedbackStyleRegular];
   }
   else
@@ -1791,6 +1802,11 @@ static int helperCallDragDropCb(Ihandle* ih, IupCocoaTreeItem* tree_item_drag, I
 {
   NSArray<NSPasteboardType>* drag_types = [[drag_info draggingPasteboard] types];
   Ihandle* ih = [(IupCocoaOutlineView*)outline_view ih];
+
+  if([drag_types containsObject:NSPasteboardTypeFileURL] && IupGetCallback(ih, "DROPFILES_CB"))
+  {
+    return NSDragOperationCopy;
+  }
 
   if([drag_types containsObject:IUPCOCOA_OUTLINEVIEW_DRAGANDDROP_TYPE])
   {
@@ -2470,6 +2486,14 @@ static void cocoaTreeRemoveNodeData(Ihandle* ih, IupCocoaTreeItem* tree_item, in
 
 - (BOOL) outlineView:(NSOutlineView *)outline_view acceptDrop:(id <NSDraggingInfo>)drag_info item:(id)parent_target_tree_item childIndex:(NSInteger)target_child_index
 {
+  {
+    Ihandle* ih_dropfiles = [(IupCocoaOutlineView*)outline_view ih];
+    if([[[drag_info draggingPasteboard] types] containsObject:NSPasteboardTypeFileURL] && IupGetCallback(ih_dropfiles, "DROPFILES_CB"))
+    {
+      return cocoaTargetDropFilesFromInfo(ih_dropfiles, drag_info, outline_view) ? YES : NO;
+    }
+  }
+
   if([drag_info draggingSource] == outline_view)
   {
     [self setItemBeingDragged:nil];

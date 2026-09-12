@@ -14,6 +14,8 @@
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_drv.h"
+
+#import "iupcocoa_dragdrop.h"
 #include "iup_drvfont.h"
 #include "iup_mask.h"
 #include "iup_key.h"
@@ -1792,6 +1794,12 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
   if (!ih)
     return NSDragOperationNone;
 
+  if ([[pboard types] containsObject:NSPasteboardTypeFileURL] && IupGetCallback(ih, "DROPFILES_CB"))
+  {
+    [tableView setDropRow:-1 dropOperation:NSTableViewDropOn];
+    return NSDragOperationCopy;
+  }
+
   NSEventModifierFlags flags = [NSEvent modifierFlags];
   int is_shift = (flags & NSEventModifierFlagShift) != 0;
   int is_copy = (flags & NSEventModifierFlagOption) != 0;
@@ -1852,6 +1860,11 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
   NSPasteboard *pboard = [info draggingPasteboard];
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(tableView, IHANDLE_ASSOCIATED_OBJ_KEY);
   if (!ih) return NO;
+
+  if ([[pboard types] containsObject:NSPasteboardTypeFileURL] && IupGetCallback(ih, "DROPFILES_CB"))
+  {
+    return cocoaTargetDropFilesFromInfo(ih, info, tableView) ? YES : NO;
+  }
 
   NSEventModifierFlags flags = [NSEvent modifierFlags];
   int is_shift = (flags & NSEventModifierFlagShift) != 0;
@@ -2938,6 +2951,8 @@ static void cocoaListUpdateDragDrop(Ihandle* ih)
       [table_view setVerticalMotionCanBeginDrag:NO];
     }
 
+    BOOL enable_dropfiles = (IupGetCallback(ih, "DROPFILES_CB") != NULL);
+
     NSMutableArray* registeredTypes = [NSMutableArray array];
     if (enable_internal_dnd)
       [registeredTypes addObject:IupListPasteboardType];
@@ -2945,7 +2960,10 @@ static void cocoaListUpdateDragDrop(Ihandle* ih)
     if (enable_crosslist_dnd && enable_drop_target)
       [registeredTypes addObject:IupInternalDndType];
 
-    if ([registeredTypes count] > 0 && enable_drop_target)
+    if (enable_dropfiles)
+      [registeredTypes addObject:NSPasteboardTypeFileURL];
+
+    if ([registeredTypes count] > 0 && (enable_drop_target || enable_dropfiles))
     {
       [table_view registerForDraggedTypes:registeredTypes];
       [table_view setDraggingDestinationFeedbackStyle:enable_internal_dnd ?

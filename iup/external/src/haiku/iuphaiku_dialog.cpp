@@ -206,9 +206,7 @@ public:
     if (msg && (msg->what == B_SIMPLE_DATA || msg->what == B_REFS_RECEIVED)
         && msg->HasRef("refs") && fIhandle && iupObjectCheck(fIhandle))
     {
-      BPoint pt(0, 0);
-      msg->FindPoint("_drop_point_", &pt);
-      pt = ConvertFromScreen(pt);
+      BPoint pt = ConvertFromScreen(msg->DropPoint());
 
       Ihandle* target = haikuDialogFindDropTarget(fIhandle, (int)pt.x, (int)pt.y);
       IFnsiii cb = (IFnsiii)IupGetCallback(target, "DROPFILES_CB");

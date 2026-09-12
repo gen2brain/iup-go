@@ -270,6 +270,10 @@ public:
   {
     switch (event)
     {
+      case FL_DND_ENTER: case FL_DND_DRAG: case FL_DND_LEAVE: case FL_DND_RELEASE: case FL_PASTE:
+        if (iupfltkDragDropHandleEvent(this, iup_handle, event))
+          return 1;
+        break;
       case FL_FOCUS: case FL_UNFOCUS:
         iupfltkFocusInOutEvent(this, iup_handle, event); break;
       case FL_ENTER: case FL_LEAVE:

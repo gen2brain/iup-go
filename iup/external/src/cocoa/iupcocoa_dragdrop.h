@@ -73,5 +73,6 @@ void cocoaSourceDragDestroyAssociatedData(Ihandle* ih);
 
 int cocoaTargetDropBasePerformDropCallback(Ihandle* ih, id<NSDraggingInfo> the_sender, NSPasteboard* paste_board, NSPoint drop_point);
 NSDragOperation cocoaTargetDropBaseDraggingUpdated(Ihandle* ih, id<NSDraggingInfo> the_sender);
+int cocoaTargetDropFilesFromInfo(Ihandle* ih, id<NSDraggingInfo> the_sender, NSView* view);
 
 #endif /* __IUPCOCOA_DRAGDROP_H */
