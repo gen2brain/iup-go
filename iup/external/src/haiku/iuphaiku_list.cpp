@@ -484,6 +484,7 @@ public:
         return;
       }
     }
+    if (fIhandle && iuphaikuHandleDropFiles(fIhandle, this, msg)) return;
     if (fIhandle && iuphaikuDnDMessageReceived(fIhandle, this, msg)) return;
     BListView::MessageReceived(msg);
   }

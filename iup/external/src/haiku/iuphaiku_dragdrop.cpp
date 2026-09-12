@@ -18,6 +18,8 @@
 #include <Point.h>
 #include <Rect.h>
 #include <View.h>
+#include <Entry.h>
+#include <Path.h>
 
 extern "C" {
 #include "iup.h"
@@ -309,6 +311,34 @@ bool iuphaikuDnDMessageReceived(Ihandle* ih, BView* view, BMessage* msg)
     BMessage reply(IUPHAIKU_DD_END_REPLY);
     reply.AddInt32("action", haikuDnDActionFromModifiers(src_ih, mods));
     msg->SendReply(&reply);
+  }
+  return true;
+}
+
+bool iuphaikuHandleDropFiles(Ihandle* ih, BView* view, BMessage* msg)
+{
+  if (!ih || !msg) return false;
+  if (msg->what != B_SIMPLE_DATA && msg->what != B_REFS_RECEIVED) return false;
+  if (!msg->HasRef("refs")) return false;
+
+  IFnsiii cb = (IFnsiii)IupGetCallback(ih, "DROPFILES_CB");
+  if (!cb) return false;
+
+  BPoint pt = msg->DropPoint();
+  if (view && view->Looper())
+    pt = view->ConvertFromScreen(pt);
+
+  entry_ref ref;
+  int32 count = 0;
+  for (; msg->FindRef("refs", count, &ref) == B_OK; ++count) {}
+  for (int32 i = 0; i < count; ++i)
+  {
+    if (msg->FindRef("refs", i, &ref) != B_OK) continue;
+    BPath path;
+    if (BEntry(&ref).GetPath(&path) != B_OK) continue;
+    int ret = cb(ih, (char*)path.Path(), count - i - 1, (int)pt.x, (int)pt.y);
+    if (ret == IUP_IGNORE) break;
+    if (ret == IUP_CLOSE) { IupExitLoop(); break; }
   }
   return true;
 }

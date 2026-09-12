@@ -135,6 +135,7 @@ void iuphaikuDnDMouseDown(Ihandle* ih, BPoint where, unsigned int buttons);
 void iuphaikuDnDMouseUp(Ihandle* ih);
 bool iuphaikuDnDMouseMoved(Ihandle* ih, BView* view, BPoint where, unsigned int transit, const BMessage* drag_msg);
 bool iuphaikuDnDMessageReceived(Ihandle* ih, BView* view, BMessage* msg);
+bool iuphaikuHandleDropFiles(Ihandle* ih, BView* view, BMessage* msg);
 bool iuphaikuDnDInitiateDrag(Ihandle* ih, BView* view, BPoint where);
 
 void iuphaikuCanvasOnDraw(Ihandle* ih, BView* view, BRect dirty);

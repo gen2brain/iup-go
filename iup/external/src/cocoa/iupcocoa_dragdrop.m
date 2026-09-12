@@ -381,6 +381,47 @@ int cocoaTargetDropBasePerformDropCallback(Ihandle* ih, id<NSDraggingInfo> the_s
   return 0;
 }
 
+int cocoaTargetDropFilesFromInfo(Ihandle* ih, id<NSDraggingInfo> the_sender, NSView* view)
+{
+  IFnsiii drop_files_callback = (IFnsiii)IupGetCallback(ih, "DROPFILES_CB");
+  if(!drop_files_callback)
+  {
+    return 0;
+  }
+
+  NSArray* acceptable_drop_items = [[the_sender draggingPasteboard] readObjectsForClasses:@[[NSURL class]] options:nil];
+  NSMutableArray* file_urls = [NSMutableArray array];
+  for(id drop_item in acceptable_drop_items)
+  {
+    if([drop_item isKindOfClass:[NSURL class]] && [(NSURL*)drop_item isFileURL])
+    {
+      [file_urls addObject:drop_item];
+    }
+  }
+  if([file_urls count] == 0)
+  {
+    return 0;
+  }
+
+  NSPoint drop_point = [view convertPoint:[the_sender draggingLocation] fromView:nil];
+  if(![view isFlipped])
+  {
+    drop_point.y = [view bounds].size.height - drop_point.y;
+  }
+
+  int total_files = (int)[file_urls count];
+  for(int i = 0; i < total_files; i++)
+  {
+    NSString* file_url_string = [(NSURL*)file_urls[i] path];
+    const char* file_path = [file_url_string fileSystemRepresentation];
+    if(drop_files_callback(ih, (char*)file_path, total_files - i - 1, (int)drop_point.x, (int)drop_point.y) == IUP_IGNORE)
+    {
+      break;
+    }
+  }
+  return 1;
+}
+
 @implementation IupSourceDragAssociatedData
 
 - (instancetype) init
