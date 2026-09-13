@@ -24,6 +24,16 @@ IUP_SDK_API void iupdrvSetEntryFunction(Icallback func)
   (void)func;
 }
 
+IUP_SDK_API void* iupdrvNativeScopeBegin(void)
+{
+  return [[NSAutoreleasePool alloc] init];
+}
+
+IUP_SDK_API void iupdrvNativeScopeEnd(void* scope)
+{
+  [(NSAutoreleasePool*)scope drain];
+}
+
 IUP_SDK_API void iupdrvSetIdleFunction(Icallback f)
 {
   mac_idle_cb = (IFidle)f;
@@ -43,7 +53,7 @@ static int macLoopCallIdle(void)
   return ret;
 }
 
-void IupExitLoop(void)
+static void cocoaExitLoop(void)
 {
   char* exit_loop = IupGetGlobal("EXITLOOP");
   if (!exit_loop || iupStrBoolean(exit_loop))
@@ -60,6 +70,13 @@ void IupExitLoop(void)
                                            data1:0
                                            data2:0];
     [NSApp postEvent:event atStart:NO];
+  }
+}
+
+void IupExitLoop(void)
+{
+  @autoreleasepool {
+    cocoaExitLoop();
   }
 }
 
@@ -138,12 +155,14 @@ int IupMainLoop(void)
 
 int IupLoopStepWait(void)
 {
-  NSEvent* event = [NSApp nextEventMatchingMask:NSEventMaskAny
-                                      untilDate:[NSDate distantFuture]
-                                         inMode:NSDefaultRunLoopMode
-                                        dequeue:YES];
-  if (event != nil)
-    macLoopProcessMessage(event);
+  @autoreleasepool {
+    NSEvent* event = [NSApp nextEventMatchingMask:NSEventMaskAny
+                                        untilDate:[NSDate distantFuture]
+                                           inMode:NSDefaultRunLoopMode
+                                          dequeue:YES];
+    if (event != nil)
+      macLoopProcessMessage(event);
+  }
 
   if (mac_main_loop_should_quit)
     return IUP_CLOSE;
@@ -153,14 +172,16 @@ int IupLoopStepWait(void)
 
 int IupLoopStep(void)
 {
-  NSEvent* event = [NSApp nextEventMatchingMask:NSEventMaskAny
-                                      untilDate:[NSDate dateWithTimeIntervalSinceNow:0.0]
-                                         inMode:NSDefaultRunLoopMode
-                                        dequeue:YES];
-  if (event != nil)
-    macLoopProcessMessage(event);
-  else if (mac_idle_cb)
-    macLoopCallIdle();
+  @autoreleasepool {
+    NSEvent* event = [NSApp nextEventMatchingMask:NSEventMaskAny
+                                        untilDate:[NSDate dateWithTimeIntervalSinceNow:0.0]
+                                           inMode:NSDefaultRunLoopMode
+                                          dequeue:YES];
+    if (event != nil)
+      macLoopProcessMessage(event);
+    else if (mac_idle_cb)
+      macLoopCallIdle();
+  }
 
   if (mac_main_loop_should_quit)
     return IUP_CLOSE;
@@ -172,14 +193,16 @@ void IupFlush(void)
 {
   while (YES)
   {
-    NSEvent* event = [NSApp nextEventMatchingMask:NSEventMaskAny
-                                        untilDate:[NSDate dateWithTimeIntervalSinceNow:0.0]
-                                           inMode:NSDefaultRunLoopMode
-                                          dequeue:YES];
-    if (event == nil)
-      break;
+    @autoreleasepool {
+      NSEvent* event = [NSApp nextEventMatchingMask:NSEventMaskAny
+                                          untilDate:[NSDate dateWithTimeIntervalSinceNow:0.0]
+                                             inMode:NSDefaultRunLoopMode
+                                            dequeue:YES];
+      if (event == nil)
+        break;
 
-    macLoopProcessMessage(event);
+      macLoopProcessMessage(event);
+    }
 
     if (mac_main_loop_should_quit)
       break;

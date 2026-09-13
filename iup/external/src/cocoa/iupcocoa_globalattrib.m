@@ -173,7 +173,7 @@ static CGEventRef iupCocoaGlobalEventCallback(CGEventTapProxy proxy, CGEventType
 }
 #endif /* !GNUSTEP */
 
-IUP_SDK_API int iupdrvSetGlobal(const char *name, const char *value)
+static int cocoaSetGlobal(const char *name, const char *value)
 {
   if (iupStrEqual(name, "SINGLEINSTANCE"))
   {
@@ -327,7 +327,14 @@ IUP_SDK_API int iupdrvSetGlobal(const char *name, const char *value)
   return 1;
 }
 
-IUP_SDK_API char *iupdrvGetGlobal(const char *name)
+IUP_SDK_API int iupdrvSetGlobal(const char *name, const char *value)
+{
+  @autoreleasepool {
+    return cocoaSetGlobal(name, value);
+  }
+}
+
+static char * cocoaGetGlobal(const char *name)
 {
   if (iupStrEqual(name, "VIRTUALSCREEN"))
   {
@@ -416,4 +423,11 @@ IUP_SDK_API char *iupdrvGetGlobal(const char *name)
 #endif
 
   return NULL;
+}
+
+IUP_SDK_API char *iupdrvGetGlobal(const char *name)
+{
+  @autoreleasepool {
+    return cocoaGetGlobal(name);
+  }
 }

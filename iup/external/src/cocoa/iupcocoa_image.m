@@ -87,7 +87,7 @@ static int cocoaImageBitmapToRGBA(NSBitmapImageRep* bitmap, unsigned char* rgba,
 #endif
 
 /* The output format is packed RGB(A), top-down, matching the IUP image data format. */
-IUP_SDK_API void iupdrvImageGetData(void* handle, unsigned char* out_img_data)
+static void cocoaImageGetData(void* handle, unsigned char* out_img_data)
 {
   if (!handle)
     return;
@@ -175,6 +175,13 @@ IUP_SDK_API void iupdrvImageGetData(void* handle, unsigned char* out_img_data)
   free(rgba);
 }
 
+IUP_SDK_API void iupdrvImageGetData(void* handle, unsigned char* out_img_data)
+{
+  @autoreleasepool {
+    cocoaImageGetData(handle, out_img_data);
+  }
+}
+
 
 static NSBitmapImageRep* cocoaImageCreateBitmapRep(int width, int height, int bpp)
 {
@@ -214,12 +221,19 @@ static NSImage* cocoaImageWrapBitmapRep(NSBitmapImageRep* bitmap, int width, int
 
 
 
-IUP_SDK_API int iupdrvImageGetRawInfo(void* handle, int *w, int *h, int *bpp, iupColor* colors, int *colors_count)
+static int cocoaImageGetRawInfo(void* handle, int *w, int *h, int *bpp, iupColor* colors, int *colors_count)
 {
   /* indexed images are converted to RGB(A) automatically, so there is no palette to read */
   (void)colors;
   (void)colors_count;
   return iupdrvImageGetInfo(handle, w, h, bpp);
+}
+
+IUP_SDK_API int iupdrvImageGetRawInfo(void* handle, int *w, int *h, int *bpp, iupColor* colors, int *colors_count)
+{
+  @autoreleasepool {
+    return cocoaImageGetRawInfo(handle, w, h, bpp, colors, colors_count);
+  }
 }
 
 static NSImage* iupCocoaCreateNSImage(Ihandle *ih, const char* bgcolor, int make_inactive)
@@ -352,7 +366,7 @@ static NSImage* iupCocoaCreateNSImage(Ihandle *ih, const char* bgcolor, int make
   return ns_image;
 }
 
-IUP_SDK_API void* iupdrvImageCreateImage(Ihandle *ih, const char* bgcolor, int make_inactive)
+static void* cocoaImageCreateImage(Ihandle *ih, const char* bgcolor, int make_inactive)
 {
   NSImage* ns_image = iupCocoaCreateNSImage(ih, bgcolor, make_inactive);
 
@@ -366,7 +380,14 @@ IUP_SDK_API void* iupdrvImageCreateImage(Ihandle *ih, const char* bgcolor, int m
   return ns_image;
 }
 
-IUP_SDK_API void* iupdrvImageCreateIcon(Ihandle *ih)
+IUP_SDK_API void* iupdrvImageCreateImage(Ihandle *ih, const char* bgcolor, int make_inactive)
+{
+  @autoreleasepool {
+    return cocoaImageCreateImage(ih, bgcolor, make_inactive);
+  }
+}
+
+static void* cocoaImageCreateIcon(Ihandle *ih)
 {
   NSImage* ns_image = iupCocoaCreateNSImage(ih, NULL, 0);
 
@@ -380,7 +401,14 @@ IUP_SDK_API void* iupdrvImageCreateIcon(Ihandle *ih)
   return ns_image;
 }
 
-IUP_SDK_API void* iupdrvImageCreateCursor(Ihandle *ih)
+IUP_SDK_API void* iupdrvImageCreateIcon(Ihandle *ih)
+{
+  @autoreleasepool {
+    return cocoaImageCreateIcon(ih);
+  }
+}
+
+static void* cocoaImageCreateCursor(Ihandle *ih)
 {
   int hx=0, hy=0;
   iupStrToIntInt(iupAttribGet(ih, "HOTSPOT"), &hx, &hy, ':');
@@ -407,7 +435,14 @@ IUP_SDK_API void* iupdrvImageCreateCursor(Ihandle *ih)
   return cursor;
 }
 
-IUP_SDK_API void* iupdrvImageLoad(const char* name, int type)
+IUP_SDK_API void* iupdrvImageCreateCursor(Ihandle *ih)
+{
+  @autoreleasepool {
+    return cocoaImageCreateCursor(ih);
+  }
+}
+
+static void* cocoaImageLoad(const char* name, int type)
 {
   if (!name || (name[0] == '\0'))
   {
@@ -461,7 +496,14 @@ IUP_SDK_API void* iupdrvImageLoad(const char* name, int type)
   return (void*)the_image;
 }
 
-IUP_SDK_API int iupdrvImageGetInfo(void* handle, int *w, int *h, int *bpp)
+IUP_SDK_API void* iupdrvImageLoad(const char* name, int type)
+{
+  @autoreleasepool {
+    return cocoaImageLoad(name, type);
+  }
+}
+
+static int cocoaImageGetInfo(void* handle, int *w, int *h, int *bpp)
 {
   if (w) *w = 0;
   if (h) *h = 0;
@@ -503,7 +545,14 @@ IUP_SDK_API int iupdrvImageGetInfo(void* handle, int *w, int *h, int *bpp)
   return 1;
 }
 
-IUP_SDK_API void iupdrvImageDestroy(void* handle, int type)
+IUP_SDK_API int iupdrvImageGetInfo(void* handle, int *w, int *h, int *bpp)
+{
+  @autoreleasepool {
+    return cocoaImageGetInfo(handle, w, h, bpp);
+  }
+}
+
+static void cocoaImageDestroy(void* handle, int type)
 {
   const char* type_str = (type == IUPIMAGE_CURSOR) ? "CURSOR" :
                          (type == IUPIMAGE_ICON) ? "ICON" : "NSImage";
@@ -513,6 +562,13 @@ IUP_SDK_API void iupdrvImageDestroy(void* handle, int type)
     cb(handle, (char*)type_str);
 
   [((__bridge id)handle) release];
+}
+
+IUP_SDK_API void iupdrvImageDestroy(void* handle, int type)
+{
+  @autoreleasepool {
+    cocoaImageDestroy(handle, type);
+  }
 }
 
 static unsigned char* iCocoaImageExpandPalette(unsigned char* imgdata, int width, int height, iupColor* colors, int colors_count)
@@ -603,7 +659,7 @@ static NSData* iCocoaImageEncode(unsigned char* imgdata, int width, int height, 
   return result;
 }
 
-IUP_SDK_API int iupdrvImageSave(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count, const char* filename, const char* format)
+static int cocoaImageSave(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count, const char* filename, const char* format)
 {
   @autoreleasepool {
     NSData* data = iCocoaImageEncode(imgdata, width, height, bpp, colors, colors_count, format);
@@ -614,7 +670,14 @@ IUP_SDK_API int iupdrvImageSave(unsigned char* imgdata, int width, int height, i
   }
 }
 
-IUP_SDK_API unsigned char* iupdrvImageSaveToBuffer(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count, const char* format, int* size)
+IUP_SDK_API int iupdrvImageSave(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count, const char* filename, const char* format)
+{
+  @autoreleasepool {
+    return cocoaImageSave(imgdata, width, height, bpp, colors, colors_count, filename, format);
+  }
+}
+
+static unsigned char* cocoaImageSaveToBuffer(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count, const char* format, int* size)
 {
   @autoreleasepool {
     NSData* data = iCocoaImageEncode(imgdata, width, height, bpp, colors, colors_count, format);
@@ -629,7 +692,14 @@ IUP_SDK_API unsigned char* iupdrvImageSaveToBuffer(unsigned char* imgdata, int w
   }
 }
 
-IUP_SDK_API int iupdrvGetIconPixels(Ihandle* ih, const char* value, int* width, int* height, unsigned char** pixels)
+IUP_SDK_API unsigned char* iupdrvImageSaveToBuffer(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count, const char* format, int* size)
+{
+  @autoreleasepool {
+    return cocoaImageSaveToBuffer(imgdata, width, height, bpp, colors, colors_count, format, size);
+  }
+}
+
+static int cocoaGetIconPixels(Ihandle* ih, const char* value, int* width, int* height, unsigned char** pixels)
 {
   NSImage* image;
   NSBitmapImageRep* rep;
@@ -710,4 +780,11 @@ IUP_SDK_API int iupdrvGetIconPixels(Ihandle* ih, const char* value, int* width, 
   *pixels = dstData;
 
   return 1;
+}
+
+IUP_SDK_API int iupdrvGetIconPixels(Ihandle* ih, const char* value, int* width, int* height, unsigned char** pixels)
+{
+  @autoreleasepool {
+    return cocoaGetIconPixels(ih, value, width, height, pixels);
+  }
 }
