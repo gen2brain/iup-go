@@ -75,14 +75,22 @@ static IupViewController* cocoaTouchDialogVC(Ihandle* ih)
 }
 
 /* show_state gate so a double iupDialogHide early-returns on the second pass */
-IUP_SDK_API int iupdrvDialogIsVisible(Ihandle* ih)
+static int cocoaTouchDialogIsVisible(Ihandle* ih)
 {
 	if (!ih || !ih->handle) return 0;
 	if (ih->data && ih->data->show_state == IUP_HIDE) return 0;
 	return 1;
 }
 
-IUP_SDK_API void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* handle, int* w, int* h)
+IUP_SDK_API int iupdrvDialogIsVisible(Ihandle* ih)
+{
+	@autoreleasepool
+	{
+		return cocoaTouchDialogIsVisible(ih);
+	}
+}
+
+static void cocoaTouchDialogGetSize(Ihandle* ih, InativeHandle* handle, int* w, int* h)
 {
 	(void)handle;
 	IupCocoaTouchFixed* client = iupCocoaTouchDialogGetClientArea(ih);
@@ -98,8 +106,16 @@ IUP_SDK_API void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* handle, int* w,
 	if (h) *h = iupROUND(screen.size.height);
 }
 
+IUP_SDK_API void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* handle, int* w, int* h)
+{
+	@autoreleasepool
+	{
+		cocoaTouchDialogGetSize(ih, handle, w, h);
+	}
+}
+
 /* visible=0 dismisses + pumps until the animation completes, so a deferred Destroy doesn't race UIKit */
-IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
+static void cocoaTouchDialogSetVisible(Ihandle* ih, int visible)
 {
 	if (visible || !ih || !ih->handle) return;
 	if (iupAttribGet(ih, "_IUPCOCOA_SHEET_GONE")) return;
@@ -127,19 +143,43 @@ IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
 	}
 }
 
-IUP_SDK_API void iupdrvDialogGetPosition(Ihandle* ih, InativeHandle* handle, int* x, int* y)
+IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
+{
+	@autoreleasepool
+	{
+		cocoaTouchDialogSetVisible(ih, visible);
+	}
+}
+
+static void cocoaTouchDialogGetPosition(Ihandle* ih, InativeHandle* handle, int* x, int* y)
 {
 	(void)ih; (void)handle;
 	if (x) *x = 0;
 	if (y) *y = 0;
 }
 
-IUP_SDK_API void iupdrvDialogSetPosition(Ihandle* ih, int x, int y)
+IUP_SDK_API void iupdrvDialogGetPosition(Ihandle* ih, InativeHandle* handle, int* x, int* y)
+{
+	@autoreleasepool
+	{
+		cocoaTouchDialogGetPosition(ih, handle, x, y);
+	}
+}
+
+static void cocoaTouchDialogSetPosition(Ihandle* ih, int x, int y)
 {
 	(void)ih; (void)x; (void)y;
 }
 
-IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int* border, int* caption, int* menu)
+IUP_SDK_API void iupdrvDialogSetPosition(Ihandle* ih, int x, int y)
+{
+	@autoreleasepool
+	{
+		cocoaTouchDialogSetPosition(ih, x, y);
+	}
+}
+
+static void cocoaTouchDialogGetDecoration(Ihandle* ih, int* border, int* caption, int* menu)
 {
 	(void)ih;
 	if (border)  *border  = 0;
@@ -147,7 +187,15 @@ IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int* border, int* captio
 	if (menu)    *menu    = 0;
 }
 
-IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
+IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int* border, int* caption, int* menu)
+{
+	@autoreleasepool
+	{
+		cocoaTouchDialogGetDecoration(ih, border, caption, menu);
+	}
+}
+
+static int cocoaTouchDialogSetPlacement(Ihandle* ih)
 {
 	if (iupAttribGetBoolean(ih, "FULLSCREEN"))
 	{
@@ -188,9 +236,25 @@ IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
 	return 1;
 }
 
-IUP_SDK_API void iupdrvDialogSetParent(Ihandle* ih, InativeHandle* parent)
+IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
+{
+	@autoreleasepool
+	{
+		return cocoaTouchDialogSetPlacement(ih);
+	}
+}
+
+static void cocoaTouchDialogSetParent(Ihandle* ih, InativeHandle* parent)
 {
 	(void)ih; (void)parent;
+}
+
+IUP_SDK_API void iupdrvDialogSetParent(Ihandle* ih, InativeHandle* parent)
+{
+	@autoreleasepool
+	{
+		cocoaTouchDialogSetParent(ih, parent);
+	}
 }
 
 static char* cocoaTouchDialogGetClientSizeAttrib(Ihandle* ih)

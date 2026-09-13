@@ -28,7 +28,7 @@ static char* cocoaTouchInfoPlistString(NSString* key)
 	return iupStrReturnStr([s UTF8String]);
 }
 
-IUP_SDK_API int iupdrvSetGlobal(const char* name, const char* value)
+static int cocoaTouchSetGlobal(const char* name, const char* value)
 {
 	if (iupStrEqual(name, "LANGUAGE"))
 	{
@@ -43,7 +43,15 @@ IUP_SDK_API int iupdrvSetGlobal(const char* name, const char* value)
 	return 1;
 }
 
-IUP_SDK_API char* iupdrvGetGlobal(const char* name)
+IUP_SDK_API int iupdrvSetGlobal(const char* name, const char* value)
+{
+	@autoreleasepool
+	{
+		return cocoaTouchSetGlobal(name, value);
+	}
+}
+
+static char* cocoaTouchGetGlobal(const char* name)
 {
 	if (iupStrEqual(name, "CURSORPOS"))
 	{
@@ -133,4 +141,12 @@ IUP_SDK_API char* iupdrvGetGlobal(const char* name)
 	if (iupStrEqual(name, "TOUCHREADY"))
 		return iupStrReturnBoolean(1);
 	return NULL;
+}
+
+IUP_SDK_API char* iupdrvGetGlobal(const char* name)
+{
+	@autoreleasepool
+	{
+		return cocoaTouchGetGlobal(name);
+	}
 }
