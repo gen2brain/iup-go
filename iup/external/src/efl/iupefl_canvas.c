@@ -385,6 +385,7 @@ static Eo* eflCanvasGetTooltipWidget(Ihandle* ih)
 
   efl_gfx_color_set(overlay, 0, 0, 0, 0);
   efl_canvas_object_repeat_events_set(overlay, EINA_TRUE);
+  iupeflAttachToContainer(ih, overlay);
 
   Eo* vg = iupeflGetWidget(ih);
   if (vg)
@@ -677,6 +678,7 @@ static int eflCanvasMapMethod(Ihandle* ih)
   efl_event_callback_add(vg, EFL_EVENT_POINTER_DOWN, eflCanvasButtonCallback, ih);
   efl_event_callback_add(vg, EFL_EVENT_POINTER_UP, eflCanvasButtonCallback, ih);
   efl_event_callback_add(vg, EFL_EVENT_POINTER_WHEEL, eflCanvasWheelCallback, ih);
+  iupeflKeySetTarget(vg, ih);
   efl_event_callback_add(vg, EFL_EVENT_KEY_DOWN, iupeflKeyDownEvent, ih);
   efl_event_callback_add(vg, EFL_EVENT_KEY_UP, iupeflKeyUpEvent, ih);
   efl_event_callback_add(vg, EFL_EVENT_POINTER_IN, iupeflPointerInEvent, ih);
@@ -797,6 +799,8 @@ static void eflCanvasLayoutUpdateMethod(Ihandle* ih)
   {
     int abs_x, abs_y;
     Eo* clip;
+
+    iupeflAttachToContainer(ih, xparent);
 
     iupeflGetOrigin(ih, &abs_x, &abs_y);
     abs_x += ih->x;

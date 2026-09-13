@@ -1791,6 +1791,7 @@ static int eflListMapMethod(Ihandle* ih)
     efl_event_callback_add(list, EFL_EVENT_POINTER_UP, iupeflPointerUpEvent, ih);
     efl_event_callback_add(list, EFL_EVENT_POINTER_MOVE, iupeflPointerMoveEvent, ih);
     efl_event_callback_add(list, EFL_UI_FOCUS_MANAGER_EVENT_MANAGER_FOCUS_CHANGED, iupeflManagerFocusChangedEvent, ih);
+    iupeflKeySetTarget(list, ih);
     efl_event_callback_add(list, EFL_EVENT_KEY_DOWN, iupeflKeyDownEvent, ih);
     efl_event_callback_add(list, EFL_EVENT_KEY_UP, iupeflKeyUpEvent, ih);
 
@@ -1934,6 +1935,7 @@ static int eflListMapMethod(Ihandle* ih)
     efl_event_callback_add(list, EFL_EVENT_POINTER_UP, iupeflPointerUpEvent, ih);
     efl_event_callback_add(list, EFL_EVENT_POINTER_MOVE, iupeflPointerMoveEvent, ih);
     efl_event_callback_add(list, EFL_UI_FOCUS_MANAGER_EVENT_MANAGER_FOCUS_CHANGED, iupeflManagerFocusChangedEvent, ih);
+    iupeflKeySetTarget(list, ih);
     efl_event_callback_add(list, EFL_EVENT_KEY_DOWN, iupeflKeyDownEvent, ih);
     efl_event_callback_add(list, EFL_EVENT_KEY_UP, iupeflKeyUpEvent, ih);
 

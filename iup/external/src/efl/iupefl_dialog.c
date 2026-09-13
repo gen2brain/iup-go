@@ -209,10 +209,9 @@ static void eflDialogKeyDownCallback(void* data, const Efl_Event* event)
 {
   Ihandle* ih = (Ihandle*)data;
   Eo* ev = event->info;
-  const char* str;
   const char* keyname;
 
-  if (!iupObjectCheck(ih))
+  if (!iupObjectCheck(ih) || efl_input_processed_get(ev))
     return;
 
   {
@@ -244,18 +243,11 @@ static void eflDialogKeyDownCallback(void* data, const Efl_Event* event)
     }
   }
 
-  if (efl_input_modifier_enabled_get(ev, EFL_INPUT_MODIFIER_ALT, NULL))
   {
-    str = efl_input_key_string_get(ev);
-    if (str && str[0] && !str[1])
-    {
-      char key = str[0];
-      if (iupKeyProcessMnemonic(ih, key))
-        return;
-      Elm_Object_Item* item = iupeflMenuFindMnemonic(ih, key);
-      if (item)
-        elm_menu_item_selected_set(item, EINA_TRUE);
-    }
+    Eo* win = iupeflGetWidget(ih);
+    Eo* focused = evas_focus_get(evas_object_evas_get(win));
+    if (!focused || focused == win || !iupeflKeyIsTarget(focused))
+      iupeflKeyProcessMnemonic(ih, ev);
   }
 }
 

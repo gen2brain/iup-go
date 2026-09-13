@@ -352,6 +352,53 @@ IUP_DRV_API int iupeflKeyIsMenuAccel(Ihandle* ih, int code)
   return menu && iupMenuFindAccel(menu, code);
 }
 
+IUP_DRV_API void iupeflKeySetTarget(Eo* obj, Ihandle* ih)
+{
+  efl_key_data_set(obj, "_IUP_KEY_TARGET", ih);
+}
+
+IUP_DRV_API int iupeflKeyIsTarget(Eo* obj)
+{
+  return obj && efl_key_data_get(obj, "_IUP_KEY_TARGET") != NULL;
+}
+
+static int eflKeyMnemonicKey(Efl_Input_Key* key_event)
+{
+  const char* keyname = efl_input_key_name_get(key_event);
+
+  if (!efl_input_modifier_enabled_get(key_event, EFL_INPUT_MODIFIER_ALT, NULL) || !keyname || !keyname[0] || keyname[1])
+    return 0;
+
+  return keyname[0];
+}
+
+static Efl_Input_Key* efl_key_mnemonic_event = NULL;
+static double efl_key_mnemonic_timestamp = 0;
+
+IUP_DRV_API int iupeflKeyProcessMnemonic(Ihandle* ih, Efl_Input_Key* key_event)
+{
+  int key = eflKeyMnemonicKey(key_event);
+  double timestamp;
+
+  if (!key)
+    return 0;
+
+  timestamp = efl_input_timestamp_get(key_event);
+  if (key_event == efl_key_mnemonic_event && timestamp == efl_key_mnemonic_timestamp)
+  {
+    efl_input_processed_set(key_event, EINA_TRUE);
+    return 1;
+  }
+
+  if (!iupKeyProcessMnemonic(ih, key) && !iupeflMenuOpenItem(iupeflMenuFindMnemonic(ih, key)))
+    return 0;
+
+  efl_key_mnemonic_event = key_event;
+  efl_key_mnemonic_timestamp = timestamp;
+  efl_input_processed_set(key_event, EINA_TRUE);
+  return 1;
+}
+
 IUP_DRV_API void iupeflKeyDownEvent(void* data, const Efl_Event* ev)
 {
   Ihandle* ih = (Ihandle*)data;
@@ -383,7 +430,10 @@ IUP_DRV_API void iupeflKeyDownEvent(void* data, const Efl_Event* ev)
     return;
   }
   if (result == IUP_IGNORE)
+  {
+    efl_input_processed_set(key_event, EINA_TRUE);
     return;
+  }
 
   if (!iupObjectCheck(ih))
     return;
@@ -397,11 +447,32 @@ IUP_DRV_API void iupeflKeyDownEvent(void* data, const Efl_Event* ev)
       return;
     }
     if (result == IUP_IGNORE)
+    {
+      efl_input_processed_set(key_event, EINA_TRUE);
       return;
+    }
   }
 
   if (iupKeyProcessNavigation(ih, code, has_shift))
+  {
+    efl_input_processed_set(key_event, EINA_TRUE);
     return;
+  }
+
+  if (evas_focus_get(evas_object_evas_get(ev->object)) == ev->object)
+  {
+    if (iupeflKeyProcessMnemonic(ih, key_event))
+      return;
+  }
+  else
+  {
+    int key = eflKeyMnemonicKey(key_event);
+    if (key && iupeflMenuFindMnemonic(ih, key))
+    {
+      efl_input_processed_set(key_event, EINA_TRUE);
+      return;
+    }
+  }
 
   if (code == K_F1)
   {

@@ -160,6 +160,46 @@ IUP_DRV_API void iupeflGetOrigin(Ihandle* ih, int *x, int *y)
   *y = abs_y;
 }
 
+IUP_DRV_API Eo* iupeflGetContainer(Ihandle* ih)
+{
+  Ihandle* parent;
+  Eo* container = NULL;
+
+  for (parent = ih->parent; parent; parent = parent->parent)
+  {
+    Eo* content_box = (Eo*)iupAttribGet(parent, "_IUPTAB_CONTAINER");
+    if (content_box)
+      return content_box;
+
+    if (parent->iclass->nativetype == IUP_TYPEVOID || parent->iclass->nativetype == IUP_TYPECANVAS)
+      continue;
+
+    container = (Eo*)iupClassObjectGetInnerNativeContainerHandle(parent, ih);
+    if (!container)
+      container = (Eo*)parent->handle;
+    break;
+  }
+
+  if (!container || !efl_isa(container, EFL_CANVAS_GROUP_CLASS) || efl_isa(container, EFL_UI_WIN_CLASS))
+    return NULL;
+
+  return container;
+}
+
+IUP_DRV_API void iupeflAttachToContainer(Ihandle* ih, Eo* obj)
+{
+  Eo* container;
+
+  if (!obj || evas_object_smart_parent_get(obj))
+    return;
+
+  container = iupeflGetContainer(ih);
+  if (!container || container == obj)
+    return;
+
+  evas_object_smart_member_add(obj, container);
+}
+
 IUP_DRV_API void iupeflSetPosSize(Ihandle* ih, int x, int y, int width, int height)
 {
   Eo* widget = (Eo*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
@@ -172,6 +212,8 @@ IUP_DRV_API void iupeflSetPosSize(Ihandle* ih, int x, int y, int width, int heig
   if (!widget)
     return;
 
+  iupeflAttachToContainer(ih, widget);
+
   iupeflGetOrigin(ih, &abs_x, &abs_y);
   abs_x += x;
   abs_y += y;
@@ -182,6 +224,7 @@ IUP_DRV_API void iupeflSetPosSize(Ihandle* ih, int x, int y, int width, int heig
   bg_rect = (Eo*)iupAttribGet(ih, "_IUP_EFL_BGRECT");
   if (bg_rect)
   {
+    iupeflAttachToContainer(ih, bg_rect);
     efl_gfx_entity_position_set(bg_rect, EINA_POSITION2D(abs_x, abs_y));
     efl_gfx_entity_size_set(bg_rect, EINA_SIZE2D(width, height));
     efl_gfx_stack_below(bg_rect, widget);
@@ -264,11 +307,23 @@ IUP_DRV_API unsigned int iupeflGetDefaultSeat(Eo* widget)
  *
  ****************************************************************************/
 
+static void eflFixedGroupMemberAdd(Eo* obj, void* pd, Eo* member)
+{
+  (void)pd;
+  efl_canvas_group_member_add(efl_super(obj, EFL_UI_WIDGET_CLASS), member);
+}
+
+static Eina_Bool eflFixedClassInitializer(Efl_Class* klass)
+{
+  EFL_OPS_DEFINE(ops, EFL_OBJECT_OP_FUNC(efl_canvas_group_member_add, eflFixedGroupMemberAdd));
+  return efl_class_functions_set(klass, &ops, NULL);
+}
+
 static const Efl_Class_Description _iup_fixed_class_desc = {
   EO_VERSION,
   "Iup.Fixed",
   EFL_CLASS_TYPE_REGULAR,
-  0, NULL, NULL, NULL
+  0, eflFixedClassInitializer, NULL, NULL
 };
 
 EFL_DEFINE_CLASS(iupefl_fixed_class_get, &_iup_fixed_class_desc, EFL_UI_WIDGET_CLASS, NULL)
@@ -371,16 +426,30 @@ IUP_DRV_API void iupeflUpdateMnemonic(Ihandle* ih)
  * Base Callbacks Registration
  ****************************************************************************/
 
+static Eo* eflBaseKeyTarget(Eo* widget)
+{
+  if (efl_isa(widget, EFL_UI_TEXTBOX_CLASS))
+  {
+    Eo* text_obj = efl_text_cursor_object_text_object_get(efl_text_interactive_main_cursor_get(widget));
+    if (text_obj)
+      return text_obj;
+  }
+  return widget;
+}
+
 IUP_DRV_API void iupeflBaseAddCallbacks(Ihandle* ih, Eo* widget)
 {
+  Eo* key_target = eflBaseKeyTarget(widget);
+
   efl_event_callback_add(widget, EFL_EVENT_POINTER_IN, iupeflPointerInEvent, ih);
   efl_event_callback_add(widget, EFL_EVENT_POINTER_OUT, iupeflPointerOutEvent, ih);
   efl_event_callback_add(widget, EFL_EVENT_POINTER_DOWN, iupeflPointerDownEvent, ih);
   efl_event_callback_add(widget, EFL_EVENT_POINTER_UP, iupeflPointerUpEvent, ih);
   efl_event_callback_add(widget, EFL_EVENT_POINTER_MOVE, iupeflPointerMoveEvent, ih);
   efl_event_callback_add(widget, EFL_EVENT_POINTER_WHEEL, iupeflPointerWheelEvent, ih);
-  efl_event_callback_add(widget, EFL_EVENT_KEY_DOWN, iupeflKeyDownEvent, ih);
-  efl_event_callback_add(widget, EFL_EVENT_KEY_UP, iupeflKeyUpEvent, ih);
+  iupeflKeySetTarget(key_target, ih);
+  efl_event_callback_priority_add(key_target, EFL_EVENT_KEY_DOWN, EFL_CALLBACK_PRIORITY_BEFORE, iupeflKeyDownEvent, ih);
+  efl_event_callback_priority_add(key_target, EFL_EVENT_KEY_UP, EFL_CALLBACK_PRIORITY_BEFORE, iupeflKeyUpEvent, ih);
 
   if (efl_isa(widget, EFL_UI_WIDGET_CLASS))
     efl_event_callback_add(widget, EFL_UI_FOCUS_OBJECT_EVENT_FOCUS_CHANGED, iupeflFocusChangedEvent, ih);
@@ -397,8 +466,8 @@ IUP_DRV_API void iupeflBaseRemoveCallbacks(Ihandle* ih, Eo* widget)
   efl_event_callback_del(widget, EFL_EVENT_POINTER_UP, iupeflPointerUpEvent, ih);
   efl_event_callback_del(widget, EFL_EVENT_POINTER_MOVE, iupeflPointerMoveEvent, ih);
   efl_event_callback_del(widget, EFL_EVENT_POINTER_WHEEL, iupeflPointerWheelEvent, ih);
-  efl_event_callback_del(widget, EFL_EVENT_KEY_DOWN, iupeflKeyDownEvent, ih);
-  efl_event_callback_del(widget, EFL_EVENT_KEY_UP, iupeflKeyUpEvent, ih);
+  efl_event_callback_del(eflBaseKeyTarget(widget), EFL_EVENT_KEY_DOWN, iupeflKeyDownEvent, ih);
+  efl_event_callback_del(eflBaseKeyTarget(widget), EFL_EVENT_KEY_UP, iupeflKeyUpEvent, ih);
 
   iupeflKeyImfDestroy(ih);
 
