@@ -95,6 +95,16 @@ IUP_SDK_API void iupdrvSetEntryFunction(Icallback func)
 	exit(0);
 }
 
+IUP_SDK_API void* iupdrvNativeScopeBegin(void)
+{
+	return [[NSAutoreleasePool alloc] init];
+}
+
+IUP_SDK_API void iupdrvNativeScopeEnd(void* scope)
+{
+	[(NSAutoreleasePool*)scope drain];
+}
+
 void IupExitLoop(void)
 {
 	if (s_modal_loop_level > 0)

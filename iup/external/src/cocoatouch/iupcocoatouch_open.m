@@ -153,7 +153,7 @@ void iupCocoaTouchRefreshAllThemes(void)
 
 static int s_cocoatouch_system_dark = -1;
 
-IUP_SDK_API int iupdrvIsSystemDarkMode(void)
+static int cocoaTouchIsSystemDarkMode(void)
 {
 	UIWindow* window = iupCocoaTouchFindCurrentWindow();
 
@@ -166,7 +166,15 @@ IUP_SDK_API int iupdrvIsSystemDarkMode(void)
 	return s_cocoatouch_system_dark;
 }
 
-IUP_SDK_API void iupdrvSetAppearance(int appearance)
+IUP_SDK_API int iupdrvIsSystemDarkMode(void)
+{
+	@autoreleasepool
+	{
+		return cocoaTouchIsSystemDarkMode();
+	}
+}
+
+static void cocoaTouchSetAppearance(int appearance)
 {
 	UIUserInterfaceStyle style = UIUserInterfaceStyleUnspecified;
 
@@ -187,6 +195,14 @@ IUP_SDK_API void iupdrvSetAppearance(int appearance)
 	iupCocoaTouchRefreshAllThemes();
 }
 
+IUP_SDK_API void iupdrvSetAppearance(int appearance)
+{
+	@autoreleasepool
+	{
+		cocoaTouchSetAppearance(appearance);
+	}
+}
+
 void iupCocoaTouchHandleTraitFlip(void)
 {
 	/* dedupe across the multiple VCs that fire on each flip */
@@ -202,7 +218,7 @@ void iupCocoaTouchHandleTraitFlip(void)
 	iupGlobalNotifyThemeChanged();
 }
 
-IUP_SDK_API int iupdrvOpen(int* argc, char*** argv)
+static int cocoaTouchOpen(int* argc, char*** argv)
 {
 	(void)argc;
 	(void)argv;
@@ -221,6 +237,14 @@ IUP_SDK_API int iupdrvOpen(int* argc, char*** argv)
 	return IUP_NOERROR;
 }
 
+IUP_SDK_API int iupdrvOpen(int* argc, char*** argv)
+{
+	@autoreleasepool
+	{
+		return cocoaTouchOpen(argc, argv);
+	}
+}
+
 /* APPID/APPNAME are read-only; baked into Info.plist at build time */
 IUP_SDK_API int iupdrvSetGlobalAppIDAttrib(const char* value)
 {
@@ -234,7 +258,15 @@ IUP_SDK_API int iupdrvSetGlobalAppNameAttrib(const char* value)
 	return 0;
 }
 
-IUP_SDK_API void iupdrvClose(void)
+static void cocoaTouchClose(void)
 {
 	iupdrvFontFinish();
+}
+
+IUP_SDK_API void iupdrvClose(void)
+{
+	@autoreleasepool
+	{
+		cocoaTouchClose();
+	}
 }

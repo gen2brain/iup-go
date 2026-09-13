@@ -348,14 +348,30 @@ IUP_DRV_API NSAttributedString* iupCocoaTouchParseMarkup(const char* raw, UIFont
 	return out.length > 0 ? out : nil;
 }
 
-IUP_SDK_API void iupdrvActivate(Ihandle* ih)
+static void cocoaTouchActivate(Ihandle* ih)
 {
 	(void)ih;
 }
 
-IUP_SDK_API void iupdrvReparent(Ihandle* ih)
+IUP_SDK_API void iupdrvActivate(Ihandle* ih)
+{
+	@autoreleasepool
+	{
+		cocoaTouchActivate(ih);
+	}
+}
+
+static void cocoaTouchReparent(Ihandle* ih)
 {
 	iupCocoaTouchAddToParent(ih);
+}
+
+IUP_SDK_API void iupdrvReparent(Ihandle* ih)
+{
+	@autoreleasepool
+	{
+		cocoaTouchReparent(ih);
+	}
 }
 
 IUP_SDK_API void iupdrvBaseLayoutUpdateMethod(Ihandle* ih)
@@ -384,7 +400,7 @@ IUP_SDK_API void iupdrvBaseUnMapMethod(Ihandle* ih)
 	ih->handle = NULL;
 }
 
-IUP_SDK_API void iupdrvDisplayUpdate(Ihandle* ih)
+static void cocoaTouchDisplayUpdate(Ihandle* ih)
 {
 	id handle = ih->handle;
 	if ([handle isKindOfClass:[UIView class]])
@@ -393,9 +409,25 @@ IUP_SDK_API void iupdrvDisplayUpdate(Ihandle* ih)
 	}
 }
 
-IUP_SDK_API void iupdrvDisplayRedraw(Ihandle* ih)
+IUP_SDK_API void iupdrvDisplayUpdate(Ihandle* ih)
+{
+	@autoreleasepool
+	{
+		cocoaTouchDisplayUpdate(ih);
+	}
+}
+
+static void cocoaTouchDisplayRedraw(Ihandle* ih)
 {
 	iupdrvDisplayUpdate(ih);
+}
+
+IUP_SDK_API void iupdrvDisplayRedraw(Ihandle* ih)
+{
+	@autoreleasepool
+	{
+		cocoaTouchDisplayRedraw(ih);
+	}
 }
 
 static UIView* cocoaTouchCommonGetView(Ihandle* ih)
@@ -407,7 +439,7 @@ static UIView* cocoaTouchCommonGetView(Ihandle* ih)
 	return nil;
 }
 
-IUP_SDK_API void iupdrvScreenToClient(Ihandle* ih, int* x, int* y)
+static void cocoaTouchScreenToClient(Ihandle* ih, int* x, int* y)
 {
 	UIView* view = cocoaTouchCommonGetView(ih);
 	UIWindow* win = view.window ?: iupCocoaTouchFindCurrentWindow();
@@ -419,7 +451,15 @@ IUP_SDK_API void iupdrvScreenToClient(Ihandle* ih, int* x, int* y)
 	*y = iupROUND(view_pt.y);
 }
 
-IUP_SDK_API void iupdrvClientToScreen(Ihandle* ih, int* x, int* y)
+IUP_SDK_API void iupdrvScreenToClient(Ihandle* ih, int* x, int* y)
+{
+	@autoreleasepool
+	{
+		cocoaTouchScreenToClient(ih, x, y);
+	}
+}
+
+static void cocoaTouchClientToScreen(Ihandle* ih, int* x, int* y)
 {
 	UIView* view = cocoaTouchCommonGetView(ih);
 	UIWindow* win = view.window ?: iupCocoaTouchFindCurrentWindow();
@@ -429,6 +469,14 @@ IUP_SDK_API void iupdrvClientToScreen(Ihandle* ih, int* x, int* y)
 	CGPoint screen_pt = [win convertPoint:window_pt toWindow:nil];
 	*x = iupROUND(screen_pt.x);
 	*y = iupROUND(screen_pt.y);
+}
+
+IUP_SDK_API void iupdrvClientToScreen(Ihandle* ih, int* x, int* y)
+{
+	@autoreleasepool
+	{
+		cocoaTouchClientToScreen(ih, x, y);
+	}
 }
 
 IUP_SDK_API int iupdrvBaseSetZorderAttrib(Ihandle* ih, const char* value)
@@ -441,25 +489,49 @@ IUP_SDK_API int iupdrvBaseSetZorderAttrib(Ihandle* ih, const char* value)
 	return 1;
 }
 
-IUP_SDK_API void iupdrvSetVisible(Ihandle* ih, int visible)
+static void cocoaTouchSetVisible(Ihandle* ih, int visible)
 {
 	UIView* view = cocoaTouchCommonGetView(ih);
 	if (view) [view setHidden:visible ? NO : YES];
 }
 
-IUP_SDK_API int iupdrvIsVisible(Ihandle* ih)
+IUP_SDK_API void iupdrvSetVisible(Ihandle* ih, int visible)
+{
+	@autoreleasepool
+	{
+		cocoaTouchSetVisible(ih, visible);
+	}
+}
+
+static int cocoaTouchIsVisible(Ihandle* ih)
 {
 	UIView* view = cocoaTouchCommonGetView(ih);
 	return view ? !view.isHidden : 1;
 }
 
-IUP_SDK_API int iupdrvIsActive(Ihandle* ih)
+IUP_SDK_API int iupdrvIsVisible(Ihandle* ih)
+{
+	@autoreleasepool
+	{
+		return cocoaTouchIsVisible(ih);
+	}
+}
+
+static int cocoaTouchIsActive(Ihandle* ih)
 {
 	const char* v = iupAttribGet(ih, "_IUPCOCOATOUCH_ACTIVE");
 	return (!v) ? 1 : iupStrBoolean(v);
 }
 
-IUP_SDK_API void iupdrvSetActive(Ihandle* ih, int enable)
+IUP_SDK_API int iupdrvIsActive(Ihandle* ih)
+{
+	@autoreleasepool
+	{
+		return cocoaTouchIsActive(ih);
+	}
+}
+
+static void cocoaTouchSetActive(Ihandle* ih, int enable)
 {
 	iupAttribSet(ih, "_IUPCOCOATOUCH_ACTIVE", enable ? "YES" : "NO");
 	id handle = ih->handle;
@@ -467,6 +539,14 @@ IUP_SDK_API void iupdrvSetActive(Ihandle* ih, int enable)
 		[handle setEnabled:enable ? YES : NO];
 	else if ([handle isKindOfClass:[UIView class]])
 		[(UIView*)handle setUserInteractionEnabled:enable ? YES : NO];
+}
+
+IUP_SDK_API void iupdrvSetActive(Ihandle* ih, int enable)
+{
+	@autoreleasepool
+	{
+		cocoaTouchSetActive(ih, enable);
+	}
 }
 
 IUP_SDK_API char* iupdrvBaseGetXAttrib(Ihandle* ih)
@@ -492,12 +572,20 @@ IUP_SDK_API int iupdrvBaseSetCursorAttrib(Ihandle* ih, const char* value)
 	return 0;
 }
 
-IUP_SDK_API int iupdrvGetScrollbarSize(void)
+static int cocoaTouchGetScrollbarSize(void)
 {
 	return 0;
 }
 
-IUP_SDK_API void iupdrvSetAccessibleTitle(Ihandle* ih, const char* title)
+IUP_SDK_API int iupdrvGetScrollbarSize(void)
+{
+	@autoreleasepool
+	{
+		return cocoaTouchGetScrollbarSize();
+	}
+}
+
+static void cocoaTouchSetAccessibleTitle(Ihandle* ih, const char* title)
 {
 	id handle = ih->handle;
 	if ([handle respondsToSelector:@selector(setAccessibilityLabel:)])
@@ -506,11 +594,27 @@ IUP_SDK_API void iupdrvSetAccessibleTitle(Ihandle* ih, const char* title)
 	}
 }
 
-IUP_SDK_API void iupdrvSetAccessibleDescription(Ihandle* ih, const char* description)
+IUP_SDK_API void iupdrvSetAccessibleTitle(Ihandle* ih, const char* title)
+{
+	@autoreleasepool
+	{
+		cocoaTouchSetAccessibleTitle(ih, title);
+	}
+}
+
+static void cocoaTouchSetAccessibleDescription(Ihandle* ih, const char* description)
 {
 	id handle = ih->handle;
 	if ([handle respondsToSelector:@selector(setAccessibilityHint:)])
 		[handle setAccessibilityHint:description ? [NSString stringWithUTF8String:description] : nil];
+}
+
+IUP_SDK_API void iupdrvSetAccessibleDescription(Ihandle* ih, const char* description)
+{
+	@autoreleasepool
+	{
+		cocoaTouchSetAccessibleDescription(ih, description);
+	}
 }
 
 IUP_SDK_API void iupdrvBaseRegisterCommonAttrib(Iclass* ic)
@@ -523,24 +627,56 @@ IUP_SDK_API void iupdrvBaseRegisterVisualAttrib(Iclass* ic)
 	(void)ic;
 }
 
+static void cocoaTouchPostRedraw(Ihandle* ih)
+{
+	iupdrvDisplayUpdate(ih);
+}
+
 IUP_SDK_API void iupdrvPostRedraw(Ihandle* ih)
+{
+	@autoreleasepool
+	{
+		cocoaTouchPostRedraw(ih);
+	}
+}
+
+static void cocoaTouchRedrawNow(Ihandle* ih)
 {
 	iupdrvDisplayUpdate(ih);
 }
 
 IUP_SDK_API void iupdrvRedrawNow(Ihandle* ih)
 {
-	iupdrvDisplayUpdate(ih);
+	@autoreleasepool
+	{
+		cocoaTouchRedrawNow(ih);
+	}
 }
 
-IUP_SDK_API void iupdrvSendKey(int key, int press)
+static void cocoaTouchSendKey(int key, int press)
 {
 	(void)key; (void)press;
 }
 
-IUP_SDK_API void iupdrvSendMouse(int x, int y, int bt, int status)
+IUP_SDK_API void iupdrvSendKey(int key, int press)
+{
+	@autoreleasepool
+	{
+		cocoaTouchSendKey(key, press);
+	}
+}
+
+static void cocoaTouchSendMouse(int x, int y, int bt, int status)
 {
 	(void)x; (void)y; (void)bt; (void)status;
+}
+
+IUP_SDK_API void iupdrvSendMouse(int x, int y, int bt, int status)
+{
+	@autoreleasepool
+	{
+		cocoaTouchSendMouse(x, y, bt, status);
+	}
 }
 
 IUP_SDK_API void iupdrvSleep(int time)
@@ -548,7 +684,15 @@ IUP_SDK_API void iupdrvSleep(int time)
 	if (time > 0) usleep((useconds_t)time * 1000);
 }
 
-IUP_SDK_API void iupdrvWarpPointer(int x, int y)
+static void cocoaTouchWarpPointer(int x, int y)
 {
 	(void)x; (void)y;
+}
+
+IUP_SDK_API void iupdrvWarpPointer(int x, int y)
+{
+	@autoreleasepool
+	{
+		cocoaTouchWarpPointer(x, y);
+	}
 }

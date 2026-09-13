@@ -61,7 +61,7 @@ static Ihandle* cocoaTouchFocusFirstFocusable(Ihandle* ih)
 	return NULL;
 }
 
-IUP_SDK_API void iupdrvSetFocus(Ihandle* ih)
+static void cocoaTouchSetFocus(Ihandle* ih)
 {
 	if (!ih) return;
 
@@ -82,4 +82,12 @@ IUP_SDK_API void iupdrvSetFocus(Ihandle* ih)
 
 	if ([view becomeFirstResponder])
 		iupCallGetFocusCb(ih);
+}
+
+IUP_SDK_API void iupdrvSetFocus(Ihandle* ih)
+{
+	@autoreleasepool
+	{
+		cocoaTouchSetFocus(ih);
+	}
 }

@@ -119,7 +119,7 @@ static IupCocoaTouchFont* cocoaTouchGetSystemFont(void)
 	return s_systemFont;
 }
 
-IUP_SDK_API char* iupdrvGetSystemFont(void)
+static char* cocoaTouchSystemFontName(void)
 {
 	static char buffer[200] = "";
 	if (s_systemFont == nil)
@@ -130,6 +130,14 @@ IUP_SDK_API char* iupdrvGetSystemFont(void)
 	/* refresh every call; Dynamic Type can flip s_systemFont mid-session */
 	if (s_systemFont) strlcpy(buffer, [[s_systemFont iupFontName] UTF8String], sizeof(buffer));
 	return buffer;
+}
+
+IUP_SDK_API char* iupdrvGetSystemFont(void)
+{
+	@autoreleasepool
+	{
+		return cocoaTouchSystemFontName();
+	}
 }
 
 static BOOL cocoaTouchFontIsSystemName(const char* name)
@@ -360,18 +368,34 @@ static BOOL cocoaTouchFontGetMarkupSize(Ihandle* ih, const char* str, int* w, in
 	return YES;
 }
 
-IUP_SDK_API void iupdrvFontGetMultiLineStringSize(Ihandle* ih, const char* str, int* w, int* h)
+static void cocoaTouchFontGetMultiLineStringSize(Ihandle* ih, const char* str, int* w, int* h)
 {
 	if (cocoaTouchFontGetMarkupSize(ih, str, w, h)) return;
 	cocoaTouchFontGetTextSize(iupCocoaTouchGetFont(ih), str, str ? (int)strlen(str) : 0, w, h);
 }
 
-IUP_SDK_API void iupdrvFontGetTextSize(const char* font_name, const char* str, int len, int* w, int* h)
+IUP_SDK_API void iupdrvFontGetMultiLineStringSize(Ihandle* ih, const char* str, int* w, int* h)
+{
+	@autoreleasepool
+	{
+		cocoaTouchFontGetMultiLineStringSize(ih, str, w, h);
+	}
+}
+
+static void cocoaTouchFontTextSize(const char* font_name, const char* str, int len, int* w, int* h)
 {
 	cocoaTouchFontGetTextSize(iupCocoaTouchFindFont(font_name), str, len, w, h);
 }
 
-IUP_SDK_API int iupdrvFontGetStringWidth(Ihandle* ih, const char* str)
+IUP_SDK_API void iupdrvFontGetTextSize(const char* font_name, const char* str, int len, int* w, int* h)
+{
+	@autoreleasepool
+	{
+		cocoaTouchFontTextSize(font_name, str, len, w, h);
+	}
+}
+
+static int cocoaTouchFontGetStringWidth(Ihandle* ih, const char* str)
 {
 	if (!str || !*str) return 0;
 	int w = 0;
@@ -385,7 +409,15 @@ IUP_SDK_API int iupdrvFontGetStringWidth(Ihandle* ih, const char* str)
 	return w;
 }
 
-IUP_SDK_API void iupdrvFontGetCharSize(Ihandle* ih, int* charwidth, int* charheight)
+IUP_SDK_API int iupdrvFontGetStringWidth(Ihandle* ih, const char* str)
+{
+	@autoreleasepool
+	{
+		return cocoaTouchFontGetStringWidth(ih, str);
+	}
+}
+
+static void cocoaTouchFontGetCharSize(Ihandle* ih, int* charwidth, int* charheight)
 {
 	IupCocoaTouchFont* font = iupCocoaTouchGetFont(ih);
 	if (!font)
@@ -398,7 +430,15 @@ IUP_SDK_API void iupdrvFontGetCharSize(Ihandle* ih, int* charwidth, int* charhei
 	if (charheight) *charheight = [font charHeight];
 }
 
-IUP_SDK_API void iupdrvFontGetFontDim(const char* font_name, int* max_width, int* line_height, int* ascent, int* descent)
+IUP_SDK_API void iupdrvFontGetCharSize(Ihandle* ih, int* charwidth, int* charheight)
+{
+	@autoreleasepool
+	{
+		cocoaTouchFontGetCharSize(ih, charwidth, charheight);
+	}
+}
+
+static void cocoaTouchFontGetFontDim(const char* font_name, int* max_width, int* line_height, int* ascent, int* descent)
 {
 	IupCocoaTouchFont* font = iupCocoaTouchFindFont(font_name);
 	if (!font) return;
@@ -406,6 +446,14 @@ IUP_SDK_API void iupdrvFontGetFontDim(const char* font_name, int* max_width, int
 	if (line_height) *line_height = [font charHeight];
 	if (ascent)      *ascent      = [font ascent];
 	if (descent)     *descent     = [font descent];
+}
+
+IUP_SDK_API void iupdrvFontGetFontDim(const char* font_name, int* max_width, int* line_height, int* ascent, int* descent)
+{
+	@autoreleasepool
+	{
+		cocoaTouchFontGetFontDim(font_name, max_width, line_height, ascent, descent);
+	}
 }
 
 static int cocoaTouchFontFamilyCompare(const void* a, const void* b)
@@ -436,7 +484,7 @@ IUP_SDK_API int iupdrvFontGetFamilyList(char*** list)
 
 static id s_contentSizeObserver = nil;
 
-IUP_SDK_API void iupdrvFontInit(void)
+static void cocoaTouchFontInit(void)
 {
 	if (s_fontCache == nil)
 	{
@@ -460,7 +508,15 @@ IUP_SDK_API void iupdrvFontInit(void)
 	}
 }
 
-IUP_SDK_API void iupdrvFontFinish(void)
+IUP_SDK_API void iupdrvFontInit(void)
+{
+	@autoreleasepool
+	{
+		cocoaTouchFontInit();
+	}
+}
+
+static void cocoaTouchFontFinish(void)
 {
 	if (s_contentSizeObserver)
 	{
@@ -472,4 +528,12 @@ IUP_SDK_API void iupdrvFontFinish(void)
 	s_fontCache = nil;
 	[s_systemFont release];
 	s_systemFont = nil;
+}
+
+IUP_SDK_API void iupdrvFontFinish(void)
+{
+	@autoreleasepool
+	{
+		cocoaTouchFontFinish();
+	}
 }

@@ -19,31 +19,71 @@
 #include "iup_str.h"
 #include "iup_drvinfo.h"
 
-IUP_SDK_API void iupdrvAddScreenOffset(int* x, int* y, int add)
+static void cocoaTouchAddScreenOffset(int* x, int* y, int add)
 {
 	(void)x; (void)y; (void)add;
 }
 
-IUP_SDK_API void iupdrvGetScreenSize(int* width, int* height)
+IUP_SDK_API void iupdrvAddScreenOffset(int* x, int* y, int add)
+{
+	@autoreleasepool
+	{
+		cocoaTouchAddScreenOffset(x, y, add);
+	}
+}
+
+static void cocoaTouchGetScreenSize(int* width, int* height)
 {
 	CGRect rect = [[UIScreen mainScreen] bounds];
 	if (width)  *width  = (int)rect.size.width;
 	if (height) *height = (int)rect.size.height;
 }
 
-IUP_SDK_API void iupdrvGetFullSize(int* width, int* height)
+IUP_SDK_API void iupdrvGetScreenSize(int* width, int* height)
+{
+	@autoreleasepool
+	{
+		cocoaTouchGetScreenSize(width, height);
+	}
+}
+
+static void cocoaTouchGetFullSize(int* width, int* height)
 {
 	iupdrvGetScreenSize(width, height);
 }
 
-IUP_SDK_API int iupdrvGetScreenDepth(void)
+IUP_SDK_API void iupdrvGetFullSize(int* width, int* height)
+{
+	@autoreleasepool
+	{
+		cocoaTouchGetFullSize(width, height);
+	}
+}
+
+static int cocoaTouchGetScreenDepth(void)
 {
 	return 32;
 }
 
-IUP_SDK_API double iupdrvGetScreenDpi(void)
+IUP_SDK_API int iupdrvGetScreenDepth(void)
+{
+	@autoreleasepool
+	{
+		return cocoaTouchGetScreenDepth();
+	}
+}
+
+static double cocoaTouchGetScreenDpi(void)
 {
 	return [[UIScreen mainScreen] scale] * 72.0;
+}
+
+IUP_SDK_API double iupdrvGetScreenDpi(void)
+{
+	@autoreleasepool
+	{
+		return cocoaTouchGetScreenDpi();
+	}
 }
 
 IUP_SDK_API int iupdrvScaleNaturalPx(int px)
@@ -54,7 +94,7 @@ IUP_SDK_API int iupdrvScaleNaturalPx(int px)
 
 extern void iupCocoaTouchGetLastTouchScreen(CGPoint* out);
 
-IUP_SDK_API void iupdrvGetCursorPos(int* x, int* y)
+static void cocoaTouchGetCursorPos(int* x, int* y)
 {
 	CGPoint p;
 	iupCocoaTouchGetLastTouchScreen(&p);
@@ -62,7 +102,15 @@ IUP_SDK_API void iupdrvGetCursorPos(int* x, int* y)
 	if (y) *y = (int)p.y;
 }
 
-IUP_SDK_API void iupdrvGetKeyState(char* key)
+IUP_SDK_API void iupdrvGetCursorPos(int* x, int* y)
+{
+	@autoreleasepool
+	{
+		cocoaTouchGetCursorPos(x, y);
+	}
+}
+
+static void cocoaTouchGetKeyState(char* key)
 {
 	if (!key) return;
 	key[0] = ' ';
@@ -72,12 +120,28 @@ IUP_SDK_API void iupdrvGetKeyState(char* key)
 	key[4] = 0;
 }
 
-IUP_SDK_API char* iupdrvGetSystemName(void)
+IUP_SDK_API void iupdrvGetKeyState(char* key)
+{
+	@autoreleasepool
+	{
+		cocoaTouchGetKeyState(key);
+	}
+}
+
+static char* cocoaTouchGetSystemName(void)
 {
 	return "iOS";
 }
 
-IUP_SDK_API char* iupdrvGetSystemVersion(void)
+IUP_SDK_API char* iupdrvGetSystemName(void)
+{
+	@autoreleasepool
+	{
+		return cocoaTouchGetSystemName();
+	}
+}
+
+static char* cocoaTouchGetSystemVersion(void)
 {
 	NSString* version = [[NSProcessInfo processInfo] operatingSystemVersionString];
 	const char* c_str = [version UTF8String];
@@ -87,7 +151,15 @@ IUP_SDK_API char* iupdrvGetSystemVersion(void)
 	return out;
 }
 
-IUP_SDK_API char* iupdrvGetComputerName(void)
+IUP_SDK_API char* iupdrvGetSystemVersion(void)
+{
+	@autoreleasepool
+	{
+		return cocoaTouchGetSystemVersion();
+	}
+}
+
+static char* cocoaTouchGetComputerName(void)
 {
 	char host[_POSIX_HOST_NAME_MAX + 1];
 	if (gethostname(host, _POSIX_HOST_NAME_MAX) != 0)
@@ -100,7 +172,15 @@ IUP_SDK_API char* iupdrvGetComputerName(void)
 	return out;
 }
 
-IUP_SDK_API char* iupdrvGetUserName(void)
+IUP_SDK_API char* iupdrvGetComputerName(void)
+{
+	@autoreleasepool
+	{
+		return cocoaTouchGetComputerName();
+	}
+}
+
+static char* cocoaTouchGetUserName(void)
 {
 	NSString* user = NSFullUserName();
 	const char* c_str = [user UTF8String];
@@ -110,7 +190,15 @@ IUP_SDK_API char* iupdrvGetUserName(void)
 	return out;
 }
 
-IUP_SDK_API int iupdrvGetPreferencePath(char* filename, const char* app_name, int use_system)
+IUP_SDK_API char* iupdrvGetUserName(void)
+{
+	@autoreleasepool
+	{
+		return cocoaTouchGetUserName();
+	}
+}
+
+static int cocoaTouchGetPreferencePath(char* filename, const char* app_name, int use_system)
 {
 	(void)use_system;
 	filename[0] = '\0';
@@ -133,7 +221,15 @@ IUP_SDK_API int iupdrvGetPreferencePath(char* filename, const char* app_name, in
 	return 1;
 }
 
-IUP_SDK_API int iupdrvGetUserDir(char* path, int size, int kind)
+IUP_SDK_API int iupdrvGetPreferencePath(char* filename, const char* app_name, int use_system)
+{
+	@autoreleasepool
+	{
+		return cocoaTouchGetPreferencePath(filename, app_name, use_system);
+	}
+}
+
+static int cocoaTouchGetUserDir(char* path, int size, int kind)
 {
 	if (!path || size <= 0)
 		return 0;
@@ -168,7 +264,15 @@ IUP_SDK_API int iupdrvGetUserDir(char* path, int size, int kind)
 	return 1;
 }
 
-IUP_SDK_API char* iupdrvGetCurrentDirectory(void)
+IUP_SDK_API int iupdrvGetUserDir(char* path, int size, int kind)
+{
+	@autoreleasepool
+	{
+		return cocoaTouchGetUserDir(path, size, kind);
+	}
+}
+
+static char* cocoaTouchGetCurrentDirectory(void)
 {
 	char buf[PATH_MAX];
 	if (!getcwd(buf, sizeof(buf)))
@@ -181,9 +285,25 @@ IUP_SDK_API char* iupdrvGetCurrentDirectory(void)
 	return out;
 }
 
-IUP_SDK_API int iupdrvSetCurrentDirectory(const char* dir)
+IUP_SDK_API char* iupdrvGetCurrentDirectory(void)
+{
+	@autoreleasepool
+	{
+		return cocoaTouchGetCurrentDirectory();
+	}
+}
+
+static int cocoaTouchSetCurrentDirectory(const char* dir)
 {
 	return chdir(dir) == 0 ? 1 : 0;
+}
+
+IUP_SDK_API int iupdrvSetCurrentDirectory(const char* dir)
+{
+	@autoreleasepool
+	{
+		return cocoaTouchSetCurrentDirectory(dir);
+	}
 }
 
 IUP_API void IupLogV(const char* type, const char* format, va_list arglist)
@@ -209,7 +329,15 @@ IUP_API void IupLog(const char* type, const char* format, ...)
 	va_end(arglist);
 }
 
-IUP_SDK_API char* iupdrvLocaleInfo(void)
+static char* cocoaTouchLocaleInfo(void)
 {
 	return iupStrReturnStr(nl_langinfo(CODESET));
+}
+
+IUP_SDK_API char* iupdrvLocaleInfo(void)
+{
+	@autoreleasepool
+	{
+		return cocoaTouchLocaleInfo();
+	}
 }

@@ -124,7 +124,7 @@ static unsigned char* cocoaTouchImageReadBackRGBA(CGImageRef cg_image, int* out_
 }
 
 
-IUP_SDK_API void iupdrvImageGetData(void* handle, unsigned char* imgdata)
+static void cocoaTouchImageGetData(void* handle, unsigned char* imgdata)
 {
 	/* interleaved RGBA, or RGB if no alpha */
 	if (!handle || !imgdata) return;
@@ -157,14 +157,30 @@ IUP_SDK_API void iupdrvImageGetData(void* handle, unsigned char* imgdata)
 	free(rgba);
 }
 
+IUP_SDK_API void iupdrvImageGetData(void* handle, unsigned char* imgdata)
+{
+	@autoreleasepool
+	{
+		cocoaTouchImageGetData(handle, imgdata);
+	}
+}
 
-IUP_SDK_API int iupdrvImageGetRawInfo(void* handle, int* w, int* h, int* bpp, iupColor* palette, int* palette_count)
+
+static int cocoaTouchImageGetRawInfo(void* handle, int* w, int* h, int* bpp, iupColor* palette, int* palette_count)
 {
 	(void)palette; (void)palette_count;
 	return iupdrvImageGetInfo(handle, w, h, bpp);
 }
 
-IUP_SDK_API void* iupdrvImageCreateImage(Ihandle* ih, const char* bgcolor, int make_inactive)
+IUP_SDK_API int iupdrvImageGetRawInfo(void* handle, int* w, int* h, int* bpp, iupColor* palette, int* palette_count)
+{
+	@autoreleasepool
+	{
+		return cocoaTouchImageGetRawInfo(handle, w, h, bpp, palette, palette_count);
+	}
+}
+
+static void* cocoaTouchImageCreateImage(Ihandle* ih, const char* bgcolor, int make_inactive)
 {
 	int bpp    = iupAttribGetInt(ih, "BPP");
 	int width  = ih->currentwidth;
@@ -188,18 +204,42 @@ IUP_SDK_API void* iupdrvImageCreateImage(Ihandle* ih, const char* bgcolor, int m
 	return [ui_image retain];
 }
 
-IUP_SDK_API void* iupdrvImageCreateIcon(Ihandle* ih)
+IUP_SDK_API void* iupdrvImageCreateImage(Ihandle* ih, const char* bgcolor, int make_inactive)
+{
+	@autoreleasepool
+	{
+		return cocoaTouchImageCreateImage(ih, bgcolor, make_inactive);
+	}
+}
+
+static void* cocoaTouchImageCreateIcon(Ihandle* ih)
 {
 	return iupdrvImageCreateImage(ih, NULL, 0);
 }
 
-IUP_SDK_API void* iupdrvImageCreateCursor(Ihandle* ih)
+IUP_SDK_API void* iupdrvImageCreateIcon(Ihandle* ih)
+{
+	@autoreleasepool
+	{
+		return cocoaTouchImageCreateIcon(ih);
+	}
+}
+
+static void* cocoaTouchImageCreateCursor(Ihandle* ih)
 {
 	(void)ih;
 	return NULL;  /* no user-supplied cursor image on iOS */
 }
 
-IUP_SDK_API void* iupdrvImageLoad(const char* name, int type)
+IUP_SDK_API void* iupdrvImageCreateCursor(Ihandle* ih)
+{
+	@autoreleasepool
+	{
+		return cocoaTouchImageCreateCursor(ih);
+	}
+}
+
+static void* cocoaTouchImageLoad(const char* name, int type)
 {
 	(void)type;
 	if (!name) return NULL;
@@ -224,7 +264,15 @@ IUP_SDK_API void* iupdrvImageLoad(const char* name, int type)
 	return NULL;
 }
 
-IUP_SDK_API int iupdrvImageGetInfo(void* handle, int* w, int* h, int* bpp)
+IUP_SDK_API void* iupdrvImageLoad(const char* name, int type)
+{
+	@autoreleasepool
+	{
+		return cocoaTouchImageLoad(name, type);
+	}
+}
+
+static int cocoaTouchImageGetInfo(void* handle, int* w, int* h, int* bpp)
 {
 	UIImage* ui_image = (UIImage*)handle;
 	if (!ui_image) return 0;
@@ -236,14 +284,30 @@ IUP_SDK_API int iupdrvImageGetInfo(void* handle, int* w, int* h, int* bpp)
 	return 1;
 }
 
-IUP_SDK_API void iupdrvImageDestroy(void* handle, int type)
+IUP_SDK_API int iupdrvImageGetInfo(void* handle, int* w, int* h, int* bpp)
+{
+	@autoreleasepool
+	{
+		return cocoaTouchImageGetInfo(handle, w, h, bpp);
+	}
+}
+
+static void cocoaTouchImageDestroy(void* handle, int type)
 {
 	(void)type;
 	[(UIImage*)handle release];
 }
 
+IUP_SDK_API void iupdrvImageDestroy(void* handle, int type)
+{
+	@autoreleasepool
+	{
+		cocoaTouchImageDestroy(handle, type);
+	}
+}
+
 /* unpremultiplied AARRGGBB icon bytes */
-IUP_SDK_API int iupdrvGetIconPixels(Ihandle* ih, const char* value, int* width, int* height, unsigned char** pixels)
+static int cocoaTouchGetIconPixels(Ihandle* ih, const char* value, int* width, int* height, unsigned char** pixels)
 {
 	(void)ih;
 	if (!value || !width || !height || !pixels) return 0;
@@ -274,6 +338,14 @@ IUP_SDK_API int iupdrvGetIconPixels(Ihandle* ih, const char* value, int* width, 
 	*height = h;
 	*pixels = out;
 	return 1;
+}
+
+IUP_SDK_API int iupdrvGetIconPixels(Ihandle* ih, const char* value, int* width, int* height, unsigned char** pixels)
+{
+	@autoreleasepool
+	{
+		return cocoaTouchGetIconPixels(ih, value, width, height, pixels);
+	}
 }
 
 
@@ -359,7 +431,7 @@ static int cocoaTouchImageEncode(unsigned char* imgdata, int width, int height, 
 	return 1;
 }
 
-IUP_SDK_API int iupdrvImageSave(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count,
+static int cocoaTouchImageSave(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count,
                     const char* filename, const char* format)
 {
 	NSData* data = nil;
@@ -369,7 +441,16 @@ IUP_SDK_API int iupdrvImageSave(unsigned char* imgdata, int width, int height, i
 	return ok ? 1 : 0;
 }
 
-IUP_SDK_API unsigned char* iupdrvImageSaveToBuffer(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count,
+IUP_SDK_API int iupdrvImageSave(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count,
+                    const char* filename, const char* format)
+{
+	@autoreleasepool
+	{
+		return cocoaTouchImageSave(imgdata, width, height, bpp, colors, colors_count, filename, format);
+	}
+}
+
+static unsigned char* cocoaTouchImageSaveToBuffer(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count,
                                        const char* format, int* size)
 {
 	NSData* data = nil;
@@ -381,4 +462,13 @@ IUP_SDK_API unsigned char* iupdrvImageSaveToBuffer(unsigned char* imgdata, int w
 	[data release];
 	if (size) *size = (int)len;
 	return buf;
+}
+
+IUP_SDK_API unsigned char* iupdrvImageSaveToBuffer(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count,
+                                       const char* format, int* size)
+{
+	@autoreleasepool
+	{
+		return cocoaTouchImageSaveToBuffer(imgdata, width, height, bpp, colors, colors_count, format, size);
+	}
 }
