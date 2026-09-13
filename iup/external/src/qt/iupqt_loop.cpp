@@ -64,6 +64,16 @@ extern "C" IUP_SDK_API void iupdrvSetEntryFunction(Icallback func)
   (void)func;
 }
 
+extern "C" IUP_SDK_API void* iupdrvNativeScopeBegin(void)
+{
+  return NULL;
+}
+
+extern "C" IUP_SDK_API void iupdrvNativeScopeEnd(void* scope)
+{
+  (void)scope;
+}
+
 extern "C" IUP_SDK_API void iupdrvSetIdleFunction(Icallback f)
 {
   if (qt_idle_timer)

@@ -37,6 +37,14 @@ IUP_SDK_API void iupdrvSetIdleFunction(Icallback func);
  * \ingroup drv */
 IUP_SDK_API void iupdrvSetEntryFunction(Icallback func);
 
+/** Opens a native scope around one call into the driver. Called from the class dispatch.
+ * \ingroup drv */
+IUP_SDK_API void* iupdrvNativeScopeBegin(void);
+
+/** Closes a scope returned by \ref iupdrvNativeScopeBegin.
+ * \ingroup drv */
+IUP_SDK_API void iupdrvNativeScopeEnd(void* scope);
+
 /** Convert the coordinates from screen relative to client area.
  * \ingroup drv */
 IUP_SDK_API void iupdrvScreenToClient(Ihandle* ih, int *x, int *y);
