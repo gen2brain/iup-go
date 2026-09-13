@@ -157,6 +157,41 @@ void iupUpdateFontAttrib(Ihandle* ih)
   iupAttribSetClassObject(ih, "FONT", iupGetFontValue(ih));
 }
 
+IUP_SDK_API void iupFontGetMultiLineStringSize(Ihandle* ih, const char* str, int *w, int *h)
+{
+  char* font = iupGetFontValue(ih);
+  int markup = iupAttribGetBoolean(ih, "MARKUP");
+  int width, height;
+
+  if (str && font)
+  {
+    char* last_font = iupAttribGet(ih, "_IUPFONT_SIZE_FONT");
+    char* last_str = iupAttribGet(ih, "_IUPFONT_SIZE_STR");
+
+    if (last_font && last_str &&
+        markup == iupAttribGetInt(ih, "_IUPFONT_SIZE_MARKUP") &&
+        iupStrEqual(font, last_font) && iupStrEqual(str, last_str) &&
+        iupStrToIntInt(iupAttribGet(ih, "_IUPFONT_SIZE_VALUE"), &width, &height, 'x') == 2)
+    {
+      if (w) *w = width;
+      if (h) *h = height;
+      return;
+    }
+  }
+
+  iupdrvFontGetMultiLineStringSize(ih, str, &width, &height);
+  if (w) *w = width;
+  if (h) *h = height;
+
+  if (str && font)
+  {
+    iupAttribSetStr(ih, "_IUPFONT_SIZE_FONT", font);
+    iupAttribSetStr(ih, "_IUPFONT_SIZE_STR", str);
+    iupAttribSetInt(ih, "_IUPFONT_SIZE_MARKUP", markup);
+    iupAttribSetStrf(ih, "_IUPFONT_SIZE_VALUE", "%dx%d", width, height);
+  }
+}
+
 IUP_SDK_API int iupGetFontInfo(const char* font, char *typeface, int *size, int *is_bold, int *is_italic, int *is_underline, int *is_strikeout)
 {
   *size = 0;

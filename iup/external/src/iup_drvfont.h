@@ -65,6 +65,11 @@ IUP_SDK_API int iupdrvFontGetFamilyList(char*** list);
   * \ingroup drvfont */
 IUP_SDK_API char* iupGetFontValue(Ihandle* ih);
 
+/** Cached wrapper for \ref iupdrvFontGetMultiLineStringSize.
+ * Reuses the last measured size when font, markup and string are unchanged.
+ *\ingroup drvfont */
+IUP_SDK_API void iupFontGetMultiLineStringSize(Ihandle* ih, const char* str, int *w, int *h);
+
 /** Parse the font format description.
  * Returns a non zero value if successful.
  * \ingroup drvfont */

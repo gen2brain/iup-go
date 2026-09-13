@@ -127,7 +127,7 @@ static void iButtonComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *ch
       int text_w, text_h;
       char* title = iupAttribGet(ih, "TITLE");
       char* str = iupStrProcessMnemonic(title, NULL, 0);   /* remove & */
-      iupdrvFontGetMultiLineStringSize(ih, str, &text_w, &text_h);
+      iupFontGetMultiLineStringSize(ih, str, &text_w, &text_h);
       if (str && str != title) free(str);
 
       if (ih->data->img_position == IUP_IMGPOS_RIGHT ||
@@ -147,7 +147,7 @@ static void iButtonComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *ch
   {
     char* title = iupAttribGet(ih, "TITLE");
     char* str = iupStrProcessMnemonic(title, NULL, 0);   /* remove & */
-    iupdrvFontGetMultiLineStringSize(ih, str, &natural_w, &natural_h);
+    iupFontGetMultiLineStringSize(ih, str, &natural_w, &natural_h);
     if (str && str!=title) free(str);
   }
 

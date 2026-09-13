@@ -144,7 +144,7 @@ static void iLabelComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *chi
     /* must use IupGetAttribute to check from the native implementation */
     char* title = IupGetAttribute(ih, "TITLE");
     char* str = iupStrProcessMnemonic(title, NULL, 0);   /* remove & */
-    iupdrvFontGetMultiLineStringSize(ih, str, &natural_w, &natural_h);
+    iupFontGetMultiLineStringSize(ih, str, &natural_w, &natural_h);
     if (str && str!=title) free(str);
 
     natural_w += 2*ih->data->horiz_padding;

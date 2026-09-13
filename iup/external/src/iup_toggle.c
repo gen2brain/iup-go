@@ -96,7 +96,7 @@ static void iToggleComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *ch
     /* must use IupGetAttribute to check from the native implementation */
     char* title = IupGetAttribute(ih, "TITLE");
     char* str = iupStrProcessMnemonic(title, NULL, 0);   /* remove & */
-    iupdrvFontGetMultiLineStringSize(ih, str, &natural_w, &natural_h);
+    iupFontGetMultiLineStringSize(ih, str, &natural_w, &natural_h);
 
     if (iupAttribGetBoolean(ih, "SWITCH"))
     {
