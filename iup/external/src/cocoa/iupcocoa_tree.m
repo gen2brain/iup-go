@@ -16,11 +16,11 @@
 #include "iup_image.h"
 #include "iup_tree.h"
 
-#import "iupcocoa_dragdrop.h"
 #include "iup_drv.h"
 #include "iup_drvinfo.h"
 
 #include "iupcocoa_drv.h"
+#include "iupcocoa_dragdrop.h"
 
 
 @interface IupCocoaTreeTableCellView : NSTableCellView
