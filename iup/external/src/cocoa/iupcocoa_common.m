@@ -818,31 +818,53 @@ IUP_SDK_API int iupdrvBaseSetFgColorAttrib(Ihandle* ih, const char* value)
 #ifndef GNUSTEP
 static NSCursor* cocoaGetResizeCursor(const char* name)
 {
-  if (@available(macOS 15.0, *))
+  enum { IUP_FRAME_TOP = 1, IUP_FRAME_LEFT = 2, IUP_FRAME_BOTTOM = 4, IUP_FRAME_RIGHT = 8 };
+  enum { IUP_FRAME_INWARD = 1, IUP_FRAME_OUTWARD = 2 };
+
+  SEL frame_sel = NSSelectorFromString(@"frameResizeCursorFromPosition:inDirections:");
+  if ([NSCursor respondsToSelector:frame_sel])
   {
     static struct {
       const char* iupname;
-      NSCursorFrameResizePosition position;
+      NSUInteger position;
     } frame[] = {
-      {"RESIZE_N",  NSCursorFrameResizePositionTop},
-      {"RESIZE_S",  NSCursorFrameResizePositionBottom},
-      {"RESIZE_W",  NSCursorFrameResizePositionLeft},
-      {"RESIZE_E",  NSCursorFrameResizePositionRight},
-      {"RESIZE_NE", NSCursorFrameResizePositionTopRight},
-      {"RESIZE_NW", NSCursorFrameResizePositionTopLeft},
-      {"RESIZE_SE", NSCursorFrameResizePositionBottomRight},
-      {"RESIZE_SW", NSCursorFrameResizePositionBottomLeft},
+      {"RESIZE_N",  IUP_FRAME_TOP},
+      {"RESIZE_S",  IUP_FRAME_BOTTOM},
+      {"RESIZE_W",  IUP_FRAME_LEFT},
+      {"RESIZE_E",  IUP_FRAME_RIGHT},
+      {"RESIZE_NE", IUP_FRAME_TOP | IUP_FRAME_RIGHT},
+      {"RESIZE_NW", IUP_FRAME_TOP | IUP_FRAME_LEFT},
+      {"RESIZE_SE", IUP_FRAME_BOTTOM | IUP_FRAME_RIGHT},
+      {"RESIZE_SW", IUP_FRAME_BOTTOM | IUP_FRAME_LEFT},
     };
     for (int i = 0; i < sizeof(frame)/sizeof(frame[0]); i++)
     {
       if (iupStrEqualNoCase(name, frame[i].iupname))
-        return [NSCursor frameResizeCursorFromPosition:frame[i].position inDirections:NSCursorFrameResizeDirectionsAll];
+      {
+        NSUInteger position = frame[i].position;
+        NSUInteger directions = IUP_FRAME_INWARD | IUP_FRAME_OUTWARD;
+        NSMethodSignature* signature = [NSCursor methodSignatureForSelector:frame_sel];
+        NSInvocation* invocation = [NSInvocation invocationWithMethodSignature:signature];
+        [invocation setTarget:[NSCursor class]];
+        [invocation setSelector:frame_sel];
+        [invocation setArgument:&position atIndex:2];
+        [invocation setArgument:&directions atIndex:3];
+        [invocation invoke];
+        NSCursor* resize_cursor = nil;
+        [invocation getReturnValue:&resize_cursor];
+        return resize_cursor;
+      }
     }
-    if (iupStrEqualNoCase(name, "RESIZE_NS") || iupStrEqualNoCase(name, "SPLITTER_HORIZ"))
-      return [NSCursor rowResizeCursor];
-    if (iupStrEqualNoCase(name, "RESIZE_WE") || iupStrEqualNoCase(name, "SPLITTER_VERT"))
-      return [NSCursor columnResizeCursor];
   }
+
+  SEL row_sel = NSSelectorFromString(@"rowResizeCursor");
+  if ((iupStrEqualNoCase(name, "RESIZE_NS") || iupStrEqualNoCase(name, "SPLITTER_HORIZ")) && [NSCursor respondsToSelector:row_sel])
+    return [NSCursor performSelector:row_sel];
+
+  SEL column_sel = NSSelectorFromString(@"columnResizeCursor");
+  if ((iupStrEqualNoCase(name, "RESIZE_WE") || iupStrEqualNoCase(name, "SPLITTER_VERT")) && [NSCursor respondsToSelector:column_sel])
+    return [NSCursor performSelector:column_sel];
+
   return nil;
 }
 #endif
