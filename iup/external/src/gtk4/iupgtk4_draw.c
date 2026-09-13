@@ -134,7 +134,7 @@ IUP_SDK_API void iupdrvDrawFlush(IdrawCanvas* dc)
 
   if (dc->release_cr)
   {
-    /* Outside ACTION: buffer was the draw target, just trigger repaint */
+    iupAttribSet(dc->ih, "_IUPGTK4_BUFFER_CHANGED", "1");
     gtk_widget_queue_draw(dc->widget);
   }
 }
