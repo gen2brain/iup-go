@@ -449,12 +449,14 @@ IUP_SDK_API void iupdrvBaseUnMapMethod(Ihandle* ih)
 
 IUP_SDK_API void iupdrvPostRedraw(Ihandle* ih)
 {
+  if (iupAttribGet(ih, "_IUPGTK4_RETAIN"))
+    iupAttribSet(ih, "_IUPGTK4_UPDATERECT", "ALL");
   gtk_widget_queue_draw(ih->handle);
 }
 
 IUP_SDK_API void iupdrvRedrawNow(Ihandle* ih)
 {
-  gtk_widget_queue_draw(ih->handle);
+  iupdrvPostRedraw(ih);
 }
 
 IUP_SDK_API void iupdrvScreenToClient(Ihandle* ih, int* x, int* y)
