@@ -166,6 +166,9 @@ static void iup_gtk4_fixed_layout_measure(GtkWidget* widget, GtkOrientation orie
     if (!gtk_widget_get_visible(child))
       continue;
 
+    if (GTK_IS_NATIVE(child))
+      continue;
+
     if (G_TYPE_CHECK_INSTANCE_TYPE(child, iup_gtk4_fixed_get_type()))
       continue;
 
@@ -185,7 +188,7 @@ static void iup_gtk4_fixed_layout_measure(GtkWidget* widget, GtkOrientation orie
       child_size = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(child), "_iup_height"));
     }
 
-    if (child_size <= 0 || child_size > child_nat * 3)
+    if (child_size <= 0)
       child_size = child_nat;
 
     const char* visiblelines_set = (const char*)g_object_get_data(G_OBJECT(child), "iup-visiblelines-set");
