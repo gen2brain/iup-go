@@ -25,7 +25,10 @@ IUP_DRV_API void iupeflSetCanFocus(Eo *widget, int can)
 
 IUP_SDK_API void iupdrvSetFocus(Ihandle *ih)
 {
-  Eo* widget = iupeflGetWidget(ih);
+  Eo* widget = (Eo*)iupAttribGet(ih, "_IUPEFL_ENTRY");
+
+  if (!widget)
+    widget = iupeflGetWidget(ih);
 
   if (!widget)
     return;

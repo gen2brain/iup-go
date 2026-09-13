@@ -72,6 +72,27 @@ IUP_DRV_API Elm_Object_Item* iupeflMenuFindMnemonic(Ihandle* ih, char key)
   return item;
 }
 
+IUP_DRV_API int iupeflMenuOpenItem(Elm_Object_Item* item)
+{
+  Evas_Object* view;
+
+  if (!item || elm_object_item_disabled_get(item))
+    return 0;
+
+  view = elm_menu_item_object_get(item);
+  if (!view)
+    return 0;
+
+  {
+    Elm_Object_Item* selected = elm_menu_selected_item_get(elm_object_item_widget_get(item));
+    if (selected && selected != item)
+      elm_menu_item_selected_set(selected, EINA_FALSE);
+  }
+  elm_menu_item_selected_set(item, EINA_TRUE);
+  elm_layout_signal_emit(view, "elm,action,click", "elm");
+  return 1;
+}
+
 /****************************************************************
                      Title Processing
 ****************************************************************/

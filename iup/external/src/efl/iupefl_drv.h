@@ -80,6 +80,9 @@ IUP_DRV_API void iupeflFocusChangedEvent(void *data, const Efl_Event *ev);
 IUP_DRV_API void iupeflKeyDownEvent(void *data, const Efl_Event *ev);
 IUP_DRV_API void iupeflKeyUpEvent(void *data, const Efl_Event *ev);
 IUP_DRV_API void iupeflKeyImfDestroy(Ihandle *ih);
+IUP_DRV_API int iupeflKeyProcessMnemonic(Ihandle* ih, Efl_Input_Key* key_event);
+IUP_DRV_API void iupeflKeySetTarget(Eo* obj, Ihandle* ih);
+IUP_DRV_API int iupeflKeyIsTarget(Eo* obj);
 IUP_DRV_API void iupeflPointerMoveEvent(void *data, const Efl_Event *ev);
 IUP_DRV_API void iupeflPointerDownEvent(void *data, const Efl_Event *ev);
 IUP_DRV_API void iupeflPointerUpEvent(void *data, const Efl_Event *ev);
@@ -110,6 +113,8 @@ IUP_DRV_API int iupeflSetFgColorAttrib(Ihandle* ih, const char* value);
 IUP_DRV_API void iupeflAddToParent(Ihandle* ih);
 IUP_DRV_API void iupeflSetPosSize(Ihandle* ih, int x, int y, int width, int height);
 IUP_DRV_API void iupeflGetOrigin(Ihandle* ih, int *x, int *y);
+IUP_DRV_API Eo* iupeflGetContainer(Ihandle* ih);
+IUP_DRV_API void iupeflAttachToContainer(Ihandle* ih, Eo* obj);
 
 IUP_DRV_API void iupeflBaseAddCallbacks(Ihandle* ih, Eo* widget);
 IUP_DRV_API void iupeflBaseRemoveCallbacks(Ihandle* ih, Eo* widget);
@@ -210,6 +215,7 @@ IUP_DRV_API int iupeflMenuActivateAccel(Ihandle* ih, int code);
  ****************************************************************************/
 
 IUP_DRV_API Elm_Object_Item* iupeflMenuFindMnemonic(Ihandle* ih, char key);
+IUP_DRV_API int iupeflMenuOpenItem(Elm_Object_Item* item);
 
 /****************************************************************************
  * System Information

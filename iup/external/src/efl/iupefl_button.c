@@ -431,6 +431,7 @@ static int eflButtonMapMethod(Ihandle* ih)
 
   efl_event_callback_add(btn, EFL_EVENT_POINTER_IN, iupeflPointerInEvent, ih);
   efl_event_callback_add(btn, EFL_EVENT_POINTER_OUT, iupeflPointerOutEvent, ih);
+  iupeflKeySetTarget(btn, ih);
   efl_event_callback_add(btn, EFL_EVENT_KEY_DOWN, iupeflKeyDownEvent, ih);
   efl_event_callback_add(btn, EFL_EVENT_KEY_UP, iupeflKeyUpEvent, ih);
   efl_event_callback_add(btn, EFL_EVENT_FOCUS_IN, iupeflManagerFocusChangedEvent, ih);

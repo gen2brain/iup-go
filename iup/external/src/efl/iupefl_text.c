@@ -1604,11 +1604,20 @@ static int eflTextMapMethod(Ihandle* ih)
       else
         efl_text_wrap_set(widget, EFL_TEXT_FORMAT_WRAP_NONE);
 
-      Elm_Scroller_Policy on_policy = iupAttribGetBoolean(ih, "AUTOHIDE")
-        ? ELM_SCROLLER_POLICY_AUTO : ELM_SCROLLER_POLICY_ON;
-      Elm_Scroller_Policy hp = (ih->data->sb & IUP_SB_HORIZ) ? on_policy : ELM_SCROLLER_POLICY_OFF;
-      Elm_Scroller_Policy vp = (ih->data->sb & IUP_SB_VERT)  ? on_policy : ELM_SCROLLER_POLICY_OFF;
-      elm_interface_scrollable_policy_set(widget, hp, vp);
+      {
+        Efl_Ui_Scrollbar_Mode on_mode = iupAttribGetBoolean(ih, "AUTOHIDE") ? EFL_UI_SCROLLBAR_MODE_AUTO : EFL_UI_SCROLLBAR_MODE_ON;
+        Efl_Ui_Scrollbar_Mode hp = (ih->data->sb & IUP_SB_HORIZ) ? on_mode : EFL_UI_SCROLLBAR_MODE_OFF;
+        Efl_Ui_Scrollbar_Mode vp = (ih->data->sb & IUP_SB_VERT) ? on_mode : EFL_UI_SCROLLBAR_MODE_OFF;
+        Eina_Iterator* it = efl_children_iterator_new(widget);
+        Eo* child;
+
+        EINA_ITERATOR_FOREACH(it, child)
+        {
+          if (efl_isa(child, EFL_UI_SCROLLBAR_INTERFACE))
+            efl_ui_scrollbar_bar_mode_set(child, hp, vp);
+        }
+        eina_iterator_free(it);
+      }
     }
     else
     {
