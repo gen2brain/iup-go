@@ -15,7 +15,6 @@
 #include "iup_str.h"
 #include "iup_drv.h"
 
-#import "iupcocoa_dragdrop.h"
 #include "iup_drvfont.h"
 #include "iup_mask.h"
 #include "iup_key.h"
@@ -24,6 +23,7 @@
 #include "iup_class.h"
 
 #include "iupcocoa_drv.h"
+#include "iupcocoa_dragdrop.h"
 
 
 /* pasteboard type for internal list reordering (SHOWDRAGDROP=YES) */
