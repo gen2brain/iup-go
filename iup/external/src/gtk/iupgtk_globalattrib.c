@@ -141,15 +141,17 @@ IUP_SDK_API int iupdrvSetGlobal(const char *name, const char *value)
   }
   if (iupStrEqual(name, "SHOWMENUIMAGES"))
   {
-#if !GTK_CHECK_VERSION(3, 10, 0)  /* deprecated since 3.10 */
+#if !GTK_CHECK_VERSION(3, 10, 0)  /* GtkImageMenuItem and gtk-menu-images unused since 3.10 */
     /* make sure the type is realized */
     g_type_class_unref (g_type_class_ref (GTK_TYPE_IMAGE_MENU_ITEM));
-#endif
 
     if (iupStrBoolean(value))
       g_object_set (gtk_settings_get_default (), "gtk-menu-images", TRUE, NULL);
     else
       g_object_set (gtk_settings_get_default (), "gtk-menu-images", FALSE, NULL);
+#else
+    (void)value;
+#endif
   }
   return 1;
 }
@@ -267,12 +269,14 @@ IUP_SDK_API char *iupdrvGetGlobal(const char *name)
     }
   }
 #endif
+#if !GTK_CHECK_VERSION(3, 10, 0)
   if (iupStrEqual(name, "SHOWMENUIMAGES"))
   {
     gboolean menu_images;
     g_object_get (gtk_settings_get_default (), "gtk-menu-images", &menu_images, NULL);
     return iupStrReturnBoolean(menu_images);
   }
+#endif
   if (iupStrEqual(name, "OVERLAYSCROLLBAR"))
   {
 #if GTK_CHECK_VERSION(3, 16, 0)
