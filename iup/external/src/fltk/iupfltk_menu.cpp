@@ -463,10 +463,16 @@ static int fltkMenuSetBgColorAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
+static void fltkMenuDestroyMethod(Ihandle* ih)
+{
+  fltkMenuLabelsDestroy(ih);
+}
+
 extern "C" IUP_SDK_API void iupdrvMenuInitClass(Iclass* ic)
 {
   ic->Map = fltkMenuMapMethod;
   ic->UnMap = fltkMenuUnMapMethod;
+  ic->Destroy = fltkMenuDestroyMethod;
 
   iupClassRegisterAttribute(ic, "FONT", NULL, NULL, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, fltkMenuSetBgColorAttrib, NULL, NULL, IUPAF_DEFAULT);
