@@ -2253,6 +2253,8 @@ static bool cocoaTextParseParagraphAttributes(NSMutableParagraphStyle* paragraph
   if(format)
   {
     int pos = 0;
+    int prev_pos = 0;
+    int last_pos = 0;
     char* str;
     NSMutableArray* tab_array = [NSMutableArray array];
 
@@ -2287,9 +2289,19 @@ static bool cocoaTextParseParagraphAttributes(NSMutableParagraphStyle* paragraph
 
       [tab_array addObject:text_tab];
       [text_tab release];
+
+      prev_pos = last_pos;
+      last_pos = pos;
     }
 
     [paragraph_style setTabStops:tab_array];
+
+    CGFloat default_interval = (CGFloat)(last_pos - prev_pos);
+    if (default_interval <= 0.0)
+      default_interval = (CGFloat)last_pos;
+    if (default_interval > 0.0)
+      [paragraph_style setDefaultTabInterval:default_interval];
+
     needs_paragraph_style = true;
   }
 
@@ -2702,6 +2714,42 @@ static NSFont* cocoaTextApplySmallCaps(NSFont* font)
 #endif
 }
 
+typedef struct {
+  bool change_family;
+  bool change_size;
+  bool change_traits;
+  bool change_weight;
+  bool change_smallcaps;
+  NSString* family_name;
+  CGFloat size;
+  NSFontTraitMask trait_mask;
+  int weight;
+} IupCocoaTextFontIntent;
+
+static void cocoaTextApplyFontChanges(NSMutableDictionary* attribute_dict, NSDictionary* base_attributes, IupCocoaFont* iup_font, const IupCocoaTextFontIntent* intent)
+{
+  if(!(intent->change_family || intent->change_traits || intent->change_size || intent->change_weight || intent->change_smallcaps))
+    return;
+
+  NSFontManager* font_manager = [NSFontManager sharedFontManager];
+  NSFont* target_font = [base_attributes objectForKey:NSFontAttributeName];
+  if(nil == target_font)
+    target_font = [iup_font nativeFont];
+
+  if(intent->change_family)
+    target_font = [font_manager convertFont:target_font toFamily:intent->family_name];
+  if(intent->change_size)
+    target_font = [font_manager convertFont:target_font toSize:intent->size];
+  if(intent->change_traits)
+    target_font = [font_manager convertFont:target_font toHaveTrait:intent->trait_mask];
+  if(intent->change_weight)
+    target_font = cocoaTextChangeFontWeight(target_font, intent->weight);
+  if(intent->change_smallcaps)
+    target_font = cocoaTextApplySmallCaps(target_font);
+
+  [attribute_dict setObject:target_font forKey:NSFontAttributeName];
+}
+
 static NSMutableDictionary* cocoaTextParseCharacterFormat(Ihandle* ih, Ihandle* formattag, NSTextView* text_view, NSRange selection_range)
 {
   char* format;
@@ -2729,10 +2777,7 @@ static NSMutableDictionary* cocoaTextParseCharacterFormat(Ihandle* ih, Ihandle* 
   {
     int font_size_int = 0;
     iupStrToInt(format, &font_size_int);
-    if(font_size_int < 0)
-    {
-    }
-    else
+    if(font_size_int >= 0)
     {
       font_size = (CGFloat)font_size_int;
       did_change_font_size = true;
@@ -2916,14 +2961,8 @@ static NSMutableDictionary* cocoaTextParseCharacterFormat(Ihandle* ih, Ihandle* 
   {
     NSColor* the_color = cocoaTextColorFromStr(format);
     if (the_color)
-    {
       [attribute_dict setValue:the_color forKey:NSForegroundColorAttributeName];
-      needs_add_font_fgcolor = true;
-    }
-    else
-    {
-      needs_add_font_fgcolor = false;
-    }
+    needs_add_font_fgcolor = (the_color != nil);
     did_change_attribute = true;
     did_change_font_fgcolor = true;
   }
@@ -2933,14 +2972,8 @@ static NSMutableDictionary* cocoaTextParseCharacterFormat(Ihandle* ih, Ihandle* 
   {
     NSColor* the_color = cocoaTextColorFromStr(format);
     if (the_color)
-    {
       [attribute_dict setObject:the_color forKey:NSBackgroundColorAttributeName];
-      needs_add_font_bgcolor = true;
-    }
-    else
-    {
-      needs_add_font_bgcolor = false;
-    }
+    needs_add_font_bgcolor = (the_color != nil);
     did_change_attribute = true;
     did_change_font_bgcolor = true;
   }
@@ -2956,17 +2989,11 @@ static NSMutableDictionary* cocoaTextParseCharacterFormat(Ihandle* ih, Ihandle* 
       did_change_font_fgcolor = true;
       needs_add_font_fgcolor = true;
     }
-    else
+    else if(!iupAttribGet(formattag, "FGCOLOR"))
     {
-      if(iupAttribGet(formattag, "FGCOLOR"))
-      {
-      }
-      else
-      {
-        [attribute_dict removeObjectForKey:NSForegroundColorAttributeName];
-        did_change_font_fgcolor = true;
-        needs_add_font_fgcolor = false;
-      }
+      [attribute_dict removeObjectForKey:NSForegroundColorAttributeName];
+      did_change_font_fgcolor = true;
+      needs_add_font_fgcolor = false;
     }
     did_change_attribute = true;
   }
@@ -2997,8 +3024,12 @@ static NSMutableDictionary* cocoaTextParseCharacterFormat(Ihandle* ih, Ihandle* 
 
   if(did_change_attribute)
   {
-    NSFontManager* font_manager = [NSFontManager sharedFontManager];
     IupCocoaFont* iup_font = iupcocoaGetFont(ih);
+    IupCocoaTextFontIntent font_intent = {
+      did_change_font_family, did_change_font_size, did_change_font_traits,
+      did_change_font_weight, did_change_smallcaps,
+      font_family_name, font_size, trait_mask, font_target_weight
+    };
 
     NSTextStorage* text_storage = [text_view textStorage];
 
@@ -3020,42 +3051,8 @@ static NSMutableDictionary* cocoaTextParseCharacterFormat(Ihandle* ih, Ihandle* 
         NSAttributedString* current_substring = [text_storage attributedSubstringFromRange:sub_range];
         NSDictionary<NSAttributedStringKey, id>* current_substring_attributes = [current_substring attributesAtIndex:0 effectiveRange:&attrib_range];
 
-        NSFont* target_font = nil;
+        cocoaTextApplyFontChanges(attribute_dict, current_substring_attributes, iup_font, &font_intent);
 
-        if(did_change_font_family || did_change_font_traits || did_change_font_size || did_change_font_weight || did_change_smallcaps)
-        {
-          NSFont* base_font = [current_substring_attributes objectForKey:NSFontAttributeName];
-          if(nil == base_font)
-          {
-            base_font = [iup_font nativeFont];
-          }
-          target_font = base_font;
-
-          if(did_change_font_family)
-          {
-            target_font = [font_manager convertFont:target_font toFamily:font_family_name];
-          }
-          if(did_change_font_size)
-          {
-            target_font = [font_manager convertFont:target_font toSize:font_size];
-          }
-          if(did_change_font_traits)
-          {
-            target_font = [font_manager convertFont:target_font toHaveTrait:trait_mask];
-          }
-
-          if(did_change_font_weight)
-          {
-            target_font = cocoaTextChangeFontWeight(target_font, font_target_weight);
-          }
-
-          if(did_change_smallcaps)
-          {
-            target_font = cocoaTextApplySmallCaps(target_font);
-          }
-
-          [attribute_dict setObject:target_font forKey:NSFontAttributeName];
-        }
         NSRange adjusted_range = { loc, attrib_range.length };
         [text_storage addAttributes:attribute_dict range:adjusted_range];
 
@@ -3081,42 +3078,7 @@ static NSMutableDictionary* cocoaTextParseCharacterFormat(Ihandle* ih, Ihandle* 
     {
       NSDictionary<NSAttributedStringKey, id>* current_substring_attributes = [text_view typingAttributes];
 
-      NSFont* target_font = nil;
-
-      if(did_change_font_family || did_change_font_traits || did_change_font_size || did_change_font_weight || did_change_smallcaps)
-      {
-        NSFont* base_font = [current_substring_attributes objectForKey:NSFontAttributeName];
-        if(nil == base_font)
-        {
-          base_font = [iup_font nativeFont];
-        }
-        target_font = base_font;
-
-        if(did_change_font_family)
-        {
-          target_font = [font_manager convertFont:target_font toFamily:font_family_name];
-        }
-        if(did_change_font_size)
-        {
-          target_font = [font_manager convertFont:target_font toSize:font_size];
-        }
-        if(did_change_font_traits)
-        {
-          target_font = [font_manager convertFont:target_font toHaveTrait:trait_mask];
-        }
-
-        if(did_change_font_weight)
-        {
-          target_font = cocoaTextChangeFontWeight(target_font, font_target_weight);
-        }
-
-        if(did_change_smallcaps)
-        {
-          target_font = cocoaTextApplySmallCaps(target_font);
-        }
-
-        [attribute_dict setObject:target_font forKey:NSFontAttributeName];
-      }
+      cocoaTextApplyFontChanges(attribute_dict, current_substring_attributes, iup_font, &font_intent);
     }
   }
 
