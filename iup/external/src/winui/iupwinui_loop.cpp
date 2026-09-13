@@ -68,6 +68,8 @@ extern "C" int IupMainLoopLevel(void)
 
 static int winuiLoopProcessMessage(MSG* msg)
 {
+  int dispatched = 0;
+
   if (msg->message == WM_QUIT)
     return IUP_CLOSE;
 
@@ -145,17 +147,21 @@ static int winuiLoopProcessMessage(MSG* msg)
             while (PeekMessage(&flush, NULL, WM_KEYFIRST, WM_KEYLAST, PM_REMOVE)) {}
             return IUP_DEFAULT;
           }
+
+          dispatched = wincode;
         }
       }
     }
   }
 
+  iupwinuiKeySetDispatched(dispatched);
   BOOL handled = iupwinuiContentPreTranslateMessage(msg);
   if (!handled)
   {
     TranslateMessage(msg);
     DispatchMessage(msg);
   }
+  iupwinuiKeySetDispatched(0);
   return IUP_DEFAULT;
 }
 

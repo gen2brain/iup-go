@@ -23,6 +23,17 @@ extern "C" {
 static int winuiKeyMap[256] = {0};
 static int winuiKeyMapShift[256] = {0};
 static int winui_key_initialized = 0;
+static int winui_key_dispatched = 0;
+
+IUP_DRV_API void iupwinuiKeySetDispatched(int wincode)
+{
+  winui_key_dispatched = wincode;
+}
+
+IUP_DRV_API int iupwinuiKeyIsDispatched(int wincode)
+{
+  return wincode != 0 && wincode == winui_key_dispatched;
+}
 
 static void winuiKeyInit(void)
 {
@@ -186,7 +197,7 @@ IUP_DRV_API int iupwinuiKeyEvent(Ihandle* ih, int wincode, int extended, int pre
   if (code == 0)
     return 1;
 
-  if (!press)
+  if (!press || iupwinuiKeyIsDispatched(wincode))
     return 1;
 
   result = iupKeyCallKeyCb(ih, code);
@@ -200,6 +211,18 @@ IUP_DRV_API int iupwinuiKeyEvent(Ihandle* ih, int wincode, int extended, int pre
 
   if (!iupObjectCheck(ih))
     return 1;
+
+  if (ih->iclass->nativetype == IUP_TYPECANVAS)
+  {
+    result = iupKeyCallKeyPressCb(ih, code, 1);
+    if (result == IUP_CLOSE)
+    {
+      IupExitLoop();
+      return 1;
+    }
+    if (result == IUP_IGNORE)
+      return 0;
+  }
 
   if ((GetKeyState(VK_MENU) & 0x8000) && wincode < 128)
   {

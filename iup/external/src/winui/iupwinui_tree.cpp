@@ -2115,7 +2115,7 @@ static int winuiTreeMapMethod(Ihandle* ih)
         return;
       }
 
-      int ret = iupKeyCallKeyCb(ih, code);
+      int ret = iupwinuiKeyIsDispatched((int)args.Key())? IUP_DEFAULT: iupKeyCallKeyCb(ih, code);
       if (ret == IUP_CLOSE)
       {
         IupExitLoop();
