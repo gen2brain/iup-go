@@ -138,6 +138,12 @@ static int iAudioSetFileAttrib(Ihandle* ih, const char* value)
   ih->data->loaded = 1;
   ma_sound_set_end_callback(&ih->data->sound, iAudioEndCallback, ih);
   iAudioApplySettings(ih);
+
+  {
+    ma_uint64 length;
+    ma_sound_get_length_in_pcm_frames(&ih->data->sound, &length);
+  }
+
   return 1;
 }
 
