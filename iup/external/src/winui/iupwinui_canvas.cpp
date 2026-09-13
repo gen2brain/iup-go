@@ -151,9 +151,9 @@ static LRESULT CALLBACK winuiGLCanvasWndProc(HWND hwnd, UINT msg, WPARAM wParam,
   case WM_SYSKEYDOWN:
   {
     int code = iupwinuiKeyDecode((int)wParam, (lParam & 0x01000000)? 1: 0);
-    if (code)
+    if (code && !iupwinuiKeyIsDispatched((int)wParam))
     {
-      int ret = iupKeyCallKeyPressCb(ih, code, 1);
+      int ret = iupKeyCallKeyCb(ih, code);
       if (ret == IUP_CLOSE)
       {
         IupExitLoop();
@@ -162,7 +162,7 @@ static LRESULT CALLBACK winuiGLCanvasWndProc(HWND hwnd, UINT msg, WPARAM wParam,
       if (ret == IUP_IGNORE)
         return 0;
 
-      ret = iupKeyCallKeyCb(ih, code);
+      ret = iupKeyCallKeyPressCb(ih, code, 1);
       if (ret == IUP_CLOSE)
       {
         IupExitLoop();
@@ -1025,9 +1025,9 @@ static int winuiCanvasMapMethod(Ihandle* ih)
       }
     }
 
-    if (code)
+    if (code && !iupwinuiKeyIsDispatched((int)args.Key()))
     {
-      int ret = iupKeyCallKeyPressCb(ih, code, 1);
+      int ret = iupKeyCallKeyCb(ih, code);
       if (ret == IUP_CLOSE)
       {
         IupExitLoop();
@@ -1040,7 +1040,7 @@ static int winuiCanvasMapMethod(Ihandle* ih)
         return;
       }
 
-      ret = iupKeyCallKeyCb(ih, code);
+      ret = iupKeyCallKeyPressCb(ih, code, 1);
       if (ret == IUP_CLOSE)
       {
         IupExitLoop();

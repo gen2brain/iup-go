@@ -59,6 +59,8 @@ IUP_DRV_API int iupwinuiKeyDecode(int keyval, int extended);
 IUP_DRV_API int iupwinuiKeyIsExtended(int code);
 IUP_DRV_API int iupwinuiMenuActivateAccel(Ihandle* ih_dialog, int code);
 IUP_DRV_API int iupwinuiKeyEvent(Ihandle* ih, int wincode, int extended, int press);
+IUP_DRV_API void iupwinuiKeySetDispatched(int wincode);
+IUP_DRV_API int iupwinuiKeyIsDispatched(int wincode);
 IUP_DRV_API void iupwinuiButtonKeySetStatus(int modifiers, int button, char* status, int doubleclick);
 
 /****************************************************************************
