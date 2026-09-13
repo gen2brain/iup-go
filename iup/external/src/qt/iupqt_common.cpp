@@ -257,11 +257,8 @@ extern "C" IUP_SDK_API void iupdrvBaseUnMapMethod(Ihandle* ih)
   if (widget)
   {
     widget->hide();
-
-    if (!widget->parent())
-      delete widget;
-    else
-      widget->setParent(nullptr);
+    widget->setParent(nullptr);
+    delete widget;
   }
 
   ih->handle = nullptr;
