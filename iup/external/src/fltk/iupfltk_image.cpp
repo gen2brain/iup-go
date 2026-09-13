@@ -11,6 +11,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <new>
 
 extern "C" {
 #include "iup.h"
@@ -78,7 +79,7 @@ extern "C" IUP_SDK_API void* iupdrvImageCreateImage(Ihandle *ih, const char* bgc
 
   int channels = has_alpha ? 4 : 3;
 
-  unsigned char* data = (unsigned char*)malloc((size_t)ih->currentwidth * ih->currentheight * channels);
+  unsigned char* data = new (std::nothrow) unsigned char[(size_t)ih->currentwidth * ih->currentheight * channels];
   if (!data)
     return NULL;
 
@@ -225,7 +226,7 @@ extern "C" IUP_SDK_API void* iupdrvImageLoad(const char* name, int type)
   int ld = rgb->ld();
   if (ld == 0) ld = w * d;
 
-  unsigned char* data = (unsigned char*)malloc((size_t)w * h * d);
+  unsigned char* data = new (std::nothrow) unsigned char[(size_t)w * h * d];
   if (!data)
   {
     shared->release();
