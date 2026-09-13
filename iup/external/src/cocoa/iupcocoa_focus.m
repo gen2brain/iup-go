@@ -47,7 +47,7 @@ IUP_DRV_API int iupcocoaAcceptsFirstResponder(Ihandle* ih, int super_accepts)
   return super_accepts;
 }
 
-IUP_SDK_API void iupdrvSetFocus(Ihandle *ih)
+static void cocoaSetFocus(Ihandle *ih)
 {
   if (!ih || !ih->handle)
   {
@@ -93,6 +93,13 @@ IUP_SDK_API void iupdrvSetFocus(Ihandle *ih)
     }
 
     iupAttribSet(ih, "_IUPCOCOA_FOCUSREQUEST", NULL);
+  }
+}
+
+IUP_SDK_API void iupdrvSetFocus(Ihandle *ih)
+{
+  @autoreleasepool {
+    cocoaSetFocus(ih);
   }
 }
 

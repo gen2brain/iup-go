@@ -19,8 +19,6 @@
 #endif
 
 
-static NSAutoreleasePool* s_autoreleasePool = nil;
-
 IUP_SDK_API void* iupdrvGetDisplay(void)
 {
   return NULL;
@@ -45,7 +43,7 @@ static bool cocoaGetByteRGBAFromNSColor(NSColor* ns_color, unsigned char* red, u
   }
 }
 
-IUP_SDK_API int iupdrvIsSystemDarkMode(void)
+static int cocoaIsSystemDarkMode(void)
 {
 #ifdef GNUSTEP
   unsigned char r, g, b, a;
@@ -59,7 +57,14 @@ IUP_SDK_API int iupdrvIsSystemDarkMode(void)
 #endif
 }
 
-IUP_SDK_API void iupdrvSetAppearance(int appearance)
+IUP_SDK_API int iupdrvIsSystemDarkMode(void)
+{
+  @autoreleasepool {
+    return cocoaIsSystemDarkMode();
+  }
+}
+
+static void cocoaSetAppearance(int appearance)
 {
 #ifndef GNUSTEP
   if (appearance == IUP_APPEARANCE_DARK)
@@ -79,6 +84,13 @@ IUP_SDK_API void iupdrvSetAppearance(int appearance)
       iupGlobalSetAppearanceColors(dark);
   }
 #endif
+}
+
+IUP_SDK_API void iupdrvSetAppearance(int appearance)
+{
+  @autoreleasepool {
+    cocoaSetAppearance(appearance);
+  }
 }
 
 static void cocoaUpdateGlobalColors(void)
@@ -138,15 +150,8 @@ static const char* iupCocoaGetSystemLanguage(void)
   return iupmac_language;
 }
 
-IUP_SDK_API int iupdrvOpen(int* argc, char*** argv)
+static int cocoaOpen(void)
 {
-  (void)argc;
-  (void)argv;
-
-  if (nil == s_autoreleasePool)
-  {
-    s_autoreleasePool = [[NSAutoreleasePool alloc] init];
-  }
 
 #ifdef GNUSTEP
   /* Seed NSFont defaults before sharedApplication. */
@@ -269,7 +274,7 @@ IUP_SDK_API int iupdrvOpen(int* argc, char*** argv)
   return IUP_NOERROR;
 }
 
-IUP_SDK_API int iupdrvSetGlobalAppIDAttrib(const char* value)
+static int cocoaSetGlobalAppIDAttrib(const char* value)
 {
   static int appid_set = 0;
   if (appid_set || !value || !value[0])
@@ -280,7 +285,24 @@ IUP_SDK_API int iupdrvSetGlobalAppIDAttrib(const char* value)
   return 1;
 }
 
-IUP_SDK_API int iupdrvSetGlobalAppNameAttrib(const char* value)
+IUP_SDK_API int iupdrvSetGlobalAppIDAttrib(const char* value)
+{
+  @autoreleasepool {
+    return cocoaSetGlobalAppIDAttrib(value);
+  }
+}
+
+IUP_SDK_API int iupdrvOpen(int* argc, char*** argv)
+{
+  (void)argc;
+  (void)argv;
+
+  @autoreleasepool {
+    return cocoaOpen();
+  }
+}
+
+static int cocoaSetGlobalAppNameAttrib(const char* value)
 {
   static int appname_set = 0;
   if (appname_set || !value || !value[0])
@@ -292,10 +314,16 @@ IUP_SDK_API int iupdrvSetGlobalAppNameAttrib(const char* value)
   return 1;
 }
 
+IUP_SDK_API int iupdrvSetGlobalAppNameAttrib(const char* value)
+{
+  @autoreleasepool {
+    return cocoaSetGlobalAppNameAttrib(value);
+  }
+}
+
 IUP_SDK_API void iupdrvClose(void)
 {
-  iupcocoaMenuCleanupApplicationMenu();
-
-  /* draining here crashes when the last window closes; the pool must outlive IupClose */
-  /* [s_autoreleasePool drain]; */
+  @autoreleasepool {
+    iupcocoaMenuCleanupApplicationMenu();
+  }
 }

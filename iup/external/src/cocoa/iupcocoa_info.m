@@ -27,20 +27,34 @@
 #include "iup_classbase.h"
 
 
-IUP_SDK_API char* iupdrvGetCurrentDirectory(void)
+static char* cocoaGetCurrentDirectory(void)
 {
   NSString *curDir = [[NSFileManager defaultManager] currentDirectoryPath];
   return iupStrReturnStr([curDir UTF8String]);
 }
 
-IUP_SDK_API int iupdrvSetCurrentDirectory(const char* dir)
+IUP_SDK_API char* iupdrvGetCurrentDirectory(void)
+{
+  @autoreleasepool {
+    return cocoaGetCurrentDirectory();
+  }
+}
+
+static int cocoaSetCurrentDirectory(const char* dir)
 {
   NSString *path = [NSString stringWithUTF8String:dir];
   BOOL r = [[NSFileManager defaultManager] changeCurrentDirectoryPath:path];
   return (r ? 1 : 0);
 }
 
-IUP_SDK_API void iupdrvAddScreenOffset(int *x, int *y, int add)
+IUP_SDK_API int iupdrvSetCurrentDirectory(const char* dir)
+{
+  @autoreleasepool {
+    return cocoaSetCurrentDirectory(dir);
+  }
+}
+
+static void cocoaAddScreenOffset(int *x, int *y, int add)
 {
   NSScreen *screen = [NSScreen mainScreen];
   if (screen)
@@ -66,21 +80,42 @@ IUP_SDK_API void iupdrvAddScreenOffset(int *x, int *y, int add)
   }
 }
 
-IUP_SDK_API void iupdrvGetScreenSize(int *width, int *height)
+IUP_SDK_API void iupdrvAddScreenOffset(int *x, int *y, int add)
+{
+  @autoreleasepool {
+    cocoaAddScreenOffset(x, y, add);
+  }
+}
+
+static void cocoaGetScreenSize(int *width, int *height)
 {
   NSRect screen_rect = [[NSScreen mainScreen] visibleFrame];
   if (width) *width = (int)screen_rect.size.width;
   if (height) *height = (int)screen_rect.size.height;
 }
 
-IUP_SDK_API void iupdrvGetFullSize(int *width, int *height)
+IUP_SDK_API void iupdrvGetScreenSize(int *width, int *height)
+{
+  @autoreleasepool {
+    cocoaGetScreenSize(width, height);
+  }
+}
+
+static void cocoaGetFullSize(int *width, int *height)
 {
   NSRect screen_rect = [[NSScreen mainScreen] frame];
   if (width) *width = (int)screen_rect.size.width;
   if (height) *height = (int)screen_rect.size.height;
 }
 
-IUP_SDK_API int iupdrvGetScreenDepth(void)
+IUP_SDK_API void iupdrvGetFullSize(int *width, int *height)
+{
+  @autoreleasepool {
+    cocoaGetFullSize(width, height);
+  }
+}
+
+static int cocoaGetScreenDepth(void)
 {
   NSScreen* screen = [NSScreen mainScreen];
   if (screen)
@@ -96,7 +131,14 @@ IUP_SDK_API int iupdrvGetScreenDepth(void)
   return 32;
 }
 
-IUP_SDK_API double iupdrvGetScreenDpi(void)
+IUP_SDK_API int iupdrvGetScreenDepth(void)
+{
+  @autoreleasepool {
+    return cocoaGetScreenDepth();
+  }
+}
+
+static double cocoaGetScreenDpi(void)
 {
   NSScreen* screen = [NSScreen mainScreen];
   if (screen != nil)
@@ -108,12 +150,19 @@ IUP_SDK_API double iupdrvGetScreenDpi(void)
   return 72.0;
 }
 
+IUP_SDK_API double iupdrvGetScreenDpi(void)
+{
+  @autoreleasepool {
+    return cocoaGetScreenDpi();
+  }
+}
+
 IUP_SDK_API int iupdrvScaleNaturalPx(int px)
 {
   return px;
 }
 
-IUP_SDK_API void iupdrvGetCursorPos(int *x, int *y)
+static void cocoaGetCursorPos(int *x, int *y)
 {
   /* [NSEvent mouseLocation] origin is bottom-left of the primary screen. */
   NSPoint mouse_point = [NSEvent mouseLocation];
@@ -127,7 +176,14 @@ IUP_SDK_API void iupdrvGetCursorPos(int *x, int *y)
   iupdrvAddScreenOffset(x, y, -1);
 }
 
-IUP_SDK_API void iupdrvGetKeyState(char* key)
+IUP_SDK_API void iupdrvGetCursorPos(int *x, int *y)
+{
+  @autoreleasepool {
+    cocoaGetCursorPos(x, y);
+  }
+}
+
+static void cocoaGetKeyState(char* key)
 {
   NSEventModifierFlags flags = [NSEvent modifierFlags];
 
@@ -138,7 +194,14 @@ IUP_SDK_API void iupdrvGetKeyState(char* key)
   key[4] = 0;
 }
 
-IUP_SDK_API char *iupdrvGetSystemName(void)
+IUP_SDK_API void iupdrvGetKeyState(char* key)
+{
+  @autoreleasepool {
+    cocoaGetKeyState(key);
+  }
+}
+
+static char * cocoaGetSystemName(void)
 {
 #ifndef GNUSTEP
   NSOperatingSystemVersion version = [[NSProcessInfo processInfo] operatingSystemVersion];
@@ -189,7 +252,14 @@ IUP_SDK_API char *iupdrvGetSystemName(void)
 #endif
 }
 
-IUP_SDK_API char *iupdrvGetSystemVersion(void)
+IUP_SDK_API char *iupdrvGetSystemName(void)
+{
+  @autoreleasepool {
+    return cocoaGetSystemName();
+  }
+}
+
+static char * cocoaGetSystemVersion(void)
 {
   char* str = iupStrGetMemory(100);
 
@@ -213,7 +283,14 @@ IUP_SDK_API char *iupdrvGetSystemVersion(void)
   return str;
 }
 
-IUP_SDK_API char *iupdrvGetComputerName(void)
+IUP_SDK_API char *iupdrvGetSystemVersion(void)
+{
+  @autoreleasepool {
+    return cocoaGetSystemVersion();
+  }
+}
+
+static char * cocoaGetComputerName(void)
 {
 #ifndef GNUSTEP
   NSString* computer_name = [(NSString *)SCDynamicStoreCopyComputerName(NULL, NULL) autorelease];
@@ -229,7 +306,14 @@ IUP_SDK_API char *iupdrvGetComputerName(void)
 #endif
 }
 
-IUP_SDK_API char *iupdrvGetUserName(void)
+IUP_SDK_API char *iupdrvGetComputerName(void)
+{
+  @autoreleasepool {
+    return cocoaGetComputerName();
+  }
+}
+
+static char * cocoaGetUserName(void)
 {
   NSString* user_name = NSUserName();
   if (!user_name)
@@ -238,7 +322,14 @@ IUP_SDK_API char *iupdrvGetUserName(void)
   return iupStrReturnStr([user_name UTF8String]);
 }
 
-IUP_SDK_API int iupdrvGetPreferencePath(char *filename, const char *app_name, int use_system)
+IUP_SDK_API char *iupdrvGetUserName(void)
+{
+  @autoreleasepool {
+    return cocoaGetUserName();
+  }
+}
+
+static int cocoaGetPreferencePath(char *filename, const char *app_name, int use_system)
 {
   if (!app_name || !app_name[0])
   {
@@ -283,7 +374,14 @@ IUP_SDK_API int iupdrvGetPreferencePath(char *filename, const char *app_name, in
   return 0;
 }
 
-IUP_SDK_API int iupdrvGetUserDir(char* path, int size, int kind)
+IUP_SDK_API int iupdrvGetPreferencePath(char *filename, const char *app_name, int use_system)
+{
+  @autoreleasepool {
+    return cocoaGetPreferencePath(filename, app_name, use_system);
+  }
+}
+
+static int cocoaGetUserDir(char* path, int size, int kind)
 {
   NSSearchPathDirectory dir;
 
@@ -318,9 +416,23 @@ IUP_SDK_API int iupdrvGetUserDir(char* path, int size, int kind)
   return 1;
 }
 
-IUP_SDK_API char* iupdrvLocaleInfo(void)
+IUP_SDK_API int iupdrvGetUserDir(char* path, int size, int kind)
+{
+  @autoreleasepool {
+    return cocoaGetUserDir(path, size, kind);
+  }
+}
+
+static char* cocoaLocaleInfo(void)
 {
   return iupStrReturnStr(nl_langinfo(CODESET));
+}
+
+IUP_SDK_API char* iupdrvLocaleInfo(void)
+{
+  @autoreleasepool {
+    return cocoaLocaleInfo();
+  }
 }
 
 IUP_API void IupLogV(const char* type, const char* format, va_list arglist)

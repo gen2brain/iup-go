@@ -109,7 +109,7 @@ static IupCocoaFont *cocoaGetSystemFont()
   return s_systemFont;
 }
 
-IUP_SDK_API char *iupdrvGetSystemFont(void)
+static char * cocoaSystemFontName(void)
 {
   static char system_font_cstr[200] = "";
   if (system_font_cstr[0] == '\0')
@@ -123,6 +123,13 @@ IUP_SDK_API char *iupdrvGetSystemFont(void)
     strlcpy(system_font_cstr, [[s_systemFont iupFontName] UTF8String], 200);
   }
   return (char *)system_font_cstr;
+}
+
+IUP_SDK_API char *iupdrvGetSystemFont(void)
+{
+  @autoreleasepool {
+    return cocoaSystemFontName();
+  }
 }
 
 IUP_DRV_API IupCocoaFont *iupcocoaFindFont(const char *iup_font_name)
@@ -346,7 +353,7 @@ static void cocoaFontGetTextSize(IupCocoaFont *iup_font, const char *str, int le
   if (h) *h = [iup_font charHeight] * line_count;
 }
 
-IUP_SDK_API void iupdrvFontGetMultiLineStringSize(Ihandle *ih, const char *str, int *w, int *h)
+static void cocoaFontGetMultiLineStringSize(Ihandle *ih, const char *str, int *w, int *h)
 {
   IupCocoaFont *iup_font = cocoaFontGet(ih);
   if (iup_font)
@@ -365,6 +372,13 @@ IUP_SDK_API void iupdrvFontGetMultiLineStringSize(Ihandle *ih, const char *str, 
     }
 
     cocoaFontGetTextSize(iup_font, str, str ? (int)strlen(str) : 0, w, h);
+  }
+}
+
+IUP_SDK_API void iupdrvFontGetMultiLineStringSize(Ihandle *ih, const char *str, int *w, int *h)
+{
+  @autoreleasepool {
+    cocoaFontGetMultiLineStringSize(ih, str, w, h);
   }
 }
 
@@ -394,7 +408,7 @@ IUP_DRV_API int iupcocoaTextFieldCellInset(void)
   return inset;
 }
 
-IUP_SDK_API void iupdrvFontGetTextSize(const char *font_name, const char *str, int len, int *w, int *h)
+static void cocoaFontTextSize(const char *font_name, const char *str, int len, int *w, int *h)
 {
   IupCocoaFont *the_font = iupcocoaFindFont(font_name);
   if (the_font)
@@ -403,7 +417,14 @@ IUP_SDK_API void iupdrvFontGetTextSize(const char *font_name, const char *str, i
   }
 }
 
-IUP_SDK_API void iupdrvFontGetFontDim(const char *font, int *max_width, int *line_height, int *ascent, int *descent)
+IUP_SDK_API void iupdrvFontGetTextSize(const char *font_name, const char *str, int len, int *w, int *h)
+{
+  @autoreleasepool {
+    cocoaFontTextSize(font_name, str, len, w, h);
+  }
+}
+
+static void cocoaFontGetFontDim(const char *font, int *max_width, int *line_height, int *ascent, int *descent)
 {
   IupCocoaFont *iup_font = iupcocoaFindFont(font);
   if (iup_font)
@@ -415,7 +436,14 @@ IUP_SDK_API void iupdrvFontGetFontDim(const char *font, int *max_width, int *lin
   }
 }
 
-IUP_SDK_API int iupdrvFontGetStringWidth(Ihandle *ih, const char *str)
+IUP_SDK_API void iupdrvFontGetFontDim(const char *font, int *max_width, int *line_height, int *ascent, int *descent)
+{
+  @autoreleasepool {
+    cocoaFontGetFontDim(font, max_width, line_height, ascent, descent);
+  }
+}
+
+static int cocoaFontGetStringWidth(Ihandle *ih, const char *str)
 {
   int w = 0;
   if (!str || str[0] == 0)
@@ -436,7 +464,14 @@ IUP_SDK_API int iupdrvFontGetStringWidth(Ihandle *ih, const char *str)
   return w;
 }
 
-IUP_SDK_API void iupdrvFontGetCharSize(Ihandle *ih, int *charwidth, int *charheight)
+IUP_SDK_API int iupdrvFontGetStringWidth(Ihandle *ih, const char *str)
+{
+  @autoreleasepool {
+    return cocoaFontGetStringWidth(ih, str);
+  }
+}
+
+static void cocoaFontGetCharSize(Ihandle *ih, int *charwidth, int *charheight)
 {
   IupCocoaFont *iup_font = cocoaFontGet(ih);
   if (!iup_font)
@@ -450,12 +485,19 @@ IUP_SDK_API void iupdrvFontGetCharSize(Ihandle *ih, int *charwidth, int *charhei
   if (charheight) *charheight = [iup_font charHeight];
 }
 
+IUP_SDK_API void iupdrvFontGetCharSize(Ihandle *ih, int *charwidth, int *charheight)
+{
+  @autoreleasepool {
+    cocoaFontGetCharSize(ih, charwidth, charheight);
+  }
+}
+
 static int cocoaFontFamilyCompare(const void* a, const void* b)
 {
   return iupStrCompare(*(const char**)a, *(const char**)b, 0, 1);
 }
 
-IUP_SDK_API int iupdrvFontGetFamilyList(char*** list)
+static int cocoaFontGetFamilyList(char*** list)
 {
   @autoreleasepool {
     NSArray<NSString*>* families = [[NSFontManager sharedFontManager] availableFontFamilies];
@@ -477,7 +519,14 @@ IUP_SDK_API int iupdrvFontGetFamilyList(char*** list)
   }
 }
 
-IUP_SDK_API void iupdrvFontInit(void)
+IUP_SDK_API int iupdrvFontGetFamilyList(char*** list)
+{
+  @autoreleasepool {
+    return cocoaFontGetFamilyList(list);
+  }
+}
+
+static void cocoaFontInit(void)
 {
   if (nil == s_mapOfFonts)
   {
@@ -489,7 +538,14 @@ IUP_SDK_API void iupdrvFontInit(void)
   }
 }
 
-IUP_SDK_API void iupdrvFontFinish(void)
+IUP_SDK_API void iupdrvFontInit(void)
+{
+  @autoreleasepool {
+    cocoaFontInit();
+  }
+}
+
+static void cocoaFontFinish(void)
 {
   /* This will release all the fonts we've allocated. */
   [s_mapOfFonts release];
@@ -497,4 +553,11 @@ IUP_SDK_API void iupdrvFontFinish(void)
 
   [s_systemFont release];
   s_systemFont = nil;
+}
+
+IUP_SDK_API void iupdrvFontFinish(void)
+{
+  @autoreleasepool {
+    cocoaFontFinish();
+  }
 }
