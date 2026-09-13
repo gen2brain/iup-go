@@ -17,6 +17,7 @@
 #include "iup_assert.h"
 #include "iup_register.h"
 #include "iup_globalattrib.h"
+#include "iup_drv.h"
 
 
 typedef struct _IattribFunc
@@ -93,7 +94,7 @@ static char* iClassGetDefaultValue(IattribFunc* afunc)
     return (char*)afunc->default_value;
 }
 
-int iupClassObjectSetAttributeId2(Ihandle* ih, const char* name, int id1, int id2, const char* value)
+static int iClassObjectSetAttributeId2(Ihandle* ih, const char* name, int id1, int id2, const char* value)
 {
   IattribFunc* afunc;
 
@@ -136,7 +137,7 @@ int iupClassObjectSetAttributeId2(Ihandle* ih, const char* name, int id1, int id
   return 1;  /* function not found, default to string */
 }
 
-int iupClassObjectSetAttributeId(Ihandle* ih, const char* name, int id, const char * value)
+static int iClassObjectSetAttributeId(Ihandle* ih, const char* name, int id, const char * value)
 {
   IattribFunc* afunc;
 
@@ -170,7 +171,7 @@ int iupClassObjectSetAttributeId(Ihandle* ih, const char* name, int id, const ch
   return 1;  /* function not found, default to string */
 }
 
-int iupClassObjectSetAttribute(Ihandle* ih, const char* name, const char * value, int *inherit)
+static int iClassObjectSetAttribute(Ihandle* ih, const char* name, const char * value, int *inherit)
 {
   IattribFunc* afunc;
 
@@ -276,7 +277,7 @@ int iupClassObjectSetAttribute(Ihandle* ih, const char* name, const char * value
   return 1;  /* function not found, default to string */
 }
 
-char* iupClassObjectGetAttributeId2(Ihandle* ih, const char* name, int id1, int id2)
+static char* iClassObjectGetAttributeId2(Ihandle* ih, const char* name, int id1, int id2)
 {
   IattribFunc* afunc;
 
@@ -310,7 +311,7 @@ char* iupClassObjectGetAttributeId2(Ihandle* ih, const char* name, int id1, int 
   return NULL;
 }
 
-char* iupClassObjectGetAttributeId(Ihandle* ih, const char* name, int id)
+static char* iClassObjectGetAttributeId(Ihandle* ih, const char* name, int id)
 {
   IattribFunc* afunc;
 
@@ -336,7 +337,7 @@ char* iupClassObjectGetAttributeId(Ihandle* ih, const char* name, int id)
   return NULL;
 }
 
-char* iupClassObjectGetAttribute(Ihandle* ih, const char* name, char* *def_value, int *inherit)
+static char* iClassObjectGetAttribute(Ihandle* ih, const char* name, char* *def_value, int *inherit)
 {
   IattribFunc* afunc;
 
@@ -412,6 +413,54 @@ char* iupClassObjectGetAttribute(Ihandle* ih, const char* name, char* *def_value
     }
   }
   return NULL;
+}
+
+int iupClassObjectSetAttributeId2(Ihandle* ih, const char* name, int id1, int id2, const char* value)
+{
+  void* scope = iupdrvNativeScopeBegin();
+  int ret = iClassObjectSetAttributeId2(ih, name, id1, id2, value);
+  iupdrvNativeScopeEnd(scope);
+  return ret;
+}
+
+int iupClassObjectSetAttributeId(Ihandle* ih, const char* name, int id, const char * value)
+{
+  void* scope = iupdrvNativeScopeBegin();
+  int ret = iClassObjectSetAttributeId(ih, name, id, value);
+  iupdrvNativeScopeEnd(scope);
+  return ret;
+}
+
+int iupClassObjectSetAttribute(Ihandle* ih, const char* name, const char * value, int *inherit)
+{
+  void* scope = iupdrvNativeScopeBegin();
+  int ret = iClassObjectSetAttribute(ih, name, value, inherit);
+  iupdrvNativeScopeEnd(scope);
+  return ret;
+}
+
+char* iupClassObjectGetAttributeId2(Ihandle* ih, const char* name, int id1, int id2)
+{
+  void* scope = iupdrvNativeScopeBegin();
+  char* ret = iClassObjectGetAttributeId2(ih, name, id1, id2);
+  iupdrvNativeScopeEnd(scope);
+  return ret;
+}
+
+char* iupClassObjectGetAttributeId(Ihandle* ih, const char* name, int id)
+{
+  void* scope = iupdrvNativeScopeBegin();
+  char* ret = iClassObjectGetAttributeId(ih, name, id);
+  iupdrvNativeScopeEnd(scope);
+  return ret;
+}
+
+char* iupClassObjectGetAttribute(Ihandle* ih, const char* name, char* *def_value, int *inherit)
+{
+  void* scope = iupdrvNativeScopeBegin();
+  char* ret = iClassObjectGetAttribute(ih, name, def_value, inherit);
+  iupdrvNativeScopeEnd(scope);
+  return ret;
 }
 
 void iupClassObjectGetAttributeInfo(Ihandle* ih, const char* name, char* *def_value, int *inherit)
@@ -1113,7 +1162,7 @@ IUP_API void IupCopyClassAttributes(Ihandle* src_ih, Ihandle* dst_ih)
   }
 }
 
-IUP_SDK_API void iupClassObjectUpdateGlobalDefaults(Ihandle* ih)
+static void iClassObjectUpdateGlobalDefaults(Ihandle* ih)
 {
   Iclass* ic = ih->iclass;
   char* name = iupTableFirst(ic->attrib_func);
@@ -1133,7 +1182,14 @@ IUP_SDK_API void iupClassObjectUpdateGlobalDefaults(Ihandle* ih)
   }
 }
 
-void iupClassObjectEnsureDefaultAttributes(Ihandle* ih)
+IUP_SDK_API void iupClassObjectUpdateGlobalDefaults(Ihandle* ih)
+{
+  void* scope = iupdrvNativeScopeBegin();
+  iClassObjectUpdateGlobalDefaults(ih);
+  iupdrvNativeScopeEnd(scope);
+}
+
+static void iClassObjectEnsureDefaultAttributes(Ihandle* ih)
 {
   Iclass* ic;
   char *name;
@@ -1167,9 +1223,23 @@ void iupClassObjectEnsureDefaultAttributes(Ihandle* ih)
   }
 }
 
-void iupClassUpdate(Iclass* ic)
+void iupClassObjectEnsureDefaultAttributes(Ihandle* ih)
+{
+  void* scope = iupdrvNativeScopeBegin();
+  iClassObjectEnsureDefaultAttributes(ih);
+  iupdrvNativeScopeEnd(scope);
+}
+
+static void iClassUpdate(Iclass* ic)
 {
   IattribFunc* afunc = (IattribFunc*)iupTableGet(ic->attrib_func, "CLASSUPDATE");
   if (afunc && afunc->set)
     afunc->set((Ihandle*)ic, NULL);
+}
+
+void iupClassUpdate(Iclass* ic)
+{
+  void* scope = iupdrvNativeScopeBegin();
+  iClassUpdate(ic);
+  iupdrvNativeScopeEnd(scope);
 }

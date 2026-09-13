@@ -49,6 +49,16 @@ IUP_SDK_API void iupdrvSetEntryFunction(Icallback func)
   (void)func;
 }
 
+IUP_SDK_API void* iupdrvNativeScopeBegin(void)
+{
+  return NULL;
+}
+
+IUP_SDK_API void iupdrvNativeScopeEnd(void* scope)
+{
+  (void)scope;
+}
+
 IUP_SDK_API void iupdrvSetIdleFunction(Icallback f)
 {
   if (gtk_idle_cb)

@@ -13,6 +13,7 @@
 #include "iup_object.h"
 #include "iup_str.h"
 #include "iup_assert.h"
+#include "iup_drv.h"
 
 
 /*****************************************************************
@@ -162,62 +163,90 @@ static int iClassHasDlgPopup(Iclass* ic)
 
 IUP_SDK_API int iupClassObjectCreate(Ihandle* ih, void** params)
 {
-  return iClassCreate(ih->iclass, ih, params);
+  void* scope = iupdrvNativeScopeBegin();
+  int ret = iClassCreate(ih->iclass, ih, params);
+  iupdrvNativeScopeEnd(scope);
+  return ret;
 }
 
 IUP_SDK_API int iupClassObjectMap(Ihandle* ih)
 {
-  return iClassMap(ih->iclass, ih);
+  void* scope = iupdrvNativeScopeBegin();
+  int ret = iClassMap(ih->iclass, ih);
+  iupdrvNativeScopeEnd(scope);
+  return ret;
 }
 
 IUP_SDK_API void iupClassObjectUnMap(Ihandle* ih)
 {
+  void* scope = iupdrvNativeScopeBegin();
   iClassUnMap(ih->iclass, ih);
+  iupdrvNativeScopeEnd(scope);
 }
 
 IUP_SDK_API void iupClassObjectDestroy(Ihandle* ih)
 {
+  void* scope = iupdrvNativeScopeBegin();
   iClassDestroy(ih->iclass, ih);
+  iupdrvNativeScopeEnd(scope);
 }
 
 IUP_SDK_API void iupClassObjectComputeNaturalSize(Ihandle* ih, int *w, int *h, int *children_expand)
 {
+  void* scope = iupdrvNativeScopeBegin();
   iClassComputeNaturalSize(ih->iclass, ih, w, h, children_expand);
+  iupdrvNativeScopeEnd(scope);
 }
 
 IUP_SDK_API void iupClassObjectSetChildrenCurrentSize(Ihandle* ih, int shrink)
 {
+  void* scope = iupdrvNativeScopeBegin();
   iClassSetChildrenCurrentSize(ih->iclass, ih, shrink);
+  iupdrvNativeScopeEnd(scope);
 }
 
 IUP_SDK_API void iupClassObjectSetChildrenPosition(Ihandle* ih, int x, int y)
 {
+  void* scope = iupdrvNativeScopeBegin();
   iClassSetChildrenPosition(ih->iclass, ih, x, y);
+  iupdrvNativeScopeEnd(scope);
 }
 
 IUP_SDK_API void* iupClassObjectGetInnerNativeContainerHandle(Ihandle* ih, Ihandle* child)
 {
-  return iClassGetInnerNativeContainerHandle(ih->iclass, ih, child);
+  void* scope = iupdrvNativeScopeBegin();
+  void* ret = iClassGetInnerNativeContainerHandle(ih->iclass, ih, child);
+  iupdrvNativeScopeEnd(scope);
+  return ret;
 }
 
 IUP_SDK_API void iupClassObjectChildAdded(Ihandle* ih, Ihandle* child)
 {
+  void* scope = iupdrvNativeScopeBegin();
   iClassObjectChildAdded(ih->iclass, ih, child);
+  iupdrvNativeScopeEnd(scope);
 }
 
 IUP_SDK_API void iupClassObjectChildRemoved(Ihandle* ih, Ihandle* child, int pos)
 {
+  void* scope = iupdrvNativeScopeBegin();
   iClassObjectChildRemoved(ih->iclass, ih, child, pos);
+  iupdrvNativeScopeEnd(scope);
 }
 
 IUP_SDK_API void iupClassObjectLayoutUpdate(Ihandle *ih)
 {
+  void* scope = iupdrvNativeScopeBegin();
   iClassLayoutUpdate(ih->iclass, ih);
+  iupdrvNativeScopeEnd(scope);
 }
 
 IUP_SDK_API int iupClassObjectDlgPopup(Ihandle* ih, int x, int y)
 {
-  return iClassDlgPopup(ih->iclass, ih, x, y);
+  void* scope = iupdrvNativeScopeBegin();
+  int ret = iClassDlgPopup(ih->iclass, ih, x, y);
+  iupdrvNativeScopeEnd(scope);
+  return ret;
 }
 
 IUP_SDK_API int iupClassObjectHasDlgPopup(Ihandle* ih)
