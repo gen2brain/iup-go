@@ -143,7 +143,7 @@ IUP_DRV_API void iupmotSetPosition(Widget widget, int x, int y)
 
   /* to position outside parent area */
   {
-    int new_x, new_y;
+    Position new_x, new_y;
     XtVaGetValues(widget,
       XmNx, &new_x,
       XmNy, &new_y,
