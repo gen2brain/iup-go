@@ -403,15 +403,18 @@ static int iExpanderAnimateTimer_CB(Ihandle* animate_timer)
   int num_frames = iupAttribGetInt(ih, "NUMFRAMES");
   int time_delay = iupAttribGetInt(animate_timer, "ELAPSEDTIME");
   int height;
+  int last_frame;
   int current_frame = frame_time != 0 ? time_delay / frame_time : 0;  /* safety check */
 
   if (num_frames == 0)
     return IUP_DEFAULT;
 
+  last_frame = (current_frame >= num_frames - 1);
+
   if (closing)
-    height = (final_height*(num_frames - current_frame)) / num_frames;
+    height = last_frame ? 0 : (final_height*(num_frames - current_frame)) / num_frames;
   else
-    height = (final_height*(current_frame + 1)) / num_frames;
+    height = last_frame ? final_height : (final_height*(current_frame + 1)) / num_frames;
 
   IupSetfAttribute(child, "MAXSIZE", "%dx%d", width, height);
 
@@ -421,9 +424,10 @@ static int iExpanderAnimateTimer_CB(Ihandle* animate_timer)
   if (ih->data->state_refresh)
     IupRefresh(ih);
 
-  if (current_frame == num_frames - 1)
+  if (last_frame)
   {
     iupAttribSetStr(child, "MAXSIZE", iupAttribGet(child, "OLD_MAXSIZE"));
+    IupSetAttribute(child, "CHILDOFFSET", NULL);
 
     if (closing)
     {
