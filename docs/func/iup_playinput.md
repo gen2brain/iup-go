@@ -32,7 +32,7 @@ Screen size differences can exist, but if different themes are used, then mouse 
 |---------------------------------|----------|
 | Win32, WinUI, GTK, Motif        | Yes      |
 | Cocoa, Qt, FLTK, Android, Haiku | Yes      |
-| GTK4, EFL, CocoaTouch           | No       |
+| GTK4, EFL, Cocoa Touch          | No       |
 
 ### See Also
 

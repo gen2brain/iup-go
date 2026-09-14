@@ -34,7 +34,7 @@ Returns the registered metadata of a global attribute: flag bits and the set of 
 | IUPDRV_WINUI      | 128   | WinUI 3                 |
 | IUPDRV_FLTK       | 256   | FLTK                    |
 | IUPDRV_ANDROID    | 512   | Android                 |
-| IUPDRV_COCOATOUCH | 1024  | iOS (CocoaTouch)        |
+| IUPDRV_COCOATOUCH | 1024  | iOS (Cocoa Touch)       |
 | IUPDRV_HAIKU      | 2048  | Haiku                   |
 
 A binding can compare `drivers` against the bit for the current driver (matched from `IupGetGlobal("DRIVER")`) to know whether a global is supported on this build.

@@ -384,7 +384,7 @@ CACHEDIR is clearable storage; DATADIR is persistent; CONFIGDIR holds settings; 
 | GTK, GTK 4, Motif, EFL, FLTK | `$XDG_CACHE_HOME`        | `$XDG_DATA_HOME`                | `$XDG_CONFIG_HOME`          | `$TMPDIR`, else `/tmp`    |
 | Qt                           | `GenericCacheLocation`   | `GenericDataLocation`           | `GenericConfigLocation`     | `TempLocation`            |
 | Cocoa                        | `~/Library/Caches`       | `~/Library/Application Support` | same as DATADIR             | `NSTemporaryDirectory()`  |
-| CocoaTouch                   | `Library/Caches`         | `Library/Application Support`   | same as DATADIR             | `NSTemporaryDirectory()`  |
+| Cocoa Touch                  | `Library/Caches`         | `Library/Application Support`   | same as DATADIR             | `NSTemporaryDirectory()`  |
 | Android                      | `Context.getCacheDir()`  | `Context.getFilesDir()`         | same as DATADIR             | `Context.getCacheDir()`   |
 | Haiku                        | `B_USER_CACHE_DIRECTORY` | `B_USER_DATA_DIRECTORY`         | `B_USER_SETTINGS_DIRECTORY` | `B_SYSTEM_TEMP_DIRECTORY` |
 | WebAssembly                  | `$HOME/.cache`           | `$HOME/.local/share`            | `$HOME/.config`             | `/tmp`                    |

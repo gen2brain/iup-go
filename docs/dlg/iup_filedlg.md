@@ -142,7 +142,7 @@ When MULTIPLEFILES=YES it is called only for one file.
 >   FILTERUSED attribute will be updated to reflect the change. If returns IUP_CONTINUE, the FILE attribute if defined will update the current filename.
 
 [HELP_CB](../call/iup_help_cb.md): Action generated when the Help button is pressed.
-Not supported in CocoaTouch, FLTK, EFL, Android and Haiku.
+Not supported in Cocoa Touch, FLTK, EFL, Android and Haiku.
 
 [BUTTON_CB](../call/iup_button_cb.md): Action generated when any mouse button is pressed or released over the preview canvas.
 
@@ -194,7 +194,7 @@ The underlying native widget per driver:
 - **GTK 4**: GtkFileDialog.
 - **Motif**: XmFileSelectionDialog.
 - **Cocoa**: NSOpenPanel / NSSavePanel.
-- **CocoaTouch**: UIDocumentPickerViewController.
+- **Cocoa Touch**: UIDocumentPickerViewController.
 - **Qt**: QFileDialog.
 - **FLTK**: Fl_File_Chooser.
 - **EFL**: elm_fileselector.

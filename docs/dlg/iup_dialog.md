@@ -423,7 +423,7 @@ The underlying native widget per driver:
 - **GTK 4**: GtkWindow.
 - **Motif**: topLevelShellWidgetClass.
 - **Cocoa**: NSWindow.
-- **CocoaTouch**: UIViewController hosted by the main UIWindow.
+- **Cocoa Touch**: UIViewController hosted by the main UIWindow.
 - **Qt**: QMainWindow.
 - **FLTK**: Fl_Double_Window.
 - **EFL**: Efl_Ui_Win.

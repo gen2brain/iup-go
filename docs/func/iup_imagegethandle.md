@@ -38,7 +38,7 @@ Name can also be a system-specific stock / named image:
 - **GTK 3**: names of GTK Stock Items.
 - **GTK 4**: names of icon theme icons.
 - **Qt**: names of Qt standard pixmaps (`QStyle::StandardPixmap`).
-- **CocoaTouch**: asset-catalog names via `[UIImage imageNamed:]` and SF Symbol names via `[UIImage systemImageNamed:]`.
+- **Cocoa Touch**: asset-catalog names via `[UIImage imageNamed:]` and SF Symbol names via `[UIImage systemImageNamed:]`.
 - **Motif**: names of bitmaps installed on the system.
 
 In all cases, the function returns a new image handle and associates the name with that handle, so in the next call it will return the existing handle.

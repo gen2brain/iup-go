@@ -119,7 +119,7 @@ The underlying native service per driver:
 - **Win32**: Shell Notification balloon (no action buttons).
 - **WinUI**: AppNotificationManager.
 - **Linux/Unix** (GTK, GTK 4, Qt, FLTK, EFL, Motif): `org.freedesktop.Notifications` over D-Bus; supported features depend on the running notification daemon.
-- **Cocoa**, **CocoaTouch**: UNUserNotificationCenter (requires permission and a valid bundle identifier).
+- **Cocoa**, **Cocoa Touch**: UNUserNotificationCenter (requires permission and a valid bundle identifier).
 - **Android**: NotificationManager (requires `android.permission.POST_NOTIFICATIONS` on API 33+ for STYLE=NOTIFICATION).
 - **Haiku**: BNotification.
 

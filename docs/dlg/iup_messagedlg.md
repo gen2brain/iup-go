@@ -62,7 +62,7 @@ The underlying native widget per driver:
 - **GTK 4**: GtkAlertDialog (4.10+).
 - **Motif**: XmCreateMessageDialog / XmCreateMessageBox.
 - **Cocoa**: NSAlert.
-- **CocoaTouch**: custom UIView.
+- **Cocoa Touch**: custom UIView.
 - **Qt**: QMessageBox.
 - **FLTK**: fl_message / fl_choice_n.
 - **EFL**: custom dialog window (efl_ui_win).

@@ -3,7 +3,7 @@
 IUP is a multi-platform toolkit for building graphical user interfaces.
 It uses native interface elements for high performance and platform-consistent look and feel.
 
-This is a fork maintained as part of [IUP-Go](https://github.com/gen2brain/iup-go) with additional backends (Cocoa, WinUI, Qt, GTK4, FLTK, EFL, Android, CocoaTouch, Haiku, WebAssembly) and features.
+This is a fork maintained as part of [IUP-Go](https://github.com/gen2brain/iup-go) with additional backends (Cocoa, WinUI, Qt, GTK4, FLTK, EFL, Android, Cocoa Touch, Haiku, WebAssembly) and features.
 
 API reference documentation is available in the [docs](https://github.com/gen2brain/iup-go/tree/main/docs) directory.
 For the original IUP documentation, visit [IUP's website](https://www.tecgraf.puc-rio.br/iup).
@@ -45,7 +45,7 @@ Available presets:
 | `win32`           | Win32                           | Windows native       |
 | `winui`           | WinUI / XAML Islands            |                      |
 | `cocoa`           | Cocoa / AppKit                  | macOS native         |
-| `cocoatouch`      | CocoaTouch / UIKit              | iOS                  |
+| `cocoatouch`      | Cocoa Touch / UIKit             | iOS                  |
 | `motif`           | Motif / X11                     |                      |
 | `qt6`             | Qt6                             |                      |
 | `qt5`             | Qt5                             |                      |
@@ -59,7 +59,7 @@ Available presets:
 | `win32-full`      | Win32 + all optional libs       |                      |
 | `winui-full`      | WinUI + all optional libs       |                      |
 | `cocoa-full`      | Cocoa + all optional libs       |                      |
-| `cocoatouch-full` | CocoaTouch + all optional libs  |                      |
+| `cocoatouch-full` | Cocoa Touch + all optional libs |                      |
 | `motif-full`      | Motif + all optional libs       |                      |
 | `qt6-full`        | Qt6 + all optional libs         |                      |
 | `qt5-full`        | Qt5 + all optional libs         |                      |
@@ -155,7 +155,7 @@ Requires the Android NDK (r23 or newer). Set `ANDROID_NDK_HOME` and use the `and
 Valid `ANDROID_ABI` values: `arm64-v8a`, `armeabi-v7a`, `x86`, `x86_64`.
 The Gradle project under `android/` wraps this build (see [android/README.md](android/README.md)); Android consumers can drive CMake through Gradle rather than invoking it directly.
 
-**CocoaTouch** (iOS):
+**Cocoa Touch** (iOS):
 Requires Xcode (or the Command Line Tools) for the iOS SDK and Apple Clang.
 Use the `cocoatouch` preset together with an iOS toolchain file to target device or simulator.
 The app-bundle build (sign + install + log) is wrapped by helper scripts under `ios/`; see [ios/README.md](ios/README.md).
