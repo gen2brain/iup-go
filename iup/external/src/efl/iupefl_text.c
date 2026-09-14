@@ -1695,7 +1695,6 @@ static void eflTextUnMapMethod(Ihandle* ih)
 
   ih->handle = NULL;
 
-  iupeflFontFree(ih);
 }
 
 static int eflTextSetFontAttrib(Ihandle* ih, const char* value)

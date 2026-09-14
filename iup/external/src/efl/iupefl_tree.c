@@ -2738,7 +2738,6 @@ static void eflTreeUnMapMethod(Ihandle* ih)
 
   ih->handle = NULL;
 
-  iupeflFontFree(ih);
 }
 
 IUP_SDK_API void iupdrvTreeAddBorders(Ihandle* ih, int *w, int *h)
