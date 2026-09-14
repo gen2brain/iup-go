@@ -5,7 +5,12 @@
  */
 
 #include <windows.h>
+#include <initguid.h>
 #include <wincodec.h>
+
+#ifdef _MSC_VER
+DEFINE_GUID(IID_IWICImagingFactory, 0xec5ec8a9, 0xc395, 0x4314, 0x9c,0x77, 0x54,0xd7,0xa9,0x35,0xff,0x70);
+#endif
 
 #include <stdio.h>
 #include <stdlib.h>
