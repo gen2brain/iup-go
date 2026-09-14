@@ -104,7 +104,7 @@ The underlying native image type per driver:
 - **GTK 4**: GdkTexture / GdkCursor.
 - **Motif**: Pixmap / Cursor.
 - **Cocoa**: NSImage.
-- **CocoaTouch**: UIImage.
+- **Cocoa Touch**: UIImage.
 - **Qt**: QPixmap.
 - **FLTK**: Fl_RGB_Image.
 - **EFL**: Evas_Object.

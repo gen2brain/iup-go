@@ -1,6 +1,6 @@
 # IUP for iOS
 
-This directory pairs the iOS (CocoaTouch) C driver with build helper and app-bundle templates.
+This directory pairs the iOS (Cocoa Touch) C driver with build helper and app-bundle templates.
 
 Two independent build flows are supported:
 

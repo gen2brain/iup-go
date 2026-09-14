@@ -6,7 +6,7 @@ Go library based on [IUP](https://www.tecgraf.puc-rio.br/iup/), a multi-platform
 
 IUP-Go provides system native UI controls for Windows ([Win32](#win32), [WinUI](#winui)), macOS ([Cocoa](#macos)), 
 Linux/BSD ([GTK](#gtk), [Qt](#qt), [FLTK](#fltk), [EFL](#efl), [Motif](#motif), [GNUstep](#gnustep)), Haiku ([Interface Kit](#haiku)),
-WebAssembly ([Emscripten](#emscripten)), Android ([Android](#android)), and iOS ([CocoaTouch](#ios)).
+WebAssembly ([Emscripten](#emscripten)), Android ([Android](#android)), and iOS ([Cocoa Touch](#ios)).
 
 C/C++/Obj-C source code is included and compiled together with bindings.
 Note that the first build can take a few minutes.
@@ -202,9 +202,6 @@ The same `main()` compiles as a desktop binary, an Android shared library, and a
 Most examples are laid out for desktop windows and will overflow a phone screen though; production mobile apps need a layout tuned for small screens.
 See [mobile_sample](examples/mobile_sample) and [mobile_hello](examples/mobile_hello) for examples designed for mobile. Also check [chat](examples/chat) that handles both desktop and mobile layouts.
 
-`iup.EntryPoint(main)` registers `main` as the callback the platform fires after launch; on desktop it is a no-op and the Go runtime calls `main` directly.
-`iup.Close()` and `iup.MainLoop()` are no-ops on mobile (the host platform owns the lifecycle), so avoid scheduling cleanup after `iup.MainLoop()`.
-
 Examples without a top-level `Dialog` (e.g. `alarm`, `message`) will not run on mobile, the host platform requires a real Dialog as the root.
 
 ##### Android
@@ -218,7 +215,7 @@ See [iup/external/android/README.md](iup/external/android/README.md) for prerequ
 
 ##### iOS
 
-The Go binary IS the iOS executable; the CocoaTouch driver calls `UIApplicationMain` itself.
+The Go binary IS the iOS executable; the Cocoa Touch driver calls `UIApplicationMain` itself.
 
 See [iup/external/ios/README.md](iup/external/ios/README.md) for prerequisites, signing, and distribution.
 
