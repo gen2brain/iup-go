@@ -513,8 +513,10 @@ static void haikuMenuUnMapMethod(Ihandle* ih)
           root->ResizeTo(b.Width(), b.Height());
         }
       }
+      delete mb;
     }
     if (ih->parent) iupAttribSet(ih->parent, "_IUP_DIALOG_HASMENU", NULL);
+    ih->parent = NULL;
   }
   else
   {

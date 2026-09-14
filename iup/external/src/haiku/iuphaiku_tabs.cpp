@@ -14,6 +14,8 @@
 #include <List.h>
 #include <Rect.h>
 #include <TabView.h>
+#include <Layout.h>
+#include <LayoutItem.h>
 #include <View.h>
 
 extern "C" {
@@ -184,6 +186,16 @@ public:
   {
     BTabView::MakeFocus(focus);
     if (fIhandle) iuphaikuFocusInOutEvent(fIhandle, focus ? 1 : 0);
+  }
+
+  BTab* RemoveTab(int32 index) override
+  {
+    BLayout* layout = ContainerView() ? ContainerView()->GetLayout() : NULL;
+    BLayoutItem* item = layout ? layout->ItemAt(index) : NULL;
+    BTab* tab = BTabView::RemoveTab(index);
+    if (tab)
+      delete item;
+    return tab;
   }
 
   /* BTabView indices skip hidden tabs; convert to IUP child positions. */
