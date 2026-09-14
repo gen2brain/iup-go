@@ -560,6 +560,16 @@ jobs:
         cmake -S . -B build/winui-shared -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DIUP_BACKEND=winui -DIUP_BUILD_GL=ON -DIUP_BUILD_WEB=ON -DIUP_BUILD_CTRL=ON -DIUP_BUILD_PLOT=ON -DIUP_BUILD_MEDIA=ON -DCMAKE_COMPILE_WARNING_AS_ERROR=ON
         cmake --build build/winui-shared --parallel
       working-directory: iup/external
+    - name: CMake Win32
+      run: |
+        cmake --preset win32-full -G Ninja -DCMAKE_COMPILE_WARNING_AS_ERROR=ON
+        cmake --build build/win32-full --parallel
+      working-directory: iup/external
+    - name: CMake Win32 shared
+      run: |
+        cmake -S . -B build/win32-shared -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DIUP_BACKEND=win32 -DIUP_BUILD_GL=ON -DIUP_BUILD_WEB=ON -DIUP_BUILD_CTRL=ON -DIUP_BUILD_PLOT=ON -DIUP_BUILD_MEDIA=ON -DCMAKE_COMPILE_WARNING_AS_ERROR=ON
+        cmake --build build/win32-shared --parallel
+      working-directory: iup/external
 
   linux-android:
     runs-on: ubuntu-latest
