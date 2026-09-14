@@ -57,6 +57,14 @@ static void winuiTimerProc(IupWinUITimer* timer_data)
     int ret = cb(ih);
     timer_data->in_tick = false;
 
+    if (timer_data->stopped)
+    {
+      delete timer_data;
+      if (ret == IUP_CLOSE)
+        IupExitLoop();
+      return;
+    }
+
     if (ret == IUP_CLOSE)
       IupExitLoop();
   }
@@ -119,6 +127,9 @@ extern "C" IUP_SDK_API void iupdrvTimerStop(Ihandle* ih)
       }
 
       iupAttribSet(ih, IUPWINUI_TIMER_DATA, nullptr);
+
+      if (!timer_data->in_tick)
+        delete timer_data;
     }
 
     ih->serial = -1;

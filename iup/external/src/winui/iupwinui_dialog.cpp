@@ -849,7 +849,6 @@ static void winuiDialogUnMapMethod(Ihandle* ih)
 {
   if (ih->data->menu)
   {
-    ih->data->menu->handle = NULL;
     IupDestroy(ih->data->menu);
     ih->data->menu = NULL;
   }
