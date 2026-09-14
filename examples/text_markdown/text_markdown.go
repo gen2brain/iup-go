@@ -111,40 +111,28 @@ func main() {
 	iup.SetAttribute(mltline, "FORMATTING", "YES")
 	iup.SetAttribute(mltline, "EXPAND", "YES")
 	iup.SetAttribute(mltline, "READONLY", "YES")
+	iup.SetAttribute(mltline, "VISIBLELINES", "24")
+	iup.SetAttribute(mltline, "VISIBLECOLUMNS", "60")
 
 	iup.SetCallback(mltline, "LINK_CB", iup.TextLinkFunc(func(ih iup.Ihandle, url string) int {
 		fmt.Printf("Link clicked: %s\n", url)
 		return iup.DEFAULT
 	}))
 
-	exported := iup.MultiLine()
-	iup.SetAttribute(exported, "READONLY", "YES")
-	iup.SetAttribute(exported, "EXPAND", "HORIZONTAL")
-	iup.SetAttribute(exported, "VISIBLELINES", "8")
-
-	refreshExport := func() {
-		out := iup.GetAttribute(mltline, "GETMARKDOWNVALUE")
-		iup.SetAttribute(exported, "VALUE", out)
-		fmt.Fprintf(os.Stderr, "GETMARKDOWNVALUE:\n%s\n", out)
-	}
-
 	btnAppend := iup.Button("Append Section")
 	iup.SetCallback(btnAppend, "ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
 		iup.SetAttribute(mltline, "APPENDMARKDOWN", appendSection)
-		refreshExport()
 		return iup.DEFAULT
 	}))
 
-	dlg := iup.Dialog(iup.Vbox(mltline, btnAppend, exported))
+	dlg := iup.Dialog(iup.Vbox(mltline, btnAppend))
 	iup.SetAttribute(dlg, "TITLE", "Markdown Example")
-	iup.SetAttribute(dlg, "SIZE", "HALFxHALF")
 	iup.SetAttribute(dlg, "MARGIN", "10x10")
 	iup.SetAttribute(dlg, "GAP", "10")
 
 	iup.Map(dlg)
 
 	iup.SetAttribute(mltline, "MARKDOWNVALUE", md)
-	refreshExport()
 
 	iup.ShowXY(dlg, iup.CENTER, iup.CENTER)
 	iup.MainLoop()

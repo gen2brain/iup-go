@@ -61,8 +61,8 @@ func main() {
 		iup.Label("SLIDE animation runs when opening and closing."),
 		iup.Toggle("A toggle"),
 	).SetAttributes("NMARGIN=5x5, NGAP=4")))
-	animated.SetAttributes(`TITLE="Animated, framed, custom images", ANIMATION=SLIDE, NUMFRAMES=20, FRAMETIME=20`)
-	animated.SetAttributes(`FRAME=YES, FRAMEWIDTH=2, BACKCOLOR="235 235 245", STATE=CLOSE`)
+	animated.SetAttributes(`TITLE="Animated, custom images", ANIMATION=SLIDE, NUMFRAMES=20, FRAMETIME=20`)
+	animated.SetAttributes(`BACKCOLOR="235 235 245", STATE=CLOSE`)
 	animated.SetAttributes("IMAGE=arrow_close, IMAGEOPEN=arrow_open, IMAGEHIGHLIGHT=arrow_close_high, IMAGEOPENHIGHLIGHT=arrow_open_high")
 	animated.SetAttributes("TITLEIMAGE=title_close, TITLEIMAGEOPEN=title_open, TITLEIMAGEHIGHLIGHT=title_close_high, TITLEIMAGEOPENHIGHLIGHT=title_open_high")
 	animated.SetCallback("OPENCLOSE_CB", openClose("Animated expander"))
@@ -80,10 +80,10 @@ func main() {
 		return iup.DEFAULT
 	}))
 
-	autoShow := iup.Expander(iup.Vbox(
+	autoShow := iup.Expander(iup.BackgroundBox(iup.Vbox(
 		iup.Label("Shown while the mouse rests over the bar for a second."),
-		iup.Label("STATEREFRESH=NO keeps the dialog layout untouched."),
-	).SetAttributes("NMARGIN=5x5, NGAP=4"))
+		iup.Label("The child must be a native container; it floats on top."),
+	).SetAttributes("NMARGIN=5x5, NGAP=4")))
 	autoShow.SetAttributes(`TITLE="Auto show", AUTOSHOW=YES, STATEREFRESH=NO, BARSIZE=30, STATE=CLOSE`)
 	autoShow.SetCallback("OPENCLOSE_CB", openClose("Auto show expander"))
 
@@ -117,7 +117,6 @@ func main() {
 	column := iup.Vbox(
 		plain,
 		extras,
-		autoShow,
 		iup.Hbox(left, right, bottom).SetAttribute("NGAP", "10"),
 		toggleAll,
 		status,
@@ -125,7 +124,7 @@ func main() {
 
 	hbox := iup.Hbox(
 		column,
-		iup.Vbox(animated, iup.Fill()),
+		iup.Vbox(animated, autoShow, iup.Fill()).SetAttribute("NGAP", "10"),
 	).SetAttributes("NMARGIN=10x10, NGAP=10")
 
 	dlg := iup.Dialog(hbox).SetAttributes(`TITLE="IupExpander"`)

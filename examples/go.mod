@@ -1,12 +1,16 @@
 module examples
 
-go 1.21
+go 1.26.4
 
 replace github.com/gen2brain/iup-go/iup => ../iup
 
 require (
+	github.com/gen2brain/folio v0.2.5
 	github.com/gen2brain/iup-go/iup v0.0.0-00010101000000-000000000000
 	github.com/go-gl/gl v0.0.0-20260331235117-4566fea9a276
 )
 
-require github.com/ebitengine/purego v0.10.1 // indirect
+require (
+	github.com/ebitengine/purego v0.10.1 // indirect
+	golang.org/x/net v0.58.0 // indirect
+)
