@@ -17,7 +17,7 @@ func dlopenRaw(nameOrPath string) uintptr {
 }
 
 func sysLibNames(base string) []string {
-	return []string{"lib" + base + ".dylib", "lib" + base + ".4.dylib"}
+	return []string{"@executable_path/../Frameworks/lib" + base + ".4.dylib", "lib" + base + ".dylib", "lib" + base + ".4.dylib"}
 }
 
 func canonicalLibName(base string) string { return "lib" + base + ".dylib" }
