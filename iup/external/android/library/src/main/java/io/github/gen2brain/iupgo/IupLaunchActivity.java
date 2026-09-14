@@ -22,6 +22,11 @@ public class IupLaunchActivity extends Activity
     /* Override to add libraries (no lib prefix, no .so suffix). Must include "iup". */
     protected String[] getLibraries()
     {
+        String entryLibraryName = getManifestMetaString("ENTRY_LIBRARY");
+        if (entryLibraryName != null && entryLibraryName.startsWith("lib") && entryLibraryName.endsWith(".so"))
+        {
+            return new String[] { entryLibraryName.substring(3, entryLibraryName.length() - 3) };
+        }
         return new String[] { "iup" };
     }
 

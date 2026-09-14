@@ -103,6 +103,13 @@ public class MyIupLaunchActivity extends IupLaunchActivity {
 }
 ```
 
+Or skip the subclass and name the library in the manifest; `IupLaunchActivity` then loads it and calls its entry point:
+
+```xml
+<activity android:name="io.github.gen2brain.iupgo.IupLaunchActivity" ...>
+<meta-data android:name="ENTRY_LIBRARY" android:value="libmyapp.so"/>
+```
+
 Then build the APK:
 
 ```sh
@@ -122,7 +129,7 @@ For iterating on an examples end-to-end, the script in this directory wraps the 
 ./build-android.sh -f -l -i -s -n iupapp ../../../examples/mobile_sample 
 ```
 
-`-n <name>` must match `MyIupLaunchActivity.getLibraries()` / `getEntryPointLibraryName()` (`iupapp` for the bundled example app).
+`-x <name>` must match `MyIupLaunchActivity.getLibraries()` / `getEntryPointLibraryName()` (`iupapp` for the bundled example app).
 Run `./build-android.sh -h` for the full flag list.
 
 ### Release signing

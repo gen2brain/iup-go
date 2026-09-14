@@ -127,8 +127,8 @@ if [[ "$CAPTURE_ONLY" -eq 1 ]]; then
 fi
 
 if [[ "$CLEAN" -eq 1 ]]; then
-	echo "==> clean: wiping ${GRADLE_DIR}/{,library/,iupapp/}build, ${GRADLE_DIR}/.gradle, and ${JNILIBS_DIR}"
-	rm -rf "${GRADLE_DIR}/build" "${GRADLE_DIR}/library/build" "${GRADLE_DIR}/iupapp/build" "${GRADLE_DIR}/.gradle" "${JNILIBS_DIR}"
+	echo "==> clean: wiping ${GRADLE_DIR}/{,library/,iupapp/,template/}build, ${GRADLE_DIR}/.gradle, and ${JNILIBS_DIR}"
+	rm -rf "${GRADLE_DIR}/build" "${GRADLE_DIR}/library/build" "${GRADLE_DIR}/iupapp/build" "${GRADLE_DIR}/template/build" "${GRADLE_DIR}/.gradle" "${JNILIBS_DIR}"
 	# Exit here if the user only asked to clean.
 	if [[ $# -lt 1 ]]; then
 		echo "==> done"

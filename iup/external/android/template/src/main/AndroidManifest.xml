@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:tools="http://schemas.android.com/tools">
+
+	<application
+		android:allowBackup="true"
+		android:icon="@mipmap/ic_launcher"
+		android:label="IupApp"
+		android:supportsRtl="true"
+		android:theme="@style/AppTheme"
+		android:hardwareAccelerated="true"
+		android:largeHeap="true"
+		android:name="io.github.gen2brain.iupgo.IupApplication">
+
+		<activity
+			android:name="io.github.gen2brain.iupgo.IupLaunchActivity"
+			android:theme="@android:style/Theme.Translucent.NoTitleBar"
+			android:configChanges="orientation|keyboardHidden|screenSize"
+			android:noHistory="true"
+			android:exported="true"
+			tools:replace="android:exported">
+			<intent-filter>
+				<action android:name="android.intent.action.MAIN"/>
+				<category android:name="android.intent.category.LAUNCHER"/>
+			</intent-filter>
+		</activity>
+
+		<meta-data android:name="ENTRY_LIBRARY" android:value="libiupapp.so"/>
+	</application>
+
+</manifest>

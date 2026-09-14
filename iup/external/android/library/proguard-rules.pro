@@ -13,6 +13,8 @@
 -keepclasseswithmembers class * {
     native <methods>;
 }
+-keepnames class com.google.android.material.button.MaterialButton
+-keepnames class com.google.android.material.slider.Slider
 
 # Keep line numbers in shrunk stack traces, helps logcat triage.
 -keepattributes SourceFile,LineNumberTable

@@ -1,1 +1,1 @@
-include ':library', ':iupapp'
+include ':library', ':iupapp', ':template'
