@@ -1,0 +1,33 @@
+plugins {
+	id 'com.android.application'
+}
+
+android {
+	namespace = 'io.github.gen2brain.iupgo.template'
+	compileSdk = rootProject.ext.compileSdk
+
+	defaultConfig {
+		applicationId = 'io.github.gen2brain.iupgo.template'
+		minSdk = rootProject.ext.minSdk
+		targetSdk = rootProject.ext.targetSdk
+		versionCode = rootProject.ext.versionCode
+		versionName = rootProject.ext.versionName
+	}
+
+	compileOptions {
+		sourceCompatibility = JavaVersion.VERSION_17
+		targetCompatibility = JavaVersion.VERSION_17
+	}
+
+	buildTypes {
+		release {
+			minifyEnabled = true
+			shrinkResources = true
+			proguardFiles getDefaultProguardFile('proguard-android-optimize.txt')
+		}
+	}
+}
+
+dependencies {
+	implementation project(':library')
+}
