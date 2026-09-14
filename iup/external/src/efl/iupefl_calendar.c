@@ -154,7 +154,6 @@ static void eflCalendarUnMapMethod(Ihandle* ih)
 
   ih->handle = NULL;
 
-  iupeflFontFree(ih);
 }
 
 Iclass* iupCalendarNewClass(void)

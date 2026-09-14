@@ -2108,7 +2108,6 @@ static void eflListUnMapMethod(Ihandle* ih)
 
   ih->handle = NULL;
 
-  iupeflFontFree(ih);
 }
 
 IUP_SDK_API int iupdrvListGetCount(Ihandle* ih)

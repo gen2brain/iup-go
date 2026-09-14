@@ -153,7 +153,6 @@ IUP_DRV_API void iupeflDialogSetFocus(Ihandle* ih);
 IUP_DRV_API void iupeflUpdateWidgetFont(Ihandle* ih, Eo* widget);
 IUP_DRV_API void iupeflBuildTextStyle(Ihandle* ih, char* style, int style_size);
 IUP_DRV_API void iupeflApplyTextStyle(Ihandle* ih, Eo* widget);
-IUP_DRV_API void iupeflFontFree(Ihandle* ih);
 
 /****************************************************************************
  * Textbox Border Measurement

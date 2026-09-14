@@ -787,7 +787,6 @@ static void eflCanvasUnMapMethod(Ihandle* ih)
 
   ih->handle = NULL;
 
-  iupeflFontFree(ih);
 }
 
 static void eflCanvasLayoutUpdateMethod(Ihandle* ih)

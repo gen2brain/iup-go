@@ -414,7 +414,6 @@ static void eflMenuItemUnMapMethod(Ihandle* ih)
   iupAttribSet(ih, "_IUP_EFL_ITEM", NULL);
   ih->handle = NULL;
 
-  iupeflFontFree(ih);
 }
 
 IUP_SDK_API void iupdrvMenuItemInitClass(Iclass* ic)
@@ -475,7 +474,6 @@ static void eflMenuSeparatorUnMapMethod(Ihandle* ih)
   iupAttribSet(ih, "_IUP_EFL_ITEM", NULL);
   ih->handle = NULL;
 
-  iupeflFontFree(ih);
 }
 
 IUP_SDK_API void iupdrvMenuSeparatorInitClass(Iclass* ic)
@@ -585,7 +583,6 @@ static void eflSubmenuUnMapMethod(Ihandle* ih)
   iupAttribSet(ih, "_IUP_EFL_PARENT_ITEM", NULL);
   ih->handle = NULL;
 
-  iupeflFontFree(ih);
 }
 
 IUP_SDK_API void iupdrvSubmenuInitClass(Iclass* ic)
@@ -891,7 +888,6 @@ static void eflMenuUnMapMethod(Ihandle* ih)
   iupAttribSet(ih, "_IUP_EFL_MENU", NULL);
   ih->handle = NULL;
 
-  iupeflFontFree(ih);
 }
 
 IUP_SDK_API void iupdrvMenuInitClass(Iclass* ic)

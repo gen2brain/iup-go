@@ -13,6 +13,7 @@
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
+#include "iup_array.h"
 #include "iup_drvfont.h"
 #include "iup_image.h"
 #include "iup_markup.h"
@@ -22,7 +23,8 @@
 
 typedef struct _IeflFont
 {
-  char* font_name;
+  char font[200];
+  char font_name[100];
   int size;
   int is_bold;
   int is_italic;
@@ -34,6 +36,7 @@ typedef struct _IeflFont
   int descent;
 } IeflFont;
 
+static Iarray* efl_fonts = NULL;
 static Eo* efl_font_measure_tb = NULL;
 static Ecore_Evas* efl_font_buffer_ee = NULL;
 
@@ -237,74 +240,52 @@ static void eflFontMeasureString(const char* family, int size, int is_bold, int 
   if (h) *h = sz.h > 0 ? sz.h : size;
 }
 
+static int eflFindFont(const char* font_str)
+{
+  int i, count = iupArrayCount(efl_fonts);
+  IeflFont* fonts = (IeflFont*)iupArrayGetData(efl_fonts);
+  IeflFont* font;
+
+  for (i = 0; i < count; i++)
+  {
+    if (iupStrEqualNoCase(font_str, fonts[i].font))
+      return i;
+  }
+
+  fonts = (IeflFont*)iupArrayInc(efl_fonts);
+  font = &fonts[count];
+  memset(font, 0, sizeof(IeflFont));
+  iupStrCopyN(font->font, sizeof(font->font), font_str);
+  eflFontParse(font_str, font->font_name, &font->size, &font->is_bold, &font->is_italic, &font->is_underline, &font->is_strikeout);
+  eflFontMeasure(font->font_name, font->size, font->is_bold, font->is_italic, &font->charwidth, &font->charheight, &font->ascent, &font->descent);
+  return count;
+}
+
 static IeflFont* eflFontGet(Ihandle* ih)
 {
-  IeflFont* font = (IeflFont*)iupAttribGet(ih, "_IUP_EFL_FONT");
-  if (!font && ih)
+  int idx;
+
+  if (!ih)
+    return NULL;
+
+  idx = iupAttribGetInt(ih, "_IUP_EFL_FONT");
+  if (!idx)
   {
     char* font_str = iupGetFontValue(ih);
     if (!font_str)
       font_str = IupGetGlobal("DEFAULTFONT");
-    if (font_str)
-    {
-      char family[100];
-      int size, is_bold, is_italic, is_underline, is_strikeout;
-
-      font = (IeflFont*)calloc(1, sizeof(IeflFont));
-      iupAttribSet(ih, "_IUP_EFL_FONT", (char*)font);
-
-      eflFontParse(font_str, family, &size, &is_bold, &is_italic, &is_underline, &is_strikeout);
-
-      font->font_name = strdup(family);
-      font->size = size;
-      font->is_bold = is_bold;
-      font->is_italic = is_italic;
-      font->is_underline = is_underline;
-      font->is_strikeout = is_strikeout;
-
-      eflFontMeasure(family, size, is_bold, is_italic, &font->charwidth, &font->charheight, &font->ascent, &font->descent);
-    }
+    if (!font_str)
+      return NULL;
+    idx = eflFindFont(font_str) + 1;
+    iupAttribSetInt(ih, "_IUP_EFL_FONT", idx);
   }
-  return font;
-}
 
-IUP_DRV_API void iupeflFontFree(Ihandle* ih)
-{
-  IeflFont* font = (IeflFont*)iupAttribGet(ih, "_IUP_EFL_FONT");
-  if (font)
-  {
-    if (font->font_name)
-      free(font->font_name);
-    free(font);
-    iupAttribSet(ih, "_IUP_EFL_FONT", NULL);
-  }
+  return (IeflFont*)iupArrayGetData(efl_fonts) + (idx - 1);
 }
 
 IUP_SDK_API int iupdrvSetFontAttrib(Ihandle* ih, const char* value)
 {
-  IeflFont* font = eflFontGet(ih);
-  char family[100];
-  int size, is_bold, is_italic, is_underline, is_strikeout;
-
-  if (!font)
-  {
-    font = (IeflFont*)calloc(1, sizeof(IeflFont));
-    iupAttribSet(ih, "_IUP_EFL_FONT", (char*)font);
-  }
-
-  eflFontParse(value, family, &size, &is_bold, &is_italic, &is_underline, &is_strikeout);
-
-  if (font->font_name)
-    free(font->font_name);
-
-  font->font_name = strdup(family);
-  font->size = size;
-  font->is_bold = is_bold;
-  font->is_italic = is_italic;
-  font->is_underline = is_underline;
-  font->is_strikeout = is_strikeout;
-
-  eflFontMeasure(family, size, is_bold, is_italic, &font->charwidth, &font->charheight, &font->ascent, &font->descent);
+  iupAttribSetInt(ih, "_IUP_EFL_FONT", eflFindFont(value) + 1);
 
   if (ih->handle && (ih->iclass->nativetype != IUP_TYPEVOID))
   {
@@ -338,7 +319,7 @@ IUP_SDK_API void iupdrvFontGetMultiLineStringSize(Ihandle* ih, const char* str, 
     size = font->size;
     is_bold = font->is_bold;
     is_italic = font->is_italic;
-    iupStrCopyN(family, sizeof(family), font->font_name ? font->font_name : "Sans");
+    iupStrCopyN(family, sizeof(family), font->font_name[0] ? font->font_name : "Sans");
     charheight = font->charheight;
   }
   else
@@ -411,7 +392,7 @@ IUP_SDK_API int iupdrvFontGetStringWidth(Ihandle* ih, const char* str)
 
   if (font)
   {
-    family = font->font_name ? font->font_name : "Sans";
+    family = font->font_name[0] ? font->font_name : "Sans";
     size = font->size;
     is_bold = font->is_bold;
     is_italic = font->is_italic;
@@ -581,7 +562,7 @@ IUP_DRV_API void iupeflBuildTextStyle(Ihandle* ih, char* style, int style_size)
 
   if (font)
   {
-    if (font->font_name)
+    if (font->font_name[0])
       strncpy(font_family, font->font_name, sizeof(font_family) - 1);
     font_size = font->size > 0 ? font->size : 12;
 
@@ -618,7 +599,7 @@ IUP_DRV_API void iupeflApplyTextStyle(Ihandle* ih, Eo* widget)
   {
     IeflFont* font = eflFontGet(ih);
 
-    if (font && font->font_name)
+    if (font && font->font_name[0])
     {
       efl_text_font_family_set(widget, font->font_name);
       efl_text_font_size_set(widget, font->size > 0 ? font->size : 11);
@@ -697,12 +678,16 @@ IUP_DRV_API void iupeflUpdateWidgetFont(Ihandle* ih, Evas_Object* widget)
 
 IUP_SDK_API void iupdrvFontInit(void)
 {
+  efl_fonts = iupArrayCreate(50, sizeof(IeflFont));
   efl_font_measure_tb = NULL;
   efl_font_buffer_ee = ecore_evas_buffer_new(1, 1);
 }
 
 IUP_SDK_API void iupdrvFontFinish(void)
 {
+  iupArrayDestroy(efl_fonts);
+  efl_fonts = NULL;
+
   if (efl_font_measure_tb)
   {
     efl_del(efl_font_measure_tb);

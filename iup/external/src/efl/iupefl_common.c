@@ -826,7 +826,6 @@ IUP_SDK_API void iupdrvBaseUnMapMethod(Ihandle* ih)
       efl_unref(widget);
   }
 
-  iupeflFontFree(ih);
 
   ih->handle = NULL;
 }

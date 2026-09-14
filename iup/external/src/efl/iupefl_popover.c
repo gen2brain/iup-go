@@ -199,7 +199,6 @@ static void eflPopoverUnMapMethod(Ihandle* ih)
   iupAttribSet(ih, "_IUP_EFL_INNER", NULL);
   ih->handle = NULL;
 
-  iupeflFontFree(ih);
 }
 
 static void eflPopoverLayoutUpdateMethod(Ihandle* ih)
