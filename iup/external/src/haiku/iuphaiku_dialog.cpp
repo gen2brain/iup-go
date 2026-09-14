@@ -444,6 +444,12 @@ static void haikuDialogUnMapMethod(Ihandle* ih)
 {
   IupHaikuWindow* win = (IupHaikuWindow*)ih->handle;
 
+  if (ih->data->menu)
+  {
+    IupDestroy(ih->data->menu);
+    ih->data->menu = NULL;
+  }
+
   if (win && be_app)
   {
     for (Ihandle* dlg = iupDlgListFirst(); dlg; dlg = iupDlgListNext())

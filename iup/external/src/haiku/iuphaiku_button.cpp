@@ -329,6 +329,7 @@ static void haikuButtonApplyImage(Ihandle* ih, const char* name, int make_inacti
   if (!bm) return;
 
   LooperLockGuard guard(button->Looper());
+  button->SetIcon(NULL, 0);
   button->SetIcon(bm, 0);
 }
 
