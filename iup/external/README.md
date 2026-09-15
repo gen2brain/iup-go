@@ -6,7 +6,6 @@ It uses native interface elements for high performance and platform-consistent l
 This is a fork maintained as part of [IUP-Go](https://github.com/gen2brain/iup-go) with additional backends (Cocoa, WinUI, Qt, GTK4, FLTK, EFL, Android, Cocoa Touch, Haiku, WebAssembly) and features.
 
 API reference documentation is available in the [docs](https://github.com/gen2brain/iup-go/tree/main/docs) directory.
-For the original IUP documentation, visit [IUP's website](https://www.tecgraf.puc-rio.br/iup).
 
 ## Building
 
@@ -85,7 +84,7 @@ IDEs automatically pick up both files. See [example](https://gist.github.com/gen
 | `IUP_BUILD_PLOT`     | `OFF`            | Build `iupplot` (Plot control)                                  |
 | `IUP_BUILD_MEDIA`    | `OFF`            | Build `iupmedia` (Audio, Camera and Microphone controls)        |
 | `IUP_BUILD_EXAMPLES` | `OFF`            | Build example programs (C and C++)                              |
-| `IUP_USE_XEMBED`     | `OFF`            | Use XEmbed tray protocol instead of SNI (GTK3/Motif)            |
+| `IUP_USE_XEMBED`     | `OFF`            | Use XEmbed tray protocol instead of SNI (GTK3/GTK2/Motif)       |
 | `IUP_EMBED_MANIFEST` | `ON`             | Embed the application manifest into built executables (Windows) |
 | `BUILD_SHARED_LIBS`  | `OFF`            | Build shared libraries instead of static                        |
 
@@ -175,8 +174,7 @@ cmake --build build/wasm                     # -> build/wasm/libiup.a (wasm32)
 Linking via `find_package(IUP)` / `IUP::iup` pulls in the Emscripten runtime flags IUP needs automatically. For a direct `emcc` link, pass them yourself:
 
 ```bash
-emcc app.c build/wasm/libiup.a -Iinclude \
-  -sEMULATE_FUNCTION_POINTER_CASTS=1 -sALLOW_MEMORY_GROWTH=1 -sNO_EXIT_RUNTIME=1 -o app.html
+emcc app.c build/wasm/libiup.a -Iinclude -sEMULATE_FUNCTION_POINTER_CASTS=1 -sALLOW_MEMORY_GROWTH=1 -sNO_EXIT_RUNTIME=1 -o app.html
 ```
 
 This builds the static library only. To build and run a complete app (C or Go) in the browser, use `wasm/build-wasm.sh`; see [wasm/README.md](wasm/README.md).
@@ -190,8 +188,8 @@ iOS uses EAGL + CAEAGLLayer from OpenGLES framework (no extra deps).
 Haiku uses BGLView from `libGL` (ships with the OS).
 
 **Media** (`IUP_BUILD_MEDIA`):
-No extra dependencies. Audio uses the bundled miniaudio, which loads PulseAudio, ALSA or JACK at runtime on Linux
-and the system audio API elsewhere; the microphone captures through the same backends. The camera uses Video4Linux2, Media Foundation, AVFoundation, the Camera2 NDK or getUserMedia.
+No extra dependencies. Audio uses the bundled miniaudio, which loads PulseAudio, ALSA or JACK at runtime on Linux and the system audio API elsewhere; the microphone captures through the same backends.
+The camera uses Video4Linux2, Media Foundation, AVFoundation, the Camera2 NDK or getUserMedia.
 
 ### Using IUP from CMake
 
@@ -235,11 +233,11 @@ This produces `iup-docs-<version>.tar.gz` in the build directory.
 
 ## Libraries
 
-| Library    | Description                       |
-|------------|-----------------------------------|
-| `iup`      | Core library (always built)       |
-| `iupgl`    | OpenGL canvas control             |
-| `iupweb`   | Web browser control               |
-| `iupplot`  | Plot/charting control             |
-| `iupctrl`  | Matrix, Cells, and Flat* controls |
+| Library    | Description                                  |
+|------------|----------------------------------------------|
+| `iup`      | Core library (always built)                  |
+| `iupgl`    | OpenGL canvas control                        |
+| `iupweb`   | Web browser control                          |
+| `iupplot`  | Plot/charting control                        |
+| `iupctrl`  | Matrix, Cells, and Flat* controls            |
 | `iupmedia` | Audio player, Camera and Microphone controls |

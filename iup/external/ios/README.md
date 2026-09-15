@@ -2,8 +2,9 @@
 
 This directory pairs the iOS (Cocoa Touch) C driver with build helper and app-bundle templates.
 
-Two independent build flows are supported:
+Three build flows are supported:
 
+* **Packaging with iupkg** - one command from the Go program to a signed `.ipa`, see [cmd/iupkg](../../../cmd/iupkg).
 * **Go flow on macOS (native)** - Apple's clang + codesign, no third-party tooling.
 * **Go flow on Linux (cross-compile)** - osxcross + zsign + go-ios.
 
@@ -19,7 +20,7 @@ Two independent build flows are supported:
 
 * osxcross with iPhoneOS.sdk and iPhoneSimulator.sdk under `/opt/osxcross/target/SDK/`
 * `arm64-apple-ios-clang` and `x86_64-apple-ios-simulator-clang` [wrapper scripts](https://gist.github.com/gen2brain/490dec4a39e57aa0fd59c108f3120023) on PATH (under `/opt/osxcross/target/bin/`)
-* `zsign` for ad-hoc signing
+* `zsign` for signing in the script flow (iupkg signs by itself)
 * `go-ios` for install/launch/log capture
 
 iOS 17+ requires a one-time persistent tunnel daemon for go-ios's developer services:
@@ -119,9 +120,10 @@ go-ios install --path=myapp.ipa
 go-ios launch com.example.myapp --kill-existing
 ```
 
-### One-shot helpers
+### Development helpers
 
-For iterating on an examples end-to-end, two scripts in this directory chain the build, bundle, sign, and install steps above:
+Two scripts in this directory are for iterating on an app on a device or simulator (build, bundle, sign, install, logs, screenshots)
+and for the C flow; for distribution use iupkg. They chain the steps above:
 
 ```sh
 # macOS native:
@@ -169,11 +171,11 @@ C / Swift / Objective-C apps can consume IUP via `IUP.xcframework`, produced on 
 ./build-framework.sh -F -s -    # ad-hoc sign the resulting xcframework
 ```
 
-Output: `iup/external/build/dist/IUP.xcframework`. The script drives three CMake presets (`cocoatouch-framework-device`, `cocoatouch-framework-simulator-arm64`, `cocoatouch-framework-simulator-x86_64`), `lipo`'s the two simulator slices into one fat sim framework, and runs `xcodebuild -create-xcframework`.
+Output: `iup/external/build/dist/IUP.xcframework`. The script drives three CMake presets (`cocoatouch-framework-device`, `cocoatouch-framework-simulator-arm64`, `cocoatouch-framework-simulator-x86_64`),
+`lipo`'s the two simulator slices into one fat sim framework, and runs `xcodebuild -create-xcframework`.
 
 Each per-slice `IUP.framework` carries the full module map so consumers can `#import <IUP/iup.h>` (Objective-C / C) or `import IUP` (Swift).
 
 ## Caveats
 
 * iOS 15.0 is the deployment floor (same hardware as iOS 14, lets us use `UIButton.Configuration` and `UISheetPresentationController` unconditionally).
-* `@available(...)` is not allowed in the driver source (so that `osxcross` can work without specific Darwin `compiler-rt` bits). The driver uses `NSProcessInfo.operatingSystemVersion` runtime checks instead.
