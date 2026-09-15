@@ -140,6 +140,41 @@ IUP_SDK_API void iupdrvDialogSetPosition(Ihandle *ih, int x, int y)
     NULL);
 }
 
+static int motDialogGetMwmDecorations(Ihandle* ih)
+{
+  int mwm_decor = 0;
+  int has_titlebar = 0;
+
+  if (iupAttribGetBoolean(ih, "HIDETITLEBAR"))
+    return 0;
+
+  if (iupAttribGet(ih, "TITLE"))
+    has_titlebar = 1;
+  if (iupAttribGetBoolean(ih, "RESIZE"))
+    mwm_decor |= MWM_DECOR_RESIZEH | MWM_DECOR_BORDER;
+  if (iupAttribGetBoolean(ih, "MENUBOX"))
+  {
+    mwm_decor |= MWM_DECOR_MENU;
+    has_titlebar = 1;
+  }
+  if (iupAttribGetBoolean(ih, "MAXBOX"))
+  {
+    mwm_decor |= MWM_DECOR_MAXIMIZE;
+    has_titlebar = 1;
+  }
+  if (iupAttribGetBoolean(ih, "MINBOX"))
+  {
+    mwm_decor |= MWM_DECOR_MINIMIZE;
+    has_titlebar = 1;
+  }
+  if (has_titlebar)
+    mwm_decor |= MWM_DECOR_TITLE;
+  if (iupAttribGetBoolean(ih, "BORDER") || has_titlebar)
+    mwm_decor |= MWM_DECOR_BORDER;
+
+  return mwm_decor;
+}
+
 static int motDialogGetMenuSize(Ihandle* ih)
 {
   if (ih->data->menu)
@@ -191,15 +226,19 @@ IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int *border, int *captio
   static int native_border = 0;
   static int native_caption = 0;
 
-  int has_titlebar = iupAttribGetBoolean(ih, "RESIZE")  || /* GTK and Motif only */
-                     iupAttribGetBoolean(ih, "MAXBOX")  ||
-                     iupAttribGetBoolean(ih, "MINBOX")  ||
-                     iupAttribGetBoolean(ih, "MENUBOX") ||
-                     iupAttribGet(ih, "TITLE");
+  int hide_titlebar = iupAttribGetBoolean(ih, "HIDETITLEBAR");
 
-  int has_border = has_titlebar ||
-                   iupAttribGetBoolean(ih, "RESIZE") ||
-                   iupAttribGetBoolean(ih, "BORDER");
+  int has_titlebar = !hide_titlebar &&
+                     (iupAttribGetBoolean(ih, "RESIZE")  || /* GTK and Motif only */
+                      iupAttribGetBoolean(ih, "MAXBOX")  ||
+                      iupAttribGetBoolean(ih, "MINBOX")  ||
+                      iupAttribGetBoolean(ih, "MENUBOX") ||
+                      iupAttribGet(ih, "TITLE"));
+
+  int has_border = !hide_titlebar &&
+                   (has_titlebar ||
+                    iupAttribGetBoolean(ih, "RESIZE") ||
+                    iupAttribGetBoolean(ih, "BORDER"));
 
   *menu = motDialogGetMenuSize(ih);
 
@@ -285,50 +324,22 @@ static int motDialogQueryWMspecSupport(Atom feature)
 
 static void motDialogSetWindowManagerStyle(Ihandle* ih)
 {
-  PropMwmHints hints;
-  static Atom xwmhint = 0;
-  if (!xwmhint)
-    xwmhint = XInternAtom(iupmot_display, "_MOTIF_WM_HINTS", False);
+  int functions = 0;
 
-  hints.flags = (MWM_HINTS_FUNCTIONS | MWM_HINTS_DECORATIONS);
-  hints.functions = 0;
-  hints.decorations = 0;
-  hints.inputMode = 0;
-  hints.status = 0;
+  if (iupAttribGet(ih, "TITLE"))
+    functions |= MWM_FUNC_MOVE;
+  if (iupAttribGetBoolean(ih, "MENUBOX"))
+    functions |= MWM_FUNC_CLOSE;
+  if (iupAttribGetBoolean(ih, "MINBOX"))
+    functions |= MWM_FUNC_MINIMIZE;
+  if (iupAttribGetBoolean(ih, "MAXBOX"))
+    functions |= MWM_FUNC_MAXIMIZE;
+  if (iupAttribGetBoolean(ih, "RESIZE"))
+    functions |= MWM_FUNC_RESIZE;
 
-  if (iupAttribGet(ih, "TITLE")) {
-    hints.functions   |= MWM_FUNC_MOVE;
-    hints.decorations |= MWM_DECOR_TITLE;
-  }
-
-  if (iupAttribGetBoolean(ih, "MENUBOX")) {
-    hints.functions   |= MWM_FUNC_CLOSE;
-    hints.decorations |= MWM_DECOR_MENU;
-  }
-
-  if (iupAttribGetBoolean(ih, "MINBOX")) {
-    hints.functions   |= MWM_FUNC_MINIMIZE;
-    hints.decorations |= MWM_DECOR_MINIMIZE;
-  }
-
-  if (iupAttribGetBoolean(ih, "MAXBOX")) {
-    hints.functions   |= MWM_FUNC_MAXIMIZE;
-    hints.decorations |= MWM_DECOR_MAXIMIZE;
-  }
-
-  if (iupAttribGetBoolean(ih, "RESIZE")) {
-    hints.functions   |= MWM_FUNC_RESIZE;
-    hints.decorations |= MWM_DECOR_RESIZEH;
-  }
-
-  if (iupAttribGetBoolean(ih, "BORDER"))
-    hints.decorations |= MWM_DECOR_BORDER;
-
-  XChangeProperty(iupmot_display, XtWindow(ih->handle),
-      xwmhint, xwmhint,
-      32, PropModeReplace,
-      (const unsigned char *) &hints,
-      PROP_MOTIF_WM_HINTS_ELEMENTS);
+  XtVaSetValues(ih->handle, XmNmwmFunctions, (XtArgVal)functions,
+                            XmNmwmDecorations, (XtArgVal)motDialogGetMwmDecorations(ih),
+                            NULL);
 }
 
 static void motDialogChangeWMState(Ihandle* ih, Atom state1, Atom state2, int operation)
@@ -628,21 +639,9 @@ static int motDialogSetMaxSizeAttrib(Ihandle* ih, const char* value)
 
 static int motDialogSetHideTitleBarAttrib(Ihandle* ih, const char* value)
 {
-  PropMwmHints hints;
-  static Atom xwmhint = 0;
-  if (!xwmhint)
-    xwmhint = XInternAtom(iupmot_display, "_MOTIF_WM_HINTS", False);
-
-  memset(&hints, 0, sizeof(hints));
-  hints.flags = MWM_HINTS_DECORATIONS;
-  if (iupStrBoolean(value))
-    hints.decorations = 0;
-  else
-    hints.decorations = MWM_DECOR_ALL;
-
-  XChangeProperty(iupmot_display, XtWindow(ih->handle),
-      xwmhint, xwmhint, 32, PropModeReplace,
-      (const unsigned char *)&hints, PROP_MOTIF_WM_HINTS_ELEMENTS);
+  iupAttribSetStr(ih, "HIDETITLEBAR", value);
+  iupAttribSet(ih, "_IUPMOT_DECOR_VALID", NULL);
+  XtVaSetValues(ih->handle, XmNmwmDecorations, (XtArgVal)motDialogGetMwmDecorations(ih), NULL);
   return 1;
 }
 
@@ -1024,6 +1023,23 @@ static void motDialogCBStructureNotifyEvent(Widget w, XtPointer data, XEvent *ev
 
   switch(evt->type)
   {
+    case ConfigureNotify:
+    {
+      int border, caption, menu;
+
+      if (ih->data->ignore_resize || iupAttribGet(ih, "_IUPMOT_FS_STYLE") ||
+          (ih->userwidth <= 0 && ih->userheight <= 0))
+        break;
+
+      iupdrvDialogGetDecoration(ih, &border, &caption, &menu);
+      if (border != iupAttribGetInt(ih, "_IUPMOT_SIZED_BORDER") || caption != iupAttribGetInt(ih, "_IUPMOT_SIZED_CAPTION"))
+      {
+        ih->currentwidth = 0;
+        ih->currentheight = 0;
+        IupRefresh(ih);
+      }
+      break;
+    }
     case MapNotify:
     {
       if (ih->data->show_state == IUP_MINIMIZE) /* it is a RESTORE. */
@@ -1101,7 +1117,6 @@ static int motDialogMapMethod(Ihandle* ih)
   InativeHandle* parent;
   int mwm_decor = 0;
   int num_args = 0;
-  int has_titlebar = 0;
   Arg args[20];
 
   /****************************/
@@ -1111,39 +1126,10 @@ static int motDialogMapMethod(Ihandle* ih)
   if (iupAttribGetBoolean(ih, "CUSTOMFRAMESIMULATE"))
     iupDialogCustomFrameSimulateCheckCallbacks(ih);
 
-  if (iupAttribGet(ih, "TITLE"))
-    has_titlebar = 1;
-  if (iupAttribGetBoolean(ih, "RESIZE"))
-  {
-    mwm_decor |= MWM_DECOR_RESIZEH;
-    mwm_decor |= MWM_DECOR_BORDER;  /* has_border */
-  }
-  else
+  if (!iupAttribGetBoolean(ih, "RESIZE"))
     iupAttribSet(ih, "MAXBOX", "NO");
-  if (iupAttribGetBoolean(ih, "MENUBOX"))
-  {
-    mwm_decor |= MWM_DECOR_MENU;
-    has_titlebar = 1;
-  }
-  if (iupAttribGetBoolean(ih, "MAXBOX"))
-  {
-    mwm_decor |= MWM_DECOR_MAXIMIZE;
-    has_titlebar = 1;
-  }
-  if (iupAttribGetBoolean(ih, "MINBOX"))
-  {
-    mwm_decor |= MWM_DECOR_MINIMIZE;
-    has_titlebar = 1;
-  }
-  if (iupAttribGetBoolean(ih, "HIDETITLEBAR"))
-  {
-    mwm_decor &= ~(MWM_DECOR_TITLE | MWM_DECOR_MENU | MWM_DECOR_MINIMIZE | MWM_DECOR_MAXIMIZE);
-    has_titlebar = 0;
-  }
-  if (has_titlebar)
-    mwm_decor |= MWM_DECOR_TITLE;
-  if (iupAttribGetBoolean(ih, "BORDER") || has_titlebar)
-    mwm_decor |= MWM_DECOR_BORDER;  /* has_border */
+
+  mwm_decor = motDialogGetMwmDecorations(ih);
 
   iupMOT_SETARG(args, num_args, XmNmappedWhenManaged, False);  /* so XtRealizeWidget will not show the dialog */
   iupMOT_SETARG(args, num_args, XmNdeleteResponse, XmDO_NOTHING);
@@ -1291,6 +1277,9 @@ static void motDialogLayoutUpdateMethod(Ihandle *ih)
   ih->data->ignore_resize = 1;
 
   iupdrvDialogGetDecoration(ih, &border, &caption, &menu);
+
+  iupAttribSetInt(ih, "_IUPMOT_SIZED_BORDER", border);
+  iupAttribSetInt(ih, "_IUPMOT_SIZED_CAPTION", caption);
 
   if (!iupAttribGetBoolean(ih, "RESIZE"))
   {
