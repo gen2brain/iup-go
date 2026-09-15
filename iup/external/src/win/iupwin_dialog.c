@@ -1061,11 +1061,22 @@ static LRESULT CALLBACK winDialogWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM 
 
 enum { IUPWIN_DIALOG, IUPWIN_DIALOGCONTROL, IUPWIN_DIALOG_SAVEBITS };
 
+static BOOL CALLBACK winDialogFirstIconProc(HMODULE module, LPCTSTR type, LPTSTR name, LONG_PTR param)
+{
+  HICON* icons = (HICON*)param;
+  (void)type;
+  icons[0] = LoadImage(module, name, IMAGE_ICON, 0, 0, LR_DEFAULTSIZE);
+  icons[1] = LoadImage(module, name, IMAGE_ICON, GetSystemMetrics(SM_CXSMICON), GetSystemMetrics(SM_CYSMICON), 0);
+  return FALSE;
+}
+
 static void winDialogRegisterClass(int type)
 {
   TCHAR* name;
-  WNDCLASS wndclass;
-  ZeroMemory(&wndclass, sizeof(WNDCLASS));
+  HICON icons[2] = { NULL, NULL };
+  WNDCLASSEX wndclass;
+  ZeroMemory(&wndclass, sizeof(WNDCLASSEX));
+  wndclass.cbSize = sizeof(WNDCLASSEX);
 
   if (type == IUPWIN_DIALOGCONTROL)
     name = TEXT("IupDialogControl");
@@ -1080,13 +1091,17 @@ static void winDialogRegisterClass(int type)
   wndclass.hCursor        = LoadCursor(NULL, IDC_ARROW);
   wndclass.hbrBackground  = (HBRUSH)(COLOR_BTNFACE+1);  /* +1 to use a standard system color */
 
+  EnumResourceNames(GetModuleHandle(NULL), RT_GROUP_ICON, winDialogFirstIconProc, (LONG_PTR)icons);
+  wndclass.hIcon   = icons[0];
+  wndclass.hIconSm = icons[1];
+
   if (type == IUPWIN_DIALOG_SAVEBITS)
     wndclass.style |= CS_SAVEBITS;
 
   if (type == IUPWIN_DIALOGCONTROL)
     wndclass.style |=  CS_HREDRAW | CS_VREDRAW;
 
-  RegisterClass(&wndclass);
+  RegisterClassEx(&wndclass);
 }
 
 static void winDialogRelease(Iclass* ic)
