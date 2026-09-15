@@ -64,6 +64,7 @@ IUP_DRV_API void iupeflLoopCleanup(void);
 IUP_DRV_API void iupeflModalLoopRun(Eo* modal_win);
 IUP_DRV_API void iupeflModalLoopQuit(void);
 IUP_DRV_API void iupeflMessagePendingFlush(Eo *loop);
+IUP_DRV_API void iupeflSetWindowAppID(Eo* win);
 
 /****************************************************************************
  * Backend Detection (X11 vs Wayland)

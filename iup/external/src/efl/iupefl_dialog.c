@@ -743,6 +743,8 @@ static int eflDialogMapMethod(Ihandle* ih)
   if (!win)
     return IUP_ERROR;
 
+  iupeflSetWindowAppID(win);
+
   /* EFL windows are visible by default after efl_add, hide until IupShowXY */
   efl_gfx_entity_visible_set(win, EINA_FALSE);
 

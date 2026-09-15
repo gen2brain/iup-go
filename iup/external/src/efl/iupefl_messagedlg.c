@@ -117,6 +117,8 @@ static int eflMessageDlgPopup(Ihandle* ih, int x, int y)
   if (!win)
     return IUP_ERROR;
 
+  iupeflSetWindowAppID(win);
+
   efl_event_callback_add(win, EFL_UI_WIN_EVENT_DELETE_REQUEST, eflMessageDlgCloseCallback, NULL);
 
   vbox = efl_add(EFL_UI_BOX_CLASS, win,
