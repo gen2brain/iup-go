@@ -658,6 +658,19 @@ static void cocoaDialogChildDestroyNotification(NSNotification* notification)
  ******************* Driver Functions ***************************
  ****************************************************************/
 
+static void cocoaDialogUpdateLevel(Ihandle* ih)
+{
+  NSWindow* the_window = iupcocoaDialogGetWindow(ih);
+  if (!the_window) return;
+
+  if (iupAttribGetBoolean(ih, "TOPMOST"))
+    [the_window setLevel:NSStatusWindowLevel];
+  else if (iupAttribGetBoolean(ih, "DIALOGHINT"))
+    [the_window setLevel:NSFloatingWindowLevel];
+  else
+    [the_window setLevel:NSNormalWindowLevel];
+}
+
 static int cocoaDialogIsVisible(Ihandle* ih)
 {
   return iupdrvIsVisible(ih);
@@ -707,6 +720,7 @@ static void cocoaDialogSetVisible(Ihandle* ih, int visible)
       NSWindow* parent_window = (NSWindow*)parent;
       if (![parent_window childWindows] || ![[parent_window childWindows] containsObject:the_window])
         [parent_window addChildWindow:the_window ordered:NSWindowAbove];
+      cocoaDialogUpdateLevel(ih);
     }
 
     if (iupAttribGetBoolean(ih, "SHOWNOACTIVATE"))
@@ -945,6 +959,7 @@ static void cocoaDialogSetParent(Ihandle* ih, InativeHandle* parent)
   if (the_window && [parent_window isKindOfClass:[NSWindow class]])
   {
     [parent_window addChildWindow:the_window ordered:NSWindowAbove];
+    cocoaDialogUpdateLevel(ih);
   }
 }
 
@@ -1227,14 +1242,8 @@ static char* cocoaDialogGetFullScreenAttrib(Ihandle* ih)
 
 static int cocoaDialogSetDialogHintAttrib(Ihandle* ih, const char* value)
 {
-  NSWindow* the_window = iupcocoaDialogGetWindow(ih);
-  if (!the_window) return 0;
-
-  if (iupStrBoolean(value))
-    [the_window setLevel:NSFloatingWindowLevel];
-  else
-    [the_window setLevel:NSNormalWindowLevel];
-
+  iupAttribSetStr(ih, "DIALOGHINT", value);
+  cocoaDialogUpdateLevel(ih);
   return 1;
 }
 
@@ -1280,13 +1289,8 @@ static char* cocoaDialogGetActiveWindowAttrib(Ihandle* ih)
 
 static int cocoaDialogSetTopMostAttrib(Ihandle *ih, const char *value)
 {
-  NSWindow* the_window = iupcocoaDialogGetWindow(ih);
-  if (!the_window) return 0;
-
-  if (iupStrBoolean(value))
-    [the_window setLevel:NSStatusWindowLevel];
-  else
-    [the_window setLevel:NSNormalWindowLevel];
+  iupAttribSetStr(ih, "TOPMOST", value);
+  cocoaDialogUpdateLevel(ih);
   return 1;
 }
 

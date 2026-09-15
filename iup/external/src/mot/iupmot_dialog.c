@@ -36,6 +36,7 @@
 Atom iupmot_wm_deletewindow = 0;  /* used also by IupMessageDlg */
 
 static int motDialogSetBgColorAttrib(Ihandle* ih, const char* value);
+static int motDialogSetTopMostAttrib(Ihandle* ih, const char* value);
 
 /****************************************************************
                      Utilities
@@ -86,6 +87,9 @@ IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
 
   if (visible)
   {
+    if (iupAttribGetBoolean(ih, "TOPMOST"))
+      motDialogSetTopMostAttrib(ih, "YES");
+
     XtMapWidget(ih->handle);
     XRaiseWindow(iupmot_display, XtWindow(ih->handle));
     while (!iupdrvDialogIsVisible(ih)); /* waits until window get mapped */
@@ -357,24 +361,39 @@ static void motDialogChangeWMState(Ihandle* ih, Atom state1, Atom state2, int op
   {
     if (operation)
     {
-      if (state1 && state2)
-      {
-        Atom atoms[2];
-        atoms[0] = state1;
-        atoms[1] = state2;
+      Atom actual_type;
+      int actual_format;
+      unsigned long nitems, bytes_after;
+      unsigned char* prop_data = NULL;
+      Atom merged[64];
+      unsigned long i, count = 0;
+      int has1 = 0, has2 = 0;
 
-        XChangeProperty(iupmot_display, XtWindow(ih->handle),
-            wmstate, XA_ATOM,
-            32, PropModeReplace,
-            (const unsigned char *)&atoms, 2);
-      }
-      else
+      if (XGetWindowProperty(iupmot_display, XtWindow(ih->handle), wmstate,
+            0, 1024, False, XA_ATOM, &actual_type, &actual_format,
+            &nitems, &bytes_after, &prop_data) == Success && prop_data)
       {
-        XChangeProperty(iupmot_display, XtWindow(ih->handle),
-            wmstate, XA_ATOM,
-            32, PropModeReplace,
-            (const unsigned char *)&state1, 1);
+        Atom* atoms = (Atom*)prop_data;
+
+        for (i = 0; i < nitems && count < 62; i++)
+        {
+          if (atoms[i] == state1) has1 = 1;
+          if (state2 && atoms[i] == state2) has2 = 1;
+          merged[count++] = atoms[i];
+        }
+
+        XFree(prop_data);
       }
+
+      if (!has1)
+        merged[count++] = state1;
+      if (state2 && !has2)
+        merged[count++] = state2;
+
+      XChangeProperty(iupmot_display, XtWindow(ih->handle),
+          wmstate, XA_ATOM,
+          32, PropModeReplace,
+          (const unsigned char *)merged, (int)count);
     }
     else
     {

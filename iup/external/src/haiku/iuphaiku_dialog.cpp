@@ -403,7 +403,17 @@ static window_look haikuDialogResolveLook(Ihandle* ih)
 static window_feel haikuDialogResolveFeel(Ihandle* ih)
 {
   if (iupAttribGetBoolean(ih, "TOPMOST")) return B_FLOATING_ALL_WINDOW_FEEL;
+  if (iupDialogGetNativeParent(ih)) return B_FLOATING_SUBSET_WINDOW_FEEL;
   return B_NORMAL_WINDOW_FEEL;
+}
+
+static void haikuDialogUpdateFeel(Ihandle* ih, IupHaikuWindow* win)
+{
+  window_feel feel = haikuDialogResolveFeel(ih);
+  if (iupAttribGet(ih, "_IUPHAIKU_SAVED_FEEL"))
+    iupAttribSetInt(ih, "_IUPHAIKU_SAVED_FEEL", (int)feel);
+  else
+    win->SetFeel(feel);
 }
 
 static uint32 haikuDialogResolveFlags(Ihandle* ih)
@@ -543,8 +553,8 @@ extern "C" IUP_SDK_API void iupdrvDialogSetParent(Ihandle* ih, InativeHandle* na
   if (!win || !native_parent) return;
 
   LooperLockGuard guard(win);
-  win->SetFeel(B_FLOATING_SUBSET_WINDOW_FEEL);
   win->AddToSubset((BWindow*)native_parent);
+  haikuDialogUpdateFeel(ih, win);
 }
 
 extern "C" IUP_SDK_API void iupdrvDialogGetPosition(Ihandle* ih, InativeHandle* handle, int *x, int *y)
@@ -775,10 +785,10 @@ static int haikuDialogSetCustomFrameAttrib(Ihandle* ih, const char* value)
 static int haikuDialogSetTopMostAttrib(Ihandle* ih, const char* value)
 {
   IupHaikuWindow* win = (IupHaikuWindow*)ih->handle;
+  iupAttribSetStr(ih, "TOPMOST", value);
   if (!win) return 1;
   LooperLockGuard guard(win);
-  win->SetFeel(iupStrBoolean(value) ? B_FLOATING_ALL_WINDOW_FEEL
-                                    : B_NORMAL_WINDOW_FEEL);
+  haikuDialogUpdateFeel(ih, win);
   return 1;
 }
 

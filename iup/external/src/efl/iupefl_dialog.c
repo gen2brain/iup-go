@@ -48,6 +48,9 @@
 
 #include "iupefl_drv.h"
 
+#define IUPEFL_LAYER_NORMAL 4
+#define IUPEFL_LAYER_ABOVE  6
+
 
 /****************************************************************
                      Callbacks
@@ -513,6 +516,12 @@ IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
 
   if (!win)
     return;
+
+  if (visible && iupAttribGetBoolean(ih, "TOPMOST"))
+  {
+    efl_gfx_stack_layer_set(win, IUPEFL_LAYER_NORMAL);
+    efl_gfx_stack_layer_set(win, IUPEFL_LAYER_ABOVE);
+  }
 
   iupeflSetVisible(win, visible ? EINA_TRUE : EINA_FALSE);
 
@@ -1028,8 +1037,7 @@ static int eflDialogSetTopMostAttrib(Ihandle* ih, const char* value)
   if (!win)
     return 0;
 
-  if (iupStrBoolean(value))
-    efl_gfx_stack_raise_to_top(win);
+  efl_gfx_stack_layer_set(win, iupStrBoolean(value) ? IUPEFL_LAYER_ABOVE : IUPEFL_LAYER_NORMAL);
 
   return 1;
 }

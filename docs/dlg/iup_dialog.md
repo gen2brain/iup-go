@@ -237,8 +237,8 @@ In Win32 and WinUI it is only valid if the PARENTDIALOG or NATIVEPARENT attribut
 
 **TOPMOST**: puts the dialog always in front of all other dialogs in all applications.
 Default: NO.
-In Motif depends on the window manager honoring `_NET_WM_STATE_ABOVE`.
-Not supported in GTK4, iOS, and Android.
+In Motif and EFL depends on the window manager honoring `_NET_WM_STATE_ABOVE`.
+Not supported in GTK4, FLTK, iOS, and Android.
 
 #### Exclusive [System Dependent]
 
