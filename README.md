@@ -11,8 +11,8 @@ WebAssembly ([Emscripten](#emscripten)), Android ([Android](#android)), and iOS 
 C/C++/Obj-C source code is included and compiled together with bindings.
 Note that the first build can take a few minutes.
 
-Alternatively, build with `CGO_ENABLED=0` and no C compiler. A prebuilt library for the platform's default backend is bundled and loaded at runtime, for `linux`, `darwin`, and `windows` on `amd64` and `arm64`.
-Other backends and platforms require the cgo build.
+Alternatively, build with `CGO_ENABLED=0` and no C compiler. A prebuilt library for the platform's default backend is bundled and loaded at runtime,
+for `linux`, `darwin`, and `windows` on `amd64` and `arm64`. Other backends and platforms require the cgo build.
 
 To build the IUP C library standalone (without Go bindings), see [iup/external](iup/external) for CMake build instructions.
 
@@ -57,7 +57,7 @@ Add `-ldflags "-s -w"` to strip symbols and DWARF info; the C++/WinRT headers ge
 
 On macOS, you need Command Line Tools for Xcode (if you have `brew`, you already have this).
 
-To create an `.app` bundle or `.dmg` image, check this [gist](https://gist.github.com/mholt/11008646c95d787c30806d3f24b2c844).
+To create an `.app` bundle, see [Packaging](#packaging).
 
 * You can build for Qt, with the `qt` build tag. Install deps with `brew install qt`.
 * You can build for GTK, with the `gtk/gtk4` build tag. Install deps with `brew install gtk+3 / gtk4`.
@@ -209,6 +209,7 @@ Examples without a top-level `Dialog` (e.g. `alarm`, `message`) will not run on 
 Builds the Go program as a `c-shared` `.so` consumed by a Gradle library.
 
 See [iup/external/android/README.md](iup/external/android/README.md) for prerequisites, build flow, permissions, and packaging.
+For a one-command `.apk` without the Gradle project, see [Packaging](#packaging).
 
 [<img src="examples/mobile_sample/mobile_sample_android1.png" width="300"/>](examples/mobile_sample/mobile_sample_android1.png)
 [<img src="examples/mobile_sample/mobile_sample_android2.png" width="300"/>](examples/mobile_sample/mobile_sample_android2.png)
@@ -218,6 +219,7 @@ See [iup/external/android/README.md](iup/external/android/README.md) for prerequ
 The Go binary IS the iOS executable; the Cocoa Touch driver calls `UIApplicationMain` itself.
 
 See [iup/external/ios/README.md](iup/external/ios/README.md) for prerequisites, signing, and distribution.
+For a one-command `.ipa`, see [Packaging](#packaging).
 
 [<img src="examples/mobile_sample/mobile_sample_ios1.png" width="300"/>](examples/mobile_sample/mobile_sample_ios1.png)
 [<img src="examples/mobile_sample/mobile_sample_ios2.png" width="300"/>](examples/mobile_sample/mobile_sample_ios2.png)
@@ -255,11 +257,22 @@ CGO_CFLAGS="-I<include path> ..." CGO_LDFLAGS="-L<dir> -llib ..." go build -tags
 
 You can also point `PKG_CONFIG_LIBDIR` to some local directory with custom modified `.pc` files.
 
+### Packaging
+
+[iupkg](cmd/iupkg) builds and packages a program for distribution: a Windows `.exe` with icon, version info and manifest,
+a macOS `.app`, Linux `.tar.gz`/`.deb`/`.rpm`, an Android `.apk`, an iOS `.ipa`, a WebAssembly site or a Haiku `.hpkg`.
+Signing is built in: Authenticode, Apple code signing with notarization, and APK signing, all without platform tools.
+
+```
+$ go install github.com/gen2brain/iup-go/cmd/iupkg@latest
+```
+
+See [cmd/iupkg/README.md](cmd/iupkg/README.md) for every target, flag and the signing setup.
+
 ### Documentation
 
 API reference documentation is available in the [docs](docs/) directory. Each Go function link to its corresponding documentation page.
 Also check [Go Reference](https://pkg.go.dev/github.com/gen2brain/iup-go/iup) and [Examples](examples/).
-For the original IUP reference, visit [IUP's website](https://www.tecgraf.puc-rio.br/iup).
 
 ### Thread-Safety
 
