@@ -142,6 +142,92 @@ IUP_SDK_API int iupStrHasSpace(const char* str)
   return 0;
 }
 
+IUP_SDK_API char** iupStrSplitCommandLine(const char* filename, const char* parameters)
+{
+  size_t len = parameters ? strlen(parameters) : 0;
+  size_t max_args = len / 2 + 3;
+  char** argv = (char**)malloc(max_args * sizeof(char*) + len + 1);
+  const char* p = parameters;
+  char* dst;
+  char quote = 0;
+  int argc = 0, in_arg = 0;
+
+  if (!argv)
+    return NULL;
+
+  dst = (char*)(argv + max_args);
+  argv[argc++] = (char*)filename;
+
+  while (p && *p)
+  {
+    if (quote == '\'')
+    {
+      if (*p == '\'')
+        quote = 0;
+      else
+        *dst++ = *p;
+    }
+    else if (quote == '"')
+    {
+      if (*p == '"')
+        quote = 0;
+      else if (*p == '\\' && (p[1] == '"' || p[1] == '\\' || p[1] == '`' || p[1] == '$' || p[1] == '\n'))
+      {
+        p++;
+        if (*p != '\n')
+          *dst++ = *p;
+      }
+      else
+        *dst++ = *p;
+    }
+    else if (*p == '\\' && p[1] == '\n')
+      p++;
+    else if (*p == ' ' || *p == '\t' || *p == '\n')
+    {
+      if (in_arg)
+      {
+        *dst++ = 0;
+        in_arg = 0;
+      }
+    }
+    else
+    {
+      if (!in_arg)
+      {
+        argv[argc++] = dst;
+        in_arg = 1;
+      }
+
+      if (*p == '\'' || *p == '"')
+        quote = *p;
+      else if (*p == '\\')
+      {
+        p++;
+        if (!*p)
+        {
+          free(argv);
+          return NULL;
+        }
+        *dst++ = *p;
+      }
+      else
+        *dst++ = *p;
+    }
+    p++;
+  }
+
+  if (quote)
+  {
+    free(argv);
+    return NULL;
+  }
+
+  if (in_arg)
+    *dst = 0;
+  argv[argc] = NULL;
+  return argv;
+}
+
 IUP_SDK_API char *iupStrDup(const char *str)
 {
   if (str)

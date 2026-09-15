@@ -121,6 +121,12 @@ IUP_SDK_API void iupStrUpper(char* dstr, const char* sstr);
  * \ingroup str */
 IUP_SDK_API int iupStrHasSpace(const char* str);
 
+/** Splits a parameter string into a NULL terminated argument vector with argv[0] set to filename,
+ * using POSIX shell quoting. Returns NULL on an unmatched quote or a trailing backslash.
+ * Must free the returned vector.
+ * \ingroup str */
+IUP_SDK_API char** iupStrSplitCommandLine(const char* filename, const char* parameters);
+
 /** Checks if the character is a digit.
  * \ingroup str */
 #define iup_isdigit(_c) (_c>='0' && _c<='9')
