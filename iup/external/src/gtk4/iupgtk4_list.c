@@ -1506,57 +1506,76 @@ static gboolean gtk4ListEditKeyPressEvent(GtkEventControllerKey *controller, gui
       (keyval == GDK_KEY_Next || keyval == GDK_KEY_KP_Page_Down))
   {
     GListStore* store = gtk4ListGetGListStore(ih);
+    int count = iupdrvListGetCount(ih);
 
-    if (store)
+    if (store && count > 0)
     {
       int pos = -1;
       GtkSelectionModel* selection = gtk4ListGetSelectionModel(ih);
-      guint selected = gtk_single_selection_get_selected(GTK_SINGLE_SELECTION(selection));
+      guint selected;
+      IupListItem* item;
 
-      if (selected != GTK_INVALID_LIST_POSITION)
+      if (ih->data->is_dropdown)
+        selected = (guint)(iupAttribGetInt(ih, "_IUPLIST_OLDVALUE") - 1);
+      else
+        selected = gtk_single_selection_get_selected(GTK_SINGLE_SELECTION(selection));
+
+      if (selected != GTK_INVALID_LIST_POSITION && (int)selected < count)
         pos = (int)selected;
 
       if (pos == -1)
         pos = 0;
       else if (keyval == GDK_KEY_Up || keyval == GDK_KEY_KP_Up)
-      {
         pos--;
-        if (pos < 0) pos = 0;
-      }
       else if (keyval == GDK_KEY_Prior || keyval == GDK_KEY_KP_Page_Up)
-      {
         pos -= 5;
-        if (pos < 0) pos = 0;
-      }
       else if (keyval == GDK_KEY_Down || keyval == GDK_KEY_KP_Down)
-      {
-        int count = iupdrvListGetCount(ih);
         pos++;
-        if (pos > count-1) pos = count-1;
-      }
       else if (keyval == GDK_KEY_Next || keyval == GDK_KEY_KP_Page_Down)
-      {
-        int count = iupdrvListGetCount(ih);
         pos += 5;
-        if (pos > count-1) pos = count-1;
-      }
 
-      if (pos != -1)
+      if (pos < 0) pos = 0;
+      if (pos > count-1) pos = count-1;
+
+      item = g_list_model_get_item(G_LIST_MODEL(store), pos);
+
+      if (ih->data->is_dropdown)
+      {
+        if (item)
+        {
+          const char* text = iup_list_item_get_text(item);
+          if (text)
+            gtk_editable_set_text(GTK_EDITABLE(entry), text);
+        }
+
+        IFnsii cb = (IFnsii)IupGetCallback(ih, "ACTION");
+        if (gtk_drop_down_get_selected(GTK_DROP_DOWN(ih->handle)) != (guint)pos)
+          gtk_drop_down_set_selected(GTK_DROP_DOWN(ih->handle), pos);
+        else if (cb)
+          iupListSingleCallActionCb(ih, cb, pos + 1);
+
+        if (!cb)
+          iupAttribSetInt(ih, "_IUPLIST_OLDVALUE", pos + 1);
+      }
+      else
       {
         iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", "1");
         gtk_single_selection_set_selected(GTK_SINGLE_SELECTION(selection), pos);
         iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", NULL);
         iupAttribSetInt(ih, "_IUPLIST_OLDVALUE", pos+1);
 
-        IupListItem* item = g_list_model_get_item(G_LIST_MODEL(store), pos);
         if (item)
         {
           const char* text = iup_list_item_get_text(item);
           if (text)
             gtk_editable_set_text(GTK_EDITABLE(entry), text);
-          g_object_unref(item);
         }
       }
+
+      if (item)
+        g_object_unref(item);
+
+      return TRUE;
     }
   }
 
