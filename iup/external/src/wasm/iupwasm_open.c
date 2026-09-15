@@ -169,30 +169,13 @@ EMSCRIPTEN_KEEPALIVE void iupwasmThemeChanged(void)
   iupGlobalNotifyThemeChanged();
 }
 
-EM_JS(int, iupwasmJsLanguage, (void), {
-  var s = (typeof navigator !== 'undefined' && navigator.language) ? navigator.language : "";
-  var len = lengthBytesUTF8(s) + 1;
-  var ptr = _malloc(len);
-  stringToUTF8(s, ptr, len);
-  return ptr;
-})
-
 IUP_SDK_API int iupdrvOpen(int *argc, char ***argv)
 {
-  char* lang;
   (void)argc;
   (void)argv;
 
   IupSetGlobal("DRIVER", "WASM");
   IupSetGlobal("WINDOWING", "WEB");
-
-  lang = (char*)(intptr_t)iupwasmJsLanguage();
-  if (lang)
-  {
-    if (lang[0])
-      IupStoreGlobal("SYSTEMLANGUAGE", lang);
-    free(lang);
-  }
 
   iupwasmJsInstallProxy();
   iupwasmJsInstallKeyHandler();

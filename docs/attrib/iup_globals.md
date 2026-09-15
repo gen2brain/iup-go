@@ -297,11 +297,13 @@ On macOS is system version.
 
 ### SYSTEMLANGUAGE (read-only)
 
-Returns a text with a description of the system language.
+Returns the user's preferred user interface language as a BCP 47 tag, like "en-US", "pt-BR" or "sr-Latn-RS".
+Returns NULL when the system has no language, like the "C" locale on Unix.
+On Linux and BSD it is taken from the LANGUAGE, LC_ALL, LC_MESSAGES or LANG environment variables, the first one that is set.
 
 ### SYSTEMLOCALE (read-only)
 
-Returns a text with a description of the system locale.
+Returns the character encoding used by the C runtime, like "UTF-8". On Windows it is the ANSI code page, like "CP1252", or "UTF-8" when that is the code page.
 
 ### FONTLIST (read-only)
 

@@ -17,6 +17,8 @@
 #include <Application.h>
 #include <FindDirectory.h>
 #include <InterfaceDefs.h>
+#include <LocaleRoster.h>
+#include <Message.h>
 #include <Path.h>
 #include <Point.h>
 #include <Screen.h>
@@ -182,6 +184,18 @@ extern "C" IUP_SDK_API int iupdrvGetPreferencePath(char *filename, const char *a
 extern "C" IUP_SDK_API char* iupdrvLocaleInfo(void)
 {
   return (char*)"UTF-8";
+}
+
+extern "C" IUP_SDK_API char* iupdrvLanguageInfo(void)
+{
+  BMessage languages;
+  const char* language;
+
+  if (BLocaleRoster::Default()->GetPreferredLanguages(&languages) != B_OK)
+    return NULL;
+  if (languages.FindString("language", 0, &language) != B_OK)
+    return NULL;
+  return iupStrLanguageTag(language);
 }
 
 extern "C" IUP_SDK_API void* iupdrvGetDisplay(void)

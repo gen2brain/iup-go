@@ -127,6 +127,16 @@ IUP_SDK_API int iupStrHasSpace(const char* str);
  * \ingroup str */
 IUP_SDK_API char** iupStrSplitCommandLine(const char* filename, const char* parameters);
 
+/** Converts a locale or language name ("en_US.UTF-8", "en-us", "sr_RS@latin") to a BCP 47 tag ("en-US", "sr-Latn-RS").
+ * Returns NULL for "C", "POSIX" and names without a language. Returns a buffer from \ref iupStrGetMemory.
+ * \ingroup str */
+IUP_SDK_API char* iupStrLanguageTag(const char* name);
+
+/** Returns the BCP 47 tag of the language in the LANGUAGE, LC_ALL, LC_MESSAGES or LANG environment variables,
+ * the first one that is set, or NULL.
+ * \ingroup str */
+IUP_SDK_API char* iupStrLanguageTagFromEnv(void);
+
 /** Checks if the character is a digit.
  * \ingroup str */
 #define iup_isdigit(_c) (_c>='0' && _c<='9')

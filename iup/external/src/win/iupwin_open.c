@@ -182,8 +182,6 @@ IUP_SDK_API int iupdrvOpen(int *argc, char ***argv)
 #ifdef USE_WINHOOKPOST
   iupwin_threadmsghook = SetWindowsHookEx(WH_MSGFILTER, iupwinPostMessageFilterProc, NULL, iupwin_mainthreadid);
 #endif
-  IupSetGlobal("SYSTEMLANGUAGE", iupwinGetSystemLanguage());
-
   iupwinDarkModeInit();
   iupwinSetGlobalColors();
 

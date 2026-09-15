@@ -138,18 +138,6 @@ IUP_DRV_API void iupcocoaSetGlobalColors(void)
 #endif
 }
 
-static const char* iupCocoaGetSystemLanguage(void)
-{
-  static char iupmac_language[20] = "en";
-  NSString* language = [[NSLocale preferredLanguages] firstObject];
-  if (language)
-  {
-    strncpy(iupmac_language, [language UTF8String], 19);
-    iupmac_language[19] = 0;
-  }
-  return iupmac_language;
-}
-
 static int cocoaOpen(void)
 {
 
@@ -264,7 +252,6 @@ static int cocoaOpen(void)
 #else
   IupSetGlobal("WINDOWING", "QUARTZ");
 #endif
-  IupSetGlobal("SYSTEMLANGUAGE", iupCocoaGetSystemLanguage());
 
   iupcocoaSetGlobalColors();
   IupSetGlobal("_IUP_RESET_GLOBALCOLORS", "YES");

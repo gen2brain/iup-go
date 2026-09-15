@@ -236,7 +236,12 @@ IUP_SDK_API int iupdrvGetUserDir(char* path, int size, int kind)
 
 IUP_SDK_API char* iupdrvLocaleInfo(void)
 {
-  return androidCallStringStatic("getLocaleTag");
+  return "UTF-8";
+}
+
+IUP_SDK_API char* iupdrvLanguageInfo(void)
+{
+  return iupStrLanguageTag(androidCallStringStatic("getLocaleTag"));
 }
 
 IUP_SDK_API char* iupdrvGetCurrentDirectory(void)

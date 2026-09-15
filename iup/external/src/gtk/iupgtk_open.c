@@ -704,8 +704,6 @@ IUP_SDK_API int iupdrvOpen(int *argc, char ***argv)
 
   IupSetGlobal("DRIVER", "GTK");
 
-  IupStoreGlobal("SYSTEMLANGUAGE", pango_language_to_string(gtk_get_default_language()));
-
   /* driver system version */
   IupSetfAttribute(NULL, "GTKVERSION", "%d.%d.%d", gtk_major_version, gtk_minor_version, gtk_micro_version);
   IupSetfAttribute(NULL, "GTKDEVVERSION", "%d.%d.%d", GTK_MAJOR_VERSION, GTK_MINOR_VERSION, GTK_MICRO_VERSION);
