@@ -1109,30 +1109,35 @@ static char* cocoaDialogGetResizeAttrib(Ihandle* ih)
 
 static int cocoaDialogSetResizeAttrib(Ihandle* ih, const char* value)
 {
+  iupAttribSetStr(ih, "RESIZE", value);
   cocoaDialogUpdateStyleMask(ih);
   return 1;
 }
 
 static int cocoaDialogSetMinBoxAttrib(Ihandle* ih, const char* value)
 {
+  iupAttribSetStr(ih, "MINBOX", value);
   cocoaDialogUpdateStyleMask(ih);
   return 1;
 }
 
 static int cocoaDialogSetMaxBoxAttrib(Ihandle* ih, const char* value)
 {
+  iupAttribSetStr(ih, "MAXBOX", value);
   cocoaDialogUpdateStyleMask(ih);
   return 1;
 }
 
 static int cocoaDialogSetMenuBoxAttrib(Ihandle* ih, const char* value)
 {
+  iupAttribSetStr(ih, "MENUBOX", value);
   cocoaDialogUpdateStyleMask(ih);
   return 1;
 }
 
 static int cocoaDialogSetBorderAttrib(Ihandle* ih, const char* value)
 {
+  iupAttribSetStr(ih, "BORDER", value);
   cocoaDialogUpdateStyleMask(ih);
   return 1;
 }
