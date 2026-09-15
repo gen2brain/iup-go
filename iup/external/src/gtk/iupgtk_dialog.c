@@ -139,6 +139,17 @@ static int gtkDialogGetMenuSize(Ihandle* ih)
 
 #define iupABS(_x) ((_x)<0? -(_x): (_x))
 
+static int gtkDialogIsStateFixedSize(Ihandle* ih)
+{
+  GdkWindow* window = iupgtkGetWindow(ih->handle);
+  GdkWindowState state = window ? gdk_window_get_state(window) : 0;
+#if GTK_CHECK_VERSION(3, 10, 0)
+  return (state & (GDK_WINDOW_STATE_MAXIMIZED | GDK_WINDOW_STATE_FULLSCREEN | GDK_WINDOW_STATE_TILED)) != 0;
+#else
+  return (state & (GDK_WINDOW_STATE_MAXIMIZED | GDK_WINDOW_STATE_FULLSCREEN)) != 0;
+#endif
+}
+
 /* Get CSD shadow margin (the part of window outside visible frame) */
 static int gtkDialogGetCSDShadowMargin(Ihandle* ih)
 {
@@ -466,15 +477,7 @@ static gboolean gtkDialogConfigureEvent(GtkWidget *widget, GdkEventConfigure *ev
 
       /* evt includes the CSD shadows unless the window is maximized, fullscreen or tiled */
       {
-        GdkWindow* window = iupgtkGetWindow(ih->handle);
-        GdkWindowState state = window ? gdk_window_get_state(window) : 0;
-#if GTK_CHECK_VERSION(3, 10, 0)
-        int no_shadows = (state & (GDK_WINDOW_STATE_MAXIMIZED | GDK_WINDOW_STATE_FULLSCREEN | GDK_WINDOW_STATE_TILED)) != 0;
-#else
-        int no_shadows = (state & (GDK_WINDOW_STATE_MAXIMIZED | GDK_WINDOW_STATE_FULLSCREEN)) != 0;
-#endif
-
-        if (no_shadows)
+        if (gtkDialogIsStateFixedSize(ih))
         {
           visible_width = evt->width;
           visible_height = evt->height;
@@ -532,6 +535,20 @@ static gboolean gtkDialogConfigureEvent(GtkWidget *widget, GdkEventConfigure *ev
       }
 
       ih->data->ignore_resize = 0;
+
+      if ((ih->userwidth > 0 || ih->userheight > 0) && !gtkDialogIsStateFixedSize(ih))
+      {
+        int sized_border, sized_caption, cur_border, cur_caption, cur_menu;
+        sized_border = iupAttribGetInt(ih, "_IUPGTK_SIZED_BORDER");
+        sized_caption = iupAttribGetInt(ih, "_IUPGTK_SIZED_CAPTION");
+        iupdrvDialogGetDecoration(ih, &cur_border, &cur_caption, &cur_menu);
+        if (cur_border != sized_border || cur_caption != sized_caption)
+        {
+          ih->currentwidth = 0;
+          ih->currentheight = 0;
+          IupRefresh(ih);
+        }
+      }
     }
 
 #if !GTK_CHECK_VERSION(3, 0, 0)
@@ -925,6 +942,9 @@ static void gtkDialogLayoutUpdateMethod(Ihandle *ih)
 
   if (width <= 0) width = 1;
   if (height <= 0) height = 1;
+
+  iupAttribSetInt(ih, "_IUPGTK_SIZED_BORDER", border);
+  iupAttribSetInt(ih, "_IUPGTK_SIZED_CAPTION", caption);
 
   gtk_window_resize((GtkWindow*)ih->handle, width, height);
 
@@ -1391,6 +1411,11 @@ static int gtkDialogSetBackgroundAttrib(Ihandle* ih, const char* value)
 
 static int gtkDialogSetHideTitleBarAttrib(Ihandle *ih, const char *value)
 {
+  if (iupdrvIsVisible(ih))
+  {
+    iupAttribSet(ih, "_IUPGTK_OLD_WIDTH", NULL);
+    iupAttribSet(ih, "_IUPGTK_OLD_HEIGHT", NULL);
+  }
   gtk_window_set_decorated(GTK_WINDOW(ih->handle), !iupStrBoolean(value));
   return 1;
 }
