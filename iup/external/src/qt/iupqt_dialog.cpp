@@ -793,6 +793,7 @@ static char* qtDialogGetClientOffsetAttrib(Ihandle *ih)
 
 static int qtDialogSetResizeAttrib(Ihandle* ih, const char* value)
 {
+  iupAttribSetStr(ih, "RESIZE", value);
   if (ih->handle)
   {
     IupQtDialog* dialog = (IupQtDialog*)ih->handle;
@@ -803,6 +804,7 @@ static int qtDialogSetResizeAttrib(Ihandle* ih, const char* value)
 
 static int qtDialogSetMinBoxAttrib(Ihandle* ih, const char* value)
 {
+  iupAttribSetStr(ih, "MINBOX", value);
   if (ih->handle)
   {
     IupQtDialog* dialog = (IupQtDialog*)ih->handle;
@@ -813,6 +815,7 @@ static int qtDialogSetMinBoxAttrib(Ihandle* ih, const char* value)
 
 static int qtDialogSetMaxBoxAttrib(Ihandle* ih, const char* value)
 {
+  iupAttribSetStr(ih, "MAXBOX", value);
   if (ih->handle)
   {
     IupQtDialog* dialog = (IupQtDialog*)ih->handle;
@@ -823,6 +826,7 @@ static int qtDialogSetMaxBoxAttrib(Ihandle* ih, const char* value)
 
 static int qtDialogSetMenuBoxAttrib(Ihandle* ih, const char* value)
 {
+  iupAttribSetStr(ih, "MENUBOX", value);
   if (ih->handle)
   {
     IupQtDialog* dialog = (IupQtDialog*)ih->handle;
@@ -833,6 +837,7 @@ static int qtDialogSetMenuBoxAttrib(Ihandle* ih, const char* value)
 
 static int qtDialogSetBorderAttrib(Ihandle* ih, const char* value)
 {
+  iupAttribSetStr(ih, "BORDER", value);
   if (ih->handle)
   {
     IupQtDialog* dialog = (IupQtDialog*)ih->handle;
@@ -915,6 +920,7 @@ static int qtDialogSetFullScreenAttrib(Ihandle* ih, const char* value)
 
 static int qtDialogSetDialogHintAttrib(Ihandle* ih, const char* value)
 {
+  iupAttribSetStr(ih, "DIALOGHINT", value);
   if (ih->handle)
   {
     IupQtDialog* dialog = (IupQtDialog*)ih->handle;
@@ -925,6 +931,7 @@ static int qtDialogSetDialogHintAttrib(Ihandle* ih, const char* value)
 
 static int qtDialogSetToolBoxAttrib(Ihandle *ih, const char *value)
 {
+  iupAttribSetStr(ih, "TOOLBOX", value);
   if (ih->handle)
   {
     IupQtDialog* dialog = (IupQtDialog*)ih->handle;
