@@ -1545,7 +1545,7 @@ static gboolean gtk4ListEditKeyPressEvent(GtkEventControllerKey *controller, gui
         {
           const char* text = iup_list_item_get_text(item);
           if (text)
-            gtk_editable_set_text(GTK_EDITABLE(entry), text);
+            g_object_set(gtk_editable_get_delegate(GTK_EDITABLE(entry)), "text", text, NULL);
         }
 
         IFnsii cb = (IFnsii)IupGetCallback(ih, "ACTION");
@@ -1568,7 +1568,7 @@ static gboolean gtk4ListEditKeyPressEvent(GtkEventControllerKey *controller, gui
         {
           const char* text = iup_list_item_get_text(item);
           if (text)
-            gtk_editable_set_text(GTK_EDITABLE(entry), text);
+            g_object_set(gtk_editable_get_delegate(GTK_EDITABLE(entry)), "text", text, NULL);
         }
       }
 
