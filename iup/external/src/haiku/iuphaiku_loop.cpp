@@ -195,11 +195,6 @@ IUP_DRV_API void iuphaikuPostAppWake(void)
 IUP_DRV_API void iuphaikuAppDrainPosts(void)
 {
   haikuDrainPostQueue();
-
-  if (haiku_main_loop_level == 1 && iupDlgListVisibleCount() <= 0)
-  {
-    if (be_app) be_app->Quit();
-  }
 }
 
 IUP_DRV_API void iuphaikuAppIdleTick(void)
@@ -286,8 +281,6 @@ extern "C" IUP_API int IupMainLoop(void)
         if (ret == IUP_CLOSE) { haiku_idle_cb = NULL; break; }
         if (ret == IUP_IGNORE) haiku_idle_cb = NULL;
       }
-
-      if (iupDlgListVisibleCount() <= 0) break;
 
       /* Blocked here, so the looper can't repaint itself; drain its pending updates. */
       if (self_window) self_window->UpdateIfNeeded();
