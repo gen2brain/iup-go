@@ -37,6 +37,7 @@
 #   -T TAGS      build tags (comma/space separated), e.g. "gl"; selects the
 #                optional subsystems (gl, web, ctrl, plot, media) in both the emcc module
 #                and the Go program, mirroring the desktop -tags convention.
+#   -m           build only the IUP module (build/iup.js + iup.wasm), no APP needed
 #   -h           show this help
 #
 # Requires EMSDK at /opt/emsdk (or EMSDK exported). -s/-l/-k need node +
@@ -69,7 +70,8 @@ TAGS=""
 OPT=0
 TINYGO=0
 FORCE=0
-while getopts "slk:y:K:cT:Otfh" opt; do
+MODULE_ONLY=0
+while getopts "slk:y:K:cT:Otfmh" opt; do
   case "$opt" in
     s) SHOT=1 ;;
     l) LOG=1 ;;
@@ -81,6 +83,7 @@ while getopts "slk:y:K:cT:Otfh" opt; do
     O) OPT=1 ;;
     t) TINYGO=1 ; PATH="/opt/tinygo/bin:$PATH" ;;
     f) FORCE=1 ;;
+    m) MODULE_ONLY=1 ;;
     h) usage 0 ;;
     *) usage 1 ;;
   esac
@@ -96,11 +99,11 @@ if [ "$CLEAN" = 1 ]; then
   [ $# -eq 0 ] && exit 0
 fi
 
-if [ $# -lt 1 ]; then
+if [ $# -lt 1 ] && [ "$MODULE_ONLY" = 0 ]; then
   echo "error: APP required" >&2
   usage 1
 fi
-APP="$1"
+APP="${1:-}"
 
 EMSDK_DIR="${EMSDK:-/opt/emsdk}"
 . "$EMSDK_DIR/emsdk_env.sh" >/dev/null 2>&1 || true
@@ -188,6 +191,11 @@ case "$APP" in
         $CORE "$REPO/iup/wasm_bridge.c" -o "$BUILD/iup.js"
     else
       echo ">>> reuse build/iup.js (-f to rebuild)"
+    fi
+
+    if [ "$MODULE_ONLY" = 1 ]; then
+      echo "OK: built $BUILD/iup.js"
+      exit 0
     fi
 
     if [ "$TINYGO" = 1 ]; then
