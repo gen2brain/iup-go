@@ -591,16 +591,18 @@ var idleCB = purego.NewCallback(func() int {
 	return 0
 })
 
-var entryPointCB = purego.NewCallback(func() {
+var entryPointCB = purego.NewCallback(func() int {
 	if globalEntry != nil {
 		globalEntry()
 	}
+	return 0
 })
 
-var exitCB = purego.NewCallback(func() {
+var exitCB = purego.NewCallback(func() int {
 	if globalExit != nil {
 		globalExit()
 	}
+	return 0
 })
 
 func GetFunction(name string) uintptr {
