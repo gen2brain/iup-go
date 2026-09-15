@@ -144,7 +144,7 @@ static int gtkDialogGetCSDShadowMargin(Ihandle* ih)
 {
 #if GTK_CHECK_VERSION(3, 0, 0)
   GtkStyleContext* context = gtk_widget_get_style_context(ih->handle);
-  if (gtk_style_context_has_class(context, "csd"))
+  if (gtk_style_context_has_class(context, "csd") && gtk_window_get_decorated((GtkWindow*)ih->handle))
   {
     /* GTK3 CSD shadow margin is typically 26 pixels (Adwaita theme) */
     return 26;
@@ -713,10 +713,13 @@ static int gtkDialogMapMethod(Ihandle* ih)
                                       GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_BUTTON_MOTION_MASK);
   }
 
-#if GTK_CHECK_VERSION(3, 10, 0)
   if (iupAttribGetBoolean(ih, "HIDETITLEBAR"))
+  {
+#if GTK_CHECK_VERSION(3, 10, 0)
     gtk_window_set_titlebar(GTK_WINDOW(ih->handle), gtk_fixed_new());
 #endif
+    gtk_window_set_decorated(GTK_WINDOW(ih->handle), FALSE);
+  }
 
   /* the GtkViewport clips content on Wayland CSD */
   {
