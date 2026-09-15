@@ -244,7 +244,8 @@ extern "C" IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int *border, 
 
   *menu = fltkDialogGetMenuSize(ih);
 
-  if (iupAttribGetBoolean(ih, "CUSTOMFRAME") || iupAttribGetBoolean(ih, "HIDETITLEBAR"))
+  if (iupAttribGetBoolean(ih, "CUSTOMFRAME") || iupAttribGetBoolean(ih, "HIDETITLEBAR") ||
+      (ih->handle && ((IupFltkDialog*)ih->handle)->fullscreen_active()))
   {
     *border = 0;
     *caption = 0;
@@ -269,11 +270,16 @@ extern "C" IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int *border, 
 
     if (dw > 0 || dh > 0)
     {
-      *border = has_border ? dw / 2 : 0;
-      *caption = has_titlebar ? (dh - dw) : 0;
-      if (*caption < 0) *caption = 0;
-      return;
+      iupAttribSetInt(ih, "_IUPFLTK_DECOR_BORDER", dw / 2);
+      iupAttribSetInt(ih, "_IUPFLTK_DECOR_CAPTION", dh - dw > 0 ? dh - dw : 0);
     }
+  }
+
+  if (iupAttribGet(ih, "_IUPFLTK_DECOR_BORDER"))
+  {
+    *border = has_border ? iupAttribGetInt(ih, "_IUPFLTK_DECOR_BORDER") : 0;
+    *caption = has_titlebar ? iupAttribGetInt(ih, "_IUPFLTK_DECOR_CAPTION") : 0;
+    return;
   }
 
   *border = has_border ? est_border : 0;
