@@ -230,6 +230,13 @@ IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int *border, int *captio
 
   *menu = gtkDialogGetMenuSize(ih);
 
+  if (iupAttribGetBoolean(ih, "HIDETITLEBAR"))
+  {
+    *border = 0;
+    *caption = 0;
+    return;
+  }
+
 #if GTK_CHECK_VERSION(3, 0, 0)
   if (ih->handle)
   {
@@ -268,9 +275,6 @@ IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int *border, int *captio
 
       if (win_border > 0) native_border = win_border;
       if (win_caption > 0) native_caption = win_caption;
-
-      if (iupAttribGetBoolean(ih, "HIDETITLEBAR"))
-        *caption = 0;
       return;
     }
   }
@@ -291,9 +295,6 @@ IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int *border, int *captio
     if (has_titlebar)
       *caption = (native_caption > 0) ? native_caption : 20;
   }
-
-  if (iupAttribGetBoolean(ih, "HIDETITLEBAR"))
-    *caption = 0;
 }
 
 IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
