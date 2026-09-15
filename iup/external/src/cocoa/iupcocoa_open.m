@@ -16,6 +16,26 @@
 
 #ifdef GNUSTEP
 #import <GNUstepGUI/GSTheme.h>
+
+@interface IupGnustepApplicationDelegate : NSObject
+@end
+
+@implementation IupGnustepApplicationDelegate
+- (BOOL)application:(NSApplication*)sender openFile:(NSString*)filename
+{
+  (void)sender;
+  (void)filename;
+  return NO;
+}
+
+- (void)application:(NSApplication*)sender openFiles:(NSArray*)filenames
+{
+  (void)sender;
+  (void)filenames;
+}
+@end
+
+static IupGnustepApplicationDelegate* cocoa_gnustep_app_delegate = nil;
 #endif
 
 
@@ -236,6 +256,14 @@ static int cocoaOpen(void)
     [NSApp setActivationPolicy:NSApplicationActivationPolicyRegular];
   }
 
+#ifdef GNUSTEP
+  if (![NSApp delegate])
+  {
+    cocoa_gnustep_app_delegate = [[IupGnustepApplicationDelegate alloc] init];
+    [NSApp setDelegate:cocoa_gnustep_app_delegate];
+  }
+#endif
+
   /* [NSApp run] would do this, but IUP runs its own event loop */
   [NSApp finishLaunching];
 
@@ -313,4 +341,14 @@ IUP_SDK_API void iupdrvClose(void)
   @autoreleasepool {
     iupcocoaMenuCleanupApplicationMenu();
   }
+
+#ifdef GNUSTEP
+  if (cocoa_gnustep_app_delegate)
+  {
+    if ([NSApp delegate] == cocoa_gnustep_app_delegate)
+      [NSApp setDelegate:nil];
+    [cocoa_gnustep_app_delegate release];
+    cocoa_gnustep_app_delegate = nil;
+  }
+#endif
 }
