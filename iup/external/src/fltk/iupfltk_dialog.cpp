@@ -769,8 +769,33 @@ static void fltkDialogCloseCallback(Fl_Widget* w, void* data)
   IupHide(ih);
 }
 
+static void fltkDialogDefaultXClass(void)
+{
+  static int done = 0;
+  if (done)
+    return;
+  done = 1;
+
+  if (IupGetGlobal("_IUP_APPID_INTERNAL"))
+    return;
+
+  const char* exe = iupfltkExeFileName();
+  if (!exe)
+    return;
+
+  const char* base = strrchr(exe, '/');
+#if defined(_WIN32)
+  const char* back = strrchr(exe, '\\');
+  if (back && (!base || back > base))
+    base = back;
+#endif
+  Fl_Window::default_xclass(base ? base + 1 : exe);
+}
+
 static int fltkDialogMapMethod(Ihandle* ih)
 {
+  fltkDialogDefaultXClass();
+
   IupFltkDialog* dialog = new IupFltkDialog(100, 100, ih);
   dialog->end();
 
