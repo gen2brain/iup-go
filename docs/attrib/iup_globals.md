@@ -42,8 +42,8 @@ Application identifier used by the desktop environment.
 In GTK/Wayland, it maps to the XDG desktop file ID.
 On Haiku, it becomes the `BApplication` MIME signature.
 Also used by [IupConfig](../func/iup_config.md) as a last fallback when neither APP_NAME nor APPNAME is set.
-Can be set once. Used by the desktop environment in GTK, GTK 4, Qt, FLTK and Haiku; only stored in the other drivers.
-When not set, GTK, GTK 4, Qt and FLTK use the executable name.
+Can be set once. Used by the desktop environment in GTK, GTK 4, Qt, FLTK, EFL and Haiku; only stored in the other drivers.
+When not set, GTK, GTK 4, Qt, FLTK and EFL use the executable name.
 On Android it is read-only and reflects the app's manifest application id.
 On iOS, it is read-only and reflects `CFBundleIdentifier` from the app's Info.plist.
 

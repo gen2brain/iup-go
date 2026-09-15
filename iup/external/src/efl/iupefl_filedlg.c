@@ -394,6 +394,8 @@ static int eflFileDlgPopup(Ihandle* ih, int x, int y)
   if (!win)
     return IUP_ERROR;
 
+  iupeflSetWindowAppID(win);
+
   fileselector = elm_fileselector_add(win);
   if (!fileselector)
   {

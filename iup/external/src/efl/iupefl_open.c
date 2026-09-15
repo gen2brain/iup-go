@@ -35,6 +35,7 @@
 #include "iup_drv.h"
 #include "iup_object.h"
 #include "iup_globalattrib.h"
+#include "iup_str.h"
 
 #include "iupefl_drv.h"
 
@@ -430,8 +431,32 @@ static char* efl_app_name = NULL;
 
 IUP_SDK_API int iupdrvSetGlobalAppIDAttrib(const char* value)
 {
-  (void)value;
+  static int appid_set = 0;
+  if (appid_set || !value || !value[0])
+    return 0;
+
+  IupStoreGlobal("_IUP_APPID_INTERNAL", value);
+  appid_set = 1;
   return 1;
+}
+
+IUP_DRV_API void iupeflSetWindowAppID(Eo* win)
+{
+  Evas* evas = win ? evas_object_evas_get(win) : NULL;
+  Ecore_Evas* ee = evas ? ecore_evas_ecore_evas_get(evas) : NULL;
+  const char* appid = IupGetGlobal("_IUP_APPID_INTERNAL");
+  char* exe_title = NULL;
+
+  if (!ee)
+    return;
+
+  if (!appid)
+    appid = exe_title = iupStrFileGetTitle(IupGetGlobal("ARGV0"));
+
+  if (appid && appid[0])
+    ecore_evas_name_class_set(ee, appid, appid);
+
+  free(exe_title);
 }
 
 IUP_SDK_API int iupdrvSetGlobalAppNameAttrib(const char* value)
