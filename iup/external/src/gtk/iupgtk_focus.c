@@ -9,6 +9,7 @@
 #include "iup.h"
 
 #include "iup_object.h"
+#include "iup_attrib.h"
 #include "iup_focus.h"
 #include "iup_drv.h"
 
@@ -30,12 +31,13 @@ IUP_DRV_API void iupgtkSetCanFocus(GtkWidget *widget, int can)
 IUP_SDK_API void iupdrvSetFocus(Ihandle *ih)
 {
   Ihandle* dialog = IupGetDialog(ih);
+  GtkWidget* focus_widget = (GtkWidget*)iupAttribGet(ih, "_IUPGTK_FOCUSWIDGET");
   if (dialog && dialog->handle)
   {
     if (!gtk_window_is_active((GtkWindow*)dialog->handle))
       gdk_window_focus(iupgtkGetWindow(dialog->handle), gtk_get_current_event_time());
   }
-  gtk_widget_grab_focus(ih->handle);
+  gtk_widget_grab_focus(focus_widget ? focus_widget : ih->handle);
 }
 
 IUP_DRV_API gboolean iupgtkFocusInOutEvent(GtkWidget *widget, GdkEventFocus *evt, Ihandle *ih)

@@ -1796,6 +1796,8 @@ static gboolean gtkListEditKeyPressEvent(GtkWidget* entry, GdkEventKey *evt, Iha
         }
       }
     }
+
+    return TRUE;
   }
 
   return FALSE;
@@ -2271,6 +2273,7 @@ static int gtkListMapMethod(Ihandle* ih)
       iupgtkSetCanFocus(ih->handle, 0);  /* focus goes only to the edit box */
       if (!iupAttribGetBoolean(ih, "CANFOCUS"))
         iupgtkSetCanFocus(entry, 0);
+      iupAttribSet(ih, "_IUPGTK_FOCUSWIDGET", (char*)entry);
 
       g_signal_connect(G_OBJECT(entry), "focus-in-event",     G_CALLBACK(iupgtkFocusInOutEvent), ih);
       g_signal_connect(G_OBJECT(entry), "focus-out-event",    G_CALLBACK(iupgtkFocusInOutEvent), ih);
