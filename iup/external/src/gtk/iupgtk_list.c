@@ -789,6 +789,8 @@ static void gtkComboBoxChildrenToggleCb(GtkWidget *widget, gpointer client_data)
     GtkWidget** toggle = (GtkWidget**)client_data;
     *toggle = widget;
   }
+  else if (GTK_IS_BOX(widget))
+    gtk_container_forall(GTK_CONTAINER(widget), gtkComboBoxChildrenToggleCb, client_data);
 }
 
 static void gtkComboBoxChildrenSetBgColor(GtkWidget *widget, gpointer client_data)
@@ -2035,7 +2037,7 @@ static gboolean gtkListComboFocusInOutEvent(GtkWidget *widget, GdkEventFocus *ev
 static gboolean gtkListComboEnterLeaveEvent(GtkWidget *widget, GdkEventCrossing *evt, Ihandle *ih)
 {
   /* Used only when DROPDOWN=YES and EDITBOX=NO */
-  if (iupAttribGetStr(ih, "_IUPDROPDOWN_POPUP"))
+  if (evt->mode != GDK_CROSSING_NORMAL)
     return FALSE;
   return iupgtkEnterLeaveEvent(widget, evt, ih);
 }
@@ -2179,6 +2181,8 @@ static int gtkListMapMethod(Ihandle* ih)
       if (!iupAttribGetBoolean(ih, "CANFOCUS"))
       {
         iupgtkSetCanFocus(ih->handle, 0);
+        if (toggle)
+          iupgtkSetCanFocus(toggle, 0);
 #if GTK_CHECK_VERSION(3, 20, 0)
         gtk_widget_set_focus_on_click(ih->handle, FALSE);
 #else
