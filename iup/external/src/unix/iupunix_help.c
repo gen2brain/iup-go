@@ -7,6 +7,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <fcntl.h>
+#include <sys/stat.h>
 #include <sys/wait.h>
 #include <spawn.h>
 #include <errno.h>
@@ -19,64 +21,145 @@
 
 extern char **environ;
 
-static int iupUnixSpawn(const char *filename, const char* parameters, int wait)
+static char* iupUnixFindExecutable(const char* filename)
 {
-  char** argv = NULL;
-  int argc = 0;
-  pid_t pid;
-  int status, i;
+  const char* path;
+  size_t name_len;
+  struct stat st;
 
-  if (parameters && parameters[0])
+  if (strchr(filename, '/'))
+    return iupStrDup(filename);
+
+  path = getenv("PATH");
+  if (!path)
+    path = "/bin:/usr/bin";
+
+  name_len = strlen(filename);
+  while (1)
   {
-    char* params_copy = iupStrDup(parameters);
-    char* token;
-    char* rest = params_copy;
+    const char* end = strchr(path, ':');
+    size_t dir_len = end ? (size_t)(end - path) : strlen(path);
+    char* full = (char*)malloc(dir_len + name_len + 3);
 
+    if (dir_len == 0)
+      strcpy(full, "./");
+    else
     {
-      char* tmp = iupStrDup(parameters);
-      char* tmp_rest = tmp;
-      while (strtok_r(tmp_rest, " \t", &tmp_rest))
-        argc++;
-      free(tmp);
+      memcpy(full, path, dir_len);
+      full[dir_len] = '/';
+      full[dir_len + 1] = 0;
     }
+    strcat(full, filename);
 
-    argv = (char**)malloc(sizeof(char*) * (argc + 2));
-    argv[0] = (char*)filename;
-    i = 1;
-    while ((token = strtok_r(rest, " \t", &rest)) != NULL)
-      argv[i++] = token;
-    argv[i] = NULL;
+    if (access(full, X_OK) == 0 && stat(full, &st) == 0 && S_ISREG(st.st_mode))
+      return full;
 
-    status = posix_spawnp(&pid, filename, NULL, NULL, argv, environ);
-
-    free(argv);
-    free(params_copy);
+    free(full);
+    if (!end)
+      return NULL;
+    path = end + 1;
   }
-  else
+}
+
+static int iupUnixSpawnDetached(char** argv)
+{
+  char* path;
+  int fds[2], err = 0;
+  ssize_t n;
+  pid_t pid;
+
+  path = iupUnixFindExecutable(argv[0]);
+  if (!path)
+    return -2;
+
+  if (pipe(fds) != 0)
   {
-    argv = (char**)malloc(sizeof(char*) * 2);
-    argv[0] = (char*)filename;
-    argv[1] = NULL;
+    free(path);
+    return -1;
+  }
+  fcntl(fds[0], F_SETFD, FD_CLOEXEC);
+  fcntl(fds[1], F_SETFD, FD_CLOEXEC);
 
-    status = posix_spawnp(&pid, filename, NULL, NULL, argv, environ);
+  pid = fork();
+  if (pid == 0)
+  {
+    pid_t child;
 
-    free(argv);
+    close(fds[0]);
+    child = fork();
+    if (child == 0)
+    {
+      execve(path, argv, environ);
+      err = errno;
+      n = write(fds[1], &err, sizeof(err));
+      _exit(127);
+    }
+    if (child == -1)
+    {
+      err = errno;
+      n = write(fds[1], &err, sizeof(err));
+    }
+    _exit(0);
   }
 
-  if (status != 0)
+  close(fds[1]);
+
+  if (pid == -1)
   {
-    if (status == ENOENT)
-      return -2;
+    close(fds[0]);
+    free(path);
     return -1;
   }
 
-  if (wait)
+  do
+    n = read(fds[0], &err, sizeof(err));
+  while (n == -1 && errno == EINTR);
+  close(fds[0]);
+
+  while (waitpid(pid, NULL, 0) == -1 && errno == EINTR)
+    ;
+
+  free(path);
+
+  if (n == (ssize_t)sizeof(err))
+    return (err == ENOENT) ? -2 : -1;
+  if (n != 0)
+    return -1;
+  return 1;
+}
+
+static int iupUnixSpawnWait(char** argv)
+{
+  pid_t pid;
+  int status = posix_spawnp(&pid, argv[0], NULL, NULL, argv, environ);
+
+  if (status != 0)
+    return (status == ENOENT) ? -2 : -1;
+
+  while (waitpid(pid, &status, 0) == -1)
   {
-    if (waitpid(pid, &status, 0) == -1)
+    if (errno != EINTR)
       return -1;
   }
 
   return 1;
+}
+
+static int iupUnixSpawn(const char *filename, const char* parameters, int wait)
+{
+  char** argv;
+  int ret;
+
+  if (!filename || !filename[0])
+    return -1;
+
+  argv = iupStrSplitCommandLine(filename, parameters);
+  if (!argv)
+    return -1;
+
+  ret = wait ? iupUnixSpawnWait(argv) : iupUnixSpawnDetached(argv);
+  free(argv);
+  return ret;
 }
 
 IUP_API int IupExecute(const char *filename, const char* parameters)
@@ -92,6 +175,7 @@ IUP_API int IupExecuteWait(const char *filename, const char* parameters)
 IUP_API int IupHelp(const char *url)
 {
   char *browser;
+  char *argv[3];
 
   if (iupUnixPortalHelp(url) == 1)
     return 1;
@@ -109,5 +193,8 @@ IUP_API int IupHelp(const char *url)
       browser = "xdg-open";
   }
 
-  return IupExecute(browser, url);
+  argv[0] = browser;
+  argv[1] = (char*)url;
+  argv[2] = NULL;
+  return iupUnixSpawnDetached(argv);
 }

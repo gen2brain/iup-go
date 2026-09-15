@@ -7,7 +7,7 @@ On Linux/Unix the browser can be overridden via the IUP_HELPAPP environment vari
 
 It is a non-synchronous operation, i.e., the function will return just after executing the command, and it will not wait for its result.
 
-It will use the [IupExecute](iup_execute.md) function.
+The URL is passed to the handler as a single argument.
 
 ### Parameters/Return
 

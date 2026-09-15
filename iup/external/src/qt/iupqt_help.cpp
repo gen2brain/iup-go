@@ -9,11 +9,36 @@
 #include <QString>
 #include <QProcess>
 #include <QStringList>
+#include <QStandardPaths>
+#include <QFileInfo>
+#include <QDir>
+
+#include <cstdlib>
 
 extern "C" {
 #include "iup.h"
+#include "iup_str.h"
 }
 
+static bool qtHelpSplitArguments(const char* filename, const char* parameters, QStringList& arguments)
+{
+  char** argv = iupStrSplitCommandLine(filename, parameters);
+  if (!argv)
+    return false;
+
+  for (int i = 1; argv[i]; i++)
+    arguments << QString::fromUtf8(argv[i]);
+
+  free(argv);
+  return true;
+}
+
+static bool qtHelpProgramExists(const QString& program)
+{
+  if (QDir::fromNativeSeparators(program).contains(QLatin1Char('/')))
+    return QFileInfo::exists(program);
+  return !QStandardPaths::findExecutable(program).isEmpty();
+}
 
 /****************************************************************************
  * Execute Program Asynchronously
@@ -27,29 +52,16 @@ extern "C" IUP_API int IupExecute(const char* filename, const char* parameters)
   QString program = QString::fromUtf8(filename);
   QStringList arguments;
 
-  if (parameters && parameters[0] != 0)
-  {
-    QString params = QString::fromUtf8(parameters);
-    arguments = params.split(' ', Qt::SkipEmptyParts);
-  }
+  if (!qtHelpSplitArguments(filename, parameters, arguments))
+    return -1;
 
-  qint64 pid;
-  if (QProcess::startDetached(program, arguments, QString(), &pid))
-    return 1;  /* Success */
-  else
-  {
-    QProcess test;
-    test.start(program, arguments);
-    if (!test.waitForStarted(100))
-    {
-      QProcess::ProcessError error = test.error();
-      if (error == QProcess::FailedToStart)
-        return -2;
-      else
-        return -1;
-    }
-    return -1;  /* Generic error */
-  }
+  if (!qtHelpProgramExists(program))
+    return -2;
+
+  if (QProcess::startDetached(program, arguments))
+    return 1;
+
+  return -1;
 }
 
 /****************************************************************************
@@ -64,11 +76,8 @@ extern "C" IUP_API int IupExecuteWait(const char* filename, const char* paramete
   QString program = QString::fromUtf8(filename);
   QStringList arguments;
 
-  if (parameters && parameters[0] != 0)
-  {
-    QString params = QString::fromUtf8(parameters);
-    arguments = params.split(' ', Qt::SkipEmptyParts);
-  }
+  if (!qtHelpSplitArguments(filename, parameters, arguments))
+    return -1;
 
   int exitCode = QProcess::execute(program, arguments);
 
