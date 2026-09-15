@@ -516,17 +516,31 @@ static LRESULT CALLBACK winuiDialogWndProc(HWND hwnd, UINT msg, WPARAM wParam, L
   return DefWindowProc(hwnd, msg, wParam, lParam);
 }
 
+static BOOL CALLBACK winuiDialogFirstIconProc(HMODULE module, LPCWSTR type, LPWSTR name, LONG_PTR param)
+{
+  HICON* icons = (HICON*)param;
+  (void)type;
+  icons[0] = (HICON)LoadImageW(module, name, IMAGE_ICON, 0, 0, LR_DEFAULTSIZE);
+  icons[1] = (HICON)LoadImageW(module, name, IMAGE_ICON, GetSystemMetrics(SM_CXSMICON), GetSystemMetrics(SM_CYSMICON), 0);
+  return FALSE;
+}
+
 static void winuiDialogRegisterClass(void)
 {
   static bool registered = false;
   if (registered)
     return;
 
+  HICON icons[2] = { NULL, NULL };
+  EnumResourceNamesW(GetModuleHandle(NULL), RT_GROUP_ICON, winuiDialogFirstIconProc, (LONG_PTR)icons);
+
   WNDCLASSEXW wc = {};
   wc.cbSize = sizeof(WNDCLASSEXW);
   wc.style = CS_HREDRAW | CS_VREDRAW;
   wc.lpfnWndProc = winuiDialogWndProc;
   wc.hInstance = GetModuleHandle(NULL);
+  wc.hIcon = icons[0];
+  wc.hIconSm = icons[1];
   wc.hCursor = LoadCursor(NULL, IDC_ARROW);
   wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
   wc.lpszClassName = WINUI_DIALOG_CLASS;
