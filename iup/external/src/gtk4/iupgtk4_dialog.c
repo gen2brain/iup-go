@@ -855,14 +855,40 @@ static int gtk4DialogSetTitleAttrib(Ihandle* ih, const char* value)
 
 static int gtk4DialogSetIconAttrib(Ihandle* ih, const char* value)
 {
+  GtkIconTheme* icon_theme;
+  GdkSurface* surface;
+  GdkTexture* texture;
+  GList* icon_list;
+
   if (!value)
   {
     gtk_window_set_icon_name(GTK_WINDOW(ih->handle), NULL);
     return 0;
   }
 
-  /* GTK4 window icons can only be named theme icons */
-  gtk_window_set_icon_name(GTK_WINDOW(ih->handle), value);
+  icon_theme = gtk_icon_theme_get_for_display(gtk_widget_get_display(ih->handle));
+  if (!iupImageGetImageFromName(value) && gtk_icon_theme_has_icon(icon_theme, value))
+  {
+    int* sizes = gtk_icon_theme_get_icon_sizes(icon_theme, value);
+    int themed = sizes[0] != 0;
+    g_free(sizes);
+    if (themed)
+    {
+      gtk_window_set_icon_name(GTK_WINDOW(ih->handle), value);
+      return 1;
+    }
+  }
+
+  texture = (GdkTexture*)iupImageGetIcon(value);
+  surface = gtk_native_get_surface(GTK_NATIVE(ih->handle));
+  if (!texture || !surface || !GDK_IS_TOPLEVEL(surface))
+    return 1;
+
+  gtk_window_set_icon_name(GTK_WINDOW(ih->handle), NULL);
+
+  icon_list = g_list_append(NULL, texture);
+  gdk_toplevel_set_icon_list(GDK_TOPLEVEL(surface), icon_list);
+  g_list_free(icon_list);
   return 1;
 }
 
