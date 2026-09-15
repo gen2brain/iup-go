@@ -6,6 +6,9 @@
 
 #include <cstdio>
 #include <cstdlib>
+#if !defined(_WIN32)
+#include <unistd.h>
+#endif
 #include <clocale>
 #include <cstdint>
 
@@ -17,9 +20,15 @@
 #include <FL/wayland.H>
 #endif
 
-#if defined(__APPLE__)
+#if defined(_WIN32)
+#include <windows.h>
+#elif defined(__APPLE__)
 #include <objc/objc.h>
 #include <objc/message.h>
+#include <mach-o/dyld.h>
+#elif defined(__FreeBSD__) || defined(__NetBSD__)
+#include <sys/types.h>
+#include <sys/sysctl.h>
 #endif
 
 extern "C" {
@@ -230,6 +239,52 @@ extern "C" IUP_SDK_API void iupdrvSetAppearance(int appearance)
 /****************************************************************************
  * Driver Initialization
  ****************************************************************************/
+
+IUP_DRV_API const char* iupfltkExeFileName(void)
+{
+  static char path[4096];
+  if (path[0])
+    return path;
+
+#if defined(_WIN32)
+  if (GetModuleFileNameA(NULL, path, sizeof(path)) == 0)
+    path[0] = 0;
+#elif defined(__APPLE__)
+  uint32_t size = sizeof(path);
+  if (_NSGetExecutablePath(path, &size) != 0)
+    path[0] = 0;
+#elif defined(__linux__) || defined(__DragonFly__)
+#if defined(__linux__)
+  ssize_t len = readlink("/proc/self/exe", path, sizeof(path) - 1);
+#else
+  ssize_t len = readlink("/proc/curproc/file", path, sizeof(path) - 1);
+#endif
+  path[len > 0 ? len : 0] = 0;
+#elif defined(__FreeBSD__)
+  int mib[4] = { CTL_KERN, KERN_PROC, KERN_PROC_PATHNAME, -1 };
+  size_t size = sizeof(path);
+  if (sysctl(mib, 4, path, &size, NULL, 0) != 0)
+    path[0] = 0;
+#elif defined(__NetBSD__)
+  int mib[4] = { CTL_KERN, KERN_PROC_ARGS, -1, KERN_PROC_PATHNAME };
+  size_t size = sizeof(path);
+  if (sysctl(mib, 4, path, &size, NULL, 0) != 0)
+    path[0] = 0;
+#endif
+
+#if !defined(_WIN32)
+  if (!path[0])
+  {
+    const char* argv0 = IupGetGlobal("ARGV0");
+    if (!argv0 || !realpath(argv0, path))
+    {
+      path[0] = 0;
+      return NULL;
+    }
+  }
+#endif
+  return path[0] ? path : NULL;
+}
 
 extern "C" IUP_SDK_API int iupdrvOpen(int *argc, char ***argv)
 {

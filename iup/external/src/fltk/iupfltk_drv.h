@@ -58,6 +58,7 @@ IUP_DRV_API void iupfltkNativeContainerAdd(Fl_Group* container, Fl_Widget* widge
 
 IUP_DRV_API int iupfltkIsX11(void);
 IUP_DRV_API int iupfltkIsWayland(void);
+IUP_DRV_API const char* iupfltkExeFileName(void);
 
 /****************************************************************************
  * Focus Management
