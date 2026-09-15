@@ -13,7 +13,6 @@ extern "C" {
 
 /* system */
 IUP_DRV_API int   iupwinGetComCtl32Version(void);
-IUP_DRV_API char* iupwinGetSystemLanguage(void);
 IUP_DRV_API int   iupwinCheckWindowsVersion(DWORD major, DWORD minor);
 IUP_DRV_API DWORD iupwinGetBuildNumber(void);
 IUP_DRV_API int   iupwinIsAppThemed(void);

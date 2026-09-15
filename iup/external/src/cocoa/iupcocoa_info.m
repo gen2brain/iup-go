@@ -435,6 +435,18 @@ IUP_SDK_API char* iupdrvLocaleInfo(void)
   }
 }
 
+IUP_SDK_API char* iupdrvLanguageInfo(void)
+{
+#ifdef GNUSTEP
+  return iupStrLanguageTagFromEnv();
+#else
+  @autoreleasepool {
+    NSString* language = [[NSLocale preferredLanguages] firstObject];
+    return language ? iupStrLanguageTag([language UTF8String]) : NULL;
+  }
+#endif
+}
+
 IUP_API void IupLogV(const char* type, const char* format, va_list arglist)
 {
   char buffer[2048];

@@ -228,6 +228,127 @@ IUP_SDK_API char** iupStrSplitCommandLine(const char* filename, const char* para
   return argv;
 }
 
+IUP_SDK_API char* iupStrLanguageTag(const char* name)
+{
+  char tag[64];
+  const char* p = name;
+  const char* modifier = NULL;
+  int len = 0, subtag = 0, has_script = 0;
+
+  if (!name)
+    return NULL;
+
+  while (*p && *p != '.' && *p != '@' && *p != ':' && len < (int)sizeof(tag) - 16)
+  {
+    const char* start = p;
+    int n = 0, alpha = 1, digit = 1, i;
+
+    while ((p[n] >= 'a' && p[n] <= 'z') || (p[n] >= 'A' && p[n] <= 'Z') || iup_isdigit(p[n]))
+    {
+      if (iup_isdigit(p[n]))
+        alpha = 0;
+      else
+        digit = 0;
+      n++;
+    }
+    p += n;
+    if (*p == '-' || *p == '_')
+      p++;
+    else if (*p && *p != '.' && *p != '@' && *p != ':')
+      break;
+
+    if (n == 0 || n > 8 || len + n + 1 >= (int)sizeof(tag) - 16)
+      break;
+
+    if (subtag == 0)
+    {
+      if (!alpha || n < 2 || n > 3)
+        return NULL;
+      for (i = 0; i < n; i++)
+        tag[len++] = (char)iup_tolower(start[i]);
+    }
+    else
+    {
+      tag[len++] = '-';
+      if (alpha && n == 4)
+      {
+        has_script = 1;
+        tag[len++] = (char)iup_toupper(start[0]);
+        for (i = 1; i < n; i++)
+          tag[len++] = (char)iup_tolower(start[i]);
+      }
+      else if ((alpha && n == 2) || (digit && n == 3))
+      {
+        for (i = 0; i < n; i++)
+          tag[len++] = (char)iup_toupper(start[i]);
+      }
+      else
+      {
+        for (i = 0; i < n; i++)
+          tag[len++] = (char)iup_tolower(start[i]);
+      }
+    }
+    subtag++;
+  }
+
+  if (subtag == 0)
+    return NULL;
+
+  tag[len] = 0;
+
+  modifier = strchr(name, '@');
+  if (modifier && !has_script)
+  {
+    const char* script = NULL;
+    if (iupStrEqualNoCase(modifier + 1, "latin"))
+      script = "Latn";
+    else if (iupStrEqualNoCase(modifier + 1, "cyrillic"))
+      script = "Cyrl";
+
+    if (script)
+    {
+      char* dash = strchr(tag, '-');
+      char rest[64];
+      strcpy(rest, dash ? dash : "");
+      len = dash ? (int)(dash - tag) : len;
+      tag[len++] = '-';
+      memcpy(tag + len, script, 4);
+      len += 4;
+      strcpy(tag + len, rest);
+    }
+  }
+
+  return iupStrReturnStr(tag);
+}
+
+IUP_SDK_API char* iupStrLanguageTagFromEnv(void)
+{
+  static const char* vars[] = { "LANGUAGE", "LC_ALL", "LC_MESSAGES", "LANG" };
+  int i;
+
+  for (i = 0; i < 4; i++)
+  {
+    char buffer[64];
+    const char* value = getenv(vars[i]);
+    const char* colon;
+    int len;
+
+    if (!value || !value[0])
+      continue;
+
+    colon = strchr(value, ':');
+    len = colon ? (int)(colon - value) : (int)strlen(value);
+    if (len <= 0 || len >= (int)sizeof(buffer))
+      continue;
+
+    memcpy(buffer, value, len);
+    buffer[len] = 0;
+    return iupStrLanguageTag(buffer);
+  }
+
+  return NULL;
+}
+
 IUP_SDK_API char *iupStrDup(const char *str)
 {
   if (str)

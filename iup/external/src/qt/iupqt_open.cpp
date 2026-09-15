@@ -455,9 +455,6 @@ extern "C" IUP_SDK_API int iupdrvOpen(int *argc, char ***argv)
     IupStoreGlobal("ARGV0", (*argv)[0]);
   }
 
-  QString locale = QLocale::system().name();
-  IupStoreGlobal("SYSTEMLANGUAGE", locale.toUtf8().constData());
-
   qtSetGlobalAttrib();
 
   qt_system_palette = QApplication::palette();

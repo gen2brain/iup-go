@@ -341,12 +341,6 @@ extern "C" IUP_SDK_API int iupdrvOpen(int *argc, char ***argv)
 #endif
 
   {
-    const char* locale = setlocale(LC_ALL, NULL);
-    if (locale)
-      IupStoreGlobal("SYSTEMLANGUAGE", locale);
-  }
-
-  {
     const char* scheme = getenv("IUP_FLTKTHEME");
     if (scheme && scheme[0])
       Fl::scheme(scheme);

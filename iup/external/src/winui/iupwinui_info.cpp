@@ -242,15 +242,22 @@ extern "C" IUP_SDK_API void iupdrvGetKeyState(char* key)
 
 extern "C" IUP_SDK_API char* iupdrvLocaleInfo(void)
 {
-  static char locale[10] = "";
-  if (locale[0] == 0)
-  {
-    GetLocaleInfoA(LOCALE_USER_DEFAULT, LOCALE_SISO639LANGNAME, locale, sizeof(locale));
-    int len = (int)strlen(locale);
-    locale[len] = '_';
-    GetLocaleInfoA(LOCALE_USER_DEFAULT, LOCALE_SISO3166CTRYNAME, locale + len + 1, sizeof(locale) - len - 1);
-  }
-  return locale;
+  UINT codepage = GetACP();
+  if (codepage == CP_UTF8)
+    return (char*)"UTF-8";
+  return iupStrReturnStrf("CP%u", codepage);
+}
+
+extern "C" IUP_SDK_API char* iupdrvLanguageInfo(void)
+{
+  WCHAR wname[LOCALE_NAME_MAX_LENGTH];
+  char name[LOCALE_NAME_MAX_LENGTH];
+
+  if (!LCIDToLocaleName(MAKELCID(GetUserDefaultUILanguage(), SORT_DEFAULT), wname, LOCALE_NAME_MAX_LENGTH, 0))
+    return NULL;
+  if (!WideCharToMultiByte(CP_UTF8, 0, wname, -1, name, sizeof(name), NULL, NULL))
+    return NULL;
+  return iupStrLanguageTag(name);
 }
 
 extern "C" IUP_SDK_API void iupdrvAddScreenOffset(int* x, int* y, int add)

@@ -20,6 +20,17 @@
 #include <unistd.h>
 #include <pwd.h>
 #include <langinfo.h>
+#else
+#include <windows.h>
+#endif
+
+#ifdef __APPLE__
+#include <CoreFoundation/CoreFoundation.h>
+#endif
+
+#ifdef __HAIKU__
+#include <LocaleRoster.h>
+#include <Message.h>
 #endif
 
 #include "iup.h"
@@ -298,7 +309,47 @@ extern "C" IUP_SDK_API char* iupdrvLocaleInfo(void)
 #ifndef _WIN32
   return iupStrReturnStr(nl_langinfo(CODESET));
 #else
-  return iupStrReturnStr("UTF-8");
+  UINT codepage = GetACP();
+  if (codepage == CP_UTF8)
+    return (char*)"UTF-8";
+  return iupStrReturnStrf("CP%u", codepage);
+#endif
+}
+
+extern "C" IUP_SDK_API char* iupdrvLanguageInfo(void)
+{
+#if defined(_WIN32)
+  WCHAR wname[LOCALE_NAME_MAX_LENGTH];
+  char name[LOCALE_NAME_MAX_LENGTH];
+
+  if (!LCIDToLocaleName(MAKELCID(GetUserDefaultUILanguage(), SORT_DEFAULT), wname, LOCALE_NAME_MAX_LENGTH, 0))
+    return NULL;
+  if (!WideCharToMultiByte(CP_UTF8, 0, wname, -1, name, sizeof(name), NULL, NULL))
+    return NULL;
+  return iupStrLanguageTag(name);
+#elif defined(__APPLE__)
+  char name[64];
+  char* tag = NULL;
+  CFArrayRef languages = CFLocaleCopyPreferredLanguages();
+
+  if (!languages)
+    return NULL;
+  if (CFArrayGetCount(languages) > 0 &&
+      CFStringGetCString((CFStringRef)CFArrayGetValueAtIndex(languages, 0), name, sizeof(name), kCFStringEncodingUTF8))
+    tag = iupStrLanguageTag(name);
+  CFRelease(languages);
+  return tag;
+#elif defined(__HAIKU__)
+  BMessage languages;
+  const char* language;
+
+  if (BLocaleRoster::Default()->GetPreferredLanguages(&languages) != B_OK)
+    return NULL;
+  if (languages.FindString("language", 0, &language) != B_OK)
+    return NULL;
+  return iupStrLanguageTag(language);
+#else
+  return iupStrLanguageTagFromEnv();
 #endif
 }
 

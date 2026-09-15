@@ -183,6 +183,22 @@ IUP_SDK_API char* iupdrvLocaleInfo(void)
   return iupStrReturnStr("UTF-8");
 }
 
+EM_JS(int, iupwasmJsLanguage, (void), {
+  var s = (typeof navigator !== 'undefined' && navigator.language) ? navigator.language : "";
+  var len = lengthBytesUTF8(s) + 1;
+  var ptr = _malloc(len);
+  stringToUTF8(s, ptr, len);
+  return ptr;
+})
+
+IUP_SDK_API char* iupdrvLanguageInfo(void)
+{
+  char* lang = (char*)(intptr_t)iupwasmJsLanguage();
+  char* tag = iupStrLanguageTag(lang);
+  free(lang);
+  return tag;
+}
+
 static const char* wasmHomeDir(void)
 {
   const char* home = getenv("HOME");

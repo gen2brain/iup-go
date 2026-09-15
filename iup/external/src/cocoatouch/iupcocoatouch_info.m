@@ -341,3 +341,12 @@ IUP_SDK_API char* iupdrvLocaleInfo(void)
 		return cocoaTouchLocaleInfo();
 	}
 }
+
+IUP_SDK_API char* iupdrvLanguageInfo(void)
+{
+	@autoreleasepool
+	{
+		NSString* language = [[NSLocale preferredLanguages] firstObject];
+		return language ? iupStrLanguageTag([language UTF8String]) : NULL;
+	}
+}

@@ -33,9 +33,22 @@ static void iupwinGetVersionInfo(OSVERSIONINFOW* osvi)
 
 IUP_SDK_API char* iupdrvLocaleInfo(void)
 {
-  CPINFOEXA info;
-  GetCPInfoExA(CP_ACP, 0, &info);
-  return iupStrReturnStr(info.CodePageName);
+  UINT codepage = GetACP();
+  if (codepage == CP_UTF8)
+    return "UTF-8";
+  return iupStrReturnStrf("CP%u", codepage);
+}
+
+IUP_SDK_API char* iupdrvLanguageInfo(void)
+{
+  WCHAR wname[LOCALE_NAME_MAX_LENGTH];
+  char name[LOCALE_NAME_MAX_LENGTH];
+
+  if (!LCIDToLocaleName(MAKELCID(GetUserDefaultUILanguage(), SORT_DEFAULT), wname, LOCALE_NAME_MAX_LENGTH, 0))
+    return NULL;
+  if (!WideCharToMultiByte(CP_UTF8, 0, wname, -1, name, sizeof(name), NULL, NULL))
+    return NULL;
+  return iupStrLanguageTag(name);
 }
 
 IUP_SDK_API char *iupdrvGetSystemName(void)

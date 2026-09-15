@@ -18,6 +18,10 @@
 #include <langinfo.h>
 #include <syslog.h>
 
+#ifdef __APPLE__
+#include <CoreFoundation/CoreFoundation.h>
+#endif
+
 #include "iup_export.h"
 #include "iup_str.h"
 #include "iup_drvinfo.h"
@@ -27,6 +31,25 @@
 IUP_SDK_API char* iupdrvLocaleInfo(void)
 {
   return iupStrReturnStr(nl_langinfo(CODESET));
+}
+
+IUP_SDK_API char* iupdrvLanguageInfo(void)
+{
+#ifdef __APPLE__
+  char name[64];
+  char* tag = NULL;
+  CFArrayRef languages = CFLocaleCopyPreferredLanguages();
+
+  if (!languages)
+    return NULL;
+  if (CFArrayGetCount(languages) > 0 &&
+      CFStringGetCString((CFStringRef)CFArrayGetValueAtIndex(languages, 0), name, sizeof(name), kCFStringEncodingUTF8))
+    tag = iupStrLanguageTag(name);
+  CFRelease(languages);
+  return tag;
+#else
+  return iupStrLanguageTagFromEnv();
+#endif
 }
 
 IUP_SDK_API char *iupdrvGetSystemName(void)

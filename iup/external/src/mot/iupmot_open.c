@@ -122,8 +122,6 @@ IUP_SDK_API int iupdrvOpen(int *argc, char ***argv)
   XtRealizeWidget(iupmot_appshell);
   IupSetGlobal("APPSHELL", (char*)iupmot_appshell);
 
-  IupStoreGlobal("SYSTEMLANGUAGE", setlocale(LC_ALL, NULL));
-
   iupmot_screen  = XDefaultScreen(iupmot_display);
 
   IupSetGlobal("XDISPLAY", (char*)iupmot_display);
