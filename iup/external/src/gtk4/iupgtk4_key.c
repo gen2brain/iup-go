@@ -349,6 +349,8 @@ IUP_DRV_API void iupgtk4ButtonKeySetStatus(GdkModifierType state, unsigned int b
 IUP_DRV_API void iupgtk4SetupKeyEvents(GtkWidget* widget, Ihandle* ih)
 {
   GtkEventController* key_controller = gtk_event_controller_key_new();
+  if (GTK_IS_EDITABLE(widget))
+    gtk_event_controller_set_propagation_phase(key_controller, GTK_PHASE_CAPTURE);
   gtk_widget_add_controller(widget, key_controller);
   g_signal_connect(key_controller, "key-pressed", G_CALLBACK(iupgtk4KeyPressEvent), ih);
 }
