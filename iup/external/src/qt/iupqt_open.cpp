@@ -486,12 +486,7 @@ extern "C" IUP_SDK_API int iupdrvSetGlobalAppIDAttrib(const char* value)
   if (!app)
     return 0;
 
-  QString appid = QString::fromUtf8(value);
-
-  if (!appid.endsWith(".desktop"))
-    appid += ".desktop";
-
-  app->setDesktopFileName(appid);
+  app->setDesktopFileName(QString::fromUtf8(value));
   appid_set = 1;
   return 1;
 }
