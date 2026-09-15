@@ -15,7 +15,6 @@ extern "C" {
 #include "iup_loop.h"
 #include "iup_str.h"
 #include "iup_object.h"
-#include "iup_dlglist.h"
 }
 
 #include "iupfltk_drv.h"
@@ -130,14 +129,7 @@ extern "C" IUP_API int IupMainLoop(void)
   fltk_loop_exit_flag[current_level] = false;
 
   while (!fltk_loop_exit_flag[current_level])
-  {
-    if (Fl::wait() == 0)
-    {
-      if (iupDlgListVisibleCount() <= 0)
-        break;
-      Fl::wait(0.1);
-    }
-  }
+    Fl::wait(1e20);
 
   fltk_loop_exit_flag[current_level] = false;
   fltk_main_loop_level--;
@@ -150,7 +142,7 @@ extern "C" IUP_API int IupMainLoop(void)
 
 extern "C" IUP_API int IupLoopStepWait(void)
 {
-  Fl::wait();
+  Fl::wait(1e20);
   return IUP_DEFAULT;
 }
 
