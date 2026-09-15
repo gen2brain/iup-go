@@ -1003,12 +1003,12 @@ static int winuiDialogSetBgColorAttrib(Ihandle* ih, const char* value)
 
 static int winuiDialogSetTopMostAttrib(Ihandle* ih, const char* value)
 {
-  if (ih->handle)
+  IupWinUIDialogAux* aux = winuiGetAux<IupWinUIDialogAux>(ih, IUPWINUI_DIALOG_AUX);
+  if (aux && aux->appWindow)
   {
-    if (iupStrBoolean(value))
-      SetWindowPos((HWND)ih->handle, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE | SWP_NOACTIVATE);
-    else
-      SetWindowPos((HWND)ih->handle, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE | SWP_NOACTIVATE);
+    OverlappedPresenter presenter = aux->appWindow.Presenter().try_as<OverlappedPresenter>();
+    if (presenter)
+      presenter.IsAlwaysOnTop(iupStrBoolean(value) != 0);
   }
   return 1;
 }

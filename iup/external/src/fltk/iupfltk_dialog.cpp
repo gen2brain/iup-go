@@ -604,18 +604,6 @@ static int fltkDialogSetBringFrontAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-static int fltkDialogSetTopMostAttrib(Ihandle* ih, const char* value)
-{
-  IupFltkDialog* dialog = (IupFltkDialog*)ih->handle;
-  if (!dialog)
-    return 0;
-
-  if (iupStrBoolean(value))
-    dialog->set_non_modal();
-
-  return 1;
-}
-
 
 static int fltkDialogSetIconAttrib(Ihandle* ih, const char* value)
 {
@@ -949,7 +937,7 @@ extern "C" IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, iupfltkGetNativeWindowHandleName(), iupfltkGetNativeWindowHandleAttrib, NULL, NULL, NULL, IUPAF_NO_INHERIT | IUPAF_NO_STRING);
 
   iupClassRegisterAttribute(ic, "BRINGFRONT", NULL, fltkDialogSetBringFrontAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TOPMOST", NULL, fltkDialogSetTopMostAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TOPMOST", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "OPACITY", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "CUSTOMFRAME", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);

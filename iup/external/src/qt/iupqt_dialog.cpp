@@ -100,11 +100,16 @@ public:
     if (iupAttribGetBoolean(iup_handle, "HIDETITLEBAR"))
       flags |= Qt::FramelessWindowHint;
 
+    if (iupAttribGetBoolean(iup_handle, "TOPMOST"))
+      flags |= Qt::WindowStaysOnTopHint;
+
     if (isVisible())
     {
       setWindowFlags(flags);
       show();
     }
+    else if (windowHandle())
+      setWindowFlags(flags);
     else
       overrideWindowFlags(flags);
   }
@@ -950,20 +955,12 @@ static char* qtDialogGetActiveWindowAttrib(Ihandle* ih)
 
 static int qtDialogSetTopMostAttrib(Ihandle *ih, const char *value)
 {
-  QWidget* widget = (QWidget*)ih->handle;
-  if (!widget)
-    return 0;
-
-  Qt::WindowFlags flags = widget->windowFlags();
-
-  if (iupStrBoolean(value))
-    flags |= Qt::WindowStaysOnTopHint;
-  else
-    flags &= ~Qt::WindowStaysOnTopHint;
-
-  widget->setWindowFlags(flags);
-  widget->show(); /* Need to show again after changing flags */
-
+  iupAttribSetStr(ih, "TOPMOST", value);
+  if (ih->handle)
+  {
+    IupQtDialog* dialog = (IupQtDialog*)ih->handle;
+    dialog->updateWindowFlags();
+  }
   return 1;
 }
 
