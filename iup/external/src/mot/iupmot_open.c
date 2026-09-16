@@ -101,6 +101,9 @@ IUP_SDK_API int iupdrvOpen(int *argc, char ***argv)
 
   setlocale(LC_ALL, "");
 
+  if (argv && *argv && **argv && (**argv)[0])
+    IupStoreGlobal("ARGV0", (*argv)[0]);
+
   XtToolkitInitialize();
 
   iupmot_appcontext = XtCreateApplicationContext();

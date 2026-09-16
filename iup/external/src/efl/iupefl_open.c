@@ -427,8 +427,6 @@ IUP_SDK_API int iupdrvOpen(int* argc, char*** argv)
   return IUP_NOERROR;
 }
 
-static char* efl_app_name = NULL;
-
 IUP_SDK_API int iupdrvSetGlobalAppIDAttrib(const char* value)
 {
   static int appid_set = 0;
@@ -454,22 +452,23 @@ IUP_DRV_API void iupeflSetWindowAppID(Eo* win)
     appid = exe_title = iupStrFileGetTitle(IupGetGlobal("ARGV0"));
 
   if (appid && appid[0])
-    ecore_evas_name_class_set(ee, appid, appid);
+  {
+    const char* appname = IupGetGlobal("_IUP_APPNAME_INTERNAL");
+    ecore_evas_name_class_set(ee, appid, (appname && iupeflIsX11()) ? appname : appid);
+  }
 
   free(exe_title);
 }
 
 IUP_SDK_API int iupdrvSetGlobalAppNameAttrib(const char* value)
 {
-  if (efl_app_name)
-    free(efl_app_name);
+  static int appname_set = 0;
+  if (appname_set || !value || !value[0])
+    return 0;
 
-  if (value)
-    efl_app_name = strdup(value);
-  else
-    efl_app_name = NULL;
-
-  return 0;
+  IupStoreGlobal("_IUP_APPNAME_INTERNAL", value);
+  appname_set = 1;
+  return 1;
 }
 
 IUP_SDK_API void iupdrvClose(void)

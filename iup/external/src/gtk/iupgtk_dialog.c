@@ -752,14 +752,6 @@ static int gtkDialogMapMethod(Ihandle* ih)
     iupAttribSet(ih, "_IUP_GTK_INNER_PARENT", (char*)inner_parent);
   }
 
-#if !GTK_CHECK_VERSION(3, 22, 0)
-  {
-    const char* appid = IupGetGlobal("_IUP_APPID_INTERNAL");
-    if (appid)
-      gtk_window_set_wmclass(GTK_WINDOW(ih->handle), appid, appid);
-  }
-#endif
-
 #if GTK_CHECK_VERSION(3, 0, 0)
   /* the ARGB visual has to be selected before the window is realized */
   if (iupAttribGet(ih, "OPACITYIMAGE"))
@@ -770,19 +762,17 @@ static int gtkDialogMapMethod(Ihandle* ih)
   }
 #endif
 
-  gtk_widget_realize(ih->handle);
-
-#if GTK_CHECK_VERSION(3, 0, 0) && defined(GDK_WINDOWING_X11)
+  if (!g_get_prgname())
   {
-    const char* appid = IupGetGlobal("_IUP_APPID_INTERNAL");
-    if (appid)
+    char* exe_title = iupStrFileGetTitle(IupGetGlobal("ARGV0"));
+    if (exe_title)
     {
-      GdkWindow* window = iupgtkGetWindow(ih->handle);
-      if (window && GDK_IS_X11_WINDOW(window))
-        gdk_x11_window_set_utf8_property(GDK_X11_WINDOW(window), "WM_CLASS", appid);
+      g_set_prgname(exe_title);
+      free(exe_title);
     }
   }
-#endif
+
+  gtk_widget_realize(ih->handle);
 
   if (iupAttribGet(ih, "TITLE"))
     has_titlebar = 1;

@@ -750,6 +750,7 @@ IUP_SDK_API int iupdrvSetGlobalAppNameAttrib(const char* value)
   if (appname_set || !value || !value[0])
     return 0;
 
+  gdk_set_program_class(value);
   appname_set = 1;
   return 1;
 }

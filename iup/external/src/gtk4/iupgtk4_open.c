@@ -9,6 +9,10 @@
 
 #include <gdk/gdk.h>
 
+#ifdef GDK_WINDOWING_X11
+#include <gdk/x11/gdkx.h>
+#endif
+
 #ifdef GDK_WINDOWING_WAYLAND
 #include <gdk/wayland/gdkwayland.h>
 #endif
@@ -433,6 +437,14 @@ IUP_SDK_API int iupdrvSetGlobalAppNameAttrib(const char* value)
   static int appname_set = 0;
   if (appname_set || !value || !value[0])
     return 0;
+
+#ifdef GDK_WINDOWING_X11
+  {
+    GdkDisplay* display = gdk_display_get_default();
+    if (display && GDK_IS_X11_DISPLAY(display))
+      gdk_x11_display_set_program_class(display, value);
+  }
+#endif
 
   appname_set = 1;
   return 1;

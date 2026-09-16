@@ -41,7 +41,7 @@ static const iGlobalRegEntry registry[] = {
   { "APPID",                  0,    ALL },
   { "APPNAME",                0,    ALL },
   { "APPSHELL",               R|P,  M|G|G4 },
-  { "ARGV0",                  0,    G|Q|G4|E|WU|F|HK },
+  { "ARGV0",                  0,    M|G|Q|G4|E|WU|F|HK },
   { "AUTOREPEAT",             0,    M|E|F },
   { "CACHEDIR",               R,    ALL },
   { "COMCTL32VER6",           R,    W },
