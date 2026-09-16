@@ -85,6 +85,7 @@ IDEs automatically pick up both files. See [example](https://gist.github.com/gen
 | `IUP_BUILD_MEDIA`    | `OFF`            | Build `iupmedia` (Audio, Camera and Microphone controls)        |
 | `IUP_BUILD_EXAMPLES` | `OFF`            | Build example programs (C and C++)                              |
 | `IUP_USE_XEMBED`     | `OFF`            | Use XEmbed tray protocol instead of SNI (GTK3/GTK2/Motif)       |
+| `IUP_USE_XFT`        | `OFF`            | Use Xft for font rendering (Motif)                              |
 | `IUP_EMBED_MANIFEST` | `ON`             | Embed the application manifest into built executables (Windows) |
 | `BUILD_SHARED_LIBS`  | `OFF`            | Build shared libraries instead of static                        |
 
@@ -141,7 +142,7 @@ For Web: also `qtwebengine5-dev` or `qt5-qtwebengine-devel`.
 FLTK does not provide pkg-config files, so `libfltk` and `libfltk_images` must be in the library search path.
 
 **Motif**:
-`motif-devel` or `libmotif-dev`. XFT and FreeType are auto-detected for font rendering.
+`motif-devel` or `libmotif-dev`. `IUP_USE_XFT` also requires `libXft`, `freetype2` and `fontconfig`.
 
 **WinUI** (Windows only):
 Requires a C++20 compiler (MSVC or Clang++).

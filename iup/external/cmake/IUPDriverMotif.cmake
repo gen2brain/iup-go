@@ -34,12 +34,13 @@ set(IUP_DRIVER_INCLUDE_DIRS
 
 set(IUP_DRIVER_LINK_LIBRARIES Xm Xmu Xt Xext Xrender X11 dl m)
 
-pkg_check_modules(XFT IMPORTED_TARGET xft)
-pkg_check_modules(FREETYPE IMPORTED_TARGET freetype2)
+if(IUP_USE_XFT)
+  pkg_check_modules(XFT REQUIRED IMPORTED_TARGET xft)
+  pkg_check_modules(FREETYPE REQUIRED IMPORTED_TARGET freetype2)
+  pkg_check_modules(FONTCONFIG REQUIRED IMPORTED_TARGET fontconfig)
 
-if(XFT_FOUND AND FREETYPE_FOUND)
   list(APPEND IUP_DRIVER_COMPILE_DEFINITIONS IUP_USE_XFT)
-  list(APPEND IUP_DRIVER_LINK_LIBRARIES PkgConfig::XFT PkgConfig::FREETYPE)
+  list(APPEND IUP_DRIVER_LINK_LIBRARIES PkgConfig::XFT PkgConfig::FREETYPE PkgConfig::FONTCONFIG)
 endif()
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
@@ -53,8 +54,8 @@ endif()
 set(IUP_DRIVER_COMPILE_OPTIONS "")
 
 set(IUP_PC_REQUIRES "")
-if(XFT_FOUND AND FREETYPE_FOUND)
-  set(IUP_PC_REQUIRES "xft freetype2")
+if(IUP_USE_XFT)
+  set(IUP_PC_REQUIRES "xft freetype2 fontconfig")
 endif()
 set(IUP_PC_LIBS_PRIVATE "-lXm -lXmu -lXt -lXext -lXrender -lX11 -ldl -lm")
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
