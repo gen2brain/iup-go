@@ -134,12 +134,7 @@ var (
 		"142 106 200", "80 152 172", "184 108 158", "116 138 92",
 	}
 
-	convCv                   iup.Ihandle
-	thread, search, composer iup.Ihandle
-	title, subtitle          iup.Ihandle
-	dlg, screens             iup.Ihandle
-	location                 iup.Ihandle
-	mobile                   bool
+	mobile bool
 
 	shown    []int
 	selected int
@@ -164,14 +159,14 @@ func main() {
 	makeEmoticons()
 	filter("")
 
-	convCv = iup.Canvas().SetAttributes(map[string]string{
+	convCv := iup.Canvas().SetAttributes(map[string]string{
 		"BORDER":    "NO",
 		"EXPAND":    "YES",
 		"SCROLLBAR": "VERTICAL",
 		"YAUTOHIDE": "YES",
 		"CANFOCUS":  "NO",
 		"SIZE":      fmt.Sprintf("x%d", 3*8*visibleRows),
-	})
+	}).SetHandle("chat_conv")
 	convCv.SetCallback("ACTION", iup.ActionFunc(drawConversations))
 	convCv.SetCallback("RESIZE_CB", iup.ResizeFunc(resized))
 	convCv.SetCallback("SCROLL_CB", iup.ScrollFunc(scrolled))
@@ -180,7 +175,7 @@ func main() {
 	convCv.SetCallback("MOTION_CB", iup.MotionFunc(convHover))
 	convCv.SetCallback("LEAVEWINDOW_CB", iup.LeaveWindowFunc(convLeave))
 
-	thread = iup.Text().SetAttributes(map[string]string{
+	thread := iup.Text().SetAttributes(map[string]string{
 		"MULTILINE":  "YES",
 		"FORMATTING": "YES",
 		"WORDWRAP":   "YES",
@@ -188,7 +183,7 @@ func main() {
 		"BORDER":     "NO",
 		"EXPAND":     "YES",
 		"PADDING":    "10x8",
-	})
+	}).SetHandle("chat_thread")
 
 	columns := func(desktop, phone string) string {
 		if mobile {
@@ -197,20 +192,20 @@ func main() {
 		return desktop
 	}
 
-	search = iup.Text().SetAttributes(map[string]string{
+	search := iup.Text().SetAttributes(map[string]string{
 		"VISIBLECOLUMNS": columns("20", "12"),
 		"EXPAND":         "HORIZONTAL",
 		"PADDING":        "6x5",
 		"CUEBANNER":      "Search",
-	})
+	}).SetHandle("chat_search")
 	search.SetCallback("VALUECHANGED_CB", iup.ValueChangedFunc(searchChanged))
 
-	composer = iup.Text().SetAttributes(map[string]string{
+	composer := iup.Text().SetAttributes(map[string]string{
 		"VISIBLECOLUMNS": columns("40", "8"),
 		"EXPAND":         "HORIZONTAL",
 		"PADDING":        "8x6",
 		"CUEBANNER":      "Type a message, **bold** and :) work",
-	})
+	}).SetHandle("chat_composer")
 
 	sendBtn := iconButton("send", "Send", iup.ActionFunc(send))
 	sendBtn.SetHandle("sendButton")
@@ -220,8 +215,8 @@ func main() {
 	attachPopover(attach)
 	makeLocation()
 
-	title = iup.Label("").SetAttributes("FONTSTYLE=Bold, EXPAND=HORIZONTAL")
-	subtitle = iup.Label("").SetAttributes(map[string]string{"FGCOLOR": pal.accent, "EXPAND": "HORIZONTAL"})
+	title := iup.Label("").SetAttributes("FONTSTYLE=Bold, EXPAND=HORIZONTAL").SetHandle("chat_title")
+	subtitle := iup.Label("").SetAttributes(map[string]string{"FGCOLOR": pal.accent, "EXPAND": "HORIZONTAL"}).SetHandle("chat_subtitle")
 
 	list := iup.Vbox(
 		iup.Hbox(
@@ -257,14 +252,14 @@ func main() {
 
 	var content iup.Ihandle
 	if mobile {
-		screens = iup.Zbox(list, room)
+		screens := iup.Zbox(list, room).SetHandle("chat_screens")
 		content = screens
 	} else {
 		list.SetAttribute("EXPAND", "VERTICAL")
 		content = iup.Hbox(list, room)
 	}
 
-	dlg = iup.Dialog(content).SetAttributes(map[string]string{
+	dlg := iup.Dialog(content).SetHandle("chat_dlg").SetAttributes(map[string]string{
 		"TITLE":        "Chat",
 		"DEFAULTENTER": "sendButton",
 	})
@@ -280,8 +275,8 @@ func main() {
 }
 
 func back(ih iup.Ihandle) int {
-	screens.SetAttribute("VALUEPOS", "0")
-	iup.Update(convCv)
+	iup.GetHandle("chat_screens").SetAttribute("VALUEPOS", "0")
+	iup.Update(iup.GetHandle("chat_conv"))
 	return iup.DEFAULT
 }
 
@@ -330,7 +325,7 @@ func toggleAppearance(ih iup.Ihandle) int {
 func retheme() {
 	setPalette()
 	makeIcons()
-	subtitle.SetAttribute("FGCOLOR", pal.accentText)
+	iup.GetHandle("chat_subtitle").SetAttribute("FGCOLOR", pal.accentText)
 	open(selected)
 }
 
@@ -354,11 +349,14 @@ func mix(a, b string, t float64) string {
 }
 
 func open(idx int) {
+	subtitle := iup.GetHandle("chat_subtitle")
+	thread := iup.GetHandle("chat_thread")
+
 	selected = idx
 	c := &conversations[idx]
 	c.unread = 0
 
-	title.SetAttribute("TITLE", c.name)
+	iup.GetHandle("chat_title").SetAttribute("TITLE", c.name)
 	if c.people > 2 {
 		subtitle.SetAttribute("TITLE", fmt.Sprintf("%d participants", c.people))
 	} else {
@@ -373,12 +371,14 @@ func open(idx int) {
 	thread.SetAttribute("READONLY", "YES")
 	thread.SetAttribute("SCROLLTO", fmt.Sprintf("%d:1", thread.GetInt("LINECOUNT")))
 	if mobile {
-		screens.SetAttribute("VALUEPOS", "1")
+		iup.GetHandle("chat_screens").SetAttribute("VALUEPOS", "1")
 	}
-	iup.Update(convCv)
+	iup.Update(iup.GetHandle("chat_conv"))
 }
 
 func appendMessage(m *message) {
+	thread := iup.GetHandle("chat_thread")
+
 	base := strconv.Itoa(fontSize(thread))
 	small := strconv.Itoa(fontSize(thread) * 4 / 5)
 
@@ -453,12 +453,14 @@ func fontSize(ih iup.Ihandle) int {
 }
 
 func appendLine(s string) int {
+	thread := iup.GetHandle("chat_thread")
+
 	thread.SetAttribute("APPEND", s)
 	return thread.GetInt("LINECOUNT")
 }
 
 func lineText(n int) string {
-	lines := strings.Split(thread.GetAttribute("VALUE"), "\n")
+	lines := strings.Split(iup.GetHandle("chat_thread").GetAttribute("VALUE"), "\n")
 	if n-1 < 0 || n-1 >= len(lines) {
 		return ""
 	}
@@ -484,7 +486,7 @@ func tag(line, col, endCol int, attrs map[string]string) {
 		ft.SetAttribute(k, v)
 	}
 	ft.SetAttribute("SELECTION", fmt.Sprintf("%d,%d:%d,%d", line, col, line, endCol))
-	thread.SetAttributeHandle("ADDFORMATTAG", ft)
+	iup.GetHandle("chat_thread").SetAttributeHandle("ADDFORMATTAG", ft)
 }
 
 func filter(q string) {
@@ -502,7 +504,7 @@ func filter(q string) {
 func searchChanged(ih iup.Ihandle) int {
 	filter(ih.GetAttribute("VALUE"))
 	hovered = -1
-	iup.Update(convCv)
+	iup.Update(iup.GetHandle("chat_conv"))
 	return iup.DEFAULT
 }
 
@@ -720,6 +722,8 @@ func rowAt(ih iup.Ihandle, y int) int {
 }
 
 func emoticonPopover(anchor iup.Ihandle) {
+	composer := iup.GetHandle("chat_composer")
+
 	var pop iup.Ihandle
 	keys := make([]iup.Ihandle, 0, len(emoticons))
 	for _, e := range emoticons {
@@ -756,6 +760,8 @@ func plain(s string) string {
 }
 
 func send(ih iup.Ihandle) int {
+	composer := iup.GetHandle("chat_composer")
+
 	body := strings.TrimSpace(composer.GetAttribute("VALUE"))
 	if body == "" {
 		return iup.DEFAULT
@@ -766,6 +772,8 @@ func send(ih iup.Ihandle) int {
 }
 
 func sendBody(body string) {
+	thread := iup.GetHandle("chat_thread")
+
 	c := &conversations[selected]
 	c.msgs = append(c.msgs, message{body: body, stamp: time.Now().Format("3:04 PM")})
 	c.preview = plain(body)
@@ -775,7 +783,7 @@ func sendBody(body string) {
 	appendMessage(&c.msgs[len(c.msgs)-1])
 	thread.SetAttribute("READONLY", "YES")
 	thread.SetAttribute("SCROLLTO", fmt.Sprintf("%d:1", thread.GetInt("LINECOUNT")))
-	iup.Update(convCv)
+	iup.Update(iup.GetHandle("chat_conv"))
 }
 
 func attachPopover(anchor iup.Ihandle) {
@@ -806,7 +814,7 @@ func attachPopover(anchor iup.Ihandle) {
 
 func sendFile() {
 	d := iup.FileDlg().SetAttributes("DIALOGTYPE=OPEN, TITLE=\"Send a file\"")
-	d.SetAttributeHandle("PARENTDIALOG", dlg)
+	d.SetAttributeHandle("PARENTDIALOG", iup.GetHandle("chat_dlg"))
 	iup.Popup(d, iup.CENTER, iup.CENTER)
 	if d.GetInt("STATUS") != -1 {
 		path := d.GetAttribute("VALUE")
@@ -834,7 +842,7 @@ func fileSize(n int64) string {
 }
 
 func makeLocation() {
-	location = iup.Location()
+	location := iup.Location().SetHandle("chat_location")
 	location.SetCallback("LOCATION_CB", iup.LocationFunc(func(ih iup.Ihandle, lat, lon float64) int {
 		ih.SetAttribute("ACTIVE", "NO")
 		sendBody(fmt.Sprintf("[My location](https://maps.google.com/?q=%.5f,%.5f)", lat, lon))
@@ -855,6 +863,8 @@ func makeLocation() {
 }
 
 func sendLocation() {
+	location := iup.GetHandle("chat_location")
+
 	if !location.GetBool("AVAILABLE") {
 		iup.Message("Location", "No location service on this system")
 		return
