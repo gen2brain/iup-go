@@ -134,6 +134,37 @@ static Ihandle* iMdCreateTag(iMdState* s, int start, int end)
   return tag;
 }
 
+static int iMdGetColor(Ihandle* ih, const char* name, unsigned char* r, unsigned char* g, unsigned char* b)
+{
+  char* value = IupGetAttribute(ih, name);
+  if (!value)
+    return 0;
+  if (!iupStrToRGB(value, r, g, b))
+  {
+    char* global = IupGetGlobal(value);
+    if (!global || !iupStrToRGB(global, r, g, b))
+      return 0;
+  }
+  return 1;
+}
+
+/* mix the control own colors so the result follows a light or a dark theme */
+static void iMdSetMixedColor(iMdState* s, Ihandle* tag, const char* tagname, const char* from, const char* to, double factor, const char* fallback)
+{
+  unsigned char fr, fg, fb, tr, tg, tb;
+
+  if (!iMdGetColor(s->ih, from, &fr, &fg, &fb) || !iMdGetColor(s->ih, to, &tr, &tg, &tb))
+  {
+    IupSetAttribute(tag, tagname, (char*)fallback);
+    return;
+  }
+
+  IupSetStrf(tag, tagname, "%d %d %d",
+             (int)(fr + (tr - fr) * factor),
+             (int)(fg + (tg - fg) * factor),
+             (int)(fb + (tb - fb) * factor));
+}
+
 static int iMdIsBlankLine(const char* line, int len)
 {
   int i;
@@ -325,7 +356,7 @@ static int iMdParseInlineCode(iMdState* s, const char* text, int len)
       {
         Ihandle* tag = iMdCreateTag(s, start, end);
         IupSetAttribute(tag, "FONTFACE", "Courier");
-        IupSetAttribute(tag, "BGCOLOR", "230 230 230");
+        iMdSetMixedColor(s, tag, "BGCOLOR", "BGCOLOR", "FGCOLOR", 0.10, "230 230 230");
       }
       return i + ct;
     }
@@ -821,7 +852,7 @@ static void iMdParseCodeBlock(iMdState* s, const char** p_input)
 
       tag = iMdCreateTag(s, start, s->text.charlen);
       IupSetAttribute(tag, "FONTFACE", "Courier");
-      IupSetAttribute(tag, "BGCOLOR", "230 230 230");
+      iMdSetMixedColor(s, tag, "BGCOLOR", "BGCOLOR", "FGCOLOR", 0.10, "230 230 230");
     }
 
     input = next;
@@ -853,7 +884,7 @@ static void iMdParseBlockquote(iMdState* s, const char* line, int len)
     tag = iMdCreateTag(s, start, s->text.charlen);
     IupSetAttribute(tag, "INDENT", "30");
     IupSetAttribute(tag, "ITALIC", "YES");
-    IupSetAttribute(tag, "FGCOLOR", "100 100 100");
+    iMdSetMixedColor(s, tag, "FGCOLOR", "FGCOLOR", "BGCOLOR", 0.35, "100 100 100");
   }
 }
 
@@ -909,7 +940,7 @@ static void iMdParseHorizontalRule(iMdState* s)
   iMdBufAppendStr(&s->text, rule);
 
   tag = iMdCreateTag(s, start, s->text.charlen);
-  IupSetAttribute(tag, "FGCOLOR", "160 160 160");
+  iMdSetMixedColor(s, tag, "FGCOLOR", "FGCOLOR", "BGCOLOR", 0.55, "160 160 160");
   IupSetAttribute(tag, "ALIGNMENT", "CENTER");
 }
 
@@ -1625,16 +1656,8 @@ void iupMarkdownSetValue(Ihandle* ih, const char* markdown_text)
 static void iMdResetColor(Ihandle* ih, const char* name, Ihandle* tag, const char* tagname)
 {
   unsigned char r, g, b;
-  char* value = IupGetAttribute(ih, name);
-  if (!value)
-    return;
-  if (!iupStrToRGB(value, &r, &g, &b))
-  {
-    char* global = IupGetGlobal(value);
-    if (!global || !iupStrToRGB(global, &r, &g, &b))
-      return;
-  }
-  IupSetStrf(tag, tagname, "%d %d %d", r, g, b);
+  if (iMdGetColor(ih, name, &r, &g, &b))
+    IupSetStrf(tag, tagname, "%d %d %d", r, g, b);
 }
 
 static void iMdAppendResetTag(Ihandle* ih, Ihandle* bulk_tag, int charlen)
