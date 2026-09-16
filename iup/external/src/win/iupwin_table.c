@@ -46,12 +46,16 @@ static COLORREF winTableFocusRectColor(COLORREF bg_color)
  * Data Structure
  ****************************************************************************/
 
+/* the rows can arrive after the dialog is shown, when the first measure found empty columns */
+#define WIN_TABLE_AUTOSIZE (WM_APP + 1)
+
 typedef struct _IwinTableData {
   HWND list_view;
 
   int* col_widths;             /* Width of each column (pixels) */
   BOOL* col_width_set;         /* TRUE if column has explicit RASTERWIDTH set */
   char** col_titles;
+  BOOL autosized;              /* columns were measured with rows present */
 
   /* Cell storage (normal mode) */
   char*** cell_values;         /* [num_lin][num_col] -> string */
@@ -114,6 +118,24 @@ static void winTableSetCell(char** cell, const char* value)
     *cell = iupStrDup(value);
   else
     *cell = NULL;
+}
+
+static UINT winTableGetColAlignment(Ihandle* ih, int col)
+{
+  char name[50];
+  char* align;
+
+  snprintf(name, sizeof(name), "ALIGNMENT%d", col);
+  align = iupAttribGet(ih, name);
+  if (!align)
+    return DT_LEFT;
+
+  if (iupStrEqualNoCase(align, "ARIGHT") || iupStrEqualNoCase(align, "RIGHT"))
+    return DT_RIGHT;
+  if (iupStrEqualNoCase(align, "ACENTER") || iupStrEqualNoCase(align, "CENTER"))
+    return DT_CENTER;
+
+  return DT_LEFT;
 }
 
 static void winTableAutoSizeColumns(Ihandle* ih)
@@ -1210,6 +1232,9 @@ IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
   }
 
   ih->data->num_lin = num_lin;
+
+  if (!data->autosized && num_lin > 0)
+    PostMessage(list_view, WIN_TABLE_AUTOSIZE, 0, 0);
 }
 
 IUP_SDK_API void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
@@ -1558,6 +1583,7 @@ static int winTableSetAlignmentAttrib(Ihandle* ih, int col, const char* value)
     lvc.fmt |= LVCFMT_LEFT;
 
   ListView_SetColumn(list_view, col, &lvc);
+  InvalidateRect(list_view, NULL, TRUE);
 
   return 1;
 }
@@ -1954,8 +1980,10 @@ static int winTableNotifyCallback(Ihandle* ih, void* msg_info, int* result)
             char* value = iupdrvTableGetCellValue(ih, lin, col);
             if (value && *value)
             {
+              UINT align = winTableGetColAlignment(ih, col);
               RECT textRc = rc;
               textRc.left += img_offset + 4;
+              textRc.right -= 4;
 
               HFONT hDrawFont = hFont;
               if (!hDrawFont)
@@ -1965,7 +1993,7 @@ static int winTableNotifyCallback(Ihandle* ih, void* msg_info, int* result)
 
               SetBkMode(hdc, TRANSPARENT);
               SetTextColor(hdc, fg_color);
-              DrawText(hdc, iupwinStrToSystem(value), -1, &textRc, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX);
+              DrawText(hdc, iupwinStrToSystem(value), -1, &textRc, align | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX);
 
               SelectObject(hdc, hOldFont);
             }
@@ -2549,6 +2577,23 @@ static LRESULT CALLBACK winTableListViewWndProc(HWND hwnd, UINT msg, WPARAM wp, 
     }
   }
 
+  if (msg == WIN_TABLE_AUTOSIZE)
+  {
+    IwinTableData* data = IWIN_TABLE_DATA(ih);
+    if (data && !data->autosized && ih->data->num_lin > 0)
+    {
+      RECT rect;
+      GetClientRect(hwnd, &rect);
+      if (rect.right - rect.left > 100)
+      {
+        data->autosized = TRUE;
+        winTableAutoSizeColumns(ih);
+        winTableAdjustColumnWidths(ih);
+      }
+    }
+    return 0;
+  }
+
   if (winTableKeyProc(ih, hwnd, msg, wp, lp, &result))
     return result;
 
@@ -2793,7 +2838,12 @@ static void winTableLayoutUpdateMethod(Ihandle* ih)
     if (width > 100)
     {
       if (!was_visible)
+      {
+        IwinTableData* data = IWIN_TABLE_DATA(ih);
         winTableAutoSizeColumns(ih);
+        if (data && ih->data->num_lin > 0)
+          data->autosized = TRUE;
+      }
 
       winTableAdjustColumnWidths(ih);
 
