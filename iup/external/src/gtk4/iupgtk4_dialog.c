@@ -599,6 +599,16 @@ static int gtk4DialogMapMethod(Ihandle* ih)
 
   iupAttribSet(ih, "_IUPGTK4_INNER_PARENT", (char*)inner_parent);
 
+  if (!g_get_prgname())
+  {
+    char* exe_title = iupStrFileGetTitle(IupGetGlobal("ARGV0"));
+    if (exe_title)
+    {
+      g_set_prgname(exe_title);
+      free(exe_title);
+    }
+  }
+
   gtk_widget_realize(ih->handle);
 
   if (iupAttribGet(ih, "TITLE"))

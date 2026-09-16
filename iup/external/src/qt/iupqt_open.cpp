@@ -484,6 +484,7 @@ extern "C" IUP_SDK_API int iupdrvSetGlobalAppIDAttrib(const char* value)
     return 0;
 
   app->setDesktopFileName(QString::fromUtf8(value));
+  qputenv("RESOURCE_NAME", QByteArray(value));
   appid_set = 1;
   return 1;
 }

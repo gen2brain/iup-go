@@ -1204,12 +1204,13 @@ static int motDialogMapMethod(Ihandle* ih)
     const char* appname = IupGetGlobal("_IUP_APPNAME_INTERNAL");
     Window window = XtWindow(ih->handle);
 
-    if (appid || appname)
     {
       XClassHint class_hint;
-      class_hint.res_name = (char*)(appid ? appid : "iup");
+      char* exe_title = appid ? NULL : iupStrFileGetTitle(IupGetGlobal("ARGV0"));
+      class_hint.res_name = (char*)(appid ? appid : (exe_title ? exe_title : "iup"));
       class_hint.res_class = (char*)(appname ? appname : "Iup");
       XSetClassHint(iupmot_display, window, &class_hint);
+      free(exe_title);
     }
 
     if (appname)
