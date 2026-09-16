@@ -97,6 +97,18 @@ static void eflCanvasSliderChangedCallback(void* data, const Efl_Event* ev)
   }
 }
 
+static void eflCanvasLayoutUpdateMethod(Ihandle* ih);
+
+static void eflCanvasSetScrollBarVisible(Ihandle* ih, Eo* sb, Eina_Bool visible)
+{
+  if (efl_gfx_entity_visible_get(sb) == visible)
+    return;
+
+  iupeflSetVisible(sb, visible);
+  if (ih->handle)
+    eflCanvasLayoutUpdateMethod(ih);
+}
+
 /* the range is in application units, the drawing surface is always the visible area */
 static void eflCanvasUpdateScrollBar(Ihandle* ih, int horiz)
 {
@@ -117,12 +129,12 @@ static void eflCanvasUpdateScrollBar(Ihandle* ih, int horiz)
     efl_ui_range_limits_set(sb, lo, lo + 1);
     efl_ui_range_value_set(sb, lo);
     efl_ui_widget_disabled_set(sb, EINA_TRUE);
-    iupeflSetVisible(sb, !iupAttribGetBoolean(ih, horiz ? "XAUTOHIDE" : "YAUTOHIDE"));
+    eflCanvasSetScrollBarVisible(ih, sb, !iupAttribGetBoolean(ih, horiz ? "XAUTOHIDE" : "YAUTOHIDE"));
     return;
   }
 
   efl_ui_widget_disabled_set(sb, EINA_FALSE);
-  iupeflSetVisible(sb, EINA_TRUE);
+  eflCanvasSetScrollBarVisible(ih, sb, EINA_TRUE);
 
   if (pos < lo) pos = lo;
   if (pos > hi - page) pos = hi - page;
@@ -539,22 +551,6 @@ static void eflCanvasSetupGestures(Ihandle* ih, Eo* parent, Eo* vg)
                      Attributes
 ****************************************************************/
 
-static int eflCanvasSetBgColorAttrib(Ihandle* ih, const char* value)
-{
-  Eo* vg = iupeflGetWidget(ih);
-  unsigned char r, g, b;
-
-  if (!vg)
-    return 0;
-
-  if (!iupStrToRGB(value, &r, &g, &b))
-    return 0;
-
-  iupeflSetColor(vg, r, g, b, 255);
-
-  return 1;
-}
-
 static char* eflCanvasGetDrawableAttrib(Ihandle* ih)
 {
   return (char*)iupeflGetWidget(ih);
@@ -580,9 +576,6 @@ static int eflCanvasMapMethod(Ihandle* ih)
 {
   Eo* parent;
   Eo* vg;
-  Eo* wrap = NULL;
-  Eo* row = NULL;
-  Eo* vg_parent;
 
   parent = iupeflGetParentWidget(ih);
   if (!parent)
@@ -590,31 +583,8 @@ static int eflCanvasMapMethod(Ihandle* ih)
 
   ih->data->sb = iupBaseGetScrollbar(ih);
 
-  if (ih->data->sb)
   {
-    wrap = efl_add(EFL_UI_BOX_CLASS, parent, efl_gfx_entity_visible_set(efl_added, EINA_TRUE));
-    if (!wrap)
-      return IUP_ERROR;
-    efl_ui_layout_orientation_set(wrap, EFL_UI_LAYOUT_ORIENTATION_VERTICAL);
-
-    row = efl_add(EFL_UI_BOX_CLASS, wrap, efl_gfx_entity_visible_set(efl_added, EINA_TRUE));
-    if (!row)
-    {
-      efl_del(wrap);
-      return IUP_ERROR;
-    }
-    efl_ui_layout_orientation_set(row, EFL_UI_LAYOUT_ORIENTATION_HORIZONTAL);
-    efl_gfx_hint_weight_set(row, 1.0, 1.0);
-    efl_pack(wrap, row);
-
-    iupAttribSet(ih, "_IUP_EXTRAPARENT", (char*)wrap);
-    iupAttribSet(ih, "_IUP_EFL_CANVAS_ROW", (char*)row);
-  }
-
-  vg_parent = row ? row : parent;
-
-  {
-    Evas* evas = evas_object_evas_get(vg_parent);
+    Evas* evas = evas_object_evas_get(parent);
     vg = evas_object_image_filled_add(evas);
     if (vg)
     {
@@ -625,11 +595,7 @@ static int eflCanvasMapMethod(Ihandle* ih)
   }
 
   if (!vg)
-  {
-    if (wrap)
-      efl_del(wrap);
     return IUP_ERROR;
-  }
 
   efl_canvas_object_pass_events_set(vg, EINA_FALSE);
   efl_canvas_object_repeat_events_set(vg, EINA_FALSE);
@@ -638,28 +604,21 @@ static int eflCanvasMapMethod(Ihandle* ih)
 
   evas_event_callback_add(evas_object_evas_get(vg), EVAS_CALLBACK_RENDER_PRE, eflCanvasRenderPreCallback, ih);
 
-  if (row)
+  if (ih->data->sb)
   {
-    efl_gfx_hint_weight_set(vg, 1.0, 1.0);
-    efl_pack(row, vg);
-
     if (ih->data->sb & IUP_SB_VERT)
     {
-      Eo* vsb = efl_add(EFL_UI_SLIDER_CLASS, row, efl_gfx_entity_visible_set(efl_added, EINA_TRUE));
+      Eo* vsb = efl_add(EFL_UI_SLIDER_CLASS, parent, efl_gfx_entity_visible_set(efl_added, EINA_TRUE));
       efl_ui_layout_orientation_set(vsb, EFL_UI_LAYOUT_ORIENTATION_VERTICAL);
-      efl_gfx_hint_weight_set(vsb, 0.0, 1.0);
       efl_event_callback_add(vsb, EFL_UI_RANGE_EVENT_CHANGED, eflCanvasSliderChangedCallback, ih);
-      efl_pack(row, vsb);
       iupAttribSet(ih, "_IUP_EFL_VSB", (char*)vsb);
     }
 
     if (ih->data->sb & IUP_SB_HORIZ)
     {
-      Eo* hsb = efl_add(EFL_UI_SLIDER_CLASS, wrap, efl_gfx_entity_visible_set(efl_added, EINA_TRUE));
+      Eo* hsb = efl_add(EFL_UI_SLIDER_CLASS, parent, efl_gfx_entity_visible_set(efl_added, EINA_TRUE));
       efl_ui_layout_orientation_set(hsb, EFL_UI_LAYOUT_ORIENTATION_HORIZONTAL);
-      efl_gfx_hint_weight_set(hsb, 1.0, 0.0);
       efl_event_callback_add(hsb, EFL_UI_RANGE_EVENT_CHANGED, eflCanvasSliderChangedCallback, ih);
-      efl_pack(wrap, hsb);
       iupAttribSet(ih, "_IUP_EFL_HSB", (char*)hsb);
     }
   }
@@ -767,13 +726,21 @@ static void eflCanvasUnMapMethod(Ihandle* ih)
     efl_del(vg);
   }
 
+  {
+    Eo* vsb = (Eo*)iupAttribGet(ih, "_IUP_EFL_VSB");
+    Eo* hsb = (Eo*)iupAttribGet(ih, "_IUP_EFL_HSB");
+    if (vsb)
+      efl_del(vsb);
+    if (hsb)
+      efl_del(hsb);
+    iupAttribSet(ih, "_IUP_EFL_VSB", NULL);
+    iupAttribSet(ih, "_IUP_EFL_HSB", NULL);
+  }
+
   if (wrap)
   {
     efl_del(wrap);
     iupAttribSet(ih, "_IUP_EXTRAPARENT", NULL);
-    iupAttribSet(ih, "_IUP_EFL_CANVAS_ROW", NULL);
-    iupAttribSet(ih, "_IUP_EFL_VSB", NULL);
-    iupAttribSet(ih, "_IUP_EFL_HSB", NULL);
   }
 
   {
@@ -817,7 +784,36 @@ static void eflCanvasLayoutUpdateMethod(Ihandle* ih)
   }
   else if (vg)
   {
-    iupeflSetPosSize(ih, ih->x, ih->y, ih->currentwidth, ih->currentheight);
+    Eo* vsb = (Eo*)iupAttribGet(ih, "_IUP_EFL_VSB");
+    Eo* hsb = (Eo*)iupAttribGet(ih, "_IUP_EFL_HSB");
+    int sb_size = iupdrvGetScrollbarSize();
+    int sb_vert = (vsb && efl_gfx_entity_visible_get(vsb)) ? sb_size : 0;
+    int sb_horiz = (hsb && efl_gfx_entity_visible_get(hsb)) ? sb_size : 0;
+    int width = ih->currentwidth - sb_vert;
+    int height = ih->currentheight - sb_horiz;
+    int abs_x, abs_y;
+
+    if (width < 1) width = 1;
+    if (height < 1) height = 1;
+
+    iupeflSetPosSize(ih, ih->x, ih->y, width, height);
+
+    iupeflGetOrigin(ih, &abs_x, &abs_y);
+    abs_x += ih->x;
+    abs_y += ih->y;
+
+    if (vsb)
+    {
+      iupeflAttachToContainer(ih, vsb);
+      efl_gfx_entity_position_set(vsb, EINA_POSITION2D(abs_x + width, abs_y));
+      efl_gfx_entity_size_set(vsb, EINA_SIZE2D(sb_size, height));
+    }
+    if (hsb)
+    {
+      iupeflAttachToContainer(ih, hsb);
+      efl_gfx_entity_position_set(hsb, EINA_POSITION2D(abs_x, abs_y + height));
+      efl_gfx_entity_size_set(hsb, EINA_SIZE2D(width, sb_size));
+    }
   }
 
   {
@@ -883,7 +879,7 @@ IUP_SDK_API void iupdrvCanvasInitClass(Iclass* ic)
 
   iupClassRegisterCallback(ic, "GESTURE_CB", "iiiidd");
 
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, eflCanvasSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupeflSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
 
   iupClassRegisterAttribute(ic, "DRAWABLE", eflCanvasGetDrawableAttrib, NULL, NULL, NULL, IUPAF_NO_STRING | IUPAF_READONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DRAWSIZE", eflCanvasGetDrawSizeAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);

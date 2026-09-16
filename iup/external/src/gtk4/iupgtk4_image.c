@@ -29,8 +29,12 @@ IUP_SDK_API void iupdrvImageGetData(void* handle, unsigned char* imgdata)
   if (bpp == 8)
     return;
 
-  /* GTK4 textures are always 32bpp RGBA, download directly */
-  gdk_texture_download(texture, imgdata, w * 4);
+  {
+    GdkTextureDownloader* downloader = gdk_texture_downloader_new(texture);
+    gdk_texture_downloader_set_format(downloader, GDK_MEMORY_R8G8B8A8);
+    gdk_texture_downloader_download_into(downloader, imgdata, (gsize)w * 4);
+    gdk_texture_downloader_free(downloader);
+  }
 }
 
 

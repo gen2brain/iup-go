@@ -52,6 +52,9 @@ extern "C" IUP_SDK_API void iupdrvImageGetData(void* handle, unsigned char* imgd
     return;
   }
 
+  if (image.hasAlphaChannel())
+    image = image.convertToFormat(QImage::Format_ARGB32);
+
   int channels = image.hasAlphaChannel() ? 4 : 3;
   int line_size = w * channels;
   for (int y = 0; y < h; y++)

@@ -353,6 +353,9 @@ extern "C" IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
   {
     dialog->show();
 
+    if (ih->data->show_state == IUP_MAXIMIZE && !dialog->maximize_active())
+      dialog->maximize();
+
 #if defined(FLTK_USE_X11)
     if (iupfltkIsX11() && fl_xid(dialog)
 #ifdef IUPX11_USE_DLOPEN

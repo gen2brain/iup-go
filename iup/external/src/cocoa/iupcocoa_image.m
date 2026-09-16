@@ -43,16 +43,21 @@ IUP_DRV_API int iupcocoaImageCalculateBytesPerRow(int width, int bytes_per_pixel
 }
 
 #ifdef GNUSTEP
-/* Opal's NSBitmapImageRep has no -CGImage, so read the samples and premultiply by hand */
+/* Opal's NSBitmapImageRep has no -CGImage, so read the samples by hand */
 static int cocoaImageBitmapToRGBA(NSBitmapImageRep* bitmap, unsigned char* rgba, int w, int h)
 {
   const unsigned char* data = [bitmap bitmapData];
   NSInteger src_stride = [bitmap bytesPerRow];
   NSInteger samples = [bitmap samplesPerPixel];
-  int straight = ([bitmap bitmapFormat] & NSBitmapFormatAlphaNonpremultiplied) != 0;
+  NSInteger bits = [bitmap bitsPerSample];
+  NSBitmapFormat format = [bitmap bitmapFormat];
+  int premul = (format & NSBitmapFormatAlphaNonpremultiplied) == 0;
+  int high = (format & NSBitmapFormatSixteenBitLittleEndian) ? 1 : 0;
+  int step = (int)(samples * (bits / 8));
   int x, y;
 
-  if (!data || [bitmap isPlanar] || samples < 3 || [bitmap bitsPerPixel] != samples * 8)
+  if (!data || [bitmap isPlanar] || samples < 3 || (bits != 8 && bits != 16) ||
+      [bitmap bitsPerPixel] != samples * bits)
     return 0;
 
   for (y = 0; y < h; y++)
@@ -62,23 +67,34 @@ static int cocoaImageBitmapToRGBA(NSBitmapImageRep* bitmap, unsigned char* rgba,
 
     for (x = 0; x < w; x++)
     {
-      const unsigned char* src = src_line + x * samples;
+      const unsigned char* src = src_line + (size_t)x * step;
       unsigned char* dest = dest_line + x * 4;
-      unsigned int a = (samples > 3) ? src[3] : 255;
+      unsigned int c[4];
+      int i;
 
-      if (straight && a != 255)
+      for (i = 0; i < 4; i++)
       {
-        dest[0] = (unsigned char)((src[0] * a) / 255);
-        dest[1] = (unsigned char)((src[1] * a) / 255);
-        dest[2] = (unsigned char)((src[2] * a) / 255);
+        if (i >= samples)
+          c[i] = 255;
+        else if (bits == 16)
+          c[i] = src[i * 2 + high];   /* the most significant byte is the 8 bit value */
+        else
+          c[i] = src[i];
       }
-      else
+
+      if (premul && c[3] != 0 && c[3] != 255)
       {
-        dest[0] = src[0];
-        dest[1] = src[1];
-        dest[2] = src[2];
+        for (i = 0; i < 3; i++)
+        {
+          c[i] = (c[i] * 255 + c[3] / 2) / c[3];
+          if (c[i] > 255) c[i] = 255;
+        }
       }
-      dest[3] = (unsigned char)a;
+
+      dest[0] = (unsigned char)c[0];
+      dest[1] = (unsigned char)c[1];
+      dest[2] = (unsigned char)c[2];
+      dest[3] = (unsigned char)c[3];
     }
   }
 
@@ -121,10 +137,7 @@ static void cocoaImageGetData(void* handle, unsigned char* out_img_data)
 
   NSInteger w = [bitmap pixelsWide];
   NSInteger h = [bitmap pixelsHigh];
-  int channels = (int)([bitmap bitsPerPixel] / 8);
-
-  if (channels < 3)
-    return;
+  int channels = [bitmap hasAlpha] ? 4 : 3;   /* must match the bpp iupdrvImageGetInfo reports */
 
   size_t rgba_stride = (size_t)w * 4;
   unsigned char* rgba = (unsigned char*)calloc(rgba_stride * h, 1);
@@ -156,6 +169,26 @@ static void cocoaImageGetData(void* handle, unsigned char* out_img_data)
   }
   CGContextDrawImage(ctx, CGRectMake(0, 0, w, h), cg_image);
   CGContextRelease(ctx);
+
+  /* the context is pre-multiplied, IUP image data is not */
+  {
+    size_t i, count = (size_t)w * h;
+    for (i = 0; i < count; i++)
+    {
+      unsigned char* p = rgba + i * 4;
+      unsigned int a = p[3];
+      int j;
+
+      if (a == 0 || a == 255)
+        continue;
+
+      for (j = 0; j < 3; j++)
+      {
+        unsigned int v = (p[j] * 255 + a / 2) / a;
+        p[j] = (unsigned char)(v > 255 ? 255 : v);
+      }
+    }
+  }
 #endif
 
   for (int y = 0; y < h; y++)
@@ -541,7 +574,7 @@ static int cocoaImageGetInfo(void* handle, int *w, int *h, int *bpp)
 
   if (w) *w = (int)[bitmap pixelsWide];
   if (h) *h = (int)[bitmap pixelsHigh];
-  if (bpp) *bpp = (int)[bitmap bitsPerPixel];
+  if (bpp) *bpp = [bitmap hasAlpha] ? 32 : 24;   /* the data is handed over as 8 bits per channel */
   return 1;
 }
 
