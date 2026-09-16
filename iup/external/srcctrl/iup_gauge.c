@@ -123,6 +123,18 @@ static int iGaugeRedraw_CB(Ihandle* ih)
 
   IupDrawParentBackground(ih);
 
+  if (!backcolor)
+  {
+    long parentbg = iupDrawStrToColor(iupBaseNativeParentGetBgColorAttrib(ih), ih->data->bgcolor);
+    int r = iupDrawRed(parentbg), g = iupDrawGreen(parentbg), b = iupDrawBlue(parentbg);
+    int fr = iupDrawRed(fgcolor), fg = iupDrawGreen(fgcolor), fb = iupDrawBlue(fgcolor);
+
+    iupAttribSetStrf(ih, "_IUPGAUGE_BACKCOLOR", "%d %d %d", r + ((fr - r) * 12) / 100,
+                                                            g + ((fg - g) * 12) / 100,
+                                                            b + ((fb - b) * 12) / 100);
+    backcolor = iupAttribGet(ih, "_IUPGAUGE_BACKCOLOR");
+  }
+
   /* draw border */
   if (ih->data->flat)
   {
@@ -419,7 +431,6 @@ static int iGaugeCreateMethod(Ihandle* ih, void **params)
   IupSetAttribute(ih, "EXPAND", "NO");
 
   /* default values */
-  iupAttribSet(ih, "BACKCOLOR", "220 220 220");
   iupAttribSet(ih, "FGCOLOR", IGAUGE_DEFAULTCOLOR);
   ih->data->fgcolor = iupDrawColor(0, 120, 220, 255);
   ih->data->vmax = 1;
@@ -430,6 +441,7 @@ static int iGaugeCreateMethod(Ihandle* ih, void **params)
   ih->data->flatcolor = iupDrawColor(160, 160, 160, 255);
   ih->data->show_text = 1;
   ih->data->orientation = IGAUGE_HORIZONTAL;
+  ih->data->flat = 1;
 
   /* IupCanvas callbacks */
   IupSetCallback(ih, "ACTION", (Icallback)iGaugeRedraw_CB);
@@ -468,7 +480,7 @@ Iclass* iupGaugeNewClass(void)
   iupClassRegisterAttribute(ic, "TEXT", NULL, iGaugeSetTextAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SHOWTEXT", iGaugeGetShowTextAttrib, iGaugeSetShowTextAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "FGCOLOR", NULL, iGaugeSetFgColorAttrib, IGAUGE_DEFAULTCOLOR, NULL, IUPAF_NOT_MAPPED);
-  iupClassRegisterAttribute(ic, "FLAT", iGaugeGetFlatAttrib, iGaugeSetFlatAttrib, NULL, NULL, IUPAF_NOT_MAPPED);
+  iupClassRegisterAttribute(ic, "FLAT", iGaugeGetFlatAttrib, iGaugeSetFlatAttrib, "YES", NULL, IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "FLATCOLOR", NULL, iGaugeSetFlatColorAttrib, IUPAF_SAMEASSYSTEM, "160 160 160", IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "ORIENTATION", iGaugeGetOrientationAttrib, iGaugeSetOrientationAttrib, IUPAF_SAMEASSYSTEM, "HORIZONTAL", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "BACKCOLOR", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);

@@ -11,8 +11,8 @@ It inherits from [IupCanvas](../elem/iup_canvas.md).
 
 ### Attributes
 
-**BACKCOLOR** (non-inheritable): color of the background inside the borders. Predefined to "220 220 220".
-Can be NULL. When NULL it will use the parent's background color.
+**BACKCOLOR** (non-inheritable): color of the background inside the borders. Can be NULL.
+When NULL it follows the parent background color tinted towards FGCOLOR.
 
 **CANFOCUS:** enables the focus traversal of the control. Default: NO. (different from IupCanvas)
 
@@ -21,8 +21,8 @@ Can be NULL. When NULL it will use the parent's background color.
 [FGCOLOR](../attrib/iup_fgcolor.md): Controls the gauge and text color.
 Default: "0 120 220".
 
-**FLAT**: use a 1 pixel flat border instead of the default 3-pixel sunken border.
-Can be YES or NO. Default: NO.
+**FLAT**: use a 1 pixel flat border instead of a 3-pixel sunken border.
+Can be YES or NO. Default: YES.
 
 **FLATCOLOR:** color of the border when FLAT=YES. Default: "160 160 160".
 
