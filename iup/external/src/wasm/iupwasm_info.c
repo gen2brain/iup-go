@@ -191,6 +191,11 @@ EM_JS(int, iupwasmJsLanguage, (void), {
   return ptr;
 })
 
+IUP_SDK_API char* iupdrvExeFileName(void)
+{
+  return NULL;
+}
+
 IUP_SDK_API char* iupdrvLanguageInfo(void)
 {
   char* lang = (char*)(intptr_t)iupwasmJsLanguage();

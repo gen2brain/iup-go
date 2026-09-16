@@ -239,6 +239,11 @@ IUP_SDK_API char* iupdrvLocaleInfo(void)
   return "UTF-8";
 }
 
+IUP_SDK_API char* iupdrvExeFileName(void)
+{
+  return androidCallStringStatic("getPackageCodePath");
+}
+
 IUP_SDK_API char* iupdrvLanguageInfo(void)
 {
   return iupStrLanguageTag(androidCallStringStatic("getLocaleTag"));

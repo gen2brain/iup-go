@@ -145,16 +145,5 @@ extern "C" IUP_SDK_API char* iupdrvGetGlobal(const char* name)
   if (iupStrEqual(name, "SHOWMENUIMAGES"))
     return (char*)"NO";
 
-  if (iupStrEqual(name, "EXEFILENAME"))
-  {
-    char* argv0 = IupGetGlobal("ARGV0");
-    if (argv0)
-    {
-      char* full = realpath(argv0, NULL);
-      if (full) { char* s = iupStrReturnStr(full); free(full); return s; }
-    }
-    return NULL;
-  }
-
   return NULL;
 }

@@ -39,6 +39,20 @@ IUP_SDK_API char* iupdrvLocaleInfo(void)
   return iupStrReturnStrf("CP%u", codepage);
 }
 
+IUP_SDK_API char* iupdrvExeFileName(void)
+{
+  WCHAR wfilename[10240];
+  char filename[10240 * 4];
+
+  if (GetModuleFileNameW(NULL, wfilename, 10240) == 0)
+    return NULL;
+
+  if (WideCharToMultiByte(CP_UTF8, 0, wfilename, -1, filename, sizeof(filename), NULL, NULL) == 0)
+    return NULL;
+
+  return iupStrReturnStr(filename);
+}
+
 IUP_SDK_API char* iupdrvLanguageInfo(void)
 {
   WCHAR wname[LOCALE_NAME_MAX_LENGTH];

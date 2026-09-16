@@ -385,10 +385,6 @@ static char * cocoaGetGlobal(const char *name)
   {
     return iupStrReturnBoolean(utf8autoconvert);
   }
-  if (iupStrEqual(name, "EXEFILENAME"))
-  {
-    return iupStrReturnStr([[[NSBundle mainBundle] executablePath] fileSystemRepresentation]);
-  }
   if (iupStrEqual(name, "MENU"))
   {
     return (char*)iupcocoaMenuGetApplicationMenu();

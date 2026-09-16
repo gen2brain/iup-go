@@ -454,6 +454,17 @@ public final class IupCommon
         return java.util.Locale.getDefault().toLanguageTag();
     }
 
+    /** Path of the APK the application was loaded from. */
+    @Keep
+    public static String getPackageCodePath()
+    {
+        IupApplication app = IupApplication.getIupApplication();
+        if (app == null)
+            return null;
+
+        return app.getPackageCodePath();
+    }
+
     /** "Manufacturer Model", suitable for COMPUTERNAME. */
     @Keep
     public static String getDeviceName()

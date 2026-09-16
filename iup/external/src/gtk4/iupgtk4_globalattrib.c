@@ -283,20 +283,6 @@ IUP_SDK_API char* iupdrvGetGlobal(const char* name)
     return iupStrReturnBoolean(0);
   }
 #ifndef WIN32
-  if (iupStrEqual(name, "EXEFILENAME"))
-  {
-    char* argv0 = IupGetGlobal("ARGV0");
-    if (argv0)
-    {
-      char* exefilename = realpath(argv0, NULL);
-      if (exefilename)
-      {
-        char* str = iupStrReturnStr(exefilename);
-        free(exefilename);
-        return str;
-      }
-    }
-  }
 #endif
   if (iupStrEqual(name, "SHOWMENUIMAGES"))
   {

@@ -15,6 +15,7 @@
 #include <unistd.h>
 
 #include <Application.h>
+#include <Roster.h>
 #include <FindDirectory.h>
 #include <InterfaceDefs.h>
 #include <LocaleRoster.h>
@@ -184,6 +185,20 @@ extern "C" IUP_SDK_API int iupdrvGetPreferencePath(char *filename, const char *a
 extern "C" IUP_SDK_API char* iupdrvLocaleInfo(void)
 {
   return (char*)"UTF-8";
+}
+
+extern "C" IUP_SDK_API char* iupdrvExeFileName(void)
+{
+  app_info info;
+  BPath path;
+
+  if (!be_app || be_app->GetAppInfo(&info) != B_OK)
+    return NULL;
+
+  if (path.SetTo(&info.ref) != B_OK)
+    return NULL;
+
+  return iupStrReturnStr(path.Path());
 }
 
 extern "C" IUP_SDK_API char* iupdrvLanguageInfo(void)

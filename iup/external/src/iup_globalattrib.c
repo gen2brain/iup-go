@@ -418,6 +418,8 @@ IUP_API char* IupGetGlobal(const char *name)
     return iupdrvLocaleInfo();
   if (iupStrEqual(name, "SYSTEMLANGUAGE"))
     return iupdrvLanguageInfo();
+  if (iupStrEqual(name, "EXEFILENAME"))
+    return iupdrvExeFileName();
   if (iupStrEqual(name, "SCROLLBARSIZE"))
     return iupStrReturnInt(iupdrvGetScrollbarSize());
   if (iupStrEqual(name, "TOUCHREADY"))

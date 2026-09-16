@@ -180,21 +180,6 @@ IUP_SDK_API char* iupdrvGetGlobal(const char *name)
     return iupStrReturnBoolean(iupmotStrGetUTF8Mode());
   if (iupStrEqual(name, "UTF8MODE_FILE"))
     return iupStrReturnBoolean(iupmotStrGetUTF8ModeFile());
-  if (iupStrEqual(name, "EXEFILENAME"))
-  {
-    char* argv0 = IupGetGlobal("ARGV0");
-    if (argv0)
-    {
-      char* exefilename = realpath(argv0, NULL);
-      if (exefilename)
-      {
-        char* str = iupStrReturnStr(exefilename);
-        free(exefilename);
-        return str;
-      }
-    }
-    return NULL;
-  }
   if (iupStrEqual(name, "SANDBOX"))
   {
     if (getenv("FLATPAK_ID"))

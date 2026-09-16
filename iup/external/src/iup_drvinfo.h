@@ -91,6 +91,10 @@ IUP_SDK_API char* iupdrvLocaleInfo(void);
  * \ingroup drvinfo */
 IUP_SDK_API char* iupdrvLanguageInfo(void);
 
+/** Returns the full path of the running executable, or NULL.
+ * \ingroup drvinfo */
+IUP_SDK_API char* iupdrvExeFileName(void);
+
 /** Returns the full path to a configuration file for the given app name.
  * Creates necessary directories if they don't exist.
  * \ingroup drvinfo */

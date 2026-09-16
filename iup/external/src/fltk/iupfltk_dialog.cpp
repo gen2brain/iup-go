@@ -788,7 +788,7 @@ static void fltkDialogDefaultXClass(void)
   if (IupGetGlobal("_IUP_APPID_INTERNAL"))
     return;
 
-  const char* exe = iupfltkExeFileName();
+  const char* exe = iupdrvExeFileName();
   if (!exe)
     return;
 

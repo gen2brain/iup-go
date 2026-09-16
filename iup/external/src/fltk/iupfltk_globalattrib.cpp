@@ -232,8 +232,5 @@ extern "C" IUP_SDK_API char* iupdrvGetGlobal(const char* name)
     return NULL;
   }
 
-  if (iupStrEqual(name, "EXEFILENAME"))
-    return (char*)iupfltkExeFileName();
-
   return NULL;
 }

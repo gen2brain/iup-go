@@ -254,20 +254,6 @@ IUP_SDK_API char *iupdrvGetGlobal(const char *name)
     return iupStrReturnBoolean(!iupgtkStrGetUTF8Mode());
   }
 #ifndef WIN32
-  if (iupStrEqual(name, "EXEFILENAME"))
-  {
-    char* argv0 = IupGetGlobal("ARGV0");
-    if (argv0)
-    {
-      char* exefilename = realpath(argv0, NULL);
-      if (exefilename)
-      {
-        char* str = iupStrReturnStr(exefilename);
-        free(exefilename);
-        return str;
-      }
-    }
-  }
 #endif
 #if !GTK_CHECK_VERSION(3, 10, 0)
   if (iupStrEqual(name, "SHOWMENUIMAGES"))
