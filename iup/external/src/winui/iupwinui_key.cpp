@@ -347,24 +347,6 @@ IUP_DRV_API int iupwinuiKeyDecode(int wincode, int extended)
 
 IUP_DRV_API void iupwinuiButtonKeySetStatus(int keys, int button, char* status, int doubleclick)
 {
-  iupKEY_SETBUTTON1(status);
-  iupKEY_SETBUTTON2(status);
-  iupKEY_SETBUTTON3(status);
-  iupKEY_SETBUTTON4(status);
-  iupKEY_SETBUTTON5(status);
-  iupKEY_SETSHIFT(status);
-  iupKEY_SETCONTROL(status);
-  iupKEY_SETALT(status);
-  iupKEY_SETSYS(status);
-  iupKEY_SETDOUBLE(status);
-
-  status[0] = ' ';
-  status[1] = ' ';
-  status[2] = ' ';
-  status[3] = ' ';
-  status[4] = ' ';
-  status[5] = ' ';
-
   if (keys & MK_SHIFT)
     iupKEY_SETSHIFT(status);
 
