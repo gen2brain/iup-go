@@ -458,33 +458,34 @@ IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
     *x += charheight;
   }
 
-  if (!has_user_padding)
+  if (has_image && has_text)
   {
-    if (has_image && has_text)
-    {
-      if (image_text_border_x == -1)
-        cocoaButtonMeasureBorders(ih, 1, 1, img_position, &image_text_border_x, &image_text_border_y);
+    if (image_text_border_x == -1)
+      cocoaButtonMeasureBorders(ih, 1, 1, img_position, &image_text_border_x, &image_text_border_y);
 
-      border_x = image_text_border_x;
-      border_y = image_text_border_y;
-    }
-    else if (has_image)
-    {
-      if (image_border_x == -1)
-        cocoaButtonMeasureBorders(ih, 1, 0, IUP_IMGPOS_LEFT, &image_border_x, &image_border_y);
-
-      border_x = image_border_x;
-      border_y = image_border_y;
-    }
-    else
-    {
-      if (text_border_x == -1)
-        cocoaButtonMeasureBorders(ih, 0, 1, IUP_IMGPOS_LEFT, &text_border_x, &text_border_y);
-
-      border_x = text_border_x;
-      border_y = text_border_y;
-    }
+    border_x = image_text_border_x;
+    border_y = image_text_border_y;
   }
+  else if (has_image)
+  {
+    if (image_border_x == -1)
+      cocoaButtonMeasureBorders(ih, 1, 0, IUP_IMGPOS_LEFT, &image_border_x, &image_border_y);
+
+    border_x = image_border_x;
+    border_y = image_border_y;
+  }
+  else
+  {
+    if (text_border_x == -1)
+      cocoaButtonMeasureBorders(ih, 0, 1, IUP_IMGPOS_LEFT, &text_border_x, &text_border_y);
+
+    border_x = text_border_x;
+    border_y = text_border_y;
+  }
+
+  /* user PADDING replaces the theme padding; keep only the bezel frame */
+  if (has_user_padding)
+    border_x = border_y;
 
   *x += border_x;
   *y += border_y;
