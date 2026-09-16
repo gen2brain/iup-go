@@ -1718,7 +1718,7 @@ static int winTableNotifyCallback(Ihandle* ih, void* msg_info, int* result)
           winTableInvalidateCell(winTableGetListView(ih), lin, col);
         }
 
-        char status[IUPKEY_STATUS_SIZE] = "";
+        char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
         iupwinButtonKeySetStatus(0, status, 0);
 
         winTableCallClickCB(ih, lin, col, status);

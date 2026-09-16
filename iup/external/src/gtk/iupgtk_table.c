@@ -699,7 +699,7 @@ static gboolean gtkTableButtonEvent(GtkWidget* widget, GdkEventButton* evt, Ihan
       int lin = indices[0] + 1;
       g_list_free(columns);
 
-      char status[IUPKEY_STATUS_SIZE] = "";
+      char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
       iupgtkButtonKeySetStatus(evt->state, evt->button, status, 0);
 
       cb(ih, lin, col_index, status);

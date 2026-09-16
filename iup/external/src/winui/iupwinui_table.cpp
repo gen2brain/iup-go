@@ -3121,7 +3121,7 @@ static int winuiTableMapMethod(Ihandle* ih)
         winuiTableSetFocusVisual(ih, lin, col);
       }
 
-      char status[IUPKEY_STATUS_SIZE] = "";
+      char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
       iupwinuiButtonKeySetStatus(0, 0, status, 0);
 
       IFniis click_cb = (IFniis)IupGetCallback(ih, "CLICK_CB");
