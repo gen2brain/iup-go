@@ -31,6 +31,75 @@ DEFINE_GUID(IID_IWICImagingFactory, 0xec5ec8a9, 0xc395, 0x4314, 0x9c,0x77, 0x54,
 /* RGB in RGBA DIBs are pre-multiplied by alpha to AlphaBlend usage. */
 #define iupALPHAPRE(_src, _alpha) (((_src)*(_alpha))/255)
 
+/* a bitmap loaded from a file is a DIB section, not a packed DIB in global memory */
+static void* winImagePackDib(HBITMAP hBitmap)
+{
+  BITMAP bm;
+  BITMAPINFO* bmi;
+  BYTE* dib;
+  HDC hdc;
+  int bpp, colors_count = 0;
+  size_t line_size, bits_size, extra;
+
+  if (!GetObject(hBitmap, sizeof(BITMAP), &bm))
+    return NULL;
+
+  bpp = bm.bmBitsPixel * bm.bmPlanes;
+  if (bpp <= 8)
+    colors_count = 1 << bpp;
+  extra = (size_t)colors_count * sizeof(RGBQUAD);
+
+  line_size = (((size_t)bm.bmWidth * bpp + 31) / 32) * 4;
+  bits_size = line_size * bm.bmHeight;
+
+  dib = (BYTE*)malloc(sizeof(BITMAPINFOHEADER) + extra + bits_size);
+  if (!dib)
+    return NULL;
+
+  bmi = (BITMAPINFO*)dib;
+  memset(&bmi->bmiHeader, 0, sizeof(BITMAPINFOHEADER));
+  bmi->bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+  bmi->bmiHeader.biWidth = bm.bmWidth;
+  bmi->bmiHeader.biHeight = bm.bmHeight;   /* positive, GetDIBits returns it bottom-up */
+  bmi->bmiHeader.biPlanes = 1;
+  bmi->bmiHeader.biBitCount = (WORD)bpp;
+  bmi->bmiHeader.biCompression = BI_RGB;
+
+  hdc = CreateCompatibleDC(NULL);
+  if (!GetDIBits(hdc, hBitmap, 0, bm.bmHeight, dib + sizeof(BITMAPINFOHEADER) + extra, bmi, DIB_RGB_COLORS))
+  {
+    DeleteDC(hdc);
+    free(dib);
+    return NULL;
+  }
+  DeleteDC(hdc);
+
+  return dib;
+}
+
+static void* winImageLockDib(HANDLE handle, void** packed)
+{
+  void* dib = GlobalLock(handle);
+
+  *packed = NULL;
+  if (dib)
+    return dib;
+
+  if (GetObjectType(handle) != OBJ_BITMAP)
+    return NULL;
+
+  *packed = winImagePackDib((HBITMAP)handle);
+  return *packed;
+}
+
+static void winImageUnlockDib(HANDLE handle, void* packed)
+{
+  if (packed)
+    free(packed);
+  else
+    GlobalUnlock(handle);
+}
+
 static int winDibNumColors(BITMAPINFOHEADER* bmih)
 {
   if (bmih->biBitCount > 8)
@@ -55,9 +124,13 @@ IUP_SDK_API void iupdrvImageGetData(void* handle, unsigned char* imgdata)
   size_t bmp_line_size, bits_size, dst_line_size;
   BYTE* bits;
   HANDLE hHandle = (HANDLE)handle;
-  void* dib = GlobalLock(hHandle);
+  void* packed;
+  void* dib = winImageLockDib(hHandle, &packed);
   BITMAPINFOHEADER* bmih = (BITMAPINFOHEADER*)dib;
   unsigned char* line_data;
+
+  if (!dib)
+    return;
 
   w = bmih->biWidth;
   h = abs(bmih->biHeight);
@@ -163,13 +236,32 @@ IUP_SDK_API void iupdrvImageGetData(void* handle, unsigned char* imgdata)
         }
         else
         {
-          line_data[2] = *bits++;  /* blue */
-          line_data[1] = *bits++;  /* green */
-          line_data[0] = *bits++;  /* red */
-          line_data += 3;
+          unsigned int b = *bits++;
+          unsigned int g = *bits++;
+          unsigned int r = *bits++;
 
           if (bmih->biBitCount == 32)
-            *line_data++ = *bits++;
+          {
+            unsigned int a = *bits++;
+
+            /* RGB is stored pre-multiplied by alpha, imgdata is not */
+            if (a != 0 && a != 255)
+            {
+              r = (r * 255 + a / 2) / a;
+              g = (g * 255 + a / 2) / a;
+              b = (b * 255 + a / 2) / a;
+              if (r > 255) r = 255;
+              if (g > 255) g = 255;
+              if (b > 255) b = 255;
+            }
+
+            line_data[3] = (unsigned char)a;
+          }
+
+          line_data[0] = (unsigned char)r;
+          line_data[1] = (unsigned char)g;
+          line_data[2] = (unsigned char)b;
+          line_data += (bmih->biBitCount == 32) ? 4 : 3;
         }
       }
 
@@ -180,15 +272,24 @@ IUP_SDK_API void iupdrvImageGetData(void* handle, unsigned char* imgdata)
     }
   }
 
-  GlobalUnlock(hHandle);
+  winImageUnlockDib(hHandle, packed);
 }
 
 
 IUP_SDK_API int iupdrvImageGetRawInfo(void* handle, int *w, int *h, int *bpp, iupColor* colors, int *colors_count)
 {
   HANDLE hHandle = (HANDLE)handle;
-  void* dib = GlobalLock(hHandle);
+  void* packed;
+  void* dib = winImageLockDib(hHandle, &packed);
   BITMAPINFOHEADER* bmih = (BITMAPINFOHEADER*)dib;
+
+  if (!dib)
+  {
+    if (w) *w = 0;
+    if (h) *h = 0;
+    if (bpp) *bpp = 0;
+    return 0;
+  }
 
   if (w) *w = bmih->biWidth;
   if (h) *h = abs(bmih->biHeight);
@@ -212,7 +313,7 @@ IUP_SDK_API int iupdrvImageGetRawInfo(void* handle, int *w, int *h, int *bpp, iu
     }
   }
 
-  GlobalUnlock(hHandle);
+  winImageUnlockDib(hHandle, packed);
   return 1;
 }
 

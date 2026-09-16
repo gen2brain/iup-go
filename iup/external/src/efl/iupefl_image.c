@@ -65,7 +65,29 @@ IUP_SDK_API void iupdrvImageGetData(void* handle, unsigned char* imgdata)
 
     if (channels == 4)
     {
-      memcpy(line_data, pix_line, w * 4);
+      for (x = 0; x < w; x++)
+      {
+        unsigned int pix = pix_line[x];
+        unsigned int a = (pix >> 24) & 0xFF;
+        unsigned int r = (pix >> 16) & 0xFF;
+        unsigned int g = (pix >> 8) & 0xFF;
+        unsigned int b = pix & 0xFF;
+
+        if (a != 0 && a != 255)
+        {
+          r = (r * 255 + a / 2) / a;
+          g = (g * 255 + a / 2) / a;
+          b = (b * 255 + a / 2) / a;
+          if (r > 255) r = 255;
+          if (g > 255) g = 255;
+          if (b > 255) b = 255;
+        }
+
+        line_data[x * 4]     = (unsigned char)r;
+        line_data[x * 4 + 1] = (unsigned char)g;
+        line_data[x * 4 + 2] = (unsigned char)b;
+        line_data[x * 4 + 3] = (unsigned char)a;
+      }
     }
     else
     {

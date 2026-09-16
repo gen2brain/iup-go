@@ -442,11 +442,26 @@ extern "C" IUP_SDK_API void iupdrvImageGetData(void* handle, unsigned char* imgd
     for (int x = 0; x < width; x++)
     {
       int src_pos = y * width * 4 + x * 4;
+      unsigned int b = pixels[src_pos];
+      unsigned int g = pixels[src_pos + 1];
+      unsigned int r = pixels[src_pos + 2];
+      unsigned int a = pixels[src_pos + 3];
 
-      line_data[0] = pixels[src_pos + 2];
-      line_data[1] = pixels[src_pos + 1];
-      line_data[2] = pixels[src_pos];
-      line_data[3] = pixels[src_pos + 3];
+      /* the bitmap is BGRA pre-multiplied by alpha, imgdata is not */
+      if (a != 0 && a != 255)
+      {
+        r = (r * 255 + a / 2) / a;
+        g = (g * 255 + a / 2) / a;
+        b = (b * 255 + a / 2) / a;
+        if (r > 255) r = 255;
+        if (g > 255) g = 255;
+        if (b > 255) b = 255;
+      }
+
+      line_data[0] = (unsigned char)r;
+      line_data[1] = (unsigned char)g;
+      line_data[2] = (unsigned char)b;
+      line_data[3] = (unsigned char)a;
       line_data += 4;
     }
   }

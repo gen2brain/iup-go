@@ -31,6 +31,7 @@ The available file formats supported are system-dependent:
 - **Haiku**: formats supported by the Translation Kit (BTranslatorRoster / BTranslationUtils), such as BMP, GIF, JPEG, PNG, TGA, TIFF and WebP
 
 In this case, the function returns a new image handle and associates the name with that handle, so in the next call it will return the existing handle.
+Not supported in WebAssembly.
 
 Name can also be a system-specific stock / named image:
 

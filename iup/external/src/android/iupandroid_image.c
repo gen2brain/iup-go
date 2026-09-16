@@ -261,6 +261,48 @@ IUP_SDK_API void* iupdrvImageCreateCursor(Ihandle* ih)
   return NULL;
 }
 
+/* the decoder can return RGBA_F16 or RGB_565; the readers below expect RGBA_8888 */
+static jobject androidImageToRGBA8888(JNIEnv* jni_env, jobject java_bitmap)
+{
+  AndroidBitmapInfo bitmap_info;
+  jclass bitmap_class, config_class;
+  jfieldID config_field;
+  jmethodID copy_id;
+  jobject config, copy;
+
+  if (AndroidBitmap_getInfo(jni_env, java_bitmap, &bitmap_info) < 0 ||
+      bitmap_info.format == ANDROID_BITMAP_FORMAT_RGBA_8888)
+    return java_bitmap;
+
+  bitmap_class = (*jni_env)->FindClass(jni_env, "android/graphics/Bitmap");
+  config_class = (*jni_env)->FindClass(jni_env, "android/graphics/Bitmap$Config");
+  if (!bitmap_class || !config_class)
+    return java_bitmap;
+
+  config_field = (*jni_env)->GetStaticFieldID(jni_env, config_class, "ARGB_8888", "Landroid/graphics/Bitmap$Config;");
+  copy_id = (*jni_env)->GetMethodID(jni_env, bitmap_class, "copy", "(Landroid/graphics/Bitmap$Config;Z)Landroid/graphics/Bitmap;");
+  if (!config_field || !copy_id)
+  {
+    (*jni_env)->DeleteLocalRef(jni_env, bitmap_class);
+    (*jni_env)->DeleteLocalRef(jni_env, config_class);
+    return java_bitmap;
+  }
+
+  config = (*jni_env)->GetStaticObjectField(jni_env, config_class, config_field);
+  copy = (*jni_env)->CallObjectMethod(jni_env, java_bitmap, copy_id, config, JNI_FALSE);
+  iupAndroid_CheckException(jni_env, "Bitmap.copy");
+
+  (*jni_env)->DeleteLocalRef(jni_env, config);
+  (*jni_env)->DeleteLocalRef(jni_env, bitmap_class);
+  (*jni_env)->DeleteLocalRef(jni_env, config_class);
+
+  if (!copy)
+    return java_bitmap;
+
+  (*jni_env)->DeleteLocalRef(jni_env, java_bitmap);
+  return copy;
+}
+
 IUP_SDK_API void* iupdrvImageLoad(const char* name, int type)
 {
   (void)type;
@@ -280,7 +322,10 @@ IUP_SDK_API void* iupdrvImageLoad(const char* name, int type)
 
   if (java_bitmap != NULL)
   {
-    jobject return_bitmap = (*jni_env)->NewGlobalRef(jni_env, java_bitmap);
+    jobject return_bitmap;
+
+    java_bitmap = androidImageToRGBA8888(jni_env, java_bitmap);
+    return_bitmap = (*jni_env)->NewGlobalRef(jni_env, java_bitmap);
     (*jni_env)->DeleteLocalRef(jni_env, java_bitmap);
     return return_bitmap;
   }

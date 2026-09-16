@@ -439,25 +439,31 @@ static void winuiCanvasUpdateChildLayout(Ihandle* ih)
   if (aux->sbHoriz && aux->sbHoriz.Visibility() == Visibility::Visible)
     sb_horiz_height = sb_size;
 
+  /* WinUI throws on a negative size, the canvas can be smaller than a scrollbar */
+  double client_width = width - sb_vert_width;
+  double client_height = height - sb_horiz_height;
+  if (client_width < 0) client_width = 0;
+  if (client_height < 0) client_height = 0;
+
   if (aux->displayImage)
   {
-    aux->displayImage.Width(width - sb_vert_width);
-    aux->displayImage.Height(height - sb_horiz_height);
+    aux->displayImage.Width(client_width);
+    aux->displayImage.Height(client_height);
   }
 
   if (aux->sbVert && aux->sbVert.Visibility() == Visibility::Visible)
   {
-    Canvas::SetLeft(aux->sbVert, width - sb_vert_width);
+    Canvas::SetLeft(aux->sbVert, client_width);
     Canvas::SetTop(aux->sbVert, 0.0);
     aux->sbVert.Width(sb_vert_width);
-    aux->sbVert.Height(height - sb_horiz_height);
+    aux->sbVert.Height(client_height);
   }
 
   if (aux->sbHoriz && aux->sbHoriz.Visibility() == Visibility::Visible)
   {
     Canvas::SetLeft(aux->sbHoriz, 0.0);
-    Canvas::SetTop(aux->sbHoriz, height - sb_horiz_height);
-    aux->sbHoriz.Width(width - sb_vert_width);
+    Canvas::SetTop(aux->sbHoriz, client_height);
+    aux->sbHoriz.Width(client_width);
     aux->sbHoriz.Height(sb_horiz_height);
   }
 }
