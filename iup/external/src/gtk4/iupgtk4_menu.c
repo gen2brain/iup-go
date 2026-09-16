@@ -898,8 +898,27 @@ static int gtk4MenuMapMethod(Ihandle* ih)
     GtkWidget* inner_parent;
     GtkWidget* menu_box = (GtkWidget*)iupAttribGet(dialog, "_IUPGTK4_MENU_BOX");
 
-    if (!dialog->handle || !menu_box)
+    if (!dialog->handle)
       return IUP_ERROR;
+
+    if (!menu_box)
+    {
+      GtkWidget* child = gtk_window_get_child((GtkWindow*)dialog->handle);
+      if (!child)
+        return IUP_ERROR;
+
+      menu_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+      gtk_box_set_spacing(GTK_BOX(menu_box), 0);
+      gtk_box_set_homogeneous(GTK_BOX(menu_box), FALSE);
+
+      g_object_ref(child);
+      gtk_window_set_child((GtkWindow*)dialog->handle, NULL);
+      gtk_box_append(GTK_BOX(menu_box), child);
+      g_object_unref(child);
+
+      gtk_window_set_child((GtkWindow*)dialog->handle, menu_box);
+      iupAttribSet(dialog, "_IUPGTK4_MENU_BOX", (char*)menu_box);
+    }
 
     action_group = g_simple_action_group_new();
     iupAttribSet(dialog, "_IUPGTK4_MENU_ACTION_GROUP", (char*)action_group);
