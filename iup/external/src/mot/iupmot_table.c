@@ -33,6 +33,7 @@
 #include "iupmot_color.h"
 #include "iup_drv.h"
 #include "iup_drvfont.h"
+#include "iup_key.h"
 #include "iup_table.h"
 
 
@@ -997,7 +998,11 @@ static void motTableInputCallback(Widget w, XtPointer client_data, XtPointer cal
 
       IFniis cb = (IFniis)IupGetCallback(ih, "CLICK_CB");
       if (cb)
-        cb(ih, lin, col, "1");
+      {
+        char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
+        iupmotButtonKeySetStatus(button_event->state, button_event->button, status, 0);
+        cb(ih, lin, col, status);
+      }
 
       IFnii enteritem_cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
       if (enteritem_cb)
@@ -1462,6 +1467,10 @@ static int motTableMapMethod(Ihandle* ih)
   XtAddCallback(mot_data->drawing_area, XmNexposeCallback, motTableExposeCallback, (XtPointer)ih);
   XtAddCallback(mot_data->drawing_area, XmNresizeCallback, motTableResizeCallback, (XtPointer)ih);
   XtAddCallback(mot_data->drawing_area, XmNinputCallback, motTableInputCallback, (XtPointer)ih);
+
+  /* the default translation gives Ctrl+Btn1 to traversal only, so the input callback never sees it */
+  XtOverrideTranslations(mot_data->drawing_area,
+                         XtParseTranslationTable("#override c<Btn1Down>: DrawingAreaInput() ManagerGadgetTraverseCurrent()"));
 
   XtAddEventHandler(mot_data->drawing_area, KeyPressMask, False, (XtEventHandler)motTableKeyPressCallback, (XtPointer)ih);
   XtAddEventHandler(mot_data->drawing_area, Button1MotionMask, False, (XtEventHandler)motTableRowDragMotion, (XtPointer)ih);

@@ -19,6 +19,7 @@
 #include "iup_drvinfo.h"
 #include "iup_table.h"
 #include "iup_image.h"
+#include "iup_key.h"
 #include "iup_focus.h"
 
 #include "iupefl_drv.h"
@@ -1657,7 +1658,14 @@ static void eflTableCellClickCallback(void* data, const Efl_Event* ev)
 
   cb = (IFniis)IupGetCallback(ih, "CLICK_CB");
   if (cb)
-    cb(ih, lin, col, "l");
+  {
+    char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
+    Evas* evas = evas_object_evas_get(iupeflGetWidget(ih));
+
+    iupeflButtonKeySetStatus(evas ? (Evas_Modifier*)evas_key_modifier_get(evas) : NULL,
+                             efl_input_pointer_button_get(pointer), status, is_double_click);
+    cb(ih, lin, col, status);
+  }
 }
 
 static Evas_Object* eflTableCreateCellWidget(Ihandle* ih, Evas_Object* parent, const char* text, int is_header, int lin, int col)

@@ -831,6 +831,10 @@ static int motCanvasMapMethod(Ihandle* ih)
   XtAddCallback(ih->handle, XmNresizeCallback, (XtCallbackProc)motCanvasResizeCallback,  (XtPointer)ih);
   XtAddCallback(ih->handle, XmNinputCallback,  (XtCallbackProc)motCanvasInputCallback,   (XtPointer)ih);
 
+  /* the default translation gives Ctrl+Btn1 to traversal only, so the input callback never sees it */
+  XtOverrideTranslations(ih->handle,
+                         XtParseTranslationTable("#override c<Btn1Down>: DrawingAreaInput() ManagerGadgetTraverseCurrent()"));
+
   XtAddEventHandler(ih->handle, EnterWindowMask, False,(XtEventHandler)iupmotEnterLeaveWindowEvent, (XtPointer)ih);
   XtAddEventHandler(ih->handle, LeaveWindowMask, False,(XtEventHandler)iupmotEnterLeaveWindowEvent, (XtPointer)ih);
 

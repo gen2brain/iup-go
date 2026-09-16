@@ -35,6 +35,7 @@ extern "C" {
 #include "iup_drv.h"
 #include "iup_drvfont.h"
 #include "iup_image.h"
+#include "iup_key.h"
 #include "iup_table.h"
 }
 
@@ -534,14 +535,39 @@ protected:
 
   void mousePressEvent(QMouseEvent* event) override
   {
-    if (event->button() == Qt::LeftButton)
-    {
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-      press_pos = event->position().toPoint();
+    QPoint pos = event->position().toPoint();
 #else
-      press_pos = event->pos();
+    QPoint pos = event->pos();
 #endif
+
+    if (event->button() == Qt::LeftButton)
+      press_pos = pos;
+
+    IFniis cb = (IFniis)IupGetCallback(ih, "CLICK_CB");
+    if (cb)
+    {
+      QModelIndex index = indexAt(pos);
+      if (index.isValid())
+      {
+        int button = 0;
+        if (event->button() == Qt::LeftButton)
+          button = IUP_BUTTON1;
+        else if (event->button() == Qt::MiddleButton)
+          button = IUP_BUTTON2;
+        else if (event->button() == Qt::RightButton)
+          button = IUP_BUTTON3;
+        else if (event->button() == Qt::XButton1)
+          button = IUP_BUTTON4;
+        else if (event->button() == Qt::XButton2)
+          button = IUP_BUTTON5;
+
+        char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
+        iupqtButtonKeySetStatus(event->modifiers(), event->button(), button, status, 0);
+        cb(ih, index.row() + 1, index.column() + 1, status);
+      }
     }
+
     QTableWidget::mousePressEvent(event);
   }
 
@@ -691,22 +717,9 @@ protected:
 private:
   void setupCallbacks()
   {
-    connect(this, &QTableWidget::cellClicked, this, &IupQtTableWidget::onCellClicked);
     connect(this, &QTableWidget::cellDoubleClicked, this, &IupQtTableWidget::onCellDoubleClicked);
     connect(this, &QTableWidget::currentCellChanged, this, &IupQtTableWidget::onCurrentCellChanged);
     connect(this, &QTableWidget::cellChanged, this, &IupQtTableWidget::onCellChanged);
-  }
-
-  void onCellClicked(int row, int column)
-  {
-    int lin = row + 1;
-    int col = column + 1;
-
-    IFniis cb = (IFniis)IupGetCallback(ih, "CLICK_CB");
-    if (cb)
-    {
-      cb(ih, lin, col, (char*)"1");  /* "1" = left button, single click */
-    }
   }
 
   void onCellDoubleClicked(int row, int column)

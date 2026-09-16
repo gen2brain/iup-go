@@ -25,6 +25,7 @@ extern "C" {
 #include "iup_drv.h"
 #include "iup_drvfont.h"
 #include "iup_image.h"
+#include "iup_key.h"
 #include "iup_table.h"
 }
 
@@ -617,7 +618,7 @@ protected:
             IFniis click_cb = (IFniis)IupGetCallback(iup_handle, "CLICK_CB");
             if (click_cb)
             {
-              char status[20] = "";
+              char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
               int button = IUP_BUTTON1;
               if (Fl::event_button() == FL_MIDDLE_MOUSE) button = IUP_BUTTON2;
               else if (Fl::event_button() == FL_RIGHT_MOUSE) button = IUP_BUTTON3;

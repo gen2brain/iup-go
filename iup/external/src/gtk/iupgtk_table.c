@@ -665,9 +665,6 @@ static void gtkTableCellEdited(GtkCellRendererText* renderer, gchar* path_string
 
 static gboolean gtkTableButtonEvent(GtkWidget* widget, GdkEventButton* evt, Ihandle* ih)
 {
-  if (evt->button != 1)
-    return FALSE;
-
   /* Only cell-area clicks; a grip press has window-relative coords that would match a phantom cell and block resize. */
   if (evt->window != gtk_tree_view_get_bin_window(GTK_TREE_VIEW(widget)))
     return FALSE;
@@ -682,11 +679,8 @@ static gboolean gtkTableButtonEvent(GtkWidget* widget, GdkEventButton* evt, Ihan
   if (dummy_column && column == dummy_column)
   {
     gtk_tree_path_free(path);
-    return TRUE;
+    return (evt->button == 1) ? TRUE : FALSE;
   }
-
-  if (ih->data->show_dragdrop)
-    iupAttribSetInt(ih, "_IUPTABLE_DRAGITEM", gtk_tree_path_get_indices(path)[0] + 1);
 
   if (evt->type == GDK_BUTTON_PRESS)
   {
@@ -704,7 +698,19 @@ static gboolean gtkTableButtonEvent(GtkWidget* widget, GdkEventButton* evt, Ihan
 
       cb(ih, lin, col_index, status);
     }
+  }
 
+  if (evt->button != 1)
+  {
+    gtk_tree_path_free(path);
+    return FALSE;
+  }
+
+  if (ih->data->show_dragdrop)
+    iupAttribSetInt(ih, "_IUPTABLE_DRAGITEM", gtk_tree_path_get_indices(path)[0] + 1);
+
+  if (evt->type == GDK_BUTTON_PRESS)
+  {
     if (ih->data->show_dragdrop)
     {
       gtk_tree_path_free(path);

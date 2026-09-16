@@ -493,6 +493,7 @@ struct IupWinUITableAux
 
   winrt::event_token selectionChangedToken;
   winrt::event_token doubleTappedToken;
+  winrt::event_token rightTappedToken;
   winrt::event_token keyDownToken;
   winrt::event_token sizeChangedToken;
   winrt::event_token containerContentChangingToken;
@@ -512,7 +513,7 @@ struct IupWinUITableAux
                         resize_col(0), resize_start_x(0), resize_start_width(0),
                         reorder_from(-1), suppress_reorder(false), itemsChangedToken{},
                         selectionChangedToken{}, doubleTappedToken{},
-                        keyDownToken{}, sizeChangedToken{},
+                        rightTappedToken{}, keyDownToken{}, sizeChangedToken{},
                         containerContentChangingToken{} {}
 };
 

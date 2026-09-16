@@ -1566,6 +1566,18 @@ static int winTableSetAlignmentAttrib(Ihandle* ih, int col, const char* value)
  * Callbacks
  ****************************************************************************/
 
+static WORD winTableGetKeyFlags(WORD button)
+{
+  WORD keys = button;
+
+  if (GetKeyState(VK_SHIFT) & 0x8000)
+    keys |= MK_SHIFT;
+  if (GetKeyState(VK_CONTROL) & 0x8000)
+    keys |= MK_CONTROL;
+
+  return keys;
+}
+
 static int winTableCallEnterItemCB(Ihandle* ih, int lin, int col)
 {
   IFnii cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
@@ -1719,12 +1731,26 @@ static int winTableNotifyCallback(Ihandle* ih, void* msg_info, int* result)
         }
 
         char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
-        iupwinButtonKeySetStatus(0, status, 0);
+        iupwinButtonKeySetStatus(winTableGetKeyFlags(MK_LBUTTON), status, 0);
 
         winTableCallClickCB(ih, lin, col, status);
 
         if (!data->suppress_callbacks)
           winTableCallEnterItemCB(ih, lin, col);
+      }
+      break;
+    }
+
+    case NM_RCLICK:
+    {
+      LPNMITEMACTIVATE pnmia = (LPNMITEMACTIVATE)msg_info;
+
+      if (pnmia->iItem >= 0 && pnmia->iSubItem > 0)
+      {
+        char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
+        iupwinButtonKeySetStatus(winTableGetKeyFlags(MK_RBUTTON), status, 0);
+
+        winTableCallClickCB(ih, pnmia->iItem + 1, pnmia->iSubItem, status);
       }
       break;
     }

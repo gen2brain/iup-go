@@ -1883,6 +1883,7 @@ static int gtk4TableMapMethod(Ihandle* ih)
   }
 
   gtk_data->click_controller = GTK_EVENT_CONTROLLER(gtk_gesture_click_new());
+  gtk_gesture_single_set_button(GTK_GESTURE_SINGLE(gtk_data->click_controller), 0);
   gtk_widget_add_controller(gtk_data->column_view, gtk_data->click_controller);
   g_signal_connect(gtk_data->click_controller, "pressed", G_CALLBACK(on_click), ih);
 
