@@ -5244,7 +5244,7 @@ static int cocoaTextMapMethod(Ihandle* ih)
 
   if (ih->data->is_multiline)
   {
-    NSScrollView* scroll_view = [[NSScrollView alloc] initWithFrame:NSZeroRect];
+    NSScrollView* scroll_view = [[NSScrollView alloc] initWithFrame:NSMakeRect(0, 0, 200, 100)];
     NSSize scrollview_content_size = [scroll_view contentSize];
     NSTextView* text_view;
 
