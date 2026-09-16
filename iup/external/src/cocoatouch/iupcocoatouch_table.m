@@ -18,6 +18,7 @@
 #include "iup_classbase.h"
 #include "iup_str.h"
 #include "iup_image.h"
+#include "iup_key.h"
 #include "iup_table.h"
 
 #include "iupcocoatouch_drv.h"
@@ -690,7 +691,8 @@ static UICollectionViewLayout* cocoaTouchTableMakeLayout(IupCocoaTouchTableContr
 	IFniis click_cb = (IFniis)IupGetCallback(_ihandle, "CLICK_CB");
 	if (click_cb)
 	{
-		char status[6] = "1    ";
+		char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
+		iupKEY_SETBUTTON1(status);
 		if (click_cb(_ihandle, (int)_focusLin, (int)_focusCol, status) == IUP_CLOSE) IupExitLoop();
 	}
 	IFnii enter_cb = (IFnii)IupGetCallback(_ihandle, "ENTERITEM_CB");

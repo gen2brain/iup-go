@@ -3122,7 +3122,25 @@ static int winuiTableMapMethod(Ihandle* ih)
       }
 
       char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
-      iupwinuiButtonKeySetStatus(0, 0, status, 0);
+      iupwinuiButtonKeySetStatus(iupwinuiGetModifierKeys() | MK_LBUTTON, 0, status, 0);
+
+      IFniis click_cb = (IFniis)IupGetCallback(ih, "CLICK_CB");
+      if (click_cb)
+        click_cb(ih, lin, col, status);
+    }
+  });
+
+  aux->rightTappedToken = listView.RightTapped([ih](IInspectable const&, RightTappedRoutedEventArgs const& args) {
+    auto source = args.OriginalSource().try_as<DependencyObject>();
+    if (!source) return;
+
+    int lin = 0, col = 0;
+    winuiTableGetCellFromPoint(ih, source, &lin, &col);
+
+    if (lin > 0 && col > 0)
+    {
+      char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
+      iupwinuiButtonKeySetStatus(iupwinuiGetModifierKeys() | MK_RBUTTON, 0, status, 0);
 
       IFniis click_cb = (IFniis)IupGetCallback(ih, "CLICK_CB");
       if (click_cb)
@@ -3237,6 +3255,8 @@ static void winuiTableUnMapMethod(Ihandle* ih)
   {
     listView.SelectionChanged(aux->selectionChangedToken);
     listView.DoubleTapped(aux->doubleTappedToken);
+    if (aux->rightTappedToken)
+      listView.RightTapped(aux->rightTappedToken);
     listView.PreviewKeyDown(aux->keyDownToken);
     if (aux->gotFocusToken)
       listView.GotFocus(aux->gotFocusToken);
