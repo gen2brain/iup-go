@@ -1095,7 +1095,7 @@ IUP_SDK_API void iupDrawCalcShadows(long bgcolor, long *light_shadow, long *mid_
   int g, bg_g = iupDrawGreen(bgcolor);
   int b, bg_b = iupDrawBlue(bgcolor);
 
-  /* light_shadow, a fraction toward white so a dark background does not get a white edge */
+  /* light_shadow */
 
   r = bg_r + ((255 - bg_r) * 45) / 100;
   g = bg_g + ((255 - bg_g) * 45) / 100;

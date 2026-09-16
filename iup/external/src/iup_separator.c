@@ -123,7 +123,6 @@ static int iSeparatorRedraw_CB(Ihandle* ih)
     }
     else if (ih->data->style == ISEPARATOR_SUNKENLINE)
     {
-      /* the groove highlight is a slight lift off the background, not a fixed white */
       long bgcolor = iupDrawStrToColor(iupBaseNativeParentGetBgColorAttrib(ih), 0);
       long sunken_color = iupDrawColor((unsigned char)(iupDrawRed(bgcolor) + ((255 - iupDrawRed(bgcolor)) * 20) / 100),
                                        (unsigned char)(iupDrawGreen(bgcolor) + ((255 - iupDrawGreen(bgcolor)) * 20) / 100),
