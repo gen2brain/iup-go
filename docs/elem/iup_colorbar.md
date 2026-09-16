@@ -23,8 +23,8 @@ The maximum number of colors is 256. The default colors use the same set of **Iu
 
 **COUNT** (read-only) (non-inheritable)**:** same as **NUM_CELLS** but it is read-only.
 
-**FLAT**: use a 1 pixel flat border instead of the default 3-pixel sunken border.
-When enabled is the same as setting SHADOWED=NO. Can be YES or NO. Default: NO.
+**FLAT**: use a 1 pixel flat border instead of a 3-pixel sunken border.
+When enabled is the same as setting SHADOWED=NO. Can be YES or NO. Default: YES.
 
 **FLATCOLOR:** color of the border when FLAT=YES and the preview area borders.
 Default: "0 0 0".
@@ -56,7 +56,7 @@ Default "15" (white).
 Non square cells expand equally to occupy all of the control area. Default: "YES".
 
 **SHADOWED:** Controls the 3D effect of the color cells. When enabled is the same as setting FLAT=NO.
-Default: "YES".
+Default: "NO".
 
 **TRANSPARENCY**: Contains a color that will be not rendered in the color palette.
 The color cell will have a white and gray chess pattern.

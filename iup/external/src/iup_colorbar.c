@@ -877,6 +877,7 @@ static int iColorbarCreateMethod(Ihandle* ih, void **params)
   ih->data->mid_shadow = iupDrawColor(192, 192, 192, 255);
   ih->data->dark_shadow = iupDrawColor(128, 128, 128, 255);
   ih->data->flatcolor = iupDrawColor(0, 0, 0, 255);
+  ih->data->shadowed = 0;
 
   /* Initialization of the color array */
   for (i = 0; i < ICOLORBAR_DEFAULT_NUM_CELLS; i++)
@@ -940,7 +941,7 @@ Iclass* iupColorbarNewClass(void)
   iupClassRegisterAttribute(ic, "SHOW_SECONDARY", iColorbarGetShowSecondaryAttrib, iColorbarSetShowSecondaryAttrib, NULL, NULL, IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "SQUARED", iColorbarGetSquaredAttrib, iColorbarSetSquaredAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "SHADOWED", iColorbarGetShadowedAttrib, iColorbarSetShadowedAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NOT_MAPPED);
-  iupClassRegisterAttribute(ic, "FLAT", iColorbarGetFlatAttrib, iColorbarSetFlatAttrib, NULL, NULL, IUPAF_NOT_MAPPED);
+  iupClassRegisterAttribute(ic, "FLAT", iColorbarGetFlatAttrib, iColorbarSetFlatAttrib, "YES", NULL, IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "FLATCOLOR", NULL, iColorbarSetFlatColorAttrib, IUPAF_SAMEASSYSTEM, "0 0 0", IUPAF_NOT_MAPPED);
 
   /* Overwrite IupCanvas Attributes */

@@ -1095,38 +1095,18 @@ IUP_SDK_API void iupDrawCalcShadows(long bgcolor, long *light_shadow, long *mid_
   int g, bg_g = iupDrawGreen(bgcolor);
   int b, bg_b = iupDrawBlue(bgcolor);
 
-  /* light_shadow */
+  /* light_shadow, a fraction toward white so a dark background does not get a white edge */
 
-  int max = bg_r;
-  if (bg_g > max) max = bg_g;
-  if (bg_b > max) max = bg_b;
-
-  if (255 - max < 64)
-  {
-    r = 255;
-    g = 255;
-    b = 255;
-  }
-  else
-  {
-    /* preserve some color information */
-    if (bg_r == max) r = 255;
-    else             r = bg_r + (255 - max);
-    if (bg_g == max) g = 255;
-    else             g = bg_g + (255 - max);
-    if (bg_b == max) b = 255;
-    else             b = bg_b + (255 - max);
-  }
+  r = bg_r + ((255 - bg_r) * 45) / 100;
+  g = bg_g + ((255 - bg_g) * 45) / 100;
+  b = bg_b + ((255 - bg_b) * 45) / 100;
 
   if (light_shadow) *light_shadow = iupDrawColor((unsigned char)r, (unsigned char)g, (unsigned char)b, 255);
 
   /* dark_shadow */
-  r = bg_r - 128;
-  g = bg_g - 128;
-  b = bg_b - 128;
-  if (r < 0) r = 0;
-  if (g < 0) g = 0;
-  if (b < 0) b = 0;
+  r = (bg_r * 55) / 100;
+  g = (bg_g * 55) / 100;
+  b = (bg_b * 55) / 100;
 
   if (dark_shadow) *dark_shadow = iupDrawColor((unsigned char)r, (unsigned char)g, (unsigned char)b, 255);
 

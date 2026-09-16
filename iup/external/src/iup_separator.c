@@ -31,7 +31,8 @@ struct _IcontrolData
   int orientation,
       barsize,
       barsize_hw,    /* barsize scaled to HW pixels; cached at set-time. */
-      style;
+      style,
+      hover;
 };
 
 /****************************************************************/
@@ -67,35 +68,40 @@ static int iSeparatorRedraw_CB(Ihandle* ih)
 
     if (ih->data->style == ISEPARATOR_GRIP)
     {
-      int i, count;
-      long sunken_color;
-      if (iupDrawRed(color) + iupDrawGreen(color) + iupDrawBlue(color) > 3 * 190)
-        sunken_color = iupDrawColor(100, 100, 100, 255);
-      else
-        sunken_color = iupDrawColor(255, 255, 255, 255);
+      int len, thick = iupdrvScaleNaturalPx(2);
+
+      if (!ih->data->hover)
+      {
+        iupdrvDrawFlush(dc);
+        iupdrvDrawKillCanvas(dc);
+        return IUP_DEFAULT;
+      }
 
       if (ih->data->orientation == ISEPARATOR_VERT)
       {
-        x = w / 2 - 1;
-        y = 2;
-        count = (h - 2) / ih->data->barsize;
+        len = h / 8;
+        if (len > iupdrvScaleNaturalPx(28))
+          len = iupdrvScaleNaturalPx(28);
+
+        if (len >= thick)
+        {
+          x = (w - thick) / 2;
+          y = (h - len) / 2;
+          iupdrvDrawRectangle(dc, x, y, x + thick - 1, y + len - 1, color, IUP_DRAW_FILL, 1);
+        }
       }
       else
       {
-        x = 2;
-        y = h / 2 - 1;
-        count = (w - 2) / ih->data->barsize;
-      }
+        len = w / 8;
+        if (len > iupdrvScaleNaturalPx(28))
+          len = iupdrvScaleNaturalPx(28);
 
-      for (i = 0; i < count; i++)
-      {
-        iupdrvDrawRectangle(dc, x + 1, y + 1, x + 2, y + 2, sunken_color, IUP_DRAW_FILL, 1);
-        iupdrvDrawRectangle(dc, x, y, x + 1, y + 1, color, IUP_DRAW_FILL, 1);
-
-        if (ih->data->orientation == ISEPARATOR_VERT)
-          y += ih->data->barsize;
-        else
-          x += ih->data->barsize;
+        if (len >= thick)
+        {
+          x = (w - len) / 2;
+          y = (h - thick) / 2;
+          iupdrvDrawRectangle(dc, x, y, x + len - 1, y + thick - 1, color, IUP_DRAW_FILL, 1);
+        }
       }
     }
     else if (ih->data->style == ISEPARATOR_DUALLINES)
@@ -117,11 +123,12 @@ static int iSeparatorRedraw_CB(Ihandle* ih)
     }
     else if (ih->data->style == ISEPARATOR_SUNKENLINE)
     {
-      long sunken_color;
-      if (iupDrawRed(color) + iupDrawGreen(color) + iupDrawBlue(color) > 3 * 190)
-        sunken_color = iupDrawColor(100, 100, 100, 255);
-      else
-        sunken_color = iupDrawColor(255, 255, 255, 255);
+      /* the groove highlight is a slight lift off the background, not a fixed white */
+      long bgcolor = iupDrawStrToColor(iupBaseNativeParentGetBgColorAttrib(ih), 0);
+      long sunken_color = iupDrawColor((unsigned char)(iupDrawRed(bgcolor) + ((255 - iupDrawRed(bgcolor)) * 20) / 100),
+                                       (unsigned char)(iupDrawGreen(bgcolor) + ((255 - iupDrawGreen(bgcolor)) * 20) / 100),
+                                       (unsigned char)(iupDrawBlue(bgcolor) + ((255 - iupDrawBlue(bgcolor)) * 20) / 100),
+                                       255);
 
       if (ih->data->orientation == ISEPARATOR_VERT)
       {
@@ -236,6 +243,26 @@ static char* iSeparatorGetBarSizeAttrib(Ihandle* ih)
 
 /*****************************************************************************************/
 
+static int iSeparatorEnterWindow_CB(Ihandle* ih)
+{
+  if (ih->data->style == ISEPARATOR_GRIP)
+  {
+    ih->data->hover = 1;
+    IupUpdate(ih);
+  }
+  return IUP_DEFAULT;
+}
+
+static int iSeparatorLeaveWindow_CB(Ihandle* ih)
+{
+  if (ih->data->hover)
+  {
+    ih->data->hover = 0;
+    IupUpdate(ih);
+  }
+  return IUP_DEFAULT;
+}
+
 static int iSeparatorCreateMethod(Ihandle* ih, void** params)
 {
   (void)params;
@@ -256,6 +283,8 @@ static int iSeparatorCreateMethod(Ihandle* ih, void** params)
 
   /* internal callbacks */
   IupSetCallback(ih, "ACTION", (Icallback)iSeparatorRedraw_CB);
+  IupSetCallback(ih, "ENTERWINDOW_CB", (Icallback)iSeparatorEnterWindow_CB);
+  IupSetCallback(ih, "LEAVEWINDOW_CB", (Icallback)iSeparatorLeaveWindow_CB);
 
   return IUP_NOERROR;
 }

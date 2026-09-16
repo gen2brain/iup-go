@@ -30,6 +30,7 @@ Default: "EAST".
 Default: YES. If set to NO then the layout will be updated only when the mouse drag is released.
 
 **SHOWGRIP** (non-inheritable): Shows the bar grip affordance. Default: NO.
+The grip is drawn only while the cursor is over the bar.
 When set to NO, COLOR is used to fill the grip area.
 If set to "LINES" then instead of the traditional grip appearance, it will be two parallel lines.
 

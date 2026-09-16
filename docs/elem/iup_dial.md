@@ -17,8 +17,8 @@ It inherits from [IupCanvas](../elem/iup_canvas.md).
 
 [EXPAND](../attrib/iup_expand.md): the default is "NO".
 
-**FLAT**: use a 1 pixel flat border instead of the default 3-pixel sunken border.
-Can be YES or NO. Default: NO.
+**FLAT**: use a 1 pixel flat border instead of a 3-pixel sunken border.
+Can be YES or NO. Default: YES.
 
 **FLATCOLOR:** color of the border when FLAT=YES. Default: "160 160 160".
 
