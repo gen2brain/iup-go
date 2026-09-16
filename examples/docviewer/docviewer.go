@@ -45,8 +45,6 @@ type job struct {
 }
 
 var (
-	dlg, tree, canvas, pageText, pageCount, status iup.Ihandle
-
 	jobs     = make(chan job, 64)
 	serial   int
 	pages    int
@@ -65,10 +63,10 @@ func main() {
 	iup.Open()
 	defer iup.Close()
 
-	tree = iup.Tree().SetAttributes(`ADDROOT=NO, EXPAND=YES`)
+	tree := iup.Tree().SetAttributes(`ADDROOT=NO, EXPAND=YES`).SetHandle("dv_tree")
 	tree.SetCallback("SELECTION_CB", iup.SelectionFunc(treeSelection))
 
-	canvas = iup.Canvas().SetAttributes(`SCROLLBAR=YES, EXPAND=YES, BORDER=NO, BGCOLOR="128 128 128"`)
+	canvas := iup.Canvas().SetAttributes(`SCROLLBAR=YES, EXPAND=YES, BORDER=NO, BGCOLOR="128 128 128"`).SetHandle("dv_canvas")
 	canvas.SetCallback("ACTION", iup.ActionFunc(canvasAction))
 	canvas.SetCallback("RESIZE_CB", iup.ResizeFunc(canvasResize))
 	canvas.SetCallback("SCROLL_CB", iup.ScrollFunc(canvasScroll))
@@ -78,14 +76,14 @@ func main() {
 
 	split := iup.Split(tree, canvas).SetAttributes("VALUE=250, AUTOHIDE=YES")
 
-	pageText = iup.Text().SetAttributes("SPIN=YES, SPINMIN=1, SPINMAX=1, VISIBLECOLUMNS=4, ACTIVE=NO")
+	pageText := iup.Text().SetAttributes("SPIN=YES, SPINMIN=1, SPINMAX=1, VISIBLECOLUMNS=4, ACTIVE=NO").SetHandle("dv_page")
 	pageText.SetCallback("VALUECHANGED_CB", iup.ValueChangedFunc(func(ih iup.Ihandle) int {
 		if n, err := strconv.Atoi(ih.GetAttribute("VALUE")); err == nil {
 			showPage(n - 1)
 		}
 		return iup.DEFAULT
 	}))
-	pageCount = iup.Label("of 0").SetAttribute("EXPAND", "HORIZONTAL")
+	pageCount := iup.Label("of 0").SetAttribute("EXPAND", "HORIZONTAL").SetHandle("dv_count")
 
 	toolbar := iup.Hbox(
 		iup.Button("Previous").SetCallback("ACTION", iup.ActionFunc(func(iup.Ihandle) int { showPage(current - 1); return iup.DEFAULT })),
@@ -98,16 +96,16 @@ func main() {
 		iup.Button("Fit Width").SetCallback("ACTION", iup.ActionFunc(func(iup.Ihandle) int { fitWidth = true; requestRender(); return iup.DEFAULT })),
 	).SetAttributes("NGAP=4, ALIGNMENT=ACENTER")
 
-	status = iup.Label("Open a PDF, EPUB, MOBI, CHM, FB2, DOCX or SVG file").SetAttribute("EXPAND", "HORIZONTAL")
+	status := iup.Label("Open a PDF, EPUB, MOBI, CHM, FB2, DOCX or SVG file").SetAttribute("EXPAND", "HORIZONTAL").SetHandle("dv_status")
 
-	dlg = iup.Dialog(iup.Vbox(toolbar, split, status).SetAttributes("NMARGIN=4x4, NGAP=4")).SetAttributes(map[string]string{
+	dlg := iup.Dialog(iup.Vbox(toolbar, split, status).SetAttributes("NMARGIN=4x4, NGAP=4")).SetHandle("dv_dlg").SetAttributes(map[string]string{
 		"TITLE":     "Document Viewer",
 		"MENU":      "docviewer_menu",
 		"PLACEMENT": "MAXIMIZED",
 	})
 	buildMenu()
 
-	go worker()
+	go worker(canvas)
 
 	iup.Show(dlg)
 
@@ -148,7 +146,7 @@ func openAction(iup.Ihandle) int {
 		"TITLE":      "Open Document",
 		"EXTFILTER":  "Documents|*.pdf;*.epub;*.mobi;*.azw3;*.chm;*.fb2;*.docx;*.pptx;*.xlsx;*.svg;*.html;*.txt|All Files|*.*|",
 	})
-	iup.SetAttributeHandle(fdlg, "PARENTDIALOG", dlg)
+	iup.SetAttributeHandle(fdlg, "PARENTDIALOG", iup.GetHandle("dv_dlg"))
 	iup.Popup(fdlg, iup.CENTERPARENT, iup.CENTERPARENT)
 	if fdlg.GetInt("STATUS") != -1 {
 		openDocument(fdlg.GetAttribute("VALUE"))
@@ -157,7 +155,7 @@ func openAction(iup.Ihandle) int {
 }
 
 func openDocument(path string) {
-	status.SetAttribute("TITLE", "Opening "+filepath.Base(path)+"...")
+	iup.GetHandle("dv_status").SetAttribute("TITLE", "Opening "+filepath.Base(path)+"...")
 	serial++
 	jobs <- job{open: path, serial: serial}
 }
@@ -166,15 +164,15 @@ func closeDocument() {
 	serial++
 	jobs <- job{open: "", page: -1, serial: serial}
 	resetView()
-	dlg.SetAttribute("TITLE", "Document Viewer")
-	status.SetAttribute("TITLE", "No document")
+	iup.GetHandle("dv_dlg").SetAttribute("TITLE", "Document Viewer")
+	iup.GetHandle("dv_status").SetAttribute("TITLE", "No document")
 }
 
 func resetView() {
 	pages, current = 0, 0
-	tree.SetAttribute("DELNODE", "ALL")
-	pageText.SetAttributes("VALUE=1, SPINMAX=1, ACTIVE=NO")
-	pageCount.SetAttribute("TITLE", "of 0")
+	iup.GetHandle("dv_tree").SetAttribute("DELNODE", "ALL")
+	iup.GetHandle("dv_page").SetAttributes("VALUE=1, SPINMAX=1, ACTIVE=NO")
+	iup.GetHandle("dv_count").SetAttribute("TITLE", "of 0")
 	setPageImage(nil)
 }
 
@@ -187,7 +185,7 @@ func showPage(n int) {
 		return
 	}
 	current = n
-	pageText.SetAttribute("VALUE", n+1)
+	iup.GetHandle("dv_page").SetAttribute("VALUE", n+1)
 	requestRender()
 }
 
@@ -215,7 +213,7 @@ func requestRender() {
 
 func canvasSize() (int, int) {
 	var w, h int
-	fmt.Sscanf(canvas.GetAttribute("DRAWSIZE"), "%dx%d", &w, &h)
+	fmt.Sscanf(iup.GetHandle("dv_canvas").GetAttribute("DRAWSIZE"), "%dx%d", &w, &h)
 	return w, h
 }
 
@@ -223,6 +221,10 @@ func workerResult(ih iup.Ihandle, kind string, s int, p any) int {
 	if s != serial {
 		return iup.DEFAULT
 	}
+
+	canvas := iup.GetHandle("dv_canvas")
+	dlg := iup.GetHandle("dv_dlg")
+	status := iup.GetHandle("dv_status")
 	switch kind {
 	case "opened":
 		o := p.(opened)
@@ -239,8 +241,8 @@ func workerResult(ih iup.Ihandle, kind string, s int, p any) int {
 			title = filepath.Base(o.path)
 		}
 		dlg.SetAttribute("TITLE", title+" - Document Viewer")
-		pageText.SetAttributes(fmt.Sprintf("SPINMAX=%d, ACTIVE=YES, VALUE=1", max(pages, 1)))
-		pageCount.SetAttribute("TITLE", fmt.Sprintf("of %d", pages))
+		iup.GetHandle("dv_page").SetAttributes(fmt.Sprintf("SPINMAX=%d, ACTIVE=YES, VALUE=1", max(pages, 1)))
+		iup.GetHandle("dv_count").SetAttribute("TITLE", fmt.Sprintf("of %d", pages))
 		status.SetAttribute("TITLE", fmt.Sprintf("%s, %s, %d pages", filepath.Base(o.path), o.kind, pages))
 		fillOutline(o.outline)
 		current = 0
@@ -276,14 +278,14 @@ func setPageImage(img *image.RGBA) {
 		imgW, imgH = img.Bounds().Dx(), img.Bounds().Dy()
 	}
 	updateScrollbars()
-	iup.Update(canvas)
+	iup.Update(iup.GetHandle("dv_canvas"))
 }
 
 func updateScrollbars() {
 	w, h := canvasSize()
 	contentW := max(imgW+2*pageMargin, w)
 	contentH := max(imgH+2*pageMargin, h)
-	canvas.SetAttributes(fmt.Sprintf("XMAX=%d, YMAX=%d, DX=%d, DY=%d", contentW, contentH, w, h))
+	iup.GetHandle("dv_canvas").SetAttributes(fmt.Sprintf("XMAX=%d, YMAX=%d, DX=%d, DY=%d", contentW, contentH, w, h))
 }
 
 func fillOutline(entries []entry) {
@@ -291,6 +293,8 @@ func fillOutline(entries []entry) {
 }
 
 func addEntries(entries []entry, ref int, first bool) {
+	tree := iup.GetHandle("dv_tree")
+
 	for _, e := range entries {
 		kind := "LEAF"
 		if len(e.children) > 0 {
@@ -396,7 +400,7 @@ func canvasKey(ih iup.Ihandle, c int) int {
 	return iup.IGNORE
 }
 
-func worker() {
+func worker(canvas iup.Ihandle) {
 	var d doc.Document
 	for j := range jobs {
 		if j.open != "" || j.page < 0 {

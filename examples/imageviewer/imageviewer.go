@@ -22,8 +22,6 @@ var extensions = []string{
 }
 
 var (
-	dlg, canvas, fileLabel, sizeLabel, zoomSep, zoomLabel, indexSep, indexLabel, slideTimer iup.Ihandle
-
 	files   []string
 	current = -1
 	imgName string
@@ -41,7 +39,7 @@ func main() {
 	iup.Open()
 	defer iup.Close()
 
-	canvas = iup.Canvas().SetAttributes(`SCROLLBAR=YES, EXPAND=YES, BORDER=NO, BGCOLOR="64 64 64"`)
+	canvas := iup.Canvas().SetAttributes(`SCROLLBAR=YES, EXPAND=YES, BORDER=NO, BGCOLOR="64 64 64"`).SetHandle("iv_canvas")
 	canvas.SetCallback("ACTION", iup.ActionFunc(canvasAction))
 	canvas.SetCallback("RESIZE_CB", iup.ResizeFunc(func(iup.Ihandle, int, int) int { layoutImage(); return iup.DEFAULT }))
 	canvas.SetCallback("SCROLL_CB", iup.ScrollFunc(func(ih iup.Ihandle, op int, posx, posy float64) int { iup.Update(ih); return iup.DEFAULT }))
@@ -56,16 +54,16 @@ func main() {
 		return iup.DEFAULT
 	}))
 
-	fileLabel = iup.Label("Open an image, or drop one here").SetAttribute("EXPAND", "HORIZONTAL")
-	sizeLabel = iup.Label("")
-	zoomLabel = iup.Label("")
-	indexLabel = iup.Label("")
-	zoomSep = iup.Label("").SetAttribute("SEPARATOR", "VERTICAL")
-	indexSep = iup.Label("").SetAttribute("SEPARATOR", "VERTICAL")
+	fileLabel := iup.Label("Open an image, or drop one here").SetAttribute("EXPAND", "HORIZONTAL").SetHandle("iv_file")
+	sizeLabel := iup.Label("").SetHandle("iv_size")
+	zoomLabel := iup.Label("").SetHandle("iv_zoom")
+	indexLabel := iup.Label("").SetHandle("iv_index")
+	zoomSep := iup.Label("").SetAttribute("SEPARATOR", "VERTICAL").SetHandle("iv_zoomsep")
+	indexSep := iup.Label("").SetAttribute("SEPARATOR", "VERTICAL").SetHandle("iv_indexsep")
 	status := iup.Hbox(fileLabel, sizeLabel, zoomSep, zoomLabel, indexSep, indexLabel).SetAttributes("NGAP=8, NMARGIN=4x2, ALIGNMENT=ACENTER")
 	status.SetHandle("imageviewer_status")
 
-	slideTimer = iup.Timer().SetAttribute("TIME", 3000)
+	slideTimer := iup.Timer().SetAttribute("TIME", 3000).SetHandle("iv_timer")
 	slideTimer.SetCallback("ACTION_CB", iup.TimerActionFunc(func(iup.Ihandle) int {
 		if len(files) > 1 {
 			showIndex((current + 1) % len(files))
@@ -73,7 +71,7 @@ func main() {
 		return iup.DEFAULT
 	}))
 
-	dlg = iup.Dialog(iup.Vbox(canvas, status)).SetAttributes(map[string]string{
+	dlg := iup.Dialog(iup.Vbox(canvas, status)).SetHandle("iv_dlg").SetAttributes(map[string]string{
 		"TITLE":     title,
 		"MENU":      "imageviewer_menu",
 		"PLACEMENT": "MAXIMIZED",
@@ -145,7 +143,7 @@ func openDialog() {
 	if current >= 0 {
 		fdlg.SetAttribute("DIRECTORY", filepath.Dir(files[current]))
 	}
-	iup.SetAttributeHandle(fdlg, "PARENTDIALOG", dlg)
+	iup.SetAttributeHandle(fdlg, "PARENTDIALOG", iup.GetHandle("iv_dlg"))
 	iup.Popup(fdlg, iup.CENTERPARENT, iup.CENTERPARENT)
 	if fdlg.GetInt("STATUS") != -1 {
 		openFile(fdlg.GetAttribute("VALUE"))
@@ -155,7 +153,7 @@ func openDialog() {
 func openFile(path string) {
 	path, err := filepath.Abs(path)
 	if err != nil {
-		iup.MessageError(dlg, err.Error())
+		iup.MessageError(iup.GetHandle("iv_dlg"), err.Error())
 		return
 	}
 	files = listImages(filepath.Dir(path))
@@ -195,14 +193,16 @@ func showIndex(i int) {
 }
 
 func loadCurrent() {
+	dlg := iup.GetHandle("iv_dlg")
+
 	releaseImage()
 	path := files[current]
 	h := iup.ImageGetHandle(path)
 	if h == 0 {
-		fileLabel.SetAttribute("TITLE", "Cannot open "+filepath.Base(path))
+		iup.GetHandle("iv_file").SetAttribute("TITLE", "Cannot open "+filepath.Base(path))
 		dlg.SetAttribute("TITLE", title)
 		updateStatus()
-		iup.Update(canvas)
+		iup.Update(iup.GetHandle("iv_canvas"))
 		return
 	}
 	setImage(h, path)
@@ -227,14 +227,14 @@ func closeImage() {
 	stopSlideshow()
 	releaseImage()
 	files, current = nil, -1
-	dlg.SetAttribute("TITLE", title)
-	fileLabel.SetAttribute("TITLE", "No image")
+	iup.GetHandle("iv_dlg").SetAttribute("TITLE", title)
+	iup.GetHandle("iv_file").SetAttribute("TITLE", "No image")
 	layoutImage()
 }
 
 func canvasSize() (int, int) {
 	var w, h int
-	fmt.Sscanf(canvas.GetAttribute("DRAWSIZE"), "%dx%d", &w, &h)
+	fmt.Sscanf(iup.GetHandle("iv_canvas").GetAttribute("DRAWSIZE"), "%dx%d", &w, &h)
 	return w, h
 }
 
@@ -251,6 +251,8 @@ func scaled() (int, int) {
 }
 
 func layoutImage() {
+	canvas := iup.GetHandle("iv_canvas")
+
 	if fit {
 		zoom = fitZoom()
 	}
@@ -274,6 +276,8 @@ func setZoom(z float64, cx, cy int) {
 	if img == 0 {
 		return
 	}
+
+	canvas := iup.GetHandle("iv_canvas")
 	z = math.Max(0.02, math.Min(z, 32))
 	w, h := canvasSize()
 	if cx < 0 {
@@ -298,6 +302,8 @@ func setZoom(z float64, cx, cy int) {
 }
 
 func imageOrigin() (int, int) {
+	canvas := iup.GetHandle("iv_canvas")
+
 	w, h := canvasSize()
 	sw, sh := scaled()
 	x := (w - sw) / 2
@@ -347,14 +353,18 @@ func drawChecker(ih iup.Ihandle, x1, y1, x2, y2 int) {
 }
 
 func updateStatus() {
+	fileLabel := iup.GetHandle("iv_file")
+	sizeLabel := iup.GetHandle("iv_size")
+	zoomLabel := iup.GetHandle("iv_zoom")
+
 	index := ""
 	if current >= 0 {
 		index = fmt.Sprintf("%d / %d", current+1, len(files))
 	}
-	indexLabel.SetAttribute("TITLE", index)
-	shown := img != 0 && !dlg.GetBool("FULLSCREEN")
-	zoomSep.SetAttribute("VISIBLE", shown)
-	indexSep.SetAttribute("VISIBLE", shown && index != "")
+	iup.GetHandle("iv_index").SetAttribute("TITLE", index)
+	shown := img != 0 && !iup.GetHandle("iv_dlg").GetBool("FULLSCREEN")
+	iup.GetHandle("iv_zoomsep").SetAttribute("VISIBLE", shown)
+	iup.GetHandle("iv_indexsep").SetAttribute("VISIBLE", shown && index != "")
 	if img == 0 {
 		sizeLabel.SetAttribute("TITLE", "")
 		zoomLabel.SetAttribute("TITLE", "")
@@ -449,7 +459,7 @@ func canvasKey(ih iup.Ihandle, c int) int {
 	switch c {
 	case iup.K_ESC:
 		stopSlideshow()
-		if dlg.GetBool("FULLSCREEN") {
+		if iup.GetHandle("iv_dlg").GetBool("FULLSCREEN") {
 			toggleFullScreen()
 		}
 	case iup.K_F11:
@@ -483,6 +493,8 @@ func canvasKey(ih iup.Ihandle, c int) int {
 }
 
 func toggleFullScreen() {
+	dlg := iup.GetHandle("iv_dlg")
+
 	full := !dlg.GetBool("FULLSCREEN")
 	status := iup.GetHandle("imageviewer_status")
 	status.SetAttribute("FLOATING", full)
@@ -495,10 +507,12 @@ func toggleFullScreen() {
 	dlg.SetAttribute("FULLSCREEN", full)
 	updateStatus()
 	iup.Refresh(dlg)
-	iup.SetFocus(canvas)
+	iup.SetFocus(iup.GetHandle("iv_canvas"))
 }
 
 func toggleSlideshow() {
+	slideTimer := iup.GetHandle("iv_timer")
+
 	if slideTimer.GetBool("RUN") {
 		stopSlideshow()
 		return
@@ -510,7 +524,7 @@ func toggleSlideshow() {
 }
 
 func stopSlideshow() {
-	slideTimer.SetAttribute("RUN", "NO")
+	iup.GetHandle("iv_timer").SetAttribute("RUN", "NO")
 	iup.GetHandle("imageviewer_slideshow").SetAttribute("VALUE", "OFF")
 }
 
@@ -524,10 +538,12 @@ func copyImage() {
 }
 
 func pasteImage() {
+	dlg := iup.GetHandle("iv_dlg")
+
 	clip := iup.Clipboard()
 	defer clip.Destroy()
 	if !clip.GetBool("IMAGEAVAILABLE") {
-		fileLabel.SetAttribute("TITLE", "No image in the clipboard")
+		iup.GetHandle("iv_file").SetAttribute("TITLE", "No image in the clipboard")
 		return
 	}
 	h := iup.ImageFromHandle(iup.GetPtr(clip, "NATIVEIMAGE"))
@@ -548,6 +564,8 @@ func saveDialog() {
 	if img == 0 {
 		return
 	}
+
+	dlg := iup.GetHandle("iv_dlg")
 	fdlg := iup.FileDlg()
 	defer fdlg.Destroy()
 	base := "clipboard"
@@ -581,7 +599,7 @@ func transform(f func(src *image.RGBA) *image.RGBA) {
 	}
 	src := iup.ImageToImage(img)
 	if src == nil {
-		iup.MessageError(dlg, "This image format cannot be transformed")
+		iup.MessageError(iup.GetHandle("iv_dlg"), "This image format cannot be transformed")
 		return
 	}
 	name := imgName
