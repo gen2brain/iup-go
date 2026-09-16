@@ -1399,6 +1399,14 @@ static int gtkDialogSetBackgroundAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
+static int gtkDialogSetMenuBarKeyAttrib(Ihandle *ih, const char *value)
+{
+  GtkSettings* settings = gtk_widget_get_settings(ih->handle);
+  if (settings)
+    g_object_set(settings, "gtk-menu-bar-accel", (!value || iupStrBoolean(value)) ? "F10" : "", NULL);
+  return 1;
+}
+
 static int gtkDialogSetHideTitleBarAttrib(Ihandle *ih, const char *value)
 {
   if (iupdrvIsVisible(ih))
@@ -1478,6 +1486,7 @@ IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "CUSTOMFRAME", NULL, NULL, IUPAF_SAMEASSYSTEM, NULL, IUPAF_DEFAULT);
 
   iupClassRegisterAttribute(ic, "HIDETITLEBAR", NULL, gtkDialogSetHideTitleBarAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MENUBARKEY", NULL, gtkDialogSetMenuBarKeyAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "BRINGFRONT", NULL, gtkDialogSetBringFrontAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
 

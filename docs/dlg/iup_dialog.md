@@ -134,6 +134,10 @@ Default: 65535x65535.
 Use [IupSetHandle](../func/iup_sethandle.md) or [IupSetAttributeHandle](../func/iup_setattributehandle.md) to associate a menu to a name.
 See also [IupMenu](../elem/iup_menu.md).
 
+**MENUBARKEY** (non-inheritable): whether F10 opens the menu bar. Default: YES.
+Set to NO so the application receives F10 in K_ANY.
+Supported in GTK and GTK 4; in GTK 3 it affects every dialog of the application, in GTK 4 only this dialog.
+
 **MENUBOX** (creation-only): Requires a system menu box from the window manager.
 If hidden will also remove the Close button. Default: YES.
 In Motif the decorations are controlled by the Window Manager and may not be possible to be changed from IUP.
