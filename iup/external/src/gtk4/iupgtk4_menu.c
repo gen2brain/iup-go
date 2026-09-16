@@ -514,7 +514,7 @@ static GMenuItem* gtk4MenuItemBuildEntry(Ihandle* menu, Ihandle* ih, GSimpleActi
     {
       /* GtkPopoverMenuBar requires submenus at root level; wrap the action in a single-item submenu. */
       GMenu* item_submenu = g_menu_new();
-      g_menu_append(item_submenu, NULL, full_action_name);
+      g_menu_append(item_submenu, label_str, full_action_name);
       mitem = g_menu_item_new(label_str, NULL);
       g_menu_item_set_submenu(mitem, G_MENU_MODEL(item_submenu));
       g_object_unref(item_submenu);
@@ -625,21 +625,6 @@ static void gtk4AnchorPopoverClosedCb(GtkPopover *popover, gpointer user_data)
     gtk_widget_set_visible(anchor_window, FALSE);
 
   (void)popover;
-}
-
-static void gtk4PopoverMenuSetVHomogeneous(GtkWidget* popover)
-{
-  GtkWidget* sw = gtk_popover_get_child(GTK_POPOVER(popover));
-  if (sw && GTK_IS_SCROLLED_WINDOW(sw))
-  {
-    GtkWidget* vp = gtk_scrolled_window_get_child(GTK_SCROLLED_WINDOW(sw));
-    if (vp && GTK_IS_VIEWPORT(vp))
-    {
-      GtkWidget* stack = gtk_viewport_get_child(GTK_VIEWPORT(vp));
-      if (stack && GTK_IS_STACK(stack))
-        gtk_stack_set_vhomogeneous(GTK_STACK(stack), TRUE);
-    }
-  }
 }
 
 IUP_SDK_API int iupdrvMenuPopup(Ihandle* ih, int x, int y)
@@ -779,7 +764,6 @@ IUP_SDK_API int iupdrvMenuPopup(Ihandle* ih, int x, int y)
     if (!popover)
       return IUP_ERROR;
 
-    gtk4PopoverMenuSetVHomogeneous(popover);
     gtk4MenuPopupAttachCustoms(ih, GTK_POPOVER_MENU(popover));
 
     gtk_widget_insert_action_group(anchor_window, "menu", G_ACTION_GROUP(action_group));
@@ -864,7 +848,6 @@ IUP_SDK_API int iupdrvMenuPopup(Ihandle* ih, int x, int y)
     return IUP_ERROR;
   }
 
-  gtk4PopoverMenuSetVHomogeneous(popover);
   gtk4MenuPopupAttachCustoms(ih, GTK_POPOVER_MENU(popover));
 
   g_signal_connect(popover, "closed", G_CALLBACK(gtk4PopoverClosedCb), (gpointer)loop);
