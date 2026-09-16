@@ -1212,7 +1212,7 @@ static void on_click(GtkGestureClick* gesture, int n_press, double x, double y, 
   IFniis click_cb = (IFniis)IupGetCallback(ih, "CLICK_CB");
   if (click_cb)
   {
-    char status[IUPKEY_STATUS_SIZE] = "";
+    char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
     GdkModifierType state = gtk_event_controller_get_current_event_state(GTK_EVENT_CONTROLLER(gesture));
     iupgtk4ButtonKeySetStatus(state, button, status, 0);
 
