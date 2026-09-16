@@ -21,7 +21,7 @@ Default: NO.
 
 **BARSIZE** (non-inheritable): controls the size of the bar handler. Default: 5.
 
-**COLOR**: Changes the color of the bar grip affordance. Default: "160 160 160".
+**COLOR**: Changes the color of the bar grip affordance. Default: "160 160 160" ("90 90 90" when DARKMODE is enabled).
 
 **ORIENTATION** (creation-only) (non-inheritable): Indicates the orientation of the bar handler.
 The direction of the resize is perpendicular to the orientation. Possible values are "VERTICAL" or "HORIZONTAL".
@@ -37,6 +37,7 @@ The min value cannot be less than 0, and the max value cannot be larger than 100
 This will constrain the interactive change of the bar handler. Default: "0:1000".
 
 **SHOWGRIP** (non-inheritable): Shows the bar grip affordance. Default: YES. When set to NO, the BARSIZE is set to 3.
+The grip is drawn only while the cursor is over the bar.
 When set to NO, COLOR is used to fill the grip area if defined, if COLOR is not defined the area is filled with the parent background color.
 If set to "LINES" then instead of the traditional grip appearance, it will be two parallel lines.
 
