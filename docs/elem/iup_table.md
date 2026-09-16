@@ -52,6 +52,12 @@ n starts at 1.
 
 **RASTERWIDTHcol** (non-inheritable): Same as WIDTHcol.
 
+**SORTSIGNcol** (non-inheritable): Shows a sort sign (up or down arrow) in the column header.
+Can be "UP", "DOWN" or "NO". Default: NO.
+Only one column shows the sign, setting it in a column clears it in the others.
+It only draws the sign, the rows are not sorted.
+n starts at 1.
+
 **ALIGNMENTcol** (non-inheritable): Column text alignment.
 Can be "ALEFT", "ACENTER" or "ARIGHT". Default: "ALEFT".
 n starts at 1.
@@ -188,6 +194,7 @@ The default value of EXPAND is "YES".
 **col**: column number (1-based).
 
 **Returns:** IUP_IGNORE to suppress the sort operation.
+When the sort is suppressed the sign is not updated, an application that sorts its own rows sets SORTSIGNcol.
 The rows and the arrow are left unchanged.
 
 **REORDER_CB**: Callback called when the user reorders a column by dragging it to a new position.

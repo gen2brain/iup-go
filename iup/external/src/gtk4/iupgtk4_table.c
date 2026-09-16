@@ -279,6 +279,7 @@ typedef struct _Igtk4TableData
   GtkEventController* key_controller;
   GtkEventController* focus_controller;
   int is_virtual;
+  int sort_display_only;
   int num_columns;
   int current_row;  /* Current focused row (1-based row_index, 0=none) */
   int current_col;  /* Current focused column (1-based, 0=none) */
@@ -1429,6 +1430,10 @@ static int table_sort_func(gconstpointer a, gconstpointer b, gpointer user_data)
   if (gtk_data->is_virtual)
     return GTK_ORDERING_EQUAL;
 
+  /* the application sorted its own rows, the sorter only carries the arrow */
+  if (gtk_data->sort_display_only)
+    return GTK_ORDERING_EQUAL;
+
   IupTableRow* row_a = IUP_TABLE_ROW((gpointer)a);
   IupTableRow* row_b = IUP_TABLE_ROW((gpointer)b);
   gint col = sort_data->col;
@@ -1501,14 +1506,21 @@ static void gtk4TableSorterChanged(GtkSorter* sorter, GtkSorterChange change, gp
     if (column == primary_column)
     {
       IFni sort_cb = (IFni)IupGetCallback(ih, "SORT_CB");
+
+      gtk_data->sort_display_only = 0;
+      iupAttribSet(ih, "_IUP_GTK4_SORTSET", NULL);
+
       if (sort_cb && sort_cb(ih, (int)i + 1) == IUP_IGNORE)
       {
         /* put the sorter back where it was; the signal it emits must not run this again */
-        GtkColumnViewColumn* prev = (GtkColumnViewColumn*)iupAttribGet(ih, "_IUP_GTK4_SORTCOL");
-        GtkSortType prev_order = (GtkSortType)iupAttribGetInt(ih, "_IUP_GTK4_SORTORDER");
-        iupAttribSet(ih, "_IUP_GTK4_SORTBUSY", "1");
-        gtk_column_view_sort_by_column(GTK_COLUMN_VIEW(gtk_data->column_view), prev, prev_order);
-        iupAttribSet(ih, "_IUP_GTK4_SORTBUSY", NULL);
+        if (!iupAttribGet(ih, "_IUP_GTK4_SORTSET"))
+        {
+          GtkColumnViewColumn* prev = (GtkColumnViewColumn*)iupAttribGet(ih, "_IUP_GTK4_SORTCOL");
+          GtkSortType prev_order = (GtkSortType)iupAttribGetInt(ih, "_IUP_GTK4_SORTORDER");
+          iupAttribSet(ih, "_IUP_GTK4_SORTBUSY", "1");
+          gtk_column_view_sort_by_column(GTK_COLUMN_VIEW(gtk_data->column_view), prev, prev_order);
+          iupAttribSet(ih, "_IUP_GTK4_SORTBUSY", NULL);
+        }
       }
       else
       {
@@ -2261,6 +2273,57 @@ IUP_SDK_API char* iupdrvTableGetColTitle(Ihandle* ih, int col)
   }
 
   return NULL;
+}
+
+IUP_SDK_API void iupdrvTableSetSortSign(Ihandle* ih, int col, int sign)
+{
+  Igtk4TableData* gtk_data = IGTK4_TABLE_DATA(ih);
+  GListModel* columns;
+  GtkColumnViewColumn* column = NULL;
+
+  if (!gtk_data || !gtk_data->column_view || col < 1 || col > ih->data->num_col)
+    return;
+
+  columns = gtk_column_view_get_columns(GTK_COLUMN_VIEW(gtk_data->column_view));
+  if (sign != 0)
+    column = (GtkColumnViewColumn*)g_list_model_get_item(columns, (guint)(col - 1));
+
+  gtk_data->sort_display_only = 1;
+
+  iupAttribSet(ih, "_IUP_GTK4_SORTBUSY", "1");
+  gtk_column_view_sort_by_column(GTK_COLUMN_VIEW(gtk_data->column_view), column,
+                                 sign > 0 ? GTK_SORT_ASCENDING : GTK_SORT_DESCENDING);
+  iupAttribSet(ih, "_IUP_GTK4_SORTBUSY", NULL);
+
+  iupAttribSet(ih, "_IUP_GTK4_SORTCOL", (char*)column);
+  iupAttribSetInt(ih, "_IUP_GTK4_SORTORDER", sign > 0 ? GTK_SORT_ASCENDING : GTK_SORT_DESCENDING);
+  iupAttribSet(ih, "_IUP_GTK4_SORTSET", "1");
+
+  if (column)
+    g_object_unref(column);
+}
+
+IUP_SDK_API int iupdrvTableGetSortSign(Ihandle* ih, int col)
+{
+  Igtk4TableData* gtk_data = IGTK4_TABLE_DATA(ih);
+  GListModel* columns;
+  GtkColumnViewColumn* current = (GtkColumnViewColumn*)iupAttribGet(ih, "_IUP_GTK4_SORTCOL");
+  GtkColumnViewColumn* column;
+  int sign = 0;
+
+  if (!gtk_data || !gtk_data->column_view || !current || col < 1 || col > ih->data->num_col)
+    return 0;
+
+  columns = gtk_column_view_get_columns(GTK_COLUMN_VIEW(gtk_data->column_view));
+  column = (GtkColumnViewColumn*)g_list_model_get_item(columns, (guint)(col - 1));
+
+  if (column == current)
+    sign = (iupAttribGetInt(ih, "_IUP_GTK4_SORTORDER") == GTK_SORT_ASCENDING) ? 1 : -1;
+
+  if (column)
+    g_object_unref(column);
+
+  return sign;
 }
 
 IUP_SDK_API void iupdrvTableSetColWidth(Ihandle* ih, int col, int width)

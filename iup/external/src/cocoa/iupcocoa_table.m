@@ -65,6 +65,7 @@ typedef struct _IcocoaTableData {
   int previous_selected_row;            /* Previously selected row (0-based, -1=none) for redraw */
   int previous_focused_row;             /* Previously focused row (1-based, 0=none) for focus rectangle redraw */
   int previous_focused_col;             /* Previously focused column (1-based, 0=none) for focus rectangle redraw */
+  BOOL columns_autosized;               /* columns were measured with rows present */
 } IcocoaTableData;
 
 #define ICOCOA_TABLE_DATA(ih) ((IcocoaTableData*)(ih->data->native_data))
@@ -2017,6 +2018,30 @@ IUP_SDK_API void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
     cocoaTableSetNumColAttrib(ih, iupStrReturnInt(num_col));
 }
 
+/* sizeToFit only fits the header cell, and the rows can arrive after the columns are created */
+static void cocoaTableAutoSizeColumns(Ihandle* ih)
+{
+  NSTableView* tableView = cocoaTableGetTableView(ih);
+  NSArray* columns;
+  NSFont* font;
+
+  if (!tableView)
+    return;
+
+  columns = [tableView tableColumns];
+  font = [NSFont systemFontOfSize:[NSFont systemFontSize]];
+
+  for (int col_index = 0; col_index < ih->data->num_col - 1 && col_index < (int)[columns count]; col_index++)
+  {
+    char expwidth_name[50];
+    snprintf(expwidth_name, sizeof(expwidth_name), "_IUP_TABLE_EXPWIDTH%d", col_index + 1);
+    if (iupAttribGet(ih, expwidth_name))
+      continue;
+
+    [[columns objectAtIndex:col_index] setWidth:cocoaTableCalculateColumnWidth(ih, col_index, font)];
+  }
+}
+
 IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
 {
   if (num_lin < 0)
@@ -2026,6 +2051,19 @@ IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
 
   if (ih->handle)
     cocoaTableSetNumLinAttrib(ih, iupStrReturnInt(num_lin));
+
+  {
+    IcocoaTableData* table_data = cocoaTableGetData(ih);
+    if (table_data && !table_data->columns_autosized && num_lin > 0 && ih->handle)
+    {
+      table_data->columns_autosized = YES;
+      /* the cells are filled after this returns, so measure on the next run loop cycle */
+      dispatch_async(dispatch_get_main_queue(), ^{
+        if (iupObjectCheck(ih))
+          cocoaTableAutoSizeColumns(ih);
+      });
+    }
+  }
 }
 
 IUP_SDK_API void iupdrvTableAddCol(Ihandle* ih, int pos)
@@ -2171,6 +2209,48 @@ IUP_SDK_API char* iupdrvTableGetColTitle(Ihandle* ih, int col)
   }
 
   return NULL;
+}
+
+IUP_SDK_API void iupdrvTableSetSortSign(Ihandle* ih, int col, int sign)
+{
+  NSTableView* tableView = cocoaTableGetTableView(ih);
+  if (!tableView || col < 1 || col > ih->data->num_col)
+    return;
+
+  /* the header cell reads the descriptor, the delegate must not sort the rows again */
+  iupAttribSet(ih, "_IUPCOCOA_SORTBUSY", "1");
+
+  if (sign == 0)
+    [tableView setSortDescriptors:[NSArray array]];
+  else
+  {
+    NSSortDescriptor* descriptor = [NSSortDescriptor sortDescriptorWithKey:[NSString stringWithFormat:@"%d", col - 1]
+                                                                ascending:(sign > 0)];
+    [tableView setSortDescriptors:[NSArray arrayWithObject:descriptor]];
+  }
+
+  iupAttribSet(ih, "_IUPCOCOA_SORTBUSY", NULL);
+
+  [[tableView headerView] setNeedsDisplay:YES];
+}
+
+IUP_SDK_API int iupdrvTableGetSortSign(Ihandle* ih, int col)
+{
+  NSTableView* tableView = cocoaTableGetTableView(ih);
+  NSArray* descriptors;
+
+  if (!tableView || col < 1 || col > ih->data->num_col)
+    return 0;
+
+  descriptors = [tableView sortDescriptors];
+  if ([descriptors count] == 0)
+    return 0;
+
+  NSSortDescriptor* descriptor = [descriptors objectAtIndex:0];
+  if ([[descriptor key] intValue] != col - 1)
+    return 0;
+
+  return [descriptor ascending] ? 1 : -1;
 }
 
 IUP_SDK_API void iupdrvTableSetColWidth(Ihandle* ih, int col, int width)

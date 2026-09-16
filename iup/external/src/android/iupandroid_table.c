@@ -204,6 +204,29 @@ IUP_SDK_API char* iupdrvTableGetColTitle(Ihandle* ih, int col)
   return result;
 }
 
+IUP_SDK_API void iupdrvTableSetSortSign(Ihandle* ih, int col, int sign)
+{
+  if (!ih->handle) return;
+  JNIEnv* env = iupAndroid_GetEnvThreadSafe();
+  jclass cls = androidTableFindClass(env);
+  jmethodID m = (*env)->GetStaticMethodID(env, cls, "setSortSign", "(Landroid/view/View;II)V");
+  (*env)->CallStaticVoidMethod(env, cls, m, ih->handle, (jint)col, (jint)sign);
+  iupAndroid_CheckException(env, "IupTableHelper.setSortSign");
+  (*env)->DeleteLocalRef(env, cls);
+}
+
+IUP_SDK_API int iupdrvTableGetSortSign(Ihandle* ih, int col)
+{
+  if (!ih->handle) return 0;
+  JNIEnv* env = iupAndroid_GetEnvThreadSafe();
+  jclass cls = androidTableFindClass(env);
+  jmethodID m = (*env)->GetStaticMethodID(env, cls, "getSortSign", "(Landroid/view/View;I)I");
+  jint sign = (*env)->CallStaticIntMethod(env, cls, m, ih->handle, (jint)col);
+  iupAndroid_CheckException(env, "IupTableHelper.getSortSign");
+  (*env)->DeleteLocalRef(env, cls);
+  return (int)sign;
+}
+
 IUP_SDK_API void iupdrvTableSetColWidth(Ihandle* ih, int col, int width)
 {
   if (!ih->handle) return;

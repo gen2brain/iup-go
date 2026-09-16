@@ -42,8 +42,9 @@ Application identifier used by the desktop environment.
 In GTK/Wayland, it maps to the XDG desktop file ID.
 On Haiku, it becomes the `BApplication` MIME signature.
 Also used by [IupConfig](../func/iup_config.md) as a last fallback when neither APP_NAME nor APPNAME is set.
-Can be set once. Used by the desktop environment in GTK, GTK 4, Qt, FLTK, EFL and Haiku; only stored in the other drivers.
-When not set, GTK, GTK 4, Qt, FLTK and EFL use the executable name.
+On X11 it is the WM_CLASS instance name, and on Wayland the application id.
+Can be set once. Used by the desktop environment in GTK, GTK 4, Qt, FLTK, EFL, Motif and Haiku; only stored in the other drivers.
+When not set, GTK, GTK 4, Qt, FLTK, EFL and Motif use the executable name.
 On Android it is read-only and reflects the app's manifest application id.
 On iOS, it is read-only and reflects `CFBundleIdentifier` from the app's Info.plist.
 
@@ -52,7 +53,8 @@ On iOS, it is read-only and reflects `CFBundleIdentifier` from the app's Info.pl
 Application name used by the system.
 In Windows, it is used for the taskbar and tray. In macOS, it is used for the dock.
 Also used by [IupConfig](../func/iup_config.md) as a fallback when APP_NAME is not set (APPNAME is checked first, then APPID).
-Used by the system in Win32, WinUI, macOS, Qt and EFL; only stored in the other drivers.
+On X11 it is the WM_CLASS class name, except in GTK 4, which always uses the instance name, and in FLTK, which uses the capitalized instance name.
+Used by the system in Win32, WinUI, macOS, Qt, GTK, EFL and Motif; only stored in the other drivers.
 On Android it is read-only and reflects the app's manifest label.
 On iOS, it is read-only and reflects `CFBundleDisplayName` (or `CFBundleName` if not set) from the app's Info.plist.
 
@@ -358,11 +360,12 @@ Not available in WebAssembly.
 
 Returns the filename of the executable with full path.
 Depending on how the program is executed the argv[0] not always has the full executable path.
+On Android it is the APK path, on iOS the bundle executable. Not available in WebAssembly.
 
 ### ARGV0 (read-only)
 
 The program path as received in argv[0].
-Supported in GTK, GTK 4, Qt, EFL, FLTK, WinUI and Haiku.
+Supported in GTK, GTK 4, Qt, Motif, EFL, FLTK, WinUI and Haiku.
 
 ### HELPAPP
 

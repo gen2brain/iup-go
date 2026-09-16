@@ -294,6 +294,56 @@ static IupGtkVirtualModel *iup_gtk_virtual_model_new(Ihandle *ih)
 /* Utility Functions                                                         */
 /* ========================================================================= */
 
+static void gtkTableShowSortSign(Ihandle* ih, int col, int sign)
+{
+  IgtkTableData* gtk_data = IGTK_TABLE_DATA(ih);
+  GList* columns, *l;
+  int i = 1;
+
+  if (!gtk_data || !gtk_data->tree_view)
+    return;
+
+  columns = gtk_tree_view_get_columns(GTK_TREE_VIEW(gtk_data->tree_view));
+
+  for (l = columns; l != NULL; l = l->next, i++)
+  {
+    GtkTreeViewColumn* column = GTK_TREE_VIEW_COLUMN(l->data);
+
+    if (i == col && sign != 0)
+    {
+      gtk_tree_view_column_set_sort_indicator(column, TRUE);
+      gtk_tree_view_column_set_sort_order(column, sign > 0 ? GTK_SORT_ASCENDING : GTK_SORT_DESCENDING);
+    }
+    else
+      gtk_tree_view_column_set_sort_indicator(column, FALSE);
+  }
+
+  g_list_free(columns);
+}
+
+IUP_SDK_API void iupdrvTableSetSortSign(Ihandle* ih, int col, int sign)
+{
+  IgtkTableData* gtk_data = IGTK_TABLE_DATA(ih);
+
+  if (!gtk_data)
+    return;
+
+  gtk_data->sort_column = sign ? col : 0;
+  gtk_data->sort_ascending = (sign >= 0);
+
+  gtkTableShowSortSign(ih, col, sign);
+}
+
+IUP_SDK_API int iupdrvTableGetSortSign(Ihandle* ih, int col)
+{
+  IgtkTableData* gtk_data = IGTK_TABLE_DATA(ih);
+
+  if (!gtk_data || gtk_data->sort_column != col)
+    return 0;
+
+  return gtk_data->sort_ascending ? 1 : -1;
+}
+
 static void gtkTableColumnClicked(GtkTreeViewColumn* column, Ihandle* ih);
 
 static int gtkTableModelColCount(Ihandle* ih)
@@ -763,22 +813,7 @@ static void gtkTableColumnClicked(GtkTreeViewColumn* column, Ihandle* ih)
   gtk_data->sort_column = col_index;
   gtk_data->sort_ascending = ascending;
 
-  {
-    GList* l;
-    int i = 1;
-    for (l = columns; l != NULL; l = l->next, i++)
-    {
-      GtkTreeViewColumn* col = GTK_TREE_VIEW_COLUMN(l->data);
-      if (i == col_index)
-      {
-        gtk_tree_view_column_set_sort_indicator(col, TRUE);
-        gtk_tree_view_column_set_sort_order(col,
-          gtk_data->sort_ascending ? GTK_SORT_ASCENDING : GTK_SORT_DESCENDING);
-      }
-      else
-        gtk_tree_view_column_set_sort_indicator(col, FALSE);
-    }
-  }
+  gtkTableShowSortSign(ih, col_index, gtk_data->sort_ascending ? 1 : -1);
 
   g_list_free(columns);
 

@@ -1425,6 +1425,36 @@ IUP_SDK_API char* iupdrvTableGetColTitle(Ihandle* ih, int col)
   return iupStrReturnStr(text.toUtf8().constData());
 }
 
+IUP_SDK_API void iupdrvTableSetSortSign(Ihandle* ih, int col, int sign)
+{
+  QTableWidget* table = qtTableGetWidget(ih);
+  if (!table)
+    return;
+
+  QHeaderView* hHeader = table->horizontalHeader();
+
+  if (sign == 0)
+  {
+    iupAttribSetInt(ih, "_QT_SORT_COLUMN", 0);
+    hHeader->setSortIndicatorShown(false);
+    return;
+  }
+
+  iupAttribSetInt(ih, "_QT_SORT_COLUMN", col);
+  iupAttribSetInt(ih, "_QT_SORT_ASCENDING", sign > 0);
+
+  hHeader->setSortIndicatorShown(true);
+  hHeader->setSortIndicator(col - 1, sign > 0 ? Qt::AscendingOrder : Qt::DescendingOrder);
+}
+
+IUP_SDK_API int iupdrvTableGetSortSign(Ihandle* ih, int col)
+{
+  if (iupAttribGetInt(ih, "_QT_SORT_COLUMN") != col)
+    return 0;
+
+  return iupAttribGetInt(ih, "_QT_SORT_ASCENDING") ? 1 : -1;
+}
+
 IUP_SDK_API void iupdrvTableSetColWidth(Ihandle* ih, int col, int width)
 {
   QTableWidget* table = qtTableGetWidget(ih);
