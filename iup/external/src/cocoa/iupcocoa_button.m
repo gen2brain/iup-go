@@ -393,41 +393,34 @@ static void cocoaButtonMeasureBorders(Ihandle* ih, int has_image, int has_text, 
   }
 
   NSSize fitting_size = [temp_button fittingSize];
-  NSSize intrinsic_size = [temp_button intrinsicContentSize];
 
-  *border_x = (int)lroundf(fitting_size.width - intrinsic_size.width);
-  *border_y = (int)lroundf(fitting_size.height - intrinsic_size.height);
-
-  /* Fallback: image-only horizontal is inflated by NSButton min-width, use vertical for both axes */
-  if (*border_x == 0 && *border_y == 0)
+  if (has_image && has_text)
   {
-    if (has_image && has_text)
-    {
-      int iup_text_w = iupdrvFontGetStringWidth(ih, "Test");
-      int iup_text_h;
-      iupdrvFontGetCharSize(ih, NULL, &iup_text_h);
-      int content_w = 16 + 2 + iup_text_w;
-      int content_h = (16 > iup_text_h) ? 16 : iup_text_h;
+    int iup_text_w = iupdrvFontGetStringWidth(ih, "Test");
+    int iup_text_h;
+    iupdrvFontGetCharSize(ih, NULL, &iup_text_h);
+    int content_w = 16 + 2 + iup_text_w;
+    int content_h = (16 > iup_text_h) ? 16 : iup_text_h;
 
-      *border_x = (int)lroundf(fitting_size.width) - content_w;
-      *border_y = (int)lroundf(fitting_size.height) - content_h;
-    }
-    else if (has_image)
-    {
-      int chrome = (int)lroundf(fitting_size.height) - 16;
-      if (chrome < 0) chrome = 0;
-      *border_x = chrome;
-      *border_y = chrome;
-    }
-    else
-    {
-      int iup_text_w = iupdrvFontGetStringWidth(ih, "WWWWWWWWWW");
-      int iup_text_h;
-      iupdrvFontGetCharSize(ih, NULL, &iup_text_h);
+    *border_x = (int)lroundf(fitting_size.width) - content_w;
+    *border_y = (int)lroundf(fitting_size.height) - content_h;
+  }
+  else if (has_image)
+  {
+    /* the image-only width is inflated by the NSButton minimum, so use the vertical chrome */
+    int chrome = (int)lroundf(fitting_size.height) - 16;
+    if (chrome < 0) chrome = 0;
+    *border_x = chrome;
+    *border_y = chrome;
+  }
+  else
+  {
+    int iup_text_w = iupdrvFontGetStringWidth(ih, "WWWWWWWWWW");
+    int iup_text_h;
+    iupdrvFontGetCharSize(ih, NULL, &iup_text_h);
 
-      *border_x = (int)lroundf(fitting_size.width) - iup_text_w;
-      *border_y = (int)lroundf(fitting_size.height) - iup_text_h;
-    }
+    *border_x = (int)lroundf(fitting_size.width) - iup_text_w;
+    *border_y = (int)lroundf(fitting_size.height) - iup_text_h;
   }
 
   if (*border_x < 0) *border_x = 0;
