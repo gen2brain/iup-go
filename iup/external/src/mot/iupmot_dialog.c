@@ -1206,7 +1206,7 @@ static int motDialogMapMethod(Ihandle* ih)
 
     {
       XClassHint class_hint;
-      char* exe_title = appid ? NULL : iupStrFileGetTitle(IupGetGlobal("ARGV0"));
+      char* exe_title = appid ? NULL : iupStrFileGetTitle(iupdrvExeFileName());
       class_hint.res_name = (char*)(appid ? appid : (exe_title ? exe_title : "iup"));
       class_hint.res_class = (char*)(appname ? appname : "Iup");
       XSetClassHint(iupmot_display, window, &class_hint);

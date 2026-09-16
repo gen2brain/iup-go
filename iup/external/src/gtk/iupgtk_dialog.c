@@ -764,7 +764,7 @@ static int gtkDialogMapMethod(Ihandle* ih)
 
   if (!g_get_prgname())
   {
-    char* exe_title = iupStrFileGetTitle(IupGetGlobal("ARGV0"));
+    char* exe_title = iupStrFileGetTitle(iupdrvExeFileName());
     if (exe_title)
     {
       g_set_prgname(exe_title);

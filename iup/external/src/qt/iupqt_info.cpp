@@ -316,6 +316,14 @@ extern "C" IUP_SDK_API char* iupdrvLocaleInfo(void)
 #endif
 }
 
+extern "C" IUP_SDK_API char* iupdrvExeFileName(void)
+{
+  QByteArray path = QCoreApplication::applicationFilePath().toUtf8();
+  if (path.isEmpty())
+    return NULL;
+  return iupStrReturnStr(path.constData());
+}
+
 extern "C" IUP_SDK_API char* iupdrvLanguageInfo(void)
 {
 #if defined(_WIN32)

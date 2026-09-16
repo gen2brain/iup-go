@@ -435,6 +435,14 @@ IUP_SDK_API char* iupdrvLocaleInfo(void)
   }
 }
 
+IUP_SDK_API char* iupdrvExeFileName(void)
+{
+  NSString* path = [[NSBundle mainBundle] executablePath];
+  if (!path)
+    return NULL;
+  return iupStrReturnStr([path fileSystemRepresentation]);
+}
+
 IUP_SDK_API char* iupdrvLanguageInfo(void)
 {
 #ifdef GNUSTEP

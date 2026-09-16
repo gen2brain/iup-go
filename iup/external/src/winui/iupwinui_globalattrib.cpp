@@ -352,13 +352,6 @@ extern "C" IUP_SDK_API char* iupdrvGetGlobal(const char* name)
   {
     return iupStrReturnBoolean(0);
   }
-  if (iupStrEqual(name, "EXEFILENAME"))
-  {
-    wchar_t filename[10240];
-    GetModuleFileNameW(NULL, filename, 10240);
-    winrt::hstring hs(filename);
-    return iupwinuiHStringToString(hs);
-  }
   if (iupStrEqual(name, "TOUCHREADY"))
   {
     return iupStrReturnBoolean(GetSystemMetrics(SM_DIGITIZER) & NID_READY);

@@ -35,6 +35,7 @@
 #include "iup_drv.h"
 #include "iup_object.h"
 #include "iup_globalattrib.h"
+#include "iup_drvinfo.h"
 #include "iup_str.h"
 
 #include "iupefl_drv.h"
@@ -449,7 +450,7 @@ IUP_DRV_API void iupeflSetWindowAppID(Eo* win)
     return;
 
   if (!appid)
-    appid = exe_title = iupStrFileGetTitle(IupGetGlobal("ARGV0"));
+    appid = exe_title = iupStrFileGetTitle(iupdrvExeFileName());
 
   if (appid && appid[0])
   {

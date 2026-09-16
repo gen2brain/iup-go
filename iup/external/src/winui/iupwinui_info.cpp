@@ -248,6 +248,14 @@ extern "C" IUP_SDK_API char* iupdrvLocaleInfo(void)
   return iupStrReturnStrf("CP%u", codepage);
 }
 
+extern "C" IUP_SDK_API char* iupdrvExeFileName(void)
+{
+  wchar_t filename[10240];
+  if (GetModuleFileNameW(NULL, filename, 10240) == 0)
+    return NULL;
+  return iupwinuiHStringToString(winrt::hstring(filename));
+}
+
 extern "C" IUP_SDK_API char* iupdrvLanguageInfo(void)
 {
   WCHAR wname[LOCALE_NAME_MAX_LENGTH];
