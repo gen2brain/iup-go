@@ -99,14 +99,26 @@ static void eflCanvasSliderChangedCallback(void* data, const Efl_Event* ev)
 
 static void eflCanvasLayoutUpdateMethod(Ihandle* ih);
 
+static void eflCanvasLayoutJob(void* data)
+{
+  Ihandle* ih = (Ihandle*)data;
+  iupAttribSet(ih, "_IUP_EFL_LAYOUT_JOB", NULL);
+  if (ih->handle)
+    eflCanvasLayoutUpdateMethod(ih);
+}
+
 static void eflCanvasSetScrollBarVisible(Ihandle* ih, Eo* sb, Eina_Bool visible)
 {
   if (efl_gfx_entity_visible_get(sb) == visible)
     return;
 
   iupeflSetVisible(sb, visible);
-  if (ih->handle)
-    eflCanvasLayoutUpdateMethod(ih);
+
+  if (ih->handle && !iupAttribGet(ih, "_IUP_EFL_LAYOUT_JOB"))
+  {
+    Ecore_Job* job = ecore_job_add(eflCanvasLayoutJob, ih);
+    iupAttribSet(ih, "_IUP_EFL_LAYOUT_JOB", (char*)job);
+  }
 }
 
 /* the range is in application units, the drawing surface is always the visible area */
@@ -658,6 +670,13 @@ static void eflCanvasUnMapMethod(Ihandle* ih)
 {
   Eo* vg = iupeflGetWidget(ih);
   Eo* wrap = (Eo*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
+  Ecore_Job* job = (Ecore_Job*)iupAttribGet(ih, "_IUP_EFL_LAYOUT_JOB");
+
+  if (job)
+  {
+    ecore_job_del(job);
+    iupAttribSet(ih, "_IUP_EFL_LAYOUT_JOB", NULL);
+  }
 
   {
     Eo* gl = (Eo*)iupAttribGet(ih, "_IUP_EFL_GESTURE_LAYER");
