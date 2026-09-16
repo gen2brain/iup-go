@@ -1040,6 +1040,16 @@ static int gtk4DialogSetHideTitleBarAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
+static int gtk4DialogSetMenuBarKeyAttrib(Ihandle* ih, const char* value)
+{
+#if GTK_CHECK_VERSION(4, 2, 0)
+  gtk_window_set_handle_menubar_accel((GtkWindow*)ih->handle, value ? iupStrBoolean(value) : TRUE);
+#else
+  (void)value;
+#endif
+  return 1;
+}
+
 static int gtk4DialogSetBackImageZoomAttrib(Ihandle* ih, const char* value)
 {
   (void)value;
@@ -1094,6 +1104,7 @@ IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "SHAPEIMAGE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CUSTOMFRAME", NULL, NULL, IUPAF_SAMEASSYSTEM, NULL, IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "HIDETITLEBAR", NULL, gtk4DialogSetHideTitleBarAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MENUBARKEY", NULL, gtk4DialogSetMenuBarKeyAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "BRINGFRONT", NULL, gtk4DialogSetBringFrontAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "COMPOSITED", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
