@@ -106,6 +106,7 @@ Requires FORMATTING=YES and MULTILINE=YES. Not supported in Motif.
 **MARKDOWNVALUE** (write-only): sets the text from a Markdown string, interpreting headings, emphasis, lists, code blocks, blockquotes, links, images, tables, and HTML `<img>` tags as IUP format tags.
 Tables use the pipe syntax, with per-column alignment taken from the delimiter row, drawn as a monospaced grid with box drawing borders. In WinUI they are tab aligned columns with a bold underlined header.
 An image in a table cell does not affect the column width.
+The code background, the blockquote text and the horizontal rule are derived from BGCOLOR and FGCOLOR.
 Images are not rendered in FLTK. The horizontal rule is not centered in FLTK. Heading spacing is not supported in Android and EFL.
 Requires FORMATTING=YES and MULTILINE=YES. Not supported in Motif.
 

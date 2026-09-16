@@ -536,7 +536,7 @@ static void motTableDrawCell(Ihandle* ih, int lin, int col, int is_header)
 #endif
       XDrawString(display, window, mot_data->gc, text_x, text_y, text, text_len);
 
-    if (is_header && ih->data->sortable && mot_data->sort_column == col && mot_data->sort_signs)
+    if (is_header && mot_data->sort_column == col && mot_data->sort_signs)
     {
       int arrow_x;
       int arrow_y = y + (h - 6) / 2;
@@ -2050,6 +2050,32 @@ IUP_SDK_API char* iupdrvTableGetColTitle(Ihandle* ih, int col)
     return NULL;
 
   return mot_data->col_titles[col-1];
+}
+
+IUP_SDK_API void iupdrvTableSetSortSign(Ihandle* ih, int col, int sign)
+{
+  ImotTableData* mot_data = IMOT_TABLE_DATA(ih);
+
+  if (!mot_data || !mot_data->sort_signs || col < 1 || col > ih->data->num_col)
+    return;
+
+  if (mot_data->sort_column > 0 && mot_data->sort_column <= ih->data->num_col)
+    mot_data->sort_signs[mot_data->sort_column - 1] = 0;
+
+  mot_data->sort_column = sign ? col : 0;
+  mot_data->sort_signs[col - 1] = (char)sign;
+
+  motTableRedraw(ih);
+}
+
+IUP_SDK_API int iupdrvTableGetSortSign(Ihandle* ih, int col)
+{
+  ImotTableData* mot_data = IMOT_TABLE_DATA(ih);
+
+  if (!mot_data || !mot_data->sort_signs || mot_data->sort_column != col)
+    return 0;
+
+  return mot_data->sort_signs[col - 1];
 }
 
 IUP_SDK_API void iupdrvTableSetColWidth(Ihandle* ih, int col, int width)

@@ -1797,6 +1797,29 @@ extern "C" IUP_SDK_API char* iupdrvTableGetColTitle(Ihandle* ih, int col)
   return aux->col_titles[col - 1];
 }
 
+extern "C" IUP_SDK_API void iupdrvTableSetSortSign(Ihandle* ih, int col, int sign)
+{
+  IupWinUITableAux* aux = winuiTableGetAux(ih);
+
+  if (!aux || col < 1 || col > ih->data->num_col)
+    return;
+
+  aux->sort_column = sign ? col : 0;
+  aux->sort_ascending = sign;
+
+  winuiTableUpdateSortArrow(ih, sign ? col : 0);
+}
+
+extern "C" IUP_SDK_API int iupdrvTableGetSortSign(Ihandle* ih, int col)
+{
+  IupWinUITableAux* aux = winuiTableGetAux(ih);
+
+  if (!aux || aux->sort_column != col)
+    return 0;
+
+  return aux->sort_ascending;
+}
+
 extern "C" IUP_SDK_API void iupdrvTableSetColWidth(Ihandle* ih, int col, int width)
 {
   IupWinUITableAux* aux = winuiTableGetAux(ih);

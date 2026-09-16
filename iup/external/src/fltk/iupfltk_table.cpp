@@ -1673,6 +1673,29 @@ extern "C" IUP_SDK_API char* iupdrvTableGetColTitle(Ihandle* ih, int col)
   return iupStrReturnStr(table->col_titles[c].c_str());
 }
 
+extern "C" IUP_SDK_API void iupdrvTableSetSortSign(Ihandle* ih, int col, int sign)
+{
+  IupFltkTable* table = fltkTableGetWidget(ih);
+
+  if (!table || col < 1 || col > ih->data->num_col)
+    return;
+
+  table->sort_column = sign ? col : 0;
+  table->sort_ascending = (sign > 0);
+
+  table->redraw();
+}
+
+extern "C" IUP_SDK_API int iupdrvTableGetSortSign(Ihandle* ih, int col)
+{
+  IupFltkTable* table = fltkTableGetWidget(ih);
+
+  if (!table || table->sort_column != col)
+    return 0;
+
+  return table->sort_ascending ? 1 : -1;
+}
+
 extern "C" IUP_SDK_API void iupdrvTableSetColWidth(Ihandle* ih, int col, int width)
 {
   IupFltkTable* table = fltkTableGetWidget(ih);

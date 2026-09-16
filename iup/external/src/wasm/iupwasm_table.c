@@ -460,6 +460,25 @@ IUP_SDK_API char* iupdrvTableGetColTitle(Ihandle* ih, int col)
   return iupAttribGetId(ih, "_IUPWASM_COLTITLE", col);
 }
 
+IUP_SDK_API void iupdrvTableSetSortSign(Ihandle* ih, int col, int sign)
+{
+  if (col < 1 || col > ih->data->num_col)
+    return;
+
+  iupAttribSetInt(ih, "_IUPWASM_SORTCOL", sign ? col : 0);
+  iupAttribSetInt(ih, "_IUPWASM_SORTASC", sign > 0);
+
+  wasmTableSortIndicator(ih, sign ? col : 0, sign > 0);
+}
+
+IUP_SDK_API int iupdrvTableGetSortSign(Ihandle* ih, int col)
+{
+  if (iupAttribGetInt(ih, "_IUPWASM_SORTCOL") != col)
+    return 0;
+
+  return iupAttribGetInt(ih, "_IUPWASM_SORTASC") ? 1 : -1;
+}
+
 IUP_SDK_API void iupdrvTableSetColWidth(Ihandle* ih, int col, int width)
 {
   int id = iupwasmIdOf(ih);

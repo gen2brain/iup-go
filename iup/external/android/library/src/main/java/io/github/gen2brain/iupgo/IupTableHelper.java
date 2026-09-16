@@ -1143,7 +1143,7 @@ public final class IupTableHelper
             tv.setBackgroundColor(table.headerBg);
             tv.setTextColor(table.headerFg);
             String title = table.colTitles[c] != null ? table.colTitles[c] : "";
-            if (table.sortable && col == table.sortCol)
+            if (col == table.sortCol)
                 title = title + (table.sortAsc ? "  ▲" : "  ▼");
             tv.setText(title);
             ((int[]) tv.getTag())[0] = col;
@@ -1340,6 +1340,22 @@ public final class IupTableHelper
 
 
     @Keep
+    public static void setSortSign(View v, int col, int sign)
+    {
+        if (!(v instanceof IupTableView table)) return;
+        if (col < 1 || col > table.numCol) return;
+        table.sortCol = sign != 0 ? col : 0;
+        table.sortAsc = sign > 0;
+        rebuildHeader(table);
+    }
+
+    public static int getSortSign(View v, int col)
+    {
+        if (!(v instanceof IupTableView table)) return 0;
+        if (table.sortCol != col) return 0;
+        return table.sortAsc ? 1 : -1;
+    }
+
     public static void setColWidth(View v, int col, int widthPx)
     {
         if (!(v instanceof IupTableView table)) return;

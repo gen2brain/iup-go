@@ -248,6 +248,69 @@ static int iTableSetImageAttribId2(Ihandle* ih, int lin, int col, const char* va
 /* Column Attributes (TITLEn, ALIGNMENTn, WIDTHn)                           */
 /* ========================================================================= */
 
+static char* iTableSortSignStr(int sign)
+{
+  if (sign > 0)
+    return "UP";
+  if (sign < 0)
+    return "DOWN";
+  return "NO";
+}
+
+static char* iTableGetSortSignIdAttrib(Ihandle* ih, int col)
+{
+  if (col < 1 || col > ih->data->num_col)
+    return NULL;
+
+  if (!ih->handle)
+  {
+    char name[50];
+    snprintf(name, sizeof(name), "SORTSIGN%d", col);
+    return iupAttribGet(ih, name);
+  }
+
+  return iTableSortSignStr(iupdrvTableGetSortSign(ih, col));
+}
+
+static int iTableSetSortSignIdAttrib(Ihandle* ih, int col, const char* value)
+{
+  int sign = 0;
+
+  if (col < 1 || col > ih->data->num_col)
+    return 0;
+
+  if (iupStrEqualNoCase(value, "UP"))
+    sign = 1;
+  else if (iupStrEqualNoCase(value, "DOWN"))
+    sign = -1;
+
+  if (!ih->handle)
+  {
+    char name[50];
+    int i;
+
+    /* only one column carries the sign */
+    if (sign != 0)
+    {
+      for (i = 1; i <= ih->data->num_col; i++)
+      {
+        if (i != col)
+        {
+          snprintf(name, sizeof(name), "SORTSIGN%d", i);
+          iupAttribSetStr(ih, name, NULL);
+        }
+      }
+    }
+
+    snprintf(name, sizeof(name), "SORTSIGN%d", col);
+    iupAttribSetStr(ih, name, sign ? iTableSortSignStr(sign) : NULL);
+    return 0;
+  }
+
+  iupdrvTableSetSortSign(ih, col, sign);
+  return 0;
+}
+
 static char* iTableGetTitleIdAttrib(Ihandle* ih, int col)
 {
   if (col < 1 || col > ih->data->num_col)
@@ -867,6 +930,7 @@ Iclass* iupTableNewClass(void)
   iupClassRegisterAttributeId(ic, "TITLE", iTableGetTitleIdAttrib, iTableSetTitleIdAttrib, IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "WIDTH", iTableGetWidthIdAttrib, iTableSetWidthIdAttrib, IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "RASTERWIDTH", iTableGetRasterWidthIdAttrib, iTableSetRasterWidthIdAttrib, IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "SORTSIGN", iTableGetSortSignIdAttrib, iTableSetSortSignIdAttrib, IUPAF_NO_INHERIT);
 
   /* Selection attributes */
   iupClassRegisterAttribute(ic, "FOCUSCELL", iTableGetFocusCellAttrib, iTableSetFocusCellAttrib, IUPAF_SAMEASSYSTEM, "1:1", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);

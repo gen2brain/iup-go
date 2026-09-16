@@ -481,7 +481,7 @@ static UICollectionViewLayout* cocoaTouchTableMakeLayout(IupCocoaTouchTableContr
 	{
 		NSString* title = (NSUInteger)col < [_headers count] ? [_headers objectAtIndex:(NSUInteger)col] : @"";
 		BOOL sortable = _ihandle && _ihandle->data && _ihandle->data->sortable;
-		if (sortable && (col + 1) == _sortCol)
+		if ((col + 1) == _sortCol)
 			title = [title stringByAppendingString:_sortAscending ? @"  ▲" : @"  ▼"];
 		cell.label.text = title;
 		cell.label.font = [UIFont boldSystemFontOfSize:[UIFont systemFontSize]];
@@ -864,6 +864,26 @@ IUP_SDK_API char* iupdrvTableGetColTitle(Ihandle* ih, int col)
 	if (!ctrl || col < 1 || (NSUInteger)col > [ctrl.headers count]) return NULL;
 	NSString* text = [ctrl.headers objectAtIndex:(NSUInteger)(col - 1)];
 	return text ? iupStrReturnStr([text UTF8String]) : NULL;
+}
+
+IUP_SDK_API void iupdrvTableSetSortSign(Ihandle* ih, int col, int sign)
+{
+	IupCocoaTouchTableController* ctrl = cocoaTouchTableGetController(ih);
+	if (!ctrl || col < 1 || col > ih->data->num_col) return;
+
+	ctrl.sortCol = sign ? col : 0;
+	ctrl.sortAscending = (sign > 0);
+
+	UICollectionView* view = cocoaTouchTableGet(ih);
+	if (view) [view reloadData];
+}
+
+IUP_SDK_API int iupdrvTableGetSortSign(Ihandle* ih, int col)
+{
+	IupCocoaTouchTableController* ctrl = cocoaTouchTableGetController(ih);
+	if (!ctrl || ctrl.sortCol != col) return 0;
+
+	return ctrl.sortAscending ? 1 : -1;
 }
 
 IUP_SDK_API void iupdrvTableSetColWidth(Ihandle* ih, int col, int width)

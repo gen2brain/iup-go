@@ -888,6 +888,29 @@ IUP_SDK_API char* iupdrvTableGetColTitle(Ihandle* ih, int col)
   return data->col_titles[col-1];
 }
 
+IUP_SDK_API void iupdrvTableSetSortSign(Ihandle* ih, int col, int sign)
+{
+  IwinTableData* data = IWIN_TABLE_DATA(ih);
+
+  if (!data || col < 1 || col > ih->data->num_col)
+    return;
+
+  data->sort_column = sign ? col : 0;
+  data->sort_ascending = (char)sign;
+
+  winTableUpdateSortArrow(ih, col);
+}
+
+IUP_SDK_API int iupdrvTableGetSortSign(Ihandle* ih, int col)
+{
+  IwinTableData* data = IWIN_TABLE_DATA(ih);
+
+  if (!data || data->sort_column != col)
+    return 0;
+
+  return data->sort_ascending;
+}
+
 IUP_SDK_API void iupdrvTableSetColWidth(Ihandle* ih, int col, int width)
 {
   IwinTableData* data = IWIN_TABLE_DATA(ih);

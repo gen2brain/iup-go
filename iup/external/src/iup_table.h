@@ -72,6 +72,8 @@ IUP_SDK_API void iupdrvTableSetCellImage(Ihandle* ih, int lin, int col, const ch
 /* Column operations */
 IUP_SDK_API void iupdrvTableSetColTitle(Ihandle* ih, int col, const char* title);
 IUP_SDK_API char* iupdrvTableGetColTitle(Ihandle* ih, int col);
+IUP_SDK_API void iupdrvTableSetSortSign(Ihandle* ih, int col, int sign);
+IUP_SDK_API int iupdrvTableGetSortSign(Ihandle* ih, int col);
 IUP_SDK_API void iupdrvTableSetColWidth(Ihandle* ih, int col, int width);
 IUP_SDK_API int iupdrvTableGetColWidth(Ihandle* ih, int col);
 
