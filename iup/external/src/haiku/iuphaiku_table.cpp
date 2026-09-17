@@ -211,6 +211,8 @@ public:
     if (!fIhandle) return;
     if (iupAttribGet(fIhandle, "_IUPTABLE_IGNORE_SELECTION_CB")) return;
 
+    iupTableCallMultiSelectionCb(fIhandle);
+
     BRow* row = CurrentSelection();
     if (!row) return;
     int lin = IndexOf(row);
@@ -1673,6 +1675,56 @@ extern "C" IUP_SDK_API void iupdrvTableGetFocusCell(Ihandle* ih, int* lin, int* 
   BRow* r = tv->FocusRow();
   if (r && lin) *lin = tv->IndexOf(r) + 1;
   if (col) *col = tv->FocusCol();
+}
+
+extern "C" IUP_SDK_API int iupdrvTableIsLinSelected(Ihandle* ih, int lin)
+{
+  IupHaikuTableView* tv = haikuTableGetView(ih);
+  if (!tv) return 0;
+  LooperLockGuard guard(tv->Looper());
+  BRow* row = haikuTableGetRow(tv, lin);
+  return (row && row->IsSelected()) ? 1 : 0;
+}
+
+extern "C" IUP_SDK_API void iupdrvTableSelectLin(Ihandle* ih, int lin, int select)
+{
+  IupHaikuTableView* tv = haikuTableGetView(ih);
+  if (!tv) return;
+  LooperLockGuard guard(tv->Looper());
+  BRow* row = haikuTableGetRow(tv, lin);
+  if (!row) return;
+
+  if (select)
+    tv->AddToSelection(row);
+  else
+    tv->Deselect(row);
+}
+
+extern "C" IUP_SDK_API int* iupdrvTableGetSelectedLins(Ihandle* ih, int* count)
+{
+  IupHaikuTableView* tv = haikuTableGetView(ih);
+  *count = 0;
+  if (!tv) return NULL;
+
+  LooperLockGuard guard(tv->Looper());
+
+  int total = 0;
+  for (BRow* row = tv->CurrentSelection(); row; row = tv->CurrentSelection(row))
+    total++;
+
+  if (total == 0) return NULL;
+
+  int* lins = (int*)malloc(sizeof(int) * total);
+  int i = 0;
+
+  for (BRow* row = tv->CurrentSelection(); row && i < total; row = tv->CurrentSelection(row))
+  {
+    int lin = tv->IndexOf(row);
+    if (lin >= 0) lins[i++] = lin + 1;
+  }
+
+  *count = i;
+  return lins;
 }
 
 extern "C" IUP_SDK_API void iupdrvTableScrollToCell(Ihandle* ih, int lin, int /*col*/)

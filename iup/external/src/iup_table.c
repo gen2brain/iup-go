@@ -518,6 +518,78 @@ static int iTableSetFocusCellAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
+static char* iTableGetSelectedIdAttrib(Ihandle* ih, int lin)
+{
+  if (!ih->handle || lin < 1 || lin > ih->data->num_lin)
+    return NULL;
+
+  return iupStrReturnBoolean(iupdrvTableIsLinSelected(ih, lin));
+}
+
+static int iTableSetSelectedIdAttrib(Ihandle* ih, int lin, const char* value)
+{
+  if (!ih->handle || lin < 1 || lin > ih->data->num_lin)
+    return 0;
+
+  if (iupStrEqualNoCase(iupAttribGetStr(ih, "SELECTIONMODE"), "NONE"))
+    return 0;
+
+  iupAttribSet(ih, "_IUPTABLE_IGNORE_SELECTION_CB", "1");
+  iupdrvTableSelectLin(ih, lin, iupStrBoolean(value));
+  iupAttribSet(ih, "_IUPTABLE_IGNORE_SELECTION_CB", NULL);
+  return 0;
+}
+
+static char* iTableGetSelectedLinesAttrib(Ihandle* ih)
+{
+  int* lins;
+  int count, i;
+  char* str;
+
+  if (!ih->handle || ih->data->num_lin == 0)
+    return NULL;
+
+  str = iupStrGetMemory(ih->data->num_lin + 1);
+  memset(str, '-', ih->data->num_lin);
+  str[ih->data->num_lin] = 0;
+
+  lins = iupdrvTableGetSelectedLins(ih, &count);
+  if (lins)
+  {
+    for (i = 0; i < count; i++)
+    {
+      if (lins[i] >= 1 && lins[i] <= ih->data->num_lin)
+        str[lins[i] - 1] = '+';
+    }
+    free(lins);
+  }
+
+  return str;
+}
+
+static int iTableSetSelectedLinesAttrib(Ihandle* ih, const char* value)
+{
+  int count, lin;
+
+  if (!ih->handle || !value)
+    return 0;
+
+  if (!iupStrEqualNoCase(iupAttribGetStr(ih, "SELECTIONMODE"), "MULTIPLE"))
+    return 0;
+
+  count = (int)strlen(value);
+  if (count > ih->data->num_lin)
+    count = ih->data->num_lin;
+
+  iupAttribSet(ih, "_IUPTABLE_IGNORE_SELECTION_CB", "1");
+
+  for (lin = 1; lin <= count; lin++)
+    iupdrvTableSelectLin(ih, lin, value[lin - 1] == '+');
+
+  iupAttribSet(ih, "_IUPTABLE_IGNORE_SELECTION_CB", NULL);
+  return 0;
+}
+
 static char* iTableGetValueAttrib(Ihandle* ih)
 {
   if (!ih->handle)
@@ -772,6 +844,29 @@ int iupTableCallDragDropCb(Ihandle* ih, int drag_id, int drop_id, int *is_ctrl)
   return IUP_CONTINUE;  /* move/copy by default when no callback */
 }
 
+void iupTableCallMultiSelectionCb(Ihandle* ih)
+{
+  IFnIi cb;
+  int* lins;
+  int count;
+
+  if (iupAttribGet(ih, "_IUPTABLE_IGNORE_SELECTION_CB"))
+    return;
+
+  if (!iupStrEqualNoCase(iupAttribGetStr(ih, "SELECTIONMODE"), "MULTIPLE"))
+    return;
+
+  cb = (IFnIi)IupGetCallback(ih, "MULTISELECTION_CB");
+  if (!cb)
+    return;
+
+  lins = iupdrvTableGetSelectedLins(ih, &count);
+  cb(ih, lins, count);
+
+  if (lins)
+    free(lins);
+}
+
 void iupTableMoveLinAttribs(Ihandle* ih, int from_lin, int to_lin)
 {
   static const char* attribs[3] = { "BGCOLOR", "FGCOLOR", "FONT" };
@@ -900,6 +995,7 @@ Iclass* iupTableNewClass(void)
   iupClassRegisterCallback(ic, "IMAGE_CB", "ii=s");
   iupClassRegisterCallback(ic, "REORDER_CB", "ii");
   iupClassRegisterCallback(ic, "DRAGDROP_CB", "iiii");
+  iupClassRegisterCallback(ic, "MULTISELECTION_CB", "Ii");
 
   /* Common Callbacks */
   iupBaseRegisterCommonCallbacks(ic);
@@ -942,6 +1038,8 @@ Iclass* iupTableNewClass(void)
   iupClassRegisterAttribute(ic, "FOCUSCELL", iTableGetFocusCellAttrib, iTableSetFocusCellAttrib, IUPAF_SAMEASSYSTEM, "1:1", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "VALUE", iTableGetValueAttrib, iTableSetValueAttrib, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SELECTIONMODE", NULL, NULL, IUPAF_SAMEASSYSTEM, "SINGLE", IUPAF_NO_INHERIT);  /* NONE, SINGLE, MULTIPLE */
+  iupClassRegisterAttributeId(ic, "SELECTED", iTableGetSelectedIdAttrib, iTableSetSelectedIdAttrib, IUPAF_NO_SAVE | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTEDLINES", iTableGetSelectedLinesAttrib, iTableSetSelectedLinesAttrib, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
 
   /* Display attributes */
   iupClassRegisterAttribute(ic, "SHOWGRID", NULL, iTableSetShowGridAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);

@@ -140,6 +140,10 @@ EM_JS(void, iupwasmJsTableFocus, (int id, int lin, int col, int select, int focu
   globalThis.__iupApply({ op: 'tablefocus', id: id, lin: lin, col: col, select: select, focusrect: focusrect });
 })
 
+EM_JS(void, iupwasmJsTableSelect, (int id, int lin, int select), {
+  globalThis.__iupApply({ op: 'tableselect', id: id, lin: lin, select: select });
+})
+
 EM_JS(void, iupwasmJsTableScrollTo, (int id, int lin, int col), {
   globalThis.__iupApply({ op: 'tablescrollto', id: id, lin: lin, col: col });
 })
@@ -367,6 +371,67 @@ static void wasmTableUpdateFocus(Ihandle* ih, int lin, int col)
     iupwasmJsTableFocus(id, lin, col, select, focusrect);
 }
 
+/* the selected rows are kept as per-row attributes, the bounds keep a virtual table off a full scan */
+static void wasmTableSelectRow(Ihandle* ih, int lin, int select)
+{
+  int id = iupwasmIdOf(ih);
+
+  if (lin < 1 || lin > ih->data->num_lin)
+    return;
+
+  iupAttribSetId(ih, "_IUPWASM_TABLESEL", lin, select ? "1" : NULL);
+
+  if (select)
+  {
+    int first = iupAttribGetInt(ih, "_IUPWASM_TABLESELFIRST");
+    int last = iupAttribGetInt(ih, "_IUPWASM_TABLESELLAST");
+
+    if (first < 1 || lin < first)
+      iupAttribSetInt(ih, "_IUPWASM_TABLESELFIRST", lin);
+    if (lin > last)
+      iupAttribSetInt(ih, "_IUPWASM_TABLESELLAST", lin);
+  }
+
+  if (id && !iupAttribGetBoolean(ih, "VIRTUALMODE"))
+    iupwasmJsTableSelect(id, lin, select);
+}
+
+static void wasmTableSelectedRange(Ihandle* ih, int* first, int* last)
+{
+  *first = iupAttribGetInt(ih, "_IUPWASM_TABLESELFIRST");
+  *last = iupAttribGetInt(ih, "_IUPWASM_TABLESELLAST");
+
+  if (*first < 1)
+    *first = 1;
+  if (*last > ih->data->num_lin)
+    *last = ih->data->num_lin;
+}
+
+static void wasmTableSelectOnly(Ihandle* ih, int lin)
+{
+  int l, first, last;
+
+  wasmTableSelectedRange(ih, &first, &last);
+
+  for (l = first; l <= last; l++)
+  {
+    if (l != lin && iupAttribGetId(ih, "_IUPWASM_TABLESEL", l))
+      wasmTableSelectRow(ih, l, 0);
+  }
+
+  iupAttribSetInt(ih, "_IUPWASM_TABLESELFIRST", 0);
+  iupAttribSetInt(ih, "_IUPWASM_TABLESELLAST", 0);
+
+  wasmTableSelectRow(ih, lin, 1);
+}
+
+static void wasmTableSetFocus(Ihandle* ih, int lin, int col)
+{
+  iupAttribSetInt(ih, "_IUPWASM_FOCUSLIN", lin);
+  iupAttribSetInt(ih, "_IUPWASM_FOCUSCOL", col);
+  wasmTableUpdateFocus(ih, lin, col);
+}
+
 IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
 {
   int id = iupwasmIdOf(ih);
@@ -494,9 +559,55 @@ IUP_SDK_API int iupdrvTableGetColWidth(Ihandle* ih, int col)
 
 IUP_SDK_API void iupdrvTableSetFocusCell(Ihandle* ih, int lin, int col)
 {
-  iupAttribSetInt(ih, "_IUPWASM_FOCUSLIN", lin);
-  iupAttribSetInt(ih, "_IUPWASM_FOCUSCOL", col);
-  wasmTableUpdateFocus(ih, lin, col);
+  wasmTableSetFocus(ih, lin, col);
+
+  if (!iupStrEqualNoCase(iupAttribGetStr(ih, "SELECTIONMODE"), "NONE"))
+  {
+    wasmTableSelectOnly(ih, lin);
+    iupAttribSetInt(ih, "_IUPWASM_TABLEANCHOR", lin);
+  }
+}
+
+IUP_SDK_API int iupdrvTableIsLinSelected(Ihandle* ih, int lin)
+{
+  return iupAttribGetId(ih, "_IUPWASM_TABLESEL", lin) ? 1 : 0;
+}
+
+IUP_SDK_API void iupdrvTableSelectLin(Ihandle* ih, int lin, int select)
+{
+  wasmTableSelectRow(ih, lin, select);
+}
+
+IUP_SDK_API int* iupdrvTableGetSelectedLins(Ihandle* ih, int* count)
+{
+  int* lins;
+  int lin, first, last, i = 0;
+
+  *count = 0;
+
+  if (ih->data->num_lin <= 0)
+    return NULL;
+
+  wasmTableSelectedRange(ih, &first, &last);
+  if (last < first)
+    return NULL;
+
+  lins = (int*)malloc(sizeof(int) * (last - first + 1));
+
+  for (lin = first; lin <= last; lin++)
+  {
+    if (iupAttribGetId(ih, "_IUPWASM_TABLESEL", lin))
+      lins[i++] = lin;
+  }
+
+  if (i == 0)
+  {
+    free(lins);
+    return NULL;
+  }
+
+  *count = i;
+  return lins;
 }
 
 IUP_SDK_API void iupdrvTableGetFocusCell(Ihandle* ih, int* lin, int* col)
@@ -572,7 +683,44 @@ EMSCRIPTEN_KEEPALIVE void iupwasmTableCellClick(int id, int lin, int col, int mo
   if (!ih)
     return;
 
-  iupdrvTableSetFocusCell(ih, lin, col);
+  wasmTableSetFocus(ih, lin, col);
+
+  {
+    char* selmode = iupAttribGetStr(ih, "SELECTIONMODE");
+
+    if (!iupStrEqualNoCase(selmode, "NONE"))
+    {
+      int anchor = iupAttribGetInt(ih, "_IUPWASM_TABLEANCHOR");
+
+      if (iupStrEqualNoCase(selmode, "MULTIPLE") && (mods & 1) && anchor > 0)
+      {
+        int from = anchor < lin ? anchor : lin;
+        int to = anchor < lin ? lin : anchor;
+        int l, first, last;
+
+        wasmTableSelectedRange(ih, &first, &last);
+
+        for (l = first; l <= last; l++)
+          wasmTableSelectRow(ih, l, 0);
+
+        iupAttribSetInt(ih, "_IUPWASM_TABLESELFIRST", 0);
+        iupAttribSetInt(ih, "_IUPWASM_TABLESELLAST", 0);
+
+        for (l = from; l <= to; l++)
+          wasmTableSelectRow(ih, l, 1);
+      }
+      else if (iupStrEqualNoCase(selmode, "MULTIPLE") && (mods & 2))
+      {
+        wasmTableSelectRow(ih, lin, !iupdrvTableIsLinSelected(ih, lin));
+        iupAttribSetInt(ih, "_IUPWASM_TABLEANCHOR", lin);
+      }
+      else
+      {
+        wasmTableSelectOnly(ih, lin);
+        iupAttribSetInt(ih, "_IUPWASM_TABLEANCHOR", lin);
+      }
+    }
+  }
 
   enter_cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
   if (enter_cb)
@@ -586,6 +734,8 @@ EMSCRIPTEN_KEEPALIVE void iupwasmTableCellClick(int id, int lin, int col, int mo
     if (click_cb(ih, lin, col, status) == IUP_CLOSE)
       IupExitLoop();
   }
+
+  iupTableCallMultiSelectionCb(ih);
 }
 
 static int wasmTableCellEditable(Ihandle* ih, int col)

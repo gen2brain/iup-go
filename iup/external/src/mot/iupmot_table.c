@@ -77,6 +77,10 @@ typedef struct _ImotTableData
   int current_row;           /* Current focused row (1-based, 0=none) */
   int current_col;           /* Current focused column (1-based, 0=none) */
 
+  char* row_selected;        /* [num_lin] selection flags */
+  int row_selected_size;     /* allocated size of row_selected */
+  int anchor_row;            /* shift-click range anchor (1-based, 0=none) */
+
   /* Row drag-reorder state (SHOWDRAGDROP) */
   int drag_source_row;       /* Row where the drag started (1-based, 0=none) */
   int drag_target_row;       /* Insert-before index while dragging (0-based, -1=none) */
@@ -183,6 +187,74 @@ static void motTableSortRows(Ihandle* ih, int col, int ascending)
         mot_data->cell_values[j + 1] = temp_row;
       }
     }
+  }
+}
+
+/* ========================================================================= */
+/* Helper Functions - Selection                                             */
+/* ========================================================================= */
+
+static char* motTableSelection(Ihandle* ih)
+{
+  ImotTableData* mot_data = IMOT_TABLE_DATA(ih);
+
+  if (ih->data->num_lin <= 0)
+    return NULL;
+
+  if (mot_data->row_selected_size < ih->data->num_lin)
+  {
+    mot_data->row_selected = (char*)realloc(mot_data->row_selected, ih->data->num_lin);
+    memset(mot_data->row_selected + mot_data->row_selected_size, 0, ih->data->num_lin - mot_data->row_selected_size);
+    mot_data->row_selected_size = ih->data->num_lin;
+  }
+
+  return mot_data->row_selected;
+}
+
+static int motTableRowSelected(Ihandle* ih, int lin)
+{
+  ImotTableData* mot_data = IMOT_TABLE_DATA(ih);
+
+  if (!mot_data->row_selected || lin < 1 || lin > mot_data->row_selected_size)
+    return 0;
+
+  return mot_data->row_selected[lin - 1];
+}
+
+static void motTableSelectRow(Ihandle* ih, int lin, int select, int exclusive)
+{
+  char* sel = motTableSelection(ih);
+
+  if (!sel || lin < 1 || lin > ih->data->num_lin)
+    return;
+
+  if (exclusive)
+    memset(sel, 0, ih->data->num_lin);
+
+  sel[lin - 1] = (char)(select ? 1 : 0);
+}
+
+static void motTableSelectRange(Ihandle* ih, int from, int to)
+{
+  char* sel = motTableSelection(ih);
+  int lin;
+
+  if (!sel)
+    return;
+
+  if (from > to)
+  {
+    lin = from;
+    from = to;
+    to = lin;
+  }
+
+  memset(sel, 0, ih->data->num_lin);
+
+  for (lin = from; lin <= to; lin++)
+  {
+    if (lin >= 1 && lin <= ih->data->num_lin)
+      sel[lin - 1] = 1;
   }
 }
 
@@ -372,7 +444,7 @@ static void motTableDrawCell(Ihandle* ih, int lin, int col, int is_header)
   const char* text;
   int text_len, text_width, text_x, text_y;
   int is_focused_cell = (lin == mot_data->current_row && col == mot_data->current_col);
-  int is_focused_row = (lin == mot_data->current_row && !is_header);
+  int is_focused_row = (!is_header && motTableRowSelected(ih, lin));
 
   if (is_header)
   {
@@ -699,7 +771,7 @@ static void motTableDrawTable(Ihandle* ih)
           int ry = mot_data->header_height + (lin - 1) * mot_data->row_height - mot_data->scroll_y;
           Pixel bg = mot_data->bg_pixel;
 
-          if (lin == mot_data->current_row)
+          if (motTableRowSelected(ih, lin))
             bg = mot_data->select_bg_pixel;
           else
           {
@@ -983,6 +1055,24 @@ static void motTableInputCallback(Widget w, XtPointer client_data, XtPointer cal
       mot_data->current_row = lin;
       mot_data->current_col = col;
 
+      char* selmode = iupAttribGetStr(ih, "SELECTIONMODE");
+
+      if (!iupStrEqualNoCase(selmode, "NONE"))
+      {
+        if (iupStrEqualNoCase(selmode, "MULTIPLE") && (button_event->state & ShiftMask) && mot_data->anchor_row > 0)
+          motTableSelectRange(ih, mot_data->anchor_row, lin);
+        else if (iupStrEqualNoCase(selmode, "MULTIPLE") && (button_event->state & ControlMask))
+        {
+          motTableSelectRow(ih, lin, !motTableRowSelected(ih, lin), 0);
+          mot_data->anchor_row = lin;
+        }
+        else
+        {
+          motTableSelectRow(ih, lin, 1, 1);
+          mot_data->anchor_row = lin;
+        }
+      }
+
       if (ih->data->show_dragdrop && button_event->button == Button1)
       {
         mot_data->drag_source_row = lin;
@@ -1003,6 +1093,8 @@ static void motTableInputCallback(Widget w, XtPointer client_data, XtPointer cal
       IFnii enteritem_cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
       if (enteritem_cb)
         enteritem_cb(ih, lin, col);
+
+      iupTableCallMultiSelectionCb(ih);
 
       motTableRedraw(ih);
 
@@ -1201,7 +1293,17 @@ static void motTableKeyPressCallback(Widget w, XtPointer client_data, XEvent* ev
   }
 
   if (redraw)
+  {
+    if (!iupStrEqualNoCase(iupAttribGetStr(ih, "SELECTIONMODE"), "NONE"))
+    {
+      motTableSelectRow(ih, mot_data->current_row, 1, 1);
+      mot_data->anchor_row = mot_data->current_row;
+    }
+
+    iupTableCallMultiSelectionCb(ih);
+
     motTableRedraw(ih);
+  }
 
   (void)w;
 }
@@ -1635,6 +1737,9 @@ static void motTableUnMapMethod(Ihandle* ih)
     free(mot_data->col_titles);
   }
 
+  if (mot_data->row_selected)
+    free(mot_data->row_selected);
+
   if (mot_data->col_widths)
     free(mot_data->col_widths);
 
@@ -1696,6 +1801,9 @@ IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
   }
 
   ih->data->num_lin = num_lin;
+
+  if (mot_data->row_selected && mot_data->row_selected_size > num_lin)
+    memset(mot_data->row_selected + num_lin, 0, mot_data->row_selected_size - num_lin);
 
   motTableUpdateScrollbars(ih);
   motTableRedraw(ih);
@@ -1770,6 +1878,14 @@ IUP_SDK_API void iupdrvTableAddLin(Ihandle* ih, int pos)
 
   ih->data->num_lin = new_num_lin;
 
+  if (mot_data->row_selected)
+  {
+    char* sel = motTableSelection(ih);
+    for (lin = new_num_lin - 1; lin > pos; lin--)
+      sel[lin] = sel[lin - 1];
+    sel[pos] = 0;
+  }
+
   motTableUpdateScrollbars(ih);
   motTableRedraw(ih);
 }
@@ -1802,6 +1918,13 @@ IUP_SDK_API void iupdrvTableDelLin(Ihandle* ih, int pos)
   for (lin = pos; lin < new_num_lin; lin++)
   {
     mot_data->cell_values[lin] = mot_data->cell_values[lin + 1];
+  }
+
+  if (mot_data->row_selected)
+  {
+    for (lin = pos; lin < mot_data->row_selected_size - 1; lin++)
+      mot_data->row_selected[lin] = mot_data->row_selected[lin + 1];
+    mot_data->row_selected[mot_data->row_selected_size - 1] = 0;
   }
 
   if (new_num_lin > 0)
@@ -2056,6 +2179,13 @@ IUP_SDK_API void iupdrvTableSetFocusCell(Ihandle* ih, int lin, int col)
 
   mot_data->current_row = lin;
   mot_data->current_col = col;
+
+  if (!iupStrEqualNoCase(iupAttribGetStr(ih, "SELECTIONMODE"), "NONE"))
+  {
+    motTableSelectRow(ih, lin, 1, 1);
+    mot_data->anchor_row = lin;
+  }
+
   motTableRedraw(ih);
 
   IFnii enteritem_cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
@@ -2074,6 +2204,54 @@ IUP_SDK_API void iupdrvTableGetFocusCell(Ihandle* ih, int* lin, int* col)
 
   if (lin) *lin = mot_data->current_row;
   if (col) *col = mot_data->current_col;
+}
+
+IUP_SDK_API int iupdrvTableIsLinSelected(Ihandle* ih, int lin)
+{
+  if (!IMOT_TABLE_DATA(ih))
+    return 0;
+
+  return motTableRowSelected(ih, lin);
+}
+
+IUP_SDK_API void iupdrvTableSelectLin(Ihandle* ih, int lin, int select)
+{
+  ImotTableData* mot_data = IMOT_TABLE_DATA(ih);
+
+  if (!mot_data)
+    return;
+
+  motTableSelectRow(ih, lin, select, 0);
+  motTableRedraw(ih);
+}
+
+IUP_SDK_API int* iupdrvTableGetSelectedLins(Ihandle* ih, int* count)
+{
+  ImotTableData* mot_data = IMOT_TABLE_DATA(ih);
+  int* lins;
+  int lin, i = 0;
+
+  *count = 0;
+
+  if (!mot_data || !mot_data->row_selected || ih->data->num_lin <= 0)
+    return NULL;
+
+  lins = (int*)malloc(sizeof(int) * ih->data->num_lin);
+
+  for (lin = 1; lin <= ih->data->num_lin; lin++)
+  {
+    if (motTableRowSelected(ih, lin))
+      lins[i++] = lin;
+  }
+
+  if (i == 0)
+  {
+    free(lins);
+    return NULL;
+  }
+
+  *count = i;
+  return lins;
 }
 
 IUP_SDK_API void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col)

@@ -1903,6 +1903,83 @@ extern "C" IUP_SDK_API void iupdrvTableGetFocusCell(Ihandle* ih, int* lin, int* 
  * Scrolling
  ****************************************************************************/
 
+extern "C" IUP_SDK_API int iupdrvTableIsLinSelected(Ihandle* ih, int lin)
+{
+  if (lin < 1 || lin > ih->data->num_lin)
+    return 0;
+
+  return winuiTableIsRowSelected(ih, lin) ? 1 : 0;
+}
+
+extern "C" IUP_SDK_API void iupdrvTableSelectLin(Ihandle* ih, int lin, int select)
+{
+  ListView listView = winuiTableGetListView(ih);
+  if (!listView || lin < 1 || lin > ih->data->num_lin)
+    return;
+
+  uint32_t index = (uint32_t)(lin - 1);
+  if (index >= listView.Items().Size())
+    return;
+
+  if (listView.SelectionMode() == ListViewSelectionMode::Single)
+  {
+    listView.SelectedIndex(select ? (int)index : -1);
+    return;
+  }
+
+  auto item = listView.Items().GetAt(index);
+  uint32_t sel_idx;
+  bool selected = listView.SelectedItems().IndexOf(item, sel_idx);
+
+  if (select && !selected)
+    listView.SelectedItems().Append(item);
+  else if (!select && selected)
+    listView.SelectedItems().RemoveAt(sel_idx);
+}
+
+extern "C" IUP_SDK_API int* iupdrvTableGetSelectedLins(Ihandle* ih, int* count)
+{
+  ListView listView = winuiTableGetListView(ih);
+  *count = 0;
+
+  if (!listView)
+    return NULL;
+
+  if (listView.SelectionMode() == ListViewSelectionMode::None)
+    return NULL;
+
+  if (listView.SelectionMode() == ListViewSelectionMode::Single)
+  {
+    int index = listView.SelectedIndex();
+    if (index < 0)
+      return NULL;
+
+    int* single = (int*)malloc(sizeof(int));
+    single[0] = index + 1;
+    *count = 1;
+    return single;
+  }
+
+  auto items = listView.Items();
+  auto selected = listView.SelectedItems();
+  uint32_t total = selected.Size();
+  if (total == 0)
+    return NULL;
+
+  int* lins = (int*)malloc(sizeof(int) * total);
+  int i = 0;
+
+  for (uint32_t lin = 0; lin < items.Size(); lin++)
+  {
+    uint32_t sel_idx;
+    if (selected.IndexOf(items.GetAt(lin), sel_idx))
+      lins[i++] = (int)lin + 1;
+  }
+
+  *count = i;
+  return lins;
+}
+
 extern "C" IUP_SDK_API void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col)
 {
   (void)col;
@@ -3054,6 +3131,8 @@ static int winuiTableMapMethod(Ihandle* ih)
 
     ListView lv = winuiTableGetListView(ih);
     if (!lv) return;
+
+    iupTableCallMultiSelectionCb(ih);
 
     int old_row = a->current_row;
 

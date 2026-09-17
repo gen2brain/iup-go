@@ -1132,6 +1132,8 @@ static void on_selection_changed(GtkSelectionModel* selection, guint position, g
   Igtk4TableData* gtk_data = IGTK4_TABLE_DATA(ih);
   int old_row = gtk_data->current_row;
 
+  iupTableCallMultiSelectionCb(ih);
+
   if (GTK_IS_SINGLE_SELECTION(selection))
   {
     GObject* item = gtk_single_selection_get_selected_item(GTK_SINGLE_SELECTION(selection));
@@ -2346,6 +2348,78 @@ IUP_SDK_API void iupdrvTableGetFocusCell(Ihandle* ih, int* lin, int* col)
 
   *lin = gtk_data->current_row;
   *col = gtk_data->current_col;
+}
+
+IUP_SDK_API int iupdrvTableIsLinSelected(Ihandle* ih, int lin)
+{
+  Igtk4TableData* gtk_data = IGTK4_TABLE_DATA(ih);
+  guint pos;
+
+  if (!gtk_data || !gtk_data->selection_model)
+    return 0;
+
+  pos = gtk4TableViewPos(gtk_data, lin);
+  if (pos == GTK_INVALID_LIST_POSITION)
+    return 0;
+
+  return gtk_selection_model_is_selected(gtk_data->selection_model, pos);
+}
+
+IUP_SDK_API void iupdrvTableSelectLin(Ihandle* ih, int lin, int select)
+{
+  Igtk4TableData* gtk_data = IGTK4_TABLE_DATA(ih);
+  guint pos;
+
+  if (!gtk_data || !gtk_data->selection_model)
+    return;
+
+  pos = gtk4TableViewPos(gtk_data, lin);
+  if (pos == GTK_INVALID_LIST_POSITION)
+    return;
+
+  if (select)
+    gtk_selection_model_select_item(gtk_data->selection_model, pos, FALSE);
+  else
+    gtk_selection_model_unselect_item(gtk_data->selection_model, pos);
+}
+
+IUP_SDK_API int* iupdrvTableGetSelectedLins(Ihandle* ih, int* count)
+{
+  Igtk4TableData* gtk_data = IGTK4_TABLE_DATA(ih);
+  GtkBitset* set;
+  GtkBitsetIter iter;
+  int* lins;
+  guint pos;
+  int i = 0;
+
+  *count = 0;
+
+  if (!gtk_data || !gtk_data->selection_model)
+    return NULL;
+
+  set = gtk_selection_model_get_selection(gtk_data->selection_model);
+  if (gtk_bitset_is_empty(set))
+  {
+    gtk_bitset_unref(set);
+    return NULL;
+  }
+
+  lins = (int*)malloc(sizeof(int) * gtk_bitset_get_size(set));
+
+  if (gtk_bitset_iter_init_first(&iter, set, &pos))
+  {
+    do
+    {
+      int lin = gtk4TableLinFromViewPos(gtk_data, pos);
+      if (lin > 0)
+        lins[i++] = lin;
+    } while (gtk_bitset_iter_next(&iter, &pos));
+  }
+
+  gtk_bitset_unref(set);
+
+  *count = i;
+  return lins;
 }
 
 /* ========================================================================= */

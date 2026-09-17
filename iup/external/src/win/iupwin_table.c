@@ -985,6 +985,7 @@ IUP_SDK_API void iupdrvTableSetFocusCell(Ihandle* ih, int lin, int col)
 
   data->suppress_callbacks = 1;
 
+  ListView_SetItemState(list_view, -1, 0, LVIS_SELECTED);
   ListView_SetItemState(list_view, lin - 1, LVIS_FOCUSED | LVIS_SELECTED, LVIS_FOCUSED | LVIS_SELECTED);
 
   ListView_EnsureVisible(list_view, lin - 1, FALSE);
@@ -1013,6 +1014,54 @@ IUP_SDK_API void iupdrvTableGetFocusCell(Ihandle* ih, int* lin, int* col)
 /****************************************************************************
  * Scrolling
  ****************************************************************************/
+
+IUP_SDK_API int iupdrvTableIsLinSelected(Ihandle* ih, int lin)
+{
+  HWND list_view = winTableGetListView(ih);
+
+  if (!list_view || lin < 1 || lin > ih->data->num_lin)
+    return 0;
+
+  return (ListView_GetItemState(list_view, lin - 1, LVIS_SELECTED) & LVIS_SELECTED) ? 1 : 0;
+}
+
+IUP_SDK_API void iupdrvTableSelectLin(Ihandle* ih, int lin, int select)
+{
+  HWND list_view = winTableGetListView(ih);
+
+  if (!list_view || lin < 1 || lin > ih->data->num_lin)
+    return;
+
+  ListView_SetItemState(list_view, lin - 1, select ? LVIS_SELECTED : 0, LVIS_SELECTED);
+}
+
+IUP_SDK_API int* iupdrvTableGetSelectedLins(Ihandle* ih, int* count)
+{
+  HWND list_view = winTableGetListView(ih);
+  int* lins;
+  int total, item, i = 0;
+
+  *count = 0;
+
+  if (!list_view)
+    return NULL;
+
+  total = ListView_GetSelectedCount(list_view);
+  if (total <= 0)
+    return NULL;
+
+  lins = (int*)malloc(sizeof(int) * total);
+
+  item = ListView_GetNextItem(list_view, -1, LVNI_SELECTED);
+  while (item >= 0 && i < total)
+  {
+    lins[i++] = item + 1;
+    item = ListView_GetNextItem(list_view, item, LVNI_SELECTED);
+  }
+
+  *count = i;
+  return lins;
+}
 
 IUP_SDK_API void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col)
 {
@@ -1746,6 +1795,19 @@ static int winTableNotifyCallback(Ihandle* ih, void* msg_info, int* result)
       break;
     }
 
+    case LVN_ITEMCHANGING:
+    {
+      LPNMLISTVIEW pnmv = (LPNMLISTVIEW)msg_info;
+
+      if ((pnmv->uChanged & LVIF_STATE) && (pnmv->uNewState & LVIS_SELECTED) && !(pnmv->uOldState & LVIS_SELECTED) &&
+          iupStrEqualNoCase(iupAttribGetStr(ih, "SELECTIONMODE"), "NONE"))
+      {
+        *result = TRUE;
+        return 1;
+      }
+      break;
+    }
+
     case LVN_ITEMCHANGED:
     {
       LPNMLISTVIEW pnmv = (LPNMLISTVIEW)msg_info;
@@ -1757,6 +1819,10 @@ static int winTableNotifyCallback(Ihandle* ih, void* msg_info, int* result)
         /* Update row (column will be updated in NM_CLICK) */
         data->current_row = lin;
       }
+
+      if ((pnmv->uChanged & LVIF_STATE) && ((pnmv->uNewState ^ pnmv->uOldState) & LVIS_SELECTED) && !data->suppress_callbacks)
+        iupTableCallMultiSelectionCb(ih);
+
       break;
     }
 
@@ -2398,6 +2464,11 @@ static int winTableKeyProc(Ihandle* ih, HWND hwnd, UINT msg, WPARAM wp, LPARAM l
     if (data->edit_control)
       return 0;
 
+    if ((wp == VK_UP || wp == VK_DOWN) &&
+        (GetKeyState(VK_SHIFT) & 0x8000 || GetKeyState(VK_CONTROL) & 0x8000) &&
+        iupStrEqualNoCase(iupAttribGetStr(ih, "SELECTIONMODE"), "MULTIPLE"))
+      return 0;  /* the list view extends the selection itself */
+
     switch (wp)
     {
       case VK_UP:
@@ -2409,6 +2480,7 @@ static int winTableKeyProc(Ihandle* ih, HWND hwnd, UINT msg, WPARAM wp, LPARAM l
           if (enteritem_cb)
             enteritem_cb(ih, lin - 1, col);
 
+          iupTableCallMultiSelectionCb(ih);
           handled = TRUE;
         }
         break;
@@ -2422,6 +2494,7 @@ static int winTableKeyProc(Ihandle* ih, HWND hwnd, UINT msg, WPARAM wp, LPARAM l
           if (enteritem_cb)
             enteritem_cb(ih, lin + 1, col);
 
+          iupTableCallMultiSelectionCb(ih);
           handled = TRUE;
         }
         break;
@@ -2667,7 +2740,10 @@ static int winTableMapMethod(Ihandle* ih)
   data->hfont = NULL;
 
   /* no WS_VISIBLE initially, shown after the first layout */
-  dwStyle = WS_CHILD | WS_BORDER | WS_TABSTOP | LVS_REPORT | LVS_SINGLESEL | LVS_SHOWSELALWAYS;
+  dwStyle = WS_CHILD | WS_BORDER | WS_TABSTOP | LVS_REPORT | LVS_SHOWSELALWAYS;
+
+  if (!iupStrEqualNoCase(iupAttribGetStr(ih, "SELECTIONMODE"), "MULTIPLE"))
+    dwStyle |= LVS_SINGLESEL;
 
   if (iupStrBoolean(virtualmode))
     dwStyle |= LVS_OWNERDATA;

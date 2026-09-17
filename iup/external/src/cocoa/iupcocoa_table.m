@@ -1380,10 +1380,19 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
   return rowView;
 }
 
+- (BOOL)tableView:(NSTableView*)tableView shouldSelectRow:(NSInteger)row
+{
+  (void)tableView;
+  (void)row;
+  return iupStrEqualNoCase(iupAttribGetStr(ih, "SELECTIONMODE"), "NONE") ? NO : YES;
+}
+
 - (void)tableViewSelectionDidChange:(NSNotification*)notification
 {
   NSTableView* tableView = [notification object];
   NSInteger selectedRow = [tableView selectedRow];
+
+  iupTableCallMultiSelectionCb(ih);
 
   /* NSTableView tracks no current column in row-selection mode, so it is tracked manually */
   IcocoaTableData* table_data = ICOCOA_TABLE_DATA(ih);
@@ -2345,6 +2354,52 @@ IUP_SDK_API void iupdrvTableGetFocusCell(Ihandle* ih, int* lin, int* col)
   *col = (selectedColumn >= 0) ? (int)selectedColumn + 1 : 0;
 }
 
+IUP_SDK_API int iupdrvTableIsLinSelected(Ihandle* ih, int lin)
+{
+  NSTableView* tableView = cocoaTableGetTableView(ih);
+  if (!tableView || lin < 1 || lin > ih->data->num_lin)
+    return 0;
+
+  return [[tableView selectedRowIndexes] containsIndex:(NSUInteger)(lin - 1)] ? 1 : 0;
+}
+
+IUP_SDK_API void iupdrvTableSelectLin(Ihandle* ih, int lin, int select)
+{
+  NSTableView* tableView = cocoaTableGetTableView(ih);
+  if (!tableView || lin < 1 || lin > ih->data->num_lin)
+    return;
+
+  if (select)
+    [tableView selectRowIndexes:[NSIndexSet indexSetWithIndex:(NSUInteger)(lin - 1)] byExtendingSelection:YES];
+  else
+    [tableView deselectRow:(NSInteger)(lin - 1)];
+}
+
+IUP_SDK_API int* iupdrvTableGetSelectedLins(Ihandle* ih, int* count)
+{
+  NSTableView* tableView = cocoaTableGetTableView(ih);
+  *count = 0;
+
+  if (!tableView)
+    return NULL;
+
+  NSIndexSet* rows = [tableView selectedRowIndexes];
+  NSUInteger total = [rows count];
+  if (total == 0)
+    return NULL;
+
+  int* lins = (int*)malloc(sizeof(int) * total);
+  __block int i = 0;
+
+  [rows enumerateIndexesUsingBlock:^(NSUInteger index, BOOL* stop) {
+    (void)stop;
+    lins[i++] = (int)index + 1;
+  }];
+
+  *count = i;
+  return lins;
+}
+
 /* ========================================================================= */
 /* Driver Functions - Scrolling & Display                                   */
 /* ========================================================================= */
@@ -2574,9 +2629,7 @@ static int cocoaTableMapMethod(Ihandle* ih)
   if (!selmode)
     selmode = "SINGLE";  /* Default */
 
-  if (iupStrEqualNoCase(selmode, "NONE"))
-    [tableView setAllowsEmptySelection:NO];
-  else if (iupStrEqualNoCase(selmode, "MULTIPLE"))
+  if (iupStrEqualNoCase(selmode, "MULTIPLE"))
     [tableView setAllowsMultipleSelection:YES];
   else
     [tableView setAllowsMultipleSelection:NO];

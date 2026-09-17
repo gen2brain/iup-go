@@ -278,6 +278,57 @@ IUP_SDK_API void iupdrvTableGetFocusCell(Ihandle* ih, int* lin, int* col)
   if (col) *col = (int)c;
 }
 
+IUP_SDK_API int iupdrvTableIsLinSelected(Ihandle* ih, int lin)
+{
+  if (!ih->handle) return 0;
+  JNIEnv* env = iupAndroid_GetEnvThreadSafe();
+  jclass cls = androidTableFindClass(env);
+  jmethodID m = (*env)->GetStaticMethodID(env, cls, "isLinSelected", "(Landroid/view/View;I)Z");
+  jboolean selected = (*env)->CallStaticBooleanMethod(env, cls, m, ih->handle, (jint)lin);
+  iupAndroid_CheckException(env, "IupTableHelper.isLinSelected");
+  (*env)->DeleteLocalRef(env, cls);
+  return selected == JNI_TRUE ? 1 : 0;
+}
+
+IUP_SDK_API void iupdrvTableSelectLin(Ihandle* ih, int lin, int select)
+{
+  if (!ih->handle) return;
+  JNIEnv* env = iupAndroid_GetEnvThreadSafe();
+  jclass cls = androidTableFindClass(env);
+  jmethodID m = (*env)->GetStaticMethodID(env, cls, "selectLin", "(Landroid/view/View;IZ)V");
+  (*env)->CallStaticVoidMethod(env, cls, m, ih->handle, (jint)lin, (jboolean)(select ? JNI_TRUE : JNI_FALSE));
+  iupAndroid_CheckException(env, "IupTableHelper.selectLin");
+  (*env)->DeleteLocalRef(env, cls);
+}
+
+IUP_SDK_API int* iupdrvTableGetSelectedLins(Ihandle* ih, int* count)
+{
+  *count = 0;
+  if (!ih->handle) return NULL;
+
+  JNIEnv* env = iupAndroid_GetEnvThreadSafe();
+  jclass cls = androidTableFindClass(env);
+  jmethodID m = (*env)->GetStaticMethodID(env, cls, "getSelectedLins", "(Landroid/view/View;)[I");
+  jintArray array = (jintArray)(*env)->CallStaticObjectMethod(env, cls, m, ih->handle);
+  iupAndroid_CheckException(env, "IupTableHelper.getSelectedLins");
+  (*env)->DeleteLocalRef(env, cls);
+
+  if (!array) return NULL;
+
+  jsize total = (*env)->GetArrayLength(env, array);
+  int* lins = NULL;
+
+  if (total > 0)
+  {
+    lins = (int*)malloc(sizeof(int) * total);
+    (*env)->GetIntArrayRegion(env, array, 0, total, (jint*)lins);
+    *count = (int)total;
+  }
+
+  (*env)->DeleteLocalRef(env, array);
+  return lins;
+}
+
 IUP_SDK_API void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col)
 {
   if (!ih->handle) return;
@@ -578,6 +629,20 @@ static int androidTableSetFocusRectAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
+static int androidTableSetSelectionModeAttrib(Ihandle* ih, const char* value)
+{
+  if (!ih->handle) return 1;
+  JNIEnv* env = iupAndroid_GetEnvThreadSafe();
+  jclass cls = androidTableFindClass(env);
+  jmethodID m = (*env)->GetStaticMethodID(env, cls, "setSelectionMode", "(Landroid/view/View;Ljava/lang/String;)V");
+  jstring jmode = (*env)->NewStringUTF(env, value ? value : "SINGLE");
+  (*env)->CallStaticVoidMethod(env, cls, m, ih->handle, jmode);
+  iupAndroid_CheckException(env, "IupTableHelper.setSelectionMode");
+  (*env)->DeleteLocalRef(env, jmode);
+  (*env)->DeleteLocalRef(env, cls);
+  return 1;
+}
+
 static int androidTableSetEditableIdAttrib(Ihandle* ih, int col, const char* value)
 {
   if (!ih->handle) return 1;
@@ -784,4 +849,5 @@ IUP_SDK_API void iupdrvTableInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "ALLOWREORDER", androidTableGetAllowReorderAttrib, androidTableSetAllowReorderAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "VIRTUALMODE", NULL, androidTableSetVirtualModeAttrib, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FOCUSRECT", NULL, androidTableSetFocusRectAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTIONMODE", NULL, androidTableSetSelectionModeAttrib, IUPAF_SAMEASSYSTEM, "SINGLE", IUPAF_NO_INHERIT);
 }

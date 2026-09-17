@@ -1963,7 +1963,11 @@ type MultiSelectionFunc func(ih Ihandle, ids []int, n int) int
 func goIupMultiSelectionCB(ih unsafe.Pointer, ids *C.int, n C.int) C.int {
 	f := loadCallback((Ihandle)(ih), "_IUPGO_MULTISELECTION_CB").Value().(MultiSelectionFunc)
 
-	goIds := unsafe.Slice((*int)(unsafe.Pointer(ids)), n)
+	cIds := unsafe.Slice(ids, n)
+	goIds := make([]int, n)
+	for i, id := range cIds {
+		goIds[i] = int(id)
+	}
 
 	return C.int(f((Ihandle)(ih), goIds, int(n)))
 }
@@ -1985,7 +1989,11 @@ type MultiUnselectionFunc func(ih Ihandle, ids []int, n int) int
 func goIupMultiUnselectionCB(ih unsafe.Pointer, ids *C.int, n C.int) C.int {
 	f := loadCallback((Ihandle)(ih), "_IUPGO_MULTIUNSELECTION_CB").Value().(MultiUnselectionFunc)
 
-	goIds := unsafe.Slice((*int)(unsafe.Pointer(ids)), n)
+	cIds := unsafe.Slice(ids, n)
+	goIds := make([]int, n)
+	for i, id := range cIds {
+		goIds[i] = int(id)
+	}
 
 	return C.int(f((Ihandle)(ih), goIds, int(n)))
 }
