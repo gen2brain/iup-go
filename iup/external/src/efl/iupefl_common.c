@@ -138,6 +138,16 @@ IUP_DRV_API void iupeflGetOrigin(Ihandle* ih, int *x, int *y)
   Ihandle* parent;
   int abs_x = 0, abs_y = 0;
 
+  /* a tab page child carries the container itself, ancestors carry it only for deeper children */
+  Eo* own_box = (Eo*)iupAttribGet(ih, "_IUPTAB_CONTAINER");
+  if (own_box)
+  {
+    Eina_Rect geom = efl_gfx_entity_geometry_get(own_box);
+    *x = geom.x;
+    *y = geom.y;
+    return;
+  }
+
   for (parent = ih->parent; parent; parent = parent->parent)
   {
     Eo* content_box = (Eo*)iupAttribGet(parent, "_IUPTAB_CONTAINER");
