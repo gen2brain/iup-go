@@ -417,8 +417,8 @@ IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
 
   if (ih->data->is_dropdown)
   {
-    /* Measure the real widget; callers add sb_size after, so subtract it here. */
-    if (!ih->data->has_editbox && ih->handle && GTK_IS_DROP_DOWN(ih->handle))
+    /* measure the real widget, hidden it reports 0, callers add sb_size after so subtract it here */
+    if (!ih->data->has_editbox && ih->handle && gtk_widget_get_visible(ih->handle) && GTK_IS_DROP_DOWN(ih->handle))
     {
       int rnat_w = 0, rnat_h = 0, sb_size = iupdrvGetScrollbarSize();
       gtk_widget_measure(ih->handle, GTK_ORIENTATION_HORIZONTAL, -1, NULL, &rnat_w, NULL, NULL);
