@@ -767,6 +767,13 @@ static gboolean gtkTableButtonEvent(GtkWidget* widget, GdkEventButton* evt, Ihan
       return FALSE;  /* let GtkTreeView select and start the row drag */
     }
 
+    if ((evt->state & (GDK_CONTROL_MASK | GDK_SHIFT_MASK)) &&
+        iupStrEqualNoCase(iupAttribGetStr(ih, "SELECTIONMODE"), "MULTIPLE"))
+    {
+      gtk_tree_path_free(path);
+      return FALSE;  /* set_cursor would clear the selection GtkTreeView is extending */
+    }
+
     gtk_tree_view_set_cursor(GTK_TREE_VIEW(widget), path, column, FALSE);
     gtk_tree_path_free(path);
     return TRUE;
@@ -932,49 +939,8 @@ static void gtkTableCursorChanged(GtkTreeView* tree_view, Ihandle* ih)
 
 static void gtkTableSelectionChanged(GtkTreeSelection* selection, Ihandle* ih)
 {
-  IFnii cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
-  if (!cb)
-    return;
-
-  GtkSelectionMode mode = gtk_tree_selection_get_mode(selection);
-
-  if (mode == GTK_SELECTION_MULTIPLE)
-  {
-    GList* rows = gtk_tree_selection_get_selected_rows(selection, NULL);
-    if (rows)
-    {
-      GtkTreePath* path = (GtkTreePath*)rows->data;
-      int* indices = gtk_tree_path_get_indices(path);
-      int lin = indices[0] + 1;  /* 1-based */
-
-      cb(ih, lin, 1);  /* Column is always 1 for row selection */
-
-      g_list_free_full(rows, (GDestroyNotify)gtk_tree_path_free);
-    }
-    else
-    {
-      cb(ih, 0, 0);  /* Selection cleared */
-    }
-  }
-  else
-  {
-    GtkTreeModel* model;
-    GtkTreeIter iter;
-
-    if (gtk_tree_selection_get_selected(selection, &model, &iter))
-    {
-      GtkTreePath* path = gtk_tree_model_get_path(model, &iter);
-      int* indices = gtk_tree_path_get_indices(path);
-      int lin = indices[0] + 1;  /* 1-based */
-      gtk_tree_path_free(path);
-
-      cb(ih, lin, 1);  /* Column is always 1 for row selection */
-    }
-    else
-    {
-      cb(ih, 0, 0);  /* Selection cleared */
-    }
-  }
+  (void)selection;
+  iupTableCallMultiSelectionCb(ih);
 }
 
 /* ========================================================================= */
@@ -1852,6 +1818,8 @@ static int gtkTableMapMethod(Ihandle* ih)
   g_signal_connect(gtk_data->tree_view, "cursor-changed", G_CALLBACK(gtkTableCursorChanged), ih);
   g_signal_connect(gtk_data->tree_view, "columns-changed", G_CALLBACK(gtkTableColumnsChanged), ih);
 
+  g_signal_connect(gtk_tree_view_get_selection(GTK_TREE_VIEW(gtk_data->tree_view)), "changed", G_CALLBACK(gtkTableSelectionChanged), ih);
+
   if (ih->data->show_dragdrop)
     gtkTableEnableDragDrop(ih);
 #if GTK_CHECK_VERSION(3, 0, 0)
@@ -2364,6 +2332,74 @@ IUP_SDK_API void iupdrvTableGetFocusCell(Ihandle* ih, int* lin, int* col)
     *lin = 1;
     *col = 1;
   }
+}
+
+IUP_SDK_API int iupdrvTableIsLinSelected(Ihandle* ih, int lin)
+{
+  IgtkTableData* gtk_data = IGTK_TABLE_DATA(ih);
+  GtkTreeSelection* selection;
+  GtkTreePath* path;
+  int selected;
+
+  if (lin < 1 || lin > ih->data->num_lin)
+    return 0;
+
+  selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(gtk_data->tree_view));
+  path = gtk_tree_path_new_from_indices(lin - 1, -1);
+  selected = gtk_tree_selection_path_is_selected(selection, path);
+  gtk_tree_path_free(path);
+
+  return selected;
+}
+
+IUP_SDK_API void iupdrvTableSelectLin(Ihandle* ih, int lin, int select)
+{
+  IgtkTableData* gtk_data = IGTK_TABLE_DATA(ih);
+  GtkTreeSelection* selection;
+  GtkTreePath* path;
+
+  if (lin < 1 || lin > ih->data->num_lin)
+    return;
+
+  selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(gtk_data->tree_view));
+  path = gtk_tree_path_new_from_indices(lin - 1, -1);
+
+  if (select)
+    gtk_tree_selection_select_path(selection, path);
+  else
+    gtk_tree_selection_unselect_path(selection, path);
+
+  gtk_tree_path_free(path);
+}
+
+IUP_SDK_API int* iupdrvTableGetSelectedLins(Ihandle* ih, int* count)
+{
+  IgtkTableData* gtk_data = IGTK_TABLE_DATA(ih);
+  GtkTreeSelection* selection;
+  GList* rows;
+  GList* item;
+  int* lins;
+  int i = 0;
+
+  *count = 0;
+
+  selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(gtk_data->tree_view));
+  rows = gtk_tree_selection_get_selected_rows(selection, NULL);
+  if (!rows)
+    return NULL;
+
+  lins = (int*)malloc(sizeof(int) * g_list_length(rows));
+
+  for (item = rows; item; item = item->next)
+  {
+    int* indices = gtk_tree_path_get_indices((GtkTreePath*)item->data);
+    lins[i++] = indices[0] + 1;
+  }
+
+  g_list_free_full(rows, (GDestroyNotify)gtk_tree_path_free);
+
+  *count = i;
+  return lins;
 }
 
 /* ========================================================================= */

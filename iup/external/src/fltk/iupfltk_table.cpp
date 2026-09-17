@@ -252,6 +252,7 @@ public:
   int drag_source_row;
   int drag_target_row;
   int row_dragging;
+  unsigned int selection_stamp;
 
   IupFltkTable(int X, int Y, int W, int H, Ihandle* ih)
     : Fl_Table_Row(X, Y, W, H), iup_handle(ih),
@@ -259,7 +260,7 @@ public:
       auto_widths_rows(0),
       sort_column(0), sort_ascending(1),
       drag_source_col(-1), drag_target_col(-1), drag_start_x(0), drag_start_y(0), dragging(0),
-      drag_source_row(-1), drag_target_row(-1), row_dragging(0)
+      drag_source_row(-1), drag_target_row(-1), row_dragging(0), selection_stamp(0)
   {
     selection_color(FL_SELECTION_COLOR);
   }
@@ -267,6 +268,17 @@ public:
   int getCellRect(int R, int C, int &X, int &Y, int &W, int &H)
   {
     return find_cell(CONTEXT_CELL, R, C, X, Y, W, H);
+  }
+
+  unsigned int selectionStamp()
+  {
+    unsigned int stamp = 0;
+    for (int r = 0; r < rows(); r++)
+    {
+      if (row_selected(r))
+        stamp = stamp * 31u + (unsigned int)(r + 1);
+    }
+    return stamp;
   }
 
 
@@ -825,7 +837,19 @@ protected:
         break;
     }
 
-    return Fl_Table_Row::handle(event);
+    int ret = Fl_Table_Row::handle(event);
+
+    if (event == FL_PUSH || event == FL_DRAG || event == FL_KEYDOWN)
+    {
+      unsigned int stamp = selectionStamp();
+      if (stamp != selection_stamp)
+      {
+        selection_stamp = stamp;
+        iupTableCallMultiSelectionCb(iup_handle);
+      }
+    }
+
+    return ret;
   }
 };
 
@@ -1738,6 +1762,57 @@ extern "C" IUP_SDK_API void iupdrvTableGetFocusCell(Ihandle* ih, int* lin, int* 
 
   *lin = table->focus_lin + 1;
   *col = table->focus_col + 1;
+}
+
+extern "C" IUP_SDK_API int iupdrvTableIsLinSelected(Ihandle* ih, int lin)
+{
+  IupFltkTable* table = fltkTableGetWidget(ih);
+  if (!table || lin < 1 || lin > table->rows())
+    return 0;
+
+  return table->row_selected(lin - 1) ? 1 : 0;
+}
+
+extern "C" IUP_SDK_API void iupdrvTableSelectLin(Ihandle* ih, int lin, int select)
+{
+  IupFltkTable* table = fltkTableGetWidget(ih);
+  if (!table || lin < 1 || lin > table->rows())
+    return;
+
+  table->select_row(lin - 1, select ? 1 : 0);
+  table->selection_stamp = table->selectionStamp();
+}
+
+extern "C" IUP_SDK_API int* iupdrvTableGetSelectedLins(Ihandle* ih, int* count)
+{
+  IupFltkTable* table = fltkTableGetWidget(ih);
+  int* lins;
+  int n, r, i = 0;
+
+  *count = 0;
+  if (!table)
+    return NULL;
+
+  n = table->rows();
+  if (n <= 0)
+    return NULL;
+
+  lins = (int*)malloc(sizeof(int) * n);
+
+  for (r = 0; r < n; r++)
+  {
+    if (table->row_selected(r))
+      lins[i++] = r + 1;
+  }
+
+  if (i == 0)
+  {
+    free(lins);
+    return NULL;
+  }
+
+  *count = i;
+  return lins;
 }
 
 extern "C" IUP_SDK_API void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col)

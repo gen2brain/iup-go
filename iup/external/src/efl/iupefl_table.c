@@ -46,6 +46,9 @@ typedef struct _IeflTableData
   int alloc_num_lin;           /* Allocated rows for cell_labels/cell_bgs */
   int selected_lin;            /* Currently selected row (1-based, 0 = none) */
   int selected_col;            /* Currently selected column (1-based, 0 = none) */
+  char* row_selected;          /* [num_lin] selection flags */
+  int row_selected_size;       /* Allocated size of row_selected */
+  int anchor_row;              /* Shift-click range anchor (1-based, 0 = none) */
   int is_virtual;              /* 1 if VIRTUALMODE=YES */
   int has_focus;
   unsigned char sel_r, sel_g, sel_b;
@@ -211,6 +214,70 @@ static int eflTablePoolRow(IeflTableData* data, int lin)
   return pool_lin;
 }
 
+static char* eflTableSelection(Ihandle* ih)
+{
+  IeflTableData* data = IEFL_TABLE_DATA(ih);
+
+  if (ih->data->num_lin <= 0)
+    return NULL;
+
+  if (data->row_selected_size < ih->data->num_lin)
+  {
+    data->row_selected = (char*)realloc(data->row_selected, ih->data->num_lin);
+    memset(data->row_selected + data->row_selected_size, 0, ih->data->num_lin - data->row_selected_size);
+    data->row_selected_size = ih->data->num_lin;
+  }
+
+  return data->row_selected;
+}
+
+static int eflTableRowSelected(Ihandle* ih, int lin)
+{
+  IeflTableData* data = IEFL_TABLE_DATA(ih);
+
+  if (!data->row_selected || lin < 1 || lin > data->row_selected_size)
+    return 0;
+
+  return data->row_selected[lin - 1];
+}
+
+static void eflTableSelectRow(Ihandle* ih, int lin, int select, int exclusive)
+{
+  char* sel = eflTableSelection(ih);
+
+  if (!sel || lin < 1 || lin > ih->data->num_lin)
+    return;
+
+  if (exclusive)
+    memset(sel, 0, ih->data->num_lin);
+
+  sel[lin - 1] = (char)(select ? 1 : 0);
+}
+
+static void eflTableSelectRange(Ihandle* ih, int from, int to)
+{
+  char* sel = eflTableSelection(ih);
+  int lin;
+
+  if (!sel)
+    return;
+
+  if (from > to)
+  {
+    lin = from;
+    from = to;
+    to = lin;
+  }
+
+  memset(sel, 0, ih->data->num_lin);
+
+  for (lin = from; lin <= to; lin++)
+  {
+    if (lin >= 1 && lin <= ih->data->num_lin)
+      sel[lin - 1] = 1;
+  }
+}
+
 static void eflTableSetCellBgColor(Ihandle* ih, int lin, int col)
 {
   IeflTableData* data = IEFL_TABLE_DATA(ih);
@@ -233,7 +300,7 @@ static void eflTableSetCellBgColor(Ihandle* ih, int lin, int col)
   if (!cell_bg)
     return;
 
-  if (lin == data->selected_lin)
+  if (eflTableRowSelected(ih, lin))
   {
     r = data->sel_r; g = data->sel_g; b = data->sel_b; a = 200;
   }
@@ -1607,6 +1674,29 @@ static void eflTableCellClickCallback(void* data, const Efl_Event* ev)
   table_data->selected_lin = lin;
   table_data->selected_col = col;
 
+  char* selmode = iupAttribGetStr(ih, "SELECTIONMODE");
+
+  if (!iupStrEqualNoCase(selmode, "NONE"))
+  {
+    Evas* evas = evas_object_evas_get(iupeflGetWidget(ih));
+    const Evas_Modifier* mods = evas ? evas_key_modifier_get(evas) : NULL;
+    int is_shift = mods && evas_key_modifier_is_set(mods, "Shift");
+    int is_ctrl = mods && evas_key_modifier_is_set(mods, "Control");
+
+    if (iupStrEqualNoCase(selmode, "MULTIPLE") && is_shift && table_data->anchor_row > 0)
+      eflTableSelectRange(ih, table_data->anchor_row, lin);
+    else if (iupStrEqualNoCase(selmode, "MULTIPLE") && is_ctrl)
+    {
+      eflTableSelectRow(ih, lin, !eflTableRowSelected(ih, lin), 0);
+      table_data->anchor_row = lin;
+    }
+    else
+    {
+      eflTableSelectRow(ih, lin, 1, 1);
+      table_data->anchor_row = lin;
+    }
+  }
+
   if (table_data->cell_bgs)
   {
     int row, c;
@@ -1619,7 +1709,7 @@ static void eflTableCellClickCallback(void* data, const Efl_Event* ev)
         if (cell_bg)
         {
           int actual_row = table_data->is_virtual ? (table_data->first_visible_row - 1 + row) : row;
-          if (actual_row == lin - 1)
+          if (eflTableRowSelected(ih, actual_row + 1))
           {
             efl_gfx_color_set(cell_bg, table_data->sel_r, table_data->sel_g, table_data->sel_b, 200);
           }
@@ -1652,19 +1742,22 @@ static void eflTableCellClickCallback(void* data, const Efl_Event* ev)
   if (is_double_click && eflTableIsCellEditable(ih, col))
   {
     eflTableStartCellEdit(ih, lin, col);
-    return;
   }
-
-  cb = (IFniis)IupGetCallback(ih, "CLICK_CB");
-  if (cb)
+  else
   {
-    char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
-    Evas* evas = evas_object_evas_get(iupeflGetWidget(ih));
+    cb = (IFniis)IupGetCallback(ih, "CLICK_CB");
+    if (cb)
+    {
+      char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
+      Evas* evas = evas_object_evas_get(iupeflGetWidget(ih));
 
-    iupeflButtonKeySetStatus(evas ? (Evas_Modifier*)evas_key_modifier_get(evas) : NULL,
-                             efl_input_pointer_button_get(pointer), status, is_double_click);
-    cb(ih, lin, col, status);
+      iupeflButtonKeySetStatus(evas ? (Evas_Modifier*)evas_key_modifier_get(evas) : NULL,
+                               efl_input_pointer_button_get(pointer), status, is_double_click);
+      cb(ih, lin, col, status);
+    }
   }
+
+  iupTableCallMultiSelectionCb(ih);
 }
 
 static Evas_Object* eflTableCreateCellWidget(Ihandle* ih, Evas_Object* parent, const char* text, int is_header, int lin, int col)
@@ -2401,7 +2494,7 @@ static void eflTableUpdateVisibleRows(Ihandle* ih, int force)
       if (bg)
       {
         eflTableGetCellBgColor(ih, data_row, col, &bg_r, &bg_g, &bg_b);
-        if (data_row == data->selected_lin)
+        if (eflTableRowSelected(ih, data_row))
           efl_gfx_color_set(bg, data->sel_r, data->sel_g, data->sel_b, 200);
         else
           efl_gfx_color_set(bg, bg_r, bg_g, bg_b, 255);
@@ -2486,6 +2579,9 @@ IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
     num_lin = 0;
 
   ih->data->num_lin = num_lin;
+
+  if (data && data->row_selected && data->row_selected_size > num_lin)
+    memset(data->row_selected + num_lin, 0, data->row_selected_size - num_lin);
 
   (void)i;
 
@@ -2676,6 +2772,12 @@ IUP_SDK_API void iupdrvTableSetFocusCell(Ihandle* ih, int lin, int col)
   data->selected_lin = lin;
   data->selected_col = col;
 
+  if (!iupStrEqualNoCase(iupAttribGetStr(ih, "SELECTIONMODE"), "NONE"))
+  {
+    eflTableSelectRow(ih, lin, 1, 1);
+    data->anchor_row = lin;
+  }
+
   max_lin = data->is_virtual ? data->alloc_num_lin : ih->data->num_lin;
 
   if (data->cell_bgs)
@@ -2690,7 +2792,7 @@ IUP_SDK_API void iupdrvTableSetFocusCell(Ihandle* ih, int lin, int col)
         if (cell_bg)
         {
           int actual_row = data->is_virtual ? (data->first_visible_row - 1 + row) : row;
-          if (actual_row == lin - 1)
+          if (eflTableRowSelected(ih, actual_row + 1))
             efl_gfx_color_set(cell_bg, data->sel_r, data->sel_g, data->sel_b, 200);
           else
           {
@@ -2721,6 +2823,57 @@ IUP_SDK_API void iupdrvTableGetFocusCell(Ihandle* ih, int* lin, int* col)
 
   *lin = data->selected_lin > 0 ? data->selected_lin : 1;
   *col = data->selected_col > 0 ? data->selected_col : 1;
+}
+
+IUP_SDK_API int iupdrvTableIsLinSelected(Ihandle* ih, int lin)
+{
+  if (!IEFL_TABLE_DATA(ih))
+    return 0;
+
+  return eflTableRowSelected(ih, lin);
+}
+
+IUP_SDK_API void iupdrvTableSelectLin(Ihandle* ih, int lin, int select)
+{
+  IeflTableData* data = IEFL_TABLE_DATA(ih);
+  int col;
+
+  if (!data)
+    return;
+
+  eflTableSelectRow(ih, lin, select, 0);
+
+  for (col = 1; col <= ih->data->num_col; col++)
+    eflTableSetCellBgColor(ih, lin, col);
+}
+
+IUP_SDK_API int* iupdrvTableGetSelectedLins(Ihandle* ih, int* count)
+{
+  IeflTableData* data = IEFL_TABLE_DATA(ih);
+  int* lins;
+  int lin, i = 0;
+
+  *count = 0;
+
+  if (!data || !data->row_selected || ih->data->num_lin <= 0)
+    return NULL;
+
+  lins = (int*)malloc(sizeof(int) * ih->data->num_lin);
+
+  for (lin = 1; lin <= ih->data->num_lin; lin++)
+  {
+    if (eflTableRowSelected(ih, lin))
+      lins[i++] = lin;
+  }
+
+  if (i == 0)
+  {
+    free(lins);
+    return NULL;
+  }
+
+  *count = i;
+  return lins;
 }
 
 IUP_SDK_API void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col)
@@ -3231,6 +3384,13 @@ static void eflTableUnMapMethod(Ihandle* ih)
     {
       free(data->col_widths);
       data->col_widths = NULL;
+    }
+
+    if (data->row_selected)
+    {
+      free(data->row_selected);
+      data->row_selected = NULL;
+      data->row_selected_size = 0;
     }
 
     if (data->scroller)

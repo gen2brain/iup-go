@@ -38,6 +38,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.TreeSet;
 
 
 /* notifyDataSetChanged on purpose: bulk C-side mutations make per-item notifications more expensive */
@@ -96,6 +97,8 @@ public final class IupTableHelper
 
         int focusLin = 1;
         int focusCol = 1;
+        final TreeSet<Integer> selectedLins = new TreeSet<>();
+        String selectionMode = "SINGLE";
         int rowSelectBg;
         int rowSelectFg;
         int focusCellBg;
@@ -340,8 +343,8 @@ public final class IupTableHelper
                 tv.setText(text);
                 tv.setGravity(gravityFromAlign(table.colAlign.get(col)));
 
-                boolean rowSelected = (lin == table.focusLin);
-                boolean focusCell = rowSelected && (col == table.focusCol) && table.focusRect;
+                boolean rowSelected = table.selectedLins.contains(lin);
+                boolean focusCell = (lin == table.focusLin) && (col == table.focusCol) && table.focusRect;
                 if (focusCell)
                 {
                     tv.setBackground(focusCellDrawable(table));
@@ -374,20 +377,41 @@ public final class IupTableHelper
     }
 
 
+    static void selectOnly(IupTableView t, int lin)
+    {
+        ArrayList<Integer> stale = new ArrayList<>(t.selectedLins);
+        t.selectedLins.clear();
+        if (lin >= 1) t.selectedLins.add(lin);
+        for (Integer s : stale) refreshRowStyle(t, s);
+    }
+
     static void handleCellTap(IupTableView t, int lin, int col)
     {
         int oldLin = t.focusLin, oldCol = t.focusCol;
         boolean changed = (oldLin != lin || oldCol != col);
-        if (changed)
+
+        t.focusLin = lin;
+        t.focusCol = col;
+
+        if ("MULTIPLE".equalsIgnoreCase(t.selectionMode))
         {
-            t.focusLin = lin;
-            t.focusCol = col;
-            refreshRowStyle(t, oldLin);
-            refreshRowStyle(t, lin);
+            if (!t.selectedLins.remove(Integer.valueOf(lin)))
+                t.selectedLins.add(lin);
         }
+        else if (!"NONE".equalsIgnoreCase(t.selectionMode))
+        {
+            selectOnly(t, lin);
+        }
+
+        refreshRowStyle(t, oldLin);
+        refreshRowStyle(t, lin);
+
         final boolean changedFinal = changed;
         /* Defer; sync CLICK_CB that opens a modal would race the touch dispatcher Surface teardown. */
-        t.recyclerView.post(() -> dispatchClick(t.ihandlePtr, lin, col, changedFinal ? 1 : 0));
+        t.recyclerView.post(() -> {
+            dispatchClick(t.ihandlePtr, lin, col, changedFinal ? 1 : 0);
+            dispatchSelection(t.ihandlePtr);
+        });
     }
 
     static void refreshRowStyle(IupTableView t, int lin)
@@ -405,8 +429,8 @@ public final class IupTableHelper
 
     static void applyCellStyle(IupTableView t, TextView tv, int lin, int col)
     {
-        boolean rowSelected = (lin == t.focusLin);
-        boolean focusCell = rowSelected && (col == t.focusCol) && t.focusRect;
+        boolean rowSelected = t.selectedLins.contains(lin);
+        boolean focusCell = (lin == t.focusLin) && (col == t.focusCol) && t.focusRect;
         if (focusCell)
         {
             tv.setBackground(focusCellDrawable(t));
@@ -1667,11 +1691,50 @@ public final class IupTableHelper
         if (!(v instanceof IupTableView t)) return;
         if (lin < 1 || lin > t.numLin || col < 1 || col > t.numCol) return;
         int oldLin = t.focusLin, oldCol = t.focusCol;
-        if (oldLin == lin && oldCol == col) return;
+
+        if (!"NONE".equalsIgnoreCase(t.selectionMode))
+            selectOnly(t, lin);
+
         t.focusLin = lin;
         t.focusCol = col;
         refreshRowStyle(t, oldLin);
         refreshRowStyle(t, lin);
+    }
+
+    @Keep
+    public static void setSelectionMode(View v, String mode)
+    {
+        if (!(v instanceof IupTableView t)) return;
+        t.selectionMode = (mode == null) ? "SINGLE" : mode;
+        if ("NONE".equalsIgnoreCase(t.selectionMode))
+            selectOnly(t, 0);
+    }
+
+    @Keep
+    public static boolean isLinSelected(View v, int lin)
+    {
+        if (!(v instanceof IupTableView t)) return false;
+        return t.selectedLins.contains(lin);
+    }
+
+    @Keep
+    public static void selectLin(View v, int lin, boolean select)
+    {
+        if (!(v instanceof IupTableView t)) return;
+        if (lin < 1 || lin > t.numLin) return;
+        if (select) t.selectedLins.add(lin);
+        else t.selectedLins.remove(Integer.valueOf(lin));
+        refreshRowStyle(t, lin);
+    }
+
+    @Keep
+    public static int[] getSelectedLins(View v)
+    {
+        if (!(v instanceof IupTableView t)) return new int[0];
+        int[] lins = new int[t.selectedLins.size()];
+        int i = 0;
+        for (Integer lin : t.selectedLins) lins[i++] = lin;
+        return lins;
     }
 
     @Keep
@@ -1790,6 +1853,7 @@ public final class IupTableHelper
     }
 
     public static native void dispatchClick(long ihandlePtr, int lin, int col, int focusChanged);
+    public static native void dispatchSelection(long ihandlePtr);
     public static native int dispatchEditBegin(long ihandlePtr, int lin, int col);
     public static native void dispatchEdition(long ihandlePtr, int lin, int col, String text);
     public static native int dispatchEditEnd(long ihandlePtr, int lin, int col, String text, int apply);

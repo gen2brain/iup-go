@@ -45,6 +45,7 @@ int iupTableCheckCellPos(Ihandle* ih, int lin, int col);
 char* iupTableGetCellImageCb(Ihandle* ih, int lin, int col);
 
 int iupTableCallDragDropCb(Ihandle* ih, int drag_id, int drop_id, int *is_ctrl);
+void iupTableCallMultiSelectionCb(Ihandle* ih);
 void iupTableMoveLinAttribs(Ihandle* ih, int from_lin, int to_lin);
 
 /* ========================================================================= */
@@ -80,6 +81,9 @@ IUP_SDK_API int iupdrvTableGetColWidth(Ihandle* ih, int col);
 /* Selection */
 IUP_SDK_API void iupdrvTableSetFocusCell(Ihandle* ih, int lin, int col);
 IUP_SDK_API void iupdrvTableGetFocusCell(Ihandle* ih, int* lin, int* col);
+IUP_SDK_API int iupdrvTableIsLinSelected(Ihandle* ih, int lin);
+IUP_SDK_API void iupdrvTableSelectLin(Ihandle* ih, int lin, int select);
+IUP_SDK_API int* iupdrvTableGetSelectedLins(Ihandle* ih, int* count);  /* malloc'd, caller frees */
 
 /* Scrolling */
 IUP_SDK_API void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col);

@@ -2208,7 +2208,7 @@
       case 'tablestripe': {
         if (el) {
           var tsrows = el.__iupBody.children;
-          for (var i = 0; i < tsrows.length; i++) { var tsbg = c.alt ? ((i % 2) ? c.odd : c.even) : ''; tsrows[i].__iupStripeBg = tsbg; if (tsrows[i] !== el.__iupSelRow) tsrows[i].style.background = tsbg; }
+          for (var i = 0; i < tsrows.length; i++) { var tsbg = c.alt ? ((i % 2) ? c.odd : c.even) : ''; tsrows[i].__iupStripeBg = tsbg; if (!tsrows[i].__iupSelected) tsrows[i].style.background = tsbg; }
           el.__iupEven = c.even; el.__iupOdd = c.odd; el.__iupAlt = c.alt;
         }
       } break;
@@ -2263,10 +2263,17 @@
           var tfprev = el.__iupFocusTd; if (tfprev) tfprev.style.outline = '';
           var tftr = el.__iupBody.children[c.lin - 1];
           var tftd = tftr ? tftr.children[c.col - 1] : null;
-          var tfprevRow = el.__iupSelRow;
-          if (tfprevRow && tfprevRow !== tftr) { tfprevRow.style.background = tfprevRow.__iupStripeBg || ''; tfprevRow.style.color = ''; }
-          if (tftr && c.select) { tftr.style.background = 'Highlight'; tftr.style.color = 'HighlightText'; el.__iupSelRow = tftr; } else { el.__iupSelRow = null; }
           if (tftd) { if (c.focusrect) { tftd.style.outline = '1px dotted ' + (c.select ? 'HighlightText' : 'var(--iup-accent)'); tftd.style.outlineOffset = '-1px'; } el.__iupFocusTd = c.focusrect ? tftd : null; tftd.scrollIntoView({ block: 'nearest', inline: 'nearest' }); }
+        }
+      } break;
+      case 'tableselect': {
+        if (el) {
+          var tsltr = el.__iupBody.children[c.lin - 1];
+          if (tsltr) {
+            tsltr.__iupSelected = !!c.select;
+            if (c.select) { tsltr.style.background = 'Highlight'; tsltr.style.color = 'HighlightText'; }
+            else { tsltr.style.background = tsltr.__iupStripeBg || ''; tsltr.style.color = ''; }
+          }
         }
       } break;
       case 'tablescrollto': {

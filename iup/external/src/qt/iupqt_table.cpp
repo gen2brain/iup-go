@@ -24,6 +24,9 @@
 #include <QDragMoveEvent>
 #include <QMouseEvent>
 
+#include <QItemSelectionModel>
+
+#include <algorithm>
 #include <cstdio>
 
 extern "C" {
@@ -720,6 +723,12 @@ private:
     connect(this, &QTableWidget::cellDoubleClicked, this, &IupQtTableWidget::onCellDoubleClicked);
     connect(this, &QTableWidget::currentCellChanged, this, &IupQtTableWidget::onCurrentCellChanged);
     connect(this, &QTableWidget::cellChanged, this, &IupQtTableWidget::onCellChanged);
+    connect(this, &QTableWidget::itemSelectionChanged, this, &IupQtTableWidget::onSelectionChanged);
+  }
+
+  void onSelectionChanged()
+  {
+    iupTableCallMultiSelectionCb(ih);
   }
 
   void onCellDoubleClicked(int row, int column)
@@ -1463,6 +1472,61 @@ IUP_SDK_API void iupdrvTableGetFocusCell(Ihandle* ih, int* lin, int* col)
 
   *lin = table->currentRow() + 1;
   *col = table->currentColumn() + 1;
+}
+
+IUP_SDK_API int iupdrvTableIsLinSelected(Ihandle* ih, int lin)
+{
+  QTableWidget* table = qtTableGetWidget(ih);
+  if (!table || !table->selectionModel())
+    return 0;
+
+  if (lin < 1 || lin > table->rowCount())
+    return 0;
+
+  return table->selectionModel()->isRowSelected(lin - 1, QModelIndex()) ? 1 : 0;
+}
+
+IUP_SDK_API void iupdrvTableSelectLin(Ihandle* ih, int lin, int select)
+{
+  QTableWidget* table = qtTableGetWidget(ih);
+  if (!table || !table->selectionModel())
+    return;
+
+  if (lin < 1 || lin > table->rowCount() || table->columnCount() == 0)
+    return;
+
+  QModelIndex first = table->model()->index(lin - 1, 0);
+  QModelIndex last = table->model()->index(lin - 1, table->columnCount() - 1);
+
+  table->selectionModel()->select(QItemSelection(first, last),
+                                  (select ? QItemSelectionModel::Select : QItemSelectionModel::Deselect) |
+                                  QItemSelectionModel::Rows);
+}
+
+IUP_SDK_API int* iupdrvTableGetSelectedLins(Ihandle* ih, int* count)
+{
+  QTableWidget* table = qtTableGetWidget(ih);
+  *count = 0;
+
+  if (!table || !table->selectionModel())
+    return NULL;
+
+  QModelIndexList rows = table->selectionModel()->selectedRows();
+  if (rows.isEmpty())
+    return NULL;
+
+  QList<int> lins;
+  for (const QModelIndex& index : rows)
+    lins.append(index.row() + 1);
+
+  std::sort(lins.begin(), lins.end());
+
+  int* result = (int*)malloc(sizeof(int) * lins.size());
+  for (int i = 0; i < lins.size(); i++)
+    result[i] = lins[i];
+
+  *count = (int)lins.size();
+  return result;
 }
 
 IUP_SDK_API void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col)

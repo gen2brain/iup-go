@@ -15,6 +15,17 @@
 #include "iupandroid_drv.h"
 
 
+JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupTableHelper_dispatchSelection(
+    JNIEnv* jni_env, jclass cls, jlong ihandle_ptr)
+{
+  (void)jni_env;
+  (void)cls;
+  Ihandle* ih = (Ihandle*)ihandle_ptr;
+  if (!ih) return;
+
+  iupTableCallMultiSelectionCb(ih);
+}
+
 JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupTableHelper_dispatchClick(
     JNIEnv* jni_env, jclass cls, jlong ihandle_ptr,
     jint lin, jint col, jint focus_changed)

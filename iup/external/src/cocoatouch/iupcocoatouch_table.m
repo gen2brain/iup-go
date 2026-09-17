@@ -176,6 +176,7 @@ static const void* IUP_COCOATOUCH_TABLE_CTRL_OBJ_KEY = "IUP_COCOATOUCH_TABLE_CTR
 @property(nonatomic, retain) NSMutableArray<NSNumber*>* colWidths;
 @property(nonatomic, assign) NSInteger focusLin;
 @property(nonatomic, assign) NSInteger focusCol;
+@property(nonatomic, retain) NSMutableIndexSet* selectedLins;
 @property(nonatomic, assign) BOOL showGrid;
 @property(nonatomic, assign) CGFloat lastKnownContainerWidth;
 @property(nonatomic, assign) NSInteger sortCol;
@@ -239,10 +240,11 @@ static UICollectionViewLayout* cocoaTouchTableMakeLayout(IupCocoaTouchTableContr
 	self = [super init];
 	if (self)
 	{
-		_cells     = [[NSMutableArray alloc] init];
-		_images    = [[NSMutableArray alloc] init];
-		_headers   = [[NSMutableArray alloc] init];
-		_colWidths = [[NSMutableArray alloc] init];
+		_cells        = [[NSMutableArray alloc] init];
+		_images       = [[NSMutableArray alloc] init];
+		_headers      = [[NSMutableArray alloc] init];
+		_colWidths    = [[NSMutableArray alloc] init];
+		_selectedLins = [[NSMutableIndexSet alloc] init];
 		_focusLin = 1;
 		_focusCol = 1;
 		_showGrid = YES;
@@ -258,6 +260,7 @@ static UICollectionViewLayout* cocoaTouchTableMakeLayout(IupCocoaTouchTableContr
 	[_images release];
 	[_headers release];
 	[_colWidths release];
+	[_selectedLins release];
 	[super dealloc];
 }
 
@@ -504,8 +507,8 @@ static UICollectionViewLayout* cocoaTouchTableMakeLayout(IupCocoaTouchTableContr
 		cell.label.font = [UIFont systemFontOfSize:[UIFont systemFontSize]];
 		cell.label.textColor = [UIColor labelColor];
 		cell.userInteractionEnabled = YES;
-		cell.rowSelected = ((lin + 1) == _focusLin);
-		cell.cellFocused = cell.rowSelected && ((col + 1) == _focusCol);
+		cell.rowSelected = [_selectedLins containsIndex:(NSUInteger)(lin + 1)];
+		cell.cellFocused = ((lin + 1) == _focusLin) && ((col + 1) == _focusCol);
 
 		const char* align = _ihandle ? iupAttribGetId(_ihandle, "ALIGNMENT", (int)col + 1) : NULL;
 		if (align && iupStrEqualNoCase(align, "ARIGHT"))      cell.label.textAlignment = NSTextAlignmentRight;
@@ -677,6 +680,23 @@ static UICollectionViewLayout* cocoaTouchTableMakeLayout(IupCocoaTouchTableContr
 	_focusLin = lin + 1;
 	_focusCol = col + 1;
 
+	const char* selmode = iupAttribGetStr(_ihandle, "SELECTIONMODE");
+	if (!iupStrEqualNoCase(selmode, "NONE"))
+	{
+		if (iupStrEqualNoCase(selmode, "MULTIPLE"))
+		{
+			if ([_selectedLins containsIndex:(NSUInteger)_focusLin])
+				[_selectedLins removeIndex:(NSUInteger)_focusLin];
+			else
+				[_selectedLins addIndex:(NSUInteger)_focusLin];
+		}
+		else
+		{
+			[_selectedLins removeAllIndexes];
+			[_selectedLins addIndex:(NSUInteger)_focusLin];
+		}
+	}
+
 	NSMutableArray<NSIndexPath*>* reload = [NSMutableArray array];
 	for (NSInteger c = 0; c < num_col; c++)
 	{
@@ -697,6 +717,8 @@ static UICollectionViewLayout* cocoaTouchTableMakeLayout(IupCocoaTouchTableContr
 	}
 	IFnii enter_cb = (IFnii)IupGetCallback(_ihandle, "ENTERITEM_CB");
 	if (enter_cb && enter_cb(_ihandle, (int)_focusLin, (int)_focusCol) == IUP_CLOSE) IupExitLoop();
+
+	iupTableCallMultiSelectionCb(_ihandle);
 }
 
 - (void)onDoubleTap:(UITapGestureRecognizer*)gr
@@ -760,6 +782,7 @@ IUP_SDK_API void iupdrvTableAddLin(Ihandle* ih, int pos)
 	NSMutableArray<NSString*>* row = [NSMutableArray arrayWithCapacity:(NSUInteger)[ctrl numberOfColumns]];
 	for (NSInteger c = 0; c < [ctrl numberOfColumns]; c++) [row addObject:@""];
 	[ctrl.cells insertObject:row atIndex:index];
+	[ctrl.selectedLins shiftIndexesStartingAtIndex:(index + 1) by:1];
 	ih->data->num_lin = (int)[ctrl.cells count];
 	[cocoaTouchTableGet(ih) reloadData];
 }
@@ -771,6 +794,8 @@ IUP_SDK_API void iupdrvTableDelLin(Ihandle* ih, int pos)
 	NSUInteger index = (NSUInteger)(pos - 1);
 	if (index >= [ctrl.cells count]) return;
 	[ctrl.cells removeObjectAtIndex:index];
+	[ctrl.selectedLins removeIndex:(index + 1)];
+	[ctrl.selectedLins shiftIndexesStartingAtIndex:(index + 2) by:-1];
 	ih->data->num_lin = (int)[ctrl.cells count];
 	[cocoaTouchTableGet(ih) reloadData];
 }
@@ -918,6 +943,11 @@ IUP_SDK_API void iupdrvTableSetFocusCell(Ihandle* ih, int lin, int col)
 	if (!ctrl || !view) return;
 	ctrl.focusLin = lin;
 	ctrl.focusCol = col;
+	if (!iupStrEqualNoCase(iupAttribGetStr(ih, "SELECTIONMODE"), "NONE"))
+	{
+		[ctrl.selectedLins removeAllIndexes];
+		[ctrl.selectedLins addIndex:(NSUInteger)lin];
+	}
 	NSInteger num_col = [ctrl numberOfColumns];
 	if (lin >= 1 && lin <= [ctrl numberOfLines] && col >= 1 && col <= num_col)
 	{
@@ -932,6 +962,47 @@ IUP_SDK_API void iupdrvTableGetFocusCell(Ihandle* ih, int* lin, int* col)
 	IupCocoaTouchTableController* ctrl = cocoaTouchTableGetController(ih);
 	if (lin) *lin = ctrl ? (int)ctrl.focusLin : 1;
 	if (col) *col = ctrl ? (int)ctrl.focusCol : 1;
+}
+
+IUP_SDK_API int iupdrvTableIsLinSelected(Ihandle* ih, int lin)
+{
+	IupCocoaTouchTableController* ctrl = cocoaTouchTableGetController(ih);
+	if (!ctrl || lin < 1 || lin > [ctrl numberOfLines]) return 0;
+	return [ctrl.selectedLins containsIndex:(NSUInteger)lin] ? 1 : 0;
+}
+
+IUP_SDK_API void iupdrvTableSelectLin(Ihandle* ih, int lin, int select)
+{
+	IupCocoaTouchTableController* ctrl = cocoaTouchTableGetController(ih);
+	if (!ctrl || lin < 1 || lin > [ctrl numberOfLines]) return;
+
+	if (select)
+		[ctrl.selectedLins addIndex:(NSUInteger)lin];
+	else
+		[ctrl.selectedLins removeIndex:(NSUInteger)lin];
+
+	[cocoaTouchTableGet(ih) reloadData];
+}
+
+IUP_SDK_API int* iupdrvTableGetSelectedLins(Ihandle* ih, int* count)
+{
+	IupCocoaTouchTableController* ctrl = cocoaTouchTableGetController(ih);
+	*count = 0;
+	if (!ctrl) return NULL;
+
+	NSUInteger total = [ctrl.selectedLins count];
+	if (total == 0) return NULL;
+
+	int* lins = (int*)malloc(sizeof(int) * total);
+	__block int i = 0;
+
+	[ctrl.selectedLins enumerateIndexesUsingBlock:^(NSUInteger index, BOOL* stop) {
+		(void)stop;
+		lins[i++] = (int)index;
+	}];
+
+	*count = i;
+	return lins;
 }
 
 IUP_SDK_API void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col)
