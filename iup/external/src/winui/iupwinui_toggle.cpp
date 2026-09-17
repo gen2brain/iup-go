@@ -784,6 +784,8 @@ static void winuiToggleUnMapMethod(Ihandle* ih)
         fe.LostFocus(aux->lostFocusToken);
     }
 
+    iupwinuiRemoveFromParent(ih);
+
     switch (aux->controlType)
     {
     case IUPWINUI_TOGGLE_TOGGLESWITCH:

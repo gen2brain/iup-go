@@ -377,6 +377,14 @@ static void winuiTreeSelectionChangedHandler(Ihandle* ih)
     int id = winuiTreeFindNodeId(ih, node);
     if (id >= 0)
     {
+      /* XAML raises this after the setter returned, so a flag alone cannot tell a programmatic
+         selection from a user one */
+      if (aux->programmaticId == id)
+      {
+        aux->programmaticId = -1;
+        return;
+      }
+
       winuiTreeSetFocus(ih, id);
 
       IFnii cb = (IFnii)IupGetCallback(ih, "SELECTION_CB");
@@ -873,7 +881,10 @@ static int winuiTreeSetValueAttrib(Ihandle* ih, const char* value)
   {
     IupWinUITreeAux* aux = winuiGetAux<IupWinUITreeAux>(ih, IUPWINUI_TREE_AUX);
     if (aux)
+    {
       aux->ignoreChange = true;
+      aux->programmaticId = target_id;
+    }
     treeView.SelectedNodes().Clear();
     treeView.SelectedNodes().Append(target_node);
     if (aux)
@@ -990,7 +1001,10 @@ static int winuiTreeSetMarkedAttrib(Ihandle* ih, int id, const char* value)
 
   IupWinUITreeAux* aux = winuiGetAux<IupWinUITreeAux>(ih, IUPWINUI_TREE_AUX);
   if (aux)
+  {
     aux->ignoreChange = true;
+    aux->programmaticId = id;
+  }
 
   if (iupStrBoolean(value))
   {
@@ -2066,7 +2080,21 @@ static int winuiTreeMapMethod(Ihandle* ih)
   });
 
   aux->selectionChangedToken = treeView.SelectionChanged([ih](TreeView const&, TreeViewSelectionChangedEventArgs const&) {
-    winuiTreeSelectionChangedHandler(ih);
+    IupWinUITreeAux* sel_aux = winuiGetAux<IupWinUITreeAux>(ih, IUPWINUI_TREE_AUX);
+    if (!sel_aux || sel_aux->ignoreChange)
+      return;
+
+    /* creating a control from inside the XAML event crashes, hand it to the queue like the button does */
+    Microsoft::UI::Dispatching::DispatcherQueue dq = Microsoft::UI::Dispatching::DispatcherQueue::GetForCurrentThread();
+    if (dq)
+    {
+      dq.TryEnqueue([ih]() {
+        if (iupObjectCheck(ih))
+          winuiTreeSelectionChangedHandler(ih);
+      });
+    }
+    else
+      winuiTreeSelectionChangedHandler(ih);
   });
 
   aux->rightTappedToken = treeView.RightTapped([ih](IInspectable const&, RightTappedRoutedEventArgs const& args) {
@@ -2263,6 +2291,7 @@ static void winuiTreeUnMapMethod(Ihandle* ih)
 
     winuiTreeReleaseCacheNodes(ih, 0, ih->data->node_count);
 
+    iupwinuiRemoveFromParent(ih);
     winuiReleaseHandle<TreeView>(ih);
   }
 

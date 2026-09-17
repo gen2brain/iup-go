@@ -144,7 +144,10 @@ static void winuiProgressBarLayoutUpdateMethod(Ihandle* ih)
 static void winuiProgressBarUnMapMethod(Ihandle* ih)
 {
   if (ih->handle)
+  {
+    iupwinuiRemoveFromParent(ih);
     winuiReleaseHandle<ProgressBar>(ih);
+  }
   ih->handle = NULL;
 }
 

@@ -1797,6 +1797,7 @@ static void winuiListUnMapMethod(Ihandle* ih)
           comboBox.LostFocus(aux->lostFocusToken);
       }
       winuiListReleaseTextBoxAttrib(ih);
+      iupwinuiRemoveFromParent(ih);
       winuiReleaseHandle<ComboBox>(ih);
     }
     else if (aux->hasEditbox)
@@ -1839,6 +1840,7 @@ static void winuiListUnMapMethod(Ihandle* ih)
         iupAttribSet(ih, "_IUPWINUI_LISTBOX", nullptr);
       }
       winuiListReleaseTextBoxAttrib(ih);
+      iupwinuiRemoveFromParent(ih);
       winuiReleaseHandle<Grid>(ih);
     }
     else if (aux->isVirtual)
@@ -1864,6 +1866,7 @@ static void winuiListUnMapMethod(Ihandle* ih)
           listView.LostFocus(aux->lostFocusToken);
         winuiListDetachPointerEvents(listView, aux);
       }
+      iupwinuiRemoveFromParent(ih);
       winuiReleaseHandle<ListView>(ih);
     }
     else
@@ -1883,6 +1886,7 @@ static void winuiListUnMapMethod(Ihandle* ih)
           listBox.LostFocus(aux->lostFocusToken);
         winuiListDetachPointerEvents(listBox, aux);
       }
+      iupwinuiRemoveFromParent(ih);
       winuiReleaseHandle<ListBox>(ih);
     }
   }

@@ -41,6 +41,7 @@ IUP_DRV_API void iupwinuiSetFgColor(InativeHandle* handle, unsigned char r, unsi
  ****************************************************************************/
 
 IUP_DRV_API void iupwinuiAddToParent(Ihandle* ih);
+IUP_DRV_API void iupwinuiRemoveFromParent(Ihandle* ih);
 IUP_DRV_API void iupwinuiTipsDestroy(Ihandle* ih);
 
 /****************************************************************************
@@ -428,6 +429,7 @@ struct IupWinUITreeAux
   winrt::event_token dragItemsStartingToken;
   winrt::event_token dragItemsCompletedToken;
   bool ignoreChange;
+  int programmaticId;
 
   winrt::event_token gotFocusToken{};
   winrt::event_token lostFocusToken{};
@@ -439,7 +441,7 @@ struct IupWinUITreeAux
                        itemInvokedToken{}, selectionChangedToken{},
                        rightTappedToken{}, keyDownToken{}, doubleTappedToken{},
                        dragItemsStartingToken{}, dragItemsCompletedToken{},
-                       ignoreChange(false), namesDirty(false) {}
+                       ignoreChange(false), programmaticId(-1), namesDirty(false) {}
 };
 
 struct IupWinUIMenuAux

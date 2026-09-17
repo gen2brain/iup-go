@@ -3311,6 +3311,7 @@ static void winuiTableUnMapMethod(Ihandle* ih)
 
   if (!aux)
   {
+    iupwinuiRemoveFromParent(ih);
     winuiReleaseHandle<Grid>(ih);
     return;
   }
@@ -3391,6 +3392,8 @@ static void winuiTableUnMapMethod(Ihandle* ih)
   }
 
   winuiFreeAux<IupWinUITableAux>(ih, IUPWINUI_TABLE_AUX);
+
+  iupwinuiRemoveFromParent(ih);
 
   winuiReleaseHandle<Grid>(ih);
 }

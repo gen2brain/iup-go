@@ -1457,6 +1457,8 @@ static void winuiTextUnMapMethod(Ihandle* ih)
   bool isFormatted = aux ? aux->isFormatted : false;
   winuiFreeAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
 
+  iupwinuiRemoveFromParent(ih);
+
   if (isSpin)
     winuiReleaseHandle<NumberBox>(ih);
   else if (isPassword)

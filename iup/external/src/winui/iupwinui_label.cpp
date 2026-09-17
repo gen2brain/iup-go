@@ -509,7 +509,10 @@ static void winuiLabelUnMapMethod(Ihandle* ih)
   }
 
   if (ih->handle)
+  {
+    iupwinuiRemoveFromParent(ih);
     winuiReleaseHandle<Border>(ih);
+  }
 
   ih->handle = NULL;
 }

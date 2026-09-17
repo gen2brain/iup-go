@@ -248,6 +248,7 @@ static void winuiScrollbarUnMapMethod(Ihandle* ih)
       if (aux->lostFocusToken)
         sb.LostFocus(aux->lostFocusToken);
     }
+    iupwinuiRemoveFromParent(ih);
     winuiReleaseHandle<ScrollBar>(ih);
   }
 

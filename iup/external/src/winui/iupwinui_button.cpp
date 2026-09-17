@@ -667,6 +667,7 @@ static void winuiButtonUnMapMethod(Ihandle* ih)
       if (aux->captureLostToken)
         btn.PointerCaptureLost(aux->captureLostToken);
     }
+    iupwinuiRemoveFromParent(ih);
     winuiReleaseHandle<Button>(ih);
   }
 
