@@ -475,10 +475,12 @@ static void gtk4TabsSwitchPage(GtkNotebook* notebook, GtkWidget* page, guint pag
   GtkWidget* tab_container = (GtkWidget*)iupAttribGet(child, "_IUPTAB_CONTAINER");
   GtkWidget* prev_tab_container = (GtkWidget*)iupAttribGet(prev_child, "_IUPTAB_CONTAINER");
 
+  if (tab_container) gtk_widget_set_visible(tab_container, TRUE);
+
+  /* while a tab is being removed prev_child is another tab, hiding it would blank the wrong page */
   if (iupAttribGet(ih, "_IUPGTK4_IGNORE_SWITCHPAGE"))
     return;
 
-  if (tab_container) gtk_widget_set_visible(tab_container, TRUE);
   if (prev_tab_container) gtk_widget_set_visible(prev_tab_container, FALSE);
 
   if (iupAttribGet(ih, "_IUPGTK4_IGNORE_CHANGE"))
