@@ -151,11 +151,11 @@ Uses L:C notation. The value is an image name set with [IupSetHandle](../func/iu
 
 #### Natural Size
 
-**VISIBLECOLUMNS**: Number of columns to consider for the natural size calculation.
-When not set, all columns are used (capped at the actual column count).
+**VISIBLECOLUMNS**: Number of columns shown. Defines the natural width and limits it, the table is not stretched wider.
+When not set, all columns are used (capped at the actual column count) and the table fills the available width.
 
-**VISIBLELINES**: Number of data rows to consider for the natural size calculation.
-When not set, a default of 8 rows is used.
+**VISIBLELINES**: Number of data rows shown. Defines the natural height and limits it, the table is not stretched taller.
+When not set, a default of 8 rows is used and the table fills the available height.
 
 >
 >

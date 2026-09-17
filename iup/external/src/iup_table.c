@@ -622,12 +622,18 @@ static void iTableComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *chi
   int visiblecolumns, visiblelines;
   int max_col, visible_lines;
 
-  *children_expand = ih->expand;
-
   iupdrvFontGetCharSize(ih, &charwidth, &charheight);
 
   visiblecolumns = iupAttribGetInt(ih, "VISIBLECOLUMNS");
   visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
+
+  /* they bound the visible rows and columns, so the box must not stretch that axis */
+  if (visiblelines > 0)
+    ih->expand &= ~IUP_EXPAND_HEIGHT;
+  if (visiblecolumns > 0)
+    ih->expand &= ~IUP_EXPAND_WIDTH;
+
+  *children_expand = ih->expand;
 
   if (visiblecolumns > 0 && ih->data->num_col > 0)
     max_col = (visiblecolumns < ih->data->num_col) ? visiblecolumns : ih->data->num_col;
