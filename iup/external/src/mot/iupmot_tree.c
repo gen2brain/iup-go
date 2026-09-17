@@ -3153,7 +3153,16 @@ IUP_SDK_API void iupdrvTreeAddBorders(Ihandle* ih, int *w, int *h)
   int border = 2 * 2;
   int sb = iupdrvGetScrollbarSize();
   int indent_icon = 16 + 16;  /* expander glyph + 1 indent step */
-  (void)ih;
+  int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
+  int char_w, char_h, row_h;
+
+  /* an item is an icon gadget, its height is the icon plus the gadget highlight */
+  if (visiblelines <= 0) visiblelines = 8;
+  iupdrvFontGetCharSize(ih, &char_w, &char_h);
+  row_h = (char_h > 16 ? char_h : 16) + 2 * 2 + 2 * ih->data->spacing;
+  if (row_h > char_h)
+    *h += visiblelines * (row_h - char_h);
+
   *w += border + sb + indent_icon;
   *h += border;
 }
