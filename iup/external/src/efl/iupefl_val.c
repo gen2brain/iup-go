@@ -42,7 +42,8 @@ static int eflValSetValueAttrib(Ihandle* ih, const char* value)
   if (iupStrToDouble(value, &val))
   {
     ih->data->val = val;
-    efl_ui_range_value_set(slider, val);
+    iupValCropValue(ih);
+    efl_ui_range_value_set(slider, ih->data->val);
   }
 
   return 0;
@@ -56,8 +57,12 @@ static int eflValSetMinAttrib(Ihandle* ih, const char* value)
   if (iupStrToDouble(value, &min))
   {
     ih->data->vmin = min;
+    iupValCropValue(ih);
     if (slider)
+    {
       efl_ui_range_limits_set(slider, min, ih->data->vmax);
+      efl_ui_range_value_set(slider, ih->data->val);
+    }
   }
 
   return 0;
@@ -71,8 +76,12 @@ static int eflValSetMaxAttrib(Ihandle* ih, const char* value)
   if (iupStrToDouble(value, &max))
   {
     ih->data->vmax = max;
+    iupValCropValue(ih);
     if (slider)
+    {
       efl_ui_range_limits_set(slider, ih->data->vmin, max);
+      efl_ui_range_value_set(slider, ih->data->val);
+    }
   }
 
   return 0;
