@@ -46,7 +46,6 @@ typedef struct _IeflTableData
   int alloc_num_lin;           /* Allocated rows for cell_labels/cell_bgs */
   int selected_lin;            /* Currently selected row (1-based, 0 = none) */
   int selected_col;            /* Currently selected column (1-based, 0 = none) */
-  int target_height;           /* Target height for VISIBLELINES constraint (0 = no constraint) */
   int is_virtual;              /* 1 if VIRTUALMODE=YES */
   int has_focus;
   unsigned char sel_r, sel_g, sel_b;
@@ -3036,23 +3035,11 @@ static int eflTableMapMethod(Ihandle* ih)
   data->row_height = DEFAULT_ROW_HEIGHT;
   data->selected_lin = 0;
   data->selected_col = 0;
-  data->target_height = 0;
   data->sort_column = 0;
   data->sort_ascending = 1;
 
   is_virtual = iupAttribGetBoolean(ih, "VIRTUALMODE");
   data->is_virtual = is_virtual;
-
-  {
-    int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
-    if (visiblelines > 0)
-    {
-      int grid_padding = 0;
-      if (iupAttribGetBoolean(ih, "SHOWGRID"))
-        grid_padding = visiblelines;
-      data->target_height = data->header_height + (data->row_height * visiblelines) + grid_padding + 2;
-    }
-  }
 
   {
     char* hlcolor = IupGetGlobal("TXTHLCOLOR");
@@ -3271,16 +3258,7 @@ static void eflTableUnMapMethod(Ihandle* ih)
 
 static void eflTableLayoutUpdateMethod(Ihandle* ih)
 {
-  IeflTableData* data = IEFL_TABLE_DATA(ih);
-  int height = ih->currentheight;
-
-  if (data && data->target_height > 0 && height > data->target_height)
-    height = data->target_height;
-
-  iupeflSetPosSize(ih, ih->x, ih->y, ih->currentwidth, height);
-
-  if (data && data->scroller && data->target_height > 0)
-    efl_gfx_hint_size_max_set(data->scroller, EINA_SIZE2D(-1, data->target_height));
+  iupeflSetPosSize(ih, ih->x, ih->y, ih->currentwidth, ih->currentheight);
 }
 
 static int eflTableSetSortableAttrib(Ihandle* ih, const char* value)

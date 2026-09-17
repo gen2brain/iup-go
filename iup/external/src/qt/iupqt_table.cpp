@@ -931,52 +931,9 @@ static void qtTableLayoutUpdateMethod(Ihandle* ih)
   if (!table)
     return;
 
-  int width = ih->currentwidth;
-  int height = ih->currentheight;
-
-  QVariant targetVar = table->property("iup-table-target-height");
-  if (targetVar.isValid())
-  {
-    int target_height = targetVar.toInt();
-    if (target_height > 0 && height > target_height)
-      height = target_height;
-  }
-
-  QVariant visColVar = table->property("iup-table-visible-columns");
-  if (visColVar.isValid())
-  {
-    int visible_columns = visColVar.toInt();
-    if (visible_columns > 0)
-    {
-      int cols_width = 0;
-      int num_cols = visible_columns;
-      if (num_cols > ih->data->num_col)
-        num_cols = ih->data->num_col;
-
-      for (int c = 0; c < num_cols; c++)
-      {
-        int col_width = table->columnWidth(c);
-        if (col_width <= 0)
-          col_width = 80;
-        cols_width += col_width;
-      }
-
-      int sb_size = iupdrvGetScrollbarSize();
-      int frame_width = table->frameWidth();
-
-      int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
-      int need_vert_sb = (visiblelines > 0 && ih->data->num_lin > visiblelines);
-      int vert_sb_width = need_vert_sb ? sb_size : 0;
-
-      int target_width = cols_width + vert_sb_width + 2 * frame_width;
-      if (width > target_width)
-        width = target_width;
-    }
-  }
-
   QWidget* parent = table->parentWidget();
   if (parent)
-    iupqtSetPosSize(parent, table, ih->x, ih->y, width, height);
+    iupqtSetPosSize(parent, table, ih->x, ih->y, ih->currentwidth, ih->currentheight);
 
   table->horizontalScrollBar()->setValue(0);
   table->verticalScrollBar()->setValue(0);
@@ -1148,26 +1105,6 @@ static int qtTableMapMethod(Ihandle* ih)
   ih->handle = (InativeHandle*)table;
 
   iupqtAddToParent(ih);
-
-  int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
-  if (visiblelines > 0)
-  {
-    int row_height = iupdrvTableGetRowHeight(ih);
-    int header_height = iupdrvTableGetHeaderHeight(ih);
-    int sb_size = iupdrvGetScrollbarSize();
-    int frame_width = table->frameWidth();
-
-    int visiblecolumns = iupAttribGetInt(ih, "VISIBLECOLUMNS");
-    int need_horiz_sb = (visiblecolumns > 0 && ih->data->num_col > visiblecolumns);
-    int horiz_sb_height = need_horiz_sb ? sb_size : 0;
-
-    int target_height = header_height + (row_height * visiblelines) + horiz_sb_height + 2 * frame_width;
-    table->setProperty("iup-table-target-height", target_height);
-  }
-
-  int visiblecolumns = iupAttribGetInt(ih, "VISIBLECOLUMNS");
-  if (visiblecolumns > 0)
-    table->setProperty("iup-table-visible-columns", visiblecolumns);
 
   return IUP_NOERROR;
 }

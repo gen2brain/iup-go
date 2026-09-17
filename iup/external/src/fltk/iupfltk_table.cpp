@@ -121,6 +121,8 @@ class IupFltkTable;
 static void fltkTableEndCellEdit(Ihandle* ih, int apply);
 static void fltkTableStartCellEdit(Ihandle* ih, int lin, int col);
 static void fltkTableDeferredEdit(void* data);
+static void fltkTableLayoutUpdateMethod(Ihandle* ih);
+static IupFltkTable* fltkTableGetWidget(Ihandle* ih);
 static void fltkTableSortRows(Ihandle* ih, int col, int ascending);
 static void fltkTableHandleHeaderClick(Ihandle* ih, int col);
 static void fltkTableSwapColumns(Ihandle* ih, int src, int dst);
@@ -240,6 +242,7 @@ public:
   int is_virtual;
   int has_dummy_col;
   int auto_widths_done;
+  int auto_widths_rows;
   int sort_column;
   int sort_ascending;
   int drag_source_col;
@@ -253,6 +256,7 @@ public:
   IupFltkTable(int X, int Y, int W, int H, Ihandle* ih)
     : Fl_Table_Row(X, Y, W, H), iup_handle(ih),
       focus_lin(0), focus_col(0), show_grid(1), is_virtual(0), has_dummy_col(0), auto_widths_done(0),
+      auto_widths_rows(0),
       sort_column(0), sort_ascending(1),
       drag_source_col(-1), drag_target_col(-1), drag_start_x(0), drag_start_y(0), dragging(0),
       drag_source_row(-1), drag_target_row(-1), row_dragging(0)
@@ -533,8 +537,14 @@ protected:
   {
     switch (event)
     {
+      case FL_DND_ENTER: case FL_DND_DRAG: case FL_DND_LEAVE: case FL_DND_RELEASE: case FL_PASTE:
+        if (iupfltkDragDropHandleEvent(this, iup_handle, event))
+          return 1;
+        break;
+
       case FL_PUSH:
       {
+        iupfltkDragDropHandleEvent(this, iup_handle, event);
         take_focus();
 
         int R, C;
@@ -632,6 +642,9 @@ protected:
 
       case FL_DRAG:
       {
+        if (iupfltkDragDropHandleEvent(this, iup_handle, event))
+          return 1;
+
         if (drag_source_col >= 0 && iup_handle->data->allow_reorder)
         {
           int dx = Fl::event_x() - drag_start_x;
@@ -869,6 +882,19 @@ static void fltkTableDeferredEdit(void* data)
   fltkTableStartCellEdit(ih, lin, col);
 }
 
+static void fltkTableDeferredAutoWidths(void* data)
+{
+  Ihandle* ih = (Ihandle*)data;
+  if (!iupObjectCheck(ih)) return;
+  if (!ih->handle) return;
+
+  IupFltkTable* table = fltkTableGetWidget(ih);
+  if (!table) return;
+
+  table->auto_widths_done = 0;
+  fltkTableLayoutUpdateMethod(ih);
+  table->redraw();
+}
 
 static void fltkTableSortRows(Ihandle* ih, int col, int ascending)
 {
@@ -1193,36 +1219,6 @@ static void fltkTableLayoutUpdateMethod(Ihandle* ih)
   int width = ih->currentwidth;
   int height = ih->currentheight;
 
-  int target_height = iupAttribGetInt(ih, "_IUPFLTK_TABLE_TARGET_HEIGHT");
-  if (target_height > 0 && height > target_height)
-    height = target_height;
-
-  int visible_columns = iupAttribGetInt(ih, "_IUPFLTK_TABLE_VISIBLE_COLUMNS");
-  if (visible_columns > 0)
-  {
-    int cols_width = 0;
-    int num_cols = visible_columns;
-    if (num_cols > ih->data->num_col)
-      num_cols = ih->data->num_col;
-
-    for (int c = 0; c < num_cols; c++)
-      cols_width += table->col_width(c);
-
-    int sb_size = iupdrvGetScrollbarSize();
-    int border = iupdrvTableGetBorderWidth(ih);
-
-    int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
-    int need_vert_sb = (visiblelines > 0 && ih->data->num_lin > visiblelines);
-    int vert_sb_width = need_vert_sb ? sb_size : 0;
-
-    int target_width = cols_width + vert_sb_width + 2 * border;
-    if (width > target_width)
-      width = target_width;
-  }
-
-  ih->currentwidth = width;
-  ih->currentheight = height;
-
   iupdrvBaseLayoutUpdateMethod(ih);
 
   if (ih->data->num_col > 0)
@@ -1379,26 +1375,6 @@ static int fltkTableMapMethod(Ihandle* ih)
   if (!iupAttribGetBoolean(ih, "CANFOCUS"))
     iupfltkSetCanFocus(table, 0);
 
-  int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
-  if (visiblelines > 0)
-  {
-    int row_h = iupdrvTableGetRowHeight(ih);
-    int header_h = iupdrvTableGetHeaderHeight(ih);
-    int sb_size = iupdrvGetScrollbarSize();
-    int border = iupdrvTableGetBorderWidth(ih);
-
-    int visiblecolumns = iupAttribGetInt(ih, "VISIBLECOLUMNS");
-    int need_horiz_sb = (visiblecolumns > 0 && num_col > visiblecolumns);
-    int horiz_sb_height = need_horiz_sb ? sb_size : 0;
-
-    int target_height = header_h + (row_h * visiblelines) + horiz_sb_height + 2 * border;
-    iupAttribSetInt(ih, "_IUPFLTK_TABLE_TARGET_HEIGHT", target_height);
-  }
-
-  int visiblecolumns = iupAttribGetInt(ih, "VISIBLECOLUMNS");
-  if (visiblecolumns > 0)
-    iupAttribSetInt(ih, "_IUPFLTK_TABLE_VISIBLE_COLUMNS", visiblecolumns);
-
   return IUP_NOERROR;
 }
 
@@ -1468,6 +1444,13 @@ extern "C" IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
       table->resize_storage(num_lin, ih->data->num_col);
     table->rows(num_lin);
     table->redraw();
+
+    /* the cells are filled after this returns, so measure the columns later */
+    if (num_lin > 0 && table->auto_widths_done && !table->auto_widths_rows)
+    {
+      table->auto_widths_rows = 1;
+      Fl::add_timeout(0.01, fltkTableDeferredAutoWidths, (void*)ih);
+    }
   }
 }
 

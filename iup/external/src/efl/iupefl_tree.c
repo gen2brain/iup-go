@@ -1790,6 +1790,7 @@ static int eflTreeSetDelNodeAttrib(Ihandle* ih, int id, const char* value)
 
   if (iupStrEqualNoCase(value, "ALL"))
   {
+    int old_count = ih->data->node_count;
     Elm_Object_Item* item = elm_genlist_first_item_get(tree);
     while (item)
     {
@@ -1799,7 +1800,7 @@ static int eflTreeSetDelNodeAttrib(Ihandle* ih, int id, const char* value)
       item = next;
     }
 
-    iupTreeDelFromCache(ih, 0, -1);
+    iupTreeDelFromCache(ih, 0, old_count);
   }
   else if (iupStrEqualNoCase(value, "SELECTED"))
   {
