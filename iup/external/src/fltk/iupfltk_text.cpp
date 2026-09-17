@@ -1716,8 +1716,6 @@ static int fltkTextMapMethod(Ihandle* ih)
     IupFltkTextEditor* editor = new IupFltkTextEditor(0, 0, 10, 10, ih);
     ih->handle = (InativeHandle*)editor;
 
-    editor->text_buffer->add_modify_callback(fltkTextEditorModifyCallback, (void*)ih);
-
     if (iupAttribGetBoolean(ih, "WORDWRAP") || !(ih->data->sb & IUP_SB_HORIZ))
       editor->wrap_mode(Fl_Text_Display::WRAP_AT_BOUNDS, 0);
 
@@ -1727,6 +1725,8 @@ static int fltkTextMapMethod(Ihandle* ih)
     char* value = iupAttribGet(ih, "VALUE");
     if (value)
       editor->text_buffer->text(value);
+
+    editor->text_buffer->add_modify_callback(fltkTextEditorModifyCallback, (void*)ih);
 
     iupfltkAddToParent(ih);
 
