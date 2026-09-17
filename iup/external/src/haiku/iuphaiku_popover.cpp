@@ -179,7 +179,7 @@ static void haikuPopoverSetVisible(Ihandle* ih, int visible)
   if (!popover) return;
 
   int ax = 0, ay = 0, aw = 0, ah = 0;
-  if (anchor->iclass && anchor->iclass->nativetype == IUP_TYPECONTROL)
+  if (anchor->iclass && anchor->iclass->nativetype != IUP_TYPEVOID)
   {
     BView* av = (BView*)anchor->handle;
     LooperLockGuard guard(av->Looper());
