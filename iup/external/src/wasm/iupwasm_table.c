@@ -557,20 +557,11 @@ IUP_SDK_API void iupdrvTableAddBorders(Ihandle* ih, int* w, int* h)
   if (h) *h += 2;
 }
 
-/* clamp height to VISIBLELINES rows so EXPAND doesn't stretch the table; extra space stays empty */
 static void wasmTableLayoutUpdate(Ihandle* ih)
 {
   int id = iupwasmIdOf(ih);
-  int h = ih->currentheight;
-  int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
-  if (visiblelines > 0)
-  {
-    int content = iupdrvTableGetHeaderHeight(ih) + iupdrvTableGetRowHeight(ih) * visiblelines + 2;
-    if (h > content)
-      h = content;
-  }
   if (id)
-    iupwasmJsSetPos(id, ih->x, ih->y, ih->currentwidth, h);
+    iupwasmJsSetPos(id, ih->x, ih->y, ih->currentwidth, ih->currentheight);
 }
 
 EMSCRIPTEN_KEEPALIVE void iupwasmTableCellClick(int id, int lin, int col, int mods)

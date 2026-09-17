@@ -1551,55 +1551,10 @@ static void gtk4TableLayoutUpdateMethod(Ihandle* ih)
 {
   Igtk4TableData* gtk_data = IGTK4_TABLE_DATA(ih);
   GtkWidget* widget = gtk_data->scrolled_win;
-  int width = ih->currentwidth;
-  int height = ih->currentheight;
-
-  int target_height = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(widget), "iup-table-target-height"));
-  if (target_height > 0)
-  {
-    if (height > target_height)
-      height = target_height;
-  }
-
-  int visible_columns = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(widget), "iup-table-visible-columns"));
-  if (visible_columns > 0 && gtk_data->column_view)
-  {
-    int c, cols_width = 0;
-    int num_cols = visible_columns;
-    if (num_cols > ih->data->num_col)
-      num_cols = ih->data->num_col;
-
-    GListModel* columns = gtk_column_view_get_columns(GTK_COLUMN_VIEW(gtk_data->column_view));
-    guint n_columns = g_list_model_get_n_items(columns);
-
-    for (c = 0; c < num_cols && c < (int)n_columns; c++)
-    {
-      GtkColumnViewColumn* column = g_list_model_get_item(columns, c);
-      if (column)
-      {
-        int col_width = gtk_column_view_column_get_fixed_width(column);
-        if (col_width <= 0)
-          col_width = 80;
-        cols_width += col_width;
-        g_object_unref(column);
-      }
-    }
-
-    int sb_size = iupdrvGetScrollbarSize();
-    int border = 2;
-
-    int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
-    int need_vert_sb = (visiblelines > 0 && ih->data->num_lin > visiblelines);
-    int vert_sb_width = need_vert_sb ? sb_size : 0;
-
-    int target_width = cols_width + vert_sb_width + border;
-    if (width > target_width)
-      width = target_width;
-  }
 
   GtkWidget* parent = gtk_widget_get_parent(widget);
   if (parent)
-    iupgtk4NativeContainerSetBounds(parent, widget, ih->x, ih->y, width, height);
+    iupgtk4NativeContainerSetBounds(parent, widget, ih->x, ih->y, ih->currentwidth, ih->currentheight);
 }
 
 static void gtk4TableColumnsChanged(GListModel* model, guint position, guint removed, guint added, Ihandle* ih)
@@ -1945,25 +1900,6 @@ static int gtk4TableMapMethod(Ihandle* ih)
 
   iupdrvTableSetShowGrid(ih, iupAttribGetBoolean(ih, "SHOWGRID"));
 
-  int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
-  if (visiblelines > 0)
-  {
-    int row_height = iupdrvTableGetRowHeight(ih);
-    int header_height = iupdrvTableGetHeaderHeight(ih);
-    int sb_size = iupdrvGetScrollbarSize();
-
-    int visiblecolumns = iupAttribGetInt(ih, "VISIBLECOLUMNS");
-    int need_horiz_sb = (visiblecolumns > 0 && ih->data->num_col > visiblecolumns);
-    int horiz_sb_height = need_horiz_sb ? sb_size : 0;
-
-    int content_height = header_height + (row_height * visiblelines) + horiz_sb_height + 2;
-    g_object_set_data(G_OBJECT(gtk_data->scrolled_win), "iup-table-target-height", GINT_TO_POINTER(content_height));
-  }
-
-  int visiblecolumns = iupAttribGetInt(ih, "VISIBLECOLUMNS");
-  if (visiblecolumns > 0)
-    g_object_set_data(G_OBJECT(gtk_data->scrolled_win), "iup-table-visible-columns", GINT_TO_POINTER(visiblecolumns));
-
   return IUP_NOERROR;
 }
 
@@ -2014,13 +1950,20 @@ IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
   if (num_lin < 0)
     num_lin = 0;
 
-  ih->data->num_lin = num_lin;
-
   if (gtk_data->is_virtual)
   {
-    g_list_model_items_changed(gtk_data->model, 0, g_list_model_get_n_items(gtk_data->model), num_lin);
+    /* the model reports num_lin, so read it before assigning */
+    guint old_count = g_list_model_get_n_items(gtk_data->model);
+    ih->data->num_lin = num_lin;
+
+    if ((guint)num_lin > old_count)
+      g_list_model_items_changed(gtk_data->model, old_count, 0, (guint)num_lin - old_count);
+    else if ((guint)num_lin < old_count)
+      g_list_model_items_changed(gtk_data->model, (guint)num_lin, old_count - (guint)num_lin, 0);
     return;
   }
+
+  ih->data->num_lin = num_lin;
 
   GListStore* store = G_LIST_STORE(gtk_data->model);
   guint current_rows = g_list_model_get_n_items(gtk_data->model);
@@ -2411,12 +2354,28 @@ IUP_SDK_API void iupdrvTableGetFocusCell(Ihandle* ih, int* lin, int* col)
 
 IUP_SDK_API void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col)
 {
-  Igtk4TableData* gtk_data = IGTK4_TABLE_DATA(ih);
-
   if (lin < 1 || lin > ih->data->num_lin)
     return;
 
-  gtk_widget_activate_action(gtk_data->column_view, "list.scroll-to-item", "u", lin - 1);
+#if GTK_CHECK_VERSION(4, 12, 0)
+  {
+    Igtk4TableData* gtk_data = IGTK4_TABLE_DATA(ih);
+    GtkColumnView* column_view = GTK_COLUMN_VIEW(gtk_data->column_view);
+    GListModel* columns = gtk_column_view_get_columns(column_view);
+    GtkColumnViewColumn* column = NULL;
+
+    if (columns && col >= 1 && (guint)col <= g_list_model_get_n_items(columns))
+      column = GTK_COLUMN_VIEW_COLUMN(g_list_model_get_item(columns, col - 1));
+
+    gtk_column_view_scroll_to(column_view, lin - 1, column, GTK_LIST_SCROLL_NONE, NULL);
+
+    if (column)
+      g_object_unref(column);
+  }
+#else
+  /* the scroll action belongs to the GtkListView inside, which is private before 4.12 */
+  (void)col;
+#endif
 }
 
 /* ========================================================================= */

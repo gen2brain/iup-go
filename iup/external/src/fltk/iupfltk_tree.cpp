@@ -1339,7 +1339,10 @@ static int fltkTreeSetDelNodeAttrib(Ihandle* ih, int id, const char* value)
         cb(ih, (char*)ih->data->node_cache[i].userdata);
     }
 
-    tree->clear();
+    /* Fl_Tree::clear deletes the hidden root too, and the add methods need it */
+    if (tree->root())
+      tree->clear_children(tree->root());
+
     iupTreeDelFromCache(ih, 0, ih->data->node_count);
 
     iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", NULL);

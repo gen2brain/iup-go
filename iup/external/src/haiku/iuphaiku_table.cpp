@@ -21,6 +21,7 @@
 #include <Looper.h>
 #include <Message.h>
 #include <MessageFilter.h>
+#include <MessageRunner.h>
 #include <Rect.h>
 #include <ScrollBar.h>
 #include <String.h>
@@ -108,6 +109,9 @@ public:
 static IupHaikuVirtualField g_virtual_field;
 
 class IupHaikuTableView;
+static void haikuTableAutoSizeColumns(Ihandle* ih, IupHaikuTableView* tv);
+
+#define IUPHAIKU_TABLE_AUTOSIZE 'IupA'
 
 class IupHaikuTableEditor : public BTextView
 {
@@ -292,6 +296,18 @@ protected:
   void MessageReceived(BMessage* msg) override
   {
     if (!fIhandle) { BColumnListView::MessageReceived(msg); return; }
+
+    if (msg->what == IUPHAIKU_TABLE_AUTOSIZE)
+    {
+      delete fAutoSizeRunner;
+      fAutoSizeRunner = NULL;
+      haikuTableAutoSizeColumns(fIhandle, this);
+      StretchLastColumn();
+      SetMeasuredWithRows();
+      Invalidate();
+      return;
+    }
+
     BRow* r = FocusRow();
     int lin = r ? (int)IndexOf(r) + 1 : 0;
 
@@ -677,6 +693,15 @@ public:
 
   bool NeedsAutoSize() const { return fNeedsAutoSize; }
   void ClearNeedsAutoSize() { fNeedsAutoSize = false; }
+  void ScheduleAutoSize()
+  {
+    if (fAutoSizeRunner) return;
+    BMessage tick(IUPHAIKU_TABLE_AUTOSIZE);
+    fAutoSizeRunner = new BMessageRunner(BMessenger(this), &tick, 50000, 1);
+  }
+  void CancelAutoSize() { delete fAutoSizeRunner; fAutoSizeRunner = NULL; }
+  bool MeasuredWithRows() const { return fMeasuredWithRows; }
+  void SetMeasuredWithRows() { fMeasuredWithRows = true; }
 
   void SetTrailView(BView* v) { fTrail = v; }
   void RepositionTrail();
@@ -685,6 +710,8 @@ private:
   Ihandle* fIhandle;
   bool fIsVirtual = false;
   bool fNeedsAutoSize = true;
+  bool fMeasuredWithRows = false;
+  BMessageRunner* fAutoSizeRunner = NULL;
   int fFocusCol = 1;
   BMessageFilter* fSortFilter = NULL;
   IupHaikuTableEditor* fEditor = NULL;
@@ -1391,6 +1418,10 @@ extern "C" IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
 
   ih->data->num_lin = num_lin;
 
+  /* the cells are filled after this returns, so measure the columns later */
+  if (num_lin > 0 && !tv->MeasuredWithRows())
+    tv->ScheduleAutoSize();
+
   int cur = tv->CountRows(NULL);
   if (num_lin > cur)
   {
@@ -1732,42 +1763,11 @@ static void haikuTableLayoutUpdateMethod(Ihandle* ih)
     haikuTableAutoSizeColumns(ih, tv);
     tv->StretchLastColumn();
     tv->ClearNeedsAutoSize();
+    if (ih->data->num_lin > 0)
+      tv->SetMeasuredWithRows();
   }
 
-  int width = ih->currentwidth;
-  int height = ih->currentheight;
-  int sb = iupdrvGetScrollbarSize();
-  const int border = 4;
-
-  int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
-  if (visiblelines > 0)
-  {
-    /* Same chrome as iupdrvTableAddBorders: 6 + hsb only when VISIBLECOLUMNS overflows. */
-    int max_h = iupdrvTableGetHeaderHeight(ih)
-              + iupdrvTableGetRowHeight(ih) * visiblelines + 6;
-    int vc = iupAttribGetInt(ih, "VISIBLECOLUMNS");
-    if (vc > 0 && ih->data->num_col > vc) max_h += sb;
-    if (height > max_h) height = max_h;
-  }
-
-  int visiblecolumns = iupAttribGetInt(ih, "VISIBLECOLUMNS");
-  if (visiblecolumns > 0)
-  {
-    int n = visiblecolumns;
-    if (n > ih->data->num_col) n = ih->data->num_col;
-
-    int cols_w = 0;
-    for (int c = 0; c < n; c++)
-    {
-      IupHaikuTableColumn* col = haikuTableGetColumn(tv, c + 1);
-      if (col) cols_w += (int)(col->Width() + 0.5f);
-    }
-
-    int max_w = cols_w + sb + 15 /* latch */ + border;
-    if (width > max_w) width = max_w;
-  }
-
-  iuphaikuSetPosSize(tv, ih->x, ih->y, width, height);
+  iuphaikuSetPosSize(tv, ih->x, ih->y, ih->currentwidth, ih->currentheight);
 }
 
 IUP_DRV_API void iuphaikuTableUpdateColors(Ihandle* ih)
@@ -1835,6 +1835,7 @@ static void haikuTableUnMapMethod(Ihandle* ih)
 
     if (tv->Editor()) tv->EndEdit(false);
 
+    tv->CancelAutoSize();
     tv->SetIhandle(NULL);
 
     /* BColumnListView::Clear() does NOT delete rows; RemoveColumn / RemoveRow leave items to the caller. */

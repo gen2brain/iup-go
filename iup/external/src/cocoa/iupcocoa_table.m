@@ -35,8 +35,6 @@ static char kEditingRowKey;
 static char kEditingColKey;
 static char kEditEndedKey;
 static char kEditBeginCalledKey;
-static char kTargetHeightKey;
-static char kVisibleColumnsKey;
 
 /* ========================================================================= */
 /* Data Structures                                                           */
@@ -2626,25 +2624,6 @@ static int cocoaTableMapMethod(Ihandle* ih)
 
   iupcocoaAddToParent(ih);
 
-  int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
-  if (visiblelines > 0)
-  {
-    int row_height = iupdrvTableGetRowHeight(ih);
-    int header_height = iupdrvTableGetHeaderHeight(ih);
-    int sb_size = iupdrvGetScrollbarSize();
-
-    int visiblecolumns = iupAttribGetInt(ih, "VISIBLECOLUMNS");
-    int need_horiz_sb = (visiblecolumns > 0 && ih->data->num_col > visiblecolumns);
-    int horiz_sb_height = need_horiz_sb ? sb_size : 0;
-
-    int target_height = header_height + (row_height * visiblelines) + horiz_sb_height + 2;
-    objc_setAssociatedObject(scrollView, &kTargetHeightKey, @(target_height), OBJC_ASSOCIATION_RETAIN);
-  }
-
-  int visiblecolumns = iupAttribGetInt(ih, "VISIBLECOLUMNS");
-  if (visiblecolumns > 0)
-    objc_setAssociatedObject(scrollView, &kVisibleColumnsKey, @(visiblecolumns), OBJC_ASSOCIATION_RETAIN);
-
   return IUP_NOERROR;
 }
 
@@ -2683,56 +2662,6 @@ static void cocoaTableLayoutUpdateMethod(Ihandle* ih)
 
   int width = ih->currentwidth;
   int height = ih->currentheight;
-
-  NSNumber* targetHeightNum = objc_getAssociatedObject(scroll_view, &kTargetHeightKey);
-  if (targetHeightNum)
-  {
-    int target_height = [targetHeightNum intValue];
-    if (target_height > 0 && height > target_height)
-      height = target_height;
-  }
-
-  NSNumber* visColNum = objc_getAssociatedObject(scroll_view, &kVisibleColumnsKey);
-  if (visColNum)
-  {
-    int visible_columns = [visColNum intValue];
-    if (visible_columns > 0)
-    {
-      NSTableView* tableView = (NSTableView*)[scroll_view documentView];
-      if (tableView && [tableView isKindOfClass:[NSTableView class]])
-      {
-        NSArray* columns = [tableView tableColumns];
-        int num_cols = visible_columns;
-        if (num_cols > (int)[columns count])
-          num_cols = (int)[columns count];
-
-        CGFloat cols_width = 0;
-        for (int c = 0; c < num_cols; c++)
-        {
-          NSTableColumn* column = [columns objectAtIndex:c];
-          CGFloat col_width = [column width];
-          if (col_width <= 0)
-            col_width = 80;
-          cols_width += col_width;
-        }
-
-        int sb_size = iupdrvGetScrollbarSize();
-
-        NSSize contentSz = [scroll_view contentSize];
-        NSRect frameSz = [scroll_view frame];
-        int border_w = (int)(NSWidth(frameSz) - contentSz.width);
-
-        int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
-        int need_vert_sb = (visiblelines > 0 && ih->data->num_lin > visiblelines);
-        int vert_sb_width = need_vert_sb ? sb_size : 0;
-
-        int cols_width_int = (int)ceil(cols_width);
-        int target_width = cols_width_int + vert_sb_width + border_w;
-        if (width > target_width)
-          width = target_width;
-      }
-    }
-  }
 
   NSRect parent_bounds = [parent_view bounds];
   NSRect child_rect;

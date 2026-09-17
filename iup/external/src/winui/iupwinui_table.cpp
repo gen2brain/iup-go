@@ -2742,40 +2742,6 @@ static void winuiTableLayoutUpdateMethod(Ihandle* ih)
   int width = ih->currentwidth;
   int height = ih->currentheight;
   int header_height = iupdrvTableGetHeaderHeight(ih);
-  int border = iupdrvTableGetBorderWidth(ih);
-
-  int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
-  if (visiblelines > 0)
-  {
-    int row_height = iupdrvTableGetRowHeight(ih);
-    int max_height = header_height + (row_height * visiblelines) + border;
-    if (height > max_height)
-      height = max_height;
-  }
-
-  int visiblecolumns = iupAttribGetInt(ih, "VISIBLECOLUMNS");
-  if (visiblecolumns > 0)
-  {
-    IupWinUITableAux* aux = winuiTableGetAux(ih);
-    if (aux)
-    {
-      int cols_width = 0;
-      int num_cols = visiblecolumns;
-      if (num_cols > ih->data->num_col)
-        num_cols = ih->data->num_col;
-
-      for (int c = 0; c < num_cols; c++)
-        cols_width += aux->col_widths[c];
-
-      int sb_size = iupdrvGetScrollbarSize();
-      int need_vert_sb = (visiblelines > 0 && ih->data->num_lin > visiblelines);
-      int vert_sb_width = need_vert_sb ? sb_size : 0;
-      int max_width = cols_width + vert_sb_width + border;
-
-      if (width > max_width)
-        width = max_width;
-    }
-  }
 
   Grid containerGrid = winuiGetHandle<Grid>(ih);
   if (containerGrid)

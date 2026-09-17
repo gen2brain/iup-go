@@ -103,10 +103,6 @@ typedef struct _ImotTableData
   Pixel grid_pixel;
   Pixel select_bg_pixel;
 
-  /* VISIBLELINES/VISIBLECOLUMNS constraints (0 = no constraint) */
-  int target_height;
-  int visible_columns;
-
 } ImotTableData;
 
 #define IMOT_TABLE_DATA(ih) ((ImotTableData*)(ih->data->native_data))
@@ -482,7 +478,7 @@ static void motTableDrawCell(Ihandle* ih, int lin, int col, int is_header)
     if (mot_data->xft_font)
     {
       XGlyphInfo extents;
-      XftTextExtents8(display, mot_data->xft_font, (XftChar8*)text, text_len, &extents);
+      XftTextExtentsUtf8(display, mot_data->xft_font, (FcChar8*)text, text_len, &extents);
       text_width = extents.width;
     }
     else
@@ -529,7 +525,7 @@ static void motTableDrawCell(Ihandle* ih, int lin, int col, int is_header)
       render_color.alpha = 0xffff;
 
       XftColorAllocValue(display, DefaultVisual(display, iupmot_screen), DefaultColormap(display, iupmot_screen), &render_color, &xft_color);
-      XftDrawString8(mot_data->xft_draw, &xft_color, mot_data->xft_font, text_x, text_y, (XftChar8*)text, text_len);
+      XftDrawStringUtf8(mot_data->xft_draw, &xft_color, mot_data->xft_font, text_x, text_y, (FcChar8*)text, text_len);
       XftColorFree(display, DefaultVisual(display, iupmot_screen), DefaultColormap(display, iupmot_screen), &xft_color);
     }
     else
@@ -608,7 +604,7 @@ static void motTableDrawTable(Ihandle* ih)
         if (mot_data->xft_font)
         {
           XGlyphInfo extents;
-          XftTextExtents8(iupmot_display, mot_data->xft_font, (XftChar8*)mot_data->col_titles[c], strlen(mot_data->col_titles[c]), &extents);
+          XftTextExtentsUtf8(iupmot_display, mot_data->xft_font, (FcChar8*)mot_data->col_titles[c], strlen(mot_data->col_titles[c]), &extents);
           title_width = extents.width;
         }
         else
@@ -628,7 +624,7 @@ static void motTableDrawTable(Ihandle* ih)
           if (mot_data->xft_font)
           {
             XGlyphInfo extents;
-            XftTextExtents8(iupmot_display, mot_data->xft_font, (XftChar8*)cell_value, strlen(cell_value), &extents);
+            XftTextExtentsUtf8(iupmot_display, mot_data->xft_font, (FcChar8*)cell_value, strlen(cell_value), &extents);
             cell_width = extents.width;
           }
           else
@@ -1544,25 +1540,6 @@ static int motTableMapMethod(Ihandle* ih)
 
   mot_data->columns_autosized = 0;
 
-  /* Store constraints for VISIBLELINES/VISIBLECOLUMNS clamping in LayoutUpdate */
-  int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
-  if (visiblelines > 0)
-  {
-    int row_height = iupdrvTableGetRowHeight(ih);
-    int header_height = iupdrvTableGetHeaderHeight(ih);
-    int border = iupdrvTableGetBorderWidth(ih);
-    int sb_size = iupdrvGetScrollbarSize();
-
-    /* motTableSetSize reserves horizontal scrollbar space, and VISIBLELINES can trigger it */
-    mot_data->target_height = header_height + (row_height * visiblelines) + border + sb_size;
-  }
-  else
-  {
-    mot_data->target_height = 0;
-  }
-
-  mot_data->visible_columns = iupAttribGetInt(ih, "VISIBLECOLUMNS");
-
   motTableUpdateScrollbars(ih);
 
   return IUP_NOERROR;
@@ -1602,41 +1579,9 @@ static void motTableSetSize(Ihandle* ih, Widget container, int setsize, int use_
 
 static void motTableLayoutUpdateMethod(Ihandle* ih)
 {
-  ImotTableData* mot_data = IMOT_TABLE_DATA(ih);
   Widget container = (Widget)iupAttribGet(ih, "_IUP_EXTRAPARENT");
-  int width = ih->currentwidth;
-  int height = ih->currentheight;
 
-  if (mot_data && mot_data->target_height > 0)
-  {
-    if (height > mot_data->target_height)
-      height = mot_data->target_height;
-  }
-
-  if (mot_data && mot_data->visible_columns > 0 && mot_data->col_widths)
-  {
-    int c, cols_width = 0;
-    int num_cols = mot_data->visible_columns;
-    if (num_cols > ih->data->num_col)
-      num_cols = ih->data->num_col;
-
-    for (c = 0; c < num_cols; c++)
-      cols_width += mot_data->col_widths[c];
-
-    int sb_size = iupdrvGetScrollbarSize();
-    int border = iupdrvTableGetBorderWidth(ih);
-
-    int visiblelines = mot_data->target_height > 0 ? 1 : 0;  /* target_height > 0 means VISIBLELINES was set */
-    int need_vert_sb = (visiblelines && ih->data->num_lin > iupAttribGetInt(ih, "VISIBLELINES"));
-    int vert_sb_width = need_vert_sb ? sb_size : 0;
-
-    int target_width = cols_width + vert_sb_width + border + sb_size;
-
-    if (width > target_width)
-      width = target_width;
-  }
-
-  motTableSetSize(ih, container, 1, width, height);
+  motTableSetSize(ih, container, 1, ih->currentwidth, ih->currentheight);
   iupmotSetPosition(container, ih->x, ih->y);
 }
 
@@ -2133,10 +2078,42 @@ IUP_SDK_API void iupdrvTableGetFocusCell(Ihandle* ih, int* lin, int* col)
 
 IUP_SDK_API void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col)
 {
-  /* Not implemented */
-  (void)ih;
-  (void)lin;
-  (void)col;
+  ImotTableData* mot_data = IMOT_TABLE_DATA(ih);
+  Dimension width, height;
+  int visible_height, row_top, row_bottom, c, col_left, col_right;
+
+  if (!mot_data || !mot_data->drawing_area || !mot_data->col_widths || mot_data->row_height <= 0)
+    return;
+
+  XtVaGetValues(mot_data->drawing_area, XmNwidth, &width, XmNheight, &height, NULL);
+
+  visible_height = height - mot_data->header_height;
+  row_top = (lin - 1) * mot_data->row_height;
+  row_bottom = row_top + mot_data->row_height;
+
+  if (row_top < mot_data->scroll_y)
+    mot_data->scroll_y = row_top;
+  else if (row_bottom > mot_data->scroll_y + visible_height)
+    mot_data->scroll_y = row_bottom - visible_height;
+
+  if (mot_data->scroll_y < 0)
+    mot_data->scroll_y = 0;
+
+  col_left = 0;
+  for (c = 0; c < col - 1 && c < ih->data->num_col; c++)
+    col_left += mot_data->col_widths[c];
+  col_right = col_left + mot_data->col_widths[col - 1];
+
+  if (col_left < mot_data->scroll_x)
+    mot_data->scroll_x = col_left;
+  else if (col_right > mot_data->scroll_x + width)
+    mot_data->scroll_x = col_right - width;
+
+  if (mot_data->scroll_x < 0)
+    mot_data->scroll_x = 0;
+
+  motTableUpdateScrollbars(ih);
+  motTableRedraw(ih);
 }
 
 IUP_SDK_API void iupdrvTableRedraw(Ihandle* ih)
@@ -2217,23 +2194,10 @@ IUP_SDK_API void iupdrvTableAddBorders(Ihandle* ih, int* w, int* h)
 {
   int sb_size = iupdrvGetScrollbarSize();
   int border = iupdrvTableGetBorderWidth(ih);
-  int visiblecolumns = iupAttribGetInt(ih, "VISIBLECOLUMNS");
-  int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
-
-  *w += sb_size + border;
-
-  *h += border;
 
   /* motTableSetSize always reserves horizontal scrollbar space */
-  if (visiblecolumns > 0 && ih->data->num_col > visiblecolumns)
-  {
-    *h += sb_size;
-  }
-  else if (visiblelines == 0)
-  {
-    *h += sb_size;
-  }
-  /* with VISIBLELINES the target_height from MapMethod already includes sb_size */
+  *w += sb_size + border;
+  *h += sb_size + border;
 }
 
 /* ========================================================================= */

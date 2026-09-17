@@ -761,7 +761,7 @@ static gboolean gtkTableButtonEvent(GtkWidget* widget, GdkEventButton* evt, Ihan
 
   if (evt->type == GDK_BUTTON_PRESS)
   {
-    if (ih->data->show_dragdrop)
+    if (ih->data->show_dragdrop || iupAttribGetBoolean(ih, "DRAGSOURCE"))
     {
       gtk_tree_path_free(path);
       return FALSE;  /* let GtkTreeView select and start the row drag */
@@ -1429,44 +1429,6 @@ static void gtkTableLayoutUpdateMethod(Ihandle* ih)
   int width = ih->currentwidth;
   int height = ih->currentheight;
 
-  int target_height = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(widget), "iup-table-target-height"));
-  if (target_height > 0 && height > target_height)
-    height = target_height;
-
-  int visible_columns = iupAttribGetInt(ih, "VISIBLECOLUMNS");
-  if (visible_columns > 0 && gtk_data->tree_view)
-  {
-    int c, cols_width = 0;
-    int num_cols = visible_columns;
-    if (num_cols > ih->data->num_col)
-      num_cols = ih->data->num_col;
-
-    for (c = 0; c < num_cols; c++)
-    {
-      GtkTreeViewColumn* column = gtk_tree_view_get_column(GTK_TREE_VIEW(gtk_data->tree_view), c);
-      if (column)
-      {
-        int col_width = gtk_tree_view_column_get_width(column);
-        if (col_width <= 0)
-        {
-          col_width = gtk3TableCalculateColumnWidth(ih, c);
-        }
-        cols_width += col_width;
-      }
-    }
-
-    int sb_size = iupdrvGetScrollbarSize();
-    int border = 2;
-
-    int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
-    int need_vert_sb = (visiblelines > 0 && ih->data->num_lin > visiblelines);
-    int vert_sb_width = need_vert_sb ? sb_size : 0;
-
-    int target_width = cols_width + vert_sb_width + border;
-    if (width > target_width)
-      width = target_width;
-  }
-
   GtkWidget* parent = gtk_widget_get_parent(widget);
   while (parent && !GTK_IS_FIXED(parent))
     parent = gtk_widget_get_parent(parent);
@@ -1920,18 +1882,6 @@ static int gtkTableMapMethod(Ihandle* ih)
 
   iupdrvTableSetShowGrid(ih, iupAttribGetBoolean(ih, "SHOWGRID"));
 
-  /* GtkFixed ignores vexpand/valign, so VISIBLELINES clamps in the size-allocate handler */
-  int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
-  if (visiblelines > 0)
-  {
-    int row_height = iupdrvTableGetRowHeight(ih);
-    int header_height = iupdrvTableGetHeaderHeight(ih);
-    int content_height = header_height + (row_height * visiblelines);
-    content_height += 2;  /* scrolled window border */
-
-    g_object_set_data(G_OBJECT(gtk_data->scrolled_win), "iup-table-target-height", GINT_TO_POINTER(content_height));
-  }
-
   return IUP_NOERROR;
 }
 
@@ -2028,14 +1978,40 @@ IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
   if (num_lin < 0)
     num_lin = 0;
 
-  ih->data->num_lin = num_lin;
-
   if (gtk_data->is_virtual)
   {
+    int old_lin = ih->data->num_lin;
+    ih->data->num_lin = num_lin;
+
+    /* GtkTreeView tracks the row count only through these signals */
+    if (gtk_data->virtual_model && num_lin != old_lin)
+    {
+      GtkTreeModel* model = GTK_TREE_MODEL(gtk_data->virtual_model);
+      int i;
+
+      for (i = old_lin; i < num_lin; i++)
+      {
+        GtkTreePath* path = gtk_tree_path_new_from_indices(i, -1);
+        GtkTreeIter iter;
+        if (gtk_tree_model_get_iter(model, &iter, path))
+          gtk_tree_model_row_inserted(model, path, &iter);
+        gtk_tree_path_free(path);
+      }
+
+      for (i = old_lin - 1; i >= num_lin; i--)
+      {
+        GtkTreePath* path = gtk_tree_path_new_from_indices(i, -1);
+        gtk_tree_model_row_deleted(model, path);
+        gtk_tree_path_free(path);
+      }
+    }
+
     if (gtk_data->tree_view)
       gtk_widget_queue_draw(gtk_data->tree_view);
     return;
   }
+
+  ih->data->num_lin = num_lin;
 
   if (!gtk_data->store)
     return;
