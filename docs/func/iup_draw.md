@@ -177,6 +177,7 @@ Draws a focus rectangle.
     void IupDrawGetSize(Ihandle* ih, int *w, int *h);
 
 Returns the drawing area size. In C unwanted values can be NULL.
+Valid only between IupDrawBegin and IupDrawEnd, outside them read the canvas DRAWSIZE attribute.
 
     void IupDrawGetTextSize(Ihandle* ih, const char* str, int len, int *w, int *h);
 
