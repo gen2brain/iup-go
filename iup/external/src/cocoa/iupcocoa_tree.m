@@ -4552,6 +4552,20 @@ static void cocoaTreeUnMapMethod(Ihandle* ih)
   ih->handle = NULL;
 }
 
+static void cocoaTreeLayoutUpdateMethod(Ihandle* ih)
+{
+  NSOutlineView* outline_view;
+
+  iupdrvBaseLayoutUpdateMethod(ih);
+
+  outline_view = cocoaTreeGetOutlineView(ih);
+  if (!outline_view)
+    return;
+
+  /* the column keeps its creation width otherwise, clipping the row highlight and scrolling sideways */
+  [outline_view sizeLastColumnToFit];
+}
+
 IUP_SDK_API void iupdrvTreeAddBorders(Ihandle* ih, int *w, int *h)
 {
   int border = 2 * 2;
@@ -4567,6 +4581,7 @@ IUP_SDK_API void iupdrvTreeInitClass(Iclass* ic)
   /* Driver Dependent Class functions */
   ic->Map = cocoaTreeMapMethod;
   ic->UnMap = cocoaTreeUnMapMethod;
+  ic->LayoutUpdate = cocoaTreeLayoutUpdateMethod;
 
   /* Visual */
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, cocoaTreeSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTBGCOLOR", IUPAF_DEFAULT);
