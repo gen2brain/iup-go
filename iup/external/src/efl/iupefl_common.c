@@ -64,9 +64,22 @@ IUP_DRV_API int iupeflSetBgColorAttrib(Ihandle* ih, const char* value)
   bg_rect = (Eo*)iupAttribGet(ih, "_IUP_EFL_BGRECT");
   if (!bg_rect)
   {
+    Eina_Rect geom = efl_gfx_entity_geometry_get(widget);
+
     bg_rect = efl_add(EFL_CANVAS_RECTANGLE_CLASS, widget);
     iupAttribSet(ih, "_IUP_EFL_BGRECT", (char*)bg_rect);
-    efl_gfx_entity_visible_set(bg_rect, EINA_TRUE);
+
+    /* set after the layout ran there is no later update to place it, follow the widget now */
+    if (geom.w > 0 && geom.h > 0)
+    {
+      iupeflAttachToContainer(ih, bg_rect);
+      iupeflSetPosition(bg_rect, geom.x, geom.y);
+      iupeflSetSize(bg_rect, geom.w, geom.h);
+      efl_gfx_stack_below(bg_rect, widget);
+      efl_gfx_entity_visible_set(bg_rect, efl_gfx_entity_visible_get(widget));
+    }
+    else
+      efl_gfx_entity_visible_set(bg_rect, EINA_TRUE);
   }
 
   efl_gfx_color_set(bg_rect, r, g, b, 255);
@@ -88,11 +101,18 @@ IUP_DRV_API int iupeflSetFgColorAttrib(Ihandle* ih, const char* value)
 IUP_DRV_API int iupeflBaseSetVisibleAttrib(Ihandle* ih, const char* value)
 {
   Eo* widget = iupeflGetWidget(ih);
+  Eo* bg_rect;
+  Eina_Bool visible;
 
   if (!widget)
     return 0;
 
-  iupeflSetVisible(widget, iupStrBoolean(value) ? EINA_TRUE : EINA_FALSE);
+  visible = iupStrBoolean(value) ? EINA_TRUE : EINA_FALSE;
+  iupeflSetVisible(widget, visible);
+
+  bg_rect = (Eo*)iupAttribGet(ih, "_IUP_EFL_BGRECT");
+  if (bg_rect)
+    iupeflSetVisible(bg_rect, visible);
 
   return 0;
 }
@@ -759,6 +779,7 @@ IUP_SDK_API void iupdrvSetVisible(Ihandle* ih, int visible)
 {
   Eo* widget = iupeflGetWidget(ih);
   Eo* container = (Eo*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
+  Eo* bg_rect = (Eo*)iupAttribGet(ih, "_IUP_EFL_BGRECT");
 
   iupAttribSet(ih, "_IUPEFL_HIDDEN", visible ? NULL : "1");
 
@@ -767,6 +788,9 @@ IUP_SDK_API void iupdrvSetVisible(Ihandle* ih, int visible)
 
   if (widget && widget != (Eo*)-1)
     iupeflSetVisible(widget, visible ? EINA_TRUE : EINA_FALSE);
+
+  if (bg_rect)
+    iupeflSetVisible(bg_rect, visible ? EINA_TRUE : EINA_FALSE);
 }
 
 IUP_SDK_API int iupdrvIsVisible(Ihandle* ih)
