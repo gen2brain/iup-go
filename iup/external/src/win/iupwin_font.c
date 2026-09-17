@@ -88,6 +88,15 @@ static IwinFont* winFindFont(const char *font, int res)
   if (mapped_name)
     iupStrCopyN(typeface, sizeof(typeface), mapped_name);
 
+  if (size == 0)
+  {
+    /* a face without a size, keep the default size instead of failing to create the font */
+    char def_typeface[50] = "";
+    int def_bold, def_italic, def_underline, def_strikeout;
+    iupGetFontInfo(IupGetGlobal("DEFAULTFONT"), def_typeface, &size,
+                   &def_bold, &def_italic, &def_underline, &def_strikeout);
+  }
+
   /* get in pixels */
   if (size < 0)
     height_pixels = size;    /* already in pixels */
