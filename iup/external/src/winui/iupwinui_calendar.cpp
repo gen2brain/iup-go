@@ -179,6 +179,7 @@ static void winuiCalendarUnMapMethod(Ihandle* ih)
       if (aux->lostFocusToken)
         cv.LostFocus(aux->lostFocusToken);
     }
+    iupwinuiRemoveFromParent(ih);
     winuiReleaseHandle<CalendarView>(ih);
   }
 

@@ -252,6 +252,7 @@ static void winuiValUnMapMethod(Ihandle* ih)
       if (aux->lostFocusToken)
         slider.LostFocus(aux->lostFocusToken);
     }
+    iupwinuiRemoveFromParent(ih);
     winuiReleaseHandle<Slider>(ih);
   }
 

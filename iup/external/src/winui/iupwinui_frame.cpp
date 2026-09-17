@@ -282,6 +282,7 @@ static int winuiFrameMapMethod(Ihandle* ih)
 static void winuiFrameUnMapMethod(Ihandle* ih)
 {
   winuiFreeAux<IupWinUIFrameAux>(ih, IUPWINUI_FRAME_AUX);
+  iupwinuiRemoveFromParent(ih);
   winuiReleaseHandle<Canvas>(ih);
 }
 

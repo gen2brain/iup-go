@@ -1228,6 +1228,7 @@ static void winuiCanvasUnMapMethod(Ihandle* ih)
     if (aux->sbVert && aux->sbVertScrollToken)
       aux->sbVert.Scroll(aux->sbVertScrollToken);
 
+    iupwinuiRemoveFromParent(ih);
     winuiReleaseHandle<Canvas>(ih);
   }
 

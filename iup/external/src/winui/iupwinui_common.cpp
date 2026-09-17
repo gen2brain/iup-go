@@ -92,6 +92,28 @@ IUP_DRV_API void iupwinuiAddToParent(Ihandle* ih)
     parentCanvas.Children().Append(elem);
 }
 
+IUP_DRV_API void iupwinuiRemoveFromParent(Ihandle* ih)
+{
+  if (!ih || !ih->handle || winuiHandleIsHWND(ih))
+    return;
+
+  UIElement elem = winuiGetHandle<UIElement>(ih);
+  if (!elem)
+    return;
+
+  FrameworkElement fe = elem.try_as<FrameworkElement>();
+  if (!fe)
+    return;
+
+  Panel panel = fe.Parent().try_as<Panel>();
+  if (!panel)
+    return;
+
+  uint32_t index;
+  if (panel.Children().IndexOf(elem, index))
+    panel.Children().RemoveAt(index);
+}
+
 /****************************************************************************
  * Base Driver Functions
  ****************************************************************************/
@@ -206,25 +228,7 @@ extern "C" IUP_SDK_API void iupdrvBaseUnMapMethod(Ihandle* ih)
   if (winuiHandleIsHWND(ih))
     return;
 
-  UIElement elem = winuiGetHandle<UIElement>(ih);
-  if (elem)
-  {
-    FrameworkElement fe = elem.try_as<FrameworkElement>();
-    if (fe)
-    {
-      DependencyObject parent = fe.Parent();
-      if (parent)
-      {
-        Panel panel = parent.try_as<Panel>();
-        if (panel)
-        {
-          uint32_t index;
-          if (panel.Children().IndexOf(elem, index))
-            panel.Children().RemoveAt(index);
-        }
-      }
-    }
-  }
+  iupwinuiRemoveFromParent(ih);
 
   winuiReleaseHandle<UIElement>(ih);
 }

@@ -503,7 +503,10 @@ static void winuiTabsUnMapMethod(Ihandle* ih)
   }
 
   if (ih->handle)
+  {
+    iupwinuiRemoveFromParent(ih);
     winuiReleaseHandle<TabView>(ih);
+  }
   ih->handle = nullptr;
 }
 
@@ -556,11 +559,14 @@ static int winuiTabsSetTabTitleAttrib(Ihandle* ih, int pos, const char* value)
 
 static int winuiTabsSetShowCloseAttrib(Ihandle* ih, const char* value)
 {
+  bool closable = iupStrBoolean(value) ? true : false;
+
+  /* this setter replaces the core one, a tab added later reads show_close */
+  ih->data->show_close = closable ? 1 : 0;
+
   TabView tabView = winuiTabsGetTabView(ih);
   if (!tabView)
     return 1;
-
-  bool closable = iupStrBoolean(value) ? true : false;
 
   uint32_t count = tabView.TabItems().Size();
   for (uint32_t i = 0; i < count; i++)
