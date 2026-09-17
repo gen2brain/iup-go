@@ -829,6 +829,23 @@ IUP_SDK_API void iupdrvReparent(Ihandle* ih)
   if (!widget || !new_parent || efl_parent_get(widget) == new_parent)
     return;
 
+  /* an Evas object cannot move to another canvas, so another window needs a new widget */
+  if (evas_object_evas_get(widget) != evas_object_evas_get(new_parent))
+  {
+    int old_visible = IupGetInt(ih, "VISIBLE");
+
+    if (old_visible)
+      IupSetAttribute(ih, "VISIBLE", "NO");
+
+    IupUnmap(ih);
+    IupMap(ih);
+
+    if (old_visible)
+      IupSetAttribute(ih, "VISIBLE", "YES");
+
+    return;
+  }
+
   {
     Eina_Bool visible = efl_gfx_entity_visible_get(widget);
 

@@ -1774,7 +1774,6 @@ static void eflTreeDelNodeRec(Ihandle* ih, Elm_Object_Item* item, IFns cb)
 
   ih->data->node_count--;
 
-  efl_ui_focus_manager_calc_unregister(iupeflGetWidget(ih), item);
   elm_object_item_del(item);
 }
 
@@ -1791,14 +1790,11 @@ static int eflTreeSetDelNodeAttrib(Ihandle* ih, int id, const char* value)
   if (iupStrEqualNoCase(value, "ALL"))
   {
     int old_count = ih->data->node_count;
-    Elm_Object_Item* item = elm_genlist_first_item_get(tree);
-    while (item)
-    {
-      Elm_Object_Item* next = elm_genlist_item_next_get(item);
-      if (!elm_genlist_item_parent_get(item))
-        eflTreeDelNodeRec(ih, item, cb);
-      item = next;
-    }
+    Elm_Object_Item* item;
+
+    /* the first item is always a root and takes its children with it, so re-read it */
+    while ((item = elm_genlist_first_item_get(tree)) != NULL)
+      eflTreeDelNodeRec(ih, item, cb);
 
     iupTreeDelFromCache(ih, 0, old_count);
   }
@@ -2101,7 +2097,6 @@ static void eflTreeCopyMoveNode(Ihandle* ih, Eo* tree, Elm_Object_Item* src_item
 
   if (!is_copy)
   {
-    efl_ui_focus_manager_calc_unregister(tree, src_item);
     elm_object_item_del(src_item);
 
     ih->data->node_count = old_count;
