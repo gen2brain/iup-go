@@ -1355,6 +1355,10 @@ static int haikuListMapMethod(Ihandle* ih)
     BMenuField* field = new BMenuField(BRect(0, 0, 99, field_h - 1), "iup_list", NULL, menu, true, B_FOLLOW_NONE);
     ih->handle = (InativeHandle*)field;
     iuphaikuAddToParent(ih);
+
+    /* once attached every BView call needs the window lock, a map after Show runs on a live looper */
+    LooperLockGuard guard(field->Looper());
+
     if (BMenuBar* mb = field->MenuBar())
       mb->AddFilter(new IupHaikuListMenuFilter(ih));
     iuphaikuUpdateWidgetFont(ih, field);
