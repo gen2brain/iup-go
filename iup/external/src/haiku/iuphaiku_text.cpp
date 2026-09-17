@@ -1652,6 +1652,9 @@ static int haikuTextMapMethod(Ihandle* ih)
 
     iuphaikuAddToParent(ih);
 
+    /* once attached every BView call needs the window lock, a map after Show runs on a live looper */
+    LooperLockGuard guard(tv->Looper());
+
     if (!iupAttribGetBoolean(ih, "WORDWRAP"))    tv->SetWordWrap(false);
     if (iupAttribGetBoolean(ih, "OVERWRITE"))    tv->SetOverwrite(true);
     if (ih->data->has_formatting)                tv->SetStylable(true);
@@ -1681,6 +1684,8 @@ static int haikuTextMapMethod(Ihandle* ih)
     iupAttribSet(ih, "_IUPHAIKU_TEXT_INNER", (char*)tc->TextView());
 
     iuphaikuAddToParent(ih);
+
+    LooperLockGuard guard(tc->Looper());
 
     char* value = iupAttribGet(ih, "VALUE");
     if (value)
