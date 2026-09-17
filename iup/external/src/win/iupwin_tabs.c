@@ -285,6 +285,72 @@ IUP_SDK_API int iupdrvTabsGetLineCountAttrib(Ihandle* ih)
   return (int)SendMessage(ih->handle, TCM_GETROWCOUNT, 0, 0);
 }
 
+static void winTabGetPageWindowRect(Ihandle* ih, RECT *rect)
+{
+  GetClientRect(ih->handle, rect);
+
+  if (ih->data->type == ITABS_LEFT || ih->data->type == ITABS_RIGHT)
+  {
+    int tab_count = (int)SendMessage(ih->handle, TCM_GETITEMCOUNT, 0, 0);
+    int tab_width = 0;
+
+    if (tab_count > 0)
+    {
+      RECT tab_rect;
+      SendMessage(ih->handle, TCM_GETITEMRECT, 0, (LPARAM)&tab_rect);
+
+      if (ih->data->type == ITABS_LEFT)
+      {
+        tab_width = tab_rect.right - tab_rect.left;
+        rect->left = tab_width + 4;  /* 4px border */
+        rect->top = 4;
+        rect->right -= 4;
+        rect->bottom -= 4;
+      }
+      else  /* ITABS_RIGHT */
+      {
+        tab_width = tab_rect.right - tab_rect.left;
+        rect->left = 4;
+        rect->top = 4;
+        rect->right -= (tab_width + 4);
+        rect->bottom -= 4;
+      }
+
+      if (rect->left >= rect->right || rect->top >= rect->bottom)
+      {
+        rect->left = 0;
+        rect->top = 0;
+        rect->right = 0;
+        rect->bottom = 0;
+      }
+    }
+  }
+  else
+  {
+    SendMessage(ih->handle, TCM_ADJUSTRECT, FALSE, (LPARAM)rect);
+  }
+}
+
+static void winTabSetPageWindowPos(HWND tab_container, RECT *rect)
+{
+  if (rect->right <= 0 || rect->bottom <= 0 ||
+      rect->left >= rect->right || rect->top >= rect->bottom)
+    return;
+
+  LONG style = GetWindowLong(tab_container, GWL_STYLE);
+  BOOL has_visible_style = (style & WS_VISIBLE) != 0;
+
+  if (!has_visible_style)
+  {
+    return;
+  }
+
+  SetWindowPos(tab_container, NULL,
+                rect->left, rect->top,
+                rect->right - rect->left, rect->bottom - rect->top,
+                SWP_NOACTIVATE | SWP_NOZORDER);
+}
+
 static HWND winTabsGetPageWindow(Ihandle* ih, int pos)
 {
   int p = winTabsPosFixToWin(ih, pos);
@@ -313,7 +379,14 @@ IUP_SDK_API void iupdrvTabsSetCurrentTab(Ihandle* ih, int pos)
 
     tab_container = winTabsGetPageWindow(ih, pos);
     if (tab_container)
+    {
+      RECT rect;
+
+      /* a page inserted while hidden was never positioned, TCN_SELCHANGE does the same */
       ShowWindow(tab_container, SW_SHOW);
+      winTabGetPageWindowRect(ih, &rect);
+      winTabSetPageWindowPos(tab_container, &rect);
+    }
   }
 }
 
@@ -514,72 +587,6 @@ static int winTabsGetImageIndex(Ihandle* ih, const char* name)
     ret = ImageList_Add(image_list, bmp, NULL);
   }
   return ret;
-}
-
-static void winTabGetPageWindowRect(Ihandle* ih, RECT *rect)
-{
-  GetClientRect(ih->handle, rect);
-
-  if (ih->data->type == ITABS_LEFT || ih->data->type == ITABS_RIGHT)
-  {
-    int tab_count = (int)SendMessage(ih->handle, TCM_GETITEMCOUNT, 0, 0);
-    int tab_width = 0;
-
-    if (tab_count > 0)
-    {
-      RECT tab_rect;
-      SendMessage(ih->handle, TCM_GETITEMRECT, 0, (LPARAM)&tab_rect);
-
-      if (ih->data->type == ITABS_LEFT)
-      {
-        tab_width = tab_rect.right - tab_rect.left;
-        rect->left = tab_width + 4;  /* 4px border */
-        rect->top = 4;
-        rect->right -= 4;
-        rect->bottom -= 4;
-      }
-      else  /* ITABS_RIGHT */
-      {
-        tab_width = tab_rect.right - tab_rect.left;
-        rect->left = 4;
-        rect->top = 4;
-        rect->right -= (tab_width + 4);
-        rect->bottom -= 4;
-      }
-
-      if (rect->left >= rect->right || rect->top >= rect->bottom)
-      {
-        rect->left = 0;
-        rect->top = 0;
-        rect->right = 0;
-        rect->bottom = 0;
-      }
-    }
-  }
-  else
-  {
-    SendMessage(ih->handle, TCM_ADJUSTRECT, FALSE, (LPARAM)rect);
-  }
-}
-
-static void winTabSetPageWindowPos(HWND tab_container, RECT *rect)
-{
-  if (rect->right <= 0 || rect->bottom <= 0 ||
-      rect->left >= rect->right || rect->top >= rect->bottom)
-    return;
-
-  LONG style = GetWindowLong(tab_container, GWL_STYLE);
-  BOOL has_visible_style = (style & WS_VISIBLE) != 0;
-
-  if (!has_visible_style)
-  {
-    return;
-  }
-
-  SetWindowPos(tab_container, NULL,
-                rect->left, rect->top,
-                rect->right - rect->left, rect->bottom - rect->top,
-                SWP_NOACTIVATE | SWP_NOZORDER);
 }
 
 static void winTabsPlacePageWindows(Ihandle* ih, RECT* rect)
