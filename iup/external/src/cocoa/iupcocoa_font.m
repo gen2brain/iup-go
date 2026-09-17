@@ -160,6 +160,15 @@ IUP_DRV_API IupCocoaFont *iupcocoaFindFont(const char *iup_font_name)
     return NULL;
   }
 
+  if (font_size == 0)
+  {
+    /* a face without a size, keep the default size instead of failing to create the font */
+    char def_type_face[128] = "";
+    int def_bold, def_italic, def_underline, def_strikeout;
+    iupGetFontInfo(IupGetGlobal("DEFAULTFONT"), def_type_face, &font_size,
+                   &def_bold, &def_italic, &def_underline, &def_strikeout);
+  }
+
   /* a negative IUP size is in pixels, NSFont works in points */
   if (font_size < 0)
   {
