@@ -207,6 +207,8 @@ func dispatchStr(ih Ihandle, name string, i1, i2 int) string {
 		return f(ih, i1)
 	case CellFunc:
 		return f(ih, i1)
+	case MatrixValueFunc:
+		return f(ih, i1, i2)
 	case MatrixFontFunc:
 		return f(ih, i1, i2)
 	case MatrixTypeFunc:

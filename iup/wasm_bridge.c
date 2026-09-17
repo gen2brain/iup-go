@@ -72,16 +72,19 @@ static int wasmCbLocation(Ihandle* ih, double lat, double lon) { return iupwasmG
 static int wasmCbSensor(Ihandle* ih, double x, double y, double z) { return iupwasmGoDispatchF(ih, "SENSOR_CB", 0, x, y, z); }
 
 /* String-returning dispatch for callbacks that return char* (table VALUE_CB/IMAGE_CB).
-   The result lives in a single recycled heap slot, valid until the next such call. */
+   A ring of slots, a matrix cell value must outlive the FGCOLOR_CB that follows it. */
 EM_JS(char*, iupwasmGoDispatchStr, (Ihandle* ih, const char* name, int i1, int i2), {
   if (!globalThis.iupGoDispatchStr) return 0;
   var s = globalThis.iupGoDispatchStr(ih, UTF8ToString(name), i1, i2);
   if (s == null) s = "";
-  if (globalThis.__iupStrRet) _free(globalThis.__iupStrRet);
+  if (!globalThis.__iupStrRing) { globalThis.__iupStrRing = new Array(8).fill(0); globalThis.__iupStrRingPos = 0; }
+  var slot = globalThis.__iupStrRingPos;
+  globalThis.__iupStrRingPos = (slot + 1) % 8;
+  if (globalThis.__iupStrRing[slot]) _free(globalThis.__iupStrRing[slot]);
   var len = lengthBytesUTF8(s) + 1;
   var ptr = _malloc(len);
   stringToUTF8(s, ptr, len);
-  globalThis.__iupStrRet = ptr;
+  globalThis.__iupStrRing[slot] = ptr;
   return ptr;
 })
 
