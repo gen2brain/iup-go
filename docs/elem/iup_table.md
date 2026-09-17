@@ -71,6 +71,14 @@ Default: "1:1".
 **SELECTIONMODE** (non-inheritable): Selection mode.
 Can be "NONE", "SINGLE" or "MULTIPLE". Default: "SINGLE".
 
+**SELECTEDlin** (non-inheritable): Gets or sets the selection state of a line.
+Can be "YES" or "NO". lin starts at 1.
+Setting it is ignored when SELECTIONMODE=NONE.
+
+**SELECTEDLINES** (non-inheritable): Gets or sets the selection state of all lines, as a sequence of "+" and "-" symbols, one per line.
+Can be set only when SELECTIONMODE=MULTIPLE, a string shorter than NUMLIN leaves the remaining lines unchanged.
+Returns NULL when the table has no lines.
+
 #### Display
 
 **SHOWGRID** (non-inheritable): Shows grid lines between cells.
@@ -185,6 +193,17 @@ The default value of EXPAND is "YES".
 **ih**: identifier of the element that activated the event.\
 **lin**: new focus line (1-based).\
 **col**: new focus column (1-based).
+
+**MULTISELECTION_CB**: Action generated when the selection changes and SELECTIONMODE=MULTIPLE.
+
+    int function(Ihandle *ih, int *lin, int n);
+
+**ih**: identifier of the element that activated the event.\
+**lin**: array of the selected lines (1-based), in ascending order.\
+**n**: number of selected lines, 0 when the selection was cleared.
+
+The array is valid only during the callback.
+Not called when the selection is changed by SELECTEDlin or SELECTEDLINES.
 
 **SORT_CB**: Action generated when the user clicks a column header with SORTABLE=YES.
 
