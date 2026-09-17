@@ -1724,7 +1724,16 @@ static void cocoaTouchTreeUnMapMethod(Ihandle* ih)
 
 IUP_SDK_API void iupdrvTreeAddBorders(Ihandle* ih, int *w, int *h)
 {
-	(void)ih;
+	int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
+	int char_w, char_h, row_h;
+
+	/* the core counts VISIBLELINES in font heights, a row is a touch target */
+	if (visiblelines <= 0) visiblelines = 8;
+	iupdrvFontGetCharSize(ih, &char_w, &char_h);
+	row_h = 32 + 2 * ih->data->spacing;
+	if (row_h > char_h)
+		*h += visiblelines * (row_h - char_h);
+
 	*w += 40;  /* disclosure indicator + 1 indent step */
 	*h += 4;
 }
