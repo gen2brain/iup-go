@@ -1762,6 +1762,14 @@ static int winTableNotifyCallback(Ihandle* ih, void* msg_info, int* result)
         data->row_dragging = TRUE;
         SetCapture(data->list_view);
       }
+      else if (iupAttribGetBoolean(ih, "DRAGSOURCE"))
+      {
+        /* the list view detects the drag itself, DragDetect never sees it */
+        LPNMLISTVIEW pnmv = (LPNMLISTVIEW)msg_info;
+        POINT pt = pnmv->ptAction;
+        ClientToScreen(ih->handle, &pt);
+        IupSetStrf(ih, "DRAGSTART", "%d,%d", (int)pt.x, (int)pt.y);
+      }
       break;
     }
 
