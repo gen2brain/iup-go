@@ -124,7 +124,7 @@ static int wasmScrollbarMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-IUP_SDK_API void iupdrvScrollbarGetMinSize(Ihandle* ih, int *w, int *h)
+IUP_SDK_API void iupdrvScrollbarGetMinSize(Ihandle* ih, int* w, int* h)
 {
   if (ih->data->orientation == ISCROLLBAR_VERTICAL)
   {

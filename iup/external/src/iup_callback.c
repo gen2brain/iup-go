@@ -14,7 +14,7 @@
 #include "iup_varg.h"
 
 
-char* iupGetCallbackName(Ihandle *ih, const char *name)
+char* iupGetCallbackName(Ihandle* ih, const char* name)
 {
   void* value;
   Icallback func = (Icallback)iupTableGetFunc(ih->attrib, name, &value);
@@ -28,7 +28,7 @@ char* iupGetCallbackName(Ihandle *ih, const char *name)
   return NULL;
 }
 
-IUP_API Icallback IupGetCallback(Ihandle *ih, const char *name)
+IUP_API Icallback IupGetCallback(Ihandle* ih, const char* name)
 {
   void* value;
 
@@ -43,7 +43,7 @@ IUP_API Icallback IupGetCallback(Ihandle *ih, const char *name)
   return (Icallback)iupTableGetFunc(ih->attrib, name, &value);
 }
 
-IUP_API Icallback IupSetCallback(Ihandle *ih, const char *name, Icallback func)
+IUP_API Icallback IupSetCallback(Ihandle* ih, const char* name, Icallback func)
 {
   Icallback old_func = NULL;
 
@@ -67,7 +67,7 @@ IUP_API Icallback IupSetCallback(Ihandle *ih, const char *name, Icallback func)
   return old_func;
 }
 
-IUP_API Ihandle* IupSetCallbacksV(Ihandle* ih, const char *name, Icallback func, va_list arglist)
+IUP_API Ihandle* IupSetCallbacksV(Ihandle* ih, const char* name, Icallback func, va_list arglist)
 {
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
@@ -87,7 +87,7 @@ IUP_API Ihandle* IupSetCallbacksV(Ihandle* ih, const char *name, Icallback func,
   return ih;
 }
 
-IUP_API Ihandle* IupSetCallbacks(Ihandle* ih, const char *name, Icallback func, ...)
+IUP_API Ihandle* IupSetCallbacks(Ihandle* ih, const char* name, Icallback func, ...)
 {
   va_list arglist;
 

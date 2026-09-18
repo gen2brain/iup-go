@@ -42,7 +42,7 @@ struct _IcontrolData
 {
   iupCanvas canvas;  /* from IupCanvas (must reserve it) */
 
-  Iarray *items_array;
+  Iarray* items_array;
 
   /* aux */
   int line_height, line_width;
@@ -99,7 +99,7 @@ static int iFlatListConvertXYToPos(Ihandle* ih, int x, int y)
   return pos;
 }
 
-static void iFlatListCopyItem(Ihandle *ih, int from, int to)
+static void iFlatListCopyItem(Ihandle* ih, int from, int to)
 {
   int count = iupArrayCount(ih->data->items_array);
   iFlatListItem* items = (iFlatListItem*)iupArrayGetData(ih->data->items_array);
@@ -126,7 +126,7 @@ static void iFlatListCopyItem(Ihandle *ih, int from, int to)
   items[i].selected = 0;
 }
 
-static void iFlatListRemoveItem(Ihandle *ih, int start, int remove_count)
+static void iFlatListRemoveItem(Ihandle* ih, int start, int remove_count)
 {
   iFlatListItem* items = (iFlatListItem*)iupArrayGetData(ih->data->items_array);
   int i;
@@ -164,7 +164,7 @@ static void iFlatListSetItemFont(Ihandle* ih, const char* font)
   }
 }
 
-static void iFlatListCalcItemMaxSize(Ihandle *ih, iFlatListItem* items, int count, int *max_w, int *max_h)
+static void iFlatListCalcItemMaxSize(Ihandle* ih, iFlatListItem* items, int count, int* max_w, int* max_h)
 {
   int i;
 
@@ -177,7 +177,7 @@ static void iFlatListCalcItemMaxSize(Ihandle *ih, iFlatListItem* items, int coun
   for (i = 0; i < count; i++)
   {
     int item_width, item_height;
-    char *text = items[i].title;
+    char* text = items[i].title;
     char* imagename = items[i].image;
 
     iFlatListSetItemFont(ih, items[i].font);
@@ -189,7 +189,7 @@ static void iFlatListCalcItemMaxSize(Ihandle *ih, iFlatListItem* items, int coun
   }
 }
 
-static void iFlatListUpdateScrollBar(Ihandle *ih)
+static void iFlatListUpdateScrollBar(Ihandle* ih)
 {
   int canvas_width = ih->currentwidth;
   int canvas_height = ih->currentheight;
@@ -317,8 +317,8 @@ static int iFlatListRedraw_CB(Ihandle* ih)
 
   for (i = 0; i < count; i++)
   {
-    char *fgcolor = (items[i].fg_color) ? items[i].fg_color : foreground_color;
-    char *bgcolor = (items[i].bg_color) ? items[i].bg_color : background_color;
+    char* fgcolor = (items[i].fg_color) ? items[i].fg_color : foreground_color;
+    char* bgcolor = (items[i].bg_color) ? items[i].bg_color : background_color;
 
     if (items[i].selected)
     {
@@ -384,7 +384,7 @@ static char* iFlatListGetIdValueAttrib(Ihandle* ih, int pos);
 
 static void iFlatListCallActionCallback(Ihandle* ih, IFnsii cb, int pos, int state)
 {
-  char *text;
+  char* text;
 
   if (pos < 1 || !cb)
     return;
@@ -463,7 +463,7 @@ static void iFlatListSelectItem(Ihandle* ih, int pos, int ctrlPressed, int shftP
   {
     int i, start, end;
     char* str;
-    char *val = iupAttribGet(ih, "_IUPFLATLIST_LASTSELECTED");
+    char* val = iupAttribGet(ih, "_IUPFLATLIST_LASTSELECTED");
     int last_pos = 0;
     if (val) iupStrToInt(val, &last_pos);
     if (pos <= last_pos)
@@ -905,7 +905,7 @@ static int iFlatListSetAlignmentAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-static char* iFlatListGetAlignmentAttrib(Ihandle *ih)
+static char* iFlatListGetAlignmentAttrib(Ihandle* ih)
 {
   char* horiz_align2str[3] = { "ALEFT", "ACENTER", "ARIGHT" };
   char* vert_align2str[3] = { "ATOP", "ACENTER", "ABOTTOM" };
@@ -1030,12 +1030,12 @@ static int iFlatListSetRemoveItemAttrib(Ihandle* ih, const char* value)
 static int iFlatListSetImageAttribId(Ihandle* ih, int pos, const char* value)
 {
   int count = iupArrayCount(ih->data->items_array);
-  iFlatListItem *items;
+  iFlatListItem* items;
 
   if (pos < 1 || pos > count)
     return 0;
 
-  items = (iFlatListItem *)iupArrayGetData(ih->data->items_array);
+  items = (iFlatListItem*)iupArrayGetData(ih->data->items_array);
 
   if (items[pos - 1].image)
     free(items[pos - 1].image);
@@ -1053,24 +1053,24 @@ static int iFlatListSetImageAttribId(Ihandle* ih, int pos, const char* value)
 static char* iFlatListGetImageAttribId(Ihandle* ih, int pos)
 {
   int count = iupArrayCount(ih->data->items_array);
-  iFlatListItem *items;
+  iFlatListItem* items;
 
   if (pos < 1 || pos > count)
     return 0;
 
-  items = (iFlatListItem *)iupArrayGetData(ih->data->items_array);
+  items = (iFlatListItem*)iupArrayGetData(ih->data->items_array);
   return items[pos - 1].image;
 }
 
 static char* iFlatListGetImageNativeHandleAttribId(Ihandle* ih, int pos)
 {
   int count = iupArrayCount(ih->data->items_array);
-  iFlatListItem *items;
+  iFlatListItem* items;
 
   if (pos < 1 || pos > count)
     return 0;
 
-  items = (iFlatListItem *)iupArrayGetData(ih->data->items_array);
+  items = (iFlatListItem*)iupArrayGetData(ih->data->items_array);
   if (items[pos - 1].image)
     return iupImageGetImage(items[pos - 1].image, ih, 0, NULL);
 
@@ -1087,7 +1087,7 @@ static int iFlatListSetImagePositionAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-static char* iFlatListGetImagePositionAttrib(Ihandle *ih)
+static char* iFlatListGetImagePositionAttrib(Ihandle* ih)
 {
   char* img_pos2str[4] = { "LEFT", "RIGHT", "TOP", "BOTTOM" };
   return img_pos2str[ih->data->img_position];
@@ -1112,7 +1112,7 @@ static int iFlatListSetShowDragDropAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-static int iFlatListDropData_CB(Ihandle *ih, char* type, void* data, int len, int x, int y)
+static int iFlatListDropData_CB(Ihandle* ih, char* type, void* data, int len, int x, int y)
 {
   int pos = IupConvertXYToPos(ih, x, y);
   int is_ctrl = 0;
@@ -1136,7 +1136,7 @@ static int iFlatListDropData_CB(Ihandle *ih, char* type, void* data, int len, in
 
   if (IupGetInt(ih_source, "MULTIPLE"))
   {
-    char *buffer = IupGetAttribute(ih_source, "VALUE");
+    char* buffer = IupGetAttribute(ih_source, "VALUE");
 
     /* Copy all selected items */
     int src_pos = 1;  /* IUP starts at 1 */
@@ -1201,7 +1201,7 @@ static int iFlatListDropData_CB(Ihandle *ih, char* type, void* data, int len, in
   return IUP_DEFAULT;
 }
 
-static int iFlatListDragData_CB(Ihandle *ih, char* type, void *data, int len)
+static int iFlatListDragData_CB(Ihandle* ih, char* type, void* data, int len)
 {
   int pos = iupAttribGetInt(ih, "_IUP_LIST_SOURCEPOS");
   if (pos < 1)
@@ -1209,7 +1209,7 @@ static int iFlatListDragData_CB(Ihandle *ih, char* type, void *data, int len)
 
   if (ih->data->is_multiple)
   {
-    char *buffer = IupGetAttribute(ih, "VALUE");
+    char* buffer = IupGetAttribute(ih, "VALUE");
 
     /* It will not drag all selected items only
     when the user begins to drag an item not selected.
@@ -1253,7 +1253,7 @@ static int iFlatListDragBegin_CB(Ihandle* ih, int x, int y)
   return IUP_DEFAULT;
 }
 
-static int iFlatListDragEnd_CB(Ihandle *ih, int del)
+static int iFlatListDragEnd_CB(Ihandle* ih, int del)
 {
   iupAttribSetInt(ih, "_IUP_LIST_SOURCEPOS", 0);
   (void)del;
@@ -1292,7 +1292,7 @@ static int iFlatListSetIconSpacingAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-static char* iFlatListGetIconSpacingAttrib(Ihandle *ih)
+static char* iFlatListGetIconSpacingAttrib(Ihandle* ih)
 {
   return iupStrReturnInt(ih->data->icon_spacing);
 }
@@ -1395,11 +1395,11 @@ static char* iFlatListGetValueAttrib(Ihandle* ih)
   iFlatListItem* items = (iFlatListItem*)iupArrayGetData(ih->data->items_array);
   int count = iupArrayCount(ih->data->items_array);
   int i;
-  char *retval = NULL;
+  char* retval = NULL;
 
   if (ih->data->is_multiple)
   {
-    char *val = (char *)malloc((count + 1)*sizeof(char));
+    char* val = (char*)malloc((count + 1)*sizeof(char));
     if (!val)
       return NULL;
     for (i = 0; i < count; i++)
@@ -1443,7 +1443,7 @@ static char* iFlatListGetItemFGColorAttrib(Ihandle* ih, int pos)
 
 static int iFlatListSetItemFGColorAttrib(Ihandle* ih, int pos, const char* value)
 {
-  iFlatListItem *items = (iFlatListItem *)iupArrayGetData(ih->data->items_array);
+  iFlatListItem* items = (iFlatListItem*)iupArrayGetData(ih->data->items_array);
   int count = iupArrayCount(ih->data->items_array);
   int i = pos - 1;
 
@@ -1473,7 +1473,7 @@ static char* iFlatListGetItemBGColorAttrib(Ihandle* ih, int pos)
 
 static int iFlatListSetItemBGColorAttrib(Ihandle* ih, int pos, const char* value)
 {
-  iFlatListItem *items = (iFlatListItem *)iupArrayGetData(ih->data->items_array);
+  iFlatListItem* items = (iFlatListItem*)iupArrayGetData(ih->data->items_array);
   int count = iupArrayCount(ih->data->items_array);
   int i = pos - 1;
 
@@ -1503,7 +1503,7 @@ static char* iFlatListGetItemTipAttrib(Ihandle* ih, int pos)
 
 static int iFlatListSetItemTipAttrib(Ihandle* ih, int pos, const char* value)
 {
-  iFlatListItem *items = (iFlatListItem *)iupArrayGetData(ih->data->items_array);
+  iFlatListItem* items = (iFlatListItem*)iupArrayGetData(ih->data->items_array);
   int count = iupArrayCount(ih->data->items_array);
   int i = pos - 1;
 
@@ -1532,7 +1532,7 @@ static char* iFlatListGetItemFontAttrib(Ihandle* ih, int pos)
 
 static int iFlatListSetItemFontAttrib(Ihandle* ih, int pos, const char* value)
 {
-  iFlatListItem *items = (iFlatListItem *)iupArrayGetData(ih->data->items_array);
+  iFlatListItem* items = (iFlatListItem*)iupArrayGetData(ih->data->items_array);
   int count = iupArrayCount(ih->data->items_array);
   int i = pos - 1;
 
@@ -1551,7 +1551,7 @@ static int iFlatListSetItemFontAttrib(Ihandle* ih, int pos, const char* value)
 
 static int iFlatListSetItemFontStyleAttrib(Ihandle* ih, int pos, const char* value)
 {
-  iFlatListItem *items = (iFlatListItem *)iupArrayGetData(ih->data->items_array);
+  iFlatListItem* items = (iFlatListItem*)iupArrayGetData(ih->data->items_array);
   int count = iupArrayCount(ih->data->items_array);
   int i = pos - 1;
   int size = 0;
@@ -1582,7 +1582,7 @@ static int iFlatListSetItemFontStyleAttrib(Ihandle* ih, int pos, const char* val
 
 static char* iFlatListGetItemFontStyleAttrib(Ihandle* ih, int pos)
 {
-  iFlatListItem *items = (iFlatListItem *)iupArrayGetData(ih->data->items_array);
+  iFlatListItem* items = (iFlatListItem*)iupArrayGetData(ih->data->items_array);
   int count = iupArrayCount(ih->data->items_array);
   int i = pos - 1;
   int size = 0;
@@ -1608,7 +1608,7 @@ static char* iFlatListGetItemFontStyleAttrib(Ihandle* ih, int pos)
 
 static int iFlatListSetItemFontSizeAttrib(Ihandle* ih, int pos, const char* value)
 {
-  iFlatListItem *items = (iFlatListItem *)iupArrayGetData(ih->data->items_array);
+  iFlatListItem* items = (iFlatListItem*)iupArrayGetData(ih->data->items_array);
   int count = iupArrayCount(ih->data->items_array);
   int i = pos - 1;
   int size = 0;
@@ -1639,7 +1639,7 @@ static int iFlatListSetItemFontSizeAttrib(Ihandle* ih, int pos, const char* valu
 
 static char* iFlatListGetItemFontSizeAttrib(Ihandle* ih, int pos)
 {
-  iFlatListItem *items = (iFlatListItem *)iupArrayGetData(ih->data->items_array);
+  iFlatListItem* items = (iFlatListItem*)iupArrayGetData(ih->data->items_array);
   int count = iupArrayCount(ih->data->items_array);
   int i = pos - 1;
   int size = 0;
@@ -1747,7 +1747,7 @@ static int iFlatListSetBorderWidthAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-static char* iFlatListGetBorderWidthAttrib(Ihandle *ih)
+static char* iFlatListGetBorderWidthAttrib(Ihandle* ih)
 {
   return iupStrReturnInt(ih->data->border_width);
 }
@@ -1762,7 +1762,7 @@ static int iFlatListSetAttribPostRedraw(Ihandle* ih, const char* value)
 
 /*****************************************************************************************/
 
-static void iFlatListComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *children_expand)
+static void iFlatListComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* children_expand)
 {
   int num_lines;
   int fit2backimage = iupAttribGetBoolean(ih, "FITTOBACKIMAGE");

@@ -603,14 +603,14 @@ extern "C"
     int32_t  __stdcall WINRT_IMPL_CloseHandle(void* hObject) noexcept WINRT_IMPL_LINK(CloseHandle, 4);
     uint32_t __stdcall WINRT_IMPL_WaitForSingleObject(void* handle, uint32_t milliseconds) noexcept WINRT_IMPL_LINK(WaitForSingleObject, 8);
 
-    int32_t  __stdcall WINRT_IMPL_TrySubmitThreadpoolCallback(void(__stdcall *callback)(void*, void* context), void* context, void*) noexcept WINRT_IMPL_LINK(TrySubmitThreadpoolCallback, 12);
-    winrt::impl::ptp_timer __stdcall WINRT_IMPL_CreateThreadpoolTimer(void(__stdcall *callback)(void*, void* context, void*), void* context, void*) noexcept WINRT_IMPL_LINK(CreateThreadpoolTimer, 12);     
+    int32_t  __stdcall WINRT_IMPL_TrySubmitThreadpoolCallback(void(__stdcall* callback)(void*, void* context), void* context, void*) noexcept WINRT_IMPL_LINK(TrySubmitThreadpoolCallback, 12);
+    winrt::impl::ptp_timer __stdcall WINRT_IMPL_CreateThreadpoolTimer(void(__stdcall* callback)(void*, void* context, void*), void* context, void*) noexcept WINRT_IMPL_LINK(CreateThreadpoolTimer, 12);     
     void     __stdcall WINRT_IMPL_SetThreadpoolTimer(winrt::impl::ptp_timer timer, void* time, uint32_t period, uint32_t window) noexcept WINRT_IMPL_LINK(SetThreadpoolTimer, 16);
     void     __stdcall WINRT_IMPL_CloseThreadpoolTimer(winrt::impl::ptp_timer timer) noexcept WINRT_IMPL_LINK(CloseThreadpoolTimer, 4);
-    winrt::impl::ptp_wait __stdcall WINRT_IMPL_CreateThreadpoolWait(void(__stdcall *callback)(void*, void* context, void*, uint32_t result), void* context, void*) noexcept WINRT_IMPL_LINK(CreateThreadpoolWait, 12);
+    winrt::impl::ptp_wait __stdcall WINRT_IMPL_CreateThreadpoolWait(void(__stdcall* callback)(void*, void* context, void*, uint32_t result), void* context, void*) noexcept WINRT_IMPL_LINK(CreateThreadpoolWait, 12);
     void     __stdcall WINRT_IMPL_SetThreadpoolWait(winrt::impl::ptp_wait wait, void* handle, void* timeout) noexcept WINRT_IMPL_LINK(SetThreadpoolWait, 12);
     void     __stdcall WINRT_IMPL_CloseThreadpoolWait(winrt::impl::ptp_wait wait) noexcept WINRT_IMPL_LINK(CloseThreadpoolWait, 4);
-    winrt::impl::ptp_io __stdcall WINRT_IMPL_CreateThreadpoolIo(void* object, void(__stdcall *callback)(void*, void* context, void* overlapped, uint32_t result, std::size_t bytes, void*) noexcept, void* context, void*) noexcept WINRT_IMPL_LINK(CreateThreadpoolIo, 16);
+    winrt::impl::ptp_io __stdcall WINRT_IMPL_CreateThreadpoolIo(void* object, void(__stdcall* callback)(void*, void* context, void* overlapped, uint32_t result, std::size_t bytes, void*) noexcept, void* context, void*) noexcept WINRT_IMPL_LINK(CreateThreadpoolIo, 16);
     void     __stdcall WINRT_IMPL_StartThreadpoolIo(winrt::impl::ptp_io io) noexcept WINRT_IMPL_LINK(StartThreadpoolIo, 4);
     void     __stdcall WINRT_IMPL_CancelThreadpoolIo(winrt::impl::ptp_io io) noexcept WINRT_IMPL_LINK(CancelThreadpoolIo, 4);
     void     __stdcall WINRT_IMPL_CloseThreadpoolIo(winrt::impl::ptp_io io) noexcept WINRT_IMPL_LINK(CloseThreadpoolIo, 4);

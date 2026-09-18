@@ -152,7 +152,7 @@ struct Iclass_
    * Also called before the element is mapped, so it must be independent of the native control.
    * First call done at iupLayoutCompute for the dialog.
    */
-  void (*ComputeNaturalSize)(Ihandle* ih, int *w, int *h, int *children_expand);
+  void (*ComputeNaturalSize)(Ihandle* ih, int* w, int* h, int* children_expand);
 
   /** Method that calculates and updates the current size of children based on the available size,
    * the natural size and the expand configuration. \n
@@ -283,11 +283,11 @@ IUP_SDK_API void iupClassRegisterAttributeId2(Iclass* ic, const char* name,
 /** Returns the attribute handling functions, defaults and flags.
  * \ingroup iclass */
 IUP_SDK_API void iupClassRegisterGetAttribute(Iclass* ic, const char* name,
-                                           IattribGetFunc *get,
-                                           IattribSetFunc *set,
+                                           IattribGetFunc* get,
+                                           IattribSetFunc* set,
                                            const char* *default_value,
                                            const char* *system_default,
-                                           int *flags);
+                                           int* flags);
 
 /** Replaces the attribute handling functions of an already registered attribute.
  * \ingroup iclass */
@@ -379,7 +379,7 @@ IUP_SDK_API void iupClassObjectLayoutUpdate(Ihandle* ih);
 /** Calls \ref Iclass::ComputeNaturalSize method. 
  * \ingroup iclassobject
  */
-IUP_SDK_API void iupClassObjectComputeNaturalSize(Ihandle* ih, int *w, int *h, int *children_expand);
+IUP_SDK_API void iupClassObjectComputeNaturalSize(Ihandle* ih, int* w, int* h, int* children_expand);
 
 /** Calls \ref Iclass::SetChildrenCurrentSize method. 
  * \ingroup iclassobject
@@ -407,15 +407,15 @@ IUP_SDK_API int iupClassObjectHasDlgPopup(Ihandle* ih);
  * Set is called from iupAttribUpdate (IupMap), IupStoreAttribute and IupSetAttribute.
  * Get is called only from IupGetAttribute.
  */
-int   iupClassObjectSetAttribute(Ihandle* ih, const char* name, const char* value, int *inherit);
-char* iupClassObjectGetAttribute(Ihandle* ih, const char* name, char* *def_value, int *inherit);
+int   iupClassObjectSetAttribute(Ihandle* ih, const char* name, const char* value, int* inherit);
+char* iupClassObjectGetAttribute(Ihandle* ih, const char* name, char* *def_value, int* inherit);
 int   iupClassObjectSetAttributeId(Ihandle* ih, const char* name, int id, const char* value);
 char* iupClassObjectGetAttributeId(Ihandle* ih, const char* name, int id);
 int   iupClassObjectSetAttributeId2(Ihandle* ih, const char* name, int id1, int id2, const char* value);
 char* iupClassObjectGetAttributeId2(Ihandle* ih, const char* name, int id1, int id2);
 
 /* Used only in iupAttribGetStr */
-void  iupClassObjectGetAttributeInfo(Ihandle* ih, const char* name, char* *def_value, int *inherit);
+void  iupClassObjectGetAttributeInfo(Ihandle* ih, const char* name, char* *def_value, int* inherit);
 
 /* Used only in iupAttribIsNotString */
 int   iupClassObjectAttribIsNotString(Ihandle* ih, const char* name);
@@ -441,7 +441,7 @@ IUP_SDK_API void iupClassObjectUpdateGlobalDefaults(Ihandle* ih);
 void iupClassUpdate(Iclass* ic);
 
 int iupClassAttribIsRegistered(Iclass* ic, const char* name);
-void iupClassGetAttribNameInfo(Iclass* ic, const char* name, char* *def_value, int *flags);
+void iupClassGetAttribNameInfo(Iclass* ic, const char* name, char* *def_value, int* flags);
 
 /* Used in iupClassRegisterAttribute and iGlobalChangingDefaultColor */
 int iupClassIsGlobalDefault(const char* name, int colors);

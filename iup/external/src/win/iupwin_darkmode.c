@@ -64,15 +64,15 @@ enum WinPreferredAppMode
   WIN_APPMODE_FORCELIGHT,
 };
 
-typedef enum WinPreferredAppMode (WINAPI *winSetPreferredAppMode)(enum WinPreferredAppMode appmode);  /* ordinal 135 */
-typedef BOOL (WINAPI *winAllowDarkModeForWindow)(HWND hwnd, BOOL allow);                              /* ordinal 133 */
-typedef void (WINAPI *winRefreshImmersiveColorPolicyState)(void);                                    /* ordinal 104 */
-typedef void (WINAPI *winFlushMenuThemes)(void);                                                     /* ordinal 136 */
+typedef enum WinPreferredAppMode (WINAPI* winSetPreferredAppMode)(enum WinPreferredAppMode appmode);  /* ordinal 135 */
+typedef BOOL (WINAPI* winAllowDarkModeForWindow)(HWND hwnd, BOOL allow);                              /* ordinal 133 */
+typedef void (WINAPI* winRefreshImmersiveColorPolicyState)(void);                                    /* ordinal 104 */
+typedef void (WINAPI* winFlushMenuThemes)(void);                                                     /* ordinal 136 */
 
-typedef HRESULT (STDAPICALLTYPE *winSetWindowTheme)(HWND hwnd, LPCWSTR sub, LPCWSTR id);
-typedef HTHEME (STDAPICALLTYPE *winOpenThemeData)(HWND hwnd, LPCWSTR classlist);
-typedef HRESULT (STDAPICALLTYPE *winCloseThemeData)(HTHEME htheme);
-typedef HRESULT (STDAPICALLTYPE *winDrawThemeTextEx)(HTHEME, HDC, int, int, LPCWSTR, int, DWORD, RECT*, const DTTOPTS*);
+typedef HRESULT (STDAPICALLTYPE* winSetWindowTheme)(HWND hwnd, LPCWSTR sub, LPCWSTR id);
+typedef HTHEME (STDAPICALLTYPE* winOpenThemeData)(HWND hwnd, LPCWSTR classlist);
+typedef HRESULT (STDAPICALLTYPE* winCloseThemeData)(HTHEME htheme);
+typedef HRESULT (STDAPICALLTYPE* winDrawThemeTextEx)(HTHEME, HDC, int, int, LPCWSTR, int, DWORD, RECT*, const DTTOPTS*);
 
 static winSetPreferredAppMode              my_SetPreferredAppMode = NULL;
 static winAllowDarkModeForWindow           my_AllowDarkModeForWindow = NULL;
@@ -101,11 +101,11 @@ typedef struct _IUPWIN_DTBGOPTS { DWORD dwSize; DWORD dwFlags; RECT rcClip; } IU
 
 #define IUPWIN_BP_PUSHBUTTON 1
 
-typedef HTHEME  (WINAPI *winOpenNcThemeData)(HWND hwnd, LPCWSTR classlist); /* uxtheme ordinal 49 */
-typedef HRESULT (WINAPI *winGetThemeColor)(HTHEME, int, int, int, COLORREF*);
-typedef HRESULT (WINAPI *winDrawThemeBackground)(HTHEME, HDC, int, int, const RECT*, const RECT*);
-typedef HRESULT (WINAPI *winDrawThemeBackgroundEx)(HTHEME, HDC, int, int, const RECT*, const IUPWIN_DTBGOPTS*);
-typedef HRESULT (WINAPI *winDrawThemeText)(HTHEME, HDC, int, int, LPCWSTR, int, DWORD, DWORD, const RECT*);
+typedef HTHEME  (WINAPI* winOpenNcThemeData)(HWND hwnd, LPCWSTR classlist); /* uxtheme ordinal 49 */
+typedef HRESULT (WINAPI* winGetThemeColor)(HTHEME, int, int, int, COLORREF*);
+typedef HRESULT (WINAPI* winDrawThemeBackground)(HTHEME, HDC, int, int, const RECT*, const RECT*);
+typedef HRESULT (WINAPI* winDrawThemeBackgroundEx)(HTHEME, HDC, int, int, const RECT*, const IUPWIN_DTBGOPTS*);
+typedef HRESULT (WINAPI* winDrawThemeText)(HTHEME, HDC, int, int, LPCWSTR, int, DWORD, DWORD, const RECT*);
 
 static winOpenNcThemeData       my_OpenNcThemeData = NULL;
 static winGetThemeColor         my_GetThemeColor = NULL;

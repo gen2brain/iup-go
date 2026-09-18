@@ -25,7 +25,7 @@
 #include "iupmot_drv.h"
 
 
-IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
+IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int* x, int* y)
 {
   int has_user_padding = 0;
 
@@ -200,7 +200,7 @@ static void motButtonActivateCallback(Widget w, Ihandle* ih, XtPointer call_data
   (void)call_data;
 }
 
-static void motButtonKeyPressEvent(Widget w, Ihandle* ih, XEvent *evt, Boolean *cont)
+static void motButtonKeyPressEvent(Widget w, Ihandle* ih, XEvent* evt, Boolean* cont)
 {
   int code = iupmotKeyDecode((XKeyEvent*)evt);
   if (code == K_CR)
@@ -213,7 +213,7 @@ static void motButtonKeyPressEvent(Widget w, Ihandle* ih, XEvent *evt, Boolean *
   iupmotKeyPressEvent(w, ih, evt, cont);
 }
 
-static void motButtonEnterLeaveWindowEvent(Widget w, Ihandle* ih, XEvent *evt, Boolean *cont)
+static void motButtonEnterLeaveWindowEvent(Widget w, Ihandle* ih, XEvent* evt, Boolean* cont)
 {
   /* Used only when FLAT=Yes, to manage relief */
 

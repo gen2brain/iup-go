@@ -138,7 +138,7 @@ static void winuiDialogUpdateDpi(Ihandle* ih)
 
 static void winuiDialogTitleBarThemeColor(HWND hwnd)
 {
-  typedef HRESULT(STDAPICALLTYPE *PtrDwmSetWindowAttribute)(HWND, DWORD, LPCVOID, DWORD);
+  typedef HRESULT(STDAPICALLTYPE* PtrDwmSetWindowAttribute)(HWND, DWORD, LPCVOID, DWORD);
   static PtrDwmSetWindowAttribute pDwmSetWindowAttribute = NULL;
   static int initialized = 0;
 

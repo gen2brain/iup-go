@@ -63,7 +63,7 @@ IUP_DRV_API void iupeflLoopCleanup(void);
 /* pass the modal window to block input on the other windows, or NULL for no blocking */
 IUP_DRV_API void iupeflModalLoopRun(Eo* modal_win);
 IUP_DRV_API void iupeflModalLoopQuit(void);
-IUP_DRV_API void iupeflMessagePendingFlush(Eo *loop);
+IUP_DRV_API void iupeflMessagePendingFlush(Eo* loop);
 IUP_DRV_API void iupeflSetWindowAppID(Eo* win);
 
 /****************************************************************************
@@ -77,20 +77,20 @@ IUP_DRV_API int iupeflIsX11(void);
  * Event Handlers
  ****************************************************************************/
 
-IUP_DRV_API void iupeflFocusChangedEvent(void *data, const Efl_Event *ev);
-IUP_DRV_API void iupeflKeyDownEvent(void *data, const Efl_Event *ev);
-IUP_DRV_API void iupeflKeyUpEvent(void *data, const Efl_Event *ev);
-IUP_DRV_API void iupeflKeyImfDestroy(Ihandle *ih);
+IUP_DRV_API void iupeflFocusChangedEvent(void* data, const Efl_Event* ev);
+IUP_DRV_API void iupeflKeyDownEvent(void* data, const Efl_Event* ev);
+IUP_DRV_API void iupeflKeyUpEvent(void* data, const Efl_Event* ev);
+IUP_DRV_API void iupeflKeyImfDestroy(Ihandle* ih);
 IUP_DRV_API int iupeflKeyProcessMnemonic(Ihandle* ih, Efl_Input_Key* key_event);
 IUP_DRV_API void iupeflKeySetTarget(Eo* obj, Ihandle* ih);
 IUP_DRV_API int iupeflKeyIsTarget(Eo* obj);
-IUP_DRV_API void iupeflPointerMoveEvent(void *data, const Efl_Event *ev);
-IUP_DRV_API void iupeflPointerDownEvent(void *data, const Efl_Event *ev);
-IUP_DRV_API void iupeflPointerUpEvent(void *data, const Efl_Event *ev);
-IUP_DRV_API void iupeflPointerWheelEvent(void *data, const Efl_Event *ev);
-IUP_DRV_API void iupeflPointerInEvent(void *data, const Efl_Event *ev);
-IUP_DRV_API void iupeflPointerOutEvent(void *data, const Efl_Event *ev);
-IUP_DRV_API void iupeflManagerFocusChangedEvent(void *data, const Efl_Event *ev);
+IUP_DRV_API void iupeflPointerMoveEvent(void* data, const Efl_Event* ev);
+IUP_DRV_API void iupeflPointerDownEvent(void* data, const Efl_Event* ev);
+IUP_DRV_API void iupeflPointerUpEvent(void* data, const Efl_Event* ev);
+IUP_DRV_API void iupeflPointerWheelEvent(void* data, const Efl_Event* ev);
+IUP_DRV_API void iupeflPointerInEvent(void* data, const Efl_Event* ev);
+IUP_DRV_API void iupeflPointerOutEvent(void* data, const Efl_Event* ev);
+IUP_DRV_API void iupeflManagerFocusChangedEvent(void* data, const Efl_Event* ev);
 
 /****************************************************************************
  * Text and Mnemonic Handling
@@ -113,7 +113,7 @@ IUP_DRV_API int iupeflSetFgColorAttrib(Ihandle* ih, const char* value);
 
 IUP_DRV_API void iupeflAddToParent(Ihandle* ih);
 IUP_DRV_API void iupeflSetPosSize(Ihandle* ih, int x, int y, int width, int height);
-IUP_DRV_API void iupeflGetOrigin(Ihandle* ih, int *x, int *y);
+IUP_DRV_API void iupeflGetOrigin(Ihandle* ih, int* x, int* y);
 IUP_DRV_API Eo* iupeflGetContainer(Ihandle* ih);
 IUP_DRV_API void iupeflAttachToContainer(Ihandle* ih, Eo* obj);
 

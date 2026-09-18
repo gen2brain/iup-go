@@ -2821,7 +2821,7 @@ static int winuiTreeSetDragSourceAttrib(Ihandle* ih, const char* value)
  * Class Initialization
  ****************************************************************************/
 
-extern "C" IUP_SDK_API void iupdrvTreeAddBorders(Ihandle* ih, int *w, int *h)
+extern "C" IUP_SDK_API void iupdrvTreeAddBorders(Ihandle* ih, int* w, int* h)
 {
   double scale = iupwinuiGetScale(ih);
   int border = (int)ceil(4 * scale);

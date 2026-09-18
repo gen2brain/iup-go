@@ -345,7 +345,7 @@ static int eflFileDlgPopup(Ihandle* ih, int x, int y)
   Eo* win;
   Eo* parent_win = NULL;
   Evas_Object* fileselector;
-  char *dialogtype, *title, *file, *dir, *value;
+  char* dialogtype, *title, *file, *dir, *value;
   int is_save = 0;
   int folder_mode = 0;
   int is_multi = 0;

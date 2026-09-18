@@ -189,7 +189,7 @@ static char* iZboxGetValuePosAttrib(Ihandle* ih)
 
 static int iZboxSetValueAttrib(Ihandle* ih, const char* value)
 {
-  Ihandle *new_handle;
+  Ihandle* new_handle;
 
   if (!value)
     return 0;
@@ -227,7 +227,7 @@ static int iZboxSetVisibleAttrib(Ihandle* ih, const char* value)
   return 1;  /* must be 1 to mark when set at the element */
 }
 
-static void iZboxComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *children_expand)
+static void iZboxComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* children_expand)
 {
   Ihandle* child;
   int children_naturalwidth, children_naturalheight;
@@ -328,7 +328,7 @@ static void iZboxSetChildrenPositionMethod(Ihandle* ih, int x, int y)
 
 /******************************************************************************/
 
-IUP_API Ihandle* IupZboxv(Ihandle **children)
+IUP_API Ihandle* IupZboxv(Ihandle** children)
 {
   return IupCreatev("zbox", (void**)children);
 }
@@ -340,7 +340,7 @@ IUP_API Ihandle* IupZboxV(Ihandle* child, va_list arglist)
 
 IUP_API Ihandle* IupZbox(Ihandle* child, ...)
 {
-  Ihandle *ih;
+  Ihandle* ih;
 
   va_list arglist;
   va_start(arglist, child);

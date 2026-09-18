@@ -25,7 +25,7 @@
 
 void iupListSingleCallDblClickCb(Ihandle* ih, IFnis cb, int pos)
 {
-  char *text;
+  char* text;
 
   if (pos<=0)
     return;
@@ -38,7 +38,7 @@ void iupListSingleCallDblClickCb(Ihandle* ih, IFnis cb, int pos)
 
 static void iListCallActionCallback(Ihandle* ih, IFnsii cb, int pos, int state)
 {
-  char *text;
+  char* text;
 
   if (pos<=0)
     return;
@@ -196,7 +196,7 @@ int iupListGetPosAttrib(Ihandle* ih, int pos)
 
 void iupListSetInitialItems(Ihandle* ih)
 {
-  char *value;
+  char* value;
   int i = 1;
   while ((value = iupAttribGetId(ih, "", i))!=NULL)
   {
@@ -731,7 +731,7 @@ static char* iListGetFitImageAttrib(Ihandle* ih)
   return iupStrReturnBoolean(ih->data->fit_image);
 }
 
-int iupListCallDragDropCb(Ihandle* ih, int drag_id, int drop_id, int *is_ctrl)
+int iupListCallDragDropCb(Ihandle* ih, int drag_id, int drop_id, int* is_ctrl)
 {
   IFniiii cbDragDrop = (IFniiii)IupGetCallback(ih, "DRAGDROP_CB");
   int is_shift = 0;
@@ -783,7 +783,7 @@ static int iListSetShowDragDropAttrib(Ihandle* ih, const char* value)
 
 /*****************************************************************************************/
 
-static int iListDropData_CB(Ihandle *ih, char* type, void* data, int len, int x, int y)
+static int iListDropData_CB(Ihandle* ih, char* type, void* data, int len, int x, int y)
 {
   int pos = IupConvertXYToPos(ih, x, y);
   int is_ctrl = 0;
@@ -812,7 +812,7 @@ static int iListDropData_CB(Ihandle *ih, char* type, void* data, int len, int x,
 
   if (IupGetInt(ih_source, "MULTIPLE"))
   {
-    char *buffer = IupGetAttribute(ih_source, "VALUE");
+    char* buffer = IupGetAttribute(ih_source, "VALUE");
 
     /* Copy all selected items */
     int src_pos = 1;  /* IUP starts at 1 */
@@ -859,7 +859,7 @@ static int iListDropData_CB(Ihandle *ih, char* type, void* data, int len, int x,
   return IUP_DEFAULT;
 }
 
-static int iListDragData_CB(Ihandle *ih, char* type, void *data, int len)
+static int iListDragData_CB(Ihandle* ih, char* type, void* data, int len)
 {
   int pos = iupAttribGetInt(ih, "_IUP_LIST_SOURCEPOS");
   if (pos < 1)
@@ -867,7 +867,7 @@ static int iListDragData_CB(Ihandle *ih, char* type, void *data, int len)
 
   if (ih->data->is_multiple)
   {
-    char *buffer = IupGetAttribute(ih, "VALUE");
+    char* buffer = IupGetAttribute(ih, "VALUE");
 
     /* It will not drag all selected items only
        when the user begins to drag an item not selected.
@@ -903,7 +903,7 @@ static int iListDragDataSize_CB(Ihandle* ih, char* type)
   return sizeof(Ihandle*);
 }
 
-static int iListDragEnd_CB(Ihandle *ih, int del)
+static int iListDragEnd_CB(Ihandle* ih, int del)
 {
   iupAttribSetInt(ih, "_IUP_LIST_SOURCEPOS", 0);
   (void)del;
@@ -988,14 +988,14 @@ static int iListCreateMethod(Ihandle* ih, void** params)
   return IUP_NOERROR;
 }
 
-static void iListGetItemImageInfo(Ihandle *ih, int id, int *img_w, int *img_h)
+static void iListGetItemImageInfo(Ihandle* ih, int id, int* img_w, int* img_h)
 {
   *img_w = 0;
   *img_h = 0;
 
   if (!ih->handle)
   {
-    char *value = iupAttribGetId(ih, "IMAGE", id);
+    char* value = iupAttribGetId(ih, "IMAGE", id);
     if (value)
       iupImageGetInfo(value, img_w, img_h, NULL);
   }
@@ -1010,7 +1010,7 @@ static void iListGetItemImageInfo(Ihandle *ih, int id, int *img_w, int *img_h)
   }
 }
 
-static void iListGetNaturalItemsSize(Ihandle *ih, int *w, int *h)
+static void iListGetNaturalItemsSize(Ihandle* ih, int* w, int* h)
 {
   int visiblecolumns, i,
       max_h = 0,
@@ -1034,7 +1034,7 @@ static void iListGetNaturalItemsSize(Ihandle *ih, int *w, int *h)
   }
   else
   {
-    char *value;
+    char* value;
     int item_w;
 
     for (i=1; i<=count; i++)
@@ -1158,7 +1158,7 @@ static void iListGetNaturalItemsSize(Ihandle *ih, int *w, int *h)
   }
 }
 
-static void iListComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *children_expand)
+static void iListComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* children_expand)
 {
   int natural_w, natural_h;
   int sb_size = iupdrvGetScrollbarSize();

@@ -72,7 +72,7 @@ static void winMenuUpdateBar(Ihandle* ih)
   }
 }
 
-static void winMenuGetLastPos(Ihandle* ih, int *last_pos, int *pos)
+static void winMenuGetLastPos(Ihandle* ih, int* last_pos, int* pos)
 {
   Ihandle* child;
   *last_pos=0;
@@ -196,7 +196,7 @@ IUP_DRV_API void iupwinMenuDialogProc(Ihandle* ih_dialog, UINT msg, WPARAM wp, L
   case WM_INITMENUPOPUP:
     {
       HMENU hMenu = (HMENU)wp;
-      Ihandle *ih = iupwinMenuGetHandle(hMenu);
+      Ihandle* ih = iupwinMenuGetHandle(hMenu);
       if (ih)
       {
         Icallback cb = (Icallback)IupGetCallback(ih, "MENUOPEN_CB");
@@ -208,7 +208,7 @@ IUP_DRV_API void iupwinMenuDialogProc(Ihandle* ih_dialog, UINT msg, WPARAM wp, L
   case WM_UNINITMENUPOPUP:
     {
       HMENU hMenu = (HMENU)wp;
-      Ihandle *ih = iupwinMenuGetHandle(hMenu);
+      Ihandle* ih = iupwinMenuGetHandle(hMenu);
       if (ih)
       {
         Icallback cb = (Icallback)IupGetCallback(ih, "MENUCLOSE_CB");
@@ -220,7 +220,7 @@ IUP_DRV_API void iupwinMenuDialogProc(Ihandle* ih_dialog, UINT msg, WPARAM wp, L
   case WM_MENUSELECT:
     {
       HMENU hMenu = (HMENU)lp;
-      Ihandle *ih;
+      Ihandle* ih;
 
       if (!lp)
         break;
@@ -556,7 +556,7 @@ static int winMenuItemSetImpressAttrib(Ihandle* ih, const char* value)
 {
   HBITMAP hBitmapUnchecked, hBitmapChecked;
 
-  char *image = iupAttribGet(ih, "IMPRESS");
+  char* image = iupAttribGet(ih, "IMPRESS");
   hBitmapUnchecked = iupImageGetImage(image, ih, 0, NULL);
 
   if (value)
@@ -573,7 +573,7 @@ static int winMenuItemSetImpressAttrib(Ihandle* ih, const char* value)
 
 static int winMenuItemSetTitleAttrib(Ihandle* ih, const char* value)
 {
-  char *str;
+  char* str;
 
   /* check if the submenu handle was created in winSubmenuAddToParent */
   if (ih->handle == (InativeHandle*)-1)

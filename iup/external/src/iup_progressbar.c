@@ -90,7 +90,7 @@ static int iProgressBarSetCircularAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-static int iProgressBarCreateMethod(Ihandle* ih, void **params)
+static int iProgressBarCreateMethod(Ihandle* ih, void** params)
 {
   (void)params;
 

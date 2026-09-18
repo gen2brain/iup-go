@@ -32,7 +32,7 @@ IUP_DRV_API Ihandle* iupwinHandleGet(InativeHandle* handle)
   return ih;
 }
 
-IUP_DRV_API void iupwinHandleAdd(Ihandle *ih, InativeHandle* handle)
+IUP_DRV_API void iupwinHandleAdd(Ihandle* ih, InativeHandle* handle)
 {
   IFvs cb;
 

@@ -32,7 +32,7 @@ static int winButtonGetBorder(void)
   return 4;
 }
 
-IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
+IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int* x, int* y)
 {
   /* LAYOUT_DECORATION_ESTIMATE */
   int border_size = winButtonGetBorder() * 2;
@@ -102,9 +102,9 @@ static int winButtonCalcAlignPosY(int vert_alignment, int rect_height, int heigh
   return y;
 }
 
-static HBITMAP winButtonGetBitmap(Ihandle* ih, UINT itemState, int *shift, int *w, int *h, int *bpp)
+static HBITMAP winButtonGetBitmap(Ihandle* ih, UINT itemState, int* shift, int* w, int* h, int* bpp)
 {
-  char *name;
+  char* name;
   int make_inactive = 0;
   HBITMAP hBitmap;
 
@@ -330,7 +330,7 @@ static void winButtonDrawText(Ihandle* ih, HDC hDC, int rect_width, int rect_hei
   }
 }
 
-static void winButtonDrawItem(Ihandle* ih, DRAWITEMSTRUCT *drawitem)
+static void winButtonDrawItem(Ihandle* ih, DRAWITEMSTRUCT* drawitem)
 {
   int has_border = 1;
   HDC hDC;
@@ -475,7 +475,7 @@ static int winButtonSetAlignmentAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-static char* winButtonGetAlignmentAttrib(Ihandle *ih)
+static char* winButtonGetAlignmentAttrib(Ihandle* ih)
 {
   char* horiz_align2str[3] = {"ALEFT", "ACENTER", "ARIGHT"};
   char* vert_align2str[3] = {"ATOP", "ACENTER", "ABOTTOM"};
@@ -540,7 +540,7 @@ static int winButtonSetFgColorAttrib(Ihandle* ih, const char* value)
 
 /****************************************************************************************/
 
-static int winButtonMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT *result)
+static int winButtonMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT* result)
 {
   if (ih->data->type != IUP_BUTTON_TEXT)
   {
@@ -678,7 +678,7 @@ static int winButtonMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT
   return iupwinBaseMsgProc(ih, msg, wp, lp, result);
 }
 
-static int winButtonWmNotify(Ihandle* ih, NMHDR* msg_info, int *result)
+static int winButtonWmNotify(Ihandle* ih, NMHDR* msg_info, int* result)
 {
   if (msg_info->code == NM_CUSTOMDRAW)
     return iupwinCustomDrawToDrawItem(ih, msg_info, result, (IFdrawItem)winButtonDrawItem);

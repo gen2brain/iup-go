@@ -47,14 +47,14 @@ static void winCanvasSetScrollInfo(HWND hWnd, int imin, int imax, int ipage, int
   SetScrollInfo(hWnd, flag, &scrollinfo, TRUE);
 }
 
-static int winCanvasSetBgColorAttrib(Ihandle *ih, const char *value)
+static int winCanvasSetBgColorAttrib(Ihandle* ih, const char* value)
 {
   (void)value;
   iupdrvPostRedraw(ih);
   return 1;
 }
 
-static int winCanvasSetDXAttrib(Ihandle* ih, const char *value)
+static int winCanvasSetDXAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->sb & IUP_SB_HORIZ)
   {
@@ -116,7 +116,7 @@ static int winCanvasSetDXAttrib(Ihandle* ih, const char *value)
   return 1;
 }
 
-static int winCanvasSetDYAttrib(Ihandle* ih, const char *value)
+static int winCanvasSetDYAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->sb & IUP_SB_VERT)
   {
@@ -179,7 +179,7 @@ static int winCanvasSetDYAttrib(Ihandle* ih, const char *value)
   return 1;
 }
 
-static int winCanvasSetPosXAttrib(Ihandle *ih, const char *value)
+static int winCanvasSetPosXAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->sb & IUP_SB_HORIZ)
   {
@@ -209,7 +209,7 @@ static int winCanvasSetPosXAttrib(Ihandle *ih, const char *value)
   return 1;
 }
 
-static int winCanvasSetPosYAttrib(Ihandle *ih, const char *value)
+static int winCanvasSetPosYAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->sb & IUP_SB_VERT)
   {
@@ -239,7 +239,7 @@ static int winCanvasSetPosYAttrib(Ihandle *ih, const char *value)
   return 1;
 }
 
-static void winCanvasGetScrollInfo(HWND hWnd, int *ipos, int *ipage, int flag, int track)
+static void winCanvasGetScrollInfo(HWND hWnd, int* ipos, int* ipage, int flag, int track)
 {
   SCROLLINFO scrollinfo;
   scrollinfo.cbSize = sizeof(SCROLLINFO);
@@ -414,7 +414,7 @@ static char* winCanvasGetDrawSizeAttrib(Ihandle* ih)
   return iupStrReturnIntInt((int)(rect.right-rect.left), (int)(rect.bottom-rect.top), 'x');
 }
 
-static int winCanvasMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT *result)
+static int winCanvasMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT* result)
 {
   switch (msg)
   {

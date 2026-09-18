@@ -106,7 +106,7 @@ static void winProgressBarDraw(Ihandle* ih, HDC hDC)
   }
 }
 
-static int winProgressBarMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT *result)
+static int winProgressBarMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT* result)
 {
   if (msg == WM_PAINT)
   {

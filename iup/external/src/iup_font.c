@@ -157,7 +157,7 @@ void iupUpdateFontAttrib(Ihandle* ih)
   iupAttribSetClassObject(ih, "FONT", iupGetFontValue(ih));
 }
 
-IUP_SDK_API void iupFontGetMultiLineStringSize(Ihandle* ih, const char* str, int *w, int *h)
+IUP_SDK_API void iupFontGetMultiLineStringSize(Ihandle* ih, const char* str, int* w, int* h)
 {
   char* font = iupGetFontValue(ih);
   int markup = iupAttribGetBoolean(ih, "MARKUP");
@@ -192,7 +192,7 @@ IUP_SDK_API void iupFontGetMultiLineStringSize(Ihandle* ih, const char* str, int
   }
 }
 
-IUP_SDK_API int iupGetFontInfo(const char* font, char *typeface, int *size, int *is_bold, int *is_italic, int *is_underline, int *is_strikeout)
+IUP_SDK_API int iupGetFontInfo(const char* font, char* typeface, int* size, int* is_bold, int* is_italic, int* is_underline, int* is_strikeout)
 {
   *size = 0;
   *is_bold = 0;
@@ -473,7 +473,7 @@ enum {                          /* style */
  FONT_STRIKEOUT = 8
 };
 
-static int iFontFindStyleName(const char *name, int len, int *style)
+static int iFontFindStyleName(const char* name, int len, int* style)
 {
 #define STYLE_NUM_NAMES 21
   static struct { const char* name; int style; } style_names[STYLE_NUM_NAMES] = {
@@ -516,9 +516,9 @@ static int iFontFindStyleName(const char *name, int len, int *style)
 
 #define is_style_sep(_x) (_x == ' ' || _x == ',' || _x == '_')
 
-static const char * iFontGetStyleWord(const char *str, const char *last, int *wordlen)
+static const char * iFontGetStyleWord(const char* str, const char* last, int* wordlen)
 {
-  const char *result;
+  const char* result;
 
   while (last > str && is_style_sep(*(last - 1)))
     last--;
@@ -532,9 +532,9 @@ static const char * iFontGetStyleWord(const char *str, const char *last, int *wo
   return result;
 }
 
-IUP_SDK_API int iupFontParsePango(const char *font, char *typeface, int *size, int *bold, int *italic, int *underline, int *strikeout)
+IUP_SDK_API int iupFontParsePango(const char* font, char* typeface, int* size, int* bold, int* italic, int* underline, int* strikeout)
 {
-  const char *p, *last;
+  const char* p, *last;
   int len, wordlen, style;
 
   if (font[0] == '-')  /* X font, abort */
@@ -610,7 +610,7 @@ IUP_SDK_API int iupFontParsePango(const char *font, char *typeface, int *size, i
     return 0;
 }
 
-IUP_SDK_API int iupFontParseWin(const char *value, char *typeface, int *size, int *bold, int *italic, int *underline, int *strikeout)
+IUP_SDK_API int iupFontParseWin(const char* value, char* typeface, int* size, int* bold, int* italic, int* underline, int* strikeout)
 {
   int c;
 
@@ -689,7 +689,7 @@ IUP_SDK_API int iupFontParseWin(const char *value, char *typeface, int *size, in
   return 1;
 }
 
-IUP_SDK_API int iupFontParseX(const char *font, char *typeface, int typeface_size, int *size, int *bold, int *italic, int *underline, int *strikeout)
+IUP_SDK_API int iupFontParseX(const char* font, char* typeface, int typeface_size, int* size, int* bold, int* italic, int* underline, int* strikeout)
 {
   char style1[30], style2[30];
   char* token;

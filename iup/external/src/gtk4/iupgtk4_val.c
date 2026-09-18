@@ -17,7 +17,7 @@
 #include "iupgtk4_drv.h"
 
 
-IUP_SDK_API void iupdrvValGetMinSize(Ihandle* ih, int *w, int *h)
+IUP_SDK_API void iupdrvValGetMinSize(Ihandle* ih, int* w, int* h)
 {
   static int horiz_min_w = -1, horiz_min_h = -1;
   static int vert_min_w = -1, vert_min_h = -1;
@@ -83,7 +83,7 @@ static int gtk4ValSetValueAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-static gboolean gtk4ValChangeValue(GtkRange *range, GtkScrollType scroll, double fval, Ihandle *ih)
+static gboolean gtk4ValChangeValue(GtkRange* range, GtkScrollType scroll, double fval, Ihandle* ih)
 {
   double old_val = ih->data->val;
   IFn cb;
@@ -113,7 +113,7 @@ static gboolean gtk4ValChangeValue(GtkRange *range, GtkScrollType scroll, double
   return FALSE;
 }
 
-static gboolean gtk4ValKeyPressEvent(GtkEventControllerKey *controller, guint keyval, guint keycode, GdkModifierType state, Ihandle *ih)
+static gboolean gtk4ValKeyPressEvent(GtkEventControllerKey* controller, guint keyval, guint keycode, GdkModifierType state, Ihandle* ih)
 {
   (void)controller;
   (void)keycode;

@@ -727,7 +727,7 @@ static int eflTextSetSelectionAttrib(Ihandle* ih, const char* value)
 static char* eflTextGetSelectionAttrib(Ihandle* ih)
 {
   Eo* entry = iupeflGetWidget(ih);
-  Efl_Text_Cursor_Object *sel_start, *sel_end;
+  Efl_Text_Cursor_Object* sel_start, *sel_end;
   int start, end;
 
   if (!entry || iupAttribGet(ih, "_IUP_EFL_IS_SPINNER"))
@@ -756,7 +756,7 @@ static char* eflTextGetSelectionAttrib(Ihandle* ih)
 static char* eflTextGetSelectedTextAttrib(Ihandle* ih)
 {
   Eo* entry = iupeflGetWidget(ih);
-  Efl_Text_Cursor_Object *sel_start, *sel_end;
+  Efl_Text_Cursor_Object* sel_start, *sel_end;
 
   if (!entry || iupAttribGet(ih, "_IUP_EFL_IS_SPINNER"))
     return NULL;
@@ -782,7 +782,7 @@ static char* eflTextGetSelectedTextAttrib(Ihandle* ih)
 static int eflTextSetSelectedTextAttrib(Ihandle* ih, const char* value)
 {
   Eo* entry = iupeflGetWidget(ih);
-  Efl_Text_Cursor_Object *sel_start, *sel_end;
+  Efl_Text_Cursor_Object* sel_start, *sel_end;
 
   if (!entry || iupAttribGet(ih, "_IUP_EFL_IS_SPINNER"))
     return 0;
@@ -854,7 +854,7 @@ static int eflTextSetInsertAttrib(Ihandle* ih, const char* value)
 
   ih->data->disable_callbacks = 1;
 
-  Efl_Text_Cursor_Object *sel_start = NULL, *sel_end = NULL;
+  Efl_Text_Cursor_Object* sel_start = NULL, *sel_end = NULL;
   efl_text_interactive_selection_cursors_get(entry, &sel_start, &sel_end);
   if (sel_start && sel_end &&
       efl_text_cursor_object_position_get(sel_start) != efl_text_cursor_object_position_get(sel_end))
@@ -1087,7 +1087,7 @@ static char* eflTextGetCaretAttrib(Ihandle* ih)
 static int eflTextSetClipboardAttrib(Ihandle* ih, const char* value)
 {
   Eo* entry = iupeflGetWidget(ih);
-  Efl_Text_Cursor_Object *cursor_start, *cursor_end;
+  Efl_Text_Cursor_Object* cursor_start, *cursor_end;
 
   if (!entry || iupAttribGet(ih, "_IUP_EFL_IS_SPINNER"))
     return 0;
@@ -1245,7 +1245,7 @@ static int eflTextSetSelectionPosAttrib(Ihandle* ih, const char* value)
 static char* eflTextGetSelectionPosAttrib(Ihandle* ih)
 {
   Eo* entry = iupeflGetWidget(ih);
-  Efl_Text_Cursor_Object *sel_start, *sel_end;
+  Efl_Text_Cursor_Object* sel_start, *sel_end;
   int start_pos, end_pos;
 
   if (!entry || iupAttribGet(ih, "_IUP_EFL_IS_SPINNER"))
@@ -2640,7 +2640,7 @@ IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bul
 static int eflTextSetRemoveFormattingAttrib(Ihandle* ih, const char* value)
 {
   Eo* entry;
-  Efl_Text_Cursor_Object *start_cursor, *end_cursor;
+  Efl_Text_Cursor_Object* start_cursor, *end_cursor;
 
   if (!ih->data->is_multiline)
     return 0;
@@ -2670,7 +2670,7 @@ static int eflTextSetRemoveFormattingAttrib(Ihandle* ih, const char* value)
   {
     if (efl_text_interactive_have_selection_get(entry))
     {
-      Efl_Text_Cursor_Object *sel_start, *sel_end;
+      Efl_Text_Cursor_Object* sel_start, *sel_end;
       int start_pos, end_pos;
       efl_text_interactive_selection_cursors_get(entry, &sel_start, &sel_end);
       if (sel_start && sel_end)
@@ -2870,7 +2870,7 @@ IUP_SDK_API int iupdrvTextGetFormatTags(Ihandle* ih, Ihandle* bulk_tag)
   for (i = 0; i < link_count; i++)
   {
     char name[80];
-    char *url, *range;
+    char* url, *range;
     int start, end;
 
     snprintf(name, sizeof(name), "_IUP_LINK_URL_%d", i);

@@ -51,7 +51,7 @@ static void qtTimerProc(IupQtTimer* timer_data)
  * Timer Management Functions
  ****************************************************************************/
 
-extern "C" IUP_SDK_API void iupdrvTimerRun(Ihandle *ih)
+extern "C" IUP_SDK_API void iupdrvTimerRun(Ihandle* ih)
 {
   unsigned int time_ms;
 

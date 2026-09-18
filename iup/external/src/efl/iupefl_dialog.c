@@ -330,7 +330,7 @@ static void eflDialogSetMwmHints(Ihandle* ih, Eo* win, int has_titlebar, int dec
   data[1] = functions;
   data[2] = decorations;
 
-  ecore_x_window_prop_property_set(xwin, ECORE_X_ATOM_MOTIF_WM_HINTS, ECORE_X_ATOM_MOTIF_WM_HINTS, 32, (void *)data, 5);
+  ecore_x_window_prop_property_set(xwin, ECORE_X_ATOM_MOTIF_WM_HINTS, ECORE_X_ATOM_MOTIF_WM_HINTS, 32, (void*)data, 5);
 }
 #endif
 

@@ -442,7 +442,7 @@ static Ihandle* iDatePickCreateText(void)
 
 static int iDatePickCreateMethod(Ihandle* ih, void** params)
 {
-  Ihandle *box, *tgl;
+  Ihandle* box, *tgl;
   (void)params;
 
   tgl = IupToggle(NULL);

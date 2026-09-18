@@ -832,7 +832,7 @@ extern "C" IUP_SDK_API void iupdrvTreeUpdateMarkMode(Ihandle* ih)
   tv->SetListType(ih->data->mark_mode == ITREE_MARK_MULTIPLE ? B_MULTIPLE_SELECTION_LIST : B_SINGLE_SELECTION_LIST);
 }
 
-extern "C" IUP_SDK_API void iupdrvTreeAddBorders(Ihandle* ih, int *w, int *h)
+extern "C" IUP_SDK_API void iupdrvTreeAddBorders(Ihandle* ih, int* w, int* h)
 {
   (void)ih;
   int border = 2 * 2;

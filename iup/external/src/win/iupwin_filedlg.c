@@ -91,7 +91,7 @@ static INT CALLBACK winFileDlgBrowseCallback(HWND hWnd, UINT uMsg, LPARAM lParam
   return 0;
 }
 
-static void winFileDlgGetFolder(Ihandle *ih)
+static void winFileDlgGetFolder(Ihandle* ih)
 {
   InativeHandle* parent = iupDialogGetNativeParent(ih);
   BROWSEINFO browseinfo;
@@ -337,7 +337,7 @@ static void winFileDlgUpdatePreviewGLCanvas(Ihandle* ih)
   }
 }
 
-static int winFileCheckPreviewCanvas(HWND hWnd, LPARAM lParam, int *x, int *y)
+static int winFileCheckPreviewCanvas(HWND hWnd, LPARAM lParam, int* x, int* y)
 {
   HWND hWndPreview = GetDlgItem(hWnd, IUP_PREVIEWCANVAS);
   POINT pt;
@@ -751,7 +751,7 @@ static TCHAR* winFileDlgStrReplaceSeparator(const TCHAR* name)
   return buffer;
 }
 
-static int winFileDlgUseHook(Ihandle *ih, int x, int y)
+static int winFileDlgUseHook(Ihandle* ih, int x, int y)
 {
   if (IupGetCallback(ih, "FILE_CB") || IupGetCallback(ih, "HELP_CB"))
     return 1;
@@ -765,12 +765,12 @@ static int winFileDlgUseHook(Ihandle *ih, int x, int y)
   return 0;
 }
 
-static int winFileDlgPopup(Ihandle *ih, int x, int y)
+static int winFileDlgPopup(Ihandle* ih, int x, int y)
 {
   InativeHandle* parent = iupDialogGetNativeParent(ih);
   OPENFILENAME openfilename;
   int result, dialogtype;
-  char *value, *initial_dir=NULL;
+  char* value, *initial_dir=NULL;
   TCHAR* extfilter = NULL;
   HGLOBAL hPreviewTemplate = NULL;
 
@@ -818,7 +818,7 @@ static int winFileDlgPopup(Ihandle *ih, int x, int y)
     value = iupAttribGet(ih, "FILTER");
     if (value)
     {
-      TCHAR *winfo, *wvalue;
+      TCHAR* winfo, *wvalue;
       int sz1, sz2;
       char* info = iupAttribGet(ih, "FILTERINFO");
       if (!info)

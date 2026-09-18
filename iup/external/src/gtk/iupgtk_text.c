@@ -31,7 +31,7 @@
 #endif
 
 
-IUP_SDK_API void iupdrvTextAddSpin(Ihandle* ih, int *w, int h)
+IUP_SDK_API void iupdrvTextAddSpin(Ihandle* ih, int* w, int h)
 {
   static int spin_arrow_width = -1;
 
@@ -39,13 +39,13 @@ IUP_SDK_API void iupdrvTextAddSpin(Ihandle* ih, int *w, int h)
 
   if (spin_arrow_width < 0)
   {
-    GtkWidget *temp_window = gtk_offscreen_window_new();
-    GtkWidget *temp_spin = gtk_spin_button_new_with_range(0, 100, 1);
-    GtkWidget *temp_entry = gtk_entry_new();
+    GtkWidget* temp_window = gtk_offscreen_window_new();
+    GtkWidget* temp_spin = gtk_spin_button_new_with_range(0, 100, 1);
+    GtkWidget* temp_entry = gtk_entry_new();
 #if GTK_CHECK_VERSION(3, 0, 0)
-    GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+    GtkWidget* vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
 #else
-    GtkWidget *vbox = gtk_vbox_new(FALSE, 0);
+    GtkWidget* vbox = gtk_vbox_new(FALSE, 0);
 #endif
 
     gtk_entry_set_width_chars(GTK_ENTRY(temp_spin), 1);
@@ -92,12 +92,12 @@ static void iupgtkTextMeasureEntryBorders(void)
 {
   if (iupgtk_entry_border_x < 0)
   {
-    GtkWidget *temp_window, *temp_entry, *temp_entry_noframe;
+    GtkWidget* temp_window, *temp_entry, *temp_entry_noframe;
     int entry_w, entry_h, entry_noframe_h;
     int char_width, char_height;
-    PangoContext *context;
-    PangoLayout *layout;
-    GtkWidget *vbox;
+    PangoContext* context;
+    PangoLayout* layout;
+    GtkWidget* vbox;
 
     temp_window = gtk_offscreen_window_new();
 #if GTK_CHECK_VERSION(3, 0, 0)
@@ -171,9 +171,9 @@ static void iupgtkTextMeasureMultilineMetrics(void)
 {
   if (iupgtk_multiline_border_height < 0)
   {
-    GtkWidget *temp_window, *temp_sw, *temp_tv;
-    PangoContext *context;
-    PangoLayout *layout;
+    GtkWidget* temp_window, *temp_sw, *temp_tv;
+    PangoContext* context;
+    PangoLayout* layout;
     int layout_1line_h, layout_2line_h;
     int sw_h, tv_h;
 
@@ -267,7 +267,7 @@ static int gtkTextColumnAdjust(Ihandle* ih, int visiblecolumns)
   return visiblecolumns * adjust;
 }
 
-IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int *x, int *y)
+IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int* x, int* y)
 {
   /* Used also by IupCalendar in GTK */
 
@@ -278,8 +278,8 @@ IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int *x, int *y)
   static int spin_natural_height = -1;
   if (iupAttribGetBoolean(ih, "SPIN") && spin_natural_height == -1)
   {
-    GtkWidget *temp_window = gtk_offscreen_window_new();
-    GtkWidget *temp_spin = gtk_spin_button_new_with_range(0, 100, 1);
+    GtkWidget* temp_window = gtk_offscreen_window_new();
+    GtkWidget* temp_spin = gtk_spin_button_new_with_range(0, 100, 1);
 
     gtk_container_add(GTK_CONTAINER(temp_window), temp_spin);
     gtk_widget_show_all(temp_window);
@@ -342,7 +342,7 @@ IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int *x, int *y)
   }
 }
 
-IUP_SDK_API void iupdrvTextAddExtraPadding(Ihandle* ih, int *w, int *h)
+IUP_SDK_API void iupdrvTextAddExtraPadding(Ihandle* ih, int* w, int* h)
 {
   (void)ih;
   iupgtkTextMeasureEntryBorders();
@@ -503,7 +503,7 @@ static void gtkTextParseParagraphFormat(Ihandle* formattag, GtkTextTag* tag)
   format = iupAttribGet(formattag, "TABSARRAY");
   if (format)
   {
-    PangoTabArray *tabs;
+    PangoTabArray* tabs;
     int pos, i = 0;
     PangoTabAlign align;
     char* str;
@@ -804,7 +804,7 @@ static void gtkTextParseCharacterFormat(Ihandle* formattag, GtkTextTag* tag)
   }
 }
 
-static void gtkTextMoveIterToLinCol(GtkTextBuffer *buffer, GtkTextIter *iter, int lin, int col)
+static void gtkTextMoveIterToLinCol(GtkTextBuffer* buffer, GtkTextIter* iter, int lin, int col)
 {
   int line_count, line_length;
 
@@ -826,7 +826,7 @@ static void gtkTextMoveIterToLinCol(GtkTextBuffer *buffer, GtkTextIter *iter, in
   gtk_text_iter_set_line_offset(iter, col);
 }
 
-static void gtkTextGetLinColFromPosition(const GtkTextIter *iter, int *lin, int *col)
+static void gtkTextGetLinColFromPosition(const GtkTextIter* iter, int* lin, int* col)
 {
   *lin = gtk_text_iter_get_line(iter);
   *col = gtk_text_iter_get_line_offset(iter);
@@ -852,18 +852,18 @@ static int gtkTextGetCharSize(Ihandle* ih)
   return charwidth;
 }
 
-IUP_SDK_API void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, int col, int *pos)
+IUP_SDK_API void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, int col, int* pos)
 {
   GtkTextIter iter;
-  GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
+  GtkTextBuffer* buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
   gtkTextMoveIterToLinCol(buffer, &iter, lin, col);
   *pos = gtk_text_iter_get_offset(&iter);
 }
 
-IUP_SDK_API void iupdrvTextConvertPosToLinCol(Ihandle* ih, int pos, int *lin, int *col)
+IUP_SDK_API void iupdrvTextConvertPosToLinCol(Ihandle* ih, int pos, int* lin, int* col)
 {
   GtkTextIter iter;
-  GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
+  GtkTextBuffer* buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
   gtk_text_buffer_get_iter_at_offset(buffer, &iter, pos);
   gtkTextGetLinColFromPosition(&iter, lin, col);
 }
@@ -893,7 +893,7 @@ static int gtkTextConvertXYToPos(Ihandle* ih, int x, int y)
 
 static void gtkTextScrollToVisible(Ihandle* ih)
 {
-  GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
+  GtkTextBuffer* buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
   GtkTextMark* mark = gtk_text_buffer_get_insert(buffer);
   gtk_text_view_scroll_mark_onscreen(GTK_TEXT_VIEW(ih->handle), mark);
 }
@@ -905,7 +905,7 @@ static void gtkTextScrollToVisible(Ihandle* ih)
 static int gtkTextSelectionGetIter(Ihandle* ih, const char* value, GtkTextIter* start_iter, GtkTextIter* end_iter)
 {
   int lin_start=1, col_start=1, lin_end=1, col_end=1;
-  GtkTextBuffer *buffer;
+  GtkTextBuffer* buffer;
 
   /* Used only when MULTILINE=YES */
 
@@ -939,7 +939,7 @@ static int gtkTextSelectionGetIter(Ihandle* ih, const char* value, GtkTextIter* 
 static int gtkTextSelectionPosGetIter(Ihandle* ih, const char* value, GtkTextIter* start_iter, GtkTextIter* end_iter)
 {
   int start=0, end=0;
-  GtkTextBuffer *buffer;
+  GtkTextBuffer* buffer;
 
   /* Used only when MULTILINE=YES */
 
@@ -977,7 +977,7 @@ static int gtkTextSetSelectionAttrib(Ihandle* ih, const char* value)
      GtkTextIter start_iter, end_iter;
      if (gtkTextSelectionGetIter(ih, value, &start_iter, &end_iter))
      {
-       GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
+       GtkTextBuffer* buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
        gtk_text_buffer_select_range(buffer, &start_iter, &end_iter);
      }
   }
@@ -1021,7 +1021,7 @@ static char* gtkTextGetSelectionAttrib(Ihandle* ih)
     int start_col, start_lin, end_col, end_lin;
 
     GtkTextIter start_iter, end_iter;
-    GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
+    GtkTextBuffer* buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
     if (gtk_text_buffer_get_selection_bounds(buffer, &start_iter, &end_iter))
     {
       gtkTextGetLinColFromPosition(&start_iter, &start_lin, &start_col);
@@ -1051,7 +1051,7 @@ static int gtkTextSetSelectionPosAttrib(Ihandle* ih, const char* value)
     GtkTextIter start_iter, end_iter;
     if (gtkTextSelectionPosGetIter(ih, value, &start_iter, &end_iter))
     {
-      GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
+      GtkTextBuffer* buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
       gtk_text_buffer_select_range(buffer, &start_iter, &end_iter);
     }
   }
@@ -1092,7 +1092,7 @@ static char* gtkTextGetSelectionPosAttrib(Ihandle* ih)
   if (ih->data->is_multiline)
   {
     GtkTextIter start_iter, end_iter;
-    GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
+    GtkTextBuffer* buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
     if (gtk_text_buffer_get_selection_bounds(buffer, &start_iter, &end_iter))
     {
       start = gtk_text_iter_get_offset(&start_iter);
@@ -1118,7 +1118,7 @@ static int gtkTextSetSelectedTextAttrib(Ihandle* ih, const char* value)
   if (ih->data->is_multiline)
   {
     GtkTextIter start_iter, end_iter;
-    GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
+    GtkTextBuffer* buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
     if (gtk_text_buffer_get_selection_bounds(buffer, &start_iter, &end_iter))
     {
       ih->data->disable_callbacks = 1;
@@ -1147,7 +1147,7 @@ static char* gtkTextGetCountAttrib(Ihandle* ih)
   int count;
   if (ih->data->is_multiline)
   {
-    GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
+    GtkTextBuffer* buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
     count = gtk_text_buffer_get_char_count(buffer);
   }
   else
@@ -1165,7 +1165,7 @@ static char* gtkTextGetLineCountAttrib(Ihandle* ih)
 {
   if (ih->data->is_multiline)
   {
-    GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
+    GtkTextBuffer* buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
     int linecount = gtk_text_buffer_get_line_count(buffer);
     return iupStrReturnInt(linecount);
   }
@@ -1178,7 +1178,7 @@ static char* gtkTextGetSelectedTextAttrib(Ihandle* ih)
   if (ih->data->is_multiline)
   {
     GtkTextIter start_iter, end_iter;
-    GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
+    GtkTextBuffer* buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
     if (gtk_text_buffer_get_selection_bounds(buffer, &start_iter, &end_iter))
     {
       char* buf_text = gtk_text_buffer_get_slice(buffer, &start_iter, &end_iter, TRUE);
@@ -1214,7 +1214,7 @@ static int gtkTextSetCaretAttrib(Ihandle* ih, const char* value)
     int lin = 1, col = 1;
     GtkTextIter iter;
 
-    GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
+    GtkTextBuffer* buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
 
     iupStrToIntInt(value, &lin, &col, ',');
 
@@ -1242,7 +1242,7 @@ static char* gtkTextGetCaretAttrib(Ihandle* ih)
     int col, lin;
     GtkTextIter iter;
 
-    GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
+    GtkTextBuffer* buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
     gtk_text_buffer_get_iter_at_mark(buffer, &iter, gtk_text_buffer_get_insert(buffer));
     gtkTextGetLinColFromPosition(&iter, &lin, &col);
 
@@ -1269,7 +1269,7 @@ static int gtkTextSetCaretPosAttrib(Ihandle* ih, const char* value)
   if (ih->data->is_multiline)
   {
     GtkTextIter iter;
-    GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
+    GtkTextBuffer* buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
     gtk_text_buffer_get_iter_at_offset(buffer, &iter, pos);
     gtk_text_buffer_place_cursor(buffer, &iter);
     gtkTextScrollToVisible(ih);
@@ -1287,7 +1287,7 @@ static char* gtkTextGetCaretPosAttrib(Ihandle* ih)
   if (ih->data->is_multiline)
   {
     GtkTextIter iter;
-    GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
+    GtkTextBuffer* buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
     gtk_text_buffer_get_iter_at_mark(buffer, &iter, gtk_text_buffer_get_insert(buffer));
     pos = gtk_text_iter_get_offset(&iter);
   }
@@ -1306,7 +1306,7 @@ static int gtkTextSetScrollToAttrib(Ihandle* ih, const char* value)
   {
     int lin = 1, col = 1;
     GtkTextIter iter;
-    GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
+    GtkTextBuffer* buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
 
     iupStrToIntInt(value, &lin, &col, ',');
     if (lin < 1) lin = 1;
@@ -1340,7 +1340,7 @@ static int gtkTextSetScrollToPosAttrib(Ihandle* ih, const char* value)
   if (ih->data->is_multiline)
   {
     GtkTextIter iter;
-    GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
+    GtkTextBuffer* buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
     gtk_text_buffer_get_iter_at_offset(buffer, &iter, pos);
     gtk_text_view_scroll_to_iter(GTK_TEXT_VIEW(ih->handle), &iter, 0, FALSE, 0, 0);
   }
@@ -1356,7 +1356,7 @@ static int gtkTextSetValueAttrib(Ihandle* ih, const char* value)
   ih->data->disable_callbacks = 1;
   if (ih->data->is_multiline)
   {
-    GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
+    GtkTextBuffer* buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
     gtk_text_buffer_set_text(buffer, iupgtkStrConvertToSystem(value), -1);
   }
   else
@@ -1373,7 +1373,7 @@ static char* gtkTextGetValueAttrib(Ihandle* ih)
   {
     GtkTextIter start_iter;
     GtkTextIter end_iter;
-    GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
+    GtkTextBuffer* buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
     gtk_text_buffer_get_start_iter(buffer, &start_iter);
     gtk_text_buffer_get_end_iter(buffer, &end_iter);
     {
@@ -1398,7 +1398,7 @@ static char* gtkTextGetLineValueAttrib(Ihandle* ih)
     int lin;
     char* buf_text;
     char* value;
-    GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
+    GtkTextBuffer* buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
     gtk_text_buffer_get_iter_at_mark(buffer, &iter, gtk_text_buffer_get_insert(buffer));
     lin = gtk_text_iter_get_line(&iter);
     gtk_text_buffer_get_iter_at_line(buffer, &start_iter, lin);
@@ -1423,7 +1423,7 @@ static int gtkTextSetInsertAttrib(Ihandle* ih, const char* value)
   ih->data->disable_callbacks = 1;
   if (ih->data->is_multiline)
   {
-    GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
+    GtkTextBuffer* buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
     gtk_text_buffer_insert_at_cursor(buffer, iupgtkStrConvertToSystem(value), -1);
   }
   else
@@ -1445,7 +1445,7 @@ static int gtkTextSetAppendAttrib(Ihandle* ih, const char* value)
   if (ih->data->is_multiline)
   {
     GtkTextIter iter;
-    GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
+    GtkTextBuffer* buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
     gtk_text_buffer_get_end_iter(buffer, &iter);
     pos = gtk_text_buffer_get_char_count(buffer);
     if (ih->data->append_newline && pos!=0)
@@ -1546,15 +1546,15 @@ static int gtkTextSetNCAttrib(Ihandle* ih, const char* value)
     return 1; /* store until not mapped, when mapped will be set again */
 }
 
-static int gtkTextSetClipboardAttrib(Ihandle *ih, const char *value)
+static int gtkTextSetClipboardAttrib(Ihandle* ih, const char* value)
 {
   ih->data->disable_callbacks = 1;
   if (iupStrEqualNoCase(value, "COPY"))
   {
     if (ih->data->is_multiline)
     {
-      GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
-      GtkClipboard *clipboard = gtk_clipboard_get(gdk_atom_intern("CLIPBOARD", FALSE));
+      GtkTextBuffer* buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
+      GtkClipboard* clipboard = gtk_clipboard_get(gdk_atom_intern("CLIPBOARD", FALSE));
       gtk_text_buffer_copy_clipboard(buffer, clipboard);
     }
     else
@@ -1564,8 +1564,8 @@ static int gtkTextSetClipboardAttrib(Ihandle *ih, const char *value)
   {
     if (ih->data->is_multiline)
     {
-      GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
-      GtkClipboard *clipboard = gtk_clipboard_get(gdk_atom_intern("CLIPBOARD", FALSE));
+      GtkTextBuffer* buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
+      GtkClipboard* clipboard = gtk_clipboard_get(gdk_atom_intern("CLIPBOARD", FALSE));
       gtk_text_buffer_cut_clipboard(buffer, clipboard, TRUE);
     }
     else
@@ -1575,8 +1575,8 @@ static int gtkTextSetClipboardAttrib(Ihandle *ih, const char *value)
   {
     if (ih->data->is_multiline)
     {
-      GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
-      GtkClipboard *clipboard = gtk_clipboard_get(gdk_atom_intern("CLIPBOARD", FALSE));
+      GtkTextBuffer* buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
+      GtkClipboard* clipboard = gtk_clipboard_get(gdk_atom_intern("CLIPBOARD", FALSE));
       gtk_text_buffer_paste_clipboard(buffer, clipboard, NULL, TRUE);
     }
     else
@@ -1586,7 +1586,7 @@ static int gtkTextSetClipboardAttrib(Ihandle *ih, const char *value)
   {
     if (ih->data->is_multiline)
     {
-      GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
+      GtkTextBuffer* buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
       gtk_text_buffer_delete_selection(buffer, FALSE, TRUE);
     }
     else
@@ -1658,9 +1658,9 @@ static char* gtkTextGetPasswordAttrib(Ihandle* ih)
 static int gtkTextSetFgColorAttrib(Ihandle* ih, const char* value)
 {
 #if GTK_CHECK_VERSION(3, 20, 0)
-  char *fg;
-  char *css;
-  GtkCssProvider *provider;
+  char* fg;
+  char* css;
+  GtkCssProvider* provider;
   GdkRGBA rgba;
   unsigned char r, g, b;
   if (!iupStrToRGB(value, &r, &g, &b))
@@ -1716,7 +1716,7 @@ static int gtkTextSetBgColorAttrib(Ihandle* ih, const char* value)
 
 static int gtkTextSetTabSizeAttrib(Ihandle* ih, const char* value)
 {
-  PangoTabArray *tabs;
+  PangoTabArray* tabs;
   int tabsize, charwidth;
   if (!ih->data->is_multiline)
     return 0;
@@ -1730,7 +1730,7 @@ static int gtkTextSetTabSizeAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-static int gtkTextSetCueBannerAttrib(Ihandle *ih, const char *value)
+static int gtkTextSetCueBannerAttrib(Ihandle* ih, const char* value)
 {
   if (!ih->data->is_multiline)
   {
@@ -1775,10 +1775,10 @@ IUP_SDK_API void iupdrvTextAddFormatTagStopBulk(Ihandle* ih, void* state)
 
 IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bulk)
 {
-  GtkTextBuffer *buffer;
+  GtkTextBuffer* buffer;
   GtkTextIter start_iter, end_iter;
   GtkTextTag* tag;
-  char *selection;
+  char* selection;
   (void)bulk;
 
   if (!ih->data->is_multiline)
@@ -1955,7 +1955,7 @@ IUP_SDK_API int iupdrvTextGetFormatTags(Ihandle* ih, Ihandle* bulk_tag)
   while (gtk_text_iter_compare(&iter, &end_iter) < 0)
   {
     GtkTextIter next_iter = iter;
-    GSList *tags, *item;
+    GSList* tags, *item;
     Ihandle* formattag;
     int start, end;
 
@@ -1985,7 +1985,7 @@ IUP_SDK_API int iupdrvTextGetFormatTags(Ihandle* ih, Ihandle* bulk_tag)
 
 static int gtkTextSetRemoveFormattingAttrib(Ihandle* ih, const char* value)
 {
-  GtkTextBuffer *buffer;
+  GtkTextBuffer* buffer;
   GtkTextIter start_iter, end_iter;
 
   if (!ih->data->is_multiline)
@@ -2010,7 +2010,7 @@ static int gtkTextSetRemoveFormattingAttrib(Ihandle* ih, const char* value)
 
 /************************************************************************************************/
 
-static gint gtkTextSpinInput(GtkSpinButton *spin, gdouble *val, Ihandle* ih)
+static gint gtkTextSpinInput(GtkSpinButton* spin, gdouble* val, Ihandle* ih)
 {
   (void)spin;
   *val = (double)iupAttribGetInt(ih, "_IUPGTK_SPIN_VALUE");
@@ -2018,7 +2018,7 @@ static gint gtkTextSpinInput(GtkSpinButton *spin, gdouble *val, Ihandle* ih)
   return TRUE; /* disable input update */
 }
 
-static gboolean gtkTextSpinOutput(GtkSpinButton *spin, Ihandle* ih)
+static gboolean gtkTextSpinOutput(GtkSpinButton* spin, Ihandle* ih)
 {
   if (iupAttribGet(ih, "_IUPGTK_SPIN_NOAUTO"))
   {
@@ -2159,7 +2159,7 @@ static char* gtkTextGetSpinValueAttrib(Ihandle* ih)
 /**********************************************************************************************************/
 
 
-static void gtkTextMoveCursor(GtkWidget *w, GtkMovementStep step, gint count, gboolean extend_selection, Ihandle* ih)
+static void gtkTextMoveCursor(GtkWidget* w, GtkMovementStep step, gint count, gboolean extend_selection, Ihandle* ih)
 {
   int col, lin, pos;
 
@@ -2170,7 +2170,7 @@ static void gtkTextMoveCursor(GtkWidget *w, GtkMovementStep step, gint count, gb
   {
     GtkTextIter iter;
 
-    GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
+    GtkTextBuffer* buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
     gtk_text_buffer_get_iter_at_mark(buffer, &iter, gtk_text_buffer_get_insert(buffer));
     gtkTextGetLinColFromPosition(&iter, &lin, &col);
     pos = gtk_text_iter_get_offset(&iter);
@@ -2196,7 +2196,7 @@ static void gtkTextMoveCursor(GtkWidget *w, GtkMovementStep step, gint count, gb
   (void)extend_selection;
 }
 
-static gboolean gtkTextKeyReleaseEvent(GtkWidget *widget, GdkEventKey *evt, Ihandle *ih)
+static gboolean gtkTextKeyReleaseEvent(GtkWidget* widget, GdkEventKey* evt, Ihandle* ih)
 {
   gtkTextMoveCursor(NULL, 0, 0, 0, ih);
   (void)widget;
@@ -2204,7 +2204,7 @@ static gboolean gtkTextKeyReleaseEvent(GtkWidget *widget, GdkEventKey *evt, Ihan
   return FALSE;
 }
 
-static gboolean gtkTextButtonEvent(GtkWidget *widget, GdkEventButton *evt, Ihandle *ih)
+static gboolean gtkTextButtonEvent(GtkWidget* widget, GdkEventButton* evt, Ihandle* ih)
 {
   gtkTextMoveCursor(NULL, 0, 0, 0, ih);
   return iupgtkButtonEvent(widget, evt, ih);
@@ -2228,7 +2228,7 @@ static const char* gtkTextGetLinkUrlAtIter(GtkTextIter* iter)
   return url;
 }
 
-static gboolean gtkTextLinkRelease(GtkWidget *widget, GdkEventButton *evt, Ihandle *ih)
+static gboolean gtkTextLinkRelease(GtkWidget* widget, GdkEventButton* evt, Ihandle* ih)
 {
   if (evt->type == GDK_BUTTON_RELEASE && evt->button == 1)
   {
@@ -2261,7 +2261,7 @@ static gboolean gtkTextLinkRelease(GtkWidget *widget, GdkEventButton *evt, Ihand
   return FALSE;
 }
 
-static gboolean gtkTextLinkMotion(GtkWidget *widget, GdkEventMotion *evt, Ihandle *ih)
+static gboolean gtkTextLinkMotion(GtkWidget* widget, GdkEventMotion* evt, Ihandle* ih)
 {
   GtkTextView* text_view = GTK_TEXT_VIEW(widget);
   GtkTextIter iter;
@@ -2295,7 +2295,7 @@ static gboolean gtkTextLinkMotion(GtkWidget *widget, GdkEventMotion *evt, Ihandl
   return FALSE;
 }
 
-static void gtkTextEntryDeleteText(GtkEditable *editable, int start, int end, Ihandle* ih)
+static void gtkTextEntryDeleteText(GtkEditable* editable, int start, int end, Ihandle* ih)
 {
   IFnis cb = (IFnis)IupGetCallback(ih, "ACTION");
   int ret;
@@ -2308,7 +2308,7 @@ static void gtkTextEntryDeleteText(GtkEditable *editable, int start, int end, Ih
     g_signal_stop_emission_by_name (editable, "delete_text");
 }
 
-static void gtkTextFilterInsertText(GtkEditable *editable, const gchar *text, gint length, gint *position, Ihandle* ih)
+static void gtkTextFilterInsertText(GtkEditable* editable, const gchar* text, gint length, gint* position, Ihandle* ih)
 {
   char* filter = iupAttribGet(ih, "FILTER");
   if (!filter)
@@ -2346,7 +2346,7 @@ static void gtkTextFilterInsertText(GtkEditable *editable, const gchar *text, gi
   }
 }
 
-static void gtkTextEntryInsertText(GtkEditable *editable, char *insert_value, int len, int *pos, Ihandle* ih)
+static void gtkTextEntryInsertText(GtkEditable* editable, char* insert_value, int len, int* pos, Ihandle* ih)
 {
   IFnis cb = (IFnis)IupGetCallback(ih, "ACTION");
   int ret;
@@ -2371,7 +2371,7 @@ static void gtkTextEntryInsertText(GtkEditable *editable, char *insert_value, in
   (void)len;
 }
 
-static void gtkTextBufferDeleteRange(GtkTextBuffer *textbuffer, GtkTextIter *start_iter, GtkTextIter *end_iter, Ihandle* ih)
+static void gtkTextBufferDeleteRange(GtkTextBuffer* textbuffer, GtkTextIter* start_iter, GtkTextIter* end_iter, Ihandle* ih)
 {
   IFnis cb = (IFnis)IupGetCallback(ih, "ACTION");
   int start, end;
@@ -2388,7 +2388,7 @@ static void gtkTextBufferDeleteRange(GtkTextBuffer *textbuffer, GtkTextIter *sta
     g_signal_stop_emission_by_name (textbuffer, "delete_range");
 }
 
-static void gtkTextBufferInsertText(GtkTextBuffer *textbuffer, GtkTextIter *pos_iter, gchar *insert_value, gint len, Ihandle* ih)
+static void gtkTextBufferInsertText(GtkTextBuffer* textbuffer, GtkTextIter* pos_iter, gchar* insert_value, gint len, Ihandle* ih)
 {
   IFnis cb = (IFnis)IupGetCallback(ih, "ACTION");
   int ret, pos;
@@ -2551,8 +2551,8 @@ static int gtkTextMapMethod(Ihandle* ih)
 #if GTK_CHECK_VERSION(3, 14, 0)
     if (!iupAttribGetBoolean(ih, "BORDER"))
     {
-      GtkStyleContext *context = gtk_widget_get_style_context(ih->handle);
-      GtkCssProvider *provider = gtk_css_provider_new();
+      GtkStyleContext* context = gtk_widget_get_style_context(ih->handle);
+      GtkCssProvider* provider = gtk_css_provider_new();
       gtk_css_provider_load_from_data(GTK_CSS_PROVIDER(provider), "*{ border: none; }", -1, NULL);
       gtk_style_context_add_provider(context, GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
       g_object_unref(provider);
@@ -2602,7 +2602,7 @@ static int gtkTextMapMethod(Ihandle* ih)
 
   if (ih->data->is_multiline)
   {
-    GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
+    GtkTextBuffer* buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
     g_signal_connect(G_OBJECT(buffer), "delete-range", G_CALLBACK(gtkTextBufferDeleteRange), ih);
     g_signal_connect(G_OBJECT(buffer), "insert-text", G_CALLBACK(gtkTextBufferInsertText), ih);
     g_signal_connect(G_OBJECT(buffer), "changed", G_CALLBACK(gtkTextChanged), ih);

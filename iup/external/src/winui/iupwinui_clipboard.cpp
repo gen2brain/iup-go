@@ -226,7 +226,7 @@ static int winuiClipboardSetImageAttrib(Ihandle* ih, const char* value)
 
 static HANDLE winuiCopyHandle(HANDLE hHandle)
 {
-  void *src_data, *dst_data;
+  void* src_data, *dst_data;
   HANDLE hNewHandle;
   SIZE_T size = GlobalSize(hHandle);
   if (size == 0)

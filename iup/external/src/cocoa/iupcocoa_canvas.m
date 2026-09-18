@@ -27,10 +27,10 @@
 #include "iupcocoa_dragdrop.h"
 
 
-static void cocoaCanvasLayoutUpdateMethod(Ihandle *ih);
+static void cocoaCanvasLayoutUpdateMethod(Ihandle* ih);
 static int cocoaCanvasSetDXAttrib(Ihandle* ih, const char* value);
 static int cocoaCanvasSetDYAttrib(Ihandle* ih, const char* value);
-static void cocoaCanvasComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *expand);
+static void cocoaCanvasComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* expand);
 
 @interface IupCocoaCanvasView : NSControl <NSTextInputClient>
 
@@ -508,7 +508,7 @@ static void cocoaCanvasFireGesture(Ihandle* ih, int gesture, int state, int x, i
   [self setNeedsDisplay:YES];
 }
 
-- (BOOL) acceptsFirstMouse:(NSEvent *)theEvent
+- (BOOL) acceptsFirstMouse:(NSEvent*)theEvent
 {
   return YES;
 }
@@ -1331,7 +1331,7 @@ static char* cocoaCanvasGetNSViewAttrib(Ihandle* ih)
   return (char*)canvas_view;
 }
 
-static char* cocoaCanvasGetDrawSizeAttrib(Ihandle *ih)
+static char* cocoaCanvasGetDrawSizeAttrib(Ihandle* ih)
 {
   IupCocoaCanvasView* canvas_view = cocoaCanvasGetCanvasView(ih);
   NSRect the_frame = [canvas_view bounds];
@@ -1521,7 +1521,7 @@ static void cocoaCanvasUnMapMethod(Ihandle* ih)
   iupAttribSet(ih, "_IUPCOCOA_CANVAS_SBVERT", NULL);
 }
 
-static void cocoaCanvasLayoutUpdateMethod(Ihandle *ih)
+static void cocoaCanvasLayoutUpdateMethod(Ihandle* ih)
 {
   iupdrvBaseLayoutUpdateMethod(ih);
 
@@ -1534,7 +1534,7 @@ static void cocoaCanvasLayoutUpdateMethod(Ihandle *ih)
   }
 }
 
-static void cocoaCanvasComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *expand)
+static void cocoaCanvasComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* expand)
 {
   int natural_w = ih->naturalwidth;
   int natural_h = ih->naturalheight;

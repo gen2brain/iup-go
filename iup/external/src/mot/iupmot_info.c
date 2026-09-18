@@ -22,12 +22,12 @@
 #include "iup_drvinfo.h"
 
 
-static int xGetWorkAreaSize(Display* display, int screen, int *width, int *height)
+static int xGetWorkAreaSize(Display* display, int screen, int* width, int* height)
 {
   /* _NET_WORKAREA, x, y, width, height CARDINAL[][4]/32 */
   static Atom workarea = 0;
   Atom type;
-  long *data;
+  long* data;
   int format;
   unsigned long after, ndata;
 
@@ -36,7 +36,7 @@ static int xGetWorkAreaSize(Display* display, int screen, int *width, int *heigh
 
   XGetWindowProperty(display, RootWindow(display, screen),
                      workarea, 0, LONG_MAX, False, XA_CARDINAL, &type, &format, &ndata,
-                     &after, (unsigned char **)&data);
+                     &after, (unsigned char**)&data);
   if (type != XA_CARDINAL || data == NULL)
   {
     if (data) XFree(data);
@@ -50,14 +50,14 @@ static int xGetWorkAreaSize(Display* display, int screen, int *width, int *heigh
   return 1;
 }
 
-IUP_SDK_API void iupdrvAddScreenOffset(int *x, int *y, int add)
+IUP_SDK_API void iupdrvAddScreenOffset(int* x, int* y, int add)
 {
   (void)x;
   (void)y;
   (void)add;
 }
 
-IUP_SDK_API void iupdrvGetScreenSize(int *width, int *height)
+IUP_SDK_API void iupdrvGetScreenSize(int* width, int* height)
 {
   Display* display = (Display*)iupdrvGetDisplay();
   int screen = XDefaultScreen(display);
@@ -68,7 +68,7 @@ IUP_SDK_API void iupdrvGetScreenSize(int *width, int *height)
   }
 }
 
-IUP_SDK_API void iupdrvGetFullSize(int *width, int *height)
+IUP_SDK_API void iupdrvGetFullSize(int* width, int* height)
 {
   Display* display = (Display*)iupdrvGetDisplay();
   int screen = XDefaultScreen(display);
@@ -149,7 +149,7 @@ IUP_SDK_API int iupdrvScaleNaturalPx(int px)
   return px;
 }
 
-IUP_SDK_API void iupdrvGetCursorPos(int *x, int *y)
+IUP_SDK_API void iupdrvGetCursorPos(int* x, int* y)
 {
   Window root, child;
   int cx, cy;
@@ -182,7 +182,7 @@ IUP_SDK_API void iupdrvGetKeyState(char* key)
 {
   char keys[32];
   Display* display = (Display*)iupdrvGetDisplay();
-  XModifierKeymap *modMap = XGetModifierMapping(display);
+  XModifierKeymap* modMap = XGetModifierMapping(display);
   XQueryKeymap(display, keys);
 
   if (xCheckModifier(modMap->modifiermap, modMap->max_keypermod, ShiftMapIndex, keys))

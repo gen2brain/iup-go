@@ -254,7 +254,7 @@ static char* iSpinboxGetClientSizeAttrib(Ihandle* ih)
   return iupStrReturnIntInt(width, height, 'x');
 }
 
-static void iSpinboxComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *children_expand)
+static void iSpinboxComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* children_expand)
 {
   /* update spin natural size */
   iupBaseComputeNaturalSize(ih->firstchild);
@@ -324,7 +324,7 @@ static void iSpinboxSetChildrenPositionMethod(Ihandle* ih, int x, int y)
 
 static int iSpinboxCreateMethod(Ihandle* ih, void** params)
 {
-  Ihandle *spin = IupSpin();
+  Ihandle* spin = IupSpin();
   spin->flags |= IUP_INTERNAL;
   iupChildTreeAppend(ih, spin);  /* spin will always be the firstchild */
 
@@ -378,7 +378,7 @@ Iclass* iupSpinboxNewClass(void)
 
 IUP_API Ihandle* IupSpinbox(Ihandle* ctrl)
 {
-  void *children[2];
+  void* children[2];
   children[0] = (void*)ctrl;
   children[1] = NULL;
   return IupCreatev("spinbox", children);

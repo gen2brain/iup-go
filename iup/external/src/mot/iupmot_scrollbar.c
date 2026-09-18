@@ -28,7 +28,7 @@
 
 #define IMOT_SB_MAX 32767
 
-IUP_SDK_API void iupdrvScrollbarGetMinSize(Ihandle* ih, int *w, int *h)
+IUP_SDK_API void iupdrvScrollbarGetMinSize(Ihandle* ih, int* w, int* h)
 {
   int sb_size = 20;
 
@@ -115,7 +115,7 @@ static int motScrollbarSetPageSizeAttrib(Ihandle* ih, const char* value)
 static void motScrollbarCallback(Widget w, XtPointer client_data, XtPointer call_data)
 {
   int op = (int)(intptr_t)client_data;
-  Ihandle *ih;
+  Ihandle* ih;
   int ipos, ipage;
   double range, old_val;
 

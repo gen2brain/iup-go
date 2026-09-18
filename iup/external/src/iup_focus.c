@@ -18,9 +18,9 @@
 #include "iup_childtree.h"
 
 
-IUP_SDK_API Ihandle* iupFocusNextInteractive(Ihandle *ih)
+IUP_SDK_API Ihandle* iupFocusNextInteractive(Ihandle* ih)
 {
-  Ihandle *c;
+  Ihandle* c;
 
   if (!ih)
     return NULL;
@@ -34,7 +34,7 @@ IUP_SDK_API Ihandle* iupFocusNextInteractive(Ihandle *ih)
   return NULL;
 }
 
-IUP_SDK_API int iupFocusCanAccept(Ihandle *ih)
+IUP_SDK_API int iupFocusCanAccept(Ihandle* ih)
 {
   if (ih->iclass->is_interactive &&  /* interactive */
       iupAttribGetBoolean(ih, "CANFOCUS") &&   /* can receive focus */
@@ -46,7 +46,7 @@ IUP_SDK_API int iupFocusCanAccept(Ihandle *ih)
     return 0;
 }
 
-static int iFocusCheckActiveRadio(Ihandle *ih)
+static int iFocusCheckActiveRadio(Ihandle* ih)
 {
   if (IupClassMatch(ih, "toggle") &&
       IupGetInt(ih, "RADIO") &&
@@ -56,10 +56,10 @@ static int iFocusCheckActiveRadio(Ihandle *ih)
     return 1;
 }
 
-static Ihandle* iFocusFindAtBrothers(Ihandle *start, int checkradio)
+static Ihandle* iFocusFindAtBrothers(Ihandle* start, int checkradio)
 {
-  Ihandle *c;
-  Ihandle *nf;
+  Ihandle* c;
+  Ihandle* nf;
 
   for (c = start; c; c = c->brother)
   {
@@ -76,9 +76,9 @@ static Ihandle* iFocusFindAtBrothers(Ihandle *start, int checkradio)
   return NULL;
 }
 
-static Ihandle* iFocusFindNext(Ihandle *ih, int checkradio)
+static Ihandle* iFocusFindNext(Ihandle* ih, int checkradio)
 {
-  Ihandle *nf, *p;
+  Ihandle* nf, *p;
 
   if (!ih)
     return NULL;
@@ -113,9 +113,9 @@ static Ihandle* iFocusFindNext(Ihandle *ih, int checkradio)
   return NULL;
 }
 
-IUP_API Ihandle* IupNextField(Ihandle *ih)
+IUP_API Ihandle* IupNextField(Ihandle* ih)
 {
-  Ihandle *ih_next;
+  Ihandle* ih_next;
 
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
@@ -140,9 +140,9 @@ IUP_API Ihandle* IupNextField(Ihandle *ih)
   return NULL;
 }
 
-void iupFocusNext(Ihandle *ih)
+void iupFocusNext(Ihandle* ih)
 {
-  Ihandle *ih_next = iFocusFindNext(ih, 0);
+  Ihandle* ih_next = iFocusFindNext(ih, 0);
   if (!ih_next)
   {
     /* not found after the element, then start over from the beginning,
@@ -155,9 +155,9 @@ void iupFocusNext(Ihandle *ih)
     iupdrvSetFocus(ih_next);
 }
 
-static int iFocusFindPrevious(Ihandle *parent, Ihandle **previous, Ihandle *ih, int checkradio)
+static int iFocusFindPrevious(Ihandle* parent, Ihandle** previous, Ihandle* ih, int checkradio)
 {
-  Ihandle *c;
+  Ihandle* c;
 
   if (!parent)
     return 0;
@@ -186,9 +186,9 @@ static int iFocusFindPrevious(Ihandle *parent, Ihandle **previous, Ihandle *ih, 
   return 0;
 }
 
-IUP_API Ihandle* IupPreviousField(Ihandle *ih)
+IUP_API Ihandle* IupPreviousField(Ihandle* ih)
 {
-  Ihandle *previous = NULL;
+  Ihandle* previous = NULL;
 
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
@@ -206,9 +206,9 @@ IUP_API Ihandle* IupPreviousField(Ihandle *ih)
   return NULL;
 }
 
-void iupFocusPrevious(Ihandle *ih)
+void iupFocusPrevious(Ihandle* ih)
 {
-  Ihandle *previous = NULL;
+  Ihandle* previous = NULL;
 
   /* search from the dialog down to the element */
   iFocusFindPrevious(IupGetDialog(ih), &previous, ih, 0);
@@ -226,7 +226,7 @@ IUP_API Ihandle* IupGetFocus(void)
   return iup_current_focus;
 }
 
-void iupSetCurrentFocus(Ihandle *ih)
+void iupSetCurrentFocus(Ihandle* ih)
 {
   iup_current_focus = ih;
 
@@ -255,7 +255,7 @@ void iupSetCurrentFocus(Ihandle *ih)
   }
 }
 
-void iupResetCurrentFocus(Ihandle *destroyed_ih)
+void iupResetCurrentFocus(Ihandle* destroyed_ih)
 {
   if (iup_current_focus == destroyed_ih)
     iup_current_focus = NULL;
@@ -263,7 +263,7 @@ void iupResetCurrentFocus(Ihandle *destroyed_ih)
     iup_current_dialog_focus = NULL;
 }
 
-IUP_API Ihandle *IupSetFocus(Ihandle *ih)
+IUP_API Ihandle* IupSetFocus(Ihandle* ih)
 {
   Ihandle* old_focus = IupGetFocus();
 
@@ -280,7 +280,7 @@ IUP_API Ihandle *IupSetFocus(Ihandle *ih)
   return old_focus;
 }
 
-IUP_SDK_API void iupCallGetFocusCb(Ihandle *ih)
+IUP_SDK_API void iupCallGetFocusCb(Ihandle* ih)
 {
   Icallback cb;
 
@@ -315,7 +315,7 @@ IUP_SDK_API void iupCallGetFocusCb(Ihandle *ih)
   }
 }
 
-IUP_SDK_API void iupCallKillFocusCb(Ihandle *ih)
+IUP_SDK_API void iupCallKillFocusCb(Ihandle* ih)
 {
   Icallback cb;
 

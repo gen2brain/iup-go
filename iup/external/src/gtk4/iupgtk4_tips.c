@@ -27,7 +27,7 @@ static void gtk4TooltipSetTitle(Ihandle* ih, GtkWidget* widget, const char* valu
     gtk_widget_set_tooltip_text(widget, iupgtk4StrConvertToSystem(value));
 }
 
-static gboolean gtk4QueryTooltip(GtkWidget *widget, gint _x, gint _y, gboolean keyboard_mode, GtkTooltip *tooltip, Ihandle* ih)
+static gboolean gtk4QueryTooltip(GtkWidget* widget, gint _x, gint _y, gboolean keyboard_mode, GtkTooltip* tooltip, Ihandle* ih)
 {
   char* value;
 

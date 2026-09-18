@@ -198,7 +198,7 @@ static int wasmToggleMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-IUP_SDK_API void iupdrvToggleAddCheckBox(Ihandle* ih, int *x, int *y, const char* str)
+IUP_SDK_API void iupdrvToggleAddCheckBox(Ihandle* ih, int* x, int* y, const char* str)
 {
   (void)ih;
   (void)str;
@@ -206,7 +206,7 @@ IUP_SDK_API void iupdrvToggleAddCheckBox(Ihandle* ih, int *x, int *y, const char
   if (y && *y < 18) *y = 18;
 }
 
-IUP_SDK_API void iupdrvToggleAddSwitch(Ihandle* ih, int *x, int *y, const char* str)
+IUP_SDK_API void iupdrvToggleAddSwitch(Ihandle* ih, int* x, int* y, const char* str)
 {
   (void)ih;
   (void)str;
@@ -214,7 +214,7 @@ IUP_SDK_API void iupdrvToggleAddSwitch(Ihandle* ih, int *x, int *y, const char* 
   if (y && *y < 20) *y = 20;
 }
 
-IUP_SDK_API void iupdrvToggleAddBorders(Ihandle* ih, int *x, int *y)
+IUP_SDK_API void iupdrvToggleAddBorders(Ihandle* ih, int* x, int* y)
 {
   (void)ih;
   if (x) *x += 6;

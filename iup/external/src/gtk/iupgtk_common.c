@@ -44,22 +44,22 @@ typedef struct _iupGtkFixedClass
 } iupGtkFixedClass;
 
 static GType iup_gtk_fixed_get_type (void) G_GNUC_CONST;
-static void iup_gtk_fixed_class_init (iupGtkFixedClass *_class);
-static void iup_gtk_fixed_init (iupGtkFixed *fixed);
-static void iup_gtk_fixed_get_preferred_size (GtkWidget *widget, gint *minimum, gint *natural);
+static void iup_gtk_fixed_class_init (iupGtkFixedClass* _class);
+static void iup_gtk_fixed_init (iupGtkFixed* fixed);
+static void iup_gtk_fixed_get_preferred_size (GtkWidget* widget, gint* minimum, gint* natural);
 
 G_DEFINE_TYPE (iupGtkFixed, iup_gtk_fixed, GTK_TYPE_FIXED)
 
-static void iup_gtk_fixed_class_init (iupGtkFixedClass *_class)
+static void iup_gtk_fixed_class_init (iupGtkFixedClass* _class)
 {
-  GtkWidgetClass *widget_class = (GtkWidgetClass*) _class;
+  GtkWidgetClass* widget_class = (GtkWidgetClass*) _class;
   widget_class->get_preferred_width = iup_gtk_fixed_get_preferred_size;
   widget_class->get_preferred_height = iup_gtk_fixed_get_preferred_size;
 }
 
 static int iupGtkFixedWindow = 0;
 
-static void iup_gtk_fixed_init (iupGtkFixed *fixed)
+static void iup_gtk_fixed_init (iupGtkFixed* fixed)
 {
 #ifdef GDK_WINDOWING_WAYLAND
   GdkDisplay* display = gdk_display_get_default();
@@ -74,7 +74,7 @@ static void iup_gtk_fixed_init (iupGtkFixed *fixed)
     gtk_widget_set_has_window(GTK_WIDGET(fixed), TRUE);
 }
 
-static void iup_gtk_fixed_get_preferred_size (GtkWidget *widget, gint *minimum, gint *natural)
+static void iup_gtk_fixed_get_preferred_size (GtkWidget* widget, gint* minimum, gint* natural)
 {
   (void)widget;
   /* all this is just to replace this method, so it will behave like GtkLayout. */
@@ -246,7 +246,7 @@ IUP_DRV_API void iupgtkSetPosSize(GtkContainer* parent, GtkWidget* widget, int x
   }
 }
 
-IUP_SDK_API void iupdrvBaseLayoutUpdateMethod(Ihandle *ih)
+IUP_SDK_API void iupdrvBaseLayoutUpdateMethod(Ihandle* ih)
 {
   GtkWidget* parent = gtkGetNativeParent(ih);
   GtkWidget* widget = (GtkWidget*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
@@ -264,7 +264,7 @@ IUP_SDK_API void iupdrvBaseUnMapMethod(Ihandle* ih)
   gtk_widget_destroy(widget);   /* To match the call to gtk_*****_new     */
 }
 
-IUP_SDK_API void iupdrvPostRedraw(Ihandle *ih)
+IUP_SDK_API void iupdrvPostRedraw(Ihandle* ih)
 {
   GdkWindow* window = iupgtkGetWindow(ih->handle);
   if (window)
@@ -274,7 +274,7 @@ IUP_SDK_API void iupdrvPostRedraw(Ihandle *ih)
   gtk_widget_queue_draw(ih->handle);
 }
 
-IUP_SDK_API void iupdrvRedrawNow(Ihandle *ih)
+IUP_SDK_API void iupdrvRedrawNow(Ihandle* ih)
 {
   GdkWindow* window = iupgtkGetWindow(ih->handle);
   if (window)
@@ -300,7 +300,7 @@ static GtkWidget* gtkGetWindowedParent(GtkWidget* widget)
   return widget;
 }
 
-IUP_SDK_API void iupdrvScreenToClient(Ihandle* ih, int *x, int *y)
+IUP_SDK_API void iupdrvScreenToClient(Ihandle* ih, int* x, int* y)
 {
   gint win_x = 0, win_y = 0;
   gint dx = 0, dy = 0;
@@ -312,7 +312,7 @@ IUP_SDK_API void iupdrvScreenToClient(Ihandle* ih, int *x, int *y)
   *y -= win_y + dy;
 }
 
-IUP_SDK_API void iupdrvClientToScreen(Ihandle* ih, int *x, int *y)
+IUP_SDK_API void iupdrvClientToScreen(Ihandle* ih, int* x, int* y)
 {
   gint win_x = 0, win_y = 0;
   gint dx = 0, dy = 0;
@@ -324,7 +324,7 @@ IUP_SDK_API void iupdrvClientToScreen(Ihandle* ih, int *x, int *y)
   *y += win_y + dy;
 }
 
-IUP_DRV_API gboolean iupgtkShowHelp(GtkWidget *widget, GtkWidgetHelpType *arg1, Ihandle *ih)
+IUP_DRV_API gboolean iupgtkShowHelp(GtkWidget* widget, GtkWidgetHelpType* arg1, Ihandle* ih)
 {
   Icallback cb;
   (void)widget;
@@ -337,7 +337,7 @@ IUP_DRV_API gboolean iupgtkShowHelp(GtkWidget *widget, GtkWidgetHelpType *arg1, 
   return FALSE;
 }
 
-IUP_DRV_API gboolean iupgtkEnterLeaveEvent(GtkWidget *widget, GdkEventCrossing *evt, Ihandle *ih)
+IUP_DRV_API gboolean iupgtkEnterLeaveEvent(GtkWidget* widget, GdkEventCrossing* evt, Ihandle* ih)
 {
   Icallback cb = NULL;
   (void)widget;
@@ -443,7 +443,7 @@ IUP_SDK_API int iupdrvIsVisible(Ihandle* ih)
     return 0;
 }
 
-IUP_SDK_API int iupdrvIsActive(Ihandle *ih)
+IUP_SDK_API int iupdrvIsActive(Ihandle* ih)
 {
 #if GTK_CHECK_VERSION(2, 18, 0)
   return gtk_widget_is_sensitive(ih->handle);
@@ -468,7 +468,7 @@ IUP_DRV_API void iupgdkRGBASet(GdkRGBA* rgba, unsigned char r, unsigned char g, 
   rgba->alpha = 1.0;
 }
 
-static GdkRGBA gtkDarkerRGBA(GdkRGBA *rgba)
+static GdkRGBA gtkDarkerRGBA(GdkRGBA* rgba)
 {
   GdkRGBA dark_rgba = {0,0,0,1.0};
 
@@ -485,7 +485,7 @@ static gdouble gtkCROPDouble(gdouble x)
   return x;
 }
 
-static GdkRGBA gtkLighterRGBA(GdkRGBA *rgba)
+static GdkRGBA gtkLighterRGBA(GdkRGBA* rgba)
 {
   GdkRGBA light_rgba = {0,0,0,1.0};
 
@@ -496,7 +496,7 @@ static GdkRGBA gtkLighterRGBA(GdkRGBA *rgba)
   return light_rgba;
 }
 #else
-static GdkColor gtkDarkerColor(GdkColor *color)
+static GdkColor gtkDarkerColor(GdkColor* color)
 {
   GdkColor dark_color = {0L,0,0,0};
 
@@ -513,7 +513,7 @@ static guint16 gtkCROP16(int x)
   return (guint16)x;
 }
 
-static GdkColor gtkLighterColor(GdkColor *color)
+static GdkColor gtkLighterColor(GdkColor* color)
 {
   GdkColor light_color = {0L,0,0,0};
 
@@ -565,9 +565,9 @@ IUP_DRV_API void iupgtkSetBgColor(InativeHandle* handle, unsigned char r, unsign
 
 #if GTK_CHECK_VERSION(3, 16, 0)
   {
-    char *bg, *bg_light, *bg_dark;
-    char *css;
-    GtkCssProvider *provider;
+    char* bg, *bg_light, *bg_dark;
+    char* css;
+    GtkCssProvider* provider;
 
     bg = gdk_rgba_to_string(&rgba);
     bg_light = gdk_rgba_to_string(&light_rgba);
@@ -618,7 +618,7 @@ IUP_DRV_API void iupgtkSetBgColor(InativeHandle* handle, unsigned char r, unsign
     gtk_widget_override_background_color(handle, GTK_STATE_FLAG_INSENSITIVE, &rgba);  /* disabled */
 #endif
 #else  /* GTK 2.x */
-  GtkRcStyle *rc_style;
+  GtkRcStyle* rc_style;
   GdkColor color;
 
   iupgdkColorSetRGB(&color, r, g, b);
@@ -652,7 +652,7 @@ IUP_DRV_API void iupgtkSetFgColor(InativeHandle* handle, unsigned char r, unsign
   gtk_widget_override_color(handle, GTK_STATE_FLAG_PRELIGHT, &rgba);
 #pragma GCC diagnostic pop
 #else
-  GtkRcStyle *rc_style;
+  GtkRcStyle* rc_style;
   GdkColor color;
 
   iupgdkColorSetRGB(&color, r, g, b);
@@ -854,7 +854,7 @@ IUP_SDK_API void iupdrvBaseRegisterVisualAttrib(Iclass* ic)
   iupClassRegisterAttribute(ic, "TIPICON", NULL, NULL, IUPAF_SAMEASSYSTEM, NULL, IUPAF_DEFAULT);
 }
 
-IUP_DRV_API gboolean iupgtkMotionNotifyEvent(GtkWidget *widget, GdkEventMotion *evt, Ihandle *ih)
+IUP_DRV_API gboolean iupgtkMotionNotifyEvent(GtkWidget* widget, GdkEventMotion* evt, Ihandle* ih)
 {
   IFniis cb;
 
@@ -877,7 +877,7 @@ IUP_DRV_API gboolean iupgtkMotionNotifyEvent(GtkWidget *widget, GdkEventMotion *
   return FALSE;
 }
 
-IUP_DRV_API gboolean iupgtkButtonEvent(GtkWidget *widget, GdkEventButton *evt, Ihandle *ih)
+IUP_DRV_API gboolean iupgtkButtonEvent(GtkWidget* widget, GdkEventButton* evt, Ihandle* ih)
 {
   IFniiiis cb = (IFniiiis)IupGetCallback(ih,"BUTTON_CB");
   if (cb)
@@ -941,7 +941,7 @@ IUP_SDK_API void iupdrvSendKey(int key, int press)
   Ihandle* focus;
   guint keyval, state;
   gint nkeys = 0;
-  GdkKeymapKey *keys;
+  GdkKeymapKey* keys;
   GdkWindow* window;
 
   focus = IupGetFocus();
@@ -1066,7 +1066,7 @@ IUP_SDK_API void iupdrvSleep(int time)
   g_usleep(time*1000);  /* milli to micro */
 }
 
-IUP_DRV_API GdkWindow* iupgtkGetWindow(GtkWidget *widget)
+IUP_DRV_API GdkWindow* iupgtkGetWindow(GtkWidget* widget)
 {
 #if GTK_CHECK_VERSION(2, 14, 0)
   return gtk_widget_get_window(widget);
@@ -1075,15 +1075,15 @@ IUP_DRV_API GdkWindow* iupgtkGetWindow(GtkWidget *widget)
 #endif
 }
 
-IUP_DRV_API void iupgtkWindowGetPointer(GdkWindow *window, int *x, int *y, GdkModifierType *mask)
+IUP_DRV_API void iupgtkWindowGetPointer(GdkWindow* window, int* x, int* y, GdkModifierType* mask)
 {
 #if GTK_CHECK_VERSION(3, 20, 0)
-  GdkDisplay *display = gdk_window_get_display(window);
+  GdkDisplay* display = gdk_window_get_display(window);
   GdkSeat* seat = gdk_display_get_default_seat(display);
   GdkDevice* device = gdk_seat_get_pointer(seat);
   gdk_window_get_device_position(window, device, x, y, mask);
 #elif GTK_CHECK_VERSION(3, 0, 0)
-  GdkDisplay *display = gdk_window_get_display(window);
+  GdkDisplay* display = gdk_window_get_display(window);
   GdkDeviceManager* device_manager = gdk_display_get_device_manager(display);
   GdkDevice* device = gdk_device_manager_get_client_pointer(device_manager);
   gdk_window_get_device_position(window, device, x, y, mask);
@@ -1151,7 +1151,7 @@ IUP_SDK_API int iupdrvIsSystemDarkMode(void)
 #endif
 }
 
-IUP_SDK_API void iupdrvSetAccessibleTitle(Ihandle *ih, const char* title)
+IUP_SDK_API void iupdrvSetAccessibleTitle(Ihandle* ih, const char* title)
 {
   GtkWidget* widget = (GtkWidget*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
   if (!widget)
@@ -1164,7 +1164,7 @@ IUP_SDK_API void iupdrvSetAccessibleTitle(Ihandle *ih, const char* title)
   }
 }
 
-IUP_SDK_API void iupdrvSetAccessibleDescription(Ihandle *ih, const char* description)
+IUP_SDK_API void iupdrvSetAccessibleDescription(Ihandle* ih, const char* description)
 {
   GtkWidget* widget = (GtkWidget*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
   if (!widget)

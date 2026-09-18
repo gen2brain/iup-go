@@ -41,7 +41,7 @@ static int iButtonSetImagePositionAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-static char* iButtonGetImagePositionAttrib(Ihandle *ih)
+static char* iButtonGetImagePositionAttrib(Ihandle* ih)
 {
   char* img_pos2str[4] = {"LEFT", "RIGHT", "TOP", "BOTTOM"};
   return iupStrReturnStr(img_pos2str[ih->data->img_position]);
@@ -60,7 +60,7 @@ static int iButtonSetSpacingAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-static char* iButtonGetSpacingAttrib(Ihandle *ih)
+static char* iButtonGetSpacingAttrib(Ihandle* ih)
 {
   return iupStrReturnInt(ih->data->spacing);
 }
@@ -95,7 +95,7 @@ static int iButtonCreateMethod(Ihandle* ih, void** params)
   return IUP_NOERROR;
 }
 
-static void iButtonComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *children_expand)
+static void iButtonComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* children_expand)
 {
   int has_border = 1;
   int natural_w = 0,
@@ -170,7 +170,7 @@ static void iButtonComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *ch
 
 IUP_API Ihandle* IupButton(const char* title)
 {
-  void *params[2];
+  void* params[2];
   params[0] = (void*)title;
   params[1] = NULL;
   return IupCreatev("button", params);

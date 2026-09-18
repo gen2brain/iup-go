@@ -98,7 +98,7 @@ IUP_SDK_API void iupTabsScaleImageSize(Ihandle* ih, int raw_w, int raw_h, int* o
 static void iTabsGetMaxTabSize(Ihandle* ih, int* max_width, int* max_height)
 {
   int width, height, pos;
-  char *tabtitle, *tabimage;
+  char* tabtitle, *tabimage;
   Ihandle* child;
   int max_w = 0;
   int max_h = 0;
@@ -122,14 +122,14 @@ static void iTabsGetMaxTabSize(Ihandle* ih, int* max_width, int* max_height)
   *max_height = max_h;
 }
 
-static void iTabsGetDecorMargin(int *m, int *s)
+static void iTabsGetDecorMargin(int* m, int* s)
 {
   int e = iupdrvTabsExtraMargin();
   *m = 4 + e;
   *s = 2 + 2*e;
 }
 
-static void iTabsGetDecorSize(Ihandle* ih, int *width, int *height)
+static void iTabsGetDecorSize(Ihandle* ih, int* width, int* height)
 {
   int m, s;
 
@@ -201,7 +201,7 @@ static void iTabsGetDecorSize(Ihandle* ih, int *width, int *height)
   *height += ih->data->vert_padding;
 }
 
-static void iTabsGetDecorOffset(Ihandle* ih, int *dx, int *dy)
+static void iTabsGetDecorOffset(Ihandle* ih, int* dx, int* dy)
 {
   int m, s;
   iTabsGetDecorMargin(&m, &s);
@@ -356,7 +356,7 @@ static char* iTabsGetCountAttrib(Ihandle* ih)
 static int iTabsSetValueHandleAttrib(Ihandle* ih, const char* value)
 {
   int pos;
-  Ihandle *child;
+  Ihandle* child;
 
   child = (Ihandle*)value;
 
@@ -416,7 +416,7 @@ static char* iTabsGetValuePosAttrib(Ihandle* ih)
 
 static int iTabsSetValueAttrib(Ihandle* ih, const char* value)
 {
-  Ihandle *child;
+  Ihandle* child;
 
   if (!value)
     return 0;
@@ -493,7 +493,7 @@ static int iTabsSetShowCloseAttrib(Ihandle* ih, const char* value)
 /* TABS - Methods                                                            */
 /* ------------------------------------------------------------------------- */
 
-static void iTabsComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *children_expand)
+static void iTabsComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* children_expand)
 {
   Ihandle* child;
   int children_naturalwidth, children_naturalheight;
@@ -535,7 +535,7 @@ static void iTabsComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *chil
     {
       int m, s;
       int pos;
-      char *tabtitle, *tabimage;
+      char* tabtitle, *tabimage;
       Ihandle* tab_child;
       int num_tabs = 0;
 
@@ -578,7 +578,7 @@ static void iTabsComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *chil
     {
       int m, s;
       int pos;
-      char *tabtitle, *tabimage;
+      char* tabtitle, *tabimage;
       Ihandle* tab_child;
       int num_tabs = 0;
 
@@ -612,7 +612,7 @@ static void iTabsComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *chil
     {
       int m, s;
       int pos;
-      char *tabtitle, *tabimage;
+      char* tabtitle, *tabimage;
       Ihandle* tab_child;
 
       iTabsGetDecorMargin(&m, &s);
@@ -693,7 +693,7 @@ static void* iTabsGetInnerNativeContainerHandleMethod(Ihandle* ih, Ihandle* chil
     return NULL;
 }
 
-static int iTabsCreateMethod(Ihandle* ih, void **params)
+static int iTabsCreateMethod(Ihandle* ih, void** params)
 {
   ih->data = iupALLOCCTRLDATA();
 
@@ -783,7 +783,7 @@ IUP_API Ihandle* IupTabsV(Ihandle* child, va_list arglist)
 
 IUP_API Ihandle* IupTabs(Ihandle* child, ...)
 {
-  Ihandle *ih;
+  Ihandle* ih;
 
   va_list arglist;
   va_start(arglist, child);

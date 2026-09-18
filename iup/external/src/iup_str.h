@@ -67,17 +67,17 @@ IUP_SDK_API int iupStrLineCount(const char* str, int len);
  * It works for UNIX, DOS and MAC line ends. The size does not includes the line end.
  * If str is NULL it will return NULL.
  * \ingroup str */
-IUP_SDK_API const char* iupStrNextLine(const char* str, int *len);
+IUP_SDK_API const char* iupStrNextLine(const char* str, int* len);
 
 /** Returns a pointer to the next value and the size of the current value.
  * The size does not include the separator.
  * If str is NULL it will return NULL.
  * \ingroup str */
-IUP_SDK_API const char* iupStrNextValue(const char* str, int str_len, int *len, char sep);
+IUP_SDK_API const char* iupStrNextValue(const char* str, int str_len, int* len, char sep);
 
 /** Returns the number of repetitions of the character occurs in the string.
  * \ingroup str */
-IUP_SDK_API int iupStrCountChar(const char *str, char c);
+IUP_SDK_API int iupStrCountChar(const char* str, char c);
 
 /** Returns a copy of the given string.
  * If str is NULL it will return NULL.
@@ -89,7 +89,7 @@ IUP_SDK_API char* iupStrDup(const char* str);
  * The string is then incremented to after the position of the character.
  * Must free the returned string.
  * \ingroup str */
-IUP_SDK_API char* iupStrDupUntil(const char **str, char c);
+IUP_SDK_API char* iupStrDupUntil(const char** str, char c);
 
 /** Copy the string to the buffer, but limited to the max_size of the buffer.
  * buffer is always properly ended.
@@ -105,7 +105,7 @@ IUP_SDK_API char* iupStrGetMemory(int size);
 /** Returns a very large buffer to be used in unknown size string construction.
  * Use snprintf or vsnprintf with the given size.
  * \ingroup str */
-IUP_SDK_API char* iupStrGetLargeMem(int *size);
+IUP_SDK_API char* iupStrGetLargeMem(int* size);
 
 /** Converts a string into lower case. Can be used in-place. \n
  * It will work only for character codes <128.
@@ -212,7 +212,7 @@ IUP_SDK_API char* iupStrReturnRGBA(unsigned char r, unsigned char g, unsigned ch
 
 /** Returns two string values in a string using \ref iupStrGetMemory.
  * \ingroup str */
-IUP_SDK_API char* iupStrReturnStrStr(const char *str1, const char *str2, char sep);
+IUP_SDK_API char* iupStrReturnStrStr(const char* str1, const char* str2, char sep);
 
 /** Returns two int values in a string using \ref iupStrGetMemory.
  * \ingroup str */
@@ -224,50 +224,50 @@ IUP_SDK_API int iupStrGetFormatPrecision(const char* format);
 
 /** Prints a double in a string using the given decimal symbol.
  * \ingroup str */
-IUP_SDK_API void iupStrPrintfDoubleLocale(char *str, const char *format, double d, const char* decimal_symbol);
+IUP_SDK_API void iupStrPrintfDoubleLocale(char* str, const char* format, double d, const char* decimal_symbol);
 
 /** Extract RGB components from the string. Returns 0 or 1.
  * \ingroup str */
-IUP_SDK_API int iupStrToRGB(const char *str, unsigned char *r, unsigned char *g, unsigned char *b);
+IUP_SDK_API int iupStrToRGB(const char* str, unsigned char* r, unsigned char* g, unsigned char* b);
 
 /** Extract RGBA components from the string. Returns 0 or 1.
  * \ingroup str */
-IUP_SDK_API int iupStrToRGBA(const char *str, unsigned char *r, unsigned char *g, unsigned char *b, unsigned char *a);
+IUP_SDK_API int iupStrToRGBA(const char* str, unsigned char* r, unsigned char* g, unsigned char* b, unsigned char* a);
 
 /** Converts the string to an int. The string must contain only the integer value.
  * Returns a non-zero value if successful.
  * \ingroup str */
-IUP_SDK_API int iupStrToInt(const char *str, int *i);
+IUP_SDK_API int iupStrToInt(const char* str, int* i);
 
 /** Converts the string to an unsigned int. The string must contain only the integer value.
 * Returns a non-zero value if successful.
 * \ingroup str */
-IUP_SDK_API int iupStrToUInt(const char *str, unsigned int *i);
+IUP_SDK_API int iupStrToUInt(const char* str, unsigned int* i);
 
 /** Converts the string to two int. The string must contain two integer values in sequence,
  * separated by the given character (usually 'x' or ':').
  * Returns the number of converted values.
  * Values not extracted are not changed.
  * \ingroup str */
-IUP_SDK_API int iupStrToIntInt(const char *str, int *i1, int *i2, char sep);
+IUP_SDK_API int iupStrToIntInt(const char* str, int* i1, int* i2, char sep);
 
 /** Converts the string to a float. The string must contain only the real value.
  * Returns a non-zero value if successful.
  * \ingroup str */
-IUP_SDK_API int iupStrToFloat(const char *str, float *f);
-IUP_SDK_API int iupStrToFloatDef(const char *str, float *f, float def);
+IUP_SDK_API int iupStrToFloat(const char* str, float* f);
+IUP_SDK_API int iupStrToFloatDef(const char* str, float* f, float def);
 
 /** Converts the string to a double. The string must contain only the real value.
  * Returns a non-zero value if successful.
  * \ingroup str */
-IUP_SDK_API int iupStrToDouble(const char *str, double *d);
-IUP_SDK_API int iupStrToDoubleDef(const char *str, double *d, double def);
+IUP_SDK_API int iupStrToDouble(const char* str, double* d);
+IUP_SDK_API int iupStrToDoubleDef(const char* str, double* d, double def);
 
 /** Converts the string to a double using the given decimal symbol.
  * The string must contain only the real value.
  * Returns a non-zero value if successful. Returns 2 if a locale was set.
  * \ingroup str */
-IUP_SDK_API int iupStrToDoubleLocale(const char *str, double *d, const char* decimal_symbol);
+IUP_SDK_API int iupStrToDoubleLocale(const char* str, double* d, const char* decimal_symbol);
 
 /** Converts the string to two float. The string must contain two real values in sequence,
  * separated by the given character (usually 'x' or ':').
@@ -275,7 +275,7 @@ IUP_SDK_API int iupStrToDoubleLocale(const char *str, double *d, const char* dec
  * Values not extracted are not changed.
  * ATENTION: AVOID DEFINING THIS TYPE OF ATTRIBUTE VALUE.
  * \ingroup str */
-IUP_SDK_API int iupStrToFloatFloat(const char *str, float *f1, float *f2, char sep);
+IUP_SDK_API int iupStrToFloatFloat(const char* str, float* f1, float* f2, char sep);
 
 /** Converts the string to two double. The string must contain two real values in sequence,
  * separated by the given character (usually 'x' or ':').
@@ -283,33 +283,33 @@ IUP_SDK_API int iupStrToFloatFloat(const char *str, float *f1, float *f2, char s
  * Values not extracted are not changed.
  * ATENTION: AVOID DEFINING THIS TYPE OF ATTRIBUTE VALUE.
  * \ingroup str */
-IUP_SDK_API int iupStrToDoubleDouble(const char *str, double *f1, double *f2, char sep);
+IUP_SDK_API int iupStrToDoubleDouble(const char* str, double* f1, double* f2, char sep);
 
 /** Extract two strings from the string.
  * separated by the given character (usually 'x' or ':').
  * Returns the number of converted values.
  * Values not extracted are set to empty strings.
  * \ingroup str */
-IUP_SDK_API int iupStrToStrStr(const char *str, char *str1, int str1_size, char *str2, int str2_size, char sep);
+IUP_SDK_API int iupStrToStrStr(const char* str, char* str1, int str1_size, char* str2, int str2_size, char sep);
 
 /** Returns the file extension of a file name.
  * Supports UNIX and Windows directory separators.
  * Must free the returned string.
  * \ingroup str */
-IUP_SDK_API char* iupStrFileGetExt(const char *filename);
+IUP_SDK_API char* iupStrFileGetExt(const char* filename);
 
 /** Returns the file title of a file name.
  * Supports UNIX and Windows directory separators.
  * Must free the returned string.
  * \ingroup str */
-IUP_SDK_API char* iupStrFileGetTitle(const char *filename);
+IUP_SDK_API char* iupStrFileGetTitle(const char* filename);
 
 /** Returns the file path of a file name.
  * Supports UNIX and Windows directory separators.
  * The returned value includes the last separator.
  * Must free the returned string.
  * \ingroup str */
-IUP_SDK_API char* iupStrFileGetPath(const char *filename);
+IUP_SDK_API char* iupStrFileGetPath(const char* filename);
 
 /** Concat path and title adding '/' between if path does not have it.
  * Must free the returned string.
@@ -374,7 +374,7 @@ IUP_SDK_API char* iupStrInsert(const char* value, const char* insert_value, int 
 - -1: remove & and return in c
 - 0: remove &
  * \ingroup str */
-IUP_SDK_API char* iupStrProcessMnemonic(const char* str, char *c, int action);
+IUP_SDK_API char* iupStrProcessMnemonic(const char* str, char* c, int action);
 
 /** Returns the Mnemonic if found. Zero otherwise.
  * \ingroup str */
@@ -392,12 +392,12 @@ IUP_SDK_API int iupStrCompare(const char* str1, const char* str2, int casesensit
  *  If partial=1 the compare up to a number of characters defined by the strlen of the second string. \n
  *  Case-insensitive will work only for Latin-1 characters, even when using utf8=1.
  * \ingroup str */
-IUP_SDK_API int iupStrCompareEqual(const char *str1, const char *str2, int casesensitive, int utf8, int partial);
+IUP_SDK_API int iupStrCompareEqual(const char* str1, const char* str2, int casesensitive, int utf8, int partial);
 
 /** Returns a non-zero value if the second string is found inside the first string.  \n
  *  Uses \ref iupStrCompareEqual.
  * \ingroup str */
-IUP_SDK_API int iupStrCompareFind(const char *str1, const char *str2, int casesensitive, int utf8);
+IUP_SDK_API int iupStrCompareFind(const char* str1, const char* str2, int casesensitive, int utf8);
 
 /** Case conversion available for \ref iupStrChangeCase.
 * \ingroup str */

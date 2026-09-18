@@ -247,7 +247,7 @@ static void iupAndroidRedirectStdio(void)
   }
 }
 
-IUP_SDK_API int iupdrvOpen(int *argc, char ***argv)
+IUP_SDK_API int iupdrvOpen(int* argc, char*** argv)
 {
   (void)argc;
   (void)argv;

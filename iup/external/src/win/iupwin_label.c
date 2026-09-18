@@ -35,7 +35,7 @@
 #define DT_HIDEPREFIX   0x00100000
 #endif
 
-IUP_SDK_API void iupdrvLabelAddExtraPadding(Ihandle* ih, int *x, int *y)
+IUP_SDK_API void iupdrvLabelAddExtraPadding(Ihandle* ih, int* x, int* y)
 {
   (void)ih;
   (void)x;
@@ -48,7 +48,7 @@ static void winLabelDrawImage(Ihandle* ih, HDC hDC, int rect_width, int rect_hei
       ypad = ih->data->vert_padding;
   int x, y, width, height, bpp;
   HBITMAP hBitmap;
-  char *name;
+  char* name;
   int make_inactive = 0;
 
   if (iupdrvIsActive(ih))
@@ -136,7 +136,7 @@ static void winLabelDrawText(Ihandle* ih, HDC hDC, int rect_width, int rect_heig
   iupwinDrawText(hDC, title, x, y, width, height, hFont, fgcolor, style);
 }
 
-static void winLabelDrawItem(Ihandle* ih, DRAWITEMSTRUCT *drawitem)
+static void winLabelDrawItem(Ihandle* ih, DRAWITEMSTRUCT* drawitem)
 {
   HDC hDC;
   iupwinBitmapDC bmpDC;
@@ -215,7 +215,7 @@ static int winLabelSetAlignmentAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-static char* winLabelGetAlignmentAttrib(Ihandle *ih)
+static char* winLabelGetAlignmentAttrib(Ihandle* ih)
 {
   if (ih->data->type != IUP_LABEL_SEP_HORIZ && ih->data->type != IUP_LABEL_SEP_VERT)
   {
@@ -306,7 +306,7 @@ static int winLabelPostRedrawSetAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-static int winLabelMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT *result)
+static int winLabelMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT* result)
 {
   switch (msg)
   {

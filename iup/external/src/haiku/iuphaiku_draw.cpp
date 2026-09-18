@@ -129,7 +129,7 @@ extern "C" IUP_SDK_API void iupdrvDrawFlush(IdrawCanvas* dc)
   canvas->DrawBitmap(dc->bm, BPoint(0, 0));
 }
 
-extern "C" IUP_SDK_API void iupdrvDrawGetSize(IdrawCanvas* dc, int *w, int *h)
+extern "C" IUP_SDK_API void iupdrvDrawGetSize(IdrawCanvas* dc, int* w, int* h)
 {
   if (w) *w = dc ? dc->w : 0;
   if (h) *h = dc ? dc->h : 0;
@@ -466,7 +466,7 @@ extern "C" IUP_SDK_API void iupdrvDrawResetClip(IdrawCanvas* dc)
   dc->bm->Unlock();
 }
 
-extern "C" IUP_SDK_API void iupdrvDrawGetClipRect(IdrawCanvas* dc, int *x1, int *y1, int *x2, int *y2)
+extern "C" IUP_SDK_API void iupdrvDrawGetClipRect(IdrawCanvas* dc, int* x1, int* y1, int* x2, int* y2)
 {
   if (x1) *x1 = 0;
   if (y1) *y1 = 0;

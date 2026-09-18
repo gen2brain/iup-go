@@ -267,7 +267,7 @@ static void androidCameraImageAvailable(void* context, AImageReader* reader)
   IandroidCamera* camera = (IandroidCamera*)context;
   AImage* image = NULL;
   int32_t width = 0, height = 0, ystride = 0, ustride = 0, vstride = 0, upixel = 1, vpixel = 1;
-  uint8_t *yplane = NULL, *uplane = NULL, *vplane = NULL;
+  uint8_t* yplane = NULL, *uplane = NULL, *vplane = NULL;
   int ylen = 0, ulen = 0, vlen = 0, x, y;
   unsigned char* rgb;
 

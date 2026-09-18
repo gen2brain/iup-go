@@ -138,7 +138,7 @@ static int wasmValMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-IUP_SDK_API void iupdrvValGetMinSize(Ihandle* ih, int *w, int *h)
+IUP_SDK_API void iupdrvValGetMinSize(Ihandle* ih, int* w, int* h)
 {
   if (ih->data->orientation == IVAL_VERTICAL)
   {

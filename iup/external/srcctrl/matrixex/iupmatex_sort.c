@@ -107,7 +107,7 @@ static int iMatrixExSortDialogClose_CB(Ihandle* ih_button)
   return IUP_CLOSE;
 }
 
-static int iMatrixExSortToggleValue_CB(Ihandle *ih_matrix, int lin, int col, int status)
+static int iMatrixExSortToggleValue_CB(Ihandle* ih_matrix, int lin, int col, int status)
 {
   if (lin!=2 || col!=1)
     return IUP_DEFAULT;
@@ -133,7 +133,7 @@ static int iMatrixExSortToggleValue_CB(Ihandle *ih_matrix, int lin, int col, int
   return IUP_DEFAULT;
 }
 
-static int iMatrixExSortDropCheck_CB(Ihandle *ih_matrix, int lin, int col)
+static int iMatrixExSortDropCheck_CB(Ihandle* ih_matrix, int lin, int col)
 {
   (void)ih_matrix;
 
@@ -143,7 +143,7 @@ static int iMatrixExSortDropCheck_CB(Ihandle *ih_matrix, int lin, int col)
   return IUP_IGNORE;
 }
 
-static int iMatrixExSortEdition_CB(Ihandle *ih_matrix, int lin, int col, int mode, int update)
+static int iMatrixExSortEdition_CB(Ihandle* ih_matrix, int lin, int col, int mode, int update)
 {
   if (mode==1)
   {
@@ -202,7 +202,7 @@ static int iMatrixExSortEdition_CB(Ihandle *ih_matrix, int lin, int col, int mod
 
 static Ihandle* iMatrixExSortCreateDialog(ImatExData* matex_data)
 {
-  Ihandle *ih_matrix, *matrix_box, *options_box, *reset, *sort, *invert,
+  Ihandle* ih_matrix, *matrix_box, *options_box, *reset, *sort, *invert,
           *dlg, *close, *dlg_box, *button_box, *parent;
 
   ih_matrix = IupSetAttributes(IupMatrix(),

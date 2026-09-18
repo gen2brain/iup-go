@@ -165,7 +165,7 @@ static int wasmLabelMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-IUP_SDK_API void iupdrvLabelAddExtraPadding(Ihandle* ih, int *x, int *y)
+IUP_SDK_API void iupdrvLabelAddExtraPadding(Ihandle* ih, int* x, int* y)
 {
   (void)ih;
   (void)x;

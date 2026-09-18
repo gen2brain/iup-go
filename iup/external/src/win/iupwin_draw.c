@@ -40,11 +40,11 @@
                              Themes
 *******************************************************************************/
 
-typedef HTHEME  (STDAPICALLTYPE *_winThemeOpenData)(HWND hwnd, LPCWSTR pszClassList);
-typedef HRESULT (STDAPICALLTYPE *_winThemeCloseData)(HTHEME hTheme);
-typedef HRESULT (STDAPICALLTYPE *_winThemeDrawBackground)(HTHEME hTheme, HDC hDC, int iPartId, int iStateId, const RECT *pRect, const RECT *pClipRect);
-typedef HRESULT (STDAPICALLTYPE *_winThemeGetColor)(HTHEME hTheme, int iPartId, int iStateId, int iPropId, COLORREF *pColor);
-typedef HRESULT (STDAPICALLTYPE *_winThemeGetPartSize)(HTHEME hTheme, HDC hDC, int iPartId, int iStateId, const RECT *pRect, enum THEMESIZE eSize, SIZE *psz);
+typedef HTHEME  (STDAPICALLTYPE* _winThemeOpenData)(HWND hwnd, LPCWSTR pszClassList);
+typedef HRESULT (STDAPICALLTYPE* _winThemeCloseData)(HTHEME hTheme);
+typedef HRESULT (STDAPICALLTYPE* _winThemeDrawBackground)(HTHEME hTheme, HDC hDC, int iPartId, int iStateId, const RECT* pRect, const RECT* pClipRect);
+typedef HRESULT (STDAPICALLTYPE* _winThemeGetColor)(HTHEME hTheme, int iPartId, int iStateId, int iPropId, COLORREF* pColor);
+typedef HRESULT (STDAPICALLTYPE* _winThemeGetPartSize)(HTHEME hTheme, HDC hDC, int iPartId, int iStateId, const RECT* pRect, enum THEMESIZE eSize, SIZE* psz);
 
 
 static _winThemeOpenData winThemeOpenData = NULL;
@@ -145,7 +145,7 @@ static int winDrawGetThemeStateId(int itemState)
     return PBS_NORMAL;
 }
 
-static int winDrawThemeButtonBorder(HWND hWnd, HDC hDC, RECT *rect, UINT itemState)
+static int winDrawThemeButtonBorder(HWND hWnd, HDC hDC, RECT* rect, UINT itemState)
 {
   int iStateId;
   HTHEME hTheme;
@@ -165,7 +165,7 @@ static int winDrawThemeButtonBorder(HWND hWnd, HDC hDC, RECT *rect, UINT itemSta
   return 1;
 }
 
-static int winDrawTheme3StateButton(HWND hWnd, HDC hDC, RECT *rect)
+static int winDrawTheme3StateButton(HWND hWnd, HDC hDC, RECT* rect)
 {
   HTHEME hTheme;
 
@@ -182,7 +182,7 @@ static int winDrawTheme3StateButton(HWND hWnd, HDC hDC, RECT *rect)
   return 1;
 }
 
-IUP_DRV_API void iupwinDrawThemeFrameBorder(HWND hWnd, HDC hDC, RECT *rect, UINT itemState)
+IUP_DRV_API void iupwinDrawThemeFrameBorder(HWND hWnd, HDC hDC, RECT* rect, UINT itemState)
 {
   int iStateId = GBS_NORMAL;
   HTHEME hTheme;
@@ -202,7 +202,7 @@ IUP_DRV_API void iupwinDrawThemeFrameBorder(HWND hWnd, HDC hDC, RECT *rect, UINT
   winThemeCloseData(hTheme);
 }
 
-IUP_DRV_API int iupwinDrawGetThemeTabsBgColor(HWND hWnd, COLORREF *color)
+IUP_DRV_API int iupwinDrawGetThemeTabsBgColor(HWND hWnd, COLORREF* color)
 {
   HTHEME hTheme;
   HRESULT ret;
@@ -223,7 +223,7 @@ IUP_DRV_API int iupwinDrawGetThemeTabsBgColor(HWND hWnd, COLORREF *color)
   return (ret == S_OK)? 1: 0;
 }
 
-IUP_DRV_API int iupwinDrawGetThemeButtonBgColor(HWND hWnd, COLORREF *color)
+IUP_DRV_API int iupwinDrawGetThemeButtonBgColor(HWND hWnd, COLORREF* color)
 {
   HTHEME hTheme;
   HRESULT ret;
@@ -243,7 +243,7 @@ IUP_DRV_API int iupwinDrawGetThemeButtonBgColor(HWND hWnd, COLORREF *color)
 
 IUP_DRV_API void iupwinDrawRemoveTheme(HWND hwnd)
 {
-  typedef HRESULT (STDAPICALLTYPE *winSetWindowTheme)(HWND hwnd, LPCWSTR pszSubAppName, LPCWSTR pszSubIdList);
+  typedef HRESULT (STDAPICALLTYPE* winSetWindowTheme)(HWND hwnd, LPCWSTR pszSubAppName, LPCWSTR pszSubIdList);
   static winSetWindowTheme mySetWindowTheme = NULL;
   if (!mySetWindowTheme)
   {
@@ -321,7 +321,7 @@ static int winDrawGetStateId(int itemState)
     return 0;
 }
 
-IUP_DRV_API void iupwinDrawButtonBorder(HWND hWnd, HDC hDC, RECT *rect, UINT itemState)
+IUP_DRV_API void iupwinDrawButtonBorder(HWND hWnd, HDC hDC, RECT* rect, UINT itemState)
 {
   if (!winDrawThemeButtonBorder(hWnd, hDC, rect, itemState))
   {
@@ -331,7 +331,7 @@ IUP_DRV_API void iupwinDrawButtonBorder(HWND hWnd, HDC hDC, RECT *rect, UINT ite
   }
 }
 
-IUP_DRV_API void iupwinDraw3StateButton(HWND hWnd, HDC hDC, RECT *rect)
+IUP_DRV_API void iupwinDraw3StateButton(HWND hWnd, HDC hDC, RECT* rect)
 {
   if (!winDrawTheme3StateButton(hWnd, hDC, rect))
   {
@@ -358,7 +358,7 @@ IUP_DRV_API void iupwinDrawParentBackground(Ihandle* ih, HDC hDC, RECT* rect)
   FillRect(hDC, rect, (HBRUSH)GetStockObject(DC_BRUSH));
 }
 
-IUP_DRV_API HDC iupwinDrawCreateBitmapDC(iupwinBitmapDC *bmpDC, HDC hDC, int x, int y, int w, int h)
+IUP_DRV_API HDC iupwinDrawCreateBitmapDC(iupwinBitmapDC* bmpDC, HDC hDC, int x, int y, int w, int h)
 {
   bmpDC->x = x;
   bmpDC->y = y;
@@ -372,7 +372,7 @@ IUP_DRV_API HDC iupwinDrawCreateBitmapDC(iupwinBitmapDC *bmpDC, HDC hDC, int x, 
   return bmpDC->hBitmapDC;
 }
 
-IUP_DRV_API void iupwinDrawDestroyBitmapDC(iupwinBitmapDC *bmpDC)
+IUP_DRV_API void iupwinDrawDestroyBitmapDC(iupwinBitmapDC* bmpDC)
 {
   BitBlt(bmpDC->hDC, bmpDC->x, bmpDC->y, bmpDC->w, bmpDC->h, bmpDC->hBitmapDC, 0, 0, SRCCOPY);
   SelectObject(bmpDC->hBitmapDC, bmpDC->hOldBitmap);
@@ -380,9 +380,9 @@ IUP_DRV_API void iupwinDrawDestroyBitmapDC(iupwinBitmapDC *bmpDC)
   DeleteDC(bmpDC->hBitmapDC);  /* to match CreateCompatibleDC */
 }
 
-IUP_DRV_API int iupwinCustomDrawToDrawItem(Ihandle* ih, NMHDR* msg_info, int *result, IFdrawItem drawitem_cb)
+IUP_DRV_API int iupwinCustomDrawToDrawItem(Ihandle* ih, NMHDR* msg_info, int* result, IFdrawItem drawitem_cb)
 {
-  NMCUSTOMDRAW *customdraw = (NMCUSTOMDRAW*)msg_info;
+  NMCUSTOMDRAW* customdraw = (NMCUSTOMDRAW*)msg_info;
 
   if (customdraw->dwDrawStage == CDDS_PREERASE)
   {

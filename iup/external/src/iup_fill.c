@@ -178,7 +178,7 @@ static void iFillUpdateSize(Ihandle* ih)
   }
 }
 
-static void iFillComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *children_expand)
+static void iFillComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* children_expand)
 {
   (void)children_expand;  /* unset if not a container */
 

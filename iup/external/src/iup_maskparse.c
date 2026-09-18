@@ -48,9 +48,9 @@ static char imask_parse_chars[] = "|*+()[]-^/.?^${}~";
 
 typedef struct _ImaskParseVars
 {
-  const char *string;
+  const char* string;
   int state, j, num_states;
-  ImaskParsed *fsm;
+  ImaskParsed* fsm;
   short capture[30];
   short size;
   char nextcap;
@@ -60,7 +60,7 @@ typedef struct _ImaskParseVars
 static int iMaskParseExpression (ImaskParseVars * vars);
 static int iMaskParseTerm (ImaskParseVars * vars);
 static int iMaskParseFactor (ImaskParseVars * vars);
-static void iMaskParseError (ImaskParseVars *vars);
+static void iMaskParseError (ImaskParseVars* vars);
 static void iMaskParseNewState (ImaskParseVars * vars);
 static void iMaskParseSetState (ImaskParseVars * vars, int state, char ch, char command, int next1, int next2);
 
@@ -79,7 +79,7 @@ int iupMaskSetChar (int char_number, char new_char)
      * the finite state machines (fsm) built from the pattern.
      */
 
-int iupMaskParse(const char *text, ImaskParsed ** fsm)
+int iupMaskParse(const char* text, ImaskParsed ** fsm)
 {
   int t;
   ImaskParseVars vars;
@@ -93,7 +93,7 @@ int iupMaskParse(const char *text, ImaskParsed ** fsm)
   vars.nextcap = 0;
   vars.string = text;
 
-  if ((vars.fsm = (ImaskParsed *) malloc (STATE_BLOCK * sizeof (ImaskParsed))) == NULL)
+  if ((vars.fsm = (ImaskParsed*) malloc (STATE_BLOCK * sizeof (ImaskParsed))) == NULL)
     return IMASK_MEM_ERROR;
 
   memset(vars.fsm, 0, STATE_BLOCK*sizeof (ImaskParsed));
@@ -552,7 +552,7 @@ static void iMaskParseNewState (ImaskParseVars * vars)
 
   if (vars->state >= vars->num_states - 1)
   {
-    ImaskParsed *new_fsm = (ImaskParsed*) realloc (vars->fsm, (vars->num_states + STATE_BLOCK) * sizeof (ImaskParsed));
+    ImaskParsed* new_fsm = (ImaskParsed*) realloc (vars->fsm, (vars->num_states + STATE_BLOCK) * sizeof (ImaskParsed));
     if (!new_fsm)
       return;
     memset(new_fsm + vars->num_states, 0, STATE_BLOCK*sizeof(ImaskParsed));

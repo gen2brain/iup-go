@@ -122,7 +122,7 @@ EM_JS(void, iupwasmJsTabsSetShowClose, (int tabsId, int pos, int on), {
 EMSCRIPTEN_KEEPALIVE void iupwasmDispatchTabChange(int tabsId, int newpos, int oldpos)
 {
   Ihandle* ih = iupwasmHandleFromId(tabsId);
-  Ihandle *newc, *oldc;
+  Ihandle* newc, *oldc;
   IFnnn cb;
   IFnii cbpos;
   if (!ih)
@@ -175,7 +175,7 @@ EMSCRIPTEN_KEEPALIVE void iupwasmTabsRightClick(int tabsId, int pos)
 EMSCRIPTEN_KEEPALIVE void iupwasmTabsReorder(int tabsId, int oldPos, int newPos)
 {
   Ihandle* ih = iupwasmHandleFromId(tabsId);
-  Ihandle *child, *ref_child;
+  Ihandle* child, *ref_child;
   IFnii cb;
   if (!ih)
     return;

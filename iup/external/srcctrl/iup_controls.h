@@ -32,8 +32,8 @@ Iclass* iupFlatTabsNewClass(void);
 Iclass* iupFlatScrollBoxNewClass(void);
 Iclass* iupGaugeNewClass(void);
 
-char *iupControlBaseGetParentBgColor (Ihandle* ih);
-char *iupControlBaseGetBgColorAttrib(Ihandle* ih);
+char* iupControlBaseGetParentBgColor (Ihandle* ih);
+char* iupControlBaseGetBgColorAttrib(Ihandle* ih);
 
 /* HW px (font helpers) -> canvas-coord (DRAWSIZE space). Identity on non-density-scaled drivers. */
 int iupControlBaseCanvasPx(int hw_px);

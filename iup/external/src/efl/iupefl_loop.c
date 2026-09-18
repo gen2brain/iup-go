@@ -37,11 +37,11 @@ static int efl_modal_loop_level = 0;
 static int efl_modal_loop_exit_flag[EFL_MODAL_LOOP_MAX_DEPTH] = {0};
 
 /* Dynamic loading of efl_loop_message_pending_flush (requires EFL to be patched) */
-typedef void (*efl_loop_message_pending_flush_fn)(Eo *obj);
+typedef void (*efl_loop_message_pending_flush_fn)(Eo* obj);
 static efl_loop_message_pending_flush_fn efl_pending_flush_func = NULL;
 static int efl_pending_flush_checked = 0;
 
-IUP_DRV_API void iupeflMessagePendingFlush(Eo *loop)
+IUP_DRV_API void iupeflMessagePendingFlush(Eo* loop)
 {
   if (!efl_pending_flush_checked)
   {
@@ -65,7 +65,7 @@ IUP_DRV_API void iupeflMessagePendingFlush(Eo *loop)
  * Idle Function
  ****************************************************************************/
 
-static Eina_Bool eflIdlerCallback(void *data)
+static Eina_Bool eflIdlerCallback(void* data)
 {
   (void)data;
 
@@ -166,7 +166,7 @@ IUP_SDK_API int IupMainLoop(void)
   }
   else
   {
-    Eo *loop = efl_main_loop_get();
+    Eo* loop = efl_main_loop_get();
     while (!efl_exitmainloop)
     {
       iupeflMessagePendingFlush(loop);
@@ -223,7 +223,7 @@ IUP_SDK_API void IupFlush(void)
 IUP_DRV_API void iupeflModalLoopRun(Eo* modal_win)
 {
   int level, i;
-  Eo *loop = efl_main_loop_get();
+  Eo* loop = efl_main_loop_get();
 
   if (efl_modal_loop_level >= EFL_MODAL_LOOP_MAX_DEPTH)
     return;

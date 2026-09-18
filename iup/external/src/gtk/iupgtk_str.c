@@ -31,12 +31,12 @@ IUP_DRV_API int iupgtkStrGetUTF8Mode(void)
   return iupgtk_utf8mode;
 }
 
-static char* gtkStrToUTF8(const char *str, int len, const char* charset)
+static char* gtkStrToUTF8(const char* str, int len, const char* charset)
 {
   return g_convert(str, len, "UTF-8", charset, NULL, NULL, NULL);
 }
 
-static char* gtkStrFromUTF8(const char *str, const char* charset)
+static char* gtkStrFromUTF8(const char* str, const char* charset)
 {
   return g_convert(str, -1, charset, "UTF-8", NULL, NULL, NULL);
 }
@@ -49,9 +49,9 @@ IUP_DRV_API void iupgtkStrRelease(void)
     g_free(gtkLastConvertUTF8);
 }
 
-IUP_DRV_API char* iupgtkStrConvertToSystemLen(const char* str, int *len)  /* From IUP (current locale) to GTK */
+IUP_DRV_API char* iupgtkStrConvertToSystemLen(const char* str, int* len)  /* From IUP (current locale) to GTK */
 {
-  const char *charset = NULL;
+  const char* charset = NULL;
 
   if (!str || *str == 0 || iupgtk_utf8mode)
     return (char*)str;
@@ -79,7 +79,7 @@ IUP_DRV_API char* iupgtkStrConvertToSystemLen(const char* str, int *len)  /* Fro
 
 IUP_DRV_API char* iupgtkStrConvertToSystem(const char* str)  /* From IUP (current locale) to GTK */
 {
-  const char *charset = NULL;
+  const char* charset = NULL;
 
   if (!str || *str == 0 || iupgtk_utf8mode)
     return (char*)str;
@@ -106,7 +106,7 @@ IUP_DRV_API char* iupgtkStrConvertToSystem(const char* str)  /* From IUP (curren
 
 IUP_DRV_API char* iupgtkStrConvertFromSystem(const char* str)  /* From GTK to IUP (current locale) */
 {
-  const gchar *charset = NULL;
+  const gchar* charset = NULL;
 
   if (!str || *str == 0 || iupgtk_utf8mode)
     return (char*)str;
@@ -131,9 +131,9 @@ IUP_DRV_API char* iupgtkStrConvertFromSystem(const char* str)  /* From GTK to IU
   return gtkLastConvertUTF8;
 }
 
-static gboolean gtkGetFilenameCharset(const gchar **filename_charset)
+static gboolean gtkGetFilenameCharset(const gchar** filename_charset)
 {
-  const gchar **charsets = NULL;
+  const gchar** charsets = NULL;
   gboolean is_utf8 = FALSE;
 
 #if GTK_CHECK_VERSION(2, 6, 0)
@@ -148,7 +148,7 @@ static gboolean gtkGetFilenameCharset(const gchar **filename_charset)
 
 IUP_DRV_API char* iupgtkStrConvertToFilename(const char* str)   /* From IUP (current locale) to Filename */
 {
-  const gchar *charset = NULL;
+  const gchar* charset = NULL;
 
   if (!str || *str == 0 || iupgtk_utf8mode)
     return (char*)str;
@@ -175,7 +175,7 @@ IUP_DRV_API char* iupgtkStrConvertToFilename(const char* str)   /* From IUP (cur
 
 IUP_DRV_API char* iupgtkStrConvertFromFilename(const char* str)   /* From Filename to IUP */
 {
-  const char *charset = NULL;
+  const char* charset = NULL;
 
   if (!str || *str == 0 || iupgtk_utf8mode)
     return (char*)str;
@@ -200,7 +200,7 @@ IUP_DRV_API char* iupgtkStrConvertFromFilename(const char* str)   /* From Filena
   return gtkLastConvertUTF8;
 }
 
-static char* iupCheckUtf8Buffer(char* utf8_buffer, int *utf8_buffer_max, int len)
+static char* iupCheckUtf8Buffer(char* utf8_buffer, int* utf8_buffer_max, int len)
 {
   if (!utf8_buffer)
   {
@@ -216,7 +216,7 @@ static char* iupCheckUtf8Buffer(char* utf8_buffer, int *utf8_buffer_max, int len
   return utf8_buffer;
 }
 
-static char* iupStrCopyToUtf8Buffer(const char* str, int len, char* utf8_buffer, int *utf8_buffer_max)
+static char* iupStrCopyToUtf8Buffer(const char* str, int len, char* utf8_buffer, int* utf8_buffer_max)
 {
   utf8_buffer = iupCheckUtf8Buffer(utf8_buffer, utf8_buffer_max, len);
   memcpy(utf8_buffer, str, len);
@@ -225,7 +225,7 @@ static char* iupStrCopyToUtf8Buffer(const char* str, int len, char* utf8_buffer,
 }
 
 /* Used in glfont */
-IUP_SDK_API char* iupStrConvertToUTF8(const char* str, int len, char* utf8_buffer, int *utf8_buffer_max, int utf8mode)
+IUP_SDK_API char* iupStrConvertToUTF8(const char* str, int len, char* utf8_buffer, int* utf8_buffer_max, int utf8mode)
 {
   if (utf8mode || iupStrIsAscii(str)) /* string is already utf8 or is ascii */
     return iupStrCopyToUtf8Buffer(str, len, utf8_buffer, utf8_buffer_max);
@@ -234,7 +234,7 @@ IUP_SDK_API char* iupStrConvertToUTF8(const char* str, int len, char* utf8_buffe
     int mlen;
     char* g_buffer;
 
-    const char *charset = NULL;
+    const char* charset = NULL;
     if (g_get_charset(&charset) == TRUE)  /* current locale is already UTF-8 */
     {
       if (g_utf8_validate(str, len, NULL))

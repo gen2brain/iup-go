@@ -100,7 +100,7 @@ iupPlotDataSet::~iupPlotDataSet()
     delete mExtra;
 }
 
-bool iupPlotDataSet::FindSample(iupPlotTrafo *inTrafoX, iupPlotTrafo *inTrafoY, double inScreenX, double inScreenY, double inScreenTolerance,
+bool iupPlotDataSet::FindSample(iupPlotTrafo* inTrafoX, iupPlotTrafo* inTrafoY, double inScreenX, double inScreenY, double inScreenTolerance,
                                 int &outSampleIndex, double &outX, double &outY) const
 {
   switch (mMode)
@@ -118,7 +118,7 @@ bool iupPlotDataSet::FindSample(iupPlotTrafo *inTrafoX, iupPlotTrafo *inTrafoY, 
   }
 }
 
-bool iupPlotDataSet::FindPointSample(iupPlotTrafo *inTrafoX, iupPlotTrafo *inTrafoY, double inScreenX, double inScreenY, double inScreenTolerance,
+bool iupPlotDataSet::FindPointSample(iupPlotTrafo* inTrafoX, iupPlotTrafo* inTrafoY, double inScreenX, double inScreenY, double inScreenTolerance,
                                      int &outSampleIndex, double &outX, double &outY) const
 {
   double theX, theY, theScreenX, theScreenY;
@@ -158,7 +158,7 @@ bool iupPlotDataSet::FindPointSample(iupPlotTrafo *inTrafoX, iupPlotTrafo *inTra
   return false;
 }
 
-bool iupPlotDataSet::FindMultipleBarSample(iupPlotTrafo *inTrafoX, iupPlotTrafo *inTrafoY, double inScreenX, double inScreenY,
+bool iupPlotDataSet::FindMultipleBarSample(iupPlotTrafo* inTrafoX, iupPlotTrafo* inTrafoY, double inScreenX, double inScreenY,
                                            int &outSampleIndex, double &outX, double &outY) const
 {
   double theX, theY, theScreenX, theScreenY;
@@ -198,7 +198,7 @@ bool iupPlotDataSet::FindMultipleBarSample(iupPlotTrafo *inTrafoX, iupPlotTrafo 
   return false;
 }
 
-bool iupPlotDataSet::FindBarSample(iupPlotTrafo *inTrafoX, iupPlotTrafo *inTrafoY, double inScreenX, double inScreenY,
+bool iupPlotDataSet::FindBarSample(iupPlotTrafo* inTrafoX, iupPlotTrafo* inTrafoY, double inScreenX, double inScreenY,
                                    int &outSampleIndex, double &outX, double &outY) const
 {
   double theX, theY, theScreenX, theScreenY;
@@ -237,7 +237,7 @@ bool iupPlotDataSet::FindBarSample(iupPlotTrafo *inTrafoX, iupPlotTrafo *inTrafo
   return false;
 }
 
-bool iupPlotDataSet::FindHorizontalBarSample(iupPlotTrafo *inTrafoX, iupPlotTrafo *inTrafoY, double inScreenX, double inScreenY,
+bool iupPlotDataSet::FindHorizontalBarSample(iupPlotTrafo* inTrafoX, iupPlotTrafo* inTrafoY, double inScreenX, double inScreenY,
                                              int &outSampleIndex, double &outX, double &outY) const
 {
   double theX, theY, theScreenX, theScreenY;
@@ -276,7 +276,7 @@ bool iupPlotDataSet::FindHorizontalBarSample(iupPlotTrafo *inTrafoX, iupPlotTraf
   return false;
 }
 
-bool iupPlotDataSet::FindPieSample(iupPlotTrafo *inTrafoX, iupPlotTrafo *inTrafoY, double inScreenX, double inScreenY, int &outSampleIndex, double &outX, double &outY) const
+bool iupPlotDataSet::FindPieSample(iupPlotTrafo* inTrafoX, iupPlotTrafo* inTrafoY, double inScreenX, double inScreenY, int &outSampleIndex, double &outX, double &outY) const
 {
   double theX, theY;
 
@@ -368,7 +368,7 @@ static bool iPlotCheckInsideBoxTolerance(double x1, double y1, double x2, double
   return true;
 }
 
-bool iupPlotDataSet::FindSegment(iupPlotTrafo *mTrafoX, iupPlotTrafo *mTrafoY, double inScreenX, double inScreenY, double inScreenTolerance,
+bool iupPlotDataSet::FindSegment(iupPlotTrafo* mTrafoX, iupPlotTrafo* mTrafoY, double inScreenX, double inScreenY, double inScreenTolerance,
                                  int &outSampleIndex1, int &outSampleIndex2, double &outX1, double &outY1, double &outX2, double &outY2) const
 {
   if (!mTrafoX || !mTrafoY)
@@ -602,8 +602,8 @@ int iupPlotDataSet::GetCount()
 
 void iupPlotDataSet::AddSample(double inX, double inY)
 {
-  iupPlotDataReal *theXData = (iupPlotDataReal*)mDataX;
-  iupPlotDataReal *theYData = (iupPlotDataReal*)mDataY;
+  iupPlotDataReal* theXData = (iupPlotDataReal*)mDataX;
+  iupPlotDataReal* theYData = (iupPlotDataReal*)mDataY;
 
   if (theXData->IsString())
     return;
@@ -619,8 +619,8 @@ void iupPlotDataSet::AddSample(double inX, double inY)
 
 void iupPlotDataSet::InsertSample(int inSampleIndex, double inX, double inY)
 {
-  iupPlotDataReal *theXData = (iupPlotDataReal*)mDataX;
-  iupPlotDataReal *theYData = (iupPlotDataReal*)mDataY;
+  iupPlotDataReal* theXData = (iupPlotDataReal*)mDataX;
+  iupPlotDataReal* theYData = (iupPlotDataReal*)mDataY;
 
   if (theXData->IsString())
     return;
@@ -654,8 +654,8 @@ void iupPlotDataSet::InitExtra()
 
 void iupPlotDataSet::AddSampleSegment(double inX, double inY, bool inSegment)
 {
-  iupPlotDataReal *theXData = (iupPlotDataReal*)mDataX;
-  iupPlotDataReal *theYData = (iupPlotDataReal*)mDataY;
+  iupPlotDataReal* theXData = (iupPlotDataReal*)mDataX;
+  iupPlotDataReal* theYData = (iupPlotDataReal*)mDataY;
 
   if (theXData->IsString())
     return;
@@ -673,8 +673,8 @@ void iupPlotDataSet::AddSampleSegment(double inX, double inY, bool inSegment)
 
 void iupPlotDataSet::InsertSampleSegment(int inSampleIndex, double inX, double inY, bool inSegment)
 {
-  iupPlotDataReal *theXData = (iupPlotDataReal*)mDataX;
-  iupPlotDataReal *theYData = (iupPlotDataReal*)mDataY;
+  iupPlotDataReal* theXData = (iupPlotDataReal*)mDataX;
+  iupPlotDataReal* theYData = (iupPlotDataReal*)mDataY;
 
   if (theXData->IsString())
     return;
@@ -692,8 +692,8 @@ void iupPlotDataSet::InsertSampleSegment(int inSampleIndex, double inX, double i
 
 void iupPlotDataSet::AddSample(const char* inX, double inY)
 {
-  iupPlotDataString *theXData = (iupPlotDataString*)mDataX;
-  iupPlotDataReal *theYData = (iupPlotDataReal*)mDataY;
+  iupPlotDataString* theXData = (iupPlotDataString*)mDataX;
+  iupPlotDataReal* theYData = (iupPlotDataReal*)mDataY;
 
   if (!theXData->IsString())
     return;
@@ -709,8 +709,8 @@ void iupPlotDataSet::AddSample(const char* inX, double inY)
 
 void iupPlotDataSet::InsertSample(int inSampleIndex, const char* inX, double inY)
 {
-  iupPlotDataString *theXData = (iupPlotDataString*)mDataX;
-  iupPlotDataReal *theYData = (iupPlotDataReal*)mDataY;
+  iupPlotDataString* theXData = (iupPlotDataString*)mDataX;
+  iupPlotDataReal* theYData = (iupPlotDataReal*)mDataY;
 
   if (!theXData->IsString())
     return;
@@ -735,10 +735,10 @@ void iupPlotDataSet::RemoveSample(int inSampleIndex)
     mExtra->RemoveSample(inSampleIndex);
 }
 
-void iupPlotDataSet::GetSample(int inSampleIndex, double *inX, double *inY)
+void iupPlotDataSet::GetSample(int inSampleIndex, double* inX, double* inY)
 {
-  iupPlotDataReal *theXData = (iupPlotDataReal*)mDataX;
-  iupPlotDataReal *theYData = (iupPlotDataReal*)mDataY;
+  iupPlotDataReal* theXData = (iupPlotDataReal*)mDataX;
+  iupPlotDataReal* theYData = (iupPlotDataReal*)mDataY;
 
   if (theXData->IsString())
     return;
@@ -751,10 +751,10 @@ void iupPlotDataSet::GetSample(int inSampleIndex, double *inX, double *inY)
   if (inY) *inY = theYData->GetSample(inSampleIndex);
 }
 
-void iupPlotDataSet::GetSample(int inSampleIndex, const char* *inX, double *inY)
+void iupPlotDataSet::GetSample(int inSampleIndex, const char* *inX, double* inY)
 {
-  iupPlotDataString *theXData = (iupPlotDataString*)mDataX;
-  iupPlotDataReal *theYData = (iupPlotDataReal*)mDataY;
+  iupPlotDataString* theXData = (iupPlotDataString*)mDataX;
+  iupPlotDataReal* theYData = (iupPlotDataReal*)mDataY;
 
   if (!theXData->IsString())
     return;
@@ -787,8 +787,8 @@ double iupPlotDataSet::GetSampleExtra(int inSampleIndex)
 
 void iupPlotDataSet::SetSample(int inSampleIndex, double inX, double inY)
 {
-  iupPlotDataReal *theXData = (iupPlotDataReal*)mDataX;
-  iupPlotDataReal *theYData = (iupPlotDataReal*)mDataY;
+  iupPlotDataReal* theXData = (iupPlotDataReal*)mDataX;
+  iupPlotDataReal* theYData = (iupPlotDataReal*)mDataY;
 
   if (theXData->IsString())
     return;
@@ -803,8 +803,8 @@ void iupPlotDataSet::SetSample(int inSampleIndex, double inX, double inY)
 
 void iupPlotDataSet::SetSample(int inSampleIndex, const char* inX, double inY)
 {
-  iupPlotDataString *theXData = (iupPlotDataString*)mDataX;
-  iupPlotDataReal *theYData = (iupPlotDataReal*)mDataY;
+  iupPlotDataString* theXData = (iupPlotDataString*)mDataX;
+  iupPlotDataReal* theYData = (iupPlotDataReal*)mDataY;
 
   if (!theXData->IsString())
     return;
@@ -871,7 +871,7 @@ static void iPlotDrawHighlightedArc(iupPlotDrawContext* ctx, int x1, int y1, int
 }
 
 static void iPlotDrawHighlightedCurve(iupPlotDrawContext* ctx, int inCount, const iupPlotData* inDataX, const iupPlotData* inDataY, const iupPlotDataBool* inSegment,
-                                      const iupPlotTrafo *inTrafoX, const iupPlotTrafo *inTrafoY, long color, int lineWidth, bool inConnectPreviousX, bool inSelected = false)
+                                      const iupPlotTrafo* inTrafoX, const iupPlotTrafo* inTrafoY, long color, int lineWidth, bool inConnectPreviousX, bool inSelected = false)
 {
   long hlColor = iupDrawColor(iupDrawRed(color), iupDrawGreen(color), iupDrawBlue(color), inSelected ? SELECT_ALPHA : HIGHLIGHT_ALPHA);
   int hlWidth = lineWidth + (inSelected ? SELECT_OFFSET : HIGHLIGHT_OFFSET);
@@ -907,7 +907,7 @@ static void iPlotDrawHighlightedCurve(iupPlotDrawContext* ctx, int inCount, cons
   buf.DrawStroke(ctx, hlColor, IUP_PLOT_LINE_CONTINUOUS, hlWidth);
 }
 
-void iupPlotDataSet::DrawDataLine(const iupPlotTrafo *inTrafoX, const iupPlotTrafo *inTrafoY, iupPlotDrawContext* ctx, const iupPlotSampleNotify* inNotify, bool inShowMark, bool inErrorBar) const
+void iupPlotDataSet::DrawDataLine(const iupPlotTrafo* inTrafoX, const iupPlotTrafo* inTrafoY, iupPlotDrawContext* ctx, const iupPlotSampleNotify* inNotify, bool inShowMark, bool inErrorBar) const
 {
   int theCount = mDataX->GetCount();
   int drawStyle = iupPlotLineStyleToDrawStyle(mLineStyle);
@@ -962,7 +962,7 @@ void iupPlotDataSet::DrawDataLine(const iupPlotTrafo *inTrafoX, const iupPlotTra
     iPlotDrawHighlightedCurve(ctx, theCount, mDataX, mDataY, mSegment, inTrafoX, inTrafoY, mColor, mLineWidth, false, true);
 }
 
-void iupPlotDataSet::DrawErrorBar(const iupPlotTrafo *inTrafoY, iupPlotDrawContext* ctx, int index, double theY, double theScreenX) const
+void iupPlotDataSet::DrawErrorBar(const iupPlotTrafo* inTrafoY, iupPlotDrawContext* ctx, int index, double theY, double theScreenX) const
 {
   double theError = mExtra->GetSample(index);
   double theScreenErrorY1 = inTrafoY->Transform(theY - theError);
@@ -980,7 +980,7 @@ void iupPlotDataSet::DrawErrorBar(const iupPlotTrafo *inTrafoY, iupPlotDrawConte
   iupPlotDrawLine(ctx->ih, absXL, absY2, absXR, absY2, mColor, IUP_DRAW_STROKE, mLineWidth);
 }
 
-void iupPlotDataSet::SetSampleExtraMarkSize(const iupPlotTrafo *inTrafoY, int inSampleIndex, int *outMarkSize) const
+void iupPlotDataSet::SetSampleExtraMarkSize(const iupPlotTrafo* inTrafoY, int inSampleIndex, int* outMarkSize) const
 {
   double theMarkSize = mExtra->GetSample(inSampleIndex);
   int theScreenSize = 1;
@@ -991,7 +991,7 @@ void iupPlotDataSet::SetSampleExtraMarkSize(const iupPlotTrafo *inTrafoY, int in
   *outMarkSize = theScreenSize;
 }
 
-void iupPlotDataSet::DrawDataMark(const iupPlotTrafo *inTrafoX, const iupPlotTrafo *inTrafoY, iupPlotDrawContext* ctx, const iupPlotSampleNotify* inNotify) const
+void iupPlotDataSet::DrawDataMark(const iupPlotTrafo* inTrafoX, const iupPlotTrafo* inTrafoY, iupPlotDrawContext* ctx, const iupPlotSampleNotify* inNotify) const
 {
   int theCount = mDataX->GetCount();
   for (int i = 0; i < theCount; i++)
@@ -1017,7 +1017,7 @@ void iupPlotDataSet::DrawDataMark(const iupPlotTrafo *inTrafoX, const iupPlotTra
   }
 }
 
-void iupPlotDataSet::DrawDataStem(const iupPlotTrafo *inTrafoX, const iupPlotTrafo *inTrafoY, iupPlotDrawContext* ctx, const iupPlotSampleNotify* inNotify, bool inShowMark) const
+void iupPlotDataSet::DrawDataStem(const iupPlotTrafo* inTrafoX, const iupPlotTrafo* inTrafoY, iupPlotDrawContext* ctx, const iupPlotSampleNotify* inNotify, bool inShowMark) const
 {
   double theScreenY0 = inTrafoY->Transform(0);
   int absY0 = iupPlotDrawCalcY(ctx, theScreenY0);
@@ -1051,7 +1051,7 @@ void iupPlotDataSet::DrawDataStem(const iupPlotTrafo *inTrafoX, const iupPlotTra
   }
 }
 
-void iupPlotDataSet::DrawDataArea(const iupPlotTrafo *inTrafoX, const iupPlotTrafo *inTrafoY, iupPlotDrawContext* ctx, const iupPlotSampleNotify* inNotify) const
+void iupPlotDataSet::DrawDataArea(const iupPlotTrafo* inTrafoX, const iupPlotTrafo* inTrafoY, iupPlotDrawContext* ctx, const iupPlotSampleNotify* inNotify) const
 {
   int theCount = mDataX->GetCount();
   double theScreenY0 = inTrafoY->Transform(0);
@@ -1154,7 +1154,7 @@ static void iPlotDrawBarRect(iupPlotDrawContext* ctx, double x, double y, double
   iupPlotDrawRectangle(ctx->ih, x1, y1, x2, y2, color, style, lineWidth);
 }
 
-void iupPlotDataSet::DrawDataBar(const iupPlotTrafo *inTrafoX, const iupPlotTrafo *inTrafoY, iupPlotDrawContext* ctx, const iupPlotSampleNotify* inNotify) const
+void iupPlotDataSet::DrawDataBar(const iupPlotTrafo* inTrafoX, const iupPlotTrafo* inTrafoY, iupPlotDrawContext* ctx, const iupPlotSampleNotify* inNotify) const
 {
   int theCount = mDataX->GetCount();
   double theScreenY0 = inTrafoY->Transform(0);
@@ -1202,7 +1202,7 @@ void iupPlotDataSet::DrawDataBar(const iupPlotTrafo *inTrafoX, const iupPlotTraf
   }
 }
 
-void iupPlotDataSet::DrawDataHorizontalBar(const iupPlotTrafo *inTrafoX, const iupPlotTrafo *inTrafoY, iupPlotDrawContext* ctx, const iupPlotSampleNotify* inNotify) const
+void iupPlotDataSet::DrawDataHorizontalBar(const iupPlotTrafo* inTrafoX, const iupPlotTrafo* inTrafoY, iupPlotDrawContext* ctx, const iupPlotSampleNotify* inNotify) const
 {
   int theCount = mDataX->GetCount();
   double theScreenX0 = inTrafoX->Transform(0);
@@ -1250,7 +1250,7 @@ void iupPlotDataSet::DrawDataHorizontalBar(const iupPlotTrafo *inTrafoX, const i
   }
 }
 
-void iupPlotDataSet::DrawDataMultiBar(const iupPlotTrafo *inTrafoX, const iupPlotTrafo *inTrafoY, iupPlotDrawContext* ctx, const iupPlotSampleNotify* inNotify) const
+void iupPlotDataSet::DrawDataMultiBar(const iupPlotTrafo* inTrafoX, const iupPlotTrafo* inTrafoY, iupPlotDrawContext* ctx, const iupPlotSampleNotify* inNotify) const
 {
   int theCount = mDataX->GetCount();
   double theScreenY0 = inTrafoY->Transform(0);
@@ -1295,7 +1295,7 @@ void iupPlotDataSet::DrawDataMultiBar(const iupPlotTrafo *inTrafoX, const iupPlo
   }
 }
 
-void iupPlotDataSet::DrawDataStep(const iupPlotTrafo *inTrafoX, const iupPlotTrafo *inTrafoY, iupPlotDrawContext* ctx, const iupPlotSampleNotify* inNotify) const
+void iupPlotDataSet::DrawDataStep(const iupPlotTrafo* inTrafoX, const iupPlotTrafo* inTrafoY, iupPlotDrawContext* ctx, const iupPlotSampleNotify* inNotify) const
 {
   int theCount = mDataX->GetCount();
 
@@ -1359,7 +1359,7 @@ static int iPlotGetPieTextAlignment(double bisectrix, double inPieSliceLabelPos)
   else                        return IUP_PLOT_EAST;
 }
 
-void iupPlotDataSet::DrawDataPie(const iupPlotTrafo *inTrafoX, const iupPlotTrafo *inTrafoY, iupPlotDrawContext* ctx, const iupPlotSampleNotify* inNotify, const iupPlotAxis& inAxisY, long inBackColor) const
+void iupPlotDataSet::DrawDataPie(const iupPlotTrafo* inTrafoX, const iupPlotTrafo* inTrafoY, iupPlotDrawContext* ctx, const iupPlotSampleNotify* inNotify, const iupPlotAxis& inAxisY, long inBackColor) const
 {
   int theXCount = mDataX->GetCount();
   int theYCount = mDataY->GetCount();
@@ -1388,13 +1388,13 @@ void iupPlotDataSet::DrawDataPie(const iupPlotTrafo *inTrafoX, const iupPlotTraf
 
   w = 2.0 * mPieRadius;
   h = 2.0 * mPieRadius;
-  w *= ((iupPlotTrafoLinear *)inTrafoX)->mSlope;
-  h *= ((iupPlotTrafoLinear *)inTrafoY)->mSlope;
+  w *= ((iupPlotTrafoLinear*)inTrafoX)->mSlope;
+  h *= ((iupPlotTrafoLinear*)inTrafoY)->mSlope;
 
   double w1 = 2.0 * (mPieRadius * 1.01);
   double h1 = 2.0 * (mPieRadius * 1.01);
-  w1 *= ((iupPlotTrafoLinear *)inTrafoX)->mSlope;
-  h1 *= ((iupPlotTrafoLinear *)inTrafoY)->mSlope;
+  w1 *= ((iupPlotTrafoLinear*)inTrafoX)->mSlope;
+  h1 *= ((iupPlotTrafoLinear*)inTrafoY)->mSlope;
 
   double startAngle = mPieStartAngle;
 
@@ -1453,7 +1453,7 @@ void iupPlotDataSet::DrawDataPie(const iupPlotTrafo *inTrafoX, const iupPlotTraf
       {
       case IUP_PLOT_X:
         if (mDataX->IsString())
-          iupPlotDrawAlignedText(ctx, px, py, text_alignment, ((iupPlotDataString *)mDataX)->GetSampleString(i), inAxisY.mColor, fontStr, 0);
+          iupPlotDrawAlignedText(ctx, px, py, text_alignment, ((iupPlotDataString*)mDataX)->GetSampleString(i), inAxisY.mColor, fontStr, 0);
         else
         {
           snprintf(theBuf, sizeof(theBuf), "%d", i);
@@ -1484,8 +1484,8 @@ void iupPlotDataSet::DrawDataPie(const iupPlotTrafo *inTrafoX, const iupPlotTraf
   {
     double hw = mPieHole * 2.0 * mPieRadius;
     double hh = mPieHole * 2.0 * mPieRadius;
-    hw *= ((iupPlotTrafoLinear *)inTrafoX)->mSlope;
-    hh *= ((iupPlotTrafoLinear *)inTrafoY)->mSlope;
+    hw *= ((iupPlotTrafoLinear*)inTrafoX)->mSlope;
+    hh *= ((iupPlotTrafoLinear*)inTrafoY)->mSlope;
 
     int hx1 = iupPlotDrawCalcX(ctx, xc - hw / 2);
     int hy1 = iupPlotDrawCalcY(ctx, yc + hh / 2);
@@ -1498,7 +1498,7 @@ void iupPlotDataSet::DrawDataPie(const iupPlotTrafo *inTrafoX, const iupPlotTraf
   }
 }
 
-void iupPlotDataSet::DrawSelection(const iupPlotTrafo *inTrafoX, const iupPlotTrafo *inTrafoY, iupPlotDrawContext* ctx, const iupPlotSampleNotify* inNotify) const
+void iupPlotDataSet::DrawSelection(const iupPlotTrafo* inTrafoX, const iupPlotTrafo* inTrafoY, iupPlotDrawContext* ctx, const iupPlotSampleNotify* inNotify) const
 {
   int theCount = mDataX->GetCount();
 
@@ -1526,7 +1526,7 @@ void iupPlotDataSet::DrawSelection(const iupPlotTrafo *inTrafoX, const iupPlotTr
   }
 }
 
-void iupPlotDataSet::DrawData(const iupPlotTrafo *inTrafoX, const iupPlotTrafo *inTrafoY, iupPlotDrawContext* ctx, const iupPlotSampleNotify* inNotify) const
+void iupPlotDataSet::DrawData(const iupPlotTrafo* inTrafoX, const iupPlotTrafo* inTrafoY, iupPlotDrawContext* ctx, const iupPlotSampleNotify* inNotify) const
 {
   int theXCount = mDataX->GetCount();
   int theYCount = mDataY->GetCount();

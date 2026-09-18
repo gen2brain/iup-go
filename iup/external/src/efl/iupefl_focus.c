@@ -17,13 +17,13 @@
 #include "iupefl_drv.h"
 
 
-IUP_DRV_API void iupeflSetCanFocus(Eo *widget, int can)
+IUP_DRV_API void iupeflSetCanFocus(Eo* widget, int can)
 {
   if (efl_isa(widget, EFL_UI_WIDGET_CLASS))
     efl_ui_widget_focus_allow_set(widget, can ? EINA_TRUE : EINA_FALSE);
 }
 
-IUP_SDK_API void iupdrvSetFocus(Ihandle *ih)
+IUP_SDK_API void iupdrvSetFocus(Ihandle* ih)
 {
   Eo* widget = (Eo*)iupAttribGet(ih, "_IUPEFL_ENTRY");
 

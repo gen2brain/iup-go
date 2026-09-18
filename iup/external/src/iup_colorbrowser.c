@@ -73,7 +73,7 @@ struct _IcontrolData
         intensity;    /* 0<=I<=1 */
   unsigned char red, green, blue;  /* 0<=x<=255 */
 
-  Ihandle *image;
+  Ihandle* image;
 };
 
 static double iColorBrowserSXmax(Ihandle* ih, int y)
@@ -106,7 +106,7 @@ static double iColorBrowserCalcSaturation(Ihandle* ih, int x, double sx_max)
 }
 
 /* Rotate points of 60 degrees */
-static void iColorBrowserRotatePoints(double *x1, double *y1, double *x2, double *y2, int xc, int yc)
+static void iColorBrowserRotatePoints(double* x1, double* y1, double* x2, double* y2, int xc, int yc)
 {
   double xt, yt;
   double nxt, nyt;
@@ -131,7 +131,7 @@ static void iColorBrowserRotatePoints(double *x1, double *y1, double *x2, double
 static void iColorBrowserRenderImageHue(Ihandle* ih)
 {
   int x, y, active = 1;
-  unsigned char *colors;
+  unsigned char* colors;
   unsigned char bg_red, bg_green, bg_blue;
 
   if (!IupGetInt(ih, "ACTIVE"))
@@ -208,7 +208,7 @@ static void iColorBrowserRenderImageHue(Ihandle* ih)
 static void iColorBrowserRenderImageSI(Ihandle* ih)
 {
   int x, y, active = 1;
-  unsigned char *colors;
+  unsigned char* colors;
   unsigned char bg_red, bg_green, bg_blue;
 
   if (!IupGetInt(ih, "ACTIVE"))
@@ -449,7 +449,7 @@ static int iColorBrowserButton_CB(Ihandle* ih, int b, int press, int x, int y)
 }
 
 /* Callback for the mouse motion in the canvas */
-static int iColorBrowserMotion_CB(Ihandle* ih, int x, int y, char *status)
+static int iColorBrowserMotion_CB(Ihandle* ih, int x, int y, char* status)
 {
   if (!iup_isbutton1(status))
   {
@@ -791,7 +791,7 @@ static void iColorBrowserDestroyMethod(Ihandle* ih)
   IupDestroy(ih->data->image);
 }
 
-static int iColorBrowserCreateMethod(Ihandle* ih, void **params)
+static int iColorBrowserCreateMethod(Ihandle* ih, void** params)
 {
   (void)params;
 

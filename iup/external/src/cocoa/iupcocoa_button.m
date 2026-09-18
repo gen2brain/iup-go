@@ -59,12 +59,12 @@ static const void* IUP_COCOA_BUTTON_RECEIVER_OBJ_KEY = @"IUP_COCOA_BUTTON_RECEIV
 {
   [super updateTrackingAreas];
 
-  for (NSTrackingArea *area in [self trackingAreas])
+  for (NSTrackingArea* area in [self trackingAreas])
   {
     [self removeTrackingArea:area];
   }
 
-  NSTrackingArea *trackingArea = [[NSTrackingArea alloc]
+  NSTrackingArea* trackingArea = [[NSTrackingArea alloc]
     initWithRect:[self bounds]
          options:(NSTrackingMouseEnteredAndExited | NSTrackingMouseMoved |
                   NSTrackingActiveInKeyWindow | NSTrackingInVisibleRect)
@@ -75,7 +75,7 @@ static const void* IUP_COCOA_BUTTON_RECEIVER_OBJ_KEY = @"IUP_COCOA_BUTTON_RECEIV
   [trackingArea release];
 }
 
-- (void)mouseEntered:(NSEvent *)event
+- (void)mouseEntered:(NSEvent*)event
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
   if (!ih) return;
@@ -95,7 +95,7 @@ static const void* IUP_COCOA_BUTTON_RECEIVER_OBJ_KEY = @"IUP_COCOA_BUTTON_RECEIV
   }
 }
 
-- (void)mouseExited:(NSEvent *)event
+- (void)mouseExited:(NSEvent*)event
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
   if (!ih) return;
@@ -115,7 +115,7 @@ static const void* IUP_COCOA_BUTTON_RECEIVER_OBJ_KEY = @"IUP_COCOA_BUTTON_RECEIV
   }
 }
 
-- (void)mouseMoved:(NSEvent *)event
+- (void)mouseMoved:(NSEvent*)event
 {
   [super mouseMoved:event];
 
@@ -124,7 +124,7 @@ static const void* IUP_COCOA_BUTTON_RECEIVER_OBJ_KEY = @"IUP_COCOA_BUTTON_RECEIV
     iupcocoaCommonBaseHandleMouseMotionCallback(ih, event, self);
 }
 
-- (void)mouseDown:(NSEvent *)event
+- (void)mouseDown:(NSEvent*)event
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
   if (ih)
@@ -178,7 +178,7 @@ static const void* IUP_COCOA_BUTTON_RECEIVER_OBJ_KEY = @"IUP_COCOA_BUTTON_RECEIV
 #undef IUP_BUTTON_HIGHLIGHT
 }
 
-- (void)mouseUp:(NSEvent *)event
+- (void)mouseUp:(NSEvent*)event
 {
   [super mouseUp:event];
 
@@ -187,7 +187,7 @@ static const void* IUP_COCOA_BUTTON_RECEIVER_OBJ_KEY = @"IUP_COCOA_BUTTON_RECEIV
     iupcocoaCommonBaseHandleMouseButtonCallback(ih, event, self, false);
 }
 
-- (void)rightMouseDown:(NSEvent *)event
+- (void)rightMouseDown:(NSEvent*)event
 {
   [super rightMouseDown:event];
 
@@ -196,7 +196,7 @@ static const void* IUP_COCOA_BUTTON_RECEIVER_OBJ_KEY = @"IUP_COCOA_BUTTON_RECEIV
     iupcocoaCommonBaseHandleMouseButtonCallback(ih, event, self, true);
 }
 
-- (void)rightMouseUp:(NSEvent *)event
+- (void)rightMouseUp:(NSEvent*)event
 {
   [super rightMouseUp:event];
 
@@ -205,7 +205,7 @@ static const void* IUP_COCOA_BUTTON_RECEIVER_OBJ_KEY = @"IUP_COCOA_BUTTON_RECEIV
     iupcocoaCommonBaseHandleMouseButtonCallback(ih, event, self, false);
 }
 
-- (void)otherMouseDown:(NSEvent *)event
+- (void)otherMouseDown:(NSEvent*)event
 {
   [super otherMouseDown:event];
 
@@ -214,7 +214,7 @@ static const void* IUP_COCOA_BUTTON_RECEIVER_OBJ_KEY = @"IUP_COCOA_BUTTON_RECEIV
     iupcocoaCommonBaseHandleMouseButtonCallback(ih, event, self, true);
 }
 
-- (void)otherMouseUp:(NSEvent *)event
+- (void)otherMouseUp:(NSEvent*)event
 {
   [super otherMouseUp:event];
 
@@ -223,7 +223,7 @@ static const void* IUP_COCOA_BUTTON_RECEIVER_OBJ_KEY = @"IUP_COCOA_BUTTON_RECEIV
     iupcocoaCommonBaseHandleMouseButtonCallback(ih, event, self, false);
 }
 
-- (void)scrollWheel:(NSEvent *)event
+- (void)scrollWheel:(NSEvent*)event
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
   if (ih)
@@ -237,7 +237,7 @@ static const void* IUP_COCOA_BUTTON_RECEIVER_OBJ_KEY = @"IUP_COCOA_BUTTON_RECEIV
   }
 }
 
-- (void)keyDown:(NSEvent *)event
+- (void)keyDown:(NSEvent*)event
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
   if (ih)
@@ -257,7 +257,7 @@ static const void* IUP_COCOA_BUTTON_RECEIVER_OBJ_KEY = @"IUP_COCOA_BUTTON_RECEIV
     [super keyDown:event];
 }
 
-- (void)keyUp:(NSEvent *)event
+- (void)keyUp:(NSEvent*)event
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
   if (ih)
@@ -270,7 +270,7 @@ static const void* IUP_COCOA_BUTTON_RECEIVER_OBJ_KEY = @"IUP_COCOA_BUTTON_RECEIV
     [super keyUp:event];
 }
 
-- (void)flagsChanged:(NSEvent *)event
+- (void)flagsChanged:(NSEvent*)event
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
   if (ih)
@@ -361,7 +361,7 @@ static int text_border_x = -1, text_border_y = -1;
 static int image_border_x = -1, image_border_y = -1;
 static int image_text_border_x = -1, image_text_border_y = -1;
 
-static void cocoaButtonMeasureBorders(Ihandle* ih, int has_image, int has_text, int img_position, int *border_x, int *border_y)
+static void cocoaButtonMeasureBorders(Ihandle* ih, int has_image, int has_text, int img_position, int* border_x, int* border_y)
 {
   NSButton* temp_button = [[NSButton alloc] initWithFrame:NSZeroRect];
   [temp_button setBezelStyle:NSBezelStyleRegularSquare];
@@ -429,7 +429,7 @@ static void cocoaButtonMeasureBorders(Ihandle* ih, int has_image, int has_text, 
   [temp_button release];
 }
 
-IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
+IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int* x, int* y)
 {
   int border_x = 0, border_y = 0;
   int has_image = 0;
@@ -766,7 +766,7 @@ static int cocoaButtonSetActiveAttrib(Ihandle* ih, const char* value)
   return iupBaseSetActiveAttrib(ih, value);
 }
 
-void cocoaButtonLayoutUpdateMethod(Ihandle *ih)
+void cocoaButtonLayoutUpdateMethod(Ihandle* ih)
 {
   NSView* parent_view = iupcocoaCommonBaseLayoutGetParentView(ih);
   NSView* child_view = iupcocoaCommonBaseLayoutGetChildView(ih);

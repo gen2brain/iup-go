@@ -107,7 +107,7 @@ static Ihandle* load_image_expand_up(void)
 
 static void iFlatTabsInitializeImages(void)
 {
-  Ihandle *image;
+  Ihandle* image;
 
   unsigned char img_close[ITABS_CLOSE_SIZE * ITABS_CLOSE_SIZE] =
   {
@@ -143,10 +143,10 @@ static void iFlatTabsInitializeImages(void)
   IupSetHandle("IupFlatExpandUp", image);
 }
 
-static int iFlatTabsGetExtraWidth(Ihandle* ih, int extra_buttons, int img_position, int horiz_padding, int vert_padding, int *extra_height);
-static int iFlatTabsGetExtraHeight(Ihandle* ih, int extra_buttons, int img_position, int horiz_padding, int vert_padding, int *extra_width);
-static void iFlatTabsGetTabSize(Ihandle* ih, int fixedwidth, int horiz_padding, int vert_padding, int show_close, int pos, int *tab_w, int *tab_h);
-static int  iFlatTabsGetTitleSize(Ihandle* ih, int *title_width, int* title_height, int has_scrolled_size);
+static int iFlatTabsGetExtraWidth(Ihandle* ih, int extra_buttons, int img_position, int horiz_padding, int vert_padding, int* extra_height);
+static int iFlatTabsGetExtraHeight(Ihandle* ih, int extra_buttons, int img_position, int horiz_padding, int vert_padding, int* extra_width);
+static void iFlatTabsGetTabSize(Ihandle* ih, int fixedwidth, int horiz_padding, int vert_padding, int show_close, int pos, int* tab_w, int* tab_h);
+static int  iFlatTabsGetTitleSize(Ihandle* ih, int* title_width, int* title_height, int has_scrolled_size);
 
 static void iFlatTabsUpdateScrollPos(Ihandle* ih, Ihandle* child)
 {
@@ -268,7 +268,7 @@ static void iFlatTabsSetTabFont(Ihandle* ih, int pos)
   }
 }
 
-static void iFlatTabsGetTabSize(Ihandle* ih, int fixedwidth, int horiz_padding, int vert_padding, int show_close, int pos, int *tab_w, int *tab_h)
+static void iFlatTabsGetTabSize(Ihandle* ih, int fixedwidth, int horiz_padding, int vert_padding, int show_close, int pos, int* tab_w, int* tab_h)
 {
   int img_position = iupFlatGetImagePosition(iupAttribGetStr(ih, "TABSIMAGEPOSITION"));
   int spacing = iupAttribGetInt(ih, "TABSIMAGESPACING");
@@ -276,7 +276,7 @@ static void iFlatTabsGetTabSize(Ihandle* ih, int fixedwidth, int horiz_padding, 
   char* tab_title = iupAttribGetId(ih, "TABTITLE", pos);
   double text_orientation = iupAttribGetDouble(ih, "TABSTEXTORIENTATION");
   int tabType = iupAttribGetInt(ih, "_IUPTAB_TYPE");
-  int *tab = (tabType == ITABS_TOP || tabType == ITABS_BOTTOM) ? tab_w : tab_h;
+  int* tab = (tabType == ITABS_TOP || tabType == ITABS_BOTTOM) ? tab_w : tab_h;
   char num_title[30] = "";
 
   iFlatTabsSetTabFont(ih, pos);
@@ -304,7 +304,7 @@ static void iFlatTabsGetTabSize(Ihandle* ih, int fixedwidth, int horiz_padding, 
   }
 }
 
-static int iFlatTabsGetTitleSize(Ihandle* ih, int *title_width, int* title_height, int has_scrolled_size)
+static int iFlatTabsGetTitleSize(Ihandle* ih, int* title_width, int* title_height, int has_scrolled_size)
 {
   int vert_padding, horiz_padding, extra_buttons;
   int tab_w, tab_h, pos, title_max, scroll_size;
@@ -415,7 +415,7 @@ static void iFlatTabsSetExtraFont(Ihandle* ih, int id)
   }
 }
 
-static int iFlatTabsGetExtraWidthId(Ihandle* ih, int id, int img_position, int horiz_padding, int vert_padding, int *extra_height)
+static int iFlatTabsGetExtraWidthId(Ihandle* ih, int id, int img_position, int horiz_padding, int vert_padding, int* extra_height)
 {
   char* imagename = iupAttribGetId(ih, "EXTRAIMAGE", id);
   char* title = iupAttribGetId(ih, "EXTRATITLE", id);
@@ -433,7 +433,7 @@ static int iFlatTabsGetExtraWidthId(Ihandle* ih, int id, int img_position, int h
   return w;
 }
 
-static int iFlatTabsGetExtraWidth(Ihandle* ih, int extra_buttons, int img_position, int horiz_padding, int vert_padding, int *extra_height)
+static int iFlatTabsGetExtraWidth(Ihandle* ih, int extra_buttons, int img_position, int horiz_padding, int vert_padding, int* extra_height)
 {
   int extra_width = 0, i, h;
 
@@ -455,7 +455,7 @@ static int iFlatTabsGetExtraWidth(Ihandle* ih, int extra_buttons, int img_positi
   return extra_width;
 }
 
-static int iFlatTabsGetExtraHeightId(Ihandle* ih, int id, int img_position, int horiz_padding, int vert_padding, int *extra_width)
+static int iFlatTabsGetExtraHeightId(Ihandle* ih, int id, int img_position, int horiz_padding, int vert_padding, int* extra_width)
 {
   char* imagename = iupAttribGetId(ih, "EXTRAIMAGE", id);
   char* title = iupAttribGetId(ih, "EXTRATITLE", id);
@@ -473,7 +473,7 @@ static int iFlatTabsGetExtraHeightId(Ihandle* ih, int id, int img_position, int 
   return h;
 }
 
-static int iFlatTabsGetExtraHeight(Ihandle* ih, int extra_buttons, int img_position, int horiz_padding, int vert_padding, int *extra_width)
+static int iFlatTabsGetExtraHeight(Ihandle* ih, int extra_buttons, int img_position, int horiz_padding, int vert_padding, int* extra_width)
 {
   int extra_height = 0, i, w;
 
@@ -503,7 +503,7 @@ static int iFlatTabsGetExtraActive(Ihandle* ih, int id)
   return iupAttribGetBooleanId(ih, "EXTRAACTIVE", id);
 }
 
-static void iFlatTabsGetAlignment(const char* alignment, int *horiz_alignment, int *vert_alignment)
+static void iFlatTabsGetAlignment(const char* alignment, int* horiz_alignment, int* vert_alignment)
 {
   char value1[30], value2[30];
   iupStrToStrStr(alignment, value1, sizeof(value1), value2, sizeof(value2), ':');
@@ -516,7 +516,7 @@ static int iFlatTabsArrowSize(int scroll_size)
   return (scroll_size + 1) / 2;
 }
 
-static void iFlatTabsDrawScrollTopButton(IdrawCanvas* dc, const char *tabs_bgcolor, const char *tabs_forecolor, int active, int title_pos, int title_width, int scroll_size)
+static void iFlatTabsDrawScrollTopButton(IdrawCanvas* dc, const char* tabs_bgcolor, const char* tabs_forecolor, int active, int title_pos, int title_width, int scroll_size)
 {
   int arrow_size = iFlatTabsArrowSize(scroll_size);
 
@@ -526,7 +526,7 @@ static void iFlatTabsDrawScrollTopButton(IdrawCanvas* dc, const char *tabs_bgcol
   iupFlatDrawArrow(dc, x, y, arrow_size, tabs_forecolor, tabs_bgcolor, active, IUPDRAW_ARROW_TOP);
 }
 
-static void iFlatTabsDrawScrollBottomButton(IdrawCanvas* dc, const char *tabs_bgcolor, const char *tabs_forecolor, int active, int title_pos, int title_width, int height, int scroll_size)
+static void iFlatTabsDrawScrollBottomButton(IdrawCanvas* dc, const char* tabs_bgcolor, const char* tabs_forecolor, int active, int title_pos, int title_width, int height, int scroll_size)
 {
   int arrow_size = iFlatTabsArrowSize(scroll_size);
 
@@ -536,7 +536,7 @@ static void iFlatTabsDrawScrollBottomButton(IdrawCanvas* dc, const char *tabs_bg
   iupFlatDrawArrow(dc, x, y, arrow_size, tabs_forecolor, tabs_bgcolor, active, IUPDRAW_ARROW_BOTTOM);
 }
 
-static void iFlatTabsDrawScrollLeftButton(IdrawCanvas* dc, const char *tabs_bgcolor, const char *tabs_forecolor, int active, int title_pos, int title_height, int scroll_size)
+static void iFlatTabsDrawScrollLeftButton(IdrawCanvas* dc, const char* tabs_bgcolor, const char* tabs_forecolor, int active, int title_pos, int title_height, int scroll_size)
 {
   int arrow_size = iFlatTabsArrowSize(scroll_size);
 
@@ -546,7 +546,7 @@ static void iFlatTabsDrawScrollLeftButton(IdrawCanvas* dc, const char *tabs_bgco
   iupFlatDrawArrow(dc, x, y, arrow_size, tabs_forecolor, tabs_bgcolor, active, IUPDRAW_ARROW_LEFT);
 }
 
-static void iFlatTabsDrawScrollRightButton(IdrawCanvas* dc, const char *tabs_bgcolor, const char *tabs_forecolor, int active, int title_pos, int title_height, int width, int scroll_size)
+static void iFlatTabsDrawScrollRightButton(IdrawCanvas* dc, const char* tabs_bgcolor, const char* tabs_forecolor, int active, int title_pos, int title_height, int width, int scroll_size)
 {
   int arrow_size = iFlatTabsArrowSize(scroll_size);
 
@@ -556,7 +556,7 @@ static void iFlatTabsDrawScrollRightButton(IdrawCanvas* dc, const char *tabs_bgc
   iupFlatDrawArrow(dc, x, y, arrow_size, tabs_forecolor, tabs_bgcolor, active, IUPDRAW_ARROW_RIGHT);
 }
 
-static void iFlatTabsGetCloseRect(int x, int y, int w, int h, double text_orientation, int *close_x, int *close_y)
+static void iFlatTabsGetCloseRect(int x, int y, int w, int h, double text_orientation, int* close_x, int* close_y)
 {
     if (text_orientation < 45.)
     {
@@ -1200,7 +1200,7 @@ static void iFlatTabsCheckCurrentTab(Ihandle* ih, Ihandle* check_child, int chec
   }
 }
 
-static int iFlatTabsFindTab(Ihandle* ih, int cur_x, int cur_y, int show_close, int *inside_close)
+static int iFlatTabsFindTab(Ihandle* ih, int cur_x, int cur_y, int show_close, int* inside_close)
 {
   int title_width, title_height;
   int tabType = iupAttribGetInt(ih, "_IUPTAB_TYPE");
@@ -1339,7 +1339,7 @@ static int iFlatTabsFindTab(Ihandle* ih, int cur_x, int cur_y, int show_close, i
 
 static void iFlatTabsGetExtraButtonBox(Ihandle* ih, int tabType, int extra_buttons, int img_position, int horiz_padding, int vert_padding,
                                        int title_x_pos, int title_y_pos, int title_height, int title_width,
-                                       int id, int *xmin, int *ymin, int *xmax, int *ymax)
+                                       int id, int* xmin, int* ymin, int* xmax, int* ymax)
 {
   int i, total_extra_size = 0;
   int extra_x, extra_y, extra_w, extra_h;
@@ -1414,7 +1414,7 @@ static void iFlatTabsToggleExpand(Ihandle* ih)
 
 static void iFlatTabsReorderTab(Ihandle* ih, int source_pos, int target_pos)
 {
-  Ihandle *source_child, *ref_child, *current_child;
+  Ihandle* source_child, *ref_child, *current_child;
   char* saved[ATTRIB_ID_COUNT];
   int i;
 
@@ -1599,7 +1599,7 @@ static int iFlatTabsButton_CB(Ihandle* ih, int button, int pressed, int x, int y
 
       if (tab_found > ITABS_NONE && iupAttribGetBooleanId(ih, "TABACTIVE", tab_found) && inside_close && tab_close_press == tab_found)
       {
-        Ihandle *child = IupGetChild(ih, tab_found);
+        Ihandle* child = IupGetChild(ih, tab_found);
         if (child)
         {
           int ret = IUP_DEFAULT;
@@ -1674,7 +1674,7 @@ static int iFlatTabsButton_CB(Ihandle* ih, int button, int pressed, int x, int y
   return IUP_DEFAULT;
 }
 
-static int iFlatTabsMotion_CB(Ihandle *ih, int x, int y, char *status)
+static int iFlatTabsMotion_CB(Ihandle* ih, int x, int y, char* status)
 {
   int tab_found, tab_highlighted, redraw = 0;
   int inside_close, show_close, tab_active;
@@ -1905,7 +1905,7 @@ static int iFlatTabsKRight_CB(Ihandle* ih)
 static int iFlatTabsSetValueHandleAttrib(Ihandle* ih, const char* value)
 {
   Ihandle* current_child;
-  Ihandle *child = (Ihandle*)value;
+  Ihandle* child = (Ihandle*)value;
 
   if (!iupObjectCheck(child))
     return 0;
@@ -1959,7 +1959,7 @@ static char* iFlatTabsGetValuePosAttrib(Ihandle* ih)
 
 static int iFlatTabsSetValueAttrib(Ihandle* ih, const char* value)
 {
-  Ihandle *child;
+  Ihandle* child;
 
   if (!value)
     return 0;
@@ -2426,7 +2426,7 @@ static void iFlatTabsChildRemovedMethod(Ihandle* ih, Ihandle* child, int pos)
   }
 }
 
-static void iFlatTabsComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *children_expand)
+static void iFlatTabsComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* children_expand)
 {
   Ihandle* child;
   int children_naturalwidth, children_naturalheight;
@@ -2558,7 +2558,7 @@ static void iFlatTabsSetChildrenPositionMethod(Ihandle* ih, int x, int y)
   }
 }
 
-static int iFlatTabsCreateMethod(Ihandle* ih, void **params)
+static int iFlatTabsCreateMethod(Ihandle* ih, void** params)
 {
   /* add children */
   if (params)
@@ -2751,7 +2751,7 @@ IUP_API Ihandle* IupFlatTabsV(Ihandle* child, va_list arglist)
 
 IUPCONTROLS_API Ihandle* IupFlatTabs(Ihandle* child, ...)
 {
-  Ihandle *ih;
+  Ihandle* ih;
 
   va_list arglist;
   va_start(arglist, child);

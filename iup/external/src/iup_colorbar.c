@@ -853,7 +853,7 @@ static int iColorbarButton_CB(Ihandle* ih, int b, int m, int x, int y, char* r)
 
 /****************************************************************************/
 
-static int iColorbarCreateMethod(Ihandle* ih, void **params)
+static int iColorbarCreateMethod(Ihandle* ih, void** params)
 {
   int i;
   (void)params;

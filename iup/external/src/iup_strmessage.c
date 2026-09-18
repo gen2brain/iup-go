@@ -18,7 +18,7 @@
 #include "iup_register.h"
 
 
-static Itable *istrmessage_table = NULL;   /* the message hash table indexed by the name string */
+static Itable* istrmessage_table = NULL;   /* the message hash table indexed by the name string */
 
 void iupStrMessageInit(void)
 {
@@ -57,7 +57,7 @@ IUP_API void IupSetLanguagePack(Ihandle* ih)
     iupTableClear(istrmessage_table);
   else
   {
-    char *name, *value;
+    char* name, *value;
 
     name = iupTableFirst(ih->attrib);
     while (name)
@@ -74,12 +74,12 @@ IUP_API void IupSetLanguagePack(Ihandle* ih)
   }
 }
 
-IUP_API void IupSetLanguage(const char *language)
+IUP_API void IupSetLanguage(const char* language)
 {
   IupStoreGlobal("LANGUAGE", language);
 }
 
-IUP_API char *IupGetLanguage(void)
+IUP_API char* IupGetLanguage(void)
 {
   return IupGetGlobal("LANGUAGE");
 }
@@ -88,7 +88,7 @@ IUP_API char *IupGetLanguage(void)
 
 static void iupSetLngAttV(const char* first, va_list arglist)
 {
-  const char *name, *str;
+  const char* name, *str;
   name = first;
   while (name)
   {

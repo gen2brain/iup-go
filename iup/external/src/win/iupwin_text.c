@@ -81,13 +81,13 @@
 #define WM_IUPCARET WM_APP+1   /* Custom IUP message */
 
 
-IUP_SDK_API void iupdrvTextAddSpin(Ihandle* ih, int *w, int h)
+IUP_SDK_API void iupdrvTextAddSpin(Ihandle* ih, int* w, int h)
 {
   *w += h;
   (void)ih;
 }
 
-IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int *w, int *h)
+IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int* w, int* h)
 {
   /* Used also by IupCalendar and IupDatePick in Windows */
   /* LAYOUT_DECORATION_ESTIMATE */
@@ -97,14 +97,14 @@ IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int *w, int *h)
   (void)ih;
 }
 
-IUP_SDK_API void iupdrvTextAddExtraPadding(Ihandle* ih, int *w, int *h)
+IUP_SDK_API void iupdrvTextAddExtraPadding(Ihandle* ih, int* w, int* h)
 {
   (void)ih;
   (void)w;
   (void)h;
 }
 
-static void winTextParseParagraphFormat(Ihandle* formattag, PARAFORMAT2 *paraformat, int convert2twips)
+static void winTextParseParagraphFormat(Ihandle* formattag, PARAFORMAT2* paraformat, int convert2twips)
 {
   int val;
   char* format;
@@ -261,7 +261,7 @@ static void winTextParseParagraphFormat(Ihandle* formattag, PARAFORMAT2 *parafor
   }
 }
 
-static void winTextParseCharacterFormat(Ihandle* formattag, CHARFORMAT2 *charformat, int pixel2twips)
+static void winTextParseCharacterFormat(Ihandle* formattag, CHARFORMAT2* charformat, int pixel2twips)
 {
   int val;
   char* format;
@@ -520,7 +520,7 @@ static void winTextUpdateFontFormat(CHARFORMAT2* charformat, const char* value)
     charformat->dwEffects |= CFE_STRIKEOUT;
 }
 
-static int winTextSetLinColToPosition(Ihandle *ih, int lin, int col)
+static int winTextSetLinColToPosition(Ihandle* ih, int lin, int col)
 {
   int linmax, colmax, lineindex, wpos;
 
@@ -542,7 +542,7 @@ static int winTextSetLinColToPosition(Ihandle *ih, int lin, int col)
   return wpos;
 }
 
-static int winTextGetLastPosition(Ihandle *ih)
+static int winTextGetLastPosition(Ihandle* ih)
 {
   int lincount = (int)SendMessage(ih->handle, EM_GETLINECOUNT, 0, 0L);
   int lineindex = (int)SendMessage(ih->handle, EM_LINEINDEX, (WPARAM)(lincount - 1), 0L);
@@ -643,7 +643,7 @@ static int winTextGetCaretPosition(Ihandle* ih)
   return wpos;
 }
 
-static int winTextGetCaret(Ihandle* ih, int *lin, int *col)
+static int winTextGetCaret(Ihandle* ih, int* lin, int* col)
 {
   int pos;
   int wpos = winTextGetCaretPosition(ih);
@@ -668,7 +668,7 @@ static int winTextGetCaret(Ihandle* ih, int *lin, int *col)
   return pos;
 }
 
-static int winTextGetSelection(Ihandle* ih, int *start, int *end)
+static int winTextGetSelection(Ihandle* ih, int* start, int* end)
 {
   *start = 0;
   *end = 0;
@@ -707,7 +707,7 @@ static void winTextSetSelection(Ihandle* ih, int start, int end)
   SendMessage(ih->handle, EM_SETSEL, (WPARAM)start, (LPARAM)end);
 }
 
-IUP_SDK_API void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, int col, int *pos)
+IUP_SDK_API void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, int col, int* pos)
 {
   int wpos = winTextSetLinColToPosition(ih, lin, col);
 
@@ -717,7 +717,7 @@ IUP_SDK_API void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, int col, int
     *pos = wpos;
 }
 
-IUP_SDK_API void iupdrvTextConvertPosToLinCol(Ihandle* ih, int pos, int *lin, int *col)
+IUP_SDK_API void iupdrvTextConvertPosToLinCol(Ihandle* ih, int pos, int* lin, int* col)
 {
   int wpos;
 
@@ -795,7 +795,7 @@ static DWORD CALLBACK winTextWriteStreamCallback(DWORD_PTR dwCookie, LPBYTE lpBu
 {
   HANDLE hFile = (HANDLE)dwCookie;
 
-  if (WriteFile(hFile, lpBuff, cb, (DWORD *)pcb, NULL))
+  if (WriteFile(hFile, lpBuff, cb, (DWORD*)pcb, NULL))
     return 0;
 
   return (DWORD)-1;
@@ -827,7 +827,7 @@ static DWORD CALLBACK winTextReadStreamCallback(DWORD_PTR dwCookie, LPBYTE lpBuf
 {
   HANDLE hFile = (HANDLE)dwCookie;
 
-  if (ReadFile(hFile, lpBuff, cb, (DWORD *)pcb, NULL))
+  if (ReadFile(hFile, lpBuff, cb, (DWORD*)pcb, NULL))
     return 0;
 
   return (DWORD)-1;
@@ -1340,7 +1340,7 @@ static int winTextSetScrollToPosAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-static int winTextSetFilterAttrib(Ihandle *ih, const char *value)
+static int winTextSetFilterAttrib(Ihandle* ih, const char* value)
 {
   int style = 0;
 
@@ -1371,7 +1371,7 @@ static int winTextSetFilterAttrib(Ihandle *ih, const char *value)
   return 1;
 }
 
-static int winTextSetClipboardAttrib(Ihandle *ih, const char *value)
+static int winTextSetClipboardAttrib(Ihandle* ih, const char* value)
 {
   UINT msg = 0;
 
@@ -1396,14 +1396,14 @@ static int winTextSetClipboardAttrib(Ihandle *ih, const char *value)
   return 0;
 }
 
-static int winTextSetFgColorAttrib(Ihandle *ih, const char *value)
+static int winTextSetFgColorAttrib(Ihandle* ih, const char* value)
 {
   (void)value;
   iupdrvPostRedraw(ih);
   return 1;
 }
 
-static int winTextSetBgColorAttrib(Ihandle *ih, const char *value)
+static int winTextSetBgColorAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->has_formatting)
   {
@@ -1419,7 +1419,7 @@ static int winTextSetBgColorAttrib(Ihandle *ih, const char *value)
   return 1;
 }
 
-static int winTextSetCueBannerAttrib(Ihandle *ih, const char *value)
+static int winTextSetCueBannerAttrib(Ihandle* ih, const char* value)
 {
   if (!ih->data->is_multiline && iupwin_comctl32ver6)
   {
@@ -1778,7 +1778,7 @@ static void winTextInsertImage(Ihandle* ih, const char* image_name, int img_w, i
 IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bulk)
 {
   int convert2twips, pixel2twips;
-  char *selection, *units;
+  char* selection, *units;
   PARAFORMAT2 paraformat;
   CHARFORMAT2 charformat;
   formatTagBulkState* state = NULL;
@@ -2106,7 +2106,7 @@ static char* winTextGetScrollVisibleAttrib(Ihandle* ih)
 /****************************************************************************************/
 
 
-static int winTextCtlColor(Ihandle* ih, HDC hdc, LRESULT *result)
+static int winTextCtlColor(Ihandle* ih, HDC hdc, LRESULT* result)
 {
   COLORREF cr;
 
@@ -2162,12 +2162,12 @@ static int winTextCallActionCb(Ihandle* ih, char* insert_value, int remove_dir)
   return 1;
 }
 
-static int winTextSpinWmNotify(Ihandle* ih, NMHDR* msg_info, int *result)
+static int winTextSpinWmNotify(Ihandle* ih, NMHDR* msg_info, int* result)
 {
   if (msg_info->code == UDN_DELTAPOS)
   {
     int min, max;
-    NMUPDOWN *updown = (NMUPDOWN*)msg_info;
+    NMUPDOWN* updown = (NMUPDOWN*)msg_info;
     HWND hSpin = (HWND)iupAttribGet(ih, "_IUPWIN_SPIN");
     int old_pos = (int)SendMessage(hSpin, UDM_GETPOS32, 0, 0);
     int pos = updown->iPos + updown->iDelta;
@@ -2244,7 +2244,7 @@ static void winTextHandleLinkClick(Ihandle* ih, int x, int y)
   }
 }
 
-static int winTextMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT *result)
+static int winTextMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT* result)
 {
   int ret = 0;
 

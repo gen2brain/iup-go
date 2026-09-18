@@ -418,7 +418,7 @@ static char* iGaugeGetOrientationAttrib(Ihandle* ih)
     return "VERTICAL";
 }
 
-static int iGaugeCreateMethod(Ihandle* ih, void **params)
+static int iGaugeCreateMethod(Ihandle* ih, void** params)
 {
   (void)params;
 

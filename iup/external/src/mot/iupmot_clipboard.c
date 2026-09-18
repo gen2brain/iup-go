@@ -58,7 +58,7 @@ typedef struct {
   int format;
 } motPrimaryRequest;
 
-static int motClipboardIsPrimary(Ihandle *ih)
+static int motClipboardIsPrimary(Ihandle* ih)
 {
   return iupStrEqualNoCase(iupAttribGetStr(ih, "SELECTION"), "PRIMARY");
 }
@@ -81,7 +81,7 @@ static int motPrimaryIsTextTarget(Atom target)
          target == XInternAtom(iupmot_display, "TEXT", False);
 }
 
-static Boolean motPrimaryConvertProc(Widget w, Atom *selection, Atom *target, Atom *type, XtPointer *value, unsigned long *length, int *format)
+static Boolean motPrimaryConvertProc(Widget w, Atom* selection, Atom* target, Atom* type, XtPointer* value, unsigned long* length, int* format)
 {
   (void)w;
   (void)selection;
@@ -128,7 +128,7 @@ static Boolean motPrimaryConvertProc(Widget w, Atom *selection, Atom *target, At
   return False;
 }
 
-static void motPrimaryLoseProc(Widget w, Atom *selection)
+static void motPrimaryLoseProc(Widget w, Atom* selection)
 {
   (void)w;
   (void)selection;
@@ -169,7 +169,7 @@ static void motPrimaryDisown(void)
   motPrimaryLoseProc(iupmot_appshell, NULL);
 }
 
-static void motPrimaryRequestCb(Widget w, XtPointer client_data, Atom *selection, Atom *type, XtPointer value, unsigned long *length, int *format)
+static void motPrimaryRequestCb(Widget w, XtPointer client_data, Atom* selection, Atom* type, XtPointer value, unsigned long* length, int* format)
 {
   motPrimaryRequest* request = (motPrimaryRequest*)client_data;
 
@@ -196,7 +196,7 @@ static void motPrimaryRequestCb(Widget w, XtPointer client_data, Atom *selection
   request->state = 1;
 }
 
-static void motPrimaryTimeoutCb(XtPointer client_data, XtIntervalId *id)
+static void motPrimaryTimeoutCb(XtPointer client_data, XtIntervalId* id)
 {
   motPrimaryRequest* request = (motPrimaryRequest*)client_data;
   (void)id;
@@ -268,7 +268,7 @@ static char* motPrimaryGetText(void)
   return value;
 }
 
-static int motClipboardSetTextAttrib(Ihandle *ih, const char *value)
+static int motClipboardSetTextAttrib(Ihandle* ih, const char* value)
 {
   long item_id = 0;
   Window window;
@@ -306,7 +306,7 @@ static int motClipboardSetTextAttrib(Ihandle *ih, const char *value)
   return 0;
 }
 
-static char* motClipboardGetTextAttrib(Ihandle *ih)
+static char* motClipboardGetTextAttrib(Ihandle* ih)
 {
   unsigned long size;
   char* str;
@@ -328,7 +328,7 @@ static char* motClipboardGetTextAttrib(Ihandle *ih)
   return str;
 }
 
-static int motClipboardSetImageAttrib(Ihandle *ih, const char *value)
+static int motClipboardSetImageAttrib(Ihandle* ih, const char* value)
 {
   Pixmap pixmap;
   long item_id = 0;
@@ -374,7 +374,7 @@ static int motClipboardSetImageAttrib(Ihandle *ih, const char *value)
   return 0;
 }
 
-static int motClipboardSetNativeImageAttrib(Ihandle *ih, const char *value)
+static int motClipboardSetNativeImageAttrib(Ihandle* ih, const char* value)
 {
   long item_id = 0;
   Window window;
@@ -415,7 +415,7 @@ static int motClipboardSetNativeImageAttrib(Ihandle *ih, const char *value)
   return 0;
 }
 
-static char* motClipboardGetNativeImageAttrib(Ihandle *ih)
+static char* motClipboardGetNativeImageAttrib(Ihandle* ih)
 {
   unsigned long size;
   void* data;
@@ -449,7 +449,7 @@ static char* motClipboardGetNativeImageAttrib(Ihandle *ih)
   return (char*)pixmap;
 }
 
-static int motClipboardSetFormatDataAttrib(Ihandle *ih, const char *value)
+static int motClipboardSetFormatDataAttrib(Ihandle* ih, const char* value)
 {
   int size;
   long item_id = 0;
@@ -497,7 +497,7 @@ static int motClipboardSetFormatDataAttrib(Ihandle *ih, const char *value)
   return 0;
 }
 
-static char* motClipboardGetFormatDataAttrib(Ihandle *ih)
+static char* motClipboardGetFormatDataAttrib(Ihandle* ih)
 {
   unsigned long size;
   void* data;
@@ -571,7 +571,7 @@ static int motClipboardIsAvailable(const char* format_name, int any_text)
   return 0;
 }
 
-static char* motClipboardGetTextAvailableAttrib(Ihandle *ih)
+static char* motClipboardGetTextAvailableAttrib(Ihandle* ih)
 {
   if (motClipboardIsPrimary(ih))
     return iupStrReturnBoolean (motPrimaryHasTarget(XA_STRING, 1));
@@ -579,7 +579,7 @@ static char* motClipboardGetTextAvailableAttrib(Ihandle *ih)
   return iupStrReturnBoolean (motClipboardIsAvailable("STRING", 1));
 }
 
-static char* motClipboardGetImageAvailableAttrib(Ihandle *ih)
+static char* motClipboardGetImageAvailableAttrib(Ihandle* ih)
 {
   if (motClipboardIsPrimary(ih))
     return iupStrReturnBoolean (motPrimaryHasTarget(XA_PIXMAP, 0));
@@ -587,7 +587,7 @@ static char* motClipboardGetImageAvailableAttrib(Ihandle *ih)
   return iupStrReturnBoolean (motClipboardIsAvailable("PIXMAP", 0));
 }
 
-static char* motClipboardGetFormatAvailableAttrib(Ihandle *ih)
+static char* motClipboardGetFormatAvailableAttrib(Ihandle* ih)
 {
   char* format = iupAttribGetStr(ih, "FORMAT");
   if (!format)
@@ -599,7 +599,7 @@ static char* motClipboardGetFormatAvailableAttrib(Ihandle *ih)
   return iupStrReturnBoolean (motClipboardIsAvailable(format, 0));
 }
 
-static char* motClipboardGetFormatDataStringAttrib(Ihandle *ih)
+static char* motClipboardGetFormatDataStringAttrib(Ihandle* ih)
 {
   char* data = motClipboardGetFormatDataAttrib(ih);
   if (!data)
@@ -612,7 +612,7 @@ static char* motClipboardGetFormatDataStringAttrib(Ihandle *ih)
   }
 }
 
-static int motClipboardSetFormatDataStringAttrib(Ihandle *ih, const char *value)
+static int motClipboardSetFormatDataStringAttrib(Ihandle* ih, const char* value)
 {
   if (value)
   {
@@ -624,7 +624,7 @@ static int motClipboardSetFormatDataStringAttrib(Ihandle *ih, const char *value)
     return motClipboardSetFormatDataAttrib(ih, NULL);
 }
 
-static int motClipboardSetAddFormatAttrib(Ihandle *ih, const char *value)
+static int motClipboardSetAddFormatAttrib(Ihandle* ih, const char* value)
 {
   if (value)
     XmClipboardRegisterFormat(iupmot_display, (char*)value, 8);

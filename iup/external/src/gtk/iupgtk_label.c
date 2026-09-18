@@ -23,7 +23,7 @@
 
 #include "iupgtk_drv.h"
 
-IUP_SDK_API void iupdrvLabelAddExtraPadding(Ihandle* ih, int *x, int *y)
+IUP_SDK_API void iupdrvLabelAddExtraPadding(Ihandle* ih, int* x, int* y)
 {
   (void)ih;
   (void)x;
@@ -307,7 +307,7 @@ static int gtkLabelSetActiveAttrib(Ihandle* ih, const char* value)
 static int gtkLabelMapMethod(Ihandle* ih)
 {
   char* value;
-  GtkWidget *label;
+  GtkWidget* label;
 
   value = iupAttribGet(ih, "SEPARATOR");
   if (value)
@@ -353,7 +353,7 @@ static int gtkLabelMapMethod(Ihandle* ih)
 
   /* interactive callbacks will not work without the eventbox */
   {
-    GtkWidget *box = gtk_event_box_new();
+    GtkWidget* box = gtk_event_box_new();
     gtk_container_add((GtkContainer*)box, ih->handle);
     iupAttribSet(ih, "_IUP_EXTRAPARENT", (char*)box);
 

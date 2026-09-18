@@ -38,7 +38,7 @@ static void winuiImageSetPixelBGRA(uint8_t* pixels, int pos, uint8_t r, uint8_t 
   pixels[pos + 3] = a;
 }
 
-extern "C" IUP_SDK_API void* iupdrvImageCreateImage(Ihandle *ih, const char* bgcolor, int make_inactive)
+extern "C" IUP_SDK_API void* iupdrvImageCreateImage(Ihandle* ih, const char* bgcolor, int make_inactive)
 {
   int width = ih->currentwidth;
   int height = ih->currentheight;
@@ -137,7 +137,7 @@ extern "C" IUP_SDK_API void* iupdrvImageCreateImage(Ihandle *ih, const char* bgc
   return handle;
 }
 
-static HICON winuiImageCreateCursorIcon(Ihandle *ih, int is_cursor)
+static HICON winuiImageCreateCursorIcon(Ihandle* ih, int is_cursor)
 {
   int width = ih->currentwidth;
   int height = ih->currentheight;
@@ -253,12 +253,12 @@ static HICON winuiImageCreateCursorIcon(Ihandle *ih, int is_cursor)
   return icon;
 }
 
-extern "C" IUP_SDK_API void* iupdrvImageCreateIcon(Ihandle *ih)
+extern "C" IUP_SDK_API void* iupdrvImageCreateIcon(Ihandle* ih)
 {
   return (void*)winuiImageCreateCursorIcon(ih, 0);
 }
 
-extern "C" IUP_SDK_API void* iupdrvImageCreateCursor(Ihandle *ih)
+extern "C" IUP_SDK_API void* iupdrvImageCreateCursor(Ihandle* ih)
 {
   return (void*)winuiImageCreateCursorIcon(ih, 1);
 }
@@ -404,7 +404,7 @@ void winuiImageSetSource(Ihandle* ih, Microsoft::UI::Xaml::Controls::Image const
   winuiImageSetPixelSize(ih, img, bitmap.PixelWidth(), bitmap.PixelHeight());
 }
 
-extern "C" IUP_SDK_API int iupdrvImageGetInfo(void* handle, int *w, int *h, int *bpp)
+extern "C" IUP_SDK_API int iupdrvImageGetInfo(void* handle, int* w, int* h, int* bpp)
 {
   WriteableBitmap bitmap = winuiGetBitmapFromHandle(handle);
   if (!bitmap)
@@ -468,7 +468,7 @@ extern "C" IUP_SDK_API void iupdrvImageGetData(void* handle, unsigned char* imgd
 }
 
 
-extern "C" IUP_SDK_API int iupdrvImageGetRawInfo(void* handle, int *w, int *h, int *bpp, iupColor* colors, int *colors_count)
+extern "C" IUP_SDK_API int iupdrvImageGetRawInfo(void* handle, int* w, int* h, int* bpp, iupColor* colors, int* colors_count)
 {
   (void)colors;
   if (colors_count) *colors_count = 0;

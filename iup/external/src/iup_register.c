@@ -15,7 +15,7 @@
 #include "iup_stdcontrols.h"
 
 
-static Itable *iregister_table = NULL;   /* table indexed by name containing Iclass* address */
+static Itable* iregister_table = NULL;   /* table indexed by name containing Iclass* address */
 
 void iupRegisterInit(void)
 {

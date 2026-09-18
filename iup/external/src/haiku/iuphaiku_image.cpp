@@ -115,7 +115,7 @@ static BBitmap* haikuBuildBitmap(int width, int height, int bpp, iupColor* color
   return bm;
 }
 
-extern "C" IUP_SDK_API void* iupdrvImageCreateImage(Ihandle *ih, const char* bgcolor, int make_inactive)
+extern "C" IUP_SDK_API void* iupdrvImageCreateImage(Ihandle* ih, const char* bgcolor, int make_inactive)
 {
   int bpp = iupAttribGetInt(ih, "BPP");
   int colors_count = 0;
@@ -134,12 +134,12 @@ extern "C" IUP_SDK_API void* iupdrvImageCreateImage(Ihandle *ih, const char* bgc
 }
 
 
-extern "C" IUP_SDK_API void* iupdrvImageCreateIcon(Ihandle *ih)
+extern "C" IUP_SDK_API void* iupdrvImageCreateIcon(Ihandle* ih)
 {
   return iupdrvImageCreateImage(ih, NULL, 0);
 }
 
-extern "C" IUP_SDK_API void* iupdrvImageCreateCursor(Ihandle *ih)
+extern "C" IUP_SDK_API void* iupdrvImageCreateCursor(Ihandle* ih)
 {
   BBitmap* bm = (BBitmap*)iupdrvImageCreateImage(ih, NULL, 0);
   if (!bm) return NULL;
@@ -161,7 +161,7 @@ extern "C" IUP_SDK_API void iupdrvImageDestroy(void* handle, int type)
     delete (BBitmap*)handle;
 }
 
-extern "C" IUP_SDK_API int iupdrvImageGetInfo(void* handle, int *w, int *h, int *bpp)
+extern "C" IUP_SDK_API int iupdrvImageGetInfo(void* handle, int* w, int* h, int* bpp)
 {
   BBitmap* bm = (BBitmap*)handle;
   if (!bm || bm->InitCheck() != B_OK)
@@ -178,7 +178,7 @@ extern "C" IUP_SDK_API int iupdrvImageGetInfo(void* handle, int *w, int *h, int 
   return 1;
 }
 
-extern "C" IUP_SDK_API int iupdrvImageGetRawInfo(void* handle, int *w, int *h, int *bpp, iupColor* colors, int *colors_count)
+extern "C" IUP_SDK_API int iupdrvImageGetRawInfo(void* handle, int* w, int* h, int* bpp, iupColor* colors, int* colors_count)
 {
   (void)colors;
   if (colors_count) *colors_count = 0;

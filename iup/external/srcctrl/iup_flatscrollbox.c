@@ -19,14 +19,14 @@
 #include "iup_flatscrollbar.h"
 
 
-static Ihandle* iFlatScrollBoxGetChild(Ihandle *ih)
+static Ihandle* iFlatScrollBoxGetChild(Ihandle* ih)
 {
   /* ih->firstchild is vertical scrollbar */
   /* ih->firstchild->brother is horizontal scrollbar */
   return ih->firstchild->brother->brother;
 }
 
-static void iFlatScrollBoxUpdateChildPos(Ihandle *ih, Ihandle* child)
+static void iFlatScrollBoxUpdateChildPos(Ihandle* ih, Ihandle* child)
 {
   int posx = iupAttribGetInt(ih, "POSX");
   int posy = iupAttribGetInt(ih, "POSY");
@@ -55,7 +55,7 @@ static void iFlatScrollBoxUpdateChildPos(Ihandle *ih, Ihandle* child)
   iupBaseSetPosition(child, x, y);
 }
 
-static void iFlatScrollBoxUpdateLayout(Ihandle *ih, Ihandle *child)
+static void iFlatScrollBoxUpdateLayout(Ihandle* ih, Ihandle* child)
 {
   if (child->handle)
   {
@@ -69,7 +69,7 @@ static void iFlatScrollBoxUpdateLayout(Ihandle *ih, Ihandle *child)
   }
 }
 
-static int iFlatScrollBoxScroll_CB(Ihandle *ih, int op, float posx, float posy)
+static int iFlatScrollBoxScroll_CB(Ihandle* ih, int op, float posx, float posy)
 {
   Ihandle* child = iFlatScrollBoxGetChild(ih);
 
@@ -89,7 +89,7 @@ static int iFlatScrollBoxScroll_CB(Ihandle *ih, int op, float posx, float posy)
   return IUP_DEFAULT;
 }
 
-static int iFlatScrollBoxFlatScroll_CB(Ihandle *ih)
+static int iFlatScrollBoxFlatScroll_CB(Ihandle* ih)
 {
   Ihandle* child = iFlatScrollBoxGetChild(ih);
 
@@ -109,7 +109,7 @@ static int iFlatScrollBoxFlatScroll_CB(Ihandle *ih)
 /*****************************************************************************/
 
 
-static int iFlatScrollBoxButton_CB(Ihandle *ih, int but, int pressed, int x, int y, char* status)
+static int iFlatScrollBoxButton_CB(Ihandle* ih, int but, int pressed, int x, int y, char* status)
 {
   if (but == IUP_BUTTON1 && pressed)
   {
@@ -127,7 +127,7 @@ static int iFlatScrollBoxButton_CB(Ihandle *ih, int but, int pressed, int x, int
   return IUP_DEFAULT;
 }
 
-static int iFlatScrollBoxMotion_CB(Ihandle *ih, int x, int y, char* status)
+static int iFlatScrollBoxMotion_CB(Ihandle* ih, int x, int y, char* status)
 {
   iupFlatScrollBarMotionUpdate(ih, x, y);
 
@@ -157,7 +157,7 @@ static int iFlatScrollBoxWheel_CB(Ihandle* ih, float delta)
 /*****************************************************************************/
 
 
-static int iFlatScrollBoxGetChildPosition(Ihandle* ih, Ihandle* child, int *posx, int *posy)
+static int iFlatScrollBoxGetChildPosition(Ihandle* ih, Ihandle* child, int* posx, int* posy)
 {
   while (child->parent && child != ih)
   {
@@ -234,7 +234,7 @@ static int iFlatScrollBoxSetExpandAttrib(Ihandle* ih, const char* value)
 /*******************************************************************************************************/
 
 
-static void iFlatScrollBoxComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *children_expand)
+static void iFlatScrollBoxComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* children_expand)
 {
   Ihandle* child = iFlatScrollBoxGetChild(ih);
   if (child)
@@ -483,7 +483,7 @@ Iclass* iupFlatScrollBoxNewClass(void)
 
 IUPCONTROLS_API Ihandle* IupFlatScrollBox(Ihandle* child)
 {
-  void *children[2];
+  void* children[2];
   children[0] = (void*)child;
   children[1] = NULL;
   return IupCreatev("flatscrollbox", children);

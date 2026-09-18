@@ -78,7 +78,7 @@ static void fltkDrawSetLineStyle(int style, int line_width)
   fl_line_style(fltk_style | FL_CAP_FLAT | FL_JOIN_MITER, line_width);
 }
 
-static void iupDrawOrderMinMax(int *x1, int *y1, int *x2, int *y2)
+static void iupDrawOrderMinMax(int* x1, int* y1, int* x2, int* y2)
 {
   int t;
   if (*x1 > *x2) { t = *x1; *x1 = *x2; *x2 = t; }
@@ -204,7 +204,7 @@ extern "C" IUP_SDK_API void iupdrvDrawUpdateSize(IdrawCanvas* dc)
   }
 }
 
-extern "C" IUP_SDK_API void iupdrvDrawGetSize(IdrawCanvas* dc, int *w, int *h)
+extern "C" IUP_SDK_API void iupdrvDrawGetSize(IdrawCanvas* dc, int* w, int* h)
 {
   if (!dc) return;
   if (w) *w = dc->w;
@@ -731,7 +731,7 @@ extern "C" IUP_SDK_API void iupdrvDrawResetClip(IdrawCanvas* dc)
   dc->clip_y2 = dc->h - 1;
 }
 
-extern "C" IUP_SDK_API void iupdrvDrawGetClipRect(IdrawCanvas* dc, int *x1, int *y1, int *x2, int *y2)
+extern "C" IUP_SDK_API void iupdrvDrawGetClipRect(IdrawCanvas* dc, int* x1, int* y1, int* x2, int* y2)
 {
   if (!dc) return;
   if (x1) *x1 = dc->clip_x1;

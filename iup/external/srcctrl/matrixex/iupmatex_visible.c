@@ -68,17 +68,17 @@ int iupMatrixExIsLineVisible(Ihandle* ih, int lin)
   return 1;
 }
 
-static char* iMatrixGetVisibleColAttribId(Ihandle *ih, int col)
+static char* iMatrixGetVisibleColAttribId(Ihandle* ih, int col)
 {
   return iupStrReturnBoolean (iupMatrixExIsColumnVisible(ih, col));
 }
 
-static char* iMatrixGetVisibleLinAttribId(Ihandle *ih, int lin)
+static char* iMatrixGetVisibleLinAttribId(Ihandle* ih, int lin)
 {
   return iupStrReturnBoolean (iupMatrixExIsLineVisible(ih, lin));
 }
 
-static int iMatrixSetVisibleColAttribId(Ihandle *ih, int col, const char* value)
+static int iMatrixSetVisibleColAttribId(Ihandle* ih, int col, const char* value)
 {
   char* old_width;
 
@@ -105,7 +105,7 @@ static int iMatrixSetVisibleColAttribId(Ihandle *ih, int col, const char* value)
   return 0;
 }
 
-static int iMatrixSetVisibleLinAttribId(Ihandle *ih, int lin, const char* value)
+static int iMatrixSetVisibleLinAttribId(Ihandle* ih, int lin, const char* value)
 {
   char* old_height;
 

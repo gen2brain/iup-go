@@ -60,34 +60,34 @@ GType iup_gtk_virtual_list_model_get_type(void);
 #define IUP_TYPE_GTK_VIRTUAL_LIST_MODEL (iup_gtk_virtual_list_model_get_type())
 #define IUP_GTK_VIRTUAL_LIST_MODEL(obj) (G_TYPE_CHECK_INSTANCE_CAST((obj), IUP_TYPE_GTK_VIRTUAL_LIST_MODEL, IupGtkVirtualListModel))
 
-static void iup_gtk_virtual_list_model_tree_model_init(GtkTreeModelIface *iface);
+static void iup_gtk_virtual_list_model_tree_model_init(GtkTreeModelIface* iface);
 
 G_DEFINE_TYPE_WITH_CODE(IupGtkVirtualListModel, iup_gtk_virtual_list_model, G_TYPE_OBJECT,
                         G_IMPLEMENT_INTERFACE(GTK_TYPE_TREE_MODEL, iup_gtk_virtual_list_model_tree_model_init))
 
-static void iup_gtk_virtual_list_model_init(IupGtkVirtualListModel *model)
+static void iup_gtk_virtual_list_model_init(IupGtkVirtualListModel* model)
 {
   model->stamp = g_random_int();
 }
 
-static void iup_gtk_virtual_list_model_class_init(IupGtkVirtualListModelClass *klass)
+static void iup_gtk_virtual_list_model_class_init(IupGtkVirtualListModelClass* klass)
 {
   (void)klass;
 }
 
-static GtkTreeModelFlags iup_gtk_virtual_list_model_get_flags(GtkTreeModel *tree_model)
+static GtkTreeModelFlags iup_gtk_virtual_list_model_get_flags(GtkTreeModel* tree_model)
 {
   (void)tree_model;
   return GTK_TREE_MODEL_LIST_ONLY;
 }
 
-static gint iup_gtk_virtual_list_model_get_n_columns(GtkTreeModel *tree_model)
+static gint iup_gtk_virtual_list_model_get_n_columns(GtkTreeModel* tree_model)
 {
   (void)tree_model;
   return IUPGTK_LIST_LAST_DATA;  /* IMAGE + TEXT columns */
 }
 
-static GType iup_gtk_virtual_list_model_get_column_type(GtkTreeModel *tree_model, gint index)
+static GType iup_gtk_virtual_list_model_get_column_type(GtkTreeModel* tree_model, gint index)
 {
   (void)tree_model;
   if (index == IUPGTK_LIST_IMAGE)
@@ -95,10 +95,10 @@ static GType iup_gtk_virtual_list_model_get_column_type(GtkTreeModel *tree_model
   return G_TYPE_STRING;
 }
 
-static gboolean iup_gtk_virtual_list_model_get_iter(GtkTreeModel *tree_model, GtkTreeIter *iter, GtkTreePath *path)
+static gboolean iup_gtk_virtual_list_model_get_iter(GtkTreeModel* tree_model, GtkTreeIter* iter, GtkTreePath* path)
 {
-  IupGtkVirtualListModel *model = IUP_GTK_VIRTUAL_LIST_MODEL(tree_model);
-  gint *indices;
+  IupGtkVirtualListModel* model = IUP_GTK_VIRTUAL_LIST_MODEL(tree_model);
+  gint* indices;
   gint depth, row;
 
   indices = gtk_tree_path_get_indices(path);
@@ -119,9 +119,9 @@ static gboolean iup_gtk_virtual_list_model_get_iter(GtkTreeModel *tree_model, Gt
   return TRUE;
 }
 
-static GtkTreePath *iup_gtk_virtual_list_model_get_path(GtkTreeModel *tree_model, GtkTreeIter *iter)
+static GtkTreePath* iup_gtk_virtual_list_model_get_path(GtkTreeModel* tree_model, GtkTreeIter* iter)
 {
-  IupGtkVirtualListModel *model = IUP_GTK_VIRTUAL_LIST_MODEL(tree_model);
+  IupGtkVirtualListModel* model = IUP_GTK_VIRTUAL_LIST_MODEL(tree_model);
 
   if (iter->stamp != model->stamp)
     return NULL;
@@ -130,11 +130,11 @@ static GtkTreePath *iup_gtk_virtual_list_model_get_path(GtkTreeModel *tree_model
   return gtk_tree_path_new_from_indices(row, -1);
 }
 
-static void iup_gtk_virtual_list_model_get_value(GtkTreeModel *tree_model, GtkTreeIter *iter, gint column, GValue *value)
+static void iup_gtk_virtual_list_model_get_value(GtkTreeModel* tree_model, GtkTreeIter* iter, gint column, GValue* value)
 {
-  IupGtkVirtualListModel *model = IUP_GTK_VIRTUAL_LIST_MODEL(tree_model);
+  IupGtkVirtualListModel* model = IUP_GTK_VIRTUAL_LIST_MODEL(tree_model);
   gint row;
-  char *item_value;
+  char* item_value;
 
   if (column == IUPGTK_LIST_IMAGE)
   {
@@ -207,9 +207,9 @@ static void iup_gtk_virtual_list_model_get_value(GtkTreeModel *tree_model, GtkTr
   g_value_set_string(value, item_value ? item_value : "");
 }
 
-static gboolean iup_gtk_virtual_list_model_iter_next(GtkTreeModel *tree_model, GtkTreeIter *iter)
+static gboolean iup_gtk_virtual_list_model_iter_next(GtkTreeModel* tree_model, GtkTreeIter* iter)
 {
-  IupGtkVirtualListModel *model = IUP_GTK_VIRTUAL_LIST_MODEL(tree_model);
+  IupGtkVirtualListModel* model = IUP_GTK_VIRTUAL_LIST_MODEL(tree_model);
   gint row;
 
   if (iter->stamp != model->stamp)
@@ -225,9 +225,9 @@ static gboolean iup_gtk_virtual_list_model_iter_next(GtkTreeModel *tree_model, G
   return TRUE;
 }
 
-static gboolean iup_gtk_virtual_list_model_iter_children(GtkTreeModel *tree_model, GtkTreeIter *iter, GtkTreeIter *parent)
+static gboolean iup_gtk_virtual_list_model_iter_children(GtkTreeModel* tree_model, GtkTreeIter* iter, GtkTreeIter* parent)
 {
-  IupGtkVirtualListModel *model = IUP_GTK_VIRTUAL_LIST_MODEL(tree_model);
+  IupGtkVirtualListModel* model = IUP_GTK_VIRTUAL_LIST_MODEL(tree_model);
 
   if (parent != NULL)
     return FALSE;
@@ -242,16 +242,16 @@ static gboolean iup_gtk_virtual_list_model_iter_children(GtkTreeModel *tree_mode
   return TRUE;
 }
 
-static gboolean iup_gtk_virtual_list_model_iter_has_child(GtkTreeModel *tree_model, GtkTreeIter *iter)
+static gboolean iup_gtk_virtual_list_model_iter_has_child(GtkTreeModel* tree_model, GtkTreeIter* iter)
 {
   (void)tree_model;
   (void)iter;
   return FALSE;
 }
 
-static gint iup_gtk_virtual_list_model_iter_n_children(GtkTreeModel *tree_model, GtkTreeIter *iter)
+static gint iup_gtk_virtual_list_model_iter_n_children(GtkTreeModel* tree_model, GtkTreeIter* iter)
 {
-  IupGtkVirtualListModel *model = IUP_GTK_VIRTUAL_LIST_MODEL(tree_model);
+  IupGtkVirtualListModel* model = IUP_GTK_VIRTUAL_LIST_MODEL(tree_model);
 
   if (iter == NULL)
     return model->count;
@@ -259,9 +259,9 @@ static gint iup_gtk_virtual_list_model_iter_n_children(GtkTreeModel *tree_model,
   return 0;
 }
 
-static gboolean iup_gtk_virtual_list_model_iter_nth_child(GtkTreeModel *tree_model, GtkTreeIter *iter, GtkTreeIter *parent, gint n)
+static gboolean iup_gtk_virtual_list_model_iter_nth_child(GtkTreeModel* tree_model, GtkTreeIter* iter, GtkTreeIter* parent, gint n)
 {
-  IupGtkVirtualListModel *model = IUP_GTK_VIRTUAL_LIST_MODEL(tree_model);
+  IupGtkVirtualListModel* model = IUP_GTK_VIRTUAL_LIST_MODEL(tree_model);
 
   if (parent != NULL)
     return FALSE;
@@ -276,7 +276,7 @@ static gboolean iup_gtk_virtual_list_model_iter_nth_child(GtkTreeModel *tree_mod
   return TRUE;
 }
 
-static gboolean iup_gtk_virtual_list_model_iter_parent(GtkTreeModel *tree_model, GtkTreeIter *iter, GtkTreeIter *child)
+static gboolean iup_gtk_virtual_list_model_iter_parent(GtkTreeModel* tree_model, GtkTreeIter* iter, GtkTreeIter* child)
 {
   (void)tree_model;
   (void)iter;
@@ -284,7 +284,7 @@ static gboolean iup_gtk_virtual_list_model_iter_parent(GtkTreeModel *tree_model,
   return FALSE;
 }
 
-static void iup_gtk_virtual_list_model_tree_model_init(GtkTreeModelIface *iface)
+static void iup_gtk_virtual_list_model_tree_model_init(GtkTreeModelIface* iface)
 {
   iface->get_flags = iup_gtk_virtual_list_model_get_flags;
   iface->get_n_columns = iup_gtk_virtual_list_model_get_n_columns;
@@ -300,15 +300,15 @@ static void iup_gtk_virtual_list_model_tree_model_init(GtkTreeModelIface *iface)
   iface->iter_parent = iup_gtk_virtual_list_model_iter_parent;
 }
 
-static IupGtkVirtualListModel *iup_gtk_virtual_list_model_new(Ihandle *ih)
+static IupGtkVirtualListModel* iup_gtk_virtual_list_model_new(Ihandle* ih)
 {
-  IupGtkVirtualListModel *model = g_object_new(IUP_TYPE_GTK_VIRTUAL_LIST_MODEL, NULL);
+  IupGtkVirtualListModel* model = g_object_new(IUP_TYPE_GTK_VIRTUAL_LIST_MODEL, NULL);
   model->ih = ih;
   model->count = ih->data->item_count;
   return model;
 }
 
-static void iup_gtk_virtual_list_model_notify_count_changed(IupGtkVirtualListModel *model, Ihandle* ih, int new_count)
+static void iup_gtk_virtual_list_model_notify_count_changed(IupGtkVirtualListModel* model, Ihandle* ih, int new_count)
 {
   GtkTreeView* tree_view;
 
@@ -353,15 +353,15 @@ static void iupgtkListMeasureItemMetrics(void)
 {
   if (iupgtk_list_item_space < 0)
   {
-    GtkWidget *temp_window = gtk_offscreen_window_new();
-    GtkListStore *temp_store = gtk_list_store_new(1, G_TYPE_STRING);
-    GtkWidget *temp_tree = gtk_tree_view_new_with_model(GTK_TREE_MODEL(temp_store));
-    GtkCellRenderer *renderer = gtk_cell_renderer_text_new();
-    GtkTreeViewColumn *column = gtk_tree_view_column_new_with_attributes("", renderer, "text", 0, NULL);
+    GtkWidget* temp_window = gtk_offscreen_window_new();
+    GtkListStore* temp_store = gtk_list_store_new(1, G_TYPE_STRING);
+    GtkWidget* temp_tree = gtk_tree_view_new_with_model(GTK_TREE_MODEL(temp_store));
+    GtkCellRenderer* renderer = gtk_cell_renderer_text_new();
+    GtkTreeViewColumn* column = gtk_tree_view_column_new_with_attributes("", renderer, "text", 0, NULL);
     GtkTreeIter iter;
     int char_height;
-    PangoContext *context;
-    PangoLayout *layout;
+    PangoContext* context;
+    PangoLayout* layout;
 
     g_object_set(G_OBJECT(renderer), "xpad", 0, NULL);
     g_object_set(G_OBJECT(renderer), "ypad", 0, NULL);
@@ -378,8 +378,8 @@ static void iupgtkListMeasureItemMetrics(void)
 
     /* Measure actual row stride by comparing Y positions of row 0 and row 1 */
     {
-      GtkTreePath *path0 = gtk_tree_path_new_from_string("0");
-      GtkTreePath *path1 = gtk_tree_path_new_from_string("1");
+      GtkTreePath* path0 = gtk_tree_path_new_from_string("0");
+      GtkTreePath* path1 = gtk_tree_path_new_from_string("1");
       GdkRectangle rect0, rect1;
 
       gtk_tree_view_get_background_area(GTK_TREE_VIEW(temp_tree), path0, column, &rect0);
@@ -405,14 +405,14 @@ static void iupgtkListMeasureItemMetrics(void)
   }
 }
 
-IUP_SDK_API void iupdrvListAddItemSpace(Ihandle* ih, int *h)
+IUP_SDK_API void iupdrvListAddItemSpace(Ihandle* ih, int* h)
 {
   (void)ih;
   iupgtkListMeasureItemMetrics();
   *h += iupgtk_list_item_space;
 }
 
-IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
+IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int* x, int* y)
 {
   /* LAYOUT_DECORATION_ESTIMATE */
   static int dropdown_border_x = -1;
@@ -424,9 +424,9 @@ IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
 
   if (scrolled_window_border == -1)
   {
-    GtkWidget *temp_window = gtk_offscreen_window_new();
-    GtkWidget *temp_scrolled = gtk_scrolled_window_new(NULL, NULL);
-    GtkWidget *temp_label = gtk_label_new("X");
+    GtkWidget* temp_window = gtk_offscreen_window_new();
+    GtkWidget* temp_scrolled = gtk_scrolled_window_new(NULL, NULL);
+    GtkWidget* temp_label = gtk_label_new("X");
     GtkRequisition label_min, label_nat;
     GtkRequisition sw_min, sw_nat;
 
@@ -464,8 +464,8 @@ IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
 
   if (editbox_border_y == -1)
   {
-    GtkWidget *temp_window = gtk_offscreen_window_new();
-    GtkWidget *temp_entry = gtk_entry_new();
+    GtkWidget* temp_window = gtk_offscreen_window_new();
+    GtkWidget* temp_entry = gtk_entry_new();
 
     gtk_container_add(GTK_CONTAINER(temp_window), temp_entry);
     gtk_widget_show_all(temp_window);
@@ -507,14 +507,14 @@ IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
 
     if (dropdown_border_x == -1)
     {
-      GtkWidget *temp_window = gtk_offscreen_window_new();
-      GtkListStore *temp_store = gtk_list_store_new(1, G_TYPE_STRING);
+      GtkWidget* temp_window = gtk_offscreen_window_new();
+      GtkListStore* temp_store = gtk_list_store_new(1, G_TYPE_STRING);
       GtkTreeIter iter;
       gtk_list_store_append(temp_store, &iter);
       gtk_list_store_set(temp_store, &iter, 0, "X", -1);
 
       GtkWidget* temp_combo = gtk_combo_box_new_with_model(GTK_TREE_MODEL(temp_store));
-      GtkCellRenderer *renderer = gtk_cell_renderer_text_new();
+      GtkCellRenderer* renderer = gtk_cell_renderer_text_new();
       gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(temp_combo), renderer, TRUE);
       gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(temp_combo), renderer, "text", 0, NULL);
 
@@ -658,13 +658,13 @@ static GtkTreeModel* gtkListGetModel(Ihandle* ih)
 
 IUP_SDK_API int iupdrvListGetCount(Ihandle* ih)
 {
-  GtkTreeModel *model = gtkListGetModel(ih);
+  GtkTreeModel* model = gtkListGetModel(ih);
   return gtk_tree_model_iter_n_children(model, NULL);
 }
 
 IUP_SDK_API void iupdrvListAppendItem(Ihandle* ih, const char* value)
 {
-  GtkTreeModel *model = gtkListGetModel(ih);
+  GtkTreeModel* model = gtkListGetModel(ih);
   GtkTreeIter iter;
 
   iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", "1");
@@ -677,7 +677,7 @@ IUP_SDK_API void iupdrvListAppendItem(Ihandle* ih, const char* value)
 
 IUP_SDK_API void iupdrvListInsertItem(Ihandle* ih, int pos, const char* value)
 {
-  GtkTreeModel *model = gtkListGetModel(ih);
+  GtkTreeModel* model = gtkListGetModel(ih);
   GtkTreeIter iter;
 
   iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", "1");
@@ -692,7 +692,7 @@ IUP_SDK_API void iupdrvListInsertItem(Ihandle* ih, int pos, const char* value)
 
 IUP_SDK_API void iupdrvListRemoveItem(Ihandle* ih, int pos)
 {
-  GtkTreeModel *model = gtkListGetModel(ih);
+  GtkTreeModel* model = gtkListGetModel(ih);
   GtkTreeIter iter;
   if (gtk_tree_model_iter_nth_child(model, &iter, NULL, pos))
   {
@@ -727,7 +727,7 @@ IUP_SDK_API void iupdrvListRemoveItem(Ihandle* ih, int pos)
 
 IUP_SDK_API void iupdrvListRemoveAllItems(Ihandle* ih)
 {
-  GtkTreeModel *model = gtkListGetModel(ih);
+  GtkTreeModel* model = gtkListGetModel(ih);
   iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", "1");
   gtk_list_store_clear(GTK_LIST_STORE(model));
   iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", NULL);
@@ -772,7 +772,7 @@ static char* gtkListGetIdValueAttrib(Ihandle* ih, int id)
     GtkTreeModel* model = gtkListGetModel(ih);
     if (gtk_tree_model_iter_nth_child(model, &iter, NULL, pos))
     {
-      gchar *text = NULL;
+      gchar* text = NULL;
       gtk_tree_model_get(model, &iter, IUPGTK_LIST_TEXT, &text, -1);
       if (text)
       {
@@ -786,7 +786,7 @@ static char* gtkListGetIdValueAttrib(Ihandle* ih, int id)
 }
 
 
-static void gtkComboBoxChildrenToggleCb(GtkWidget *widget, gpointer client_data)
+static void gtkComboBoxChildrenToggleCb(GtkWidget* widget, gpointer client_data)
 {
   if (GTK_IS_TOGGLE_BUTTON(widget))
   {
@@ -797,7 +797,7 @@ static void gtkComboBoxChildrenToggleCb(GtkWidget *widget, gpointer client_data)
     gtk_container_forall(GTK_CONTAINER(widget), gtkComboBoxChildrenToggleCb, client_data);
 }
 
-static void gtkComboBoxChildrenSetBgColor(GtkWidget *widget, gpointer client_data)
+static void gtkComboBoxChildrenSetBgColor(GtkWidget* widget, gpointer client_data)
 {
   GdkColor* c = (GdkColor*)client_data;
   iupgtkSetBgColor(widget, (unsigned char)c->red, (unsigned char)c->green, (unsigned char)c->blue);
@@ -844,7 +844,7 @@ static int gtkListSetBgColorAttrib(Ihandle* ih, const char* value)
   if (ih->data->is_dropdown)
   {
     GdkColor c;
-    GtkContainer *container = (GtkContainer*)ih->handle;
+    GtkContainer* container = (GtkContainer*)ih->handle;
     c.blue = b;
     c.green = g;
     c.red = r;
@@ -932,7 +932,7 @@ static char* gtkListGetValueAttrib(Ihandle* ih)
         GtkTreeModel* tree_model;
         if (gtk_tree_selection_get_selected(selection, &tree_model, &iter))
         {
-          GtkTreePath *path = gtk_tree_model_get_path(tree_model, &iter);
+          GtkTreePath* path = gtk_tree_model_get_path(tree_model, &iter);
           int* indices = gtk_tree_path_get_indices(path);
           int ret = indices[0]+1;  /* IUP starts at 1 */
           gtk_tree_path_free (path);
@@ -941,7 +941,7 @@ static char* gtkListGetValueAttrib(Ihandle* ih)
       }
       else
       {
-        GList *il, *list = gtk_tree_selection_get_selected_rows(selection, NULL);
+        GList* il, *list = gtk_tree_selection_get_selected_rows(selection, NULL);
         int count = iupdrvListGetCount(ih);
         char* str = iupStrGetMemory(count+1);
         memset(str, '-', count);
@@ -977,7 +977,7 @@ static int gtkListSetValueAttrib(Ihandle* ih, const char* value)
     if (ih->data->is_dropdown)
     {
       int pos;
-      GtkTreeModel *model = gtkListGetModel(ih);
+      GtkTreeModel* model = gtkListGetModel(ih);
       iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", "1");
       if (iupStrToInt(value, &pos) == 1 &&
           (pos>0 && pos<=gtk_tree_model_iter_n_children(model, NULL)))
@@ -1412,7 +1412,7 @@ static int gtkListSetNCAttrib(Ihandle* ih, const char* value)
     return 1; /* store until not mapped, when mapped will be set again */
 }
 
-static int gtkListSetClipboardAttrib(Ihandle *ih, const char *value)
+static int gtkListSetClipboardAttrib(Ihandle* ih, const char* value)
 {
   GtkEntry* entry;
   if (!ih->data->has_editbox)
@@ -1554,8 +1554,8 @@ IUP_SDK_API void iupdrvListSetItemCount(Ihandle* ih, int count)
 
 /*********************************************************************************/
 
-static void gtkListDragDataReceived(GtkWidget *widget, GdkDragContext *context, gint x, gint y,
-                                    GtkSelectionData *selection_data, guint info, guint time, Ihandle* ih)
+static void gtkListDragDataReceived(GtkWidget* widget, GdkDragContext* context, gint x, gint y,
+                                    GtkSelectionData* selection_data, guint info, guint time, Ihandle* ih)
 {
   int is_ctrl;
   int idDrag = iupAttribGetInt(ih, "_IUPLIST_DRAGITEM");  /* starts at 1 */
@@ -1585,10 +1585,10 @@ static void gtkListDragDataReceived(GtkWidget *widget, GdkDragContext *context, 
     GtkTreePath* path;
     GtkTreeSelection* selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(ih->handle));
     int count = iupdrvListGetCount(ih);
-    GtkTreeModel *model = gtkListGetModel(ih);
+    GtkTreeModel* model = gtkListGetModel(ih);
     GtkTreeIter iterDrag, iterDrop;
-    gchar *text = NULL;
-    GdkPixbuf *pixImage = NULL;
+    gchar* text = NULL;
+    GdkPixbuf* pixImage = NULL;
 
     /* Copy text and image of the dragged item */
     gtk_tree_model_iter_nth_child(model, &iterDrag, NULL, idDrag);  /* starts at 0 */
@@ -1634,7 +1634,7 @@ static void gtkListDragDataReceived(GtkWidget *widget, GdkDragContext *context, 
   (void)selection_data;
 }
 
-static gboolean gtkListDragMotion(GtkWidget *widget, GdkDragContext *context, gint x, gint y, guint time, Ihandle* ih)
+static gboolean gtkListDragMotion(GtkWidget* widget, GdkDragContext* context, gint x, gint y, guint time, Ihandle* ih)
 {
   GtkTreePath* path;
   GtkTreeViewDropPosition pos;
@@ -1657,7 +1657,7 @@ static gboolean gtkListDragMotion(GtkWidget *widget, GdkDragContext *context, gi
   return FALSE;
 }
 
-static void gtkListDragBegin(GtkWidget *widget, GdkDragContext *context, Ihandle* ih)
+static void gtkListDragBegin(GtkWidget* widget, GdkDragContext* context, Ihandle* ih)
 {
   int x = iupAttribGetInt(ih, "_IUPLIST_DRAG_X");
   int y = iupAttribGetInt(ih, "_IUPLIST_DRAG_Y");
@@ -1667,7 +1667,7 @@ static void gtkListDragBegin(GtkWidget *widget, GdkDragContext *context, Ihandle
   (void)widget;
 }
 
-static gboolean gtkListDragButtonEvent(GtkWidget *widget, GdkEventButton *evt, Ihandle *ih)
+static gboolean gtkListDragButtonEvent(GtkWidget* widget, GdkEventButton* evt, Ihandle* ih)
 {
   if (evt->type == GDK_BUTTON_PRESS && evt->button == 1)  /* left single press */
   {
@@ -1733,7 +1733,7 @@ static void gtkListEditMoveCursor(GtkWidget* entry, GtkMovementStep step, gint c
   (void)extend_selection;
 }
 
-static gboolean gtkListEditKeyPressEvent(GtkWidget* entry, GdkEventKey *evt, Ihandle *ih)
+static gboolean gtkListEditKeyPressEvent(GtkWidget* entry, GdkEventKey* evt, Ihandle* ih)
 {
   if (iupgtkKeyPressEvent(entry, evt, ih) == TRUE)
     return TRUE;
@@ -1749,7 +1749,7 @@ static gboolean gtkListEditKeyPressEvent(GtkWidget* entry, GdkEventKey *evt, Iha
     GtkTreeSelection* selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(ih->handle));
     if (gtk_tree_selection_get_selected(selection, &model, &iter))
     {
-      GtkTreePath *path = gtk_tree_model_get_path(model, &iter);
+      GtkTreePath* path = gtk_tree_model_get_path(model, &iter);
       int* indices = gtk_tree_path_get_indices(path);
       pos = indices[0];
       gtk_tree_path_free(path);
@@ -1793,7 +1793,7 @@ static gboolean gtkListEditKeyPressEvent(GtkWidget* entry, GdkEventKey *evt, Iha
 
       if (gtk_tree_model_iter_nth_child(model, &iter, NULL, pos))
       {
-        gchar *text = NULL;
+        gchar* text = NULL;
         gtk_tree_model_get(model, &iter, IUPGTK_LIST_TEXT, &text, -1);
         if (text)
         {
@@ -1809,21 +1809,21 @@ static gboolean gtkListEditKeyPressEvent(GtkWidget* entry, GdkEventKey *evt, Iha
   return FALSE;
 }
 
-static gboolean gtkListEditKeyReleaseEvent(GtkWidget *widget, GdkEventKey *evt, Ihandle *ih)
+static gboolean gtkListEditKeyReleaseEvent(GtkWidget* widget, GdkEventKey* evt, Ihandle* ih)
 {
   gtkListEditMoveCursor(widget, 0, 0, 0, ih);
   (void)evt;
   return FALSE;
 }
 
-static gboolean gtkListEditButtonEvent(GtkWidget *widget, GdkEventButton *evt, Ihandle *ih)
+static gboolean gtkListEditButtonEvent(GtkWidget* widget, GdkEventButton* evt, Ihandle* ih)
 {
   gtkListEditMoveCursor(widget, 0, 0, 0, ih);
   (void)evt;
   return FALSE;
 }
 
-static void gtkListEditDeleteText(GtkEditable *editable, int start, int end, Ihandle* ih)
+static void gtkListEditDeleteText(GtkEditable* editable, int start, int end, Ihandle* ih)
 {
   IFnis cb = (IFnis)IupGetCallback(ih, "EDIT_CB");
   int ret;
@@ -1836,7 +1836,7 @@ static void gtkListEditDeleteText(GtkEditable *editable, int start, int end, Iha
     g_signal_stop_emission_by_name(editable, "delete_text");
 }
 
-static void gtkListEditInsertText(GtkEditable *editable, char *insert_value, int len, int *pos, Ihandle* ih)
+static void gtkListEditInsertText(GtkEditable* editable, char* insert_value, int len, int* pos, Ihandle* ih)
 {
   IFnis cb = (IFnis)IupGetCallback(ih, "EDIT_CB");
   int ret;
@@ -1871,7 +1871,7 @@ static void gtkListEditChanged(void* dummy, Ihandle* ih)
   (void)dummy;
 }
 
-static void gtkListComboBoxPopupShown(GtkComboBox* widget, GParamSpec *pspec, Ihandle* ih)
+static void gtkListComboBoxPopupShown(GtkComboBox* widget, GParamSpec* pspec, Ihandle* ih)
 {
   IFni cb = (IFni)IupGetCallback(ih, "DROPDOWN_CB");
   iupAttribSet(ih, "_IUPDROPDOWN_POPUP", "1");
@@ -1931,7 +1931,7 @@ static void gtkListTreeViewGrabFocusAfter(GtkWidget* widget, Ihandle* ih)
   iupAttribSet(ih, "_IUPLIST_BLOCK_SELECT", NULL);
 }
 
-static gboolean gtkListSimpleKeyPressEvent(GtkWidget *widget, GdkEventKey *evt, Ihandle *ih)
+static gboolean gtkListSimpleKeyPressEvent(GtkWidget* widget, GdkEventKey* evt, Ihandle* ih)
 {
   if (iupgtkKeyPressEvent(widget, evt, ih) == TRUE)
     return TRUE;
@@ -1941,7 +1941,7 @@ static gboolean gtkListSimpleKeyPressEvent(GtkWidget *widget, GdkEventKey *evt, 
   return FALSE;
 }
 
-static void gtkListRowActivated(GtkTreeView *tree_view, GtkTreePath *path, GtkTreeViewColumn *column, Ihandle* ih)
+static void gtkListRowActivated(GtkTreeView* tree_view, GtkTreePath* path, GtkTreeViewColumn* column, Ihandle* ih)
 {
   IFnis cb = (IFnis) IupGetCallback(ih, "DBLCLICK_CB");
   if (cb)
@@ -1962,7 +1962,7 @@ static void gtkListSelectionChanged(GtkTreeSelection* selection, Ihandle* ih)
     GtkTreeModel* tree_model;
     if (gtk_tree_selection_get_selected(selection, &tree_model, &iter))
     {
-      GtkTreePath *path = gtk_tree_model_get_path(tree_model, &iter);
+      GtkTreePath* path = gtk_tree_model_get_path(tree_model, &iter);
       char* value = NULL;
 
       gtk_tree_model_get(tree_model, &iter, IUPGTK_LIST_TEXT, &value, -1);
@@ -1989,7 +1989,7 @@ static void gtkListSelectionChanged(GtkTreeSelection* selection, Ihandle* ih)
       GtkTreeModel* tree_model;
       if (gtk_tree_selection_get_selected(selection, &tree_model, &iter))
       {
-        GtkTreePath *path = gtk_tree_model_get_path(tree_model, &iter);
+        GtkTreePath* path = gtk_tree_model_get_path(tree_model, &iter);
         int* indices = gtk_tree_path_get_indices(path);
         iupListSingleCallActionCb(ih, cb, indices[0]+1);  /* IUP starts at 1 */
         gtk_tree_path_free (path);
@@ -2002,7 +2002,7 @@ static void gtkListSelectionChanged(GtkTreeSelection* selection, Ihandle* ih)
     IFnsii cb = (IFnsii) IupGetCallback(ih, "ACTION");
     if (multi_cb || cb)
     {
-      GList *il, *list = gtk_tree_selection_get_selected_rows(selection, NULL);
+      GList* il, *list = gtk_tree_selection_get_selected_rows(selection, NULL);
       int i, sel_count = g_list_length(list);
       int* pos = malloc(sizeof(int)*sel_count);
       for (il=list, i=0; il; il=il->next, i++)
@@ -2023,7 +2023,7 @@ static void gtkListSelectionChanged(GtkTreeSelection* selection, Ihandle* ih)
     iupBaseCallValueChangedCb(ih);
 }
 
-static gboolean gtkListComboFocusInOutEvent(GtkWidget *widget, GdkEventFocus *evt, Ihandle *ih)
+static gboolean gtkListComboFocusInOutEvent(GtkWidget* widget, GdkEventFocus* evt, Ihandle* ih)
 {
   /* Used only when DROPDOWN=YES and EDITBOX=NO */
   if (iupAttribGetStr(ih, "_IUPDROPDOWN_POPUP"))
@@ -2038,7 +2038,7 @@ static gboolean gtkListComboFocusInOutEvent(GtkWidget *widget, GdkEventFocus *ev
   return iupgtkFocusInOutEvent(widget, evt, ih);
 }
 
-static gboolean gtkListComboEnterLeaveEvent(GtkWidget *widget, GdkEventCrossing *evt, Ihandle *ih)
+static gboolean gtkListComboEnterLeaveEvent(GtkWidget* widget, GdkEventCrossing* evt, Ihandle* ih)
 {
   /* Used only when DROPDOWN=YES and EDITBOX=NO */
   if (evt->mode != GDK_CROSSING_NORMAL)
@@ -2076,8 +2076,8 @@ static void gtkListScrolledWindowSizeAllocate(GtkWidget* widget, GdkRectangle* a
 static int gtkListMapMethod(Ihandle* ih)
 {
   GtkScrolledWindow* scrolled_window = NULL;
-  GtkListStore *store;
-  GtkCellRenderer *renderer = NULL, *renderer_img = NULL;
+  GtkListStore* store;
+  GtkCellRenderer* renderer = NULL, *renderer_img = NULL;
 
   store = gtk_list_store_new(IUPGTK_LIST_LAST_DATA, GDK_TYPE_PIXBUF, G_TYPE_STRING);
 
@@ -2112,7 +2112,7 @@ static int gtkListMapMethod(Ihandle* ih)
 
     if (ih->data->has_editbox)
     {
-      GtkWidget *entry;
+      GtkWidget* entry;
 #if GTK_CHECK_VERSION(2, 12, 0)
       GList* list = gtk_cell_layout_get_cells(GTK_CELL_LAYOUT(ih->handle));
       renderer = list->data;
@@ -2145,13 +2145,13 @@ static int gtkListMapMethod(Ihandle* ih)
     }
     else
     {
-      GtkWidget *toggle = NULL;
+      GtkWidget* toggle = NULL;
       Ihandle* native_parent = iupChildTreeGetNativeParent(ih);
 
       /* had to add an event box so it can be positioned in an IupCanvas based control */
       if (native_parent->iclass->nativetype == IUP_TYPECANVAS)
       {
-        GtkWidget *box = gtk_event_box_new();
+        GtkWidget* box = gtk_event_box_new();
         gtk_container_add((GtkContainer*)box, ih->handle);
         iupAttribSet(ih, "_IUP_EXTRAPARENT", (char*)box);
       }
@@ -2221,7 +2221,7 @@ static int gtkListMapMethod(Ihandle* ih)
   else
   {
     GtkTreeSelection* selection;
-    GtkTreeViewColumn *column;
+    GtkTreeViewColumn* column;
     GtkPolicyType scrollbar_policy;
     GtkTreeModel* model;
 
@@ -2259,7 +2259,7 @@ static int gtkListMapMethod(Ihandle* ih)
       GtkBox* vbox = (GtkBox*)gtk_vbox_new(FALSE, 0);
 #endif
 
-      GtkWidget *entry = gtk_entry_new();
+      GtkWidget* entry = gtk_entry_new();
       gtk_widget_show(entry);
 #if GTK_CHECK_VERSION(3, 0, 0)
       gtk_widget_set_vexpand(entry, FALSE);

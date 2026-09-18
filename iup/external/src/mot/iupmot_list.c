@@ -55,7 +55,7 @@ IUP_SDK_API int iupdrvListSetImageHandle(Ihandle* ih, int id, void* hImage)
   return 0;
 }
 
-IUP_SDK_API void iupdrvListAddItemSpace(Ihandle* ih, int *h)
+IUP_SDK_API void iupdrvListAddItemSpace(Ihandle* ih, int* h)
 {
   if (ih->data->has_editbox)
     *h += 1;
@@ -63,7 +63,7 @@ IUP_SDK_API void iupdrvListAddItemSpace(Ihandle* ih, int *h)
     *h += 3;
 }
 
-IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
+IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int* x, int* y)
 {
   int border_size = 2*4;
   (*x) += border_size;
@@ -130,10 +130,10 @@ static void motListAddItem(Ihandle* ih, int pos, const char* value)
   XmStringFree(str);
 }
 
-static void motListAddSortedItem(Ihandle* ih, const char *value)
+static void motListAddSortedItem(Ihandle* ih, const char* value)
 {
-  char *text;
-  XmString *strlist;
+  char* text;
+  XmString* strlist;
   int u_bound, l_bound = 0;
 
   XtVaGetValues(ih->handle, XmNitemCount, &u_bound, XmNitems, &strlist, NULL);
@@ -356,7 +356,7 @@ static char* motListGetValueAttrib(Ihandle* ih)
 {
   if (ih->data->has_editbox)
   {
-    char *str, *xstr;
+    char* str, *xstr;
     Widget cbedit;
     XtVaGetValues(ih->handle, XmNtextField, &cbedit, NULL);
     xstr = XmTextFieldGetString(cbedit);
@@ -914,7 +914,7 @@ static int motListSetNCAttrib(Ihandle* ih, const char* value)
     return 1; /* store until not mapped, when mapped will be set again */
 }
 
-static int motListSetClipboardAttrib(Ihandle *ih, const char *value)
+static int motListSetClipboardAttrib(Ihandle* ih, const char* value)
 {
   Widget cbedit;
   if (!ih->data->has_editbox)
@@ -925,7 +925,7 @@ static int motListSetClipboardAttrib(Ihandle *ih, const char *value)
   if (iupStrEqualNoCase(value, "COPY"))
   {
     Ihandle* clipboard;
-    char *str = XmTextFieldGetSelection(cbedit);
+    char* str = XmTextFieldGetSelection(cbedit);
     if (!str) return 0;
 
     clipboard = IupClipboard();
@@ -937,7 +937,7 @@ static int motListSetClipboardAttrib(Ihandle *ih, const char *value)
   else if (iupStrEqualNoCase(value, "CUT"))
   {
     Ihandle* clipboard;
-    char *str = XmTextFieldGetSelection(cbedit);
+    char* str = XmTextFieldGetSelection(cbedit);
     if (!str) return 0;
 
     clipboard = IupClipboard();
@@ -954,7 +954,7 @@ static int motListSetClipboardAttrib(Ihandle *ih, const char *value)
   else if (iupStrEqualNoCase(value, "PASTE"))
   {
     Ihandle* clipboard;
-    char *str;
+    char* str;
 
     clipboard = IupClipboard();
     str = IupGetAttribute(clipboard, "TEXT");
@@ -977,7 +977,7 @@ static int motListSetClipboardAttrib(Ihandle *ih, const char *value)
 
 /*********************************************************************************/
 
-static void motListDragTransferProc(Widget drop_context, Ihandle* ih, Atom *seltype, Atom *type, XtPointer value, unsigned long *length, int format)
+static void motListDragTransferProc(Widget drop_context, Ihandle* ih, Atom* seltype, Atom* type, XtPointer value, unsigned long* length, int format)
 {
   Atom atomListItem = XInternAtom(iupmot_display, "LIST_ITEM", False);
   int idDrag = (int)(intptr_t)value;  /* starts at 1 */
@@ -1038,7 +1038,7 @@ static void motListDropProc(Widget w, XtPointer client_data, XmDropProcCallbackS
   int i, num_args = 0;
   Widget drop_context;
   Cardinal numExportTargets;
-  Atom *exportTargets;
+  Atom* exportTargets;
   Boolean found = False;
   Ihandle* ih = NULL;
   (void)client_data;
@@ -1091,7 +1091,7 @@ static void motListDragDropFinishCallback(Widget drop_context, XtPointer client_
   (void)client_data;
 }
 
-static void motListDragMotionCallback(Widget drop_context, Ihandle *ih, XmDragMotionCallbackStruct* drag_motion)
+static void motListDragMotionCallback(Widget drop_context, Ihandle* ih, XmDragMotionCallbackStruct* drag_motion)
 {
   (void)drop_context;
   if (!iupAttribGet(ih, "NODRAGFEEDBACK"))
@@ -1122,8 +1122,8 @@ static void motListDragMotionCallback(Widget drop_context, Ihandle *ih, XmDragMo
   }
 }
 
-static Boolean motListConvertProc(Widget drop_context, Atom *selection, Atom *target, Atom *type_return,
-                                  XtPointer *value_return, unsigned long *length_return, int *format_return)
+static Boolean motListConvertProc(Widget drop_context, Atom* selection, Atom* target, Atom* type_return,
+                                  XtPointer* value_return, unsigned long* length_return, int* format_return)
 {
   Atom atomMotifDrop = XInternAtom(iupmot_display, "_MOTIF_DROP", False);
   Atom atomTreeItem = XInternAtom(iupmot_display, "LIST_ITEM", False);
@@ -1265,10 +1265,10 @@ static void motListEnableDragDrop(Widget w, Ihandle* ih)
 
 /*********************************************************************************/
 
-static void motListEditModifyVerifyCallback(Widget cbedit, Ihandle *ih, XmTextVerifyPtr text)
+static void motListEditModifyVerifyCallback(Widget cbedit, Ihandle* ih, XmTextVerifyPtr text)
 {
   int start, end, remove_dir = 0, ret;
-  char *insert_value;
+  char* insert_value;
   KeySym motcode = 0;
   IFnis cb;
 
@@ -1342,7 +1342,7 @@ static void motListEditMotionVerifyCallback(Widget w, Ihandle* ih, XmTextVerifyC
   (void)w;
 }
 
-static void motListEditKeyPressEvent(Widget cbedit, Ihandle *ih, XKeyEvent *evt, Boolean *cont)
+static void motListEditKeyPressEvent(Widget cbedit, Ihandle* ih, XKeyEvent* evt, Boolean* cont)
 {
   *cont = True;
   iupmotKeyPressEvent(cbedit, ih, (XEvent*)evt, cont);

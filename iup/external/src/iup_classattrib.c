@@ -171,7 +171,7 @@ static int iClassObjectSetAttributeId(Ihandle* ih, const char* name, int id, con
   return 1;  /* function not found, default to string */
 }
 
-static int iClassObjectSetAttribute(Ihandle* ih, const char* name, const char * value, int *inherit)
+static int iClassObjectSetAttribute(Ihandle* ih, const char* name, const char * value, int* inherit)
 {
   IattribFunc* afunc;
 
@@ -337,7 +337,7 @@ static char* iClassObjectGetAttributeId(Ihandle* ih, const char* name, int id)
   return NULL;
 }
 
-static char* iClassObjectGetAttribute(Ihandle* ih, const char* name, char* *def_value, int *inherit)
+static char* iClassObjectGetAttribute(Ihandle* ih, const char* name, char* *def_value, int* inherit)
 {
   IattribFunc* afunc;
 
@@ -431,7 +431,7 @@ int iupClassObjectSetAttributeId(Ihandle* ih, const char* name, int id, const ch
   return ret;
 }
 
-int iupClassObjectSetAttribute(Ihandle* ih, const char* name, const char * value, int *inherit)
+int iupClassObjectSetAttribute(Ihandle* ih, const char* name, const char * value, int* inherit)
 {
   void* scope = iupdrvNativeScopeBegin();
   int ret = iClassObjectSetAttribute(ih, name, value, inherit);
@@ -455,7 +455,7 @@ char* iupClassObjectGetAttributeId(Ihandle* ih, const char* name, int id)
   return ret;
 }
 
-char* iupClassObjectGetAttribute(Ihandle* ih, const char* name, char* *def_value, int *inherit)
+char* iupClassObjectGetAttribute(Ihandle* ih, const char* name, char* *def_value, int* inherit)
 {
   void* scope = iupdrvNativeScopeBegin();
   char* ret = iClassObjectGetAttribute(ih, name, def_value, inherit);
@@ -463,7 +463,7 @@ char* iupClassObjectGetAttribute(Ihandle* ih, const char* name, char* *def_value
   return ret;
 }
 
-void iupClassObjectGetAttributeInfo(Ihandle* ih, const char* name, char* *def_value, int *inherit)
+void iupClassObjectGetAttributeInfo(Ihandle* ih, const char* name, char* *def_value, int* inherit)
 {
   IattribFunc* afunc;
 
@@ -499,7 +499,7 @@ void iupClassObjectGetAttributeInfo(Ihandle* ih, const char* name, char* *def_va
   }
 }
 
-void iupClassGetAttribNameInfo(Iclass* ic, const char* name, char* *def_value, int *flags)
+void iupClassGetAttribNameInfo(Iclass* ic, const char* name, char* *def_value, int* flags)
 {
   IattribFunc* afunc = (IattribFunc*)iupTableGet(ic->attrib_func, name);
   *def_value = NULL;
@@ -676,8 +676,8 @@ IUP_SDK_API void iupClassRegisterAttributeId2(Iclass* ic, const char* name,
 }
 
 IUP_SDK_API void iupClassRegisterGetAttribute(Iclass* ic, const char* name,
-                                  IattribGetFunc *_get, IattribSetFunc *_set,
-                                  const char* *_default_value, const char* *_system_default, int *_flags)
+                                  IattribGetFunc* _get, IattribSetFunc* _set,
+                                  const char* *_default_value, const char* *_system_default, int* _flags)
 {
   IattribFunc* afunc = (IattribFunc*)iupTableGet(ic->attrib_func, name);
   if (afunc)
@@ -911,7 +911,7 @@ IUP_API int IupGetClassConstructor(const char* classname, char** format, char** 
   return ic->format ? 1 : 0;
 }
 
-IUP_API void IupSetClassDefaultAttribute(const char* classname, const char *name, const char* default_value)
+IUP_API void IupSetClassDefaultAttribute(const char* classname, const char* name, const char* default_value)
 {
   Iclass* ic;
   IattribFunc* afunc;
@@ -951,7 +951,7 @@ IUP_API void IupSaveClassAttributes(Ihandle* ih)
 {
   int has_attrib_id, start_id = 0;
   Iclass* ic;
-  char *name;
+  char* name;
 
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
@@ -985,8 +985,8 @@ IUP_API void IupSaveClassAttributes(Ihandle* ih)
       if (!(afunc->flags & IUPAF_HAS_ID))     /* no ID */
       {
         int inherit;
-        char *def_value;
-        char *value = iupClassObjectGetAttribute(ih, name, &def_value, &inherit);
+        char* def_value;
+        char* value = iupClassObjectGetAttribute(ih, name, &def_value, &inherit);
         if (value && value[0])    /* NOT NULL and not empty */
         {
           if ((def_value && iupStrEqualNoCase(def_value, value)) ||  /* equal to the default value */
@@ -1002,7 +1002,7 @@ IUP_API void IupSaveClassAttributes(Ihandle* ih)
       }
       else if (has_attrib_id)
       {
-        char *value;
+        char* value;
 
         if (iupStrEqual(name, "IDVALUE"))
           name = "";
@@ -1049,7 +1049,7 @@ IUP_API void IupCopyClassAttributes(Ihandle* src_ih, Ihandle* dst_ih)
 {
   int has_attrib_id, start_id = 0;
   Iclass* ic;
-  char *name;
+  char* name;
 
   iupASSERT(iupObjectCheck(src_ih));
   if (!iupObjectCheck(src_ih))
@@ -1089,7 +1089,7 @@ IUP_API void IupCopyClassAttributes(Ihandle* src_ih, Ihandle* dst_ih)
 
       if (!(afunc->flags & IUPAF_HAS_ID))     /* no ID */
       {
-        char *value = IupGetAttribute(src_ih, name);
+        char* value = IupGetAttribute(src_ih, name);
         if (value && value[0])    /* NOT NULL and not empty */
         {
           if (!iupStrEqualNoCase(value, IupGetAttribute(dst_ih, name)))     /* NOT already equal */
@@ -1098,7 +1098,7 @@ IUP_API void IupCopyClassAttributes(Ihandle* src_ih, Ihandle* dst_ih)
       }
       else if (has_attrib_id)
       {
-        char *value;
+        char* value;
 
         if (iupStrEqual(name, "IDVALUE"))
           name = "";
@@ -1152,7 +1152,7 @@ IUP_API void IupCopyClassAttributes(Ihandle* src_ih, Ihandle* dst_ih)
                  !(afunc->flags & IUPAF_HAS_ID) &&      /* no ID */
                  !(afunc->flags & IUPAF_CALLBACK))      /* not a callback */
     {
-      char *value = IupGetAttribute(src_ih, name);
+      char* value = IupGetAttribute(src_ih, name);
       if (value &&     /* NOT NULL */
           !iupStrEqualNoCase(value, IupGetAttribute(dst_ih, name)))     /* NOT already stored */
         IupStoreAttribute(dst_ih, name, value);
@@ -1192,7 +1192,7 @@ IUP_SDK_API void iupClassObjectUpdateGlobalDefaults(Ihandle* ih)
 static void iClassObjectEnsureDefaultAttributes(Ihandle* ih)
 {
   Iclass* ic;
-  char *name;
+  char* name;
 
   ic = ih->iclass;
 

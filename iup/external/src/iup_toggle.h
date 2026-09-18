@@ -14,13 +14,13 @@ extern "C" {
 
 /** \addtogroup drv
  * @{ */
-IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y);
-IUP_SDK_API void iupdrvToggleAddBorders(Ihandle* ih, int *x, int *y);
+IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int* x, int* y);
+IUP_SDK_API void iupdrvToggleAddBorders(Ihandle* ih, int* x, int* y);
 IUP_SDK_API void iupdrvToggleInitClass(Iclass* ic);
 /** Adds checkbox indicator size. */
-IUP_SDK_API void iupdrvToggleAddCheckBox(Ihandle* ih, int *x, int *y, const char* str);
+IUP_SDK_API void iupdrvToggleAddCheckBox(Ihandle* ih, int* x, int* y, const char* str);
 /** Adds switch indicator size. */
-IUP_SDK_API void iupdrvToggleAddSwitch(Ihandle* ih, int *x, int *y, const char* str);
+IUP_SDK_API void iupdrvToggleAddSwitch(Ihandle* ih, int* x, int* y, const char* str);
 /** @} */
 
 IUP_SDK_API Ihandle* iupRadioFindToggleParent(Ihandle* ih_toggle);

@@ -86,7 +86,7 @@ static void gtk4CssAppendRules(GString* out, const char* class_name, Igtk4Widget
 
   if (style->sub_rules && g_hash_table_size(style->sub_rules) > 0)
   {
-    GList *keys, *l;
+    GList* keys, *l;
     keys = g_hash_table_get_keys(style->sub_rules);
     keys = g_list_sort(keys, (GCompareFunc)strcmp);
     for (l = keys; l; l = l->next)

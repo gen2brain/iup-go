@@ -57,7 +57,7 @@ static int gtkTrayDoubleClick(int button)
   }
 }
 
-static void gtkTrayAction(GtkStatusIcon *status_icon, Ihandle *ih)
+static void gtkTrayAction(GtkStatusIcon* status_icon, Ihandle* ih)
 {
   /* from GTK source code it is called only when button==1 and pressed==1 */
   int button = 1;
@@ -71,7 +71,7 @@ static void gtkTrayAction(GtkStatusIcon *status_icon, Ihandle *ih)
   (void)status_icon;
 }
 
-static void gtkTrayPopupMenu(GtkStatusIcon *status_icon, guint gbutton, guint activate_time, Ihandle *ih)
+static void gtkTrayPopupMenu(GtkStatusIcon* status_icon, guint gbutton, guint activate_time, Ihandle* ih)
 {
   /* from GTK source code it is called only when button==3 and pressed==1 */
   int button = 3;
@@ -87,7 +87,7 @@ static void gtkTrayPopupMenu(GtkStatusIcon *status_icon, guint gbutton, guint ac
   (void)status_icon;
 }
 
-static GtkStatusIcon* gtkGetStatusIcon(Ihandle *ih)
+static GtkStatusIcon* gtkGetStatusIcon(Ihandle* ih)
 {
   GtkStatusIcon* status_icon = (GtkStatusIcon*)iupAttribGet(ih, "_IUPGTK_STATUSICON");
 
@@ -108,14 +108,14 @@ static GtkStatusIcon* gtkGetStatusIcon(Ihandle *ih)
 /* Driver Interface Implementation                                            */
 /******************************************************************************/
 
-IUP_SDK_API int iupdrvTraySetVisible(Ihandle *ih, int visible)
+IUP_SDK_API int iupdrvTraySetVisible(Ihandle* ih, int visible)
 {
   GtkStatusIcon* status_icon = gtkGetStatusIcon(ih);
   gtk_status_icon_set_visible(status_icon, visible);
   return 1;
 }
 
-IUP_SDK_API int iupdrvTraySetTip(Ihandle *ih, const char *value)
+IUP_SDK_API int iupdrvTraySetTip(Ihandle* ih, const char* value)
 {
   GtkStatusIcon* status_icon = gtkGetStatusIcon(ih);
 
@@ -137,7 +137,7 @@ IUP_SDK_API int iupdrvTraySetTip(Ihandle *ih, const char *value)
   return 1;
 }
 
-IUP_SDK_API int iupdrvTraySetImage(Ihandle *ih, const char *value)
+IUP_SDK_API int iupdrvTraySetImage(Ihandle* ih, const char* value)
 {
   GtkStatusIcon* status_icon = gtkGetStatusIcon(ih);
   GdkPixbuf* icon = (GdkPixbuf*)iupImageGetIcon(value);
@@ -145,7 +145,7 @@ IUP_SDK_API int iupdrvTraySetImage(Ihandle *ih, const char *value)
   return 1;
 }
 
-IUP_SDK_API int iupdrvTraySetMenu(Ihandle *ih, Ihandle *menu)
+IUP_SDK_API int iupdrvTraySetMenu(Ihandle* ih, Ihandle* menu)
 {
   /* the XEmbed protocol has no way for the host to request a context menu, use TRAYCLICK_CB */
   (void)ih;
@@ -162,7 +162,7 @@ static gboolean gtkXEmbedDeferredExitLoop(gpointer data)
   return G_SOURCE_REMOVE;
 }
 
-IUP_SDK_API void iupdrvTrayDestroy(Ihandle *ih)
+IUP_SDK_API void iupdrvTrayDestroy(Ihandle* ih)
 {
   GtkStatusIcon* status_icon = (GtkStatusIcon*)iupAttribGet(ih, "_IUPGTK_STATUSICON");
 

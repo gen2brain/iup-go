@@ -109,7 +109,7 @@ typedef NS_ENUM(NSUInteger, IupCocoaTabTextOrientation) {
 - (NSRect)tabRectFromIndex:(NSUInteger)index;
 - (NSRect)rectForTabListControl;
 - (BOOL)isBlankAreaOfTabBarViewInPoint:(NSPoint)p;
-- (NSMenu *)tabsMenu;
+- (NSMenu*)tabsMenu;
 - (void)popupMenuDidChoosed:(NSMenuItem*)item;
 - (BOOL)validateMenuItem:(NSMenuItem*)menuItem;
 - (IupCocoaTabCell*)tabCellInPoint:(NSPoint)p;

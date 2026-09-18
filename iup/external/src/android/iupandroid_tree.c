@@ -1136,7 +1136,7 @@ static int androidTreeSetHideButtonsAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-IUP_SDK_API void iupdrvTreeAddBorders(Ihandle* ih, int *w, int *h)
+IUP_SDK_API void iupdrvTreeAddBorders(Ihandle* ih, int* w, int* h)
 {
   int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
   int char_w, char_h, row_h;

@@ -68,7 +68,7 @@ static char* iValGetMinAttrib(Ihandle* ih)
   return iupStrReturnDouble(ih->data->vmin);
 }
 
-static int iValSetOrientationAttrib(Ihandle* ih, const char *value)
+static int iValSetOrientationAttrib(Ihandle* ih, const char* value)
 {
   int min_w, min_h;
 
@@ -95,7 +95,7 @@ static char* iValGetOrientationAttrib(Ihandle* ih)
     return "VERTICAL";
 }
 
-static int iValSetInvertedAttrib(Ihandle* ih, const char *value)
+static int iValSetInvertedAttrib(Ihandle* ih, const char* value)
 {
   /* valid only before map */
   if (ih->handle)
@@ -114,7 +114,7 @@ static char* iValGetInvertedAttrib(Ihandle* ih)
   return iupStrReturnBoolean (ih->data->inverted);
 }
 
-static int iValCreateMethod(Ihandle* ih, void **params)
+static int iValCreateMethod(Ihandle* ih, void** params)
 {
   char* orientation = "HORIZONTAL";
   if (params && params[0])
@@ -173,9 +173,9 @@ Iclass* iupValNewClass(void)
   return ic;
 }
 
-IUP_API Ihandle* IupVal(const char *orientation)
+IUP_API Ihandle* IupVal(const char* orientation)
 {
-  void *params[2];
+  void* params[2];
   params[0] = (void*)orientation;
   params[1] = NULL;
   return IupCreatev("val", params);

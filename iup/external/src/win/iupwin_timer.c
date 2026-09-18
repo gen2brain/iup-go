@@ -17,7 +17,7 @@
 #include "iup_timer.h"
 
 
-static ULONGLONG(WINAPI *winTimerGetTickCount64) (void) = NULL;
+static ULONGLONG(WINAPI* winTimerGetTickCount64) (void) = NULL;
 
 static Itable* wintimer_id_table = NULL; /* table indexed by ID containing Ihandle* address */
 
@@ -33,7 +33,7 @@ static long long winTimerGetTickCount(void)
 static VOID CALLBACK winTimerFunc(HWND hwnd, UINT msg, UINT_PTR wid, DWORD time)
 {
   Icallback cb;
-  Ihandle *ih;
+  Ihandle* ih;
 
   (void)time;
   (void)msg;
@@ -56,7 +56,7 @@ static VOID CALLBACK winTimerFunc(HWND hwnd, UINT msg, UINT_PTR wid, DWORD time)
   }
 }
 
-IUP_SDK_API void iupdrvTimerRun(Ihandle *ih)
+IUP_SDK_API void iupdrvTimerRun(Ihandle* ih)
 {
   unsigned int time_ms;
 
@@ -106,6 +106,6 @@ IUP_SDK_API void iupdrvTimerInitClass(Iclass* ic)
 
   {
     HMODULE kernel32 = GetModuleHandle(TEXT("KERNEL32.DLL"));
-    winTimerGetTickCount64 = (ULONGLONG(WINAPI *)(void))GetProcAddress(kernel32, "GetTickCount64");
+    winTimerGetTickCount64 = (ULONGLONG(WINAPI*)(void))GetProcAddress(kernel32, "GetTickCount64");
   }
 }

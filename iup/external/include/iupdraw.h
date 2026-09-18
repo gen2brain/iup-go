@@ -20,7 +20,7 @@ IUP_API void IupDrawEnd(Ihandle* ih);
 
 IUP_API void IupDrawSetClipRect(Ihandle* ih, int x1, int y1, int x2, int y2);
 IUP_API void IupDrawSetClipRoundedRect(Ihandle* ih, int x1, int y1, int x2, int y2, int corner_radius);
-IUP_API void IupDrawGetClipRect(Ihandle* ih, int *x1, int *y1, int *x2, int *y2);
+IUP_API void IupDrawGetClipRect(Ihandle* ih, int* x1, int* y1, int* x2, int* y2);
 IUP_API void IupDrawResetClip(Ihandle* ih);
 
 /* color controlled by the attribute DRAWCOLOR */
@@ -48,10 +48,10 @@ IUP_API void IupDrawImage(Ihandle* ih, const char* name, int x, int y, int w, in
 IUP_API void IupDrawSelectRect(Ihandle* ih, int x1, int y1, int x2, int y2);
 IUP_API void IupDrawFocusRect(Ihandle* ih, int x1, int y1, int x2, int y2);
 
-IUP_API void IupDrawGetSize(Ihandle* ih, int *w, int *h);
-IUP_API void IupDrawGetTextSize(Ihandle* ih, const char* text, int len, int *w, int *h);
-IUP_API void IupDrawGetTextMetrics(Ihandle* ih, int *ascent, int *descent, int *line_height);
-IUP_API void IupDrawGetImageInfo(const char* name, int *w, int *h, int *bpp);
+IUP_API void IupDrawGetSize(Ihandle* ih, int* w, int* h);
+IUP_API void IupDrawGetTextSize(Ihandle* ih, const char* text, int len, int* w, int* h);
+IUP_API void IupDrawGetTextMetrics(Ihandle* ih, int* ascent, int* descent, int* line_height);
+IUP_API void IupDrawGetImageInfo(const char* name, int* w, int* h, int* bpp);
 
 IUP_API Ihandle* IupDrawGetImage(Ihandle* ih);
 IUP_API char* IupDrawGetSvg(Ihandle* ih);

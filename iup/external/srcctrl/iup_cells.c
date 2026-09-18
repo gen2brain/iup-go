@@ -844,7 +844,7 @@ static void iCellsUnMapMethod(Ihandle* ih)
   (void)ih;
 }
 
-static int iCellsCreateMethod(Ihandle* ih, void **params)
+static int iCellsCreateMethod(Ihandle* ih, void** params)
 {
   (void)params;
 

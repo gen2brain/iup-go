@@ -287,7 +287,7 @@ IUP_SDK_API int iupdrvDialogIsVisible(Ihandle* ih)
   return iupdrvIsVisible(ih);
 }
 
-IUP_SDK_API void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* handle, int *w, int *h)
+IUP_SDK_API void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* handle, int* w, int* h)
 {
   (void)handle;
   if (w) *w = ih->currentwidth;
@@ -316,7 +316,7 @@ IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
   }
 }
 
-IUP_SDK_API void iupdrvDialogGetPosition(Ihandle* ih, InativeHandle* handle, int *x, int *y)
+IUP_SDK_API void iupdrvDialogGetPosition(Ihandle* ih, InativeHandle* handle, int* x, int* y)
 {
   (void)handle;
   if (x) *x = ih ? iupAttribGetInt(ih, "_IUPWASM_POSX") : 0;
@@ -359,7 +359,7 @@ IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
   return 0;
 }
 
-IUP_SDK_API void iupdrvDialogSetPosition(Ihandle *ih, int x, int y)
+IUP_SDK_API void iupdrvDialogSetPosition(Ihandle* ih, int x, int y)
 {
   int id = iupwasmIdOf(ih);
   iupAttribSetInt(ih, "_IUPWASM_POSX", x);
@@ -368,7 +368,7 @@ IUP_SDK_API void iupdrvDialogSetPosition(Ihandle *ih, int x, int y)
     iupwasmJsSetPos(id, x, y, ih->currentwidth, ih->currentheight);
 }
 
-IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int *border, int *caption, int *menu)
+IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int* border, int* caption, int* menu)
 {
   int menu_h = (ih->data->menu) ? iupdrvMenuGetMenuBarSize(ih->data->menu) : 0;
   int caption_h = wasmDialogHasCaption(ih) ? wasmDialogCaptionHeight(ih) : 0;

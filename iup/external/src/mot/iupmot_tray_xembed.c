@@ -108,7 +108,7 @@ static void motTraySendDockRequest(IupmotTray* tray)
   ev.data.l[3] = 0;
   ev.data.l[4] = 0;
 
-  XSendEvent(iupmot_display, tray->tray_window, False, NoEventMask, (XEvent *)&ev);
+  XSendEvent(iupmot_display, tray->tray_window, False, NoEventMask, (XEvent*)&ev);
   XSync(iupmot_display, False);
 }
 

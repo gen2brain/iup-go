@@ -65,7 +65,7 @@ IUP_API void IupMessage(const char* title, const char* message)
   IupDestroy(dlg);
 }
 
-IUP_API void IupMessageV(const char *title, const char *format, va_list arglist)
+IUP_API void IupMessageV(const char* title, const char* format, va_list arglist)
 {
   int size;
   char* str = iupStrGetLargeMem(&size);
@@ -73,7 +73,7 @@ IUP_API void IupMessageV(const char *title, const char *format, va_list arglist)
   IupMessage(title, str);
 }
 
-IUP_API void IupMessagef(const char *title, const char *format, ...)
+IUP_API void IupMessagef(const char* title, const char* format, ...)
 {
   va_list arglist;
   va_start(arglist, format);
@@ -114,10 +114,10 @@ IUP_API void IupMessageError(Ihandle* parent, const char* message)
   IupDestroy(dlg);
 }
 
-IUP_API int IupMessageAlarm(Ihandle* parent, const char* title, const char *message, const char *buttons)
+IUP_API int IupMessageAlarm(Ihandle* parent, const char* title, const char* message, const char* buttons)
 {
   Ihandle* dlg = IupMessageDlg();
-  char *str_message, *str_title;
+  char* str_message, *str_title;
   int ret;
 
   if (!parent)

@@ -45,7 +45,7 @@ static const void* POPOVER_DELEGATE_KEY = @"POPOVER_DELEGATE_KEY";
   return self;
 }
 
-- (void)popoverDidClose:(NSNotification *)notification
+- (void)popoverDidClose:(NSNotification*)notification
 {
   self.lastCloseTime = [NSDate timeIntervalSinceReferenceDate];
 
@@ -54,14 +54,14 @@ static const void* POPOVER_DELEGATE_KEY = @"POPOVER_DELEGATE_KEY";
     show_cb(_ih, IUP_HIDE);
 }
 
-- (void)popoverWillShow:(NSNotification *)notification
+- (void)popoverWillShow:(NSNotification*)notification
 {
   IFni show_cb = (IFni)IupGetCallback(_ih, "SHOW_CB");
   if (show_cb)
     show_cb(_ih, IUP_SHOW);
 }
 
-- (BOOL)popoverShouldDetach:(NSPopover *)popover
+- (BOOL)popoverShouldDetach:(NSPopover*)popover
 {
   return NO;
 }

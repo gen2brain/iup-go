@@ -169,13 +169,13 @@ static void winListUpdateShowImageItemHeight(Ihandle* ih, winListItemData* itemd
   SendMessage(ih->handle, WIN_SETITEMHEIGHT(ih), pos, height);
 }
 
-IUP_SDK_API void iupdrvListAddItemSpace(Ihandle* ih, int *h)
+IUP_SDK_API void iupdrvListAddItemSpace(Ihandle* ih, int* h)
 {
   (void)ih;
   (void)h;
 }
 
-IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
+IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int* x, int* y)
 {
   /* LAYOUT_DECORATION_ESTIMATE */
   int border_size = 2 * 4;
@@ -397,7 +397,7 @@ static void winListUpdateItemWidth(Ihandle* ih)
   }
 }
 
-static int winListSetBgColorAttrib(Ihandle *ih, const char *value)
+static int winListSetBgColorAttrib(Ihandle* ih, const char* value)
 {
   (void)value;
   if (ih->handle)
@@ -630,7 +630,7 @@ static int winListSetPaddingAttrib(Ihandle* ih, const char* value)
     return 1; /* store until not mapped, when mapped will be set again */
 }
 
-static int winListSetFilterAttrib(Ihandle *ih, const char *value)
+static int winListSetFilterAttrib(Ihandle* ih, const char* value)
 {
   int style = 0;
 
@@ -655,7 +655,7 @@ static int winListSetFilterAttrib(Ihandle *ih, const char *value)
   return 1;
 }
 
-static int winListSetCueBannerAttrib(Ihandle *ih, const char *value)
+static int winListSetCueBannerAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->has_editbox && iupwin_comctl32ver6)
   {
@@ -668,7 +668,7 @@ static int winListSetCueBannerAttrib(Ihandle *ih, const char *value)
   return 0;
 }
 
-static int winListSetClipboardAttrib(Ihandle *ih, const char *value)
+static int winListSetClipboardAttrib(Ihandle* ih, const char* value)
 {
   UINT msg = 0;
 
@@ -1035,7 +1035,7 @@ static int winListSetImageAttrib(Ihandle* ih, int id, const char* value)
 
 static char* winListGetImageNativeHandleAttribId(Ihandle* ih, int id)
 {
-  winListItemData *itemdata = winListGetItemData(ih, id - 1);
+  winListItemData* itemdata = winListGetItemData(ih, id - 1);
   if (itemdata)
     return (char*)itemdata->hBitmap;
   else
@@ -1044,7 +1044,7 @@ static char* winListGetImageNativeHandleAttribId(Ihandle* ih, int id)
 
 IUP_SDK_API void* iupdrvListGetImageHandle(Ihandle* ih, int id)
 {
-  winListItemData *itemdata = winListGetItemData(ih, id-1);
+  winListItemData* itemdata = winListGetItemData(ih, id-1);
   if (!itemdata)
     return NULL;
   return itemdata->hBitmap;
@@ -1090,7 +1090,7 @@ static void winListDrawRect(HWND hWnd, HDC hDC, int nIndex)
   PatBlt(hDC, rect.left, rect.top, rect.right-rect.left, rect.bottom-rect.top, PATINVERT);
 }
 
-static void winListDrawDropFeedback(Ihandle *ih, int nIndex)
+static void winListDrawDropFeedback(Ihandle* ih, int nIndex)
 {
   int nLastIndex = iupAttribGetInt(ih, "_IUPLIST_LASTITEM");
   if (nLastIndex != nIndex)
@@ -1125,7 +1125,7 @@ static int winInClient(HWND hWnd, POINT pt)
   return PtInRect(&rect, pt);
 }
 
-IUP_DRV_API int iupwinListDND(Ihandle *ih, UINT uNotification, POINT pt)
+IUP_DRV_API int iupwinListDND(Ihandle* ih, UINT uNotification, POINT pt)
 {
   switch(uNotification)
   {
@@ -1162,7 +1162,7 @@ IUP_DRV_API int iupwinListDND(Ihandle *ih, UINT uNotification, POINT pt)
 
       if (iupListCallDragDropCb(ih, idDrag, idDrop, &is_ctrl) == IUP_CONTINUE)  /* starts at 0 */
       {
-        winListItemData *itemdata = winListGetItemData(ih, idDrag);  /* starts at 0 */
+        winListItemData* itemdata = winListGetItemData(ih, idDrag);  /* starts at 0 */
         HBITMAP hBitmap = itemdata->hBitmap;
         char* text = winListGetText(ih, idDrag);  /* starts at 0 */
         int count = iupdrvListGetCount(ih);
@@ -1225,7 +1225,7 @@ static void winListEnableDragDrop(Ihandle* ih)
 /*********************************************************************************/
 
 
-static int winListCtlColor(Ihandle* ih, HDC hdc, LRESULT *result)
+static int winListCtlColor(Ihandle* ih, HDC hdc, LRESULT* result)
 {
   COLORREF cr;
 
@@ -1386,7 +1386,7 @@ static int winListCallEditCb(Ihandle* ih, HWND cbedit, char* insert_value, int r
   return 1;
 }
 
-static int winListEditProc(Ihandle* ih, HWND cbedit, UINT msg, WPARAM wp, LPARAM lp, LRESULT *result)
+static int winListEditProc(Ihandle* ih, HWND cbedit, UINT msg, WPARAM wp, LPARAM lp, LRESULT* result)
 {
   int ret = 0;
 
@@ -1578,7 +1578,7 @@ static LRESULT CALLBACK winListEditWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARA
   int ret = 0;
   LRESULT result = 0;
   WNDPROC oldProc;
-  Ihandle *ih;
+  Ihandle* ih;
 
   ih = iupwinHandleGet(hwnd);
   if (!iupObjectCheck(ih))
@@ -1595,7 +1595,7 @@ static LRESULT CALLBACK winListEditWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARA
     return CallWindowProc(oldProc, hwnd, msg, wp, lp);
 }
 
-static int winListComboListProc(Ihandle* ih, HWND cblist, UINT msg, WPARAM wp, LPARAM lp, LRESULT *result)
+static int winListComboListProc(Ihandle* ih, HWND cblist, UINT msg, WPARAM wp, LPARAM lp, LRESULT* result)
 {
   (void)cblist;
 
@@ -1647,7 +1647,7 @@ static LRESULT CALLBACK winListComboListWndProc(HWND hwnd, UINT msg, WPARAM wp, 
   int ret = 0;
   LRESULT result = 0;
   WNDPROC oldProc;
-  Ihandle *ih;
+  Ihandle* ih;
 
   ih = iupwinHandleGet(hwnd);
   if (!iupObjectCheck(ih))
@@ -1664,7 +1664,7 @@ static LRESULT CALLBACK winListComboListWndProc(HWND hwnd, UINT msg, WPARAM wp, 
     return CallWindowProc(oldProc, hwnd, msg, wp, lp);
 }
 
-static int winListMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT *result)
+static int winListMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT* result)
 {
   if (ih->data->is_dropdown)
   {
@@ -1772,7 +1772,7 @@ static int winListMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT *
   return iupwinBaseMsgProc(ih, msg, wp, lp, result);
 }
 
-static int winListVirtualNotifyCallback(Ihandle* ih, void* msg_info, int *result)
+static int winListVirtualNotifyCallback(Ihandle* ih, void* msg_info, int* result)
 {
   NMHDR* nmhdr = (NMHDR*)msg_info;
 
@@ -1956,7 +1956,7 @@ static LRESULT CALLBACK winListVirtualWndProc(HWND hwnd, UINT msg, WPARAM wp, LP
 {
   LRESULT result = 0;
   WNDPROC oldProc;
-  Ihandle *ih;
+  Ihandle* ih;
 
   ih = iupwinHandleGet(hwnd);
   if (!iupObjectCheck(ih))
@@ -1993,7 +1993,7 @@ static int winListVirtualConvertXYToPos(Ihandle* ih, int x, int y)
 
 /*********************************************************************************/
 
-static void winListDrawItem(Ihandle* ih, DRAWITEMSTRUCT *drawitem)
+static void winListDrawItem(Ihandle* ih, DRAWITEMSTRUCT* drawitem)
 {
   char* text;
   int txt_w, txt_h;
@@ -2095,7 +2095,7 @@ static void winListDrawItem(Ihandle* ih, DRAWITEMSTRUCT *drawitem)
   iupwinDrawDestroyBitmapDC(&bmpDC);
 }
 
-static void winListLayoutUpdateMethod(Ihandle *ih)
+static void winListLayoutUpdateMethod(Ihandle* ih)
 {
   if (ih->data->is_dropdown)
   {

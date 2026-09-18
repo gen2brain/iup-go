@@ -31,8 +31,8 @@
 
 @implementation IupCocoaNotifyDelegate
 
-- (void)userNotificationCenter:(UNUserNotificationCenter *)center
-       willPresentNotification:(UNNotification *)notification
+- (void)userNotificationCenter:(UNUserNotificationCenter*)center
+       willPresentNotification:(UNNotification*)notification
          withCompletionHandler:(void (^)(UNNotificationPresentationOptions))completionHandler
 {
   UNNotificationPresentationOptions options = UNNotificationPresentationOptionSound;
@@ -46,8 +46,8 @@
   completionHandler(options);
 }
 
-- (void)userNotificationCenter:(UNUserNotificationCenter *)center
-didReceiveNotificationResponse:(UNNotificationResponse *)response
+- (void)userNotificationCenter:(UNUserNotificationCenter*)center
+didReceiveNotificationResponse:(UNNotificationResponse*)response
          withCompletionHandler:(void (^)(void))completionHandler
 {
   NSString* actionId = response.actionIdentifier;

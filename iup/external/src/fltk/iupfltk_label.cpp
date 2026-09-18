@@ -124,7 +124,7 @@ static void fltkLabelSetPixmap(Ihandle* ih, const char* name, int make_inactive)
   }
 }
 
-extern "C" IUP_SDK_API void iupdrvLabelAddExtraPadding(Ihandle* ih, int *x, int *y)
+extern "C" IUP_SDK_API void iupdrvLabelAddExtraPadding(Ihandle* ih, int* x, int* y)
 {
   (void)y;
 

@@ -42,7 +42,7 @@ IUP_DRV_API void iupwinWdlImageInit(void)
   IupSetFunction("_IUPIMAGE_WD_IMAGEDESTROY", wdlImageDestroy);
 }
 
-static void wdBufferRGB2Bitmap(BYTE* Scan0, INT dstStride, INT srcStride, UINT channels, UINT width, UINT height, const BYTE *rgb, const char* bgcolor, int make_inactive)
+static void wdBufferRGB2Bitmap(BYTE* Scan0, INT dstStride, INT srcStride, UINT channels, UINT width, UINT height, const BYTE* rgb, const char* bgcolor, int make_inactive)
 {
   UINT i, j;
   unsigned char bg_r = 0, bg_g = 0, bg_b = 0;
@@ -150,10 +150,10 @@ static WD_HIMAGE wdlCreateImageFromBuffer(UINT uWidth, UINT uHeight, UINT srcStr
     IWICBitmap* bitmap = NULL;
     HRESULT hr;
     WICRect rect;
-    IWICBitmapLock *bitmap_lock = NULL;
+    IWICBitmapLock* bitmap_lock = NULL;
     UINT cbBufferSize = 0;
     UINT dstStride = 0;
-    BYTE *Scan0 = NULL;
+    BYTE* Scan0 = NULL;
 
     if (wic_factory == NULL) {
       WD_TRACE("wdlCreateImageFromBuffer: Image API disabled.");
@@ -205,7 +205,7 @@ static WD_HIMAGE wdlCreateImageFromBuffer(UINT uWidth, UINT uHeight, UINT srcStr
   else {
     dummy_GpPixelFormat format;
     int status;
-    dummy_GpBitmap *bitmap = NULL;
+    dummy_GpBitmap* bitmap = NULL;
     dummy_GpBitmapData bitmapData;
     dummy_GpRectI rect;
 
@@ -262,7 +262,7 @@ static WD_HIMAGE wdlImageLoad(const char* name)
   return hImage;
 }
 
-static WD_HIMAGE wdlImageCreateImage(Ihandle *ih, const char* bgcolor, int make_inactive)
+static WD_HIMAGE wdlImageCreateImage(Ihandle* ih, const char* bgcolor, int make_inactive)
 {
   int width, height, channels, bgcolor_depend = 0;
   unsigned char* data;
@@ -324,7 +324,7 @@ IUP_DRV_API WD_HIMAGE iupwinWdlImageGetImage(const char* name, Ihandle* ih_paren
   int pos;
   char* img_bgcolor;
   WD_HIMAGE handle;
-  Ihandle *ih;
+  Ihandle* ih;
   int bg_concat = 0;
 
   if (!name)
@@ -408,7 +408,7 @@ IUP_DRV_API WD_HIMAGE iupwinWdlImageGetImageTint(const char* name, Ihandle* ih_p
   char cache_name[100];
   char* img_bgcolor;
   WD_HIMAGE handle;
-  Ihandle *ih;
+  Ihandle* ih;
   unsigned char* rgba;
   unsigned char tr, tg, tb, ta;
   int img_w, img_h, i, count, pos;

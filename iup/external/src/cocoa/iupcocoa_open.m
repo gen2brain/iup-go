@@ -164,16 +164,16 @@ static int cocoaOpen(void)
 #ifdef GNUSTEP
   /* Seed NSFont defaults before sharedApplication. */
   {
-    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    NSUserDefaults* defaults = [NSUserDefaults standardUserDefaults];
     [defaults registerDefaults:@{@"NSScrollViewInterfaceStyle": @"NSMacintoshInterfaceStyle"}];
     if (![defaults stringForKey:@"NSFont"])
     {
-      NSArray *regular_keys = @[
+      NSArray* regular_keys = @[
         @"NSFont", @"NSUserFont", @"NSSystemFont", @"NSLabelFont",
         @"NSMessageFont", @"NSPaletteFont", @"NSTitleBarFont",
         @"NSToolTipsFont", @"NSControlContentFont", @"NSMenuFont"
       ];
-      for (NSString *k in regular_keys)
+      for (NSString* k in regular_keys)
       {
         [defaults setObject:@"DejaVuSans" forKey:k];
       }
@@ -203,28 +203,28 @@ static int cocoaOpen(void)
 
   /* fontWithName:size: is silent on a miss, so verify the seeds once the backend is up */
   {
-    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    NSString *current = [defaults stringForKey:@"NSFont"];
+    NSUserDefaults* defaults = [NSUserDefaults standardUserDefaults];
+    NSString* current = [defaults stringForKey:@"NSFont"];
     if (!current || ![NSFont fontWithName:current size:12])
     {
-      NSArray *regular_candidates = @[
+      NSArray* regular_candidates = @[
         @"DejaVuSans", @"BitstreamVeraSans-Roman", @"LiberationSans",
         @"FreeSans", @"NimbusSans-Regular", @"NimbusSansL-Regu"
       ];
-      NSArray *bold_candidates = @[
+      NSArray* bold_candidates = @[
         @"DejaVuSans-Bold", @"BitstreamVeraSans-Bold", @"LiberationSans-Bold",
         @"FreeSansBold", @"NimbusSans-Bold", @"NimbusSansL-Bold"
       ];
-      NSArray *mono_candidates = @[
+      NSArray* mono_candidates = @[
         @"DejaVuSansMono", @"BitstreamVeraSansMono-Roman", @"LiberationMono",
         @"FreeMono", @"NimbusMono-Regular", @"NimbusMonoL-Regu", @"Courier"
       ];
-      NSString *chosen_regular = nil;
-      NSString *chosen_bold = nil;
-      NSString *chosen_mono = nil;
-      for (NSString *n in regular_candidates) { if ([NSFont fontWithName:n size:12]) { chosen_regular = n; break; } }
-      for (NSString *n in bold_candidates)    { if ([NSFont fontWithName:n size:12]) { chosen_bold = n; break; } }
-      for (NSString *n in mono_candidates)    { if ([NSFont fontWithName:n size:12]) { chosen_mono = n; break; } }
+      NSString* chosen_regular = nil;
+      NSString* chosen_bold = nil;
+      NSString* chosen_mono = nil;
+      for (NSString* n in regular_candidates) { if ([NSFont fontWithName:n size:12]) { chosen_regular = n; break; } }
+      for (NSString* n in bold_candidates)    { if ([NSFont fontWithName:n size:12]) { chosen_bold = n; break; } }
+      for (NSString* n in mono_candidates)    { if ([NSFont fontWithName:n size:12]) { chosen_mono = n; break; } }
       if (chosen_regular)
       {
         [defaults setObject:chosen_regular forKey:@"NSFont"];

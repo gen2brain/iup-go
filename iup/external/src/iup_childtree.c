@@ -30,7 +30,7 @@ IUP_API Ihandle* IupGetDialog(Ihandle* ih)
     return ih;
   else if (ih->iclass->nativetype == IUP_TYPEMENU)
   {
-    Ihandle *dlg;
+    Ihandle* dlg;
     /* if ih is a menu then */
     /* searches all the dialogs that may have been associated with the menu. */
     for (dlg = iupDlgListFirst(); dlg; dlg = iupDlgListNext())
@@ -45,7 +45,7 @@ IUP_API Ihandle* IupGetDialog(Ihandle* ih)
 
 static void iChildTreeDetach(Ihandle* parent, Ihandle* child)
 {
-  Ihandle *c, *c_prev = NULL;
+  Ihandle* c, *c_prev = NULL;
 
   /* Removes the child entry inside the parent's child list */
   for (c = parent->firstchild; c; c = c->brother)
@@ -66,9 +66,9 @@ static void iChildTreeDetach(Ihandle* parent, Ihandle* child)
   }
 }
 
-IUP_API void IupDetach(Ihandle *child)
+IUP_API void IupDetach(Ihandle* child)
 {
-  Ihandle *parent;
+  Ihandle* parent;
   int pos;
 
   iupASSERT(iupObjectCheck(child));
@@ -91,7 +91,7 @@ IUP_API void IupDetach(Ihandle *child)
 
 static int iChildTreeFind(Ihandle* parent, Ihandle* child)
 {
-  Ihandle *c;
+  Ihandle* c;
 
   /* Finds the reference child entry inside the parent's child list */
   for (c = parent->firstchild; c; c = c->brother)
@@ -105,7 +105,7 @@ static int iChildTreeFind(Ihandle* parent, Ihandle* child)
 
 static void iChildTreeInsert(Ihandle* parent, Ihandle* ref_child, Ihandle* child)
 {
-  Ihandle *c, *c_prev = NULL;
+  Ihandle* c, *c_prev = NULL;
 
   if (parent->firstchild == NULL)
   {
@@ -280,7 +280,7 @@ IUP_API Ihandle* IupAppend(Ihandle* parent, Ihandle* child)
 
 static void iChildTreeReparent(Ihandle* child, Ihandle* new_parent)
 {
-  Ihandle *c;
+  Ihandle* c;
 
   /* Forward the reparent to all native children */
 
@@ -396,7 +396,7 @@ IUP_API int IupGetChildPos(Ihandle* ih, Ihandle* child)
 
 IUP_SDK_API Ihandle* iupChildTreeGetPrevBrother(Ihandle* ih)
 {
-  Ihandle *c, *prev = NULL;
+  Ihandle* c, *prev = NULL;
 
   for (c = ih->parent->firstchild; c; c = c->brother)
   {
@@ -447,7 +447,7 @@ IUP_API Ihandle* IupGetBrother(Ihandle* ih)
   return ih->brother;
 }
 
-IUP_API Ihandle* IupGetParent(Ihandle *ih)
+IUP_API Ihandle* IupGetParent(Ihandle* ih)
 {
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))

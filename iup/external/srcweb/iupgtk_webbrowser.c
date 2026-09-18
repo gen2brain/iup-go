@@ -359,9 +359,9 @@ static char* gtkWebBrowserGetItemHistoryAttrib(Ihandle* ih, int id)
 static char* gtkWebBrowserGetForwardCountAttrib(Ihandle* ih)
 {
 #if defined(IUPWEB_USE_WEBKIT1) && !defined(IUPWEB_USE_DLOPEN)
-  WebKitWebBackForwardList *back_forward_list = webkit_web_view_get_back_forward_list((WebKitWebView*)ih->handle);
+  WebKitWebBackForwardList* back_forward_list = webkit_web_view_get_back_forward_list((WebKitWebView*)ih->handle);
 #else
-  WebKitBackForwardList *back_forward_list = webkit_web_view_get_back_forward_list ((WebKitWebView*)ih->handle);
+  WebKitBackForwardList* back_forward_list = webkit_web_view_get_back_forward_list ((WebKitWebView*)ih->handle);
 #endif
 
 #ifdef IUPWEB_USE_DLOPEN
@@ -383,9 +383,9 @@ static char* gtkWebBrowserGetForwardCountAttrib(Ihandle* ih)
 static char* gtkWebBrowserGetBackCountAttrib(Ihandle* ih)
 {
 #if defined(IUPWEB_USE_WEBKIT1) && !defined(IUPWEB_USE_DLOPEN)
-  WebKitWebBackForwardList *back_forward_list = webkit_web_view_get_back_forward_list((WebKitWebView*)ih->handle);
+  WebKitWebBackForwardList* back_forward_list = webkit_web_view_get_back_forward_list((WebKitWebView*)ih->handle);
 #else
-  WebKitBackForwardList *back_forward_list = webkit_web_view_get_back_forward_list((WebKitWebView*)ih->handle);
+  WebKitBackForwardList* back_forward_list = webkit_web_view_get_back_forward_list((WebKitWebView*)ih->handle);
 #endif
 
 #ifdef IUPWEB_USE_DLOPEN
@@ -438,11 +438,11 @@ typedef struct _gtkWebAsyncStr
   char* data;
 } gtkWebAsyncStr;
 
-static void gtkWebBrowserGetResourceData(GObject *source_object, GAsyncResult *res, gpointer user_data)
+static void gtkWebBrowserGetResourceData(GObject* source_object, GAsyncResult* res, gpointer user_data)
 {
   gtkWebAsyncStr* async = (gtkWebAsyncStr*)user_data;
-  WebKitWebResource *resource = (WebKitWebResource*)source_object;
-  GError *error = NULL;
+  WebKitWebResource* resource = (WebKitWebResource*)source_object;
+  GError* error = NULL;
   gsize len = 0;
   guchar* data = webkit_web_resource_get_data_finish(resource, res, &len, &error);
 
@@ -766,7 +766,7 @@ static int gtkWebBrowserSetPrintAttrib(Ihandle* ih, const char* value)
 #ifdef IUPWEB_USE_DLOPEN
   if (s_use_webkit2)
   {
-    WebKitPrintOperation *print_operation = webkit_print_operation_new((WebKitWebView*)ih->handle);
+    WebKitPrintOperation* print_operation = webkit_print_operation_new((WebKitWebView*)ih->handle);
     if (iupStrBoolean(value))
     {
       Ihandle* dlg = IupGetDialog(ih);
@@ -789,7 +789,7 @@ static int gtkWebBrowserSetPrintAttrib(Ihandle* ih, const char* value)
     (void)value;
   }
 #elif defined(IUPWEB_USE_WEBKIT6) || defined(IUPWEB_USE_WEBKIT2)
-  WebKitPrintOperation *print_operation = webkit_print_operation_new((WebKitWebView*)ih->handle);
+  WebKitPrintOperation* print_operation = webkit_print_operation_new((WebKitWebView*)ih->handle);
   if (iupStrBoolean(value))
   {
     Ihandle* dlg = IupGetDialog(ih);
@@ -2127,7 +2127,7 @@ static int gtkWebBrowserSetFindAttrib(Ihandle* ih, const char* value)
 }
 
 #if (defined(IUPWEB_USE_WEBKIT2) || defined(IUPWEB_USE_DLOPEN))
-static void gtkWebBrowserDocumentLoadFinished_WK2(WebKitWebView *web_view, WebKitLoadEvent load_event, Ihandle *ih)
+static void gtkWebBrowserDocumentLoadFinished_WK2(WebKitWebView* web_view, WebKitLoadEvent load_event, Ihandle* ih)
 {
 #ifdef IUPWEB_USE_DLOPEN
   if (load_event != WEBKIT_LOAD_EVENT_FINISHED)
@@ -2157,7 +2157,7 @@ static void gtkWebBrowserDocumentLoadFinished_WK2(WebKitWebView *web_view, WebKi
 #endif
 
 #if (defined(IUPWEB_USE_WEBKIT1) || defined(IUPWEB_USE_DLOPEN))
-static void gtkWebBrowserDocumentLoadFinished_WK1(WebKitWebView *web_view, WebKitWebFrame *frame, Ihandle *ih)
+static void gtkWebBrowserDocumentLoadFinished_WK1(WebKitWebView* web_view, WebKitWebFrame* frame, Ihandle* ih)
 {
   gtkWebBrowserInitSelectionTracking(ih);
 
@@ -2181,8 +2181,8 @@ static void gtkWebBrowserDocumentLoadFinished_WK1(WebKitWebView *web_view, WebKi
 #endif
 
 #if (defined(IUPWEB_USE_WEBKIT2) || defined(IUPWEB_USE_DLOPEN))
-static gboolean gtkWebBrowserLoadError_WK2(WebKitWebView *web_view, WebKitLoadEvent load_event,
-                                       gchar *failing_uri, GError *error, Ihandle *ih)
+static gboolean gtkWebBrowserLoadError_WK2(WebKitWebView* web_view, WebKitLoadEvent load_event,
+                                       gchar* failing_uri, GError* error, Ihandle* ih)
 {
   gtkWebBrowserUpdateHistory(ih);
 
@@ -2198,8 +2198,8 @@ static gboolean gtkWebBrowserLoadError_WK2(WebKitWebView *web_view, WebKitLoadEv
 #endif
 
 #if (defined(IUPWEB_USE_WEBKIT1) || defined(IUPWEB_USE_DLOPEN))
-static gboolean gtkWebBrowserLoadError_WK1(WebKitWebView *web_view, WebKitWebFrame *frame,
-                                       gchar *uri, gpointer web_error, Ihandle *ih)
+static gboolean gtkWebBrowserLoadError_WK1(WebKitWebView* web_view, WebKitWebFrame* frame,
+                                       gchar* uri, gpointer web_error, Ihandle* ih)
 {
   gtkWebBrowserUpdateHistory(ih);
 
@@ -2215,8 +2215,8 @@ static gboolean gtkWebBrowserLoadError_WK1(WebKitWebView *web_view, WebKitWebFra
 #endif
 
 #if (defined(IUPWEB_USE_WEBKIT2) || defined(IUPWEB_USE_DLOPEN))
-static gboolean gtkWebBrowserNavigate_WK2(WebKitWebView *web_view, WebKitPolicyDecision *decision,
-                                 WebKitPolicyDecisionType decision_type, Ihandle *ih)
+static gboolean gtkWebBrowserNavigate_WK2(WebKitWebView* web_view, WebKitPolicyDecision* decision,
+                                 WebKitPolicyDecisionType decision_type, Ihandle* ih)
 {
   if (decision_type != WEBKIT_POLICY_DECISION_TYPE_NAVIGATION_ACTION)
     return FALSE;
@@ -2241,8 +2241,8 @@ static gboolean gtkWebBrowserNavigate_WK2(WebKitWebView *web_view, WebKitPolicyD
 #endif
 
 #if (defined(IUPWEB_USE_WEBKIT1) || defined(IUPWEB_USE_DLOPEN))
-static gboolean gtkWebBrowserNavigate_WK1(WebKitWebView *web_view, WebKitWebFrame *frame, WebKitNetworkRequest *request,
-                                 WebKitWebNavigationAction *navigation_action, WebKitWebPolicyDecision *policy_decision, Ihandle *ih)
+static gboolean gtkWebBrowserNavigate_WK1(WebKitWebView* web_view, WebKitWebFrame* frame, WebKitNetworkRequest* request,
+                                 WebKitWebNavigationAction* navigation_action, WebKitWebPolicyDecision* policy_decision, Ihandle* ih)
 {
   if (iupAttribGet(ih, "_IUPWEB_IGNORE_NAVIGATE"))
     return FALSE;
@@ -2263,7 +2263,7 @@ static gboolean gtkWebBrowserNavigate_WK1(WebKitWebView *web_view, WebKitWebFram
 #endif
 
 #if (defined(IUPWEB_USE_WEBKIT2) || defined(IUPWEB_USE_DLOPEN))
-static WebKitWebView* gtkWebBrowserNewWindow_WK2(WebKitWebView *web_view, WebKitNavigationAction *navigation_action, Ihandle *ih)
+static WebKitWebView* gtkWebBrowserNewWindow_WK2(WebKitWebView* web_view, WebKitNavigationAction* navigation_action, Ihandle* ih)
 {
   IFns cb = (IFns)IupGetCallback(ih, "NEWWINDOW_CB");
   if (cb)
@@ -2279,7 +2279,7 @@ static WebKitWebView* gtkWebBrowserNewWindow_WK2(WebKitWebView *web_view, WebKit
 #endif
 
 #if (defined(IUPWEB_USE_WEBKIT1) || defined(IUPWEB_USE_DLOPEN))
-static WebKitWebView* gtkWebBrowserNewWindow_WK1(WebKitWebView *web_view, WebKitWebFrame *frame, Ihandle *ih)
+static WebKitWebView* gtkWebBrowserNewWindow_WK1(WebKitWebView* web_view, WebKitWebFrame* frame, Ihandle* ih)
 {
   IFns cb = (IFns)IupGetCallback(ih, "NEWWINDOW_CB");
   if (cb)
@@ -2296,7 +2296,7 @@ static WebKitWebView* gtkWebBrowserNewWindow_WK1(WebKitWebView *web_view, WebKit
 #if (defined(IUPWEB_USE_WEBKIT2) || defined(IUPWEB_USE_WEBKIT6) || defined(IUPWEB_USE_DLOPEN))
 #if defined(IUPWEB_USE_WEBKIT6) && !defined(IUPWEB_USE_DLOPEN)
 /* WebKit6 uses JSCValue instead of WebKitJavascriptResult */
-static void gtkWebBrowserScriptMessageReceived_Update(WebKitUserContentManager *manager, JSCValue *js_value, Ihandle *ih)
+static void gtkWebBrowserScriptMessageReceived_Update(WebKitUserContentManager* manager, JSCValue* js_value, Ihandle* ih)
 {
   IFn cb_update = (IFn)IupGetCallback(ih, "UPDATE_CB");
   if (cb_update)
@@ -2306,7 +2306,7 @@ static void gtkWebBrowserScriptMessageReceived_Update(WebKitUserContentManager *
   (void)js_value;
 }
 
-static void gtkWebBrowserScriptMessageReceived_Dirty(WebKitUserContentManager *manager, JSCValue *js_value, Ihandle *ih)
+static void gtkWebBrowserScriptMessageReceived_Dirty(WebKitUserContentManager* manager, JSCValue* js_value, Ihandle* ih)
 {
   iupAttribSet(ih, "_IUPWEB_DIRTY", "1");
 
@@ -2315,7 +2315,7 @@ static void gtkWebBrowserScriptMessageReceived_Dirty(WebKitUserContentManager *m
 }
 #else
 /* WebKit2 uses WebKitJavascriptResult */
-static void gtkWebBrowserScriptMessageReceived_Update(WebKitUserContentManager *manager, WebKitJavascriptResult *js_result, Ihandle *ih)
+static void gtkWebBrowserScriptMessageReceived_Update(WebKitUserContentManager* manager, WebKitJavascriptResult* js_result, Ihandle* ih)
 {
   IFn cb_update = (IFn)IupGetCallback(ih, "UPDATE_CB");
   if (cb_update)
@@ -2325,7 +2325,7 @@ static void gtkWebBrowserScriptMessageReceived_Update(WebKitUserContentManager *
   (void)js_result;
 }
 
-static void gtkWebBrowserScriptMessageReceived_Dirty(WebKitUserContentManager *manager, WebKitJavascriptResult *js_result, Ihandle *ih)
+static void gtkWebBrowserScriptMessageReceived_Dirty(WebKitUserContentManager* manager, WebKitJavascriptResult* js_result, Ihandle* ih)
 {
   iupAttribSet(ih, "_IUPWEB_DIRTY", "1");
 
@@ -2335,7 +2335,7 @@ static void gtkWebBrowserScriptMessageReceived_Dirty(WebKitUserContentManager *m
 #endif
 #endif
 
-static void gtkWebBrowserDummyLogFunc(const gchar *log_domain, GLogLevelFlags log_level, const gchar *message, gpointer user_data)
+static void gtkWebBrowserDummyLogFunc(const gchar* log_domain, GLogLevelFlags log_level, const gchar* message, gpointer user_data)
 {
   (void)log_domain;
   (void)log_level;
@@ -2500,7 +2500,7 @@ static int gtkWebBrowserMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-static void gtkWebBrowserComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *children_expand)
+static void gtkWebBrowserComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* children_expand)
 {
   int natural_w = 0, natural_h = 0;
   (void)children_expand;
@@ -2550,7 +2550,7 @@ static void gtkWebBrowserUnMapMethod(Ihandle* ih)
   iupdrvBaseUnMapMethod(ih);
 }
 
-static int gtkWebBrowserCreateMethod(Ihandle* ih, void **params)
+static int gtkWebBrowserCreateMethod(Ihandle* ih, void** params)
 {
   (void)params;
 

@@ -63,7 +63,7 @@ static int fltkFrameTitleHeight(Ihandle* ih)
   return ch;
 }
 
-extern "C" IUP_SDK_API void iupdrvFrameGetDecorOffset(Ihandle* ih, int *x, int *y)
+extern "C" IUP_SDK_API void iupdrvFrameGetDecorOffset(Ihandle* ih, int* x, int* y)
 {
   *x = 3;
   *y = 3;
@@ -78,7 +78,7 @@ extern "C" IUP_SDK_API int iupdrvFrameHasClientOffset(Ihandle* ih)
   return 0;
 }
 
-extern "C" IUP_SDK_API int iupdrvFrameGetTitleHeight(Ihandle* ih, int *h)
+extern "C" IUP_SDK_API int iupdrvFrameGetTitleHeight(Ihandle* ih, int* h)
 {
   if (iupAttribGet(ih, "_IUPFRAME_HAS_TITLE"))
   {
@@ -88,7 +88,7 @@ extern "C" IUP_SDK_API int iupdrvFrameGetTitleHeight(Ihandle* ih, int *h)
   return 0;
 }
 
-extern "C" IUP_SDK_API int iupdrvFrameGetDecorSize(Ihandle* ih, int *w, int *h)
+extern "C" IUP_SDK_API int iupdrvFrameGetDecorSize(Ihandle* ih, int* w, int* h)
 {
   *w = 6;
   *h = 6;

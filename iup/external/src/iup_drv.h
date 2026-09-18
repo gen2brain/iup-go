@@ -47,11 +47,11 @@ IUP_SDK_API void iupdrvNativeScopeEnd(void* scope);
 
 /** Convert the coordinates from screen relative to client area.
  * \ingroup drv */
-IUP_SDK_API void iupdrvScreenToClient(Ihandle* ih, int *x, int *y);
+IUP_SDK_API void iupdrvScreenToClient(Ihandle* ih, int* x, int* y);
 
 /** Convert the coordinates from relative client area to screen.
  * \ingroup drv */
-IUP_SDK_API void iupdrvClientToScreen(Ihandle* ih, int *x, int *y);
+IUP_SDK_API void iupdrvClientToScreen(Ihandle* ih, int* x, int* y);
 
 /** Returns true if the element is visible.
  * \ingroup drv */
@@ -76,11 +76,11 @@ IUP_SDK_API void iupdrvSetActive(Ihandle* ih, int enable);
 
 /** Post a redraw of a control and children.
  * \ingroup drv */
-IUP_SDK_API void iupdrvPostRedraw(Ihandle *ih);
+IUP_SDK_API void iupdrvPostRedraw(Ihandle* ih);
 
 /** Force a redraw of a control and children.
  * \ingroup drv */
-IUP_SDK_API void iupdrvRedrawNow(Ihandle *ih);
+IUP_SDK_API void iupdrvRedrawNow(Ihandle* ih);
 
 /** Reparent the native control.
  * \ingroup drv */
@@ -113,7 +113,7 @@ IUP_SDK_API void iupdrvWarpPointer(int x, int y);
 
 /** Translates an IUP key definition into a system definition.
  * \ingroup drv */
-IUP_SDK_API void iupdrvKeyEncode(int key, unsigned int *keyval, unsigned int *state);
+IUP_SDK_API void iupdrvKeyEncode(int key, unsigned int* keyval, unsigned int* state);
 
 /** Suspends execution for the specified number of milliseconds.
  * \ingroup drv */
@@ -121,11 +121,11 @@ IUP_SDK_API void iupdrvSleep(int time);
 
 /** Sets the accessibility text for screen readers.
  * \ingroup drv */
-IUP_SDK_API void iupdrvSetAccessibleTitle(Ihandle *ih, const char* title);
+IUP_SDK_API void iupdrvSetAccessibleTitle(Ihandle* ih, const char* title);
 
 /** Sets the accessibility description (help/hint) for screen readers.
  * \ingroup drv */
-IUP_SDK_API void iupdrvSetAccessibleDescription(Ihandle *ih, const char* description);
+IUP_SDK_API void iupdrvSetAccessibleDescription(Ihandle* ih, const char* description);
 
 /** Sets the application identifier (for Wayland/XDG desktop file name).
  * \ingroup drv */
@@ -155,7 +155,7 @@ IUP_SDK_API int iupdrvRecentMenuUpdate(Ihandle* menu, const char** filenames, in
 
 
 /* Called only from IupOpen/IupClose. */
-IUP_SDK_API int iupdrvOpen(int *argc, char ***argv);
+IUP_SDK_API int iupdrvOpen(int* argc, char*** argv);
 IUP_SDK_API void iupdrvClose(void);
 
 

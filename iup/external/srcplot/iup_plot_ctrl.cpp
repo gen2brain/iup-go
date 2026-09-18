@@ -52,7 +52,7 @@ static int iPlotSelectFile(Ihandle* parent, char* filename, const char* title, c
   return 0;
 }
 
-static double iPlotDataSetValuesMatrixNumericGetValue_CB(Ihandle *ih_matrix, int lin, int col)
+static double iPlotDataSetValuesMatrixNumericGetValue_CB(Ihandle* ih_matrix, int lin, int col)
 {
   Ihandle* ih = (Ihandle*)IupGetAttribute(ih_matrix, "PLOT");
   int plot_current = iupAttribGetInt(ih_matrix, "_IUP_PLOT_CURRENT");
@@ -84,7 +84,7 @@ static double iPlotDataSetValuesMatrixNumericGetValue_CB(Ihandle *ih_matrix, int
     return y;
 }
 
-static char* iPlotDataSetValuesMatrixValue_CB(Ihandle *ih_matrix, int lin, int col)
+static char* iPlotDataSetValuesMatrixValue_CB(Ihandle* ih_matrix, int lin, int col)
 {
   Ihandle* ih = (Ihandle*)IupGetAttribute(ih_matrix, "PLOT");
   int plot_current = iupAttribGetInt(ih_matrix, "_IUP_PLOT_CURRENT");
@@ -184,7 +184,7 @@ static int iPlotDataSetValuesMatrixValueEdit_CB(Ihandle* ih_matrix, int lin, int
   return IUP_DEFAULT;
 }
 
-static int iPlotDataSetValuesMatrixResize_CB(Ihandle *ih, int, int)
+static int iPlotDataSetValuesMatrixResize_CB(Ihandle* ih, int, int)
 {
   IupSetAttribute(ih, "RASTERWIDTH1", NULL);
   IupSetAttribute(ih, "RASTERWIDTH2", NULL);
@@ -206,7 +206,7 @@ static int iPlotDataSetValues_CB(Ihandle* ih_item)
   int plot_current = iupAttribGetInt(ih_menu, "_IUP_PLOT_CURRENT");
   int ds = iupAttribGetInt(ih_menu, "_IUP_DS");
 
-  Ihandle *matrix = IupCreate("matrixex");  /* IupControlsOpen must have been called somewhere */
+  Ihandle* matrix = IupCreate("matrixex");  /* IupControlsOpen must have been called somewhere */
   if (!matrix)
     return IUP_DEFAULT;
 
@@ -216,16 +216,16 @@ static int iPlotDataSetValues_CB(Ihandle* ih_item)
   char* ds_name = IupGetAttribute(ih, "DS_NAME");
   Ihandle* label = IupLabel(ds_name);
 
-  Ihandle *button = IupButton("Close");
+  Ihandle* button = IupButton("Close");
 
-  Ihandle *vbox = IupVbox(label, matrix, button, NULL);
+  Ihandle* vbox = IupVbox(label, matrix, button, NULL);
   IupSetAttribute(vbox, "ALIGNMENT", "ACENTER");
   IupSetAttribute(vbox, "MARGIN", "10x10");
   IupSetAttribute(vbox, "GAP", "10");
 
   Ihandle* dlg = IupDialog(vbox);
 
-  Ihandle *parent = IupGetDialog(ih);
+  Ihandle* parent = IupGetDialog(ih);
 
   IupSetStrAttribute(dlg, "TITLE", "_@IUP_DATASETVALUESDLG");
   IupSetAttribute(dlg, "MINBOX", "NO");
@@ -293,7 +293,7 @@ static int iPlotDataSetValues_CB(Ihandle* ih_item)
 }
 
 static int iPlotKeyPress_CB(Ihandle* ih, int c, int press);
-static void iPlotRedrawInteract(Ihandle *ih);
+static void iPlotRedrawInteract(Ihandle* ih);
 
 static int iPlotZoomIn_CB(Ihandle* self)
 {
@@ -810,7 +810,7 @@ static void iPlotPropertiesCheckChanges(Ihandle* parambox)
   }
 }
 
-static int iPlotPropertiesTreeSelection_CB(Ihandle *ih_tree, int id, int status)
+static int iPlotPropertiesTreeSelection_CB(Ihandle* ih_tree, int id, int status)
 {
   if (status == 0)
   {
@@ -1350,7 +1350,7 @@ static int iPlotResize_CB(Ihandle* ih, int width, int height)
   return IUP_DEFAULT;
 }
 
-static void iPlotRedrawInteract(Ihandle *ih)
+static void iPlotRedrawInteract(Ihandle* ih)
 {
   // when interacting
   int flush = 0, // flush if necessary
@@ -1363,7 +1363,7 @@ static void iPlotRedrawInteract(Ihandle *ih)
   iupPlotRedraw(ih, flush, only_current, reset_redraw);
 }
 
-void iupPlotResetZoom(Ihandle *ih, int redraw)
+void iupPlotResetZoom(Ihandle* ih, int redraw)
 {
   ih->data->current_plot->ResetZoom();
 
@@ -1380,7 +1380,7 @@ void iupPlotResetZoom(Ihandle *ih, int redraw)
     iPlotRedrawInteract(ih);
 }
 
-static void iPlotPanStart(Ihandle *ih)
+static void iPlotPanStart(Ihandle* ih)
 {
   ih->data->current_plot->PanStart();
 
@@ -1394,7 +1394,7 @@ static void iPlotPanStart(Ihandle *ih)
   }
 }
 
-static void iPlotPan(Ihandle *ih, int x1, int y1, int x2, int y2)
+static void iPlotPan(Ihandle* ih, int x1, int y1, int x2, int y2)
 {
   double rx1, ry1, rx2, ry2;
   ih->data->current_plot->TransformBack(x1, y1, rx1, ry1);
@@ -1425,7 +1425,7 @@ static void iPlotPan(Ihandle *ih, int x1, int y1, int x2, int y2)
   iPlotRedrawInteract(ih);
 }
 
-static void iPlotZoom(Ihandle *ih, int x, int y, float delta)
+static void iPlotZoom(Ihandle* ih, int x, int y, float delta)
 {
   double rx, ry;
   ih->data->current_plot->TransformBack(x, y, rx, ry);
@@ -1454,7 +1454,7 @@ static void iPlotZoom(Ihandle *ih, int x, int y, float delta)
   iPlotRedrawInteract(ih);
 }
 
-void iupPlotSetZoom(Ihandle *ih, int dir)
+void iupPlotSetZoom(Ihandle* ih, int dir)
 {
   if (dir > 0)
   {
@@ -1472,7 +1472,7 @@ void iupPlotSetZoom(Ihandle *ih, int dir)
     iupPlotResetZoom(ih, 1);
 }
 
-static void iPlotZoomTo(Ihandle *ih, int x1, int y1, int x2, int y2)
+static void iPlotZoomTo(Ihandle* ih, int x1, int y1, int x2, int y2)
 {
   double rx1, ry1, rx2, ry2;
   ih->data->current_plot->TransformBack(x1, y1, rx1, ry1);
@@ -1497,7 +1497,7 @@ static void iPlotZoomTo(Ihandle *ih, int x1, int y1, int x2, int y2)
   iPlotRedrawInteract(ih);
 }
 
-static void iPlotScroll(Ihandle *ih, float delta, bool full_page, bool vertical)
+static void iPlotScroll(Ihandle* ih, float delta, bool full_page, bool vertical)
 {
   ih->data->current_plot->Scroll(delta, full_page, vertical);
 
@@ -1513,7 +1513,7 @@ static void iPlotScroll(Ihandle *ih, float delta, bool full_page, bool vertical)
   iPlotRedrawInteract(ih);
 }
 
-static void iPlotScrollTo(Ihandle *ih, int x, int y)
+static void iPlotScrollTo(Ihandle* ih, int x, int y)
 {
   double rx, ry;
   ih->data->current_plot->TransformBack(x, y, rx, ry);
@@ -1701,7 +1701,7 @@ static int iPlotButton_CB(Ihandle* ih, int button, int press, int x, int y, char
   return IUP_DEFAULT;
 }
 
-static int iPlotMotion_CB(Ihandle* ih, int x, int y, char *status)
+static int iPlotMotion_CB(Ihandle* ih, int x, int y, char* status)
 {
   if (iupStrEqualNoCase(IupGetAttribute(ih, "CURSOR"), "HAND"))
     IupSetAttribute(ih, "CURSOR", NULL);
@@ -1916,7 +1916,7 @@ static int iPlotMotion_CB(Ihandle* ih, int x, int y, char *status)
   return IUP_DEFAULT;
 }
 
-static int iPlotWheel_CB(Ihandle *ih, float delta, int x, int y, char* status)
+static int iPlotWheel_CB(Ihandle* ih, float delta, int x, int y, char* status)
 {
   int index = iPlotFindPlot(ih, x, y, status);
   if (index < 0)
@@ -2182,7 +2182,7 @@ IUPPLOT_API void IupPlotInsertSegment(Ihandle* ih, int inIndex, int inSampleInde
   theDataSet->InsertSampleSegment(inSampleIndex, inX, inY, true);
 }
 
-IUPPLOT_API void IupPlotAddSamples(Ihandle* ih, int inIndex, double *x, double *y, int count)
+IUPPLOT_API void IupPlotAddSamples(Ihandle* ih, int inIndex, double* x, double* y, int count)
 {
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
@@ -2237,7 +2237,7 @@ IUPPLOT_API void IupPlotInsertStrSamples(Ihandle* ih, int inIndex, int inSampleI
     theDataSet->InsertSample(inSampleIndex + i, inX[i], inY[i]);
 }
 
-IUPPLOT_API void IupPlotInsertSamples(Ihandle* ih, int inIndex, int inSampleIndex, double *inX, double *inY, int count)
+IUPPLOT_API void IupPlotInsertSamples(Ihandle* ih, int inIndex, int inSampleIndex, double* inX, double* inY, int count)
 {
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
@@ -2256,7 +2256,7 @@ IUPPLOT_API void IupPlotInsertSamples(Ihandle* ih, int inIndex, int inSampleInde
     theDataSet->InsertSample(inSampleIndex + i, inX[i], inY[i]);
 }
 
-IUPPLOT_API void IupPlotGetSample(Ihandle* ih, int inIndex, int inSampleIndex, double *x, double *y)
+IUPPLOT_API void IupPlotGetSample(Ihandle* ih, int inIndex, int inSampleIndex, double* x, double* y)
 {
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
@@ -2273,7 +2273,7 @@ IUPPLOT_API void IupPlotGetSample(Ihandle* ih, int inIndex, int inSampleIndex, d
   theDataSet->GetSample(inSampleIndex, x, y);
 }
 
-IUPPLOT_API void IupPlotGetSampleStr(Ihandle* ih, int inIndex, int inSampleIndex, const char* *x, double *y)
+IUPPLOT_API void IupPlotGetSampleStr(Ihandle* ih, int inIndex, int inSampleIndex, const char* *x, double* y)
 {
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
@@ -2412,7 +2412,7 @@ IUPPLOT_API void IupPlotSetSampleExtra(Ihandle* ih, int inIndex, int inSampleInd
   return theDataSet->SetSampleExtra(inSampleIndex, inExtra);
 }
 
-IUPPLOT_API void IupPlotTransform(Ihandle* ih, double x, double y, double *cnv_x, double *cnv_y)
+IUPPLOT_API void IupPlotTransform(Ihandle* ih, double x, double y, double* cnv_x, double* cnv_y)
 {
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
@@ -2426,7 +2426,7 @@ IUPPLOT_API void IupPlotTransform(Ihandle* ih, double x, double y, double *cnv_x
   if (cnv_y) *cnv_y = ih->data->current_plot->mAxisY.mTrafo->Transform(y);
 }
 
-IUPPLOT_API void IupPlotTransformTo(Ihandle* ih, double cnv_x, double cnv_y, double *x, double *y)
+IUPPLOT_API void IupPlotTransformTo(Ihandle* ih, double cnv_x, double cnv_y, double* x, double* y)
 {
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
@@ -2614,7 +2614,7 @@ IUPPLOT_API int IupPlotLoadData(Ihandle* ih, const char* filename, int strXdata)
   return error;
 }
 
-IUPPLOT_API int IupPlotFindSample(Ihandle* ih, double cnv_x, double cnv_y, int *ds_index, int *sample_index)
+IUPPLOT_API int IupPlotFindSample(Ihandle* ih, double cnv_x, double cnv_y, int* ds_index, int* sample_index)
 {
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
@@ -2638,7 +2638,7 @@ IUPPLOT_API int IupPlotFindSample(Ihandle* ih, double cnv_x, double cnv_y, int *
   return 0;
 }
 
-IUPPLOT_API int  IupPlotFindSegment(Ihandle* ih, double cnv_x, double cnv_y, int *ds_index, int *sample_index1, int *sample_index2)
+IUPPLOT_API int  IupPlotFindSegment(Ihandle* ih, double cnv_x, double cnv_y, int* ds_index, int* sample_index1, int* sample_index2)
 {
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
@@ -2690,7 +2690,7 @@ static void iPlotDestroyMethod(Ihandle* ih)
     delete theDataSet;
 }
 
-static int iPlotCreateMethod(Ihandle* ih, void **params)
+static int iPlotCreateMethod(Ihandle* ih, void** params)
 {
   (void)params;
 

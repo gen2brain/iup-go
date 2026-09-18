@@ -1646,7 +1646,7 @@ static int fltkTextSetPaddingAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-extern "C" IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int *w, int *h)
+extern "C" IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int* w, int* h)
 {
   Fl_Boxtype box = FL_DOWN_BOX;
 
@@ -1660,14 +1660,14 @@ extern "C" IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int *w, int *h)
   *h += Fl::box_dh(box) + 2;   /* TOP_MARGIN(1) + BOTTOM_MARGIN(1) in Fl_Text_Display */
 }
 
-extern "C" IUP_SDK_API void iupdrvTextAddSpin(Ihandle* ih, int *w, int h)
+extern "C" IUP_SDK_API void iupdrvTextAddSpin(Ihandle* ih, int* w, int h)
 {
   (void)ih;
   (void)h;
   *w += 20;
 }
 
-extern "C" IUP_SDK_API void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, int col, int *pos)
+extern "C" IUP_SDK_API void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, int col, int* pos)
 {
   if (ih->data->is_multiline)
   {
@@ -1683,7 +1683,7 @@ extern "C" IUP_SDK_API void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, i
   *pos = col - 1;
 }
 
-extern "C" IUP_SDK_API void iupdrvTextConvertPosToLinCol(Ihandle* ih, int pos, int *lin, int *col)
+extern "C" IUP_SDK_API void iupdrvTextConvertPosToLinCol(Ihandle* ih, int pos, int* lin, int* col)
 {
   if (ih->data->is_multiline)
   {
@@ -1700,7 +1700,7 @@ extern "C" IUP_SDK_API void iupdrvTextConvertPosToLinCol(Ihandle* ih, int pos, i
   *col = pos + 1;
 }
 
-extern "C" IUP_SDK_API void iupdrvTextAddExtraPadding(Ihandle* ih, int *w, int *h)
+extern "C" IUP_SDK_API void iupdrvTextAddExtraPadding(Ihandle* ih, int* w, int* h)
 {
   (void)ih;
   (void)w;

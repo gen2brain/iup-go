@@ -193,7 +193,7 @@ extern "C" IUP_SDK_API void iupdrvDrawKillCanvas(IdrawCanvas* dc)
  * Get Size of Draw Canvas
  ****************************************************************************/
 
-extern "C" IUP_SDK_API void iupdrvDrawGetSize(IdrawCanvas* dc, int *w, int *h)
+extern "C" IUP_SDK_API void iupdrvDrawGetSize(IdrawCanvas* dc, int* w, int* h)
 {
   int width = 0, height = 0;
 
@@ -231,7 +231,7 @@ extern "C" IUP_SDK_API void iupdrvDrawFlush(IdrawCanvas* dc)
  * Get Clip Area
  ****************************************************************************/
 
-extern "C" IUP_SDK_API void iupdrvDrawGetClipRect(IdrawCanvas* dc, int *x1, int *y1, int *x2, int *y2)
+extern "C" IUP_SDK_API void iupdrvDrawGetClipRect(IdrawCanvas* dc, int* x1, int* y1, int* x2, int* y2)
 {
   if (dc)
   {
@@ -960,7 +960,7 @@ extern "C" IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, in
  * Get Text Size
  ****************************************************************************/
 
-void qtDrawGetTextSize(IdrawCanvas* dc, const char* text, int len, int *w, int *h, const char* font)
+void qtDrawGetTextSize(IdrawCanvas* dc, const char* text, int len, int* w, int* h, const char* font)
 {
   if (!text)
   {
@@ -990,7 +990,7 @@ void qtDrawGetTextSize(IdrawCanvas* dc, const char* text, int len, int *w, int *
  * Get Image Info
  ****************************************************************************/
 
-void qtDrawGetImageInfo(const char* name, int *w, int *h, int *bpp)
+void qtDrawGetImageInfo(const char* name, int* w, int* h, int* bpp)
 {
   if (!name)
   {

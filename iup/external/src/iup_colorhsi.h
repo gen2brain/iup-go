@@ -19,13 +19,13 @@ extern "C" {
 
 /* Converts from RGB to HSI.
  */
-void iupColorRGB2HSI(unsigned char r, unsigned char g, unsigned char b, double *h, double *s, double *i);
+void iupColorRGB2HSI(unsigned char r, unsigned char g, unsigned char b, double* h, double* s, double* i);
 
 /* Converts from HSI to RGB.
  */
-void iupColorHSI2RGB(double h, double s, double i, unsigned char *r, unsigned char *g, unsigned char *b);
+void iupColorHSI2RGB(double h, double s, double i, unsigned char* r, unsigned char* g, unsigned char* b);
 
-int iupStrToHSI(const char *str, double *h, double *s, double *i);
+int iupStrToHSI(const char* str, double* h, double* s, double* i);
 
 
 #if defined(__cplusplus)

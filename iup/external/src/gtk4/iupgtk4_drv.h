@@ -17,9 +17,9 @@ extern "C" {
 #define iupgtk4ColorToDouble(_x) ((double)_x/255.0)
 
 /* Common */
-IUP_DRV_API void iupgtk4SetupEnterLeaveEvents(GtkWidget *widget, Ihandle* ih);
-IUP_DRV_API void iupgtk4SetupMotionEvents(GtkWidget *widget, Ihandle *ih);
-IUP_DRV_API void iupgtk4SetupButtonEvents(GtkWidget *widget, Ihandle *ih);
+IUP_DRV_API void iupgtk4SetupEnterLeaveEvents(GtkWidget* widget, Ihandle* ih);
+IUP_DRV_API void iupgtk4SetupMotionEvents(GtkWidget* widget, Ihandle* ih);
+IUP_DRV_API void iupgtk4SetupButtonEvents(GtkWidget* widget, Ihandle* ih);
 IUP_DRV_API void iupgtk4ButtonPressed(GtkGestureClick* gesture, int n_press, double x, double y, Ihandle* ih);
 
 IUP_DRV_API int iupgtk4SetMnemonicTitle(Ihandle* ih, GtkLabel* label, const char* value);
@@ -32,8 +32,8 @@ IUP_DRV_API void iupgtk4SetFgColor(InativeHandle* handle, unsigned char r, unsig
 IUP_DRV_API void iupgtk4AddToParent(Ihandle* ih);
 IUP_DRV_API const char* iupgtk4GetWidgetClassName(GtkWidget* widget);
 IUP_DRV_API void iupgtk4SetPosSize(GtkWidget* parent, GtkWidget* widget, int x, int y, int width, int height);
-IUP_DRV_API GdkSurface* iupgtk4GetSurface(GtkWidget *widget);
-IUP_DRV_API void iupgtk4SurfaceGetPointer(GdkSurface *surface, double *x, double *y, GdkModifierType *mask);
+IUP_DRV_API GdkSurface* iupgtk4GetSurface(GtkWidget* widget);
+IUP_DRV_API void iupgtk4SurfaceGetPointer(GdkSurface* surface, double* x, double* y, GdkModifierType* mask);
 IUP_DRV_API int iupgtk4IsVisible(GtkWidget* widget);
 IUP_DRV_API void iupgtk4ClearSizeStyleCSS(GtkWidget* widget);
 IUP_DRV_API void iupgtk4SetMargin(GtkWidget* widget, int horiz_padding, int vert_padding);
@@ -52,29 +52,29 @@ IUP_DRV_API void iupgtk4NativeContainerSetBorder(GtkWidget* container, int enabl
 /* Str */
 IUP_DRV_API void  iupgtk4StrRelease(void);
 IUP_DRV_API char* iupgtk4StrConvertToSystem(const char* str);
-IUP_DRV_API char* iupgtk4StrConvertToSystemLen(const char* str, int *len);
+IUP_DRV_API char* iupgtk4StrConvertToSystemLen(const char* str, int* len);
 IUP_DRV_API char* iupgtk4StrConvertFromSystem(const char* str);
 IUP_DRV_API char* iupgtk4StrConvertFromFilename(const char* str);
 IUP_DRV_API char* iupgtk4StrConvertToFilename(const char* str);
 
 /* Focus */
-IUP_DRV_API void iupgtk4SetupFocusEvents(GtkWidget *widget, Ihandle* ih);
-IUP_DRV_API void iupgtk4SetCanFocus(GtkWidget *widget, int can);
+IUP_DRV_API void iupgtk4SetupFocusEvents(GtkWidget* widget, Ihandle* ih);
+IUP_DRV_API void iupgtk4SetCanFocus(GtkWidget* widget, int can);
 
 /* Key */
-IUP_DRV_API gboolean iupgtk4KeyPressEvent(GtkEventControllerKey *controller, guint keyval, guint keycode, GdkModifierType state, Ihandle *ih);
-IUP_DRV_API gboolean iupgtk4KeyReleaseEvent(GtkEventControllerKey *controller, guint keyval, guint keycode, GdkModifierType state, Ihandle *ih);
-IUP_DRV_API void iupgtk4SetupKeyEvents(GtkWidget *widget, Ihandle* ih);
+IUP_DRV_API gboolean iupgtk4KeyPressEvent(GtkEventControllerKey* controller, guint keyval, guint keycode, GdkModifierType state, Ihandle* ih);
+IUP_DRV_API gboolean iupgtk4KeyReleaseEvent(GtkEventControllerKey* controller, guint keyval, guint keycode, GdkModifierType state, Ihandle* ih);
+IUP_DRV_API void iupgtk4SetupKeyEvents(GtkWidget* widget, Ihandle* ih);
 IUP_DRV_API void iupgtk4ButtonKeySetStatus(GdkModifierType state, unsigned int but, char* status, int doubleclick);
 IUP_DRV_API int iupgtk4KeyDecode(guint keyval, GdkModifierType state);
 IUP_DRV_API void iupgtk4InstallGlobalInputController(GtkWidget* window);
 
 /* Font */
 IUP_DRV_API PangoFontDescription* iupgtk4GetPangoFontDesc(const char* value);
-IUP_DRV_API char* iupgtk4GetPangoFontDescAttrib(Ihandle *ih);
-IUP_DRV_API char* iupgtk4GetPangoLayoutAttrib(Ihandle *ih);
-IUP_DRV_API char* iupgtk4GetFontIdAttrib(Ihandle *ih);
-IUP_DRV_API void iupgtk4UpdateWidgetFont(Ihandle *ih, GtkWidget* widget);
+IUP_DRV_API char* iupgtk4GetPangoFontDescAttrib(Ihandle* ih);
+IUP_DRV_API char* iupgtk4GetPangoLayoutAttrib(Ihandle* ih);
+IUP_DRV_API char* iupgtk4GetFontIdAttrib(Ihandle* ih);
+IUP_DRV_API void iupgtk4UpdateWidgetFont(Ihandle* ih, GtkWidget* widget);
 IUP_DRV_API PangoLayout* iupgtk4GetPangoLayout(const char* value);
 
 /* There are PANGO_SCALE Pango units in one device unit.
@@ -83,13 +83,13 @@ IUP_DRV_API PangoLayout* iupgtk4GetPangoLayout(const char* value);
 #define iupGTK4_PIXELS2PANGOUNITS(_x) ((_x) * PANGO_SCALE)
 
 /* Open */
-IUP_DRV_API char* iupgtk4GetNativeWidgetHandle(GtkWidget *widget);
+IUP_DRV_API char* iupgtk4GetNativeWidgetHandle(GtkWidget* widget);
 IUP_DRV_API char* iupgtk4GetNativeWindowHandleAttrib(Ihandle* ih);
 IUP_DRV_API const char* iupgtk4GetNativeWindowHandleName(void);
 IUP_DRV_API const char* iupgtk4GetNativeFontIdName(void);
 
 /* Dialog */
-IUP_DRV_API gboolean iupgtk4DialogCloseRequest(GtkWindow *window, Ihandle *ih);
+IUP_DRV_API gboolean iupgtk4DialogCloseRequest(GtkWindow* window, Ihandle* ih);
 IUP_DRV_API GtkWindow* iupgtk4GetTransientFor(Ihandle* ih);
 
 /* Button */

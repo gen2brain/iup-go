@@ -42,7 +42,7 @@ static Icolor mot_color;
               NOT  TrueColor Functions
 *******************************************/
 
-static int motColor8BppErrorHandler(Display* dpy, XErrorEvent *err)
+static int motColor8BppErrorHandler(Display* dpy, XErrorEvent* err)
 {
   char msg[80];
 

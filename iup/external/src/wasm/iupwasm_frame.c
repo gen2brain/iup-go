@@ -37,14 +37,14 @@ IUP_SDK_API int iupdrvFrameHasClientOffset(Ihandle* ih)
   return 1;
 }
 
-IUP_SDK_API void iupdrvFrameGetDecorOffset(Ihandle* ih, int *x, int *y)
+IUP_SDK_API void iupdrvFrameGetDecorOffset(Ihandle* ih, int* x, int* y)
 {
   (void)ih;
   if (x) *x = IUPWASM_FRAME_BORDER + IUPWASM_FRAME_INSET;
   if (y) *y = IUPWASM_FRAME_BORDER + IUPWASM_FRAME_INSET;  /* title height is added by the core */
 }
 
-IUP_SDK_API int iupdrvFrameGetDecorSize(Ihandle* ih, int *w, int *h)
+IUP_SDK_API int iupdrvFrameGetDecorSize(Ihandle* ih, int* w, int* h)
 {
   int title_h = wasmFrameTitleHeight(ih);
   if (w) *w = 2 * (IUPWASM_FRAME_BORDER + IUPWASM_FRAME_INSET);
@@ -52,7 +52,7 @@ IUP_SDK_API int iupdrvFrameGetDecorSize(Ihandle* ih, int *w, int *h)
   return 1;
 }
 
-IUP_SDK_API int iupdrvFrameGetTitleHeight(Ihandle* ih, int *h)
+IUP_SDK_API int iupdrvFrameGetTitleHeight(Ihandle* ih, int* h)
 {
   if (h) *h = wasmFrameTitleHeight(ih);
   return 1;

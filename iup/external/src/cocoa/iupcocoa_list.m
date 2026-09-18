@@ -56,11 +56,11 @@ static char* cocoaListGetValueAttrib(Ihandle* ih);
 - (NSView*) tableView:(NSTableView*)table_view viewForTableColumn:(NSTableColumn*)table_column row:(NSInteger)the_row;
 - (void) tableViewSelectionDidChange:(NSNotification*)the_notification;
 - (CGFloat) tableView:(NSTableView*)table_view heightOfRow:(NSInteger)row;
-- (id<NSPasteboardWriting>)tableView:(NSTableView *)tableView pasteboardWriterForRow:(NSInteger)row;
-- (NSDragOperation)tableView:(NSTableView *)tableView validateDrop:(id <NSDraggingInfo>)info proposedRow:(NSInteger)row proposedDropOperation:(NSTableViewDropOperation)dropOperation;
-- (BOOL)tableView:(NSTableView *)tableView acceptDrop:(id <NSDraggingInfo>)info row:(NSInteger)row dropOperation:(NSTableViewDropOperation)dropOperation;
-- (void)tableView:(NSTableView *)tableView draggingSession:(NSDraggingSession *)session willBeginAtPoint:(NSPoint)screenPoint forRowIndexes:(NSIndexSet *)rowIndexes;
-- (void)tableView:(NSTableView *)tableView draggingSession:(NSDraggingSession *)session endedAtPoint:(NSPoint)screenPoint operation:(NSDragOperation)operation;
+- (id<NSPasteboardWriting>)tableView:(NSTableView*)tableView pasteboardWriterForRow:(NSInteger)row;
+- (NSDragOperation)tableView:(NSTableView*)tableView validateDrop:(id <NSDraggingInfo>)info proposedRow:(NSInteger)row proposedDropOperation:(NSTableViewDropOperation)dropOperation;
+- (BOOL)tableView:(NSTableView*)tableView acceptDrop:(id <NSDraggingInfo>)info row:(NSInteger)row dropOperation:(NSTableViewDropOperation)dropOperation;
+- (void)tableView:(NSTableView*)tableView draggingSession:(NSDraggingSession*)session willBeginAtPoint:(NSPoint)screenPoint forRowIndexes:(NSIndexSet*)rowIndexes;
+- (void)tableView:(NSTableView*)tableView draggingSession:(NSDraggingSession*)session endedAtPoint:(NSPoint)screenPoint operation:(NSDragOperation)operation;
 - (void)listDoubleClickAction:(id)sender;
 @end
 
@@ -253,7 +253,7 @@ static int cocoaListGetMaxWidth(Ihandle* ih)
 
 static NSFont* cocoaGetNativeFont(Ihandle* ih)
 {
-  IupCocoaFont *iup_font = NULL;
+  IupCocoaFont* iup_font = NULL;
 
   if (ih)
   {
@@ -396,7 +396,7 @@ static void cocoaListCallCaretCbForTextView(Ihandle* ih, NSTextView* textView)
 @end
 
 @implementation IupCocoaListTextField
-- (NSMenu *)textView:(NSTextView *)text_view menu:(NSMenu *)the_menu forEvent:(NSEvent *)the_event atIndex:(NSUInteger)char_index
+- (NSMenu*)textView:(NSTextView*)text_view menu:(NSMenu*)the_menu forEvent:(NSEvent*)the_event atIndex:(NSUInteger)char_index
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
   if (!iupAttribGet(ih, "_IUPCOCOA_CONTEXTMENU_SET"))
@@ -450,7 +450,7 @@ static void cocoaListCallCaretCbForTextView(Ihandle* ih, NSTextView* textView)
   return result;
 }
 
-- (void)keyDown:(NSEvent *)event
+- (void)keyDown:(NSEvent*)event
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
   if (ih)
@@ -469,7 +469,7 @@ static void cocoaListCallCaretCbForTextView(Ihandle* ih, NSTextView* textView)
   }
 }
 
-- (void)keyUp:(NSEvent *)event
+- (void)keyUp:(NSEvent*)event
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
   if (ih)
@@ -484,7 +484,7 @@ static void cocoaListCallCaretCbForTextView(Ihandle* ih, NSTextView* textView)
     [super keyUp:event];
 }
 
-- (void)flagsChanged:(NSEvent *)event
+- (void)flagsChanged:(NSEvent*)event
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
   if (ih)
@@ -620,7 +620,7 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
 }
 #endif
 
-- (NSMenu *)menuForEvent:(NSEvent *)event
+- (NSMenu*)menuForEvent:(NSEvent*)event
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
   if (iupAttribGet(ih, "_IUPCOCOA_CONTEXTMENU_SET"))
@@ -675,7 +675,7 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
   return result;
 }
 
-- (void)keyDown:(NSEvent *)event
+- (void)keyDown:(NSEvent*)event
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
   if (ih)
@@ -693,7 +693,7 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
   }
 }
 
-- (void)keyUp:(NSEvent *)event
+- (void)keyUp:(NSEvent*)event
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
   if (ih)
@@ -707,7 +707,7 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
     [super keyUp:event];
 }
 
-- (void)flagsChanged:(NSEvent *)event
+- (void)flagsChanged:(NSEvent*)event
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
   if (ih)
@@ -721,7 +721,7 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
     [super flagsChanged:event];
 }
 
-- (void)mouseDown:(NSEvent *)event
+- (void)mouseDown:(NSEvent*)event
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
   BOOL propagate = ih ? cocoaListHandleMouseButton(ih, event, self, true) : YES;
@@ -737,7 +737,7 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
   }
 }
 
-- (void)rightMouseDown:(NSEvent *)event
+- (void)rightMouseDown:(NSEvent*)event
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
   BOOL propagate = ih ? cocoaListHandleMouseButton(ih, event, self, true) : YES;
@@ -753,7 +753,7 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
   }
 }
 
-- (void)otherMouseDown:(NSEvent *)event
+- (void)otherMouseDown:(NSEvent*)event
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
   BOOL propagate = ih ? cocoaListHandleMouseButton(ih, event, self, true) : YES;
@@ -786,7 +786,7 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
   [tracking_area release];
 }
 
-- (void)mouseMoved:(NSEvent *)event
+- (void)mouseMoved:(NSEvent*)event
 {
   [super mouseMoved:event];
 
@@ -798,11 +798,11 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
 @end
 
 @interface IupCocoaComboBox : NSComboBox
-- (NSMenu *)textView:(NSTextView *)text_view menu:(NSMenu *)the_menu forEvent:(NSEvent *)the_event atIndex:(NSUInteger)char_index;
+- (NSMenu*)textView:(NSTextView*)text_view menu:(NSMenu*)the_menu forEvent:(NSEvent*)the_event atIndex:(NSUInteger)char_index;
 @end
 
 @implementation IupCocoaComboBox
-- (NSMenu *)textView:(NSTextView *)text_view menu:(NSMenu *)the_menu forEvent:(NSEvent *)the_event atIndex:(NSUInteger)char_index
+- (NSMenu*)textView:(NSTextView*)text_view menu:(NSMenu*)the_menu forEvent:(NSEvent*)the_event atIndex:(NSUInteger)char_index
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
 
@@ -859,7 +859,7 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
   return [super acceptsFirstResponder];
 }
 
-- (void)keyDown:(NSEvent *)event
+- (void)keyDown:(NSEvent*)event
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
   if (ih)
@@ -874,7 +874,7 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
     [super keyDown:event];
 }
 
-- (void)keyUp:(NSEvent *)event
+- (void)keyUp:(NSEvent*)event
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
   if (ih)
@@ -887,7 +887,7 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
     [super keyUp:event];
 }
 
-- (void)flagsChanged:(NSEvent *)event
+- (void)flagsChanged:(NSEvent*)event
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
   if (ih)
@@ -946,7 +946,7 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
 - (void) controlTextDidEndEditing:(NSNotification*)the_notification;
 - (void) controlTextDidBeginEditing:(NSNotification*)the_notification;
 - (BOOL) control:(NSControl*)control textView:(NSTextView*)textView doCommandBySelector:(SEL)commandSelector;
-- (BOOL) textView:(NSTextView *)textView shouldChangeTextInRange:(NSRange)affectedCharRange replacementString:(NSString *)replacementString;
+- (BOOL) textView:(NSTextView*)textView shouldChangeTextInRange:(NSRange)affectedCharRange replacementString:(NSString*)replacementString;
 @end
 
 @implementation IupCocoaListDelegate
@@ -1072,18 +1072,18 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
   IFn cb = (IFn)IupGetCallback(ih, "EDIT_CB");
   if (!cb) return;
 
-  NSText *fieldEditor = [[text_obj window] fieldEditor:YES forObject:text_obj];
+  NSText* fieldEditor = [[text_obj window] fieldEditor:YES forObject:text_obj];
   if ([fieldEditor isKindOfClass:[NSTextView class]])
   {
-    [(NSTextView *)fieldEditor setDelegate:self];
+    [(NSTextView*)fieldEditor setDelegate:self];
   }
 }
 
-- (void)textViewDidChangeSelection:(NSNotification *)notification
+- (void)textViewDidChangeSelection:(NSNotification*)notification
 {
-  NSTextView *textView = [notification object];
+  NSTextView* textView = [notification object];
 
-  NSControl *control = nil;
+  NSControl* control = nil;
   for (NSView* view = [textView superview]; view != nil; view = [view superview])
   {
     if ([view isKindOfClass:[NSControl class]])
@@ -1148,7 +1148,7 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
   return NO;
 }
 
-- (BOOL) textView:(NSTextView *)textView shouldChangeTextInRange:(NSRange)affectedCharRange replacementString:(NSString *)replacementString
+- (BOOL) textView:(NSTextView*)textView shouldChangeTextInRange:(NSRange)affectedCharRange replacementString:(NSString*)replacementString
 {
   NSControl* control = nil;
 
@@ -1716,7 +1716,7 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
   }
 }
 
-- (BOOL)tableView:(NSTableView *)tableView shouldSelectRow:(NSInteger)row
+- (BOOL)tableView:(NSTableView*)tableView shouldSelectRow:(NSInteger)row
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(tableView, IHANDLE_ASSOCIATED_OBJ_KEY);
   if (ih)
@@ -1730,7 +1730,7 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
   return YES;
 }
 
-- (id<NSPasteboardWriting>)tableView:(NSTableView *)tableView pasteboardWriterForRow:(NSInteger)row
+- (id<NSPasteboardWriting>)tableView:(NSTableView*)tableView pasteboardWriterForRow:(NSInteger)row
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(tableView, IHANDLE_ASSOCIATED_OBJ_KEY);
   if (!ih) return nil;
@@ -1751,11 +1751,11 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
     return cocoaSourceDragAppPasteboardItem(ih, (int)NSMinX(row_rect), (int)NSMinY(row_rect));
   }
 
-  NSPasteboardItem *pboardItem = [[[NSPasteboardItem alloc] init] autorelease];
+  NSPasteboardItem* pboardItem = [[[NSPasteboardItem alloc] init] autorelease];
 
   if (enable_internal_dnd)
   {
-    NSString *rowIndexStr = [NSString stringWithFormat:@"%ld", (long)row];
+    NSString* rowIndexStr = [NSString stringWithFormat:@"%ld", (long)row];
     [pboardItem setString:rowIndexStr forType:IupListPasteboardType];
   }
 
@@ -1765,7 +1765,7 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
 
     if (ih->data->is_multiple)
     {
-      char *buffer = cocoaListGetValueAttrib(ih);
+      char* buffer = cocoaListGetValueAttrib(ih);
       int count = iupdrvListGetCount(ih);
 
       if (buffer && row >= 0 && row < count)
@@ -1800,7 +1800,7 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
       }
     }
 
-    NSData *handleData = [NSData dataWithBytes:&ih length:sizeof(Ihandle*)];
+    NSData* handleData = [NSData dataWithBytes:&ih length:sizeof(Ihandle*)];
     [pboardItem setData:handleData forType:IupInternalDndType];
   }
 
@@ -1811,7 +1811,7 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
 }
 
 #ifdef GNUSTEP
-- (BOOL)tableView:(NSTableView *)tableView writeRowsWithIndexes:(NSIndexSet *)rows toPasteboard:(NSPasteboard *)pboard
+- (BOOL)tableView:(NSTableView*)tableView writeRowsWithIndexes:(NSIndexSet*)rows toPasteboard:(NSPasteboard*)pboard
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(tableView, IHANDLE_ASSOCIATED_OBJ_KEY);
   if (!ih)
@@ -1825,9 +1825,9 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
 }
 #endif
 
-- (NSDragOperation)tableView:(NSTableView *)tableView validateDrop:(id <NSDraggingInfo>)info proposedRow:(NSInteger)row proposedDropOperation:(NSTableViewDropOperation)dropOperation
+- (NSDragOperation)tableView:(NSTableView*)tableView validateDrop:(id <NSDraggingInfo>)info proposedRow:(NSInteger)row proposedDropOperation:(NSTableViewDropOperation)dropOperation
 {
-  NSPasteboard *pboard = [info draggingPasteboard];
+  NSPasteboard* pboard = [info draggingPasteboard];
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(tableView, IHANDLE_ASSOCIATED_OBJ_KEY);
   if (!ih)
     return NSDragOperationNone;
@@ -1857,7 +1857,7 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
     if ([info draggingSource] != tableView)
       return NSDragOperationNone;
 
-    NSString *rowIndexStr = [pboard stringForType:IupListPasteboardType];
+    NSString* rowIndexStr = [pboard stringForType:IupListPasteboardType];
     if (!rowIndexStr) return NSDragOperationNone;
 
     NSInteger sourceRow = -1;
@@ -1880,7 +1880,7 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
 
   if ([[pboard types] containsObject:IupInternalDndType])
   {
-    NSData *handleData = [pboard dataForType:IupInternalDndType];
+    NSData* handleData = [pboard dataForType:IupInternalDndType];
     if (!handleData || [handleData length] != sizeof(Ihandle*))
       return NSDragOperationNone;
 
@@ -1903,9 +1903,9 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
   return NSDragOperationNone;
 }
 
-- (BOOL)tableView:(NSTableView *)tableView acceptDrop:(id <NSDraggingInfo>)info row:(NSInteger)row dropOperation:(NSTableViewDropOperation)dropOperation
+- (BOOL)tableView:(NSTableView*)tableView acceptDrop:(id <NSDraggingInfo>)info row:(NSInteger)row dropOperation:(NSTableViewDropOperation)dropOperation
 {
-  NSPasteboard *pboard = [info draggingPasteboard];
+  NSPasteboard* pboard = [info draggingPasteboard];
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(tableView, IHANDLE_ASSOCIATED_OBJ_KEY);
   if (!ih) return NO;
 
@@ -1926,7 +1926,7 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
 
   if ([[pboard types] containsObject:IupListPasteboardType])
   {
-    NSString *rowIndexStr = [pboard stringForType:IupListPasteboardType];
+    NSString* rowIndexStr = [pboard stringForType:IupListPasteboardType];
     if (!rowIndexStr) return NO;
 
     NSInteger sourceRow = -1;
@@ -1982,7 +1982,7 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
 
   if ([[pboard types] containsObject:IupInternalDndType])
   {
-    NSData *handleData = [pboard dataForType:IupInternalDndType];
+    NSData* handleData = [pboard dataForType:IupInternalDndType];
     if (!handleData || [handleData length] != sizeof(Ihandle*))
       return NO;
 
@@ -2001,7 +2001,7 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
 
     if (IupGetInt(ih_source, "MULTIPLE"))
     {
-      char *value_buffer = IupGetAttribute(ih_source, "VALUE");
+      char* value_buffer = IupGetAttribute(ih_source, "VALUE");
       int count = iupdrvListGetCount(ih_source);
 
       if (value_buffer && count > 0)
@@ -2069,7 +2069,7 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
   return NO;
 }
 
-- (void)tableView:(NSTableView *)tableView draggingSession:(NSDraggingSession *)session willBeginAtPoint:(NSPoint)screenPoint forRowIndexes:(NSIndexSet *)rowIndexes
+- (void)tableView:(NSTableView*)tableView draggingSession:(NSDraggingSession*)session willBeginAtPoint:(NSPoint)screenPoint forRowIndexes:(NSIndexSet*)rowIndexes
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(tableView, IHANDLE_ASSOCIATED_OBJ_KEY);
   if (!ih) return;
@@ -2081,7 +2081,7 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
   }
 }
 
-- (void)tableView:(NSTableView *)tableView draggingSession:(NSDraggingSession *)session endedAtPoint:(NSPoint)screenPoint operation:(NSDragOperation)operation
+- (void)tableView:(NSTableView*)tableView draggingSession:(NSDraggingSession*)session endedAtPoint:(NSPoint)screenPoint operation:(NSDragOperation)operation
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(tableView, IHANDLE_ASSOCIATED_OBJ_KEY);
   if (!ih) return;
@@ -2182,7 +2182,7 @@ IUP_SDK_API void iupdrvListAddItemSpace(Ihandle* ih, int* h)
   *h += 2;
 }
 
-IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
+IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int* x, int* y)
 {
   IupCocoaListSubType sub_type = cocoaListGetSubType(ih);
 
@@ -2647,7 +2647,7 @@ IUP_SDK_API void* iupdrvListGetImageHandle(Ihandle* ih, int id)
   if (sub_type == IUPCOCOALISTSUBTYPE_DROPDOWN)
   {
     NSPopUpButton* popup_button = (NSPopUpButton*)cocoaListGetBaseWidget(ih);
-    NSMenuItem *menu_item = (NSMenuItem*)[popup_button itemAtIndex:pos];
+    NSMenuItem* menu_item = (NSMenuItem*)[popup_button itemAtIndex:pos];
     return [menu_item image];
   }
   else if(sub_type >= IUPCOCOALISTSUBTYPE_EDITBOX)
@@ -2673,7 +2673,7 @@ IUP_SDK_API int iupdrvListSetImageHandle(Ihandle* ih, int id, void* hImage)
   if (sub_type == IUPCOCOALISTSUBTYPE_DROPDOWN)
   {
     NSPopUpButton* popup_button = (NSPopUpButton*)cocoaListGetBaseWidget(ih);
-    NSMenuItem *menu_item = (NSMenuItem*)[popup_button itemAtIndex:pos];
+    NSMenuItem* menu_item = (NSMenuItem*)[popup_button itemAtIndex:pos];
 
     if (image)
     {

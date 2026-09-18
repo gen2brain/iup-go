@@ -24,10 +24,10 @@
 
 
 #if !GTK_CHECK_VERSION(2, 6, 0)
-static void gtk_button_set_image(GtkButton *button, GtkWidget *image)
+static void gtk_button_set_image(GtkButton* button, GtkWidget* image)
 {
 }
-static GtkWidget* gtk_button_get_image(GtkButton *button)
+static GtkWidget* gtk_button_get_image(GtkButton* button)
 {
   return NULL;
 }
@@ -50,7 +50,7 @@ static void gtkButtonEnsureNoMinCss(void)
 }
 #endif
 
-IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
+IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int* x, int* y)
 {
 #if GTK_CHECK_VERSION(3, 0, 0)
   /* Measure border deltas using preferred (not allocated) child size */
@@ -343,7 +343,7 @@ IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
     border_x = button_size.width - child_alloc.width;
     border_y = button_size.height - child_alloc.height;
 
-    GtkBorder *inner_border = NULL;
+    GtkBorder* inner_border = NULL;
     gtk_widget_style_get(temp_button, "inner-border", &inner_border, NULL);
 
     if (!inner_border)
@@ -369,11 +369,11 @@ IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
 #endif
 }
 
-static void gtkButtonChildrenCb(GtkWidget *widget, gpointer client_data)
+static void gtkButtonChildrenCb(GtkWidget* widget, gpointer client_data)
 {
   if (GTK_IS_LABEL(widget))
   {
-    GtkLabel **label = (GtkLabel**) client_data;
+    GtkLabel** label = (GtkLabel**) client_data;
     *label = (GtkLabel*)widget;
   }
 }
@@ -404,7 +404,7 @@ static GtkLabel* gtkButtonGetLabel(Ihandle* ih)
     else
     {
       /* when both is set, button contains an GtkAlignment, that contains a GtkBox, that contains a label and an image */
-      GtkContainer *container = (GtkContainer*)gtk_bin_get_child((GtkBin*)gtk_bin_get_child((GtkBin*)ih->handle));
+      GtkContainer* container = (GtkContainer*)gtk_bin_get_child((GtkBin*)gtk_bin_get_child((GtkBin*)ih->handle));
       GtkLabel* label = NULL;
       gtk_container_foreach(container, gtkButtonChildrenCb, &label);
       return label;
@@ -692,11 +692,11 @@ static int gtkButtonSetFontAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-static void gtkButtonImageChildrenCb(GtkWidget *widget, gpointer client_data)
+static void gtkButtonImageChildrenCb(GtkWidget* widget, gpointer client_data)
 {
   if (GTK_IS_IMAGE(widget))
   {
-    GtkImage **image = (GtkImage**)client_data;
+    GtkImage** image = (GtkImage**)client_data;
     *image = (GtkImage*)widget;
   }
 }
@@ -805,7 +805,7 @@ static int gtkButtonSetActiveAttrib(Ihandle* ih, const char* value)
   return iupBaseSetActiveAttrib(ih, value);
 }
 
-static gboolean gtkButtonEnterLeaveEvent(GtkWidget *widget, GdkEventCrossing *evt, Ihandle *ih)
+static gboolean gtkButtonEnterLeaveEvent(GtkWidget* widget, GdkEventCrossing* evt, Ihandle* ih)
 {
   /* Used when FLAT=Yes, to manage relief */
 
@@ -820,7 +820,7 @@ static gboolean gtkButtonEnterLeaveEvent(GtkWidget *widget, GdkEventCrossing *ev
   return FALSE;
 }
 
-static void gtkButtonClicked(GtkButton *widget, Ihandle* ih)
+static void gtkButtonClicked(GtkButton* widget, Ihandle* ih)
 {
   Icallback cb = IupGetCallback(ih, "ACTION");
   if (cb)
@@ -831,7 +831,7 @@ static void gtkButtonClicked(GtkButton *widget, Ihandle* ih)
   (void)widget;
 }
 
-static gboolean gtkButtonEvent(GtkWidget *widget, GdkEventButton *evt, Ihandle *ih)
+static gboolean gtkButtonEvent(GtkWidget* widget, GdkEventButton* evt, Ihandle* ih)
 {
   if (iupgtkButtonEvent(widget, evt, ih)==TRUE)
     return TRUE;
@@ -865,7 +865,7 @@ static gboolean gtkButtonEvent(GtkWidget *widget, GdkEventButton *evt, Ihandle *
   return FALSE;
 }
 
-static void gtkButtonLayoutUpdateMethod(Ihandle *ih)
+static void gtkButtonLayoutUpdateMethod(Ihandle* ih)
 {
   iupdrvBaseLayoutUpdateMethod(ih);
 }

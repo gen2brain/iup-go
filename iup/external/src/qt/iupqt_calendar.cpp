@@ -104,7 +104,7 @@ protected:
  * Natural Size Calculation
  ****************************************************************************/
 
-static void qtCalendarComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *children_expand)
+static void qtCalendarComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* children_expand)
 {
   (void)children_expand;
 

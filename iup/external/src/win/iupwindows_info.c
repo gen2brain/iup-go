@@ -20,7 +20,7 @@
 #include "iup_varg.h"
 
 
-typedef LONG (WINAPI *PFN_RtlGetVersion)(OSVERSIONINFOW*);
+typedef LONG (WINAPI* PFN_RtlGetVersion)(OSVERSIONINFOW*);
 
 static void iupwinGetVersionInfo(OSVERSIONINFOW* osvi)
 {
@@ -65,7 +65,7 @@ IUP_SDK_API char* iupdrvLanguageInfo(void)
   return iupStrLanguageTag(name);
 }
 
-IUP_SDK_API char *iupdrvGetSystemName(void)
+IUP_SDK_API char* iupdrvGetSystemName(void)
 {
   OSVERSIONINFOW osvi;
   iupwinGetVersionInfo(&osvi);
@@ -104,9 +104,9 @@ IUP_SDK_API char *iupdrvGetSystemName(void)
   return "Windows";
 }
 
-IUP_SDK_API char *iupdrvGetSystemVersion(void)
+IUP_SDK_API char* iupdrvGetSystemVersion(void)
 {
-  char *str = iupStrGetMemory(256);
+  char* str = iupStrGetMemory(256);
   OSVERSIONINFOW osvi;
   SYSTEM_INFO si;
 
@@ -151,7 +151,7 @@ static int iupwinMakeDirectory(const char* path)
   return CreateDirectoryA(path, NULL) ? 1 : 0;
 }
 
-IUP_SDK_API int iupdrvGetPreferencePath(char *filename, const char *app_name, int use_system)
+IUP_SDK_API int iupdrvGetPreferencePath(char* filename, const char* app_name, int use_system)
 {
   char* homedrive;
   char* homepath;
@@ -209,7 +209,7 @@ IUP_SDK_API int iupdrvGetUserDir(char* path, int size, int kind)
   return 1;
 }
 
-IUP_SDK_API char *iupdrvGetComputerName(void)
+IUP_SDK_API char* iupdrvGetComputerName(void)
 {
   DWORD size = MAX_COMPUTERNAME_LENGTH + 1;
   char* str = iupStrGetMemory(size);
@@ -217,7 +217,7 @@ IUP_SDK_API char *iupdrvGetComputerName(void)
   return str;
 }
 
-IUP_SDK_API char *iupdrvGetUserName(void)
+IUP_SDK_API char* iupdrvGetUserName(void)
 {
   DWORD size = 256;
   char* str = iupStrGetMemory(size);

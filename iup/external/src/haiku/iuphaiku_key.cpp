@@ -209,7 +209,7 @@ IUP_DRV_API void iuphaikuButtonKeySetStatus(unsigned int modifiers, unsigned int
   if (doubleclick) iupKEY_SETDOUBLE(status);
 }
 
-extern "C" IUP_SDK_API void iupdrvKeyEncode(int code, unsigned int *keyval, unsigned int *state)
+extern "C" IUP_SDK_API void iupdrvKeyEncode(int code, unsigned int* keyval, unsigned int* state)
 {
   if (keyval) *keyval = 0;
   if (state)  *state = 0;

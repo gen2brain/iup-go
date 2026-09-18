@@ -16,7 +16,7 @@
 #include "iup_attrib.h"
 
 
-static Itable *ifunc_table = NULL;   /* the function hash table indexed by the name string */
+static Itable* ifunc_table = NULL;   /* the function hash table indexed by the name string */
 
 
 void iupFuncInit(void)
@@ -30,7 +30,7 @@ void iupFuncFinish(void)
   ifunc_table = NULL;
 }
 
-IUP_API Icallback IupGetFunction(const char *name)
+IUP_API Icallback IupGetFunction(const char* name)
 {
   void* value;
 
@@ -41,7 +41,7 @@ IUP_API Icallback IupGetFunction(const char *name)
   return (Icallback)iupTableGetFunc(ifunc_table, name, &value);
 }
 
-IUP_API Icallback IupSetFunction(const char *name, Icallback func)
+IUP_API Icallback IupSetFunction(const char* name, Icallback func)
 {
   void* value;
   Icallback old_func;

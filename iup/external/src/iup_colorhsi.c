@@ -45,7 +45,7 @@ static double iColorReconstruct(unsigned char value)
   return (((double)value + 0.5)/256.0);
 }
 
-static void iColorSmax01(double h, double hr, double hb, double hg, double *h0, double *h1)
+static void iColorSmax01(double h, double hr, double hb, double hg, double* h0, double* h1)
 {
   if (h < rad120)
     *h0 = hb;
@@ -151,7 +151,7 @@ static double iColorHSI_ImaxS(double h, double cosH, double sinH)
   return fabs(i);
 }
 
-static void iColorRGB2HSI(double r, double g, double b, double *h, double *s, double *i)
+static void iColorRGB2HSI(double r, double g, double b, double* h, double* s, double* i)
 {
   double v, u, ImaxS;
 
@@ -202,7 +202,7 @@ static void iColorRGB2HSI(double r, double g, double b, double *h, double *s, do
     *i = (((*i) - ImaxS)*0.5)/(1.0 - ImaxS) + 0.5;
 }
 
-static void iColorHSI2RGB(double h, double s, double i, double *r, double *g, double *b)
+static void iColorHSI2RGB(double h, double s, double i, double* r, double* g, double* b)
 {
   double cosH, sinH, H, v, u;
   double Smax, ImaxS;
@@ -260,7 +260,7 @@ static void iColorHSI2RGB(double h, double s, double i, double *r, double *g, do
 
 /*********************************************************************************************/
 
-void iupColorRGB2HSI(unsigned char r, unsigned char g, unsigned char b, double *h, double *s, double *i)
+void iupColorRGB2HSI(unsigned char r, unsigned char g, unsigned char b, double* h, double* s, double* i)
 {
   double fr = iColorReconstruct(r);
   double fg = iColorReconstruct(g);
@@ -269,7 +269,7 @@ void iupColorRGB2HSI(unsigned char r, unsigned char g, unsigned char b, double *
   iColorRGB2HSI(fr, fg, fb, h, s, i);
 }
 
-void iupColorHSI2RGB(double h, double s, double i, unsigned char *r, unsigned char *g, unsigned char *b)
+void iupColorHSI2RGB(double h, double s, double i, unsigned char* r, unsigned char* g, unsigned char* b)
 {
   double fr, fg, fb;
 
@@ -280,7 +280,7 @@ void iupColorHSI2RGB(double h, double s, double i, unsigned char *r, unsigned ch
   *b = iColorQuantize(fb);
 }
 
-int iupStrToHSI(const char *str, double *h, double *s, double *i)
+int iupStrToHSI(const char* str, double* h, double* s, double* i)
 {
   double fh, fs, fi;
   if (!str) return 0;

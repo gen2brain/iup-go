@@ -16,18 +16,18 @@
 #include "iupgtk4_x11.h"
 
 
-IUP_SDK_API void iupdrvAddScreenOffset(int *x, int *y, int add)
+IUP_SDK_API void iupdrvAddScreenOffset(int* x, int* y, int add)
 {
   (void)x;
   (void)y;
   (void)add;
 }
 
-IUP_SDK_API void iupdrvGetScreenSize(int *width, int *height)
+IUP_SDK_API void iupdrvGetScreenSize(int* width, int* height)
 {
-  GdkDisplay *display = gdk_display_get_default();
-  GListModel *monitors = gdk_display_get_monitors(display);
-  GdkMonitor *monitor = NULL;
+  GdkDisplay* display = gdk_display_get_default();
+  GListModel* monitors = gdk_display_get_monitors(display);
+  GdkMonitor* monitor = NULL;
 
   /* gdk_monitor_is_primary removed, just use first monitor */
   if (g_list_model_get_n_items(monitors) > 0)
@@ -43,11 +43,11 @@ IUP_SDK_API void iupdrvGetScreenSize(int *width, int *height)
   }
 }
 
-IUP_SDK_API void iupdrvGetFullSize(int *width, int *height)
+IUP_SDK_API void iupdrvGetFullSize(int* width, int* height)
 {
-  GdkDisplay *display = gdk_display_get_default();
-  GListModel *monitors = gdk_display_get_monitors(display);
-  GdkMonitor *monitor = NULL;
+  GdkDisplay* display = gdk_display_get_default();
+  GListModel* monitors = gdk_display_get_monitors(display);
+  GdkMonitor* monitor = NULL;
 
   /* gdk_monitor_is_primary removed, just use first monitor */
   if (g_list_model_get_n_items(monitors) > 0)
@@ -70,9 +70,9 @@ IUP_SDK_API int iupdrvGetScreenDepth(void)
 
 IUP_SDK_API double iupdrvGetScreenDpi(void)
 {
-  GdkDisplay *display = gdk_display_get_default();
-  GListModel *monitors = gdk_display_get_monitors(display);
-  GdkMonitor *monitor = g_list_model_get_item(monitors, 0);
+  GdkDisplay* display = gdk_display_get_default();
+  GListModel* monitors = gdk_display_get_monitors(display);
+  GdkMonitor* monitor = g_list_model_get_item(monitors, 0);
 
   if (monitor)
   {
@@ -91,7 +91,7 @@ IUP_SDK_API int iupdrvScaleNaturalPx(int px)
   return px;
 }
 
-IUP_SDK_API void iupdrvGetCursorPos(int *x, int *y)
+IUP_SDK_API void iupdrvGetCursorPos(int* x, int* y)
 {
 #ifdef GDK_WINDOWING_X11
   if (iupgtk4X11IsBackend() && iupgtk4X11QueryPointer(x, y))
@@ -99,13 +99,13 @@ IUP_SDK_API void iupdrvGetCursorPos(int *x, int *y)
 #endif
 
   {
-    GdkDisplay *display = gdk_display_get_default();
-    GdkSeat *seat = gdk_display_get_default_seat(display);
-    GdkDevice *device = gdk_seat_get_pointer(seat);
+    GdkDisplay* display = gdk_display_get_default();
+    GdkSeat* seat = gdk_display_get_default_seat(display);
+    GdkDevice* device = gdk_seat_get_pointer(seat);
 
     if (device)
     {
-      GdkSurface *surface = gdk_device_get_surface_at_position(device, NULL, NULL);
+      GdkSurface* surface = gdk_device_get_surface_at_position(device, NULL, NULL);
 
       if (surface)
       {
@@ -125,9 +125,9 @@ IUP_SDK_API void iupdrvGetCursorPos(int *x, int *y)
 
 IUP_SDK_API void iupdrvGetKeyState(char* key)
 {
-  GdkDisplay *display = gdk_display_get_default();
-  GdkSeat *seat = gdk_display_get_default_seat(display);
-  GdkDevice *device = gdk_seat_get_keyboard(seat);
+  GdkDisplay* display = gdk_display_get_default();
+  GdkSeat* seat = gdk_display_get_default_seat(display);
+  GdkDevice* device = gdk_seat_get_keyboard(seat);
   GdkModifierType aModifierType = 0;
 
   /* Get modifier state directly - keyboard device doesn't have surface position */

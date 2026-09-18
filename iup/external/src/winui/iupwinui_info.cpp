@@ -17,7 +17,7 @@ extern "C" {
 
 #include "iupwinui_drv.h"
 
-typedef LONG (WINAPI *PFN_RtlGetVersion)(OSVERSIONINFOW*);
+typedef LONG (WINAPI* PFN_RtlGetVersion)(OSVERSIONINFOW*);
 
 static void iupwinuiGetVersionInfo(OSVERSIONINFOW* osvi)
 {

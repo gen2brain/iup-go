@@ -79,7 +79,7 @@ static void gtk4FileDlgGetMultipleFiles(Ihandle* ih, GListModel* list)
   else
   {
     Iarray* names_array = iupArrayCreate(1024, sizeof(char));  /* just set an initial size, but count is 0 */
-    char *all_names;
+    char* all_names;
     int cur_len, count = 0;
 
     int len = dir_len;
@@ -362,7 +362,7 @@ static int gtk4FileDlgPopupDefault(Ihandle* ih, int x, int y)
   value = iupAttribGet(ih, "EXTFILTER");
   if (value && !is_dir)
   {
-    char *name, *pattern, *filters = iupStrDup(value);
+    char* name, *pattern, *filters = iupStrDup(value);
     char atrib[30];
     int i, pattern_count, j;
     int filter_index = iupAttribGetInt(ih, "FILTERUSED");
@@ -377,7 +377,7 @@ static int gtk4FileDlgPopupDefault(Ihandle* ih, int x, int y)
     name = filters;
     for (i = 0; i < data.filter_count && name[0]; i++)
     {
-      GtkFileFilter *filter = gtk_file_filter_new();
+      GtkFileFilter* filter = gtk_file_filter_new();
 
       pattern = gtk4FileDlgGetNextStr(name);
       pattern_count = iupStrReplace(pattern, ';', 0) + 1;
@@ -416,7 +416,7 @@ static int gtk4FileDlgPopupDefault(Ihandle* ih, int x, int y)
     {
       char* filters = iupStrDup(value), *fstr;
       int pattern_count, i;
-      GtkFileFilter *filter = gtk_file_filter_new();
+      GtkFileFilter* filter = gtk_file_filter_new();
       char* info = iupAttribGet(ih, "FILTERINFO");
       if (!info)
         info = value;
@@ -555,7 +555,7 @@ static int gtk4FileDlgPopupLegacy(Ihandle* ih, int x, int y)
 {
   GtkWidget* dialog;
   GtkFileChooserAction action;
-  const char *ok, *cancel, *open, *save, *help;
+  const char* ok, *cancel, *open, *save, *help;
   IFnss file_cb;
   char* value;
   int filter_count = 0;
@@ -655,7 +655,7 @@ static int gtk4FileDlgPopupLegacy(Ihandle* ih, int x, int y)
   value = iupAttribGet(ih, "EXTFILTER");
   if (value)
   {
-    char *name, *pattern, *filters = iupStrDup(value);
+    char* name, *pattern, *filters = iupStrDup(value);
     char atrib[30];
     int i, pattern_count, j;
     int filter_index = iupAttribGetInt(ih, "FILTERUSED");
@@ -667,7 +667,7 @@ static int gtk4FileDlgPopupLegacy(Ihandle* ih, int x, int y)
     name = filters;
     for (i=0; i<filter_count && name[0]; i++)
     {
-      GtkFileFilter *filter = gtk_file_filter_new();
+      GtkFileFilter* filter = gtk_file_filter_new();
 
       pattern = gtk4FileDlgGetNextStr(name);
 
@@ -702,7 +702,7 @@ static int gtk4FileDlgPopupLegacy(Ihandle* ih, int x, int y)
     {
       char* filters = iupStrDup(value), *fstr;
       int pattern_count, i;
-      GtkFileFilter *filter = gtk_file_filter_new();
+      GtkFileFilter* filter = gtk_file_filter_new();
       char* info = iupAttribGet(ih, "FILTERINFO");
       if (!info)
         info = value;

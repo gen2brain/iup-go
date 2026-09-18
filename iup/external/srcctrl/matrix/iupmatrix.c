@@ -1008,7 +1008,7 @@ static char* iMatrixGetFlatAttrib(Ihandle* ih)
   return iupStrReturnBoolean(ih->data->flat);
 }
 
-static void iMatrixClearAttribFlags(Ihandle* ih, unsigned char *flags, int lin, int col)
+static void iMatrixClearAttribFlags(Ihandle* ih, unsigned char* flags, int lin, int col)
 {
   int is_marked = (*flags) & IMAT_IS_MARKED;
 
@@ -1532,7 +1532,7 @@ static char* iMatrixGetBgColorAttrib(Ihandle* ih, int lin, int col)
   if (lin == IUP_INVALID_ID && col == IUP_INVALID_ID) /* empty id - return the global default value */
   {
     /* check the hash table */
-    char *color = iupAttribGet(ih, "BGCOLOR");
+    char* color = iupAttribGet(ih, "BGCOLOR");
 
     /* If not defined return the default for normal cells */
     if (!color)
@@ -1666,12 +1666,12 @@ static char* iMatrixGetCellFrameVertColorAttrib(Ihandle* ih, int lin, int col)
     return NULL;
 }
 
-static void iMatrixConvertLinColToPos(Ihandle* ih, int lin, int col, int *pos)
+static void iMatrixConvertLinColToPos(Ihandle* ih, int lin, int col, int* pos)
 {
   *pos = lin*ih->data->columns.num + col;
 }
 
-static void iMatrixConvertPosToLinCol(Ihandle* ih, int pos, int *lin, int *col)
+static void iMatrixConvertPosToLinCol(Ihandle* ih, int pos, int* lin, int* col)
 {
   *lin = pos / ih->data->columns.num;
   *col = pos % ih->data->columns.num;
@@ -1828,7 +1828,7 @@ static int iMatrixRedraw_CB(Ihandle* ih)
 
 /***************************************************************************/
 
-static int iMatrixCreateMethod(Ihandle* ih, void **params)
+static int iMatrixCreateMethod(Ihandle* ih, void** params)
 {
   (void)params;
 
@@ -1908,7 +1908,7 @@ static void iMatrixUnMapMethod(Ihandle* ih)
   iupMatrixMemRelease(ih);
 }
 
-static int iMatrixGetNaturalWidth(Ihandle* ih, int *full_width)
+static int iMatrixGetNaturalWidth(Ihandle* ih, int* full_width)
 {
   int width = 0, visible_num, col;
 
@@ -1948,7 +1948,7 @@ static int iMatrixGetNaturalWidth(Ihandle* ih, int *full_width)
   return width;
 }
 
-static int iMatrixGetNaturalHeight(Ihandle* ih, int *full_height)
+static int iMatrixGetNaturalHeight(Ihandle* ih, int* full_height)
 {
   int height = 0, visible_num, lin;
 
@@ -2031,7 +2031,7 @@ int iupMatrixGetScrollbarSize(Ihandle* ih)
     return iupdrvGetScrollbarSize();
 }
 
-static void iMatrixComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *children_expand)
+static void iMatrixComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* children_expand)
 {
   int sb, sb_w = 0, sb_h = 0, full_width = 0, full_height = 0, border = 0;
   (void)children_expand; /* unset if not name container */
@@ -2097,7 +2097,7 @@ static void iMatrixSetChildrenPositionMethod(Ihandle* ih, int x, int y)
 
 static void iMatrixCreateCursor(void)
 {
-  Ihandle *imgcursor;
+  Ihandle* imgcursor;
   unsigned char matrx_img_cur_excel[15 * 15] =
   {
     0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0,

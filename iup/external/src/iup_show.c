@@ -20,7 +20,7 @@
 #include "iup_drv.h"
 
 
-IUP_API void IupUnmap(Ihandle *ih)
+IUP_API void IupUnmap(Ihandle* ih)
 {
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
@@ -141,7 +141,7 @@ IUP_API int IupMap(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-IUP_API int IupPopup(Ihandle *ih, int x, int y)
+IUP_API int IupPopup(Ihandle* ih, int x, int y)
 {
   int ret;
 
@@ -174,7 +174,7 @@ IUP_API int IupPopup(Ihandle *ih, int x, int y)
   return IUP_NOERROR;
 }
 
-IUP_API int IupShowXY(Ihandle *ih, int x, int y)
+IUP_API int IupShowXY(Ihandle* ih, int x, int y)
 {
   int ret;
 

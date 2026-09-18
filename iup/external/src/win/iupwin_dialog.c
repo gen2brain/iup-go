@@ -56,7 +56,7 @@ static int winDialogSetBgColorAttrib(Ihandle* ih, const char* value);
 
 #ifdef __ITaskbarList3_FWD_DEFINED__
 
-static ITaskbarList3* winDialogEnsureTaskBar(Ihandle *ih)
+static ITaskbarList3* winDialogEnsureTaskBar(Ihandle* ih)
 {
   ITaskbarList3* tbl = (ITaskbarList3*)iupAttribGet(ih, "_IUPWIN_TASKBARLIST");
   if (!tbl && ih->handle)
@@ -68,7 +68,7 @@ static ITaskbarList3* winDialogEnsureTaskBar(Ihandle *ih)
   return tbl;
 }
 
-static int winDialogSetTaskBarProgressAttrib(Ihandle *ih, const char *value)
+static int winDialogSetTaskBarProgressAttrib(Ihandle* ih, const char* value)
 {
   if (iupStrBoolean(value))
     winDialogEnsureTaskBar(ih);
@@ -81,7 +81,7 @@ static int winDialogSetTaskBarProgressAttrib(Ihandle *ih, const char *value)
   return 1;
 }
 
-static int winDialogSetTaskBarProgressValueAttrib(Ihandle *ih, const char *value)
+static int winDialogSetTaskBarProgressValueAttrib(Ihandle* ih, const char* value)
 {
   ITaskbarList3* tbl = winDialogEnsureTaskBar(ih);
   if(tbl)
@@ -97,7 +97,7 @@ static int winDialogSetTaskBarProgressValueAttrib(Ihandle *ih, const char *value
   return 0;
 }
 
-static int winDialogSetTaskBarProgressStateAttrib(Ihandle *ih, const char *value)
+static int winDialogSetTaskBarProgressStateAttrib(Ihandle* ih, const char* value)
 {
   ITaskbarList3* tbl = winDialogEnsureTaskBar(ih);
   if(tbl)
@@ -133,7 +133,7 @@ IUP_SDK_API int iupdrvDialogIsVisible(Ihandle* ih)
   return iupdrvIsVisible(ih);
 }
 
-IUP_SDK_API void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* handle, int *w, int *h)
+IUP_SDK_API void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* handle, int* w, int* h)
 {
   RECT rect;
   if (!handle)
@@ -176,7 +176,7 @@ IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
     iupwinBringWindowToForeground(ih->handle);
 }
 
-IUP_SDK_API void iupdrvDialogGetPosition(Ihandle *ih, InativeHandle* handle, int *x, int *y)
+IUP_SDK_API void iupdrvDialogGetPosition(Ihandle* ih, InativeHandle* handle, int* x, int* y)
 {
   RECT rect;
   if (!handle)
@@ -188,7 +188,7 @@ IUP_SDK_API void iupdrvDialogGetPosition(Ihandle *ih, InativeHandle* handle, int
   iupdrvAddScreenOffset(x, y, -1);
 }
 
-IUP_SDK_API void iupdrvDialogSetPosition(Ihandle *ih, int x, int y)
+IUP_SDK_API void iupdrvDialogSetPosition(Ihandle* ih, int x, int y)
 {
   /* Only moves the window and places it at the top of the Z order. */
   int flags = SWP_NOSIZE;
@@ -197,7 +197,7 @@ IUP_SDK_API void iupdrvDialogSetPosition(Ihandle *ih, int x, int y)
   SetWindowPos(ih->handle, HWND_TOP, x, y, 0, 0, flags);
 }
 
-static void winDialogGetWindowDecor(Ihandle* ih, int *border, int *caption, int menu)
+static void winDialogGetWindowDecor(Ihandle* ih, int* border, int* caption, int menu)
 {
   WINDOWINFO wi;
   wi.cbSize = sizeof(WINDOWINFO);
@@ -238,7 +238,7 @@ static void winDialogGetWindowDecor(Ihandle* ih, int *border, int *caption, int 
   }
 }
 
-IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int *border, int *caption, int *menu)
+IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int* border, int* caption, int* menu)
 {
   if (ih->data->menu)
     *menu = iupdrvMenuGetMenuBarSize(ih->data->menu);
@@ -590,7 +590,7 @@ static LRESULT winDialogCustomFrameHitTest(Ihandle* ih, LPARAM lp)
   return result;
 }
 
-static int winDialogCustomFrameProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT *result)
+static int winDialogCustomFrameProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT* result)
 {
   switch (msg)
   {
@@ -784,7 +784,7 @@ IUP_SDK_API void iupdrvSetAppearance(int appearance)
   }
 }
 
-static int winDialogBaseProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT *result)
+static int winDialogBaseProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT* result)
 {
   if (iupAttribGetBoolean(ih, "CUSTOMFRAMEDRAW") || iupAttribGetBoolean(ih, "CUSTOMFRAME"))
   {
@@ -1040,7 +1040,7 @@ static Ihandle* winMinMaxHandle = NULL;
 static LRESULT CALLBACK winDialogWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
 {
   LRESULT result;
-  Ihandle *ih = iupwinHandleGet(hwnd);
+  Ihandle* ih = iupwinHandleGet(hwnd);
   if (!iupObjectCheck(ih))
   {
     /* the first time WM_GETMINMAXINFO is called, Ihandle is not associated yet */
@@ -1323,7 +1323,7 @@ static void winDialogUnMapMethod(Ihandle* ih)
   DestroyWindow(ih->handle);
 }
 
-static void winDialogLayoutUpdateMethod(Ihandle *ih)
+static void winDialogLayoutUpdateMethod(Ihandle* ih)
 {
   if (ih->data->ignore_resize)
     return;
@@ -1341,7 +1341,7 @@ static void winDialogLayoutUpdateMethod(Ihandle *ih)
                                    Attributes
 ****************************************************************************/
 
-static char* winDialogGetClientOffsetAttrib(Ihandle *ih)
+static char* winDialogGetClientOffsetAttrib(Ihandle* ih)
 {
   (void)ih;
 
@@ -1434,7 +1434,7 @@ static int winDialogSetBackgroundAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-static int winDialogSetOpacityAttrib(Ihandle *ih, const char *value)
+static int winDialogSetOpacityAttrib(Ihandle* ih, const char* value)
 {
   int opacity;
   if (!iupStrToInt(value, &opacity))
@@ -1445,7 +1445,7 @@ static int winDialogSetOpacityAttrib(Ihandle *ih, const char *value)
   return 1;
 }
 
-static int winDialogSetOpacityImageAttrib(Ihandle *ih, const char *value)
+static int winDialogSetOpacityImageAttrib(Ihandle* ih, const char* value)
 {
   HBITMAP hBitmap = (HBITMAP)iupImageGetImage(value, ih, 0, NULL);
   if (!hBitmap)
@@ -1475,7 +1475,7 @@ static int winDialogSetOpacityImageAttrib(Ihandle *ih, const char *value)
   }
 }
 
-static int winDialogSetShapeImageAttrib(Ihandle *ih, const char *value)
+static int winDialogSetShapeImageAttrib(Ihandle* ih, const char* value)
 {
   Ihandle* image = IupGetHandle(value);
   if (!image)
@@ -1531,7 +1531,7 @@ static int winDialogSetShapeImageAttrib(Ihandle *ih, const char *value)
   }
 }
 
-static char* winDialogGetMaximizedAttrib(Ihandle *ih)
+static char* winDialogGetMaximizedAttrib(Ihandle* ih)
 {
   if (iupAttribGetBoolean(ih, "CUSTOMFRAMESIMULATE"))
     return iupAttribGet(ih, "MAXIMIZED");
@@ -1539,12 +1539,12 @@ static char* winDialogGetMaximizedAttrib(Ihandle *ih)
     return iupStrReturnBoolean(IsZoomed(ih->handle));
 }
 
-static char* winDialogGetMinimizedAttrib(Ihandle *ih)
+static char* winDialogGetMinimizedAttrib(Ihandle* ih)
 {
   return iupStrReturnBoolean(IsIconic(ih->handle));
 }
 
-static int winDialogSetBringFrontAttrib(Ihandle *ih, const char *value)
+static int winDialogSetBringFrontAttrib(Ihandle* ih, const char* value)
 {
   if (iupStrBoolean(value))
   {
@@ -1564,7 +1564,7 @@ static char* winDialogGetActiveWindowAttrib(Ihandle* ih)
   return iupStrReturnBoolean (wininfo.dwWindowStatus & WS_ACTIVECAPTION);
 }
 
-static int winDialogSetTopMostAttrib(Ihandle *ih, const char *value)
+static int winDialogSetTopMostAttrib(Ihandle* ih, const char* value)
 {
   if (iupStrBoolean(value))
     SetWindowPos(ih->handle, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE | SWP_NOACTIVATE);
@@ -1573,7 +1573,7 @@ static int winDialogSetTopMostAttrib(Ihandle *ih, const char *value)
   return 1;
 }
 
-static int winDialogSetHideTitleBarAttrib(Ihandle *ih, const char *value)
+static int winDialogSetHideTitleBarAttrib(Ihandle* ih, const char* value)
 {
   if (!ih->handle)
     return 1;
@@ -1607,7 +1607,7 @@ static HICON winDialogLoadIcon(const char* name, int size)
   return hIcon;
 }
 
-static int winDialogSetIconAttrib(Ihandle* ih, const char *value)
+static int winDialogSetIconAttrib(Ihandle* ih, const char* value)
 {
   if (!value)
   {

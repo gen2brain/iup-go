@@ -17,7 +17,7 @@
 #include "iupgtk4_drv.h"
 
 
-IUP_SDK_API void iupdrvScrollbarGetMinSize(Ihandle* ih, int *w, int *h)
+IUP_SDK_API void iupdrvScrollbarGetMinSize(Ihandle* ih, int* w, int* h)
 {
   static int horiz_min_w = -1, horiz_min_h = -1;
   static int vert_min_w = -1, vert_min_h = -1;
@@ -125,7 +125,7 @@ static int gtk4ScrollbarSetValueAttrib(Ihandle* ih, const char* value)
 /*********************************************************************************************/
 
 
-static gboolean gtk4ScrollbarChangeValue(GtkRange *range, GtkScrollType scroll, double value, Ihandle *ih)
+static gboolean gtk4ScrollbarChangeValue(GtkRange* range, GtkScrollType scroll, double value, Ihandle* ih)
 {
   int horiz = (ih->data->orientation == ISCROLLBAR_HORIZONTAL);
   int op;
@@ -147,7 +147,7 @@ static gboolean gtk4ScrollbarChangeValue(GtkRange *range, GtkScrollType scroll, 
   return FALSE;
 }
 
-static void gtk4ScrollbarValueChanged(GtkAdjustment *adjustment, Ihandle *ih)
+static void gtk4ScrollbarValueChanged(GtkAdjustment* adjustment, Ihandle* ih)
 {
   double old_val = ih->data->val;
   double fval;
@@ -188,7 +188,7 @@ static void gtk4ScrollbarValueChanged(GtkAdjustment *adjustment, Ihandle *ih)
   }
 }
 
-static gboolean gtk4ScrollbarKeyPressEvent(GtkEventControllerKey *controller, guint keyval, guint keycode, GdkModifierType state, Ihandle *ih)
+static gboolean gtk4ScrollbarKeyPressEvent(GtkEventControllerKey* controller, guint keyval, guint keycode, GdkModifierType state, Ihandle* ih)
 {
   (void)controller;
   (void)keycode;

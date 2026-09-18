@@ -210,7 +210,7 @@ bool iupPlotGrid::DrawY(iupPlotTickIter* inTickIter, iupPlotTrafo* inTrafo, cons
 
 /************************************************************************************************/
 
-void iupPlot::DrawCrossSamplesH(const iupPlotRect &inRect, const iupPlotData *inXData, const iupPlotData *inYData, iupPlotDrawContext* ctx) const
+void iupPlot::DrawCrossSamplesH(const iupPlotRect &inRect, const iupPlotData* inXData, const iupPlotData* inYData, iupPlotDrawContext* ctx) const
 {
   int theCount = inXData->GetCount();
   if (theCount == 0)
@@ -255,14 +255,14 @@ void iupPlot::DrawCrossHairH(const iupPlotRect &inRect, iupPlotDrawContext* ctx)
   {
     iupPlotDataSet* dataset = mDataSetList[ds];
 
-    const iupPlotData *theXData = dataset->GetDataX();
-    const iupPlotData *theYData = dataset->GetDataY();
+    const iupPlotData* theXData = dataset->GetDataX();
+    const iupPlotData* theYData = dataset->GetDataY();
 
     DrawCrossSamplesH(inRect, theXData, theYData, ctx);
   }
 }
 
-void iupPlot::DrawCrossSamplesV(const iupPlotRect &inRect, const iupPlotData *inXData, const iupPlotData *inYData, iupPlotDrawContext* ctx) const
+void iupPlot::DrawCrossSamplesV(const iupPlotRect &inRect, const iupPlotData* inXData, const iupPlotData* inYData, iupPlotDrawContext* ctx) const
 {
   int theCount = inXData->GetCount();
   if (theCount == 0)
@@ -306,8 +306,8 @@ void iupPlot::DrawCrossHairV(const iupPlotRect &inRect, iupPlotDrawContext* ctx)
   {
     iupPlotDataSet* dataset = mDataSetList[ds];
 
-    const iupPlotData *theXData = dataset->GetDataX();
-    const iupPlotData *theYData = dataset->GetDataY();
+    const iupPlotData* theXData = dataset->GetDataX();
+    const iupPlotData* theYData = dataset->GetDataY();
 
     DrawCrossSamplesV(inRect, theXData, theYData, ctx);
   }
@@ -526,7 +526,7 @@ bool iupPlot::DrawLegend(const iupPlotRect &inRect, iupPlotDrawContext* ctx, iup
   return true;
 }
 
-int iupStrToColor(const char* str, long *color);
+int iupStrToColor(const char* str, long* color);
 
 long iupPlotDrawGetSampleColorTable(Ihandle* ih, int index)
 {
@@ -557,7 +557,7 @@ long iupPlotDrawGetSampleColorTable(Ihandle* ih, int index)
   return 0;
 }
 
-bool iupPlot::DrawSampleColorLegend(iupPlotDataSet *dataset, const iupPlotRect &inRect, iupPlotDrawContext* ctx, iupPlotRect &ioPos) const
+bool iupPlot::DrawSampleColorLegend(iupPlotDataSet* dataset, const iupPlotRect &inRect, iupPlotDrawContext* ctx, iupPlotRect &ioPos) const
 {
   if (mLegend.mShow)
   {
@@ -582,7 +582,7 @@ bool iupPlot::DrawSampleColorLegend(iupPlotDataSet *dataset, const iupPlotRect &
     for (int i = 0; i < theCount; i++)
     {
       IupSetAttribute(ctx->ih, "DRAWFONT", fontStr);
-      const char* sampleStr = ((iupPlotDataString *)dataset->GetDataX())->GetSampleString(i);
+      const char* sampleStr = ((iupPlotDataString*)dataset->GetDataX())->GetSampleString(i);
       iupDrawGetTextSize(ctx->ih, sampleStr, (int)strlen(sampleStr), &theWidth, NULL, 0);
 
       theWidth += theLineSpace;
@@ -672,7 +672,7 @@ bool iupPlot::DrawSampleColorLegend(iupPlotDataSet *dataset, const iupPlotRect &
       double textRefX = theLegendX + theLineSpace;
       double textRefY = theLegendY + boxSize / 2;
       iupPlotDrawAlignedText(ctx, textRefX, textRefY, IUP_PLOT_WEST,
-                             ((iupPlotDataString *)dataset->GetDataX())->GetSampleString(i),
+                             ((iupPlotDataString*)dataset->GetDataX())->GetSampleString(i),
                              sampleColor, fontStr, 0);
     }
   }

@@ -309,7 +309,7 @@ IUP_SDK_API void iupdrvDrawFlush(IdrawCanvas* dc)
 
 }
 
-IUP_SDK_API void iupdrvDrawGetSize(IdrawCanvas* dc, int *w, int *h)
+IUP_SDK_API void iupdrvDrawGetSize(IdrawCanvas* dc, int* w, int* h)
 {
   if (w) *w = dc->w;
   if (h) *h = dc->h;
@@ -1141,7 +1141,7 @@ IUP_SDK_API void iupdrvDrawResetClip(IdrawCanvas* dc)
   iDrawApplyClip(dc);
 }
 
-IUP_SDK_API void iupdrvDrawGetClipRect(IdrawCanvas* dc, int *x1, int *y1, int *x2, int *y2)
+IUP_SDK_API void iupdrvDrawGetClipRect(IdrawCanvas* dc, int* x1, int* y1, int* x2, int* y2)
 {
   if (x1) *x1 = dc->clip_x1;
   if (y1) *y1 = dc->clip_y1;

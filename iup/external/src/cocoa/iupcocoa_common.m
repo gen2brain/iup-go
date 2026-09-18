@@ -447,7 +447,7 @@ IUP_DRV_API NSView* iupcocoaCommonBaseLayoutGetChildView(Ihandle* ih)
   return the_view;
 }
 
-IUP_SDK_API void iupdrvBaseLayoutUpdateMethod(Ihandle *ih)
+IUP_SDK_API void iupdrvBaseLayoutUpdateMethod(Ihandle* ih)
 {
   NSView* parent_view = iupcocoaCommonBaseLayoutGetParentView(ih);
   if (!parent_view) return;
@@ -511,7 +511,7 @@ IUP_SDK_API void iupdrvBaseUnMapMethod(Ihandle* ih)
   ih->handle = NULL;
 }
 
-static void iupCocoaDisplayUpdate(Ihandle *ih)
+static void iupCocoaDisplayUpdate(Ihandle* ih)
 {
   id the_handle = ih->handle;
 
@@ -533,7 +533,7 @@ static void iupCocoaDisplayUpdate(Ihandle *ih)
   }
 }
 
-static void cocoaRedrawNow(Ihandle *ih)
+static void cocoaRedrawNow(Ihandle* ih)
 {
   iupCocoaDisplayUpdate(ih);
   NSView* view = iupcocoaGetMainView(ih);
@@ -543,26 +543,26 @@ static void cocoaRedrawNow(Ihandle *ih)
   }
 }
 
-IUP_SDK_API void iupdrvRedrawNow(Ihandle *ih)
+IUP_SDK_API void iupdrvRedrawNow(Ihandle* ih)
 {
   @autoreleasepool {
     cocoaRedrawNow(ih);
   }
 }
 
-static void cocoaPostRedraw(Ihandle *ih)
+static void cocoaPostRedraw(Ihandle* ih)
 {
   iupCocoaDisplayUpdate(ih);
 }
 
-IUP_SDK_API void iupdrvPostRedraw(Ihandle *ih)
+IUP_SDK_API void iupdrvPostRedraw(Ihandle* ih)
 {
   @autoreleasepool {
     cocoaPostRedraw(ih);
   }
 }
 
-static void cocoaScreenToClient(Ihandle* ih, int *x, int *y)
+static void cocoaScreenToClient(Ihandle* ih, int* x, int* y)
 {
   NSRect main_screen = [[NSScreen mainScreen] frame];
   CGFloat main_screen_top = main_screen.origin.y + main_screen.size.height;
@@ -590,14 +590,14 @@ static void cocoaScreenToClient(Ihandle* ih, int *x, int *y)
   *y = iupROUND(view_point.y);
 }
 
-IUP_SDK_API void iupdrvScreenToClient(Ihandle* ih, int *x, int *y)
+IUP_SDK_API void iupdrvScreenToClient(Ihandle* ih, int* x, int* y)
 {
   @autoreleasepool {
     cocoaScreenToClient(ih, x, y);
   }
 }
 
-static void cocoaClientToScreen(Ihandle* ih, int *x, int *y)
+static void cocoaClientToScreen(Ihandle* ih, int* x, int* y)
 {
   NSView* main_view = iupcocoaGetMainView(ih);
   if (!main_view) return;
@@ -625,7 +625,7 @@ static void cocoaClientToScreen(Ihandle* ih, int *x, int *y)
   *y = main_screen_top - screen_rect.origin.y;
 }
 
-IUP_SDK_API void iupdrvClientToScreen(Ihandle* ih, int *x, int *y)
+IUP_SDK_API void iupdrvClientToScreen(Ihandle* ih, int* x, int* y)
 {
   @autoreleasepool {
     cocoaClientToScreen(ih, x, y);
@@ -701,7 +701,7 @@ IUP_SDK_API int iupdrvIsVisible(Ihandle* ih)
   }
 }
 
-static int cocoaIsActive(Ihandle *ih)
+static int cocoaIsActive(Ihandle* ih)
 {
   char* value = iupAttribGet(ih, "_IUPCOCOA_ACTIVE");
   int result;
@@ -714,7 +714,7 @@ static int cocoaIsActive(Ihandle *ih)
   return result;
 }
 
-IUP_SDK_API int iupdrvIsActive(Ihandle *ih)
+IUP_SDK_API int iupdrvIsActive(Ihandle* ih)
 {
   @autoreleasepool {
     return cocoaIsActive(ih);
@@ -823,7 +823,7 @@ IUP_SDK_API int iupdrvBaseSetFgColorAttrib(Ihandle* ih, const char* value)
   if ([main_view isKindOfClass:[NSButton class]])
   {
     NSButton* button = (NSButton*)main_view;
-    NSMutableAttributedString *coloredTitle = [[button attributedTitle] mutableCopy];
+    NSMutableAttributedString* coloredTitle = [[button attributedTitle] mutableCopy];
     NSRange titleRange = NSMakeRange(0, [coloredTitle length]);
     [coloredTitle addAttribute:NSForegroundColorAttributeName value:the_color range:titleRange];
     [button setAttributedTitle:coloredTitle];
@@ -846,15 +846,15 @@ IUP_SDK_API int iupdrvBaseSetFgColorAttrib(Ihandle* ih, const char* value)
   BOOL _hidden;
 }
 @property(nonatomic, retain) NSCursor* cursor;
-- (void)mouseEntered:(NSEvent *)event;
-- (void)mouseExited:(NSEvent *)event;
+- (void)mouseEntered:(NSEvent*)event;
+- (void)mouseExited:(NSEvent*)event;
 - (void)dealloc;
 @end
 
 @implementation IUPCursorTrackingDelegate
 @synthesize cursor = _cursor;
 
-- (void)mouseEntered:(NSEvent *)event
+- (void)mouseEntered:(NSEvent*)event
 {
   if (self.cursor)
     [self.cursor set];
@@ -865,7 +865,7 @@ IUP_SDK_API int iupdrvBaseSetFgColorAttrib(Ihandle* ih, const char* value)
   }
 }
 
-- (void)mouseExited:(NSEvent *)event
+- (void)mouseExited:(NSEvent*)event
 {
   if (_hidden)
   {
@@ -1125,7 +1125,7 @@ IUP_DRV_API void iupcocoaGnustepFillCellRect(NSView* cellView, NSRect dirtyRect,
 }
 #endif
 
-static void cocoaSetAccessibleTitle(Ihandle *ih, const char* title)
+static void cocoaSetAccessibleTitle(Ihandle* ih, const char* title)
 {
   id the_object = iupcocoaGetMainView(ih);
   if([the_object respondsToSelector:@selector(setAccessibilityLabel:)])
@@ -1142,21 +1142,21 @@ static void cocoaSetAccessibleTitle(Ihandle *ih, const char* title)
   }
 }
 
-IUP_SDK_API void iupdrvSetAccessibleTitle(Ihandle *ih, const char* title)
+IUP_SDK_API void iupdrvSetAccessibleTitle(Ihandle* ih, const char* title)
 {
   @autoreleasepool {
     cocoaSetAccessibleTitle(ih, title);
   }
 }
 
-static void cocoaSetAccessibleDescription(Ihandle *ih, const char* description)
+static void cocoaSetAccessibleDescription(Ihandle* ih, const char* description)
 {
   id the_object = iupcocoaGetMainView(ih);
   if([the_object respondsToSelector:@selector(setAccessibilityHelp:)])
     [the_object setAccessibilityHelp:description ? [NSString stringWithUTF8String:description] : nil];
 }
 
-IUP_SDK_API void iupdrvSetAccessibleDescription(Ihandle *ih, const char* description)
+IUP_SDK_API void iupdrvSetAccessibleDescription(Ihandle* ih, const char* description)
 {
   @autoreleasepool {
     cocoaSetAccessibleDescription(ih, description);

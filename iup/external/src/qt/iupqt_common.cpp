@@ -229,7 +229,7 @@ IUP_DRV_API void iupqtSetPosSize(QWidget* parent, QWidget* widget, int x, int y,
   }
 }
 
-extern "C" IUP_SDK_API void iupdrvBaseLayoutUpdateMethod(Ihandle *ih)
+extern "C" IUP_SDK_API void iupdrvBaseLayoutUpdateMethod(Ihandle* ih)
 {
   QWidget* parent = qtGetNativeParent(ih);
   QWidget* widget = (QWidget*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
@@ -274,7 +274,7 @@ static void qtRedrawInvalidateBuffer(Ihandle* ih)
   }
 }
 
-extern "C" IUP_SDK_API void iupdrvPostRedraw(Ihandle *ih)
+extern "C" IUP_SDK_API void iupdrvPostRedraw(Ihandle* ih)
 {
   QWidget* canvas = iupqtCanvasGetWidget(ih);
   if (canvas)
@@ -289,7 +289,7 @@ extern "C" IUP_SDK_API void iupdrvPostRedraw(Ihandle *ih)
     widget->update();
 }
 
-extern "C" IUP_SDK_API void iupdrvRedrawNow(Ihandle *ih)
+extern "C" IUP_SDK_API void iupdrvRedrawNow(Ihandle* ih)
 {
   QWidget* canvas = iupqtCanvasGetWidget(ih);
   if (canvas)
@@ -308,7 +308,7 @@ extern "C" IUP_SDK_API void iupdrvRedrawNow(Ihandle *ih)
  * Screen/Client Coordinate Conversion
  ****************************************************************************/
 
-extern "C" IUP_SDK_API void iupdrvScreenToClient(Ihandle* ih, int *x, int *y)
+extern "C" IUP_SDK_API void iupdrvScreenToClient(Ihandle* ih, int* x, int* y)
 {
   QWidget* widget = (QWidget*)ih->handle;
 
@@ -322,7 +322,7 @@ extern "C" IUP_SDK_API void iupdrvScreenToClient(Ihandle* ih, int *x, int *y)
   }
 }
 
-extern "C" IUP_SDK_API void iupdrvClientToScreen(Ihandle* ih, int *x, int *y)
+extern "C" IUP_SDK_API void iupdrvClientToScreen(Ihandle* ih, int* x, int* y)
 {
   QWidget* widget = (QWidget*)ih->handle;
 
@@ -340,7 +340,7 @@ extern "C" IUP_SDK_API void iupdrvClientToScreen(Ihandle* ih, int *x, int *y)
  * Event Handlers
  ****************************************************************************/
 
-IUP_DRV_API int iupqtEnterLeaveEvent(QWidget *widget, QEvent *evt, Ihandle* ih)
+IUP_DRV_API int iupqtEnterLeaveEvent(QWidget* widget, QEvent* evt, Ihandle* ih)
 {
   Icallback cb = NULL;
   (void)widget;
@@ -460,7 +460,7 @@ extern "C" IUP_SDK_API int iupdrvIsVisible(Ihandle* ih)
   return 0;
 }
 
-extern "C" IUP_SDK_API int iupdrvIsActive(Ihandle *ih)
+extern "C" IUP_SDK_API int iupdrvIsActive(Ihandle* ih)
 {
   if (ih->iclass->nativetype == IUP_TYPEVOID || ih->iclass->nativetype == IUP_TYPEMENU)
     return 1;
@@ -495,7 +495,7 @@ extern "C" IUP_SDK_API void iupdrvSetActive(Ihandle* ih, int enable)
  * Mouse Event Handlers
  ****************************************************************************/
 
-IUP_DRV_API int iupqtMouseMoveEvent(QWidget *widget, QEvent *evt, Ihandle *ih)
+IUP_DRV_API int iupqtMouseMoveEvent(QWidget* widget, QEvent* evt, Ihandle* ih)
 {
   IFniis cb;
   (void)widget;
@@ -517,7 +517,7 @@ IUP_DRV_API int iupqtMouseMoveEvent(QWidget *widget, QEvent *evt, Ihandle *ih)
   return 0;
 }
 
-IUP_DRV_API int iupqtMouseButtonEvent(QWidget *widget, QEvent *evt, Ihandle *ih)
+IUP_DRV_API int iupqtMouseButtonEvent(QWidget* widget, QEvent* evt, Ihandle* ih)
 {
   IFniiiis cb = (IFniiiis)IupGetCallback(ih, "BUTTON_CB");
   if (cb)
@@ -780,14 +780,14 @@ extern "C" IUP_SDK_API void iupdrvSendMouse(int x, int y, int bt, int status)
                                               button, buttons, Qt::NoModifier));
 }
 
-extern "C" IUP_SDK_API void iupdrvSetAccessibleTitle(Ihandle *ih, const char* title)
+extern "C" IUP_SDK_API void iupdrvSetAccessibleTitle(Ihandle* ih, const char* title)
 {
   QWidget* widget = (QWidget*)ih->handle;
   if (widget)
     widget->setAccessibleName(title ? QString::fromUtf8(title) : QString());
 }
 
-extern "C" IUP_SDK_API void iupdrvSetAccessibleDescription(Ihandle *ih, const char* description)
+extern "C" IUP_SDK_API void iupdrvSetAccessibleDescription(Ihandle* ih, const char* description)
 {
   QWidget* widget = (QWidget*)ih->handle;
   if (widget)

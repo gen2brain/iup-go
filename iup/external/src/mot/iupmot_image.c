@@ -30,7 +30,7 @@ IUP_SDK_API void iupdrvImageGetData(void* handle, unsigned char* imgdata)
 {
   Pixmap pixmap = (Pixmap)handle;
   int w, h, bpp;
-  XImage *xi;
+  XImage* xi;
 
   if (!iupdrvImageGetInfo(handle, &w, &h, &bpp))
     return;
@@ -44,7 +44,7 @@ IUP_SDK_API void iupdrvImageGetData(void* handle, unsigned char* imgdata)
     /* planes are packed and top-bottom in this imgdata */
     int channels = (bpp == 32) ? 4 : 3;
     int line_size = w * channels;
-    unsigned char *line_data;
+    unsigned char* line_data;
     int y, x;
 
     for (y = 0; y<h; y++)
@@ -61,12 +61,12 @@ IUP_SDK_API void iupdrvImageGetData(void* handle, unsigned char* imgdata)
 }
 
 
-IUP_SDK_API void* iupdrvImageCreateImage(Ihandle *ih, const char* bgcolor, int make_inactive)
+IUP_SDK_API void* iupdrvImageCreateImage(Ihandle* ih, const char* bgcolor, int make_inactive)
 {
   int y, x, bpp, bgcolor_depend = 0,
       width = ih->currentwidth,
       height = ih->currentheight;
-  unsigned char *imgdata = (unsigned char*)iupAttribGetStr(ih, "WID");
+  unsigned char* imgdata = (unsigned char*)iupAttribGetStr(ih, "WID");
   Pixmap pixmap;
   unsigned char bg_r=0, bg_g=0, bg_b=0;
   GC gc;
@@ -129,7 +129,7 @@ IUP_SDK_API void* iupdrvImageCreateImage(Ihandle *ih, const char* bgcolor, int m
       else
       {
         int channels = (bpp==24)? 3: 4;
-        unsigned char *pixel_data = imgdata + y*width*channels + x*channels;
+        unsigned char* pixel_data = imgdata + y*width*channels + x*channels;
         unsigned char r = *(pixel_data),
                       g = *(pixel_data+1),
                       b = *(pixel_data+2);
@@ -164,20 +164,20 @@ IUP_SDK_API void* iupdrvImageCreateImage(Ihandle *ih, const char* bgcolor, int m
   return (void*)pixmap;
 }
 
-IUP_SDK_API void* iupdrvImageCreateIcon(Ihandle *ih)
+IUP_SDK_API void* iupdrvImageCreateIcon(Ihandle* ih)
 {
   return iupdrvImageCreateImage(ih, NULL, 0);
 }
 
-IUP_SDK_API void* iupdrvImageCreateCursor(Ihandle *ih)
+IUP_SDK_API void* iupdrvImageCreateCursor(Ihandle* ih)
 {
   int bpp,y,x,hx,hy,
       width = ih->currentwidth,
       height = ih->currentheight,
       line_size = (width+7)/8,
       size_bytes = line_size*height;
-  unsigned char *imgdata = (unsigned char*)iupAttribGetStr(ih, "WID");
-  char *sbits, *mbits, *sb, *mb;
+  unsigned char* imgdata = (unsigned char*)iupAttribGetStr(ih, "WID");
+  char* sbits, *mbits, *sb, *mb;
   Pixmap source, mask;
   XColor fg, bg;
   unsigned char r, g, b;
@@ -242,15 +242,15 @@ IUP_SDK_API void* iupdrvImageCreateCursor(Ihandle *ih)
   return (void*)cursor;
 }
 
-static Pixmap motImageCreateMask(Ihandle *ih)
+static Pixmap motImageCreateMask(Ihandle* ih)
 {
   int bpp, y, x,
       width = ih->currentwidth,
       height = ih->currentheight,
       line_size = (width+7)/8,
       size_bytes = line_size*height;
-  unsigned char *imgdata = (unsigned char*)iupAttribGetStr(ih, "WID");
-  char *bits, *sb;
+  unsigned char* imgdata = (unsigned char*)iupAttribGetStr(ih, "WID");
+  char* bits, *sb;
   Pixmap mask;
 
   bpp = iupAttribGetInt(ih, "BPP");
@@ -287,7 +287,7 @@ static Pixmap motImageCreateMask(Ihandle *ih)
       {
         int byte = x/8;
         int bit = x%8;
-        unsigned char *pixel_data = imgdata + (y*width + x)*4;
+        unsigned char* pixel_data = imgdata + (y*width + x)*4;
         unsigned char a = *(pixel_data+3);
         if (a > 127)
           sb[byte] = (char)(sb[byte] | (1<<bit));
@@ -312,7 +312,7 @@ static Pixmap motImageCreateMask(Ihandle *ih)
 IUP_DRV_API Pixmap iupmotImageGetMask(const char* name)
 {
   Pixmap mask;
-  Ihandle *ih;
+  Ihandle* ih;
 
   if (!name)
     return 0;
@@ -367,7 +367,7 @@ IUP_SDK_API void* iupdrvImageLoad(const char* name, int type)
   }
 }
 
-IUP_SDK_API int iupdrvImageGetInfo(void* handle, int *w, int *h, int *bpp)
+IUP_SDK_API int iupdrvImageGetInfo(void* handle, int* w, int* h, int* bpp)
 {
   Pixmap pixmap = (Pixmap)handle;
   Window root;
@@ -386,7 +386,7 @@ IUP_SDK_API int iupdrvImageGetInfo(void* handle, int *w, int *h, int *bpp)
   return 1;
 }
 
-IUP_SDK_API int iupdrvImageGetRawInfo(void* handle, int *w, int *h, int *bpp, iupColor* colors, int *colors_count)
+IUP_SDK_API int iupdrvImageGetRawInfo(void* handle, int* w, int* h, int* bpp, iupColor* colors, int* colors_count)
 {
   /* How to get the palette? */
   (void)colors;

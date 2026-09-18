@@ -43,7 +43,7 @@ static void eflDragCleanup(void)
   efl_drag_is_move = 0;
 }
 
-static Eina_Bool eflDragEndIdleCb(void *data)
+static Eina_Bool eflDragEndIdleCb(void* data)
 {
   Ihandle* ih = (Ihandle*)data;
 
@@ -113,7 +113,7 @@ static Evas_Modifier* eflGetModifiers(Ihandle* ih)
  * Drop Target Callbacks (Modern EFL API)
  *****************************************************************************/
 
-static void eflDropPositionChangedCb(void *data, const Efl_Event *ev)
+static void eflDropPositionChangedCb(void* data, const Efl_Event* ev)
 {
   Ihandle* ih = (Ihandle*)data;
   Efl_Ui_Drop_Event* drop_ev = ev->info;
@@ -129,7 +129,7 @@ static void eflDropPositionChangedCb(void *data, const Efl_Event *ev)
   }
 }
 
-static void eflDropDroppedCb(void *data, const Efl_Event *ev)
+static void eflDropDroppedCb(void* data, const Efl_Event* ev)
 {
   Ihandle* ih = (Ihandle*)data;
   Efl_Ui_Drop_Dropped_Event* drop_ev = ev->info;
@@ -215,7 +215,7 @@ static int eflSetDropTargetAttrib(Ihandle* ih, const char* value)
  * Drag Source Callbacks (Modern EFL API)
  *****************************************************************************/
 
-static void eflDragFinishedCb(void *data, const Efl_Event *ev)
+static void eflDragFinishedCb(void* data, const Efl_Event* ev)
 {
   Ihandle* ih = (Ihandle*)data;
   Eo* win = iupeflGetMainWindow();
@@ -356,7 +356,7 @@ static void eflStartDrag(Ihandle* ih, int x, int y)
   free(dragData);
 }
 
-static void eflDragSourcePointerDownCb(void *data, const Efl_Event *ev)
+static void eflDragSourcePointerDownCb(void* data, const Efl_Event* ev)
 {
   Ihandle* ih = (Ihandle*)data;
   Efl_Input_Pointer* pointer = ev->info;
@@ -373,7 +373,7 @@ static void eflDragSourcePointerDownCb(void *data, const Efl_Event *ev)
   iupAttribSet(ih, "_IUPEFL_DRAG_PENDING", "1");
 }
 
-static void eflDragSourcePointerMoveCb(void *data, const Efl_Event *ev)
+static void eflDragSourcePointerMoveCb(void* data, const Efl_Event* ev)
 {
   Ihandle* ih = (Ihandle*)data;
   Efl_Input_Pointer* pointer = ev->info;
@@ -396,7 +396,7 @@ static void eflDragSourcePointerMoveCb(void *data, const Efl_Event *ev)
   }
 }
 
-static void eflDragSourcePointerUpCb(void *data, const Efl_Event *ev)
+static void eflDragSourcePointerUpCb(void* data, const Efl_Event* ev)
 {
   Ihandle* ih = (Ihandle*)data;
 
@@ -457,19 +457,19 @@ static int eflSetDragSourceAttrib(Ihandle* ih, const char* value)
  * File Drop Support (Ecore_Evas level)
  *****************************************************************************/
 
-extern void ecore_evas_dnd_mark_motion_used(Ecore_Evas *ee, unsigned int seat);
+extern void ecore_evas_dnd_mark_motion_used(Ecore_Evas* ee, unsigned int seat);
 
 typedef struct {
-  Ihandle *ih;
+  Ihandle* ih;
   int x, y;
 } eflDropFilesData;
 
-static Ihandle* eflDropFilesIhFromEe(Ecore_Evas *ee)
+static Ihandle* eflDropFilesIhFromEe(Ecore_Evas* ee)
 {
   return (Ihandle*)ecore_evas_data_get(ee, "_IUP_DROPFILES_IH");
 }
 
-static void eflDropFilesMotionCb(Ecore_Evas *ee, unsigned int seat, Eina_Position2D p)
+static void eflDropFilesMotionCb(Ecore_Evas* ee, unsigned int seat, Eina_Position2D p)
 {
   Ihandle* ih = eflDropFilesIhFromEe(ee);
 
@@ -555,7 +555,7 @@ static Eina_Value eflDropFilesSelectionCb(Eo* obj, void* data, const Eina_Value 
   return value;
 }
 
-static void eflDropFilesDropCb(Ecore_Evas *ee, unsigned int seat, Eina_Position2D p, const char *action)
+static void eflDropFilesDropCb(Ecore_Evas* ee, unsigned int seat, Eina_Position2D p, const char* action)
 {
   Ihandle* ih = eflDropFilesIhFromEe(ee);
   Eina_Array* types;

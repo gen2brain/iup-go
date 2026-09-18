@@ -26,17 +26,17 @@ typedef struct _ImaskCapt
 
 typedef struct _ImaskMatchVars
 {
-  const char *text;
-  ImaskParsed *fsm;
+  const char* text;
+  ImaskParsed* fsm;
   iMaskMatchFunc function;
-  short *tested;
-  short *tested_end;
-  void *user;
+  short* tested;
+  short* tested_end;
+  void* user;
 } ImaskMatchVars;
 
 typedef struct _ImaskStack
 {
-  short *stack;
+  short* stack;
   short size;
 } ImaskStack;
 
@@ -44,53 +44,53 @@ typedef struct _ImaskStack
 
 /* match functions corresponding to regular expressions */
 
-static int match_blanks (const char *text, long j)
+static int match_blanks (const char* text, long j)
 {
   return (((text[j] == '\t') || (text[j] == '\xff') || (text[j] == ' ') ||
      (text[j] == '\n'))) ? IMASK_NORMAL_MATCH : IMASK_NO_MATCH;
 }
 
-static int match_non_blanks (const char *text, long j)
+static int match_non_blanks (const char* text, long j)
 {
   return (!((text[j] == '\t') || (text[j] == '\xff') ||
       (text[j] == ' ') || (text[j] == '\n')))
     ? IMASK_NORMAL_MATCH : IMASK_NO_MATCH;
 }
 
-static int match_alpha (const char *text, long j)
+static int match_alpha (const char* text, long j)
 {
   return (isalpha((int)(unsigned char)text[j])) ? IMASK_NORMAL_MATCH : IMASK_NO_MATCH;
 }
 
-static int match_non_alpha (const char *text, long j)
+static int match_non_alpha (const char* text, long j)
 {
   return (!isalpha((int)(unsigned char)text[j]) && (text[j] != '\0'))
     ? IMASK_NORMAL_MATCH : IMASK_NO_MATCH;
 }
 
-static int match_digit (const char *text, long j)
+static int match_digit (const char* text, long j)
 {
   return (isdigit((int)(unsigned char)text[j])) ? IMASK_NORMAL_MATCH : IMASK_NO_MATCH;
 }
 
-static int match_non_digit (const char *text, long j)
+static int match_non_digit (const char* text, long j)
 {
   return (!isdigit((int)(unsigned char)text[j]) && (text[j] != '\0'))
     ? IMASK_NORMAL_MATCH : IMASK_NO_MATCH;
 }
 
-static int match_alphanum (const char *text, long j)
+static int match_alphanum (const char* text, long j)
 {
   return isalphanum (text[j]) ? IMASK_NORMAL_MATCH : IMASK_NO_MATCH;
 }
 
-static int match_non_alphanum (const char *text, long j)
+static int match_non_alphanum (const char* text, long j)
 {
   return (isalphanum (text[j]) || (text[j] == '\0'))
     ? IMASK_NO_MATCH : IMASK_NORMAL_MATCH;
 }
 
-static int match_word_boundary (const char *text, long j)
+static int match_word_boundary (const char* text, long j)
 {
   if (j == 0)
   {
@@ -126,11 +126,11 @@ ImaskMatchFunc* iupMaskMatchGetFuncs(void)
 
 static void iMaskMatchCaptureResult (ImaskMatchVars * vars, ImaskCapt * capture)
 {
-  ImaskCapt *next = NULL;
+  ImaskCapt* next = NULL;
 
   while (capture != NULL)
   {
-    ImaskCapt *cap = capture->next_one;
+    ImaskCapt* cap = capture->next_one;
 
     capture->next_one = next;
     next = capture;
@@ -144,7 +144,7 @@ static void iMaskMatchCaptureResult (ImaskMatchVars * vars, ImaskCapt * capture)
   {
     if (capture->type == IMASK_CAPT_OPEN)
     {
-      ImaskCapt *cap = capture->next_one;
+      ImaskCapt* cap = capture->next_one;
 
       capture->next_one = next;
       next = capture;
@@ -345,7 +345,7 @@ static int iMaskInStack (ImaskStack * stack, int state)
   return 0;
 }
 
-static void iMaskNewStack (ImaskStack * new_stack, short *stack)
+static void iMaskNewStack (ImaskStack * new_stack, short* stack)
 {
   new_stack->size = 0;
   new_stack->stack = stack;
@@ -358,7 +358,7 @@ static void iMaskPushStack (ImaskStack * stack, int value)
 
 static void iMaskMoveStack (ImaskStack * dest, ImaskStack * source)
 {
-  short *temp = dest->stack;
+  short* temp = dest->stack;
   dest->stack = source->stack;
   source->stack = temp;
 
@@ -367,7 +367,7 @@ static void iMaskMoveStack (ImaskStack * dest, ImaskStack * source)
 }
 
 /* non recursive */
-static long iMaskMatchLocal (const char *text, ImaskParsed * fsm, long start, char *addchar, int casei)
+static long iMaskMatchLocal (const char* text, ImaskParsed * fsm, long start, char* addchar, int casei)
 {
   int finished = IMASK_NOMATCH;
   ImaskStack now, next;
@@ -561,7 +561,7 @@ static long iMaskMatchLocal (const char *text, ImaskParsed * fsm, long start, ch
   }
 }
 
-int iupMaskMatch (const char *text, ImaskParsed * fsm, long start, iMaskMatchFunc function, void *user, char *addchar, int icase)
+int iupMaskMatch (const char* text, ImaskParsed * fsm, long start, iMaskMatchFunc function, void* user, char* addchar, int icase)
 {
   long ret;
   short tested[10000];  /* to be eliminated */

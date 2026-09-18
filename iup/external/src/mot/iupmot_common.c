@@ -56,7 +56,7 @@ IUP_DRV_API void iupmotSetGLBackgroundChild(Ihandle* ih)
 
 static void motSaveAttributesRec(Ihandle* ih)
 {
-  Ihandle *child;
+  Ihandle* child;
 
   IupSaveClassAttributes(ih);
 
@@ -153,7 +153,7 @@ IUP_DRV_API void iupmotSetPosition(Widget widget, int x, int y)
   }
 }
 
-IUP_SDK_API void iupdrvBaseLayoutUpdateMethod(Ihandle *ih)
+IUP_SDK_API void iupdrvBaseLayoutUpdateMethod(Ihandle* ih)
 {
   Widget widget = (Widget)iupAttribGet(ih, "_IUP_EXTRAPARENT");
   if (!widget) widget = ih->handle;
@@ -177,7 +177,7 @@ IUP_SDK_API void iupdrvBaseUnMapMethod(Ihandle* ih)
   iupAttribSet(ih, "_IUPMOT_FONTLIST", NULL);
 }
 
-IUP_SDK_API void iupdrvPostRedraw(Ihandle *ih)
+IUP_SDK_API void iupdrvPostRedraw(Ihandle* ih)
 {
   XExposeEvent evt;
   Dimension w, h;
@@ -200,7 +200,7 @@ IUP_SDK_API void iupdrvPostRedraw(Ihandle *ih)
   XSendEvent(iupmot_display, XtWindow(ih->handle), False, ExposureMask, (XEvent*)&evt);
 }
 
-IUP_SDK_API void iupdrvRedrawNow(Ihandle *ih)
+IUP_SDK_API void iupdrvRedrawNow(Ihandle* ih)
 {
   Widget w;
 
@@ -222,7 +222,7 @@ IUP_SDK_API void iupdrvRedrawNow(Ihandle *ih)
   XmUpdateDisplay(ih->handle);
 }
 
-IUP_SDK_API void iupdrvScreenToClient(Ihandle* ih, int *x, int *y)
+IUP_SDK_API void iupdrvScreenToClient(Ihandle* ih, int* x, int* y)
 {
   Window child;
   XTranslateCoordinates(iupmot_display, RootWindow(iupmot_display, iupmot_screen),
@@ -230,7 +230,7 @@ IUP_SDK_API void iupdrvScreenToClient(Ihandle* ih, int *x, int *y)
                                         *x, *y, x, y, &child);
 }
 
-IUP_SDK_API void iupdrvClientToScreen(Ihandle* ih, int *x, int *y)
+IUP_SDK_API void iupdrvClientToScreen(Ihandle* ih, int* x, int* y)
 {
   Window child;
   XTranslateCoordinates(iupmot_display, XtWindow(ih->handle),
@@ -238,7 +238,7 @@ IUP_SDK_API void iupdrvClientToScreen(Ihandle* ih, int *x, int *y)
                                         *x, *y, x, y, &child);
 }
 
-IUP_DRV_API void iupmotHelpCallback(Widget w, Ihandle *ih, XtPointer call_data)
+IUP_DRV_API void iupmotHelpCallback(Widget w, Ihandle* ih, XtPointer call_data)
 {
   Icallback cb = IupGetCallback(ih, "HELP_CB");
   if (cb && cb(ih) == IUP_CLOSE)
@@ -248,7 +248,7 @@ IUP_DRV_API void iupmotHelpCallback(Widget w, Ihandle *ih, XtPointer call_data)
   (void)w;
 }
 
-IUP_DRV_API void iupmotEnterLeaveWindowEvent(Widget w, Ihandle *ih, XEvent *evt, Boolean *cont)
+IUP_DRV_API void iupmotEnterLeaveWindowEvent(Widget w, Ihandle* ih, XEvent* evt, Boolean* cont)
 {
   Icallback cb = NULL;
   (void)cont;
@@ -329,7 +329,7 @@ IUP_SDK_API void iupdrvSetActive(Ihandle* ih, int enable)
   XtSetSensitive(widget, enable);
 }
 
-IUP_DRV_API char* iupmotGetXWindowAttrib(Ihandle *ih)
+IUP_DRV_API char* iupmotGetXWindowAttrib(Ihandle* ih)
 {
   return (char*)XtWindow(ih->handle);
 }
@@ -371,7 +371,7 @@ IUP_SDK_API int iupdrvBaseSetFgColorAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-IUP_DRV_API void iupmotGetWindowSize(Ihandle *ih, int *width, int *height)
+IUP_DRV_API void iupmotGetWindowSize(Ihandle* ih, int* width, int* height)
 {
   Dimension w, h;
   XtVaGetValues(ih->handle, XmNwidth, &w, XmNheight, &h, NULL);
@@ -531,7 +531,7 @@ IUP_DRV_API void iupmotButtonPressReleaseEvent(Widget w, Ihandle* ih, XEvent* ev
 {
   IFniiiis cb;
 
-  XButtonEvent *but_evt = (XButtonEvent*)evt;
+  XButtonEvent* but_evt = (XButtonEvent*)evt;
   if (but_evt->button!=Button1 &&
       but_evt->button!=Button2 &&
       but_evt->button!=Button3 &&
@@ -568,7 +568,7 @@ IUP_DRV_API void iupmotButtonPressReleaseEvent(Widget w, Ihandle* ih, XEvent* ev
   (void)w;
 }
 
-IUP_DRV_API void iupmotDummyPointerMotionEvent(Widget w, XtPointer *data, XEvent *evt, Boolean *cont)
+IUP_DRV_API void iupmotDummyPointerMotionEvent(Widget w, XtPointer* data, XEvent* evt, Boolean* cont)
 {
   /* Used only when global callbacks are enabled */
   (void)w;
@@ -577,12 +577,12 @@ IUP_DRV_API void iupmotDummyPointerMotionEvent(Widget w, XtPointer *data, XEvent
   (void)cont;
 }
 
-IUP_DRV_API void iupmotPointerMotionEvent(Widget w, Ihandle *ih, XEvent *evt, Boolean *cont)
+IUP_DRV_API void iupmotPointerMotionEvent(Widget w, Ihandle* ih, XEvent* evt, Boolean* cont)
 {
   IFniis cb = (IFniis)IupGetCallback(ih,"MOTION_CB");
   if (cb)
   {
-    XMotionEvent *motion_evt = (XMotionEvent*)evt;
+    XMotionEvent* motion_evt = (XMotionEvent*)evt;
     char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
     iupmotButtonKeySetStatus(motion_evt->state, 0, status, 0);
     cb(ih, motion_evt->x, motion_evt->y, status);
@@ -712,13 +712,13 @@ IUP_SDK_API void iupdrvSleep(int time)
 }
 #endif
 
-IUP_SDK_API void iupdrvSetAccessibleTitle(Ihandle *ih, const char* title)
+IUP_SDK_API void iupdrvSetAccessibleTitle(Ihandle* ih, const char* title)
 {
   (void)title;
   (void)ih;
 }
 
-IUP_SDK_API void iupdrvSetAccessibleDescription(Ihandle *ih, const char* description)
+IUP_SDK_API void iupdrvSetAccessibleDescription(Ihandle* ih, const char* description)
 {
   (void)description;
   (void)ih;
@@ -772,7 +772,7 @@ IUP_SDK_API int iupdrvIsSystemDarkMode(void)
   return (bg_lum < fg_lum) ? 1 : 0;
 }
 
-IUP_DRV_API void iupmotScrolledWindowWheelEvent(Widget w, Ihandle *ih, XEvent *evt, Boolean *cont)
+IUP_DRV_API void iupmotScrolledWindowWheelEvent(Widget w, Ihandle* ih, XEvent* evt, Boolean* cont)
 {
   XButtonEvent* but_evt = (XButtonEvent*)evt;
   Widget sb_win, sb;

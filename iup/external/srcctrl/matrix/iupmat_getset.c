@@ -223,7 +223,7 @@ char* iupMatrixGetNumericFormatDef(Ihandle* ih)
 
 static char* iMatrixGetValueNumericTitle(Ihandle* ih, int col, const char* value)
 {
-  char *format = NULL;
+  char* format = NULL;
 
   /* here lin==0 */
 
@@ -248,7 +248,7 @@ static char* iMatrixGetValueNumericTitle(Ihandle* ih, int col, const char* value
 
 static char* iMatrixGetValueNumericFormatted(Ihandle* ih, int lin, int col, const char* value)
 {
-  char *format = NULL;
+  char* format = NULL;
   double number;
 
   /* here lin!=0 */
@@ -375,7 +375,7 @@ void iupMatrixPrepareDrawData(Ihandle* ih)
   ih->data->bgcolor_cb = (IFniiIII)IupGetCallback(ih, "BGCOLOR_CB");
 }
 
-static char* iMatrixGetCellAttribute(Ihandle* ih, unsigned char attr, int lin, int col, int *native_parent)
+static char* iMatrixGetCellAttribute(Ihandle* ih, unsigned char attr, int lin, int col, int* native_parent)
 {
   char* value = NULL;
   const char* attrib = NULL;
@@ -443,7 +443,7 @@ static char* iMatrixGetCellAttribute(Ihandle* ih, unsigned char attr, int lin, i
   return value;
 }
 
-static int iMatrixCallColorCB(Ihandle* ih, IFniiIII cb, int lin, int col, unsigned char *r, unsigned char *g, unsigned char *b)
+static int iMatrixCallColorCB(Ihandle* ih, IFniiIII cb, int lin, int col, unsigned char* r, unsigned char* g, unsigned char* b)
 {
   int ir = 0, ig = 0, ib = 0, ret;
   ret = cb(ih, lin, col, &ir, &ig, &ib);
@@ -479,7 +479,7 @@ char* iupMatrixGetFgColorStr(Ihandle* ih, int lin, int col)
 /* Color attenuation factor in a marked cell, 20% darker */
 #define IMAT_ATENUATION(_x)    ((unsigned char)(((_x)*8)/10))
 
-static void iMatrixAddMarkedAttenuation(Ihandle* ih, unsigned char *r, unsigned char *g, unsigned char *b)
+static void iMatrixAddMarkedAttenuation(Ihandle* ih, unsigned char* r, unsigned char* g, unsigned char* b)
 {
   char* hlcolor = iupAttribGetStr(ih, "HLCOLOR");
   unsigned char hl_r, hl_g, hl_b;
@@ -496,7 +496,7 @@ static void iMatrixAddMarkedAttenuation(Ihandle* ih, unsigned char *r, unsigned 
   *b = IMAT_ATENUATION(*b);
 }
 
-void iupMatrixGetFgRGB(Ihandle* ih, int lin, int col, unsigned char *r, unsigned char *g, unsigned char *b, int marked, int active)
+void iupMatrixGetFgRGB(Ihandle* ih, int lin, int col, unsigned char* r, unsigned char* g, unsigned char* b, int marked, int active)
 {
   /* called from Draw only */
   if (!ih->data->fgcolor_cb || (iMatrixCallColorCB(ih, ih->data->fgcolor_cb, lin, col, r, g, b) == IUP_IGNORE))
@@ -523,7 +523,7 @@ void iupMatrixGetFgRGB(Ihandle* ih, int lin, int col, unsigned char *r, unsigned
   }
 }
 
-void iupMatrixGetTypeRGB(Ihandle* ih, const char* color, unsigned char *r, unsigned char *g, unsigned char *b, int marked, int active)
+void iupMatrixGetTypeRGB(Ihandle* ih, const char* color, unsigned char* r, unsigned char* g, unsigned char* b, int marked, int active)
 {
   /* called from Draw only */
   iupStrToRGB(color, r, g, b);
@@ -556,7 +556,7 @@ char* iupMatrixGetBgColorStr(Ihandle* ih, int lin, int col)
 
 #define IMAT_DARKER(_x)    (((_x)*9)/10)
 
-void iupMatrixGetBgRGB(Ihandle* ih, int lin, int col, unsigned char *r, unsigned char *g, unsigned char *b, int marked, int active)
+void iupMatrixGetBgRGB(Ihandle* ih, int lin, int col, unsigned char* r, unsigned char* g, unsigned char* b, int marked, int active)
 {
   /* called from Draw only */
   if (!ih->data->bgcolor_cb || (iMatrixCallColorCB(ih, ih->data->bgcolor_cb, lin, col, r, g, b) == IUP_IGNORE))
@@ -633,7 +633,7 @@ int iupMatrixGetType(Ihandle* ih, int lin, int col)
   return IMAT_TYPE_TEXT;
 }
 
-int iupMatrixGetFrameHorizColor(Ihandle* ih, int lin, int col, long *framecolor, int check_title)
+int iupMatrixGetFrameHorizColor(Ihandle* ih, int lin, int col, long* framecolor, int check_title)
 {
   if ((ih->data->callback_mode || ih->data->cells[lin][col].flags & IMAT_HAS_FRAMEHORIZCOLOR) ||
       ih->data->lines.dt[lin].flags & IMAT_HAS_FRAMEHORIZCOLOR)
@@ -661,7 +661,7 @@ int iupMatrixGetFrameHorizColor(Ihandle* ih, int lin, int col, long *framecolor,
   return 0;
 }
 
-int iupMatrixGetFrameVertColor(Ihandle* ih, int lin, int col, long *framecolor, int check_title)
+int iupMatrixGetFrameVertColor(Ihandle* ih, int lin, int col, long* framecolor, int check_title)
 {
   if ((ih->data->callback_mode || ih->data->cells[lin][col].flags & IMAT_HAS_FRAMEVERTCOLOR) ||
       ih->data->columns.dt[col].flags & IMAT_HAS_FRAMEVERTCOLOR)
@@ -737,7 +737,7 @@ int iupMatrixGetLinAlignment(Ihandle* ih, int lin)
     return IMAT_ALIGN_CENTER;
 }
 
-void iupMatrixGetCellAlign(Ihandle* ih, int lin, int col, int *col_alignment, int *lin_alignment)
+void iupMatrixGetCellAlign(Ihandle* ih, int lin, int col, int* col_alignment, int* lin_alignment)
 {
   char* align = iupAttribGetId2(ih, "ALIGN", lin, col);
   if (align)
@@ -927,10 +927,10 @@ int iupMatrixGetLineHeight(Ihandle* ih, int lin, int use_value)
   return 0;
 }
 
-char *iupMatrixGetSize(Ihandle* ih, int index, int m, int pixels_unit)
+char* iupMatrixGetSize(Ihandle* ih, int index, int m, int pixels_unit)
 {
   int size;
-  ImatLinColData *p;
+  ImatLinColData* p;
 
   if (m == IMAT_PROCESS_LIN)
     p = &(ih->data->lines);
@@ -969,7 +969,7 @@ char *iupMatrixGetSize(Ihandle* ih, int index, int m, int pixels_unit)
   return iupStrReturnInt(size);
 }
 
-static int iMatrixGetOffset(int index, int *offset, ImatLinColData *p)
+static int iMatrixGetOffset(int index, int* offset, ImatLinColData* p)
 {
   int i;
 
@@ -1002,7 +1002,7 @@ static int iMatrixGetOffset(int index, int *offset, ImatLinColData *p)
   return 1;
 }
 
-int iupMatrixGetCellOffset(Ihandle* ih, int lin, int col, int *x, int *y)
+int iupMatrixGetCellOffset(Ihandle* ih, int lin, int col, int* x, int* y)
 {
   if (!iMatrixGetOffset(col, x, &(ih->data->columns)))
     return 0;
@@ -1013,7 +1013,7 @@ int iupMatrixGetCellOffset(Ihandle* ih, int lin, int col, int *x, int *y)
   return 1;
 }
 
-static int iMatrixGetIndexFromOffset(int pos, ImatLinColData *p)
+static int iMatrixGetIndexFromOffset(int pos, ImatLinColData* p)
 {
   int offset = 0, i;
 
@@ -1076,7 +1076,7 @@ int iupMatrixGetCellFromXY(Ihandle* ih, int x, int y, int* l, int* c)
   return 1;
 }
 
-static int iMatrixGetCellDim(int index, int* offset, int* size, ImatLinColData *p)
+static int iMatrixGetCellDim(int index, int* offset, int* size, ImatLinColData* p)
 {
   int i, visible = 1;
 
@@ -1259,7 +1259,7 @@ void iupMatrixMergeSplitRange(Ihandle* ih, int merged)
   ih->data->merge_info_count--;
 }
 
-void iupMatrixGetMergedRect(Ihandle *ih, int merged, int *startLin, int *endLin, int *startCol, int *endCol)
+void iupMatrixGetMergedRect(Ihandle* ih, int merged, int* startLin, int* endLin, int* startCol, int* endCol)
 {
   ImatMergedData* merged_data = ih->data->merge_info + (merged - 1);
   if (merged_data->used)

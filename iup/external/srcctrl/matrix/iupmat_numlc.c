@@ -377,7 +377,7 @@ static void iMatrixUpdateColumnAttributes(Ihandle* ih, int base, int count, int 
 /* Exported functions                                                     */
 /**************************************************************************/
 
-int iupMatrixGetStartEnd(const char* value, int *base, int *count, int max, int del)
+int iupMatrixGetStartEnd(const char* value, int* base, int* count, int max, int del)
 {
   int ret;
 

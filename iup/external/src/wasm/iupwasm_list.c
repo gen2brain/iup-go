@@ -618,14 +618,14 @@ IUP_SDK_API void iupdrvListSetItemCount(Ihandle* ih, int count)
   wasmListVirtualRender(ih);
 }
 
-IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int *w, int *h)
+IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int* w, int* h)
 {
   (void)ih;
   if (w) *w += 4;
   if (h) *h += 2;
 }
 
-IUP_SDK_API void iupdrvListAddItemSpace(Ihandle* ih, int *h)
+IUP_SDK_API void iupdrvListAddItemSpace(Ihandle* ih, int* h)
 {
   (void)ih;
   if (h) *h += 1;  /* match the rendered option box so VISIBLELINES is exact */

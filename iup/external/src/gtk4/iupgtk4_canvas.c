@@ -21,7 +21,7 @@
 #include "iupgtk4_drv.h"
 
 
-static void gtk4CanvasUpdateChildLayout(Ihandle *ih, int flush)
+static void gtk4CanvasUpdateChildLayout(Ihandle* ih, int flush)
 {
   iupGtk4Fixed* sb_win = (iupGtk4Fixed*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
   GtkWidget* sb_horiz = (GtkWidget*)iupAttribGet(ih, "_IUPGTK4_SBHORIZ");
@@ -111,7 +111,7 @@ static void gtk4CanvasAdjustVertValueChanged(GtkAdjustment* adjustment, Ihandle*
   }
 }
 
-static gboolean gtk4CanvasScrollEvent(GtkEventControllerScroll *controller, double dx, double dy, Ihandle *ih)
+static gboolean gtk4CanvasScrollEvent(GtkEventControllerScroll* controller, double dx, double dy, Ihandle* ih)
 {
   IFnfiis wcb = (IFnfiis)IupGetCallback(ih, "WHEEL_CB");
 
@@ -130,7 +130,7 @@ static gboolean gtk4CanvasScrollEvent(GtkEventControllerScroll *controller, doub
     GdkModifierType state = gtk_event_controller_get_current_event_state(GTK_EVENT_CONTROLLER(controller));
     iupgtk4ButtonKeySetStatus(state, button, status, 0);
 
-    GdkEvent *event = gtk_event_controller_get_current_event(GTK_EVENT_CONTROLLER(controller));
+    GdkEvent* event = gtk_event_controller_get_current_event(GTK_EVENT_CONTROLLER(controller));
     double x, y;
     gdk_event_get_position(event, &x, &y);
 
@@ -172,7 +172,7 @@ static gboolean gtk4CanvasScrollEvent(GtkEventControllerScroll *controller, doub
   return TRUE;
 }
 
-static void gtk4CanvasButtonPressed(GtkGestureClick *gesture, int n_press, double x, double y, Ihandle *ih)
+static void gtk4CanvasButtonPressed(GtkGestureClick* gesture, int n_press, double x, double y, Ihandle* ih)
 {
   GtkWidget* widget = ih->handle;
 
@@ -209,7 +209,7 @@ static void gtk4CanvasGLComposite(Ihandle* ih, cairo_t* cr, int width, int heigh
   cairo_surface_destroy(s);
 }
 
-static void gtk4CanvasDraw(GtkDrawingArea *area, cairo_t* cr, int width, int height, Ihandle *ih)
+static void gtk4CanvasDraw(GtkDrawingArea* area, cairo_t* cr, int width, int height, Ihandle* ih)
 {
   IFn cb = (IFn)IupGetCallback(ih,"ACTION");
   cairo_surface_t* buffer;
@@ -464,9 +464,9 @@ static int gtk4CanvasSetUpdateRectAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-static void gtk4CanvasSizeAllocate(GtkDrawingArea *drawing_area, int width, int height, gpointer user_data)
+static void gtk4CanvasSizeAllocate(GtkDrawingArea* drawing_area, int width, int height, gpointer user_data)
 {
-  Ihandle *ih = (Ihandle*)user_data;
+  Ihandle* ih = (Ihandle*)user_data;
   IFnii cb;
 
   if (!ih->data->inside_resize)
@@ -487,7 +487,7 @@ static void gtk4CanvasSizeAllocate(GtkDrawingArea *drawing_area, int width, int 
   (void)drawing_area;
 }
 
-static char* gtk4CanvasGetDrawSizeAttrib(Ihandle *ih)
+static char* gtk4CanvasGetDrawSizeAttrib(Ihandle* ih)
 {
   if (ih->handle && GTK_IS_WIDGET(ih->handle))
   {
@@ -499,7 +499,7 @@ static char* gtk4CanvasGetDrawSizeAttrib(Ihandle *ih)
   return NULL;
 }
 
-static int gtk4CanvasCheckScroll(double min, double max, double *page, double *pos)
+static int gtk4CanvasCheckScroll(double min, double max, double* page, double* pos)
 {
   double old_pos = *pos;
   double range = max-min;
@@ -515,7 +515,7 @@ static int gtk4CanvasCheckScroll(double min, double max, double *page, double *p
     return 1;
 }
 
-static int gtk4CanvasSetDXAttrib(Ihandle* ih, const char *value)
+static int gtk4CanvasSetDXAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->sb & IUP_SB_HORIZ)
   {
@@ -589,7 +589,7 @@ static int gtk4CanvasSetDXAttrib(Ihandle* ih, const char *value)
   return 1;
 }
 
-static int gtk4CanvasSetDYAttrib(Ihandle* ih, const char *value)
+static int gtk4CanvasSetDYAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->sb & IUP_SB_VERT)
   {
@@ -663,7 +663,7 @@ static int gtk4CanvasSetDYAttrib(Ihandle* ih, const char *value)
   return 1;
 }
 
-static int gtk4CanvasSetPosXAttrib(Ihandle* ih, const char *value)
+static int gtk4CanvasSetPosXAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->sb & IUP_SB_HORIZ)
   {
@@ -693,7 +693,7 @@ static int gtk4CanvasSetPosXAttrib(Ihandle* ih, const char *value)
   return 1;
 }
 
-static int gtk4CanvasSetPosYAttrib(Ihandle* ih, const char *value)
+static int gtk4CanvasSetPosYAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->sb & IUP_SB_VERT)
   {

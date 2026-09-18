@@ -57,7 +57,7 @@ static void fltkTimerProc(void* data)
     Fl::repeat_timeout(timer_data->interval_sec, fltkTimerProc, data);
 }
 
-extern "C" IUP_SDK_API void iupdrvTimerRun(Ihandle *ih)
+extern "C" IUP_SDK_API void iupdrvTimerRun(Ihandle* ih)
 {
   unsigned int time_ms;
 

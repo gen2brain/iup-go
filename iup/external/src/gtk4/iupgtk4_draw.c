@@ -24,7 +24,7 @@ struct _IdrawCanvas
 
   GtkWidget* widget;
   int release_cr;
-  cairo_t *cr, *image_cr;
+  cairo_t* cr, *image_cr;
 
   int clip_x1, clip_y1, clip_x2, clip_y2;
 };
@@ -139,7 +139,7 @@ IUP_SDK_API void iupdrvDrawFlush(IdrawCanvas* dc)
   }
 }
 
-IUP_SDK_API void iupdrvDrawGetSize(IdrawCanvas* dc, int *w, int *h)
+IUP_SDK_API void iupdrvDrawGetSize(IdrawCanvas* dc, int* w, int* h)
 {
   if (w) *w = dc->w;
   if (h) *h = dc->h;
@@ -259,7 +259,7 @@ IUP_SDK_API void iupdrvDrawLine(IdrawCanvas* dc, int x1, int y1, int x2, int y2,
   cairo_stroke(dc->image_cr);
 }
 
-static void iFixAngles(double *a1, double *a2)
+static void iFixAngles(double* a1, double* a2)
 {
   /* Cairo angles are clock-wise by default, in radians */
 
@@ -517,7 +517,7 @@ IUP_SDK_API void iupdrvDrawQuadraticBezier(IdrawCanvas* dc, int x1, int y1, int 
   iupdrvDrawBezier(dc, x1, y1, cx1, cy1, cx2, cy2, x3, y3, color, style, line_width);
 }
 
-IUP_SDK_API void iupdrvDrawGetClipRect(IdrawCanvas* dc, int *x1, int *y1, int *x2, int *y2)
+IUP_SDK_API void iupdrvDrawGetClipRect(IdrawCanvas* dc, int* x1, int* y1, int* x2, int* y2)
 {
   if (x1) *x1 = dc->clip_x1;
   if (y1) *y1 = dc->clip_y1;
@@ -762,7 +762,7 @@ IUP_SDK_API void iupdrvDrawFocusRect(IdrawCanvas* dc, int x1, int y1, int x2, in
 
 IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, float angle, const long* colors, const float* offsets, int count)
 {
-  cairo_pattern_t *pattern;
+  cairo_pattern_t* pattern;
   float rad, x0, y0, x3, y3;
   float w, h;
   int i;
@@ -794,7 +794,7 @@ IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x
 
 IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int radius, const long* colors, const float* offsets, int count)
 {
-  cairo_pattern_t *pattern;
+  cairo_pattern_t* pattern;
   int i;
 
   pattern = cairo_pattern_create_radial(cx, cy, 0, cx, cy, radius);

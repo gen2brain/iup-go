@@ -43,7 +43,7 @@
 
 static void winTabsInitializeCloseImage(void)
 {
-  Ihandle *image_close;
+  Ihandle* image_close;
 
   unsigned char img_close[ITABS_CLOSE_SIZE * ITABS_CLOSE_SIZE] =
   {
@@ -285,7 +285,7 @@ IUP_SDK_API int iupdrvTabsGetLineCountAttrib(Ihandle* ih)
   return (int)SendMessage(ih->handle, TCM_GETROWCOUNT, 0, 0);
 }
 
-static void winTabGetPageWindowRect(Ihandle* ih, RECT *rect)
+static void winTabGetPageWindowRect(Ihandle* ih, RECT* rect)
 {
   GetClientRect(ih->handle, rect);
 
@@ -331,7 +331,7 @@ static void winTabGetPageWindowRect(Ihandle* ih, RECT *rect)
   }
 }
 
-static void winTabSetPageWindowPos(HWND tab_container, RECT *rect)
+static void winTabSetPageWindowPos(HWND tab_container, RECT* rect)
 {
   if (rect->right <= 0 || rect->bottom <= 0 ||
       rect->left >= rect->right || rect->top >= rect->bottom)
@@ -522,9 +522,9 @@ static int winTabsGetImageIndex(Ihandle* ih, const char* name)
   int count, i, ret;
   int img_w, img_h, dst_w, dst_h;
   Iarray* bmp_array;
-  HBITMAP *bmp_array_data;
+  HBITMAP* bmp_array_data;
   Iarray* scaled_array;
-  HBITMAP *scaled_array_data;
+  HBITMAP* scaled_array_data;
   HBITMAP bmp = iupImageGetImage(name, ih, 0, NULL);
   if (!bmp)
     return -1;
@@ -682,7 +682,7 @@ static HWND winTabsCreatePageWindow(Ihandle* ih)
 static void winTabsInsertItem(Ihandle* ih, Ihandle* child, int pos, HWND tab_container)
 {
   TCITEM tie;
-  char *tabtitle, *tabimage;
+  char* tabtitle, *tabimage;
   int old_rowcount = 0, old_num_tabs, p;
   RECT rect;
 
@@ -960,7 +960,7 @@ static char* winTabsGetBgColorAttrib(Ihandle* ih)
   return IupGetGlobal("DLGBGCOLOR");
 }
 
-static int winTabsSetBgColorAttrib(Ihandle *ih, const char *value)
+static int winTabsSetBgColorAttrib(Ihandle* ih, const char* value)
 {
   (void)value;
   iupdrvPostRedraw(ih);
@@ -1091,7 +1091,7 @@ static int winTabsIsInsideCloseButton(Ihandle* ih, int p)
   return 0;
 }
 
-static int winTabsCtlColor(Ihandle* ih, HDC hdc, LRESULT *result)
+static int winTabsCtlColor(Ihandle* ih, HDC hdc, LRESULT* result)
 {
   /* works only when NOT winTabsUsingXPStyles */
   COLORREF bgcolor;
@@ -1104,7 +1104,7 @@ static int winTabsCtlColor(Ihandle* ih, HDC hdc, LRESULT *result)
   return 0;
 }
 
-static int winTabsWmNotify(Ihandle* ih, NMHDR* msg_info, int *result)
+static int winTabsWmNotify(Ihandle* ih, NMHDR* msg_info, int* result)
 {
   (void)result;
 
@@ -1203,7 +1203,7 @@ static int winTabsWmNotify(Ihandle* ih, NMHDR* msg_info, int *result)
   return 0; /* result not used */
 }
 
-static int winTabsMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT *result)
+static int winTabsMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT* result)
 {
   switch (msg)
   {
@@ -1405,7 +1405,7 @@ static int winTabsMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT *
           if (winTabsIsInsideCloseButton(ih, press_p))
           {
             int pos = winTabsPosFixFromWin(ih, press_p);
-            Ihandle *child = IupGetChild(ih, pos);
+            Ihandle* child = IupGetChild(ih, pos);
             HWND tab_container = (HWND)iupAttribGet(child, "_IUPTAB_PAGE");
 
             iupAttribSetInt(ih, "_IUPTABS_CLOSEPRESS", -1);
@@ -1521,7 +1521,7 @@ static void winTabsDrawTab(Ihandle* ih, HDC hDC, int p, int width, int height, C
   HIMAGELIST image_list = (HIMAGELIST)SendMessage(ih->handle, TCM_GETIMAGELIST, 0, 0);
   int imgW = 0, imgH = 0, txtW = 0, txtH = 0,
     bpp, style = 0, x = 0, y = 0, border = 4;
-  char *str = NULL, *value = NULL;
+  char* str = NULL, *value = NULL;
   int high_p, press_p;
 
   tci.mask = TCIF_TEXT | TCIF_IMAGE;
@@ -1640,7 +1640,7 @@ static void winTabsDrawTab(Ihandle* ih, HDC hDC, int p, int width, int height, C
   if (str && str != value) free(str);
 }
 
-static void winTabsDrawItem(Ihandle* ih, DRAWITEMSTRUCT *drawitem)
+static void winTabsDrawItem(Ihandle* ih, DRAWITEMSTRUCT* drawitem)
 {
   HDC hDC;
   iupwinBitmapDC bmpDC;

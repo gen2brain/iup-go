@@ -12,14 +12,14 @@
 #include "iupefl_drv.h"
 
 
-IUP_SDK_API void iupdrvAddScreenOffset(int *x, int *y, int add)
+IUP_SDK_API void iupdrvAddScreenOffset(int* x, int* y, int add)
 {
   (void)x;
   (void)y;
   (void)add;
 }
 
-IUP_SDK_API void iupdrvGetScreenSize(int *width, int *height)
+IUP_SDK_API void iupdrvGetScreenSize(int* width, int* height)
 {
   Ecore_Evas* ee = ecore_evas_new(NULL, 0, 0, 1, 1, NULL);
   if (ee)
@@ -34,7 +34,7 @@ IUP_SDK_API void iupdrvGetScreenSize(int *width, int *height)
   }
 }
 
-IUP_SDK_API void iupdrvGetFullSize(int *width, int *height)
+IUP_SDK_API void iupdrvGetFullSize(int* width, int* height)
 {
   iupdrvGetScreenSize(width, height);
 }
@@ -62,7 +62,7 @@ IUP_SDK_API int iupdrvScaleNaturalPx(int px)
   return px;
 }
 
-IUP_SDK_API void iupdrvGetCursorPos(int *x, int *y)
+IUP_SDK_API void iupdrvGetCursorPos(int* x, int* y)
 {
   Eo* win = iupeflGetMainWindow();
 

@@ -25,14 +25,14 @@ extern "C" {
 #include "iupfltk_drv.h"
 
 
-extern "C" IUP_SDK_API void iupdrvAddScreenOffset(int *x, int *y, int add)
+extern "C" IUP_SDK_API void iupdrvAddScreenOffset(int* x, int* y, int add)
 {
   (void)x;
   (void)y;
   (void)add;
 }
 
-extern "C" IUP_SDK_API void iupdrvGetScreenSize(int *width, int *height)
+extern "C" IUP_SDK_API void iupdrvGetScreenSize(int* width, int* height)
 {
   int x, y, w, h;
   Fl::screen_work_area(x, y, w, h);
@@ -40,7 +40,7 @@ extern "C" IUP_SDK_API void iupdrvGetScreenSize(int *width, int *height)
   *height = h;
 }
 
-extern "C" IUP_SDK_API void iupdrvGetFullSize(int *width, int *height)
+extern "C" IUP_SDK_API void iupdrvGetFullSize(int* width, int* height)
 {
   int x, y, w, h;
   Fl::screen_xywh(x, y, w, h);
@@ -78,7 +78,7 @@ extern "C" IUP_SDK_API void* iupdrvGetDisplay(void)
   return NULL;
 }
 
-extern "C" IUP_SDK_API void iupdrvGetCursorPos(int *x, int *y)
+extern "C" IUP_SDK_API void iupdrvGetCursorPos(int* x, int* y)
 {
   Fl::get_mouse(*x, *y);
 }

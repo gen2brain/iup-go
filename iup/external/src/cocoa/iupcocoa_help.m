@@ -17,7 +17,7 @@
 
 #include "iup_str.h"
 
-extern char **environ;
+extern char** environ;
 
 static char* iupCocoaFindExecutable(const char* filename)
 {
@@ -146,7 +146,7 @@ static int iupCocoaSpawnWait(char** argv)
   return 1;
 }
 
-static int iupCocoaSpawn(const char *filename, const char* parameters, int wait)
+static int iupCocoaSpawn(const char* filename, const char* parameters, int wait)
 {
   char** argv;
   int ret;
@@ -163,19 +163,19 @@ static int iupCocoaSpawn(const char *filename, const char* parameters, int wait)
   return ret;
 }
 
-IUP_API int IupExecute(const char *filename, const char* parameters)
+IUP_API int IupExecute(const char* filename, const char* parameters)
 {
   return iupCocoaSpawn(filename, parameters, 0);
 }
 
-IUP_API int IupExecuteWait(const char *filename, const char* parameters)
+IUP_API int IupExecuteWait(const char* filename, const char* parameters)
 {
   return iupCocoaSpawn(filename, parameters, 1);
 }
 
 IUP_API int IupHelp(const char* url)
 {
-  char *argv[3];
+  char* argv[3];
 
   argv[0] = "open";
   argv[1] = (char*)url;

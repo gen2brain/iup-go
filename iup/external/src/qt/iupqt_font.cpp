@@ -177,7 +177,7 @@ IUP_DRV_API QFont* iupqtGetQFont(const char* value)
     return nullptr;
 }
 
-IUP_DRV_API QFont* iupqtGetQFontLine(const char* value, int *ascent, int *charheight)
+IUP_DRV_API QFont* iupqtGetQFontLine(const char* value, int* ascent, int* charheight)
 {
   IqtFont* qtfont = qtFindFont(value);
   if (!qtfont)

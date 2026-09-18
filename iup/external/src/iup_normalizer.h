@@ -12,7 +12,7 @@ extern "C" {
 #endif
 
 
-void iupNormalizeSizeBoxChild(Ihandle *ih, int normalize, int children_natural_maxwidth, int children_natural_maxheight);
+void iupNormalizeSizeBoxChild(Ihandle* ih, int normalize, int children_natural_maxwidth, int children_natural_maxheight);
 int iupNormalizeGetNormalizeSize(const char* value);
 char* iupNormalizeGetNormalizeSizeStr(int normalize);
 

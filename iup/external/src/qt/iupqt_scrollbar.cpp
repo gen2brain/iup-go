@@ -59,16 +59,16 @@ public:
       setBaseStyle(base);
   }
 
-  int styleHint(StyleHint hint, const QStyleOption *option = nullptr,
-                const QWidget *widget = nullptr, QStyleHintReturn *returnData = nullptr) const override
+  int styleHint(StyleHint hint, const QStyleOption* option = nullptr,
+                const QWidget* widget = nullptr, QStyleHintReturn* returnData = nullptr) const override
   {
     if (hint == SH_ScrollBar_Transient)
       return 0;
     return QProxyStyle::styleHint(hint, option, widget, returnData);
   }
 
-  void drawComplexControl(ComplexControl control, const QStyleOptionComplex *option,
-                          QPainter *painter, const QWidget *widget = nullptr) const override
+  void drawComplexControl(ComplexControl control, const QStyleOptionComplex* option,
+                          QPainter* painter, const QWidget* widget = nullptr) const override
   {
     if (control == CC_ScrollBar)
     {
@@ -80,8 +80,8 @@ public:
     QProxyStyle::drawComplexControl(control, option, painter, widget);
   }
 
-  QRect subControlRect(ComplexControl control, const QStyleOptionComplex *option,
-                       SubControl subControl, const QWidget *widget = nullptr) const override
+  QRect subControlRect(ComplexControl control, const QStyleOptionComplex* option,
+                       SubControl subControl, const QWidget* widget = nullptr) const override
   {
     if (control == CC_ScrollBar)
     {
@@ -313,7 +313,7 @@ static int qtScrollbarSetPageSizeAttrib(Ihandle* ih, const char* value)
 /*********************************************************************************************/
 
 
-extern "C" IUP_SDK_API void iupdrvScrollbarGetMinSize(Ihandle* ih, int *w, int *h)
+extern "C" IUP_SDK_API void iupdrvScrollbarGetMinSize(Ihandle* ih, int* w, int* h)
 {
   static int horiz_min_w = -1, horiz_min_h = -1;
   static int vert_min_w = -1, vert_min_h = -1;

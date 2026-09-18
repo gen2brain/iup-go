@@ -67,7 +67,7 @@ IUP_DRV_API void iupwinBringWindowToForeground(HWND hwnd)
   }
 }
 
-IUP_SDK_API void iupdrvSetFocus(Ihandle *ih)
+IUP_SDK_API void iupdrvSetFocus(Ihandle* ih)
 {
   SetFocus(ih->handle);
 
@@ -75,7 +75,7 @@ IUP_SDK_API void iupdrvSetFocus(Ihandle *ih)
   SendMessage(ih->handle, WM_CHANGEUISTATE, UIS_CLEAR|UISF_HIDEFOCUS, 0);  /* clear+hidefocus=showfocus */
 }
 
-IUP_DRV_API void iupwinWmSetFocus(Ihandle *ih)
+IUP_DRV_API void iupwinWmSetFocus(Ihandle* ih)
 {
   Ihandle* dialog = IupGetDialog(ih);
   if (!dialog)

@@ -18,7 +18,7 @@
 #include "iupcocoa_drv.h"
 
 
-IUP_SDK_API void iupdrvFrameGetDecorOffset(Ihandle* ih, int *x, int *y)
+IUP_SDK_API void iupdrvFrameGetDecorOffset(Ihandle* ih, int* x, int* y)
 {
   /* NSBox lays children out inside its contentView, so the offset is (0,0) */
   (void)ih;
@@ -32,7 +32,7 @@ IUP_SDK_API int iupdrvFrameHasClientOffset(Ihandle* ih)
   return 0;
 }
 
-IUP_SDK_API int iupdrvFrameGetTitleHeight(Ihandle* ih, int *h)
+IUP_SDK_API int iupdrvFrameGetTitleHeight(Ihandle* ih, int* h)
 {
   if (iupAttribGet(ih, "_IUPFRAME_HAS_TITLE") || iupAttribGet(ih, "TITLE"))
   {
@@ -62,7 +62,7 @@ IUP_SDK_API int iupdrvFrameGetTitleHeight(Ihandle* ih, int *h)
   return 1;
 }
 
-IUP_SDK_API int iupdrvFrameGetDecorSize(Ihandle* ih, int *w, int *h)
+IUP_SDK_API int iupdrvFrameGetDecorSize(Ihandle* ih, int* w, int* h)
 {
   NSBox* tempBox = [[[NSBox alloc] initWithFrame:NSMakeRect(0, 0, 100, 100)] autorelease];
 

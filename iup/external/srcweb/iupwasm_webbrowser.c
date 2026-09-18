@@ -455,7 +455,7 @@ static int wasmWebCreateMethod(Ihandle* ih, void** params)
   return IUP_NOERROR;
 }
 
-static void wasmWebComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *children_expand)
+static void wasmWebComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* children_expand)
 {
   int natural_w = 0, natural_h = 0;
   (void)children_expand;

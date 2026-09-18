@@ -46,7 +46,7 @@ static int gtk4CalendarSetValueAttrib(Ihandle* ih, const char* value)
     timeinfo = localtime(&timer);
     if (timeinfo)
     {
-      GDateTime *dt = g_date_time_new_local(timeinfo->tm_year + 1900,
+      GDateTime* dt = g_date_time_new_local(timeinfo->tm_year + 1900,
                                              timeinfo->tm_mon + 1,
                                              timeinfo->tm_mday, 0, 0, 0);
       if (dt)
@@ -61,7 +61,7 @@ static int gtk4CalendarSetValueAttrib(Ihandle* ih, const char* value)
     int year, month, day;
     if (sscanf(value, "%d/%d/%d", &year, &month, &day) == 3)
     {
-      GDateTime *dt;
+      GDateTime* dt;
       if (month < 1) month = 1;
       if (month > 12) month = 12;
       if (day < 1) day = 1;
@@ -80,7 +80,7 @@ static int gtk4CalendarSetValueAttrib(Ihandle* ih, const char* value)
 
 static char* gtk4CalendarGetValueAttrib(Ihandle* ih)
 {
-  GDateTime *dt = gtk_calendar_get_date(GTK_CALENDAR(ih->handle));
+  GDateTime* dt = gtk_calendar_get_date(GTK_CALENDAR(ih->handle));
   int year = g_date_time_get_year(dt);
   int month = g_date_time_get_month(dt);
   int day = g_date_time_get_day_of_month(dt);
@@ -103,7 +103,7 @@ static char* gtk4CalendarGetTodayAttrib(Ihandle* ih)
 }
 
 /* the GTK 4 calendar header does not follow the cell metrics, so only the widget can size itself */
-static void gtk4CalendarComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *children_expand)
+static void gtk4CalendarComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* children_expand)
 {
   GtkWidget* calendar = ih->handle;
   GtkWidget* temp_calendar = NULL;
@@ -132,7 +132,7 @@ static void gtk4CalendarComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, in
   *h = nat_h;
 }
 
-static void gtk4CalendarDaySelected(GtkCalendar *calendar, Ihandle* ih)
+static void gtk4CalendarDaySelected(GtkCalendar* calendar, Ihandle* ih)
 {
   iupBaseCallValueChangedCb(ih);
   (void)calendar;

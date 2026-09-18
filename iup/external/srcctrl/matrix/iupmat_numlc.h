@@ -11,7 +11,7 @@
 extern "C" {
 #endif
 
-int iupMatrixGetStartEnd(const char* value, int *base, int *count, int max, int del);
+int iupMatrixGetStartEnd(const char* value, int* base, int* count, int max, int del);
 
 int  iupMatrixSetAddLinAttrib(Ihandle* ih, const char* value);
 int  iupMatrixSetDelLinAttrib(Ihandle* ih, const char* value);

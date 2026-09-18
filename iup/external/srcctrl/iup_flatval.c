@@ -53,9 +53,9 @@ struct _IcontrolData
       dragging;
 };
 
-static void iFlatValGetHandlerSize(Ihandle* ih, int is_horizontal, int draw_w, int draw_h, int *width, int *height)
+static void iFlatValGetHandlerSize(Ihandle* ih, int is_horizontal, int draw_w, int draw_h, int* width, int* height)
 {
-  char *image = iupAttribGet(ih, "IMAGE");
+  char* image = iupAttribGet(ih, "IMAGE");
   if (image)
   {
     *width = 0;
@@ -85,7 +85,7 @@ static void iFlatValGetHandlerSize(Ihandle* ih, int is_horizontal, int draw_w, i
   }
 }
 
-static int iFlatValGetSliderInfo(Ihandle* ih, int dx, int dy, int is_horizontal, int draw_w, int draw_h, int *p, int *p1, int *p2, int *handler_op_size)
+static int iFlatValGetSliderInfo(Ihandle* ih, int dx, int dy, int is_horizontal, int draw_w, int draw_h, int* p, int* p1, int* p2, int* handler_op_size)
 {
   int handler_width, handler_height;
   iFlatValGetHandlerSize(ih, is_horizontal, draw_w, draw_h, &handler_width, &handler_height);
@@ -108,7 +108,7 @@ static int iFlatValGetSliderInfo(Ihandle* ih, int dx, int dy, int is_horizontal,
   }
 }
 
-static void iFlatValGetSliderOpositeInfo(Ihandle* ih, int dx, int dy, int is_horizontal, int draw_w, int draw_h, int *q, int *op_size)
+static void iFlatValGetSliderOpositeInfo(Ihandle* ih, int dx, int dy, int is_horizontal, int draw_w, int draw_h, int* q, int* op_size)
 {
   if (is_horizontal)
   {
@@ -122,7 +122,7 @@ static void iFlatValGetSliderOpositeInfo(Ihandle* ih, int dx, int dy, int is_hor
   }
 }
 
-static void iFlatValGetCanvasSize(Ihandle* ih, int *w, int *h)
+static void iFlatValGetCanvasSize(Ihandle* ih, int* w, int* h)
 {
   IupGetIntInt(ih, "DRAWSIZE", w, h);
   if (*w <= 0) *w = ih->currentwidth;
@@ -198,7 +198,7 @@ static int iFlatValIsInsideHandler(Ihandle* ih, int x, int y)
     return 0;
 }
 
-static int iFlatValHandlerPos(Ihandle *ih)
+static int iFlatValHandlerPos(Ihandle* ih)
 {
   int is_horizontal = ih->data->orientation == IFLATVAL_HORIZONTAL;
   double percent = (ih->data->value - ih->data->vmin) / (ih->data->vmax - ih->data->vmin);
@@ -225,7 +225,7 @@ static int iFlatValRedraw_CB(Ihandle* ih)
   int focus_feedback = iupAttribGetBoolean(ih, "FOCUSFEEDBACK");
   int is_horizontal = ih->data->orientation == IFLATVAL_HORIZONTAL;
   int handler_width, handler_height;
-  char *image = iupAttribGet(ih, "IMAGE");
+  char* image = iupAttribGet(ih, "IMAGE");
   char* bgimage = iupAttribGet(ih, "BACKIMAGE");
   double percent = (ih->data->value - ih->data->vmin) / (ih->data->vmax - ih->data->vmin);
   IdrawCanvas* dc = iupdrvDrawCreateCanvas(ih);
@@ -799,12 +799,12 @@ static int iFlatValSetBorderWidthAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-static char* iFlatValGetBorderWidthAttrib(Ihandle *ih)
+static char* iFlatValGetBorderWidthAttrib(Ihandle* ih)
 {
   return iupStrReturnInt(ih->data->border_width);
 }
 
-static void iFlatValComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *children_expand)
+static void iFlatValComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* children_expand)
 {
   int natural_w = 0,
       natural_h = 0;
@@ -848,7 +848,7 @@ static void iFlatValComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *c
   (void)children_expand; /* unset if not a container */
 }
 
-static int iFlatValCreateMethod(Ihandle* ih, void **params)
+static int iFlatValCreateMethod(Ihandle* ih, void** params)
 {
   /* free the data allocated by IupCanvas */
   free(ih->data);
@@ -958,9 +958,9 @@ Iclass* iupFlatValNewClass(void)
   return ic;
 }
 
-IUPCONTROLS_API Ihandle* IupFlatVal(const char *orientation)
+IUPCONTROLS_API Ihandle* IupFlatVal(const char* orientation)
 {
-  void *params[2];
+  void* params[2];
   params[0] = (void*)orientation;
   params[1] = NULL;
   return IupCreatev("flatval", params);

@@ -141,7 +141,7 @@ IUP_SDK_API int iupdrvIsSystemDarkMode(void)
   return iupwinIsSystemDarkMode();
 }
 
-IUP_SDK_API int iupdrvOpen(int *argc, char ***argv)
+IUP_SDK_API int iupdrvOpen(int* argc, char*** argv)
 {
   (void)argc; /* unused in the Windows driver */
   (void)argv;

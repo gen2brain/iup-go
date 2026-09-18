@@ -33,7 +33,7 @@ typedef int (*Icallback)(Ihandle*);
  * \ingroup ctrl */
 /** @{ */
 
-IUP_API int       IupOpen(int *argc, char ***argv);
+IUP_API int       IupOpen(int* argc, char*** argv);
 IUP_API void      IupClose(void);
 IUP_API int       IupIsOpened(void);
 

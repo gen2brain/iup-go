@@ -15,7 +15,7 @@
 #define SEE_MASK_NOASYNC 0x00000100
 #endif
 
-IUP_API int IupExecute(const char *filename, const char* parameters)
+IUP_API int IupExecute(const char* filename, const char* parameters)
 {
   INT_PTR err = (INT_PTR)ShellExecuteA(GetDesktopWindow(), "open", filename, parameters, NULL, SW_SHOWNORMAL);
   if (err <= 32)
@@ -32,7 +32,7 @@ IUP_API int IupExecute(const char *filename, const char* parameters)
   return 1;
 }
 
-IUP_API int IupExecuteWait(const char *filename, const char* parameters)
+IUP_API int IupExecuteWait(const char* filename, const char* parameters)
 {
   SHELLEXECUTEINFOA ExecInfo;
   memset(&ExecInfo, 0, sizeof(SHELLEXECUTEINFOA));

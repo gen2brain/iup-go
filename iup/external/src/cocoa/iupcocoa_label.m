@@ -44,7 +44,7 @@ typedef NS_ENUM(NSUInteger, IUPTextVerticalAlignment)
     return titleRect;
   }
 
-  NSAttributedString *attrString = self.attributedStringValue;
+  NSAttributedString* attrString = self.attributedStringValue;
   if (attrString.length == 0) {
     return titleRect;
   }
@@ -77,13 +77,13 @@ typedef NS_ENUM(NSUInteger, IUPTextVerticalAlignment)
   return newTitleRect;
 }
 
-- (void)drawInteriorWithFrame:(NSRect)cellFrame inView:(NSView *)controlView
+- (void)drawInteriorWithFrame:(NSRect)cellFrame inView:(NSView*)controlView
 {
   NSRect titleRect = [self titleRectForBounds:cellFrame];
   [super drawInteriorWithFrame:titleRect inView:controlView];
 }
 
-- (void)selectWithFrame:(NSRect)rect inView:(NSView *)controlView editor:(NSText *)editor delegate:(id)delegate start:(NSInteger)start length:(NSInteger)length
+- (void)selectWithFrame:(NSRect)rect inView:(NSView*)controlView editor:(NSText*)editor delegate:(id)delegate start:(NSInteger)start length:(NSInteger)length
 {
   [super selectWithFrame:[self titleRectForBounds:rect] inView:controlView editor:editor delegate:delegate start:start length:length];
 }
@@ -121,66 +121,66 @@ typedef NS_ENUM(NSUInteger, IUPTextVerticalAlignment)
 	[super drawRect:dirtyRect];
 }
 
-- (void)mouseDown:(NSEvent *)theEvent
+- (void)mouseDown:(NSEvent*)theEvent
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
   if (!ih || !iupcocoaCommonBaseHandleMouseButtonCallback(ih, theEvent, self, true))
     [super mouseDown:theEvent];
 }
 
-- (void)mouseUp:(NSEvent *)theEvent
+- (void)mouseUp:(NSEvent*)theEvent
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
   if (!ih || !iupcocoaCommonBaseHandleMouseButtonCallback(ih, theEvent, self, false))
     [super mouseUp:theEvent];
 }
 
-- (void)rightMouseDown:(NSEvent *)theEvent
+- (void)rightMouseDown:(NSEvent*)theEvent
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
   if (!ih || !iupcocoaCommonBaseHandleMouseButtonCallback(ih, theEvent, self, true))
     [super rightMouseDown:theEvent];
 }
 
-- (void)rightMouseUp:(NSEvent *)theEvent
+- (void)rightMouseUp:(NSEvent*)theEvent
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
   if (!ih || !iupcocoaCommonBaseHandleMouseButtonCallback(ih, theEvent, self, false))
     [super rightMouseUp:theEvent];
 }
 
-- (void)otherMouseDown:(NSEvent *)theEvent
+- (void)otherMouseDown:(NSEvent*)theEvent
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
   if (!ih || !iupcocoaCommonBaseHandleMouseButtonCallback(ih, theEvent, self, true))
     [super otherMouseDown:theEvent];
 }
 
-- (void)otherMouseUp:(NSEvent *)theEvent
+- (void)otherMouseUp:(NSEvent*)theEvent
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
   if (!ih || !iupcocoaCommonBaseHandleMouseButtonCallback(ih, theEvent, self, false))
     [super otherMouseUp:theEvent];
 }
 
-- (void)mouseMoved:(NSEvent *)theEvent
+- (void)mouseMoved:(NSEvent*)theEvent
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
   if (!ih || !iupcocoaCommonBaseHandleMouseMotionCallback(ih, theEvent, self))
     [super mouseMoved:theEvent];
 }
 
-- (void)mouseDragged:(NSEvent *)theEvent
+- (void)mouseDragged:(NSEvent*)theEvent
 {
   [self mouseMoved:theEvent];
 }
 
-- (void)rightMouseDragged:(NSEvent *)theEvent
+- (void)rightMouseDragged:(NSEvent*)theEvent
 {
   [self mouseMoved:theEvent];
 }
 
-- (void)otherMouseDragged:(NSEvent *)theEvent
+- (void)otherMouseDragged:(NSEvent*)theEvent
 {
   [self mouseMoved:theEvent];
 }
@@ -207,7 +207,7 @@ typedef NS_ENUM(NSUInteger, IUPTextVerticalAlignment)
 	[self addTrackingArea:_mouseTrackingArea];
 }
 
-- (void)mouseEntered:(NSEvent *)theEvent
+- (void)mouseEntered:(NSEvent*)theEvent
 {
   [super mouseEntered:theEvent];
 
@@ -223,7 +223,7 @@ typedef NS_ENUM(NSUInteger, IUPTextVerticalAlignment)
   }
 }
 
-- (void)mouseExited:(NSEvent *)theEvent
+- (void)mouseExited:(NSEvent*)theEvent
 {
   [super mouseExited:theEvent];
 
@@ -252,7 +252,7 @@ static NSImageView* cocoaLabelGetImageView(Ihandle* ih)
   return (NSImageView*)iupcocoaGetMainView(ih);
 }
 
-IUP_SDK_API void iupdrvLabelAddExtraPadding(Ihandle* ih, int *x, int *y)
+IUP_SDK_API void iupdrvLabelAddExtraPadding(Ihandle* ih, int* x, int* y)
 {
   (void)y;
 
@@ -947,7 +947,7 @@ static int cocoaLabelMapMethod(Ihandle* ih)
 
       iupAttribSet(ih, "_IUPCOCOA_ACTIVE", "YES");
 
-      char *name;
+      char* name;
       int make_inactive = 0;
 
       if (iupdrvIsActive(ih))

@@ -79,7 +79,7 @@ IUP_API void IupDrawEnd(Ihandle* ih)
   iupAttribSet(ih, "_IUP_DRAW_DC", NULL);
 }
 
-IUP_API void IupDrawGetSize(Ihandle* ih, int *w, int *h)
+IUP_API void IupDrawGetSize(Ihandle* ih, int* w, int* h)
 {
   iSvgCanvas* svg;
 
@@ -494,14 +494,14 @@ IUP_API void IupDrawRadialGradientStops(Ihandle* ih, int cx, int cy, int radius,
   iupdrvDrawRadialGradient((IdrawCanvas*)iupAttribGet(ih, "_IUP_DRAW_DC"), cx, cy, radius, c, o, count);
 }
 
-static void iDrawRotatePoint(int x, int y, int *rx, int *ry, double sin_theta, double cos_theta)
+static void iDrawRotatePoint(int x, int y, int* rx, int* ry, double sin_theta, double cos_theta)
 {
   double t;
   t = (x * cos_theta) - (y * sin_theta); *rx = iupROUND(t);
   t = (x * sin_theta) + (y * cos_theta); *ry = iupROUND(t);
 }
 
-static void iDrawGetTextBounds(int w, int h, double text_orientation, int *o_w, int *o_h)
+static void iDrawGetTextBounds(int w, int h, double text_orientation, int* o_w, int* o_h)
 {
   int xmin, xmax, ymin, ymax, x_r, y_r;
 
@@ -531,7 +531,7 @@ static void iDrawGetTextBounds(int w, int h, double text_orientation, int *o_w, 
   if (o_h) *o_h = ymax - ymin + 1;
 }
 
-IUP_SDK_API char* iupDrawGetTextSize(Ihandle* ih, const char* text, int len, int *w, int *h, double text_orientation)
+IUP_SDK_API char* iupDrawGetTextSize(Ihandle* ih, const char* text, int len, int* w, int* h, double text_orientation)
 {
   char*font = iupAttribGetStr(ih, "DRAWFONT");
   if (!font)
@@ -631,7 +631,7 @@ IUP_API void IupDrawText(Ihandle* ih, const char* text, int len, int x, int y, i
   }
 }
 
-IUP_API void IupDrawGetTextSize(Ihandle* ih, const char* text, int len, int *w, int *h)
+IUP_API void IupDrawGetTextSize(Ihandle* ih, const char* text, int len, int* w, int* h)
 {
   double text_orientation;
 
@@ -648,7 +648,7 @@ IUP_API void IupDrawGetTextSize(Ihandle* ih, const char* text, int len, int *w, 
   iupDrawGetTextSize(ih, text, len, w, h, text_orientation);
 }
 
-IUP_API void IupDrawGetTextMetrics(Ihandle* ih, int *ascent, int *descent, int *line_height)
+IUP_API void IupDrawGetTextMetrics(Ihandle* ih, int* ascent, int* descent, int* line_height)
 {
   char* font;
   int max_width, lh, asc, desc;
@@ -668,7 +668,7 @@ IUP_API void IupDrawGetTextMetrics(Ihandle* ih, int *ascent, int *descent, int *
   if (line_height) *line_height = lh;
 }
 
-IUP_API void IupDrawGetImageInfo(const char* name, int *w, int *h, int *bpp)
+IUP_API void IupDrawGetImageInfo(const char* name, int* w, int* h, int* bpp)
 {
   iupImageGetInfo(name, w, h, bpp);
 }
@@ -920,7 +920,7 @@ IUP_API void IupDrawSetClipRoundedRect(Ihandle* ih, int x1, int y1, int x2, int 
   iupdrvDrawSetClipRoundedRect((IdrawCanvas*)iupAttribGet(ih, "_IUP_DRAW_DC"), x1, y1, x2, y2, corner_radius);
 }
 
-IUP_API void IupDrawGetClipRect(Ihandle* ih, int *x1, int *y1, int *x2, int *y2)
+IUP_API void IupDrawGetClipRect(Ihandle* ih, int* x1, int* y1, int* x2, int* y2)
 {
   iSvgCanvas* svg;
 
@@ -1032,7 +1032,7 @@ IUP_SDK_API long iupDrawStrToColor(const char* str, long c_def)
     return c_def;
 }
 
-IUP_SDK_API void iupDrawSetColor(Ihandle *ih, const char* name, long color)
+IUP_SDK_API void iupDrawSetColor(Ihandle* ih, const char* name, long color)
 {
   char value[60];
   unsigned char a = iupDrawAlpha(color);
@@ -1043,7 +1043,7 @@ IUP_SDK_API void iupDrawSetColor(Ihandle *ih, const char* name, long color)
   iupAttribSetStr(ih, name, value);
 }
 
-IUP_SDK_API void iupDrawRaiseRect(Ihandle *ih, int x1, int y1, int x2, int y2, long light_shadow, long mid_shadow, long dark_shadow)
+IUP_SDK_API void iupDrawRaiseRect(Ihandle* ih, int x1, int y1, int x2, int y2, long light_shadow, long mid_shadow, long dark_shadow)
 {
   iupDrawSetColor(ih, "DRAWCOLOR", light_shadow);
   IupDrawLine(ih, x1, y1, x1, y2);
@@ -1058,7 +1058,7 @@ IUP_SDK_API void iupDrawRaiseRect(Ihandle *ih, int x1, int y1, int x2, int y2, l
   IupDrawLine(ih, x2, y1, x2, y2);
 }
 
-IUP_SDK_API void iupDrawVertSunkenMark(Ihandle *ih, int x, int y1, int y2, long light_shadow, long dark_shadow)
+IUP_SDK_API void iupDrawVertSunkenMark(Ihandle* ih, int x, int y1, int y2, long light_shadow, long dark_shadow)
 {
   iupDrawSetColor(ih, "DRAWCOLOR", dark_shadow);
   IupDrawLine(ih, x - 1, y1, x - 1, y2);
@@ -1066,7 +1066,7 @@ IUP_SDK_API void iupDrawVertSunkenMark(Ihandle *ih, int x, int y1, int y2, long 
   IupDrawLine(ih, x, y1, x, y2);
 }
 
-IUP_SDK_API void iupDrawHorizSunkenMark(Ihandle *ih, int x1, int x2, int y, long light_shadow, long dark_shadow)
+IUP_SDK_API void iupDrawHorizSunkenMark(Ihandle* ih, int x1, int x2, int y, long light_shadow, long dark_shadow)
 {
   iupDrawSetColor(ih, "DRAWCOLOR", dark_shadow);
   IupDrawLine(ih, x1, y - 1, x2, y - 1);
@@ -1074,7 +1074,7 @@ IUP_SDK_API void iupDrawHorizSunkenMark(Ihandle *ih, int x1, int x2, int y, long
   IupDrawLine(ih, x1, y, x2, y);
 }
 
-IUP_SDK_API void iupDrawSunkenRect(Ihandle *ih, int x1, int y1, int x2, int y2, long light_shadow, long mid_shadow, long dark_shadow)
+IUP_SDK_API void iupDrawSunkenRect(Ihandle* ih, int x1, int y1, int x2, int y2, long light_shadow, long mid_shadow, long dark_shadow)
 {
   iupDrawSetColor(ih, "DRAWCOLOR", mid_shadow);
   IupDrawLine(ih, x1, y1, x1, y2);
@@ -1089,7 +1089,7 @@ IUP_SDK_API void iupDrawSunkenRect(Ihandle *ih, int x1, int y1, int x2, int y2, 
   IupDrawLine(ih, x2, y1, x2, y2);
 }
 
-IUP_SDK_API void iupDrawCalcShadows(long bgcolor, long *light_shadow, long *mid_shadow, long *dark_shadow)
+IUP_SDK_API void iupDrawCalcShadows(long bgcolor, long* light_shadow, long* mid_shadow, long* dark_shadow)
 {
   int r, bg_r = iupDrawRed(bgcolor);
   int g, bg_g = iupDrawGreen(bgcolor);
@@ -1339,7 +1339,7 @@ static void iFlatDrawText(IdrawCanvas* dc, int x, int y, int w, int h, const cha
   iupdrvDrawText(dc, str, (int)strlen(str), x, y, w, h, color, font, text_flags | IUP_DRAW_LAYOUTCENTER, text_orientation);  /* layout is always center here */
 }
 
-static void iFlatGetIconPosition(int icon_width, int icon_height, int *x, int *y, int width, int height, int horiz_alignment, int vert_alignment)
+static void iFlatGetIconPosition(int icon_width, int icon_height, int* x, int* y, int width, int height, int horiz_alignment, int vert_alignment)
 {
   if (horiz_alignment == IUP_ALIGN_ARIGHT)
     *x = icon_width - width;
@@ -1358,7 +1358,7 @@ static void iFlatGetIconPosition(int icon_width, int icon_height, int *x, int *y
 
 static void iFlatGetImageTextPosition(int x, int y, int img_position, int spacing,
                                         int img_width, int img_height, int txt_width, int txt_height,
-                                        int *img_x, int *img_y, int *txt_x, int *txt_y)
+                                        int* img_x, int* img_y, int* txt_x, int* txt_y)
 {
   switch (img_position)
   {
@@ -1422,7 +1422,7 @@ static void iFlatGetImageTextPosition(int x, int y, int img_position, int spacin
 }
 
 IUP_SDK_API void iupFlatDrawGetIconSize(Ihandle* ih, int img_position, int spacing, int horiz_padding, int vert_padding,
-                            const char* imagename, const char* title, int *w, int *h, double text_orientation)
+                            const char* imagename, const char* title, int* w, int* h, double text_orientation)
 {
   if (imagename)
   {
@@ -1684,7 +1684,7 @@ IUP_SDK_API void iupFlatDrawCheckMark(IdrawCanvas* dc, int xmin, int xmax, int y
   iupdrvDrawPolygon(dc, points, 3, color, IUP_DRAW_STROKE, 2);
 }
 
-IUP_SDK_API void iupFlatDrawDrawCircle(IdrawCanvas* dc, int xc, int yc, int radius, int fill, int line_width, char *fgcolor, char *bgcolor, int active)
+IUP_SDK_API void iupFlatDrawDrawCircle(IdrawCanvas* dc, int xc, int yc, int radius, int fill, int line_width, char* fgcolor, char* bgcolor, int active)
 {
   int x1, y1, x2, y2;
   int style = (fill) ? IUP_DRAW_FILL : IUP_DRAW_STROKE;
@@ -1708,7 +1708,7 @@ static char* iFlatDrawGetImageName(Ihandle* ih, const char* baseattrib, const ch
   return iupAttribGetStr(ih, attrib);
 }
 
-IUP_SDK_API const char* iupFlatGetImageName(Ihandle* ih, const char* baseattrib, const char* basevalue, int press, int highlight, int active, int *make_inactive)
+IUP_SDK_API const char* iupFlatGetImageName(Ihandle* ih, const char* baseattrib, const char* basevalue, int press, int highlight, int active, int* make_inactive)
 {
   const char* imagename = NULL;
 
@@ -1749,7 +1749,7 @@ static char* iFlatDrawGetImageNameId(Ihandle* ih, const char* baseattrib, const 
   return iupAttribGetId(ih, attrib, id);
 }
 
-IUP_SDK_API const char* iupFlatGetImageNameId(Ihandle* ih, const char* baseattrib, int id, const char* basevalue, int press, int highlight, int active, int *make_inactive)
+IUP_SDK_API const char* iupFlatGetImageNameId(Ihandle* ih, const char* baseattrib, int id, const char* basevalue, int press, int highlight, int active, int* make_inactive)
 {
   const char* imagename = NULL;
 
@@ -1840,7 +1840,7 @@ IUP_SDK_API void iupFlatItemResetTip(Ihandle* ih)
     iFlatItemSetTipVisible(ih, tip);
 }
 
-IUP_SDK_API void iupFlatItemSetTip(Ihandle *ih, const char* tip)
+IUP_SDK_API void iupFlatItemSetTip(Ihandle* ih, const char* tip)
 {
   if (!iFlatItemCheckTip(ih, tip))
     iFlatItemSetTipVisible(ih, tip);

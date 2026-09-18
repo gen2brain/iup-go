@@ -33,10 +33,10 @@ typedef struct _Fl_Input_ Fl_Input_;
  * Event Handlers
  ****************************************************************************/
 
-IUP_DRV_API int iupfltkEnterLeaveEvent(Fl_Widget *widget, Ihandle* ih, int event);
+IUP_DRV_API int iupfltkEnterLeaveEvent(Fl_Widget* widget, Ihandle* ih, int event);
 IUP_DRV_API int iupfltkEditCheckMask(Ihandle* ih, Fl_Input_* input, int event, const char* cb_name, void* mask, int nc);
-IUP_DRV_API int iupfltkMouseMoveEvent(Fl_Widget *widget, Ihandle *ih);
-IUP_DRV_API int iupfltkMouseButtonEvent(Fl_Widget *widget, Ihandle *ih, int event);
+IUP_DRV_API int iupfltkMouseMoveEvent(Fl_Widget* widget, Ihandle* ih);
+IUP_DRV_API int iupfltkMouseButtonEvent(Fl_Widget* widget, Ihandle* ih, int event);
 
 /****************************************************************************
  * Widget Management
@@ -63,15 +63,15 @@ IUP_DRV_API int iupfltkIsWayland(void);
  * Focus Management
  ****************************************************************************/
 
-IUP_DRV_API int iupfltkFocusInOutEvent(Fl_Widget *widget, Ihandle* ih, int event);
-IUP_DRV_API void iupfltkSetCanFocus(Fl_Widget *widget, int can);
+IUP_DRV_API int iupfltkFocusInOutEvent(Fl_Widget* widget, Ihandle* ih, int event);
+IUP_DRV_API void iupfltkSetCanFocus(Fl_Widget* widget, int can);
 
 /****************************************************************************
  * Key Input Handling
  ****************************************************************************/
 
-IUP_DRV_API int iupfltkKeyPressEvent(Fl_Widget *widget, Ihandle* ih);
-IUP_DRV_API int iupfltkKeyReleaseEvent(Fl_Widget *widget, Ihandle* ih);
+IUP_DRV_API int iupfltkKeyPressEvent(Fl_Widget* widget, Ihandle* ih);
+IUP_DRV_API int iupfltkKeyReleaseEvent(Fl_Widget* widget, Ihandle* ih);
 IUP_DRV_API int iupfltkKeyDecode(void);
 IUP_DRV_API void iupfltkButtonKeySetStatus(int state, int button, char* status, int doubleclick);
 
@@ -96,7 +96,7 @@ IUP_DRV_API const char* iupfltkFormatGetLinkAtPos(Ihandle* ih, int pos);
 IUP_DRV_API int iupfltkFormatSetRemoveFormattingAttrib(Ihandle* ih, const char* value);
 IUP_DRV_API int iupfltkGetFontFromString(const char* font, int* fl_font, int* fl_size);
 IUP_DRV_API void iupfltkGetFontDecoration(Ihandle* ih, const char* font, int* underline, int* strikeout);
-IUP_DRV_API void iupfltkUpdateWidgetFont(Ihandle *ih, Fl_Widget* widget);
+IUP_DRV_API void iupfltkUpdateWidgetFont(Ihandle* ih, Fl_Widget* widget);
 
 /****************************************************************************
  * Native Handle Access

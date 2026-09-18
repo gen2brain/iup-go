@@ -73,7 +73,7 @@ static char* iupStrReturnColor(long color)
   return iupStrReturnRGBA(r, g, b, a);
 }
 
-int iupStrToColor(const char* str, long *color)
+int iupStrToColor(const char* str, long* color)
 {
   unsigned char r, g, b, a;
   if (iupStrToRGBA(str, &r, &g, &b, &a))

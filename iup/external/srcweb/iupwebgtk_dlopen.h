@@ -119,63 +119,63 @@ typedef enum {
 /* --- Common Function Pointers --- */
 /* These functions have the same name in both APIs */
 static GtkWidget* (*webkit_web_view_new)(void);
-static const gchar* (*webkit_web_view_get_uri)(WebKitWebView *web_view);
-static void (*webkit_web_view_load_uri)(WebKitWebView *web_view, const gchar *uri);
-static void (*webkit_web_view_go_back)(WebKitWebView *web_view);
-static void (*webkit_web_view_go_forward)(WebKitWebView *web_view);
-static gboolean (*webkit_web_view_can_go_back)(WebKitWebView *web_view);
-static gboolean (*webkit_web_view_can_go_forward)(WebKitWebView *web_view);
-static void (*webkit_web_view_reload)(WebKitWebView *web_view);
-static void (*webkit_web_view_stop_loading)(WebKitWebView *web_view);
-static void (*webkit_web_view_set_editable)(WebKitWebView *web_view, gboolean editable);
-static gdouble (*webkit_web_view_get_zoom_level)(WebKitWebView *web_view);
-static void (*webkit_web_view_set_zoom_level)(WebKitWebView *web_view, gdouble zoom_level);
-static const gchar* (*webkit_network_request_get_uri)(WebKitNetworkRequest *request);
+static const gchar* (*webkit_web_view_get_uri)(WebKitWebView* web_view);
+static void (*webkit_web_view_load_uri)(WebKitWebView* web_view, const gchar* uri);
+static void (*webkit_web_view_go_back)(WebKitWebView* web_view);
+static void (*webkit_web_view_go_forward)(WebKitWebView* web_view);
+static gboolean (*webkit_web_view_can_go_back)(WebKitWebView* web_view);
+static gboolean (*webkit_web_view_can_go_forward)(WebKitWebView* web_view);
+static void (*webkit_web_view_reload)(WebKitWebView* web_view);
+static void (*webkit_web_view_stop_loading)(WebKitWebView* web_view);
+static void (*webkit_web_view_set_editable)(WebKitWebView* web_view, gboolean editable);
+static gdouble (*webkit_web_view_get_zoom_level)(WebKitWebView* web_view);
+static void (*webkit_web_view_set_zoom_level)(WebKitWebView* web_view, gdouble zoom_level);
+static const gchar* (*webkit_network_request_get_uri)(WebKitNetworkRequest* request);
 /* WK1 and WK2 use the same function name but different struct *return* types.
   The common function pointer uses the WK2 (WebKitBackForwardList*) type.
   When using WK1, the result must be cast to (WebKitWebBackForwardList*).
 */
-static WebKitBackForwardList* (*webkit_web_view_get_back_forward_list)(WebKitWebView *web_view);
+static WebKitBackForwardList* (*webkit_web_view_get_back_forward_list)(WebKitWebView* web_view);
 
 
 /* --- WebKit2 Function Pointers --- */
 static WebKitWebView* (*webkit_web_view_new_with_context)(void*); /* WK2 only */
-static WebKitBackForwardListItem* (*webkit_back_forward_list_get_nth_item)(WebKitBackForwardList *back_forward_list, gint index);
-static const gchar* (*webkit_back_forward_list_item_get_uri)(WebKitBackForwardListItem *item);
-static GList* (*webkit_back_forward_list_get_forward_list)(WebKitBackForwardList *back_forward_list);
-static GList* (*webkit_back_forward_list_get_back_list)(WebKitBackForwardList *back_forward_list);
-static void (*webkit_web_view_load_html)(WebKitWebView *web_view, const gchar *content, const gchar *base_uri);
-static WebKitWebResource* (*webkit_web_view_get_main_resource)(WebKitWebView *web_view);
-static void (*webkit_web_resource_get_data)(WebKitWebResource *resource, GCancellable *cancellable, GAsyncReadyCallback callback, gpointer user_data);
-static guchar* (*webkit_web_resource_get_data_finish)(WebKitWebResource *resource, GAsyncResult *result, gsize *length, GError **error);
-static void (*webkit_web_view_save_to_file)(WebKitWebView *web_view, GFile *file, WebKitSaveMode save_mode, GCancellable *cancellable, GAsyncReadyCallback callback, gpointer user_data);
-static void (*webkit_web_view_execute_editing_command)(WebKitWebView *web_view, const gchar *command);
-static void (*webkit_web_view_execute_editing_command_with_argument)(WebKitWebView *web_view, const gchar *command, const gchar* argument);
-static gboolean (*webkit_web_view_is_editable)(WebKitWebView *web_view);
-static WebKitPrintOperation* (*webkit_print_operation_new)(WebKitWebView *web_view);
-static void (*webkit_print_operation_run_dialog)(WebKitPrintOperation *print_operation, GtkWindow *parent);
-static void (*webkit_print_operation_print)(WebKitPrintOperation *print_operation);
+static WebKitBackForwardListItem* (*webkit_back_forward_list_get_nth_item)(WebKitBackForwardList* back_forward_list, gint index);
+static const gchar* (*webkit_back_forward_list_item_get_uri)(WebKitBackForwardListItem* item);
+static GList* (*webkit_back_forward_list_get_forward_list)(WebKitBackForwardList* back_forward_list);
+static GList* (*webkit_back_forward_list_get_back_list)(WebKitBackForwardList* back_forward_list);
+static void (*webkit_web_view_load_html)(WebKitWebView* web_view, const gchar* content, const gchar* base_uri);
+static WebKitWebResource* (*webkit_web_view_get_main_resource)(WebKitWebView* web_view);
+static void (*webkit_web_resource_get_data)(WebKitWebResource* resource, GCancellable* cancellable, GAsyncReadyCallback callback, gpointer user_data);
+static guchar* (*webkit_web_resource_get_data_finish)(WebKitWebResource* resource, GAsyncResult* result, gsize* length, GError** error);
+static void (*webkit_web_view_save_to_file)(WebKitWebView* web_view, GFile* file, WebKitSaveMode save_mode, GCancellable* cancellable, GAsyncReadyCallback callback, gpointer user_data);
+static void (*webkit_web_view_execute_editing_command)(WebKitWebView* web_view, const gchar* command);
+static void (*webkit_web_view_execute_editing_command_with_argument)(WebKitWebView* web_view, const gchar* command, const gchar* argument);
+static gboolean (*webkit_web_view_is_editable)(WebKitWebView* web_view);
+static WebKitPrintOperation* (*webkit_print_operation_new)(WebKitWebView* web_view);
+static void (*webkit_print_operation_run_dialog)(WebKitPrintOperation* print_operation, GtkWindow* parent);
+static void (*webkit_print_operation_print)(WebKitPrintOperation* print_operation);
 static gboolean (*webkit_web_view_is_loading)(WebKitWebView* web_view);
-static void (*webkit_web_view_run_javascript)(WebKitWebView *web_view, const gchar *script, GCancellable *cancellable, GAsyncReadyCallback callback, gpointer user_data);
-static WebKitJavascriptResult* (*webkit_web_view_run_javascript_finish)(WebKitWebView *web_view, GAsyncResult *result, GError **error);
-static JSGlobalContextRef (*webkit_javascript_result_get_global_context)(WebKitJavascriptResult *js_result);
-static JSValueRef (*webkit_javascript_result_get_value)(WebKitJavascriptResult *js_result);
-static JSCValue* (*webkit_javascript_result_get_js_value)(WebKitJavascriptResult *js_result);
-static void (*webkit_javascript_result_unref)(WebKitJavascriptResult *js_result);
-static WebKitNavigationAction* (*webkit_navigation_policy_decision_get_navigation_action)(WebKitNavigationPolicyDecision *decision);
-static WebKitURIRequest* (*webkit_navigation_action_get_request)(WebKitNavigationAction *navigation);
-static const gchar* (*webkit_uri_request_get_uri)(WebKitURIRequest *request);
+static void (*webkit_web_view_run_javascript)(WebKitWebView* web_view, const gchar* script, GCancellable* cancellable, GAsyncReadyCallback callback, gpointer user_data);
+static WebKitJavascriptResult* (*webkit_web_view_run_javascript_finish)(WebKitWebView* web_view, GAsyncResult* result, GError** error);
+static JSGlobalContextRef (*webkit_javascript_result_get_global_context)(WebKitJavascriptResult* js_result);
+static JSValueRef (*webkit_javascript_result_get_value)(WebKitJavascriptResult* js_result);
+static JSCValue* (*webkit_javascript_result_get_js_value)(WebKitJavascriptResult* js_result);
+static void (*webkit_javascript_result_unref)(WebKitJavascriptResult* js_result);
+static WebKitNavigationAction* (*webkit_navigation_policy_decision_get_navigation_action)(WebKitNavigationPolicyDecision* decision);
+static WebKitURIRequest* (*webkit_navigation_action_get_request)(WebKitNavigationAction* navigation);
+static const gchar* (*webkit_uri_request_get_uri)(WebKitURIRequest* request);
 static WebKitUserContentManager* (*webkit_user_content_manager_new)(void);
-static void (*webkit_user_content_manager_add_script)(WebKitUserContentManager *manager, WebKitUserScript *script);
-static gboolean (*webkit_user_content_manager_register_script_message_handler)(WebKitUserContentManager *manager, const gchar *name);
-static void (*webkit_user_content_manager_unregister_script_message_handler)(WebKitUserContentManager *manager, const gchar *name);
-static WebKitUserScript* (*webkit_user_script_new)(const gchar *source, WebKitUserContentInjectedFrames injected_frames, WebKitUserScriptInjectionTime injection_time, const gchar* const *whitelist, const gchar* const *blacklist);
-static void (*webkit_user_script_unref)(WebKitUserScript *user_script);
-static WebKitWebView* (*webkit_web_view_new_with_user_content_manager)(WebKitUserContentManager *user_content_manager);
-static WebKitUserContentManager* (*webkit_web_view_get_user_content_manager)(WebKitWebView *web_view);
+static void (*webkit_user_content_manager_add_script)(WebKitUserContentManager* manager, WebKitUserScript* script);
+static gboolean (*webkit_user_content_manager_register_script_message_handler)(WebKitUserContentManager* manager, const gchar* name);
+static void (*webkit_user_content_manager_unregister_script_message_handler)(WebKitUserContentManager* manager, const gchar* name);
+static WebKitUserScript* (*webkit_user_script_new)(const gchar* source, WebKitUserContentInjectedFrames injected_frames, WebKitUserScriptInjectionTime injection_time, const gchar* const* whitelist, const gchar* const* blacklist);
+static void (*webkit_user_script_unref)(WebKitUserScript* user_script);
+static WebKitWebView* (*webkit_web_view_new_with_user_content_manager)(WebKitUserContentManager* user_content_manager);
+static WebKitUserContentManager* (*webkit_web_view_get_user_content_manager)(WebKitWebView* web_view);
 
 /* --- JSCore Function Pointers (WebKit2 result handling, WebKit1 sync eval) --- */
-static JSGlobalContextRef (*webkit_web_frame_get_global_context)(WebKitWebFrame *frame);
+static JSGlobalContextRef (*webkit_web_frame_get_global_context)(WebKitWebFrame* frame);
 static JSStringRef (*JSStringCreateWithUTF8CString)(const char* string);
 static JSValueRef (*JSEvaluateScript)(JSGlobalContextRef ctx, JSStringRef script, JSObjectRef thisObject, JSStringRef sourceURL, int startingLineNumber, JSValueRef* exception);
 static JSStringRef (*JSValueToStringCopy)(JSGlobalContextRef ctx, JSValueRef value, JSValueRef* exception);
@@ -187,46 +187,46 @@ static int (*JSValueIsUndefined)(JSGlobalContextRef ctx, JSValueRef value);
 
 /* --- WebKit6 Function Pointers (GTK4) --- */
 /* webkit_web_view_evaluate_javascript replaces webkit_web_view_run_javascript */
-static void (*webkit_web_view_evaluate_javascript)(WebKitWebView *web_view, const char *script, gssize length, const char *world_name, const char *source_uri, GCancellable *cancellable, GAsyncReadyCallback callback, gpointer user_data);
-static JSCValue* (*webkit_web_view_evaluate_javascript_finish)(WebKitWebView *web_view, GAsyncResult *result, GError **error);
+static void (*webkit_web_view_evaluate_javascript)(WebKitWebView* web_view, const char* script, gssize length, const char* world_name, const char* source_uri, GCancellable* cancellable, GAsyncReadyCallback callback, gpointer user_data);
+static JSCValue* (*webkit_web_view_evaluate_javascript_finish)(WebKitWebView* web_view, GAsyncResult* result, GError** error);
 /* WebKit6 basic function takes world_name (3 params vs 2 in WK2) */
-static gboolean (*webkit_user_content_manager_register_script_message_handler_wk6)(WebKitUserContentManager *manager, const char *name, const char *world_name);
-static void (*webkit_user_content_manager_unregister_script_message_handler_wk6)(WebKitUserContentManager *manager, const char *name, const char *world_name);
+static gboolean (*webkit_user_content_manager_register_script_message_handler_wk6)(WebKitUserContentManager* manager, const char* name, const char* world_name);
+static void (*webkit_user_content_manager_unregister_script_message_handler_wk6)(WebKitUserContentManager* manager, const char* name, const char* world_name);
 
 /* --- JSCore GObject Function Pointers (for JavaScript in WebKit6) --- */
-static char* (*jsc_value_to_string)(JSCValue *value);
-static gboolean (*jsc_value_is_null)(JSCValue *value);
-static gboolean (*jsc_value_is_undefined)(JSCValue *value);
-static gboolean (*jsc_value_is_number)(JSCValue *value);
-static gboolean (*jsc_value_is_string)(JSCValue *value);
-static gboolean (*jsc_value_is_boolean)(JSCValue *value);
-static JSCContext* (*jsc_value_get_context)(JSCValue *value);
-static JSCException* (*jsc_context_get_exception)(JSCContext *context);
-static char* (*jsc_exception_get_message)(JSCException *exception);
+static char* (*jsc_value_to_string)(JSCValue* value);
+static gboolean (*jsc_value_is_null)(JSCValue* value);
+static gboolean (*jsc_value_is_undefined)(JSCValue* value);
+static gboolean (*jsc_value_is_number)(JSCValue* value);
+static gboolean (*jsc_value_is_string)(JSCValue* value);
+static gboolean (*jsc_value_is_boolean)(JSCValue* value);
+static JSCContext* (*jsc_value_get_context)(JSCValue* value);
+static JSCException* (*jsc_context_get_exception)(JSCContext* context);
+static char* (*jsc_exception_get_message)(JSCException* exception);
 
 /* --- WebKit1 Function Pointers --- */
-static WebKitWebHistoryItem* (*webkit_web_back_forward_list_get_nth_item)(WebKitWebBackForwardList *back_forward_list, gint index);
-static const gchar* (*webkit_web_history_item_get_uri)(WebKitWebHistoryItem *item);
-static gint (*webkit_web_back_forward_list_get_forward_length)(WebKitWebBackForwardList *back_forward_list);
-static gint (*webkit_web_back_forward_list_get_back_length)(WebKitWebBackForwardList *back_forward_list);
-static void (*webkit_web_view_load_string)(WebKitWebView *web_view, const gchar *content, const gchar *mime_type, const gchar *encoding, const gchar *base_uri);
-static WebKitWebFrame* (*webkit_web_view_get_main_frame)(WebKitWebView *web_view);
-static WebKitWebDataSource* (*webkit_web_frame_get_data_source)(WebKitWebFrame *frame);
+static WebKitWebHistoryItem* (*webkit_web_back_forward_list_get_nth_item)(WebKitWebBackForwardList* back_forward_list, gint index);
+static const gchar* (*webkit_web_history_item_get_uri)(WebKitWebHistoryItem* item);
+static gint (*webkit_web_back_forward_list_get_forward_length)(WebKitWebBackForwardList* back_forward_list);
+static gint (*webkit_web_back_forward_list_get_back_length)(WebKitWebBackForwardList* back_forward_list);
+static void (*webkit_web_view_load_string)(WebKitWebView* web_view, const gchar* content, const gchar* mime_type, const gchar* encoding, const gchar* base_uri);
+static WebKitWebFrame* (*webkit_web_view_get_main_frame)(WebKitWebView* web_view);
+static WebKitWebDataSource* (*webkit_web_frame_get_data_source)(WebKitWebFrame* frame);
 static GString* (*webkit_web_data_source_get_data)(WebKitWebDataSource* data_source);
-static void (*webkit_web_frame_print)(WebKitWebFrame *frame);
-static void (*webkit_web_view_cut_clipboard)(WebKitWebView *web_view);
-static void (*webkit_web_view_copy_clipboard)(WebKitWebView *web_view);
-static void (*webkit_web_view_paste_clipboard)(WebKitWebView *web_view);
-static void (*webkit_web_view_undo)(WebKitWebView *web_view);
-static void (*webkit_web_view_redo)(WebKitWebView *web_view);
-static gboolean (*webkit_web_view_can_paste_clipboard)(WebKitWebView *web_view);
-static void (*webkit_web_view_select_all)(WebKitWebView *web_view);
-static gboolean (*webkit_web_view_get_editable)(WebKitWebView *web_view);
-static WebKitLoadStatus (*webkit_web_view_get_load_status)(WebKitWebView *web_view);
-static void (*webkit_web_view_go_back_or_forward)(WebKitWebView *web_view, gint steps);
-static void (*webkit_web_view_execute_script)(WebKitWebView *web_view, const gchar *script);
-static const gchar* (*webkit_web_frame_get_uri)(WebKitWebFrame *frame);
-static WebKitWebNavigationAction* (*webkit_web_policy_decision_get_navigation_action)(WebKitWebPolicyDecision *policy_decision);
+static void (*webkit_web_frame_print)(WebKitWebFrame* frame);
+static void (*webkit_web_view_cut_clipboard)(WebKitWebView* web_view);
+static void (*webkit_web_view_copy_clipboard)(WebKitWebView* web_view);
+static void (*webkit_web_view_paste_clipboard)(WebKitWebView* web_view);
+static void (*webkit_web_view_undo)(WebKitWebView* web_view);
+static void (*webkit_web_view_redo)(WebKitWebView* web_view);
+static gboolean (*webkit_web_view_can_paste_clipboard)(WebKitWebView* web_view);
+static void (*webkit_web_view_select_all)(WebKitWebView* web_view);
+static gboolean (*webkit_web_view_get_editable)(WebKitWebView* web_view);
+static WebKitLoadStatus (*webkit_web_view_get_load_status)(WebKitWebView* web_view);
+static void (*webkit_web_view_go_back_or_forward)(WebKitWebView* web_view, gint steps);
+static void (*webkit_web_view_execute_script)(WebKitWebView* web_view, const gchar* script);
+static const gchar* (*webkit_web_frame_get_uri)(WebKitWebFrame* frame);
+static WebKitWebNavigationAction* (*webkit_web_policy_decision_get_navigation_action)(WebKitWebPolicyDecision* policy_decision);
 
 
 static void iupgtkWebBrowser_ClearDLSymbols()

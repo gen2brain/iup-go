@@ -418,7 +418,7 @@ static void eGLCanvasGetActualSize(Ihandle* ih, IGlControlData* gldata, int* phy
   if (*physical_height < 1) *physical_height = 1;
 }
 
-static int eGLCanvasDefaultResize(Ihandle *ih, int width, int height)
+static int eGLCanvasDefaultResize(Ihandle* ih, int width, int height)
 {
   IGlControlData* gldata = (IGlControlData*)iupAttribGet(ih, "_IUP_GLCONTROLDATA");
   int physical_width, physical_height;
@@ -618,7 +618,7 @@ static int eGLCanvasChooseConfig(Ihandle* ih, IGlControlData* gldata, int visual
   return 1;
 }
 
-static char* eGLCanvasGetVisualAttrib(Ihandle *ih)
+static char* eGLCanvasGetVisualAttrib(Ihandle* ih)
 {
   return iupEGLBackendGetVisual(ih);
 }

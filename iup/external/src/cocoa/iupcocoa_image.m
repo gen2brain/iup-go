@@ -254,7 +254,7 @@ static NSImage* cocoaImageWrapBitmapRep(NSBitmapImageRep* bitmap, int width, int
 
 
 
-static int cocoaImageGetRawInfo(void* handle, int *w, int *h, int *bpp, iupColor* colors, int *colors_count)
+static int cocoaImageGetRawInfo(void* handle, int* w, int* h, int* bpp, iupColor* colors, int* colors_count)
 {
   /* indexed images are converted to RGB(A) automatically, so there is no palette to read */
   (void)colors;
@@ -262,19 +262,19 @@ static int cocoaImageGetRawInfo(void* handle, int *w, int *h, int *bpp, iupColor
   return iupdrvImageGetInfo(handle, w, h, bpp);
 }
 
-IUP_SDK_API int iupdrvImageGetRawInfo(void* handle, int *w, int *h, int *bpp, iupColor* colors, int *colors_count)
+IUP_SDK_API int iupdrvImageGetRawInfo(void* handle, int* w, int* h, int* bpp, iupColor* colors, int* colors_count)
 {
   @autoreleasepool {
     return cocoaImageGetRawInfo(handle, w, h, bpp, colors, colors_count);
   }
 }
 
-static NSImage* iupCocoaCreateNSImage(Ihandle *ih, const char* bgcolor, int make_inactive)
+static NSImage* iupCocoaCreateNSImage(Ihandle* ih, const char* bgcolor, int make_inactive)
 {
   int width = ih->currentwidth;
   int height = ih->currentheight;
   int bpp = iupAttribGetInt(ih, "BPP");
-  unsigned char *imgdata = (unsigned char*)iupAttribGetStr(ih, "WID");
+  unsigned char* imgdata = (unsigned char*)iupAttribGetStr(ih, "WID");
   unsigned char bg_r=0, bg_g=0, bg_b=0;
   int flat_alpha = iupAttribGetBoolean(ih, "FLAT_ALPHA");
 
@@ -284,7 +284,7 @@ static NSImage* iupCocoaCreateNSImage(Ihandle *ih, const char* bgcolor, int make
   if (!bitmap_image)
     return NULL;
 
-  unsigned char *pixels = [bitmap_image bitmapData];
+  unsigned char* pixels = [bitmap_image bitmapData];
   NSInteger bytes_per_row = [bitmap_image bytesPerRow];
 
   if (bpp == 32)
@@ -399,7 +399,7 @@ static NSImage* iupCocoaCreateNSImage(Ihandle *ih, const char* bgcolor, int make
   return ns_image;
 }
 
-static void* cocoaImageCreateImage(Ihandle *ih, const char* bgcolor, int make_inactive)
+static void* cocoaImageCreateImage(Ihandle* ih, const char* bgcolor, int make_inactive)
 {
   NSImage* ns_image = iupCocoaCreateNSImage(ih, bgcolor, make_inactive);
 
@@ -413,14 +413,14 @@ static void* cocoaImageCreateImage(Ihandle *ih, const char* bgcolor, int make_in
   return ns_image;
 }
 
-IUP_SDK_API void* iupdrvImageCreateImage(Ihandle *ih, const char* bgcolor, int make_inactive)
+IUP_SDK_API void* iupdrvImageCreateImage(Ihandle* ih, const char* bgcolor, int make_inactive)
 {
   @autoreleasepool {
     return cocoaImageCreateImage(ih, bgcolor, make_inactive);
   }
 }
 
-static void* cocoaImageCreateIcon(Ihandle *ih)
+static void* cocoaImageCreateIcon(Ihandle* ih)
 {
   NSImage* ns_image = iupCocoaCreateNSImage(ih, NULL, 0);
 
@@ -434,19 +434,19 @@ static void* cocoaImageCreateIcon(Ihandle *ih)
   return ns_image;
 }
 
-IUP_SDK_API void* iupdrvImageCreateIcon(Ihandle *ih)
+IUP_SDK_API void* iupdrvImageCreateIcon(Ihandle* ih)
 {
   @autoreleasepool {
     return cocoaImageCreateIcon(ih);
   }
 }
 
-static void* cocoaImageCreateCursor(Ihandle *ih)
+static void* cocoaImageCreateCursor(Ihandle* ih)
 {
   int hx=0, hy=0;
   iupStrToIntInt(iupAttribGet(ih, "HOTSPOT"), &hx, &hy, ':');
 
-  NSImage *image = iupCocoaCreateNSImage(ih, NULL, 0);
+  NSImage* image = iupCocoaCreateNSImage(ih, NULL, 0);
   if (!image)
   {
     return NULL;
@@ -455,7 +455,7 @@ static void* cocoaImageCreateCursor(Ihandle *ih)
   NSSize size = [image size];
   NSPoint hotSpot = NSMakePoint(hx, size.height - 1 - hy);
 
-  NSCursor *cursor = [[NSCursor alloc] initWithImage:image hotSpot:hotSpot];
+  NSCursor* cursor = [[NSCursor alloc] initWithImage:image hotSpot:hotSpot];
   [image release];
 
   if (cursor)
@@ -468,7 +468,7 @@ static void* cocoaImageCreateCursor(Ihandle *ih)
   return cursor;
 }
 
-IUP_SDK_API void* iupdrvImageCreateCursor(Ihandle *ih)
+IUP_SDK_API void* iupdrvImageCreateCursor(Ihandle* ih)
 {
   @autoreleasepool {
     return cocoaImageCreateCursor(ih);
@@ -536,7 +536,7 @@ IUP_SDK_API void* iupdrvImageLoad(const char* name, int type)
   }
 }
 
-static int cocoaImageGetInfo(void* handle, int *w, int *h, int *bpp)
+static int cocoaImageGetInfo(void* handle, int* w, int* h, int* bpp)
 {
   if (w) *w = 0;
   if (h) *h = 0;
@@ -548,7 +548,7 @@ static int cocoaImageGetInfo(void* handle, int *w, int *h, int *bpp)
   if (![(__bridge id)handle isKindOfClass:[NSImage class]])
     return 0;
 
-  NSImage *image = (__bridge NSImage*)handle;
+  NSImage* image = (__bridge NSImage*)handle;
   NSBitmapImageRep* bitmap = nil;
 
   for(NSImageRep* image_rep in [image representations])
@@ -578,7 +578,7 @@ static int cocoaImageGetInfo(void* handle, int *w, int *h, int *bpp)
   return 1;
 }
 
-IUP_SDK_API int iupdrvImageGetInfo(void* handle, int *w, int *h, int *bpp)
+IUP_SDK_API int iupdrvImageGetInfo(void* handle, int* w, int* h, int* bpp)
 {
   @autoreleasepool {
     return cocoaImageGetInfo(handle, w, h, bpp);

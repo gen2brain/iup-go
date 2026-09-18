@@ -155,7 +155,7 @@ protected:
     iupAttribSet(ih, "_IUPLIST_DRAGITEM", NULL);
   }
 
-  void dropEvent(QDropEvent *event) override
+  void dropEvent(QDropEvent* event) override
   {
     int drag_id = iupAttribGetInt(ih, "_IUPLIST_DRAGITEM");
 
@@ -237,7 +237,7 @@ protected:
     iupAttribSet(ih, "_IUPLIST_DRAGITEM", NULL);
   }
 
-  void dragEnterEvent(QDragEnterEvent *event) override
+  void dragEnterEvent(QDragEnterEvent* event) override
   {
     if (event->mimeData()->hasFormat("application/x-iup-list-item"))
     {
@@ -249,7 +249,7 @@ protected:
     }
   }
 
-  void dragMoveEvent(QDragMoveEvent *event) override
+  void dragMoveEvent(QDragMoveEvent* event) override
   {
     if (event->mimeData()->hasFormat("application/x-iup-list-item"))
     {
@@ -399,7 +399,7 @@ public:
 
   IupQtListItemDelegate(Ihandle* ih_param) : ih(ih_param) {}
 
-  void paint(QPainter *painter, const QStyleOptionViewItem &option,
+  void paint(QPainter* painter, const QStyleOptionViewItem &option,
              const QModelIndex &index) const override
   {
     QStyleOptionViewItem opt = option;
@@ -624,7 +624,7 @@ static void iupqtListMeasureItemMetrics(Ihandle* ih)
   }
 }
 
-extern "C" IUP_SDK_API void iupdrvListAddItemSpace(Ihandle* ih, int *h)
+extern "C" IUP_SDK_API void iupdrvListAddItemSpace(Ihandle* ih, int* h)
 {
   iupqtListMeasureItemMetrics(ih);
   *h += iupqt_list_item_space;
@@ -700,7 +700,7 @@ static void iupqtListMeasureBorders(Ihandle* ih)
   (void)ih;
 }
 
-extern "C" IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
+extern "C" IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int* x, int* y)
 {
   iupqtListMeasureBorders(ih);
 

@@ -22,7 +22,7 @@
 IUP_API void IupRefreshChildren(Ihandle* ih)
 {
   int shrink;
-  Ihandle *dialog, *child;
+  Ihandle* dialog, *child;
 
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
@@ -95,7 +95,7 @@ IUP_API void IupUpdate(Ihandle* ih)
     iupdrvPostRedraw(ih);
 }
 
-static void iLayoutDisplayUpdateChildren(Ihandle *ih)
+static void iLayoutDisplayUpdateChildren(Ihandle* ih)
 {
   Ihandle* child;
   for (child = ih->firstchild; child; child = child->brother)
@@ -114,7 +114,7 @@ IUP_API void IupUpdateChildren(Ihandle* ih)
   iLayoutDisplayUpdateChildren(ih);
 }
 
-static void iLayoutDisplayRedrawChildren(Ihandle *ih)
+static void iLayoutDisplayRedrawChildren(Ihandle* ih)
 {
   Ihandle* child;
   for (child = ih->firstchild; child; child = child->brother)
@@ -189,7 +189,7 @@ IUP_SDK_API void iupLayoutCompute(Ihandle* ih)
   iupBaseSetPosition(ih, 0, 0);
 }
 
-IUP_SDK_API void iupLayoutApplyMinMaxSize(Ihandle* ih, int *w, int *h)
+IUP_SDK_API void iupLayoutApplyMinMaxSize(Ihandle* ih, int* w, int* h)
 {
   if (ih->flags & IUP_MINSIZE)
   {

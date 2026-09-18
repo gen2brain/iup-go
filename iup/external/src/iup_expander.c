@@ -1415,7 +1415,7 @@ static char* iExpanderGetExtraButtonsAttrib(Ihandle* ih)
 |* Methods                                                                   *|
 \*****************************************************************************/
 
-static void iExpanderComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *children_expand)
+static void iExpanderComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* children_expand)
 {
   int child_expand = 0,
       natural_w, natural_h;
@@ -1708,7 +1708,7 @@ Iclass* iupExpanderNewClass(void)
 
 IUP_API Ihandle* IupExpander(Ihandle* child)
 {
-  void *children[2];
+  void* children[2];
   children[0] = (void*)child;
   children[1] = NULL;
   return IupCreatev("expander", children);

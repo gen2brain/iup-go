@@ -75,46 +75,46 @@ static int gtkTableImageModelCol(int iup_col);
 /* Custom Virtual Tree Model Implementation                                  */
 /* ========================================================================= */
 
-static void iup_gtk_virtual_model_tree_model_init(GtkTreeModelIface *iface);
+static void iup_gtk_virtual_model_tree_model_init(GtkTreeModelIface* iface);
 
 G_DEFINE_TYPE_WITH_CODE(IupGtkVirtualModel, iup_gtk_virtual_model, G_TYPE_OBJECT,
                         G_IMPLEMENT_INTERFACE(GTK_TYPE_TREE_MODEL, iup_gtk_virtual_model_tree_model_init))
 
-static void iup_gtk_virtual_model_init(IupGtkVirtualModel *model)
+static void iup_gtk_virtual_model_init(IupGtkVirtualModel* model)
 {
   model->stamp = g_random_int();
 }
 
-static void iup_gtk_virtual_model_class_init(IupGtkVirtualModelClass *klass)
+static void iup_gtk_virtual_model_class_init(IupGtkVirtualModelClass* klass)
 {
 }
 
 /* GtkTreeModel interface implementation */
 
-static GtkTreeModelFlags iup_gtk_virtual_model_get_flags(GtkTreeModel *tree_model)
+static GtkTreeModelFlags iup_gtk_virtual_model_get_flags(GtkTreeModel* tree_model)
 {
   return GTK_TREE_MODEL_LIST_ONLY;  /* Flat list, no hierarchy */
 }
 
-static gint iup_gtk_virtual_model_get_n_columns(GtkTreeModel *tree_model)
+static gint iup_gtk_virtual_model_get_n_columns(GtkTreeModel* tree_model)
 {
-  IupGtkVirtualModel *model = IUP_GTK_VIRTUAL_MODEL(tree_model);
+  IupGtkVirtualModel* model = IUP_GTK_VIRTUAL_MODEL(tree_model);
   if (!model->ih) return 0;
   return gtkTableModelColCount(model->ih);
 }
 
-static GType iup_gtk_virtual_model_get_column_type(GtkTreeModel *tree_model, gint index)
+static GType iup_gtk_virtual_model_get_column_type(GtkTreeModel* tree_model, gint index)
 {
-  IupGtkVirtualModel *model = IUP_GTK_VIRTUAL_MODEL(tree_model);
+  IupGtkVirtualModel* model = IUP_GTK_VIRTUAL_MODEL(tree_model);
   if (model->ih && model->ih->data->show_image && (index % 2 == 0))
     return GDK_TYPE_PIXBUF;
   return G_TYPE_STRING;
 }
 
-static gboolean iup_gtk_virtual_model_get_iter(GtkTreeModel *tree_model, GtkTreeIter *iter, GtkTreePath *path)
+static gboolean iup_gtk_virtual_model_get_iter(GtkTreeModel* tree_model, GtkTreeIter* iter, GtkTreePath* path)
 {
-  IupGtkVirtualModel *model = IUP_GTK_VIRTUAL_MODEL(tree_model);
-  gint *indices = gtk_tree_path_get_indices(path);
+  IupGtkVirtualModel* model = IUP_GTK_VIRTUAL_MODEL(tree_model);
+  gint* indices = gtk_tree_path_get_indices(path);
   gint depth = gtk_tree_path_get_depth(path);
 
   if (depth != 1)
@@ -132,9 +132,9 @@ static gboolean iup_gtk_virtual_model_get_iter(GtkTreeModel *tree_model, GtkTree
   return TRUE;
 }
 
-static GtkTreePath *iup_gtk_virtual_model_get_path(GtkTreeModel *tree_model, GtkTreeIter *iter)
+static GtkTreePath* iup_gtk_virtual_model_get_path(GtkTreeModel* tree_model, GtkTreeIter* iter)
 {
-  IupGtkVirtualModel *model = IUP_GTK_VIRTUAL_MODEL(tree_model);
+  IupGtkVirtualModel* model = IUP_GTK_VIRTUAL_MODEL(tree_model);
 
   if (iter->stamp != model->stamp)
     return NULL;
@@ -143,9 +143,9 @@ static GtkTreePath *iup_gtk_virtual_model_get_path(GtkTreeModel *tree_model, Gtk
   return gtk_tree_path_new_from_indices(row, -1);
 }
 
-static void iup_gtk_virtual_model_get_value(GtkTreeModel *tree_model, GtkTreeIter *iter, gint column, GValue *value)
+static void iup_gtk_virtual_model_get_value(GtkTreeModel* tree_model, GtkTreeIter* iter, gint column, GValue* value)
 {
-  IupGtkVirtualModel *model = IUP_GTK_VIRTUAL_MODEL(tree_model);
+  IupGtkVirtualModel* model = IUP_GTK_VIRTUAL_MODEL(tree_model);
 
   if (iter->stamp != model->stamp)
     return;
@@ -189,7 +189,7 @@ static void iup_gtk_virtual_model_get_value(GtkTreeModel *tree_model, GtkTreeIte
   sIFnii value_cb = (sIFnii)IupGetCallback(model->ih, "VALUE_CB");
   if (value_cb)
   {
-    char *cell_value = value_cb(model->ih, row + 1, iup_col + 1);
+    char* cell_value = value_cb(model->ih, row + 1, iup_col + 1);
     if (cell_value)
     {
       g_value_set_string(value, cell_value);
@@ -200,9 +200,9 @@ static void iup_gtk_virtual_model_get_value(GtkTreeModel *tree_model, GtkTreeIte
   g_value_set_string(value, "");
 }
 
-static gboolean iup_gtk_virtual_model_iter_next(GtkTreeModel *tree_model, GtkTreeIter *iter)
+static gboolean iup_gtk_virtual_model_iter_next(GtkTreeModel* tree_model, GtkTreeIter* iter)
 {
-  IupGtkVirtualModel *model = IUP_GTK_VIRTUAL_MODEL(tree_model);
+  IupGtkVirtualModel* model = IUP_GTK_VIRTUAL_MODEL(tree_model);
 
   if (iter->stamp != model->stamp)
     return FALSE;
@@ -217,9 +217,9 @@ static gboolean iup_gtk_virtual_model_iter_next(GtkTreeModel *tree_model, GtkTre
   return TRUE;
 }
 
-static gboolean iup_gtk_virtual_model_iter_children(GtkTreeModel *tree_model, GtkTreeIter *iter, GtkTreeIter *parent)
+static gboolean iup_gtk_virtual_model_iter_children(GtkTreeModel* tree_model, GtkTreeIter* iter, GtkTreeIter* parent)
 {
-  IupGtkVirtualModel *model = IUP_GTK_VIRTUAL_MODEL(tree_model);
+  IupGtkVirtualModel* model = IUP_GTK_VIRTUAL_MODEL(tree_model);
 
   if (parent != NULL)
     return FALSE;
@@ -232,14 +232,14 @@ static gboolean iup_gtk_virtual_model_iter_children(GtkTreeModel *tree_model, Gt
   return TRUE;
 }
 
-static gboolean iup_gtk_virtual_model_iter_has_child(GtkTreeModel *tree_model, GtkTreeIter *iter)
+static gboolean iup_gtk_virtual_model_iter_has_child(GtkTreeModel* tree_model, GtkTreeIter* iter)
 {
   return FALSE;  /* Flat list has no children */
 }
 
-static gint iup_gtk_virtual_model_iter_n_children(GtkTreeModel *tree_model, GtkTreeIter *iter)
+static gint iup_gtk_virtual_model_iter_n_children(GtkTreeModel* tree_model, GtkTreeIter* iter)
 {
-  IupGtkVirtualModel *model = IUP_GTK_VIRTUAL_MODEL(tree_model);
+  IupGtkVirtualModel* model = IUP_GTK_VIRTUAL_MODEL(tree_model);
 
   if (iter == NULL)
     return model->ih->data->num_lin;
@@ -247,9 +247,9 @@ static gint iup_gtk_virtual_model_iter_n_children(GtkTreeModel *tree_model, GtkT
   return 0;
 }
 
-static gboolean iup_gtk_virtual_model_iter_nth_child(GtkTreeModel *tree_model, GtkTreeIter *iter, GtkTreeIter *parent, gint n)
+static gboolean iup_gtk_virtual_model_iter_nth_child(GtkTreeModel* tree_model, GtkTreeIter* iter, GtkTreeIter* parent, gint n)
 {
-  IupGtkVirtualModel *model = IUP_GTK_VIRTUAL_MODEL(tree_model);
+  IupGtkVirtualModel* model = IUP_GTK_VIRTUAL_MODEL(tree_model);
 
   if (parent != NULL)
     return FALSE;
@@ -262,12 +262,12 @@ static gboolean iup_gtk_virtual_model_iter_nth_child(GtkTreeModel *tree_model, G
   return TRUE;
 }
 
-static gboolean iup_gtk_virtual_model_iter_parent(GtkTreeModel *tree_model, GtkTreeIter *iter, GtkTreeIter *child)
+static gboolean iup_gtk_virtual_model_iter_parent(GtkTreeModel* tree_model, GtkTreeIter* iter, GtkTreeIter* child)
 {
   return FALSE;  /* Flat list has no parents */
 }
 
-static void iup_gtk_virtual_model_tree_model_init(GtkTreeModelIface *iface)
+static void iup_gtk_virtual_model_tree_model_init(GtkTreeModelIface* iface)
 {
   iface->get_flags = iup_gtk_virtual_model_get_flags;
   iface->get_n_columns = iup_gtk_virtual_model_get_n_columns;
@@ -283,9 +283,9 @@ static void iup_gtk_virtual_model_tree_model_init(GtkTreeModelIface *iface)
   iface->iter_parent = iup_gtk_virtual_model_iter_parent;
 }
 
-static IupGtkVirtualModel *iup_gtk_virtual_model_new(Ihandle *ih)
+static IupGtkVirtualModel* iup_gtk_virtual_model_new(Ihandle* ih)
 {
-  IupGtkVirtualModel *model = g_object_new(IUP_TYPE_GTK_VIRTUAL_MODEL, NULL);
+  IupGtkVirtualModel* model = g_object_new(IUP_TYPE_GTK_VIRTUAL_MODEL, NULL);
   model->ih = ih;
   return model;
 }

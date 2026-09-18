@@ -145,7 +145,7 @@ static void cocoaCalendarLayoutUpdateMethod(Ihandle* ih)
   }
 }
 
-static void cocoaCalendarComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *children_expand)
+static void cocoaCalendarComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* children_expand)
 {
   (void)children_expand;
 

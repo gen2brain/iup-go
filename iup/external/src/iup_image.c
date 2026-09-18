@@ -23,17 +23,17 @@
 #include "iup_draw.h"
 
 
-void iupImageResizeRGBA(int src_width, int src_height, unsigned char *src_map, int dst_width, int dst_height, unsigned char *dst_map, int depth)
+void iupImageResizeRGBA(int src_width, int src_height, unsigned char* src_map, int dst_width, int dst_height, unsigned char* dst_map, int depth)
 {
   /* Do bilinear interpolation */
 
-  unsigned char *line_mapl, *line_maph;
+  unsigned char* line_mapl, *line_maph;
   double t, u, src_x, src_y, factor;
   int xl, yl, xh, yh, x, y;
-  unsigned char *fhh, *fll, *fhl, *flh;
+  unsigned char* fhh, *fll, *fhl, *flh;
 
-  int *XL = (int*)malloc(dst_width * sizeof(int));
-  double *T = (double*)malloc(dst_width * sizeof(double));
+  int* XL = (int*)malloc(dst_width * sizeof(int));
+  double* T = (double*)malloc(dst_width * sizeof(double));
   if (!XL || !T) { free(XL); free(T); return; }
 
   factor = (double)src_width / (double)dst_width;
@@ -82,11 +82,11 @@ void iupImageResizeRGBA(int src_width, int src_height, unsigned char *src_map, i
   free(T);
 }
 
-static void iDataStretchMap(int src_width, int src_height, unsigned char *src_map, int dst_width, int dst_height, unsigned char *dst_map)
+static void iDataStretchMap(int src_width, int src_height, unsigned char* src_map, int dst_width, int dst_height, unsigned char* dst_map)
 {
   int x, y, offset;
   double factor;
-  unsigned char *line_map;
+  unsigned char* line_map;
   int* XTab = (int*)malloc(dst_width*sizeof(int));
   if (!XTab) return;
 
@@ -124,7 +124,7 @@ static void iImageResize(Ihandle* ih, int new_width, int new_height)
   if (new_width <= 0 || new_height <= 0 || new_width > 32767 || new_height > 32767)
     return;
   count = new_width*new_height*channels;
-  new_imgdata = (unsigned char *)malloc(count);
+  new_imgdata = (unsigned char*)malloc(count);
   if (!new_imgdata)
     return;
 
@@ -150,7 +150,7 @@ typedef struct _IimageStock
   int can_resize;
 } IimageStock;
 
-static Itable *istock_table = NULL;   /* the image hash table indexed by the name string */
+static Itable* istock_table = NULL;   /* the image hash table indexed by the name string */
 
 void iupImageStockInit(void)
 {
@@ -176,7 +176,7 @@ void iupImageStockFinish(void)
   istock_table = NULL;
 }
 
-IUP_SDK_API void iupImageStockSet(const char *name, iupImageStockCreateFunc func, const char* native_name)
+IUP_SDK_API void iupImageStockSet(const char* name, iupImageStockCreateFunc func, const char* native_name)
 {
   IimageStock* istock = (IimageStock*)iupTableGet(istock_table, name);
   if (istock)
@@ -195,7 +195,7 @@ IUP_SDK_API void iupImageStockSet(const char *name, iupImageStockCreateFunc func
   iupTableSet(istock_table, name, (void*)istock, IUPTABLE_POINTER);
 }
 
-IUP_SDK_API void iupImageStockSetNoResize(const char *name, iupImageStockCreateFunc func, const char* native_name)
+IUP_SDK_API void iupImageStockSetNoResize(const char* name, iupImageStockCreateFunc func, const char* native_name)
 {
   IimageStock* istock = (IimageStock*)iupTableGet(istock_table, name);
   if (istock)
@@ -292,7 +292,7 @@ static void iImageStockUnload(const char* name)
     istock->image = NULL;
 }
 
-static void iImageStockLoad(const char *name)
+static void iImageStockLoad(const char* name)
 {
   /* Used only in iupImageStockLoadAll */
   const char* native_name = NULL;
@@ -341,7 +341,7 @@ int iupImageNormBpp(int bpp)
   return 32;
 }
 
-static void iupColorSet(iupColor *c, unsigned char r, unsigned char g, unsigned char b, unsigned char a)
+static void iupColorSet(iupColor* c, unsigned char r, unsigned char g, unsigned char b, unsigned char a)
 {
   c->r = r;
   c->g = g;
@@ -349,9 +349,9 @@ static void iupColorSet(iupColor *c, unsigned char r, unsigned char g, unsigned 
   c->a = a;
 }
 
-IUP_SDK_API int iupImageInitColorTable(Ihandle *ih, iupColor* colors, int *colors_count)
+IUP_SDK_API int iupImageInitColorTable(Ihandle* ih, iupColor* colors, int* colors_count)
 {
-  char *value;
+  char* value;
   unsigned char red, green, blue;
   int i, has_alpha = 0;
   static iupColor default_colors[16] = {
@@ -412,9 +412,9 @@ IUP_SDK_API int iupImageInitColorTable(Ihandle *ih, iupColor* colors, int *color
   return has_alpha;
 }
 
-void iupImageInitNonBgColors(Ihandle* ih, unsigned char *colors)
+void iupImageInitNonBgColors(Ihandle* ih, unsigned char* colors)
 {
-  char *value;
+  char* value;
   int i;
 
   memset(colors, 0, 256);
@@ -437,7 +437,7 @@ void iupImageInitNonBgColors(Ihandle* ih, unsigned char *colors)
   }
 }
 
-IUP_SDK_API void iupImageColorMakeInactive(unsigned char *r, unsigned char *g, unsigned char *b, unsigned char bg_r, unsigned char bg_g, unsigned char bg_b)
+IUP_SDK_API void iupImageColorMakeInactive(unsigned char* r, unsigned char* g, unsigned char* b, unsigned char bg_r, unsigned char bg_g, unsigned char bg_b)
 {
   if (*r != bg_r || *g != bg_g || *b != bg_b)  /* preserve colors identical to the background color */
   {
@@ -562,7 +562,7 @@ Ihandle* iupImageGetImageFromName(const char* name)
 void* iupImageGetIcon(const char* name)
 {
   void* icon;
-  Ihandle *ih;
+  Ihandle* ih;
 
   if (!name)
     return NULL;
@@ -606,7 +606,7 @@ void* iupImageGetIcon(const char* name)
 void* iupImageGetCursor(const char* name)
 {
   void* cursor;
-  Ihandle *ih;
+  Ihandle* ih;
 
   if (!name)
     return NULL;
@@ -641,7 +641,7 @@ IUP_SDK_API void* iupImageGetImage(const char* name, Ihandle* ih_parent, int mak
   char cache_name[100];
   char* img_bgcolor;
   void* handle;
-  Ihandle *ih;
+  Ihandle* ih;
   int bg_concat = 0;
   int pos;
 
@@ -727,7 +727,7 @@ IUP_SDK_API void* iupImageGetImage(const char* name, Ihandle* ih_parent, int mak
   return handle;
 }
 
-IUP_SDK_API unsigned char* iupImageGetRGBAData(Ihandle* ih, int make_inactive, const char* bgcolor, int *img_w, int *img_h)
+IUP_SDK_API unsigned char* iupImageGetRGBAData(Ihandle* ih, int make_inactive, const char* bgcolor, int* img_w, int* img_h)
 {
   unsigned char* imgdata;
   unsigned char* rgba;
@@ -803,7 +803,7 @@ IUP_SDK_API void* iupImageGetImageTint(const char* name, Ihandle* ih_parent, int
   char cache_name[100];
   char* img_bgcolor;
   void* handle;
-  Ihandle *ih, *tmp;
+  Ihandle* ih, *tmp;
   unsigned char* rgba;
   unsigned char tr, tg, tb, ta;
   int img_w, img_h, i, count, pos;
@@ -870,9 +870,9 @@ IUP_SDK_API void* iupImageGetImageTint(const char* name, Ihandle* ih_parent, int
   return handle;
 }
 
-IUP_SDK_API void iupImageGetInfo(const char* name, int *w, int *h, int *bpp)
+IUP_SDK_API void iupImageGetInfo(const char* name, int* w, int* h, int* bpp)
 {
-  Ihandle *ih;
+  Ihandle* ih;
 
   if (!name)
     return;
@@ -956,7 +956,7 @@ IUP_API Ihandle* IupImageFromHandle(void* handle)
 IUP_API Ihandle* IupImageGetHandle(const char* name)
 {
   /* Used in additional controls where WID is mandatory - IupMatrix, IupGLControls and IupPlot */
-  Ihandle *ih;
+  Ihandle* ih;
   const char* native_name = NULL;
   void* handle;
 
@@ -1093,7 +1093,7 @@ IUP_API unsigned char* IupImageSaveToBuffer(Ihandle* ih, const char* format, int
 
 void iupImageRemoveFromCache(Ihandle* ih, void* handle)
 {
-  char *name;
+  char* name;
   void* cur_handle;
 
   name = iupTableFirst(ih->attrib);
@@ -1115,7 +1115,7 @@ void iupImageRemoveFromCache(Ihandle* ih, void* handle)
 
 static void iImageClearCache(Ihandle* ih)
 {
-  char *name;
+  char* name;
   void* handle;
 
   handle = iupAttribGet(ih, "_IUPIMAGE_MASK");
@@ -1206,14 +1206,14 @@ static void iImageClearCache(Ihandle* ih)
 
 /******************************************************************************/
 
-static int iImageSetClearCacheAttrib(Ihandle *ih, const char* value)
+static int iImageSetClearCacheAttrib(Ihandle* ih, const char* value)
 {
   iImageClearCache(ih);
   (void)value;
   return 0;
 }
 
-static int iImageSetReshapeAttrib(Ihandle *ih, const char* value)
+static int iImageSetReshapeAttrib(Ihandle* ih, const char* value)
 {
   int w, h;
 
@@ -1234,7 +1234,7 @@ static int iImageSetReshapeAttrib(Ihandle *ih, const char* value)
       unsigned char* new_imgdata;
       if (channels < 1)
         channels = 3;
-      new_imgdata = (unsigned char *)realloc(imgdata, sizeof(unsigned char)*w*h * channels);
+      new_imgdata = (unsigned char*)realloc(imgdata, sizeof(unsigned char)*w*h * channels);
       if (!new_imgdata)
         return 0;
       iupAttribSet(ih, "WID", (char*)new_imgdata);
@@ -1246,7 +1246,7 @@ static int iImageSetReshapeAttrib(Ihandle *ih, const char* value)
   return 0;
 }
 
-static int iImageSetResizeAttrib(Ihandle *ih, const char* value)
+static int iImageSetResizeAttrib(Ihandle* ih, const char* value)
 {
   int new_width, new_height;
 
@@ -1266,12 +1266,12 @@ static int iImageSetResizeAttrib(Ihandle *ih, const char* value)
   return 0;
 }
 
-static char* iImageGetWidthAttrib(Ihandle *ih)
+static char* iImageGetWidthAttrib(Ihandle* ih)
 {
   return iupStrReturnInt(ih->currentwidth);
 }
 
-static char* iImageGetHeightAttrib(Ihandle *ih)
+static char* iImageGetHeightAttrib(Ihandle* ih)
 {
   return iupStrReturnInt(ih->currentheight);
 }
@@ -1290,7 +1290,7 @@ static char* iImageGetRasterSizeAttrib(Ihandle* ih)
   return iupStrReturnIntInt(width, height, 'x');
 }
 
-static int iImageSetIdValueAttrib(Ihandle *ih, int id, const char* value)
+static int iImageSetIdValueAttrib(Ihandle* ih, int id, const char* value)
 {
   (void)ih;
   (void)value;
@@ -1299,7 +1299,7 @@ static int iImageSetIdValueAttrib(Ihandle *ih, int id, const char* value)
   return 1;
 }
 
-static char* iImageGetIdValueAttrib(Ihandle *ih, int id)
+static char* iImageGetIdValueAttrib(Ihandle* ih, int id)
 {
   return iupAttribGetId(ih, "", id);
 }
@@ -1309,7 +1309,7 @@ static char* iImageGetIdValueAttrib(Ihandle *ih, int id)
 static int iImageCreate(Ihandle* ih, void** params, int bpp)
 {
   int width, height, channels, count;
-  unsigned char *imgdata;
+  unsigned char* imgdata;
 
   iupASSERT(params != NULL);
   if (!params)
@@ -1334,7 +1334,7 @@ static int iImageCreate(Ihandle* ih, void** params, int bpp)
     channels = 4;
 
   count = width*height*channels;
-  imgdata = (unsigned char *)malloc(count);
+  imgdata = (unsigned char*)malloc(count);
   if (!imgdata)
     return IUP_ERROR;
 
@@ -1505,9 +1505,9 @@ IUP_SDK_API unsigned char* iupImageWriteBMP(unsigned char* imgdata, int width, i
 
 /******************************************************************************/
 
-IUP_API Ihandle* IupImage(int width, int height, const unsigned char *imgdata)
+IUP_API Ihandle* IupImage(int width, int height, const unsigned char* imgdata)
 {
-  void *params[4];
+  void* params[4];
   params[0] = (void*)(intptr_t)width;
   params[1] = (void*)(intptr_t)height;
   params[2] = imgdata ? (void*)imgdata : (void*)(intptr_t)-1;
@@ -1515,9 +1515,9 @@ IUP_API Ihandle* IupImage(int width, int height, const unsigned char *imgdata)
   return IupCreatev("image", params);
 }
 
-IUP_API Ihandle* IupImageRGB(int width, int height, const unsigned char *imgdata)
+IUP_API Ihandle* IupImageRGB(int width, int height, const unsigned char* imgdata)
 {
-  void *params[4];
+  void* params[4];
   params[0] = (void*)(intptr_t)width;
   params[1] = (void*)(intptr_t)height;
   params[2] = imgdata ? (void*)imgdata : (void*)(intptr_t)-1;
@@ -1525,9 +1525,9 @@ IUP_API Ihandle* IupImageRGB(int width, int height, const unsigned char *imgdata
   return IupCreatev("imagergb", params);
 }
 
-IUP_API Ihandle* IupImageRGBA(int width, int height, const unsigned char *imgdata)
+IUP_API Ihandle* IupImageRGBA(int width, int height, const unsigned char* imgdata)
 {
-  void *params[4];
+  void* params[4];
   params[0] = (void*)(intptr_t)width;
   params[1] = (void*)(intptr_t)height;
   params[2] = imgdata ? (void*)imgdata : (void*)(intptr_t)-1;

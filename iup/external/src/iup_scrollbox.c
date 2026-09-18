@@ -24,7 +24,7 @@
 |* Canvas Callbacks                                                          *|
 \*****************************************************************************/
 
-static void iScrollBoxUpdateChildPos(Ihandle *ih)
+static void iScrollBoxUpdateChildPos(Ihandle* ih)
 {
   if (ih->firstchild)
   {
@@ -43,7 +43,7 @@ static void iScrollBoxUpdateChildPos(Ihandle *ih)
   }
 }
 
-static int iScrollBoxScroll_CB(Ihandle *ih, int op, float posx, float posy)
+static int iScrollBoxScroll_CB(Ihandle* ih, int op, float posx, float posy)
 {
   if ((op == IUP_SBDRAGH || op == IUP_SBDRAGV) && !iupAttribGetBoolean(ih, "LAYOUTDRAG"))
     return IUP_DEFAULT;
@@ -55,7 +55,7 @@ static int iScrollBoxScroll_CB(Ihandle *ih, int op, float posx, float posy)
   return IUP_DEFAULT;
 }
 
-static void iScrollBoxSetPos(Ihandle *ih, int posx, int posy)
+static void iScrollBoxSetPos(Ihandle* ih, int posx, int posy)
 {
   IupSetInt(ih, "POSX", posx);
   IupSetInt(ih, "POSY", posy);
@@ -63,7 +63,7 @@ static void iScrollBoxSetPos(Ihandle *ih, int posx, int posy)
   iScrollBoxUpdateChildPos(ih);
 }
 
-static int iScrollBoxButton_CB(Ihandle *ih, int but, int pressed, int x, int y, char* status)
+static int iScrollBoxButton_CB(Ihandle* ih, int but, int pressed, int x, int y, char* status)
 {
   if (but==IUP_BUTTON1 && pressed)
   {
@@ -79,7 +79,7 @@ static int iScrollBoxButton_CB(Ihandle *ih, int but, int pressed, int x, int y, 
   return IUP_DEFAULT;
 }
 
-static int iScrollBoxMotion_CB(Ihandle *ih, int x, int y, char* status)
+static int iScrollBoxMotion_CB(Ihandle* ih, int x, int y, char* status)
 {
   if (iup_isbutton1(status) && iupAttribGet(ih, "_IUP_DRAG_SB"))
   {
@@ -101,7 +101,7 @@ static int iScrollBoxMotion_CB(Ihandle *ih, int x, int y, char* status)
 |* Attributes                                                                *|
 \*****************************************************************************/
 
-static int iScrollBoxGetChildPosition(Ihandle* ih, Ihandle* child, int *posx, int *posy)
+static int iScrollBoxGetChildPosition(Ihandle* ih, Ihandle* child, int* posx, int* posy)
 {
   while (child->parent && child != ih)
   {
@@ -179,7 +179,7 @@ static int iScrollBoxSetExpandAttrib(Ihandle* ih, const char* value)
 \*****************************************************************************/
 
 
-static void iScrollBoxComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *children_expand)
+static void iScrollBoxComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* children_expand)
 {
   Ihandle* child = ih->firstchild;
   if (child)
@@ -434,7 +434,7 @@ Iclass* iupScrollBoxNewClass(void)
 
 IUP_API Ihandle* IupScrollBox(Ihandle* child)
 {
-  void *children[2];
+  void* children[2];
   children[0] = (void*)child;
   children[1] = NULL;
   return IupCreatev("scrollbox", children);

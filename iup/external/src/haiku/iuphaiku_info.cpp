@@ -38,14 +38,14 @@ extern "C" IUP_SDK_API int iupdrvScaleNaturalPx(int natural)
   return natural;
 }
 
-extern "C" IUP_SDK_API void iupdrvAddScreenOffset(int *x, int *y, int add)
+extern "C" IUP_SDK_API void iupdrvAddScreenOffset(int* x, int* y, int add)
 {
   (void)x;
   (void)y;
   (void)add;
 }
 
-extern "C" IUP_SDK_API void iupdrvGetScreenSize(int *w, int *h)
+extern "C" IUP_SDK_API void iupdrvGetScreenSize(int* w, int* h)
 {
   BScreen screen;
   BRect frame = screen.Frame();
@@ -53,7 +53,7 @@ extern "C" IUP_SDK_API void iupdrvGetScreenSize(int *w, int *h)
   if (h) *h = frame.IntegerHeight() + 1;
 }
 
-extern "C" IUP_SDK_API void iupdrvGetFullSize(int *w, int *h)
+extern "C" IUP_SDK_API void iupdrvGetFullSize(int* w, int* h)
 {
   iupdrvGetScreenSize(w, h);
 }
@@ -77,7 +77,7 @@ extern "C" IUP_SDK_API double iupdrvGetScreenDpi(void)
   return 96.0;
 }
 
-extern "C" IUP_SDK_API void iupdrvGetCursorPos(int *x, int *y)
+extern "C" IUP_SDK_API void iupdrvGetCursorPos(int* x, int* y)
 {
   BPoint where;
   uint32 buttons = 0;
@@ -143,7 +143,7 @@ extern "C" IUP_SDK_API int iupdrvSetCurrentDirectory(const char* dir)
   return chdir(dir) == 0 ? 1 : 0;
 }
 
-extern "C" IUP_SDK_API int iupdrvGetUserDir(char *path, int size, int kind)
+extern "C" IUP_SDK_API int iupdrvGetUserDir(char* path, int size, int kind)
 {
   if (!path || size <= 0) return 0;
   directory_which which = B_USER_DIRECTORY;
@@ -161,7 +161,7 @@ extern "C" IUP_SDK_API int iupdrvGetUserDir(char *path, int size, int kind)
   return 1;
 }
 
-extern "C" IUP_SDK_API int iupdrvGetPreferencePath(char *filename, const char *app_name, int use_system)
+extern "C" IUP_SDK_API int iupdrvGetPreferencePath(char* filename, const char* app_name, int use_system)
 {
   if (!filename) return 0;
   if (!app_name || !app_name[0]) { filename[0] = '\0'; return 0; }

@@ -28,7 +28,7 @@ IUP_SDK_API void iupFlatScrollBarMotionUpdate(Ihandle* ih, int x, int y);
    so the canvas can be redrawn while scrolling the flatscrollbars */
 
 /* For now, used only in IupFlatScrollBox */
-IUP_SDK_API void iupFlatScrollBarSetPos(Ihandle *ih, int posx, int posy);
+IUP_SDK_API void iupFlatScrollBarSetPos(Ihandle* ih, int posx, int posy);
 
 
 #ifdef __cplusplus

@@ -44,7 +44,7 @@ IUP_API void IupConfigCopy(Ihandle* ih1, Ihandle* ih2, const char* exclude_prefi
 
 /****************************************************************/
 
-IUP_API void IupConfigSetListVariable(Ihandle* ih, const char *group, const char* key, const char* value, int add);
+IUP_API void IupConfigSetListVariable(Ihandle* ih, const char* group, const char* key, const char* value, int add);
 
 IUP_API void IupConfigRecentInit(Ihandle* ih, Ihandle* menu, Icallback recent_cb, int max_recent);
 IUP_API void IupConfigRecentUpdate(Ihandle* ih, const char* filename);

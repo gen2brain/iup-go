@@ -150,7 +150,7 @@ static void fltkScrollbarCallback(Fl_Widget* w, void* data)
   }
 }
 
-extern "C" IUP_SDK_API void iupdrvScrollbarGetMinSize(Ihandle* ih, int *w, int *h)
+extern "C" IUP_SDK_API void iupdrvScrollbarGetMinSize(Ihandle* ih, int* w, int* h)
 {
   if (ih->data->orientation == ISCROLLBAR_HORIZONTAL)
   {

@@ -124,7 +124,7 @@ static char* iAnimatedLabelGetAnimationHandleAttrib(Ihandle* ih)
 
 static int iAnimatedLabelSetAnimationAttrib(Ihandle* ih, const char* value)
 {
-  Ihandle *animation;
+  Ihandle* animation;
 
   if (!value)
     return 0;
@@ -138,13 +138,13 @@ static int iAnimatedLabelSetAnimationAttrib(Ihandle* ih, const char* value)
 
 static char* iAnimatedLabelGetAnimationAttrib(Ihandle* ih)
 {
-  Ihandle *animation = (Ihandle*)iAnimatedLabelGetAnimationHandleAttrib(ih);
+  Ihandle* animation = (Ihandle*)iAnimatedLabelGetAnimationHandleAttrib(ih);
   return IupGetName(animation);
 }
 
 static char* iAnimatedLabelGetFrameCountAttrib(Ihandle* ih)
 {
-  Ihandle *animation = (Ihandle*)iAnimatedLabelGetAnimationHandleAttrib(ih);
+  Ihandle* animation = (Ihandle*)iAnimatedLabelGetAnimationHandleAttrib(ih);
   return iupStrReturnInt(IupGetChildCount(animation));
 }
 
@@ -211,7 +211,7 @@ Iclass* iupAnimatedLabelNewClass(void)
 
 IUP_API Ihandle* IupAnimatedLabel(Ihandle* animation)
 {
-  void *params[2];
+  void* params[2];
   params[0] = (void*)animation;
   params[1] = NULL;
   return IupCreatev("animatedlabel", params);

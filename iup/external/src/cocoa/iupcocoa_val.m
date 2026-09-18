@@ -63,7 +63,7 @@ static const void* IUP_COCOA_SLIDER_RECEIVER_OBJ_KEY = "IUP_COCOA_SLIDER_RECEIVE
   return YES;
 }
 
-- (void)keyDown:(NSEvent *)event
+- (void)keyDown:(NSEvent*)event
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
   if (!ih)
@@ -132,7 +132,7 @@ static const void* IUP_COCOA_SLIDER_RECEIVER_OBJ_KEY = "IUP_COCOA_SLIDER_RECEIVE
 
 @end
 
-IUP_SDK_API void iupdrvValGetMinSize(Ihandle* ih, int *w, int *h)
+IUP_SDK_API void iupdrvValGetMinSize(Ihandle* ih, int* w, int* h)
 {
   int ticks_size = 0;
   if (iupAttribGetInt(ih, "SHOWTICKS") > 0)

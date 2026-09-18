@@ -22,7 +22,7 @@
 
 IUPJNI_DECLARE_CLASS_STATIC(IupClipboardHelper);
 
-static int androidClipboardSetTextAttrib(Ihandle *ih, const char *value)
+static int androidClipboardSetTextAttrib(Ihandle* ih, const char* value)
 {
   (void)ih;
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
@@ -37,7 +37,7 @@ static int androidClipboardSetTextAttrib(Ihandle *ih, const char *value)
   return 0;
 }
 
-static char* androidClipboardGetTextAttrib(Ihandle *ih)
+static char* androidClipboardGetTextAttrib(Ihandle* ih)
 {
   (void)ih;
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
@@ -57,7 +57,7 @@ static char* androidClipboardGetTextAttrib(Ihandle *ih)
   return value;
 }
 
-static char* androidClipboardGetTextAvailableAttrib(Ihandle *ih)
+static char* androidClipboardGetTextAvailableAttrib(Ihandle* ih)
 {
   (void)ih;
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
@@ -70,7 +70,7 @@ static char* androidClipboardGetTextAvailableAttrib(Ihandle *ih)
   return iupStrReturnBoolean((int)available);
 }
 
-static int androidClipboardSetNativeImageAttrib(Ihandle *ih, const char *value)
+static int androidClipboardSetNativeImageAttrib(Ihandle* ih, const char* value)
 {
   (void)ih;
   if (!value) return 0;
@@ -84,7 +84,7 @@ static int androidClipboardSetNativeImageAttrib(Ihandle *ih, const char *value)
   return 0;
 }
 
-static char* androidClipboardGetNativeImageAttrib(Ihandle *ih)
+static char* androidClipboardGetNativeImageAttrib(Ihandle* ih)
 {
   (void)ih;
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
@@ -101,7 +101,7 @@ static char* androidClipboardGetNativeImageAttrib(Ihandle *ih)
   return (char*)global;
 }
 
-static int androidClipboardSetImageAttrib(Ihandle *ih, const char *value)
+static int androidClipboardSetImageAttrib(Ihandle* ih, const char* value)
 {
   void* bitmap;
   if (!value) return 0;
@@ -112,7 +112,7 @@ static int androidClipboardSetImageAttrib(Ihandle *ih, const char *value)
   return androidClipboardSetNativeImageAttrib(ih, (const char*)bitmap);
 }
 
-static char* androidClipboardGetImageAvailableAttrib(Ihandle *ih)
+static char* androidClipboardGetImageAvailableAttrib(Ihandle* ih)
 {
   (void)ih;
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
@@ -124,13 +124,13 @@ static char* androidClipboardGetImageAvailableAttrib(Ihandle *ih)
   return iupStrReturnBoolean(available == JNI_TRUE);
 }
 
-static int androidClipboardSetAddFormatAttrib(Ihandle *ih, const char *value)
+static int androidClipboardSetAddFormatAttrib(Ihandle* ih, const char* value)
 {
   (void)ih; (void)value;
   return 0;
 }
 
-static char* androidClipboardGetFormatAvailableAttrib(Ihandle *ih)
+static char* androidClipboardGetFormatAvailableAttrib(Ihandle* ih)
 {
   char* format = iupAttribGetStr(ih, "FORMAT");
   if (!format)
@@ -148,7 +148,7 @@ static char* androidClipboardGetFormatAvailableAttrib(Ihandle *ih)
   return iupStrReturnBoolean((int)available);
 }
 
-static int androidClipboardSetFormatDataStringAttrib(Ihandle *ih, const char *value)
+static int androidClipboardSetFormatDataStringAttrib(Ihandle* ih, const char* value)
 {
   char* format = iupAttribGetStr(ih, "FORMAT");
   if (!format)
@@ -171,7 +171,7 @@ static int androidClipboardSetFormatDataStringAttrib(Ihandle *ih, const char *va
   return 0;
 }
 
-static char* androidClipboardGetFormatDataStringAttrib(Ihandle *ih)
+static char* androidClipboardGetFormatDataStringAttrib(Ihandle* ih)
 {
   char* format = iupAttribGetStr(ih, "FORMAT");
   if (!format)

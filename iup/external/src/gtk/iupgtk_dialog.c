@@ -44,7 +44,7 @@ static void gtkDialogSetMinMax(Ihandle* ih, int min_w, int min_h, int max_w, int
                      Utilities
 ****************************************************************/
 
-static gboolean gtkDialogChildDestroyEvent(GtkWidget *widget, Ihandle *ih)
+static gboolean gtkDialogChildDestroyEvent(GtkWidget* widget, Ihandle* ih)
 {
   (void)widget;
 
@@ -69,7 +69,7 @@ IUP_SDK_API int iupdrvDialogIsVisible(Ihandle* ih)
   return iupdrvIsVisible(ih);
 }
 
-IUP_SDK_API void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* handle, int *w, int *h)
+IUP_SDK_API void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* handle, int* w, int* h)
 {
   int width, height;
   int border = 0, caption = 0, menu;
@@ -105,7 +105,7 @@ IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
     gtk_widget_hide(ih->handle);
 }
 
-IUP_SDK_API void iupdrvDialogGetPosition(Ihandle *ih, InativeHandle* handle, int *x, int *y)
+IUP_SDK_API void iupdrvDialogGetPosition(Ihandle* ih, InativeHandle* handle, int* x, int* y)
 {
   if (!handle)
     handle = ih->handle;
@@ -124,7 +124,7 @@ IUP_SDK_API void iupdrvDialogGetPosition(Ihandle *ih, InativeHandle* handle, int
   }
 }
 
-IUP_SDK_API void iupdrvDialogSetPosition(Ihandle *ih, int x, int y)
+IUP_SDK_API void iupdrvDialogSetPosition(Ihandle* ih, int x, int y)
 {
   gtk_window_move((GtkWindow*)ih->handle, x, y);
 }
@@ -164,7 +164,7 @@ static int gtkDialogGetCSDShadowMargin(Ihandle* ih)
   return 0;
 }
 
-static void gtkDialogGetWindowDecor(Ihandle* ih, int *win_border, int *win_caption)
+static void gtkDialogGetWindowDecor(Ihandle* ih, int* win_border, int* win_caption)
 {
   GdkWindow* window = iupgtkGetWindow(ih->handle);
 
@@ -223,7 +223,7 @@ static void gtkDialogGetWindowDecor(Ihandle* ih, int *win_border, int *win_capti
   }
 }
 
-IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int *border, int *caption, int *menu)
+IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int* border, int* caption, int* menu)
 {
   static int native_border = 0;
   static int native_caption = 0;
@@ -387,7 +387,7 @@ IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
                      Callbacks and Events
 ****************************************************************/
 
-IUP_DRV_API gboolean iupgtkDialogDeleteEvent(GtkWidget *widget, GdkEvent *evt, Ihandle *ih)
+IUP_DRV_API gboolean iupgtkDialogDeleteEvent(GtkWidget* widget, GdkEvent* evt, Ihandle* ih)
 {
   Icallback cb;
   (void)widget;
@@ -415,7 +415,7 @@ IUP_DRV_API gboolean iupgtkDialogDeleteEvent(GtkWidget *widget, GdkEvent *evt, I
   return TRUE; /* do not propagate */
 }
 
-static gboolean gtkDialogConfigureEvent(GtkWidget *widget, GdkEventConfigure *evt, Ihandle *ih)
+static gboolean gtkDialogConfigureEvent(GtkWidget* widget, GdkEventConfigure* evt, Ihandle* ih)
 {
   int old_width, old_height, old_x, old_y;
   gint x, y;
@@ -579,7 +579,7 @@ static gboolean gtkDialogConfigureEvent(GtkWidget *widget, GdkEventConfigure *ev
   return FALSE;
 }
 
-static gboolean gtkDialogWindowStateEvent(GtkWidget *widget, GdkEventWindowState *evt, Ihandle *ih)
+static gboolean gtkDialogWindowStateEvent(GtkWidget* widget, GdkEventWindowState* evt, Ihandle* ih)
 {
   int state = -1;
   (void)widget;
@@ -898,7 +898,7 @@ static void gtkDialogUnMapMethod(Ihandle* ih)
   gtk_widget_destroy(ih->handle);
 }
 
-static void gtkDialogLayoutUpdateMethod(Ihandle *ih)
+static void gtkDialogLayoutUpdateMethod(Ihandle* ih)
 {
   int border, caption, menu;
   int width, height;
@@ -1079,7 +1079,7 @@ static char* gtkDialogGetActiveWindowAttrib(Ihandle* ih)
   return iupStrReturnBoolean(gtk_window_is_active((GtkWindow*)ih->handle));
 }
 
-static char* gtkDialogGetClientSizeAttrib(Ihandle *ih)
+static char* gtkDialogGetClientSizeAttrib(Ihandle* ih)
 {
   if (ih->handle)
   {
@@ -1092,7 +1092,7 @@ static char* gtkDialogGetClientSizeAttrib(Ihandle *ih)
     return iupDialogGetClientSizeAttrib(ih);
 }
 
-static char* gtkDialogGetClientOffsetAttrib(Ihandle *ih)
+static char* gtkDialogGetClientOffsetAttrib(Ihandle* ih)
 {
   /* remove the menu because it is placed inside the client area */
   return iupStrReturnIntInt(0, -gtkDialogGetMenuSize(ih), 'x');
@@ -1167,7 +1167,7 @@ static int gtkDialogSetTopMostAttrib(Ihandle* ih, const char* value)
 }
 
 #if GTK_CHECK_VERSION(2, 12, 0)
-static int gtkDialogSetOpacityAttrib(Ihandle *ih, const char *value)
+static int gtkDialogSetOpacityAttrib(Ihandle* ih, const char* value)
 {
   int opacity;
   if (!iupStrToInt(value, &opacity))
@@ -1197,7 +1197,7 @@ static gboolean gtkDialogOpacityImageDraw(GtkWidget* widget, cairo_t* cr, Ihandl
 }
 #endif
 
-static int gtkDialogSetOpacityImageAttrib(Ihandle *ih, const char *value)
+static int gtkDialogSetOpacityImageAttrib(Ihandle* ih, const char* value)
 {
 #if GTK_CHECK_VERSION(3, 0, 0)
   GdkPixbuf* pixbuf;
@@ -1231,7 +1231,7 @@ static int gtkDialogSetOpacityImageAttrib(Ihandle *ih, const char *value)
 #endif
 }
 
-static int gtkDialogSetShapeImageAttrib(Ihandle *ih, const char *value)
+static int gtkDialogSetShapeImageAttrib(Ihandle* ih, const char* value)
 {
   GdkPixbuf* pixbuf = iupImageGetImage(value, ih, 0, NULL);
   if (pixbuf)
@@ -1240,7 +1240,7 @@ static int gtkDialogSetShapeImageAttrib(Ihandle *ih, const char *value)
     GdkWindow* window = iupgtkGetWindow(ih->handle);
     if (window)
     {
-      cairo_region_t *shape;
+      cairo_region_t* shape;
 
 #if GTK_CHECK_VERSION(3, 10, 0)
       cairo_surface_t* surface = gdk_cairo_surface_create_from_pixbuf(pixbuf, 0, window);
@@ -1276,7 +1276,7 @@ static int gtkDialogSetShapeImageAttrib(Ihandle *ih, const char *value)
 }
 #endif
 
-static int gtkDialogSetIconAttrib(Ihandle* ih, const char *value)
+static int gtkDialogSetIconAttrib(Ihandle* ih, const char* value)
 {
   if (!value)
     gtk_window_set_icon((GtkWindow*)ih->handle, NULL);
@@ -1399,7 +1399,7 @@ static int gtkDialogSetBackgroundAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-static int gtkDialogSetMenuBarKeyAttrib(Ihandle *ih, const char *value)
+static int gtkDialogSetMenuBarKeyAttrib(Ihandle* ih, const char* value)
 {
   GtkSettings* settings = gtk_widget_get_settings(ih->handle);
   if (settings)
@@ -1407,7 +1407,7 @@ static int gtkDialogSetMenuBarKeyAttrib(Ihandle *ih, const char *value)
   return 1;
 }
 
-static int gtkDialogSetHideTitleBarAttrib(Ihandle *ih, const char *value)
+static int gtkDialogSetHideTitleBarAttrib(Ihandle* ih, const char* value)
 {
   if (iupdrvIsVisible(ih))
   {

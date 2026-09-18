@@ -35,7 +35,7 @@ struct _Imask
         imax;
 };
 
-IUP_SDK_API int iupMaskCheck(Imask* mask, const char *val)
+IUP_SDK_API int iupMaskCheck(Imask* mask, const char* val)
 {
   int ret;
 

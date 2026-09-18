@@ -27,17 +27,17 @@ extern "C" {
 
 /** Retrieve the main desktop full size (size of the main monitor).
  * \ingroup drvinfo */
-IUP_SDK_API void iupdrvGetFullSize(int *width, int *height);
+IUP_SDK_API void iupdrvGetFullSize(int* width, int* height);
 
 /** Retrieve the main desktop available size (full size less taskbar/menubar space).
  * \ingroup drvinfo */
-IUP_SDK_API void iupdrvGetScreenSize(int *width, int *height);
+IUP_SDK_API void iupdrvGetScreenSize(int* width, int* height);
 
 /** Adds the main desktop offset because of a taskbar/menubar positioning.
  * Only useful in Windows. In X-Windows the position of the origin 0,0 is already adjusted
  * to be after the taskbar/menubar.
  * \ingroup drvinfo */
-IUP_SDK_API void iupdrvAddScreenOffset(int *x, int *y, int add);
+IUP_SDK_API void iupdrvAddScreenOffset(int* x, int* y, int add);
 
 /** Retrieve the default desktop bits per pixel.
  * \ingroup drvinfo */
@@ -53,7 +53,7 @@ IUP_SDK_API int iupdrvScaleNaturalPx(int px);
 
 /** Returns a string with the system version number.
  * \ingroup drvinfo */
-IUP_SDK_API char *iupdrvGetSystemVersion(void);
+IUP_SDK_API char* iupdrvGetSystemVersion(void);
 
 /** Returns a string with the system name.
  * \ingroup drvinfo */
@@ -76,7 +76,7 @@ IUP_SDK_API void iupdrvGetKeyState(char* key);
 
 /** Returns the current position of the mouse cursor.
  * \ingroup drvinfo */
-IUP_SDK_API void iupdrvGetCursorPos(int *x, int *y);
+IUP_SDK_API void iupdrvGetCursorPos(int* x, int* y);
 
 /** Returns the driver "Display" in UNIX and NULL in Windows.
  * Must be implemented somewhere else.
@@ -98,7 +98,7 @@ IUP_SDK_API char* iupdrvExeFileName(void);
 /** Returns the full path to a configuration file for the given app name.
  * Creates necessary directories if they don't exist.
  * \ingroup drvinfo */
-IUP_SDK_API int iupdrvGetPreferencePath(char *filename, const char *app_name, int use_system);
+IUP_SDK_API int iupdrvGetPreferencePath(char* filename, const char* app_name, int use_system);
 
 /** Per-user directory kinds for \ref iupdrvGetUserDir. \ingroup drvinfo */
 enum {
@@ -111,7 +111,7 @@ enum {
 /** Writes the per-user standard directory for the requested kind into \p path
  * (NUL-terminated, no trailing separator). Returns 1 on success, 0 otherwise.
  * \ingroup drvinfo */
-IUP_SDK_API int iupdrvGetUserDir(char *path, int size, int kind);
+IUP_SDK_API int iupdrvGetUserDir(char* path, int size, int kind);
 
 /** Changes the current directory.
 * \ingroup drvinfo */

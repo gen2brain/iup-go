@@ -445,7 +445,7 @@ static void cocoaTreeSetFocus(Ihandle* ih, int id);
   return [super frameOfOutlineCellAtRow:row];
 }
 
-- (NSMenu *)menuForEvent:(NSEvent *)event
+- (NSMenu*)menuForEvent:(NSEvent*)event
 {
   if (!iupAttribGet(self.ih, "_IUPCOCOA_CONTEXTMENU_SET"))
   {
@@ -461,7 +461,7 @@ static void cocoaTreeSetFocus(Ihandle* ih, int id);
   return nil;
 }
 
-- (void) rightMouseDown:(NSEvent *)event
+- (void) rightMouseDown:(NSEvent*)event
 {
   NSPoint point = [self convertPoint:[event locationInWindow] fromView:nil];
   NSInteger row = [self rowAtPoint:point];
@@ -471,7 +471,7 @@ static void cocoaTreeSetFocus(Ihandle* ih, int id);
     IFni cb = (IFni)IupGetCallback(self.ih, "RIGHTCLICK_CB");
     if (cb)
     {
-      IupCocoaTreeItem *item = [self itemAtRow:row];
+      IupCocoaTreeItem* item = [self itemAtRow:row];
       int item_id = iupTreeFindNodeId(self.ih, (InodeHandle*)item);
       cb(self.ih, item_id);
       return;
@@ -481,7 +481,7 @@ static void cocoaTreeSetFocus(Ihandle* ih, int id);
   [super rightMouseDown:event];
 }
 
-- (void) mouseDown:(NSEvent *)event
+- (void) mouseDown:(NSEvent*)event
 {
   if ([event clickCount] == 2)
   {
@@ -490,7 +490,7 @@ static void cocoaTreeSetFocus(Ihandle* ih, int id);
 
     if (row >= 0)
     {
-      IupCocoaTreeItem *item = [self itemAtRow:row];
+      IupCocoaTreeItem* item = [self itemAtRow:row];
       int kind = [item kind];
       int item_id = iupTreeFindNodeId(self.ih, (InodeHandle*)item);
 
@@ -533,7 +533,7 @@ static void cocoaTreeSetFocus(Ihandle* ih, int id);
 {
   Ihandle* ih = [self ih];
 
-  NSString *chars = [the_event characters];
+  NSString* chars = [the_event characters];
   if ([chars length] > 0)
   {
     unichar aChar = [chars characterAtIndex:0];
@@ -578,19 +578,19 @@ static void cocoaTreeSetFocus(Ihandle* ih, int id);
   if (!IupGetCallback(ih, "TIPS_CB"))
     return;
 
-  for (NSTrackingArea *area in [self trackingAreas]) {
+  for (NSTrackingArea* area in [self trackingAreas]) {
     if ([area owner] == self) {
       [self removeTrackingArea:area];
     }
   }
 
   NSTrackingAreaOptions options = NSTrackingMouseMoved | NSTrackingActiveInKeyWindow | NSTrackingInVisibleRect;
-  NSTrackingArea *trackingArea = [[NSTrackingArea alloc] initWithRect:[self bounds] options:options owner:self userInfo:nil];
+  NSTrackingArea* trackingArea = [[NSTrackingArea alloc] initWithRect:[self bounds] options:options owner:self userInfo:nil];
   [self addTrackingArea:trackingArea];
   [trackingArea release];
 }
 
-- (void)mouseMoved:(NSEvent *)event
+- (void)mouseMoved:(NSEvent*)event
 {
   [super mouseMoved:event];
 
@@ -652,7 +652,7 @@ static void cocoaTreeSetFocus(Ihandle* ih, int id);
 
 @implementation IupCocoaTreeTextField
 
-- (NSMenu *)textView:(NSTextView *)textView menu:(NSMenu *)menu forEvent:(NSEvent *)event atIndex:(NSUInteger)charIndex
+- (NSMenu*)textView:(NSTextView*)textView menu:(NSMenu*)menu forEvent:(NSEvent*)event atIndex:(NSUInteger)charIndex
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
   if (!ih)
@@ -683,9 +683,9 @@ static void cocoaTreeSetFocus(Ihandle* ih, int id);
   return nil;
 }
 
-- (void)controlTextDidEndEditing:(NSNotification *)notification
+- (void)controlTextDidEndEditing:(NSNotification*)notification
 {
-  IupCocoaOutlineView *outlineView = objc_getAssociatedObject(self, IUP_COCOA_TREE_TEXTFIELD_OWNER_KEY);
+  IupCocoaOutlineView* outlineView = objc_getAssociatedObject(self, IUP_COCOA_TREE_TEXTFIELD_OWNER_KEY);
   if (!outlineView)
     return;
 
@@ -721,7 +721,7 @@ static void cocoaTreeSetFocus(Ihandle* ih, int id);
   [item setTitle:newTitle];
 }
 
-- (BOOL)control:(NSControl *)control textShouldBeginEditing:(NSText *)fieldEditor
+- (BOOL)control:(NSControl*)control textShouldBeginEditing:(NSText*)fieldEditor
 {
     IupCocoaOutlineView* outline_view = objc_getAssociatedObject(self, IUP_COCOA_TREE_TEXTFIELD_OWNER_KEY);
     if (!outline_view) return YES;
@@ -742,7 +742,7 @@ static void cocoaTreeSetFocus(Ihandle* ih, int id);
     return YES;
 }
 
-- (void)controlTextDidBeginEditing:(NSNotification *)notification
+- (void)controlTextDidBeginEditing:(NSNotification*)notification
 {
     IupCocoaOutlineView* outline_view = objc_getAssociatedObject(self, IUP_COCOA_TREE_TEXTFIELD_OWNER_KEY);
     if (!outline_view) return;
@@ -1189,7 +1189,7 @@ static NSImage* helperGetActiveImageForTreeItem(IupCocoaTreeItem* tree_item, Iup
 }
 
 /* WARNING: This is another method that should be fast for performance. */
-- (NSView *)outlineView:(NSOutlineView*)outline_view viewForTableColumn:(NSTableColumn*)table_column item:(id)the_item
+- (NSView*)outlineView:(NSOutlineView*)outline_view viewForTableColumn:(NSTableColumn*)table_column item:(id)the_item
 {
   Ihandle* ih = [(IupCocoaOutlineView*)outline_view ih];
   IupCocoaTreeItem* tree_item = (IupCocoaTreeItem*)the_item;
@@ -1461,10 +1461,10 @@ static NSImage* helperGetActiveImageForTreeItem(IupCocoaTreeItem* tree_item, Iup
         if (ids)
         {
           __block int i = 0;
-          [unselected_set enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
+          [unselected_set enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL* stop) {
             if (idx < [outline_view numberOfRows])
             {
-              IupCocoaTreeItem *item = [outline_view itemAtRow:idx];
+              IupCocoaTreeItem* item = [outline_view itemAtRow:idx];
               if (item)
                 ids[i++] = iupTreeFindNodeId(ih, (InodeHandle*)item);
             }
@@ -1478,10 +1478,10 @@ static NSImage* helperGetActiveImageForTreeItem(IupCocoaTreeItem* tree_item, Iup
       }
       else if (single_selection_cb)
       {
-        [unselected_set enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
+        [unselected_set enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL* stop) {
           if (idx < [outline_view numberOfRows])
           {
-            IupCocoaTreeItem *item = [outline_view itemAtRow:idx];
+            IupCocoaTreeItem* item = [outline_view itemAtRow:idx];
             if (item)
               single_selection_cb(ih, iupTreeFindNodeId(ih, (InodeHandle*)item), 0);
           }
@@ -1506,10 +1506,10 @@ static NSImage* helperGetActiveImageForTreeItem(IupCocoaTreeItem* tree_item, Iup
       if (ids)
       {
         __block int i = 0;
-        [added_selected_set enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
+        [added_selected_set enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL* stop) {
           if (idx < [outline_view numberOfRows])
           {
-            IupCocoaTreeItem *item = [outline_view itemAtRow:idx];
+            IupCocoaTreeItem* item = [outline_view itemAtRow:idx];
             if (item)
               ids[i++] = iupTreeFindNodeId(ih, (InodeHandle*)item);
           }
@@ -1523,10 +1523,10 @@ static NSImage* helperGetActiveImageForTreeItem(IupCocoaTreeItem* tree_item, Iup
     }
     else if (single_selection_cb)
     {
-      [added_selected_set enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
+      [added_selected_set enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL* stop) {
         if (idx < [outline_view numberOfRows])
         {
-          IupCocoaTreeItem *item = [outline_view itemAtRow:idx];
+          IupCocoaTreeItem* item = [outline_view itemAtRow:idx];
           if (item)
             single_selection_cb(ih, iupTreeFindNodeId(ih, (InodeHandle*)item), 1);
         }
@@ -1545,7 +1545,7 @@ static NSImage* helperGetActiveImageForTreeItem(IupCocoaTreeItem* tree_item, Iup
   [self handleSelectionDidChange:outline_view];
 }
 
-- (NSTableRowView *)outlineView:(NSOutlineView *)outlineView rowViewForItem:(id)item
+- (NSTableRowView*)outlineView:(NSOutlineView*)outlineView rowViewForItem:(id)item
 {
   IupCocoaOutlineView* iup_outline_view = (IupCocoaOutlineView*)outlineView;
   IupCocoaTreeRowView* row_view = [outlineView makeViewWithIdentifier:@"IupTreeRow" owner:self];
@@ -1595,7 +1595,7 @@ static NSImage* helperGetActiveImageForTreeItem(IupCocoaTreeItem* tree_item, Iup
 
 - (void) iupCocoaTreeDoubleClickAction:(id)sender
 {
-  IupCocoaOutlineView *outlineView = (IupCocoaOutlineView*)sender;
+  IupCocoaOutlineView* outlineView = (IupCocoaOutlineView*)sender;
   NSInteger clickedRow = [outlineView clickedRow];
   if (clickedRow < 0)
   {
@@ -1604,7 +1604,7 @@ static NSImage* helperGetActiveImageForTreeItem(IupCocoaTreeItem* tree_item, Iup
 
   if (clickedRow >= 0)
   {
-    IupCocoaTreeItem *item = [outlineView itemAtRow:clickedRow];
+    IupCocoaTreeItem* item = [outlineView itemAtRow:clickedRow];
     Ihandle* ih = [outlineView ih];
     int item_id = iupTreeFindNodeId(ih, (InodeHandle*)item);
 
@@ -1621,7 +1621,7 @@ static NSImage* helperGetActiveImageForTreeItem(IupCocoaTreeItem* tree_item, Iup
   }
 }
 
-- (NSString *)outlineView:(NSOutlineView *)outlineView toolTipForCell:(NSCell *)cell rect:(NSRectPointer)rect tableColumn:(NSTableColumn *)tableColumn item:(id)item mouseLocation:(NSPoint)mouseLocation
+- (NSString*)outlineView:(NSOutlineView*)outlineView toolTipForCell:(NSCell*)cell rect:(NSRectPointer)rect tableColumn:(NSTableColumn*)tableColumn item:(id)item mouseLocation:(NSPoint)mouseLocation
 {
   Ihandle* ih = [(IupCocoaOutlineView*)outlineView ih];
   if (!ih)
@@ -1789,7 +1789,7 @@ static NSData* helperDataWithValue(NSValue* the_value)
   return ret_data;
 }
 
-- (id <NSPasteboardWriting>)outlineView:(NSOutlineView *)outlineView pasteboardWriterForItem:(id)the_item
+- (id <NSPasteboardWriting>)outlineView:(NSOutlineView*)outlineView pasteboardWriterForItem:(id)the_item
 {
   if(![the_item isKindOfClass:[IupCocoaTreeItem class]])
   {
@@ -1821,7 +1821,7 @@ static NSData* helperDataWithValue(NSValue* the_value)
 }
 
 #ifdef GNUSTEP
-- (BOOL)outlineView:(NSOutlineView *)outlineView writeItems:(NSArray *)items toPasteboard:(NSPasteboard *)pboard
+- (BOOL)outlineView:(NSOutlineView*)outlineView writeItems:(NSArray*)items toPasteboard:(NSPasteboard*)pboard
 {
   Ihandle* ih = [(IupCocoaOutlineView*)outlineView ih];
   if(!ih || [items count] == 0)
@@ -1835,7 +1835,7 @@ static NSData* helperDataWithValue(NSValue* the_value)
 }
 #endif
 
-- (void)outlineView:(NSOutlineView *)outlineView draggingSession:(NSDraggingSession *)session endedAtPoint:(NSPoint)screenPoint operation:(NSDragOperation)drag_operation
+- (void)outlineView:(NSOutlineView*)outlineView draggingSession:(NSDraggingSession*)session endedAtPoint:(NSPoint)screenPoint operation:(NSDragOperation)drag_operation
 {
   [self setItemBeingDragged:nil];
 
@@ -1846,7 +1846,7 @@ static NSData* helperDataWithValue(NSValue* the_value)
   }
 }
 
-- (void)outlineView:(NSOutlineView *)outlineView draggingSession:(NSDraggingSession *)session willBeginAtPoint:(NSPoint)screenPoint forItems:(NSArray *)dragged_items
+- (void)outlineView:(NSOutlineView*)outlineView draggingSession:(NSDraggingSession*)session willBeginAtPoint:(NSPoint)screenPoint forItems:(NSArray*)dragged_items
 {
   [self setItemBeingDragged:nil];
 
@@ -1872,7 +1872,7 @@ static int helperCallDragDropCb(Ihandle* ih, IupCocoaTreeItem* tree_item_drag, I
   return IUP_CONTINUE; /* allow to move by default if callback not defined */
 }
 
-- (NSDragOperation)outlineView:(NSOutlineView *)outline_view validateDrop:(id < NSDraggingInfo >)drag_info proposedItem:(id)target_item proposedChildIndex:(NSInteger)child_index
+- (NSDragOperation)outlineView:(NSOutlineView*)outline_view validateDrop:(id < NSDraggingInfo >)drag_info proposedItem:(id)target_item proposedChildIndex:(NSInteger)child_index
 {
   NSArray<NSPasteboardType>* drag_types = [[drag_info draggingPasteboard] types];
   Ihandle* ih = [(IupCocoaOutlineView*)outline_view ih];
@@ -2031,7 +2031,7 @@ static int helperCallDragDropCb(Ihandle* ih, IupCocoaTreeItem* tree_item_drag, I
 /* DRAGDROPTREE - Cross-tree drag and drop support                          */
 /*****************************************************************************/
 
-static int cocoaTreeDropData_CB(Ihandle *ih, char* type, void* data, int len, int x, int y)
+static int cocoaTreeDropData_CB(Ihandle* ih, char* type, void* data, int len, int x, int y)
 {
   int id = IupConvertXYToPos(ih, x, y);
   int is_ctrl = 0;
@@ -2057,7 +2057,7 @@ static int cocoaTreeDropData_CB(Ihandle *ih, char* type, void* data, int len, in
   if (ih_source->data->mark_mode == ITREE_MARK_SINGLE)
   {
     int src_id = iupAttribGetInt(ih_source, "_IUPTREE_SOURCEID");
-    InodeHandle *itemDst, *itemSrc;
+    InodeHandle* itemDst, *itemSrc;
 
     itemSrc = iupTreeGetNode(ih_source, src_id);
     if (!itemSrc)
@@ -2078,7 +2078,7 @@ static int cocoaTreeDropData_CB(Ihandle *ih, char* type, void* data, int len, in
   return IUP_DEFAULT;
 }
 
-static int cocoaTreeDragData_CB(Ihandle *ih, char* type, void *data, int len)
+static int cocoaTreeDragData_CB(Ihandle* ih, char* type, void* data, int len)
 {
   int id = iupAttribGetInt(ih, "_IUPTREE_SOURCEID");
   if (id < 0)
@@ -2104,7 +2104,7 @@ static int cocoaTreeDragDataSize_CB(Ihandle* ih, char* type)
   return sizeof(Ihandle*);
 }
 
-static int cocoaTreeDragEnd_CB(Ihandle *ih, int del)
+static int cocoaTreeDragEnd_CB(Ihandle* ih, int del)
 {
   iupAttribSetInt(ih, "_IUPTREE_SOURCEID", -1);
   (void)del;
@@ -2565,7 +2565,7 @@ static IupCocoaTreeItem* helperIsPointerValid(intptr_t look_for_pointer, IupCoco
 
 static void cocoaTreeRemoveNodeData(Ihandle* ih, IupCocoaTreeItem* tree_item, int call_cb);
 
-- (BOOL) outlineView:(NSOutlineView *)outline_view acceptDrop:(id <NSDraggingInfo>)drag_info item:(id)parent_target_tree_item childIndex:(NSInteger)target_child_index
+- (BOOL) outlineView:(NSOutlineView*)outline_view acceptDrop:(id <NSDraggingInfo>)drag_info item:(id)parent_target_tree_item childIndex:(NSInteger)target_child_index
 {
   {
     Ihandle* ih_dropfiles = [(IupCocoaOutlineView*)outline_view ih];
@@ -2891,7 +2891,7 @@ IUP_SDK_API InodeHandle* iupdrvTreeGetFocusNode(Ihandle* ih)
   return NULL;
 }
 
-IUP_SDK_API void iupdrvTreeUpdateMarkMode(Ihandle *ih)
+IUP_SDK_API void iupdrvTreeUpdateMarkMode(Ihandle* ih)
 {
   NSOutlineView* outline_view = cocoaTreeGetOutlineView(ih);
 
@@ -4221,7 +4221,7 @@ static int cocoaTreeSetDelNodeAttrib(Ihandle* ih, int id, const char* value)
     NSIndexSet* selected_indexes = [outline_view selectedRowIndexes];
     NSMutableArray* items_to_remove = [NSMutableArray array];
 
-    [selected_indexes enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
+    [selected_indexes enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL* stop) {
 IupCocoaTreeItem* item = [outline_view itemAtRow:idx];
 if (item)
   [items_to_remove addObject:item];
@@ -4469,7 +4469,7 @@ static int cocoaTreeSetContextMenuAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-static char* cocoaTreeGetActiveAttrib(Ihandle *ih)
+static char* cocoaTreeGetActiveAttrib(Ihandle* ih)
 {
   NSOutlineView* outline_view = cocoaTreeGetOutlineView(ih);
   BOOL was_enabled = [outline_view isEnabled];
@@ -4660,7 +4660,7 @@ static void cocoaTreeLayoutUpdateMethod(Ihandle* ih)
   [outline_view sizeLastColumnToFit];
 }
 
-IUP_SDK_API void iupdrvTreeAddBorders(Ihandle* ih, int *w, int *h)
+IUP_SDK_API void iupdrvTreeAddBorders(Ihandle* ih, int* w, int* h)
 {
   int border = 2 * 2;
   int sb = iupdrvGetScrollbarSize();

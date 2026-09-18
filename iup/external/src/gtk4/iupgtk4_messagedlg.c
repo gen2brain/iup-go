@@ -43,7 +43,7 @@ static int gtk4MessageDlgPopup(Ihandle* ih, int x, int y)
 {
   GtkAlertDialog* dialog;
   GtkWindow* parent;
-  char *buttons;
+  char* buttons;
   const char* button_labels[5];
   int num_buttons = 0;
   int button_def;

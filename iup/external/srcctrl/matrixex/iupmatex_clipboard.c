@@ -18,7 +18,7 @@
 #include "iup_matrixex.h"
 
 
-static void iMatrixExMarkedCellLimits(const char* marked, int num_lin, int num_col, int *lin1, int *lin2, int *col1, int *col2)
+static void iMatrixExMarkedCellLimits(const char* marked, int num_lin, int num_col, int* lin1, int* lin2, int* col1, int* col2)
 {
   /* use only for MARKMODE=CELL */
   int lin, col;
@@ -44,7 +44,7 @@ static void iMatrixExMarkedCellLimits(const char* marked, int num_lin, int num_c
   }
 }
 
-static void iMatrixExCellMarkedStart(const char* marked, int num_lin, int num_col, int *lin1, int *col1)
+static void iMatrixExCellMarkedStart(const char* marked, int num_lin, int num_col, int* lin1, int* col1)
 {
   int lin, col;
 
@@ -99,7 +99,7 @@ static void iMatrixExCellMarkedStart(const char* marked, int num_lin, int num_co
 static int iMatrixExMarkedCellConsistent(const char* marked, int num_lin, int num_col)
 {
   int lin, col, selected;
-  const char *l1=NULL, *ll=NULL;
+  const char* l1=NULL, *ll=NULL;
 
   /* the selected column pattern must be consistent along lines */
 
@@ -314,7 +314,7 @@ static void iMatrixExCopyData(ImatExData* matex_data, Iarray* data, const char* 
 
   if (iupStrEqualNoCase(value, "MARKED"))
   {
-    char *marked = IupGetAttribute(matex_data->ih,"MARKED");
+    char* marked = IupGetAttribute(matex_data->ih,"MARKED");
     if (!marked)  /* no marked cells */
     {
       iupAttribSet(matex_data->ih, "LASTERROR", "IUP_ERRORNOSELECTION");
@@ -366,7 +366,7 @@ static void iMatrixExCopyData(ImatExData* matex_data, Iarray* data, const char* 
   }
 }
 
-static int iMatrixExSetCopyAttrib(Ihandle *ih, const char* value)
+static int iMatrixExSetCopyAttrib(Ihandle* ih, const char* value)
 {
   ImatExData* matex_data = (ImatExData*)iupAttribGet(ih, "_IUP_MATEX_DATA");
   Iarray* data =  iupArrayCreate(100, sizeof(char));
@@ -389,7 +389,7 @@ static int iMatrixExSetCopyAttrib(Ihandle *ih, const char* value)
   return 0;
 }
 
-static int iMatrixExSetCopyDataAttrib(Ihandle *ih, const char* value)
+static int iMatrixExSetCopyDataAttrib(Ihandle* ih, const char* value)
 {
   if (!value)
     iupAttribSet(ih, "COPYDATA", NULL);
@@ -412,7 +412,7 @@ static int iMatrixExSetCopyDataAttrib(Ihandle *ih, const char* value)
   return 0;
 }
 
-static int iMatrixExStrGetDataSize(const char* data, int *num_lin, int *num_col, char *sep)
+static int iMatrixExStrGetDataSize(const char* data, int* num_lin, int* num_col, char* sep)
 {
   int len = (int)strlen(data);
   *num_lin = iupStrLineCount(data, len);
@@ -456,7 +456,7 @@ static int iMatrixExStrGetDataSize(const char* data, int *num_lin, int *num_col,
   return 1;
 }
 
-static char* iMatrixExStrCopyData(char* value, int *value_max_size, const char* data, int value_len)
+static char* iMatrixExStrCopyData(char* value, int* value_max_size, const char* data, int value_len)
 {
   if (*value_max_size <= value_len)
   {
@@ -468,7 +468,7 @@ static char* iMatrixExStrCopyData(char* value, int *value_max_size, const char* 
   return value;
 }
 
-static void iMatrixExPasteSetData(Ihandle *ih, const char* data, int data_num_lin, int data_num_col, char sep, int start_lin, int start_col, int num_lin, int num_col, const char* busyname)
+static void iMatrixExPasteSetData(Ihandle* ih, const char* data, int data_num_lin, int data_num_col, char sep, int start_lin, int start_col, int num_lin, int num_col, const char* busyname)
 {
   ImatExData* matex_data = (ImatExData*)iupAttribGet(ih, "_IUP_MATEX_DATA");
   int lin, col, len, l, c;
@@ -539,7 +539,7 @@ static void iMatrixExPasteSetData(Ihandle *ih, const char* data, int data_num_li
   iupBaseCallValueChangedCb(matex_data->ih);
 }
 
-static int iMatrixExGetVisibleNumLin(Ihandle *ih, int start_lin, int data_num_lin)
+static int iMatrixExGetVisibleNumLin(Ihandle* ih, int start_lin, int data_num_lin)
 {
   int lin, vis_num_lin = data_num_lin;
   for (lin=start_lin; lin < start_lin+data_num_lin; lin++)
@@ -550,7 +550,7 @@ static int iMatrixExGetVisibleNumLin(Ihandle *ih, int start_lin, int data_num_li
   return vis_num_lin;
 }
 
-static int iMatrixExGetVisibleNumCol(Ihandle *ih, int start_col, int data_num_col)
+static int iMatrixExGetVisibleNumCol(Ihandle* ih, int start_col, int data_num_col)
 {
   int col, vis_num_col = data_num_col;
   for (col=start_col; col < start_col+data_num_col; col++)
@@ -561,7 +561,7 @@ static int iMatrixExGetVisibleNumCol(Ihandle *ih, int start_col, int data_num_co
   return vis_num_col;
 }
 
-static void iMatrixExPasteData(Ihandle *ih, const char* data, int lin, int col, const char* busyname)
+static void iMatrixExPasteData(Ihandle* ih, const char* data, int lin, int col, const char* busyname)
 {
   int num_lin, num_col, skip_lines,
       data_num_lin, data_num_col;
@@ -585,7 +585,7 @@ static void iMatrixExPasteData(Ihandle *ih, const char* data, int lin, int col, 
     for (i=0; i<skip_lines && *data; i++)
     {
       int len;
-      const char *next_line = iupStrNextLine(data, &len);
+      const char* next_line = iupStrNextLine(data, &len);
       data = (char*)next_line;
     }
 
@@ -630,7 +630,7 @@ static void iMatrixExPasteData(Ihandle *ih, const char* data, int lin, int col, 
   iMatrixExPasteSetData(ih, data, data_num_lin, data_num_col, sep, lin, col, num_lin, num_col, busyname);
 }
 
-static int iMatrixExSetPasteAttrib(Ihandle *ih, const char* value)
+static int iMatrixExSetPasteAttrib(Ihandle* ih, const char* value)
 {
   int lin=0, col=0;
 
@@ -642,7 +642,7 @@ static int iMatrixExSetPasteAttrib(Ihandle *ih, const char* value)
     IupGetIntInt(ih, "FOCUSCELL", &lin, &col);
   else if (iupStrEqualNoCase(value, "MARKED"))
   {
-    char *marked = IupGetAttribute(ih,"MARKED");
+    char* marked = IupGetAttribute(ih,"MARKED");
     if (marked)
     {
       int num_lin = IupGetInt(ih, "NUMLIN");
@@ -660,7 +660,7 @@ static int iMatrixExSetPasteAttrib(Ihandle *ih, const char* value)
   return 0;
 }
 
-static int iMatrixExSetPasteDataAttrib(Ihandle *ih, const char* data)
+static int iMatrixExSetPasteDataAttrib(Ihandle* ih, const char* data)
 {
   int lin=0, col=0;
   IupGetIntInt(ih, "FOCUSCELL", &lin, &col);
@@ -672,7 +672,7 @@ static char* iMatrixReadFile(const char* filename)
 {
   char* data;
   long size;
-  FILE *file = fopen(filename, "rb");
+  FILE* file = fopen(filename, "rb");
   if (!file)
     return NULL;
 
@@ -704,7 +704,7 @@ static char* iMatrixReadFile(const char* filename)
   return data;
 }
 
-static int iMatrixExSetPasteFileAttrib(Ihandle *ih, const char* value)
+static int iMatrixExSetPasteFileAttrib(Ihandle* ih, const char* value)
 {
   char* data, *paste_at;
   int lin = 0, col = 0;

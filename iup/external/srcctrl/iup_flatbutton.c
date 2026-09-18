@@ -25,7 +25,7 @@
 
 
 /* from IupRadio implementation */
-IUP_SDK_API Ihandle *iupRadioFindToggleParent(Ihandle* ih_toggle);
+IUP_SDK_API Ihandle* iupRadioFindToggleParent(Ihandle* ih_toggle);
 
 
 struct _IcontrolData
@@ -52,7 +52,7 @@ struct _IcontrolData
 
 static int iFlatButtonRedraw_CB(Ihandle* ih)
 {
-  char *image = iupAttribGet(ih, "IMAGE");
+  char* image = iupAttribGet(ih, "IMAGE");
   char* title = iupAttribGet(ih, "TITLE");
   int active = IupGetInt(ih, "ACTIVE");  /* native implementation */
   int selected = ih->data->value;
@@ -456,7 +456,7 @@ static int iFlatButtonSetAlignmentAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-static char* iFlatButtonGetAlignmentAttrib(Ihandle *ih)
+static char* iFlatButtonGetAlignmentAttrib(Ihandle* ih)
 {
   char* horiz_align2str[3] = {"ALEFT", "ACENTER", "ARIGHT"};
   char* vert_align2str[3] = {"ATOP", "ACENTER", "ABOTTOM"};
@@ -506,7 +506,7 @@ static int iFlatButtonSetImagePositionAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-static char* iFlatButtonGetImagePositionAttrib(Ihandle *ih)
+static char* iFlatButtonGetImagePositionAttrib(Ihandle* ih)
 {
   char* img_pos2str[4] = {"LEFT", "RIGHT", "TOP", "BOTTOM"};
   return iupStrReturnStr(img_pos2str[ih->data->img_position]);
@@ -520,7 +520,7 @@ static int iFlatButtonSetSpacingAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-static char* iFlatButtonGetSpacingAttrib(Ihandle *ih)
+static char* iFlatButtonGetSpacingAttrib(Ihandle* ih)
 {
   return iupStrReturnInt(ih->data->spacing);
 }
@@ -533,7 +533,7 @@ static int iFlatButtonSetBorderWidthAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-static char* iFlatButtonGetBorderWidthAttrib(Ihandle *ih)
+static char* iFlatButtonGetBorderWidthAttrib(Ihandle* ih)
 {
   return iupStrReturnInt(ih->data->border_width);
 }
@@ -711,7 +711,7 @@ static int iFlatButtonMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-static void iFlatButtonComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *children_expand)
+static void iFlatButtonComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* children_expand)
 {
   int fit2backimage = iupAttribGetBoolean(ih, "FITTOBACKIMAGE");
   char* bgimage = iupAttribGet(ih, "BACKIMAGE");
@@ -835,7 +835,7 @@ Iclass* iupFlatButtonNewClass(void)
 
 IUPCONTROLS_API Ihandle* IupFlatButton(const char* title)
 {
-  void *params[2];
+  void* params[2];
   params[0] = (void*)title;
   params[1] = NULL;
   return IupCreatev("flatbutton", params);

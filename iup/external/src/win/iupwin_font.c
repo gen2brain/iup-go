@@ -34,7 +34,7 @@ typedef struct IwinFont_
 
 static Iarray* win_fonts = NULL;
 
-typedef UINT (WINAPI *PtrGetDpiForWindow)(HWND hwnd);
+typedef UINT (WINAPI* PtrGetDpiForWindow)(HWND hwnd);
 
 static int winFontGetRes(Ihandle* ih)
 {
@@ -59,7 +59,7 @@ static int winFontGetRes(Ihandle* ih)
   return iupwinGetScreenRes();
 }
 
-static IwinFont* winFindFont(const char *font, int res)
+static IwinFont* winFindFont(const char* font, int res)
 {
   HFONT hFont;
   int height_pixels;  /* negative value */
@@ -207,7 +207,7 @@ IUP_DRV_API HFONT iupwinGetHFont(Ihandle* ih, const char* value)
     return winfont->hFont;
 }
 
-static IwinFont* winFontCreateNativeFont(Ihandle *ih, const char* value)
+static IwinFont* winFontCreateNativeFont(Ihandle* ih, const char* value)
 {
   IwinFont* winfont = winFindFont(value, winFontGetRes(ih));
   if (!winfont)
@@ -220,7 +220,7 @@ static IwinFont* winFontCreateNativeFont(Ihandle *ih, const char* value)
   return winfont;
 }
 
-static IwinFont* winFontGet(Ihandle *ih)
+static IwinFont* winFontGet(Ihandle* ih)
 {
   int res = winFontGetRes(ih);
   IwinFont* winfont = winFindFont(iupGetFontValue(ih), res);
@@ -229,7 +229,7 @@ static IwinFont* winFontGet(Ihandle *ih)
   return winfont;
 }
 
-IUP_DRV_API char* iupwinGetHFontAttrib(Ihandle *ih)
+IUP_DRV_API char* iupwinGetHFontAttrib(Ihandle* ih)
 {
   IwinFont* winfont = winFontGet(ih);
   if (!winfont)
@@ -285,7 +285,7 @@ static void winFontReleaseDC(Ihandle* ih, HDC hdc)
     ReleaseDC(ih->handle, hdc);  /* handle can be NULL here */
 }
 
-static void winFontGetTextSize(Ihandle* ih, IwinFont* winfont, const char* str, int len, int *w, int *h)
+static void winFontGetTextSize(Ihandle* ih, IwinFont* winfont, const char* str, int len, int* w, int* h)
 {
   int max_w = 0, line_count = 1;
 
@@ -307,8 +307,8 @@ static void winFontGetTextSize(Ihandle* ih, IwinFont* winfont, const char* str, 
   {
     SIZE size;
     int l_len, sum_len = 0;
-    const char *nextstr;
-    const char *curstr = str;
+    const char* nextstr;
+    const char* curstr = str;
 
     HDC hdc = winFontGetDC(ih);
     HFONT oldhfont = (HFONT)SelectObject(hdc, winfont->hFont);
@@ -353,21 +353,21 @@ static void winFontGetTextSize(Ihandle* ih, IwinFont* winfont, const char* str, 
   if (h) *h = winfont->charheight * line_count;
 }
 
-IUP_SDK_API void iupdrvFontGetMultiLineStringSize(Ihandle* ih, const char* str, int *w, int *h)
+IUP_SDK_API void iupdrvFontGetMultiLineStringSize(Ihandle* ih, const char* str, int* w, int* h)
 {
   IwinFont* winfont = winFontGet(ih);
   if (winfont)
     winFontGetTextSize(ih, winfont, str, str? (int)strlen(str): 0, w, h);
 }
 
-IUP_SDK_API void iupdrvFontGetTextSize(const char* font, const char* str, int len, int *w, int *h)
+IUP_SDK_API void iupdrvFontGetTextSize(const char* font, const char* str, int len, int* w, int* h)
 {
   IwinFont* winfont = winFindFont(font, iupwinGetScreenRes());
   if (winfont)
     winFontGetTextSize(NULL, winfont, str, len, w, h);
 }
 
-IUP_SDK_API void iupdrvFontGetFontDim(const char* font, int *max_width, int *line_height, int *ascent, int *descent)
+IUP_SDK_API void iupdrvFontGetFontDim(const char* font, int* max_width, int* line_height, int* ascent, int* descent)
 {
   IwinFont* winfont = winFindFont(font, iupwinGetScreenRes());
   if (winfont)
@@ -412,7 +412,7 @@ IUP_SDK_API int iupdrvFontGetStringWidth(Ihandle* ih, const char* str)
   return size.cx;
 }
 
-IUP_SDK_API void iupdrvFontGetCharSize(Ihandle* ih, int *charwidth, int *charheight)
+IUP_SDK_API void iupdrvFontGetCharSize(Ihandle* ih, int* charwidth, int* charheight)
 {
   IwinFont* winfont = winFontGet(ih);
   if (!winfont)

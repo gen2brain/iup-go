@@ -117,7 +117,7 @@ typedef NS_ENUM(NSInteger, IupAppleWKWebViewLoadStatus)
 	}
 }
 
-- (WKWebView *)webView:(WKWebView*)web_view createWebViewWithConfiguration:(WKWebViewConfiguration*)webview_configuration forNavigationAction:(WKNavigationAction*)navigation_action windowFeatures:(WKWindowFeatures*)window_features
+- (WKWebView*)webView:(WKWebView*)web_view createWebViewWithConfiguration:(WKWebViewConfiguration*)webview_configuration forNavigationAction:(WKNavigationAction*)navigation_action windowFeatures:(WKWindowFeatures*)window_features
 {
 	Ihandle* ih = [self ihandle];
 	if (!ih || !iupObjectCheck(ih)) return nil;
@@ -221,7 +221,7 @@ typedef NS_ENUM(NSInteger, IupAppleWKWebViewLoadStatus)
 	[self setCurrentLoadStatus:IupAppleWKWebViewLoadStatusLoading];
 }
 
-- (void)userContentController:(WKUserContentController *)userContentController didReceiveScriptMessage:(WKScriptMessage *)message
+- (void)userContentController:(WKUserContentController*)userContentController didReceiveScriptMessage:(WKScriptMessage*)message
 {
 	/* KVC avoids a Mac Catalyst header clash where NSLayoutAnchor.name is
 	   marked unavailable, poisoning static resolution of -name. */
@@ -291,7 +291,7 @@ static char* appleWKWebBrowserRunJavaScriptSync(Ihandle* ih, NSString* js_string
 	__block BOOL finished = NO;
 
 	void (^run_js_and_wait)(void) = ^{
-		[web_view evaluateJavaScript:js_string completionHandler:^(id result, NSError *error) {
+		[web_view evaluateJavaScript:js_string completionHandler:^(id result, NSError* error) {
 			if (!error && result)
 			{
 				if ([result isKindOfClass:[NSString class]])
@@ -497,7 +497,7 @@ static char* appleWKWebBrowserGetHTMLAttrib(Ihandle* ih)
 	__block BOOL finished = NO;
 
 	void (^run_js_and_wait)(void) = ^{
-		[web_view evaluateJavaScript:@"document.documentElement.outerHTML" completionHandler:^(id result, NSError *error) {
+		[web_view evaluateJavaScript:@"document.documentElement.outerHTML" completionHandler:^(id result, NSError* error) {
 			if (!error && result)
 			{
 				if ([result isKindOfClass:[NSString class]])
@@ -1191,7 +1191,7 @@ static void appleWKWebBrowserUnMapMethod(Ihandle* ih)
 	iupdrvBaseUnMapMethod(ih);
 }
 
-static void appleWKWebBrowserComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *children_expand)
+static void appleWKWebBrowserComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* children_expand)
 {
   int natural_w = 0, natural_h = 0;
   (void)children_expand;
@@ -1202,7 +1202,7 @@ static void appleWKWebBrowserComputeNaturalSizeMethod(Ihandle* ih, int *w, int *
   *h = natural_h;
 }
 
-static int appleWKWebBrowserCreateMethod(Ihandle* ih, void **params)
+static int appleWKWebBrowserCreateMethod(Ihandle* ih, void** params)
 {
 	(void)params;
 

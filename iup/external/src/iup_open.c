@@ -35,7 +35,7 @@ IUP_API int IupIsOpened(void)
   return iup_opened;
 }
 
-IUP_API int IupOpen(int *argc, char ***argv)
+IUP_API int IupOpen(int* argc, char*** argv)
 {
   if (iup_opened)
     return IUP_OPENED;

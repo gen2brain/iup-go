@@ -94,7 +94,7 @@ IUP_SDK_API void iupdrvSetAppearance(int appearance)
     iupGlobalSetAppearanceColors(dark);
 }
 
-IUP_SDK_API int iupdrvOpen(int *argc, char ***argv)
+IUP_SDK_API int iupdrvOpen(int* argc, char*** argv)
 {
   IupSetGlobal("DRIVER", "Motif");
   IupSetGlobal("WINDOWING", "X11");

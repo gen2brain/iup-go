@@ -443,9 +443,9 @@ void iupTermPtyClose(ItermPty* pty)
 #endif
 
 typedef void* ItermHPCON;
-typedef HRESULT (WINAPI *ItermCreatePseudoConsole)(COORD, HANDLE, HANDLE, DWORD, ItermHPCON*);
-typedef HRESULT (WINAPI *ItermResizePseudoConsole)(ItermHPCON, COORD);
-typedef void (WINAPI *ItermClosePseudoConsole)(ItermHPCON);
+typedef HRESULT (WINAPI* ItermCreatePseudoConsole)(COORD, HANDLE, HANDLE, DWORD, ItermHPCON*);
+typedef HRESULT (WINAPI* ItermResizePseudoConsole)(ItermHPCON, COORD);
+typedef void (WINAPI* ItermClosePseudoConsole)(ItermHPCON);
 
 struct _ItermPty
 {

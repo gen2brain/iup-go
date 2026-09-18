@@ -36,7 +36,7 @@
 
 @implementation IupGLContext
 
-- (id)initWithFormat:(NSOpenGLPixelFormat *)format shareContext:(NSOpenGLContext *)share
+- (id)initWithFormat:(NSOpenGLPixelFormat*)format shareContext:(NSOpenGLContext*)share
 {
   self = [super initWithFormat:format shareContext:share];
   if (self) {
@@ -85,7 +85,7 @@ typedef struct _IGlControlData
   int owns_view;
 } IGlControlData;
 
-static int cocoaGLCanvasDefaultResize_CB(Ihandle *ih, int width, int height)
+static int cocoaGLCanvasDefaultResize_CB(Ihandle* ih, int width, int height)
 {
   IGlControlData* gldata = (IGlControlData*)iupAttribGet(ih, "_IUP_GLCONTROLDATA");
 

@@ -16,7 +16,7 @@ extern "C" {
 IUP_DRV_API extern unsigned long (* iupmotColorGetPixel)(unsigned char r, unsigned char g, unsigned char b);
 
 /* Returns a RGB triple from a pixel value. */
-IUP_DRV_API extern void (* iupmotColorGetRGB)(unsigned long pixel, unsigned char *r, unsigned char *g, unsigned char *b);
+IUP_DRV_API extern void (* iupmotColorGetRGB)(unsigned long pixel, unsigned char* r, unsigned char* g, unsigned char* b);
 
 /* initialize the toplevel colormap and the iupmotColorGet* functions */
 IUP_DRV_API void iupmotColorInit(void);

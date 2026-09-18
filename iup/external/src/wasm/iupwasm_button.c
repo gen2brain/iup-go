@@ -152,7 +152,7 @@ static int wasmButtonMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
+IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int* x, int* y)
 {
   (void)ih;
   if (x) *x += 16;

@@ -32,11 +32,11 @@ extern "C" {
 
 /** Returns true if the attribute name is a known pointer. \n
  * \ingroup attrib */
-IUP_SDK_API int iupAttribIsNotString(Ihandle* ih, const char *name);
+IUP_SDK_API int iupAttribIsNotString(Ihandle* ih, const char* name);
 
 /** Returns true if the attribute name is a known Ihandle*. \n
 * \ingroup attrib */
-IUP_SDK_API int iupAttribIsIhandle(Ihandle* ih, const char *name);
+IUP_SDK_API int iupAttribIsIhandle(Ihandle* ih, const char* name);
 
 
 
@@ -58,66 +58,66 @@ IUP_SDK_API void iupAttribSetStr(Ihandle* ih, const char* name, const char* valu
  * This is not supposed to be used for very large strings,
  * just for combinations of numeric data or constant strings.
  * \ingroup attrib */
-IUP_SDK_API void iupAttribSetStrf(Ihandle *ih, const char* name, const char* format, ...);
+IUP_SDK_API void iupAttribSetStrf(Ihandle* ih, const char* name, const char* format, ...);
 
 /** Sets an integer attribute only in the hash table. \n
  * It will be stored as a string. \n
  * It ignores children.
  * \ingroup attrib */
-IUP_SDK_API void iupAttribSetInt(Ihandle *ih, const char* name, int num);
+IUP_SDK_API void iupAttribSetInt(Ihandle* ih, const char* name, int num);
 
 /** Same as \ref iupAttribSet with an id.
  * \ingroup attrib */
-IUP_SDK_API void iupAttribSetId(Ihandle *ih, const char* name, int id, const char* value);
+IUP_SDK_API void iupAttribSetId(Ihandle* ih, const char* name, int id, const char* value);
 
 /** Same as \ref iupAttribSetStr with an id.
  * \ingroup attrib */
-IUP_SDK_API void iupAttribSetStrId(Ihandle *ih, const char* name, int id, const char* value);
+IUP_SDK_API void iupAttribSetStrId(Ihandle* ih, const char* name, int id, const char* value);
 
 /** Same as \ref iupAttribSet with lin and col.
  * \ingroup attrib */
-IUP_SDK_API void iupAttribSetId2(Ihandle *ih, const char* name, int lin, int col, const char* value);
+IUP_SDK_API void iupAttribSetId2(Ihandle* ih, const char* name, int lin, int col, const char* value);
 
 /** Same as \ref iupAttribSetStr with lin and col.
  * \ingroup attrib */
-IUP_SDK_API void iupAttribSetStrId2(Ihandle *ih, const char* name, int lin, int col, const char* value);
+IUP_SDK_API void iupAttribSetStrId2(Ihandle* ih, const char* name, int lin, int col, const char* value);
 
 /** Same as \ref iupAttribSetInt with an id.
  * \ingroup attrib */
-IUP_SDK_API void iupAttribSetIntId(Ihandle *ih, const char* name, int id, int num);
+IUP_SDK_API void iupAttribSetIntId(Ihandle* ih, const char* name, int id, int num);
 
 /** Same as \ref iupAttribSetInt with lin and col.
  * \ingroup attrib */
-IUP_SDK_API void iupAttribSetIntId2(Ihandle *ih, const char* name, int lin, int col, int num);
+IUP_SDK_API void iupAttribSetIntId2(Ihandle* ih, const char* name, int lin, int col, int num);
 
 /** Sets a floating point attribute only in the hash table. \n
  * It will be stored as a string. \n
  * It ignores children.
  * \ingroup attrib */
-IUP_SDK_API void iupAttribSetFloat(Ihandle *ih, const char* name, float num);
+IUP_SDK_API void iupAttribSetFloat(Ihandle* ih, const char* name, float num);
 
 /** Same as \ref iupAttribSetFloat with an id.
  * \ingroup attrib */
-IUP_SDK_API void iupAttribSetFloatId(Ihandle *ih, const char* name, int id, float num);
+IUP_SDK_API void iupAttribSetFloatId(Ihandle* ih, const char* name, int id, float num);
 
 /** Same as \ref iupAttribSetFloat with lin and col.
  * \ingroup attrib */
-IUP_SDK_API void iupAttribSetFloatId2(Ihandle *ih, const char* name, int lin, int col, float num);
+IUP_SDK_API void iupAttribSetFloatId2(Ihandle* ih, const char* name, int lin, int col, float num);
 
 
 /** Sets a floating point attribute only in the hash table. \n
 * It will be stored as a string. \n
 * It ignores children.
 * \ingroup attrib */
-IUP_SDK_API void iupAttribSetDouble(Ihandle *ih, const char* name, double num);
+IUP_SDK_API void iupAttribSetDouble(Ihandle* ih, const char* name, double num);
 
 /** Same as \ref iupAttribSetDouble with an id.
 * \ingroup attrib */
-IUP_SDK_API void iupAttribSetDoubleId(Ihandle *ih, const char* name, int id, double num);
+IUP_SDK_API void iupAttribSetDoubleId(Ihandle* ih, const char* name, int id, double num);
 
 /** Same as \ref iupAttribSetDouble with lin and col.
 * \ingroup attrib */
-IUP_SDK_API void iupAttribSetDoubleId2(Ihandle *ih, const char* name, int lin, int col, double num);
+IUP_SDK_API void iupAttribSetDoubleId2(Ihandle* ih, const char* name, int lin, int col, double num);
 
 
 /** Returns the attribute from the hash table only.  \n
@@ -140,7 +140,7 @@ IUP_SDK_API int iupAttribGetInt(Ihandle* ih, const char* name);
 /** Same as \ref iupAttribGetInt but returns two integer numbers. \n
  * Returns the number of valid integers: 0, 1 or 2.
  * \ingroup attrib */
-IUP_SDK_API int iupAttribGetIntInt(Ihandle *ih, const char* name, int *i1, int *i2, char sep);
+IUP_SDK_API int iupAttribGetIntInt(Ihandle* ih, const char* name, int* i1, int* i2, char sep);
 
 /** Same as \ref iupAttribGetStr but checks for boolean values.
  * Use \ref iupStrBoolean.
@@ -218,15 +218,15 @@ IUP_SDK_API char* iupAttribGetLocal(Ihandle* ih, const char* name);
 
 /** Parse a string of attributes.
  *\ingroup attrib */
-IUP_SDK_API void iupAttribParse(Ihandle *ih, const char* str);
+IUP_SDK_API void iupAttribParse(Ihandle* ih, const char* str);
 
 /** Set an internal name to a handle.
  * \ingroup attrib */
-IUP_SDK_API void iupAttribSetHandleName(Ihandle *ih);
+IUP_SDK_API void iupAttribSetHandleName(Ihandle* ih);
 
 /** Returns the internal name if set.
  * \ingroup attrib */
-IUP_SDK_API char* iupAttribGetHandleName(Ihandle *ih);
+IUP_SDK_API char* iupAttribGetHandleName(Ihandle* ih);
 
 /** Sets the attribute only at the element. \n
  * If set method is not defined will not be set,

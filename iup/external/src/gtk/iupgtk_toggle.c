@@ -29,10 +29,10 @@
 
 
 #if !GTK_CHECK_VERSION(2, 6, 0)
-static void gtk_button_set_image(GtkButton *button, GtkWidget *image)
+static void gtk_button_set_image(GtkButton* button, GtkWidget* image)
 {
 }
-static GtkWidget* gtk_button_get_image(GtkButton *button)
+static GtkWidget* gtk_button_get_image(GtkButton* button)
 {
   return NULL;
 }
@@ -242,7 +242,7 @@ static void gtkSwitchDestroyCallback(GtkWidget* widget, Ihandle* ih)
 }
 #endif
 
-IUP_SDK_API void iupdrvToggleAddBorders(Ihandle* ih, int *x, int *y)
+IUP_SDK_API void iupdrvToggleAddBorders(Ihandle* ih, int* x, int* y)
 {
 #if GTK_CHECK_VERSION(3, 0, 0)
   static int toggle_border_x = -1, toggle_border_y = -1;
@@ -322,7 +322,7 @@ IUP_SDK_API void iupdrvToggleAddBorders(Ihandle* ih, int *x, int *y)
 #endif
 }
 
-IUP_SDK_API void iupdrvToggleAddSwitch(Ihandle* ih, int *x, int *y, const char* str)
+IUP_SDK_API void iupdrvToggleAddSwitch(Ihandle* ih, int* x, int* y, const char* str)
 {
 #if GTK_CHECK_VERSION(3, 0, 0)
   static int switch_w = -1;
@@ -370,7 +370,7 @@ IUP_SDK_API void iupdrvToggleAddSwitch(Ihandle* ih, int *x, int *y, const char* 
 #endif
 }
 
-IUP_SDK_API void iupdrvToggleAddCheckBox(Ihandle* ih, int *x, int *y, const char* str)
+IUP_SDK_API void iupdrvToggleAddCheckBox(Ihandle* ih, int* x, int* y, const char* str)
 {
   static int check_w = -1;
   static int check_h = -1;
@@ -761,7 +761,7 @@ static int gtkToggleSetActiveAttrib(Ihandle* ih, const char* value)
 /****************************************************************************************************/
 
 #if GTK_CHECK_VERSION(3, 0, 0)
-static void gtkSwitchToggled(GtkSwitch *widget, GParamSpec *pspec, Ihandle* ih)
+static void gtkSwitchToggled(GtkSwitch* widget, GParamSpec* pspec, Ihandle* ih)
 {
   IFni cb;
   int check;
@@ -782,7 +782,7 @@ static void gtkSwitchToggled(GtkSwitch *widget, GParamSpec *pspec, Ihandle* ih)
 }
 #endif
 
-static void gtkToggleToggled(GtkToggleButton *widget, Ihandle* ih)
+static void gtkToggleToggled(GtkToggleButton* widget, Ihandle* ih)
 {
   IFni cb;
   int check;
@@ -805,7 +805,7 @@ static void gtkToggleToggled(GtkToggleButton *widget, Ihandle* ih)
   (void)widget;
 }
 
-static int gtkToggleUpdate3StateCheck(Ihandle *ih, int keyb)
+static int gtkToggleUpdate3StateCheck(Ihandle* ih, int keyb)
 {
   int check = gtkToggleGetCheck(ih);
   if (check == 1)  /* GOTO check == -1 */
@@ -836,7 +836,7 @@ static int gtkToggleUpdate3StateCheck(Ihandle *ih, int keyb)
   return FALSE;
 }
 
-static gboolean gtkToggleButtonEvent(GtkWidget *widget, GdkEventButton *evt, Ihandle *ih)
+static gboolean gtkToggleButtonEvent(GtkWidget* widget, GdkEventButton* evt, Ihandle* ih)
 {
   if (iupAttribGet(ih, "_IUPGTK_IGNORE_TOGGLE"))
     return FALSE;
@@ -865,7 +865,7 @@ static gboolean gtkToggleButtonEvent(GtkWidget *widget, GdkEventButton *evt, Iha
   return FALSE;
 }
 
-static gboolean gtkToggleKeyEvent(GtkWidget *widget, GdkEventKey *evt, Ihandle *ih)
+static gboolean gtkToggleKeyEvent(GtkWidget* widget, GdkEventKey* evt, Ihandle* ih)
 {
   if (evt->type == GDK_KEY_PRESS)
   {
@@ -885,7 +885,7 @@ static gboolean gtkToggleKeyEvent(GtkWidget *widget, GdkEventKey *evt, Ihandle *
   return FALSE;
 }
 
-static gboolean gtkToggleEnterLeaveEvent(GtkWidget *widget, GdkEventCrossing *evt, Ihandle *ih)
+static gboolean gtkToggleEnterLeaveEvent(GtkWidget* widget, GdkEventCrossing* evt, Ihandle* ih)
 {
   /* Used only when FLAT=Yes */
 
@@ -908,7 +908,7 @@ static gboolean gtkToggleEnterLeaveEvent(GtkWidget *widget, GdkEventCrossing *ev
 static int gtkToggleMapMethod(Ihandle* ih)
 {
   Ihandle* radio = iupRadioFindToggleParent(ih);
-  char *value;
+  char* value;
   int is3state = 0;
 
   if (!ih->parent)

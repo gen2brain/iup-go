@@ -29,8 +29,8 @@ extern "C" {
  * @{ */
 IUP_SDK_API void iupdrvTreeInitClass(Iclass* ic);
 IUP_SDK_API void iupdrvTreeAddNode(Ihandle* ih, int id, int kind, const char* title, int add);
-IUP_SDK_API void iupdrvTreeUpdateMarkMode(Ihandle *ih);
-IUP_SDK_API void iupdrvTreeAddBorders(Ihandle* ih, int *w, int *h);
+IUP_SDK_API void iupdrvTreeUpdateMarkMode(Ihandle* ih);
+IUP_SDK_API void iupdrvTreeAddBorders(Ihandle* ih, int* w, int* h);
 /** @} */
 
 char* iupTreeGetSpacingAttrib(Ihandle* ih);
@@ -63,10 +63,10 @@ int iupTreeFindNodeId(Ihandle* ih, InodeHandle* node_handle);
  * @{ */
 IUP_SDK_API InodeHandle* iupdrvTreeGetFocusNode(Ihandle* ih);
 IUP_SDK_API int iupdrvTreeTotalChildCount(Ihandle* ih, InodeHandle* node_handle);
-IUP_SDK_API void iupdrvTreeDragDropCopyNode(Ihandle *src, Ihandle *dst, InodeHandle *itemSrc, InodeHandle *itemDst);
+IUP_SDK_API void iupdrvTreeDragDropCopyNode(Ihandle* src, Ihandle* dst, InodeHandle* itemSrc, InodeHandle* itemDst);
 /** @} */
 
-void iupTreeSelectLastCollapsedBranch(Ihandle* ih, int *last_id);
+void iupTreeSelectLastCollapsedBranch(Ihandle* ih, int* last_id);
 void iupTreeDelFromCache(Ihandle* ih, int id, int count);
 void iupTreeIncCacheMem(Ihandle* ih);
 void iupTreeAddToCache(Ihandle* ih, int add, int kindPrev, InodeHandle* prevNode, InodeHandle* node_handle);
@@ -91,7 +91,7 @@ struct _IcontrolData
   void* def_image_collapsed_mask;
   void* def_image_expanded_mask;
 
-  InodeData *node_cache;   /* given the id returns node native handle and user_data */
+  InodeData* node_cache;   /* given the id returns node native handle and user_data */
   int node_cache_max, node_count;
 };
 

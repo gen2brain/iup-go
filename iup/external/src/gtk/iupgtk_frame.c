@@ -65,7 +65,7 @@ static void gtkFrameMeasureDecor(int has_title, int* decor_w, int* decor_h, int*
 }
 #endif
 
-IUP_SDK_API void iupdrvFrameGetDecorOffset(Ihandle* ih, int *x, int *y)
+IUP_SDK_API void iupdrvFrameGetDecorOffset(Ihandle* ih, int* x, int* y)
 {
 #if GTK_CHECK_VERSION(3, 0, 0)
   static int measured = 0;
@@ -96,7 +96,7 @@ IUP_SDK_API int iupdrvFrameHasClientOffset(Ihandle* ih)
   return 0;
 }
 
-IUP_SDK_API int iupdrvFrameGetTitleHeight(Ihandle* ih, int *h)
+IUP_SDK_API int iupdrvFrameGetTitleHeight(Ihandle* ih, int* h)
 {
 #if GTK_CHECK_VERSION(3, 0, 0)
   static int measured = 0;
@@ -135,7 +135,7 @@ IUP_SDK_API int iupdrvFrameGetTitleHeight(Ihandle* ih, int *h)
 #endif
 }
 
-IUP_SDK_API int iupdrvFrameGetDecorSize(Ihandle* ih, int *w, int *h)
+IUP_SDK_API int iupdrvFrameGetDecorSize(Ihandle* ih, int* w, int* h)
 {
 #if GTK_CHECK_VERSION(3, 0, 0)
   static int titled_measured = 0, untitled_measured = 0;
@@ -263,8 +263,8 @@ static void* gtkFrameGetInnerNativeContainerHandleMethod(Ihandle* ih, Ihandle* c
 
 static int gtkFrameMapMethod(Ihandle* ih)
 {
-  char *title;
-  GtkWidget *inner_parent;
+  char* title;
+  GtkWidget* inner_parent;
 
   if (!ih->parent)
     return IUP_ERROR;

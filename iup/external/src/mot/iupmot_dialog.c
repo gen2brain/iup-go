@@ -52,7 +52,7 @@ IUP_SDK_API int iupdrvDialogIsVisible(Ihandle* ih)
   return iupdrvIsVisible(ih) || ih->data->show_state == IUP_MINIMIZE;
 }
 
-IUP_SDK_API void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* handle, int *w, int *h)
+IUP_SDK_API void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* handle, int* w, int* h)
 {
   Dimension width, height;
   int border=0, caption=0, menu;
@@ -70,13 +70,13 @@ IUP_SDK_API void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* handle, int *w,
 
 IUP_DRV_API void iupmotDialogSetVisual(Ihandle* ih, void* visual)
 {
-  Ihandle *dialog = IupGetDialog(ih);
+  Ihandle* dialog = IupGetDialog(ih);
   XtVaSetValues(dialog->handle, XmNvisual, visual, NULL);
 }
 
 IUP_DRV_API void iupmotDialogResetVisual(Ihandle* ih)
 {
-  Ihandle *dialog = IupGetDialog(ih);
+  Ihandle* dialog = IupGetDialog(ih);
   XtVaSetValues(dialog->handle, XmNvisual, iupmot_visual, NULL);
 }
 
@@ -109,7 +109,7 @@ IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
   }
 }
 
-IUP_SDK_API void iupdrvDialogGetPosition(Ihandle *ih, InativeHandle* handle, int *x, int *y)
+IUP_SDK_API void iupdrvDialogGetPosition(Ihandle* ih, InativeHandle* handle, int* x, int* y)
 {
   Position cur_x, cur_y;
   if (!handle)
@@ -131,7 +131,7 @@ IUP_SDK_API void iupdrvDialogGetPosition(Ihandle *ih, InativeHandle* handle, int
   if (y) *y = cur_y;
 }
 
-IUP_SDK_API void iupdrvDialogSetPosition(Ihandle *ih, int x, int y)
+IUP_SDK_API void iupdrvDialogSetPosition(Ihandle* ih, int x, int y)
 {
   /* no need to compensate decoration when setting */
   XtVaSetValues(ih->handle,
@@ -183,7 +183,7 @@ static int motDialogGetMenuSize(Ihandle* ih)
     return 0;
 }
 
-static int motDialogGetWindowDecor(Ihandle* ih, int *border, int *caption)
+static int motDialogGetWindowDecor(Ihandle* ih, int* border, int* caption)
 {
   /* Try to get the size of the window decoration. */
   /* Use the dialog_manager instead of the handle, so it can use the client offset. */
@@ -221,7 +221,7 @@ static int motDialogGetWindowDecor(Ihandle* ih, int *border, int *caption)
   return 0;
 }
 
-IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int *border, int *caption, int *menu)
+IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int* border, int* caption, int* menu)
 {
   static int native_border = 0;
   static int native_caption = 0;
@@ -291,7 +291,7 @@ static int motDialogQueryWMspecSupport(Atom feature)
 {
   static Atom netsuppport = 0;
   Atom type;
-  Atom *atoms;
+  Atom* atoms;
   int format;
   unsigned long after, natoms, i;
 
@@ -301,7 +301,7 @@ static int motDialogQueryWMspecSupport(Atom feature)
   /* get all the features */
   XGetWindowProperty(iupmot_display, RootWindow(iupmot_display, iupmot_screen),
                      netsuppport, 0, LONG_MAX, False, XA_ATOM, &type, &format, &natoms,
-                     &after, (unsigned char **)&atoms);
+                     &after, (unsigned char**)&atoms);
   if (type != XA_ATOM || atoms == NULL)
   {
     if (atoms) XFree(atoms);
@@ -404,7 +404,7 @@ static void motDialogChangeWMState(Ihandle* ih, Atom state1, Atom state2, int op
       XChangeProperty(iupmot_display, XtWindow(ih->handle),
           wmstate, XA_ATOM,
           32, PropModeReplace,
-          (const unsigned char *)merged, (int)count);
+          (const unsigned char*)merged, (int)count);
     }
     else
     {
@@ -658,7 +658,7 @@ static int motDialogSetTitleAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-static char* motDialogGetClientSizeAttrib(Ihandle *ih)
+static char* motDialogGetClientSizeAttrib(Ihandle* ih)
 {
   if (ih->handle)
   {
@@ -675,7 +675,7 @@ static char* motDialogGetClientSizeAttrib(Ihandle *ih)
     return iupDialogGetClientSizeAttrib(ih);
 }
 
-static char* motDialogGetClientOffsetAttrib(Ihandle *ih)
+static char* motDialogGetClientOffsetAttrib(Ihandle* ih)
 {
   /* remove the menu because it is placed inside the client area */
   return iupStrReturnIntInt(0, -motDialogGetMenuSize(ih), 'x');
@@ -921,7 +921,7 @@ static int motDialogSetBringFrontAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-static int motDialogSetIconAttrib(Ihandle* ih, const char *value)
+static int motDialogSetIconAttrib(Ihandle* ih, const char* value)
 {
   if (!value)
     XtVaSetValues(ih->handle, XmNiconPixmap, NULL, NULL);
@@ -944,7 +944,7 @@ static int motDialogSetIconAttrib(Ihandle* ih, const char *value)
 static void motDialogCBclose(Widget w, XtPointer client_data, XtPointer call_data)
 {
   Icallback cb;
-  Ihandle *ih = (Ihandle*)client_data;
+  Ihandle* ih = (Ihandle*)client_data;
   if (!ih) return;
   (void)call_data;
   (void)w;
@@ -966,11 +966,11 @@ static void motDialogCBclose(Widget w, XtPointer client_data, XtPointer call_dat
   IupHide(ih); /* default: close the window */
 }
 
-static void motDialogConfigureNotify(Widget w, XEvent *evt, String* s, Cardinal *card)
+static void motDialogConfigureNotify(Widget w, XEvent* evt, String* s, Cardinal* card)
 {
   IFnii cb;
   int border, caption, menu;
-  XConfigureEvent *cevent = (XConfigureEvent *)evt;
+  XConfigureEvent* cevent = (XConfigureEvent*)evt;
   Ihandle* ih;
   (void)s;
   (void)card;
@@ -1014,9 +1014,9 @@ static void motDialogConfigureNotify(Widget w, XEvent *evt, String* s, Cardinal 
   }
 }
 
-static void motDialogCBStructureNotifyEvent(Widget w, XtPointer data, XEvent *evt, Boolean *cont)
+static void motDialogCBStructureNotifyEvent(Widget w, XtPointer data, XEvent* evt, Boolean* cont)
 {
-  Ihandle *ih = (Ihandle*)data;
+  Ihandle* ih = (Ihandle*)data;
   int state = -1;
   (void)cont;
   (void)w;
@@ -1068,7 +1068,7 @@ static void motDialogCBStructureNotifyEvent(Widget w, XtPointer data, XEvent *ev
   }
 }
 
-static void motDialogDestroyCallback(Widget w, Ihandle *ih, XtPointer call_data)
+static void motDialogDestroyCallback(Widget w, Ihandle* ih, XtPointer call_data)
 {
   /* If the IUP dialog was not destroyed, destroy it here. */
   if (iupObjectCheck(ih))
@@ -1266,7 +1266,7 @@ static void motDialogUnMapMethod(Ihandle* ih)
   iupdrvBaseUnMapMethod(ih);
 }
 
-static void motDialogLayoutUpdateMethod(Ihandle *ih)
+static void motDialogLayoutUpdateMethod(Ihandle* ih)
 {
   int border, caption, menu;
 

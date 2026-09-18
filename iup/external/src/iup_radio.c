@@ -14,9 +14,9 @@
 #include "iup_stdcontrols.h"
 
 
-IUP_SDK_API Ihandle *iupRadioFindToggleParent(Ihandle* ih_toggle)
+IUP_SDK_API Ihandle* iupRadioFindToggleParent(Ihandle* ih_toggle)
 {
-  Ihandle *p;
+  Ihandle* p;
 
   if (iupAttribGetBoolean(ih_toggle, "IGNORERADIO"))
     return NULL;
@@ -99,7 +99,7 @@ static char* iRadioGetValueHandleAttrib(Ihandle* ih)
 
 static int iRadioSetValueAttrib(Ihandle* ih, const char* value)
 {
-  Ihandle *ih_toggle;
+  Ihandle* ih_toggle;
 
   if (!value)
     return 0;
@@ -114,7 +114,7 @@ static int iRadioSetValueAttrib(Ihandle* ih, const char* value)
 
 static char* iRadioGetValueAttrib(Ihandle* ih)
 {
-  Ihandle *ih_toggle = (Ihandle*)iRadioGetValueHandleAttrib(ih);
+  Ihandle* ih_toggle = (Ihandle*)iRadioGetValueHandleAttrib(ih);
   return IupGetName(ih_toggle);  /* Name is guarantied at Toggle MapMethod */
 }
 
@@ -131,7 +131,7 @@ static int iRadioCreateMethod(Ihandle* ih, void** params)
   return IUP_NOERROR;
 }
 
-static void iRadioComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *children_expand)
+static void iRadioComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* children_expand)
 {
   Ihandle* child = ih->firstchild;
   if (child)
@@ -161,7 +161,7 @@ static void iRadioSetChildrenPositionMethod(Ihandle* ih, int x, int y)
 
 IUP_API Ihandle* IupRadio(Ihandle* child)
 {
-  void *children[2];
+  void* children[2];
   children[0] = (void*)child;
   children[1] = NULL;
   return IupCreatev("radio", children);

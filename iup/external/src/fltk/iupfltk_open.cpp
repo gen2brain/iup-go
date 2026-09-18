@@ -240,7 +240,7 @@ extern "C" IUP_SDK_API void iupdrvSetAppearance(int appearance)
  * Driver Initialization
  ****************************************************************************/
 
-extern "C" IUP_SDK_API int iupdrvOpen(int *argc, char ***argv)
+extern "C" IUP_SDK_API int iupdrvOpen(int* argc, char*** argv)
 {
   Fl::visual(FL_DOUBLE | FL_RGB);
 

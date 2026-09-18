@@ -458,7 +458,7 @@ static int haikuLabelMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-extern "C" IUP_SDK_API void iupdrvLabelAddExtraPadding(Ihandle* ih, int *x, int *y)
+extern "C" IUP_SDK_API void iupdrvLabelAddExtraPadding(Ihandle* ih, int* x, int* y)
 {
   (void)ih;
   (void)x;

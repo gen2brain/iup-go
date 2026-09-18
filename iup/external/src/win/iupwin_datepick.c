@@ -166,7 +166,7 @@ static int winDatePickSetShowDropdownAttrib(Ihandle* ih, const char* value)
 
 /*********************************************************************************************/
 
-static int winDatePickWmNotify(Ihandle* ih, NMHDR* msg_info, int *result)
+static int winDatePickWmNotify(Ihandle* ih, NMHDR* msg_info, int* result)
 {
   if (msg_info->code == DTN_DATETIMECHANGE)
   {
@@ -189,7 +189,7 @@ static int winDatePickWmNotify(Ihandle* ih, NMHDR* msg_info, int *result)
 
 /*********************************************************************************************/
 
-static void winDatePickComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *children_expand)
+static void winDatePickComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* children_expand)
 {
   (void)children_expand; /* unset if not a container */
 
@@ -293,7 +293,7 @@ Iclass* iupDatePickNewClass(void)
   return ic;
 }
 
-Ihandle *IupDatePick(void)
+Ihandle* IupDatePick(void)
 {
   return IupCreate("datepick");
 }

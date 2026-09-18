@@ -92,7 +92,7 @@ static char* gtkCalendarGetTodayAttrib(Ihandle* ih)
   return iupStrReturnStrf("%d/%d/%d", timeinfo->tm_year + 1900, timeinfo->tm_mon + 1, timeinfo->tm_mday);
 }
 
-static void gtkCalendarComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *children_expand)
+static void gtkCalendarComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* children_expand)
 {
   (void)children_expand; /* unset if not a container */
 
@@ -108,7 +108,7 @@ static void gtkCalendarComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int
   iupdrvTextAddBorders(ih, w, h);
 }
 
-static void gtkCalendarDaySelected(GtkCalendar *calendar, Ihandle* ih)
+static void gtkCalendarDaySelected(GtkCalendar* calendar, Ihandle* ih)
 {
   guint year, month, day;
   int old_day;

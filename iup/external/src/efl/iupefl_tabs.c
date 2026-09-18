@@ -196,10 +196,10 @@ static void eflTabsReorderTab(Ihandle* ih, int source, int target)
   IupRefresh(ih);
 }
 
-static void eflTabsDragPointerDown(void *data, const Efl_Event *ev)
+static void eflTabsDragPointerDown(void* data, const Efl_Event* ev)
 {
   Ihandle* ih = (Ihandle*)data;
-  Efl_Input_Pointer *pointer = ev->info;
+  Efl_Input_Pointer* pointer = ev->info;
   Eo* clicked_item;
   int pos;
   int button;
@@ -238,10 +238,10 @@ static void eflTabsDragPointerDown(void *data, const Efl_Event *ev)
   iupAttribSetInt(ih, "_IUPTABS_DRAG_START_Y", pointer_pos.y);
 }
 
-static void eflTabsDragPointerMove(void *data, const Efl_Event *ev)
+static void eflTabsDragPointerMove(void* data, const Efl_Event* ev)
 {
   Ihandle* ih = (Ihandle*)data;
-  Efl_Input_Pointer *pointer = ev->info;
+  Efl_Input_Pointer* pointer = ev->info;
   Eina_Position2D pointer_pos;
   int start_x, start_y;
   int target, old_target;
@@ -273,7 +273,7 @@ static void eflTabsDragPointerMove(void *data, const Efl_Event *ev)
   }
 }
 
-static void eflTabsDragPointerUp(void *data, const Efl_Event *ev)
+static void eflTabsDragPointerUp(void* data, const Efl_Event* ev)
 {
   Ihandle* ih = (Ihandle*)data;
   int is_dragging;
@@ -780,7 +780,7 @@ static void eflTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
     Eo* pager;
     Eo* page;
     Eo* content_box;
-    char *tabtitle, *tabimage;
+    char* tabtitle, *tabimage;
     int pos;
 
     if (iupAttribGet(ih, "_IUPTABS_REORDERING"))

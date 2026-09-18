@@ -71,7 +71,7 @@ static HRESULT CALLBACK winMessageDlgTaskDialogCallback(HWND hwnd, UINT msg, WPA
 
 static int winMessageDlgPopupTaskDialog(Ihandle* ih, InativeHandle* parent, char* icon, char* buttons)
 {
-  typedef HRESULT (WINAPI *TaskDialogIndirectFunc)(const TASKDIALOGCONFIG*, int*, int*, BOOL*);
+  typedef HRESULT (WINAPI* TaskDialogIndirectFunc)(const TASKDIALOGCONFIG*, int*, int*, BOOL*);
   static TaskDialogIndirectFunc pTaskDialogIndirect = NULL;
   static int initialized = 0;
 
@@ -184,7 +184,7 @@ static int winMessageDlgPopupTaskDialog(Ihandle* ih, InativeHandle* parent, char
 static int winMessageDlgPopup(Ihandle* ih, int x, int y)
 {
   InativeHandle* parent = iupDialogGetNativeParent(ih);
-  char *icon, *buttons;
+  char* icon, *buttons;
   (void)x;
   (void)y;
 

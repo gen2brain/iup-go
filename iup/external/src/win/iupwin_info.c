@@ -14,7 +14,7 @@
 #include "iupwin_info.h"
 
 
-typedef LONG (WINAPI *PFN_RtlGetVersion)(OSVERSIONINFOW*);
+typedef LONG (WINAPI* PFN_RtlGetVersion)(OSVERSIONINFOW*);
 
 static void iupwinGetVersionInfo(OSVERSIONINFOW* osvi)
 {
@@ -73,7 +73,7 @@ typedef struct _DLLVERSIONINFO
   DWORD dwBuildNumber;
   DWORD dwPlatformID;
 } DLLVERSIONINFO;
-typedef HRESULT (CALLBACK* DLLGETVERSIONPROC)(DLLVERSIONINFO *);
+typedef HRESULT (CALLBACK* DLLGETVERSIONPROC)(DLLVERSIONINFO*);
 
 static DWORD winGetDllVersion(LPCTSTR lpszDllName)
 {
@@ -120,7 +120,7 @@ IUP_DRV_API int iupwinGetComCtl32Version(void)
 
 IUP_DRV_API int iupwinIsAppThemed(void)
 {
-  typedef BOOL (STDAPICALLTYPE *winIsAppThemed)(void);
+  typedef BOOL (STDAPICALLTYPE* winIsAppThemed)(void);
   static winIsAppThemed myIsAppThemed = NULL;
   if (!myIsAppThemed)
   {
@@ -137,7 +137,7 @@ IUP_DRV_API int iupwinIsAppThemed(void)
 
 IUP_DRV_API int iupwinIsSystemDarkMode(void)
 {
-  typedef HRESULT(STDAPICALLTYPE *PtrDwmGetWindowAttribute)(HWND, DWORD, PVOID, DWORD);
+  typedef HRESULT(STDAPICALLTYPE* PtrDwmGetWindowAttribute)(HWND, DWORD, PVOID, DWORD);
   static PtrDwmGetWindowAttribute dwmGetWindowAttribute = NULL;
   static int initialized = 0;
   static int dark_mode = 0;
@@ -172,7 +172,7 @@ IUP_DRV_API int iupwinIsSystemDarkMode(void)
   return dark_mode;
 }
 
-IUP_SDK_API void iupdrvGetScreenSize(int *width, int *height)
+IUP_SDK_API void iupdrvGetScreenSize(int* width, int* height)
 {
   RECT area;
   SystemParametersInfoA(SPI_GETWORKAREA, 0, &area, 0);
@@ -180,7 +180,7 @@ IUP_SDK_API void iupdrvGetScreenSize(int *width, int *height)
   *height = (int)(area.bottom - area.top);
 }
 
-IUP_SDK_API void iupdrvAddScreenOffset(int *x, int *y, int add)
+IUP_SDK_API void iupdrvAddScreenOffset(int* x, int* y, int add)
 {
   RECT area;
   SystemParametersInfoA(SPI_GETWORKAREA, 0, &area, 0);
@@ -196,7 +196,7 @@ IUP_SDK_API void iupdrvAddScreenOffset(int *x, int *y, int add)
   }
 }
 
-IUP_SDK_API void iupdrvGetFullSize(int *width, int *height)
+IUP_SDK_API void iupdrvGetFullSize(int* width, int* height)
 {
   RECT rect;
   GetWindowRect(GetDesktopWindow(), &rect);
@@ -227,7 +227,7 @@ IUP_SDK_API int iupdrvScaleNaturalPx(int px)
   return px;
 }
 
-IUP_SDK_API void iupdrvGetCursorPos(int *x, int *y)
+IUP_SDK_API void iupdrvGetCursorPos(int* x, int* y)
 {
   POINT CursorPoint;
   GetCursorPos(&CursorPoint);

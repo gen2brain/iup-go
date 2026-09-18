@@ -49,7 +49,7 @@ typedef struct _Itable Itable;
 /** Creates a hash table with an initial default size.
  * This function is equivalent to iupTableCreateSized(0);
  * \ingroup table */
-IUP_SDK_API Itable *iupTableCreate(Itable_IndexTypes indexType);
+IUP_SDK_API Itable* iupTableCreate(Itable_IndexTypes indexType);
 
 /** Creates a hash table with the specified initial size.
  * Use this function if you expect the table to become very large.
@@ -58,51 +58,51 @@ IUP_SDK_API Itable *iupTableCreate(Itable_IndexTypes indexType);
  * are supported. If you specify a higher value here, the maximum
  * allowed value will be used.
  * \ingroup table */
-IUP_SDK_API Itable *iupTableCreateSized(Itable_IndexTypes indexType, unsigned int initialSizeIndex);
+IUP_SDK_API Itable* iupTableCreateSized(Itable_IndexTypes indexType, unsigned int initialSizeIndex);
 
 /** Destroys the Itable.
  * Calls \ref iupTableClear.
  * \ingroup table */
-IUP_SDK_API void iupTableDestroy(Itable *it);
+IUP_SDK_API void iupTableDestroy(Itable* it);
 
 /** Removes all items in the table.
  * This function does also free the memory of strings contained in the table!!!!
  * \ingroup table */
-IUP_SDK_API void iupTableClear(Itable *it);
+IUP_SDK_API void iupTableClear(Itable* it);
 
 /** Returns the number of keys stored in the table.
  * \ingroup table */
-IUP_SDK_API int iupTableCount(Itable *it);
+IUP_SDK_API int iupTableCount(Itable* it);
 
 /** Store an element in the table.
  * \ingroup table */
-IUP_SDK_API void iupTableSet(Itable *it, const char *key, void *value, Itable_Types itemType);
+IUP_SDK_API void iupTableSet(Itable* it, const char* key, void* value, Itable_Types itemType);
 
 /** Store a function pointer in the table.
  * Type is set to IUPTABLE_FUNCPOINTER.
  * \ingroup table */
-IUP_SDK_API void iupTableSetFunc(Itable *it, const char *key, Ifunc func);
+IUP_SDK_API void iupTableSetFunc(Itable* it, const char* key, Ifunc func);
 
 /** Retrieves an element from the table.
  * Returns NULL if not found.
  * \ingroup table */
-IUP_SDK_API void *iupTableGet(Itable *it, const char *key);
+IUP_SDK_API void* iupTableGet(Itable* it, const char* key);
 
 /** Retrieves a function pointer from the table.
  * If not a function or not found returns NULL.
  * value always contains the element pointer.
  * \ingroup table */
-IUP_SDK_API Ifunc iupTableGetFunc(Itable *it, const char *key, void **value);
+IUP_SDK_API Ifunc iupTableGetFunc(Itable* it, const char* key, void** value);
 
 /** Retrieves an element from the table and its type.
  * \ingroup table */
-IUP_SDK_API void *iupTableGetTyped(Itable *it, const char *key, Itable_Types *itemType);
+IUP_SDK_API void* iupTableGetTyped(Itable* it, const char* key, Itable_Types* itemType);
 
 /** Removes the entry at the specified key from the
  * hash table and frees the memory used by it if
  * it is a string...
  * \ingroup table */
-IUP_SDK_API void iupTableRemove(Itable *it, const char *key);
+IUP_SDK_API void iupTableRemove(Itable* it, const char* key);
 
 /** Key iteration function. Returns a key.
  * To iterate over all keys call iupTableFirst at the first
@@ -113,11 +113,11 @@ IUP_SDK_API void iupTableRemove(Itable *it, const char *key);
  * iupTableGetCurr() to access the value of the key
  * very fast.
  * \ingroup table */
-IUP_SDK_API char *iupTableFirst(Itable *it);
+IUP_SDK_API char* iupTableFirst(Itable* it);
 
 /** Key iteration function. See \ref iupTableNext.
  * \ingroup table */
-IUP_SDK_API char *iupTableNext(Itable *it);
+IUP_SDK_API char* iupTableNext(Itable* it);
 
 /** Returns the value at the current position.  \n
  * The current context is an iterator
@@ -127,22 +127,22 @@ IUP_SDK_API char *iupTableNext(Itable *it);
  * at a key returned by iupTableNext(),
  * use this function instead of iupTableGet().
  * \ingroup table */
-IUP_SDK_API void *iupTableGetCurr(Itable *it);
+IUP_SDK_API void* iupTableGetCurr(Itable* it);
 
 /** Returns the type at the current position. \n
  * Same as \ref iupTableGetCurr but returns the type.
  * Returns -1 if failed.
  * \ingroup table */
-IUP_SDK_API int iupTableGetCurrType(Itable *it);
+IUP_SDK_API int iupTableGetCurrType(Itable* it);
 
 /** Replaces the data at the current position.
  * \ingroup table */
-IUP_SDK_API void iupTableSetCurr(Itable *it, void *value, Itable_Types itemType);
+IUP_SDK_API void iupTableSetCurr(Itable* it, void* value, Itable_Types itemType);
 
 /** Removes the current element and returns the next key.
  * Use this function to remove an element during an iteration.
  * \ingroup table */
-IUP_SDK_API char *iupTableRemoveCurr(Itable *it);
+IUP_SDK_API char* iupTableRemoveCurr(Itable* it);
 
 
 #ifdef __cplusplus

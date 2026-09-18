@@ -26,7 +26,7 @@
 #include "iupwin_str.h"
 
 
-IUP_SDK_API void iupdrvFrameGetDecorOffset(Ihandle* ih, int *x, int *y)
+IUP_SDK_API void iupdrvFrameGetDecorOffset(Ihandle* ih, int* x, int* y)
 {
   (void)ih;
   /* LAYOUT_DECORATION_ESTIMATE */
@@ -48,14 +48,14 @@ IUP_SDK_API int iupdrvFrameHasClientOffset(Ihandle* ih)
   return 1;
 }
 
-IUP_SDK_API int iupdrvFrameGetTitleHeight(Ihandle* ih, int *h)
+IUP_SDK_API int iupdrvFrameGetTitleHeight(Ihandle* ih, int* h)
 {
   (void)ih;
   (void)h;
   return 0;
 }
 
-IUP_SDK_API int iupdrvFrameGetDecorSize(Ihandle* ih, int *w, int *h)
+IUP_SDK_API int iupdrvFrameGetDecorSize(Ihandle* ih, int* w, int* h)
 {
   (void)ih;
   (void)w;
@@ -101,7 +101,7 @@ static void winFrameDrawText(HDC hDC, const char* text, int x, int y, COLORREF f
   SetBkMode(hDC, OPAQUE);
 }
 
-static void winFrameDrawItem(Ihandle* ih, DRAWITEMSTRUCT *drawitem)
+static void winFrameDrawItem(Ihandle* ih, DRAWITEMSTRUCT* drawitem)
 {
   iupwinBitmapDC bmpDC;
   HDC hDC = iupwinDrawCreateBitmapDC(&bmpDC, drawitem->hDC, 0, 0, drawitem->rcItem.right-drawitem->rcItem.left,
@@ -178,7 +178,7 @@ static void winFrameDrawItem(Ihandle* ih, DRAWITEMSTRUCT *drawitem)
   iupwinDrawDestroyBitmapDC(&bmpDC);
 }
 
-static int winFrameMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT *result)
+static int winFrameMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT* result)
 {
   switch (msg)
   {
@@ -205,7 +205,7 @@ static int winFrameMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT 
 
 static int winFrameMapMethod(Ihandle* ih)
 {
-  char *title;
+  char* title;
   DWORD dwStyle = WS_CHILD|WS_CLIPSIBLINGS|
                   BS_OWNERDRAW, /* owner draw necessary because BS_GROUPBOX does not work ok */
       dwExStyle = 0;

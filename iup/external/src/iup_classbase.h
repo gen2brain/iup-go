@@ -94,7 +94,7 @@ IUP_SDK_API void iupBaseUpdateAttribFromFont(Ihandle* ih);
 
 /** Driver dependent \ref Iclass::LayoutUpdate method.
  * \ingroup iclassbasemethod */
-IUP_SDK_API void iupdrvBaseLayoutUpdateMethod(Ihandle *ih);
+IUP_SDK_API void iupdrvBaseLayoutUpdateMethod(Ihandle* ih);
 
 /** Driver dependent \ref Iclass::UnMap method.
  * \ingroup iclassbasemethod */
@@ -134,7 +134,7 @@ IUP_SDK_API int iupBaseSetExpandAttrib(Ihandle* ih, const char* value);
 /* visual */
 IUP_SDK_API char* iupBaseGetVisibleAttrib(Ihandle* ih);
 IUP_SDK_API int iupBaseSetVisibleAttrib(Ihandle* ih, const char* value);
-IUP_SDK_API char* iupBaseGetActiveAttrib(Ihandle *ih);
+IUP_SDK_API char* iupBaseGetActiveAttrib(Ihandle* ih);
 IUP_SDK_API int iupBaseSetActiveAttrib(Ihandle* ih, const char* value);
 IUP_SDK_API int iupdrvBaseSetZorderAttrib(Ihandle* ih, const char* value);
 IUP_SDK_API int iupdrvBaseSetTipAttrib(Ihandle* ih, const char* value);

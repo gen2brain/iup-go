@@ -25,7 +25,7 @@
 #include "iupgtk_drv.h"
 
 
-IUP_SDK_API void iupdrvScrollbarGetMinSize(Ihandle* ih, int *w, int *h)
+IUP_SDK_API void iupdrvScrollbarGetMinSize(Ihandle* ih, int* w, int* h)
 {
 #if GTK_CHECK_VERSION(3, 0, 0)
   static int horiz_min_w = -1, horiz_min_h = -1;
@@ -150,7 +150,7 @@ static int gtkScrollbarSetValueAttrib(Ihandle* ih, const char* value)
 
 /*********************************************************************************************/
 
-static gboolean gtkScrollbarChangeValue(GtkRange *range, GtkScrollType scroll, double fval, Ihandle *ih)
+static gboolean gtkScrollbarChangeValue(GtkRange* range, GtkScrollType scroll, double fval, Ihandle* ih)
 {
   double old_val = ih->data->val;
   double adj_page_size, range_val;
@@ -225,7 +225,7 @@ static gboolean gtkScrollbarChangeValue(GtkRange *range, GtkScrollType scroll, d
   return TRUE;
 }
 
-static gboolean gtkScrollbarKeyPressEvent(GtkWidget *widget, GdkEventKey *evt, Ihandle *ih)
+static gboolean gtkScrollbarKeyPressEvent(GtkWidget* widget, GdkEventKey* evt, Ihandle* ih)
 {
   if (iupgtkKeyPressEvent(widget, evt, ih) == TRUE)
     return TRUE;

@@ -21,14 +21,14 @@ IUP_DRV_API void iupwinDrawBitmap(HDC hDC, HBITMAP hBitmap, int x, int y, int w,
 IUP_DRV_API void iupwinDrawText(HDC hDC, const char* text, int x, int y, int width, int height, HFONT hFont, COLORREF fgcolor, int style);
 
 IUP_DRV_API void iupwinDrawParentBackground(Ihandle* ih, HDC hDC, RECT* rect);
-IUP_DRV_API void iupwinDrawButtonBorder(HWND hWnd, HDC hDC, RECT *rect, UINT itemState);
-IUP_DRV_API void iupwinDraw3StateButton(HWND hWnd, HDC hDC, RECT *rect);
+IUP_DRV_API void iupwinDrawButtonBorder(HWND hWnd, HDC hDC, RECT* rect, UINT itemState);
+IUP_DRV_API void iupwinDraw3StateButton(HWND hWnd, HDC hDC, RECT* rect);
 IUP_DRV_API int  iupwinDrawToggleGlyph(HWND hWnd, HDC hDC, RECT* item, int is_radio, int check, UINT itemState, int align_right);
 
 IUP_DRV_API void iupwinDrawThemeInit(void);
-IUP_DRV_API void iupwinDrawThemeFrameBorder(HWND hWnd, HDC hDC, RECT *rect, UINT itemState);
-IUP_DRV_API int  iupwinDrawGetThemeTabsBgColor(HWND hWnd, COLORREF *color);
-IUP_DRV_API int  iupwinDrawGetThemeButtonBgColor(HWND hWnd, COLORREF *color);
+IUP_DRV_API void iupwinDrawThemeFrameBorder(HWND hWnd, HDC hDC, RECT* rect, UINT itemState);
+IUP_DRV_API int  iupwinDrawGetThemeTabsBgColor(HWND hWnd, COLORREF* color);
+IUP_DRV_API int  iupwinDrawGetThemeButtonBgColor(HWND hWnd, COLORREF* color);
 IUP_DRV_API void iupwinDrawRemoveTheme(HWND hWnd);
 
 typedef struct _iupwinBitmapDC
@@ -38,10 +38,10 @@ typedef struct _iupwinBitmapDC
   int x, y, w, h;
 } iupwinBitmapDC;
 
-IUP_DRV_API HDC iupwinDrawCreateBitmapDC(iupwinBitmapDC *bmpDC, HDC hDC, int x, int y, int w, int h);
-IUP_DRV_API void iupwinDrawDestroyBitmapDC(iupwinBitmapDC *bmpDC);
+IUP_DRV_API HDC iupwinDrawCreateBitmapDC(iupwinBitmapDC* bmpDC, HDC hDC, int x, int y, int w, int h);
+IUP_DRV_API void iupwinDrawDestroyBitmapDC(iupwinBitmapDC* bmpDC);
 
-IUP_DRV_API int iupwinCustomDrawToDrawItem(Ihandle* ih, NMHDR* msg_info, int *result, IFdrawItem drawitem_cb);
+IUP_DRV_API int iupwinCustomDrawToDrawItem(Ihandle* ih, NMHDR* msg_info, int* result, IFdrawItem drawitem_cb);
 
 /* Not defined for MingW and Cygwin */
 #ifndef ODS_HOTLIGHT

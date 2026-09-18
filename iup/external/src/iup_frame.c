@@ -27,7 +27,7 @@ int iupFrameGetTitleHeight(Ihandle* ih)
   return height;
 }
 
-static void iFrameGetDecorSize(Ihandle* ih, int *width, int *height)
+static void iFrameGetDecorSize(Ihandle* ih, int* width, int* height)
 {
   if (iupdrvFrameGetDecorSize(ih, width, height))
     return;
@@ -92,7 +92,7 @@ static int iFrameCreateMethod(Ihandle* ih, void** params)
   return IUP_NOERROR;
 }
 
-static void iFrameComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *children_expand)
+static void iFrameComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* children_expand)
 {
   int decorwidth, decorheight;
   Ihandle* child = ih->firstchild;
@@ -164,7 +164,7 @@ static void iFrameSetChildrenPositionMethod(Ihandle* ih, int x, int y)
 
 IUP_API Ihandle* IupFrame(Ihandle* child)
 {
-  void *children[2];
+  void* children[2];
   children[0] = (void*)child;
   children[1] = NULL;
   return IupCreatev("frame", children);

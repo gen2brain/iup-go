@@ -27,7 +27,7 @@
 #include "iupwin_draw.h"
 
 
-IUP_SDK_API void iupdrvValGetMinSize(Ihandle* ih, int *w, int *h)
+IUP_SDK_API void iupdrvValGetMinSize(Ihandle* ih, int* w, int* h)
 {
   /* LAYOUT_DECORATION_ESTIMATE */
   int ticks_size = 0;
@@ -52,7 +52,7 @@ IUP_SDK_API void iupdrvValGetMinSize(Ihandle* ih, int *w, int *h)
   }
 }
 
-static int winValSetBgColorAttrib(Ihandle *ih, const char *value)
+static int winValSetBgColorAttrib(Ihandle* ih, const char* value)
 {
   (void)value;
   iupdrvPostRedraw(ih);
@@ -145,7 +145,7 @@ static int winValCustomScroll(Ihandle* ih, int msg)
   return 0; /* not used */
 }
 
-static void winValIncPageValue(Ihandle *ih, int dir)
+static void winValIncPageValue(Ihandle* ih, int dir)
 {
   int pagesize, ival;
   pagesize = (int)(ih->data->pagestep*SHRT_MAX);
@@ -159,7 +159,7 @@ static void winValIncPageValue(Ihandle *ih, int dir)
   winValCustomScroll(ih, 0);
 }
 
-static int winValCtlColor(Ihandle* ih, HDC hdc, LRESULT *result)
+static int winValCtlColor(Ihandle* ih, HDC hdc, LRESULT* result)
 {
   COLORREF cr;
   if (iupwinGetParentBgColor(ih, &cr))
@@ -172,7 +172,7 @@ static int winValCtlColor(Ihandle* ih, HDC hdc, LRESULT *result)
   return 0;
 }
 
-static int winValMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT *result)
+static int winValMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT* result)
 {
   (void)lp;
 

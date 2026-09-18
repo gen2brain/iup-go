@@ -482,7 +482,7 @@ IUP_SDK_API int iupdrvTabsIsTabVisible(Ihandle* child, int pos)
 /* ------------------------------------------------------------------------- */
 
 
-static void motTabsPageChangedCallback(Widget w, Ihandle* ih, XmNotebookCallbackStruct *nptr)
+static void motTabsPageChangedCallback(Widget w, Ihandle* ih, XmNotebookCallbackStruct* nptr)
 {
   if (nptr->reason == XmCR_MAJOR_TAB)
   {
@@ -588,7 +588,7 @@ static void motTabsCloseButtonActivate(Widget w, XtPointer client_data, XtPointe
   }
 }
 
-static void motTabsConfigureNotify(Widget w, XEvent *evt, String* s, Cardinal *card)
+static void motTabsConfigureNotify(Widget w, XEvent* evt, String* s, Cardinal* card)
 {
   /* Motif does not process the changed of position and/or size of children outside the parent's client area.
      Since Notebook pages are not resized until they are moved into the visible area,
@@ -596,7 +596,7 @@ static void motTabsConfigureNotify(Widget w, XEvent *evt, String* s, Cardinal *c
      Since tab pages are not hidden, they are moved outside the visible area,
      a resize occurs every time a tab is activated.
   */
-  Ihandle *child;
+  Ihandle* child;
   (void)s;
   (void)card;
   (void)evt;
@@ -624,7 +624,7 @@ static void motTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
     Widget tab_button;
     int num_args = 0, pos;
     Arg args[30];
-    char *tabtitle, *tabimage, *background;
+    char* tabtitle, *tabimage, *background;
     Pixel color;
 
     /* open space for new tab number */
