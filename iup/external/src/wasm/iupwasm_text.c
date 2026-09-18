@@ -1065,6 +1065,7 @@ IUP_SDK_API int iupdrvTextGetFormatTags(Ihandle* ih, Ihandle* bulk_tag)
   int id = iupwasmIdOf(ih);
   char* runs;
   char* line;
+  char* saveptr;
 
   if (!id || !ih->data->is_multiline || !ih->data->has_formatting)
     return 0;
@@ -1073,7 +1074,7 @@ IUP_SDK_API int iupdrvTextGetFormatTags(Ihandle* ih, Ihandle* bulk_tag)
   if (!runs)
     return 1;
 
-  line = strtok(runs, "\n");
+  line = strtok_r(runs, "\n", &saveptr);
   while (line)
   {
     char css[512] = "", pcss[256] = "";
@@ -1119,7 +1120,7 @@ IUP_SDK_API int iupdrvTextGetFormatTags(Ihandle* ih, Ihandle* bulk_tag)
       }
     }
 
-    line = strtok(NULL, "\n");
+    line = strtok_r(NULL, "\n", &saveptr);
   }
 
   free(runs);
