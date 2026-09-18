@@ -22,6 +22,7 @@ extern "C" {
 #include "iup_tree.h"
 #include "iup_image.h"
 #include "iup_key.h"
+#include "iup_drvinfo.h"
 }
 
 #include <winrt/Microsoft.UI.Xaml.Automation.h>
@@ -2729,6 +2730,19 @@ static int winuiTreeSetDragSourceAttrib(Ihandle* ih, const char* value)
       if (!drag_types)
         return;
 
+      IFnii dragbegin_cb = (IFnii)IupGetCallback(ih, "DRAGBEGIN_CB");
+      if (dragbegin_cb)
+      {
+        int x, y;
+        iupdrvGetCursorPos(&x, &y);
+        iupdrvScreenToClient(ih, &x, &y);
+        if (dragbegin_cb(ih, x, y) == IUP_IGNORE)
+        {
+          e.Cancel(true);
+          return;
+        }
+      }
+
       auto items = e.Items();
       if (items.Size() == 0)
         return;
@@ -2774,13 +2788,22 @@ static int winuiTreeSetDragSourceAttrib(Ihandle* ih, const char* value)
           }
         }
       }
+
+      if (iupAttribGetBoolean(ih, "DRAGSOURCEMOVE"))
+        e.Data().RequestedOperation(DataPackageOperation::Move);
+      else
+        e.Data().RequestedOperation(DataPackageOperation::Copy);
     });
 
     aux->dragItemsCompletedToken = treeView.DragItemsCompleted([ih](TreeView const&, TreeViewDragItemsCompletedEventArgs const& e) {
       IFni dragend_cb = (IFni)IupGetCallback(ih, "DRAGEND_CB");
       if (dragend_cb)
       {
-        int del = (e.DropResult() == DataPackageOperation::Move) ? 1 : 0;
+        int del = -1;
+        if (e.DropResult() == DataPackageOperation::Move)
+          del = 1;
+        else if (e.DropResult() == DataPackageOperation::Copy)
+          del = 0;
         dragend_cb(ih, del);
       }
       winuiDragDataCleanup();
