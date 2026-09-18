@@ -87,7 +87,6 @@ static int iupgtk_entry_border_x = -1;
 static int iupgtk_entry_border_y = -1;
 static int iupgtk_entry_noframe_border_y = -1;
 static int iupgtk_entry_css_dec_x = 0;
-static int iupgtk_entry_char_adjust_x = 0;
 
 static void iupgtkTextMeasureEntryBorders(void)
 {
@@ -156,17 +155,9 @@ static void iupgtkTextMeasureEntryBorders(void)
       int avg_w = pango_font_metrics_get_approximate_char_width(metrics);
       int digit_w = pango_font_metrics_get_approximate_digit_width(metrics);
       int gtk_char_pixels = (MAX(avg_w, digit_w) + PANGO_SCALE - 1) / PANGO_SCALE;
-      int digit_col;
-
-      pango_layout_set_text(layout, "0000000000", -1);
-      pango_layout_get_pixel_size(layout, &digit_col, NULL);
-      digit_col = (digit_col + 9) / 10;
-      if (digit_col < gtk_char_pixels + 1) digit_col = gtk_char_pixels + 1;
 
       iupgtk_entry_css_dec_x = entry_w - gtk_char_pixels;
-      iupgtk_entry_char_adjust_x = char_width - digit_col;
       if (iupgtk_entry_css_dec_x < 2) iupgtk_entry_css_dec_x = 2;
-      if (iupgtk_entry_char_adjust_x < 0) iupgtk_entry_char_adjust_x = 0;
 
       pango_font_metrics_unref(metrics);
     }
@@ -246,6 +237,36 @@ static void iupgtkTextMeasureMultilineMetrics(void)
   }
 }
 
+/* the core sizes a column as a W, GTK as a digit, and the gap between them depends on the font */
+static int gtkTextColumnAdjust(Ihandle* ih, int visiblecolumns)
+{
+  PangoLayout* layout = (PangoLayout*)iupgtkGetPangoLayoutAttrib(ih);
+  int digit_col = iupdrvFontGetStringWidth(ih, "0000000000") / 10;
+  int adjust;
+
+  if (layout)
+  {
+    PangoContext* context = pango_layout_get_context(layout);
+    PangoFontMetrics* metrics = pango_context_get_metrics(context,
+        pango_layout_get_font_description(layout) ? pango_layout_get_font_description(layout) : pango_context_get_font_description(context),
+        pango_context_get_language(context));
+    int avg_w = pango_font_metrics_get_approximate_char_width(metrics);
+    int digit_w = pango_font_metrics_get_approximate_digit_width(metrics);
+    int gtk_char_pixels = (MAX(avg_w, digit_w) + PANGO_SCALE - 1) / PANGO_SCALE;
+
+    if (digit_col < gtk_char_pixels + 1)
+      digit_col = gtk_char_pixels + 1;
+
+    pango_font_metrics_unref(metrics);
+  }
+
+  adjust = iupdrvFontGetStringWidth(ih, "WWWWWWWWWW") / 10 - digit_col;
+  if (adjust < 0)
+    adjust = 0;
+
+  return visiblecolumns * adjust;
+}
+
 IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int *x, int *y)
 {
   /* Used also by IupCalendar in GTK */
@@ -284,7 +305,7 @@ IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int *x, int *y)
     int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
     iupgtkTextMeasureMultilineMetrics();
 
-    (*x) += iupgtk_multiline_border_width - visiblecolumns * iupgtk_entry_char_adjust_x;
+    (*x) += iupgtk_multiline_border_width - gtkTextColumnAdjust(ih, visiblecolumns);
 
     if (visiblelines > 0)
     {
@@ -306,7 +327,7 @@ IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int *x, int *y)
   else
   {
     int visiblecolumns = iupAttribGetInt(ih, "VISIBLECOLUMNS");
-    (*x) += iupgtk_entry_css_dec_x - visiblecolumns * iupgtk_entry_char_adjust_x;
+    (*x) += iupgtk_entry_css_dec_x - gtkTextColumnAdjust(ih, visiblecolumns);
 
     if (iupAttribGetBoolean(ih, "SPIN"))
     {
