@@ -60,6 +60,22 @@ static const void* IUP_COCOA_SCROLLBAR_RECEIVER_OBJ_KEY = "IUP_COCOA_SCROLLBAR_R
         op = IUP_SBPOSV;
       break;
     }
+#ifdef GNUSTEP
+  case NSScrollerDecrementLine:
+    ih->data->val -= ih->data->linestep * (ih->data->vmax - ih->data->vmin);
+    if (ih->data->orientation == ISCROLLBAR_HORIZONTAL)
+      op = IUP_SBLEFT;
+    else
+      op = IUP_SBUP;
+    break;
+  case NSScrollerIncrementLine:
+    ih->data->val += ih->data->linestep * (ih->data->vmax - ih->data->vmin);
+    if (ih->data->orientation == ISCROLLBAR_HORIZONTAL)
+      op = IUP_SBRIGHT;
+    else
+      op = IUP_SBDN;
+    break;
+#endif
   case NSScrollerDecrementPage:
     ih->data->val -= ih->data->pagestep * (ih->data->vmax - ih->data->vmin);
     if (ih->data->orientation == ISCROLLBAR_HORIZONTAL)
