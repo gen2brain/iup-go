@@ -71,22 +71,30 @@ static gboolean gtk4DropTargetDrop(GtkDropTarget *target, const GValue *value, d
   return TRUE;
 }
 
+/* set while an IUP source drags, so an external source keeps the GTK copy default */
+static int gtk4_drag_source_move = 0;
+
 static GdkDragAction gtk4DropTargetMotion(GtkDropTarget *target, double x, double y, Ihandle *ih)
 {
   IFniis cbDropMotion = (IFniis)IupGetCallback(ih, "DROPMOTION_CB");
+  GdkModifierType mask = gtk_event_controller_get_current_event_state(GTK_EVENT_CONTROLLER(target));
 
   if (cbDropMotion)
   {
     char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
-    GdkModifierType mask;
-
-    mask = gtk_event_controller_get_current_event_state(GTK_EVENT_CONTROLLER(target));
 
     iupgtk4ButtonKeySetStatus(mask, 0, status, 0);
     cbDropMotion(ih, (int)x, (int)y, status);
   }
 
-  /* GtkDropTarget motion callback doesn't select action - drop target does */
+  /* GtkDropTarget prefers copy whenever it is offered */
+  if (gtk4_drag_source_move && !(mask & GDK_CONTROL_MASK))
+  {
+    gtk_drop_target_set_actions(target, GDK_ACTION_MOVE);
+    return GDK_ACTION_MOVE;
+  }
+
+  gtk_drop_target_set_actions(target, GDK_ACTION_MOVE | GDK_ACTION_COPY);
   return GDK_ACTION_COPY;
 }
 
@@ -171,6 +179,8 @@ static GdkContentProvider* gtk4DragSourcePrepare(GtkDragSource *source, double x
   GBytes *bytes;
   GdkContentProvider *provider;
 
+  gtk4_drag_source_move = iupAttribGetBoolean(ih, "DRAGSOURCEMOVE");
+
   if (cbDragBegin)
   {
     int ret = cbDragBegin(ih, (int)x, (int)y);
@@ -210,11 +220,19 @@ static void gtk4DragSourceDragEnd(GtkDragSource *source, GdkDrag *drag, gboolean
   IFni cbDrag = (IFni)IupGetCallback(ih, "DRAGEND_CB");
 
   (void)source;
-  (void)drag;
+
+  gtk4_drag_source_move = 0;
 
   if (cbDrag)
   {
-    int remove = delete_data ? 1 : 0;
+    GdkDragAction action = gdk_drag_get_selected_action(drag);
+    int remove = -1;
+
+    if (delete_data || action == GDK_ACTION_MOVE)
+      remove = 1;
+    else if (action == GDK_ACTION_COPY)
+      remove = 0;
+
     cbDrag(ih, remove);
   }
 }
@@ -586,7 +604,7 @@ static GtkWidget* gtk4GetDropFilesWidget(Ihandle* ih)
   return ih->handle;
 }
 
-static void gtk4RemoveChildDropTargets(GtkWidget *widget)
+static void gtk4RemoveChildDropTargets(GtkWidget *widget, GtkEventController *keep)
 {
   GListModel *controllers;
   GtkWidget *child;
@@ -596,20 +614,20 @@ static void gtk4RemoveChildDropTargets(GtkWidget *widget)
   for (i = g_list_model_get_n_items(controllers); i > 0; i--)
   {
     GtkEventController *ctrl = g_list_model_get_item(controllers, i - 1);
-    if (GTK_IS_DROP_TARGET(ctrl))
+    if (GTK_IS_DROP_TARGET(ctrl) && ctrl != keep)
       gtk_widget_remove_controller(widget, ctrl);
     g_object_unref(ctrl);
   }
   g_object_unref(controllers);
 
   for (child = gtk_widget_get_first_child(widget); child; child = gtk_widget_get_next_sibling(child))
-    gtk4RemoveChildDropTargets(child);
+    gtk4RemoveChildDropTargets(child, keep);
 }
 
 static void gtk4DropFilesWidgetMapped(GtkWidget *widget, gpointer user_data)
 {
-  (void)user_data;
-  gtk4RemoveChildDropTargets(widget);
+  Ihandle* ih = (Ihandle*)user_data;
+  gtk4RemoveChildDropTargets(widget, (GtkEventController*)iupAttribGet(ih, "_IUPGTK4_DROP_TARGET"));
   g_signal_handlers_disconnect_by_func(widget, gtk4DropFilesWidgetMapped, user_data);
 }
 
@@ -638,7 +656,7 @@ static int gtk4SetDropFilesTargetAttrib(Ihandle* ih, const char* value)
     iupAttribSet(ih, "_IUPGTK4_DROPFILES_TARGET", (char*)async_target);
 
     if (gtk_widget_get_mapped(target_widget))
-      gtk4RemoveChildDropTargets(target_widget);
+      gtk4RemoveChildDropTargets(target_widget, (GtkEventController*)iupAttribGet(ih, "_IUPGTK4_DROP_TARGET"));
     else
       g_signal_connect(target_widget, "map", G_CALLBACK(gtk4DropFilesWidgetMapped), ih);
   }
