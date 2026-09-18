@@ -373,6 +373,18 @@ private:
 };
 
 
+static double haikuCanvasLineStep(Ihandle* ih, bool horiz, double page)
+{
+  double line;
+  if (iupAttribGet(ih, horiz ? "LINEX" : "LINEY"))
+    line = iupAttribGetDouble(ih, horiz ? "LINEX" : "LINEY");
+  else
+    line = page / 10;
+  if (line == 0)
+    line = 1;
+  return line;
+}
+
 class IupHaikuCanvasScrollBar : public BScrollBar
 {
 public:
@@ -380,10 +392,34 @@ public:
     : BScrollBar(BRect(0, 0, 0, 0),
                  dir == B_HORIZONTAL ? "iup_canvas_hsb" : "iup_canvas_vsb",
                  NULL, 0, 0, dir),
-      fIhandle(ih), fHoriz(dir == B_HORIZONTAL), fSilent(false) {}
+      fIhandle(ih), fHoriz(dir == B_HORIZONTAL), fSilent(false),
+      fMouseDown(false), fIsDragging(false) {}
 
   void SetSilent(bool s) { fSilent = s; }
   void SetIhandle(Ihandle* ih) { fIhandle = ih; }
+
+  void MouseDown(BPoint where) override
+  {
+    fMouseDown = true;
+    fIsDragging = false;
+    fLastWhere = where;
+    BScrollBar::MouseDown(where);
+  }
+
+  void MouseMoved(BPoint where, uint32 code, const BMessage* drag) override
+  {
+    if (fMouseDown && where != fLastWhere) fIsDragging = true;
+    BScrollBar::MouseMoved(where, code, drag);
+  }
+
+  void MouseUp(BPoint where) override
+  {
+    BScrollBar::MouseUp(where);
+    if (fIhandle && fIsDragging)
+      firePosCallback(fHoriz ? IUP_SBPOSH : IUP_SBPOSV);
+    fMouseDown = false;
+    fIsDragging = false;
+  }
 
   void ValueChanged(float v) override
   {
@@ -391,24 +427,54 @@ public:
     if (fSilent || !fIhandle || !fIhandle->data) return;
 
     double pos = v;
+    double old_pos = fHoriz ? fIhandle->data->posx : fIhandle->data->posy;
     if (fHoriz) { fIhandle->data->posx = pos; iupAttribSetDouble(fIhandle, "POSX", pos); }
     else        { fIhandle->data->posy = pos; iupAttribSetDouble(fIhandle, "POSY", pos); }
 
     IFniff cb = (IFniff)IupGetCallback(fIhandle, "SCROLL_CB");
     if (cb)
-    {
-      int op = fHoriz ? IUP_SBPOSH : IUP_SBPOSV;
-      cb(fIhandle, op, (float)fIhandle->data->posx, (float)fIhandle->data->posy);
-    }
+      firePosCallback(classifyOp(pos - old_pos));
     else if (IupHaikuCanvasView* inner =
         (IupHaikuCanvasView*)fIhandle->handle)
       inner->Invalidate();
   }
 
 private:
+  int classifyOp(double delta)
+  {
+    int op = fHoriz ? IUP_SBPOSH : IUP_SBPOSV;
+    if (fIsDragging)
+      return fHoriz ? IUP_SBDRAGH : IUP_SBDRAGV;
+    if (!fMouseDown)
+      return op;
+
+    double page = iupAttribGetDouble(fIhandle, fHoriz ? "DX" : "DY");
+    double line = haikuCanvasLineStep(fIhandle, fHoriz, page);
+
+    double amount = delta < 0 ? -delta : delta;
+    double tol = (page - line) * 0.5;
+    if (line > 0 && amount < line + tol)
+      op = fHoriz ? (delta < 0 ? IUP_SBLEFT : IUP_SBRIGHT)
+                  : (delta < 0 ? IUP_SBUP   : IUP_SBDN);
+    else if (page > 0 && amount < page + tol)
+      op = fHoriz ? (delta < 0 ? IUP_SBPGLEFT : IUP_SBPGRIGHT)
+                  : (delta < 0 ? IUP_SBPGUP   : IUP_SBPGDN);
+    return op;
+  }
+
+  void firePosCallback(int op)
+  {
+    IFniff cb = (IFniff)IupGetCallback(fIhandle, "SCROLL_CB");
+    if (cb)
+      cb(fIhandle, op, (float)fIhandle->data->posx, (float)fIhandle->data->posy);
+  }
+
   Ihandle* fIhandle;
   bool fHoriz;
   bool fSilent;
+  bool fMouseDown;
+  bool fIsDragging;
+  BPoint fLastWhere;
 };
 
 
@@ -542,7 +608,7 @@ static void haikuCanvasSyncScrollBar(Ihandle* ih, bool horiz)
     if (pos > hi - page) pos = hi - page;
     sb->SetRange((float)lo, (float)(hi - page));
     sb->SetProportion((float)(page / range));
-    sb->SetSteps((float)(range * 0.05), (float)page);
+    sb->SetSteps((float)haikuCanvasLineStep(ih, horiz, page), (float)page);
     sb->SetValue((float)pos);
   }
   sb->SetSilent(false);
