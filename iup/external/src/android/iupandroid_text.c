@@ -1203,6 +1203,7 @@ IUP_SDK_API int iupdrvTextGetFormatTags(Ihandle* ih, Ihandle* bulk_tag)
   const char* runs;
   char* copy;
   char* line;
+  char* saveptr;
 
   if (!ih->data->is_multiline || !ih->data->has_formatting || !ih->handle)
     return 0;
@@ -1228,7 +1229,7 @@ IUP_SDK_API int iupdrvTextGetFormatTags(Ihandle* ih, Ihandle* bulk_tag)
   if (!copy)
     return 1;
 
-  line = strtok(copy, "\n");
+  line = strtok_r(copy, "\n", &saveptr);
   while (line)
   {
     char face[128] = "", url[512] = "";
@@ -1283,7 +1284,7 @@ IUP_SDK_API int iupdrvTextGetFormatTags(Ihandle* ih, Ihandle* bulk_tag)
         IupSetStrAttribute(formattag, "LINK", url);
     }
 
-    line = strtok(NULL, "\n");
+    line = strtok_r(NULL, "\n", &saveptr);
   }
 
   free(copy);
