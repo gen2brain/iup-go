@@ -104,6 +104,19 @@ public:
     setStyle(new IupQtScrollBarStyle());
     setRange(0, ISCROLLBAR_RANGE);
     setTracking(true);
+
+    /* the page action moves by pageStep, which is the thumb size here, so redo it with PAGESTEP */
+    connect(this, &QAbstractSlider::actionTriggered, this, [this](int action) {
+      if (action != QAbstractSlider::SliderPageStepAdd && action != QAbstractSlider::SliderPageStepSub)
+        return;
+
+      int step = (int)(iup_handle->data->pagestep * ISCROLLBAR_RANGE);
+      if (step < 1) step = 1;
+      if (action == QAbstractSlider::SliderPageStepSub)
+        step = -step;
+
+      setSliderPosition(value() + step);
+    });
   }
 
 protected:
