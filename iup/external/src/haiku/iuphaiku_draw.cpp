@@ -17,6 +17,7 @@
 #include <GradientRadial.h>
 #include <Point.h>
 #include <Region.h>
+#include <String.h>
 #include <View.h>
 
 
@@ -363,15 +364,29 @@ extern "C" IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, in
     while (nl < end && *nl != '\n') ++nl;
     int line_len = (int)(nl - line);
 
+    const char* draw_text = line;
+    int draw_len = line_len;
+    BString truncated;
+
+    if ((flags & IUP_DRAW_ELLIPSIS) && w > 0 && dc->view->StringWidth(line, line_len) > (float)w)
+    {
+      BFont view_font;
+      dc->view->GetFont(&view_font);
+      truncated.SetTo(line, line_len);
+      view_font.TruncateString(&truncated, B_TRUNCATE_END, (float)w);
+      draw_text = truncated.String();
+      draw_len = (int)truncated.Length();
+    }
+
     int line_x = x;
     if ((flags & 0x000F) == IUP_DRAW_CENTER || (flags & 0x000F) == IUP_DRAW_RIGHT)
     {
-      float lw = dc->view->StringWidth(line, line_len);
+      float lw = dc->view->StringWidth(draw_text, draw_len);
       if ((flags & 0x000F) == IUP_DRAW_CENTER) line_x = x + (w - (int)lw) / 2;
       else                                     line_x = x + (w - (int)lw);
     }
 
-    dc->view->DrawString(line, line_len, BPoint((float)line_x, (float)line_y + fh.ascent));
+    dc->view->DrawString(draw_text, draw_len, BPoint((float)line_x, (float)line_y + fh.ascent));
 
     if (nl >= end) break;
     line = nl + 1;
