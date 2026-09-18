@@ -397,10 +397,68 @@ static void iDrawSetLineStyleAndWidth(GC gc, int style, int line_width)
   XChangeGC(iupmot_display, gc, GCLineWidth | GCLineStyle, &gcval);
 }
 
+/* X11 encodes coordinates as 16 bit, a primitive far outside the canvas wraps around */
+#define MOT_DRAW_LIMIT 16384
+
+static int motDrawClamp(int c)
+{
+  if (c < -MOT_DRAW_LIMIT)
+    return -MOT_DRAW_LIMIT;
+  if (c > MOT_DRAW_LIMIT)
+    return MOT_DRAW_LIMIT;
+  return c;
+}
+
+static int motDrawClipLine(int* x1, int* y1, int* x2, int* y2)
+{
+  double dx = (double)(*x2 - *x1), dy = (double)(*y2 - *y1);
+  double t0 = 0.0, t1 = 1.0;
+  double p[4], q[4];
+  int i, ox = *x1, oy = *y1;
+
+  p[0] = -dx; q[0] = (double)(*x1 + MOT_DRAW_LIMIT);
+  p[1] =  dx; q[1] = (double)(MOT_DRAW_LIMIT - *x1);
+  p[2] = -dy; q[2] = (double)(*y1 + MOT_DRAW_LIMIT);
+  p[3] =  dy; q[3] = (double)(MOT_DRAW_LIMIT - *y1);
+
+  for (i = 0; i < 4; i++)
+  {
+    if (p[i] == 0.0)
+    {
+      if (q[i] < 0.0)
+        return 0;
+      continue;
+    }
+
+    {
+      double t = q[i] / p[i];
+      if (p[i] < 0.0)
+      {
+        if (t > t1) return 0;
+        if (t > t0) t0 = t;
+      }
+      else
+      {
+        if (t < t0) return 0;
+        if (t < t1) t1 = t;
+      }
+    }
+  }
+
+  *x2 = ox + iupROUND(t1 * dx);
+  *y2 = oy + iupROUND(t1 * dy);
+  *x1 = ox + iupROUND(t0 * dx);
+  *y1 = oy + iupROUND(t0 * dy);
+  return 1;
+}
+
 IUP_SDK_API void iupdrvDrawRectangle(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color, int style, int line_width)
 {
   iupDrawCheckSwapCoord(x1, x2);
   iupDrawCheckSwapCoord(y1, y2);
+
+  x1 = motDrawClamp(x1); y1 = motDrawClamp(y1);
+  x2 = motDrawClamp(x2); y2 = motDrawClamp(y2);
 
   if (motDrawAlphaColor(dc, color))
   {
@@ -436,6 +494,9 @@ IUP_SDK_API void iupdrvDrawRectangle(IdrawCanvas* dc, int x1, int y1, int x2, in
 
 IUP_SDK_API void iupdrvDrawLine(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color, int style, int line_width)
 {
+  if (!motDrawClipLine(&x1, &y1, &x2, &y2))
+    return;
+
   if (motDrawAlphaColor(dc, color))
   {
     ImotAlphaMask m;
@@ -461,6 +522,9 @@ IUP_SDK_API void iupdrvDrawLine(IdrawCanvas* dc, int x1, int y1, int x2, int y2,
 
 IUP_SDK_API void iupdrvDrawArc(IdrawCanvas* dc, int x1, int y1, int x2, int y2, double a1, double a2, long color, int style, int line_width)
 {
+  x1 = motDrawClamp(x1); y1 = motDrawClamp(y1);
+  x2 = motDrawClamp(x2); y2 = motDrawClamp(y2);
+
   iupDrawCheckSwapCoord(x1, x2);
   iupDrawCheckSwapCoord(y1, y2);
 
@@ -501,6 +565,9 @@ IUP_SDK_API void iupdrvDrawArc(IdrawCanvas* dc, int x1, int y1, int x2, int y2, 
 
 IUP_SDK_API void iupdrvDrawEllipse(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color, int style, int line_width)
 {
+  x1 = motDrawClamp(x1); y1 = motDrawClamp(y1);
+  x2 = motDrawClamp(x2); y2 = motDrawClamp(y2);
+
   iupDrawCheckSwapCoord(x1, x2);
   iupDrawCheckSwapCoord(y1, y2);
 
@@ -559,8 +626,8 @@ IUP_SDK_API void iupdrvDrawPolygon(IdrawCanvas* dc, int* points, int count, long
 
   for (i = 0; i < count; i++)
   {
-    pnt[i].x = (short)points[2*i];
-    pnt[i].y = (short)points[2*i+1];
+    pnt[i].x = (short)motDrawClamp(points[2*i]);
+    pnt[i].y = (short)motDrawClamp(points[2*i+1]);
   }
 
   if (style != IUP_DRAW_FILL)
@@ -614,6 +681,9 @@ IUP_SDK_API void iupdrvDrawPolygon(IdrawCanvas* dc, int* points, int count, long
 
 IUP_SDK_API void iupdrvDrawPixel(IdrawCanvas* dc, int x, int y, long color)
 {
+  if (x < -MOT_DRAW_LIMIT || x > MOT_DRAW_LIMIT || y < -MOT_DRAW_LIMIT || y > MOT_DRAW_LIMIT)
+    return;
+
   if (motDrawAlphaColor(dc, color))
   {
     XRenderColor rc = motDrawRenderColor(color);
@@ -627,6 +697,9 @@ IUP_SDK_API void iupdrvDrawPixel(IdrawCanvas* dc, int x, int y, long color)
 
 IUP_SDK_API void iupdrvDrawRoundedRectangle(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int corner_radius, long color, int style, int line_width)
 {
+  x1 = motDrawClamp(x1); y1 = motDrawClamp(y1);
+  x2 = motDrawClamp(x2); y2 = motDrawClamp(y2);
+
   int diameter, max_radius, use_alpha;
   ImotAlphaMask m;
   Drawable target;
@@ -1319,6 +1392,9 @@ IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_ina
 
 IUP_SDK_API void iupdrvDrawSelectRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2)
 {
+  x1 = motDrawClamp(x1); y1 = motDrawClamp(y1);
+  x2 = motDrawClamp(x2); y2 = motDrawClamp(y2);
+
   iupDrawCheckSwapCoord(x1, x2);
   iupDrawCheckSwapCoord(y1, y2);
 
@@ -1333,6 +1409,9 @@ IUP_SDK_API void iupdrvDrawSelectRect(IdrawCanvas* dc, int x1, int y1, int x2, i
 
 IUP_SDK_API void iupdrvDrawFocusRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2)
 {
+  x1 = motDrawClamp(x1); y1 = motDrawClamp(y1);
+  x2 = motDrawClamp(x2); y2 = motDrawClamp(y2);
+
   iupDrawCheckSwapCoord(x1, x2);
   iupDrawCheckSwapCoord(y1, y2);
 
