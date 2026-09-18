@@ -128,7 +128,7 @@ static int winScrollbarProcessScroll(Ihandle* ih, int msg)
     {
     case SB_LINEUP:
       {
-        int linestep = (int)((ih->data->linestep / range) * IWIN_SB_MAX);
+        int linestep = (int)(ih->data->linestep * IWIN_SB_MAX);
         if (linestep < 1) linestep = 1;
         ipos -= linestep;
         if (ipos < 0) ipos = 0;
@@ -136,20 +136,28 @@ static int winScrollbarProcessScroll(Ihandle* ih, int msg)
       }
     case SB_LINEDOWN:
       {
-        int linestep = (int)((ih->data->linestep / range) * IWIN_SB_MAX);
+        int linestep = (int)(ih->data->linestep * IWIN_SB_MAX);
         if (linestep < 1) linestep = 1;
         ipos += linestep;
         if (ipos > IWIN_SB_MAX - ipage) ipos = IWIN_SB_MAX - ipage;
         break;
       }
     case SB_PAGEUP:
-      ipos -= ipage;
-      if (ipos < 0) ipos = 0;
-      break;
+      {
+        int pagestep = (int)(ih->data->pagestep * IWIN_SB_MAX);
+        if (pagestep < 1) pagestep = 1;
+        ipos -= pagestep;
+        if (ipos < 0) ipos = 0;
+        break;
+      }
     case SB_PAGEDOWN:
-      ipos += ipage;
-      if (ipos > IWIN_SB_MAX - ipage) ipos = IWIN_SB_MAX - ipage;
-      break;
+      {
+        int pagestep = (int)(ih->data->pagestep * IWIN_SB_MAX);
+        if (pagestep < 1) pagestep = 1;
+        ipos += pagestep;
+        if (ipos > IWIN_SB_MAX - ipage) ipos = IWIN_SB_MAX - ipage;
+        break;
+      }
     case SB_TOP:
       ipos = 0;
       break;

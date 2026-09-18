@@ -101,8 +101,8 @@ static void gtkScrollbarUpdateAdjustment(Ihandle* ih)
     (ih->data->val - ih->data->vmin) / range,                /* value */
     0.0,                                                       /* lower */
     1.0,                                                       /* upper */
-    ih->data->linestep / range,                                /* step_increment */
-    ih->data->pagestep / range,                                /* page_increment */
+    ih->data->linestep,                                        /* step_increment */
+    ih->data->pagestep,                                        /* page_increment */
     ih->data->pagesize / range);                               /* page_size */
 }
 
@@ -260,8 +260,8 @@ static int gtkScrollbarMapMethod(Ihandle* ih)
 
   if (range != 0)
   {
-    linestep = ih->data->linestep / range;
-    pagestep = ih->data->pagestep / range;
+    linestep = ih->data->linestep;
+    pagestep = ih->data->pagestep;
     pagesize = ih->data->pagesize / range;
   }
 

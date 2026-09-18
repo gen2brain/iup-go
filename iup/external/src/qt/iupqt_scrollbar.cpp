@@ -190,11 +190,8 @@ static void qtScrollbarUpdateNative(Ihandle* ih)
   int imax = ISCROLLBAR_RANGE - ipage;
   if (imax < 0) imax = 0;
 
-  int istep = (int)((ih->data->linestep / range) * ISCROLLBAR_RANGE);
+  int istep = (int)(ih->data->linestep * ISCROLLBAR_RANGE);
   if (istep < 1) istep = 1;
-
-  int ipagestep = (int)((ih->data->pagestep / range) * ISCROLLBAR_RANGE);
-  if (ipagestep < 1) ipagestep = 1;
 
   int ipos = (int)(((ih->data->val - ih->data->vmin) / range) * ISCROLLBAR_RANGE);
   if (ipos < 0) ipos = 0;

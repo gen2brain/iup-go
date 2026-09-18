@@ -42,7 +42,7 @@ static void androidScrollbarPushSteps(Ihandle* ih)
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
   jclass java_class = IUPJNI_FindClass(IupScrollbarHelper, jni_env, "io/github/gen2brain/iupgo/IupScrollbarHelper");
   jmethodID m = (*jni_env)->GetStaticMethodID(jni_env, java_class, "setSteps", "(Landroid/view/View;D)V");
-  (*jni_env)->CallStaticVoidMethod(jni_env, java_class, m, ih->handle, (jdouble)ih->data->pagestep);
+  (*jni_env)->CallStaticVoidMethod(jni_env, java_class, m, ih->handle, (jdouble)(ih->data->pagestep * (ih->data->vmax - ih->data->vmin)));
   iupAndroid_CheckException(jni_env, "IupScrollbarHelper.setSteps");
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
 }

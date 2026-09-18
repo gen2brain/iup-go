@@ -106,7 +106,7 @@ static void fltkScrollbarUpdateNative(Ihandle* ih)
   sb->value(fval * ISCROLLBAR_RANGE, (int)(fpage * ISCROLLBAR_RANGE),
             0, ISCROLLBAR_RANGE);
 
-  int istep = (int)((ih->data->linestep / range) * ISCROLLBAR_RANGE);
+  int istep = (int)(ih->data->linestep * ISCROLLBAR_RANGE);
   if (istep < 1) istep = 1;
   sb->linesize(istep);
 }

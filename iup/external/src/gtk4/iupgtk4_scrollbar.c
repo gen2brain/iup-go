@@ -70,8 +70,8 @@ static void gtk4ScrollbarUpdateAdjustment(Ihandle* ih)
     (ih->data->val - ih->data->vmin) / range,
     0.0,
     1.0,
-    ih->data->linestep / range,
-    ih->data->pagestep / range,
+    ih->data->linestep,
+    ih->data->pagestep,
     ih->data->pagesize / range);
 }
 
@@ -234,8 +234,8 @@ static int gtk4ScrollbarMapMethod(Ihandle* ih)
 
   if (range != 0)
   {
-    linestep = ih->data->linestep / range;
-    pagestep = ih->data->pagestep / range;
+    linestep = ih->data->linestep;
+    pagestep = ih->data->pagestep;
     pagesize = ih->data->pagesize / range;
   }
 
