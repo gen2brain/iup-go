@@ -314,7 +314,7 @@ public:
     if (msg && iupStrBoolean(IupGetGlobal("INPUTCALLBACKS")))
       iuphaikuFireGlobalInputCB(msg);
 
-    /* Command+letter activates a mnemonic; Command rides physical Alt on the default keymap (see SHORTCUTKEY). */
+    /* Command+letter activates a mnemonic; Command is the Haiku shortcut modifier, IUP reports it as Ctrl. */
     if (msg && msg->what == B_KEY_DOWN && fIhandle && iupObjectCheck(fIhandle))
     {
       int32 mods = 0, raw = 0;

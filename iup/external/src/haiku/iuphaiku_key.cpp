@@ -150,9 +150,9 @@ IUP_DRV_API int iuphaikuKeyPadScanCode(int code, int* byte_val)
 static int haikuApplyModifiers(int code, unsigned int modifiers)
 {
   if (modifiers & B_SHIFT_KEY)   code = iup_XkeyShift(code);
-  if (modifiers & B_CONTROL_KEY) code = iup_XkeyCtrl(code);
-  if (modifiers & B_OPTION_KEY)  code = iup_XkeyAlt(code);
-  if (modifiers & B_COMMAND_KEY) code = iup_XkeySys(code);
+  if (modifiers & B_COMMAND_KEY) code = iup_XkeyCtrl(code);
+  if (modifiers & B_CONTROL_KEY) code = iup_XkeyAlt(code);
+  if (modifiers & B_OPTION_KEY)  code = iup_XkeySys(code);
   return code;
 }
 
@@ -198,9 +198,9 @@ IUP_DRV_API int iuphaikuKeyDecode(int byte, int raw_char, int key, unsigned int 
 IUP_DRV_API void iuphaikuButtonKeySetStatus(unsigned int modifiers, unsigned int buttons, int button, char* status, int doubleclick)
 {
   if (modifiers & B_SHIFT_KEY)   iupKEY_SETSHIFT(status);
-  if (modifiers & B_CONTROL_KEY) iupKEY_SETCONTROL(status);
-  if (modifiers & B_OPTION_KEY)  iupKEY_SETALT(status);
-  if (modifiers & B_COMMAND_KEY) iupKEY_SETSYS(status);
+  if (modifiers & B_COMMAND_KEY) iupKEY_SETCONTROL(status);
+  if (modifiers & B_CONTROL_KEY) iupKEY_SETALT(status);
+  if (modifiers & B_OPTION_KEY)  iupKEY_SETSYS(status);
 
   if ((buttons & B_PRIMARY_MOUSE_BUTTON)   || button == 1) iupKEY_SETBUTTON1(status);
   if ((buttons & B_TERTIARY_MOUSE_BUTTON)  || button == 2) iupKEY_SETBUTTON2(status);
@@ -235,7 +235,7 @@ extern "C" IUP_SDK_API void iupdrvKeyEncode(int code, unsigned int* keyval, unsi
   *keyval = native;
 
   if (iup_isShiftXkey(code)) *state |= B_SHIFT_KEY;
-  if (iup_isCtrlXkey(code))  *state |= B_CONTROL_KEY;
-  if (iup_isAltXkey(code))   *state |= B_OPTION_KEY;
-  if (iup_isSysXkey(code))   *state |= B_COMMAND_KEY;
+  if (iup_isCtrlXkey(code))  *state |= B_COMMAND_KEY;
+  if (iup_isAltXkey(code))   *state |= B_CONTROL_KEY;
+  if (iup_isSysXkey(code))   *state |= B_OPTION_KEY;
 }

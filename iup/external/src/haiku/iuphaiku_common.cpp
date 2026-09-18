@@ -424,9 +424,9 @@ extern "C" IUP_SDK_API void iupdrvSendKey(int key, int press)
   {
     byte_val = (unsigned int)pad_byte;
     if (iup_isShiftXkey(key)) state |= B_SHIFT_KEY;
-    if (iup_isCtrlXkey(key))  state |= B_CONTROL_KEY;
-    if (iup_isAltXkey(key))   state |= B_OPTION_KEY;
-    if (iup_isSysXkey(key))   state |= B_COMMAND_KEY;
+    if (iup_isCtrlXkey(key))  state |= B_COMMAND_KEY;
+    if (iup_isAltXkey(key))   state |= B_CONTROL_KEY;
+    if (iup_isSysXkey(key))   state |= B_OPTION_KEY;
   }
   else
   {

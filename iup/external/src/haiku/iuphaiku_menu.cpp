@@ -135,7 +135,8 @@ static void haikuItemApplyKey(Ihandle* ih, BMenuItem* item, const char* title)
   }
 
   if (iup_isShiftXkey(code)) mods |= B_SHIFT_KEY;
-  if (iup_isAltXkey(code)) mods |= B_OPTION_KEY;
+  if (iup_isAltXkey(code)) mods |= B_CONTROL_KEY;
+  if (iup_isSysXkey(code)) mods |= B_OPTION_KEY;
   item->SetShortcut(ch, mods);
 }
 
