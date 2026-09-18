@@ -263,7 +263,8 @@ bool iuphaikuCanvasOnMessageReceived(Ihandle* ih, BView* view, BMessage* msg)
     msg->FindFloat("be:wheel_delta_y", &dy);
 
     int32 mods = 0;
-    msg->FindInt32("modifiers", &mods);
+    if (msg->FindInt32("modifiers", &mods) != B_OK)
+      mods = (int32)modifiers();
 
     BPoint pt;
     uint32 buttons = 0;
@@ -274,7 +275,11 @@ bool iuphaikuCanvasOnMessageReceived(Ihandle* ih, BView* view, BMessage* msg)
 
     /* Haiku wheel delta is positive-down; IUP convention positive-up. */
     IFnfiis cb = (IFnfiis)IupGetCallback(ih, "WHEEL_CB");
-    if (cb) cb(ih, -dy, (int)pt.x, (int)pt.y, status);
+    if (cb)
+    {
+      cb(ih, -dy, (int)pt.x, (int)pt.y, status);
+      return true;
+    }
 
     /* drive the vertical scrollbar so SCROLL_CB-based scrollers get wheel scrolling */
     if (ih->data && (ih->data->sb & IUP_SB_VERT) && dy != 0.0f)
