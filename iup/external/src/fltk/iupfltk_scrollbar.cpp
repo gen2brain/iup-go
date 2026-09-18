@@ -39,6 +39,14 @@ public:
       type(FL_VERTICAL);
   }
 
+  void pageBy(int dir)
+  {
+    int step = (int)(iup_handle->data->pagestep * ISCROLLBAR_RANGE);
+    if (step < 1) step = 1;
+    value(clamp(value() + dir * step));
+    do_callback();
+  }
+
   int handle(int event) override
   {
     switch (event)
@@ -73,9 +81,17 @@ public:
           int ss = (int)(slider_size() * track + 0.5);
           int sliderpos = arrow + (int)(val * (track - ss) + 0.5);
           if (pos < sliderpos)
+          {
             last_op = is_horiz ? IUP_SBPGLEFT : IUP_SBPGUP;
+            pageBy(-1);
+            return 1;
+          }
           else if (pos >= sliderpos + ss)
+          {
             last_op = is_horiz ? IUP_SBPGRIGHT : IUP_SBPGDN;
+            pageBy(1);
+            return 1;
+          }
           else
             last_op = is_horiz ? IUP_SBDRAGH : IUP_SBDRAGV;
         }
