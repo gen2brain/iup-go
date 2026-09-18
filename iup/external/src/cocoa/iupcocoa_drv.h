@@ -86,6 +86,9 @@ IUP_DRV_API int iupcocoaKeyDecode(CGEventRef event);
 #endif
 IUP_DRV_API void iupcocoaButtonKeySetStatus(NSEvent* ns_event, char* out_status);
 
+/* reload after rows were removed; GNUstep leaves their views behind */
+IUP_DRV_API void iupcocoaReloadTableView(NSTableView* tableView);
+
 #ifdef GNUSTEP
 /* GNUstep needs drawsGrid=NO and autoresizesAllColumnsToFit=YES set directly; the setters are no-ops */
 IUP_DRV_API void iupcocoaGnustepConfigureTableView(NSTableView* tableView);

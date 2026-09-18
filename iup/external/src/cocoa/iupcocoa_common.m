@@ -1058,6 +1058,16 @@ IUP_SDK_API int iupdrvGetScrollbarSize(void)
   }
 }
 
+IUP_DRV_API void iupcocoaReloadTableView(NSTableView* tableView)
+{
+  [tableView reloadData];
+
+#ifdef GNUSTEP
+  for (NSView* row_view in [NSArray arrayWithArray:[tableView subviews]])
+    [row_view removeFromSuperview];
+#endif
+}
+
 #ifdef GNUSTEP
 IUP_DRV_API void iupcocoaGnustepConfigureTableView(NSTableView* tableView)
 {
