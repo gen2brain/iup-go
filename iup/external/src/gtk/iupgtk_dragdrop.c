@@ -24,6 +24,9 @@
 #include "iupgtk_drv.h"
 
 
+/* set while an IUP source drags, so an external source keeps the GTK copy default */
+static int gtk_drag_source_move = 0;
+
 static void gtkDragDataReceived(GtkWidget *widget, GdkDragContext *drag_context, gint x, gint y, GtkSelectionData *seldata, guint info, guint time, Ihandle *ih)
 {
   IFnsViii cbDropData = (IFnsViii)IupGetCallback(ih, "DROPDATA_CB");
@@ -133,22 +136,31 @@ static gboolean gtkDragMotion(GtkWidget *widget, GdkDragContext *drag_context, g
   if(targetAtom != GDK_NONE)
   {
     IFniis cbDropMotion = (IFniis)IupGetCallback(ih, "DROPMOTION_CB");
+    GdkModifierType mask;
+    GdkDragAction action, actions;
+
+    iupgtkWindowGetPointer(iupgtkGetWindow(widget), NULL, NULL, &mask);
 
     if(cbDropMotion)
     {
       char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
-      GdkModifierType mask;
-      iupgtkWindowGetPointer(iupgtkGetWindow(widget), NULL, NULL, &mask);
 
       iupgtkButtonKeySetStatus(mask, 0, status, 0);
       cbDropMotion(ih, x, y, status);
     }
 
 #if GTK_CHECK_VERSION(2, 22, 0)
-    gdk_drag_status(drag_context, gdk_drag_context_get_suggested_action(drag_context), time);
+    action = gdk_drag_context_get_suggested_action(drag_context);
+    actions = gdk_drag_context_get_actions(drag_context);
 #else
-    gdk_drag_status(drag_context, drag_context->suggested_action, time);
+    action = drag_context->suggested_action;
+    actions = drag_context->actions;
 #endif
+
+    if (gtk_drag_source_move && !(mask & GDK_CONTROL_MASK) && (actions & GDK_ACTION_MOVE))
+      action = GDK_ACTION_MOVE;
+
+    gdk_drag_status(drag_context, action, time);
     return TRUE;
   }
   (void)ih;
@@ -162,6 +174,8 @@ static gboolean gtkDragMotion(GtkWidget *widget, GdkDragContext *drag_context, g
 static void gtkDragEnd(GtkWidget *widget, GdkDragContext *drag_context, Ihandle *ih)
 {
   IFni cbDrag = (IFni)IupGetCallback(ih, "DRAGEND_CB");
+
+  gtk_drag_source_move = 0;
   if(cbDrag)
   {
     GdkDragAction action;
@@ -189,6 +203,9 @@ static void gtkDragBegin(GtkWidget *widget, GdkDragContext *drag_context, Ihandl
   char* value;
 
   IFnii cbDragBegin = (IFnii)IupGetCallback(ih, "DRAGBEGIN_CB");
+
+  gtk_drag_source_move = iupAttribGetBoolean(ih, "DRAGSOURCEMOVE");
+
   if(cbDragBegin)
   {
     int x, y;  /* the returned position is not exactly the start position. */
