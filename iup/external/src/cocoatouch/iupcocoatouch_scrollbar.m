@@ -169,7 +169,7 @@ static void cocoaTouchScrollbarFire(Ihandle* ih, int op, double old_val)
 	if (ih->data->inverted) before = !before;
 
 	double old_val = ih->data->val;
-	double step = ih->data->pagestep;
+	double step = ih->data->pagestep * (ih->data->vmax - ih->data->vmin);
 	if (before) ih->data->val -= step;
 	else        ih->data->val += step;
 	iupScrollbarCropValue(ih);

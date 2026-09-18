@@ -50,7 +50,7 @@ static void eflScrollbarUpdateRange(Ihandle* ih)
   efl_ui_range_limits_set(slider, ih->data->vmin, max_pos);
   efl_ui_range_value_set(slider, ih->data->val);
   if (ih->data->linestep > 0)
-    efl_ui_range_step_set(slider, ih->data->linestep);
+    efl_ui_range_step_set(slider, ih->data->linestep * (ih->data->vmax - ih->data->vmin));
 
   iupAttribSet(ih, "_IUPEFL_SB_UPDATING", NULL);
 }
