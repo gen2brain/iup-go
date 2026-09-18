@@ -131,7 +131,7 @@ static int winuiScrollbarSetLineStepAttrib(Ihandle* ih, const char* value)
   {
     ScrollBar sb = winuiGetHandle<ScrollBar>(ih);
     if (sb)
-      sb.SmallChange(ih->data->linestep);
+      sb.SmallChange(ih->data->linestep * (ih->data->vmax - ih->data->vmin));
   }
   return 0;
 }
@@ -142,7 +142,7 @@ static int winuiScrollbarSetPageStepAttrib(Ihandle* ih, const char* value)
   {
     ScrollBar sb = winuiGetHandle<ScrollBar>(ih);
     if (sb)
-      sb.LargeChange(ih->data->pagestep);
+      sb.LargeChange(ih->data->pagestep * (ih->data->vmax - ih->data->vmin));
   }
   return 0;
 }
@@ -206,8 +206,8 @@ static int winuiScrollbarMapMethod(Ihandle* ih)
   sb.Maximum(ih->data->vmax - ih->data->pagesize);
   sb.Value(ih->data->val);
   sb.ViewportSize(ih->data->pagesize);
-  sb.SmallChange(ih->data->linestep);
-  sb.LargeChange(ih->data->pagestep);
+  sb.SmallChange(ih->data->linestep * (ih->data->vmax - ih->data->vmin));
+  sb.LargeChange(ih->data->pagestep * (ih->data->vmax - ih->data->vmin));
 
   if (ih->data->orientation == ISCROLLBAR_HORIZONTAL)
     sb.Orientation(Orientation::Horizontal);
