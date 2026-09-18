@@ -929,6 +929,14 @@ extern "C" IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, in
   else
     textFormat->SetWordWrapping(DWRITE_WORD_WRAPPING_NO_WRAP);
 
+  if (flags & IUP_DRAW_ELLIPSIS)
+  {
+    DWRITE_TRIMMING trimming = { DWRITE_TRIMMING_GRANULARITY_CHARACTER, 0, 0 };
+    com_ptr<IDWriteInlineObject> ellipsisSign;
+    if (SUCCEEDED(g_dwriteFactory->CreateEllipsisTrimmingSign(textFormat.get(), ellipsisSign.put())))
+      textFormat->SetTrimming(&trimming, ellipsisSign.get());
+  }
+
   wchar_t* wtext = nullptr;
   int wlen = 0;
 
