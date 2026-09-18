@@ -182,7 +182,7 @@ static int iMultiBoxUpdateAttribFromFont(Ihandle* ih)
 
 /**********************************************************************************/
 
-static void iMultiBoxComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *children_expand)
+static void iMultiBoxComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* children_expand)
 {
   Ihandle* child;
   int max_width = 0;
@@ -472,7 +472,7 @@ static int iMultiBoxCreateMethod(Ihandle* ih, void** params)
 
 /******************************************************************************/
 
-IUP_API Ihandle* IupMultiBoxv(Ihandle **children)
+IUP_API Ihandle* IupMultiBoxv(Ihandle** children)
 {
   return IupCreatev("multibox", (void**)children);
 }
@@ -484,7 +484,7 @@ IUP_API Ihandle* IupMultiBoxV(Ihandle* child, va_list arglist)
 
 IUP_API Ihandle* IupMultiBox(Ihandle* child, ...)
 {
-  Ihandle *ih;
+  Ihandle* ih;
 
   va_list arglist;
   va_start(arglist, child);

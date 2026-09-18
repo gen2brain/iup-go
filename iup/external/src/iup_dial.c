@@ -77,7 +77,7 @@ static long iDialGetFgColor(Ihandle* ih, double a)
   return ih->data->fgcolor[IDIAL_NCOLORS - i];
 }
 
-static void iDialDrawVerticalShading(Ihandle* ih, int *ymin, int *ymax)
+static void iDialDrawVerticalShading(Ihandle* ih, int* ymin, int* ymax)
 {
   int i, border = ih->data->flat ? 1 : 2;
   double delta = (0.5 * M_PI) / IDIAL_NCOLORS;
@@ -162,7 +162,7 @@ static void iDialDrawVertical(Ihandle* ih)
   }
 }
 
-static void iDialDrawHorizontalShading(Ihandle* ih, int *xmin, int *xmax)
+static void iDialDrawHorizontalShading(Ihandle* ih, int* xmin, int* xmax)
 {
   long fgcolor;
   int i, border = ih->data->flat ? 1 : 2;
@@ -415,7 +415,7 @@ static int iDialButtonRelease(Ihandle* ih, int button)
 
 /******************************************************************/
 
-static int iDialMotionVertical_CB(Ihandle* ih, int x, int y, char *status)
+static int iDialMotionVertical_CB(Ihandle* ih, int x, int y, char* status)
 {
   IFn cb;
   (void)x; /* not used */
@@ -435,7 +435,7 @@ static int iDialMotionVertical_CB(Ihandle* ih, int x, int y, char *status)
   return IUP_DEFAULT;
 }
 
-static int iDialMotionHorizontal_CB(Ihandle* ih, int x, int y, char *status)
+static int iDialMotionHorizontal_CB(Ihandle* ih, int x, int y, char* status)
 {
   IFn cb;
   (void)y;
@@ -455,7 +455,7 @@ static int iDialMotionHorizontal_CB(Ihandle* ih, int x, int y, char *status)
   return IUP_DEFAULT;
 }
 
-static int iDialMotionCircular_CB(Ihandle* ih, int x, int y, char *status)
+static int iDialMotionCircular_CB(Ihandle* ih, int x, int y, char* status)
 {
   int cx = ih->data->w / 2;
   int cy = ih->data->h / 2;
@@ -752,7 +752,7 @@ static int iDialSetFlatColorAttrib(Ihandle* ih, const char* value)
 
 /****************************************************************************/
 
-static int iDialCreateMethod(Ihandle* ih, void **params)
+static int iDialCreateMethod(Ihandle* ih, void** params)
 {
   char* orientation = "HORIZONTAL";
   if (params && params[0])
@@ -826,7 +826,7 @@ Iclass* iupDialNewClass(void)
 
 IUP_API Ihandle* IupDial(const char* orientation)
 {
-  void *params[2];
+  void* params[2];
   params[0] = (void*)orientation;
   params[1] = NULL;
   return IupCreatev("dial", params);

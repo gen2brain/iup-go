@@ -26,7 +26,7 @@ IUP_SDK_API void iupdrvFontFinish(void);
 /** Retrieve the character size for the selected font.
  * Should be used only to calculate the SIZE attribute.
  * \ingroup drvfont */
-IUP_SDK_API void iupdrvFontGetCharSize(Ihandle* ih, int *charwidth, int *charheight);
+IUP_SDK_API void iupdrvFontGetCharSize(Ihandle* ih, int* charwidth, int* charheight);
 
 /** Retrieve the string width for the selected font.
  * \ingroup drvfont */
@@ -36,16 +36,16 @@ IUP_SDK_API int iupdrvFontGetStringWidth(Ihandle* ih, const char* str);
  * Width is the maximum line width. \n
  * Height is charheight*number_of_lines (this will avoid line size variations).
  * \ingroup drvfont */
-IUP_SDK_API void iupdrvFontGetMultiLineStringSize(Ihandle* ih, const char* str, int *w, int *h);
+IUP_SDK_API void iupdrvFontGetMultiLineStringSize(Ihandle* ih, const char* str, int* w, int* h);
 
 /** Same as \ref iupdrvFontGetMultiLineStringSize but not associated with a control.
  * Used in IupDraw.\n
  *\ingroup drvfont */
-IUP_SDK_API void iupdrvFontGetTextSize(const char* font, const char* str, int len, int *w, int *h);
+IUP_SDK_API void iupdrvFontGetTextSize(const char* font, const char* str, int len, int* w, int* h);
 
 /** Returns information about the font. \n
  *\ingroup drvfont */
-IUP_SDK_API void iupdrvFontGetFontDim(const char* font, int *max_width, int *line_height, int *ascent, int *descent);
+IUP_SDK_API void iupdrvFontGetFontDim(const char* font, int* max_width, int* line_height, int* ascent, int* descent);
 
 /** Returns the System default font.
  * \ingroup drvfont */
@@ -68,27 +68,27 @@ IUP_SDK_API char* iupGetFontValue(Ihandle* ih);
 /** Cached wrapper for \ref iupdrvFontGetMultiLineStringSize.
  * Reuses the last measured size when font, markup and string are unchanged.
  *\ingroup drvfont */
-IUP_SDK_API void iupFontGetMultiLineStringSize(Ihandle* ih, const char* str, int *w, int *h);
+IUP_SDK_API void iupFontGetMultiLineStringSize(Ihandle* ih, const char* str, int* w, int* h);
 
 /** Parse the font format description.
  * Returns a non zero value if successful.
  * \ingroup drvfont */
-IUP_SDK_API int iupGetFontInfo(const char* font, char* typeface, int *size, int *is_bold, int *is_italic, int *is_underline, int *is_strikeout);
+IUP_SDK_API int iupGetFontInfo(const char* font, char* typeface, int* size, int* is_bold, int* is_italic, int* is_underline, int* is_strikeout);
 
 /** Parse the Pango font format description.
  * Returns a non-zero value if successful.
  * \ingroup drvfont */
-IUP_SDK_API int iupFontParsePango(const char *value, char* typeface, int *size, int *bold, int *italic, int *underline, int *strikeout);
+IUP_SDK_API int iupFontParsePango(const char* value, char* typeface, int* size, int* bold, int* italic, int* underline, int* strikeout);
 
 /** Parse the old IUP Windows font format description.
  * Returns a non-zero value if successful.
  * \ingroup drvfont */
-IUP_SDK_API int iupFontParseWin(const char *value, char* typeface, int *size, int *bold, int *italic, int *underline, int *strikeout);
+IUP_SDK_API int iupFontParseWin(const char* value, char* typeface, int* size, int* bold, int* italic, int* underline, int* strikeout);
 
 /** Parse the X-Windows font format description.
  * Returns a non-zero value if successful.
  * \ingroup drvfont */
-IUP_SDK_API int iupFontParseX(const char *value, char *typeface, int typeface_size, int *size, int *bold, int *italic, int *underline, int *strikeout);
+IUP_SDK_API int iupFontParseX(const char* value, char* typeface, int typeface_size, int* size, int* bold, int* italic, int* underline, int* strikeout);
 
 /** Changes the FONT style only.
  * \ingroup attribfunc */

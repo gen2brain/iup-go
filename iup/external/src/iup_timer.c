@@ -19,7 +19,7 @@
 long long iupTimerGetLongLong(Ihandle* ih, const char* name)
 {
   long long i = 0;
-  char *value = iupAttribGetStr(ih, name);
+  char* value = iupAttribGetStr(ih, name);
   if (value)
   {
     if (sscanf(value, "%lld", &i) != 1)
@@ -28,7 +28,7 @@ long long iupTimerGetLongLong(Ihandle* ih, const char* name)
   return i;
 }
 
-static int iTimerSetRunAttrib(Ihandle *ih, const char *value)
+static int iTimerSetRunAttrib(Ihandle* ih, const char* value)
 {
   if (iupStrBoolean(value))
     iupdrvTimerRun(ih);
@@ -38,12 +38,12 @@ static int iTimerSetRunAttrib(Ihandle *ih, const char *value)
   return 0;
 }
 
-static char* iTimerGetRunAttrib(Ihandle *ih)
+static char* iTimerGetRunAttrib(Ihandle* ih)
 {
   return iupStrReturnBoolean (ih->serial > 0);
 }
 
-static char* iTimerGetWidAttrib(Ihandle *ih)
+static char* iTimerGetWidAttrib(Ihandle* ih)
 {
   return iupStrReturnInt(ih->serial);
 }

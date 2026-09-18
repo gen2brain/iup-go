@@ -27,7 +27,7 @@
 /* set while an IUP source drags, so an external source keeps the GTK copy default */
 static int gtk_drag_source_move = 0;
 
-static void gtkDragDataReceived(GtkWidget *widget, GdkDragContext *drag_context, gint x, gint y, GtkSelectionData *seldata, guint info, guint time, Ihandle *ih)
+static void gtkDragDataReceived(GtkWidget* widget, GdkDragContext* drag_context, gint x, gint y, GtkSelectionData* seldata, guint info, guint time, Ihandle* ih)
 {
   IFnsViii cbDropData = (IFnsViii)IupGetCallback(ih, "DROPDATA_CB");
   void* targetData = NULL;
@@ -72,14 +72,14 @@ static void gtkDragDataReceived(GtkWidget *widget, GdkDragContext *drag_context,
   (void)time;
 }
 
-static void gtkDragDataGet(GtkWidget *widget, GdkDragContext *drag_context, GtkSelectionData *seldata, guint info, guint time, Ihandle* ih)
+static void gtkDragDataGet(GtkWidget* widget, GdkDragContext* drag_context, GtkSelectionData* seldata, guint info, guint time, Ihandle* ih)
 {
   IFnsVi cbDragData = (IFnsVi)IupGetCallback(ih, "DRAGDATA_CB");
   IFns cbDragDataSize = (IFns)IupGetCallback(ih, "DRAGDATASIZE_CB");
   if(cbDragData && cbDragDataSize)
   {
     void* sourceData;
-    char *type;
+    char* type;
     int size;
     GdkDragAction action;
 
@@ -124,7 +124,7 @@ static void gtkDragDataGet(GtkWidget *widget, GdkDragContext *drag_context, GtkS
   (void)info;
 }
 
-static gboolean gtkDragMotion(GtkWidget *widget, GdkDragContext *drag_context, gint x, gint y, guint time, Ihandle* ih)
+static gboolean gtkDragMotion(GtkWidget* widget, GdkDragContext* drag_context, gint x, gint y, guint time, Ihandle* ih)
 {
   GdkAtom targetAtom;
 
@@ -171,7 +171,7 @@ static gboolean gtkDragMotion(GtkWidget *widget, GdkDragContext *drag_context, g
   return FALSE;
 }
 
-static void gtkDragEnd(GtkWidget *widget, GdkDragContext *drag_context, Ihandle *ih)
+static void gtkDragEnd(GtkWidget* widget, GdkDragContext* drag_context, Ihandle* ih)
 {
   IFni cbDrag = (IFni)IupGetCallback(ih, "DRAGEND_CB");
 
@@ -198,7 +198,7 @@ static void gtkDragEnd(GtkWidget *widget, GdkDragContext *drag_context, Ihandle 
   (void)widget;
 }
 
-static void gtkDragBegin(GtkWidget *widget, GdkDragContext *drag_context, Ihandle *ih)
+static void gtkDragBegin(GtkWidget* widget, GdkDragContext* drag_context, Ihandle* ih)
 {
   char* value;
 
@@ -256,7 +256,7 @@ static GtkTargetList* gtkCreateTargetList(const char* value)
 
 static int gtkSetDropTypesAttrib(Ihandle* ih, const char* value)
 {
-  GtkTargetList *targetlist = (GtkTargetList*)iupAttribGet(ih, "_IUPGTK_DROP_TARGETLIST");
+  GtkTargetList* targetlist = (GtkTargetList*)iupAttribGet(ih, "_IUPGTK_DROP_TARGETLIST");
   if (targetlist)
   {
     gtk_target_list_unref(targetlist);
@@ -283,8 +283,8 @@ static int gtkSetDropTargetAttrib(Ihandle* ih, const char* value)
 {
   if(iupStrBoolean(value))
   {
-    GtkTargetList *targetlist = (GtkTargetList*)iupAttribGet(ih, "_IUPGTK_DROP_TARGETLIST");
-    GtkTargetEntry *drop_types_entry;
+    GtkTargetList* targetlist = (GtkTargetList*)iupAttribGet(ih, "_IUPGTK_DROP_TARGETLIST");
+    GtkTargetEntry* drop_types_entry;
     GtkWidget* widget;
     int targetlist_count;
 
@@ -309,7 +309,7 @@ static int gtkSetDropTargetAttrib(Ihandle* ih, const char* value)
 
 static int gtkSetDragTypesAttrib(Ihandle* ih, const char* value)
 {
-  GtkTargetList *targetlist = (GtkTargetList*)iupAttribGet(ih, "_IUPGTK_DRAG_TARGETLIST");
+  GtkTargetList* targetlist = (GtkTargetList*)iupAttribGet(ih, "_IUPGTK_DRAG_TARGETLIST");
   if (targetlist)
   {
     gtk_target_list_unref(targetlist);
@@ -328,8 +328,8 @@ static int gtkSetDragSourceAttrib(Ihandle* ih, const char* value)
 {
   if (iupStrBoolean(value))
   {
-    GtkTargetList *targetlist = (GtkTargetList*)iupAttribGet(ih, "_IUPGTK_DRAG_TARGETLIST");
-    GtkTargetEntry *drag_types_entry;
+    GtkTargetList* targetlist = (GtkTargetList*)iupAttribGet(ih, "_IUPGTK_DRAG_TARGETLIST");
+    GtkTargetEntry* drag_types_entry;
     GtkWidget* widget;
     int targetlist_count;
 
@@ -358,7 +358,7 @@ static int gtkSetDragSourceAttrib(Ihandle* ih, const char* value)
 
 static void gtkDropFileDragDataReceived(GtkWidget* w, GdkDragContext* context, int x, int y, GtkSelectionData* seldata, guint info, guint time, Ihandle* ih)
 {
-  gchar **uris = NULL, *data = NULL;
+  gchar** uris = NULL, *data = NULL;
   int i, count;
   Ihandle* cb_ih = ih;
   IFnsiii cb;

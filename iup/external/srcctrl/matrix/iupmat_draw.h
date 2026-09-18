@@ -31,8 +31,8 @@ void iupMatrixDrawCB(Ihandle* ih);
 int iupMatrixDrawSetRedrawAttrib(Ihandle* ih, const char* value);
 
 /* Aux, don't actually draw anything */
-void iupMatrixDrawSetDropFeedbackArea(int *x1, int *y1, int *x2, int *y2);
-void iupMatrixDrawSetToggleFeedbackArea(int toggle_centered, int *x1, int *y1, int *x2, int *y2);
+void iupMatrixDrawSetDropFeedbackArea(int* x1, int* y1, int* x2, int* y2);
+void iupMatrixDrawSetToggleFeedbackArea(int toggle_centered, int* x1, int* y1, int* x2, int* y2);
 
 
 #ifdef __cplusplus

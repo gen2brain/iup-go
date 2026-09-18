@@ -14,7 +14,7 @@ extern "C" {
 /* Returns the IUP handle given the Windows handle. */
 
 IUP_DRV_API Ihandle* iupwinHandleGet(InativeHandle* handle);
-IUP_DRV_API void iupwinHandleAdd(Ihandle *ih, InativeHandle* handle);
+IUP_DRV_API void iupwinHandleAdd(Ihandle* ih, InativeHandle* handle);
 IUP_DRV_API void iupwinHandleRemove(InativeHandle* handle);
 IUP_DRV_API void iupwinHandleInit(void);
 IUP_DRV_API void iupwinHandleFinish(void);

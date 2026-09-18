@@ -842,7 +842,7 @@ static void cocoaSourceDragProvideDataForTypeUser(Ihandle* ih, NSPasteboard* pas
   return dragging_item;
 }
 
-- (NSString *) filePromiseProvider:(NSFilePromiseProvider*)file_promise_provider fileNameForType:(NSString*)file_type
+- (NSString*) filePromiseProvider:(NSFilePromiseProvider*)file_promise_provider fileNameForType:(NSString*)file_type
 {
   Ihandle* ih = [self ihandle];
   IFnssi file_promise_name_callback = (IFnssi)IupGetCallback(ih, "DRAGFILECREATENAME_CB");

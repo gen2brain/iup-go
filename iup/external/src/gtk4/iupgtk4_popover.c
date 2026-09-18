@@ -19,7 +19,7 @@
 #include "iupgtk4_drv.h"
 
 
-static void gtk4PopoverClosedCb(GtkPopover *popover, Ihandle* ih)
+static void gtk4PopoverClosedCb(GtkPopover* popover, Ihandle* ih)
 {
   IFni show_cb;
 

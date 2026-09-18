@@ -17,9 +17,9 @@
 #include "iupmot_drv.h"
 
 
-static void motTimerProc(XtPointer client_data, XtIntervalId *id)
+static void motTimerProc(XtPointer client_data, XtIntervalId* id)
 {
-  Ihandle *ih = (Ihandle*)client_data;
+  Ihandle* ih = (Ihandle*)client_data;
   Icallback cb;
   (void)id;
 
@@ -43,7 +43,7 @@ static void motTimerProc(XtPointer client_data, XtIntervalId *id)
   }
 }
 
-IUP_SDK_API void iupdrvTimerRun(Ihandle *ih)
+IUP_SDK_API void iupdrvTimerRun(Ihandle* ih)
 {
   unsigned int time_ms;
 

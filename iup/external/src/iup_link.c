@@ -59,7 +59,7 @@ static int iLinkMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-static int iLinkCreateMethod(Ihandle* ih, void **params)
+static int iLinkCreateMethod(Ihandle* ih, void** params)
 {
   if (params)
   {
@@ -102,9 +102,9 @@ Iclass* iupLinkNewClass(void)
   return ic;
 }
 
-IUP_API Ihandle* IupLink(const char *url, const char * title)
+IUP_API Ihandle* IupLink(const char* url, const char * title)
 {
-  void *params[3];
+  void* params[3];
   params[0] = (void*)url;
   params[1] = (void*)title;
   params[2] = NULL;

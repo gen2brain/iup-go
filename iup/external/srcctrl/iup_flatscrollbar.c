@@ -22,12 +22,12 @@
 
 #define SB_NONE -1
 
-static Ihandle* iFlatScrollBarGetVertical(Ihandle *ih)
+static Ihandle* iFlatScrollBarGetVertical(Ihandle* ih)
 {
   return ih->firstchild;  /* sb_vert */
 }
 
-static Ihandle* iFlatScrollBarGetHorizontal(Ihandle *ih)
+static Ihandle* iFlatScrollBarGetHorizontal(Ihandle* ih)
 {
   return ih->firstchild->brother;  /* sb_horiz */
 }
@@ -66,7 +66,7 @@ static void iFlatScrollBarRedrawHorizontal(Ihandle* ih)
   }
 }
 
-static void iFlatScrollBarNormalizePos(int *pos, int max, int d)
+static void iFlatScrollBarNormalizePos(int* pos, int max, int d)
 {
   if (*pos > max - d) *pos = max - d;
   if (*pos < 0) *pos = 0;
@@ -88,7 +88,7 @@ static int iFlatScrollBarGetLineX(Ihandle* ih, int dx)
   return linex;
 }
 
-static void iFlatScrollBarNotify(Ihandle *ih, int handler)
+static void iFlatScrollBarNotify(Ihandle* ih, int handler)
 {
   if (handler == SB_NONE)
   {
@@ -115,7 +115,7 @@ static void iFlatScrollBarNotify(Ihandle *ih, int handler)
 }
 
 /* used only in IupFlatScrollBox */
-IUP_SDK_API void iupFlatScrollBarSetPos(Ihandle *ih, int posx, int posy)
+IUP_SDK_API void iupFlatScrollBarSetPos(Ihandle* ih, int posx, int posy)
 {
   iFlatScrollBarNormalizePos(&posx, iupAttribGetInt(ih, "XMAX"), iupAttribGetInt(ih, "DX"));
   iFlatScrollBarNormalizePos(&posy, iupAttribGetInt(ih, "YMAX"), iupAttribGetInt(ih, "DY"));
@@ -185,7 +185,7 @@ static void iFlatScrollBarDrawVertical(Ihandle* sb_vert, IdrawCanvas* dc, int ac
   int show_transparent = iupAttribGetBoolean(sb_vert->parent, "SHOWTRANSPARENT");
   int arrow_size = sb_size;
 
-  const char *fgcolor_inc = fgcolor,
+  const char* fgcolor_inc = fgcolor,
     *fgcolor_dec = fgcolor,
     *fgcolor_drag = fgcolor;
 
@@ -265,7 +265,7 @@ static void iFlatScrollBarDrawHorizontal(Ihandle* sb_horiz, IdrawCanvas* dc, int
   int show_transparent = iupAttribGetBoolean(sb_horiz->parent, "SHOWTRANSPARENT");
   int arrow_size = sb_size;
 
-  const char *fgcolor_inc = fgcolor,
+  const char* fgcolor_inc = fgcolor,
     *fgcolor_dec = fgcolor,
     *fgcolor_drag = fgcolor;
 
@@ -660,7 +660,7 @@ static int iFlatScrollBarButton_CB(Ihandle* sb_ih, int button, int press, int x,
   return IUP_DEFAULT;
 }
 
-static int iFlatScrollBarMotion_CB(Ihandle *sb_ih, int x, int y, char* status)
+static int iFlatScrollBarMotion_CB(Ihandle* sb_ih, int x, int y, char* status)
 {
   int redraw = 0, old_handler;
   int handler = iFlatScrollBarGetHandler(sb_ih, x, y);
@@ -798,7 +798,7 @@ static IattribSetFunc iupCanvasSetPosYAttrib = NULL;
 static IattribGetFunc iupCanvasGetPosXAttrib = NULL;
 static IattribGetFunc iupCanvasGetPosYAttrib = NULL;
 
-static int iFlatScrollBarSetDXAttrib(Ihandle* ih, const char *value)
+static int iFlatScrollBarSetDXAttrib(Ihandle* ih, const char* value)
 {
   if (iupFlatScrollBarGet(ih) & IUP_SB_HORIZ)
   {
@@ -848,7 +848,7 @@ static int iFlatScrollBarSetDXAttrib(Ihandle* ih, const char *value)
     return iupCanvasSetDXAttrib(ih, value);
 }
 
-static int iFlatScrollBarSetDYAttrib(Ihandle* ih, const char *value)
+static int iFlatScrollBarSetDYAttrib(Ihandle* ih, const char* value)
 {
   if (iupFlatScrollBarGet(ih) & IUP_SB_VERT)
   {
@@ -898,7 +898,7 @@ static int iFlatScrollBarSetDYAttrib(Ihandle* ih, const char *value)
     return iupCanvasSetDYAttrib(ih, value);
 }
 
-static int iFlatScrollBarSetPosXAttrib(Ihandle* ih, const char *value)
+static int iFlatScrollBarSetPosXAttrib(Ihandle* ih, const char* value)
 {
   if (iupFlatScrollBarGet(ih) & IUP_SB_HORIZ)
   {
@@ -925,7 +925,7 @@ static int iFlatScrollBarSetPosXAttrib(Ihandle* ih, const char *value)
     return iupCanvasSetPosXAttrib(ih, value);
 }
 
-static int iFlatScrollBarSetPosYAttrib(Ihandle* ih, const char *value)
+static int iFlatScrollBarSetPosYAttrib(Ihandle* ih, const char* value)
 {
   if (iupFlatScrollBarGet(ih) & IUP_SB_VERT)
   {
@@ -968,7 +968,7 @@ static char* iFlatScrollBarGetPosXAttrib(Ihandle* ih)
     return iupCanvasGetPosXAttrib(ih);
 }
 
-static int iFlatScrollBarSetShowFloatingAttrib(Ihandle* ih, const char *value)
+static int iFlatScrollBarSetShowFloatingAttrib(Ihandle* ih, const char* value)
 {
   int sb = iupFlatScrollBarGet(ih);
   if (sb == IUP_SB_NONE)
@@ -1010,7 +1010,7 @@ static int iFlatScrollBarSetShowFloatingAttrib(Ihandle* ih, const char *value)
   return 1;
 }
 
-static int iFlatScrollBarSetShowTransparentAttrib(Ihandle* ih, const char *value)
+static int iFlatScrollBarSetShowTransparentAttrib(Ihandle* ih, const char* value)
 {
   if (iupStrBoolean(value))
   {

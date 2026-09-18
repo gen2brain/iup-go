@@ -104,7 +104,7 @@ static Imot2iupkey other_remap[] = {
   { XK_dead_diaeresis,  K_diaeresis },
 };
 
-IUP_SDK_API void iupdrvKeyEncode(int code, unsigned int *keycode, unsigned int *state)
+IUP_SDK_API void iupdrvKeyEncode(int code, unsigned int* keycode, unsigned int* state)
 {
   KeySym motcode = (KeySym)iup_XkeyBase(code);
 
@@ -163,7 +163,7 @@ static int motKeyMap2Iup(KeySym motcode, unsigned int state)
   return code;
 }
 
-IUP_DRV_API KeySym iupmotKeycodeToKeysym(XKeyEvent *evt)
+IUP_DRV_API KeySym iupmotKeycodeToKeysym(XKeyEvent* evt)
 {
   int i;
   Modifiers modifiers;
@@ -219,7 +219,7 @@ IUP_DRV_API KeySym iupmotKeycodeToKeysym(XKeyEvent *evt)
   return motcode;
 }
 
-IUP_DRV_API int iupmotKeyDecode(XKeyEvent *evt)
+IUP_DRV_API int iupmotKeyDecode(XKeyEvent* evt)
 {
   KeySym motcode = iupmotKeycodeToKeysym(evt);
 
@@ -252,7 +252,7 @@ IUP_DRV_API KeySym iupmotKeyCharToKeySym(char c)
  *
  * Returns 1 if the keypress is found in the queue and 0 otherwise.
  */
-static int motKeyDiscardKeypressRepeat(XEvent *evt)
+static int motKeyDiscardKeypressRepeat(XEvent* evt)
 {
   XEvent ahead;
   if (XEventsQueued(iupmot_display, QueuedAfterReading))
@@ -271,7 +271,7 @@ static int motKeyDiscardKeypressRepeat(XEvent *evt)
 }
 
 /* this is called only for canvas */
-IUP_DRV_API void iupmotCanvasKeyReleaseEvent(Widget w, Ihandle *ih, XEvent *evt, Boolean *cont)
+IUP_DRV_API void iupmotCanvasKeyReleaseEvent(Widget w, Ihandle* ih, XEvent* evt, Boolean* cont)
 {
   if (motKeyDiscardKeypressRepeat(evt))
   {
@@ -306,7 +306,7 @@ static void motKeyImDestroyCallback(Widget w, XtPointer client_data, XtPointer c
 }
 
 /* a commit consumed by TEXTINPUT_CB suppresses the K_ANY for that key */
-static int motKeyTextInput(Widget w, XKeyEvent *evt, Ihandle *ih)
+static int motKeyTextInput(Widget w, XKeyEvent* evt, Ihandle* ih)
 {
   char buf[64];
   KeySym keysym = 0;
@@ -338,7 +338,7 @@ static int motKeyTextInput(Widget w, XKeyEvent *evt, Ihandle *ih)
   return iupKeyCallTextInputCb(ih, buf) == IUP_IGNORE;
 }
 
-IUP_DRV_API void iupmotKeyPressEvent(Widget w, Ihandle *ih, XEvent *evt, Boolean *cont)
+IUP_DRV_API void iupmotKeyPressEvent(Widget w, Ihandle* ih, XEvent* evt, Boolean* cont)
 {
   int result;
   int code;

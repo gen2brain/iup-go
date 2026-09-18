@@ -72,9 +72,9 @@ static void iMatrixExCopyColToSetData(ImatExData* matex_data, int lin, int col, 
   iupBaseCallValueChangedCb(matex_data->ih);
 }
 
-static int iMatrixExGetMarkedLines(Ihandle *ih, int num_lin, int num_col, int col, char* selection, int *selection_count)
+static int iMatrixExGetMarkedLines(Ihandle* ih, int num_lin, int num_col, int col, char* selection, int* selection_count)
 {
-  char *marked = IupGetAttribute(ih, "MARKED");
+  char* marked = IupGetAttribute(ih, "MARKED");
   if (!marked)  /* no marked cells */
     return 0;
 
@@ -130,7 +130,7 @@ static int iMatrixExGetMarkedLines(Ihandle *ih, int num_lin, int num_col, int co
   return 1;
 }
 
-static int iMatrixExStrGetInterval(const char* interval, int num_lin, char* selection, int *selection_count)
+static int iMatrixExStrGetInterval(const char* interval, int num_lin, char* selection, int* selection_count)
 {
   int lin1, lin2, len, value_len, ret;
   char value[100];
@@ -183,7 +183,7 @@ static int iMatrixExStrGetInterval(const char* interval, int num_lin, char* sele
   return 1;
 }
 
-static int iMatrixExSetCopyColToAttribId2(Ihandle *ih, int lin, int col, const char* value)
+static int iMatrixExSetCopyColToAttribId2(Ihandle* ih, int lin, int col, const char* value)
 {
   ImatExData* matex_data = (ImatExData*)iupAttribGet(ih, "_IUP_MATEX_DATA");
   int lin1, lin2;

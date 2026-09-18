@@ -129,7 +129,7 @@ static int wasmDatePickMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-static void wasmDatePickComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *children_expand)
+static void wasmDatePickComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* children_expand)
 {
   (void)ih;
   (void)children_expand;

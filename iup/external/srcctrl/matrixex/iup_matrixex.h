@@ -53,8 +53,8 @@ int iupMatrixExIsColumnVisible(Ihandle* ih, int col);
 int iupMatrixExIsLineVisible(Ihandle* ih, int lin);
 
 /* Common */
-void iupMatrixExCheckLimitsOrder(int *v1, int *v2, int min, int max);
-void iupMatrixExGetDialogPosition(ImatExData* matex_data, int *x, int *y);
+void iupMatrixExCheckLimitsOrder(int* v1, int* v2, int min, int max);
+void iupMatrixExGetDialogPosition(ImatExData* matex_data, int* x, int* y);
 
 void iupMatrixExRegisterClipboard(Iclass* ic);
 void iupMatrixExRegisterBusy(Iclass* ic);

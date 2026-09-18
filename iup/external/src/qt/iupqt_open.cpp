@@ -61,7 +61,7 @@ IUP_DRV_API void iupqtLoopCleanup(void);
  * Native Handle Access
  ****************************************************************************/
 
-IUP_DRV_API char* iupqtGetNativeWidgetHandle(QWidget *widget)
+IUP_DRV_API char* iupqtGetNativeWidgetHandle(QWidget* widget)
 {
   if (!widget)
     return NULL;
@@ -151,7 +151,7 @@ IUP_DRV_API char* iupqtStrConvertToSystem(const char* str)
   return (char*)str;
 }
 
-IUP_DRV_API char* iupqtStrConvertToSystemLen(const char* str, int *len)
+IUP_DRV_API char* iupqtStrConvertToSystemLen(const char* str, int* len)
 {
   if (len)
     *len = (int)strlen(str);
@@ -239,7 +239,7 @@ static void qtSetGlobalAttrib(void)
     IupSetGlobal("WINDOWING", "X11");
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 2, 0) && !defined(Q_OS_WIN) && !defined(Q_OS_MACOS) && !defined(Q_OS_HAIKU)
-    if (auto *x11App = qApp->nativeInterface<QNativeInterface::QX11Application>())
+    if (auto* x11App = qApp->nativeInterface<QNativeInterface::QX11Application>())
     {
       Display* xdisplay = (Display*)x11App->display();
       if (xdisplay)
@@ -262,7 +262,7 @@ static void qtSetGlobalAttrib(void)
     IupSetGlobal("WINDOWING", "WAYLAND");
 
 #if defined(IUP_QT_HAS_WAYLAND_APP) && !defined(Q_OS_WIN) && !defined(Q_OS_MACOS)
-    if (auto *waylandApp = qApp->nativeInterface<QNativeInterface::QWaylandApplication>())
+    if (auto* waylandApp = qApp->nativeInterface<QNativeInterface::QWaylandApplication>())
     {
       void* wl_display = waylandApp->display();
       if (wl_display)
@@ -391,7 +391,7 @@ extern "C" IUP_SDK_API int iupdrvIsSystemDarkMode(void)
  * Driver Initialization
  ****************************************************************************/
 
-extern "C" IUP_SDK_API int iupdrvOpen(int *argc, char ***argv)
+extern "C" IUP_SDK_API int iupdrvOpen(int* argc, char*** argv)
 {
   if (!QApplication::instance())
   {

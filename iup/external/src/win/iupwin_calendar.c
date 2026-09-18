@@ -139,7 +139,7 @@ static char* winCalendarGetTodayAttrib(Ihandle* ih)
   return iupStrReturnStrf("%d/%d/%d", st.wYear, st.wMonth, st.wDay);
 }
 
-static void winCalendarComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *children_expand)
+static void winCalendarComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* children_expand)
 {
   (void)children_expand; /* unset if not a container */
 
@@ -166,7 +166,7 @@ static void winCalendarComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int
 }
 
 
-static int winCalendarWmNotify(Ihandle* ih, NMHDR* msg_info, int *result)
+static int winCalendarWmNotify(Ihandle* ih, NMHDR* msg_info, int* result)
 {
   if (msg_info->code == MCN_SELECT)
   {

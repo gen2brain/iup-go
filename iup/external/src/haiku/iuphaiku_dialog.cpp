@@ -520,7 +520,7 @@ static void haikuDialogLayoutUpdateMethod(Ihandle* ih)
   ih->data->ignore_resize = 0;
 }
 
-extern "C" IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int *border, int *caption, int *menu)
+extern "C" IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int* border, int* caption, int* menu)
 {
   if (border) *border = 0;
   if (caption) *caption = 0;
@@ -557,7 +557,7 @@ extern "C" IUP_SDK_API void iupdrvDialogSetParent(Ihandle* ih, InativeHandle* na
   haikuDialogUpdateFeel(ih, win);
 }
 
-extern "C" IUP_SDK_API void iupdrvDialogGetPosition(Ihandle* ih, InativeHandle* handle, int *x, int *y)
+extern "C" IUP_SDK_API void iupdrvDialogGetPosition(Ihandle* ih, InativeHandle* handle, int* x, int* y)
 {
   if (x) *x = 0;
   if (y) *y = 0;
@@ -571,7 +571,7 @@ extern "C" IUP_SDK_API void iupdrvDialogGetPosition(Ihandle* ih, InativeHandle* 
   if (y) *y = (int)outer.top;
 }
 
-extern "C" IUP_SDK_API void iupdrvDialogSetPosition(Ihandle *ih, int x, int y)
+extern "C" IUP_SDK_API void iupdrvDialogSetPosition(Ihandle* ih, int x, int y)
 {
   IupHaikuWindow* win = (IupHaikuWindow*)ih->handle;
   if (!win) return;
@@ -585,7 +585,7 @@ extern "C" IUP_SDK_API void iupdrvDialogSetPosition(Ihandle *ih, int x, int y)
   win->MoveTo((float)(x + dx), (float)(y + dy));
 }
 
-extern "C" IUP_SDK_API void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* handle, int *w, int *h)
+extern "C" IUP_SDK_API void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* handle, int* w, int* h)
 {
   if (w) *w = 0;
   if (h) *h = 0;

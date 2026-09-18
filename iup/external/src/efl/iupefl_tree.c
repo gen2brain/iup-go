@@ -2399,7 +2399,7 @@ static int efl_tree_drag_start_y = 0;
 static Ihandle* efl_tree_drag_source = NULL;
 static Eina_Bool efl_tree_drag_active = EINA_FALSE;
 
-static void eflTreeDragFinishedCb(void *data, const Efl_Event *ev)
+static void eflTreeDragFinishedCb(void* data, const Efl_Event* ev)
 {
   (void)data;
   (void)ev;
@@ -2407,7 +2407,7 @@ static void eflTreeDragFinishedCb(void *data, const Efl_Event *ev)
   efl_tree_drag_source = NULL;
 }
 
-static void eflTreeDragPointerDownCb(void *data, const Efl_Event *ev)
+static void eflTreeDragPointerDownCb(void* data, const Efl_Event* ev)
 {
   Ihandle* ih = (Ihandle*)data;
   Efl_Input_Pointer* pointer = ev->info;
@@ -2428,7 +2428,7 @@ static void eflTreeDragPointerDownCb(void *data, const Efl_Event *ev)
   iupAttribSet(ih, "_IUPEFL_TREE_DRAG_PENDING", "1");
 }
 
-static void eflTreeDragPointerMoveCb(void *data, const Efl_Event *ev)
+static void eflTreeDragPointerMoveCb(void* data, const Efl_Event* ev)
 {
   Ihandle* ih = (Ihandle*)data;
   Efl_Input_Pointer* pointer = ev->info;
@@ -2479,14 +2479,14 @@ static void eflTreeDragPointerMoveCb(void *data, const Efl_Event *ev)
   }
 }
 
-static void eflTreeDragPointerUpCb(void *data, const Efl_Event *ev)
+static void eflTreeDragPointerUpCb(void* data, const Efl_Event* ev)
 {
   Ihandle* ih = (Ihandle*)data;
   (void)ev;
   iupAttribSet(ih, "_IUPEFL_TREE_DRAG_PENDING", NULL);
 }
 
-static void eflTreeDropCb(void *data, const Efl_Event *ev)
+static void eflTreeDropCb(void* data, const Efl_Event* ev)
 {
   Ihandle* ih = (Ihandle*)data;
   Efl_Ui_Drop_Dropped_Event* drop_ev = ev->info;
@@ -2736,7 +2736,7 @@ static void eflTreeUnMapMethod(Ihandle* ih)
 
 }
 
-IUP_SDK_API void iupdrvTreeAddBorders(Ihandle* ih, int *w, int *h)
+IUP_SDK_API void iupdrvTreeAddBorders(Ihandle* ih, int* w, int* h)
 {
   int border = 2 * 2;
   int sb = iupdrvGetScrollbarSize();

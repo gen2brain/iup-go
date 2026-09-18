@@ -29,7 +29,7 @@ extern "C" {
 
 #include "iupqt_drv.h"
 
-IUP_DRV_API int iupqtKeyDecode(QEvent *evt);
+IUP_DRV_API int iupqtKeyDecode(QEvent* evt);
 
 /****************************************************************************
  * Global Input Event Handler
@@ -46,7 +46,7 @@ public:
     return filter;
   }
 
-  bool eventFilter(QObject *obj, QEvent *event) override
+  bool eventFilter(QObject* obj, QEvent* event) override
   {
     (void)obj;
 
@@ -169,7 +169,7 @@ public:
  * Global Set/Get
  ****************************************************************************/
 
-extern "C" IUP_SDK_API int iupdrvSetGlobal(const char *name, const char *value)
+extern "C" IUP_SDK_API int iupdrvSetGlobal(const char* name, const char* value)
 {
   if (iupStrEqual(name, "SINGLEINSTANCE"))
   {
@@ -227,7 +227,7 @@ extern "C" IUP_SDK_API int iupdrvSetGlobal(const char *name, const char *value)
   return 1;
 }
 
-extern "C" IUP_SDK_API char *iupdrvGetGlobal(const char *name)
+extern "C" IUP_SDK_API char* iupdrvGetGlobal(const char* name)
 {
   if (iupStrEqual(name, "VIRTUALSCREEN"))
   {
@@ -248,7 +248,7 @@ extern "C" IUP_SDK_API char *iupdrvGetGlobal(const char *name)
     int monitors_count = screens.size();
     const int entry_size = 50;
 
-    char *str = iupStrGetMemory(monitors_count * entry_size);
+    char* str = iupStrGetMemory(monitors_count * entry_size);
     char* pstr = str;
 
     for (int i = 0; i < monitors_count; i++)
@@ -327,7 +327,7 @@ extern "C" IUP_SDK_API char *iupdrvGetGlobal(const char *name)
  * Key Decoding
  ****************************************************************************/
 
-IUP_DRV_API int iupqtKeyDecode(QEvent *evt)
+IUP_DRV_API int iupqtKeyDecode(QEvent* evt)
 {
   QKeyEvent* key_evt = static_cast<QKeyEvent*>(evt);
 

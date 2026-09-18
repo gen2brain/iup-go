@@ -55,7 +55,7 @@ IUP_SDK_API void iupMaskDestroy(Imask* mask);
 /** Check if the value is valid using the mask to filter it.
  * Returns 1 if full match, -1 if partial match, and 0 otherwise.
  * \ingroup mask */
-IUP_SDK_API int iupMaskCheck(Imask* mask, const char *value);
+IUP_SDK_API int iupMaskCheck(Imask* mask, const char* value);
 
 /** Returns the mask string.
  * \ingroup mask */

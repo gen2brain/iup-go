@@ -30,7 +30,7 @@ static int wasmMessageDlgPopup(Ihandle* ih, int x, int y)
   char* title = iupAttribGet(ih, "TITLE");
   char* buttons = iupAttribGetStr(ih, "BUTTONS");
   const char* labels[3];
-  Ihandle *dlg, *dlg_box, *button_box, *bobj[3];
+  Ihandle* dlg, *dlg_box, *button_box, *bobj[3];
   int count = 1, i, bt, def;
   (void)x;
   (void)y;

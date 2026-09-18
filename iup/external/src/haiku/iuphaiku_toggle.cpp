@@ -704,7 +704,7 @@ static void haikuToggleUnMapMethod(Ihandle* ih)
   iupdrvBaseUnMapMethod(ih);
 }
 
-extern "C" IUP_SDK_API void iupdrvToggleAddBorders(Ihandle* ih, int *x, int *y)
+extern "C" IUP_SDK_API void iupdrvToggleAddBorders(Ihandle* ih, int* x, int* y)
 {
   if (ih && ih->data->type == IUP_TOGGLE_IMAGE)
   {
@@ -739,7 +739,7 @@ static void haikuToggleProbeChrome(Ihandle* ih, int* chrome_w, int* min_h)
   *min_h    = (int)ceilf(ph);
 }
 
-extern "C" IUP_SDK_API void iupdrvToggleAddCheckBox(Ihandle* ih, int *x, int *y, const char* /*str*/)
+extern "C" IUP_SDK_API void iupdrvToggleAddCheckBox(Ihandle* ih, int* x, int* y, const char* /*str*/)
 {
   int chrome_w, min_h;
   haikuToggleProbeChrome(ih, &chrome_w, &min_h);
@@ -747,7 +747,7 @@ extern "C" IUP_SDK_API void iupdrvToggleAddCheckBox(Ihandle* ih, int *x, int *y,
   if (y && *y < min_h) *y = min_h;
 }
 
-extern "C" IUP_SDK_API void iupdrvToggleAddSwitch(Ihandle* ih, int *x, int *y, const char* /*str*/)
+extern "C" IUP_SDK_API void iupdrvToggleAddSwitch(Ihandle* ih, int* x, int* y, const char* /*str*/)
 {
   float gap = be_control_look ? be_control_look->DefaultLabelSpacing() : (float)IupHaikuSwitchToggle::kGap;
   int chrome = IupHaikuSwitchToggle::kTrackW + (int)gap + 1;

@@ -19,7 +19,7 @@ void iupNamesDestroyHandles(void);
 /* called from IupDestroy */
 void iupRemoveNames(Ihandle* ih);
 
-int iupNamesFindAll(Ihandle *ih, char** names, int n);
+int iupNamesFindAll(Ihandle* ih, char** names, int n);
 
 
 IUP_SDK_API void iupNamesDestroyHandlesSelected(const char* name, void* value);

@@ -18,7 +18,7 @@
 
 static gboolean gtkTimerProc(gpointer data)
 {
-  Ihandle *ih = (Ihandle*)data;
+  Ihandle* ih = (Ihandle*)data;
   Icallback cb;
 
   if (!iupObjectCheck(ih))   /* control could be destroyed before timer callback */
@@ -38,7 +38,7 @@ static gboolean gtkTimerProc(gpointer data)
   return TRUE;
 }
 
-IUP_SDK_API void iupdrvTimerRun(Ihandle *ih)
+IUP_SDK_API void iupdrvTimerRun(Ihandle* ih)
 {
   unsigned int time_ms;
 

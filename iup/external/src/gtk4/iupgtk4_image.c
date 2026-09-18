@@ -38,14 +38,14 @@ IUP_SDK_API void iupdrvImageGetData(void* handle, unsigned char* imgdata)
 }
 
 
-IUP_SDK_API void* iupdrvImageCreateImage(Ihandle *ih, const char* bgcolor, int make_inactive)
+IUP_SDK_API void* iupdrvImageCreateImage(Ihandle* ih, const char* bgcolor, int make_inactive)
 {
   GdkTexture* texture;
-  guchar *pixdata;
-  unsigned char *imgdata, *line_data, bg_r = 0, bg_g = 0, bg_b = 0;
+  guchar* pixdata;
+  unsigned char* imgdata, *line_data, bg_r = 0, bg_g = 0, bg_b = 0;
   int x, y, bpp, colors_count = 0, has_alpha = 0;
   iupColor colors[256];
-  GBytes *bytes;
+  GBytes* bytes;
 
   bpp = iupAttribGetInt(ih, "BPP");
 
@@ -142,14 +142,14 @@ IUP_SDK_API void* iupdrvImageCreateImage(Ihandle *ih, const char* bgcolor, int m
   return texture;
 }
 
-IUP_SDK_API void* iupdrvImageCreateIcon(Ihandle *ih)
+IUP_SDK_API void* iupdrvImageCreateIcon(Ihandle* ih)
 {
   return iupdrvImageCreateImage(ih, NULL, 0);
 }
 
-IUP_SDK_API void* iupdrvImageCreateCursor(Ihandle *ih)
+IUP_SDK_API void* iupdrvImageCreateCursor(Ihandle* ih)
 {
-  GdkCursor *cursor;
+  GdkCursor* cursor;
   GdkTexture* texture;
   int hx = 0, hy = 0;
 
@@ -168,9 +168,9 @@ IUP_SDK_API void* iupdrvImageLoad(const char* name, int type)
     return gdk_cursor_new_from_name(name, NULL);
   else /* IUPIMAGE_IMAGE or IUPIMAGE_ICON */
   {
-    GdkTexture *texture = NULL;
+    GdkTexture* texture = NULL;
     GtkIconTheme* icon_theme;
-    GtkIconPaintable *paintable;
+    GtkIconPaintable* paintable;
     int stock_size = iupImageStockGetSize();
 
     icon_theme = gtk_icon_theme_get_for_display(gdk_display_get_default());
@@ -179,10 +179,10 @@ IUP_SDK_API void* iupdrvImageLoad(const char* name, int type)
       paintable = gtk_icon_theme_lookup_icon(icon_theme, name, NULL, stock_size, 1, GTK_TEXT_DIR_NONE, 0);
       if (paintable)
       {
-        GFile *file = gtk_icon_paintable_get_file(paintable);
+        GFile* file = gtk_icon_paintable_get_file(paintable);
         if (file)
         {
-          char *filename = g_file_get_path(file);
+          char* filename = g_file_get_path(file);
           if (filename)
           {
             texture = gdk_texture_new_from_filename(filename, NULL);
@@ -200,10 +200,10 @@ IUP_SDK_API void* iupdrvImageLoad(const char* name, int type)
         paintable = gtk_icon_theme_lookup_icon(icon_theme, name + 4, NULL, stock_size, 1, GTK_TEXT_DIR_NONE, 0);
         if (paintable)
         {
-          GFile *file = gtk_icon_paintable_get_file(paintable);
+          GFile* file = gtk_icon_paintable_get_file(paintable);
           if (file)
           {
-            char *filename = g_file_get_path(file);
+            char* filename = g_file_get_path(file);
             if (filename)
             {
               texture = gdk_texture_new_from_filename(filename, NULL);
@@ -230,10 +230,10 @@ IUP_SDK_API void* iupdrvImageLoad(const char* name, int type)
               paintable = gtk_icon_theme_lookup_icon(icon_theme, new_names[i], NULL, stock_size, 1, GTK_TEXT_DIR_NONE, 0);
               if (paintable)
               {
-                GFile *file = gtk_icon_paintable_get_file(paintable);
+                GFile* file = gtk_icon_paintable_get_file(paintable);
                 if (file)
                 {
-                  char *filename = g_file_get_path(file);
+                  char* filename = g_file_get_path(file);
                   if (filename)
                   {
                     texture = gdk_texture_new_from_filename(filename, NULL);
@@ -258,7 +258,7 @@ IUP_SDK_API void* iupdrvImageLoad(const char* name, int type)
   }
 }
 
-IUP_SDK_API int iupdrvImageGetInfo(void* handle, int *w, int *h, int *bpp)
+IUP_SDK_API int iupdrvImageGetInfo(void* handle, int* w, int* h, int* bpp)
 {
   GdkTexture* texture = (GdkTexture*)handle;
   if (!GDK_IS_TEXTURE(texture))
@@ -274,7 +274,7 @@ IUP_SDK_API int iupdrvImageGetInfo(void* handle, int *w, int *h, int *bpp)
   return 1;
 }
 
-IUP_SDK_API int iupdrvImageGetRawInfo(void* handle, int *w, int *h, int *bpp, iupColor* colors, int *colors_count)
+IUP_SDK_API int iupdrvImageGetRawInfo(void* handle, int* w, int* h, int* bpp, iupColor* colors, int* colors_count)
 {
   /* GTK4 textures are always 32 bpp RGBA */
   (void)colors;

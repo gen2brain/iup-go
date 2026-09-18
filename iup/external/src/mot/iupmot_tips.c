@@ -137,7 +137,7 @@ static void motTipsHide(void)
   iupmotTipLeaveNotify();
 }
 
-static void motTipsInit(Ihandle *ih)
+static void motTipsInit(Ihandle* ih)
 {
   if (!mot_tips.Dialog)
   {
@@ -186,7 +186,7 @@ IUP_SDK_API char* iupdrvBaseGetTipVisibleAttrib(Ihandle* ih)
   return iupStrReturnBoolean (mot_tips.Visible);
 }
 
-IUP_DRV_API void iupmotTipEnterNotify(Ihandle *ih)
+IUP_DRV_API void iupmotTipEnterNotify(Ihandle* ih)
 {
   iupmotTipLeaveNotify();
 

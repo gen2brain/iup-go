@@ -16,7 +16,7 @@ extern "C" {
  * @{ */
 IUP_SDK_API void iupdrvButtonInitClass(Iclass* ic);
 /** Adds platform button borders to size. */
-IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y);
+IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int* x, int* y);
 /** @} */
 
 char* iupButtonGetPaddingAttrib(Ihandle* ih);

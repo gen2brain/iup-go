@@ -21,7 +21,7 @@
 /* An Ihandle* may have many different handle names.
    Do not confuse with the NAME attribute. */
 
-static Itable *inames_strtable = NULL;   /* table indexed by name containing Ihandle* address */
+static Itable* inames_strtable = NULL;   /* table indexed by name containing Ihandle* address */
 
 void iupNamesInit(void)
 {
@@ -55,7 +55,7 @@ static int iNameCheckArray(Ihandle** ih_array, int count, Ihandle* ih)
 
 void iupNamesDestroyHandles(void)
 {
-  char *name;
+  char* name;
   Ihandle** ih_array, *ih;
   int count, i = 0;
 
@@ -100,7 +100,7 @@ void iupNamesDestroyHandles(void)
 
 IUP_SDK_API void iupNamesDestroyHandlesSelected(const char* attrib_name, void* attrib_value)
 {
-  char *name;
+  char* name;
   Ihandle** ih_array, *ih;
   int count, i = 0;
 
@@ -146,7 +146,7 @@ IUP_SDK_API void iupNamesDestroyHandlesSelected(const char* attrib_name, void* a
 void iupRemoveNames(Ihandle* ih)
 {
   /* called from IupDestroy */
-  char *name;
+  char* name;
 
   /* ih here is an Ihandle* */
 
@@ -162,14 +162,14 @@ void iupRemoveNames(Ihandle* ih)
      So, some names may have left invalid on the handle names database. */
 }
 
-IUP_API Ihandle *IupGetHandle(const char *name)
+IUP_API Ihandle* IupGetHandle(const char* name)
 {
   if (!name) /* no iupASSERT needed here */
     return NULL;
   return (Ihandle*)iupTableGet (inames_strtable, name);
 }
 
-int iupNamesFindAll(Ihandle *ih, char** names, int n)
+int iupNamesFindAll(Ihandle* ih, char** names, int n)
 {
   int i = 0;
   char* name = iupTableFirst(inames_strtable);
@@ -191,7 +191,7 @@ int iupNamesFindAll(Ihandle *ih, char** names, int n)
   return i;
 }
 
-static char* iNameFindHandle(Ihandle *ih)
+static char* iNameFindHandle(Ihandle* ih)
 {
   /* search for a name */
   char* name = iupTableFirst(inames_strtable);
@@ -206,9 +206,9 @@ static char* iNameFindHandle(Ihandle *ih)
   return NULL;
 }
 
-IUP_API Ihandle* IupSetHandle(const char *name, Ihandle *ih)
+IUP_API Ihandle* IupSetHandle(const char* name, Ihandle* ih)
 {
-  Ihandle *old_ih;
+  Ihandle* old_ih;
 
   iupASSERT(name!=NULL);
   if (!name)

@@ -28,7 +28,7 @@
 #include "iupmot_color.h"
 
 
-IUP_SDK_API void iupdrvFrameGetDecorOffset(Ihandle* ih, int *x, int *y)
+IUP_SDK_API void iupdrvFrameGetDecorOffset(Ihandle* ih, int* x, int* y)
 {
   (void)ih;
   *x = 2;
@@ -41,14 +41,14 @@ IUP_SDK_API int iupdrvFrameHasClientOffset(Ihandle* ih)
   return 0;
 }
 
-IUP_SDK_API int iupdrvFrameGetTitleHeight(Ihandle* ih, int *h)
+IUP_SDK_API int iupdrvFrameGetTitleHeight(Ihandle* ih, int* h)
 {
   (void)ih;
   (void)h;
   return 0;
 }
 
-IUP_SDK_API int iupdrvFrameGetDecorSize(Ihandle* ih, int *w, int *h)
+IUP_SDK_API int iupdrvFrameGetDecorSize(Ihandle* ih, int* w, int* h)
 {
   (void)ih;
   (void)w;
@@ -198,7 +198,7 @@ static void* motFrameGetInnerNativeContainerHandleMethod(Ihandle* ih, Ihandle* c
 
 static int motFrameMapMethod(Ihandle* ih)
 {
-  char *title;
+  char* title;
   int num_args = 0;
   Arg args[20];
   Widget child_manager;

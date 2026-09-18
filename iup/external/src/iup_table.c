@@ -686,7 +686,7 @@ static int iTableCreateMethod(Ihandle* ih, void** params)
   return IUP_NOERROR;
 }
 
-static void iTableComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *children_expand)
+static void iTableComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* children_expand)
 {
   int natural_w = 0, natural_h = 0;
   int charwidth, charheight;
@@ -813,7 +813,7 @@ static int iTableSetSortableAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-int iupTableCallDragDropCb(Ihandle* ih, int drag_id, int drop_id, int *is_ctrl)
+int iupTableCallDragDropCb(Ihandle* ih, int drag_id, int drop_id, int* is_ctrl)
 {
   IFniiii cbDragDrop = (IFniiii)IupGetCallback(ih, "DRAGDROP_CB");
   int is_shift = 0;

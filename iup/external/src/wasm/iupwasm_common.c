@@ -580,7 +580,7 @@ IUP_SDK_API void iupdrvReparent(Ihandle* ih)
   iupwasmAddToParent(ih);
 }
 
-IUP_SDK_API void iupdrvBaseLayoutUpdateMethod(Ihandle *ih)
+IUP_SDK_API void iupdrvBaseLayoutUpdateMethod(Ihandle* ih)
 {
   int id = iupwasmIdOf(ih);
   if (id)
@@ -598,19 +598,19 @@ IUP_SDK_API void iupdrvBaseUnMapMethod(Ihandle* ih)
 }
 
 /* canvas and its subclasses (colorbrowser, dial, gauge, cells, matrix) all redraw via ACTION */
-IUP_SDK_API void iupdrvPostRedraw(Ihandle *ih)
+IUP_SDK_API void iupdrvPostRedraw(Ihandle* ih)
 {
   if (ih->iclass->nativetype == IUP_TYPECANVAS)
     iupwasmCanvasRedraw(ih);
 }
 
-IUP_SDK_API void iupdrvRedrawNow(Ihandle *ih)
+IUP_SDK_API void iupdrvRedrawNow(Ihandle* ih)
 {
   if (ih->iclass->nativetype == IUP_TYPECANVAS)
     iupwasmCanvasRedraw(ih);
 }
 
-IUP_SDK_API void iupdrvScreenToClient(Ihandle* ih, int *x, int *y)
+IUP_SDK_API void iupdrvScreenToClient(Ihandle* ih, int* x, int* y)
 {
   int id = iupwasmIdOf(ih);
   int origin[2] = { 0, 0 };
@@ -620,7 +620,7 @@ IUP_SDK_API void iupdrvScreenToClient(Ihandle* ih, int *x, int *y)
   *y -= origin[1];
 }
 
-IUP_SDK_API void iupdrvClientToScreen(Ihandle* ih, int *x, int *y)
+IUP_SDK_API void iupdrvClientToScreen(Ihandle* ih, int* x, int* y)
 {
   int id = iupwasmIdOf(ih);
   int origin[2] = { 0, 0 };
@@ -672,7 +672,7 @@ IUP_SDK_API int iupdrvIsVisible(Ihandle* ih)
   return 1;
 }
 
-IUP_SDK_API int iupdrvIsActive(Ihandle *ih)
+IUP_SDK_API int iupdrvIsActive(Ihandle* ih)
 {
   (void)ih;
   return 1;
@@ -819,14 +819,14 @@ char* iupwasmGetScrollVisibleAttrib(Ihandle* ih)
   return "NO";
 }
 
-IUP_SDK_API void iupdrvSetAccessibleTitle(Ihandle *ih, const char* title)
+IUP_SDK_API void iupdrvSetAccessibleTitle(Ihandle* ih, const char* title)
 {
   int id = iupwasmIdOf(ih);
   if (id)
     iupwasmJsSetAccessible(id, title ? title : "");
 }
 
-IUP_SDK_API void iupdrvSetAccessibleDescription(Ihandle *ih, const char* description)
+IUP_SDK_API void iupdrvSetAccessibleDescription(Ihandle* ih, const char* description)
 {
   int id = iupwasmIdOf(ih);
   if (id)

@@ -110,7 +110,7 @@ static char* iBackgroundBoxGetClientSizeAttrib(Ihandle* ih)
   return iupStrReturnIntInt(width, height, 'x');
 }
 
-static void iBackgroundBoxComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *children_expand)
+static void iBackgroundBoxComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* children_expand)
 {
   if (iupAttribGetBoolean(ih, "CANVASBOX"))
   {
@@ -269,7 +269,7 @@ Iclass* iupBackgroundBoxNewClass(void)
 
 IUP_API Ihandle* IupBackgroundBox(Ihandle* child)
 {
-  void *children[2];
+  void* children[2];
   children[0] = (void*)child;
   children[1] = NULL;
   return IupCreatev("backgroundbox", children);

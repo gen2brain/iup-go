@@ -2162,7 +2162,7 @@ static void qtTreeUnMapMethod(Ihandle* ih)
  * Class Initialization
  ****************************************************************************/
 
-extern "C" IUP_SDK_API void iupdrvTreeAddBorders(Ihandle* ih, int *w, int *h)
+extern "C" IUP_SDK_API void iupdrvTreeAddBorders(Ihandle* ih, int* w, int* h)
 {
   int border = 2 * 2;
   int sb = iupdrvGetScrollbarSize();

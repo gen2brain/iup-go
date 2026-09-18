@@ -20,7 +20,7 @@
 #include "iup_draw.h"
 
 
-static void iFlatFrameGetTitleSize(Ihandle* ih, int frame, int *width, int *height)
+static void iFlatFrameGetTitleSize(Ihandle* ih, int frame, int* width, int* height)
 {
   int img_position = iupFlatGetImagePosition(iupAttribGetStr(ih, "TITLEIMAGEPOSITION"));
   int spacing = iupAttribGetInt(ih, "TITLEIMAGESPACING");
@@ -88,7 +88,7 @@ static int iFlatFrameRedraw_CB(Ihandle* ih)
 
   if (title_h)
   {
-    char *titleimage = iupAttribGet(ih, "TITLEIMAGE");
+    char* titleimage = iupAttribGet(ih, "TITLEIMAGE");
     char* title = iupAttribGet(ih, "TITLE");
     char* titlecolor = iupAttribGetStr(ih, "TITLECOLOR");
     char* titlebgcolor = iupAttribGetStr(ih, "TITLEBGCOLOR");
@@ -215,7 +215,7 @@ static int iFlatFrameSetAttribPostRedraw(Ihandle* ih, const char* value)
 
 IUPCONTROLS_API Ihandle* IupFlatFrame(Ihandle* child)
 {
-  void *children[2];
+  void* children[2];
   children[0] = (void*)child;
   children[1] = NULL;
   return IupCreatev("flatframe", children);

@@ -64,7 +64,7 @@ static void iClassDestroy(Iclass* ic, Ihandle* ih)
     iClassDestroy(ic->parent, ih);
 }
 
-static void iClassComputeNaturalSize(Iclass* ic, Ihandle* ih, int *w, int *h, int *children_expand)
+static void iClassComputeNaturalSize(Iclass* ic, Ihandle* ih, int* w, int* h, int* children_expand)
 {
   if (ic->parent)
     iClassComputeNaturalSize(ic->parent, ih, w, h, children_expand);
@@ -124,7 +124,7 @@ static void iClassObjectChildRemoved(Iclass* ic, Ihandle* ih, Ihandle* child, in
     ic->ChildRemoved(ih, child, pos);
 }
 
-static void iClassLayoutUpdate(Iclass* ic, Ihandle *ih)
+static void iClassLayoutUpdate(Iclass* ic, Ihandle* ih)
 {
   if (ic->parent)
     iClassLayoutUpdate(ic->parent, ih);
@@ -191,7 +191,7 @@ IUP_SDK_API void iupClassObjectDestroy(Ihandle* ih)
   iupdrvNativeScopeEnd(scope);
 }
 
-IUP_SDK_API void iupClassObjectComputeNaturalSize(Ihandle* ih, int *w, int *h, int *children_expand)
+IUP_SDK_API void iupClassObjectComputeNaturalSize(Ihandle* ih, int* w, int* h, int* children_expand)
 {
   void* scope = iupdrvNativeScopeBegin();
   iClassComputeNaturalSize(ih->iclass, ih, w, h, children_expand);
@@ -234,7 +234,7 @@ IUP_SDK_API void iupClassObjectChildRemoved(Ihandle* ih, Ihandle* child, int pos
   iupdrvNativeScopeEnd(scope);
 }
 
-IUP_SDK_API void iupClassObjectLayoutUpdate(Ihandle *ih)
+IUP_SDK_API void iupClassObjectLayoutUpdate(Ihandle* ih)
 {
   void* scope = iupdrvNativeScopeBegin();
   iClassLayoutUpdate(ih->iclass, ih);
@@ -330,7 +330,7 @@ IUP_SDK_API int iupClassMatch(Iclass* ic, const char* classname)
                         Main API
 *****************************************************************/
 
-IUP_API char* IupGetClassName(Ihandle *ih)
+IUP_API char* IupGetClassName(Ihandle* ih)
 {
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
@@ -339,7 +339,7 @@ IUP_API char* IupGetClassName(Ihandle *ih)
   return (char*)ih->iclass->name;
 }
 
-IUP_API char* IupGetClassType(Ihandle *ih)
+IUP_API char* IupGetClassType(Ihandle* ih)
 {
   static char* type2str[] = { "void", "control", "canvas", "dialog", "image", "menu", "other" };
 

@@ -83,7 +83,7 @@ static int iParamButton3_CB(Ihandle* self)
 
 /***********************************************************************/
 
-static int iParamToggleAction_CB(Ihandle *self, int v)
+static int iParamToggleAction_CB(Ihandle* self, int v)
 {
   Ihandle* param = (Ihandle*)iupAttribGetInherit(self, "PARAM");
   Ihandle* param_box = (Ihandle*)iupAttribGetInherit(self, "PARAMBOX");
@@ -122,7 +122,7 @@ static int iParamToggleAction_CB(Ihandle *self, int v)
   return IUP_DEFAULT;
 }
 
-static int iParamDateValueChanged_CB(Ihandle *self)
+static int iParamDateValueChanged_CB(Ihandle* self)
 {
   Ihandle* param = (Ihandle*)iupAttribGetInherit(self, "PARAM");
   Ihandle* param_box = (Ihandle*)iupAttribGetInherit(self, "PARAMBOX");
@@ -143,7 +143,7 @@ static int iParamDateValueChanged_CB(Ihandle *self)
   return IUP_DEFAULT;
 }
 
-static int iParamTextAction_CB(Ihandle *self, int c, char *after)
+static int iParamTextAction_CB(Ihandle* self, int c, char* after)
 {
   Ihandle* param = (Ihandle*)iupAttribGetInherit(self, "PARAM");
   Ihandle* param_box = (Ihandle*)iupAttribGetInherit(self, "PARAMBOX");
@@ -208,7 +208,7 @@ static int iParamTextAction_CB(Ihandle *self, int c, char *after)
   return ret;
 }
 
-static int iParamValAction_CB(Ihandle *self)
+static int iParamValAction_CB(Ihandle* self)
 {
   Ihandle* param = (Ihandle*)iupAttribGetInherit(self, "PARAM");
   Ihandle* ctrl = (Ihandle*)iupAttribGetInherit(self, "CONTROL");
@@ -298,7 +298,7 @@ static int iParamValAction_CB(Ihandle *self)
   return IUP_DEFAULT;
 }
 
-static int iParamListAction_CB(Ihandle *self, char *t, int i, int v)
+static int iParamListAction_CB(Ihandle* self, char* t, int i, int v)
 {
   (void)t;
   if (v == 1)
@@ -324,7 +324,7 @@ static int iParamListAction_CB(Ihandle *self, char *t, int i, int v)
   return IUP_DEFAULT;
 }
 
-static int iParamOptionsAction_CB(Ihandle *self, int v)
+static int iParamOptionsAction_CB(Ihandle* self, int v)
 {
   if (v == 1)
   {
@@ -347,7 +347,7 @@ static int iParamOptionsAction_CB(Ihandle *self, int v)
   return IUP_DEFAULT;
 }
 
-static int iParamFileButton_CB(Ihandle *self)
+static int iParamFileButton_CB(Ihandle* self)
 {
   Ihandle* param   = (Ihandle*)iupAttribGetInherit(self, "PARAM");
   Ihandle* ctrl = (Ihandle*)iupAttribGetInherit(self, "CONTROL");
@@ -398,7 +398,7 @@ static int iParamFileButton_CB(Ihandle *self)
   return IUP_DEFAULT;
 }
 
-static int iParamColorButton_CB(Ihandle *self)
+static int iParamColorButton_CB(Ihandle* self)
 {
   Ihandle* param   = (Ihandle*)iupAttribGetInherit(self, "PARAM");
   Ihandle* ctrl = (Ihandle*)iupAttribGetInherit(self, "CONTROL");
@@ -435,7 +435,7 @@ static int iParamColorButton_CB(Ihandle *self)
   return IUP_DEFAULT;
 }
 
-static int iParamFontButton_CB(Ihandle *self)
+static int iParamFontButton_CB(Ihandle* self)
 {
   Ihandle* param   = (Ihandle*)iupAttribGetInherit(self, "PARAM");
   Ihandle* ctrl = (Ihandle*)iupAttribGetInherit(self, "CONTROL");
@@ -471,7 +471,7 @@ static int iParamFontButton_CB(Ihandle *self)
   return IUP_DEFAULT;
 }
 
-static int iParamSpinReal_CB(Ihandle *self, int pos)
+static int iParamSpinReal_CB(Ihandle* self, int pos)
 {
   Ihandle* param = (Ihandle*)iupAttribGetInherit(self, "PARAM");
   Ihandle* param_box = (Ihandle*)iupAttribGetInherit(self, "PARAMBOX");
@@ -519,7 +519,7 @@ static int iParamSpinReal_CB(Ihandle *self, int pos)
   return IUP_DEFAULT;
 }
 
-static int iParamSpinInt_CB(Ihandle *self, int pos)
+static int iParamSpinInt_CB(Ihandle* self, int pos)
 {
   Ihandle* param = (Ihandle*)iupAttribGetInherit(self, "PARAM");
   Ihandle* param_box = (Ihandle*)iupAttribGetInherit(self, "PARAMBOX");
@@ -568,9 +568,9 @@ static int iParamDestroy_CB(Ihandle* self)
   return IUP_DEFAULT;
 }
 
-static Ihandle* iParamCreateCtrlBox(Ihandle* param, const char *type)
+static Ihandle* iParamCreateCtrlBox(Ihandle* param, const char* type)
 {
-  Ihandle *box, *ctrl = NULL, *label;
+  Ihandle* box, *ctrl = NULL, *label;
   char* title = iupAttribGet(param, "TITLE");
 
   label = IupLabel(title);
@@ -694,7 +694,7 @@ static Ihandle* iParamCreateCtrlBox(Ihandle* param, const char *type)
     }
     else
     {
-      char *visiblecolumns;
+      char* visiblecolumns;
 
       ctrl = IupText();
       IupSetAttribute(ctrl, "VISIBLECOLUMNS", "8");
@@ -1074,7 +1074,7 @@ static void iParamBoxNormalizeSize(Ihandle** params, int count)
   }
 }
 
-static Ihandle* iupParamBoxDlg(Ihandle *param_box, const char* title)
+static Ihandle* iupParamBoxDlg(Ihandle* param_box, const char* title)
 {
   Ihandle* button1, *button2;
   Ihandle* dlg = IupDialog(param_box);
@@ -1119,7 +1119,7 @@ static Ihandle* iupParamBoxDlg(Ihandle *param_box, const char* title)
 static int iParamBoxCreateMethod(Ihandle* param_box, void** vparams)
 {
   Ihandle** params = (Ihandle**)vparams;
-  Ihandle *button_1 = NULL, *button_2 = NULL, *button_3 = NULL,
+  Ihandle* button_1 = NULL, *button_2 = NULL, *button_3 = NULL,
     *params_vbox, *button_box = NULL, *ctrl_box, *content, *names_param = NULL;
   int i, p, count = 0, noframe = 0, nobuttons = 0;
 
@@ -1140,7 +1140,7 @@ static int iParamBoxCreateMethod(Ihandle* param_box, void** vparams)
 
   for (i = 0; i < count; i++)
   {
-    char *type = iupAttribGet(params[i], "TYPE");
+    char* type = iupAttribGet(params[i], "TYPE");
 
     if (iupStrEqual(type, "BUTTONNAMES"))
     {
@@ -1252,7 +1252,7 @@ static int iParamBoxCreateMethod(Ihandle* param_box, void** vparams)
                     Parameter String Parsing
 *******************************************************************************************/
 
-static char* iParamStrGetNextItem(char* line, char sep, int *count)
+static char* iParamStrGetNextItem(char* line, char sep, int* count)
 {
   int i = 0;
 
@@ -1276,7 +1276,7 @@ static char* iParamStrGetNextItem(char* line, char sep, int *count)
 
 static void iParamStrSetBoolNames(char* extra, Ihandle* param)
 {
-  char *falsestr = NULL, *truestr = NULL;
+  char* falsestr = NULL, *truestr = NULL;
   int count;
 
   if (extra)
@@ -1299,7 +1299,7 @@ static void iParamStrSetBoolNames(char* extra, Ihandle* param)
 
 static void iParamStrSetInterval(char* extra, Ihandle* param)
 {
-  char *min, *max, *step;
+  char* min, *max, *step;
   int count;
 
   if (!extra)
@@ -1326,7 +1326,7 @@ static void iParamStrSetInterval(char* extra, Ihandle* param)
 
 static void iParamStrSetFileOptions(char* extra, Ihandle* param)
 {
-  char *type, *filter, *directory, *nochangedir, *nooverwriteprompt;
+  char* type, *filter, *directory, *nochangedir, *nooverwriteprompt;
   int count;
 
   if (!extra)
@@ -1355,7 +1355,7 @@ static void iParamStrSetMultiOptions(char* extra, Ihandle* param)
 
 static void iParamStrSetButtonNames(char* extra, Ihandle* param)
 {
-  char *button1, *button2, *button3;
+  char* button1, *button2, *button3;
   int count;
 
   if (!extra)
@@ -1373,7 +1373,7 @@ static void iParamStrSetButtonNames(char* extra, Ihandle* param)
 static void iParamStrSetListItems(char* extra, Ihandle* param)
 {
   int i = 0, count;
-  char *item;
+  char* item;
 
   if (!extra)
     return;
@@ -1390,7 +1390,7 @@ static void iParamStrSetListItems(char* extra, Ihandle* param)
   iupAttribSetId(param, "", i, "");
 }
 
-static char* iParamStrGetExtra(char* line, char start, char end, int *count)
+static char* iParamStrGetExtra(char* line, char start, char end, int* count)
 {
   int i = 0, end_pos = -1;
 
@@ -1457,7 +1457,7 @@ static const char* iParamStrGetType(const char* format)
 }
 
 /* Used in IupLua */
-IUP_SDK_API char iupGetParamType(const char* format, int *line_size)
+IUP_SDK_API char iupGetParamType(const char* format, int* line_size)
 {
   const char* type = iParamStrGetType(format);
   const char* line_end = strchr(format, '\n');
@@ -1652,7 +1652,7 @@ static int iParamCreateMethod(Ihandle* param, void** params)
 }
 
 /* Used in IupLua also */
-IUP_SDK_API int iupGetParamCount(const char *format, int *param_extra)
+IUP_SDK_API int iupGetParamCount(const char* format, int* param_extra)
 {
   int param_count = 0, extra = 0;
   const char* s = format;
@@ -1692,7 +1692,7 @@ IUP_SDK_API int iupGetParamCount(const char *format, int *param_extra)
 
 IUP_API int IupGetParamv(const char* title, Iparamcb action, void* user_data, const char* format, int param_count, int param_extra, void** param_data)
 {
-  Ihandle *dlg, *param_box, **params;
+  Ihandle* dlg, *param_box, **params;
   int i, line_size, p, count;
 
   iupASSERT(title && format);
@@ -1719,28 +1719,28 @@ IUP_API int IupGetParamv(const char* title, Iparamcb action, void* user_data, co
     data_type = iupAttribGet(params[i], "DATATYPE");
     if (iupStrEqualNoCase(data_type, "FLOAT"))
     {
-      float *data_float = (float*)(param_data[p]);
+      float* data_float = (float*)(param_data[p]);
       if (!data_float) { free(params); return 0; }
       iupAttribSetFloat(params[i], "VALUE", *data_float);
       p++;
     }
     else if (iupStrEqualNoCase(data_type, "DOUBLE"))
     {
-      double *data_double = (double*)(param_data[p]);
+      double* data_double = (double*)(param_data[p]);
       if (!data_double) { free(params); return 0; }
       iupAttribSetDouble(params[i], "VALUE", *data_double);
       p++;
     }
     else if (iupStrEqualNoCase(data_type, "INT"))
     {
-      int *data_int = (int*)(param_data[p]);
+      int* data_int = (int*)(param_data[p]);
       if (!data_int) { free(params); return 0; }
       iupAttribSetInt(params[i], "VALUE", *data_int);
       p++;
     }
     else if (iupStrEqualNoCase(data_type, "STRING"))
     {
-      char *data_str = (char*)(param_data[p]);
+      char* data_str = (char*)(param_data[p]);
       if (!data_str) { free(params); return 0; }
       iupAttribSetStr(params[i], "VALUE", data_str);
       p++;
@@ -1789,25 +1789,25 @@ IUP_API int IupGetParamv(const char* title, Iparamcb action, void* user_data, co
       char* data_type = iupAttribGet(param, "DATATYPE");
       if (iupStrEqualNoCase(data_type, "INT"))
       {
-        int *data_int = (int*)(param_data[p]);
+        int* data_int = (int*)(param_data[p]);
         *data_int = iupAttribGetInt(param, "VALUE");
         p++;
       }
       else if (iupStrEqualNoCase(data_type, "FLOAT"))
       {
-        float *data_float = (float*)(param_data[p]);
+        float* data_float = (float*)(param_data[p]);
         *data_float = iupAttribGetFloat(param, "VALUE");
         p++;
       }
       else if (iupStrEqualNoCase(data_type, "DOUBLE"))
       {
-        double *data_double = (double*)(param_data[p]);
+        double* data_double = (double*)(param_data[p]);
         *data_double = iupAttribGetDouble(param, "VALUE");
         p++;
       }
       else if (iupStrEqualNoCase(data_type, "STRING"))
       {
-        char *data_str = (char*)(param_data[p]);
+        char* data_str = (char*)(param_data[p]);
         int max_str = iupAttribGetInt(param, "MAXSTR");
         if (!max_str)
         {
@@ -1865,7 +1865,7 @@ IUP_API int IupGetParam(const char* title, Iparamcb action, void* user_data, con
 
 IUP_API Ihandle* IupParam(const char* format)
 {
-  void *params[2];
+  void* params[2];
   params[0] = (void*)format;
   params[1] = NULL;
   return IupCreatev("param", params);
@@ -1936,7 +1936,7 @@ IUP_API Ihandle* IupParamBoxV(Ihandle* child, va_list arglist)
 
 IUP_API Ihandle* IupParamBox(Ihandle * child, ...)
 {
-  Ihandle *ih;
+  Ihandle* ih;
 
   va_list arglist;
   va_start(arglist, child);
@@ -1946,7 +1946,7 @@ IUP_API Ihandle* IupParamBox(Ihandle * child, ...)
   return ih;
 }
 
-static void iParamBoxComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *children_expand)
+static void iParamBoxComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* children_expand)
 {
   Ihandle* child = ih->firstchild;  /* only for the VBOX */
   if (child)

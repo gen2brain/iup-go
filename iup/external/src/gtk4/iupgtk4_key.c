@@ -47,7 +47,7 @@ static Igtk2iupkey other_remap[] = {
   { GDK_KEY_dead_diaeresis,  K_diaeresis},
 };
 
-IUP_SDK_API void iupdrvKeyEncode(int code, unsigned int *keyval, unsigned int *state)
+IUP_SDK_API void iupdrvKeyEncode(int code, unsigned int* keyval, unsigned int* state)
 {
   *keyval = (unsigned int)iup_XkeyBase(code);
 
@@ -155,7 +155,7 @@ static int iupObjectIsNativeContainer(Ihandle* ih)
     return 0;
 }
 
-static void gtk4KeyImCommit(GtkIMContext *context, const char *str, Ihandle *ih)
+static void gtk4KeyImCommit(GtkIMContext* context, const char* str, Ihandle* ih)
 {
   (void)context;
   if (iupKeyCallTextInputCb(ih, str) == IUP_IGNORE)
@@ -163,11 +163,11 @@ static void gtk4KeyImCommit(GtkIMContext *context, const char *str, Ihandle *ih)
 }
 
 /* a commit consumed by TEXTINPUT_CB suppresses the K_ANY for that key */
-static gboolean gtk4KeyImFilter(GtkEventControllerKey *controller, guint keyval, GdkModifierType state, Ihandle *ih)
+static gboolean gtk4KeyImFilter(GtkEventControllerKey* controller, guint keyval, GdkModifierType state, Ihandle* ih)
 {
-  GtkWidget *widget;
-  GtkIMContext *context;
-  GdkEvent *event;
+  GtkWidget* widget;
+  GtkIMContext* context;
+  GdkEvent* event;
 
   if (!IupGetCallback(ih, "TEXTINPUT_CB"))
     return FALSE;
@@ -196,11 +196,11 @@ static gboolean gtk4KeyImFilter(GtkEventControllerKey *controller, guint keyval,
   return FALSE;
 }
 
-IUP_DRV_API gboolean iupgtk4KeyPressEvent(GtkEventControllerKey *controller, guint keyval, guint keycode, GdkModifierType state, Ihandle *ih)
+IUP_DRV_API gboolean iupgtk4KeyPressEvent(GtkEventControllerKey* controller, guint keyval, guint keycode, GdkModifierType state, Ihandle* ih)
 {
   int result;
   int code;
-  GtkWidget *widget;
+  GtkWidget* widget;
 
   (void)keycode;
 
@@ -218,7 +218,7 @@ IUP_DRV_API gboolean iupgtk4KeyPressEvent(GtkEventControllerKey *controller, gui
   if (iupObjectIsNativeContainer(ih))
   {
     GtkWindow* win = (GtkWindow*)IupGetDialog(ih)->handle;
-    GtkWidget *widget_focus = gtk_window_get_focus(win);
+    GtkWidget* widget_focus = gtk_window_get_focus(win);
     if (widget_focus && widget_focus != widget)
       return FALSE;
   }
@@ -267,7 +267,7 @@ IUP_DRV_API gboolean iupgtk4KeyPressEvent(GtkEventControllerKey *controller, gui
   return FALSE;
 }
 
-IUP_DRV_API gboolean iupgtk4KeyReleaseEvent(GtkEventControllerKey *controller, guint keyval, guint keycode, GdkModifierType state, Ihandle *ih)
+IUP_DRV_API gboolean iupgtk4KeyReleaseEvent(GtkEventControllerKey* controller, guint keyval, guint keycode, GdkModifierType state, Ihandle* ih)
 {
   int result;
   int code;

@@ -217,7 +217,7 @@ static int iupObjectIsNativeContainer(Ihandle* ih)
 }
 
 /* a commit consumed by TEXTINPUT_CB suppresses the K_ANY for that key */
-static int fltkKeyTextInput(Ihandle *ih)
+static int fltkKeyTextInput(Ihandle* ih)
 {
   if (!IupGetCallback(ih, "TEXTINPUT_CB"))
     return 0;
@@ -234,7 +234,7 @@ static int fltkKeyTextInput(Ihandle *ih)
   return iupKeyCallTextInputCb(ih, text) == IUP_IGNORE;
 }
 
-IUP_DRV_API int iupfltkKeyPressEvent(Fl_Widget *widget, Ihandle *ih)
+IUP_DRV_API int iupfltkKeyPressEvent(Fl_Widget* widget, Ihandle* ih)
 {
   int result;
   int code;
@@ -307,7 +307,7 @@ IUP_DRV_API int iupfltkKeyPressEvent(Fl_Widget *widget, Ihandle *ih)
   return 0;
 }
 
-IUP_DRV_API int iupfltkKeyReleaseEvent(Fl_Widget *widget, Ihandle *ih)
+IUP_DRV_API int iupfltkKeyReleaseEvent(Fl_Widget* widget, Ihandle* ih)
 {
   int result;
   int code = iupfltkKeyDecode();
@@ -331,7 +331,7 @@ IUP_DRV_API int iupfltkKeyReleaseEvent(Fl_Widget *widget, Ihandle *ih)
  * Key Encoding (IUP to FLTK)
  ****************************************************************************/
 
-extern "C" IUP_SDK_API void iupdrvKeyEncode(int code, unsigned int *keyval, unsigned int *state)
+extern "C" IUP_SDK_API void iupdrvKeyEncode(int code, unsigned int* keyval, unsigned int* state)
 {
   *keyval = (unsigned int)iup_XkeyBase(code);
 

@@ -33,7 +33,7 @@ IUP_SDK_API int iupBaseTypeVoidMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-IUP_SDK_API char* iupBaseGetWidAttrib(Ihandle *ih)
+IUP_SDK_API char* iupBaseGetWidAttrib(Ihandle* ih)
 {
   return (char*)ih->handle;
 }
@@ -236,7 +236,7 @@ static int iBaseSetPositionAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-static char* iBaseGetXAttrib(Ihandle *ih)
+static char* iBaseGetXAttrib(Ihandle* ih)
 {
   int x = 0, y = 0;
   iupdrvClientToScreen(ih, &x, &y);
@@ -244,7 +244,7 @@ static char* iBaseGetXAttrib(Ihandle *ih)
   return iupStrReturnInt(x);
 }
 
-static char* iBaseGetYAttrib(Ihandle *ih)
+static char* iBaseGetYAttrib(Ihandle* ih)
 {
   int x = 0, y = 0;
   iupdrvClientToScreen(ih, &x, &y);
@@ -252,7 +252,7 @@ static char* iBaseGetYAttrib(Ihandle *ih)
   return iupStrReturnInt(y);
 }
 
-static char* iBaseGetScreenPositionAttrib(Ihandle *ih)
+static char* iBaseGetScreenPositionAttrib(Ihandle* ih)
 {
   int x = 0, y = 0;
   iupdrvClientToScreen(ih, &x, &y);
@@ -260,7 +260,7 @@ static char* iBaseGetScreenPositionAttrib(Ihandle *ih)
   return iupStrReturnIntInt(x, y, ',');
 }
 
-IUP_SDK_API char* iupBaseGetActiveAttrib(Ihandle *ih)
+IUP_SDK_API char* iupBaseGetActiveAttrib(Ihandle* ih)
 {
   return iupStrReturnBoolean (iupdrvIsActive(ih));
 }
@@ -391,7 +391,7 @@ static Ihandle* iBaseFindNamedChild(Ihandle* ih, const char* name)
 
 IUP_API Ihandle* IupGetDialogChild(Ihandle* ih, const char* name)
 {
-  Ihandle *child, *dialog;
+  Ihandle* child, *dialog;
   char attrib[1024];
 
   iupASSERT(iupObjectCheck(ih));
@@ -525,7 +525,7 @@ IUP_SDK_API char* iupBaseGetExpandAttrib(Ihandle* ih)
 
 IUP_SDK_API void iupBaseContainerUpdateExpand(Ihandle* ih)
 {
-  char *expand = iupAttribGetInherit(ih, "EXPAND");
+  char* expand = iupAttribGetInherit(ih, "EXPAND");
   if (!expand)
     ih->expand = IUP_EXPAND_BOTH;  /* default for containers is YES */
   else

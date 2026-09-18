@@ -322,7 +322,7 @@ IUP_SDK_API void iupdrvReparent(Ihandle* ih)
   }
 }
 
-IUP_SDK_API void iupdrvBaseLayoutUpdateMethod(Ihandle *ih)
+IUP_SDK_API void iupdrvBaseLayoutUpdateMethod(Ihandle* ih)
 {
   if (ih->currentwidth > 0 && ih->currentheight > 0)
     SetWindowPos(ih->handle, NULL, ih->x, ih->y, ih->currentwidth, ih->currentheight,
@@ -332,20 +332,20 @@ IUP_SDK_API void iupdrvBaseLayoutUpdateMethod(Ihandle *ih)
                  SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOOWNERZORDER);
 }
 
-IUP_SDK_API void iupdrvRedrawNow(Ihandle *ih)
+IUP_SDK_API void iupdrvRedrawNow(Ihandle* ih)
 {
   /* REDRAW Now - IupRedraw */
   RedrawWindow(ih->handle,NULL,NULL,RDW_ERASE|RDW_INVALIDATE|RDW_INTERNALPAINT|RDW_UPDATENOW);
 }
 
-IUP_SDK_API void iupdrvPostRedraw(Ihandle *ih)
+IUP_SDK_API void iupdrvPostRedraw(Ihandle* ih)
 {
   /* Post a REDRAW - IupUpdate */
   /* can NOT use RDW_NOCHILDREN because IupList has internal children that needs to be redrawn */
   RedrawWindow(ih->handle,NULL,NULL,RDW_ERASE|RDW_INVALIDATE|RDW_INTERNALPAINT);
 }
 
-IUP_SDK_API void iupdrvScreenToClient(Ihandle* ih, int *x, int *y)
+IUP_SDK_API void iupdrvScreenToClient(Ihandle* ih, int* x, int* y)
 {
   POINT p;
   p.x = *x;
@@ -355,7 +355,7 @@ IUP_SDK_API void iupdrvScreenToClient(Ihandle* ih, int *x, int *y)
   *y = p.y;
 }
 
-IUP_SDK_API void iupdrvClientToScreen(Ihandle* ih, int *x, int *y)
+IUP_SDK_API void iupdrvClientToScreen(Ihandle* ih, int* x, int* y)
 {
   POINT p;
   p.x = *x;
@@ -488,7 +488,7 @@ static int winTextInputChar(Ihandle* ih, WCHAR wc)
   return iupKeyCallTextInputCb(ih, utf8) == IUP_IGNORE;
 }
 
-IUP_DRV_API int iupwinBaseMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT *result)
+IUP_DRV_API int iupwinBaseMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT* result)
 {
   switch (msg)
   {
@@ -689,7 +689,7 @@ IUP_DRV_API LRESULT CALLBACK iupwinBaseWndProc(HWND hwnd, UINT msg, WPARAM wp, L
   int ret;
   LRESULT result = 0;
   IwinMsgProc MsgProc;
-  Ihandle *ih;
+  Ihandle* ih;
   WNDPROC oldProc;
 
   ih = iupwinHandleGet(hwnd);
@@ -712,7 +712,7 @@ IUP_DRV_API LRESULT CALLBACK iupwinBaseWndProc(HWND hwnd, UINT msg, WPARAM wp, L
     return CallWindowProc(oldProc, hwnd, msg, wp, lp);
 }
 
-static Ihandle* winContainerWmCommandGetIhandle(Ihandle *ih, WPARAM wp, LPARAM lp)
+static Ihandle* winContainerWmCommandGetIhandle(Ihandle* ih, WPARAM wp, LPARAM lp)
 {
   /* WPARAM - if HIWORD is 0 if the message is from a menu.
               or HIWORD is 1 if the message is from an accelerator.
@@ -720,7 +720,7 @@ static Ihandle* winContainerWmCommandGetIhandle(Ihandle *ih, WPARAM wp, LPARAM l
               LOWORD is the identifier.
      LPARAM - the control sending the message or 0. */
 
-  Ihandle *child = NULL;
+  Ihandle* child = NULL;
 
   if (HIWORD(wp)==0 && lp==0 && LOWORD(wp)>10)
   {
@@ -758,7 +758,7 @@ static int winCheckParent(Ihandle* child, Ihandle* ih)
   }
 }
 
-IUP_DRV_API int iupwinBaseContainerMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT *result)
+IUP_DRV_API int iupwinBaseContainerMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT* result)
 {
   /* All messages here are sent to the parent Window,
      but they are useful for child controls.  */
@@ -794,8 +794,8 @@ IUP_DRV_API int iupwinBaseContainerMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPA
     }
   case WM_DRAWITEM:   /* for OWNERDRAW controls */
     {
-      Ihandle *child;
-      DRAWITEMSTRUCT *drawitem = (LPDRAWITEMSTRUCT)lp;
+      Ihandle* child;
+      DRAWITEMSTRUCT* drawitem = (LPDRAWITEMSTRUCT)lp;
       if (!drawitem)
         break;
 
@@ -823,7 +823,7 @@ IUP_DRV_API int iupwinBaseContainerMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPA
   case WM_HSCROLL:
   case WM_VSCROLL:
     {
-      Ihandle *child = iupwinHandleGet((HWND)lp);
+      Ihandle* child = iupwinHandleGet((HWND)lp);
       if (iupObjectCheck(child) && winCheckParent(child, ih))
       {
         IFni cb = (IFni)IupGetCallback(child, "_IUPWIN_CUSTOMSCROLL_CB");
@@ -836,7 +836,7 @@ IUP_DRV_API int iupwinBaseContainerMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPA
                        Header, List-view, Rebar, Toolbar, ToolTip, Trackbar, Tree-view.
                        And for Button if using Windows XP Style. */
     {
-      Ihandle *child;
+      Ihandle* child;
       NMHDR* msg_info = (NMHDR*)lp;
       if (!msg_info)
         break;
@@ -898,7 +898,7 @@ IUP_DRV_API int iupwinBaseContainerMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPA
       if (msg == WM_DRAGLISTMSG)
       {
         DRAGLISTINFO* lpDrag = (DRAGLISTINFO*) lp;
-        Ihandle *child = iupwinHandleGet(lpDrag->hWnd);
+        Ihandle* child = iupwinHandleGet(lpDrag->hWnd);
         if (iupObjectCheck(child) && winCheckParent(child, ih))
         {
           *result = iupwinListDND(child, lpDrag->uNotification, lpDrag->ptCursor);
@@ -912,7 +912,7 @@ IUP_DRV_API int iupwinBaseContainerMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPA
   return iupwinBaseMsgProc(ih, msg, wp, lp, result);
 }
 
-IUP_DRV_API void iupwinChangeWndProc(Ihandle *ih, WNDPROC newProc)
+IUP_DRV_API void iupwinChangeWndProc(Ihandle* ih, WNDPROC newProc)
 {
   IupSetCallback(ih, "_IUPWIN_OLDWNDPROC_CB", (Icallback)GetWindowLongPtr(ih->handle, GWLP_WNDPROC));
   SetWindowLongPtr(ih->handle, GWLP_WNDPROC, (LONG_PTR)newProc);
@@ -937,7 +937,7 @@ IUP_SDK_API void iupdrvBaseUnMapMethod(Ihandle* ih)
   DestroyWindow(ih->handle);
 }
 
-IUP_DRV_API int iupwinGetColorRef(Ihandle *ih, char *name, COLORREF *color)
+IUP_DRV_API int iupwinGetColorRef(Ihandle* ih, char* name, COLORREF* color)
 {
   unsigned char r, g, b;
   /* must use IupGetAttribute to use inheritance */
@@ -1005,7 +1005,7 @@ IUP_DRV_API int iupwinSetTitleAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-IUP_SDK_API void iupdrvSetAccessibleTitle(Ihandle *ih, const char* title)
+IUP_SDK_API void iupdrvSetAccessibleTitle(Ihandle* ih, const char* title)
 {
   if (!title)
     SetWindowText(ih->handle, TEXT(""));
@@ -1013,13 +1013,13 @@ IUP_SDK_API void iupdrvSetAccessibleTitle(Ihandle *ih, const char* title)
     SetWindowText(ih->handle, iupwinStrToSystem(title));
 }
 
-IUP_SDK_API void iupdrvSetAccessibleDescription(Ihandle *ih, const char* description)
+IUP_SDK_API void iupdrvSetAccessibleDescription(Ihandle* ih, const char* description)
 {
   (void)ih;
   (void)description;
 }
 
-IUP_DRV_API void iupwinSetMnemonicTitle(Ihandle *ih, int pos, const char* value)
+IUP_DRV_API void iupwinSetMnemonicTitle(Ihandle* ih, int pos, const char* value)
 {
   int c;
 
@@ -1332,7 +1332,7 @@ IUP_DRV_API int iupwinMouseMove(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp)
   return 0;
 }
 
-IUP_DRV_API void iupwinGetNativeParentStyle(Ihandle* ih, DWORD *dwExStyle, DWORD *dwStyle)
+IUP_DRV_API void iupwinGetNativeParentStyle(Ihandle* ih, DWORD* dwExStyle, DWORD* dwStyle)
 {
   *dwStyle |= WS_CLIPCHILDREN;
 
@@ -1581,7 +1581,7 @@ IUP_DRV_API void iupwinDrawFocusRect(HDC hDC, int x, int y, int w, int h)
 
 IUP_DRV_API void iupwinTitleBarThemeColor(HWND hwnd)
 {
-  typedef HRESULT(STDAPICALLTYPE *PtrDwmSetWindowAttribute)(HWND, DWORD, LPCVOID, DWORD);
+  typedef HRESULT(STDAPICALLTYPE* PtrDwmSetWindowAttribute)(HWND, DWORD, LPCVOID, DWORD);
   static PtrDwmSetWindowAttribute dwmSetWindowAttribute = NULL;
   static int initialized = 0;
 

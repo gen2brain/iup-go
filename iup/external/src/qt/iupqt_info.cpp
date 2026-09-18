@@ -45,14 +45,14 @@
  * Screen Information
  ****************************************************************************/
 
-extern "C" IUP_SDK_API void iupdrvAddScreenOffset(int *x, int *y, int add)
+extern "C" IUP_SDK_API void iupdrvAddScreenOffset(int* x, int* y, int add)
 {
   (void)x;
   (void)y;
   (void)add;
 }
 
-extern "C" IUP_SDK_API void iupdrvGetScreenSize(int *width, int *height)
+extern "C" IUP_SDK_API void iupdrvGetScreenSize(int* width, int* height)
 {
   QScreen* screen = QGuiApplication::primaryScreen();
 
@@ -69,7 +69,7 @@ extern "C" IUP_SDK_API void iupdrvGetScreenSize(int *width, int *height)
   }
 }
 
-extern "C" IUP_SDK_API void iupdrvGetFullSize(int *width, int *height)
+extern "C" IUP_SDK_API void iupdrvGetFullSize(int* width, int* height)
 {
   QScreen* screen = QGuiApplication::primaryScreen();
 
@@ -121,7 +121,7 @@ extern "C" IUP_SDK_API int iupdrvScaleNaturalPx(int px)
  * Cursor and Keyboard State
  ****************************************************************************/
 
-extern "C" IUP_SDK_API void iupdrvGetCursorPos(int *x, int *y)
+extern "C" IUP_SDK_API void iupdrvGetCursorPos(int* x, int* y)
 {
   QPoint pos = QCursor::pos();
 
@@ -162,13 +162,13 @@ extern "C" IUP_SDK_API void iupdrvGetKeyState(char* key)
  * System Information
  ****************************************************************************/
 
-extern "C" IUP_SDK_API char *iupdrvGetComputerName(void)
+extern "C" IUP_SDK_API char* iupdrvGetComputerName(void)
 {
   QString hostname = QSysInfo::machineHostName();
   return iupStrReturnStr(hostname.toUtf8().constData());
 }
 
-extern "C" IUP_SDK_API char *iupdrvGetUserName(void)
+extern "C" IUP_SDK_API char* iupdrvGetUserName(void)
 {
 #ifdef _WIN32
   QString username = qgetenv("USERNAME");
@@ -197,13 +197,13 @@ extern "C" IUP_SDK_API char *iupdrvGetUserName(void)
  * Additional System Info
  ****************************************************************************/
 
-extern "C" IUP_SDK_API char *iupdrvGetSystemName(void)
+extern "C" IUP_SDK_API char* iupdrvGetSystemName(void)
 {
   QString os_name = QSysInfo::productType();
   return iupStrReturnStr(os_name.toUtf8().constData());
 }
 
-extern "C" IUP_SDK_API char *iupdrvGetSystemVersion(void)
+extern "C" IUP_SDK_API char* iupdrvGetSystemVersion(void)
 {
   QString os_version = QSysInfo::productVersion();
   return iupStrReturnStr(os_version.toUtf8().constData());
@@ -227,7 +227,7 @@ extern "C" IUP_SDK_API int iupdrvSetCurrentDirectory(const char* dir)
   return QDir::setCurrent(QString::fromUtf8(dir)) ? 1 : 0;
 }
 
-extern "C" IUP_SDK_API int iupdrvGetPreferencePath(char *filename, const char *app_name, int use_system)
+extern "C" IUP_SDK_API int iupdrvGetPreferencePath(char* filename, const char* app_name, int use_system)
 {
   if (!app_name || !app_name[0])
   {

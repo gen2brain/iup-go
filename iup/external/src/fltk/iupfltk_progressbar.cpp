@@ -100,7 +100,7 @@ static void fltkProgressBarMarqueeTimeout(void* data)
   Fl::repeat_timeout(0.05, fltkProgressBarMarqueeTimeout, data);
 }
 
-extern "C" IUP_SDK_API void iupdrvProgressBarGetMinSize(Ihandle* ih, int *w, int *h)
+extern "C" IUP_SDK_API void iupdrvProgressBarGetMinSize(Ihandle* ih, int* w, int* h)
 {
   if (iupStrEqualNoCase(iupAttribGetStr(ih, "ORIENTATION"), "VERTICAL"))
   {

@@ -184,7 +184,7 @@ EMSCRIPTEN_KEEPALIVE void iupwasmCanvasMultiTouch(int cid, int count, const char
 {
   Ihandle* ih = iupwasmHandleFromId(cid);
   IFniIIII cb;
-  int *ids, *xs, *ys, *states, i;
+  int* ids, *xs, *ys, *states, i;
   const char* p = points;
   if (!ih || count <= 0 || iupStrEqualNoCase(iupAttribGet(ih, "TOUCH"), "NO"))
     return;

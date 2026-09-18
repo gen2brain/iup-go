@@ -42,7 +42,7 @@
 @end
 
 @interface IupTabsRootView ()
-  - (void)_handleRightMouseDownOnTabCell:(IupCocoaTabCell *)tab_cell cb:(IFni)cb ih:(Ihandle *)ih event:(NSEvent *)event;
+  - (void)_handleRightMouseDownOnTabCell:(IupCocoaTabCell*)tab_cell cb:(IFni)cb ih:(Ihandle*)ih event:(NSEvent*)event;
   @end
 
 /*
@@ -327,7 +327,7 @@ static CGFloat cocoaTabsMaxTabWidth(Ihandle* ih)
   return [super acceptsFirstResponder];
 }
 
-- (void)keyDown:(NSEvent *)event
+- (void)keyDown:(NSEvent*)event
 {
   Ihandle* ih = [self ihandle];
   if (ih)
@@ -340,7 +340,7 @@ static CGFloat cocoaTabsMaxTabWidth(Ihandle* ih)
     [super keyDown:event];
 }
 
-- (void)keyUp:(NSEvent *)event
+- (void)keyUp:(NSEvent*)event
 {
   Ihandle* ih = [self ihandle];
   if (ih)
@@ -353,7 +353,7 @@ static CGFloat cocoaTabsMaxTabWidth(Ihandle* ih)
     [super keyUp:event];
 }
 
-- (void)flagsChanged:(NSEvent *)event
+- (void)flagsChanged:(NSEvent*)event
 {
   Ihandle* ih = [self ihandle];
   if (ih)
@@ -401,7 +401,7 @@ static CGFloat cocoaTabsMaxTabWidth(Ihandle* ih)
   }
 }
 
-- (void)_handleRightMouseDownOnTabCell:(IupCocoaTabCell *)tab_cell cb:(IFni)cb ih:(Ihandle *)ih event:(NSEvent *)event
+- (void)_handleRightMouseDownOnTabCell:(IupCocoaTabCell*)tab_cell cb:(IFni)cb ih:(Ihandle*)ih event:(NSEvent*)event
 {
   NSInteger native_pos = [[self.tabBarView tabs] indexOfObject:tab_cell];
   if (native_pos != NSNotFound)
@@ -785,7 +785,7 @@ static int cocoaTabsCreateAndInsertItem(Ihandle* ih, Ihandle* child, int iup_pos
 
   NSImage* ns_image = cocoaTabsScaledTabImage(ih, image_name);
 
-  IupCocoaTabCell *tab_cell = [IupCocoaTabCell tabCellWithTabBarView:tab_bar_view title:ns_title image:ns_image];
+  IupCocoaTabCell* tab_cell = [IupCocoaTabCell tabCellWithTabBarView:tab_bar_view title:ns_title image:ns_image];
 
   [tab_cell setHasCloseButton:do_show_close];
 

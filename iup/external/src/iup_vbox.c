@@ -88,7 +88,7 @@ static char* iVboxGetOrientationAttrib(Ihandle* ih)
   return "VERTICAL";
 }
 
-static void iVboxComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *children_expand)
+static void iVboxComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* children_expand)
 {
   Ihandle* child;
   int total_natural_width, total_natural_height;
@@ -143,7 +143,7 @@ static void iVboxComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *chil
   *h = total_natural_height;
 }
 
-static int iHboxCalcHomogeneousHeight(Ihandle *ih)
+static int iHboxCalcHomogeneousHeight(Ihandle* ih)
 {
   Ihandle* child;
   int homogeneous_height;
@@ -163,7 +163,7 @@ static int iHboxCalcHomogeneousHeight(Ihandle *ih)
   return homogeneous_height;
 }
 
-static int iVboxCalcEmptyHeight(Ihandle *ih, int expand)
+static int iVboxCalcEmptyHeight(Ihandle* ih, int expand)
 {
   /* This is the space that the child can be expanded. */
   Ihandle* child;
@@ -271,7 +271,7 @@ static void iVboxSetChildrenPositionMethod(Ihandle* ih, int x, int y)
 
 /******************************************************************************/
 
-IUP_API Ihandle* IupVboxv(Ihandle **children)
+IUP_API Ihandle* IupVboxv(Ihandle** children)
 {
   return IupCreatev("vbox", (void**)children);
 }
@@ -283,7 +283,7 @@ IUP_API Ihandle* IupVboxV(Ihandle* child, va_list arglist)
 
 IUP_API Ihandle* IupVbox(Ihandle* child, ...)
 {
-  Ihandle *ih;
+  Ihandle* ih;
 
   va_list arglist;
   va_start(arglist, child);

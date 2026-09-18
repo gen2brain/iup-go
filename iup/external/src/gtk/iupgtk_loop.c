@@ -153,7 +153,7 @@ typedef struct {
   char* p;
 } gtkPostMessageUserData;
 
-static gint gtkPostMessageCallback(void *cb_data)
+static gint gtkPostMessageCallback(void* cb_data)
 {
   gtkPostMessageUserData* user_data = (gtkPostMessageUserData*)cb_data;
   Ihandle* ih = user_data->ih;

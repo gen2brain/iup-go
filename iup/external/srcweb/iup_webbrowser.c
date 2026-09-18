@@ -34,7 +34,7 @@ IUPWEB_API int IupWebBrowserOpen(void)
   return IUP_NOERROR;
 }
 
-IUPWEB_API Ihandle *IupWebBrowser(void)
+IUPWEB_API Ihandle* IupWebBrowser(void)
 {
   return IupCreate("webbrowser");
 }

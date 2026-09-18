@@ -44,7 +44,7 @@ struct _IdrawCanvas{
   int clip_x1, clip_y1, clip_x2, clip_y2;
 };
 
-static int motDrawGetGeometry(Ihandle *ih, Drawable wnd, int *_w, int *_h, int *_d)
+static int motDrawGetGeometry(Ihandle* ih, Drawable wnd, int* _w, int* _h, int* _d)
 {
   Window root;
   int x, y;
@@ -344,7 +344,7 @@ IUP_SDK_API void iupdrvDrawFlush(IdrawCanvas* dc)
   XCopyArea(iupmot_display, dc->pixmap, dc->wnd, dc->gc, 0, 0, dc->w, dc->h, 0, 0);
 }
 
-IUP_SDK_API void iupdrvDrawGetSize(IdrawCanvas* dc, int *w, int *h)
+IUP_SDK_API void iupdrvDrawGetSize(IdrawCanvas* dc, int* w, int* h)
 {
   if (!dc)
   {
@@ -686,7 +686,7 @@ IUP_SDK_API void iupdrvDrawRoundedRectangle(IdrawCanvas* dc, int x1, int y1, int
     motDrawAlphaMaskEnd(dc, &m, color);
 }
 
-IUP_SDK_API void iupdrvDrawGetClipRect(IdrawCanvas* dc, int *x1, int *y1, int *x2, int *y2)
+IUP_SDK_API void iupdrvDrawGetClipRect(IdrawCanvas* dc, int* x1, int* y1, int* x2, int* y2)
 {
   if (x1) *x1 = dc->clip_x1;
   if (y1) *y1 = dc->clip_y1;

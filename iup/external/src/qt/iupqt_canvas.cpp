@@ -606,7 +606,7 @@ static void qtCanvasProcessScroll(Ihandle* ih, QScrollBar* scrollbar, int orient
     return;
 
   double xmin, xmax, ymin, ymax, dx, dy;
-  double *pos_ptr, line_val;
+  double* pos_ptr, line_val;
   int op = IUP_SBPOSH;  /* default */
   int is_vert = (orientation == Qt::Vertical);
 

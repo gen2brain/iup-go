@@ -26,7 +26,7 @@
 #include "iup_object.h"
 
 
-static Itable *iglobal_table = NULL;
+static Itable* iglobal_table = NULL;
 static int iglobal_appearance = IUP_APPEARANCE_SYSTEM;
 static int iglobal_appearance_applying = 0;
 static char iglobal_theme_state[256] = "";
@@ -150,7 +150,7 @@ IUP_SDK_API int iupGlobalIsDarkMode(void)
   return (0.2126 * br + 0.7152 * bg + 0.0722 * bb) < (0.2126 * fr + 0.7152 * fg + 0.0722 * fb)? 1: 0;
 }
 
-static int iGlobalChangingDefaultColor(const char *name)
+static int iGlobalChangingDefaultColor(const char* name)
 {
   if (iupClassIsGlobalDefault(name, 1))
   {
@@ -162,7 +162,7 @@ static int iGlobalChangingDefaultColor(const char *name)
   return 0;
 }
 
-int iupGlobalDefaultColorChanged(const char *name)
+int iupGlobalDefaultColorChanged(const char* name)
 {
   char str[50];
   snprintf(str, sizeof(str), "_IUP_USER_DEFAULT_%s", name);
@@ -179,7 +179,7 @@ void iupGlobalSetDefaultColorAttrib(const char* name, int r, int g, int b)
   }
 }
 
-static void iGlobalTableSet(const char *name, const char *value, int store)
+static void iGlobalTableSet(const char* name, const char* value, int store)
 {
   if (!value)
     iupTableRemove(iglobal_table, name);
@@ -189,7 +189,7 @@ static void iGlobalTableSet(const char *name, const char *value, int store)
     iupTableSet(iglobal_table, name, (void*)value, IUPTABLE_POINTER);
 }
 
-static void iGlobalSet(const char *name, const char *value, int store)
+static void iGlobalSet(const char* name, const char* value, int store)
 {
   iupASSERT(name!=NULL);
   if (!name) return;
@@ -301,22 +301,22 @@ static void iGlobalSet(const char *name, const char *value, int store)
     iGlobalTableSet(name, value, store);
 }
 
-IUP_API void IupSetGlobal(const char *name, const char *value)
+IUP_API void IupSetGlobal(const char* name, const char* value)
 {
   iGlobalSet(name, value, 0);
 }
 
-IUP_API void IupStoreGlobal(const char *name, const char *value)
+IUP_API void IupStoreGlobal(const char* name, const char* value)
 {
   iGlobalSet(name, value, 1);
 }
 
-IUP_API void IupSetStrGlobal(const char *name, const char *value)
+IUP_API void IupSetStrGlobal(const char* name, const char* value)
 {
   iGlobalSet(name, value, 1);
 }
 
-IUP_API char* IupGetGlobal(const char *name)
+IUP_API char* IupGetGlobal(const char* name)
 {
   char* value;
 
@@ -350,7 +350,7 @@ IUP_API char* IupGetGlobal(const char *name)
   }
   if (iupStrEqual(name, "MODKEYSTATE"))
   {
-    char *str = iupStrGetMemory(5);
+    char* str = iupStrGetMemory(5);
     iupdrvGetKeyState(str);
     return str;
   }

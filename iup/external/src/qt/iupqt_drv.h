@@ -43,9 +43,9 @@ typedef struct _QMouseEvent QMouseEvent;
  * Event Handlers
  ****************************************************************************/
 
-IUP_DRV_API int iupqtEnterLeaveEvent(QWidget *widget, QEvent *evt, Ihandle* ih);
-IUP_DRV_API int iupqtMouseMoveEvent(QWidget *widget, QEvent *evt, Ihandle *ih);
-IUP_DRV_API int iupqtMouseButtonEvent(QWidget *widget, QEvent *evt, Ihandle *ih);
+IUP_DRV_API int iupqtEnterLeaveEvent(QWidget* widget, QEvent* evt, Ihandle* ih);
+IUP_DRV_API int iupqtMouseMoveEvent(QWidget* widget, QEvent* evt, Ihandle* ih);
+IUP_DRV_API int iupqtMouseButtonEvent(QWidget* widget, QEvent* evt, Ihandle* ih);
 
 /****************************************************************************
  * Text and Mnemonic Handling
@@ -81,7 +81,7 @@ IUP_DRV_API void iupqtNativeContainerMove(QWidget* container, QWidget* widget, i
 /* Qt uses UTF-8 internally, so conversions are mostly pass-through */
 IUP_DRV_API void iupqtStrRelease(void);
 IUP_DRV_API char* iupqtStrConvertToSystem(const char* str);
-IUP_DRV_API char* iupqtStrConvertToSystemLen(const char* str, int *len);
+IUP_DRV_API char* iupqtStrConvertToSystemLen(const char* str, int* len);
 IUP_DRV_API char* iupqtStrConvertFromSystem(const char* str);
 IUP_DRV_API char* iupqtStrConvertFromFilename(const char* str);
 IUP_DRV_API char* iupqtStrConvertToFilename(const char* str);
@@ -92,16 +92,16 @@ IUP_DRV_API int iupqtStrGetUTF8Mode(void);
  * Focus Management
  ****************************************************************************/
 
-IUP_DRV_API int iupqtFocusInOutEvent(QWidget *widget, QEvent *evt, Ihandle* ih);
-IUP_DRV_API void iupqtSetCanFocus(QWidget *widget, int can);
+IUP_DRV_API int iupqtFocusInOutEvent(QWidget* widget, QEvent* evt, Ihandle* ih);
+IUP_DRV_API void iupqtSetCanFocus(QWidget* widget, int can);
 IUP_DRV_API void iupqtDialogSetFocus(Ihandle* ih);
 
 /****************************************************************************
  * Key Input Handling
  ****************************************************************************/
 
-IUP_DRV_API int iupqtKeyPressEvent(QWidget *widget, QKeyEvent *evt, Ihandle* ih);
-IUP_DRV_API int iupqtKeyReleaseEvent(QWidget *widget, QKeyEvent *evt, Ihandle* ih);
+IUP_DRV_API int iupqtKeyPressEvent(QWidget* widget, QKeyEvent* evt, Ihandle* ih);
+IUP_DRV_API int iupqtKeyReleaseEvent(QWidget* widget, QKeyEvent* evt, Ihandle* ih);
 
 #ifdef __cplusplus
 IUP_DRV_API void iupqtButtonKeySetStatus(Qt::KeyboardModifiers modifiers, Qt::MouseButtons buttons, int button, char* status, int doubleclick);
@@ -114,15 +114,15 @@ IUP_DRV_API void iupqtButtonKeySetStatus(int modifiers, int buttons, int button,
  ****************************************************************************/
 
 IUP_DRV_API QFont* iupqtGetQFont(const char* value);
-IUP_DRV_API QFont* iupqtGetQFontLine(const char* value, int *ascent, int *charheight);
-IUP_DRV_API char* iupqtGetQFontAttrib(Ihandle *ih);
-IUP_DRV_API void iupqtUpdateWidgetFont(Ihandle *ih, QWidget* widget);
+IUP_DRV_API QFont* iupqtGetQFontLine(const char* value, int* ascent, int* charheight);
+IUP_DRV_API char* iupqtGetQFontAttrib(Ihandle* ih);
+IUP_DRV_API void iupqtUpdateWidgetFont(Ihandle* ih, QWidget* widget);
 
 /****************************************************************************
  * Native Handle Access
  ****************************************************************************/
 
-IUP_DRV_API char* iupqtGetNativeWidgetHandle(QWidget *widget);
+IUP_DRV_API char* iupqtGetNativeWidgetHandle(QWidget* widget);
 IUP_DRV_API char* iupqtGetNativeWindowHandleAttrib(Ihandle* ih);
 IUP_DRV_API const char* iupqtGetNativeWindowHandleName(void);
 IUP_DRV_API const char* iupqtGetNativeFontIdName(void);
@@ -131,7 +131,7 @@ IUP_DRV_API const char* iupqtGetNativeFontIdName(void);
  * Dialog Management
  ****************************************************************************/
 
-IUP_DRV_API int iupqtDialogCloseEvent(QWidget *widget, QEvent *evt, Ihandle *ih);
+IUP_DRV_API int iupqtDialogCloseEvent(QWidget* widget, QEvent* evt, Ihandle* ih);
 IUP_DRV_API QWidget* iupqtGetParentWidget(Ihandle* ih);
 
 /****************************************************************************

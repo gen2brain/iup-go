@@ -72,7 +72,7 @@ int iupMenuIsMenuBar(Ihandle* ih)
     return 0;
 }
 
-static void iMenuAdjustPos(int *x, int *y)
+static void iMenuAdjustPos(int* x, int* y)
 {
   int cursor_x = 0, cursor_y = 0;
   int screen_width = 0, screen_height = 0;
@@ -130,7 +130,7 @@ char* iupMenuProcessTitle(Ihandle* ih, const char* title)
   if (str)
   {
     int len = (int)strlen(title);
-    char *new_title = malloc(len+1+1);
+    char* new_title = malloc(len+1+1);
     int pos = (int)(str - title);
     if (!new_title) return (char*)title;
     memcpy(new_title, title, pos);
@@ -415,7 +415,7 @@ Iclass* iupMenuNewClass(void)
 
 IUP_API Ihandle* IupMenuItem(const char* title)
 {
-  void *params[2];
+  void* params[2];
   params[0] = (void*)title;
   params[1] = NULL;
   return IupCreatev("menuitem", params);
@@ -423,13 +423,13 @@ IUP_API Ihandle* IupMenuItem(const char* title)
 
 IUP_API Ihandle* IupSubmenu(const char* title, Ihandle* child)
 {
-  void *params[2];
+  void* params[2];
   params[0] = (void*)title;
   params[1] = (void*)child;
   return IupCreatev("submenu", params);
 }
 
-IUP_API Ihandle* IupMenuv(Ihandle **children)
+IUP_API Ihandle* IupMenuv(Ihandle** children)
 {
   return IupCreatev("menu", (void**)children);
 }
@@ -439,9 +439,9 @@ IUP_API Ihandle* IupMenuV(Ihandle* child, va_list arglist)
   return IupCreateV("menu", child, arglist);
 }
 
-IUP_API Ihandle* IupMenu(Ihandle *child, ...)
+IUP_API Ihandle* IupMenu(Ihandle* child, ...)
 {
-  Ihandle *ih;
+  Ihandle* ih;
 
   va_list arglist;
   va_start(arglist, child);

@@ -248,7 +248,7 @@ static char* eflClipboardGetFormatDataAttrib(Ihandle* ih)
   Eina_Future* future;
   Eina_Iterator* types;
   const char* mime_type;
-  eflClipboardResult *result = &efl_clipboard_format_result;
+  eflClipboardResult* result = &efl_clipboard_format_result;
 
   result->data = NULL;
   result->size = 0;

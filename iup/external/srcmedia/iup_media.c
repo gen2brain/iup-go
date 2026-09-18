@@ -27,7 +27,7 @@ IUPMEDIA_API int IupMediaOpen(void)
   return IUP_NOERROR;
 }
 
-IUPMEDIA_API Ihandle *IupAudio(void)
+IUPMEDIA_API Ihandle* IupAudio(void)
 {
   return IupCreate("audio");
 }

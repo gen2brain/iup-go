@@ -271,7 +271,7 @@ static void wasmTableSortRows(Ihandle* ih, int col, int ascending)
   int id = iupwasmIdOf(ih);
   int n = ih->data->num_lin;
   char** values;
-  int *order, *pos, *at;
+  int* order, *pos, *at;
   int i, j;
 
   if (n < 2)

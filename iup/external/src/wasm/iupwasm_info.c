@@ -41,19 +41,19 @@ EM_JS(int, iupwasmScreenFullHeight, (void), {
   return screen.height || window.innerHeight || 600;
 })
 
-IUP_SDK_API void iupdrvGetFullSize(int *width, int *height)
+IUP_SDK_API void iupdrvGetFullSize(int* width, int* height)
 {
   if (width) *width = iupwasmScreenFullWidth();
   if (height) *height = iupwasmScreenFullHeight();
 }
 
-IUP_SDK_API void iupdrvGetScreenSize(int *width, int *height)
+IUP_SDK_API void iupdrvGetScreenSize(int* width, int* height)
 {
   if (width) *width = iupwasmScreenAvailWidth();
   if (height) *height = iupwasmScreenAvailHeight();
 }
 
-IUP_SDK_API void iupdrvAddScreenOffset(int *x, int *y, int add)
+IUP_SDK_API void iupdrvAddScreenOffset(int* x, int* y, int add)
 {
   (void)x;
   (void)y;
@@ -172,7 +172,7 @@ IUP_SDK_API void iupdrvGetKeyState(char* key)
   }
 }
 
-IUP_SDK_API void iupdrvGetCursorPos(int *x, int *y)
+IUP_SDK_API void iupdrvGetCursorPos(int* x, int* y)
 {
   if (x) *x = iupwasmCursorX();
   if (y) *y = iupwasmCursorY();
@@ -236,7 +236,7 @@ static int wasmMakeDirectoryPath(char* path)
   return wasmMakeDirectoryIfNeeded(path);
 }
 
-IUP_SDK_API int iupdrvGetUserDir(char *path, int size, int kind)
+IUP_SDK_API int iupdrvGetUserDir(char* path, int size, int kind)
 {
   const char* subdir;
 
@@ -262,7 +262,7 @@ IUP_SDK_API int iupdrvGetUserDir(char *path, int size, int kind)
   return 1;
 }
 
-IUP_SDK_API int iupdrvGetPreferencePath(char *filename, const char *app_name, int use_system)
+IUP_SDK_API int iupdrvGetPreferencePath(char* filename, const char* app_name, int use_system)
 {
   if (!filename)
     return 0;

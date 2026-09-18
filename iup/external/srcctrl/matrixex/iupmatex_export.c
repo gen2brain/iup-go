@@ -55,7 +55,7 @@ static void iMatrixExStrCopyNoSepLaTeX(char* buffer, const char* str)
   *buffer = 0;
 }
 
-static void iMatrixExCopyTXT(Ihandle *ih, FILE* file, int num_lin, int num_col, int skip_lin, int skip_col)
+static void iMatrixExCopyTXT(Ihandle* ih, FILE* file, int num_lin, int num_col, int skip_lin, int skip_col)
 {
   ImatExData* matex_data = (ImatExData*)iupAttribGet(ih, "_IUP_MATEX_DATA");
   int lin, col;
@@ -130,7 +130,7 @@ static char* iMatrixExGetCellAttrib(Ihandle* ih, const char* attrib, int lin, in
   return value;
 }
 
-static char* iMatrixExGetCellFormat(Ihandle *ih, int lin, int col, char* format)
+static char* iMatrixExGetCellFormat(Ihandle* ih, int lin, int col, char* format)
 {
   char* value, *init = "style=\"";
 
@@ -206,7 +206,7 @@ static char* iMatrixExGetCellFormat(Ihandle *ih, int lin, int col, char* format)
   return format;
 }
 
-static void iMatrixExCopyHTML(Ihandle *ih, FILE* file, int num_lin, int num_col, char* buffer, int skip_lin, int skip_col)
+static void iMatrixExCopyHTML(Ihandle* ih, FILE* file, int num_lin, int num_col, char* buffer, int skip_lin, int skip_col)
 {
   ImatExData* matex_data = (ImatExData*)iupAttribGet(ih, "_IUP_MATEX_DATA");
   int lin, col;
@@ -292,7 +292,7 @@ static int iMatrixExIsBoldLine(Ihandle* ih, int lin)
   return 0;
 }
 
-static void iMatrixExCopyLaTeX(Ihandle *ih, FILE* file, int num_lin, int num_col, char* buffer, int skip_lin, int skip_col)
+static void iMatrixExCopyLaTeX(Ihandle* ih, FILE* file, int num_lin, int num_col, char* buffer, int skip_lin, int skip_col)
 {
   ImatExData* matex_data = (ImatExData*)iupAttribGet(ih, "_IUP_MATEX_DATA");
   int lin, col;
@@ -369,13 +369,13 @@ static void iMatrixExCopyLaTeX(Ihandle *ih, FILE* file, int num_lin, int num_col
   fprintf(file,"\\end{table}\n");
 }
 
-static int iMatrixExSetCopyFileAttrib(Ihandle *ih, const char* value)
+static int iMatrixExSetCopyFileAttrib(Ihandle* ih, const char* value)
 {
   int num_lin, num_col, skip_lin, skip_col;
   char buffer[1024];
   char* format;
 
-  FILE *file = fopen(value, "wb");
+  FILE* file = fopen(value, "wb");
   if (!file)
   {
     iupAttribSet(ih, "LASTERROR", "IUP_ERRORFILESAVE");

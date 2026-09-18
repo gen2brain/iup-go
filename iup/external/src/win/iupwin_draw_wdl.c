@@ -100,7 +100,7 @@ IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
   RECT rect;
   int x1, y1, x2, y2;
   int fresh = 0;
-  char *rcPaint;
+  char* rcPaint;
 
   dc->ih = ih;
   dc->backend_type = wdBackend();
@@ -276,7 +276,7 @@ IUP_SDK_API void iupdrvDrawFlush(IdrawCanvas* dc)
   }
 }
 
-IUP_SDK_API void iupdrvDrawGetSize(IdrawCanvas* dc, int *w, int *h)
+IUP_SDK_API void iupdrvDrawGetSize(IdrawCanvas* dc, int* w, int* h)
 {
   if (w) *w = dc->w;
   if (h) *h = dc->h;
@@ -555,7 +555,7 @@ IUP_SDK_API void iupdrvDrawResetClip(IdrawCanvas* dc)
   dc->clip_y2 = 0;
 }
 
-IUP_SDK_API void iupdrvDrawGetClipRect(IdrawCanvas* dc, int *x1, int *y1, int *x2, int *y2)
+IUP_SDK_API void iupdrvDrawGetClipRect(IdrawCanvas* dc, int* x1, int* y1, int* x2, int* y2)
 {
   if (x1) *x1 = dc->clip_x1;
   if (y1) *y1 = dc->clip_y1;
@@ -650,7 +650,7 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
 {
   WD_RECT rect;
   DWORD dwFlags = WD_STR_TOPALIGN;
-  WCHAR *wtext = iupwinStrToSystemLen(text, &len);
+  WCHAR* wtext = iupwinStrToSystemLen(text, &len);
   WD_HBRUSH brush = wdCreateSolidBrush(dc->hCanvas, iupColor2ARGB(color));
   int layout_center = flags & IUP_DRAW_LAYOUTCENTER;
 

@@ -209,7 +209,7 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
   NSUInteger index = 0;
   for (index = 0; index < [tabs count]; ++index)
   {
-    IupCocoaTabCell *tab = [tabs objectAtIndex:index];
+    IupCocoaTabCell* tab = [tabs objectAtIndex:index];
     NSRect rect = [tab frame];
     if (NSPointInRect(p, rect))
     {
@@ -220,14 +220,14 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
   return YES;
 }
 
-- (NSMenu *)tabsMenu
+- (NSMenu*)tabsMenu
 {
   [menu release];
   menu = [[NSMenu alloc] initWithTitle:@"Contextual Menu"];
   NSUInteger index = 0;
   for (index = 0; index < [tabs count]; index++)
   {
-    IupCocoaTabCell *tab = [tabs objectAtIndex:index];
+    IupCocoaTabCell* tab = [tabs objectAtIndex:index];
     [menu insertItemWithTitle:[tab title] action:@selector(popupMenuDidChoosed:) keyEquivalent:@"" atIndex:index];
   }
   return menu;
@@ -238,7 +238,7 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
   NSUInteger index = [menu indexOfItem:item];
   if (index != -1)
   {
-    IupCocoaTabCell *tab = [tabs objectAtIndex:index];
+    IupCocoaTabCell* tab = [tabs objectAtIndex:index];
     NSRect tabRect = [tab frame];
     NSRect tabBarViewRect = [self bounds];
     if (!CGRectContainsRect(tabBarViewRect, tabRect))
@@ -260,7 +260,7 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
   NSUInteger index = 0;
   for (index = 0; index < [tabs count]; index++)
   {
-    IupCocoaTabCell *tab = [tabs objectAtIndex:index];
+    IupCocoaTabCell* tab = [tabs objectAtIndex:index];
     NSRect rect = [tab frame];
     if (NSPointInRect(p, rect))
     {
@@ -379,7 +379,7 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
 
 - (void)exchangeTabWithIndex:(NSUInteger)one withTabIndex:(NSUInteger)two
 {
-  NSMutableArray *allTabs = [self tabs];
+  NSMutableArray* allTabs = [self tabs];
   [allTabs exchangeObjectAtIndex:one withObjectAtIndex:two];
 }
 @end
@@ -571,7 +571,7 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
   [[self tabs] removeObject:tabCell];
   if ([tabs count] > 0)
   {
-    IupCocoaTabCell *nextTab = [tabs objectAtIndex:index];
+    IupCocoaTabCell* nextTab = [tabs objectAtIndex:index];
     [nextTab setAsActiveTab];
   }
   [self syncAccessibilityElements];
@@ -614,7 +614,7 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
     p = [self convertPoint:p fromView:nil];
     if ([self isBlankAreaOfTabBarViewInPoint:p])
     {
-      IupCocoaTabCell *tab = [self addTabViewWithTitle:@"Untitled"];
+      IupCocoaTabCell* tab = [self addTabViewWithTitle:@"Untitled"];
       [tab setAsActiveTab];
       [self redraw];
     }
@@ -711,7 +711,7 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
   NSInteger index = 0;
   for (index = 0; index < [tabs count]; ++index)
   {
-    IupCocoaTabCell *tab = [tabs objectAtIndex:index];
+    IupCocoaTabCell* tab = [tabs objectAtIndex:index];
     NSRect rect = [self tabRectFromIndex:index];
     if (tab == draggingTab)
       rect.origin = dragOrigin;
@@ -752,7 +752,7 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
   [self removeAllToolTips];
   for (index = 0; index < [tabs count]; ++index)
   {
-    IupCocoaTabCell *tab = [tabs objectAtIndex:index];
+    IupCocoaTabCell* tab = [tabs objectAtIndex:index];
     [self setToolTip:[tab title]];
     [self addToolTipRect:[tab frame] owner:[tab title] userData:nil];
     if (tab != draggingTab)
@@ -774,14 +774,14 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
   [self syncAccessibilityElements];
 }
 
-- (id)addTabViewWithTitle:(NSString *)title
+- (id)addTabViewWithTitle:(NSString*)title
 {
   return [self addTabViewWithTitle:title image:nil];
 }
 
-- (id)addTabViewWithTitle:(NSString *)title image:(NSImage *)image
+- (id)addTabViewWithTitle:(NSString*)title image:(NSImage*)image
 {
-  IupCocoaTabCell *tab = [IupCocoaTabCell tabCellWithTabBarView:self title:title image:image];
+  IupCocoaTabCell* tab = [IupCocoaTabCell tabCellWithTabBarView:self title:title image:image];
 
   if ([[self delegate] respondsToSelector:@selector(tabWillBeCreated:)])
   {
@@ -809,7 +809,7 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
   return tab;
 }
 
-- (void)mouseDown:(NSEvent *)theEvent
+- (void)mouseDown:(NSEvent*)theEvent
 {
   if (!enabled)
     return;
@@ -839,7 +839,7 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
   NSUInteger index = 0;
   for (index = 0; index < [tabs count]; ++ index)
   {
-    IupCocoaTabCell *tab = [tabs objectAtIndex:index];
+    IupCocoaTabCell* tab = [tabs objectAtIndex:index];
     BOOL inside = NSPointInRect(p, [tab frame]);
     [tab setIsPressed:inside];
 
@@ -851,7 +851,7 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
   isDragging = NO;
 }
 
-- (void)mouseMoved:(NSEvent *)theEvent
+- (void)mouseMoved:(NSEvent*)theEvent
 {
   if (!enabled)
     return;
@@ -862,14 +862,14 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
   NSUInteger index = 0;
   for (index = 0; index < [tabs count]; ++ index)
   {
-    IupCocoaTabCell *tab = [tabs objectAtIndex:index];
+    IupCocoaTabCell* tab = [tabs objectAtIndex:index];
     [tab mouseMoved:theEvent];
   };
 
   [self redraw];
 }
 
-- (void)mouseExited:(NSEvent *)theEvent
+- (void)mouseExited:(NSEvent*)theEvent
 {
   NSUInteger index = 0;
   for (index = 0; index < [tabs count]; ++index)
@@ -997,7 +997,7 @@ static CGFloat cocoaTabBarEase(CGFloat from, CGFloat to, BOOL* done)
     [self setNeedsDisplay:YES];
 }
 
-- (void)mouseDragged:(NSEvent *)theEvent
+- (void)mouseDragged:(NSEvent*)theEvent
 {
   if (!self.allowsDragging)
   {
@@ -1079,12 +1079,12 @@ static CGFloat cocoaTabBarEase(CGFloat from, CGFloat to, BOOL* done)
 
 #pragma mark - NSDraggingSource
 
-- (NSDragOperation)draggingSession:(NSDraggingSession *)session sourceOperationMaskForDraggingContext:(NSDraggingContext)context
+- (NSDragOperation)draggingSession:(NSDraggingSession*)session sourceOperationMaskForDraggingContext:(NSDraggingContext)context
 {
   return NSDragOperationMove;
 }
 
-- (void)setTabFont:(NSFont *)newFont
+- (void)setTabFont:(NSFont*)newFont
 {
   if (tabFont != newFont)
   {
@@ -1093,7 +1093,7 @@ static CGFloat cocoaTabBarEase(CGFloat from, CGFloat to, BOOL* done)
   }
 }
 
-- (void)setTabs:(NSMutableArray *)newTabs
+- (void)setTabs:(NSMutableArray*)newTabs
 {
   if (tabs != newTabs)
   {
@@ -1102,7 +1102,7 @@ static CGFloat cocoaTabBarEase(CGFloat from, CGFloat to, BOOL* done)
   }
 }
 
-- (void)setSelectedTab:(IupCocoaTabCell *)newSelectedTab
+- (void)setSelectedTab:(IupCocoaTabCell*)newSelectedTab
 {
   if (selectedTab != newSelectedTab)
   {
@@ -1111,7 +1111,7 @@ static CGFloat cocoaTabBarEase(CGFloat from, CGFloat to, BOOL* done)
   }
 }
 
-- (void)setBgColor:(NSColor *)newBgColor
+- (void)setBgColor:(NSColor*)newBgColor
 {
   if (bgColor != newBgColor)
   {
@@ -1120,7 +1120,7 @@ static CGFloat cocoaTabBarEase(CGFloat from, CGFloat to, BOOL* done)
   }
 }
 
-- (void)setTabBGColor:(NSColor *)newTabBGColor
+- (void)setTabBGColor:(NSColor*)newTabBGColor
 {
   if (tabBGColor != newTabBGColor)
   {
@@ -1129,7 +1129,7 @@ static CGFloat cocoaTabBarEase(CGFloat from, CGFloat to, BOOL* done)
   }
 }
 
-- (void)setTabActivedBGColor:(NSColor *)newTabActivedBGColor
+- (void)setTabActivedBGColor:(NSColor*)newTabActivedBGColor
 {
   if (tabActivedBGColor != newTabActivedBGColor)
   {
@@ -1138,7 +1138,7 @@ static CGFloat cocoaTabBarEase(CGFloat from, CGFloat to, BOOL* done)
   }
 }
 
-- (void)setTabBorderColor:(NSColor *)newTabBorderColor
+- (void)setTabBorderColor:(NSColor*)newTabBorderColor
 {
   if (tabBorderColor != newTabBorderColor)
   {
@@ -1147,7 +1147,7 @@ static CGFloat cocoaTabBarEase(CGFloat from, CGFloat to, BOOL* done)
   }
 }
 
-- (void)setTabTitleColor:(NSColor *)newTabTitleColor
+- (void)setTabTitleColor:(NSColor*)newTabTitleColor
 {
   if (tabTitleColor != newTabTitleColor)
   {
@@ -1156,7 +1156,7 @@ static CGFloat cocoaTabBarEase(CGFloat from, CGFloat to, BOOL* done)
   }
 }
 
-- (void)setTabActivedTitleColor:(NSColor *)newTabActivedTitleColor
+- (void)setTabActivedTitleColor:(NSColor*)newTabActivedTitleColor
 {
   if (tabActivedTitleColor != newTabActivedTitleColor)
   {
@@ -1165,7 +1165,7 @@ static CGFloat cocoaTabBarEase(CGFloat from, CGFloat to, BOOL* done)
   }
 }
 
-- (void)setSmallControlColor:(NSColor *)newSmallControlColor
+- (void)setSmallControlColor:(NSColor*)newSmallControlColor
 {
   if (smallControlColor != newSmallControlColor)
   {
@@ -1203,7 +1203,7 @@ static CGFloat cocoaTabBarEase(CGFloat from, CGFloat to, BOOL* done)
 
 + (id)tabCellWithTabBarView:(IupCocoaTabBarView*)tabBarView title:(NSString*)aTittle image:(NSImage*)anImage
 {
-  IupCocoaTabCell *tabCell = [[[IupCocoaTabCell alloc] init] autorelease];
+  IupCocoaTabCell* tabCell = [[[IupCocoaTabCell alloc] init] autorelease];
   [tabCell setTabBarView:tabBarView];
   [tabCell setIsActived:NO];
   [tabCell setTitle:aTittle];
@@ -1239,7 +1239,7 @@ static CGFloat cocoaTabBarEase(CGFloat from, CGFloat to, BOOL* done)
 - (void)drawCloseButton
 {
   NSRect closeButtonRect = [self closeButtonRect];
-  NSBezierPath *closeButtonPath = [NSBezierPath bezierPath];
+  NSBezierPath* closeButtonPath = [NSBezierPath bezierPath];
   CGFloat minX = NSMinX(closeButtonRect);
   CGFloat maxX = NSMaxX(closeButtonRect);
   CGFloat minY = NSMinY(closeButtonRect);
@@ -1384,8 +1384,8 @@ static CGFloat cocoaTabBarEase(CGFloat from, CGFloat to, BOOL* done)
   }
 
 
-  NSMutableDictionary *attrs = [NSMutableDictionary dictionary];
-  NSColor *fontColor;
+  NSMutableDictionary* attrs = [NSMutableDictionary dictionary];
+  NSColor* fontColor;
   if (accentActive)
     fontColor = [NSColor alternateSelectedControlTextColor];
   else if ([self isActived] || [[self tabBarView] usesMaterialBackground])
@@ -1401,13 +1401,13 @@ static CGFloat cocoaTabBarEase(CGFloat from, CGFloat to, BOOL* done)
   [attrs setObject:fontColor forKey:NSForegroundColorAttributeName];
   [attrs setObject:p forKey:NSParagraphStyleAttributeName];
 
-  NSString *currentTitle = [self title];
+  NSString* currentTitle = [self title];
   if (currentTitle == nil)
   {
     currentTitle = @"";
   }
 
-  NSMutableAttributedString *mas = [[[NSMutableAttributedString alloc] initWithString:currentTitle attributes:attrs] autorelease];
+  NSMutableAttributedString* mas = [[[NSMutableAttributedString alloc] initWithString:currentTitle attributes:attrs] autorelease];
 
   [self setTitleAttributedString:mas];
 
@@ -1440,14 +1440,14 @@ static CGFloat cocoaTabBarEase(CGFloat from, CGFloat to, BOOL* done)
 
   if (isVerticalText)
   {
-    NSGraphicsContext *context = [NSGraphicsContext currentContext];
+    NSGraphicsContext* context = [NSGraphicsContext currentContext];
     [context saveGraphicsState];
 
     NSRect tabFrame = [self frame];
     CGFloat centerX = NSMidX(tabFrame);
     CGFloat centerY = NSMidY(tabFrame);
 
-    NSAffineTransform *transform = [NSAffineTransform transform];
+    NSAffineTransform* transform = [NSAffineTransform transform];
     [transform translateXBy:centerX yBy:centerY];
     [transform rotateByDegrees:90];
     [transform translateXBy:-centerX yBy:-centerY];
@@ -1530,10 +1530,10 @@ static CGFloat cocoaTabBarEase(CGFloat from, CGFloat to, BOOL* done)
   }
 
   NSUInteger index = 0;
-  NSMutableArray *tabs = [[self tabBarView] tabs];
+  NSMutableArray* tabs = [[self tabBarView] tabs];
   for (index = 0; index < [tabs count]; ++ index)
   {
-    IupCocoaTabCell *tab = [tabs objectAtIndex:index];
+    IupCocoaTabCell* tab = [tabs objectAtIndex:index];
     [tab setIsActived:NO];
   }
 
@@ -1552,7 +1552,7 @@ static CGFloat cocoaTabBarEase(CGFloat from, CGFloat to, BOOL* done)
   [[self tabBarView] setNeedsDisplay:YES];
 }
 
-- (void)mouseDown:(NSEvent *)theEvent
+- (void)mouseDown:(NSEvent*)theEvent
 {
   if (![self hasCloseButton])
   {
@@ -1583,7 +1583,7 @@ static CGFloat cocoaTabBarEase(CGFloat from, CGFloat to, BOOL* done)
 
 }
 
-- (void)mouseMoved:(NSEvent *)theEvent
+- (void)mouseMoved:(NSEvent*)theEvent
 {
   NSPoint p = [theEvent locationInWindow];
   p = [[self tabBarView] convertPoint:p fromView:[[[self tabBarView] window] contentView]];
@@ -1609,7 +1609,7 @@ static CGFloat cocoaTabBarEase(CGFloat from, CGFloat to, BOOL* done)
   isPressed = flag;
 }
 
-- (void)setTitle:(NSString *)newTitle
+- (void)setTitle:(NSString*)newTitle
 {
   if (title != newTitle)
   {
@@ -1618,7 +1618,7 @@ static CGFloat cocoaTabBarEase(CGFloat from, CGFloat to, BOOL* done)
   }
 }
 
-- (void)setImage:(NSImage *)newImage
+- (void)setImage:(NSImage*)newImage
 {
   if (image != newImage)
   {
@@ -1627,7 +1627,7 @@ static CGFloat cocoaTabBarEase(CGFloat from, CGFloat to, BOOL* done)
   }
 }
 
-- (void)setTitleAttributedString:(NSMutableAttributedString *)newTitleAttributedString
+- (void)setTitleAttributedString:(NSMutableAttributedString*)newTitleAttributedString
 {
   if (titleAttributedString != newTitleAttributedString)
   {

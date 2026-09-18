@@ -12,7 +12,7 @@
 extern "C" {
 #endif
 
-int   iupMatrixEditIsVisible(Ihandle *ih);
+int   iupMatrixEditIsVisible(Ihandle* ih);
 int   iupMatrixEditShow     (Ihandle* ih);
 int   iupMatrixEditShowXY   (Ihandle* ih, int x, int y);
 void  iupMatrixEditHide     (Ihandle* ih);

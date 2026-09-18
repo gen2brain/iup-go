@@ -844,7 +844,7 @@ static void iMatrixDrawImage(Ihandle* ih, int x1, int x2, int y1, int y2, int co
    -> lin, col - cell coordinates */
 static void iMatrixDrawCellValue(Ihandle* ih, int x1, int x2, int y1, int y2, int col_alignment, int lin_alignment, int marked, int active, int lin, int col, IFniiiiii draw_cb, long framecolor)
 {
-  char *value;
+  char* value;
 
   /* avoid drawing over the frame of the next cell */
   x2 -= IMAT_FRAME_W / 2;
@@ -972,7 +972,7 @@ static void iMatrixDrawColMove(Ihandle* ih)
 /* Exported functions                                                     */
 /**************************************************************************/
 
-void iupMatrixDrawSetDropFeedbackArea(int *x1, int *y1, int *x2, int *y2)
+void iupMatrixDrawSetDropFeedbackArea(int* x1, int* y1, int* x2, int* y2)
 {
   *x2 -= IMAT_PADDING_W / 2 + IMAT_FRAME_W / 2;
   *x1 = *x2 - IMAT_FEEDBACK_SIZE - IMAT_PADDING_W / 2;
@@ -981,7 +981,7 @@ void iupMatrixDrawSetDropFeedbackArea(int *x1, int *y1, int *x2, int *y2)
   *y2 -= IMAT_PADDING_H / 2 + IMAT_FRAME_H / 2;
 }
 
-void iupMatrixDrawSetToggleFeedbackArea(int toggle_centered, int *x1, int *y1, int *x2, int *y2)
+void iupMatrixDrawSetToggleFeedbackArea(int toggle_centered, int* x1, int* y1, int* x2, int* y2)
 {
   if (toggle_centered)
   {
@@ -998,7 +998,7 @@ void iupMatrixDrawSetToggleFeedbackArea(int toggle_centered, int *x1, int *y1, i
   *y2 -= IMAT_PADDING_H / 2 + IMAT_FRAME_H / 2;
 }
 
-static int iMatrixAdjustVisibleColToMergedCells(Ihandle *ih, int *col1, int lin1, int lin2)
+static int iMatrixAdjustVisibleColToMergedCells(Ihandle* ih, int* col1, int lin1, int lin2)
 {
   int lin, adjusted = 0, merged;
   int startCol;
@@ -1026,7 +1026,7 @@ static int iMatrixAdjustVisibleColToMergedCells(Ihandle *ih, int *col1, int lin1
   return adjusted;
 }
 
-static int iMatrixAdjustVisibleLinToMergedCells(Ihandle *ih, int *lin1, int col1, int col2)
+static int iMatrixAdjustVisibleLinToMergedCells(Ihandle* ih, int* lin1, int col1, int col2)
 {
   int col, adjusted = 0, merged;
   int startLin;

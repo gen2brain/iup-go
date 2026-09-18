@@ -39,7 +39,7 @@ typedef struct _ImenuPos
   Ihandle* ih;
 } ImenuPos;
 
-static void gtkMenuPositionFunc(GtkMenu *menu, gint *x, gint *y, gboolean *push_in, ImenuPos *menupos)
+static void gtkMenuPositionFunc(GtkMenu* menu, gint* x, gint* y, gboolean* push_in, ImenuPos* menupos)
 {
   char* value = iupAttribGet(menupos->ih, "POPUPALIGN");
 
@@ -352,7 +352,7 @@ static void gtkMenuItemUpdateImage(Ihandle* ih, const char* value, const char* i
 
 /*******************************************************************************************/
 
-static void gtkMenuMap(GtkWidget *widget, Ihandle* ih)
+static void gtkMenuMap(GtkWidget* widget, Ihandle* ih)
 {
   Icallback cb = IupGetCallback(ih, "MENUOPEN_CB");
   if (!cb && ih->parent) cb = (Icallback)IupGetCallback(ih->parent, "MENUOPEN_CB");  /* check also in the Submenu */
@@ -361,7 +361,7 @@ static void gtkMenuMap(GtkWidget *widget, Ihandle* ih)
   (void)widget;
 }
 
-static void gtkMenuUnMap(GtkWidget *widget, Ihandle* ih)
+static void gtkMenuUnMap(GtkWidget* widget, Ihandle* ih)
 {
   Icallback cb = IupGetCallback(ih, "MENUCLOSE_CB");
   if (!cb && ih->parent) cb = (Icallback)IupGetCallback(ih->parent, "MENUCLOSE_CB");  /* check also in the Submenu */
@@ -370,7 +370,7 @@ static void gtkMenuUnMap(GtkWidget *widget, Ihandle* ih)
   (void)widget;
 }
 
-static void gtkPopupMenuUnMap(GtkWidget *widget, Ihandle* ih)
+static void gtkPopupMenuUnMap(GtkWidget* widget, Ihandle* ih)
 {
   gtkMenuUnMap(widget, ih);
 
@@ -378,7 +378,7 @@ static void gtkPopupMenuUnMap(GtkWidget *widget, Ihandle* ih)
   gtk_main_quit();
 }
 
-static void gtkMenuItemSelect(GtkWidget *widget, Ihandle* ih)
+static void gtkMenuItemSelect(GtkWidget* widget, Ihandle* ih)
 {
   Icallback cb = IupGetCallback(ih, "HIGHLIGHT_CB");
   if (cb)
@@ -391,7 +391,7 @@ static void gtkMenuItemSelect(GtkWidget *widget, Ihandle* ih)
   (void)widget;
 }
 
-static void gtkMenuItemActivate(GtkWidget *widget, Ihandle* ih)
+static void gtkMenuItemActivate(GtkWidget* widget, Ihandle* ih)
 {
   Icallback cb;
 
@@ -436,7 +436,7 @@ static void gtkMenuItemActivate(GtkWidget *widget, Ihandle* ih)
   (void)widget;
 }
 
-static gboolean gtkMenuKeyPressEvent(GtkWidget *widget, GdkEventKey *evt, Ihandle *ih)
+static gboolean gtkMenuKeyPressEvent(GtkWidget* widget, GdkEventKey* evt, Ihandle* ih)
 {
   if (evt->keyval == GDK_KEY_F1)
   {
@@ -667,7 +667,7 @@ static void gtkMenuItemSetAccel(Ihandle* ih, int code, guint* accel_key, GdkModi
 
 static int gtkMenuItemSetTitleAttrib(Ihandle* ih, const char* value)
 {
-  char *str;
+  char* str;
   GtkWidget* label;
 
   if (!value)
@@ -937,7 +937,7 @@ IUP_SDK_API void iupdrvMenuSeparatorInitClass(Iclass* ic)
 
 /*******************************************************************************************/
 
-static void gtkRecentItemActivate(GtkWidget *widget, Ihandle* menu)
+static void gtkRecentItemActivate(GtkWidget* widget, Ihandle* menu)
 {
   int index = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(widget), "_IUP_RECENT_INDEX"));
   Icallback recent_cb = (Icallback)iupAttribGet(menu, "_IUP_RECENT_CB");

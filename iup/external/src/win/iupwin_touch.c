@@ -35,21 +35,21 @@ typedef struct tagTOUCHINPUT {
 #endif
 
 static int win_touch_loaded = 0;
-static BOOL (WINAPI *winGetTouchInputInfo)(HTOUCHINPUT hTouchInput, UINT cInputs, TOUCHINPUT* pInputs, int cbSize) = NULL;
-static BOOL (WINAPI *winCloseTouchInputHandle)(HTOUCHINPUT hTouchInput) = NULL;
-static BOOL (WINAPI *winRegisterTouchWindow)(HWND hwnd, ULONG ulFlags) = NULL;
-static BOOL (WINAPI *winUnregisterTouchWindow)(HWND hwnd) = NULL;
-static BOOL (WINAPI *winIsTouchWindow)(HWND hwnd, PULONG pulFlags) = NULL;
+static BOOL (WINAPI* winGetTouchInputInfo)(HTOUCHINPUT hTouchInput, UINT cInputs, TOUCHINPUT* pInputs, int cbSize) = NULL;
+static BOOL (WINAPI* winCloseTouchInputHandle)(HTOUCHINPUT hTouchInput) = NULL;
+static BOOL (WINAPI* winRegisterTouchWindow)(HWND hwnd, ULONG ulFlags) = NULL;
+static BOOL (WINAPI* winUnregisterTouchWindow)(HWND hwnd) = NULL;
+static BOOL (WINAPI* winIsTouchWindow)(HWND hwnd, PULONG pulFlags) = NULL;
 
 IUP_DRV_API void iupwinTouchInit(void)
 {
   HINSTANCE lib = LoadLibrary(TEXT("user32"));
 
-  winGetTouchInputInfo = (BOOL (WINAPI *)(HTOUCHINPUT,UINT,TOUCHINPUT *,int))GetProcAddress(lib, "GetTouchInputInfo");
-  winCloseTouchInputHandle = (BOOL (WINAPI *)(HTOUCHINPUT))GetProcAddress(lib, "CloseTouchInputHandle");
-  winRegisterTouchWindow = (BOOL (WINAPI *)(HWND,ULONG))GetProcAddress(lib, "RegisterTouchWindow");
-  winUnregisterTouchWindow = (BOOL (WINAPI *)(HWND))GetProcAddress(lib, "UnregisterTouchWindow");
-  winIsTouchWindow = (BOOL (WINAPI *)(HWND,PULONG))GetProcAddress(lib, "IsTouchWindow");
+  winGetTouchInputInfo = (BOOL (WINAPI*)(HTOUCHINPUT,UINT,TOUCHINPUT *,int))GetProcAddress(lib, "GetTouchInputInfo");
+  winCloseTouchInputHandle = (BOOL (WINAPI*)(HTOUCHINPUT))GetProcAddress(lib, "CloseTouchInputHandle");
+  winRegisterTouchWindow = (BOOL (WINAPI*)(HWND,ULONG))GetProcAddress(lib, "RegisterTouchWindow");
+  winUnregisterTouchWindow = (BOOL (WINAPI*)(HWND))GetProcAddress(lib, "UnregisterTouchWindow");
+  winIsTouchWindow = (BOOL (WINAPI*)(HWND,PULONG))GetProcAddress(lib, "IsTouchWindow");
 
   if (winIsTouchWindow)
     win_touch_loaded = 1;
@@ -57,7 +57,7 @@ IUP_DRV_API void iupwinTouchInit(void)
     win_touch_loaded = 0;
 }
 
-static int winSetTouchAttrib(Ihandle *ih, const char *value)
+static int winSetTouchAttrib(Ihandle* ih, const char* value)
 {
   if (win_touch_loaded)
   {
@@ -75,7 +75,7 @@ static char* winGetTouchAttrib(Ihandle* ih)
   return iupStrReturnBoolean (win_touch_loaded && winIsTouchWindow(ih->handle, &pulFlags));
 }
 
-static int winSetGestureAttrib(Ihandle *ih, const char *value)
+static int winSetGestureAttrib(Ihandle* ih, const char* value)
 {
   if (win_touch_loaded)
   {
@@ -169,7 +169,7 @@ IUP_DRV_API void iupwinTouchProcessInput(Ihandle* ih, int count, void* lp)
 
   if (mcb || cb)
   {
-    int *px=NULL, *py=NULL, *pid=NULL, *pstate=NULL;
+    int* px=NULL, *py=NULL, *pid=NULL, *pstate=NULL;
     TOUCHINPUT* ti = malloc(count*sizeof(TOUCHINPUT));
 
     if (mcb)

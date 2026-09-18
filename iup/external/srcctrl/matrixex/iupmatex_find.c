@@ -23,7 +23,7 @@ static void iMatrixExFindDialogUpdateResult(ImatExData* matex_data, Ihandle* ih_
     IupSetStrAttribute(IupGetDialogChild(ih_button, "RESULT"), "TITLE", "_@IUP_NOT_FOUND");
   else
   {
-    char *lin_title, *col_title;
+    char* lin_title, *col_title;
     int lin, col;
     iupStrToIntInt(last_found, &lin, &col, ':');
     lin_title = IupGetAttributeId2(matex_data->ih, "", lin, 0);
@@ -95,7 +95,7 @@ static int iMatrixExFindDialogClose_CB(Ihandle* ih_button)
 
 static void iMatrixExFindCreateDialog(ImatExData* matex_data)
 {
-  Ihandle *text_box, *options_box, *find_next, *find_prev, *result_box,
+  Ihandle* text_box, *options_box, *find_next, *find_prev, *result_box,
           *dlg, *close, *dlg_box, *button_box, *parent;
 
   text_box = IupSetAttributes(IupHbox(
@@ -207,7 +207,7 @@ void iupMatrixExFindShowDialog(ImatExData* matex_data)
     IupShow(matex_data->find_dlg);
 }
 
-static int iMatrixMatch(Ihandle *ih, const char* findvalue, int lin, int col, int matchcase, int matchwholecell, int utf8)
+static int iMatrixMatch(Ihandle* ih, const char* findvalue, int lin, int col, int matchcase, int matchwholecell, int utf8)
 {
   char* value = iupMatrixExGetCellValue(ih, lin, col, 1);  /* get displayed value */
   if (!value || value[0] == 0)
@@ -219,7 +219,7 @@ static int iMatrixMatch(Ihandle *ih, const char* findvalue, int lin, int col, in
     return iupStrCompareFind(value, findvalue, matchcase, utf8);  /* search only for the first occurrence */
 }
 
-static int iMatrixExSetFind(Ihandle *ih, const char* value, int inc, int flip, int matchcase, int matchwholecell, int find_col, int *lin, int *col, int search_cur_cell)
+static int iMatrixExSetFind(Ihandle* ih, const char* value, int inc, int flip, int matchcase, int matchwholecell, int find_col, int* lin, int* col, int search_cur_cell)
 {
   int utf8 = IupGetInt(NULL, "UTF8MODE");
   int num_lin = IupGetInt(ih, "NUMLIN");
@@ -305,7 +305,7 @@ static int iMatrixExSetFind(Ihandle *ih, const char* value, int inc, int flip, i
   return 1;
 }
 
-static int iMatrixExSetFindAttrib(Ihandle *ih, const char* value)
+static int iMatrixExSetFindAttrib(Ihandle* ih, const char* value)
 {
   int lin=1, col=1, search_cur_cell = 0, find_col;
   int inc, flip, matchcase, matchwholecell;

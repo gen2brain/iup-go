@@ -14,7 +14,7 @@ extern "C" {
 
 int   iupMatrixAuxCanvasPx(int hw);  /* HW px -> canvas-coord; identity on non-density-scaled drivers. */
 
-int   iupMatrixAuxIsFullVisibleLast(ImatLinColData *p);
+int   iupMatrixAuxIsFullVisibleLast(ImatLinColData* p);
 int   iupMatrixAuxIsCellStartVisible(Ihandle* ih, int lin, int col);
 int   iupMatrixAuxIsCellVisible(Ihandle* ih, int lin, int col);
 
@@ -23,7 +23,7 @@ int   iupMatrixAuxCalcSizes(Ihandle* ih);
 void  iupMatrixAuxAdjustFirstFromLast(ImatLinColData* p);
 void  iupMatrixAuxAdjustFirstFromScrollPos(ImatLinColData* p, int scroll_pos);
 void  iupMatrixAuxUpdateScrollPos(Ihandle* ih, int m);
-void  iupMatrixAuxUpdateLast(ImatLinColData *p);
+void  iupMatrixAuxUpdateLast(ImatLinColData* p);
 
 int   iupMatrixAuxCallLeaveCellCb    (Ihandle* ih);
 void  iupMatrixAuxCallEnterCellCb    (Ihandle* ih);

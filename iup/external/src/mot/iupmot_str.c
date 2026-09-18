@@ -277,7 +277,7 @@ IUP_DRV_API char* iupmotStrConvertFromFilename(const char* str)
   return result;
 }
 
-IUP_DRV_API void iupmotSetMnemonicTitle(Ihandle *ih, Widget w, int pos, const char* value)
+IUP_DRV_API void iupmotSetMnemonicTitle(Ihandle* ih, Widget w, int pos, const char* value)
 {
   char c;
   char* str;
@@ -313,7 +313,7 @@ IUP_DRV_API void iupmotSetMnemonicTitle(Ihandle *ih, Widget w, int pos, const ch
   }
 }
 
-IUP_DRV_API void iupmotSetXmString(Widget w, const char *resource, const char* value)
+IUP_DRV_API void iupmotSetXmString(Widget w, const char* resource, const char* value)
 {
   XmString xm_str = iupmotStringCreate(value);
   XmString cur_str = NULL;
@@ -381,7 +381,7 @@ IUP_DRV_API char* iupmotReturnXmString(XmString str)
   return ret;
 }
 
-IUP_DRV_API XmString iupmotStringCreate(const char *value)
+IUP_DRV_API XmString iupmotStringCreate(const char* value)
 {
   int use_utf8 = 0;
 
@@ -403,20 +403,20 @@ IUP_DRV_API XmString iupmotStringCreate(const char *value)
   }
 }
 
-IUP_DRV_API void iupmotSetTitle(Widget w, const char *value)
+IUP_DRV_API void iupmotSetTitle(Widget w, const char* value)
 {
   XtVaSetValues(w, XmNtitle, value,
                    XmNiconName, value,
                    NULL);
 }
 
-IUP_DRV_API void iupmotTextSetString(Widget w, const char *value)
+IUP_DRV_API void iupmotTextSetString(Widget w, const char* value)
 {
   value = iupmotStrConvertToSystem(value);
   XmTextSetString(w, (char*)value);
 }
 
-static char* iupCheckUtf8Buffer(char* utf8_buffer, int *utf8_buffer_max, int len)
+static char* iupCheckUtf8Buffer(char* utf8_buffer, int* utf8_buffer_max, int len)
 {
   if (!utf8_buffer)
   {
@@ -432,7 +432,7 @@ static char* iupCheckUtf8Buffer(char* utf8_buffer, int *utf8_buffer_max, int len
   return utf8_buffer;
 }
 
-static char* iupStrCopyToUtf8Buffer(const char* str, int len, char* utf8_buffer, int *utf8_buffer_max)
+static char* iupStrCopyToUtf8Buffer(const char* str, int len, char* utf8_buffer, int* utf8_buffer_max)
 {
   utf8_buffer = iupCheckUtf8Buffer(utf8_buffer, utf8_buffer_max, len);
   memcpy(utf8_buffer, str, len);
@@ -441,7 +441,7 @@ static char* iupStrCopyToUtf8Buffer(const char* str, int len, char* utf8_buffer,
 }
 
 /* Used in glfont */
-IUP_SDK_API char* iupStrConvertToUTF8(const char* str, int len, char* utf8_buffer, int *utf8_buffer_max, int utf8mode)
+IUP_SDK_API char* iupStrConvertToUTF8(const char* str, int len, char* utf8_buffer, int* utf8_buffer_max, int utf8mode)
 {
   if (utf8mode || iupStrIsAscii(str)) /* string is already utf8 or is ascii */
     return iupStrCopyToUtf8Buffer(str, len, utf8_buffer, utf8_buffer_max);

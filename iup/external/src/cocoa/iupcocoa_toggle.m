@@ -82,7 +82,7 @@ static void cocoaToggleCycle3State(Ihandle* ih, NSButton* button)
   return YES;
 }
 
-- (void)mouseDown:(NSEvent *)event
+- (void)mouseDown:(NSEvent*)event
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
 
@@ -96,7 +96,7 @@ static void cocoaToggleCycle3State(Ihandle* ih, NSButton* button)
   [super mouseDown:event];
 }
 
-- (void)keyDown:(NSEvent *)event
+- (void)keyDown:(NSEvent*)event
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
   if (!ih)
@@ -298,13 +298,13 @@ static void cocoaToggleDeselectRadio(Ihandle* radio, Ihandle* ih)
 @end
 
 
-IUP_SDK_API void iupdrvToggleAddBorders(Ihandle* ih, int *x, int *y)
+IUP_SDK_API void iupdrvToggleAddBorders(Ihandle* ih, int* x, int* y)
 {
   if (ih->data->type == IUP_TOGGLE_IMAGE)
     iupdrvButtonAddBorders(ih, x, y);
 }
 
-IUP_SDK_API void iupdrvToggleAddSwitch(Ihandle* ih, int *x, int *y, const char* str)
+IUP_SDK_API void iupdrvToggleAddSwitch(Ihandle* ih, int* x, int* y, const char* str)
 {
   static int switch_w = -1;
   static int switch_h = -1;
@@ -328,7 +328,7 @@ IUP_SDK_API void iupdrvToggleAddSwitch(Ihandle* ih, int *x, int *y, const char* 
     *x += 8;
 }
 
-IUP_SDK_API void iupdrvToggleAddCheckBox(Ihandle* ih, int *x, int *y, const char* str)
+IUP_SDK_API void iupdrvToggleAddCheckBox(Ihandle* ih, int* x, int* y, const char* str)
 {
   static int check_w = -1;
   static int check_h = -1;

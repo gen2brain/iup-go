@@ -230,31 +230,31 @@ GType iup_gtk4_virtual_list_model_get_type(void);
 #define IUP_TYPE_GTK4_VIRTUAL_LIST_MODEL (iup_gtk4_virtual_list_model_get_type())
 #define IUP_GTK4_VIRTUAL_LIST_MODEL(obj) (G_TYPE_CHECK_INSTANCE_CAST((obj), IUP_TYPE_GTK4_VIRTUAL_LIST_MODEL, IupGtk4VirtualListModel))
 
-static void iup_gtk4_virtual_list_model_iface_init(GListModelInterface *iface);
+static void iup_gtk4_virtual_list_model_iface_init(GListModelInterface* iface);
 
 G_DEFINE_TYPE_WITH_CODE(IupGtk4VirtualListModel, iup_gtk4_virtual_list_model, G_TYPE_OBJECT,
                         G_IMPLEMENT_INTERFACE(G_TYPE_LIST_MODEL, iup_gtk4_virtual_list_model_iface_init))
 
-static void iup_gtk4_virtual_list_model_init(IupGtk4VirtualListModel *model)
+static void iup_gtk4_virtual_list_model_init(IupGtk4VirtualListModel* model)
 {
   model->ih = NULL;
   model->count = 0;
 }
 
-static void iup_gtk4_virtual_list_model_class_init(IupGtk4VirtualListModelClass *klass)
+static void iup_gtk4_virtual_list_model_class_init(IupGtk4VirtualListModelClass* klass)
 {
   (void)klass;
 }
 
-static GType iup_gtk4_virtual_list_model_get_item_type(GListModel *list)
+static GType iup_gtk4_virtual_list_model_get_item_type(GListModel* list)
 {
   (void)list;
   return IUP_TYPE_LIST_ITEM;
 }
 
-static guint iup_gtk4_virtual_list_model_get_n_items(GListModel *list)
+static guint iup_gtk4_virtual_list_model_get_n_items(GListModel* list)
 {
-  IupGtk4VirtualListModel *model;
+  IupGtk4VirtualListModel* model;
 
   if (!IUP_GTK4_VIRTUAL_LIST_MODEL(list))
     return 0;
@@ -263,11 +263,11 @@ static guint iup_gtk4_virtual_list_model_get_n_items(GListModel *list)
   return model->count;
 }
 
-static gpointer iup_gtk4_virtual_list_model_get_item(GListModel *list, guint position)
+static gpointer iup_gtk4_virtual_list_model_get_item(GListModel* list, guint position)
 {
-  IupGtk4VirtualListModel *model;
-  char *text;
-  IupListItem *item;
+  IupGtk4VirtualListModel* model;
+  char* text;
+  IupListItem* item;
 
   if (!IUP_GTK4_VIRTUAL_LIST_MODEL(list))
     return NULL;
@@ -297,22 +297,22 @@ static gpointer iup_gtk4_virtual_list_model_get_item(GListModel *list, guint pos
   return item;
 }
 
-static void iup_gtk4_virtual_list_model_iface_init(GListModelInterface *iface)
+static void iup_gtk4_virtual_list_model_iface_init(GListModelInterface* iface)
 {
   iface->get_item_type = iup_gtk4_virtual_list_model_get_item_type;
   iface->get_n_items = iup_gtk4_virtual_list_model_get_n_items;
   iface->get_item = iup_gtk4_virtual_list_model_get_item;
 }
 
-static IupGtk4VirtualListModel *iup_gtk4_virtual_list_model_new(Ihandle *ih)
+static IupGtk4VirtualListModel* iup_gtk4_virtual_list_model_new(Ihandle* ih)
 {
-  IupGtk4VirtualListModel *model = g_object_new(IUP_TYPE_GTK4_VIRTUAL_LIST_MODEL, NULL);
+  IupGtk4VirtualListModel* model = g_object_new(IUP_TYPE_GTK4_VIRTUAL_LIST_MODEL, NULL);
   model->ih = ih;
   model->count = ih->data->item_count;
   return model;
 }
 
-static void iup_gtk4_virtual_list_model_set_count(IupGtk4VirtualListModel *model, int new_count)
+static void iup_gtk4_virtual_list_model_set_count(IupGtk4VirtualListModel* model, int new_count)
 {
   guint old_count = model->count;
   if (old_count != (guint)new_count)
@@ -365,7 +365,7 @@ static void gtk4ListSetFactory(Ihandle* ih, GtkListItemFactory* factory)
 static int gtk4_list_item_spacing = -1;
 static int gtk4_list_item_height = -1;
 
-IUP_SDK_API void iupdrvListAddItemSpace(Ihandle* ih, int *h)
+IUP_SDK_API void iupdrvListAddItemSpace(Ihandle* ih, int* h)
 {
   if (gtk4_list_item_spacing == -1)
   {
@@ -379,7 +379,7 @@ IUP_SDK_API void iupdrvListAddItemSpace(Ihandle* ih, int *h)
   *h += gtk4_list_item_spacing;
 }
 
-IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
+IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int* x, int* y)
 {
   static int editbox_border_x = -1, editbox_border_y = -1, editbox_entry_natural_height = -1;
   static int dropdown_border_x = -1, dropdown_border_y = -1, dropdown_natural_height = -1;
@@ -506,7 +506,7 @@ IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
     {
       if (editbox_border_x == -1 || editbox_border_y == -1)
       {
-        GtkWidget *temp_entry = gtk_entry_new();
+        GtkWidget* temp_entry = gtk_entry_new();
 
         int min_w, nat_w, min_h, nat_h;
 
@@ -572,20 +572,20 @@ static int gtk4ListConvertXYToPos(Ihandle* ih, int x, int y)
 
     if (store)
     {
-      GtkWidget *picked = gtk_widget_pick(ih->handle, x, y, GTK_PICK_DEFAULT);
+      GtkWidget* picked = gtk_widget_pick(ih->handle, x, y, GTK_PICK_DEFAULT);
       if (picked)
       {
         /* Live position via the box's GtkListItem; cached position+1 would go stale on model shifts. */
-        GtkWidget *current = picked;
+        GtkWidget* current = picked;
         int depth = 0;
         while (current && current != ih->handle)
         {
-          const char *type_name = G_OBJECT_TYPE_NAME(current);
-          GtkWidget *box = NULL;
+          const char* type_name = G_OBJECT_TYPE_NAME(current);
+          GtkWidget* box = NULL;
 
           if (strcmp(type_name, "GtkListItemWidget") == 0)
           {
-            GtkWidget *child = gtk_widget_get_first_child(current);
+            GtkWidget* child = gtk_widget_get_first_child(current);
             if (child && strcmp(G_OBJECT_TYPE_NAME(child), "GtkBox") == 0)
               box = child;
           }
@@ -596,7 +596,7 @@ static int gtk4ListConvertXYToPos(Ihandle* ih, int x, int y)
 
           if (box)
           {
-            GtkListItem *list_item = (GtkListItem*)g_object_get_data(G_OBJECT(box), "iup-list-item");
+            GtkListItem* list_item = (GtkListItem*)g_object_get_data(G_OBJECT(box), "iup-list-item");
             if (list_item)
             {
               guint position = gtk_list_item_get_position(list_item);
@@ -1352,7 +1352,7 @@ static int gtk4ListSetNCAttrib(Ihandle* ih, const char* value)
     return 1;
 }
 
-static void gtk4ListPasteReadyCb(GObject *source, GAsyncResult *result, gpointer user_data)
+static void gtk4ListPasteReadyCb(GObject* source, GAsyncResult* result, gpointer user_data)
 {
   Ihandle* ih = (Ihandle*)user_data;
   GError* error = NULL;
@@ -1375,7 +1375,7 @@ static void gtk4ListPasteReadyCb(GObject *source, GAsyncResult *result, gpointer
   }
 }
 
-static int gtk4ListSetClipboardAttrib(Ihandle *ih, const char *value)
+static int gtk4ListSetClipboardAttrib(Ihandle* ih, const char* value)
 {
   GtkEntry* entry;
   if (!ih->data->has_editbox)
@@ -1491,7 +1491,7 @@ static void gtk4ListEditMoveCursor(GtkWidget* entry, GtkMovementStep step, gint 
   (void)extend_selection;
 }
 
-static gboolean gtk4ListEditKeyPressEvent(GtkEventControllerKey *controller, guint keyval, guint keycode, GdkModifierType state, Ihandle *ih)
+static gboolean gtk4ListEditKeyPressEvent(GtkEventControllerKey* controller, guint keyval, guint keycode, GdkModifierType state, Ihandle* ih)
 {
   GtkWidget* entry = (GtkWidget*)iupAttribGet(ih, "_IUPGTK4_ENTRY");
 
@@ -1582,7 +1582,7 @@ static gboolean gtk4ListEditKeyPressEvent(GtkEventControllerKey *controller, gui
   return FALSE;
 }
 
-static gboolean gtk4ListEditKeyReleaseEvent(GtkEventControllerKey *controller, guint keyval, guint keycode, GdkModifierType state, Ihandle *ih)
+static gboolean gtk4ListEditKeyReleaseEvent(GtkEventControllerKey* controller, guint keyval, guint keycode, GdkModifierType state, Ihandle* ih)
 {
   GtkWidget* entry = (GtkWidget*)iupAttribGet(ih, "_IUPGTK4_ENTRY");
   gtk4ListEditMoveCursor(entry, 0, 0, 0, ih);
@@ -1593,7 +1593,7 @@ static gboolean gtk4ListEditKeyReleaseEvent(GtkEventControllerKey *controller, g
   return FALSE;
 }
 
-static void gtk4ListEditButtonPressed(GtkGestureClick *gesture, int n_press, double x, double y, Ihandle *ih)
+static void gtk4ListEditButtonPressed(GtkGestureClick* gesture, int n_press, double x, double y, Ihandle* ih)
 {
   GtkWidget* entry = (GtkWidget*)iupAttribGet(ih, "_IUPGTK4_ENTRY");
   gtk4ListEditMoveCursor(entry, 0, 0, 0, ih);
@@ -1603,7 +1603,7 @@ static void gtk4ListEditButtonPressed(GtkGestureClick *gesture, int n_press, dou
   (void)y;
 }
 
-static void gtk4ListEditDeleteText(GtkEditable *editable, int start, int end, Ihandle* ih)
+static void gtk4ListEditDeleteText(GtkEditable* editable, int start, int end, Ihandle* ih)
 {
   IFnis cb = (IFnis)IupGetCallback(ih, "EDIT_CB");
   int ret;
@@ -1616,7 +1616,7 @@ static void gtk4ListEditDeleteText(GtkEditable *editable, int start, int end, Ih
     g_signal_stop_emission_by_name(editable, "delete_text");
 }
 
-static void gtk4ListEditInsertText(GtkEditable *editable, char *insert_value, int len, int *pos, Ihandle* ih)
+static void gtk4ListEditInsertText(GtkEditable* editable, char* insert_value, int len, int* pos, Ihandle* ih)
 {
   IFnis cb = (IFnis)IupGetCallback(ih, "EDIT_CB");
   int ret;
@@ -1652,7 +1652,7 @@ static void gtk4ListEditChanged(void* dummy, Ihandle* ih)
   (void)dummy;
 }
 
-static gboolean gtk4ListSimpleKeyPressEvent(GtkEventControllerKey *controller, guint keyval, guint keycode, GdkModifierType state, Ihandle *ih)
+static gboolean gtk4ListSimpleKeyPressEvent(GtkEventControllerKey* controller, guint keyval, guint keycode, GdkModifierType state, Ihandle* ih)
 {
   if (iupgtk4KeyPressEvent(controller, keyval, keycode, state, ih) == TRUE)
     return TRUE;
@@ -2342,7 +2342,7 @@ static int gtk4ListMapMethod(Ihandle* ih)
 
     if (ih->data->has_editbox)
     {
-      GtkWidget *entry = gtk_entry_new();
+      GtkWidget* entry = gtk_entry_new();
       gtk_editable_set_width_chars(GTK_EDITABLE(entry), 1);
       iupAttribSet(ih, "_IUPGTK4_ENTRY", (char*)entry);
 
@@ -2475,7 +2475,7 @@ static int gtk4ListMapMethod(Ihandle* ih)
       gtk_widget_set_vexpand(container, FALSE);
       gtk_widget_set_hexpand(container, FALSE);
 
-      GtkWidget *entry = gtk_entry_new();
+      GtkWidget* entry = gtk_entry_new();
       gtk_widget_set_vexpand(entry, FALSE);
       gtk_widget_set_hexpand(entry, FALSE);
       gtk_widget_set_valign(entry, GTK_ALIGN_CENTER);

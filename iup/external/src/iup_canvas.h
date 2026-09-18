@@ -17,8 +17,8 @@ extern "C" {
 IUP_SDK_API void iupdrvCanvasInitClass(Iclass* ic);
 /** @} */
 
-void iupCanvasCalcScrollIntPos(double min, double max, double page, double pos, int imin, int imax, int *ipage, int *ipos);
-void iupCanvasCalcScrollRealPos(double min, double max, double *pos, int imin, int imax, int ipage, int *ipos);
+void iupCanvasCalcScrollIntPos(double min, double max, double page, double pos, int imin, int imax, int* ipage, int* ipos);
+void iupCanvasCalcScrollRealPos(double min, double max, double* pos, int imin, int imax, int ipage, int* ipos);
 char* iupCanvasGetPosXAttrib(Ihandle* ih);
 char* iupCanvasGetPosYAttrib(Ihandle* ih);
 

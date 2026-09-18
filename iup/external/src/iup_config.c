@@ -333,7 +333,7 @@ IUP_API double IupConfigGetVariableDoubleId(Ihandle* ih, const char* group, cons
 
 IUP_API void IupConfigCopy(Ihandle* ih1, Ihandle* ih2, const char* exclude_prefix)
 {
-  char *name;
+  char* name;
 
   iupASSERT(iupObjectCheck(ih1));
   if (!iupObjectCheck(ih1))
@@ -356,7 +356,7 @@ IUP_API void IupConfigCopy(Ihandle* ih1, Ihandle* ih2, const char* exclude_prefi
 /******************************************************************/
 
 
-IUP_API void IupConfigSetListVariable(Ihandle* ih, const char *group, const char* key, const char* value, int add)
+IUP_API void IupConfigSetListVariable(Ihandle* ih, const char* group, const char* key, const char* value, int add)
 {
   const char* value_id;
   int last_id, found_id = 0;
@@ -413,7 +413,7 @@ static const char* iConfigGetRecentAttribName(const char* recent_name, const cha
     return base_name;
 }
 
-static int iConfigListRecent_CB(Ihandle* list, char *text, int item, int state)
+static int iConfigListRecent_CB(Ihandle* list, char* text, int item, int state)
 {
   (void)item;
 

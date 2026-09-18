@@ -288,7 +288,7 @@ extern "C" IUP_SDK_API void iupdrvSetAppearance(int appearance)
   }
 }
 
-extern "C" IUP_SDK_API int iupdrvOpen(int *argc, char ***argv)
+extern "C" IUP_SDK_API int iupdrvOpen(int* argc, char*** argv)
 {
   if (be_app == NULL)
   {

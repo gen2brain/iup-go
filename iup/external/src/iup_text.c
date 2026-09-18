@@ -28,7 +28,7 @@
 /* Used by List and Text, implemented in Text
    Can NOT use ih->data
 */
-int iupEditCheckNewValue(Ihandle* ih, IFnis cb, const char* new_value, void *mask, int nc)
+int iupEditCheckNewValue(Ihandle* ih, IFnis cb, const char* new_value, void* mask, int nc)
 {
   if (!new_value)
     return 1;
@@ -58,9 +58,9 @@ int iupEditCheckNewValue(Ihandle* ih, IFnis cb, const char* new_value, void *mas
   return 1;
 }
 
-int iupEditCallActionCb(Ihandle* ih, IFnis cb, const char* insert_value, int start, int end, void *mask, int nc, int remove_dir, int utf8)
+int iupEditCallActionCb(Ihandle* ih, IFnis cb, const char* insert_value, int start, int end, void* mask, int nc, int remove_dir, int utf8)
 {
-  char *new_value, *value;
+  char* new_value, *value;
   int ret = -1, /* normal processing */
       key = 0;
 
@@ -555,7 +555,7 @@ static int iMultilineCreateMethod(Ihandle* ih, void** params)
   return IUP_NOERROR;
 }
 
-static void iTextComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *children_expand)
+static void iTextComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* children_expand)
 {
   int natural_w = 0,
       natural_h = 0,
@@ -606,10 +606,10 @@ static void iTextDestroyMethod(Ihandle* ih)
 
 /******************************************************************************/
 
-typedef void (*Iconvertlincol2pos)(Ihandle* ih, int lin, int col, int *pos);
-typedef void (*Iconvertpos2lincol)(Ihandle* ih, int pos, int *lin, int *col);
+typedef void (*Iconvertlincol2pos)(Ihandle* ih, int lin, int col, int* pos);
+typedef void (*Iconvertpos2lincol)(Ihandle* ih, int pos, int* lin, int* col);
 
-IUP_API void IupTextConvertLinColToPos(Ihandle* ih, int lin, int col, int *pos)
+IUP_API void IupTextConvertLinColToPos(Ihandle* ih, int lin, int col, int* pos)
 {
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
@@ -633,7 +633,7 @@ IUP_API void IupTextConvertLinColToPos(Ihandle* ih, int lin, int col, int *pos)
   }
 }
 
-IUP_API void IupTextConvertPosToLinCol(Ihandle* ih, int pos, int *lin, int *col)
+IUP_API void IupTextConvertPosToLinCol(Ihandle* ih, int pos, int* lin, int* col)
 {
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))

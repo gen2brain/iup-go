@@ -36,7 +36,7 @@ typedef struct _ImenuPos
 static int gtk4IsWin32Backend(void)
 {
 #ifdef GDK_WINDOWING_WIN32
-  GdkDisplay *display = gdk_display_get_default();
+  GdkDisplay* display = gdk_display_get_default();
   return (display && GDK_IS_WIN32_DISPLAY(display));
 #else
   return 0;
@@ -46,7 +46,7 @@ static int gtk4IsWin32Backend(void)
 static int gtk4IsMacosBackend(void)
 {
 #ifdef GDK_WINDOWING_MACOS
-  GdkDisplay *display = gdk_display_get_default();
+  GdkDisplay* display = gdk_display_get_default();
   return (display && GDK_IS_MACOS_DISPLAY(display));
 #else
   return 0;
@@ -211,7 +211,7 @@ static GSimpleActionGroup* gtk4MenuGetActionGroup(Ihandle* menu)
   return (GSimpleActionGroup*)iupAttribGet(root, "_IUPGTK4_ACTION_GROUP");
 }
 
-static GMenu* gtk4MenuFindEntryPos(Ihandle* menu, Ihandle* child, int *pos)
+static GMenu* gtk4MenuFindEntryPos(Ihandle* menu, Ihandle* child, int* pos)
 {
   GMenu* section = (GMenu*)iupAttribGet(menu, "_IUPGTK4_SECTION0");
   Ihandle* c;
@@ -594,7 +594,7 @@ static void gtk4MenuPopupAttachCustoms(Ihandle* ih_menu, GtkPopoverMenu* popover
   }
 }
 
-static void gtk4PopoverClosedCb(GtkPopover *popover, gpointer user_data)
+static void gtk4PopoverClosedCb(GtkPopover* popover, gpointer user_data)
 {
   GMainLoop* loop = (GMainLoop*)user_data;
   if (loop && g_main_loop_is_running(loop))
@@ -615,10 +615,10 @@ static void gtk4MenuParentDestroyCb(GtkWidget* parent, gpointer user_data)
   iupAttribSet(ih, "_IUPGTK4_POPOVER_PARENT", NULL);
 }
 
-static void gtk4AnchorPopoverClosedCb(GtkPopover *popover, gpointer user_data)
+static void gtk4AnchorPopoverClosedCb(GtkPopover* popover, gpointer user_data)
 {
-  Ihandle *ih = (Ihandle*)user_data;
-  GtkWidget *anchor_window;
+  Ihandle* ih = (Ihandle*)user_data;
+  GtkWidget* anchor_window;
 
   anchor_window = (GtkWidget*)iupAttribGet(ih, "_IUPGTK4_ANCHOR_WINDOW");
   if (anchor_window)
@@ -700,7 +700,7 @@ IUP_SDK_API int iupdrvMenuPopup(Ihandle* ih, int x, int y)
         g_main_context_iteration(NULL, FALSE);
 
       {
-        GdkSurface *surface = gtk_native_get_surface(GTK_NATIVE(anchor_window));
+        GdkSurface* surface = gtk_native_get_surface(GTK_NATIVE(anchor_window));
         if (surface)
         {
 #ifdef GDK_WINDOWING_X11
@@ -733,7 +733,7 @@ IUP_SDK_API int iupdrvMenuPopup(Ihandle* ih, int x, int y)
     }
 
     {
-      GdkSurface *surface = gtk_native_get_surface(GTK_NATIVE(anchor_window));
+      GdkSurface* surface = gtk_native_get_surface(GTK_NATIVE(anchor_window));
 
       if (surface)
       {
@@ -791,7 +791,7 @@ IUP_SDK_API int iupdrvMenuPopup(Ihandle* ih, int x, int y)
   }
 
   {
-    GtkNative *native = gtk_widget_get_native(parent_widget);
+    GtkNative* native = gtk_widget_get_native(parent_widget);
     if (native)
     {
       double native_x, native_y;

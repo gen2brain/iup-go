@@ -20,25 +20,25 @@ extern "C" {
 /** Returns the key name from its code.
  * Returns NULL if code not found.
  * \ingroup key */
-IUP_SDK_API char *iupKeyCodeToName(int code);
+IUP_SDK_API char* iupKeyCodeToName(int code);
 
 /** Calls a function for each defined key. \n
  * Used only by the IupLua binding.
  * \ingroup key */
-IUP_SDK_API void iupKeyForEach(void(*func)(const char *name, int code, void* user_data), void* user_data);
+IUP_SDK_API void iupKeyForEach(void(*func)(const char* name, int code, void* user_data), void* user_data);
 
 /** Calls the K_ANY or K_* callbacks. Should be called when a keyboard event occurred.
  * \ingroup key */
-IUP_SDK_API int iupKeyCallKeyCb(Ihandle *ih, int c);
+IUP_SDK_API int iupKeyCallKeyCb(Ihandle* ih, int c);
 
 /** Calls the KEYPRESS_CB callback. Should be called when a keyboard event occurred.
  * \ingroup key */
-IUP_SDK_API int iupKeyCallKeyPressCb(Ihandle *ih, int code, int press);
+IUP_SDK_API int iupKeyCallKeyPressCb(Ihandle* ih, int code, int press);
 
 /** Calls the TEXTINPUT_CB callback with committed UTF-8 text.
  * Returns IUP_IGNORE when the control consumed the text.
  * \ingroup key */
-IUP_SDK_API int iupKeyCallTextInputCb(Ihandle *ih, const char* value);
+IUP_SDK_API int iupKeyCallTextInputCb(Ihandle* ih, const char* value);
 
 /** Process Tab, DEFAULTENTER and DEFAULTESC in key press events.
  * \ingroup key */

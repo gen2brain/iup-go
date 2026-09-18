@@ -395,7 +395,7 @@ static void gtkTabsSwitchPage(GtkNotebook* notebook, void* page, int pos, Ihandl
   (void)page;
 }
 
-static gboolean gtkTabsButtonPressEvent(GtkWidget *widget, GdkEventButton *evt, Ihandle *child)
+static gboolean gtkTabsButtonPressEvent(GtkWidget* widget, GdkEventButton* evt, Ihandle* child)
 {
   Ihandle* ih = IupGetParent(child);
   IFni cb = (IFni)IupGetCallback(ih, "RIGHTCLICK_CB");
@@ -412,7 +412,7 @@ static gboolean gtkTabsButtonPressEvent(GtkWidget *widget, GdkEventButton *evt, 
   return iupgtkButtonEvent(widget, evt, ih);
 }
 
-static void gtkTabsCloseButtonClicked(GtkButton *widget, Ihandle* child)
+static void gtkTabsCloseButtonClicked(GtkButton* widget, Ihandle* child)
 {
   /* Close tab child */
   GtkWidget* tab_page = (GtkWidget*)iupAttribGet(child, "_IUPTAB_PAGE");
@@ -451,9 +451,9 @@ static void gtkTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
 
   if (ih->handle)
   {
-    GtkWidget *evtBox, *tab_page, *tab_container, *box = NULL;
-    GtkWidget *tab_label = NULL, *tab_image = NULL, *tab_close = NULL;
-    char *tabtitle, *tabimage;
+    GtkWidget* evtBox, *tab_page, *tab_container, *box = NULL;
+    GtkWidget* tab_label = NULL, *tab_image = NULL, *tab_close = NULL;
+    char* tabtitle, *tabimage;
     int pos;
     unsigned char r, g, b;
 

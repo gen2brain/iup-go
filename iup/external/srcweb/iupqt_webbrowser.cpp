@@ -657,7 +657,7 @@ static int qtWebBrowserSetPrintPreviewAttrib(Ihandle* ih, const char* value)
   QPrintPreviewDialog preview(&printer, webview);
 
   QObject::connect(&preview, &QPrintPreviewDialog::paintRequested,
-    [webview](QPrinter *printer) {
+    [webview](QPrinter* printer) {
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
       webview->page()->printToPdf([](const QByteArray &) {
       });
@@ -1556,7 +1556,7 @@ static void qtWebBrowserUnMapMethod(Ihandle* ih)
  * Create/Destroy Methods
  ****************************************************************************/
 
-static int qtWebBrowserCreateMethod(Ihandle* ih, void **params)
+static int qtWebBrowserCreateMethod(Ihandle* ih, void** params)
 {
   (void)params;
 
@@ -1569,7 +1569,7 @@ static int qtWebBrowserCreateMethod(Ihandle* ih, void **params)
  * Natural Size Calculation
  ****************************************************************************/
 
-static void qtWebBrowserComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *children_expand)
+static void qtWebBrowserComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* children_expand)
 {
   int natural_w = 0, natural_h = 0;
   (void)children_expand;

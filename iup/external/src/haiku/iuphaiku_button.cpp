@@ -495,7 +495,7 @@ static int haikuButtonMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-extern "C" IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
+extern "C" IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int* x, int* y)
 {
   if (ih && haikuButtonIsColorSwatch(ih))
   {

@@ -181,7 +181,7 @@ static void qtButtonUpdateLayout(Ihandle* ih)
   }
 }
 
-extern "C" IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
+extern "C" IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int* x, int* y)
 {
   int has_image = 0;
   int has_text = 0;
@@ -598,7 +598,7 @@ static void qtButtonClicked(Ihandle* ih)
  * Map/UnMap Methods
  ****************************************************************************/
 
-static void qtButtonLayoutUpdateMethod(Ihandle *ih)
+static void qtButtonLayoutUpdateMethod(Ihandle* ih)
 {
   QAbstractButton* button = (QAbstractButton*)ih->handle;
   if (!button)

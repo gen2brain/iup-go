@@ -23,7 +23,7 @@ static const void* IUP_COCOA_TOOLTIP_OWNER_KEY = @"IUP_COCOA_TOOLTIP_OWNER_KEY";
 
 @implementation IupCocoaToolTipOwner
 
-- (NSString *)view:(NSView *)view stringForToolTip:(NSToolTipTag)tag point:(NSPoint)point userData:(void *)data
+- (NSString*)view:(NSView*)view stringForToolTip:(NSToolTipTag)tag point:(NSPoint)point userData:(void*)data
 {
   if (!self.ihandle || !iupObjectCheck(self.ihandle))
   {

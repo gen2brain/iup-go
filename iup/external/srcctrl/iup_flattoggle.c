@@ -28,7 +28,7 @@
 #define ITOGGLE_MARGIN 2
 
 /* from IupRadio implementation */
-IUP_SDK_API Ihandle *iupRadioFindToggleParent(Ihandle* ih_toggle);
+IUP_SDK_API Ihandle* iupRadioFindToggleParent(Ihandle* ih_toggle);
 
 struct _IcontrolData
 {
@@ -269,7 +269,7 @@ static void iFlatToggleDrawSwitch(IdrawCanvas* dc, Ihandle* ih, int check_left, 
 
 static int iFlatToggleRedraw_CB(Ihandle* ih)
 {
-  char *image = iupAttribGet(ih, "IMAGE");
+  char* image = iupAttribGet(ih, "IMAGE");
   char* title = iupAttribGet(ih, "TITLE");
   int active = IupGetInt(ih, "ACTIVE");  /* native implementation */
   int selected = ih->data->value;
@@ -753,7 +753,7 @@ static int iFlatToggleSetAlignmentAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-static char* iFlatToggleGetAlignmentAttrib(Ihandle *ih)
+static char* iFlatToggleGetAlignmentAttrib(Ihandle* ih)
 {
   char* horiz_align2str[3] = { "ALEFT", "ACENTER", "ARIGHT" };
   char* vert_align2str[3] = { "ATOP", "ACENTER", "ABOTTOM" };
@@ -840,7 +840,7 @@ static int iFlatToggleSetImagePositionAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-static char* iFlatToggleGetImagePositionAttrib(Ihandle *ih)
+static char* iFlatToggleGetImagePositionAttrib(Ihandle* ih)
 {
   char* img_pos2str[4] = { "LEFT", "RIGHT", "TOP", "BOTTOM" };
   return iupStrReturnStr(img_pos2str[ih->data->img_position]);
@@ -854,7 +854,7 @@ static int iFlatToggleSetSpacingAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-static char* iFlatToggleGetSpacingAttrib(Ihandle *ih)
+static char* iFlatToggleGetSpacingAttrib(Ihandle* ih)
 {
   return iupStrReturnInt(ih->data->spacing);
 }
@@ -867,7 +867,7 @@ static int iFlatToggleSetBorderWidthAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-static char* iFlatToggleGetBorderWidthAttrib(Ihandle *ih)
+static char* iFlatToggleGetBorderWidthAttrib(Ihandle* ih)
 {
   return iupStrReturnInt(ih->data->border_width);
 }
@@ -1017,7 +1017,7 @@ static int iFlatToggleMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-static void iFlatToggleComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *children_expand)
+static void iFlatToggleComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* children_expand)
 {
   int fit2backimage = iupAttribGetBoolean(ih, "FITTOBACKIMAGE");
   char* bgimage = iupAttribGet(ih, "BACKIMAGE");
@@ -1196,7 +1196,7 @@ Iclass* iupFlatToggleNewClass(void)
 
 IUPCONTROLS_API Ihandle* IupFlatToggle(const char* title)
 {
-  void *params[2];
+  void* params[2];
   params[0] = (void*)title;
   params[1] = NULL;
   return IupCreatev("flattoggle", params);

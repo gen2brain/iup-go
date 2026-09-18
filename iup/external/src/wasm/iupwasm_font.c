@@ -145,7 +145,7 @@ IUP_SDK_API int iupdrvSetFontAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-IUP_SDK_API void iupdrvFontGetCharSize(Ihandle* ih, int *charwidth, int *charheight)
+IUP_SDK_API void iupdrvFontGetCharSize(Ihandle* ih, int* charwidth, int* charheight)
 {
   char css[1100];
   wasmFontForIh(ih, css, sizeof(css));
@@ -189,7 +189,7 @@ EM_JS(void, iupwasmJsMeasureMarkup, (const char* css, const char* markup, int* w
   HEAP32[hp >> 2] = s.offsetHeight || 16;
 })
 
-IUP_SDK_API void iupdrvFontGetMultiLineStringSize(Ihandle* ih, const char* str, int *w, int *h)
+IUP_SDK_API void iupdrvFontGetMultiLineStringSize(Ihandle* ih, const char* str, int* w, int* h)
 {
   if (ih && str && iupAttribGetBoolean(ih, "MARKUP"))
   {
@@ -205,7 +205,7 @@ IUP_SDK_API void iupdrvFontGetMultiLineStringSize(Ihandle* ih, const char* str, 
   iupdrvFontGetTextSize(IupGetAttribute(ih, "FONT"), str, -1, w, h);
 }
 
-IUP_SDK_API void iupdrvFontGetTextSize(const char* font, const char* str, int len, int *w, int *h)
+IUP_SDK_API void iupdrvFontGetTextSize(const char* font, const char* str, int len, int* w, int* h)
 {
   char css[1100];
   int total, max_w = 0, lines = 1, start, i, line_h;
@@ -243,7 +243,7 @@ IUP_SDK_API void iupdrvFontGetTextSize(const char* font, const char* str, int le
   if (h) *h = lines * line_h;
 }
 
-IUP_SDK_API void iupdrvFontGetFontDim(const char* font, int *max_width, int *line_height, int *ascent, int *descent)
+IUP_SDK_API void iupdrvFontGetFontDim(const char* font, int* max_width, int* line_height, int* ascent, int* descent)
 {
   char css[1100];
   int lh;

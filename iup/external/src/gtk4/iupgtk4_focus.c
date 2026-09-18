@@ -16,12 +16,12 @@
 #include "iupgtk4_drv.h"
 
 
-IUP_DRV_API void iupgtk4SetCanFocus(GtkWidget *widget, int can)
+IUP_DRV_API void iupgtk4SetCanFocus(GtkWidget* widget, int can)
 {
   gtk_widget_set_focusable(widget, can);
 }
 
-IUP_SDK_API void iupdrvSetFocus(Ihandle *ih)
+IUP_SDK_API void iupdrvSetFocus(Ihandle* ih)
 {
   Ihandle* dialog = IupGetDialog(ih);
 

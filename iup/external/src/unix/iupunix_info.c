@@ -98,7 +98,7 @@ IUP_SDK_API char* iupdrvLanguageInfo(void)
 #endif
 }
 
-IUP_SDK_API char *iupdrvGetSystemName(void)
+IUP_SDK_API char* iupdrvGetSystemName(void)
 {
   struct utsname un;
   uname(&un);
@@ -108,7 +108,7 @@ IUP_SDK_API char *iupdrvGetSystemName(void)
     return iupStrReturnStr(un.sysname);
 }
 
-IUP_SDK_API char *iupdrvGetSystemVersion(void)
+IUP_SDK_API char* iupdrvGetSystemVersion(void)
 {
   struct utsname un;
   uname(&un);
@@ -129,7 +129,7 @@ IUP_SDK_API int iupdrvSetCurrentDirectory(const char* dir)
 IUP_SDK_API char* iupdrvGetCurrentDirectory(void)
 {
   size_t size = 256;
-  char *buffer = (char *)iupStrGetMemory(size);
+  char* buffer = (char*)iupStrGetMemory(size);
 
   for (;;)
   {
@@ -143,7 +143,7 @@ IUP_SDK_API char* iupdrvGetCurrentDirectory(void)
     }
 
     size += size;
-    buffer = (char *)iupStrGetMemory(size);
+    buffer = (char*)iupStrGetMemory(size);
   }
 
   return NULL;
@@ -170,7 +170,7 @@ static int iupUnixMakeDirectoryIfNeeded(const char* path)
   }
 }
 
-IUP_SDK_API char *iupdrvGetComputerName(void)
+IUP_SDK_API char* iupdrvGetComputerName(void)
 {
   static char hostname[256];
   if (gethostname(hostname, sizeof(hostname)) == 0)
@@ -178,7 +178,7 @@ IUP_SDK_API char *iupdrvGetComputerName(void)
   return iupStrReturnStr("unknown");
 }
 
-IUP_SDK_API char *iupdrvGetUserName(void)
+IUP_SDK_API char* iupdrvGetUserName(void)
 {
   const char* username = getenv("USER");
   if (!username)
@@ -186,7 +186,7 @@ IUP_SDK_API char *iupdrvGetUserName(void)
   return iupStrReturnStr(username ? username : "unknown");
 }
 
-IUP_SDK_API int iupdrvGetPreferencePath(char *filename, const char *app_name, int use_system)
+IUP_SDK_API int iupdrvGetPreferencePath(char* filename, const char* app_name, int use_system)
 {
   char* home;
 

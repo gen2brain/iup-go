@@ -1046,7 +1046,7 @@ extern "C" IUP_SDK_API void iupdrvListSetItemCount(Ihandle* ih, int count)
   lv->Invalidate();
 }
 
-extern "C" IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int *w, int *h)
+extern "C" IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int* w, int* h)
 {
   if (!ih) return;
 
@@ -1087,7 +1087,7 @@ extern "C" IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int *w, int *h)
   if (w) *w += label_pad;
 }
 
-extern "C" IUP_SDK_API void iupdrvListAddItemSpace(Ihandle* ih, int *h)
+extern "C" IUP_SDK_API void iupdrvListAddItemSpace(Ihandle* ih, int* h)
 {
   /* ceil per font-component + 4 px matches the row height BListView uses. */
   if (!h) return;

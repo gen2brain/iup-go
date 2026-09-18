@@ -60,11 +60,11 @@ static void iSplitAutoHideChild(Ihandle* child, int flag)
 
 static void iSplitAutoHide(Ihandle* ih)
 {
-  Ihandle *child1 = ih->firstchild->brother;
+  Ihandle* child1 = ih->firstchild->brother;
   if (child1)
   {
     int tol;
-    Ihandle *child2 = child1->brother;
+    Ihandle* child2 = child1->brother;
 
     if (ih->data->orientation == ISPLIT_VERT)
     {
@@ -151,12 +151,12 @@ static void iSplitAdjustVal(Ihandle* ih)
     iSplitAutoHide(ih);
 }
 
-static int iSplitAdjustWidth1(Ihandle* ih, int *width1)
+static int iSplitAdjustWidth1(Ihandle* ih, int* width1)
 {
-  Ihandle *child1 = ih->firstchild->brother;
+  Ihandle* child1 = ih->firstchild->brother;
   if (child1)
   {
-    Ihandle *child2 = child1->brother;
+    Ihandle* child2 = child1->brother;
 
     int min_width1 = *width1;
     iupLayoutApplyMinMaxSize(child1, &min_width1, NULL);
@@ -182,12 +182,12 @@ static int iSplitAdjustWidth1(Ihandle* ih, int *width1)
   return 0;
 }
 
-static int iSplitAdjustHeight1(Ihandle* ih, int *height1)
+static int iSplitAdjustHeight1(Ihandle* ih, int* height1)
 {
-  Ihandle *child1 = ih->firstchild->brother;
+  Ihandle* child1 = ih->firstchild->brother;
   if (child1)
   {
-    Ihandle *child2 = child1->brother;
+    Ihandle* child2 = child1->brother;
 
     int min_height1 = *height1;
     iupLayoutApplyMinMaxSize(child1, NULL, &min_height1);
@@ -241,7 +241,7 @@ static void iSplitSetBarPosition(Ihandle* ih)
 |* Callbacks of canvas bar                                                   *|
 \*****************************************************************************/
 
-static int iSplitMotion_CB(Ihandle* bar, int x, int y, char *status)
+static int iSplitMotion_CB(Ihandle* bar, int x, int y, char* status)
 {
   Ihandle* ih = bar->parent;
 
@@ -542,10 +542,10 @@ static int iSplitSetAutoHideAttrib(Ihandle* ih, const char* value)
     ih->data->autohide = 1;
   else
   {
-    Ihandle *child1 = ih->firstchild->brother;
+    Ihandle* child1 = ih->firstchild->brother;
     if (child1)
     {
-      Ihandle *child2 = child1->brother;
+      Ihandle* child2 = child1->brother;
       iSplitAutoHideChild(child1, ISPLIT_SHOW);
       if (child2)
         iSplitAutoHideChild(child2, ISPLIT_SHOW);
@@ -572,11 +572,11 @@ static char* iSplitGetAutoHideAttrib(Ihandle* ih)
 |* Methods                                                                   *|
 \*****************************************************************************/
 
-static void iSplitComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *children_expand)
+static void iSplitComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* children_expand)
 {
   int natural_w = 0,
       natural_h = 0;
-  Ihandle *child1, *child2 = NULL;
+  Ihandle* child1, *child2 = NULL;
   child1 = ih->firstchild->brother;
   if (child1)
     child2 = child1->brother;
@@ -648,7 +648,7 @@ static void iSplitComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *chi
 static void iSplitSetChildrenCurrentSizeMethod(Ihandle* ih, int shrink)
 {
   int old_val = ih->data->val;
-  Ihandle *child1, *child2 = NULL;
+  Ihandle* child1, *child2 = NULL;
   child1 = ih->firstchild->brother;
   if (child1)
     child2 = child1->brother;
@@ -736,7 +736,7 @@ static void iSplitSetChildrenCurrentSizeMethod(Ihandle* ih, int shrink)
 
 static void iSplitSetChildrenPositionMethod(Ihandle* ih, int x, int y)
 {
-  Ihandle *child1, *child2 = NULL;
+  Ihandle* child1, *child2 = NULL;
   child1 = ih->firstchild->brother;
   if (child1)
     child2 = child1->brother;
@@ -864,7 +864,7 @@ Iclass* iupSplitNewClass(void)
 
 IUP_API Ihandle* IupSplit(Ihandle* child1, Ihandle* child2)
 {
-  void *children[3];
+  void* children[3];
   children[0] = (void*)child1;
   children[1] = (void*)child2;
   children[2] = NULL;

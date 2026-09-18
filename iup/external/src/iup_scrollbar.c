@@ -72,7 +72,7 @@ static char* iScrollbarGetMinAttrib(Ihandle* ih)
   return iupStrReturnDouble(ih->data->vmin);
 }
 
-static int iScrollbarSetOrientationAttrib(Ihandle* ih, const char *value)
+static int iScrollbarSetOrientationAttrib(Ihandle* ih, const char* value)
 {
   int min_w, min_h;
 
@@ -103,7 +103,7 @@ static char* iScrollbarGetOrientationAttrib(Ihandle* ih)
     return "VERTICAL";
 }
 
-static int iScrollbarSetInvertedAttrib(Ihandle* ih, const char *value)
+static int iScrollbarSetInvertedAttrib(Ihandle* ih, const char* value)
 {
   if (ih->handle)
     return 0;
@@ -121,7 +121,7 @@ static char* iScrollbarGetInvertedAttrib(Ihandle* ih)
   return iupStrReturnBoolean(ih->data->inverted);
 }
 
-static int iScrollbarCreateMethod(Ihandle* ih, void **params)
+static int iScrollbarCreateMethod(Ihandle* ih, void** params)
 {
   char* orientation = "HORIZONTAL";
   if (params && params[0])
@@ -176,9 +176,9 @@ Iclass* iupScrollbarNewClass(void)
   return ic;
 }
 
-IUP_API Ihandle* IupScrollbar(const char *orientation)
+IUP_API Ihandle* IupScrollbar(const char* orientation)
 {
-  void *params[2];
+  void* params[2];
   params[0] = (void*)orientation;
   params[1] = NULL;
   return IupCreatev("scrollbar", params);

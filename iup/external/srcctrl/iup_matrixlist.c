@@ -56,7 +56,7 @@ typedef struct _ImatrixListData  /* Used only by the IupMatrixList control */
 
 static void iMatrixListInitializeImages(void)
 {
-  Ihandle *image_uncheck, *image_check, *image_del, *image_add;
+  Ihandle* image_uncheck, *image_check, *image_del, *image_add;
 
 #define IMTXL_IMG_WIDTH  16
 #define IMTXL_IMG_HEIGHT 16
@@ -364,7 +364,7 @@ static void iMatrixListSetFocusItem(Ihandle* ih, ImatrixListData* mtxList, int l
  Attributes
 ******************************************************************************/
 
-static char* iMatrixListGetEditableAttrib(Ihandle *ih)
+static char* iMatrixListGetEditableAttrib(Ihandle* ih)
 {
   ImatrixListData* mtxList = (ImatrixListData*)iupAttribGet(ih, "_IUPMTXLIST_DATA");
   return iupStrReturnBoolean(mtxList->editable);
@@ -467,7 +467,7 @@ static int iMatrixListSetCountAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-static char* iMatrixListGetColumnOrderAttrib(Ihandle *ih)
+static char* iMatrixListGetColumnOrderAttrib(Ihandle* ih)
 {
   ImatrixListData* mtxList = (ImatrixListData*)iupAttribGet(ih, "_IUPMTXLIST_DATA");
   char* str = iupStrGetMemory(30);
@@ -488,7 +488,7 @@ static char* iMatrixListGetColumnOrderAttrib(Ihandle *ih)
   return str;
 }
 
-static int iMatrixListSetColumnOrderAttrib(Ihandle *ih, const char* value)
+static int iMatrixListSetColumnOrderAttrib(Ihandle* ih, const char* value)
 {
   ImatrixListData* mtxList = (ImatrixListData*)iupAttribGet(ih, "_IUPMTXLIST_DATA");
   char value1[30], value2[30], value3[30];
@@ -584,19 +584,19 @@ static int iMatrixListSetColumnOrderAttrib(Ihandle *ih, const char* value)
   return 0;
 }
 
-static char* iMatrixListGetImageColAttrib(Ihandle *ih)
+static char* iMatrixListGetImageColAttrib(Ihandle* ih)
 {
   ImatrixListData* mtxList = (ImatrixListData*)iupAttribGet(ih, "_IUPMTXLIST_DATA");
   return iupStrReturnInt(mtxList->image_col);
 }
 
-static char* iMatrixListGetColorColAttrib(Ihandle *ih)
+static char* iMatrixListGetColorColAttrib(Ihandle* ih)
 {
   ImatrixListData* mtxList = (ImatrixListData*)iupAttribGet(ih, "_IUPMTXLIST_DATA");
   return iupStrReturnInt(mtxList->color_col);
 }
 
-static char* iMatrixListGetLabelColAttrib(Ihandle *ih)
+static char* iMatrixListGetLabelColAttrib(Ihandle* ih)
 {
   ImatrixListData* mtxList = (ImatrixListData*)iupAttribGet(ih, "_IUPMTXLIST_DATA");
   return iupStrReturnInt(mtxList->label_col);
@@ -867,7 +867,7 @@ static char* iMatrixListGetNumColVisibleAttrib(Ihandle* ih)
          Callbacks
 ******************************************************************************/
 
-static int iMatrixListDrawColorCol(Ihandle *ih, int lin, int x1, int x2, int y1, int y2)
+static int iMatrixListDrawColorCol(Ihandle* ih, int lin, int x1, int x2, int y1, int y2)
 {
   unsigned char red, green, blue;
   char* color = iupAttribGetId(ih, "COLOR", lin);
@@ -913,7 +913,7 @@ static int iMatrixListDrawColorCol(Ihandle *ih, int lin, int x1, int x2, int y1,
   return IUP_DEFAULT;  /* draw nothing more */
 }
 
-static int iMatrixListDrawImageCol(Ihandle *ih, ImatrixListData* mtxList, int lin, int col, int x1, int x2, int y1, int y2)
+static int iMatrixListDrawImageCol(Ihandle* ih, ImatrixListData* mtxList, int lin, int col, int x1, int x2, int y1, int y2)
 {
   char* image_name;
   int imagevalue, showdelete, linedelete;
@@ -975,7 +975,7 @@ static int iMatrixListDrawImageCol(Ihandle *ih, ImatrixListData* mtxList, int li
   return IUP_DEFAULT;  /* draw nothing more */
 }
 
-static int iMatrixListDraw_CB(Ihandle *ih, int lin, int col, int x1, int x2, int y1, int y2)
+static int iMatrixListDraw_CB(Ihandle* ih, int lin, int col, int x1, int x2, int y1, int y2)
 {
   ImatrixListData* mtxList = (ImatrixListData*)iupAttribGet(ih, "_IUPMTXLIST_DATA");
   int lines_num = ih->data->lines.num;
@@ -1006,7 +1006,7 @@ static int iMatrixListDraw_CB(Ihandle *ih, int lin, int col, int x1, int x2, int
   return IUP_DEFAULT;  /* draw nothing more */
 }
 
-static int iMatrixListEdition_CB(Ihandle *ih, int lin, int col, int mode, int update)
+static int iMatrixListEdition_CB(Ihandle* ih, int lin, int col, int mode, int update)
 {
   ImatrixListData* mtxList = (ImatrixListData*)iupAttribGet(ih, "_IUPMTXLIST_DATA");
   int lines_num = ih->data->lines.num;
@@ -1079,7 +1079,7 @@ static int iMatrixListEdition_CB(Ihandle *ih, int lin, int col, int mode, int up
   return IUP_DEFAULT;
 }
 
-static int iMatrixListClick_CB(Ihandle *ih, int lin, int col, char *status)
+static int iMatrixListClick_CB(Ihandle* ih, int lin, int col, char* status)
 {
   ImatrixListData* mtxList = (ImatrixListData*)iupAttribGet(ih, "_IUPMTXLIST_DATA");
   IFniis listclick_cb = (IFniis)IupGetCallback(ih, "LISTCLICK_CB");
@@ -1094,7 +1094,7 @@ static int iMatrixListClick_CB(Ihandle *ih, int lin, int col, char *status)
   return IUP_DEFAULT;
 }
 
-static int iMatrixListCheckDelete(Ihandle *ih)
+static int iMatrixListCheckDelete(Ihandle* ih)
 {
   if (IupGetInt(ih, "SHOWDELETE"))
     return 1;
@@ -1116,7 +1116,7 @@ static int iMatrixListCheckDelete(Ihandle *ih)
   }
 }
 
-static int iMatrixListRelease_CB(Ihandle *ih, int lin, int col, char *status)
+static int iMatrixListRelease_CB(Ihandle* ih, int lin, int col, char* status)
 {
   ImatrixListData* mtxList = (ImatrixListData*)iupAttribGet(ih, "_IUPMTXLIST_DATA");
   IFniis listrelease_cb = (IFniis)IupGetCallback(ih, "LISTRELEASE_CB");
@@ -1214,7 +1214,7 @@ static int iMatrixListRelease_CB(Ihandle *ih, int lin, int col, char *status)
   return IUP_DEFAULT;
 }
 
-static int iMatrixListEnterItem_CB(Ihandle *ih, int lin, int col)
+static int iMatrixListEnterItem_CB(Ihandle* ih, int lin, int col)
 {
   IFnii cb = (IFnii)IupGetCallback(ih, "ACTION_CB");
   int itemactive;
@@ -1231,7 +1231,7 @@ static int iMatrixListEnterItem_CB(Ihandle *ih, int lin, int col)
   return IUP_DEFAULT;
 }
 
-static int iMatrixListLeaveItem_CB(Ihandle *ih, int lin, int col)
+static int iMatrixListLeaveItem_CB(Ihandle* ih, int lin, int col)
 {
   IFnii cb = (IFnii)IupGetCallback(ih, "ACTION_CB");
   int itemactive;
@@ -1250,7 +1250,7 @@ static int iMatrixListLeaveItem_CB(Ihandle *ih, int lin, int col)
   return IUP_DEFAULT;
 }
 
-static int iMatrixListKeyAny_CB(Ihandle *ih, int key)
+static int iMatrixListKeyAny_CB(Ihandle* ih, int key)
 {
   ImatrixListData* mtxList = (ImatrixListData*)iupAttribGet(ih, "_IUPMTXLIST_DATA");
 
@@ -1360,7 +1360,7 @@ static int iMatrixListMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-static int iMatrixListCreateMethod(Ihandle* ih, void **params)
+static int iMatrixListCreateMethod(Ihandle* ih, void** params)
 {
   ImatrixListData* mtxList = (ImatrixListData*)calloc(1, sizeof(ImatrixListData));
   iupAttribSet(ih, "_IUPMTXLIST_DATA", (char*)mtxList);

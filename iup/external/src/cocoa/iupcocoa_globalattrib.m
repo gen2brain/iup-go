@@ -76,7 +76,7 @@ static int cocoaGlobalMapButton(int64_t button_number)
   return IUP_BUTTON1 + (int)button_number;
 }
 
-static CGEventRef iupCocoaGlobalEventCallback(CGEventTapProxy proxy, CGEventType type, CGEventRef event, void *refcon)
+static CGEventRef iupCocoaGlobalEventCallback(CGEventTapProxy proxy, CGEventType type, CGEventRef event, void* refcon)
 {
   if (type == kCGEventTapDisabledByTimeout)
   {
@@ -173,7 +173,7 @@ static CGEventRef iupCocoaGlobalEventCallback(CGEventTapProxy proxy, CGEventType
 }
 #endif /* !GNUSTEP */
 
-static int cocoaSetGlobal(const char *name, const char *value)
+static int cocoaSetGlobal(const char* name, const char* value)
 {
   if (iupStrEqual(name, "SINGLEINSTANCE"))
   {
@@ -327,14 +327,14 @@ static int cocoaSetGlobal(const char *name, const char *value)
   return 1;
 }
 
-IUP_SDK_API int iupdrvSetGlobal(const char *name, const char *value)
+IUP_SDK_API int iupdrvSetGlobal(const char* name, const char* value)
 {
   @autoreleasepool {
     return cocoaSetGlobal(name, value);
   }
 }
 
-static char * cocoaGetGlobal(const char *name)
+static char * cocoaGetGlobal(const char* name)
 {
   if (iupStrEqual(name, "VIRTUALSCREEN"))
   {
@@ -357,7 +357,7 @@ static char * cocoaGetGlobal(const char *name)
   {
     NSArray* arr = [NSScreen screens];
     NSUInteger monitors_count = [arr count];
-    char *str = iupStrGetMemory(monitors_count * 50);
+    char* str = iupStrGetMemory(monitors_count * 50);
     char* pstr = str;
 
     NSRect primary_screen_rect = [[NSScreen mainScreen] frame];
@@ -421,7 +421,7 @@ static char * cocoaGetGlobal(const char *name)
   return NULL;
 }
 
-IUP_SDK_API char *iupdrvGetGlobal(const char *name)
+IUP_SDK_API char* iupdrvGetGlobal(const char* name)
 {
   @autoreleasepool {
     return cocoaGetGlobal(name);

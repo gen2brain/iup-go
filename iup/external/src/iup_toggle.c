@@ -32,7 +32,7 @@ static int iToggleSetFlatAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-static char* iToggleGetFlatAttrib(Ihandle *ih)
+static char* iToggleGetFlatAttrib(Ihandle* ih)
 {
   return iupStrReturnBoolean (ih->data->flat);
 }
@@ -64,7 +64,7 @@ static int iToggleCreateMethod(Ihandle* ih, void** params)
   return IUP_NOERROR;
 }
 
-static void iToggleComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *children_expand)
+static void iToggleComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* children_expand)
 {
   int natural_w = 0,
       natural_h = 0,
@@ -117,7 +117,7 @@ static void iToggleComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *ch
 
 IUP_API Ihandle* IupToggle(const char* title)
 {
-  void *params[2];
+  void* params[2];
   params[0] = (void*)title;
   params[1] = NULL;
   return IupCreatev("toggle", params);

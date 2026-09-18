@@ -231,7 +231,7 @@ static void haikuValUnMapMethod(Ihandle* ih)
   iupdrvBaseUnMapMethod(ih);
 }
 
-extern "C" IUP_SDK_API void iupdrvValGetMinSize(Ihandle* ih, int *w, int *h)
+extern "C" IUP_SDK_API void iupdrvValGetMinSize(Ihandle* ih, int* w, int* h)
 {
   int vertical = (ih->data->orientation == IVAL_VERTICAL);
   if (w) *w = vertical ? 22 : 80;

@@ -19,7 +19,7 @@
 
 #include "iupunix_portal.h"
 
-extern char **environ;
+extern char** environ;
 
 static char* iupUnixFindExecutable(const char* filename)
 {
@@ -145,7 +145,7 @@ static int iupUnixSpawnWait(char** argv)
   return 1;
 }
 
-static int iupUnixSpawn(const char *filename, const char* parameters, int wait)
+static int iupUnixSpawn(const char* filename, const char* parameters, int wait)
 {
   char** argv;
   int ret;
@@ -162,20 +162,20 @@ static int iupUnixSpawn(const char *filename, const char* parameters, int wait)
   return ret;
 }
 
-IUP_API int IupExecute(const char *filename, const char* parameters)
+IUP_API int IupExecute(const char* filename, const char* parameters)
 {
   return iupUnixSpawn(filename, parameters, 0);
 }
 
-IUP_API int IupExecuteWait(const char *filename, const char* parameters)
+IUP_API int IupExecuteWait(const char* filename, const char* parameters)
 {
   return iupUnixSpawn(filename, parameters, 1);
 }
 
-IUP_API int IupHelp(const char *url)
+IUP_API int IupHelp(const char* url)
 {
-  char *browser;
-  char *argv[3];
+  char* browser;
+  char* argv[3];
 
   if (iupUnixPortalHelp(url) == 1)
     return 1;

@@ -21,7 +21,7 @@
 #include "iupgtk_drv.h"
 
 
-static void iGdkEventFunc(GdkEvent *evt, gpointer data)
+static void iGdkEventFunc(GdkEvent* evt, gpointer data)
 {
   switch(evt->type)
   {
@@ -112,7 +112,7 @@ static void iGdkEventFunc(GdkEvent *evt, gpointer data)
   gtk_main_do_event(evt);
 }
 
-IUP_SDK_API int iupdrvSetGlobal(const char *name, const char *value)
+IUP_SDK_API int iupdrvSetGlobal(const char* name, const char* value)
 {
   if (iupStrEqual(name, "SINGLEINSTANCE"))
   {
@@ -156,7 +156,7 @@ IUP_SDK_API int iupdrvSetGlobal(const char *name, const char *value)
   return 1;
 }
 
-IUP_SDK_API char *iupdrvGetGlobal(const char *name)
+IUP_SDK_API char* iupdrvGetGlobal(const char* name)
 {
   if (iupStrEqual(name, "VIRTUALSCREEN"))
   {
@@ -165,7 +165,7 @@ IUP_SDK_API char *iupdrvGetGlobal(const char *name)
     int w, h;
 
 #if GTK_CHECK_VERSION(3, 22, 0)
-    GdkDisplay *display = gdk_display_get_default();
+    GdkDisplay* display = gdk_display_get_default();
     GdkMonitor* monitor = gdk_display_get_primary_monitor(display);
     if (!monitor)
        monitor = gdk_display_get_monitor(display, 0);
@@ -176,7 +176,7 @@ IUP_SDK_API char *iupdrvGetGlobal(const char *name)
     w = rect.width;
     h = rect.height;
 #elif GTK_CHECK_VERSION(3, 0, 0)
-    GdkScreen *screen = gdk_screen_get_default();
+    GdkScreen* screen = gdk_screen_get_default();
     w = gdk_screen_get_width(screen);
     h = gdk_screen_get_height(screen);
     GdkRectangle rect;
@@ -189,10 +189,10 @@ IUP_SDK_API char *iupdrvGetGlobal(const char *name)
     x = rect.x;
     y = rect.y;
 #else
-    GdkScreen *screen = gdk_screen_get_default();
+    GdkScreen* screen = gdk_screen_get_default();
     w = gdk_screen_get_width(screen);
     h = gdk_screen_get_height(screen);
-    GdkWindow *root = gdk_screen_get_root_window(gdk_screen_get_default());
+    GdkWindow* root = gdk_screen_get_root_window(gdk_screen_get_default());
     gdk_window_get_root_origin(root, &x, &y);
 #endif
 
@@ -202,13 +202,13 @@ IUP_SDK_API char *iupdrvGetGlobal(const char *name)
   {
     int i;
 #if GTK_CHECK_VERSION(3, 22, 0)
-    GdkDisplay *display = gdk_display_get_default();
+    GdkDisplay* display = gdk_display_get_default();
     int monitors_count = gdk_display_get_n_monitors(display);
 #else
-    GdkScreen *screen = gdk_screen_get_default();
+    GdkScreen* screen = gdk_screen_get_default();
     int monitors_count = gdk_screen_get_n_monitors(screen);
 #endif
-    char *str = iupStrGetMemory(monitors_count * 50);
+    char* str = iupStrGetMemory(monitors_count * 50);
     char* pstr = str;
     GdkRectangle rect;
 
@@ -228,10 +228,10 @@ IUP_SDK_API char *iupdrvGetGlobal(const char *name)
   if (iupStrEqual(name, "MONITORSCOUNT"))
   {
 #if GTK_CHECK_VERSION(3, 22, 0)
-    GdkDisplay *display = gdk_display_get_default();
+    GdkDisplay* display = gdk_display_get_default();
     int monitors_count = gdk_display_get_n_monitors(display);
 #else
-    GdkScreen *screen = gdk_screen_get_default();
+    GdkScreen* screen = gdk_screen_get_default();
     int monitors_count = gdk_screen_get_n_monitors(screen);
 #endif
     return iupStrReturnInt(monitors_count);

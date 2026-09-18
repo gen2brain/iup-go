@@ -43,12 +43,12 @@ typedef struct _IupMotSwitchData
 } IupMotSwitchData;
 
 
-IUP_SDK_API void iupdrvToggleAddBorders(Ihandle* ih, int *x, int *y)
+IUP_SDK_API void iupdrvToggleAddBorders(Ihandle* ih, int* x, int* y)
 {
   iupdrvButtonAddBorders(ih, x, y);
 }
 
-IUP_SDK_API void iupdrvToggleAddSwitch(Ihandle* ih, int *x, int *y, const char* str)
+IUP_SDK_API void iupdrvToggleAddSwitch(Ihandle* ih, int* x, int* y, const char* str)
 {
   (void)ih;
 
@@ -62,7 +62,7 @@ IUP_SDK_API void iupdrvToggleAddSwitch(Ihandle* ih, int *x, int *y, const char* 
     (*x) += 8;
 }
 
-IUP_SDK_API void iupdrvToggleAddCheckBox(Ihandle* ih, int *x, int *y, const char* str)
+IUP_SDK_API void iupdrvToggleAddCheckBox(Ihandle* ih, int* x, int* y, const char* str)
 {
   int check_box = 15;
   (void)ih;
@@ -376,7 +376,7 @@ static int motToggleSetImPressAttrib(Ihandle* ih, const char* value)
 
 static int motToggleSetValueAttrib(Ihandle* ih, const char* value)
 {
-  Ihandle *radio;
+  Ihandle* radio;
   unsigned char check;
 
   if (iupAttribGetBoolean(ih, "SWITCH"))
@@ -498,7 +498,7 @@ static char* motToggleGetSelectColorAttrib(Ihandle* ih)
   return iupStrReturnStrf("%d %d %d", (int)r, (int)g, (int)b);
 }
 
-static int motToggleSetSelectColorAttrib(Ihandle* ih, const char *value)
+static int motToggleSetSelectColorAttrib(Ihandle* ih, const char* value)
 {
   Pixel color = iupmotColorGetPixelStr(value);
   if (color != (Pixel)-1)
@@ -508,7 +508,7 @@ static int motToggleSetSelectColorAttrib(Ihandle* ih, const char *value)
 
 static void motToggleValueChangedCallback(Widget w, Ihandle* ih, XmToggleButtonCallbackStruct* call_data)
 {
-  Ihandle *radio;
+  Ihandle* radio;
   IFni cb;
   int check = call_data->set;
 
@@ -572,7 +572,7 @@ static void motToggleValueChangedCallback(Widget w, Ihandle* ih, XmToggleButtonC
   (void)w;
 }
 
-static void motToggleEnterLeaveWindowEvent(Widget w, Ihandle* ih, XEvent *evt, Boolean *cont)
+static void motToggleEnterLeaveWindowEvent(Widget w, Ihandle* ih, XEvent* evt, Boolean* cont)
 {
   /* Used only when FLAT=Yes */
   unsigned char check = 0;

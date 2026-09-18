@@ -21,7 +21,7 @@
 
 typedef struct _IprogressDlgData
 {
-  Ihandle *progress,
+  Ihandle* progress,
           *description;  /* label for the secondary description */
 
   int state,          /* flag indicating if it was interrupted */
@@ -73,7 +73,7 @@ static int iProgressDlgSetTotalCountAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-static char* iProgressDlgGetTotalCountAttrib(Ihandle *ih)
+static char* iProgressDlgGetTotalCountAttrib(Ihandle* ih)
 {
   IprogressDlgData* progress_data = (IprogressDlgData*)iupAttribGet(ih, "_IUP_PDLG_DATA");
   return iupStrReturnInt(progress_data->total_count);
@@ -87,7 +87,7 @@ static int iProgressDlgSetCountAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-static char* iProgressDlgGetCountAttrib(Ihandle *ih)
+static char* iProgressDlgGetCountAttrib(Ihandle* ih)
 {
   IprogressDlgData* progress_data = (IprogressDlgData*)iupAttribGet(ih, "_IUP_PDLG_DATA");
   return iupStrReturnInt(progress_data->count);
@@ -105,7 +105,7 @@ static int iProgressDlgSetIncAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-static char* iProgressDlgGetStateAttrib(Ihandle *ih)
+static char* iProgressDlgGetStateAttrib(Ihandle* ih)
 {
   IprogressDlgData* progress_data = (IprogressDlgData*)iupAttribGet(ih, "_IUP_PDLG_DATA");
   if (progress_data->state==-1)
@@ -128,7 +128,7 @@ static void iProgressDlgStopMarquee(IprogressDlgData* progress_data)
   }
 }
 
-static int iProgressDlgSetStateAttrib(Ihandle *ih, const char* value)
+static int iProgressDlgSetStateAttrib(Ihandle* ih, const char* value)
 {
   IprogressDlgData* progress_data = (IprogressDlgData*)iupAttribGet(ih, "_IUP_PDLG_DATA");
 
@@ -262,7 +262,7 @@ static void iProgressDlgDestroyMethod(Ihandle* ih)
 
 static int iProgressDlgCreateMethod(Ihandle* ih, void** params)
 {
-  Ihandle *lbl, *progress, *marquee, *cancel, *vbox;
+  Ihandle* lbl, *progress, *marquee, *cancel, *vbox;
   IprogressDlgData* progress_data = (IprogressDlgData*)malloc(sizeof(IprogressDlgData));
   memset(progress_data, 0, sizeof(IprogressDlgData));
   iupAttribSet(ih, "_IUP_PDLG_DATA", (char*)progress_data);

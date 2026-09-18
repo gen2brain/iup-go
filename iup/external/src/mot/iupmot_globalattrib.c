@@ -51,7 +51,7 @@ static Boolean motMotionNotifyEventDispatchProc(XEvent* evt)
   IFiis cb = (IFiis)IupGetFunction("GLOBALMOTION_CB");
   if (cb)
   {
-    XMotionEvent *evt_motion = (XMotionEvent*)evt;
+    XMotionEvent* evt_motion = (XMotionEvent*)evt;
     char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
     int x = (int)evt_motion->x;
     int y = (int)evt_motion->y;
@@ -72,7 +72,7 @@ static Boolean motButtonEventDispatchProc(XEvent* evt)
   IFiiiis cb = (IFiiiis)IupGetFunction("GLOBALBUTTON_CB");
   if (cb)
   {
-    XButtonEvent *evt_button = (XButtonEvent*)evt;
+    XButtonEvent* evt_button = (XButtonEvent*)evt;
     static Time last = 0;
     char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
     int x = (int)evt_button->x;
@@ -117,7 +117,7 @@ static Boolean motButtonEventDispatchProc(XEvent* evt)
     return motButtonReleaseEventDispatchProc_OLD(evt);
 }
 
-IUP_SDK_API int iupdrvSetGlobal(const char *name, const char *value)
+IUP_SDK_API int iupdrvSetGlobal(const char* name, const char* value)
 {
   if (iupStrEqual(name, "SINGLEINSTANCE"))
   {
@@ -174,7 +174,7 @@ IUP_SDK_API int iupdrvSetGlobal(const char *name, const char *value)
   return 1;
 }
 
-IUP_SDK_API char* iupdrvGetGlobal(const char *name)
+IUP_SDK_API char* iupdrvGetGlobal(const char* name)
 {
   if (iupStrEqual(name, "UTF8MODE"))
     return iupStrReturnBoolean(iupmotStrGetUTF8Mode());

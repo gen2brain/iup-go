@@ -26,7 +26,7 @@ int iupMatrixAuxCanvasPx(int hw)
 }
 
 
-int iupMatrixAuxIsFullVisibleLast(ImatLinColData *p)
+int iupMatrixAuxIsFullVisibleLast(ImatLinColData* p)
 {
   int i, sum = 0;
 
@@ -157,7 +157,7 @@ void iupMatrixAuxUpdateScrollPos(Ihandle* ih, int m)
 {
   int i, sb, SB, scroll_pos;
   char* POS;
-  ImatLinColData *p;
+  ImatLinColData* p;
 
   sb = iupMatrixGetScrollbar(ih);
 
@@ -214,7 +214,7 @@ void iupMatrixAuxUpdateScrollPos(Ihandle* ih, int m)
 
 /* Calculate which is the last visible column/line of the matrix.
    Depends on the first visible column/line.  */
-void iupMatrixAuxUpdateLast(ImatLinColData *p)
+void iupMatrixAuxUpdateLast(ImatLinColData* p)
 {
   if (p->current_visible_size > 0)
   {
@@ -255,7 +255,7 @@ void iupMatrixAuxUpdateLast(ImatLinColData *p)
 static void iMatrixAuxFillSizeVec(Ihandle* ih, int m)
 {
   int i;
-  ImatLinColData *p;
+  ImatLinColData* p;
 
   if (m == IMAT_PROCESS_LIN)
     p = &(ih->data->lines);
@@ -281,8 +281,8 @@ static void iMatrixAuxFillSizeVec(Ihandle* ih, int m)
 
 static int iMatrixAuxUpdateVisibleSize(Ihandle* ih, int m)
 {
-  char *D, *AUTOHIDE, *MAX;
-  ImatLinColData *p;
+  char* D, *AUTOHIDE, *MAX;
+  ImatLinColData* p;
   int canvas_size, fixed_size, i, SB;
 
   if (m == IMAT_PROCESS_LIN)

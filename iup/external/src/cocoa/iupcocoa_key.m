@@ -186,7 +186,7 @@ static int cocoaKeyApplyModifiers(int iup_key, int has_shift, int has_ctrl, int 
 
 #ifdef GNUSTEP
 /* GNUstep reports X11 keycodes, not Cocoa virtual key codes, so the table above does not apply */
-static int cocoaKeyDecodeCharacter(NSEvent *ns_event)
+static int cocoaKeyDecodeCharacter(NSEvent* ns_event)
 {
   NSString* chars = [ns_event charactersIgnoringModifiers];
   unichar ch;
@@ -247,7 +247,7 @@ static int cocoaKeyDecodeCharacter(NSEvent *ns_event)
 }
 #endif
 
-static int cocoaKeyDecode(NSEvent *ns_event, int mac_key_code)
+static int cocoaKeyDecode(NSEvent* ns_event, int mac_key_code)
 {
   int iup_base_key = 0;
 
@@ -314,7 +314,7 @@ static int cocoaKeyDecode(NSEvent *ns_event, int mac_key_code)
       ([ns_event type] == NSEventTypeKeyDown || [ns_event type] == NSEventTypeKeyUp) &&
       !(has_ctrl || has_alt || has_sys))
   {
-    NSString *chars = [ns_event characters];
+    NSString* chars = [ns_event characters];
     if ([chars length] > 0)
     {
       unichar ch = [chars characterAtIndex:0];
@@ -351,7 +351,7 @@ static bool cocoaKeyIsMenuAccel(Ihandle* ih, int code)
   return false;
 }
 
-bool iupCocoaKeyDownEvent(Ihandle *ih, NSEvent *ns_event, int mac_key_code)
+bool iupCocoaKeyDownEvent(Ihandle* ih, NSEvent* ns_event, int mac_key_code)
 {
   int result;
   int iup_key_code;
@@ -450,7 +450,7 @@ bool iupCocoaKeyDownEvent(Ihandle *ih, NSEvent *ns_event, int mac_key_code)
   return false;
 }
 
-bool iupCocoaKeyUpEvent(Ihandle *ih, NSEvent *ns_event, int mac_key_code)
+bool iupCocoaKeyUpEvent(Ihandle* ih, NSEvent* ns_event, int mac_key_code)
 {
   int result;
   int iup_key_code;
@@ -479,18 +479,18 @@ bool iupCocoaKeyUpEvent(Ihandle *ih, NSEvent *ns_event, int mac_key_code)
   return false;
 }
 
-IUP_DRV_API int iupcocoaKeyDecodeEvent(NSEvent *ns_event, int mac_key_code)
+IUP_DRV_API int iupcocoaKeyDecodeEvent(NSEvent* ns_event, int mac_key_code)
 {
   return cocoaKeyDecode(ns_event, mac_key_code);
 }
 
-IUP_DRV_API bool iupcocoaKeyEvent(Ihandle *ih, NSEvent *ns_event, int mac_key_code, bool is_pressed)
+IUP_DRV_API bool iupcocoaKeyEvent(Ihandle* ih, NSEvent* ns_event, int mac_key_code, bool is_pressed)
 {
   return is_pressed ? iupCocoaKeyDownEvent(ih, ns_event, mac_key_code)
                     : iupCocoaKeyUpEvent(ih, ns_event, mac_key_code);
 }
 
-IUP_DRV_API bool iupcocoaModifierEvent(Ihandle *ih, NSEvent *ns_event, int mac_key_code)
+IUP_DRV_API bool iupcocoaModifierEvent(Ihandle* ih, NSEvent* ns_event, int mac_key_code)
 {
   bool is_pressed = false;
   NSEventModifierFlags flags = [ns_event modifierFlags];
@@ -547,7 +547,7 @@ IUP_DRV_API bool iupcocoaModifierEvent(Ihandle *ih, NSEvent *ns_event, int mac_k
   return iupcocoaKeyEvent(ih, ns_event, mac_key_code, is_pressed);
 }
 
-IUP_DRV_API void iupcocoaButtonKeySetStatus(NSEvent *ns_event, char *out_status)
+IUP_DRV_API void iupcocoaButtonKeySetStatus(NSEvent* ns_event, char* out_status)
 {
   NSEventModifierFlags flags = [ns_event modifierFlags];
 
@@ -630,7 +630,7 @@ IUP_DRV_API int iupcocoaKeyDecode(CGEventRef event)
 }
 #endif /* !GNUSTEP */
 
-IUP_SDK_API void iupdrvKeyEncode(int code, unsigned int *maccode, unsigned int *state)
+IUP_SDK_API void iupdrvKeyEncode(int code, unsigned int* maccode, unsigned int* state)
 {
   int i;
   int iup_base_key = iup_XkeyBase(code);

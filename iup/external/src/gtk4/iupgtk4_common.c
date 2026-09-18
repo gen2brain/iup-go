@@ -836,7 +836,7 @@ IUP_SDK_API void iupdrvSleep(int time)
   g_usleep(time*1000);
 }
 
-IUP_SDK_API void iupdrvSetAccessibleTitle(Ihandle *ih, const char* title)
+IUP_SDK_API void iupdrvSetAccessibleTitle(Ihandle* ih, const char* title)
 {
   GtkWidget* widget = (GtkWidget*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
   if (!widget)
@@ -851,7 +851,7 @@ IUP_SDK_API void iupdrvSetAccessibleTitle(Ihandle *ih, const char* title)
     gtk_accessible_update_property(GTK_ACCESSIBLE(widget), GTK_ACCESSIBLE_PROPERTY_LABEL, title, -1);
 }
 
-IUP_SDK_API void iupdrvSetAccessibleDescription(Ihandle *ih, const char* description)
+IUP_SDK_API void iupdrvSetAccessibleDescription(Ihandle* ih, const char* description)
 {
   GtkWidget* widget = (GtkWidget*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
   if (!widget)
@@ -987,7 +987,7 @@ IUP_DRV_API void iupgtk4SetupMotionEvents(GtkWidget* widget, Ihandle* ih)
   g_signal_connect(motion, "motion", G_CALLBACK(gtk4MotionNotify), ih);
 }
 
-IUP_DRV_API char* iupgtk4StrConvertToSystemLen(const char* str, int *len)
+IUP_DRV_API char* iupgtk4StrConvertToSystemLen(const char* str, int* len)
 {
   (void)len;
   return (char*)str;

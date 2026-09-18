@@ -21,7 +21,7 @@ static guint gtk_idle_id;
 
 /* Track main loop manually since gtk_main_level() was removed */
 #define MAX_LOOP_DEPTH 10
-static GMainLoop *gtk4_loop_stack[MAX_LOOP_DEPTH] = {NULL};
+static GMainLoop* gtk4_loop_stack[MAX_LOOP_DEPTH] = {NULL};
 static int gtk4_loop_level = 0;
 
 static gboolean gtkIdleFunc(gpointer data)
@@ -124,7 +124,7 @@ IUP_API int IupMainLoop(void)
 
 IUP_API int IupLoopStepWait(void)
 {
-  GMainContext *context = g_main_context_default();
+  GMainContext* context = g_main_context_default();
   g_main_context_iteration(context, TRUE);
 
   if (gtk4_loop_level > 0 && gtk4_loop_stack[gtk4_loop_level - 1] &&
@@ -136,7 +136,7 @@ IUP_API int IupLoopStepWait(void)
 
 IUP_API int IupLoopStep(void)
 {
-  GMainContext *context = g_main_context_default();
+  GMainContext* context = g_main_context_default();
   g_main_context_iteration(context, FALSE);
 
   if (gtk4_loop_level > 0 && gtk4_loop_stack[gtk4_loop_level - 1] &&
@@ -157,7 +157,7 @@ IUP_API void IupFlush(void)
     iupdrvSetIdleFunction(NULL);
   }
 
-  GMainContext *context = g_main_context_default();
+  GMainContext* context = g_main_context_default();
   while (count<100 && g_main_context_pending(context))
   {
     g_main_context_iteration(context, FALSE);
@@ -177,7 +177,7 @@ typedef struct {
   char* p;
 } gtkPostMessageUserData;
 
-static gint gtkPostMessageCallback(void *cb_data)
+static gint gtkPostMessageCallback(void* cb_data)
 {
   gtkPostMessageUserData* user_data = (gtkPostMessageUserData*)cb_data;
   Ihandle* ih = user_data->ih;
@@ -227,7 +227,7 @@ IUP_DRV_API void iupgtk4LoopCleanup(void)
     }
   }
 
-  GMainContext *context = g_main_context_default();
+  GMainContext* context = g_main_context_default();
   int count = 0;
   while (count < 100 && g_main_context_pending(context))
   {

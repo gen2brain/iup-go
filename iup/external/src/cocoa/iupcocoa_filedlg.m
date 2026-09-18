@@ -130,7 +130,7 @@ static void cocoaPreviewSetButtonStatus(int button, char* status)
   [area release];
 }
 
-- (void)mouseMoved:(NSEvent *)theEvent
+- (void)mouseMoved:(NSEvent*)theEvent
 {
   Ihandle* ih = [self ihandle];
   IFniis cb = (IFniis)IupGetCallback(ih, "MOTION_CB");
@@ -149,7 +149,7 @@ static void cocoaPreviewSetButtonStatus(int button, char* status)
   }
 }
 
-- (void)mouseDown:(NSEvent *)theEvent
+- (void)mouseDown:(NSEvent*)theEvent
 {
   Ihandle* ih = [self ihandle];
   IFniiiis cb = (IFniiiis)IupGetCallback(ih, "BUTTON_CB");
@@ -171,7 +171,7 @@ static void cocoaPreviewSetButtonStatus(int button, char* status)
   }
 }
 
-- (void)mouseUp:(NSEvent *)theEvent
+- (void)mouseUp:(NSEvent*)theEvent
 {
   Ihandle* ih = [self ihandle];
   IFniiiis cb = (IFniiiis)IupGetCallback(ih, "BUTTON_CB");
@@ -192,7 +192,7 @@ static void cocoaPreviewSetButtonStatus(int button, char* status)
   }
 }
 
-- (void)scrollWheel:(NSEvent *)theEvent
+- (void)scrollWheel:(NSEvent*)theEvent
 {
   Ihandle* ih = [self ihandle];
   IFnfiis cb = (IFnfiis)IupGetCallback(ih, "WHEEL_CB");
@@ -301,7 +301,7 @@ static void cocoaPreviewSetButtonStatus(int button, char* status)
   }
 }
 
-- (BOOL)panel:(id)sender validateURL:(NSURL *)url error:(NSError **)outError
+- (BOOL)panel:(id)sender validateURL:(NSURL*)url error:(NSError**)outError
 {
   Ihandle* ih = [self ihandle];
   IFnss cb = (IFnss)IupGetCallback(ih, "FILE_CB");
@@ -329,7 +329,7 @@ static void cocoaPreviewSetButtonStatus(int button, char* status)
 @end
 
 
-static int cocoaFileDlgPopup(Ihandle *ih, int x, int y)
+static int cocoaFileDlgPopup(Ihandle* ih, int x, int y)
 {
   (void)x;
   (void)y;

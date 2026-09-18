@@ -27,15 +27,15 @@ extern "C" {
  * Helper Functions
  ****************************************************************************/
 
-static QClipboard::Mode qtClipboardMode(Ihandle *ih)
+static QClipboard::Mode qtClipboardMode(Ihandle* ih)
 {
-  QClipboard *clipboard = QGuiApplication::clipboard();
+  QClipboard* clipboard = QGuiApplication::clipboard();
   if (clipboard && clipboard->supportsSelection() && iupStrEqualNoCase(iupAttribGetStr(ih, "SELECTION"), "PRIMARY"))
     return QClipboard::Selection;
   return QClipboard::Clipboard;
 }
 
-static const char* qtClipboardGetFormatMimeType(Ihandle *ih)
+static const char* qtClipboardGetFormatMimeType(Ihandle* ih)
 {
   return iupAttribGetStr(ih, "FORMAT");
 }
@@ -44,9 +44,9 @@ static const char* qtClipboardGetFormatMimeType(Ihandle *ih)
  * TEXT Attribute
  ****************************************************************************/
 
-static int qtClipboardSetTextAttrib(Ihandle *ih, const char *value)
+static int qtClipboardSetTextAttrib(Ihandle* ih, const char* value)
 {
-  QClipboard *clipboard = QGuiApplication::clipboard();
+  QClipboard* clipboard = QGuiApplication::clipboard();
   QClipboard::Mode mode = qtClipboardMode(ih);
 
   if (!clipboard)
@@ -62,9 +62,9 @@ static int qtClipboardSetTextAttrib(Ihandle *ih, const char *value)
   return 0;
 }
 
-static char* qtClipboardGetTextAttrib(Ihandle *ih)
+static char* qtClipboardGetTextAttrib(Ihandle* ih)
 {
-  QClipboard *clipboard = QGuiApplication::clipboard();
+  QClipboard* clipboard = QGuiApplication::clipboard();
   QClipboard::Mode mode = qtClipboardMode(ih);
 
   if (!clipboard)
@@ -75,15 +75,15 @@ static char* qtClipboardGetTextAttrib(Ihandle *ih)
   return iupStrReturnStr(text.toUtf8().constData());
 }
 
-static char* qtClipboardGetTextAvailableAttrib(Ihandle *ih)
+static char* qtClipboardGetTextAvailableAttrib(Ihandle* ih)
 {
-  QClipboard *clipboard = QGuiApplication::clipboard();
+  QClipboard* clipboard = QGuiApplication::clipboard();
   QClipboard::Mode mode = qtClipboardMode(ih);
 
   if (!clipboard)
     return nullptr;
 
-  const QMimeData *mimeData = clipboard->mimeData(mode);
+  const QMimeData* mimeData = clipboard->mimeData(mode);
 
   return iupStrReturnBoolean(mimeData && mimeData->hasText());
 }
@@ -92,9 +92,9 @@ static char* qtClipboardGetTextAvailableAttrib(Ihandle *ih)
  * IMAGE Attributes
  ****************************************************************************/
 
-static int qtClipboardSetImageAttrib(Ihandle *ih, const char *value)
+static int qtClipboardSetImageAttrib(Ihandle* ih, const char* value)
 {
-  QClipboard *clipboard = QGuiApplication::clipboard();
+  QClipboard* clipboard = QGuiApplication::clipboard();
   QClipboard::Mode mode = qtClipboardMode(ih);
 
   if (!clipboard)
@@ -113,9 +113,9 @@ static int qtClipboardSetImageAttrib(Ihandle *ih, const char *value)
   return 0;
 }
 
-static int qtClipboardSetNativeImageAttrib(Ihandle *ih, const char *value)
+static int qtClipboardSetNativeImageAttrib(Ihandle* ih, const char* value)
 {
-  QClipboard *clipboard = QGuiApplication::clipboard();
+  QClipboard* clipboard = QGuiApplication::clipboard();
   QClipboard::Mode mode = qtClipboardMode(ih);
 
   if (!clipboard)
@@ -132,9 +132,9 @@ static int qtClipboardSetNativeImageAttrib(Ihandle *ih, const char *value)
   return 0;
 }
 
-static char* qtClipboardGetNativeImageAttrib(Ihandle *ih)
+static char* qtClipboardGetNativeImageAttrib(Ihandle* ih)
 {
-  QClipboard *clipboard = QGuiApplication::clipboard();
+  QClipboard* clipboard = QGuiApplication::clipboard();
   QClipboard::Mode mode = qtClipboardMode(ih);
 
   if (!clipboard)
@@ -150,15 +150,15 @@ static char* qtClipboardGetNativeImageAttrib(Ihandle *ih)
   return (char*)result;
 }
 
-static char* qtClipboardGetImageAvailableAttrib(Ihandle *ih)
+static char* qtClipboardGetImageAvailableAttrib(Ihandle* ih)
 {
-  QClipboard *clipboard = QGuiApplication::clipboard();
+  QClipboard* clipboard = QGuiApplication::clipboard();
   QClipboard::Mode mode = qtClipboardMode(ih);
 
   if (!clipboard)
     return nullptr;
 
-  const QMimeData *mimeData = clipboard->mimeData(mode);
+  const QMimeData* mimeData = clipboard->mimeData(mode);
 
   return iupStrReturnBoolean(mimeData && mimeData->hasImage());
 }
@@ -167,9 +167,9 @@ static char* qtClipboardGetImageAvailableAttrib(Ihandle *ih)
  * PDF/SVG Vector Image Attributes (Qt-specific, similar to Cocoa)
  ****************************************************************************/
 
-static int qtClipboardSetNativeVectorImageAttrib(Ihandle *ih, const char *value)
+static int qtClipboardSetNativeVectorImageAttrib(Ihandle* ih, const char* value)
 {
-  QClipboard *clipboard = QGuiApplication::clipboard();
+  QClipboard* clipboard = QGuiApplication::clipboard();
   QClipboard::Mode mode = qtClipboardMode(ih);
 
   if (!clipboard)
@@ -184,7 +184,7 @@ static int qtClipboardSetNativeVectorImageAttrib(Ihandle *ih, const char *value)
   int data_size = iupAttribGetInt(ih, "FORMATDATASIZE");
   if (data_size > 0)
   {
-    QMimeData *mimeData = new QMimeData();
+    QMimeData* mimeData = new QMimeData();
     QByteArray byteArray((const char*)value, data_size);
 
     mimeData->setData("application/pdf", byteArray);
@@ -194,15 +194,15 @@ static int qtClipboardSetNativeVectorImageAttrib(Ihandle *ih, const char *value)
   return 0;
 }
 
-static char* qtClipboardGetNativeVectorImageAttrib(Ihandle *ih)
+static char* qtClipboardGetNativeVectorImageAttrib(Ihandle* ih)
 {
-  QClipboard *clipboard = QGuiApplication::clipboard();
+  QClipboard* clipboard = QGuiApplication::clipboard();
   QClipboard::Mode mode = qtClipboardMode(ih);
 
   if (!clipboard)
     return nullptr;
 
-  const QMimeData *mimeData = clipboard->mimeData(mode);
+  const QMimeData* mimeData = clipboard->mimeData(mode);
   if (!mimeData)
     return nullptr;
 
@@ -218,30 +218,30 @@ static char* qtClipboardGetNativeVectorImageAttrib(Ihandle *ih)
   return (char*)data;
 }
 
-static char* qtClipboardGetPDFAvailableAttrib(Ihandle *ih)
+static char* qtClipboardGetPDFAvailableAttrib(Ihandle* ih)
 {
-  QClipboard *clipboard = QGuiApplication::clipboard();
+  QClipboard* clipboard = QGuiApplication::clipboard();
   QClipboard::Mode mode = qtClipboardMode(ih);
 
   if (!clipboard)
     return nullptr;
 
-  const QMimeData *mimeData = clipboard->mimeData(mode);
+  const QMimeData* mimeData = clipboard->mimeData(mode);
 
   return iupStrReturnBoolean(mimeData && mimeData->hasFormat("application/pdf"));
 }
 
-static int qtClipboardSetSaveNativeVectorImageAttrib(Ihandle *ih, const char *value)
+static int qtClipboardSetSaveNativeVectorImageAttrib(Ihandle* ih, const char* value)
 {
   if (!value)
     return 0;
 
-  QClipboard *clipboard = QGuiApplication::clipboard();
+  QClipboard* clipboard = QGuiApplication::clipboard();
   QClipboard::Mode mode = qtClipboardMode(ih);
   if (!clipboard)
     return 0;
 
-  const QMimeData *mimeData = clipboard->mimeData(mode);
+  const QMimeData* mimeData = clipboard->mimeData(mode);
   if (!mimeData)
     return 0;
 
@@ -263,9 +263,9 @@ static int qtClipboardSetSaveNativeVectorImageAttrib(Ihandle *ih, const char *va
  * HTML Attribute (Qt-specific)
  ****************************************************************************/
 
-static int qtClipboardSetHTMLAttrib(Ihandle *ih, const char *value)
+static int qtClipboardSetHTMLAttrib(Ihandle* ih, const char* value)
 {
-  QClipboard *clipboard = QGuiApplication::clipboard();
+  QClipboard* clipboard = QGuiApplication::clipboard();
   QClipboard::Mode mode = qtClipboardMode(ih);
 
   if (!clipboard)
@@ -277,22 +277,22 @@ static int qtClipboardSetHTMLAttrib(Ihandle *ih, const char *value)
     return 0;
   }
 
-  QMimeData *mimeData = new QMimeData();
+  QMimeData* mimeData = new QMimeData();
   mimeData->setHtml(QString::fromUtf8(value));
   clipboard->setMimeData(mimeData, mode);
 
   return 0;
 }
 
-static char* qtClipboardGetHTMLAttrib(Ihandle *ih)
+static char* qtClipboardGetHTMLAttrib(Ihandle* ih)
 {
-  QClipboard *clipboard = QGuiApplication::clipboard();
+  QClipboard* clipboard = QGuiApplication::clipboard();
   QClipboard::Mode mode = qtClipboardMode(ih);
 
   if (!clipboard)
     return nullptr;
 
-  const QMimeData *mimeData = clipboard->mimeData(mode);
+  const QMimeData* mimeData = clipboard->mimeData(mode);
   if (!mimeData || !mimeData->hasHtml())
     return nullptr;
 
@@ -301,15 +301,15 @@ static char* qtClipboardGetHTMLAttrib(Ihandle *ih)
   return iupStrReturnStr(html.toUtf8().constData());
 }
 
-static char* qtClipboardGetHTMLAvailableAttrib(Ihandle *ih)
+static char* qtClipboardGetHTMLAvailableAttrib(Ihandle* ih)
 {
-  QClipboard *clipboard = QGuiApplication::clipboard();
+  QClipboard* clipboard = QGuiApplication::clipboard();
   QClipboard::Mode mode = qtClipboardMode(ih);
 
   if (!clipboard)
     return nullptr;
 
-  const QMimeData *mimeData = clipboard->mimeData(mode);
+  const QMimeData* mimeData = clipboard->mimeData(mode);
 
   return iupStrReturnBoolean(mimeData && mimeData->hasHtml());
 }
@@ -318,9 +318,9 @@ static char* qtClipboardGetHTMLAvailableAttrib(Ihandle *ih)
  * FORMAT Attributes (Custom MIME types)
  ****************************************************************************/
 
-static int qtClipboardSetFormatDataAttrib(Ihandle *ih, const char *value)
+static int qtClipboardSetFormatDataAttrib(Ihandle* ih, const char* value)
 {
-  QClipboard *clipboard = QGuiApplication::clipboard();
+  QClipboard* clipboard = QGuiApplication::clipboard();
   QClipboard::Mode mode = qtClipboardMode(ih);
 
   if (!clipboard)
@@ -340,7 +340,7 @@ static int qtClipboardSetFormatDataAttrib(Ihandle *ih, const char *value)
   if (size <= 0)
     return 0;
 
-  QMimeData *mimeData = new QMimeData();
+  QMimeData* mimeData = new QMimeData();
   QByteArray byteArray((const char*)value, size);
   mimeData->setData(QString::fromUtf8(mime_type), byteArray);
 
@@ -349,9 +349,9 @@ static int qtClipboardSetFormatDataAttrib(Ihandle *ih, const char *value)
   return 0;
 }
 
-static char* qtClipboardGetFormatDataAttrib(Ihandle *ih)
+static char* qtClipboardGetFormatDataAttrib(Ihandle* ih)
 {
-  QClipboard *clipboard = QGuiApplication::clipboard();
+  QClipboard* clipboard = QGuiApplication::clipboard();
   QClipboard::Mode mode = qtClipboardMode(ih);
 
   if (!clipboard)
@@ -361,7 +361,7 @@ static char* qtClipboardGetFormatDataAttrib(Ihandle *ih)
   if (!mime_type)
     return nullptr;
 
-  const QMimeData *mimeData = clipboard->mimeData(mode);
+  const QMimeData* mimeData = clipboard->mimeData(mode);
   if (!mimeData)
     return nullptr;
 
@@ -378,7 +378,7 @@ static char* qtClipboardGetFormatDataAttrib(Ihandle *ih)
   return (char*)data;
 }
 
-static char* qtClipboardGetFormatDataStringAttrib(Ihandle *ih)
+static char* qtClipboardGetFormatDataStringAttrib(Ihandle* ih)
 {
   char* data = qtClipboardGetFormatDataAttrib(ih);
   if (!data)
@@ -389,7 +389,7 @@ static char* qtClipboardGetFormatDataStringAttrib(Ihandle *ih)
   return iupStrReturnStr(data);
 }
 
-static int qtClipboardSetFormatDataStringAttrib(Ihandle *ih, const char *value)
+static int qtClipboardSetFormatDataStringAttrib(Ihandle* ih, const char* value)
 {
   if (value)
   {
@@ -401,9 +401,9 @@ static int qtClipboardSetFormatDataStringAttrib(Ihandle *ih, const char *value)
     return qtClipboardSetFormatDataAttrib(ih, nullptr);
 }
 
-static char* qtClipboardGetFormatAvailableAttrib(Ihandle *ih)
+static char* qtClipboardGetFormatAvailableAttrib(Ihandle* ih)
 {
-  QClipboard *clipboard = QGuiApplication::clipboard();
+  QClipboard* clipboard = QGuiApplication::clipboard();
   QClipboard::Mode mode = qtClipboardMode(ih);
 
   if (!clipboard)
@@ -413,14 +413,14 @@ static char* qtClipboardGetFormatAvailableAttrib(Ihandle *ih)
   if (!mime_type)
     return nullptr;
 
-  const QMimeData *mimeData = clipboard->mimeData(mode);
+  const QMimeData* mimeData = clipboard->mimeData(mode);
   if (!mimeData)
     return iupStrReturnBoolean(0);
 
   return iupStrReturnBoolean(mimeData->hasFormat(QString::fromUtf8(mime_type)));
 }
 
-static int qtClipboardSetAddFormatAttrib(Ihandle *ih, const char *value)
+static int qtClipboardSetAddFormatAttrib(Ihandle* ih, const char* value)
 {
   (void)ih;
   (void)value;

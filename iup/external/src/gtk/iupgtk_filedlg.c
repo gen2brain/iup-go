@@ -69,7 +69,7 @@ static char* gtkFileDlgGetNextStr(char* str)
 
 static void gtkFileDlgGetMultipleFiles(Ihandle* ih, GSList* list)
 {
-  char *filename = iupgtkStrConvertFromFilename((char*)list->data);
+  char* filename = iupgtkStrConvertFromFilename((char*)list->data);
 
   char* dir = iupStrFileGetPath(filename);
   int dir_len = (int)strlen(dir);
@@ -95,7 +95,7 @@ static void gtkFileDlgGetMultipleFiles(Ihandle* ih, GSList* list)
   else
   {
     Iarray* names_array = iupArrayCreate(1024, sizeof(char));  /* just set an initial size, but count is 0 */
-    char *all_names;
+    char* all_names;
     int cur_len, count = 0;
 
     int len = dir_len;
@@ -159,7 +159,7 @@ static void gtkFileDlgUpdatePreviewGLCanvas(Ihandle* ih)
   }
 }
 
-static void gtkFileDlgPreviewRealize(GtkWidget *widget, Ihandle *ih)
+static void gtkFileDlgPreviewRealize(GtkWidget* widget, Ihandle* ih)
 {
   iupAttribSet(ih, "PREVIEWDC", iupgtkGetNativeGraphicsContext(widget));
   iupAttribSet(ih, "WID", (char*)widget);
@@ -173,7 +173,7 @@ static void gtkFileDlgPreviewRealize(GtkWidget *widget, Ihandle *ih)
   gtkFileDlgUpdatePreviewGLCanvas(ih);
 }
 
-static void gtkFileDlgRealize(GtkWidget *widget, Ihandle *ih)
+static void gtkFileDlgRealize(GtkWidget* widget, Ihandle* ih)
 {
   /* callback here always exists */
   IFnss cb = (IFnss)IupGetCallback(ih, "FILE_CB");
@@ -181,7 +181,7 @@ static void gtkFileDlgRealize(GtkWidget *widget, Ihandle *ih)
   (void)widget;
 }
 
-static gboolean gtkFileDlgPreviewConfigureEvent(GtkWidget *widget, GdkEventConfigure *evt, Ihandle *ih)
+static gboolean gtkFileDlgPreviewConfigureEvent(GtkWidget* widget, GdkEventConfigure* evt, Ihandle* ih)
 {
   iupAttribSetInt(ih, "PREVIEWWIDTH", evt->width);
   iupAttribSetInt(ih, "PREVIEWHEIGHT", evt->height);
@@ -191,13 +191,13 @@ static gboolean gtkFileDlgPreviewConfigureEvent(GtkWidget *widget, GdkEventConfi
 }
 
 #if GTK_CHECK_VERSION(3, 0, 0)
-static gboolean gtkFileDlgPreviewDraw(GtkWidget *widget, cairo_t *cr, Ihandle *ih)
+static gboolean gtkFileDlgPreviewDraw(GtkWidget* widget, cairo_t* cr, Ihandle* ih)
 #else
-static gboolean gtkFileDlgPreviewExposeEvent(GtkWidget *widget, GdkEventExpose *evt, Ihandle *ih)
+static gboolean gtkFileDlgPreviewExposeEvent(GtkWidget* widget, GdkEventExpose* evt, Ihandle* ih)
 #endif
 {
-  GtkFileChooser *file_chooser = (GtkFileChooser*)iupAttribGet(ih, "_IUPDLG_FILE_CHOOSER");
-  char *filename = gtk_file_chooser_get_preview_filename(file_chooser);
+  GtkFileChooser* file_chooser = (GtkFileChooser*)iupAttribGet(ih, "_IUPDLG_FILE_CHOOSER");
+  char* filename = gtk_file_chooser_get_preview_filename(file_chooser);
   IFnss cb = (IFnss)IupGetCallback(ih, "FILE_CB");
 
 #if GTK_CHECK_VERSION(3, 0, 0)
@@ -219,9 +219,9 @@ static gboolean gtkFileDlgPreviewExposeEvent(GtkWidget *widget, GdkEventExpose *
   return TRUE;  /* stop other handlers */
 }
 
-static void gtkFileDlgUpdatePreview(GtkFileChooser *file_chooser, Ihandle* ih)
+static void gtkFileDlgUpdatePreview(GtkFileChooser* file_chooser, Ihandle* ih)
 {
-  char *filename = gtk_file_chooser_get_preview_filename(file_chooser);
+  char* filename = gtk_file_chooser_get_preview_filename(file_chooser);
   GtkWidget* preview_canvas = (GtkWidget*)iupAttribGet(ih, "WID");
 
   IFnss cb = (IFnss)IupGetCallback(ih, "FILE_CB");
@@ -268,7 +268,7 @@ static int gtkFileDlgPopup(Ihandle* ih, int x, int y)
   GtkWidget* dialog;
   GtkWidget* preview_canvas = NULL;
   GtkFileChooserAction action;
-  const char *ok, *cancel, *open, *save, *help;
+  const char* ok, *cancel, *open, *save, *help;
   IFnss file_cb;
   char* value;
   int response, filter_count = 0;
@@ -412,7 +412,7 @@ static int gtkFileDlgPopup(Ihandle* ih, int x, int y)
   value = iupAttribGet(ih, "EXTFILTER");
   if (value)
   {
-    char *name, *pattern, *filters = iupStrDup(value);
+    char* name, *pattern, *filters = iupStrDup(value);
     char atrib[30];
     int i, pattern_count, j;
     int filter_index = iupAttribGetInt(ih, "FILTERUSED");
@@ -424,7 +424,7 @@ static int gtkFileDlgPopup(Ihandle* ih, int x, int y)
     name = filters;
     for (i=0; i<filter_count && name[0]; i++)
     {
-      GtkFileFilter *filter = gtk_file_filter_new();
+      GtkFileFilter* filter = gtk_file_filter_new();
 
       pattern = gtkFileDlgGetNextStr(name);
 
@@ -459,7 +459,7 @@ static int gtkFileDlgPopup(Ihandle* ih, int x, int y)
     {
       char* filters = iupStrDup(value), *fstr;
       int pattern_count, i;
-      GtkFileFilter *filter = gtk_file_filter_new();
+      GtkFileFilter* filter = gtk_file_filter_new();
       char* info = iupAttribGet(ih, "FILTERINFO");
       if (!info)
         info = value;
@@ -550,7 +550,7 @@ static int gtkFileDlgPopup(Ihandle* ih, int x, int y)
     }
     else if (response == GTK_RESPONSE_OK)
     {
-      char *filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
+      char* filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
       int file_exist = gtkIsFile(filename);
       int dir_exist = gtkIsDirectory(filename);
       g_free(filename);
@@ -663,7 +663,7 @@ static int gtkFileDlgPopup(Ihandle* ih, int x, int y)
     }
     else
     {
-      char *filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
+      char* filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
       filename = gtkFileCheckExt(ih, filename);
       iupAttribSetStr(ih, "VALUE", iupgtkStrConvertFromFilename(filename));
       file_exist = gtkIsFile(filename);

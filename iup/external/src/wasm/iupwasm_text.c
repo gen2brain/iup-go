@@ -659,21 +659,21 @@ static int wasmTextMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int *w, int *h)
+IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int* w, int* h)
 {
   (void)ih;
   if (w) *w += 6;
   if (h) *h += 6;  /* 2px border + 4px vertical padding; line box itself is VISIBLELINES*charheight */
 }
 
-IUP_SDK_API void iupdrvTextAddExtraPadding(Ihandle* ih, int *w, int *h)
+IUP_SDK_API void iupdrvTextAddExtraPadding(Ihandle* ih, int* w, int* h)
 {
   (void)ih;
   (void)w;
   (void)h;
 }
 
-IUP_SDK_API void iupdrvTextAddSpin(Ihandle* ih, int *w, int h)
+IUP_SDK_API void iupdrvTextAddSpin(Ihandle* ih, int* w, int h)
 {
   (void)ih;
   (void)h;
@@ -690,14 +690,14 @@ EM_JS(void, iupwasmJsTextPosToLc, (int id, int pos, int* lp, int* cp), {
   HEAP32[cp >> 2] = r[1];
 })
 
-IUP_SDK_API void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, int col, int *pos)
+IUP_SDK_API void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, int col, int* pos)
 {
   int id = iupwasmIdOf(ih);
   if (pos)
     *pos = id ? iupwasmJsTextLcToPos(id, lin, col) : ((col > 0) ? col - 1 : 0);
 }
 
-IUP_SDK_API void iupdrvTextConvertPosToLinCol(Ihandle* ih, int pos, int *lin, int *col)
+IUP_SDK_API void iupdrvTextConvertPosToLinCol(Ihandle* ih, int pos, int* lin, int* col)
 {
   int id = iupwasmIdOf(ih);
   int l = 1, c = pos + 1;

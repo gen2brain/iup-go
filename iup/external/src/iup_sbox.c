@@ -54,7 +54,7 @@ static void iSboxSaveDimension(Ihandle* ih, int w, int h)
   iupLayoutApplyMinMaxSize(ih, &(ih->data->w), &(ih->data->h));
 }
 
-static void iSboxAddDecorOffset(Ihandle* ih, int *x, int *y, int bar_size)
+static void iSboxAddDecorOffset(Ihandle* ih, int* x, int* y, int bar_size)
 {
   /* skip north thumb if there is one */
   if (ih->data->direction == ISBOX_NORTH)
@@ -65,7 +65,7 @@ static void iSboxAddDecorOffset(Ihandle* ih, int *x, int *y, int bar_size)
     *x += bar_size;
 }
 
-static void iSboxGetFinalSize(Ihandle* ih, int direction, int *w, int *h)
+static void iSboxGetFinalSize(Ihandle* ih, int direction, int* w, int* h)
 {
   int final_x, final_y;
   int diff_x, diff_y;
@@ -89,7 +89,7 @@ static void iSboxGetFinalSize(Ihandle* ih, int direction, int *w, int *h)
 |* Callbacks of canvas bar                                                   *|
 \*****************************************************************************/
 
-static int iSboxMotion_CB(Ihandle* bar, int x, int y, char *r)
+static int iSboxMotion_CB(Ihandle* bar, int x, int y, char* r)
 {
   Ihandle* ih = bar->parent;
 
@@ -286,7 +286,7 @@ static char* iSboxGetLayoutDragAttrib(Ihandle* ih)
 |* Methods                                                                   *|
 \*****************************************************************************/
 
-static void iSboxComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *children_expand)
+static void iSboxComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* children_expand)
 {
   int natural_w = ih->naturalwidth,
       natural_h = ih->naturalheight;
@@ -475,7 +475,7 @@ Iclass* iupSboxNewClass(void)
 
 IUP_API Ihandle* IupSbox(Ihandle* child)
 {
-  void *children[2];
+  void* children[2];
   children[0] = (void*)child;
   children[1] = NULL;
   return IupCreatev("sbox", children);

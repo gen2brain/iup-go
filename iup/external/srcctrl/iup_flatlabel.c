@@ -36,7 +36,7 @@ struct _IcontrolData
 
 static int iFlatLabelRedraw_CB(Ihandle* ih)
 {
-  char *image = iupAttribGet(ih, "IMAGE");
+  char* image = iupAttribGet(ih, "IMAGE");
   char* title = iupAttribGet(ih, "TITLE");
   int active = IupGetInt(ih, "ACTIVE");  /* native implementation */
   char* fgcolor = iupAttribGetStr(ih, "FGCOLOR");
@@ -124,7 +124,7 @@ static int iFlatLabelSetAlignmentAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-static char* iFlatLabelGetAlignmentAttrib(Ihandle *ih)
+static char* iFlatLabelGetAlignmentAttrib(Ihandle* ih)
 {
   char* horiz_align2str[3] = {"ALEFT", "ACENTER", "ARIGHT"};
   char* vert_align2str[3] = {"ATOP", "ACENTER", "ABOTTOM"};
@@ -163,7 +163,7 @@ static int iFlatLabelSetImagePositionAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-static char* iFlatLabelGetImagePositionAttrib(Ihandle *ih)
+static char* iFlatLabelGetImagePositionAttrib(Ihandle* ih)
 {
   char* img_pos2str[4] = {"LEFT", "RIGHT", "TOP", "BOTTOM"};
   return iupStrReturnStr(img_pos2str[ih->data->img_position]);
@@ -177,7 +177,7 @@ static int iFlatLabelSetSpacingAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-static char* iFlatLabelGetSpacingAttrib(Ihandle *ih)
+static char* iFlatLabelGetSpacingAttrib(Ihandle* ih)
 {
   return iupStrReturnInt(ih->data->spacing);
 }
@@ -210,7 +210,7 @@ static int iFlatLabelCreateMethod(Ihandle* ih, void** params)
   return IUP_NOERROR;
 }
 
-static void iFlatLabelComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *children_expand)
+static void iFlatLabelComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* children_expand)
 {
   int fit2backimage = iupAttribGetBoolean(ih, "FITTOBACKIMAGE");
   char* bgimage = iupAttribGet(ih, "BACKIMAGE");
@@ -289,7 +289,7 @@ Iclass* iupFlatLabelNewClass(void)
 
 IUPCONTROLS_API Ihandle* IupFlatLabel(const char* title)
 {
-  void *params[2];
+  void* params[2];
   params[0] = (void*)title;
   params[1] = NULL;
   return IupCreatev("flatlabel", params);

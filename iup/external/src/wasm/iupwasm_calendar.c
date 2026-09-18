@@ -275,7 +275,7 @@ static int wasmCalendarMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-static void wasmCalendarComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *children_expand)
+static void wasmCalendarComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* children_expand)
 {
   int cw, ch;
   (void)children_expand;

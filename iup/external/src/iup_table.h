@@ -44,7 +44,7 @@ int iupTableIsValid(Ihandle* ih);
 int iupTableCheckCellPos(Ihandle* ih, int lin, int col);
 char* iupTableGetCellImageCb(Ihandle* ih, int lin, int col);
 
-int iupTableCallDragDropCb(Ihandle* ih, int drag_id, int drop_id, int *is_ctrl);
+int iupTableCallDragDropCb(Ihandle* ih, int drag_id, int drop_id, int* is_ctrl);
 void iupTableCallMultiSelectionCb(Ihandle* ih);
 void iupTableMoveLinAttribs(Ihandle* ih, int from_lin, int to_lin);
 

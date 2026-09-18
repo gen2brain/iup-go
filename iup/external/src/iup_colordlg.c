@@ -43,11 +43,11 @@ typedef struct _IcolorDlgData
   double hue, saturation, intensity;
   unsigned char red, green, blue, alpha;
 
-  Ihandle *red_txt, *green_txt, *blue_txt, *alpha_txt;
-  Ihandle *hue_txt, *intensity_txt, *saturation_txt;
-  Ihandle *color_browser, *color_cnv, *colorhex_txt;
-  Ihandle *colortable_cbar, *alpha_val;
-  Ihandle *help_bt;
+  Ihandle* red_txt, *green_txt, *blue_txt, *alpha_txt;
+  Ihandle* hue_txt, *intensity_txt, *saturation_txt;
+  Ihandle* color_browser, *color_cnv, *colorhex_txt;
+  Ihandle* colortable_cbar, *alpha_val;
+  Ihandle* help_bt;
 } IcolorDlgData;
 
 
@@ -213,7 +213,7 @@ static void iColorDrawTransparentRectangle(Ihandle* color_cnv, int xmin, int ymi
     int w = xmax - xmin + 1;
     int h = ymax - ymin + 1;
     Ihandle* image = IupImageRGBA(w,h,NULL);
-    unsigned char *colors = (unsigned char*)iupAttribGet(image, "WID");
+    unsigned char* colors = (unsigned char*)iupAttribGet(image, "WID");
     int x, y;
     unsigned char red = iupDrawRed(color);
     unsigned char green = iupDrawGreen(color);
@@ -284,7 +284,7 @@ static int iColorDlgColorCnvAction_CB(Ihandle* color_cnv)
   return IUP_DEFAULT;
 }
 
-static int iColorDlgRedAction_CB(Ihandle* ih, int c, char *value)
+static int iColorDlgRedAction_CB(Ihandle* ih, int c, char* value)
 {
   IcolorDlgData* colordlg_data = (IcolorDlgData*)iupAttribGetInherit(ih, "_IUP_GC_DATA");
   int vi;
@@ -309,7 +309,7 @@ static int iColorDlgRedSpin_CB(Ihandle* ih, int vi)
   return IUP_DEFAULT;
 }
 
-static int iColorDlgGreenAction_CB(Ihandle* ih, int c, char *value)
+static int iColorDlgGreenAction_CB(Ihandle* ih, int c, char* value)
 {
   IcolorDlgData* colordlg_data = (IcolorDlgData*)iupAttribGetInherit(ih, "_IUP_GC_DATA");
   int vi;
@@ -334,7 +334,7 @@ static int iColorDlgGreenSpin_CB(Ihandle* ih, int vi)
   return IUP_DEFAULT;
 }
 
-static int iColorDlgBlueAction_CB(Ihandle* ih, int c, char *value)
+static int iColorDlgBlueAction_CB(Ihandle* ih, int c, char* value)
 {
   IcolorDlgData* colordlg_data = (IcolorDlgData*)iupAttribGetInherit(ih, "_IUP_GC_DATA");
   int vi;
@@ -359,7 +359,7 @@ static int iColorDlgBlueSpin_CB(Ihandle* ih, int vi)
   return IUP_DEFAULT;
 }
 
-static int iColorDlgHueAction_CB(Ihandle* ih, int c, char *value)
+static int iColorDlgHueAction_CB(Ihandle* ih, int c, char* value)
 {
   IcolorDlgData* colordlg_data = (IcolorDlgData*)iupAttribGetInherit(ih, "_IUP_GC_DATA");
   int vi;
@@ -384,7 +384,7 @@ static int iColorDlgHueSpin_CB(Ihandle* ih, int vi)
   return IUP_DEFAULT;
 }
 
-static int iColorDlgSaturationAction_CB(Ihandle* ih, int c, char *value)
+static int iColorDlgSaturationAction_CB(Ihandle* ih, int c, char* value)
 {
   IcolorDlgData* colordlg_data = (IcolorDlgData*)iupAttribGetInherit(ih, "_IUP_GC_DATA");
   int vi;
@@ -409,7 +409,7 @@ static int iColorDlgSaturationSpin_CB(Ihandle* ih, int vi)
   return IUP_DEFAULT;
 }
 
-static int iColorDlgIntensityAction_CB(Ihandle* ih, int c, char *value)
+static int iColorDlgIntensityAction_CB(Ihandle* ih, int c, char* value)
 {
   IcolorDlgData* colordlg_data = (IcolorDlgData*)iupAttribGetInherit(ih, "_IUP_GC_DATA");
   int vi;
@@ -791,7 +791,7 @@ static char* iColorDlgGetAlphaAttrib(Ihandle* ih)
   return iupStrReturnInt((int)colordlg_data->alpha);
 }
 
-static int iStrToRGBA(const char *str, unsigned char *r, unsigned char *g, unsigned char *b, unsigned char *a)
+static int iStrToRGBA(const char* str, unsigned char* r, unsigned char* g, unsigned char* b, unsigned char* a)
 {
   unsigned int ri = 0, gi = 0, bi = 0, ai = 0, ret;
   if (!str) return 0;
@@ -850,7 +850,7 @@ static char* iColorDlgGetValueAttrib(Ihandle* ih)
     return iupStrReturnRGB(colordlg_data->red, colordlg_data->green, colordlg_data->blue);
 }
 
-static int iupStrToHSI_Int(const char *str, int *h, int *s, int *i)
+static int iupStrToHSI_Int(const char* str, int* h, int* s, int* i)
 {
   int fh, fs, fi;
   if (!str) return 0;
@@ -973,9 +973,9 @@ static void iColorDlgDestroyMethod(Ihandle* ih)
 
 static int iColorDlgCreateMethod(Ihandle* ih, void** params)
 {
-  Ihandle *ok_bt, *cancel_bt;
-  Ihandle *rgb_vb, *hsi_vb, *clr_vb;
-  Ihandle *lin1, *lin2, *col1, *col2;
+  Ihandle* ok_bt, *cancel_bt;
+  Ihandle* rgb_vb, *hsi_vb, *clr_vb;
+  Ihandle* lin1, *lin2, *col1, *col2;
 
   IcolorDlgData* colordlg_data = (IcolorDlgData*)malloc(sizeof(IcolorDlgData));
   if (!colordlg_data) return IUP_ERROR;

@@ -48,7 +48,7 @@ static Igtk2iupkey other_remap[] = {
   { GDK_KEY_dead_diaeresis,  K_diaeresis },
 };
 
-IUP_SDK_API void iupdrvKeyEncode(int code, unsigned int *keyval, unsigned int *state)
+IUP_SDK_API void iupdrvKeyEncode(int code, unsigned int* keyval, unsigned int* state)
 {
   *keyval = (unsigned int)iup_XkeyBase(code);
 
@@ -106,7 +106,7 @@ static int gtkKeyMap2Iup(guint keyval, int state)
   return code;
 }
 
-IUP_DRV_API int iupgtkKeyDecode(GdkEventKey *evt)
+IUP_DRV_API int iupgtkKeyDecode(GdkEventKey* evt)
 {
   int i;
   guint keyval = evt->keyval;
@@ -159,14 +159,14 @@ static int iupObjectIsNativeContainer(Ihandle* ih)
     return 0;
 }
 
-static void gtkKeyImCommit(GtkIMContext *context, const char *str, Ihandle *ih)
+static void gtkKeyImCommit(GtkIMContext* context, const char* str, Ihandle* ih)
 {
   (void)context;
   if (iupKeyCallTextInputCb(ih, str) == IUP_IGNORE)
     iupAttribSet(ih, "_IUPGTK_IM_CONSUMED", "1");
 }
 
-static GtkIMContext* gtkKeyGetImContext(GtkWidget *widget, Ihandle *ih)
+static GtkIMContext* gtkKeyGetImContext(GtkWidget* widget, Ihandle* ih)
 {
   GtkIMContext* context = (GtkIMContext*)g_object_get_data(G_OBJECT(widget), "_IUP_IM_CONTEXT");
   if (!context)
@@ -181,7 +181,7 @@ static GtkIMContext* gtkKeyGetImContext(GtkWidget *widget, Ihandle *ih)
 }
 
 /* a commit consumed by TEXTINPUT_CB suppresses the K_ANY for that key */
-static gboolean gtkKeyImFilter(GtkWidget *widget, GdkEventKey *evt, Ihandle *ih)
+static gboolean gtkKeyImFilter(GtkWidget* widget, GdkEventKey* evt, Ihandle* ih)
 {
   if (!IupGetCallback(ih, "TEXTINPUT_CB"))
     return FALSE;
@@ -196,7 +196,7 @@ static gboolean gtkKeyImFilter(GtkWidget *widget, GdkEventKey *evt, Ihandle *ih)
   return FALSE;
 }
 
-IUP_DRV_API gboolean iupgtkKeyPressEvent(GtkWidget *widget, GdkEventKey *evt, Ihandle *ih)
+IUP_DRV_API gboolean iupgtkKeyPressEvent(GtkWidget* widget, GdkEventKey* evt, Ihandle* ih)
 {
   int result;
   int code;
@@ -216,7 +216,7 @@ IUP_DRV_API gboolean iupgtkKeyPressEvent(GtkWidget *widget, GdkEventKey *evt, Ih
   if (iupObjectIsNativeContainer(ih))
   {
     GtkWindow* win = (GtkWindow*)IupGetDialog(ih)->handle;
-    GtkWidget *widget_focus = gtk_window_get_focus(win);
+    GtkWidget* widget_focus = gtk_window_get_focus(win);
     if (widget_focus && widget_focus != widget)
       return FALSE;
   }
@@ -266,7 +266,7 @@ IUP_DRV_API gboolean iupgtkKeyPressEvent(GtkWidget *widget, GdkEventKey *evt, Ih
   return FALSE;
 }
 
-IUP_DRV_API gboolean iupgtkKeyReleaseEvent(GtkWidget *widget, GdkEventKey *evt, Ihandle *ih)
+IUP_DRV_API gboolean iupgtkKeyReleaseEvent(GtkWidget* widget, GdkEventKey* evt, Ihandle* ih)
 {
   /* this is called only for canvas */
   int result;

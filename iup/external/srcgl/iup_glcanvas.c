@@ -61,7 +61,7 @@ static Iclass* iGLBackgroundBoxNewClass(void)
 
 IUPGL_API Ihandle* IupGLBackgroundBox(Ihandle* child)
 {
-  void *children[2];
+  void* children[2];
   children[0] = (void*)child;
   children[1] = NULL;
   return IupCreatev("glbackgroundbox", children);

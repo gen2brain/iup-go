@@ -15,8 +15,8 @@ extern "C" {
  * \ingroup drv
  * @{ */
 IUP_SDK_API void iupdrvListInitClass(Iclass* ic);
-IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int *w, int *h);
-IUP_SDK_API void iupdrvListAddItemSpace(Ihandle* ih, int *h);
+IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int* w, int* h);
+IUP_SDK_API void iupdrvListAddItemSpace(Ihandle* ih, int* h);
 IUP_SDK_API int iupdrvListGetCount(Ihandle* ih);
 IUP_SDK_API void iupdrvListAppendItem(Ihandle* ih, const char* value);
 IUP_SDK_API void iupdrvListInsertItem(Ihandle* ih, int pos, const char* value);
@@ -28,8 +28,8 @@ IUP_SDK_API void iupdrvListSetItemCount(Ihandle* ih, int count);
 /** @} */
 
 /* Used by List and Text, implemented in Text */
-int iupEditCallActionCb(Ihandle* ih, IFnis cb, const char* insert_value, int start, int end, void *mask, int nc, int remove_dir, int utf8);
-int iupEditCheckNewValue(Ihandle* ih, IFnis cb, const char* new_value, void *mask, int nc);
+int iupEditCallActionCb(Ihandle* ih, IFnis cb, const char* insert_value, int start, int end, void* mask, int nc, int remove_dir, int utf8);
+int iupEditCheckNewValue(Ihandle* ih, IFnis cb, const char* new_value, void* mask, int nc);
 
 int iupListGetPosAttrib(Ihandle* ih, int id);
 int iupListSetIdValueAttrib(Ihandle* ih, int id, const char* value);
@@ -40,7 +40,7 @@ char* iupListGetSpacingAttrib(Ihandle* ih);
 void iupListSingleCallActionCb(Ihandle* ih, IFnsii cb, int pos);
 void iupListMultipleCallActionCb(Ihandle* ih, IFnsii cb, IFns multi_cb, int* pos, int sel_count);
 void iupListSingleCallDblClickCb(Ihandle* ih, IFnis cb, int pos);
-int iupListCallDragDropCb(Ihandle* ih, int drag_id, int drop_id, int *is_ctrl);
+int iupListCallDragDropCb(Ihandle* ih, int drag_id, int drop_id, int* is_ctrl);
 
 void iupListSetInitialItems(Ihandle* ih);
 void iupListUpdateOldValue(Ihandle* ih, int pos, int removed);

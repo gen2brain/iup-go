@@ -1247,7 +1247,7 @@ static int iMdParseTable(iMdState* s, const char** p_input)
   const char* input = *p_input;
   const char* next;
   int line_len, num_col, c, start, header_start, header_end;
-  int *widths, *aligns;
+  int* widths, *aligns;
   iMdCell* cells;
   Ihandle* tag;
 
@@ -1774,8 +1774,8 @@ static float iMdNamedScale(const char* value)
 
 static void iMdApplyTag(Ihandle* tag, iMdFmt* fmt, int charlen, int base_size)
 {
-  char *value;
-  const char *link, *image;
+  char* value;
+  const char* link, *image;
   int start = 0, end = 0, i;
   int bold = -1, italic = -1, strike = -1, mono = -1, quote = -1;
   float scale = 0;

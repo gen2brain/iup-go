@@ -26,7 +26,7 @@
 #include "iup_glcanvas_nativeinfo.h"
 
 
-typedef HGLRC (WINAPI *wglCreateContextAttribsARB_PROC) (HDC hDC, HGLRC hShareContext, const int *attribList);
+typedef HGLRC (WINAPI* wglCreateContextAttribsARB_PROC) (HDC hDC, HGLRC hShareContext, const int* attribList);
 
 #ifndef WGL_CONTEXT_MAJOR_VERSION_ARB
 #define WGL_CONTEXT_MAJOR_VERSION_ARB  0x2091
@@ -59,7 +59,7 @@ typedef struct _IGlControlData
 
 static int wGLCreateContext(Ihandle* ih, IGlControlData* gldata);
 
-static int wGLCanvasDefaultResize_CB(Ihandle *ih, int width, int height)
+static int wGLCanvasDefaultResize_CB(Ihandle* ih, int width, int height)
 {
   IGlControlData* gldata = (IGlControlData*)iupAttribGet(ih, "_IUP_GLCONTROLDATA");
   if (gldata && gldata->lazy_init)

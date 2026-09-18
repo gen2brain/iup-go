@@ -32,7 +32,7 @@
 #include "iupgtk4_drv.h"
 #include "iupgtk4_x11.h"
 
-IUP_DRV_API char* iupgtk4GetNativeWidgetHandle(GtkWidget *widget)
+IUP_DRV_API char* iupgtk4GetNativeWidgetHandle(GtkWidget* widget)
 {
   if (!widget)
     return NULL;
@@ -176,7 +176,7 @@ static void gtkSetGlobalAttrib(void)
 #endif
 }
 
-static void gtkSetGlobalColorAttrib(const char* name, GdkRGBA *color)
+static void gtkSetGlobalColorAttrib(const char* name, GdkRGBA* color)
 {
   iupGlobalSetDefaultColorAttrib(name,
     (int)(color->red * 255.0),
@@ -355,7 +355,7 @@ IUP_DRV_API void iupgtk4SetGlobalColors(void)
   gtk_window_destroy(GTK_WINDOW(dialog));
 }
 
-IUP_SDK_API int iupdrvOpen(int *argc, char ***argv)
+IUP_SDK_API int iupdrvOpen(int* argc, char*** argv)
 {
   (void)argc;
   (void)argv;

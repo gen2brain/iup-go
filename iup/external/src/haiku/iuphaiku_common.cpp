@@ -108,7 +108,7 @@ IUP_DRV_API int iuphaikuStubMap(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-IUP_DRV_API void iuphaikuStubComputeNaturalSize(Ihandle* ih, int *w, int *h, int *children_expand)
+IUP_DRV_API void iuphaikuStubComputeNaturalSize(Ihandle* ih, int* w, int* h, int* children_expand)
 {
   (void)ih;
   (void)children_expand;
@@ -116,7 +116,7 @@ IUP_DRV_API void iuphaikuStubComputeNaturalSize(Ihandle* ih, int *w, int *h, int
   if (h && *h == 0) *h = 1;
 }
 
-extern "C" IUP_SDK_API void iupdrvScreenToClient(Ihandle* ih, int *x, int *y)
+extern "C" IUP_SDK_API void iupdrvScreenToClient(Ihandle* ih, int* x, int* y)
 {
   if (!ih || !ih->handle) return;
 
@@ -137,7 +137,7 @@ extern "C" IUP_SDK_API void iupdrvScreenToClient(Ihandle* ih, int *x, int *y)
   if (y) *y -= (int)origin.y;
 }
 
-extern "C" IUP_SDK_API void iupdrvClientToScreen(Ihandle* ih, int *x, int *y)
+extern "C" IUP_SDK_API void iupdrvClientToScreen(Ihandle* ih, int* x, int* y)
 {
   if (!ih || !ih->handle) return;
 
@@ -256,7 +256,7 @@ extern "C" IUP_SDK_API void iupdrvActivate(Ihandle* ih)
   ctrl->Invoke();
 }
 
-extern "C" IUP_SDK_API void iupdrvPostRedraw(Ihandle *ih)
+extern "C" IUP_SDK_API void iupdrvPostRedraw(Ihandle* ih)
 {
   if (!ih || !ih->handle) return;
   if (ih->iclass && ih->iclass->nativetype == IUP_TYPEDIALOG) return;
@@ -269,7 +269,7 @@ extern "C" IUP_SDK_API void iupdrvPostRedraw(Ihandle *ih)
   view->Invalidate();
 }
 
-extern "C" IUP_SDK_API void iupdrvRedrawNow(Ihandle *ih)
+extern "C" IUP_SDK_API void iupdrvRedrawNow(Ihandle* ih)
 {
   if (!ih || !ih->handle) return;
   if (ih->iclass && ih->iclass->nativetype == IUP_TYPEDIALOG) return;
@@ -548,19 +548,19 @@ extern "C" IUP_SDK_API void iupdrvSleep(int time)
   snooze((bigtime_t)time * 1000);
 }
 
-extern "C" IUP_SDK_API void iupdrvSetAccessibleTitle(Ihandle *ih, const char* title)
+extern "C" IUP_SDK_API void iupdrvSetAccessibleTitle(Ihandle* ih, const char* title)
 {
   (void)ih;
   (void)title;
 }
 
-extern "C" IUP_SDK_API void iupdrvSetAccessibleDescription(Ihandle *ih, const char* description)
+extern "C" IUP_SDK_API void iupdrvSetAccessibleDescription(Ihandle* ih, const char* description)
 {
   (void)ih;
   (void)description;
 }
 
-extern "C" IUP_SDK_API void iupdrvBaseLayoutUpdateMethod(Ihandle *ih)
+extern "C" IUP_SDK_API void iupdrvBaseLayoutUpdateMethod(Ihandle* ih)
 {
   if (!ih || !ih->handle)
     return;

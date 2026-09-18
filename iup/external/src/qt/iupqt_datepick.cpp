@@ -143,7 +143,7 @@ static void qtDatePickUpdateDisplayFormat(Ihandle* ih)
   datepick->setDisplayFormat(format);
 }
 
-static void qtDatePickComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *children_expand)
+static void qtDatePickComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* children_expand)
 {
   (void)children_expand;
 

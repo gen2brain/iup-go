@@ -38,7 +38,7 @@ static int CB_button_CANCEL (Ihandle* ih)
   return IUP_CLOSE;
 }
 
-static int CB_dblclick(Ihandle *ih, int item, char *text)
+static int CB_dblclick(Ihandle* ih, int item, char* text)
 {
   (void)text;
   iupAttribSetInt(IupGetDialog(ih), "_IUP_LIST_NUMBER", item-1);
@@ -46,7 +46,7 @@ static int CB_dblclick(Ihandle *ih, int item, char *text)
   return IUP_CLOSE;
 }
 
-static int CB_list (Ihandle *ih, char *text, int item, int state)
+static int CB_list (Ihandle* ih, char* text, int item, int state)
 {
   (void)text;
   if (state)
@@ -54,12 +54,12 @@ static int CB_list (Ihandle *ih, char *text, int item, int state)
   return IUP_DEFAULT;
 }
 
-IUP_API int IupListDialog (int type, const char *title, int size, const char** list_str,
+IUP_API int IupListDialog (int type, const char* title, int size, const char** list_str,
                    int op, int max_col, int max_lin, int* marks)
 {
-  Ihandle *lst, *ok, *dlg, *cancel, *dlg_box, *button_box;
+  Ihandle* lst, *ok, *dlg, *cancel, *dlg_box, *button_box;
   int i, bt;
-  char *m=NULL;
+  char* m=NULL;
 
   lst = IupList();
 
@@ -155,15 +155,15 @@ IUP_API int IupListDialog (int type, const char *title, int size, const char** l
   return bt;
 }
 
-static int iAlarmButtonAction_CB(Ihandle *ih)
+static int iAlarmButtonAction_CB(Ihandle* ih)
 {
   iupAttribSet(IupGetDialog(ih), "_IUP_BUTTON_NUMBER", iupAttribGet(ih, "_IUP_BUTTON_NUMBER"));
   return IUP_CLOSE;
 }
 
-IUP_API int IupAlarm(const char *title, const char *msg, const char *b1, const char *b2, const char *b3)
+IUP_API int IupAlarm(const char* title, const char* msg, const char* b1, const char* b2, const char* b3)
 {
-  Ihandle  *dlg, *dlg_box, *button_box, *buttons[3], *default_esc, *default_enter;
+  Ihandle* dlg, *dlg_box, *button_box, *buttons[3], *default_esc, *default_enter;
   int i, count, bt;
 
   msg = msg? msg: "";
@@ -239,7 +239,7 @@ IUP_API int IupAlarm(const char *title, const char *msg, const char *b1, const c
 
 IUP_API int IupGetFile(char* filename)
 {
-  Ihandle *dlg = 0;
+  Ihandle* dlg = 0;
   int ret;
   char filter[4096] = "*.*";
   static char dir[4096] = "";  /* static will make the dir persist from one call to another if not defined */
@@ -277,7 +277,7 @@ IUP_API int IupGetFile(char* filename)
 
 IUP_API int IupGetText(const char* title, char* text, int maxsize)
 {
-  Ihandle *ok, *cancel = NULL, *multi_text, *button_box, *dlg_box, *dlg;
+  Ihandle* ok, *cancel = NULL, *multi_text, *button_box, *dlg_box, *dlg;
   int bt;
 
   if (maxsize == 0)
@@ -345,7 +345,7 @@ IUP_API int IupGetText(const char* title, char* text, int maxsize)
   return bt;
 }
 
-IUP_API int IupGetColor(int x, int y, unsigned char *r, unsigned char *g, unsigned char *b)
+IUP_API int IupGetColor(int x, int y, unsigned char* r, unsigned char* g, unsigned char* b)
 {
   int ret;
   Ihandle* dlg = IupColorDlg();

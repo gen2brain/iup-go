@@ -134,7 +134,7 @@ static Iqt2iupkey other_remap[] = {
  * Key Encoding (IUP to Qt)
  ****************************************************************************/
 
-extern "C" IUP_SDK_API void iupdrvKeyEncode(int code, unsigned int *keyval, unsigned int *state)
+extern "C" IUP_SDK_API void iupdrvKeyEncode(int code, unsigned int* keyval, unsigned int* state)
 {
   int base = iup_XkeyBase(code);
   int i, count;
@@ -219,7 +219,7 @@ static int qtKeyMap2Iup(int keyval, Qt::KeyboardModifiers modifiers)
  * Key Decoding (Qt event to IUP code)
  ****************************************************************************/
 
-static int qtKeyDecode(QKeyEvent *evt)
+static int qtKeyDecode(QKeyEvent* evt)
 {
   int key = evt->key();
   Qt::KeyboardModifiers modifiers = evt->modifiers();
@@ -274,7 +274,7 @@ static int iupObjectIsNativeContainer(Ihandle* ih)
 }
 
 /* a commit consumed by TEXTINPUT_CB suppresses the K_ANY for that key */
-static int qtKeyTextInput(QKeyEvent *evt, Ihandle *ih)
+static int qtKeyTextInput(QKeyEvent* evt, Ihandle* ih)
 {
   if (!IupGetCallback(ih, "TEXTINPUT_CB"))
     return 0;
@@ -291,7 +291,7 @@ static int qtKeyTextInput(QKeyEvent *evt, Ihandle *ih)
   return iupKeyCallTextInputCb(ih, text.toUtf8().constData()) == IUP_IGNORE;
 }
 
-IUP_DRV_API int iupqtKeyPressEvent(QWidget *widget, QKeyEvent *evt, Ihandle *ih)
+IUP_DRV_API int iupqtKeyPressEvent(QWidget* widget, QKeyEvent* evt, Ihandle* ih)
 {
   int result;
   int code;
@@ -360,7 +360,7 @@ IUP_DRV_API int iupqtKeyPressEvent(QWidget *widget, QKeyEvent *evt, Ihandle *ih)
   return 0;
 }
 
-IUP_DRV_API int iupqtKeyReleaseEvent(QWidget *widget, QKeyEvent *evt, Ihandle *ih)
+IUP_DRV_API int iupqtKeyReleaseEvent(QWidget* widget, QKeyEvent* evt, Ihandle* ih)
 {
   /* This is called only for canvas */
   int result;

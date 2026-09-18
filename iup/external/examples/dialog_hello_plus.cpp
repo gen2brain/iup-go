@@ -1,13 +1,13 @@
 #include <cstdlib>
 #include "iupplus.h"
 
-static int quit_cb(Ihandle *self)
+static int quit_cb(Ihandle* self)
 {
   (void)self;
   return IUP_CLOSE;
 }
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
   Iup::Open(argc, argv);
 

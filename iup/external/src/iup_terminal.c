@@ -1411,7 +1411,7 @@ static void itermDestroyMethod(Ihandle* ih)
   iupTermScreenRelease(&ih->data->term);
 }
 
-static void itermComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *children_expand)
+static void itermComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* children_expand)
 {
   int cols = iupAttribGetInt(ih, "VISIBLECOLUMNS");
   int rows = iupAttribGetInt(ih, "VISIBLELINES");
@@ -1430,7 +1430,7 @@ static void itermComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *chil
   (void)children_expand;
 }
 
-static int itermCreateMethod(Ihandle* ih, void **params)
+static int itermCreateMethod(Ihandle* ih, void** params)
 {
   Iterm* t;
   (void)params;

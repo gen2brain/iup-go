@@ -229,10 +229,10 @@ bool iupPlot::FindDataSetSample(double inScreenX, double inScreenY, int &outInde
 
     if (dataset->FindSample(mAxisX.mTrafo, mAxisY.mTrafo, inScreenX, inScreenY, mScreenTolerance, outSampleIndex, outX, outY))
     {
-      const iupPlotData *theXData = dataset->GetDataX();
+      const iupPlotData* theXData = dataset->GetDataX();
       if (theXData->IsString())
       {
-        const iupPlotDataString *theStringXData = (const iupPlotDataString *)(theXData);
+        const iupPlotDataString* theStringXData = (const iupPlotDataString*)(theXData);
         outStrX = theStringXData->GetSampleString(outSampleIndex);
       }
       else
@@ -381,10 +381,10 @@ void iupPlot::ConfigureAxis()
   {
     if (mDataSetListCount > 0)
     {
-      const iupPlotData *theXData = mDataSetList[0]->GetDataX();   // The first dataset will define the named tick usage
+      const iupPlotData* theXData = mDataSetList[0]->GetDataX();   // The first dataset will define the named tick usage
       if (theXData->IsString())
       {
-        const iupPlotDataString *theStringXData = (const iupPlotDataString *)(theXData);
+        const iupPlotDataString* theStringXData = (const iupPlotDataString*)(theXData);
         mAxisX.SetNamedTickIter(theStringXData);
       }
     }

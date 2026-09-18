@@ -19,11 +19,11 @@
 #include "iup_str.h"
 #include "iup_camera.h"
 
-typedef HRESULT (WINAPI *MFStartupFunc)(ULONG, DWORD);
-typedef HRESULT (WINAPI *MFCreateAttributesFunc)(IMFAttributes**, UINT32);
-typedef HRESULT (WINAPI *MFCreateMediaTypeFunc)(IMFMediaType**);
-typedef HRESULT (WINAPI *MFEnumDeviceSourcesFunc)(IMFAttributes*, IMFActivate***, UINT32*);
-typedef HRESULT (WINAPI *MFCreateSourceReaderFromMediaSourceFunc)(IMFMediaSource*, IMFAttributes*, IMFSourceReader**);
+typedef HRESULT (WINAPI* MFStartupFunc)(ULONG, DWORD);
+typedef HRESULT (WINAPI* MFCreateAttributesFunc)(IMFAttributes**, UINT32);
+typedef HRESULT (WINAPI* MFCreateMediaTypeFunc)(IMFMediaType**);
+typedef HRESULT (WINAPI* MFEnumDeviceSourcesFunc)(IMFAttributes*, IMFActivate***, UINT32*);
+typedef HRESULT (WINAPI* MFCreateSourceReaderFromMediaSourceFunc)(IMFMediaSource*, IMFAttributes*, IMFSourceReader**);
 
 static MFStartupFunc winMFStartup;
 static MFCreateAttributesFunc winMFCreateAttributes;

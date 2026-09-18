@@ -30,7 +30,7 @@
 #include "iupmot_color.h"
 
 
-IUP_SDK_API void iupdrvValGetMinSize(Ihandle* ih, int *w, int *h)
+IUP_SDK_API void iupdrvValGetMinSize(Ihandle* ih, int* w, int* h)
 {
   int ticks_size = 0;
   if (iupAttribGetInt(ih, "SHOWTICKS"))
@@ -195,7 +195,7 @@ static void motValCallAction(Ihandle* ih, int ival)
   }
 }
 
-static void motValIncPageValue(Ihandle *ih, int dir)
+static void motValIncPageValue(Ihandle* ih, int dir)
 {
   int pagesize, ival;
   pagesize = (int)(ih->data->pagestep*SHRT_MAX);
@@ -212,7 +212,7 @@ static void motValIncPageValue(Ihandle *ih, int dir)
   motValCallAction(ih, ival);
 }
 
-static void motValIncLineValue(Ihandle *ih, int dir)
+static void motValIncLineValue(Ihandle* ih, int dir)
 {
   int linesize, ival;
   linesize = (int)(ih->data->step*SHRT_MAX);
@@ -229,7 +229,7 @@ static void motValIncLineValue(Ihandle *ih, int dir)
   motValCallAction(ih, ival);
 }
 
-static void motValKeyPressEvent(Widget w, Ihandle *ih, XKeyEvent *evt, Boolean *cont)
+static void motValKeyPressEvent(Widget w, Ihandle* ih, XKeyEvent* evt, Boolean* cont)
 {
   KeySym motcode;
 
@@ -308,7 +308,7 @@ static void motValKeyPressEvent(Widget w, Ihandle *ih, XKeyEvent *evt, Boolean *
   }
 }
 
-static void motValValueChangedCallback(Widget w, Ihandle* ih, XmScaleCallbackStruct *cbs)
+static void motValValueChangedCallback(Widget w, Ihandle* ih, XmScaleCallbackStruct* cbs)
 {
   motValCallAction(ih, cbs->value);
 
@@ -335,7 +335,7 @@ static void motValButtonPressReleaseEvent(Widget w, Ihandle* ih, XButtonEvent* e
   }
 }
 
-static void motValFocusChangeEvent(Widget w, Ihandle *ih, XEvent *evt, Boolean *cont)
+static void motValFocusChangeEvent(Widget w, Ihandle* ih, XEvent* evt, Boolean* cont)
 {
   if (iupAttribGet(ih, "_IUPVAL_IGNOREFOCUS"))
     return;

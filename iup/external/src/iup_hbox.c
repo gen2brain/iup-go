@@ -86,7 +86,7 @@ static char* iHboxGetOrientationAttrib(Ihandle* ih)
   return "HORIZONTAL";
 }
 
-static void iHboxComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *children_expand)
+static void iHboxComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* children_expand)
 {
   Ihandle* child;
   int total_natural_width, total_natural_height;
@@ -141,7 +141,7 @@ static void iHboxComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *chil
   *h = total_natural_height;
 }
 
-static int iHboxCalcHomogeneousWidth(Ihandle *ih)
+static int iHboxCalcHomogeneousWidth(Ihandle* ih)
 {
   Ihandle* child;
   int homogeneous_width;
@@ -161,7 +161,7 @@ static int iHboxCalcHomogeneousWidth(Ihandle *ih)
   return homogeneous_width;
 }
 
-static int iHboxCalcEmptyWidth(Ihandle *ih, int expand)
+static int iHboxCalcEmptyWidth(Ihandle* ih, int expand)
 {
   /* This is the space that the child can be expanded. */
   Ihandle* child;
@@ -270,7 +270,7 @@ static void iHboxSetChildrenPositionMethod(Ihandle* ih, int x, int y)
 
 /******************************************************************************/
 
-IUP_API Ihandle* IupHboxv(Ihandle **children)
+IUP_API Ihandle* IupHboxv(Ihandle** children)
 {
   return IupCreatev("hbox", (void**)children);
 }
@@ -282,7 +282,7 @@ IUP_API Ihandle* IupHboxV(Ihandle* child, va_list arglist)
 
 IUP_API Ihandle* IupHbox(Ihandle* child, ...)
 {
-  Ihandle *ih;
+  Ihandle* ih;
 
   va_list arglist;
   va_start(arglist, child);

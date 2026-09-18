@@ -23,11 +23,11 @@ using namespace Windows::UI::Xaml::Interop;
 
 
 /* appmodel.h hides the OS ones under the driver's NTDDI_VERSION; the runtime DLL exports them as Mdd* */
-typedef HRESULT (WINAPI *TryCreatePackageDependencyFunc)(PSID, PCWSTR, PACKAGE_VERSION, INT32, INT32, PCWSTR, INT32, PWSTR*);
-typedef HRESULT (WINAPI *AddPackageDependencyFunc)(PCWSTR, INT32, INT32, void**, PWSTR*);
-typedef HRESULT (WINAPI *RemovePackageDependencyFunc)(void*);
-typedef HRESULT (WINAPI *DeletePackageDependencyFunc)(PCWSTR);
-typedef void (WINAPI *MddDeletePackageDependencyFunc)(PCWSTR);
+typedef HRESULT (WINAPI* TryCreatePackageDependencyFunc)(PSID, PCWSTR, PACKAGE_VERSION, INT32, INT32, PCWSTR, INT32, PWSTR*);
+typedef HRESULT (WINAPI* AddPackageDependencyFunc)(PCWSTR, INT32, INT32, void**, PWSTR*);
+typedef HRESULT (WINAPI* RemovePackageDependencyFunc)(void*);
+typedef HRESULT (WINAPI* DeletePackageDependencyFunc)(PCWSTR);
+typedef void (WINAPI* MddDeletePackageDependencyFunc)(PCWSTR);
 
 #if defined(_M_X64) || defined(__x86_64__)
 #define WINUI_ARCH PROCESSOR_ARCHITECTURE_AMD64
@@ -378,7 +378,7 @@ static int iupwinuiInitBootstrap(void)
   return 0;
 }
 
-typedef BOOL (__stdcall *ContentPreTranslateMessageFunc)(const MSG*);
+typedef BOOL (__stdcall* ContentPreTranslateMessageFunc)(const MSG*);
 static ContentPreTranslateMessageFunc winui_content_pretranslate = NULL;
 
 static void iupwinuiFindContentPreTranslateMessage(void)
@@ -424,7 +424,7 @@ IUP_DRV_API void iupwinuiProcessPendingMessages(void)
   }
 }
 
-extern "C" IUP_SDK_API int iupdrvOpen(int *argc, char ***argv)
+extern "C" IUP_SDK_API int iupdrvOpen(int* argc, char*** argv)
 {
   (void)argc;
   (void)argv;

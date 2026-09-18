@@ -237,7 +237,7 @@ static int fltkDialogGetMenuSize(Ihandle* ih)
   return 0;
 }
 
-extern "C" IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int *border, int *caption, int *menu)
+extern "C" IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int* border, int* caption, int* menu)
 {
   /* Estimate used until the native window frame can be measured. */
   const int est_border = 1, est_caption = 25;
@@ -286,7 +286,7 @@ extern "C" IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int *border, 
   *caption = has_titlebar ? est_caption : 0;
 }
 
-extern "C" IUP_SDK_API void iupdrvDialogGetPosition(Ihandle *ih, InativeHandle* handle, int *x, int *y)
+extern "C" IUP_SDK_API void iupdrvDialogGetPosition(Ihandle* ih, InativeHandle* handle, int* x, int* y)
 {
   IupFltkDialog* dialog;
 
@@ -302,14 +302,14 @@ extern "C" IUP_SDK_API void iupdrvDialogGetPosition(Ihandle *ih, InativeHandle* 
   }
 }
 
-extern "C" IUP_SDK_API void iupdrvDialogSetPosition(Ihandle *ih, int x, int y)
+extern "C" IUP_SDK_API void iupdrvDialogSetPosition(Ihandle* ih, int x, int y)
 {
   IupFltkDialog* dialog = (IupFltkDialog*)ih->handle;
   if (dialog)
     dialog->position(x, y);
 }
 
-extern "C" IUP_SDK_API void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* handle, int *w, int *h)
+extern "C" IUP_SDK_API void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* handle, int* w, int* h)
 {
   int border = 0, caption = 0, menu = 0;
 

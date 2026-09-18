@@ -28,7 +28,7 @@ extern "C" {
 
 IUPWEB_API int IupWebBrowserOpen(void);
 
-IUPWEB_API Ihandle *IupWebBrowser(void);
+IUPWEB_API Ihandle* IupWebBrowser(void);
 
 
 #ifdef __cplusplus

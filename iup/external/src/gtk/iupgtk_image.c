@@ -24,9 +24,9 @@ IUP_SDK_API void iupdrvImageGetData(void* handle, unsigned char* imgdata)
 {
   GdkPixbuf* pixbuf = (GdkPixbuf*)handle;
   int w, h, y, bpp;
-  guchar *pixdata, *pixline_data;
+  guchar* pixdata, *pixline_data;
   int rowstride;
-  unsigned char *line_data;
+  unsigned char* line_data;
 
   if (!iupdrvImageGetInfo(handle, &w, &h, &bpp))
     return;
@@ -49,12 +49,12 @@ IUP_SDK_API void iupdrvImageGetData(void* handle, unsigned char* imgdata)
 }
 
 
-IUP_SDK_API void* iupdrvImageCreateImage(Ihandle *ih, const char* bgcolor, int make_inactive)
+IUP_SDK_API void* iupdrvImageCreateImage(Ihandle* ih, const char* bgcolor, int make_inactive)
 {
   GdkPixbuf* pixbuf;
-  guchar *pixdata, *pixline_data;
+  guchar* pixdata, *pixline_data;
   int rowstride, channels;
-  unsigned char *imgdata, *line_data, bg_r=0, bg_g=0, bg_b=0;
+  unsigned char* imgdata, *line_data, bg_r=0, bg_g=0, bg_b=0;
   int x, y, bpp, colors_count = 0, has_alpha = 0;
   iupColor colors[256];
 
@@ -106,7 +106,7 @@ IUP_SDK_API void* iupdrvImageCreateImage(Ihandle *ih, const char* bgcolor, int m
       {
         unsigned char index = line_data[x];
         iupColor* c = &colors[index];
-        guchar *r = &pixline_data[channels*x],
+        guchar* r = &pixline_data[channels*x],
                *g = r+1,
                *b = g+1,
                *a = b+1;
@@ -133,7 +133,7 @@ IUP_SDK_API void* iupdrvImageCreateImage(Ihandle *ih, const char* bgcolor, int m
       {
         for (x=0; x<ih->currentwidth; x++)
         {
-          guchar *r = &pixline_data[channels*x],
+          guchar* r = &pixline_data[channels*x],
                  *g = r+1,
                  *b = g+1,
                  *a = b+1;
@@ -159,14 +159,14 @@ IUP_SDK_API void* iupdrvImageCreateImage(Ihandle *ih, const char* bgcolor, int m
   return pixbuf;
 }
 
-IUP_SDK_API void* iupdrvImageCreateIcon(Ihandle *ih)
+IUP_SDK_API void* iupdrvImageCreateIcon(Ihandle* ih)
 {
   return iupdrvImageCreateImage(ih, NULL, 0);
 }
 
-IUP_SDK_API void* iupdrvImageCreateCursor(Ihandle *ih)
+IUP_SDK_API void* iupdrvImageCreateCursor(Ihandle* ih)
 {
-  GdkCursor *cursor;
+  GdkCursor* cursor;
 
   int hx=0, hy=0;
   iupStrToIntInt(iupAttribGet(ih, "HOTSPOT"), &hx, &hy, ':');
@@ -174,10 +174,10 @@ IUP_SDK_API void* iupdrvImageCreateCursor(Ihandle *ih)
 #if !GTK_CHECK_VERSION(3, 0, 0) && !defined(GDK_DISABLE_DEPRECATED)  /* not supported in GTK3 or when GDK deprecated APIs are disabled */
   if (iupAttribGetInt(ih, "BPP") == 8 && !iupAttribGet(ih, "3"))
   {
-    GdkPixmap *source, *mask;
+    GdkPixmap* source, *mask;
     GdkColor fg, bg;
     unsigned char r, g, b;
-    char *sbits, *mbits, *sb, *mb;
+    char* sbits, *mbits, *sb, *mb;
     int y, x, line_size = (ih->currentwidth+7)/8;
     int size_bytes = line_size*ih->currentheight;
     unsigned char* imgdata = (unsigned char*)iupAttribGetStr(ih, "WID");
@@ -254,9 +254,9 @@ static GdkPixbuf* gtkImageRenderPixbuf(GtkIconSet* icon_set, int render_icon_siz
   return pixbuf;
 }
 
-static GdkPixbuf *gtkImageLoadFactoryIcon(const char* name, int render_icon_size)
+static GdkPixbuf* gtkImageLoadFactoryIcon(const char* name, int render_icon_size)
 {
-  GdkPixbuf *pixbuf = NULL;
+  GdkPixbuf* pixbuf = NULL;
   GtkIconSet* icon_set = gtk_icon_factory_lookup_default(name);
   if (icon_set)
     pixbuf = gtkImageRenderPixbuf(icon_set, render_icon_size, GTK_TEXT_DIR_NONE);
@@ -324,9 +324,9 @@ IUP_SDK_API void* iupdrvImageLoad(const char* name, int type)
 #endif
   else /* IUPIMAGE_IMAGE or IUPIMAGE_ICON */
   {
-    GdkPixbuf *pixbuf = NULL;
+    GdkPixbuf* pixbuf = NULL;
     GtkIconTheme* icon_theme;
-    GError *error;
+    GError* error;
     int stock_size = iupImageStockGetSize();
 
     /* default approach */
@@ -387,7 +387,7 @@ IUP_SDK_API void* iupdrvImageLoad(const char* name, int type)
   }
 }
 
-IUP_SDK_API int iupdrvImageGetInfo(void* handle, int *w, int *h, int *bpp)
+IUP_SDK_API int iupdrvImageGetInfo(void* handle, int* w, int* h, int* bpp)
 {
   GdkPixbuf* pixbuf = (GdkPixbuf*)handle;
   if (!GDK_IS_PIXBUF(pixbuf))
@@ -403,7 +403,7 @@ IUP_SDK_API int iupdrvImageGetInfo(void* handle, int *w, int *h, int *bpp)
   return 1;
 }
 
-IUP_SDK_API int iupdrvImageGetRawInfo(void* handle, int *w, int *h, int *bpp, iupColor* colors, int *colors_count)
+IUP_SDK_API int iupdrvImageGetRawInfo(void* handle, int* w, int* h, int* bpp, iupColor* colors, int* colors_count)
 {
   /* GdkPixbuf are only 24 bpp or 32 bpp */
   (void)colors;

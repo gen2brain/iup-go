@@ -2149,7 +2149,7 @@ static void winWebBrowserUnMapMethod(Ihandle* ih)
   }
 }
 
-static void winWebBrowserComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *children_expand)
+static void winWebBrowserComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* children_expand)
 {
   int natural_w = 0, natural_h = 0;
   (void)children_expand;
@@ -2179,7 +2179,7 @@ static void winWebBrowserLayoutUpdateMethod(Ihandle* ih)
   }
 }
 
-static int winWebBrowserCreateMethod(Ihandle* ih, void **params)
+static int winWebBrowserCreateMethod(Ihandle* ih, void** params)
 {
   (void)params;
 

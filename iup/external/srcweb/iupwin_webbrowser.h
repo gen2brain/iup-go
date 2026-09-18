@@ -44,14 +44,14 @@ typedef enum {
   WEBVIEW2_RUNTIME_TYPE_EMBEDDED = 1
 } WebView2RuntimeType;
 
-typedef HRESULT (STDAPICALLTYPE *CreateWebViewEnvironmentWithOptionsInternalFunc)(
+typedef HRESULT (STDAPICALLTYPE* CreateWebViewEnvironmentWithOptionsInternalFunc)(
     bool useCustomLoader,
     WebView2RuntimeType runtimeType,
     PCWSTR userDataFolder,
     IUnknown* environmentOptions,
     ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler* environmentCreatedHandler);
 
-typedef HRESULT (STDAPICALLTYPE *CreateCoreWebView2EnvironmentWithOptionsFunc)(
+typedef HRESULT (STDAPICALLTYPE* CreateCoreWebView2EnvironmentWithOptionsFunc)(
     PCWSTR browserExecutableFolder,
     PCWSTR userDataFolder,
     void* environmentOptions,

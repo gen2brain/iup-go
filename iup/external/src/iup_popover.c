@@ -243,7 +243,7 @@ static int iPopoverSetExpandAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-static void iPopoverComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *children_expand)
+static void iPopoverComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* children_expand)
 {
   if (ih->firstchild)
   {
@@ -335,7 +335,7 @@ Iclass* iupPopoverNewClass(void)
 
 IUP_API Ihandle* IupPopover(Ihandle* child)
 {
-  void *children[2];
+  void* children[2];
   children[0] = (void*)child;
   children[1] = NULL;
   return IupCreatev("popover", children);

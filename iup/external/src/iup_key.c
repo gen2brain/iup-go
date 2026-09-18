@@ -199,7 +199,7 @@ void iupKeyInit(void)
   ikey_map_ext[0xFF] = "K_DEL";
 }
 
-static const char* iKeyBaseCodeToName(int code, unsigned char *mod)
+static const char* iKeyBaseCodeToName(int code, unsigned char* mod)
 {
   *mod = 0;  /* all modifiers */
   if (code == K_BS)
@@ -296,7 +296,7 @@ IUP_SDK_API char* iupKeyCodeToName(int code)
   return (char*)base_name;
 }
 
-static void iKeyCallFunc(void (*func)(const char *name, int code, void* user_data), void* user_data, const char *name, int code, unsigned char mod)
+static void iKeyCallFunc(void (*func)(const char* name, int code, void* user_data), void* user_data, const char* name, int code, unsigned char mod)
 {
   char mod_name[30];
 
@@ -321,7 +321,7 @@ static void iKeyCallFunc(void (*func)(const char *name, int code, void* user_dat
   }
 }
 
-IUP_SDK_API void iupKeyForEach(void(*func)(const char *name, int code, void* user_data), void* user_data)
+IUP_SDK_API void iupKeyForEach(void(*func)(const char* name, int code, void* user_data), void* user_data)
 {
   /* Used only by the IupLua binding. */
   int code, map;
@@ -354,7 +354,7 @@ IUP_SDK_API void iupKeyForEach(void(*func)(const char *name, int code, void* use
   iKeyCallFunc(func, user_data, "K_diaeresis", K_diaeresis, 1);
 }
 
-IUP_SDK_API int iupKeyCallKeyCb(Ihandle *ih, int code)
+IUP_SDK_API int iupKeyCallKeyCb(Ihandle* ih, int code)
 {
   char* name = iupKeyCodeToName(code);
   for (; ih; ih = ih->parent)
@@ -375,14 +375,14 @@ IUP_SDK_API int iupKeyCallKeyCb(Ihandle *ih, int code)
   return IUP_DEFAULT;
 }
 
-IUP_SDK_API int iupKeyCallKeyPressCb(Ihandle *ih, int code, int press)
+IUP_SDK_API int iupKeyCallKeyPressCb(Ihandle* ih, int code, int press)
 {
   IFnii cb = (IFnii)IupGetCallback(ih, "KEYPRESS_CB");
   if (cb) return cb(ih, code, press);
   return IUP_DEFAULT;
 }
 
-IUP_SDK_API int iupKeyCallTextInputCb(Ihandle *ih, const char* value)
+IUP_SDK_API int iupKeyCallTextInputCb(Ihandle* ih, const char* value)
 {
   IFns cb = (IFns)IupGetCallback(ih, "TEXTINPUT_CB");
   if (cb)
@@ -396,7 +396,7 @@ static void iupKeyActivate(Ihandle* ih)
     iupdrvActivate(ih);
 }
 
-static void iupSetFontSizeChildren(Ihandle *ih, int inc)
+static void iupSetFontSizeChildren(Ihandle* ih, int inc)
 {
   /* if FONT is set at a child,
      then it will not inherit the value set at the dialog.
@@ -546,7 +546,7 @@ IUP_SDK_API int iupKeyProcessNavigation(Ihandle* ih, int code, int shift)
 
 IUP_SDK_API int iupKeyProcessMnemonic(Ihandle* ih, int code)
 {
-  Ihandle *ih_mnemonic, *dialog = IupGetDialog(ih);
+  Ihandle* ih_mnemonic, *dialog = IupGetDialog(ih);
   char attrib[16] = "_IUP_MNEMONIC_ ";
   attrib[14] = (char)code;
   iupStrUpper(attrib, attrib);

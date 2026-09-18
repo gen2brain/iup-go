@@ -47,13 +47,13 @@ static int iGlobalsCompareNames(const void* i1, const void* i2)
 }
 
 /* Returns user-set globals not present in the registry. */
-static int iGlobalGetAppAttributes(char **names)
+static int iGlobalGetAppAttributes(char** names)
 {
   int total_count = iupGetGlobalAttributes(NULL, 0);
   char ** gnames = NULL;
   int gcount, count, i;
 
-  gnames = (char **)malloc(sizeof(char*)* total_count);
+  gnames = (char**)malloc(sizeof(char*)* total_count);
   if (!gnames)
     return 0;
 
@@ -93,7 +93,7 @@ static void iGlobalsUpdate(Ihandle* dlg)
   Ihandle* txt4 = (Ihandle*)iupAttribGetInherit(list4, "_IUP_NAMESVALUE");
   Ihandle* show_auto_tg = IupGetDialogChild(dlg, "SHOWAUTO");
   int show_auto = IupGetInt(show_auto_tg, "VALUE");
-  char **attr_names;
+  char** attr_names;
 
   /* Clear everything */
   IupSetAttribute(list1, "REMOVEITEM", NULL);
@@ -114,7 +114,7 @@ static void iGlobalsUpdate(Ihandle* dlg)
   total_count = iGlobalGetAppAttributes(NULL);
   if (total_count > 0)
   {
-    attr_names = (char **)malloc(total_count * sizeof(char *));
+    attr_names = (char**)malloc(total_count * sizeof(char*));
     attr_count = iGlobalGetAppAttributes(attr_names);
     qsort(attr_names, total_count, sizeof(char*), iGlobalsCompareNames);
     for (i = 0; i < attr_count; i++)
@@ -142,14 +142,14 @@ static void iGlobalsUpdate(Ihandle* dlg)
   }
 
   total_count = iupGetFunctions(NULL, 0);
-  attr_names = (char **)malloc(total_count * sizeof(char *));
+  attr_names = (char**)malloc(total_count * sizeof(char*));
   attr_count = iupGetFunctions(attr_names, total_count);
   for (i = 0; i < attr_count; i++)
     IupSetAttributeId(list3, "", i + 1, attr_names[i]);
   free(attr_names);
 
   total_count = IupGetAllNames(NULL, 0);
-  attr_names = (char **)malloc(total_count * sizeof(char *));
+  attr_names = (char**)malloc(total_count * sizeof(char*));
   attr_count = IupGetAllNames(attr_names, total_count);
   j = 1;
   for (i = 0; i < attr_count; i++)
@@ -164,16 +164,16 @@ static void iGlobalsUpdate(Ihandle* dlg)
   free(attr_names);
 }
 
-static int iGlobalsList_CB(Ihandle *list1, char *name, int item, int state)
+static int iGlobalsList_CB(Ihandle* list1, char* name, int item, int state)
 {
   (void)item;
   if (state)
   {
     char* value = IupGetGlobal(name);
-    Ihandle* txt1 = (Ihandle *)iupAttribGetInherit(list1, "_IUP_ATTVALUE");
-    Ihandle* setbut = (Ihandle *)iupAttribGetInherit(list1, "_IUP_SETBUTTON");
-    Ihandle* colorbut = (Ihandle *)iupAttribGetInherit(list1, "_IUP_COLORBUTTON");
-    Ihandle* fontbut = (Ihandle *)iupAttribGetInherit(list1, "_IUP_FONTBUTTON");
+    Ihandle* txt1 = (Ihandle*)iupAttribGetInherit(list1, "_IUP_ATTVALUE");
+    Ihandle* setbut = (Ihandle*)iupAttribGetInherit(list1, "_IUP_SETBUTTON");
+    Ihandle* colorbut = (Ihandle*)iupAttribGetInherit(list1, "_IUP_COLORBUTTON");
+    Ihandle* fontbut = (Ihandle*)iupAttribGetInherit(list1, "_IUP_FONTBUTTON");
 
     if (value)
     {
@@ -211,7 +211,7 @@ static int iGlobalsSet_CB(Ihandle* button)
   char* item = IupGetAttribute(list1, "VALUE");
   if (item)
   {
-    Ihandle* txt1 = (Ihandle *)iupAttribGetInherit(list1, "_IUP_ATTVALUE");
+    Ihandle* txt1 = (Ihandle*)iupAttribGetInherit(list1, "_IUP_ATTVALUE");
     char* value = IupGetAttribute(txt1, "VALUE");
     char* name = IupGetAttribute(list1, item);
 
@@ -222,7 +222,7 @@ static int iGlobalsSet_CB(Ihandle* button)
 
     if (strstr(name, "COLOR") != NULL)
     {
-      Ihandle* colorbut = (Ihandle *)iupAttribGetInherit(list1, "_IUP_COLORBUTTON");
+      Ihandle* colorbut = (Ihandle*)iupAttribGetInherit(list1, "_IUP_COLORBUTTON");
       IupStoreAttribute(colorbut, "BGCOLOR", value);  /* set it even if it is NULL */
       IupSetStrGlobal("BGCOLOR", value);
     }
@@ -230,7 +230,7 @@ static int iGlobalsSet_CB(Ihandle* button)
   return IUP_DEFAULT;
 }
 
-static int iGlobalsSetColor_CB(Ihandle *colorbut)
+static int iGlobalsSetColor_CB(Ihandle* colorbut)
 {
   Ihandle* color_dlg = IupColorDlg();
   IupSetAttributeHandle(color_dlg, "PARENTDIALOG", IupGetDialog(colorbut));
@@ -242,7 +242,7 @@ static int iGlobalsSetColor_CB(Ihandle *colorbut)
   if (IupGetInt(color_dlg, "STATUS") == 1)
   {
     Ihandle* list1 = (Ihandle*)iupAttribGetInherit(colorbut, "_IUP_PROPLIST");
-    Ihandle* txt1 = (Ihandle *)iupAttribGetInherit(list1, "_IUP_ATTVALUE");
+    Ihandle* txt1 = (Ihandle*)iupAttribGetInherit(list1, "_IUP_ATTVALUE");
     char* value = IupGetAttribute(color_dlg, "VALUE");
     char* name = IupGetAttribute(list1, IupGetAttribute(list1, "VALUE"));
 
@@ -262,11 +262,11 @@ static int iGlobalsSetColor_CB(Ihandle *colorbut)
   return IUP_DEFAULT;
 }
 
-static int iGlobalsSetFont_CB(Ihandle *fontbut)
+static int iGlobalsSetFont_CB(Ihandle* fontbut)
 {
   Ihandle* font_dlg = IupFontDlg();
   Ihandle* list1 = (Ihandle*)iupAttribGetInherit(fontbut, "_IUP_PROPLIST");
-  Ihandle* txt1 = (Ihandle *)iupAttribGetInherit(list1, "_IUP_ATTVALUE");
+  Ihandle* txt1 = (Ihandle*)iupAttribGetInherit(list1, "_IUP_ATTVALUE");
   IupSetAttributeHandle(font_dlg, "PARENTDIALOG", IupGetDialog(fontbut));
   IupSetAttribute(font_dlg, "TITLE", "Choose Font");
   IupStoreAttribute(font_dlg, "VALUE", IupGetAttribute(txt1, "VALUE"));
@@ -302,13 +302,13 @@ static int iGlobalsSetNewAttrib_CB(Ihandle* button)
   return IUP_DEFAULT;
 }
 
-static int iGlobalsFunctionsList_CB(Ihandle *list, char *name, int item, int state)
+static int iGlobalsFunctionsList_CB(Ihandle* list, char* name, int item, int state)
 {
   (void)item;
   if (state)
   {
     Icallback cb = IupGetFunction(name);
-    Ihandle* txt = (Ihandle *)iupAttribGetInherit(list, "_IUP_FUNCVALUE");
+    Ihandle* txt = (Ihandle*)iupAttribGetInherit(list, "_IUP_FUNCVALUE");
 
     if (cb)
       IupSetfAttribute(txt, "VALUE", "%p", cb);
@@ -325,7 +325,7 @@ static int iGlobalsFunctionReset_CB(Ihandle* bt)
   char* name = IupGetAttribute(list, "VALUESTRING");
   if (name)
   {
-    Ihandle* txt = (Ihandle *)iupAttribGetInherit(bt, "_IUP_FUNCVALUE");
+    Ihandle* txt = (Ihandle*)iupAttribGetInherit(bt, "_IUP_FUNCVALUE");
 
     IupSetFunction(name, NULL);
     IupSetAttribute(txt, "VALUE", "NULL");
@@ -334,12 +334,12 @@ static int iGlobalsFunctionReset_CB(Ihandle* bt)
   return IUP_DEFAULT;
 }
 
-static int iGlobalsNamesList_CB(Ihandle *list, char *name, int item, int state)
+static int iGlobalsNamesList_CB(Ihandle* list, char* name, int item, int state)
 {
   (void)item;
   if (state)
   {
-    Ihandle* txt = (Ihandle *)iupAttribGetInherit(list, "_IUP_NAMESVALUE");
+    Ihandle* txt = (Ihandle*)iupAttribGetInherit(list, "_IUP_NAMESVALUE");
     Ihandle* elem = IupGetHandle(name);
 
     if (elem)
@@ -357,7 +357,7 @@ static int iGlobalsNameReset_CB(Ihandle* bt)
   char* name = IupGetAttribute(list, "VALUESTRING");
   if (name)
   {
-    Ihandle* txt = (Ihandle *)iupAttribGetInherit(bt, "_IUP_NAMESVALUE");
+    Ihandle* txt = (Ihandle*)iupAttribGetInherit(bt, "_IUP_NAMESVALUE");
 
     IupSetHandle(name, NULL);
     IupSetAttribute(txt, "VALUE", "NULL");
@@ -482,7 +482,7 @@ static int iGlobalsClose_CB(Ihandle* ih)
 
 static Ihandle* iGlobalsCreateDialog(void)
 {
-  Ihandle *list1, *list2, *list3, *list4, *close, *dlg, *dlg_box, *button_box, *colorbut1, *fontbut1, *colorbut2, *fontbut2,
+  Ihandle* list1, *list2, *list3, *list4, *close, *dlg, *dlg_box, *button_box, *colorbut1, *fontbut1, *colorbut2, *fontbut2,
     *tabs, *box1, *box11, *box12, *box13, *box14, *box2, *box3, *box4, *set1, *set2, *value1, *value2, *value3, *value4;
 
   close = IupButton("_@IUP_CLOSE");

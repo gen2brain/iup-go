@@ -26,7 +26,7 @@
 
 #ifdef GDK_WINDOWING_QUARTZ
 #include <gdk/gdkquartz.h>
-void* gdk_quartz_window_get_nsview(GdkWindow *window);
+void* gdk_quartz_window_get_nsview(GdkWindow* window);
 #endif
 
 #include "iup.h"
@@ -66,7 +66,7 @@ static inline XID x11_visual_id_from_visual(Visual* v) {
 }
 #endif
 
-IUP_DRV_API char* iupgtkGetNativeWidgetHandle(GtkWidget *widget)
+IUP_DRV_API char* iupgtkGetNativeWidgetHandle(GtkWidget* widget)
 {
   GdkWindow* window = iupgtkGetWindow(widget);
   if (!window)
@@ -387,7 +387,7 @@ IUP_DRV_API void iupgtkPushVisualAndColormap(void* visual, void* colormap)
 
 #elif defined(GDK_WINDOWING_QUARTZ)
   GdkColormap* gdk_colormap;
-  GdkVisual *gdk_visual = gdk_visual_get_best();
+  GdkVisual* gdk_visual = gdk_visual_get_best();
 
   gdk_colormap = gdk_colormap_new(gdk_visual, FALSE);
 
@@ -473,14 +473,14 @@ IUP_DRV_API char* iupgtkGetNativeWindowHandleAttrib(Ihandle* ih)
 }
 
 #if GTK_CHECK_VERSION(3, 0, 0)
-static void gtkSetGlobalColorAttrib(const char* name, GdkRGBA *color)
+static void gtkSetGlobalColorAttrib(const char* name, GdkRGBA* color)
 {
   iupGlobalSetDefaultColorAttrib(name, (int)iupgtkColorFromDouble(color->red),
                                        (int)iupgtkColorFromDouble(color->green),
                                        (int)iupgtkColorFromDouble(color->blue));
 }
 #else
-static void gtkSetGlobalColorAttrib(const char* name, GdkColor *color)
+static void gtkSetGlobalColorAttrib(const char* name, GdkColor* color)
 {
   iupGlobalSetDefaultColorAttrib(name, (int)iupCOLOR16TO8(color->red),
                                        (int)iupCOLOR16TO8(color->green),
@@ -625,7 +625,7 @@ IUP_DRV_API void iupgtkSetGlobalColors(void)
 /* #define IUPGTK_DEBUG */
 
 #if defined(IUPGTK_DEBUG)
-static void iupgtk_log(const gchar *log_domain, GLogLevelFlags log_level, const gchar *message, gpointer user_data)
+static void iupgtk_log(const gchar* log_domain, GLogLevelFlags log_level, const gchar* message, gpointer user_data)
 {
   const char* log_lvl = "";
   (void)user_data;
@@ -660,7 +660,7 @@ static void iupgtk_log(const gchar *log_domain, GLogLevelFlags log_level, const 
 #endif
 
 #if GTK_CHECK_VERSION(3, 0, 0) && GLIB_CHECK_VERSION(2, 50, 0)
-static GLogWriterOutput gtkLogWriter(GLogLevelFlags log_level, const GLogField *fields,
+static GLogWriterOutput gtkLogWriter(GLogLevelFlags log_level, const GLogField* fields,
                                       gsize n_fields, gpointer user_data)
 {
   gsize i;
@@ -684,7 +684,7 @@ static GLogWriterOutput gtkLogWriter(GLogLevelFlags log_level, const GLogField *
 }
 #endif
 
-IUP_SDK_API int iupdrvOpen(int *argc, char ***argv)
+IUP_SDK_API int iupdrvOpen(int* argc, char*** argv)
 {
   char* value;
 

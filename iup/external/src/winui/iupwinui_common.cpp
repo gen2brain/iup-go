@@ -244,7 +244,7 @@ static int winuiGetDialogMenuHeight(Ihandle* dialog)
   return 0;
 }
 
-extern "C" IUP_SDK_API void iupdrvScreenToClient(Ihandle* ih, int *x, int *y)
+extern "C" IUP_SDK_API void iupdrvScreenToClient(Ihandle* ih, int* x, int* y)
 {
   if (!ih || !ih->handle)
     return;
@@ -269,7 +269,7 @@ extern "C" IUP_SDK_API void iupdrvScreenToClient(Ihandle* ih, int *x, int *y)
   *y = p.y;
 }
 
-extern "C" IUP_SDK_API void iupdrvClientToScreen(Ihandle* ih, int *x, int *y)
+extern "C" IUP_SDK_API void iupdrvClientToScreen(Ihandle* ih, int* x, int* y)
 {
   if (!ih || !ih->handle)
     return;

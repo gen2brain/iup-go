@@ -44,7 +44,7 @@ static char* iDialogGetBorderSizeAttrib(Ihandle* ih)
   return iupStrReturnInt(border);
 }
 
-char* iupDialogGetClientSizeAttrib(Ihandle *ih)
+char* iupDialogGetClientSizeAttrib(Ihandle* ih)
 {
   int width = ih->currentwidth, height = ih->currentheight;
   int border = 0, caption = 0, menu = 0;
@@ -68,7 +68,7 @@ int iupDialogSetClientSizeAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-static void iDialogAdjustPos(Ihandle *ih, int *x, int *y)
+static void iDialogAdjustPos(Ihandle* ih, int* x, int* y)
 {
   int cursor_x = 0, cursor_y = 0;
   int screen_width = 0, screen_height = 0;
@@ -182,7 +182,7 @@ static void iDialogAdjustPos(Ihandle *ih, int *x, int *y)
 
 void iupDialogEnterModal(Ihandle* ih_popup, int popup_level)
 {
-  Ihandle *ih;
+  Ihandle* ih;
 
   assert(popup_level == dlg_popup_level);
 
@@ -219,7 +219,7 @@ static void iDialogSetModal(Ihandle* ih_popup)
 
 void iupDialogLeaveModal(int popup_level)
 {
-  Ihandle *ih;
+  Ihandle* ih;
 
   assert(popup_level == dlg_popup_level);
 
@@ -289,7 +289,7 @@ static void iDialogDestroyMethod(Ihandle* ih)
 
 static int iDialogSetMenuAttrib(Ihandle* ih, const char* value);
 
-static void iDialogComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *children_expand)
+static void iDialogComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* children_expand)
 {
   int decorwidth, decorheight;
   Ihandle* child = ih->firstchild;
@@ -412,7 +412,7 @@ static void iDialogAfterShow(Ihandle* ih)
     /* do it only if show_cb did NOT change the current focus */
     if (old_focus == IupGetFocus() && !iupAttribGetBoolean(ih, "SHOWNOFOCUS"))
     {
-      Ihandle *startfocus = IupGetAttributeHandle(ih, "STARTFOCUS");
+      Ihandle* startfocus = IupGetAttributeHandle(ih, "STARTFOCUS");
       if (startfocus)
         IupSetFocus(startfocus);
       else
@@ -457,7 +457,7 @@ static void iDialogListCheckLastVisible(int was_modal)
   }
 }
 
-static int iDialogUpdateVisibility(Ihandle* ih, int *x, int *y)
+static int iDialogUpdateVisibility(Ihandle* ih, int* x, int* y)
 {
   /* save visible state before iupdrvDialogSetPlacement */
   /* because it can also show the window when changing placement. */
@@ -754,7 +754,7 @@ static void iDialogCustomFrameSimulateSetCursor(Ihandle* ih, const char* value)
   iupAttribSet(ih, "_IUPDLG_RESETCURSOR", "1");
 }
 
-static int iDialogCustomFrameSimulateMotion_CB(Ihandle* ih, int x, int y, char *status)
+static int iDialogCustomFrameSimulateMotion_CB(Ihandle* ih, int x, int y, char* status)
 {
   int is_resizing = iupAttribGetInt(ih, "_IUPDLG_RESIZING");
   int border = 5;
@@ -938,7 +938,7 @@ static int iDialogCustomFrameSimulateCaptionButton_CB(Ihandle* caption, int butt
   return IUP_DEFAULT;
 }
 
-static int iDialogCustomFrameSimulateCaptionMotion_CB(Ihandle* caption, int x, int y, char *status)
+static int iDialogCustomFrameSimulateCaptionMotion_CB(Ihandle* caption, int x, int y, char* status)
 {
   Ihandle* ih = IupGetDialog(caption);
   int is_moving = iupAttribGetInt(ih, "_IUPDLG_MOVING");
@@ -1036,7 +1036,7 @@ static int iDialogSetSizeAttrib(Ihandle* ih, const char* value)
   }
   else
   {
-    char *sh, sw[40];
+    char* sh, sw[40];
     iupStrCopyN(sw, sizeof(sw), value);
     sh = strchr(sw, 'x');
     if (!sh)
@@ -1185,7 +1185,7 @@ void iupDialogUpdatePosition(Ihandle* ih)
   iupdrvDialogSetPosition(ih, x, y);
 }
 
-void iupDialogGetDecorSize(Ihandle* ih, int *decorwidth, int *decorheight)
+void iupDialogGetDecorSize(Ihandle* ih, int* decorwidth, int* decorheight)
 {
   int border, caption, menu;
   iupdrvDialogGetDecoration(ih, &border, &caption, &menu);
@@ -1202,15 +1202,15 @@ void iupDialogGetDecorSize(Ihandle* ih, int *decorwidth, int *decorheight)
   }
 }
 
-static int iDialogSetHideTaskbarAttrib(Ihandle *ih, const char *value)
+static int iDialogSetHideTaskbarAttrib(Ihandle* ih, const char* value)
 {
   iupdrvDialogSetVisible(ih, !iupStrBoolean(value));
   return 0;
 }
 
-static int iDialogSetSimulateModalAttrib(Ihandle *ih, const char *value)
+static int iDialogSetSimulateModalAttrib(Ihandle* ih, const char* value)
 {
-  Ihandle *ih_dlg;
+  Ihandle* ih_dlg;
 
   int sim_modal = iupStrBoolean(value);
 
@@ -1231,7 +1231,7 @@ static int iDialogSetSimulateModalAttrib(Ihandle *ih, const char *value)
   return 0;
 }
 
-static int iDialogSetDefaultEnterAttrib(Ihandle *ih, const char *value)
+static int iDialogSetDefaultEnterAttrib(Ihandle* ih, const char* value)
 {
   Ihandle* old_bt = (Ihandle*)iupAttribGet(ih, "_IUP_DEFAULTENTER_BUTTON");
   Ihandle* new_bt = value ? IupGetHandle(value) : NULL;
@@ -1247,7 +1247,7 @@ static int iDialogSetDefaultEnterAttrib(Ihandle *ih, const char *value)
   return 1;
 }
 
-static int iDialogSetParentDialogAttrib(Ihandle *ih, const char *value)
+static int iDialogSetParentDialogAttrib(Ihandle* ih, const char* value)
 {
   Ihandle* parent = IupGetHandle(value);
   InativeHandle* native_parent;
@@ -1262,7 +1262,7 @@ static int iDialogSetParentDialogAttrib(Ihandle *ih, const char *value)
   return 1;
 }
 
-static int iDialogSetDialogFrameAttrib(Ihandle *ih, const char *value)
+static int iDialogSetDialogFrameAttrib(Ihandle* ih, const char* value)
 {
   if (iupStrBoolean(value))
   {
@@ -1279,21 +1279,21 @@ static int iDialogSetDialogFrameAttrib(Ihandle *ih, const char *value)
   return 1;
 }
 
-static char* iDialogGetXAttrib(Ihandle *ih)
+static char* iDialogGetXAttrib(Ihandle* ih)
 {
   int x = 0;
   iupdrvDialogGetPosition(ih, NULL, &x, NULL);
   return iupStrReturnInt(x);
 }
 
-static char* iDialogGetYAttrib(Ihandle *ih)
+static char* iDialogGetYAttrib(Ihandle* ih)
 {
   int y = 0;
   iupdrvDialogGetPosition(ih, NULL, NULL, &y);
   return iupStrReturnInt(y);
 }
 
-static char* iDialogGetScreenPositionAttrib(Ihandle *ih)
+static char* iDialogGetScreenPositionAttrib(Ihandle* ih)
 {
   int x = 0, y = 0;
   iupdrvDialogGetPosition(ih, NULL, &x, &y);
@@ -1358,7 +1358,7 @@ static int iDialogSetMenuAttrib(Ihandle* ih, const char* value)
 
 IUP_API Ihandle* IupDialog(Ihandle* child)
 {
-  void *children[2];
+  void* children[2];
   children[0] = child;
   children[1] = NULL;
   return IupCreatev("dialog", children);

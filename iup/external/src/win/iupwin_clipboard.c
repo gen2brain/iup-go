@@ -81,7 +81,7 @@ static void winWritePlaceableFile(HANDLE hFile, unsigned char* buffer, DWORD dwS
   WriteFile(hFile, buffer, dwSize, &nBytesWrite, NULL);
 }
 
-static int winClipboardSetSaveEMFAttrib(Ihandle *ih, const char *value)
+static int winClipboardSetSaveEMFAttrib(Ihandle* ih, const char* value)
 {
   HENHMETAFILE Handle;
   DWORD dwSize, nBytesWrite;
@@ -116,7 +116,7 @@ static int winClipboardSetSaveEMFAttrib(Ihandle *ih, const char *value)
   return 0;
 }
 
-static int winClipboardSetSaveWMFAttrib(Ihandle *ih, const char *value)
+static int winClipboardSetSaveWMFAttrib(Ihandle* ih, const char* value)
 {
   DWORD dwSize;
   unsigned char* buffer;
@@ -155,7 +155,7 @@ static int winClipboardSetSaveWMFAttrib(Ihandle *ih, const char *value)
   return 0;
 }
 
-static int winClipboardSetTextAttrib(Ihandle *ih, const char *value)
+static int winClipboardSetTextAttrib(Ihandle* ih, const char* value)
 {
   HANDLE hHandle;
   TCHAR* wstr;
@@ -211,7 +211,7 @@ static int winClipboardSetTextAttrib(Ihandle *ih, const char *value)
   return 0;
 }
 
-static char* winClipboardGetTextAttrib(Ihandle *ih)
+static char* winClipboardGetTextAttrib(Ihandle* ih)
 {
   HANDLE hHandle;
   char* str;
@@ -249,7 +249,7 @@ static char* winClipboardGetTextAttrib(Ihandle *ih)
   return str;
 }
 
-static int winClipboardSetImageAttrib(Ihandle *ih, const char *value)
+static int winClipboardSetImageAttrib(Ihandle* ih, const char* value)
 {
   HBITMAP hBitmap;
 
@@ -272,7 +272,7 @@ static int winClipboardSetImageAttrib(Ihandle *ih, const char *value)
   return 0;
 }
 
-static int winClipboardSetNativeImageAttrib(Ihandle *ih, const char *value)
+static int winClipboardSetNativeImageAttrib(Ihandle* ih, const char* value)
 {
   if (!OpenClipboard(GetForegroundWindow()))
     return 0;
@@ -293,7 +293,7 @@ static int winClipboardSetNativeImageAttrib(Ihandle *ih, const char *value)
 
 static HANDLE winCopyHandle(HANDLE hHandle)
 {
-  void *src_data, *dst_data;
+  void* src_data, *dst_data;
   HANDLE hNewHandle;
   SIZE_T size = GlobalSize(hHandle);
   if (size == 0)
@@ -311,7 +311,7 @@ static HANDLE winCopyHandle(HANDLE hHandle)
   return hNewHandle;
 }
 
-static char* winClipboardGetNativeImageAttrib(Ihandle *ih)
+static char* winClipboardGetNativeImageAttrib(Ihandle* ih)
 {
   HANDLE hHandle;
 
@@ -332,7 +332,7 @@ static char* winClipboardGetNativeImageAttrib(Ihandle *ih)
   return (char*)hHandle;
 }
 
-static int winClipboardGetFormatId(Ihandle *ih)
+static int winClipboardGetFormatId(Ihandle* ih)
 {
   char* format = iupAttribGetStr(ih, "FORMAT");
   if (!format)
@@ -340,7 +340,7 @@ static int winClipboardGetFormatId(Ihandle *ih)
   return RegisterClipboardFormat(iupwinStrToSystem(format));
 }
 
-static int winClipboardSetFormatDataAttrib(Ihandle *ih, const char *value)
+static int winClipboardSetFormatDataAttrib(Ihandle* ih, const char* value)
 {
   HANDLE hHandle;
   void* data;
@@ -388,7 +388,7 @@ static int winClipboardSetFormatDataAttrib(Ihandle *ih, const char *value)
   return 0;
 }
 
-static char* winClipboardGetFormatDataAttrib(Ihandle *ih)
+static char* winClipboardGetFormatDataAttrib(Ihandle* ih)
 {
   HANDLE hHandle;
   char* data;
@@ -429,7 +429,7 @@ static char* winClipboardGetFormatDataAttrib(Ihandle *ih)
   return data;
 }
 
-static char* winClipboardGetFormatDataStringAttrib(Ihandle *ih)
+static char* winClipboardGetFormatDataStringAttrib(Ihandle* ih)
 {
   TCHAR* data = (TCHAR*)winClipboardGetFormatDataAttrib(ih);
   if (!data)
@@ -440,7 +440,7 @@ static char* winClipboardGetFormatDataStringAttrib(Ihandle *ih)
   return iupStrReturnStr(iupwinStrFromSystem(data));
 }
 
-static int winClipboardSetFormatDataStringAttrib(Ihandle *ih, const char *value)
+static int winClipboardSetFormatDataStringAttrib(Ihandle* ih, const char* value)
 {
   if (value)
   {
@@ -462,7 +462,7 @@ static int winClipboardIsAvailable(UINT format_id)
   return check;
 }
 
-static char* winClipboardGetTextAvailableAttrib(Ihandle *ih)
+static char* winClipboardGetTextAvailableAttrib(Ihandle* ih)
 {
   (void)ih;
 #ifdef UNICODE
@@ -472,25 +472,25 @@ static char* winClipboardGetTextAvailableAttrib(Ihandle *ih)
 #endif
 }
 
-static char* winClipboardGetImageAvailableAttrib(Ihandle *ih)
+static char* winClipboardGetImageAvailableAttrib(Ihandle* ih)
 {
   (void)ih;
   return iupStrReturnBoolean (winClipboardIsAvailable(CF_DIB));
 }
 
-static char* winClipboardGetWMFAvailableAttrib(Ihandle *ih)
+static char* winClipboardGetWMFAvailableAttrib(Ihandle* ih)
 {
   (void)ih;
   return iupStrReturnBoolean (winClipboardIsAvailable(CF_METAFILEPICT));
 }
 
-static char* winClipboardGetEMFAvailableAttrib(Ihandle *ih)
+static char* winClipboardGetEMFAvailableAttrib(Ihandle* ih)
 {
   (void)ih;
   return iupStrReturnBoolean (winClipboardIsAvailable(CF_ENHMETAFILE));
 }
 
-static char* winClipboardGetFormatAvailableAttrib(Ihandle *ih)
+static char* winClipboardGetFormatAvailableAttrib(Ihandle* ih)
 {
   UINT format_id = winClipboardGetFormatId(ih);
   if (format_id==0)
@@ -499,7 +499,7 @@ static char* winClipboardGetFormatAvailableAttrib(Ihandle *ih)
   return iupStrReturnBoolean (winClipboardIsAvailable(format_id));
 }
 
-static int winClipboardSetAddFormatAttrib(Ihandle *ih, const char *value)
+static int winClipboardSetAddFormatAttrib(Ihandle* ih, const char* value)
 {
   if (value)
     RegisterClipboardFormat(iupwinStrToSystem(value));

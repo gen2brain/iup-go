@@ -48,7 +48,7 @@ IUP_SDK_API void iupdrvDrawUpdateSize(IdrawCanvas* dc);
 
 /** Returns the canvas size available for drawing.
  * \ingroup drvdraw */
-IUP_SDK_API void iupdrvDrawGetSize(IdrawCanvas* dc, int *w, int *h);
+IUP_SDK_API void iupdrvDrawGetSize(IdrawCanvas* dc, int* w, int* h);
 
 /** Draws a line.
  * \ingroup drvdraw */
@@ -131,7 +131,7 @@ IUP_SDK_API void iupdrvDrawResetClip(IdrawCanvas* dc);
 
 /** Returns the last rectangle set in iupdrvDrawSetClipRect.
 * \ingroup drvdraw */
-IUP_SDK_API void iupdrvDrawGetClipRect(IdrawCanvas* dc, int *x1, int *y1, int *x2, int *y2);
+IUP_SDK_API void iupdrvDrawGetClipRect(IdrawCanvas* dc, int* x1, int* y1, int* x2, int* y2);
 
 /** Draws a selection rectangle.
  * \ingroup drvdraw */

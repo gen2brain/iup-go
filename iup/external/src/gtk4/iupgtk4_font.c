@@ -32,11 +32,11 @@ typedef struct _Igtk4Font
 } Igtk4Font;
 
 static Iarray* gtk4_fonts = NULL;
-static PangoContext *gtk4_fonts_context = NULL;
+static PangoContext* gtk4_fonts_context = NULL;
 
 static void gtk4FontUpdateLayout(Igtk4Font* gtkfont, PangoLayout* layout)
 {
-  PangoAttrList *attrs;
+  PangoAttrList* attrs;
 
   pango_layout_set_font_description(layout, gtkfont->fontdesc);
 
@@ -56,7 +56,7 @@ static void gtk4FontUpdateLayout(Igtk4Font* gtkfont, PangoLayout* layout)
   }
 }
 
-static Igtk4Font* gtk4FindFont(const char *font)
+static Igtk4Font* gtk4FindFont(const char* font)
 {
   PangoFontMetrics* metrics;
   PangoFontDescription* fontdesc;
@@ -110,11 +110,11 @@ static Igtk4Font* gtk4FindFont(const char *font)
       if (size<0)
       {
         double res = 96.0;  /* default DPI */
-        GdkDisplay *display = gdk_display_get_default();
+        GdkDisplay* display = gdk_display_get_default();
         if (display)
         {
-          GListModel *monitors = gdk_display_get_monitors(display);
-          GdkMonitor *monitor = g_list_model_get_item(monitors, 0);
+          GListModel* monitors = gdk_display_get_monitors(display);
+          GdkMonitor* monitor = g_list_model_get_item(monitors, 0);
           if (monitor)
           {
             int scale_factor = gdk_monitor_get_scale_factor(monitor);
@@ -160,7 +160,7 @@ static Igtk4Font* gtk4FindFont(const char *font)
 
 static Igtk4Font* gtk4FontCreateNativeFont(Ihandle* ih, const char* value)
 {
-  Igtk4Font *gtkfont = gtk4FindFont(value);
+  Igtk4Font* gtkfont = gtk4FindFont(value);
   if (!gtkfont)
   {
     iupERROR1("Failed to create Font: %s", value);
@@ -171,7 +171,7 @@ static Igtk4Font* gtk4FontCreateNativeFont(Ihandle* ih, const char* value)
   return gtkfont;
 }
 
-static Igtk4Font* gtk4FontGet(Ihandle *ih)
+static Igtk4Font* gtk4FontGet(Ihandle* ih)
 {
   Igtk4Font* gtkfont = gtk4FindFont(iupGetFontValue(ih));
   if (!gtkfont)
@@ -190,7 +190,7 @@ static void gtk4FontUpdateWidget(Ihandle* ih, GtkWidget* widget, PangoFontDescri
 
   if (GTK_IS_LABEL(widget))
   {
-    PangoAttrList *attrs = pango_attr_list_new();
+    PangoAttrList* attrs = pango_attr_list_new();
 
     if (ih && iupAttribGetBoolean(ih, "MARKUP"))
     {
@@ -214,7 +214,7 @@ static void gtk4FontUpdateWidget(Ihandle* ih, GtkWidget* widget, PangoFontDescri
   else
   {
     char css_font[512];
-    const char *family = pango_font_description_get_family(fontdesc);
+    const char* family = pango_font_description_get_family(fontdesc);
     int size = pango_font_description_get_size(fontdesc);
     PangoWeight weight = pango_font_description_get_weight(fontdesc);
     PangoStyle style = pango_font_description_get_style(fontdesc);
@@ -253,7 +253,7 @@ static void gtk4FontUpdateWidget(Ihandle* ih, GtkWidget* widget, PangoFontDescri
   }
 }
 
-IUP_DRV_API void iupgtk4UpdateWidgetFont(Ihandle *ih, GtkWidget* widget)
+IUP_DRV_API void iupgtk4UpdateWidgetFont(Ihandle* ih, GtkWidget* widget)
 {
   PangoFontDescription* fontdesc = (PangoFontDescription*)iupgtk4GetPangoFontDescAttrib(ih);
   gtk4FontUpdateWidget(ih, widget, fontdesc);
@@ -264,8 +264,8 @@ IUP_SDK_API char* iupdrvGetSystemFont(void)
   static char str[200]; /* must return a static string, because it will be used as the default value for the FONT attribute */
 
   /* gtk_style_context_get removed - use CSS and default font */
-  GtkSettings *settings = gtk_settings_get_default();
-  gchar *font_name = NULL;
+  GtkSettings* settings = gtk_settings_get_default();
+  gchar* font_name = NULL;
 
   if (settings)
     g_object_get(settings, "gtk-font-name", &font_name, NULL);
@@ -284,14 +284,14 @@ IUP_SDK_API char* iupdrvGetSystemFont(void)
 
 IUP_DRV_API PangoLayout* iupgtk4GetPangoLayout(const char* value)
 {
-  Igtk4Font *gtkfont = gtk4FindFont(value);
+  Igtk4Font* gtkfont = gtk4FindFont(value);
   if (gtkfont)
     return gtkfont->layout;
   else
     return NULL;
 }
 
-IUP_DRV_API char* iupgtk4GetPangoLayoutAttrib(Ihandle *ih)
+IUP_DRV_API char* iupgtk4GetPangoLayoutAttrib(Ihandle* ih)
 {
   Igtk4Font* gtkfont = gtk4FontGet(ih);
   if (gtkfont)
@@ -302,14 +302,14 @@ IUP_DRV_API char* iupgtk4GetPangoLayoutAttrib(Ihandle *ih)
 
 IUP_DRV_API PangoFontDescription* iupgtk4GetPangoFontDesc(const char* value)
 {
-  Igtk4Font *gtkfont = gtk4FindFont(value);
+  Igtk4Font* gtkfont = gtk4FindFont(value);
   if (gtkfont)
     return gtkfont->fontdesc;
   else
     return NULL;
 }
 
-IUP_DRV_API char* iupgtk4GetPangoFontDescAttrib(Ihandle *ih)
+IUP_DRV_API char* iupgtk4GetPangoFontDescAttrib(Ihandle* ih)
 {
   Igtk4Font* gtkfont = gtk4FontGet(ih);
   if (gtkfont)
@@ -318,7 +318,7 @@ IUP_DRV_API char* iupgtk4GetPangoFontDescAttrib(Ihandle *ih)
     return NULL;
 }
 
-IUP_DRV_API char* iupgtk4GetFontIdAttrib(Ihandle *ih)
+IUP_DRV_API char* iupgtk4GetFontIdAttrib(Ihandle* ih)
 {
   /* GdkFont completely removed - no font IDs available */
   (void)ih;
@@ -341,7 +341,7 @@ IUP_SDK_API int iupdrvSetFontAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-static void gtk4FontGetTextSize(Ihandle* ih, Igtk4Font* gtkfont, const char* str, int len, int *w, int *h)
+static void gtk4FontGetTextSize(Ihandle* ih, Igtk4Font* gtkfont, const char* str, int len, int* w, int* h)
 {
   int max_w = 0, line_count = 1;
 
@@ -384,23 +384,23 @@ static void gtk4FontGetTextSize(Ihandle* ih, Igtk4Font* gtkfont, const char* str
   if (h) *h = gtkfont->charheight * line_count;
 }
 
-IUP_SDK_API void iupdrvFontGetMultiLineStringSize(Ihandle* ih, const char* str, int *w, int *h)
+IUP_SDK_API void iupdrvFontGetMultiLineStringSize(Ihandle* ih, const char* str, int* w, int* h)
 {
   Igtk4Font* gtkfont = gtk4FontGet(ih);
   if (gtkfont)
     gtk4FontGetTextSize(ih, gtkfont, str, str? (int)strlen(str): 0, w, h);
 }
 
-IUP_SDK_API void iupdrvFontGetTextSize(const char* font, const char* str, int len, int *w, int *h)
+IUP_SDK_API void iupdrvFontGetTextSize(const char* font, const char* str, int len, int* w, int* h)
 {
-  Igtk4Font *gtkfont = gtk4FindFont(font);
+  Igtk4Font* gtkfont = gtk4FindFont(font);
   if (gtkfont)
     gtk4FontGetTextSize(NULL, gtkfont, str, len, w, h);
 }
 
-IUP_SDK_API void iupdrvFontGetFontDim(const char* font, int *max_width, int *line_height, int *ascent, int *descent)
+IUP_SDK_API void iupdrvFontGetFontDim(const char* font, int* max_width, int* line_height, int* ascent, int* descent)
 {
-  Igtk4Font *gtkfont = gtk4FindFont(font);
+  Igtk4Font* gtkfont = gtk4FindFont(font);
   if (gtkfont)
   {
     PangoFontMetrics* metrics;
@@ -461,7 +461,7 @@ IUP_SDK_API int iupdrvFontGetStringWidth(Ihandle* ih, const char* str)
   return w;
 }
 
-IUP_SDK_API void iupdrvFontGetCharSize(Ihandle* ih, int *charwidth, int *charheight)
+IUP_SDK_API void iupdrvFontGetCharSize(Ihandle* ih, int* charwidth, int* charheight)
 {
   Igtk4Font* gtkfont = gtk4FontGet(ih);
   if (!gtkfont)
@@ -510,7 +510,7 @@ IUP_SDK_API void iupdrvFontInit(void)
 {
   gtk4_fonts = iupArrayCreate(50, sizeof(Igtk4Font));
 
-  PangoFontMap *font_map = pango_cairo_font_map_get_default();
+  PangoFontMap* font_map = pango_cairo_font_map_get_default();
   gtk4_fonts_context = pango_font_map_create_context(font_map);
   pango_context_set_language(gtk4_fonts_context, gtk_get_default_language());
 }

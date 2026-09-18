@@ -134,7 +134,7 @@ static int motProgressBarSetFgColorAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-static void motProgressBarLayoutUpdateMethod(Ihandle *ih)
+static void motProgressBarLayoutUpdateMethod(Ihandle* ih)
 {
   unsigned char orientation;
   XtVaGetValues(ih->handle, XmNorientation, &orientation, NULL);

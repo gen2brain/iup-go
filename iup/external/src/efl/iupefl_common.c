@@ -153,7 +153,7 @@ IUP_DRV_API char* iupeflBaseGetActiveAttrib(Ihandle* ih)
  * Position and Size
  ****************************************************************************/
 
-IUP_DRV_API void iupeflGetOrigin(Ihandle* ih, int *x, int *y)
+IUP_DRV_API void iupeflGetOrigin(Ihandle* ih, int* x, int* y)
 {
   Ihandle* parent;
   int abs_x = 0, abs_y = 0;

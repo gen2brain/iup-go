@@ -28,7 +28,7 @@ struct _IcontrolData
 {
   /* aux */
   int is_holding;
-  Ihandle *old_parent, *old_brother;
+  Ihandle* old_parent, *old_brother;
 
   /* attributes */
   int layoutdrag, barsize, showgrip;
@@ -100,7 +100,7 @@ static char* iDetachBoxGetBarSizeAttrib(Ihandle* ih)
 
 static int iDetachBoxSetRestoreAttrib(Ihandle* ih, const char* value)
 {
-  Ihandle *dlg = IupGetDialog(ih);
+  Ihandle* dlg = IupGetDialog(ih);
   Ihandle* new_parent = IupGetHandle(value);
   Ihandle* new_brother = NULL;
 
@@ -151,8 +151,8 @@ static int iDetachBoxSetDetachAttrib(Ihandle* ih, const char* value)
   IFnnii detachedCB = (IFnnii)IupGetCallback(ih, "DETACHED_CB");
 
   /* Create new dialog */
-  Ihandle *new_parent = IupDialog(NULL);
-  Ihandle *old_dialog = IupGetDialog(ih);
+  Ihandle* new_parent = IupDialog(NULL);
+  Ihandle* old_dialog = IupGetDialog(ih);
 
   /* Set new dialog as child of the current application */
   IupSetAttributeHandle(new_parent, "PARENTDIALOG", old_dialog);
@@ -382,7 +382,7 @@ static int iDetachBoxFocus_CB(Ihandle* bar, int focus)
 |* Methods                                                                   *|
 \*****************************************************************************/
 
-static void iDetachBoxComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *children_expand)
+static void iDetachBoxComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* children_expand)
 {
   int natural_w = 0,
       natural_h = 0;
@@ -516,7 +516,7 @@ static int iDetachBoxCreateMethod(Ihandle* ih, void** params)
 
 static void iDetachBoxCreateCursor(void)
 {
-  Ihandle *imgcursor;
+  Ihandle* imgcursor;
   unsigned char detach_img_cur[16*16] =
   {
     0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
@@ -599,7 +599,7 @@ Iclass* iupDetachBoxNewClass(void)
 
 IUP_API Ihandle* IupDetachBox(Ihandle* child)
 {
-  void *children[2];
+  void* children[2];
   children[0] = (void*)child;
   children[1] = NULL;
   return IupCreatev("detachbox", children);

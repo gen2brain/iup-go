@@ -41,7 +41,7 @@ const char iup_ident[] =
   "$URL: www.tecgraf.puc-rio.br/iup $\n";
 
 /* Using this, if you look for the string TECVER, you will find also the library version. */
-const char *iup_tecver = "TECVERID.str:Iup:LIB:" IUP_VERSION IUP_VERSION_FIX;
+const char* iup_tecver = "TECVERID.str:Iup:LIB:" IUP_VERSION IUP_VERSION_FIX;
 
 IUP_API char* IupVersion(void)
 {

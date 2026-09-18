@@ -188,7 +188,7 @@ static void fltkButtonCallback(Fl_Widget* w, void* data)
   }
 }
 
-extern "C" IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
+extern "C" IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int* x, int* y)
 {
   int has_user_padding = 0;
 

@@ -89,7 +89,7 @@ static BOOL cocoaDialogIsMaximized(NSWindow* the_window)
 
 @implementation IupCocoaWindow
 
-- (BOOL)performKeyEquivalent:(NSEvent *)event
+- (BOOL)performKeyEquivalent:(NSEvent*)event
 {
   if ([event type] == NSEventTypeKeyDown)
   {
@@ -143,7 +143,7 @@ static BOOL cocoaDialogIsMaximized(NSWindow* the_window)
   return [super performKeyEquivalent:event];
 }
 
-- (void)keyDown:(NSEvent *)event
+- (void)keyDown:(NSEvent*)event
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
   if (ih)
@@ -161,7 +161,7 @@ static BOOL cocoaDialogIsMaximized(NSWindow* the_window)
   }
 }
 
-- (void)keyUp:(NSEvent *)event
+- (void)keyUp:(NSEvent*)event
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
   if (ih)
@@ -174,7 +174,7 @@ static BOOL cocoaDialogIsMaximized(NSWindow* the_window)
     [super keyUp:event];
 }
 
-- (void)flagsChanged:(NSEvent *)event
+- (void)flagsChanged:(NSEvent*)event
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
   if (ih)
@@ -443,7 +443,7 @@ static void cocoaDialogChildDestroyNotification(NSNotification* notification)
   }
 }
 
-- (NSRect)windowWillUseStandardFrame:(NSWindow *)window defaultFrame:(NSRect)newFrame
+- (NSRect)windowWillUseStandardFrame:(NSWindow*)window defaultFrame:(NSRect)newFrame
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(window, IHANDLE_ASSOCIATED_OBJ_KEY);
 
@@ -607,10 +607,10 @@ static void cocoaDialogChildDestroyNotification(NSNotification* notification)
   cocoaDialogChildDestroyNotification(notification);
 }
 
-- (void)observeValueForKeyPath:(NSString *)keyPath
+- (void)observeValueForKeyPath:(NSString*)keyPath
                       ofObject:(id)object
-                        change:(NSDictionary *)change
-                       context:(void *)context
+                        change:(NSDictionary*)change
+                       context:(void*)context
 {
   if (context == IupCocoaAppearanceContext)
   {
@@ -683,7 +683,7 @@ IUP_SDK_API int iupdrvDialogIsVisible(Ihandle* ih)
   }
 }
 
-static void cocoaDialogGetSize(Ihandle* ih, InativeHandle* handle, int *w, int *h)
+static void cocoaDialogGetSize(Ihandle* ih, InativeHandle* handle, int* w, int* h)
 {
   NSWindow* the_window = handle ? (NSWindow*)handle : iupcocoaDialogGetWindow(ih);
   if (!the_window) return;
@@ -694,7 +694,7 @@ static void cocoaDialogGetSize(Ihandle* ih, InativeHandle* handle, int *w, int *
   if (h) *h = iupROUND(frame_rect.size.height);
 }
 
-IUP_SDK_API void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* handle, int *w, int *h)
+IUP_SDK_API void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* handle, int* w, int* h)
 {
   @autoreleasepool {
     cocoaDialogGetSize(ih, handle, w, h);
@@ -782,7 +782,7 @@ IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
   }
 }
 
-static void cocoaDialogGetPosition(Ihandle *ih, InativeHandle* handle, int *x, int *y)
+static void cocoaDialogGetPosition(Ihandle* ih, InativeHandle* handle, int* x, int* y)
 {
   NSWindow* the_window = handle ? (NSWindow*)handle : iupcocoaDialogGetWindow(ih);
   if (!the_window) return;
@@ -793,14 +793,14 @@ static void cocoaDialogGetPosition(Ihandle *ih, InativeHandle* handle, int *x, i
   if (y) *y = iupcocoaComputeIupScreenHeightFromCartesian(the_rect.origin.y + the_rect.size.height);
 }
 
-IUP_SDK_API void iupdrvDialogGetPosition(Ihandle *ih, InativeHandle* handle, int *x, int *y)
+IUP_SDK_API void iupdrvDialogGetPosition(Ihandle* ih, InativeHandle* handle, int* x, int* y)
 {
   @autoreleasepool {
     cocoaDialogGetPosition(ih, handle, x, y);
   }
 }
 
-static void cocoaDialogSetPosition(Ihandle *ih, int x, int y)
+static void cocoaDialogSetPosition(Ihandle* ih, int x, int y)
 {
   NSWindow* the_window = iupcocoaDialogGetWindow(ih);
   if (!the_window) return;
@@ -809,14 +809,14 @@ static void cocoaDialogSetPosition(Ihandle *ih, int x, int y)
   [the_window setFrameTopLeftPoint:NSMakePoint(x, inverted_y)];
 }
 
-IUP_SDK_API void iupdrvDialogSetPosition(Ihandle *ih, int x, int y)
+IUP_SDK_API void iupdrvDialogSetPosition(Ihandle* ih, int x, int y)
 {
   @autoreleasepool {
     cocoaDialogSetPosition(ih, x, y);
   }
 }
 
-static void cocoaDialogGetDecoration(Ihandle* ih, int *border, int *caption, int *menu)
+static void cocoaDialogGetDecoration(Ihandle* ih, int* border, int* caption, int* menu)
 {
   *menu = 0; /* In Cocoa, the menu bar is not part of the window's decoration height. */
 
@@ -854,7 +854,7 @@ static void cocoaDialogGetDecoration(Ihandle* ih, int *border, int *caption, int
   }
 }
 
-IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int *border, int *caption, int *menu)
+IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int* border, int* caption, int* menu)
 {
   @autoreleasepool {
     cocoaDialogGetDecoration(ih, border, caption, menu);
@@ -1053,7 +1053,7 @@ static int cocoaDialogSetMaxSizeAttrib(Ihandle* ih, const char* value)
   return iupBaseSetMaxSizeAttrib(ih, value);
 }
 
-static char* cocoaDialogGetClientSizeAttrib(Ihandle *ih)
+static char* cocoaDialogGetClientSizeAttrib(Ihandle* ih)
 {
   if (ih->handle)
   {
@@ -1082,7 +1082,7 @@ static char* cocoaDialogGetClientSizeAttrib(Ihandle *ih)
   return iupDialogGetClientSizeAttrib(ih);
 }
 
-static char* cocoaDialogGetClientOffsetAttrib(Ihandle *ih)
+static char* cocoaDialogGetClientOffsetAttrib(Ihandle* ih)
 {
   if (iupAttribGetBoolean(ih, "CUSTOMFRAMEDRAW"))
   {
@@ -1252,7 +1252,7 @@ static int cocoaDialogSetDialogHintAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-static int cocoaDialogSetHideTitleBarAttrib(Ihandle *ih, const char *value)
+static int cocoaDialogSetHideTitleBarAttrib(Ihandle* ih, const char* value)
 {
   NSWindow* window = iupcocoaDialogGetWindow(ih);
   if (!window) return 0;
@@ -1292,14 +1292,14 @@ static char* cocoaDialogGetActiveWindowAttrib(Ihandle* ih)
   return iupStrReturnBoolean([the_window isKeyWindow]);
 }
 
-static int cocoaDialogSetTopMostAttrib(Ihandle *ih, const char *value)
+static int cocoaDialogSetTopMostAttrib(Ihandle* ih, const char* value)
 {
   iupAttribSetStr(ih, "TOPMOST", value);
   cocoaDialogUpdateLevel(ih);
   return 1;
 }
 
-static int cocoaDialogSetBringFrontAttrib(Ihandle *ih, const char *value)
+static int cocoaDialogSetBringFrontAttrib(Ihandle* ih, const char* value)
 {
   if (iupStrBoolean(value))
   {
@@ -1313,7 +1313,7 @@ static int cocoaDialogSetBringFrontAttrib(Ihandle *ih, const char *value)
   return 0;
 }
 
-static int cocoaDialogSetOpacityAttrib(Ihandle *ih, const char *value)
+static int cocoaDialogSetOpacityAttrib(Ihandle* ih, const char* value)
 {
   NSWindow* the_window = iupcocoaDialogGetWindow(ih);
   if (!the_window) return 0;
@@ -1329,7 +1329,7 @@ static int cocoaDialogSetOpacityAttrib(Ihandle *ih, const char *value)
   return 0;
 }
 
-static int cocoaDialogSetIconAttrib(Ihandle* ih, const char *value)
+static int cocoaDialogSetIconAttrib(Ihandle* ih, const char* value)
 {
   NSImage* icon = iupImageGetIcon(value);
   [NSApp setApplicationIconImage:icon];
@@ -1396,7 +1396,7 @@ static int cocoaDialogSetBackgroundAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-static int cocoaDialogSetShapeImageAttrib(Ihandle *ih, const char *value)
+static int cocoaDialogSetShapeImageAttrib(Ihandle* ih, const char* value)
 {
   NSWindow* window = iupcocoaDialogGetWindow(ih);
   if (!window) return 0;
@@ -1431,12 +1431,12 @@ static int cocoaDialogSetShapeImageAttrib(Ihandle *ih, const char *value)
   return 1;
 }
 
-static int cocoaDialogSetOpacityImageAttrib(Ihandle *ih, const char *value)
+static int cocoaDialogSetOpacityImageAttrib(Ihandle* ih, const char* value)
 {
   return cocoaDialogSetShapeImageAttrib(ih, value);
 }
 
-static int cocoaDialogSetCustomFrameAttrib(Ihandle *ih, const char *value)
+static int cocoaDialogSetCustomFrameAttrib(Ihandle* ih, const char* value)
 {
   NSWindow* window = iupcocoaDialogGetWindow(ih);
   if (!window) return 0;
@@ -1469,7 +1469,7 @@ static int cocoaDialogSetCustomFrameAttrib(Ihandle *ih, const char *value)
   return 1;
 }
 
-static char* cocoaDialogGetMaximizedAttrib(Ihandle *ih)
+static char* cocoaDialogGetMaximizedAttrib(Ihandle* ih)
 {
   if (iupAttribGetBoolean(ih, "CUSTOMFRAME") || iupAttribGetBoolean(ih, "CUSTOMFRAMESIMULATE"))
     return iupAttribGet(ih, "MAXIMIZED");
@@ -1481,7 +1481,7 @@ static char* cocoaDialogGetMaximizedAttrib(Ihandle *ih)
   return iupStrReturnBoolean(cocoaDialogIsMaximized(the_window));
 }
 
-static char* cocoaDialogGetMinimizedAttrib(Ihandle *ih)
+static char* cocoaDialogGetMinimizedAttrib(Ihandle* ih)
 {
   NSWindow* the_window = iupcocoaDialogGetWindow(ih);
   if (!the_window)
@@ -1490,7 +1490,7 @@ static char* cocoaDialogGetMinimizedAttrib(Ihandle *ih)
   return iupStrReturnBoolean([the_window isMiniaturized]);
 }
 
-static char* cocoaDialogGetNSViewAttrib(Ihandle *ih)
+static char* cocoaDialogGetNSViewAttrib(Ihandle* ih)
 {
   NSWindow* the_window = iupcocoaDialogGetWindow(ih);
   if (!the_window)
@@ -1646,7 +1646,7 @@ static void cocoaDialogUnMapMethod(Ihandle* ih)
                     forKeyPath:@"effectiveAppearance"
                        context:IupCocoaAppearanceContext];
   }
-  @catch (NSException *exception)
+  @catch (NSException* exception)
   {
   }
 
@@ -1667,7 +1667,7 @@ static void cocoaDialogUnMapMethod(Ihandle* ih)
   ih->handle = NULL;
 }
 
-static void cocoaDialogLayoutUpdateMethod(Ihandle *ih)
+static void cocoaDialogLayoutUpdateMethod(Ihandle* ih)
 {
   int width, height;
 
@@ -1893,12 +1893,12 @@ typedef enum { IUP_DOCK_NORMAL, IUP_DOCK_PAUSED, IUP_DOCK_ERROR, IUP_DOCK_INDETE
 
 @end
 
-static IupDockProgressView* cocoaDockProgressView(Ihandle *ih)
+static IupDockProgressView* cocoaDockProgressView(Ihandle* ih)
 {
   return (IupDockProgressView*)objc_getAssociatedObject((id)ih->handle, DOCKPROGRESS_ASSOCIATED_OBJ_KEY);
 }
 
-static int cocoaDialogSetTaskBarProgressAttrib(Ihandle *ih, const char *value)
+static int cocoaDialogSetTaskBarProgressAttrib(Ihandle* ih, const char* value)
 {
   if (iupStrBoolean(value))
   {
@@ -1922,7 +1922,7 @@ static int cocoaDialogSetTaskBarProgressAttrib(Ihandle *ih, const char *value)
   return 1;
 }
 
-static int cocoaDialogSetTaskBarProgressStateAttrib(Ihandle *ih, const char *value)
+static int cocoaDialogSetTaskBarProgressStateAttrib(Ihandle* ih, const char* value)
 {
   IupDockProgressView* view = cocoaDockProgressView(ih);
   if (!view) return 1;
@@ -1940,7 +1940,7 @@ static int cocoaDialogSetTaskBarProgressStateAttrib(Ihandle *ih, const char *val
   return 1;
 }
 
-static int cocoaDialogSetTaskBarProgressValueAttrib(Ihandle *ih, const char *value)
+static int cocoaDialogSetTaskBarProgressValueAttrib(Ihandle* ih, const char* value)
 {
   IupDockProgressView* view = cocoaDockProgressView(ih);
   if (!view) return 1;

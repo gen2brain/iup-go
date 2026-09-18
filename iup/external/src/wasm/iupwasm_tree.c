@@ -309,12 +309,12 @@ IUP_SDK_API void iupdrvTreeAddNode(Ihandle* ih, int id, int kind, const char* ti
     iupwasmJsTreeFocus(treeId, newRowId);
 }
 
-IUP_SDK_API void iupdrvTreeUpdateMarkMode(Ihandle *ih)
+IUP_SDK_API void iupdrvTreeUpdateMarkMode(Ihandle* ih)
 {
   (void)ih;
 }
 
-IUP_SDK_API void iupdrvTreeAddBorders(Ihandle* ih, int *w, int *h)
+IUP_SDK_API void iupdrvTreeAddBorders(Ihandle* ih, int* w, int* h)
 {
   (void)ih;
   if (w) *w += 2;
@@ -386,7 +386,7 @@ static void wasmTreeCopyMoveNode(Ihandle* ih, int idSrc, int idDst, int isCopy)
       ih->data->node_cache[id_new + k].node_handle = (InodeHandle*)(intptr_t)(base + k);
 }
 
-IUP_SDK_API void iupdrvTreeDragDropCopyNode(Ihandle *src, Ihandle *dst, InodeHandle *itemSrc, InodeHandle *itemDst)
+IUP_SDK_API void iupdrvTreeDragDropCopyNode(Ihandle* src, Ihandle* dst, InodeHandle* itemSrc, InodeHandle* itemDst)
 {
   int idSrc = iupTreeFindNodeId(src, itemSrc);
   int idDst = iupTreeFindNodeId(dst, itemDst);

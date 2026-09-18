@@ -1660,8 +1660,8 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
     NSInteger col = [tableView columnForView:textField];
 
     if (row < 0 || col < 0) {
-      NSNumber *nRow = objc_getAssociatedObject(tableView, &kEditingRowKey);
-      NSNumber *nCol = objc_getAssociatedObject(tableView, &kEditingColKey);
+      NSNumber* nRow = objc_getAssociatedObject(tableView, &kEditingRowKey);
+      NSNumber* nCol = objc_getAssociatedObject(tableView, &kEditingColKey);
       if (nRow && nCol) {
         row = [nRow integerValue];
         col = [nCol integerValue];
@@ -1754,8 +1754,8 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
   if (editEnded && [editEnded boolValue])
       return;
 
-  NSNumber *nRow = objc_getAssociatedObject(tableView, &kEditingRowKey);
-  NSNumber *nCol = objc_getAssociatedObject(tableView, &kEditingColKey);
+  NSNumber* nRow = objc_getAssociatedObject(tableView, &kEditingRowKey);
+  NSNumber* nCol = objc_getAssociatedObject(tableView, &kEditingColKey);
   if (nRow && nCol) {
       row = [nRow integerValue];
       col = [nCol integerValue];
@@ -1816,7 +1816,7 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
   }
 }
 
-- (void)tableView:(NSTableView *)tableView didDragTableColumn:(NSTableColumn *)tableColumn
+- (void)tableView:(NSTableView*)tableView didDragTableColumn:(NSTableColumn*)tableColumn
 {
   if (!ih) return;
 

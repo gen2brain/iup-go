@@ -31,8 +31,8 @@ static int gtkMessageDlgPopup(Ihandle* ih, int x, int y)
   InativeHandle* parent = iupDialogGetNativeParent(ih);
   GtkMessageType type = GTK_MESSAGE_OTHER;
   GtkWidget* dialog;
-  char *icon, *buttons, *title;
-  const char *ok, *cancel, *yes, *no, *help, *retry = IupGetLanguageString("IUP_RETRY");
+  char* icon, *buttons, *title;
+  const char* ok, *cancel, *yes, *no, *help, *retry = IupGetLanguageString("IUP_RETRY");
   int response, button_def;
 
   iupAttribSetInt(ih, "_IUPDLG_X", x);   /* used in iupDialogUpdatePosition */

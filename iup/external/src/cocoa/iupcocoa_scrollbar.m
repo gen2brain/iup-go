@@ -115,7 +115,7 @@ static const void* IUP_COCOA_SCROLLBAR_RECEIVER_OBJ_KEY = "IUP_COCOA_SCROLLBAR_R
 @end
 
 
-IUP_SDK_API void iupdrvScrollbarGetMinSize(Ihandle* ih, int *w, int *h)
+IUP_SDK_API void iupdrvScrollbarGetMinSize(Ihandle* ih, int* w, int* h)
 {
 #ifdef GNUSTEP
   CGFloat sb_size = [NSScroller scrollerWidth];

@@ -17,17 +17,17 @@
 #include "iup_drvinfo.h"
 
 
-IUP_SDK_API void iupdrvAddScreenOffset(int *x, int *y, int add)
+IUP_SDK_API void iupdrvAddScreenOffset(int* x, int* y, int add)
 {
   (void)x;
   (void)y;
   (void)add;
 }
 
-IUP_SDK_API void iupdrvGetScreenSize(int *width, int *height)
+IUP_SDK_API void iupdrvGetScreenSize(int* width, int* height)
 {
 #if GTK_CHECK_VERSION(3, 22, 0)
-  GdkDisplay *display = gdk_display_get_default();
+  GdkDisplay* display = gdk_display_get_default();
   GdkMonitor* monitor = gdk_display_get_primary_monitor(display);
   if (!monitor)
     monitor = gdk_display_get_monitor(display, 0);
@@ -56,7 +56,7 @@ IUP_SDK_API void iupdrvGetScreenSize(int *width, int *height)
 #endif
 }
 
-IUP_SDK_API void iupdrvGetFullSize(int *width, int *height)
+IUP_SDK_API void iupdrvGetFullSize(int* width, int* height)
 {
   GdkRectangle rect;
 #if GTK_CHECK_VERSION(3, 22, 0)
@@ -102,7 +102,7 @@ IUP_SDK_API int iupdrvScaleNaturalPx(int px)
   return px;
 }
 
-IUP_SDK_API void iupdrvGetCursorPos(int *x, int *y)
+IUP_SDK_API void iupdrvGetCursorPos(int* x, int* y)
 {
 #if GTK_CHECK_VERSION(3, 20, 0)
   GdkSeat* seat = gdk_display_get_default_seat(gdk_display_get_default());

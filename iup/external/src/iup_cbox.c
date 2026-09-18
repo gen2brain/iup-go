@@ -30,7 +30,7 @@ static int iCboxCreateMethod(Ihandle* ih, void** params)
   return IUP_NOERROR;
 }
 
-static void iCboxComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *children_expand)
+static void iCboxComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* children_expand)
 {
   Ihandle* child;
   int children_naturalwidth, children_naturalheight;
@@ -96,7 +96,7 @@ IUP_API Ihandle* IupCboxV(Ihandle* child, va_list arglist)
 
 IUP_API Ihandle* IupCbox (Ihandle * child,...)
 {
-  Ihandle *ih;
+  Ihandle* ih;
 
   va_list arglist;
   va_start(arglist, child);

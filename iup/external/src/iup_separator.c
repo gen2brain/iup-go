@@ -288,7 +288,7 @@ static int iSeparatorCreateMethod(Ihandle* ih, void** params)
   return IUP_NOERROR;
 }
 
-static void iSeparatorComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *children_expand)
+static void iSeparatorComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* children_expand)
 {
   int natural_w = 0,
       natural_h = 0;

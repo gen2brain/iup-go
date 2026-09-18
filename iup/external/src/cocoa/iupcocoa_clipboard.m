@@ -132,7 +132,7 @@ static char* cocoaClipboardGetImageAvailableAttrib(Ihandle* ih)
   return iupStrReturnBoolean([NSImage canInitWithPasteboard:paste_board]);
 }
 
-static int cocoaClipboardSetNativeVectorImageAttrib(Ihandle *ih, const char *value)
+static int cocoaClipboardSetNativeVectorImageAttrib(Ihandle* ih, const char* value)
 {
   NSPasteboard* paste_board = [NSPasteboard generalPasteboard];
 
@@ -153,7 +153,7 @@ static int cocoaClipboardSetNativeVectorImageAttrib(Ihandle *ih, const char *val
   return 0;
 }
 
-static char* cocoaClipboardGetNativeVectorImageAttrib(Ihandle *ih)
+static char* cocoaClipboardGetNativeVectorImageAttrib(Ihandle* ih)
 {
   NSPasteboard* paste_board = [NSPasteboard generalPasteboard];
   NSData* pdf_data = [paste_board dataForType:NSPasteboardTypePDF];

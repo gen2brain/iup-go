@@ -17,7 +17,7 @@
 #include "iup_predialogs.h"
 
 
-static int compare_names(const void *a, const void *b)
+static int compare_names(const void* a, const void* b)
 {
   return strcmp( * ( char** ) a, * ( char** ) b );
 }
@@ -148,7 +148,7 @@ static char* getCallbackParameters(const char* format)
 }
 
 /* Update callback labels */
-static int callbacksList_ActionCB (Ihandle *ih, char *callName, int pos, int state)
+static int callbacksList_ActionCB (Ihandle* ih, char* callName, int pos, int state)
 {
   if (state == 1)
   {
@@ -169,7 +169,7 @@ static int callbacksList_ActionCB (Ihandle *ih, char *callName, int pos, int sta
 }
 
 /* Update attribute labels */
-static int attributesList_ActionCB (Ihandle *ih, char *attribName, int pos, int state)
+static int attributesList_ActionCB (Ihandle* ih, char* attribName, int pos, int state)
 {
   if (state == 1)
   {
@@ -259,7 +259,7 @@ IUP_SDK_API void iupClassInfoGetDesc(Iclass* ic, Ihandle* ih, const char* attrib
                    ic->has_attrib_id ? "  Has Id Attributes\n" : "");
 }
 
-static int classesList_ActionCB (Ihandle *ih, char *className, int pos, int state)
+static int classesList_ActionCB (Ihandle* ih, char* className, int pos, int state)
 {
   if (state == 1)
   {
@@ -268,10 +268,10 @@ static int classesList_ActionCB (Ihandle *ih, char *className, int pos, int stat
     Ihandle* listAttributes = IupGetDialogChild(ih, "listAttributes");
     Ihandle* listCallbacks = IupGetDialogChild(ih, "listCallbacks");
     Ihandle* txtInfo = IupGetDialogChild(ih, "txtInfo");
-    char **attr_names;
+    char** attr_names;
 
     total_n = IupGetClassAttributes(className, NULL, -1); /* total include callbacks */
-    attr_names = (char **)malloc(total_n * sizeof(char *));
+    attr_names = (char**)malloc(total_n * sizeof(char*));
     if (!attr_names) return IUP_DEFAULT;
 
     /************ attributes ************/
@@ -316,10 +316,10 @@ static void PopulateListOfClasses(Ihandle* ih)
 {
   Ihandle* listClasses = IupGetDialogChild(ih, "listClasses");
   int i, num_classes;
-  char **list;
+  char** list;
 
   num_classes = IupGetAllClasses(NULL, -1);
-  list = (char **)malloc(num_classes * sizeof(char *));
+  list = (char**)malloc(num_classes * sizeof(char*));
   if (!list) return;
   IupGetAllClasses(list, num_classes);
 
@@ -379,7 +379,7 @@ static int button_ok_CB(Ihandle* ih)
 
 IUP_API Ihandle* IupClassInfoDialog(Ihandle* parent)
 {
-  Ihandle *dialog, *box, *buttons, *listClasses, *listAttributes, *listCallbacks, *txtInfo, *ok_bt, *help_bt;
+  Ihandle* dialog, *box, *buttons, *listClasses, *listAttributes, *listCallbacks, *txtInfo, *ok_bt, *help_bt;
 
   listClasses    = IupList();  /* list of registered classes */
   listAttributes = IupList();  /* list of attributes of the selected class */

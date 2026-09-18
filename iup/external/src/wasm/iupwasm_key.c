@@ -10,7 +10,7 @@
 
 
 /* No native key-event injection in a browser; core's key path runs entirely from the JS keydown handler. */
-IUP_SDK_API void iupdrvKeyEncode(int key, unsigned int *keyval, unsigned int *state)
+IUP_SDK_API void iupdrvKeyEncode(int key, unsigned int* keyval, unsigned int* state)
 {
   (void)key;
   if (keyval) *keyval = 0;

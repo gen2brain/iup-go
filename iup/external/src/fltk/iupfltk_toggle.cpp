@@ -274,12 +274,12 @@ static void fltkToggleSetPixmap(Ihandle* ih, const char* name, int make_inactive
     button->image(image);
 }
 
-extern "C" IUP_SDK_API void iupdrvToggleAddBorders(Ihandle* ih, int *x, int *y)
+extern "C" IUP_SDK_API void iupdrvToggleAddBorders(Ihandle* ih, int* x, int* y)
 {
   iupdrvButtonAddBorders(ih, x, y);
 }
 
-extern "C" IUP_SDK_API void iupdrvToggleAddCheckBox(Ihandle* ih, int *x, int *y, const char* str)
+extern "C" IUP_SDK_API void iupdrvToggleAddCheckBox(Ihandle* ih, int* x, int* y, const char* str)
 {
   (void)str;
   if (ih->data->type == IUP_TOGGLE_IMAGE)
@@ -607,7 +607,7 @@ static int fltkToggleMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-extern "C" IUP_SDK_API void iupdrvToggleAddSwitch(Ihandle* ih, int *x, int *y, const char* str)
+extern "C" IUP_SDK_API void iupdrvToggleAddSwitch(Ihandle* ih, int* x, int* y, const char* str)
 {
   (void)ih;
 

@@ -127,7 +127,7 @@ static void fltkValCallback(Fl_Widget* w, void* data)
   fltkValUpdateValue((Ihandle*)data);
 }
 
-extern "C" IUP_SDK_API void iupdrvValGetMinSize(Ihandle* ih, int *w, int *h)
+extern "C" IUP_SDK_API void iupdrvValGetMinSize(Ihandle* ih, int* w, int* h)
 {
   int ticks_size = 0;
   if (iupAttribGetInt(ih, "SHOWTICKS"))

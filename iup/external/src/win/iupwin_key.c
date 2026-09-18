@@ -232,7 +232,7 @@ IUP_DRV_API int iupwinKeyIsExtended(int code)
   return 0;
 }
 
-IUP_SDK_API void iupdrvKeyEncode(int code, unsigned int *wincode, unsigned int *state)
+IUP_SDK_API void iupdrvKeyEncode(int code, unsigned int* wincode, unsigned int* state)
 {
   int i, iupcode = iup_XkeyBase(code);
 

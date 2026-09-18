@@ -16,18 +16,18 @@
 
 typedef struct Idiallst_
 {
-  Ihandle *ih;
-  struct Idiallst_ *next;
+  Ihandle* ih;
+  struct Idiallst_* next;
 } Idiallst;
 
-static Idiallst *idlglist = NULL;  /* list of all created dialogs */
+static Idiallst* idlglist = NULL;  /* list of all created dialogs */
 static int idlg_count = 0;
 
-IUP_SDK_API void iupDlgListAdd(Ihandle *ih)
+IUP_SDK_API void iupDlgListAdd(Ihandle* ih)
 {
   if (ih)
   {
-    Idiallst *p=(Idiallst *)malloc(sizeof(Idiallst));
+    Idiallst* p=(Idiallst*)malloc(sizeof(Idiallst));
     if (!p)
       return;
     p->ih = ih;
@@ -37,22 +37,22 @@ IUP_SDK_API void iupDlgListAdd(Ihandle *ih)
   }
 }
 
-IUP_SDK_API void iupDlgListRemove(Ihandle *ih)
+IUP_SDK_API void iupDlgListRemove(Ihandle* ih)
 {
   if (!idlglist || !ih)
     return;
 
   if (idlglist->ih == ih)    /* ih is header */
   {
-    Idiallst *p = idlglist->next;
+    Idiallst* p = idlglist->next;
     free(idlglist);
     idlglist = p;
     idlg_count--;
   }
   else
   {
-    Idiallst *p;    /* current pointer */
-    Idiallst *b;    /* before pointer */
+    Idiallst* p;    /* current pointer */
+    Idiallst* b;    /* before pointer */
     for (b = idlglist, p = idlglist->next; p; b = p, p = p->next)
     {
       if (p->ih == ih)
@@ -66,22 +66,22 @@ IUP_SDK_API void iupDlgListRemove(Ihandle *ih)
   }
 }
 
-static Idiallst *idlg_first = NULL;
+static Idiallst* idlg_first = NULL;
 
 IUP_SDK_API int iupDlgListCount(void)
 {
   return idlg_count;
 }
 
-IUP_SDK_API Ihandle *iupDlgListFirst(void)
+IUP_SDK_API Ihandle* iupDlgListFirst(void)
 {
   idlg_first = idlglist;
   return iupDlgListNext();
 }
 
-IUP_SDK_API Ihandle *iupDlgListNext(void)
+IUP_SDK_API Ihandle* iupDlgListNext(void)
 {
-  Ihandle *ih = NULL;
+  Ihandle* ih = NULL;
   if (idlg_first)
   {
     ih = idlg_first->ih;
@@ -115,7 +115,7 @@ void iupDlgListDestroyAll(void)
 {
   int i, count = 0;
   Ihandle** ih_array = (Ihandle**)malloc(idlg_count * sizeof(Ihandle*));
-  Idiallst *list;
+  Idiallst* list;
   if (!ih_array)
     return;
   for (list = idlglist; list; list = list->next)
@@ -140,7 +140,7 @@ IUP_SDK_API void iupDlgListDestroySelected(const char* name, void* value)
 {
   int i, count = 0;
   Ihandle** ih_array = (Ihandle**)malloc(idlg_count * sizeof(Ihandle*));
-  Idiallst *list;
+  Idiallst* list;
   if (!ih_array)
     return;
   for (list = idlglist; list; list = list->next)

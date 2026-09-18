@@ -28,7 +28,7 @@
 
 static void iMatrixEditUpdateValue(Ihandle* ih)
 {
-  char *value = iupMatrixEditGetValue(ih);
+  char* value = iupMatrixEditGetValue(ih);
 
   iupAttribSet(ih, "CELL_EDITED", "Yes");
 
@@ -134,7 +134,7 @@ static int iMatrixMenuItemAction_CB(Ihandle* ih_item)
 
 static void iMatrixEditInitMenu(Ihandle* ih_menu)
 {
-  char *value;
+  char* value;
   int i = 1;
   int v = IupGetInt(ih_menu, "VALUE");
 

@@ -16,7 +16,7 @@
 #include "iupgtk_drv.h"
 
 
-IUP_DRV_API void iupgtkSetCanFocus(GtkWidget *widget, int can)
+IUP_DRV_API void iupgtkSetCanFocus(GtkWidget* widget, int can)
 {
 #if GTK_CHECK_VERSION(2, 18, 0)
   gtk_widget_set_can_focus(widget, can);
@@ -28,7 +28,7 @@ IUP_DRV_API void iupgtkSetCanFocus(GtkWidget *widget, int can)
 #endif
 }
 
-IUP_SDK_API void iupdrvSetFocus(Ihandle *ih)
+IUP_SDK_API void iupdrvSetFocus(Ihandle* ih)
 {
   Ihandle* dialog = IupGetDialog(ih);
   GtkWidget* focus_widget = (GtkWidget*)iupAttribGet(ih, "_IUPGTK_FOCUSWIDGET");
@@ -40,7 +40,7 @@ IUP_SDK_API void iupdrvSetFocus(Ihandle *ih)
   gtk_widget_grab_focus(focus_widget ? focus_widget : ih->handle);
 }
 
-IUP_DRV_API gboolean iupgtkFocusInOutEvent(GtkWidget *widget, GdkEventFocus *evt, Ihandle *ih)
+IUP_DRV_API gboolean iupgtkFocusInOutEvent(GtkWidget* widget, GdkEventFocus* evt, Ihandle* ih)
 {
   (void)widget;
 

@@ -153,14 +153,14 @@ extern "C" IUP_SDK_API int iupdrvFrameHasClientOffset(Ihandle* ih)
   return 0;
 }
 
-extern "C" IUP_SDK_API void iupdrvFrameGetDecorOffset(Ihandle* ih, int *x, int *y)
+extern "C" IUP_SDK_API void iupdrvFrameGetDecorOffset(Ihandle* ih, int* x, int* y)
 {
   (void)ih;
   if (x) *x = 0;
   if (y) *y = 0;
 }
 
-extern "C" IUP_SDK_API int iupdrvFrameGetTitleHeight(Ihandle* ih, int *h)
+extern "C" IUP_SDK_API int iupdrvFrameGetTitleHeight(Ihandle* ih, int* h)
 {
   if (!iupAttribGet(ih, "_IUPFRAME_HAS_TITLE") && !iupAttribGet(ih, "TITLE"))
   {
@@ -179,7 +179,7 @@ extern "C" IUP_SDK_API int iupdrvFrameGetTitleHeight(Ihandle* ih, int *h)
   return 1;
 }
 
-extern "C" IUP_SDK_API int iupdrvFrameGetDecorSize(Ihandle* ih, int *w, int *h)
+extern "C" IUP_SDK_API int iupdrvFrameGetDecorSize(Ihandle* ih, int* w, int* h)
 {
   BBox temp(BRect(0, 0, 99, 99), "iup_frame_probe", B_FOLLOW_NONE, kFrameFlags, haikuFrameResolveBorder(ih));
 

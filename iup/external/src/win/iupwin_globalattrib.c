@@ -403,7 +403,7 @@ IUP_SDK_API char* iupdrvGetGlobal(const char* name)
   }
   if (iupStrEqual(name, "DWM_COMPOSITION"))
   {
-    typedef HRESULT(STDAPICALLTYPE *PtrDwmIsCompositionEnabled)(BOOL*);
+    typedef HRESULT(STDAPICALLTYPE* PtrDwmIsCompositionEnabled)(BOOL*);
     static PtrDwmIsCompositionEnabled dwmIsCompositionEnabled = NULL;
     if (dwmIsCompositionEnabled == NULL)
     {

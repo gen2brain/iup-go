@@ -25,7 +25,7 @@
 
 static void motMessageDlgDeleteWindowCallback(Widget w, XtPointer client_data, XtPointer call_data)
 {
-  Ihandle *ih = (Ihandle*)client_data;
+  Ihandle* ih = (Ihandle*)client_data;
   if (!ih) return;
   (void)call_data;
   (void)w;
@@ -47,7 +47,7 @@ static void motMessageDlgCallback(Widget w, Ihandle* ih, XmAnyCallbackStruct* ca
 
 static void motMessageDlgHelpCallback(Widget w, XtPointer client_data, XtPointer call_data)
 {
-  Ihandle *ih = (Ihandle*)client_data;
+  Ihandle* ih = (Ihandle*)client_data;
   Icallback cb = (Icallback)IupGetCallback(ih, "HELP_CB");
   if (cb && cb(ih) == IUP_CLOSE)
   {
@@ -68,7 +68,7 @@ static int motMessageDlgPopup(Ihandle* ih, int x, int y)
   int style = XmDIALOG_FULL_APPLICATION_MODAL;
   int type = XmDIALOG_MESSAGE;
   int num_but = 2;
-  char *value;
+  char* value;
 
   iupAttribSetInt(ih, "_IUPDLG_X", x);   /* used in iupDialogUpdatePosition */
   iupAttribSetInt(ih, "_IUPDLG_Y", y);

@@ -45,15 +45,15 @@ IUPCONTROLS_API int IupControlsOpen(void)
   return IUP_NOERROR;
 }
 
-char *iupControlBaseGetParentBgColor(Ihandle* ih)
+char* iupControlBaseGetParentBgColor(Ihandle* ih)
 {
   return IupGetAttribute(iupChildTreeGetNativeParent(ih), "BGCOLOR");
 }
 
-char *iupControlBaseGetBgColorAttrib(Ihandle* ih)
+char* iupControlBaseGetBgColorAttrib(Ihandle* ih)
 {
   /* check the hash table */
-  char *color = iupAttribGet(ih, "BGCOLOR");
+  char* color = iupAttribGet(ih, "BGCOLOR");
 
   /* If not defined check native definition from parent */
   if (!color)

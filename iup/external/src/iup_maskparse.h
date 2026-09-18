@@ -21,13 +21,13 @@ typedef struct _ImaskParsed
   int next2;
 } ImaskParsed;
 
-typedef int (*iMaskMatchFunc) (char which_one, long next_pos, long capture_pos, const char *text, void* user_data);
+typedef int (*iMaskMatchFunc) (char which_one, long next_pos, long capture_pos, const char* text, void* user_data);
 
 /* Parse the mask and if it is ok create and returns the internal structure. */
 int iupMaskParse(const char* mask, ImaskParsed** imk);
 
 /* Do the pattern matching on the given text. */
-int iupMaskMatch(const char* text, ImaskParsed* imk, long start, iMaskMatchFunc mask_func, void* user_data, char *addchar, int icase);
+int iupMaskMatch(const char* text, ImaskParsed* imk, long start, iMaskMatchFunc mask_func, void* user_data, char* addchar, int icase);
 
 /* Change a control character. */
 int iupMaskSetChar(int char_number, char new_char);

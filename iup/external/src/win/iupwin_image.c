@@ -276,7 +276,7 @@ IUP_SDK_API void iupdrvImageGetData(void* handle, unsigned char* imgdata)
 }
 
 
-IUP_SDK_API int iupdrvImageGetRawInfo(void* handle, int *w, int *h, int *bpp, iupColor* colors, int *colors_count)
+IUP_SDK_API int iupdrvImageGetRawInfo(void* handle, int* w, int* h, int* bpp, iupColor* colors, int* colors_count)
 {
   HANDLE hHandle = (HANDLE)handle;
   void* packed;
@@ -343,7 +343,7 @@ static int winImageInitDibColors(iupColor* colors, RGBQUAD* bmpcolors, int color
   return ret;
 }
 
-static void* winImageCreateBitmap(Ihandle *ih, const char* bgcolor, int make_inactive)
+static void* winImageCreateBitmap(Ihandle* ih, const char* bgcolor, int make_inactive)
 {
   unsigned char bg_r = 0, bg_g = 0, bg_b = 0;
   int y,x,bmp_line_size,data_line_size,
@@ -352,7 +352,7 @@ static void* winImageCreateBitmap(Ihandle *ih, const char* bgcolor, int make_ina
       channels = iupAttribGetInt(ih, "CHANNELS"),
       flat_alpha = iupAttribGetBoolean(ih, "FLAT_ALPHA"),
       bpp = iupAttribGetInt(ih, "BPP");
-  unsigned char *imgdata = (unsigned char*)iupAttribGetStr(ih, "WID");
+  unsigned char* imgdata = (unsigned char*)iupAttribGetStr(ih, "WID");
   HBITMAP hBitmap;
   BYTE* bits;   /* DIB bitmap bits, created in CreateDIBSection and filled here */
   int colors_count = 0;
@@ -403,7 +403,7 @@ static void* winImageCreateBitmap(Ihandle *ih, const char* bgcolor, int make_ina
     }
 
     hDC = GetDC(NULL);
-    hBitmap = CreateDIBSection(hDC, (BITMAPINFO*)bmih, DIB_RGB_COLORS, (void **)&bits, NULL, 0x0);
+    hBitmap = CreateDIBSection(hDC, (BITMAPINFO*)bmih, DIB_RGB_COLORS, (void**)&bits, NULL, 0x0);
     ReleaseDC(NULL, hDC);
     free(bmih);
   }
@@ -425,7 +425,7 @@ static void* winImageCreateBitmap(Ihandle *ih, const char* bgcolor, int make_ina
       {
         int offset = channels*x;
         /* Windows Bitmap order is BGRA */
-        BYTE *b = &bits[offset],
+        BYTE* b = &bits[offset],
              *g = b+1,
              *r = g+1,
              *a = r+1,
@@ -470,7 +470,7 @@ static void* winImageCreateBitmap(Ihandle *ih, const char* bgcolor, int make_ina
         {
           int offset = 4*x;
           /* Windows Bitmap order is BGRA */
-          BYTE *b = &bits[offset],
+          BYTE* b = &bits[offset],
                *g = b + 1,
                *r = g + 1,
                *a = r + 1,
@@ -513,14 +513,14 @@ static void* winImageCreateBitmap(Ihandle *ih, const char* bgcolor, int make_ina
   return hBitmap;
 }
 
-static HBITMAP winImageCreateBitmask(Ihandle *ih)
+static HBITMAP winImageCreateBitmask(Ihandle* ih)
 {
   int y, x, mask_line_size,data_line_size, colors_count, set,
       width = ih->currentwidth,
       height = ih->currentheight,
       channels = iupAttribGetInt(ih, "CHANNELS"),
       bpp = iupAttribGetInt(ih, "BPP");
-  unsigned char *imgdata = (unsigned char*)iupAttribGetStr(ih, "WID");
+  unsigned char* imgdata = (unsigned char*)iupAttribGetStr(ih, "WID");
   HBITMAP hBitmap;
   BYTE* bitmask, *bitmask_ptr;
   iupColor colors[256];
@@ -569,7 +569,7 @@ static HBITMAP winImageCreateBitmask(Ihandle *ih)
   return hBitmap;
 }
 
-static HICON winImageCreateCursorIcon(Ihandle *ih, int is_cursor)
+static HICON winImageCreateCursorIcon(Ihandle* ih, int is_cursor)
 {
   HBITMAP hBitmap, hBitmapMask;
   ICONINFO iconinfo;
@@ -639,7 +639,7 @@ static HICON winImageCreateCursorIcon(Ihandle *ih, int is_cursor)
   return icon;
 }
 
-IUP_SDK_API void* iupdrvImageCreateImage(Ihandle *ih, const char* bgcolor, int make_inactive)
+IUP_SDK_API void* iupdrvImageCreateImage(Ihandle* ih, const char* bgcolor, int make_inactive)
 {
   void* handle = winImageCreateBitmap(ih, bgcolor, make_inactive);
 
@@ -653,7 +653,7 @@ IUP_SDK_API void* iupdrvImageCreateImage(Ihandle *ih, const char* bgcolor, int m
   return handle;
 }
 
-IUP_SDK_API void* iupdrvImageCreateIcon(Ihandle *ih)
+IUP_SDK_API void* iupdrvImageCreateIcon(Ihandle* ih)
 {
   void* handle = winImageCreateCursorIcon(ih, 0);
 
@@ -667,7 +667,7 @@ IUP_SDK_API void* iupdrvImageCreateIcon(Ihandle *ih)
   return handle;
 }
 
-IUP_SDK_API void* iupdrvImageCreateCursor(Ihandle *ih)
+IUP_SDK_API void* iupdrvImageCreateCursor(Ihandle* ih)
 {
   void* handle = winImageCreateCursorIcon(ih, 1);
 
@@ -705,7 +705,7 @@ IUP_SDK_API void* iupdrvImageLoad(const char* name, int type)
   return hImage;
 }
 
-IUP_SDK_API int iupdrvImageGetInfo(void* handle, int *w, int *h, int *bpp)
+IUP_SDK_API int iupdrvImageGetInfo(void* handle, int* w, int* h, int* bpp)
 {
   BITMAP bm;
   if (!GetObject((HBITMAP)handle, sizeof(BITMAP), (LPSTR)&bm))

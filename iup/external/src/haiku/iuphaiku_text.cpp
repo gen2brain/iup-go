@@ -1760,7 +1760,7 @@ static void haikuTextProbeChrome(int* w, int* h)
   if (h) *h += probe_h;
 }
 
-extern "C" IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int *w, int *h)
+extern "C" IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int* w, int* h)
 {
   if (ih && ih->data && ih->data->is_multiline)
   {
@@ -1908,7 +1908,7 @@ static char* haikuTextGetSpinValueAttrib(Ihandle* ih)
   return tc ? iupStrReturnStr(tc->Text()) : NULL;
 }
 
-extern "C" IUP_SDK_API void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, int col, int *pos)
+extern "C" IUP_SDK_API void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, int col, int* pos)
 {
   BTextView* tv = haikuTextGetEditor(ih);
   if (!tv) { if (pos) *pos = 0; return; }
@@ -1921,7 +1921,7 @@ extern "C" IUP_SDK_API void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, i
   if (pos) *pos = line_start + col - 1;
 }
 
-extern "C" IUP_SDK_API void iupdrvTextConvertPosToLinCol(Ihandle* ih, int pos, int *lin, int *col)
+extern "C" IUP_SDK_API void iupdrvTextConvertPosToLinCol(Ihandle* ih, int pos, int* lin, int* col)
 {
   BTextView* tv = haikuTextGetEditor(ih);
   if (!tv) { if (lin) *lin = 1; if (col) *col = 1; return; }

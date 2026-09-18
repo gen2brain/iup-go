@@ -401,7 +401,7 @@ IUP_SDK_API void iupdrvDrawFlush(IdrawCanvas* dc)
     iupwasmJsCanvasBlit(dc->cid);
 }
 
-IUP_SDK_API void iupdrvDrawGetSize(IdrawCanvas* dc, int *w, int *h)
+IUP_SDK_API void iupdrvDrawGetSize(IdrawCanvas* dc, int* w, int* h)
 {
   if (w) *w = dc ? dc->w : 0;
   if (h) *h = dc ? dc->h : 0;
@@ -584,7 +584,7 @@ IUP_SDK_API void iupdrvDrawResetClip(IdrawCanvas* dc)
   iupwasmJsResetClip(dc->cid);
 }
 
-IUP_SDK_API void iupdrvDrawGetClipRect(IdrawCanvas* dc, int *x1, int *y1, int *x2, int *y2)
+IUP_SDK_API void iupdrvDrawGetClipRect(IdrawCanvas* dc, int* x1, int* y1, int* x2, int* y2)
 {
   (void)dc;
   if (x1) *x1 = 0;

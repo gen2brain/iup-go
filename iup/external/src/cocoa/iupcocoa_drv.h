@@ -78,9 +78,9 @@ IUP_DRV_API void iupcocoaCommonBaseSetContextMenuForWidget(Ihandle* ih, id ih_wi
 IUP_DRV_API int iupcocoaCommonBaseSetContextMenuAttrib(Ihandle* ih, const char* value);
 IUP_DRV_API char* iupcocoaCommonBaseGetContextMenuAttrib(Ihandle* ih);
 
-IUP_DRV_API bool iupcocoaKeyEvent(Ihandle *ih, NSEvent* ns_event, int mac_key_code, bool is_pressed);
+IUP_DRV_API bool iupcocoaKeyEvent(Ihandle* ih, NSEvent* ns_event, int mac_key_code, bool is_pressed);
 IUP_DRV_API int iupcocoaKeyDecodeEvent(NSEvent* ns_event, int mac_key_code);
-IUP_DRV_API bool iupcocoaModifierEvent(Ihandle *ih, NSEvent* ns_event, int mac_key_code);
+IUP_DRV_API bool iupcocoaModifierEvent(Ihandle* ih, NSEvent* ns_event, int mac_key_code);
 #ifndef GNUSTEP
 IUP_DRV_API int iupcocoaKeyDecode(CGEventRef event);
 #endif
@@ -122,7 +122,7 @@ static inline NSRect iupcocoaClampRect(NSRect r)
 @end
 
 IUP_DRV_API IupCocoaFont* iupcocoaGetFont(Ihandle* ih);
-IUP_DRV_API IupCocoaFont* iupcocoaFindFont(const char *iup_font_name);
+IUP_DRV_API IupCocoaFont* iupcocoaFindFont(const char* iup_font_name);
 
 IUP_DRV_API int iupcocoaTextFieldCellInset(void);
 

@@ -71,7 +71,7 @@ static int iupmotMakeDirectory(const char* name)
 
 static void motFileDlgAskUserCBclose(Widget w, XtPointer client_data, XtPointer call_data)
 {
-  int *ret_code = (int*)client_data;
+  int* ret_code = (int*)client_data;
   if (!ret_code) return;
   (void)call_data;
   (void)w;
@@ -169,7 +169,7 @@ static int motFileDlgCheckValue(Ihandle* ih, Widget filebox)
 
 static void motFileDlgCBclose(Widget w, XtPointer client_data, XtPointer call_data)
 {
-  Ihandle *ih = (Ihandle*)client_data;
+  Ihandle* ih = (Ihandle*)client_data;
   if (!ih) return;
   (void)call_data;
   (void)w;
@@ -180,8 +180,8 @@ static void motFileDlgCBclose(Widget w, XtPointer client_data, XtPointer call_da
 
 static int motFileDlgGetMultipleFiles(Ihandle* ih, const char* dir, Widget wList)
 {
-  int *pos, pos_count, dir_len;
-  char *filename;
+  int* pos, pos_count, dir_len;
+  char* filename;
   XmString* items;
 
   XtVaGetValues(wList, XmNselectedPositions, &pos, XmNselectedPositionCount, &pos_count, NULL);
@@ -215,7 +215,7 @@ static int motFileDlgGetMultipleFiles(Ihandle* ih, const char* dir, Widget wList
   else
   {
     Iarray* names_array = iupArrayCreate(1024, sizeof(char));  /* just set an initial size, but count is 0 */
-    char *all_names;
+    char* all_names;
     int i, cur_len, count = 0;
 
     int len = dir_len;
@@ -384,7 +384,7 @@ static void motFileDlgCallback(Widget filebox, Ihandle* ih, XmFileSelectionBoxCa
   }
 }
 
-static void motFileDlgHelpCallback(Widget w, Ihandle *ih, XtPointer call_data)
+static void motFileDlgHelpCallback(Widget w, Ihandle* ih, XtPointer call_data)
 {
   Icallback cb = IupGetCallback(ih, "HELP_CB");
   if (cb && cb(ih) == IUP_CLOSE)
@@ -478,9 +478,9 @@ static void motFileDlgNewFolderCallback(Widget w, Widget filebox, XtPointer call
   (void)w;
 }
 
-static void motFileDlgPreviewCanvasInputCallback(Widget w, Ihandle *ih, XtPointer call_data)
+static void motFileDlgPreviewCanvasInputCallback(Widget w, Ihandle* ih, XtPointer call_data)
 {
-  XEvent *evt = ((XmDrawingAreaCallbackStruct*)call_data)->event;
+  XEvent* evt = ((XmDrawingAreaCallbackStruct*)call_data)->event;
 
   if (!XtWindow(w) || !ih) return;
 
@@ -489,7 +489,7 @@ static void motFileDlgPreviewCanvasInputCallback(Widget w, Ihandle *ih, XtPointe
   case ButtonPress:
   case ButtonRelease:
   {
-    XButtonEvent *but_evt = (XButtonEvent*)evt;
+    XButtonEvent* but_evt = (XButtonEvent*)evt;
     Boolean cont = True;
     iupmotButtonPressReleaseEvent(w, ih, evt, &cont);
     if (cont == False)
@@ -512,7 +512,7 @@ static void motFileDlgPreviewCanvasInputCallback(Widget w, Ihandle *ih, XtPointe
   }
 }
 
-static void motFileDlgPreviewCanvasResizeCallback(Widget w, Ihandle *ih, XtPointer call_data)
+static void motFileDlgPreviewCanvasResizeCallback(Widget w, Ihandle* ih, XtPointer call_data)
 {
   Dimension width, height;
   XtVaGetValues(w, XmNwidth, &width,
@@ -535,7 +535,7 @@ static void motFileDlgUpdatePreviewGLCanvas(Ihandle* ih)
   }
 }
 
-static void motFileDlgPreviewCanvasInit(Ihandle *ih, Widget w)
+static void motFileDlgPreviewCanvasInit(Ihandle* ih, Widget w)
 {
   XSetWindowAttributes attrs;
   GC gc = XCreateGC(iupmot_display, XtWindow(w), 0, NULL);
@@ -552,7 +552,7 @@ static void motFileDlgPreviewCanvasInit(Ihandle *ih, Widget w)
   XChangeWindowAttributes(iupmot_display, XtWindow(w), CWBitGravity|CWBackPixmap, &attrs);
 }
 
-static void motFileDlgPreviewCanvasExposeCallback(Widget w, Ihandle *ih, XtPointer call_data)
+static void motFileDlgPreviewCanvasExposeCallback(Widget w, Ihandle* ih, XtPointer call_data)
 {
   Widget filebox = (Widget)iupAttribGet(ih, "_IUPDLG_FILEBOX");
   char* filename;
@@ -717,8 +717,8 @@ static int motFileDlgPopup(Ihandle* ih, int x, int y)
   value = iupAttribGet(ih, "FILTER");
   if (value)
   {
-    char *filter = value;
-    char *p = strchr(value, ';');
+    char* filter = value;
+    char* p = strchr(value, ';');
     if (p)
     {
       /* Use only the first filter */

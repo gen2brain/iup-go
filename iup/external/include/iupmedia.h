@@ -26,9 +26,9 @@ extern "C" {
 #endif /* IUPMEDIA_API */
 
 IUPMEDIA_API int IupMediaOpen(void);
-IUPMEDIA_API Ihandle *IupAudio(void);
-IUPMEDIA_API Ihandle *IupCamera(void);
-IUPMEDIA_API Ihandle *IupMicrophone(void);
+IUPMEDIA_API Ihandle* IupAudio(void);
+IUPMEDIA_API Ihandle* IupCamera(void);
+IUPMEDIA_API Ihandle* IupMicrophone(void);
 
 #ifdef __cplusplus
 }

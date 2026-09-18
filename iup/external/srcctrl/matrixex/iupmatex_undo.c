@@ -62,7 +62,7 @@ static int iMatrixExUndoDataSwap(ImatExData* matex_data, IundoData* undo_data)
   char* id = iupTableFirst(undo_data->data_table);
   while (id)
   {
-    char *value, *old_value;
+    char* value, *old_value;
     int lin=1, col=1;
     iupStrToIntInt(id, &lin, &col, ':');
 
@@ -337,7 +337,7 @@ static void iMatrixUndoListUpdate(ImatExData* matex_data, Ihandle* ih_list)
   IupSetAttributeId(ih_list, "", item, NULL);  /* stack+current+null */
 }
 
-static int iMatrixExUndoListAction_CB(Ihandle* ih_list, char *text, int item, int state)
+static int iMatrixExUndoListAction_CB(Ihandle* ih_list, char* text, int item, int state)
 {
   if (state==1)
   {

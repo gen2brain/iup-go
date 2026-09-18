@@ -228,8 +228,8 @@ static int iFontDlgShow_CB(Ihandle* ih, int state)
 
 static int iFontDlgCreateMethod(Ihandle* ih, void** params)
 {
-  Ihandle *ok_bt, *cancel_bt, *help_bt;
-  Ihandle *lin1, *lin2, *list1, *list2, *list3;
+  Ihandle* ok_bt, *cancel_bt, *help_bt;
+  Ihandle* lin1, *lin2, *list1, *list2, *list3;
 
   ok_bt = IupButton("_@IUP_OK");
   IupSetStrAttribute(ok_bt, "PADDING", IupGetGlobal("DEFAULTBUTTONPADDING"));

@@ -25,7 +25,7 @@
 #define IMATEX_SEPARATOR_MAXSTR 5
 
 
-void iupMatrixExGetDialogPosition(ImatExData* matex_data, int *x, int *y)
+void iupMatrixExGetDialogPosition(ImatExData* matex_data, int* x, int* y)
 {
   /* return a dialog position aligned with the bottom-right corner of the focus cell,
      and it will make sure that the focus cell is visible */
@@ -49,7 +49,7 @@ static void iMatrixListShowLastError(Ihandle* ih)
     IupMessageError(IupGetDialog(ih), lasterror);
 }
 
-static void iMatrixExSelectAll(Ihandle *ih)
+static void iMatrixExSelectAll(Ihandle* ih)
 {
   char* markmode = IupGetAttribute(ih, "MARKMODE");
 
@@ -98,7 +98,7 @@ static void iMatrixExSelectAll(Ihandle *ih)
   }
 }
 
-void iupMatrixExCheckLimitsOrder(int *v1, int *v2, int min, int max)
+void iupMatrixExCheckLimitsOrder(int* v1, int* v2, int min, int max)
 {
   if (*v1<min) *v1 = min;
   if (*v2<min) *v2 = min;
@@ -107,7 +107,7 @@ void iupMatrixExCheckLimitsOrder(int *v1, int *v2, int min, int max)
   if (*v1>*v2) {int v=*v1; *v1=*v2; *v2=v;}
 }
 
-static int iMatrixExSetFreezeAttrib(Ihandle *ih, const char* value)
+static int iMatrixExSetFreezeAttrib(Ihandle* ih, const char* value)
 {
   int freeze, lin, col;
   int flin, fcol;
@@ -185,7 +185,7 @@ static char* iMatrixExFileDlg(ImatExData* matex_data, int save, const char* titl
 static int iMatrixExItemExport_CB(Ihandle* ih_item)
 {
   ImatExData* matex_data = (ImatExData*)IupGetAttribute(ih_item, "MATRIX_EX_DATA");
-  char *filter, *info, *extfilter, *filename;
+  char* filter, *info, *extfilter, *filename;
 
   if (iupStrEqual(IupGetAttribute(ih_item, "FILEFORMAT"), "LaTeX"))
   {
@@ -224,7 +224,7 @@ static int iMatrixExItemExport_CB(Ihandle* ih_item)
 static int iMatrixExItemImport_CB(Ihandle* ih_item)
 {
   ImatExData* matex_data = (ImatExData*)IupGetAttribute(ih_item, "MATRIX_EX_DATA");
-  char *filter, *info, *extfilter, *filename;
+  char* filter, *info, *extfilter, *filename;
 
   filter = "*.txt";
   info = "Text file";
@@ -719,7 +719,7 @@ static Ihandle* iMatrixExCreateMenuContext(Ihandle* ih, int lin, int col)
 
   if (!readonly)
   {
-    Ihandle *undo, *redo, *undolist;
+    Ihandle* undo, *redo, *undolist;
     IupAppend(menu, undo = IupSetCallbacks(IupSetAttributes(IupMenuItem("_@IUP_UNDOAC"), "IMAGE=IUP_EditUndo"), "ACTION", iMatrixExItemUndo_CB, NULL));
     IupAppend(menu, redo = IupSetCallbacks(IupSetAttributes(IupMenuItem("_@IUP_REDOAC"), "IMAGE=IUP_EditRedo"), "ACTION", iMatrixExItemRedo_CB, NULL));
     IupAppend(menu, undolist = IupSetCallbacks(IupMenuItem("_@IUP_UNDOLISTDLG"), "ACTION", iMatrixExItemUndoList_CB, NULL));
@@ -801,7 +801,7 @@ static Ihandle* iMatrixExCreateMenuContext(Ihandle* ih, int lin, int col)
   return menu;
 }
 
-static int iMatrixSetShowMenuContextAttribId(Ihandle *ih, int lin, int col, const char* value)
+static int iMatrixSetShowMenuContextAttribId(Ihandle* ih, int lin, int col, const char* value)
 {
   ImatExData* matex_data = (ImatExData*)iupAttribGet(ih, "_IUP_MATEX_DATA");
   Ihandle* menu = iMatrixExCreateMenuContext(ih, lin, col);
@@ -833,7 +833,7 @@ static int iMatrixSetShowMenuContextAttribId(Ihandle *ih, int lin, int col, cons
   return 0;
 }
 
-static int iMatrixExSetShowDialogAttrib(Ihandle *ih, const char* value)
+static int iMatrixExSetShowDialogAttrib(Ihandle* ih, const char* value)
 {
   ImatExData* matex_data = (ImatExData*)iupAttribGet(ih, "_IUP_MATEX_DATA");
   int readonly = IupGetInt(ih, "READONLY");
@@ -1060,7 +1060,7 @@ static int iMatrixExKeyPress_CB(Ihandle* ih, int c, int press)
   return iMatrixOriginalKeyPress_CB(ih, c, press);
 }
 
-static int iMatrixExCreateMethod(Ihandle* ih, void **params)
+static int iMatrixExCreateMethod(Ihandle* ih, void** params)
 {
   ImatExData* matex_data = (ImatExData*)malloc(sizeof(ImatExData));
   memset(matex_data, 0, sizeof(ImatExData));

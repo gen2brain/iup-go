@@ -77,7 +77,7 @@ extern "C" IUP_SDK_API void iupdrvImageGetData(void* handle, unsigned char* imgd
  * Image Creation from IUP Image
  ****************************************************************************/
 
-extern "C" IUP_SDK_API void* iupdrvImageCreateImage(Ihandle *ih, const char* bgcolor, int make_inactive)
+extern "C" IUP_SDK_API void* iupdrvImageCreateImage(Ihandle* ih, const char* bgcolor, int make_inactive)
 {
   int bpp, colors_count = 0, has_alpha = 0;
   iupColor colors[256];
@@ -206,12 +206,12 @@ extern "C" IUP_SDK_API void* iupdrvImageCreateImage(Ihandle *ih, const char* bgc
   return pixmap;
 }
 
-extern "C" IUP_SDK_API void* iupdrvImageCreateIcon(Ihandle *ih)
+extern "C" IUP_SDK_API void* iupdrvImageCreateIcon(Ihandle* ih)
 {
   return iupdrvImageCreateImage(ih, NULL, 0);
 }
 
-extern "C" IUP_SDK_API void* iupdrvImageCreateCursor(Ihandle *ih)
+extern "C" IUP_SDK_API void* iupdrvImageCreateCursor(Ihandle* ih)
 {
   QPixmap* pixmap = (QPixmap*)iupdrvImageCreateImage(ih, NULL, 0);
 
@@ -314,7 +314,7 @@ extern "C" IUP_SDK_API void* iupdrvImageLoad(const char* name, int type)
  * Image Information
  ****************************************************************************/
 
-extern "C" IUP_SDK_API int iupdrvImageGetInfo(void* handle, int *w, int *h, int *bpp)
+extern "C" IUP_SDK_API int iupdrvImageGetInfo(void* handle, int* w, int* h, int* bpp)
 {
   QPixmap* pixmap = (QPixmap*)handle;
 
@@ -345,7 +345,7 @@ extern "C" IUP_SDK_API int iupdrvImageGetInfo(void* handle, int *w, int *h, int 
   return 1;
 }
 
-extern "C" IUP_SDK_API int iupdrvImageGetRawInfo(void* handle, int *w, int *h, int *bpp, iupColor* colors, int *colors_count)
+extern "C" IUP_SDK_API int iupdrvImageGetRawInfo(void* handle, int* w, int* h, int* bpp, iupColor* colors, int* colors_count)
 {
   (void)colors;
   (void)colors_count;

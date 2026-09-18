@@ -31,7 +31,7 @@
  * Native GtkPopover implementation (GTK >= 3.12)
  ***********************************************************************************/
 
-static void gtkPopoverClosedCb(GtkPopover *popover, Ihandle* ih)
+static void gtkPopoverClosedCb(GtkPopover* popover, Ihandle* ih)
 {
   IFni show_cb;
 

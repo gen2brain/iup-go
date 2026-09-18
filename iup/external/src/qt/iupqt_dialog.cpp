@@ -308,7 +308,7 @@ protected:
  * Dialog Event Handlers
  ****************************************************************************/
 
-IUP_DRV_API int iupqtDialogCloseEvent(QWidget *widget, QEvent *evt, Ihandle *ih)
+IUP_DRV_API int iupqtDialogCloseEvent(QWidget* widget, QEvent* evt, Ihandle* ih)
 {
   Icallback cb;
   (void)widget;
@@ -386,7 +386,7 @@ extern "C" IUP_SDK_API int iupdrvDialogIsVisible(Ihandle* ih)
   return iupdrvIsVisible(ih);
 }
 
-extern "C" IUP_SDK_API void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* handle, int *w, int *h)
+extern "C" IUP_SDK_API void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* handle, int* w, int* h)
 {
   QWidget* widget;
   int border = 0, caption = 0, menu = 0;
@@ -469,7 +469,7 @@ extern "C" IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
   }
 }
 
-extern "C" IUP_SDK_API void iupdrvDialogGetPosition(Ihandle *ih, InativeHandle* handle, int *x, int *y)
+extern "C" IUP_SDK_API void iupdrvDialogGetPosition(Ihandle* ih, InativeHandle* handle, int* x, int* y)
 {
   QWidget* widget;
 
@@ -491,7 +491,7 @@ extern "C" IUP_SDK_API void iupdrvDialogGetPosition(Ihandle *ih, InativeHandle* 
   }
 }
 
-extern "C" IUP_SDK_API void iupdrvDialogSetPosition(Ihandle *ih, int x, int y)
+extern "C" IUP_SDK_API void iupdrvDialogSetPosition(Ihandle* ih, int x, int y)
 {
   QWidget* widget = (QWidget*)ih->handle;
 
@@ -512,7 +512,7 @@ static int qtDialogGetMenuSize(Ihandle* ih)
     return 0;
 }
 
-extern "C" IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int *border, int *caption, int *menu)
+extern "C" IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int* border, int* caption, int* menu)
 {
   /* Estimate used until the native window frame can be measured. */
   const int est_border = 5, est_caption = 25;
@@ -601,7 +601,7 @@ extern "C" IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int *border, 
     *caption = native_caption ? native_caption : est_caption;
 }
 
-static void qtDialogGetClientSize(Ihandle* ih, int *width, int *height)
+static void qtDialogGetClientSize(Ihandle* ih, int* width, int* height)
 {
   QWidget* widget = (QWidget*)ih->handle;
 
@@ -772,7 +772,7 @@ static int qtDialogSetResizeIncAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-static char* qtDialogGetClientSizeAttrib(Ihandle *ih)
+static char* qtDialogGetClientSizeAttrib(Ihandle* ih)
 {
   if (ih->handle)
   {
@@ -784,7 +784,7 @@ static char* qtDialogGetClientSizeAttrib(Ihandle *ih)
   return iupDialogGetClientSizeAttrib(ih);
 }
 
-static char* qtDialogGetClientOffsetAttrib(Ihandle *ih)
+static char* qtDialogGetClientOffsetAttrib(Ihandle* ih)
 {
   (void)ih;
   /* In Qt, menu is part of the window, not client area */
@@ -929,7 +929,7 @@ static int qtDialogSetDialogHintAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-static int qtDialogSetToolBoxAttrib(Ihandle *ih, const char *value)
+static int qtDialogSetToolBoxAttrib(Ihandle* ih, const char* value)
 {
   iupAttribSetStr(ih, "TOOLBOX", value);
   if (ih->handle)
@@ -940,7 +940,7 @@ static int qtDialogSetToolBoxAttrib(Ihandle *ih, const char *value)
   return 1;
 }
 
-static int qtDialogSetHideTitleBarAttrib(Ihandle *ih, const char *value)
+static int qtDialogSetHideTitleBarAttrib(Ihandle* ih, const char* value)
 {
   iupAttribSetStr(ih, "HIDETITLEBAR", value);
   if (ih->handle)
@@ -960,7 +960,7 @@ static char* qtDialogGetActiveWindowAttrib(Ihandle* ih)
   return iupStrReturnBoolean(widget->isActiveWindow());
 }
 
-static int qtDialogSetTopMostAttrib(Ihandle *ih, const char *value)
+static int qtDialogSetTopMostAttrib(Ihandle* ih, const char* value)
 {
   iupAttribSetStr(ih, "TOPMOST", value);
   if (ih->handle)
@@ -971,7 +971,7 @@ static int qtDialogSetTopMostAttrib(Ihandle *ih, const char *value)
   return 1;
 }
 
-static int qtDialogSetBringFrontAttrib(Ihandle *ih, const char *value)
+static int qtDialogSetBringFrontAttrib(Ihandle* ih, const char* value)
 {
   if (iupStrBoolean(value))
   {
@@ -985,7 +985,7 @@ static int qtDialogSetBringFrontAttrib(Ihandle *ih, const char *value)
   return 0;
 }
 
-static int qtDialogSetOpacityAttrib(Ihandle *ih, const char *value)
+static int qtDialogSetOpacityAttrib(Ihandle* ih, const char* value)
 {
   QWidget* widget = (QWidget*)ih->handle;
   if (!widget)
@@ -1002,7 +1002,7 @@ static int qtDialogSetOpacityAttrib(Ihandle *ih, const char *value)
   return 0;
 }
 
-static int qtDialogSetIconAttrib(Ihandle* ih, const char *value)
+static int qtDialogSetIconAttrib(Ihandle* ih, const char* value)
 {
   QWidget* widget = (QWidget*)ih->handle;
   if (!widget)
@@ -1067,7 +1067,7 @@ static int qtDialogSetBackgroundAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-static int qtDialogSetShapeImageAttrib(Ihandle *ih, const char *value)
+static int qtDialogSetShapeImageAttrib(Ihandle* ih, const char* value)
 {
   QWidget* widget = (QWidget*)ih->handle;
   if (!widget)
@@ -1089,7 +1089,7 @@ static int qtDialogSetShapeImageAttrib(Ihandle *ih, const char *value)
   return 0;
 }
 
-static int qtDialogSetOpacityImageAttrib(Ihandle *ih, const char *value)
+static int qtDialogSetOpacityImageAttrib(Ihandle* ih, const char* value)
 {
   IupQtDialog* dialog = dynamic_cast<IupQtDialog*>((QWidget*)ih->handle);
   if (!dialog)
@@ -1114,7 +1114,7 @@ static int qtDialogSetOpacityImageAttrib(Ihandle *ih, const char *value)
   return 1;
 }
 
-static char* qtDialogGetMaximizedAttrib(Ihandle *ih)
+static char* qtDialogGetMaximizedAttrib(Ihandle* ih)
 {
   QWidget* widget = (QWidget*)ih->handle;
   if (!widget)
@@ -1123,7 +1123,7 @@ static char* qtDialogGetMaximizedAttrib(Ihandle *ih)
   return iupStrReturnBoolean(widget->isMaximized());
 }
 
-static char* qtDialogGetMinimizedAttrib(Ihandle *ih)
+static char* qtDialogGetMinimizedAttrib(Ihandle* ih)
 {
   QWidget* widget = (QWidget*)ih->handle;
   if (!widget)
@@ -1228,7 +1228,7 @@ extern "C" void qtDialogUnMapMethod(Ihandle* ih)
   }
 }
 
-extern "C" void qtDialogLayoutUpdateMethod(Ihandle *ih)
+extern "C" void qtDialogLayoutUpdateMethod(Ihandle* ih)
 {
   int border, caption, menu;
   int width, height;

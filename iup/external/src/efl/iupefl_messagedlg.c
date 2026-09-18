@@ -92,9 +92,9 @@ static int eflMessageDlgPopup(Ihandle* ih, int x, int y)
   Eo* btn1 = NULL;
   Eo* btn2 = NULL;
   Eo* btn3 = NULL;
-  char *buttons, *title, *value, *dialogtype;
-  const char *ok, *cancel, *yes, *no, *help, *retry;
-  const char *icon_name;
+  char* buttons, *title, *value, *dialogtype;
+  const char* ok, *cancel, *yes, *no, *help, *retry;
+  const char* icon_name;
   int button_def;
   int text_w = 0, text_h = 0;
   int win_w, win_h;

@@ -100,7 +100,7 @@ static NSTextField* cocoaTextGetStepperTextField(Ihandle* ih)
 
 @implementation IupCocoaTextFieldCell
 
-- (instancetype)initTextCell:(NSString *)string
+- (instancetype)initTextCell:(NSString*)string
 {
   self = [super initTextCell:string];
   if (self)
@@ -111,7 +111,7 @@ static NSTextField* cocoaTextGetStepperTextField(Ihandle* ih)
   return self;
 }
 
-- (instancetype)initWithCoder:(NSCoder *)coder
+- (instancetype)initWithCoder:(NSCoder*)coder
 {
   self = [super initWithCoder:coder];
   if (self)
@@ -227,7 +227,7 @@ static BOOL cocoaTextHandleShouldChangeText(NSTextField* text_field, NSTextView*
   return cocoaTextHandleShouldChangeText(self, text_view, change_range, replacement_string);
 }
 
-- (NSMenu *)textView:(NSTextView *)text_view menu:(NSMenu *)the_menu forEvent:(NSEvent *)the_event atIndex:(NSUInteger)char_index
+- (NSMenu*)textView:(NSTextView*)text_view menu:(NSMenu*)the_menu forEvent:(NSEvent*)the_event atIndex:(NSUInteger)char_index
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
   if (iupAttribGet(ih, "_IUPCOCOA_CONTEXTMENU_SET"))
@@ -278,7 +278,7 @@ static BOOL cocoaTextHandleShouldChangeText(NSTextField* text_field, NSTextView*
 
 @implementation IupCocoaSecureTextFieldCell
 
-- (instancetype)initTextCell:(NSString *)string
+- (instancetype)initTextCell:(NSString*)string
 {
   self = [super initTextCell:string];
   if (self)
@@ -289,7 +289,7 @@ static BOOL cocoaTextHandleShouldChangeText(NSTextField* text_field, NSTextView*
   return self;
 }
 
-- (instancetype)initWithCoder:(NSCoder *)coder
+- (instancetype)initWithCoder:(NSCoder*)coder
 {
   self = [super initWithCoder:coder];
   if (self)
@@ -346,7 +346,7 @@ static BOOL cocoaTextHandleShouldChangeText(NSTextField* text_field, NSTextView*
   return cocoaTextHandleShouldChangeText(self, text_view, change_range, replacement_string);
 }
 
-- (NSMenu *)textView:(NSTextView *)text_view menu:(NSMenu *)the_menu forEvent:(NSEvent *)the_event atIndex:(NSUInteger)char_index
+- (NSMenu*)textView:(NSTextView*)text_view menu:(NSMenu*)the_menu forEvent:(NSEvent*)the_event atIndex:(NSUInteger)char_index
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
   if (iupAttribGet(ih, "_IUPCOCOA_CONTEXTMENU_SET"))
@@ -628,7 +628,7 @@ static void cocoaTextCallCaretCb(Ihandle* ih)
   return undoManager;
 }
 
-- (NSMenu *)textView:(NSTextView *)textView menu:(NSMenu *)menu forEvent:(NSEvent *)event atIndex:(NSUInteger)charIndex
+- (NSMenu*)textView:(NSTextView*)textView menu:(NSMenu*)menu forEvent:(NSEvent*)event atIndex:(NSUInteger)charIndex
 {
   Ihandle* ih = [self ihandle];
   if (iupAttribGet(ih, "_IUPCOCOA_CONTEXTMENU_SET"))
@@ -816,7 +816,7 @@ static void cocoaTextCallCaretCb(Ihandle* ih)
 
 @end
 
-IUP_SDK_API void iupdrvTextAddSpin(Ihandle* ih, int *w, int h)
+IUP_SDK_API void iupdrvTextAddSpin(Ihandle* ih, int* w, int h)
 {
   static int spin_arrow_width = -1;
 
@@ -841,7 +841,7 @@ IUP_SDK_API void iupdrvTextAddSpin(Ihandle* ih, int *w, int h)
   *w += spin_arrow_width;
 }
 
-IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int *x, int *y)
+IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int* x, int* y)
 {
   static int cocoa_textfield_border_w = -1;
   static int cocoa_textfield_border_h = -1;
@@ -963,7 +963,7 @@ IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int *x, int *y)
   }
 }
 
-IUP_SDK_API void iupdrvTextAddExtraPadding(Ihandle* ih, int *w, int *h)
+IUP_SDK_API void iupdrvTextAddExtraPadding(Ihandle* ih, int* w, int* h)
 {
   static int cocoa_textfield_extra_w = -1;
   static int cocoa_textfield_extra_h = -1;
@@ -1914,7 +1914,7 @@ static bool cocoaTextComputeLineColumnFromRangeForTextView(NSTextView* text_view
   return true;
 }
 
-IUP_SDK_API void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, int col, int *pos)
+IUP_SDK_API void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, int col, int* pos)
 {
   IupCocoaTextSubType sub_type = cocoaTextGetSubType(ih);
   switch(sub_type)
@@ -2021,7 +2021,7 @@ IUP_SDK_API void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, int col, int
   }
 }
 
-IUP_SDK_API void iupdrvTextConvertPosToLinCol(Ihandle* ih, int pos, int *lin, int *col)
+IUP_SDK_API void iupdrvTextConvertPosToLinCol(Ihandle* ih, int pos, int* lin, int* col)
 {
   IupCocoaTextSubType sub_type = cocoaTextGetSubType(ih);
   switch(sub_type)
@@ -4375,7 +4375,7 @@ static char* cocoaTextGetLineValueAttrib(Ihandle* ih)
   }
 }
 
-static int cocoaTextSetCueBannerAttrib(Ihandle *ih, const char *value)
+static int cocoaTextSetCueBannerAttrib(Ihandle* ih, const char* value)
 {
   NSString* ns_string;
 
@@ -5501,7 +5501,7 @@ static void cocoaTextUnMapMethod(Ihandle* ih)
   ih->handle = NULL;
 }
 
-static void cocoaTextComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *children_expand)
+static void cocoaTextComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* children_expand)
 {
   int natural_w = 0,
       natural_h = 0,

@@ -286,7 +286,7 @@ static char* motMenuGetAccel(Ihandle* ih, const char* title)
 
 static int motMenuItemSetTitleAttrib(Ihandle* ih, const char* value)
 {
-  char *str;
+  char* str;
 
   if (iupStrEqual(value, iupAttribGet(ih, "_IUPMOT_TITLE_APPLIED")))
     return 1;
@@ -302,7 +302,7 @@ static int motMenuItemSetTitleAttrib(Ihandle* ih, const char* value)
     str = iupMenuProcessTitle(ih, value);
 
   {
-    char *p = strchr(str, '\t');
+    char* p = strchr(str, '\t');
     if (p)
     {
       int offset = (int)(p-str);
@@ -471,7 +471,7 @@ IUP_SDK_API int iupdrvRecentMenuUpdate(Ihandle* menu, const char** filenames, in
 static int motMenuAddCreateArgs(Ihandle* ih, Arg* args, int num_args, int has_accel, XmString* xm_label, XmString* xm_accel)
 {
   char c;
-  char *str, *label;
+  char* str, *label;
   int str_owned = 0;
   XmFontList fontlist;
   char* value = iupAttribGet(ih, "TITLE");
@@ -492,7 +492,7 @@ static int motMenuAddCreateArgs(Ihandle* ih, Arg* args, int num_args, int has_ac
 
   if (has_accel)
   {
-    char *p = strchr(str, '\t');
+    char* p = strchr(str, '\t');
     if (p)
     {
       int offset = (int)(p-str);

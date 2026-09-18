@@ -26,7 +26,7 @@
 
 typedef int (*IFnv)(Ihandle*, void*);
 
-IUP_API int IupTreeGetId(Ihandle* ih, void *userdata)
+IUP_API int IupTreeGetId(Ihandle* ih, void* userdata)
 {
   IFnv find_userdata_cb;
 
@@ -79,7 +79,7 @@ IUP_API void IupTreeSetAttributeHandle(Ihandle* ih, const char* a, int id, Ihand
 
 /************************************************************************************/
 
-void iupTreeSelectLastCollapsedBranch(Ihandle* ih, int *last_id)
+void iupTreeSelectLastCollapsedBranch(Ihandle* ih, int* last_id)
 {
   /* if last selected item is a branch, then select its children */
   if (iupStrEqual(IupGetAttributeId(ih, "KIND", *last_id), "BRANCH") &&
@@ -118,7 +118,7 @@ int iupTreeFindNodeId(Ihandle* ih, InodeHandle* node_handle)
       return i;
   }
   */
-  InodeData *node_cache = ih->data->node_cache;
+  InodeData* node_cache = ih->data->node_cache;
   while(node_cache->node_handle != node_handle &&
         node_cache->node_handle != NULL)   /* the cache always have zeros at the end */
     node_cache++;
@@ -139,7 +139,7 @@ static int iTreeFindUserDataId(Ihandle* ih, void* userdata)
       return i;
   }
   */
-  InodeData *node_cache = ih->data->node_cache;
+  InodeData* node_cache = ih->data->node_cache;
   while(node_cache->userdata != userdata &&
         node_cache->node_handle != NULL)   /* the cache always have zeros at the end */
     node_cache++;
@@ -509,7 +509,7 @@ static int iTreeSetUserDataAttrib(Ihandle* ih, int id, const char* value)
 
 /*****************************************************************************************/
 
-static int iTreeDropData_CB(Ihandle *ih, char* type, void* data, int len, int x, int y)
+static int iTreeDropData_CB(Ihandle* ih, char* type, void* data, int len, int x, int y)
 {
   int id = IupConvertXYToPos(ih, x, y);
   int is_ctrl = 0;
@@ -538,7 +538,7 @@ static int iTreeDropData_CB(Ihandle *ih, char* type, void* data, int len, int x,
   if(ih_source->data->mark_mode == ITREE_MARK_SINGLE)
   {
     int src_id = iupAttribGetInt(ih_source, "_IUP_TREE_SOURCEID");
-    InodeHandle *itemDst, *itemSrc;
+    InodeHandle* itemDst, *itemSrc;
 
     itemSrc = iupTreeGetNode(ih_source, src_id);
     if (!itemSrc)
@@ -559,7 +559,7 @@ static int iTreeDropData_CB(Ihandle *ih, char* type, void* data, int len, int x,
   return IUP_DEFAULT;
 }
 
-static int iTreeDragData_CB(Ihandle *ih, char* type, void *data, int len)
+static int iTreeDragData_CB(Ihandle* ih, char* type, void* data, int len)
 {
   int id = iupAttribGetInt(ih, "_IUP_TREE_SOURCEID");
   if (id < 0)
@@ -587,7 +587,7 @@ static int iTreeDragDataSize_CB(Ihandle* ih, char* type)
   return sizeof(Ihandle*);
 }
 
-static int iTreeDragEnd_CB(Ihandle *ih, int del)
+static int iTreeDragEnd_CB(Ihandle* ih, int del)
 {
   iupAttribSetInt(ih, "_IUP_TREE_SOURCEID", -1);
   (void)del;
@@ -715,7 +715,7 @@ static char* iTreeGetTitleFontSizeAttrib(Ihandle* ih, int id)
 
 /*************************************************************************/
 
-static int iTreeCreateMethod(Ihandle* ih, void **params)
+static int iTreeCreateMethod(Ihandle* ih, void** params)
 {
   (void)params;
 
@@ -732,7 +732,7 @@ static int iTreeCreateMethod(Ihandle* ih, void **params)
   return IUP_NOERROR;
 }
 
-static void iTreeComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *children_expand)
+static void iTreeComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* children_expand)
 {
   int natural_w, natural_h, char_w, char_h, visiblecolumns, visiblelines;
   (void)children_expand;

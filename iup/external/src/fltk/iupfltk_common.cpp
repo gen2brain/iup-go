@@ -144,7 +144,7 @@ IUP_DRV_API void iupfltkSetPosSize(Fl_Widget* widget, int x, int y, int width, i
  * Driver Base Functions
  ****************************************************************************/
 
-extern "C" IUP_SDK_API void iupdrvBaseLayoutUpdateMethod(Ihandle *ih)
+extern "C" IUP_SDK_API void iupdrvBaseLayoutUpdateMethod(Ihandle* ih)
 {
   Fl_Widget* widget = (Fl_Widget*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
 
@@ -202,7 +202,7 @@ extern "C" IUP_SDK_API void iupdrvBaseUnMapMethod(Ihandle* ih)
   ih->handle = NULL;
 }
 
-extern "C" IUP_SDK_API void iupdrvPostRedraw(Ihandle *ih)
+extern "C" IUP_SDK_API void iupdrvPostRedraw(Ihandle* ih)
 {
   Fl_Widget* widget = (Fl_Widget*)ih->handle;
   if (widget)
@@ -215,7 +215,7 @@ extern "C" IUP_SDK_API void iupdrvPostRedraw(Ihandle *ih)
   }
 }
 
-extern "C" IUP_SDK_API void iupdrvRedrawNow(Ihandle *ih)
+extern "C" IUP_SDK_API void iupdrvRedrawNow(Ihandle* ih)
 {
   Fl_Widget* widget = (Fl_Widget*)ih->handle;
   if (widget)
@@ -264,7 +264,7 @@ extern "C" IUP_SDK_API void iupdrvSleep(int time)
  * Screen/Client Coordinate Conversion
  ****************************************************************************/
 
-extern "C" IUP_SDK_API void iupdrvScreenToClient(Ihandle* ih, int *x, int *y)
+extern "C" IUP_SDK_API void iupdrvScreenToClient(Ihandle* ih, int* x, int* y)
 {
   Fl_Widget* widget = (Fl_Widget*)ih->handle;
   if (!widget)
@@ -287,7 +287,7 @@ extern "C" IUP_SDK_API void iupdrvScreenToClient(Ihandle* ih, int *x, int *y)
   }
 }
 
-extern "C" IUP_SDK_API void iupdrvClientToScreen(Ihandle* ih, int *x, int *y)
+extern "C" IUP_SDK_API void iupdrvClientToScreen(Ihandle* ih, int* x, int* y)
 {
   Fl_Widget* widget = (Fl_Widget*)ih->handle;
   if (!widget)
@@ -314,7 +314,7 @@ extern "C" IUP_SDK_API void iupdrvClientToScreen(Ihandle* ih, int *x, int *y)
  * Event Handlers
  ****************************************************************************/
 
-IUP_DRV_API int iupfltkEnterLeaveEvent(Fl_Widget *widget, Ihandle* ih, int event)
+IUP_DRV_API int iupfltkEnterLeaveEvent(Fl_Widget* widget, Ihandle* ih, int event)
 {
   if (!widget->active())
     return 0;
@@ -349,7 +349,7 @@ IUP_DRV_API int iupfltkEnterLeaveEvent(Fl_Widget *widget, Ihandle* ih, int event
   return 0;
 }
 
-IUP_DRV_API int iupfltkMouseMoveEvent(Fl_Widget *widget, Ihandle *ih)
+IUP_DRV_API int iupfltkMouseMoveEvent(Fl_Widget* widget, Ihandle* ih)
 {
   IFniis cb;
 
@@ -366,7 +366,7 @@ IUP_DRV_API int iupfltkMouseMoveEvent(Fl_Widget *widget, Ihandle *ih)
   return 0;
 }
 
-IUP_DRV_API int iupfltkMouseButtonEvent(Fl_Widget *widget, Ihandle *ih, int event)
+IUP_DRV_API int iupfltkMouseButtonEvent(Fl_Widget* widget, Ihandle* ih, int event)
 {
   IFniiiis cb = (IFniiiis)IupGetCallback(ih, "BUTTON_CB");
   if (cb)
@@ -598,7 +598,7 @@ extern "C" IUP_SDK_API int iupdrvIsVisible(Ihandle* ih)
   return 1;
 }
 
-extern "C" IUP_SDK_API int iupdrvIsActive(Ihandle *ih)
+extern "C" IUP_SDK_API int iupdrvIsActive(Ihandle* ih)
 {
   if (ih->iclass->nativetype == IUP_TYPEVOID || ih->iclass->nativetype == IUP_TYPEMENU)
     return 1;
@@ -704,13 +704,13 @@ extern "C" IUP_SDK_API int iupdrvGetScrollbarSize(void)
   return Fl::scrollbar_size();
 }
 
-extern "C" IUP_SDK_API void iupdrvSetAccessibleTitle(Ihandle *ih, const char* title)
+extern "C" IUP_SDK_API void iupdrvSetAccessibleTitle(Ihandle* ih, const char* title)
 {
   (void)ih;
   (void)title;
 }
 
-extern "C" IUP_SDK_API void iupdrvSetAccessibleDescription(Ihandle *ih, const char* description)
+extern "C" IUP_SDK_API void iupdrvSetAccessibleDescription(Ihandle* ih, const char* description)
 {
   (void)ih;
   (void)description;

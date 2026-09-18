@@ -102,7 +102,7 @@ static int iLayoutPropertiesClose_CB(Ihandle* ih)
 IUP_SDK_API void iupLayoutPropertiesUpdate(Ihandle* properties, Ihandle* ih)
 {
   int i, j, attr_count, cb_count, total_count = IupGetClassAttributes(ih->iclass->name, NULL, 0);
-  char **attr_names = (char **)malloc(total_count * sizeof(char *));
+  char** attr_names = (char**)malloc(total_count * sizeof(char*));
   Ihandle* list1;
   if (!attr_names)
     return;
@@ -139,7 +139,7 @@ IUP_SDK_API void iupLayoutPropertiesUpdate(Ihandle* properties, Ihandle* ih)
   attr_count = IupGetAllAttributes(ih, NULL, 0);
   if (attr_count > total_count)
   {
-    char** new_attr_names = (char **)realloc(attr_names, attr_count * sizeof(char *));
+    char** new_attr_names = (char**)realloc(attr_names, attr_count * sizeof(char*));
     if (!new_attr_names)
     {
       free(attr_names);
@@ -229,7 +229,7 @@ static int iLayoutPropertiesIdTextChanged_CB(Ihandle* id_text)
   {
     char* def_value;
     int flags;
-    char *value, name[100];
+    char* value, name[100];
     Ihandle* elem = (Ihandle*)iupAttribGetInherit(id_text, "_IUP_PROPELEMENT");
     Ihandle* txt1 = IupGetDialogChild(id_text, "VALUE1A");
     Ihandle* list1 = (Ihandle*)iupAttribGetInherit(id_text, "_IUP_PROPLIST1");
@@ -311,7 +311,7 @@ static int iLayoutPropertiesSet_CB(Ihandle* button)
   return IUP_DEFAULT;
 }
 
-static int iLayoutPropertiesSetColor_CB(Ihandle *colorbut)
+static int iLayoutPropertiesSetColor_CB(Ihandle* colorbut)
 {
   Ihandle* color_dlg = IupColorDlg();
   IupSetAttributeHandle(color_dlg, "PARENTDIALOG", IupGetDialog(colorbut));
@@ -356,7 +356,7 @@ static int iLayoutPropertiesSetColor_CB(Ihandle *colorbut)
   return IUP_DEFAULT;
 }
 
-static int iLayoutPropertiesSetFont_CB(Ihandle *fontbut)
+static int iLayoutPropertiesSetFont_CB(Ihandle* fontbut)
 {
   Ihandle* font_dlg = IupFontDlg();
   Ihandle* txt1 = IupGetDialogChild(fontbut, "VALUE1A");
@@ -400,7 +400,7 @@ static int iLayoutPropertiesSetFont_CB(Ihandle *fontbut)
   return IUP_DEFAULT;
 }
 
-static int iLayoutPropertiesShowHandle_CB(Ihandle *handlebut)
+static int iLayoutPropertiesShowHandle_CB(Ihandle* handlebut)
 {
   Ihandle* elem = (Ihandle*)iupAttribGet(handlebut, "_IUP_HANDLE");
   if (!elem)  /* Handle Name */
@@ -426,7 +426,7 @@ static int iLayoutPropertiesShowHandle_CB(Ihandle *handlebut)
   return IUP_DEFAULT;
 }
 
-static int iLayoutPropertiesList1_CB(Ihandle *list1, char *name, int item, int state)
+static int iLayoutPropertiesList1_CB(Ihandle* list1, char* name, int item, int state)
 {
   (void)item;
   if (state)
@@ -518,7 +518,7 @@ static int iLayoutPropertiesList1_CB(Ihandle *list1, char *name, int item, int s
   return IUP_DEFAULT;
 }
 
-static int iLayoutPropertiesList2_CB(Ihandle *list2, char *name, int item, int state)
+static int iLayoutPropertiesList2_CB(Ihandle* list2, char* name, int item, int state)
 {
   (void)item;
   if (state)
@@ -534,7 +534,7 @@ static int iLayoutPropertiesList2_CB(Ihandle *list2, char *name, int item, int s
   return IUP_DEFAULT;
 }
 
-static int iLayoutPropertiesGetAsString_CB(Ihandle *button)
+static int iLayoutPropertiesGetAsString_CB(Ihandle* button)
 {
   Ihandle* elem = (Ihandle*)iupAttribGetInherit(button, "_IUP_PROPELEMENT");
   Ihandle* list2 = (Ihandle*)iupAttribGetInherit(button, "_IUP_PROPLIST2");
@@ -569,7 +569,7 @@ static int iLayoutPropertiesSetStr_CB(Ihandle* button)
   return IUP_DEFAULT;
 }
 
-static int iLayoutPropertiesList3_CB(Ihandle *list3, char *text, int item, int state)
+static int iLayoutPropertiesList3_CB(Ihandle* list3, char* text, int item, int state)
 {
   (void)item;
   if (state)
@@ -599,7 +599,7 @@ static int iLayoutPropertiesList3_CB(Ihandle *list3, char *text, int item, int s
 
 static Ihandle* iLayoutPropertiesCreateDialog(Ihandle* parent)
 {
-  Ihandle *list1, *list2, *list3, *close, *dlg, *dlg_box, *button_box, *colorbut, *fontbut, *handlebut,
+  Ihandle* list1, *list2, *list3, *close, *dlg, *dlg_box, *button_box, *colorbut, *fontbut, *handlebut,
     *tabs, *box1, *box11, *box2, *box22, *box3, *box33, *set, *id_text, *id_label, *imagelbl;
 
   if (!IupGetHandle("IMGEMPTY"))

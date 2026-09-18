@@ -105,7 +105,7 @@ static void* wasmImageCreateRGBA(int width, int height, int bpp, iupColor* color
   return (void*)(intptr_t)id;
 }
 
-IUP_SDK_API void* iupdrvImageCreateImage(Ihandle *ih, const char* bgcolor, int make_inactive)
+IUP_SDK_API void* iupdrvImageCreateImage(Ihandle* ih, const char* bgcolor, int make_inactive)
 {
   int bpp, colors_count = 0;
   iupColor colors[256];
@@ -121,12 +121,12 @@ IUP_SDK_API void* iupdrvImageCreateImage(Ihandle *ih, const char* bgcolor, int m
   return wasmImageCreateRGBA(ih->currentwidth, ih->currentheight, bpp, colors, imgdata);
 }
 
-IUP_SDK_API void* iupdrvImageCreateIcon(Ihandle *ih)
+IUP_SDK_API void* iupdrvImageCreateIcon(Ihandle* ih)
 {
   return iupdrvImageCreateImage(ih, NULL, 0);
 }
 
-IUP_SDK_API void* iupdrvImageCreateCursor(Ihandle *ih)
+IUP_SDK_API void* iupdrvImageCreateCursor(Ihandle* ih)
 {
   return iupdrvImageCreateImage(ih, NULL, 0);
 }
@@ -147,7 +147,7 @@ IUP_SDK_API void iupdrvImageDestroy(void* handle, int type)
     iupwasmJsImageDestroy(id);
 }
 
-IUP_SDK_API int iupdrvImageGetInfo(void* handle, int *w, int *h, int *bpp)
+IUP_SDK_API int iupdrvImageGetInfo(void* handle, int* w, int* h, int* bpp)
 {
   int id = (int)(intptr_t)handle;
   if (id <= 0 || id >= s_imginfo_count)
@@ -190,7 +190,7 @@ IUP_SDK_API void iupdrvImageGetData(void* handle, unsigned char* imgdata)
   }
 }
 
-IUP_SDK_API int iupdrvImageGetRawInfo(void* handle, int *w, int *h, int *bpp, iupColor* colors, int *colors_count)
+IUP_SDK_API int iupdrvImageGetRawInfo(void* handle, int* w, int* h, int* bpp, iupColor* colors, int* colors_count)
 {
   (void)colors;
   if (colors_count) *colors_count = 0;

@@ -58,7 +58,7 @@ static int iPlotEstimateNumberCharCount(bool inFormatAuto, const char* inFormatS
   return thePrecision;
 }
 
-static bool iPlotGetTickFormat(Ihandle* ih, IFnssds formatticknumber_cb, char* inBuf, const char *inFormatString, double inValue)
+static bool iPlotGetTickFormat(Ihandle* ih, IFnssds formatticknumber_cb, char* inBuf, const char* inFormatString, double inValue)
 {
   char* decimal_symbol = IupGetGlobal("DEFAULTDECIMALSYMBOL");
 
@@ -182,7 +182,7 @@ void iupPlotAxis::Init()
     mReverseTicksLabel = true;
 }
 
-void iupPlotAxis::GetTickNumberSize(Ihandle* ih, int *outWitdh, int *outHeight) const
+void iupPlotAxis::GetTickNumberSize(Ihandle* ih, int* outWitdh, int* outHeight) const
 {
   int theTickFontWidth, theTickFontHeight;
   SetFont(ih, mTick.mFontStyle, mTick.mFontSize);
@@ -192,7 +192,7 @@ void iupPlotAxis::GetTickNumberSize(Ihandle* ih, int *outWitdh, int *outHeight) 
   if (outWitdh)  *outWitdh  = theTickFontWidth * iPlotEstimateNumberCharCount(mTick.mFormatAuto, mTick.mFormatString, mHasZoom? mNoZoomMin: mMin, mHasZoom? mNoZoomMax: mMax);
 }
 
-void iupPlotAxis::SetNamedTickIter(const iupPlotDataString *inStringData)
+void iupPlotAxis::SetNamedTickIter(const iupPlotDataString* inStringData)
 {
   mTickIter = &mNamedTickIter;
   mTickIter->SetAxis(this);

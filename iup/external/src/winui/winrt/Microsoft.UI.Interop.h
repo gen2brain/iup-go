@@ -19,12 +19,12 @@ namespace ABI::Microsoft::UI
 namespace winrt::Microsoft::UI 
 {
 
-typedef HRESULT (STDAPICALLTYPE *PfnGetWindowIdFromWindow)(_In_ HWND hwnd, _Out_ ABI::Microsoft::UI::WindowId* windowId);
-typedef HRESULT (STDAPICALLTYPE *PfnGetWindowFromWindowId)(_In_ ABI::Microsoft::UI::WindowId windowId, _Out_ HWND* hwnd);
-typedef HRESULT (STDAPICALLTYPE *PfnGetDisplayIdFromMonitor)(_In_ HMONITOR hmonitor, _Out_ ABI::Microsoft::UI::DisplayId* displayId);
-typedef HRESULT (STDAPICALLTYPE *PfnGetMonitorFromDisplayId)(_In_ ABI::Microsoft::UI::DisplayId displayId, _Out_ HMONITOR* hmonitor);
-typedef HRESULT (STDAPICALLTYPE *PfnGetIconIdFromIcon)(_In_ HICON hicon, _Out_ ABI::Microsoft::UI::IconId* iconId);
-typedef HRESULT (STDAPICALLTYPE *PfnGetIconFromIconId)(_In_ ABI::Microsoft::UI::IconId iconId, _Out_ HICON* hicon);
+typedef HRESULT (STDAPICALLTYPE* PfnGetWindowIdFromWindow)(_In_ HWND hwnd, _Out_ ABI::Microsoft::UI::WindowId* windowId);
+typedef HRESULT (STDAPICALLTYPE* PfnGetWindowFromWindowId)(_In_ ABI::Microsoft::UI::WindowId windowId, _Out_ HWND* hwnd);
+typedef HRESULT (STDAPICALLTYPE* PfnGetDisplayIdFromMonitor)(_In_ HMONITOR hmonitor, _Out_ ABI::Microsoft::UI::DisplayId* displayId);
+typedef HRESULT (STDAPICALLTYPE* PfnGetMonitorFromDisplayId)(_In_ ABI::Microsoft::UI::DisplayId displayId, _Out_ HMONITOR* hmonitor);
+typedef HRESULT (STDAPICALLTYPE* PfnGetIconIdFromIcon)(_In_ HICON hicon, _Out_ ABI::Microsoft::UI::IconId* iconId);
+typedef HRESULT (STDAPICALLTYPE* PfnGetIconFromIconId)(_In_ ABI::Microsoft::UI::IconId iconId, _Out_ HICON* hicon);
 
 typedef struct _InteropImpl
 {

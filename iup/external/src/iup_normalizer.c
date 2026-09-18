@@ -45,7 +45,7 @@ char* iupNormalizeGetNormalizeSizeStr(int normalize)
   return int2str[normalize];
 }
 
-void iupNormalizeSizeBoxChild(Ihandle *ih, int normalize, int children_natural_maxwidth, int children_natural_maxheight)
+void iupNormalizeSizeBoxChild(Ihandle* ih, int normalize, int children_natural_maxwidth, int children_natural_maxheight)
 {
   /* It is called from Vbox and Hbox ComputeNaturalSizeMethod after the natural size is calculated */
   /* reset the natural width and/or height */
@@ -169,7 +169,7 @@ static char* iNormalizerGetNextControlHandleAttrib(Ihandle* ih)
 
 /*******************************************************************************/
 
-static void iNormalizerComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *children_expand)
+static void iNormalizerComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* children_expand)
 {
   (void)w;
   (void)h;
@@ -235,7 +235,7 @@ Iclass* iupNormalizerNewClass(void)
   return ic;
 }
 
-IUP_API Ihandle* IupNormalizerv(Ihandle **ih_list)
+IUP_API Ihandle* IupNormalizerv(Ihandle** ih_list)
 {
   return IupCreatev("normalizer", (void**)ih_list);
 }
@@ -247,7 +247,7 @@ IUP_API Ihandle* IupNormalizerV(Ihandle* ih_first, va_list arglist)
 
 IUP_API Ihandle* IupNormalizer(Ihandle* ih_first, ...)
 {
-  Ihandle *ih;
+  Ihandle* ih;
 
   va_list arglist;
   va_start(arglist, ih_first);

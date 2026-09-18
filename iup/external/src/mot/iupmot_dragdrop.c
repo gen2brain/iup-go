@@ -49,8 +49,8 @@ IUP_DRV_API void iupmotDisableDragSource(Widget w)
   XtOverrideTranslations(w, drag_translations);
 }
 
-static void motDropTransferProc(Widget dropTransfer, Ihandle* ih, Atom *selType, Atom *typeAtom,
-                                XtPointer targetData, unsigned long *length, int format)
+static void motDropTransferProc(Widget dropTransfer, Ihandle* ih, Atom* selType, Atom* typeAtom,
+                                XtPointer targetData, unsigned long* length, int format)
 {
   IFnsViii cbDropData;
 
@@ -111,10 +111,10 @@ static void motDropProc(Widget dropTarget, XtPointer clientData, XmDropProcCallb
   int i, j, num_args;
   Widget dragContext, dropTransfer;
   Cardinal numDragTypes, numDropTypes;
-  Atom *dragTypesList, *dropTypesList;
+  Atom* dragTypesList, *dropTypesList;
   Atom atomItem = 0;
   Boolean found = False;
-  Ihandle *ih = NULL;
+  Ihandle* ih = NULL;
 
   /* this is called before drag data is processed */
   dragContext = dropData->dragContext;
@@ -182,11 +182,11 @@ static void motDropProc(Widget dropTarget, XtPointer clientData, XmDropProcCallb
   (void)clientData;
 }
 
-static Boolean motDragConvertProc(Widget dragContext, Atom *selection, Atom *target, Atom *typeReturn,
-                                  XtPointer *valueReturn, unsigned long *lengthReturn, int *formatReturn)
+static Boolean motDragConvertProc(Widget dragContext, Atom* selection, Atom* target, Atom* typeReturn,
+                                  XtPointer* valueReturn, unsigned long* lengthReturn, int* formatReturn)
 {
   Atom atomMotifDrop = XInternAtom(iupmot_display, "_MOTIF_DROP", False);
-  Ihandle *ih = NULL;
+  Ihandle* ih = NULL;
   IFnsVi cbDragData;
   IFns cbDragDataSize;
 
@@ -223,7 +223,7 @@ static Boolean motDragConvertProc(Widget dragContext, Atom *selection, Atom *tar
   return False;
 }
 
-static void motDropFinishCallback(Widget dragContext, Ihandle *ih, XmDropFinishCallbackStruct *callData)
+static void motDropFinishCallback(Widget dragContext, Ihandle* ih, XmDropFinishCallbackStruct* callData)
 {
   IFni cbDrag = (IFni)IupGetCallback(ih, "DRAGEND_CB");
   if(cbDrag)
@@ -284,7 +284,7 @@ static void motDragStartFromEvent(Widget dragSource, Ihandle* ih, XEvent* evt)
   Widget drag_icon = NULL;
   Arg args[20];
   int num_args = 0;
-  Atom *dragTypesList;
+  Atom* dragTypesList;
   Cardinal dragTypesListCount;
   char* value;
 
@@ -399,10 +399,10 @@ static void motDragSourceMotionHandler(Widget w, XtPointer client_data, XEvent* 
   (void)cont;
 }
 
-static Atom* motCreateTargetList(const char *value, int *count)
+static Atom* motCreateTargetList(const char* value, int* count)
 {
   int count_alloc = 10;
-  Atom *targetlist = (Atom*)XtMalloc(sizeof(Atom) * count_alloc);
+  Atom* targetlist = (Atom*)XtMalloc(sizeof(Atom) * count_alloc);
   char valueCopy[256];
   char valueTemp1[256];
   char valueTemp2[256];
@@ -441,7 +441,7 @@ static Atom* motCreateTargetList(const char *value, int *count)
 static int motSetDropTypesAttrib(Ihandle* ih, const char* value)
 {
   int count = 0;
-  Atom *targetlist = (Atom*)iupAttribGet(ih, "_IUPMOT_DROP_TARGETLIST");
+  Atom* targetlist = (Atom*)iupAttribGet(ih, "_IUPMOT_DROP_TARGETLIST");
   if (targetlist)
   {
     XtFree((char*)targetlist);
@@ -470,7 +470,7 @@ static int motSetDropTargetAttrib(Ihandle* ih, const char* value)
 
   if(iupStrBoolean(value))
   {
-    Atom *dropTypesList = (Atom*)iupAttribGet(ih, "_IUPMOT_DROP_TARGETLIST");
+    Atom* dropTypesList = (Atom*)iupAttribGet(ih, "_IUPMOT_DROP_TARGETLIST");
     Cardinal numDropTypes = (Cardinal)iupAttribGetInt(ih, "_IUPMOT_DROP_TARGETLIST_COUNT");
     Arg args[20];
     int num_args = 0;
@@ -500,7 +500,7 @@ static int motSetDropTargetAttrib(Ihandle* ih, const char* value)
 static int motSetDragTypesAttrib(Ihandle* ih, const char* value)
 {
   int count = 0;
-  Atom *targetlist = (Atom*)iupAttribGet(ih, "_IUPMOT_DRAG_TARGETLIST");
+  Atom* targetlist = (Atom*)iupAttribGet(ih, "_IUPMOT_DRAG_TARGETLIST");
   if (targetlist)
   {
     XtFree((char*)targetlist);
@@ -806,7 +806,7 @@ static void motXdndHandlePosition(Ihandle* ih, Widget w, XClientMessageEvent* ev
   (void)w;
 }
 
-static Bool motXdndSelectionPredicate(Display *display, XEvent *event, XPointer arg)
+static Bool motXdndSelectionPredicate(Display* display, XEvent* event, XPointer arg)
 {
   (void)display;
   (void)arg;

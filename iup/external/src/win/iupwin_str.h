@@ -19,7 +19,7 @@ IUP_DRV_API int iupwinStrGetUTF8ModeFile(void);
 
 IUP_DRV_API char* iupwinStrFromSystem(const TCHAR* str);
 IUP_DRV_API TCHAR* iupwinStrToSystem(const char* str);
-IUP_DRV_API TCHAR* iupwinStrToSystemLen(const char* str, int *len);
+IUP_DRV_API TCHAR* iupwinStrToSystemLen(const char* str, int* len);
 IUP_DRV_API TCHAR* iupwinStrToSystemFilename(const char* str);
 IUP_DRV_API char* iupwinStrFromSystemFilename(const TCHAR* str);
 

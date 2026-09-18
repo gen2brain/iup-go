@@ -32,7 +32,7 @@
 #include "iupgtk_drv.h"
 
 
-static void gtkCanvasUpdateChildLayout(Ihandle *ih, int flush)
+static void gtkCanvasUpdateChildLayout(Ihandle* ih, int flush)
 {
   GtkContainer* sb_win = (GtkContainer*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
   GtkWidget* sb_horiz = (GtkWidget*)iupAttribGet(ih, "_IUPGTK_SBHORIZ");
@@ -99,7 +99,7 @@ static int gtkCanvasScroll2Iup(GtkScrollType scroll, int vert)
   return -1;
 }
 
-static gboolean gtkCanvasScrollHorizChangeValue(GtkRange *range, GtkScrollType scroll, double value, Ihandle *ih)
+static gboolean gtkCanvasScrollHorizChangeValue(GtkRange* range, GtkScrollType scroll, double value, Ihandle* ih)
 {
   int op = gtkCanvasScroll2Iup(scroll, 0);
   iupAttribSetInt(ih, "_IUPGTK_SBOP", op);
@@ -108,7 +108,7 @@ static gboolean gtkCanvasScrollHorizChangeValue(GtkRange *range, GtkScrollType s
   return FALSE;
 }
 
-static void gtkCanvasAdjustHorizValueChanged(GtkAdjustment *adjustment, Ihandle *ih)
+static void gtkCanvasAdjustHorizValueChanged(GtkAdjustment* adjustment, Ihandle* ih)
 {
   double posx, posy, xmin, xmax, dx;
   IFniff scroll_cb;
@@ -153,7 +153,7 @@ static void gtkCanvasAdjustHorizValueChanged(GtkAdjustment *adjustment, Ihandle 
   }
 }
 
-static gboolean gtkCanvasScrollVertChangeValue(GtkRange *range, GtkScrollType scroll, double value, Ihandle *ih)
+static gboolean gtkCanvasScrollVertChangeValue(GtkRange* range, GtkScrollType scroll, double value, Ihandle* ih)
 {
   int op = gtkCanvasScroll2Iup(scroll, 1);
   iupAttribSetInt(ih, "_IUPGTK_SBOP", op);
@@ -162,7 +162,7 @@ static gboolean gtkCanvasScrollVertChangeValue(GtkRange *range, GtkScrollType sc
   return FALSE;
 }
 
-static void gtkCanvasAdjustVertValueChanged(GtkAdjustment *adjustment, Ihandle *ih)
+static void gtkCanvasAdjustVertValueChanged(GtkAdjustment* adjustment, Ihandle* ih)
 {
   double posx, posy, ymin, ymax, dy;
   IFniff scroll_cb;
@@ -208,7 +208,7 @@ static void gtkCanvasAdjustVertValueChanged(GtkAdjustment *adjustment, Ihandle *
   }
 }
 
-static gboolean gtkCanvasScrollEvent(GtkWidget *widget, GdkEventScroll *evt, Ihandle *ih)
+static gboolean gtkCanvasScrollEvent(GtkWidget* widget, GdkEventScroll* evt, Ihandle* ih)
 {
   /* occurs only for the mouse wheel. Not related to the scrollbars */
   IFnfiis wcb = (IFnfiis)IupGetCallback(ih, "WHEEL_CB");
@@ -261,7 +261,7 @@ static gboolean gtkCanvasScrollEvent(GtkWidget *widget, GdkEventScroll *evt, Iha
   return TRUE;
 }
 
-static gboolean gtkCanvasButtonEvent(GtkWidget *widget, GdkEventButton *evt, Ihandle *ih)
+static gboolean gtkCanvasButtonEvent(GtkWidget* widget, GdkEventButton* evt, Ihandle* ih)
 {
   /* canvas returns TRUE so start the drag ourselves; skip the grab, it conflicts with the drag */
   int dragsource = iupAttribGetBoolean(ih, "DRAGSOURCE");
@@ -294,7 +294,7 @@ static gboolean gtkCanvasButtonEvent(GtkWidget *widget, GdkEventButton *evt, Iha
   return TRUE; /* stop other handlers from being invoked */
 }
 
-static gboolean gtkCanvasMotionNotifyEvent(GtkWidget *widget, GdkEventMotion *evt, Ihandle *ih)
+static gboolean gtkCanvasMotionNotifyEvent(GtkWidget* widget, GdkEventMotion* evt, Ihandle* ih)
 {
   iupgtkMotionNotifyEvent(widget, evt, ih);
 
@@ -321,7 +321,7 @@ static gboolean gtkCanvasMotionNotifyEvent(GtkWidget *widget, GdkEventMotion *ev
   return TRUE; /* stop other handlers from being invoked */
 }
 
-gboolean gtkCanvasFocusOutEvent(GtkWidget *widget, GdkEventFocus *evt, Ihandle *ih)
+gboolean gtkCanvasFocusOutEvent(GtkWidget* widget, GdkEventFocus* evt, Ihandle* ih)
 {
   if (widget == gtk_grab_get_current())
     gtk_grab_remove(widget);
@@ -332,9 +332,9 @@ gboolean gtkCanvasFocusOutEvent(GtkWidget *widget, GdkEventFocus *evt, Ihandle *
 static int gtkCanvasSetBgColorAttrib(Ihandle* ih, const char* value);
 
 #if GTK_CHECK_VERSION(3, 0, 0)
-static gboolean gtkCanvasDraw(GtkWidget *widget, cairo_t* cr, Ihandle *ih)
+static gboolean gtkCanvasDraw(GtkWidget* widget, cairo_t* cr, Ihandle* ih)
 #else
-static gboolean gtkCanvasExposeEvent(GtkWidget *widget, GdkEventExpose *evt, Ihandle *ih)
+static gboolean gtkCanvasExposeEvent(GtkWidget* widget, GdkEventExpose* evt, Ihandle* ih)
 #endif
 {
   IFn cb = (IFn)IupGetCallback(ih,"ACTION");
@@ -472,9 +472,9 @@ static gboolean gtkCanvasExposeEvent(GtkWidget *widget, GdkEventExpose *evt, Iha
 }
 
 #if GTK_CHECK_VERSION(3, 0, 0)
-static gboolean gtkCanvasBorderDraw(GtkWidget *widget, cairo_t* cr, void* user)
+static gboolean gtkCanvasBorderDraw(GtkWidget* widget, cairo_t* cr, void* user)
 #else
-static gboolean gtkCanvasBorderExposeEvent(GtkWidget *widget, GdkEventExpose *evt, void* user)
+static gboolean gtkCanvasBorderExposeEvent(GtkWidget* widget, GdkEventExpose* evt, void* user)
 #endif
 {
 #if GTK_CHECK_VERSION(3, 0, 0)
@@ -487,7 +487,7 @@ static gboolean gtkCanvasBorderExposeEvent(GtkWidget *widget, GdkEventExpose *ev
   gtk_style_context_restore (context);
 #else
   GdkWindow* window = iupgtkGetWindow(widget);
-  GtkStyle *style = gtk_widget_get_style(widget);
+  GtkStyle* style = gtk_widget_get_style(widget);
   GtkAllocation allocation;
 #if GTK_CHECK_VERSION(2, 18, 0)
   gtk_widget_get_allocation(widget, &allocation);
@@ -512,7 +512,7 @@ static int gtkCanvasSetUpdateRectAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-static void gtkCanvasLayoutUpdateMethod(Ihandle *ih)
+static void gtkCanvasLayoutUpdateMethod(Ihandle* ih)
 {
   iupdrvBaseLayoutUpdateMethod(ih);
 
@@ -528,7 +528,7 @@ static void gtkCanvasLayoutUpdateMethod(Ihandle *ih)
   gtkCanvasUpdateChildLayout(ih, 0);
 }
 
-static void gtkCanvasSizeAllocate(GtkWidget* widget, GdkRectangle *allocation, Ihandle *ih)
+static void gtkCanvasSizeAllocate(GtkWidget* widget, GdkRectangle* allocation, Ihandle* ih)
 {
   IFnii cb = (IFnii)IupGetCallback(ih, "RESIZE_CB");
   if (cb && !(ih->data->inside_resize))
@@ -541,14 +541,14 @@ static void gtkCanvasSizeAllocate(GtkWidget* widget, GdkRectangle *allocation, I
   (void)widget;
 }
 
-static void gtkCanvasAdjustmentSetValue(Ihandle *ih, GtkAdjustment *adjustment, double value)
+static void gtkCanvasAdjustmentSetValue(Ihandle* ih, GtkAdjustment* adjustment, double value)
 {
   iupAttribSet(ih, "_IUPGTK_SETSBPOS", "1");
   gtk_adjustment_set_value(adjustment, value);
   iupAttribSet(ih, "_IUPGTK_SETSBPOS", NULL);
 }
 
-static int gtkCanvasCheckScroll(double min, double max, double *page, double *pos)
+static int gtkCanvasCheckScroll(double min, double max, double* page, double* pos)
 {
   double old_pos = *pos;
   double range = max-min;
@@ -564,7 +564,7 @@ static int gtkCanvasCheckScroll(double min, double max, double *page, double *po
     return 1;
 }
 
-static int gtkCanvasSetDXAttrib(Ihandle* ih, const char *value)
+static int gtkCanvasSetDXAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->sb & IUP_SB_HORIZ)
   {
@@ -658,7 +658,7 @@ static int gtkCanvasSetDXAttrib(Ihandle* ih, const char *value)
   return 1;
 }
 
-static int gtkCanvasSetDYAttrib(Ihandle* ih, const char *value)
+static int gtkCanvasSetDYAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->sb & IUP_SB_VERT)
   {
@@ -752,7 +752,7 @@ static int gtkCanvasSetDYAttrib(Ihandle* ih, const char *value)
   return 1;
 }
 
-static int gtkCanvasSetPosXAttrib(Ihandle* ih, const char *value)
+static int gtkCanvasSetPosXAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->sb & IUP_SB_HORIZ)
   {
@@ -781,7 +781,7 @@ static int gtkCanvasSetPosXAttrib(Ihandle* ih, const char *value)
   return 1;
 }
 
-static int gtkCanvasSetPosYAttrib(Ihandle* ih, const char *value)
+static int gtkCanvasSetPosYAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->sb & IUP_SB_VERT)
   {
@@ -865,7 +865,7 @@ static int gtkCanvasSetBgColorAttrib(Ihandle* ih, const char* value)
   }
 }
 
-static char* gtkCanvasGetDrawSizeAttrib(Ihandle *ih)
+static char* gtkCanvasGetDrawSizeAttrib(Ihandle* ih)
 {
   GdkWindow* window = iupgtkGetWindow(ih->handle);
   if (window)

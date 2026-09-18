@@ -49,12 +49,12 @@ private:
 public:
   IupQtTabStyle(Ihandle* ih_param) : QProxyStyle(), ih(ih_param) {}
 
-  void drawControl(ControlElement element, const QStyleOption *option,
-                   QPainter *painter, const QWidget *widget) const override
+  void drawControl(ControlElement element, const QStyleOption* option,
+                   QPainter* painter, const QWidget* widget) const override
   {
     if (element == CE_TabBarTabLabel)
     {
-      if (const QStyleOptionTab *tab = qstyleoption_cast<const QStyleOptionTab*>(option))
+      if (const QStyleOptionTab* tab = qstyleoption_cast<const QStyleOptionTab*>(option))
       {
         bool isVerticalTab = (tab->shape == QTabBar::RoundedWest ||
                               tab->shape == QTabBar::RoundedEast ||

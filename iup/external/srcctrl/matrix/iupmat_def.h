@@ -64,7 +64,7 @@ typedef double (*ImatNumericConvertFunc)(double number, int quantity, int src_un
 /***************************************************************************/
 typedef struct _ImatCell
 {
-  char *value;          /* Cell value */
+  char* value;          /* Cell value */
   unsigned char flags;  /* Attribute flags for the cell */
 } ImatCell;
 
@@ -179,7 +179,7 @@ struct _IcontrolData
   sIFnii font_cb, type_cb;
   IFniiIII fgcolor_cb;
   IFniiIII bgcolor_cb;
-  char *bgcolor, *bgcolor_parent, *fgcolor, *font;  /* not need to free */
+  char* bgcolor, *bgcolor_parent, *fgcolor, *font;  /* not need to free */
 
   /* RGB color components for IupDraw */
   unsigned char bgcolor_r, bgcolor_g, bgcolor_b;

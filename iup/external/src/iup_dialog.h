@@ -40,7 +40,7 @@ char* iupDialogGetChildIdStr(Ihandle* ih);
 /** \addtogroup drvdialog
  * @{ */
 /** Returns the size of the decoration. */
-IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int *border, int *caption, int *menu);
+IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int* border, int* caption, int* menu);
 /** Changes the parent dialog (works only if already set at map). */
 IUP_SDK_API void iupdrvDialogSetParent(Ihandle* ih, InativeHandle* native_parent);
 /** @} */
@@ -64,15 +64,15 @@ void iupDialogEnterModal(Ihandle* ih_popup, int popup_level);
 /** Registers platform-specific Dialog attributes and methods. */
 IUP_SDK_API void iupdrvDialogInitClass(Iclass* iclass);
 /** Gets current dialog position (screen coordinates). */
-IUP_SDK_API void iupdrvDialogGetPosition(Ihandle* ih, InativeHandle* handle, int *x, int *y);
+IUP_SDK_API void iupdrvDialogGetPosition(Ihandle* ih, InativeHandle* handle, int* x, int* y);
 /** Shows or hides dialog. */
 IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible);
 /** Sets dialog placement (MINIMIZED, MAXIMIZED, FULLSCREEN, NORMAL). */
 IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih);
 /** Sets dialog position (screen coordinates). */
-IUP_SDK_API void iupdrvDialogSetPosition(Ihandle *ih, int x, int y);
+IUP_SDK_API void iupdrvDialogSetPosition(Ihandle* ih, int x, int y);
 /** Gets current dialog size (including decorations). */
-IUP_SDK_API void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* handle, int *w, int *h);
+IUP_SDK_API void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* handle, int* w, int* h);
 /** Returns 1 if dialog is visible. */
 IUP_SDK_API int iupdrvDialogIsVisible(Ihandle* ih);
 /** @} */
@@ -84,7 +84,7 @@ IUP_SDK_API int iupdrvDialogIsVisible(Ihandle* ih);
 #ifdef _IUPDLG_PRIVATE
 
 /* retrieve the decorations size that offsets the window size of the client size. */
-void iupDialogGetDecorSize(Ihandle* ih, int *decorwidth, int *decorheight);
+void iupDialogGetDecorSize(Ihandle* ih, int* decorwidth, int* decorheight);
 
 void iupDialogCustomFrameSimulateCheckCallbacks(Ihandle* ih);
 int  iupDialogCustomFrameRestore(Ihandle* ih);
@@ -102,7 +102,7 @@ struct _IcontrolData
 };
 
 int iupDialogSetClientSizeAttrib(Ihandle* ih, const char* value);
-char* iupDialogGetClientSizeAttrib(Ihandle *ih);
+char* iupDialogGetClientSizeAttrib(Ihandle* ih);
 
 
 #endif

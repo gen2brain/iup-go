@@ -94,7 +94,7 @@ IUP_DRV_API void iuphaikuSetCanFocus(BView* widget, int can);
 IUP_DRV_API void iuphaikuFocusInOutEvent(Ihandle* ih, int focus_in);
 
 IUP_DRV_API int iuphaikuStubMap(Ihandle* ih);
-IUP_DRV_API void iuphaikuStubComputeNaturalSize(Ihandle* ih, int *w, int *h, int *children_expand);
+IUP_DRV_API void iuphaikuStubComputeNaturalSize(Ihandle* ih, int* w, int* h, int* children_expand);
 
 IUP_DRV_API void iuphaikuSingleInstanceDispatch(BMessage* msg);
 

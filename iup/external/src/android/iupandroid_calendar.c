@@ -94,7 +94,7 @@ static int androidCalendarMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-static void androidCalendarComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *children_expand)
+static void androidCalendarComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* children_expand)
 {
   (void)children_expand;
   (void)ih;

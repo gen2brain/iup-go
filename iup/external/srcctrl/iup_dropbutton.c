@@ -57,7 +57,7 @@ enum { IUP_POS_BOTTOMLEFT, IUP_POS_TOPLEFT, IUP_POS_BOTTOMRIGHT, IUP_POS_TOPRIGH
 
 static int iDropButtonRedraw_CB(Ihandle* ih)
 {
-  const char *image = iupAttribGet(ih, "IMAGE");
+  const char* image = iupAttribGet(ih, "IMAGE");
   char* title = iupAttribGet(ih, "TITLE");
   int active = IupGetInt(ih, "ACTIVE");  /* native implementation */
   char* fgcolor = iupAttribGetStr(ih, "FGCOLOR");
@@ -570,7 +570,7 @@ static int iDropButtonSetAlignmentAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-static char* iDropButtonGetAlignmentAttrib(Ihandle *ih)
+static char* iDropButtonGetAlignmentAttrib(Ihandle* ih)
 {
   char* horiz_align2str[3] = {"ALEFT", "ACENTER", "ARIGHT"};
   char* vert_align2str[3] = {"ATOP", "ACENTER", "ABOTTOM"};
@@ -620,7 +620,7 @@ static int iDropButtonSetImagePositionAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-static char* iDropButtonGetImagePositionAttrib(Ihandle *ih)
+static char* iDropButtonGetImagePositionAttrib(Ihandle* ih)
 {
   char* img_pos2str[4] = {"LEFT", "RIGHT", "TOP", "BOTTOM"};
   return iupStrReturnStr(img_pos2str[ih->data->img_position]);
@@ -634,7 +634,7 @@ static int iDropButtonSetSpacingAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-static char* iDropButtonGetSpacingAttrib(Ihandle *ih)
+static char* iDropButtonGetSpacingAttrib(Ihandle* ih)
 {
   return iupStrReturnInt(ih->data->spacing);
 }
@@ -647,7 +647,7 @@ static int iDropButtonSetBorderWidthAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-static char* iDropButtonGetBorderWidthAttrib(Ihandle *ih)
+static char* iDropButtonGetBorderWidthAttrib(Ihandle* ih)
 {
   return iupStrReturnInt(ih->data->border_width);
 }
@@ -671,7 +671,7 @@ static int iDropButtonSetArrowSizeAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-static char* iDropButtonGetArrowSizeAttrib(Ihandle *ih)
+static char* iDropButtonGetArrowSizeAttrib(Ihandle* ih)
 {
   return iupStrReturnInt(ih->data->arrow_size);
 }
@@ -684,7 +684,7 @@ static int iDropButtonSetArrowPaddingAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-static char* iDropButtonGetArrowPaddingAttrib(Ihandle *ih)
+static char* iDropButtonGetArrowPaddingAttrib(Ihandle* ih)
 {
   return iupStrReturnInt(ih->data->arrow_padding);
 }
@@ -864,7 +864,7 @@ static void iDropButtonDestroyMethod(Ihandle* ih)
     IupDestroy(ih->data->dropdialog);
 }
 
-static void iDropButtonComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *children_expand)
+static void iDropButtonComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* children_expand)
 {
   int fit2backimage = iupAttribGetBoolean(ih, "FITTOBACKIMAGE");
   char* bgimage = iupAttribGet(ih, "BACKIMAGE");
@@ -1011,7 +1011,7 @@ Iclass* iupDropButtonNewClass(void)
 
 IUPCONTROLS_API Ihandle* IupDropButton(Ihandle* dropchild)
 {
-  void *children[2];
+  void* children[2];
   children[0] = (void*)dropchild;
   children[1] = NULL;
   return IupCreatev("dropbutton", children);

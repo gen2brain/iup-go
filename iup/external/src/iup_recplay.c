@@ -175,7 +175,7 @@ IUP_API int IupRecordInput(const char* filename, int mode)
 
 /*************************************************************************************/
 
-static void iPlayReadInt(FILE* file, int *value, int mode)
+static void iPlayReadInt(FILE* file, int* value, int mode)
 {
   if (mode == IUP_RECTEXT)
   {
@@ -189,7 +189,7 @@ static void iPlayReadInt(FILE* file, int *value, int mode)
   }
 }
 
-static void iPlayReadFloat(FILE* file, float *value, int mode)
+static void iPlayReadFloat(FILE* file, float* value, int mode)
 {
   if (mode == IUP_RECTEXT)
   {
@@ -203,7 +203,7 @@ static void iPlayReadFloat(FILE* file, float *value, int mode)
   }
 }
 
-static void iPlayReadByte(FILE* file, char *value, int mode)
+static void iPlayReadByte(FILE* file, char* value, int mode)
 {
   if (mode == IUP_RECTEXT)
   {
@@ -219,7 +219,7 @@ static void iPlayReadByte(FILE* file, char *value, int mode)
   }
 }
 
-static void iPlayReadChar(FILE* file, char *value, int mode)
+static void iPlayReadChar(FILE* file, char* value, int mode)
 {
   if (mode == IUP_RECTEXT)
   {

@@ -212,7 +212,7 @@ void iupPlot::CalculateXRange(double &outXMin, double &outXMax) const
 
   for (int ds = 0; ds < mDataSetListCount; ds++)
   {
-    const iupPlotData *theXData = mDataSetList[ds]->GetDataX();
+    const iupPlotData* theXData = mDataSetList[ds]->GetDataX();
 
     if (theXData->GetCount() == 0)
       continue;
@@ -248,7 +248,7 @@ void iupPlot::CalculateYRange(double &outYMin, double &outYMax) const
 
   for (int ds = 0; ds < mDataSetListCount; ds++)
   {
-    const iupPlotData *theYData = mDataSetList[ds]->GetDataY();
+    const iupPlotData* theYData = mDataSetList[ds]->GetDataY();
 
     double theYMin;
     double theYMax;

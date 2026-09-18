@@ -15,22 +15,22 @@ extern "C" {
  * \ingroup drv
  * @{ */
 IUP_SDK_API void iupdrvTextInitClass(Iclass* ic);
-IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int *w, int *h);
-IUP_SDK_API void iupdrvTextAddExtraPadding(Ihandle* ih, int *w, int *h);
-IUP_SDK_API void iupdrvTextAddSpin(Ihandle* ih, int *w, int h);
+IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int* w, int* h);
+IUP_SDK_API void iupdrvTextAddExtraPadding(Ihandle* ih, int* w, int* h);
+IUP_SDK_API void iupdrvTextAddSpin(Ihandle* ih, int* w, int h);
 IUP_SDK_API void* iupdrvTextAddFormatTagStartBulk(Ihandle* ih);
 IUP_SDK_API void iupdrvTextAddFormatTagStopBulk(Ihandle* ih, void* state);
 IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bulk);
 IUP_SDK_API int iupdrvTextGetFormatTags(Ihandle* ih, Ihandle* bulk_tag);
 /** Converts line/col to char position. */
-IUP_SDK_API void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, int col, int *pos);
+IUP_SDK_API void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, int col, int* pos);
 /** Converts char position to line/col. */
-IUP_SDK_API void iupdrvTextConvertPosToLinCol(Ihandle* ih, int pos, int *lin, int *col);
+IUP_SDK_API void iupdrvTextConvertPosToLinCol(Ihandle* ih, int pos, int* lin, int* col);
 /** @} */
 
 /* Used by List and Text, implemented in Text */
-int iupEditCallActionCb(Ihandle* ih, IFnis cb, const char* insert_value, int start, int end, void *mask, int nc, int remove_dir, int utf8);
-int iupEditCheckNewValue(Ihandle* ih, IFnis cb, const char* new_value, void *mask, int nc);
+int iupEditCallActionCb(Ihandle* ih, IFnis cb, const char* insert_value, int start, int end, void* mask, int nc, int remove_dir, int utf8);
+int iupEditCheckNewValue(Ihandle* ih, IFnis cb, const char* new_value, void* mask, int nc);
 
 void iupTextUpdateFormatTags(Ihandle* ih);
 

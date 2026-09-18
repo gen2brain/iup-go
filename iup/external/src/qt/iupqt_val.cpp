@@ -162,7 +162,7 @@ static void qtValUpdateValue(IupQtSlider* slider, Ihandle* ih)
  * Min Size Calculation
  ****************************************************************************/
 
-extern "C" IUP_SDK_API void iupdrvValGetMinSize(Ihandle* ih, int *w, int *h)
+extern "C" IUP_SDK_API void iupdrvValGetMinSize(Ihandle* ih, int* w, int* h)
 {
   static int horiz_min_w = -1, horiz_min_h = -1;
   static int vert_min_w = -1, vert_min_h = -1;

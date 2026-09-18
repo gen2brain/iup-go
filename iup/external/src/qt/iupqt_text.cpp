@@ -425,7 +425,7 @@ protected:
  * Helper Functions
  ****************************************************************************/
 
-extern "C" IUP_SDK_API void iupdrvTextAddSpin(Ihandle* ih, int *w, int h)
+extern "C" IUP_SDK_API void iupdrvTextAddSpin(Ihandle* ih, int* w, int h)
 {
   static int spin_min_width = -1;
 
@@ -507,7 +507,7 @@ static void iupqtTextMeasureMultilineBorders(void)
   }
 }
 
-extern "C" IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int *x, int *y)
+extern "C" IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int* x, int* y)
 {
   if (iupAttribGetBoolean(ih, "_IUP_MULTILINE_TEXT"))
   {
@@ -533,14 +533,14 @@ extern "C" IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int *x, int *y)
   }
 }
 
-extern "C" IUP_SDK_API void iupdrvTextAddExtraPadding(Ihandle* ih, int *w, int *h)
+extern "C" IUP_SDK_API void iupdrvTextAddExtraPadding(Ihandle* ih, int* w, int* h)
 {
   (void)ih;
   (void)w;
   (void)h;
 }
 
-extern "C" IUP_SDK_API void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, int col, int *pos)
+extern "C" IUP_SDK_API void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, int col, int* pos)
 {
   if (ih->data->is_multiline)
   {
@@ -567,7 +567,7 @@ extern "C" IUP_SDK_API void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, i
     *pos = col - 1; /* single line, position is column */
 }
 
-extern "C" IUP_SDK_API void iupdrvTextConvertPosToLinCol(Ihandle* ih, int pos, int *lin, int *col)
+extern "C" IUP_SDK_API void iupdrvTextConvertPosToLinCol(Ihandle* ih, int pos, int* lin, int* col)
 {
   if (ih->data->is_multiline)
   {

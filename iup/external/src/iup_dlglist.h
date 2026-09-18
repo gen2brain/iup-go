@@ -20,11 +20,11 @@ extern "C" {
 
 /** Adds a dialog to the list. Used only in IupDialog.
  * \ingroup dlglist */
-IUP_SDK_API void iupDlgListAdd(Ihandle *ih);
+IUP_SDK_API void iupDlgListAdd(Ihandle* ih);
 
 /** Removes a dialog from the list. Used only in IupDestroy.
  * \ingroup dlglist */
-IUP_SDK_API void iupDlgListRemove(Ihandle *ih);
+IUP_SDK_API void iupDlgListRemove(Ihandle* ih);
 
 /** Returns the number of dialogs.
  * \ingroup dlglist */

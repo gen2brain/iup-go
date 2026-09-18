@@ -19,7 +19,7 @@
 #include "iup_canvas.h"
 
 
-void iupCanvasCalcScrollIntPos(double min, double max, double page, double pos, int imin, int imax, int *ipage,  int *ipos)
+void iupCanvasCalcScrollIntPos(double min, double max, double page, double pos, int imin, int imax, int* ipage,  int* ipos)
 {
   double range = max-min;
   int irange = imax-imin;
@@ -37,7 +37,7 @@ void iupCanvasCalcScrollIntPos(double min, double max, double page, double pos, 
   }
 }
 
-void iupCanvasCalcScrollRealPos(double min, double max, double *pos, int imin, int imax, int ipage, int *ipos)
+void iupCanvasCalcScrollRealPos(double min, double max, double* pos, int imin, int imax, int ipage, int* ipos)
 {
   double range = max-min;
   int irange = imax-imin;
@@ -94,7 +94,7 @@ static int iCanvasCreateMethod(Ihandle* ih, void** params)
   return IUP_NOERROR;
 }
 
-static void iCanvasComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *children_expand)
+static void iCanvasComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* children_expand)
 {
   int natural_w = 0, natural_h = 0;
   (void)children_expand; /* unset if not a container */

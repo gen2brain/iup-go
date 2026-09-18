@@ -349,7 +349,7 @@ void iupMatrixMarkBlockSet(Ihandle* ih, int ctrl, int lin1, int col1)
   ih->data->mark_block = 1;
 }
 
-static void iMatrixMarkAllLinCol(ImatLinColData *p, int mark)
+static void iMatrixMarkAllLinCol(ImatLinColData* p, int mark)
 {
   int i;
   for(i = 1; i < p->num; i++)

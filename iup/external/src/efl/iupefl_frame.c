@@ -110,7 +110,7 @@ static int eflFrameHasTitle(Ihandle* ih)
   return (title && title[0]);
 }
 
-IUP_SDK_API void iupdrvFrameGetDecorOffset(Ihandle* ih, int *x, int *y)
+IUP_SDK_API void iupdrvFrameGetDecorOffset(Ihandle* ih, int* x, int* y)
 {
   eflFrameEnsureMeasured();
   if (eflFrameHasTitle(ih))
@@ -131,14 +131,14 @@ IUP_SDK_API int iupdrvFrameHasClientOffset(Ihandle* ih)
   return 1;
 }
 
-IUP_SDK_API int iupdrvFrameGetTitleHeight(Ihandle* ih, int *h)
+IUP_SDK_API int iupdrvFrameGetTitleHeight(Ihandle* ih, int* h)
 {
   (void)ih;
   *h = 0;
   return 1;
 }
 
-IUP_SDK_API int iupdrvFrameGetDecorSize(Ihandle* ih, int *w, int *h)
+IUP_SDK_API int iupdrvFrameGetDecorSize(Ihandle* ih, int* w, int* h)
 {
   eflFrameEnsureMeasured();
   if (eflFrameHasTitle(ih))

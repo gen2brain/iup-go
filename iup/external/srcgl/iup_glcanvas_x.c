@@ -29,7 +29,7 @@
 #endif
 
 
-typedef GLXContext (*glXCreateContextAttribsARB_PROC)(Display *dpy, GLXFBConfig config, GLXContext share_list, Bool direct, const int *attrib_list);
+typedef GLXContext (*glXCreateContextAttribsARB_PROC)(Display* dpy, GLXFBConfig config, GLXContext share_list, Bool direct, const int* attrib_list);
 
 #ifndef GLX_CONTEXT_MAJOR_VERSION_ARB
 #define GLX_CONTEXT_MAJOR_VERSION_ARB 0x2091
@@ -53,7 +53,7 @@ typedef struct _IGlControlData
   Display* display;
   Drawable window;
   Colormap colormap;
-  XVisualInfo *vinfo;
+  XVisualInfo* vinfo;
   GLXContext context;
 
   int use_composite;
@@ -210,7 +210,7 @@ static void xGLCompositeSize(IGlControlData* gldata, int* w, int* h)
 }
 
 
-static int xGLCanvasDefaultResize(Ihandle *ih, int width, int height)
+static int xGLCanvasDefaultResize(Ihandle* ih, int width, int height)
 {
   IupGLMakeCurrent(ih);
   glViewport(0,0,width,height);
@@ -384,7 +384,7 @@ static void xGLCanvasGetVisual(Ihandle* ih, IGlControlData* gldata)
   iupAttribSet(ih, "ERROR", NULL);
 }
 
-static char* xGLCanvasGetVisualAttrib(Ihandle *ih)
+static char* xGLCanvasGetVisualAttrib(Ihandle* ih)
 {
   IGlControlData* gldata = (IGlControlData*)iupAttribGet(ih, "_IUP_GLCONTROLDATA");
 
@@ -448,7 +448,7 @@ static int xGLCanvasMapMethod(Ihandle* ih)
       char* value;
       GLXFBConfig matching_config = NULL;
       int nelements = 0, i;
-      GLXFBConfig *configs = glXGetFBConfigs(gldata->display, DefaultScreen(gldata->display), &nelements);
+      GLXFBConfig* configs = glXGetFBConfigs(gldata->display, DefaultScreen(gldata->display), &nelements);
 
       if (configs && nelements > 0)
       {
@@ -734,7 +734,7 @@ IUPGL_API void* IupGLGetProcAddress(const char* name)
   return (void*)glXGetProcAddressARB((const GLubyte*)name);
 }
 
-static int xGLCanvasIgnoreError(Display *param1, XErrorEvent *param2)
+static int xGLCanvasIgnoreError(Display* param1, XErrorEvent* param2)
 {
   (void)param1;
   (void)param2;
@@ -748,7 +748,7 @@ IUPGL_API void IupGLPalette(Ihandle* ih, int index, float r, float g, float b)
   IGlControlData* gldata;
   XColor color;
   int rShift, gShift, bShift;
-  XVisualInfo *vinfo;
+  XVisualInfo* vinfo;
   XErrorHandler old_handler;
 
   iupASSERT(iupObjectCheck(ih));

@@ -636,7 +636,7 @@ static char* eflListGetCaretPosAttrib(Ihandle* ih)
 static int eflListSetSelectionAttrib(Ihandle* ih, const char* value)
 {
   Eo* entry;
-  Efl_Text_Cursor_Object *cursor_start, *cursor_end;
+  Efl_Text_Cursor_Object* cursor_start, *cursor_end;
   int start = 1, end = 1;
 
   if (!ih->data->has_editbox)
@@ -667,7 +667,7 @@ static int eflListSetSelectionAttrib(Ihandle* ih, const char* value)
 static char* eflListGetSelectionAttrib(Ihandle* ih)
 {
   Eo* entry;
-  Efl_Text_Cursor_Object *cursor_start, *cursor_end;
+  Efl_Text_Cursor_Object* cursor_start, *cursor_end;
   int start_pos, end_pos;
 
   if (!ih->data->has_editbox)
@@ -693,7 +693,7 @@ static char* eflListGetSelectionAttrib(Ihandle* ih)
 static int eflListSetSelectionPosAttrib(Ihandle* ih, const char* value)
 {
   Eo* entry;
-  Efl_Text_Cursor_Object *cursor_start, *cursor_end;
+  Efl_Text_Cursor_Object* cursor_start, *cursor_end;
   int start = 0, end = 0;
 
   if (!ih->data->has_editbox)
@@ -721,7 +721,7 @@ static int eflListSetSelectionPosAttrib(Ihandle* ih, const char* value)
 static char* eflListGetSelectionPosAttrib(Ihandle* ih)
 {
   Eo* entry;
-  Efl_Text_Cursor_Object *cursor_start, *cursor_end;
+  Efl_Text_Cursor_Object* cursor_start, *cursor_end;
   int start_pos, end_pos;
 
   if (!ih->data->has_editbox)
@@ -747,7 +747,7 @@ static char* eflListGetSelectionPosAttrib(Ihandle* ih)
 static int eflListSetSelectedTextAttrib(Ihandle* ih, const char* value)
 {
   Eo* entry;
-  Efl_Text_Cursor_Object *cursor_start, *cursor_end;
+  Efl_Text_Cursor_Object* cursor_start, *cursor_end;
   int start_pos, end_pos;
 
   if (!ih->data->has_editbox)
@@ -782,7 +782,7 @@ static int eflListSetSelectedTextAttrib(Ihandle* ih, const char* value)
 static char* eflListGetSelectedTextAttrib(Ihandle* ih)
 {
   Eo* entry;
-  Efl_Text_Cursor_Object *cursor_start, *cursor_end;
+  Efl_Text_Cursor_Object* cursor_start, *cursor_end;
   int start_pos, end_pos;
   const char* full_text;
   int len;
@@ -892,7 +892,7 @@ static int eflListSetClipboardAttrib(Ihandle* ih, const char* value)
     efl_ui_textbox_selection_paste(entry);
   else if (iupStrEqualNoCase(value, "CLEAR"))
   {
-    Efl_Text_Cursor_Object *cursor_start, *cursor_end;
+    Efl_Text_Cursor_Object* cursor_start, *cursor_end;
     efl_text_interactive_selection_cursors_get(entry, &cursor_start, &cursor_end);
     if (cursor_start && cursor_end)
       efl_text_cursor_object_range_delete(cursor_start, cursor_end);
@@ -1389,7 +1389,7 @@ static Ihandle* efl_list_drag_source = NULL;
 static int efl_list_drag_source_pos = 0;
 static Eina_Bool efl_list_drag_active = EINA_FALSE;
 
-static Eina_Bool eflListDragEndIdleCb(void *data)
+static Eina_Bool eflListDragEndIdleCb(void* data)
 {
   (void)data;
   efl_list_drag_active = EINA_FALSE;
@@ -1398,7 +1398,7 @@ static Eina_Bool eflListDragEndIdleCb(void *data)
   return ECORE_CALLBACK_CANCEL;
 }
 
-static void eflListDragFinishedCb(void *data, const Efl_Event *ev)
+static void eflListDragFinishedCb(void* data, const Efl_Event* ev)
 {
   Eo* win = iupeflGetMainWindow();
   (void)ev;
@@ -1410,7 +1410,7 @@ static void eflListDragFinishedCb(void *data, const Efl_Event *ev)
   ecore_idler_add(eflListDragEndIdleCb, NULL);
 }
 
-static void eflListDragPointerDownCb(void *data, const Efl_Event *ev)
+static void eflListDragPointerDownCb(void* data, const Efl_Event* ev)
 {
   Ihandle* ih = (Ihandle*)data;
   Efl_Input_Pointer* pointer = ev->info;
@@ -1443,7 +1443,7 @@ static void eflListDragPointerDownCb(void *data, const Efl_Event *ev)
   iupAttribSet(ih, "_IUPEFL_LIST_DRAG_PENDING", "1");
 }
 
-static void eflListDragPointerMoveCb(void *data, const Efl_Event *ev)
+static void eflListDragPointerMoveCb(void* data, const Efl_Event* ev)
 {
   Ihandle* ih = (Ihandle*)data;
   Efl_Input_Pointer* pointer = ev->info;
@@ -1523,7 +1523,7 @@ static void eflListDragPointerMoveCb(void *data, const Efl_Event *ev)
   }
 }
 
-static void eflListDragPointerUpCb(void *data, const Efl_Event *ev)
+static void eflListDragPointerUpCb(void* data, const Efl_Event* ev)
 {
   Ihandle* ih = (Ihandle*)data;
   (void)ev;
@@ -1536,7 +1536,7 @@ static void eflListDragPointerUpCb(void *data, const Efl_Event *ev)
   }
 }
 
-static void eflListDropCb(void *data, const Efl_Event *ev)
+static void eflListDropCb(void* data, const Efl_Event* ev)
 {
   Ihandle* ih = (Ihandle*)data;
   Efl_Ui_Drop_Dropped_Event* drop_ev = ev->info;
@@ -2394,7 +2394,7 @@ static void eflListMeasureMetrics(void)
   if (efl_dropdown_border_h < 6) efl_dropdown_border_h = 6;
 }
 
-IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int *w, int *h)
+IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int* w, int* h)
 {
   int is_dropdown = ih->data->is_dropdown;
 
@@ -2413,7 +2413,7 @@ IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int *w, int *h)
   }
 }
 
-IUP_SDK_API void iupdrvListAddItemSpace(Ihandle* ih, int *h)
+IUP_SDK_API void iupdrvListAddItemSpace(Ihandle* ih, int* h)
 {
   (void)ih;
   eflListMeasureMetrics();

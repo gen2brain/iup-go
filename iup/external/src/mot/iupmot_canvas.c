@@ -35,7 +35,7 @@
 static void motCanvasScrollbarCallback(Widget w, XtPointer client_data, XtPointer call_data)
 {
   int op = (int)(intptr_t)client_data, ipage, ipos;
-  Ihandle *ih;
+  Ihandle* ih;
   IFniff cb;
   double posx, posy;
   (void)call_data;
@@ -78,7 +78,7 @@ static void motCanvasScrollbarCallback(Widget w, XtPointer client_data, XtPointe
   }
 }
 
-static void motCanvasSetSize(Ihandle *ih, Widget sb_win, int setsize)
+static void motCanvasSetSize(Ihandle* ih, Widget sb_win, int setsize)
 {
   Widget sb_horiz = (Widget)iupAttribGet(ih, "_IUPMOT_SBHORIZ");
   Widget sb_vert = (Widget)iupAttribGet(ih, "_IUPMOT_SBVERT");
@@ -134,13 +134,13 @@ static void motCanvasSetSize(Ihandle *ih, Widget sb_win, int setsize)
     NULL);
 }
 
-static void motCanvasUpdateScrollLayout(Ihandle *ih)
+static void motCanvasUpdateScrollLayout(Ihandle* ih)
 {
   Widget sb_win = (Widget)iupAttribGet(ih, "_IUP_EXTRAPARENT");
   motCanvasSetSize(ih, sb_win, 0);
 }
 
-static void motCanvasResizeCallback(Widget w, Ihandle *ih, XtPointer call_data)
+static void motCanvasResizeCallback(Widget w, Ihandle* ih, XtPointer call_data)
 {
   IFnii cb;
   (void)call_data;
@@ -243,7 +243,7 @@ static void motCanvasGLComposite(Ihandle* ih)
   motCanvasGLRefreshChildren(ih->firstchild);
 }
 
-static void motCanvasExposeCallback(Widget w, Ihandle *ih, XtPointer call_data)
+static void motCanvasExposeCallback(Widget w, Ihandle* ih, XtPointer call_data)
 {
   IFn cb;
   (void)call_data;
@@ -312,9 +312,9 @@ static int motCanvasSetUpdateRectAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-static void motCanvasInputCallback(Widget w, Ihandle *ih, XtPointer call_data)
+static void motCanvasInputCallback(Widget w, Ihandle* ih, XtPointer call_data)
 {
-  XEvent *evt = ((XmDrawingAreaCallbackStruct*)call_data)->event;
+  XEvent* evt = ((XmDrawingAreaCallbackStruct*)call_data)->event;
 
   if (!XtWindow(w) || !ih) return;
 
@@ -327,7 +327,7 @@ static void motCanvasInputCallback(Widget w, Ihandle *ih, XtPointer call_data)
     /* break missing on purpose... */
   case ButtonRelease:
     {
-      XButtonEvent *but_evt = (XButtonEvent*)evt;
+      XButtonEvent* but_evt = (XButtonEvent*)evt;
       Boolean cont = True;
       iupmotButtonPressReleaseEvent(w, ih, evt, &cont);
       if (cont == False)
@@ -381,7 +381,7 @@ static void motCanvasSetScrollInfo(Widget sb, int imin, int imax, int ipos, int 
                 NULL);
 }
 
-static int motCanvasSetDXAttrib(Ihandle* ih, const char *value)
+static int motCanvasSetDXAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->sb & IUP_SB_HORIZ)
   {
@@ -462,7 +462,7 @@ static int motCanvasSetDXAttrib(Ihandle* ih, const char *value)
   return 1;
 }
 
-static int motCanvasSetPosXAttrib(Ihandle* ih, const char *value)
+static int motCanvasSetPosXAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->sb & IUP_SB_HORIZ)
   {
@@ -494,7 +494,7 @@ static int motCanvasSetPosXAttrib(Ihandle* ih, const char *value)
   return 1;
 }
 
-static int motCanvasSetDYAttrib(Ihandle* ih, const char *value)
+static int motCanvasSetDYAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->sb & IUP_SB_VERT)
   {
@@ -575,7 +575,7 @@ static int motCanvasSetDYAttrib(Ihandle* ih, const char *value)
   return 1;
 }
 
-static int motCanvasSetPosYAttrib(Ihandle* ih, const char *value)
+static int motCanvasSetPosYAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->sb & IUP_SB_VERT)
   {
@@ -607,24 +607,24 @@ static int motCanvasSetPosYAttrib(Ihandle* ih, const char *value)
   return 1;
 }
 
-static char* motCanvasGetXDisplayAttrib(Ihandle *ih)
+static char* motCanvasGetXDisplayAttrib(Ihandle* ih)
 {
   (void)ih;
   return (char*)iupmot_display;
 }
 
-static char* motCanvasGetXScreenAttrib(Ihandle *ih)
+static char* motCanvasGetXScreenAttrib(Ihandle* ih)
 {
   (void)ih;
   return (char*)(intptr_t)iupmot_screen;
 }
 
-static char* motCanvasGetXWindowAttrib(Ihandle *ih)
+static char* motCanvasGetXWindowAttrib(Ihandle* ih)
 {
   return (char*)XtWindow(ih->handle);
 }
 
-static char* motCanvasGetDrawSizeAttrib(Ihandle *ih)
+static char* motCanvasGetDrawSizeAttrib(Ihandle* ih)
 {
   Dimension width, height;
   XtVaGetValues(ih->handle, XmNwidth,  &width,
@@ -669,7 +669,7 @@ static int motCanvasSetBgColorAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-static void motCanvasLayoutUpdateMethod(Ihandle *ih)
+static void motCanvasLayoutUpdateMethod(Ihandle* ih)
 {
   Widget sb_win = (Widget)iupAttribGet(ih, "_IUP_EXTRAPARENT");
   motCanvasSetSize(ih, sb_win, 1);
@@ -679,7 +679,7 @@ static void motCanvasLayoutUpdateMethod(Ihandle *ih)
 static int motCanvasMapMethod(Ihandle* ih)
 {
   Widget sb_win;
-  char *visual;
+  char* visual;
   int num_args = 0;
   Arg args[20];
 

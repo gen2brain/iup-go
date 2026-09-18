@@ -60,13 +60,13 @@ IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bul
    (void)bulk;
  }
 
-IUP_SDK_API void iupdrvTextAddSpin(Ihandle* ih, int *w, int h)
+IUP_SDK_API void iupdrvTextAddSpin(Ihandle* ih, int* w, int h)
 {
   *w += h/2;
   (void)ih;
 }
 
-IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int *w, int *h)
+IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int* w, int* h)
 {
   int border_size = 2*5;
   (*w) += border_size;
@@ -74,7 +74,7 @@ IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int *w, int *h)
   (void)ih;
 }
 
-IUP_SDK_API void iupdrvTextAddExtraPadding(Ihandle* ih, int *w, int *h)
+IUP_SDK_API void iupdrvTextAddExtraPadding(Ihandle* ih, int* w, int* h)
 {
   int highlight = 2*2;
   (*w) += highlight;
@@ -82,7 +82,7 @@ IUP_SDK_API void iupdrvTextAddExtraPadding(Ihandle* ih, int *w, int *h)
   (void)ih;
 }
 
-static void motTextGetLinColFromPosition(const char *str, int pos, int *lin, int *col )
+static void motTextGetLinColFromPosition(const char* str, int pos, int* lin, int* col )
 {
   int i;
 
@@ -106,7 +106,7 @@ static void motTextGetLinColFromPosition(const char *str, int pos, int *lin, int
   (*col)++;
 }
 
-static int motTextSetLinColToPosition(const char *str, int lin, int col)
+static int motTextSetLinColToPosition(const char* str, int lin, int col)
 {
   int pos=0, cur_lin, cur_col;
 
@@ -140,16 +140,16 @@ static int motTextSetLinColToPosition(const char *str, int lin, int col)
   return pos;
 }
 
-IUP_SDK_API void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, int col, int *pos)
+IUP_SDK_API void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, int col, int* pos)
 {
   char* str = XmTextGetString(ih->handle);
   *pos = motTextSetLinColToPosition(str, lin, col);
   XtFree(str);
 }
 
-IUP_SDK_API void iupdrvTextConvertPosToLinCol(Ihandle* ih, int pos, int *lin, int *col)
+IUP_SDK_API void iupdrvTextConvertPosToLinCol(Ihandle* ih, int pos, int* lin, int* col)
 {
-  char *str = XmTextGetString(ih->handle);
+  char* str = XmTextGetString(ih->handle);
   motTextGetLinColFromPosition(str, pos, lin, col);
   XtFree(str);
 }
@@ -313,7 +313,7 @@ static int motTextSetSelectionAttrib(Ihandle* ih, const char* value)
   if (ih->data->is_multiline)
   {
     int lin_start=1, col_start=1, lin_end=1, col_end=1;
-    char *str;
+    char* str;
 
     if (sscanf(value, "%d,%d:%d,%d", &lin_start, &col_start, &lin_end, &col_end)!=4) return 0;
     if (lin_start<1 || col_start<1 || lin_end<1 || col_end<1) return 0;
@@ -351,7 +351,7 @@ static char* motTextGetSelectionAttrib(Ihandle* ih)
   {
     int start_col, start_lin, end_col, end_lin;
 
-    char *value = XmTextGetString(ih->handle);
+    char* value = XmTextGetString(ih->handle);
     motTextGetLinColFromPosition(value, start, &start_lin, &start_col);
     motTextGetLinColFromPosition(value, end,   &end_lin,   &end_col);
     XtFree(value);
@@ -413,7 +413,7 @@ static int motTextSetCaretAttrib(Ihandle* ih, const char* value)
   if (ih->data->is_multiline)
   {
     int lin = 1, col = 1;
-    char *str;
+    char* str;
 
     iupStrToIntInt(value, &lin, &col, ',');
 
@@ -441,7 +441,7 @@ static char* motTextGetCaretAttrib(Ihandle* ih)
   {
     int col, lin;
 
-    char *value = XmTextGetString(ih->handle);
+    char* value = XmTextGetString(ih->handle);
     motTextGetLinColFromPosition(value, pos, &lin, &col);
     XtFree(value);
 
@@ -537,7 +537,7 @@ static int motTextSetNCAttrib(Ihandle* ih, const char* value)
     return 1; /* store until not mapped, when mapped will be set again */
 }
 
-static int motTextSetClipboardAttrib(Ihandle *ih, const char *value)
+static int motTextSetClipboardAttrib(Ihandle* ih, const char* value)
 {
   Boolean editable;
   XtVaGetValues(ih->handle, XmNeditable, &editable, NULL);
@@ -548,7 +548,7 @@ static int motTextSetClipboardAttrib(Ihandle *ih, const char *value)
   if (iupStrEqualNoCase(value, "COPY"))
   {
     Ihandle* clipboard;
-    char *str = XmTextGetSelection(ih->handle);
+    char* str = XmTextGetSelection(ih->handle);
     if (!str)
       return 0;
 
@@ -561,7 +561,7 @@ static int motTextSetClipboardAttrib(Ihandle *ih, const char *value)
   else if (iupStrEqualNoCase(value, "CUT"))
   {
     Ihandle* clipboard;
-    char *str;
+    char* str;
 
     if (!editable)
       return 0;
@@ -587,7 +587,7 @@ static int motTextSetClipboardAttrib(Ihandle *ih, const char *value)
   else if (iupStrEqualNoCase(value, "PASTE"))
   {
     Ihandle* clipboard;
-    char *str;
+    char* str;
 
     if (!editable)
       return 0;
@@ -787,7 +787,7 @@ static char* motTextGetLineValueAttrib(Ihandle* ih)
   {
     int lin, col, start, end;
     char* str = iupStrGetMemory(200);
-    char *value = XmTextGetString(ih->handle);
+    char* value = XmTextGetString(ih->handle);
     XmTextPosition pos = XmTextGetInsertionPosition(ih->handle);
     motTextGetLinColFromPosition(value, pos, &lin, &col);
     start = motTextSetLinColToPosition(value, lin, 1);
@@ -804,7 +804,7 @@ static char* motTextGetLineValueAttrib(Ihandle* ih)
 /******************************************************************************/
 
 
-static void motTextSpinModifyVerifyCallback(Widget w, Ihandle* ih, XmSpinBoxCallbackStruct *cbs)
+static void motTextSpinModifyVerifyCallback(Widget w, Ihandle* ih, XmSpinBoxCallbackStruct* cbs)
 {
   IFni cb = (IFni) IupGetCallback(ih, "SPIN_CB");
   if (cb)
@@ -821,10 +821,10 @@ static void motTextSpinModifyVerifyCallback(Widget w, Ihandle* ih, XmSpinBoxCall
   iupAttribSet(ih, "_IUPMOT_SPIN_DISABLE_TEXT_CB", "1");
 }
 
-static void motTextModifyVerifyCallback(Widget w, Ihandle *ih, XmTextVerifyPtr text)
+static void motTextModifyVerifyCallback(Widget w, Ihandle* ih, XmTextVerifyPtr text)
 {
   int start, end, remove_dir = 0, ret;
-  char *insert_value;
+  char* insert_value;
   KeySym motcode = 0;
   IFnis cb;
 
@@ -981,7 +981,7 @@ static void motTextMotionVerifyCallback(Widget w, Ihandle* ih, XmTextVerifyCallb
 
   if (ih->data->is_multiline)
   {
-    char *value = XmTextGetString(ih->handle);
+    char* value = XmTextGetString(ih->handle);
     motTextGetLinColFromPosition(value, pos, &lin, &col);
     XtFree(value);
   }
@@ -1024,7 +1024,7 @@ static void motTextValueChangedCallback(Widget w, Ihandle* ih, XmAnyCallbackStru
   (void)w;
 }
 
-static void motTextKeyPressEvent(Widget w, Ihandle *ih, XKeyEvent *evt, Boolean *cont)
+static void motTextKeyPressEvent(Widget w, Ihandle* ih, XKeyEvent* evt, Boolean* cont)
 {
   Widget spinbox;
 

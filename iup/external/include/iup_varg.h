@@ -22,9 +22,9 @@ IUP_API void      IupSetStrfV(Ihandle* ih, const char* name, const char* format,
 IUP_API void      IupSetStrfIdV(Ihandle* ih, const char* name, int id, const char* format, va_list arglist);
 IUP_API void      IupSetStrfId2V(Ihandle* ih, const char* name, int lin, int col, const char* format, va_list arglist);
 
-IUP_API Ihandle*  IupSetCallbacksV(Ihandle* ih, const char *name, Icallback func, va_list arglist);
+IUP_API Ihandle*  IupSetCallbacksV(Ihandle* ih, const char* name, Icallback func, va_list arglist);
 
-IUP_API Ihandle*  IupCreateV(const char *classname, void* first, va_list arglist);
+IUP_API Ihandle*  IupCreateV(const char* classname, void* first, va_list arglist);
 IUP_API Ihandle*  IupVboxV(Ihandle* child, va_list arglist);
 IUP_API Ihandle*  IupZboxV(Ihandle* child, va_list arglist);
 IUP_API Ihandle*  IupHboxV(Ihandle* child,va_list arglist);
@@ -36,7 +36,7 @@ IUP_API Ihandle*  IupMenuV(Ihandle* child,va_list arglist);
 IUP_API Ihandle*  IupTabsV(Ihandle* child, va_list arglist);
 IUP_API Ihandle*  IupFlatTabsV(Ihandle* child, va_list arglist);
 
-IUP_API void      IupMessageV(const char *title, const char *format, va_list arglist);
+IUP_API void      IupMessageV(const char* title, const char* format, va_list arglist);
 IUP_API Ihandle*  IupParamBoxV(Ihandle* param, va_list arglist);
 IUP_API int       IupGetParamV(const char* title, Iparamcb action, void* user_data, const char* format, va_list arglist);
 

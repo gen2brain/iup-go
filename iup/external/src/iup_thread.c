@@ -84,7 +84,7 @@ static int iThreadSetStartAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-static int iThreadCreateMethod(Ihandle* ih, void **params)
+static int iThreadCreateMethod(Ihandle* ih, void** params)
 {
   void* mutex = iupdrvMutexCreate();
   iupAttribSet(ih, "MUTEX", (char*)mutex);

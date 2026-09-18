@@ -318,7 +318,7 @@ int iupMatrixMouseButton_CB(Ihandle* ih, int button, int press, int x, int y, ch
 
 static void iMatrixMouseResetCursor(Ihandle* ih)
 {
-  char *cursor = iupAttribGet(ih, "_IUPMAT_CURSOR");
+  char* cursor = iupAttribGet(ih, "_IUPMAT_CURSOR");
   if (cursor)
   {
     IupStoreAttribute(ih, "CURSOR", cursor);
@@ -333,7 +333,7 @@ static void iMatrixMouseSetCursor(Ihandle* ih, const char* name)
   IupSetAttribute(ih, "CURSOR", name);
 }
 
-int iupMatrixMouseMove_CB(Ihandle* ih, int x, int y, char *status)
+int iupMatrixMouseMove_CB(Ihandle* ih, int x, int y, char* status)
 {
   int lin, col, has_lincol;
 

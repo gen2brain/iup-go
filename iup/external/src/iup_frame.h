@@ -16,11 +16,11 @@ extern "C" {
 IUP_SDK_API int iupdrvFrameHasClientOffset(Ihandle* ih);
 IUP_SDK_API void iupdrvFrameInitClass(Iclass* ic);
 /** Gets offset to client area. */
-IUP_SDK_API void iupdrvFrameGetDecorOffset(Ihandle* ih, int *x, int *y);
+IUP_SDK_API void iupdrvFrameGetDecorOffset(Ihandle* ih, int* x, int* y);
 /** Gets total decoration size. */
-IUP_SDK_API int iupdrvFrameGetDecorSize(Ihandle* ih, int *w, int *h);
+IUP_SDK_API int iupdrvFrameGetDecorSize(Ihandle* ih, int* w, int* h);
 /** Gets title area height. */
-IUP_SDK_API int iupdrvFrameGetTitleHeight(Ihandle* ih, int *h);
+IUP_SDK_API int iupdrvFrameGetTitleHeight(Ihandle* ih, int* h);
 /** @} */
 
 int iupFrameGetTitleHeight(Ihandle* ih);

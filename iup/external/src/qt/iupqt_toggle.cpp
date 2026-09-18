@@ -430,7 +430,7 @@ static void qtToggleMeasureBorders(void)
   if (qt_toggle_struct_y < 0) qt_toggle_struct_y = 0;
 }
 
-extern "C" IUP_SDK_API void iupdrvToggleAddBorders(Ihandle* ih, int *x, int *y)
+extern "C" IUP_SDK_API void iupdrvToggleAddBorders(Ihandle* ih, int* x, int* y)
 {
   if (ih && ih->data->type == IUP_TOGGLE_IMAGE)
   {
@@ -464,7 +464,7 @@ extern "C" IUP_SDK_API void iupdrvToggleAddBorders(Ihandle* ih, int *x, int *y)
   }
 }
 
-extern "C" IUP_SDK_API void iupdrvToggleAddSwitch(Ihandle* ih, int *x, int *y, const char* str)
+extern "C" IUP_SDK_API void iupdrvToggleAddSwitch(Ihandle* ih, int* x, int* y, const char* str)
 {
   static int switch_w = -1;
   static int switch_h = -1;
@@ -487,7 +487,7 @@ extern "C" IUP_SDK_API void iupdrvToggleAddSwitch(Ihandle* ih, int *x, int *y, c
     (*x) += 8;
 }
 
-extern "C" IUP_SDK_API void iupdrvToggleAddCheckBox(Ihandle* ih, int *x, int *y, const char* str)
+extern "C" IUP_SDK_API void iupdrvToggleAddCheckBox(Ihandle* ih, int* x, int* y, const char* str)
 {
   int check_box = IUP_TOGGLE_BOX;
 

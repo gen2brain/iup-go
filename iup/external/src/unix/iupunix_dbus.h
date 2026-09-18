@@ -24,19 +24,19 @@ typedef int dbus_int32_t;
 typedef unsigned int dbus_bool_t;
 
 struct DBusError {
-  const char *name;
-  const char *message;
+  const char* name;
+  const char* message;
   unsigned int dummy1 : 1;
   unsigned int dummy2 : 1;
   unsigned int dummy3 : 1;
   unsigned int dummy4 : 1;
   unsigned int dummy5 : 1;
-  void *padding1;
+  void* padding1;
 };
 
 struct DBusMessageIter {
-  void *dummy1;
-  void *dummy2;
+  void* dummy1;
+  void* dummy2;
   dbus_uint32_t dummy3;
   int dummy4;
   int dummy5;
@@ -48,7 +48,7 @@ struct DBusMessageIter {
   int dummy11;
   int pad1;
   int pad2;
-  void *pad3;
+  void* pad3;
 };
 
 typedef enum {

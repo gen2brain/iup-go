@@ -142,7 +142,7 @@ static void winStrWide2Char(const WCHAR* wstr, char* str, int len)
   str[len] = 0;
 }
 
-static void winStrChar2Wide(const char* str, WCHAR* wstr, int *len)
+static void winStrChar2Wide(const char* str, WCHAR* wstr, int* len)
 {
   /* cbMultiByte is the str size in bytes of the actual string
      cchWideChar is the wstr number in characters available in the buffer
@@ -250,7 +250,7 @@ IUP_DRV_API char* iupwinStrFromSystem(const TCHAR* wstr)
 #endif
 }
 
-IUP_DRV_API TCHAR* iupwinStrToSystemLen(const char* str, int *len)
+IUP_DRV_API TCHAR* iupwinStrToSystemLen(const char* str, int* len)
 {
   /* The len here is in bytes always, using UTF-8 or not.
      So, when converted to Unicode must return the actual size in characters. */
@@ -268,7 +268,7 @@ IUP_DRV_API TCHAR* iupwinStrToSystemLen(const char* str, int *len)
 #endif
 }
 
-static char* iupCheckUtf8Buffer(char* utf8_buffer, int *utf8_buffer_max, int len)
+static char* iupCheckUtf8Buffer(char* utf8_buffer, int* utf8_buffer_max, int len)
 {
   if (!utf8_buffer)
   {
@@ -284,7 +284,7 @@ static char* iupCheckUtf8Buffer(char* utf8_buffer, int *utf8_buffer_max, int len
   return utf8_buffer;
 }
 
-static char* iupStrCopyToUtf8Buffer(const char* str, int len, char* utf8_buffer, int *utf8_buffer_max)
+static char* iupStrCopyToUtf8Buffer(const char* str, int len, char* utf8_buffer, int* utf8_buffer_max)
 {
   utf8_buffer = iupCheckUtf8Buffer(utf8_buffer, utf8_buffer_max, len);
   memcpy(utf8_buffer, str, len);
@@ -293,7 +293,7 @@ static char* iupStrCopyToUtf8Buffer(const char* str, int len, char* utf8_buffer,
 }
 
 /* Used in glfont */
-IUP_SDK_API char* iupStrConvertToUTF8(const char* str, int len, char* utf8_buffer, int *utf8_buffer_max, int utf8mode)
+IUP_SDK_API char* iupStrConvertToUTF8(const char* str, int len, char* utf8_buffer, int* utf8_buffer_max, int utf8mode)
 {
   if (utf8mode || iupStrIsAscii(str)) /* string is already utf8 or is ascii */
     return iupStrCopyToUtf8Buffer(str, len, utf8_buffer, utf8_buffer_max);
