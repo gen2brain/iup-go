@@ -29,14 +29,12 @@ func main() {
 	lblOp := iup.Label("Op: -").SetHandle("lblOp").SetAttribute("SIZE", "120x")
 
 	iup.SetCallback(sbH, "VALUECHANGED_CB", iup.ValueChangedFunc(func(ih iup.Ihandle) int {
-		val := ih.GetAttribute("VALUE")
-		iup.GetHandle("lblH").SetAttribute("TITLE", fmt.Sprintf("H: %s", val))
+		iup.GetHandle("lblH").SetAttribute("TITLE", fmt.Sprintf("H: %.2f", iup.GetDouble(ih, "VALUE")))
 		return iup.DEFAULT
 	}))
 
 	iup.SetCallback(sbV, "VALUECHANGED_CB", iup.ValueChangedFunc(func(ih iup.Ihandle) int {
-		val := ih.GetAttribute("VALUE")
-		iup.GetHandle("lblV").SetAttribute("TITLE", fmt.Sprintf("V: %s", val))
+		iup.GetHandle("lblV").SetAttribute("TITLE", fmt.Sprintf("V: %.2f", iup.GetDouble(ih, "VALUE")))
 		return iup.DEFAULT
 	}))
 

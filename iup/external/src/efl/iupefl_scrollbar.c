@@ -31,7 +31,7 @@ static void eflScrollbarDragStopCallback(void* data, const Efl_Event* ev)
   iupAttribSet((Ihandle*)data, "_IUPEFL_SB_DRAGGING", NULL);
 }
 
-static void eflScrollbarUpdateRange(Ihandle* ih)
+IUP_SDK_API void iupdrvScrollbarUpdate(Ihandle* ih)
 {
   Eo* slider = iupeflGetWidget(ih);
   double max_pos;
@@ -48,6 +48,8 @@ static void eflScrollbarUpdateRange(Ihandle* ih)
   iupAttribSet(ih, "_IUPEFL_SB_UPDATING", "1");
 
   efl_ui_range_limits_set(slider, ih->data->vmin, max_pos);
+  /* the knob only follows new limits when the value itself changes */
+  efl_ui_range_value_set(slider, max_pos);
   efl_ui_range_value_set(slider, ih->data->val);
   if (ih->data->linestep > 0)
     efl_ui_range_step_set(slider, ih->data->linestep * (ih->data->vmax - ih->data->vmin));
@@ -115,7 +117,7 @@ static int eflScrollbarSetValueAttrib(Ihandle* ih, const char* value)
   if (iupStrToDouble(value, &val))
   {
     ih->data->val = val;
-    eflScrollbarUpdateRange(ih);
+    iupdrvScrollbarUpdate(ih);
   }
 
   return 0;
@@ -126,7 +128,7 @@ static int eflScrollbarSetLineStepAttrib(Ihandle* ih, const char* value)
   Eo* slider = iupeflGetWidget(ih);
 
   if (iupStrToDoubleDef(value, &(ih->data->linestep), 0.01))
-    eflScrollbarUpdateRange(ih);
+    iupdrvScrollbarUpdate(ih);
 
   return 0;
 }
@@ -134,14 +136,14 @@ static int eflScrollbarSetLineStepAttrib(Ihandle* ih, const char* value)
 static int eflScrollbarSetPageStepAttrib(Ihandle* ih, const char* value)
 {
   if (iupStrToDoubleDef(value, &(ih->data->pagestep), 0.1))
-    eflScrollbarUpdateRange(ih);
+    iupdrvScrollbarUpdate(ih);
   return 0;
 }
 
 static int eflScrollbarSetPageSizeAttrib(Ihandle* ih, const char* value)
 {
   if (iupStrToDoubleDef(value, &(ih->data->pagesize), 0.1))
-    eflScrollbarUpdateRange(ih);
+    iupdrvScrollbarUpdate(ih);
   return 0;
 }
 
@@ -177,7 +179,7 @@ static int eflScrollbarMapMethod(Ihandle* ih)
   }
   efl_ui_layout_orientation_set(slider, dir);
 
-  eflScrollbarUpdateRange(ih);
+  iupdrvScrollbarUpdate(ih);
 
   efl_event_callback_add(slider, EFL_UI_RANGE_EVENT_CHANGED, eflScrollbarChangedCallback, ih);
   efl_event_callback_add(slider, EFL_UI_SLIDER_EVENT_SLIDER_DRAG_START, eflScrollbarDragStartCallback, ih);

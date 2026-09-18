@@ -230,13 +230,18 @@ IUP_SDK_API void iupdrvScrollbarGetMinSize(Ihandle* ih, int* w, int* h)
 	}
 }
 
+IUP_SDK_API void iupdrvScrollbarUpdate(Ihandle* ih)
+{
+	if (ih->handle && [(id)ih->handle isKindOfClass:[IupCocoaTouchScrollbar class]])
+		[(IupCocoaTouchScrollbar*)ih->handle refreshFromData];
+}
+
 static int cocoaTouchScrollbarSetValueAttrib(Ihandle* ih, const char* value)
 {
 	if (iupStrToDouble(value, &(ih->data->val)))
 	{
 		iupScrollbarCropValue(ih);
-		if (ih->handle && [(id)ih->handle isKindOfClass:[IupCocoaTouchScrollbar class]])
-			[(IupCocoaTouchScrollbar*)ih->handle refreshFromData];
+		iupdrvScrollbarUpdate(ih);
 	}
 	return 0;
 }
@@ -258,8 +263,7 @@ static int cocoaTouchScrollbarSetPageSizeAttrib(Ihandle* ih, const char* value)
 	if (iupStrToDoubleDef(value, &(ih->data->pagesize), 0.1))
 	{
 		iupScrollbarCropValue(ih);
-		if (ih->handle && [(id)ih->handle isKindOfClass:[IupCocoaTouchScrollbar class]])
-			[(IupCocoaTouchScrollbar*)ih->handle refreshFromData];
+		iupdrvScrollbarUpdate(ih);
 	}
 	return 0;
 }

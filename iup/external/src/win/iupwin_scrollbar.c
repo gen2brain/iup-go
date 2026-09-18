@@ -39,7 +39,7 @@ IUP_SDK_API void iupdrvScrollbarGetMinSize(Ihandle* ih, int* w, int* h)
   }
 }
 
-static void winScrollbarSetScrollInfo(Ihandle* ih)
+IUP_SDK_API void iupdrvScrollbarUpdate(Ihandle* ih)
 {
   SCROLLINFO si;
   double range = ih->data->vmax - ih->data->vmin;
@@ -82,7 +82,7 @@ static int winScrollbarSetPageSizeAttrib(Ihandle* ih, const char* value)
   if (iupStrToDoubleDef(value, &(ih->data->pagesize), 0.1))
   {
     iupScrollbarCropValue(ih);
-    winScrollbarSetScrollInfo(ih);
+    iupdrvScrollbarUpdate(ih);
   }
   return 0;
 }
@@ -92,7 +92,7 @@ static int winScrollbarSetValueAttrib(Ihandle* ih, const char* value)
   if (iupStrToDouble(value, &(ih->data->val)))
   {
     iupScrollbarCropValue(ih);
-    winScrollbarSetScrollInfo(ih);
+    iupdrvScrollbarUpdate(ih);
   }
   return 0;
 }
@@ -173,7 +173,7 @@ static int winScrollbarProcessScroll(Ihandle* ih, int msg)
     iupScrollbarCropValue(ih);
 
     if (msg != SB_THUMBTRACK)
-      winScrollbarSetScrollInfo(ih);
+      iupdrvScrollbarUpdate(ih);
   }
 
   if (ih->data->orientation == ISCROLLBAR_HORIZONTAL)
@@ -282,7 +282,7 @@ static int winScrollbarMapMethod(Ihandle* ih)
   IupSetCallback(ih, "_IUPWIN_CTRLMSGPROC_CB", (Icallback)winScrollbarMsgProc);
   IupSetCallback(ih, "_IUPWIN_CUSTOMSCROLL_CB", (Icallback)winScrollbarCustomScroll);
 
-  winScrollbarSetScrollInfo(ih);
+  iupdrvScrollbarUpdate(ih);
 
   return IUP_NOERROR;
 }

@@ -147,7 +147,7 @@ private:
   }
 };
 
-static void haikuSbUpdateNative(Ihandle* ih)
+extern "C" IUP_SDK_API void iupdrvScrollbarUpdate(Ihandle* ih)
 {
   IupHaikuScrollBar* sb = (IupHaikuScrollBar*)ih->handle;
   if (!sb) return;
@@ -185,7 +185,7 @@ static int haikuSbSetValueAttrib(Ihandle* ih, const char* value)
   if (iupStrToDouble(value, &(ih->data->val)))
   {
     iupScrollbarCropValue(ih);
-    haikuSbUpdateNative(ih);
+    iupdrvScrollbarUpdate(ih);
   }
   return 0;
 }
@@ -193,14 +193,14 @@ static int haikuSbSetValueAttrib(Ihandle* ih, const char* value)
 static int haikuSbSetLineStepAttrib(Ihandle* ih, const char* value)
 {
   if (iupStrToDoubleDef(value, &(ih->data->linestep), 0.01))
-    haikuSbUpdateNative(ih);
+    iupdrvScrollbarUpdate(ih);
   return 0;
 }
 
 static int haikuSbSetPageStepAttrib(Ihandle* ih, const char* value)
 {
   if (iupStrToDoubleDef(value, &(ih->data->pagestep), 0.1))
-    haikuSbUpdateNative(ih);
+    iupdrvScrollbarUpdate(ih);
   return 0;
 }
 
@@ -209,7 +209,7 @@ static int haikuSbSetPageSizeAttrib(Ihandle* ih, const char* value)
   if (iupStrToDoubleDef(value, &(ih->data->pagesize), 0.1))
   {
     iupScrollbarCropValue(ih);
-    haikuSbUpdateNative(ih);
+    iupdrvScrollbarUpdate(ih);
   }
   return 0;
 }
@@ -222,7 +222,7 @@ static int haikuSbMapMethod(Ihandle* ih)
   ih->handle = (InativeHandle*)sb;
   iuphaikuAddToParent(ih);
 
-  haikuSbUpdateNative(ih);
+  iupdrvScrollbarUpdate(ih);
   return IUP_NOERROR;
 }
 

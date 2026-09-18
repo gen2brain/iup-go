@@ -51,7 +51,11 @@ char* iupScrollbarGetPageSizeAttrib(Ihandle* ih)
 static int iScrollbarSetMaxAttrib(Ihandle* ih, const char* value)
 {
   if (iupStrToDouble(value, &(ih->data->vmax)))
+  {
     iupScrollbarCropValue(ih);
+    if (ih->handle)
+      iupdrvScrollbarUpdate(ih);
+  }
   return 0;
 }
 
@@ -63,7 +67,11 @@ static char* iScrollbarGetMaxAttrib(Ihandle* ih)
 static int iScrollbarSetMinAttrib(Ihandle* ih, const char* value)
 {
   if (iupStrToDouble(value, &(ih->data->vmin)))
+  {
     iupScrollbarCropValue(ih);
+    if (ih->handle)
+      iupdrvScrollbarUpdate(ih);
+  }
   return 0;
 }
 

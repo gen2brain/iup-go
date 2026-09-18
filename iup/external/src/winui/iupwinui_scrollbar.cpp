@@ -40,6 +40,28 @@ struct IupWinUIScrollbarAux
 
 #define IUPWINUI_SCROLLBAR_AUX "_IUPWINUI_SCROLLBAR_AUX"
 
+static void winuiScrollbarApplyRange(Ihandle* ih, ScrollBar sb)
+{
+  sb.Minimum(ih->data->vmin);
+  sb.Maximum(ih->data->vmax - ih->data->pagesize);
+  sb.Value(ih->data->val);
+  sb.ViewportSize(ih->data->pagesize);
+  sb.SmallChange(ih->data->linestep * (ih->data->vmax - ih->data->vmin));
+  sb.LargeChange(ih->data->pagestep * (ih->data->vmax - ih->data->vmin));
+}
+
+extern "C" IUP_SDK_API void iupdrvScrollbarUpdate(Ihandle* ih)
+{
+  ScrollBar sb = winuiGetHandle<ScrollBar>(ih);
+  if (!sb)
+    return;
+
+  IupWinUIScrollbarAux* aux = winuiGetAux<IupWinUIScrollbarAux>(ih, IUPWINUI_SCROLLBAR_AUX);
+  if (aux) aux->ignore_changed = true;
+  winuiScrollbarApplyRange(ih, sb);
+  if (aux) aux->ignore_changed = false;
+}
+
 static void winuiScrollbarUpdateValue(Ihandle* ih, ScrollEventType scrollType)
 {
   IupWinUIScrollbarAux* aux = winuiGetAux<IupWinUIScrollbarAux>(ih, IUPWINUI_SCROLLBAR_AUX);
@@ -202,12 +224,7 @@ static int winuiScrollbarMapMethod(Ihandle* ih)
   sb.HorizontalAlignment(HorizontalAlignment::Left);
   sb.VerticalAlignment(VerticalAlignment::Top);
 
-  sb.Minimum(ih->data->vmin);
-  sb.Maximum(ih->data->vmax - ih->data->pagesize);
-  sb.Value(ih->data->val);
-  sb.ViewportSize(ih->data->pagesize);
-  sb.SmallChange(ih->data->linestep * (ih->data->vmax - ih->data->vmin));
-  sb.LargeChange(ih->data->pagestep * (ih->data->vmax - ih->data->vmin));
+  winuiScrollbarApplyRange(ih, sb);
 
   if (ih->data->orientation == ISCROLLBAR_HORIZONTAL)
     sb.Orientation(Orientation::Horizontal);

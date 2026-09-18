@@ -38,7 +38,7 @@ static double wasmSbRange(Ihandle* ih)
   return (r == 0) ? 1 : r;
 }
 
-static void wasmSbReflect(Ihandle* ih)
+IUP_SDK_API void iupdrvScrollbarUpdate(Ihandle* ih)
 {
   int id = iupwasmIdOf(ih);
   if (id)
@@ -84,7 +84,7 @@ static int wasmSbSetValueAttrib(Ihandle* ih, const char* value)
   {
     ih->data->val = v;
     iupScrollbarCropValue(ih);
-    wasmSbReflect(ih);
+    iupdrvScrollbarUpdate(ih);
   }
   return 0;
 }
@@ -106,7 +106,7 @@ static int wasmSbSetPageSizeAttrib(Ihandle* ih, const char* value)
   if (iupStrToDouble(value, &ih->data->pagesize))
   {
     iupScrollbarCropValue(ih);
-    wasmSbReflect(ih);
+    iupdrvScrollbarUpdate(ih);
   }
   return 0;
 }
@@ -119,7 +119,7 @@ static int wasmScrollbarMapMethod(Ihandle* ih)
     return IUP_ERROR;
   ih->handle = (InativeHandle*)(intptr_t)id;
   iupwasmRegisterHandle(id, ih);
-  wasmSbReflect(ih);
+  iupdrvScrollbarUpdate(ih);
   iupwasmAddToParent(ih);
   return IUP_NOERROR;
 }
