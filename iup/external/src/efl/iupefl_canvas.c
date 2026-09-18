@@ -432,7 +432,7 @@ static int eflCanvasSetTipAttrib(Ihandle* ih, const char* value)
     return 1;
 
   if (value && *value)
-    elm_object_tooltip_text_set(widget, value);
+    iupeflTipSetText(widget, value);
   else
   {
     const char* old_tip = iupAttribGet(ih, "TIP");
