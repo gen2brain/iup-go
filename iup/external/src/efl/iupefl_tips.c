@@ -20,6 +20,14 @@
 #include "iupefl_drv.h"
 
 
+void iupeflTipSetText(Eo* widget, const char* value)
+{
+  char* markup_text = evas_textblock_text_utf8_to_markup(NULL, value);
+  elm_object_tooltip_text_set(widget, markup_text ? markup_text : value);
+  if (markup_text)
+    free(markup_text);
+}
+
 static Eo* eflTipGetWidget(Ihandle* ih)
 {
   Eo* widget = (Eo*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
@@ -34,6 +42,8 @@ static void eflTipSetLabelText(Evas_Object* label, Ihandle* ih, const char* tip)
   const char* tipfont = iupAttribGet(ih, "TIPFONT");
   const char* tipfgcolor = iupAttribGet(ih, "TIPFGCOLOR");
   const char* tipbgcolor = iupAttribGet(ih, "TIPBGCOLOR");
+  char* markup_text = evas_textblock_text_utf8_to_markup(NULL, tip);
+  const char* text = markup_text ? markup_text : tip;
 
   if (tipfont || tipfgcolor || tipbgcolor)
   {
@@ -65,11 +75,14 @@ static void eflTipSetLabelText(Evas_Object* label, Ihandle* ih, const char* tip)
     (void)open_pos;
     (void)close_pos;
 
-    snprintf(markup, sizeof(markup), "%s%s%s", open_tags, tip, close_tags);
+    snprintf(markup, sizeof(markup), "%s%s%s", open_tags, text, close_tags);
     elm_object_text_set(label, markup);
   }
   else
-    elm_object_text_set(label, tip);
+    elm_object_text_set(label, text);
+
+  if (markup_text)
+    free(markup_text);
 }
 
 static Evas_Object* eflTipContentCb(void* data, Evas_Object* obj, Evas_Object* tooltip)
@@ -149,7 +162,7 @@ IUP_SDK_API int iupdrvBaseSetTipAttrib(Ihandle* ih, const char* value)
         iupAttribGet(ih, "TIPFONT") || iupAttribGet(ih, "TIPFGCOLOR") || iupAttribGet(ih, "TIPBGCOLOR"))
       elm_object_tooltip_content_cb_set(widget, eflTipContentCb, ih, NULL);
     else
-      elm_object_tooltip_text_set(widget, value);
+      iupeflTipSetText(widget, value);
 
   }
   else

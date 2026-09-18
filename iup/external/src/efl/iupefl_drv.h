@@ -25,6 +25,7 @@
 #define iupeflGetMainLoop() efl_main_loop_get()
 
 void iupeflDrawReleaseFrame(Ihandle* ih);
+void iupeflTipSetText(Eo* widget, const char* value);
 
 #define iupeflSetVisible(obj, visible) efl_gfx_entity_visible_set(obj, visible)
 #define iupeflIsVisible(obj) efl_gfx_entity_visible_get(obj)
