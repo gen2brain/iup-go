@@ -905,6 +905,12 @@ static int eflTextSetFgColorAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
+static void eflTextScrollToCursor(Eo* entry, Efl_Text_Cursor_Object* cur)
+{
+  Eina_Rect rect = efl_text_cursor_object_cursor_geometry_get(cur, EFL_TEXT_CURSOR_TYPE_BEFORE);
+  efl_ui_scrollable_scroll(entry, rect, EINA_FALSE);
+}
+
 static int eflTextSetScrollToAttrib(Ihandle* ih, const char* value)
 {
   Eo* entry = iupeflGetWidget(ih);
@@ -930,7 +936,10 @@ static int eflTextSetScrollToAttrib(Ihandle* ih, const char* value)
 
   Efl_Text_Cursor_Object* cur = efl_text_interactive_main_cursor_get(entry);
   if (cur)
+  {
     efl_text_cursor_object_position_set(cur, pos);
+    eflTextScrollToCursor(entry, cur);
+  }
 
   return 0;
 }
@@ -948,7 +957,10 @@ static int eflTextSetScrollToPosAttrib(Ihandle* ih, const char* value)
 
   Efl_Text_Cursor_Object* cur = efl_text_interactive_main_cursor_get(entry);
   if (cur)
+  {
     efl_text_cursor_object_position_set(cur, pos);
+    eflTextScrollToCursor(entry, cur);
+  }
 
   return 0;
 }
