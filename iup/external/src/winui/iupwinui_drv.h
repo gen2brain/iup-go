@@ -498,6 +498,8 @@ struct IupWinUITableAux
   winrt::event_token rightTappedToken;
   winrt::event_token keyDownToken;
   winrt::event_token sizeChangedToken;
+  winrt::event_token dragItemsStartingToken;
+  winrt::event_token dragItemsCompletedToken;
   winrt::event_token containerContentChangingToken;
 
   winrt::event_token gotFocusToken{};

@@ -26,11 +26,13 @@ extern "C" {
 #include "iup_key.h"
 #include "iup_table.h"
 #include "iup_image.h"
+#include "iup_drvinfo.h"
 }
 
 #include "iupwinui_drv.h"
 
 #include <winrt/Microsoft.UI.Xaml.Automation.h>
+#include <winrt/Windows.ApplicationModel.DataTransfer.h>
 
 using namespace winrt;
 using namespace Microsoft::UI::Xaml;
@@ -42,6 +44,7 @@ using namespace Microsoft::UI::Xaml::Hosting;
 using namespace Windows::Foundation;
 using namespace Windows::UI;
 using namespace Microsoft::UI::Xaml::Markup;
+using namespace Windows::ApplicationModel::DataTransfer;
 
 
 static void winuiTableApplyCellColors(Ihandle* ih, int lin, int col, Border border, TextBlock tb);
@@ -3402,6 +3405,90 @@ static void winuiTableUnMapMethod(Ihandle* ih)
  * Class Initialization
  ****************************************************************************/
 
+static int winuiTableSetDragSourceAttrib(Ihandle* ih, const char* value)
+{
+  ListView listView = winuiTableGetListView(ih);
+  IupWinUITableAux* aux = winuiGetAux<IupWinUITableAux>(ih, IUPWINUI_TABLE_AUX);
+
+  if (!listView || !aux)
+    return 1;
+
+  if (aux->dragItemsStartingToken)
+  {
+    listView.DragItemsStarting(aux->dragItemsStartingToken);
+    aux->dragItemsStartingToken = {};
+  }
+  if (aux->dragItemsCompletedToken)
+  {
+    listView.DragItemsCompleted(aux->dragItemsCompletedToken);
+    aux->dragItemsCompletedToken = {};
+  }
+
+  if (!iupStrBoolean(value))
+    return 1;
+
+  listView.CanDragItems(true);
+
+  /* ListView detects the drag itself, the shared UIElement::DragStarting never fires */
+  aux->dragItemsStartingToken = listView.DragItemsStarting([ih](IInspectable const&, DragItemsStartingEventArgs const& e) {
+    char* drag_types = iupAttribGet(ih, "DRAGTYPES");
+    if (!drag_types)
+      return;
+
+    IFnii dragbegin_cb = (IFnii)IupGetCallback(ih, "DRAGBEGIN_CB");
+    if (dragbegin_cb)
+    {
+      int x, y;
+      iupdrvGetCursorPos(&x, &y);
+      iupdrvScreenToClient(ih, &x, &y);
+      if (dragbegin_cb(ih, x, y) == IUP_IGNORE)
+      {
+        e.Cancel(true);
+        return;
+      }
+    }
+
+    IFns datasize_cb = (IFns)IupGetCallback(ih, "DRAGDATASIZE_CB");
+    IFnsVi dragdata_cb = (IFnsVi)IupGetCallback(ih, "DRAGDATA_CB");
+
+    if (datasize_cb && dragdata_cb)
+    {
+      int size = datasize_cb(ih, drag_types);
+      if (size > 0)
+      {
+        void* data = malloc(size);
+        if (data)
+        {
+          dragdata_cb(ih, drag_types, data, size);
+          winuiDragSetInProcessData(drag_types, data, size);
+          e.Data().SetText(iupwinuiStringToHString(drag_types));
+        }
+      }
+    }
+
+    if (iupAttribGetBoolean(ih, "DRAGSOURCEMOVE"))
+      e.Data().RequestedOperation(DataPackageOperation::Move);
+    else
+      e.Data().RequestedOperation(DataPackageOperation::Copy);
+  });
+
+  aux->dragItemsCompletedToken = listView.DragItemsCompleted([ih](ListViewBase const&, DragItemsCompletedEventArgs const& e) {
+    IFni dragend_cb = (IFni)IupGetCallback(ih, "DRAGEND_CB");
+    if (dragend_cb)
+    {
+      int del = -1;
+      if (e.DropResult() == DataPackageOperation::Move)
+        del = 1;
+      else if (e.DropResult() == DataPackageOperation::Copy)
+        del = 0;
+      dragend_cb(ih, del);
+    }
+    winuiDragDataCleanup();
+  });
+
+  return 1;
+}
+
 extern "C" IUP_SDK_API void iupdrvTableInitClass(Iclass* ic)
 {
   ic->Map = winuiTableMapMethod;
@@ -3420,4 +3507,6 @@ extern "C" IUP_SDK_API void iupdrvTableInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "FOCUSRECT", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
 
   iupClassRegisterAttributeId(ic, "ALIGNMENT", NULL, (IattribSetIdFunc)winuiTableSetAlignmentAttrib, IUPAF_NO_INHERIT);
+
+  iupClassRegisterReplaceAttribFunc(ic, "DRAGSOURCE", NULL, winuiTableSetDragSourceAttrib);
 }
