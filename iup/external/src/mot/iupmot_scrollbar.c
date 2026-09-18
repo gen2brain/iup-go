@@ -60,10 +60,10 @@ static void motScrollbarUpdateNative(Ihandle* ih)
   if (ipos < 0) ipos = 0;
   if (ipos > IMOT_SB_MAX - ipage) ipos = IMOT_SB_MAX - ipage;
 
-  istep = (int)((ih->data->linestep / range) * IMOT_SB_MAX);
+  istep = (int)(ih->data->linestep * IMOT_SB_MAX);
   if (istep < 1) istep = 1;
 
-  ipagestep = (int)((ih->data->pagestep / range) * IMOT_SB_MAX);
+  ipagestep = (int)(ih->data->pagestep * IMOT_SB_MAX);
   if (ipagestep < 1) ipagestep = 1;
 
   XtVaSetValues(ih->handle,
