@@ -252,7 +252,10 @@ public final class IupCanvasHelper
         {
             int nl = text.indexOf('\n', start);
             int end = nl < 0 ? text.length() : nl;
-            c.drawText(text, start, end, anchorX, baselineY, tp);
+            CharSequence line = text.subSequence(start, end);
+            if ((flags & TEXT_ELLIPSIS) != 0 && w > 0)
+                line = android.text.TextUtils.ellipsize(line, tp, w, android.text.TextUtils.TruncateAt.END);
+            c.drawText(line, 0, line.length(), anchorX, baselineY, tp);
             if (nl < 0) break;
             baselineY += lineHeight;
             start = nl + 1;
