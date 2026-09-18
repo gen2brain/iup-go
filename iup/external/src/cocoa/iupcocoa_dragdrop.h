@@ -71,6 +71,17 @@ IupSourceDragAssociatedData* cocoaSourceDragCreateAssociatedData(Ihandle* ih, NS
 void cocoaTargetDropDestroyAssociatedData(Ihandle* ih);
 void cocoaSourceDragDestroyAssociatedData(Ihandle* ih);
 
+/* for the controls whose native view runs the drag itself */
+NSPasteboardItem* cocoaSourceDragAppPasteboardItem(Ihandle* ih, int x, int y);
+int cocoaSourceDragAppWritePasteboard(Ihandle* ih, NSPasteboard* paste_board, int x, int y);
+void cocoaSourceDragAppEnded(Ihandle* ih, NSDragOperation drag_operation);
+
+int cocoaSourceDragSetDragSourceAttrib(Ihandle* ih, const char* value);
+int cocoaTargetDropSetDropTargetAttrib(Ihandle* ih, const char* value);
+
+int cocoaTargetDropAppTypeAvailable(Ihandle* ih, NSPasteboard* paste_board);
+NSDragOperation cocoaTargetDropOperationForInfo(id<NSDraggingInfo> the_sender);
+
 int cocoaTargetDropBasePerformDropCallback(Ihandle* ih, id<NSDraggingInfo> the_sender, NSPasteboard* paste_board, NSPoint drop_point);
 NSDragOperation cocoaTargetDropBaseDraggingUpdated(Ihandle* ih, id<NSDraggingInfo> the_sender);
 int cocoaTargetDropFilesFromInfo(Ihandle* ih, id<NSDraggingInfo> the_sender, NSView* view);

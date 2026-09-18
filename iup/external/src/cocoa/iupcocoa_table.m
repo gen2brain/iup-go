@@ -22,6 +22,7 @@
 #include "iup_table.h"
 
 #include "iupcocoa_drv.h"
+#include "iupcocoa_dragdrop.h"
 
 
 @class IupCocoaTableDataSource;
@@ -680,6 +681,22 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
   return self;
 }
 
+#ifdef GNUSTEP
+- (NSDragOperation)draggingSourceOperationMaskForLocal:(BOOL)is_local
+{
+  if (!is_local)
+    return NSDragOperationCopy;
+
+  return iupAttribGetBoolean(ih, "DRAGSOURCEMOVE") ? (NSDragOperationMove | NSDragOperationCopy) : NSDragOperationCopy;
+}
+
+- (void)draggedImage:(NSImage*)dragged_image endedAt:(NSPoint)screen_point operation:(NSDragOperation)drag_operation
+{
+  if (!ih->data->show_dragdrop)
+    cocoaSourceDragAppEnded(ih, drag_operation);
+}
+#endif
+
 - (void)mouseDown:(NSEvent*)event
 {
   NSPoint point = [self convertPoint:[event locationInWindow] fromView:nil];
@@ -992,15 +1009,55 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
 - (id<NSPasteboardWriting>)tableView:(NSTableView*)tableView pasteboardWriterForRow:(NSInteger)row
 {
   if (!ih->data->show_dragdrop)
-    return nil;
+  {
+    /* AppKit asks for the payload before it moves the selection */
+    if (![[tableView selectedRowIndexes] containsIndex:row])
+      [tableView selectRowIndexes:[NSIndexSet indexSetWithIndex:row] byExtendingSelection:NO];
+
+    NSRect row_rect = [tableView rectOfRow:row];
+    return cocoaSourceDragAppPasteboardItem(ih, (int)NSMinX(row_rect), (int)NSMinY(row_rect));
+  }
   NSPasteboardItem* item = [[[NSPasteboardItem alloc] init] autorelease];
   [item setString:[NSString stringWithFormat:@"%ld", (long)row] forType:kIupTableRowPasteboardType];
   return item;
 }
 
+#ifdef GNUSTEP
+- (BOOL)tableView:(NSTableView*)tableView writeRowsWithIndexes:(NSIndexSet*)rows toPasteboard:(NSPasteboard*)pboard
+{
+  if (ih->data->show_dragdrop)
+    return NO;
+
+  NSRect row_rect = [tableView rectOfRow:[rows firstIndex]];
+  return cocoaSourceDragAppWritePasteboard(ih, pboard, (int)NSMinX(row_rect), (int)NSMinY(row_rect)) ? YES : NO;
+}
+#endif
+
+- (void)tableView:(NSTableView*)tableView draggingSession:(NSDraggingSession*)session
+    endedAtPoint:(NSPoint)screen_point operation:(NSDragOperation)drag_operation
+{
+  if (!ih->data->show_dragdrop)
+    cocoaSourceDragAppEnded(ih, drag_operation);
+}
+
 - (NSDragOperation)tableView:(NSTableView*)tableView validateDrop:(id<NSDraggingInfo>)info
     proposedRow:(NSInteger)row proposedDropOperation:(NSTableViewDropOperation)dropOperation
 {
+  NSPasteboard* paste_board = [info draggingPasteboard];
+
+  if ([[paste_board types] containsObject:NSPasteboardTypeFileURL] && IupGetCallback(ih, "DROPFILES_CB"))
+  {
+    [tableView setDropRow:-1 dropOperation:NSTableViewDropOn];
+    return NSDragOperationCopy;
+  }
+
+  if (cocoaTargetDropAppTypeAvailable(ih, paste_board))
+  {
+    [tableView setDropRow:-1 dropOperation:NSTableViewDropOn];
+    cocoaTargetDropBaseDraggingUpdated(ih, info);
+    return cocoaTargetDropOperationForInfo(info);
+  }
+
   if (!ih->data->show_dragdrop)
     return NSDragOperationNone;
   if (dropOperation == NSTableViewDropOn)
@@ -1011,7 +1068,20 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
 - (BOOL)tableView:(NSTableView*)tableView acceptDrop:(id<NSDraggingInfo>)info
     row:(NSInteger)row dropOperation:(NSTableViewDropOperation)dropOperation
 {
-  NSString* str = [[info draggingPasteboard] stringForType:kIupTableRowPasteboardType];
+  NSPasteboard* paste_board = [info draggingPasteboard];
+
+  if ([[paste_board types] containsObject:NSPasteboardTypeFileURL] && IupGetCallback(ih, "DROPFILES_CB"))
+  {
+    return cocoaTargetDropFilesFromInfo(ih, info, tableView) ? YES : NO;
+  }
+
+  if (cocoaTargetDropAppTypeAvailable(ih, paste_board))
+  {
+    NSPoint drop_point = [tableView convertPoint:[info draggingLocation] fromView:nil];
+    return cocoaTargetDropBasePerformDropCallback(ih, info, paste_board, drop_point) ? YES : NO;
+  }
+
+  NSString* str = [paste_board stringForType:kIupTableRowPasteboardType];
   if (!str)
     return NO;
 
@@ -1920,7 +1990,7 @@ static int cocoaTableSetNumLinAttrib(Ihandle* ih, const char* value)
     ih->data->num_lin = num_lin;
 
     NSTableView* tableView = cocoaTableGetTableView(ih);
-    [tableView reloadData];
+    iupcocoaReloadTableView(tableView);
     return 1;
   }
 
@@ -2570,6 +2640,66 @@ IUP_SDK_API void iupdrvTableAddBorders(Ihandle* ih, int* w, int* h)
     *h += sb_size;
 }
 
+static void cocoaTableUpdateDragDrop(Ihandle* ih)
+{
+  NSTableView* tableView = cocoaTableGetTableView(ih);
+  if (!tableView) return;
+
+  BOOL enable_internal_dnd = ih->data->show_dragdrop ? YES : NO;
+  BOOL enable_drag_source = enable_internal_dnd || iupAttribGetBoolean(ih, "DRAGSOURCE");
+
+  if (enable_drag_source)
+  {
+    NSDragOperation source_mask = NSDragOperationMove | NSDragOperationCopy;
+    if (!enable_internal_dnd && !iupAttribGetBoolean(ih, "DRAGSOURCEMOVE"))
+      source_mask = NSDragOperationCopy;
+    [tableView setDraggingSourceOperationMask:source_mask forLocal:YES];
+    [tableView setDraggingSourceOperationMask:NSDragOperationNone forLocal:NO];
+    [tableView setVerticalMotionCanBeginDrag:YES];
+  }
+  else
+  {
+    [tableView setDraggingSourceOperationMask:NSDragOperationNone forLocal:YES];
+    [tableView setDraggingSourceOperationMask:NSDragOperationNone forLocal:NO];
+    [tableView setVerticalMotionCanBeginDrag:NO];
+  }
+
+  NSMutableArray* registered_types = [NSMutableArray array];
+  if (enable_internal_dnd)
+    [registered_types addObject:kIupTableRowPasteboardType];
+
+  if (iupAttribGetBoolean(ih, "DROPTARGET"))
+  {
+    IupTargetDropAssociatedData* drop_data = cocoaTargetDropGetAssociatedData(ih);
+    for (NSString* type_name in [drop_data dropRegisteredTypes])
+      [registered_types addObject:type_name];
+  }
+
+  if (IupGetCallback(ih, "DROPFILES_CB"))
+    [registered_types addObject:NSPasteboardTypeFileURL];
+
+  if ([registered_types count] > 0)
+    [tableView registerForDraggedTypes:registered_types];
+  else
+    [tableView unregisterDraggedTypes];
+}
+
+static int cocoaTableSetDragSourceAttrib(Ihandle* ih, const char* value)
+{
+  cocoaSourceDragSetDragSourceAttrib(ih, value);
+  if (ih->handle)
+    cocoaTableUpdateDragDrop(ih);
+  return 1;
+}
+
+static int cocoaTableSetDropTargetAttrib(Ihandle* ih, const char* value)
+{
+  cocoaTargetDropSetDropTargetAttrib(ih, value);
+  if (ih->handle)
+    cocoaTableUpdateDragDrop(ih);
+  return 1;
+}
+
 /* ========================================================================= */
 /* Widget Creation - MapMethod                                               */
 /* ========================================================================= */
@@ -2644,12 +2774,6 @@ static int cocoaTableMapMethod(Ihandle* ih)
   [tableView setDoubleAction:@selector(tableViewAction:)];
   [tableView setTarget:delegate];
 
-  if (ih->data->show_dragdrop)
-  {
-    [tableView registerForDraggedTypes:@[kIupTableRowPasteboardType]];
-    [tableView setDraggingSourceOperationMask:NSDragOperationMove forLocal:YES];
-  }
-
   objc_setAssociatedObject(tableView, IUP_COCOA_TABLE_DATASOURCE_KEY, dataSource, OBJC_ASSOCIATION_RETAIN);
   objc_setAssociatedObject(tableView, IUP_COCOA_TABLE_DELEGATE_KEY, delegate, OBJC_ASSOCIATION_RETAIN);
   objc_setAssociatedObject(tableView, "_IUPCOCOA_IHANDLE", (void*)ih, OBJC_ASSOCIATION_ASSIGN);
@@ -2677,11 +2801,19 @@ static int cocoaTableMapMethod(Ihandle* ih)
 
   iupcocoaAddToParent(ih);
 
+  cocoaSourceDragCreateAssociatedData(ih, tableView, scrollView);
+  cocoaTargetDropCreateAssociatedData(ih, tableView, scrollView);
+
+  cocoaTableUpdateDragDrop(ih);
+
   return IUP_NOERROR;
 }
 
 static void cocoaTableUnMapMethod(Ihandle* ih)
 {
+  cocoaSourceDragDestroyAssociatedData(ih);
+  cocoaTargetDropDestroyAssociatedData(ih);
+
   cocoaTableFreeData(ih);
 
   iupcocoaSetAssociatedViews(ih, nil, nil);
@@ -2783,4 +2915,6 @@ IUP_SDK_API void iupdrvTableInitClass(Iclass* ic)
   iupClassRegisterReplaceAttribFunc(ic, "ALLOWREORDER", NULL, cocoaTableSetReorderAttrib);
   iupClassRegisterReplaceAttribFunc(ic, "USERRESIZE", NULL, cocoaTableSetUserResizeAttrib);
   iupClassRegisterReplaceAttribFunc(ic, "ACTIVE", NULL, cocoaTableSetActiveAttrib);
+  iupClassRegisterReplaceAttribFunc(ic, "DRAGSOURCE", NULL, cocoaTableSetDragSourceAttrib);
+  iupClassRegisterReplaceAttribFunc(ic, "DROPTARGET", NULL, cocoaTableSetDropTargetAttrib);
 }

@@ -56,12 +56,7 @@ NSDragOperation cocoaTargetDropBaseDraggingUpdated(Ihandle* ih, id<NSDraggingInf
       return NSDragOperationNone;
     }
 
-    NSWindow* the_window = [main_view window];
-    NSPoint screen_point = [the_sender draggingLocation];
-    NSRect screen_rect = NSMakeRect(screen_point.x, screen_point.y, 0, 0);
-    NSRect window_rect = [the_window convertRectFromScreen:screen_rect];
-    NSPoint window_point = window_rect.origin;
-    NSPoint view_point = [main_view convertPoint:window_point fromView:nil];
+    NSPoint view_point = [main_view convertPoint:[the_sender draggingLocation] fromView:nil];
 
     if (![main_view isFlipped])
     {
@@ -230,7 +225,7 @@ int cocoaTargetDropBasePerformDropCallback(Ihandle* ih, id<NSDraggingInfo> the_s
           break;
         }
       }
-      return 0;
+      return 1;
     }
   }
 
@@ -378,7 +373,7 @@ int cocoaTargetDropBasePerformDropCallback(Ihandle* ih, id<NSDraggingInfo> the_s
       break;
   }
 
-  return 0;
+  return [acceptable_drop_items count] > 0;
 }
 
 int cocoaTargetDropFilesFromInfo(Ihandle* ih, id<NSDraggingInfo> the_sender, NSView* view)
@@ -957,6 +952,23 @@ static bool cocoaSourceDragDoDefaultFileCreate(NSFilePromiseProvider* file_promi
 }
 #endif /* !GNUSTEP */
 
+#ifdef GNUSTEP
+- (NSDragOperation) draggingSourceOperationMaskForLocal:(BOOL)is_local
+{
+  if (!is_local)
+    return NSDragOperationCopy;
+
+  return iupAttribGetBoolean([self ihandle], "DRAGSOURCEMOVE") ? (NSDragOperationMove | NSDragOperationCopy) : NSDragOperationCopy;
+}
+
+- (void) draggedImage:(NSImage*)dragged_image endedAt:(NSPoint)screen_point operation:(NSDragOperation)drag_operation
+{
+  (void)dragged_image;
+  (void)screen_point;
+  cocoaSourceDragAppEnded([self ihandle], drag_operation);
+}
+#endif
+
 - (void) draggingSession:(NSDraggingSession*)dragging_session willBeginAtPoint:(NSPoint)screen_point
 {
   (void)dragging_session;
@@ -993,6 +1005,21 @@ static bool cocoaSourceDragDoDefaultFileCreate(NSFilePromiseProvider* file_promi
 
 @end
 
+/* AppKit rejects a type name that is not a UTI */
+static NSString* cocoaDragDropTypeName(const char* name)
+{
+  if (iupStrEqualNoCase(name, "TEXT") || iupStrEqualNoCase(name, "UTF8_STRING") || iupStrEqualNoCase(name, "text/plain"))
+    return NSPasteboardTypeString;
+  if (iupStrEqualNoCase(name, "text/uri-list"))
+    return NSPasteboardTypeFileURL;
+  if (iupStrEqualNoCase(name, "image/png"))
+    return NSPasteboardTypePNG;
+  if (iupStrEqualNoCase(name, "image/tiff"))
+    return NSPasteboardTypeTIFF;
+
+  return [NSString stringWithUTF8String:name];
+}
+
 static NSMutableArray* cocoaParseDragDropTypes(const char* value)
 {
   NSMutableArray* array_of_types = [NSMutableArray array];
@@ -1003,7 +1030,7 @@ static NSMutableArray* cocoaParseDragDropTypes(const char* value)
   iupStrCopyN(value_copy, sizeof(value_copy), value);
   while (iupStrToStrStr(value_copy, value_temp1, sizeof(value_temp1), value_temp2, sizeof(value_temp2), ',') > 0)
   {
-    NSString* type_string = [NSString stringWithUTF8String:value_temp1];
+    NSString* type_string = cocoaDragDropTypeName(value_temp1);
     if ([type_string length] > 0)
       [array_of_types addObject:type_string];
 
@@ -1057,6 +1084,24 @@ IupTargetDropAssociatedData* cocoaTargetDropGetAssociatedData(Ihandle* ih)
   return drag_drop_data;
 }
 
+static void cocoaTargetDropRegisterTypes(id the_object, IupTargetDropAssociatedData* drag_drop_data, NSArray* array_of_types)
+{
+  if(![the_object respondsToSelector:@selector(registerForDraggedTypes:)])
+    return;
+
+  NSMutableArray* all_types = [NSMutableArray arrayWithArray:array_of_types];
+  NSArray* app_types = [drag_drop_data dropRegisteredTypes];
+
+  /* keep the types the control registered itself */
+  for(NSString* type_name in [the_object registeredDraggedTypes])
+  {
+    if(![app_types containsObject:type_name] && ![all_types containsObject:type_name])
+      [all_types addObject:type_name];
+  }
+
+  [the_object registerForDraggedTypes:all_types];
+}
+
 static int cocoaTargetDropSetDropTypesAttrib(Ihandle* ih, const char* value)
 {
   IupTargetDropAssociatedData* drag_drop_data = cocoaTargetDropGetAssociatedData(ih);
@@ -1070,15 +1115,16 @@ static int cocoaTargetDropSetDropTypesAttrib(Ihandle* ih, const char* value)
 
     if ([array_of_types count] > 0)
     {
-      [drag_drop_data setDropRegisteredTypes:array_of_types];
+      if ([[drag_drop_data dropRegisteredTypes] containsObject:NSPasteboardTypeFileURL] &&
+          ![array_of_types containsObject:NSPasteboardTypeFileURL])
+        [array_of_types addObject:NSPasteboardTypeFileURL];
 
       if([drag_drop_data isDropTargetEnabled])
       {
-        if([the_object respondsToSelector:@selector(registerForDraggedTypes:)])
-        {
-          [the_object registerForDraggedTypes:array_of_types];
-        }
+        cocoaTargetDropRegisterTypes(the_object, drag_drop_data, array_of_types);
       }
+
+      [drag_drop_data setDropRegisteredTypes:array_of_types];
     }
   }
   else
@@ -1092,7 +1138,7 @@ static int cocoaTargetDropSetDropTypesAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-static int cocoaTargetDropSetDropTargetAttrib(Ihandle* ih, const char* value)
+int cocoaTargetDropSetDropTargetAttrib(Ihandle* ih, const char* value)
 {
   IupTargetDropAssociatedData* drag_drop_data = cocoaTargetDropGetAssociatedData(ih);
   id the_object = [drag_drop_data mainView];
@@ -1101,13 +1147,10 @@ static int cocoaTargetDropSetDropTargetAttrib(Ihandle* ih, const char* value)
   if(iupStrBoolean(value))
   {
     [drag_drop_data setDropTargetEnabled:true];
-    if([the_object respondsToSelector:@selector(registerForDraggedTypes:)])
+    NSArray* array_of_types = [drag_drop_data dropRegisteredTypes];
+    if (array_of_types && [array_of_types count] > 0)
     {
-      NSArray* array_of_types = [drag_drop_data dropRegisteredTypes];
-      if (array_of_types && [array_of_types count] > 0)
-      {
-        [the_object registerForDraggedTypes:array_of_types];
-      }
+      cocoaTargetDropRegisterTypes(the_object, drag_drop_data, array_of_types);
     }
   }
   else
@@ -1121,11 +1164,44 @@ static int cocoaTargetDropSetDropTargetAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
+int cocoaTargetDropAppTypeAvailable(Ihandle* ih, NSPasteboard* paste_board)
+{
+  IupTargetDropAssociatedData* associated_data = cocoaTargetDropGetAssociatedData(ih);
+  if (![associated_data isDropTargetEnabled])
+    return 0;
+
+  return [paste_board availableTypeFromArray:[associated_data dropRegisteredTypes]] != nil;
+}
+
+NSDragOperation cocoaTargetDropOperationForInfo(id<NSDraggingInfo> the_sender)
+{
+  NSDragOperation source_mask = [the_sender draggingSourceOperationMask];
+  int is_copy = ([NSEvent modifierFlags] & NSEventModifierFlagOption) != 0;
+
+  if (!is_copy && (source_mask & NSDragOperationMove))
+    return NSDragOperationMove;
+  if (source_mask & NSDragOperationCopy)
+    return NSDragOperationCopy;
+
+  return NSDragOperationNone;
+}
+
 static int cocoaSetDropFilesTargetAttrib(Ihandle* ih, const char* value)
 {
   if (iupStrBoolean(value))
   {
-    cocoaTargetDropSetDropTypesAttrib(ih, (const char*)NSPasteboardTypeFileURL.UTF8String);
+    IupTargetDropAssociatedData* drag_drop_data = cocoaTargetDropGetAssociatedData(ih);
+    NSMutableArray* array_of_types = [NSMutableArray arrayWithArray:[drag_drop_data dropRegisteredTypes]];
+    id the_object = [drag_drop_data mainView];
+    if (!the_object)
+      the_object = ih->handle;
+
+    if (![array_of_types containsObject:NSPasteboardTypeFileURL])
+      [array_of_types addObject:NSPasteboardTypeFileURL];
+
+    cocoaTargetDropRegisterTypes(the_object, drag_drop_data, array_of_types);
+    [drag_drop_data setDropRegisteredTypes:array_of_types];
+
     cocoaTargetDropSetDropTargetAttrib(ih, "YES");
   }
   else
@@ -1174,7 +1250,7 @@ IupSourceDragAssociatedData* cocoaSourceDragGetAssociatedData(Ihandle* ih)
   return drag_drop_data;
 }
 
-static int cocoaSourceDragSetDragSourceAttrib(Ihandle* ih, const char* value)
+int cocoaSourceDragSetDragSourceAttrib(Ihandle* ih, const char* value)
 {
   IupSourceDragAssociatedData* drag_drop_data = cocoaSourceDragGetAssociatedData(ih);
   if(iupStrBoolean(value))
@@ -1217,6 +1293,144 @@ static int cocoaSourceDragSetDragTypesAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
+static NSArray<NSString*>* cocoaSourceDragAppTypes(Ihandle* ih, int x, int y)
+{
+  IupSourceDragAssociatedData* drag_source_data = cocoaSourceDragGetAssociatedData(ih);
+  if (![drag_source_data isDragSourceEnabled])
+    return nil;
+
+  NSArray<NSString*>* registered_types = [drag_source_data dragRegisteredTypes];
+  if ([registered_types count] == 0)
+    return nil;
+
+  if (!IupGetCallback(ih, "DRAGDATASIZE_CB") || !IupGetCallback(ih, "DRAGDATA_CB"))
+    return nil;
+
+  IFnii cbDragBegin = (IFnii)IupGetCallback(ih, "DRAGBEGIN_CB");
+  if (cbDragBegin && cbDragBegin(ih, x, y) == IUP_IGNORE)
+    return nil;
+
+  return registered_types;
+}
+
+static NSData* cocoaSourceDragAppData(Ihandle* ih, NSString* type_name)
+{
+  IFns cbDragDataSize = (IFns)IupGetCallback(ih, "DRAGDATASIZE_CB");
+  IFnsVi cbDragData = (IFnsVi)IupGetCallback(ih, "DRAGDATA_CB");
+
+  char* c_type_name = (char*)[type_name UTF8String];
+  int data_size = cbDragDataSize(ih, c_type_name);
+  if (data_size <= 0)
+    return nil;
+
+  void* data_buffer = malloc(data_size);
+  if (!data_buffer)
+    return nil;
+
+  NSData* ns_data = nil;
+  if (cbDragData(ih, c_type_name, data_buffer, data_size) != IUP_IGNORE)
+    ns_data = [NSData dataWithBytes:data_buffer length:data_size];
+
+  free(data_buffer);
+  return ns_data;
+}
+
+NSPasteboardItem* cocoaSourceDragAppPasteboardItem(Ihandle* ih, int x, int y)
+{
+  NSArray<NSString*>* registered_types = cocoaSourceDragAppTypes(ih, x, y);
+  if (!registered_types)
+    return nil;
+
+  NSPasteboardItem* pasteboard_item = [[[NSPasteboardItem alloc] init] autorelease];
+  bool wrote_any = false;
+
+  for (NSString* type_name in registered_types)
+  {
+    NSData* ns_data = cocoaSourceDragAppData(ih, type_name);
+
+    /* AppKit throws on a drag with no pasteboard data */
+    if (ns_data && [pasteboard_item setData:ns_data forType:type_name])
+      wrote_any = true;
+  }
+
+  return wrote_any ? pasteboard_item : nil;
+}
+
+int cocoaSourceDragAppWritePasteboard(Ihandle* ih, NSPasteboard* paste_board, int x, int y)
+{
+  NSArray<NSString*>* registered_types = cocoaSourceDragAppTypes(ih, x, y);
+  if (!registered_types)
+    return 0;
+
+  [paste_board declareTypes:registered_types owner:nil];
+
+  int wrote_any = 0;
+  for (NSString* type_name in registered_types)
+  {
+    NSData* ns_data = cocoaSourceDragAppData(ih, type_name);
+    if (!ns_data)
+      continue;
+
+#ifdef GNUSTEP
+    /* GNUstep reads the string type back as a serialised property list */
+    if ([type_name isEqualToString:NSPasteboardTypeString])
+    {
+      const char* bytes = (const char*)[ns_data bytes];
+      NSString* ns_string = [[[NSString alloc] initWithBytes:bytes length:strnlen(bytes, [ns_data length]) encoding:NSUTF8StringEncoding] autorelease];
+      if (ns_string && [paste_board setString:ns_string forType:type_name])
+        wrote_any = 1;
+      continue;
+    }
+#endif
+
+    if ([paste_board setData:ns_data forType:type_name])
+      wrote_any = 1;
+  }
+
+  return wrote_any;
+}
+
+void cocoaSourceDragAppEnded(Ihandle* ih, NSDragOperation drag_operation)
+{
+  IFni cbDragEnd = (IFni)IupGetCallback(ih, "DRAGEND_CB");
+  if (!cbDragEnd)
+    return;
+
+  if (NSDragOperationMove == (drag_operation & NSDragOperationMove))
+    cbDragEnd(ih, 1);
+  else if (NSDragOperationCopy == (drag_operation & NSDragOperationCopy))
+    cbDragEnd(ih, 0);
+  else
+    cbDragEnd(ih, -1);
+}
+
+#ifdef GNUSTEP
+static NSImage* cocoaSourceDragImage(Ihandle* ih)
+{
+  char* drag_cursor_name = NULL;
+
+  if (!iupAttribGetBoolean(ih, "DRAGSOURCEMOVE"))
+    drag_cursor_name = iupAttribGet(ih, "DRAGCURSORCOPY");
+  if (!drag_cursor_name)
+    drag_cursor_name = iupAttribGet(ih, "DRAGCURSOR");
+
+  if (drag_cursor_name)
+  {
+    NSImage* drag_image = (NSImage*)iupImageGetImage(drag_cursor_name, ih, 0, NULL);
+    if (drag_image)
+      return drag_image;
+  }
+
+  NSImage* drag_image = [[[NSImage alloc] initWithSize:NSMakeSize(16, 16)] autorelease];
+  [drag_image lockFocus];
+  [[NSColor colorWithCalibratedWhite:0.4 alpha:0.6] set];
+  NSRectFill(NSMakeRect(0, 0, 16, 16));
+  [drag_image unlockFocus];
+
+  return drag_image;
+}
+#endif
+
 static int cocoaSourceDragSetDragStartAttrib(Ihandle* ih, const char* value)
 {
   int x, y;
@@ -1232,6 +1446,7 @@ static int cocoaSourceDragSetDragStartAttrib(Ihandle* ih, const char* value)
   if (!main_view)
     return 0;
 
+#ifndef GNUSTEP
   IFnii cbDragBegin = (IFnii)IupGetCallback(ih, "DRAGBEGIN_CB");
   if (cbDragBegin)
   {
@@ -1239,7 +1454,6 @@ static int cocoaSourceDragSetDragStartAttrib(Ihandle* ih, const char* value)
       return 0;
   }
 
-#ifndef GNUSTEP
   NSDraggingItem* dragging_item = [drag_source_data defaultDraggingItem];
   if (!dragging_item)
     return 0;
@@ -1281,9 +1495,28 @@ static int cocoaSourceDragSetDragStartAttrib(Ihandle* ih, const char* value)
 
   [main_view beginDraggingSessionWithItems:@[dragging_item] event:the_event source:drag_source_data];
 #else
-  (void)main_view;
-  (void)x;
-  (void)y;
+  NSEvent* the_event = [[NSApplication sharedApplication] currentEvent];
+  if (!the_event)
+    return 0;
+
+  NSPasteboard* paste_board = [NSPasteboard pasteboardWithName:NSDragPboard];
+  if (!cocoaSourceDragAppWritePasteboard(ih, paste_board, x, y))
+    return 0;
+
+  NSPoint view_point = NSMakePoint(x, y);
+  if (![main_view isFlipped])
+  {
+    NSRect view_bounds = [main_view bounds];
+    view_point.y = view_bounds.size.height - y;
+  }
+
+  [main_view dragImage:cocoaSourceDragImage(ih)
+                    at:view_point
+                offset:NSMakeSize(0, 0)
+                 event:the_event
+            pasteboard:paste_board
+                source:drag_source_data
+             slideBack:YES];
 #endif
 
   return 0;

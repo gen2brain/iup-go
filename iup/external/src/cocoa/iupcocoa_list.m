@@ -602,6 +602,24 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
 
 @implementation IupCocoaListTableView
 
+#ifdef GNUSTEP
+- (NSDragOperation)draggingSourceOperationMaskForLocal:(BOOL)is_local
+{
+  Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
+  if (!is_local || !ih)
+    return NSDragOperationCopy;
+
+  return iupAttribGetBoolean(ih, "DRAGSOURCEMOVE") ? (NSDragOperationMove | NSDragOperationCopy) : NSDragOperationCopy;
+}
+
+- (void)draggedImage:(NSImage*)dragged_image endedAt:(NSPoint)screen_point operation:(NSDragOperation)drag_operation
+{
+  Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
+  if (ih)
+    cocoaSourceDragAppEnded(ih, drag_operation);
+}
+#endif
+
 - (NSMenu *)menuForEvent:(NSEvent *)event
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
@@ -1723,7 +1741,15 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
   BOOL enable_crosslist_dnd = iupAttribGetBoolean(ih, "DRAGDROPLIST");
 
   if (!enable_internal_dnd && !enable_crosslist_dnd)
-    return nil;
+  {
+    NSRect row_rect = [tableView rectOfRow:row];
+
+    /* AppKit asks for the payload before it moves the selection */
+    if (![[tableView selectedRowIndexes] containsIndex:row])
+      [tableView selectRowIndexes:[NSIndexSet indexSetWithIndex:row] byExtendingSelection:NO];
+
+    return cocoaSourceDragAppPasteboardItem(ih, (int)NSMinX(row_rect), (int)NSMinY(row_rect));
+  }
 
   NSPasteboardItem *pboardItem = [[[NSPasteboardItem alloc] init] autorelease];
 
@@ -1784,11 +1810,23 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
   return pboardItem;
 }
 
+#ifdef GNUSTEP
+- (BOOL)tableView:(NSTableView *)tableView writeRowsWithIndexes:(NSIndexSet *)rows toPasteboard:(NSPasteboard *)pboard
+{
+  Ihandle* ih = (Ihandle*)objc_getAssociatedObject(tableView, IHANDLE_ASSOCIATED_OBJ_KEY);
+  if (!ih)
+    return NO;
+
+  if (ih->data->show_dragdrop || iupAttribGetBoolean(ih, "DRAGDROPLIST"))
+    return NO;
+
+  NSRect row_rect = [tableView rectOfRow:[rows firstIndex]];
+  return cocoaSourceDragAppWritePasteboard(ih, pboard, (int)NSMinX(row_rect), (int)NSMinY(row_rect)) ? YES : NO;
+}
+#endif
+
 - (NSDragOperation)tableView:(NSTableView *)tableView validateDrop:(id <NSDraggingInfo>)info proposedRow:(NSInteger)row proposedDropOperation:(NSTableViewDropOperation)dropOperation
 {
-  if (dropOperation != NSTableViewDropAbove)
-    return NSDragOperationNone;
-
   NSPasteboard *pboard = [info draggingPasteboard];
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(tableView, IHANDLE_ASSOCIATED_OBJ_KEY);
   if (!ih)
@@ -1799,6 +1837,16 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
     [tableView setDropRow:-1 dropOperation:NSTableViewDropOn];
     return NSDragOperationCopy;
   }
+
+  if (cocoaTargetDropAppTypeAvailable(ih, pboard))
+  {
+    [tableView setDropRow:-1 dropOperation:NSTableViewDropOn];
+    cocoaTargetDropBaseDraggingUpdated(ih, info);
+    return cocoaTargetDropOperationForInfo(info);
+  }
+
+  if (dropOperation != NSTableViewDropAbove)
+    return NSDragOperationNone;
 
   NSEventModifierFlags flags = [NSEvent modifierFlags];
   int is_shift = (flags & NSEventModifierFlagShift) != 0;
@@ -1864,6 +1912,12 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
   if ([[pboard types] containsObject:NSPasteboardTypeFileURL] && IupGetCallback(ih, "DROPFILES_CB"))
   {
     return cocoaTargetDropFilesFromInfo(ih, info, tableView) ? YES : NO;
+  }
+
+  if (cocoaTargetDropAppTypeAvailable(ih, pboard))
+  {
+    NSPoint drop_point = [tableView convertPoint:[info draggingLocation] fromView:nil];
+    return cocoaTargetDropBasePerformDropCallback(ih, info, pboard, drop_point) ? YES : NO;
   }
 
   NSEventModifierFlags flags = [NSEvent modifierFlags];
@@ -2033,6 +2087,9 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
   if (!ih) return;
 
   iupAttribSet(ih, "_IUPLIST_DRAGITEM", NULL);
+
+  if (!ih->data->show_dragdrop && !iupAttribGetBoolean(ih, "DRAGDROPLIST"))
+    cocoaSourceDragAppEnded(ih, operation);
 }
 
 - (void)listDoubleClickAction:(id)sender
@@ -2518,7 +2575,7 @@ IUP_SDK_API void iupdrvListRemoveItem(Ihandle* ih, int pos)
 
         iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", "1");
         [data_array removeObjectAtIndex:pos];
-        [table_view reloadData];
+        iupcocoaReloadTableView(table_view);
         iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", NULL);
 
         cocoaListUpdateColumnWidth(ih);
@@ -2570,7 +2627,7 @@ IUP_SDK_API void iupdrvListRemoveAllItems(Ihandle* ih)
         {
             iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", "1");
             [data_array removeAllObjects];
-            [table_view reloadData];
+            iupcocoaReloadTableView(table_view);
             iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", NULL);
         }
 
@@ -2934,12 +2991,14 @@ static void cocoaListUpdateDragDrop(Ihandle* ih)
     BOOL enable_internal_dnd = ih->data->show_dragdrop && (sub_type == IUPCOCOALISTSUBTYPE_SINGLELIST);
     BOOL enable_crosslist_dnd = iupAttribGetBoolean(ih, "DRAGDROPLIST");
 
-    BOOL enable_drag_source = enable_internal_dnd || (enable_crosslist_dnd && iupAttribGetBoolean(ih, "DRAGSOURCE"));
-    BOOL enable_drop_target = enable_internal_dnd || (enable_crosslist_dnd && iupAttribGetBoolean(ih, "DROPTARGET"));
+    BOOL enable_drag_source = enable_internal_dnd || iupAttribGetBoolean(ih, "DRAGSOURCE");
+    BOOL enable_drop_target = enable_internal_dnd || iupAttribGetBoolean(ih, "DROPTARGET");
 
     if (enable_drag_source)
     {
       NSDragOperation source_mask = NSDragOperationMove | NSDragOperationCopy;
+      if (!enable_internal_dnd && !enable_crosslist_dnd && !iupAttribGetBoolean(ih, "DRAGSOURCEMOVE"))
+        source_mask = NSDragOperationCopy;
       [table_view setDraggingSourceOperationMask:source_mask forLocal:YES];
       [table_view setDraggingSourceOperationMask:NSDragOperationNone forLocal:NO];
       [table_view setVerticalMotionCanBeginDrag:YES];
@@ -2960,6 +3019,13 @@ static void cocoaListUpdateDragDrop(Ihandle* ih)
     if (enable_crosslist_dnd && enable_drop_target)
       [registeredTypes addObject:IupInternalDndType];
 
+    if (enable_drop_target)
+    {
+      IupTargetDropAssociatedData* drop_data = cocoaTargetDropGetAssociatedData(ih);
+      for (NSString* type_name in [drop_data dropRegisteredTypes])
+        [registeredTypes addObject:type_name];
+    }
+
     if (enable_dropfiles)
       [registeredTypes addObject:NSPasteboardTypeFileURL];
 
@@ -2975,6 +3041,22 @@ static void cocoaListUpdateDragDrop(Ihandle* ih)
       [table_view unregisterDraggedTypes];
     }
   }
+}
+
+static int cocoaListSetDragSourceAttrib(Ihandle* ih, const char* value)
+{
+  cocoaSourceDragSetDragSourceAttrib(ih, value);
+  if (ih->handle)
+    cocoaListUpdateDragDrop(ih);
+  return 1;
+}
+
+static int cocoaListSetDropTargetAttrib(Ihandle* ih, const char* value)
+{
+  cocoaTargetDropSetDropTargetAttrib(ih, value);
+  if (ih->handle)
+    cocoaListUpdateDragDrop(ih);
+  return 1;
 }
 
 static int cocoaListSetShowDragDropAttrib(Ihandle* ih, const char* value)
@@ -3964,6 +4046,12 @@ static int cocoaListMapMethod(Ihandle* ih)
   {
     cocoaListUpdateColumnWidth(ih);
 
+    {
+      NSView* base_widget = cocoaListGetBaseWidget(ih);
+      cocoaSourceDragCreateAssociatedData(ih, base_widget, base_widget);
+      cocoaTargetDropCreateAssociatedData(ih, base_widget, base_widget);
+    }
+
     if (!ih->data->is_virtual)
       cocoaListUpdateDragDrop(ih);
 
@@ -3984,6 +4072,9 @@ static void cocoaListUnMapMethod(Ihandle* ih)
 {
   NSView* root_view = ih->handle;
   if (!root_view) return;
+
+  cocoaSourceDragDestroyAssociatedData(ih);
+  cocoaTargetDropDestroyAssociatedData(ih);
 
   NSView* base_view = cocoaListGetBaseWidget(ih);
   IupCocoaListSubType sub_type = cocoaListGetSubType(ih);
@@ -4069,6 +4160,8 @@ IUP_SDK_API void iupdrvListInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "VALUE", cocoaListGetValueAttrib, cocoaListSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SHOWDRAGDROP", NULL, cocoaListSetShowDragDropAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DRAGDROPLIST", NULL, cocoaListSetDragDropListAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterReplaceAttribFunc(ic, "DRAGSOURCE", NULL, cocoaListSetDragSourceAttrib);
+  iupClassRegisterReplaceAttribFunc(ic, "DROPTARGET", NULL, cocoaListSetDropTargetAttrib);
   iupClassRegisterAttribute(ic, "SHOWDROPDOWN", NULL, cocoaListSetShowDropdownAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TOPITEM", NULL, cocoaListSetTopItemAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SPACING", iupListGetSpacingAttrib, cocoaListSetSpacingAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NOT_MAPPED);
