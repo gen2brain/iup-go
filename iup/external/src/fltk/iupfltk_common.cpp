@@ -38,6 +38,12 @@ extern "C" {
 #include "iupunix_x11.h"
 #endif
 
+#ifdef _WIN32
+#define iupStrtokR strtok_s
+#else
+#define iupStrtokR strtok_r
+#endif
+
 
 /****************************************************************************
  * Native Container (for absolute positioning)
@@ -770,7 +776,8 @@ IUP_DRV_API int iupfltkHandleDropFiles(Ihandle* ih)
   int x = Fl::event_x();
   int y = Fl::event_y();
   char* buf = strdup(text);
-  char* line = strtok(buf, "\r\n");
+  char* saveptr;
+  char* line = iupStrtokR(buf, "\r\n", &saveptr);
   int count = 0;
 
   while (line)
@@ -782,7 +789,7 @@ IUP_DRV_API int iupfltkHandleDropFiles(Ihandle* ih)
       cb(cb_ih, filename, count, x, y);
       count++;
     }
-    line = strtok(NULL, "\r\n");
+    line = iupStrtokR(NULL, "\r\n", &saveptr);
   }
 
   free(buf);
