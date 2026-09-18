@@ -106,7 +106,7 @@ public:
   }
 };
 
-static void fltkScrollbarUpdateNative(Ihandle* ih)
+extern "C" IUP_SDK_API void iupdrvScrollbarUpdate(Ihandle* ih)
 {
   IupFltkScrollbar* sb = (IupFltkScrollbar*)ih->handle;
   if (!sb)
@@ -185,7 +185,7 @@ static int fltkScrollbarSetValueAttrib(Ihandle* ih, const char* value)
   if (iupStrToDouble(value, &(ih->data->val)))
   {
     iupScrollbarCropValue(ih);
-    fltkScrollbarUpdateNative(ih);
+    iupdrvScrollbarUpdate(ih);
   }
   return 0;
 }
@@ -193,14 +193,14 @@ static int fltkScrollbarSetValueAttrib(Ihandle* ih, const char* value)
 static int fltkScrollbarSetLineStepAttrib(Ihandle* ih, const char* value)
 {
   if (iupStrToDoubleDef(value, &(ih->data->linestep), 0.01))
-    fltkScrollbarUpdateNative(ih);
+    iupdrvScrollbarUpdate(ih);
   return 0;
 }
 
 static int fltkScrollbarSetPageStepAttrib(Ihandle* ih, const char* value)
 {
   if (iupStrToDoubleDef(value, &(ih->data->pagestep), 0.1))
-    fltkScrollbarUpdateNative(ih);
+    iupdrvScrollbarUpdate(ih);
   return 0;
 }
 
@@ -209,7 +209,7 @@ static int fltkScrollbarSetPageSizeAttrib(Ihandle* ih, const char* value)
   if (iupStrToDoubleDef(value, &(ih->data->pagesize), 0.1))
   {
     iupScrollbarCropValue(ih);
-    fltkScrollbarUpdateNative(ih);
+    iupdrvScrollbarUpdate(ih);
   }
   return 0;
 }
@@ -226,7 +226,7 @@ static int fltkScrollbarMapMethod(Ihandle* ih)
     /* FLTK doesn't have a direct inversion mode for scrollbars */
   }
 
-  fltkScrollbarUpdateNative(ih);
+  iupdrvScrollbarUpdate(ih);
 
   sb->callback(fltkScrollbarCallback, (void*)ih);
 

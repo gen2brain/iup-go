@@ -188,7 +188,7 @@ protected:
   }
 };
 
-static void qtScrollbarUpdateNative(Ihandle* ih)
+extern "C" IUP_SDK_API void iupdrvScrollbarUpdate(Ihandle* ih)
 {
   IupQtScrollBar* sb = (IupQtScrollBar*)ih->handle;
   if (!sb) return;
@@ -290,7 +290,7 @@ static int qtScrollbarSetValueAttrib(Ihandle* ih, const char* value)
   if (iupStrToDouble(value, &(ih->data->val)))
   {
     iupScrollbarCropValue(ih);
-    qtScrollbarUpdateNative(ih);
+    iupdrvScrollbarUpdate(ih);
   }
   return 0;
 }
@@ -298,14 +298,14 @@ static int qtScrollbarSetValueAttrib(Ihandle* ih, const char* value)
 static int qtScrollbarSetLineStepAttrib(Ihandle* ih, const char* value)
 {
   if (iupStrToDoubleDef(value, &(ih->data->linestep), 0.01))
-    qtScrollbarUpdateNative(ih);
+    iupdrvScrollbarUpdate(ih);
   return 0;
 }
 
 static int qtScrollbarSetPageStepAttrib(Ihandle* ih, const char* value)
 {
   if (iupStrToDoubleDef(value, &(ih->data->pagestep), 0.1))
-    qtScrollbarUpdateNative(ih);
+    iupdrvScrollbarUpdate(ih);
   return 0;
 }
 
@@ -314,7 +314,7 @@ static int qtScrollbarSetPageSizeAttrib(Ihandle* ih, const char* value)
   if (iupStrToDoubleDef(value, &(ih->data->pagesize), 0.1))
   {
     iupScrollbarCropValue(ih);
-    qtScrollbarUpdateNative(ih);
+    iupdrvScrollbarUpdate(ih);
   }
   return 0;
 }
@@ -378,7 +378,7 @@ static int qtScrollbarMapMethod(Ihandle* ih)
     sb->setInvertedControls(true);
   }
 
-  qtScrollbarUpdateNative(ih);
+  iupdrvScrollbarUpdate(ih);
 
   iupqtAddToParent(ih);
 

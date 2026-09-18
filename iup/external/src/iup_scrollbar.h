@@ -35,6 +35,7 @@ char* iupScrollbarGetPageSizeAttrib(Ihandle* ih);
  * @{ */
 IUP_SDK_API void iupdrvScrollbarInitClass(Iclass* ic);
 IUP_SDK_API void iupdrvScrollbarGetMinSize(Ihandle* ih, int* w, int* h);
+IUP_SDK_API void iupdrvScrollbarUpdate(Ihandle* ih);
 /** @} */
 
 

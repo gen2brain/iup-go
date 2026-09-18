@@ -56,7 +56,7 @@ IUP_SDK_API void iupdrvScrollbarGetMinSize(Ihandle* ih, int* w, int* h)
   }
 }
 
-static void gtk4ScrollbarUpdateAdjustment(Ihandle* ih)
+IUP_SDK_API void iupdrvScrollbarUpdate(Ihandle* ih)
 {
   GtkAdjustment* adjustment;
   double range = ih->data->vmax - ih->data->vmin;
@@ -78,14 +78,14 @@ static void gtk4ScrollbarUpdateAdjustment(Ihandle* ih)
 static int gtk4ScrollbarSetLineStepAttrib(Ihandle* ih, const char* value)
 {
   if (iupStrToDoubleDef(value, &(ih->data->linestep), 0.01))
-    gtk4ScrollbarUpdateAdjustment(ih);
+    iupdrvScrollbarUpdate(ih);
   return 0;
 }
 
 static int gtk4ScrollbarSetPageStepAttrib(Ihandle* ih, const char* value)
 {
   if (iupStrToDoubleDef(value, &(ih->data->pagestep), 0.1))
-    gtk4ScrollbarUpdateAdjustment(ih);
+    iupdrvScrollbarUpdate(ih);
   return 0;
 }
 
@@ -94,7 +94,7 @@ static int gtk4ScrollbarSetPageSizeAttrib(Ihandle* ih, const char* value)
   if (iupStrToDoubleDef(value, &(ih->data->pagesize), 0.1))
   {
     iupScrollbarCropValue(ih);
-    gtk4ScrollbarUpdateAdjustment(ih);
+    iupdrvScrollbarUpdate(ih);
   }
   return 0;
 }

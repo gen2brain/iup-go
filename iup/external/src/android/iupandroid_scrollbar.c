@@ -47,6 +47,12 @@ static void androidScrollbarPushSteps(Ihandle* ih)
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
 }
 
+IUP_SDK_API void iupdrvScrollbarUpdate(Ihandle* ih)
+{
+  androidScrollbarPushRange(ih);
+  androidScrollbarPushSteps(ih);
+}
+
 static int androidScrollbarSetBgColorAttrib(Ihandle* ih, const char* value)
 {
   unsigned char r, g, b;

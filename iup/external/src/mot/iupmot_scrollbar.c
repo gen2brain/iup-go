@@ -44,7 +44,7 @@ IUP_SDK_API void iupdrvScrollbarGetMinSize(Ihandle* ih, int* w, int* h)
   }
 }
 
-static void motScrollbarUpdateNative(Ihandle* ih)
+IUP_SDK_API void iupdrvScrollbarUpdate(Ihandle* ih)
 {
   double range = ih->data->vmax - ih->data->vmin;
   int ipage, ipos, istep, ipagestep;
@@ -81,7 +81,7 @@ static int motScrollbarSetValueAttrib(Ihandle* ih, const char* value)
   if (iupStrToDouble(value, &(ih->data->val)))
   {
     iupScrollbarCropValue(ih);
-    motScrollbarUpdateNative(ih);
+    iupdrvScrollbarUpdate(ih);
   }
   return 0;
 }
@@ -89,14 +89,14 @@ static int motScrollbarSetValueAttrib(Ihandle* ih, const char* value)
 static int motScrollbarSetLineStepAttrib(Ihandle* ih, const char* value)
 {
   if (iupStrToDoubleDef(value, &(ih->data->linestep), 0.01))
-    motScrollbarUpdateNative(ih);
+    iupdrvScrollbarUpdate(ih);
   return 0;
 }
 
 static int motScrollbarSetPageStepAttrib(Ihandle* ih, const char* value)
 {
   if (iupStrToDoubleDef(value, &(ih->data->pagestep), 0.1))
-    motScrollbarUpdateNative(ih);
+    iupdrvScrollbarUpdate(ih);
   return 0;
 }
 
@@ -105,7 +105,7 @@ static int motScrollbarSetPageSizeAttrib(Ihandle* ih, const char* value)
   if (iupStrToDoubleDef(value, &(ih->data->pagesize), 0.1))
   {
     iupScrollbarCropValue(ih);
-    motScrollbarUpdateNative(ih);
+    iupdrvScrollbarUpdate(ih);
   }
   return 0;
 }
@@ -238,7 +238,7 @@ static int motScrollbarMapMethod(Ihandle* ih)
 
   ih->serial = iupDialogGetChildId(ih);
 
-  motScrollbarUpdateNative(ih);
+  iupdrvScrollbarUpdate(ih);
 
   XtRealizeWidget(ih->handle);
 

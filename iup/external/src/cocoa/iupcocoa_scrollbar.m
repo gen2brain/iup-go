@@ -153,7 +153,7 @@ IUP_SDK_API void iupdrvScrollbarGetMinSize(Ihandle* ih, int* w, int* h)
   }
 }
 
-static void cocoaScrollbarUpdateNative(Ihandle* ih)
+IUP_SDK_API void iupdrvScrollbarUpdate(Ihandle* ih)
 {
   NSScroller* scroller = ih->handle;
   double max_pos = ih->data->vmax - ih->data->pagesize;
@@ -182,7 +182,7 @@ static int cocoaScrollbarSetValueAttrib(Ihandle* ih, const char* value)
   if (iupStrToDouble(value, &(ih->data->val)))
   {
     iupScrollbarCropValue(ih);
-    cocoaScrollbarUpdateNative(ih);
+    iupdrvScrollbarUpdate(ih);
   }
   return 0;
 }
@@ -204,7 +204,7 @@ static int cocoaScrollbarSetPageSizeAttrib(Ihandle* ih, const char* value)
   if (iupStrToDoubleDef(value, &(ih->data->pagesize), 0.1))
   {
     iupScrollbarCropValue(ih);
-    cocoaScrollbarUpdateNative(ih);
+    iupdrvScrollbarUpdate(ih);
   }
   return 0;
 }
@@ -242,7 +242,7 @@ static int cocoaScrollbarMapMethod(Ihandle* ih)
   iupcocoaSetAssociatedViews(ih, scroller, scroller);
   iupcocoaAddToParent(ih);
 
-  cocoaScrollbarUpdateNative(ih);
+  iupdrvScrollbarUpdate(ih);
 
   if (!iupAttribGetBoolean(ih, "CANFOCUS"))
   {
