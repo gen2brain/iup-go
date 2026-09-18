@@ -126,21 +126,10 @@ static void cocoaTouchDialogSetVisible(Ihandle* ih, int visible)
 
 	if (presenter.presentingViewController == nil) return;
 
-	if (presenter.isBeingDismissed)
-	{
-		while (presenter.presentingViewController != nil)
-		{
-			@autoreleasepool { CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.05, true); }
-		}
-		return;
-	}
+	if (presenter.isBeingDismissed) return;
 
-	__block BOOL done = NO;
-	[presenter dismissViewControllerAnimated:YES completion:^{ done = YES; }];
-	while (!done)
-	{
-		@autoreleasepool { CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.05, true); }
-	}
+	/* waiting for the completion deadlocks when UIKit drops a dismissal asked for mid transition */
+	[presenter dismissViewControllerAnimated:NO completion:nil];
 }
 
 IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
@@ -605,14 +594,15 @@ static int cocoaTouchDialogMapMethod(Ihandle* ih)
 		UIViewController* top = iupCocoaTouchFindTopPresentedViewController();
 		if (top == nil) top = root;
 		Ihandle* ih_ref = ih;
+		iupAttribSet(ih, "_IUP_DIALOG_DEFER_DESTROY", "1");
 		[top presentViewController:nav animated:YES completion:^{
+			if (!iupObjectCheck(ih_ref)) return;
+			iupAttribSet(ih_ref, "_IUP_DIALOG_DEFER_DESTROY", NULL);
 			IFni cb = (IFni)IupGetCallback(ih_ref, "SHOW_CB");
 			if (cb) cb(ih_ref, IUP_SHOW);
 		}];
 		[nav release];
 	}
-
-	iupAttribSet(ih, "_IUP_DIALOG_DEFER_DESTROY", "1");
 
 	return IUP_NOERROR;
 }
