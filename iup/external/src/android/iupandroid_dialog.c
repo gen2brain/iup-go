@@ -440,6 +440,8 @@ void iupAndroid_DialogActivityCreated(Ihandle* ih)
   value = iupAttribGet(ih, "DRAWER");
   if (value)
     androidDialogSetDrawerAttrib(ih, value);
+
+  iupAttribSet(ih, "_IUP_DIALOG_DEFER_DESTROY", NULL);
 }
 
 static int androidDialogMapMethod(Ihandle* ih)
@@ -467,7 +469,7 @@ static int androidDialogMapMethod(Ihandle* ih)
 
   /* ViewGroup placeholder now; Activity.onCreate swaps to the Activity later. */
   ih->handle = (jobject)((*jni_env)->NewGlobalRef(jni_env, view_group));
-  iupAttribSet(ih, "_IUP_DIALOG_DEFER_DESTROY", "1");  /* cleared in Activity.onDestroy */
+  iupAttribSet(ih, "_IUP_DIALOG_DEFER_DESTROY", "1");  /* cleared once the Activity exists */
 
   (*jni_env)->DeleteLocalRef(jni_env, view_group);
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
