@@ -61,14 +61,14 @@ static const void* IUP_COCOA_SCROLLBAR_RECEIVER_OBJ_KEY = "IUP_COCOA_SCROLLBAR_R
       break;
     }
   case NSScrollerDecrementPage:
-    ih->data->val -= ih->data->pagestep;
+    ih->data->val -= ih->data->pagestep * (ih->data->vmax - ih->data->vmin);
     if (ih->data->orientation == ISCROLLBAR_HORIZONTAL)
       op = IUP_SBPGLEFT;
     else
       op = IUP_SBPGUP;
     break;
   case NSScrollerIncrementPage:
-    ih->data->val += ih->data->pagestep;
+    ih->data->val += ih->data->pagestep * (ih->data->vmax - ih->data->vmin);
     if (ih->data->orientation == ISCROLLBAR_HORIZONTAL)
       op = IUP_SBPGRIGHT;
     else
