@@ -12,6 +12,7 @@ A **copy** operation is enabled with the CTRL key pressed. A **move** operation 
 A move operation will be possible only if the attribute DRAGSOURCEMOVE is YES.
 When no key is pressed, the default operation is **copy** when DRAGSOURCEMOVE=NO and **move** when DRAGSOURCEMOVE=YES.
 The user can cancel a drag at any time by pressing the ESCAPE key.
+In Cocoa the copy modifier is the Option key.
 
 Steps to use the Drag & Drop support in an IUP application:
 
@@ -29,12 +30,13 @@ DROPMOTION_CB is the only optional drop callback.
 
 ### Affects
 
-[IupLabel](../elem/iup_label.md), [IupText](../elem/iup_text.md), [IupList](../elem/iup_list.md), [IupTree](../elem/iup_tree.md), [IupCanvas](../elem/iup_canvas.md) and [IupDialog](../dlg/iup_dialog.md).
+[IupLabel](../elem/iup_label.md), [IupText](../elem/iup_text.md), [IupList](../elem/iup_list.md), [IupTree](../elem/iup_tree.md), [IupTable](../elem/iup_table.md), [IupCanvas](../elem/iup_canvas.md) and [IupDialog](../dlg/iup_dialog.md).
 
 ### Attributes at Drag Source
 
 **DRAGSOURCE** (non-inheritable): Set up a control as a source for drag operations.
 Default: NO.
+In GNUstep the item must be selected before the drag starts, and IupCanvas is not supported as a source.
 
 **DRAGTYPES** (non-inheritable): A list of data types that are supported by the source.
 Accepts a string with one or more names separated by commas. See Notes below for a list of known names.

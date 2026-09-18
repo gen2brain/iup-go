@@ -422,6 +422,22 @@ static void cocoaTreeSetFocus(Ihandle* ih, int id);
 }
 #endif
 
+#ifdef GNUSTEP
+- (NSDragOperation) draggingSourceOperationMaskForLocal:(BOOL)is_local
+{
+  if (!is_local || !self.ih)
+    return NSDragOperationCopy;
+
+  return iupAttribGetBoolean(self.ih, "DRAGSOURCEMOVE") ? (NSDragOperationMove | NSDragOperationCopy) : NSDragOperationCopy;
+}
+
+- (void) draggedImage:(NSImage*)dragged_image endedAt:(NSPoint)screen_point operation:(NSDragOperation)drag_operation
+{
+  if (self.ih)
+    cocoaSourceDragAppEnded(self.ih, drag_operation);
+}
+#endif
+
 - (NSRect) frameOfOutlineCellAtRow:(NSInteger)row
 {
   if (self.ih && iupAttribGetBoolean(self.ih, "HIDEBUTTONS"))
@@ -1664,12 +1680,14 @@ static void cocoaTreeUpdateDragDrop(Ihandle* ih)
   BOOL enable_internal_dnd = ih->data->show_dragdrop;
   BOOL enable_crosstree_dnd = iupAttribGetBoolean(ih, "DRAGDROPTREE");
 
-  BOOL enable_drag_source = enable_internal_dnd || (enable_crosstree_dnd && iupAttribGetBoolean(ih, "DRAGSOURCE"));
-  BOOL enable_drop_target = enable_internal_dnd || (enable_crosstree_dnd && iupAttribGetBoolean(ih, "DROPTARGET"));
+  BOOL enable_drag_source = enable_internal_dnd || iupAttribGetBoolean(ih, "DRAGSOURCE");
+  BOOL enable_drop_target = enable_internal_dnd || iupAttribGetBoolean(ih, "DROPTARGET");
 
   if (enable_drag_source)
   {
     NSDragOperation source_mask = NSDragOperationMove | NSDragOperationCopy;
+    if (!enable_internal_dnd && !enable_crosstree_dnd && !iupAttribGetBoolean(ih, "DRAGSOURCEMOVE"))
+      source_mask = NSDragOperationCopy;
     [outline_view setDraggingSourceOperationMask:source_mask forLocal:YES];
 
     [outline_view setDraggingSourceOperationMask:NSDragOperationNone forLocal:NO];
@@ -1688,6 +1706,13 @@ static void cocoaTreeUpdateDragDrop(Ihandle* ih)
   NSMutableArray* registered_types = [NSMutableArray array];
   if (enable_drop_target && (enable_internal_dnd || enable_crosstree_dnd))
     [registered_types addObject:IUPCOCOA_OUTLINEVIEW_DRAGANDDROP_TYPE];
+
+  if (enable_drop_target)
+  {
+    IupTargetDropAssociatedData* drop_data = cocoaTargetDropGetAssociatedData(ih);
+    for (NSString* type_name in [drop_data dropRegisteredTypes])
+      [registered_types addObject:type_name];
+  }
 
   if (enable_dropfiles)
     [registered_types addObject:NSPasteboardTypeFileURL];
@@ -1718,9 +1743,19 @@ static int cocoaTreeSetShowDragDropAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-static int cocoaTreeSetDndControlAttrib(Ihandle* ih, const char* value)
+static int cocoaTreeSetDragSourceAttrib(Ihandle* ih, const char* value)
 {
-  (void)value;
+  cocoaSourceDragSetDragSourceAttrib(ih, value);
+  if (ih->handle)
+  {
+    cocoaTreeUpdateDragDrop(ih);
+  }
+  return 1;
+}
+
+static int cocoaTreeSetDropTargetAttrib(Ihandle* ih, const char* value)
+{
+  cocoaTargetDropSetDropTargetAttrib(ih, value);
   if (ih->handle)
   {
     cocoaTreeUpdateDragDrop(ih);
@@ -1762,6 +1797,19 @@ static NSData* helperDataWithValue(NSValue* the_value)
   }
   IupCocoaTreeItem* tree_item = (IupCocoaTreeItem*)the_item;
 
+  Ihandle* ih = [(IupCocoaOutlineView*)outlineView ih];
+  if(!ih->data->show_dragdrop && !iupAttribGetBoolean(ih, "DRAGDROPTREE"))
+  {
+    NSInteger item_row = [outlineView rowForItem:the_item];
+
+    /* AppKit asks for the payload before it moves the selection */
+    if(![[outlineView selectedRowIndexes] containsIndex:item_row])
+      [outlineView selectRowIndexes:[NSIndexSet indexSetWithIndex:item_row] byExtendingSelection:NO];
+
+    NSRect row_rect = [outlineView rectOfRow:item_row];
+    return cocoaSourceDragAppPasteboardItem(ih, (int)NSMinX(row_rect), (int)NSMinY(row_rect));
+  }
+
   NSPasteboardItem* paste_board_item = [[NSPasteboardItem alloc] init];
   [paste_board_item autorelease];
 
@@ -1770,6 +1818,32 @@ static NSData* helperDataWithValue(NSValue* the_value)
 
   [paste_board_item setData:data_value forType:IUPCOCOA_OUTLINEVIEW_DRAGANDDROP_TYPE];
   return paste_board_item;
+}
+
+#ifdef GNUSTEP
+- (BOOL)outlineView:(NSOutlineView *)outlineView writeItems:(NSArray *)items toPasteboard:(NSPasteboard *)pboard
+{
+  Ihandle* ih = [(IupCocoaOutlineView*)outlineView ih];
+  if(!ih || [items count] == 0)
+    return NO;
+
+  if(ih->data->show_dragdrop || iupAttribGetBoolean(ih, "DRAGDROPTREE"))
+    return NO;
+
+  NSRect row_rect = [outlineView rectOfRow:[outlineView rowForItem:[items objectAtIndex:0]]];
+  return cocoaSourceDragAppWritePasteboard(ih, pboard, (int)NSMinX(row_rect), (int)NSMinY(row_rect)) ? YES : NO;
+}
+#endif
+
+- (void)outlineView:(NSOutlineView *)outlineView draggingSession:(NSDraggingSession *)session endedAtPoint:(NSPoint)screenPoint operation:(NSDragOperation)drag_operation
+{
+  [self setItemBeingDragged:nil];
+
+  Ihandle* ih = [(IupCocoaOutlineView*)outlineView ih];
+  if(!ih->data->show_dragdrop && !iupAttribGetBoolean(ih, "DRAGDROPTREE"))
+  {
+    cocoaSourceDragAppEnded(ih, drag_operation);
+  }
 }
 
 - (void)outlineView:(NSOutlineView *)outlineView draggingSession:(NSDraggingSession *)session willBeginAtPoint:(NSPoint)screenPoint forItems:(NSArray *)dragged_items
@@ -1806,6 +1880,13 @@ static int helperCallDragDropCb(Ihandle* ih, IupCocoaTreeItem* tree_item_drag, I
   if([drag_types containsObject:NSPasteboardTypeFileURL] && IupGetCallback(ih, "DROPFILES_CB"))
   {
     return NSDragOperationCopy;
+  }
+
+  if(cocoaTargetDropAppTypeAvailable(ih, [drag_info draggingPasteboard]))
+  {
+    [outline_view setDropItem:nil dropChildIndex:NSOutlineViewDropOnItemIndex];
+    cocoaTargetDropBaseDraggingUpdated(ih, drag_info);
+    return cocoaTargetDropOperationForInfo(drag_info);
   }
 
   if([drag_types containsObject:IUPCOCOA_OUTLINEVIEW_DRAGANDDROP_TYPE])
@@ -2491,6 +2572,13 @@ static void cocoaTreeRemoveNodeData(Ihandle* ih, IupCocoaTreeItem* tree_item, in
     if([[[drag_info draggingPasteboard] types] containsObject:NSPasteboardTypeFileURL] && IupGetCallback(ih_dropfiles, "DROPFILES_CB"))
     {
       return cocoaTargetDropFilesFromInfo(ih_dropfiles, drag_info, outline_view) ? YES : NO;
+    }
+
+    NSPasteboard* paste_board = [drag_info draggingPasteboard];
+    if(cocoaTargetDropAppTypeAvailable(ih_dropfiles, paste_board))
+    {
+      NSPoint drop_point = [outline_view convertPoint:[drag_info draggingLocation] fromView:nil];
+      return cocoaTargetDropBasePerformDropCallback(ih_dropfiles, drag_info, paste_board, drop_point) ? YES : NO;
     }
   }
 
@@ -4510,6 +4598,9 @@ static int cocoaTreeMapMethod(Ihandle* ih)
 
   iupdrvTreeUpdateMarkMode(ih);
 
+  cocoaSourceDragCreateAssociatedData(ih, outline_view, scroll_view);
+  cocoaTargetDropCreateAssociatedData(ih, outline_view, scroll_view);
+
   cocoaTreeUpdateDragDrop(ih);
 
   if (!iupAttribGetBoolean(ih, "CANFOCUS"))
@@ -4537,6 +4628,9 @@ static void cocoaTreeUnMapMethod(Ihandle* ih)
     }
     iupcocoaCommonBaseSetContextMenuAttrib(ih, NULL);
   }
+
+  cocoaSourceDragDestroyAssociatedData(ih);
+  cocoaTargetDropDestroyAssociatedData(ih);
 
   IupCocoaOutlineView* outline_view = (IupCocoaOutlineView*)cocoaTreeGetOutlineView(ih);
   [outline_view setMarkStartNode:nil];
@@ -4652,6 +4746,6 @@ IUP_SDK_API void iupdrvTreeInitClass(Iclass* ic)
 
   iupClassRegisterReplaceAttribFunc(ic, "SHOWDRAGDROP", NULL, cocoaTreeSetShowDragDropAttrib);
   iupClassRegisterAttribute(ic, "DRAGDROPTREE", NULL, cocoaTreeSetDragDropTreeAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterReplaceAttribFunc(ic, "DRAGSOURCE", NULL, cocoaTreeSetDndControlAttrib);
-  iupClassRegisterReplaceAttribFunc(ic, "DROPTARGET", NULL, cocoaTreeSetDndControlAttrib);
+  iupClassRegisterReplaceAttribFunc(ic, "DRAGSOURCE", NULL, cocoaTreeSetDragSourceAttrib);
+  iupClassRegisterReplaceAttribFunc(ic, "DROPTARGET", NULL, cocoaTreeSetDropTargetAttrib);
 }

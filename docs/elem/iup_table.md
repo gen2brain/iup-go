@@ -132,6 +132,8 @@ Can be "YES" or "NO". Default: "NO".
 **SHOWDRAGDROP** (creation-only) (non-inheritable): enables the interactive reordering of rows by dragging, and enables the DRAGDROP_CB callback.
 Can be "YES" or "NO". Default: "NO".
 
+[Drag & Drop](../attrib/iup_dragdrop.md) attributes and callbacks are supported, but SHOWDRAGDROP must be set to NO.
+
 **USERRESIZE** (non-inheritable): Enables user column resizing by dragging the header dividers.
 Can be "YES" or "NO". Default: "NO".
 
