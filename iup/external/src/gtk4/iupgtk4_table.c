@@ -2139,7 +2139,10 @@ static int gtk4TableCalculateColumnWidth(Ihandle* ih, int col_index)
   for (int lin = 1; lin <= max_rows_to_check; lin++)
   {
     int cell_width = 0;
-    char* cell_value = iupAttribGetId2(ih, "", lin, iup_col);
+    /* the core drops the cell attributes once it replays them, the model keeps them */
+    char* cell_value = iupdrvTableGetCellValue(ih, lin, iup_col);
+    if (!cell_value || !*cell_value)
+      cell_value = iupAttribGetId2(ih, "", lin, iup_col);
     if (cell_value && *cell_value)
       cell_width = iupdrvFontGetStringWidth(ih, cell_value);
     cell_width += 16;  /* Add padding (8px left + 8px right) */
