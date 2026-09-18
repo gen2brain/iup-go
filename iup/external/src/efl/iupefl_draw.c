@@ -315,10 +315,68 @@ IUP_SDK_API void iupdrvDrawGetSize(IdrawCanvas* dc, int* w, int* h)
   if (h) *h = dc->h;
 }
 
+/* the Evas vector rasterizer works in 16.16 fixed point, a primitive far outside the canvas wraps around */
+#define EFL_DRAW_LIMIT 16384
+
+static int eflDrawClamp(int c)
+{
+  if (c < -EFL_DRAW_LIMIT)
+    return -EFL_DRAW_LIMIT;
+  if (c > EFL_DRAW_LIMIT)
+    return EFL_DRAW_LIMIT;
+  return c;
+}
+
+static int eflDrawClipLine(int* x1, int* y1, int* x2, int* y2)
+{
+  double dx = (double)(*x2 - *x1), dy = (double)(*y2 - *y1);
+  double t0 = 0.0, t1 = 1.0;
+  double p[4], q[4];
+  int i, ox = *x1, oy = *y1;
+
+  p[0] = -dx; q[0] = (double)(*x1 + EFL_DRAW_LIMIT);
+  p[1] =  dx; q[1] = (double)(EFL_DRAW_LIMIT - *x1);
+  p[2] = -dy; q[2] = (double)(*y1 + EFL_DRAW_LIMIT);
+  p[3] =  dy; q[3] = (double)(EFL_DRAW_LIMIT - *y1);
+
+  for (i = 0; i < 4; i++)
+  {
+    if (p[i] == 0.0)
+    {
+      if (q[i] < 0.0)
+        return 0;
+      continue;
+    }
+
+    {
+      double t = q[i] / p[i];
+      if (p[i] < 0.0)
+      {
+        if (t > t1) return 0;
+        if (t > t0) t0 = t;
+      }
+      else
+      {
+        if (t < t0) return 0;
+        if (t < t1) t1 = t;
+      }
+    }
+  }
+
+  *x2 = ox + iupROUND(t1 * dx);
+  *y2 = oy + iupROUND(t1 * dy);
+  *x1 = ox + iupROUND(t0 * dx);
+  *y1 = oy + iupROUND(t0 * dy);
+  return 1;
+}
+
 IUP_SDK_API void iupdrvDrawLine(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color, int style, int line_width)
 {
   Efl_VG* shape;
   int r, g, b, a;
+
+  if (!eflDrawClipLine(&x1, &y1, &x2, &y2))
+    return;
 
   if (!iDrawIsDashed(style) && iupDrawAlpha(color) == 255 && dc->batch_shape &&
       dc->batch_root == dc->root && dc->batch_color == color && dc->batch_width == line_width &&
@@ -356,6 +414,9 @@ IUP_SDK_API void iupdrvDrawRectangle(IdrawCanvas* dc, int x1, int y1, int x2, in
 
   iupDrawCheckSwapCoord(x1, x2);
   iupDrawCheckSwapCoord(y1, y2);
+
+  x1 = eflDrawClamp(x1); y1 = eflDrawClamp(y1);
+  x2 = eflDrawClamp(x2); y2 = eflDrawClamp(y2);
 
   iDrawGetColor(color, &r, &g, &b, &a);
 
@@ -456,6 +517,9 @@ IUP_SDK_API void iupdrvDrawEllipse(IdrawCanvas* dc, int x1, int y1, int x2, int 
   int r, g, b, a;
   double cx, cy, rx, ry;
 
+  x1 = eflDrawClamp(x1); y1 = eflDrawClamp(y1);
+  x2 = eflDrawClamp(x2); y2 = eflDrawClamp(y2);
+
   iupDrawCheckSwapCoord(x1, x2);
   iupDrawCheckSwapCoord(y1, y2);
 
@@ -537,6 +601,9 @@ IUP_SDK_API void iupdrvDrawRoundedRectangle(IdrawCanvas* dc, int x1, int y1, int
 {
   Efl_VG* shape;
   int r, g, b, a;
+
+  x1 = eflDrawClamp(x1); y1 = eflDrawClamp(y1);
+  x2 = eflDrawClamp(x2); y2 = eflDrawClamp(y2);
 
   iupDrawCheckSwapCoord(x1, x2);
   iupDrawCheckSwapCoord(y1, y2);
@@ -1112,6 +1179,9 @@ static void iDrawApplyClip(IdrawCanvas* dc)
 
 IUP_SDK_API void iupdrvDrawSetClipRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2)
 {
+  x1 = eflDrawClamp(x1); y1 = eflDrawClamp(y1);
+  x2 = eflDrawClamp(x2); y2 = eflDrawClamp(y2);
+
   iupDrawCheckSwapCoord(x1, x2);
   iupDrawCheckSwapCoord(y1, y2);
 
@@ -1151,11 +1221,17 @@ IUP_SDK_API void iupdrvDrawGetClipRect(IdrawCanvas* dc, int* x1, int* y1, int* x
 
 IUP_SDK_API void iupdrvDrawSelectRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2)
 {
+  x1 = eflDrawClamp(x1); y1 = eflDrawClamp(y1);
+  x2 = eflDrawClamp(x2); y2 = eflDrawClamp(y2);
+
   iupdrvDrawRectangle(dc, x1, y1, x2, y2, iupDrawColor(0, 0, 255, 128), IUP_DRAW_FILL, 1);
 }
 
 IUP_SDK_API void iupdrvDrawFocusRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2)
 {
+  x1 = eflDrawClamp(x1); y1 = eflDrawClamp(y1);
+  x2 = eflDrawClamp(x2); y2 = eflDrawClamp(y2);
+
   iupdrvDrawRectangle(dc, x1, y1, x2, y2, iupDrawColor(0, 0, 0, 255), IUP_DRAW_STROKE_DOT, 1);
 }
 
