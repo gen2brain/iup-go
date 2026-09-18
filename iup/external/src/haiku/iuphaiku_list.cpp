@@ -444,7 +444,7 @@ public:
     int32 mods = 0;
     if (BLooper* L = Looper())
       if (BMessage* cur = L->CurrentMessage()) cur->FindInt32("modifiers", &mods);
-    BCursorID id = (mods & B_CONTROL_KEY) ? B_CURSOR_ID_COPY : B_CURSOR_ID_MOVE;
+    BCursorID id = (mods & B_COMMAND_KEY) ? B_CURSOR_ID_COPY : B_CURSOR_ID_MOVE;
     int last = iupAttribGetInt(fIhandle, "_IUPHAIKU_LIST_REORDER_CURSOR");
     if (last == (int)id) return;
     BCursor* prev = (BCursor*)iupAttribGet(fIhandle, "_IUPHAIKU_LIST_REORDER_BCURSOR");

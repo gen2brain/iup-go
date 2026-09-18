@@ -163,7 +163,7 @@ static void haikuDnDApplyDragCursor(Ihandle* ih, BView* view, const BMessage* dr
   drag_msg->FindPointer("be:originator", (void**)&src_ih);
   if (!src_ih || !iupObjectCheck(src_ih)) return;
 
-  const char* name = (mods & B_CONTROL_KEY) ? iupAttribGet(src_ih, "DRAGCURSORCOPY") : NULL;
+  const char* name = (mods & B_COMMAND_KEY) ? iupAttribGet(src_ih, "DRAGCURSORCOPY") : NULL;
   if (!name) name = iupAttribGet(src_ih, "DRAGCURSOR");
   if (!name) return;
 
@@ -246,7 +246,7 @@ static int haikuDnDActionFromModifiers(Ihandle* ih, int32 mods)
 {
   /* IUP semantics: CTRL forces copy, SHIFT forces move. Default follows DRAGSOURCEMOVE. */
   bool can_move = iupAttribGetBoolean(ih, "DRAGSOURCEMOVE");
-  if (mods & B_CONTROL_KEY) return 0;
+  if (mods & B_COMMAND_KEY) return 0;
   if (mods & B_SHIFT_KEY) return can_move ? 1 : 0;
   return can_move ? 1 : 0;
 }

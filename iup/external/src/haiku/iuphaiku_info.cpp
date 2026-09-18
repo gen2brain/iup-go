@@ -91,9 +91,9 @@ extern "C" IUP_SDK_API void iupdrvGetKeyState(char* key)
   if (!key) return;
   uint32 mods = ::modifiers();
   key[0] = (mods & B_SHIFT_KEY)   ? 'S' : ' ';
-  key[1] = (mods & B_CONTROL_KEY) ? 'C' : ' ';
-  key[2] = (mods & B_OPTION_KEY)  ? 'A' : ' ';
-  key[3] = (mods & B_COMMAND_KEY) ? 'Y' : ' ';
+  key[1] = (mods & B_COMMAND_KEY) ? 'C' : ' ';
+  key[2] = (mods & B_CONTROL_KEY) ? 'A' : ' ';
+  key[3] = (mods & B_OPTION_KEY)  ? 'Y' : ' ';
   key[4] = 0;
 }
 
