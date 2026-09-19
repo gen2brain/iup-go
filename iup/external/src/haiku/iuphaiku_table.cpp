@@ -979,8 +979,6 @@ public:
   filter_result Filter(BMessage* msg, BHandler** target) override
   {
     if (!fTv || !target || !*target) return B_DISPATCH_MESSAGE;
-    if (msg->what != B_MOUSE_DOWN && msg->what != B_MOUSE_UP &&
-        msg->what != B_MOUSE_MOVED) return B_DISPATCH_MESSAGE;
 
     BView* tgt = dynamic_cast<BView*>(*target);
     if (!tgt) return B_DISPATCH_MESSAGE;
@@ -989,6 +987,15 @@ public:
     for (BView* p = tgt; p; p = p->Parent())
       if (p == fTv) { inside = true; break; }
     if (!inside) return B_DISPATCH_MESSAGE;
+
+    if (msg->WasDropped() && fTv->GetIhandle())
+    {
+      if (iuphaikuHandleDropFiles(fTv->GetIhandle(), fTv, msg)) return B_SKIP_MESSAGE;
+      if (iuphaikuDnDMessageReceived(fTv->GetIhandle(), fTv, msg)) return B_SKIP_MESSAGE;
+    }
+
+    if (msg->what != B_MOUSE_DOWN && msg->what != B_MOUSE_UP &&
+        msg->what != B_MOUSE_MOVED) return B_DISPATCH_MESSAGE;
 
     if (!iupdrvIsActive(fTv->GetIhandle()))
       return B_SKIP_MESSAGE;
