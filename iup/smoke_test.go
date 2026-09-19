@@ -410,6 +410,18 @@ func TestUIThreadGuard(t *testing.T) {
 	markUIThread()
 	defer uiThread.Store(saved)
 
+	var trusted []any
+	iupThreads.Range(func(id, _ any) bool {
+		trusted = append(trusted, id)
+		iupThreads.Delete(id)
+		return true
+	})
+	defer func() {
+		for _, id := range trusted {
+			iupThreads.Store(id, struct{}{})
+		}
+	}()
+
 	btn.SetAttribute("TITLE", "from the main thread")
 
 	done := make(chan any, 1)
