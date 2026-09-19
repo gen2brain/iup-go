@@ -343,9 +343,20 @@ static void eflFixedGroupMemberAdd(Eo* obj, void* pd, Eo* member)
   efl_canvas_group_member_add(efl_super(obj, EFL_UI_WIDGET_CLASS), member);
 }
 
+static Eo* eflFixedFinalize(Eo* obj, void* pd)
+{
+  (void)pd;
+  obj = efl_finalize(efl_super(obj, iupefl_fixed_class_get()));
+  if (obj)
+    efl_ui_widget_focus_allow_set(obj, EINA_FALSE);
+  return obj;
+}
+
 static Eina_Bool eflFixedClassInitializer(Efl_Class* klass)
 {
-  EFL_OPS_DEFINE(ops, EFL_OBJECT_OP_FUNC(efl_canvas_group_member_add, eflFixedGroupMemberAdd));
+  EFL_OPS_DEFINE(ops,
+                 EFL_OBJECT_OP_FUNC(efl_canvas_group_member_add, eflFixedGroupMemberAdd),
+                 EFL_OBJECT_OP_FUNC(efl_finalize, eflFixedFinalize));
   return efl_class_functions_set(klass, &ops, NULL);
 }
 
