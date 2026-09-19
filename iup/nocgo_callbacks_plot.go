@@ -3,6 +3,7 @@
 package iup
 
 import (
+	"sync"
 	"unsafe"
 
 	"github.com/ebitengine/purego"
@@ -10,44 +11,50 @@ import (
 
 type PlotButtonFunc func(ih Ihandle, button, pressed int, x, y float64, status string) int
 
-var plotButtonFuncCB = purego.NewCallback(func(ih uintptr, button int32, pressed int32, x float64, y float64, status uintptr) int {
-	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_PLOTBUTTON_CB").(PlotButtonFunc); ok {
-		return f(Ihandle(ih), int(button), int(pressed), x, y, goString(status))
-	}
-	return 0
+var plotButtonFuncCB = sync.OnceValue(func() uintptr {
+	return newFloatCallback(func(ih uintptr, button int32, pressed int32, x float64, y float64, status uintptr) int {
+		if f, ok := loadCallback(Ihandle(ih), "_IUPGO_PLOTBUTTON_CB").(PlotButtonFunc); ok {
+			return f(Ihandle(ih), int(button), int(pressed), x, y, goString(status))
+		}
+		return 0
+	})
 })
 
 func setPlotButtonFunc(ih Ihandle, f PlotButtonFunc) {
 	storeCallback(ih, "_IUPGO_PLOTBUTTON_CB", f)
-	iupSetCallback(uintptr(ih), "PLOTBUTTON_CB", plotButtonFuncCB)
+	iupSetCallback(uintptr(ih), "PLOTBUTTON_CB", plotButtonFuncCB())
 }
 
 type PlotClickSampleFunc func(ih Ihandle, dsIndex, sampleIndex int, x, y float64, button int) int
 
-var plotClickSampleFuncCB = purego.NewCallback(func(ih uintptr, dsIndex int32, sampleIndex int32, x float64, y float64, button int32) int {
-	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_CLICKSAMPLE_CB").(PlotClickSampleFunc); ok {
-		return f(Ihandle(ih), int(dsIndex), int(sampleIndex), x, y, int(button))
-	}
-	return 0
+var plotClickSampleFuncCB = sync.OnceValue(func() uintptr {
+	return newFloatCallback(func(ih uintptr, dsIndex int32, sampleIndex int32, x float64, y float64, button int32) int {
+		if f, ok := loadCallback(Ihandle(ih), "_IUPGO_CLICKSAMPLE_CB").(PlotClickSampleFunc); ok {
+			return f(Ihandle(ih), int(dsIndex), int(sampleIndex), x, y, int(button))
+		}
+		return 0
+	})
 })
 
 func setPlotClickSampleFunc(ih Ihandle, f PlotClickSampleFunc) {
 	storeCallback(ih, "_IUPGO_CLICKSAMPLE_CB", f)
-	iupSetCallback(uintptr(ih), "CLICKSAMPLE_CB", plotClickSampleFuncCB)
+	iupSetCallback(uintptr(ih), "CLICKSAMPLE_CB", plotClickSampleFuncCB())
 }
 
 type PlotClickSegmentFunc func(ih Ihandle, dsIndex, sampleIndex1 int, x1, y1 float64, sampleIndex2 int, x2, y2 float64, button int) int
 
-var plotClickSegmentFuncCB = purego.NewCallback(func(ih uintptr, dsIndex int32, sampleIndex1 int32, x1 float64, y1 float64, sampleIndex2 int32, x2 float64, y2 float64, button int32) int {
-	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_CLICKSEGMENT_CB").(PlotClickSegmentFunc); ok {
-		return f(Ihandle(ih), int(dsIndex), int(sampleIndex1), x1, y1, int(sampleIndex2), x2, y2, int(button))
-	}
-	return 0
+var plotClickSegmentFuncCB = sync.OnceValue(func() uintptr {
+	return newFloatCallback(func(ih uintptr, dsIndex int32, sampleIndex1 int32, x1 float64, y1 float64, sampleIndex2 int32, x2 float64, y2 float64, button int32) int {
+		if f, ok := loadCallback(Ihandle(ih), "_IUPGO_CLICKSEGMENT_CB").(PlotClickSegmentFunc); ok {
+			return f(Ihandle(ih), int(dsIndex), int(sampleIndex1), x1, y1, int(sampleIndex2), x2, y2, int(button))
+		}
+		return 0
+	})
 })
 
 func setPlotClickSegmentFunc(ih Ihandle, f PlotClickSegmentFunc) {
 	storeCallback(ih, "_IUPGO_CLICKSEGMENT_CB", f)
-	iupSetCallback(uintptr(ih), "CLICKSEGMENT_CB", plotClickSegmentFuncCB)
+	iupSetCallback(uintptr(ih), "CLICKSEGMENT_CB", plotClickSegmentFuncCB())
 }
 
 type PlotDeleteBeginFunc func(ih Ihandle) int
@@ -80,30 +87,34 @@ func setPlotDeleteEndFunc(ih Ihandle, f PlotDeleteEndFunc) {
 
 type PlotDeleteFunc func(ih Ihandle, dsIndex, sampleIndex int, x, y float64) int
 
-var plotDeleteFuncCB = purego.NewCallback(func(ih uintptr, dsIndex int32, sampleIndex int32, x float64, y float64) int {
-	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_PLOT_DELETE_CB").(PlotDeleteFunc); ok {
-		return f(Ihandle(ih), int(dsIndex), int(sampleIndex), x, y)
-	}
-	return 0
+var plotDeleteFuncCB = sync.OnceValue(func() uintptr {
+	return newFloatCallback(func(ih uintptr, dsIndex int32, sampleIndex int32, x float64, y float64) int {
+		if f, ok := loadCallback(Ihandle(ih), "_IUPGO_PLOT_DELETE_CB").(PlotDeleteFunc); ok {
+			return f(Ihandle(ih), int(dsIndex), int(sampleIndex), x, y)
+		}
+		return 0
+	})
 })
 
 func setPlotDeleteFunc(ih Ihandle, f PlotDeleteFunc) {
 	storeCallback(ih, "_IUPGO_PLOT_DELETE_CB", f)
-	iupSetCallback(uintptr(ih), "DELETE_CB", plotDeleteFuncCB)
+	iupSetCallback(uintptr(ih), "DELETE_CB", plotDeleteFuncCB())
 }
 
 type PlotDrawSampleFunc func(ih Ihandle, dsIndex, sampleIndex int, x, y float64, state int) int
 
-var plotDrawSampleFuncCB = purego.NewCallback(func(ih uintptr, dsIndex int32, sampleIndex int32, x float64, y float64, state int32) int {
-	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_DRAWSAMPLE_CB").(PlotDrawSampleFunc); ok {
-		return f(Ihandle(ih), int(dsIndex), int(sampleIndex), x, y, int(state))
-	}
-	return 0
+var plotDrawSampleFuncCB = sync.OnceValue(func() uintptr {
+	return newFloatCallback(func(ih uintptr, dsIndex int32, sampleIndex int32, x float64, y float64, state int32) int {
+		if f, ok := loadCallback(Ihandle(ih), "_IUPGO_DRAWSAMPLE_CB").(PlotDrawSampleFunc); ok {
+			return f(Ihandle(ih), int(dsIndex), int(sampleIndex), x, y, int(state))
+		}
+		return 0
+	})
 })
 
 func setPlotDrawSampleFunc(ih Ihandle, f PlotDrawSampleFunc) {
 	storeCallback(ih, "_IUPGO_DRAWSAMPLE_CB", f)
-	iupSetCallback(uintptr(ih), "DRAWSAMPLE_CB", plotDrawSampleFuncCB)
+	iupSetCallback(uintptr(ih), "DRAWSAMPLE_CB", plotDrawSampleFuncCB())
 }
 
 type PlotDSPropertiesChangedFunc func(ih Ihandle, dsIndex int) int
@@ -136,16 +147,18 @@ func setPlotDSPropertiesValidateFunc(ih Ihandle, f PlotDSPropertiesValidateFunc)
 
 type PlotEditSampleFunc func(ih Ihandle, dsIndex, sampleIndex int, x, y float64) int
 
-var plotEditSampleFuncCB = purego.NewCallback(func(ih uintptr, dsIndex int32, sampleIndex int32, x float64, y float64) int {
-	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_EDITSAMPLE_CB").(PlotEditSampleFunc); ok {
-		return f(Ihandle(ih), int(dsIndex), int(sampleIndex), x, y)
-	}
-	return 0
+var plotEditSampleFuncCB = sync.OnceValue(func() uintptr {
+	return newFloatCallback(func(ih uintptr, dsIndex int32, sampleIndex int32, x float64, y float64) int {
+		if f, ok := loadCallback(Ihandle(ih), "_IUPGO_EDITSAMPLE_CB").(PlotEditSampleFunc); ok {
+			return f(Ihandle(ih), int(dsIndex), int(sampleIndex), x, y)
+		}
+		return 0
+	})
 })
 
 func setPlotEditSampleFunc(ih Ihandle, f PlotEditSampleFunc) {
 	storeCallback(ih, "_IUPGO_EDITSAMPLE_CB", f)
-	iupSetCallback(uintptr(ih), "EDITSAMPLE_CB", plotEditSampleFuncCB)
+	iupSetCallback(uintptr(ih), "EDITSAMPLE_CB", plotEditSampleFuncCB())
 }
 
 type PlotMenuContextCloseFunc func(ih, menu Ihandle, x, y int) int
@@ -178,16 +191,18 @@ func setPlotMenuContextFunc(ih Ihandle, f PlotMenuContextFunc) {
 
 type PlotMotionFunc func(ih Ihandle, x, y float64, status string) int
 
-var plotMotionFuncCB = purego.NewCallback(func(ih uintptr, x float64, y float64, status uintptr) int {
-	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_PLOTMOTION_CB").(PlotMotionFunc); ok {
-		return f(Ihandle(ih), x, y, goString(status))
-	}
-	return 0
+var plotMotionFuncCB = sync.OnceValue(func() uintptr {
+	return newFloatCallback(func(ih uintptr, x float64, y float64, status uintptr) int {
+		if f, ok := loadCallback(Ihandle(ih), "_IUPGO_PLOTMOTION_CB").(PlotMotionFunc); ok {
+			return f(Ihandle(ih), x, y, goString(status))
+		}
+		return 0
+	})
 })
 
 func setPlotMotionFunc(ih Ihandle, f PlotMotionFunc) {
 	storeCallback(ih, "_IUPGO_PLOTMOTION_CB", f)
-	iupSetCallback(uintptr(ih), "PLOTMOTION_CB", plotMotionFuncCB)
+	iupSetCallback(uintptr(ih), "PLOTMOTION_CB", plotMotionFuncCB())
 }
 
 type PlotPropertiesChangedFunc func(ih Ihandle) int
@@ -248,16 +263,18 @@ func setPlotSelectEndFunc(ih Ihandle, f PlotSelectEndFunc) {
 
 type PlotSelectFunc func(ih Ihandle, dsIndex, sampleIndex int, x, y float64, selected int) int
 
-var plotSelectFuncCB = purego.NewCallback(func(ih uintptr, dsIndex int32, sampleIndex int32, x float64, y float64, selected int32) int {
-	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_PLOT_SELECT_CB").(PlotSelectFunc); ok {
-		return f(Ihandle(ih), int(dsIndex), int(sampleIndex), x, y, int(selected))
-	}
-	return 0
+var plotSelectFuncCB = sync.OnceValue(func() uintptr {
+	return newFloatCallback(func(ih uintptr, dsIndex int32, sampleIndex int32, x float64, y float64, selected int32) int {
+		if f, ok := loadCallback(Ihandle(ih), "_IUPGO_PLOT_SELECT_CB").(PlotSelectFunc); ok {
+			return f(Ihandle(ih), int(dsIndex), int(sampleIndex), x, y, int(selected))
+		}
+		return 0
+	})
 })
 
 func setPlotSelectFunc(ih Ihandle, f PlotSelectFunc) {
 	storeCallback(ih, "_IUPGO_PLOT_SELECT_CB", f)
-	iupSetCallback(uintptr(ih), "SELECT_CB", plotSelectFuncCB)
+	iupSetCallback(uintptr(ih), "SELECT_CB", plotSelectFuncCB())
 }
 
 type PlotDrawFunc func(ih Ihandle) int
@@ -306,20 +323,24 @@ func plotTickFormatNumber(ih uintptr, name string, buffer, format uintptr, value
 	return DEFAULT
 }
 
-var plotXTickFormatCB = purego.NewCallback(func(ih, buffer, format uintptr, value float64, decimalSymbol uintptr) int {
-	return plotTickFormatNumber(ih, "_IUPGO_XTICKFORMATNUMBER_CB", buffer, format, value, decimalSymbol)
+var plotXTickFormatCB = sync.OnceValue(func() uintptr {
+	return newFloatCallback(func(ih, buffer, format uintptr, value float64, decimalSymbol uintptr) int {
+		return plotTickFormatNumber(ih, "_IUPGO_XTICKFORMATNUMBER_CB", buffer, format, value, decimalSymbol)
+	})
 })
 
-var plotYTickFormatCB = purego.NewCallback(func(ih, buffer, format uintptr, value float64, decimalSymbol uintptr) int {
-	return plotTickFormatNumber(ih, "_IUPGO_YTICKFORMATNUMBER_CB", buffer, format, value, decimalSymbol)
+var plotYTickFormatCB = sync.OnceValue(func() uintptr {
+	return newFloatCallback(func(ih, buffer, format uintptr, value float64, decimalSymbol uintptr) int {
+		return plotTickFormatNumber(ih, "_IUPGO_YTICKFORMATNUMBER_CB", buffer, format, value, decimalSymbol)
+	})
 })
 
 func setPlotXTickFormatNumberFunc(ih Ihandle, f PlotTickFormatNumberFunc) {
 	storeCallback(ih, "_IUPGO_XTICKFORMATNUMBER_CB", f)
-	iupSetCallback(uintptr(ih), "XTICKFORMATNUMBER_CB", plotXTickFormatCB)
+	iupSetCallback(uintptr(ih), "XTICKFORMATNUMBER_CB", plotXTickFormatCB())
 }
 
 func setPlotYTickFormatNumberFunc(ih Ihandle, f PlotTickFormatNumberFunc) {
 	storeCallback(ih, "_IUPGO_YTICKFORMATNUMBER_CB", f)
-	iupSetCallback(uintptr(ih), "YTICKFORMATNUMBER_CB", plotYTickFormatCB)
+	iupSetCallback(uintptr(ih), "YTICKFORMATNUMBER_CB", plotYTickFormatCB())
 }
