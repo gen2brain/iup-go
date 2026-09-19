@@ -38,6 +38,7 @@
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_key.h"
+#include "iup_focus.h"
 #include "iup_drv.h"
 #include "iup_globalattrib.h"
 #include "iup_drvinfo.h"
@@ -208,41 +209,54 @@ static void eflDialogThemeChangedCallback(void* data, const Efl_Event* ev)
   iupGlobalNotifyThemeChanged();
 }
 
+static int eflDialogHasFocusableChild(Ihandle* ih)
+{
+  Ihandle* child;
+
+  for (child = ih->firstchild; child; child = child->brother)
+  {
+    if (iupFocusCanAccept(child) || eflDialogHasFocusableChild(child))
+      return 1;
+  }
+
+  return 0;
+}
+
 static void eflDialogKeyDownCallback(void* data, const Efl_Event* event)
 {
   Ihandle* ih = (Ihandle*)data;
   Eo* ev = event->info;
-  const char* keyname;
+  int code;
 
   if (!iupObjectCheck(ih) || efl_input_processed_get(ev))
     return;
 
-  {
-    int code = iupeflKeyDecodeEvent(ev);
-    if (code && iupeflMenuActivateAccel(ih, code))
-      return;
-  }
+  code = iupeflKeyDecodeEvent(ev);
+  if (code && iupeflMenuActivateAccel(ih, code))
+    return;
 
-  keyname = efl_input_key_name_get(ev);
-  if (keyname)
+  /* with a focusable control the same core path runs from iupeflKeyDownEvent */
+  if (code && !eflDialogHasFocusableChild(ih))
   {
-    if (strcmp(keyname, "Return") == 0 || strcmp(keyname, "KP_Enter") == 0)
+    int result = iupKeyCallKeyCb(ih, code);
+    if (result == IUP_CLOSE)
     {
-      Ihandle* bt = IupGetAttributeHandle(ih, "DEFAULTENTER");
-      if (iupObjectCheck(bt))
-      {
-        iupdrvActivate(bt);
-        return;
-      }
+      IupExitLoop();
+      return;
     }
-    else if (strcmp(keyname, "Escape") == 0)
+    if (result == IUP_IGNORE)
     {
-      Ihandle* bt = IupGetAttributeHandle(ih, "DEFAULTESC");
-      if (iupObjectCheck(bt))
-      {
-        iupdrvActivate(bt);
-        return;
-      }
+      efl_input_processed_set(ev, EINA_TRUE);
+      return;
+    }
+
+    if (!iupObjectCheck(ih))
+      return;
+
+    if (iupKeyProcessNavigation(ih, code, efl_input_modifier_enabled_get(ev, EFL_INPUT_MODIFIER_SHIFT, NULL)))
+    {
+      efl_input_processed_set(ev, EINA_TRUE);
+      return;
     }
   }
 
