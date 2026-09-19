@@ -1740,7 +1740,18 @@ static void cocoaDialogLayoutUpdateMethod(Ihandle* ih)
     [the_window setContentMinSize:NSMakeSize(1, 1)];
     [the_window setContentMaxSize:NSMakeSize(65535, 65535)];
 
+#ifdef GNUSTEP
+    /* GNUstep grows the frame upwards from a fixed origin, which desyncs it from the WM geometry */
+    {
+      NSRect old_frame = [the_window frame];
+      NSRect frame_rect = [the_window frameRectForContentRect:NSMakeRect(0, 0, content_size.width, content_size.height)];
+      frame_rect.origin.x = old_frame.origin.x;
+      frame_rect.origin.y = old_frame.origin.y + old_frame.size.height - frame_rect.size.height;
+      [the_window setFrame:frame_rect display:YES];
+    }
+#else
     [the_window setContentSize:content_size];
+#endif
 
     if (!iupAttribGetBoolean(ih, "RESIZE"))
     {
