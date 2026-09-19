@@ -808,6 +808,9 @@ IUP_SDK_API void iupdrvSetVisible(Ihandle* ih, int visible)
 
   if (bg_rect)
     iupeflSetVisible(bg_rect, visible ? EINA_TRUE : EINA_FALSE);
+
+  if (ih->iclass->nativetype == IUP_TYPECANVAS)
+    iupeflCanvasSetScrollBarsVisible(ih, visible);
 }
 
 IUP_SDK_API int iupdrvIsVisible(Ihandle* ih)

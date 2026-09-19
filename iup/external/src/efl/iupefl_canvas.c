@@ -160,6 +160,26 @@ static void eflCanvasUpdateScrollBar(Ihandle* ih, int horiz)
   }
 }
 
+IUP_DRV_API void iupeflCanvasSetScrollBarsVisible(Ihandle* ih, int visible)
+{
+  Eo* vsb = (Eo*)iupAttribGet(ih, "_IUP_EFL_VSB");
+  Eo* hsb = (Eo*)iupAttribGet(ih, "_IUP_EFL_HSB");
+
+  if (!vsb && !hsb)
+    return;
+
+  if (visible)
+  {
+    eflCanvasUpdateScrollBar(ih, 0);
+    eflCanvasUpdateScrollBar(ih, 1);
+  }
+  else
+  {
+    if (vsb) iupeflSetVisible(vsb, EINA_FALSE);
+    if (hsb) iupeflSetVisible(hsb, EINA_FALSE);
+  }
+}
+
 static int eflCanvasSetDXAttrib(Ihandle* ih, const char* value)
 {
   double dx;
