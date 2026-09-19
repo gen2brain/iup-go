@@ -369,6 +369,21 @@ IUP_SDK_API int iupdrvTabsGetLineCountAttrib(Ihandle* ih)
   return 1;
 }
 
+static void eflTabsLayoutJob(void* data)
+{
+  Ihandle* ih = (Ihandle*)data;
+  iupAttribSet(ih, "_IUP_EFL_LAYOUT_JOB", NULL);
+  iupLayoutUpdate(ih);
+}
+
+static void eflTabsScheduleLayout(Ihandle* ih)
+{
+  if (iupAttribGet(ih, "_IUP_EFL_LAYOUT_JOB"))
+    return;
+
+  iupAttribSet(ih, "_IUP_EFL_LAYOUT_JOB", (char*)ecore_job_add(eflTabsLayoutJob, ih));
+}
+
 IUP_SDK_API void iupdrvTabsSetCurrentTab(Ihandle* ih, int pos)
 {
   Eo* pager = iupeflGetWidget(ih);
@@ -390,6 +405,9 @@ IUP_SDK_API void iupdrvTabsSetCurrentTab(Ihandle* ih, int pos)
       }
       iupAttribSet(ih, "_IUP_EFL_IGNORE_CHANGE", NULL);
       }
+
+      iupAttribSetInt(ih, "_IUP_EFL_PREV_POS", pos);
+      eflTabsScheduleLayout(ih);
     }
   }
 }
@@ -426,13 +444,6 @@ IUP_SDK_API int iupdrvTabsIsTabVisible(Ihandle* child, int pos)
                      Callbacks
 ****************************************************************/
 
-static void eflTabsLayoutJob(void* data)
-{
-  Ihandle* ih = (Ihandle*)data;
-  iupAttribSet(ih, "_IUP_EFL_LAYOUT_JOB", NULL);
-  iupLayoutUpdate(ih);
-}
-
 static void eflTabsItemSelectedCallback(void* data, const Efl_Event* ev)
 {
   Ihandle* ih = (Ihandle*)data;
@@ -465,11 +476,7 @@ static void eflTabsItemSelectedCallback(void* data, const Efl_Event* ev)
 
   iupAttribSetInt(ih, "_IUP_EFL_PREV_POS", pos);
 
-  if (!iupAttribGet(ih, "_IUP_EFL_LAYOUT_JOB"))
-  {
-    Ecore_Job* job = ecore_job_add(eflTabsLayoutJob, ih);
-    iupAttribSet(ih, "_IUP_EFL_LAYOUT_JOB", (char*)job);
-  }
+  eflTabsScheduleLayout(ih);
 
   cb = (IFnnn)IupGetCallback(ih, "TABCHANGE_CB");
   if (cb)
@@ -697,12 +704,21 @@ static void eflTabsSetSubtreeVisible(Ihandle* ih, Eina_Bool visible)
 
   if (ih->iclass->nativetype != IUP_TYPEVOID && ih->handle)
   {
+    Eina_Bool show = visible && !iupAttribGet(ih, "_IUPEFL_HIDDEN");
     Eo* widget = (Eo*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
+    Eo* bg_rect = (Eo*)iupAttribGet(ih, "_IUP_EFL_BGRECT");
+
     if (!widget)
       widget = iupeflGetWidget(ih);
 
     if (widget)
-      efl_gfx_entity_visible_set(widget, visible && !iupAttribGet(ih, "_IUPEFL_HIDDEN"));
+      efl_gfx_entity_visible_set(widget, show);
+
+    if (bg_rect)
+      efl_gfx_entity_visible_set(bg_rect, show);
+
+    if (ih->iclass->nativetype == IUP_TYPECANVAS)
+      iupeflCanvasSetScrollBarsVisible(ih, show);
   }
 
   for (child = ih->firstchild; child; child = child->brother)
@@ -716,6 +732,7 @@ static void eflTabsLayoutUpdateMethod(Ihandle* ih)
 {
   Eo* pager = iupeflGetWidget(ih);
   Ihandle* child;
+  Eina_Bool visible;
   int current_tab;
   int pos;
 
@@ -723,9 +740,12 @@ static void eflTabsLayoutUpdateMethod(Ihandle* ih)
 
   current_tab = iupdrvTabsGetCurrentTab(ih);
 
+  /* a nested IupTabs lays out after the outer one hid it, and must not show its page again */
+  visible = pager ? efl_gfx_entity_visible_get(pager) : EINA_TRUE;
+
   pos = 0;
   for (child = ih->firstchild; child; child = child->brother, pos++)
-    eflTabsSetSubtreeVisible(child, pos == current_tab ? EINA_TRUE : EINA_FALSE);
+    eflTabsSetSubtreeVisible(child, visible && pos == current_tab ? EINA_TRUE : EINA_FALSE);
 }
 
 IUP_SDK_API void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_title, const char* tab_image, int* tab_width, int* tab_height)
