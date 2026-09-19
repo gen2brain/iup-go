@@ -429,7 +429,7 @@ struct IupWinUITreeAux
   winrt::event_token dragItemsStartingToken;
   winrt::event_token dragItemsCompletedToken;
   bool ignoreChange;
-  int programmaticId;
+  int currentId;
 
   winrt::event_token gotFocusToken{};
   winrt::event_token lostFocusToken{};
@@ -441,7 +441,7 @@ struct IupWinUITreeAux
                        itemInvokedToken{}, selectionChangedToken{},
                        rightTappedToken{}, keyDownToken{}, doubleTappedToken{},
                        dragItemsStartingToken{}, dragItemsCompletedToken{},
-                       ignoreChange(false), programmaticId(-1), namesDirty(false) {}
+                       ignoreChange(false), currentId(-1), namesDirty(false) {}
 };
 
 struct IupWinUIMenuAux
