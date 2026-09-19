@@ -217,8 +217,10 @@ static void gtk4CanvasDraw(GtkDrawingArea* area, cairo_t* cr, int width, int hei
   if (iupAttribGet(ih, "_IUPGL_COMPOSITE"))
   {
     iupAttribSet(ih, "_IUPGL_IN_DRAW", "1");
+    iupAttribSet(ih, "_IUPGTK4_IN_DRAW", "1");
     if (cb && !(ih->data->inside_resize))
       cb(ih);
+    iupAttribSet(ih, "_IUPGTK4_IN_DRAW", NULL);
     iupAttribSet(ih, "_IUPGL_IN_DRAW", NULL);
     gtk4CanvasGLComposite(ih, cr, width, height);
     (void)area;
@@ -255,7 +257,9 @@ static void gtk4CanvasDraw(GtkDrawingArea* area, cairo_t* cr, int width, int hei
     iupAttribSetInt(ih, "_IUPGTK4_DRAW_WIDTH", width);
     iupAttribSetInt(ih, "_IUPGTK4_DRAW_HEIGHT", height);
 
+    iupAttribSet(ih, "_IUPGTK4_IN_DRAW", "1");
     cb(ih);
+    iupAttribSet(ih, "_IUPGTK4_IN_DRAW", NULL);
 
     iupAttribSet(ih, "CLIPRECT", NULL);
     iupAttribSet(ih, "CAIRO_CR", NULL);
@@ -341,7 +345,9 @@ static int gtk4CanvasUpdateRetained(Ihandle* ih, iupGtk4Canvas* canvas, int widt
     iupAttribSetInt(ih, "_IUPGTK4_DRAW_WIDTH", width);
     iupAttribSetInt(ih, "_IUPGTK4_DRAW_HEIGHT", height);
 
+    iupAttribSet(ih, "_IUPGTK4_IN_DRAW", "1");
     cb(ih);
+    iupAttribSet(ih, "_IUPGTK4_IN_DRAW", NULL);
 
     iupAttribSet(ih, "CLIPRECT", NULL);
     iupAttribSet(ih, "CAIRO_CR", NULL);
@@ -515,6 +521,46 @@ static int gtk4CanvasCheckScroll(double min, double max, double* page, double* p
     return 1;
 }
 
+static gboolean gtk4CanvasScrollIdle(gpointer data)
+{
+  Ihandle* ih = (Ihandle*)data;
+  char* pending_dx = iupAttribGet(ih, "_IUPGTK4_SB_PENDINGDX");
+  char* pending_dy = iupAttribGet(ih, "_IUPGTK4_SB_PENDINGDY");
+
+  iupAttribSet(ih, "_IUPGTK4_SB_IDLE", NULL);
+
+  if (pending_dx)
+  {
+    char dx[50];
+    iupStrCopyN(dx, sizeof(dx), pending_dx);
+    iupAttribSet(ih, "_IUPGTK4_SB_PENDINGDX", NULL);
+    IupSetStrAttribute(ih, "DX", dx);
+  }
+
+  if (pending_dy)
+  {
+    char dy[50];
+    iupStrCopyN(dy, sizeof(dy), pending_dy);
+    iupAttribSet(ih, "_IUPGTK4_SB_PENDINGDY", NULL);
+    IupSetStrAttribute(ih, "DY", dy);
+  }
+
+  return G_SOURCE_REMOVE;
+}
+
+static int gtk4CanvasDeferScroll(Ihandle* ih, const char* name, double value)
+{
+  if (!iupAttribGet(ih, "_IUPGTK4_IN_DRAW"))
+    return 0;
+
+  iupAttribSetStrf(ih, name, "%g", value);
+
+  if (!iupAttribGet(ih, "_IUPGTK4_SB_IDLE"))
+    iupAttribSetInt(ih, "_IUPGTK4_SB_IDLE", (int)g_idle_add(gtk4CanvasScrollIdle, ih));
+
+  return 1;
+}
+
 static int gtk4CanvasSetDXAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->sb & IUP_SB_HORIZ)
@@ -527,6 +573,9 @@ static int gtk4CanvasSetDXAttrib(Ihandle* ih, const char* value)
     if (!sb_horiz) return 1;
 
     if (!iupStrToDoubleDef(value, &dx, 0.1))
+      return 1;
+
+    if (gtk4CanvasDeferScroll(ih, "_IUPGTK4_SB_PENDINGDX", dx))
       return 1;
 
     iupAttribSet(ih, "SB_RESIZE", NULL);
@@ -601,6 +650,9 @@ static int gtk4CanvasSetDYAttrib(Ihandle* ih, const char* value)
     if (!sb_vert) return 1;
 
     if (!iupStrToDoubleDef(value, &dy, 0.1))
+      return 1;
+
+    if (gtk4CanvasDeferScroll(ih, "_IUPGTK4_SB_PENDINGDY", dy))
       return 1;
 
     iupAttribSet(ih, "SB_RESIZE", NULL);
@@ -1149,6 +1201,15 @@ static void gtk4CanvasUnMapMethod(Ihandle* ih)
     cairo_surface_destroy(buffer);
 
   ((iupGtk4Canvas*)ih->handle)->ih = NULL;
+
+  {
+    int idle_id = iupAttribGetInt(ih, "_IUPGTK4_SB_IDLE");
+    if (idle_id)
+    {
+      g_source_remove((guint)idle_id);
+      iupAttribSet(ih, "_IUPGTK4_SB_IDLE", NULL);
+    }
+  }
 
   {
     IgtkTouchState* ts = (IgtkTouchState*)iupAttribGet(ih, "_IUPGTK_TOUCH_STATE");
