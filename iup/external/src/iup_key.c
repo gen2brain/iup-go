@@ -437,12 +437,12 @@ IUP_SDK_API int iupKeyProcessNavigation(Ihandle* ih, int code, int shift)
   /* this is called after K_ANY is processed,
      so the user may change its behavior */
 
-  if (code == K_cTAB)
+  if (iup_XkeyBase(code) == K_TAB && iup_isCtrlXkey(code))
   {
     int is_multiline = iupAttribGetInt(ih, "_IUP_MULTILINE_TEXT");
     if (is_multiline)
     {
-      if (shift)
+      if (shift || iup_isShiftXkey(code))
         IupPreviousField(ih);
       else
         IupNextField(ih);
