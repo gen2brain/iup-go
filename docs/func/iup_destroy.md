@@ -21,6 +21,8 @@ This function also deletes the main names associated to the interface element be
 
 All dialogs and all elements that have names are automatically destroyed in **IupClose**.
 
+In Android and iOS destroying a dialog that is still appearing is completed when it finishes appearing, so [DESTROY_CB](../call/iup_destroy_cb.md) is called later.
+
 ### See Also
 
 [IupAppend](iup_append.md), [IupDetach](iup_detach.md), [IupMap](iup_map.md), [IupUnmap](iup_unmap.md), [IupCreate](iup_create.md)

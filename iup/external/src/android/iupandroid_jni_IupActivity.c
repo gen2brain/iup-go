@@ -15,6 +15,7 @@
 #include "iup_class.h"
 #include "iup_str.h"
 #include "iup_globalattrib.h"
+#include "iup_dialog.h"
 
 #include "iupandroid_drv.h"
 
@@ -104,13 +105,13 @@ JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupActivity_DialogActivity
 }
 
 /* clear the defer flag so user's later IupDestroy completes; iup.Popup readback needs the Ihandle alive */
-JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupActivity_FinalizeDialogDestroy(JNIEnv* jni_env, jobject thiz, jlong ihandle_ptr)
+JNIEXPORT jboolean JNICALL Java_io_github_gen2brain_iupgo_IupActivity_FinalizeDialogDestroy(JNIEnv* jni_env, jobject thiz, jlong ihandle_ptr)
 {
   (void)jni_env;
   (void)thiz;
   Ihandle* ih = (Ihandle*)(intptr_t)ihandle_ptr;
-  if (!ih || !iupObjectCheck(ih)) return;
-  iupAttribSet(ih, "_IUP_DIALOG_DEFER_DESTROY", NULL);
+  if (!ih || !iupObjectCheck(ih)) return JNI_FALSE;
+  return iupDialogDeferDestroyDone(ih) ? JNI_TRUE : JNI_FALSE;
 }
 
 JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupActivity_NotifyThemeChanged(JNIEnv* jni_env, jobject thiz, jlong ihandle_ptr, jint dark_mode)

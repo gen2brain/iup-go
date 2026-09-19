@@ -440,8 +440,6 @@ void iupAndroid_DialogActivityCreated(Ihandle* ih)
   value = iupAttribGet(ih, "DRAWER");
   if (value)
     androidDialogSetDrawerAttrib(ih, value);
-
-  iupAttribSet(ih, "_IUP_DIALOG_DEFER_DESTROY", NULL);
 }
 
 static int androidDialogMapMethod(Ihandle* ih)

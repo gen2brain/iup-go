@@ -262,7 +262,7 @@ public class IupActivity extends AppCompatActivity
     /** Replays Android-only Dialog attributes on the C side once the Activity exists. */
     native protected void DialogActivityCreated(long ihandlePtr);
 
-    native protected void FinalizeDialogDestroy(long ihandlePtr);
+    native protected boolean FinalizeDialogDestroy(long ihandlePtr);
 
     /** refreshes DLG/TXT palette on the C side and fires THEMECHANGED_CB. */
     native protected void NotifyThemeChanged(long ihandlePtr, int darkMode);
@@ -326,6 +326,9 @@ public class IupActivity extends AppCompatActivity
         long ihandlePtr = getIntent().getLongExtra("Ihandle", 0);
         if (ihandlePtr != 0)
         {
+            if (FinalizeDialogDestroy(ihandlePtr))
+                return;
+
             int state = firstStart ? IUP_SHOW : IUP_RESTORE;
             firstStart = false;
             IupCommon.handleIupCallbackInt(ihandlePtr, "SHOW_CB", state);

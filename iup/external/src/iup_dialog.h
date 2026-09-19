@@ -47,6 +47,9 @@ IUP_SDK_API void iupdrvDialogSetParent(Ihandle* ih, InativeHandle* native_parent
 
 IUP_SDK_API InativeHandle* iupDialogGetNativeParent(Ihandle* ih);
 
+/* Ends the mobile async presentation deferral; returns 1 when a pending IupDestroy was run. */
+IUP_SDK_API int iupDialogDeferDestroyDone(Ihandle* ih);
+
 /* Updates the dialog initial position from internal attributes.
    Used mostly by the native pre-defined dialogs. */
 void iupDialogUpdatePosition(Ihandle* ih);

@@ -161,10 +161,11 @@ Uses L:C notation. The value is an image name set with [IupSetHandle](../func/iu
 
 #### Natural Size
 
-**VISIBLECOLUMNS**: Number of columns shown. Defines the natural width and limits it, the table is not stretched wider.
+**VISIBLECOLUMNS**: Number of columns shown. Defines the natural width and limits it, the table is not stretched wider unless EXPAND is set.
 When not set, all columns are used (capped at the actual column count) and the table fills the available width.
+It counts table columns, while in [IupList](iup_list.md) the same attribute counts characters.
 
-**VISIBLELINES**: Number of data rows shown. Defines the natural height and limits it, the table is not stretched taller.
+**VISIBLELINES**: Number of data rows shown. Defines the natural height and limits it, the table is not stretched taller unless EXPAND is set.
 When not set, a default of 8 rows is used and the table fills the available height.
 
 >
