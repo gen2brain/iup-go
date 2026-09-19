@@ -6,6 +6,10 @@
 
 #include <cstddef>
 #include <climits>
+#include <map>
+
+#include <Autolock.h>
+#include <Locker.h>
 
 #include <Application.h>
 #include <Looper.h>
@@ -30,6 +34,37 @@ extern "C" {
 /* A timer's "handle" is a BHandler that owns a BMessageRunner. */
 
 #define IUPHAIKU_TIMER_TICK 'IupT'
+
+static BLocker& haikuTimerRegistryLock(void)
+{
+  static BLocker lock("iup_timer_registry");
+  return lock;
+}
+
+static std::map<int, Ihandle*>& haikuTimerRegistry(void)
+{
+  static std::map<int, Ihandle*> registry;
+  return registry;
+}
+
+static void haikuTimerRegister(int serial, Ihandle* ih)
+{
+  BAutolock guard(haikuTimerRegistryLock());
+  haikuTimerRegistry()[serial] = ih;
+}
+
+static void haikuTimerUnregister(int serial)
+{
+  BAutolock guard(haikuTimerRegistryLock());
+  haikuTimerRegistry().erase(serial);
+}
+
+Ihandle* iuphaikuTimerFromSerial(int serial)
+{
+  BAutolock guard(haikuTimerRegistryLock());
+  std::map<int, Ihandle*>::iterator found = haikuTimerRegistry().find(serial);
+  return found == haikuTimerRegistry().end() ? NULL : found->second;
+}
 
 class IupHaikuTimer : public BHandler
 {
@@ -56,7 +91,7 @@ public:
       if (target)
       {
         BMessage hop(IUPHAIKU_TIMER_HOP_MSG);
-        hop.AddPointer("ih", fIhandle);
+        hop.AddInt32("serial", (int32)fIhandle->serial);
         BMessenger msgr(target);
         if (msgr.IsValid() && msgr.SendMessage(&hop) == B_OK)
           return;
@@ -115,20 +150,24 @@ extern "C" IUP_SDK_API void iupdrvTimerRun(Ihandle* ih)
   }
   int time_ms = iupAttribGetInt(ih, "TIME");
   if (time_ms <= 0) time_ms = 100;
+  haikuTimerUnregister(ih->serial);
   t->Start((bigtime_t)time_ms * 1000);
   ih->serial = haikuTimerNextSerial();
+  haikuTimerRegister(ih->serial, ih);
 }
 
 extern "C" IUP_SDK_API void iupdrvTimerStop(Ihandle* ih)
 {
   IupHaikuTimer* t = (IupHaikuTimer*)iupAttribGet(ih, "_IUPHAIKU_TIMER");
   if (t) t->Stop();
+  haikuTimerUnregister(ih->serial);
   ih->serial = -1;
 }
 
 static void haikuTimerDestroy(Ihandle* ih)
 {
   IupHaikuTimer* t = (IupHaikuTimer*)iupAttribGet(ih, "_IUPHAIKU_TIMER");
+  haikuTimerUnregister(ih->serial);
   if (t)
   {
     BLooper* l = t->Looper();
