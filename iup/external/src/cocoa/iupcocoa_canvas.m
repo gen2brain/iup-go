@@ -236,6 +236,11 @@ static void cocoaCanvasFireGesture(Ihandle* ih, int gesture, int state, int x, i
 
     /* updateTrackingAreas is not called until the frame changes */
     [self updateTrackingAreas];
+
+#ifdef GNUSTEP
+    /* GNUstep forwards NSMouseMoved only when the window asks for it, a tracking area is not enough */
+    [[self window] setAcceptsMouseMovedEvents:YES];
+#endif
   }
 }
 
@@ -710,10 +715,7 @@ static BOOL cocoaCanvasOptionIsMeta(Ihandle* ih, NSEvent* the_event)
     [self setStartedDrag:false];
   }
 
-  if(!iupcocoaCommonBaseHandleMouseButtonCallback(_ih, the_event, self, true))
-  {
-    [super mouseDown:the_event];
-  }
+  iupcocoaCommonBaseHandleMouseButtonCallback(_ih, the_event, self, true);
 }
 
 - (void) mouseMoved:(NSEvent*)the_event
@@ -767,10 +769,7 @@ static BOOL cocoaCanvasOptionIsMeta(Ihandle* ih, NSEvent* the_event)
 {
   if(![self isEnabled]) return;
 
-  if(!iupcocoaCommonBaseHandleMouseButtonCallback(_ih, the_event, self, true))
-  {
-    [super rightMouseDown:the_event];
-  }
+  iupcocoaCommonBaseHandleMouseButtonCallback(_ih, the_event, self, true);
 }
 
 - (void) rightMouseDragged:(NSEvent*)the_event
@@ -797,10 +796,7 @@ static BOOL cocoaCanvasOptionIsMeta(Ihandle* ih, NSEvent* the_event)
 {
   if(![self isEnabled]) return;
 
-  if(!iupcocoaCommonBaseHandleMouseButtonCallback(_ih, the_event, self, true))
-  {
-    [super otherMouseDown:the_event];
-  }
+  iupcocoaCommonBaseHandleMouseButtonCallback(_ih, the_event, self, true);
 }
 
 - (void) otherMouseDragged:(NSEvent*)the_event
