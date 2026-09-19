@@ -437,6 +437,7 @@ IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int* x, int* y)
     gtk_container_add(GTK_CONTAINER(temp_scrolled), temp_label);
 #else
     gtk_scrolled_window_add_with_viewport(GTK_SCROLLED_WINDOW(temp_scrolled), temp_label);
+    gtk_viewport_set_shadow_type(GTK_VIEWPORT(gtk_bin_get_child(GTK_BIN(temp_scrolled))), GTK_SHADOW_NONE);
 #endif
     gtk_container_add(GTK_CONTAINER(temp_window), temp_scrolled);
     gtk_widget_show_all(temp_window);
