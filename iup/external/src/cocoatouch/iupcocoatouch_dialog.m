@@ -50,7 +50,7 @@ static const void* IUPCOCOATOUCH_DIALOG_DELEGATE_KEY = @"IUPCOCOATOUCH_DIALOG_DE
 	Ihandle* ih = _ihandle;
 	if (!ih || !iupObjectCheck(ih)) return;
 	iupAttribSet(ih, "_IUPCOCOA_SHEET_GONE", "1");
-	iupAttribSet(ih, "_IUP_DIALOG_DEFER_DESTROY", NULL);
+	iupDialogDeferDestroyDone(ih);
 	IupExitLoop();
 }
 
@@ -597,7 +597,7 @@ static int cocoaTouchDialogMapMethod(Ihandle* ih)
 		iupAttribSet(ih, "_IUP_DIALOG_DEFER_DESTROY", "1");
 		[top presentViewController:nav animated:YES completion:^{
 			if (!iupObjectCheck(ih_ref)) return;
-			iupAttribSet(ih_ref, "_IUP_DIALOG_DEFER_DESTROY", NULL);
+			if (iupDialogDeferDestroyDone(ih_ref)) return;
 			IFni cb = (IFni)IupGetCallback(ih_ref, "SHOW_CB");
 			if (cb) cb(ih_ref, IUP_SHOW);
 		}];

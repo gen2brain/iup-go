@@ -28,6 +28,18 @@
 
 static int dlg_popup_level = 1;
 
+IUP_SDK_API int iupDialogDeferDestroyDone(Ihandle* ih)
+{
+  iupAttribSet(ih, "_IUP_DIALOG_DEFER_DESTROY", NULL);
+
+  if (!iupAttribGet(ih, "_IUP_DIALOG_PENDING_DESTROY"))
+    return 0;
+
+  iupAttribSet(ih, "_IUP_DIALOG_PENDING_DESTROY", NULL);
+  IupDestroy(ih);
+  return 1;
+}
+
 IUP_SDK_API InativeHandle* iupDialogGetNativeParent(Ihandle* ih)
 {
   Ihandle* parent = IupGetAttributeHandle(ih, "PARENTDIALOG");
