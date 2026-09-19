@@ -259,7 +259,7 @@ protected:
     int code = iuphaikuKeyDecode((int)(unsigned char)bytes[0], (int)raw_char, (int)raw_key, (unsigned)mods);
     if (code)
     {
-      int ret = iupKeyCallKeyCb(fIhandle, code);
+      int ret = (mods & B_COMMAND_KEY) ? IUP_DEFAULT : iupKeyCallKeyCb(fIhandle, code);
       if (ret == IUP_CLOSE) IupExitLoop();
       if (ret == IUP_IGNORE) return;
     }

@@ -297,7 +297,7 @@ public:
       int code = iuphaikuKeyDecode((int)(unsigned char)bytes[0], (int)raw_char, (int)raw_key, (unsigned)mods);
       if (code)
       {
-        int r = iupKeyCallKeyCb(fIhandle, code);
+        int r = (mods & B_COMMAND_KEY) ? IUP_DEFAULT : iupKeyCallKeyCb(fIhandle, code);
         if (r == IUP_CLOSE) { IupExitLoop(); return; }
         if (r == IUP_IGNORE) return;
       }
