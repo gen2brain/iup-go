@@ -358,6 +358,16 @@ static void winuiTreeItemInvokedHandler(Ihandle* ih, TreeViewNode const& node)
   }
 }
 
+static void winuiTreeSyncCurrent(Ihandle* ih, TreeView const& treeView)
+{
+  IupWinUITreeAux* aux = winuiGetAux<IupWinUITreeAux>(ih, IUPWINUI_TREE_AUX);
+  if (!aux)
+    return;
+
+  auto selectedNodes = treeView.SelectedNodes();
+  aux->currentId = selectedNodes.Size() > 0 ? winuiTreeFindNodeId(ih, selectedNodes.GetAt(0)) : -1;
+}
+
 static void winuiTreeSelectionChangedHandler(Ihandle* ih)
 {
   IupWinUITreeAux* aux = winuiGetAux<IupWinUITreeAux>(ih, IUPWINUI_TREE_AUX);
@@ -372,19 +382,22 @@ static void winuiTreeSelectionChangedHandler(Ihandle* ih)
     return;
 
   auto selectedNodes = treeView.SelectedNodes();
-  if (selectedNodes.Size() > 0)
+  if (selectedNodes.Size() == 0)
+  {
+    aux->currentId = -1;
+    return;
+  }
+
   {
     TreeViewNode node = selectedNodes.GetAt(0);
     int id = winuiTreeFindNodeId(ih, node);
     if (id >= 0)
     {
-      /* XAML raises this after the setter returned, so a flag alone cannot tell a programmatic
-         selection from a user one */
-      if (aux->programmaticId == id)
-      {
-        aux->programmaticId = -1;
+      /* only the single selection is tracked, a multiple one reports the first node either way */
+      if (ih->data->mark_mode == ITREE_MARK_SINGLE && id == aux->currentId)
         return;
-      }
+
+      aux->currentId = id;
 
       winuiTreeSetFocus(ih, id);
 
@@ -882,14 +895,12 @@ static int winuiTreeSetValueAttrib(Ihandle* ih, const char* value)
   {
     IupWinUITreeAux* aux = winuiGetAux<IupWinUITreeAux>(ih, IUPWINUI_TREE_AUX);
     if (aux)
-    {
       aux->ignoreChange = true;
-      aux->programmaticId = target_id;
-    }
     treeView.SelectedNodes().Clear();
     treeView.SelectedNodes().Append(target_node);
     if (aux)
       aux->ignoreChange = false;
+    winuiTreeSyncCurrent(ih, treeView);
   }
 
   winuiTreeSetFocus(ih, target_id);
@@ -1002,10 +1013,7 @@ static int winuiTreeSetMarkedAttrib(Ihandle* ih, int id, const char* value)
 
   IupWinUITreeAux* aux = winuiGetAux<IupWinUITreeAux>(ih, IUPWINUI_TREE_AUX);
   if (aux)
-  {
     aux->ignoreChange = true;
-    aux->programmaticId = id;
-  }
 
   if (iupStrBoolean(value))
   {
@@ -1022,6 +1030,7 @@ static int winuiTreeSetMarkedAttrib(Ihandle* ih, int id, const char* value)
 
   if (aux)
     aux->ignoreChange = false;
+  winuiTreeSyncCurrent(ih, treeView);
 
   return 0;
 }
@@ -1159,6 +1168,7 @@ static int winuiTreeSetMarkAttrib(Ihandle* ih, const char* value)
 
   if (aux)
     aux->ignoreChange = false;
+  winuiTreeSyncCurrent(ih, treeView);
 
   return 1;
 }
@@ -1215,6 +1225,7 @@ static int winuiTreeSetMarkedNodesAttrib(Ihandle* ih, const char* value)
 
   if (aux)
     aux->ignoreChange = false;
+  winuiTreeSyncCurrent(ih, treeView);
 
   return 0;
 }
@@ -1232,6 +1243,7 @@ static int winuiTreeSetDelNodeAttrib(Ihandle* ih, int id, const char* value)
     winuiTreeReleaseCacheNodes(ih, 0, old_count);
     ih->data->node_count = 0;
     iupTreeDelFromCache(ih, 0, old_count);
+    winuiTreeSyncCurrent(ih, treeView);
     return 0;
   }
 
@@ -1250,6 +1262,7 @@ static int winuiTreeSetDelNodeAttrib(Ihandle* ih, int id, const char* value)
         iupTreeDelFromCache(ih, id + 1, childCount);
       }
     }
+    winuiTreeSyncCurrent(ih, treeView);
     return 0;
   }
 
@@ -1287,6 +1300,7 @@ static int winuiTreeSetDelNodeAttrib(Ihandle* ih, int id, const char* value)
         break;
       }
     }
+    winuiTreeSyncCurrent(ih, treeView);
     return 0;
   }
 
@@ -1313,6 +1327,8 @@ static int winuiTreeSetDelNodeAttrib(Ihandle* ih, int id, const char* value)
     ih->data->node_count -= count;
     iupTreeDelFromCache(ih, id, count);
   }
+
+  winuiTreeSyncCurrent(ih, treeView);
 
   return 0;
 }
@@ -2379,6 +2395,7 @@ extern "C" IUP_SDK_API void iupdrvTreeAddNode(Ihandle* ih, int id, int kind, con
     iupTreeAddToCache(ih, 0, 0, NULL, (InodeHandle*)nodePtr);
 
   winuiTreeMarkAutomationNames(ih);
+  winuiTreeSyncCurrent(ih, treeView);
 }
 
 extern "C" IUP_SDK_API InodeHandle* iupdrvTreeGetFocusNode(Ihandle* ih)
