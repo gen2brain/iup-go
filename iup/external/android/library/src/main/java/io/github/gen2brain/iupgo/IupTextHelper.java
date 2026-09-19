@@ -2,6 +2,7 @@ package io.github.gen2brain.iupgo;
 
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.Rect;
 import android.graphics.Typeface;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
@@ -645,7 +646,7 @@ public final class IupTextHelper
         return e.subSequence(s, en).toString();
     }
 
-    /* Scroll without moving caret; bringPointIntoView propagates up to NestedScrollView. */
+    /* The EditText is laid out at full text height, so the wrapping scroll views own the range. */
     @Keep
     public static void scrollToOffset(View v, int pos)
     {
@@ -655,10 +656,15 @@ public final class IupTextHelper
         int len = e == null ? 0 : e.length();
         if (pos < 0) pos = 0;
         if (pos > len) pos = len;
-        if (tv.getLayout() != null)
-        {
-            try { tv.bringPointIntoView(pos); } catch (Throwable ignored) {}
-        }
+        Layout layout = tv.getLayout();
+        if (layout == null) return;
+        try { tv.bringPointIntoView(pos); } catch (Throwable ignored) {}
+        if (!(v instanceof NestedScrollView)) return;
+        int line = layout.getLineForOffset(pos);
+        int x = (int)layout.getPrimaryHorizontal(pos) + tv.getTotalPaddingLeft();
+        int top = layout.getLineTop(line) + tv.getTotalPaddingTop();
+        int bottom = layout.getLineBottom(line) + tv.getTotalPaddingTop();
+        tv.requestRectangleOnScreen(new Rect(x, top, x + 1, bottom), true);
     }
 
     /* al: 0=ALEFT, 1=ACENTER, 2=ARIGHT. */
