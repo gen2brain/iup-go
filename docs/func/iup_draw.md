@@ -145,6 +145,7 @@ It will be ignored when WRAP=YES.
 w and h are optional and can be -1 or 0, the text size will be used, so WRAP nor ELLIPSIS will not produce any changes.
 The text is not automatically clipped to the rectangle, if **DRAWTEXTCLIP**=YES it will be clipped but depending on the driver may affect the clipping set by IupDrawSetClipRect.
 The text can be drawn in any angle using **DRAWTEXTORIENTATION**, in degrees and counterclockwise, its layout is not centered inside the given rectangle when text is oriented, to center the layout use **DRAWTEXTLAYOUTCENTER**=YES.
+In Motif only the Xft build draws non-Latin text, the default build is 8 bit.
 
     void IupDrawImage(Ihandle* ih, const char* name, int x, int y, int w, int h);
 
