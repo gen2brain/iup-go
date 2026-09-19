@@ -33,7 +33,7 @@ func runSign(args []string) error {
 	fs.StringVar(&c.notaryID, "notary-key-id", "", "darwin: App Store Connect API key `id` (default: from the key file name)")
 	fs.StringVar(&c.notaryIssue, "notary-issuer", "", "darwin: App Store Connect issuer `id`")
 	fs.Usage = func() {
-		fmt.Fprint(os.Stderr, "Usage:\n\n\tiupkg sign [flags] <file>\n\nSigns an existing .exe, .app, .ipa, .apk, .deb, .rpm, or Mach-O executable or dylib in place.\nWith an OpenPGP key any other file gets a detached <file>.asc signature.\n\nFlags:\n")
+		fmt.Fprint(os.Stderr, "Usage:\n\n\tiupkg sign [flags] <file>\n\nSigns an existing .exe, .msix, .app, .ipa, .apk, .deb, .rpm, or Mach-O executable or dylib in place.\nWith an OpenPGP key any other file gets a detached <file>.asc signature.\n\nFlags:\n")
 		printDefaults(fs)
 	}
 	if err := fs.Parse(args); err != nil {
@@ -72,6 +72,11 @@ func runSign(args []string) error {
 			return errors.New("--sign is required for Windows executables")
 		}
 		return signWindows(c, path)
+	case ".msix", ".appx":
+		if c.sign == "" {
+			return errors.New("--sign is required for MSIX packages")
+		}
+		return signMSIX(c, path)
 	case ".ipa":
 		return signIPA(c, path)
 	case ".apk":
