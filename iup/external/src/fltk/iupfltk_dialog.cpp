@@ -394,6 +394,17 @@ extern "C" IUP_SDK_API int iupdrvDialogIsVisible(Ihandle* ih)
   return dialog->visible();
 }
 
+static void fltkDialogSaveNormalRect(Ihandle* ih, IupFltkDialog* dialog)
+{
+  if (dialog->fullscreen_active() || iupAttribGet(ih, "_IUPFLTK_FS_W"))
+    return;
+
+  iupAttribSetInt(ih, "_IUPFLTK_FS_X", dialog->x());
+  iupAttribSetInt(ih, "_IUPFLTK_FS_Y", dialog->y());
+  iupAttribSetInt(ih, "_IUPFLTK_FS_W", dialog->w());
+  iupAttribSetInt(ih, "_IUPFLTK_FS_H", dialog->h());
+}
+
 extern "C" IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
 {
   IupFltkDialog* dialog = (IupFltkDialog*)ih->handle;
@@ -409,6 +420,7 @@ extern "C" IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
 
   if (iupAttribGetBoolean(ih, "FULLSCREEN"))
   {
+    fltkDialogSaveNormalRect(ih, dialog);
     dialog->fullscreen();
     return 1;
   }
@@ -710,9 +722,27 @@ static int fltkDialogSetFullScreenAttrib(Ihandle* ih, const char* value)
     return 0;
 
   if (iupStrBoolean(value))
+  {
+    fltkDialogSaveNormalRect(ih, dialog);
     dialog->fullscreen();
+  }
   else
-    dialog->fullscreen_off();
+  {
+    if (iupAttribGet(ih, "_IUPFLTK_FS_W"))
+    {
+      int fs_x = iupAttribGetInt(ih, "_IUPFLTK_FS_X"), fs_y = iupAttribGetInt(ih, "_IUPFLTK_FS_Y");
+      int fs_w = iupAttribGetInt(ih, "_IUPFLTK_FS_W"), fs_h = iupAttribGetInt(ih, "_IUPFLTK_FS_H");
+
+      dialog->fullscreen_off(fs_x, fs_y, fs_w, fs_h);
+      dialog->resize(fs_x, fs_y, fs_w, fs_h);
+      iupAttribSet(ih, "_IUPFLTK_FS_X", NULL);
+      iupAttribSet(ih, "_IUPFLTK_FS_Y", NULL);
+      iupAttribSet(ih, "_IUPFLTK_FS_W", NULL);
+      iupAttribSet(ih, "_IUPFLTK_FS_H", NULL);
+    }
+    else
+      dialog->fullscreen_off();
+  }
 
   return 1;
 }
