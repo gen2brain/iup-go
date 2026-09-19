@@ -38,6 +38,7 @@ static Igtk2iupkey keypad_remap[] = {
 static Igtk2iupkey other_remap[] = {
   { GDK_KEY_BackSpace,       K_BS  },
   { GDK_KEY_Tab,             K_TAB },
+  { GDK_KEY_ISO_Left_Tab,    K_TAB },
   { GDK_KEY_Return,          K_CR  },
   { 0xFE03,                  K_RALT},
   { GDK_KEY_dead_tilde,      K_tilde },

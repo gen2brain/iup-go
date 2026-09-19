@@ -95,6 +95,7 @@ static Imot2iupkey osfmotkey_remap[] = {
 static Imot2iupkey other_remap[] = {
   { XK_BackSpace, K_BS  },
   { XK_Tab,       K_TAB },
+  { XK_ISO_Left_Tab, K_TAB },
   { XK_Return,    K_CR  },
   { 0xFE03,       K_RALT},
   { XK_dead_tilde,      K_tilde     },
