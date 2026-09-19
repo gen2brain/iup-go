@@ -235,6 +235,12 @@ static void eflDialogKeyDownCallback(void* data, const Efl_Event* event)
   if (code && iupeflMenuActivateAccel(ih, code))
     return;
 
+  if (code && iupeflMenuNavigate(ih, code))
+  {
+    efl_input_processed_set(ev, EINA_TRUE);
+    return;
+  }
+
   /* with a focusable control the same core path runs from iupeflKeyDownEvent */
   if (code && !eflDialogHasFocusableChild(ih))
   {
