@@ -169,8 +169,6 @@ static long iappleCameraScore(AVCaptureDeviceFormat* format, int req_width, int 
     case UIInterfaceOrientationPortraitUpsideDown: rotation = 270; break;
     default: rotation = 90; break;
     }
-    if (device.position == AVCaptureDevicePositionFront && (rotation == 90 || rotation == 270))
-      rotation = 360 - rotation;
   }
 #endif
 
