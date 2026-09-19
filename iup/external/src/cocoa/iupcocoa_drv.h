@@ -51,6 +51,7 @@ IUP_DRV_API void iupcocoaRemoveFromParent(Ihandle* ih);
 
 IUP_DRV_API NSView* iupcocoaCommonBaseLayoutGetParentView(Ihandle* ih);
 IUP_DRV_API NSView* iupcocoaCommonBaseLayoutGetChildView(Ihandle* ih);
+IUP_DRV_API void iupcocoaSetViewFrame(NSView* view, NSRect rect);
 
 /* Coordinate conversion helpers: Cocoa uses Cartesian (y-up), IUP uses (y-down). */
 IUP_DRV_API int iupcocoaComputeCartesianScreenHeightFromIup(int iup_height);

@@ -798,7 +798,7 @@ void cocoaButtonLayoutUpdateMethod(Ihandle* ih)
     );
   }
 
-  [child_view setFrame:NSIntegralRect(child_rect)];
+  iupcocoaSetViewFrame(child_view, NSIntegralRect(child_rect));
 }
 
 static int cocoaButtonSetShowAsDefaultAttrib(Ihandle* ih, const char* value)
