@@ -1605,8 +1605,12 @@ static int eflTextMapMethod(Ihandle* ih)
 
     if (ih->data->is_multiline)
     {
+      Evas_Object* tb = eflTextGetTextblock(ih);
+
       efl_text_multiline_set(widget, EINA_TRUE);
       efl_ui_textbox_scrollable_set(widget, has_border);
+      if (tb)
+        efl_canvas_textblock_newline_as_paragraph_separator_set(tb, EINA_TRUE);
 
       if (iupAttribGetBoolean(ih, "WORDWRAP"))
       {
