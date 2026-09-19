@@ -1,10 +1,10 @@
 ## iupkg
 
-Builds and packages an IUP-Go program for distribution: a Windows executable with icon, version info and manifest,
+Builds and packages an IUP-Go program for distribution: a Windows executable with icon, version info and manifest, or an `.msix`,
 a macOS `.app`, a Linux tarball, `.deb` or `.rpm`, an Android `.apk`, an iOS `.ipa`, a WebAssembly site or a Haiku `.hpkg`.
 
 Every format is written by iupkg itself, including the signatures, so a Go toolchain is all a host needs.
-cross-compiling C code and installing on devices need the platform tools named below.
+Cross-compiling C code and installing on devices need the platform tools named below.
 
 ```sh
 go install github.com/gen2brain/iup-go/cmd/iupkg@latest
@@ -49,9 +49,10 @@ iupkg staple <app>
  | `--cgo`                                              |                     | build with cgo (default: `go env CGO_ENABLED` for the host platform, off when cross-compiling, always on with a driver tag) |
  | `--release`                                          |                     | `-trimpath -ldflags "-s -w"`                                                                                                |
  | `--console`                                          |                     | windows: console application                                                                                                |
- | `--format`                                           | `targz`             | linux: comma list of `targz`, `deb`, `rpm`                                                                                  |
+ | `--format`                                           | linux: `targz`      | linux: comma list of `targz`, `deb`, `rpm`; windows: `msix`, written next to the `.exe`                                     |
  | `--category`                                         | `Utility`           | linux: desktop entry categories                                                                                             |
  | `--vendor`                                           | application name    | Windows company name, Debian maintainer (`Name <email>`), RPM and Haiku vendor                                              |
+ | `--publisher`                                        | certificate subject | windows msix: publisher of the package identity                                                                             |
  | `--copyright`                                        |                     | Windows and Haiku copyright line                                                                                            |
  | `--license`                                          | `Unknown`           | rpm and haiku license name                                                                                                  |
  | `--permissions`                                      |                     | comma list of `camera`, `microphone`, `location`, `notifications`, `internet`                                               |
@@ -79,6 +80,15 @@ Built as a GUI application unless `--console`. A cross build with `--cgo` or a d
 ```sh
 iupkg package --os windows --arch amd64 --name "My App" --version 1.2.0 --icon icon.png ./cmd/myapp
 iupkg package --os windows --tags winui --release ./cmd/myapp                  # on a Windows host
+```
+
+`--format msix` also writes `<exe>-<version>-<arch>.msix`, a full trust package with the identity `--id` and the version `<version>.<build>`.
+Its publisher is the subject of the `--sign` certificate, or `--publisher` for an unsigned package; Windows installs only a signed one.
+A purego build carries the IUP DLLs next to the executable; with the `winui` tag the package depends on the Windows App Runtime 1.8.
+
+```sh
+iupkg package --os windows --arch amd64 --format msix --id com.example.myapp --sign codesign.p12 ./cmd/myapp
+iupkg package --os windows --format msix --publisher "CN=6E0F3A1C-..." ./cmd/myapp         # for the Store
 ```
 
 #### macOS
@@ -162,6 +172,8 @@ With `--signer codesign` it is a keychain identity instead. Signatures carry a t
 Authenticode: SHA-256, the full certificate chain from the file, an RFC 3161 countersignature from `--timestamp-url`.
 Windows only trusts certificates from a CA in Microsoft's root program; a self-signed one produces a valid signature that SmartScreen still warns about.
 
+An `.msix` and the executable in it get the same signature; a self-signed certificate has to be in the machine's Trusted People store.
+
 ```sh
 IUPKG_P12_PASSWORD=secret iupkg package --os windows --arch amd64 --sign codesign.p12 ./cmd/myapp
 ```
@@ -196,34 +208,14 @@ iupkg package --os ios --sign dev.p12 --profile dev.mobileprovision --install ./
 
 #### Linux
 
-OpenPGP, SHA-256. `--sign` takes a secret key exported with `gpg --export-secret-keys`, armored or binary, holding exactly one key (passphrase in `IUPKG_GPG_PASSPHRASE`, empty by default).
-With `--signer gpg` the `gpg` program signs instead and `--sign` is any key it knows (an id, a fingerprint or an email), which covers keys held by the agent or a smartcard.
-
-- `.tar.gz`: a detached armored signature `<archive>.asc`, checked with `gpg --verify`.
-- `.rpm`: the header signature and the legacy header and payload signature, checked with `rpmkeys --checksig` after `rpmkeys --import` of the public key.
-- `.deb`: a debsigs origin signature (the `_gpgorigin` member), checked with `debsig-verify`. dpkg and apt do not check it; they trust the signed repository a package comes from, which iupkg does not make.
+OpenPGP, SHA-256: a detached `<archive>.asc` for the tarball, the header and legacy signatures in an `.rpm`, a debsigs origin signature in a `.deb` (dpkg and apt do not check it).
+`--sign` takes a key exported with `gpg --export-secret-keys` (passphrase in `IUPKG_GPG_PASSPHRASE`, empty by default); with `--signer gpg` it names a key of the `gpg` program instead.
 
 ```sh
 gpg --armor --export-secret-keys jane@example.com > release.asc
 IUPKG_GPG_PASSPHRASE=secret iupkg package --os linux --format targz,deb,rpm --sign release.asc ./cmd/myapp
 iupkg package --os linux --format rpm --signer gpg --sign jane@example.com ./cmd/myapp
 ```
-
-### Signing existing files
-
-`iupkg sign` signs a file made elsewhere, in place, with the same signers: a Windows `.exe` or `.dll`, a macOS or iOS `.app` directory, an `.ipa`, an `.apk`, a `.deb`, an `.rpm`, or a bare Mach-O executable or dylib.
-It takes `--sign`, `--signer` (`gpg`), `--profile` (iOS), `--entitlements` (macOS), `--timestamp`, `--timestamp-url` and the `--notary-*` flags; a macOS bundle with `--notary-key` is notarized and stapled after signing.
-
-```sh
-iupkg sign --sign codesign.p12 MyApp.exe
-iupkg sign --sign devid.p12 --notary-key AuthKey_ABC123DEFG.p8 --notary-issuer 69a6de7f-... "My App.app"
-iupkg sign --sign dev.p12 --profile dev.mobileprovision MyApp.ipa
-iupkg sign MyApp.apk                                  # debug key
-iupkg sign --sign release.asc myapp-1.0.0-1.x86_64.rpm
-iupkg sign --signer gpg --sign jane@example.com myapp-1.0.0-haiku.hpkg   # writes the .hpkg.asc
-```
-
-With an OpenPGP key (`--signer gpg`, or a key file named `.asc`, `.gpg` or `.pgp`) a `.deb` or `.rpm` is re-signed in place, replacing any signature it had, and every other file gets a detached armored `<file>.asc` next to it. RPM v6 packages are refused.
 
 #### Android
 
@@ -233,3 +225,20 @@ Without `--sign` a debug key is generated once and kept in the user cache direct
 keytool -importkeystore -srckeystore release.jks -destkeystore release.p12 -deststoretype PKCS12
 IUPKG_P12_PASSWORD=secret iupkg package --os android --sign release.p12 --release ./cmd/myapp
 ```
+
+### Signing existing files
+
+`iupkg sign` signs a file made elsewhere, in place, with the same signers: a Windows `.exe`, `.dll` or `.msix`, a macOS or iOS `.app` directory, an `.ipa`, an `.apk`, a `.deb`, an `.rpm`, or a bare Mach-O executable or dylib.
+It takes `--sign`, `--signer` (`gpg`), `--profile` (iOS), `--entitlements` (macOS), `--timestamp`, `--timestamp-url` and the `--notary-*` flags; a macOS bundle with `--notary-key` is notarized and stapled after signing.
+
+```sh
+iupkg sign --sign codesign.p12 MyApp.exe
+iupkg sign --sign codesign.p12 myapp-1.2.0-x64.msix
+iupkg sign --sign devid.p12 --notary-key AuthKey_ABC123DEFG.p8 --notary-issuer 69a6de7f-... "My App.app"
+iupkg sign --sign dev.p12 --profile dev.mobileprovision MyApp.ipa
+iupkg sign MyApp.apk                                  # debug key
+iupkg sign --sign release.asc myapp-1.0.0-1.x86_64.rpm
+iupkg sign --signer gpg --sign jane@example.com myapp-1.0.0-haiku.hpkg   # writes the .hpkg.asc
+```
+
+With an OpenPGP key (`--signer gpg`, or an `.asc`, `.gpg` or `.pgp` key file) a `.deb` or `.rpm` is re-signed in place, RPM v6 excepted, and any other file gets a detached `<file>.asc`.

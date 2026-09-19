@@ -29,7 +29,7 @@ Usage:
 
 Targets (--os):
 
-	windows  .exe with icon, version info and the IUP manifest; Authenticode with --sign
+	windows  .exe with icon, version info and the IUP manifest, --format msix; Authenticode with --sign
 	darwin   .app bundle and a zip of it; signed, notarized and stapled with --sign and --notary-*
 	linux    .tar.gz with .desktop file, hicolor icons and a Makefile; --format deb,rpm; OpenPGP signatures with --sign
 	android  .apk from the template in the iup module, needs only the NDK; signed
@@ -40,7 +40,7 @@ Targets (--os):
 Signing is done by iupkg itself on every platform; on macOS --signer codesign
 uses a keychain identity instead, for linux --signer gpg a key of the gpg program.
 Password of a .p12 file: IUPKG_P12_PASSWORD, of an OpenPGP key: IUPKG_GPG_PASSPHRASE.
-sign takes an existing .exe, .app, .ipa, .apk, .deb, .rpm or Mach-O file, and
+sign takes an existing .exe, .msix, .app, .ipa, .apk, .deb, .rpm or Mach-O file, and
 with an OpenPGP key any other file; run 'iupkg sign -h' for its flags.
 
 Flags:
@@ -67,6 +67,7 @@ type config struct {
 	category    string
 	formats     []string
 	vendor      string
+	publisher   string
 	copyright   string
 	license     string
 	permissions []string
@@ -174,11 +175,12 @@ func newFlagSet(c *config) *flag.FlagSet {
 	fs.StringVar(&c.minOS, "minos", "15.0", "ios: minimum iOS `version`")
 	fs.StringVar(&c.profile, "profile", "", "ios: provisioning profile `file` (.mobileprovision)")
 	fs.StringVar(&c.category, "category", "Utility", "linux: desktop entry `categories`, separated by ;")
-	fs.Func("format", "linux: comma-separated `formats`: targz, deb, rpm (default targz)", func(s string) error {
+	fs.Func("format", "comma-separated `formats`, linux: targz, deb, rpm (default targz); windows: msix, written next to the .exe", func(s string) error {
 		c.formats = splitList(s)
 		return nil
 	})
 	fs.StringVar(&c.vendor, "vendor", "", "`vendor`: Windows company name, Debian maintainer, RPM and Haiku vendor (default: the application name)")
+	fs.StringVar(&c.publisher, "publisher", "", "windows msix: publisher `name` of the package identity (default: the subject of the --sign certificate; the Store assigns one)")
 	fs.StringVar(&c.copyright, "copyright", "", "copyright `line` for Windows and Haiku (haiku default: the application name)")
 	fs.StringVar(&c.license, "license", "Unknown", "license `name` for rpm and haiku")
 	fs.Func("permissions", "comma-separated `list`: camera, microphone, location, notifications, internet", func(s string) error {
@@ -326,8 +328,15 @@ func (c *config) resolve() error {
 	if c.vendor == "" {
 		c.vendor = c.name
 	}
-	if len(c.formats) == 0 {
+	if len(c.formats) == 0 && c.goos == "linux" {
 		c.formats = []string{"targz"}
+	}
+	if c.goos == "windows" {
+		for _, format := range c.formats {
+			if format != "msix" {
+				return fmt.Errorf("unknown format %q (msix)", format)
+			}
+		}
 	}
 	return nil
 }

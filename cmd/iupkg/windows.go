@@ -2,15 +2,20 @@ package main
 
 import (
 	"bytes"
+	"encoding/xml"
 	"fmt"
+	"image"
 	"os"
 	"os/signal"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 
 	"github.com/gen2brain/iup-go/cmd/iupkg/internal/authenticode"
 	"github.com/gen2brain/iup-go/cmd/iupkg/internal/icon"
+	"github.com/gen2brain/iup-go/cmd/iupkg/internal/keys"
+	"github.com/gen2brain/iup-go/cmd/iupkg/internal/msix"
 	"github.com/tc-hib/winres"
 	"github.com/tc-hib/winres/version"
 )
@@ -81,17 +86,185 @@ func packageWindows(c *config) error {
 		}
 	}
 	fmt.Fprintln(os.Stderr, out)
+	if slices.Contains(c.formats, "msix") {
+		return packageMSIX(c, out, img, ldflags)
+	}
 	return nil
 }
 
-func signWindows(c *config, exe string) error {
-	id, err := c.identity()
+var msixArch = map[string]string{"amd64": "x64", "386": "x86", "arm64": "arm64", "arm": "arm"}
+
+var msixLogos = []struct {
+	name string
+	size int
+}{{"StoreLogo", 50}, {"Square44x44Logo", 44}, {"Square150x150Logo", 150}}
+
+const msixWinUIRuntime = `<PackageDependency Name="Microsoft.WindowsAppRuntime.1.8" MinVersion="8000.0.0.0" Publisher="CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US"/>`
+
+var msixCapabilities = map[string]string{
+	"internet":   `<Capability Name="internetClient"/>`,
+	"camera":     `<DeviceCapability Name="webcam"/>`,
+	"microphone": `<DeviceCapability Name="microphone"/>`,
+	"location":   `<DeviceCapability Name="location"/>`,
+}
+
+func packageMSIX(c *config, exe string, img image.Image, ldflags []string) error {
+	arch, ok := msixArch[c.goarch]
+	if !ok {
+		return fmt.Errorf("no MSIX architecture for %s", c.goarch)
+	}
+	if !msix.ValidName(c.id) {
+		return fmt.Errorf("--id %q is not an MSIX identity name: 3 to 50 letters, digits, periods and dashes", c.id)
+	}
+	var signer *authenticode.Signer
+	publisher := c.publisher
+	if c.sign != "" {
+		var id *keys.Identity
+		var err error
+		if signer, id, err = windowsSigner(c); err != nil {
+			return err
+		}
+		subject, err := msix.Publisher(id.Cert)
+		if err != nil {
+			return err
+		}
+		if publisher != "" && publisher != subject {
+			return fmt.Errorf("--publisher %q is not the certificate subject %q", publisher, subject)
+		}
+		publisher = subject
+	}
+	if publisher == "" {
+		publisher = msix.CommonName(c.vendor)
+	}
+	if signer == nil {
+		fmt.Fprintln(os.Stderr, "iupkg: the .msix is unsigned, Windows installs it only after it is signed (--sign, iupkg sign, or the Store)")
+	}
+
+	var files []msix.File
+	if !c.cgo {
+		tmp, err := os.MkdirTemp("", "iupkg-")
+		if err != nil {
+			return err
+		}
+		defer os.RemoveAll(tmp)
+		exe = filepath.Join(tmp, c.exe+".exe")
+		if err := goBuild(c, c.goarch, exe, []string{"nomanifest", "extlib"}, ldflags); err != nil {
+			return err
+		}
+		if c.sign != "" {
+			if err := signWindows(c, exe); err != nil {
+				return err
+			}
+		}
+		for _, base := range c.libBases() {
+			lib, err := readGzip(filepath.Join(c.iupDir, "libs", "windows_"+c.goarch, "lib"+base+".dll.gz"))
+			if err != nil {
+				return err
+			}
+			files = append(files, msix.File{Name: "lib" + base + ".dll", Data: lib})
+		}
+	}
+	data, err := os.ReadFile(exe)
 	if err != nil {
 		return err
+	}
+	files = append([]msix.File{{Name: c.exe + ".exe", Data: data}}, files...)
+	for _, logo := range msixLogos {
+		png, err := icon.PNG(icon.Resize(img, logo.size))
+		if err != nil {
+			return err
+		}
+		files = append(files, msix.File{Name: "Assets/" + logo.name + ".png", Data: png})
+	}
+	pkg, err := msix.Write(msixManifest(c, arch, publisher), files, signer)
+	if err != nil {
+		return err
+	}
+	out := filepath.Join(c.out, fmt.Sprintf("%s-%s-%s.msix", c.exe, c.version, arch))
+	if err := os.WriteFile(out, pkg, 0o644); err != nil {
+		return err
+	}
+	fmt.Fprintln(os.Stderr, out)
+	return nil
+}
+
+func msixManifest(c *config, arch, publisher string) []byte {
+	esc := func(s string) string {
+		var b bytes.Buffer
+		xml.EscapeText(&b, []byte(s))
+		return b.String()
+	}
+	var capabilities, devices string
+	for _, p := range c.permissions {
+		if strings.HasPrefix(msixCapabilities[p], "<Capability") {
+			capabilities += "\n    " + msixCapabilities[p]
+		} else if msixCapabilities[p] != "" {
+			devices += "\n    " + msixCapabilities[p]
+		}
+	}
+	var runtime string
+	if slices.Contains(c.tags, "winui") {
+		runtime = "\n    " + msixWinUIRuntime
+	}
+	return fmt.Appendf(nil, `<?xml version="1.0" encoding="utf-8"?>
+<Package xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10" xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10" xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities" IgnorableNamespaces="uap rescap">
+  <Identity Name="%s" Publisher="%s" Version="%s" ProcessorArchitecture="%s"/>
+  <Properties>
+    <DisplayName>%s</DisplayName>
+    <PublisherDisplayName>%s</PublisherDisplayName>
+    <Logo>Assets\StoreLogo.png</Logo>
+  </Properties>
+  <Resources>
+    <Resource Language="en-us"/>
+  </Resources>
+  <Dependencies>
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.17763.0" MaxVersionTested="10.0.26100.0"/>%s
+  </Dependencies>
+  <Capabilities>%s
+    <rescap:Capability Name="runFullTrust"/>%s
+  </Capabilities>
+  <Applications>
+    <Application Id="App" Executable="%s.exe" EntryPoint="Windows.FullTrustApplication">
+      <uap:VisualElements DisplayName="%s" Description="%s" BackgroundColor="transparent" Square150x150Logo="Assets\Square150x150Logo.png" Square44x44Logo="Assets\Square44x44Logo.png"/>
+    </Application>
+  </Applications>
+</Package>
+`, esc(c.id), esc(publisher), windowsVersion(c.version, c.build), arch, esc(c.name), esc(c.vendor),
+		runtime, capabilities, devices, esc(c.exe), esc(c.name), esc(c.name))
+}
+
+func windowsSigner(c *config) (*authenticode.Signer, *keys.Identity, error) {
+	id, err := c.identity()
+	if err != nil {
+		return nil, nil, err
 	}
 	signer := &authenticode.Signer{Key: id.Key, Chain: id.Certificates()}
 	if c.timestamp {
 		signer.TimestampURL = c.tsaURL
+	}
+	return signer, id, nil
+}
+
+func signMSIX(c *config, path string) error {
+	signer, _, err := windowsSigner(c)
+	if err != nil {
+		return err
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	signed, err := msix.Sign(data, signer)
+	if err != nil {
+		return fmt.Errorf("%s: %w", path, err)
+	}
+	return os.WriteFile(path, signed, 0o644)
+}
+
+func signWindows(c *config, exe string) error {
+	signer, _, err := windowsSigner(c)
+	if err != nil {
+		return err
 	}
 	data, err := os.ReadFile(exe)
 	if err != nil {

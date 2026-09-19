@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/xml"
 	"testing"
 )
 
@@ -84,5 +85,34 @@ func TestProfileEntitlementsPlist(t *testing.T) {
 	}
 	if _, err := profileEntitlementsPlist([]byte("nothing"), "a"); err == nil {
 		t.Error("expected an error without Entitlements")
+	}
+}
+
+func TestMSIXManifest(t *testing.T) {
+	c := &config{name: "A & B", exe: "ab", id: "com.example.ab", vendor: "V", version: "1.2", build: 3, permissions: []string{"camera", "internet"}}
+	manifest := msixManifest(c, "x64", `CN=V, O="V, Inc."`)
+	var pkg struct {
+		Identity struct {
+			Publisher string `xml:"Publisher,attr"`
+			Version   string `xml:"Version,attr"`
+		}
+	}
+	if err := xml.Unmarshal(manifest, &pkg); err != nil {
+		t.Fatal(err)
+	}
+	if pkg.Identity.Publisher != `CN=V, O="V, Inc."` || pkg.Identity.Version != "1.2.0.3" {
+		t.Errorf("identity: %+v", pkg.Identity)
+	}
+	for _, want := range []string{"<DisplayName>A &amp; B</DisplayName>", `<Capability Name="internetClient"/>`, `<DeviceCapability Name="webcam"/>`, `Executable="ab.exe"`} {
+		if !bytes.Contains(manifest, []byte(want)) {
+			t.Errorf("manifest missing %q", want)
+		}
+	}
+	if bytes.Contains(manifest, []byte("WindowsAppRuntime")) {
+		t.Error("runtime dependency without the winui tag")
+	}
+	c.tags = []string{"winui"}
+	if !bytes.Contains(msixManifest(c, "x64", "CN=V"), []byte(`<PackageDependency Name="Microsoft.WindowsAppRuntime.1.8"`)) {
+		t.Error("no runtime dependency with the winui tag")
 	}
 }

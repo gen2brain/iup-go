@@ -129,12 +129,7 @@ func copyDylibs(c *config, archs []string, dir string) error {
 	if err != nil {
 		return err
 	}
-	bases := []string{"iup"}
-	for _, tag := range c.tags {
-		if base, ok := optionalLibs[tag]; ok && !slices.Contains(bases, base) {
-			bases = append(bases, base)
-		}
-	}
+	bases := c.libBases()
 
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return err
@@ -157,6 +152,16 @@ func copyDylibs(c *config, archs []string, dir string) error {
 		}
 	}
 	return nil
+}
+
+func (c *config) libBases() []string {
+	bases := []string{"iup"}
+	for _, tag := range c.tags {
+		if base, ok := optionalLibs[tag]; ok && !slices.Contains(bases, base) {
+			bases = append(bases, base)
+		}
+	}
+	return bases
 }
 
 func readGzip(path string) ([]byte, error) {

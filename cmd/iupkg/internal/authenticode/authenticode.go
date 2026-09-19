@@ -20,6 +20,7 @@ var (
 	oidSpcOpusInfo     = asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 311, 2, 1, 12}
 	oidSpcPEImageData  = asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 311, 2, 1, 15}
 	oidSpcIndividual   = asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 311, 2, 1, 21}
+	oidSpcSipInfo      = asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 311, 2, 1, 30}
 	oidMSCounterSign   = asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 311, 3, 3, 1}
 )
 
@@ -50,6 +51,14 @@ type spcIndirectDataContent struct {
 	Data          spcAttributeTypeAndValue
 	MessageDigest digestInfo
 }
+
+type spcSipInfo struct {
+	Version            int
+	UUID               []byte
+	R1, R2, R3, R4, R5 int
+}
+
+var appxSipUUID = []byte{0x4B, 0xDF, 0xC5, 0x0A, 0x07, 0xCE, 0xE2, 0x4D, 0xB7, 0x6E, 0x23, 0xC8, 0x39, 0xA0, 0x9F, 0xD1}
 
 type peLayout struct {
 	checksumOff int
@@ -194,6 +203,24 @@ func checksum(pe []byte, checksumOff int) uint32 {
 	sum += sum >> 16
 	sum &= 0xffff
 	return uint32(sum) + uint32(len(pe))
+}
+
+func SignAppx(digests []byte, s *Signer) ([]byte, error) {
+	if s == nil || s.Key == nil || len(s.Chain) == 0 {
+		return nil, errors.New("authenticode: a certificate is required")
+	}
+	sip, err := asn1.Marshal(spcSipInfo{Version: 0x01010000, UUID: appxSipUUID})
+	if err != nil {
+		return nil, err
+	}
+	content, err := asn1.Marshal(spcIndirectDataContent{
+		Data:          spcAttributeTypeAndValue{oidSpcSipInfo, asn1.RawValue{FullBytes: sip}},
+		MessageDigest: digestInfo{cms.SHA256, digests},
+	})
+	if err != nil {
+		return nil, err
+	}
+	return pkcs7(content, s)
 }
 
 func Sign(pe []byte, s *Signer) ([]byte, error) {

@@ -209,6 +209,7 @@ Examples without a top-level `Dialog` (e.g. `alarm`, `message`) will not run on 
 Builds the Go program as a `c-shared` `.so` consumed by a Gradle library.
 
 See [iup/external/android/README.md](iup/external/android/README.md) for prerequisites, build flow, permissions, and packaging.
+
 For a one-command `.apk` without the Gradle project, see [Packaging](#packaging).
 
 [<img src="examples/mobile_sample/mobile_sample_android1.png" width="300"/>](examples/mobile_sample/mobile_sample_android1.png)
@@ -219,6 +220,7 @@ For a one-command `.apk` without the Gradle project, see [Packaging](#packaging)
 The Go binary IS the iOS executable; the Cocoa Touch driver calls `UIApplicationMain` itself.
 
 See [iup/external/ios/README.md](iup/external/ios/README.md) for prerequisites, signing, and distribution.
+
 For a one-command `.ipa`, see [Packaging](#packaging).
 
 [<img src="examples/mobile_sample/mobile_sample_ios1.png" width="300"/>](examples/mobile_sample/mobile_sample_ios1.png)
@@ -233,7 +235,7 @@ For a one-command `.ipa`, see [Packaging](#packaging).
 * `ctrl` - build with support for `Matrix`, `Cells`, and `Flat*` controls
 * `gtk` - use GTK in macOS or Windows
 * `gtk4` - build for GTK4, default is GTK3
-* `gtk2` - build for GTK2 (Linux/Unix)
+* `gtk2` - build for GTK2 (Linux/BSD)
 * `qt` - build for the Qt framework
 * `qt5` - build for Qt5 version, default is Qt6 (used with `qt`)
 * `fltk` - build for FLTK (Fast Light Toolkit)
@@ -259,9 +261,9 @@ You can also point `PKG_CONFIG_LIBDIR` to some local directory with custom modif
 
 ### Packaging
 
-[iupkg](cmd/iupkg) builds and packages a program for distribution: a Windows `.exe` with icon, version info and manifest,
+[iupkg](cmd/iupkg) builds and packages a program for distribution: a Windows `.exe` with icon, version info and manifest, or an `.msix`,
 a macOS `.app`, Linux `.tar.gz`/`.deb`/`.rpm`, an Android `.apk`, an iOS `.ipa`, a WebAssembly site or a Haiku `.hpkg`.
-Signing is built in: Authenticode, Apple code signing with notarization, and APK signing, all without platform tools.
+Signing is built in: Authenticode, Apple code signing with notarization, APK signing and OpenPGP for the Linux packages, all without platform tools.
 
 ```
 $ go install github.com/gen2brain/iup-go/cmd/iupkg@latest
