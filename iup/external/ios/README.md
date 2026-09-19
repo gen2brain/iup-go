@@ -160,6 +160,22 @@ xcrun simctl launch --wait-for-debugger booted com.example.myapp
 lldb -n myapp    # or attach via Xcode
 ```
 
+## Permissions
+
+The library declares no usage descriptions. IUP features that need one list them below; the app adds
+only what its code uses, to `Info.plist`.
+
+| IUP feature     | Info.plist key                        | Notes                                                                                                                  |
+|-----------------|---------------------------------------|------------------------------------------------------------------------------------------------------------------------|
+| `IupCamera`     | `NSCameraUsageDescription`            | Prompted by IUP on the first `RUN=YES`; the answer arrives in `PERMISSION_CB`. Without the key iOS terminates the app. |
+| `IupMicrophone` | `NSMicrophoneUsageDescription`        | Prompted by IUP on the first `RUN=YES`; the answer arrives in `PERMISSION_CB`. Without the key iOS terminates the app. |
+| `IupLocation`   | `NSLocationWhenInUseUsageDescription` | Prompted by IUP on the first `RUN=YES`. Without the key the request fails silently and PERMISSION stays `PROMPT`.      |
+| `IupSensor`     | none                                  | No key needed for any TYPE, COMPASS included, even though it reads the heading through `CLLocationManager`.            |
+| `IupNotify`     | none                                  | Authorization is requested at runtime through the REQUESTPERMISSION attribute.                                         |
+
+`iupapp/Info.plist` declares the first three because the shipped examples exercise every feature.
+`cmd/iupkg` writes them from its `--permissions` flag.
+
 ## Library distribution as XCFramework
 
 C / Swift / Objective-C apps can consume IUP via `IUP.xcframework`, produced on macOS only:

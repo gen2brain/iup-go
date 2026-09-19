@@ -82,6 +82,8 @@ All three callbacks are called from the main loop on every driver.
 
 ### Notes
 
+Android and iOS need no permission and no manifest or Info.plist entry, COMPASS included.
+
 WebAssembly needs a secure context (HTTPS or localhost). On iOS the browser asks for permission the first
 time ACTIVE is set to YES, and the request is only accepted from a user event such as a button ACTION.
 

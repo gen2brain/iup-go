@@ -184,6 +184,7 @@ The library's `AndroidManifest.xml` declares **no** `<uses-permission>` entries.
 | `IupLocation`                                              | `android.permission.ACCESS_COARSE_LOCATION` | Runtime permission, prompted by IUP on the first `RUN=YES`; the answer arrives in `PERMISSION_CB`. `ACCURACY=FINE` also needs `android.permission.ACCESS_FINE_LOCATION`. |
 | `IupCamera`                                                | `android.permission.CAMERA`                 | Runtime permission, prompted by IUP on the first `RUN=YES`; the answer arrives in `PERMISSION_CB`.                                                                       |
 | `IupMicrophone`                                            | `android.permission.RECORD_AUDIO`           | Runtime permission, prompted by IUP on the first `RUN=YES`; the answer arrives in `PERMISSION_CB`.                                                                       |
+| `IupSensor`                                                | none                                        | No permission needed for any TYPE, COMPASS included.                                                                                                                     |
 
 Add permissions to your app's `AndroidManifest.xml`, i.e.:
 
