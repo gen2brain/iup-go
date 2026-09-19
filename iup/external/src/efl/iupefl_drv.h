@@ -91,6 +91,7 @@ IUP_DRV_API void iupeflPointerUpEvent(void* data, const Efl_Event* ev);
 IUP_DRV_API void iupeflPointerWheelEvent(void* data, const Efl_Event* ev);
 IUP_DRV_API void iupeflPointerInEvent(void* data, const Efl_Event* ev);
 IUP_DRV_API void iupeflPointerOutEvent(void* data, const Efl_Event* ev);
+IUP_DRV_API void iupeflChildFocusChangedEvent(void* data, const Efl_Event* ev);
 IUP_DRV_API void iupeflManagerFocusChangedEvent(void* data, const Efl_Event* ev);
 
 /****************************************************************************

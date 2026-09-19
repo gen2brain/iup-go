@@ -43,14 +43,12 @@ IUP_SDK_API void iupdrvSetFocus(Ihandle* ih)
   }
 }
 
-IUP_DRV_API void iupeflFocusChangedEvent(void* data, const Efl_Event* ev)
+static void eflFocusReport(Ihandle* ih, int focused)
 {
-  Ihandle* ih = (Ihandle*)data;
-
   if (!iupObjectCheck(ih))
     return;
 
-  if (efl_ui_focus_object_focus_get(ev->object))
+  if (focused)
   {
     if (!iupdrvIsActive(ih))
       return;
@@ -59,6 +57,19 @@ IUP_DRV_API void iupeflFocusChangedEvent(void* data, const Efl_Event* ev)
   }
   else
     iupCallKillFocusCb(ih);
+}
+
+IUP_DRV_API void iupeflFocusChangedEvent(void* data, const Efl_Event* ev)
+{
+  eflFocusReport((Ihandle*)data, efl_ui_focus_object_focus_get(ev->object));
+}
+
+/* a composition widget keeps the focus on an inner element and only reports it here */
+IUP_DRV_API void iupeflChildFocusChangedEvent(void* data, const Efl_Event* ev)
+{
+  Eina_Bool* child_focused = (Eina_Bool*)ev->info;
+
+  eflFocusReport((Ihandle*)data, child_focused && *child_focused);
 }
 
 IUP_DRV_API void iupeflManagerFocusChangedEvent(void* data, const Efl_Event* ev)
