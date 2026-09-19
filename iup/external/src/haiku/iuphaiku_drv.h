@@ -138,6 +138,8 @@ bool iuphaikuDnDMessageReceived(Ihandle* ih, BView* view, BMessage* msg);
 bool iuphaikuHandleDropFiles(Ihandle* ih, BView* view, BMessage* msg);
 bool iuphaikuDnDInitiateDrag(Ihandle* ih, BView* view, BPoint where);
 
+Ihandle* iuphaikuTimerFromSerial(int serial);
+
 void iuphaikuCanvasOnDraw(Ihandle* ih, BView* view, BRect dirty);
 void iuphaikuCanvasOnFrameResized(Ihandle* ih, BView* view, float new_w, float new_h);
 void iuphaikuCanvasOnAttachedToWindow(Ihandle* ih, BView* view);

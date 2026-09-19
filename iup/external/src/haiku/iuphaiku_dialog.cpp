@@ -278,8 +278,9 @@ public:
     }
     if (msg && msg->what == IUPHAIKU_TIMER_HOP_MSG)
     {
-      Ihandle* ih = NULL;
-      msg->FindPointer("ih", (void**)&ih);
+      int32 serial = -1;
+      msg->FindInt32("serial", &serial);
+      Ihandle* ih = iuphaikuTimerFromSerial((int)serial);
       if (ih && iupObjectCheck(ih))
       {
         Icallback cb = IupGetCallback(ih, "ACTION_CB");
