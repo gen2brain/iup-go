@@ -56,7 +56,7 @@ iupkg staple <app>
  | `--license`                                          | `Unknown`           | rpm and haiku license name                                                                                                  |
  | `--permissions`                                      |                     | comma list of `camera`, `microphone`, `location`, `notifications`, `internet`                                               |
  | `--sign`                                             |                     | signing identity, see Signing                                                                                               |
- | `--signer`                                           | `iupkg`             | darwin, ios: `iupkg` or `codesign` (`codesign` on a Mac)                                                                    |
+ | `--signer`                                           | `iupkg`             | `iupkg`; darwin, ios: `codesign` (the default on a Mac); linux: `gpg`                                                       |
  | `--timestamp`                                        | `true`              | add a trusted timestamp when signing with a certificate                                                                     |
  | `--timestamp-url`                                    | DigiCert            | windows: RFC 3161 server                                                                                                    |
  | `--install`                                          |                     | android, ios: install on the connected device                                                                               |
@@ -101,7 +101,7 @@ tar xzf myapp-1.0.0-linux-arm64.tar.gz && make -C myapp-1.0.0 user-install
 ```
 
 `--format deb,rpm` writes `<name>_<version>-<build>_<arch>.deb` and
-`<name>-<version>-<build>.<arch>.rpm` instead, installing under `/usr`; both are unsigned.
+`<name>-<version>-<build>.<arch>.rpm` instead, installing under `/usr`. With `--sign` all three are signed with an OpenPGP key, see Signing.
 
 ```sh
 iupkg package --os linux --format deb,rpm --vendor "Jane Doe <jane@example.com>" --license MIT ./cmd/myapp
@@ -194,17 +194,36 @@ The certificate must match the provisioning profile. On a Mac `codesign` is the 
 iupkg package --os ios --sign dev.p12 --profile dev.mobileprovision --install ./cmd/myapp
 ```
 
+#### Linux
+
+OpenPGP, SHA-256. `--sign` takes a secret key exported with `gpg --export-secret-keys`, armored or binary, holding exactly one key (passphrase in `IUPKG_GPG_PASSPHRASE`, empty by default).
+With `--signer gpg` the `gpg` program signs instead and `--sign` is any key it knows (an id, a fingerprint or an email), which covers keys held by the agent or a smartcard.
+
+- `.tar.gz`: a detached armored signature `<archive>.asc`, checked with `gpg --verify`.
+- `.rpm`: the header signature and the legacy header and payload signature, checked with `rpmkeys --checksig` after `rpmkeys --import` of the public key.
+- `.deb`: a debsigs origin signature (the `_gpgorigin` member), checked with `debsig-verify`. dpkg and apt do not check it; they trust the signed repository a package comes from, which iupkg does not make.
+
+```sh
+gpg --armor --export-secret-keys jane@example.com > release.asc
+IUPKG_GPG_PASSPHRASE=secret iupkg package --os linux --format targz,deb,rpm --sign release.asc ./cmd/myapp
+iupkg package --os linux --format rpm --signer gpg --sign jane@example.com ./cmd/myapp
+```
+
 ### Signing existing files
 
-`iupkg sign` signs a file made elsewhere, in place, with the same signers: a Windows `.exe` or `.dll`, a macOS or iOS `.app` directory, an `.ipa`, an `.apk`, or a bare Mach-O executable or dylib.
-It takes `--sign`, `--profile` (iOS), `--entitlements` (macOS), `--timestamp`, `--timestamp-url` and the `--notary-*` flags; a macOS bundle with `--notary-key` is notarized and stapled after signing.
+`iupkg sign` signs a file made elsewhere, in place, with the same signers: a Windows `.exe` or `.dll`, a macOS or iOS `.app` directory, an `.ipa`, an `.apk`, a `.deb`, an `.rpm`, or a bare Mach-O executable or dylib.
+It takes `--sign`, `--signer` (`gpg`), `--profile` (iOS), `--entitlements` (macOS), `--timestamp`, `--timestamp-url` and the `--notary-*` flags; a macOS bundle with `--notary-key` is notarized and stapled after signing.
 
 ```sh
 iupkg sign --sign codesign.p12 MyApp.exe
 iupkg sign --sign devid.p12 --notary-key AuthKey_ABC123DEFG.p8 --notary-issuer 69a6de7f-... "My App.app"
 iupkg sign --sign dev.p12 --profile dev.mobileprovision MyApp.ipa
 iupkg sign MyApp.apk                                  # debug key
+iupkg sign --sign release.asc myapp-1.0.0-1.x86_64.rpm
+iupkg sign --signer gpg --sign jane@example.com myapp-1.0.0-haiku.hpkg   # writes the .hpkg.asc
 ```
+
+With an OpenPGP key (`--signer gpg`, or a key file named `.asc`, `.gpg` or `.pgp`) a `.deb` or `.rpm` is re-signed in place, replacing any signature it had, and every other file gets a detached armored `<file>.asc` next to it. RPM v6 packages are refused.
 
 #### Android
 

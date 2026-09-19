@@ -8,18 +8,23 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/gen2brain/iup-go/cmd/iupkg/internal/apk"
 	"github.com/gen2brain/iup-go/cmd/iupkg/internal/apple"
 	"github.com/gen2brain/iup-go/cmd/iupkg/internal/authenticode"
+	"github.com/gen2brain/iup-go/cmd/iupkg/internal/deb"
+	"github.com/gen2brain/iup-go/cmd/iupkg/internal/pgp"
+	"github.com/gen2brain/iup-go/cmd/iupkg/internal/rpm"
 )
 
 func runSign(args []string) error {
 	c := &config{signer: "iupkg"}
 	var entitlements string
 	fs := flag.NewFlagSet("sign", flag.ContinueOnError)
-	fs.StringVar(&c.sign, "sign", "", "signing `identity`: a .p12 or PEM file with the key and certificate (default: android a debug key, darwin ad-hoc)")
+	fs.StringVar(&c.sign, "sign", "", "signing `identity`: a .p12 or PEM file with the key and certificate, or an exported OpenPGP secret key (default: android a debug key, darwin ad-hoc)")
+	fs.StringVar(&c.signer, "signer", "iupkg", "signing `tool`: iupkg, or gpg with a gpg key in --sign")
 	fs.StringVar(&c.profile, "profile", "", "ios: provisioning profile `file` (.mobileprovision), embedded and the source of the entitlements")
 	fs.StringVar(&entitlements, "entitlements", "", "darwin: entitlements plist `file`")
 	fs.BoolVar(&c.timestamp, "timestamp", true, "add a trusted timestamp when signing with a certificate")
@@ -28,7 +33,7 @@ func runSign(args []string) error {
 	fs.StringVar(&c.notaryID, "notary-key-id", "", "darwin: App Store Connect API key `id` (default: from the key file name)")
 	fs.StringVar(&c.notaryIssue, "notary-issuer", "", "darwin: App Store Connect issuer `id`")
 	fs.Usage = func() {
-		fmt.Fprint(os.Stderr, "Usage:\n\n\tiupkg sign [flags] <file>\n\nSigns an existing .exe, .app, .ipa, .apk, or Mach-O executable or dylib in place.\n\nFlags:\n")
+		fmt.Fprint(os.Stderr, "Usage:\n\n\tiupkg sign [flags] <file>\n\nSigns an existing .exe, .app, .ipa, .apk, .deb, .rpm, or Mach-O executable or dylib in place.\nWith an OpenPGP key any other file gets a detached <file>.asc signature.\n\nFlags:\n")
 		printDefaults(fs)
 	}
 	if err := fs.Parse(args); err != nil {
@@ -44,6 +49,14 @@ func runSign(args []string) error {
 		return err
 	}
 
+	if c.signer != "iupkg" && c.signer != "gpg" {
+		return fmt.Errorf("unknown signer %q", c.signer)
+	}
+	ext := strings.ToLower(filepath.Ext(path))
+	if !info.IsDir() && (ext == ".deb" || ext == ".rpm" || c.pgpKey()) {
+		return signPGP(c, path, ext)
+	}
+
 	switch {
 	case info.IsDir() && strings.HasSuffix(strings.ToLower(path), ".app"):
 		if _, err := os.Stat(filepath.Join(path, "Contents", "Info.plist")); err == nil {
@@ -53,7 +66,7 @@ func runSign(args []string) error {
 	case info.IsDir():
 		return fmt.Errorf("%s: not an .app bundle", path)
 	}
-	switch strings.ToLower(filepath.Ext(path)) {
+	switch ext {
 	case ".exe", ".dll":
 		if c.sign == "" {
 			return errors.New("--sign is required for Windows executables")
@@ -81,6 +94,48 @@ func runSign(args []string) error {
 		return err
 	}
 	return os.WriteFile(path, signed, info.Mode())
+}
+
+func (c *config) pgpKey() bool {
+	return c.signer == "gpg" || slices.Contains([]string{".asc", ".gpg", ".pgp"}, strings.ToLower(filepath.Ext(c.sign)))
+}
+
+func signPGP(c *config, path, ext string) error {
+	sign, err := c.pgpSigner()
+	if err != nil {
+		return err
+	}
+	if ext != ".deb" && ext != ".rpm" {
+		return signDetached(path, sign)
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	if ext == ".deb" {
+		data, err = deb.Sign(data, sign)
+	} else {
+		data, err = rpm.Sign(data, sign)
+	}
+	if err != nil {
+		return fmt.Errorf("%s: %w", path, err)
+	}
+	return os.WriteFile(path, data, 0o644)
+}
+
+func signDetached(path string, sign pgp.Signer) error {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	sig, err := sign(data)
+	if err != nil {
+		return err
+	}
+	if sig, err = pgp.Armor(sig); err != nil {
+		return err
+	}
+	return os.WriteFile(path+".asc", sig, 0o644)
 }
 
 func signMacApp(c *config, app, entitlements string) error {

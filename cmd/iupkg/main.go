@@ -15,6 +15,7 @@ import (
 	"github.com/gen2brain/iup-go/cmd/iupkg/internal/apple"
 	"github.com/gen2brain/iup-go/cmd/iupkg/internal/authenticode"
 	"github.com/gen2brain/iup-go/cmd/iupkg/internal/keys"
+	"github.com/gen2brain/iup-go/cmd/iupkg/internal/pgp"
 )
 
 const usageText = `iupkg builds and packages IUP-Go applications.
@@ -30,16 +31,17 @@ Targets (--os):
 
 	windows  .exe with icon, version info and the IUP manifest; Authenticode with --sign
 	darwin   .app bundle and a zip of it; signed, notarized and stapled with --sign and --notary-*
-	linux    .tar.gz with .desktop file, hicolor icons and a Makefile; --format deb,rpm
+	linux    .tar.gz with .desktop file, hicolor icons and a Makefile; --format deb,rpm; OpenPGP signatures with --sign
 	android  .apk from the template in the iup module, needs only the NDK; signed
 	ios      .ipa signed with --sign and --profile
 	js       directory with the wasm module and loader, served by iupkg serve
 	haiku    .hpkg package, active when copied into the packages directory
 
 Signing is done by iupkg itself on every platform; on macOS --signer codesign
-uses a keychain identity instead. Password of a .p12 file: IUPKG_P12_PASSWORD.
-sign takes an existing .exe, .app, .ipa, .apk or Mach-O file; run
-'iupkg sign -h' for its flags.
+uses a keychain identity instead, for linux --signer gpg a key of the gpg program.
+Password of a .p12 file: IUPKG_P12_PASSWORD, of an OpenPGP key: IUPKG_GPG_PASSPHRASE.
+sign takes an existing .exe, .app, .ipa, .apk, .deb, .rpm or Mach-O file, and
+with an OpenPGP key any other file; run 'iupkg sign -h' for its flags.
 
 Flags:
 `
@@ -183,8 +185,8 @@ func newFlagSet(c *config) *flag.FlagSet {
 		c.permissions = splitList(s)
 		return nil
 	})
-	fs.StringVar(&c.sign, "sign", "", "signing `identity`: a .p12 or PEM file with the key and certificate, a keychain identity with --signer codesign (default: android a debug key, darwin ad-hoc, others unsigned)")
-	fs.StringVar(&c.signer, "signer", "", "darwin, ios: signing `tool`: iupkg or codesign (default: codesign on macOS, else iupkg)")
+	fs.StringVar(&c.sign, "sign", "", "signing `identity`: a .p12 or PEM file with the key and certificate, linux: an exported OpenPGP secret key; a keychain identity with --signer codesign, a gpg key with --signer gpg (default: android a debug key, darwin ad-hoc, others unsigned)")
+	fs.StringVar(&c.signer, "signer", "", "signing `tool`: iupkg, darwin, ios: codesign, linux: gpg (default: codesign on macOS, else iupkg)")
 	fs.BoolVar(&c.timestamp, "timestamp", true, "add a trusted timestamp when signing with a certificate")
 	fs.StringVar(&c.tsaURL, "timestamp-url", authenticode.DefaultTimestampURL, "windows: RFC 3161 timestamp server `url`")
 	fs.StringVar(&c.notaryKey, "notary-key", "", "darwin: App Store Connect API private key `file` (AuthKey_<id>.p8), enables notarization")
@@ -251,8 +253,11 @@ func runPackage(args []string) error {
 			c.signer = "codesign"
 		}
 	}
-	if c.signer != "iupkg" && c.signer != "codesign" {
+	if !slices.Contains([]string{"iupkg", "codesign", "gpg"}, c.signer) {
 		return fmt.Errorf("unknown signer %q", c.signer)
+	}
+	if c.signer == "gpg" && c.goos != "linux" {
+		return errors.New("--signer gpg is for linux packages")
 	}
 	if c.signer == "codesign" && runtime.GOOS != "darwin" {
 		return errors.New("--signer codesign needs a macOS host")
@@ -332,6 +337,16 @@ func (c *config) identity() (*keys.Identity, error) {
 		return nil, errors.New("--sign is required")
 	}
 	return keys.Load(c.sign)
+}
+
+func (c *config) pgpSigner() (pgp.Signer, error) {
+	if c.sign == "" {
+		return nil, errors.New("--sign is required")
+	}
+	if c.signer == "gpg" {
+		return pgp.GPG(c.sign), nil
+	}
+	return pgp.Load(c.sign)
 }
 
 var driverTags = []string{"winui", "gtk", "gtk2", "gtk4", "qt", "qt5", "motif", "fltk", "efl", "gnustep"}

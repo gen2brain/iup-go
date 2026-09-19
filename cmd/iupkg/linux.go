@@ -16,6 +16,7 @@ import (
 
 	"github.com/gen2brain/iup-go/cmd/iupkg/internal/deb"
 	"github.com/gen2brain/iup-go/cmd/iupkg/internal/icon"
+	"github.com/gen2brain/iup-go/cmd/iupkg/internal/pgp"
 	"github.com/gen2brain/iup-go/cmd/iupkg/internal/pkgtree"
 	"github.com/gen2brain/iup-go/cmd/iupkg/internal/rpm"
 )
@@ -62,17 +63,26 @@ func packageLinux(c *config) error {
 		files = append(files, tarFile{path.Join(top, "share", "icons", "hicolor", dim+"x"+dim, "apps", id+".png"), 0o644, data})
 	}
 
+	var sign pgp.Signer
+	if c.sign != "" {
+		if sign, err = c.pgpSigner(); err != nil {
+			return err
+		}
+	}
+
 	for _, format := range c.formats {
 		var archive string
 		var err error
 		switch format {
 		case "targz":
 			archive = filepath.Join(c.out, fmt.Sprintf("%s-%s-linux-%s.tar.gz", c.exe, c.version, c.goarch))
-			err = writeTarGz(archive, files)
+			if err = writeTarGz(archive, files); err == nil && sign != nil {
+				err = signDetached(archive, sign)
+			}
 		case "deb":
-			archive, err = writeDeb(c, id, exe, img)
+			archive, err = writeDeb(c, id, exe, img, sign)
 		case "rpm":
-			archive, err = writeRPM(c, id, exe, img)
+			archive, err = writeRPM(c, id, exe, img, sign)
 		default:
 			err = fmt.Errorf("unknown format %q (targz, deb, rpm)", format)
 		}
@@ -115,7 +125,7 @@ func packageName(s string) string {
 	return b.String()
 }
 
-func writeDeb(c *config, id string, exe []byte, img image.Image) (string, error) {
+func writeDeb(c *config, id string, exe []byte, img image.Image, sign pgp.Signer) (string, error) {
 	arch, ok := debArch[c.goarch]
 	if !ok {
 		return "", fmt.Errorf("no Debian architecture for %s", c.goarch)
@@ -127,7 +137,7 @@ func writeDeb(c *config, id string, exe []byte, img image.Image) (string, error)
 	name := packageName(c.exe)
 	version := fmt.Sprintf("%s-%d", c.version, c.build)
 	data, err := deb.Write(deb.Package{
-		Name: name, Version: version, Arch: arch, Maintainer: c.vendor, Description: c.name, Section: "misc", Files: files,
+		Name: name, Version: version, Arch: arch, Maintainer: c.vendor, Description: c.name, Section: "misc", Files: files, Sign: sign,
 	})
 	if err != nil {
 		return "", err
@@ -136,7 +146,7 @@ func writeDeb(c *config, id string, exe []byte, img image.Image) (string, error)
 	return out, os.WriteFile(out, data, 0o644)
 }
 
-func writeRPM(c *config, id string, exe []byte, img image.Image) (string, error) {
+func writeRPM(c *config, id string, exe []byte, img image.Image, sign pgp.Signer) (string, error) {
 	arch, ok := rpmArch[c.goarch]
 	if !ok {
 		return "", fmt.Errorf("no RPM architecture for %s", c.goarch)
@@ -149,7 +159,7 @@ func writeRPM(c *config, id string, exe []byte, img image.Image) (string, error)
 	release := strconv.Itoa(c.build)
 	data, err := rpm.Write(rpm.Package{
 		Name: name, Version: c.version, Release: release, Arch: arch, Summary: c.name, Description: c.name,
-		License: c.license, Vendor: c.vendor, Files: files,
+		License: c.license, Vendor: c.vendor, Files: files, Sign: sign,
 	})
 	if err != nil {
 		return "", err
