@@ -127,6 +127,47 @@ private:
 };
 
 
+class IupHaikuCommandKeyFilter : public BMessageFilter
+{
+public:
+  IupHaikuCommandKeyFilter() : BMessageFilter(B_ANY_DELIVERY, B_ANY_SOURCE, B_KEY_DOWN) {}
+
+  filter_result Filter(BMessage* msg, BHandler** target) override
+  {
+    int32 mods = 0;
+    const char* bytes = NULL;
+    if (msg->FindInt32("modifiers", &mods) != B_OK || !(mods & B_COMMAND_KEY))
+      return B_DISPATCH_MESSAGE;
+    if (msg->FindString("bytes", &bytes) != B_OK || !bytes)
+      return B_DISPATCH_MESSAGE;
+
+    Ihandle* ih = IupGetFocus();
+    if (!ih) return B_DISPATCH_MESSAGE;
+
+    int32 raw_char = 0, raw_key = 0;
+    msg->FindInt32("raw_char", &raw_char);
+    msg->FindInt32("key", &raw_key);
+
+    int code = iuphaikuKeyDecode((unsigned char)bytes[0], (int)raw_char, (int)raw_key, (unsigned)mods);
+    if (!code) return B_DISPATCH_MESSAGE;
+
+    int press = iupKeyCallKeyPressCb(ih, code, 1);
+    int any = iupKeyCallKeyCb(ih, code);
+    if (press == IUP_CLOSE || any == IUP_CLOSE) { IupExitLoop(); return B_SKIP_MESSAGE; }
+    if (press == IUP_IGNORE || any == IUP_IGNORE) return B_SKIP_MESSAGE;
+
+    int nav_code = code;
+    if (iup_isShiftXkey(code) && iup_XkeyBase(code) == K_TAB)
+      nav_code = iup_XkeyCtrl(K_TAB);
+
+    if (iupKeyProcessNavigation(ih, nav_code, mods & B_SHIFT_KEY))
+      return B_SKIP_MESSAGE;
+
+    (void)target;
+    return B_DISPATCH_MESSAGE;
+  }
+};
+
 class IupHaikuWindow : public BWindow
 {
 public:
@@ -139,6 +180,7 @@ public:
   {
     fRootView = new IupHaikuRootView(Bounds(), ih);
     AddChild(fRootView);
+    AddCommonFilter(new IupHaikuCommandKeyFilter());
   }
 
   /* BMenuField::~BMenuField deletes its own filter without unlinking it; ~BLooper would double-free */
