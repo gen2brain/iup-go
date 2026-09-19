@@ -7,11 +7,13 @@ import (
 	"crypto/sha1"
 	"crypto/sha256"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"path"
 	"slices"
 	"time"
 
+	"github.com/gen2brain/iup-go/cmd/iupkg/internal/pgp"
 	"github.com/gen2brain/iup-go/cmd/iupkg/internal/pkgtree"
 )
 
@@ -26,11 +28,15 @@ type Package struct {
 	Vendor      string
 	URL         string
 	Files       []pkgtree.File
+	Sign        pgp.Signer
 }
 
 const (
+	typeChar        = 1
+	typeInt8        = 2
 	typeInt16       = 3
 	typeInt32       = 4
+	typeInt64       = 5
 	typeString      = 6
 	typeBin         = 7
 	typeStringArray = 8
@@ -40,7 +46,12 @@ const (
 	tagHeaderImmutable  = 63
 	tagHeaderI18NTable  = 100
 	tagSigSize          = 1000
+	tagSigPGP           = 1002
 	tagSigMD5           = 1004
+	tagSigGPG           = 1005
+	tagSigReserved      = 1008
+	tagSigDSA           = 267
+	tagSigRSA           = 268
 	tagSigSHA1          = 269
 	tagSigSHA256        = 273
 
@@ -85,6 +96,7 @@ const (
 	tagPayloadCompress  = 1125
 	tagPayloadFlags     = 1126
 	tagFileDigestAlgo   = 5011
+	tagRPMFormat        = 5114
 	tagPayloadDigest    = 5092
 	tagPayloadDigestAlg = 5093
 	tagPayloadDigestAlt = 5097
@@ -137,6 +149,8 @@ func align(typ int32) int {
 		return 2
 	case typeInt32:
 		return 4
+	case typeInt64:
+		return 8
 	}
 	return 1
 }
@@ -303,29 +317,150 @@ func Write(p Package) ([]byte, error) {
 	sumMD5 := md5.New()
 	sumMD5.Write(hdr)
 	sumMD5.Write(payload.Bytes())
-	sig := header(tagHeaderSignatures, []entry{
+	sigs, err := signatures(hdr, payload.Bytes(), p.Sign)
+	if err != nil {
+		return nil, err
+	}
+	sig := header(tagHeaderSignatures, append(sigs,
 		int32s(tagSigSize, []int32{int32(len(hdr) + payload.Len())}),
 		bin(tagSigMD5, sumMD5.Sum(nil)),
 		str(tagSigSHA1, fmt.Sprintf("%x", sha1.Sum(hdr))),
 		str(tagSigSHA256, fmt.Sprintf("%x", sha256.Sum256(hdr))),
-	})
+	))
 
-	var out bytes.Buffer
-	out.Write([]byte{0xed, 0xab, 0xee, 0xdb, 3, 0, 0, 0})
-	out.Write(binary.BigEndian.AppendUint16(nil, 1))
+	lead := []byte{0xed, 0xab, 0xee, 0xdb, 3, 0, 0, 0}
+	lead = binary.BigEndian.AppendUint16(lead, 1)
 	name := make([]byte, 66)
 	copy(name, p.Name+"-"+evr)
-	out.Write(name)
-	out.Write(binary.BigEndian.AppendUint16(nil, 1))
-	out.Write(binary.BigEndian.AppendUint16(nil, 5))
-	out.Write(make([]byte, 16))
+	lead = append(lead, name...)
+	lead = binary.BigEndian.AppendUint16(lead, 1)
+	lead = binary.BigEndian.AppendUint16(lead, 5)
+	lead = append(lead, make([]byte, 16)...)
+	return assemble(lead, sig, hdr, payload.Bytes()), nil
+}
+
+func assemble(lead, sig, hdr, payload []byte) []byte {
+	var out bytes.Buffer
+	out.Write(lead)
 	out.Write(sig)
 	for out.Len()%8 != 0 {
 		out.WriteByte(0)
 	}
 	out.Write(hdr)
-	out.Write(payload.Bytes())
-	return out.Bytes(), nil
+	out.Write(payload)
+	return out.Bytes()
+}
+
+func signatures(hdr, payload []byte, sign pgp.Signer) ([]entry, error) {
+	if sign == nil {
+		return nil, nil
+	}
+	hdrSig, err := sign(hdr)
+	if err != nil {
+		return nil, err
+	}
+	allSig, err := sign(slices.Concat(hdr, payload))
+	if err != nil {
+		return nil, err
+	}
+	rsa, err := pgp.IsRSA(hdrSig)
+	if err != nil {
+		return nil, err
+	}
+	if rsa {
+		return []entry{bin(tagSigRSA, hdrSig), bin(tagSigPGP, allSig)}, nil
+	}
+	return []entry{bin(tagSigDSA, hdrSig), bin(tagSigGPG, allSig)}, nil
+}
+
+func Sign(data []byte, sign pgp.Signer) ([]byte, error) {
+	const leadSize = 96
+	if len(data) < leadSize || !bytes.Equal(data[:4], []byte{0xed, 0xab, 0xee, 0xdb}) {
+		return nil, errors.New("not an RPM package")
+	}
+	sigEntries, sigLen, err := parseHeader(data[leadSize:])
+	if err != nil {
+		return nil, fmt.Errorf("signature header: %w", err)
+	}
+	rest := leadSize + (sigLen+7)/8*8
+	if rest > len(data) {
+		return nil, errors.New("truncated RPM package")
+	}
+	hdrEntries, hdrLen, err := parseHeader(data[rest:])
+	if err != nil {
+		return nil, fmt.Errorf("header: %w", err)
+	}
+	for _, e := range hdrEntries {
+		if e.tag == tagRPMFormat && e.typ == typeInt32 && e.count == 1 && binary.BigEndian.Uint32(e.data) > 4 {
+			return nil, errors.New("RPM v6 packages are not supported")
+		}
+	}
+	hdr, payload := data[rest:rest+hdrLen], data[rest+hdrLen:]
+
+	sigEntries = slices.DeleteFunc(sigEntries, func(e entry) bool {
+		return slices.Contains([]int32{tagSigPGP, tagSigGPG, tagSigDSA, tagSigRSA, tagSigReserved}, e.tag)
+	})
+	sigs, err := signatures(hdr, payload, sign)
+	if err != nil {
+		return nil, err
+	}
+	return assemble(data[:leadSize], header(tagHeaderSignatures, append(sigs, sigEntries...)), hdr, payload), nil
+}
+
+func parseHeader(data []byte) ([]entry, int, error) {
+	if len(data) < 16 || !bytes.Equal(data[:4], []byte{0x8e, 0xad, 0xe8, 0x01}) {
+		return nil, 0, errors.New("bad magic")
+	}
+	nindex := int(binary.BigEndian.Uint32(data[8:]))
+	hsize := int(binary.BigEndian.Uint32(data[12:]))
+	if nindex < 0 || hsize < 0 || nindex > len(data)/16 || 16+nindex*16+hsize > len(data) {
+		return nil, 0, errors.New("truncated")
+	}
+	store := data[16+nindex*16 : 16+nindex*16+hsize]
+
+	var entries []entry
+	for i := range nindex {
+		index := data[16+i*16:]
+		e := entry{
+			tag:   int32(binary.BigEndian.Uint32(index)),
+			typ:   int32(binary.BigEndian.Uint32(index[4:])),
+			count: int32(binary.BigEndian.Uint32(index[12:])),
+		}
+		offset := int(binary.BigEndian.Uint32(index[8:]))
+		if e.tag == tagHeaderSignatures || e.tag == tagHeaderImmutable {
+			continue
+		}
+		if offset < 0 || offset > len(store) || e.count < 0 {
+			return nil, 0, errors.New("bad entry")
+		}
+		var size int
+		switch e.typ {
+		case typeInt16:
+			size = 2 * int(e.count)
+		case typeInt32:
+			size = 4 * int(e.count)
+		case typeInt64:
+			size = 8 * int(e.count)
+		case typeBin, typeChar, typeInt8:
+			size = int(e.count)
+		case typeString, typeStringArray, typeI18NString:
+			for range e.count {
+				end := bytes.IndexByte(store[offset+size:], 0)
+				if end < 0 {
+					return nil, 0, errors.New("bad string")
+				}
+				size += end + 1
+			}
+		default:
+			return nil, 0, fmt.Errorf("unsupported entry type %d", e.typ)
+		}
+		if size < 0 || offset+size > len(store) {
+			return nil, 0, errors.New("bad entry")
+		}
+		e.data = bytes.Clone(store[offset : offset+size])
+		entries = append(entries, e)
+	}
+	return entries, 16 + nindex*16 + hsize, nil
 }
 
 func cpioEntry(out *bytes.Buffer, name string, mode uint32, ino, mtime int32, body []byte) {

@@ -5,11 +5,20 @@ import (
 	"bytes"
 	"compress/gzip"
 	"crypto/md5"
+	"errors"
 	"fmt"
+	"slices"
+	"strconv"
 	"strings"
 	"time"
 
+	"github.com/gen2brain/iup-go/cmd/iupkg/internal/pgp"
 	"github.com/gen2brain/iup-go/cmd/iupkg/internal/pkgtree"
+)
+
+const (
+	arMagic    = "!<arch>\n"
+	originName = "_gpgorigin"
 )
 
 type Package struct {
@@ -20,6 +29,7 @@ type Package struct {
 	Description string
 	Section     string
 	Files       []pkgtree.File
+	Sign        pgp.Signer
 }
 
 func Write(p Package) ([]byte, error) {
@@ -51,11 +61,54 @@ func Write(p Package) ([]byte, error) {
 		return nil, err
 	}
 
+	version := []byte("2.0\n")
 	var out bytes.Buffer
-	out.WriteString("!<arch>\n")
-	arMember(&out, "debian-binary", []byte("2.0\n"), now)
+	out.WriteString(arMagic)
+	arMember(&out, "debian-binary", version, now)
 	arMember(&out, "control.tar.gz", controlTar, now)
 	arMember(&out, "data.tar.gz", dataTar, now)
+	if p.Sign != nil {
+		sig, err := p.Sign(slices.Concat(version, controlTar, dataTar))
+		if err != nil {
+			return nil, err
+		}
+		arMember(&out, originName, sig, now)
+	}
+	return out.Bytes(), nil
+}
+
+func Sign(data []byte, sign pgp.Signer) ([]byte, error) {
+	if !bytes.HasPrefix(data, []byte(arMagic)) {
+		return nil, errors.New("not a Debian package")
+	}
+	var out, signed bytes.Buffer
+	out.WriteString(arMagic)
+	for rest := data[len(arMagic):]; len(rest) > 0; {
+		if len(rest) < 60 {
+			return nil, errors.New("truncated ar member")
+		}
+		name := strings.TrimSuffix(strings.TrimSpace(string(rest[:16])), "/")
+		size, err := strconv.Atoi(strings.TrimSpace(string(rest[48:58])))
+		if err != nil || size < 0 || 60+size > len(rest) {
+			return nil, errors.New("bad ar member size")
+		}
+		end := min(60+size+size%2, len(rest))
+		if name == "debian-binary" || strings.HasPrefix(name, "control.tar") || strings.HasPrefix(name, "data.tar") {
+			signed.Write(rest[60 : 60+size])
+		}
+		if name != originName {
+			out.Write(rest[:end])
+		}
+		rest = rest[end:]
+	}
+	sig, err := sign(signed.Bytes())
+	if err != nil {
+		return nil, err
+	}
+	if out.Len()%2 == 1 {
+		out.WriteByte('\n')
+	}
+	arMember(&out, originName, sig, time.Now())
 	return out.Bytes(), nil
 }
 
