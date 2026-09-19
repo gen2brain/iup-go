@@ -211,6 +211,7 @@ IUP_DRV_API void iupeflTextSetCursor(Eo* entry, int pos);
 IUP_DRV_API void iupeflTextDeleteRange(Eo* entry, int start, int end);
 IUP_DRV_API void iupeflTextInsertAt(Eo* entry, int pos, const char* text);
 IUP_DRV_API int iupeflKeyIsMenuAccel(Ihandle* ih, int code);
+IUP_DRV_API int iupeflMenuNavigate(Ihandle* dialog, int code);
 IUP_DRV_API int iupeflMenuActivateAccel(Ihandle* ih, int code);
 
 /****************************************************************************

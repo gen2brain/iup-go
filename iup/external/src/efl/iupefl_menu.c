@@ -351,6 +351,205 @@ static void eflMenuItemActivateCb(void* data, Evas_Object* obj, void* event_info
   }
 }
 
+static Ihandle* eflMenuFindOpenDropdown(Ihandle* menu)
+{
+  Ihandle* child;
+  Ihandle* deepest = NULL;
+
+  for (child = menu->firstchild; child; child = child->brother)
+  {
+    Ihandle* dropdown = child->firstchild;
+    Evas_Object* hover;
+
+    if (!dropdown || !iupStrEqual(dropdown->iclass->name, "menu"))
+      continue;
+
+    hover = (Evas_Object*)iupAttribGet(dropdown, "_IUP_EFL_HOVER");
+    if (hover && evas_object_visible_get(hover))
+    {
+      Ihandle* nested = eflMenuFindOpenDropdown(dropdown);
+      deepest = nested ? nested : dropdown;
+    }
+  }
+
+  return deepest;
+}
+
+static int eflMenuItemCanSelect(Ihandle* ih)
+{
+  if (iupStrEqual(ih->iclass->name, "menuseparator"))
+    return 0;
+
+  return iupAttribGetBoolean(ih, "ACTIVE") && iupAttribGet(ih, "_IUP_EFL_ITEM") != NULL;
+}
+
+static Ihandle* eflMenuStepItem(Ihandle* dropdown, Ihandle* from, int back)
+{
+  Ihandle* child;
+  Ihandle* prev = NULL;
+  int seen = 0;
+
+  for (child = dropdown->firstchild; child; child = child->brother)
+  {
+    if (!eflMenuItemCanSelect(child))
+      continue;
+
+    if (back)
+    {
+      if (child == from)
+        return prev ? prev : child;
+      prev = child;
+    }
+    else
+    {
+      if (seen)
+        return child;
+      if (child == from)
+        seen = 1;
+      if (!prev)
+        prev = child;
+    }
+  }
+
+  if (back)
+    return prev;
+
+  return seen ? from : prev;
+}
+
+static Ihandle* eflMenuDropdownOf(Ihandle* submenu)
+{
+  Ihandle* dropdown = submenu->firstchild;
+
+  if (dropdown && iupStrEqual(dropdown->iclass->name, "menu") && dropdown->firstchild)
+    return dropdown;
+
+  return NULL;
+}
+
+static void eflMenuSelectItem(Ihandle* dropdown, Ihandle* item_ih)
+{
+  Ihandle* current = (Ihandle*)iupAttribGet(dropdown, "_IUP_EFL_MENU_CURRENT");
+
+  if (current && iupObjectCheck(current))
+  {
+    Elm_Object_Item* item = (Elm_Object_Item*)iupAttribGet(current, "_IUP_EFL_ITEM");
+    if (item)
+      elm_menu_item_selected_set(item, EINA_FALSE);
+  }
+
+  iupAttribSet(dropdown, "_IUP_EFL_MENU_CURRENT", (char*)item_ih);
+
+  if (item_ih)
+  {
+    Elm_Object_Item* item = (Elm_Object_Item*)iupAttribGet(item_ih, "_IUP_EFL_ITEM");
+    if (item)
+    {
+      /* the setter returns early when the flag already matches, so the theme needs the change */
+      elm_menu_item_selected_set(item, EINA_FALSE);
+      elm_menu_item_selected_set(item, EINA_TRUE);
+    }
+  }
+}
+
+static int eflMenuCloseLevel(Ihandle* dropdown, Ihandle* bar)
+{
+  Ihandle* submenu = dropdown->parent;
+  Ihandle* outer = submenu ? submenu->parent : NULL;
+  Elm_Object_Item* item = submenu ? (Elm_Object_Item*)iupAttribGet(submenu, "_IUP_EFL_ITEM") : NULL;
+
+  if (!outer || !item || outer == bar || !iupStrEqual(outer->iclass->name, "menu"))
+    return 0;
+
+  eflMenuSelectItem(dropdown, NULL);
+  elm_menu_item_selected_set(item, EINA_FALSE);
+  eflMenuSelectItem(outer, submenu);
+  return 1;
+}
+
+static int eflMenuOpenBarSibling(Ihandle* dropdown, Ihandle* bar, int back)
+{
+  Ihandle* submenu = dropdown->parent;
+  Ihandle* sibling;
+  Ihandle* nested;
+  Elm_Object_Item* item;
+
+  if (!submenu || submenu->parent != bar)
+    return 0;
+
+  sibling = eflMenuStepItem(bar, submenu, back);
+  if (!sibling || sibling == submenu)
+    return 0;
+
+  item = (Elm_Object_Item*)iupAttribGet(sibling, "_IUP_EFL_ITEM");
+  nested = eflMenuDropdownOf(sibling);
+  if (!item || !nested)
+    return 0;
+
+  eflMenuSelectItem(dropdown, NULL);
+  elm_menu_item_selected_set(item, EINA_TRUE);
+  eflMenuSelectItem(nested, eflMenuStepItem(nested, NULL, 0));
+  return 1;
+}
+
+IUP_DRV_API int iupeflMenuNavigate(Ihandle* dialog, int code)
+{
+  Ihandle* bar = IupGetAttributeHandle(dialog, "MENU");
+  Ihandle* dropdown;
+  Ihandle* current;
+
+  if (!bar || !bar->handle)
+    return 0;
+
+  dropdown = eflMenuFindOpenDropdown(bar);
+  if (!dropdown)
+    return 0;
+
+  current = (Ihandle*)iupAttribGet(dropdown, "_IUP_EFL_MENU_CURRENT");
+  if (current && !iupObjectCheck(current))
+    current = NULL;
+
+  switch (code)
+  {
+  case K_ESC:
+    if (!eflMenuCloseLevel(dropdown, bar))
+    {
+      eflMenuSelectItem(dropdown, NULL);
+      elm_menu_close((Evas_Object*)bar->handle);
+    }
+    return 1;
+  case K_DOWN:
+  case K_UP:
+    eflMenuSelectItem(dropdown, eflMenuStepItem(dropdown, current, code == K_UP));
+    return 1;
+  case K_RIGHT:
+  case K_CR:
+    if (current && eflMenuDropdownOf(current))
+    {
+      Ihandle* nested = eflMenuDropdownOf(current);
+      Elm_Object_Item* item = (Elm_Object_Item*)iupAttribGet(current, "_IUP_EFL_ITEM");
+      if (item)
+        elm_object_item_signal_emit(item, "elm,action,open", "elm");
+      eflMenuSelectItem(nested, eflMenuStepItem(nested, NULL, 0));
+    }
+    else if (code == K_RIGHT)
+      eflMenuOpenBarSibling(dropdown, bar, 0);
+    else if (current)
+    {
+      eflMenuSelectItem(dropdown, NULL);
+      elm_menu_close((Evas_Object*)bar->handle);
+      eflMenuItemActivateCb(current, NULL, NULL);
+    }
+    return 1;
+  case K_LEFT:
+    if (!eflMenuCloseLevel(dropdown, bar))
+      eflMenuOpenBarSibling(dropdown, bar, 1);
+    return 1;
+  }
+
+  return 0;
+}
+
 IUP_DRV_API int iupeflMenuActivateAccel(Ihandle* ih, int code)
 {
   Ihandle* menu = IupGetAttributeHandle(ih, "MENU");
@@ -946,6 +1145,7 @@ static void eflMenuUnMapMethod(Ihandle* ih)
       evas_object_event_callback_del(hover, EVAS_CALLBACK_HIDE, eflMenuHoverHideCallback);
       iupAttribSet(ih, "_IUP_EFL_HOVER", NULL);
     }
+    iupAttribSet(ih, "_IUP_EFL_MENU_CURRENT", NULL);
     iupAttribSet(ih, "_IUP_EFL_CONTENT_MENU", NULL);
   }
   else if (ih->handle)
