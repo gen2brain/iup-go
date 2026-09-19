@@ -11,6 +11,7 @@
 #include <FL/Fl_Image.H>
 #include <FL/platform.H>
 
+#define _USE_MATH_DEFINES
 #include <cstdlib>
 #include <cstring>
 #include <cmath>
