@@ -686,6 +686,12 @@ static int iTableCreateMethod(Ihandle* ih, void** params)
   return IUP_NOERROR;
 }
 
+static int iTableSetExpandAttrib(Ihandle* ih, const char* value)
+{
+  iupAttribSet(ih, "_IUPTABLE_USEREXPAND", value ? "1" : NULL);
+  return iupBaseSetExpandAttrib(ih, value);
+}
+
 static void iTableComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* children_expand)
 {
   int natural_w = 0, natural_h = 0;
@@ -699,11 +705,13 @@ static void iTableComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* chi
   visiblecolumns = iupAttribGetInt(ih, "VISIBLECOLUMNS");
   visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
 
-  /* they bound the visible rows and columns, so the box must not stretch that axis */
-  if (visiblelines > 0)
-    ih->expand &= ~IUP_EXPAND_HEIGHT;
-  if (visiblecolumns > 0)
-    ih->expand &= ~IUP_EXPAND_WIDTH;
+  if (!iupAttribGet(ih, "_IUPTABLE_USEREXPAND"))
+  {
+    if (visiblelines > 0)
+      ih->expand &= ~IUP_EXPAND_HEIGHT;
+    if (visiblecolumns > 0)
+      ih->expand &= ~IUP_EXPAND_WIDTH;
+  }
 
   *children_expand = ih->expand;
 
@@ -1015,7 +1023,7 @@ Iclass* iupTableNewClass(void)
   iupClassRegisterAttribute(ic, "COUNT", iTableGetCountAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
 
   /* Overwrite common attributes */
-  iupClassRegisterAttribute(ic, "EXPAND", iupBaseGetExpandAttrib, iupBaseSetExpandAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "EXPAND", iupBaseGetExpandAttrib, iTableSetExpandAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
 
   /* Action attributes */
   iupClassRegisterAttribute(ic, "ADDLIN", NULL, iTableSetAddLinAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
