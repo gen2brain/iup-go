@@ -434,8 +434,7 @@ static int eflButtonMapMethod(Ihandle* ih)
   iupeflKeySetTarget(btn, ih);
   efl_event_callback_add(btn, EFL_EVENT_KEY_DOWN, iupeflKeyDownEvent, ih);
   efl_event_callback_add(btn, EFL_EVENT_KEY_UP, iupeflKeyUpEvent, ih);
-  efl_event_callback_add(btn, EFL_EVENT_FOCUS_IN, iupeflManagerFocusChangedEvent, ih);
-  efl_event_callback_add(btn, EFL_EVENT_FOCUS_OUT, iupeflManagerFocusChangedEvent, ih);
+  efl_event_callback_add(btn, EFL_UI_FOCUS_OBJECT_EVENT_FOCUS_CHANGED, iupeflFocusChangedEvent, ih);
 
   iupeflAddToParent(ih);
 
@@ -462,8 +461,7 @@ static void eflButtonUnMapMethod(Ihandle* ih)
     efl_event_callback_del(btn, EFL_EVENT_POINTER_OUT, iupeflPointerOutEvent, ih);
     efl_event_callback_del(btn, EFL_EVENT_KEY_DOWN, iupeflKeyDownEvent, ih);
     efl_event_callback_del(btn, EFL_EVENT_KEY_UP, iupeflKeyUpEvent, ih);
-    efl_event_callback_del(btn, EFL_EVENT_FOCUS_IN, iupeflManagerFocusChangedEvent, ih);
-    efl_event_callback_del(btn, EFL_EVENT_FOCUS_OUT, iupeflManagerFocusChangedEvent, ih);
+    efl_event_callback_del(btn, EFL_UI_FOCUS_OBJECT_EVENT_FOCUS_CHANGED, iupeflFocusChangedEvent, ih);
 
     efl_del(btn);
   }
