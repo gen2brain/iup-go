@@ -118,7 +118,7 @@ static void cocoaCalendarLayoutUpdateMethod(Ihandle* ih)
     CGFloat x = (parent_bounds.size.width - intrinsic_size.width) / 2;
     CGFloat y = (parent_bounds.size.height - intrinsic_size.height) / 2;
     child_rect = NSMakeRect(x, y, intrinsic_size.width, intrinsic_size.height);
-    [date_picker setFrame:child_rect];
+    iupcocoaSetViewFrame(date_picker, child_rect);
     [date_picker setBoundsSize:intrinsic_size];
   }
   else
@@ -132,7 +132,7 @@ static void cocoaCalendarLayoutUpdateMethod(Ihandle* ih)
       child_rect = NSMakeRect(ih->x, parent_bounds.size.height - ih->y - ih->currentheight, ih->currentwidth, ih->currentheight);
     }
 
-    [date_picker setFrame:child_rect];
+    iupcocoaSetViewFrame(date_picker, child_rect);
 
     if (child_rect.size.width > intrinsic_size.width || child_rect.size.height > intrinsic_size.height)
     {

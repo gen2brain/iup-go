@@ -447,6 +447,17 @@ IUP_DRV_API NSView* iupcocoaCommonBaseLayoutGetChildView(Ihandle* ih)
   return the_view;
 }
 
+void iupcocoaSetViewFrame(NSView* view, NSRect rect)
+{
+#ifdef GNUSTEP
+  /* GNUstep never invalidates the area a moved view leaves behind */
+  NSRect old_rect = [view frame];
+  if (!NSEqualRects(old_rect, rect))
+    [[view superview] setNeedsDisplayInRect:NSUnionRect(old_rect, rect)];
+#endif
+  [view setFrame:rect];
+}
+
 IUP_SDK_API void iupdrvBaseLayoutUpdateMethod(Ihandle* ih)
 {
   NSView* parent_view = iupcocoaCommonBaseLayoutGetParentView(ih);
@@ -477,7 +488,7 @@ IUP_SDK_API void iupdrvBaseLayoutUpdateMethod(Ihandle* ih)
     );
   }
 
-  [child_view setFrame:child_rect];
+  iupcocoaSetViewFrame(child_view, child_rect);
 
   iupcocoaUpdateTip(ih);
 }
