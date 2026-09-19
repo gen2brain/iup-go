@@ -1126,30 +1126,34 @@ func setTextInputFunc(ih Ihandle, f TextInputFunc) {
 
 type WheelFunc func(ih Ihandle, delta float64, x, y int, status string) int
 
-var wheelCB = purego.NewCallback(func(ih uintptr, delta float32, x, y int32, status uintptr) int {
-	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_WHEEL_CB").(WheelFunc); ok {
-		return f(Ihandle(ih), float64(delta), int(x), int(y), goString(status))
-	}
-	return 0
+var wheelCB = sync.OnceValue(func() uintptr {
+	return newFloatCallback(func(ih uintptr, delta float32, x, y int32, status uintptr) int {
+		if f, ok := loadCallback(Ihandle(ih), "_IUPGO_WHEEL_CB").(WheelFunc); ok {
+			return f(Ihandle(ih), float64(delta), int(x), int(y), goString(status))
+		}
+		return 0
+	})
 })
 
 func setWheelFunc(ih Ihandle, f WheelFunc) {
 	storeCallback(ih, "_IUPGO_WHEEL_CB", f)
-	iupSetCallback(uintptr(ih), "WHEEL_CB", wheelCB)
+	iupSetCallback(uintptr(ih), "WHEEL_CB", wheelCB())
 }
 
 type ScrollFunc func(ih Ihandle, op int, posx, posy float64) int
 
-var scrollCB = purego.NewCallback(func(ih uintptr, op int32, posx, posy float32) int {
-	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_SCROLL_CB").(ScrollFunc); ok {
-		return f(Ihandle(ih), int(op), float64(posx), float64(posy))
-	}
-	return 0
+var scrollCB = sync.OnceValue(func() uintptr {
+	return newFloatCallback(func(ih uintptr, op int32, posx, posy float32) int {
+		if f, ok := loadCallback(Ihandle(ih), "_IUPGO_SCROLL_CB").(ScrollFunc); ok {
+			return f(Ihandle(ih), int(op), float64(posx), float64(posy))
+		}
+		return 0
+	})
 })
 
 func setScrollFunc(ih Ihandle, f ScrollFunc) {
 	storeCallback(ih, "_IUPGO_SCROLL_CB", f)
-	iupSetCallback(uintptr(ih), "SCROLL_CB", scrollCB)
+	iupSetCallback(uintptr(ih), "SCROLL_CB", scrollCB())
 }
 
 type ListActionFunc func(ih Ihandle, text string, item, state int) int
@@ -1619,16 +1623,18 @@ func setFocusFunc(ih Ihandle, f FocusFunc) {
 
 type GestureFunc func(ih Ihandle, gesture, state, x, y int, v1, v2 float64) int
 
-var gestureCB = purego.NewCallback(func(ih uintptr, gesture, state, x, y int32, v1, v2 float64) int {
-	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_GESTURE_CB").(GestureFunc); ok {
-		return f(Ihandle(ih), int(gesture), int(state), int(x), int(y), v1, v2)
-	}
-	return 0
+var gestureCB = sync.OnceValue(func() uintptr {
+	return newFloatCallback(func(ih uintptr, gesture, state, x, y int32, v1, v2 float64) int {
+		if f, ok := loadCallback(Ihandle(ih), "_IUPGO_GESTURE_CB").(GestureFunc); ok {
+			return f(Ihandle(ih), int(gesture), int(state), int(x), int(y), v1, v2)
+		}
+		return 0
+	})
 })
 
 func setGestureFunc(ih Ihandle, f GestureFunc) {
 	storeCallback(ih, "_IUPGO_GESTURE_CB", f)
-	iupSetCallback(uintptr(ih), "GESTURE_CB", gestureCB)
+	iupSetCallback(uintptr(ih), "GESTURE_CB", gestureCB())
 }
 
 type MaskFailFunc func(ih Ihandle, newValue string) int
@@ -1703,30 +1709,34 @@ func setNotifyCloseFunc(ih Ihandle, f NotifyCloseFunc) {
 
 type LocationFunc func(ih Ihandle, latitude, longitude float64) int
 
-var locationCB = purego.NewCallback(func(ih uintptr, latitude, longitude float64) int {
-	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_LOCATION_CB").(LocationFunc); ok {
-		return f(Ihandle(ih), latitude, longitude)
-	}
-	return 0
+var locationCB = sync.OnceValue(func() uintptr {
+	return newFloatCallback(func(ih uintptr, latitude, longitude float64) int {
+		if f, ok := loadCallback(Ihandle(ih), "_IUPGO_LOCATION_CB").(LocationFunc); ok {
+			return f(Ihandle(ih), latitude, longitude)
+		}
+		return 0
+	})
 })
 
 func setLocationFunc(ih Ihandle, f LocationFunc) {
 	storeCallback(ih, "_IUPGO_LOCATION_CB", f)
-	iupSetCallback(uintptr(ih), "LOCATION_CB", locationCB)
+	iupSetCallback(uintptr(ih), "LOCATION_CB", locationCB())
 }
 
 type SensorFunc func(ih Ihandle, x, y, z float64) int
 
-var sensorCB = purego.NewCallback(func(ih uintptr, x, y, z float64) int {
-	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_SENSOR_CB").(SensorFunc); ok {
-		return f(Ihandle(ih), x, y, z)
-	}
-	return 0
+var sensorCB = sync.OnceValue(func() uintptr {
+	return newFloatCallback(func(ih uintptr, x, y, z float64) int {
+		if f, ok := loadCallback(Ihandle(ih), "_IUPGO_SENSOR_CB").(SensorFunc); ok {
+			return f(Ihandle(ih), x, y, z)
+		}
+		return 0
+	})
 })
 
 func setSensorFunc(ih Ihandle, f SensorFunc) {
 	storeCallback(ih, "_IUPGO_SENSOR_CB", f)
-	iupSetCallback(uintptr(ih), "SENSOR_CB", sensorCB)
+	iupSetCallback(uintptr(ih), "SENSOR_CB", sensorCB())
 }
 
 type PermissionFunc func(ih Ihandle, granted int) int
@@ -1997,23 +2007,25 @@ func setValueChangingFunc(ih Ihandle, f ValueChangingFunc) {
 
 type PostMessageFunc func(Ihandle, string, int, any) int
 
-var postMessageCB = purego.NewCallback(func(ih, s uintptr, i int32, d float64, p uintptr) int {
-	_ = d
-	f, ok := loadCallback(Ihandle(ih), "_IUPGO_POSTMESSAGE_CB").(PostMessageFunc)
-	if !ok {
-		return 0
-	}
-	var payload any
-	if p != 0 {
-		payload = cbLoad(uint64(p))
-		cbDelete(uint64(p))
-	}
-	return f(Ihandle(ih), goString(s), int(i), payload)
+var postMessageCB = sync.OnceValue(func() uintptr {
+	return newFloatCallback(func(ih, s uintptr, i int32, d float64, p uintptr) int {
+		_ = d
+		f, ok := loadCallback(Ihandle(ih), "_IUPGO_POSTMESSAGE_CB").(PostMessageFunc)
+		if !ok {
+			return 0
+		}
+		var payload any
+		if p != 0 {
+			payload = cbLoad(uint64(p))
+			cbDelete(uint64(p))
+		}
+		return f(Ihandle(ih), goString(s), int(i), payload)
+	})
 })
 
 func setPostMessageFunc(ih Ihandle, f PostMessageFunc) {
 	storeCallback(ih, "_IUPGO_POSTMESSAGE_CB", f)
-	iupSetCallback(uintptr(ih), "POSTMESSAGE_CB", postMessageCB)
+	iupSetCallback(uintptr(ih), "POSTMESSAGE_CB", postMessageCB())
 }
 
 func PostMessage(ih Ihandle, s string, i int, p any) {

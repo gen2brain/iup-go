@@ -43,3 +43,5 @@ func currentThreadID() uint64 {
 
 	return uint64(pthreadSelf())
 }
+
+func newFloatCallback(fn any) uintptr { return purego.NewCallback(fn) }

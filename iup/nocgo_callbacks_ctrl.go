@@ -2,7 +2,11 @@
 
 package iup
 
-import "github.com/ebitengine/purego"
+import (
+	"sync"
+
+	"github.com/ebitengine/purego"
+)
 
 type BusyFunc func(ih Ihandle, lin, col int, status string) int
 
@@ -576,16 +580,18 @@ func setNLinesFunc(ih Ihandle, f NLinesFunc) {
 
 type NumericSetValueFunc func(ih Ihandle, lin, col int, value float64) int
 
-var numericSetValueFuncCB = purego.NewCallback(func(ih uintptr, lin int32, col int32, value float64) int {
-	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_NUMERICSETVALUE_CB").(NumericSetValueFunc); ok {
-		return f(Ihandle(ih), int(lin), int(col), value)
-	}
-	return 0
+var numericSetValueFuncCB = sync.OnceValue(func() uintptr {
+	return newFloatCallback(func(ih uintptr, lin int32, col int32, value float64) int {
+		if f, ok := loadCallback(Ihandle(ih), "_IUPGO_NUMERICSETVALUE_CB").(NumericSetValueFunc); ok {
+			return f(Ihandle(ih), int(lin), int(col), value)
+		}
+		return 0
+	})
 })
 
 func setNumericSetValueFunc(ih Ihandle, f NumericSetValueFunc) {
 	storeCallback(ih, "_IUPGO_NUMERICSETVALUE_CB", f)
-	iupSetCallback(uintptr(ih), "NUMERICSETVALUE_CB", numericSetValueFuncCB)
+	iupSetCallback(uintptr(ih), "NUMERICSETVALUE_CB", numericSetValueFuncCB())
 }
 
 type PasteSizeFunc func(ih Ihandle, numlin, numcol int) int
@@ -835,16 +841,18 @@ func setFlatMotionFunc(ih Ihandle, f MotionFunc) {
 	iupSetCallback(uintptr(ih), "FLAT_MOTION_CB", flatMotionCB)
 }
 
-var flatWheelCB = purego.NewCallback(func(ih uintptr, delta float32, x, y int32, status uintptr) int {
-	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_FLAT_WHEEL_CB").(WheelFunc); ok {
-		return f(Ihandle(ih), float64(delta), int(x), int(y), goString(status))
-	}
-	return 0
+var flatWheelCB = sync.OnceValue(func() uintptr {
+	return newFloatCallback(func(ih uintptr, delta float32, x, y int32, status uintptr) int {
+		if f, ok := loadCallback(Ihandle(ih), "_IUPGO_FLAT_WHEEL_CB").(WheelFunc); ok {
+			return f(Ihandle(ih), float64(delta), int(x), int(y), goString(status))
+		}
+		return 0
+	})
 })
 
 func setFlatWheelFunc(ih Ihandle, f WheelFunc) {
 	storeCallback(ih, "_IUPGO_FLAT_WHEEL_CB", f)
-	iupSetCallback(uintptr(ih), "FLAT_WHEEL_CB", flatWheelCB)
+	iupSetCallback(uintptr(ih), "FLAT_WHEEL_CB", flatWheelCB())
 }
 
 var flatFocusCB = purego.NewCallback(func(ih uintptr, c int32) int {
