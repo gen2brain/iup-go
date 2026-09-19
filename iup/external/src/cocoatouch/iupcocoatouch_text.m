@@ -56,9 +56,22 @@ static const void* IUPCOCOATOUCH_TEXT_DELEGATE_KEY = "IUPCOCOATOUCH_TEXT_DELEGAT
 
 @interface IupCocoaTouchTextView : UITextView
 @property(nonatomic, assign) Ihandle* ihandle;
+@property(nonatomic, assign) BOOL unwrapped;
 @end
 
 @implementation IupCocoaTouchTextView
+
+/* UITextView puts width tracking back on every time it lays out, which re-wraps a WORDWRAP=NO text */
+- (void)layoutSubviews
+{
+	[super layoutSubviews];
+	if (!_unwrapped) return;
+	if (self.textContainer.widthTracksTextView || self.textContainer.size.width != CGFLOAT_MAX)
+	{
+		self.textContainer.widthTracksTextView = NO;
+		self.textContainer.size = CGSizeMake(CGFLOAT_MAX, CGFLOAT_MAX);
+	}
+}
 
 - (void)pressesBegan:(NSSet<UIPress*>*)presses withEvent:(UIPressesEvent*)event
 {
@@ -1658,10 +1671,7 @@ static int cocoaTouchTextMapMethod(Ihandle* ih)
 		if (iupAttribGetBoolean(ih, "WORDWRAP"))
 			ih->data->sb &= ~IUP_SB_HORIZ;
 		else
-		{
-			tv.textContainer.size = CGSizeMake(CGFLOAT_MAX, CGFLOAT_MAX);
-			tv.textContainer.widthTracksTextView = NO;
-		}
+			tv.unwrapped = YES;
 		cocoaTouchTextWireViewDelegate(tv, ih);
 		view = tv;
 	}
