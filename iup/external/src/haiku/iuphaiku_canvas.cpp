@@ -255,6 +255,7 @@ bool iuphaikuCanvasOnKeyUp(Ihandle* ih, BView* view, const char* bytes, int numB
 
 bool iuphaikuCanvasOnMessageReceived(Ihandle* ih, BView* view, BMessage* msg)
 {
+  if (iuphaikuHandleDropFiles(ih, view, msg)) return true;
   if (iuphaikuDnDMessageReceived(ih, view, msg)) return true;
   if (msg && msg->what == B_MOUSE_WHEEL_CHANGED && ih)
   {
