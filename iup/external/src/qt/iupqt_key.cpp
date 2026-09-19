@@ -72,6 +72,7 @@ static Iqt2iupkey keypad_remap[] = {
 static Iqt2iupkey other_remap[] = {
   { Qt::Key_Backspace,  K_BS  },
   { Qt::Key_Tab,        K_TAB },
+  { Qt::Key_Backtab,    K_TAB },
   { Qt::Key_Return,     K_CR  },
   { Qt::Key_Enter,      K_CR  },
   { Qt::Key_Escape,     K_ESC },

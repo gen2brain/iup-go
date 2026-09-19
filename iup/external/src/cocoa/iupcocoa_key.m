@@ -234,7 +234,8 @@ static int cocoaKeyDecodeCharacter(NSEvent* ns_event)
     case NSMenuFunctionKey:        return K_Menu;
     case NSHelpFunctionKey:        return K_HELP;
     case 0x1B:                     return K_ESC;
-    case 0x09:                     return K_TAB;
+    case 0x09:
+    case 0x19:                     return K_TAB;
     case 0x0D:
     case 0x03:                     return K_CR;
     case 0x7F:                     return K_BS;
