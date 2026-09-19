@@ -214,6 +214,60 @@ static void eflMenuShowCallback(void* data, Evas* e, Evas_Object* obj, void* eve
     cb(ih);
 }
 
+static void eflMenuHoverShowCallback(void* data, Evas* e, Evas_Object* obj, void* event_info)
+{
+  Ihandle* ih = (Ihandle*)data;
+  Icallback cb;
+
+  (void)e;
+  (void)obj;
+  (void)event_info;
+
+  cb = IupGetCallback(ih, "MENUOPEN_CB");
+  if (!cb && ih->parent)
+    cb = IupGetCallback(ih->parent, "MENUOPEN_CB");
+  if (cb)
+    cb(ih);
+}
+
+static void eflMenuHoverHideCallback(void* data, Evas* e, Evas_Object* obj, void* event_info)
+{
+  Ihandle* ih = (Ihandle*)data;
+  Icallback cb;
+
+  (void)e;
+  (void)obj;
+  (void)event_info;
+
+  cb = IupGetCallback(ih, "MENUCLOSE_CB");
+  if (!cb && ih->parent)
+    cb = IupGetCallback(ih->parent, "MENUCLOSE_CB");
+  if (cb)
+    cb(ih);
+}
+
+static void eflMenuHookDropdownHover(Ihandle* menu, Elm_Object_Item* item)
+{
+  Evas_Object* view;
+  Evas_Object* box;
+  Evas_Object* hover;
+  const char* type;
+
+  if (!menu || iupAttribGet(menu, "_IUP_EFL_HOVER"))
+    return;
+
+  view = elm_menu_item_object_get(item);
+  box = view ? elm_object_parent_widget_get(view) : NULL;
+  hover = box ? elm_object_parent_widget_get(box) : NULL;
+  type = hover ? evas_object_type_get(hover) : NULL;
+  if (!type || !strstr(type, "hover"))
+    return;
+
+  iupAttribSet(menu, "_IUP_EFL_HOVER", (char*)hover);
+  evas_object_event_callback_add(hover, EVAS_CALLBACK_SHOW, eflMenuHoverShowCallback, menu);
+  evas_object_event_callback_add(hover, EVAS_CALLBACK_HIDE, eflMenuHoverHideCallback, menu);
+}
+
 static void eflMenuItemUpdateMark(Ihandle* ih, const char* title_override)
 {
   Elm_Object_Item* item = (Elm_Object_Item*)iupAttribGet(ih, "_IUP_EFL_ITEM");
@@ -396,6 +450,9 @@ static int eflMenuItemMapMethod(Ihandle* ih)
   ih->serial = iupMenuGetChildId(ih);
   iupAttribSet(ih, "_IUP_EFL_ITEM", (char*)item);
 
+  if (parent_item)
+    eflMenuHookDropdownHover(ih->parent, item);
+
   eflMenuItemUpdateMark(ih, NULL);
 
   if (!iupAttribGetBoolean(ih, "ACTIVE"))
@@ -563,6 +620,9 @@ static int eflSubmenuMapMethod(Ihandle* ih)
   iupAttribSet(ih, "_IUP_EFL_ITEM", (char*)item);
   iupAttribSet(ih, "_IUP_EFL_PARENT_ITEM", (char*)item);
 
+  if (parent_item)
+    eflMenuHookDropdownHover(ih->parent, item);
+
   if (mnemonic && iupMenuIsMenuBar(ih->parent))
     eflMenuStoreMnemonic(ih->parent, mnemonic, item);
 
@@ -702,6 +762,8 @@ IUP_SDK_API int iupdrvRecentMenuUpdate(Ihandle* menu, const char** filenames, in
       {
         elm_object_item_data_set(item, (void*)(intptr_t)i);
         iupAttribSet(menu, attr_name, (char*)item);
+        if (parent_item)
+          eflMenuHookDropdownHover(menu, item);
       }
     }
 
@@ -733,6 +795,8 @@ IUP_SDK_API int iupdrvRecentMenuUpdate(Ihandle* menu, const char** filenames, in
     {
       elm_object_item_disabled_set(empty_item, EINA_TRUE);
       iupAttribSet(menu, "_IUP_RECENT_EMPTY", (char*)empty_item);
+      if (parent_item)
+        eflMenuHookDropdownHover(menu, empty_item);
     }
   }
 
@@ -875,6 +939,13 @@ static void eflMenuUnMapMethod(Ihandle* ih)
   }
   else if (iupAttribGet(ih, "_IUP_EFL_CONTENT_MENU"))
   {
+    Evas_Object* hover = (Evas_Object*)iupAttribGet(ih, "_IUP_EFL_HOVER");
+    if (hover)
+    {
+      evas_object_event_callback_del(hover, EVAS_CALLBACK_SHOW, eflMenuHoverShowCallback);
+      evas_object_event_callback_del(hover, EVAS_CALLBACK_HIDE, eflMenuHoverHideCallback);
+      iupAttribSet(ih, "_IUP_EFL_HOVER", NULL);
+    }
     iupAttribSet(ih, "_IUP_EFL_CONTENT_MENU", NULL);
   }
   else if (ih->handle)
