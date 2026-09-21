@@ -545,6 +545,204 @@ IUP_SDK_API void iupdrvDrawQuadraticBezier(IdrawCanvas* dc, int x1, int y1, int 
   iupdrvDrawBezier(dc, x1, y1, cx1, cy1, cx2, cy2, x3, y3, color, style, line_width);
 }
 
+static WD_HBRUSH iWdlCreateSourceBrush(IdrawCanvas* dc, const IupDrawSource* src)
+{
+  WD_COLOR colors[IUP_GRADIENT_MAX_STOPS];
+  int i;
+
+  if (src->type == IUP_SOURCE_SOLID)
+    return wdCreateSolidBrush(dc->hCanvas, iupColor2ARGB(src->color));
+
+  for (i = 0; i < src->count; i++)
+    colors[i] = iupColor2ARGB(src->colors[i]);
+
+  if (src->type == IUP_SOURCE_LINEAR_GRADIENT)
+  {
+    int gx1 = src->x1, gy1 = src->y1, gx2 = src->x2, gy2 = src->y2;
+    float rad, w, h, cx, cy, x0, y0, x3, y3;
+
+    iupDrawCheckSwapCoord(gx1, gx2);
+    iupDrawCheckSwapCoord(gy1, gy2);
+
+    rad = src->angle * 3.14159265359f / 180.0f;
+    w = (float)(gx2 - gx1);
+    h = (float)(gy2 - gy1);
+    cx = (float)gx1 + w / 2.0f;
+    cy = (float)gy1 + h / 2.0f;
+
+    x0 = cx - (w * cosf(rad)) / 2.0f;
+    y0 = cy - (h * sinf(rad)) / 2.0f;
+    x3 = cx + (w * cosf(rad)) / 2.0f;
+    y3 = cy + (h * sinf(rad)) / 2.0f;
+
+    return wdCreateLinearGradientBrushEx(dc->hCanvas, x0, y0, x3, y3, colors, src->offsets, src->count);
+  }
+  else
+    return wdCreateRadialGradientBrushEx(dc->hCanvas, iupInt2Float(src->cx), iupInt2Float(src->cy), iupInt2Float(src->radius), iupInt2Float(src->radius), colors, src->offsets, src->count);
+}
+
+static WD_HPATH iWdlBuildPath(IdrawCanvas* dc, const IupPathSeg* segs, int count, int rule)
+{
+  WD_HPATH path;
+  WD_PATHSINK sink;
+  int i;
+  int in_figure = 0;
+  float sub_x = 0.0f, sub_y = 0.0f;
+
+  path = wdCreatePath(dc->hCanvas);
+  if (!path)
+    return NULL;
+
+  if (!wdOpenPathSink(&sink, path))
+  {
+    wdDestroyPath(path);
+    return NULL;
+  }
+
+  for (i = 0; i < count; i++)
+  {
+    switch (segs[i].op)
+    {
+    case IUP_PATHSEG_MOVE_TO:
+      if (in_figure)
+        wdEndFigure(&sink, FALSE);
+      wdBeginFigureFillMode(&sink, iupInt2Float(segs[i].x1), iupInt2Float(segs[i].y1), rule);
+      sub_x = iupInt2Float(segs[i].x1);
+      sub_y = iupInt2Float(segs[i].y1);
+      in_figure = 1;
+      break;
+    case IUP_PATHSEG_LINE_TO:
+      if (!in_figure)
+      {
+        wdBeginFigureFillMode(&sink, sub_x, sub_y, rule);
+        in_figure = 1;
+      }
+      wdAddLine(&sink, iupInt2Float(segs[i].x1), iupInt2Float(segs[i].y1));
+      break;
+    case IUP_PATHSEG_CURVE_TO:
+      if (!in_figure)
+      {
+        wdBeginFigureFillMode(&sink, sub_x, sub_y, rule);
+        in_figure = 1;
+      }
+      wdAddBezier(&sink, iupInt2Float(segs[i].x1), iupInt2Float(segs[i].y1), iupInt2Float(segs[i].x2), iupInt2Float(segs[i].y2), iupInt2Float(segs[i].x3), iupInt2Float(segs[i].y3));
+      break;
+    case IUP_PATHSEG_QUAD_TO:
+    {
+      float qx, qy, c1x, c1y, c2x, c2y;
+      if (!in_figure)
+      {
+        wdBeginFigureFillMode(&sink, sub_x, sub_y, rule);
+        in_figure = 1;
+      }
+      qx = sink.ptEnd.x;
+      qy = sink.ptEnd.y;
+      c1x = qx + 2.0f / 3.0f * (iupInt2Float(segs[i].x1) - qx);
+      c1y = qy + 2.0f / 3.0f * (iupInt2Float(segs[i].y1) - qy);
+      c2x = iupInt2Float(segs[i].x2) + 2.0f / 3.0f * (iupInt2Float(segs[i].x1) - iupInt2Float(segs[i].x2));
+      c2y = iupInt2Float(segs[i].y2) + 2.0f / 3.0f * (iupInt2Float(segs[i].y1) - iupInt2Float(segs[i].y2));
+      wdAddBezier(&sink, c1x, c1y, c2x, c2y, iupInt2Float(segs[i].x2), iupInt2Float(segs[i].y2));
+      break;
+    }
+    case IUP_PATHSEG_ARC_TO:
+    {
+      IupPathSeg bez[4];
+      int j, n = iupDrawPathArcToBeziers(&segs[i], bez);
+      if (!in_figure)
+      {
+        wdBeginFigureFillMode(&sink, sub_x, sub_y, rule);
+        in_figure = 1;
+      }
+      for (j = 0; j < n; j++)
+        wdAddBezier(&sink, iupInt2Float(bez[j].x1), iupInt2Float(bez[j].y1), iupInt2Float(bez[j].x2), iupInt2Float(bez[j].y2), iupInt2Float(bez[j].x3), iupInt2Float(bez[j].y3));
+      break;
+    }
+    case IUP_PATHSEG_CLOSE:
+      if (in_figure)
+        wdEndFigure(&sink, TRUE);
+      in_figure = 0;
+      break;
+    }
+  }
+
+  if (in_figure)
+    wdEndFigure(&sink, FALSE);
+
+  wdClosePathSink(&sink);
+  return path;
+}
+
+IUP_SDK_API void iupdrvDrawPathFill(IdrawCanvas* dc, const IupPathSeg* segs, int count, const IupDrawSource* src, int rule)
+{
+  WD_HPATH path = iWdlBuildPath(dc, segs, count, rule);
+  if (!path)
+    return;
+
+  {
+    WD_HBRUSH brush = iWdlCreateSourceBrush(dc, src);
+    if (brush)
+    {
+      wdFillPath(dc->hCanvas, brush, path);
+      wdDestroyBrush(brush);
+    }
+    else
+    {
+      wdSetClip(dc->hCanvas, NULL, path);
+      if (src->type == IUP_SOURCE_LINEAR_GRADIENT)
+        iupdrvDrawLinearGradient(dc, src->x1, src->y1, src->x2, src->y2, src->angle, src->colors, src->offsets, src->count);
+      else
+        iupdrvDrawRadialGradient(dc, src->cx, src->cy, src->radius, src->colors, src->offsets, src->count);
+      wdSetClip(dc->hCanvas, NULL, NULL);
+    }
+  }
+
+  wdDestroyPath(path);
+}
+
+IUP_SDK_API void iupdrvDrawPathStroke(IdrawCanvas* dc, const IupPathSeg* segs, int count, const IupDrawSource* src, int style, int line_width)
+{
+  WD_HPATH path = iWdlBuildPath(dc, segs, count, IUP_PATH_RULE_WINDING);
+  WD_HBRUSH brush;
+  WD_HSTROKESTYLE stroke_style;
+
+  if (!path)
+    return;
+
+  stroke_style = iCreateStrokeStyle(style);
+  brush = iWdlCreateSourceBrush(dc, src);
+  if (!brush)
+  {
+    brush = wdCreateSolidBrush(dc->hCanvas, iupColor2ARGB(src->colors[0]));
+    if (!brush)
+    {
+      wdDestroyPath(path);
+      return;
+    }
+  }
+
+  wdDrawPathStyled(dc->hCanvas, brush, path, iupInt2FloatW(line_width), stroke_style);
+
+  wdDestroyBrush(brush);
+  wdDestroyPath(path);
+}
+
+IUP_SDK_API void iupdrvDrawSetClipPath(IdrawCanvas* dc, const IupPathSeg* segs, int count, int rule)
+{
+  int x1, y1, x2, y2;
+  WD_HPATH path = iWdlBuildPath(dc, segs, count, rule);
+  if (!path)
+    return;
+
+  wdSetClip(dc->hCanvas, NULL, path);
+  wdDestroyPath(path);
+
+  iupDrawPathGetBBox(segs, count, &x1, &y1, &x2, &y2);
+  dc->clip_x1 = x1;
+  dc->clip_y1 = y1;
+  dc->clip_x2 = x2;
+  dc->clip_y2 = y2;
+}
+
 IUP_SDK_API void iupdrvDrawResetClip(IdrawCanvas* dc)
 {
   wdSetClip(dc->hCanvas, NULL, NULL);

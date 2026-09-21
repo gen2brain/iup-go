@@ -84,32 +84,38 @@ wdSetSolidBrushColor(WD_HBRUSH hBrush, WD_COLOR color)
 }
 
 WD_HBRUSH
-wdCreateLinearGradientBrush(WD_HCANVAS hCanvas, float x0, float y0, float x1, float y1, WD_COLOR color0, WD_COLOR color1)
+wdCreateLinearGradientBrushEx(WD_HCANVAS hCanvas, float x0, float y0, float x1, float y1, const WD_COLOR* colors, const float* offsets, int count)
 {
     if(d2d_enabled()) {
         d2d_canvas_t* c = (d2d_canvas_t*) hCanvas;
         dummy_ID2D1LinearGradientBrush* b;
         dummy_ID2D1GradientStopCollection* stopCollection;
-        dummy_D2D1_GRADIENT_STOP stops[2];
+        dummy_D2D1_GRADIENT_STOP* stops;
         dummy_D2D1_LINEAR_GRADIENT_BRUSH_PROPERTIES props;
         HRESULT hr;
+        int i;
 
-        /* Create gradient stops */
-        stops[0].position = 0.0f;
-        d2d_init_color(&stops[0].color, color0);
-        stops[1].position = 1.0f;
-        d2d_init_color(&stops[1].color, color1);
+        if(count < 2)
+            return NULL;
 
-        /* Create gradient stop collection */
-        hr = dummy_ID2D1RenderTarget_CreateGradientStopCollection(c->target, stops, 2,
+        stops = (dummy_D2D1_GRADIENT_STOP*) malloc((size_t)count * sizeof(dummy_D2D1_GRADIENT_STOP));
+        if(stops == NULL)
+            return NULL;
+
+        for(i = 0; i < count; i++) {
+            stops[i].position = offsets[i];
+            d2d_init_color(&stops[i].color, colors[i]);
+        }
+
+        hr = dummy_ID2D1RenderTarget_CreateGradientStopCollection(c->target, stops, count,
                     0 /* D2D1_GAMMA_2_2 */, 0 /* D2D1_EXTEND_MODE_CLAMP */, &stopCollection);
+        free(stops);
         if(FAILED(hr)) {
             WD_TRACE_HR("wdCreateLinearGradientBrush: "
                         "ID2D1RenderTarget::CreateGradientStopCollection() failed.");
             return NULL;
         }
 
-        /* Create linear gradient brush */
         props.startPoint.x = x0;
         props.startPoint.y = y0;
         props.endPoint.x = x1;
@@ -133,32 +139,46 @@ wdCreateLinearGradientBrush(WD_HCANVAS hCanvas, float x0, float y0, float x1, fl
 }
 
 WD_HBRUSH
-wdCreateRadialGradientBrush(WD_HCANVAS hCanvas, float cx, float cy, float rx, float ry, WD_COLOR colorCenter, WD_COLOR colorEdge)
+wdCreateLinearGradientBrush(WD_HCANVAS hCanvas, float x0, float y0, float x1, float y1, WD_COLOR color0, WD_COLOR color1)
+{
+    WD_COLOR colors[2] = { color0, color1 };
+    float offsets[2] = { 0.0f, 1.0f };
+    return wdCreateLinearGradientBrushEx(hCanvas, x0, y0, x1, y1, colors, offsets, 2);
+}
+
+WD_HBRUSH
+wdCreateRadialGradientBrushEx(WD_HCANVAS hCanvas, float cx, float cy, float rx, float ry, const WD_COLOR* colors, const float* offsets, int count)
 {
     if(d2d_enabled()) {
         d2d_canvas_t* c = (d2d_canvas_t*) hCanvas;
         dummy_ID2D1RadialGradientBrush* b;
         dummy_ID2D1GradientStopCollection* stopCollection;
-        dummy_D2D1_GRADIENT_STOP stops[2];
+        dummy_D2D1_GRADIENT_STOP* stops;
         dummy_D2D1_RADIAL_GRADIENT_BRUSH_PROPERTIES props;
         HRESULT hr;
+        int i;
 
-        /* Create gradient stops */
-        stops[0].position = 0.0f;
-        d2d_init_color(&stops[0].color, colorCenter);
-        stops[1].position = 1.0f;
-        d2d_init_color(&stops[1].color, colorEdge);
+        if(count < 2)
+            return NULL;
 
-        /* Create gradient stop collection */
-        hr = dummy_ID2D1RenderTarget_CreateGradientStopCollection(c->target, stops, 2,
+        stops = (dummy_D2D1_GRADIENT_STOP*) malloc((size_t)count * sizeof(dummy_D2D1_GRADIENT_STOP));
+        if(stops == NULL)
+            return NULL;
+
+        for(i = 0; i < count; i++) {
+            stops[i].position = offsets[i];
+            d2d_init_color(&stops[i].color, colors[i]);
+        }
+
+        hr = dummy_ID2D1RenderTarget_CreateGradientStopCollection(c->target, stops, count,
                     0 /* D2D1_GAMMA_2_2 */, 0 /* D2D1_EXTEND_MODE_CLAMP */, &stopCollection);
+        free(stops);
         if(FAILED(hr)) {
             WD_TRACE_HR("wdCreateRadialGradientBrush: "
                         "ID2D1RenderTarget::CreateGradientStopCollection() failed.");
             return NULL;
         }
 
-        /* Create radial gradient brush */
         props.center.x = cx;
         props.center.y = cy;
         props.gradientOriginOffset.x = 0.0f;
@@ -181,4 +201,12 @@ wdCreateRadialGradientBrush(WD_HCANVAS hCanvas, float cx, float cy, float rx, fl
         /* Return NULL - caller will fall back to manual gradient */
         return NULL;
     }
+}
+
+WD_HBRUSH
+wdCreateRadialGradientBrush(WD_HCANVAS hCanvas, float cx, float cy, float rx, float ry, WD_COLOR colorCenter, WD_COLOR colorEdge)
+{
+    WD_COLOR colors[2] = { colorCenter, colorEdge };
+    float offsets[2] = { 0.0f, 1.0f };
+    return wdCreateRadialGradientBrushEx(hCanvas, cx, cy, rx, ry, colors, offsets, 2);
 }

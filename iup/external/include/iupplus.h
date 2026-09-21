@@ -427,6 +427,20 @@ namespace Iup
     void DrawRadialGradient(int cx, int cy, int radius, const char* colorCenter, const char* colorEdge) { IupDrawRadialGradient(ih, cx, cy, radius, colorCenter, colorEdge); }
     void DrawLinearGradientStops(int x1, int y1, int x2, int y2, float angle, const char** colors, const float* offsets, int count) { IupDrawLinearGradientStops(ih, x1, y1, x2, y2, angle, colors, offsets, count); }
     void DrawRadialGradientStops(int cx, int cy, int radius, const char** colors, const float* offsets, int count) { IupDrawRadialGradientStops(ih, cx, cy, radius, colors, offsets, count); }
+    void DrawPathBegin() { IupDrawPathBegin(ih); }
+    void DrawPathMoveTo(int x, int y) { IupDrawPathMoveTo(ih, x, y); }
+    void DrawPathLineTo(int x, int y) { IupDrawPathLineTo(ih, x, y); }
+    void DrawPathCurveTo(int x1, int y1, int x2, int y2, int x3, int y3) { IupDrawPathCurveTo(ih, x1, y1, x2, y2, x3, y3); }
+    void DrawPathQuadTo(int x1, int y1, int x2, int y2) { IupDrawPathQuadTo(ih, x1, y1, x2, y2); }
+    void DrawPathArcTo(int cx, int cy, int rx, int ry, double a1, double a2) { IupDrawPathArcTo(ih, cx, cy, rx, ry, a1, a2); }
+    void DrawPathClose() { IupDrawPathClose(ih); }
+    void DrawPathFill(int rule) { IupDrawPathFill(ih, rule); }
+    void DrawPathStroke() { IupDrawPathStroke(ih); }
+    void DrawSetClipPath(int rule) { IupDrawSetClipPath(ih, rule); }
+    void DrawSetSourceSolid(const char* color) { IupDrawSetSourceSolid(ih, color); }
+    void DrawSetSourceLinearGradient(int x1, int y1, int x2, int y2, float angle, const char** colors, const float* offsets, int count) { IupDrawSetSourceLinearGradient(ih, x1, y1, x2, y2, angle, colors, offsets, count); }
+    void DrawSetSourceRadialGradient(int cx, int cy, int radius, const char** colors, const float* offsets, int count) { IupDrawSetSourceRadialGradient(ih, cx, cy, radius, colors, offsets, count); }
+    void DrawResetSource() { IupDrawResetSource(ih); }
     void DrawText(const char* text, int len, int x, int y, int w, int h) { IupDrawText(ih, text, len, x, y, w, h); }
     void DrawImage(const char* name, int x, int y, int w, int h) { IupDrawImage(ih, name, x, y, w, h); }
     void DrawSelectRect(int x1, int y1, int x2, int y2) { IupDrawSelectRect(ih, x1, y1, x2, y2); }
@@ -720,6 +734,20 @@ namespace Iup
     void DrawRadialGradient(int cx, int cy, int radius, const char* colorCenter, const char* colorEdge) { IupDrawRadialGradient(ih, cx, cy, radius, colorCenter, colorEdge); }
     void DrawLinearGradientStops(int x1, int y1, int x2, int y2, float angle, const char** colors, const float* offsets, int count) { IupDrawLinearGradientStops(ih, x1, y1, x2, y2, angle, colors, offsets, count); }
     void DrawRadialGradientStops(int cx, int cy, int radius, const char** colors, const float* offsets, int count) { IupDrawRadialGradientStops(ih, cx, cy, radius, colors, offsets, count); }
+    void DrawPathBegin() { IupDrawPathBegin(ih); }
+    void DrawPathMoveTo(int x, int y) { IupDrawPathMoveTo(ih, x, y); }
+    void DrawPathLineTo(int x, int y) { IupDrawPathLineTo(ih, x, y); }
+    void DrawPathCurveTo(int x1, int y1, int x2, int y2, int x3, int y3) { IupDrawPathCurveTo(ih, x1, y1, x2, y2, x3, y3); }
+    void DrawPathQuadTo(int x1, int y1, int x2, int y2) { IupDrawPathQuadTo(ih, x1, y1, x2, y2); }
+    void DrawPathArcTo(int cx, int cy, int rx, int ry, double a1, double a2) { IupDrawPathArcTo(ih, cx, cy, rx, ry, a1, a2); }
+    void DrawPathClose() { IupDrawPathClose(ih); }
+    void DrawPathFill(int rule) { IupDrawPathFill(ih, rule); }
+    void DrawPathStroke() { IupDrawPathStroke(ih); }
+    void DrawSetClipPath(int rule) { IupDrawSetClipPath(ih, rule); }
+    void DrawSetSourceSolid(const char* color) { IupDrawSetSourceSolid(ih, color); }
+    void DrawSetSourceLinearGradient(int x1, int y1, int x2, int y2, float angle, const char** colors, const float* offsets, int count) { IupDrawSetSourceLinearGradient(ih, x1, y1, x2, y2, angle, colors, offsets, count); }
+    void DrawSetSourceRadialGradient(int cx, int cy, int radius, const char** colors, const float* offsets, int count) { IupDrawSetSourceRadialGradient(ih, cx, cy, radius, colors, offsets, count); }
+    void DrawResetSource() { IupDrawResetSource(ih); }
     void DrawText(const char* text, int len, int x, int y, int w, int h) { IupDrawText(ih, text, len, x, y, w, h); }
     void DrawImage(const char* name, int x, int y, int w, int h) { IupDrawImage(ih, name, x, y, w, h); }
     void DrawSelectRect(int x1, int y1, int x2, int y2) { IupDrawSelectRect(ih, x1, y1, x2, y2); }

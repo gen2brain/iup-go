@@ -501,6 +501,138 @@ void iupSvgDrawRadialGradient(iSvgCanvas* dc, int cx, int cy, int radius, const 
   iSvgBufAppend(&dc->buf, "/>\n");
 }
 
+/* ---- Path ---- */
+
+static void iSvgWritePathD(iSvgCanvas* dc, const IupPathSeg* segs, int count)
+{
+  int i;
+  for (i = 0; i < count; i++)
+  {
+    switch (segs[i].op)
+    {
+    case IUP_PATHSEG_MOVE_TO:
+      iSvgBufPrintf(&dc->buf, "M%d,%d ", segs[i].x1, segs[i].y1);
+      break;
+    case IUP_PATHSEG_LINE_TO:
+      iSvgBufPrintf(&dc->buf, "L%d,%d ", segs[i].x1, segs[i].y1);
+      break;
+    case IUP_PATHSEG_CURVE_TO:
+      iSvgBufPrintf(&dc->buf, "C%d,%d %d,%d %d,%d ", segs[i].x1, segs[i].y1, segs[i].x2, segs[i].y2, segs[i].x3, segs[i].y3);
+      break;
+    case IUP_PATHSEG_QUAD_TO:
+      iSvgBufPrintf(&dc->buf, "Q%d,%d %d,%d ", segs[i].x1, segs[i].y1, segs[i].x2, segs[i].y2);
+      break;
+    case IUP_PATHSEG_ARC_TO:
+    {
+      IupPathSeg bez[4];
+      int j, n = iupDrawPathArcToBeziers(&segs[i], bez);
+      for (j = 0; j < n; j++)
+        iSvgBufPrintf(&dc->buf, "C%d,%d %d,%d %d,%d ", bez[j].x1, bez[j].y1, bez[j].x2, bez[j].y2, bez[j].x3, bez[j].y3);
+      break;
+    }
+    case IUP_PATHSEG_CLOSE:
+      iSvgBufAppend(&dc->buf, "Z ");
+      break;
+    }
+  }
+}
+
+static int iSvgWriteGradientDef(iSvgCanvas* dc, const IupDrawSource* src)
+{
+  int gid = dc->id_counter++;
+
+  if (src->type == IUP_SOURCE_LINEAR_GRADIENT)
+  {
+    int x1 = src->x1, y1 = src->y1, x2 = src->x2, y2 = src->y2;
+    float rad, w, h, gx1, gy1, gx2, gy2;
+
+    iSvgSwapCoord(x1, x2);
+    iSvgSwapCoord(y1, y2);
+
+    w = (float)(x2 - x1);
+    h = (float)(y2 - y1);
+
+    rad = src->angle * (float)IUP_DEG2RAD;
+
+    gx1 = (float)x1 + w / 2.0f - (w * cosf(rad)) / 2.0f;
+    gy1 = (float)y1 + h / 2.0f - (h * sinf(rad)) / 2.0f;
+    gx2 = (float)x1 + w / 2.0f + (w * cosf(rad)) / 2.0f;
+    gy2 = (float)y1 + h / 2.0f + (h * sinf(rad)) / 2.0f;
+
+    iSvgBufPrintf(&dc->buf,
+      "<defs><linearGradient id=\"lg%d\" gradientUnits=\"userSpaceOnUse\" x1=\"%.1f\" y1=\"%.1f\" x2=\"%.1f\" y2=\"%.1f\">",
+      gid, gx1, gy1, gx2, gy2);
+    iSvgWriteStops(dc, src->colors, src->offsets, src->count);
+    iSvgBufAppend(&dc->buf, "</linearGradient></defs>\n");
+  }
+  else
+  {
+    iSvgBufPrintf(&dc->buf,
+      "<defs><radialGradient id=\"rg%d\" gradientUnits=\"userSpaceOnUse\" cx=\"%d\" cy=\"%d\" r=\"%d\">",
+      gid, src->cx, src->cy, src->radius);
+    iSvgWriteStops(dc, src->colors, src->offsets, src->count);
+    iSvgBufAppend(&dc->buf, "</radialGradient></defs>\n");
+  }
+
+  return gid;
+}
+
+void iupSvgDrawPathFill(iSvgCanvas* dc, const IupPathSeg* segs, int count, const IupDrawSource* src, int rule)
+{
+  int gid = -1;
+
+  if (src->type != IUP_SOURCE_SOLID)
+    gid = iSvgWriteGradientDef(dc, src);
+
+  iSvgBufAppend(&dc->buf, "<path d=\"");
+  iSvgWritePathD(dc, segs, count);
+  iSvgBufAppend(&dc->buf, "\"");
+
+  if (src->type == IUP_SOURCE_LINEAR_GRADIENT)
+    iSvgBufPrintf(&dc->buf, " fill=\"url(#lg%d)\" stroke=\"none\"", gid);
+  else if (src->type == IUP_SOURCE_RADIAL_GRADIENT)
+    iSvgBufPrintf(&dc->buf, " fill=\"url(#rg%d)\" stroke=\"none\"", gid);
+  else
+  {
+    int r = iupDrawRed(src->color), g = iupDrawGreen(src->color), b = iupDrawBlue(src->color), a = iupDrawAlpha(src->color);
+    iSvgBufPrintf(&dc->buf, " fill=\"rgb(%d,%d,%d)\" fill-opacity=\"%.3g\" stroke=\"none\"",
+                  r, g, b, iSvgAlphaVal(a));
+  }
+
+  if (rule == IUP_PATH_RULE_EVENODD)
+    iSvgBufAppend(&dc->buf, " fill-rule=\"evenodd\"");
+
+  iSvgClipRef(dc, &dc->buf);
+  iSvgBufAppend(&dc->buf, "/>\n");
+}
+
+void iupSvgDrawPathStroke(iSvgCanvas* dc, const IupPathSeg* segs, int count, const IupDrawSource* src, int style, int line_width)
+{
+  int gid = -1;
+
+  if (src->type != IUP_SOURCE_SOLID)
+    gid = iSvgWriteGradientDef(dc, src);
+
+  iSvgBufAppend(&dc->buf, "<path d=\"");
+  iSvgWritePathD(dc, segs, count);
+  iSvgBufAppend(&dc->buf, "\"");
+
+  if (src->type == IUP_SOURCE_LINEAR_GRADIENT)
+    iSvgBufPrintf(&dc->buf, " fill=\"none\" stroke=\"url(#lg%d)\" stroke-width=\"%d\"%s",
+                  gid, line_width, iSvgDashArray(style));
+  else if (src->type == IUP_SOURCE_RADIAL_GRADIENT)
+    iSvgBufPrintf(&dc->buf, " fill=\"none\" stroke=\"url(#rg%d)\" stroke-width=\"%d\"%s",
+                  gid, line_width, iSvgDashArray(style));
+  else
+  {
+    int r = iupDrawRed(src->color), g = iupDrawGreen(src->color), b = iupDrawBlue(src->color), a = iupDrawAlpha(src->color);
+    iSvgStrokeAttrs(&dc->buf, r, g, b, a, style, line_width);
+  }
+
+  iSvgClipRef(dc, &dc->buf);
+  iSvgBufAppend(&dc->buf, "/>\n");
+}
+
 /* ---- Text ---- */
 
 static void iSvgParseFontAttrs(iSvgBuffer* buf, const char* font)
@@ -711,6 +843,21 @@ void iupSvgDrawGetClipRect(iSvgCanvas* dc, int* x1, int* y1, int* x2, int* y2)
   if (y1) *y1 = dc->clip_y1;
   if (x2) *x2 = dc->clip_x2;
   if (y2) *y2 = dc->clip_y2;
+}
+
+void iupSvgDrawSetClipPath(iSvgCanvas* dc, const IupPathSeg* segs, int count, int rule)
+{
+  iupDrawPathGetBBox(segs, count, &dc->clip_x1, &dc->clip_y1, &dc->clip_x2, &dc->clip_y2);
+
+  dc->clip_id = dc->id_counter++;
+  dc->clip_active = 1;
+
+  iSvgBufPrintf(&dc->buf, "<defs><clipPath id=\"clip%d\"><path d=\"", dc->clip_id);
+  iSvgWritePathD(dc, segs, count);
+  iSvgBufAppend(&dc->buf, "\"");
+  if (rule == IUP_PATH_RULE_EVENODD)
+    iSvgBufAppend(&dc->buf, " clip-rule=\"evenodd\"");
+  iSvgBufAppend(&dc->buf, "/></clipPath></defs>\n");
 }
 
 /* ---- Embedded Image (PNG + Base64) ---- */

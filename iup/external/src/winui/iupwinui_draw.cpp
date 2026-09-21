@@ -1285,6 +1285,250 @@ extern "C" IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, in
     brush.get());
 }
 
+static com_ptr<ID2D1PathGeometry> winuiDrawBuildPathGeometry(const IupPathSeg* segs, int count, int rule)
+{
+  com_ptr<ID2D1PathGeometry> pathGeometry;
+  g_d2dFactory->CreatePathGeometry(pathGeometry.put());
+  if (!pathGeometry)
+    return nullptr;
+
+  com_ptr<ID2D1GeometrySink> sink;
+  if (FAILED(pathGeometry->Open(sink.put())))
+    return nullptr;
+
+  sink->SetFillMode(rule == IUP_PATH_RULE_EVENODD ? D2D1_FILL_MODE_ALTERNATE : D2D1_FILL_MODE_WINDING);
+
+  float sub_x = 0.0f, sub_y = 0.0f;
+  bool in_figure = false;
+
+  for (int i = 0; i < count; i++)
+  {
+    switch (segs[i].op)
+    {
+    case IUP_PATHSEG_MOVE_TO:
+      if (in_figure)
+        sink->EndFigure(D2D1_FIGURE_END_OPEN);
+      sink->BeginFigure(D2D1::Point2F((float)segs[i].x1, (float)segs[i].y1), D2D1_FIGURE_BEGIN_FILLED);
+      sub_x = (float)segs[i].x1;
+      sub_y = (float)segs[i].y1;
+      in_figure = true;
+      break;
+    case IUP_PATHSEG_LINE_TO:
+      if (!in_figure)
+      {
+        sink->BeginFigure(D2D1::Point2F(sub_x, sub_y), D2D1_FIGURE_BEGIN_FILLED);
+        in_figure = true;
+      }
+      sink->AddLine(D2D1::Point2F((float)segs[i].x1, (float)segs[i].y1));
+      break;
+    case IUP_PATHSEG_CURVE_TO:
+      if (!in_figure)
+      {
+        sink->BeginFigure(D2D1::Point2F(sub_x, sub_y), D2D1_FIGURE_BEGIN_FILLED);
+        in_figure = true;
+      }
+      sink->AddBezier(D2D1::BezierSegment(
+        D2D1::Point2F((float)segs[i].x1, (float)segs[i].y1),
+        D2D1::Point2F((float)segs[i].x2, (float)segs[i].y2),
+        D2D1::Point2F((float)segs[i].x3, (float)segs[i].y3)));
+      break;
+    case IUP_PATHSEG_QUAD_TO:
+      if (!in_figure)
+      {
+        sink->BeginFigure(D2D1::Point2F(sub_x, sub_y), D2D1_FIGURE_BEGIN_FILLED);
+        in_figure = true;
+      }
+      sink->AddQuadraticBezier(D2D1::QuadraticBezierSegment(
+        D2D1::Point2F((float)segs[i].x1, (float)segs[i].y1),
+        D2D1::Point2F((float)segs[i].x2, (float)segs[i].y2)));
+      break;
+    case IUP_PATHSEG_ARC_TO:
+    {
+      IupPathSeg bez[4];
+      int j, n = iupDrawPathArcToBeziers(&segs[i], bez);
+      if (!in_figure)
+      {
+        sink->BeginFigure(D2D1::Point2F(sub_x, sub_y), D2D1_FIGURE_BEGIN_FILLED);
+        in_figure = true;
+      }
+      for (j = 0; j < n; j++)
+        sink->AddBezier(D2D1::BezierSegment(
+          D2D1::Point2F((float)bez[j].x1, (float)bez[j].y1),
+          D2D1::Point2F((float)bez[j].x2, (float)bez[j].y2),
+          D2D1::Point2F((float)bez[j].x3, (float)bez[j].y3)));
+      break;
+    }
+    case IUP_PATHSEG_CLOSE:
+      if (in_figure)
+        sink->EndFigure(D2D1_FIGURE_END_CLOSED);
+      in_figure = false;
+      break;
+    }
+  }
+
+  if (in_figure)
+    sink->EndFigure(D2D1_FIGURE_END_OPEN);
+
+  sink->Close();
+  return pathGeometry;
+}
+
+static void winuiDrawFillWithSource(IdrawCanvas* dc, ID2D1Geometry* geometry, const IupDrawSource* src)
+{
+  if (src->type == IUP_SOURCE_SOLID)
+  {
+    dc->solidBrush->SetColor(winuiDrawColor(src->color));
+    dc->d2dContext->FillGeometry(geometry, dc->solidBrush.get());
+    return;
+  }
+
+  D2D1_GRADIENT_STOP stops[IUP_GRADIENT_MAX_STOPS];
+  for (int i = 0; i < src->count; i++)
+    stops[i] = { src->offsets[i], winuiDrawColor(src->colors[i]) };
+  com_ptr<ID2D1GradientStopCollection> collection;
+  dc->d2dContext->CreateGradientStopCollection(stops, src->count, collection.put());
+
+  if (src->type == IUP_SOURCE_LINEAR_GRADIENT)
+  {
+    int gx1 = src->x1, gy1 = src->y1, gx2 = src->x2, gy2 = src->y2;
+    iupDrawCheckSwapCoord(gx1, gx2);
+    iupDrawCheckSwapCoord(gy1, gy2);
+
+    float w = (float)(gx2 - gx1);
+    float h = (float)(gy2 - gy1);
+    float cx = gx1 + w / 2.0f;
+    float cy = gy1 + h / 2.0f;
+    float rad = src->angle * (float)IUP_DEG2RAD;
+    float sx = cx - (w * cosf(rad)) / 2.0f;
+    float sy = cy - (h * sinf(rad)) / 2.0f;
+    float ex = cx + (w * cosf(rad)) / 2.0f;
+    float ey = cy + (h * sinf(rad)) / 2.0f;
+
+    com_ptr<ID2D1LinearGradientBrush> brush;
+    dc->d2dContext->CreateLinearGradientBrush(
+      D2D1::LinearGradientBrushProperties(D2D1::Point2F(sx, sy), D2D1::Point2F(ex, ey)),
+      collection.get(), brush.put());
+    dc->d2dContext->FillGeometry(geometry, brush.get());
+  }
+  else
+  {
+    com_ptr<ID2D1RadialGradientBrush> brush;
+    dc->d2dContext->CreateRadialGradientBrush(
+      D2D1::RadialGradientBrushProperties(
+        D2D1::Point2F((float)src->cx, (float)src->cy),
+        D2D1::Point2F(0.0f, 0.0f),
+        (float)src->radius, (float)src->radius),
+      collection.get(), brush.put());
+    dc->d2dContext->FillGeometry(geometry, brush.get());
+  }
+}
+
+static void winuiDrawStrokeWithSource(IdrawCanvas* dc, ID2D1Geometry* geometry, const IupDrawSource* src, int style, int line_width)
+{
+  ID2D1StrokeStyle* strokeStyle = winuiDrawStrokeStyle(style);
+
+  if (src->type == IUP_SOURCE_SOLID)
+  {
+    dc->solidBrush->SetColor(winuiDrawColor(src->color));
+    dc->d2dContext->DrawGeometry(geometry, dc->solidBrush.get(), (float)line_width, strokeStyle);
+    return;
+  }
+
+  D2D1_GRADIENT_STOP stops[IUP_GRADIENT_MAX_STOPS];
+  for (int i = 0; i < src->count; i++)
+    stops[i] = { src->offsets[i], winuiDrawColor(src->colors[i]) };
+  com_ptr<ID2D1GradientStopCollection> collection;
+  dc->d2dContext->CreateGradientStopCollection(stops, src->count, collection.put());
+
+  if (src->type == IUP_SOURCE_LINEAR_GRADIENT)
+  {
+    int gx1 = src->x1, gy1 = src->y1, gx2 = src->x2, gy2 = src->y2;
+    iupDrawCheckSwapCoord(gx1, gx2);
+    iupDrawCheckSwapCoord(gy1, gy2);
+
+    float w = (float)(gx2 - gx1);
+    float h = (float)(gy2 - gy1);
+    float cx = gx1 + w / 2.0f;
+    float cy = gy1 + h / 2.0f;
+    float rad = src->angle * (float)IUP_DEG2RAD;
+    float sx = cx - (w * cosf(rad)) / 2.0f;
+    float sy = cy - (h * sinf(rad)) / 2.0f;
+    float ex = cx + (w * cosf(rad)) / 2.0f;
+    float ey = cy + (h * sinf(rad)) / 2.0f;
+
+    com_ptr<ID2D1LinearGradientBrush> brush;
+    dc->d2dContext->CreateLinearGradientBrush(
+      D2D1::LinearGradientBrushProperties(D2D1::Point2F(sx, sy), D2D1::Point2F(ex, ey)),
+      collection.get(), brush.put());
+    dc->d2dContext->DrawGeometry(geometry, brush.get(), (float)line_width, strokeStyle);
+  }
+  else
+  {
+    com_ptr<ID2D1RadialGradientBrush> brush;
+    dc->d2dContext->CreateRadialGradientBrush(
+      D2D1::RadialGradientBrushProperties(
+        D2D1::Point2F((float)src->cx, (float)src->cy),
+        D2D1::Point2F(0.0f, 0.0f),
+        (float)src->radius, (float)src->radius),
+      collection.get(), brush.put());
+    dc->d2dContext->DrawGeometry(geometry, brush.get(), (float)line_width, strokeStyle);
+  }
+}
+
+extern "C" IUP_SDK_API void iupdrvDrawPathFill(IdrawCanvas* dc, const IupPathSeg* segs, int count, const IupDrawSource* src, int rule)
+{
+  if (!dc || !dc->d2dContext)
+    return;
+
+  com_ptr<ID2D1PathGeometry> geometry = winuiDrawBuildPathGeometry(segs, count, rule);
+  if (!geometry)
+    return;
+
+  winuiDrawFillWithSource(dc, geometry.get(), src);
+}
+
+extern "C" IUP_SDK_API void iupdrvDrawPathStroke(IdrawCanvas* dc, const IupPathSeg* segs, int count, const IupDrawSource* src, int style, int line_width)
+{
+  if (!dc || !dc->d2dContext)
+    return;
+
+  com_ptr<ID2D1PathGeometry> geometry = winuiDrawBuildPathGeometry(segs, count, IUP_PATH_RULE_WINDING);
+  if (!geometry)
+    return;
+
+  winuiDrawStrokeWithSource(dc, geometry.get(), src, style, line_width);
+}
+
+extern "C" IUP_SDK_API void iupdrvDrawSetClipPath(IdrawCanvas* dc, const IupPathSeg* segs, int count, int rule)
+{
+  if (!dc || !dc->d2dContext)
+    return;
+
+  if (dc->clipType == WINUI_CLIP_RECT)
+    dc->d2dContext->PopAxisAlignedClip();
+  else if (dc->clipType == WINUI_CLIP_LAYER)
+    dc->d2dContext->PopLayer();
+
+  com_ptr<ID2D1PathGeometry> geometry = winuiDrawBuildPathGeometry(segs, count, rule);
+  if (!geometry)
+  {
+    dc->clipType = WINUI_CLIP_NONE;
+    return;
+  }
+
+  D2D1_LAYER_PARAMETERS layerParams = D2D1::LayerParameters(D2D1::InfiniteRect(), geometry.get());
+  dc->d2dContext->PushLayer(layerParams, nullptr);
+
+  dc->clipType = WINUI_CLIP_LAYER;
+
+  int x1, y1, x2, y2;
+  iupDrawPathGetBBox(segs, count, &x1, &y1, &x2, &y2);
+  dc->clip_x1 = x1;
+  dc->clip_y1 = y1;
+  dc->clip_x2 = x2;
+  dc->clip_y2 = y2;
+}
+
 static void iD2DCopyBgraPremulToRgba(unsigned char* dst, const unsigned char* src, int w, int h, int dst_w, int src_pitch)
 {
   for (int y = 0; y < h; y++)

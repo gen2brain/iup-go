@@ -198,6 +198,26 @@ wdBeginFigure(WD_PATHSINK* pSink, float x, float y)
 }
 
 void
+wdBeginFigureFillMode(WD_PATHSINK* pSink, float x, float y, int fillMode)
+{
+    if(d2d_enabled()) {
+        dummy_ID2D1GeometrySink* s = (dummy_ID2D1GeometrySink*) pSink->pData;
+        dummy_D2D1_POINT_2F pt = { x, y };
+
+        dummy_ID2D1GeometrySink_SetFillMode(s,
+                fillMode == WD_FILLMODE_ALTERNATE ? dummy_D2D1_FILL_MODE_ALTERNATE : dummy_D2D1_FILL_MODE_WINDING);
+        dummy_ID2D1GeometrySink_BeginFigure(s, pt, dummy_D2D1_FIGURE_BEGIN_FILLED);
+    } else {
+        gdix_vtable->fn_SetPathFillMode(pSink->pData,
+                fillMode == WD_FILLMODE_ALTERNATE ? dummy_FillModeAlternate : dummy_FillModeWinding);
+        gdix_vtable->fn_StartPathFigure(pSink->pData);
+    }
+
+    pSink->ptEnd.x = x;
+    pSink->ptEnd.y = y;
+}
+
+void
 wdEndFigure(WD_PATHSINK* pSink, BOOL bCloseFigure)
 {
     if(d2d_enabled()) {

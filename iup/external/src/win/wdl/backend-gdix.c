@@ -138,6 +138,7 @@ gdix_init(void)
     /* Path functions */
     GPA(CreatePath, (dummy_GpFillMode, dummy_GpPath**));
     GPA(DeletePath, (dummy_GpPath*));
+    GPA(SetPathFillMode, (dummy_GpPath*, dummy_GpFillMode));
     GPA(ClosePathFigure, (dummy_GpPath*));
     GPA(StartPathFigure, (dummy_GpPath*));
     GPA(GetPathLastPoint, (dummy_GpPath*, dummy_GpPointF*));

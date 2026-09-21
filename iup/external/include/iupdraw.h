@@ -43,6 +43,26 @@ IUP_API void IupDrawRadialGradient(Ihandle* ih, int cx, int cy, int radius, cons
 IUP_API void IupDrawLinearGradientStops(Ihandle* ih, int x1, int y1, int x2, int y2, float angle, const char** colors, const float* offsets, int count);
 IUP_API void IupDrawRadialGradientStops(Ihandle* ih, int cx, int cy, int radius, const char** colors, const float* offsets, int count);
 
+IUP_API void IupDrawPathBegin(Ihandle* ih);
+IUP_API void IupDrawPathMoveTo(Ihandle* ih, int x, int y);
+IUP_API void IupDrawPathLineTo(Ihandle* ih, int x, int y);
+IUP_API void IupDrawPathCurveTo(Ihandle* ih, int x1, int y1, int x2, int y2, int x3, int y3);
+IUP_API void IupDrawPathQuadTo(Ihandle* ih, int x1, int y1, int x2, int y2);
+IUP_API void IupDrawPathArcTo(Ihandle* ih, int cx, int cy, int rx, int ry, double a1, double a2);
+IUP_API void IupDrawPathClose(Ihandle* ih);
+
+#define IUP_DRAW_RULE_WINDING  0
+#define IUP_DRAW_RULE_EVENODD 1
+
+IUP_API void IupDrawPathFill(Ihandle* ih, int rule);
+IUP_API void IupDrawPathStroke(Ihandle* ih);
+IUP_API void IupDrawSetClipPath(Ihandle* ih, int rule);
+
+IUP_API void IupDrawSetSourceSolid(Ihandle* ih, const char* color);
+IUP_API void IupDrawSetSourceLinearGradient(Ihandle* ih, int x1, int y1, int x2, int y2, float angle, const char** colors, const float* offsets, int count);
+IUP_API void IupDrawSetSourceRadialGradient(Ihandle* ih, int cx, int cy, int radius, const char** colors, const float* offsets, int count);
+IUP_API void IupDrawResetSource(Ihandle* ih);
+
 IUP_API void IupDrawText(Ihandle* ih, const char* text, int len, int x, int y, int w, int h);
 IUP_API void IupDrawImage(Ihandle* ih, const char* name, int x, int y, int w, int h);
 IUP_API void IupDrawSelectRect(Ihandle* ih, int x1, int y1, int x2, int y2);

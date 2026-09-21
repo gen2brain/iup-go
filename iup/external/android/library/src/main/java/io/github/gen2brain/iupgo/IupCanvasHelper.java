@@ -369,4 +369,123 @@ public final class IupCanvasHelper
         }
         return p;
     }
+
+    @Keep
+    public static void drawPathFill(IupAndroidCanvas view, int[] segs, int color, int count, int rule)
+    {
+        Canvas c = view.getBackCanvas(); if (c == null) return;
+        Paint p = fillPaint(color);
+        Path path = pathFromSegments(segs, count);
+        path.setFillType(rule == 1 ? Path.FillType.EVEN_ODD : Path.FillType.WINDING);
+        c.drawPath(path, p);
+    }
+
+    @Keep
+    public static void drawPathFillGradient(IupAndroidCanvas view, int[] segs, int count, int rule,
+                                            int sx, int sy, int ex, int ey, int cx, int cy, int radius, int type,
+                                            int[] colors, float[] offsets)
+    {
+        Canvas c = view.getBackCanvas(); if (c == null) return;
+        Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
+        p.setStyle(Paint.Style.FILL);
+        Path path = pathFromSegments(segs, count);
+        path.setFillType(rule == 1 ? Path.FillType.EVEN_ODD : Path.FillType.WINDING);
+        if (type == SOURCE_LINEAR_GRADIENT)
+            p.setShader(new LinearGradient(sx, sy, ex, ey, colors, offsets, Shader.TileMode.CLAMP));
+        else
+            p.setShader(new RadialGradient(cx, cy, radius, colors, offsets, Shader.TileMode.CLAMP));
+        c.drawPath(path, p);
+    }
+
+    @Keep
+    public static void drawPathStroke(IupAndroidCanvas view, int[] segs, int color, int count, int style, int width)
+    {
+        Canvas c = view.getBackCanvas(); if (c == null) return;
+        c.drawPath(pathFromSegments(segs, count), strokePaint(color, style, width));
+    }
+
+    @Keep
+    public static void drawPathStrokeGradient(IupAndroidCanvas view, int[] segs, int color, int count, int style, int width,
+                                              int sx, int sy, int ex, int ey, int cx, int cy, int radius, int type,
+                                              int[] colors, float[] offsets)
+    {
+        Canvas c = view.getBackCanvas(); if (c == null) return;
+        Paint p = strokePaint(color, style, width);
+        if (type == SOURCE_LINEAR_GRADIENT)
+            p.setShader(new LinearGradient(sx, sy, ex, ey, colors, offsets, Shader.TileMode.CLAMP));
+        else
+            p.setShader(new RadialGradient(cx, cy, radius, colors, offsets, Shader.TileMode.CLAMP));
+        c.drawPath(pathFromSegments(segs, count), p);
+    }
+
+    @Keep
+    public static void setClipPath(IupAndroidCanvas view, int[] segs, int count, int rule)
+    {
+        Canvas c = view.getBackCanvas(); if (c == null) return;
+        resetClip(view);
+        Path path = pathFromSegments(segs, count);
+        path.setFillType(rule == 1 ? Path.FillType.EVEN_ODD : Path.FillType.WINDING);
+        c.save();
+        c.clipPath(path);
+        view.clipSaved = true;
+    }
+
+    private static Path pathFromSegments(int[] segs, int count)
+    {
+        Path path = new Path();
+        if (segs == null) return path;
+        int n = Math.min(count, segs.length / 9);
+        boolean current = false;
+        for (int s = 0; s < n; s++)
+        {
+            int base = s * 9;
+            int op = segs[base + 0];
+            int x1 = segs[base + 1];
+            int y1 = segs[base + 2];
+            int x2 = segs[base + 3];
+            int y2 = segs[base + 4];
+            int x3 = segs[base + 5];
+            int y3 = segs[base + 6];
+            double a1 = segs[base + 7] / 1000000.0;
+            double a2 = segs[base + 8] / 1000000.0;
+
+            switch (op)
+            {
+                case 0:
+                    path.moveTo(x1, y1);
+                    current = true;
+                    break;
+                case 1:
+                    if (current) path.lineTo(x1, y1);
+                    else path.moveTo(x1, y1);
+                    current = true;
+                    break;
+                case 2:
+                    path.cubicTo(x1, y1, x2, y2, x3, y3);
+                    current = true;
+                    break;
+                case 3:
+                    path.quadTo(x1, y1, x2, y2);
+                    current = true;
+                    break;
+                case 4:
+                {
+                    float cx = x1, cy = y1, rx = x2, ry = y2;
+                    float sweep = (float)(a2 - a1);
+                    while (sweep < 0) sweep += 360;
+                    while (sweep > 360) sweep -= 360;
+                    if (sweep >= 0.01f)
+                        path.arcTo(new RectF(cx - rx, cy - ry, cx + rx, cy + ry), (float)-a1, -sweep);
+                    current = true;
+                    break;
+                }
+                case 5:
+                    path.close();
+                    break;
+            }
+        }
+        return path;
+    }
+
+    private static final int SOURCE_LINEAR_GRADIENT = 1;
 }

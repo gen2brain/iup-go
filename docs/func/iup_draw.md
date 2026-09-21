@@ -17,13 +17,9 @@ Internally, IupDraw uses several drawing APIs depending on the platform:
 - **Motif**: X11 (Xlib + XRender)
 - **Android**: android.graphics.Canvas
 - **Haiku**: BView attached to an offscreen BBitmap (Interface Kit)
+- **WebAssembly**: Canvas 2D
 
-All drivers are double buffered, so drawing occurs off-screen and the final result is displayed when **IupDrawEnd** is called only.
-
-In Windows, Direct2D and GDI+ are accessed using the [WinDrawLib](https://github.com/mity/windrawlib) library by Martin Mitáš.
-This library is embedded in IUP source code and uses run-time dynamic linking, so no extra libraries need to be linked by the application.
-
-The canvas has a read-only attribute called **DRAWDRIVER** that returns the active backend: D2D, GDI+, CAIRO, COCOA, COCOATOUCH, QT, FLTK, EFL_VG, X11, ANDROID or HAIKU.
+The canvas has a read-only attribute called **DRAWDRIVER** that returns the active backend: D2D, GDI+, CAIRO, COCOA, COCOATOUCH, QT, FLTK, EFL_VG, X11, ANDROID, HAIKU or CANVAS2D.
 
 ### Control
 
@@ -125,7 +121,67 @@ Draws a radial gradient fill centered at (cx, cy) with the given radius.
     void IupDrawLinearGradientStops(Ihandle* ih, int x1, int y1, int x2, int y2, float angle, const char** colors, const float* offsets, int count);
     void IupDrawRadialGradientStops(Ihandle* ih, int cx, int cy, int radius, const char** colors, const float* offsets, int count);
 
-Same as the two-color functions but across **count** color stops (2 to 64). **offsets** are positions in the 0-1 range in ascending order; if NULL the stops are evenly spaced. The colors accept the alpha component. Two stops at the same offset produce a hard color edge on most drivers; Qt keeps only one stop per offset (the last color set), so the edge blends instead.
+Same as the two-color functions with **count** color stops, from 2 to 64. **offsets** is NULL or an array of **count** ascending positions in the 0-1 range. NULL uses evenly spaced stops. Colors accept an alpha component.
+
+Two stops at the same offset produce a hard color edge.
+In Qt, the last color at a duplicate offset is used.
+
+### Paths and Sources
+
+A path contains line, curve and arc segments. It is kept until IupDrawPathBegin or IupDrawEnd.
+
+    void IupDrawPathBegin(Ihandle* ih);
+
+Creates an empty current path.
+
+    void IupDrawPathMoveTo(Ihandle* ih, int x, int y);
+
+Starts a new subpath at (x, y).
+
+    void IupDrawPathLineTo(Ihandle* ih, int x, int y);
+
+Adds a line from the current point to (x, y). With no current point, starts a new subpath at (x, y).
+
+    void IupDrawPathCurveTo(Ihandle* ih, int x1, int y1, int x2, int y2, int x3, int y3);
+
+Adds a cubic Bezier curve to (x3, y3), with control points (x1, y1) and (x2, y2).
+
+    void IupDrawPathQuadTo(Ihandle* ih, int x1, int y1, int x2, int y2);
+
+Adds a quadratic Bezier curve to (x2, y2), with control point (x1, y1).
+
+    void IupDrawPathArcTo(Ihandle* ih, int cx, int cy, int rx, int ry, double a1, double a2);
+
+Adds an elliptical arc centered at (cx, cy), with horizontal radius **rx** and vertical radius **ry**. The angles are in degrees and counter-clockwise relative to the 3 o'clock position. A line connects the current point to the start of the arc.
+
+    void IupDrawPathClose(Ihandle* ih);
+
+Closes the current subpath with a line to its starting point.
+
+    void IupDrawPathFill(Ihandle* ih, int rule);
+
+Fills the current path with the current source. Open subpaths are closed before filling. **rule** can be IUP_DRAW_RULE_WINDING or IUP_DRAW_RULE_EVENODD.
+
+    void IupDrawPathStroke(Ihandle* ih);
+
+Strokes the current path with the current source. **DRAWSTYLE** controls the line style and **DRAWLINEWIDTH** controls the line width.
+
+    void IupDrawSetClipPath(Ihandle* ih, int rule);
+
+Sets the current path as the clipping region, replacing the previous clipping region. **rule** can be IUP_DRAW_RULE_WINDING or IUP_DRAW_RULE_EVENODD. IupDrawResetClip removes the clipping region.
+
+    void IupDrawSetSourceSolid(Ihandle* ih, const char* color);
+
+Sets a solid "R G B [A]" source for path drawing. Also sets **DRAWCOLOR**.
+
+    void IupDrawSetSourceLinearGradient(Ihandle* ih, int x1, int y1, int x2, int y2, float angle, const char** colors, const float* offsets, int count);
+    void IupDrawSetSourceRadialGradient(Ihandle* ih, int cx, int cy, int radius, const char** colors, const float* offsets, int count);
+
+Sets a linear or radial gradient source for path drawing. The gradient geometry, colors, offsets and count have the same meaning as IupDrawLinearGradientStops and IupDrawRadialGradientStops.
+
+    void IupDrawResetSource(Ihandle* ih);
+
+Resets the current source to **DRAWCOLOR**.
 
 ### Text and Images
 
@@ -204,7 +260,8 @@ Must be called between IupDrawBegin and IupDrawEnd.
     char* IupDrawGetSvg(Ihandle* ih);
 
 Returns an SVG string representation of the drawing.
-Must be called between IupDrawBegin and IupDrawEnd.
+Calls the canvas ACTION callback to draw the SVG, so it must be called outside IupDrawBegin and IupDrawEnd.
+The returned string must be freed with `free`.
 
 ### Example
 

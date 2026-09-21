@@ -826,7 +826,7 @@ IUP_SDK_API void iupdrvDrawFocusRect(IdrawCanvas* dc, int x1, int y1, int x2, in
   iupdrvDrawRectangle(dc, x1, y1, x2, y2, iupDrawColor(0, 0, 0, 224), IUP_DRAW_STROKE_DOT, 1);
 }
 
-IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, float angle, const long* colors, const float* offsets, int count)
+static cairo_pattern_t* iDrawCreateLinearPattern(int x1, int y1, int x2, int y2, float angle, const long* colors, const float* offsets, int count)
 {
   cairo_pattern_t* pattern;
   float rad, x0, y0, x3, y3;
@@ -839,7 +839,6 @@ IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x
   w = (float)(x2 - x1);
   h = (float)(y2 - y1);
 
-  /* 0 = left to right, 90 = top to bottom, 180 = right to left, 270 = bottom to top */
   rad = angle * G_PI / 180.0f;
 
   x0 = x1 + w / 2.0f - (w * cos(rad)) / 2.0f;
@@ -852,13 +851,10 @@ IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x
     cairo_pattern_add_color_stop_rgba(pattern, offsets[i],
       iupDrawRed(colors[i]) / 255.0, iupDrawGreen(colors[i]) / 255.0, iupDrawBlue(colors[i]) / 255.0, iupDrawAlpha(colors[i]) / 255.0);
 
-  cairo_set_source(dc->image_cr, pattern);
-  cairo_rectangle(dc->image_cr, x1, y1, w, h);
-  cairo_fill(dc->image_cr);
-  cairo_pattern_destroy(pattern);
+  return pattern;
 }
 
-IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int radius, const long* colors, const float* offsets, int count)
+static cairo_pattern_t* iDrawCreateRadialPattern(int cx, int cy, int radius, const long* colors, const float* offsets, int count)
 {
   cairo_pattern_t* pattern;
   int i;
@@ -868,13 +864,123 @@ IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int r
     cairo_pattern_add_color_stop_rgba(pattern, offsets[i],
       iupDrawRed(colors[i]) / 255.0, iupDrawGreen(colors[i]) / 255.0, iupDrawBlue(colors[i]) / 255.0, iupDrawAlpha(colors[i]) / 255.0);
 
+  return pattern;
+}
+
+static void iDrawSetSource(IdrawCanvas* dc, const IupDrawSource* src)
+{
+  if (src->type == IUP_SOURCE_LINEAR_GRADIENT)
+  {
+    cairo_pattern_t* pattern = iDrawCreateLinearPattern(src->x1, src->y1, src->x2, src->y2, src->angle, src->colors, src->offsets, src->count);
+    cairo_set_source(dc->image_cr, pattern);
+    cairo_pattern_destroy(pattern);
+  }
+  else if (src->type == IUP_SOURCE_RADIAL_GRADIENT)
+  {
+    cairo_pattern_t* pattern = iDrawCreateRadialPattern(src->cx, src->cy, src->radius, src->colors, src->offsets, src->count);
+    cairo_set_source(dc->image_cr, pattern);
+    cairo_pattern_destroy(pattern);
+  }
+  else
+    cairo_set_source_rgba(dc->image_cr, iupgtkColorToDouble(iupDrawRed(src->color)), iupgtkColorToDouble(iupDrawGreen(src->color)), iupgtkColorToDouble(iupDrawBlue(src->color)), iupgtkColorToDouble(iupDrawAlpha(src->color)));
+}
+
+static void iDrawBuildPath(cairo_t* cr, const IupPathSeg* segs, int count)
+{
+  int i;
+
+  cairo_new_path(cr);
+
+  for (i = 0; i < count; i++)
+  {
+    switch (segs[i].op)
+    {
+    case IUP_PATHSEG_MOVE_TO:
+      cairo_move_to(cr, segs[i].x1, segs[i].y1);
+      break;
+    case IUP_PATHSEG_LINE_TO:
+      cairo_line_to(cr, segs[i].x1, segs[i].y1);
+      break;
+    case IUP_PATHSEG_CURVE_TO:
+      cairo_curve_to(cr, segs[i].x1, segs[i].y1, segs[i].x2, segs[i].y2, segs[i].x3, segs[i].y3);
+      break;
+    case IUP_PATHSEG_QUAD_TO:
+    {
+      double x0, y0;
+      cairo_get_current_point(cr, &x0, &y0);
+      cairo_curve_to(cr,
+        x0 + 2.0 / 3.0 * (segs[i].x1 - x0), y0 + 2.0 / 3.0 * (segs[i].y1 - y0),
+        segs[i].x2 + 2.0 / 3.0 * (segs[i].x1 - segs[i].x2), segs[i].y2 + 2.0 / 3.0 * (segs[i].y1 - segs[i].y2),
+        segs[i].x2, segs[i].y2);
+      break;
+    }
+    case IUP_PATHSEG_ARC_TO:
+    {
+      IupPathSeg bez[4];
+      int j, n = iupDrawPathArcToBeziers(&segs[i], bez);
+      for (j = 0; j < n; j++)
+        cairo_curve_to(cr, bez[j].x1, bez[j].y1, bez[j].x2, bez[j].y2, bez[j].x3, bez[j].y3);
+      break;
+    }
+    case IUP_PATHSEG_CLOSE:
+      cairo_close_path(cr);
+      break;
+    }
+  }
+}
+
+IUP_SDK_API void iupdrvDrawPathFill(IdrawCanvas* dc, const IupPathSeg* segs, int count, const IupDrawSource* src, int rule)
+{
+  iDrawSetSource(dc, src);
+  iDrawBuildPath(dc->image_cr, segs, count);
+  cairo_set_fill_rule(dc->image_cr, rule == IUP_PATH_RULE_EVENODD ? CAIRO_FILL_RULE_EVEN_ODD : CAIRO_FILL_RULE_WINDING);
+  cairo_fill(dc->image_cr);
+}
+
+IUP_SDK_API void iupdrvDrawPathStroke(IdrawCanvas* dc, const IupPathSeg* segs, int count, const IupDrawSource* src, int style, int line_width)
+{
+  iDrawSetSource(dc, src);
+  iDrawSetLineWidth(dc, line_width);
+  iDrawSetLineStyle(dc, style);
+  iDrawBuildPath(dc->image_cr, segs, count);
+  cairo_stroke(dc->image_cr);
+}
+
+IUP_SDK_API void iupdrvDrawSetClipPath(IdrawCanvas* dc, const IupPathSeg* segs, int count, int rule)
+{
+  iupdrvDrawResetClip(dc);
+
+  iDrawBuildPath(dc->image_cr, segs, count);
+  cairo_set_fill_rule(dc->image_cr, rule == IUP_PATH_RULE_EVENODD ? CAIRO_FILL_RULE_EVEN_ODD : CAIRO_FILL_RULE_WINDING);
+  cairo_clip(dc->image_cr);
+
+  iupDrawPathGetBBox(segs, count, &dc->clip_x1, &dc->clip_y1, &dc->clip_x2, &dc->clip_y2);
+}
+
+IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, float angle, const long* colors, const float* offsets, int count)
+{
+  cairo_pattern_t* pattern;
+
+  iupDrawCheckSwapCoord(x1, x2);
+  iupDrawCheckSwapCoord(y1, y2);
+
+  pattern = iDrawCreateLinearPattern(x1, y1, x2, y2, angle, colors, offsets, count);
+  cairo_set_source(dc->image_cr, pattern);
+  cairo_rectangle(dc->image_cr, x1, y1, x2 - x1, y2 - y1);
+  cairo_fill(dc->image_cr);
+  cairo_pattern_destroy(pattern);
+}
+
+IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int radius, const long* colors, const float* offsets, int count)
+{
+  cairo_pattern_t* pattern = iDrawCreateRadialPattern(cx, cy, radius, colors, offsets, count);
   cairo_set_source(dc->image_cr, pattern);
   cairo_arc(dc->image_cr, cx, cy, radius, 0, 2 * G_PI);
   cairo_fill(dc->image_cr);
   cairo_pattern_destroy(pattern);
 }
 
-static void iCairoCopyBgraPremulToRgba(unsigned char* dst, const unsigned char* src, int w, int h, int src_stride)
+static void iDrawCopyBgraPremulToRgba(unsigned char* dst, const unsigned char* src, int w, int h, int src_stride)
 {
   int x, y;
   for (y = 0; y < h; y++)
@@ -917,7 +1023,7 @@ IUP_SDK_API int iupdrvDrawGetImageData(IdrawCanvas* dc, unsigned char* data)
 
   stride = cairo_image_surface_get_stride(surface);
 
-  iCairoCopyBgraPremulToRgba(data, src, dc->w, dc->h, stride);
+  iDrawCopyBgraPremulToRgba(data, src, dc->w, dc->h, stride);
   return 1;
 }
 
@@ -944,7 +1050,7 @@ IUP_SDK_API int iupdrvCanvasGetImageData(Ihandle* ih, unsigned char* data, int w
   if (h > cairo_image_surface_get_height(surface))
     h = cairo_image_surface_get_height(surface);
 
-  iCairoCopyBgraPremulToRgba(data, src, w, h, stride);
+  iDrawCopyBgraPremulToRgba(data, src, w, h, stride);
   return 1;
 #else
   GdkDrawable* drawable = (GdkDrawable*)IupGetAttribute(ih, "DRAWABLE");

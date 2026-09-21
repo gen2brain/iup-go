@@ -913,15 +913,8 @@ extern "C" IUP_SDK_API void iupdrvDrawFocusRect(IdrawCanvas* dc, int x1, int y1,
  * Linear Gradient
  ****************************************************************************/
 
-extern "C" IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, float angle, const long* colors, const float* offsets, int count)
+static QLinearGradient* qtDrawCreateLinearGradient(int x1, int y1, int x2, int y2, float angle, const long* colors, const float* offsets, int count)
 {
-  if (!dc || !dc->painter)
-    return;
-
-  iupDrawCheckSwapCoord(x1, x2);
-  iupDrawCheckSwapCoord(y1, y2);
-
-  /* 0 = left to right, 90 = top to bottom, 180 = right to left, 270 = bottom to top */
   qreal rad = angle * M_PI / 180.0;
   qreal w = x2 - x1;
   qreal h = y2 - y1;
@@ -931,11 +924,142 @@ extern "C" IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, in
   QPointF start(cx - (w * cos(rad)) / 2.0, cy - (h * sin(rad)) / 2.0);
   QPointF end(cx + (w * cos(rad)) / 2.0, cy + (h * sin(rad)) / 2.0);
 
-  QLinearGradient gradient(start, end);
+  QLinearGradient* gradient = new QLinearGradient(start, end);
   for (int i = 0; i < count; i++)
-    gradient.setColorAt(offsets[i], QColor(iupDrawRed(colors[i]), iupDrawGreen(colors[i]), iupDrawBlue(colors[i]), iupDrawAlpha(colors[i])));
+    gradient->setColorAt(offsets[i], QColor(iupDrawRed(colors[i]), iupDrawGreen(colors[i]), iupDrawBlue(colors[i]), iupDrawAlpha(colors[i])));
+  return gradient;
+}
 
-  dc->painter->fillRect(x1, y1, x2 - x1, y2 - y1, gradient);
+static QRadialGradient* qtDrawCreateRadialGradient(int cx, int cy, int radius, const long* colors, const float* offsets, int count)
+{
+  QRadialGradient* gradient = new QRadialGradient(cx, cy, radius, cx, cy);
+  for (int i = 0; i < count; i++)
+    gradient->setColorAt(offsets[i], QColor(iupDrawRed(colors[i]), iupDrawGreen(colors[i]), iupDrawBlue(colors[i]), iupDrawAlpha(colors[i])));
+  return gradient;
+}
+
+static void qtDrawSetSource(IdrawCanvas* dc, const IupDrawSource* src)
+{
+  if (src->type == IUP_SOURCE_LINEAR_GRADIENT)
+  {
+    QLinearGradient* grad = qtDrawCreateLinearGradient(src->x1, src->y1, src->x2, src->y2, src->angle, src->colors, src->offsets, src->count);
+    dc->painter->setBrush(*grad);
+    dc->painter->setPen(Qt::NoPen);
+    delete grad;
+  }
+  else if (src->type == IUP_SOURCE_RADIAL_GRADIENT)
+  {
+    QRadialGradient* grad = qtDrawCreateRadialGradient(src->cx, src->cy, src->radius, src->colors, src->offsets, src->count);
+    dc->painter->setBrush(*grad);
+    dc->painter->setPen(Qt::NoPen);
+    delete grad;
+  }
+  else
+  {
+    QColor qcolor;
+    qtDrawGetColor(src->color, qcolor);
+    dc->painter->setPen(Qt::NoPen);
+    dc->painter->setBrush(qcolor);
+  }
+}
+
+static void qtDrawSetPenStyle(QPen& pen, int style)
+{
+  switch (style)
+  {
+  case IUP_DRAW_STROKE_DASH:
+    pen.setStyle(Qt::DashLine);
+    break;
+  case IUP_DRAW_STROKE_DOT:
+    pen.setStyle(Qt::DotLine);
+    break;
+  case IUP_DRAW_STROKE_DASH_DOT:
+    pen.setStyle(Qt::DashDotLine);
+    break;
+  case IUP_DRAW_STROKE_DASH_DOT_DOT:
+    pen.setStyle(Qt::DashDotDotLine);
+    break;
+  default:
+    pen.setStyle(Qt::SolidLine);
+    break;
+  }
+}
+
+static void qtDrawSetPen(IdrawCanvas* dc, const IupDrawSource* src, int style, int line_width)
+{
+  QPen pen;
+
+  if (src->type == IUP_SOURCE_LINEAR_GRADIENT)
+  {
+    QLinearGradient* grad = qtDrawCreateLinearGradient(src->x1, src->y1, src->x2, src->y2, src->angle, src->colors, src->offsets, src->count);
+    pen = QPen(*grad, line_width);
+    delete grad;
+  }
+  else if (src->type == IUP_SOURCE_RADIAL_GRADIENT)
+  {
+    QRadialGradient* grad = qtDrawCreateRadialGradient(src->cx, src->cy, src->radius, src->colors, src->offsets, src->count);
+    pen = QPen(*grad, line_width);
+    delete grad;
+  }
+  else
+  {
+    QColor qcolor;
+    qtDrawGetColor(src->color, qcolor);
+    pen = QPen(qcolor);
+    pen.setWidth(line_width);
+  }
+
+  qtDrawSetPenStyle(pen, style);
+  dc->painter->setPen(pen);
+  dc->painter->setBrush(Qt::NoBrush);
+}
+
+static void qtDrawBuildPath(QPainterPath& path, const IupPathSeg* segs, int count)
+{
+  int i;
+
+  for (i = 0; i < count; i++)
+  {
+    switch (segs[i].op)
+    {
+    case IUP_PATHSEG_MOVE_TO:
+      path.moveTo(segs[i].x1, segs[i].y1);
+      break;
+    case IUP_PATHSEG_LINE_TO:
+      path.lineTo(segs[i].x1, segs[i].y1);
+      break;
+    case IUP_PATHSEG_CURVE_TO:
+      path.cubicTo(segs[i].x1, segs[i].y1, segs[i].x2, segs[i].y2, segs[i].x3, segs[i].y3);
+      break;
+    case IUP_PATHSEG_QUAD_TO:
+      path.quadTo(segs[i].x1, segs[i].y1, segs[i].x2, segs[i].y2);
+      break;
+    case IUP_PATHSEG_ARC_TO:
+    {
+      IupPathSeg bez[4];
+      int j, n = iupDrawPathArcToBeziers(&segs[i], bez);
+      for (j = 0; j < n; j++)
+        path.cubicTo(bez[j].x1, bez[j].y1, bez[j].x2, bez[j].y2, bez[j].x3, bez[j].y3);
+      break;
+    }
+    case IUP_PATHSEG_CLOSE:
+      path.closeSubpath();
+      break;
+    }
+  }
+}
+
+extern "C" IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, float angle, const long* colors, const float* offsets, int count)
+{
+  if (!dc || !dc->painter)
+    return;
+
+  iupDrawCheckSwapCoord(x1, x2);
+  iupDrawCheckSwapCoord(y1, y2);
+
+  QLinearGradient* gradient = qtDrawCreateLinearGradient(x1, y1, x2, y2, angle, colors, offsets, count);
+  dc->painter->fillRect(x1, y1, x2 - x1, y2 - y1, *gradient);
+  delete gradient;
 }
 
 /****************************************************************************
@@ -947,13 +1071,49 @@ extern "C" IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, in
   if (!dc || !dc->painter)
     return;
 
-  QRadialGradient gradient(cx, cy, radius, cx, cy);
-  for (int i = 0; i < count; i++)
-    gradient.setColorAt(offsets[i], QColor(iupDrawRed(colors[i]), iupDrawGreen(colors[i]), iupDrawBlue(colors[i]), iupDrawAlpha(colors[i])));
-
+  QRadialGradient* gradient = qtDrawCreateRadialGradient(cx, cy, radius, colors, offsets, count);
   dc->painter->setPen(Qt::NoPen);
-  dc->painter->setBrush(gradient);
+  dc->painter->setBrush(*gradient);
   dc->painter->drawEllipse(QPoint(cx, cy), radius, radius);
+  delete gradient;
+}
+
+extern "C" IUP_SDK_API void iupdrvDrawPathFill(IdrawCanvas* dc, const IupPathSeg* segs, int count, const IupDrawSource* src, int rule)
+{
+  if (!dc || !dc->painter)
+    return;
+
+  QPainterPath path;
+  path.setFillRule(rule == IUP_PATH_RULE_WINDING ? Qt::WindingFill : Qt::OddEvenFill);
+  qtDrawBuildPath(path, segs, count);
+  qtDrawSetSource(dc, src);
+  dc->painter->drawPath(path);
+}
+
+extern "C" IUP_SDK_API void iupdrvDrawPathStroke(IdrawCanvas* dc, const IupPathSeg* segs, int count, const IupDrawSource* src, int style, int line_width)
+{
+  if (!dc || !dc->painter)
+    return;
+
+  QPainterPath path;
+  qtDrawBuildPath(path, segs, count);
+  qtDrawSetPen(dc, src, style, line_width);
+  dc->painter->drawPath(path);
+}
+
+extern "C" IUP_SDK_API void iupdrvDrawSetClipPath(IdrawCanvas* dc, const IupPathSeg* segs, int count, int rule)
+{
+  if (!dc || !dc->painter)
+    return;
+
+  QPainterPath path;
+  path.setFillRule(rule == IUP_PATH_RULE_WINDING ? Qt::WindingFill : Qt::OddEvenFill);
+  qtDrawBuildPath(path, segs, count);
+
+  dc->painter->setClipPath(path);
+  dc->painter->setClipping(true);
+
+  iupDrawPathGetBBox(segs, count, &dc->clip_x1, &dc->clip_y1, &dc->clip_x2, &dc->clip_y2);
 }
 
 /****************************************************************************
