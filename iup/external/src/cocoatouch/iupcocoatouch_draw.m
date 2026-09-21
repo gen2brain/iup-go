@@ -552,7 +552,6 @@ IUP_SDK_API void iupdrvDrawBezier(IdrawCanvas* dc, int x1, int y1, int x2, int y
 
 IUP_SDK_API void iupdrvDrawQuadraticBezier(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int x3, int y3, long color, int style, int line_width)
 {
-	/* lift quadratic control point to cubic (c1 = q0 + 2/3 * (q1 - q0)) */
 	int cx1 = x1 + ((2 * (x2 - x1)) / 3);
 	int cy1 = y1 + ((2 * (y2 - y1)) / 3);
 	int cx2 = x3 + ((2 * (x2 - x3)) / 3);
@@ -593,7 +592,6 @@ IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x
 	CGContextSaveGState(dc->cgContext);
 	CGContextClipToRect(dc->cgContext, CGRectMake(x1, y1, x2 - x1 + 1, y2 - y1 + 1));
 
-	/* 0 = left to right, 90 = top to bottom, 180 = right to left, 270 = bottom to top */
 	CGFloat w = (CGFloat)(x2 - x1);
 	CGFloat h = (CGFloat)(y2 - y1);
 	CGFloat rad = angle * M_PI / 180.0;
@@ -619,7 +617,6 @@ IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int r
 
 	CGContextSaveGState(dc->cgContext);
 
-	/* solid edge-color fill first for AA boundary; gradient doesn't AA */
 	CGRect circle = CGRectMake(cx - radius, cy - radius, 2 * radius, 2 * radius);
 	CGContextBeginPath(dc->cgContext);
 	CGContextAddEllipseInRect(dc->cgContext, circle);
@@ -633,6 +630,139 @@ IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int r
 
 	CGContextRestoreGState(dc->cgContext);
 	CGGradientRelease(gradient);
+}
+
+static void cocoaTouchDrawBuildPath(CGContextRef ctx, const IupPathSeg* segs, int count)
+{
+	int i;
+	for (i = 0; i < count; i++)
+	{
+		switch (segs[i].op)
+		{
+			case IUP_PATHSEG_MOVE_TO:
+				CGContextMoveToPoint(ctx, (CGFloat)segs[i].x1, (CGFloat)segs[i].y1);
+				break;
+			case IUP_PATHSEG_LINE_TO:
+				CGContextAddLineToPoint(ctx, (CGFloat)segs[i].x1, (CGFloat)segs[i].y1);
+				break;
+			case IUP_PATHSEG_CURVE_TO:
+				CGContextAddCurveToPoint(ctx, (CGFloat)segs[i].x1, (CGFloat)segs[i].y1, (CGFloat)segs[i].x2, (CGFloat)segs[i].y2, (CGFloat)segs[i].x3, (CGFloat)segs[i].y3);
+				break;
+			case IUP_PATHSEG_QUAD_TO:
+				CGContextAddQuadCurveToPoint(ctx, (CGFloat)segs[i].x1, (CGFloat)segs[i].y1, (CGFloat)segs[i].x2, (CGFloat)segs[i].y2);
+				break;
+			case IUP_PATHSEG_ARC_TO:
+			{
+				IupPathSeg bez[4];
+				int j, n = iupDrawPathArcToBeziers(&segs[i], bez);
+				for (j = 0; j < n; j++)
+					CGContextAddCurveToPoint(ctx, (CGFloat)bez[j].x1, (CGFloat)bez[j].y1, (CGFloat)bez[j].x2, (CGFloat)bez[j].y2, (CGFloat)bez[j].x3, (CGFloat)bez[j].y3);
+				break;
+			}
+			case IUP_PATHSEG_CLOSE:
+				CGContextClosePath(ctx);
+				break;
+		}
+	}
+}
+
+static void cocoaTouchDrawClipPath(CGContextRef ctx, int rule)
+{
+	if (rule == IUP_PATH_RULE_EVENODD)
+		CGContextEOClip(ctx);
+	else
+		CGContextClip(ctx);
+}
+
+static void cocoaTouchDrawGradient(CGContextRef ctx, CGGradientRef gradient, const IupDrawSource* src)
+{
+	if (src->type == IUP_SOURCE_LINEAR_GRADIENT)
+	{
+		int gx1 = src->x1, gy1 = src->y1, gx2 = src->x2, gy2 = src->y2;
+		iupDrawCheckSwapCoord(gx1, gx2);
+		iupDrawCheckSwapCoord(gy1, gy2);
+
+		CGFloat w = (CGFloat)(gx2 - gx1 + 1);
+		CGFloat h = (CGFloat)(gy2 - gy1 + 1);
+		CGFloat rad = src->angle * M_PI / 180.0;
+		CGPoint start = CGPointMake(gx1 + w / 2.0 - (w * cos(rad)) / 2.0, gy1 + h / 2.0 - (h * sin(rad)) / 2.0);
+		CGPoint end = CGPointMake(gx1 + w / 2.0 + (w * cos(rad)) / 2.0, gy1 + h / 2.0 + (h * sin(rad)) / 2.0);
+		CGContextDrawLinearGradient(ctx, gradient, start, end, kCGGradientDrawsBeforeStartLocation | kCGGradientDrawsAfterEndLocation);
+	}
+	else
+		CGContextDrawRadialGradient(ctx, gradient, CGPointMake((CGFloat)src->cx, (CGFloat)src->cy), 0.0, CGPointMake((CGFloat)src->cx, (CGFloat)src->cy), (CGFloat)src->radius, 0);
+}
+
+IUP_SDK_API void iupdrvDrawPathFill(IdrawCanvas* dc, const IupPathSeg* segs, int count, const IupDrawSource* src, int rule)
+{
+	if (!dc) return;
+
+	CGContextBeginPath(dc->cgContext);
+	cocoaTouchDrawBuildPath(dc->cgContext, segs, count);
+
+	if (src->type == IUP_SOURCE_SOLID)
+	{
+		cocoaTouchDrawSetFillColor(dc->cgContext, src->color);
+		if (rule == IUP_PATH_RULE_EVENODD)
+			CGContextEOFillPath(dc->cgContext);
+		else
+			CGContextFillPath(dc->cgContext);
+		return;
+	}
+
+	CGGradientRef gradient = cocoaTouchDrawCreateGradient(src->colors, src->offsets, src->count);
+	if (!gradient) return;
+
+	CGContextSaveGState(dc->cgContext);
+	cocoaTouchDrawClipPath(dc->cgContext, rule);
+	cocoaTouchDrawGradient(dc->cgContext, gradient, src);
+	CGContextRestoreGState(dc->cgContext);
+	CGGradientRelease(gradient);
+}
+
+IUP_SDK_API void iupdrvDrawPathStroke(IdrawCanvas* dc, const IupPathSeg* segs, int count, const IupDrawSource* src, int style, int line_width)
+{
+	if (!dc) return;
+
+	CGContextBeginPath(dc->cgContext);
+	cocoaTouchDrawBuildPath(dc->cgContext, segs, count);
+
+	if (src->type == IUP_SOURCE_SOLID)
+	{
+		cocoaTouchDrawSetStrokeColor(dc->cgContext, src->color);
+		CGContextSetLineWidth(dc->cgContext, (CGFloat)line_width);
+		cocoaTouchDrawSetLineStyle(dc->cgContext, style);
+		CGContextStrokePath(dc->cgContext);
+		return;
+	}
+
+	CGGradientRef gradient = cocoaTouchDrawCreateGradient(src->colors, src->offsets, src->count);
+	if (!gradient) return;
+
+	CGContextSaveGState(dc->cgContext);
+	CGContextSetLineWidth(dc->cgContext, (CGFloat)line_width);
+	cocoaTouchDrawSetLineStyle(dc->cgContext, style);
+	CGContextReplacePathWithStrokedPath(dc->cgContext);
+	CGContextClip(dc->cgContext);
+	cocoaTouchDrawGradient(dc->cgContext, gradient, src);
+	CGContextRestoreGState(dc->cgContext);
+	CGGradientRelease(gradient);
+}
+
+IUP_SDK_API void iupdrvDrawSetClipPath(IdrawCanvas* dc, const IupPathSeg* segs, int count, int rule)
+{
+	if (!dc) return;
+
+	iupdrvDrawResetClip(dc);
+
+	CGContextSaveGState(dc->cgContext);
+	dc->clip_state = 1;
+
+	CGContextBeginPath(dc->cgContext);
+	cocoaTouchDrawBuildPath(dc->cgContext, segs, count);
+	cocoaTouchDrawClipPath(dc->cgContext, rule);
+
+	iupDrawPathGetBBox(segs, count, &dc->clip_x1, &dc->clip_y1, &dc->clip_x2, &dc->clip_y2);
 }
 
 IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int x, int y, int w, int h, long color, const char* font, int flags, double text_orientation)
@@ -803,7 +933,6 @@ IUP_SDK_API void iupdrvDrawFocusRect(IdrawCanvas* dc, int x1, int y1, int x2, in
 	dc->focus_x2 = x2; dc->focus_y2 = y2;
 }
 
-/* w/h are logical points matching the w*h*4 buffer; step source by scale on Retina */
 IUP_SDK_API int iupdrvCanvasGetImageData(Ihandle* ih, unsigned char* data, int w, int h)
 {
 	if (!ih || !data || w <= 0 || h <= 0) return 0;
@@ -843,7 +972,6 @@ IUP_SDK_API int iupdrvCanvasGetImageData(Ihandle* ih, unsigned char* data, int w
 	return 1;
 }
 
-/* IupDrawGetImage allocates dc->w * dc->h * 4 bytes (logical points). The CG bitmap is dc->w*scale by dc->h*scale (pixels) on Retina, so stride into source pixels at scale step. */
 IUP_SDK_API int iupdrvDrawGetImageData(IdrawCanvas* dc, unsigned char* data)
 {
 	if (!dc || !data) return 0;

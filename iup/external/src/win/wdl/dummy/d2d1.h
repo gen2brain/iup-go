@@ -143,6 +143,12 @@ enum dummy_D2D1_FIGURE_END_tag {
     dummy_D2D1_FIGURE_END_CLOSED = 1
 };
 
+typedef enum dummy_D2D1_FILL_MODE_tag dummy_D2D1_FILL_MODE;
+enum dummy_D2D1_FILL_MODE_tag {
+    dummy_D2D1_FILL_MODE_ALTERNATE = 0,
+    dummy_D2D1_FILL_MODE_WINDING = 1
+};
+
 typedef enum dummy_D2D1_BITMAP_INTERPOLATION_MODE_tag dummy_D2D1_BITMAP_INTERPOLATION_MODE;
 enum dummy_D2D1_BITMAP_INTERPOLATION_MODE_tag {
     dummy_D2D1_BITMAP_INTERPOLATION_MODE_NEAREST_NEIGHBOR = 0,
@@ -799,7 +805,7 @@ struct dummy_ID2D1GeometrySinkVtbl_tag {
     STDMETHOD_(ULONG, Release)(dummy_ID2D1GeometrySink*);
 
     /* ID2D1SimplifiedGeometrySink methods */
-    STDMETHOD(dummy_SetFillMode)(void);
+    STDMETHOD_(void, dummy_SetFillMode)(dummy_ID2D1GeometrySink*, dummy_D2D1_FILL_MODE);
     STDMETHOD(dummy_SetSegmentFlags)(void);
     STDMETHOD_(void, BeginFigure)(dummy_ID2D1GeometrySink*, dummy_D2D1_POINT_2F, dummy_D2D1_FIGURE_BEGIN);
     STDMETHOD(dummy_AddLines)(void);
@@ -823,6 +829,7 @@ struct dummy_ID2D1GeometrySink_tag {
 #define dummy_ID2D1GeometrySink_AddRef(self)                (self)->vtbl->AddRef(self)
 #define dummy_ID2D1GeometrySink_Release(self)               (self)->vtbl->Release(self)
 #define dummy_ID2D1GeometrySink_BeginFigure(self,a,b)       (self)->vtbl->BeginFigure(self,a,b)
+#define dummy_ID2D1GeometrySink_SetFillMode(self,a)         (self)->vtbl->dummy_SetFillMode(self,a)
 #define dummy_ID2D1GeometrySink_EndFigure(self,a)           (self)->vtbl->EndFigure(self,a)
 #define dummy_ID2D1GeometrySink_Close(self)                 (self)->vtbl->Close(self)
 #define dummy_ID2D1GeometrySink_AddLine(self,a)             (self)->vtbl->AddLine(self,a)

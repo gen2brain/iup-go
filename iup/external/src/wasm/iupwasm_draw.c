@@ -36,7 +36,6 @@ EM_JS(void, iupwasmJsCanvasInit, (void), {
     return "rgba(" + r + "," + g + "," + b + "," + (a / 255) + ")";
   };
   globalThis.__iupDash = function(ctx, style, lw) {
-    /* IUP_DRAW style: 1=STROKE 2=DASH 3=DOT 4=DASH_DOT 5=DASH_DOT_DOT */
     if (style == 2) ctx.setLineDash([9, 3]);
     else if (style == 3) ctx.setLineDash([1, 2]);
     else if (style == 4) ctx.setLineDash([7, 3, 1, 3]);
@@ -45,7 +44,6 @@ EM_JS(void, iupwasmJsCanvasInit, (void), {
     ctx.lineWidth = lw < 1 ? 1 : lw;
   };
   globalThis.__iupCanvasOf = function(cid) {
-    /* worker-local OffscreenCanvas, blitted to the on-screen canvas on flush (survives a blocking modal) */
     if (typeof document === 'undefined') {
       globalThis.__iupLocal = globalThis.__iupLocal || {};
       if (!globalThis.__iupLocal[cid]) globalThis.__iupLocal[cid] = new OffscreenCanvas(1, 1);
@@ -60,7 +58,6 @@ EM_JS(void, iupwasmJsCanvasInit, (void), {
   };
 })
 
-/* setting width/height clears the canvas; save() is the clip baseline */
 EM_JS(void, iupwasmJsCanvasReset, (int cid, int w, int h), {
   var el = globalThis.__iupCanvasOf(cid); if (!el) return;
   el.width = w;
@@ -386,7 +383,6 @@ IUP_SDK_API void iupdrvDrawUpdateSize(IdrawCanvas* dc)
   dc->h = iupwasmJsCanvasClientH(dc->cid);
 }
 
-/* ship the worker-local frame to the on-screen canvas; no-op in main mode */
 EM_JS(void, iupwasmJsCanvasBlit, (int cid), {
   if (typeof document !== 'undefined') return;
   var local = globalThis.__iupLocal && globalThis.__iupLocal[cid];
@@ -431,7 +427,6 @@ IUP_SDK_API void iupdrvDrawArc(IdrawCanvas* dc, int x1, int y1, int x2, int y2, 
   xc = x1 + w / 2.0;
   yc = y1 + h / 2.0;
 
-  /* IUP angles are CCW degrees; canvas y-down makes positive CW, so negate + order ascending */
   s1 = -a1 * IUP_DEG2RAD;
   s2 = -a2 * IUP_DEG2RAD;
   if (s1 > s2) { tmp = s1; s1 = s2; s2 = tmp; }
@@ -483,7 +478,7 @@ IUP_SDK_API void iupdrvDrawQuadraticBezier(IdrawCanvas* dc, int x1, int y1, int 
   iupwasmJsDrawQuadBezier(dc->cid, x1, y1, x2, y2, x3, y3, iupDrawRed(color), iupDrawGreen(color), iupDrawBlue(color), iupDrawAlpha(color), style, line_width);
 }
 
-static void wasmGradientArrays(const long* colors, const float* offsets, int count, unsigned char* rgba, float* offs)
+static void wasmDrawGradientArrays(const long* colors, const float* offsets, int count, unsigned char* rgba, float* offs)
 {
   int i;
   for (i = 0; i < count; i++)
@@ -502,7 +497,7 @@ IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x
   float offs[IUP_GRADIENT_MAX_STOPS];
   iupDrawCheckSwapCoord(x1, x2);
   iupDrawCheckSwapCoord(y1, y2);
-  wasmGradientArrays(colors, offsets, count, rgba, offs);
+  wasmDrawGradientArrays(colors, offsets, count, rgba, offs);
   iupwasmJsDrawLinearGradient(dc->cid, x1, y1, x2, y2, angle, (int)(intptr_t)rgba, (int)(intptr_t)offs, count);
 }
 
@@ -510,7 +505,7 @@ IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int r
 {
   unsigned char rgba[IUP_GRADIENT_MAX_STOPS * 4];
   float offs[IUP_GRADIENT_MAX_STOPS];
-  wasmGradientArrays(colors, offsets, count, rgba, offs);
+  wasmDrawGradientArrays(colors, offsets, count, rgba, offs);
   iupwasmJsDrawRadialGradient(dc->cid, cx, cy, radius, (int)(intptr_t)rgba, (int)(intptr_t)offs, count);
 }
 
@@ -557,7 +552,7 @@ IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_ina
 
 IUP_SDK_API void iupdrvDrawSetClipRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2)
 {
-  if (x1 == 0 && y1 == 0 && x2 == 0 && y2 == 0)  /* (0,0,0,0) means no clip (the IUP convention) */
+  if (x1 == 0 && y1 == 0 && x2 == 0 && y2 == 0)
   {
     iupwasmJsResetClip(dc->cid);
     return;
@@ -612,10 +607,230 @@ IUP_SDK_API int iupdrvDrawGetImageData(IdrawCanvas* dc, unsigned char* data)
   return iupwasmJsCanvasGetImageData(dc->cid, (int)(intptr_t)data, dc->w, dc->h);
 }
 
+EM_JS(void, iupwasmJsDrawPathFill, (int cid, int segsPtr, int count, int sourceType, long color, int x1, int y1, int x2, int y2, float angle, int cx, int cy, int radius, int rgbaPtr, int offsPtr, int gradCount, int rule), {
+  var ctx = globalThis.__iupCtx(cid); if (!ctx) return;
+  var p = new Path2D();
+  for (var i = 0; i < count; i++)
+  {
+    var base = (segsPtr >> 2) + i * 12 + 1;
+    var op = HEAPU8[segsPtr + i * 48];
+    switch (op)
+    {
+    case 0:
+      p.moveTo(HEAP32[base], HEAP32[base + 1]);
+      break;
+    case 1:
+      p.lineTo(HEAP32[base], HEAP32[base + 1]);
+      break;
+    case 2:
+      p.bezierCurveTo(HEAP32[base], HEAP32[base + 1], HEAP32[base + 2], HEAP32[base + 3], HEAP32[base + 4], HEAP32[base + 5]);
+      break;
+    case 3:
+      p.quadraticCurveTo(HEAP32[base], HEAP32[base + 1], HEAP32[base + 2], HEAP32[base + 3]);
+      break;
+    case 4:
+    {
+      var centX = HEAP32[base], centY = HEAP32[base + 1];
+      var rx = HEAP32[base + 2], ry = HEAP32[base + 3];
+      var sa = HEAPF64[(segsPtr >> 3) + i * 6 + 4];
+      var ea = HEAPF64[(segsPtr >> 3) + i * 6 + 5];
+      var span = ea - sa;
+      while (span < 0) span += 360;
+      while (span > 360) span -= 360;
+      if (span >= 0.01)
+        p.ellipse(centX, centY, rx, ry, 0, -sa * Math.PI / 180, -(sa + span) * Math.PI / 180, true);
+      break;
+    }
+    case 5:
+      p.closePath();
+      break;
+    }
+  }
+  if (sourceType == 0)
+    ctx.fillStyle = globalThis.__iupRGBA((color >> 16) & 0xFF, (color >> 8) & 0xFF, color & 0xFF, (~(color >> 24)) & 0xFF);
+  else if (sourceType == 1)
+  {
+    var w = x2 - x1, h = y2 - y1;
+    var rad = angle * Math.PI / 180;
+    var x0 = x1 + w / 2 - (w * Math.cos(rad)) / 2;
+    var y0 = y1 + h / 2 - (h * Math.sin(rad)) / 2;
+    var x3 = x1 + w / 2 + (w * Math.cos(rad)) / 2;
+    var y3 = y1 + h / 2 + (h * Math.sin(rad)) / 2;
+    var grad = ctx.createLinearGradient(x0, y0, x3, y3);
+    for (var k = 0; k < gradCount; k++)
+      grad.addColorStop(HEAPF32[(offsPtr >> 2) + k],
+        globalThis.__iupRGBA(HEAPU8[rgbaPtr+k*4], HEAPU8[rgbaPtr+k*4+1], HEAPU8[rgbaPtr+k*4+2], HEAPU8[rgbaPtr+k*4+3]));
+    ctx.fillStyle = grad;
+  }
+  else if (sourceType == 2)
+  {
+    var grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
+    for (var k = 0; k < gradCount; k++)
+      grad.addColorStop(HEAPF32[(offsPtr >> 2) + k],
+        globalThis.__iupRGBA(HEAPU8[rgbaPtr+k*4], HEAPU8[rgbaPtr+k*4+1], HEAPU8[rgbaPtr+k*4+2], HEAPU8[rgbaPtr+k*4+3]));
+    ctx.fillStyle = grad;
+  }
+  ctx.setLineDash([]);
+  ctx.fill(p, rule == 1 ? "evenodd" : "nonzero");
+})
+
+EM_JS(void, iupwasmJsDrawPathStroke, (int cid, int segsPtr, int count, int sourceType, long color, int x1, int y1, int x2, int y2, float angle, int cx, int cy, int radius, int rgbaPtr, int offsPtr, int gradCount, int style, int lw), {
+  var ctx = globalThis.__iupCtx(cid); if (!ctx) return;
+  var p = new Path2D();
+  for (var i = 0; i < count; i++)
+  {
+    var base = (segsPtr >> 2) + i * 12 + 1;
+    var op = HEAPU8[segsPtr + i * 48];
+    switch (op)
+    {
+    case 0:
+      p.moveTo(HEAP32[base], HEAP32[base + 1]);
+      break;
+    case 1:
+      p.lineTo(HEAP32[base], HEAP32[base + 1]);
+      break;
+    case 2:
+      p.bezierCurveTo(HEAP32[base], HEAP32[base + 1], HEAP32[base + 2], HEAP32[base + 3], HEAP32[base + 4], HEAP32[base + 5]);
+      break;
+    case 3:
+      p.quadraticCurveTo(HEAP32[base], HEAP32[base + 1], HEAP32[base + 2], HEAP32[base + 3]);
+      break;
+    case 4:
+    {
+      var centX = HEAP32[base], centY = HEAP32[base + 1];
+      var rx = HEAP32[base + 2], ry = HEAP32[base + 3];
+      var sa = HEAPF64[(segsPtr >> 3) + i * 6 + 4];
+      var ea = HEAPF64[(segsPtr >> 3) + i * 6 + 5];
+      var span = ea - sa;
+      while (span < 0) span += 360;
+      while (span > 360) span -= 360;
+      if (span >= 0.01)
+        p.ellipse(centX, centY, rx, ry, 0, -sa * Math.PI / 180, -(sa + span) * Math.PI / 180, true);
+      break;
+    }
+    case 5:
+      p.closePath();
+      break;
+    }
+  }
+  globalThis.__iupDash(ctx, style, lw);
+  if (sourceType == 0)
+    ctx.strokeStyle = globalThis.__iupRGBA((color >> 16) & 0xFF, (color >> 8) & 0xFF, color & 0xFF, (~(color >> 24)) & 0xFF);
+  else if (sourceType == 1)
+  {
+    var w = x2 - x1, h = y2 - y1;
+    var rad = angle * Math.PI / 180;
+    var x0 = x1 + w / 2 - (w * Math.cos(rad)) / 2;
+    var y0 = y1 + h / 2 - (h * Math.sin(rad)) / 2;
+    var x3 = x1 + w / 2 + (w * Math.cos(rad)) / 2;
+    var y3 = y1 + h / 2 + (h * Math.sin(rad)) / 2;
+    var grad = ctx.createLinearGradient(x0, y0, x3, y3);
+    for (var k = 0; k < gradCount; k++)
+      grad.addColorStop(HEAPF32[(offsPtr >> 2) + k],
+        globalThis.__iupRGBA(HEAPU8[rgbaPtr+k*4], HEAPU8[rgbaPtr+k*4+1], HEAPU8[rgbaPtr+k*4+2], HEAPU8[rgbaPtr+k*4+3]));
+    ctx.strokeStyle = grad;
+  }
+  else if (sourceType == 2)
+  {
+    var grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
+    for (var k = 0; k < gradCount; k++)
+      grad.addColorStop(HEAPF32[(offsPtr >> 2) + k],
+        globalThis.__iupRGBA(HEAPU8[rgbaPtr+k*4], HEAPU8[rgbaPtr+k*4+1], HEAPU8[rgbaPtr+k*4+2], HEAPU8[rgbaPtr+k*4+3]));
+    ctx.strokeStyle = grad;
+  }
+  ctx.stroke(p);
+})
+
+EM_JS(void, iupwasmJsClipPath, (int cid, int segsPtr, int count, int rule), {
+  var ctx = globalThis.__iupCtx(cid); if (!ctx) return;
+  ctx.restore();
+  ctx.save();
+  var p = new Path2D();
+  for (var i = 0; i < count; i++)
+  {
+    var base = (segsPtr >> 2) + i * 12 + 1;
+    var op = HEAPU8[segsPtr + i * 48];
+    switch (op)
+    {
+    case 0:
+      p.moveTo(HEAP32[base], HEAP32[base + 1]);
+      break;
+    case 1:
+      p.lineTo(HEAP32[base], HEAP32[base + 1]);
+      break;
+    case 2:
+      p.bezierCurveTo(HEAP32[base], HEAP32[base + 1], HEAP32[base + 2], HEAP32[base + 3], HEAP32[base + 4], HEAP32[base + 5]);
+      break;
+    case 3:
+      p.quadraticCurveTo(HEAP32[base], HEAP32[base + 1], HEAP32[base + 2], HEAP32[base + 3]);
+      break;
+    case 4:
+    {
+      var centX = HEAP32[base], centY = HEAP32[base + 1];
+      var rx = HEAP32[base + 2], ry = HEAP32[base + 3];
+      var sa = HEAPF64[(segsPtr >> 3) + i * 6 + 4];
+      var ea = HEAPF64[(segsPtr >> 3) + i * 6 + 5];
+      var span = ea - sa;
+      while (span < 0) span += 360;
+      while (span > 360) span -= 360;
+      if (span >= 0.01)
+        p.ellipse(centX, centY, rx, ry, 0, -sa * Math.PI / 180, -(sa + span) * Math.PI / 180, true);
+      break;
+    }
+    case 5:
+      p.closePath();
+      break;
+    }
+  }
+  ctx.clip(p, rule == 1 ? "evenodd" : "nonzero");
+})
+
 IUP_SDK_API int iupdrvCanvasGetImageData(Ihandle* ih, unsigned char* data, int w, int h)
 {
   int cid = iupwasmIdOf(ih);
   if (!cid || !data)
     return 0;
   return iupwasmJsCanvasGetImageData(cid, (int)(intptr_t)data, w, h);
+}
+
+static void wasmDrawSourceArrays(const IupDrawSource* src, unsigned char* rgba, float* offs)
+{
+  int i;
+  for (i = 0; i < src->count; i++)
+  {
+    rgba[i*4+0] = iupDrawRed(src->colors[i]);
+    rgba[i*4+1] = iupDrawGreen(src->colors[i]);
+    rgba[i*4+2] = iupDrawBlue(src->colors[i]);
+    rgba[i*4+3] = iupDrawAlpha(src->colors[i]);
+    offs[i] = src->offsets[i];
+  }
+}
+
+IUP_SDK_API void iupdrvDrawPathFill(IdrawCanvas* dc, const IupPathSeg* segs, int count, const IupDrawSource* src, int rule)
+{
+  unsigned char rgba[IUP_GRADIENT_MAX_STOPS * 4];
+  float offs[IUP_GRADIENT_MAX_STOPS];
+  if (src->type != IUP_SOURCE_SOLID)
+    wasmDrawSourceArrays(src, rgba, offs);
+  iupwasmJsDrawPathFill(dc->cid, (int)(intptr_t)segs, count, src->type, src->color,
+    src->x1, src->y1, src->x2, src->y2, src->angle,
+    src->cx, src->cy, src->radius,
+    (int)(intptr_t)rgba, (int)(intptr_t)offs, src->count, rule);
+}
+
+IUP_SDK_API void iupdrvDrawPathStroke(IdrawCanvas* dc, const IupPathSeg* segs, int count, const IupDrawSource* src, int style, int line_width)
+{
+  unsigned char rgba[IUP_GRADIENT_MAX_STOPS * 4];
+  float offs[IUP_GRADIENT_MAX_STOPS];
+  if (src->type != IUP_SOURCE_SOLID)
+    wasmDrawSourceArrays(src, rgba, offs);
+  iupwasmJsDrawPathStroke(dc->cid, (int)(intptr_t)segs, count, src->type, src->color,
+    src->x1, src->y1, src->x2, src->y2, src->angle,
+    src->cx, src->cy, src->radius,
+    (int)(intptr_t)rgba, (int)(intptr_t)offs, src->count, style, line_width);
+}
+
+IUP_SDK_API void iupdrvDrawSetClipPath(IdrawCanvas* dc, const IupPathSeg* segs, int count, int rule)
+{
+  iupwasmJsClipPath(dc->cid, (int)(intptr_t)segs, count, rule);
 }

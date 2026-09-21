@@ -566,7 +566,6 @@ IUP_SDK_API void iupdrvDrawBezier(IdrawCanvas* dc, int x1, int y1, int x2, int y
 
 IUP_SDK_API void iupdrvDrawQuadraticBezier(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int x3, int y3, long color, int style, int line_width)
 {
-  /* quadratic to cubic: c1 = q0 + 2/3 (q1 - q0), c2 = q2 + 2/3 (q1 - q2) */
   int cx1, cy1, cx2, cy2;
 
   cx1 = x1 + ((2 * (x2 - x1)) / 3);
@@ -575,6 +574,255 @@ IUP_SDK_API void iupdrvDrawQuadraticBezier(IdrawCanvas* dc, int x1, int y1, int 
   cy2 = y3 + ((2 * (y2 - y3)) / 3);
 
   iupdrvDrawBezier(dc, x1, y1, cx1, cy1, cx2, cy2, x3, y3, color, style, line_width);
+}
+
+static void iupCocoaBuildPath(CGContextRef ctx, const IupPathSeg* segs, int count)
+{
+  int i;
+
+  for (i = 0; i < count; i++)
+  {
+    switch (segs[i].op)
+    {
+    case IUP_PATHSEG_MOVE_TO:
+      CGContextMoveToPoint(ctx, (CGFloat)segs[i].x1, (CGFloat)segs[i].y1);
+      break;
+    case IUP_PATHSEG_LINE_TO:
+      CGContextAddLineToPoint(ctx, (CGFloat)segs[i].x1, (CGFloat)segs[i].y1);
+      break;
+    case IUP_PATHSEG_CURVE_TO:
+      CGContextAddCurveToPoint(ctx, (CGFloat)segs[i].x1, (CGFloat)segs[i].y1, (CGFloat)segs[i].x2, (CGFloat)segs[i].y2, (CGFloat)segs[i].x3, (CGFloat)segs[i].y3);
+      break;
+    case IUP_PATHSEG_QUAD_TO:
+      CGContextAddQuadCurveToPoint(ctx, (CGFloat)segs[i].x1, (CGFloat)segs[i].y1, (CGFloat)segs[i].x2, (CGFloat)segs[i].y2);
+      break;
+    case IUP_PATHSEG_ARC_TO:
+    {
+      IupPathSeg bez[4];
+      int j, n = iupDrawPathArcToBeziers(&segs[i], bez);
+      for (j = 0; j < n; j++)
+        CGContextAddCurveToPoint(ctx, (CGFloat)bez[j].x1, (CGFloat)bez[j].y1, (CGFloat)bez[j].x2, (CGFloat)bez[j].y2, (CGFloat)bez[j].x3, (CGFloat)bez[j].y3);
+      break;
+    }
+    case IUP_PATHSEG_CLOSE:
+      CGContextClosePath(ctx);
+      break;
+    }
+  }
+}
+
+static void iupCocoaClipPath(CGContextRef ctx, int rule)
+{
+  if (rule == IUP_PATH_RULE_EVENODD)
+    CGContextEOClip(ctx);
+  else
+    CGContextClip(ctx);
+}
+
+static CGGradientRef iupCocoaCreateGradient(CGColorSpaceRef colorSpace, const IupDrawSource* src)
+{
+  CGFloat components[IUP_GRADIENT_MAX_STOPS * 4];
+  CGFloat locations[IUP_GRADIENT_MAX_STOPS];
+  int i;
+
+  for (i = 0; i < src->count; i++)
+  {
+    components[i*4+0] = iupDrawRed(src->colors[i]) / 255.0f;
+    components[i*4+1] = iupDrawGreen(src->colors[i]) / 255.0f;
+    components[i*4+2] = iupDrawBlue(src->colors[i]) / 255.0f;
+    components[i*4+3] = iupDrawAlpha(src->colors[i]) / 255.0f;
+    locations[i] = src->offsets[i];
+  }
+
+  return CGGradientCreateWithColorComponents(colorSpace, components, locations, src->count);
+}
+
+static void iupCocoaDrawGradient(CGContextRef ctx, CGGradientRef gradient, const IupDrawSource* src)
+{
+  if (src->type == IUP_SOURCE_LINEAR_GRADIENT)
+  {
+    int gx1 = src->x1, gy1 = src->y1, gx2 = src->x2, gy2 = src->y2;
+
+    iupDrawCheckSwapCoord(gx1, gx2);
+    iupDrawCheckSwapCoord(gy1, gy2);
+
+    CGFloat w = (CGFloat)(gx2 - gx1 + 1);
+    CGFloat h = (CGFloat)(gy2 - gy1 + 1);
+    CGFloat rad = src->angle * M_PI / 180.0f;
+    CGFloat cx = gx1 + w / 2.0f;
+    CGFloat cy = gy1 + h / 2.0f;
+
+    CGPoint start = CGPointMake(cx - (w * cos(rad)) / 2.0f, cy - (h * sin(rad)) / 2.0f);
+    CGPoint end = CGPointMake(cx + (w * cos(rad)) / 2.0f, cy + (h * sin(rad)) / 2.0f);
+
+    CGContextDrawLinearGradient(ctx, gradient, start, end, kCGGradientDrawsBeforeStartLocation | kCGGradientDrawsAfterEndLocation);
+  }
+  else
+    CGContextDrawRadialGradient(ctx, gradient, CGPointMake((CGFloat)src->cx, (CGFloat)src->cy), 0, CGPointMake((CGFloat)src->cx, (CGFloat)src->cy), (CGFloat)src->radius, 0);
+}
+
+#ifdef GNUSTEP
+static void iupCocoaDrawGradientPathGNUstep(IdrawCanvas* dc, const IupDrawSource* src, int rule, const IupPathSeg* segs, int count, int x1, int y1, int x2, int y2)
+{
+  int iw = x2 - x1 + 1;
+  int ih = y2 - y1 + 1;
+
+  if (iw <= 0 || ih <= 0)
+    return;
+
+  {
+    CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
+    CGGradientRef gradient = iupCocoaCreateGradient(colorSpace, src);
+    size_t bpr = 4 * iw;
+    unsigned char* tmp = calloc((size_t)ih * bpr, 1);
+
+    if (tmp)
+    {
+      CGContextRef tctx = CGBitmapContextCreate(tmp, iw, ih, 8, bpr, colorSpace, kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
+      if (tctx)
+      {
+        if (src->type == IUP_SOURCE_LINEAR_GRADIENT)
+        {
+          int gx1 = src->x1, gy1 = src->y1, gx2 = src->x2, gy2 = src->y2;
+          iupDrawCheckSwapCoord(gx1, gx2);
+          iupDrawCheckSwapCoord(gy1, gy2);
+
+          CGFloat gw = (CGFloat)(gx2 - gx1 + 1);
+          CGFloat gh = (CGFloat)(gy2 - gy1 + 1);
+          CGFloat rad = src->angle * M_PI / 180.0f;
+          CGFloat gcx = gx1 + gw / 2.0f;
+          CGFloat gcy = gy1 + gh / 2.0f;
+
+          CGPoint start = CGPointMake(gcx - (gw * cos(rad)) / 2.0f - x1, gcy - (gh * sin(rad)) / 2.0f - y1);
+          CGPoint end = CGPointMake(gcx + (gw * cos(rad)) / 2.0f - x1, gcy + (gh * sin(rad)) / 2.0f - y1);
+          CGContextDrawLinearGradient(tctx, gradient, start, end, kCGGradientDrawsBeforeStartLocation | kCGGradientDrawsAfterEndLocation);
+        }
+        else
+          CGContextDrawRadialGradient(tctx, gradient, CGPointMake((CGFloat)(src->cx - x1), (CGFloat)(src->cy - y1)), 0, CGPointMake((CGFloat)(src->cx - x1), (CGFloat)(src->cy - y1)), (CGFloat)src->radius, 0);
+
+        CGImageRef img = CGBitmapContextCreateImage(tctx);
+        if (img)
+        {
+          CGContextSaveGState(dc->cgContext);
+          CGContextBeginPath(dc->cgContext);
+          iupCocoaBuildPath(dc->cgContext, segs, count);
+          iupCocoaClipPath(dc->cgContext, rule);
+          CGContextTranslateCTM(dc->cgContext, (CGFloat)x1, (CGFloat)(y1 + ih));
+          CGContextScaleCTM(dc->cgContext, 1.0, -1.0);
+          CGContextDrawImage(dc->cgContext, CGRectMake(0, 0, iw, ih), img);
+          CGContextRestoreGState(dc->cgContext);
+          CGImageRelease(img);
+        }
+        CGContextRelease(tctx);
+      }
+      free(tmp);
+    }
+
+    CGGradientRelease(gradient);
+    CGColorSpaceRelease(colorSpace);
+  }
+}
+#endif
+
+IUP_SDK_API void iupdrvDrawPathFill(IdrawCanvas* dc, const IupPathSeg* segs, int count, const IupDrawSource* src, int rule)
+{
+  CGContextRef ctx = dc->cgContext;
+
+  CGContextBeginPath(ctx);
+  iupCocoaBuildPath(ctx, segs, count);
+
+  if (src->type == IUP_SOURCE_SOLID)
+  {
+    CGColorRef the_color = iupCocoaDrawCreateColor(src->color);
+    CGContextSetFillColorWithColor(ctx, the_color);
+    if (rule == IUP_PATH_RULE_EVENODD)
+      CGContextEOFillPath(ctx);
+    else
+      CGContextFillPath(ctx);
+    return;
+  }
+
+#ifdef GNUSTEP
+  {
+    int x1, y1, x2, y2;
+    iupDrawPathGetBBox(segs, count, &x1, &y1, &x2, &y2);
+    iupCocoaDrawGradientPathGNUstep(dc, src, rule, segs, count, x1, y1, x2, y2);
+  }
+#else
+  CGContextSaveGState(ctx);
+  iupCocoaClipPath(ctx, rule);
+  {
+    CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
+    CGGradientRef gradient = iupCocoaCreateGradient(colorSpace, src);
+    iupCocoaDrawGradient(ctx, gradient, src);
+    CGGradientRelease(gradient);
+    CGColorSpaceRelease(colorSpace);
+  }
+  CGContextRestoreGState(ctx);
+#endif
+}
+
+IUP_SDK_API void iupdrvDrawPathStroke(IdrawCanvas* dc, const IupPathSeg* segs, int count, const IupDrawSource* src, int style, int line_width)
+{
+  CGContextRef ctx = dc->cgContext;
+
+  CGContextBeginPath(ctx);
+  iupCocoaBuildPath(ctx, segs, count);
+
+  if (src->type == IUP_SOURCE_SOLID)
+  {
+    CGColorRef the_color = iupCocoaDrawCreateColor(src->color);
+    CGContextSetStrokeColorWithColor(ctx, the_color);
+    CGContextSetLineWidth(ctx, (CGFloat)line_width);
+    iupCocoaSetLineStyle(ctx, style);
+    CGContextStrokePath(ctx);
+    return;
+  }
+
+#ifdef GNUSTEP
+  {
+    CGColorRef the_color = iupCocoaDrawCreateColor(src->colors[0]);
+    CGContextSetStrokeColorWithColor(ctx, the_color);
+    CGContextSetLineWidth(ctx, (CGFloat)line_width);
+    iupCocoaSetLineStyle(ctx, style);
+    CGContextStrokePath(ctx);
+  }
+#else
+  CGContextSetLineWidth(ctx, (CGFloat)line_width);
+  iupCocoaSetLineStyle(ctx, style);
+  CGContextReplacePathWithStrokedPath(ctx);
+
+  CGContextSaveGState(ctx);
+  CGContextClip(ctx);
+  {
+    CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
+    CGGradientRef gradient = iupCocoaCreateGradient(colorSpace, src);
+    iupCocoaDrawGradient(ctx, gradient, src);
+    CGGradientRelease(gradient);
+    CGColorSpaceRelease(colorSpace);
+  }
+  CGContextRestoreGState(ctx);
+#endif
+}
+
+IUP_SDK_API void iupdrvDrawSetClipPath(IdrawCanvas* dc, const IupPathSeg* segs, int count, int rule)
+{
+  int x1, y1, x2, y2;
+
+  iupdrvDrawResetClip(dc);
+
+  CGContextSaveGState(dc->cgContext);
+  dc->clip_state = 1;
+
+  CGContextBeginPath(dc->cgContext);
+  iupCocoaBuildPath(dc->cgContext, segs, count);
+  iupCocoaClipPath(dc->cgContext, rule);
+
+  iupDrawPathGetBBox(segs, count, &x1, &y1, &x2, &y2);
+  dc->clip_x1 = (CGFloat)x1;
+  dc->clip_y1 = (CGFloat)y1;
+  dc->clip_x2 = (CGFloat)x2;
+  dc->clip_y2 = (CGFloat)y2;
 }
 
 IUP_SDK_API void iupdrvDrawGetClipRect(IdrawCanvas* dc, int* x1, int* y1, int* x2, int* y2)
@@ -987,7 +1235,6 @@ IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x
 
   CGGradientRef gradient = CGGradientCreateWithColorComponents(colorSpace, components, locations, count);
 
-  /* 0 = left to right, 90 = top to bottom, 180 = right to left, 270 = bottom to top */
   CGFloat rad = angle * M_PI / 180.0f;
 
   CGFloat w = (CGFloat)(x2 - x1 + 1);
@@ -999,7 +1246,6 @@ IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x
   CGPoint end = CGPointMake(cx_ + (w * cos(rad)) / 2.0f, cy_ + (h * sin(rad)) / 2.0f);
 
 #ifdef GNUSTEP
-  /* Opal's CGContextDrawLinearGradient ignores the clip and floods the whole canvas, so render off-screen and composite */
   {
     int iw = (int)w, ih = (int)h;
     if (iw > 0 && ih > 0)
@@ -1019,7 +1265,6 @@ IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x
           CGImageRef img = CGBitmapContextCreateImage(tctx);
           if (img)
           {
-            /* Canvas CTM is Y-down; compensate so the bitmap lands upright. */
             CGContextSaveGState(cg_context);
             CGContextTranslateCTM(cg_context, x1, y1 + h);
             CGContextScaleCTM(cg_context, 1.0, -1.0);
@@ -1037,7 +1282,6 @@ IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x
   CGContextSaveGState(cg_context);
   CGContextClipToRect(cg_context, CGRectMake(x1, y1, w, h));
 
-  /* the before/after-location flags keep diagonal gradients from cutting off the corners */
   CGContextDrawLinearGradient(cg_context, gradient, start, end, kCGGradientDrawsBeforeStartLocation | kCGGradientDrawsAfterEndLocation);
 
   CGContextRestoreGState(cg_context);
@@ -1071,7 +1315,6 @@ IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int r
   CGRect circleRect = CGRectMake(cx - radius, cy - radius, 2 * radius, 2 * radius);
 
 #ifdef GNUSTEP
-  /* Opal bleeds the radial edge colour across the whole surface, so render off-screen and composite */
   {
     int iw = 2 * radius;
     int ih = 2 * radius;
@@ -1097,7 +1340,6 @@ IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int r
                                     iupDrawAlpha(colorEdge) / 255.0f);
           CGContextFillPath(tctx);
 
-          /* Clip to the ellipse so the gradient's PAD-fill doesn't paint the corners. */
           CGContextBeginPath(tctx);
           iupCocoaAddEllipseInRect(tctx, localCircle);
           CGContextClip(tctx);
@@ -1122,7 +1364,6 @@ IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int r
 #else
   CGContextSaveGState(cg_context);
 
-  /* gradients do not anti-alias their edges, a solid filled path underneath does */
   CGContextBeginPath(cg_context);
   CGContextAddEllipseInRect(cg_context, circleRect);
   CGContextSetRGBFillColor(cg_context,

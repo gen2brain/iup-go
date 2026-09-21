@@ -322,6 +322,8 @@ void wdDestroyCachedImage(WD_HCACHEDIMAGE hCachedImage);
 WD_HBRUSH wdCreateSolidBrush(WD_HCANVAS hCanvas, WD_COLOR color);
 WD_HBRUSH wdCreateLinearGradientBrush(WD_HCANVAS hCanvas, float x0, float y0, float x1, float y1, WD_COLOR color0, WD_COLOR color1);
 WD_HBRUSH wdCreateRadialGradientBrush(WD_HCANVAS hCanvas, float cx, float cy, float rx, float ry, WD_COLOR colorCenter, WD_COLOR colorEdge);
+WD_HBRUSH wdCreateLinearGradientBrushEx(WD_HCANVAS hCanvas, float x0, float y0, float x1, float y1, const WD_COLOR* colors, const float* offsets, int count);
+WD_HBRUSH wdCreateRadialGradientBrushEx(WD_HCANVAS hCanvas, float cx, float cy, float rx, float ry, const WD_COLOR* colors, const float* offsets, int count);
 void wdDestroyBrush(WD_HBRUSH hBrush);
 
 /* Can be only called for brushes created with wdCreateSolidBrush(). */
@@ -378,7 +380,11 @@ struct WD_PATHSINK_tag {
 BOOL wdOpenPathSink(WD_PATHSINK* pSink, WD_HPATH hPath);
 void wdClosePathSink(WD_PATHSINK* pSink);
 
+#define WD_FILLMODE_WINDING     0
+#define WD_FILLMODE_ALTERNATE   1
+
 void wdBeginFigure(WD_PATHSINK* pSink, float x, float y);
+void wdBeginFigureFillMode(WD_PATHSINK* pSink, float x, float y, int fillMode);
 void wdEndFigure(WD_PATHSINK* pSink, BOOL bCloseFigure);
 
 void wdAddLine(WD_PATHSINK* pSink, float x, float y);

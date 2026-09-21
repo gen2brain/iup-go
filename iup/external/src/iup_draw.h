@@ -49,6 +49,16 @@ IUP_SDK_API void iupDrawParentBackground(IdrawCanvas* dc, Ihandle* ih);
 IUP_SDK_API char* iupDrawGetTextSize(Ihandle* ih, const char* str, int len, int* w, int* h, double text_orientation);
 IUP_SDK_API int iupDrawGetTextFlags(Ihandle* ih, const char* align_name, const char* wrap_name, const char* ellipsis_name);
 
+/* Converts one ARC_TO segment into up to 4 CURVE_TO segments.
+ * Returns the number of segments written, out must have room for 4. */
+IUP_SDK_API int iupDrawPathArcToBeziers(const IupPathSeg* seg, IupPathSeg* out);
+
+/* Bounding box of a path, arc segments contribute their full ellipse. */
+IUP_SDK_API void iupDrawPathGetBBox(const IupPathSeg* segs, int count, int* x1, int* y1, int* x2, int* y2);
+
+/* Replaces CURVE_TO/QUAD_TO/ARC_TO with LINE_TO approximations. Returns the count, *out_segs is malloc'd, caller frees. */
+IUP_SDK_API int iupDrawPathFlatten(const IupPathSeg* segs, int count, IupPathSeg** out_segs);
+
 /**********************************************************************************************************/
 
 enum{ IUP_IMGPOS_LEFT, IUP_IMGPOS_RIGHT, IUP_IMGPOS_TOP, IUP_IMGPOS_BOTTOM };

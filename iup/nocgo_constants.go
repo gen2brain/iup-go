@@ -165,3 +165,9 @@ const (
 	DriverHaiku      = 2048
 	DriverWasm       = 4096
 )
+
+// DrawPathFill fill rules
+const (
+	DRAW_RULE_WINDING = 0
+	DRAW_RULE_EVENODD = 1
+)

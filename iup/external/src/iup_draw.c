@@ -38,11 +38,171 @@ static void iSvgColorStr(long color, char* buf, int buf_size)
     snprintf(buf, buf_size, "%d %d %d %d", r, g, b, a);
 }
 
+typedef struct _IupDrawPathData
+{
+  IupPathSeg* segs;
+  int count, cap;
+  int has_current;
+  int cur_x, cur_y;
+  int sub_x, sub_y;
+} IupDrawPathData;
+
+static void iDrawPathFree(Ihandle* ih)
+{
+  IupDrawPathData* path = (IupDrawPathData*)iupAttribGet(ih, "_IUPDRAW_PATH");
+  if (path)
+  {
+    free(path->segs);
+    free(path);
+    iupAttribSet(ih, "_IUPDRAW_PATH", NULL);
+  }
+}
+
+static IupDrawPathData* iDrawPathGet(Ihandle* ih)
+{
+  IupDrawPathData* path = (IupDrawPathData*)iupAttribGet(ih, "_IUPDRAW_PATH");
+  if (!path)
+  {
+    path = (IupDrawPathData*)calloc(1, sizeof(IupDrawPathData));
+    if (path)
+      iupAttribSet(ih, "_IUPDRAW_PATH", (char*)path);
+  }
+  return path;
+}
+
+static int iDrawPathAppend(IupDrawPathData* path, IupPathSeg* seg)
+{
+  if (path->count == path->cap)
+  {
+    int cap = path->cap ? path->cap * 2 : 64;
+    IupPathSeg* segs = (IupPathSeg*)realloc(path->segs, (size_t)cap * sizeof(IupPathSeg));
+    if (!segs)
+      return 0;
+    path->segs = segs;
+    path->cap = cap;
+  }
+  path->segs[path->count++] = *seg;
+  return 1;
+}
+
+static void iDrawPathAdd(Ihandle* ih, int op, int x1, int y1, int x2, int y2, int x3, int y3, double a1, double a2)
+{
+  IupDrawPathData* path = (IupDrawPathData*)iupAttribGet(ih, "_IUPDRAW_PATH");
+  IupPathSeg seg;
+
+  if (!path)
+    return;
+
+  memset(&seg, 0, sizeof(seg));
+  seg.op = (unsigned char)op;
+  seg.x1 = x1; seg.y1 = y1;
+  seg.x2 = x2; seg.y2 = y2;
+  seg.x3 = x3; seg.y3 = y3;
+  seg.a1 = a1; seg.a2 = a2;
+
+  if (op == IUP_PATHSEG_MOVE_TO)
+  {
+    if (!iDrawPathAppend(path, &seg))
+      return;
+    path->has_current = 1;
+    path->cur_x = x1; path->cur_y = y1;
+    path->sub_x = x1; path->sub_y = y1;
+  }
+  else if (op == IUP_PATHSEG_CLOSE)
+  {
+    if (path->has_current)
+    {
+      if (!iDrawPathAppend(path, &seg))
+        return;
+      path->cur_x = path->sub_x;
+      path->cur_y = path->sub_y;
+    }
+  }
+  else
+  {
+    if (!path->has_current)
+    {
+      IupPathSeg mv;
+      int ax = x1, ay = y1;
+
+      if (op == IUP_PATHSEG_CURVE_TO) { ax = x3; ay = y3; }
+      else if (op == IUP_PATHSEG_QUAD_TO) { ax = x2; ay = y2; }
+      else if (op == IUP_PATHSEG_ARC_TO)
+      {
+        ax = iupROUND(x1 + x2 * cos(a1 * IUP_DEG2RAD));
+        ay = iupROUND(y1 - y2 * sin(a1 * IUP_DEG2RAD));
+      }
+
+      memset(&mv, 0, sizeof(mv));
+      mv.op = IUP_PATHSEG_MOVE_TO;
+      mv.x1 = ax; mv.y1 = ay;
+      if (!iDrawPathAppend(path, &mv))
+        return;
+      path->has_current = 1;
+      path->cur_x = ax; path->cur_y = ay;
+      path->sub_x = ax; path->sub_y = ay;
+    }
+
+    if (!iDrawPathAppend(path, &seg))
+      return;
+
+    if (op == IUP_PATHSEG_LINE_TO) { path->cur_x = x1; path->cur_y = y1; }
+    else if (op == IUP_PATHSEG_CURVE_TO) { path->cur_x = x3; path->cur_y = y3; }
+    else if (op == IUP_PATHSEG_QUAD_TO) { path->cur_x = x2; path->cur_y = y2; }
+    else
+    {
+      path->cur_x = iupROUND(x1 + x2 * cos(a2 * IUP_DEG2RAD));
+      path->cur_y = iupROUND(y1 - y2 * sin(a2 * IUP_DEG2RAD));
+    }
+  }
+}
+
+static void iDrawSourceFree(Ihandle* ih)
+{
+  IupDrawSource* src = (IupDrawSource*)iupAttribGet(ih, "_IUPDRAW_SOURCE");
+  if (src)
+  {
+    free(src);
+    iupAttribSet(ih, "_IUPDRAW_SOURCE", NULL);
+  }
+}
+
+static IupDrawSource* iDrawSourceGet(Ihandle* ih)
+{
+  IupDrawSource* src = (IupDrawSource*)iupAttribGet(ih, "_IUPDRAW_SOURCE");
+  if (!src)
+  {
+    src = (IupDrawSource*)calloc(1, sizeof(IupDrawSource));
+    if (src)
+      iupAttribSet(ih, "_IUPDRAW_SOURCE", (char*)src);
+  }
+  return src;
+}
+
+static const IupDrawSource* iDrawSourceCurrent(Ihandle* ih, IupDrawSource* solid)
+{
+  IupDrawSource* src = (IupDrawSource*)iupAttribGet(ih, "_IUPDRAW_SOURCE");
+  if (src)
+    return src;
+
+  memset(solid, 0, sizeof(IupDrawSource));
+  solid->type = IUP_SOURCE_SOLID;
+  solid->color = iupDrawStrToColor(iupAttribGetStr(ih, "DRAWCOLOR"), 0);
+  solid->colors[0] = solid->color;
+  solid->offsets[0] = 0;
+  solid->count = 1;
+  return solid;
+}
+
+
 IUP_API void IupDrawBegin(Ihandle* ih)
 {
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
     return;
+
+  iDrawPathFree(ih);
+  iDrawSourceFree(ih);
 
   if (IUP_SVG_GET(ih))
   {
@@ -63,6 +223,9 @@ IUP_API void IupDrawEnd(Ihandle* ih)
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
     return;
+
+  iDrawPathFree(ih);
+  iDrawSourceFree(ih);
 
   if (IUP_SVG_GET(ih))
   {
@@ -407,13 +570,15 @@ static int iDrawBuildStops(const char** colors, const float* offsets, int count,
 {
   int i;
 
-  if (count < 2)
+  if (!colors || count < 2 || count > IUP_GRADIENT_MAX_STOPS)
     return 0;
-  if (count > IUP_GRADIENT_MAX_STOPS)
-    count = IUP_GRADIENT_MAX_STOPS;
 
   for (i = 0; i < count; i++)
   {
+    if (!colors[i])
+      return 0;
+    if (offsets && (!isfinite(offsets[i]) || offsets[i] < 0.0f || offsets[i] > 1.0f || (i > 0 && offsets[i] < offsets[i - 1])))
+      return 0;
     out_colors[i] = iupDrawStrToColor(colors[i], 0);
     if (offsets)
       out_offsets[i] = offsets[i];
@@ -442,7 +607,7 @@ IUP_API void IupDrawLinearGradientStops(Ihandle* ih, int x1, int y1, int x2, int
   if (!iupObjectCheck(ih))
     return;
 
-  if (!iupAttribGet(ih, "_IUP_DRAW_DC"))
+  if (!iupAttribGet(ih, "_IUP_DRAW_DC") || !isfinite(angle))
     return;
 
   count = iDrawBuildStops(colors, offsets, count, c, o);
@@ -493,6 +658,279 @@ IUP_API void IupDrawRadialGradientStops(Ihandle* ih, int cx, int cy, int radius,
 
   iupdrvDrawRadialGradient((IdrawCanvas*)iupAttribGet(ih, "_IUP_DRAW_DC"), cx, cy, radius, c, o, count);
 }
+
+IUP_API void IupDrawPathBegin(Ihandle* ih)
+{
+  iupASSERT(iupObjectCheck(ih));
+  if (!iupObjectCheck(ih))
+    return;
+
+  if (!iupAttribGet(ih, "_IUP_DRAW_DC"))
+    return;
+
+  iDrawPathFree(ih);
+  (void)iDrawPathGet(ih);
+}
+
+IUP_API void IupDrawPathMoveTo(Ihandle* ih, int x, int y)
+{
+  iupASSERT(iupObjectCheck(ih));
+  if (!iupObjectCheck(ih))
+    return;
+
+  if (!iupAttribGet(ih, "_IUP_DRAW_DC"))
+    return;
+
+  if (!iDrawPathGet(ih))
+    return;
+  iDrawPathAdd(ih, IUP_PATHSEG_MOVE_TO, x, y, 0, 0, 0, 0, 0, 0);
+}
+
+IUP_API void IupDrawPathLineTo(Ihandle* ih, int x, int y)
+{
+  iupASSERT(iupObjectCheck(ih));
+  if (!iupObjectCheck(ih))
+    return;
+
+  if (!iupAttribGet(ih, "_IUP_DRAW_DC"))
+    return;
+
+  if (!iDrawPathGet(ih))
+    return;
+  iDrawPathAdd(ih, IUP_PATHSEG_LINE_TO, x, y, 0, 0, 0, 0, 0, 0);
+}
+
+IUP_API void IupDrawPathCurveTo(Ihandle* ih, int x1, int y1, int x2, int y2, int x3, int y3)
+{
+  iupASSERT(iupObjectCheck(ih));
+  if (!iupObjectCheck(ih))
+    return;
+
+  if (!iupAttribGet(ih, "_IUP_DRAW_DC"))
+    return;
+
+  if (!iDrawPathGet(ih))
+    return;
+  iDrawPathAdd(ih, IUP_PATHSEG_CURVE_TO, x1, y1, x2, y2, x3, y3, 0, 0);
+}
+
+IUP_API void IupDrawPathQuadTo(Ihandle* ih, int x1, int y1, int x2, int y2)
+{
+  iupASSERT(iupObjectCheck(ih));
+  if (!iupObjectCheck(ih))
+    return;
+
+  if (!iupAttribGet(ih, "_IUP_DRAW_DC"))
+    return;
+
+  if (!iDrawPathGet(ih))
+    return;
+  iDrawPathAdd(ih, IUP_PATHSEG_QUAD_TO, x1, y1, x2, y2, 0, 0, 0, 0);
+}
+
+IUP_API void IupDrawPathArcTo(Ihandle* ih, int cx, int cy, int rx, int ry, double a1, double a2)
+{
+  iupASSERT(iupObjectCheck(ih));
+  if (!iupObjectCheck(ih))
+    return;
+
+  if (!iupAttribGet(ih, "_IUP_DRAW_DC"))
+    return;
+
+  if (rx <= 0 || ry <= 0)
+    return;
+
+  if (!iDrawPathGet(ih))
+    return;
+
+  iDrawPathAdd(ih, IUP_PATHSEG_LINE_TO, iupROUND(cx + rx * cos(a1 * IUP_DEG2RAD)), iupROUND(cy - ry * sin(a1 * IUP_DEG2RAD)), 0, 0, 0, 0, 0, 0);
+  iDrawPathAdd(ih, IUP_PATHSEG_ARC_TO, cx, cy, rx, ry, 0, 0, a1, a2);
+}
+
+IUP_API void IupDrawPathClose(Ihandle* ih)
+{
+  iupASSERT(iupObjectCheck(ih));
+  if (!iupObjectCheck(ih))
+    return;
+
+  if (!iupAttribGet(ih, "_IUP_DRAW_DC"))
+    return;
+
+  if (!iDrawPathGet(ih))
+    return;
+  iDrawPathAdd(ih, IUP_PATHSEG_CLOSE, 0, 0, 0, 0, 0, 0, 0, 0);
+}
+
+IUP_API void IupDrawPathFill(Ihandle* ih, int rule)
+{
+  iSvgCanvas* svg;
+  IupDrawPathData* path;
+  IupDrawSource solid;
+  const IupDrawSource* src;
+
+  iupASSERT(iupObjectCheck(ih));
+  if (!iupObjectCheck(ih))
+    return;
+
+  if (!iupAttribGet(ih, "_IUP_DRAW_DC") || (rule != IUP_DRAW_RULE_WINDING && rule != IUP_DRAW_RULE_EVENODD))
+    return;
+
+  path = (IupDrawPathData*)iupAttribGet(ih, "_IUPDRAW_PATH");
+  if (!path || path->count == 0)
+    return;
+
+  src = iDrawSourceCurrent(ih, &solid);
+
+  svg = IUP_SVG_GET(ih);
+  if (svg)
+  {
+    iupSvgDrawPathFill(svg, path->segs, path->count, src, rule);
+    return;
+  }
+
+  iupdrvDrawPathFill((IdrawCanvas*)iupAttribGet(ih, "_IUP_DRAW_DC"), path->segs, path->count, src, rule);
+}
+
+IUP_API void IupDrawPathStroke(Ihandle* ih)
+{
+  iSvgCanvas* svg;
+  IupDrawPathData* path;
+  IupDrawSource solid;
+  const IupDrawSource* src;
+  int style, line_width;
+
+  iupASSERT(iupObjectCheck(ih));
+  if (!iupObjectCheck(ih))
+    return;
+
+  if (!iupAttribGet(ih, "_IUP_DRAW_DC"))
+    return;
+
+  path = (IupDrawPathData*)iupAttribGet(ih, "_IUPDRAW_PATH");
+  if (!path || path->count == 0)
+    return;
+
+  src = iDrawSourceCurrent(ih, &solid);
+  line_width = iDrawGetLineWidth(ih);
+  style = iDrawGetStyle(ih);
+
+  svg = IUP_SVG_GET(ih);
+  if (svg)
+  {
+    iupSvgDrawPathStroke(svg, path->segs, path->count, src, style, line_width);
+    return;
+  }
+
+  iupdrvDrawPathStroke((IdrawCanvas*)iupAttribGet(ih, "_IUP_DRAW_DC"), path->segs, path->count, src, style, line_width);
+}
+
+IUP_API void IupDrawSetClipPath(Ihandle* ih, int rule)
+{
+  iSvgCanvas* svg;
+  IupDrawPathData* path;
+
+  iupASSERT(iupObjectCheck(ih));
+  if (!iupObjectCheck(ih))
+    return;
+
+  if (!iupAttribGet(ih, "_IUP_DRAW_DC") || (rule != IUP_DRAW_RULE_WINDING && rule != IUP_DRAW_RULE_EVENODD))
+    return;
+
+  path = (IupDrawPathData*)iupAttribGet(ih, "_IUPDRAW_PATH");
+  if (!path || path->count == 0)
+    return;
+
+  svg = IUP_SVG_GET(ih);
+  if (svg)
+  {
+    iupSvgDrawSetClipPath(svg, path->segs, path->count, rule);
+    return;
+  }
+
+  iupdrvDrawSetClipPath((IdrawCanvas*)iupAttribGet(ih, "_IUP_DRAW_DC"), path->segs, path->count, rule);
+}
+
+IUP_API void IupDrawSetSourceSolid(Ihandle* ih, const char* color)
+{
+  iupASSERT(iupObjectCheck(ih));
+  if (!iupObjectCheck(ih))
+    return;
+
+  if (!iupAttribGet(ih, "_IUP_DRAW_DC"))
+    return;
+
+  iDrawSourceFree(ih);
+  if (color)
+    iupAttribSetStr(ih, "DRAWCOLOR", color);
+}
+
+IUP_API void IupDrawSetSourceLinearGradient(Ihandle* ih, int x1, int y1, int x2, int y2, float angle, const char** colors, const float* offsets, int count)
+{
+  IupDrawSource value, *src;
+
+  iupASSERT(iupObjectCheck(ih));
+  if (!iupObjectCheck(ih))
+    return;
+
+  if (!iupAttribGet(ih, "_IUP_DRAW_DC") || !isfinite(angle))
+    return;
+
+  memset(&value, 0, sizeof(value));
+  count = iDrawBuildStops(colors, offsets, count, value.colors, value.offsets);
+  if (!count)
+    return;
+
+  src = iDrawSourceGet(ih);
+  if (!src)
+    return;
+
+  value.type = IUP_SOURCE_LINEAR_GRADIENT;
+  value.x1 = x1; value.y1 = y1;
+  value.x2 = x2; value.y2 = y2;
+  value.angle = angle;
+  value.count = count;
+  *src = value;
+}
+
+IUP_API void IupDrawSetSourceRadialGradient(Ihandle* ih, int cx, int cy, int radius, const char** colors, const float* offsets, int count)
+{
+  IupDrawSource value, *src;
+
+  iupASSERT(iupObjectCheck(ih));
+  if (!iupObjectCheck(ih))
+    return;
+
+  if (!iupAttribGet(ih, "_IUP_DRAW_DC") || radius <= 0)
+    return;
+
+  memset(&value, 0, sizeof(value));
+  count = iDrawBuildStops(colors, offsets, count, value.colors, value.offsets);
+  if (!count)
+    return;
+
+  src = iDrawSourceGet(ih);
+  if (!src)
+    return;
+
+  value.type = IUP_SOURCE_RADIAL_GRADIENT;
+  value.cx = cx; value.cy = cy;
+  value.radius = radius;
+  value.count = count;
+  *src = value;
+}
+
+IUP_API void IupDrawResetSource(Ihandle* ih)
+{
+  iupASSERT(iupObjectCheck(ih));
+  if (!iupObjectCheck(ih))
+    return;
+
+  if (!iupAttribGet(ih, "_IUP_DRAW_DC"))
+    return;
+
+  iDrawSourceFree(ih);
+}
+
 
 static void iDrawRotatePoint(int x, int y, int* rx, int* ry, double sin_theta, double cos_theta)
 {
@@ -733,6 +1171,9 @@ IUP_API char* IupDrawGetSvg(Ihandle* ih)
 
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
+    return NULL;
+
+  if (iupAttribGet(ih, "_IUP_DRAW_DC"))
     return NULL;
 
   IupGetIntInt(ih, "DRAWSIZE", &w, &h);
@@ -1031,6 +1472,231 @@ IUP_SDK_API long iupDrawStrToColor(const char* str, long c_def)
   else
     return c_def;
 }
+
+IUP_SDK_API int iupDrawPathArcToBeziers(const IupPathSeg* seg, IupPathSeg* out)
+{
+  double cx = seg->x1, cy = seg->y1, rx = seg->x2, ry = seg->y2;
+  double a1, span, step, k;
+  int i, n;
+
+  if (rx <= 0 || ry <= 0)
+    return 0;
+
+  span = seg->a2 - seg->a1;
+  while (span < 0) span += 360.0;
+  while (span > 360.0) span -= 360.0;
+  if (span < 0.01)
+    return 0;
+
+  n = (int)ceil(span / 90.0);
+  if (n > 4) n = 4;
+
+  a1 = seg->a1 * IUP_DEG2RAD;
+  step = span * IUP_DEG2RAD / n;
+  k = (4.0 / 3.0) * tan(step / 4.0);
+
+  for (i = 0; i < n; i++)
+  {
+    double t0 = a1 + i * step;
+    double t1 = a1 + (i + 1) * step;
+    double p0x = cx + rx * cos(t0), p0y = cy - ry * sin(t0);
+    double p3x = cx + rx * cos(t1), p3y = cy - ry * sin(t1);
+
+    memset(&out[i], 0, sizeof(IupPathSeg));
+    out[i].op = IUP_PATHSEG_CURVE_TO;
+    out[i].x1 = iupROUND(p0x + k * (-rx * sin(t0)));
+    out[i].y1 = iupROUND(p0y + k * (-ry * cos(t0)));
+    out[i].x2 = iupROUND(p3x - k * (-rx * sin(t1)));
+    out[i].y2 = iupROUND(p3y - k * (-ry * cos(t1)));
+    out[i].x3 = iupROUND(p3x);
+    out[i].y3 = iupROUND(p3y);
+  }
+
+  return n;
+}
+
+IUP_SDK_API void iupDrawPathGetBBox(const IupPathSeg* segs, int count, int* x1, int* y1, int* x2, int* y2)
+{
+  int i, min_x = 0, min_y = 0, max_x = 0, max_y = 0, has = 0;
+
+  for (i = 0; i < count; i++)
+  {
+    int px[6], py[6], np = 0;
+
+    switch (segs[i].op)
+    {
+    case IUP_PATHSEG_MOVE_TO:
+    case IUP_PATHSEG_LINE_TO:
+      px[0] = segs[i].x1; py[0] = segs[i].y1; np = 1;
+      break;
+    case IUP_PATHSEG_QUAD_TO:
+      px[0] = segs[i].x1; py[0] = segs[i].y1;
+      px[1] = segs[i].x2; py[1] = segs[i].y2; np = 2;
+      break;
+    case IUP_PATHSEG_CURVE_TO:
+      px[0] = segs[i].x1; py[0] = segs[i].y1;
+      px[1] = segs[i].x2; py[1] = segs[i].y2;
+      px[2] = segs[i].x3; py[2] = segs[i].y3; np = 3;
+      break;
+    case IUP_PATHSEG_ARC_TO:
+      px[0] = segs[i].x1 - segs[i].x2; py[0] = segs[i].y1 - segs[i].y2;
+      px[1] = segs[i].x1 + segs[i].x2; py[1] = segs[i].y1 + segs[i].y2; np = 2;
+      break;
+    default:
+      break;
+    }
+
+    while (np--)
+    {
+      if (!has)
+      {
+        min_x = max_x = px[np];
+        min_y = max_y = py[np];
+        has = 1;
+      }
+      else
+      {
+        if (px[np] < min_x) min_x = px[np];
+        if (px[np] > max_x) max_x = px[np];
+        if (py[np] < min_y) min_y = py[np];
+        if (py[np] > max_y) max_y = py[np];
+      }
+    }
+  }
+
+  if (x1) *x1 = has ? min_x : 0;
+  if (y1) *y1 = has ? min_y : 0;
+  if (x2) *x2 = has ? max_x : 0;
+  if (y2) *y2 = has ? max_y : 0;
+}
+
+typedef struct _IupDrawFlatPath
+{
+  IupPathSeg* segs;
+  int count, cap;
+} IupDrawFlatPath;
+
+static void iDrawFlatAppend(IupDrawFlatPath* fp, int op, double x, double y)
+{
+  if (fp->count == fp->cap)
+  {
+    int cap = fp->cap ? fp->cap * 2 : 64;
+    IupPathSeg* segs = (IupPathSeg*)realloc(fp->segs, (size_t)cap * sizeof(IupPathSeg));
+    if (!segs)
+      return;
+    fp->segs = segs;
+    fp->cap = cap;
+  }
+
+  memset(&fp->segs[fp->count], 0, sizeof(IupPathSeg));
+  fp->segs[fp->count].op = (unsigned char)op;
+  fp->segs[fp->count].x1 = iupROUND(x);
+  fp->segs[fp->count].y1 = iupROUND(y);
+  fp->count++;
+}
+
+static void iDrawFlattenCubic(IupDrawFlatPath* fp, double x0, double y0, double x1, double y1, double x2, double y2, double x3, double y3, int depth)
+{
+  double dx = x3 - x0, dy = y3 - y0;
+  double chord = sqrt(dx * dx + dy * dy);
+  double tol = 0.5;
+
+  if (depth >= 16 ||
+      (chord < 0.001 &&
+       (x1 - x0) * (x1 - x0) + (y1 - y0) * (y1 - y0) < tol * tol &&
+       (x2 - x0) * (x2 - x0) + (y2 - y0) * (y2 - y0) < tol * tol) ||
+      (chord >= 0.001 &&
+       fabs((x1 - x0) * dy - (y1 - y0) * dx) <= tol * chord &&
+       fabs((x2 - x0) * dy - (y2 - y0) * dx) <= tol * chord))
+  {
+    iDrawFlatAppend(fp, IUP_PATHSEG_LINE_TO, x3, y3);
+    return;
+  }
+
+  {
+    double ax1 = (x0 + x1) / 2, ay1 = (y0 + y1) / 2;
+    double ax2 = (x1 + x2) / 2, ay2 = (y1 + y2) / 2;
+    double ax3 = (x2 + x3) / 2, ay3 = (y2 + y3) / 2;
+    double bx1 = (ax1 + ax2) / 2, by1 = (ay1 + ay2) / 2;
+    double bx2 = (ax2 + ax3) / 2, by2 = (ay2 + ay3) / 2;
+    double mx = (bx1 + bx2) / 2, my = (by1 + by2) / 2;
+
+    iDrawFlattenCubic(fp, x0, y0, ax1, ay1, bx1, by1, mx, my, depth + 1);
+    iDrawFlattenCubic(fp, mx, my, bx2, by2, ax3, ay3, x3, y3, depth + 1);
+  }
+}
+
+static void iDrawFlattenSeg(IupDrawFlatPath* fp, const IupPathSeg* seg, double cur_x, double cur_y)
+{
+  if (seg->op == IUP_PATHSEG_CURVE_TO)
+    iDrawFlattenCubic(fp, cur_x, cur_y, seg->x1, seg->y1, seg->x2, seg->y2, seg->x3, seg->y3, 0);
+  else if (seg->op == IUP_PATHSEG_QUAD_TO)
+  {
+    double x1 = cur_x + (2.0 / 3.0) * (seg->x1 - cur_x);
+    double y1 = cur_y + (2.0 / 3.0) * (seg->y1 - cur_y);
+    double x2 = seg->x2 + (2.0 / 3.0) * (seg->x1 - seg->x2);
+    double y2 = seg->y2 + (2.0 / 3.0) * (seg->y1 - seg->y2);
+    iDrawFlattenCubic(fp, cur_x, cur_y, x1, y1, x2, y2, seg->x2, seg->y2, 0);
+  }
+  else
+  {
+    IupPathSeg bez[4];
+    int i, n = iupDrawPathArcToBeziers(seg, bez);
+    for (i = 0; i < n; i++)
+    {
+      iDrawFlattenCubic(fp, cur_x, cur_y, bez[i].x1, bez[i].y1, bez[i].x2, bez[i].y2, bez[i].x3, bez[i].y3, 0);
+      cur_x = bez[i].x3;
+      cur_y = bez[i].y3;
+    }
+  }
+}
+
+IUP_SDK_API int iupDrawPathFlatten(const IupPathSeg* segs, int count, IupPathSeg** out_segs)
+{
+  IupDrawFlatPath fp;
+  double cur_x = 0, cur_y = 0;
+  int sub_x = 0, sub_y = 0;
+  int i;
+
+  memset(&fp, 0, sizeof(fp));
+
+  for (i = 0; i < count; i++)
+  {
+    switch (segs[i].op)
+    {
+    case IUP_PATHSEG_ARC_TO:
+      iDrawFlattenSeg(&fp, &segs[i], cur_x, cur_y);
+      cur_x = iupROUND(segs[i].x1 + segs[i].x2 * cos(segs[i].a2 * IUP_DEG2RAD));
+      cur_y = iupROUND(segs[i].y1 - segs[i].y2 * sin(segs[i].a2 * IUP_DEG2RAD));
+      break;
+    case IUP_PATHSEG_CURVE_TO:
+      iDrawFlattenSeg(&fp, &segs[i], cur_x, cur_y);
+      cur_x = segs[i].x3; cur_y = segs[i].y3;
+      break;
+    case IUP_PATHSEG_QUAD_TO:
+      iDrawFlattenSeg(&fp, &segs[i], cur_x, cur_y);
+      cur_x = segs[i].x2; cur_y = segs[i].y2;
+      break;
+    case IUP_PATHSEG_MOVE_TO:
+      sub_x = segs[i].x1; sub_y = segs[i].y1;
+      iDrawFlatAppend(&fp, IUP_PATHSEG_MOVE_TO, segs[i].x1, segs[i].y1);
+      cur_x = segs[i].x1; cur_y = segs[i].y1;
+      break;
+    case IUP_PATHSEG_LINE_TO:
+      iDrawFlatAppend(&fp, IUP_PATHSEG_LINE_TO, segs[i].x1, segs[i].y1);
+      cur_x = segs[i].x1; cur_y = segs[i].y1;
+      break;
+    case IUP_PATHSEG_CLOSE:
+      iDrawFlatAppend(&fp, IUP_PATHSEG_CLOSE, 0, 0);
+      cur_x = sub_x; cur_y = sub_y;
+      break;
+    }
+  }
+
+  *out_segs = fp.segs;
+  return fp.count;
+}
+
 
 IUP_SDK_API void iupDrawSetColor(Ihandle* ih, const char* name, long color)
 {
@@ -1851,4 +2517,3 @@ IUP_SDK_API int iupFlatItemSetTipAttrib(Ihandle* ih, const char* value)
   iupAttribSetStr(ih, "_IUP_FLATITEM_TIP", value);
   return iupdrvBaseSetTipAttrib(ih, value);
 }
-

@@ -37,8 +37,11 @@ struct _IdrawCanvas
   int w, h;
 
   Fl_Offscreen offscreen;
+  Fl_Offscreen clip_offscreen;
   int in_offscreen;
   int clip_pushed;
+
+  std::vector<unsigned char> clip_mask;
 
   int clip_x1, clip_y1, clip_x2, clip_y2;
 };
@@ -50,7 +53,6 @@ static void fltkDrawSetColor(long color)
   unsigned char b = iupDrawBlue(color);
   unsigned char a = iupDrawAlpha(color);
 
-  /* the colormap entry carries the alpha, a plain fl_color(r,g,b) cannot */
   if (a < 255)
   {
     Fl::set_color(FL_FREE_COLOR, r, g, b, a);
@@ -86,9 +88,59 @@ static void iupDrawOrderMinMax(int* x1, int* y1, int* x2, int* y2)
   if (*y1 > *y2) { t = *y1; *y1 = *y2; *y2 = t; }
 }
 
+static void fltkDrawCommitClipMask(IdrawCanvas* dc)
+{
+  if (!dc->clip_offscreen)
+    return;
+
+  if (dc->in_offscreen)
+  {
+    fl_end_offscreen();
+    dc->in_offscreen = 0;
+  }
+
+  fl_begin_offscreen(dc->offscreen);
+  dc->in_offscreen = 1;
+
+  for (int y = 0; y < dc->h; y++)
+  {
+    int x = 0;
+    while (x < dc->w)
+    {
+      while (x < dc->w && !dc->clip_mask[(size_t)y * dc->w + x])
+        x++;
+      int x1 = x;
+      while (x < dc->w && dc->clip_mask[(size_t)y * dc->w + x])
+        x++;
+      if (x > x1)
+        fl_copy_offscreen(x1, y, x - x1, 1, dc->clip_offscreen, x1, y);
+    }
+  }
+
+  fl_delete_offscreen(dc->clip_offscreen);
+  dc->clip_offscreen = 0;
+}
+
+static void fltkDrawBeginClipMask(IdrawCanvas* dc)
+{
+  dc->clip_offscreen = fl_create_offscreen(dc->w, dc->h);
+  if (!dc->clip_offscreen)
+    return;
+
+  if (dc->in_offscreen)
+  {
+    fl_end_offscreen();
+    dc->in_offscreen = 0;
+  }
+
+  fl_begin_offscreen(dc->clip_offscreen);
+  dc->in_offscreen = 1;
+  fl_copy_offscreen(0, 0, dc->w, dc->h, dc->offscreen, 0, 0);
+}
+
 extern "C" IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
 {
-  IdrawCanvas* dc = (IdrawCanvas*)calloc(1, sizeof(IdrawCanvas));
+  IdrawCanvas* dc = new IdrawCanvas();
 
   dc->ih = ih;
   dc->widget = (Fl_Widget*)ih->handle;
@@ -131,6 +183,8 @@ extern "C" IUP_SDK_API void iupdrvDrawKillCanvas(IdrawCanvas* dc)
 {
   if (!dc) return;
 
+  fltkDrawCommitClipMask(dc);
+
   if (dc->clip_pushed)
   {
     fl_pop_clip();
@@ -143,14 +197,15 @@ extern "C" IUP_SDK_API void iupdrvDrawKillCanvas(IdrawCanvas* dc)
     dc->in_offscreen = 0;
   }
 
-  free(dc);
+  delete dc;
 }
 
 extern "C" IUP_SDK_API void iupdrvDrawFlush(IdrawCanvas* dc)
 {
   if (!dc || !dc->widget) return;
 
-  /* the clip belongs to the offscreen surface, it has to go before that surface does */
+  fltkDrawCommitClipMask(dc);
+
   if (dc->clip_pushed)
   {
     fl_pop_clip();
@@ -183,10 +238,22 @@ extern "C" IUP_SDK_API void iupdrvDrawUpdateSize(IdrawCanvas* dc)
 
   if (new_w != dc->w || new_h != dc->h)
   {
+    if (dc->clip_pushed)
+    {
+      fl_pop_clip();
+      dc->clip_pushed = 0;
+    }
+
     if (dc->in_offscreen)
     {
       fl_end_offscreen();
       dc->in_offscreen = 0;
+    }
+
+    if (dc->clip_offscreen)
+    {
+      fl_delete_offscreen(dc->clip_offscreen);
+      dc->clip_offscreen = 0;
     }
 
     if (dc->offscreen)
@@ -194,6 +261,7 @@ extern "C" IUP_SDK_API void iupdrvDrawUpdateSize(IdrawCanvas* dc)
 
     dc->w = new_w;
     dc->h = new_h;
+    dc->clip_mask.clear();
 
     dc->offscreen = fl_create_offscreen(dc->w, dc->h);
     iupAttribSet(dc->ih, "_IUP_FLTK_OFFSCREEN", (char*)(size_t)dc->offscreen);
@@ -344,9 +412,9 @@ static long fltkInterpolateStops(const long* colors, const float* offsets, int c
     {
       float span = offsets[i + 1] - offsets[i];
       float lt = span > 0 ? (t - offsets[i]) / span : 0.0f;
-      unsigned char r1 = iupDrawRed(colors[i]), g1 = iupDrawGreen(colors[i]), b1 = iupDrawBlue(colors[i]);
-      unsigned char r2 = iupDrawRed(colors[i+1]), g2 = iupDrawGreen(colors[i+1]), b2 = iupDrawBlue(colors[i+1]);
-      return iupDrawColor((unsigned char)(r1 + lt * (r2 - r1)), (unsigned char)(g1 + lt * (g2 - g1)), (unsigned char)(b1 + lt * (b2 - b1)), 255);
+      unsigned char r1 = iupDrawRed(colors[i]), g1 = iupDrawGreen(colors[i]), b1 = iupDrawBlue(colors[i]), a1 = iupDrawAlpha(colors[i]);
+      unsigned char r2 = iupDrawRed(colors[i+1]), g2 = iupDrawGreen(colors[i+1]), b2 = iupDrawBlue(colors[i+1]), a2 = iupDrawAlpha(colors[i+1]);
+      return iupDrawColor((unsigned char)(r1 + lt * (r2 - r1)), (unsigned char)(g1 + lt * (g2 - g1)), (unsigned char)(b1 + lt * (b2 - b1)), (unsigned char)(a1 + lt * (a2 - a1)));
     }
   }
   return colors[count - 1];
@@ -394,7 +462,6 @@ extern "C" IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, in
   }
 }
 
-/* FLTK has no underline or strikeout in its fonts, so the decorations are drawn from the metrics */
 static void fltkDrawTextDecoration(const char* text, int len, int tx, int baseline, int underline, int strikeout)
 {
   int tw = (int)(fl_width(text, len) + 0.5);
@@ -503,7 +570,6 @@ extern "C" IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, in
 
   if (!dc || !text) return;
 
-  /* the box fl_draw and fl_measure need a NUL terminated string */
   if (len < 0)
     len = (int)strlen(text);
   if (len >= (int)sizeof(stack_buf))
@@ -693,6 +759,8 @@ extern "C" IUP_SDK_API void iupdrvDrawSetClipRect(IdrawCanvas* dc, int x1, int y
 {
   if (!dc) return;
 
+  fltkDrawCommitClipMask(dc);
+
   iupDrawOrderMinMax(&x1, &y1, &x2, &y2);
 
   dc->clip_x1 = x1;
@@ -705,6 +773,8 @@ extern "C" IUP_SDK_API void iupdrvDrawSetClipRect(IdrawCanvas* dc, int x1, int y
     fl_pop_clip();
     dc->clip_pushed = 0;
   }
+
+  dc->clip_mask.clear();
 
   fl_push_clip(x1, y1, x2 - x1 + 1, y2 - y1 + 1);
   dc->clip_pushed = 1;
@@ -720,6 +790,8 @@ extern "C" IUP_SDK_API void iupdrvDrawResetClip(IdrawCanvas* dc)
 {
   if (!dc) return;
 
+  fltkDrawCommitClipMask(dc);
+
   if (dc->clip_pushed)
   {
     fl_pop_clip();
@@ -730,6 +802,7 @@ extern "C" IUP_SDK_API void iupdrvDrawResetClip(IdrawCanvas* dc)
   dc->clip_y1 = 0;
   dc->clip_x2 = dc->w - 1;
   dc->clip_y2 = dc->h - 1;
+  dc->clip_mask.clear();
 }
 
 extern "C" IUP_SDK_API void iupdrvDrawGetClipRect(IdrawCanvas* dc, int* x1, int* y1, int* x2, int* y2)
@@ -764,9 +837,244 @@ extern "C" IUP_SDK_API void iupdrvDrawFocusRect(IdrawCanvas* dc, int x1, int y1,
   fl_line_style(FL_SOLID, 0);
 }
 
+static void fltkDrawPathWalk(const IupPathSeg* segs, int count, int fill)
+{
+  IupPathSeg* flat = NULL;
+  int i, n = iupDrawPathFlatten(segs, count, &flat);
+  int in_subpath = 0;
+  int sub_x = 0, sub_y = 0;
+
+  for (i = 0; i < n; i++)
+  {
+    switch (flat[i].op)
+    {
+    case IUP_PATHSEG_MOVE_TO:
+      if (in_subpath)
+      {
+        if (fill)
+          fl_gap();
+        else
+        {
+          fl_end_line();
+          fl_begin_line();
+        }
+      }
+      fl_vertex(flat[i].x1, flat[i].y1);
+      sub_x = flat[i].x1;
+      sub_y = flat[i].y1;
+      in_subpath = 1;
+      break;
+    case IUP_PATHSEG_LINE_TO:
+      fl_vertex(flat[i].x1, flat[i].y1);
+      break;
+    case IUP_PATHSEG_CLOSE:
+      fl_vertex(sub_x, sub_y);
+      break;
+    }
+  }
+
+  free(flat);
+}
+
+struct FltkPathEdge
+{
+  int x1, y1, x2, y2;
+};
+
+static std::vector<unsigned char> fltkDrawPathMask(IdrawCanvas* dc, const IupPathSeg* segs, int count, int rule)
+{
+  IupPathSeg* flat = NULL;
+  std::vector<FltkPathEdge> edges;
+  std::vector<unsigned char> mask((size_t)dc->w * dc->h, 0);
+  int n = iupDrawPathFlatten(segs, count, &flat);
+  int cur_x = 0, cur_y = 0, sub_x = 0, sub_y = 0, has_current = 0;
+
+  for (int i = 0; i < n; i++)
+  {
+    if (flat[i].op == IUP_PATHSEG_MOVE_TO)
+    {
+      if (has_current && (cur_x != sub_x || cur_y != sub_y))
+        edges.push_back({cur_x, cur_y, sub_x, sub_y});
+      cur_x = sub_x = flat[i].x1;
+      cur_y = sub_y = flat[i].y1;
+      has_current = 1;
+    }
+    else if (flat[i].op == IUP_PATHSEG_LINE_TO)
+    {
+      if (!has_current)
+      {
+        cur_x = sub_x = flat[i].x1;
+        cur_y = sub_y = flat[i].y1;
+        has_current = 1;
+      }
+      else
+      {
+        edges.push_back({cur_x, cur_y, flat[i].x1, flat[i].y1});
+        cur_x = flat[i].x1;
+        cur_y = flat[i].y1;
+      }
+    }
+    else if (flat[i].op == IUP_PATHSEG_CLOSE && has_current)
+    {
+      if (cur_x != sub_x || cur_y != sub_y)
+        edges.push_back({cur_x, cur_y, sub_x, sub_y});
+      cur_x = sub_x;
+      cur_y = sub_y;
+    }
+  }
+
+  if (has_current && (cur_x != sub_x || cur_y != sub_y))
+    edges.push_back({cur_x, cur_y, sub_x, sub_y});
+
+  free(flat);
+
+  for (int y = 0; y < dc->h; y++)
+  {
+    double py = y + 0.5;
+    for (int x = 0; x < dc->w; x++)
+    {
+      double px = x + 0.5;
+      int winding = 0;
+      for (size_t i = 0; i < edges.size(); i++)
+      {
+        const FltkPathEdge& edge = edges[i];
+        if ((edge.y1 <= py && edge.y2 > py) || (edge.y2 <= py && edge.y1 > py))
+        {
+          double cross_x = edge.x1 + (py - edge.y1) * (edge.x2 - edge.x1) / (edge.y2 - edge.y1);
+          if (cross_x > px)
+          {
+            if (rule == IUP_PATH_RULE_EVENODD)
+              winding ^= 1;
+            else
+              winding += edge.y2 > edge.y1 ? 1 : -1;
+          }
+        }
+      }
+      if ((rule == IUP_PATH_RULE_EVENODD && winding) || (rule == IUP_PATH_RULE_WINDING && winding != 0))
+        mask[(size_t)y * dc->w + x] = 1;
+    }
+  }
+
+  return mask;
+}
+
+static long fltkDrawSourceColor(const IupDrawSource* src, int x, int y)
+{
+  if (src->type == IUP_SOURCE_SOLID)
+    return src->color;
+  if (src->type == IUP_SOURCE_RADIAL_GRADIENT)
+    return fltkInterpolateStops(src->colors, src->offsets, src->count, (float)(sqrt((double)(x - src->cx) * (x - src->cx) + (double)(y - src->cy) * (y - src->cy)) / src->radius));
+
+  int x1 = src->x1, y1 = src->y1, x2 = src->x2, y2 = src->y2;
+  iupDrawOrderMinMax(&x1, &y1, &x2, &y2);
+  double rad = src->angle * M_PI / 180.0;
+  double dx = (x2 - x1) * cos(rad);
+  double dy = (y2 - y1) * sin(rad);
+  double cx = x1 + (x2 - x1) / 2.0;
+  double cy = y1 + (y2 - y1) / 2.0;
+  double x0 = cx - dx / 2.0;
+  double y0 = cy - dy / 2.0;
+  double length2 = dx * dx + dy * dy;
+  float t = length2 > 0 ? (float)(((x - x0) * dx + (y - y0) * dy) / length2) : 0.0f;
+  return fltkInterpolateStops(src->colors, src->offsets, src->count, t);
+}
+
+static void fltkDrawSourceMask(IdrawCanvas* dc, const std::vector<unsigned char>& mask, const IupDrawSource* src)
+{
+  for (int y = 0; y < dc->h; y++)
+  {
+    for (int x = 0; x < dc->w; x++)
+    {
+      size_t i = (size_t)y * dc->w + x;
+      if (mask[i] && (dc->clip_mask.empty() || dc->clip_mask[i]))
+      {
+        fltkDrawSetColor(fltkDrawSourceColor(src, x, y));
+        fl_point(x, y);
+      }
+    }
+  }
+}
+
+extern "C" IUP_SDK_API void iupdrvDrawPathFill(IdrawCanvas* dc, const IupPathSeg* segs, int count, const IupDrawSource* src, int rule)
+{
+  if (!dc || count <= 0) return;
+
+  fltkDrawSourceMask(dc, fltkDrawPathMask(dc, segs, count, rule), src);
+}
+
+extern "C" IUP_SDK_API void iupdrvDrawPathStroke(IdrawCanvas* dc, const IupPathSeg* segs, int count, const IupDrawSource* src, int style, int line_width)
+{
+  if (!dc || count <= 0) return;
+
+  if (src->type == IUP_SOURCE_SOLID)
+  {
+    fltkDrawSetColor(src->color);
+    fltkDrawSetLineStyle(style, line_width);
+    fl_begin_line();
+    fltkDrawPathWalk(segs, count, 0);
+    fl_end_line();
+    return;
+  }
+
+  Fl_Offscreen target = dc->clip_offscreen ? dc->clip_offscreen : dc->offscreen;
+
+  fl_end_offscreen();
+  dc->in_offscreen = 0;
+  Fl_Offscreen mask_offscreen = fl_create_offscreen(dc->w, dc->h);
+  fl_begin_offscreen(mask_offscreen);
+  fl_push_no_clip();
+  fl_color(FL_WHITE);
+  fl_rectf(0, 0, dc->w, dc->h);
+  fl_color(FL_BLACK);
+  fltkDrawSetLineStyle(style, line_width);
+  fl_begin_line();
+  fltkDrawPathWalk(segs, count, 0);
+  fl_end_line();
+  fl_pop_clip();
+  uchar* pixels = fl_read_image(NULL, 0, 0, dc->w, dc->h);
+  fl_end_offscreen();
+  fl_delete_offscreen(mask_offscreen);
+  fl_begin_offscreen(target);
+  dc->in_offscreen = 1;
+
+  if (pixels)
+  {
+    std::vector<unsigned char> mask((size_t)dc->w * dc->h, 0);
+    for (int y = 0; y < dc->h; y++)
+      for (int x = 0; x < dc->w; x++)
+        mask[(size_t)y * dc->w + x] = pixels[((size_t)y * dc->w + x) * 3] < 128;
+    delete[] pixels;
+    fltkDrawSourceMask(dc, mask, src);
+  }
+}
+
+extern "C" IUP_SDK_API void iupdrvDrawSetClipPath(IdrawCanvas* dc, const IupPathSeg* segs, int count, int rule)
+{
+  int x1, y1, x2, y2;
+
+  if (!dc || count <= 0) return;
+
+  iupDrawPathGetBBox(segs, count, &x1, &y1, &x2, &y2);
+  fltkDrawCommitClipMask(dc);
+  if (dc->clip_pushed)
+  {
+    fl_pop_clip();
+    dc->clip_pushed = 0;
+  }
+  dc->clip_mask = fltkDrawPathMask(dc, segs, count, rule);
+  fltkDrawBeginClipMask(dc);
+  dc->clip_x1 = x1;
+  dc->clip_y1 = y1;
+  dc->clip_x2 = x2;
+  dc->clip_y2 = y2;
+}
+
 extern "C" IUP_SDK_API int iupdrvDrawGetImageData(IdrawCanvas* dc, unsigned char* data)
 {
   if (!dc || !data) return 0;
+
+  int restart_clip = dc->clip_offscreen != 0;
+  fltkDrawCommitClipMask(dc);
 
   if (!dc->in_offscreen)
   {
@@ -776,7 +1084,11 @@ extern "C" IUP_SDK_API int iupdrvDrawGetImageData(IdrawCanvas* dc, unsigned char
 
   uchar* pixels = fl_read_image(NULL, 0, 0, dc->w, dc->h);
   if (!pixels)
+  {
+    if (restart_clip)
+      fltkDrawBeginClipMask(dc);
     return 0;
+  }
 
   int d = 3;
   for (int y = 0; y < dc->h; y++)
@@ -794,6 +1106,8 @@ extern "C" IUP_SDK_API int iupdrvDrawGetImageData(IdrawCanvas* dc, unsigned char
   }
 
   delete[] pixels;
+  if (restart_clip)
+    fltkDrawBeginClipMask(dc);
   return 1;
 }
 

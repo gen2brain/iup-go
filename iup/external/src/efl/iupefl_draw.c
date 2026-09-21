@@ -27,11 +27,10 @@ struct _IdrawCanvas
   Ihandle* ih;
   int w, h;
 
-  Eo* vg;                   /* the on-screen widget */
-  Efl_VG* root;             /* shape container of the current layer */
+  Eo* vg;
+  Efl_VG* root;
   Eina_List* shapes;
 
-  /* every primitive draws into this one buffer, in order, and it is rendered once at flush */
   Ecore_Evas* frame_ee;
   Evas* frame_evas;
   Eina_List* frame_objects;
@@ -46,7 +45,6 @@ struct _IdrawCanvas
   int batch_width;
 };
 
-/* Evas stacks later objects above earlier ones, so a new layer preserves draw order */
 static void iDrawNewLayer(IdrawCanvas* dc)
 {
   Eo* layer = efl_add(EFL_CANVAS_VG_OBJECT_CLASS, dc->frame_evas);
@@ -83,7 +81,6 @@ static void iDrawGetColor(long color, int* r, int* g, int* b, int* a)
   int blue = iupDrawBlue(color);
   int alpha = iupDrawAlpha(color);
 
-  /* EFL requires pre-multiplied colors */
   *r = (red * alpha) / 255;
   *g = (green * alpha) / 255;
   *b = (blue * alpha) / 255;
@@ -256,7 +253,6 @@ IUP_SDK_API void iupdrvDrawUpdateSize(IdrawCanvas* dc)
   }
 }
 
-/* one render for the whole frame; the same pixels are displayed and kept for readback */
 IUP_SDK_API void iupdrvDrawFlush(IdrawCanvas* dc)
 {
   const void* src;
@@ -315,7 +311,6 @@ IUP_SDK_API void iupdrvDrawGetSize(IdrawCanvas* dc, int* w, int* h)
   if (h) *h = dc->h;
 }
 
-/* the Evas vector rasterizer works in 16.16 fixed point, a primitive far outside the canvas wraps around */
 #define EFL_DRAW_LIMIT 16384
 
 static int eflDrawClamp(int c)
@@ -742,7 +737,227 @@ IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int r
   dc->shapes = eina_list_append(dc->shapes, grad);
 }
 
-/* the text object goes straight into the frame; its own geometry is the measurement */
+static void iDrawBuildPath(Efl_VG* shape, const IupPathSeg* segs, int count)
+{
+  int i;
+
+  for (i = 0; i < count; i++)
+  {
+    switch (segs[i].op)
+    {
+    case IUP_PATHSEG_MOVE_TO:
+      efl_gfx_path_append_move_to(shape, segs[i].x1, segs[i].y1);
+      break;
+    case IUP_PATHSEG_LINE_TO:
+      efl_gfx_path_append_line_to(shape, segs[i].x1, segs[i].y1);
+      break;
+    case IUP_PATHSEG_CURVE_TO:
+      efl_gfx_path_append_cubic_to(shape, segs[i].x1, segs[i].y1, segs[i].x2, segs[i].y2, segs[i].x3, segs[i].y3);
+      break;
+    case IUP_PATHSEG_QUAD_TO:
+      efl_gfx_path_append_quadratic_to(shape, segs[i].x2, segs[i].y2, segs[i].x1, segs[i].y1);
+      break;
+    case IUP_PATHSEG_ARC_TO:
+    {
+      IupPathSeg bez[4];
+      int j, n = iupDrawPathArcToBeziers(&segs[i], bez);
+      for (j = 0; j < n; j++)
+        efl_gfx_path_append_cubic_to(shape, bez[j].x1, bez[j].y1, bez[j].x2, bez[j].y2, bez[j].x3, bez[j].y3);
+      break;
+    }
+    case IUP_PATHSEG_CLOSE:
+      efl_gfx_path_append_close(shape);
+      break;
+    }
+  }
+}
+
+static Efl_VG* iDrawCreateGradient(Efl_VG* parent, const IupDrawSource* src)
+{
+  Efl_Canvas_Vg_Gradient* grad;
+  Efl_Gfx_Gradient_Stop stops[IUP_GRADIENT_MAX_STOPS];
+  int i;
+
+  if (src->type == IUP_SOURCE_LINEAR_GRADIENT)
+  {
+    double rad, w, h, gx0, gy0, gx1, gy1;
+    int x1 = src->x1, y1 = src->y1, x2 = src->x2, y2 = src->y2;
+
+    iupDrawCheckSwapCoord(x1, x2);
+    iupDrawCheckSwapCoord(y1, y2);
+
+    w = (double)(x2 - x1);
+    h = (double)(y2 - y1);
+    rad = src->angle * M_PI / 180.0;
+
+    gx0 = x1 + w / 2.0 - (w * cos(rad)) / 2.0;
+    gy0 = y1 + h / 2.0 - (h * sin(rad)) / 2.0;
+    gx1 = x1 + w / 2.0 + (w * cos(rad)) / 2.0;
+    gy1 = y1 + h / 2.0 + (h * sin(rad)) / 2.0;
+
+    grad = efl_add(EFL_CANVAS_VG_GRADIENT_LINEAR_CLASS, parent,
+      efl_gfx_gradient_linear_start_set(efl_added, gx0, gy0),
+      efl_gfx_gradient_linear_end_set(efl_added, gx1, gy1));
+  }
+  else
+  {
+    grad = efl_add(EFL_CANVAS_VG_GRADIENT_RADIAL_CLASS, parent,
+      efl_gfx_gradient_radial_center_set(efl_added, src->cx, src->cy),
+      efl_gfx_gradient_radial_radius_set(efl_added, src->radius));
+  }
+
+  for (i = 0; i < src->count; i++)
+  {
+    int r, g, b, a;
+    iDrawGetColor(src->colors[i], &r, &g, &b, &a);
+    stops[i].offset = src->offsets[i];
+    stops[i].r = r; stops[i].g = g; stops[i].b = b; stops[i].a = a;
+  }
+  efl_gfx_gradient_stop_set(grad, stops, src->count);
+
+  return grad;
+}
+
+static Efl_Gfx_Fill_Rule iDrawFillRule(int rule)
+{
+  return rule == IUP_PATH_RULE_EVENODD ? EFL_GFX_FILL_RULE_ODD_EVEN : EFL_GFX_FILL_RULE_WINDING;
+}
+
+IUP_SDK_API void iupdrvDrawPathFill(IdrawCanvas* dc, const IupPathSeg* segs, int count, const IupDrawSource* src, int rule)
+{
+  Efl_VG* shape = efl_add(EFL_CANVAS_VG_SHAPE_CLASS, dc->root);
+
+  iDrawBuildPath(shape, segs, count);
+  efl_gfx_shape_fill_rule_set(shape, iDrawFillRule(rule));
+
+  if (src->type == IUP_SOURCE_SOLID)
+  {
+    int r, g, b, a;
+    iDrawGetColor(src->color, &r, &g, &b, &a);
+    efl_gfx_color_set(shape, r, g, b, a);
+  }
+  else
+  {
+    Efl_VG* grad = iDrawCreateGradient(dc->root, src);
+    efl_canvas_vg_shape_fill_set(shape, grad);
+    dc->shapes = eina_list_append(dc->shapes, grad);
+  }
+  efl_gfx_shape_stroke_color_set(shape, 0, 0, 0, 0);
+
+  dc->shapes = eina_list_append(dc->shapes, shape);
+}
+
+IUP_SDK_API void iupdrvDrawPathStroke(IdrawCanvas* dc, const IupPathSeg* segs, int count, const IupDrawSource* src, int style, int line_width)
+{
+  Efl_VG* shape = efl_add(EFL_CANVAS_VG_SHAPE_CLASS, dc->root);
+
+  iDrawBuildPath(shape, segs, count);
+
+  efl_gfx_color_set(shape, 0, 0, 0, 0);
+  efl_gfx_shape_stroke_width_set(shape, line_width > 0 ? line_width : 1);
+  iDrawSetDash(shape, style);
+
+  if (src->type == IUP_SOURCE_SOLID)
+  {
+    int r, g, b, a;
+    iDrawGetColor(src->color, &r, &g, &b, &a);
+    efl_gfx_shape_stroke_color_set(shape, r, g, b, a);
+  }
+  else
+  {
+    Efl_VG* grad = iDrawCreateGradient(dc->root, src);
+    efl_canvas_vg_shape_stroke_fill_set(shape, grad);
+    dc->shapes = eina_list_append(dc->shapes, grad);
+  }
+
+  dc->shapes = eina_list_append(dc->shapes, shape);
+}
+
+static void iDrawApplyClipPath(IdrawCanvas* dc, const IupPathSeg* segs, int count, int rule)
+{
+  Ecore_Evas* ee;
+  Eo* layer;
+  Efl_VG* root;
+  Efl_VG* shape;
+  Evas_Object* img;
+  const unsigned int* src;
+  void* dst;
+  int y, stride;
+
+  dc->clipper = NULL;
+
+  ee = ecore_evas_buffer_new(dc->w, dc->h);
+  if (!ee)
+  {
+    iDrawNewLayer(dc);
+    return;
+  }
+  ecore_evas_alpha_set(ee, EINA_TRUE);
+
+  layer = efl_add(EFL_CANVAS_VG_OBJECT_CLASS, ecore_evas_get(ee));
+  efl_gfx_entity_position_set(layer, EINA_POSITION2D(0, 0));
+  efl_gfx_entity_size_set(layer, EINA_SIZE2D(dc->w, dc->h));
+  efl_canvas_vg_object_viewbox_set(layer, EINA_RECT(0, 0, dc->w, dc->h));
+  efl_canvas_vg_object_fill_mode_set(layer, EFL_CANVAS_VG_FILL_MODE_NONE);
+  efl_gfx_entity_visible_set(layer, EINA_TRUE);
+
+  root = efl_add(EFL_CANVAS_VG_CONTAINER_CLASS, layer);
+  efl_canvas_vg_object_root_node_set(layer, root);
+
+  shape = efl_add(EFL_CANVAS_VG_SHAPE_CLASS, root);
+  iDrawBuildPath(shape, segs, count);
+  efl_gfx_shape_fill_rule_set(shape, iDrawFillRule(rule));
+  efl_gfx_color_set(shape, 255, 255, 255, 255);
+  efl_gfx_shape_stroke_color_set(shape, 0, 0, 0, 0);
+
+  ecore_evas_manual_render(ee);
+  src = ecore_evas_buffer_pixels_get(ee);
+
+  img = evas_object_image_filled_add(dc->frame_evas);
+  evas_object_image_colorspace_set(img, EVAS_COLORSPACE_ARGB8888);
+  evas_object_image_alpha_set(img, EINA_TRUE);
+  evas_object_image_size_set(img, dc->w, dc->h);
+
+  if (src)
+  {
+    dst = evas_object_image_data_get(img, EINA_TRUE);
+    if (dst)
+    {
+      stride = evas_object_image_stride_get(img);
+      for (y = 0; y < dc->h; y++)
+        memcpy((unsigned char*)dst + (size_t)y * stride, (const unsigned char*)src + (size_t)y * dc->w * sizeof(unsigned int), (size_t)dc->w * sizeof(unsigned int));
+      evas_object_image_data_set(img, dst);
+      evas_object_image_data_update_add(img, 0, 0, dc->w, dc->h);
+    }
+  }
+
+  efl_gfx_entity_position_set(img, EINA_POSITION2D(0, 0));
+  efl_gfx_entity_size_set(img, EINA_SIZE2D(dc->w, dc->h));
+  efl_gfx_entity_visible_set(img, EINA_TRUE);
+
+  ecore_evas_free(ee);
+
+  dc->frame_objects = eina_list_append(dc->frame_objects, img);
+  dc->clipper = img;
+
+  iDrawNewLayer(dc);
+}
+
+IUP_SDK_API void iupdrvDrawSetClipPath(IdrawCanvas* dc, const IupPathSeg* segs, int count, int rule)
+{
+  int x1, y1, x2, y2;
+
+  iupDrawPathGetBBox(segs, count, &x1, &y1, &x2, &y2);
+
+  dc->clip_x1 = x1;
+  dc->clip_y1 = y1;
+  dc->clip_x2 = x2;
+  dc->clip_y2 = y2;
+  dc->clip_corner_radius = 0;
+
+  iDrawApplyClipPath(dc, segs, count, rule);
+}
+
 IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int x, int y, int w, int h, long color, const char* font, int flags, double text_orientation)
 {
   Evas_Object* text_obj;
@@ -816,7 +1031,6 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
     evas_object_textblock_size_formatted_get(text_obj, &tw, &th);
     if ((flags & IUP_DRAW_WRAP) || (flags & IUP_DRAW_ELLIPSIS))
       tw = box_w;
-    /* align is relative to the object width, so it has to stay the box */
     efl_gfx_entity_size_set(text_obj, EINA_SIZE2D(box_w, th));
   }
   else
@@ -872,7 +1086,6 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
       efl_gfx_entity_size_set(own_clip, EINA_SIZE2D(w, h));
       efl_gfx_color_set(own_clip, 255, 255, 255, 255);
       efl_gfx_entity_visible_set(own_clip, EINA_TRUE);
-      /* chain under the canvas clip so both apply */
       if (dc->clipper)
         efl_canvas_object_clipper_set(own_clip, dc->clipper);
       efl_canvas_object_clipper_set(text_obj, own_clip);
@@ -1152,7 +1365,6 @@ IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_ina
   free(pixels);
 }
 
-/* a clipper applies to the objects it is set on, so the clip starts a fresh layer */
 static void iDrawApplyClip(IdrawCanvas* dc)
 {
   int w = dc->clip_x2 - dc->clip_x1 + 1;
@@ -1235,7 +1447,6 @@ IUP_SDK_API void iupdrvDrawFocusRect(IdrawCanvas* dc, int x1, int y1, int x2, in
   iupdrvDrawRectangle(dc, x1, y1, x2, y2, iupDrawColor(0, 0, 0, 255), IUP_DRAW_STROKE_DOT, 1);
 }
 
-/* the frame is premultiplied ARGB; IUP wants packed straight RGBA */
 static void iDrawUnpackFrame(const unsigned int* src, int src_w, unsigned char* data, int dst_w, int copy_w, int copy_h)
 {
   int x, y;

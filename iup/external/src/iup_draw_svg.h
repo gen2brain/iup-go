@@ -42,8 +42,12 @@ void iupSvgDrawText(iSvgCanvas* dc, const char* text, int len, int x, int y, int
 void iupSvgDrawLinearGradient(iSvgCanvas* dc, int x1, int y1, int x2, int y2, float angle, const long* colors, const float* offsets, int count);
 void iupSvgDrawRadialGradient(iSvgCanvas* dc, int cx, int cy, int radius, const long* colors, const float* offsets, int count);
 
+void iupSvgDrawPathFill(iSvgCanvas* dc, const IupPathSeg* segs, int count, const IupDrawSource* src, int rule);
+void iupSvgDrawPathStroke(iSvgCanvas* dc, const IupPathSeg* segs, int count, const IupDrawSource* src, int style, int line_width);
+
 void iupSvgDrawSetClipRect(iSvgCanvas* dc, int x1, int y1, int x2, int y2);
 void iupSvgDrawSetClipRoundedRect(iSvgCanvas* dc, int x1, int y1, int x2, int y2, int corner_radius);
+void iupSvgDrawSetClipPath(iSvgCanvas* dc, const IupPathSeg* segs, int count, int rule);
 void iupSvgDrawResetClip(iSvgCanvas* dc);
 void iupSvgDrawGetClipRect(iSvgCanvas* dc, int* x1, int* y1, int* x2, int* y2);
 

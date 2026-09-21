@@ -52,7 +52,7 @@ func DrawPolygon(ih Ihandle, points []int, count int) {
 
 func DrawLinearGradientStops(ih Ihandle, x1, y1, x2, y2 int, angle float32, colors []string, offsets []float32) {
 	n := len(colors)
-	if n < 2 {
+	if n < 2 || (len(offsets) != 0 && len(offsets) != n) {
 		return
 	}
 	bufs := make([][]byte, n)
@@ -70,7 +70,7 @@ func DrawLinearGradientStops(ih Ihandle, x1, y1, x2, y2 int, angle float32, colo
 
 func DrawRadialGradientStops(ih Ihandle, cx, cy, radius int, colors []string, offsets []float32) {
 	n := len(colors)
-	if n < 2 {
+	if n < 2 || (len(offsets) != 0 && len(offsets) != n) {
 		return
 	}
 	bufs := make([][]byte, n)
@@ -157,3 +157,79 @@ func DrawLinearGradient(ih Ihandle, x1, y1, x2, y2 int, angle float32, color1, c
 func DrawRadialGradient(ih Ihandle, cx, cy, radius int, colorCenter, colorEdge string) {
 	iupDrawRadialGradient(uintptr(ih), int32(cx), int32(cy), int32(radius), colorCenter, colorEdge)
 }
+
+func DrawPathBegin(ih Ihandle) { iupDrawPathBegin(uintptr(ih)) }
+
+func DrawPathMoveTo(ih Ihandle, x, y int) {
+	iupDrawPathMoveTo(uintptr(ih), int32(x), int32(y))
+}
+
+func DrawPathLineTo(ih Ihandle, x, y int) {
+	iupDrawPathLineTo(uintptr(ih), int32(x), int32(y))
+}
+
+func DrawPathCurveTo(ih Ihandle, x1, y1, x2, y2, x3, y3 int) {
+	iupDrawPathCurveTo(uintptr(ih), int32(x1), int32(y1), int32(x2), int32(y2), int32(x3), int32(y3))
+}
+
+func DrawPathQuadTo(ih Ihandle, x1, y1, x2, y2 int) {
+	iupDrawPathQuadTo(uintptr(ih), int32(x1), int32(y1), int32(x2), int32(y2))
+}
+
+func DrawPathArcTo(ih Ihandle, cx, cy, rx, ry int, a1, a2 float64) {
+	iupDrawPathArcTo(uintptr(ih), int32(cx), int32(cy), int32(rx), int32(ry), a1, a2)
+}
+
+func DrawPathClose(ih Ihandle) { iupDrawPathClose(uintptr(ih)) }
+
+func DrawPathFill(ih Ihandle, rule int) {
+	iupDrawPathFill(uintptr(ih), int32(rule))
+}
+
+func DrawPathStroke(ih Ihandle) { iupDrawPathStroke(uintptr(ih)) }
+
+func DrawSetClipPath(ih Ihandle, rule int) {
+	iupDrawSetClipPath(uintptr(ih), int32(rule))
+}
+
+func DrawSetSourceSolid(ih Ihandle, color string) {
+	iupDrawSetSourceSolid(uintptr(ih), color)
+}
+
+func DrawSetSourceLinearGradient(ih Ihandle, x1, y1, x2, y2 int, angle float32, colors []string, offsets []float32) {
+	n := len(colors)
+	if n < 2 || (len(offsets) != 0 && len(offsets) != n) {
+		return
+	}
+	bufs := make([][]byte, n)
+	pColors := make([]uintptr, n)
+	for i, s := range colors {
+		bufs[i] = append([]byte(s), 0)
+		pColors[i] = uintptr(unsafe.Pointer(&bufs[i][0]))
+	}
+	var pOff *float32
+	if len(offsets) >= n {
+		pOff = &offsets[0]
+	}
+	iupDrawSetSourceLinearGradient(uintptr(ih), int32(x1), int32(y1), int32(x2), int32(y2), angle, &pColors[0], pOff, int32(n))
+}
+
+func DrawSetSourceRadialGradient(ih Ihandle, cx, cy, radius int, colors []string, offsets []float32) {
+	n := len(colors)
+	if n < 2 || (len(offsets) != 0 && len(offsets) != n) {
+		return
+	}
+	bufs := make([][]byte, n)
+	pColors := make([]uintptr, n)
+	for i, s := range colors {
+		bufs[i] = append([]byte(s), 0)
+		pColors[i] = uintptr(unsafe.Pointer(&bufs[i][0]))
+	}
+	var pOff *float32
+	if len(offsets) >= n {
+		pOff = &offsets[0]
+	}
+	iupDrawSetSourceRadialGradient(uintptr(ih), int32(cx), int32(cy), int32(radius), &pColors[0], pOff, int32(n))
+}
+
+func DrawResetSource(ih Ihandle) { iupDrawResetSource(uintptr(ih)) }

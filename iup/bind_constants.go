@@ -4,6 +4,7 @@ package iup
 
 /*
 #include "iup.h"
+#include "iupdraw.h"
 */
 import "C"
 
@@ -144,4 +145,10 @@ const (
 	GESTURE_SWIPE_LEFT  = C.IUP_GESTURE_SWIPE_LEFT
 	GESTURE_SWIPE_UP    = C.IUP_GESTURE_SWIPE_UP
 	GESTURE_SWIPE_DOWN  = C.IUP_GESTURE_SWIPE_DOWN
+)
+
+// DrawPathFill fill rules
+const (
+	DRAW_RULE_WINDING = C.IUP_DRAW_RULE_WINDING
+	DRAW_RULE_EVENODD = C.IUP_DRAW_RULE_EVENODD
 )

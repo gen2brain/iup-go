@@ -100,6 +100,46 @@ IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x
  * \ingroup drvdraw */
 IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int radius, const long* colors, const float* offsets, int count);
 
+enum { IUP_PATHSEG_MOVE_TO, IUP_PATHSEG_LINE_TO, IUP_PATHSEG_CURVE_TO, IUP_PATHSEG_QUAD_TO, IUP_PATHSEG_ARC_TO, IUP_PATHSEG_CLOSE };
+
+/* ARC_TO: (x1,y1) = center, (x2,y2) = radius x, radius y, a1/a2 in degrees counterclockwise */
+typedef struct _IupPathSeg
+{
+  unsigned char op;
+  int x1, y1, x2, y2, x3, y3;
+  double a1, a2;
+} IupPathSeg;
+
+enum { IUP_SOURCE_SOLID, IUP_SOURCE_LINEAR_GRADIENT, IUP_SOURCE_RADIAL_GRADIENT };
+
+/* fill/stroke source; solid is a single color, gradients share the iupdrvDrawLinear/RadialGradient semantics */
+typedef struct _IupDrawSource
+{
+  int type;
+  long color;
+  int x1, y1, x2, y2;
+  float angle;
+  int cx, cy, radius;
+  long colors[IUP_GRADIENT_MAX_STOPS];
+  float offsets[IUP_GRADIENT_MAX_STOPS];
+  int count;
+} IupDrawSource;
+
+enum { IUP_PATH_RULE_WINDING, IUP_PATH_RULE_EVENODD };
+
+/** Fills the path described by segs with the source.
+ * The path is kept by the caller, drivers must not store it.
+ * \ingroup drvdraw */
+IUP_SDK_API void iupdrvDrawPathFill(IdrawCanvas* dc, const IupPathSeg* segs, int count, const IupDrawSource* src, int rule);
+
+/** Strokes the path described by segs with the source.
+ * \ingroup drvdraw */
+IUP_SDK_API void iupdrvDrawPathStroke(IdrawCanvas* dc, const IupPathSeg* segs, int count, const IupDrawSource* src, int style, int line_width);
+
+/** Sets the path as the clipping area, replacing the current clip.
+ * \ingroup drvdraw */
+IUP_SDK_API void iupdrvDrawSetClipPath(IdrawCanvas* dc, const IupPathSeg* segs, int count, int rule);
+
 #define IUP_DRAW_LEFT     0x0000
 #define IUP_DRAW_CENTER   0x0001
 #define IUP_DRAW_RIGHT    0x0002

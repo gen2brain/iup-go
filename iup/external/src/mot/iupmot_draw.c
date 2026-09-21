@@ -1658,6 +1658,397 @@ IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int r
   }
 }
 
+static Picture motDrawCreateLinearGradientPicture(int x1, int y1, int x2, int y2, float angle, const long* colors, const float* offsets, int count)
+{
+  float w, h, rad, dx, dy, gx, gy;
+  XLinearGradient grad;
+  XFixed stops[IUP_GRADIENT_MAX_STOPS];
+  XRenderColor rcolors[IUP_GRADIENT_MAX_STOPS];
+  XRenderPictureAttributes pa;
+  Picture src;
+  int i;
+
+  iupDrawCheckSwapCoord(x1, x2);
+  iupDrawCheckSwapCoord(y1, y2);
+
+  w = (float)(x2 - x1);
+  h = (float)(y2 - y1);
+  rad = angle * 3.14159265359f / 180.0f;
+  dx = (float)cos(rad);
+  dy = (float)sin(rad);
+  gx = (w * dx) / 2.0f;
+  gy = (h * dy) / 2.0f;
+
+  grad.p1.x = XDoubleToFixed(x1 + w / 2.0f - gx);
+  grad.p1.y = XDoubleToFixed(y1 + h / 2.0f - gy);
+  grad.p2.x = XDoubleToFixed(x1 + w / 2.0f + gx);
+  grad.p2.y = XDoubleToFixed(y1 + h / 2.0f + gy);
+
+  for (i = 0; i < count; i++)
+  {
+    stops[i] = XDoubleToFixed(offsets[i]);
+    rcolors[i] = motDrawRenderColor(colors[i]);
+  }
+
+  src = XRenderCreateLinearGradient(iupmot_display, &grad, stops, rcolors, count);
+  pa.repeat = RepeatPad;
+  XRenderChangePicture(iupmot_display, src, CPRepeat, &pa);
+  return src;
+}
+
+static Picture motDrawCreateRadialGradientPicture(int cx, int cy, int radius, const long* colors, const float* offsets, int count)
+{
+  XRadialGradient grad;
+  XFixed stops[IUP_GRADIENT_MAX_STOPS];
+  XRenderColor rcolors[IUP_GRADIENT_MAX_STOPS];
+  XRenderPictureAttributes pa;
+  Picture src;
+  int i;
+
+  grad.inner.x = XDoubleToFixed(cx);
+  grad.inner.y = XDoubleToFixed(cy);
+  grad.inner.radius = 0;
+  grad.outer.x = XDoubleToFixed(cx);
+  grad.outer.y = XDoubleToFixed(cy);
+  grad.outer.radius = XDoubleToFixed(radius);
+
+  for (i = 0; i < count; i++)
+  {
+    stops[i] = XDoubleToFixed(offsets[i]);
+    rcolors[i] = motDrawRenderColor(colors[i]);
+  }
+
+  src = XRenderCreateRadialGradient(iupmot_display, &grad, stops, rcolors, count);
+  pa.repeat = RepeatPad;
+  XRenderChangePicture(iupmot_display, src, CPRepeat, &pa);
+  return src;
+}
+
+static Picture motDrawCreateSourcePicture(const IupDrawSource* src)
+{
+  if (src->type == IUP_SOURCE_LINEAR_GRADIENT)
+    return motDrawCreateLinearGradientPicture(src->x1, src->y1, src->x2, src->y2, src->angle, src->colors, src->offsets, src->count);
+  if (src->type == IUP_SOURCE_RADIAL_GRADIENT)
+    return motDrawCreateRadialGradientPicture(src->cx, src->cy, src->radius, src->colors, src->offsets, src->count);
+  {
+    XRenderColor rc = motDrawRenderColor(src->color);
+    return XRenderCreateSolidFill(iupmot_display, &rc);
+  }
+}
+
+static void motDrawFillRegion(Drawable target, GC gc, Region region)
+{
+  XRectangle box;
+  XClipBox(region, &box);
+  if (box.width <= 0 || box.height <= 0)
+    return;
+
+  XSetRegion(iupmot_display, gc, region);
+  XFillRectangle(iupmot_display, target, gc, box.x, box.y, box.width, box.height);
+  XSetClipMask(iupmot_display, gc, None);
+}
+
+static void motDrawStrokePathShape(Drawable target, GC gc, const IupPathSeg* flat, int fcount)
+{
+  XPoint* pts;
+  int np = 0, i, sub_open = 0;
+  short start_x = 0, start_y = 0;
+
+  pts = (XPoint*)malloc(((size_t)fcount + 1) * sizeof(XPoint));
+  if (!pts)
+    return;
+
+  for (i = 0; i < fcount; i++)
+  {
+    switch (flat[i].op)
+    {
+    case IUP_PATHSEG_MOVE_TO:
+      if (sub_open && np >= 2)
+        XDrawLines(iupmot_display, target, gc, pts, np, CoordModeOrigin);
+      pts[0].x = (short)motDrawClamp(flat[i].x1);
+      pts[0].y = (short)motDrawClamp(flat[i].y1);
+      start_x = pts[0].x;
+      start_y = pts[0].y;
+      np = 1;
+      sub_open = 1;
+      break;
+    case IUP_PATHSEG_LINE_TO:
+      if (sub_open)
+      {
+        pts[np].x = (short)motDrawClamp(flat[i].x1);
+        pts[np].y = (short)motDrawClamp(flat[i].y1);
+        np++;
+      }
+      break;
+    case IUP_PATHSEG_CLOSE:
+      if (sub_open && np >= 1)
+      {
+        pts[np].x = start_x;
+        pts[np].y = start_y;
+        XDrawLines(iupmot_display, target, gc, pts, np + 1, CoordModeOrigin);
+        pts[0].x = start_x;
+        pts[0].y = start_y;
+        np = 1;
+      }
+      break;
+    }
+  }
+
+  if (sub_open && np >= 2)
+    XDrawLines(iupmot_display, target, gc, pts, np, CoordModeOrigin);
+
+  free(pts);
+}
+
+typedef struct _ImotPathEdge
+{
+  int x1, y1, x2, y2;
+} ImotPathEdge;
+
+typedef struct _ImotPathCross
+{
+  double x;
+  int winding;
+} ImotPathCross;
+
+static int motDrawPathCrossCompare(const void* a, const void* b)
+{
+  const ImotPathCross* ca = (const ImotPathCross*)a;
+  const ImotPathCross* cb = (const ImotPathCross*)b;
+  if (ca->x < cb->x)
+    return -1;
+  if (ca->x > cb->x)
+    return 1;
+  return 0;
+}
+
+static void motDrawPathAddEdge(ImotPathEdge* edges, int* edge_count, int x1, int y1, int x2, int y2)
+{
+  if (x1 == x2 && y1 == y2)
+    return;
+
+  edges[*edge_count].x1 = x1;
+  edges[*edge_count].y1 = y1;
+  edges[*edge_count].x2 = x2;
+  edges[*edge_count].y2 = y2;
+  (*edge_count)++;
+}
+
+static Region motDrawPathRegion(const IupPathSeg* flat, int fcount, int rule)
+{
+  Region region = XCreateRegion();
+  ImotPathEdge* edges;
+  ImotPathCross* crosses;
+  int edge_count = 0, cross_count, min_y = MOT_DRAW_LIMIT, max_y = -MOT_DRAW_LIMIT;
+  int start_x = 0, start_y = 0, cur_x = 0, cur_y = 0, sub_open = 0, has_segment = 0;
+  int i, y;
+
+  edges = (ImotPathEdge*)malloc((size_t)fcount * sizeof(ImotPathEdge));
+  crosses = (ImotPathCross*)malloc((size_t)fcount * sizeof(ImotPathCross));
+  if (!edges || !crosses)
+  {
+    free(edges);
+    free(crosses);
+    return region;
+  }
+
+  for (i = 0; i < fcount; i++)
+  {
+    switch (flat[i].op)
+    {
+    case IUP_PATHSEG_MOVE_TO:
+      if (sub_open && has_segment)
+        motDrawPathAddEdge(edges, &edge_count, cur_x, cur_y, start_x, start_y);
+      start_x = cur_x = motDrawClamp(flat[i].x1);
+      start_y = cur_y = motDrawClamp(flat[i].y1);
+      sub_open = 1;
+      has_segment = 0;
+      break;
+    case IUP_PATHSEG_LINE_TO:
+      if (sub_open)
+      {
+        int x = motDrawClamp(flat[i].x1);
+        int y = motDrawClamp(flat[i].y1);
+        motDrawPathAddEdge(edges, &edge_count, cur_x, cur_y, x, y);
+        cur_x = x;
+        cur_y = y;
+        has_segment = 1;
+      }
+      break;
+    case IUP_PATHSEG_CLOSE:
+      if (sub_open && has_segment)
+      {
+        motDrawPathAddEdge(edges, &edge_count, cur_x, cur_y, start_x, start_y);
+        cur_x = start_x;
+        cur_y = start_y;
+      }
+      break;
+    }
+  }
+
+  if (sub_open && has_segment)
+    motDrawPathAddEdge(edges, &edge_count, cur_x, cur_y, start_x, start_y);
+
+  for (i = 0; i < edge_count; i++)
+  {
+    if (edges[i].y1 < min_y) min_y = edges[i].y1;
+    if (edges[i].y2 < min_y) min_y = edges[i].y2;
+    if (edges[i].y1 > max_y) max_y = edges[i].y1;
+    if (edges[i].y2 > max_y) max_y = edges[i].y2;
+  }
+
+  for (y = min_y; y < max_y; y++)
+  {
+    int state = 0;
+    double left = 0;
+
+    cross_count = 0;
+    for (i = 0; i < edge_count; i++)
+    {
+      int y1 = edges[i].y1, y2 = edges[i].y2;
+      if (y1 != y2 && ((y1 <= y && y2 > y) || (y2 <= y && y1 > y)))
+      {
+        crosses[cross_count].x = edges[i].x1 + ((double)(y * 2 + 1 - y1 * 2) * (edges[i].x2 - edges[i].x1)) / (2.0 * (y2 - y1));
+        crosses[cross_count].winding = y1 < y2 ? 1 : -1;
+        cross_count++;
+      }
+    }
+
+    qsort(crosses, cross_count, sizeof(ImotPathCross), motDrawPathCrossCompare);
+    for (i = 0; i < cross_count; )
+    {
+      int j = i, was_filled = state != 0;
+      while (j < cross_count && crosses[j].x == crosses[i].x)
+      {
+        if (rule == IUP_PATH_RULE_EVENODD)
+          state ^= 1;
+        else
+          state += crosses[j].winding;
+        j++;
+      }
+
+      if (!was_filled && state != 0)
+        left = crosses[i].x;
+      else if (was_filled && state == 0)
+      {
+        int x1 = (int)ceil(left - 0.5);
+        int x2 = (int)ceil(crosses[i].x - 0.5);
+        if (x1 < x2)
+        {
+          XRectangle rect;
+          rect.x = (short)x1;
+          rect.y = (short)y;
+          rect.width = (unsigned short)(x2 - x1);
+          rect.height = 1;
+          XUnionRectWithRegion(&rect, region, region);
+        }
+      }
+      i = j;
+    }
+  }
+
+  free(crosses);
+  free(edges);
+  return region;
+}
+
+IUP_SDK_API void iupdrvDrawPathFill(IdrawCanvas* dc, const IupPathSeg* segs, int count, const IupDrawSource* src, int rule)
+{
+  IupPathSeg* flat;
+  int fcount;
+  int x1, y1, x2, y2;
+  Region region;
+
+  fcount = iupDrawPathFlatten(segs, count, &flat);
+  if (fcount < 1)
+    return;
+
+  region = motDrawPathRegion(flat, fcount, rule);
+  free(flat);
+  if (!region)
+    return;
+
+  iupDrawPathGetBBox(segs, count, &x1, &y1, &x2, &y2);
+
+  if (src->type == IUP_SOURCE_SOLID && iupDrawAlpha(src->color) == 255 && !dc->pict)
+  {
+    XSetForeground(iupmot_display, dc->pixmap_gc, iupmotColorGetPixel(iupDrawRed(src->color), iupDrawGreen(src->color), iupDrawBlue(src->color)));
+    motDrawFillRegion(dc->pixmap, dc->pixmap_gc, region);
+  }
+  else
+  {
+    ImotAlphaMask m;
+    if (motDrawAlphaMaskBegin(dc, &m, x1, y1, x2, y2, 0))
+    {
+      Picture src_p = motDrawCreateSourcePicture(src);
+      motDrawFillRegion(m.pixmap, m.gc, region);
+      motDrawAlphaMaskComposite(dc, &m, src_p);
+      XRenderFreePicture(iupmot_display, src_p);
+    }
+  }
+
+  XDestroyRegion(region);
+}
+
+IUP_SDK_API void iupdrvDrawPathStroke(IdrawCanvas* dc, const IupPathSeg* segs, int count, const IupDrawSource* src, int style, int line_width)
+{
+  IupPathSeg* flat;
+  int fcount;
+  int x1, y1, x2, y2;
+
+  fcount = iupDrawPathFlatten(segs, count, &flat);
+  if (fcount < 1)
+    return;
+
+  iupDrawPathGetBBox(segs, count, &x1, &y1, &x2, &y2);
+
+  if (src->type == IUP_SOURCE_SOLID && !motDrawAlphaColor(dc, src->color))
+  {
+    XSetForeground(iupmot_display, dc->pixmap_gc, iupmotColorGetPixel(iupDrawRed(src->color), iupDrawGreen(src->color), iupDrawBlue(src->color)));
+    iDrawSetLineStyleAndWidth(dc->pixmap_gc, style, line_width);
+    motDrawStrokePathShape(dc->pixmap, dc->pixmap_gc, flat, fcount);
+  }
+  else
+  {
+    ImotAlphaMask m;
+    if (motDrawAlphaMaskBegin(dc, &m, x1, y1, x2, y2, line_width + 1))
+    {
+      Picture src_p = motDrawCreateSourcePicture(src);
+      iDrawSetLineStyleAndWidth(m.gc, style, line_width);
+      motDrawStrokePathShape(m.pixmap, m.gc, flat, fcount);
+      motDrawAlphaMaskComposite(dc, &m, src_p);
+      XRenderFreePicture(iupmot_display, src_p);
+    }
+  }
+
+  free(flat);
+}
+
+IUP_SDK_API void iupdrvDrawSetClipPath(IdrawCanvas* dc, const IupPathSeg* segs, int count, int rule)
+{
+  IupPathSeg* flat;
+  int fcount;
+  int x1, y1, x2, y2;
+  Region region;
+
+  fcount = iupDrawPathFlatten(segs, count, &flat);
+  if (fcount < 1)
+    return;
+
+  region = motDrawPathRegion(flat, fcount, rule);
+  XSetRegion(iupmot_display, dc->pixmap_gc, region);
+  if (dc->pict)
+    XRenderSetPictureClipRegion(iupmot_display, dc->pict, region);
+  XDestroyRegion(region);
+  free(flat);
+
+  iupDrawPathGetBBox(segs, count, &x1, &y1, &x2, &y2);
+  dc->clip_x1 = x1;
+  dc->clip_y1 = y1;
+  dc->clip_x2 = x2;
+  dc->clip_y2 = y2;
+}
+
 static void iX11CopyPixelsToRgba(unsigned char* dst, XImage* ximage, int w, int h)
 {
   int x, y;

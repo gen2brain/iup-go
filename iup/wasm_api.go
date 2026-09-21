@@ -1014,7 +1014,7 @@ func drawGradientStopArgs(colors []string, offsets []float32) (colorsPtr, offset
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
 func DrawLinearGradientStops(ih Ihandle, x1, y1, x2, y2 int, angle float32, colors []string, offsets []float32) {
-	if len(colors) < 2 {
+	if len(colors) < 2 || (len(offsets) != 0 && len(offsets) != len(colors)) {
 		return
 	}
 	cp, op, n, free := drawGradientStopArgs(colors, offsets)
@@ -1026,7 +1026,7 @@ func DrawLinearGradientStops(ih Ihandle, x1, y1, x2, y2 int, angle float32, colo
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
 func DrawRadialGradientStops(ih Ihandle, cx, cy, radius int, colors []string, offsets []float32) {
-	if len(colors) < 2 {
+	if len(colors) < 2 || (len(offsets) != 0 && len(offsets) != len(colors)) {
 		return
 	}
 	cp, op, n, free := drawGradientStopArgs(colors, offsets)
@@ -1036,6 +1036,115 @@ func DrawRadialGradientStops(ih Ihandle, cx, cy, radius int, colors []string, of
 
 func DrawRadialGradient(ih Ihandle, cx, cy, radius int, colorCenter, colorEdge string) {
 	ccall("IupDrawRadialGradient", "", []interface{}{"number", "number", "number", "number", "string", "string"}, []interface{}{int(ih), cx, cy, radius, colorCenter, colorEdge})
+}
+
+// DrawPathBegin resets the current path.
+//
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+func DrawPathBegin(ih Ihandle) {
+	ccall("IupDrawPathBegin", "", []interface{}{"number"}, []interface{}{int(ih)})
+}
+
+// DrawPathMoveTo starts a new subpath at the given position.
+//
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+func DrawPathMoveTo(ih Ihandle, x, y int) {
+	ccall("IupDrawPathMoveTo", "", []interface{}{"number", "number", "number"}, []interface{}{int(ih), x, y})
+}
+
+// DrawPathLineTo adds a line to the given position.
+//
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+func DrawPathLineTo(ih Ihandle, x, y int) {
+	ccall("IupDrawPathLineTo", "", []interface{}{"number", "number", "number"}, []interface{}{int(ih), x, y})
+}
+
+// DrawPathCurveTo adds a cubic Bezier curve with two control points.
+//
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+func DrawPathCurveTo(ih Ihandle, x1, y1, x2, y2, x3, y3 int) {
+	ccall("IupDrawPathCurveTo", "", []interface{}{"number", "number", "number", "number", "number", "number", "number"}, []interface{}{int(ih), x1, y1, x2, y2, x3, y3})
+}
+
+// DrawPathQuadTo adds a quadratic Bezier curve with one control point.
+//
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+func DrawPathQuadTo(ih Ihandle, x1, y1, x2, y2 int) {
+	ccall("IupDrawPathQuadTo", "", []interface{}{"number", "number", "number", "number", "number"}, []interface{}{int(ih), x1, y1, x2, y2})
+}
+
+// DrawPathArcTo adds an arc of the ellipse centered at (cx,cy) with radii rx,ry,
+// from a1 to a2 degrees counter-clockwise.
+//
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+func DrawPathArcTo(ih Ihandle, cx, cy, rx, ry int, a1, a2 float64) {
+	ccall("IupDrawPathArcTo", "", []interface{}{"number", "number", "number", "number", "number", "number", "number"}, []interface{}{int(ih), cx, cy, rx, ry, a1, a2})
+}
+
+// DrawPathClose closes the current subpath with a line to its start.
+//
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+func DrawPathClose(ih Ihandle) {
+	ccall("IupDrawPathClose", "", []interface{}{"number"}, []interface{}{int(ih)})
+}
+
+// DrawPathFill fills the current path with the current source.
+//
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+func DrawPathFill(ih Ihandle, rule int) {
+	ccall("IupDrawPathFill", "", []interface{}{"number", "number"}, []interface{}{int(ih), rule})
+}
+
+// DrawPathStroke strokes the current path with the current source.
+//
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+func DrawPathStroke(ih Ihandle) {
+	ccall("IupDrawPathStroke", "", []interface{}{"number"}, []interface{}{int(ih)})
+}
+
+// DrawSetClipPath sets the current path as the clipping area, replacing the previous clip.
+//
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+func DrawSetClipPath(ih Ihandle, rule int) {
+	ccall("IupDrawSetClipPath", "", []interface{}{"number", "number"}, []interface{}{int(ih), rule})
+}
+
+// DrawSetSourceSolid sets a solid color as the current source.
+//
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+func DrawSetSourceSolid(ih Ihandle, color string) {
+	ccall("IupDrawSetSourceSolid", "", []interface{}{"number", "string"}, []interface{}{int(ih), color})
+}
+
+// DrawSetSourceLinearGradient sets a linear gradient as the current source.
+//
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+func DrawSetSourceLinearGradient(ih Ihandle, x1, y1, x2, y2 int, angle float32, colors []string, offsets []float32) {
+	if len(colors) < 2 || (len(offsets) != 0 && len(offsets) != len(colors)) {
+		return
+	}
+	cp, op, n, free := drawGradientStopArgs(colors, offsets)
+	ccall("IupDrawSetSourceLinearGradient", "", []interface{}{"number", "number", "number", "number", "number", "number", "number", "number", "number"}, []interface{}{int(ih), x1, y1, x2, y2, float64(angle), cp, op, n})
+	free()
+}
+
+// DrawSetSourceRadialGradient sets a radial gradient as the current source.
+//
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+func DrawSetSourceRadialGradient(ih Ihandle, cx, cy, radius int, colors []string, offsets []float32) {
+	if len(colors) < 2 || (len(offsets) != 0 && len(offsets) != len(colors)) {
+		return
+	}
+	cp, op, n, free := drawGradientStopArgs(colors, offsets)
+	ccall("IupDrawSetSourceRadialGradient", "", []interface{}{"number", "number", "number", "number", "number", "number", "number"}, []interface{}{int(ih), cx, cy, radius, cp, op, n})
+	free()
+}
+
+// DrawResetSource resets the current source back to the DRAWCOLOR attribute.
+//
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+func DrawResetSource(ih Ihandle) {
+	ccall("IupDrawResetSource", "", []interface{}{"number"}, []interface{}{int(ih)})
 }
 
 // DrawGetTextSize returns the given text size using DRAWFONT, or FONT.

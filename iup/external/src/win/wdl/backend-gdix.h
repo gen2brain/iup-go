@@ -102,6 +102,7 @@ struct gdix_vtable_tag {
     /* Path functions */
     int (WINAPI* fn_CreatePath)(dummy_GpFillMode, dummy_GpPath**);
     int (WINAPI* fn_DeletePath)(dummy_GpPath*);
+    int (WINAPI* fn_SetPathFillMode)(dummy_GpPath*, dummy_GpFillMode);
     int (WINAPI* fn_ClosePathFigure)(dummy_GpPath*);
     int (WINAPI* fn_StartPathFigure)(dummy_GpPath*);
     int (WINAPI* fn_GetPathLastPoint)(dummy_GpPath*, dummy_GpPointF*);
