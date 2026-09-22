@@ -81,6 +81,7 @@ Iclass* iupImageNewClass(void);
 Iclass* iupImageRGBNewClass(void);
 Iclass* iupImageRGBANewClass(void);
 Iclass* iupUserNewClass(void);
+Iclass* iupDrawPathNewClass(void);
 Iclass* iupClipboardNewClass(void);
 
 /*************************************************/

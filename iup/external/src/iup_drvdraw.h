@@ -113,7 +113,7 @@ enum { IUP_PATHSEG_MOVE_TO, IUP_PATHSEG_LINE_TO, IUP_PATHSEG_CURVE_TO, IUP_PATHS
 typedef struct _IupPathSeg
 {
   unsigned char op;
-  int x1, y1, x2, y2, x3, y3;
+  double x1, y1, x2, y2, x3, y3;
   double a1, a2;
 } IupPathSeg;
 

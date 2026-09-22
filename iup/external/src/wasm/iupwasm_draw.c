@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <stddef.h>
 #include <stdint.h>
 
 #include <emscripten.h>
@@ -679,33 +680,35 @@ IUP_SDK_API int iupdrvDrawGetImageData(IdrawCanvas* dc, unsigned char* data)
   return iupwasmJsCanvasGetImageData(dc->cid, (int)(intptr_t)data, dc->w, dc->h);
 }
 
+typedef char iupwasmPathSegLayoutCheck[(sizeof(IupPathSeg) == 72 && offsetof(IupPathSeg, op) == 0 && offsetof(IupPathSeg, x1) == 8 && offsetof(IupPathSeg, a1) == 56) ? 1 : -1];
+
 EM_JS(void, iupwasmJsDrawPathFill, (int cid, int segsPtr, int count, int sourceType, long color, int x1, int y1, int x2, int y2, float angle, int cx, int cy, int radius, int rgbaPtr, int offsPtr, int gradCount, int rule), {
   var ctx = globalThis.__iupCtx(cid); if (!ctx) return;
   var p = new Path2D();
   for (var i = 0; i < count; i++)
   {
-    var base = (segsPtr >> 2) + i * 12 + 1;
-    var op = HEAPU8[segsPtr + i * 48];
+    var base = (segsPtr >> 3) + i * 9 + 1;
+    var op = HEAPU8[segsPtr + i * 72];
     switch (op)
     {
     case 0:
-      p.moveTo(HEAP32[base], HEAP32[base + 1]);
+      p.moveTo(HEAPF64[base], HEAPF64[base + 1]);
       break;
     case 1:
-      p.lineTo(HEAP32[base], HEAP32[base + 1]);
+      p.lineTo(HEAPF64[base], HEAPF64[base + 1]);
       break;
     case 2:
-      p.bezierCurveTo(HEAP32[base], HEAP32[base + 1], HEAP32[base + 2], HEAP32[base + 3], HEAP32[base + 4], HEAP32[base + 5]);
+      p.bezierCurveTo(HEAPF64[base], HEAPF64[base + 1], HEAPF64[base + 2], HEAPF64[base + 3], HEAPF64[base + 4], HEAPF64[base + 5]);
       break;
     case 3:
-      p.quadraticCurveTo(HEAP32[base], HEAP32[base + 1], HEAP32[base + 2], HEAP32[base + 3]);
+      p.quadraticCurveTo(HEAPF64[base], HEAPF64[base + 1], HEAPF64[base + 2], HEAPF64[base + 3]);
       break;
     case 4:
     {
-      var centX = HEAP32[base], centY = HEAP32[base + 1];
-      var rx = HEAP32[base + 2], ry = HEAP32[base + 3];
-      var sa = HEAPF64[(segsPtr >> 3) + i * 6 + 4];
-      var ea = HEAPF64[(segsPtr >> 3) + i * 6 + 5];
+      var centX = HEAPF64[base], centY = HEAPF64[base + 1];
+      var rx = HEAPF64[base + 2], ry = HEAPF64[base + 3];
+      var sa = HEAPF64[base + 6];
+      var ea = HEAPF64[base + 7];
       var span = ea - sa;
       while (span < 0) span += 360;
       while (span > 360) span -= 360;
@@ -751,28 +754,28 @@ EM_JS(void, iupwasmJsDrawPathStroke, (int cid, int segsPtr, int count, int sourc
   var p = new Path2D();
   for (var i = 0; i < count; i++)
   {
-    var base = (segsPtr >> 2) + i * 12 + 1;
-    var op = HEAPU8[segsPtr + i * 48];
+    var base = (segsPtr >> 3) + i * 9 + 1;
+    var op = HEAPU8[segsPtr + i * 72];
     switch (op)
     {
     case 0:
-      p.moveTo(HEAP32[base], HEAP32[base + 1]);
+      p.moveTo(HEAPF64[base], HEAPF64[base + 1]);
       break;
     case 1:
-      p.lineTo(HEAP32[base], HEAP32[base + 1]);
+      p.lineTo(HEAPF64[base], HEAPF64[base + 1]);
       break;
     case 2:
-      p.bezierCurveTo(HEAP32[base], HEAP32[base + 1], HEAP32[base + 2], HEAP32[base + 3], HEAP32[base + 4], HEAP32[base + 5]);
+      p.bezierCurveTo(HEAPF64[base], HEAPF64[base + 1], HEAPF64[base + 2], HEAPF64[base + 3], HEAPF64[base + 4], HEAPF64[base + 5]);
       break;
     case 3:
-      p.quadraticCurveTo(HEAP32[base], HEAP32[base + 1], HEAP32[base + 2], HEAP32[base + 3]);
+      p.quadraticCurveTo(HEAPF64[base], HEAPF64[base + 1], HEAPF64[base + 2], HEAPF64[base + 3]);
       break;
     case 4:
     {
-      var centX = HEAP32[base], centY = HEAP32[base + 1];
-      var rx = HEAP32[base + 2], ry = HEAP32[base + 3];
-      var sa = HEAPF64[(segsPtr >> 3) + i * 6 + 4];
-      var ea = HEAPF64[(segsPtr >> 3) + i * 6 + 5];
+      var centX = HEAPF64[base], centY = HEAPF64[base + 1];
+      var rx = HEAPF64[base + 2], ry = HEAPF64[base + 3];
+      var sa = HEAPF64[base + 6];
+      var ea = HEAPF64[base + 7];
       var span = ea - sa;
       while (span < 0) span += 360;
       while (span > 360) span -= 360;
@@ -822,28 +825,28 @@ EM_JS(void, iupwasmJsClipPath, (int cid, int segsPtr, int count, int rule), {
   var p = new Path2D();
   for (var i = 0; i < count; i++)
   {
-    var base = (segsPtr >> 2) + i * 12 + 1;
-    var op = HEAPU8[segsPtr + i * 48];
+    var base = (segsPtr >> 3) + i * 9 + 1;
+    var op = HEAPU8[segsPtr + i * 72];
     switch (op)
     {
     case 0:
-      p.moveTo(HEAP32[base], HEAP32[base + 1]);
+      p.moveTo(HEAPF64[base], HEAPF64[base + 1]);
       break;
     case 1:
-      p.lineTo(HEAP32[base], HEAP32[base + 1]);
+      p.lineTo(HEAPF64[base], HEAPF64[base + 1]);
       break;
     case 2:
-      p.bezierCurveTo(HEAP32[base], HEAP32[base + 1], HEAP32[base + 2], HEAP32[base + 3], HEAP32[base + 4], HEAP32[base + 5]);
+      p.bezierCurveTo(HEAPF64[base], HEAPF64[base + 1], HEAPF64[base + 2], HEAPF64[base + 3], HEAPF64[base + 4], HEAPF64[base + 5]);
       break;
     case 3:
-      p.quadraticCurveTo(HEAP32[base], HEAP32[base + 1], HEAP32[base + 2], HEAP32[base + 3]);
+      p.quadraticCurveTo(HEAPF64[base], HEAPF64[base + 1], HEAPF64[base + 2], HEAPF64[base + 3]);
       break;
     case 4:
     {
-      var centX = HEAP32[base], centY = HEAP32[base + 1];
-      var rx = HEAP32[base + 2], ry = HEAP32[base + 3];
-      var sa = HEAPF64[(segsPtr >> 3) + i * 6 + 4];
-      var ea = HEAPF64[(segsPtr >> 3) + i * 6 + 5];
+      var centX = HEAPF64[base], centY = HEAPF64[base + 1];
+      var rx = HEAPF64[base + 2], ry = HEAPF64[base + 3];
+      var sa = HEAPF64[base + 6];
+      var ea = HEAPF64[base + 7];
       var span = ea - sa;
       while (span < 0) span += 360;
       while (span > 360) span -= 360;

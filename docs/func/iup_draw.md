@@ -224,6 +224,46 @@ Sets a linear or radial gradient source for path drawing. The gradient geometry,
 
 Resets the current source to **DRAWCOLOR**.
 
+### Path Handles
+
+A path handle stores a path outside the drawing loop. It can be filled, stroked, used as a clipping region, measured or tested against a point.
+
+    Ihandle* IupDrawPathCreate(void);
+
+Creates an empty path. It has no parent and is destroyed with [IupDestroy](iup_destroy.md).
+
+    void IupDrawPathClear(Ihandle* path);
+
+Removes all segments from the path.
+
+The path building functions accept a path handle in place of the canvas, and then add to that path instead of the current path: IupDrawPathMoveTo, IupDrawPathLineTo, IupDrawPathCurveTo, IupDrawPathQuadTo, IupDrawPathArcTo, IupDrawPathClose and the F variants below. IupDrawPathBegin applies to the canvas only, use IupDrawPathClear for a path handle.
+
+    void IupDrawSetPath(Ihandle* ih, Ihandle* path);
+
+Replaces the current path of the canvas with the segments of the path handle. IupDrawPathFill, IupDrawPathStroke and IupDrawSetClipPath then use it, under the transform active when they are called.
+
+    void IupDrawPathGetBounds(Ihandle* path, int* x1, int* y1, int* x2, int* y2);
+
+Returns the bounding rectangle of the path in its own coordinates. Curves contribute their control points and arcs their full ellipse, so the rectangle can be larger than the drawn path. In C unwanted values can be NULL.
+
+    int IupDrawPathContains(Ihandle* path, int x, int y, int rule);
+
+Returns 1 when the point is inside the path and 0 otherwise. **rule** can be IUP_DRAW_RULE_WINDING or IUP_DRAW_RULE_EVENODD. Open subpaths are closed for the test. The point is in the coordinates of the path, the current transform is not applied. A point on the left or top edge of a shape is inside, one on the right or bottom edge is outside.
+
+    int IupDrawPathSetSvg(Ihandle* path, const char* data);
+
+Replaces the path with SVG path data, as in "M 10 10 L 90 10 Z". The commands M, L, H, V, C, S, Q, T, A and Z are accepted, in upper case for absolute and lower case for relative coordinates. Returns 1 on success, or 0 and leaves the path empty when the data cannot be parsed.
+
+### Floating Point Coordinates
+
+    void IupDrawPathMoveToF(Ihandle* ih, double x, double y);
+    void IupDrawPathLineToF(Ihandle* ih, double x, double y);
+    void IupDrawPathCurveToF(Ihandle* ih, double x1, double y1, double x2, double y2, double x3, double y3);
+    void IupDrawPathQuadToF(Ihandle* ih, double x1, double y1, double x2, double y2);
+    void IupDrawPathArcToF(Ihandle* ih, double cx, double cy, double rx, double ry, double a1, double a2);
+
+Same as the functions without the F suffix, with floating point coordinates. A path stores its points in floating point, so the two forms can be mixed. Non-finite coordinates are ignored.
+
 ### Text and Images
 
     void IupDrawText(Ihandle* ih, const char* str, int len, int x, int y, int w, int h);

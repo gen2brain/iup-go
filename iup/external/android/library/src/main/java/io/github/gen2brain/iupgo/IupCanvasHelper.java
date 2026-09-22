@@ -403,7 +403,7 @@ public final class IupCanvasHelper
     }
 
     @Keep
-    public static void drawPathFill(IupAndroidCanvas view, int[] segs, int color, int count, int rule)
+    public static void drawPathFill(IupAndroidCanvas view, float[] segs, int color, int count, int rule)
     {
         Canvas c = view.getBackCanvas(); if (c == null) return;
         Paint p = fillPaint(color);
@@ -413,7 +413,7 @@ public final class IupCanvasHelper
     }
 
     @Keep
-    public static void drawPathFillGradient(IupAndroidCanvas view, int[] segs, int count, int rule,
+    public static void drawPathFillGradient(IupAndroidCanvas view, float[] segs, int count, int rule,
                                             int sx, int sy, int ex, int ey, int cx, int cy, int radius, int type,
                                             int[] colors, float[] offsets)
     {
@@ -430,14 +430,14 @@ public final class IupCanvasHelper
     }
 
     @Keep
-    public static void drawPathStroke(IupAndroidCanvas view, int[] segs, int color, int count, int style, int width)
+    public static void drawPathStroke(IupAndroidCanvas view, float[] segs, int color, int count, int style, int width)
     {
         Canvas c = view.getBackCanvas(); if (c == null) return;
         c.drawPath(pathFromSegments(segs, count), strokePaint(color, style, width));
     }
 
     @Keep
-    public static void drawPathStrokeGradient(IupAndroidCanvas view, int[] segs, int color, int count, int style, int width,
+    public static void drawPathStrokeGradient(IupAndroidCanvas view, float[] segs, int color, int count, int style, int width,
                                               int sx, int sy, int ex, int ey, int cx, int cy, int radius, int type,
                                               int[] colors, float[] offsets)
     {
@@ -451,7 +451,7 @@ public final class IupCanvasHelper
     }
 
     @Keep
-    public static void setClipPath(IupAndroidCanvas view, int[] segs, int count, int rule)
+    public static void setClipPath(IupAndroidCanvas view, float[] segs, int count, int rule)
     {
         Canvas c = view.getBackCanvas(); if (c == null) return;
         resetClip(view);
@@ -462,7 +462,7 @@ public final class IupCanvasHelper
         view.clipSaved = true;
     }
 
-    private static Path pathFromSegments(int[] segs, int count)
+    private static Path pathFromSegments(float[] segs, int count)
     {
         Path path = new Path();
         if (segs == null) return path;
@@ -471,15 +471,15 @@ public final class IupCanvasHelper
         for (int s = 0; s < n; s++)
         {
             int base = s * 9;
-            int op = segs[base + 0];
-            int x1 = segs[base + 1];
-            int y1 = segs[base + 2];
-            int x2 = segs[base + 3];
-            int y2 = segs[base + 4];
-            int x3 = segs[base + 5];
-            int y3 = segs[base + 6];
-            double a1 = segs[base + 7] / 1000000.0;
-            double a2 = segs[base + 8] / 1000000.0;
+            int op = (int)segs[base + 0];
+            float x1 = segs[base + 1];
+            float y1 = segs[base + 2];
+            float x2 = segs[base + 3];
+            float y2 = segs[base + 4];
+            float x3 = segs[base + 5];
+            float y3 = segs[base + 6];
+            double a1 = segs[base + 7];
+            double a2 = segs[base + 8];
 
             switch (op)
             {

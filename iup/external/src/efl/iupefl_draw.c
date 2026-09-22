@@ -939,7 +939,8 @@ IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int r
 
 static void iDrawBuildPath(Efl_VG* shape, const IupPathSeg* segs, int count)
 {
-  int i, closed = 0, sub_x = 0, sub_y = 0;
+  int i, closed = 0;
+  double sub_x = 0, sub_y = 0;
 
   for (i = 0; i < count; i++)
   {
@@ -1117,7 +1118,8 @@ static void iDrawPathStrokeShape(IdrawCanvas* dc, const IupPathSeg* segs, int co
 IUP_SDK_API void iupdrvDrawPathStroke(IdrawCanvas* dc, const IupPathSeg* segs, int count, const IupDrawSource* src, int style, int line_width)
 {
   IupPathSeg* sub;
-  int start = 0, sub_x = 0, sub_y = 0, closed;
+  int start = 0, closed;
+  double sub_x = 0, sub_y = 0;
 
   if (!iDrawPathIsMixed(segs, count))
   {

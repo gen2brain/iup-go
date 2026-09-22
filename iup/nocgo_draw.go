@@ -212,6 +212,52 @@ func DrawPathArcTo(ih Ihandle, cx, cy, rx, ry int, a1, a2 float64) {
 
 func DrawPathClose(ih Ihandle) { iupDrawPathClose(uintptr(ih)) }
 
+func DrawPathMoveToF(ih Ihandle, x, y float64) {
+	iupDrawPathMoveToF(uintptr(ih), x, y)
+}
+
+func DrawPathLineToF(ih Ihandle, x, y float64) {
+	iupDrawPathLineToF(uintptr(ih), x, y)
+}
+
+func DrawPathCurveToF(ih Ihandle, x1, y1, x2, y2, x3, y3 float64) {
+	iupDrawPathCurveToF(uintptr(ih), x1, y1, x2, y2, x3, y3)
+}
+
+func DrawPathQuadToF(ih Ihandle, x1, y1, x2, y2 float64) {
+	iupDrawPathQuadToF(uintptr(ih), x1, y1, x2, y2)
+}
+
+func DrawPathArcToF(ih Ihandle, cx, cy, rx, ry, a1, a2 float64) {
+	iupDrawPathArcToF(uintptr(ih), cx, cy, rx, ry, a1, a2)
+}
+
+func DrawPathCreate() Ihandle {
+	return mkih(iupDrawPathCreate())
+}
+
+func DrawPathClear(path Ihandle) {
+	iupDrawPathClear(uintptr(path))
+}
+
+func DrawSetPath(ih Ihandle, path Ihandle) {
+	iupDrawSetPath(uintptr(ih), uintptr(path))
+}
+
+func DrawPathGetBounds(path Ihandle) (x1, y1, x2, y2 int) {
+	var a, b, c, d int32
+	iupDrawPathGetBounds(uintptr(path), &a, &b, &c, &d)
+	return int(a), int(b), int(c), int(d)
+}
+
+func DrawPathContains(path Ihandle, x, y, rule int) bool {
+	return iupDrawPathContains(uintptr(path), int32(x), int32(y), int32(rule)) != 0
+}
+
+func DrawPathSetSvg(path Ihandle, data string) bool {
+	return iupDrawPathSetSvg(uintptr(path), data) != 0
+}
+
 func DrawPathFill(ih Ihandle, rule int) {
 	iupDrawPathFill(uintptr(ih), int32(rule))
 }
