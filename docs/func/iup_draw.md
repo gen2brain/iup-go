@@ -91,6 +91,19 @@ Default: STROKE. The FILL value when set before the DrawLine has the same effect
 
 The line width default is 1, but it can be controlled by the **DRAWLINEWIDTH** attribute.
 
+The line ends and corners are controlled by the **DRAWLINECAP** and **DRAWLINEJOIN** attributes.
+DRAWLINECAP can have values: BUTT, ROUND or SQUARE. Default: BUTT.
+DRAWLINEJOIN can have values: MITER, ROUND or BEVEL. Default: MITER. The miter limit is 10.
+
+The **DRAWDASH** attribute replaces the DRAWSTYLE pattern with a custom one, a list of dash and gap lengths, as in "10 4 2 4".
+From 2 to 16 lengths. An odd count is repeated to make it even, and above 8 lengths the last one is dropped instead.
+When set, every stroke is dashed, including DRAWSTYLE=STROKE. Default: NULL, the pattern comes from DRAWSTYLE.
+
+The **DRAWDASHOFFSET** attribute is the distance into the pattern where the first dash starts. Default: 0.
+Not supported in EFL and FLTK.
+
+Dash lengths and the dash offset are in the coordinates of the current transform.
+
     void IupDrawParentBackground(Ihandle* ih);
 
 Fills the canvas with the native parent background color.

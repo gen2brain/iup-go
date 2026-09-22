@@ -72,11 +72,22 @@ static int haikuIsIdentity(const IdrawCanvas* dc)
          dc->matrix.d == 1 && dc->matrix.e == 0 && dc->matrix.f == 0;
 }
 
-static void haikuBeginStroke(IdrawCanvas* dc, long color, int line_width, int center)
+static void haikuSetLineMode(BView* view, const IupDrawStroke* stroke)
+{
+  cap_mode cap = stroke->cap == IUP_DRAW_CAP_ROUND ? B_ROUND_CAP :
+                 stroke->cap == IUP_DRAW_CAP_SQUARE ? B_SQUARE_CAP : B_BUTT_CAP;
+  join_mode join = stroke->join == IUP_DRAW_JOIN_ROUND ? B_ROUND_JOIN :
+                   stroke->join == IUP_DRAW_JOIN_BEVEL ? B_BEVEL_JOIN : B_MITER_JOIN;
+  view->SetLineMode(cap, join, (float)IUP_DRAW_MITER_LIMIT);
+}
+
+static void haikuBeginStroke(IdrawCanvas* dc, long color, int style, int line_width, int center, IupDrawStroke* stroke)
 {
   const IupDrawMatrix* m = &dc->matrix;
+  iupDrawGetStroke(dc->ih, style, stroke);
   dc->view->SetHighColor(haikuColorFromLong(color));
   dc->view->SetPenSize(line_width > 0 ? (float)line_width : 1.0f);
+  haikuSetLineMode(dc->view, stroke);
   if (center && !haikuIsIdentity(dc) && (line_width <= 0 || line_width % 2))
     dc->view->SetTransform(BAffineTransform(m->a, m->b, m->c, m->d, m->e + 0.5 * (m->a + m->c), m->f + 0.5 * (m->b + m->d)));
 }
@@ -202,12 +213,233 @@ extern "C" IUP_SDK_API void iupdrvDrawGetSize(IdrawCanvas* dc, int* w, int* h)
   if (h) *h = dc ? dc->h : 0;
 }
 
+typedef struct _HaikuDash
+{
+  const double* pattern;
+  int count;
+  int index;
+  double remain;
+} HaikuDash;
+
+static int haikuDashInit(HaikuDash* dash, const IupDrawStroke* stroke)
+{
+  double offset, total = 0.0;
+  int i;
+
+  if (stroke->dash_count < 1)
+    return 0;
+
+  dash->pattern = stroke->dashes;
+  dash->count = stroke->dash_count;
+  dash->index = 0;
+  dash->remain = stroke->dashes[0];
+
+  for (i = 0; i < dash->count; i++)
+    total += stroke->dashes[i];
+  if (total <= 0.0)
+    return 0;
+
+  offset = fmod(stroke->dash_offset, total);
+  if (offset < 0.0)
+    offset += total;
+
+  while (offset > 0.0)
+  {
+    double len = dash->pattern[dash->index];
+    if (offset < len)
+    {
+      dash->remain = len - offset;
+      break;
+    }
+    offset -= len;
+    dash->index = (dash->index + 1) % dash->count;
+    dash->remain = dash->pattern[dash->index];
+  }
+
+  return 1;
+}
+
+static void haikuStrokeDashSegment(BView* view, HaikuDash* dash, double x1, double y1, double x2, double y2)
+{
+  double dx = x2 - x1;
+  double dy = y2 - y1;
+  double length = sqrt(dx * dx + dy * dy);
+  double offset = 0.0;
+
+  if (length <= 0.0)
+    return;
+
+  while (offset < length)
+  {
+    double step = dash->remain < length - offset ? dash->remain : length - offset;
+    double t1 = offset / length;
+    double t2 = (offset + step) / length;
+    if (step > 0.0 && (dash->index & 1) == 0)
+      view->StrokeLine(BPoint(x1 + dx * t1, y1 + dy * t1), BPoint(x1 + dx * t2, y1 + dy * t2));
+    offset += step;
+    dash->remain -= step;
+    if (dash->remain <= 0.0001)
+    {
+      dash->index = (dash->index + 1) % dash->count;
+      dash->remain = dash->pattern[dash->index];
+    }
+  }
+}
+
+static void haikuStrokeDashCubic(BView* view, HaikuDash* dash, double x0, double y0, double x1, double y1, double x2, double y2, double x3, double y3)
+{
+  double px = x0, py = y0;
+  int i;
+
+  for (i = 1; i <= 20; i++)
+  {
+    double t = (double)i / 20.0;
+    double mt = 1.0 - t;
+    double x = mt * mt * mt * x0 + 3.0 * mt * mt * t * x1 + 3.0 * mt * t * t * x2 + t * t * t * x3;
+    double y = mt * mt * mt * y0 + 3.0 * mt * mt * t * y1 + 3.0 * mt * t * t * y2 + t * t * t * y3;
+    haikuStrokeDashSegment(view, dash, px, py, x, y);
+    px = x;
+    py = y;
+  }
+}
+
+static void haikuStrokeDashedPath(BView* view, const IupPathSeg* segs, int count, const IupDrawStroke* stroke)
+{
+  HaikuDash dash;
+  double cur_x = 0.0, cur_y = 0.0, sub_x = 0.0, sub_y = 0.0;
+  int has_current = 0;
+  int i;
+
+  if (!haikuDashInit(&dash, stroke))
+    return;
+
+  for (i = 0; i < count; i++)
+  {
+    switch (segs[i].op)
+    {
+    case IUP_PATHSEG_MOVE_TO:
+      cur_x = sub_x = segs[i].x1;
+      cur_y = sub_y = segs[i].y1;
+      has_current = 1;
+      break;
+    case IUP_PATHSEG_LINE_TO:
+      if (has_current)
+        haikuStrokeDashSegment(view, &dash, cur_x, cur_y, segs[i].x1, segs[i].y1);
+      cur_x = segs[i].x1;
+      cur_y = segs[i].y1;
+      has_current = 1;
+      break;
+    case IUP_PATHSEG_CURVE_TO:
+      if (has_current)
+        haikuStrokeDashCubic(view, &dash, cur_x, cur_y, segs[i].x1, segs[i].y1, segs[i].x2, segs[i].y2, segs[i].x3, segs[i].y3);
+      cur_x = segs[i].x3;
+      cur_y = segs[i].y3;
+      has_current = 1;
+      break;
+    case IUP_PATHSEG_QUAD_TO:
+      if (has_current)
+      {
+        double c1x = cur_x + 2.0 / 3.0 * (segs[i].x1 - cur_x);
+        double c1y = cur_y + 2.0 / 3.0 * (segs[i].y1 - cur_y);
+        double c2x = segs[i].x2 + 2.0 / 3.0 * (segs[i].x1 - segs[i].x2);
+        double c2y = segs[i].y2 + 2.0 / 3.0 * (segs[i].y1 - segs[i].y2);
+        haikuStrokeDashCubic(view, &dash, cur_x, cur_y, c1x, c1y, c2x, c2y, segs[i].x2, segs[i].y2);
+      }
+      cur_x = segs[i].x2;
+      cur_y = segs[i].y2;
+      has_current = 1;
+      break;
+    case IUP_PATHSEG_ARC_TO:
+    {
+      double bez[24];
+      int j, n = iupDrawPathArcToCurves(&segs[i], bez);
+      for (j = 0; j < n; j++)
+      {
+        const double* c = bez + j * 6;
+        haikuStrokeDashCubic(view, &dash, cur_x, cur_y, c[0], c[1], c[2], c[3], c[4], c[5]);
+        cur_x = c[4];
+        cur_y = c[5];
+      }
+      has_current = 1;
+      break;
+    }
+    case IUP_PATHSEG_CLOSE:
+      if (has_current)
+        haikuStrokeDashSegment(view, &dash, cur_x, cur_y, sub_x, sub_y);
+      cur_x = sub_x;
+      cur_y = sub_y;
+      break;
+    }
+  }
+}
+
+static IupPathSeg haikuSegPoint(int op, int x, int y)
+{
+  IupPathSeg seg;
+  memset(&seg, 0, sizeof(seg));
+  seg.op = (unsigned char)op;
+  seg.x1 = x;
+  seg.y1 = y;
+  return seg;
+}
+
+static IupPathSeg haikuSegCurve(int x1, int y1, int x2, int y2, int x3, int y3)
+{
+  IupPathSeg seg;
+  memset(&seg, 0, sizeof(seg));
+  seg.op = IUP_PATHSEG_CURVE_TO;
+  seg.x1 = x1;
+  seg.y1 = y1;
+  seg.x2 = x2;
+  seg.y2 = y2;
+  seg.x3 = x3;
+  seg.y3 = y3;
+  return seg;
+}
+
+static IupPathSeg haikuSegArc(int cx, int cy, int rx, int ry, double a1, double a2)
+{
+  IupPathSeg seg;
+  memset(&seg, 0, sizeof(seg));
+  seg.op = IUP_PATHSEG_ARC_TO;
+  seg.x1 = cx;
+  seg.y1 = cy;
+  seg.x2 = rx;
+  seg.y2 = ry;
+  seg.a1 = a1;
+  seg.a2 = a2;
+  return seg;
+}
+
+static IupPathSeg haikuSegClose()
+{
+  IupPathSeg seg;
+  memset(&seg, 0, sizeof(seg));
+  seg.op = IUP_PATHSEG_CLOSE;
+  return seg;
+}
+
+static void haikuArcStart(int cx, int cy, int rx, int ry, double angle, int* x, int* y)
+{
+  *x = (int)floor(cx + rx * cos(angle * IUP_DEG2RAD) + 0.5);
+  *y = (int)floor(cy - ry * sin(angle * IUP_DEG2RAD) + 0.5);
+}
+
 extern "C" IUP_SDK_API void iupdrvDrawLine(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color, int style, int line_width)
 {
+  IupDrawStroke stroke;
   if (!dc || !dc->bm) return;
   dc->bm->Lock();
-  haikuBeginStroke(dc, color, line_width, 0);
-  dc->view->StrokeLine(BPoint(x1, y1), BPoint(x2, y2));
+  haikuBeginStroke(dc, color, style, line_width, 0, &stroke);
+  if (stroke.dash_count > 0)
+  {
+    IupPathSeg segs[2];
+    segs[0] = haikuSegPoint(IUP_PATHSEG_MOVE_TO, x1, y1);
+    segs[1] = haikuSegPoint(IUP_PATHSEG_LINE_TO, x2, y2);
+    haikuStrokeDashedPath(dc->view, segs, 2, &stroke);
+  }
+  else
+    dc->view->StrokeLine(BPoint(x1, y1), BPoint(x2, y2));
   haikuEndStroke(dc, 0);
   dc->bm->Unlock();
 }
@@ -226,8 +458,20 @@ extern "C" IUP_SDK_API void iupdrvDrawRectangle(IdrawCanvas* dc, int x1, int y1,
   }
   else
   {
-    haikuBeginStroke(dc, color, line_width, 1);
-    dc->view->StrokeRect(r);
+    IupDrawStroke stroke;
+    haikuBeginStroke(dc, color, style, line_width, 1, &stroke);
+    if (stroke.dash_count > 0)
+    {
+      IupPathSeg segs[5];
+      segs[0] = haikuSegPoint(IUP_PATHSEG_MOVE_TO, x1, y1);
+      segs[1] = haikuSegPoint(IUP_PATHSEG_LINE_TO, x2, y1);
+      segs[2] = haikuSegPoint(IUP_PATHSEG_LINE_TO, x2, y2);
+      segs[3] = haikuSegPoint(IUP_PATHSEG_LINE_TO, x1, y2);
+      segs[4] = haikuSegClose();
+      haikuStrokeDashedPath(dc->view, segs, 5, &stroke);
+    }
+    else
+      dc->view->StrokeRect(r);
     haikuEndStroke(dc, 1);
   }
   dc->bm->Unlock();
@@ -248,8 +492,37 @@ extern "C" IUP_SDK_API void iupdrvDrawRoundedRectangle(IdrawCanvas* dc, int x1, 
   }
   else
   {
-    haikuBeginStroke(dc, color, line_width, 0);
-    dc->view->StrokeRoundRect(r, rad, rad);
+    IupDrawStroke stroke;
+    haikuBeginStroke(dc, color, style, line_width, 0, &stroke);
+    if (stroke.dash_count > 0 && corner_radius > 0)
+    {
+      IupPathSeg segs[10];
+      int max_radius = ((x2 - x1) < (y2 - y1) ? (x2 - x1) : (y2 - y1)) / 2;
+      if (corner_radius > max_radius) corner_radius = max_radius;
+      segs[0] = haikuSegPoint(IUP_PATHSEG_MOVE_TO, x2, y2 - corner_radius);
+      segs[1] = haikuSegPoint(IUP_PATHSEG_LINE_TO, x2, y1 + corner_radius);
+      segs[2] = haikuSegArc(x2 - corner_radius, y1 + corner_radius, corner_radius, corner_radius, 0, 90);
+      segs[3] = haikuSegPoint(IUP_PATHSEG_LINE_TO, x1 + corner_radius, y1);
+      segs[4] = haikuSegArc(x1 + corner_radius, y1 + corner_radius, corner_radius, corner_radius, 90, 180);
+      segs[5] = haikuSegPoint(IUP_PATHSEG_LINE_TO, x1, y2 - corner_radius);
+      segs[6] = haikuSegArc(x1 + corner_radius, y2 - corner_radius, corner_radius, corner_radius, 180, 270);
+      segs[7] = haikuSegPoint(IUP_PATHSEG_LINE_TO, x2 - corner_radius, y2);
+      segs[8] = haikuSegArc(x2 - corner_radius, y2 - corner_radius, corner_radius, corner_radius, 270, 360);
+      segs[9] = haikuSegClose();
+      haikuStrokeDashedPath(dc->view, segs, 10, &stroke);
+    }
+    else if (stroke.dash_count > 0)
+    {
+      IupPathSeg segs[5];
+      segs[0] = haikuSegPoint(IUP_PATHSEG_MOVE_TO, x1, y1);
+      segs[1] = haikuSegPoint(IUP_PATHSEG_LINE_TO, x2, y1);
+      segs[2] = haikuSegPoint(IUP_PATHSEG_LINE_TO, x2, y2);
+      segs[3] = haikuSegPoint(IUP_PATHSEG_LINE_TO, x1, y2);
+      segs[4] = haikuSegClose();
+      haikuStrokeDashedPath(dc->view, segs, 5, &stroke);
+    }
+    else
+      dc->view->StrokeRoundRect(r, rad, rad);
     haikuEndStroke(dc, 0);
   }
   dc->bm->Unlock();
@@ -273,8 +546,21 @@ extern "C" IUP_SDK_API void iupdrvDrawArc(IdrawCanvas* dc, int x1, int y1, int x
   }
   else
   {
-    haikuBeginStroke(dc, color, line_width, 0);
-    dc->view->StrokeArc(r, start, sweep);
+    IupDrawStroke stroke;
+    haikuBeginStroke(dc, color, style, line_width, 0, &stroke);
+    if (stroke.dash_count > 0)
+    {
+      IupPathSeg segs[2];
+      int cx = (x1 + x2) / 2, cy = (y1 + y2) / 2;
+      int rx = (x2 - x1) / 2, ry = (y2 - y1) / 2;
+      int sx, sy;
+      haikuArcStart(cx, cy, rx, ry, a1, &sx, &sy);
+      segs[0] = haikuSegPoint(IUP_PATHSEG_MOVE_TO, sx, sy);
+      segs[1] = haikuSegArc(cx, cy, rx, ry, a1, a2);
+      haikuStrokeDashedPath(dc->view, segs, 2, &stroke);
+    }
+    else
+      dc->view->StrokeArc(r, start, sweep);
     haikuEndStroke(dc, 0);
   }
   dc->bm->Unlock();
@@ -294,8 +580,19 @@ extern "C" IUP_SDK_API void iupdrvDrawEllipse(IdrawCanvas* dc, int x1, int y1, i
   }
   else
   {
-    haikuBeginStroke(dc, color, line_width, 0);
-    dc->view->StrokeEllipse(r);
+    IupDrawStroke stroke;
+    haikuBeginStroke(dc, color, style, line_width, 0, &stroke);
+    if (stroke.dash_count > 0)
+    {
+      IupPathSeg segs[2];
+      int cx = (x1 + x2) / 2, cy = (y1 + y2) / 2;
+      int rx = (x2 - x1) / 2, ry = (y2 - y1) / 2;
+      segs[0] = haikuSegPoint(IUP_PATHSEG_MOVE_TO, cx + rx, cy);
+      segs[1] = haikuSegArc(cx, cy, rx, ry, 0, 360);
+      haikuStrokeDashedPath(dc->view, segs, 2, &stroke);
+    }
+    else
+      dc->view->StrokeEllipse(r);
     haikuEndStroke(dc, 0);
   }
   dc->bm->Unlock();
@@ -316,8 +613,19 @@ extern "C" IUP_SDK_API void iupdrvDrawPolygon(IdrawCanvas* dc, int* points, int 
   }
   else
   {
-    haikuBeginStroke(dc, color, line_width, 1);
-    dc->view->StrokePolygon(pts, count, true);
+    IupDrawStroke stroke;
+    haikuBeginStroke(dc, color, style, line_width, 1, &stroke);
+    if (stroke.dash_count > 0)
+    {
+      IupPathSeg* segs = (IupPathSeg*)malloc(sizeof(IupPathSeg) * (count + 1));
+      for (int i = 0; i < count; ++i)
+        segs[i] = haikuSegPoint(i == 0 ? IUP_PATHSEG_MOVE_TO : IUP_PATHSEG_LINE_TO, points[i*2], points[i*2 + 1]);
+      segs[count] = haikuSegClose();
+      haikuStrokeDashedPath(dc->view, segs, count + 1, &stroke);
+      free(segs);
+    }
+    else
+      dc->view->StrokePolygon(pts, count, true);
     haikuEndStroke(dc, 1);
   }
   dc->bm->Unlock();
@@ -345,8 +653,17 @@ extern "C" IUP_SDK_API void iupdrvDrawBezier(IdrawCanvas* dc, int x1, int y1, in
   }
   else
   {
-    haikuBeginStroke(dc, color, line_width, 0);
-    dc->view->StrokeBezier(cp);
+    IupDrawStroke stroke;
+    haikuBeginStroke(dc, color, style, line_width, 0, &stroke);
+    if (stroke.dash_count > 0)
+    {
+      IupPathSeg segs[2];
+      segs[0] = haikuSegPoint(IUP_PATHSEG_MOVE_TO, x1, y1);
+      segs[1] = haikuSegCurve(x2, y2, x3, y3, x4, y4);
+      haikuStrokeDashedPath(dc->view, segs, 2, &stroke);
+    }
+    else
+      dc->view->StrokeBezier(cp);
     haikuEndStroke(dc, 0);
   }
   dc->bm->Unlock();
@@ -408,20 +725,20 @@ static BShape* haikuBuildShape(const IupPathSeg* segs, int count)
     {
     case IUP_PATHSEG_MOVE_TO:
       shape->MoveTo(BPoint((float)segs[i].x1, (float)segs[i].y1));
-      cur_x = sub_x = (float)segs[i].x1;
-      cur_y = sub_y = (float)segs[i].y1;
+      cur_x = sub_x = segs[i].x1;
+      cur_y = sub_y = segs[i].y1;
       break;
     case IUP_PATHSEG_LINE_TO:
       shape->LineTo(BPoint((float)segs[i].x1, (float)segs[i].y1));
-      cur_x = (float)segs[i].x1;
-      cur_y = (float)segs[i].y1;
+      cur_x = segs[i].x1;
+      cur_y = segs[i].y1;
       break;
     case IUP_PATHSEG_CURVE_TO:
       shape->BezierTo(BPoint((float)segs[i].x1, (float)segs[i].y1),
                       BPoint((float)segs[i].x2, (float)segs[i].y2),
                       BPoint((float)segs[i].x3, (float)segs[i].y3));
-      cur_x = (float)segs[i].x3;
-      cur_y = (float)segs[i].y3;
+      cur_x = segs[i].x3;
+      cur_y = segs[i].y3;
       break;
     case IUP_PATHSEG_QUAD_TO:
     {
@@ -430,8 +747,8 @@ static BShape* haikuBuildShape(const IupPathSeg* segs, int count)
       float c2x = (float)segs[i].x2 + 2.0f / 3.0f * ((float)segs[i].x1 - (float)segs[i].x2);
       float c2y = (float)segs[i].y2 + 2.0f / 3.0f * ((float)segs[i].y1 - (float)segs[i].y2);
       shape->BezierTo(BPoint(c1x, c1y), BPoint(c2x, c2y), BPoint((float)segs[i].x2, (float)segs[i].y2));
-      cur_x = (float)segs[i].x2;
-      cur_y = (float)segs[i].y2;
+      cur_x = segs[i].x2;
+      cur_y = segs[i].y2;
       break;
     }
     case IUP_PATHSEG_ARC_TO:
@@ -487,162 +804,6 @@ static BGradient* haikuBuildGradient(const IupDrawSource* src)
   }
 }
 
-typedef struct _HaikuDash
-{
-  const float* pattern;
-  int count;
-  int index;
-  float remain;
-} HaikuDash;
-
-static int haikuDashInit(HaikuDash* dash, int style)
-{
-  static const float dash_pattern[] = {9.0f, 3.0f};
-  static const float dot_pattern[] = {1.0f, 2.0f};
-  static const float dash_dot_pattern[] = {7.0f, 3.0f, 1.0f, 3.0f};
-  static const float dash_dot_dot_pattern[] = {7.0f, 3.0f, 1.0f, 3.0f, 1.0f, 3.0f};
-
-  switch (style)
-  {
-  case IUP_DRAW_STROKE_DASH:
-    dash->pattern = dash_pattern;
-    dash->count = 2;
-    break;
-  case IUP_DRAW_STROKE_DOT:
-    dash->pattern = dot_pattern;
-    dash->count = 2;
-    break;
-  case IUP_DRAW_STROKE_DASH_DOT:
-    dash->pattern = dash_dot_pattern;
-    dash->count = 4;
-    break;
-  case IUP_DRAW_STROKE_DASH_DOT_DOT:
-    dash->pattern = dash_dot_dot_pattern;
-    dash->count = 6;
-    break;
-  default:
-    return 0;
-  }
-
-  dash->index = 0;
-  dash->remain = dash->pattern[0];
-  return 1;
-}
-
-static void haikuStrokeDashSegment(BView* view, HaikuDash* dash, float x1, float y1, float x2, float y2)
-{
-  float dx = x2 - x1;
-  float dy = y2 - y1;
-  float length = sqrtf(dx * dx + dy * dy);
-  float offset = 0.0f;
-
-  if (length <= 0.0f)
-    return;
-
-  while (offset < length)
-  {
-    float step = dash->remain < length - offset ? dash->remain : length - offset;
-    float t1 = offset / length;
-    float t2 = (offset + step) / length;
-    if ((dash->index & 1) == 0)
-      view->StrokeLine(BPoint(x1 + dx * t1, y1 + dy * t1), BPoint(x1 + dx * t2, y1 + dy * t2));
-    offset += step;
-    dash->remain -= step;
-    if (dash->remain <= 0.0001f)
-    {
-      dash->index = (dash->index + 1) % dash->count;
-      dash->remain = dash->pattern[dash->index];
-    }
-  }
-}
-
-static void haikuStrokeDashCubic(BView* view, HaikuDash* dash, float x0, float y0, float x1, float y1, float x2, float y2, float x3, float y3)
-{
-  float px = x0, py = y0;
-  int i;
-
-  for (i = 1; i <= 20; i++)
-  {
-    float t = (float)i / 20.0f;
-    float mt = 1.0f - t;
-    float x = mt * mt * mt * x0 + 3.0f * mt * mt * t * x1 + 3.0f * mt * t * t * x2 + t * t * t * x3;
-    float y = mt * mt * mt * y0 + 3.0f * mt * mt * t * y1 + 3.0f * mt * t * t * y2 + t * t * t * y3;
-    haikuStrokeDashSegment(view, dash, px, py, x, y);
-    px = x;
-    py = y;
-  }
-}
-
-static void haikuStrokeDashedPath(BView* view, const IupPathSeg* segs, int count, int style)
-{
-  HaikuDash dash;
-  float cur_x = 0.0f, cur_y = 0.0f, sub_x = 0.0f, sub_y = 0.0f;
-  int has_current = 0;
-  int i;
-
-  if (!haikuDashInit(&dash, style))
-    return;
-
-  for (i = 0; i < count; i++)
-  {
-    switch (segs[i].op)
-    {
-    case IUP_PATHSEG_MOVE_TO:
-      cur_x = sub_x = (float)segs[i].x1;
-      cur_y = sub_y = (float)segs[i].y1;
-      has_current = 1;
-      break;
-    case IUP_PATHSEG_LINE_TO:
-      if (has_current)
-        haikuStrokeDashSegment(view, &dash, cur_x, cur_y, (float)segs[i].x1, (float)segs[i].y1);
-      cur_x = (float)segs[i].x1;
-      cur_y = (float)segs[i].y1;
-      has_current = 1;
-      break;
-    case IUP_PATHSEG_CURVE_TO:
-      if (has_current)
-        haikuStrokeDashCubic(view, &dash, cur_x, cur_y, (float)segs[i].x1, (float)segs[i].y1, (float)segs[i].x2, (float)segs[i].y2, (float)segs[i].x3, (float)segs[i].y3);
-      cur_x = (float)segs[i].x3;
-      cur_y = (float)segs[i].y3;
-      has_current = 1;
-      break;
-    case IUP_PATHSEG_QUAD_TO:
-      if (has_current)
-      {
-        float c1x = cur_x + 2.0f / 3.0f * ((float)segs[i].x1 - cur_x);
-        float c1y = cur_y + 2.0f / 3.0f * ((float)segs[i].y1 - cur_y);
-        float c2x = (float)segs[i].x2 + 2.0f / 3.0f * ((float)segs[i].x1 - (float)segs[i].x2);
-        float c2y = (float)segs[i].y2 + 2.0f / 3.0f * ((float)segs[i].y1 - (float)segs[i].y2);
-        haikuStrokeDashCubic(view, &dash, cur_x, cur_y, c1x, c1y, c2x, c2y, (float)segs[i].x2, (float)segs[i].y2);
-      }
-      cur_x = (float)segs[i].x2;
-      cur_y = (float)segs[i].y2;
-      has_current = 1;
-      break;
-    case IUP_PATHSEG_ARC_TO:
-    {
-      double bez[24];
-      int j, n = iupDrawPathArcToCurves(&segs[i], bez);
-      for (j = 0; j < n; j++)
-      {
-        const double* c = bez + j * 6;
-        haikuStrokeDashCubic(view, &dash, cur_x, cur_y, (float)c[0], (float)c[1], (float)c[2], (float)c[3], (float)c[4], (float)c[5]);
-        cur_x = (float)c[4];
-        cur_y = (float)c[5];
-      }
-      has_current = 1;
-      break;
-    }
-    case IUP_PATHSEG_CLOSE:
-      if (has_current)
-        haikuStrokeDashSegment(view, &dash, cur_x, cur_y, sub_x, sub_y);
-      cur_x = sub_x;
-      cur_y = sub_y;
-      break;
-    }
-  }
-}
-
 extern "C" IUP_SDK_API void iupdrvDrawPathFill(IdrawCanvas* dc, const IupPathSeg* segs, int count, const IupDrawSource* src, int rule)
 {
   if (!dc || !dc->bm) return;
@@ -671,17 +832,21 @@ extern "C" IUP_SDK_API void iupdrvDrawPathFill(IdrawCanvas* dc, const IupPathSeg
 
 extern "C" IUP_SDK_API void iupdrvDrawPathStroke(IdrawCanvas* dc, const IupPathSeg* segs, int count, const IupDrawSource* src, int style, int line_width)
 {
+  IupDrawStroke stroke;
   if (!dc || !dc->bm) return;
   BShape* shape = haikuBuildShape(segs, count);
   if (!shape) return;
 
+  iupDrawGetStroke(dc->ih, style, &stroke);
+
   dc->bm->Lock();
   dc->view->MovePenTo(0, 0);
   dc->view->SetPenSize(line_width > 0 ? (float)line_width : 1.0f);
-  if (src->type == IUP_SOURCE_SOLID && style >= IUP_DRAW_STROKE_DASH && style <= IUP_DRAW_STROKE_DASH_DOT_DOT)
+  haikuSetLineMode(dc->view, &stroke);
+  if (src->type == IUP_SOURCE_SOLID && stroke.dash_count > 0)
   {
     dc->view->SetHighColor(haikuColorFromLong(src->color));
-    haikuStrokeDashedPath(dc->view, segs, count, style);
+    haikuStrokeDashedPath(dc->view, segs, count, &stroke);
   }
   else if (src->type == IUP_SOURCE_SOLID)
   {
@@ -963,7 +1128,8 @@ extern "C" IUP_SDK_API void iupdrvDrawFocusRect(IdrawCanvas* dc, int x1, int y1,
   iupDrawCheckSwapCoord(x1, x2);
   iupDrawCheckSwapCoord(y1, y2);
   dc->bm->Lock();
-  haikuBeginStroke(dc, iupDrawColor(0, 0, 0, 255), 1, 1);
+  IupDrawStroke stroke;
+  haikuBeginStroke(dc, iupDrawColor(0, 0, 0, 255), IUP_DRAW_STROKE, 1, 1, &stroke);
   dc->view->StrokeRect(BRect(x1, y1, x2, y2), B_MIXED_COLORS);
   haikuEndStroke(dc, 1);
   dc->bm->Unlock();

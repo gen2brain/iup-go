@@ -49,6 +49,25 @@ IUP_SDK_API void iupDrawParentBackground(IdrawCanvas* dc, Ihandle* ih);
 IUP_SDK_API char* iupDrawGetTextSize(Ihandle* ih, const char* str, int len, int* w, int* h, double text_orientation);
 IUP_SDK_API int iupDrawGetTextFlags(Ihandle* ih, const char* align_name, const char* wrap_name, const char* ellipsis_name);
 
+enum{ IUP_DRAW_CAP_BUTT, IUP_DRAW_CAP_ROUND, IUP_DRAW_CAP_SQUARE };
+enum{ IUP_DRAW_JOIN_MITER, IUP_DRAW_JOIN_ROUND, IUP_DRAW_JOIN_BEVEL };
+
+#define IUP_DRAW_MAX_DASHES 16
+#define IUP_DRAW_MITER_LIMIT 10.0
+
+typedef struct _IupDrawStroke
+{
+  int cap;
+  int join;
+  double dashes[IUP_DRAW_MAX_DASHES];  /* lengths in user coordinates, empty when the stroke is solid */
+  int dash_count;
+  double dash_offset;
+} IupDrawStroke;
+
+/* Resolves DRAWLINECAP, DRAWLINEJOIN, DRAWDASH and DRAWDASHOFFSET, and the dash pattern of style
+ * when DRAWDASH is not set. Dash lengths are in user coordinates. */
+IUP_SDK_API void iupDrawGetStroke(Ihandle* ih, int style, IupDrawStroke* stroke);
+
 /* Same as iupDrawPathArcToBeziers in double precision, 6 values per curve.
  * Returns the number of curves written, out must have room for 24 values. */
 IUP_SDK_API int iupDrawPathArcToCurves(const IupPathSeg* seg, double* out);

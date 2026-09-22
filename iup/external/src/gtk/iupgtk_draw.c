@@ -246,31 +246,15 @@ IUP_SDK_API void iupdrvDrawGetSize(IdrawCanvas* dc, int* w, int* h)
 
 static void iDrawSetLineStyle(IdrawCanvas* dc, int style)
 {
-  if (style == IUP_DRAW_STROKE || style == IUP_DRAW_FILL)
-    cairo_set_dash(dc->image_cr, 0, 0, 0);
-  else
-  {
-    if (style == IUP_DRAW_STROKE_DASH)
-    {
-      double dashes[2] = { 9.0, 3.0 };
-      cairo_set_dash(dc->image_cr, dashes, 2, 0);
-    }
-    else if (style == IUP_DRAW_STROKE_DOT)
-    {
-      double dashes[2] = { 1.0, 2.0 };
-      cairo_set_dash(dc->image_cr, dashes, 2, 0);
-    }
-    else if (style == IUP_DRAW_STROKE_DASH_DOT)
-    {
-      double dashes[4] = { 7.0, 3.0, 1.0, 3.0 };
-      cairo_set_dash(dc->image_cr, dashes, 4, 0);
-    }
-    else if (style == IUP_DRAW_STROKE_DASH_DOT_DOT)
-    {
-      double dashes[6] = { 7.0, 3.0, 1.0, 3.0, 1.0, 3.0 };
-      cairo_set_dash(dc->image_cr, dashes, 6, 0);
-    }
-  }
+  IupDrawStroke stroke;
+  iupDrawGetStroke(dc->ih, style, &stroke);
+
+  cairo_set_line_cap(dc->image_cr, stroke.cap == IUP_DRAW_CAP_ROUND ? CAIRO_LINE_CAP_ROUND :
+                                   stroke.cap == IUP_DRAW_CAP_SQUARE ? CAIRO_LINE_CAP_SQUARE : CAIRO_LINE_CAP_BUTT);
+  cairo_set_line_join(dc->image_cr, stroke.join == IUP_DRAW_JOIN_ROUND ? CAIRO_LINE_JOIN_ROUND :
+                                    stroke.join == IUP_DRAW_JOIN_BEVEL ? CAIRO_LINE_JOIN_BEVEL : CAIRO_LINE_JOIN_MITER);
+  cairo_set_miter_limit(dc->image_cr, IUP_DRAW_MITER_LIMIT);
+  cairo_set_dash(dc->image_cr, stroke.dashes, stroke.dash_count, stroke.dash_offset);
 }
 
 static void iDrawSetLineWidth(IdrawCanvas* dc, int line_width)

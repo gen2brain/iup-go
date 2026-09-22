@@ -216,6 +216,10 @@ Iclass* iupCanvasNewClass(void)
   iupClassRegisterAttribute(ic, "DRAWTEXTORIENTATION", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DRAWTEXTLAYOUTCENTER", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DRAWLINEWIDTH", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DRAWLINECAP", NULL, NULL, IUPAF_SAMEASSYSTEM, "BUTT", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DRAWLINEJOIN", NULL, NULL, IUPAF_SAMEASSYSTEM, "MITER", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DRAWDASH", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DRAWDASHOFFSET", NULL, NULL, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DRAWBGCOLOR", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);  /* used only for images */
   iupClassRegisterAttribute(ic, "DRAWMAKEINACTIVE", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);  /* used only for images */
   iupClassRegisterAttribute(ic, "DRAWIMAGETINT", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);

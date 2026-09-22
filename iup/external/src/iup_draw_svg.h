@@ -19,7 +19,7 @@ extern "C"
 
 typedef struct _iSvgCanvas iSvgCanvas;
 
-iSvgCanvas* iupSvgDrawCreateCanvas(int w, int h);
+iSvgCanvas* iupSvgDrawCreateCanvas(Ihandle* ih, int w, int h);
 void        iupSvgDrawKillCanvas(iSvgCanvas* dc);
 void        iupSvgDrawSetTransform(iSvgCanvas* dc, const IupDrawMatrix* matrix);
 

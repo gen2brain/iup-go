@@ -70,6 +70,11 @@ static void fltkDrawInversePoint(const IupDrawMatrix* matrix, double x, double y
   *ty = (-matrix->b * dx + matrix->a * dy) / determinant;
 }
 
+static double fltkDrawMatrixScale(const IupDrawMatrix* matrix)
+{
+  return sqrt(fabs(matrix->a * matrix->d - matrix->b * matrix->c));
+}
+
 static void fltkDrawTransformBounds(const IupDrawMatrix* matrix, double x1, double y1, double x2, double y2, int* tx1, int* ty1, int* tx2, int* ty2)
 {
   double px[4], py[4];
@@ -115,22 +120,33 @@ static void fltkDrawSetColor(long color)
   fl_color(r, g, b);
 }
 
-static void fltkDrawSetLineStyle(int style, int line_width)
+static void fltkDrawSetLineStyle(IdrawCanvas* dc, int style, int line_width)
 {
   if (line_width <= 0) line_width = 1;
 
+  IupDrawStroke stroke;
+  iupDrawGetStroke(dc->ih, style, &stroke);
+
   int fltk_style = FL_SOLID;
+  fltk_style |= stroke.cap == IUP_DRAW_CAP_ROUND ? FL_CAP_ROUND :
+                stroke.cap == IUP_DRAW_CAP_SQUARE ? FL_CAP_SQUARE : FL_CAP_FLAT;
+  fltk_style |= stroke.join == IUP_DRAW_JOIN_ROUND ? FL_JOIN_ROUND :
+                stroke.join == IUP_DRAW_JOIN_BEVEL ? FL_JOIN_BEVEL : FL_JOIN_MITER;
 
-  switch (style)
+  char dashes[IUP_DRAW_MAX_DASHES + 1];
+  double scale = fltkDrawMatrixScale(&dc->matrix);
+  int count = 0;
+
+  for (int i = 0; i < stroke.dash_count; i++)
   {
-    case IUP_DRAW_STROKE_DASH:         fltk_style = FL_DASH; break;
-    case IUP_DRAW_STROKE_DOT:          fltk_style = FL_DOT; break;
-    case IUP_DRAW_STROKE_DASH_DOT:     fltk_style = FL_DASHDOT; break;
-    case IUP_DRAW_STROKE_DASH_DOT_DOT: fltk_style = FL_DASHDOTDOT; break;
-    default:                           fltk_style = FL_SOLID; break;
+    long len = lround(stroke.dashes[i] * scale);
+    if (len < 1) len = 1;
+    if (len > 127) len = 127;
+    dashes[count++] = (char)len;
   }
+  dashes[count] = 0;
 
-  fl_line_style(fltk_style | FL_CAP_FLAT | FL_JOIN_MITER, line_width);
+  fl_line_style(fltk_style, line_width, count ? dashes : NULL);
 }
 
 static void iupDrawOrderMinMax(int* x1, int* y1, int* x2, int* y2)
@@ -171,11 +187,6 @@ struct FltkSpan
 {
   int y, x1, x2;
 };
-
-static double fltkDrawMatrixScale(const IupDrawMatrix* matrix)
-{
-  return sqrt(fabs(matrix->a * matrix->d - matrix->b * matrix->c));
-}
 
 static void fltkShapeMove(FltkShape& shape, double x, double y)
 {
@@ -452,7 +463,7 @@ static void fltkDrawShapeLines(IdrawCanvas* dc, const FltkShape& shape, int styl
   int width = (int)lround((line_width > 0 ? line_width : 1) * fltkDrawMatrixScale(m));
   if (width < 1) width = 1;
 
-  fltkDrawSetLineStyle(style, width);
+  fltkDrawSetLineStyle(dc, style, width);
   fl_push_matrix();
   fl_mult_matrix(m->a, m->b, m->c, m->d, m->e + 0.5 * (m->a + m->c) - 0.5, m->f + 0.5 * (m->b + m->d) - 0.5);
   for (size_t s = 0; s < shape.size(); s++)
@@ -744,7 +755,7 @@ extern "C" IUP_SDK_API void iupdrvDrawLine(IdrawCanvas* dc, int x1, int y1, int 
   }
 
   fltkDrawSetColor(color);
-  fltkDrawSetLineStyle(style, line_width);
+  fltkDrawSetLineStyle(dc, style, line_width);
   fl_line(x1, y1, x2, y2);
 }
 
@@ -775,7 +786,7 @@ extern "C" IUP_SDK_API void iupdrvDrawRectangle(IdrawCanvas* dc, int x1, int y1,
     fl_rectf(x1, y1, x2 - x1 + 1, y2 - y1 + 1);
   else
   {
-    fltkDrawSetLineStyle(style, line_width);
+    fltkDrawSetLineStyle(dc, style, line_width);
     fl_rect(x1, y1, x2 - x1 + 1, y2 - y1 + 1);
   }
 }
@@ -818,7 +829,7 @@ extern "C" IUP_SDK_API void iupdrvDrawArc(IdrawCanvas* dc, int x1, int y1, int x
     fl_pie(x1, y1, w, h, a1, a2);
   else
   {
-    fltkDrawSetLineStyle(style, line_width);
+    fltkDrawSetLineStyle(dc, style, line_width);
     fl_arc(x1, y1, w, h, a1, a2);
   }
 }
@@ -862,7 +873,7 @@ extern "C" IUP_SDK_API void iupdrvDrawPolygon(IdrawCanvas* dc, int* points, int 
   }
   else
   {
-    fltkDrawSetLineStyle(style, line_width);
+    fltkDrawSetLineStyle(dc, style, line_width);
     fl_begin_loop();
     for (int i = 0; i < count; i++)
       fl_vertex(points[2 * i], points[2 * i + 1]);
@@ -915,7 +926,7 @@ extern "C" IUP_SDK_API void iupdrvDrawRoundedRectangle(IdrawCanvas* dc, int x1, 
     fl_rounded_rectf(x1, y1, w, h, corner_radius);
   else
   {
-    fltkDrawSetLineStyle(style, line_width);
+    fltkDrawSetLineStyle(dc, style, line_width);
     fl_rounded_rect(x1, y1, w, h, corner_radius);
   }
 }
@@ -935,7 +946,7 @@ extern "C" IUP_SDK_API void iupdrvDrawBezier(IdrawCanvas* dc, int x1, int y1, in
   }
 
   fltkDrawSetColor(color);
-  fltkDrawSetLineStyle(style, line_width);
+  fltkDrawSetLineStyle(dc, style, line_width);
 
   fl_begin_line();
   fl_vertex(x1, y1);

@@ -49,10 +49,10 @@ struct _IdrawCanvas{
 /* must be the same in wdInitialize and wdTerminate */
 const DWORD wdl_flags = WD_INIT_COREAPI | WD_INIT_IMAGEAPI | WD_INIT_STRINGAPI;
 
-static WD_HSTROKESTYLE g_strokeDash = NULL;
-static WD_HSTROKESTYLE g_strokeDot = NULL;
-static WD_HSTROKESTYLE g_strokeDashDot = NULL;
-static WD_HSTROKESTYLE g_strokeDashDotDot = NULL;
+static WD_HSTROKESTYLE g_strokeStyle = NULL;
+static IupDrawStroke g_strokeStyleKey;
+static float g_strokeStyleWidth = 0;
+static int g_strokeStyleValid = 0;
 
 IUP_DRV_API int iupwinDrawPartialSupported(void)
 {
@@ -83,10 +83,8 @@ IUP_DRV_API void iupwinDrawInit(void)
 
 IUP_DRV_API void iupwinDrawFinish(void)
 {
-  if (g_strokeDash) { wdDestroyStrokeStyle(g_strokeDash); g_strokeDash = NULL; }
-  if (g_strokeDot) { wdDestroyStrokeStyle(g_strokeDot); g_strokeDot = NULL; }
-  if (g_strokeDashDot) { wdDestroyStrokeStyle(g_strokeDashDot); g_strokeDashDot = NULL; }
-  if (g_strokeDashDotDot) { wdDestroyStrokeStyle(g_strokeDashDotDot); g_strokeDashDotDot = NULL; }
+  if (g_strokeStyle) { wdDestroyStrokeStyle(g_strokeStyle); g_strokeStyle = NULL; }
+  g_strokeStyleValid = 0;
 
   if (wdBackend() == WD_BACKEND_D2D)
     gdix_fini();  /* if WDL is using Direct2D must manually terminate GDI+ */
@@ -297,31 +295,60 @@ IUP_SDK_API void iupdrvDrawGetSize(IdrawCanvas* dc, int* w, int* h)
 #define iupInt2FloatW(_x) ((float)_x)
 #define iupColor2ARGB(_c) WD_ARGB(iupDrawAlpha(_c), iupDrawRed(_c), iupDrawGreen(_c), iupDrawBlue(_c))
 
-/* Returns a cached stroke style, destroyed in iupwinDrawFinish */
-static WD_HSTROKESTYLE iCreateStrokeStyle(int style)
+static int iStrokeEqual(const IupDrawStroke* a, const IupDrawStroke* b)
 {
-  static float s_dash[2] = { 9.0f, 3.0f };
-  static float s_dot[2] = { 1.0f, 2.0f };
-  static float s_dash_dot[4] = { 7.0f, 3.0f, 1.0f, 3.0f };
-  static float s_dash_dot_dot[6] = { 7.0f, 3.0f, 1.0f, 3.0f, 1.0f, 3.0f };
+  int i;
 
-  switch (style)
+  if (a->cap != b->cap || a->join != b->join || a->dash_count != b->dash_count || a->dash_offset != b->dash_offset)
+    return 0;
+
+  for (i = 0; i < a->dash_count; i++)
   {
-    case IUP_DRAW_STROKE_DASH:
-      if (!g_strokeDash) g_strokeDash = wdCreateStrokeStyleCustom(s_dash, 2, WD_LINECAP_FLAT, WD_LINEJOIN_MITER);
-      return g_strokeDash;
-    case IUP_DRAW_STROKE_DOT:
-      if (!g_strokeDot) g_strokeDot = wdCreateStrokeStyleCustom(s_dot, 2, WD_LINECAP_FLAT, WD_LINEJOIN_MITER);
-      return g_strokeDot;
-    case IUP_DRAW_STROKE_DASH_DOT:
-      if (!g_strokeDashDot) g_strokeDashDot = wdCreateStrokeStyleCustom(s_dash_dot, 4, WD_LINECAP_FLAT, WD_LINEJOIN_MITER);
-      return g_strokeDashDot;
-    case IUP_DRAW_STROKE_DASH_DOT_DOT:
-      if (!g_strokeDashDotDot) g_strokeDashDotDot = wdCreateStrokeStyleCustom(s_dash_dot_dot, 6, WD_LINECAP_FLAT, WD_LINEJOIN_MITER);
-      return g_strokeDashDotDot;
-    default:
-      return NULL;
+    if (a->dashes[i] != b->dashes[i])
+      return 0;
   }
+
+  return 1;
+}
+
+/* Returns the cached stroke style, destroyed in iupwinDrawFinish */
+static WD_HSTROKESTYLE iCreateStrokeStyle(Ihandle* ih, int style, int line_width)
+{
+  IupDrawStroke stroke;
+  float dashes[IUP_DRAW_MAX_DASHES];
+  float width = (float)line_width;
+  UINT cap, join;
+  int i;
+
+  if (width <= 0)
+    width = 1.0f;
+
+  iupDrawGetStroke(ih, style, &stroke);
+
+  if (stroke.dash_count == 0 && stroke.cap == IUP_DRAW_CAP_BUTT && stroke.join == IUP_DRAW_JOIN_MITER)
+    return NULL;
+
+  if (g_strokeStyleValid && g_strokeStyleWidth == width && iStrokeEqual(&g_strokeStyleKey, &stroke))
+    return g_strokeStyle;
+
+  for (i = 0; i < stroke.dash_count; i++)
+    dashes[i] = (float)(stroke.dashes[i] / width);
+
+  cap = stroke.cap == IUP_DRAW_CAP_ROUND ? WD_LINECAP_ROUND :
+        stroke.cap == IUP_DRAW_CAP_SQUARE ? WD_LINECAP_SQUARE : WD_LINECAP_FLAT;
+  join = stroke.join == IUP_DRAW_JOIN_ROUND ? WD_LINEJOIN_ROUND :
+         stroke.join == IUP_DRAW_JOIN_BEVEL ? WD_LINEJOIN_BEVEL : WD_LINEJOIN_MITER;
+
+  if (g_strokeStyle)
+    wdDestroyStrokeStyle(g_strokeStyle);
+
+  g_strokeStyle = wdCreateStrokeStyleCustomEx(dashes, (UINT)stroke.dash_count, (float)(stroke.dash_offset / width),
+                                              cap, join, (float)IUP_DRAW_MITER_LIMIT);
+  g_strokeStyleKey = stroke;
+  g_strokeStyleWidth = width;
+  g_strokeStyleValid = g_strokeStyle != NULL;
+
+  return g_strokeStyle;
 }
 
 IUP_SDK_API void iupdrvDrawRectangle(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color, int style, int line_width)
@@ -335,7 +362,7 @@ IUP_SDK_API void iupdrvDrawRectangle(IdrawCanvas* dc, int x1, int y1, int x2, in
     wdFillRect(dc->hCanvas, brush, iupInt2Float(x1 - 0.5f), iupInt2Float(y1 - 0.5f), iupInt2Float(x2 + 0.5f), iupInt2Float(y2 + 0.5f));
   else
   {
-    WD_HSTROKESTYLE stroke_style = iCreateStrokeStyle(style);
+    WD_HSTROKESTYLE stroke_style = iCreateStrokeStyle(dc->ih, style, line_width);
     wdDrawRectStyled(dc->hCanvas, brush, iupInt2Float(x1), iupInt2Float(y1), iupInt2Float(x2), iupInt2Float(y2), iupInt2FloatW(line_width), stroke_style);
 
   }
@@ -346,7 +373,7 @@ IUP_SDK_API void iupdrvDrawRectangle(IdrawCanvas* dc, int x1, int y1, int x2, in
 IUP_SDK_API void iupdrvDrawLine(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color, int style, int line_width)
 {
   WD_HBRUSH brush = wdCreateSolidBrush(dc->hCanvas, iupColor2ARGB(color));
-  WD_HSTROKESTYLE stroke_style = iCreateStrokeStyle(style);
+  WD_HSTROKESTYLE stroke_style = iCreateStrokeStyle(dc->ih, style, line_width);
 
   if (dc->backend_type == WD_BACKEND_D2D && line_width == 1)
   {
@@ -394,7 +421,7 @@ IUP_SDK_API void iupdrvDrawArc(IdrawCanvas* dc, int x1, int y1, int x2, int y2, 
   }
   else
   {
-    WD_HSTROKESTYLE stroke_style = iCreateStrokeStyle(style);
+    WD_HSTROKESTYLE stroke_style = iCreateStrokeStyle(dc->ih, style, line_width);
     if (sweepAngle == 360.0f)
       wdDrawEllipseStyled(dc->hCanvas, brush, xc, yc, rx, ry, iupInt2FloatW(line_width), stroke_style);
     else
@@ -425,7 +452,7 @@ IUP_SDK_API void iupdrvDrawEllipse(IdrawCanvas* dc, int x1, int y1, int x2, int 
   }
   else
   {
-    WD_HSTROKESTYLE stroke_style = iCreateStrokeStyle(style);
+    WD_HSTROKESTYLE stroke_style = iCreateStrokeStyle(dc->ih, style, line_width);
     wdDrawEllipseStyled(dc->hCanvas, brush, xc, yc, rx, ry, iupInt2FloatW(line_width), stroke_style);
 
   }
@@ -456,7 +483,7 @@ IUP_SDK_API void iupdrvDrawPolygon(IdrawCanvas* dc, int* points, int count, long
     wdFillPath(dc->hCanvas, brush, path);
   else
   {
-    WD_HSTROKESTYLE stroke_style = iCreateStrokeStyle(style);
+    WD_HSTROKESTYLE stroke_style = iCreateStrokeStyle(dc->ih, style, line_width);
     wdDrawPathStyled(dc->hCanvas, brush, path, iupInt2FloatW(line_width), stroke_style);
 
   }
@@ -505,7 +532,7 @@ IUP_SDK_API void iupdrvDrawRoundedRectangle(IdrawCanvas* dc, int x1, int y1, int
   }
   else
   {
-    WD_HSTROKESTYLE stroke_style = iCreateStrokeStyle(style);
+    WD_HSTROKESTYLE stroke_style = iCreateStrokeStyle(dc->ih, style, line_width);
     wdDrawRoundedRectStyled(dc->hCanvas, brush, x0, y0, x1f, y1f, radius, iupInt2FloatW(line_width), stroke_style);
 
   }
@@ -538,7 +565,7 @@ IUP_SDK_API void iupdrvDrawBezier(IdrawCanvas* dc, int x1, int y1, int x2, int y
   }
   else
   {
-    WD_HSTROKESTYLE stroke_style = iCreateStrokeStyle(style);
+    WD_HSTROKESTYLE stroke_style = iCreateStrokeStyle(dc->ih, style, line_width);
     wdDrawPathStyled(dc->hCanvas, brush, path, iupInt2FloatW(line_width), stroke_style);
 
   }
@@ -750,7 +777,7 @@ IUP_SDK_API void iupdrvDrawPathStroke(IdrawCanvas* dc, const IupPathSeg* segs, i
   if (!path)
     return;
 
-  stroke_style = iCreateStrokeStyle(style);
+  stroke_style = iCreateStrokeStyle(dc->ih, style, line_width);
   brush = iWdlCreateSourceBrush(dc, src);
   if (!brush)
   {
