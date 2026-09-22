@@ -4,12 +4,16 @@ Creates a matrix of alphanumeric fields. Therefore, all values of the matrix fie
 The matrix is not a grid container like [IupGridBox](../elem/iup_gridbox.md).
 It inherits from [IupCanvas](../elem/iup_canvas.md).
 
-This is an additional control. It is included in the IupControls library.
-
 It has two modes of operation: normal and callback mode.
 In normal mode, string values are stored in attributes for each cell.
 In callback mode, these attributes are ignored and the cells are filled with strings returned by the "VALUE_CB" callback.
 So the existence of this callback defines the mode the matrix will operate.
+
+### Initialization and Usage
+
+The **IupControlsOpen** function must be called after **IupOpen**.
+The "iupcontrols.h" file must also be included in the source code.
+The program must be linked to the controls library (iupctrl). In Go it needs the `ctrl` build tag.
 
 ### Creation
 

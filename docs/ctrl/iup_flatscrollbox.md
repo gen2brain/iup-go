@@ -3,6 +3,12 @@
 Creates a native container that allows its child to be scrolled. It inherits from [IupCanvas](../elem/iup_canvas.md).
 The difference from [IupScrollBox](../elem/iup_scrollbox.md) is that its scrollbars are drawn.
 
+### Initialization and Usage
+
+The **IupControlsOpen** function must be called after **IupOpen**.
+The "iupcontrols.h" file must also be included in the source code.
+The program must be linked to the controls library (iupctrl). In Go it needs the `ctrl` build tag.
+
 ### Creation
 
     Ihandle* IupFlatScrollBox(Ihandle* child);

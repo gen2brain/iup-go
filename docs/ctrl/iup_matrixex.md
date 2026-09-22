@@ -6,9 +6,13 @@ Adds support for Import/Export, Clipboard, Undo/Redo, Find, Sort, Column Visibil
 
 It can be used in callback mode or in standard more.
 
-This is an additional control that depends on the IupControls library.
-
 Based on the DMatrix library created by Bruno Kassar and Luiz Cristóvão Gomez Coelho.
+
+### Initialization and Usage
+
+The **IupControlsOpen** function must be called after **IupOpen**.
+The "iupcontrols.h" file must also be included in the source code.
+The program must be linked to the controls library (iupctrl). In Go it needs the `ctrl` build tag.
 
 ### Creation
 

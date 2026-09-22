@@ -8,6 +8,12 @@ It behaves just like an [IupToggle](../elem/iup_toggle.md), but since it is not 
 
 It inherits from [IupCanvas](../elem/iup_canvas.md).
 
+### Initialization and Usage
+
+The **IupControlsOpen** function must be called after **IupOpen**.
+The "iupcontrols.h" file must also be included in the source code.
+The program must be linked to the controls library (iupctrl). In Go it needs the `ctrl` build tag.
+
 ### Creation
 
     Ihandle* IupFlatToggle(const char *title);

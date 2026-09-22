@@ -17,7 +17,7 @@ It inherits from [IupCanvas](../elem/iup_canvas.md).
 
 The **IupGLCanvasOpen** function must be called after a **IupOpen**, so that the control can be used.
 The "iupgl.h" file must also be included in the source code.
-The program must be linked to the controls library (iupgl), and with the OpenGL library.
+The program must be linked to the GL library (iupgl) and the OpenGL library. In Go it needs the `gl` build tag.
 
 To link with the OpenGL libraries in Windows, add: opengl32.lib.
 In Linux/Unix with EGL (GTK3, GTK4, Qt, EFL, FLTK), add: -lEGL -lGL.

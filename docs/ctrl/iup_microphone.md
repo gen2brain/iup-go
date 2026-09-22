@@ -11,7 +11,7 @@ Not supported in Haiku.
 
 The **IupMediaOpen** function must be called after **IupOpen**.
 The "iupmedia.h" file must also be included in the source code.
-The program must be linked to the media library (iupmedia).
+The program must be linked to the media library (iupmedia). In Go it needs the `media` build tag.
 
 ### Creation
 

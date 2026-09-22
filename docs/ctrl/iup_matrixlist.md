@@ -5,9 +5,13 @@ Creates an interface element that displays a list of items, just like **IupList*
 It uses the matrix columns to display labels, color boxes and check boxes in a way that is not possible using **IupList**.
 But the control mimics the **IupList** attributes, callbacks and interaction, so the usage by the programmer and by the user should be very similar.
 
-This is an additional control that depends on the IupControls library.
-
 Based on MTXLIB, developed at Tecgraf/PUC-Rio by Renata Trautmann and Andre Derraik.
+
+### Initialization and Usage
+
+The **IupControlsOpen** function must be called after **IupOpen**.
+The "iupcontrols.h" file must also be included in the source code.
+The program must be linked to the controls library (iupctrl). In Go it needs the `ctrl` build tag.
 
 ### Creation
 

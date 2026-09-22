@@ -5,6 +5,12 @@ It inherits from [IupGLCanvas](iup_glcanvas.md).
 
 OBS: this is identical to the IupBackgroundBox element, but with OpenGL enabled.
 
+### Initialization and Usage
+
+The **IupGLCanvasOpen** function must be called after **IupOpen**.
+The "iupgl.h" file must also be included in the source code.
+The program must be linked to the GL library (iupgl) and the OpenGL library. In Go it needs the `gl` build tag.
+
 ### Creation
 
     Ihandle* IupGLBackgroundBox(Ihandle* child);

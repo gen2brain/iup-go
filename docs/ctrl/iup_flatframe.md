@@ -3,6 +3,12 @@
 Creates a native container, which draws a frame with a title around its child. The decorations are manually drawn.
 The control inherits from [IupBackgroundBox](../elem/iup_backgroundbox.md).
 
+### Initialization and Usage
+
+The **IupControlsOpen** function must be called after **IupOpen**.
+The "iupcontrols.h" file must also be included in the source code.
+The program must be linked to the controls library (iupctrl). In Go it needs the `ctrl` build tag.
+
 ### Creation
 
     Ihandle* IupFlatFrame(Ihandle *child);
