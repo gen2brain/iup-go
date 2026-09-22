@@ -82,6 +82,7 @@ public final class IupLabelHelper
     private static void attachButtonDispatch(View view, final long ihandlePtr)
     {
         view.setClickable(true);
+        view.setFocusable(false);
         /* Detect long-press separately so the TIP tooltip (via View.OnLongClickListener) still fires. */
         final GestureDetector longPress = new GestureDetector(view.getContext(),
             new GestureDetector.SimpleOnGestureListener()
