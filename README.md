@@ -1,6 +1,7 @@
 ## IUP-Go
 [![Build Status](https://github.com/gen2brain/iup-go/actions/workflows/build.yml/badge.svg)](https://github.com/gen2brain/iup-go/actions)
 [![Go Reference](https://pkg.go.dev/badge/github.com/gen2brain/iup-go.svg)](https://pkg.go.dev/github.com/gen2brain/iup-go/iup)
+[![Documentation](https://github.com/gen2brain/iup-go/actions/workflows/docs.yml/badge.svg)](https://gen2brain.github.io/iup-go/)
 
 Go library based on [IUP](https://www.tecgraf.puc-rio.br/iup/), a multi-platform toolkit for building graphical user interfaces.
 
@@ -22,14 +23,14 @@ Go 1.21 is the minimum required version.
 
 #### Windows
 
-* To remove a console window, i.e., compile a GUI app with WinMain entry-point, build with `-ldflags "-H=windowsgui"`.
+* To remove a console window, i.e., compile a GUI app with a WinMain entry point, build with `-ldflags "-H=windowsgui"`.
 * You can add an icon resource to an .exe file with the [rsrc](https://github.com/akavel/rsrc) tool.
 * Windows manifest is included in the build by default. See below how to disable the manifest if you want to include your own.
 
 ##### Win32
 
 For Win32, you need a C compiler, like [MinGW-w64](https://mingw-w64.org) or [TDM-GCC](http://tdm-gcc.tdragon.net/).
-You can also build a binary in [MSYS2](https://msys2.github.io/) shell.
+You can also build a binary in the [MSYS2](https://msys2.github.io/) shell.
 
 * For MSYS2, install `pacman -S mingw-w64-x86_64-go mingw-w64-x86_64-gcc mingw-w64-x86_64-pkg-config`.
 * You can build for Qt, with the `qt` build tag. Install deps with `pacman -S mingw-w64-x86_64-qt6-base`.
@@ -67,7 +68,7 @@ To create an `.app` bundle, see [Packaging](#packaging).
 
 #### Linux
 
-On Linux, you need a C/C++ compiler and development packages for GTK or Qt.
+On Linux, you need a C/C++ compiler and the GTK or Qt development packages.
 
 ##### GTK
 
@@ -81,7 +82,7 @@ On Linux, you need a C/C++ compiler and development packages for GTK or Qt.
 * Debian/Ubuntu: `apt-get install libgtk-4-dev`
 * RedHat/Fedora: `dnf install gtk4-devel`
 
-Note that you can also build for GTK2.
+You can also build for GTK2.
 
 For the `WebBrowser` control, libraries are loaded at runtime. You do not need to install `WebKitGTK` development packages.
 
@@ -163,7 +164,7 @@ This relies on the modern Objective-C stack, not the legacy GCC runtime.
 
 Stock distro packages are currently insufficient.
 Also, several bugs in `gnustep-base`, `gnustep-gui`, `libs-opal` and `libs-corebase` must be patched.
-Tarball with the required patches is at [gnustep.tar.gz](https://gist.github.com/gen2brain/eaa0a38d0fb099d3601e6d1bc9d3b07d).
+The tarball with the required patches is at [gnustep.tar.gz](https://gist.github.com/gen2brain/eaa0a38d0fb099d3601e6d1bc9d3b07d).
 
 `-fobjc-runtime=gnustep-2.2` tells Clang to emit Objective-C 2 ABI metadata compatible with libobjc2.
 Cgo sanitizes compiler/linker flags by default, so you have to pass the flag and unblock it via the env vars:
@@ -181,7 +182,7 @@ go build -tags gnustep
 
 #### Haiku
 
-Native `Interface Kit` driver. Requires a Haiku beta6, `haiku_devel` ships with a stock Haiku install, no extra packages needed.
+Native `Interface Kit` driver. Requires Haiku beta6, `haiku_devel` ships with a stock Haiku install, so no extra packages are needed.
 
 * For `WebBrowser`, install `haikuwebkit_devel` via `pkgman install haikuwebkit_devel`.
 * You can also build for Qt, with the `qt` build tag. Install deps with `pkgman install qt6_base_devel`.
@@ -202,7 +203,7 @@ The same `main()` compiles as a desktop binary, an Android shared library, and a
 Most examples are laid out for desktop windows and will overflow a phone screen though; production mobile apps need a layout tuned for small screens.
 See [mobile_sample](examples/mobile_sample) and [mobile_hello](examples/mobile_hello) for examples designed for mobile. Also check [chat](examples/chat) that handles both desktop and mobile layouts.
 
-Examples without a top-level `Dialog` (e.g. `alarm`, `message`) will not run on mobile, the host platform requires a real Dialog as the root.
+Examples without a top-level `Dialog` (e.g., `alarm`, `message`) will not run on mobile, the host platform requires a real Dialog as the root.
 
 ##### Android
 
@@ -233,7 +234,7 @@ For a one-command `.ipa`, see [Packaging](#packaging).
 * `media` - build with support for `Audio`, `Camera` and `Microphone` controls
 * `plot` - build with support for `Plot` control
 * `ctrl` - build with support for `Matrix`, `Cells`, and `Flat*` controls
-* `gtk` - use GTK in macOS or Windows
+* `gtk` - use GTK on macOS or Windows
 * `gtk4` - build for GTK4, default is GTK3
 * `gtk2` - build for GTK2 (Linux/BSD)
 * `qt` - build for the Qt framework
@@ -269,7 +270,7 @@ Signing is built in: Authenticode, Apple code signing with notarization, APK sig
 $ go install github.com/gen2brain/iup-go/cmd/iupkg@latest
 ```
 
-See [cmd/iupkg/README.md](cmd/iupkg/README.md) for every target, flag and the signing setup.
+See [cmd/iupkg/README.md](cmd/iupkg/README.md) for every target, flag, and the signing setup.
 
 ### Documentation
 
