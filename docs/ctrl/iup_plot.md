@@ -14,7 +14,7 @@ We also would like to thank Marian Trifon for the first IupPPlot implementation 
 
 The **IupPlotOpen** function must be called after a **IupOpen**, so that the control can be used.
 The "iupplot.h" file must also be included in the source code.
-The program must be linked to the controls library (iup_plot).
+The program must be linked to the plot library (iupplot). In Go it needs the `plot` build tag.
 
 ### Guide
 

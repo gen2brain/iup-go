@@ -138,56 +138,56 @@ API reference for IUP (Portable User Interface).
 
 ### Standard
 
-| Element                                       | Description                                                  |
-|-----------------------------------------------|--------------------------------------------------------------|
-| [IupAnimatedLabel](elem/iup_animatedlabel.md) | Label cycling through frames of an animation                 |
-| [IupButton](elem/iup_button.md)               | Push button with text and/or image                           |
-| [IupCalendar](elem/iup_calendar.md)           | Month calendar for date selection                            |
-| [IupCanvas](elem/iup_canvas.md)               | Drawing area                                                 |
-| [IupColorbar](elem/iup_colorbar.md)           | Palette of color cells with primary/secondary selection      |
-| [IupColorBrowser](elem/iup_colorbrowser.md)   | HSI color picker on a cylindrical projection of the RGB cube |
-| [IupDatePick](elem/iup_datepick.md)           | Date editor with a drop-down calendar                        |
-| [IupDial](elem/iup_dial.md)                   | Rotary dial for angular values                               |
-| [IupLabel](elem/iup_label.md)                 | Static text, image, or separator                             |
-| [IupSeparator](elem/iup_separator.md)         | Visual separator line                                        |
-| [IupLink](elem/iup_link.md)                   | Underlined clickable text (URL)                              |
-| [IupList](elem/iup_list.md)                   | List, drop-down or combo box with optional edit field        |
-| [IupProgressBar](elem/iup_progressbar.md)     | Native progress indicator                                    |
-| [IupScrollbar](elem/iup_scrollbar.md)         | Standalone scrollbar control                                 |
-| [IupSpin](elem/iup_spin.md)                   | Up/down arrow buttons; IupSpinBox wraps any element          |
-| [IupTable](elem/iup_table.md)                 | Native table widget for tabular data                         |
-| [IupTerminal](elem/iup_terminal.md)           | VT100 terminal emulator screen                               |
-| [IupText](elem/iup_text.md)                   | Single or multi-line editable text                           |
-| [IupToggle](elem/iup_toggle.md)               | Two-state on/off button or switch                            |
-| [IupTree](elem/iup_tree.md)                   | Hierarchical view of branches and leaves                     |
-| [IupVal](elem/iup_val.md)                     | Slider/trackbar selecting a value in a range                 |
+| Element                                                                                               | Description                                                  |
+|-------------------------------------------------------------------------------------------------------|--------------------------------------------------------------|
+| [IupAnimatedLabel](elem/iup_animatedlabel.md)                                                         | Label cycling through frames of an animation                 |
+| [IupButton](elem/iup_button.md)                                                                       | Push button with text and/or image                           |
+| [IupCalendar](elem/iup_calendar.md)                                                                   | Month calendar for date selection                            |
+| [IupCanvas](elem/iup_canvas.md)                                                                       | Drawing area                                                 |
+| [IupColorbar](elem/iup_colorbar.md)                                                                   | Palette of color cells with primary/secondary selection      |
+| [IupColorBrowser](elem/iup_colorbrowser.md)                                                           | HSI color picker on a cylindrical projection of the RGB cube |
+| [IupDatePick](elem/iup_datepick.md)                                                                   | Date editor with a drop-down calendar                        |
+| [IupDial](elem/iup_dial.md)                                                                           | Rotary dial for angular values                               |
+| [IupLabel](elem/iup_label.md)                                                                         | Static text, image, or separator                             |
+| [IupSeparator](elem/iup_separator.md)                                                                 | Visual separator line                                        |
+| [IupLink](elem/iup_link.md)                                                                           | Underlined clickable text (URL)                              |
+| [IupList](elem/iup_list.md)                                                                           | List, drop-down or combo box with optional edit field        |
+| [IupProgressBar](elem/iup_progressbar.md)                                                             | Native progress indicator                                    |
+| [IupScrollbar](elem/iup_scrollbar.md)                                                                 | Standalone scrollbar control                                 |
+| [IupSpin](elem/iup_spin.md)                                                                           | Up/down arrow buttons; IupSpinBox wraps any element          |
+| [IupTable](elem/iup_table.md)                                                                         | Native table widget for tabular data                         |
+| [IupTerminal](elem/iup_terminal.md)                                                                   | VT100 terminal emulator screen                               |
+| [IupText](elem/iup_text.md) ([IupMultiLine](elem/iup_multiline.md))                                   | Single or multi-line editable text                           |
+| [IupToggle](elem/iup_toggle.md)                                                                       | Two-state on/off button or switch                            |
+| [IupTree](elem/iup_tree.md) ([Attributes](elem/iup_tree_attrib.md), [Callbacks](elem/iup_tree_cb.md)) | Hierarchical view of branches and leaves                     |
+| [IupVal](elem/iup_val.md)                                                                             | Slider/trackbar selecting a value in a range                 |
 
 ### Additional
 
-| Element                                                                                                               | Description                                             |
-|-----------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------|
-| [IupGLCanvas](ctrl/iup_glcanvas.md)                                                                                   | OpenGL drawing surface                                  |
-| [IupGLBackgroundBox](ctrl/iup_glbackgroundbox.md)                                                                     | Background container with OpenGL enabled                |
-| [IupPlot](ctrl/iup_plot.md)                                                                                           | 2D plot of one or more data sets                        |
-| [IupWebBrowser](ctrl/iup_web.md)                                                                                      | Embedded web browser view                               |
-| [IupAudio](ctrl/iup_audio.md)                                                                                         | Audio file player                                       |
-| [IupCamera](ctrl/iup_camera.md)                                                                                       | Live camera picture                                     |
-| [IupMicrophone](ctrl/iup_microphone.md)                                                                               | Audio capture and WAV recording                         |
-| [IupMatrix](ctrl/iup_matrix.md) ([Attributes](ctrl/iup_matrix_attrib.md), [Callbacks](ctrl/iup_matrix_cb.md))         | Custom-drawn matrix of alphanumeric cells               |
-| [IupMatrixEx](ctrl/iup_matrixex.md)                                                                                   | IupMatrix extension (clipboard, undo, find, sort, ...)  |
-| [IupMatrixList](ctrl/iup_matrixlist.md)                                                                               | List built on IupMatrix; adds color and check boxes     |
-| [IupCells](ctrl/iup_cells.md)                                                                                         | Application-driven cell grid for custom drawing         |
-| [IupGauge](ctrl/iup_gauge.md)                                                                                         | Custom-drawn percent gauge                              |
-| [IupDropButton](ctrl/iup_dropbutton.md)                                                                               | Button with a drop-down area hosting arbitrary children |
-| [IupFlatButton](ctrl/iup_flatbutton.md)                                                                               | Custom-drawn button without native decorations          |
-| [IupFlatLabel](ctrl/iup_flatlabel.md)                                                                                 | Custom-drawn label without native decorations           |
-| [IupFlatToggle](ctrl/iup_flattoggle.md)                                                                               | Custom-drawn toggle without native decorations          |
-| [IupFlatFrame](ctrl/iup_flatframe.md)                                                                                 | Custom-drawn frame with title                           |
-| [IupFlatTabs](ctrl/iup_flattabs.md)                                                                                   | Custom-drawn IupTabs equivalent                         |
-| [IupFlatScrollBox](ctrl/iup_flatscrollbox.md)                                                                         | IupScrollBox with custom-drawn scrollbars               |
-| [IupFlatList](ctrl/iup_flatlist.md)                                                                                   | Custom-drawn IupList equivalent                         |
-| [IupFlatTree](ctrl/iup_flattree.md) ([Attributes](ctrl/iup_flattree_attrib.md), [Callbacks](ctrl/iup_flattree_cb.md)) | Custom-drawn IupTree equivalent                         |
-| [IupFlatVal](ctrl/iup_flatval.md)                                                                                     | Custom-drawn IupVal equivalent                          |
+| Element                                                                                                               | Description                                             | Library (Go tag)   |
+|-----------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------|--------------------|
+| [IupGLCanvas](ctrl/iup_glcanvas.md)                                                                                   | OpenGL drawing surface                                  | iupgl (`gl`)       |
+| [IupGLBackgroundBox](ctrl/iup_glbackgroundbox.md)                                                                     | Background container with OpenGL enabled                | iupgl (`gl`)       |
+| [IupPlot](ctrl/iup_plot.md)                                                                                           | 2D plot of one or more data sets                        | iupplot (`plot`)   |
+| [IupWebBrowser](ctrl/iup_web.md)                                                                                      | Embedded web browser view                               | iupweb (`web`)     |
+| [IupAudio](ctrl/iup_audio.md)                                                                                         | Audio file player                                       | iupmedia (`media`) |
+| [IupCamera](ctrl/iup_camera.md)                                                                                       | Live camera picture                                     | iupmedia (`media`) |
+| [IupMicrophone](ctrl/iup_microphone.md)                                                                               | Audio capture and WAV recording                         | iupmedia (`media`) |
+| [IupMatrix](ctrl/iup_matrix.md) ([Attributes](ctrl/iup_matrix_attrib.md), [Callbacks](ctrl/iup_matrix_cb.md))         | Custom-drawn matrix of alphanumeric cells               | iupctrl (`ctrl`)   |
+| [IupMatrixEx](ctrl/iup_matrixex.md)                                                                                   | IupMatrix extension (clipboard, undo, find, sort, ...)  | iupctrl (`ctrl`)   |
+| [IupMatrixList](ctrl/iup_matrixlist.md)                                                                               | List built on IupMatrix; adds color and check boxes     | iupctrl (`ctrl`)   |
+| [IupCells](ctrl/iup_cells.md)                                                                                         | Application-driven cell grid for custom drawing         | iupctrl (`ctrl`)   |
+| [IupGauge](ctrl/iup_gauge.md)                                                                                         | Custom-drawn percent gauge                              | iupctrl (`ctrl`)   |
+| [IupDropButton](ctrl/iup_dropbutton.md)                                                                               | Button with a drop-down area hosting arbitrary children | iupctrl (`ctrl`)   |
+| [IupFlatButton](ctrl/iup_flatbutton.md)                                                                               | Custom-drawn button without native decorations          | iupctrl (`ctrl`)   |
+| [IupFlatLabel](ctrl/iup_flatlabel.md)                                                                                 | Custom-drawn label without native decorations           | iupctrl (`ctrl`)   |
+| [IupFlatToggle](ctrl/iup_flattoggle.md)                                                                               | Custom-drawn toggle without native decorations          | iupctrl (`ctrl`)   |
+| [IupFlatFrame](ctrl/iup_flatframe.md)                                                                                 | Custom-drawn frame with title                           | iupctrl (`ctrl`)   |
+| [IupFlatTabs](ctrl/iup_flattabs.md)                                                                                   | Custom-drawn IupTabs equivalent                         | iupctrl (`ctrl`)   |
+| [IupFlatScrollBox](ctrl/iup_flatscrollbox.md) ([FLATSCROLLBAR](ctrl/iup_flatscrollbar.md))                            | IupScrollBox with custom-drawn scrollbars               | iupctrl (`ctrl`)   |
+| [IupFlatList](ctrl/iup_flatlist.md)                                                                                   | Custom-drawn IupList equivalent                         | iupctrl (`ctrl`)   |
+| [IupFlatTree](ctrl/iup_flattree.md) ([Attributes](ctrl/iup_flattree_attrib.md), [Callbacks](ctrl/iup_flattree_cb.md)) | Custom-drawn IupTree equivalent                         | iupctrl (`ctrl`)   |
+| [IupFlatVal](ctrl/iup_flatval.md)                                                                                     | Custom-drawn IupVal equivalent                          | iupctrl (`ctrl`)   |
 
 ### Management
 

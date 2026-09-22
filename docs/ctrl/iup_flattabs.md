@@ -6,6 +6,12 @@ Also known as Notebook in native systems.
 Identical to the [IupTabs](../elem/iup_tabs.md) control but the decorations and buttons are manually drawn.
 It inherits from [IupCanvas](../elem/iup_canvas.md).
 
+### Initialization and Usage
+
+The **IupControlsOpen** function must be called after **IupOpen**.
+The "iupcontrols.h" file must also be included in the source code.
+The program must be linked to the controls library (iupctrl). In Go it needs the `ctrl` build tag.
+
 ### Creation
 
     Ihandle* IupFlatTabs(Ihandle* child, ...);

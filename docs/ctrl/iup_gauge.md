@@ -3,6 +3,12 @@
 Creates a Gauge control. Shows a percent value that can be updated to simulate a progression.
 It inherits from [IupCanvas](../elem/iup_canvas.md).
 
+### Initialization and Usage
+
+The **IupControlsOpen** function must be called after **IupOpen**.
+The "iupcontrols.h" file must also be included in the source code.
+The program must be linked to the controls library (iupctrl). In Go it needs the `ctrl` build tag.
+
 ### Creation
 
     Ihandle* IupGauge(void);
