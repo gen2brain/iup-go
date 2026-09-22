@@ -31,7 +31,7 @@ sudo ios tunnel start &
 
 ## Go flow
 
-Use the same `main()` on desktop and iOS. The iup-go `init()` opens IUP before yours runs; `iup.EntryPoint(main)` registers `main` as the callback `IupAppDelegate` fires after `application:didFinishLaunchingWithOptions:`.
+Use the same `main()` on desktop and iOS. The iup-go `init()` opens IUP before yours runs; `iup.EntryPoint(main)` registers `main` as the callback IUP fires from `scene:willConnectToSession:options:`, once the window exists.
 On desktop `EntryPoint` is a no-op and the Go runtime calls `main` directly.
 
 ```go
@@ -93,6 +93,10 @@ mv myapp Payload/myapp.app/
 APP_NAME=myapp BUNDLE_ID=com.example.myapp APP_VERSION=1.0 APP_BUILD=1 MIN_IOS=15.0 \
   envsubst < iup/external/ios/iupapp/Info.plist > Payload/myapp.app/Info.plist
 ```
+
+IUP uses the scene life cycle, so an app's own `Info.plist` must declare `UIApplicationSceneManifest`
+(the template sets `UIApplicationSupportsMultipleScenes` to false). Without it no window is created
+and `main` never runs.
 
 **macOS** uses `codesign` + `xcrun simctl/devicectl`:
 

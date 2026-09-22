@@ -316,7 +316,7 @@ static UIButton* iupCocoaTouchMakeRow(NSString* title, BOOL bold, BOOL enabled, 
                         onPick:(void (^)(int))onPick
                       onCancel:(void (^)(void))onCancel
 {
-	self = [super initWithFrame:UIScreen.mainScreen.bounds];
+	self = [super initWithFrame:CGRectZero];
 	if (!self) return nil;
 	_onPick = [onPick copy];
 	_onCancel = [onCancel copy];

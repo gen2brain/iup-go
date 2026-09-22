@@ -11,5 +11,4 @@
 @end
 
 @interface IupAppDelegate : UIResponder <IupAppDelegateProtocol>
-@property(strong, nonatomic) UIWindow* window;
 @end

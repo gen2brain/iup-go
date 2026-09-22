@@ -41,6 +41,21 @@
 @implementation IupGLView
 + (Class)layerClass { return [CAEAGLLayer class]; }
 
+- (void)updateContentScale
+{
+	CGFloat scale = self.traitCollection.displayScale;
+	if (scale <= 0 || scale == self.contentScaleFactor) return;
+	self.contentScaleFactor = scale;
+	_previousSize = CGSizeZero;
+	[self setNeedsLayout];
+}
+
+- (void)traitCollectionDidChange:(UITraitCollection*)previousTraitCollection
+{
+	[super traitCollectionDidChange:previousTraitCollection];
+	[self updateContentScale];
+}
+
 - (void)layoutSubviews
 {
 	[super layoutSubviews];
@@ -113,7 +128,7 @@ static void cocoaTouchGLConfigureLayer(IupGLView* view, Ihandle* ih)
 {
 	CAEAGLLayer* layer = (CAEAGLLayer*)view.layer;
 	layer.opaque = YES;
-	view.contentScaleFactor = [UIScreen mainScreen].scale;
+	[view updateContentScale];
 
 	NSString* color_format = kEAGLColorFormatRGBA8;
 	if (iupStrEqualNoCase(iupAttribGetStr(ih, "COLOR_FORMAT"), "RGB565"))

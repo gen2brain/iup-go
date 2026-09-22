@@ -111,24 +111,51 @@ bool iupCocoaTouchIsLaunchPlaceholder(UIViewController* vc)
 }
 
 
-@implementation IupAppDelegate
+static UIWindow* s_window = nil;
 
-- (BOOL)application:(UIApplication*)application didFinishLaunchingWithOptions:(NSDictionary*)launchOptions
+@interface IupSceneDelegate : UIResponder <UIWindowSceneDelegate>
+@property(strong, nonatomic) UIWindow* window;
+@end
+
+@implementation IupSceneDelegate
+
+- (void)scene:(UIScene*)scene willConnectToSession:(UISceneSession*)session options:(UISceneConnectionOptions*)connectionOptions
 {
-	CGRect window_bounds = [[UIScreen mainScreen] bounds];
-	UIWindow* the_window = [[IupWindow alloc] initWithFrame:window_bounds];
+	if (![scene isKindOfClass:[UIWindowScene class]])
+		return;
+	UIWindowScene* window_scene = (UIWindowScene*)scene;
+
+	if (s_window)
+	{
+		s_window.windowScene = window_scene;
+		[self setWindow:s_window];
+		[s_window makeKeyAndVisible];
+		return;
+	}
+
+	s_window = [[IupWindow alloc] initWithWindowScene:window_scene];
 
 	IupLaunchViewController* view_controller = [[[IupLaunchViewController alloc] init] autorelease];
-	[the_window setRootViewController:view_controller];
+	[s_window setRootViewController:view_controller];
 
-	[self setWindow:the_window];
+	[self setWindow:s_window];
 
 	iupLoopCallEntryCb();
 	iupCocoaTouchMarkEntryFinished();
 
-	[the_window makeKeyAndVisible];
+	[s_window makeKeyAndVisible];
+}
 
-	return YES;
+@end
+
+
+@implementation IupAppDelegate
+
+- (UISceneConfiguration*)application:(UIApplication*)application configurationForConnectingSceneSession:(UISceneSession*)connectingSceneSession options:(UISceneConnectionOptions*)options
+{
+	UISceneConfiguration* config = [UISceneConfiguration configurationWithName:@"Default Configuration" sessionRole:connectingSceneSession.role];
+	config.delegateClass = [IupSceneDelegate class];
+	return config;
 }
 
 - (void)applicationWillTerminate:(UIApplication*)application
@@ -139,7 +166,7 @@ bool iupCocoaTouchIsLaunchPlaceholder(UIViewController* vc)
 
 - (UIWindow*)currentWindow
 {
-	return [self window];
+	return s_window;
 }
 
 @end

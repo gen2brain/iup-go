@@ -68,7 +68,7 @@ typedef struct
                   cornerStyle:(NSString*)corner_style
                      onTap:(void (^)(int))onTap
 {
-	self = [super initWithFrame:UIScreen.mainScreen.bounds];
+	self = [super initWithFrame:CGRectZero];
 	if (!self) return nil;
 	_onTap = [onTap copy];
 	self.backgroundColor = [UIColor.blackColor colorWithAlphaComponent:0.4];
@@ -250,10 +250,7 @@ typedef struct
 	y += side_pad;
 
 	CGFloat card_h = y;
-	CGRect bounds = self.bounds;
-	card.frame = CGRectMake(round((bounds.size.width - IUP_ALERT_WIDTH) / 2.0),
-	                        round((bounds.size.height - card_h) / 2.0),
-	                        IUP_ALERT_WIDTH, card_h);
+	card.frame = CGRectMake(0, 0, IUP_ALERT_WIDTH, card_h);
 
 	if (_hasBackdropResponse)
 	{
@@ -264,6 +261,15 @@ typedef struct
 	}
 
 	return self;
+}
+
+- (void)layoutSubviews
+{
+	[super layoutSubviews];
+	CGRect bounds = self.bounds;
+	CGSize card = _card.bounds.size;
+	_card.center = CGPointMake(round((bounds.size.width - card.width) / 2.0) + card.width / 2.0,
+	                           round((bounds.size.height - card.height) / 2.0) + card.height / 2.0);
 }
 
 - (void)backdropTapped:(UITapGestureRecognizer*)g
