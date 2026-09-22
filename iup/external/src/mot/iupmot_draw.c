@@ -415,13 +415,13 @@ static void iDrawSetLineStyleAndWidth(IdrawCanvas* dc, GC gc, int style, int lin
 /* X11 encodes coordinates as 16 bit, a primitive far outside the canvas wraps around */
 #define MOT_DRAW_LIMIT 16384
 
-static int motDrawClamp(int c)
+static int motDrawClamp(double c)
 {
   if (c < -MOT_DRAW_LIMIT)
     return -MOT_DRAW_LIMIT;
   if (c > MOT_DRAW_LIMIT)
     return MOT_DRAW_LIMIT;
-  return c;
+  return iupROUND(c);
 }
 
 static int motDrawClipLine(int* x1, int* y1, int* x2, int* y2)
@@ -642,8 +642,8 @@ static int motDrawTransformMaskBegin(IdrawCanvas* dc, ImotTransformMask* m, int 
   return 1;
 }
 
-static int motMaskX(const ImotTransformMask* m, int x) { return (x - m->ox) * m->scale; }
-static int motMaskY(const ImotTransformMask* m, int y) { return (y - m->oy) * m->scale; }
+static int motMaskX(const ImotTransformMask* m, double x) { return iupROUND((x - m->ox) * m->scale); }
+static int motMaskY(const ImotTransformMask* m, double y) { return iupROUND((y - m->oy) * m->scale); }
 static int motMaskX2(const ImotTransformMask* m, int x) { return (x + 1 - m->ox) * m->scale - 1; }
 static int motMaskY2(const ImotTransformMask* m, int y) { return (y + 1 - m->oy) * m->scale - 1; }
 static int motMaskPX(const ImotTransformMask* m, int x) { return (x - m->ox) * m->scale + m->scale / 2; }

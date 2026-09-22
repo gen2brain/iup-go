@@ -1156,6 +1156,93 @@ func DrawPathClose(ih Ihandle) {
 	ccall("IupDrawPathClose", "", []interface{}{"number"}, []interface{}{int(ih)})
 }
 
+// DrawPathMoveToF starts a new subpath at (x,y) with floating point coordinates.
+//
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
+func DrawPathMoveToF(ih Ihandle, x, y float64) {
+	ccall("IupDrawPathMoveToF", "", []interface{}{"number", "number", "number"}, []interface{}{int(ih), x, y})
+}
+
+// DrawPathLineToF adds a line to (x,y) with floating point coordinates.
+//
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
+func DrawPathLineToF(ih Ihandle, x, y float64) {
+	ccall("IupDrawPathLineToF", "", []interface{}{"number", "number", "number"}, []interface{}{int(ih), x, y})
+}
+
+// DrawPathCurveToF adds a cubic Bezier curve with floating point coordinates.
+//
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
+func DrawPathCurveToF(ih Ihandle, x1, y1, x2, y2, x3, y3 float64) {
+	ccall("IupDrawPathCurveToF", "", []interface{}{"number", "number", "number", "number", "number", "number", "number"}, []interface{}{int(ih), x1, y1, x2, y2, x3, y3})
+}
+
+// DrawPathQuadToF adds a quadratic Bezier curve with floating point coordinates.
+//
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
+func DrawPathQuadToF(ih Ihandle, x1, y1, x2, y2 float64) {
+	ccall("IupDrawPathQuadToF", "", []interface{}{"number", "number", "number", "number", "number"}, []interface{}{int(ih), x1, y1, x2, y2})
+}
+
+// DrawPathArcToF adds an elliptical arc with floating point coordinates.
+//
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
+func DrawPathArcToF(ih Ihandle, cx, cy, rx, ry, a1, a2 float64) {
+	ccall("IupDrawPathArcToF", "", []interface{}{"number", "number", "number", "number", "number", "number", "number"}, []interface{}{int(ih), cx, cy, rx, ry, a1, a2})
+}
+
+// DrawPathCreate creates an empty path that can be reused across redraws.
+// Destroy it with Destroy.
+//
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
+func DrawPathCreate() Ihandle {
+	return ccallHandle("IupDrawPathCreate", nil, nil)
+}
+
+// DrawPathClear removes all segments from the path.
+//
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
+func DrawPathClear(path Ihandle) {
+	ccall("IupDrawPathClear", "", []interface{}{"number"}, []interface{}{int(path)})
+}
+
+// DrawSetPath replaces the current path of the canvas with the path segments.
+//
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
+func DrawSetPath(ih Ihandle, path Ihandle) {
+	ccall("IupDrawSetPath", "", []interface{}{"number", "number"}, []interface{}{int(ih), int(path)})
+}
+
+// DrawPathGetBounds returns the bounding rectangle of the path.
+//
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
+func DrawPathGetBounds(path Ihandle) (x1, y1, x2, y2 int) {
+	ptr := wasmMalloc(16)
+	defer wasmFree(ptr)
+
+	ccall("IupDrawPathGetBounds", "", []interface{}{"number", "number", "number", "number", "number"},
+		[]interface{}{int(path), ptr, ptr + 4, ptr + 8, ptr + 12})
+	return wasmGetI32(ptr), wasmGetI32(ptr + 4), wasmGetI32(ptr + 8), wasmGetI32(ptr + 12)
+}
+
+// DrawPathContains reports whether the point is inside the path.
+// rule is DRAW_RULE_WINDING or DRAW_RULE_EVENODD.
+//
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
+func DrawPathContains(path Ihandle, x, y, rule int) bool {
+	return ccall("IupDrawPathContains", "number", []interface{}{"number", "number", "number", "number"},
+		[]interface{}{int(path), x, y, rule}).Int() != 0
+}
+
+// DrawPathSetSvg replaces the path with SVG path data, as in "M 10 10 L 90 10 Z".
+// It reports whether the data was parsed.
+//
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
+func DrawPathSetSvg(path Ihandle, data string) bool {
+	return ccall("IupDrawPathSetSvg", "number", []interface{}{"number", "string"},
+		[]interface{}{int(path), data}).Int() != 0
+}
+
 // DrawPathFill fills the current path with the current source.
 //
 // https://gen2brain.github.io/iup-go/func/iup_draw.html

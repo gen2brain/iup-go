@@ -588,16 +588,16 @@ static void iSvgWritePathD(iSvgCanvas* dc, const IupPathSeg* segs, int count)
     switch (segs[i].op)
     {
     case IUP_PATHSEG_MOVE_TO:
-      iSvgBufPrintf(&dc->buf, "M%d,%d ", segs[i].x1, segs[i].y1);
+      iSvgBufPrintf(&dc->buf, "M%.2f,%.2f ", segs[i].x1, segs[i].y1);
       break;
     case IUP_PATHSEG_LINE_TO:
-      iSvgBufPrintf(&dc->buf, "L%d,%d ", segs[i].x1, segs[i].y1);
+      iSvgBufPrintf(&dc->buf, "L%.2f,%.2f ", segs[i].x1, segs[i].y1);
       break;
     case IUP_PATHSEG_CURVE_TO:
-      iSvgBufPrintf(&dc->buf, "C%d,%d %d,%d %d,%d ", segs[i].x1, segs[i].y1, segs[i].x2, segs[i].y2, segs[i].x3, segs[i].y3);
+      iSvgBufPrintf(&dc->buf, "C%.2f,%.2f %.2f,%.2f %.2f,%.2f ", segs[i].x1, segs[i].y1, segs[i].x2, segs[i].y2, segs[i].x3, segs[i].y3);
       break;
     case IUP_PATHSEG_QUAD_TO:
-      iSvgBufPrintf(&dc->buf, "Q%d,%d %d,%d ", segs[i].x1, segs[i].y1, segs[i].x2, segs[i].y2);
+      iSvgBufPrintf(&dc->buf, "Q%.2f,%.2f %.2f,%.2f ", segs[i].x1, segs[i].y1, segs[i].x2, segs[i].y2);
       break;
     case IUP_PATHSEG_ARC_TO:
     {

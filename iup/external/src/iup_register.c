@@ -116,6 +116,7 @@ void iupRegisterInternalClasses(void)
   iupRegisterClassInternal(iupImageRGBNewClass());
   iupRegisterClassInternal(iupImageRGBANewClass());
   iupRegisterClassInternal(iupUserNewClass());
+  iupRegisterClassInternal(iupDrawPathNewClass());
   iupRegisterClassInternal(iupClipboardNewClass());
   iupRegisterClassInternal(iupThreadNewClass());
 

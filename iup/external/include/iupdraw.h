@@ -61,6 +61,19 @@ IUP_API void IupDrawPathQuadTo(Ihandle* ih, int x1, int y1, int x2, int y2);
 IUP_API void IupDrawPathArcTo(Ihandle* ih, int cx, int cy, int rx, int ry, double a1, double a2);
 IUP_API void IupDrawPathClose(Ihandle* ih);
 
+IUP_API void IupDrawPathMoveToF(Ihandle* ih, double x, double y);
+IUP_API void IupDrawPathLineToF(Ihandle* ih, double x, double y);
+IUP_API void IupDrawPathCurveToF(Ihandle* ih, double x1, double y1, double x2, double y2, double x3, double y3);
+IUP_API void IupDrawPathQuadToF(Ihandle* ih, double x1, double y1, double x2, double y2);
+IUP_API void IupDrawPathArcToF(Ihandle* ih, double cx, double cy, double rx, double ry, double a1, double a2);
+
+IUP_API Ihandle* IupDrawPathCreate(void);
+IUP_API void IupDrawPathClear(Ihandle* path);
+IUP_API void IupDrawSetPath(Ihandle* ih, Ihandle* path);
+IUP_API void IupDrawPathGetBounds(Ihandle* path, int* x1, int* y1, int* x2, int* y2);
+IUP_API int IupDrawPathContains(Ihandle* path, int x, int y, int rule);
+IUP_API int IupDrawPathSetSvg(Ihandle* path, const char* data);
+
 #define IUP_DRAW_RULE_WINDING  0
 #define IUP_DRAW_RULE_EVENODD 1
 
