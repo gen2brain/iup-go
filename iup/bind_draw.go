@@ -27,6 +27,63 @@ func DrawEnd(ih Ihandle) {
 	C.IupDrawEnd(ih.ptr())
 }
 
+// DrawSave saves the current drawing state.
+//
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+func DrawSave(ih Ihandle) { C.IupDrawSave(ih.ptr()) }
+
+// DrawRestore restores the most recently saved drawing state.
+//
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+func DrawRestore(ih Ihandle) { C.IupDrawRestore(ih.ptr()) }
+
+// DrawTransform multiplies the current drawing transform by the given matrix.
+//
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+func DrawTransform(ih Ihandle, a, b, c, d, e, f float64) {
+	C.IupDrawTransform(ih.ptr(), C.double(a), C.double(b), C.double(c), C.double(d), C.double(e), C.double(f))
+}
+
+// DrawSetTransform replaces the current drawing transform.
+//
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+func DrawSetTransform(ih Ihandle, a, b, c, d, e, f float64) {
+	C.IupDrawSetTransform(ih.ptr(), C.double(a), C.double(b), C.double(c), C.double(d), C.double(e), C.double(f))
+}
+
+// DrawResetTransform resets the current drawing transform to identity.
+//
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+func DrawResetTransform(ih Ihandle) { C.IupDrawResetTransform(ih.ptr()) }
+
+// DrawGetTransform returns the current drawing transform.
+//
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+func DrawGetTransform(ih Ihandle) (a, b, c, d, e, f float64) {
+	var ca, cb, cc, cd, ce, cf C.double
+	C.IupDrawGetTransform(ih.ptr(), &ca, &cb, &cc, &cd, &ce, &cf)
+	return float64(ca), float64(cb), float64(cc), float64(cd), float64(ce), float64(cf)
+}
+
+// DrawTranslate translates the current drawing transform.
+//
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+func DrawTranslate(ih Ihandle, tx, ty float64) {
+	C.IupDrawTranslate(ih.ptr(), C.double(tx), C.double(ty))
+}
+
+// DrawScale scales the current drawing transform.
+//
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+func DrawScale(ih Ihandle, sx, sy float64) {
+	C.IupDrawScale(ih.ptr(), C.double(sx), C.double(sy))
+}
+
+// DrawRotate rotates the current drawing transform counterclockwise in degrees.
+//
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+func DrawRotate(ih Ihandle, angle float64) { C.IupDrawRotate(ih.ptr(), C.double(angle)) }
+
 // DrawSetClipRect defines a rectangular clipping region.
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md

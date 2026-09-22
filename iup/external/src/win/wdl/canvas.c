@@ -381,8 +381,8 @@ wdSetClip(WD_HCANVAS hCanvas, const WD_RECT* pRect, const WD_HPATH hPath)
                 layer_params.contentBounds.right = pRect->x1;
                 layer_params.contentBounds.bottom = pRect->y1;
             } else {
-                layer_params.contentBounds.left = FLT_MIN;
-                layer_params.contentBounds.top = FLT_MIN;
+                layer_params.contentBounds.left = -FLT_MAX;
+                layer_params.contentBounds.top = -FLT_MAX;
                 layer_params.contentBounds.right = FLT_MAX;
                 layer_params.contentBounds.bottom = FLT_MAX;
             }
@@ -399,6 +399,7 @@ wdSetClip(WD_HCANVAS hCanvas, const WD_RECT* pRect, const WD_HPATH hPath)
             layer_params.layerOptions = dummy_D2D1_LAYER_OPTIONS_NONE;
 
             dummy_ID2D1RenderTarget_PushLayer(c->target, &layer_params, c->clip_layer);
+            d2d_update_text_antialias(c);
         } else if(pRect != NULL) {
             dummy_ID2D1RenderTarget_PushAxisAlignedClip(c->target,
                     (const dummy_D2D1_RECT_F*) pRect, dummy_D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
@@ -417,12 +418,82 @@ wdSetClip(WD_HCANVAS hCanvas, const WD_RECT* pRect, const WD_HPATH hPath)
 
         if(pRect != NULL) {
             gdix_vtable->fn_SetClipRect(c->graphics, pRect->x0, pRect->y0,
-                             pRect->x1, pRect->y1, mode);
+                             pRect->x1 - pRect->x0, pRect->y1 - pRect->y0, mode);
             mode = dummy_CombineModeIntersect;
         }
 
         if(hPath != NULL)
             gdix_vtable->fn_SetClipPath(c->graphics, (void*) hPath, mode);
+    }
+}
+
+void
+wdPushClipPath(WD_HCANVAS hCanvas, const WD_HPATH hPath)
+{
+    if(d2d_enabled()) {
+        d2d_canvas_t* c = (d2d_canvas_t*) hCanvas;
+        dummy_D2D1_LAYER_PARAMETERS layer_params;
+        dummy_ID2D1Layer* layer = NULL;
+
+        if(c->push_count >= 8)
+            return;
+
+        if(FAILED(dummy_ID2D1RenderTarget_CreateLayer(c->target, NULL, &layer))) {
+            WD_TRACE("wdPushClipPath: ID2D1RenderTarget::CreateLayer() failed.");
+            return;
+        }
+
+        layer_params.contentBounds.left = -FLT_MAX;
+        layer_params.contentBounds.top = -FLT_MAX;
+        layer_params.contentBounds.right = FLT_MAX;
+        layer_params.contentBounds.bottom = FLT_MAX;
+        layer_params.geometricMask = (dummy_ID2D1Geometry*) hPath;
+        layer_params.maskAntialiasMode = dummy_D2D1_ANTIALIAS_MODE_PER_PRIMITIVE;
+        layer_params.maskTransform._11 = 1.0f;
+        layer_params.maskTransform._12 = 0.0f;
+        layer_params.maskTransform._21 = 0.0f;
+        layer_params.maskTransform._22 = 1.0f;
+        layer_params.maskTransform._31 = 0.0f;
+        layer_params.maskTransform._32 = 0.0f;
+        layer_params.opacity = 1.0f;
+        layer_params.opacityBrush = NULL;
+        layer_params.layerOptions = dummy_D2D1_LAYER_OPTIONS_NONE;
+
+        dummy_ID2D1RenderTarget_PushLayer(c->target, &layer_params, layer);
+        c->push_layers[c->push_count++] = layer;
+        d2d_update_text_antialias(c);
+    } else {
+        gdix_canvas_t* c = (gdix_canvas_t*) hCanvas;
+
+        if(c->push_count >= 8)
+            return;
+
+        gdix_vtable->fn_SaveGraphics(c->graphics, &c->push_states[c->push_count++]);
+        gdix_vtable->fn_SetClipPath(c->graphics, (void*) hPath, dummy_CombineModeIntersect);
+    }
+}
+
+void
+wdPopClip(WD_HCANVAS hCanvas)
+{
+    if(d2d_enabled()) {
+        d2d_canvas_t* c = (d2d_canvas_t*) hCanvas;
+
+        if(c->push_count <= 0)
+            return;
+
+        dummy_ID2D1RenderTarget_PopLayer(c->target);
+        c->push_count--;
+        dummy_ID2D1Layer_Release(c->push_layers[c->push_count]);
+        d2d_update_text_antialias(c);
+    } else {
+        gdix_canvas_t* c = (gdix_canvas_t*) hCanvas;
+
+        if(c->push_count <= 0)
+            return;
+
+        c->push_count--;
+        gdix_vtable->fn_RestoreGraphics(c->graphics, c->push_states[c->push_count]);
     }
 }
 
@@ -596,3 +667,24 @@ wdResetWorld(WD_HCANVAS hCanvas)
     }
 }
 
+void
+wdSetWorld(WD_HCANVAS hCanvas, float a, float b, float c, float d, float e, float f)
+{
+    if(d2d_enabled()) {
+        d2d_canvas_t* canvas = (d2d_canvas_t*) hCanvas;
+        dummy_D2D1_MATRIX_3X2_F matrix;
+        d2d_reset_transform(canvas);
+        matrix._11 = a; matrix._12 = b;
+        matrix._21 = c; matrix._22 = d;
+        matrix._31 = e; matrix._32 = f;
+        d2d_apply_transform(canvas, &matrix);
+    } else {
+        gdix_canvas_t* canvas = (gdix_canvas_t*) hCanvas;
+        dummy_GpMatrix* matrix = NULL;
+        gdix_reset_transform(canvas);
+        if(gdix_vtable->fn_CreateMatrix2(a, b, c, d, e, f, &matrix) == 0 && matrix != NULL) {
+            gdix_vtable->fn_MultiplyWorldTransform(canvas->graphics, matrix, dummy_MatrixOrderPrepend);
+            gdix_vtable->fn_DeleteMatrix(matrix);
+        }
+    }
+}

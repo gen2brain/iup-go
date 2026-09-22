@@ -22,6 +22,11 @@ extern "C"
 struct _IdrawCanvas;
 typedef struct _IdrawCanvas IdrawCanvas;
 
+typedef struct _IupDrawMatrix
+{
+  double a, b, c, d, e, f;
+} IupDrawMatrix;
+
 enum{ IUP_DRAW_FILL, IUP_DRAW_STROKE, IUP_DRAW_STROKE_DASH, IUP_DRAW_STROKE_DOT, IUP_DRAW_STROKE_DASH_DOT, IUP_DRAW_STROKE_DASH_DOT_DOT };
 
 enum{ IUP_DRAW_IMAGE_NEAREST, IUP_DRAW_IMAGE_LINEAR };
@@ -49,6 +54,8 @@ IUP_SDK_API void iupdrvDrawUpdateSize(IdrawCanvas* dc);
 /** Returns the canvas size available for drawing.
  * \ingroup drvdraw */
 IUP_SDK_API void iupdrvDrawGetSize(IdrawCanvas* dc, int* w, int* h);
+
+IUP_SDK_API void iupdrvDrawSetTransform(IdrawCanvas* dc, const IupDrawMatrix* matrix);
 
 /** Draws a line.
  * \ingroup drvdraw */

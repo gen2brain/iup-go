@@ -2,11 +2,39 @@
 
 package iup
 
-import "unsafe"
+import (
+	"runtime"
+	"unsafe"
+)
 
 func DrawBegin(ih Ihandle) { iupDrawBegin(uintptr(ih)) }
 
 func DrawEnd(ih Ihandle) { iupDrawEnd(uintptr(ih)) }
+
+func DrawSave(ih Ihandle) { iupDrawSave(uintptr(ih)) }
+
+func DrawRestore(ih Ihandle) { iupDrawRestore(uintptr(ih)) }
+
+func DrawTransform(ih Ihandle, a, b, c, d, e, f float64) {
+	iupDrawTransform(uintptr(ih), a, b, c, d, e, f)
+}
+
+func DrawSetTransform(ih Ihandle, a, b, c, d, e, f float64) {
+	iupDrawSetTransform(uintptr(ih), a, b, c, d, e, f)
+}
+
+func DrawResetTransform(ih Ihandle) { iupDrawResetTransform(uintptr(ih)) }
+
+func DrawGetTransform(ih Ihandle) (a, b, c, d, e, f float64) {
+	iupDrawGetTransform(uintptr(ih), &a, &b, &c, &d, &e, &f)
+	return
+}
+
+func DrawTranslate(ih Ihandle, tx, ty float64) { iupDrawTranslate(uintptr(ih), tx, ty) }
+
+func DrawScale(ih Ihandle, sx, sy float64) { iupDrawScale(uintptr(ih), sx, sy) }
+
+func DrawRotate(ih Ihandle, angle float64) { iupDrawRotate(uintptr(ih), angle) }
 
 func DrawSetClipRect(ih Ihandle, x1, y1, x2, y2 int) {
 	iupDrawSetClipRect(uintptr(ih), int32(x1), int32(y1), int32(x2), int32(y2))
@@ -66,6 +94,7 @@ func DrawLinearGradientStops(ih Ihandle, x1, y1, x2, y2 int, angle float32, colo
 		pOff = &offsets[0]
 	}
 	iupDrawLinearGradientStops(uintptr(ih), int32(x1), int32(y1), int32(x2), int32(y2), angle, &pColors[0], pOff, int32(n))
+	runtime.KeepAlive(bufs)
 }
 
 func DrawRadialGradientStops(ih Ihandle, cx, cy, radius int, colors []string, offsets []float32) {
@@ -84,6 +113,7 @@ func DrawRadialGradientStops(ih Ihandle, cx, cy, radius int, colors []string, of
 		pOff = &offsets[0]
 	}
 	iupDrawRadialGradientStops(uintptr(ih), int32(cx), int32(cy), int32(radius), &pColors[0], pOff, int32(n))
+	runtime.KeepAlive(bufs)
 }
 
 func DrawPixel(ih Ihandle, x, y int) {
@@ -212,6 +242,7 @@ func DrawSetSourceLinearGradient(ih Ihandle, x1, y1, x2, y2 int, angle float32, 
 		pOff = &offsets[0]
 	}
 	iupDrawSetSourceLinearGradient(uintptr(ih), int32(x1), int32(y1), int32(x2), int32(y2), angle, &pColors[0], pOff, int32(n))
+	runtime.KeepAlive(bufs)
 }
 
 func DrawSetSourceRadialGradient(ih Ihandle, cx, cy, radius int, colors []string, offsets []float32) {
@@ -230,6 +261,7 @@ func DrawSetSourceRadialGradient(ih Ihandle, cx, cy, radius int, colors []string
 		pOff = &offsets[0]
 	}
 	iupDrawSetSourceRadialGradient(uintptr(ih), int32(cx), int32(cy), int32(radius), &pColors[0], pOff, int32(n))
+	runtime.KeepAlive(bufs)
 }
 
 func DrawResetSource(ih Ihandle) { iupDrawResetSource(uintptr(ih)) }

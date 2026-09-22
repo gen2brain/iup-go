@@ -164,6 +164,74 @@ func TestResizeCallback(t *testing.T) {
 	t.Logf("RESIZE_CB fired with %dx%d", gotW, gotH)
 }
 
+func TestDrawTransformState(t *testing.T) {
+	ran := false
+	var initial, transformed, restored, singular, reset [6]float64
+	var color, antialias string
+
+	cv := Canvas()
+	cv.SetAttribute("RASTERSIZE", "150x80")
+	SetCallback(cv, "ACTION", ActionFunc(func(ih Ihandle) int {
+		DrawBegin(ih)
+		initial[0], initial[1], initial[2], initial[3], initial[4], initial[5] = DrawGetTransform(ih)
+		DrawTranslate(ih, 10, 20)
+		DrawScale(ih, 2, 3)
+		transformed[0], transformed[1], transformed[2], transformed[3], transformed[4], transformed[5] = DrawGetTransform(ih)
+		ih.SetAttribute("DRAWCOLOR", "1 2 3")
+		ih.SetAttribute("DRAWANTIALIAS", "YES")
+		DrawSave(ih)
+		DrawSetTransform(ih, 1, 2, 3, 4, 5, 6)
+		ih.SetAttribute("DRAWCOLOR", "4 5 6")
+		ih.SetAttribute("DRAWANTIALIAS", "NO")
+		DrawRestore(ih)
+		restored[0], restored[1], restored[2], restored[3], restored[4], restored[5] = DrawGetTransform(ih)
+		color = ih.GetAttribute("DRAWCOLOR")
+		antialias = ih.GetAttribute("DRAWANTIALIAS")
+		DrawSetTransform(ih, 1, 0, 0, 0, 0, 0)
+		singular[0], singular[1], singular[2], singular[3], singular[4], singular[5] = DrawGetTransform(ih)
+		DrawResetTransform(ih)
+		reset[0], reset[1], reset[2], reset[3], reset[4], reset[5] = DrawGetTransform(ih)
+		DrawEnd(ih)
+		ran = true
+		return DEFAULT
+	}))
+
+	dlg := Dialog(cv)
+	Show(dlg)
+	deadline := time.Now().Add(2 * time.Second)
+	for !ran && time.Now().Before(deadline) {
+		LoopStep()
+		time.Sleep(5 * time.Millisecond)
+	}
+	Hide(dlg)
+	Destroy(dlg)
+
+	if !ran {
+		t.Fatal("ACTION never fired")
+	}
+	if initial != [6]float64{1, 0, 0, 1, 0, 0} {
+		t.Fatalf("initial transform = %v", initial)
+	}
+	if transformed != [6]float64{2, 0, 0, 3, 10, 20} {
+		t.Fatalf("composed transform = %v", transformed)
+	}
+	if restored != transformed {
+		t.Fatalf("restored transform = %v, want %v", restored, transformed)
+	}
+	if color != "1 2 3" {
+		t.Fatalf("restored DRAWCOLOR = %q", color)
+	}
+	if antialias != "YES" {
+		t.Fatalf("restored DRAWANTIALIAS = %q", antialias)
+	}
+	if singular != transformed {
+		t.Fatalf("transform after singular matrix = %v, want %v", singular, transformed)
+	}
+	if reset != initial {
+		t.Fatalf("reset transform = %v, want %v", reset, initial)
+	}
+}
+
 // Global callback (IDLE_ACTION via SetFunction) delivered through the loop.
 func TestIdleGlobal(t *testing.T) {
 	ticks := 0

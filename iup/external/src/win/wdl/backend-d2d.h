@@ -50,6 +50,8 @@ struct d2d_canvas_tag {
     };
     dummy_ID2D1GdiInteropRenderTarget* gdi_interop;
     dummy_ID2D1Layer* clip_layer;
+    dummy_ID2D1Layer* push_layers[8];
+    int push_count;
 };
 
 
@@ -76,6 +78,7 @@ void d2d_fini(void);
 d2d_canvas_t* d2d_canvas_alloc(dummy_ID2D1RenderTarget* target, WORD type, UINT width, BOOL rtl);
 
 void d2d_reset_clip(d2d_canvas_t* c);
+void d2d_update_text_antialias(d2d_canvas_t* c);
 
 void d2d_reset_transform(d2d_canvas_t* c);
 void d2d_apply_transform(d2d_canvas_t* c, const dummy_D2D1_MATRIX_3X2_F* matrix);

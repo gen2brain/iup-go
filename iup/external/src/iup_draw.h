@@ -49,6 +49,10 @@ IUP_SDK_API void iupDrawParentBackground(IdrawCanvas* dc, Ihandle* ih);
 IUP_SDK_API char* iupDrawGetTextSize(Ihandle* ih, const char* str, int len, int* w, int* h, double text_orientation);
 IUP_SDK_API int iupDrawGetTextFlags(Ihandle* ih, const char* align_name, const char* wrap_name, const char* ellipsis_name);
 
+/* Same as iupDrawPathArcToBeziers in double precision, 6 values per curve.
+ * Returns the number of curves written, out must have room for 24 values. */
+IUP_SDK_API int iupDrawPathArcToCurves(const IupPathSeg* seg, double* out);
+
 /* Converts one ARC_TO segment into up to 4 CURVE_TO segments.
  * Returns the number of segments written, out must have room for 4. */
 IUP_SDK_API int iupDrawPathArcToBeziers(const IupPathSeg* seg, IupPathSeg* out);

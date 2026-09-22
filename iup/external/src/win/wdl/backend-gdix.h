@@ -53,6 +53,9 @@ struct gdix_canvas_tag {
     int y;
     int cx;
     int cy;
+
+    UINT push_states[8];
+    int push_count;
 };
 
 
@@ -66,6 +69,9 @@ struct gdix_vtable_tag {
     int (WINAPI* fn_ReleaseDC)(dummy_GpGraphics*, HDC);
     int (WINAPI* fn_ResetClip)(dummy_GpGraphics*);
     int (WINAPI* fn_ResetWorldTransform)(dummy_GpGraphics*);
+    int (WINAPI* fn_SaveGraphics)(dummy_GpGraphics*, UINT*);
+    int (WINAPI* fn_RestoreGraphics)(dummy_GpGraphics*, UINT);
+    int (WINAPI* fn_MultiplyWorldTransform)(dummy_GpGraphics*, dummy_GpMatrix*, dummy_GpMatrixOrder);
     int (WINAPI* fn_RotateWorldTransform)(dummy_GpGraphics*, float, dummy_GpMatrixOrder);
     int (WINAPI* fn_ScaleWorldTransform)(dummy_GpGraphics*, float, float, dummy_GpMatrixOrder);
     int (WINAPI* fn_SetClipPath)(dummy_GpGraphics*, dummy_GpPath*, dummy_GpCombineMode);
@@ -75,6 +81,9 @@ struct gdix_vtable_tag {
     int (WINAPI* fn_SetSmoothingMode)(dummy_GpGraphics*, dummy_GpSmoothingMode);
     int (WINAPI* fn_SetInterpolationMode)(dummy_GpGraphics*, dummy_GpInterpolationMode);
     int (WINAPI* fn_TranslateWorldTransform)(dummy_GpGraphics*, float, float, dummy_GpMatrixOrder);
+
+    int (WINAPI* fn_CreateMatrix2)(float, float, float, float, float, float, dummy_GpMatrix**);
+    int (WINAPI* fn_DeleteMatrix)(dummy_GpMatrix*);
 
     /* Image attributes functions */
     int (WINAPI* fn_CreateImageAttributes)(void**);

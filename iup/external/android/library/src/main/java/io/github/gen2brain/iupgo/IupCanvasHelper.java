@@ -59,12 +59,14 @@ public final class IupCanvasHelper
     public static void ensureBackBuffer(IupAndroidCanvas view)
     {
         view.ensureBackBuffer();
+        resetClip(view);
     }
 
     @Keep
     public static void flush(IupAndroidCanvas view)
     {
-        view.postInvalidate();
+        if (!view.inDraw)
+            view.postInvalidate();
     }
 
     /* HW-pixel back buffer downscaled to logical size; always an ARGB_8888 copy. */
@@ -233,18 +235,33 @@ public final class IupCanvasHelper
         {
             c.clipRect(x, y, x + w, y + h);
         }
-        if (orientation != 0.0f)
-        {
-            c.rotate(-(float)orientation, x, y);  /* IUP CCW, Canvas CW */
-        }
-
         Paint.FontMetrics fm = tp.getFontMetrics();
         float lineHeight = fm.bottom - fm.top;
-        float baselineY = y - fm.top;
+        float fx = x, fy = y, fw = w;
+        if (orientation != 0.0f)
+        {
+            float px = x, py = y;
+            if ((flags & TEXT_LAYOUTCENTER) != 0)
+            {
+                String[] lines = text.split("\n", -1);
+                float layoutW = 0;
+                for (String line : lines)
+                    layoutW = Math.max(layoutW, tp.measureText(line));
+                float layoutH = lines.length * lineHeight;
+                px = x + w / 2f;
+                py = y + h / 2f;
+                fx = px - layoutW / 2f;
+                fy = py - layoutH / 2f;
+                fw = layoutW;
+            }
+            c.rotate(-(float)orientation, px, py);  /* IUP CCW, Canvas CW */
+        }
+
+        float baselineY = fy - fm.top;
         float anchorX;
-        if ((flags & TEXT_CENTER) != 0) { tp.setTextAlign(Paint.Align.CENTER); anchorX = x + w / 2f; }
-        else if ((flags & TEXT_RIGHT) != 0) { tp.setTextAlign(Paint.Align.RIGHT); anchorX = x + w; }
-        else { tp.setTextAlign(Paint.Align.LEFT); anchorX = x; }
+        if ((flags & TEXT_CENTER) != 0) { tp.setTextAlign(Paint.Align.CENTER); anchorX = fx + fw / 2f; }
+        else if ((flags & TEXT_RIGHT) != 0) { tp.setTextAlign(Paint.Align.RIGHT); anchorX = fx + fw; }
+        else { tp.setTextAlign(Paint.Align.LEFT); anchorX = fx; }
 
         /* Canvas.drawText is single-line; honour explicit '\n' by drawing each segment at its own baseline. */
         int start = 0;
@@ -274,6 +291,12 @@ public final class IupCanvasHelper
         c.drawBitmap(bmp, new Rect(sx, sy, sx + sw, sy + sh), new Rect(x, y, x + w, y + h), p);
     }
 
+    @Keep
+    public static void setTransform(IupAndroidCanvas view, float a, float b, float c, float d, float e, float f)
+    {
+        view.setDrawTransform(a, b, c, d, e, f);
+    }
+
 
     @Keep
     public static void setClipRect(IupAndroidCanvas view, int x1, int y1, int x2, int y2)
@@ -292,6 +315,7 @@ public final class IupCanvasHelper
     {
         Canvas c = view.getBackCanvas(); if (c == null) return;
         resetClip(view);
+        if (x1 == 0 && y1 == 0 && x2 == 0 && y2 == 0) return;
         normalize(tmpRect, x1, y1, x2, y2, true);
         c.save();
         Path p = new Path();
@@ -307,6 +331,7 @@ public final class IupCanvasHelper
         if (!view.clipSaved) return;
         try { c.restore(); } catch (IllegalStateException ignored) {}
         view.clipSaved = false;
+        view.applyDrawTransform();
     }
 
 
@@ -474,8 +499,14 @@ public final class IupCanvasHelper
                     float sweep = (float)(a2 - a1);
                     while (sweep < 0) sweep += 360;
                     while (sweep > 360) sweep -= 360;
-                    if (sweep >= 0.01f)
-                        path.arcTo(new RectF(cx - rx, cy - ry, cx + rx, cy + ry), (float)-a1, -sweep);
+                    RectF oval = new RectF(cx - rx, cy - ry, cx + rx, cy + ry);
+                    if (sweep >= 360f)
+                    {
+                        path.arcTo(oval, (float)-a1, -180f);
+                        path.arcTo(oval, (float)-a1 - 180f, -180f);
+                    }
+                    else if (sweep >= 0.01f)
+                        path.arcTo(oval, (float)-a1, -sweep);
                     current = true;
                     break;
                 }

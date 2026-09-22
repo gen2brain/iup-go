@@ -240,6 +240,8 @@ void wdClear(WD_HCANVAS hCanvas, WD_COLOR color);
  * of both. If none of them is set, the clipping is reset and painting is not
  * clipped at all. */
 void wdSetClip(WD_HCANVAS hCanvas, const WD_RECT* pRect, const WD_HPATH hPath);
+void wdPushClipPath(WD_HCANVAS hCanvas, const WD_HPATH hPath);
+void wdPopClip(WD_HCANVAS hCanvas);
 
 /* The painting is by default measured in pixel units: 1.0f corresponds to
  * the pixel width or height, depending on the current axis.
@@ -253,6 +255,7 @@ void wdSetClip(WD_HCANVAS hCanvas, const WD_RECT* pRect, const WD_HPATH hPath);
  */
 void wdRotateWorld(WD_HCANVAS hCanvas, float cx, float cy, float fAngle);
 void wdTranslateWorld(WD_HCANVAS hCanvas, float dx, float dy);
+void wdSetWorld(WD_HCANVAS hCanvas, float a, float b, float c, float d, float e, float f);
 void wdResetWorld(WD_HCANVAS hCanvas);
 
 
@@ -384,7 +387,7 @@ void wdClosePathSink(WD_PATHSINK* pSink);
 #define WD_FILLMODE_ALTERNATE   1
 
 void wdBeginFigure(WD_PATHSINK* pSink, float x, float y);
-void wdBeginFigureFillMode(WD_PATHSINK* pSink, float x, float y, int fillMode);
+void wdSetPathSinkFillMode(WD_PATHSINK* pSink, int fillMode);
 void wdEndFigure(WD_PATHSINK* pSink, BOOL bCloseFigure);
 
 void wdAddLine(WD_PATHSINK* pSink, float x, float y);

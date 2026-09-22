@@ -20,11 +20,14 @@ struct _IdrawCanvas
   CGContextRef cgContext;
   int release_context;
   CGFloat w, h;
+  CGAffineTransform user_transform;
+  CGAffineTransform clip_transform;
 
   CGFloat clip_x1, clip_y1, clip_x2, clip_y2;
   int clip_state;                 /* 0=no clip, 1=clip active */
 
   int draw_focus;
+  CGAffineTransform focus_transform;
   CGFloat focus_x1, focus_y1, focus_x2, focus_y2;
 };
 

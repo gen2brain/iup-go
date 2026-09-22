@@ -15,6 +15,7 @@
 #include <Font.h>
 #include <GradientLinear.h>
 #include <GradientRadial.h>
+#include <Picture.h>
 #include <Point.h>
 #include <Region.h>
 #include <Shape.h>
@@ -44,6 +45,7 @@ struct _IdrawCanvas
   int w;
   int h;
   int clip_state;
+  IupDrawMatrix matrix;
 };
 
 static rgb_color haikuColorFromLong(long c)
@@ -56,16 +58,73 @@ static rgb_color haikuColorFromLong(long c)
   return rc;
 }
 
-static void haikuApplyStroke(BView* v, long color, int line_width, int /*style*/)
+
+static void haikuSetTransform(IdrawCanvas* dc, const IupDrawMatrix* matrix)
 {
-  v->SetHighColor(haikuColorFromLong(color));
-  v->SetPenSize(line_width > 0 ? (float)line_width : 1.0f);
+  dc->matrix = *matrix;
+  if (dc->view)
+    dc->view->SetTransform(BAffineTransform(matrix->a, matrix->b, matrix->c, matrix->d, matrix->e, matrix->f));
+}
+
+static int haikuIsIdentity(const IdrawCanvas* dc)
+{
+  return dc->matrix.a == 1 && dc->matrix.b == 0 && dc->matrix.c == 0 &&
+         dc->matrix.d == 1 && dc->matrix.e == 0 && dc->matrix.f == 0;
+}
+
+static void haikuBeginStroke(IdrawCanvas* dc, long color, int line_width, int center)
+{
+  const IupDrawMatrix* m = &dc->matrix;
+  dc->view->SetHighColor(haikuColorFromLong(color));
+  dc->view->SetPenSize(line_width > 0 ? (float)line_width : 1.0f);
+  if (center && !haikuIsIdentity(dc) && (line_width <= 0 || line_width % 2))
+    dc->view->SetTransform(BAffineTransform(m->a, m->b, m->c, m->d, m->e + 0.5 * (m->a + m->c), m->f + 0.5 * (m->b + m->d)));
+}
+
+static void haikuEndStroke(IdrawCanvas* dc, int center)
+{
+  if (center && !haikuIsIdentity(dc))
+    haikuSetTransform(dc, &dc->matrix);
+}
+
+static void haikuBeginClip(IdrawCanvas* dc)
+{
+  if (dc->clip_state)
+    dc->view->PopState();
+  dc->view->SetTransform(BAffineTransform());
+  dc->view->PushState();
+  dc->clip_state = 1;
+  haikuSetTransform(dc, &dc->matrix);
+}
+
+static int haikuIsTranslation(const IdrawCanvas* dc)
+{
+  return dc->matrix.a == 1 && dc->matrix.b == 0 && dc->matrix.c == 0 && dc->matrix.d == 1;
+}
+
+static void haikuClipToRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2)
+{
+  if (haikuIsTranslation(dc))
+  {
+    dc->view->ClipToRect(BRect(x1, y1, x2, y2));
+    return;
+  }
+
+  BShape shape;
+  shape.MoveTo(BPoint(x1, y1));
+  shape.LineTo(BPoint(x2 + 1, y1));
+  shape.LineTo(BPoint(x2 + 1, y2 + 1));
+  shape.LineTo(BPoint(x1, y2 + 1));
+  shape.Close();
+  dc->view->ClipToShape(&shape);
 }
 
 extern "C" IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
 {
   IdrawCanvas* dc = (IdrawCanvas*)calloc(1, sizeof(IdrawCanvas));
   dc->ih = ih;
+  dc->matrix.a = 1;
+  dc->matrix.d = 1;
   iupdrvDrawUpdateSize(dc);
   iupAttribSet(ih, "DRAWDRIVER", "HAIKU");
   return dc;
@@ -79,6 +138,14 @@ extern "C" IUP_SDK_API void iupdrvDrawKillCanvas(IdrawCanvas* dc)
     delete dc->bm;
   }
   free(dc);
+}
+
+extern "C" IUP_SDK_API void iupdrvDrawSetTransform(IdrawCanvas* dc, const IupDrawMatrix* matrix)
+{
+  if (!dc) return;
+  if (dc->bm) dc->bm->Lock();
+  haikuSetTransform(dc, matrix);
+  if (dc->bm) dc->bm->Unlock();
 }
 
 extern "C" IUP_SDK_API void iupdrvDrawUpdateSize(IdrawCanvas* dc)
@@ -111,6 +178,7 @@ extern "C" IUP_SDK_API void iupdrvDrawUpdateSize(IdrawCanvas* dc)
   }
   dc->view->SetDrawingMode(B_OP_ALPHA);
   dc->view->SetBlendingMode(B_PIXEL_ALPHA, B_ALPHA_OVERLAY);
+  haikuSetTransform(dc, &dc->matrix);
   dc->bm->Unlock();
 }
 
@@ -138,8 +206,9 @@ extern "C" IUP_SDK_API void iupdrvDrawLine(IdrawCanvas* dc, int x1, int y1, int 
 {
   if (!dc || !dc->bm) return;
   dc->bm->Lock();
-  haikuApplyStroke(dc->view, color, line_width, style);
+  haikuBeginStroke(dc, color, line_width, 0);
   dc->view->StrokeLine(BPoint(x1, y1), BPoint(x2, y2));
+  haikuEndStroke(dc, 0);
   dc->bm->Unlock();
 }
 
@@ -157,8 +226,9 @@ extern "C" IUP_SDK_API void iupdrvDrawRectangle(IdrawCanvas* dc, int x1, int y1,
   }
   else
   {
-    haikuApplyStroke(dc->view, color, line_width, style);
+    haikuBeginStroke(dc, color, line_width, 1);
     dc->view->StrokeRect(r);
+    haikuEndStroke(dc, 1);
   }
   dc->bm->Unlock();
 }
@@ -178,8 +248,9 @@ extern "C" IUP_SDK_API void iupdrvDrawRoundedRectangle(IdrawCanvas* dc, int x1, 
   }
   else
   {
-    haikuApplyStroke(dc->view, color, line_width, style);
+    haikuBeginStroke(dc, color, line_width, 0);
     dc->view->StrokeRoundRect(r, rad, rad);
+    haikuEndStroke(dc, 0);
   }
   dc->bm->Unlock();
 }
@@ -190,6 +261,8 @@ extern "C" IUP_SDK_API void iupdrvDrawArc(IdrawCanvas* dc, int x1, int y1, int x
   iupDrawCheckSwapCoord(x1, x2);
   iupDrawCheckSwapCoord(y1, y2);
   BRect r(x1, y1, x2, y2);
+  while (a2 < a1)
+    a2 += 360;
   float start = (float)a1;
   float sweep = (float)(a2 - a1);
   dc->bm->Lock();
@@ -200,8 +273,9 @@ extern "C" IUP_SDK_API void iupdrvDrawArc(IdrawCanvas* dc, int x1, int y1, int x
   }
   else
   {
-    haikuApplyStroke(dc->view, color, line_width, style);
+    haikuBeginStroke(dc, color, line_width, 0);
     dc->view->StrokeArc(r, start, sweep);
+    haikuEndStroke(dc, 0);
   }
   dc->bm->Unlock();
 }
@@ -220,8 +294,9 @@ extern "C" IUP_SDK_API void iupdrvDrawEllipse(IdrawCanvas* dc, int x1, int y1, i
   }
   else
   {
-    haikuApplyStroke(dc->view, color, line_width, style);
+    haikuBeginStroke(dc, color, line_width, 0);
     dc->view->StrokeEllipse(r);
+    haikuEndStroke(dc, 0);
   }
   dc->bm->Unlock();
 }
@@ -241,8 +316,9 @@ extern "C" IUP_SDK_API void iupdrvDrawPolygon(IdrawCanvas* dc, int* points, int 
   }
   else
   {
-    haikuApplyStroke(dc->view, color, line_width, style);
+    haikuBeginStroke(dc, color, line_width, 1);
     dc->view->StrokePolygon(pts, count, true);
+    haikuEndStroke(dc, 1);
   }
   dc->bm->Unlock();
   free(pts);
@@ -269,8 +345,9 @@ extern "C" IUP_SDK_API void iupdrvDrawBezier(IdrawCanvas* dc, int x1, int y1, in
   }
   else
   {
-    haikuApplyStroke(dc->view, color, line_width, style);
+    haikuBeginStroke(dc, color, line_width, 0);
     dc->view->StrokeBezier(cp);
+    haikuEndStroke(dc, 0);
   }
   dc->bm->Unlock();
 }
@@ -359,16 +436,16 @@ static BShape* haikuBuildShape(const IupPathSeg* segs, int count)
     }
     case IUP_PATHSEG_ARC_TO:
     {
-      IupPathSeg bez[4];
-      int j, n = iupDrawPathArcToBeziers(&segs[i], bez);
+      double bez[24];
+      int j, n = iupDrawPathArcToCurves(&segs[i], bez);
       for (j = 0; j < n; j++)
-        shape->BezierTo(BPoint((float)bez[j].x1, (float)bez[j].y1),
-                        BPoint((float)bez[j].x2, (float)bez[j].y2),
-                        BPoint((float)bez[j].x3, (float)bez[j].y3));
+        shape->BezierTo(BPoint((float)bez[j * 6], (float)bez[j * 6 + 1]),
+                        BPoint((float)bez[j * 6 + 2], (float)bez[j * 6 + 3]),
+                        BPoint((float)bez[j * 6 + 4], (float)bez[j * 6 + 5]));
       if (n > 0)
       {
-        cur_x = (float)bez[n - 1].x3;
-        cur_y = (float)bez[n - 1].y3;
+        cur_x = (float)bez[n * 6 - 2];
+        cur_y = (float)bez[n * 6 - 1];
       }
       break;
     }
@@ -544,15 +621,16 @@ static void haikuStrokeDashedPath(BView* view, const IupPathSeg* segs, int count
       break;
     case IUP_PATHSEG_ARC_TO:
     {
-      IupPathSeg bez[4];
-      int j, n = iupDrawPathArcToBeziers(&segs[i], bez);
+      double bez[24];
+      int j, n = iupDrawPathArcToCurves(&segs[i], bez);
       for (j = 0; j < n; j++)
-        haikuStrokeDashCubic(view, &dash, cur_x, cur_y, (float)bez[j].x1, (float)bez[j].y1, (float)bez[j].x2, (float)bez[j].y2, (float)bez[j].x3, (float)bez[j].y3);
-      if (n > 0)
       {
-        cur_x = (float)bez[n - 1].x3;
-        cur_y = (float)bez[n - 1].y3;
+        const double* c = bez + j * 6;
+        haikuStrokeDashCubic(view, &dash, cur_x, cur_y, (float)c[0], (float)c[1], (float)c[2], (float)c[3], (float)c[4], (float)c[5]);
+        cur_x = (float)c[4];
+        cur_y = (float)c[5];
       }
+      has_current = 1;
       break;
     }
     case IUP_PATHSEG_CLOSE:
@@ -585,6 +663,7 @@ extern "C" IUP_SDK_API void iupdrvDrawPathFill(IdrawCanvas* dc, const IupPathSeg
     dc->view->FillShape(shape, *grad);
     delete grad;
   }
+  dc->view->SetFillRule(B_NONZERO);
   dc->bm->Unlock();
 
   delete shape;
@@ -631,12 +710,19 @@ extern "C" IUP_SDK_API void iupdrvDrawSetClipPath(IdrawCanvas* dc, const IupPath
 
   dc->bm->Lock();
   dc->view->MovePenTo(0, 0);
-  if (dc->clip_state)
-    dc->view->PopState();
-  dc->view->PushState();
-  dc->clip_state = 1;
-  dc->view->SetFillRule(rule == IUP_PATH_RULE_EVENODD ? B_EVEN_ODD : B_NONZERO);
-  dc->view->ClipToShape(shape);
+  haikuBeginClip(dc);
+  if (rule == IUP_PATH_RULE_EVENODD)
+  {
+    BPicture picture;
+    dc->view->SetFillRule(B_EVEN_ODD);
+    dc->view->BeginPicture(&picture);
+    dc->view->FillShape(shape);
+    dc->view->EndPicture();
+    dc->view->ClipToPicture(&picture);
+    dc->view->SetFillRule(B_NONZERO);
+  }
+  else
+    dc->view->ClipToShape(shape);
   dc->bm->Unlock();
 
   iupAttribSetStrf(dc->ih, "_IUPHAIKU_CLIP", "%d %d %d %d", x1, y1, x2, y2);
@@ -651,6 +737,7 @@ extern "C" IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, in
   BFont* bfont = iuphaikuGetBFont(font);
 
   dc->bm->Lock();
+  dc->view->PushState();
   if (bfont) dc->view->SetFont(bfont);
   dc->view->SetHighColor(haikuColorFromLong(color));
 
@@ -658,16 +745,23 @@ extern "C" IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, in
   dc->view->GetFontHeight(&fh);
 
   if (flags & IUP_DRAW_CLIP)
-  {
-    BRegion clip;
-    clip.Include(BRect(x, y, x + w - 1, y + h - 1));
-    dc->view->ConstrainClippingRegion(&clip);
-  }
+    haikuClipToRect(dc, x, y, x + w - 1, y + h - 1);
 
   if (text_orientation != 0.0)
   {
     BAffineTransform trans;
-    trans.RotateBy(BPoint((float)x, (float)y), -text_orientation * 3.14159265358979323846 / 180.0);
+    double px = x, py = y;
+    if (flags & IUP_DRAW_LAYOUTCENTER)
+    {
+      int layout_w = 0, layout_h = 0;
+      iupDrawGetTextSize(dc->ih, text, len, &layout_w, &layout_h, 0);
+      px = x + w / 2.0;
+      py = y + h / 2.0;
+      x = (int)floor(px - layout_w / 2.0 + 0.5);
+      y = (int)floor(py - layout_h / 2.0 + 0.5);
+      w = layout_w;
+    }
+    trans.RotateBy(BPoint((float)px, (float)py), -text_orientation * 3.14159265358979323846 / 180.0);
     dc->view->SetTransform(trans);
   }
 
@@ -712,11 +806,7 @@ extern "C" IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, in
     line_y += line_h;
   }
 
-  if (text_orientation != 0.0)
-    dc->view->SetTransform(BAffineTransform());
-
-  if (flags & IUP_DRAW_CLIP)
-    dc->view->ConstrainClippingRegion(NULL);
+  dc->view->PopState();
   dc->bm->Unlock();
 }
 
@@ -773,25 +863,61 @@ extern "C" IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, i
 extern "C" IUP_SDK_API void iupdrvDrawSetClipRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2)
 {
   if (!dc || !dc->bm) return;
+  if (x1 == 0 && y1 == 0 && x2 == 0 && y2 == 0)
+  {
+    iupdrvDrawResetClip(dc);
+    return;
+  }
   iupDrawCheckSwapCoord(x1, x2);
   iupDrawCheckSwapCoord(y1, y2);
 
   iupAttribSetStrf(dc->ih, "_IUPHAIKU_CLIP", "%d %d %d %d", x1, y1, x2, y2);
 
-  BRegion region;
-  region.Include(BRect(x1, y1, x2, y2));
   dc->bm->Lock();
-  if (dc->clip_state)
-    dc->view->PopState();
-  dc->view->PushState();
-  dc->clip_state = 1;
-  dc->view->ConstrainClippingRegion(&region);
+  haikuBeginClip(dc);
+  haikuClipToRect(dc, x1, y1, x2, y2);
   dc->bm->Unlock();
 }
 
-extern "C" IUP_SDK_API void iupdrvDrawSetClipRoundedRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int /*corner_radius*/)
+extern "C" IUP_SDK_API void iupdrvDrawSetClipRoundedRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int corner_radius)
 {
-  iupdrvDrawSetClipRect(dc, x1, y1, x2, y2);
+  if (!dc || !dc->bm) return;
+  if (x1 == 0 && y1 == 0 && x2 == 0 && y2 == 0)
+  {
+    iupdrvDrawResetClip(dc);
+    return;
+  }
+  iupDrawCheckSwapCoord(x1, x2);
+  iupDrawCheckSwapCoord(y1, y2);
+
+  float r = (float)corner_radius;
+  float max_r = ((x2 - x1 + 1) < (y2 - y1 + 1) ? (x2 - x1 + 1) : (y2 - y1 + 1)) / 2.0f;
+  if (r > max_r) r = max_r;
+  if (r <= 0)
+  {
+    iupdrvDrawSetClipRect(dc, x1, y1, x2, y2);
+    return;
+  }
+
+  iupAttribSetStrf(dc->ih, "_IUPHAIKU_CLIP", "%d %d %d %d", x1, y1, x2, y2);
+
+  float l = (float)x1, t = (float)y1, rt = (float)(x2 + 1), b = (float)(y2 + 1), k = r * 0.5522847f;
+  BShape shape;
+  shape.MoveTo(BPoint(l + r, t));
+  shape.LineTo(BPoint(rt - r, t));
+  shape.BezierTo(BPoint(rt - r + k, t), BPoint(rt, t + r - k), BPoint(rt, t + r));
+  shape.LineTo(BPoint(rt, b - r));
+  shape.BezierTo(BPoint(rt, b - r + k), BPoint(rt - r + k, b), BPoint(rt - r, b));
+  shape.LineTo(BPoint(l + r, b));
+  shape.BezierTo(BPoint(l + r - k, b), BPoint(l, b - r + k), BPoint(l, b - r));
+  shape.LineTo(BPoint(l, t + r));
+  shape.BezierTo(BPoint(l, t + r - k), BPoint(l + r - k, t), BPoint(l + r, t));
+  shape.Close();
+
+  dc->bm->Lock();
+  haikuBeginClip(dc);
+  dc->view->ClipToShape(&shape);
+  dc->bm->Unlock();
 }
 
 extern "C" IUP_SDK_API void iupdrvDrawResetClip(IdrawCanvas* dc)
@@ -803,6 +929,7 @@ extern "C" IUP_SDK_API void iupdrvDrawResetClip(IdrawCanvas* dc)
   {
     dc->view->PopState();
     dc->clip_state = 0;
+    haikuSetTransform(dc, &dc->matrix);
   }
   dc->bm->Unlock();
 }
@@ -836,8 +963,9 @@ extern "C" IUP_SDK_API void iupdrvDrawFocusRect(IdrawCanvas* dc, int x1, int y1,
   iupDrawCheckSwapCoord(x1, x2);
   iupDrawCheckSwapCoord(y1, y2);
   dc->bm->Lock();
-  dc->view->SetHighColor(0, 0, 0, 255);
+  haikuBeginStroke(dc, iupDrawColor(0, 0, 0, 255), 1, 1);
   dc->view->StrokeRect(BRect(x1, y1, x2, y2), B_MIXED_COLORS);
+  haikuEndStroke(dc, 1);
   dc->bm->Unlock();
 }
 

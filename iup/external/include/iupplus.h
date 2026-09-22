@@ -409,6 +409,15 @@ namespace Iup
 
     void DrawBegin() { IupDrawBegin(ih); }
     void DrawEnd() { IupDrawEnd(ih); }
+    void DrawSave() { IupDrawSave(ih); }
+    void DrawRestore() { IupDrawRestore(ih); }
+    void DrawTransform(double a, double b, double c, double d, double e, double f) { IupDrawTransform(ih, a, b, c, d, e, f); }
+    void DrawSetTransform(double a, double b, double c, double d, double e, double f) { IupDrawSetTransform(ih, a, b, c, d, e, f); }
+    void DrawResetTransform() { IupDrawResetTransform(ih); }
+    void DrawGetTransform(double &a, double &b, double &c, double &d, double &e, double &f) { IupDrawGetTransform(ih, &a, &b, &c, &d, &e, &f); }
+    void DrawTranslate(double tx, double ty) { IupDrawTranslate(ih, tx, ty); }
+    void DrawScale(double sx, double sy) { IupDrawScale(ih, sx, sy); }
+    void DrawRotate(double angle) { IupDrawRotate(ih, angle); }
     void DrawSetClipRect(int x1, int y1, int x2, int y2) { IupDrawSetClipRect(ih, x1, y1, x2, y2); }
     void DrawSetClipRoundedRect(int x1, int y1, int x2, int y2, int corner_radius) { IupDrawSetClipRoundedRect(ih, x1, y1, x2, y2, corner_radius); }
     void DrawGetClipRect(int* x1, int* y1, int* x2, int* y2) { IupDrawGetClipRect(ih, x1, y1, x2, y2); }
@@ -716,6 +725,15 @@ namespace Iup
 
     void DrawBegin() { IupDrawBegin(ih); }
     void DrawEnd() { IupDrawEnd(ih); }
+    void DrawSave() { IupDrawSave(ih); }
+    void DrawRestore() { IupDrawRestore(ih); }
+    void DrawTransform(double a, double b, double c, double d, double e, double f) { IupDrawTransform(ih, a, b, c, d, e, f); }
+    void DrawSetTransform(double a, double b, double c, double d, double e, double f) { IupDrawSetTransform(ih, a, b, c, d, e, f); }
+    void DrawResetTransform() { IupDrawResetTransform(ih); }
+    void DrawGetTransform(double &a, double &b, double &c, double &d, double &e, double &f) { IupDrawGetTransform(ih, &a, &b, &c, &d, &e, &f); }
+    void DrawTranslate(double tx, double ty) { IupDrawTranslate(ih, tx, ty); }
+    void DrawScale(double sx, double sy) { IupDrawScale(ih, sx, sy); }
+    void DrawRotate(double angle) { IupDrawRotate(ih, angle); }
     void DrawSetClipRect(int x1, int y1, int x2, int y2) { IupDrawSetClipRect(ih, x1, y1, x2, y2); }
     void DrawSetClipRoundedRect(int x1, int y1, int x2, int y2, int corner_radius) { IupDrawSetClipRoundedRect(ih, x1, y1, x2, y2, corner_radius); }
     void DrawGetClipRect(int* x1, int* y1, int* x2, int* y2) { IupDrawGetClipRect(ih, x1, y1, x2, y2); }
