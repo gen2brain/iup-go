@@ -1,0 +1,50 @@
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/**'
+      - '.github/docsite/**'
+      - '.github/workflows/docs.yml'
+  workflow_dispatch:
+name: Docs
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: true
+env:
+  PANDOC_VERSION: '3.11'
+  PAGEFIND_VERSION: '1.5.2'
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: Install pandoc
+      run: |
+        curl -fsSL -o pandoc.deb "https://github.com/jgm/pandoc/releases/download/${PANDOC_VERSION}/pandoc-${PANDOC_VERSION}-1-amd64.deb"
+        sudo dpkg -i pandoc.deb
+    - name: Install pagefind
+      run: npm install -g "pagefind@${PAGEFIND_VERSION}"
+    - name: Build
+      run: .github/docsite/build.sh docs _site
+    - name: Configure Pages
+      uses: actions/configure-pages@v5
+    - name: Upload
+      uses: actions/upload-pages-artifact@v3
+      with:
+        path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+    - name: Deploy
+      id: deployment
+      uses: actions/deploy-pages@v4
