@@ -61,7 +61,7 @@ func checkUIThread() {
 
 // SetAttribute sets an interface element attribute.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setattribute.md
+// https://gen2brain.github.io/iup-go/func/iup_setattribute.html
 func SetAttribute(ih Ihandle, name string, value interface{}) {
 	checkUIThread()
 
@@ -108,7 +108,7 @@ func SetAttribute(ih Ihandle, name string, value interface{}) {
 
 // SetAttributes sets several attributes of an interface element.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setattributes.md
+// https://gen2brain.github.io/iup-go/func/iup_setattributes.html
 func SetAttributes(ih Ihandle, str string) Ihandle {
 	checkUIThread()
 
@@ -121,7 +121,7 @@ func SetAttributes(ih Ihandle, str string) Ihandle {
 // ResetAttribute removes an attribute from the hash table of the element, and its children if the attribute is inheritable.
 // It is useful to reset the state of inheritable attributes in a tree of elements.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_resetattribute.md
+// https://gen2brain.github.io/iup-go/func/iup_resetattribute.html
 func ResetAttribute(ih Ihandle, name string) {
 	checkUIThread()
 
@@ -133,7 +133,7 @@ func ResetAttribute(ih Ihandle, name string) {
 
 // SetAtt sets several attributes of an interface element and optionally sets its name.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setatt.md
+// https://gen2brain.github.io/iup-go/func/iup_setatt.html
 func SetAtt(ih Ihandle, handle_name string, args ...string) Ihandle {
 	attrs := bytes.NewBufferString("")
 	for i := 0; i < len(args); i += 2 {
@@ -163,7 +163,7 @@ func SetAttrs(ih Ihandle, args ...string) Ihandle {
 //
 // It is very useful for associating images and menus.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setattributehandle.md
+// https://gen2brain.github.io/iup-go/func/iup_setattributehandle.html
 func SetAttributeHandle(ih Ihandle, name string, ihNamed Ihandle) {
 	checkUIThread()
 
@@ -175,7 +175,7 @@ func SetAttributeHandle(ih Ihandle, name string, ihNamed Ihandle) {
 
 // GetAttribute returns the name of an interface element attribute.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
+// https://gen2brain.github.io/iup-go/func/iup_getattribute.html
 func GetAttribute(ih Ihandle, name string) string {
 	checkUIThread()
 
@@ -212,7 +212,7 @@ func attribIsNotString(ih Ihandle, cName *C.char) bool {
 
 // GetAllAttributes returns the names of all attributes of an element that are set in its internal hash table only.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getallattributes.md
+// https://gen2brain.github.io/iup-go/func/iup_getallattributes.html
 func GetAllAttributes(ih Ihandle) (ret []string) {
 	checkUIThread()
 
@@ -238,7 +238,7 @@ func GetAllAttributes(ih Ihandle) (ret []string) {
 //
 // This function should be avoided. Use iup.GetAllAttributes instead.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattributes.md
+// https://gen2brain.github.io/iup-go/func/iup_getattributes.html
 func GetAttributes(ih Ihandle) string {
 	checkUIThread()
 
@@ -247,7 +247,7 @@ func GetAttributes(ih Ihandle) string {
 
 // GetAttributeHandle instead of using GetAttribute and GetHandle, this function directly returns the associated handle.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattributehandle.md
+// https://gen2brain.github.io/iup-go/func/iup_getattributehandle.html
 func GetAttributeHandle(ih Ihandle, name string) Ihandle {
 	checkUIThread()
 
@@ -259,7 +259,7 @@ func GetAttributeHandle(ih Ihandle, name string) Ihandle {
 
 // SetAttributeHandleId sets an attribute handle with an id.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setattributehandle.md
+// https://gen2brain.github.io/iup-go/func/iup_setattributehandle.html
 func SetAttributeHandleId(ih Ihandle, name string, id int, ihNamed Ihandle) {
 	checkUIThread()
 
@@ -271,7 +271,7 @@ func SetAttributeHandleId(ih Ihandle, name string, id int, ihNamed Ihandle) {
 
 // GetAttributeHandleId returns the handle attribute with an id.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattributehandle.md
+// https://gen2brain.github.io/iup-go/func/iup_getattributehandle.html
 func GetAttributeHandleId(ih Ihandle, name string, id int) Ihandle {
 	checkUIThread()
 
@@ -283,7 +283,7 @@ func GetAttributeHandleId(ih Ihandle, name string, id int) Ihandle {
 
 // SetAttributeHandleId2 sets an attribute handle with lin and col.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setattributehandle.md
+// https://gen2brain.github.io/iup-go/func/iup_setattributehandle.html
 func SetAttributeHandleId2(ih Ihandle, name string, lin, col int, ihNamed Ihandle) {
 	checkUIThread()
 
@@ -295,7 +295,7 @@ func SetAttributeHandleId2(ih Ihandle, name string, lin, col int, ihNamed Ihandl
 
 // GetAttributeHandleId2 returns the handle attribute with lin and col.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattributehandle.md
+// https://gen2brain.github.io/iup-go/func/iup_getattributehandle.html
 func GetAttributeHandleId2(ih Ihandle, name string, lin, col int) Ihandle {
 	checkUIThread()
 
@@ -307,7 +307,7 @@ func GetAttributeHandleId2(ih Ihandle, name string, lin, col int) Ihandle {
 
 // SetAttributeId sets an interface element attribute.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setattribute.md
+// https://gen2brain.github.io/iup-go/func/iup_setattribute.html
 func SetAttributeId(ih Ihandle, name string, id int, value interface{}) {
 	checkUIThread()
 
@@ -348,7 +348,7 @@ func SetAttributeId(ih Ihandle, name string, id int, value interface{}) {
 
 // GetAttributeId returns the name of an interface element attribute.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
+// https://gen2brain.github.io/iup-go/func/iup_getattribute.html
 func GetAttributeId(ih Ihandle, name string, id int) string {
 	checkUIThread()
 
@@ -360,7 +360,7 @@ func GetAttributeId(ih Ihandle, name string, id int) string {
 
 // SetAttributeId2 sets an interface element attribute.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setattribute.md
+// https://gen2brain.github.io/iup-go/func/iup_setattribute.html
 func SetAttributeId2(ih Ihandle, name string, lin, col int, value interface{}) {
 	checkUIThread()
 
@@ -401,7 +401,7 @@ func SetAttributeId2(ih Ihandle, name string, lin, col int, value interface{}) {
 
 // SetRGBId2 sets an interface element attribute.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setattribute.md
+// https://gen2brain.github.io/iup-go/func/iup_setattribute.html
 func SetRGBId2(ih Ihandle, name string, lin, col int, r, g, b uint8) {
 	checkUIThread()
 
@@ -413,7 +413,7 @@ func SetRGBId2(ih Ihandle, name string, lin, col int, r, g, b uint8) {
 
 // GetAttributeId2 returns the name of an interface element attribute.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
+// https://gen2brain.github.io/iup-go/func/iup_getattribute.html
 func GetAttributeId2(ih Ihandle, name string, lin, col int) string {
 	checkUIThread()
 
@@ -426,7 +426,7 @@ func GetAttributeId2(ih Ihandle, name string, lin, col int) string {
 // SetGlobal sets an attribute in the global environment.
 // If the driver process the attribute then it will not be stored internally.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setglobal.md
+// https://gen2brain.github.io/iup-go/func/iup_setglobal.html
 func SetGlobal(name string, value interface{}) {
 	checkUIThread()
 
@@ -456,7 +456,7 @@ func SetGlobal(name string, value interface{}) {
 // GetGlobal returns an attribute value from the global environment.
 // The value can be returned from the driver or from the internal storage.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getglobal.md
+// https://gen2brain.github.io/iup-go/func/iup_getglobal.html
 func GetGlobal(name string) string {
 	checkUIThread()
 
@@ -468,7 +468,7 @@ func GetGlobal(name string) string {
 
 // GetGlobalPtr returns an attribute value from the global environment.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getglobal.md
+// https://gen2brain.github.io/iup-go/func/iup_getglobal.html
 func GetGlobalPtr(name string) uintptr {
 	checkUIThread()
 
@@ -480,7 +480,7 @@ func GetGlobalPtr(name string) uintptr {
 
 // GetGlobalIh returns an attribute value from the global environment.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getglobal.md
+// https://gen2brain.github.io/iup-go/func/iup_getglobal.html
 func GetGlobalIh(name string) Ihandle {
 	checkUIThread()
 
@@ -498,7 +498,7 @@ func GetGlobalIh(name string) Ihandle {
 // Also natural alphabetic order is used: 123...aAáÁ...bBcC...
 // The comparison will work only for Latin-1 characters, even if UTF8MODE is Yes.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_stringcompare.md
+// https://gen2brain.github.io/iup-go/func/iup_stringcompare.html
 func StringCompare(str1, str2 string, caseSensitive, lexicographic bool) int {
 	cStr1, cStr2 := C.CString(str1), C.CString(str2)
 	defer C.free(unsafe.Pointer(cStr1))
@@ -509,7 +509,7 @@ func StringCompare(str1, str2 string, caseSensitive, lexicographic bool) int {
 
 // SetRGB sets an interface element attribute.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setattribute.md
+// https://gen2brain.github.io/iup-go/func/iup_setattribute.html
 func SetRGB(ih Ihandle, name string, r, g, b uint8) {
 	checkUIThread()
 
@@ -521,7 +521,7 @@ func SetRGB(ih Ihandle, name string, r, g, b uint8) {
 
 // SetRGBA sets an interface element attribute.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setattribute.md
+// https://gen2brain.github.io/iup-go/func/iup_setattribute.html
 func SetRGBA(ih Ihandle, name string, r, g, b, a uint8) {
 	checkUIThread()
 
@@ -533,7 +533,7 @@ func SetRGBA(ih Ihandle, name string, r, g, b, a uint8) {
 
 // SetRGBId sets an interface element attribute.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setattribute.md
+// https://gen2brain.github.io/iup-go/func/iup_setattribute.html
 func SetRGBId(ih Ihandle, name string, id int, r, g, b uint8) {
 	checkUIThread()
 
@@ -545,7 +545,7 @@ func SetRGBId(ih Ihandle, name string, id int, r, g, b uint8) {
 
 // GetInt returns the name of an interface element attribute.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
+// https://gen2brain.github.io/iup-go/func/iup_getattribute.html
 func GetInt(ih Ihandle, name string) int {
 	checkUIThread()
 
@@ -557,7 +557,7 @@ func GetInt(ih Ihandle, name string) int {
 
 // GetInt2 returns the name of an interface element attribute.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
+// https://gen2brain.github.io/iup-go/func/iup_getattribute.html
 func GetInt2(ih Ihandle, name string) (count, i1, i2 int) { // count = 0, 1 or 2
 	checkUIThread()
 
@@ -571,7 +571,7 @@ func GetInt2(ih Ihandle, name string) (count, i1, i2 int) { // count = 0, 1 or 2
 // GetBool returns a boolean attribute value.
 // Returns true for "YES", "ON", "TRUE", "1" (case insensitive), false otherwise.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
+// https://gen2brain.github.io/iup-go/func/iup_getattribute.html
 func GetBool(ih Ihandle, name string) bool {
 	val := strings.ToUpper(GetAttribute(ih, name))
 	return val == "YES" || val == "ON" || val == "TRUE" || val == "1"
@@ -579,28 +579,28 @@ func GetBool(ih Ihandle, name string) bool {
 
 // SetBool sets a boolean attribute value. Writes "YES" or "NO".
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setattribute.md
+// https://gen2brain.github.io/iup-go/func/iup_setattribute.html
 func SetBool(ih Ihandle, name string, value bool) {
 	SetAttribute(ih, name, value)
 }
 
 // SetBoolId sets a boolean attribute value for an id.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setattribute.md
+// https://gen2brain.github.io/iup-go/func/iup_setattribute.html
 func SetBoolId(ih Ihandle, name string, id int, value bool) {
 	SetAttributeId(ih, name, id, value)
 }
 
 // SetBoolId2 sets a boolean attribute value for a (lin, col) position.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setattribute.md
+// https://gen2brain.github.io/iup-go/func/iup_setattribute.html
 func SetBoolId2(ih Ihandle, name string, lin, col int, value bool) {
 	SetAttributeId2(ih, name, lin, col, value)
 }
 
 // GetFloat returns the name of an interface element attribute.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
+// https://gen2brain.github.io/iup-go/func/iup_getattribute.html
 func GetFloat(ih Ihandle, name string) float32 {
 	checkUIThread()
 
@@ -612,7 +612,7 @@ func GetFloat(ih Ihandle, name string) float32 {
 
 // GetDouble returns the name of an interface element attribute.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
+// https://gen2brain.github.io/iup-go/func/iup_getattribute.html
 func GetDouble(ih Ihandle, name string) float64 {
 	checkUIThread()
 
@@ -624,7 +624,7 @@ func GetDouble(ih Ihandle, name string) float64 {
 
 // GetRGB returns the name of an interface element attribute.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
+// https://gen2brain.github.io/iup-go/func/iup_getattribute.html
 func GetRGB(ih Ihandle, name string) (r, g, b uint8) {
 	checkUIThread()
 
@@ -637,7 +637,7 @@ func GetRGB(ih Ihandle, name string) (r, g, b uint8) {
 
 // GetRGBA returns the name of an interface element attribute.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
+// https://gen2brain.github.io/iup-go/func/iup_getattribute.html
 func GetRGBA(ih Ihandle, name string) (r, g, b, a uint8) {
 	checkUIThread()
 
@@ -650,7 +650,7 @@ func GetRGBA(ih Ihandle, name string) (r, g, b, a uint8) {
 
 // GetIntId returns the name of an interface element attribute.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
+// https://gen2brain.github.io/iup-go/func/iup_getattribute.html
 func GetIntId(ih Ihandle, name string, id int) int {
 	checkUIThread()
 
@@ -662,7 +662,7 @@ func GetIntId(ih Ihandle, name string, id int) int {
 
 // GetFloatId returns the name of an interface element attribute.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
+// https://gen2brain.github.io/iup-go/func/iup_getattribute.html
 func GetFloatId(ih Ihandle, name string, id int) float32 {
 	checkUIThread()
 
@@ -674,7 +674,7 @@ func GetFloatId(ih Ihandle, name string, id int) float32 {
 
 // GetDoubleId returns the name of an interface element attribute.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
+// https://gen2brain.github.io/iup-go/func/iup_getattribute.html
 func GetDoubleId(ih Ihandle, name string, id int) float64 {
 	checkUIThread()
 
@@ -686,7 +686,7 @@ func GetDoubleId(ih Ihandle, name string, id int) float64 {
 
 // GetRGBId returns the name of an interface element attribute.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
+// https://gen2brain.github.io/iup-go/func/iup_getattribute.html
 func GetRGBId(ih Ihandle, name string, id int) (r, g, b uint8) {
 	checkUIThread()
 
@@ -700,7 +700,7 @@ func GetRGBId(ih Ihandle, name string, id int) (r, g, b uint8) {
 // GetBoolId returns a boolean attribute value with an id.
 // Returns true for "YES", "ON", "TRUE", "1" (case insensitive), false otherwise.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
+// https://gen2brain.github.io/iup-go/func/iup_getattribute.html
 func GetBoolId(ih Ihandle, name string, id int) bool {
 	val := strings.ToUpper(GetAttributeId(ih, name, id))
 	return val == "YES" || val == "ON" || val == "TRUE" || val == "1"
@@ -708,7 +708,7 @@ func GetBoolId(ih Ihandle, name string, id int) bool {
 
 // GetIntId2 returns the name of an interface element attribute.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
+// https://gen2brain.github.io/iup-go/func/iup_getattribute.html
 func GetIntId2(ih Ihandle, name string, lin, col int) int {
 	checkUIThread()
 
@@ -720,7 +720,7 @@ func GetIntId2(ih Ihandle, name string, lin, col int) int {
 
 // GetFloatId2 returns the name of an interface element attribute.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
+// https://gen2brain.github.io/iup-go/func/iup_getattribute.html
 func GetFloatId2(ih Ihandle, name string, lin, col int) float32 {
 	checkUIThread()
 
@@ -732,7 +732,7 @@ func GetFloatId2(ih Ihandle, name string, lin, col int) float32 {
 
 // GetDoubleId2 returns the name of an interface element attribute.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
+// https://gen2brain.github.io/iup-go/func/iup_getattribute.html
 func GetDoubleId2(ih Ihandle, name string, lin, col int) float64 {
 	checkUIThread()
 
@@ -744,7 +744,7 @@ func GetDoubleId2(ih Ihandle, name string, lin, col int) float64 {
 
 // GetRGBId2 returns the name of an interface element attribute.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
+// https://gen2brain.github.io/iup-go/func/iup_getattribute.html
 func GetRGBId2(ih Ihandle, name string, lin, col int) (r, g, b uint8) {
 	checkUIThread()
 
@@ -758,7 +758,7 @@ func GetRGBId2(ih Ihandle, name string, lin, col int) (r, g, b uint8) {
 // GetBoolId2 returns a boolean attribute value with lin and col.
 // Returns true for "YES", "ON", "TRUE", "1" (case insensitive), false otherwise.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
+// https://gen2brain.github.io/iup-go/func/iup_getattribute.html
 func GetBoolId2(ih Ihandle, name string, lin, col int) bool {
 	val := strings.ToUpper(GetAttributeId2(ih, name, lin, col))
 	return val == "YES" || val == "ON" || val == "TRUE" || val == "1"

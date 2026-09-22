@@ -11,7 +11,7 @@ import (
 
 // SetAttributes sets several attributes of an interface element.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setattributes.md
+// https://gen2brain.github.io/iup-go/func/iup_setattributes.html
 func (ih Ihandle) SetAttributes(params ...interface{}) Ihandle {
 	for _, param := range params {
 		switch p := param.(type) {
@@ -88,7 +88,7 @@ func getAttributePriority(prefix string) int {
 
 // SetAttribute sets an interface element attribute.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setattribute.md
+// https://gen2brain.github.io/iup-go/func/iup_setattribute.html
 func (ih Ihandle) SetAttribute(name string, value ...interface{}) Ihandle {
 	switch len(value) {
 	case 1:
@@ -109,7 +109,7 @@ func (ih Ihandle) SetAttribute(name string, value ...interface{}) Ihandle {
 
 // GetAttribute returns an interface element attribute value.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
+// https://gen2brain.github.io/iup-go/func/iup_getattribute.html
 func (ih Ihandle) GetAttribute(name string, ids ...interface{}) string {
 	switch len(ids) {
 	case 0:
@@ -158,14 +158,14 @@ func (ih Ihandle) GetFloat(name string, ids ...interface{}) float32 {
 
 // SetHandle associates a name with an interface element.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_sethandle.md
+// https://gen2brain.github.io/iup-go/func/iup_sethandle.html
 func (ih Ihandle) SetHandle(name string) Ihandle {
 	return SetHandle(name, ih)
 }
 
 // SetCallback associates a callback with an event.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setcallback.md
+// https://gen2brain.github.io/iup-go/func/iup_setcallback.html
 func (ih Ihandle) SetCallback(name string, fn interface{}) Ihandle {
 	SetCallback(ih, name, fn)
 	return ih

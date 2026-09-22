@@ -13,14 +13,14 @@ import "unsafe"
 
 // GLCanvasOpen must be called after Open, so that the control can be used.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/ctrl/iup_glcanvas.md
+// https://gen2brain.github.io/iup-go/ctrl/iup_glcanvas.html
 func GLCanvasOpen() {
 	C.IupGLCanvasOpen()
 }
 
 // GLCanvas creates an OpenGL canvas (drawing area for OpenGL). It inherits from Canvas.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/ctrl/iup_glcanvas.md
+// https://gen2brain.github.io/iup-go/ctrl/iup_glcanvas.html
 func GLCanvas() Ihandle {
 	h := mkih(C.IupGLCanvas())
 	return h
@@ -30,28 +30,28 @@ func GLCanvas() Ihandle {
 // All subsequent OpenGL commands are directed to such canvas.
 // The first call will set the global attributes GL_VERSION, GL_VENDOR and GL_RENDERER (since 3.16).
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/ctrl/iup_glcanvas.md
+// https://gen2brain.github.io/iup-go/ctrl/iup_glcanvas.html
 func GLMakeCurrent(ih Ihandle) {
 	C.IupGLMakeCurrent(ih.ptr())
 }
 
 // GLIsCurrent returns a non zero value if the given canvas is the current OpenGL context.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/ctrl/iup_glcanvas.md
+// https://gen2brain.github.io/iup-go/ctrl/iup_glcanvas.html
 func GLIsCurrent(ih Ihandle) bool {
 	return int(C.IupGLIsCurrent(ih.ptr())) != 0
 }
 
 // GLSwapBuffers makes the BACK buffer visible. This function is necessary when a double buffer is used.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/ctrl/iup_glcanvas.md
+// https://gen2brain.github.io/iup-go/ctrl/iup_glcanvas.html
 func GLSwapBuffers(ih Ihandle) {
 	C.IupGLSwapBuffers(ih.ptr())
 }
 
 // GLGetProcAddress returns the address of the named OpenGL function, or nil. Call GLMakeCurrent first.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/ctrl/iup_glcanvas.md
+// https://gen2brain.github.io/iup-go/ctrl/iup_glcanvas.html
 func GLGetProcAddress(name string) unsafe.Pointer {
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
@@ -61,7 +61,7 @@ func GLGetProcAddress(name string) unsafe.Pointer {
 
 // GLPalette defines a color in the color palette. This function is necessary when INDEX color is used.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/ctrl/iup_glcanvas.md
+// https://gen2brain.github.io/iup-go/ctrl/iup_glcanvas.html
 func GLPalette(ih Ihandle, index int, r, g, b float32) {
 	C.IupGLPalette(ih.ptr(), C.int(index), C.float(r), C.float(g), C.float(b))
 }
@@ -69,14 +69,14 @@ func GLPalette(ih Ihandle, index int, r, g, b float32) {
 // GLUseFont creates a bitmap display list from the current FONT attribute.
 // See the documentation of the wglUseFontBitmaps and glXUseXFont functions.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/ctrl/iup_glcanvas.md
+// https://gen2brain.github.io/iup-go/ctrl/iup_glcanvas.html
 func GLUseFont(ih Ihandle, first, count, listBase int) {
 	C.IupGLUseFont(ih.ptr(), C.int(first), C.int(count), C.int(listBase))
 }
 
 // GLWait if gl is non zero it will call glFinish or glXWaitGL, else will call GdiFlush or glXWaitX.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/ctrl/iup_glcanvas.md
+// https://gen2brain.github.io/iup-go/ctrl/iup_glcanvas.html
 func GLWait(gl int) {
 	C.IupGLWait(C.int(gl))
 }
@@ -85,7 +85,7 @@ func GLWait(gl int) {
 //
 // OBS: this is identical to the BackgroundBox element, but with OpenGL enabled.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/ctrl/iup_glbackgroundbox.md
+// https://gen2brain.github.io/iup-go/ctrl/iup_glbackgroundbox.html
 func GLBackgroundBox(child Ihandle) Ihandle {
 	h := mkih(C.IupGLBackgroundBox(child.ptr()))
 	return h

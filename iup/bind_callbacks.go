@@ -104,7 +104,7 @@ func goIupLDestroyCB(ih unsafe.Pointer) C.int {
 // IdleFunc for IDLE_ACTION callback.
 // generated when there are no events or messages to be processed. Often used to perform background operations.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/call/iup_idle_action.md
+// https://gen2brain.github.io/iup-go/call/iup_idle_action.html
 type IdleFunc func() int
 
 //export goIupIdleCB
@@ -124,7 +124,7 @@ func setIdleFunc(f IdleFunc) {
 // EntryPointFunc for ENTRY_POINT callback.
 // generated when there are no events or messages to be processed. Often used to perform background operations.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/call/iup_entry_point.md
+// https://gen2brain.github.io/iup-go/call/iup_entry_point.html
 type EntryPointFunc func()
 
 //export goIupEntryPointCB
@@ -144,7 +144,7 @@ func setEntryPointFunc(f EntryPointFunc) {
 // ExitFunc for EXIT_CB callback.
 // Global callback for an exit. Used when main is not possible, such as in iOS and Android systems.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/call/iup_exit_cb.md
+// https://gen2brain.github.io/iup-go/call/iup_exit_cb.html
 type ExitFunc func()
 
 //export goIupExitCB
@@ -165,7 +165,7 @@ func setExitFunc(f ExitFunc) {
 // Called right after an element is mapped and its attributes updated in Map.
 // When the element is a dialog, it is called after the layout is updated. For all other elements is called before the layout is updated.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/call/iup_map_cb.md
+// https://gen2brain.github.io/iup-go/call/iup_map_cb.html
 type MapFunc func(Ihandle) int
 
 //export goIupMapCB
@@ -188,7 +188,7 @@ func setMapFunc(ih Ihandle, f MapFunc) {
 // UnmapFunc for UNMAP_CB callback.
 // Called right before an element is unmapped.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/call/iup_unmap_cb.md
+// https://gen2brain.github.io/iup-go/call/iup_unmap_cb.html
 type UnmapFunc func(Ihandle) int
 
 //export goIupUnmapCB
@@ -210,7 +210,7 @@ func setUnmapFunc(ih Ihandle, f UnmapFunc) {
 // DestroyFunc for DESTROY_CB callback.
 // Called right before an element is destroyed.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/call/iup_destroy_cb.md
+// https://gen2brain.github.io/iup-go/call/iup_destroy_cb.html
 type DestroyFunc func(Ihandle) int
 
 //export goIupDestroyCB
@@ -232,7 +232,7 @@ func setDestroyFunc(ih Ihandle, f DestroyFunc) {
 // GetFocusFunc for GETFOCUS_CB callback.
 // Action generated when an element is given keyboard focus.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/call/iup_getfocus_cb.md
+// https://gen2brain.github.io/iup-go/call/iup_getfocus_cb.html
 type GetFocusFunc func(Ihandle) int
 
 //export goIupGetFocusCB
@@ -254,7 +254,7 @@ func setGetFocusFunc(ih Ihandle, f GetFocusFunc) {
 // KillFocusFunc for KILLFOCUS_CB callback.
 // Action generated when an element loses keyboard focus.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/call/iup_killfocus_cb.md
+// https://gen2brain.github.io/iup-go/call/iup_killfocus_cb.html
 type KillFocusFunc func(Ihandle) int
 
 //export goIupKillFocusCB
@@ -276,7 +276,7 @@ func setKillFocusFunc(ih Ihandle, f KillFocusFunc) {
 // EnterWindowFunc for ENTERWINDOW_CB callback.
 // Action generated when the mouse enters the native element.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/call/iup_enterwindow_cb.md
+// https://gen2brain.github.io/iup-go/call/iup_enterwindow_cb.html
 type EnterWindowFunc func(Ihandle) int
 
 //export goIupEnterWindowCB
@@ -298,7 +298,7 @@ func setEnterWindowFunc(ih Ihandle, f EnterWindowFunc) {
 // LeaveWindowFunc for LEAVEWINDOW_CB callback.
 // Action generated when the mouse leaves the native element.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/call/iup_leavewindow_cb.md
+// https://gen2brain.github.io/iup-go/call/iup_leavewindow_cb.html
 type LeaveWindowFunc func(Ihandle) int
 
 //export goIupLeaveWindowCB
@@ -320,7 +320,7 @@ func setLeaveWindowFunc(ih Ihandle, f LeaveWindowFunc) {
 // TipsFunc for TIPS_CB callback.
 // Action before a tip is displayed.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/attrib/iup_tip.md
+// https://gen2brain.github.io/iup-go/attrib/iup_tip.html
 type TipsFunc func(ih Ihandle, x, y int) int
 
 //export goIupTipsCB
@@ -342,7 +342,7 @@ func setTipsFunc(ih Ihandle, f TipsFunc) {
 // KAnyFunc for K_ANY callback.
 // Action generated when a keyboard event occurs.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/call/iup_k_any.md
+// https://gen2brain.github.io/iup-go/call/iup_k_any.html
 type KAnyFunc func(Ihandle, int) int
 
 //export goIupKAnyCB
@@ -364,7 +364,7 @@ func setKAnyFunc(ih Ihandle, f KAnyFunc) {
 // HelpFunc for HELP_CB callback.
 // Action generated when the user presses F1 at a control.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/call/iup_help_cb.md
+// https://gen2brain.github.io/iup-go/call/iup_help_cb.html
 type HelpFunc func(Ihandle) int
 
 //export goIupHelpCB
@@ -386,7 +386,7 @@ func setHelpFunc(ih Ihandle, f HelpFunc) {
 // ActionFunc for ACTION callback.
 // Action generated when the element is activated. Affects each element differently.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/call/iup_action.md
+// https://gen2brain.github.io/iup-go/call/iup_action.html
 type ActionFunc func(Ihandle) int
 
 //export goIupActionCB
@@ -408,7 +408,7 @@ func setActionFunc(ih Ihandle, f ActionFunc) {
 // ButtonFunc for BUTTON_CB callback.
 // Action generated when a mouse button is pressed or released.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/call/iup_button_cb.md
+// https://gen2brain.github.io/iup-go/call/iup_button_cb.html
 type ButtonFunc func(Ihandle, int, int, int, int, string) int
 
 //export goIupButtonCB
@@ -431,7 +431,7 @@ func setButtonFunc(ih Ihandle, f ButtonFunc) {
 // TouchFunc for TOUCH_CB callback.
 // Action generated when a touch event occurred.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_canvas.md
+// https://gen2brain.github.io/iup-go/elem/iup_canvas.html
 type TouchFunc func(ih Ihandle, id, x, y int, state string) int
 
 //export goIupTouchCB
@@ -453,7 +453,7 @@ func setTouchFunc(ih Ihandle, f TouchFunc) {
 // MultiTouchFunc for MULTITOUCH_CB callback.
 // Action generated when multiple touch events occurred.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_canvas.md
+// https://gen2brain.github.io/iup-go/elem/iup_canvas.html
 type MultiTouchFunc func(ih Ihandle, count int, pid, px, py, pstate []int) int
 
 //export goIupMultiTouchCB
@@ -484,7 +484,7 @@ func setMultiTouchFunc(ih Ihandle, f MultiTouchFunc) {
 // GestureFunc for GESTURE_CB callback.
 // Action generated when a pinch, rotate, pan, swipe, tap or long-press gesture is recognized.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_canvas.md
+// https://gen2brain.github.io/iup-go/elem/iup_canvas.html
 type GestureFunc func(ih Ihandle, gesture, state, x, y int, v1, v2 float64) int
 
 //export goIupGestureCB
@@ -602,7 +602,7 @@ func setTextInputFunc(ih Ihandle, f TextInputFunc) {
 // DropFilesFunc for DROPFILES_CB callback.
 // Action called when a file is "dropped" into control.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/call/iup_dropfiles_cb.md
+// https://gen2brain.github.io/iup-go/call/iup_dropfiles_cb.html
 type DropFilesFunc func(Ihandle, string, int, int, int) int
 
 //export goIupDropFilesCB
@@ -2010,7 +2010,7 @@ func setMultiUnselectionFunc(ih Ihandle, f MultiUnselectionFunc) {
 // MenuOpenFunc for MENUOPEN_CB callback.
 // Called just before the menu is opened.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/call/iup_menuopen_cb.md
+// https://gen2brain.github.io/iup-go/call/iup_menuopen_cb.html
 type MenuOpenFunc func(ih Ihandle) int
 
 //export goIupMenuOpenCB
@@ -2448,7 +2448,7 @@ func setPermissionFunc(ih Ihandle, f PermissionFunc) {
 // The paramIndex is >= 0 for parameter changes, or one of the GETPARAM_* constants for events.
 // Return 1 to accept the change or 0 to reject it.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/dlg/iup_getparam.md
+// https://gen2brain.github.io/iup-go/dlg/iup_getparam.html
 type GetParamFunc func(dialog Ihandle, paramIndex int) int
 
 //export goIupGetParamCB
@@ -2463,7 +2463,7 @@ func goIupGetParamCB(dialog unsafe.Pointer, paramIndex C.int, userData unsafe.Po
 // ParamFunc for PARAM_CB callback.
 // Called when a parameter value changes or a button is pressed.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_parambox.md
+// https://gen2brain.github.io/iup-go/elem/iup_parambox.html
 type ParamFunc func(paramBox Ihandle, paramIndex int) int
 
 //export goIupParamCB

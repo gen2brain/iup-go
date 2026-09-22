@@ -2,8 +2,8 @@
 // interfaces with native controls.
 //
 // The package bundles a fork of the IUP C library with its own drivers and additions. The API
-// reference is in the repository [docs], and each function links to its page. Runnable programs
-// are in [examples].
+// reference is on the [documentation site], and each function links to its page. Runnable
+// programs are in [examples].
 //
 // # Drivers
 //
@@ -36,7 +36,7 @@
 // IUP is not thread-safe. Goroutines must not call IUP directly, use [PostMessage], an idle
 // callback or a [Timer] to run code on the UI thread.
 //
-// [docs]: https://github.com/gen2brain/iup-go/tree/main/docs
+// [documentation site]: https://gen2brain.github.io/iup-go/
 // [examples]: https://github.com/gen2brain/iup-go/tree/main/examples
 package iup
 

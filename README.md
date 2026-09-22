@@ -273,7 +273,8 @@ See [cmd/iupkg/README.md](cmd/iupkg/README.md) for every target, flag and the si
 
 ### Documentation
 
-API reference documentation is available in the [docs](docs/) directory. Each Go function link to its corresponding documentation page.
+API reference documentation is available at [gen2brain.github.io/iup-go](https://gen2brain.github.io/iup-go/), generated from the [docs](docs/README.md) directory. Each Go function links to its corresponding documentation page.
+Start with the guides on [Attributes](docs/attrib.md), [Callbacks](docs/call.md), [Layout](docs/layout.md) and [Keyboard](docs/keyboard.md).
 Also check [Go Reference](https://pkg.go.dev/github.com/gen2brain/iup-go/iup) and [Examples](examples/).
 
 ### Thread-Safety

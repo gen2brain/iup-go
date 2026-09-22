@@ -11,7 +11,7 @@ func init() {
 // Open initializes the IUP toolkit. Repeat calls return NOERROR
 // rather than OPENED so the same source works on desktop and iOS.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_open.md
+// https://gen2brain.github.io/iup-go/func/iup_open.html
 func Open() int {
 	ret := openShared()
 	if ret == OPENED {
@@ -22,7 +22,7 @@ func Open() int {
 
 // Close is a no-op on iOS; UIKit owns process lifetime.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_close.md
+// https://gen2brain.github.io/iup-go/func/iup_close.html
 func Close() {}
 
 // EntryPoint registers entry as the ENTRY_POINT callback fired by

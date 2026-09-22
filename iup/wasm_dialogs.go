@@ -9,14 +9,14 @@ import (
 
 // FileDlg creates the File Dialog element. It is a predefined dialog for selecting files or a directory.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/dlg/iup_filedlg.md
+// https://gen2brain.github.io/iup-go/dlg/iup_filedlg.html
 func FileDlg() Ihandle {
 	return ccallHandle("IupFileDlg", nil, nil)
 }
 
 // MessageDlg creates the Message Dialog element. It is a predefined dialog for displaying a message.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/dlg/iup_messagedlg.md
+// https://gen2brain.github.io/iup-go/dlg/iup_messagedlg.html
 func MessageDlg() Ihandle {
 	return ccallHandle("IupMessageDlg", nil, nil)
 }
@@ -24,28 +24,28 @@ func MessageDlg() Ihandle {
 // ColorDlg creates the Color Dialog element. It is a predefined dialog for selecting a color.
 // Under WebAssembly it is the platform-independent ColorBrowser-based dialog and can be shown as any regular Dialog.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/dlg/iup_colordlg.md
+// https://gen2brain.github.io/iup-go/dlg/iup_colordlg.html
 func ColorDlg() Ihandle {
 	return ccallHandle("IupColorDlg", nil, nil)
 }
 
 // ColorBrowser creates a color browser control.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/ctrl/iup_colorbrowser.md
+// https://gen2brain.github.io/iup-go/elem/iup_colorbrowser.html
 func ColorBrowser() Ihandle {
 	return ccallHandle("IupColorBrowser", nil, nil)
 }
 
 // ProgressDlg creates a progress dialog element. It is a predefined dialog for displaying the progress of an operation.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/dlg/iup_progressdlg.md
+// https://gen2brain.github.io/iup-go/dlg/iup_progressdlg.html
 func ProgressDlg() Ihandle {
 	return ccallHandle("IupProgressDlg", nil, nil)
 }
 
 // GetFile shows a modal dialog to select a filename. Uses the FileDlg element.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/dlg/iup_getfile.md
+// https://gen2brain.github.io/iup-go/dlg/iup_getfile.html
 func GetFile(path string) (sel string, ret int) {
 	if len(path) > 4095 {
 		panic("path is too long (maximum is 4095)")
@@ -61,7 +61,7 @@ func GetFile(path string) (sel string, ret int) {
 
 // GetColor shows a modal dialog which allows the user to select a color. Based on ColorDlg.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/dlg/iup_getcolor.md
+// https://gen2brain.github.io/iup-go/dlg/iup_getcolor.html
 func GetColor(x, y int) (col color.RGBA, ret int) {
 	pr := wasmMalloc(3)
 	defer wasmFree(pr)
@@ -78,7 +78,7 @@ func GetColor(x, y int) (col color.RGBA, ret int) {
 
 // GetText shows a modal dialog to edit a multiline text.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/dlg/iup_gettext.md
+// https://gen2brain.github.io/iup-go/dlg/iup_gettext.html
 func GetText(title, text string, maxSize int) (string, int) {
 	if maxSize <= 0 {
 		maxSize = 10240
@@ -93,7 +93,7 @@ func GetText(title, text string, maxSize int) (string, int) {
 
 // ListDialog shows a modal dialog to select items from a simple or multiple selection list.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/dlg/iup_listdialog.md
+// https://gen2brain.github.io/iup-go/dlg/iup_listdialog.html
 func ListDialog(_type int, title string, list []string, op, maxCol, maxLin int, marks *[]bool) (ret int) {
 	if marks != nil && len(list) != len(*marks) {
 		panic("bad parameter passed to ListDialog")
@@ -161,7 +161,7 @@ var curGetParamAction GetParamFunc
 
 // GetParam shows a modal dialog with controls built from the format string.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/dlg/iup_getparam.md
+// https://gen2brain.github.io/iup-go/dlg/iup_getparam.html
 func GetParam(title string, action GetParamFunc, format string, data ...interface{}) int {
 	paramCount, paramExtra, types := getParamInfo(format)
 	if len(types) != len(data) {

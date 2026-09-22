@@ -18,7 +18,7 @@ import "C"
 //
 // It does not have a native representation.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_fill.md
+// https://gen2brain.github.io/iup-go/elem/iup_fill.html
 func Fill() Ihandle {
 	h := mkih(C.IupFill())
 	return h
@@ -30,7 +30,7 @@ func Fill() Ihandle {
 //
 // It does not have a native representation.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_space.md
+// https://gen2brain.github.io/iup-go/elem/iup_space.html
 func Space() Ihandle {
 	h := mkih(C.IupSpace())
 	return h
@@ -43,7 +43,7 @@ func Space() Ihandle {
 // The Cbox is equivalent of a Vbox or Hbox where all the children have the FLOATING attribute set to YES,
 // but children must use CX and CY attributes instead of the POSITION attribute.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_cbox.md
+// https://gen2brain.github.io/iup-go/elem/iup_cbox.html
 func Cbox(children ...Ihandle) Ihandle {
 	children = append(children, Ihandle(0))
 
@@ -57,7 +57,7 @@ func Cbox(children ...Ihandle) Ihandle {
 //
 // It does not have a native representation.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_gridbox.md
+// https://gen2brain.github.io/iup-go/elem/iup_gridbox.html
 func GridBox(children ...Ihandle) Ihandle {
 	children = append(children, Ihandle(0))
 
@@ -70,7 +70,7 @@ func GridBox(children ...Ihandle) Ihandle {
 // by distributing the elements in lines or in columns. But its EXPAND attribute does not behave as a regular container;
 // instead it behaves as a regular element expanding into the available space.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_multibox.md
+// https://gen2brain.github.io/iup-go/elem/iup_multibox.html
 func MultiBox(children ...Ihandle) Ihandle {
 	children = append(children, Ihandle(0))
 
@@ -83,7 +83,7 @@ func MultiBox(children ...Ihandle) Ihandle {
 //
 // It does not have a native representation.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_hbox.md
+// https://gen2brain.github.io/iup-go/elem/iup_hbox.html
 func Hbox(children ...Ihandle) Ihandle {
 	children = append(children, Ihandle(0))
 
@@ -96,7 +96,7 @@ func Hbox(children ...Ihandle) Ihandle {
 //
 // It does not have a native representation.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_vbox.md
+// https://gen2brain.github.io/iup-go/elem/iup_vbox.html
 func Vbox(children ...Ihandle) Ihandle {
 	children = append(children, Ihandle(0))
 
@@ -109,7 +109,7 @@ func Vbox(children ...Ihandle) Ihandle {
 //
 // It does not have a native representation.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_zbox.md
+// https://gen2brain.github.io/iup-go/elem/iup_zbox.html
 func Zbox(children ...Ihandle) Ihandle {
 	children = append(children, Ihandle(0))
 
@@ -123,7 +123,7 @@ func Zbox(children ...Ihandle) Ihandle {
 //
 // It does not have a native representation.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_radio.md
+// https://gen2brain.github.io/iup-go/elem/iup_radio.html
 func Radio(child Ihandle) Ihandle {
 	h := mkih(C.IupRadio(child.ptr()))
 	return h
@@ -132,7 +132,7 @@ func Radio(child Ihandle) Ihandle {
 // Normalizer creates a void container that does not affect the dialog layout.
 // It acts by normalizing all the controls in a list, so their natural size becomes the biggest natural size amongst them.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_normalizer.md
+// https://gen2brain.github.io/iup-go/elem/iup_normalizer.html
 func Normalizer(ihList ...Ihandle) Ihandle {
 	ihList = append(ihList, Ihandle(0))
 
@@ -142,7 +142,7 @@ func Normalizer(ihList ...Ihandle) Ihandle {
 
 // Frame creates a native container, which draws a frame with a title around its child.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_frame.md
+// https://gen2brain.github.io/iup-go/elem/iup_frame.html
 func Frame(child Ihandle) Ihandle {
 	h := mkih(C.IupFrame(child.ptr()))
 	return h
@@ -153,7 +153,7 @@ func Frame(child Ihandle) Ihandle {
 // The interaction is done in a line of tabs with titles and arranged according to the tab type.
 // Also known as Notebook in native systems.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_tabs.md
+// https://gen2brain.github.io/iup-go/elem/iup_tabs.html
 func Tabs(children ...Ihandle) Ihandle {
 	children = append(children, Ihandle(0))
 
@@ -164,7 +164,7 @@ func Tabs(children ...Ihandle) Ihandle {
 // BackgroundBox creates a simple native container with no decorations.
 // Useful for controlling children visibility for Zbox or Expander. It inherits from Canvas.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_backgroundbox.md
+// https://gen2brain.github.io/iup-go/elem/iup_backgroundbox.html
 func BackgroundBox(child Ihandle) Ihandle {
 	h := mkih(C.IupBackgroundBox(child.ptr()))
 	return h
@@ -172,7 +172,7 @@ func BackgroundBox(child Ihandle) Ihandle {
 
 // ScrollBox creates a native container that allows its child to be scrolled. It inherits from Canvas.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_scrollbox.md
+// https://gen2brain.github.io/iup-go/elem/iup_scrollbox.html
 func ScrollBox(child Ihandle) Ihandle {
 	h := mkih(C.IupScrollBox(child.ptr()))
 	return h
@@ -186,7 +186,7 @@ func ScrollBox(child Ihandle) Ihandle {
 //
 // It does not have a native representation, but it contains also a Canvas to implement the bar handler.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_detachbox.md
+// https://gen2brain.github.io/iup-go/elem/iup_detachbox.html
 func DetachBox(child Ihandle) Ihandle {
 	h := mkih(C.IupDetachBox(child.ptr()))
 	return h
@@ -196,7 +196,7 @@ func DetachBox(child Ihandle) Ihandle {
 //
 // It does not have a native representation, but it contains also several elements to implement the bar handler.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_expander.md
+// https://gen2brain.github.io/iup-go/elem/iup_expander.html
 func Expander(child Ihandle) Ihandle {
 	h := mkih(C.IupExpander(child.ptr()))
 	return h
@@ -207,7 +207,7 @@ func Expander(child Ihandle) Ihandle {
 //
 // It does not have a native representation, but it contains also a Canvas to implement the bar handler.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_sbox.md
+// https://gen2brain.github.io/iup-go/elem/iup_sbox.html
 func Sbox(child Ihandle) Ihandle {
 	h := mkih(C.IupSbox(child.ptr()))
 	return h
@@ -219,7 +219,7 @@ func Sbox(child Ihandle) Ihandle {
 //
 // It does not have a native representation, but it contains also a Canvas to implement the bar handler.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_split.md
+// https://gen2brain.github.io/iup-go/elem/iup_split.html
 func Split(child1, child2 Ihandle) Ihandle {
 	h := mkih(C.IupSplit(child1.ptr(), child2.ptr()))
 	return h

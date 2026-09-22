@@ -25,7 +25,7 @@ func ControlsOpen() int {
 // It is a canvas-based control that displays a scrollable grid of cells.
 // Each cell can be individually drawn via the DRAW_CB callback.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/ctrl/iup_cells.md
+// https://gen2brain.github.io/iup-go/ctrl/iup_cells.html
 func Cells() Ihandle {
 	h := mkih(C.IupCells())
 	return h
@@ -34,7 +34,7 @@ func Cells() Ihandle {
 // Matrix creates a matrix control for displaying and editing tabular data.
 // The matrix is a grid of cells that can contain text, dropdowns, toggles, colors, images, and fill indicators.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/ctrl/iup_matrix.md
+// https://gen2brain.github.io/iup-go/ctrl/iup_matrix.html
 func Matrix() Ihandle {
 	h := mkih(C.IupMatrix())
 	return h
@@ -44,7 +44,7 @@ func Matrix() Ihandle {
 // It is a specialized version of the matrix control designed for displaying lists with columns.
 // Supports label, color, and image columns.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/ctrl/iup_matrixlist.md
+// https://gen2brain.github.io/iup-go/ctrl/iup_matrixlist.html
 func MatrixList() Ihandle {
 	h := mkih(C.IupMatrixList())
 	return h
@@ -54,7 +54,7 @@ func MatrixList() Ihandle {
 // It provides extra functionality on top of the standard Matrix control,
 // including undo/redo, copy/paste, sorting, searching, units conversion, etc.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/ctrl/iup_matrixex.md
+// https://gen2brain.github.io/iup-go/ctrl/iup_matrixex.html
 func MatrixEx() Ihandle {
 	h := mkih(C.IupMatrixEx())
 	return h
@@ -67,7 +67,7 @@ func MatrixEx() Ihandle {
 // It behaves just like a Button, but since it is not a native control, it has more flexibility for additional options.
 // It can also behave like a Toggle (without the checkmark).
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/ctrl/iup_flatbutton.md
+// https://gen2brain.github.io/iup-go/ctrl/iup_flatbutton.html
 func FlatButton(title string) Ihandle {
 	cTitle := cStrOrNull(title)
 	defer cStrFree(cTitle)
@@ -79,7 +79,7 @@ func FlatButton(title string) Ihandle {
 // FlatLabel creates an interface element that is a label, but it does not have native decorations.
 // Its visual presentation can contain a text and/or an image.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/ctrl/iup_flatlabel.md
+// https://gen2brain.github.io/iup-go/ctrl/iup_flatlabel.html
 func FlatLabel(title string) Ihandle {
 	cTitle := cStrOrNull(title)
 	defer cStrFree(cTitle)
@@ -91,7 +91,7 @@ func FlatLabel(title string) Ihandle {
 // FlatToggle creates an interface element that is a toggle, but it does not have native decorations.
 // When selected, this element activates a function in the application. Its visual presentation can contain a text and/or an image.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/ctrl/iup_flattoggle.md
+// https://gen2brain.github.io/iup-go/ctrl/iup_flattoggle.html
 func FlatToggle(title string) Ihandle {
 	cTitle := cStrOrNull(title)
 	defer cStrFree(cTitle)
@@ -102,7 +102,7 @@ func FlatToggle(title string) Ihandle {
 
 // FlatList creates an interface element that displays a list of items, but it does not have native decorations.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/ctrl/iup_flatlist.md
+// https://gen2brain.github.io/iup-go/ctrl/iup_flatlist.html
 func FlatList() Ihandle {
 	h := mkih(C.IupFlatList())
 	return h
@@ -110,7 +110,7 @@ func FlatList() Ihandle {
 
 // FlatTree creates a tree containing nodes of branches or leaves. Both branches and leaves can have an associated text and image.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/ctrl/iup_flattree.md
+// https://gen2brain.github.io/iup-go/ctrl/iup_flattree.html
 func FlatTree() Ihandle {
 	h := mkih(C.IupFlatTree())
 	return h
@@ -119,7 +119,7 @@ func FlatTree() Ihandle {
 // FlatVal creates a Valuator control, but it does not have native decorations.
 // Selects a value in a limited interval. Also known as Scale or Trackbar in native systems.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/ctrl/iup_flatval.md
+// https://gen2brain.github.io/iup-go/ctrl/iup_flatval.html
 func FlatVal(orientation string) Ihandle {
 	cOrientation := cStrOrNull(orientation)
 	defer cStrFree(cOrientation)
@@ -131,7 +131,7 @@ func FlatVal(orientation string) Ihandle {
 // FlatFrame creates a native container, which draws a frame with a title around its child.
 // The decorations are manually drawn. The control inherits from BackgroundBox.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/ctrl/iup_flatframe.md
+// https://gen2brain.github.io/iup-go/ctrl/iup_flatframe.html
 func FlatFrame(child Ihandle) Ihandle {
 	h := mkih(C.IupFlatFrame(child.ptr()))
 	return h
@@ -143,7 +143,7 @@ func FlatFrame(child Ihandle) Ihandle {
 // Also known as Notebook in native systems.
 // Identical to the Tabs control but the decorations and buttons are manually drawn.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/ctrl/iup_flattabs.md
+// https://gen2brain.github.io/iup-go/ctrl/iup_flattabs.html
 func FlatTabs(children ...Ihandle) Ihandle {
 	children = append(children, Ihandle(0))
 
@@ -154,7 +154,7 @@ func FlatTabs(children ...Ihandle) Ihandle {
 // FlatScrollBox creates a native container that allows its child to be scrolled. It inherits from IupCanvas.
 // The difference from ScrollBox is that its scrollbars are drawn.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/ctrl/iup_flatscrollbox.md
+// https://gen2brain.github.io/iup-go/ctrl/iup_flatscrollbox.html
 func FlatScrollBox(child Ihandle) Ihandle {
 	h := mkih(C.IupFlatScrollBox(child.ptr()))
 	return h
@@ -163,7 +163,7 @@ func FlatScrollBox(child Ihandle) Ihandle {
 // DropButton creates an interface element that is a button with a drop-down arrow.
 // It can function as a button and as a dropdown. Its visual presentation can contain a text and/or an image.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/ctrl/iup_dropbutton.md
+// https://gen2brain.github.io/iup-go/ctrl/iup_dropbutton.html
 func DropButton(dropChild Ihandle) Ihandle {
 	h := mkih(C.IupDropButton(dropChild.ptr()))
 	return h
@@ -171,7 +171,7 @@ func DropButton(dropChild Ihandle) Ihandle {
 
 // Gauge creates a Gauge control. Shows a percent value that can be updated to simulate a progression.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/ctrl/iup_gauge.md
+// https://gen2brain.github.io/iup-go/ctrl/iup_gauge.html
 func Gauge() Ihandle {
 	h := mkih(C.IupGauge())
 	return h

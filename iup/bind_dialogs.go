@@ -22,7 +22,7 @@ import "C"
 // Dialog creates a dialog element. It manages user interaction with the interface elements.
 // For any interface element to be shown, it must be encapsulated in a dialog.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/dlg/iup_dialog.md
+// https://gen2brain.github.io/iup-go/dlg/iup_dialog.html
 func Dialog(child Ihandle) Ihandle {
 	h := mkih(C.IupDialog(child.ptr()))
 	return h
@@ -41,21 +41,21 @@ func Dialog(child Ihandle) Ihandle {
 // For a menu it returns automatically after a menu item is selected.
 // IMPORTANT: If a menu item callback returns CLOSE, it will also end the current popup level dialog.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_popup.md
+// https://gen2brain.github.io/iup-go/func/iup_popup.html
 func Popup(ih Ihandle, x, y int) int {
 	return int(C.IupPopup(ih.ptr(), C.int(x), C.int(y)))
 }
 
 // Show displays a dialog in the current position, or changes a control VISIBLE attribute.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_show.md
+// https://gen2brain.github.io/iup-go/func/iup_show.html
 func Show(ih Ihandle) int {
 	return int(C.IupShow(ih.ptr()))
 }
 
 // ShowXY displays a dialog in a given position on the screen.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_showxy.md
+// https://gen2brain.github.io/iup-go/func/iup_showxy.html
 func ShowXY(ih Ihandle, x, y int) int {
 	return int(C.IupShowXY(ih.ptr(), C.int(x), C.int(y)))
 }
@@ -63,7 +63,7 @@ func ShowXY(ih Ihandle, x, y int) int {
 // Hide hides an interface element.
 // This function has the same effect as attributing value "NO" to the interface element’s VISIBLE attribute.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_hide.md
+// https://gen2brain.github.io/iup-go/func/iup_hide.html
 func Hide(ih Ihandle) int {
 	return int(C.IupHide(ih.ptr()))
 }
@@ -71,7 +71,7 @@ func Hide(ih Ihandle) int {
 // FileDlg creates the File Dialog element. It is a predefined dialog for selecting files or a directory.
 // The dialog can be shown with the Popup function only.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/dlg/iup_filedlg.md
+// https://gen2brain.github.io/iup-go/dlg/iup_filedlg.html
 func FileDlg() Ihandle {
 	h := mkih(C.IupFileDlg())
 	return h
@@ -80,7 +80,7 @@ func FileDlg() Ihandle {
 // MessageDlg creates the Message Dialog element. It is a predefined dialog for displaying a message.
 // The dialog can be shown with the Popup function only.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/dlg/iup_messagedlg.md
+// https://gen2brain.github.io/iup-go/dlg/iup_messagedlg.html
 func MessageDlg() Ihandle {
 	h := mkih(C.IupMessageDlg())
 	return h
@@ -90,7 +90,7 @@ func MessageDlg() Ihandle {
 // The Windows and GTK dialogs can be shown only with the Popup function.
 // The ColorBrowser based dialog is a Dialog that can be shown as any regular Dialog.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/dlg/iup_colordlg.md
+// https://gen2brain.github.io/iup-go/dlg/iup_colordlg.html
 func ColorDlg() Ihandle {
 	h := mkih(C.IupColorDlg())
 	return h
@@ -99,7 +99,7 @@ func ColorDlg() Ihandle {
 // FontDlg creates the Font Dialog element. It is a predefined dialog for selecting a font.
 // The dialog can be shown with the Popup function only.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/dlg/iup_fontdlg.md
+// https://gen2brain.github.io/iup-go/dlg/iup_fontdlg.html
 func FontDlg() Ihandle {
 	h := mkih(C.IupFontDlg())
 	return h
@@ -108,7 +108,7 @@ func FontDlg() Ihandle {
 // ProgressDlg creates a progress dialog element. It is a predefined dialog for displaying the progress of an operation.
 // The dialog is meant to be shown with the show functions Show or ShowXY.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/dlg/iup_progressdlg.md
+// https://gen2brain.github.io/iup-go/dlg/iup_progressdlg.html
 func ProgressDlg() Ihandle {
 	h := mkih(C.IupProgressDlg())
 	return h
@@ -117,7 +117,7 @@ func ProgressDlg() Ihandle {
 // Alarm shows a modal dialog containing a message and up to three buttons.
 // Empty title falls back to the default localized title.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/dlg/iup_alarm.md
+// https://gen2brain.github.io/iup-go/dlg/iup_alarm.html
 func Alarm(title, msg, b1, b2, b3 string) int {
 	cTitle, cMsg, cB1, cB2, cB3 := cStrOrNull(title), C.CString(msg), C.CString(b1), cStrOrNull(b2), cStrOrNull(b3)
 	defer cStrFree(cTitle)
@@ -131,7 +131,7 @@ func Alarm(title, msg, b1, b2, b3 string) int {
 
 // GetFile shows a modal dialog of the native interface system to select a filename. Uses the FileDlg element.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/dlg/iup_getfile.md
+// https://gen2brain.github.io/iup-go/dlg/iup_getfile.html
 func GetFile(path string) (sel string, ret int) {
 	if len(path) > 4095 {
 		panic("path is too long (maximum is 4095)")
@@ -148,7 +148,7 @@ func GetFile(path string) (sel string, ret int) {
 
 // GetColor shows a modal dialog which allows the user to select a color. Based on ColorDlg.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/dlg/iup_getcolor.md
+// https://gen2brain.github.io/iup-go/dlg/iup_getcolor.html
 func GetColor(x, y int) (col color.RGBA, ret int) {
 	var r, g, b uint8
 	ret = int(C.IupGetColor(C.int(x), C.int(y), (*C.uchar)(unsafe.Pointer(&r)), (*C.uchar)(unsafe.Pointer(&g)), (*C.uchar)(unsafe.Pointer(&b))))
@@ -162,7 +162,7 @@ func GetColor(x, y int) (col color.RGBA, ret int) {
 
 // GetText shows a modal dialog to edit a multiline text.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/dlg/iup_gettext.md
+// https://gen2brain.github.io/iup-go/dlg/iup_gettext.html
 func GetText(title, text string, maxSize int) (string, int) {
 	cTitle := cStrOrNull(title)
 	defer cStrFree(cTitle)
@@ -188,7 +188,7 @@ func GetText(title, text string, maxSize int) (string, int) {
 
 // ListDialog shows a modal dialog to select items from a simple or multiple selection list.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/dlg/iup_listdialog.md
+// https://gen2brain.github.io/iup-go/dlg/iup_listdialog.html
 func ListDialog(_type int, title string, list []string, op, maxCol, maxLin int, marks *[]bool) (ret int) {
 	if marks != nil && len(list) != len(*marks) {
 		panic("bad parameter passed to ListDialog")
@@ -233,7 +233,7 @@ func ListDialog(_type int, title string, list []string, op, maxCol, maxLin int, 
 // Message shows a modal dialog containing a message.
 // It simply creates and popup a MessageDlg.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/dlg/iup_message.md
+// https://gen2brain.github.io/iup-go/dlg/iup_message.html
 func Message(title, msg string) {
 	cTitle, cMsg := cStrOrNull(title), cStrOrNull(msg)
 	defer cStrFree(cTitle)
@@ -244,7 +244,7 @@ func Message(title, msg string) {
 
 // VersionShow shows a modal dialog with IUP version, driver, and system information.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_version.md
+// https://gen2brain.github.io/iup-go/func/iup_version.html
 func VersionShow() {
 	C.IupVersionShow()
 }
@@ -252,7 +252,7 @@ func VersionShow() {
 // MessageError shows a modal dialog containing an error message.
 // It simply creates and popups a MessageDlg with DIALOGTYPE=ERROR.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/dlg/iup_messageerror.md
+// https://gen2brain.github.io/iup-go/dlg/iup_messageerror.html
 func MessageError(parent Ihandle, msg string) {
 	cMsg := cStrOrNull(msg)
 	defer cStrFree(cMsg)
@@ -263,7 +263,7 @@ func MessageError(parent Ihandle, msg string) {
 // MessageAlarm shows a modal dialog containing a question message, similar to Alarm.
 // It simply creates and popups a MessageDlg with DIALOGTYPE=QUESTION.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/dlg/iup_messagealarm.md
+// https://gen2brain.github.io/iup-go/dlg/iup_messagealarm.html
 func MessageAlarm(parent Ihandle, title, msg, buttons string) {
 	cTitle, cMsg, cButtons := cStrOrNull(title), cStrOrNull(msg), cStrOrNull(buttons)
 	defer cStrFree(cTitle)
@@ -280,7 +280,7 @@ func MessageAlarm(parent Ihandle, title, msg, buttons string) {
 //
 // This is a dialog intended for developers, so they can see and inspect their elements in other ways.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/dlg/iup_elementpropdialog.md
+// https://gen2brain.github.io/iup-go/dlg/iup_elementpropdialog.html
 func ElementPropertiesDialog(parent, elem Ihandle) Ihandle {
 	h := mkih(C.IupElementPropertiesDialog(parent.ptr(), elem.ptr()))
 	return h
@@ -293,7 +293,7 @@ func ElementPropertiesDialog(parent, elem Ihandle) Ihandle {
 //
 // This is a dialog intended for developers, so they can see and inspect their globals in other ways.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/dlg/iup_globalsdialog.md
+// https://gen2brain.github.io/iup-go/dlg/iup_globalsdialog.html
 func GlobalsDialog() Ihandle {
 	h := mkih(C.IupGlobalsDialog())
 	return h
@@ -306,7 +306,7 @@ func GlobalsDialog() Ihandle {
 //
 // This is a dialog intended for developers, so they can see attributes and callbacks information of a class.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/dlg/iup_classinfodialog.md
+// https://gen2brain.github.io/iup-go/dlg/iup_classinfodialog.html
 func ClassInfoDialog(dialog Ihandle) Ihandle {
 	h := mkih(C.IupClassInfoDialog(dialog.ptr()))
 	return h
@@ -314,7 +314,7 @@ func ClassInfoDialog(dialog Ihandle) Ihandle {
 
 // Param creates a Param element from a format string line.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_param.md
+// https://gen2brain.github.io/iup-go/elem/iup_param.html
 func Param(format string) Ihandle {
 	cFormat := C.CString(format)
 	defer C.free(unsafe.Pointer(cFormat))
@@ -324,7 +324,7 @@ func Param(format string) Ihandle {
 
 // ParamBox creates a ParamBox element from an array of Param elements.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_parambox.md
+// https://gen2brain.github.io/iup-go/elem/iup_parambox.html
 func ParamBox(params ...Ihandle) Ihandle {
 	cParams := make([]*C.Ihandle, len(params)+1)
 	for i, p := range params {
@@ -375,7 +375,7 @@ func getParamInfo(format string) (paramCount, paramExtra int, types []byte) {
 //
 // Returns 1 if the user pressed OK, 0 if Cancel.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/dlg/iup_getparam.md
+// https://gen2brain.github.io/iup-go/dlg/iup_getparam.html
 func GetParam(title string, action GetParamFunc, format string, data ...interface{}) int {
 	cTitle := cStrOrNull(title)
 	defer cStrFree(cTitle)

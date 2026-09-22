@@ -33,21 +33,21 @@ func openShared() int {
 
 // Version returns a string with the IUP version number.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_version.md
+// https://gen2brain.github.io/iup-go/func/iup_version.html
 func Version() string {
 	return C.GoString(C.IupVersion())
 }
 
 // VersionDate returns a string with the IUP version date.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_version.md
+// https://gen2brain.github.io/iup-go/func/iup_version.html
 func VersionDate() string {
 	return C.GoString(C.IupVersionDate())
 }
 
 // VersionNumber returns a string with the IUP version number.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_version.md
+// https://gen2brain.github.io/iup-go/func/iup_version.html
 func VersionNumber() int {
 	return int(C.IupVersionNumber())
 }
