@@ -182,14 +182,14 @@ type SamplesFunc func(ih Ihandle, frames, channels int, samples []int16) int
 
 // Open initializes the IUP toolkit.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_open.md
+// https://gen2brain.github.io/iup-go/func/iup_open.html
 func Open() int {
 	return ccall("IupOpen", "number", []interface{}{"number", "number"}, []interface{}{0, 0}).Int()
 }
 
 // Destroy destroys an element and its children.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_destroy.md
+// https://gen2brain.github.io/iup-go/func/iup_destroy.html
 func Destroy(ih Ihandle) {
 	removeCallbacks(ih)
 	ccall("IupDestroy", "", []interface{}{"number"}, []interface{}{int(ih)})
@@ -197,7 +197,7 @@ func Destroy(ih Ihandle) {
 
 // Close ends the IUP toolkit and releases internal memory.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_close.md
+// https://gen2brain.github.io/iup-go/func/iup_close.html
 func Close() {
 	ccall("IupClose", "", nil, nil)
 }
@@ -210,7 +210,7 @@ func EntryPoint(entry func()) {}
 // JS event loop (a synchronous wait would freeze Go's scheduler) until a
 // callback returns CLOSE. Modals block in C via IupPopup.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_mainloop.md
+// https://gen2brain.github.io/iup-go/func/iup_mainloop.html
 func MainLoop() int {
 	exitCh = make(chan struct{})
 	<-exitCh
@@ -219,7 +219,7 @@ func MainLoop() int {
 
 // Show displays a dialog in the current position, or changes a control VISIBLE state.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_show.md
+// https://gen2brain.github.io/iup-go/func/iup_show.html
 func Show(ih Ihandle) int {
 	return ccall("IupShow", "number", []interface{}{"number"}, []interface{}{int(ih)}).Int()
 }
@@ -227,35 +227,35 @@ func Show(ih Ihandle) int {
 // Popup shows a menu or dialog as a popup at the given position. A dialog blocks
 // modally until closed.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_popup.md
+// https://gen2brain.github.io/iup-go/func/iup_popup.html
 func Popup(ih Ihandle, x, y int) int {
 	return ccall("IupPopup", "number", []interface{}{"number", "number", "number"}, []interface{}{int(ih), x, y}).Int()
 }
 
 // ShowXY displays a dialog at the given position (use CENTER, LEFT, etc.).
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_showxy.md
+// https://gen2brain.github.io/iup-go/func/iup_showxy.html
 func ShowXY(ih Ihandle, x, y int) int {
 	return ccall("IupShowXY", "number", []interface{}{"number", "number", "number"}, []interface{}{int(ih), x, y}).Int()
 }
 
 // Label creates a label interface element which displays a separator, a text or an image.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_label.md
+// https://gen2brain.github.io/iup-go/elem/iup_label.html
 func Label(title string) Ihandle {
 	return ccallHandle("IupLabel", []interface{}{"string"}, []interface{}{title})
 }
 
 // Button creates an interface element that is a button.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_button.md
+// https://gen2brain.github.io/iup-go/elem/iup_button.html
 func Button(title string) Ihandle {
 	return ccallHandle("IupButton", []interface{}{"string"}, []interface{}{title})
 }
 
 // Vbox creates a void container for composing elements vertically.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_vbox.md
+// https://gen2brain.github.io/iup-go/elem/iup_vbox.html
 func Vbox(children ...Ihandle) Ihandle {
 	box := ccallHandle("iupwasmVbox0", nil, nil)
 	for _, c := range children {
@@ -266,7 +266,7 @@ func Vbox(children ...Ihandle) Ihandle {
 
 // Hbox creates a void container for composing elements horizontally.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_hbox.md
+// https://gen2brain.github.io/iup-go/elem/iup_hbox.html
 func Hbox(children ...Ihandle) Ihandle {
 	box := ccallHandle("iupwasmHbox0", nil, nil)
 	for _, c := range children {
@@ -277,7 +277,7 @@ func Hbox(children ...Ihandle) Ihandle {
 
 // Tabs creates a container for grouping children into tabbed pages.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_tabs.md
+// https://gen2brain.github.io/iup-go/elem/iup_tabs.html
 func Tabs(children ...Ihandle) Ihandle {
 	tabs := ccallHandle("iupwasmTabs0", nil, nil)
 	for _, c := range children {
@@ -288,70 +288,70 @@ func Tabs(children ...Ihandle) Ihandle {
 
 // Frame creates a frame container that draws a border around its child, with an optional title.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_frame.md
+// https://gen2brain.github.io/iup-go/elem/iup_frame.html
 func Frame(child Ihandle) Ihandle {
 	return ccallHandle("IupFrame", []interface{}{"number"}, []interface{}{int(child)})
 }
 
 // Fill creates a void element that dynamically occupies empty spaces in a box.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_fill.md
+// https://gen2brain.github.io/iup-go/elem/iup_fill.html
 func Fill() Ihandle {
 	return ccallHandle("IupFill", nil, nil)
 }
 
 // Text creates an editable text field (single line).
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_text.md
+// https://gen2brain.github.io/iup-go/elem/iup_text.html
 func Text() Ihandle {
 	return ccallHandle("IupText", nil, nil)
 }
 
 // MultiLine creates an editable text field with multiple lines (Text with MULTILINE=YES).
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_multiline.md
+// https://gen2brain.github.io/iup-go/elem/iup_multiline.html
 func MultiLine() Ihandle {
 	return ccallHandle("IupMultiLine", nil, nil)
 }
 
 // ProgressBar creates a progress bar to show a percentage of a task.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_progressbar.md
+// https://gen2brain.github.io/iup-go/elem/iup_progressbar.html
 func ProgressBar() Ihandle {
 	return ccallHandle("IupProgressBar", nil, nil)
 }
 
 // Timer creates a timer that periodically invokes ACTION_CB while RUN=YES.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_timer.md
+// https://gen2brain.github.io/iup-go/elem/iup_timer.html
 func Timer() Ihandle {
 	return ccallHandle("IupTimer", nil, nil)
 }
 
 // Val creates a slider; _type is "HORIZONTAL" or "VERTICAL".
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_val.md
+// https://gen2brain.github.io/iup-go/elem/iup_val.html
 func Val(_type string) Ihandle {
 	return ccallHandle("IupVal", []interface{}{"string"}, []interface{}{_type})
 }
 
 // Toggle creates the toggle interface element (checkbox, or radio inside a Radio).
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_toggle.md
+// https://gen2brain.github.io/iup-go/elem/iup_toggle.html
 func Toggle(title string) Ihandle {
 	return ccallHandle("IupToggle", []interface{}{"string"}, []interface{}{title})
 }
 
 // Radio creates a void container for grouping mutually exclusive toggles.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_radio.md
+// https://gen2brain.github.io/iup-go/elem/iup_radio.html
 func Radio(child Ihandle) Ihandle {
 	return ccallHandle("IupRadio", []interface{}{"number"}, []interface{}{int(child)})
 }
 
 // List creates a list (listbox, dropdown, or with an edit box).
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_list.md
+// https://gen2brain.github.io/iup-go/elem/iup_list.html
 func List() Ihandle {
 	return ccallHandle("IupList", nil, nil)
 }
@@ -368,28 +368,28 @@ func imageBytes(width, height int, pixMap []byte, fn string) Ihandle {
 
 // Image creates an image to be shown on labels, buttons, toggles, etc. (8bpp indexed).
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_image.md
+// https://gen2brain.github.io/iup-go/elem/iup_image.html
 func Image(width, height int, pixMap []byte) Ihandle {
 	return imageBytes(width, height, pixMap, "IupImage")
 }
 
 // ImageRGB creates a 24bpp RGB image.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_image.md
+// https://gen2brain.github.io/iup-go/elem/iup_image.html
 func ImageRGB(width, height int, pixMap []byte) Ihandle {
 	return imageBytes(width, height, pixMap, "IupImageRGB")
 }
 
 // ImageRGBA creates a 32bpp RGBA image.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_image.md
+// https://gen2brain.github.io/iup-go/elem/iup_image.html
 func ImageRGBA(width, height int, pixMap []byte) Ihandle {
 	return imageBytes(width, height, pixMap, "IupImageRGBA")
 }
 
 // Menu creates a menu (menu bar when set as a dialog MENU, else a popup).
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_menu.md
+// https://gen2brain.github.io/iup-go/elem/iup_menu.html
 func Menu(children ...Ihandle) Ihandle {
 	menu := ccallHandle("iupwasmMenu0", nil, nil)
 	for _, c := range children {
@@ -400,21 +400,21 @@ func Menu(children ...Ihandle) Ihandle {
 
 // Submenu creates a submenu entry with the given title and child menu.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_submenu.md
+// https://gen2brain.github.io/iup-go/elem/iup_submenu.html
 func Submenu(title string, child Ihandle) Ihandle {
 	return ccallHandle("IupSubmenu", []interface{}{"string", "number"}, []interface{}{title, int(child)})
 }
 
 // MenuItem creates a menu item with the given title.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_item.md
+// https://gen2brain.github.io/iup-go/elem/iup_menuitem.html
 func MenuItem(title string) Ihandle {
 	return ccallHandle("IupMenuItem", []interface{}{"string"}, []interface{}{title})
 }
 
 // MenuSeparator creates a menu separator line.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_menuseparator.md
+// https://gen2brain.github.io/iup-go/elem/iup_menuseparator.html
 func MenuSeparator() Ihandle {
 	return ccallHandle("IupMenuSeparator", nil, nil)
 }
@@ -496,35 +496,35 @@ type MenuCloseFunc func(ih Ihandle) int
 
 // Calendar creates a calendar (date picker) element.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_calendar.md
+// https://gen2brain.github.io/iup-go/elem/iup_calendar.html
 func Calendar() Ihandle {
 	return ccallHandle("IupCalendar", nil, nil)
 }
 
 // Table creates a grid/table element.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_table.md
+// https://gen2brain.github.io/iup-go/elem/iup_table.html
 func Table() Ihandle {
 	return ccallHandle("IupTable", nil, nil)
 }
 
 // Tree creates a tree-view element.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_tree.md
+// https://gen2brain.github.io/iup-go/elem/iup_tree.html
 func Tree() Ihandle {
 	return ccallHandle("IupTree", nil, nil)
 }
 
 // Scrollbar creates a standalone scrollbar; orientation is "HORIZONTAL" or "VERTICAL".
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_scrollbar.md
+// https://gen2brain.github.io/iup-go/elem/iup_scrollbar.html
 func Scrollbar(orientation string) Ihandle {
 	return ccallHandle("IupScrollbar", []interface{}{"string"}, []interface{}{orientation})
 }
 
 // SetAttributeId sets an id-numbered attribute.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setattribute.md
+// https://gen2brain.github.io/iup-go/func/iup_setattribute.html
 func SetAttributeId(ih Ihandle, name string, id int, value interface{}) {
 	switch v := value.(type) {
 	case nil:
@@ -544,14 +544,14 @@ func SetAttributeId(ih Ihandle, name string, id int, value interface{}) {
 
 // GetAttributeId returns an id-numbered attribute value.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
+// https://gen2brain.github.io/iup-go/func/iup_getattribute.html
 func GetAttributeId(ih Ihandle, name string, id int) string {
 	return ccall("IupGetAttributeId", "string", []interface{}{"number", "string", "number"}, []interface{}{int(ih), name, id}).String()
 }
 
 // SetAttributeId2 sets a lin:col-numbered attribute (e.g. a table cell).
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setattribute.md
+// https://gen2brain.github.io/iup-go/func/iup_setattribute.html
 func SetAttributeId2(ih Ihandle, name string, lin, col int, value interface{}) {
 	switch v := value.(type) {
 	case nil:
@@ -571,56 +571,56 @@ func SetAttributeId2(ih Ihandle, name string, lin, col int, value interface{}) {
 
 // GetAttributeId2 returns a lin:col-numbered attribute value (e.g. a table cell).
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
+// https://gen2brain.github.io/iup-go/func/iup_getattribute.html
 func GetAttributeId2(ih Ihandle, name string, lin, col int) string {
 	return ccall("IupGetAttributeId2", "string", []interface{}{"number", "string", "number", "number"}, []interface{}{int(ih), name, lin, col}).String()
 }
 
 // Canvas creates a canvas for custom drawing through the IupDraw API.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_canvas.md
+// https://gen2brain.github.io/iup-go/elem/iup_canvas.html
 func Canvas() Ihandle {
 	return ccallHandle("IupCanvas", nil, nil)
 }
 
 // FontDlg creates a font selection dialog (custom IUP-controls dialog).
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/dlg/iup_fontdlg.md
+// https://gen2brain.github.io/iup-go/dlg/iup_fontdlg.html
 func FontDlg() Ihandle {
 	return ccallHandle("IupFontDlg", nil, nil)
 }
 
 // Popover creates a floating container anchored to another element.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_popover.md
+// https://gen2brain.github.io/iup-go/elem/iup_popover.html
 func Popover(child Ihandle) Ihandle {
 	return ccallHandle("IupPopover", []interface{}{"number"}, []interface{}{int(child)})
 }
 
 // Dialog creates a dialog element.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_dialog.md
+// https://gen2brain.github.io/iup-go/dlg/iup_dialog.html
 func Dialog(child Ihandle) Ihandle {
 	return ccallHandle("IupDialog", []interface{}{"number"}, []interface{}{int(child)})
 }
 
 // GetParent returns the parent of an element.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getparent.md
+// https://gen2brain.github.io/iup-go/func/iup_getparent.html
 func GetParent(ih Ihandle) Ihandle {
 	return ccallHandle("IupGetParent", []interface{}{"number"}, []interface{}{int(ih)})
 }
 
 // GetChildPos returns the position of a child in its parent's child list.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getchildpos.md
+// https://gen2brain.github.io/iup-go/func/iup_getchildpos.html
 func GetChildPos(ih, child Ihandle) int {
 	return ccall("IupGetChildPos", "number", []interface{}{"number", "number"}, []interface{}{int(ih), int(child)}).Int()
 }
 
 // SetAttribute sets an interface element attribute.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setattribute.md
+// https://gen2brain.github.io/iup-go/func/iup_setattribute.html
 func SetAttribute(ih Ihandle, name string, value interface{}) {
 	if wasmThreadSetAttr(ih, name, value) {
 		return
@@ -649,7 +649,7 @@ func SetAttribute(ih Ihandle, name string, value interface{}) {
 
 // SetAttributes sets several attributes at once from a string.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setattributes.md
+// https://gen2brain.github.io/iup-go/func/iup_setattributes.html
 func SetAttributes(ih Ihandle, str string) Ihandle {
 	ccall("IupSetAttributes", "number", []interface{}{"number", "string"}, []interface{}{int(ih), str})
 	return ih
@@ -657,7 +657,7 @@ func SetAttributes(ih Ihandle, str string) Ihandle {
 
 // GetAttribute returns an interface element attribute value.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
+// https://gen2brain.github.io/iup-go/func/iup_getattribute.html
 func GetAttribute(ih Ihandle, name string) string {
 	if attribIsNotString(ih, name) {
 		ptr := ccall("IupGetAttribute", "number", []interface{}{"number", "string"}, []interface{}{int(ih), name}).Int()
@@ -672,14 +672,14 @@ func GetAttribute(ih Ihandle, name string) string {
 
 // SetAttributeHandle associates a named element with an attribute (e.g. IMAGE handles).
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setattributehandle.md
+// https://gen2brain.github.io/iup-go/func/iup_setattributehandle.html
 func SetAttributeHandle(ih Ihandle, name string, ihNamed Ihandle) {
 	ccall("IupSetAttributeHandle", "", []interface{}{"number", "string", "number"}, []interface{}{int(ih), name, int(ihNamed)})
 }
 
 // SetHandle associates a name with an interface element.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_sethandle.md
+// https://gen2brain.github.io/iup-go/func/iup_sethandle.html
 func SetHandle(name string, ih Ihandle) Ihandle {
 	ccall("IupSetHandle", "", []interface{}{"string", "number"}, []interface{}{name, int(ih)})
 	return ih
@@ -687,49 +687,49 @@ func SetHandle(name string, ih Ihandle) Ihandle {
 
 // GetHandle returns the element associated with a name.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_gethandle.md
+// https://gen2brain.github.io/iup-go/func/iup_gethandle.html
 func GetHandle(name string) Ihandle {
 	return ccallHandle("IupGetHandle", []interface{}{"string"}, []interface{}{name})
 }
 
 // GetGlobal returns a global attribute value.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getglobal.md
+// https://gen2brain.github.io/iup-go/func/iup_getglobal.html
 func GetGlobal(name string) string {
 	return ccall("IupGetGlobal", "string", []interface{}{"string"}, []interface{}{name}).String()
 }
 
 // GetChild returns the child at the given position (0-based).
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getchild.md
+// https://gen2brain.github.io/iup-go/func/iup_getchild.html
 func GetChild(ih Ihandle, pos int) Ihandle {
 	return ccallHandle("IupGetChild", []interface{}{"number", "number"}, []interface{}{int(ih), pos})
 }
 
 // GetFloat returns an attribute value as a float32.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
+// https://gen2brain.github.io/iup-go/func/iup_getattribute.html
 func GetFloat(ih Ihandle, name string) float32 {
 	return float32(ccall("IupGetFloat", "number", []interface{}{"number", "string"}, []interface{}{int(ih), name}).Float())
 }
 
 // GetName returns the name of an element previously associated by SetHandle.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getname.md
+// https://gen2brain.github.io/iup-go/func/iup_getname.html
 func GetName(ih Ihandle) string {
 	return ccall("IupGetName", "string", []interface{}{"number"}, []interface{}{int(ih)}).String()
 }
 
 // GetInt returns an attribute value as an integer.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
+// https://gen2brain.github.io/iup-go/func/iup_getattribute.html
 func GetInt(ih Ihandle, name string) int {
 	return ccall("IupGetInt", "number", []interface{}{"number", "string"}, []interface{}{int(ih), name}).Int()
 }
 
 // SetCallback associates a callback with an event.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setcallback.md
+// https://gen2brain.github.io/iup-go/func/iup_setcallback.html
 func SetCallback(ih Ihandle, name string, fn interface{}) {
 	if fn == nil {
 		delete(callbacks, cbKey{ih, name})
@@ -742,21 +742,21 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 
 // Message shows a modal message dialog (browser alert).
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/dlg/iup_messagedlg.md
+// https://gen2brain.github.io/iup-go/dlg/iup_messagedlg.html
 func Message(title, msg string) {
 	ccall("IupMessage", "", []interface{}{"string", "string"}, []interface{}{title, msg})
 }
 
 // MessageError shows a modal error message dialog.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/dlg/iup_messageerror.md
+// https://gen2brain.github.io/iup-go/dlg/iup_messageerror.html
 func MessageError(parent Ihandle, msg string) {
 	ccall("IupMessageError", "", []interface{}{"number", "string"}, []interface{}{int(parent), msg})
 }
 
 // MessageAlarm shows a modal message dialog with the given buttons.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/dlg/iup_messagealarm.md
+// https://gen2brain.github.io/iup-go/dlg/iup_messagealarm.html
 func MessageAlarm(parent Ihandle, title, msg, buttons string) {
 	ccall("IupMessageAlarm", "", []interface{}{"number", "string", "string", "string"}, []interface{}{int(parent), title, msg, buttons})
 }
@@ -764,7 +764,7 @@ func MessageAlarm(parent Ihandle, title, msg, buttons string) {
 // Alarm shows a modal dialog with up to three buttons and returns the pressed
 // one (1, 2 or 3). b2/b3 may be empty to omit those buttons.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/dlg/iup_alarm.md
+// https://gen2brain.github.io/iup-go/dlg/iup_alarm.html
 func Alarm(title, msg, b1, b2, b3 string) int {
 	return ccall("IupAlarm", "number",
 		[]interface{}{"string", "string", "string", "string", "string"},
@@ -773,42 +773,42 @@ func Alarm(title, msg, b1, b2, b3 string) int {
 
 // Notify creates a desktop notification element.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_notify.md
+// https://gen2brain.github.io/iup-go/elem/iup_notify.html
 func Notify() Ihandle {
 	return ccallHandle("IupNotify", nil, nil)
 }
 
 // Location creates a geolocation source.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_location.md
+// https://gen2brain.github.io/iup-go/elem/iup_location.html
 func Location() Ihandle {
 	return ccallHandle("IupLocation", nil, nil)
 }
 
 // Sensor creates a motion sensor source.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_sensor.md
+// https://gen2brain.github.io/iup-go/elem/iup_sensor.html
 func Sensor() Ihandle {
 	return ccallHandle("IupSensor", nil, nil)
 }
 
 // Clipboard creates a clipboard access element.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_clipboard.md
+// https://gen2brain.github.io/iup-go/elem/iup_clipboard.html
 func Clipboard() Ihandle {
 	return ccallHandle("IupClipboard", nil, nil)
 }
 
 // Help opens a URL in a new browser tab.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_help.md
+// https://gen2brain.github.io/iup-go/func/iup_help.html
 func Help(url string) int {
 	return ccall("IupHelp", "number", []interface{}{"string"}, []interface{}{url}).Int()
 }
 
 // SetGlobal sets a global attribute.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setglobal.md
+// https://gen2brain.github.io/iup-go/func/iup_setglobal.html
 func SetGlobal(name string, value interface{}) {
 	switch v := value.(type) {
 	case nil:
@@ -832,56 +832,56 @@ func SetGlobal(name string, value interface{}) {
 
 // DrawBegin initializes the drawing process.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawBegin(ih Ihandle) {
 	ccall("IupDrawBegin", "", []interface{}{"number"}, []interface{}{int(ih)})
 }
 
 // DrawEnd terminates the drawing process and flushes to the screen.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawEnd(ih Ihandle) {
 	ccall("IupDrawEnd", "", []interface{}{"number"}, []interface{}{int(ih)})
 }
 
 // DrawSave saves the current drawing state.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawSave(ih Ihandle) {
 	ccall("IupDrawSave", "", []interface{}{"number"}, []interface{}{int(ih)})
 }
 
 // DrawRestore restores the most recently saved drawing state.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawRestore(ih Ihandle) {
 	ccall("IupDrawRestore", "", []interface{}{"number"}, []interface{}{int(ih)})
 }
 
 // DrawTransform multiplies the current drawing transform by the given matrix.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawTransform(ih Ihandle, a, b, c, d, e, f float64) {
 	ccall("IupDrawTransform", "", []interface{}{"number", "number", "number", "number", "number", "number", "number"}, []interface{}{int(ih), a, b, c, d, e, f})
 }
 
 // DrawSetTransform replaces the current drawing transform.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawSetTransform(ih Ihandle, a, b, c, d, e, f float64) {
 	ccall("IupDrawSetTransform", "", []interface{}{"number", "number", "number", "number", "number", "number", "number"}, []interface{}{int(ih), a, b, c, d, e, f})
 }
 
 // DrawResetTransform resets the current drawing transform to identity.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawResetTransform(ih Ihandle) {
 	ccall("IupDrawResetTransform", "", []interface{}{"number"}, []interface{}{int(ih)})
 }
 
 // DrawGetTransform returns the current drawing transform.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawGetTransform(ih Ihandle) (a, b, c, d, e, f float64) {
 	p := wasmMalloc(48)
 	ccall("IupDrawGetTransform", "", []interface{}{"number", "number", "number", "number", "number", "number", "number"}, []interface{}{int(ih), p, p + 8, p + 16, p + 24, p + 32, p + 40})
@@ -893,28 +893,28 @@ func DrawGetTransform(ih Ihandle) (a, b, c, d, e, f float64) {
 
 // DrawTranslate translates the current drawing transform.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawTranslate(ih Ihandle, tx, ty float64) {
 	ccall("IupDrawTranslate", "", []interface{}{"number", "number", "number"}, []interface{}{int(ih), tx, ty})
 }
 
 // DrawScale scales the current drawing transform.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawScale(ih Ihandle, sx, sy float64) {
 	ccall("IupDrawScale", "", []interface{}{"number", "number", "number"}, []interface{}{int(ih), sx, sy})
 }
 
 // DrawRotate rotates the current drawing transform counterclockwise in degrees.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawRotate(ih Ihandle, angle float64) {
 	ccall("IupDrawRotate", "", []interface{}{"number", "number"}, []interface{}{int(ih), angle})
 }
 
 // DrawGetSize returns the drawing area size.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawGetSize(ih Ihandle) (w, h int) {
 	pw := wasmMalloc(8)
 	ph := pw + 4
@@ -926,21 +926,21 @@ func DrawGetSize(ih Ihandle) (w, h int) {
 
 // DrawParentBackground fills the canvas with the native parent background color.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawParentBackground(ih Ihandle) {
 	ccall("IupDrawParentBackground", "", []interface{}{"number"}, []interface{}{int(ih)})
 }
 
 // DrawLine draws a line including start and end points.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawLine(ih Ihandle, x1, y1, x2, y2 int) {
 	ccall("IupDrawLine", "", []interface{}{"number", "number", "number", "number", "number"}, []interface{}{int(ih), x1, y1, x2, y2})
 }
 
 // DrawRectangle draws a rectangle including start and end points.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawRectangle(ih Ihandle, x1, y1, x2, y2 int) {
 	ccall("IupDrawRectangle", "", []interface{}{"number", "number", "number", "number", "number"}, []interface{}{int(ih), x1, y1, x2, y2})
 }
@@ -948,21 +948,21 @@ func DrawRectangle(ih Ihandle, x1, y1, x2, y2 int) {
 // DrawArc draws an arc inside a rectangle between the two angles in degrees.
 // When filled it draws a pie shape. Angles are counter-clockwise from 3 o'clock.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawArc(ih Ihandle, x1, y1, x2, y2 int, a1, a2 float64) {
 	ccall("IupDrawArc", "", []interface{}{"number", "number", "number", "number", "number", "number", "number"}, []interface{}{int(ih), x1, y1, x2, y2, a1, a2})
 }
 
 // DrawEllipse draws an ellipse inscribed in the rectangle (x1,y1)-(x2,y2).
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawEllipse(ih Ihandle, x1, y1, x2, y2 int) {
 	ccall("IupDrawEllipse", "", []interface{}{"number", "number", "number", "number", "number"}, []interface{}{int(ih), x1, y1, x2, y2})
 }
 
 // DrawPolygon draws a polygon. Coordinates are x1, y1, x2, y2, ...
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawPolygon(ih Ihandle, points []int, count int) {
 	if len(points) == 0 {
 		return
@@ -977,84 +977,84 @@ func DrawPolygon(ih Ihandle, points []int, count int) {
 
 // DrawPixel draws a single pixel.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawPixel(ih Ihandle, x, y int) {
 	ccall("IupDrawPixel", "", []interface{}{"number", "number", "number"}, []interface{}{int(ih), x, y})
 }
 
 // DrawRoundedRectangle draws a rectangle with rounded corners.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawRoundedRectangle(ih Ihandle, x1, y1, x2, y2, cornerRadius int) {
 	ccall("IupDrawRoundedRectangle", "", []interface{}{"number", "number", "number", "number", "number", "number"}, []interface{}{int(ih), x1, y1, x2, y2, cornerRadius})
 }
 
 // DrawBezier draws a cubic Bezier curve.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawBezier(ih Ihandle, x1, y1, x2, y2, x3, y3, x4, y4 int) {
 	ccall("IupDrawBezier", "", []interface{}{"number", "number", "number", "number", "number", "number", "number", "number", "number"}, []interface{}{int(ih), x1, y1, x2, y2, x3, y3, x4, y4})
 }
 
 // DrawQuadraticBezier draws a quadratic Bezier curve.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawQuadraticBezier(ih Ihandle, x1, y1, x2, y2, x3, y3 int) {
 	ccall("IupDrawQuadraticBezier", "", []interface{}{"number", "number", "number", "number", "number", "number", "number"}, []interface{}{int(ih), x1, y1, x2, y2, x3, y3})
 }
 
 // DrawText draws text using the font defined by DRAWFONT, or FONT.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawText(ih Ihandle, str string, x, y, w, h int) {
 	ccall("IupDrawText", "", []interface{}{"number", "string", "number", "number", "number", "number", "number"}, []interface{}{int(ih), str, len(str), x, y, w, h})
 }
 
 // DrawImage draws an image given its name; w/h of -1 use the image size.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawImage(ih Ihandle, name string, x, y, w, h int) {
 	ccall("IupDrawImage", "", []interface{}{"number", "string", "number", "number", "number", "number"}, []interface{}{int(ih), name, x, y, w, h})
 }
 
 // DrawSelectRect draws a selection rectangle.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawSelectRect(ih Ihandle, x1, y1, x2, y2 int) {
 	ccall("IupDrawSelectRect", "", []interface{}{"number", "number", "number", "number", "number"}, []interface{}{int(ih), x1, y1, x2, y2})
 }
 
 // DrawFocusRect draws a focus rectangle.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawFocusRect(ih Ihandle, x1, y1, x2, y2 int) {
 	ccall("IupDrawFocusRect", "", []interface{}{"number", "number", "number", "number", "number"}, []interface{}{int(ih), x1, y1, x2, y2})
 }
 
 // DrawSetClipRect defines a rectangular clipping region.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawSetClipRect(ih Ihandle, x1, y1, x2, y2 int) {
 	ccall("IupDrawSetClipRect", "", []interface{}{"number", "number", "number", "number", "number"}, []interface{}{int(ih), x1, y1, x2, y2})
 }
 
 // DrawSetClipRoundedRect defines a rounded rectangular clipping region.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawSetClipRoundedRect(ih Ihandle, x1, y1, x2, y2, cornerRadius int) {
 	ccall("IupDrawSetClipRoundedRect", "", []interface{}{"number", "number", "number", "number", "number", "number"}, []interface{}{int(ih), x1, y1, x2, y2, cornerRadius})
 }
 
 // DrawResetClip resets the clipping area to none.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawResetClip(ih Ihandle) {
 	ccall("IupDrawResetClip", "", []interface{}{"number"}, []interface{}{int(ih)})
 }
 
 // DrawLinearGradient draws a linear gradient between two colors.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawLinearGradient(ih Ihandle, x1, y1, x2, y2 int, angle float32, color1, color2 string) {
 	ccall("IupDrawLinearGradient", "", []interface{}{"number", "number", "number", "number", "number", "number", "string", "string"}, []interface{}{int(ih), x1, y1, x2, y2, float64(angle), color1, color2})
 }
@@ -1080,7 +1080,7 @@ func drawGradientStopArgs(colors []string, offsets []float32) (colorsPtr, offset
 
 // DrawLinearGradientStops draws a linear gradient across count color stops.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawLinearGradientStops(ih Ihandle, x1, y1, x2, y2 int, angle float32, colors []string, offsets []float32) {
 	if len(colors) < 2 || (len(offsets) != 0 && len(offsets) != len(colors)) {
 		return
@@ -1092,7 +1092,7 @@ func DrawLinearGradientStops(ih Ihandle, x1, y1, x2, y2 int, angle float32, colo
 
 // DrawRadialGradientStops draws a radial gradient across count color stops.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawRadialGradientStops(ih Ihandle, cx, cy, radius int, colors []string, offsets []float32) {
 	if len(colors) < 2 || (len(offsets) != 0 && len(offsets) != len(colors)) {
 		return
@@ -1108,35 +1108,35 @@ func DrawRadialGradient(ih Ihandle, cx, cy, radius int, colorCenter, colorEdge s
 
 // DrawPathBegin resets the current path.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawPathBegin(ih Ihandle) {
 	ccall("IupDrawPathBegin", "", []interface{}{"number"}, []interface{}{int(ih)})
 }
 
 // DrawPathMoveTo starts a new subpath at the given position.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawPathMoveTo(ih Ihandle, x, y int) {
 	ccall("IupDrawPathMoveTo", "", []interface{}{"number", "number", "number"}, []interface{}{int(ih), x, y})
 }
 
 // DrawPathLineTo adds a line to the given position.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawPathLineTo(ih Ihandle, x, y int) {
 	ccall("IupDrawPathLineTo", "", []interface{}{"number", "number", "number"}, []interface{}{int(ih), x, y})
 }
 
 // DrawPathCurveTo adds a cubic Bezier curve with two control points.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawPathCurveTo(ih Ihandle, x1, y1, x2, y2, x3, y3 int) {
 	ccall("IupDrawPathCurveTo", "", []interface{}{"number", "number", "number", "number", "number", "number", "number"}, []interface{}{int(ih), x1, y1, x2, y2, x3, y3})
 }
 
 // DrawPathQuadTo adds a quadratic Bezier curve with one control point.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawPathQuadTo(ih Ihandle, x1, y1, x2, y2 int) {
 	ccall("IupDrawPathQuadTo", "", []interface{}{"number", "number", "number", "number", "number"}, []interface{}{int(ih), x1, y1, x2, y2})
 }
@@ -1144,49 +1144,49 @@ func DrawPathQuadTo(ih Ihandle, x1, y1, x2, y2 int) {
 // DrawPathArcTo adds an arc of the ellipse centered at (cx,cy) with radii rx,ry,
 // from a1 to a2 degrees counter-clockwise.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawPathArcTo(ih Ihandle, cx, cy, rx, ry int, a1, a2 float64) {
 	ccall("IupDrawPathArcTo", "", []interface{}{"number", "number", "number", "number", "number", "number", "number"}, []interface{}{int(ih), cx, cy, rx, ry, a1, a2})
 }
 
 // DrawPathClose closes the current subpath with a line to its start.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawPathClose(ih Ihandle) {
 	ccall("IupDrawPathClose", "", []interface{}{"number"}, []interface{}{int(ih)})
 }
 
 // DrawPathFill fills the current path with the current source.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawPathFill(ih Ihandle, rule int) {
 	ccall("IupDrawPathFill", "", []interface{}{"number", "number"}, []interface{}{int(ih), rule})
 }
 
 // DrawPathStroke strokes the current path with the current source.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawPathStroke(ih Ihandle) {
 	ccall("IupDrawPathStroke", "", []interface{}{"number"}, []interface{}{int(ih)})
 }
 
 // DrawSetClipPath sets the current path as the clipping area, replacing the previous clip.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawSetClipPath(ih Ihandle, rule int) {
 	ccall("IupDrawSetClipPath", "", []interface{}{"number", "number"}, []interface{}{int(ih), rule})
 }
 
 // DrawSetSourceSolid sets a solid color as the current source.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawSetSourceSolid(ih Ihandle, color string) {
 	ccall("IupDrawSetSourceSolid", "", []interface{}{"number", "string"}, []interface{}{int(ih), color})
 }
 
 // DrawSetSourceLinearGradient sets a linear gradient as the current source.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawSetSourceLinearGradient(ih Ihandle, x1, y1, x2, y2 int, angle float32, colors []string, offsets []float32) {
 	if len(colors) < 2 || (len(offsets) != 0 && len(offsets) != len(colors)) {
 		return
@@ -1198,7 +1198,7 @@ func DrawSetSourceLinearGradient(ih Ihandle, x1, y1, x2, y2 int, angle float32, 
 
 // DrawSetSourceRadialGradient sets a radial gradient as the current source.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawSetSourceRadialGradient(ih Ihandle, cx, cy, radius int, colors []string, offsets []float32) {
 	if len(colors) < 2 || (len(offsets) != 0 && len(offsets) != len(colors)) {
 		return
@@ -1210,14 +1210,14 @@ func DrawSetSourceRadialGradient(ih Ihandle, cx, cy, radius int, colors []string
 
 // DrawResetSource resets the current source back to the DRAWCOLOR attribute.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawResetSource(ih Ihandle) {
 	ccall("IupDrawResetSource", "", []interface{}{"number"}, []interface{}{int(ih)})
 }
 
 // DrawGetTextSize returns the given text size using DRAWFONT, or FONT.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawGetTextSize(ih Ihandle, str string) (w, h int) {
 	pw := wasmMalloc(8)
 	ph := pw + 4
@@ -1229,7 +1229,7 @@ func DrawGetTextSize(ih Ihandle, str string) (w, h int) {
 
 // DrawGetTextMetrics returns the font metrics using DRAWFONT, or FONT.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawGetTextMetrics(ih Ihandle) (ascent, descent, lineHeight int) {
 	pa := wasmMalloc(12)
 	pd := pa + 4

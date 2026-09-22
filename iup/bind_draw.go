@@ -15,50 +15,50 @@ import "C"
 
 // DrawBegin initialize the drawing process.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawBegin(ih Ihandle) {
 	C.IupDrawBegin(ih.ptr())
 }
 
 // DrawEnd terminates the drawing process and actually draw on screen..
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawEnd(ih Ihandle) {
 	C.IupDrawEnd(ih.ptr())
 }
 
 // DrawSave saves the current drawing state.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawSave(ih Ihandle) { C.IupDrawSave(ih.ptr()) }
 
 // DrawRestore restores the most recently saved drawing state.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawRestore(ih Ihandle) { C.IupDrawRestore(ih.ptr()) }
 
 // DrawTransform multiplies the current drawing transform by the given matrix.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawTransform(ih Ihandle, a, b, c, d, e, f float64) {
 	C.IupDrawTransform(ih.ptr(), C.double(a), C.double(b), C.double(c), C.double(d), C.double(e), C.double(f))
 }
 
 // DrawSetTransform replaces the current drawing transform.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawSetTransform(ih Ihandle, a, b, c, d, e, f float64) {
 	C.IupDrawSetTransform(ih.ptr(), C.double(a), C.double(b), C.double(c), C.double(d), C.double(e), C.double(f))
 }
 
 // DrawResetTransform resets the current drawing transform to identity.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawResetTransform(ih Ihandle) { C.IupDrawResetTransform(ih.ptr()) }
 
 // DrawGetTransform returns the current drawing transform.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawGetTransform(ih Ihandle) (a, b, c, d, e, f float64) {
 	var ca, cb, cc, cd, ce, cf C.double
 	C.IupDrawGetTransform(ih.ptr(), &ca, &cb, &cc, &cd, &ce, &cf)
@@ -67,26 +67,26 @@ func DrawGetTransform(ih Ihandle) (a, b, c, d, e, f float64) {
 
 // DrawTranslate translates the current drawing transform.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawTranslate(ih Ihandle, tx, ty float64) {
 	C.IupDrawTranslate(ih.ptr(), C.double(tx), C.double(ty))
 }
 
 // DrawScale scales the current drawing transform.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawScale(ih Ihandle, sx, sy float64) {
 	C.IupDrawScale(ih.ptr(), C.double(sx), C.double(sy))
 }
 
 // DrawRotate rotates the current drawing transform counterclockwise in degrees.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawRotate(ih Ihandle, angle float64) { C.IupDrawRotate(ih.ptr(), C.double(angle)) }
 
 // DrawSetClipRect defines a rectangular clipping region.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawSetClipRect(ih Ihandle, x1, y1, x2, y2 int) {
 	C.IupDrawSetClipRect(ih.ptr(), C.int(x1), C.int(y1), C.int(x2), C.int(y2))
 }
@@ -94,14 +94,14 @@ func DrawSetClipRect(ih Ihandle, x1, y1, x2, y2 int) {
 // DrawSetClipRoundedRect defines a rounded rectangular clipping region.
 // This is useful for drawing gradients or other content with rounded corners.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawSetClipRoundedRect(ih Ihandle, x1, y1, x2, y2, cornerRadius int) {
 	C.IupDrawSetClipRoundedRect(ih.ptr(), C.int(x1), C.int(y1), C.int(x2), C.int(y2), C.int(cornerRadius))
 }
 
 // DrawResetClip resets the clipping area to none.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawResetClip(ih Ihandle) {
 	C.IupDrawResetClip(ih.ptr())
 }
@@ -109,7 +109,7 @@ func DrawResetClip(ih Ihandle) {
 // DrawGetClipRect returns the previous rectangular clipping region set by DrawSetClipRect,
 // if clipping was reset returns 0 in all values.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawGetClipRect(ih Ihandle) (x1, y1, x2, y2 int) {
 	var cX1, cY1, cX2, cY2 C.int
 	C.IupDrawGetClipRect(ih.ptr(), &cX1, &cY1, &cX2, &cY2)
@@ -119,21 +119,21 @@ func DrawGetClipRect(ih Ihandle) (x1, y1, x2, y2 int) {
 
 // DrawParentBackground fills the canvas with the native parent background color.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawParentBackground(ih Ihandle) {
 	C.IupDrawParentBackground(ih.ptr())
 }
 
 // DrawLine draws a line including start and end points.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawLine(ih Ihandle, x1, y1, x2, y2 int) {
 	C.IupDrawLine(ih.ptr(), C.int(x1), C.int(y1), C.int(x2), C.int(y2))
 }
 
 // DrawRectangle draws a rectangle including start and end points.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawRectangle(ih Ihandle, x1, y1, x2, y2 int) {
 	C.IupDrawRectangle(ih.ptr(), C.int(x1), C.int(y1), C.int(x2), C.int(y2))
 }
@@ -142,7 +142,7 @@ func DrawRectangle(ih Ihandle, x1, y1, x2, y2 int) {
 // When filled will draw a pie shape with the vertex at the center of the rectangle.
 // Angles are counter-clock wise relative to the 3 o'clock position.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawArc(ih Ihandle, x1, y1, x2, y2 int, a1, a2 float64) {
 	C.IupDrawArc(ih.ptr(), C.int(x1), C.int(y1), C.int(x2), C.int(y2), C.double(a1), C.double(a2))
 }
@@ -150,7 +150,7 @@ func DrawArc(ih Ihandle, x1, y1, x2, y2 int, a1, a2 float64) {
 // DrawEllipse draws an ellipse inscribed in the rectangle (x1,y1)-(x2,y2).
 // The ellipse is controlled by DRAWCOLOR, DRAWSTYLE, and DRAWLINEWIDTH attributes.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawEllipse(ih Ihandle, x1, y1, x2, y2 int) {
 	C.IupDrawEllipse(ih.ptr(), C.int(x1), C.int(y1), C.int(x2), C.int(y2))
 }
@@ -158,7 +158,7 @@ func DrawEllipse(ih Ihandle, x1, y1, x2, y2 int) {
 // DrawPolygon draws a polygon.
 // Coordinates are stored in the array in the sequence: x1, y1, x2, y2, ...
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawPolygon(ih Ihandle, points []int, count int) {
 	cPoints := make([]C.int, len(points))
 	for i, v := range points {
@@ -169,7 +169,7 @@ func DrawPolygon(ih Ihandle, points []int, count int) {
 
 // DrawPixel draws a single pixel at the given position.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawPixel(ih Ihandle, x, y int) {
 	C.IupDrawPixel(ih.ptr(), C.int(x), C.int(y))
 }
@@ -177,14 +177,14 @@ func DrawPixel(ih Ihandle, x, y int) {
 // DrawRoundedRectangle draws a rectangle with rounded corners.
 // The corner_radius parameter defines the radius of the corner arcs.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawRoundedRectangle(ih Ihandle, x1, y1, x2, y2, corner_radius int) {
 	C.IupDrawRoundedRectangle(ih.ptr(), C.int(x1), C.int(y1), C.int(x2), C.int(y2), C.int(corner_radius))
 }
 
 // DrawText draws a text in the given position using the font defined by DRAWFONT, if not defined then use FONT.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawText(ih Ihandle, str string, x, y, w, h int) {
 	cStr := C.CString(str)
 	defer C.free(unsafe.Pointer(cStr))
@@ -195,7 +195,7 @@ func DrawText(ih Ihandle, str string, x, y, w, h int) {
 // DrawImage draws an image given its name.
 // The coordinates are relative the top-left corner of the image.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawImage(ih Ihandle, name string, x, y, w, h int) {
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
@@ -205,14 +205,14 @@ func DrawImage(ih Ihandle, name string, x, y, w, h int) {
 
 // DrawSelectRect draws a selection rectangle.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawSelectRect(ih Ihandle, x1, y1, x2, y2 int) {
 	C.IupDrawSelectRect(ih.ptr(), C.int(x1), C.int(y1), C.int(x2), C.int(y2))
 }
 
 // DrawFocusRect draws a focus rectangle.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawFocusRect(ih Ihandle, x1, y1, x2, y2 int) {
 	C.IupDrawFocusRect(ih.ptr(), C.int(x1), C.int(y1), C.int(x2), C.int(y2))
 }
@@ -223,7 +223,7 @@ func DrawFocusRect(ih Ihandle, x1, y1, x2, y2 int) {
 //
 // The curve is controlled by DRAWCOLOR, DRAWSTYLE, and DRAWLINEWIDTH attributes.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawBezier(ih Ihandle, x1, y1, x2, y2, x3, y3, x4, y4 int) {
 	C.IupDrawBezier(ih.ptr(), C.int(x1), C.int(y1), C.int(x2), C.int(y2),
 		C.int(x3), C.int(y3), C.int(x4), C.int(y4))
@@ -234,7 +234,7 @@ func DrawBezier(ih Ihandle, x1, y1, x2, y2, x3, y3, x4, y4 int) {
 //
 // The curve is controlled by DRAWCOLOR, DRAWSTYLE, and DRAWLINEWIDTH attributes.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawQuadraticBezier(ih Ihandle, x1, y1, x2, y2, x3, y3 int) {
 	C.IupDrawQuadraticBezier(ih.ptr(), C.int(x1), C.int(y1), C.int(x2), C.int(y2),
 		C.int(x3), C.int(y3))
@@ -242,7 +242,7 @@ func DrawQuadraticBezier(ih Ihandle, x1, y1, x2, y2, x3, y3 int) {
 
 // DrawGetSize returns the drawing area size.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawGetSize(ih Ihandle) (w, h int) {
 	var cW, cH C.int
 	C.IupDrawGetSize(ih.ptr(), &cW, &cH)
@@ -252,7 +252,7 @@ func DrawGetSize(ih Ihandle) (w, h int) {
 
 // DrawGetTextSize returns the given text size using the font defined by DRAWFONT, if not defined then use FONT.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawGetTextSize(ih Ihandle, str string) (w, h int) {
 	cStr := C.CString(str)
 	defer C.free(unsafe.Pointer(cStr))
@@ -265,7 +265,7 @@ func DrawGetTextSize(ih Ihandle, str string) (w, h int) {
 
 // DrawGetTextMetrics returns the font metrics for the font defined by DRAWFONT, if not defined then use FONT.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawGetTextMetrics(ih Ihandle) (ascent, descent, lineHeight int) {
 	var cA, cD, cL C.int
 	C.IupDrawGetTextMetrics(ih.ptr(), &cA, &cD, &cL)
@@ -276,7 +276,7 @@ func DrawGetTextMetrics(ih Ihandle) (ascent, descent, lineHeight int) {
 // DrawGetImageInfo returns the given image size and bits per pixel.
 // bpp can be 8, 24 or 32.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawGetImageInfo(name string) (w, h, bpp int) {
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
@@ -292,14 +292,14 @@ func DrawGetImageInfo(name string) (w, h, bpp int) {
 // Returns 0 (nil handle) if the operation fails.
 // The caller is responsible for destroying the returned image handle.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawGetImage(ih Ihandle) Ihandle {
 	return mkih(C.IupDrawGetImage(ih.ptr()))
 }
 
 // DrawGetSvg repaints the control and returns the drawing as an SVG document, or an empty string on failure.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawGetSvg(ih Ihandle) string {
 	cStr := C.IupDrawGetSvg(ih.ptr())
 	if cStr == nil {
@@ -313,7 +313,7 @@ func DrawGetSvg(ih Ihandle) string {
 // angle: 0=horizontal right, 90=vertical down, 180=horizontal left, 270=vertical up.
 // color1 and color2 are color strings (e.g., "255 0 0" for red).
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawLinearGradient(ih Ihandle, x1, y1, x2, y2 int, angle float32, color1, color2 string) {
 	cColor1 := C.CString(color1)
 	defer C.free(unsafe.Pointer(cColor1))
@@ -326,7 +326,7 @@ func DrawLinearGradient(ih Ihandle, x1, y1, x2, y2 int, angle float32, color1, c
 // DrawLinearGradientStops draws a linear gradient across count color stops.
 // offsets are in the 0-1 range, ascending; if nil the stops are evenly spaced.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawLinearGradientStops(ih Ihandle, x1, y1, x2, y2 int, angle float32, colors []string, offsets []float32) {
 	n := len(colors)
 	if n < 2 || (len(offsets) != 0 && len(offsets) != n) {
@@ -353,7 +353,7 @@ func DrawLinearGradientStops(ih Ihandle, x1, y1, x2, y2 int, angle float32, colo
 // DrawRadialGradientStops draws a radial gradient across count color stops.
 // offsets are in the 0-1 range, ascending; if nil the stops are evenly spaced.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawRadialGradientStops(ih Ihandle, cx, cy, radius int, colors []string, offsets []float32) {
 	n := len(colors)
 	if n < 2 || (len(offsets) != 0 && len(offsets) != n) {
@@ -380,7 +380,7 @@ func DrawRadialGradientStops(ih Ihandle, cx, cy, radius int, colors []string, of
 // DrawRadialGradient draws a radial gradient from center to edge.
 // colorCenter and colorEdge are color strings (e.g., "255 0 0" for red).
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawRadialGradient(ih Ihandle, cx, cy, radius int, colorCenter, colorEdge string) {
 	cColorCenter := C.CString(colorCenter)
 	defer C.free(unsafe.Pointer(cColorCenter))
@@ -393,14 +393,14 @@ func DrawRadialGradient(ih Ihandle, cx, cy, radius int, colorCenter, colorEdge s
 // DrawPathBegin resets the current path.
 // The path is kept until the next DrawPathBegin or DrawEnd.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawPathBegin(ih Ihandle) {
 	C.IupDrawPathBegin(ih.ptr())
 }
 
 // DrawPathMoveTo starts a new subpath at the given position.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawPathMoveTo(ih Ihandle, x, y int) {
 	C.IupDrawPathMoveTo(ih.ptr(), C.int(x), C.int(y))
 }
@@ -408,21 +408,21 @@ func DrawPathMoveTo(ih Ihandle, x, y int) {
 // DrawPathLineTo adds a line to the given position.
 // With no current point it starts a new subpath there.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawPathLineTo(ih Ihandle, x, y int) {
 	C.IupDrawPathLineTo(ih.ptr(), C.int(x), C.int(y))
 }
 
 // DrawPathCurveTo adds a cubic Bezier curve with two control points.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawPathCurveTo(ih Ihandle, x1, y1, x2, y2, x3, y3 int) {
 	C.IupDrawPathCurveTo(ih.ptr(), C.int(x1), C.int(y1), C.int(x2), C.int(y2), C.int(x3), C.int(y3))
 }
 
 // DrawPathQuadTo adds a quadratic Bezier curve with one control point.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawPathQuadTo(ih Ihandle, x1, y1, x2, y2 int) {
 	C.IupDrawPathQuadTo(ih.ptr(), C.int(x1), C.int(y1), C.int(x2), C.int(y2))
 }
@@ -431,14 +431,14 @@ func DrawPathQuadTo(ih Ihandle, x1, y1, x2, y2 int) {
 // rx,ry, from a1 to a2 degrees counter-clockwise, connecting the current point
 // to the arc start with a line.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawPathArcTo(ih Ihandle, cx, cy, rx, ry int, a1, a2 float64) {
 	C.IupDrawPathArcTo(ih.ptr(), C.int(cx), C.int(cy), C.int(rx), C.int(ry), C.double(a1), C.double(a2))
 }
 
 // DrawPathClose closes the current subpath with a line to its start.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawPathClose(ih Ihandle) {
 	C.IupDrawPathClose(ih.ptr())
 }
@@ -447,7 +447,7 @@ func DrawPathClose(ih Ihandle) {
 // rule is DRAW_RULE_WINDING or DRAW_RULE_EVENODD.
 // Open subpaths are closed before filling.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawPathFill(ih Ihandle, rule int) {
 	C.IupDrawPathFill(ih.ptr(), C.int(rule))
 }
@@ -455,7 +455,7 @@ func DrawPathFill(ih Ihandle, rule int) {
 // DrawPathStroke strokes the current path with the current source,
 // controlled by the DRAWSTYLE and DRAWLINEWIDTH attributes.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawPathStroke(ih Ihandle) {
 	C.IupDrawPathStroke(ih.ptr())
 }
@@ -463,7 +463,7 @@ func DrawPathStroke(ih Ihandle) {
 // DrawSetClipPath sets the current path as the clipping area, replacing the
 // previous clip. rule is DRAW_RULE_WINDING or DRAW_RULE_EVENODD.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawSetClipPath(ih Ihandle, rule int) {
 	C.IupDrawSetClipPath(ih.ptr(), C.int(rule))
 }
@@ -471,7 +471,7 @@ func DrawSetClipPath(ih Ihandle, rule int) {
 // DrawSetSourceSolid sets a solid color as the current source, replacing any
 // previous source. Same as setting the DRAWCOLOR attribute.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawSetSourceSolid(ih Ihandle, color string) {
 	cColor := C.CString(color)
 	defer C.free(unsafe.Pointer(cColor))
@@ -483,7 +483,7 @@ func DrawSetSourceSolid(ih Ihandle, color string) {
 // The source is used by DrawPathFill and DrawPathStroke until reset.
 // offsets are in the 0-1 range, ascending; if nil the stops are evenly spaced.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawSetSourceLinearGradient(ih Ihandle, x1, y1, x2, y2 int, angle float32, colors []string, offsets []float32) {
 	n := len(colors)
 	if n < 2 || (len(offsets) != 0 && len(offsets) != n) {
@@ -511,7 +511,7 @@ func DrawSetSourceLinearGradient(ih Ihandle, x1, y1, x2, y2 int, angle float32, 
 // The source is used by DrawPathFill and DrawPathStroke until reset.
 // offsets are in the 0-1 range, ascending; if nil the stops are evenly spaced.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawSetSourceRadialGradient(ih Ihandle, cx, cy, radius int, colors []string, offsets []float32) {
 	n := len(colors)
 	if n < 2 || (len(offsets) != 0 && len(offsets) != n) {
@@ -537,7 +537,7 @@ func DrawSetSourceRadialGradient(ih Ihandle, cx, cy, radius int, colors []string
 
 // DrawResetSource resets the current source back to the DRAWCOLOR attribute.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawResetSource(ih Ihandle) {
 	C.IupDrawResetSource(ih.ptr())
 }

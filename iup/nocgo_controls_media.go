@@ -25,28 +25,28 @@ func init() {
 
 // MediaOpen must be called after Open, so that the media elements can be used.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/ctrl/iup_audio.md
+// https://gen2brain.github.io/iup-go/ctrl/iup_audio.html
 func MediaOpen() {
 	iupMediaOpen()
 }
 
 // Audio creates an audio player.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/ctrl/iup_audio.md
+// https://gen2brain.github.io/iup-go/ctrl/iup_audio.html
 func Audio() Ihandle {
 	return mkih(iupAudio())
 }
 
 // Camera creates a canvas that shows the live picture of a camera.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/ctrl/iup_camera.md
+// https://gen2brain.github.io/iup-go/ctrl/iup_camera.html
 func Camera() Ihandle {
 	return mkih(iupCamera())
 }
 
 // Microphone creates an audio capture source.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/ctrl/iup_microphone.md
+// https://gen2brain.github.io/iup-go/ctrl/iup_microphone.html
 func Microphone() Ihandle {
 	return mkih(iupMicrophone())
 }

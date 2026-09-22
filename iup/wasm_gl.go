@@ -9,7 +9,7 @@ import (
 
 // GLCanvasOpen must be called after Open, so that the control can be used.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/ctrl/iup_glcanvas.md
+// https://gen2brain.github.io/iup-go/ctrl/iup_glcanvas.html
 func GLCanvasOpen() {
 	ccall("IupGLCanvasOpen", "", nil, nil)
 }
@@ -17,14 +17,14 @@ func GLCanvasOpen() {
 // GLCanvas creates an OpenGL canvas (drawing area for OpenGL). It inherits from Canvas.
 // Obtain the WebGL rendering context with GLCanvasElement and drive it through syscall/js.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/ctrl/iup_glcanvas.md
+// https://gen2brain.github.io/iup-go/ctrl/iup_glcanvas.html
 func GLCanvas() Ihandle {
 	return ccallHandle("IupGLCanvas", nil, nil)
 }
 
 // GLBackgroundBox creates a simple native container with no decorations, but with OpenGL enabled. It inherits from GLCanvas.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/ctrl/iup_glbackgroundbox.md
+// https://gen2brain.github.io/iup-go/ctrl/iup_glbackgroundbox.html
 func GLBackgroundBox(child Ihandle) Ihandle {
 	return ccallHandle("IupGLBackgroundBox", []interface{}{"number"}, []interface{}{int(child)})
 }
@@ -32,14 +32,14 @@ func GLBackgroundBox(child Ihandle) Ihandle {
 // GLMakeCurrent activates the given canvas as the current OpenGL context.
 // The first call sets the global attributes GL_VERSION, GL_VENDOR and GL_RENDERER.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/ctrl/iup_glcanvas.md
+// https://gen2brain.github.io/iup-go/ctrl/iup_glcanvas.html
 func GLMakeCurrent(ih Ihandle) {
 	ccall("IupGLMakeCurrent", "", []interface{}{"number"}, []interface{}{int(ih)})
 }
 
 // GLIsCurrent returns true if the given canvas is the current OpenGL context.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/ctrl/iup_glcanvas.md
+// https://gen2brain.github.io/iup-go/ctrl/iup_glcanvas.html
 func GLIsCurrent(ih Ihandle) bool {
 	return ccall("IupGLIsCurrent", "number", []interface{}{"number"}, []interface{}{int(ih)}).Int() != 0
 }
@@ -48,28 +48,28 @@ func GLIsCurrent(ih Ihandle) bool {
 // presented automatically when control returns to the browser; this fires the
 // SWAPBUFFERS_CB callback.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/ctrl/iup_glcanvas.md
+// https://gen2brain.github.io/iup-go/ctrl/iup_glcanvas.html
 func GLSwapBuffers(ih Ihandle) {
 	ccall("IupGLSwapBuffers", "", []interface{}{"number"}, []interface{}{int(ih)})
 }
 
 // GLPalette defines a color in the color palette. Not supported under WebGL.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/ctrl/iup_glcanvas.md
+// https://gen2brain.github.io/iup-go/ctrl/iup_glcanvas.html
 func GLPalette(ih Ihandle, index int, r, g, b float32) {
 	ccall("IupGLPalette", "", []interface{}{"number", "number", "number", "number", "number"}, []interface{}{int(ih), index, float64(r), float64(g), float64(b)})
 }
 
 // GLUseFont creates a bitmap display list from the current FONT attribute. Not supported under WebGL.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/ctrl/iup_glcanvas.md
+// https://gen2brain.github.io/iup-go/ctrl/iup_glcanvas.html
 func GLUseFont(ih Ihandle, first, count, listBase int) {
 	ccall("IupGLUseFont", "", []interface{}{"number", "number", "number", "number"}, []interface{}{int(ih), first, count, listBase})
 }
 
 // GLWait calls glFinish when gl is non zero, otherwise glFlush.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/ctrl/iup_glcanvas.md
+// https://gen2brain.github.io/iup-go/ctrl/iup_glcanvas.html
 func GLWait(gl int) {
 	ccall("IupGLWait", "", []interface{}{"number"}, []interface{}{gl})
 }

@@ -1174,7 +1174,7 @@ func setValueEditFunc(ih Ihandle, f ValueEditFunc) {
 //
 // f: func(ih Ihandle, item, state int) int
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/ctrl/iup_matrixlist.md
+// https://gen2brain.github.io/iup-go/ctrl/iup_matrixlist.html
 type MatrixListActionFunc func(ih Ihandle, item, state int) int
 
 //export goIupMatrixListActionCB

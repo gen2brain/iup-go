@@ -13,7 +13,7 @@ import "C"
 // UTF8MODE is automatically enabled.
 // To disable UTF8MODE, call SetGlobal("UTF8MODE", "NO") after Open().
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_open.md
+// https://gen2brain.github.io/iup-go/func/iup_open.html
 func Open() int {
 	return openShared()
 }
@@ -21,7 +21,7 @@ func Open() int {
 // Close ends the IUP toolkit and releases internal memory.
 // It will also automatically destroy all dialogs and all elements that have names.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_close.md
+// https://gen2brain.github.io/iup-go/func/iup_close.html
 func Close() {
 	C.IupClose()
 }

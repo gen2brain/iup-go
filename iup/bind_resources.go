@@ -20,7 +20,7 @@ import "C"
 
 // Image creates an image to be shown on a label, button, toggle, or as a cursor.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_image.md
+// https://gen2brain.github.io/iup-go/elem/iup_image.html
 func Image(width, height int, pixMap []byte) Ihandle {
 	h := mkih(C.IupImage(C.int(width), C.int(height), (*C.uchar)(unsafe.Pointer(&pixMap[0]))))
 	return h
@@ -28,7 +28,7 @@ func Image(width, height int, pixMap []byte) Ihandle {
 
 // ImageRGB creates an image to be shown on a label, button, toggle, or as a cursor.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_image.md
+// https://gen2brain.github.io/iup-go/elem/iup_image.html
 func ImageRGB(width, height int, pixMap []byte) Ihandle {
 	h := mkih(C.IupImageRGB(C.int(width), C.int(height), (*C.uchar)(unsafe.Pointer(&pixMap[0]))))
 	return h
@@ -36,7 +36,7 @@ func ImageRGB(width, height int, pixMap []byte) Ihandle {
 
 // ImageRGBA creates an image to be shown on a label, button, toggle, or as a cursor.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_image.md
+// https://gen2brain.github.io/iup-go/elem/iup_image.html
 func ImageRGBA(width, height int, pixMap []byte) Ihandle {
 	h := mkih(C.IupImageRGBA(C.int(width), C.int(height), (*C.uchar)(unsafe.Pointer(&pixMap[0]))))
 	return h
@@ -98,7 +98,7 @@ func ImageToImage(ih Ihandle) *image.RGBA {
 
 // ImageGetHandle returns an IupImage handle from a name.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_imagegethandle.md
+// https://gen2brain.github.io/iup-go/func/iup_imagegethandle.html
 func ImageGetHandle(name string) Ihandle {
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
@@ -109,7 +109,7 @@ func ImageGetHandle(name string) Ihandle {
 
 // ImageFromHandle creates an IUP image from a native image handle (e.g. the IupClipboard NATIVEIMAGE).
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_imagefromhandle.md
+// https://gen2brain.github.io/iup-go/func/iup_imagefromhandle.html
 func ImageFromHandle(handle uintptr) Ihandle {
 	return mkih(C.IupImageFromHandle(unsafe.Pointer(cih(Ihandle(handle)))))
 }
@@ -118,7 +118,7 @@ func ImageFromHandle(handle uintptr) Ihandle {
 // Format can be "PNG", "JPEG", or "BMP". If empty, the format is detected from the filename extension.
 // Returns 1 on success, 0 on failure.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_imagesave.md
+// https://gen2brain.github.io/iup-go/func/iup_imagesave.html
 func ImageSave(ih Ihandle, filename, format string) int {
 	cFilename := C.CString(filename)
 	defer C.free(unsafe.Pointer(cFilename))
@@ -136,7 +136,7 @@ func ImageSave(ih Ihandle, filename, format string) int {
 // Format must be "PNG", "JPEG", or "BMP".
 // Returns nil if the operation fails.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_imagesavetobuffer.md
+// https://gen2brain.github.io/iup-go/func/iup_imagesavetobuffer.html
 func ImageSaveToBuffer(ih Ihandle, format string) []byte {
 	cFormat := C.CString(format)
 	defer C.free(unsafe.Pointer(cFormat))
@@ -159,7 +159,7 @@ func ImageSaveToBuffer(ih Ihandle, format string) []byte {
 //
 // This sequence is not the same sequence used by the Tab key, which is dependent on the native system.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_nextfield.md
+// https://gen2brain.github.io/iup-go/func/iup_nextfield.html
 func NextField(ih Ihandle) Ihandle {
 	return mkih(C.IupNextField(ih.ptr()))
 }
@@ -167,14 +167,14 @@ func NextField(ih Ihandle) Ihandle {
 // PreviousField shifts the focus to the previous element that can have the focus.
 // It is relative to the given element and does not depend on the element currently with the focus.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_previousfield.md
+// https://gen2brain.github.io/iup-go/func/iup_previousfield.html
 func PreviousField(ih Ihandle) Ihandle {
 	return mkih(C.IupPreviousField(ih.ptr()))
 }
 
 // GetFocus returns the identifier of the interface element that has the keyboard focus, i.e. the element that will receive keyboard events.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getfocus.md
+// https://gen2brain.github.io/iup-go/func/iup_getfocus.html
 func GetFocus() Ihandle {
 	return mkih(C.IupGetFocus())
 }
@@ -182,14 +182,14 @@ func GetFocus() Ihandle {
 // SetFocus sets the interface element that will receive the keyboard focus, i.e., the element that will receive keyboard events.
 // But this will be processed only after the control actually receive the focus.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setfocus.md
+// https://gen2brain.github.io/iup-go/func/iup_setfocus.html
 func SetFocus(ih Ihandle) Ihandle {
 	return mkih(C.IupSetFocus(ih.ptr()))
 }
 
 // MenuItem creates an item of the menu interface element. When selected, it generates an action.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_menuitem.md
+// https://gen2brain.github.io/iup-go/elem/iup_menuitem.html
 func MenuItem(title string) Ihandle {
 	cTitle := C.CString(title)
 	defer C.free(unsafe.Pointer(cTitle))
@@ -201,7 +201,7 @@ func MenuItem(title string) Ihandle {
 // Menu Creates a menu element, which groups 3 types of interface elements: item, submenu and separator.
 // Any other interface element defined inside a menu will be an error.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_menu.md
+// https://gen2brain.github.io/iup-go/elem/iup_menu.html
 func Menu(children ...Ihandle) Ihandle {
 	children = append(children, Ihandle(0))
 
@@ -211,7 +211,7 @@ func Menu(children ...Ihandle) Ihandle {
 
 // MenuSeparator creates the separator interface element. It shows a line between two menu items.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_menuseparator.md
+// https://gen2brain.github.io/iup-go/elem/iup_menuseparator.html
 func MenuSeparator() Ihandle {
 	h := mkih(C.IupMenuSeparator())
 	return h
@@ -219,7 +219,7 @@ func MenuSeparator() Ihandle {
 
 // Submenu creates a menu item that, when selected, opens another menu.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_submenu.md
+// https://gen2brain.github.io/iup-go/elem/iup_submenu.html
 func Submenu(title string, child Ihandle) Ihandle {
 	cTitle := C.CString(title)
 	defer C.free(unsafe.Pointer(cTitle))
@@ -230,7 +230,7 @@ func Submenu(title string, child Ihandle) Ihandle {
 
 // SetHandle associates a name with an interface element.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_sethandle.md
+// https://gen2brain.github.io/iup-go/func/iup_sethandle.html
 func SetHandle(name string, ih Ihandle) Ihandle {
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
@@ -240,7 +240,7 @@ func SetHandle(name string, ih Ihandle) Ihandle {
 
 // GetHandle returns the identifier of an interface element that has an associated name using SetHandle.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_gethandle.md
+// https://gen2brain.github.io/iup-go/func/iup_gethandle.html
 func GetHandle(name string) Ihandle {
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
@@ -251,14 +251,14 @@ func GetHandle(name string) Ihandle {
 // GetName returns a name of an interface element, if the element has an associated name using SetHandle.
 // Notice that a handle can have many names. GetName will return the last name set.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getname.md
+// https://gen2brain.github.io/iup-go/func/iup_getname.html
 func GetName(ih Ihandle) string {
 	return C.GoString(C.IupGetName(ih.ptr()))
 }
 
 // GetAllNames returns the names of all interface elements that have an associated name using SetHandle.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getallnames.md
+// https://gen2brain.github.io/iup-go/func/iup_getallnames.html
 func GetAllNames() (names []string) {
 	n := int(C.IupGetAllNames(nil, 0))
 	if n > 0 {
@@ -275,7 +275,7 @@ func GetAllNames() (names []string) {
 // GetAllDialogs returns the names of all dialogs that have an associated name using SetHandle.
 // Other dialogs will not be returned.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getalldialogs.md
+// https://gen2brain.github.io/iup-go/func/iup_getalldialogs.html
 func GetAllDialogs() (names []string) {
 	n := int(C.IupGetAllDialogs(nil, 0))
 	if n > 0 {
@@ -292,7 +292,7 @@ func GetAllDialogs() (names []string) {
 // SetLanguage sets the language name used by some pre-defined dialogs.
 // Can also be changed using the global attribute LANGUAGE.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setlanguage.md
+// https://gen2brain.github.io/iup-go/func/iup_setlanguage.html
 func SetLanguage(lng string) {
 	cLng := cStrOrNull(lng)
 	defer cStrFree(cLng)
@@ -303,14 +303,14 @@ func SetLanguage(lng string) {
 // GetLanguage returns the language used by some pre-defined dialogs.
 // Returns the same value as the LANGUAGE global attribute.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getlanguage.md
+// https://gen2brain.github.io/iup-go/func/iup_getlanguage.html
 func GetLanguage() string {
 	return C.GoString(C.IupGetLanguage())
 }
 
 // SetLanguageString associates a name with a string as an auxiliary method for Internationalization of applications.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setlanguagestring.md
+// https://gen2brain.github.io/iup-go/func/iup_setlanguagestring.html
 func SetLanguageString(name, str string) {
 	cName, cStr := C.CString(name), cStrOrNull(str)
 	defer C.free(unsafe.Pointer(cName))
@@ -322,7 +322,7 @@ func SetLanguageString(name, str string) {
 // GetLanguageString returns a language dependent string.
 // The string must have been associated with the name using the SetLanguageString or SetLanguagePack functions.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getlanguagestring.md
+// https://gen2brain.github.io/iup-go/func/iup_getlanguagestring.html
 func GetLanguageString(name string) string {
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
@@ -334,7 +334,7 @@ func GetLanguageString(name string) string {
 // It is simply a User element with several attributes set.
 // Internally will call SetLanguageString for each name in the pack.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setlanguagepack.md
+// https://gen2brain.github.io/iup-go/func/iup_setlanguagepack.html
 func SetLanguagePack(ih Ihandle) {
 	C.IupSetLanguagePack(ih.ptr())
 }
@@ -344,7 +344,7 @@ func SetLanguagePack(ih Ihandle) {
 // but you can use only one for the entire application because it does not store any data inside.
 // Or you can simply create and destroy every time you need to copy or paste.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_clipboard.md
+// https://gen2brain.github.io/iup-go/elem/iup_clipboard.html
 func Clipboard() Ihandle {
 	h := mkih(C.IupClipboard())
 	return h
@@ -353,7 +353,7 @@ func Clipboard() Ihandle {
 // Timer creates a timer which periodically invokes a callback when the time is up.
 // Each timer should be destroyed using Destroy.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_timer.md
+// https://gen2brain.github.io/iup-go/elem/iup_timer.html
 func Timer() Ihandle {
 	h := mkih(C.IupTimer())
 	return h
@@ -362,7 +362,7 @@ func Timer() Ihandle {
 // Thread creates a thread element in IUP, which is not associated to any interface element.
 // It is a very simple support to create and manage threads in a multithreading environment.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_thread.md
+// https://gen2brain.github.io/iup-go/elem/iup_thread.html
 func Thread() Ihandle {
 	h := mkih(C.IupThread())
 	return h
@@ -371,7 +371,7 @@ func Thread() Ihandle {
 // Tray creates a system tray icon element in IUP, which is not associated with any interface element.
 // It allows placing an icon in the system notification area (system tray).
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_tray.md
+// https://gen2brain.github.io/iup-go/elem/iup_tray.html
 func Tray() Ihandle {
 	h := mkih(C.IupTray())
 	return h
@@ -379,7 +379,7 @@ func Tray() Ihandle {
 
 // Notify creates a desktop notification element.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_notify.md
+// https://gen2brain.github.io/iup-go/elem/iup_notify.html
 func Notify() Ihandle {
 	h := mkih(C.IupNotify())
 	return h
@@ -387,7 +387,7 @@ func Notify() Ihandle {
 
 // Location creates a geolocation source.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_location.md
+// https://gen2brain.github.io/iup-go/elem/iup_location.html
 func Location() Ihandle {
 	h := mkih(C.IupLocation())
 	return h
@@ -395,7 +395,7 @@ func Location() Ihandle {
 
 // Sensor creates a motion sensor source.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_sensor.md
+// https://gen2brain.github.io/iup-go/elem/iup_sensor.html
 func Sensor() Ihandle {
 	h := mkih(C.IupSensor())
 	return h
@@ -407,7 +407,7 @@ func Sensor() Ihandle {
 //
 // It is also a void container. Its children can be dynamically added using Append or Insert.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_user.md
+// https://gen2brain.github.io/iup-go/elem/iup_user.html
 func User() Ihandle {
 	h := mkih(C.IupUser())
 	return h
@@ -417,7 +417,7 @@ func User() Ihandle {
 // It is a non-synchronous operation, i.e., the function will return just after execute the command, and it will not wait for its result.
 // In Windows, there is no need to add the ".exe" file extension.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_execute.md
+// https://gen2brain.github.io/iup-go/func/iup_execute.html
 func Execute(fileName, parameters string) int {
 	cFileName := C.CString(fileName)
 	cParameters := cStrOrNull(parameters)
@@ -431,7 +431,7 @@ func Execute(fileName, parameters string) int {
 // It is a synchronous operation, i.e., the function will wait the command to terminate before it returns.
 // In Windows, there is no need to add the ".exe" file extension.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_executewait.md
+// https://gen2brain.github.io/iup-go/func/iup_executewait.html
 func ExecuteWait(fileName, parameters string) int {
 	cFileName := C.CString(fileName)
 	cParameters := cStrOrNull(parameters)
@@ -446,7 +446,7 @@ func ExecuteWait(fileName, parameters string) int {
 // In UNIX, you can change the used browser setting the environment variable IUP_HELPAPP or using the global attribute "HELPAPP".
 // It is a non-synchronous operation, i.e., the function will return just after execute the command, and it will not wait for its result.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_help.md
+// https://gen2brain.github.io/iup-go/func/iup_help.html
 func Help(url string) int {
 	cUrl := C.CString(url)
 	defer C.free(unsafe.Pointer(cUrl))
@@ -457,7 +457,7 @@ func Help(url string) int {
 // Log writes a message to the system log.
 // In Windows, write to the Application event log. On Linux, write to the Syslog.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_log.md
+// https://gen2brain.github.io/iup-go/func/iup_log.html
 func Log(_type, str string) {
 	cType, cStr := C.CString(_type), C.CString(str)
 	defer C.free(unsafe.Pointer(cType))

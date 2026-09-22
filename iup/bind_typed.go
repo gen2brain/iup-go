@@ -9,35 +9,35 @@ import (
 
 // GetGlobalInt returns a global attribute as an integer, 0 when it is not a number.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getglobal.md
+// https://gen2brain.github.io/iup-go/func/iup_getglobal.html
 func GetGlobalInt(name string) int {
 	return strToInt(GetGlobal(name))
 }
 
 // GetGlobalBool returns a global attribute as a boolean.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getglobal.md
+// https://gen2brain.github.io/iup-go/func/iup_getglobal.html
 func GetGlobalBool(name string) bool {
 	return strToBool(GetGlobal(name))
 }
 
 // GetGlobalIntInt returns a global attribute holding two integers and how many were found.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getglobal.md
+// https://gen2brain.github.io/iup-go/func/iup_getglobal.html
 func GetGlobalIntInt(name string) (count, i1, i2 int) {
 	return strToIntInt(GetGlobal(name))
 }
 
 // GetGlobalRGB returns a global attribute holding a color in the "r g b" or "#rrggbb" format.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getglobal.md
+// https://gen2brain.github.io/iup-go/func/iup_getglobal.html
 func GetGlobalRGB(name string) (r, g, b uint8) {
 	return strToRGB(GetGlobal(name))
 }
 
 // SetAttributeId sets an interface element attribute for an id.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setattribute.md
+// https://gen2brain.github.io/iup-go/func/iup_setattribute.html
 func (ih Ihandle) SetAttributeId(name string, id int, value interface{}) Ihandle {
 	SetAttributeId(ih, name, id, value)
 	return ih
@@ -45,7 +45,7 @@ func (ih Ihandle) SetAttributeId(name string, id int, value interface{}) Ihandle
 
 // SetAttributeId2 sets an interface element attribute for a (lin, col) position.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setattribute.md
+// https://gen2brain.github.io/iup-go/func/iup_setattribute.html
 func (ih Ihandle) SetAttributeId2(name string, lin, col int, value interface{}) Ihandle {
 	SetAttributeId2(ih, name, lin, col, value)
 	return ih
@@ -53,7 +53,7 @@ func (ih Ihandle) SetAttributeId2(name string, lin, col int, value interface{}) 
 
 // SetAttributeHandle sets an attribute to the name of another interface element.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setattributehandle.md
+// https://gen2brain.github.io/iup-go/func/iup_setattributehandle.html
 func (ih Ihandle) SetAttributeHandle(name string, ihNamed Ihandle, ids ...int) Ihandle {
 	switch len(ids) {
 	case 0:
@@ -70,7 +70,7 @@ func (ih Ihandle) SetAttributeHandle(name string, ihNamed Ihandle, ids ...int) I
 
 // GetAttributeHandle returns the interface element named by an attribute.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattributehandle.md
+// https://gen2brain.github.io/iup-go/func/iup_getattributehandle.html
 func (ih Ihandle) GetAttributeHandle(name string, ids ...int) Ihandle {
 	switch len(ids) {
 	case 0:
@@ -86,7 +86,7 @@ func (ih Ihandle) GetAttributeHandle(name string, ids ...int) Ihandle {
 
 // SetRGB sets a color attribute. Optional ids select an id or a (lin, col) position.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setattribute.md
+// https://gen2brain.github.io/iup-go/func/iup_setattribute.html
 func (ih Ihandle) SetRGB(name string, r, g, b uint8, ids ...int) Ihandle {
 	switch len(ids) {
 	case 0:
@@ -103,7 +103,7 @@ func (ih Ihandle) SetRGB(name string, r, g, b uint8, ids ...int) Ihandle {
 
 // GetIntInt returns an attribute holding two integers and how many were found.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
+// https://gen2brain.github.io/iup-go/func/iup_getattribute.html
 func (ih Ihandle) GetIntInt(name string) (count, i1, i2 int) {
 	return GetInt2(ih, name)
 }

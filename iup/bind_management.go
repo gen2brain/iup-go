@@ -21,7 +21,7 @@ import "C"
 //
 // This function is automatically called before the dialog is shown in Show, ShowXY or Popup.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_map.md
+// https://gen2brain.github.io/iup-go/func/iup_map.html
 func Map(ih Ihandle) int {
 	return int(C.IupMap(ih.ptr()))
 }
@@ -29,7 +29,7 @@ func Map(ih Ihandle) int {
 // Unmap unmap the element from the native system. It will also unmap all its children.
 // It will NOT detach the element from its parent, and it will NOT destroy the IUP element.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_unmap.md
+// https://gen2brain.github.io/iup-go/func/iup_unmap.html
 func Unmap(ih Ihandle) {
 	C.IupUnmap(ih.ptr())
 }
@@ -39,7 +39,7 @@ func Unmap(ih Ihandle) {
 //
 // After creation the element still needs to be attached to a container and mapped to the native system so it can be visible.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_create.md
+// https://gen2brain.github.io/iup-go/func/iup_create.html
 func Create(className string) Ihandle {
 	cClassName := C.CString(className)
 	defer C.free(unsafe.Pointer(cClassName))
@@ -50,14 +50,14 @@ func Create(className string) Ihandle {
 // Destroy destroys an interface element and all its children.
 // Only dialogs, timers, popup menus and images should be normally destroyed, but detached controls can also be destroyed.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_destroy.md
+// https://gen2brain.github.io/iup-go/func/iup_destroy.html
 func Destroy(ih Ihandle) {
 	C.IupDestroy(ih.ptr())
 }
 
 // GetAllClasses returns the names of all registered classes.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getallclasses.md
+// https://gen2brain.github.io/iup-go/func/iup_getallclasses.html
 func GetAllClasses() (names []string) {
 	n := int(C.IupGetAllClasses(nil, 0))
 	if n > 0 {
@@ -73,21 +73,21 @@ func GetAllClasses() (names []string) {
 
 // GetClassName returns the name of the class of an interface element.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getclassname.md
+// https://gen2brain.github.io/iup-go/func/iup_getclassname.html
 func GetClassName(ih Ihandle) string {
 	return C.GoString(C.IupGetClassName(ih.ptr()))
 }
 
 // GetClassType returns the name of the native type of an interface element.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getclasstype.md
+// https://gen2brain.github.io/iup-go/func/iup_getclasstype.html
 func GetClassType(ih Ihandle) string {
 	return C.GoString(C.IupGetClassType(ih.ptr()))
 }
 
 // ClassMatch checks if the give class name matches the class name of the given interface element.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_classmatch.md
+// https://gen2brain.github.io/iup-go/func/iup_classmatch.html
 func ClassMatch(ih Ihandle, className string) bool {
 	cClassName := C.CString(className)
 	defer C.free(unsafe.Pointer(cClassName))
@@ -97,7 +97,7 @@ func ClassMatch(ih Ihandle, className string) bool {
 
 // GetClassAttributes returns the names of all registered attributes of a class.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getclassattributes.md
+// https://gen2brain.github.io/iup-go/func/iup_getclassattributes.html
 func GetClassAttributes(className string) (names []string) {
 	cClassName := C.CString(className)
 	defer C.free(unsafe.Pointer(cClassName))
@@ -119,7 +119,7 @@ func GetClassAttributes(className string) (names []string) {
 
 // GetClassCallbacks returns the names of all registered callbacks of a class.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getclasscallbacks.md
+// https://gen2brain.github.io/iup-go/func/iup_getclasscallbacks.html
 func GetClassCallbacks(className string) (names []string) {
 	cClassName := C.CString(className)
 	defer C.free(unsafe.Pointer(cClassName))
@@ -166,7 +166,7 @@ type ClassAttributeInfo struct {
 // of a registered attribute. ok is false when the class or attribute is not
 // registered.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getclassattributeinfo.md
+// https://gen2brain.github.io/iup-go/func/iup_getclassattributeinfo.html
 func GetClassAttributeInfo(className, name string) (info ClassAttributeInfo, ok bool) {
 	cClassName := C.CString(className)
 	defer C.free(unsafe.Pointer(cClassName))
@@ -191,7 +191,7 @@ func GetClassAttributeInfo(className, name string) (info ClassAttributeInfo, ok 
 // GetClassCallbackFormat returns the parameter format of a registered callback,
 // or "" if the class or callback is not registered.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getclasscallbackformat.md
+// https://gen2brain.github.io/iup-go/func/iup_getclasscallbackformat.html
 func GetClassCallbackFormat(className, name string) string {
 	cClassName := C.CString(className)
 	defer C.free(unsafe.Pointer(cClassName))
@@ -215,7 +215,7 @@ type ClassInfo struct {
 // constraints, focus interactivity and id-attribute support. ok is false when
 // the class is not registered.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getclassinfo.md
+// https://gen2brain.github.io/iup-go/func/iup_getclassinfo.html
 func GetClassInfo(className string) (info ClassInfo, ok bool) {
 	cClassName := C.CString(className)
 	defer C.free(unsafe.Pointer(cClassName))
@@ -245,7 +245,7 @@ type ClassConstructor struct {
 // GetClassConstructor returns the parameter format that IupCreate accepts for
 // the class. ok is false when the class is not registered.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getclassconstructor.md
+// https://gen2brain.github.io/iup-go/func/iup_getclassconstructor.html
 func GetClassConstructor(className string) (info ClassConstructor, ok bool) {
 	cClassName := C.CString(className)
 	defer C.free(unsafe.Pointer(cClassName))
@@ -266,7 +266,7 @@ func GetClassConstructor(className string) (info ClassConstructor, ok bool) {
 // GLOBAL{KEYPRESS,BUTTON,MOTION,WHEEL}_CB), plus any extras the application
 // has bound. Use [GetFunction] to test whether a given name is currently bound.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getallfunctions.md
+// https://gen2brain.github.io/iup-go/func/iup_getallfunctions.html
 func GetAllFunctions() (names []string) {
 	max := int(C.IupGetAllFunctions(nil, 0))
 	if max <= 0 {
@@ -314,7 +314,7 @@ type GlobalInfo struct {
 // GetAllGlobals returns the union of registered globals and any user-set
 // globals not already in the registry.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getallglobals.md
+// https://gen2brain.github.io/iup-go/func/iup_getallglobals.html
 func GetAllGlobals() (names []string) {
 	max := int(C.IupGetAllGlobals(nil, 0))
 	if max <= 0 {
@@ -333,7 +333,7 @@ func GetAllGlobals() (names []string) {
 // global. ok is false when the name is not in the registry (e.g. an ad-hoc
 // user-set global); flags and drivers are then zero.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getglobalinfo.md
+// https://gen2brain.github.io/iup-go/func/iup_getglobalinfo.html
 func GetGlobalInfo(name string) (info GlobalInfo, ok bool) {
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
@@ -350,7 +350,7 @@ func GetGlobalInfo(name string) (info GlobalInfo, ok bool) {
 
 // SaveClassAttributes saves all registered attributes on the internal hash table.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_saveclassattributes.md
+// https://gen2brain.github.io/iup-go/func/iup_saveclassattributes.html
 func SaveClassAttributes(ih Ihandle) {
 	C.IupSaveClassAttributes(ih.ptr())
 }
@@ -358,7 +358,7 @@ func SaveClassAttributes(ih Ihandle) {
 // CopyClassAttributes copies all registered attributes from one element to another.
 // Both elements must be of the same class.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_copyclassattributes.md
+// https://gen2brain.github.io/iup-go/func/iup_copyclassattributes.html
 func CopyClassAttributes(srcIh, dstIh Ihandle) {
 	C.IupCopyClassAttributes(srcIh.ptr(), dstIh.ptr())
 }
@@ -366,7 +366,7 @@ func CopyClassAttributes(srcIh, dstIh Ihandle) {
 // SetClassDefaultAttribute changes the default value of an attribute for a class.
 // It can be any attribute, i.e. registered attributes or user custom attributes.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setclassdefaultattribute.md
+// https://gen2brain.github.io/iup-go/func/iup_setclassdefaultattribute.html
 func SetClassDefaultAttribute(className, name, value string) {
 	cClassName, cName, cValue := C.CString(className), C.CString(name), cStrOrNull(value)
 	defer C.free(unsafe.Pointer(cClassName))
@@ -378,21 +378,21 @@ func SetClassDefaultAttribute(className, name, value string) {
 
 // Update mark the element or its children to be redraw when the control returns to the system.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_update.md
+// https://gen2brain.github.io/iup-go/func/iup_update.html
 func Update(ih Ihandle) {
 	C.IupUpdate(ih.ptr())
 }
 
 // UpdateChildren mark the element or its children to be redraw when the control returns to the system.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_update.md
+// https://gen2brain.github.io/iup-go/func/iup_update.html
 func UpdateChildren(ih Ihandle) {
 	C.IupUpdateChildren(ih.ptr())
 }
 
 // Redraw force the element and its children to be redraw immediately.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_redraw.md
+// https://gen2brain.github.io/iup-go/func/iup_redraw.html
 func Redraw(ih Ihandle, children int) {
 	C.IupRedraw(ih.ptr(), C.int(children))
 }
@@ -402,7 +402,7 @@ func Redraw(ih Ihandle, children int) {
 // It can be used for Text (returns a position in the string), List (returns an item),
 // Tree (returns a node identifier) or Matrix (returns a cell position, where pos=lin*numcol + col).
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_convertxytopos.md
+// https://gen2brain.github.io/iup-go/func/iup_convertxytopos.html
 func ConvertXYToPos(ih Ihandle, x, y int) int {
 	return int(C.IupConvertXYToPos(ih.ptr(), C.int(x), C.int(y)))
 }
@@ -412,7 +412,7 @@ func ConvertXYToPos(ih Ihandle, x, y int) int {
 // Can be used for any element inside a dialog, but the layout of the dialog and all controls will be updated.
 // It can change the layout of all the controls inside the dialog because of the dynamic layout positioning.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_refresh.md
+// https://gen2brain.github.io/iup-go/func/iup_refresh.html
 func Refresh(ih Ihandle) {
 	C.IupRefresh(ih.ptr())
 }
@@ -422,7 +422,7 @@ func Refresh(ih Ihandle) {
 // only its children will be updated. It can change the layout of all the controls inside
 // the given element because of the dynamic layout positioning.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_refreshchildren.md
+// https://gen2brain.github.io/iup-go/func/iup_refreshchildren.html
 func RefreshChildren(ih Ihandle) {
 	C.IupRefreshChildren(ih.ptr())
 }
