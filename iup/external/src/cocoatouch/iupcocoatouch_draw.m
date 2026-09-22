@@ -859,7 +859,8 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
 			CGContextConcatCTM(dc->cgContext, t);
 		}
 
-		if ((flags & IUP_DRAW_CLIP) || (flags & IUP_DRAW_WRAP) || (flags & IUP_DRAW_ELLIPSIS))
+		if ((flags & IUP_DRAW_CLIP) || (flags & IUP_DRAW_WRAP) || (flags & IUP_DRAW_ELLIPSIS) ||
+		    (w > 0 && (flags & (IUP_DRAW_CENTER | IUP_DRAW_RIGHT)) && !(text_orientation != 0.0 && layout_center)))
 		{
 			CGRect rect;
 			if (text_orientation != 0.0 && layout_center)
@@ -868,7 +869,7 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
 			}
 			else
 			{
-				rect = CGRectMake(x, y, layout_w, layout_h);
+				rect = CGRectMake(x, y, layout_w, layout_h > 0 ? layout_h : CGFLOAT_MAX);
 			}
 			[ns_string drawInRect:rect withAttributes:attrs];
 		}
