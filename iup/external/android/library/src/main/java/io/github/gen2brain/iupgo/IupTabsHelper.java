@@ -223,6 +223,7 @@ public final class IupTabsHelper
             closeBtn.setText("✕");
             closeBtn.setGravity(Gravity.CENTER);
             closeBtn.setClickable(true);
+            closeBtn.setFocusable(false);
             int closeSz = (int)(20 * density);
             LayoutParams closeLp = new LayoutParams(closeSz, closeSz);
             closeLp.setMarginStart(gap);
