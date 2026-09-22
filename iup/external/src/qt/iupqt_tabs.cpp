@@ -155,6 +155,7 @@ protected:
       close_btn->setIcon(style()->standardIcon(QStyle::SP_TitleBarCloseButton));
       close_btn->setAutoRaise(true);
       close_btn->setFixedSize(16, 16);
+      close_btn->setFocusPolicy(Qt::NoFocus);
 
       /* Look up current tab index at click time (not capture time) to handle reordering */
       QObject::connect(close_btn, &QToolButton::clicked, [this, close_btn]() {
@@ -895,6 +896,7 @@ static int qtTabsSetShowCloseAttrib(Ihandle* ih, int pos, const char* value)
         close_btn->setIcon(tabs->style()->standardIcon(QStyle::SP_TitleBarCloseButton));
         close_btn->setAutoRaise(true);
         close_btn->setFixedSize(16, 16);
+        close_btn->setFocusPolicy(Qt::NoFocus);
 
         QObject::connect(close_btn, &QToolButton::clicked, [tabs, close_btn, ih]() {
           IupQtTabBar* bar = (IupQtTabBar*)tabs->tabBar();
