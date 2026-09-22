@@ -62,6 +62,11 @@
 	<string>Shows the camera picture in the example.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Captures sound in the example.</string>
+	<key>UIApplicationSceneManifest</key>
+	<dict>
+		<key>UIApplicationSupportsMultipleScenes</key>
+		<false/>
+	</dict>
 	<key>UILaunchScreen</key>
 	<dict/>
 	<key>UIRequiredDeviceCapabilities</key>

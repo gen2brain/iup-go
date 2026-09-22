@@ -19,6 +19,8 @@
 #include "iup_str.h"
 #include "iup_drvinfo.h"
 
+#include "iupcocoatouch_drv.h"
+
 static void cocoaTouchAddScreenOffset(int* x, int* y, int add)
 {
 	(void)x; (void)y; (void)add;
@@ -32,9 +34,17 @@ IUP_SDK_API void iupdrvAddScreenOffset(int* x, int* y, int add)
 	}
 }
 
+static UIScreen* cocoaTouchGetScreen(void)
+{
+	UIWindow* window = iupCocoaTouchFindCurrentWindow();
+	if (window && window.windowScene)
+		return window.windowScene.screen;
+	return [UIScreen mainScreen];
+}
+
 static void cocoaTouchGetScreenSize(int* width, int* height)
 {
-	CGRect rect = [[UIScreen mainScreen] bounds];
+	CGRect rect = [cocoaTouchGetScreen() bounds];
 	if (width)  *width  = (int)rect.size.width;
 	if (height) *height = (int)rect.size.height;
 }
@@ -75,7 +85,7 @@ IUP_SDK_API int iupdrvGetScreenDepth(void)
 
 static double cocoaTouchGetScreenDpi(void)
 {
-	return [[UIScreen mainScreen] scale] * 72.0;
+	return [cocoaTouchGetScreen() scale] * 72.0;
 }
 
 IUP_SDK_API double iupdrvGetScreenDpi(void)

@@ -41,6 +41,8 @@ static const void* IUP_COCOATOUCH_TABLE_CTRL_OBJ_KEY = "IUP_COCOATOUCH_TABLE_CTR
 @property(nonatomic, retain) UIView* rightSep;
 @property(nonatomic, retain) UIView* bottomSep;
 @property(nonatomic, retain) NSLayoutConstraint* labelLeading;
+@property(nonatomic, retain) NSLayoutConstraint* rightSepWidth;
+@property(nonatomic, retain) NSLayoutConstraint* bottomSepHeight;
 @property(nonatomic, assign) BOOL rowSelected;
 @property(nonatomic, assign) BOOL cellFocused;
 @property(nonatomic, assign) BOOL focusRectEnabled;
@@ -84,7 +86,6 @@ static const void* IUP_COCOATOUCH_TABLE_CTRL_OBJ_KEY = "IUP_COCOATOUCH_TABLE_CTR
 			[_label.trailingAnchor constraintEqualToAnchor:self.contentView.trailingAnchor constant:-IUPCOCOATOUCH_TABLE_CELL_PAD],
 		]];
 
-		CGFloat hairline = 1.0/[UIScreen mainScreen].scale;
 		_rightSep  = [[UIView alloc] initWithFrame:CGRectZero];
 		_rightSep.translatesAutoresizingMaskIntoConstraints = NO;
 		_rightSep.backgroundColor = [UIColor separatorColor];
@@ -93,8 +94,9 @@ static const void* IUP_COCOATOUCH_TABLE_CTRL_OBJ_KEY = "IUP_COCOATOUCH_TABLE_CTR
 			[_rightSep.topAnchor      constraintEqualToAnchor:self.contentView.topAnchor],
 			[_rightSep.bottomAnchor   constraintEqualToAnchor:self.contentView.bottomAnchor],
 			[_rightSep.trailingAnchor constraintEqualToAnchor:self.contentView.trailingAnchor],
-			[_rightSep.widthAnchor    constraintEqualToConstant:hairline],
 		]];
+		_rightSepWidth = [[_rightSep.widthAnchor constraintEqualToConstant:1.0] retain];
+		_rightSepWidth.active = YES;
 
 		_bottomSep = [[UIView alloc] initWithFrame:CGRectZero];
 		_bottomSep.translatesAutoresizingMaskIntoConstraints = NO;
@@ -104,10 +106,27 @@ static const void* IUP_COCOATOUCH_TABLE_CTRL_OBJ_KEY = "IUP_COCOATOUCH_TABLE_CTR
 			[_bottomSep.leadingAnchor  constraintEqualToAnchor:self.contentView.leadingAnchor],
 			[_bottomSep.trailingAnchor constraintEqualToAnchor:self.contentView.trailingAnchor],
 			[_bottomSep.bottomAnchor   constraintEqualToAnchor:self.contentView.bottomAnchor],
-			[_bottomSep.heightAnchor   constraintEqualToConstant:hairline],
 		]];
+		_bottomSepHeight = [[_bottomSep.heightAnchor constraintEqualToConstant:1.0] retain];
+		_bottomSepHeight.active = YES;
+
+		[self updateHairline];
 	}
 	return self;
+}
+
+- (void)updateHairline
+{
+	CGFloat scale = self.traitCollection.displayScale;
+	CGFloat hairline = scale > 0 ? 1.0 / scale : 1.0;
+	_rightSepWidth.constant = hairline;
+	_bottomSepHeight.constant = hairline;
+}
+
+- (void)traitCollectionDidChange:(UITraitCollection*)previousTraitCollection
+{
+	[super traitCollectionDidChange:previousTraitCollection];
+	[self updateHairline];
 }
 
 - (void)setImage:(UIImage*)img
@@ -162,6 +181,8 @@ static const void* IUP_COCOATOUCH_TABLE_CTRL_OBJ_KEY = "IUP_COCOATOUCH_TABLE_CTR
 	[_rightSep release];
 	[_bottomSep release];
 	[_labelLeading release];
+	[_rightSepWidth release];
+	[_bottomSepHeight release];
 	[super dealloc];
 }
 

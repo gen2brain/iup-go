@@ -19,6 +19,7 @@
 #include "iup_image.h"
 #define _IUPDLG_PRIVATE
 #include "iup_dialog.h"
+#include "iup_drvinfo.h"
 
 #include "iupcocoatouch_drv.h"
 
@@ -101,9 +102,15 @@ static void cocoaTouchDialogGetSize(Ihandle* ih, InativeHandle* handle, int* w, 
 		if (h) *h = iupROUND(bounds.size.height);
 		return;
 	}
-	CGRect screen = [[UIScreen mainScreen] bounds];
-	if (w) *w = iupROUND(screen.size.width);
-	if (h) *h = iupROUND(screen.size.height);
+	UIWindow* window = iupCocoaTouchFindCurrentWindow();
+	if (!window)
+	{
+		iupdrvGetScreenSize(w, h);
+		return;
+	}
+	CGRect bounds = [window bounds];
+	if (w) *w = iupROUND(bounds.size.width);
+	if (h) *h = iupROUND(bounds.size.height);
 }
 
 IUP_SDK_API void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* handle, int* w, int* h)
