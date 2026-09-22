@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"math"
 
 	"github.com/gen2brain/iup-go/iup"
 )
@@ -100,21 +99,16 @@ func drawCb(ih iup.Ihandle) int {
 	ih.SetAttributes(`DRAWCOLOR="225 230 245", DRAWSTYLE=FILL`)
 	iup.DrawRectangle(ih, 0, 0, w, h)
 
-	// A square transformed by the committed-plus-live gesture state.
-	cx := float64(w)/2 + panX + livePanX
-	cy := float64(h)/2 + panY + livePanY
-	half := 60.0 * scale * liveScale
-	rad := (angle + liveAngle) * math.Pi / 180.0
-	cos, sin := math.Cos(rad), math.Sin(rad)
-
-	corners := [4][2]float64{{-half, -half}, {half, -half}, {half, half}, {-half, half}}
-	pts := make([]int, 0, 8)
-	for _, c := range corners {
-		pts = append(pts, int(cx+c[0]*cos-c[1]*sin), int(cy+c[0]*sin+c[1]*cos))
-	}
-
+	iup.DrawSave(ih)
+	iup.DrawTranslate(ih, float64(w)/2+panX+livePanX, float64(h)/2+panY+livePanY)
+	iup.DrawRotate(ih, -(angle + liveAngle))
+	iup.DrawScale(ih, scale*liveScale, scale*liveScale)
 	ih.SetAttributes(`DRAWCOLOR="70 110 200", DRAWSTYLE=FILL`)
-	iup.DrawPolygon(ih, pts, len(pts)/2)
+	iup.DrawRectangle(ih, -60, -60, 59, 59)
+	ih.SetAttributes(`DRAWCOLOR="255 255 255", DRAWFONT="Helvetica, Bold 16"`)
+	tw, th := iup.DrawGetTextSize(ih, "IUP")
+	iup.DrawText(ih, "IUP", -tw/2, -th/2, -1, -1)
+	iup.DrawRestore(ih)
 
 	ih.SetAttribute("DRAWCOLOR", "60 60 80")
 	iup.DrawText(ih, fmt.Sprintf("scale %.2f  angle %.0f", scale*liveScale, angle+liveAngle), 10, 10, w, h)
