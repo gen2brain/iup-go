@@ -3,6 +3,7 @@ set -e
 
 HERE=$(cd "$(dirname "$0")" && pwd)
 SRC=$(cd "${1:-docs}" && pwd)
+VERSION=$(tr -d '[:space:]' < "$HERE/../../iup/external/VERSION" | cut -d. -f1,2)
 OUT=${2:-_site}
 TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
@@ -27,7 +28,7 @@ find . -name '*.md' | sed 's|^\./||' | while read -r rel; do
   if [ "$rel" = "README.md" ]; then out="$OUT/index.html"; else out="$OUT/${rel%.md}.html"; fi
   mkdir -p "$(dirname "$out")"
   pandoc -f gfm -t html5 --template "$HERE/template.html" --toc --toc-depth=4 \
-    --lua-filter "$HERE/links.lua" -M docpath="$rel" -V root="$root" \
+    --lua-filter "$HERE/links.lua" -M docpath="$rel" -V root="$root" -V version="$VERSION" \
     --include-before-body "$nav" "$rel" -o "$out"
 done
 
