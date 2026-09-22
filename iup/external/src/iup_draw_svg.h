@@ -21,6 +21,7 @@ typedef struct _iSvgCanvas iSvgCanvas;
 
 iSvgCanvas* iupSvgDrawCreateCanvas(int w, int h);
 void        iupSvgDrawKillCanvas(iSvgCanvas* dc);
+void        iupSvgDrawSetTransform(iSvgCanvas* dc, const IupDrawMatrix* matrix);
 
 const char* iupSvgDrawGetString(iSvgCanvas* dc);
 int         iupSvgDrawGetStringLength(iSvgCanvas* dc);

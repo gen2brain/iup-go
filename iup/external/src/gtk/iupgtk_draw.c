@@ -30,6 +30,8 @@ struct _IdrawCanvas
   GtkWidget* widget;
   int release_cr;
   cairo_t* cr, *image_cr;
+  cairo_matrix_t base_matrix;
+  IupDrawMatrix matrix;
 #if !GTK_CHECK_VERSION(3, 0, 0)
   GdkWindow* wnd;
   int draw_focus,
@@ -100,9 +102,26 @@ IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
   cairo_surface_destroy(surface);
 #endif
 
+  cairo_get_matrix(dc->image_cr, &dc->base_matrix);
+  dc->matrix.a = 1;
+  dc->matrix.d = 1;
+
   iupAttribSet(ih, "DRAWDRIVER", "CAIRO");
 
   return dc;
+}
+
+IUP_SDK_API void iupdrvDrawSetTransform(IdrawCanvas* dc, const IupDrawMatrix* matrix)
+{
+  cairo_matrix_t value;
+  dc->matrix = *matrix;
+  value.xx = dc->base_matrix.xx * matrix->a + dc->base_matrix.xy * matrix->b;
+  value.yx = dc->base_matrix.yx * matrix->a + dc->base_matrix.yy * matrix->b;
+  value.xy = dc->base_matrix.xx * matrix->c + dc->base_matrix.xy * matrix->d;
+  value.yy = dc->base_matrix.yx * matrix->c + dc->base_matrix.yy * matrix->d;
+  value.x0 = dc->base_matrix.xx * matrix->e + dc->base_matrix.xy * matrix->f + dc->base_matrix.x0;
+  value.y0 = dc->base_matrix.yx * matrix->e + dc->base_matrix.yy * matrix->f + dc->base_matrix.y0;
+  cairo_set_matrix(dc->image_cr, &value);
 }
 
 IUP_SDK_API void iupdrvDrawKillCanvas(IdrawCanvas* dc)
@@ -153,6 +172,9 @@ IUP_SDK_API void iupdrvDrawUpdateSize(IdrawCanvas* dc)
       }
       else
         dc->image_cr = cairo_create(buffer);
+
+      cairo_get_matrix(dc->image_cr, &dc->base_matrix);
+      iupdrvDrawSetTransform(dc, &dc->matrix);
     }
 #else
     cairo_destroy(dc->image_cr);
@@ -160,6 +182,8 @@ IUP_SDK_API void iupdrvDrawUpdateSize(IdrawCanvas* dc)
     surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, dc->w, dc->h);
     dc->image_cr = cairo_create(surface);
     cairo_surface_destroy(surface);
+    cairo_get_matrix(dc->image_cr, &dc->base_matrix);
+    iupdrvDrawSetTransform(dc, &dc->matrix);
 #endif
   }
 }
@@ -754,6 +778,16 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
   cairo_move_to(dc->image_cr, x, y);
   pango_cairo_show_layout(dc->image_cr, fontlayout);
 
+  {
+    PangoContext* context = pango_layout_get_context(fontlayout);
+    const PangoMatrix* matrix = pango_context_get_matrix(context);
+    if (matrix && (matrix->xx != 1 || matrix->xy != 0 || matrix->yx != 0 || matrix->yy != 1))
+    {
+      pango_context_set_matrix(context, NULL);
+      pango_layout_context_changed(fontlayout);
+    }
+  }
+
   /* restore settings */
   if ((flags & IUP_DRAW_WRAP) || (flags & IUP_DRAW_ELLIPSIS))
   {
@@ -916,10 +950,10 @@ static void iDrawBuildPath(cairo_t* cr, const IupPathSeg* segs, int count)
     }
     case IUP_PATHSEG_ARC_TO:
     {
-      IupPathSeg bez[4];
-      int j, n = iupDrawPathArcToBeziers(&segs[i], bez);
+      double bez[24];
+      int j, n = iupDrawPathArcToCurves(&segs[i], bez);
       for (j = 0; j < n; j++)
-        cairo_curve_to(cr, bez[j].x1, bez[j].y1, bez[j].x2, bez[j].y2, bez[j].x3, bez[j].y3);
+        cairo_curve_to(cr, bez[j * 6], bez[j * 6 + 1], bez[j * 6 + 2], bez[j * 6 + 3], bez[j * 6 + 4], bez[j * 6 + 5]);
       break;
     }
     case IUP_PATHSEG_CLOSE:
@@ -935,6 +969,7 @@ IUP_SDK_API void iupdrvDrawPathFill(IdrawCanvas* dc, const IupPathSeg* segs, int
   iDrawBuildPath(dc->image_cr, segs, count);
   cairo_set_fill_rule(dc->image_cr, rule == IUP_PATH_RULE_EVENODD ? CAIRO_FILL_RULE_EVEN_ODD : CAIRO_FILL_RULE_WINDING);
   cairo_fill(dc->image_cr);
+  cairo_set_fill_rule(dc->image_cr, CAIRO_FILL_RULE_WINDING);
 }
 
 IUP_SDK_API void iupdrvDrawPathStroke(IdrawCanvas* dc, const IupPathSeg* segs, int count, const IupDrawSource* src, int style, int line_width)
@@ -953,6 +988,7 @@ IUP_SDK_API void iupdrvDrawSetClipPath(IdrawCanvas* dc, const IupPathSeg* segs, 
   iDrawBuildPath(dc->image_cr, segs, count);
   cairo_set_fill_rule(dc->image_cr, rule == IUP_PATH_RULE_EVENODD ? CAIRO_FILL_RULE_EVEN_ODD : CAIRO_FILL_RULE_WINDING);
   cairo_clip(dc->image_cr);
+  cairo_set_fill_rule(dc->image_cr, CAIRO_FILL_RULE_WINDING);
 
   iupDrawPathGetBBox(segs, count, &dc->clip_x1, &dc->clip_y1, &dc->clip_x2, &dc->clip_y2);
 }

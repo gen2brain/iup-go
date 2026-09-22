@@ -43,6 +43,7 @@ struct _IdrawCanvas{
 
   int backend_type;  /* WD_BACKEND_D2D or WD_BACKEND_GDIPLUS */
   int cached;
+  IupDrawMatrix matrix;
 };
 
 /* must be the same in wdInitialize and wdTerminate */
@@ -103,6 +104,8 @@ IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
   char* rcPaint;
 
   dc->ih = ih;
+  dc->matrix.a = 1;
+  dc->matrix.d = 1;
   dc->backend_type = wdBackend();
 
   dc->hWnd = (HWND)IupGetAttribute(ih, "HWND");  /* Use the attribute, so it can work with FileDlg preview area */
@@ -203,6 +206,7 @@ IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
     iupAttribSet(ih, "DRAWDRIVER", "GDI+");
 
   wdBeginPaint(dc->hCanvas);
+  wdResetWorld(dc->hCanvas);
 
   /* Clear to BGCOLOR; the ACTION may not paint the whole area and WM_ERASEBKGND skips it. */
   {
@@ -222,6 +226,13 @@ IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
   }
 
   return dc;
+}
+
+IUP_SDK_API void iupdrvDrawSetTransform(IdrawCanvas* dc, const IupDrawMatrix* matrix)
+{
+  dc->matrix = *matrix;
+  wdSetWorld(dc->hCanvas, (float)matrix->a, (float)matrix->b, (float)matrix->c,
+             (float)matrix->d, (float)matrix->e, (float)matrix->f);
 }
 
 IUP_SDK_API void iupdrvDrawKillCanvas(IdrawCanvas* dc)
@@ -359,6 +370,9 @@ IUP_SDK_API void iupdrvDrawArc(IdrawCanvas* dc, int x1, int y1, int x2, int y2, 
   float baseAngle, sweepAngle;
   WD_HBRUSH brush = wdCreateSolidBrush(dc->hCanvas, iupColor2ARGB(color));
 
+  while (a2 < a1)
+    a2 += 360;
+
   iupDrawCheckSwapCoord(x1, x2);
   iupDrawCheckSwapCoord(y1, y2);
 
@@ -428,6 +442,7 @@ IUP_SDK_API void iupdrvDrawPolygon(IdrawCanvas* dc, int* points, int count, long
 
   path = wdCreatePath(dc->hCanvas);
   wdOpenPathSink(&sink, path);
+  wdSetPathSinkFillMode(&sink, WD_FILLMODE_WINDING);
 
   wdBeginFigure(&sink, iupInt2Float(points[0]), iupInt2Float(points[1]));
 
@@ -599,6 +614,8 @@ static WD_HPATH iWdlBuildPath(IdrawCanvas* dc, const IupPathSeg* segs, int count
     return NULL;
   }
 
+  wdSetPathSinkFillMode(&sink, rule == IUP_PATH_RULE_EVENODD ? WD_FILLMODE_ALTERNATE : WD_FILLMODE_WINDING);
+
   for (i = 0; i < count; i++)
   {
     switch (segs[i].op)
@@ -606,7 +623,7 @@ static WD_HPATH iWdlBuildPath(IdrawCanvas* dc, const IupPathSeg* segs, int count
     case IUP_PATHSEG_MOVE_TO:
       if (in_figure)
         wdEndFigure(&sink, FALSE);
-      wdBeginFigureFillMode(&sink, iupInt2Float(segs[i].x1), iupInt2Float(segs[i].y1), rule);
+      wdBeginFigure(&sink, iupInt2Float(segs[i].x1), iupInt2Float(segs[i].y1));
       sub_x = iupInt2Float(segs[i].x1);
       sub_y = iupInt2Float(segs[i].y1);
       in_figure = 1;
@@ -614,7 +631,7 @@ static WD_HPATH iWdlBuildPath(IdrawCanvas* dc, const IupPathSeg* segs, int count
     case IUP_PATHSEG_LINE_TO:
       if (!in_figure)
       {
-        wdBeginFigureFillMode(&sink, sub_x, sub_y, rule);
+        wdBeginFigure(&sink, sub_x, sub_y);
         in_figure = 1;
       }
       wdAddLine(&sink, iupInt2Float(segs[i].x1), iupInt2Float(segs[i].y1));
@@ -622,7 +639,7 @@ static WD_HPATH iWdlBuildPath(IdrawCanvas* dc, const IupPathSeg* segs, int count
     case IUP_PATHSEG_CURVE_TO:
       if (!in_figure)
       {
-        wdBeginFigureFillMode(&sink, sub_x, sub_y, rule);
+        wdBeginFigure(&sink, sub_x, sub_y);
         in_figure = 1;
       }
       wdAddBezier(&sink, iupInt2Float(segs[i].x1), iupInt2Float(segs[i].y1), iupInt2Float(segs[i].x2), iupInt2Float(segs[i].y2), iupInt2Float(segs[i].x3), iupInt2Float(segs[i].y3));
@@ -632,7 +649,7 @@ static WD_HPATH iWdlBuildPath(IdrawCanvas* dc, const IupPathSeg* segs, int count
       float qx, qy, c1x, c1y, c2x, c2y;
       if (!in_figure)
       {
-        wdBeginFigureFillMode(&sink, sub_x, sub_y, rule);
+        wdBeginFigure(&sink, sub_x, sub_y);
         in_figure = 1;
       }
       qx = sink.ptEnd.x;
@@ -646,15 +663,15 @@ static WD_HPATH iWdlBuildPath(IdrawCanvas* dc, const IupPathSeg* segs, int count
     }
     case IUP_PATHSEG_ARC_TO:
     {
-      IupPathSeg bez[4];
-      int j, n = iupDrawPathArcToBeziers(&segs[i], bez);
+      double bez[24];
+      int j, n = iupDrawPathArcToCurves(&segs[i], bez);
       if (!in_figure)
       {
-        wdBeginFigureFillMode(&sink, sub_x, sub_y, rule);
+        wdBeginFigure(&sink, sub_x, sub_y);
         in_figure = 1;
       }
       for (j = 0; j < n; j++)
-        wdAddBezier(&sink, iupInt2Float(bez[j].x1), iupInt2Float(bez[j].y1), iupInt2Float(bez[j].x2), iupInt2Float(bez[j].y2), iupInt2Float(bez[j].x3), iupInt2Float(bez[j].y3));
+        wdAddBezier(&sink, (float)bez[j * 6], (float)bez[j * 6 + 1], (float)bez[j * 6 + 2], (float)bez[j * 6 + 3], (float)bez[j * 6 + 4], (float)bez[j * 6 + 5]);
       break;
     }
     case IUP_PATHSEG_CLOSE:
@@ -668,6 +685,31 @@ static WD_HPATH iWdlBuildPath(IdrawCanvas* dc, const IupPathSeg* segs, int count
   if (in_figure)
     wdEndFigure(&sink, FALSE);
 
+  wdClosePathSink(&sink);
+  return path;
+}
+
+static int iWdlAxisAligned(IdrawCanvas* dc)
+{
+  return dc->matrix.b == 0 && dc->matrix.c == 0;
+}
+
+static WD_HPATH iWdlCreateRectPath(IdrawCanvas* dc, float x1, float y1, float x2, float y2)
+{
+  WD_PATHSINK sink;
+  WD_HPATH path = wdCreatePath(dc->hCanvas);
+  if (!path)
+    return NULL;
+  if (!wdOpenPathSink(&sink, path))
+  {
+    wdDestroyPath(path);
+    return NULL;
+  }
+  wdBeginFigure(&sink, x1, y1);
+  wdAddLine(&sink, x2, y1);
+  wdAddLine(&sink, x2, y2);
+  wdAddLine(&sink, x1, y2);
+  wdEndFigure(&sink, TRUE);
   wdClosePathSink(&sink);
   return path;
 }
@@ -687,12 +729,12 @@ IUP_SDK_API void iupdrvDrawPathFill(IdrawCanvas* dc, const IupPathSeg* segs, int
     }
     else
     {
-      wdSetClip(dc->hCanvas, NULL, path);
+      wdPushClipPath(dc->hCanvas, path);
       if (src->type == IUP_SOURCE_LINEAR_GRADIENT)
         iupdrvDrawLinearGradient(dc, src->x1, src->y1, src->x2, src->y2, src->angle, src->colors, src->offsets, src->count);
       else
         iupdrvDrawRadialGradient(dc, src->cx, src->cy, src->radius, src->colors, src->offsets, src->count);
-      wdSetClip(dc->hCanvas, NULL, NULL);
+      wdPopClip(dc->hCanvas);
     }
   }
 
@@ -789,7 +831,17 @@ IUP_SDK_API void iupdrvDrawSetClipRect(IdrawCanvas* dc, int x1, int y1, int x2, 
     rect.y1 = iupInt2Float(y2 + 0.5f);
   }
 
-  wdSetClip(dc->hCanvas, &rect, NULL);
+  if (iWdlAxisAligned(dc))
+    wdSetClip(dc->hCanvas, &rect, NULL);
+  else
+  {
+    WD_HPATH path = iWdlCreateRectPath(dc, rect.x0, rect.y0, rect.x1, rect.y1);
+    if (path)
+    {
+      wdSetClip(dc->hCanvas, NULL, path);
+      wdDestroyPath(path);
+    }
+  }
 
   dc->clip_x1 = x1;
   dc->clip_y1 = y1;
@@ -854,6 +906,7 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
 
   HFONT hFont = (HFONT)iupwinGetHFont(NULL, font);
   WD_HFONT wdFont = wdCreateFontWithGdiHandle(hFont);
+  WD_HPATH clip_path = NULL;
   int layout_w = w, layout_h = h;
 
   if (text_orientation && layout_center)
@@ -886,25 +939,42 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
     rect.x0 -= iCompensatePosX(metrics.fLeading);
   }
 
+  if ((flags & IUP_DRAW_CLIP) && (text_orientation || !iWdlAxisAligned(dc)))
+  {
+    clip_path = iWdlCreateRectPath(dc, iupInt2Float(x), iupInt2Float(y), iupInt2Float(x + w), iupInt2Float(y + h));
+    if (clip_path)
+      wdPushClipPath(dc->hCanvas, clip_path);
+  }
+
   if (text_orientation)
   {
     if (layout_center)
     {
+      IupDrawMatrix offset = dc->matrix;
+      float ox = iupInt2Float(w - layout_w) / 2, oy = iupInt2Float(h - layout_h) / 2;
+      offset.e = dc->matrix.a * ox + dc->matrix.c * oy + dc->matrix.e;
+      offset.f = dc->matrix.b * ox + dc->matrix.d * oy + dc->matrix.f;
+      wdSetWorld(dc->hCanvas, (float)offset.a, (float)offset.b, (float)offset.c, (float)offset.d, (float)offset.e, (float)offset.f);
       wdRotateWorld(dc->hCanvas, iupInt2Float(x + layout_w / 2), iupInt2Float(y + layout_h / 2), (float)-text_orientation);  /* counterclockwise */
-      wdTranslateWorld(dc->hCanvas, iupInt2Float(w - layout_w) / 2, iupInt2Float(h - layout_h) / 2);  /* append the transform */
     }
     else
       wdRotateWorld(dc->hCanvas, iupInt2Float(x), iupInt2Float(y), (float)-text_orientation);  /* counterclockwise */
   }
 
-  if (!(flags & IUP_DRAW_CLIP))
+  if (!(flags & IUP_DRAW_CLIP) || clip_path)
     dwFlags |= WD_STR_NOCLIP;
 
   wdDrawString(dc->hCanvas, wdFont, &rect, wtext, len, brush, dwFlags);
 
   /* restore settings */
   if (text_orientation)
-    wdResetWorld(dc->hCanvas);
+    iupdrvDrawSetTransform(dc, &dc->matrix);
+
+  if (clip_path)
+  {
+    wdPopClip(dc->hCanvas);
+    wdDestroyPath(clip_path);
+  }
 
   wdDestroyFont(wdFont);
   wdDestroyBrush(brush);
@@ -1013,7 +1083,13 @@ IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x
   x3 = cx + (w * dx) / 2.0f;
   y3 = cy + (h * dy) / 2.0f;
 
-  brush = (count == 2) ? wdCreateLinearGradientBrush(dc->hCanvas, x0, y0, x3, y3, iupColor2ARGB(colors[0]), iupColor2ARGB(colors[1])) : NULL;
+  {
+    WD_COLOR wcolors[IUP_GRADIENT_MAX_STOPS];
+    int i;
+    for (i = 0; i < count; i++)
+      wcolors[i] = iupColor2ARGB(colors[i]);
+    brush = wdCreateLinearGradientBrushEx(dc->hCanvas, x0, y0, x3, y3, wcolors, offsets, count);
+  }
   if (brush)
   {
     wdFillRect(dc->hCanvas, brush, iupInt2Float(x1), iupInt2Float(y1), iupInt2Float(x2), iupInt2Float(y2));
@@ -1061,9 +1137,13 @@ IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int r
 {
   WD_HBRUSH brush;
 
-  brush = (count == 2) ? wdCreateRadialGradientBrush(dc->hCanvas, iupInt2Float(cx), iupInt2Float(cy),
-                                       iupInt2Float(radius), iupInt2Float(radius),
-                                       iupColor2ARGB(colors[0]), iupColor2ARGB(colors[1])) : NULL;
+  {
+    WD_COLOR wcolors[IUP_GRADIENT_MAX_STOPS];
+    int i;
+    for (i = 0; i < count; i++)
+      wcolors[i] = iupColor2ARGB(colors[i]);
+    brush = wdCreateRadialGradientBrushEx(dc->hCanvas, iupInt2Float(cx), iupInt2Float(cy), iupInt2Float(radius), iupInt2Float(radius), wcolors, offsets, count);
+  }
   if (brush)
   {
     wdFillEllipse(dc->hCanvas, brush, iupInt2Float(cx), iupInt2Float(cy), iupInt2Float(radius), iupInt2Float(radius));

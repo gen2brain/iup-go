@@ -844,6 +844,74 @@ func DrawEnd(ih Ihandle) {
 	ccall("IupDrawEnd", "", []interface{}{"number"}, []interface{}{int(ih)})
 }
 
+// DrawSave saves the current drawing state.
+//
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+func DrawSave(ih Ihandle) {
+	ccall("IupDrawSave", "", []interface{}{"number"}, []interface{}{int(ih)})
+}
+
+// DrawRestore restores the most recently saved drawing state.
+//
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+func DrawRestore(ih Ihandle) {
+	ccall("IupDrawRestore", "", []interface{}{"number"}, []interface{}{int(ih)})
+}
+
+// DrawTransform multiplies the current drawing transform by the given matrix.
+//
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+func DrawTransform(ih Ihandle, a, b, c, d, e, f float64) {
+	ccall("IupDrawTransform", "", []interface{}{"number", "number", "number", "number", "number", "number", "number"}, []interface{}{int(ih), a, b, c, d, e, f})
+}
+
+// DrawSetTransform replaces the current drawing transform.
+//
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+func DrawSetTransform(ih Ihandle, a, b, c, d, e, f float64) {
+	ccall("IupDrawSetTransform", "", []interface{}{"number", "number", "number", "number", "number", "number", "number"}, []interface{}{int(ih), a, b, c, d, e, f})
+}
+
+// DrawResetTransform resets the current drawing transform to identity.
+//
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+func DrawResetTransform(ih Ihandle) {
+	ccall("IupDrawResetTransform", "", []interface{}{"number"}, []interface{}{int(ih)})
+}
+
+// DrawGetTransform returns the current drawing transform.
+//
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+func DrawGetTransform(ih Ihandle) (a, b, c, d, e, f float64) {
+	p := wasmMalloc(48)
+	ccall("IupDrawGetTransform", "", []interface{}{"number", "number", "number", "number", "number", "number", "number"}, []interface{}{int(ih), p, p + 8, p + 16, p + 24, p + 32, p + 40})
+	a, b, c = wasmGetF64(p), wasmGetF64(p+8), wasmGetF64(p+16)
+	d, e, f = wasmGetF64(p+24), wasmGetF64(p+32), wasmGetF64(p+40)
+	wasmFree(p)
+	return
+}
+
+// DrawTranslate translates the current drawing transform.
+//
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+func DrawTranslate(ih Ihandle, tx, ty float64) {
+	ccall("IupDrawTranslate", "", []interface{}{"number", "number", "number"}, []interface{}{int(ih), tx, ty})
+}
+
+// DrawScale scales the current drawing transform.
+//
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+func DrawScale(ih Ihandle, sx, sy float64) {
+	ccall("IupDrawScale", "", []interface{}{"number", "number", "number"}, []interface{}{int(ih), sx, sy})
+}
+
+// DrawRotate rotates the current drawing transform counterclockwise in degrees.
+//
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
+func DrawRotate(ih Ihandle, angle float64) {
+	ccall("IupDrawRotate", "", []interface{}{"number", "number"}, []interface{}{int(ih), angle})
+}
+
 // DrawGetSize returns the drawing area size.
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md

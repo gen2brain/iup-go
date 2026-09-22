@@ -124,12 +124,21 @@ d2d_canvas_alloc(dummy_ID2D1RenderTarget* target, WORD type, UINT width, BOOL rt
 }
 
 void
+d2d_update_text_antialias(d2d_canvas_t* c)
+{
+    dummy_ID2D1RenderTarget_SetTextAntialiasMode(c->target,
+            (c->clip_layer != NULL || c->push_count > 0) ?
+            dummy_D2D1_TEXT_ANTIALIAS_MODE_GRAYSCALE : dummy_D2D1_TEXT_ANTIALIAS_MODE_CLEARTYPE);
+}
+
+void
 d2d_reset_clip(d2d_canvas_t* c)
 {
     if(c->clip_layer != NULL) {
         dummy_ID2D1RenderTarget_PopLayer(c->target);
         dummy_ID2D1Layer_Release(c->clip_layer);
         c->clip_layer = NULL;
+        d2d_update_text_antialias(c);
     }
     if(c->flags & D2D_CANVASFLAG_RECTCLIP) {
         dummy_ID2D1RenderTarget_PopAxisAlignedClip(c->target);

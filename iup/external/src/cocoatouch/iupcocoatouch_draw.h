@@ -30,12 +30,15 @@ struct _IdrawCanvas
 	/* logical points; bitmap is (w*scale)x(h*scale) px, CTM absorbs the scale */
 	int w, h;
 	CGFloat scale;
+	CGAffineTransform user_transform;
+	CGAffineTransform clip_transform;
 
 	int clip_state;
 	int clip_x1, clip_y1, clip_x2, clip_y2;
 
 	/* queued during Draw, committed on Flush so it sits above primitives */
 	int draw_focus;
+	CGAffineTransform focus_transform;
 	int focus_x1, focus_y1, focus_x2, focus_y2;
 };
 

@@ -37,19 +37,200 @@ struct _IdrawCanvas
 
   int clip_x1, clip_y1, clip_x2, clip_y2;
   int clip_corner_radius;
+  int clip_set;
   Eo* clipper;
 
   Efl_VG* batch_shape;
   Efl_VG* batch_root;
   long batch_color;
   int batch_width;
+  IupDrawMatrix matrix;
 };
+
+#define EFL_DRAW_LIMIT 16384
+
+static int iDrawIsIdentity(const IdrawCanvas* dc)
+{
+  return dc->matrix.a == 1 && dc->matrix.b == 0 && dc->matrix.c == 0 &&
+         dc->matrix.d == 1 && dc->matrix.e == 0 && dc->matrix.f == 0;
+}
+
+static int iDrawIsAxisAligned(const IdrawCanvas* dc)
+{
+  return dc->matrix.b == 0 && dc->matrix.c == 0;
+}
+
+static double iDrawMatrixScale(const IdrawCanvas* dc)
+{
+  return sqrt(fabs(dc->matrix.a * dc->matrix.d - dc->matrix.b * dc->matrix.c));
+}
+
+static void iDrawTransformPoint(const IdrawCanvas* dc, double* x, double* y)
+{
+  double tx = dc->matrix.a * *x + dc->matrix.c * *y + dc->matrix.e;
+  double ty = dc->matrix.b * *x + dc->matrix.d * *y + dc->matrix.f;
+  *x = tx;
+  *y = ty;
+}
+
+static void iDrawGetMatrix3(const IdrawCanvas* dc, Eina_Matrix3* m)
+{
+  eina_matrix3_values_set(m, dc->matrix.a, dc->matrix.c, dc->matrix.e,
+                             dc->matrix.b, dc->matrix.d, dc->matrix.f, 0, 0, 1);
+}
+
+static void iDrawTransformGradient(const IdrawCanvas* dc, Efl_VG* grad)
+{
+  if (efl_isa(grad, EFL_CANVAS_VG_GRADIENT_LINEAR_CLASS))
+  {
+    double x0, y0, x1, y1, dx, dy, gx, gy, len, det;
+    efl_gfx_gradient_linear_start_get(grad, &x0, &y0);
+    efl_gfx_gradient_linear_end_get(grad, &x1, &y1);
+    dx = x1 - x0;
+    dy = y1 - y0;
+    len = dx * dx + dy * dy;
+    det = dc->matrix.a * dc->matrix.d - dc->matrix.b * dc->matrix.c;
+    iDrawTransformPoint(dc, &x0, &y0);
+    if (len > 0 && det != 0)
+    {
+      gx = (dc->matrix.d * dx - dc->matrix.b * dy) / (det * len);
+      gy = (-dc->matrix.c * dx + dc->matrix.a * dy) / (det * len);
+      len = gx * gx + gy * gy;
+      x1 = x0 + gx / len;
+      y1 = y0 + gy / len;
+    }
+    else
+      iDrawTransformPoint(dc, &x1, &y1);
+    efl_gfx_gradient_linear_start_set(grad, x0, y0);
+    efl_gfx_gradient_linear_end_set(grad, x1, y1);
+  }
+  else if (efl_isa(grad, EFL_CANVAS_VG_GRADIENT_RADIAL_CLASS))
+  {
+    double cx, cy;
+    efl_gfx_gradient_radial_center_get(grad, &cx, &cy);
+    iDrawTransformPoint(dc, &cx, &cy);
+    efl_gfx_gradient_radial_center_set(grad, cx, cy);
+    efl_gfx_gradient_radial_radius_set(grad, efl_gfx_gradient_radial_radius_get(grad) * iDrawMatrixScale(dc));
+  }
+}
+
+static void iDrawTransformShape(const IdrawCanvas* dc, Efl_VG* shape, int stroke)
+{
+  if (!iDrawIsIdentity(dc))
+  {
+    Eina_Matrix3 m, result;
+    const Eina_Matrix3* own = efl_canvas_vg_node_transformation_get(shape);
+    const Efl_Gfx_Path_Command* cmds = NULL;
+    const double* pts = NULL;
+    unsigned int cmd_count = 0, pt_count = 0, i;
+    Efl_VG* grad;
+
+    iDrawGetMatrix3(dc, &m);
+    if (own)
+      eina_matrix3_compose(&m, own, &result);
+    else
+      result = m;
+
+    efl_gfx_path_get(shape, &cmds, &pts);
+    efl_gfx_path_length_get(shape, &cmd_count, &pt_count);
+    if (cmds && pts && pt_count)
+    {
+      Efl_Gfx_Path_Command* new_cmds = malloc(sizeof(Efl_Gfx_Path_Command) * cmd_count);
+      double* new_pts = malloc(sizeof(double) * pt_count);
+      if (new_cmds && new_pts)
+      {
+        memcpy(new_cmds, cmds, sizeof(Efl_Gfx_Path_Command) * cmd_count);
+        for (i = 0; i + 1 < pt_count; i += 2)
+        {
+          new_pts[i] = result.xx * pts[i] + result.xy * pts[i + 1] + result.xz;
+          new_pts[i + 1] = result.yx * pts[i] + result.yy * pts[i + 1] + result.yz;
+        }
+        efl_gfx_path_set(shape, new_cmds, new_pts);
+      }
+      free(new_cmds);
+      free(new_pts);
+    }
+    if (own)
+      efl_canvas_vg_node_transformation_set(shape, NULL);
+
+    if (stroke)
+    {
+      double scale = iDrawMatrixScale(dc);
+      const Efl_Gfx_Dash* dash = NULL;
+      unsigned int dash_count = 0;
+
+      efl_gfx_shape_stroke_width_set(shape, efl_gfx_shape_stroke_width_get(shape) * scale);
+      efl_gfx_shape_stroke_dash_get(shape, &dash, &dash_count);
+      if (dash && dash_count)
+      {
+        Efl_Gfx_Dash scaled[4];
+        for (i = 0; i < dash_count && i < 4; i++)
+        {
+          scaled[i].length = dash[i].length * scale;
+          scaled[i].gap = dash[i].gap * scale;
+        }
+        efl_gfx_shape_stroke_dash_set(shape, scaled, i);
+      }
+
+      grad = efl_canvas_vg_shape_stroke_fill_get(shape);
+    }
+    else
+      grad = efl_canvas_vg_shape_fill_get(shape);
+
+    if (grad)
+      iDrawTransformGradient(dc, grad);
+  }
+}
+
+static void iDrawAddShape(IdrawCanvas* dc, Efl_VG* shape, int stroke)
+{
+  iDrawTransformShape(dc, shape, stroke);
+  dc->shapes = eina_list_append(dc->shapes, shape);
+}
+
+static void iDrawMapObject(const IupDrawMatrix* matrix, Eo* obj)
+{
+  Evas_Map* map;
+  const Evas_Map* current = evas_object_map_get(obj);
+  int i;
+
+  if (matrix->a == 1 && matrix->b == 0 && matrix->c == 0 &&
+      matrix->d == 1 && matrix->e == 0 && matrix->f == 0)
+    return;
+
+  if (current)
+    map = evas_map_dup(current);
+  else
+  {
+    map = evas_map_new(4);
+    evas_map_util_points_populate_from_object(map, obj);
+  }
+
+  for (i = 0; i < 4; i++)
+  {
+    Evas_Coord x, y, z;
+    double tx, ty;
+    evas_map_point_coord_get(map, i, &x, &y, &z);
+    tx = matrix->a * x + matrix->c * y + matrix->e;
+    ty = matrix->b * x + matrix->d * y + matrix->f;
+    evas_map_point_coord_set(map, i, (Evas_Coord)lrint(tx), (Evas_Coord)lrint(ty), z);
+  }
+
+  evas_object_map_set(obj, map);
+  evas_object_map_enable_set(obj, EINA_TRUE);
+  evas_map_free(map);
+}
 
 static void iDrawNewLayer(IdrawCanvas* dc)
 {
   Eo* layer = efl_add(EFL_CANVAS_VG_OBJECT_CLASS, dc->frame_evas);
+  Efl_VG* root;
   if (!layer)
     return;
+
+  root = efl_add(EFL_CANVAS_VG_CONTAINER_CLASS, layer);
+  efl_canvas_vg_object_root_node_set(layer, root);
+  dc->root = efl_add(EFL_CANVAS_VG_CONTAINER_CLASS, root);
 
   efl_gfx_entity_position_set(layer, EINA_POSITION2D(0, 0));
   efl_gfx_entity_size_set(layer, EINA_SIZE2D(dc->w, dc->h));
@@ -59,18 +240,16 @@ static void iDrawNewLayer(IdrawCanvas* dc)
   if (dc->clipper)
     efl_canvas_object_clipper_set(layer, dc->clipper);
 
-  dc->root = efl_add(EFL_CANVAS_VG_CONTAINER_CLASS, layer);
-  efl_canvas_vg_object_root_node_set(layer, dc->root);
-
   dc->frame_objects = eina_list_append(dc->frame_objects, layer);
 }
 
-static void iDrawTrackObject(IdrawCanvas* dc, Eo* obj)
+static void iDrawTrackObject(IdrawCanvas* dc, Eo* obj, const IupDrawMatrix* matrix)
 {
   if (!obj)
     return;
   if (dc->clipper)
     efl_canvas_object_clipper_set(obj, dc->clipper);
+  iDrawMapObject(matrix, obj);
   dc->frame_objects = eina_list_append(dc->frame_objects, obj);
 }
 
@@ -134,6 +313,8 @@ static void iDrawRecycleFrame(Ihandle* ih)
     if (type && strcmp(type, "text") == 0)
     {
       efl_canvas_object_clipper_set(obj, NULL);
+      evas_object_map_enable_set(obj, EINA_FALSE);
+      evas_object_map_set(obj, NULL);
       efl_gfx_entity_visible_set(obj, EINA_FALSE);
       pool = eina_list_append(pool, obj);
     }
@@ -175,6 +356,8 @@ IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
   Ecore_Evas* ee;
 
   dc->ih = ih;
+  dc->matrix.a = 1;
+  dc->matrix.d = 1;
 
   vg = iupeflGetWidget(ih);
   if (!vg)
@@ -228,6 +411,12 @@ IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
   iupAttribSet(ih, "DRAWDRIVER", "EFL_VG");
 
   return dc;
+}
+
+IUP_SDK_API void iupdrvDrawSetTransform(IdrawCanvas* dc, const IupDrawMatrix* matrix)
+{
+  dc->matrix = *matrix;
+  dc->batch_shape = NULL;
 }
 
 IUP_SDK_API void iupdrvDrawKillCanvas(IdrawCanvas* dc)
@@ -311,8 +500,6 @@ IUP_SDK_API void iupdrvDrawGetSize(IdrawCanvas* dc, int* w, int* h)
   if (h) *h = dc->h;
 }
 
-#define EFL_DRAW_LIMIT 16384
-
 static int eflDrawClamp(int c)
 {
   if (c < -EFL_DRAW_LIMIT)
@@ -373,7 +560,7 @@ IUP_SDK_API void iupdrvDrawLine(IdrawCanvas* dc, int x1, int y1, int x2, int y2,
   if (!eflDrawClipLine(&x1, &y1, &x2, &y2))
     return;
 
-  if (!iDrawIsDashed(style) && iupDrawAlpha(color) == 255 && dc->batch_shape &&
+  if (!iDrawIsDashed(style) && iupDrawAlpha(color) == 255 && dc->batch_shape && iDrawIsIdentity(dc) &&
       dc->batch_root == dc->root && dc->batch_color == color && dc->batch_width == line_width &&
       dc->batch_shape == eina_list_last_data_get(dc->shapes))
   {
@@ -390,12 +577,11 @@ IUP_SDK_API void iupdrvDrawLine(IdrawCanvas* dc, int x1, int y1, int x2, int y2,
     efl_gfx_shape_stroke_color_set(efl_added, r, g, b, a),
     efl_gfx_shape_stroke_width_set(efl_added, line_width > 0 ? line_width : 1),
     efl_gfx_shape_stroke_cap_set(efl_added, EFL_GFX_CAP_BUTT));
-
   iDrawSetDash(shape, style);
 
-  dc->shapes = eina_list_append(dc->shapes, shape);
+  iDrawAddShape(dc, shape, 1);
 
-  dc->batch_shape = (iDrawIsDashed(style) || iupDrawAlpha(color) != 255) ? NULL : shape;
+  dc->batch_shape = (iDrawIsDashed(style) || iupDrawAlpha(color) != 255 || !iDrawIsIdentity(dc)) ? NULL : shape;
   dc->batch_root = dc->root;
   dc->batch_color = color;
   dc->batch_width = line_width;
@@ -436,10 +622,10 @@ IUP_SDK_API void iupdrvDrawRectangle(IdrawCanvas* dc, int x1, int y1, int x2, in
     iDrawSetDash(shape, style);
   }
 
-  dc->shapes = eina_list_append(dc->shapes, shape);
+  iDrawAddShape(dc, shape, style != IUP_DRAW_FILL);
 }
 
-static void iDrawArcToVg(Efl_VG* root, Eina_List** shapes, int x1, int y1, int x2, int y2, double a1, double a2, long color, int style, int line_width)
+static Efl_VG* iDrawArcToVg(Efl_VG* root, int x1, int y1, int x2, int y2, double a1, double a2, long color, int style, int line_width)
 {
   Efl_VG* shape;
   int r, g, b, a;
@@ -494,16 +680,18 @@ static void iDrawArcToVg(Efl_VG* root, Eina_List** shapes, int x1, int y1, int x
     efl_gfx_shape_stroke_width_set(shape, line_width > 0 ? line_width : 1);
   }
 
-  if (shapes)
-    *shapes = eina_list_append(*shapes, shape);
+  return shape;
 }
 
 IUP_SDK_API void iupdrvDrawArc(IdrawCanvas* dc, int x1, int y1, int x2, int y2, double a1, double a2, long color, int style, int line_width)
 {
+  while (a2 < a1)
+    a2 += 360;
+
   iupDrawCheckSwapCoord(x1, x2);
   iupDrawCheckSwapCoord(y1, y2);
 
-  iDrawArcToVg(dc->root, &dc->shapes, x1, y1, x2, y2, a1, a2, color, style, line_width);
+  iDrawAddShape(dc, iDrawArcToVg(dc->root, x1, y1, x2, y2, a1, a2, color, style, line_width), style != IUP_DRAW_FILL);
 }
 
 IUP_SDK_API void iupdrvDrawEllipse(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color, int style, int line_width)
@@ -549,7 +737,7 @@ IUP_SDK_API void iupdrvDrawEllipse(IdrawCanvas* dc, int x1, int y1, int x2, int 
     efl_gfx_shape_stroke_width_set(shape, line_width > 0 ? line_width : 1);
   }
 
-  dc->shapes = eina_list_append(dc->shapes, shape);
+  iDrawAddShape(dc, shape, style != IUP_DRAW_FILL);
 }
 
 IUP_SDK_API void iupdrvDrawPolygon(IdrawCanvas* dc, int* points, int count, long color, int style, int line_width)
@@ -584,7 +772,7 @@ IUP_SDK_API void iupdrvDrawPolygon(IdrawCanvas* dc, int* points, int count, long
     efl_gfx_shape_stroke_width_set(shape, line_width > 0 ? line_width : 1);
   }
 
-  dc->shapes = eina_list_append(dc->shapes, shape);
+  iDrawAddShape(dc, shape, style != IUP_DRAW_FILL);
 }
 
 IUP_SDK_API void iupdrvDrawPixel(IdrawCanvas* dc, int x, int y, long color)
@@ -625,7 +813,7 @@ IUP_SDK_API void iupdrvDrawRoundedRectangle(IdrawCanvas* dc, int x1, int y1, int
     efl_gfx_shape_stroke_width_set(shape, line_width > 0 ? line_width : 1);
   }
 
-  dc->shapes = eina_list_append(dc->shapes, shape);
+  iDrawAddShape(dc, shape, style != IUP_DRAW_FILL);
 }
 
 IUP_SDK_API void iupdrvDrawBezier(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int x3, int y3, int x4, int y4, long color, int style, int line_width)
@@ -652,7 +840,7 @@ IUP_SDK_API void iupdrvDrawBezier(IdrawCanvas* dc, int x1, int y1, int x2, int y
     iDrawSetDash(shape, style);
   }
 
-  dc->shapes = eina_list_append(dc->shapes, shape);
+  iDrawAddShape(dc, shape, style != IUP_DRAW_FILL);
 }
 
 IUP_SDK_API void iupdrvDrawQuadraticBezier(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int x3, int y3, long color, int style, int line_width)
@@ -670,7 +858,6 @@ IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x
   Efl_VG* shape;
   Efl_Canvas_Vg_Gradient* grad;
   Efl_Gfx_Gradient_Stop stops[IUP_GRADIENT_MAX_STOPS];
-  int corner_radius = dc->clip_corner_radius;
   double rad, w, h, gx0, gy0, gx1, gy1;
   int i;
 
@@ -687,7 +874,7 @@ IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x
   gy1 = y1 + h / 2.0 + (h * sin(rad)) / 2.0;
 
   shape = efl_add(EFL_CANVAS_VG_SHAPE_CLASS, dc->root,
-    efl_gfx_path_append_rect(efl_added, x1, y1, x2 - x1 + 1, y2 - y1 + 1, corner_radius, corner_radius));
+    efl_gfx_path_append_rect(efl_added, x1, y1, x2 - x1 + 1, y2 - y1 + 1, 0, 0));
 
   grad = efl_add(EFL_CANVAS_VG_GRADIENT_LINEAR_CLASS, dc->root,
     efl_gfx_gradient_linear_start_set(efl_added, gx0, gy0),
@@ -704,7 +891,7 @@ IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x
 
   efl_canvas_vg_shape_fill_set(shape, grad);
 
-  dc->shapes = eina_list_append(dc->shapes, shape);
+  iDrawAddShape(dc, shape, 0);
   dc->shapes = eina_list_append(dc->shapes, grad);
 }
 
@@ -733,20 +920,26 @@ IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int r
 
   efl_canvas_vg_shape_fill_set(shape, grad);
 
-  dc->shapes = eina_list_append(dc->shapes, shape);
+  iDrawAddShape(dc, shape, 0);
   dc->shapes = eina_list_append(dc->shapes, grad);
 }
 
 static void iDrawBuildPath(Efl_VG* shape, const IupPathSeg* segs, int count)
 {
-  int i;
+  int i, closed = 0, sub_x = 0, sub_y = 0;
 
   for (i = 0; i < count; i++)
   {
+    if (closed && segs[i].op != IUP_PATHSEG_MOVE_TO && segs[i].op != IUP_PATHSEG_CLOSE)
+      efl_gfx_path_append_move_to(shape, sub_x, sub_y);
+    closed = 0;
+
     switch (segs[i].op)
     {
     case IUP_PATHSEG_MOVE_TO:
       efl_gfx_path_append_move_to(shape, segs[i].x1, segs[i].y1);
+      sub_x = segs[i].x1;
+      sub_y = segs[i].y1;
       break;
     case IUP_PATHSEG_LINE_TO:
       efl_gfx_path_append_line_to(shape, segs[i].x1, segs[i].y1);
@@ -759,17 +952,52 @@ static void iDrawBuildPath(Efl_VG* shape, const IupPathSeg* segs, int count)
       break;
     case IUP_PATHSEG_ARC_TO:
     {
-      IupPathSeg bez[4];
-      int j, n = iupDrawPathArcToBeziers(&segs[i], bez);
+      double bez[24];
+      int j, n = iupDrawPathArcToCurves(&segs[i], bez);
       for (j = 0; j < n; j++)
-        efl_gfx_path_append_cubic_to(shape, bez[j].x1, bez[j].y1, bez[j].x2, bez[j].y2, bez[j].x3, bez[j].y3);
+        efl_gfx_path_append_cubic_to(shape, bez[j * 6], bez[j * 6 + 1], bez[j * 6 + 2], bez[j * 6 + 3], bez[j * 6 + 4], bez[j * 6 + 5]);
       break;
     }
     case IUP_PATHSEG_CLOSE:
       efl_gfx_path_append_close(shape);
+      closed = 1;
       break;
     }
   }
+}
+
+static int iDrawPathNextSubpath(const IupPathSeg* segs, int count, int start, int* closed)
+{
+  int i = start;
+
+  if (i < count && segs[i].op == IUP_PATHSEG_MOVE_TO)
+    i++;
+
+  while (i < count && segs[i].op != IUP_PATHSEG_MOVE_TO && segs[i].op != IUP_PATHSEG_CLOSE)
+    i++;
+
+  *closed = (i < count && segs[i].op == IUP_PATHSEG_CLOSE);
+  if (*closed)
+    i++;
+
+  return i;
+}
+
+static int iDrawPathIsMixed(const IupPathSeg* segs, int count)
+{
+  int start = 0, closed, has_closed = 0, has_open = 0;
+
+  while (start < count)
+  {
+    int end = iDrawPathNextSubpath(segs, count, start, &closed);
+    if (closed)
+      has_closed = 1;
+    else if (end - start > 1)
+      has_open = 1;
+    start = end;
+  }
+
+  return has_closed && has_open;
 }
 
 static Efl_VG* iDrawCreateGradient(Efl_VG* parent, const IupDrawSource* src)
@@ -844,10 +1072,10 @@ IUP_SDK_API void iupdrvDrawPathFill(IdrawCanvas* dc, const IupPathSeg* segs, int
   }
   efl_gfx_shape_stroke_color_set(shape, 0, 0, 0, 0);
 
-  dc->shapes = eina_list_append(dc->shapes, shape);
+  iDrawAddShape(dc, shape, 0);
 }
 
-IUP_SDK_API void iupdrvDrawPathStroke(IdrawCanvas* dc, const IupPathSeg* segs, int count, const IupDrawSource* src, int style, int line_width)
+static void iDrawPathStrokeShape(IdrawCanvas* dc, const IupPathSeg* segs, int count, const IupDrawSource* src, int style, int line_width)
 {
   Efl_VG* shape = efl_add(EFL_CANVAS_VG_SHAPE_CLASS, dc->root);
 
@@ -870,10 +1098,53 @@ IUP_SDK_API void iupdrvDrawPathStroke(IdrawCanvas* dc, const IupPathSeg* segs, i
     dc->shapes = eina_list_append(dc->shapes, grad);
   }
 
-  dc->shapes = eina_list_append(dc->shapes, shape);
+  iDrawAddShape(dc, shape, 1);
 }
 
-static void iDrawApplyClipPath(IdrawCanvas* dc, const IupPathSeg* segs, int count, int rule)
+IUP_SDK_API void iupdrvDrawPathStroke(IdrawCanvas* dc, const IupPathSeg* segs, int count, const IupDrawSource* src, int style, int line_width)
+{
+  IupPathSeg* sub;
+  int start = 0, sub_x = 0, sub_y = 0, closed;
+
+  if (!iDrawPathIsMixed(segs, count))
+  {
+    iDrawPathStrokeShape(dc, segs, count, src, style, line_width);
+    return;
+  }
+
+  sub = (IupPathSeg*)malloc((size_t)(count + 1) * sizeof(IupPathSeg));
+  if (!sub)
+    return;
+
+  while (start < count)
+  {
+    int end = iDrawPathNextSubpath(segs, count, start, &closed);
+    int n = 0;
+
+    if (segs[start].op == IUP_PATHSEG_MOVE_TO)
+    {
+      sub_x = segs[start].x1;
+      sub_y = segs[start].y1;
+    }
+    else
+    {
+      memset(&sub[0], 0, sizeof(IupPathSeg));
+      sub[0].op = IUP_PATHSEG_MOVE_TO;
+      sub[0].x1 = sub_x;
+      sub[0].y1 = sub_y;
+      n = 1;
+    }
+
+    memcpy(sub + n, segs + start, (size_t)(end - start) * sizeof(IupPathSeg));
+    if (n + end - start > 1)
+      iDrawPathStrokeShape(dc, sub, n + end - start, src, style, line_width);
+    start = end;
+  }
+
+  free(sub);
+}
+
+static Eo* iDrawCreateMask(IdrawCanvas* dc, const IupPathSeg* segs, int count, int rule, int x1, int y1, int x2, int y2, int corner_radius)
 {
   Ecore_Evas* ee;
   Eo* layer;
@@ -884,14 +1155,9 @@ static void iDrawApplyClipPath(IdrawCanvas* dc, const IupPathSeg* segs, int coun
   void* dst;
   int y, stride;
 
-  dc->clipper = NULL;
-
   ee = ecore_evas_buffer_new(dc->w, dc->h);
   if (!ee)
-  {
-    iDrawNewLayer(dc);
-    return;
-  }
+    return NULL;
   ecore_evas_alpha_set(ee, EINA_TRUE);
 
   layer = efl_add(EFL_CANVAS_VG_OBJECT_CLASS, ecore_evas_get(ee));
@@ -905,10 +1171,16 @@ static void iDrawApplyClipPath(IdrawCanvas* dc, const IupPathSeg* segs, int coun
   efl_canvas_vg_object_root_node_set(layer, root);
 
   shape = efl_add(EFL_CANVAS_VG_SHAPE_CLASS, root);
-  iDrawBuildPath(shape, segs, count);
-  efl_gfx_shape_fill_rule_set(shape, iDrawFillRule(rule));
+  if (segs)
+  {
+    iDrawBuildPath(shape, segs, count);
+    efl_gfx_shape_fill_rule_set(shape, iDrawFillRule(rule));
+  }
+  else
+    efl_gfx_path_append_rect(shape, x1, y1, x2 - x1 + 1, y2 - y1 + 1, corner_radius, corner_radius);
   efl_gfx_color_set(shape, 255, 255, 255, 255);
   efl_gfx_shape_stroke_color_set(shape, 0, 0, 0, 0);
+  iDrawTransformShape(dc, shape, 0);
 
   ecore_evas_manual_render(ee);
   src = ecore_evas_buffer_pixels_get(ee);
@@ -938,9 +1210,36 @@ static void iDrawApplyClipPath(IdrawCanvas* dc, const IupPathSeg* segs, int coun
   ecore_evas_free(ee);
 
   dc->frame_objects = eina_list_append(dc->frame_objects, img);
-  dc->clipper = img;
+  return img;
+}
 
-  iDrawNewLayer(dc);
+static Eo* iDrawCreateClipper(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int corner_radius)
+{
+  Eo* clipper;
+  double dx1 = x1, dy1 = y1, dx2 = x2 + 1, dy2 = y2 + 1;
+  int cx1, cy1, cx2, cy2;
+
+  if (corner_radius > 0 || !iDrawIsAxisAligned(dc))
+    return iDrawCreateMask(dc, NULL, 0, 0, x1, y1, x2, y2, corner_radius);
+
+  iDrawTransformPoint(dc, &dx1, &dy1);
+  iDrawTransformPoint(dc, &dx2, &dy2);
+  if (dx1 > dx2) { double t = dx1; dx1 = dx2; dx2 = t; }
+  if (dy1 > dy2) { double t = dy1; dy1 = dy2; dy2 = t; }
+  cx1 = eflDrawClamp((int)floor(dx1 + 0.5));
+  cy1 = eflDrawClamp((int)floor(dy1 + 0.5));
+  cx2 = eflDrawClamp((int)floor(dx2 + 0.5));
+  cy2 = eflDrawClamp((int)floor(dy2 + 0.5));
+
+  clipper = efl_add(EFL_CANVAS_RECTANGLE_CLASS, dc->frame_evas);
+  if (!clipper)
+    return NULL;
+  efl_gfx_entity_position_set(clipper, EINA_POSITION2D(cx1, cy1));
+  efl_gfx_entity_size_set(clipper, EINA_SIZE2D(cx2 > cx1 ? cx2 - cx1 : 0, cy2 > cy1 ? cy2 - cy1 : 0));
+  efl_gfx_color_set(clipper, 255, 255, 255, 255);
+  efl_gfx_entity_visible_set(clipper, EINA_TRUE);
+  dc->frame_objects = eina_list_append(dc->frame_objects, clipper);
+  return clipper;
 }
 
 IUP_SDK_API void iupdrvDrawSetClipPath(IdrawCanvas* dc, const IupPathSeg* segs, int count, int rule)
@@ -954,8 +1253,10 @@ IUP_SDK_API void iupdrvDrawSetClipPath(IdrawCanvas* dc, const IupPathSeg* segs, 
   dc->clip_x2 = x2;
   dc->clip_y2 = y2;
   dc->clip_corner_radius = 0;
+  dc->clip_set = 1;
 
-  iDrawApplyClipPath(dc, segs, count, rule);
+  dc->clipper = iDrawCreateMask(dc, segs, count, rule, 0, 0, 0, 0, 0);
+  iDrawNewLayer(dc);
 }
 
 IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int x, int y, int w, int h, long color, const char* font, int flags, double text_orientation)
@@ -971,6 +1272,8 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
   int bold = 0, italic = 0, underline = 0, strikeout = 0;
   int layout_center = flags & IUP_DRAW_LAYOUTCENTER;
   char* text_copy = NULL;
+  IupDrawMatrix text_matrix = dc->matrix;
+  int clip_x = x, clip_y = y, clip_w = w, clip_h = h, box_limit_w = dc->w, box_limit_h = dc->h;
 
   if (!text || !text[0])
     return;
@@ -982,6 +1285,27 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
 
   if (fontsize <= 0)
     fontsize = 12;
+
+  if (!iDrawIsIdentity(dc))
+  {
+    double scale = iDrawMatrixScale(dc);
+    if (scale > 0)
+    {
+      fontsize = (int)(fontsize * scale + 0.5);
+      if (fontsize < 1)
+        fontsize = 1;
+      x = (int)lrint(x * scale);
+      y = (int)lrint(y * scale);
+      if (w > 0) w = (int)lrint(w * scale);
+      if (h > 0) h = (int)lrint(h * scale);
+      box_limit_w = (int)lrint(dc->w * scale);
+      box_limit_h = (int)lrint(dc->h * scale);
+      text_matrix.a /= scale;
+      text_matrix.b /= scale;
+      text_matrix.c /= scale;
+      text_matrix.d /= scale;
+    }
+  }
 
   if (len > 0)
   {
@@ -1002,8 +1326,8 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
     char style[512];
     char* markup;
     const char* align_str = "left";
-    int box_w = w > 0 ? w : dc->w;
-    int box_h = h > 0 ? h : dc->h;
+    int box_w = w > 0 ? w : box_limit_w;
+    int box_h = h > 0 ? h : box_limit_h;
 
     if (flags & IUP_DRAW_RIGHT)
       align_str = "right";
@@ -1077,19 +1401,14 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
   efl_gfx_entity_visible_set(text_obj, EINA_TRUE);
 
   own_clip = NULL;
-  if ((flags & IUP_DRAW_CLIP) && w > 0 && h > 0)
+  if ((flags & IUP_DRAW_CLIP) && clip_w > 0 && clip_h > 0)
   {
-    own_clip = efl_add(EFL_CANVAS_RECTANGLE_CLASS, dc->frame_evas);
+    own_clip = iDrawCreateClipper(dc, clip_x, clip_y, clip_x + clip_w - 1, clip_y + clip_h - 1, 0);
     if (own_clip)
     {
-      efl_gfx_entity_position_set(own_clip, EINA_POSITION2D(x, y));
-      efl_gfx_entity_size_set(own_clip, EINA_SIZE2D(w, h));
-      efl_gfx_color_set(own_clip, 255, 255, 255, 255);
-      efl_gfx_entity_visible_set(own_clip, EINA_TRUE);
       if (dc->clipper)
         efl_canvas_object_clipper_set(own_clip, dc->clipper);
       efl_canvas_object_clipper_set(text_obj, own_clip);
-      dc->frame_objects = eina_list_append(dc->frame_objects, own_clip);
     }
   }
 
@@ -1114,7 +1433,7 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
     efl_gfx_entity_position_set(line, EINA_POSITION2D(draw_x, ly));
     efl_gfx_entity_size_set(line, EINA_SIZE2D(tw, 1));
     efl_gfx_entity_visible_set(line, EINA_TRUE);
-    iDrawTrackObject(dc, line);
+    iDrawTrackObject(dc, line, &text_matrix);
 
     if (underline && strikeout)
     {
@@ -1123,14 +1442,17 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
       efl_gfx_entity_position_set(line2, EINA_POSITION2D(draw_x, draw_y + th / 2));
       efl_gfx_entity_size_set(line2, EINA_SIZE2D(tw, 1));
       efl_gfx_entity_visible_set(line2, EINA_TRUE);
-      iDrawTrackObject(dc, line2);
+      iDrawTrackObject(dc, line2, &text_matrix);
     }
   }
 
   if (own_clip)
+  {
+    iDrawMapObject(&text_matrix, text_obj);
     dc->frame_objects = eina_list_append(dc->frame_objects, text_obj);
+  }
   else
-    iDrawTrackObject(dc, text_obj);
+    iDrawTrackObject(dc, text_obj, &text_matrix);
   iDrawNewLayer(dc);
 
   if (text_copy)
@@ -1252,13 +1574,21 @@ IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_ina
   if (w <= 0) w = sw;
   if (h <= 0) h = sh;
 
-  vis_x = (x > dc->clip_x1) ? x : dc->clip_x1;
-  vis_y = (y > dc->clip_y1) ? y : dc->clip_y1;
-  vis_w = (((x + w) < (dc->clip_x2 + 1)) ? (x + w) : (dc->clip_x2 + 1)) - vis_x;
-  vis_h = (((y + h) < (dc->clip_y2 + 1)) ? (y + h) : (dc->clip_y2 + 1)) - vis_y;
+  vis_x = x;
+  vis_y = y;
+  vis_w = w;
+  vis_h = h;
 
-  if (vis_w <= 0 || vis_h <= 0)
-    return;
+  if (iDrawIsIdentity(dc))
+  {
+    vis_x = (x > dc->clip_x1) ? x : dc->clip_x1;
+    vis_y = (y > dc->clip_y1) ? y : dc->clip_y1;
+    vis_w = (((x + w) < (dc->clip_x2 + 1)) ? (x + w) : (dc->clip_x2 + 1)) - vis_x;
+    vis_h = (((y + h) < (dc->clip_y2 + 1)) ? (y + h) : (dc->clip_y2 + 1)) - vis_y;
+
+    if (vis_w <= 0 || vis_h <= 0)
+      return;
+  }
 
   scale_x = (double)sw / (double)w;
   scale_y = (double)sh / (double)h;
@@ -1358,7 +1688,14 @@ IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_ina
     efl_gfx_entity_size_set(img, EINA_SIZE2D(vis_w, vis_h));
     efl_gfx_entity_visible_set(img, EINA_TRUE);
 
-    iDrawTrackObject(dc, img);
+    iDrawTrackObject(dc, img, &dc->matrix);
+    if (quality == IUP_DRAW_IMAGE_NEAREST && evas_object_map_get(img))
+    {
+      Evas_Map* map = evas_map_dup(evas_object_map_get(img));
+      evas_map_smooth_set(map, EINA_FALSE);
+      evas_object_map_set(img, map);
+      evas_map_free(map);
+    }
     iDrawNewLayer(dc);
   }
 
@@ -1367,30 +1704,22 @@ IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_ina
 
 static void iDrawApplyClip(IdrawCanvas* dc)
 {
-  int w = dc->clip_x2 - dc->clip_x1 + 1;
-  int h = dc->clip_y2 - dc->clip_y1 + 1;
-
   dc->clipper = NULL;
 
-  if (dc->clip_x1 > 0 || dc->clip_y1 > 0 || w < dc->w || h < dc->h)
-  {
-    Eo* clipper = efl_add(EFL_CANVAS_RECTANGLE_CLASS, dc->frame_evas);
-    if (clipper)
-    {
-      efl_gfx_entity_position_set(clipper, EINA_POSITION2D(dc->clip_x1, dc->clip_y1));
-      efl_gfx_entity_size_set(clipper, EINA_SIZE2D(w > 0 ? w : 0, h > 0 ? h : 0));
-      efl_gfx_color_set(clipper, 255, 255, 255, 255);
-      efl_gfx_entity_visible_set(clipper, EINA_TRUE);
-      dc->frame_objects = eina_list_append(dc->frame_objects, clipper);
-      dc->clipper = clipper;
-    }
-  }
+  if (dc->clip_x1 > 0 || dc->clip_y1 > 0 || dc->clip_x2 < dc->w - 1 || dc->clip_y2 < dc->h - 1 || !iDrawIsIdentity(dc))
+    dc->clipper = iDrawCreateClipper(dc, dc->clip_x1, dc->clip_y1, dc->clip_x2, dc->clip_y2, dc->clip_corner_radius);
 
   iDrawNewLayer(dc);
 }
 
 IUP_SDK_API void iupdrvDrawSetClipRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2)
 {
+  if (x1 == 0 && y1 == 0 && x2 == 0 && y2 == 0)
+  {
+    iupdrvDrawResetClip(dc);
+    return;
+  }
+
   x1 = eflDrawClamp(x1); y1 = eflDrawClamp(y1);
   x2 = eflDrawClamp(x2); y2 = eflDrawClamp(y2);
 
@@ -1402,14 +1731,33 @@ IUP_SDK_API void iupdrvDrawSetClipRect(IdrawCanvas* dc, int x1, int y1, int x2, 
   dc->clip_x2 = x2;
   dc->clip_y2 = y2;
   dc->clip_corner_radius = 0;
+  dc->clip_set = 1;
 
   iDrawApplyClip(dc);
 }
 
 IUP_SDK_API void iupdrvDrawSetClipRoundedRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int corner_radius)
 {
-  iupdrvDrawSetClipRect(dc, x1, y1, x2, y2);
+  if (x1 == 0 && y1 == 0 && x2 == 0 && y2 == 0)
+  {
+    iupdrvDrawResetClip(dc);
+    return;
+  }
+
+  x1 = eflDrawClamp(x1); y1 = eflDrawClamp(y1);
+  x2 = eflDrawClamp(x2); y2 = eflDrawClamp(y2);
+
+  iupDrawCheckSwapCoord(x1, x2);
+  iupDrawCheckSwapCoord(y1, y2);
+
+  dc->clip_x1 = x1;
+  dc->clip_y1 = y1;
+  dc->clip_x2 = x2;
+  dc->clip_y2 = y2;
   dc->clip_corner_radius = corner_radius;
+  dc->clip_set = 1;
+
+  iDrawApplyClip(dc);
 }
 
 IUP_SDK_API void iupdrvDrawResetClip(IdrawCanvas* dc)
@@ -1419,16 +1767,18 @@ IUP_SDK_API void iupdrvDrawResetClip(IdrawCanvas* dc)
   dc->clip_x2 = dc->w - 1;
   dc->clip_y2 = dc->h - 1;
   dc->clip_corner_radius = 0;
+  dc->clip_set = 0;
 
-  iDrawApplyClip(dc);
+  dc->clipper = NULL;
+  iDrawNewLayer(dc);
 }
 
 IUP_SDK_API void iupdrvDrawGetClipRect(IdrawCanvas* dc, int* x1, int* y1, int* x2, int* y2)
 {
-  if (x1) *x1 = dc->clip_x1;
-  if (y1) *y1 = dc->clip_y1;
-  if (x2) *x2 = dc->clip_x2;
-  if (y2) *y2 = dc->clip_y2;
+  if (x1) *x1 = dc->clip_set ? dc->clip_x1 : 0;
+  if (y1) *y1 = dc->clip_set ? dc->clip_y1 : 0;
+  if (x2) *x2 = dc->clip_set ? dc->clip_x2 : 0;
+  if (y2) *y2 = dc->clip_set ? dc->clip_y2 : 0;
 }
 
 IUP_SDK_API void iupdrvDrawSelectRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2)

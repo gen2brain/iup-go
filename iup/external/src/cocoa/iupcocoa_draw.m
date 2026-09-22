@@ -110,6 +110,43 @@ static void iupCocoaSetLineStyle(CGContextRef cg_context, int style)
   }
 }
 
+#ifdef GNUSTEP
+static int iupCocoaDrawConcatSwapsSkew(void)
+{
+  static int swaps = -1;
+  if (swaps < 0)
+  {
+    CGColorSpaceRef space = CGColorSpaceCreateDeviceRGB();
+    CGContextRef ctx = CGBitmapContextCreate(NULL, 1, 1, 8, 4, space, kCGImageAlphaPremultipliedLast);
+    swaps = 0;
+    if (ctx)
+    {
+      CGAffineTransform ctm;
+      CGContextConcatCTM(ctx, CGAffineTransformMake(1, 1, 0, 1, 0, 0));
+      ctm = CGContextGetCTM(ctx);
+      swaps = fabs(ctm.c) > 0.5 && fabs(ctm.b) < 0.5;
+      CGContextRelease(ctx);
+    }
+    CGColorSpaceRelease(space);
+  }
+  return swaps;
+}
+#endif
+
+static void iupCocoaDrawApplyTransform(IdrawCanvas* dc, CGAffineTransform from, CGAffineTransform to)
+{
+  CGAffineTransform delta = CGAffineTransformConcat(to, CGAffineTransformInvert(from));
+#ifdef GNUSTEP
+  if (iupCocoaDrawConcatSwapsSkew())
+  {
+    CGFloat value = delta.b;
+    delta.b = delta.c;
+    delta.c = value;
+  }
+#endif
+  CGContextConcatCTM(dc->cgContext, delta);
+}
+
 IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
 {
   IdrawCanvas* dc = calloc(1, sizeof(IdrawCanvas));
@@ -206,11 +243,20 @@ IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
 
   CGContextSetLineCap(dc->cgContext, kCGLineCapButt);
   CGContextSetLineJoin(dc->cgContext, kCGLineJoinMiter);
+  dc->user_transform = CGAffineTransformIdentity;
+  dc->clip_transform = CGAffineTransformIdentity;
 
   dc->clip_state = 0;
 
   iupAttribSet(ih, "DRAWDRIVER", "COCOA");
   return dc;
+}
+
+IUP_SDK_API void iupdrvDrawSetTransform(IdrawCanvas* dc, const IupDrawMatrix* matrix)
+{
+  CGAffineTransform value = CGAffineTransformMake(matrix->a, matrix->b, matrix->c, matrix->d, matrix->e, matrix->f);
+  iupCocoaDrawApplyTransform(dc, dc->user_transform, value);
+  dc->user_transform = value;
 }
 
 IUP_SDK_API void iupdrvDrawKillCanvas(IdrawCanvas* dc)
@@ -250,11 +296,14 @@ IUP_SDK_API void iupdrvDrawFlush(IdrawCanvas* dc)
                                    dc->focus_x2 - dc->focus_x1 + 1,
                                    dc->focus_y2 - dc->focus_y1 + 1);
     NSGraphicsContext* nsContext = [NSGraphicsContext graphicsContextWithCGContext:dc->cgContext flipped:YES];
+    CGContextSaveGState(dc->cgContext);
+    iupCocoaDrawApplyTransform(dc, dc->user_transform, dc->focus_transform);
     [NSGraphicsContext saveGraphicsState];
     [NSGraphicsContext setCurrentContext:nsContext];
     NSSetFocusRingStyle(NSFocusRingOnly);
     [[NSBezierPath bezierPathWithRect:cocoa_rect] fill];
     [NSGraphicsContext restoreGraphicsState];
+    CGContextRestoreGState(dc->cgContext);
 
     dc->draw_focus = 0;
   }
@@ -598,10 +647,10 @@ static void iupCocoaBuildPath(CGContextRef ctx, const IupPathSeg* segs, int coun
       break;
     case IUP_PATHSEG_ARC_TO:
     {
-      IupPathSeg bez[4];
-      int j, n = iupDrawPathArcToBeziers(&segs[i], bez);
+      double bez[24];
+      int j, n = iupDrawPathArcToCurves(&segs[i], bez);
       for (j = 0; j < n; j++)
-        CGContextAddCurveToPoint(ctx, (CGFloat)bez[j].x1, (CGFloat)bez[j].y1, (CGFloat)bez[j].x2, (CGFloat)bez[j].y2, (CGFloat)bez[j].x3, (CGFloat)bez[j].y3);
+        CGContextAddCurveToPoint(ctx, (CGFloat)bez[j * 6], (CGFloat)bez[j * 6 + 1], (CGFloat)bez[j * 6 + 2], (CGFloat)bez[j * 6 + 3], (CGFloat)bez[j * 6 + 4], (CGFloat)bez[j * 6 + 5]);
       break;
     }
     case IUP_PATHSEG_CLOSE:
@@ -646,8 +695,8 @@ static void iupCocoaDrawGradient(CGContextRef ctx, CGGradientRef gradient, const
     iupDrawCheckSwapCoord(gx1, gx2);
     iupDrawCheckSwapCoord(gy1, gy2);
 
-    CGFloat w = (CGFloat)(gx2 - gx1 + 1);
-    CGFloat h = (CGFloat)(gy2 - gy1 + 1);
+    CGFloat w = (CGFloat)(gx2 - gx1);
+    CGFloat h = (CGFloat)(gy2 - gy1);
     CGFloat rad = src->angle * M_PI / 180.0f;
     CGFloat cx = gx1 + w / 2.0f;
     CGFloat cy = gy1 + h / 2.0f;
@@ -658,7 +707,7 @@ static void iupCocoaDrawGradient(CGContextRef ctx, CGGradientRef gradient, const
     CGContextDrawLinearGradient(ctx, gradient, start, end, kCGGradientDrawsBeforeStartLocation | kCGGradientDrawsAfterEndLocation);
   }
   else
-    CGContextDrawRadialGradient(ctx, gradient, CGPointMake((CGFloat)src->cx, (CGFloat)src->cy), 0, CGPointMake((CGFloat)src->cx, (CGFloat)src->cy), (CGFloat)src->radius, 0);
+    CGContextDrawRadialGradient(ctx, gradient, CGPointMake((CGFloat)src->cx, (CGFloat)src->cy), 0, CGPointMake((CGFloat)src->cx, (CGFloat)src->cy), (CGFloat)src->radius, kCGGradientDrawsAfterEndLocation);
 }
 
 #ifdef GNUSTEP
@@ -687,8 +736,8 @@ static void iupCocoaDrawGradientPathGNUstep(IdrawCanvas* dc, const IupDrawSource
           iupDrawCheckSwapCoord(gx1, gx2);
           iupDrawCheckSwapCoord(gy1, gy2);
 
-          CGFloat gw = (CGFloat)(gx2 - gx1 + 1);
-          CGFloat gh = (CGFloat)(gy2 - gy1 + 1);
+          CGFloat gw = (CGFloat)(gx2 - gx1);
+          CGFloat gh = (CGFloat)(gy2 - gy1);
           CGFloat rad = src->angle * M_PI / 180.0f;
           CGFloat gcx = gx1 + gw / 2.0f;
           CGFloat gcy = gy1 + gh / 2.0f;
@@ -698,7 +747,7 @@ static void iupCocoaDrawGradientPathGNUstep(IdrawCanvas* dc, const IupDrawSource
           CGContextDrawLinearGradient(tctx, gradient, start, end, kCGGradientDrawsBeforeStartLocation | kCGGradientDrawsAfterEndLocation);
         }
         else
-          CGContextDrawRadialGradient(tctx, gradient, CGPointMake((CGFloat)(src->cx - x1), (CGFloat)(src->cy - y1)), 0, CGPointMake((CGFloat)(src->cx - x1), (CGFloat)(src->cy - y1)), (CGFloat)src->radius, 0);
+          CGContextDrawRadialGradient(tctx, gradient, CGPointMake((CGFloat)(src->cx - x1), (CGFloat)(src->cy - y1)), 0, CGPointMake((CGFloat)(src->cx - x1), (CGFloat)(src->cy - y1)), (CGFloat)src->radius, kCGGradientDrawsAfterEndLocation);
 
         CGImageRef img = CGBitmapContextCreateImage(tctx);
         if (img)
@@ -813,6 +862,7 @@ IUP_SDK_API void iupdrvDrawSetClipPath(IdrawCanvas* dc, const IupPathSeg* segs, 
 
   CGContextSaveGState(dc->cgContext);
   dc->clip_state = 1;
+  dc->clip_transform = dc->user_transform;
 
   CGContextBeginPath(dc->cgContext);
   iupCocoaBuildPath(dc->cgContext, segs, count);
@@ -848,6 +898,7 @@ IUP_SDK_API void iupdrvDrawSetClipRect(IdrawCanvas* dc, int x1, int y1, int x2, 
 
   CGContextSaveGState(dc->cgContext);
   dc->clip_state = 1;
+  dc->clip_transform = dc->user_transform;
 
   CGRect clip_rect = CGRectMake(x1, y1, x2 - x1 + 1, y2 - y1 + 1);
   CGContextClipToRect(dc->cgContext, clip_rect);
@@ -882,6 +933,7 @@ IUP_SDK_API void iupdrvDrawSetClipRoundedRect(IdrawCanvas* dc, int x1, int y1, i
 
   CGContextSaveGState(dc->cgContext);
   dc->clip_state = 1;
+  dc->clip_transform = dc->user_transform;
 
   CGRect rect = CGRectMake((CGFloat)x1, (CGFloat)y1, w, h);
   CGPathRef path = CGPathCreateWithRoundedRect(rect, radius, radius, NULL);
@@ -903,6 +955,7 @@ IUP_SDK_API void iupdrvDrawResetClip(IdrawCanvas* dc)
   if (dc->clip_state == 1)
   {
     CGContextRestoreGState(dc->cgContext);
+    iupCocoaDrawApplyTransform(dc, dc->clip_transform, dc->user_transform);
     dc->clip_state = 0;
   }
 
@@ -970,6 +1023,19 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
     if (text_orientation)
       iupDrawGetTextSize(dc->ih, text, len, &layout_w, &layout_h, 0);
 
+#ifdef GNUSTEP
+    if (flags & IUP_DRAW_CLIP)
+      CGContextClipToRect(cg_context, CGRectMake(x, y, w, h));
+
+    if (text_orientation != 0.0)
+    {
+      CGFloat px = layout_center ? x + w / 2.0 : x;
+      CGFloat py = layout_center ? y + h / 2.0 : y;
+      CGContextTranslateCTM(cg_context, px, py);
+      CGContextRotateCTM(cg_context, -text_orientation * M_PI / 180.0);
+      CGContextTranslateCTM(cg_context, -px, -py);
+    }
+#else
     if (flags & IUP_DRAW_CLIP)
     {
       [NSBezierPath clipRect:NSMakeRect(x, y, w, h)];
@@ -995,6 +1061,7 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
 
       [transform concat];
     }
+#endif
 
 #ifdef GNUSTEP
     /* Opal's NSLayoutManager path yields zero glyphs; use the Quartz text API directly */
@@ -1191,6 +1258,7 @@ IUP_SDK_API void iupdrvDrawFocusRect(IdrawCanvas* dc, int x1, int y1, int x2, in
   if (iupAttribGetBoolean(dc->ih, "NATIVEFOCUSRING"))
   {
     dc->draw_focus = 1;
+    dc->focus_transform = dc->user_transform;
     dc->focus_x1 = x1;
     dc->focus_y1 = y1;
     dc->focus_x2 = x2;
@@ -1237,8 +1305,8 @@ IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x
 
   CGFloat rad = angle * M_PI / 180.0f;
 
-  CGFloat w = (CGFloat)(x2 - x1 + 1);
-  CGFloat h = (CGFloat)(y2 - y1 + 1);
+  CGFloat w = (CGFloat)(x2 - x1);
+  CGFloat h = (CGFloat)(y2 - y1);
   CGFloat cx_ = x1 + w / 2.0f;
   CGFloat cy_ = y1 + h / 2.0f;
 

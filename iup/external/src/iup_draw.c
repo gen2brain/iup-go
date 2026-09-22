@@ -47,6 +47,191 @@ typedef struct _IupDrawPathData
   int sub_x, sub_y;
 } IupDrawPathData;
 
+enum { IUP_DRAW_CLIP_NONE, IUP_DRAW_CLIP_RECT, IUP_DRAW_CLIP_ROUNDED, IUP_DRAW_CLIP_PATH };
+
+static const char* iDrawStateAttribNames[] =
+{
+  "DRAWFONT", "DRAWCOLOR", "DRAWSTYLE", "DRAWTEXTALIGNMENT",
+  "DRAWTEXTWRAP", "DRAWTEXTELLIPSIS", "DRAWTEXTCLIP", "DRAWTEXTORIENTATION",
+  "DRAWTEXTLAYOUTCENTER", "DRAWLINEWIDTH", "DRAWBGCOLOR", "DRAWMAKEINACTIVE",
+  "DRAWIMAGETINT", "DRAWIMAGEOPACITY", "DRAWIMAGESRCRECT", "DRAWIMAGEQUALITY",
+  "DRAWANTIALIAS"
+};
+
+#define IUP_DRAW_STATE_ATTRIB_COUNT ((int)(sizeof(iDrawStateAttribNames) / sizeof(iDrawStateAttribNames[0])))
+
+typedef struct _IupDrawClipData
+{
+  int type;
+  int x1, y1, x2, y2;
+  int corner_radius;
+  IupPathSeg* segs;
+  int count;
+  int rule;
+  IupDrawMatrix matrix;
+} IupDrawClipData;
+
+typedef struct _IupDrawStateStack
+{
+  IupDrawMatrix matrix;
+  IupDrawClipData clip;
+  IupDrawSource source;
+  int has_source;
+  char* attribs[IUP_DRAW_STATE_ATTRIB_COUNT];
+  struct _IupDrawStateStack* next;
+} IupDrawStateStack;
+
+typedef struct _IupDrawState
+{
+  IupDrawMatrix matrix;
+  IupDrawClipData clip;
+  IupDrawStateStack* stack;
+} IupDrawState;
+
+static void iDrawMatrixIdentity(IupDrawMatrix* matrix)
+{
+  matrix->a = 1;
+  matrix->b = 0;
+  matrix->c = 0;
+  matrix->d = 1;
+  matrix->e = 0;
+  matrix->f = 0;
+}
+
+static int iDrawMatrixValid(const IupDrawMatrix* matrix)
+{
+  double determinant;
+  if (!isfinite(matrix->a) || !isfinite(matrix->b) || !isfinite(matrix->c) ||
+      !isfinite(matrix->d) || !isfinite(matrix->e) || !isfinite(matrix->f))
+    return 0;
+  determinant = matrix->a * matrix->d - matrix->b * matrix->c;
+  return isfinite(determinant) && determinant != 0;
+}
+
+static int iDrawMatrixMultiply(const IupDrawMatrix* left, const IupDrawMatrix* right, IupDrawMatrix* result)
+{
+  IupDrawMatrix value;
+  value.a = left->a * right->a + left->c * right->b;
+  value.b = left->b * right->a + left->d * right->b;
+  value.c = left->a * right->c + left->c * right->d;
+  value.d = left->b * right->c + left->d * right->d;
+  value.e = left->a * right->e + left->c * right->f + left->e;
+  value.f = left->b * right->e + left->d * right->f + left->f;
+  if (!iDrawMatrixValid(&value))
+    return 0;
+  *result = value;
+  return 1;
+}
+
+static IupDrawState* iDrawStateGet(Ihandle* ih)
+{
+  return (IupDrawState*)iupAttribGet(ih, "_IUPDRAW_STATE");
+}
+
+static void iDrawClipFree(IupDrawClipData* clip)
+{
+  free(clip->segs);
+  memset(clip, 0, sizeof(IupDrawClipData));
+}
+
+static int iDrawClipCopy(IupDrawClipData* dst, const IupDrawClipData* src)
+{
+  *dst = *src;
+  dst->segs = NULL;
+  if (src->count)
+  {
+    dst->segs = (IupPathSeg*)malloc((size_t)src->count * sizeof(IupPathSeg));
+    if (!dst->segs)
+      return 0;
+    memcpy(dst->segs, src->segs, (size_t)src->count * sizeof(IupPathSeg));
+  }
+  return 1;
+}
+
+static void iDrawStateStackFree(IupDrawStateStack* item)
+{
+  int i;
+  iDrawClipFree(&item->clip);
+  for (i = 0; i < IUP_DRAW_STATE_ATTRIB_COUNT; i++)
+    free(item->attribs[i]);
+  free(item);
+}
+
+static void iDrawStateFree(Ihandle* ih)
+{
+  IupDrawState* state = iDrawStateGet(ih);
+  if (state)
+  {
+    IupDrawStateStack* item = state->stack;
+    while (item)
+    {
+      IupDrawStateStack* next = item->next;
+      iDrawStateStackFree(item);
+      item = next;
+    }
+    iDrawClipFree(&state->clip);
+    free(state);
+    iupAttribSet(ih, "_IUPDRAW_STATE", NULL);
+  }
+}
+
+static void iDrawSetDriverTransform(Ihandle* ih, const IupDrawMatrix* matrix)
+{
+  iSvgCanvas* svg = IUP_SVG_GET(ih);
+  if (svg)
+    iupSvgDrawSetTransform(svg, matrix);
+  else
+    iupdrvDrawSetTransform((IdrawCanvas*)iupAttribGet(ih, "_IUP_DRAW_DC"), matrix);
+}
+
+static IupDrawState* iDrawStateCreate(Ihandle* ih)
+{
+  IupDrawState* state = (IupDrawState*)calloc(1, sizeof(IupDrawState));
+  if (!state)
+    return NULL;
+  iDrawMatrixIdentity(&state->matrix);
+  iDrawMatrixIdentity(&state->clip.matrix);
+  iupAttribSet(ih, "_IUPDRAW_STATE", (char*)state);
+  iDrawSetDriverTransform(ih, &state->matrix);
+  return state;
+}
+
+static void iDrawReplayClip(Ihandle* ih, const IupDrawClipData* clip, const IupDrawMatrix* matrix)
+{
+  iSvgCanvas* svg = IUP_SVG_GET(ih);
+  if (svg)
+  {
+    iupSvgDrawResetClip(svg);
+    if (clip->type != IUP_DRAW_CLIP_NONE)
+    {
+      iupSvgDrawSetTransform(svg, &clip->matrix);
+      if (clip->type == IUP_DRAW_CLIP_RECT)
+        iupSvgDrawSetClipRect(svg, clip->x1, clip->y1, clip->x2, clip->y2);
+      else if (clip->type == IUP_DRAW_CLIP_ROUNDED)
+        iupSvgDrawSetClipRoundedRect(svg, clip->x1, clip->y1, clip->x2, clip->y2, clip->corner_radius);
+      else
+        iupSvgDrawSetClipPath(svg, clip->segs, clip->count, clip->rule);
+    }
+    iupSvgDrawSetTransform(svg, matrix);
+  }
+  else
+  {
+    IdrawCanvas* dc = (IdrawCanvas*)iupAttribGet(ih, "_IUP_DRAW_DC");
+    iupdrvDrawResetClip(dc);
+    if (clip->type != IUP_DRAW_CLIP_NONE)
+    {
+      iupdrvDrawSetTransform(dc, &clip->matrix);
+      if (clip->type == IUP_DRAW_CLIP_RECT)
+        iupdrvDrawSetClipRect(dc, clip->x1, clip->y1, clip->x2, clip->y2);
+      else if (clip->type == IUP_DRAW_CLIP_ROUNDED)
+        iupdrvDrawSetClipRoundedRect(dc, clip->x1, clip->y1, clip->x2, clip->y2, clip->corner_radius);
+      else
+        iupdrvDrawSetClipPath(dc, clip->segs, clip->count, clip->rule);
+    }
+    iupdrvDrawSetTransform(dc, matrix);
+  }
+}
+
 static void iDrawPathFree(Ihandle* ih)
 {
   IupDrawPathData* path = (IupDrawPathData*)iupAttribGet(ih, "_IUPDRAW_PATH");
@@ -203,16 +388,20 @@ IUP_API void IupDrawBegin(Ihandle* ih)
 
   iDrawPathFree(ih);
   iDrawSourceFree(ih);
+  iDrawStateFree(ih);
 
   if (IUP_SVG_GET(ih))
   {
     iupAttribSet(ih, "_IUP_DRAW_DC", (char*)1);
+    (void)iDrawStateCreate(ih);
     return;
   }
 
   {
     IdrawCanvas* dc = iupdrvDrawCreateCanvas(ih);
     iupAttribSet(ih, "_IUP_DRAW_DC", (char*)dc);
+    if (dc)
+      (void)iDrawStateCreate(ih);
   }
 }
 
@@ -226,6 +415,7 @@ IUP_API void IupDrawEnd(Ihandle* ih)
 
   iDrawPathFree(ih);
   iDrawSourceFree(ih);
+  iDrawStateFree(ih);
 
   if (IUP_SVG_GET(ih))
   {
@@ -240,6 +430,192 @@ IUP_API void IupDrawEnd(Ihandle* ih)
   iupdrvDrawFlush(dc);
   iupdrvDrawKillCanvas(dc);
   iupAttribSet(ih, "_IUP_DRAW_DC", NULL);
+}
+
+IUP_API void IupDrawSave(Ihandle* ih)
+{
+  IupDrawStateStack* item;
+  IupDrawState* state;
+  IupDrawSource* source;
+  int i;
+
+  iupASSERT(iupObjectCheck(ih));
+  if (!iupObjectCheck(ih) || !iupAttribGet(ih, "_IUP_DRAW_DC"))
+    return;
+
+  state = iDrawStateGet(ih);
+  if (!state)
+    return;
+
+  item = (IupDrawStateStack*)calloc(1, sizeof(IupDrawStateStack));
+  if (!item)
+    return;
+
+  item->matrix = state->matrix;
+  if (!iDrawClipCopy(&item->clip, &state->clip))
+  {
+    iDrawStateStackFree(item);
+    return;
+  }
+
+  source = (IupDrawSource*)iupAttribGet(ih, "_IUPDRAW_SOURCE");
+  if (source)
+  {
+    item->source = *source;
+    item->has_source = 1;
+  }
+
+  for (i = 0; i < IUP_DRAW_STATE_ATTRIB_COUNT; i++)
+  {
+    char* value = iupAttribGet(ih, iDrawStateAttribNames[i]);
+    if (value)
+    {
+      item->attribs[i] = iupStrDup(value);
+      if (!item->attribs[i])
+      {
+        iDrawStateStackFree(item);
+        return;
+      }
+    }
+  }
+
+  item->next = state->stack;
+  state->stack = item;
+}
+
+IUP_API void IupDrawRestore(Ihandle* ih)
+{
+  IupDrawStateStack* item;
+  IupDrawState* state;
+  int i;
+
+  iupASSERT(iupObjectCheck(ih));
+  if (!iupObjectCheck(ih) || !iupAttribGet(ih, "_IUP_DRAW_DC"))
+    return;
+
+  state = iDrawStateGet(ih);
+  if (!state || !state->stack)
+    return;
+
+  item = state->stack;
+  state->stack = item->next;
+
+  for (i = 0; i < IUP_DRAW_STATE_ATTRIB_COUNT; i++)
+    iupAttribSetStr(ih, iDrawStateAttribNames[i], item->attribs[i]);
+
+  iDrawSourceFree(ih);
+  if (item->has_source)
+  {
+    IupDrawSource* source = iDrawSourceGet(ih);
+    if (source)
+      *source = item->source;
+  }
+
+  iDrawClipFree(&state->clip);
+  state->clip = item->clip;
+  item->clip.segs = NULL;
+  state->matrix = item->matrix;
+  iDrawReplayClip(ih, &state->clip, &state->matrix);
+  iDrawStateStackFree(item);
+}
+
+IUP_API void IupDrawTransform(Ihandle* ih, double a, double b, double c, double d, double e, double f)
+{
+  IupDrawMatrix matrix, result;
+  IupDrawState* state;
+
+  iupASSERT(iupObjectCheck(ih));
+  if (!iupObjectCheck(ih) || !iupAttribGet(ih, "_IUP_DRAW_DC"))
+    return;
+
+  state = iDrawStateGet(ih);
+  if (!state)
+    return;
+
+  matrix.a = a; matrix.b = b; matrix.c = c;
+  matrix.d = d; matrix.e = e; matrix.f = f;
+  if (!iDrawMatrixValid(&matrix) || !iDrawMatrixMultiply(&state->matrix, &matrix, &result))
+    return;
+
+  state->matrix = result;
+  iDrawSetDriverTransform(ih, &state->matrix);
+}
+
+IUP_API void IupDrawSetTransform(Ihandle* ih, double a, double b, double c, double d, double e, double f)
+{
+  IupDrawMatrix matrix;
+  IupDrawState* state;
+
+  iupASSERT(iupObjectCheck(ih));
+  if (!iupObjectCheck(ih) || !iupAttribGet(ih, "_IUP_DRAW_DC"))
+    return;
+
+  matrix.a = a; matrix.b = b; matrix.c = c;
+  matrix.d = d; matrix.e = e; matrix.f = f;
+  if (!iDrawMatrixValid(&matrix))
+    return;
+
+  state = iDrawStateGet(ih);
+  if (!state)
+    return;
+
+  state->matrix = matrix;
+  iDrawSetDriverTransform(ih, &state->matrix);
+}
+
+IUP_API void IupDrawResetTransform(Ihandle* ih)
+{
+  IupDrawMatrix matrix;
+  iDrawMatrixIdentity(&matrix);
+  IupDrawSetTransform(ih, matrix.a, matrix.b, matrix.c, matrix.d, matrix.e, matrix.f);
+}
+
+IUP_API void IupDrawGetTransform(Ihandle* ih, double* a, double* b, double* c, double* d, double* e, double* f)
+{
+  IupDrawState* state;
+
+  if (a) *a = 1;
+  if (b) *b = 0;
+  if (c) *c = 0;
+  if (d) *d = 1;
+  if (e) *e = 0;
+  if (f) *f = 0;
+
+  iupASSERT(iupObjectCheck(ih));
+  if (!iupObjectCheck(ih) || !iupAttribGet(ih, "_IUP_DRAW_DC"))
+    return;
+
+  state = iDrawStateGet(ih);
+  if (!state)
+    return;
+
+  if (a) *a = state->matrix.a;
+  if (b) *b = state->matrix.b;
+  if (c) *c = state->matrix.c;
+  if (d) *d = state->matrix.d;
+  if (e) *e = state->matrix.e;
+  if (f) *f = state->matrix.f;
+}
+
+IUP_API void IupDrawTranslate(Ihandle* ih, double tx, double ty)
+{
+  IupDrawTransform(ih, 1, 0, 0, 1, tx, ty);
+}
+
+IUP_API void IupDrawScale(Ihandle* ih, double sx, double sy)
+{
+  IupDrawTransform(ih, sx, 0, 0, sy, 0, 0);
+}
+
+IUP_API void IupDrawRotate(Ihandle* ih, double angle)
+{
+  double value, sine, cosine;
+  if (!isfinite(angle))
+    return;
+  value = angle * IUP_DEG2RAD;
+  sine = sin(value);
+  cosine = cos(value);
+  IupDrawTransform(ih, cosine, -sine, sine, cosine, 0, 0);
 }
 
 IUP_API void IupDrawGetSize(Ihandle* ih, int* w, int* h)
@@ -268,6 +644,8 @@ IUP_API void IupDrawGetSize(Ihandle* ih, int* w, int* h)
 IUP_API void IupDrawParentBackground(Ihandle* ih)
 {
   IdrawCanvas* dc;
+  IupDrawMatrix identity;
+  IupDrawState* state;
 
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
@@ -280,7 +658,14 @@ IUP_API void IupDrawParentBackground(Ihandle* ih)
   if (!dc)
     return;
 
+  state = iDrawStateGet(ih);
+  if (!state)
+    return;
+
+  iDrawMatrixIdentity(&identity);
+  iupdrvDrawSetTransform(dc, &identity);
   iupDrawParentBackground(dc, ih);
+  iupdrvDrawSetTransform(dc, &state->matrix);
 }
 
 static int iDrawGetStyle(Ihandle* ih)
@@ -737,7 +1122,7 @@ IUP_API void IupDrawPathArcTo(Ihandle* ih, int cx, int cy, int rx, int ry, doubl
   if (!iupAttribGet(ih, "_IUP_DRAW_DC"))
     return;
 
-  if (rx <= 0 || ry <= 0)
+  if (rx <= 0 || ry <= 0 || !isfinite(a1) || !isfinite(a2))
     return;
 
   if (!iDrawPathGet(ih))
@@ -828,6 +1213,8 @@ IUP_API void IupDrawSetClipPath(Ihandle* ih, int rule)
 {
   iSvgCanvas* svg;
   IupDrawPathData* path;
+  IupPathSeg* segs;
+  IupDrawState* state;
 
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
@@ -839,6 +1226,22 @@ IUP_API void IupDrawSetClipPath(Ihandle* ih, int rule)
   path = (IupDrawPathData*)iupAttribGet(ih, "_IUPDRAW_PATH");
   if (!path || path->count == 0)
     return;
+
+  state = iDrawStateGet(ih);
+  if (!state)
+    return;
+
+  segs = (IupPathSeg*)malloc((size_t)path->count * sizeof(IupPathSeg));
+  if (!segs)
+    return;
+  memcpy(segs, path->segs, (size_t)path->count * sizeof(IupPathSeg));
+
+  iDrawClipFree(&state->clip);
+  state->clip.type = IUP_DRAW_CLIP_PATH;
+  state->clip.segs = segs;
+  state->clip.count = path->count;
+  state->clip.rule = rule;
+  state->clip.matrix = state->matrix;
 
   svg = IUP_SVG_GET(ih);
   if (svg)
@@ -1322,6 +1725,7 @@ IUP_API void IupDrawImage(Ihandle* ih, const char* name, int x, int y, int w, in
 IUP_API void IupDrawSetClipRect(Ihandle* ih, int x1, int y1, int x2, int y2)
 {
   iSvgCanvas* svg;
+  IupDrawState* state;
 
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
@@ -1329,6 +1733,21 @@ IUP_API void IupDrawSetClipRect(Ihandle* ih, int x1, int y1, int x2, int y2)
 
   if (!iupAttribGet(ih, "_IUP_DRAW_DC"))
     return;
+
+  if (x1 == 0 && y1 == 0 && x2 == 0 && y2 == 0)
+  {
+    IupDrawResetClip(ih);
+    return;
+  }
+
+  state = iDrawStateGet(ih);
+  if (!state)
+    return;
+  iDrawClipFree(&state->clip);
+  state->clip.type = IUP_DRAW_CLIP_RECT;
+  state->clip.x1 = x1; state->clip.y1 = y1;
+  state->clip.x2 = x2; state->clip.y2 = y2;
+  state->clip.matrix = state->matrix;
 
   svg = IUP_SVG_GET(ih);
   if (svg)
@@ -1343,6 +1762,7 @@ IUP_API void IupDrawSetClipRect(Ihandle* ih, int x1, int y1, int x2, int y2)
 IUP_API void IupDrawSetClipRoundedRect(Ihandle* ih, int x1, int y1, int x2, int y2, int corner_radius)
 {
   iSvgCanvas* svg;
+  IupDrawState* state;
 
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
@@ -1350,6 +1770,22 @@ IUP_API void IupDrawSetClipRoundedRect(Ihandle* ih, int x1, int y1, int x2, int 
 
   if (!iupAttribGet(ih, "_IUP_DRAW_DC"))
     return;
+
+  if (x1 == 0 && y1 == 0 && x2 == 0 && y2 == 0)
+  {
+    IupDrawResetClip(ih);
+    return;
+  }
+
+  state = iDrawStateGet(ih);
+  if (!state)
+    return;
+  iDrawClipFree(&state->clip);
+  state->clip.type = IUP_DRAW_CLIP_ROUNDED;
+  state->clip.x1 = x1; state->clip.y1 = y1;
+  state->clip.x2 = x2; state->clip.y2 = y2;
+  state->clip.corner_radius = corner_radius;
+  state->clip.matrix = state->matrix;
 
   svg = IUP_SVG_GET(ih);
   if (svg)
@@ -1385,6 +1821,7 @@ IUP_API void IupDrawGetClipRect(Ihandle* ih, int* x1, int* y1, int* x2, int* y2)
 IUP_API void IupDrawResetClip(Ihandle* ih)
 {
   iSvgCanvas* svg;
+  IupDrawState* state;
 
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
@@ -1392,6 +1829,12 @@ IUP_API void IupDrawResetClip(Ihandle* ih)
 
   if (!iupAttribGet(ih, "_IUP_DRAW_DC"))
     return;
+
+  state = iDrawStateGet(ih);
+  if (!state)
+    return;
+  iDrawClipFree(&state->clip);
+  iDrawMatrixIdentity(&state->clip.matrix);
 
   svg = IUP_SVG_GET(ih);
   if (svg)
@@ -1473,7 +1916,7 @@ IUP_SDK_API long iupDrawStrToColor(const char* str, long c_def)
     return c_def;
 }
 
-IUP_SDK_API int iupDrawPathArcToBeziers(const IupPathSeg* seg, IupPathSeg* out)
+IUP_SDK_API int iupDrawPathArcToCurves(const IupPathSeg* seg, double* out)
 {
   double cx = seg->x1, cy = seg->y1, rx = seg->x2, ry = seg->y2;
   double a1, span, step, k;
@@ -1501,15 +1944,35 @@ IUP_SDK_API int iupDrawPathArcToBeziers(const IupPathSeg* seg, IupPathSeg* out)
     double t1 = a1 + (i + 1) * step;
     double p0x = cx + rx * cos(t0), p0y = cy - ry * sin(t0);
     double p3x = cx + rx * cos(t1), p3y = cy - ry * sin(t1);
+    double* c = out + i * 6;
 
+    c[0] = p0x + k * (-rx * sin(t0));
+    c[1] = p0y + k * (-ry * cos(t0));
+    c[2] = p3x - k * (-rx * sin(t1));
+    c[3] = p3y - k * (-ry * cos(t1));
+    c[4] = p3x;
+    c[5] = p3y;
+  }
+
+  return n;
+}
+
+IUP_SDK_API int iupDrawPathArcToBeziers(const IupPathSeg* seg, IupPathSeg* out)
+{
+  double curves[24];
+  int i, n = iupDrawPathArcToCurves(seg, curves);
+
+  for (i = 0; i < n; i++)
+  {
+    const double* c = curves + i * 6;
     memset(&out[i], 0, sizeof(IupPathSeg));
     out[i].op = IUP_PATHSEG_CURVE_TO;
-    out[i].x1 = iupROUND(p0x + k * (-rx * sin(t0)));
-    out[i].y1 = iupROUND(p0y + k * (-ry * cos(t0)));
-    out[i].x2 = iupROUND(p3x - k * (-rx * sin(t1)));
-    out[i].y2 = iupROUND(p3y - k * (-ry * cos(t1)));
-    out[i].x3 = iupROUND(p3x);
-    out[i].y3 = iupROUND(p3y);
+    out[i].x1 = iupROUND(c[0]);
+    out[i].y1 = iupROUND(c[1]);
+    out[i].x2 = iupROUND(c[2]);
+    out[i].y2 = iupROUND(c[3]);
+    out[i].x3 = iupROUND(c[4]);
+    out[i].y3 = iupROUND(c[5]);
   }
 
   return n;

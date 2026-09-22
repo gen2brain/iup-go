@@ -84,7 +84,8 @@ typedef struct dummy_ID2D1DeviceContext_tag             dummy_ID2D1DeviceContext
 
 typedef enum dummy_D2D1_TEXT_ANTIALIAS_MODE_tag dummy_D2D1_TEXT_ANTIALIAS_MODE;
 enum  dummy_D2D1_TEXT_ANTIALIAS_MODE_tag {
-  dummy_D2D1_TEXT_ANTIALIAS_MODE_CLEARTYPE = 1
+  dummy_D2D1_TEXT_ANTIALIAS_MODE_CLEARTYPE = 1,
+  dummy_D2D1_TEXT_ANTIALIAS_MODE_GRAYSCALE = 2
 } ;
 
 typedef enum dummy_DXGI_FORMAT_tag dummy_DXGI_FORMAT;

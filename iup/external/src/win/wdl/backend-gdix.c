@@ -103,6 +103,9 @@ gdix_init(void)
     GPA(ReleaseDC, (dummy_GpGraphics*, HDC));
     GPA(ResetClip, (dummy_GpGraphics*));
     GPA(ResetWorldTransform, (dummy_GpGraphics*));
+    GPA(SaveGraphics, (dummy_GpGraphics*, UINT*));
+    GPA(RestoreGraphics, (dummy_GpGraphics*, UINT));
+    GPA(MultiplyWorldTransform, (dummy_GpGraphics*, dummy_GpMatrix*, dummy_GpMatrixOrder));
     GPA(RotateWorldTransform, (dummy_GpGraphics*, float, dummy_GpMatrixOrder));
     GPA(ScaleWorldTransform, (dummy_GpGraphics*, float, float, dummy_GpMatrixOrder));
     GPA(SetClipPath, (dummy_GpGraphics*, dummy_GpPath*, dummy_GpCombineMode));
@@ -112,6 +115,9 @@ gdix_init(void)
     GPA(SetSmoothingMode, (dummy_GpGraphics*, dummy_GpSmoothingMode));
     GPA(SetInterpolationMode, (dummy_GpGraphics*, dummy_GpInterpolationMode));
     GPA(TranslateWorldTransform, (dummy_GpGraphics*, float, float, dummy_GpMatrixOrder));
+
+    GPA(CreateMatrix2, (float, float, float, float, float, float, dummy_GpMatrix**));
+    GPA(DeleteMatrix, (dummy_GpMatrix*));
 
     /* Image attributes functions */
     GPA(CreateImageAttributes, (void**));
@@ -432,6 +438,13 @@ gdix_setpen(dummy_GpPen* pen, dummy_GpBrush* brush, float width, gdix_strokestyl
         gdix_vtable->fn_SetPenStartCap(pen, style->lineCap);
         gdix_vtable->fn_SetPenEndCap(pen, style->lineCap);
         gdix_vtable->fn_SetPenLineJoin(pen, style->lineJoin);
+    }
+    else
+    {
+        gdix_vtable->fn_SetPenDashStyle(pen, dummy_DashStyleSolid);
+        gdix_vtable->fn_SetPenStartCap(pen, dummy_LineCapFlat);
+        gdix_vtable->fn_SetPenEndCap(pen, dummy_LineCapFlat);
+        gdix_vtable->fn_SetPenLineJoin(pen, dummy_LineJoinMiter);
     }
 
     gdix_vtable->fn_SetPenBrushFill(pen, brush);

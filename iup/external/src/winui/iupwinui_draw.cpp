@@ -122,6 +122,8 @@ struct _IdrawCanvas
   com_ptr<ISurfaceImageSourceNativeWithD2D> sisNative;
   ID2D1DeviceContext* d2dContext;
   POINT drawOffset;
+  D2D1_MATRIX_3X2_F baseTransform;
+  D2D1_MATRIX_3X2_F userTransform{D2D1::Matrix3x2F::Identity()};
 
   bool partial{false};
   int px1{0}, py1{0}, px2{0}, py2{0};
@@ -217,8 +219,8 @@ static bool winuiDrawBeginSession(IdrawCanvas* dc)
   dc->d2dContext = ctx;
   dc->drawOffset = offset;
 
-  dc->d2dContext->SetTransform(
-    D2D1::Matrix3x2F::Translation((float)(offset.x - updateRect.left), (float)(offset.y - updateRect.top)));
+  dc->baseTransform = D2D1::Matrix3x2F::Translation((float)(offset.x - updateRect.left), (float)(offset.y - updateRect.top));
+  dc->d2dContext->SetTransform(dc->userTransform * dc->baseTransform);
 
   if (dc->partial)
     dc->d2dContext->PushAxisAlignedClip(
@@ -312,6 +314,16 @@ extern "C" IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
   iupAttribSet(ih, "DRAWDRIVER", "D2D");
 
   return dc;
+}
+
+extern "C" IUP_SDK_API void iupdrvDrawSetTransform(IdrawCanvas* dc, const IupDrawMatrix* matrix)
+{
+  if (!dc || !dc->d2dContext)
+    return;
+  dc->userTransform = D2D1::Matrix3x2F((float)matrix->a, (float)matrix->b,
+                                       (float)matrix->c, (float)matrix->d,
+                                       (float)matrix->e, (float)matrix->f);
+  dc->d2dContext->SetTransform(dc->userTransform * dc->baseTransform);
 }
 
 extern "C" IUP_SDK_API void iupdrvDrawKillCanvas(IdrawCanvas* dc)
@@ -550,21 +562,28 @@ extern "C" IUP_SDK_API void iupdrvDrawLine(IdrawCanvas* dc, int x1, int y1, int 
 
   dc->solidBrush->SetColor(winuiDrawColor(color));
 
+  D2D1_POINT_2F p1 = D2D1::Point2F((float)x1, (float)y1);
+  D2D1_POINT_2F p2 = D2D1::Point2F((float)x2, (float)y2);
+  if (line_width == 1 && (x1 == x2 || y1 == y2))
+  {
+    iupDrawCheckSwapCoord(x1, x2);
+    iupDrawCheckSwapCoord(y1, y2);
+    if (x1 == x2)
+    {
+      p1 = D2D1::Point2F(x1 + 0.5f, (float)y1);
+      p2 = D2D1::Point2F(x1 + 0.5f, (float)(y2 + 1));
+    }
+    else
+    {
+      p1 = D2D1::Point2F((float)x1, y1 + 0.5f);
+      p2 = D2D1::Point2F((float)(x2 + 1), y1 + 0.5f);
+    }
+  }
+
   if (style == IUP_DRAW_STROKE || style == IUP_DRAW_FILL)
-  {
-    dc->d2dContext->DrawLine(
-      D2D1::Point2F((float)x1, (float)y1),
-      D2D1::Point2F((float)x2, (float)y2),
-      dc->solidBrush.get(), (float)line_width);
-  }
+    dc->d2dContext->DrawLine(p1, p2, dc->solidBrush.get(), (float)line_width);
   else
-  {
-    auto strokeStyle = winuiDrawStrokeStyle(style);
-    dc->d2dContext->DrawLine(
-      D2D1::Point2F((float)x1, (float)y1),
-      D2D1::Point2F((float)x2, (float)y2),
-      dc->solidBrush.get(), (float)line_width, strokeStyle);
-  }
+    dc->d2dContext->DrawLine(p1, p2, dc->solidBrush.get(), (float)line_width, winuiDrawStrokeStyle(style));
 }
 
 extern "C" IUP_SDK_API void iupdrvDrawRectangle(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color, int style, int line_width)
@@ -578,6 +597,11 @@ extern "C" IUP_SDK_API void iupdrvDrawRectangle(IdrawCanvas* dc, int x1, int y1,
   iupDrawCheckSwapCoord(y1, y2);
 
   D2D1_RECT_F rect = D2D1::RectF((float)x1, (float)y1, (float)(x2 + 1), (float)(y2 + 1));
+  if (style != IUP_DRAW_FILL)
+  {
+    float offset = (line_width % 2) ? 0.5f : 0.0f;
+    rect = D2D1::RectF(x1 + offset, y1 + offset, x2 + offset, y2 + offset);
+  }
 
   if (style == IUP_DRAW_FILL)
   {
@@ -875,6 +899,33 @@ extern "C" IUP_SDK_API void iupdrvDrawQuadraticBezier(IdrawCanvas* dc, int x1, i
   }
 }
 
+static bool winuiDrawAxisAligned(IdrawCanvas* dc)
+{
+  return dc->userTransform._12 == 0 && dc->userTransform._21 == 0;
+}
+
+static bool winuiDrawPushRectClip(IdrawCanvas* dc, const D2D1_RECT_F& rect)
+{
+  if (winuiDrawAxisAligned(dc))
+  {
+    dc->d2dContext->PushAxisAlignedClip(rect, D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
+    return false;
+  }
+
+  com_ptr<ID2D1RectangleGeometry> geometry;
+  g_d2dFactory->CreateRectangleGeometry(rect, geometry.put());
+  dc->d2dContext->PushLayer(D2D1::LayerParameters(D2D1::InfiniteRect(), geometry.get()), nullptr);
+  return true;
+}
+
+static void winuiDrawPopRectClip(IdrawCanvas* dc, bool layer)
+{
+  if (layer)
+    dc->d2dContext->PopLayer();
+  else
+    dc->d2dContext->PopAxisAlignedClip();
+}
+
 extern "C" IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int x, int y, int w, int h, long color, const char* font, int flags, double text_orientation)
 {
   if (!dc || !dc->d2dContext || !text)
@@ -987,10 +1038,11 @@ extern "C" IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, in
   if (text_orientation != 0.0)
   {
     D2D1_MATRIX_3X2_F oldTransform;
+    bool clipLayer = false;
     dc->d2dContext->GetTransform(&oldTransform);
 
     if (flags & IUP_DRAW_CLIP)
-      dc->d2dContext->PushAxisAlignedClip(D2D1::RectF(fx, fy, fx + fw, fy + fh), D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
+      clipLayer = winuiDrawPushRectClip(dc, D2D1::RectF(fx, fy, fx + fw, fy + fh));
 
     if (layout_center)
     {
@@ -1000,7 +1052,7 @@ extern "C" IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, in
       D2D1_MATRIX_3X2_F rotation = D2D1::Matrix3x2F::Rotation(
         (float)(-text_orientation), D2D1::Point2F(tcx, tcy));
 
-      dc->d2dContext->SetTransform(oldTransform * rotation);
+      dc->d2dContext->SetTransform(rotation * oldTransform);
 
       drawPoint = D2D1::Point2F(tcx - flw / 2.0f, tcy - flh / 2.0f);
     }
@@ -1009,7 +1061,7 @@ extern "C" IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, in
       D2D1_MATRIX_3X2_F rotation = D2D1::Matrix3x2F::Rotation(
         (float)(-text_orientation), D2D1::Point2F(fx, fy));
 
-      dc->d2dContext->SetTransform(oldTransform * rotation);
+      dc->d2dContext->SetTransform(rotation * oldTransform);
     }
 
     if (textLayout)
@@ -1020,12 +1072,13 @@ extern "C" IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, in
     dc->d2dContext->SetTransform(oldTransform);
 
     if (flags & IUP_DRAW_CLIP)
-      dc->d2dContext->PopAxisAlignedClip();
+      winuiDrawPopRectClip(dc, clipLayer);
   }
   else
   {
+    bool clipLayer = false;
     if (flags & IUP_DRAW_CLIP)
-      dc->d2dContext->PushAxisAlignedClip(D2D1::RectF(fx, fy, fx + fw, fy + fh), D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
+      clipLayer = winuiDrawPushRectClip(dc, D2D1::RectF(fx, fy, fx + fw, fy + fh));
 
     if (textLayout)
       dc->d2dContext->DrawTextLayout(drawPoint, textLayout.get(), dc->solidBrush.get());
@@ -1033,7 +1086,7 @@ extern "C" IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, in
       dc->d2dContext->DrawText(wtext, wlen, textFormat.get(), D2D1::RectF(fx, fy, fx + fw, fy + fh), dc->solidBrush.get());
 
     if (flags & IUP_DRAW_CLIP)
-      dc->d2dContext->PopAxisAlignedClip();
+      winuiDrawPopRectClip(dc, clipLayer);
   }
 
   free(wtext);
@@ -1109,9 +1162,8 @@ extern "C" IUP_SDK_API void iupdrvDrawSetClipRect(IdrawCanvas* dc, int x1, int y
   iupDrawCheckSwapCoord(y1, y2);
 
   D2D1_RECT_F clipRect = D2D1::RectF((float)x1, (float)y1, (float)(x2 + 1), (float)(y2 + 1));
-  dc->d2dContext->PushAxisAlignedClip(clipRect, D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
+  dc->clipType = winuiDrawPushRectClip(dc, clipRect) ? WINUI_CLIP_LAYER : WINUI_CLIP_RECT;
 
-  dc->clipType = WINUI_CLIP_RECT;
   dc->clip_x1 = x1;
   dc->clip_y1 = y1;
   dc->clip_x2 = x2;
@@ -1344,8 +1396,8 @@ static com_ptr<ID2D1PathGeometry> winuiDrawBuildPathGeometry(const IupPathSeg* s
       break;
     case IUP_PATHSEG_ARC_TO:
     {
-      IupPathSeg bez[4];
-      int j, n = iupDrawPathArcToBeziers(&segs[i], bez);
+      double bez[24];
+      int j, n = iupDrawPathArcToCurves(&segs[i], bez);
       if (!in_figure)
       {
         sink->BeginFigure(D2D1::Point2F(sub_x, sub_y), D2D1_FIGURE_BEGIN_FILLED);
@@ -1353,9 +1405,9 @@ static com_ptr<ID2D1PathGeometry> winuiDrawBuildPathGeometry(const IupPathSeg* s
       }
       for (j = 0; j < n; j++)
         sink->AddBezier(D2D1::BezierSegment(
-          D2D1::Point2F((float)bez[j].x1, (float)bez[j].y1),
-          D2D1::Point2F((float)bez[j].x2, (float)bez[j].y2),
-          D2D1::Point2F((float)bez[j].x3, (float)bez[j].y3)));
+          D2D1::Point2F((float)bez[j * 6], (float)bez[j * 6 + 1]),
+          D2D1::Point2F((float)bez[j * 6 + 2], (float)bez[j * 6 + 3]),
+          D2D1::Point2F((float)bez[j * 6 + 4], (float)bez[j * 6 + 5])));
       break;
     }
     case IUP_PATHSEG_CLOSE:

@@ -18,6 +18,16 @@ IUP_API void IupDrawEnd(Ihandle* ih);
 
 /* all functions can be called only between calls to Begin and End */
 
+IUP_API void IupDrawSave(Ihandle* ih);
+IUP_API void IupDrawRestore(Ihandle* ih);
+IUP_API void IupDrawTransform(Ihandle* ih, double a, double b, double c, double d, double e, double f);
+IUP_API void IupDrawSetTransform(Ihandle* ih, double a, double b, double c, double d, double e, double f);
+IUP_API void IupDrawResetTransform(Ihandle* ih);
+IUP_API void IupDrawGetTransform(Ihandle* ih, double* a, double* b, double* c, double* d, double* e, double* f);
+IUP_API void IupDrawTranslate(Ihandle* ih, double tx, double ty);
+IUP_API void IupDrawScale(Ihandle* ih, double sx, double sy);
+IUP_API void IupDrawRotate(Ihandle* ih, double angle);
+
 IUP_API void IupDrawSetClipRect(Ihandle* ih, int x1, int y1, int x2, int y2);
 IUP_API void IupDrawSetClipRoundedRect(Ihandle* ih, int x1, int y1, int x2, int y2, int corner_radius);
 IUP_API void IupDrawGetClipRect(Ihandle* ih, int* x1, int* y1, int* x2, int* y2);

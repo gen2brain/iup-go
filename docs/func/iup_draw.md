@@ -33,6 +33,34 @@ Initialize the drawing process.
 
 Terminates the drawing process and actually draw on screen.
 
+    void IupDrawSave(Ihandle* ih);
+    void IupDrawRestore(Ihandle* ih);
+
+Saves or restores the current transform, clipping region, source and `DRAW*` attributes. States can be nested. IupDrawRestore does nothing when there is no saved state. The current path is not saved.
+
+    void IupDrawTransform(Ihandle* ih, double a, double b, double c, double d, double e, double f);
+    void IupDrawSetTransform(Ihandle* ih, double a, double b, double c, double d, double e, double f);
+
+Multiplies or replaces the current transform. Coordinates are transformed as `x' = a*x + c*y + e` and `y' = b*x + d*y + f`. IupDrawTransform post-multiplies the current transform. Non-finite and non-invertible matrices are ignored.
+
+    void IupDrawResetTransform(Ihandle* ih);
+
+Resets the current transform to the identity matrix.
+
+    void IupDrawGetTransform(Ihandle* ih, double* a, double* b, double* c, double* d, double* e, double* f);
+
+Returns the current transform. In C unwanted values can be NULL.
+
+    void IupDrawTranslate(Ihandle* ih, double tx, double ty);
+    void IupDrawScale(Ihandle* ih, double sx, double sy);
+    void IupDrawRotate(Ihandle* ih, double angle);
+
+Post-multiplies the current transform by a translation, scale or rotation. The rotation angle is in degrees and counterclockwise.
+
+Transforms affect primitives, paths, text, images, sources and clipping regions. A clipping region keeps the transform active when it was set. IupDrawGetSize, IupDrawGetTextSize and IupDrawGetTextMetrics return untransformed values. IupDrawParentBackground ignores the current transform.
+In EFL and FLTK the line width is scaled uniformly by the square root of the transform determinant.
+In Motif transforms require the X11 RENDER extension.
+
     void IupDrawSetClipRect(Ihandle* ih, int x1, int y1, int x2, int y2);
 
 Defines a rectangular clipping region.
@@ -47,7 +75,7 @@ Reset the clipping area to none.
 
     void IupDrawGetClipRect(Ihandle* ih, int *x1, int *y1, int *x2, int *y2);
 
-Returns the previous rectangular clipping region set by IupDrawSetClipRect, if clipping was reset returns 0 in all values.
+Returns the previous rectangular clipping region set by IupDrawSetClipRect, if clipping was reset returns 0 in all values. The rectangle is returned as it was set, in the coordinates of the transform active when it was set. After IupDrawSetClipPath it returns the bounding rectangle of the path.
 
 ### Primitives
 
@@ -91,7 +119,7 @@ Draws an ellipse inscribed in the given rectangle.
 
     void IupDrawPolygon(Ihandle* ih, int* points, int count);
 
-Draws a polygon. Coordinates are stored in the array in the sequence: x1, y1, x2, y2, ...
+Draws a polygon. Coordinates are stored in the array in the sequence: x1, y1, x2, y2, ... A filled polygon uses the winding rule.
 
     void IupDrawPixel(Ihandle* ih, int x, int y);
 
@@ -128,7 +156,7 @@ In Qt, the last color at a duplicate offset is used.
 
 ### Paths and Sources
 
-A path contains line, curve and arc segments. It is kept until IupDrawPathBegin or IupDrawEnd.
+A path contains line, curve and arc segments. It is kept until IupDrawPathBegin or IupDrawEnd. The transform active when the path is filled, stroked or set as the clipping region applies to all of its segments.
 
     void IupDrawPathBegin(Ihandle* ih);
 

@@ -49,6 +49,8 @@ struct _IdrawCanvas
   QPainter* painter;
   QWidget* widget;
   QPixmap* buffer;
+  QTransform base_transform;
+  QTransform user_transform;
 
   int release_gc;
 
@@ -149,7 +151,7 @@ extern "C" IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
   dc->text_antialias = 1;
   dc->shape_antialias = 1;
 
-  dc->winding_rule = Qt::OddEvenFill;
+  dc->winding_rule = Qt::WindingFill;
 
   dc->clip_x1 = 0;
   dc->clip_y1 = 0;
@@ -165,9 +167,20 @@ extern "C" IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
 
     dc->painter->setRenderHint(QPainter::Antialiasing, dc->shape_antialias ? true : false);
     dc->painter->setRenderHint(QPainter::TextAntialiasing, dc->text_antialias ? true : false);
+    dc->base_transform = dc->painter->worldTransform();
   }
 
   return dc;
+}
+
+extern "C" IUP_SDK_API void iupdrvDrawSetTransform(IdrawCanvas* dc, const IupDrawMatrix* matrix)
+{
+  if (!dc)
+    return;
+
+  dc->user_transform = QTransform(matrix->a, matrix->b, matrix->c, matrix->d, matrix->e, matrix->f);
+  if (dc->painter)
+    dc->painter->setWorldTransform(dc->user_transform * dc->base_transform, false);
 }
 
 /****************************************************************************
@@ -447,8 +460,11 @@ extern "C" IUP_SDK_API void iupdrvDrawArc(IdrawCanvas* dc, int x1, int y1, int x
   int h = y2 - y1 + 1;
 
   /* Qt angles are in 1/16 degree, same origin and direction as IUP */
+  double span = a2 - a1;
+  while (span < 0)
+    span += 360;
   int start_angle = (int)(a1 * 16.0);
-  int span_angle = (int)((a2 - a1) * 16.0);
+  int span_angle = (int)(span * 16.0);
 
   if (style == IUP_DRAW_FILL)
   {
@@ -1010,12 +1026,20 @@ static void qtDrawSetPen(IdrawCanvas* dc, const IupDrawSource* src, int style, i
   }
 
   qtDrawSetPenStyle(pen, style);
+  pen.setCapStyle(Qt::FlatCap);
+  pen.setJoinStyle(Qt::MiterJoin);
   dc->painter->setPen(pen);
   dc->painter->setBrush(Qt::NoBrush);
 }
 
+static bool qtDrawSamePoint(const QPointF& p1, const QPointF& p2)
+{
+  return qAbs(p1.x() - p2.x()) < 1e-6 && qAbs(p1.y() - p2.y()) < 1e-6;
+}
+
 static void qtDrawBuildPath(QPainterPath& path, const IupPathSeg* segs, int count)
 {
+  QPointF start;
   int i;
 
   for (i = 0; i < count; i++)
@@ -1024,9 +1048,16 @@ static void qtDrawBuildPath(QPainterPath& path, const IupPathSeg* segs, int coun
     {
     case IUP_PATHSEG_MOVE_TO:
       path.moveTo(segs[i].x1, segs[i].y1);
+      start = path.currentPosition();
       break;
     case IUP_PATHSEG_LINE_TO:
-      path.lineTo(segs[i].x1, segs[i].y1);
+      if (path.elementCount() == 0)
+      {
+        path.moveTo(segs[i].x1, segs[i].y1);
+        start = path.currentPosition();
+      }
+      else if (!qtDrawSamePoint(path.currentPosition(), QPointF(segs[i].x1, segs[i].y1)))
+        path.lineTo(segs[i].x1, segs[i].y1);
       break;
     case IUP_PATHSEG_CURVE_TO:
       path.cubicTo(segs[i].x1, segs[i].y1, segs[i].x2, segs[i].y2, segs[i].x3, segs[i].y3);
@@ -1036,14 +1067,17 @@ static void qtDrawBuildPath(QPainterPath& path, const IupPathSeg* segs, int coun
       break;
     case IUP_PATHSEG_ARC_TO:
     {
-      IupPathSeg bez[4];
-      int j, n = iupDrawPathArcToBeziers(&segs[i], bez);
+      double bez[24];
+      int j, n = iupDrawPathArcToCurves(&segs[i], bez);
       for (j = 0; j < n; j++)
-        path.cubicTo(bez[j].x1, bez[j].y1, bez[j].x2, bez[j].y2, bez[j].x3, bez[j].y3);
+        path.cubicTo(bez[j * 6], bez[j * 6 + 1], bez[j * 6 + 2], bez[j * 6 + 3], bez[j * 6 + 4], bez[j * 6 + 5]);
       break;
     }
     case IUP_PATHSEG_CLOSE:
+      if (path.elementCount() > 0 && qtDrawSamePoint(path.currentPosition(), start))
+        path.setElementPositionAt(path.elementCount() - 1, start.x(), start.y());
       path.closeSubpath();
+      start = path.currentPosition();
       break;
     }
   }
@@ -1267,6 +1301,8 @@ extern "C" IUP_SDK_API void iupdrvDrawUpdateSize(IdrawCanvas* dc)
 
     dc->painter->setRenderHint(QPainter::Antialiasing, dc->shape_antialias ? true : false);
     dc->painter->setRenderHint(QPainter::TextAntialiasing, dc->text_antialias ? true : false);
+    dc->base_transform = dc->painter->worldTransform();
+    dc->painter->setWorldTransform(dc->user_transform * dc->base_transform, false);
   }
 }
 
@@ -1288,6 +1324,8 @@ void qtDrawBegin(IdrawCanvas* dc)
 
     dc->painter->setRenderHint(QPainter::Antialiasing, dc->shape_antialias ? true : false);
     dc->painter->setRenderHint(QPainter::TextAntialiasing, dc->text_antialias ? true : false);
+    dc->base_transform = dc->painter->worldTransform();
+    dc->painter->setWorldTransform(dc->user_transform * dc->base_transform, false);
   }
 }
 

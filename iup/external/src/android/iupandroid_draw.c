@@ -92,6 +92,22 @@ IUP_SDK_API void iupdrvDrawKillCanvas(IdrawCanvas* dc)
   free(dc);
 }
 
+IUP_SDK_API void iupdrvDrawSetTransform(IdrawCanvas* dc, const IupDrawMatrix* matrix)
+{
+  JNIEnv* jni_env;
+  jclass java_class;
+  jmethodID method_id;
+  if (!dc || !dc->ih->handle) return;
+  jni_env = iupAndroid_GetEnvThreadSafe();
+  java_class = androidDrawFindHelper(jni_env);
+  method_id = (*jni_env)->GetStaticMethodID(jni_env, java_class, "setTransform", "(Lio/github/gen2brain/iupgo/IupAndroidCanvas;FFFFFF)V");
+  (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, dc->ih->handle,
+                                   (jfloat)matrix->a, (jfloat)matrix->b, (jfloat)matrix->c,
+                                   (jfloat)matrix->d, (jfloat)matrix->e, (jfloat)matrix->f);
+  iupAndroid_CheckException(jni_env, "IupCanvasHelper.setTransform");
+  (*jni_env)->DeleteLocalRef(jni_env, java_class);
+}
+
 IUP_SDK_API void iupdrvDrawUpdateSize(IdrawCanvas* dc)
 {
   if (!dc || !dc->ih) return;
@@ -159,8 +175,12 @@ IUP_SDK_API void iupdrvDrawArc(IdrawCanvas* dc, int x1, int y1, int x2, int y2, 
   jclass java_class = androidDrawFindHelper(jni_env);
   jmethodID method_id = (*jni_env)->GetStaticMethodID(jni_env, java_class, "drawArc", "(Lio/github/gen2brain/iupgo/IupAndroidCanvas;IIIIFFIII)V");
 
-  float start = (float)a1;
-  float sweep = (float)(a2 - a1);
+  float start, sweep;
+
+  while (a2 < a1)
+    a2 += 360;
+  start = (float)a1;
+  sweep = (float)(a2 - a1);
 
   (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, dc->ih->handle, (jint)x1, (jint)y1, (jint)x2, (jint)y2, (jfloat)start, (jfloat)sweep, (jint)androidPackColor(color), (jint)style, (jint)line_width);
   iupAndroid_CheckException(jni_env, "IupCanvasHelper.drawArc");
@@ -383,7 +403,12 @@ IUP_SDK_API void iupdrvDrawSetClipRoundedRect(IdrawCanvas* dc, int x1, int y1, i
 
 IUP_SDK_API void iupdrvDrawResetClip(IdrawCanvas* dc)
 {
-  if (!dc || !dc->ih->handle || !dc->clipped) return;
+  if (!dc) return;
+  dc->clip_x1 = 0;
+  dc->clip_y1 = 0;
+  dc->clip_x2 = 0;
+  dc->clip_y2 = 0;
+  if (!dc->ih->handle || !dc->clipped) return;
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
   jclass java_class = androidDrawFindHelper(jni_env);
   jmethodID method_id = (*jni_env)->GetStaticMethodID(jni_env, java_class, "resetClip", "(Lio/github/gen2brain/iupgo/IupAndroidCanvas;)V");
@@ -475,8 +500,19 @@ static jintArray androidDrawPathSegmentsToArray(JNIEnv* jni_env, const IupPathSe
     buf[base + 4] = segs[i].y2;
     buf[base + 5] = segs[i].x3;
     buf[base + 6] = segs[i].y3;
-    buf[base + 7] = (jint)(segs[i].a1 * 1000000.0);
-    buf[base + 8] = (jint)(segs[i].a2 * 1000000.0);
+    if (segs[i].op == IUP_PATHSEG_ARC_TO)
+    {
+      double a1 = fmod(segs[i].a1, 360.0), span = segs[i].a2 - segs[i].a1;
+      while (span < 0) span += 360.0;
+      while (span > 360.0) span -= 360.0;
+      buf[base + 7] = (jint)(a1 * 1000000.0);
+      buf[base + 8] = (jint)((a1 + span) * 1000000.0);
+    }
+    else
+    {
+      buf[base + 7] = 0;
+      buf[base + 8] = 0;
+    }
   }
   (*jni_env)->SetIntArrayRegion(jni_env, arr, 0, count * 9, buf);
   free(buf);

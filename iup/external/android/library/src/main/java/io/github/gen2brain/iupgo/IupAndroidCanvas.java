@@ -3,6 +3,7 @@ package io.github.gen2brain.iupgo;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.Matrix;
 import android.graphics.Rect;
 import android.util.AttributeSet;
 import android.view.GestureDetector;
@@ -28,6 +29,8 @@ public class IupAndroidCanvas extends IupAndroidFixed
     private final long ihandlePtr;
     private Bitmap back;
     private Canvas backCanvas;
+    private final Matrix baseMatrix = new Matrix();
+    private final Matrix userMatrix = new Matrix();
     private GestureDetector gestureDetector;
     private ScaleGestureDetector scaleDetector;
     private float pinchScale = 1f;
@@ -37,6 +40,7 @@ public class IupAndroidCanvas extends IupAndroidFixed
     private float rotateLast, rotateAngle;
     /* Tracks an outstanding clip save() for setClipRect's restore-then-replace contract. */
     boolean clipSaved;
+    boolean inDraw;
 
     public IupAndroidCanvas(Context ctx, long ihandlePtr)
     {
@@ -280,6 +284,7 @@ public class IupAndroidCanvas extends IupAndroidFixed
     public Bitmap getBackBuffer() { return back; }
 
     /** allocates/realloc back buffer to current view size; called before each draw batch */
+    @SuppressWarnings("deprecation")
     public void ensureBackBuffer()
     {
         int w = getWidth();
@@ -293,6 +298,22 @@ public class IupAndroidCanvas extends IupAndroidFixed
         /* Scale so IUP draw coordinates are logical px (dp-equivalent). */
         float density = IupCommon.getDisplayDensity();
         if (density != 1.0f) backCanvas.scale(density, density);
+        backCanvas.getMatrix(baseMatrix);
+        applyDrawTransform();
+    }
+
+    void setDrawTransform(float a, float b, float c, float d, float e, float f)
+    {
+        userMatrix.setValues(new float[]{a, c, e, b, d, f, 0, 0, 1});
+        applyDrawTransform();
+    }
+
+    void applyDrawTransform()
+    {
+        if (backCanvas == null) return;
+        Matrix matrix = new Matrix();
+        matrix.setConcat(baseMatrix, userMatrix);
+        backCanvas.setMatrix(matrix);
     }
 
     @Override
@@ -301,7 +322,9 @@ public class IupAndroidCanvas extends IupAndroidFixed
         if (ihandlePtr != 0)
         {
             Rect clip = canvas.getClipBounds();
+            inDraw = true;
             IupCanvasHelper.dispatchAction(ihandlePtr, clip.left, clip.top, clip.right - 1, clip.bottom - 1);
+            inDraw = false;
         }
         if (back != null) canvas.drawBitmap(back, 0, 0, null);
     }

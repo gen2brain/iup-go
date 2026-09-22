@@ -28,6 +28,7 @@ struct _IdrawCanvas
   Ihandle* ih;
   int cid;          /* canvas element id */
   int w, h;
+  int clip_x1, clip_y1, clip_x2, clip_y2;
 };
 
 EM_JS(void, iupwasmJsCanvasInit, (void), {
@@ -64,7 +65,14 @@ EM_JS(void, iupwasmJsCanvasReset, (int cid, int w, int h), {
   el.height = h;
   var ctx = el.getContext("2d");
   ctx.setLineDash([]);
+  ctx.__iupTransform = [1, 0, 0, 1, 0, 0];
   ctx.save();
+})
+
+EM_JS(void, iupwasmJsSetTransform, (int cid, double a, double b, double c, double d, double e, double f), {
+  var ctx = globalThis.__iupCtx(cid); if (!ctx) return;
+  ctx.__iupTransform = [a, b, c, d, e, f];
+  ctx.setTransform(a, b, c, d, e, f);
 })
 
 EM_JS(int, iupwasmJsCanvasClientW, (int cid), {
@@ -316,7 +324,9 @@ EM_JS(void, iupwasmJsDrawImage, (int cid, int imgId, int x, int y, int w, int h,
 
 EM_JS(void, iupwasmJsClipRect, (int cid, int x, int y, int w, int h), {
   var ctx = globalThis.__iupCtx(cid); if (!ctx) return;
+  var m = ctx.__iupTransform || [1, 0, 0, 1, 0, 0];
   ctx.restore();   /* drop any previous clip before reclipping */
+  ctx.setTransform(m[0], m[1], m[2], m[3], m[4], m[5]);
   ctx.save();
   ctx.beginPath();
   ctx.rect(x, y, w, h);
@@ -325,7 +335,9 @@ EM_JS(void, iupwasmJsClipRect, (int cid, int x, int y, int w, int h), {
 
 EM_JS(void, iupwasmJsClipRoundRect, (int cid, int x1, int y1, int x2, int y2, int radius), {
   var ctx = globalThis.__iupCtx(cid); if (!ctx) return;
+  var m = ctx.__iupTransform || [1, 0, 0, 1, 0, 0];
   ctx.restore();
+  ctx.setTransform(m[0], m[1], m[2], m[3], m[4], m[5]);
   ctx.save();
   var w = x2 - x1 + 1, h = y2 - y1 + 1;
   var rr = Math.min(radius, w / 2, h / 2);
@@ -344,7 +356,9 @@ EM_JS(void, iupwasmJsClipRoundRect, (int cid, int x1, int y1, int x2, int y2, in
 
 EM_JS(void, iupwasmJsResetClip, (int cid), {
   var ctx = globalThis.__iupCtx(cid); if (!ctx) return;
+  var m = ctx.__iupTransform || [1, 0, 0, 1, 0, 0];
   ctx.restore();
+  ctx.setTransform(m[0], m[1], m[2], m[3], m[4], m[5]);
   ctx.save();
 })
 
@@ -374,6 +388,11 @@ IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
 IUP_SDK_API void iupdrvDrawKillCanvas(IdrawCanvas* dc)
 {
   if (dc) free(dc);
+}
+
+IUP_SDK_API void iupdrvDrawSetTransform(IdrawCanvas* dc, const IupDrawMatrix* matrix)
+{
+  iupwasmJsSetTransform(dc->cid, matrix->a, matrix->b, matrix->c, matrix->d, matrix->e, matrix->f);
 }
 
 IUP_SDK_API void iupdrvDrawUpdateSize(IdrawCanvas* dc)
@@ -426,6 +445,9 @@ IUP_SDK_API void iupdrvDrawArc(IdrawCanvas* dc, int x1, int y1, int x2, int y2, 
   h = y2 - y1;
   xc = x1 + w / 2.0;
   yc = y1 + h / 2.0;
+
+  while (a2 < a1)
+    a2 += 360;
 
   s1 = -a1 * IUP_DEG2RAD;
   s2 = -a2 * IUP_DEG2RAD;
@@ -550,42 +572,52 @@ IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_ina
   iupwasmJsDrawImage(dc->cid, (int)(intptr_t)handle, x, y, w, h, sx, sy, sw, sh, quality != IUP_DRAW_IMAGE_NEAREST, opacity);
 }
 
+static void iupwasmDrawStoreClip(IdrawCanvas* dc, int x1, int y1, int x2, int y2)
+{
+  dc->clip_x1 = x1;
+  dc->clip_y1 = y1;
+  dc->clip_x2 = x2;
+  dc->clip_y2 = y2;
+}
+
+IUP_SDK_API void iupdrvDrawResetClip(IdrawCanvas* dc)
+{
+  iupwasmJsResetClip(dc->cid);
+  iupwasmDrawStoreClip(dc, 0, 0, 0, 0);
+}
+
 IUP_SDK_API void iupdrvDrawSetClipRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2)
 {
   if (x1 == 0 && y1 == 0 && x2 == 0 && y2 == 0)
   {
-    iupwasmJsResetClip(dc->cid);
+    iupdrvDrawResetClip(dc);
     return;
   }
   iupDrawCheckSwapCoord(x1, x2);
   iupDrawCheckSwapCoord(y1, y2);
   iupwasmJsClipRect(dc->cid, x1, y1, x2 - x1 + 1, y2 - y1 + 1);
+  iupwasmDrawStoreClip(dc, x1, y1, x2, y2);
 }
 
 IUP_SDK_API void iupdrvDrawSetClipRoundedRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int corner_radius)
 {
   if (x1 == 0 && y1 == 0 && x2 == 0 && y2 == 0)
   {
-    iupwasmJsResetClip(dc->cid);
+    iupdrvDrawResetClip(dc);
     return;
   }
   iupDrawCheckSwapCoord(x1, x2);
   iupDrawCheckSwapCoord(y1, y2);
   iupwasmJsClipRoundRect(dc->cid, x1, y1, x2, y2, corner_radius);
-}
-
-IUP_SDK_API void iupdrvDrawResetClip(IdrawCanvas* dc)
-{
-  iupwasmJsResetClip(dc->cid);
+  iupwasmDrawStoreClip(dc, x1, y1, x2, y2);
 }
 
 IUP_SDK_API void iupdrvDrawGetClipRect(IdrawCanvas* dc, int* x1, int* y1, int* x2, int* y2)
 {
-  (void)dc;
-  if (x1) *x1 = 0;
-  if (y1) *y1 = 0;
-  if (x2) *x2 = 0;
-  if (y2) *y2 = 0;
+  if (x1) *x1 = dc->clip_x1;
+  if (y1) *y1 = dc->clip_y1;
+  if (x2) *x2 = dc->clip_x2;
+  if (y2) *y2 = dc->clip_y2;
 }
 
 IUP_SDK_API void iupdrvDrawSelectRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2)
@@ -743,7 +775,9 @@ EM_JS(void, iupwasmJsDrawPathStroke, (int cid, int segsPtr, int count, int sourc
 
 EM_JS(void, iupwasmJsClipPath, (int cid, int segsPtr, int count, int rule), {
   var ctx = globalThis.__iupCtx(cid); if (!ctx) return;
+  var m = ctx.__iupTransform || [1, 0, 0, 1, 0, 0];
   ctx.restore();
+  ctx.setTransform(m[0], m[1], m[2], m[3], m[4], m[5]);
   ctx.save();
   var p = new Path2D();
   for (var i = 0; i < count; i++)
@@ -832,5 +866,8 @@ IUP_SDK_API void iupdrvDrawPathStroke(IdrawCanvas* dc, const IupPathSeg* segs, i
 
 IUP_SDK_API void iupdrvDrawSetClipPath(IdrawCanvas* dc, const IupPathSeg* segs, int count, int rule)
 {
+  int x1, y1, x2, y2;
   iupwasmJsClipPath(dc->cid, (int)(intptr_t)segs, count, rule);
+  iupDrawPathGetBBox(segs, count, &x1, &y1, &x2, &y2);
+  iupwasmDrawStoreClip(dc, x1, y1, x2, y2);
 }
