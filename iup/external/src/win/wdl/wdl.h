@@ -356,8 +356,12 @@ void wdSetSolidBrushColor(WD_HBRUSH hBrush, WD_COLOR color);
 #define WD_LINEJOIN_BEVEL 1
 #define WD_LINEJOIN_ROUND 2
 
+#define WD_MITERLIMIT_DEFAULT 10.0f
+
 WD_HSTROKESTYLE wdCreateStrokeStyle(UINT dashStyle, UINT lineCap, UINT lineJoin);
 WD_HSTROKESTYLE wdCreateStrokeStyleCustom(const float* dashes, UINT dashesCount, UINT lineCap, UINT lineJoin);
+WD_HSTROKESTYLE wdCreateStrokeStyleCustomEx(const float* dashes, UINT dashesCount, float dashOffset,
+                UINT lineCap, UINT lineJoin, float miterLimit);
 void wdDestroyStrokeStyle(WD_HSTROKESTYLE hStrokeStyle);
 
 

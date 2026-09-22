@@ -122,6 +122,7 @@ static void iSvgBufPrintf(iSvgBuffer* buf, const char* fmt, ...)
 
 struct _iSvgCanvas
 {
+  Ihandle* ih;
   int w, h;
 
   iSvgBuffer buf;
@@ -157,22 +158,38 @@ static double iSvgAlphaVal(int a)
   return a / 255.0;
 }
 
-static const char* iSvgDashArray(int style)
+static void iSvgStrokeStyleAttrs(iSvgCanvas* dc, iSvgBuffer* buf, int style)
 {
-  switch (style)
+  IupDrawStroke stroke;
+  int i;
+
+  iupDrawGetStroke(dc->ih, style, &stroke);
+
+  if (stroke.dash_count)
   {
-  case IUP_DRAW_STROKE_DASH:         return " stroke-dasharray=\"9,3\"";
-  case IUP_DRAW_STROKE_DOT:          return " stroke-dasharray=\"1,2\"";
-  case IUP_DRAW_STROKE_DASH_DOT:     return " stroke-dasharray=\"7,3,1,3\"";
-  case IUP_DRAW_STROKE_DASH_DOT_DOT: return " stroke-dasharray=\"7,3,1,3,1,3\"";
-  default: return "";
+    iSvgBufAppend(buf, " stroke-dasharray=\"");
+    for (i = 0; i < stroke.dash_count; i++)
+      iSvgBufPrintf(buf, "%s%.10g", i ? " " : "", stroke.dashes[i]);
+    iSvgBufAppend(buf, "\"");
+
+    if (stroke.dash_offset != 0)
+      iSvgBufPrintf(buf, " stroke-dashoffset=\"%.10g\"", stroke.dash_offset);
   }
+
+  if (stroke.cap != IUP_DRAW_CAP_BUTT)
+    iSvgBufPrintf(buf, " stroke-linecap=\"%s\"", stroke.cap == IUP_DRAW_CAP_ROUND ? "round" : "square");
+
+  if (stroke.join != IUP_DRAW_JOIN_MITER)
+    iSvgBufPrintf(buf, " stroke-linejoin=\"%s\"", stroke.join == IUP_DRAW_JOIN_ROUND ? "round" : "bevel");
+  else
+    iSvgBufPrintf(buf, " stroke-miterlimit=\"%.10g\"", IUP_DRAW_MITER_LIMIT);
 }
 
-static void iSvgStrokeAttrs(iSvgBuffer* buf, int r, int g, int b, int a, int style, int line_width)
+static void iSvgStrokeAttrs(iSvgCanvas* dc, iSvgBuffer* buf, int r, int g, int b, int a, int style, int line_width)
 {
-  iSvgBufPrintf(buf, " fill=\"none\" stroke=\"rgb(%d,%d,%d)\" stroke-opacity=\"%.3g\" stroke-width=\"%d\"%s",
-                r, g, b, iSvgAlphaVal(a), line_width, iSvgDashArray(style));
+  iSvgBufPrintf(buf, " fill=\"none\" stroke=\"rgb(%d,%d,%d)\" stroke-opacity=\"%.3g\" stroke-width=\"%d\"",
+                r, g, b, iSvgAlphaVal(a), line_width);
+  iSvgStrokeStyleAttrs(dc, buf, style);
 }
 
 static void iSvgFillAttrs(iSvgBuffer* buf, int r, int g, int b, int a)
@@ -181,12 +198,12 @@ static void iSvgFillAttrs(iSvgBuffer* buf, int r, int g, int b, int a)
                 r, g, b, iSvgAlphaVal(a));
 }
 
-static void iSvgStyleAttrs(iSvgBuffer* buf, int r, int g, int b, int a, int style, int line_width)
+static void iSvgStyleAttrs(iSvgCanvas* dc, iSvgBuffer* buf, int r, int g, int b, int a, int style, int line_width)
 {
   if (style == IUP_DRAW_FILL)
     iSvgFillAttrs(buf, r, g, b, a);
   else
-    iSvgStrokeAttrs(buf, r, g, b, a, style, line_width);
+    iSvgStrokeAttrs(dc, buf, r, g, b, a, style, line_width);
 }
 
 static void iSvgClipBegin(iSvgCanvas* dc, iSvgBuffer* buf)
@@ -220,12 +237,13 @@ static void iSvgTransformAttrs(iSvgCanvas* dc, iSvgBuffer* buf, double angle, in
 
 /* ---- Public API ---- */
 
-iSvgCanvas* iupSvgDrawCreateCanvas(int w, int h)
+iSvgCanvas* iupSvgDrawCreateCanvas(Ihandle* ih, int w, int h)
 {
   iSvgCanvas* dc = (iSvgCanvas*)calloc(1, sizeof(iSvgCanvas));
   if (!dc)
     return NULL;
 
+  dc->ih = ih;
   dc->w = w;
   dc->h = h;
   dc->matrix.a = 1;
@@ -284,7 +302,7 @@ void iupSvgDrawLine(iSvgCanvas* dc, int x1, int y1, int x2, int y2, const char* 
 
   iSvgClipBegin(dc, &dc->buf);
   iSvgBufPrintf(&dc->buf, "<line x1=\"%d\" y1=\"%d\" x2=\"%d\" y2=\"%d\"", x1, y1, x2, y2);
-  iSvgStrokeAttrs(&dc->buf, r, g, b, a, style, line_width);
+  iSvgStrokeAttrs(dc, &dc->buf, r, g, b, a, style, line_width);
   iSvgTransformAttrs(dc, &dc->buf, 0, 0, 0);
   iSvgBufAppend(&dc->buf, "/>\n");
   iSvgClipEnd(dc, &dc->buf);
@@ -305,7 +323,7 @@ void iupSvgDrawRectangle(iSvgCanvas* dc, int x1, int y1, int x2, int y2, const c
 
   iSvgClipBegin(dc, &dc->buf);
   iSvgBufPrintf(&dc->buf, "<rect x=\"%d\" y=\"%d\" width=\"%d\" height=\"%d\"", x1, y1, rw, rh);
-  iSvgStyleAttrs(&dc->buf, r, g, b, a, style, line_width);
+  iSvgStyleAttrs(dc, &dc->buf, r, g, b, a, style, line_width);
   iSvgTransformAttrs(dc, &dc->buf, 0, 0, 0);
   iSvgBufAppend(&dc->buf, "/>\n");
   iSvgClipEnd(dc, &dc->buf);
@@ -331,7 +349,7 @@ void iupSvgDrawRoundedRectangle(iSvgCanvas* dc, int x1, int y1, int x2, int y2, 
   iSvgClipBegin(dc, &dc->buf);
   iSvgBufPrintf(&dc->buf, "<rect x=\"%d\" y=\"%d\" width=\"%d\" height=\"%d\" rx=\"%.1f\" ry=\"%.1f\"",
                 x1, y1, x2 - x1, y2 - y1, radius, radius);
-  iSvgStyleAttrs(&dc->buf, r, g, b, a, style, line_width);
+  iSvgStyleAttrs(dc, &dc->buf, r, g, b, a, style, line_width);
   iSvgTransformAttrs(dc, &dc->buf, 0, 0, 0);
   iSvgBufAppend(&dc->buf, "/>\n");
   iSvgClipEnd(dc, &dc->buf);
@@ -357,7 +375,7 @@ void iupSvgDrawEllipse(iSvgCanvas* dc, int x1, int y1, int x2, int y2, const cha
   iSvgClipBegin(dc, &dc->buf);
   iSvgBufPrintf(&dc->buf, "<ellipse cx=\"%.1f\" cy=\"%.1f\" rx=\"%.1f\" ry=\"%.1f\"",
                 cx, cy, rx, ry);
-  iSvgStyleAttrs(&dc->buf, r, g, b, a, style, line_width);
+  iSvgStyleAttrs(dc, &dc->buf, r, g, b, a, style, line_width);
   iSvgTransformAttrs(dc, &dc->buf, 0, 0, 0);
   iSvgBufAppend(&dc->buf, "/>\n");
   iSvgClipEnd(dc, &dc->buf);
@@ -415,7 +433,7 @@ void iupSvgDrawArc(iSvgCanvas* dc, int x1, int y1, int x2, int y2, double a1, do
                   sx, sy, rx, ry, large_arc, sweep, ex, ey);
   }
 
-  iSvgStyleAttrs(&dc->buf, r, g, b, a, style, line_width);
+  iSvgStyleAttrs(dc, &dc->buf, r, g, b, a, style, line_width);
   iSvgTransformAttrs(dc, &dc->buf, 0, 0, 0);
   iSvgBufAppend(&dc->buf, "/>\n");
   iSvgClipEnd(dc, &dc->buf);
@@ -441,7 +459,7 @@ void iupSvgDrawPolygon(iSvgCanvas* dc, int* points, int count, const char* color
     iSvgBufPrintf(&dc->buf, "%d,%d", points[2 * i], points[2 * i + 1]);
   }
   iSvgBufAppend(&dc->buf, "\"");
-  iSvgStyleAttrs(&dc->buf, r, g, b, a, style, line_width);
+  iSvgStyleAttrs(dc, &dc->buf, r, g, b, a, style, line_width);
   iSvgTransformAttrs(dc, &dc->buf, 0, 0, 0);
   iSvgBufAppend(&dc->buf, "/>\n");
   iSvgClipEnd(dc, &dc->buf);
@@ -472,7 +490,7 @@ void iupSvgDrawBezier(iSvgCanvas* dc, int x1, int y1, int x2, int y2, int x3, in
   iSvgClipBegin(dc, &dc->buf);
   iSvgBufPrintf(&dc->buf, "<path d=\"M%d,%d C%d,%d %d,%d %d,%d\"",
                 x1, y1, x2, y2, x3, y3, x4, y4);
-  iSvgStyleAttrs(&dc->buf, r, g, b, a, style, line_width);
+  iSvgStyleAttrs(dc, &dc->buf, r, g, b, a, style, line_width);
   iSvgTransformAttrs(dc, &dc->buf, 0, 0, 0);
   iSvgBufAppend(&dc->buf, "/>\n");
   iSvgClipEnd(dc, &dc->buf);
@@ -486,7 +504,7 @@ void iupSvgDrawQuadraticBezier(iSvgCanvas* dc, int x1, int y1, int x2, int y2, i
   iSvgClipBegin(dc, &dc->buf);
   iSvgBufPrintf(&dc->buf, "<path d=\"M%d,%d Q%d,%d %d,%d\"",
                 x1, y1, x2, y2, x3, y3);
-  iSvgStyleAttrs(&dc->buf, r, g, b, a, style, line_width);
+  iSvgStyleAttrs(dc, &dc->buf, r, g, b, a, style, line_width);
   iSvgTransformAttrs(dc, &dc->buf, 0, 0, 0);
   iSvgBufAppend(&dc->buf, "/>\n");
   iSvgClipEnd(dc, &dc->buf);
@@ -680,15 +698,19 @@ void iupSvgDrawPathStroke(iSvgCanvas* dc, const IupPathSeg* segs, int count, con
   iSvgBufAppend(&dc->buf, "\"");
 
   if (src->type == IUP_SOURCE_LINEAR_GRADIENT)
-    iSvgBufPrintf(&dc->buf, " fill=\"none\" stroke=\"url(#lg%d)\" stroke-width=\"%d\"%s",
-                  gid, line_width, iSvgDashArray(style));
+  {
+    iSvgBufPrintf(&dc->buf, " fill=\"none\" stroke=\"url(#lg%d)\" stroke-width=\"%d\"", gid, line_width);
+    iSvgStrokeStyleAttrs(dc, &dc->buf, style);
+  }
   else if (src->type == IUP_SOURCE_RADIAL_GRADIENT)
-    iSvgBufPrintf(&dc->buf, " fill=\"none\" stroke=\"url(#rg%d)\" stroke-width=\"%d\"%s",
-                  gid, line_width, iSvgDashArray(style));
+  {
+    iSvgBufPrintf(&dc->buf, " fill=\"none\" stroke=\"url(#rg%d)\" stroke-width=\"%d\"", gid, line_width);
+    iSvgStrokeStyleAttrs(dc, &dc->buf, style);
+  }
   else
   {
     int r = iupDrawRed(src->color), g = iupDrawGreen(src->color), b = iupDrawBlue(src->color), a = iupDrawAlpha(src->color);
-    iSvgStrokeAttrs(&dc->buf, r, g, b, a, style, line_width);
+    iSvgStrokeAttrs(dc, &dc->buf, r, g, b, a, style, line_width);
   }
 
   iSvgTransformAttrs(dc, &dc->buf, 0, 0, 0);

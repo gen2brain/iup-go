@@ -36,12 +36,16 @@ EM_JS(void, iupwasmJsCanvasInit, (void), {
   globalThis.__iupRGBA = function(r, g, b, a) {
     return "rgba(" + r + "," + g + "," + b + "," + (a / 255) + ")";
   };
-  globalThis.__iupDash = function(ctx, style, lw) {
-    if (style == 2) ctx.setLineDash([9, 3]);
-    else if (style == 3) ctx.setLineDash([1, 2]);
-    else if (style == 4) ctx.setLineDash([7, 3, 1, 3]);
-    else if (style == 5) ctx.setLineDash([7, 3, 1, 3, 1, 3]);
-    else ctx.setLineDash([]);
+  globalThis.__iupDash = function(ctx, strokePtr, lw) {
+    var s = strokePtr >> 3;
+    var count = HEAPF64[s + 4], dash = [];
+    for (var i = 0; i < count; i++)
+      dash.push(HEAPF64[s + 5 + i]);
+    ctx.lineCap = ["butt", "round", "square"][HEAPF64[s]];
+    ctx.lineJoin = ["miter", "round", "bevel"][HEAPF64[s + 1]];
+    ctx.miterLimit = HEAPF64[s + 2];
+    ctx.setLineDash(dash);
+    ctx.lineDashOffset = HEAPF64[s + 3];
     ctx.lineWidth = lw < 1 ? 1 : lw;
   };
   globalThis.__iupCanvasOf = function(cid) {
@@ -87,9 +91,9 @@ EM_JS(int, iupwasmJsCanvasClientH, (int cid), {
   return el ? (el.clientHeight || el.height || 0) : 0;
 })
 
-EM_JS(void, iupwasmJsDrawLine, (int cid, int x1, int y1, int x2, int y2, int r, int g, int b, int a, int style, int lw), {
+EM_JS(void, iupwasmJsDrawLine, (int cid, int x1, int y1, int x2, int y2, int r, int g, int b, int a, int strokePtr, int lw), {
   var ctx = globalThis.__iupCtx(cid); if (!ctx) return;
-  globalThis.__iupDash(ctx, style, lw);
+  globalThis.__iupDash(ctx, strokePtr, lw);
   ctx.strokeStyle = globalThis.__iupRGBA(r, g, b, a);
   var o = (ctx.lineWidth % 2) ? 0.5 : 0;
   ctx.beginPath();
@@ -98,7 +102,7 @@ EM_JS(void, iupwasmJsDrawLine, (int cid, int x1, int y1, int x2, int y2, int r, 
   ctx.stroke();
 })
 
-EM_JS(void, iupwasmJsDrawRect, (int cid, int x1, int y1, int x2, int y2, int r, int g, int b, int a, int style, int lw), {
+EM_JS(void, iupwasmJsDrawRect, (int cid, int x1, int y1, int x2, int y2, int r, int g, int b, int a, int style, int strokePtr, int lw), {
   var ctx = globalThis.__iupCtx(cid); if (!ctx) return;
   var col = globalThis.__iupRGBA(r, g, b, a);
   if (style == 0) {  /* FILL */
@@ -106,14 +110,14 @@ EM_JS(void, iupwasmJsDrawRect, (int cid, int x1, int y1, int x2, int y2, int r, 
     ctx.fillStyle = col;
     ctx.fillRect(x1, y1, x2 - x1 + 1, y2 - y1 + 1);
   } else {
-    globalThis.__iupDash(ctx, style, lw);
+    globalThis.__iupDash(ctx, strokePtr, lw);
     ctx.strokeStyle = col;
     var o = (ctx.lineWidth % 2) ? 0.5 : 0;
     ctx.strokeRect(x1 + o, y1 + o, x2 - x1, y2 - y1);
   }
 })
 
-EM_JS(void, iupwasmJsDrawArc, (int cid, double xc, double yc, double rx, double ry, double a1, double a2, int r, int g, int b, int a, int style, int lw), {
+EM_JS(void, iupwasmJsDrawArc, (int cid, double xc, double yc, double rx, double ry, double a1, double a2, int r, int g, int b, int a, int style, int strokePtr, int lw), {
   var ctx = globalThis.__iupCtx(cid); if (!ctx) return;
   var col = globalThis.__iupRGBA(r, g, b, a);
   ctx.beginPath();
@@ -125,13 +129,13 @@ EM_JS(void, iupwasmJsDrawArc, (int cid, double xc, double yc, double rx, double 
     ctx.fillStyle = col;
     ctx.fill();
   } else {
-    globalThis.__iupDash(ctx, style, lw);
+    globalThis.__iupDash(ctx, strokePtr, lw);
     ctx.strokeStyle = col;
     ctx.stroke();
   }
 })
 
-EM_JS(void, iupwasmJsDrawEllipse, (int cid, double xc, double yc, double rx, double ry, int r, int g, int b, int a, int style, int lw), {
+EM_JS(void, iupwasmJsDrawEllipse, (int cid, double xc, double yc, double rx, double ry, int r, int g, int b, int a, int style, int strokePtr, int lw), {
   var ctx = globalThis.__iupCtx(cid); if (!ctx) return;
   var col = globalThis.__iupRGBA(r, g, b, a);
   ctx.beginPath();
@@ -141,13 +145,13 @@ EM_JS(void, iupwasmJsDrawEllipse, (int cid, double xc, double yc, double rx, dou
     ctx.fillStyle = col;
     ctx.fill();
   } else {
-    globalThis.__iupDash(ctx, style, lw);
+    globalThis.__iupDash(ctx, strokePtr, lw);
     ctx.strokeStyle = col;
     ctx.stroke();
   }
 })
 
-EM_JS(void, iupwasmJsDrawPolygon, (int cid, int ptr, int count, int r, int g, int b, int a, int style, int lw), {
+EM_JS(void, iupwasmJsDrawPolygon, (int cid, int ptr, int count, int r, int g, int b, int a, int style, int strokePtr, int lw), {
   var ctx = globalThis.__iupCtx(cid); if (!ctx) return;
   var col = globalThis.__iupRGBA(r, g, b, a);
   ctx.beginPath();
@@ -160,7 +164,7 @@ EM_JS(void, iupwasmJsDrawPolygon, (int cid, int ptr, int count, int r, int g, in
     ctx.fillStyle = col;
     ctx.fill();
   } else {
-    globalThis.__iupDash(ctx, style, lw);
+    globalThis.__iupDash(ctx, strokePtr, lw);
     ctx.strokeStyle = col;
     ctx.stroke();
   }
@@ -173,7 +177,7 @@ EM_JS(void, iupwasmJsDrawPixel, (int cid, int x, int y, int r, int g, int b, int
   ctx.fillRect(x, y, 1, 1);
 })
 
-EM_JS(void, iupwasmJsDrawRoundRect, (int cid, int x1, int y1, int x2, int y2, int radius, int r, int g, int b, int a, int style, int lw), {
+EM_JS(void, iupwasmJsDrawRoundRect, (int cid, int x1, int y1, int x2, int y2, int radius, int r, int g, int b, int a, int style, int strokePtr, int lw), {
   var ctx = globalThis.__iupCtx(cid); if (!ctx) return;
   var col = globalThis.__iupRGBA(r, g, b, a);
   var w = x2 - x1 + 1, h = y2 - y1 + 1;
@@ -193,15 +197,15 @@ EM_JS(void, iupwasmJsDrawRoundRect, (int cid, int x1, int y1, int x2, int y2, in
     ctx.fillStyle = col;
     ctx.fill();
   } else {
-    globalThis.__iupDash(ctx, style, lw);
+    globalThis.__iupDash(ctx, strokePtr, lw);
     ctx.strokeStyle = col;
     ctx.stroke();
   }
 })
 
-EM_JS(void, iupwasmJsDrawBezier, (int cid, int x1, int y1, int x2, int y2, int x3, int y3, int x4, int y4, int r, int g, int b, int a, int style, int lw), {
+EM_JS(void, iupwasmJsDrawBezier, (int cid, int x1, int y1, int x2, int y2, int x3, int y3, int x4, int y4, int r, int g, int b, int a, int strokePtr, int lw), {
   var ctx = globalThis.__iupCtx(cid); if (!ctx) return;
-  globalThis.__iupDash(ctx, style, lw);
+  globalThis.__iupDash(ctx, strokePtr, lw);
   ctx.strokeStyle = globalThis.__iupRGBA(r, g, b, a);
   ctx.beginPath();
   ctx.moveTo(x1, y1);
@@ -209,9 +213,9 @@ EM_JS(void, iupwasmJsDrawBezier, (int cid, int x1, int y1, int x2, int y2, int x
   ctx.stroke();
 })
 
-EM_JS(void, iupwasmJsDrawQuadBezier, (int cid, int x1, int y1, int x2, int y2, int x3, int y3, int r, int g, int b, int a, int style, int lw), {
+EM_JS(void, iupwasmJsDrawQuadBezier, (int cid, int x1, int y1, int x2, int y2, int x3, int y3, int r, int g, int b, int a, int strokePtr, int lw), {
   var ctx = globalThis.__iupCtx(cid); if (!ctx) return;
-  globalThis.__iupDash(ctx, style, lw);
+  globalThis.__iupDash(ctx, strokePtr, lw);
   ctx.strokeStyle = globalThis.__iupRGBA(r, g, b, a);
   ctx.beginPath();
   ctx.moveTo(x1, y1);
@@ -422,21 +426,44 @@ IUP_SDK_API void iupdrvDrawGetSize(IdrawCanvas* dc, int* w, int* h)
   if (h) *h = dc ? dc->h : 0;
 }
 
+#define IUPWASM_STROKE_DATA (IUP_DRAW_MAX_DASHES + 5)
+
+static void wasmDrawStrokeArray(IdrawCanvas* dc, int style, double* stroke_data)
+{
+  IupDrawStroke stroke;
+  int i;
+
+  iupDrawGetStroke(dc->ih, style, &stroke);
+
+  stroke_data[0] = stroke.cap;
+  stroke_data[1] = stroke.join;
+  stroke_data[2] = IUP_DRAW_MITER_LIMIT;
+  stroke_data[3] = stroke.dash_offset;
+  stroke_data[4] = stroke.dash_count;
+  for (i = 0; i < stroke.dash_count; i++)
+    stroke_data[5 + i] = stroke.dashes[i];
+}
+
 IUP_SDK_API void iupdrvDrawLine(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color, int style, int line_width)
 {
-  iupwasmJsDrawLine(dc->cid, x1, y1, x2, y2, iupDrawRed(color), iupDrawGreen(color), iupDrawBlue(color), iupDrawAlpha(color), style, line_width);
+  double stroke_data[IUPWASM_STROKE_DATA];
+  wasmDrawStrokeArray(dc, style, stroke_data);
+  iupwasmJsDrawLine(dc->cid, x1, y1, x2, y2, iupDrawRed(color), iupDrawGreen(color), iupDrawBlue(color), iupDrawAlpha(color), (int)(intptr_t)stroke_data, line_width);
 }
 
 IUP_SDK_API void iupdrvDrawRectangle(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color, int style, int line_width)
 {
+  double stroke_data[IUPWASM_STROKE_DATA];
   iupDrawCheckSwapCoord(x1, x2);
   iupDrawCheckSwapCoord(y1, y2);
-  iupwasmJsDrawRect(dc->cid, x1, y1, x2, y2, iupDrawRed(color), iupDrawGreen(color), iupDrawBlue(color), iupDrawAlpha(color), style, line_width);
+  wasmDrawStrokeArray(dc, style, stroke_data);
+  iupwasmJsDrawRect(dc->cid, x1, y1, x2, y2, iupDrawRed(color), iupDrawGreen(color), iupDrawBlue(color), iupDrawAlpha(color), style, (int)(intptr_t)stroke_data, line_width);
 }
 
 IUP_SDK_API void iupdrvDrawArc(IdrawCanvas* dc, int x1, int y1, int x2, int y2, double a1, double a2, long color, int style, int line_width)
 {
   double xc, yc, w, h, s1, s2, tmp;
+  double stroke_data[IUPWASM_STROKE_DATA];
 
   iupDrawCheckSwapCoord(x1, x2);
   iupDrawCheckSwapCoord(y1, y2);
@@ -453,12 +480,14 @@ IUP_SDK_API void iupdrvDrawArc(IdrawCanvas* dc, int x1, int y1, int x2, int y2, 
   s2 = -a2 * IUP_DEG2RAD;
   if (s1 > s2) { tmp = s1; s1 = s2; s2 = tmp; }
 
-  iupwasmJsDrawArc(dc->cid, xc, yc, w / 2.0, h / 2.0, s1, s2, iupDrawRed(color), iupDrawGreen(color), iupDrawBlue(color), iupDrawAlpha(color), style, line_width);
+  wasmDrawStrokeArray(dc, style, stroke_data);
+  iupwasmJsDrawArc(dc->cid, xc, yc, w / 2.0, h / 2.0, s1, s2, iupDrawRed(color), iupDrawGreen(color), iupDrawBlue(color), iupDrawAlpha(color), style, (int)(intptr_t)stroke_data, line_width);
 }
 
 IUP_SDK_API void iupdrvDrawEllipse(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color, int style, int line_width)
 {
   double xc, yc, w, h;
+  double stroke_data[IUPWASM_STROKE_DATA];
 
   iupDrawCheckSwapCoord(x1, x2);
   iupDrawCheckSwapCoord(y1, y2);
@@ -468,14 +497,17 @@ IUP_SDK_API void iupdrvDrawEllipse(IdrawCanvas* dc, int x1, int y1, int x2, int 
   xc = x1 + w / 2.0;
   yc = y1 + h / 2.0;
 
-  iupwasmJsDrawEllipse(dc->cid, xc, yc, w / 2.0, h / 2.0, iupDrawRed(color), iupDrawGreen(color), iupDrawBlue(color), iupDrawAlpha(color), style, line_width);
+  wasmDrawStrokeArray(dc, style, stroke_data);
+  iupwasmJsDrawEllipse(dc->cid, xc, yc, w / 2.0, h / 2.0, iupDrawRed(color), iupDrawGreen(color), iupDrawBlue(color), iupDrawAlpha(color), style, (int)(intptr_t)stroke_data, line_width);
 }
 
 IUP_SDK_API void iupdrvDrawPolygon(IdrawCanvas* dc, int* points, int count, long color, int style, int line_width)
 {
+  double stroke_data[IUPWASM_STROKE_DATA];
   if (!points || count < 2)
     return;
-  iupwasmJsDrawPolygon(dc->cid, (int)(intptr_t)points, count, iupDrawRed(color), iupDrawGreen(color), iupDrawBlue(color), iupDrawAlpha(color), style, line_width);
+  wasmDrawStrokeArray(dc, style, stroke_data);
+  iupwasmJsDrawPolygon(dc->cid, (int)(intptr_t)points, count, iupDrawRed(color), iupDrawGreen(color), iupDrawBlue(color), iupDrawAlpha(color), style, (int)(intptr_t)stroke_data, line_width);
 }
 
 IUP_SDK_API void iupdrvDrawPixel(IdrawCanvas* dc, int x, int y, long color)
@@ -485,19 +517,25 @@ IUP_SDK_API void iupdrvDrawPixel(IdrawCanvas* dc, int x, int y, long color)
 
 IUP_SDK_API void iupdrvDrawRoundedRectangle(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int corner_radius, long color, int style, int line_width)
 {
+  double stroke_data[IUPWASM_STROKE_DATA];
   iupDrawCheckSwapCoord(x1, x2);
   iupDrawCheckSwapCoord(y1, y2);
-  iupwasmJsDrawRoundRect(dc->cid, x1, y1, x2, y2, corner_radius, iupDrawRed(color), iupDrawGreen(color), iupDrawBlue(color), iupDrawAlpha(color), style, line_width);
+  wasmDrawStrokeArray(dc, style, stroke_data);
+  iupwasmJsDrawRoundRect(dc->cid, x1, y1, x2, y2, corner_radius, iupDrawRed(color), iupDrawGreen(color), iupDrawBlue(color), iupDrawAlpha(color), style, (int)(intptr_t)stroke_data, line_width);
 }
 
 IUP_SDK_API void iupdrvDrawBezier(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int x3, int y3, int x4, int y4, long color, int style, int line_width)
 {
-  iupwasmJsDrawBezier(dc->cid, x1, y1, x2, y2, x3, y3, x4, y4, iupDrawRed(color), iupDrawGreen(color), iupDrawBlue(color), iupDrawAlpha(color), style, line_width);
+  double stroke_data[IUPWASM_STROKE_DATA];
+  wasmDrawStrokeArray(dc, style, stroke_data);
+  iupwasmJsDrawBezier(dc->cid, x1, y1, x2, y2, x3, y3, x4, y4, iupDrawRed(color), iupDrawGreen(color), iupDrawBlue(color), iupDrawAlpha(color), (int)(intptr_t)stroke_data, line_width);
 }
 
 IUP_SDK_API void iupdrvDrawQuadraticBezier(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int x3, int y3, long color, int style, int line_width)
 {
-  iupwasmJsDrawQuadBezier(dc->cid, x1, y1, x2, y2, x3, y3, iupDrawRed(color), iupDrawGreen(color), iupDrawBlue(color), iupDrawAlpha(color), style, line_width);
+  double stroke_data[IUPWASM_STROKE_DATA];
+  wasmDrawStrokeArray(dc, style, stroke_data);
+  iupwasmJsDrawQuadBezier(dc->cid, x1, y1, x2, y2, x3, y3, iupDrawRed(color), iupDrawGreen(color), iupDrawBlue(color), iupDrawAlpha(color), (int)(intptr_t)stroke_data, line_width);
 }
 
 static void wasmDrawGradientArrays(const long* colors, const float* offsets, int count, unsigned char* rgba, float* offs)
@@ -622,9 +660,11 @@ IUP_SDK_API void iupdrvDrawGetClipRect(IdrawCanvas* dc, int* x1, int* y1, int* x
 
 IUP_SDK_API void iupdrvDrawSelectRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2)
 {
+  double stroke_data[IUPWASM_STROKE_DATA];
   iupDrawCheckSwapCoord(x1, x2);
   iupDrawCheckSwapCoord(y1, y2);
-  iupwasmJsDrawRect(dc->cid, x1, y1, x2, y2, 0, 0, 255, 153, IUP_DRAW_FILL, 1);
+  wasmDrawStrokeArray(dc, IUP_DRAW_FILL, stroke_data);
+  iupwasmJsDrawRect(dc->cid, x1, y1, x2, y2, 0, 0, 255, 153, IUP_DRAW_FILL, (int)(intptr_t)stroke_data, 1);
 }
 
 IUP_SDK_API void iupdrvDrawFocusRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2)
@@ -706,7 +746,7 @@ EM_JS(void, iupwasmJsDrawPathFill, (int cid, int segsPtr, int count, int sourceT
   ctx.fill(p, rule == 1 ? "evenodd" : "nonzero");
 })
 
-EM_JS(void, iupwasmJsDrawPathStroke, (int cid, int segsPtr, int count, int sourceType, long color, int x1, int y1, int x2, int y2, float angle, int cx, int cy, int radius, int rgbaPtr, int offsPtr, int gradCount, int style, int lw), {
+EM_JS(void, iupwasmJsDrawPathStroke, (int cid, int segsPtr, int count, int sourceType, long color, int x1, int y1, int x2, int y2, float angle, int cx, int cy, int radius, int rgbaPtr, int offsPtr, int gradCount, int strokePtr, int lw), {
   var ctx = globalThis.__iupCtx(cid); if (!ctx) return;
   var p = new Path2D();
   for (var i = 0; i < count; i++)
@@ -745,7 +785,7 @@ EM_JS(void, iupwasmJsDrawPathStroke, (int cid, int segsPtr, int count, int sourc
       break;
     }
   }
-  globalThis.__iupDash(ctx, style, lw);
+  globalThis.__iupDash(ctx, strokePtr, lw);
   if (sourceType == 0)
     ctx.strokeStyle = globalThis.__iupRGBA((color >> 16) & 0xFF, (color >> 8) & 0xFF, color & 0xFF, (~(color >> 24)) & 0xFF);
   else if (sourceType == 1)
@@ -856,12 +896,14 @@ IUP_SDK_API void iupdrvDrawPathStroke(IdrawCanvas* dc, const IupPathSeg* segs, i
 {
   unsigned char rgba[IUP_GRADIENT_MAX_STOPS * 4];
   float offs[IUP_GRADIENT_MAX_STOPS];
+  double stroke_data[IUPWASM_STROKE_DATA];
   if (src->type != IUP_SOURCE_SOLID)
     wasmDrawSourceArrays(src, rgba, offs);
+  wasmDrawStrokeArray(dc, style, stroke_data);
   iupwasmJsDrawPathStroke(dc->cid, (int)(intptr_t)segs, count, src->type, src->color,
     src->x1, src->y1, src->x2, src->y2, src->angle,
     src->cx, src->cy, src->radius,
-    (int)(intptr_t)rgba, (int)(intptr_t)offs, src->count, style, line_width);
+    (int)(intptr_t)rgba, (int)(intptr_t)offs, src->count, (int)(intptr_t)stroke_data, line_width);
 }
 
 IUP_SDK_API void iupdrvDrawSetClipPath(IdrawCanvas* dc, const IupPathSeg* segs, int count, int rule)

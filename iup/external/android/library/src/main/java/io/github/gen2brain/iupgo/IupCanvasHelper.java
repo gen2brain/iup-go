@@ -374,24 +374,31 @@ public final class IupCanvasHelper
         return p;
     }
 
+    private static int strokeCap = 0;
+    private static int strokeJoin = 0;
+    private static float[] strokeDashes = null;
+    private static float strokeDashOffset = 0;
+
+    @Keep
+    public static void setStroke(int cap, int join, float[] dashes, float offset)
+    {
+        strokeCap = cap;
+        strokeJoin = join;
+        strokeDashes = dashes;
+        strokeDashOffset = offset;
+    }
+
     private static Paint strokePaint(int color, int style, int width)
     {
         Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
         p.setStyle(Paint.Style.STROKE);
         p.setColor(color);
         p.setStrokeWidth(Math.max(width, 1));
-        switch (style)
-        {
-            case STYLE_STROKE_DASH:
-                p.setPathEffect(new DashPathEffect(new float[]{9, 3}, 0)); break;
-            case STYLE_STROKE_DOT:
-                p.setPathEffect(new DashPathEffect(new float[]{1, 2}, 0)); break;
-            case STYLE_STROKE_DASH_DOT:
-                p.setPathEffect(new DashPathEffect(new float[]{7, 3, 1, 3}, 0)); break;
-            case STYLE_STROKE_DASH_DOT_DOT:
-                p.setPathEffect(new DashPathEffect(new float[]{7, 3, 1, 3, 1, 3}, 0)); break;
-            default: break;
-        }
+        p.setStrokeCap(strokeCap == 1 ? Paint.Cap.ROUND : strokeCap == 2 ? Paint.Cap.SQUARE : Paint.Cap.BUTT);
+        p.setStrokeJoin(strokeJoin == 1 ? Paint.Join.ROUND : strokeJoin == 2 ? Paint.Join.BEVEL : Paint.Join.MITER);
+        p.setStrokeMiter(10.0f);
+        if (strokeDashes != null)
+            p.setPathEffect(new DashPathEffect(strokeDashes, strokeDashOffset));
         return p;
     }
 

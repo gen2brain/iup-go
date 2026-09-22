@@ -105,38 +105,31 @@ static void cocoaTouchDrawSetFillColor(CGContextRef ctx, long color)
 		iupDrawAlpha(color) / 255.0);
 }
 
-static void cocoaTouchDrawSetLineStyle(CGContextRef ctx, int style)
+static void cocoaTouchDrawSetLineStyle(IdrawCanvas* dc, int style)
 {
-	switch (style)
+	CGContextRef ctx = dc->cgContext;
+	IupDrawStroke stroke;
+	CGFloat dashes[IUP_DRAW_MAX_DASHES];
+	int i;
+
+	iupDrawGetStroke(dc->ih, style, &stroke);
+
+	CGContextSetLineCap(ctx, stroke.cap == IUP_DRAW_CAP_ROUND ? kCGLineCapRound :
+	                         stroke.cap == IUP_DRAW_CAP_SQUARE ? kCGLineCapSquare : kCGLineCapButt);
+	CGContextSetLineJoin(ctx, stroke.join == IUP_DRAW_JOIN_ROUND ? kCGLineJoinRound :
+	                          stroke.join == IUP_DRAW_JOIN_BEVEL ? kCGLineJoinBevel : kCGLineJoinMiter);
+	CGContextSetMiterLimit(ctx, (CGFloat)IUP_DRAW_MITER_LIMIT);
+
+	if (stroke.dash_count == 0)
 	{
-		case IUP_DRAW_STROKE_DASH:
-		{
-			CGFloat dashes[2] = { 9.0, 3.0 };
-			CGContextSetLineDash(ctx, 0, dashes, 2);
-			break;
-		}
-		case IUP_DRAW_STROKE_DOT:
-		{
-			CGFloat dashes[2] = { 1.0, 2.0 };
-			CGContextSetLineDash(ctx, 0, dashes, 2);
-			break;
-		}
-		case IUP_DRAW_STROKE_DASH_DOT:
-		{
-			CGFloat dashes[4] = { 7.0, 3.0, 1.0, 3.0 };
-			CGContextSetLineDash(ctx, 0, dashes, 4);
-			break;
-		}
-		case IUP_DRAW_STROKE_DASH_DOT_DOT:
-		{
-			CGFloat dashes[6] = { 7.0, 3.0, 1.0, 3.0, 1.0, 3.0 };
-			CGContextSetLineDash(ctx, 0, dashes, 6);
-			break;
-		}
-		default:
-			CGContextSetLineDash(ctx, 0, NULL, 0);
-			break;
+		CGContextSetLineDash(ctx, 0, NULL, 0);
+		return;
 	}
+
+	for (i = 0; i < stroke.dash_count; i++)
+		dashes[i] = (CGFloat)stroke.dashes[i];
+
+	CGContextSetLineDash(ctx, (CGFloat)stroke.dash_offset, dashes, stroke.dash_count);
 }
 
 static void cocoaTouchDrawApplyTransform(IdrawCanvas* dc, CGAffineTransform from, CGAffineTransform to)
@@ -342,7 +335,7 @@ IUP_SDK_API void iupdrvDrawRectangle(IdrawCanvas* dc, int x1, int y1, int x2, in
 	{
 		cocoaTouchDrawSetStrokeColor(dc->cgContext, color);
 		CGContextSetLineWidth(dc->cgContext, (CGFloat)line_width);
-		cocoaTouchDrawSetLineStyle(dc->cgContext, style);
+		cocoaTouchDrawSetLineStyle(dc, style);
 		if (line_width == 1)
 		{
 			CGContextStrokeRect(dc->cgContext, CGRectInset(r, 0.5, 0.5));
@@ -359,7 +352,7 @@ IUP_SDK_API void iupdrvDrawLine(IdrawCanvas* dc, int x1, int y1, int x2, int y2,
 	if (!dc) return;
 	cocoaTouchDrawSetStrokeColor(dc->cgContext, color);
 	CGContextSetLineWidth(dc->cgContext, (CGFloat)line_width);
-	cocoaTouchDrawSetLineStyle(dc->cgContext, style);
+	cocoaTouchDrawSetLineStyle(dc, style);
 
 	CGContextBeginPath(dc->cgContext);
 	if (line_width == 1)
@@ -422,7 +415,7 @@ IUP_SDK_API void iupdrvDrawArc(IdrawCanvas* dc, int x1, int y1, int x2, int y2, 
 	{
 		cocoaTouchDrawSetStrokeColor(dc->cgContext, color);
 		CGContextSetLineWidth(dc->cgContext, (CGFloat)line_width);
-		cocoaTouchDrawSetLineStyle(dc->cgContext, style);
+		cocoaTouchDrawSetLineStyle(dc, style);
 
 		if (w == h)
 		{
@@ -466,7 +459,7 @@ IUP_SDK_API void iupdrvDrawEllipse(IdrawCanvas* dc, int x1, int y1, int x2, int 
 	{
 		cocoaTouchDrawSetStrokeColor(dc->cgContext, color);
 		CGContextSetLineWidth(dc->cgContext, (CGFloat)line_width);
-		cocoaTouchDrawSetLineStyle(dc->cgContext, style);
+		cocoaTouchDrawSetLineStyle(dc, style);
 		CGContextStrokePath(dc->cgContext);
 	}
 }
@@ -483,7 +476,7 @@ IUP_SDK_API void iupdrvDrawPolygon(IdrawCanvas* dc, int* points, int count, long
 	{
 		cocoaTouchDrawSetStrokeColor(dc->cgContext, color);
 		CGContextSetLineWidth(dc->cgContext, (CGFloat)line_width);
-		cocoaTouchDrawSetLineStyle(dc->cgContext, style);
+		cocoaTouchDrawSetLineStyle(dc, style);
 	}
 
 	CGContextBeginPath(dc->cgContext);
@@ -528,7 +521,7 @@ IUP_SDK_API void iupdrvDrawRoundedRectangle(IdrawCanvas* dc, int x1, int y1, int
 	{
 		cocoaTouchDrawSetStrokeColor(dc->cgContext, color);
 		CGContextSetLineWidth(dc->cgContext, (CGFloat)line_width);
-		cocoaTouchDrawSetLineStyle(dc->cgContext, style);
+		cocoaTouchDrawSetLineStyle(dc, style);
 	}
 
 	CGRect rect = CGRectMake(x1, y1, w, h);
@@ -555,7 +548,7 @@ IUP_SDK_API void iupdrvDrawBezier(IdrawCanvas* dc, int x1, int y1, int x2, int y
 	{
 		cocoaTouchDrawSetStrokeColor(dc->cgContext, color);
 		CGContextSetLineWidth(dc->cgContext, (CGFloat)line_width);
-		cocoaTouchDrawSetLineStyle(dc->cgContext, style);
+		cocoaTouchDrawSetLineStyle(dc, style);
 	}
 
 	CGContextBeginPath(dc->cgContext);
@@ -749,7 +742,7 @@ IUP_SDK_API void iupdrvDrawPathStroke(IdrawCanvas* dc, const IupPathSeg* segs, i
 	{
 		cocoaTouchDrawSetStrokeColor(dc->cgContext, src->color);
 		CGContextSetLineWidth(dc->cgContext, (CGFloat)line_width);
-		cocoaTouchDrawSetLineStyle(dc->cgContext, style);
+		cocoaTouchDrawSetLineStyle(dc, style);
 		CGContextStrokePath(dc->cgContext);
 		return;
 	}
@@ -759,7 +752,7 @@ IUP_SDK_API void iupdrvDrawPathStroke(IdrawCanvas* dc, const IupPathSeg* segs, i
 
 	CGContextSaveGState(dc->cgContext);
 	CGContextSetLineWidth(dc->cgContext, (CGFloat)line_width);
-	cocoaTouchDrawSetLineStyle(dc->cgContext, style);
+	cocoaTouchDrawSetLineStyle(dc, style);
 	CGContextReplacePathWithStrokedPath(dc->cgContext);
 	CGContextClip(dc->cgContext);
 	cocoaTouchDrawGradient(dc->cgContext, gradient, src);

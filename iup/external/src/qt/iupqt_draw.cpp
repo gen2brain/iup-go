@@ -14,6 +14,7 @@
 #include <QPixmap>
 #include <QImage>
 #include <QPainterPath>
+#include <QVector>
 #include <QTextLayout>
 #include <QTextOption>
 #include <cmath>
@@ -77,6 +78,34 @@ static void qtDrawGetColor(long color, QColor& qcolor)
   b = iupDrawBlue(color);
   a = iupDrawAlpha(color);
   qcolor.setRgb(r, g, b, a);
+}
+
+static void qtDrawApplyStroke(QPen& pen, IdrawCanvas* dc, int style, int line_width)
+{
+  IupDrawStroke stroke;
+  iupDrawGetStroke(dc->ih, style, &stroke);
+
+  pen.setWidth(line_width);
+
+  pen.setCapStyle(stroke.cap == IUP_DRAW_CAP_ROUND ? Qt::RoundCap :
+                  stroke.cap == IUP_DRAW_CAP_SQUARE ? Qt::SquareCap : Qt::FlatCap);
+  pen.setJoinStyle(stroke.join == IUP_DRAW_JOIN_ROUND ? Qt::RoundJoin :
+                   stroke.join == IUP_DRAW_JOIN_BEVEL ? Qt::BevelJoin : Qt::MiterJoin);
+  pen.setMiterLimit((qreal)(IUP_DRAW_MITER_LIMIT / 2.0));
+
+  if (stroke.dash_count > 0)
+  {
+    double width = line_width > 0 ? (double)line_width : 1.0;
+    QVector<qreal> pattern;
+    pattern.reserve(stroke.dash_count);
+    for (int i = 0; i < stroke.dash_count; i++)
+      pattern << (qreal)(stroke.dashes[i] / width);
+
+    pen.setDashPattern(pattern);
+    pen.setDashOffset((qreal)(stroke.dash_offset / width));
+  }
+  else
+    pen.setStyle(Qt::SolidLine);
 }
 
 /****************************************************************************
@@ -379,29 +408,7 @@ extern "C" IUP_SDK_API void iupdrvDrawLine(IdrawCanvas* dc, int x1, int y1, int 
   qtDrawGetColor(color, qcolor);
 
   QPen pen(qcolor);
-  pen.setWidth(line_width);
-
-  switch (style)
-  {
-    case IUP_DRAW_STROKE_DASH:
-      pen.setStyle(Qt::DashLine);
-      break;
-    case IUP_DRAW_STROKE_DOT:
-      pen.setStyle(Qt::DotLine);
-      break;
-    case IUP_DRAW_STROKE_DASH_DOT:
-      pen.setStyle(Qt::DashDotLine);
-      break;
-    case IUP_DRAW_STROKE_DASH_DOT_DOT:
-      pen.setStyle(Qt::DashDotDotLine);
-      break;
-    default:
-      pen.setStyle(Qt::SolidLine);
-      break;
-  }
-
-  pen.setCapStyle(Qt::FlatCap);
-  pen.setJoinStyle(Qt::MiterJoin);
+  qtDrawApplyStroke(pen, dc, style, line_width);
 
   dc->painter->setPen(pen);
   dc->painter->drawLine(x1, y1, x2, y2);
@@ -432,8 +439,7 @@ extern "C" IUP_SDK_API void iupdrvDrawRectangle(IdrawCanvas* dc, int x1, int y1,
   else
   {
     QPen pen(qcolor);
-    pen.setWidth(line_width);
-    pen.setStyle(Qt::SolidLine);
+    qtDrawApplyStroke(pen, dc, style, line_width);
 
     dc->painter->setPen(pen);
     dc->painter->setBrush(Qt::NoBrush);
@@ -475,8 +481,7 @@ extern "C" IUP_SDK_API void iupdrvDrawArc(IdrawCanvas* dc, int x1, int y1, int x
   else
   {
     QPen pen(qcolor);
-    pen.setWidth(line_width);
-    pen.setStyle(Qt::SolidLine);
+    qtDrawApplyStroke(pen, dc, style, line_width);
 
     dc->painter->setPen(pen);
     dc->painter->setBrush(Qt::NoBrush);
@@ -511,8 +516,7 @@ extern "C" IUP_SDK_API void iupdrvDrawEllipse(IdrawCanvas* dc, int x1, int y1, i
   else
   {
     QPen pen(qcolor);
-    pen.setWidth(line_width);
-    pen.setStyle(Qt::SolidLine);
+    qtDrawApplyStroke(pen, dc, style, line_width);
 
     dc->painter->setPen(pen);
     dc->painter->setBrush(Qt::NoBrush);
@@ -553,8 +557,7 @@ extern "C" IUP_SDK_API void iupdrvDrawPolygon(IdrawCanvas* dc, int* points, int 
   else
   {
     QPen pen(qcolor);
-    pen.setWidth(line_width);
-    pen.setStyle(Qt::SolidLine);
+    qtDrawApplyStroke(pen, dc, style, line_width);
 
     dc->painter->setPen(pen);
     dc->painter->setBrush(Qt::NoBrush);
@@ -609,8 +612,7 @@ extern "C" IUP_SDK_API void iupdrvDrawRoundedRectangle(IdrawCanvas* dc, int x1, 
   else
   {
     QPen pen(qcolor);
-    pen.setWidth(line_width);
-    pen.setStyle(Qt::SolidLine);
+    qtDrawApplyStroke(pen, dc, style, line_width);
 
     dc->painter->setPen(pen);
     dc->painter->setBrush(Qt::NoBrush);
@@ -643,8 +645,7 @@ extern "C" IUP_SDK_API void iupdrvDrawBezier(IdrawCanvas* dc, int x1, int y1, in
   else
   {
     QPen pen(qcolor);
-    pen.setWidth(line_width);
-    pen.setStyle(Qt::SolidLine);
+    qtDrawApplyStroke(pen, dc, style, line_width);
 
     dc->painter->setPen(pen);
     dc->painter->setBrush(Qt::NoBrush);
@@ -677,8 +678,7 @@ extern "C" IUP_SDK_API void iupdrvDrawQuadraticBezier(IdrawCanvas* dc, int x1, i
   else
   {
     QPen pen(qcolor);
-    pen.setWidth(line_width);
-    pen.setStyle(Qt::SolidLine);
+    qtDrawApplyStroke(pen, dc, style, line_width);
 
     dc->painter->setPen(pen);
     dc->painter->setBrush(Qt::NoBrush);
@@ -699,26 +699,7 @@ void qtDrawPolyline(IdrawCanvas* dc, int* points, int count, long color, int sty
   qtDrawGetColor(color, qcolor);
 
   QPen pen(qcolor);
-  pen.setWidth(line_width);
-
-  switch (style)
-  {
-    case IUP_DRAW_STROKE_DASH:
-      pen.setStyle(Qt::DashLine);
-      break;
-    case IUP_DRAW_STROKE_DOT:
-      pen.setStyle(Qt::DotLine);
-      break;
-    case IUP_DRAW_STROKE_DASH_DOT:
-      pen.setStyle(Qt::DashDotLine);
-      break;
-    case IUP_DRAW_STROKE_DASH_DOT_DOT:
-      pen.setStyle(Qt::DashDotDotLine);
-      break;
-    default:
-      pen.setStyle(Qt::SolidLine);
-      break;
-  }
+  qtDrawApplyStroke(pen, dc, style, line_width);
 
   dc->painter->setPen(pen);
   dc->painter->setBrush(Qt::NoBrush);
@@ -760,8 +741,7 @@ void qtDrawRoundedRectangle(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int
   else
   {
     QPen pen(qcolor);
-    pen.setWidth(line_width);
-    pen.setStyle(Qt::SolidLine);
+    qtDrawApplyStroke(pen, dc, style, line_width);
 
     dc->painter->setPen(pen);
     dc->painter->setBrush(Qt::NoBrush);
@@ -979,28 +959,6 @@ static void qtDrawSetSource(IdrawCanvas* dc, const IupDrawSource* src)
   }
 }
 
-static void qtDrawSetPenStyle(QPen& pen, int style)
-{
-  switch (style)
-  {
-  case IUP_DRAW_STROKE_DASH:
-    pen.setStyle(Qt::DashLine);
-    break;
-  case IUP_DRAW_STROKE_DOT:
-    pen.setStyle(Qt::DotLine);
-    break;
-  case IUP_DRAW_STROKE_DASH_DOT:
-    pen.setStyle(Qt::DashDotLine);
-    break;
-  case IUP_DRAW_STROKE_DASH_DOT_DOT:
-    pen.setStyle(Qt::DashDotDotLine);
-    break;
-  default:
-    pen.setStyle(Qt::SolidLine);
-    break;
-  }
-}
-
 static void qtDrawSetPen(IdrawCanvas* dc, const IupDrawSource* src, int style, int line_width)
 {
   QPen pen;
@@ -1022,12 +980,9 @@ static void qtDrawSetPen(IdrawCanvas* dc, const IupDrawSource* src, int style, i
     QColor qcolor;
     qtDrawGetColor(src->color, qcolor);
     pen = QPen(qcolor);
-    pen.setWidth(line_width);
   }
 
-  qtDrawSetPenStyle(pen, style);
-  pen.setCapStyle(Qt::FlatCap);
-  pen.setJoinStyle(Qt::MiterJoin);
+  qtDrawApplyStroke(pen, dc, style, line_width);
   dc->painter->setPen(pen);
   dc->painter->setBrush(Qt::NoBrush);
 }

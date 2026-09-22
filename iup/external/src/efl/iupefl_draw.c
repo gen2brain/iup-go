@@ -163,8 +163,8 @@ static void iDrawTransformShape(const IdrawCanvas* dc, Efl_VG* shape, int stroke
       efl_gfx_shape_stroke_dash_get(shape, &dash, &dash_count);
       if (dash && dash_count)
       {
-        Efl_Gfx_Dash scaled[4];
-        for (i = 0; i < dash_count && i < 4; i++)
+        Efl_Gfx_Dash scaled[IUP_DRAW_MAX_DASHES / 2];
+        for (i = 0; i < dash_count && i < IUP_DRAW_MAX_DASHES / 2; i++)
         {
           scaled[i].length = dash[i].length * scale;
           scaled[i].gap = dash[i].gap * scale;
@@ -270,34 +270,39 @@ static int iDrawHasClip(IdrawCanvas* dc)
   return (dc->clip_x1 > 0 || dc->clip_y1 > 0 || dc->clip_x2 < dc->w - 1 || dc->clip_y2 < dc->h - 1);
 }
 
-static int iDrawIsDashed(int style)
+static Efl_Gfx_Cap iDrawStrokeCap(int cap)
 {
-  return style == IUP_DRAW_STROKE_DASH || style == IUP_DRAW_STROKE_DOT ||
-         style == IUP_DRAW_STROKE_DASH_DOT || style == IUP_DRAW_STROKE_DASH_DOT_DOT;
+  return cap == IUP_DRAW_CAP_ROUND ? EFL_GFX_CAP_ROUND :
+         cap == IUP_DRAW_CAP_SQUARE ? EFL_GFX_CAP_SQUARE : EFL_GFX_CAP_BUTT;
 }
 
-static void iDrawSetDash(Efl_VG* shape, int style)
+static Efl_Gfx_Join iDrawStrokeJoin(int join)
 {
-  if (style == IUP_DRAW_STROKE_DASH)
+  return join == IUP_DRAW_JOIN_ROUND ? EFL_GFX_JOIN_ROUND :
+         join == IUP_DRAW_JOIN_BEVEL ? EFL_GFX_JOIN_BEVEL : EFL_GFX_JOIN_MITER;
+}
+
+static void iDrawSetStroke(IdrawCanvas* dc, Efl_VG* shape, int style)
+{
+  IupDrawStroke stroke;
+  Efl_Gfx_Dash dash[IUP_DRAW_MAX_DASHES / 2];
+  int i, count = 0;
+
+  iupDrawGetStroke(dc->ih, style, &stroke);
+
+  efl_gfx_shape_stroke_cap_set(shape, iDrawStrokeCap(stroke.cap));
+  efl_gfx_shape_stroke_join_set(shape, iDrawStrokeJoin(stroke.join));
+  efl_gfx_shape_stroke_miterlimit_set(shape, IUP_DRAW_MITER_LIMIT);
+
+  for (i = 0; i + 1 < stroke.dash_count; i += 2)
   {
-    Efl_Gfx_Dash dash[1] = { {6.0, 2.0} };
-    efl_gfx_shape_stroke_dash_set(shape, dash, 1);
+    dash[count].length = stroke.dashes[i];
+    dash[count].gap = stroke.dashes[i + 1];
+    count++;
   }
-  else if (style == IUP_DRAW_STROKE_DOT)
-  {
-    Efl_Gfx_Dash dash[1] = { {2.0, 2.0} };
-    efl_gfx_shape_stroke_dash_set(shape, dash, 1);
-  }
-  else if (style == IUP_DRAW_STROKE_DASH_DOT)
-  {
-    Efl_Gfx_Dash dash[2] = { {6.0, 2.0}, {2.0, 2.0} };
-    efl_gfx_shape_stroke_dash_set(shape, dash, 2);
-  }
-  else if (style == IUP_DRAW_STROKE_DASH_DOT_DOT)
-  {
-    Efl_Gfx_Dash dash[3] = { {6.0, 2.0}, {2.0, 2.0}, {2.0, 2.0} };
-    efl_gfx_shape_stroke_dash_set(shape, dash, 3);
-  }
+
+  if (count)
+    efl_gfx_shape_stroke_dash_set(shape, dash, count);
 }
 
 static void iDrawRecycleFrame(Ihandle* ih)
@@ -555,14 +560,19 @@ static int eflDrawClipLine(int* x1, int* y1, int* x2, int* y2)
 IUP_SDK_API void iupdrvDrawLine(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color, int style, int line_width)
 {
   Efl_VG* shape;
+  IupDrawStroke stroke;
   int r, g, b, a;
 
   if (!eflDrawClipLine(&x1, &y1, &x2, &y2))
     return;
 
-  if (!iDrawIsDashed(style) && iupDrawAlpha(color) == 255 && dc->batch_shape && iDrawIsIdentity(dc) &&
+  iupDrawGetStroke(dc->ih, style, &stroke);
+
+  if (!stroke.dash_count && iupDrawAlpha(color) == 255 && dc->batch_shape && iDrawIsIdentity(dc) &&
       dc->batch_root == dc->root && dc->batch_color == color && dc->batch_width == line_width &&
-      dc->batch_shape == eina_list_last_data_get(dc->shapes))
+      dc->batch_shape == eina_list_last_data_get(dc->shapes) &&
+      efl_gfx_shape_stroke_cap_get(dc->batch_shape) == iDrawStrokeCap(stroke.cap) &&
+      efl_gfx_shape_stroke_join_get(dc->batch_shape) == iDrawStrokeJoin(stroke.join))
   {
     efl_gfx_path_append_move_to(dc->batch_shape, x1, y1);
     efl_gfx_path_append_line_to(dc->batch_shape, x2, y2);
@@ -575,13 +585,12 @@ IUP_SDK_API void iupdrvDrawLine(IdrawCanvas* dc, int x1, int y1, int x2, int y2,
     efl_gfx_path_append_move_to(efl_added, x1, y1),
     efl_gfx_path_append_line_to(efl_added, x2, y2),
     efl_gfx_shape_stroke_color_set(efl_added, r, g, b, a),
-    efl_gfx_shape_stroke_width_set(efl_added, line_width > 0 ? line_width : 1),
-    efl_gfx_shape_stroke_cap_set(efl_added, EFL_GFX_CAP_BUTT));
-  iDrawSetDash(shape, style);
+    efl_gfx_shape_stroke_width_set(efl_added, line_width > 0 ? line_width : 1));
+  iDrawSetStroke(dc, shape, style);
 
   iDrawAddShape(dc, shape, 1);
 
-  dc->batch_shape = (iDrawIsDashed(style) || iupDrawAlpha(color) != 255 || !iDrawIsIdentity(dc)) ? NULL : shape;
+  dc->batch_shape = (stroke.dash_count || iupDrawAlpha(color) != 255 || !iDrawIsIdentity(dc)) ? NULL : shape;
   dc->batch_root = dc->root;
   dc->batch_color = color;
   dc->batch_width = line_width;
@@ -619,13 +628,13 @@ IUP_SDK_API void iupdrvDrawRectangle(IdrawCanvas* dc, int x1, int y1, int x2, in
       efl_gfx_path_append_rect(efl_added, x1 + offset, y1 + offset, rect_w - stroke_w, rect_h - stroke_w, 0, 0));
     efl_gfx_shape_stroke_color_set(shape, r, g, b, a);
     efl_gfx_shape_stroke_width_set(shape, stroke_w);
-    iDrawSetDash(shape, style);
+    iDrawSetStroke(dc, shape, style);
   }
 
   iDrawAddShape(dc, shape, style != IUP_DRAW_FILL);
 }
 
-static Efl_VG* iDrawArcToVg(Efl_VG* root, int x1, int y1, int x2, int y2, double a1, double a2, long color, int style, int line_width)
+static Efl_VG* iDrawArcToVg(IdrawCanvas* dc, int x1, int y1, int x2, int y2, double a1, double a2, long color, int style, int line_width)
 {
   Efl_VG* shape;
   int r, g, b, a;
@@ -639,7 +648,7 @@ static Efl_VG* iDrawArcToVg(Efl_VG* root, int x1, int y1, int x2, int y2, double
   rx = (x2 - x1) / 2.0;
   ry = (y2 - y1) / 2.0;
 
-  shape = efl_add(EFL_CANVAS_VG_SHAPE_CLASS, root);
+  shape = efl_add(EFL_CANVAS_VG_SHAPE_CLASS, dc->root);
 
   if (sweep >= 360.0 || sweep <= -360.0)
   {
@@ -678,6 +687,7 @@ static Efl_VG* iDrawArcToVg(Efl_VG* root, int x1, int y1, int x2, int y2, double
     efl_gfx_color_set(shape, 0, 0, 0, 0);
     efl_gfx_shape_stroke_color_set(shape, r, g, b, a);
     efl_gfx_shape_stroke_width_set(shape, line_width > 0 ? line_width : 1);
+    iDrawSetStroke(dc, shape, style);
   }
 
   return shape;
@@ -691,7 +701,7 @@ IUP_SDK_API void iupdrvDrawArc(IdrawCanvas* dc, int x1, int y1, int x2, int y2, 
   iupDrawCheckSwapCoord(x1, x2);
   iupDrawCheckSwapCoord(y1, y2);
 
-  iDrawAddShape(dc, iDrawArcToVg(dc->root, x1, y1, x2, y2, a1, a2, color, style, line_width), style != IUP_DRAW_FILL);
+  iDrawAddShape(dc, iDrawArcToVg(dc, x1, y1, x2, y2, a1, a2, color, style, line_width), style != IUP_DRAW_FILL);
 }
 
 IUP_SDK_API void iupdrvDrawEllipse(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color, int style, int line_width)
@@ -735,6 +745,7 @@ IUP_SDK_API void iupdrvDrawEllipse(IdrawCanvas* dc, int x1, int y1, int x2, int 
   {
     efl_gfx_shape_stroke_color_set(shape, r, g, b, a);
     efl_gfx_shape_stroke_width_set(shape, line_width > 0 ? line_width : 1);
+    iDrawSetStroke(dc, shape, style);
   }
 
   iDrawAddShape(dc, shape, style != IUP_DRAW_FILL);
@@ -770,6 +781,7 @@ IUP_SDK_API void iupdrvDrawPolygon(IdrawCanvas* dc, int* points, int count, long
 
     efl_gfx_shape_stroke_color_set(shape, r, g, b, a);
     efl_gfx_shape_stroke_width_set(shape, line_width > 0 ? line_width : 1);
+    iDrawSetStroke(dc, shape, style);
   }
 
   iDrawAddShape(dc, shape, style != IUP_DRAW_FILL);
@@ -811,6 +823,7 @@ IUP_SDK_API void iupdrvDrawRoundedRectangle(IdrawCanvas* dc, int x1, int y1, int
   {
     efl_gfx_shape_stroke_color_set(shape, r, g, b, a);
     efl_gfx_shape_stroke_width_set(shape, line_width > 0 ? line_width : 1);
+    iDrawSetStroke(dc, shape, style);
   }
 
   iDrawAddShape(dc, shape, style != IUP_DRAW_FILL);
@@ -837,7 +850,7 @@ IUP_SDK_API void iupdrvDrawBezier(IdrawCanvas* dc, int x1, int y1, int x2, int y
   {
     efl_gfx_shape_stroke_color_set(shape, r, g, b, a);
     efl_gfx_shape_stroke_width_set(shape, line_width > 0 ? line_width : 1);
-    iDrawSetDash(shape, style);
+    iDrawSetStroke(dc, shape, style);
   }
 
   iDrawAddShape(dc, shape, style != IUP_DRAW_FILL);
@@ -1083,7 +1096,7 @@ static void iDrawPathStrokeShape(IdrawCanvas* dc, const IupPathSeg* segs, int co
 
   efl_gfx_color_set(shape, 0, 0, 0, 0);
   efl_gfx_shape_stroke_width_set(shape, line_width > 0 ? line_width : 1);
-  iDrawSetDash(shape, style);
+  iDrawSetStroke(dc, shape, style);
 
   if (src->type == IUP_SOURCE_SOLID)
   {

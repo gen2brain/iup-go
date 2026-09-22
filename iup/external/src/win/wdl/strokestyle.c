@@ -29,7 +29,8 @@
 
 
 static WD_HSTROKESTYLE
-wdCreateStrokeStyleImpl(UINT dashStyle, const float* dashes, UINT dashesCount, UINT lineCap, UINT lineJoin)
+wdCreateStrokeStyleImpl(UINT dashStyle, const float* dashes, UINT dashesCount, float dashOffset,
+                        UINT lineCap, UINT lineJoin, float miterLimit)
 {
     if(d2d_enabled()) {
         HRESULT hr;
@@ -40,12 +41,12 @@ wdCreateStrokeStyleImpl(UINT dashStyle, const float* dashes, UINT dashesCount, U
         p.endCap = lineCap;
         p.dashCap = lineCap;
         p.lineJoin = lineJoin;
-        p.miterLimit = 1.0f;
+        p.miterLimit = miterLimit;
         p.dashStyle = dashStyle;
-        p.dashOffset = 0.0f;
+        p.dashOffset = dashOffset;
 
         wd_lock();
-        hr = dummy_ID2D1Factory_CreateStrokeStyle(d2d_factory, &p, dashes, dashesCount, &s);
+        hr = dummy_ID2D1Factory_CreateStrokeStyle(d2d_factory, &p, dashesCount > 0 ? dashes : NULL, dashesCount, &s);
         wd_unlock();
         if (FAILED(hr)) {
             WD_TRACE_HR("wdCreateStrokeStyleImpl: "
@@ -68,6 +69,8 @@ wdCreateStrokeStyleImpl(UINT dashStyle, const float* dashes, UINT dashesCount, U
         s->dashStyle = dashStyle;
         s->lineCap = lineCap;
         s->lineJoin = lineJoin;
+        s->miterLimit = miterLimit;
+        s->dashOffset = dashOffset;
         s->dashesCount = dashesCount;
         if(dashesCount > 0)
             memcpy(s->dashes, dashes, dashesCount * sizeof(float));
@@ -103,13 +106,22 @@ wdCreateStrokeStyle(UINT dashStyle, UINT lineCap, UINT lineJoin)
 
     return wdCreateStrokeStyleImpl(style_data[dashStyle].style_id,
                 style_data[dashStyle].pattern, style_data[dashStyle].pattern_size,
-                lineCap, lineJoin);
+                0.0f, lineCap, lineJoin, WD_MITERLIMIT_DEFAULT);
 }
 
 WD_HSTROKESTYLE 
 wdCreateStrokeStyleCustom(const float* dashes, UINT dashesCount, UINT lineCap, UINT lineJoin)
 {
-    return wdCreateStrokeStyleImpl(5 /* CUSTOM */, dashes, dashesCount, lineCap, lineJoin);
+    return wdCreateStrokeStyleImpl(5 /* CUSTOM */, dashes, dashesCount,
+                0.0f, lineCap, lineJoin, WD_MITERLIMIT_DEFAULT);
+}
+
+WD_HSTROKESTYLE
+wdCreateStrokeStyleCustomEx(const float* dashes, UINT dashesCount, float dashOffset,
+                            UINT lineCap, UINT lineJoin, float miterLimit)
+{
+    return wdCreateStrokeStyleImpl(dashesCount > 0 ? 5 /* CUSTOM */ : 0 /* SOLID */,
+                dashes, dashesCount, dashOffset, lineCap, lineJoin, miterLimit);
 }
 
 void

@@ -370,56 +370,46 @@ IUP_SDK_API void iupdrvDrawGetSize(IdrawCanvas* dc, int* w, int* h)
   if (h) *h = dc->h;
 }
 
-static void iDrawSetDashes(GC gc, const char* dashes, int count, int scale)
+static void iDrawSetDashes(GC gc, const double* dashes, int count, double dash_offset, int scale)
 {
-  char scaled[6];
-  int i;
+  unsigned char scaled[IUP_DRAW_MAX_DASHES];
+  int i, offset, total;
   for (i = 0; i < count; i++)
   {
-    int v = dashes[i] * scale;
-    scaled[i] = (char)(v > 127 ? 127 : v);
+    int v = iupRound(dashes[i] * scale);
+    if (v < 1) v = 1;
+    if (v > 255) v = 255;
+    scaled[i] = (unsigned char)v;
   }
-  XSetDashes(iupmot_display, gc, 0, scaled, count);
+  total = 0;
+  for (i = 0; i < count; i++)
+    total += scaled[i];
+
+  offset = iupRound(fmod(dash_offset * scale, (double)total));
+  if (offset < 0) offset += total;
+  XSetDashes(iupmot_display, gc, offset, (char*)scaled, count);
 }
 
-static void iDrawSetLineStyleAndWidth(GC gc, int style, int line_width, int scale)
+static void iDrawSetLineStyleAndWidth(IdrawCanvas* dc, GC gc, int style, int line_width, int scale)
 {
-  XGCValues gcval;
+  IupDrawStroke stroke;
+  int cap, join;
 
-  if (line_width == 1)
-    gcval.line_width = 0;
-  else
-    gcval.line_width = line_width;
+  iupDrawGetStroke(dc->ih, style, &stroke);
 
-  if (style == IUP_DRAW_STROKE || style == IUP_DRAW_FILL)
-    gcval.line_style = LineSolid;
-  else
-  {
-    if (style == IUP_DRAW_STROKE_DASH)
-    {
-      char dashes[2] = { 9, 3 };
-      iDrawSetDashes(gc, dashes, 2, scale);
-    }
-    else if (style == IUP_DRAW_STROKE_DOT)
-    {
-      char dashes[2] = { 1, 2 };
-      iDrawSetDashes(gc, dashes, 2, scale);
-    }
-    else if (style == IUP_DRAW_STROKE_DASH_DOT)
-    {
-      char dashes[4] = { 7, 3, 1, 3 };
-      iDrawSetDashes(gc, dashes, 4, scale);
-    }
-    else if (style == IUP_DRAW_STROKE_DASH_DOT_DOT)
-    {
-      char dashes[6] = { 7, 3, 1, 3, 1, 3 };
-      iDrawSetDashes(gc, dashes, 6, scale);
-    }
+  cap = stroke.cap == IUP_DRAW_CAP_ROUND ? CapRound :
+        stroke.cap == IUP_DRAW_CAP_SQUARE ? CapProjecting : CapButt;
+  join = stroke.join == IUP_DRAW_JOIN_ROUND ? JoinRound :
+         stroke.join == IUP_DRAW_JOIN_BEVEL ? JoinBevel : JoinMiter;
 
-    gcval.line_style = LineOnOffDash;
-  }
+  if (stroke.dash_count > 0)
+    iDrawSetDashes(gc, stroke.dashes, stroke.dash_count, stroke.dash_offset, scale);
 
-  XChangeGC(iupmot_display, gc, GCLineWidth | GCLineStyle, &gcval);
+  if (line_width == 1 && cap == CapButt && join == JoinMiter)
+    line_width = 0;
+
+  XSetLineAttributes(iupmot_display, gc, line_width,
+                     stroke.dash_count > 0 ? LineOnOffDash : LineSolid, cap, join);
 }
 
 /* X11 encodes coordinates as 16 bit, a primitive far outside the canvas wraps around */
@@ -738,7 +728,7 @@ IUP_SDK_API void iupdrvDrawRectangle(IdrawCanvas* dc, int x1, int y1, int x2, in
       ImotAlphaMask m;
       if (motDrawAlphaMaskBegin(dc, &m, x1, y1, x2, y2, line_width))
       {
-        iDrawSetLineStyleAndWidth(m.gc, style, line_width, dc->line_scale);
+        iDrawSetLineStyleAndWidth(dc, m.gc, style, line_width, dc->line_scale);
         XDrawRectangle(iupmot_display, m.pixmap, m.gc, x1, y1, x2 - x1, y2 - y1);
         motDrawAlphaMaskEnd(dc, &m, color);
       }
@@ -752,7 +742,7 @@ IUP_SDK_API void iupdrvDrawRectangle(IdrawCanvas* dc, int x1, int y1, int x2, in
     XFillRectangle(iupmot_display, dc->pixmap, dc->pixmap_gc, x1, y1, x2 - x1 + 1, y2 - y1 + 1);
   else
   {
-    iDrawSetLineStyleAndWidth(dc->pixmap_gc, style, line_width, dc->line_scale);
+    iDrawSetLineStyleAndWidth(dc, dc->pixmap_gc, style, line_width, dc->line_scale);
 
     XDrawRectangle(iupmot_display, dc->pixmap, dc->pixmap_gc, x1, y1, x2 - x1, y2 - y1);
   }
@@ -789,7 +779,7 @@ IUP_SDK_API void iupdrvDrawLine(IdrawCanvas* dc, int x1, int y1, int x2, int y2,
     int by2 = y1 > y2 ? y1 : y2;
     if (motDrawAlphaMaskBegin(dc, &m, bx1, by1, bx2, by2, line_width))
     {
-      iDrawSetLineStyleAndWidth(m.gc, style, line_width, dc->line_scale);
+      iDrawSetLineStyleAndWidth(dc, m.gc, style, line_width, dc->line_scale);
       XDrawLine(iupmot_display, m.pixmap, m.gc, x1, y1, x2, y2);
       motDrawAlphaMaskEnd(dc, &m, color);
     }
@@ -798,7 +788,7 @@ IUP_SDK_API void iupdrvDrawLine(IdrawCanvas* dc, int x1, int y1, int x2, int y2,
 
   XSetForeground(iupmot_display, dc->pixmap_gc, iupmotColorGetPixel(iupDrawRed(color),iupDrawGreen(color),iupDrawBlue(color)));
 
-  iDrawSetLineStyleAndWidth(dc->pixmap_gc, style, line_width, dc->line_scale);
+  iDrawSetLineStyleAndWidth(dc, dc->pixmap_gc, style, line_width, dc->line_scale);
 
   XDrawLine(iupmot_display, dc->pixmap, dc->pixmap_gc, x1, y1, x2, y2);
 }
@@ -840,7 +830,7 @@ IUP_SDK_API void iupdrvDrawArc(IdrawCanvas* dc, int x1, int y1, int x2, int y2, 
       }
       else
       {
-        iDrawSetLineStyleAndWidth(m.gc, style, line_width, dc->line_scale);
+        iDrawSetLineStyleAndWidth(dc, m.gc, style, line_width, dc->line_scale);
         XDrawArc(iupmot_display, m.pixmap, m.gc, x1, y1, x2 - x1 + 1, y2 - y1 + 1, iupRound(a1 * 64), iupRound((a2 - a1) * 64));
       }
       motDrawAlphaMaskEnd(dc, &m, color);
@@ -857,7 +847,7 @@ IUP_SDK_API void iupdrvDrawArc(IdrawCanvas* dc, int x1, int y1, int x2, int y2, 
   }
   else
   {
-    iDrawSetLineStyleAndWidth(dc->pixmap_gc, style, line_width, dc->line_scale);
+    iDrawSetLineStyleAndWidth(dc, dc->pixmap_gc, style, line_width, dc->line_scale);
 
     XDrawArc(iupmot_display, dc->pixmap, dc->pixmap_gc, x1, y1, x2 - x1 + 1, y2 - y1 + 1, iupRound(a1 * 64), iupRound((a2 - a1) * 64));   /* angle = 1/64ths of a degree */
   }
@@ -897,7 +887,7 @@ IUP_SDK_API void iupdrvDrawEllipse(IdrawCanvas* dc, int x1, int y1, int x2, int 
       }
       else
       {
-        iDrawSetLineStyleAndWidth(m.gc, style, line_width, dc->line_scale);
+        iDrawSetLineStyleAndWidth(dc, m.gc, style, line_width, dc->line_scale);
         XDrawArc(iupmot_display, m.pixmap, m.gc, x1, y1, x2 - x1 + 1, y2 - y1 + 1, 0, 23040);
       }
       motDrawAlphaMaskEnd(dc, &m, color);
@@ -915,7 +905,7 @@ IUP_SDK_API void iupdrvDrawEllipse(IdrawCanvas* dc, int x1, int y1, int x2, int 
   }
   else
   {
-    iDrawSetLineStyleAndWidth(dc->pixmap_gc, style, line_width, dc->line_scale);
+    iDrawSetLineStyleAndWidth(dc, dc->pixmap_gc, style, line_width, dc->line_scale);
     XDrawArc(iupmot_display, dc->pixmap, dc->pixmap_gc, x1, y1, x2 - x1 + 1, y2 - y1 + 1, 0, 23040);
   }
 }
@@ -1008,7 +998,7 @@ IUP_SDK_API void iupdrvDrawPolygon(IdrawCanvas* dc, int* points, int count, long
       }
       else
       {
-        iDrawSetLineStyleAndWidth(m.gc, style, line_width, dc->line_scale);
+        iDrawSetLineStyleAndWidth(dc, m.gc, style, line_width, dc->line_scale);
         XDrawLines(iupmot_display, m.pixmap, m.gc, pnt, pnt_count, CoordModeOrigin);
       }
       motDrawAlphaMaskEnd(dc, &m, color);
@@ -1028,7 +1018,7 @@ IUP_SDK_API void iupdrvDrawPolygon(IdrawCanvas* dc, int* points, int count, long
   }
   else
   {
-    iDrawSetLineStyleAndWidth(dc->pixmap_gc, style, line_width, dc->line_scale);
+    iDrawSetLineStyleAndWidth(dc, dc->pixmap_gc, style, line_width, dc->line_scale);
 
     XDrawLines(iupmot_display, dc->pixmap, dc->pixmap_gc, pnt, pnt_count, CoordModeOrigin);
   }
@@ -1123,7 +1113,7 @@ IUP_SDK_API void iupdrvDrawRoundedRectangle(IdrawCanvas* dc, int x1, int y1, int
   }
   else
   {
-    iDrawSetLineStyleAndWidth(gc, style, line_width, dc->line_scale);
+    iDrawSetLineStyleAndWidth(dc, gc, style, line_width, dc->line_scale);
 
     XDrawArc(iupmot_display, target, gc, x2 - diameter, y1, diameter, diameter, 0 * 64, 90 * 64);
     XDrawArc(iupmot_display, target, gc, x2 - diameter, y2 - diameter, diameter, diameter, 270 * 64, 90 * 64);
@@ -2062,12 +2052,13 @@ IUP_SDK_API void iupdrvDrawBezier(IdrawCanvas* dc, int x1, int y1, int x2, int y
     gc = dc->pixmap_gc;
   }
 
-  XSetLineAttributes(iupmot_display, gc, line_width, LineSolid, CapRound, JoinRound);
-
   if (style == IUP_DRAW_FILL)
     XFillPolygon(iupmot_display, target, gc, points, num_segments + 1, Nonconvex, CoordModeOrigin);
   else
+  {
+    iDrawSetLineStyleAndWidth(dc, gc, style, line_width, dc->line_scale);
     XDrawLines(iupmot_display, target, gc, points, num_segments + 1, CoordModeOrigin);
+  }
 
   if (use_alpha)
     motDrawAlphaMaskEnd(dc, &m, color);
@@ -2715,7 +2706,7 @@ IUP_SDK_API void iupdrvDrawPathStroke(IdrawCanvas* dc, const IupPathSeg* segs, i
       fcount = motDrawPathToMask(segs, count, &m, &flat);
       if (fcount > 0)
       {
-        iDrawSetLineStyleAndWidth(m.gc, style, line_width * m.scale, m.scale);
+        iDrawSetLineStyleAndWidth(dc, m.gc, style, line_width * m.scale, m.scale);
         motDrawStrokePathShape(m.pixmap, m.gc, flat, fcount);
         free(flat);
       }
@@ -2733,7 +2724,7 @@ IUP_SDK_API void iupdrvDrawPathStroke(IdrawCanvas* dc, const IupPathSeg* segs, i
   if (src->type == IUP_SOURCE_SOLID && !motDrawAlphaColor(dc, src->color))
   {
     XSetForeground(iupmot_display, dc->pixmap_gc, iupmotColorGetPixel(iupDrawRed(src->color), iupDrawGreen(src->color), iupDrawBlue(src->color)));
-    iDrawSetLineStyleAndWidth(dc->pixmap_gc, style, line_width, dc->line_scale);
+    iDrawSetLineStyleAndWidth(dc, dc->pixmap_gc, style, line_width, dc->line_scale);
     motDrawStrokePathShape(dc->pixmap, dc->pixmap_gc, flat, fcount);
   }
   else
@@ -2742,7 +2733,7 @@ IUP_SDK_API void iupdrvDrawPathStroke(IdrawCanvas* dc, const IupPathSeg* segs, i
     if (motDrawAlphaMaskBegin(dc, &m, x1, y1, x2, y2, line_width + 1))
     {
       Picture src_p = motDrawCreateSourcePicture(src);
-      iDrawSetLineStyleAndWidth(m.gc, style, line_width, dc->line_scale);
+      iDrawSetLineStyleAndWidth(dc, m.gc, style, line_width, dc->line_scale);
       motDrawStrokePathShape(m.pixmap, m.gc, flat, fcount);
       motDrawAlphaMaskComposite(dc, &m, src_p);
       XRenderFreePicture(iupmot_display, src_p);

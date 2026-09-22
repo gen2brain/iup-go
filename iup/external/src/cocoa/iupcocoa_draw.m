@@ -82,32 +82,31 @@ static void iupCocoaAddEllipseInRect(CGContextRef ctx, CGRect rect)
 #endif
 }
 
-static void iupCocoaSetLineStyle(CGContextRef cg_context, int style)
+static void iupCocoaSetLineStyle(IdrawCanvas* dc, int style)
 {
-  if (style == IUP_DRAW_STROKE || style == IUP_DRAW_FILL)
+  CGContextRef cg_context = dc->cgContext;
+  IupDrawStroke stroke;
+  CGFloat dashes[IUP_DRAW_MAX_DASHES];
+  int i;
+
+  iupDrawGetStroke(dc->ih, style, &stroke);
+
+  CGContextSetLineCap(cg_context, stroke.cap == IUP_DRAW_CAP_ROUND ? kCGLineCapRound :
+                                  stroke.cap == IUP_DRAW_CAP_SQUARE ? kCGLineCapSquare : kCGLineCapButt);
+  CGContextSetLineJoin(cg_context, stroke.join == IUP_DRAW_JOIN_ROUND ? kCGLineJoinRound :
+                                   stroke.join == IUP_DRAW_JOIN_BEVEL ? kCGLineJoinBevel : kCGLineJoinMiter);
+  CGContextSetMiterLimit(cg_context, (CGFloat)IUP_DRAW_MITER_LIMIT);
+
+  if (stroke.dash_count == 0)
   {
     CGContextSetLineDash(cg_context, 0, NULL, 0);
+    return;
   }
-  else if (style == IUP_DRAW_STROKE_DASH)
-  {
-    CGFloat dashes[2] = { 9.0, 3.0 };
-    CGContextSetLineDash(cg_context, 0, dashes, 2);
-  }
-  else if (style == IUP_DRAW_STROKE_DOT)
-  {
-    CGFloat dashes[2] = { 1.0, 2.0 };
-    CGContextSetLineDash(cg_context, 0, dashes, 2);
-  }
-  else if (style == IUP_DRAW_STROKE_DASH_DOT)
-  {
-    CGFloat dashes[4] = { 7.0, 3.0, 1.0, 3.0 };
-    CGContextSetLineDash(cg_context, 0, dashes, 4);
-  }
-  else if (style == IUP_DRAW_STROKE_DASH_DOT_DOT)
-  {
-    CGFloat dashes[6] = { 7.0, 3.0, 1.0, 3.0, 1.0, 3.0 };
-    CGContextSetLineDash(cg_context, 0, dashes, 6);
-  }
+
+  for (i = 0; i < stroke.dash_count; i++)
+    dashes[i] = (CGFloat)stroke.dashes[i];
+
+  CGContextSetLineDash(cg_context, (CGFloat)stroke.dash_offset, dashes, stroke.dash_count);
 }
 
 #ifdef GNUSTEP
@@ -347,7 +346,7 @@ IUP_SDK_API void iupdrvDrawRectangle(IdrawCanvas* dc, int x1, int y1, int x2, in
   {
     CGContextSetStrokeColorWithColor(cg_context, the_color);
     CGContextSetLineWidth(cg_context, (CGFloat)line_width);
-    iupCocoaSetLineStyle(cg_context, style);
+    iupCocoaSetLineStyle(dc, style);
 
     if (line_width == 1)
     {
@@ -368,7 +367,7 @@ IUP_SDK_API void iupdrvDrawLine(IdrawCanvas* dc, int x1, int y1, int x2, int y2,
 
   CGContextSetStrokeColorWithColor(cg_context, the_color);
   CGContextSetLineWidth(cg_context, (CGFloat)line_width);
-  iupCocoaSetLineStyle(cg_context, style);
+  iupCocoaSetLineStyle(dc, style);
 
   CGContextBeginPath(cg_context);
 
@@ -438,7 +437,7 @@ IUP_SDK_API void iupdrvDrawArc(IdrawCanvas* dc, int x1, int y1, int x2, int y2, 
     {
       CGContextSetStrokeColorWithColor(cg_context, the_color);
       CGContextSetLineWidth(cg_context, (CGFloat)line_width);
-      iupCocoaSetLineStyle(cg_context, style);
+      iupCocoaSetLineStyle(dc, style);
       CGContextAddArc(cg_context, xc, yc, 0.5*w, rad1, rad2, is_clockwise);
       CGContextStrokePath(cg_context);
     }
@@ -465,7 +464,7 @@ IUP_SDK_API void iupdrvDrawArc(IdrawCanvas* dc, int x1, int y1, int x2, int y2, 
     {
       CGContextSetStrokeColorWithColor(cg_context, the_color);
       CGContextSetLineWidth(cg_context, (CGFloat)line_width);
-      iupCocoaSetLineStyle(cg_context, style);
+      iupCocoaSetLineStyle(dc, style);
 
       CGMutablePathRef path = CGPathCreateMutable();
       CGAffineTransform transform = CGAffineTransformMakeTranslation(xc, yc);
@@ -508,7 +507,7 @@ IUP_SDK_API void iupdrvDrawEllipse(IdrawCanvas* dc, int x1, int y1, int x2, int 
   {
     CGContextSetStrokeColorWithColor(cg_context, the_color);
     CGContextSetLineWidth(cg_context, (CGFloat)line_width);
-    iupCocoaSetLineStyle(cg_context, style);
+    iupCocoaSetLineStyle(dc, style);
     CGContextStrokePath(cg_context);
   }
 }
@@ -524,7 +523,7 @@ IUP_SDK_API void iupdrvDrawPolygon(IdrawCanvas* dc, int* points, int count, long
   {
     CGContextSetStrokeColorWithColor(cg_context, the_color);
     CGContextSetLineWidth(cg_context, (CGFloat)line_width);
-    iupCocoaSetLineStyle(cg_context, style);
+    iupCocoaSetLineStyle(dc, style);
   }
 
   CGContextBeginPath(cg_context);
@@ -569,7 +568,7 @@ IUP_SDK_API void iupdrvDrawRoundedRectangle(IdrawCanvas* dc, int x1, int y1, int
   {
     CGContextSetStrokeColorWithColor(cg_context, the_color);
     CGContextSetLineWidth(cg_context, (CGFloat)line_width);
-    iupCocoaSetLineStyle(cg_context, style);
+    iupCocoaSetLineStyle(dc, style);
   }
 
   CGRect rect = CGRectMake((CGFloat)x1, (CGFloat)y1, (CGFloat)(x2 - x1 + 1), (CGFloat)(y2 - y1 + 1));
@@ -597,7 +596,7 @@ IUP_SDK_API void iupdrvDrawBezier(IdrawCanvas* dc, int x1, int y1, int x2, int y
   {
     CGContextSetStrokeColorWithColor(cg_context, the_color);
     CGContextSetLineWidth(cg_context, (CGFloat)line_width);
-    iupCocoaSetLineStyle(cg_context, style);
+    iupCocoaSetLineStyle(dc, style);
   }
 
   CGContextBeginPath(cg_context);
@@ -823,7 +822,7 @@ IUP_SDK_API void iupdrvDrawPathStroke(IdrawCanvas* dc, const IupPathSeg* segs, i
     CGColorRef the_color = iupCocoaDrawCreateColor(src->color);
     CGContextSetStrokeColorWithColor(ctx, the_color);
     CGContextSetLineWidth(ctx, (CGFloat)line_width);
-    iupCocoaSetLineStyle(ctx, style);
+    iupCocoaSetLineStyle(dc, style);
     CGContextStrokePath(ctx);
     return;
   }
@@ -833,12 +832,12 @@ IUP_SDK_API void iupdrvDrawPathStroke(IdrawCanvas* dc, const IupPathSeg* segs, i
     CGColorRef the_color = iupCocoaDrawCreateColor(src->colors[0]);
     CGContextSetStrokeColorWithColor(ctx, the_color);
     CGContextSetLineWidth(ctx, (CGFloat)line_width);
-    iupCocoaSetLineStyle(ctx, style);
+    iupCocoaSetLineStyle(dc, style);
     CGContextStrokePath(ctx);
   }
 #else
   CGContextSetLineWidth(ctx, (CGFloat)line_width);
-  iupCocoaSetLineStyle(ctx, style);
+  iupCocoaSetLineStyle(dc, style);
   CGContextReplacePathWithStrokedPath(ctx);
 
   CGContextSaveGState(ctx);

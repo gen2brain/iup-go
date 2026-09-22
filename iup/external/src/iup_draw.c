@@ -55,7 +55,8 @@ static const char* iDrawStateAttribNames[] =
   "DRAWTEXTWRAP", "DRAWTEXTELLIPSIS", "DRAWTEXTCLIP", "DRAWTEXTORIENTATION",
   "DRAWTEXTLAYOUTCENTER", "DRAWLINEWIDTH", "DRAWBGCOLOR", "DRAWMAKEINACTIVE",
   "DRAWIMAGETINT", "DRAWIMAGEOPACITY", "DRAWIMAGESRCRECT", "DRAWIMAGEQUALITY",
-  "DRAWANTIALIAS"
+  "DRAWANTIALIAS", "DRAWLINECAP", "DRAWLINEJOIN", "DRAWDASH",
+  "DRAWDASHOFFSET"
 };
 
 #define IUP_DRAW_STATE_ATTRIB_COUNT ((int)(sizeof(iDrawStateAttribNames) / sizeof(iDrawStateAttribNames[0])))
@@ -687,6 +688,110 @@ static int iDrawGetStyle(Ihandle* ih)
     return IUP_DRAW_STROKE_DASH_DOT_DOT;
   else
     return IUP_DRAW_STROKE;
+}
+
+static int iDrawGetCap(Ihandle* ih)
+{
+  char* value = iupAttribGetStr(ih, "DRAWLINECAP");
+  if (iupStrEqualNoCase(value, "ROUND"))
+    return IUP_DRAW_CAP_ROUND;
+  else if (iupStrEqualNoCase(value, "SQUARE"))
+    return IUP_DRAW_CAP_SQUARE;
+  else
+    return IUP_DRAW_CAP_BUTT;
+}
+
+static int iDrawGetJoin(Ihandle* ih)
+{
+  char* value = iupAttribGetStr(ih, "DRAWLINEJOIN");
+  if (iupStrEqualNoCase(value, "ROUND"))
+    return IUP_DRAW_JOIN_ROUND;
+  else if (iupStrEqualNoCase(value, "BEVEL"))
+    return IUP_DRAW_JOIN_BEVEL;
+  else
+    return IUP_DRAW_JOIN_MITER;
+}
+
+static int iDrawGetCustomDashes(Ihandle* ih, double* dashes)
+{
+  char* value = iupAttribGetStr(ih, "DRAWDASH");
+  int count = 0;
+  double total = 0;
+  int i;
+  if (!value)
+    return 0;
+
+  while (*value && count < IUP_DRAW_MAX_DASHES)
+  {
+    double len;
+    char* end;
+    while (*value == ' ' || *value == ',')
+      value++;
+    if (!*value)
+      break;
+    len = strtod(value, &end);
+    if (end == value || !(len >= 0) || len > 1e6)
+      return 0;
+    dashes[count++] = len;
+    value = end;
+  }
+
+  if (count < 2)
+    return 0;
+
+  for (i = 0; i < count; i++)
+    total += dashes[i];
+  if (total <= 0)
+    return 0;
+
+  if (count & 1)
+  {
+    if (count * 2 > IUP_DRAW_MAX_DASHES)
+      count--;
+    else
+    {
+      for (i = 0; i < count; i++)
+        dashes[count + i] = dashes[i];
+      count *= 2;
+    }
+  }
+
+  return count;
+}
+
+static int iDrawGetStyleDashes(int style, double* dashes)
+{
+  static const double dash[] = { 9, 3 };
+  static const double dot[] = { 1, 2 };
+  static const double dash_dot[] = { 7, 3, 1, 3 };
+  static const double dash_dot_dot[] = { 7, 3, 1, 3, 1, 3 };
+  const double* pattern;
+  int count, i;
+
+  switch (style)
+  {
+  case IUP_DRAW_STROKE_DASH:         pattern = dash;         count = 2; break;
+  case IUP_DRAW_STROKE_DOT:          pattern = dot;          count = 2; break;
+  case IUP_DRAW_STROKE_DASH_DOT:     pattern = dash_dot;     count = 4; break;
+  case IUP_DRAW_STROKE_DASH_DOT_DOT: pattern = dash_dot_dot; count = 6; break;
+  default: return 0;
+  }
+
+  for (i = 0; i < count; i++)
+    dashes[i] = pattern[i];
+  return count;
+}
+
+IUP_SDK_API void iupDrawGetStroke(Ihandle* ih, int style, IupDrawStroke* stroke)
+{
+  memset(stroke, 0, sizeof(IupDrawStroke));
+  stroke->cap = iDrawGetCap(ih);
+  stroke->join = iDrawGetJoin(ih);
+  stroke->dash_count = iDrawGetCustomDashes(ih, stroke->dashes);
+  if (!stroke->dash_count)
+    stroke->dash_count = iDrawGetStyleDashes(style, stroke->dashes);
+  if (stroke->dash_count)
+    stroke->dash_offset = iupAttribGetDouble(ih, "DRAWDASHOFFSET");
 }
 
 static int iDrawGetLineWidth(Ihandle* ih)
@@ -1583,7 +1688,7 @@ IUP_API char* IupDrawGetSvg(Ihandle* ih)
   if (w <= 0 || h <= 0)
     return NULL;
 
-  svg = iupSvgDrawCreateCanvas(w, h);
+  svg = iupSvgDrawCreateCanvas(ih, w, h);
   if (!svg)
     return NULL;
 

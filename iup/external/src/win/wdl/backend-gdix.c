@@ -430,7 +430,7 @@ gdix_setpen(dummy_GpPen* pen, dummy_GpBrush* brush, float width, gdix_strokestyl
     {
         if (style->dashesCount > 0)
         {
-            gdix_vtable->fn_SetPenDashOffset(pen, 0.5f);
+            gdix_vtable->fn_SetPenDashOffset(pen, style->dashOffset);
             gdix_vtable->fn_SetPenDashArray(pen, style->dashes, style->dashesCount);
         }
 
@@ -438,6 +438,7 @@ gdix_setpen(dummy_GpPen* pen, dummy_GpBrush* brush, float width, gdix_strokestyl
         gdix_vtable->fn_SetPenStartCap(pen, style->lineCap);
         gdix_vtable->fn_SetPenEndCap(pen, style->lineCap);
         gdix_vtable->fn_SetPenLineJoin(pen, style->lineJoin);
+        gdix_vtable->fn_SetPenMiterLimit(pen, style->miterLimit);
     }
     else
     {
@@ -445,6 +446,7 @@ gdix_setpen(dummy_GpPen* pen, dummy_GpBrush* brush, float width, gdix_strokestyl
         gdix_vtable->fn_SetPenStartCap(pen, dummy_LineCapFlat);
         gdix_vtable->fn_SetPenEndCap(pen, dummy_LineCapFlat);
         gdix_vtable->fn_SetPenLineJoin(pen, dummy_LineJoinMiter);
+        gdix_vtable->fn_SetPenMiterLimit(pen, WD_MITERLIMIT_DEFAULT);
     }
 
     gdix_vtable->fn_SetPenBrushFill(pen, brush);
