@@ -768,7 +768,9 @@ static void cell_factory_setup(GtkSignalListItemFactory* factory, GtkListItem* l
 
   if (ih->data->show_image)
   {
-    GtkWidget* image = gtk_image_new();
+    GtkWidget* image = gtk_picture_new();
+    gtk_picture_set_can_shrink(GTK_PICTURE(image), FALSE);
+    gtk_picture_set_content_fit(GTK_PICTURE(image), GTK_CONTENT_FIT_SCALE_DOWN);
     gtk_widget_set_valign(image, GTK_ALIGN_CENTER);
     gtk_widget_set_visible(image, FALSE);
     gtk_box_append(GTK_BOX(box), image);
@@ -832,6 +834,51 @@ static void gtk4TableUpdateCellFocusRect(Ihandle* ih, GtkWidget* box, int row_in
   }
 }
 
+static GdkPaintable* gtk4TableCellPaintable(Ihandle* ih, GdkPaintable* paintable)
+{
+  if (!ih->data->fit_image || !GDK_IS_TEXTURE(paintable))
+    return g_object_ref(paintable);
+
+  GdkTexture* texture = GDK_TEXTURE(paintable);
+  int width = gdk_texture_get_width(texture);
+  int height = gdk_texture_get_height(texture);
+  int charheight;
+  iupdrvFontGetCharSize(ih, NULL, &charheight);
+  if (height <= charheight || charheight <= 0)
+    return g_object_ref(paintable);
+
+  int new_width = (width * charheight) / height;
+  if (new_width < 1)
+    new_width = 1;
+
+  guchar* src = g_malloc((gsize)width * height * 4);
+  gdk_texture_download(texture, src, (gsize)width * 4);
+  guchar* dst = g_malloc((gsize)new_width * charheight * 4);
+  iupImageResizeRGBA(width, height, src, new_width, charheight, dst, 4);
+  g_free(src);
+
+  GBytes* bytes = g_bytes_new_take(dst, (gsize)new_width * charheight * 4);
+  GdkTexture* scaled = gdk_memory_texture_new(new_width, charheight, GDK_MEMORY_DEFAULT, bytes, (gsize)new_width * 4);
+  g_bytes_unref(bytes);
+  return GDK_PAINTABLE(scaled);
+}
+
+static void gtk4TableSetCellImage(Ihandle* ih, GtkWidget* picture, GdkPaintable* paintable)
+{
+  if (paintable)
+  {
+    GdkPaintable* shown = gtk4TableCellPaintable(ih, paintable);
+    gtk_picture_set_paintable(GTK_PICTURE(picture), shown);
+    g_object_unref(shown);
+    gtk_widget_set_visible(picture, TRUE);
+  }
+  else
+  {
+    gtk_picture_set_paintable(GTK_PICTURE(picture), NULL);
+    gtk_widget_set_visible(picture, FALSE);
+  }
+}
+
 static void on_row_update(IupTableRow* row, GParamSpec* pspec, gpointer user_data)
 {
   GtkListItem* list_item = GTK_LIST_ITEM(user_data);
@@ -851,19 +898,10 @@ static void on_row_update(IupTableRow* row, GParamSpec* pspec, gpointer user_dat
   if (!widget)
     return;
 
-  if (GTK_IS_IMAGE(widget))
+  if (GTK_IS_PICTURE(widget))
   {
     GdkPaintable* paintable = (row->images && col < row->num_cols) ? row->images[col] : NULL;
-    if (paintable)
-    {
-      gtk_image_set_from_paintable(GTK_IMAGE(widget), paintable);
-      gtk_widget_set_visible(widget, TRUE);
-    }
-    else
-    {
-      gtk_image_clear(GTK_IMAGE(widget));
-      gtk_widget_set_visible(widget, FALSE);
-    }
+    gtk4TableSetCellImage(data->ih, widget, paintable);
     widget = gtk_widget_get_next_sibling(widget);
     if (!widget)
       return;
@@ -909,32 +947,10 @@ static void cell_factory_bind(GtkSignalListItemFactory* factory, GtkListItem* li
   gint lin = row->row_index;
   gboolean is_selected = gtk_list_item_get_selected(list_item);
 
-  if (GTK_IS_IMAGE(widget))
+  if (GTK_IS_PICTURE(widget))
   {
     GdkPaintable* paintable = (row->images && col < row->num_cols) ? row->images[col] : NULL;
-
-    if (paintable)
-    {
-      gtk_image_set_from_paintable(GTK_IMAGE(widget), paintable);
-
-      if (ih->data->fit_image)
-      {
-        int charheight;
-        iupdrvFontGetCharSize(ih, NULL, &charheight);
-        gtk_image_set_pixel_size(GTK_IMAGE(widget), charheight);
-      }
-      else
-      {
-        int img_h = gdk_paintable_get_intrinsic_height(paintable);
-        gtk_image_set_pixel_size(GTK_IMAGE(widget), img_h);
-      }
-      gtk_widget_set_visible(widget, TRUE);
-    }
-    else
-    {
-      gtk_image_clear(GTK_IMAGE(widget));
-      gtk_widget_set_visible(widget, FALSE);
-    }
+    gtk4TableSetCellImage(ih, widget, paintable);
 
     widget = gtk_widget_get_next_sibling(widget);
   }
@@ -965,20 +981,14 @@ static void cell_factory_bind(GtkSignalListItemFactory* factory, GtkListItem* li
   if (!fgcolor)
     fgcolor = iupAttribGetId2(ih, "FGCOLOR", lin, 0);
 
-  if (fgcolor && *fgcolor)
+  unsigned char r, g, b;
+  if (fgcolor && iupStrToRGB(fgcolor, &r, &g, &b))
   {
-    GdkRGBA color;
-    if (gdk_rgba_parse(&color, fgcolor))
-    {
-      if (!attr_list)
-        attr_list = pango_attr_list_new();
+    if (!attr_list)
+      attr_list = pango_attr_list_new();
 
-      PangoAttribute* attr = pango_attr_foreground_new(
-        (guint16)(color.red * 65535),
-        (guint16)(color.green * 65535),
-        (guint16)(color.blue * 65535));
-      pango_attr_list_insert(attr_list, attr);
-    }
+    PangoAttribute* attr = pango_attr_foreground_new((guint16)(r * 257), (guint16)(g * 257), (guint16)(b * 257));
+    pango_attr_list_insert(attr_list, attr);
   }
 
   char* bgcolor = NULL;
@@ -1003,15 +1013,10 @@ static void cell_factory_bind(GtkSignalListItemFactory* factory, GtkListItem* li
     }
   }
 
-  if (bgcolor && *bgcolor)
+  if (bgcolor && iupStrToRGB(bgcolor, &r, &g, &b))
   {
     char class_name[64];
-    snprintf(class_name, sizeof(class_name), "iup-cell-bg-%s", bgcolor);
-    for (char* p = class_name; *p; p++)
-    {
-      if (!g_ascii_isalnum(*p) && *p != '-')
-        *p = '-';
-    }
+    snprintf(class_name, sizeof(class_name), "iup-cell-bg-%02x%02x%02x", r, g, b);
 
     const char* old_class = g_object_get_data(G_OBJECT(box), "iup-bgcolor-class");
     if (old_class)
@@ -1022,7 +1027,7 @@ static void cell_factory_bind(GtkSignalListItemFactory* factory, GtkListItem* li
     /* Use row:not(:selected) so selection highlight shows through */
     char css_rules[128];
     char selector[96];
-    snprintf(css_rules, sizeof(css_rules), "background-color: %s;", bgcolor);
+    snprintf(css_rules, sizeof(css_rules), "background-color: rgb(%d, %d, %d);", r, g, b);
     snprintf(selector, sizeof(selector), "row:not(:selected) .%s", class_name);
     iupgtk4CssAddStaticRule(selector, css_rules);
 
@@ -1347,6 +1352,8 @@ static gboolean on_key_pressed(GtkEventControllerKey* controller, guint keyval, 
           if (box)
           {
             GtkWidget* label = gtk_widget_get_first_child(box);
+            if (label && GTK_IS_PICTURE(label))
+              label = gtk_widget_get_next_sibling(label);
             if (label && GTK_IS_EDITABLE_LABEL(label))
             {
               IupCellFactoryData* factory_data = g_object_get_data(G_OBJECT(box), "iup-factory-data");
