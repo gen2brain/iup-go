@@ -4,6 +4,7 @@ package iup
 
 import (
 	"os"
+	"reflect"
 	"runtime"
 	"testing"
 	"time"
@@ -496,6 +497,79 @@ func TestPostMessagePayload(t *testing.T) {
 	}
 	if p, ok := got[2].(*payload); got[0] != "hello" || got[1] != 7 || !ok || p.n != 42 {
 		t.Fatalf("POSTMESSAGE_CB got %v", got)
+	}
+}
+
+// Every typed callback name is accepted by SetCallback and registered in IUP.
+func TestCallbackTable(t *testing.T) {
+	for name, types := range callbackTypes {
+		for _, ct := range types {
+			ih := User()
+			fn := reflect.MakeFunc(ct, func(args []reflect.Value) []reflect.Value {
+				out := make([]reflect.Value, ct.NumOut())
+				for i := range out {
+					out[i] = reflect.Zero(ct.Out(i))
+				}
+				return out
+			}).Interface()
+			SetCallback(ih, name, fn)
+			if GetCallback(ih, name) == 0 && name != "NUMERICGETVALUE_CB" { // purego cannot return a C double
+				t.Errorf("%s with %s was not registered", name, ct)
+			}
+			Destroy(ih)
+		}
+	}
+}
+
+// SetCallback converts a function literal, clears on a nil function and panics on mistakes.
+func TestSetCallbackCheck(t *testing.T) {
+	ih := User()
+	defer Destroy(ih)
+
+	SetCallback(ih, "MAP_CB", func(Ihandle) int { return DEFAULT })
+	if GetCallback(ih, "MAP_CB") == 0 {
+		t.Fatal("function literal for MAP_CB was not registered")
+	}
+	SetCallback(ih, "MAP_CB", MapFunc(nil))
+	if GetCallback(ih, "MAP_CB") != 0 {
+		t.Fatal("nil MapFunc did not clear MAP_CB")
+	}
+
+	for _, c := range []struct {
+		name string
+		fn   any
+	}{
+		{"MAP_CB", ActionFunc(func(Ihandle) int { return DEFAULT })},
+		{"ACTION", func(Ihandle, float64) int { return DEFAULT }},
+		{"MAPCB", MapFunc(func(Ihandle) int { return DEFAULT })},
+		{"VALUE_CB", func(Ihandle, int, int) string { return "" }},
+	} {
+		func() {
+			defer func() {
+				if r := recover(); r == nil {
+					t.Errorf("%s with %T did not panic", c.name, c.fn)
+				} else {
+					t.Logf("%s: %v", c.name, r)
+				}
+			}()
+			SetCallback(ih, c.name, c.fn)
+		}()
+	}
+}
+
+// On takes a function literal for a typed callback and the callback fires.
+func TestOnCallback(t *testing.T) {
+	mapped := false
+	b := On(Button("m"), MapCB, func(Ihandle) int {
+		mapped = true
+		return DEFAULT
+	})
+	dlg := Dialog(b)
+	Show(dlg)
+	Hide(dlg)
+	Destroy(dlg)
+	if !mapped {
+		t.Fatal("MAP_CB set with On did not fire")
 	}
 }
 

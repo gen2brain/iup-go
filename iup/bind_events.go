@@ -101,6 +101,9 @@ func GetCallback(ih Ihandle, name string) uintptr {
 //
 // https://gen2brain.github.io/iup-go/func/iup_setcallback.html
 func SetCallback(ih Ihandle, name string, fn interface{}) {
+	if fn != nil {
+		fn = checkCallback(name, fn)
+	}
 	if fn == nil {
 		cName := C.CString(name)
 		defer C.free(unsafe.Pointer(cName))

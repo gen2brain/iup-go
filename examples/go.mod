@@ -1,6 +1,6 @@
 module examples
 
-go 1.26.4
+go 1.27.0
 
 replace github.com/gen2brain/iup-go/iup => ../iup
 

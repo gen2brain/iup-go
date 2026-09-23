@@ -25,8 +25,11 @@
 // Names are upper case, values such as YES and NO are case-insensitive, and an unset attribute can
 // be inherited from the parent container.
 //
-// [Ihandle.SetCallback] registers a function for an event. A callback returns [DEFAULT], [CLOSE],
-// [IGNORE] or [CONTINUE].
+// [On] sets a callback named by a typed value such as [ActionCB], checked at compile time.
+// [Ihandle.SetCallback] takes the name as a string and panics on a mismatched function.
+// A callback returns [DEFAULT], [CLOSE], [IGNORE] or [CONTINUE].
+//
+//	iup.On(btn, iup.ActionCB, func(ih iup.Ihandle) int { return iup.CLOSE })
 //
 // # Program structure
 //

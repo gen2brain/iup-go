@@ -114,6 +114,9 @@ func GetCallback(ih Ihandle, name string) uintptr {
 }
 
 func SetCallback(ih Ihandle, name string, fn interface{}) {
+	if fn != nil {
+		fn = checkCallback(name, fn)
+	}
 	if fn == nil {
 		clearCallback(ih, "_IUPGO_"+name)
 		iupSetCallback(uintptr(ih), name, 0)
@@ -169,12 +172,6 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 			setCloseFunc(ih, v)
 		case NotifyCloseFunc:
 			setNotifyCloseFunc(ih, v)
-		case LocationFunc:
-			setLocationFunc(ih, v)
-		case SensorFunc:
-			setSensorFunc(ih, v)
-		case PermissionFunc:
-			setPermissionFunc(ih, v)
 		}
 	case "HELP_CB":
 		setHelpFunc(ih, fn.(HelpFunc))
@@ -648,6 +645,7 @@ func init() {
 		"VALUECHANGED_CB", "CLOSE_CB", "HELP_CB",
 		"CANCEL_CB", "COLORUPDATE_CB", "HIGHLIGHT_CB", "LAYOUTUPDATE_CB",
 		"MENUCLOSE_CB", "MENUOPEN_CB", "SWAPBUFFERS_CB", "THREAD_CB", "UPDATE_CB",
+		"BELL_CB",
 	} {
 		key := "_IUPGO_" + name
 		isThread := name == "THREAD_CB"

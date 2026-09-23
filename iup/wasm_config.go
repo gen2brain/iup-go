@@ -68,7 +68,7 @@ func ConfigLoad(ih Ihandle) int {
 
 func ConfigRecentInit(ih, menuOrList Ihandle, recentCb ActionFunc, maxRecent int) {
 	if recentCb != nil {
-		SetCallback(ih, "RECENT_CB", recentCb)
+		setCallback(ih, "RECENT_CB", recentCb)
 	}
 	ccall("IupConfigRecentInit", "", []interface{}{"number", "number", "number", "number"}, []interface{}{int(ih), int(menuOrList), 0, maxRecent})
 }

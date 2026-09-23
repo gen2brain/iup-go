@@ -731,6 +731,13 @@ func GetInt(ih Ihandle, name string) int {
 //
 // https://gen2brain.github.io/iup-go/func/iup_setcallback.html
 func SetCallback(ih Ihandle, name string, fn interface{}) {
+	if fn != nil {
+		fn = checkCallback(name, fn)
+	}
+	setCallback(ih, name, fn)
+}
+
+func setCallback(ih Ihandle, name string, fn interface{}) {
 	if fn == nil {
 		delete(callbacks, cbKey{ih, name})
 		ccall("IupSetCallback", "", []interface{}{"number", "string", "number"}, []interface{}{int(ih), name, 0})
