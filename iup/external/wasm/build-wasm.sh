@@ -119,39 +119,41 @@ CORE_IUP=$(ls "$SRC"/iup_*.c | grep -v '/iup_datepick\.c$')
 CORE="$SRC/iup.c $CORE_IUP $SRC/wasm/iupwasm_*.c"
 
 GLFLAGS=""
-GL_EXPORTS=""
 if has_tag gl; then
   CORE="$CORE $EXTERNAL/srcgl/iup_glcanvas.c $EXTERNAL/srcgl/iup_glcanvas_wasm.c"
   GLFLAGS="-sMAX_WEBGL_VERSION=2 -sMIN_WEBGL_VERSION=1"
-  GL_EXPORTS=",_IupGLCanvasOpen,_IupGLCanvas,_IupGLBackgroundBox,_IupGLMakeCurrent,_IupGLIsCurrent,_IupGLSwapBuffers,_IupGLPalette,_IupGLUseFont,_IupGLWait,_iupwasmGLDomId"
 fi
 
-WEB_EXPORTS=""
 if has_tag web; then
   CORE="$CORE $EXTERNAL/srcweb/iup_webbrowser.c $EXTERNAL/srcweb/iupwasm_webbrowser.c"
-  WEB_EXPORTS=",_IupWebBrowserOpen,_IupWebBrowser"
 fi
 
-CTRL_EXPORTS=""
 if has_tag ctrl; then
   CFLAGS="$CFLAGS -I$EXTERNAL/srcctrl"
   CORE="$CORE $EXTERNAL/srcctrl/*.c $EXTERNAL/srcctrl/matrix/*.c $EXTERNAL/srcctrl/matrixex/*.c"
-  CTRL_EXPORTS=",_IupControlsOpen,_IupCells,_IupMatrix,_IupMatrixList,_IupMatrixEx,_IupFlatButton,_IupFlatLabel,_IupFlatToggle,_IupFlatFrame,_IupFlatList,_IupFlatTree,_IupFlatVal,_IupFlatTabs,_IupFlatScrollBox,_IupDropButton,_IupGauge"
 fi
 
-MEDIA_EXPORTS=""
 if has_tag media; then
   CFLAGS="$CFLAGS -I$EXTERNAL/srcmedia -isystem $EXTERNAL/srcmedia/bundled"
   CORE="$CORE $EXTERNAL/srcmedia/iup_media.c $EXTERNAL/srcmedia/iup_audio.c $EXTERNAL/srcmedia/iup_miniaudio.c $EXTERNAL/srcmedia/iup_camera.c $EXTERNAL/srcmedia/iup_microphone.c $EXTERNAL/srcmedia/iupwasm_audio.c $EXTERNAL/srcmedia/iupwasm_camera.c $EXTERNAL/srcmedia/iupwasm_microphone.c"
-  MEDIA_EXPORTS=",_IupMediaOpen,_IupAudio,_IupCamera,_IupMicrophone"
 fi
 
-PLOT_EXPORTS=""
 if has_tag plot; then
   CFLAGS="$CFLAGS -I$EXTERNAL/srcplot"
   CORE="$CORE $EXTERNAL/srcplot/*.cpp"
-  PLOT_EXPORTS=",_IupPlotOpen,_IupPlot,_IupPlotBegin,_IupPlotAdd,_IupPlotAddStr,_IupPlotAddSamples,_IupPlotAddStrSamples,_IupPlotInsert,_IupPlotInsertStr,_IupPlotInsertSamples,_IupPlotInsertStrSamples,_IupPlotAddSegment,_IupPlotInsertSegment,_IupPlotEnd,_IupPlotLoadData,_IupPlotSetSample,_IupPlotSetSampleStr,_IupPlotSetSampleSelection,_IupPlotSetSampleExtra,_IupPlotGetSample,_IupPlotGetSampleStr,_IupPlotGetSampleSelection,_IupPlotGetSampleExtra,_IupPlotTransform,_IupPlotTransformTo,_IupPlotFindSample,_IupPlotFindSegment"
 fi
+
+wasm_exports() {
+  local gofiles defined
+  gofiles=$(cd "$REPO/iup" && GOOS=js GOARCH=wasm go list -e -tags "$TAGS" -f '{{range .GoFiles}}{{$.Dir}}/{{.}} {{end}}' .)
+  [ -n "$gofiles" ] || return 1
+  defined=$(grep -hoE '^[A-Za-z_][A-Za-z0-9_ *]*[ *]((Iup|iupwasm)[A-Za-z0-9_]*)[ ]*\([^;{]*(\{.*)?$' $CORE "$REPO/iup/wasm_bridge.c" |
+    sed -E 's/^[^(]*[ *]((Iup|iupwasm)[A-Za-z0-9_]*)[ ]*\(.*/\1/' | sort -u)
+  { grep -ohE "\"(Iup|iupwasm)[A-Za-z0-9_]*\"" $gofiles
+    grep -ohE "['\"_](Iup|iupwasm)[A-Za-z0-9_]*['\"(]" "$HERE"/web/*.js
+  } | sed -E "s/^['\"_]//; s/['\"(]$//" | sort -u | comm -12 - <(echo "$defined") |
+    sed 's/^/_/' | paste -sd, - | sed 's/^/_malloc,_free,/'
+}
 
 if [ "$FORCE" = 1 ] || [ ! -f "$BUILD/iup.js" ]; then MODULE_FRESH=1; else MODULE_FRESH=0; fi
 
@@ -176,9 +178,7 @@ case "$APP" in
     cp "$HERE/web/index.html" "$BUILD/index.html"
     ;;
   *)
-    EXPORTS="_IupOpen,_IupClose,_IupMainLoop,_IupShow,_IupShowXY,_IupPopup,_IupLabel,_IupButton,_IupToggle,_IupText,_IupMultiLine,_IupList,_IupTabs,_IupVal,_IupProgressBar,_IupTimer,_IupCanvas,_IupTerminal,_IupCalendar,_IupTable,_IupScrollbar,_IupPopover,_IupTree,_IupSetAttributeId,_IupSetStrAttributeId,_IupGetAttributeId,_IupSetAttributeId2,_IupSetStrAttributeId2,_IupGetAttributeId2,_IupRadio,_IupDestroy,_IupGetGlobal,_IupGetChild,_IupGetFloat,_IupImage,_IupImageRGB,_IupImageRGBA,_IupImageFromHandle,_IupDialog,_IupFrame,_IupFill,_iupwasmTabs0,_IupAppend,_IupGetParent,_IupGetChildPos,_IupGetHandle,_IupGetName,_IupGetInt,_IupSetAttribute,_IupSetStrAttribute,_IupSetAttributeHandle,_IupGetAttribute,_IupSetHandle,_IupSetAttributes,_IupSetGlobal,_IupSetStrGlobal,_IupMessage,_IupMessageError,_IupMessageAlarm,_IupAlarm,_IupNotify,_IupLocation,_IupSensor,_IupClipboard,_IupHelp,_IupFontDlg,_IupSubmenu,_IupMenuItem,_IupSeparator,_IupMenuSeparator,_iupwasmMenu0,_IupDrawBegin,_IupDrawEnd,_IupDrawGetSize,_IupDrawParentBackground,_IupDrawLine,_IupDrawRectangle,_IupDrawArc,_IupDrawEllipse,_IupDrawPolygon,_IupDrawPixel,_IupDrawRoundedRectangle,_IupDrawBezier,_IupDrawQuadraticBezier,_IupDrawText,_IupDrawImage,_IupDrawSelectRect,_IupDrawFocusRect,_IupDrawSetClipRect,_IupDrawSetClipRoundedRect,_IupDrawResetClip,_IupDrawLinearGradient,_IupDrawRadialGradient,_IupDrawLinearGradientStops,_IupDrawRadialGradientStops,_IupDrawPathBegin,_IupDrawPathMoveTo,_IupDrawPathLineTo,_IupDrawPathCurveTo,_IupDrawPathQuadTo,_IupDrawPathArcTo,_IupDrawPathClose,_IupDrawPathMoveToF,_IupDrawPathLineToF,_IupDrawPathCurveToF,_IupDrawPathQuadToF,_IupDrawPathArcToF,_IupDrawPathCreate,_IupDrawPathClear,_IupDrawSetPath,_IupDrawPathGetBounds,_IupDrawPathContains,_IupDrawPathSetSvg,_IupDrawPathFill,_IupDrawPathStroke,_IupDrawSetClipPath,_IupDrawSetSourceSolid,_IupDrawSetSourceLinearGradient,_IupDrawSetSourceRadialGradient,_IupDrawResetSource,_IupDrawGetTextSize,_IupDrawGetTextMetrics,_iupwasmVbox0,_iupwasmHbox0,_IupSetCallback,_iupwasmGoSetCallback,_iupwasmGoSetIdle,_iupwasmListReorder,_iupwasmDndTransfer,_iupwasmGetParamv,_iupwasmThemeChanged,_IupFileDlg,_IupMessageDlg,_IupColorDlg,_IupColorBrowser,_IupProgressDlg,_IupGetFile,_IupGetColor,_IupGetText,_IupListDialog,_malloc,_free$GL_EXPORTS$WEB_EXPORTS"
-    EXPORTS="$EXPORTS,_IupAnimatedLabel,_IupBackgroundBox,_IupClassMatch,_IupConfig,_IupConfigDialogClosed,_IupConfigDialogShow,_IupConfigGetVariableDouble,_IupConfigGetVariableDoubleDef,_IupConfigGetVariableDoubleId,_IupConfigGetVariableDoubleIdDef,_IupConfigGetVariableInt,_IupConfigGetVariableIntDef,_IupConfigGetVariableIntId,_IupConfigGetVariableIntIdDef,_IupConfigGetVariableStr,_IupConfigGetVariableStrDef,_IupConfigGetVariableStrId,_IupConfigGetVariableStrIdDef,_IupConfigLoad,_IupConfigRecentInit,_IupConfigRecentUpdate,_IupConfigSave,_IupConfigSetListVariable,_IupConfigSetVariableDouble,_IupConfigSetVariableDoubleId,_IupConfigSetVariableInt,_IupConfigSetVariableIntId,_IupConfigSetVariableStr,_IupConfigSetVariableStrId,_IupConvertXYToPos,_IupCopyClassAttributes,_IupCreate,_IupDatePick,_IupDetach,_IupDetachBox,_IupDrawGetClipRect,_IupDrawGetImage,_IupDrawGetImageInfo,_IupDrawGetSvg,_IupExecute,_IupExecuteWait,_IupExitLoop,_IupExpander,_IupFlush,_IupGetAllAttributes,_IupGetAllClasses,_IupGetAllDialogs,_IupGetAllFunctions,_IupGetAllGlobals,_IupGetAllNames,_IupGetAttributeHandle,_IupGetAttributeHandleId,_IupGetAttributeHandleId2,_IupGetAttributes,_IupGetBrother,_IupGetCallback,_IupGetChildCount,_IupGetClassAttributeInfo,_IupGetClassAttributes,_IupGetClassCallbackFormat,_IupGetClassCallbacks,_IupGetClassConstructor,_IupGetClassInfo,_IupGetClassName,_IupGetClassType,_IupGetDialog,_IupGetDialogChild,_IupGetDouble,_IupGetDoubleId,_IupGetDoubleId2,_IupGetFloatId,_IupGetFloatId2,_IupGetFocus,_IupGetFunction,_IupGetGlobalInfo,_IupGetIntId,_IupGetIntId2,_IupGetIntInt,_IupGetLanguage,_IupGetLanguageString,_IupGetNextChild,_IupGetRGB,_IupGetRGBA,_IupGetRGBId,_IupGetRGBId2,_IupHide,_IupImageGetHandle,_IupImageSave,_IupImageSaveToBuffer,_IupInsert,_IupLink,_IupLog,_IupLoopStep,_IupLoopStepWait,_IupMainLoopLevel,_IupMap,_IupNextField,_IupParam,_IupPlayInput,_IupPostMessage,_IupPreviousField,_IupRecordInput,_IupRedraw,_IupRefresh,_IupRefreshChildren,_IupReparent,_IupResetAttribute,_IupSaveClassAttributes,_IupSbox,_IupScrollBox,_IupSetAttributeHandleId,_IupSetAttributeHandleId2,_IupSetClassDefaultAttribute,_IupSetFocus,_IupSetLanguage,_IupSetLanguagePack,_IupSetRGB,_IupSetRGBA,_IupSetRGBId,_IupSetRGBId2,_IupSpace,_IupSpin,_IupSpinbox,_IupSplit,_IupStringCompare,_IupTextConvertLinColToPos,_IupTextConvertPosToLinCol,_IupThread,_IupTray,_IupTreeGetId,_IupTreeGetUserId,_IupTreeSetAttributeHandle,_IupTreeSetUserId,_IupUnmap,_IupUpdate,_IupUpdateChildren,_IupUser,_IupVersion,_IupVersionDate,_IupVersionNumber,_IupVersionShow,_IupCbox,_IupZbox,_IupGridBox,_IupMultiBox,_IupNormalizer,_IupParamBox,_IupDial,_IupColorbar,_IupElementPropertiesDialog,_IupClassInfoDialog,_IupGlobalsDialog$CTRL_EXPORTS$PLOT_EXPORTS$MEDIA_EXPORTS"
-    EXPORTS="$EXPORTS,_IupDrawSave,_IupDrawRestore,_IupDrawTransform,_IupDrawSetTransform,_IupDrawResetTransform,_IupDrawGetTransform,_IupDrawTranslate,_IupDrawScale,_IupDrawRotate"
+    EXPORTS=$(wasm_exports)
     RUNTIME="ccall,cwrap,UTF8ToString,stringToUTF8,lengthBytesUTF8,setValue,getValue,HEAPU8,FS,IDBFS"
     if [ "$MODULE_FRESH" = 1 ]; then
       echo ">>> emcc (Go module): IUP library"
