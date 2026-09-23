@@ -32,6 +32,16 @@ extern "C" {
 #include "iupfltk_drv.h"
 
 
+struct FltkDrawLayer
+{
+  Fl_Offscreen parent;
+  int grouped;
+  int clip_pushed;
+  int clip_x1, clip_y1, clip_x2, clip_y2;
+  IupDrawMatrix matrix;
+  std::vector<unsigned char> clip_mask;
+};
+
 struct _IdrawCanvas
 {
   Ihandle* ih;
@@ -39,7 +49,9 @@ struct _IdrawCanvas
   int w, h;
 
   Fl_Offscreen offscreen;
+  Fl_Offscreen target;
   Fl_Offscreen clip_offscreen;
+  std::vector<FltkDrawLayer> layers;
   int in_offscreen;
   int clip_pushed;
 
@@ -53,6 +65,11 @@ static int fltkDrawIdentity(const IdrawCanvas* dc)
 {
   return dc->matrix.a == 1 && dc->matrix.b == 0 && dc->matrix.c == 0 &&
          dc->matrix.d == 1 && dc->matrix.e == 0 && dc->matrix.f == 0;
+}
+
+static Fl_Offscreen fltkDrawCurrentOffscreen(const IdrawCanvas* dc)
+{
+  return dc->clip_offscreen ? dc->clip_offscreen : dc->target;
 }
 
 static void fltkDrawTransformPoint(const IupDrawMatrix* matrix, double x, double y, double* tx, double* ty)
@@ -495,7 +512,7 @@ static void fltkDrawShapeStroke(IdrawCanvas* dc, const FltkShape& shape, const I
     return;
   }
 
-  Fl_Offscreen target = dc->clip_offscreen ? dc->clip_offscreen : dc->offscreen;
+  Fl_Offscreen target = fltkDrawCurrentOffscreen(dc);
   fl_end_offscreen();
   dc->in_offscreen = 0;
   Fl_Offscreen mask_offscreen = fl_create_offscreen(dc->w, dc->h);
@@ -547,7 +564,7 @@ static void fltkDrawCommitClipMask(IdrawCanvas* dc)
     dc->in_offscreen = 0;
   }
 
-  fl_begin_offscreen(dc->offscreen);
+  fl_begin_offscreen(dc->target);
   dc->in_offscreen = 1;
 
   for (int y = 0; y < dc->h; y++)
@@ -583,7 +600,50 @@ static void fltkDrawBeginClipMask(IdrawCanvas* dc)
 
   fl_begin_offscreen(dc->clip_offscreen);
   dc->in_offscreen = 1;
-  fl_copy_offscreen(0, 0, dc->w, dc->h, dc->offscreen, 0, 0);
+  fl_copy_offscreen(0, 0, dc->w, dc->h, dc->target, 0, 0);
+}
+
+static void fltkDrawDropLayers(IdrawCanvas* dc)
+{
+  while (!dc->layers.empty())
+  {
+    FltkDrawLayer& layer = dc->layers.back();
+
+    if (dc->in_offscreen)
+    {
+      fl_end_offscreen();
+      dc->in_offscreen = 0;
+    }
+
+    if (dc->clip_offscreen)
+    {
+      fl_delete_offscreen(dc->clip_offscreen);
+      dc->clip_offscreen = 0;
+    }
+
+    if (dc->clip_pushed)
+    {
+      fl_begin_offscreen(dc->target);
+      fl_pop_clip();
+      fl_end_offscreen();
+      dc->clip_pushed = 0;
+    }
+
+    if (layer.grouped)
+      fl_delete_offscreen(dc->target);
+
+    dc->target = layer.parent;
+    dc->clip_x1 = layer.clip_x1;
+    dc->clip_y1 = layer.clip_y1;
+    dc->clip_x2 = layer.clip_x2;
+    dc->clip_y2 = layer.clip_y2;
+    dc->matrix = layer.matrix;
+    dc->clip_mask.swap(layer.clip_mask);
+    dc->layers.pop_back();
+
+    fl_begin_offscreen(dc->target);
+    dc->in_offscreen = 1;
+  }
 }
 
 extern "C" IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
@@ -616,6 +676,7 @@ extern "C" IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
 
   iupAttribSet(ih, "DRAWDRIVER", "FLTK");
 
+  dc->target = dc->offscreen;
   fl_begin_offscreen(dc->offscreen);
   dc->in_offscreen = 1;
 
@@ -637,6 +698,7 @@ extern "C" IUP_SDK_API void iupdrvDrawKillCanvas(IdrawCanvas* dc)
 {
   if (!dc) return;
 
+  fltkDrawDropLayers(dc);
   fltkDrawCommitClipMask(dc);
 
   if (dc->clip_pushed)
@@ -698,6 +760,8 @@ extern "C" IUP_SDK_API void iupdrvDrawUpdateSize(IdrawCanvas* dc)
 
   if (new_w != dc->w || new_h != dc->h)
   {
+    fltkDrawDropLayers(dc);
+
     if (dc->clip_pushed)
     {
       fl_pop_clip();
@@ -724,6 +788,7 @@ extern "C" IUP_SDK_API void iupdrvDrawUpdateSize(IdrawCanvas* dc)
     dc->clip_mask.clear();
 
     dc->offscreen = fl_create_offscreen(dc->w, dc->h);
+    dc->target = dc->offscreen;
     iupAttribSet(dc->ih, "_IUP_FLTK_OFFSCREEN", (char*)(size_t)dc->offscreen);
     iupAttribSetInt(dc->ih, "_IUP_FLTK_OFFSCREEN_W", dc->w);
     iupAttribSetInt(dc->ih, "_IUP_FLTK_OFFSCREEN_H", dc->h);
@@ -1194,7 +1259,7 @@ static std::vector<unsigned char> fltkDrawImagePixels(IdrawCanvas* dc, Fl_Image*
     fl_end_offscreen();
     fl_delete_offscreen(offscreen);
   }
-  fl_begin_offscreen(dc->clip_offscreen ? dc->clip_offscreen : dc->offscreen);
+  fl_begin_offscreen(fltkDrawCurrentOffscreen(dc));
   dc->in_offscreen = 1;
   Fl_Image::RGB_scaling(old_scaling);
   if (samples[0] && samples[1])
@@ -1283,7 +1348,7 @@ static void fltkDrawMaskEnd(IdrawCanvas* dc, FltkDrawMask* mask, Fl_Offscreen of
   }
   fl_end_offscreen();
   fl_delete_offscreen(offscreen);
-  fl_begin_offscreen(dc->clip_offscreen ? dc->clip_offscreen : dc->offscreen);
+  fl_begin_offscreen(fltkDrawCurrentOffscreen(dc));
   dc->in_offscreen = 1;
 }
 
@@ -1759,6 +1824,124 @@ extern "C" IUP_SDK_API void iupdrvDrawResetClip(IdrawCanvas* dc)
   dc->clip_mask.clear();
 }
 
+extern "C" IUP_SDK_API int iupdrvDrawBeginLayer(IdrawCanvas* dc, int alpha)
+{
+  (void)alpha;
+  if (!dc) return 0;
+
+  fltkDrawCommitClipMask(dc);
+
+  FltkDrawLayer layer;
+  layer.parent = dc->target;
+  layer.grouped = 0;
+  layer.clip_pushed = dc->clip_pushed;
+  layer.clip_x1 = dc->clip_x1;
+  layer.clip_y1 = dc->clip_y1;
+  layer.clip_x2 = dc->clip_x2;
+  layer.clip_y2 = dc->clip_y2;
+  layer.matrix = dc->matrix;
+  layer.clip_mask.swap(dc->clip_mask);
+
+  if (dc->clip_pushed)
+  {
+    fl_pop_clip();
+    dc->clip_pushed = 0;
+  }
+
+  dc->clip_x1 = 0;
+  dc->clip_y1 = 0;
+  dc->clip_x2 = 0;
+  dc->clip_y2 = 0;
+
+  Fl_Offscreen group = fl_create_offscreen(dc->w, dc->h);
+  if (group)
+  {
+    if (dc->in_offscreen)
+    {
+      fl_end_offscreen();
+      dc->in_offscreen = 0;
+    }
+
+    fl_begin_offscreen(group);
+    dc->in_offscreen = 1;
+    fl_copy_offscreen(0, 0, dc->w, dc->h, dc->target, 0, 0);
+    dc->target = group;
+    layer.grouped = 1;
+  }
+
+  dc->layers.push_back(std::move(layer));
+  return 1;
+}
+
+extern "C" IUP_SDK_API void iupdrvDrawEndLayer(IdrawCanvas* dc, int alpha)
+{
+  if (!dc || dc->layers.empty()) return;
+
+  fltkDrawCommitClipMask(dc);
+
+  if (!dc->in_offscreen)
+  {
+    fl_begin_offscreen(dc->target);
+    dc->in_offscreen = 1;
+  }
+
+  if (dc->clip_pushed)
+  {
+    fl_pop_clip();
+    dc->clip_pushed = 0;
+  }
+
+  FltkDrawLayer& layer = dc->layers.back();
+  uchar* group_pixels = NULL;
+  uchar* parent_pixels = NULL;
+
+  if (layer.grouped)
+  {
+    group_pixels = fl_read_image(NULL, 0, 0, dc->w, dc->h);
+    fl_end_offscreen();
+    fl_delete_offscreen(dc->target);
+    dc->target = layer.parent;
+    fl_begin_offscreen(dc->target);
+    parent_pixels = fl_read_image(NULL, 0, 0, dc->w, dc->h);
+  }
+
+  int clip_pushed = layer.clip_pushed;
+  dc->clip_x1 = layer.clip_x1;
+  dc->clip_y1 = layer.clip_y1;
+  dc->clip_x2 = layer.clip_x2;
+  dc->clip_y2 = layer.clip_y2;
+  dc->matrix = layer.matrix;
+  dc->clip_mask.swap(layer.clip_mask);
+  dc->layers.pop_back();
+
+  if (clip_pushed)
+  {
+    fl_push_clip(dc->clip_x1, dc->clip_y1, dc->clip_x2 - dc->clip_x1 + 1, dc->clip_y2 - dc->clip_y1 + 1);
+    dc->clip_pushed = 1;
+  }
+  else if (!dc->clip_mask.empty())
+    fltkDrawBeginClipMask(dc);
+
+  if (group_pixels && parent_pixels && alpha > 0)
+  {
+    size_t count = (size_t)dc->w * dc->h;
+    uchar* data = new uchar[count * 4];
+    for (size_t i = 0; i < count; i++)
+    {
+      data[i * 4 + 0] = group_pixels[i * 3 + 0];
+      data[i * 4 + 1] = group_pixels[i * 3 + 1];
+      data[i * 4 + 2] = group_pixels[i * 3 + 2];
+      data[i * 4 + 3] = memcmp(group_pixels + i * 3, parent_pixels + i * 3, 3) ? (uchar)alpha : 0;
+    }
+    Fl_RGB_Image image(data, dc->w, dc->h, 4);
+    image.alloc_array = 1;
+    image.draw(0, 0);
+  }
+
+  delete[] group_pixels;
+  delete[] parent_pixels;
+}
+
 extern "C" IUP_SDK_API void iupdrvDrawGetClipRect(IdrawCanvas* dc, int* x1, int* y1, int* x2, int* y2)
 {
   if (!dc) return;
@@ -1852,7 +2035,7 @@ extern "C" IUP_SDK_API int iupdrvDrawGetImageData(IdrawCanvas* dc, unsigned char
 
   if (!dc->in_offscreen)
   {
-    fl_begin_offscreen(dc->offscreen);
+    fl_begin_offscreen(dc->target);
     dc->in_offscreen = 1;
   }
 

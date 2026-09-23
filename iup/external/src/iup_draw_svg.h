@@ -50,6 +50,8 @@ void iupSvgDrawSetClipRect(iSvgCanvas* dc, int x1, int y1, int x2, int y2);
 void iupSvgDrawSetClipRoundedRect(iSvgCanvas* dc, int x1, int y1, int x2, int y2, int corner_radius);
 void iupSvgDrawSetClipPath(iSvgCanvas* dc, const IupPathSeg* segs, int count, int rule);
 void iupSvgDrawResetClip(iSvgCanvas* dc);
+void iupSvgDrawBeginLayer(iSvgCanvas* dc, int alpha);
+void iupSvgDrawEndLayer(iSvgCanvas* dc);
 void iupSvgDrawGetClipRect(iSvgCanvas* dc, int* x1, int* y1, int* x2, int* y2);
 
 void iupSvgDrawImageRGBA(iSvgCanvas* dc, const unsigned char* rgba, int img_w, int img_h, int x, int y, int w, int h, int quality);

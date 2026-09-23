@@ -37,6 +37,16 @@ extern "C" {
 
 
 
+struct IhaikuDrawLayer
+{
+  BBitmap* bm;
+  BView* view;
+  int clip_state;
+  IupDrawMatrix matrix;
+  char* clip;
+  IhaikuDrawLayer* next;
+};
+
 struct _IdrawCanvas
 {
   Ihandle* ih;
@@ -46,6 +56,7 @@ struct _IdrawCanvas
   int h;
   int clip_state;
   IupDrawMatrix matrix;
+  IhaikuDrawLayer* layers;
 };
 
 static rgb_color haikuColorFromLong(long c)
@@ -141,9 +152,60 @@ extern "C" IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
   return dc;
 }
 
+static void haikuDrawPopLayer(IdrawCanvas* dc, int alpha, int composite)
+{
+  IhaikuDrawLayer* layer = dc->layers;
+  BBitmap* group = dc->bm;
+  dc->layers = layer->next;
+
+  group->Lock();
+  dc->view->Sync();
+  group->Unlock();
+
+  if (composite && alpha > 0)
+  {
+    uint8* bits = (uint8*)group->Bits();
+    int32 bpr = group->BytesPerRow();
+    int w = group->Bounds().IntegerWidth() + 1;
+    int h = group->Bounds().IntegerHeight() + 1;
+    for (int y = 0; y < h; y++)
+    {
+      uint8* row = bits + y * bpr;
+      for (int x = 0; x < w; x++)
+        row[x * 4 + 3] = 255;
+    }
+  }
+
+  dc->bm = layer->bm;
+  dc->view = layer->view;
+  dc->clip_state = layer->clip_state;
+
+  dc->bm->Lock();
+  if (composite && alpha > 0)
+  {
+    dc->view->SetTransform(BAffineTransform());
+    dc->view->PushState();
+    dc->view->SetDrawingMode(B_OP_ALPHA);
+    dc->view->SetBlendingMode(B_CONSTANT_ALPHA, B_ALPHA_OVERLAY);
+    rgb_color c = { 0, 0, 0, (uint8)alpha };
+    dc->view->SetHighColor(c);
+    dc->view->DrawBitmap(group, BPoint(0, 0));
+    dc->view->PopState();
+  }
+  haikuSetTransform(dc, &layer->matrix);
+  dc->bm->Unlock();
+
+  delete group;
+  iupAttribSetStr(dc->ih, "_IUPHAIKU_CLIP", layer->clip);
+  free(layer->clip);
+  free(layer);
+}
+
 extern "C" IUP_SDK_API void iupdrvDrawKillCanvas(IdrawCanvas* dc)
 {
   if (!dc) return;
+  while (dc->layers)
+    haikuDrawPopLayer(dc, 0, 0);
   if (dc->bm)
   {
     delete dc->bm;
@@ -1097,6 +1159,60 @@ extern "C" IUP_SDK_API void iupdrvDrawResetClip(IdrawCanvas* dc)
     haikuSetTransform(dc, &dc->matrix);
   }
   dc->bm->Unlock();
+}
+
+extern "C" IUP_SDK_API int iupdrvDrawBeginLayer(IdrawCanvas* dc, int alpha)
+{
+  (void)alpha;
+  if (!dc || !dc->bm) return 0;
+  IhaikuDrawLayer* layer = (IhaikuDrawLayer*)calloc(1, sizeof(IhaikuDrawLayer));
+  if (!layer) return 0;
+
+  BBitmap* bm = new BBitmap(dc->bm->Bounds(), B_BITMAP_ACCEPTS_VIEWS, B_RGBA32);
+  if (!bm || bm->InitCheck() != B_OK)
+  {
+    delete bm;
+    free(layer);
+    return 0;
+  }
+  BView* view = new BView(bm->Bounds(), "iup_layer", B_FOLLOW_ALL_SIDES, B_WILL_DRAW);
+  bm->AddChild(view);
+
+  dc->bm->Lock();
+  dc->view->Sync();
+  dc->bm->Unlock();
+
+  bm->Lock();
+  view->SetDrawingMode(B_OP_COPY);
+  view->DrawBitmap(dc->bm, BPoint(0, 0));
+  view->Sync();
+  bm->Unlock();
+
+  layer->bm = dc->bm;
+  layer->view = dc->view;
+  layer->clip_state = dc->clip_state;
+  layer->matrix = dc->matrix;
+  layer->clip = iupStrDup(iupAttribGet(dc->ih, "_IUPHAIKU_CLIP"));
+  layer->next = dc->layers;
+  dc->layers = layer;
+
+  dc->bm = bm;
+  dc->view = view;
+  dc->clip_state = 0;
+  iupAttribSet(dc->ih, "_IUPHAIKU_CLIP", NULL);
+
+  bm->Lock();
+  view->SetDrawingMode(B_OP_ALPHA);
+  view->SetBlendingMode(B_PIXEL_ALPHA, B_ALPHA_OVERLAY);
+  haikuSetTransform(dc, &layer->matrix);
+  bm->Unlock();
+  return 1;
+}
+
+extern "C" IUP_SDK_API void iupdrvDrawEndLayer(IdrawCanvas* dc, int alpha)
+{
+  if (!dc || !dc->bm || !dc->layers) return;
+  haikuDrawPopLayer(dc, alpha, 1);
 }
 
 extern "C" IUP_SDK_API void iupdrvDrawGetClipRect(IdrawCanvas* dc, int* x1, int* y1, int* x2, int* y2)

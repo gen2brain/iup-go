@@ -79,6 +79,7 @@ typedef struct _IupDrawStateStack
   IupDrawSource source;
   int has_source;
   char* attribs[IUP_DRAW_STATE_ATTRIB_COUNT];
+  int layer, alpha;
   struct _IupDrawStateStack* next;
 } IupDrawStateStack;
 
@@ -387,6 +388,30 @@ static const IupDrawSource* iDrawSourceCurrent(Ihandle* ih, IupDrawSource* solid
   return solid;
 }
 
+static void iDrawEndLayer(Ihandle* ih, int alpha)
+{
+  iSvgCanvas* svg = IUP_SVG_GET(ih);
+  if (svg)
+    iupSvgDrawEndLayer(svg);
+  else
+    iupdrvDrawEndLayer((IdrawCanvas*)iupAttribGet(ih, "_IUP_DRAW_DC"), alpha);
+}
+
+static void iDrawEndAllLayers(Ihandle* ih)
+{
+  IupDrawState* state = iDrawStateGet(ih);
+  IupDrawStateStack* item;
+
+  if (!state || !iupAttribGet(ih, "_IUP_DRAW_DC"))
+    return;
+
+  for (item = state->stack; item; item = item->next)
+  {
+    if (item->layer)
+      iDrawEndLayer(ih, item->alpha);
+  }
+}
+
 
 IUP_API void IupDrawBegin(Ihandle* ih)
 {
@@ -394,6 +419,7 @@ IUP_API void IupDrawBegin(Ihandle* ih)
   if (!iupObjectCheck(ih))
     return;
 
+  iDrawEndAllLayers(ih);
   iDrawPathFree(ih);
   iDrawSourceFree(ih);
   iDrawStateFree(ih);
@@ -421,6 +447,7 @@ IUP_API void IupDrawEnd(Ihandle* ih)
   if (!iupObjectCheck(ih))
     return;
 
+  iDrawEndAllLayers(ih);
   iDrawPathFree(ih);
   iDrawSourceFree(ih);
   iDrawStateFree(ih);
@@ -440,7 +467,7 @@ IUP_API void IupDrawEnd(Ihandle* ih)
   iupAttribSet(ih, "_IUP_DRAW_DC", NULL);
 }
 
-IUP_API void IupDrawSave(Ihandle* ih)
+static IupDrawStateStack* iDrawSavePush(Ihandle* ih)
 {
   IupDrawStateStack* item;
   IupDrawState* state;
@@ -449,21 +476,21 @@ IUP_API void IupDrawSave(Ihandle* ih)
 
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih) || !iupAttribGet(ih, "_IUP_DRAW_DC"))
-    return;
+    return NULL;
 
   state = iDrawStateGet(ih);
   if (!state)
-    return;
+    return NULL;
 
   item = (IupDrawStateStack*)calloc(1, sizeof(IupDrawStateStack));
   if (!item)
-    return;
+    return NULL;
 
   item->matrix = state->matrix;
   if (!iDrawClipCopy(&item->clip, &state->clip))
   {
     iDrawStateStackFree(item);
-    return;
+    return NULL;
   }
 
   source = (IupDrawSource*)iupAttribGet(ih, "_IUPDRAW_SOURCE");
@@ -482,13 +509,46 @@ IUP_API void IupDrawSave(Ihandle* ih)
       if (!item->attribs[i])
       {
         iDrawStateStackFree(item);
-        return;
+        return NULL;
       }
     }
   }
 
   item->next = state->stack;
   state->stack = item;
+  return item;
+}
+
+IUP_API void IupDrawSave(Ihandle* ih)
+{
+  (void)iDrawSavePush(ih);
+}
+
+IUP_API void IupDrawSaveLayer(Ihandle* ih, int alpha)
+{
+  IupDrawStateStack* item = iDrawSavePush(ih);
+  IupDrawState* state;
+  iSvgCanvas* svg;
+
+  if (!item)
+    return;
+
+  if (alpha < 0) alpha = 0;
+  if (alpha > 255) alpha = 255;
+
+  item->alpha = alpha;
+
+  svg = IUP_SVG_GET(ih);
+  if (svg)
+  {
+    iupSvgDrawBeginLayer(svg, alpha);
+    item->layer = 1;
+  }
+  else
+    item->layer = iupdrvDrawBeginLayer((IdrawCanvas*)iupAttribGet(ih, "_IUP_DRAW_DC"), alpha);
+
+  state = iDrawStateGet(ih);
+  iDrawReplayClip(ih, &state->clip, &state->matrix);
 }
 
 IUP_API void IupDrawRestore(Ihandle* ih)
@@ -507,6 +567,9 @@ IUP_API void IupDrawRestore(Ihandle* ih)
 
   item = state->stack;
   state->stack = item->next;
+
+  if (item->layer)
+    iDrawEndLayer(ih, item->alpha);
 
   for (i = 0; i < IUP_DRAW_STATE_ATTRIB_COUNT; i++)
     iupAttribSetStr(ih, iDrawStateAttribNames[i], item->attribs[i]);
@@ -2169,6 +2232,14 @@ IUP_API Ihandle* IupDrawGetImage(Ihandle* ih)
   dc = (IdrawCanvas*)iupAttribGet(ih, "_IUP_DRAW_DC");
   if (dc)
   {
+    IupDrawState* state = iDrawStateGet(ih);
+    IupDrawStateStack* item;
+    for (item = state ? state->stack : NULL; item; item = item->next)
+    {
+      if (item->layer)
+        return NULL;
+    }
+
     iupdrvDrawGetSize(dc, &w, &h);
     if (w <= 0 || h <= 0 || w > 32767 || h > 32767)
       return NULL;

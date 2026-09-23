@@ -20,6 +20,7 @@ IUP_API void IupDrawEnd(Ihandle* ih);
 
 IUP_API void IupDrawSave(Ihandle* ih);
 IUP_API void IupDrawRestore(Ihandle* ih);
+IUP_API void IupDrawSaveLayer(Ihandle* ih, int alpha);
 IUP_API void IupDrawTransform(Ihandle* ih, double a, double b, double c, double d, double e, double f);
 IUP_API void IupDrawSetTransform(Ihandle* ih, double a, double b, double c, double d, double e, double f);
 IUP_API void IupDrawResetTransform(Ihandle* ih);

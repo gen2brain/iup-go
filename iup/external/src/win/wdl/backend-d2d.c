@@ -127,7 +127,7 @@ void
 d2d_update_text_antialias(d2d_canvas_t* c)
 {
     dummy_ID2D1RenderTarget_SetTextAntialiasMode(c->target,
-            (c->clip_layer != NULL || c->push_count > 0) ?
+            (c->clip_layer != NULL || c->push_count > 0 || c->layers != NULL) ?
             dummy_D2D1_TEXT_ANTIALIAS_MODE_GRAYSCALE : dummy_D2D1_TEXT_ANTIALIAS_MODE_CLEARTYPE);
 }
 
@@ -144,6 +144,35 @@ d2d_reset_clip(d2d_canvas_t* c)
         dummy_ID2D1RenderTarget_PopAxisAlignedClip(c->target);
         c->flags &= ~D2D_CANVASFLAG_RECTCLIP;
     }
+}
+
+void
+d2d_pop_layer(d2d_canvas_t* c)
+{
+    d2d_layer_t* l = c->layers;
+
+    if(l == NULL)
+        return;
+
+    d2d_reset_clip(c);
+
+    if(l->layer != NULL) {
+        dummy_ID2D1RenderTarget_PopLayer(c->target);
+        dummy_ID2D1Layer_Release(l->layer);
+    }
+
+    c->clip_layer = l->clip_layer;
+    c->flags |= l->clip_flags;
+    c->layers = l->next;
+    free(l);
+    d2d_update_text_antialias(c);
+}
+
+void
+d2d_reset_layers(d2d_canvas_t* c)
+{
+    while(c->layers != NULL)
+        d2d_pop_layer(c);
 }
 
 void

@@ -133,6 +133,7 @@ struct _iSvgCanvas
   int clip_active;
   int clip_id;
   IupDrawMatrix matrix;
+  int layers;
 };
 
 /* ---- Color Parsing ---- */
@@ -276,6 +277,8 @@ const char* iupSvgDrawGetString(iSvgCanvas* dc)
 {
   if (!dc->finalized)
   {
+    while (dc->layers > 0)
+      iupSvgDrawEndLayer(dc);
     iSvgBufAppend(&dc->buf, "</svg>\n");
     dc->finalized = 1;
   }
@@ -924,6 +927,24 @@ void iupSvgDrawResetClip(iSvgCanvas* dc)
   dc->clip_x2 = 0;
   dc->clip_y2 = 0;
   dc->clip_active = 0;
+}
+
+void iupSvgDrawBeginLayer(iSvgCanvas* dc, int alpha)
+{
+  if (dc->clip_active)
+    iSvgBufPrintf(&dc->buf, "<g clip-path=\"url(#clip%d)\" opacity=\"%.3g\">\n", dc->clip_id, alpha / 255.0);
+  else
+    iSvgBufPrintf(&dc->buf, "<g opacity=\"%.3g\">\n", alpha / 255.0);
+  dc->layers++;
+  iupSvgDrawResetClip(dc);
+}
+
+void iupSvgDrawEndLayer(iSvgCanvas* dc)
+{
+  if (dc->layers <= 0)
+    return;
+  iSvgBufAppend(&dc->buf, "</g>\n");
+  dc->layers--;
 }
 
 void iupSvgDrawGetClipRect(iSvgCanvas* dc, int* x1, int* y1, int* x2, int* y2)

@@ -38,6 +38,10 @@ Terminates the drawing process and actually draw on screen.
 
 Saves or restores the current transform, clipping region, source and `DRAW*` attributes. States can be nested. IupDrawRestore does nothing when there is no saved state. The current path is not saved.
 
+    void IupDrawSaveLayer(Ihandle* ih, int alpha);
+
+Same as IupDrawSave, and also starts a group. Everything drawn until the matching IupDrawRestore is composited onto the canvas as one image with opacity **alpha** (0-255), so overlapping shapes inside the group do not blend with each other. The group is composited through the clipping region active when IupDrawSaveLayer was called. Layers can be nested. IupDrawEnd closes the layers still open. IupDrawGetImage returns NULL while a layer is open.
+
     void IupDrawTransform(Ihandle* ih, double a, double b, double c, double d, double e, double f);
     void IupDrawSetTransform(Ihandle* ih, double a, double b, double c, double d, double e, double f);
 

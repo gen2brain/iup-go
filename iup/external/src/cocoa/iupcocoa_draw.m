@@ -258,9 +258,65 @@ IUP_SDK_API void iupdrvDrawSetTransform(IdrawCanvas* dc, const IupDrawMatrix* ma
   dc->user_transform = value;
 }
 
+IUP_SDK_API int iupdrvDrawBeginLayer(IdrawCanvas* dc, int alpha)
+{
+  IdrawLayer* layer = (IdrawLayer*)malloc(sizeof(IdrawLayer));
+  if (!layer)
+    return 0;
+
+  layer->user_transform = dc->user_transform;
+  layer->clip_transform = dc->clip_transform;
+  layer->clip_x1 = dc->clip_x1;
+  layer->clip_y1 = dc->clip_y1;
+  layer->clip_x2 = dc->clip_x2;
+  layer->clip_y2 = dc->clip_y2;
+  layer->clip_state = dc->clip_state;
+  layer->next = dc->layers;
+  dc->layers = layer;
+
+  dc->clip_state = 0;
+  dc->clip_x1 = 0;
+  dc->clip_y1 = 0;
+  dc->clip_x2 = 0;
+  dc->clip_y2 = 0;
+
+  CGContextSaveGState(dc->cgContext);
+  CGContextSetAlpha(dc->cgContext, alpha / 255.0);
+  CGContextBeginTransparencyLayer(dc->cgContext, NULL);
+  return 1;
+}
+
+IUP_SDK_API void iupdrvDrawEndLayer(IdrawCanvas* dc, int alpha)
+{
+  IdrawLayer* layer = dc->layers;
+  (void)alpha;
+
+  if (!layer)
+    return;
+
+  if (dc->clip_state == 1)
+    CGContextRestoreGState(dc->cgContext);
+
+  CGContextEndTransparencyLayer(dc->cgContext);
+  CGContextRestoreGState(dc->cgContext);
+
+  dc->user_transform = layer->user_transform;
+  dc->clip_transform = layer->clip_transform;
+  dc->clip_x1 = layer->clip_x1;
+  dc->clip_y1 = layer->clip_y1;
+  dc->clip_x2 = layer->clip_x2;
+  dc->clip_y2 = layer->clip_y2;
+  dc->clip_state = layer->clip_state;
+  dc->layers = layer->next;
+  free(layer);
+}
+
 IUP_SDK_API void iupdrvDrawKillCanvas(IdrawCanvas* dc)
 {
   if (!dc) return;
+
+  while (dc->layers)
+    iupdrvDrawEndLayer(dc, 255);
 
   if (dc->release_context)
   {

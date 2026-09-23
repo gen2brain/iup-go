@@ -110,6 +110,14 @@ enum WinUIClipType
   WINUI_CLIP_LAYER
 };
 
+struct WinUIDrawLayer
+{
+  WinUIClipType clipType;
+  int clip_x1, clip_y1, clip_x2, clip_y2;
+  D2D1_TEXT_ANTIALIAS_MODE textAntialias;
+  WinUIDrawLayer* next;
+};
+
 struct _IdrawCanvas
 {
   Ihandle* ih;
@@ -130,6 +138,7 @@ struct _IdrawCanvas
 
   WinUIClipType clipType;
   int clip_x1, clip_y1, clip_x2, clip_y2;
+  WinUIDrawLayer* layers{nullptr};
 };
 
 static D2D1_COLOR_F winuiDrawColor(long color)
@@ -341,10 +350,74 @@ extern "C" IUP_SDK_API void iupdrvDrawSetTransform(IdrawCanvas* dc, const IupDra
   dc->d2dContext->SetTransform(dc->userTransform * dc->baseTransform);
 }
 
+extern "C" IUP_SDK_API int iupdrvDrawBeginLayer(IdrawCanvas* dc, int alpha)
+{
+  if (!dc || !dc->d2dContext)
+    return 0;
+
+  WinUIDrawLayer* layer = new WinUIDrawLayer();
+  layer->clipType = dc->clipType;
+  layer->clip_x1 = dc->clip_x1;
+  layer->clip_y1 = dc->clip_y1;
+  layer->clip_x2 = dc->clip_x2;
+  layer->clip_y2 = dc->clip_y2;
+  layer->textAntialias = dc->d2dContext->GetTextAntialiasMode();
+  layer->next = dc->layers;
+  dc->layers = layer;
+
+  dc->clipType = WINUI_CLIP_NONE;
+  dc->clip_x1 = 0;
+  dc->clip_y1 = 0;
+  dc->clip_x2 = 0;
+  dc->clip_y2 = 0;
+
+  dc->d2dContext->PushLayer(D2D1::LayerParameters(D2D1::InfiniteRect(), nullptr, D2D1_ANTIALIAS_MODE_PER_PRIMITIVE,
+                                                  D2D1::IdentityMatrix(), alpha / 255.0f), nullptr);
+  dc->d2dContext->SetTextAntialiasMode(D2D1_TEXT_ANTIALIAS_MODE_GRAYSCALE);
+  return 1;
+}
+
+extern "C" IUP_SDK_API void iupdrvDrawEndLayer(IdrawCanvas* dc, int alpha)
+{
+  (void)alpha;
+
+  if (!dc || !dc->layers)
+    return;
+
+  WinUIDrawLayer* layer = dc->layers;
+
+  if (dc->d2dContext)
+  {
+    if (dc->clipType == WINUI_CLIP_RECT)
+      dc->d2dContext->PopAxisAlignedClip();
+    else if (dc->clipType == WINUI_CLIP_LAYER)
+      dc->d2dContext->PopLayer();
+
+    dc->d2dContext->PopLayer();
+    dc->d2dContext->SetTextAntialiasMode(layer->textAntialias);
+  }
+
+  dc->clipType = layer->clipType;
+  dc->clip_x1 = layer->clip_x1;
+  dc->clip_y1 = layer->clip_y1;
+  dc->clip_x2 = layer->clip_x2;
+  dc->clip_y2 = layer->clip_y2;
+  dc->layers = layer->next;
+  delete layer;
+}
+
+static void winuiDrawEndAllLayers(IdrawCanvas* dc)
+{
+  while (dc->layers)
+    iupdrvDrawEndLayer(dc, 255);
+}
+
 extern "C" IUP_SDK_API void iupdrvDrawKillCanvas(IdrawCanvas* dc)
 {
   if (!dc)
     return;
+
+  winuiDrawEndAllLayers(dc);
 
   if (dc->d2dContext)
   {
@@ -381,6 +454,8 @@ extern "C" IUP_SDK_API void iupdrvDrawUpdateSize(IdrawCanvas* dc)
 
   if (w != dc->w || h != dc->h)
   {
+    winuiDrawEndAllLayers(dc);
+
     if (dc->d2dContext)
     {
       if (dc->clipType == WINUI_CLIP_RECT)
@@ -513,6 +588,8 @@ extern "C" IUP_SDK_API void iupdrvDrawFlush(IdrawCanvas* dc)
 {
   if (!dc)
     return;
+
+  winuiDrawEndAllLayers(dc);
 
   if (dc->d2dContext)
   {
@@ -1591,7 +1668,7 @@ static void iD2DCopyBgraPremulToRgba(unsigned char* dst, const unsigned char* sr
 
 extern "C" IUP_SDK_API int iupdrvDrawGetImageData(IdrawCanvas* dc, unsigned char* data)
 {
-  if (!dc || !dc->d2dContext)
+  if (!dc || !dc->d2dContext || dc->layers)
     return 0;
 
   dc->d2dContext->Flush();

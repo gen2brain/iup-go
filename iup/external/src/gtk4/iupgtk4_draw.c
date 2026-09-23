@@ -18,6 +18,12 @@
 #include "iupgtk4_drv.h"
 
 
+typedef struct _IdrawLayer {
+  int clip_x1, clip_y1, clip_x2, clip_y2;
+  IupDrawMatrix matrix;
+  struct _IdrawLayer* next;
+} IdrawLayer;
+
 struct _IdrawCanvas
 {
   Ihandle* ih;
@@ -31,6 +37,7 @@ struct _IdrawCanvas
   IupDrawMatrix matrix;
 
   int clip_x1, clip_y1, clip_x2, clip_y2;
+  IdrawLayer* layers;
 };
 
 IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
@@ -113,8 +120,68 @@ IUP_SDK_API void iupdrvDrawSetTransform(IdrawCanvas* dc, const IupDrawMatrix* ma
   cairo_set_matrix(dc->image_cr, &value);
 }
 
+IUP_SDK_API int iupdrvDrawBeginLayer(IdrawCanvas* dc, int alpha)
+{
+  IdrawLayer* layer = (IdrawLayer*)malloc(sizeof(IdrawLayer));
+  (void)alpha;
+  if (!layer)
+    return 0;
+
+  layer->clip_x1 = dc->clip_x1;
+  layer->clip_y1 = dc->clip_y1;
+  layer->clip_x2 = dc->clip_x2;
+  layer->clip_y2 = dc->clip_y2;
+  layer->matrix = dc->matrix;
+  layer->next = dc->layers;
+  dc->layers = layer;
+
+  dc->clip_x1 = 0;
+  dc->clip_y1 = 0;
+  dc->clip_x2 = 0;
+  dc->clip_y2 = 0;
+
+  cairo_push_group(dc->image_cr);
+  cairo_save(dc->image_cr);
+  return 1;
+}
+
+static IdrawLayer* iDrawPopLayer(IdrawCanvas* dc)
+{
+  IdrawLayer* layer = dc->layers;
+  if (!layer)
+    return NULL;
+
+  cairo_restore(dc->image_cr);
+
+  dc->clip_x1 = layer->clip_x1;
+  dc->clip_y1 = layer->clip_y1;
+  dc->clip_x2 = layer->clip_x2;
+  dc->clip_y2 = layer->clip_y2;
+  dc->matrix = layer->matrix;
+  dc->layers = layer->next;
+  return layer;
+}
+
+IUP_SDK_API void iupdrvDrawEndLayer(IdrawCanvas* dc, int alpha)
+{
+  IdrawLayer* layer = iDrawPopLayer(dc);
+  if (!layer)
+    return;
+
+  cairo_pop_group_to_source(dc->image_cr);
+  cairo_paint_with_alpha(dc->image_cr, alpha / 255.0);
+  free(layer);
+}
+
 IUP_SDK_API void iupdrvDrawKillCanvas(IdrawCanvas* dc)
 {
+  IdrawLayer* layer;
+  while ((layer = iDrawPopLayer(dc)) != NULL)
+  {
+    cairo_pattern_destroy(cairo_pop_group(dc->image_cr));
+    free(layer);
+  }
+
   if (dc->shared_cr)
     cairo_restore(dc->image_cr);
   if (dc->image_cr != dc->cr)

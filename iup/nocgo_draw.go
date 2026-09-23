@@ -15,6 +15,8 @@ func DrawSave(ih Ihandle) { iupDrawSave(uintptr(ih)) }
 
 func DrawRestore(ih Ihandle) { iupDrawRestore(uintptr(ih)) }
 
+func DrawSaveLayer(ih Ihandle, alpha int) { iupDrawSaveLayer(uintptr(ih), int32(alpha)) }
+
 func DrawTransform(ih Ihandle, a, b, c, d, e, f float64) {
 	iupDrawTransform(uintptr(ih), a, b, c, d, e, f)
 }

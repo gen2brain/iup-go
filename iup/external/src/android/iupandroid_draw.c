@@ -32,12 +32,19 @@
 
 IUPJNI_DECLARE_CLASS_STATIC(IupCanvasHelper);
 
+typedef struct _IdrawLayer {
+  int clip_x1, clip_y1, clip_x2, clip_y2;
+  int clipped;
+  struct _IdrawLayer* next;
+} IdrawLayer;
+
 struct _IdrawCanvas
 {
   Ihandle* ih;
   int w, h;
   int clip_x1, clip_y1, clip_x2, clip_y2;
   int clipped;
+  IdrawLayer* layers;
 };
 
 static int androidPackColor(long color)
@@ -87,8 +94,77 @@ IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
   return dc;
 }
 
+IUP_SDK_API int iupdrvDrawBeginLayer(IdrawCanvas* dc, int alpha)
+{
+  IdrawLayer* layer;
+  if (!dc) return 0;
+  layer = (IdrawLayer*)malloc(sizeof(IdrawLayer));
+  if (!layer) return 0;
+
+  layer->clip_x1 = dc->clip_x1;
+  layer->clip_y1 = dc->clip_y1;
+  layer->clip_x2 = dc->clip_x2;
+  layer->clip_y2 = dc->clip_y2;
+  layer->clipped = dc->clipped;
+  layer->next = dc->layers;
+  dc->layers = layer;
+
+  dc->clip_x1 = 0;
+  dc->clip_y1 = 0;
+  dc->clip_x2 = 0;
+  dc->clip_y2 = 0;
+  dc->clipped = 0;
+
+  if (dc->ih->handle)
+  {
+    JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
+    jclass java_class = androidDrawFindHelper(jni_env);
+    jmethodID method_id = (*jni_env)->GetStaticMethodID(jni_env, java_class, "beginLayer", "(Lio/github/gen2brain/iupgo/IupAndroidCanvas;I)V");
+    if (!method_id)
+    {
+      iupAndroid_CheckException(jni_env, "IupCanvasHelper");
+      (*jni_env)->DeleteLocalRef(jni_env, java_class);
+      return 1;
+    }
+    (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, dc->ih->handle, (jint)alpha);
+    iupAndroid_CheckException(jni_env, "IupCanvasHelper.beginLayer");
+    (*jni_env)->DeleteLocalRef(jni_env, java_class);
+  }
+  return 1;
+}
+
+IUP_SDK_API void iupdrvDrawEndLayer(IdrawCanvas* dc, int alpha)
+{
+  IdrawLayer* layer;
+  (void)alpha;
+  if (!dc || !dc->layers) return;
+  layer = dc->layers;
+
+  if (dc->ih->handle)
+  {
+    JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
+    jclass java_class = androidDrawFindHelper(jni_env);
+    jmethodID method_id = (*jni_env)->GetStaticMethodID(jni_env, java_class, "endLayer", "(Lio/github/gen2brain/iupgo/IupAndroidCanvas;)V");
+    if (method_id)
+      (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, dc->ih->handle);
+    iupAndroid_CheckException(jni_env, "IupCanvasHelper.endLayer");
+    (*jni_env)->DeleteLocalRef(jni_env, java_class);
+  }
+
+  dc->clip_x1 = layer->clip_x1;
+  dc->clip_y1 = layer->clip_y1;
+  dc->clip_x2 = layer->clip_x2;
+  dc->clip_y2 = layer->clip_y2;
+  dc->clipped = layer->clipped;
+  dc->layers = layer->next;
+  free(layer);
+}
+
 IUP_SDK_API void iupdrvDrawKillCanvas(IdrawCanvas* dc)
 {
+  if (!dc) return;
+  while (dc->layers)
+    iupdrvDrawEndLayer(dc, 255);
   free(dc);
 }
 

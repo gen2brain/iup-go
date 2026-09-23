@@ -31,6 +31,11 @@ IUP_DRV_API void iupwinWdlImageInit(void);
 IUP_DRV_API WD_HIMAGE iupwinWdlImageGetImage(const char* name, Ihandle* ih_parent, int make_inactive, const char* bgcolor);
 IUP_DRV_API WD_HIMAGE iupwinWdlImageGetImageTint(const char* name, Ihandle* ih_parent, int make_inactive, const char* bgcolor, long tint);
 
+typedef struct _IdrawLayer {
+  int clip_x1, clip_y1, clip_x2, clip_y2;
+  struct _IdrawLayer* next;
+} IdrawLayer;
+
 struct _IdrawCanvas{
   Ihandle* ih;
   int w, h;
@@ -44,6 +49,7 @@ struct _IdrawCanvas{
   int backend_type;  /* WD_BACKEND_D2D or WD_BACKEND_GDIPLUS */
   int cached;
   IupDrawMatrix matrix;
+  IdrawLayer* layers;
 };
 
 /* must be the same in wdInitialize and wdTerminate */
@@ -233,8 +239,57 @@ IUP_SDK_API void iupdrvDrawSetTransform(IdrawCanvas* dc, const IupDrawMatrix* ma
              (float)matrix->d, (float)matrix->e, (float)matrix->f);
 }
 
+IUP_SDK_API int iupdrvDrawBeginLayer(IdrawCanvas* dc, int alpha)
+{
+  IdrawLayer* layer = (IdrawLayer*)malloc(sizeof(IdrawLayer));
+  if (!layer)
+    return 0;
+
+  layer->clip_x1 = dc->clip_x1;
+  layer->clip_y1 = dc->clip_y1;
+  layer->clip_x2 = dc->clip_x2;
+  layer->clip_y2 = dc->clip_y2;
+  layer->next = dc->layers;
+  dc->layers = layer;
+
+  dc->clip_x1 = 0;
+  dc->clip_y1 = 0;
+  dc->clip_x2 = 0;
+  dc->clip_y2 = 0;
+
+  wdPushLayer(dc->hCanvas, alpha / 255.0f);
+  return 1;
+}
+
+IUP_SDK_API void iupdrvDrawEndLayer(IdrawCanvas* dc, int alpha)
+{
+  IdrawLayer* layer = dc->layers;
+  (void)alpha;
+
+  if (!layer)
+    return;
+
+  if (dc->hCanvas)
+    wdPopLayer(dc->hCanvas);
+
+  dc->clip_x1 = layer->clip_x1;
+  dc->clip_y1 = layer->clip_y1;
+  dc->clip_x2 = layer->clip_x2;
+  dc->clip_y2 = layer->clip_y2;
+  dc->layers = layer->next;
+  free(layer);
+}
+
+static void iDrawEndAllLayers(IdrawCanvas* dc)
+{
+  while (dc->layers)
+    iupdrvDrawEndLayer(dc, 255);
+}
+
 IUP_SDK_API void iupdrvDrawKillCanvas(IdrawCanvas* dc)
 {
+  iDrawEndAllLayers(dc);
+
   if (dc->hCanvas)
   {
     wdSetClip(dc->hCanvas, NULL, NULL); /* must reset clip before destroy */
@@ -275,6 +330,8 @@ IUP_SDK_API void iupdrvDrawUpdateSize(IdrawCanvas* dc)
 
 IUP_SDK_API void iupdrvDrawFlush(IdrawCanvas* dc)
 {
+  iDrawEndAllLayers(dc);
+
   if (!wdEndPaint(dc->hCanvas) && dc->cached)
   {
     wdDestroyCanvas(dc->hCanvas);
@@ -1289,7 +1346,12 @@ static int iDrawGetImageDataWindowFallback(IdrawCanvas* dc, unsigned char* data)
 
 IUP_SDK_API int iupdrvDrawGetImageData(IdrawCanvas* dc, unsigned char* data)
 {
-  unsigned char* temp = (unsigned char*)malloc((size_t)dc->w * dc->h * 4);
+  unsigned char* temp;
+
+  if (dc->layers)
+    return 0;
+
+  temp = (unsigned char*)malloc((size_t)dc->w * dc->h * 4);
   if (!temp)
     return 0;
 

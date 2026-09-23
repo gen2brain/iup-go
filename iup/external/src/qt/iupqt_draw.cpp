@@ -44,6 +44,15 @@ IUP_DRV_API void* iupqtCanvasGetContext(Ihandle* ih);
  * Draw Context Structure
  ****************************************************************************/
 
+struct IqtDrawLayer
+{
+  QPainter* painter;
+  QImage* image;
+  QTransform base_transform;
+  int clip_x1, clip_y1, clip_x2, clip_y2;
+  IqtDrawLayer* next;
+};
+
 struct _IdrawCanvas
 {
   Ihandle* ih;
@@ -64,6 +73,8 @@ struct _IdrawCanvas
   int winding_rule;  /* Qt::FillRule */
 
   int clip_x1, clip_y1, clip_x2, clip_y2;
+
+  IqtDrawLayer* layers;
 };
 
 /****************************************************************************
@@ -78,6 +89,30 @@ static void qtDrawGetColor(long color, QColor& qcolor)
   b = iupDrawBlue(color);
   a = iupDrawAlpha(color);
   qcolor.setRgb(r, g, b, a);
+}
+
+static QImage* qtDrawLayerPop(IdrawCanvas* dc)
+{
+  IqtDrawLayer* layer = dc->layers;
+  QImage* image = layer->image;
+
+  if (dc->painter)
+  {
+    dc->painter->end();
+    delete dc->painter;
+  }
+
+  dc->painter = layer->painter;
+  dc->base_transform = layer->base_transform;
+  dc->clip_x1 = layer->clip_x1;
+  dc->clip_y1 = layer->clip_y1;
+  dc->clip_x2 = layer->clip_x2;
+  dc->clip_y2 = layer->clip_y2;
+
+  dc->layers = layer->next;
+  delete layer;
+
+  return image;
 }
 
 static void qtDrawApplyStroke(QPen& pen, IdrawCanvas* dc, int style, int line_width)
@@ -126,6 +161,7 @@ extern "C" IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
 
   dc->painter = nullptr;
   dc->release_gc = 0;
+  dc->layers = nullptr;
 
   if (dc->widget)
   {
@@ -220,6 +256,9 @@ extern "C" IUP_SDK_API void iupdrvDrawKillCanvas(IdrawCanvas* dc)
 {
   if (dc)
   {
+    while (dc->layers)
+      delete qtDrawLayerPop(dc);
+
     if (dc->painter && dc->release_gc)
     {
       delete dc->painter;
@@ -371,6 +410,57 @@ extern "C" IUP_SDK_API void iupdrvDrawResetClip(IdrawCanvas* dc)
     dc->clip_x2 = 0;
     dc->clip_y2 = 0;
   }
+}
+
+extern "C" IUP_SDK_API int iupdrvDrawBeginLayer(IdrawCanvas* dc, int alpha)
+{
+  (void)alpha;
+
+  if (!dc || !dc->painter || !dc->buffer)
+    return 0;
+
+  IqtDrawLayer* layer = new IqtDrawLayer();
+  layer->painter = dc->painter;
+  layer->base_transform = dc->base_transform;
+  layer->clip_x1 = dc->clip_x1;
+  layer->clip_y1 = dc->clip_y1;
+  layer->clip_x2 = dc->clip_x2;
+  layer->clip_y2 = dc->clip_y2;
+  layer->next = dc->layers;
+
+  layer->image = new QImage(dc->buffer->size(), QImage::Format_ARGB32_Premultiplied);
+  layer->image->setDevicePixelRatio(dc->buffer->devicePixelRatio());
+  layer->image->fill(Qt::transparent);
+
+  dc->layers = layer;
+
+  dc->painter = new QPainter(layer->image);
+  dc->painter->setRenderHint(QPainter::Antialiasing, dc->shape_antialias ? true : false);
+  dc->painter->setRenderHint(QPainter::TextAntialiasing, dc->text_antialias ? true : false);
+  dc->base_transform = dc->painter->worldTransform();
+  dc->painter->setWorldTransform(dc->user_transform * dc->base_transform, false);
+
+  dc->clip_x1 = 0;
+  dc->clip_y1 = 0;
+  dc->clip_x2 = 0;
+  dc->clip_y2 = 0;
+  return 1;
+}
+
+extern "C" IUP_SDK_API void iupdrvDrawEndLayer(IdrawCanvas* dc, int alpha)
+{
+  if (!dc || !dc->layers)
+    return;
+
+  QImage* image = qtDrawLayerPop(dc);
+
+  dc->painter->save();
+  dc->painter->resetTransform();
+  dc->painter->setOpacity(alpha / 255.0);
+  dc->painter->drawImage(0, 0, *image);
+  dc->painter->restore();
+
+  delete image;
 }
 
 /****************************************************************************

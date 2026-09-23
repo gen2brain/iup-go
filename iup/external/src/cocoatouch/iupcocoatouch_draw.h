@@ -15,6 +15,14 @@
 
 typedef struct _IdrawCanvas IdrawCanvas;
 
+typedef struct _IdrawLayer {
+	CGAffineTransform user_transform;
+	CGAffineTransform clip_transform;
+	int clip_state;
+	int clip_x1, clip_y1, clip_x2, clip_y2;
+	struct _IdrawLayer* next;
+} IdrawLayer;
+
 struct _IdrawCanvas
 {
 	Ihandle* ih;
@@ -40,6 +48,8 @@ struct _IdrawCanvas
 	int draw_focus;
 	CGAffineTransform focus_transform;
 	int focus_x1, focus_y1, focus_x2, focus_y2;
+
+	IdrawLayer* layers;
 };
 
 #ifdef __OBJC__
