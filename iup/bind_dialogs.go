@@ -6,7 +6,6 @@ import (
 	"bytes"
 	"fmt"
 	"image/color"
-	"runtime/cgo"
 	"strings"
 	"unsafe"
 )
@@ -477,7 +476,7 @@ func GetParam(title string, action GetParamFunc, format string, data ...interfac
 
 	var ret C.int
 	if action != nil {
-		ch := cgo.NewHandle(action)
+		ch := newGoHandle(action)
 		defer ch.Delete()
 		ret = C.goIupCallGetParamv(cTitle, C.uintptr_t(ch), cFormat, C.int(paramCount), C.int(paramExtra), paramDataPtr)
 	} else {
