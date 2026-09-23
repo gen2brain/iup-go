@@ -674,6 +674,19 @@ IUP_SDK_API void iupdrvDrawResetClip(IdrawCanvas* dc)
   dc->clip_y2 = 0;
 }
 
+IUP_SDK_API int iupdrvDrawBeginLayer(IdrawCanvas* dc, int alpha)
+{
+  (void)alpha;
+  cairo_push_group(dc->image_cr);
+  return 1;
+}
+
+IUP_SDK_API void iupdrvDrawEndLayer(IdrawCanvas* dc, int alpha)
+{
+  cairo_pop_group_to_source(dc->image_cr);
+  cairo_paint_with_alpha(dc->image_cr, alpha / 255.0);
+}
+
 IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int x, int y, int w, int h, long color, const char* font, int flags, double text_orientation)
 {
   PangoLayout* fontlayout = (PangoLayout*)iupgtkGetPangoLayout(font);

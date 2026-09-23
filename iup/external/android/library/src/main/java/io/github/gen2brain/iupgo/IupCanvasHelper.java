@@ -59,6 +59,8 @@ public final class IupCanvasHelper
     public static void ensureBackBuffer(IupAndroidCanvas view)
     {
         view.ensureBackBuffer();
+        while (!view.layers.isEmpty())
+            endLayer(view);
         resetClip(view);
     }
 
@@ -331,6 +333,29 @@ public final class IupCanvasHelper
         if (!view.clipSaved) return;
         try { c.restore(); } catch (IllegalStateException ignored) {}
         view.clipSaved = false;
+        view.applyDrawTransform();
+    }
+
+    @Keep
+    public static void beginLayer(IupAndroidCanvas view, int alpha)
+    {
+        Canvas c = view.getBackCanvas(); if (c == null) return;
+        view.layers.add(new int[]{c.saveLayerAlpha(null, alpha), view.clipSaved ? 1 : 0});
+        view.clipSaved = false;
+    }
+
+    @Keep
+    public static void endLayer(IupAndroidCanvas view)
+    {
+        if (view.layers.isEmpty()) return;
+        int[] layer = view.layers.remove(view.layers.size() - 1);
+        Canvas c = view.getBackCanvas();
+        if (c != null)
+        {
+            resetClip(view);
+            try { c.restoreToCount(layer[0]); } catch (IllegalArgumentException | IllegalStateException ignored) {}
+        }
+        view.clipSaved = layer[1] != 0;
         view.applyDrawTransform();
     }
 

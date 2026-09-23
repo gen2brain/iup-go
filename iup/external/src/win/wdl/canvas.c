@@ -160,6 +160,10 @@ wdDestroyCanvas(WD_HCANVAS hCanvas)
         d2d_canvas_t* c = (d2d_canvas_t*) hCanvas;
 
         /* Check for common logical errors. */
+        if(c->layers != NULL) {
+            WD_TRACE("wdDestroyCanvas: Logical error: Canvas has dangling layer.");
+            d2d_reset_layers(c);
+        }
         if(c->clip_layer != NULL  ||  (c->flags & D2D_CANVASFLAG_RECTCLIP))
             WD_TRACE("wdDestroyCanvas: Logical error: Canvas has dangling clip.");
         if(c->gdi_interop != NULL)
@@ -205,6 +209,7 @@ wdEndPaint(WD_HCANVAS hCanvas)
         d2d_canvas_t* c = (d2d_canvas_t*) hCanvas;
         HRESULT hr;
 
+        d2d_reset_layers(c);
         d2d_reset_clip(c);
 
         hr = dummy_ID2D1RenderTarget_EndDraw(c->target, NULL, NULL);
@@ -497,6 +502,65 @@ wdPopClip(WD_HCANVAS hCanvas)
     }
 }
 
+void
+wdPushLayer(WD_HCANVAS hCanvas, float fOpacity)
+{
+    if(d2d_enabled()) {
+        d2d_canvas_t* c = (d2d_canvas_t*) hCanvas;
+        dummy_D2D1_LAYER_PARAMETERS layer_params;
+        d2d_layer_t* l;
+
+        l = (d2d_layer_t*) malloc(sizeof(d2d_layer_t));
+        if(l == NULL) {
+            WD_TRACE("wdPushLayer: malloc() failed.");
+            return;
+        }
+
+        l->layer = NULL;
+        l->clip_layer = c->clip_layer;
+        l->clip_flags = (c->flags & D2D_CANVASFLAG_RECTCLIP);
+        l->next = c->layers;
+        c->clip_layer = NULL;
+        c->flags &= ~D2D_CANVASFLAG_RECTCLIP;
+        c->layers = l;
+
+        if(FAILED(dummy_ID2D1RenderTarget_CreateLayer(c->target, NULL, &l->layer))) {
+            WD_TRACE("wdPushLayer: ID2D1RenderTarget::CreateLayer() failed.");
+            l->layer = NULL;
+            d2d_update_text_antialias(c);
+            return;
+        }
+
+        layer_params.contentBounds.left = -FLT_MAX;
+        layer_params.contentBounds.top = -FLT_MAX;
+        layer_params.contentBounds.right = FLT_MAX;
+        layer_params.contentBounds.bottom = FLT_MAX;
+        layer_params.geometricMask = NULL;
+        layer_params.maskAntialiasMode = dummy_D2D1_ANTIALIAS_MODE_PER_PRIMITIVE;
+        layer_params.maskTransform._11 = 1.0f;
+        layer_params.maskTransform._12 = 0.0f;
+        layer_params.maskTransform._21 = 0.0f;
+        layer_params.maskTransform._22 = 1.0f;
+        layer_params.maskTransform._31 = 0.0f;
+        layer_params.maskTransform._32 = 0.0f;
+        layer_params.opacity = fOpacity;
+        layer_params.opacityBrush = NULL;
+        layer_params.layerOptions = dummy_D2D1_LAYER_OPTIONS_NONE;
+
+        dummy_ID2D1RenderTarget_PushLayer(c->target, &layer_params, l->layer);
+        d2d_update_text_antialias(c);
+    }
+}
+
+void
+wdPopLayer(WD_HCANVAS hCanvas)
+{
+    if(d2d_enabled()) {
+        d2d_canvas_t* c = (d2d_canvas_t*) hCanvas;
+        d2d_pop_layer(c);
+    }
+}
+
 static BOOL
 d2d_canvas_get_image_data_d2d11(d2d_canvas_t* c, BYTE* buffer, UINT width, UINT height)
 {
@@ -601,6 +665,7 @@ wdCanvasGetImageData(WD_HCANVAS hCanvas, BYTE* buffer, UINT width, UINT height)
         d2d_canvas_t* c = (d2d_canvas_t*) hCanvas;
         BOOL ok;
 
+        d2d_reset_layers(c);
         d2d_reset_clip(c);
         dummy_ID2D1RenderTarget_EndDraw(c->target, NULL, NULL);
 

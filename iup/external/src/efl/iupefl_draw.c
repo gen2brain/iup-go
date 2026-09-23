@@ -22,6 +22,23 @@
 #include "iup_drvfont.h"
 
 
+typedef struct _IdrawLayer
+{
+  struct _IdrawLayer* next;
+  Evas_Object* image;
+  Ecore_Evas* ee;
+
+  Ecore_Evas* target_ee;
+  Evas* frame_evas;
+  Efl_VG* root;
+  Eina_List* frame_objects;
+  Eo* clipper;
+  int clip_x1, clip_y1, clip_x2, clip_y2;
+  int clip_corner_radius;
+  int clip_set;
+  IupDrawMatrix matrix;
+} IdrawLayer;
+
 struct _IdrawCanvas
 {
   Ihandle* ih;
@@ -32,8 +49,10 @@ struct _IdrawCanvas
   Eina_List* shapes;
 
   Ecore_Evas* frame_ee;
+  Ecore_Evas* target_ee;
   Evas* frame_evas;
   Eina_List* frame_objects;
+  IdrawLayer* layer;
 
   int clip_x1, clip_y1, clip_x2, clip_y2;
   int clip_corner_radius;
@@ -404,6 +423,7 @@ IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
     iDrawRecycleFrame(ih);
 
   dc->frame_ee = ee;
+  dc->target_ee = ee;
   dc->frame_evas = ecore_evas_get(ee);
 
   dc->clip_x1 = 0;
@@ -424,8 +444,39 @@ IUP_SDK_API void iupdrvDrawSetTransform(IdrawCanvas* dc, const IupDrawMatrix* ma
   dc->batch_shape = NULL;
 }
 
+static IdrawLayer* iDrawPopLayer(IdrawCanvas* dc)
+{
+  IdrawLayer* layer = dc->layer;
+
+  dc->layer = layer->next;
+
+  if (layer->image)
+  {
+    eina_list_free(dc->frame_objects);
+    dc->frame_objects = layer->frame_objects;
+  }
+
+  dc->target_ee = layer->target_ee;
+  dc->frame_evas = layer->frame_evas;
+  dc->root = layer->root;
+  dc->clipper = layer->clipper;
+  dc->clip_x1 = layer->clip_x1;
+  dc->clip_y1 = layer->clip_y1;
+  dc->clip_x2 = layer->clip_x2;
+  dc->clip_y2 = layer->clip_y2;
+  dc->clip_corner_radius = layer->clip_corner_radius;
+  dc->clip_set = layer->clip_set;
+  dc->matrix = layer->matrix;
+  dc->batch_shape = NULL;
+
+  return layer;
+}
+
 IUP_SDK_API void iupdrvDrawKillCanvas(IdrawCanvas* dc)
 {
+  while (dc->layer)
+    free(iDrawPopLayer(dc));
+
   if (dc->shapes)
     eina_list_free(dc->shapes);
 
@@ -1377,7 +1428,7 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
     Eina_Rect geom;
 
     Eina_List* pool = (Eina_List*)iupAttribGet(dc->ih, "_IUP_EFL_POOL_TEXT");
-    if (pool)
+    if (pool && dc->frame_evas == ecore_evas_get(dc->frame_ee))
     {
       text_obj = (Eo*)eina_list_data_get(pool);
       pool = eina_list_remove_list(pool, pool);
@@ -1785,6 +1836,79 @@ IUP_SDK_API void iupdrvDrawResetClip(IdrawCanvas* dc)
   dc->clip_set = 0;
 
   dc->clipper = NULL;
+  iDrawNewLayer(dc);
+}
+
+IUP_SDK_API int iupdrvDrawBeginLayer(IdrawCanvas* dc, int alpha)
+{
+  IdrawLayer* layer = calloc(1, sizeof(IdrawLayer));
+  (void)alpha;
+  if (!layer)
+    return 0;
+
+  layer->next = dc->layer;
+  layer->target_ee = dc->target_ee;
+  layer->frame_evas = dc->frame_evas;
+  layer->root = dc->root;
+  layer->frame_objects = dc->frame_objects;
+  layer->clipper = dc->clipper;
+  layer->clip_x1 = dc->clip_x1;
+  layer->clip_y1 = dc->clip_y1;
+  layer->clip_x2 = dc->clip_x2;
+  layer->clip_y2 = dc->clip_y2;
+  layer->clip_corner_radius = dc->clip_corner_radius;
+  layer->clip_set = dc->clip_set;
+  layer->matrix = dc->matrix;
+  dc->layer = layer;
+  dc->batch_shape = NULL;
+
+  layer->image = ecore_evas_object_image_new(dc->target_ee);
+  if (layer->image)
+  {
+    layer->ee = ecore_evas_object_ecore_evas_get(layer->image);
+    ecore_evas_alpha_set(layer->ee, EINA_TRUE);
+    evas_object_image_filled_set(layer->image, EINA_TRUE);
+    evas_object_image_size_set(layer->image, dc->w, dc->h);
+    ecore_evas_resize(layer->ee, dc->w, dc->h);
+    efl_gfx_entity_position_set(layer->image, EINA_POSITION2D(0, 0));
+    efl_gfx_entity_size_set(layer->image, EINA_SIZE2D(dc->w, dc->h));
+    layer->frame_objects = eina_list_append(layer->frame_objects, layer->image);
+
+    dc->target_ee = layer->ee;
+    dc->frame_evas = ecore_evas_get(layer->ee);
+    dc->frame_objects = NULL;
+  }
+
+  dc->clip_x1 = 0;
+  dc->clip_y1 = 0;
+  dc->clip_x2 = dc->w - 1;
+  dc->clip_y2 = dc->h - 1;
+  dc->clip_corner_radius = 0;
+  dc->clip_set = 0;
+  dc->clipper = NULL;
+  iDrawNewLayer(dc);
+  return 1;
+}
+
+IUP_SDK_API void iupdrvDrawEndLayer(IdrawCanvas* dc, int alpha)
+{
+  IdrawLayer* layer;
+
+  if (!dc->layer)
+    return;
+
+  layer = iDrawPopLayer(dc);
+
+  if (layer->image && alpha > 0)
+  {
+    efl_gfx_color_set(layer->image, alpha, alpha, alpha, alpha);
+    if (dc->clipper)
+      efl_canvas_object_clipper_set(layer->image, dc->clipper);
+    efl_gfx_entity_visible_set(layer->image, EINA_TRUE);
+    ecore_evas_manual_render(layer->ee);
+  }
+
+  free(layer);
   iDrawNewLayer(dc);
 }
 

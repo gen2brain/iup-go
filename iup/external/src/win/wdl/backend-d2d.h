@@ -38,6 +38,14 @@
 #define D2D_BASEDELTA_X             0.5f
 #define D2D_BASEDELTA_Y             0.5f
 
+typedef struct d2d_layer_tag d2d_layer_t;
+struct d2d_layer_tag {
+    dummy_ID2D1Layer* layer;
+    dummy_ID2D1Layer* clip_layer;
+    WORD clip_flags;
+    d2d_layer_t* next;
+};
+
 typedef struct d2d_canvas_tag d2d_canvas_t;
 struct d2d_canvas_tag {
     WORD type;
@@ -52,6 +60,7 @@ struct d2d_canvas_tag {
     dummy_ID2D1Layer* clip_layer;
     dummy_ID2D1Layer* push_layers[8];
     int push_count;
+    d2d_layer_t* layers;
 };
 
 
@@ -78,6 +87,8 @@ void d2d_fini(void);
 d2d_canvas_t* d2d_canvas_alloc(dummy_ID2D1RenderTarget* target, WORD type, UINT width, BOOL rtl);
 
 void d2d_reset_clip(d2d_canvas_t* c);
+void d2d_pop_layer(d2d_canvas_t* c);
+void d2d_reset_layers(d2d_canvas_t* c);
 void d2d_update_text_antialias(d2d_canvas_t* c);
 
 void d2d_reset_transform(d2d_canvas_t* c);

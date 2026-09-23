@@ -24,12 +24,19 @@
 #include "iupwasm_drv.h"
 
 
+typedef struct _IwasmDrawLayer
+{
+  int clip_x1, clip_y1, clip_x2, clip_y2;
+  struct _IwasmDrawLayer* next;
+} IwasmDrawLayer;
+
 struct _IdrawCanvas
 {
   Ihandle* ih;
   int cid;          /* canvas element id */
   int w, h;
   int clip_x1, clip_y1, clip_x2, clip_y2;
+  IwasmDrawLayer* layers;
 };
 
 EM_JS(void, iupwasmJsCanvasInit, (void), {
@@ -49,7 +56,8 @@ EM_JS(void, iupwasmJsCanvasInit, (void), {
     ctx.lineDashOffset = HEAPF64[s + 3];
     ctx.lineWidth = lw < 1 ? 1 : lw;
   };
-  globalThis.__iupCanvasOf = function(cid) {
+  globalThis.__iupLayers = {};
+  globalThis.__iupBaseCanvasOf = function(cid) {
     if (typeof document === 'undefined') {
       globalThis.__iupLocal = globalThis.__iupLocal || {};
       if (!globalThis.__iupLocal[cid]) globalThis.__iupLocal[cid] = new OffscreenCanvas(1, 1);
@@ -58,6 +66,11 @@ EM_JS(void, iupwasmJsCanvasInit, (void), {
     var el = globalThis.__iup.els[cid];
     return el && el.__iupCanvas ? el.__iupCanvas : el;
   };
+  globalThis.__iupCanvasOf = function(cid) {
+    var stack = globalThis.__iupLayers[cid];
+    if (stack && stack.length) return stack[stack.length - 1];
+    return globalThis.__iupBaseCanvasOf(cid);
+  };
   globalThis.__iupCtx = function(cid) {
     var cv = globalThis.__iupCanvasOf(cid);
     return cv ? cv.getContext("2d") : null;
@@ -65,7 +78,8 @@ EM_JS(void, iupwasmJsCanvasInit, (void), {
 })
 
 EM_JS(void, iupwasmJsCanvasReset, (int cid, int w, int h), {
-  var el = globalThis.__iupCanvasOf(cid); if (!el) return;
+  delete globalThis.__iupLayers[cid];
+  var el = globalThis.__iupBaseCanvasOf(cid); if (!el) return;
   el.width = w;
   el.height = h;
   var ctx = el.getContext("2d");
@@ -367,8 +381,42 @@ EM_JS(void, iupwasmJsResetClip, (int cid), {
   ctx.save();
 })
 
+EM_JS(void, iupwasmJsBeginLayer, (int cid), {
+  var cv = globalThis.__iupCanvasOf(cid); if (!cv) return;
+  var oc;
+  if (typeof document !== 'undefined') {
+    oc = document.createElement('canvas');
+    oc.width = cv.width || 1;
+    oc.height = cv.height || 1;
+  } else
+    oc = new OffscreenCanvas(cv.width || 1, cv.height || 1);
+  var ctx = oc.getContext("2d");
+  ctx.__iupTransform = [1, 0, 0, 1, 0, 0];
+  ctx.save();
+  var stack = globalThis.__iupLayers[cid] || (globalThis.__iupLayers[cid] = []);
+  stack.push(oc);
+})
+
+EM_JS(void, iupwasmJsEndLayer, (int cid, int alpha), {
+  var stack = globalThis.__iupLayers[cid];
+  if (!stack || !stack.length) return;
+  var oc = stack.pop();
+  if (!stack.length) delete globalThis.__iupLayers[cid];
+  var ctx = globalThis.__iupCtx(cid); if (!ctx) return;
+  ctx.save();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.globalAlpha = alpha / 255;
+  ctx.drawImage(oc, 0, 0);
+  ctx.restore();
+})
+
+EM_JS(void, iupwasmJsLayerClear, (int cid), {
+  delete globalThis.__iupLayers[cid];
+})
+
 EM_JS(int, iupwasmJsCanvasGetImageData, (int cid, int ptr, int w, int h), {
-  var ctx = globalThis.__iupCtx(cid); if (!ctx) return 0;
+  var cv = globalThis.__iupBaseCanvasOf(cid); if (!cv) return 0;
+  var ctx = cv.getContext("2d");
   var img = ctx.getImageData(0, 0, w, h);
   HEAPU8.set(img.data, ptr);
   return 1;
@@ -392,7 +440,20 @@ IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
 
 IUP_SDK_API void iupdrvDrawKillCanvas(IdrawCanvas* dc)
 {
-  if (dc) free(dc);
+  if (!dc)
+    return;
+
+  if (dc->layers)
+    iupwasmJsLayerClear(dc->cid);
+
+  while (dc->layers)
+  {
+    IwasmDrawLayer* layer = dc->layers;
+    dc->layers = layer->next;
+    free(layer);
+  }
+
+  free(dc);
 }
 
 IUP_SDK_API void iupdrvDrawSetTransform(IdrawCanvas* dc, const IupDrawMatrix* matrix)
@@ -623,6 +684,45 @@ IUP_SDK_API void iupdrvDrawResetClip(IdrawCanvas* dc)
 {
   iupwasmJsResetClip(dc->cid);
   iupwasmDrawStoreClip(dc, 0, 0, 0, 0);
+}
+
+IUP_SDK_API int iupdrvDrawBeginLayer(IdrawCanvas* dc, int alpha)
+{
+  IwasmDrawLayer* layer;
+  (void)alpha;
+
+  if (!dc)
+    return 0;
+
+  layer = calloc(1, sizeof(IwasmDrawLayer));
+  if (!layer)
+    return 0;
+  layer->clip_x1 = dc->clip_x1;
+  layer->clip_y1 = dc->clip_y1;
+  layer->clip_x2 = dc->clip_x2;
+  layer->clip_y2 = dc->clip_y2;
+  layer->next = dc->layers;
+  dc->layers = layer;
+
+  iupwasmJsBeginLayer(dc->cid);
+  iupwasmDrawStoreClip(dc, 0, 0, 0, 0);
+  return 1;
+}
+
+IUP_SDK_API void iupdrvDrawEndLayer(IdrawCanvas* dc, int alpha)
+{
+  IwasmDrawLayer* layer;
+
+  if (!dc || !dc->layers)
+    return;
+
+  layer = dc->layers;
+  dc->layers = layer->next;
+
+  iupwasmJsEndLayer(dc->cid, alpha);
+  iupwasmDrawStoreClip(dc, layer->clip_x1, layer->clip_y1, layer->clip_x2, layer->clip_y2);
+
+  free(layer);
 }
 
 IUP_SDK_API void iupdrvDrawSetClipRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2)

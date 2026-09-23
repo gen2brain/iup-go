@@ -242,6 +242,8 @@ void wdClear(WD_HCANVAS hCanvas, WD_COLOR color);
 void wdSetClip(WD_HCANVAS hCanvas, const WD_RECT* pRect, const WD_HPATH hPath);
 void wdPushClipPath(WD_HCANVAS hCanvas, const WD_HPATH hPath);
 void wdPopClip(WD_HCANVAS hCanvas);
+void wdPushLayer(WD_HCANVAS hCanvas, float fOpacity);
+void wdPopLayer(WD_HCANVAS hCanvas);
 
 /* The painting is by default measured in pixel units: 1.0f corresponds to
  * the pixel width or height, depending on the current axis.

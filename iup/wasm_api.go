@@ -858,6 +858,14 @@ func DrawRestore(ih Ihandle) {
 	ccall("IupDrawRestore", "", []interface{}{"number"}, []interface{}{int(ih)})
 }
 
+// DrawSaveLayer saves the drawing state like DrawSave and starts a group that the matching
+// DrawRestore composites onto the canvas with opacity alpha (0-255).
+//
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
+func DrawSaveLayer(ih Ihandle, alpha int) {
+	ccall("IupDrawSaveLayer", "", []interface{}{"number", "number"}, []interface{}{int(ih), alpha})
+}
+
 // DrawTransform multiplies the current drawing transform by the given matrix.
 //
 // https://gen2brain.github.io/iup-go/func/iup_draw.html

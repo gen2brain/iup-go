@@ -17,6 +17,8 @@ import android.view.inputmethod.InputMethodManager;
 
 import androidx.annotation.NonNull;
 
+import java.util.ArrayList;
+
 
 /* Canvas back-buffer blit in onDraw; ViewGroup base so TYPECANVAS containers (FlatTabs/FlatFrame) can parent children. */
 public class IupAndroidCanvas extends IupAndroidFixed
@@ -40,6 +42,7 @@ public class IupAndroidCanvas extends IupAndroidFixed
     private float rotateLast, rotateAngle;
     /* Tracks an outstanding clip save() for setClipRect's restore-then-replace contract. */
     boolean clipSaved;
+    final ArrayList<int[]> layers = new ArrayList<>();
     boolean inDraw;
 
     public IupAndroidCanvas(Context ctx, long ihandlePtr)
@@ -295,6 +298,7 @@ public class IupAndroidCanvas extends IupAndroidFixed
         /* DENSITY_NONE: blit to view 1:1 (view's canvas would auto-scale otherwise). */
         back.setDensity(Bitmap.DENSITY_NONE);
         backCanvas = new Canvas(back);
+        layers.clear();
         /* Scale so IUP draw coordinates are logical px (dp-equivalent). */
         float density = IupCommon.getDisplayDensity();
         if (density != 1.0f) backCanvas.scale(density, density);

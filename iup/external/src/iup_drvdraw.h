@@ -176,6 +176,16 @@ IUP_SDK_API void iupdrvDrawSetClipRoundedRect(IdrawCanvas* dc, int x1, int y1, i
  * \ingroup drvdraw */
 IUP_SDK_API void iupdrvDrawResetClip(IdrawCanvas* dc);
 
+/** Starts a group composited with opacity alpha (0-255) when iupdrvDrawEndLayer is called.
+ * No clip is active inside the group until the core replays it. Returns 0 when no group was started.
+ * \ingroup drvdraw */
+IUP_SDK_API int iupdrvDrawBeginLayer(IdrawCanvas* dc, int alpha);
+
+/** Composites the innermost group through the clip active at iupdrvDrawBeginLayer
+ * and restores that clip state.
+ * \ingroup drvdraw */
+IUP_SDK_API void iupdrvDrawEndLayer(IdrawCanvas* dc, int alpha);
+
 /** Returns the last rectangle set in iupdrvDrawSetClipRect.
 * \ingroup drvdraw */
 IUP_SDK_API void iupdrvDrawGetClipRect(IdrawCanvas* dc, int* x1, int* y1, int* x2, int* y2);

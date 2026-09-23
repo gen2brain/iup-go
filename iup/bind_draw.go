@@ -37,6 +37,12 @@ func DrawSave(ih Ihandle) { C.IupDrawSave(ih.ptr()) }
 // https://gen2brain.github.io/iup-go/func/iup_draw.html
 func DrawRestore(ih Ihandle) { C.IupDrawRestore(ih.ptr()) }
 
+// DrawSaveLayer saves the drawing state like DrawSave and starts a group that the matching
+// DrawRestore composites onto the canvas with opacity alpha (0-255).
+//
+// https://gen2brain.github.io/iup-go/func/iup_draw.html
+func DrawSaveLayer(ih Ihandle, alpha int) { C.IupDrawSaveLayer(ih.ptr(), C.int(alpha)) }
+
 // DrawTransform multiplies the current drawing transform by the given matrix.
 //
 // https://gen2brain.github.io/iup-go/func/iup_draw.html

@@ -31,6 +31,17 @@
 #include "iupmot_color.h"
 
 
+typedef struct _ImotDrawLayer
+{
+  int active;
+  Pixmap pixmap;
+  GC pixmap_gc;
+  Picture pict;
+  Region clip_region;
+  int clip_x1, clip_y1, clip_x2, clip_y2;
+  struct _ImotDrawLayer* next;
+} ImotDrawLayer;
+
 struct _IdrawCanvas{
   Ihandle* ih;
   int w, h;
@@ -45,6 +56,7 @@ struct _IdrawCanvas{
   IupDrawMatrix matrix;
   int line_scale;
   Region clip_region;
+  ImotDrawLayer* layers;
 };
 
 static int motDrawGetGeometry(Ihandle* ih, Drawable wnd, int* _w, int* _h, int* _d)
@@ -194,6 +206,58 @@ static void motDrawAlphaMaskEnd(IdrawCanvas* dc, ImotAlphaMask* m, long color)
   XRenderFreePicture(iupmot_display, src);
 }
 
+static void motDrawLayerPop(IdrawCanvas* dc, int alpha, int composite)
+{
+  ImotDrawLayer* layer = dc->layers;
+  Pixmap group_pixmap;
+  GC group_gc;
+  Picture group_pict;
+  Region group_region;
+
+  dc->layers = layer->next;
+
+  if (!layer->active)
+  {
+    free(layer);
+    return;
+  }
+
+  group_pixmap = dc->pixmap;
+  group_gc = dc->pixmap_gc;
+  group_pict = dc->pict;
+  group_region = dc->clip_region;
+
+  dc->pixmap = layer->pixmap;
+  dc->pixmap_gc = layer->pixmap_gc;
+  dc->pict = layer->pict;
+  dc->clip_region = layer->clip_region;
+  dc->clip_x1 = layer->clip_x1;
+  dc->clip_y1 = layer->clip_y1;
+  dc->clip_x2 = layer->clip_x2;
+  dc->clip_y2 = layer->clip_y2;
+
+  if (composite)
+  {
+    XRenderColor rc;
+    Picture mask;
+    rc.red = 0;
+    rc.green = 0;
+    rc.blue = 0;
+    rc.alpha = (unsigned short)(alpha * 257);
+    mask = XRenderCreateSolidFill(iupmot_display, &rc);
+    XRenderComposite(iupmot_display, PictOpOver, group_pict, mask, dc->pict, 0, 0, 0, 0, 0, 0, dc->w, dc->h);
+    XRenderFreePicture(iupmot_display, mask);
+  }
+
+  if (group_region)
+    XDestroyRegion(group_region);
+  XRenderFreePicture(iupmot_display, group_pict);
+  XFreeGC(iupmot_display, group_gc);
+  XFreePixmap(iupmot_display, group_pixmap);
+
+  free(layer);
+}
+
 IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
 {
   IdrawCanvas* dc;
@@ -276,6 +340,9 @@ IUP_SDK_API void iupdrvDrawKillCanvas(IdrawCanvas* dc)
 {
   if (!dc)
     return;
+
+  while (dc->layers)
+    motDrawLayerPop(dc, 0, 0);
 
   if (dc->clip_region)
     XDestroyRegion(dc->clip_region);
@@ -1267,6 +1334,78 @@ IUP_SDK_API void iupdrvDrawResetClip(IdrawCanvas* dc)
   dc->clip_y1 = 0;
   dc->clip_x2 = 0;
   dc->clip_y2 = 0;
+}
+
+IUP_SDK_API int iupdrvDrawBeginLayer(IdrawCanvas* dc, int alpha)
+{
+  ImotDrawLayer* layer;
+  XRenderPictFormat* fmt;
+  Pixmap pixmap;
+  GC gc;
+  Picture pict;
+  int w, h, depth;
+  (void)alpha;
+
+  layer = calloc(1, sizeof(ImotDrawLayer));
+  if (!layer)
+    return 0;
+
+  layer->next = dc->layers;
+  dc->layers = layer;
+
+  if (!dc->pict)
+    return 1;
+
+  fmt = XRenderFindVisualFormat(iupmot_display, iupmot_visual);
+  if (!fmt || !motDrawGetGeometry(NULL, dc->pixmap, &w, &h, &depth))
+    return 1;
+
+  pixmap = XCreatePixmap(iupmot_display, dc->pixmap, dc->w, dc->h, depth);
+  if (!pixmap)
+    return 1;
+
+  gc = XCreateGC(iupmot_display, pixmap, 0, NULL);
+  if (!gc)
+  {
+    XFreePixmap(iupmot_display, pixmap);
+    return 1;
+  }
+
+  pict = XRenderCreatePicture(iupmot_display, pixmap, fmt, 0, NULL);
+  if (!pict)
+  {
+    XFreeGC(iupmot_display, gc);
+    XFreePixmap(iupmot_display, pixmap);
+    return 1;
+  }
+
+  XCopyArea(iupmot_display, dc->pixmap, pixmap, gc, 0, 0, dc->w, dc->h, 0, 0);
+
+  layer->active = 1;
+  layer->pixmap = dc->pixmap;
+  layer->pixmap_gc = dc->pixmap_gc;
+  layer->pict = dc->pict;
+  layer->clip_region = dc->clip_region;
+  layer->clip_x1 = dc->clip_x1;
+  layer->clip_y1 = dc->clip_y1;
+  layer->clip_x2 = dc->clip_x2;
+  layer->clip_y2 = dc->clip_y2;
+
+  dc->pixmap = pixmap;
+  dc->pixmap_gc = gc;
+  dc->pict = pict;
+  dc->clip_region = NULL;
+  dc->clip_x1 = 0;
+  dc->clip_y1 = 0;
+  dc->clip_x2 = 0;
+  dc->clip_y2 = 0;
+  return 1;
+}
+
+IUP_SDK_API void iupdrvDrawEndLayer(IdrawCanvas* dc, int alpha)
+{
+  if (dc->layers)
+    motDrawLayerPop(dc, alpha, 1);
 }
 
 typedef int (*ImotTextWidth)(void* font, const char* text, int len);
@@ -2804,7 +2943,17 @@ static void iX11CopyPixelsToRgba(unsigned char* dst, XImage* ximage, int w, int 
 
 IUP_SDK_API int iupdrvDrawGetImageData(IdrawCanvas* dc, unsigned char* data)
 {
-  XImage* ximage = XGetImage(iupmot_display, dc->pixmap, 0, 0, dc->w, dc->h, AllPlanes, ZPixmap);
+  Pixmap pixmap = dc->pixmap;
+  ImotDrawLayer* layer;
+  XImage* ximage;
+
+  for (layer = dc->layers; layer; layer = layer->next)
+  {
+    if (layer->active)
+      pixmap = layer->pixmap;
+  }
+
+  ximage = XGetImage(iupmot_display, pixmap, 0, 0, dc->w, dc->h, AllPlanes, ZPixmap);
   if (!ximage)
     return 0;
 
