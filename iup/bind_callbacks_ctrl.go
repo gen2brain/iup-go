@@ -19,7 +19,7 @@ type ListReleaseFunc func(ih Ihandle, lin, col int, status string) int
 func goIupListReleaseCB(ih unsafe.Pointer, lin, col C.int, status *C.char) C.int {
 	ch := loadCallback((Ihandle)(ih), "_IUPGO_LISTRELEASE_CB")
 	if ch == 0 {
-		return C.IUP_DEFAULT
+		return C.int(DEFAULT)
 	}
 
 	f := ch.Value().(ListReleaseFunc)
@@ -44,7 +44,7 @@ type ListInsertFunc func(ih Ihandle, pos int) int
 func goIupListInsertCB(ih unsafe.Pointer, pos C.int) C.int {
 	ch := loadCallback((Ihandle)(ih), "_IUPGO_LISTINSERT_CB")
 	if ch == 0 {
-		return C.IUP_DEFAULT
+		return C.int(DEFAULT)
 	}
 
 	f := ch.Value().(ListInsertFunc)
@@ -69,7 +69,7 @@ type ListRemoveFunc func(ih Ihandle, pos int) int
 func goIupListRemoveCB(ih unsafe.Pointer, pos C.int) C.int {
 	ch := loadCallback((Ihandle)(ih), "_IUPGO_LISTREMOVE_CB")
 	if ch == 0 {
-		return C.IUP_DEFAULT
+		return C.int(DEFAULT)
 	}
 
 	f := ch.Value().(ListRemoveFunc)
@@ -94,7 +94,7 @@ type ListEditionFunc func(ih Ihandle, lin, col, mode, update int) int
 func goIupListEditionCB(ih unsafe.Pointer, lin, col, mode, update C.int) C.int {
 	ch := loadCallback((Ihandle)(ih), "_IUPGO_LISTEDITION_CB")
 	if ch == 0 {
-		return C.IUP_DEFAULT
+		return C.int(DEFAULT)
 	}
 
 	f := ch.Value().(ListEditionFunc)
@@ -119,7 +119,7 @@ type ListDrawFunc func(ih Ihandle, lin, col, x1, x2, y1, y2 int) int
 func goIupListDrawCB(ih unsafe.Pointer, lin, col, x1, x2, y1, y2 C.int) C.int {
 	ch := loadCallback((Ihandle)(ih), "_IUPGO_LISTDRAW_CB")
 	if ch == 0 {
-		return C.IUP_DEFAULT
+		return C.int(DEFAULT)
 	}
 
 	f := ch.Value().(ListDrawFunc)
@@ -146,7 +146,7 @@ type BusyFunc func(ih Ihandle, lin, col int, status string) int
 func goIupBusyCB(ih unsafe.Pointer, lin, col C.int, status *C.char) C.int {
 	ch := loadCallback((Ihandle)(ih), "_IUPGO_BUSY_CB")
 	if ch == 0 {
-		return C.IUP_DEFAULT
+		return C.int(DEFAULT)
 	}
 
 	f := ch.Value().(BusyFunc)
@@ -171,7 +171,7 @@ type MenuContextFunc func(ih, menu Ihandle, lin, col int) int
 func goIupMenuContextCB(ih, menu unsafe.Pointer, lin, col C.int) C.int {
 	ch := loadCallback((Ihandle)(ih), "_IUPGO_MENUCONTEXT_CB")
 	if ch == 0 {
-		return C.IUP_DEFAULT
+		return C.int(DEFAULT)
 	}
 
 	f := ch.Value().(MenuContextFunc)
@@ -196,7 +196,7 @@ type MenuContextCloseFunc func(ih, menu Ihandle, lin, col int) int
 func goIupMenuContextCloseCB(ih, menu unsafe.Pointer, lin, col C.int) C.int {
 	ch := loadCallback((Ihandle)(ih), "_IUPGO_MENUCONTEXTCLOSE_CB")
 	if ch == 0 {
-		return C.IUP_DEFAULT
+		return C.int(DEFAULT)
 	}
 
 	f := ch.Value().(MenuContextCloseFunc)
@@ -221,7 +221,7 @@ type PasteSizeFunc func(ih Ihandle, numlin, numcol int) int
 func goIupPasteSizeCB(ih unsafe.Pointer, numlin, numcol C.int) C.int {
 	ch := loadCallback((Ihandle)(ih), "_IUPGO_PASTESIZE_CB")
 	if ch == 0 {
-		return C.IUP_DEFAULT
+		return C.int(DEFAULT)
 	}
 
 	f := ch.Value().(PasteSizeFunc)
@@ -273,7 +273,7 @@ type NumericSetValueFunc func(ih Ihandle, lin, col int, value float64) int
 func goIupNumericSetValueCB(ih unsafe.Pointer, lin, col C.int, value C.double) C.int {
 	ch := loadCallback((Ihandle)(ih), "_IUPGO_NUMERICSETVALUE_CB")
 	if ch == 0 {
-		return C.IUP_DEFAULT
+		return C.int(DEFAULT)
 	}
 
 	f := ch.Value().(NumericSetValueFunc)
@@ -298,7 +298,7 @@ type SortColumnCompareFunc func(ih Ihandle, col, lin1, lin2 int) int
 func goIupSortColumnCompareCB(ih unsafe.Pointer, col, lin1, lin2 C.int) C.int {
 	ch := loadCallback((Ihandle)(ih), "_IUPGO_SORTCOLUMNCOMPARE_CB")
 	if ch == 0 {
-		return C.IUP_DEFAULT
+		return C.int(DEFAULT)
 	}
 
 	f := ch.Value().(SortColumnCompareFunc)

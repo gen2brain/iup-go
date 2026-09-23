@@ -3,7 +3,6 @@
 package iup
 
 import (
-	"runtime/cgo"
 	"unsafe"
 )
 
@@ -72,7 +71,7 @@ func PostMessage(ih Ihandle, s string, i int, p any) {
 
 	var h C.uintptr_t
 	if p != nil {
-		h = C.uintptr_t(cgo.NewHandle(p))
+		h = C.uintptr_t(newGoHandle(p))
 	}
 
 	C.goIupPostMessageHandle(ih.ptr(), cS, C.int(i), h)

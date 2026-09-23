@@ -3,10 +3,11 @@
 package iup
 
 import (
-	"runtime/cgo"
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"unsafe"
 )
 
@@ -16,20 +17,50 @@ import (
 import "C"
 
 var (
-	globalIdleHandle  cgo.Handle
-	globalEntryHandle cgo.Handle
-	globalExitHandle  cgo.Handle
+	globalIdleHandle  goHandle
+	globalEntryHandle goHandle
+	globalExitHandle  goHandle
 )
+
+type goHandle uintptr
+
+var (
+	goHandles   sync.Map
+	goHandleIdx atomic.Uintptr
+)
+
+func newGoHandle(v any) goHandle {
+	h := goHandleIdx.Add(1)
+	if h == 0 {
+		panic("iup: ran out of handle space")
+	}
+	goHandles.Store(h, v)
+	return goHandle(h)
+}
+
+func (h goHandle) Value() any {
+	v, ok := goHandles.Load(uintptr(h))
+	if !ok {
+		panic("iup: misuse of an invalid handle")
+	}
+	return v
+}
+
+func (h goHandle) Delete() {
+	if _, ok := goHandles.LoadAndDelete(uintptr(h)); !ok {
+		panic("iup: misuse of an invalid handle")
+	}
+}
 
 // Tracks which _IUPGO_* keys are set on an Ihandle. _IUP* names are skipped
 // by IupGetAllAttributes, so we can't iterate them at destroy time without this list.
 const iupgoRegistryAttr = "_IUPGO_REGISTRY"
 
-func handleToStr(ch cgo.Handle) string {
+func handleToStr(ch goHandle) string {
 	return strconv.FormatUint(uint64(ch), 36)
 }
 
-func strToHandle(s string) cgo.Handle {
+func strToHandle(s string) goHandle {
 	if s == "" {
 		return 0
 	}
@@ -37,7 +68,7 @@ func strToHandle(s string) cgo.Handle {
 	if err != nil {
 		return 0
 	}
-	return cgo.Handle(uintptr(n))
+	return goHandle(uintptr(n))
 }
 
 func storeCallback(ih Ihandle, key string, f any) {
@@ -53,10 +84,10 @@ func storeCallback(ih Ihandle, key string, f any) {
 			ih.SetAttribute(iupgoRegistryAttr, list+","+key)
 		}
 	}
-	ih.SetAttribute(key, handleToStr(cgo.NewHandle(f)))
+	ih.SetAttribute(key, handleToStr(newGoHandle(f)))
 }
 
-func loadCallback(ih Ihandle, key string) cgo.Handle {
+func loadCallback(ih Ihandle, key string) goHandle {
 	enterIupThread()
 	return strToHandle(ih.GetAttribute(key))
 }
@@ -68,14 +99,14 @@ func clearCallback(ih Ihandle, key string) {
 	}
 }
 
-func setGlobalHandle(slot *cgo.Handle, f any) {
+func setGlobalHandle(slot *goHandle, f any) {
 	if *slot != 0 {
 		slot.Delete()
 	}
-	*slot = cgo.NewHandle(f)
+	*slot = newGoHandle(f)
 }
 
-func clearGlobalHandle(slot *cgo.Handle) {
+func clearGlobalHandle(slot *goHandle) {
 	if *slot != 0 {
 		slot.Delete()
 		*slot = 0
@@ -949,7 +980,7 @@ func goIupPostMessageCB(ih unsafe.Pointer, s unsafe.Pointer, i C.int, d C.double
 
 	var payload any
 	if p != nil {
-		ph := cgo.Handle(uintptr(p))
+		ph := goHandle(uintptr(p))
 		payload = ph.Value()
 		ph.Delete()
 	}
@@ -1631,7 +1662,7 @@ type DragBeginFunc func(ih Ihandle, x, y int) int
 func goIupDragBeginCB(ih unsafe.Pointer, x, y C.int) C.int {
 	ch := loadCallback((Ihandle)(ih), "_IUPGO_DRAGBEGIN_CB")
 	if ch == 0 {
-		return C.IUP_DEFAULT
+		return C.int(DEFAULT)
 	}
 
 	f := ch.Value().(DragBeginFunc)
@@ -1656,7 +1687,7 @@ type DragDataSizeFunc func(ih Ihandle, dragType string) int
 func goIupDragDataSizeCB(ih unsafe.Pointer, dragType *C.char) C.int {
 	ch := loadCallback((Ihandle)(ih), "_IUPGO_DRAGDATASIZE_CB")
 	if ch == 0 {
-		return C.IUP_DEFAULT
+		return C.int(DEFAULT)
 	}
 
 	f := ch.Value().(DragDataSizeFunc)
@@ -1681,7 +1712,7 @@ type DragDataFunc func(ih Ihandle, dragType string, data unsafe.Pointer, size in
 func goIupDragDataCB(ih unsafe.Pointer, dragType *C.char, data unsafe.Pointer, size C.int) C.int {
 	ch := loadCallback((Ihandle)(ih), "_IUPGO_DRAGDATA_CB")
 	if ch == 0 {
-		return C.IUP_DEFAULT
+		return C.int(DEFAULT)
 	}
 
 	f := ch.Value().(DragDataFunc)
@@ -1706,7 +1737,7 @@ type DragEndFunc func(ih Ihandle, action int) int
 func goIupDragEndCB(ih unsafe.Pointer, action C.int) C.int {
 	ch := loadCallback((Ihandle)(ih), "_IUPGO_DRAGEND_CB")
 	if ch == 0 {
-		return C.IUP_DEFAULT
+		return C.int(DEFAULT)
 	}
 
 	f := ch.Value().(DragEndFunc)
@@ -1731,7 +1762,7 @@ type DropDataFunc func(ih Ihandle, dragType string, data unsafe.Pointer, size, x
 func goIupDropDataCB(ih unsafe.Pointer, dragType *C.char, data unsafe.Pointer, size, x, y C.int) C.int {
 	ch := loadCallback((Ihandle)(ih), "_IUPGO_DROPDATA_CB")
 	if ch == 0 {
-		return C.IUP_DEFAULT
+		return C.int(DEFAULT)
 	}
 
 	f := ch.Value().(DropDataFunc)
@@ -1756,7 +1787,7 @@ type DropMotionFunc func(ih Ihandle, x, y int, status string) int
 func goIupDropMotionCB(ih unsafe.Pointer, x, y C.int, status *C.char) C.int {
 	ch := loadCallback((Ihandle)(ih), "_IUPGO_DROPMOTION_CB")
 	if ch == 0 {
-		return C.IUP_DEFAULT
+		return C.int(DEFAULT)
 	}
 
 	f := ch.Value().(DropMotionFunc)
@@ -2196,7 +2227,7 @@ type FileFunc func(ih Ihandle, filename, status string) int
 func goIupFileCB(ih unsafe.Pointer, filename, status *C.char) C.int {
 	ch := loadCallback((Ihandle)(ih), "_IUPGO_FILE_CB")
 	if ch == 0 {
-		return C.IUP_DEFAULT
+		return C.int(DEFAULT)
 	}
 
 	f := ch.Value().(FileFunc)
@@ -2221,7 +2252,7 @@ type LayoutUpdateFunc func(ih Ihandle) int
 func goIupLayoutUpdateCB(ih unsafe.Pointer) C.int {
 	ch := loadCallback((Ihandle)(ih), "_IUPGO_LAYOUTUPDATE_CB")
 	if ch == 0 {
-		return C.IUP_DEFAULT
+		return C.int(DEFAULT)
 	}
 
 	f := ch.Value().(LayoutUpdateFunc)
@@ -2246,7 +2277,7 @@ type HighlightFunc func(ih Ihandle) int
 func goIupHighlightCB(ih unsafe.Pointer) C.int {
 	ch := loadCallback((Ihandle)(ih), "_IUPGO_HIGHLIGHT_CB")
 	if ch == 0 {
-		return C.IUP_DEFAULT
+		return C.int(DEFAULT)
 	}
 
 	f := ch.Value().(HighlightFunc)
@@ -2271,7 +2302,7 @@ type MenuCloseFunc func(ih Ihandle) int
 func goIupMenuCloseCB(ih unsafe.Pointer) C.int {
 	ch := loadCallback((Ihandle)(ih), "_IUPGO_MENUCLOSE_CB")
 	if ch == 0 {
-		return C.IUP_DEFAULT
+		return C.int(DEFAULT)
 	}
 
 	f := ch.Value().(MenuCloseFunc)
@@ -2296,7 +2327,7 @@ type ColorUpdateFunc func(ih Ihandle) int
 func goIupColorUpdateCB(ih unsafe.Pointer) C.int {
 	ch := loadCallback((Ihandle)(ih), "_IUPGO_COLORUPDATE_CB")
 	if ch == 0 {
-		return C.IUP_DEFAULT
+		return C.int(DEFAULT)
 	}
 
 	f := ch.Value().(ColorUpdateFunc)
@@ -2453,7 +2484,7 @@ type GetParamFunc func(dialog Ihandle, paramIndex int) int
 
 //export goIupGetParamCB
 func goIupGetParamCB(dialog unsafe.Pointer, paramIndex C.int, userData unsafe.Pointer) C.int {
-	ch := cgo.Handle(userData)
+	ch := goHandle(userData)
 	f := ch.Value().(GetParamFunc)
 	return C.int(f(Ihandle(dialog), int(paramIndex)))
 }

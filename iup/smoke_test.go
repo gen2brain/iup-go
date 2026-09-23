@@ -466,6 +466,39 @@ func TestMapCallback(t *testing.T) {
 	}
 }
 
+// Replaced callbacks and PostMessage payloads survive the round trip through C and are released once.
+func TestPostMessagePayload(t *testing.T) {
+	type payload struct{ n int }
+
+	var got []any
+	b := Button("p")
+	SetCallback(b, "POSTMESSAGE_CB", PostMessageFunc(func(Ihandle, string, int, any) int {
+		t.Error("replaced POSTMESSAGE_CB fired")
+		return DEFAULT
+	}))
+	SetCallback(b, "POSTMESSAGE_CB", PostMessageFunc(func(_ Ihandle, s string, i int, p any) int {
+		got = append(got, s, i, p)
+		return DEFAULT
+	}))
+	dlg := Dialog(b)
+	Map(dlg)
+
+	PostMessage(b, "hello", 7, &payload{42})
+	deadline := time.Now().Add(2 * time.Second)
+	for len(got) == 0 && time.Now().Before(deadline) {
+		LoopStep()
+		time.Sleep(5 * time.Millisecond)
+	}
+	Destroy(dlg)
+
+	if len(got) != 3 {
+		t.Fatal("POSTMESSAGE_CB never fired")
+	}
+	if p, ok := got[2].(*payload); got[0] != "hello" || got[1] != 7 || !ok || p.n != 42 {
+		t.Fatalf("POSTMESSAGE_CB got %v", got)
+	}
+}
+
 // An attribute call from another goroutine panics instead of reaching the toolkit.
 func TestUIThreadGuard(t *testing.T) {
 	btn := Button("guard")
