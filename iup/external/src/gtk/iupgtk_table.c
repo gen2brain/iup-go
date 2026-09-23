@@ -761,14 +761,19 @@ static gboolean gtkTableButtonEvent(GtkWidget* widget, GdkEventButton* evt, Ihan
 
   if (evt->type == GDK_BUTTON_PRESS)
   {
+    int extend = (evt->state & (GDK_CONTROL_MASK | GDK_SHIFT_MASK)) &&
+                 iupStrEqualNoCase(iupAttribGetStr(ih, "SELECTIONMODE"), "MULTIPLE");
+
+    if (extend && !gtk_widget_has_focus(widget))
+      gtk_widget_grab_focus(widget);  /* GtkTreeView ignores a ctrl or shift click while unfocused */
+
     if (ih->data->show_dragdrop || iupAttribGetBoolean(ih, "DRAGSOURCE"))
     {
       gtk_tree_path_free(path);
       return FALSE;  /* let GtkTreeView select and start the row drag */
     }
 
-    if ((evt->state & (GDK_CONTROL_MASK | GDK_SHIFT_MASK)) &&
-        iupStrEqualNoCase(iupAttribGetStr(ih, "SELECTIONMODE"), "MULTIPLE"))
+    if (extend)
     {
       gtk_tree_path_free(path);
       return FALSE;  /* set_cursor would clear the selection GtkTreeView is extending */
@@ -776,6 +781,8 @@ static gboolean gtkTableButtonEvent(GtkWidget* widget, GdkEventButton* evt, Ihan
 
     gtk_tree_view_set_cursor(GTK_TREE_VIEW(widget), path, column, FALSE);
     gtk_tree_path_free(path);
+    if (!gtk_widget_has_focus(widget))
+      gtk_widget_grab_focus(widget);
     return TRUE;
   }
   else if (evt->type == GDK_2BUTTON_PRESS)
@@ -963,6 +970,7 @@ static void gtkTableCellDataFunc(GtkTreeViewColumn* column, GtkCellRenderer* ren
   int* indices = gtk_tree_path_get_indices(path);
   int lin = indices[0] + 1;  /* 1-based */
   gtk_tree_path_free(path);
+  unsigned char r, g, b;
 
   /* the text comes from the model or the store, this only sets colors */
 
@@ -986,33 +994,20 @@ static void gtkTableCellDataFunc(GtkTreeViewColumn* column, GtkCellRenderer* ren
     }
   }
 
+  if (bgcolor && iupStrToRGB(bgcolor, &r, &g, &b))
+  {
 #if GTK_CHECK_VERSION(3, 0, 0)
-  if (bgcolor && *bgcolor)
-  {
     GdkRGBA color;
-    if (gdk_rgba_parse(&color, bgcolor))
-    {
-      g_object_set(renderer, "background-rgba", &color, "background-set", TRUE, NULL);
-    }
-  }
-  else
-  {
-    g_object_set(renderer, "background-set", FALSE, NULL);
-  }
+    iupgdkRGBASet(&color, r, g, b);
+    g_object_set(renderer, "background-rgba", &color, "background-set", TRUE, NULL);
 #else
-  if (bgcolor && *bgcolor)
-  {
     GdkColor color;
-    if (gdk_color_parse(bgcolor, &color))
-    {
-      g_object_set(renderer, "background-gdk", &color, "background-set", TRUE, NULL);
-    }
+    iupgdkColorSetRGB(&color, r, g, b);
+    g_object_set(renderer, "background-gdk", &color, "background-set", TRUE, NULL);
+#endif
   }
   else
-  {
     g_object_set(renderer, "background-set", FALSE, NULL);
-  }
-#endif
 
   char* fgcolor = iupAttribGetId2(ih, "FGCOLOR", lin, col);
   if (!fgcolor)
@@ -1020,33 +1015,20 @@ static void gtkTableCellDataFunc(GtkTreeViewColumn* column, GtkCellRenderer* ren
   if (!fgcolor)
     fgcolor = iupAttribGetId2(ih, "FGCOLOR", lin, 0);
 
+  if (fgcolor && iupStrToRGB(fgcolor, &r, &g, &b))
+  {
 #if GTK_CHECK_VERSION(3, 0, 0)
-  if (fgcolor && *fgcolor)
-  {
     GdkRGBA color;
-    if (gdk_rgba_parse(&color, fgcolor))
-    {
-      g_object_set(renderer, "foreground-rgba", &color, "foreground-set", TRUE, NULL);
-    }
-  }
-  else
-  {
-    g_object_set(renderer, "foreground-set", FALSE, NULL);
-  }
+    iupgdkRGBASet(&color, r, g, b);
+    g_object_set(renderer, "foreground-rgba", &color, "foreground-set", TRUE, NULL);
 #else
-  if (fgcolor && *fgcolor)
-  {
     GdkColor color;
-    if (gdk_color_parse(fgcolor, &color))
-    {
-      g_object_set(renderer, "foreground-gdk", &color, "foreground-set", TRUE, NULL);
-    }
+    iupgdkColorSetRGB(&color, r, g, b);
+    g_object_set(renderer, "foreground-gdk", &color, "foreground-set", TRUE, NULL);
+#endif
   }
   else
-  {
     g_object_set(renderer, "foreground-set", FALSE, NULL);
-  }
-#endif
 
   char* font = iupAttribGetId2(ih, "FONT", lin, col);
   if (!font)

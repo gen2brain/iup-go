@@ -191,7 +191,15 @@ static void wasmTableApplyCellColors(Ihandle* ih)
       if (!fg) fg = iupAttribGetId2(ih, "FGCOLOR", 0, col);
       if (!fg) fg = iupAttribGetId2(ih, "FGCOLOR", lin, 0);
       if (bg || fg)
-        iupwasmJsTableCellColor(id, lin, col, bg ? bg : "", fg ? fg : "");
+      {
+        unsigned char r, g, b;
+        char bgcss[20] = "", fgcss[20] = "";
+        if (bg && iupStrToRGB(bg, &r, &g, &b))
+          snprintf(bgcss, sizeof(bgcss), "rgb(%d,%d,%d)", r, g, b);
+        if (fg && iupStrToRGB(fg, &r, &g, &b))
+          snprintf(fgcss, sizeof(fgcss), "rgb(%d,%d,%d)", r, g, b);
+        iupwasmJsTableCellColor(id, lin, col, bgcss, fgcss);
+      }
     }
 }
 
