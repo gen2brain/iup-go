@@ -80,7 +80,7 @@ func main() {
 		value := iup.GetAttributeId2(ih, "", lin, col)
 		msg := fmt.Sprintf("VALUECHANGED_CB: [%d,%d] changed to '%s'\n", lin, col, value)
 		log.SetAttribute("APPEND", msg)
-		fmt.Printf(msg)
+		fmt.Print(msg)
 		return iup.DEFAULT
 	}))
 
@@ -90,7 +90,7 @@ func main() {
 		value := iup.GetAttributeId2(ih, "", lin, col)
 		msg := fmt.Sprintf("EDITBEGIN: [%d,%d] = '%s'\n", lin, col, value)
 		log.SetAttribute("APPEND", msg)
-		fmt.Printf(msg)
+		fmt.Print(msg)
 		return iup.DEFAULT // Allow editing
 	}))
 
@@ -104,7 +104,7 @@ func main() {
 		}
 		msg := fmt.Sprintf("EDITEND: [%d,%d] '%s' → '%s' (%s)\n", lin, col, oldValue, newValue, applyStr)
 		log.SetAttribute("APPEND", msg)
-		fmt.Printf(msg)
+		fmt.Print(msg)
 		return iup.DEFAULT // Accept edit
 	}))
 

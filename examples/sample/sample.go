@@ -62,7 +62,7 @@ func main() {
 		).SetAttribute("ALIGNMENT", "ACENTER"),
 	).SetAttribute("TITLE", "Button")
 
-	iup.GetHandle("button1").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
+	iup.GetHandle("button1").On(iup.ActionCB, func(ih iup.Ihandle) int {
 		filedlg := iup.FileDlg().SetAttributes(`DIALOGTYPE=SAVE, TITLE="File Save", FILTER="*.jpg", FILTERINFO="Jpeg Files"`)
 		defer filedlg.Destroy()
 
@@ -78,9 +78,9 @@ func main() {
 		}
 
 		return iup.DEFAULT
-	}))
+	})
 
-	iup.GetHandle("button2").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
+	iup.GetHandle("button2").On(iup.ActionCB, func(ih iup.Ihandle) int {
 		dlg := iup.ColorDlg().SetAttributes(map[string]interface{}{
 			"TITLE":          "ColorDlg",
 			"VALUE":          "128 0 255",
@@ -94,7 +94,7 @@ func main() {
 		iup.Popup(dlg, iup.CENTERPARENT, iup.CENTERPARENT)
 
 		return iup.DEFAULT
-	}))
+	})
 
 	fr2 := iup.Frame(
 		iup.Vbox(
@@ -248,7 +248,7 @@ func main() {
 	}
 
 	canvas := iup.Canvas().SetAttributes(`BGCOLOR="255 255 255", BORDER=NO, XMIN=0, XMAX=99, POSX=0, DX=10`)
-	canvas.SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
+	canvas.On(iup.ActionCB, func(ih iup.Ihandle) int {
 		iup.DrawBegin(ih)
 		defer iup.DrawEnd(ih)
 
@@ -291,7 +291,7 @@ func main() {
 		iup.DrawText(ih, "Hello from IUP-Go!", w/2-80, h/2+40, -1, -1)
 
 		return iup.DEFAULT
-	}))
+	})
 
 	initTree()
 
@@ -323,7 +323,7 @@ func main() {
 		//dlg.SetAttribute("BACKDROP", "MICA")
 	}
 
-	dlg.SetCallback("THEMECHANGED_CB", iup.ThemeChangedFunc(func(ih iup.Ihandle, darkMode int) int {
+	dlg.On(iup.ThemeChangedCB, func(ih iup.Ihandle, darkMode int) int {
 		if darkMode == 1 {
 			table.SetAttribute("EVENROWCOLOR", "#3A3A3A")
 			table.SetAttribute("ODDROWCOLOR", "#2D2D2D")
@@ -332,7 +332,7 @@ func main() {
 			table.SetAttribute("ODDROWCOLOR", "#FFFFFF")
 		}
 		return iup.DEFAULT
-	}))
+	})
 
 	iup.Show(dlg)
 

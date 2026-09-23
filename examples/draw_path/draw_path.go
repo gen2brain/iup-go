@@ -8,6 +8,26 @@ import (
 
 func init() { iup.EntryPoint(main) }
 
+const hitX, hitY = 440, 540
+
+var (
+	leafPath  iup.Ihandle
+	ringPath  iup.Ihandle
+	hitPoint  = [2]int{-1, -1}
+	hitInside bool
+)
+
+func buildPaths() {
+	leafPath = iup.DrawPathCreate()
+	iup.DrawPathMoveTo(leafPath, 0, 40)
+	iup.DrawPathCurveTo(leafPath, 0, 10, 30, -10, 70, 0)
+	iup.DrawPathCurveTo(leafPath, 60, 40, 30, 55, 0, 40)
+	iup.DrawPathClose(leafPath)
+
+	ringPath = iup.DrawPathCreate()
+	iup.DrawPathSetSvg(ringPath, "M 40 0 A 40 40 0 1 1 39.9 0 Z M 40 14 A 26 26 0 1 0 40.1 14 Z")
+}
+
 func label(ih iup.Ihandle, text string, x, y int) {
 	ih.SetAttribute("DRAWFONT", "Helvetica, 9")
 	ih.SetAttribute("DRAWCOLOR", "60 60 70")
@@ -150,6 +170,46 @@ func draw(ih iup.Ihandle) int {
 	iup.DrawSetSourceSolid(ih, "70 70 80")
 	iup.DrawLine(ih, 280, 492, 560, 492)
 
+	label(ih, "path handle: drawn twice, two scales", 20, 516)
+	for i, scale := range []float64{1.0, 0.6} {
+		iup.DrawSave(ih)
+		iup.DrawTranslate(ih, float64(40+i*110), 548)
+		iup.DrawScale(ih, scale, scale)
+		iup.DrawSetPath(ih, leafPath)
+		iup.DrawSetSourceSolid(ih, "90 170 70")
+		iup.DrawPathFill(ih, iup.DRAW_RULE_WINDING)
+		iup.DrawRestore(ih)
+	}
+
+	label(ih, "SVG path data", 280, 516)
+	iup.DrawSave(ih)
+	iup.DrawTranslate(ih, 300, 540)
+	iup.DrawSetPath(ih, ringPath)
+	iup.DrawSetSourceSolid(ih, "200 120 40")
+	iup.DrawPathFill(ih, iup.DRAW_RULE_EVENODD)
+	iup.DrawRestore(ih)
+
+	label(ih, "hit test: click the leaf", hitX-20, 516)
+	x1, y1, x2, y2 := iup.DrawPathGetBounds(leafPath)
+	iup.DrawSetSourceSolid(ih, "150 150 160")
+	ih.SetAttribute("DRAWSTYLE", "STROKE_DASH")
+	iup.DrawRectangle(ih, hitX+x1, hitY+y1, hitX+x2, hitY+y2)
+	ih.SetAttribute("DRAWSTYLE", "FILL")
+	iup.DrawSave(ih)
+	iup.DrawTranslate(ih, hitX, hitY)
+	iup.DrawSetPath(ih, leafPath)
+	iup.DrawSetSourceSolid(ih, "90 170 70")
+	iup.DrawPathFill(ih, iup.DRAW_RULE_WINDING)
+	iup.DrawRestore(ih)
+	if hitPoint[0] >= 0 {
+		if hitInside {
+			iup.DrawSetSourceSolid(ih, "20 120 20")
+		} else {
+			iup.DrawSetSourceSolid(ih, "200 40 40")
+		}
+		iup.DrawArc(ih, hitPoint[0]-4, hitPoint[1]-4, hitPoint[0]+4, hitPoint[1]+4, 0, 360)
+	}
+
 	iup.DrawEnd(ih)
 	return iup.DEFAULT
 }
@@ -158,8 +218,18 @@ func main() {
 	iup.Open()
 	defer iup.Close()
 
-	cv := iup.Canvas().SetAttributes(`RASTERSIZE=640x510, BORDER=NO`)
+	buildPaths()
+
+	cv := iup.Canvas().SetAttributes(`RASTERSIZE=640x620, BORDER=NO`)
 	cv.SetCallback("ACTION", iup.ActionFunc(draw))
+	cv.SetCallback("BUTTON_CB", iup.ButtonFunc(func(ih iup.Ihandle, button, pressed, x, y int, status string) int {
+		if pressed == 1 {
+			hitPoint = [2]int{x, y}
+			hitInside = iup.DrawPathContains(leafPath, x-hitX, y-hitY, iup.DRAW_RULE_WINDING)
+			iup.Redraw(ih, 0)
+		}
+		return iup.DEFAULT
+	}))
 
 	dlg := iup.Dialog(cv).SetAttribute("TITLE", "IupDraw Paths")
 	iup.Show(dlg)

@@ -73,10 +73,10 @@ func main() {
 
 	iup.SetAttributes(dlg, `EXPAND=YES, TITLE="Button", RESIZE=NO, MENUBOX=NO, MAXBOX=NO, MINBOX=NO`)
 
-	iup.SetCallback(btnExit, "ACTION", iup.ActionFunc(btnExitCb))
-	iup.SetCallback(btnOnOff, "ACTION", iup.ActionFunc(btnOnOffCb))
-	iup.SetCallback(btnImage, "BUTTON_CB", iup.ButtonFunc(btnImageCb))
-	iup.SetCallback(btnBig, "BUTTON_CB", iup.ButtonFunc(btnBigCb))
+	btnExit.On(iup.ActionCB, btnExitCb)
+	btnOnOff.On(iup.ActionCB, btnOnOffCb)
+	btnImage.On(iup.ButtonCB, btnImageCb)
+	btnBig.On(iup.ButtonCB, btnBigCb)
 
 	iup.Show(dlg)
 	iup.MainLoop()
