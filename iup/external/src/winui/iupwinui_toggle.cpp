@@ -256,17 +256,16 @@ static int winuiToggleSetTitleAttrib(Ihandle* ih, const char* value)
   if (!aux)
     return 1;
 
+  if (aux->controlType == IUPWINUI_TOGGLE_TOGGLESWITCH)
+  {
+    iupwinuiSetAutomationName(ih, value);
+    return 1;
+  }
+
   IInspectable content = winuiToggleMakeContent(ih, value);
 
   switch (aux->controlType)
   {
-  case IUPWINUI_TOGGLE_TOGGLESWITCH:
-    {
-      ToggleSwitch ts = winuiGetHandle<ToggleSwitch>(ih);
-      if (ts)
-        ts.Header(content);
-    }
-    break;
   case IUPWINUI_TOGGLE_TOGGLEBUTTON:
     {
       if (ih->data->type == IUP_TOGGLE_IMAGE)
@@ -314,17 +313,13 @@ static char* winuiToggleGetTitleAttrib(Ihandle* ih)
   if (!aux)
     return NULL;
 
+  if (aux->controlType == IUPWINUI_TOGGLE_TOGGLESWITCH)
+    return iupAttribGet(ih, "TITLE");
+
   IInspectable content{nullptr};
 
   switch (aux->controlType)
   {
-  case IUPWINUI_TOGGLE_TOGGLESWITCH:
-    {
-      ToggleSwitch ts = winuiGetHandle<ToggleSwitch>(ih);
-      if (ts)
-        content = ts.Header();
-    }
-    break;
   case IUPWINUI_TOGGLE_TOGGLEBUTTON:
     {
       ToggleButton tb = winuiGetHandle<ToggleButton>(ih);
@@ -539,9 +534,6 @@ static int winuiToggleMapMethod(Ihandle* ih)
     ts.Resources().Insert(box_value(L"ToggleSwitchPreContentMargin"), box_value(5.0));
     ts.Resources().Insert(box_value(L"ToggleSwitchPostContentMargin"), box_value(5.0));
 
-    if (title)
-      ts.Header(winuiToggleMakeContent(ih, title));
-
     aux->toggledToken = ts.Toggled([ih](IInspectable const&, RoutedEventArgs const&) {
       ToggleSwitch t = winuiGetHandle<ToggleSwitch>(ih);
       if (t)
@@ -558,6 +550,7 @@ static int winuiToggleMapMethod(Ihandle* ih)
       parentCanvas.Children().Append(ts);
 
     winuiStoreHandle(ih, ts);
+    iupwinuiSetAutomationName(ih, title);
   }
   else if (ih->data->type == IUP_TOGGLE_IMAGE)
   {
