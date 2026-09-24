@@ -732,14 +732,58 @@ IUP_SDK_API unsigned char* iupdrvImageSaveToBuffer(unsigned char* imgdata, int w
   }
 }
 
+static int cocoaCopyRepPixels(NSBitmapImageRep* rep, int* width, int* height, unsigned char** pixels)
+{
+  int w = (int)[rep pixelsWide];
+  int h = (int)[rep pixelsHigh];
+  int spp = (int)[rep samplesPerPixel];
+  int bpp = (int)[rep bitsPerPixel] / 8;
+  int stride = (int)[rep bytesPerRow];
+  NSBitmapFormat format = [rep bitmapFormat];
+  unsigned char* src = [rep bitmapData];
+  unsigned char* dst;
+  int premultiplied, x, y;
+
+  if (!src || w <= 0 || h <= 0 || [rep isPlanar] || [rep bitsPerSample] != 8 ||
+      (spp != 3 && spp != 4) || bpp < spp || (format & NSBitmapFormatAlphaFirst))
+    return 0;
+
+  dst = (unsigned char*)malloc((size_t)w * h * 4);
+  if (!dst)
+    return 0;
+
+  premultiplied = spp == 4 && !(format & NSBitmapFormatAlphaNonpremultiplied);
+  for (y = 0; y < h; y++)
+  {
+    unsigned char* p = src + (size_t)y * stride;
+    unsigned char* q = dst + (size_t)y * w * 4;
+    for (x = 0; x < w; x++, p += bpp, q += 4)
+    {
+      unsigned char a = spp == 4 ? p[3] : 255;
+      unsigned char r = p[0], g = p[1], b = p[2];
+      if (premultiplied && a != 0 && a != 255)
+      {
+        r = (unsigned char)((r * 255 + a / 2) / a);
+        g = (unsigned char)((g * 255 + a / 2) / a);
+        b = (unsigned char)((b * 255 + a / 2) / a);
+      }
+      q[0] = a;
+      q[1] = r;
+      q[2] = g;
+      q[3] = b;
+    }
+  }
+
+  *width = w;
+  *height = h;
+  *pixels = dst;
+  return 1;
+}
+
 static int cocoaGetIconPixels(Ihandle* ih, const char* value, int* width, int* height, unsigned char** pixels)
 {
   NSImage* image;
   NSBitmapImageRep* rep;
-  NSSize size;
-  int w, h, x, y;
-  unsigned char* srcData;
-  unsigned char* dstData;
 
   (void)ih;
 
@@ -750,9 +794,21 @@ static int cocoaGetIconPixels(Ihandle* ih, const char* value, int* width, int* h
   if (!image)
     return 0;
 
-  size = [image size];
-  w = (int)size.width;
-  h = (int)size.height;
+  for (NSImageRep* candidate in [image representations])
+  {
+    if ([candidate isKindOfClass:[NSBitmapImageRep class]] &&
+        cocoaCopyRepPixels((NSBitmapImageRep*)candidate, width, height, pixels))
+      return 1;
+  }
+
+#ifdef GNUSTEP
+  rep = [NSBitmapImageRep imageRepWithData:[image TIFFRepresentation]];
+  return rep ? cocoaCopyRepPixels(rep, width, height, pixels) : 0;
+#else
+  NSSize size = [image size];
+  int w = (int)size.width;
+  int h = (int)size.height;
+  int ok;
 
   if (w <= 0 || h <= 0)
     return 0;
@@ -781,38 +837,10 @@ static int cocoaGetIconPixels(Ihandle* ih, const char* value, int* width, int* h
            fraction:1.0];
   [NSGraphicsContext restoreGraphicsState];
 
-  srcData = [rep bitmapData];
-  dstData = (unsigned char*)malloc(w * h * 4);
-  if (!dstData)
-  {
-    [rep release];
-    return 0;
-  }
-
-  for (y = 0; y < h; y++)
-  {
-    for (x = 0; x < w; x++)
-    {
-      int offset = (y * w + x) * 4;
-      unsigned char r = srcData[offset + 0];
-      unsigned char g = srcData[offset + 1];
-      unsigned char b = srcData[offset + 2];
-      unsigned char a = srcData[offset + 3];
-
-      dstData[offset + 0] = a;
-      dstData[offset + 1] = r;
-      dstData[offset + 2] = g;
-      dstData[offset + 3] = b;
-    }
-  }
-
+  ok = cocoaCopyRepPixels(rep, width, height, pixels);
   [rep release];
-
-  *width = w;
-  *height = h;
-  *pixels = dstData;
-
-  return 1;
+  return ok;
+#endif
 }
 
 IUP_SDK_API int iupdrvGetIconPixels(Ihandle* ih, const char* value, int* width, int* height, unsigned char** pixels)
