@@ -90,12 +90,31 @@ static void winuiTableSetRowAutomationName(Ihandle* ih, int lin, DependencyObjec
   Automation::AutomationProperties::SetName(container, iupwinuiStringToHString(name.c_str()));
 }
 
-static void winuiTableSetVirtualItems(ListView listView, int count)
+static void winuiTableResetVirtualItems(ListView listView, int count)
 {
   std::vector<IInspectable> items(count);
   for (int i = 0; i < count; i++)
     items[i] = box_value(i);
-  listView.ItemsSource(winrt::single_threaded_vector<IInspectable>(std::move(items)));
+  listView.ItemsSource(winrt::single_threaded_observable_vector<IInspectable>(std::move(items)));
+}
+
+static void winuiTableSetVirtualItems(ListView listView, int count)
+{
+  auto items = listView.ItemsSource().try_as<Windows::Foundation::Collections::IObservableVector<IInspectable>>();
+  if (!items)
+  {
+    winuiTableResetVirtualItems(listView, count);
+    return;
+  }
+
+  uint32_t size = items.Size();
+  while (size > (uint32_t)count)
+  {
+    items.RemoveAtEnd();
+    size--;
+  }
+  while (size < (uint32_t)count)
+    items.Append(box_value((int)size++));
 }
 
 static StackPanel winuiTableGetHeader(Ihandle* ih)
@@ -592,6 +611,23 @@ static void winuiTablePopulateVirtualContainer(Ihandle* ih, int lin, Primitives:
   }
 }
 
+static void winuiTableRefreshVirtualRows(Ihandle* ih, ListView listView)
+{
+  ItemsStackPanel panel = listView.ItemsPanelRoot().try_as<ItemsStackPanel>();
+  if (!panel || panel.FirstCacheIndex() < 0)
+    return;
+
+  int last = panel.LastCacheIndex();
+  for (int i = panel.FirstCacheIndex(); i <= last && i < ih->data->num_lin; i++)
+  {
+    auto container = listView.ContainerFromIndex(i).try_as<Primitives::SelectorItem>();
+    if (!container)
+      continue;
+    winuiTablePopulateVirtualContainer(ih, i + 1, container);
+    winuiTableSetRowAutomationName(ih, i + 1, container);
+  }
+}
+
 /****************************************************************************
  * Column Width Adjustment
  ****************************************************************************/
@@ -815,6 +851,7 @@ static void winuiTableRebuildListViewItems(Ihandle* ih)
   if (aux->isVirtual)
   {
     winuiTableSetVirtualItems(listView, ih->data->num_lin);
+    winuiTableRefreshVirtualRows(ih, listView);
     return;
   }
 
@@ -1108,6 +1145,11 @@ void winuiTableUpdateDpi(Ihandle* ih)
         border.Height(height);
     }
   }
+
+  IupWinUITableAux* aux = winuiTableGetAux(ih);
+  ListView listView = winuiTableGetListView(ih);
+  if (aux && aux->isVirtual && listView)
+    winuiTableResetVirtualItems(listView, ih->data->num_lin);
 
   winuiTableRebuildListViewItems(ih);
 }
@@ -1969,6 +2011,13 @@ extern "C" IUP_SDK_API void iupdrvTableScrollToCell(Ihandle* ih, int lin, int co
  * Display
  ****************************************************************************/
 
+static void winuiTableUpdateLayout(Ihandle* ih, ListView listView)
+{
+  Grid containerGrid = winuiGetHandle<Grid>(ih);
+  if (containerGrid && !std::isnan(containerGrid.Height()))
+    listView.UpdateLayout();
+}
+
 extern "C" IUP_SDK_API void iupdrvTableRedraw(Ihandle* ih)
 {
   IupWinUITableAux* aux = winuiTableGetAux(ih);
@@ -1979,7 +2028,7 @@ extern "C" IUP_SDK_API void iupdrvTableRedraw(Ihandle* ih)
   if (aux->isVirtual)
   {
     winuiTableRebuildListViewItems(ih);
-    listView.UpdateLayout();
+    winuiTableUpdateLayout(ih, listView);
     return;
   }
 
@@ -1997,7 +2046,7 @@ extern "C" IUP_SDK_API void iupdrvTableRedraw(Ihandle* ih)
     }
   }
 
-  listView.UpdateLayout();
+  winuiTableUpdateLayout(ih, listView);
 }
 
 void winuiTableRefreshThemeColors(Ihandle* ih)
@@ -2046,7 +2095,7 @@ void winuiTableRefreshThemeColors(Ihandle* ih)
     }
   }
 
-  listView.UpdateLayout();
+  winuiTableUpdateLayout(ih, listView);
 }
 
 extern "C" IUP_SDK_API void iupdrvTableSetShowGrid(Ihandle* ih, int show)
@@ -2161,8 +2210,8 @@ extern "C" IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
 
   if (aux->isVirtual)
   {
-    winuiTableSetVirtualItems(listView, num_lin);
     ih->data->num_lin = num_lin;
+    winuiTableSetVirtualItems(listView, num_lin);
     return;
   }
 
