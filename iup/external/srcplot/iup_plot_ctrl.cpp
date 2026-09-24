@@ -1313,7 +1313,7 @@ static int iPlotAction_CB(Ihandle* ih)
 
 void iupPlotUpdateViewports(Ihandle* ih)
 {
-  int w, h;
+  int w = 0, h = 0;
   IupGetIntInt(ih, "DRAWSIZE", &w, &h);
 
   int numcol = ih->data->numcol;
