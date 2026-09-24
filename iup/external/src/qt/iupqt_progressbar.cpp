@@ -85,10 +85,22 @@ static int qtProgressBarSetMarqueeAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-static int qtProgressBarSetValueAttrib(Ihandle* ih, const char* value)
+static void qtProgressBarUpdateValue(Ihandle* ih)
 {
   QProgressBar* pbar = (QProgressBar*)ih->handle;
+  if (!pbar || ih->data->marquee)
+    return;
 
+  /* Map value from [vmin, vmax] to [0, 1000] for precision */
+  double range = ih->data->vmax - ih->data->vmin;
+  if (range != 0)
+    pbar->setValue((int)((ih->data->value - ih->data->vmin) / range * 1000.0));
+  else
+    pbar->setValue(0);
+}
+
+static int qtProgressBarSetValueAttrib(Ihandle* ih, const char* value)
+{
   if (ih->data->marquee)
     return 0;
 
@@ -98,21 +110,7 @@ static int qtProgressBarSetValueAttrib(Ihandle* ih, const char* value)
     iupStrToDouble(value, &(ih->data->value));
 
   iProgressBarCropValue(ih);
-
-  if (pbar)
-  {
-    /* Map value from [vmin, vmax] to [0, 1000] for precision */
-    double range = ih->data->vmax - ih->data->vmin;
-    if (range != 0)
-    {
-      double fraction = (ih->data->value - ih->data->vmin) / range;
-      int int_value = (int)(fraction * 1000.0);
-      pbar->setValue(int_value);
-    }
-    else
-      pbar->setValue(0);
-  }
-
+  qtProgressBarUpdateValue(ih);
   return 0;
 }
 
@@ -120,7 +118,8 @@ static int qtProgressBarSetMinAttrib(Ihandle* ih, const char* value)
 {
   if (iupStrToDouble(value, &(ih->data->vmin)))
   {
-    qtProgressBarSetValueAttrib(ih, nullptr);
+    iProgressBarCropValue(ih);
+    qtProgressBarUpdateValue(ih);
   }
   return 0;
 }
@@ -129,7 +128,8 @@ static int qtProgressBarSetMaxAttrib(Ihandle* ih, const char* value)
 {
   if (iupStrToDouble(value, &(ih->data->vmax)))
   {
-    qtProgressBarSetValueAttrib(ih, nullptr);
+    iProgressBarCropValue(ih);
+    qtProgressBarUpdateValue(ih);
   }
   return 0;
 }
@@ -290,7 +290,7 @@ static int qtProgressBarMapMethod(Ihandle* ih)
   ih->handle = (InativeHandle*)pbar;
 
   pbar->setRange(0, 1000);
-  pbar->setValue(0);
+  qtProgressBarUpdateValue(ih);
 
   if (iupStrEqualNoCase(iupAttribGetStr(ih, "ORIENTATION"), "VERTICAL"))
   {
@@ -387,8 +387,8 @@ extern "C" IUP_SDK_API void iupdrvProgressBarInitClass(Iclass* ic)
 
   /* IupProgressBar only */
   iupClassRegisterAttribute(ic, "VALUE", iProgressBarGetValueAttrib, qtProgressBarSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "MIN", qtProgressBarGetMinAttrib, qtProgressBarSetMinAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "MAX", qtProgressBarGetMaxAttrib, qtProgressBarSetMaxAttrib, IUPAF_SAMEASSYSTEM, "1", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MIN", qtProgressBarGetMinAttrib, qtProgressBarSetMinAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MAX", qtProgressBarGetMaxAttrib, qtProgressBarSetMaxAttrib, IUPAF_SAMEASSYSTEM, "1", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DASHED", iProgressBarGetDashedAttrib, qtProgressBarSetDashedAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ORIENTATION", NULL, NULL, IUPAF_SAMEASSYSTEM, "HORIZONTAL", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MARQUEE", NULL, qtProgressBarSetMarqueeAttrib, NULL, NULL, IUPAF_NO_INHERIT);
