@@ -214,6 +214,7 @@ static const void* IUP_COCOATOUCH_TABLE_CTRL_OBJ_KEY = "IUP_COCOATOUCH_TABLE_CTR
 - (void)setImage:(NSString*)name atLin:(NSInteger)lin col:(NSInteger)col;
 - (void)resizeToLines:(NSInteger)num_lin cols:(NSInteger)num_col;
 - (void)moveRowFrom:(NSInteger)from0 to:(NSInteger)to0;
+- (void)moveColumnFrom:(NSInteger)from0 to:(NSInteger)to0;
 @end
 
 static UICollectionViewLayout* cocoaTouchTableMakeLayout(IupCocoaTouchTableController* ctrl)
@@ -419,16 +420,21 @@ static UICollectionViewLayout* cocoaTouchTableMakeLayout(IupCocoaTouchTableContr
 	[row replaceObjectAtIndex:(NSUInteger)(col - 1) withObject:(name ?: @"")];
 }
 
-- (void)swapColumn:(NSInteger)a with:(NSInteger)b
+- (void)moveColumnFrom:(NSInteger)from0 to:(NSInteger)to0
 {
-	void (^swapInArray)(NSMutableArray*, NSInteger, NSInteger) = ^(NSMutableArray* arr, NSInteger i, NSInteger j) {
-		if (!arr || i < 0 || j < 0 || i >= (NSInteger)arr.count || j >= (NSInteger)arr.count) return;
-		[arr exchangeObjectAtIndex:(NSUInteger)i withObjectAtIndex:(NSUInteger)j];
+	void (^moveInArray)(NSMutableArray*, NSInteger, NSInteger) = ^(NSMutableArray* arr, NSInteger f, NSInteger t) {
+		if (!arr || f < 0 || t < 0 || f >= (NSInteger)arr.count || t >= (NSInteger)arr.count || f == t) return;
+		id obj = [[arr objectAtIndex:(NSUInteger)f] retain];
+		[arr removeObjectAtIndex:(NSUInteger)f];
+		[arr insertObject:obj atIndex:(NSUInteger)t];
+		[obj release];
 	};
-	swapInArray(_headers, a, b);
-	swapInArray(_colWidths, a, b);
-	for (NSMutableArray* row in _cells)  swapInArray(row, a, b);
-	for (NSMutableArray* row in _images) swapInArray(row, a, b);
+	moveInArray(_headers, from0, to0);
+	moveInArray(_colWidths, from0, to0);
+	for (NSMutableArray* row in _cells)  moveInArray(row, from0, to0);
+	for (NSMutableArray* row in _images) moveInArray(row, from0, to0);
+	if (_sortCol > 0) _sortCol = iupTableMoveColPos((int)_sortCol, (int)from0 + 1, (int)to0 + 1);
+	if (_focusCol > 0) _focusCol = iupTableMoveColPos((int)_focusCol, (int)from0 + 1, (int)to0 + 1);
 }
 
 - (void)moveRowFrom:(NSInteger)from0 to:(NSInteger)to0
@@ -974,7 +980,11 @@ IUP_SDK_API void iupdrvTableSetFocusCell(Ihandle* ih, int lin, int col)
 	{
 		NSIndexPath* ip = [NSIndexPath indexPathForItem:(lin - 1) * num_col + (col - 1)
 		                                      inSection:IUPCOCOATOUCH_TABLE_BODY_SECTION];
+		[view reloadItemsAtIndexPaths:[view indexPathsForVisibleItems]];
 		[view selectItemAtIndexPath:ip animated:NO scrollPosition:UICollectionViewScrollPositionNone];
+		UICollectionViewLayoutAttributes* attr = [view layoutAttributesForItemAtIndexPath:ip];
+		if (attr)
+			[view scrollRectToVisible:attr.frame animated:NO];
 	}
 }
 
@@ -1042,6 +1052,26 @@ IUP_SDK_API void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col)
 IUP_SDK_API void iupdrvTableRedraw(Ihandle* ih)
 {
 	[cocoaTouchTableGet(ih) reloadData];
+}
+
+IUP_SDK_API void iupdrvTableUpdateCellStyle(Ihandle* ih, int lin, int col)
+{
+	IupCocoaTouchTableController* ctrl = cocoaTouchTableGetController(ih);
+	UICollectionView* view = cocoaTouchTableGet(ih);
+	if (!ctrl || !view) return;
+
+	NSInteger num_col = [ctrl numberOfColumns];
+	if (lin < 1 || lin > [ctrl numberOfLines] || col > num_col)
+	{
+		[view reloadData];
+		return;
+	}
+
+	NSMutableArray<NSIndexPath*>* reload = [NSMutableArray array];
+	for (NSInteger c = (col > 0 ? col - 1 : 0); c < (col > 0 ? col : num_col); c++)
+		[reload addObject:[NSIndexPath indexPathForItem:(lin - 1) * num_col + c
+		                                       inSection:IUPCOCOATOUCH_TABLE_BODY_SECTION]];
+	[view reloadItemsAtIndexPaths:reload];
 }
 
 IUP_SDK_API void iupdrvTableSetShowGrid(Ihandle* ih, int show)
@@ -1113,40 +1143,6 @@ static void cocoaTouchTableReplayStored(Ihandle* ih)
 	}
 }
 
-static void cocoaTouchTableSwapAttrib(Ihandle* ih, const char* a, const char* b)
-{
-	char* va = iupAttribGet(ih, a);
-	char* vb = iupAttribGet(ih, b);
-	char* tmp = va ? iupStrDup(va) : NULL;
-	iupAttribSetStr(ih, a, vb);
-	iupAttribSetStr(ih, b, tmp);
-	if (tmp) free(tmp);
-}
-
-static void cocoaTouchTableSwapColumnAttribs(Ihandle* ih, int col1, int col2)
-{
-	char a[64], b[64];
-	int num_lin = ih->data->num_lin;
-
-	snprintf(a, sizeof(a), "ALIGNMENT%d",  col1); snprintf(b, sizeof(b), "ALIGNMENT%d",  col2); cocoaTouchTableSwapAttrib(ih, a, b);
-	snprintf(a, sizeof(a), "0:%d",          col1); snprintf(b, sizeof(b), "0:%d",          col2); cocoaTouchTableSwapAttrib(ih, a, b);
-	snprintf(a, sizeof(a), "BGCOLOR0:%d",   col1); snprintf(b, sizeof(b), "BGCOLOR0:%d",   col2); cocoaTouchTableSwapAttrib(ih, a, b);
-	snprintf(a, sizeof(a), "FGCOLOR0:%d",   col1); snprintf(b, sizeof(b), "FGCOLOR0:%d",   col2); cocoaTouchTableSwapAttrib(ih, a, b);
-	snprintf(a, sizeof(a), "FONT0:%d",      col1); snprintf(b, sizeof(b), "FONT0:%d",      col2); cocoaTouchTableSwapAttrib(ih, a, b);
-	snprintf(a, sizeof(a), "IMAGE0:%d",     col1); snprintf(b, sizeof(b), "IMAGE0:%d",     col2); cocoaTouchTableSwapAttrib(ih, a, b);
-	snprintf(a, sizeof(a), "WIDTH%d",       col1); snprintf(b, sizeof(b), "WIDTH%d",       col2); cocoaTouchTableSwapAttrib(ih, a, b);
-	snprintf(a, sizeof(a), "RASTERWIDTH%d", col1); snprintf(b, sizeof(b), "RASTERWIDTH%d", col2); cocoaTouchTableSwapAttrib(ih, a, b);
-
-	for (int lin = 1; lin <= num_lin; lin++)
-	{
-		snprintf(a, sizeof(a), "%d:%d",        lin, col1); snprintf(b, sizeof(b), "%d:%d",        lin, col2); cocoaTouchTableSwapAttrib(ih, a, b);
-		snprintf(a, sizeof(a), "BGCOLOR%d:%d", lin, col1); snprintf(b, sizeof(b), "BGCOLOR%d:%d", lin, col2); cocoaTouchTableSwapAttrib(ih, a, b);
-		snprintf(a, sizeof(a), "FGCOLOR%d:%d", lin, col1); snprintf(b, sizeof(b), "FGCOLOR%d:%d", lin, col2); cocoaTouchTableSwapAttrib(ih, a, b);
-		snprintf(a, sizeof(a), "FONT%d:%d",    lin, col1); snprintf(b, sizeof(b), "FONT%d:%d",    lin, col2); cocoaTouchTableSwapAttrib(ih, a, b);
-		snprintf(a, sizeof(a), "IMAGE%d:%d",   lin, col1); snprintf(b, sizeof(b), "IMAGE%d:%d",   lin, col2); cocoaTouchTableSwapAttrib(ih, a, b);
-	}
-}
-
 @interface IupCocoaTouchTableReorderGR : NSObject
 @property(nonatomic, assign) Ihandle* ihandle;
 @property(nonatomic, assign) UICollectionView* collectionView;
@@ -1189,8 +1185,8 @@ static void cocoaTouchTableSwapColumnAttribs(Ihandle* ih, int col1, int col2)
 			if (!cb || cb(self.ihandle, (int)_sourceCol + 1, (int)target + 1) != IUP_IGNORE)
 			{
 				IupCocoaTouchTableController* ctrl = objc_getAssociatedObject(self.collectionView, IUP_COCOATOUCH_TABLE_CTRL_OBJ_KEY);
-				[ctrl swapColumn:_sourceCol with:target];
-				cocoaTouchTableSwapColumnAttribs(self.ihandle, (int)_sourceCol + 1, (int)target + 1);
+				[ctrl moveColumnFrom:_sourceCol to:target];
+				iupTableMoveColAttribs(self.ihandle, (int)_sourceCol + 1, (int)target + 1);
 				[self.collectionView reloadData];
 			}
 		}
@@ -1481,6 +1477,8 @@ static int cocoaTouchTableSetSortableAttrib(Ihandle* ih, const char* value)
 	IupCocoaTouchTableController* ctrl = cocoaTouchTableGetController(ih);
 	if (view && ctrl)
 	{
+		if (!ih->data->sortable)
+			ctrl.sortCol = 0;
 		NSInteger num_col = [ctrl numberOfColumns];
 		NSMutableArray<NSIndexPath*>* paths = [NSMutableArray array];
 		for (NSInteger c = 0; c < num_col; c++)
@@ -1506,8 +1504,6 @@ IUP_SDK_API void iupdrvTableInitClass(Iclass* ic)
 	ic->Map   = cocoaTouchTableMapMethod;
 	ic->UnMap = cocoaTouchTableUnMapMethod;
 
-	iupClassRegisterAttribute(ic, "BGCOLOR", NULL, NULL, IUPAF_SAMEASSYSTEM, "TXTBGCOLOR", IUPAF_DEFAULT);
-	iupClassRegisterAttribute(ic, "FGCOLOR", NULL, NULL, IUPAF_SAMEASSYSTEM, "TXTFGCOLOR", IUPAF_DEFAULT);
 	iupClassRegisterAttribute(ic, "ALTERNATECOLOR", NULL, cocoaTouchTableSetReloadAttrib, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "EVENROWCOLOR",   NULL, cocoaTouchTableSetReloadAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "ODDROWCOLOR",    NULL, cocoaTouchTableSetReloadAttrib, NULL, NULL, IUPAF_NO_INHERIT);

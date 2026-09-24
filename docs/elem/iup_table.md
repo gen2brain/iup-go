@@ -66,6 +66,8 @@ n starts at 1.
 
 **FOCUSCELL** (non-inheritable): Gets or sets the focused cell in "L:C" format.
 Supports partial syntax: "2:" changes only the line, ":3" changes only the column.
+Setting it selects only that line, unless SELECTIONMODE=NONE, and scrolls the cell into view.
+No callback is called.
 Default: "1:1".
 
 **SELECTIONMODE** (non-inheritable): Selection mode.
@@ -104,11 +106,16 @@ n starts at 1.
 #### Colors
 
 [BGCOLOR](../attrib/iup_bgcolor.md): Background color.
-Supports L:C notation for per-cell color, :C for per-column, L:* for per-row.
-When more than one applies to the same cell the precedence is per-cell, then per-column, then per-row.
+`BGCOLORL:C` sets one cell, `BGCOLORL:0` one line and `BGCOLOR0:C` one column.
+When more than one applies to the same cell the precedence is per-cell, then per-column, then per-line.
+A change on a mapped table is displayed immediately.
 
 [FGCOLOR](../attrib/iup_fgcolor.md): Foreground text color.
-Same L:C notation as BGCOLOR.
+Same `L:C`, `L:0` and `0:C` notation as BGCOLOR.
+
+[FONT](../attrib/iup_font.md): Text font.
+Same `L:C`, `L:0` and `0:C` notation as BGCOLOR.
+Per-cell, per-line and per-column FONT is not supported in WinUI, Motif, iOS and WebAssembly.
 
 **ALTERNATECOLOR** (non-inheritable): Enables alternating row background colors.
 Can be "YES" or "NO". Default: "NO".
@@ -124,9 +131,12 @@ Only used when ALTERNATECOLOR=YES.
 **SORTABLE** (non-inheritable): Enables column sorting when the user clicks on a column header.
 Can be "YES" or "NO". Default: "NO".
 A click toggles the direction and shows an arrow in that column header.
+Setting it to NO removes the arrow and SORTSIGN returns NO for every column.
 In virtual mode the rows are not sorted, the application must sort its own data from SORT_CB.
 
 **ALLOWREORDER** (non-inheritable): Enables column reordering via drag-and-drop on the header.
+The dragged column moves to the drop position and the columns in between shift by one.
+After the move, column number n is the column shown at position n: cell values, column and cell attributes and callbacks all use the new numbering.
 Can be "YES" or "NO". Default: "NO".
 
 **SHOWDRAGDROP** (creation-only) (non-inheritable): enables the interactive reordering of rows by dragging, and enables the DRAGDROP_CB callback.
@@ -229,6 +239,7 @@ Called only when ALLOWREORDER=YES.
 **new_pos**: the new column position after the reorder (1-based).
 
 **Returns**: if IUP_IGNORE is returned the reorder is rejected and the column returns to its original position.
+It is called before the columns are renumbered.
 
 **DRAGDROP_CB**: Callback called when the user reorders a row by dragging it.
 Called only when SHOWDRAGDROP=YES.

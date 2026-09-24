@@ -10,6 +10,7 @@
 #include <cstddef>
 #include <cstdio>
 #include <cstring>
+#include <vector>
 
 #include <Bitmap.h>
 #include <ColumnListView.h>
@@ -110,8 +111,11 @@ static IupHaikuVirtualField g_virtual_field;
 
 class IupHaikuTableView;
 static void haikuTableAutoSizeColumns(Ihandle* ih, IupHaikuTableView* tv);
+static void haikuTableCheckColumnMove(Ihandle* ih, IupHaikuTableView* tv);
 
 #define IUPHAIKU_TABLE_AUTOSIZE 'IupA'
+#define IUPHAIKU_TABLE_COLMOVE 'IupM'
+#define IUPHAIKU_TABLE_SCROLL 'IupS'
 
 class IupHaikuTableEditor : public BTextView
 {
@@ -299,6 +303,19 @@ protected:
   {
     if (!fIhandle) { BColumnListView::MessageReceived(msg); return; }
 
+    if (msg->what == IUPHAIKU_TABLE_SCROLL)
+    {
+      if (fPendingScrollLin > 0)
+        ScrollToLine(fPendingScrollLin);
+      return;
+    }
+
+    if (msg->what == IUPHAIKU_TABLE_COLMOVE)
+    {
+      haikuTableCheckColumnMove(fIhandle, this);
+      return;
+    }
+
     if (msg->what == IUPHAIKU_TABLE_AUTOSIZE)
     {
       delete fAutoSizeRunner;
@@ -447,6 +464,8 @@ public:
   void DrawAfterChildren(BRect /*updateRect*/) override
   {
     if (!fIhandle) return;
+    if (fPendingScrollLin > 0 && Looper())
+      Looper()->PostMessage(IUPHAIKU_TABLE_SCROLL, this);
     BView* outline = ScrollView();
     if (!outline) return;
 
@@ -693,6 +712,20 @@ public:
     RepositionTrail();
   }
 
+  void ScrollToLine(int lin)
+  {
+    BView* outline = ScrollView();
+    BRow* r = RowAt(lin - 1, NULL);
+    if (!r) return;
+    if (!outline || !Window() || Window()->IsHidden())
+    {
+      fPendingScrollLin = lin;
+      return;
+    }
+    fPendingScrollLin = 0;
+    ScrollTo(r);
+  }
+
   bool NeedsAutoSize() const { return fNeedsAutoSize; }
   void ClearNeedsAutoSize() { fNeedsAutoSize = false; }
   void ScheduleAutoSize()
@@ -716,6 +749,7 @@ private:
   BMessageRunner* fAutoSizeRunner = NULL;
   int fFocusCol = 1;
   BMessageFilter* fSortFilter = NULL;
+  int fPendingScrollLin = 0;
   IupHaikuTableEditor* fEditor = NULL;
   BView* fTrail = NULL;
   int fDragSourceRow = -1;
@@ -1039,6 +1073,8 @@ public:
         if (was_dragging && target >= 0)
           fTv->CommitRowMove(source, target);
       }
+      if (fTv->GetIhandle()->data->allow_reorder && fTv->Looper())
+        fTv->Looper()->PostMessage(IUPHAIKU_TABLE_COLMOVE, fTv);
       fTv->RepositionTrail();
       fTv->UpdateScrollBarVisibility();
       if (BView* outline = fTv->ScrollView()) outline->Invalidate();
@@ -1331,6 +1367,182 @@ static void haikuTableSortByClick(BColumnListView* tv)
   }
 }
 
+/* WIDTHn is dropped from the hash after map; track explicit width with a flag. */
+static bool haikuTableColHasExplicitWidth(Ihandle* ih, int col)
+{
+  if (iupAttribGetId(ih, "_IUPHAIKU_EXPLICITWIDTH", col))
+    return true;
+  if (iupAttribGetIntId(ih, "RASTERWIDTH", col) > 0) return true;
+  if (iupAttribGetIntId(ih, "WIDTH",       col) > 0) return true;
+  return false;
+}
+
+/* One-shot column auto-size: title (header font) + first 100 rows of content. */
+static void haikuTableAutoSizeColumn(Ihandle* ih, IupHaikuTableView* tv, int i)
+{
+  IupHaikuTableColumn* c = (IupHaikuTableColumn*)tv->ColumnAt(i);
+  if (!c) return;
+
+  int num_lin = tv->CountRows(NULL);
+  int max_rows = num_lin > 100 ? 100 : num_lin;
+  bool sortable = iupAttribGetBoolean(ih, "SORTABLE");
+
+  BFont header_font;
+  tv->GetFont(B_FONT_HEADER, &header_font);
+  BFont row_font;
+  tv->GetFont(B_FONT_ROW, &row_font);
+
+  BString name;
+  c->GetColumnName(&name);
+  float w = header_font.StringWidth(name.String()) + 16.0f;
+  if (sortable) w += 11.0f;
+
+  for (int lin = 0; lin < max_rows; lin++)
+  {
+    BRow* row = tv->RowAt(lin, NULL);
+    if (!row) continue;
+    IupHaikuTableField* f = (IupHaikuTableField*)row->GetField(i);
+    if (!f) continue;
+    const char* s = f->String();
+    float cw = (s && *s) ? row_font.StringWidth(s) : 0.0f;
+    if (f->Icon()) cw += 22.0f;
+    cw += 16.0f;
+    if (cw > w) w = cw;
+  }
+
+  if (w < 50.0f) w = 50.0f;
+  if (w > c->MaxWidth()) w = c->MaxWidth();
+  c->SetWidth(w);
+}
+
+static void haikuTableAutoSizeColumns(Ihandle* ih, IupHaikuTableView* tv)
+{
+  int num_col = tv->CountColumns();
+  for (int i = 0; i < num_col; i++)
+  {
+    if (!haikuTableColHasExplicitWidth(ih, i + 1))
+      haikuTableAutoSizeColumn(ih, tv, i);
+  }
+}
+
+static void haikuTableMoveColumn(Ihandle* ih, IupHaikuTableView* tv, int from_col, int to_col)
+{
+  int n = (int)tv->CountColumns();
+  std::vector<BString> titles(n);
+  std::vector<float> widths(n);
+  std::vector<alignment> aligns(n);
+  int c;
+
+  for (c = 0; c < n; c++)
+  {
+    BColumn* col = tv->ColumnAt(c);
+    col->GetColumnName(&titles[c]);
+    widths[c] = col->Width();
+    aligns[c] = col->Alignment();
+  }
+
+  if (!tv->IsVirtual())
+  {
+    int nr = (int)tv->CountRows(NULL);
+    std::vector<BString> texts(n);
+    std::vector<BBitmap*> icons(n);
+    for (int i = 0; i < nr; i++)
+    {
+      BRow* r = tv->RowAt(i, NULL);
+      if (!r) continue;
+      for (c = 0; c < n; c++)
+      {
+        IupHaikuTableField* f = dynamic_cast<IupHaikuTableField*>(r->GetField(c));
+        texts[c] = f ? f->String() : "";
+        icons[c] = f ? f->Icon() : NULL;
+      }
+      for (c = 0; c < n; c++)
+      {
+        IupHaikuTableField* f = dynamic_cast<IupHaikuTableField*>(r->GetField(iupTableMoveColPos(c + 1, from_col, to_col) - 1));
+        if (!f) continue;
+        f->SetString(texts[c].String());
+        f->SetIcon(icons[c]);
+      }
+    }
+  }
+
+  {
+    int step = (from_col < to_col) ? 1 : -1;
+    char* saved = iupStrDup(iupAttribGetId(ih, "_IUPHAIKU_EXPLICITWIDTH", from_col));
+    for (c = from_col; c != to_col; c += step)
+      iupAttribSetStrId(ih, "_IUPHAIKU_EXPLICITWIDTH", c, iupAttribGetId(ih, "_IUPHAIKU_EXPLICITWIDTH", c + step));
+    iupAttribSetStrId(ih, "_IUPHAIKU_EXPLICITWIDTH", to_col, saved);
+    if (saved) free(saved);
+  }
+
+  iupTableMoveColAttribs(ih, from_col, to_col);
+
+  for (c = 0; c < n; c++)
+  {
+    IupHaikuTableColumn* col = (IupHaikuTableColumn*)tv->ColumnAt(iupTableMoveColPos(c + 1, from_col, to_col) - 1);
+    col->SetTitle(titles[c].String());
+    col->SetWidth(widths[c]);
+    col->SetAlignment(aligns[c]);
+  }
+
+  int sort_col = iupAttribGetInt(ih, "_IUPHAIKU_SORTCOL");
+  if (sort_col > 0)
+  {
+    sort_col = iupTableMoveColPos(sort_col, from_col, to_col);
+    iupAttribSetInt(ih, "_IUPHAIKU_SORTCOL", sort_col);
+    IupHaikuTableColumn* col = (IupHaikuTableColumn*)tv->ColumnAt(sort_col - 1);
+    tv->ClearSortColumns();
+    col->SetDisplayOnly(true);
+    tv->SetSortColumn(col, false, iupAttribGetInt(ih, "_IUPHAIKU_SORTASC") != 0);
+  }
+
+  if (tv->FocusCol() > 0)
+    tv->SetFocusCol(iupTableMoveColPos(tv->FocusCol(), from_col, to_col));
+
+  if (ih->data->stretch_last && (from_col == n || to_col == n))
+  {
+    int moved = iupTableMoveColPos(n, from_col, to_col);
+    if (!haikuTableColHasExplicitWidth(ih, moved))
+      haikuTableAutoSizeColumn(ih, tv, moved - 1);
+    tv->StretchLastColumn();
+  }
+}
+
+static void haikuTableCheckColumnMove(Ihandle* ih, IupHaikuTableView* tv)
+{
+  int n = (int)tv->CountColumns();
+  int a = -1, b = -1, from, to, i;
+
+  for (i = 0; i < n; i++)
+  {
+    BColumn* col = tv->ColumnAt(i);
+    if (col && col->LogicalFieldNum() != i)
+    {
+      if (a < 0) a = i;
+      b = i;
+    }
+  }
+  if (a < 0)
+    return;
+
+  if (tv->ColumnAt(b)->LogicalFieldNum() == a) { from = a; to = b; }
+  else if (tv->ColumnAt(a)->LogicalFieldNum() == b) { from = b; to = a; }
+  else return;
+
+  tv->MoveColumn(tv->ColumnAt(to), from);
+
+  IFnii cb = (IFnii)IupGetCallback(ih, "REORDER_CB");
+  int ret = cb ? cb(ih, from + 1, to + 1) : IUP_DEFAULT;
+  if (ret != IUP_IGNORE)
+    haikuTableMoveColumn(ih, tv, from + 1, to + 1);
+
+  tv->Invalidate();
+  if (BView* outline = tv->ScrollView()) outline->Invalidate();
+
+  if (ret == IUP_CLOSE)
+    IupExitLoop();
+}
+
 static IupHaikuTableColumn* haikuTableGetColumn(IupHaikuTableView* tv, int col)
 {
   return tv ? (IupHaikuTableColumn*)tv->ColumnAt(col - 1) : NULL;
@@ -1361,63 +1573,6 @@ static IupHaikuTableField* haikuTableEnsureField(IupHaikuTableView* tv, int lin,
   }
   return f;
 }
-
-/* WIDTHn is dropped from the hash after map; track explicit width with a flag. */
-static bool haikuTableColHasExplicitWidth(Ihandle* ih, int col)
-{
-  if (iupAttribGetId(ih, "_IUPHAIKU_EXPLICITWIDTH", col))
-    return true;
-  if (iupAttribGetIntId(ih, "RASTERWIDTH", col) > 0) return true;
-  if (iupAttribGetIntId(ih, "WIDTH",       col) > 0) return true;
-  return false;
-}
-
-/* One-shot column auto-size: title (header font) + first 100 rows of content. */
-static void haikuTableAutoSizeColumns(Ihandle* ih, IupHaikuTableView* tv)
-{
-  int num_col = tv->CountColumns();
-  if (num_col == 0) return;
-
-  int num_lin = tv->CountRows(NULL);
-  int max_rows = num_lin > 100 ? 100 : num_lin;
-  bool sortable = iupAttribGetBoolean(ih, "SORTABLE");
-
-  BFont header_font;
-  tv->GetFont(B_FONT_HEADER, &header_font);
-  BFont row_font;
-  tv->GetFont(B_FONT_ROW, &row_font);
-
-  for (int i = 0; i < num_col; i++)
-  {
-    if (haikuTableColHasExplicitWidth(ih, i + 1)) continue;
-
-    IupHaikuTableColumn* c = (IupHaikuTableColumn*)tv->ColumnAt(i);
-    if (!c) continue;
-
-    BString name;
-    c->GetColumnName(&name);
-    float w = header_font.StringWidth(name.String()) + 16.0f;
-    if (sortable) w += 11.0f;
-
-    for (int lin = 0; lin < max_rows; lin++)
-    {
-      BRow* row = tv->RowAt(lin, NULL);
-      if (!row) continue;
-      IupHaikuTableField* f = (IupHaikuTableField*)row->GetField(i);
-      if (!f) continue;
-      const char* s = f->String();
-      float cw = (s && *s) ? row_font.StringWidth(s) : 0.0f;
-      if (f->Icon()) cw += 22.0f;
-      cw += 16.0f;
-      if (cw > w) w = cw;
-    }
-
-    if (w < 50.0f) w = 50.0f;
-    if (w > c->MaxWidth()) w = c->MaxWidth();
-    c->SetWidth(w);
-  }
-}
-
 
 extern "C" IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
 {
@@ -1666,10 +1821,13 @@ extern "C" IUP_SDK_API void iupdrvTableSetFocusCell(Ihandle* ih, int lin, int co
   IupHaikuTableView* tv = haikuTableGetView(ih);
   if (!tv) return;
   LooperLockGuard guard(tv->Looper());
+  bool select = !iupStrEqualNoCase(iupAttribGetStr(ih, "SELECTIONMODE"), "NONE");
   if (col > 0) tv->SetFocusCol(col);
   iupAttribSet(ih, "_IUPTABLE_IGNORE_SELECTION_CB", "1");
-  tv->SetFocusRow(lin - 1, true);
+  if (select) tv->DeselectAll();
+  tv->SetFocusRow(lin - 1, select);
   iupAttribSet(ih, "_IUPTABLE_IGNORE_SELECTION_CB", NULL);
+  tv->ScrollToLine(lin);
   if (BView* outline = tv->ScrollView()) outline->Invalidate();
 }
 
@@ -1739,8 +1897,7 @@ extern "C" IUP_SDK_API void iupdrvTableScrollToCell(Ihandle* ih, int lin, int /*
   IupHaikuTableView* tv = haikuTableGetView(ih);
   if (!tv) return;
   LooperLockGuard guard(tv->Looper());
-  BRow* r = haikuTableGetRow(tv, lin);
-  if (r) tv->ScrollTo(r);
+  tv->ScrollToLine(lin);
 }
 
 extern "C" IUP_SDK_API void iupdrvTableRedraw(Ihandle* ih)
@@ -1749,6 +1906,14 @@ extern "C" IUP_SDK_API void iupdrvTableRedraw(Ihandle* ih)
   if (!tv) return;
   LooperLockGuard guard(tv->Looper());
   tv->Refresh();
+  tv->Invalidate();
+}
+
+extern "C" IUP_SDK_API void iupdrvTableUpdateCellStyle(Ihandle* ih, int /*lin*/, int /*col*/)
+{
+  IupHaikuTableView* tv = haikuTableGetView(ih);
+  if (!tv) return;
+  LooperLockGuard guard(tv->Looper());
   tv->Invalidate();
 }
 
@@ -1916,29 +2081,18 @@ static void haikuTableUnMapMethod(Ihandle* ih)
   iupdrvBaseUnMapMethod(ih);
 }
 
-static int haikuTableSetCellRedrawAttrib(Ihandle* ih, int /*lin*/, int /*col*/, const char* /*value*/)
-{
-  IupHaikuTableView* tv = haikuTableGetView(ih);
-  if (tv)
-  {
-    LooperLockGuard guard(tv->Looper());
-    tv->Invalidate();
-  }
-  return 1;
-}
-
 static int haikuTableSetAlignmentIdAttrib(Ihandle* ih, int col, const char* value)
 {
   IupHaikuTableView* tv = haikuTableGetView(ih);
   IupHaikuTableColumn* c = haikuTableGetColumn(tv, col);
-  if (!tv || !c) return 0;
+  if (!tv || !c) return 1;
   alignment a = B_ALIGN_LEFT;
   if      (iupStrEqualNoCase(value, "ARIGHT"))  a = B_ALIGN_RIGHT;
   else if (iupStrEqualNoCase(value, "ACENTER")) a = B_ALIGN_CENTER;
   LooperLockGuard guard(tv->Looper());
   c->SetAlignment(a);
   tv->Invalidate();
-  return 0;
+  return 1;
 }
 
 static int haikuTableSetSortableAttrib(Ihandle* ih, const char* value)
@@ -1948,7 +2102,14 @@ static int haikuTableSetSortableAttrib(Ihandle* ih, const char* value)
   if (tv)
   {
     LooperLockGuard guard(tv->Looper());
+    if (!ih->data->sortable)
+    {
+      tv->ClearSortColumns();
+      iupAttribSet(ih, "_IUPHAIKU_SORTCOL", NULL);
+      iupAttribSet(ih, "_IUPHAIKU_SORTASC", NULL);
+    }
     tv->SetSortingEnabled(ih->data->sortable ? true : false);
+    tv->Invalidate();
   }
   return 1;
 }
@@ -2012,9 +2173,6 @@ extern "C" IUP_SDK_API void iupdrvTableInitClass(Iclass* ic)
 
   iupClassRegisterReplaceAttribFunc(ic, "ACTIVE", iupBaseGetActiveAttrib, haikuTableSetActiveAttrib);
 
-  iupClassRegisterAttributeId2(ic, "BGCOLOR", NULL, haikuTableSetCellRedrawAttrib, IUPAF_NO_INHERIT);
-  iupClassRegisterAttributeId2(ic, "FGCOLOR", NULL, haikuTableSetCellRedrawAttrib, IUPAF_NO_INHERIT);
-  iupClassRegisterAttributeId2(ic, "FONT", NULL, haikuTableSetCellRedrawAttrib, IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "ALIGNMENT", NULL, haikuTableSetAlignmentIdAttrib, IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "SORTABLE", NULL, haikuTableSetSortableAttrib, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);

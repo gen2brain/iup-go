@@ -454,21 +454,6 @@ static void gtkTableEnsureStore(Ihandle* ih)
   gtk_tree_view_set_model(GTK_TREE_VIEW(gtk_data->tree_view), GTK_TREE_MODEL(gtk_data->store));
 }
 
-static gboolean gtkTableHeaderButtonPress(GtkWidget* button, GdkEventButton* evt, GtkTreeViewColumn* column)
-{
-  if (evt->button == 1)
-  {
-    Ihandle* ih = (Ihandle*)g_object_get_data(G_OBJECT(column), "iup_ih");
-    if (ih)
-    {
-      int stored = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(column), "iup_col"));
-      if (stored > 0)
-        iupAttribSetInt(ih, "_IUPTABLE_DRAG_SOURCE", stored);
-    }
-  }
-  return FALSE;
-}
-
 static void gtkTableUpdateColumns(Ihandle* ih)
 {
   IgtkTableData* gtk_data = IGTK_TABLE_DATA(ih);
@@ -545,12 +530,6 @@ static void gtkTableUpdateColumns(Ihandle* ih)
 
     gtk_tree_view_append_column(GTK_TREE_VIEW(gtk_data->tree_view), column);
     g_object_set_data(G_OBJECT(column), "iup_col", GINT_TO_POINTER(col + 1));
-    g_object_set_data(G_OBJECT(column), "iup_ih", (gpointer)ih);
-#if GTK_CHECK_VERSION(3, 0, 0)
-    g_signal_connect(gtk_tree_view_column_get_button(column), "button-press-event", G_CALLBACK(gtkTableHeaderButtonPress), column);
-#else
-    g_signal_connect(column->button, "button-press-event", G_CALLBACK(gtkTableHeaderButtonPress), column);
-#endif
   }
 }
 
@@ -836,64 +815,215 @@ static void gtkTableColumnClicked(GtkTreeViewColumn* column, Ihandle* ih)
 }
 
 
+static void gtkTableApplyColumnRenderer(Ihandle* ih, int col)
+{
+  char name[50];
+  GtkCellRenderer* renderer;
+  char* value;
+  float xalign = 0.0f;
+
+  snprintf(name, sizeof(name), "_IUPGTK_RENDERER_%d", col - 1);
+  renderer = (GtkCellRenderer*)iupAttribGet(ih, name);
+  if (!renderer)
+    return;
+
+  value = iupAttribGetId(ih, "EDITABLE", col);
+  if (!value)
+    value = iupAttribGet(ih, "EDITABLE");
+  g_object_set(G_OBJECT(renderer), "editable", iupStrBoolean(value) ? TRUE : FALSE, NULL);
+
+  value = iupAttribGetId(ih, "ALIGNMENT", col);
+  if (iupStrEqualNoCase(value, "ARIGHT") || iupStrEqualNoCase(value, "RIGHT"))
+    xalign = 1.0f;
+  else if (iupStrEqualNoCase(value, "ACENTER") || iupStrEqualNoCase(value, "CENTER"))
+    xalign = 0.5f;
+  g_object_set(G_OBJECT(renderer), "xalign", xalign, NULL);
+}
+
+static void gtkTableMoveColumn(Ihandle* ih, int from_col, int to_col)
+{
+  IgtkTableData* gtk_data = IGTK_TABLE_DATA(ih);
+  GtkTreeView* tree_view = GTK_TREE_VIEW(gtk_data->tree_view);
+  int num_col = ih->data->num_col;
+  char** titles = (char**)calloc(num_col, sizeof(char*));
+  GtkTreeViewColumnSizing* sizing = (GtkTreeViewColumnSizing*)calloc(num_col, sizeof(GtkTreeViewColumnSizing));
+  int* widths = (int*)calloc(num_col, sizeof(int));
+  int c;
+
+  for (c = 0; c < num_col; c++)
+  {
+    GtkTreeViewColumn* column = gtk_tree_view_get_column(tree_view, c);
+    titles[c] = g_strdup(gtk_tree_view_column_get_title(column));
+    sizing[c] = gtk_tree_view_column_get_sizing(column);
+    widths[c] = gtk_tree_view_column_get_fixed_width(column);
+  }
+
+  if (gtk_data->store && !gtk_data->is_virtual)
+  {
+    GtkTreeModel* model = GTK_TREE_MODEL(gtk_data->store);
+    int n_model = gtk_tree_model_get_n_columns(model);
+    GValue* values = g_new0(GValue, n_model);
+    GtkTreeIter iter;
+    gboolean valid = gtk_tree_model_get_iter_first(model, &iter);
+
+    while (valid)
+    {
+      int m;
+      for (m = 0; m < n_model; m++)
+        gtk_tree_model_get_value(model, &iter, m, &values[m]);
+
+      for (c = 0; c < num_col; c++)
+      {
+        int n = iupTableMoveColPos(c + 1, from_col, to_col) - 1;
+        gtk_list_store_set_value(gtk_data->store, &iter, gtkTableTextModelCol(ih, n), &values[gtkTableTextModelCol(ih, c)]);
+        if (ih->data->show_image)
+          gtk_list_store_set_value(gtk_data->store, &iter, gtkTableImageModelCol(n), &values[gtkTableImageModelCol(c)]);
+      }
+
+      for (m = 0; m < n_model; m++)
+        g_value_unset(&values[m]);
+
+      valid = gtk_tree_model_iter_next(model, &iter);
+    }
+
+    g_free(values);
+  }
+
+  iupTableMoveColAttribs(ih, from_col, to_col);
+
+  for (c = 0; c < num_col; c++)
+  {
+    int n = iupTableMoveColPos(c + 1, from_col, to_col) - 1;
+    GtkTreeViewColumn* column = gtk_tree_view_get_column(tree_view, n);
+    gtk_tree_view_column_set_title(column, titles[c] ? titles[c] : "");
+    gtk_tree_view_column_set_sizing(column, sizing[c]);
+    if (sizing[c] == GTK_TREE_VIEW_COLUMN_FIXED)
+      gtk_tree_view_column_set_fixed_width(column, widths[c]);
+    g_free(titles[c]);
+  }
+
+  for (c = 1; c <= num_col; c++)
+    gtkTableApplyColumnRenderer(ih, c);
+
+  if (gtk_data->sort_column > 0)
+  {
+    gtk_data->sort_column = iupTableMoveColPos(gtk_data->sort_column, from_col, to_col);
+    gtkTableShowSortSign(ih, gtk_data->sort_column, gtk_data->sort_ascending ? 1 : -1);
+  }
+
+  free(titles);
+  free(sizing);
+  free(widths);
+
+  {
+    GtkTreePath* path = NULL;
+    GtkTreeViewColumn* focus_column = NULL;
+
+    gtk_tree_view_get_cursor(tree_view, &path, &focus_column);
+    if (path && focus_column)
+    {
+      int pos = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(focus_column), "iup_col"));
+      int new_pos = iupTableMoveColPos(pos, from_col, to_col);
+      if (pos > 0 && new_pos != pos)
+      {
+        GtkTreeSelection* selection = gtk_tree_view_get_selection(tree_view);
+        GList* rows = gtk_tree_selection_get_selected_rows(selection, NULL);
+        GList* l;
+
+        iupAttribSet(ih, "_IUPTABLE_IGNORE_SELECTION_CB", "1");
+        gtk_tree_view_set_cursor(tree_view, path, gtk_tree_view_get_column(tree_view, new_pos - 1), FALSE);
+        gtk_tree_selection_unselect_all(selection);
+        for (l = rows; l != NULL; l = l->next)
+          gtk_tree_selection_select_path(selection, (GtkTreePath*)l->data);
+        iupAttribSet(ih, "_IUPTABLE_IGNORE_SELECTION_CB", NULL);
+
+        g_list_free_full(rows, (GDestroyNotify)gtk_tree_path_free);
+      }
+    }
+    if (path)
+      gtk_tree_path_free(path);
+  }
+
+  gtk_widget_queue_draw(gtk_data->tree_view);
+}
+
+static GtkTreeViewColumn* gtkTableFindColumn(GtkTreeView* tree_view, int iup_col)
+{
+  GList* columns = gtk_tree_view_get_columns(tree_view);
+  GList* l;
+  GtkTreeViewColumn* found = NULL;
+
+  for (l = columns; l != NULL; l = l->next)
+  {
+    if (GPOINTER_TO_INT(g_object_get_data(G_OBJECT(l->data), "iup_col")) == iup_col)
+    {
+      found = GTK_TREE_VIEW_COLUMN(l->data);
+      break;
+    }
+  }
+
+  g_list_free(columns);
+  return found;
+}
+
 static void gtkTableColumnsChanged(GtkTreeView* tree_view, Ihandle* ih)
 {
   GList* columns;
   GList* l;
-  int n, old_pos = -1, new_pos = -1;
-  int drag_source;
+  int* order;
+  int n = 0, a = 0, b = 0, from, to, i;
 
-  if (!ih->data->allow_reorder)
+  if (!ih->data->allow_reorder || iupAttribGet(ih, "_IUPTABLE_IGNORE_COLUMNS_CHANGED"))
     return;
 
-  if (iupAttribGet(ih, "_IUPTABLE_IGNORE_COLUMNS_CHANGED"))
-    return;
-
-  drag_source = iupAttribGetInt(ih, "_IUPTABLE_DRAG_SOURCE");
-  if (drag_source <= 0)
-    return;
-
+  order = (int*)calloc(ih->data->num_col + 1, sizeof(int));
   columns = gtk_tree_view_get_columns(tree_view);
-  if (!columns)
-    return;
-
-  old_pos = drag_source;
-
-  n = 0;
-  for (l = columns; l != NULL; l = l->next)
+  for (l = columns; l != NULL && n < ih->data->num_col; l = l->next)
   {
-    GtkTreeViewColumn* column = GTK_TREE_VIEW_COLUMN(l->data);
-    int stored = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(column), "iup_col"));
-    if (stored == 0)
-      continue;
-    n++;
-    if (stored == drag_source)
-      new_pos = n;
+    int stored = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(l->data), "iup_col"));
+    if (stored > 0)
+      order[++n] = stored;
   }
-
   g_list_free(columns);
 
-  iupAttribSet(ih, "_IUPTABLE_DRAG_SOURCE", NULL);
+  if (n != ih->data->num_col)
+  {
+    free(order);
+    return;
+  }
 
-  if (old_pos > 0 && new_pos > 0 && old_pos != new_pos)
+  for (i = 1; i <= n; i++)
+  {
+    if (order[i] != i)
+    {
+      if (!a) a = i;
+      b = i;
+    }
+  }
+
+  if (!a || (order[b] != a && order[a] != b))
+  {
+    free(order);
+    return;
+  }
+
+  from = (order[b] == a) ? a : b;
+  to = (order[b] == a) ? b : a;
+  free(order);
+
   {
     IFnii cb = (IFnii)IupGetCallback(ih, "REORDER_CB");
-    if (cb)
-      cb(ih, old_pos, new_pos);
+    int ret;
 
-    columns = gtk_tree_view_get_columns(tree_view);
-    n = 0;
-    for (l = columns; l != NULL; l = l->next)
-    {
-      GtkTreeViewColumn* column = GTK_TREE_VIEW_COLUMN(l->data);
-      int stored = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(column), "iup_col"));
-      if (stored != 0)
-      {
-        n++;
-        g_object_set_data(G_OBJECT(column), "iup_col", GINT_TO_POINTER(n));
-      }
-    }
-    g_list_free(columns);
+    iupAttribSet(ih, "_IUPTABLE_IGNORE_COLUMNS_CHANGED", "1");
+    gtk_tree_view_move_column_after(tree_view, gtkTableFindColumn(tree_view, from), from > 1 ? gtkTableFindColumn(tree_view, from - 1) : NULL);
+    iupAttribSet(ih, "_IUPTABLE_IGNORE_COLUMNS_CHANGED", NULL);
+
+    ret = cb ? cb(ih, from, to) : IUP_DEFAULT;
+    if (ret != IUP_IGNORE)
+      gtkTableMoveColumn(ih, from, to);
+    if (ret == IUP_CLOSE)
+      IupExitLoop();
   }
 }
 
@@ -916,7 +1046,7 @@ static void gtkTableCursorChanged(GtkTreeView* tree_view, Ihandle* ih)
   }
 
   IFnii cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
-  if (!cb)
+  if (!cb || iupAttribGet(ih, "_IUPTABLE_IGNORE_SELECTION_CB"))
   {
     if (path)
       gtk_tree_path_free(path);
@@ -1721,12 +1851,6 @@ static int gtkTableMapMethod(Ihandle* ih)
 
       gtk_tree_view_append_column(GTK_TREE_VIEW(gtk_data->tree_view), column);
       g_object_set_data(G_OBJECT(column), "iup_col", GINT_TO_POINTER(col + 1));
-      g_object_set_data(G_OBJECT(column), "iup_ih", (gpointer)ih);
-#if GTK_CHECK_VERSION(3, 0, 0)
-      g_signal_connect(gtk_tree_view_column_get_button(column), "button-press-event", G_CALLBACK(gtkTableHeaderButtonPress), column);
-#else
-      g_signal_connect(column->button, "button-press-event", G_CALLBACK(gtkTableHeaderButtonPress), column);
-#endif
     }
 
     /* GTK gives the extra space to the LAST column when all have expand=FALSE, so a dummy column absorbs it */
@@ -2270,16 +2394,10 @@ IUP_SDK_API void iupdrvTableSetFocusCell(Ihandle* ih, int lin, int col)
   if (column)
   {
     gtk_tree_view_set_cursor(GTK_TREE_VIEW(gtk_data->tree_view), path, column, FALSE);
+    gtk_tree_view_scroll_to_cell(GTK_TREE_VIEW(gtk_data->tree_view), path, column, FALSE, 0, 0);
   }
 
   gtk_tree_path_free(path);
-
-  /* Explicitly trigger ENTERITEM_CB callback for programmatic focus changes */
-  IFnii enteritem_cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
-  if (enteritem_cb)
-  {
-    enteritem_cb(ih, lin, col);
-  }
 }
 
 IUP_SDK_API void iupdrvTableGetFocusCell(Ihandle* ih, int* lin, int* col)
@@ -2410,6 +2528,15 @@ IUP_SDK_API void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col)
 IUP_SDK_API void iupdrvTableRedraw(Ihandle* ih)
 {
   IgtkTableData* gtk_data = IGTK_TABLE_DATA(ih);
+
+  gtk_widget_queue_draw(gtk_data->tree_view);
+}
+
+IUP_SDK_API void iupdrvTableUpdateCellStyle(Ihandle* ih, int lin, int col)
+{
+  IgtkTableData* gtk_data = IGTK_TABLE_DATA(ih);
+  (void)lin;
+  (void)col;
 
   gtk_widget_queue_draw(gtk_data->tree_view);
 }
@@ -2624,6 +2751,12 @@ static int gtkTableSetSortableAttrib(Ihandle* ih, const char* value)
       }
 
       g_list_free(columns);
+
+      if (!ih->data->sortable)
+      {
+        gtk_data->sort_column = 0;
+        gtkTableShowSortSign(ih, 0, 0);
+      }
     }
   }
   return 0; /* do not store in hash table */
@@ -2707,11 +2840,6 @@ IUP_SDK_API void iupdrvTableInitClass(Iclass* ic)
   ic->Map = gtkTableMapMethod;
   ic->UnMap = gtkTableUnMapMethod;
   ic->LayoutUpdate = gtkTableLayoutUpdateMethod;
-
-  iupClassRegisterAttribute(ic, "FONT", NULL, iupdrvSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NO_SAVE | IUPAF_NOT_MAPPED);
-
-  /* Visual */
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, NULL, IUPAF_SAMEASSYSTEM, "TXTBGCOLOR", IUPAF_DEFAULT);
 
   iupClassRegisterAttribute(ic, "SIZE", NULL, NULL, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NOT_MAPPED);
 

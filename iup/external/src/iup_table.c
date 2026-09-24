@@ -514,7 +514,9 @@ static int iTableSetFocusCellAttrib(Ihandle* ih, const char* value)
     return 0;
   }
 
+  iupAttribSet(ih, "_IUPTABLE_IGNORE_SELECTION_CB", "1");
   iupdrvTableSetFocusCell(ih, lin, col);
+  iupAttribSet(ih, "_IUPTABLE_IGNORE_SELECTION_CB", NULL);
   return 0;
 }
 
@@ -646,6 +648,47 @@ static int iTableSetRedrawAttrib(Ihandle* ih, const char* value)
   if (ih->handle)
     iupdrvTableRedraw(ih);
   return 0;
+}
+
+static int iTableSetStyleAttrib(Ihandle* ih, const char* name, int lin, int col, const char* value)
+{
+  if (!ih->handle)
+    return 1;
+
+  if (lin == IUP_INVALID_ID && col == IUP_INVALID_ID)
+  {
+    if (iupAttribGet(ih, name) != value)
+      iupAttribSetStr(ih, name, value);
+    iupdrvTableUpdateCellStyle(ih, 0, 0);
+    return 1;
+  }
+
+  if (iupAttribGetId2(ih, name, lin, col) != value)
+    iupAttribSetStrId2(ih, name, lin, col, value);
+  iupdrvTableUpdateCellStyle(ih, lin < 0 ? 0 : lin, col < 0 ? 0 : col);
+  return 1;
+}
+
+static int iTableSetBgColorAttrib(Ihandle* ih, int lin, int col, const char* value)
+{
+  return iTableSetStyleAttrib(ih, "BGCOLOR", lin, col, value);
+}
+
+static int iTableSetFgColorAttrib(Ihandle* ih, int lin, int col, const char* value)
+{
+  return iTableSetStyleAttrib(ih, "FGCOLOR", lin, col, value);
+}
+
+static int iTableSetFontAttrib(Ihandle* ih, int lin, int col, const char* value)
+{
+  if (lin == IUP_INVALID_ID && col == IUP_INVALID_ID)
+  {
+    if (!value)
+      value = IupGetGlobal("DEFAULTFONT");
+    return iupdrvSetFontAttrib(ih, value);
+  }
+
+  return iTableSetStyleAttrib(ih, "FONT", lin, col, value);
 }
 
 /* ========================================================================= */
@@ -875,6 +918,80 @@ void iupTableCallMultiSelectionCb(Ihandle* ih)
     free(lins);
 }
 
+int iupTableMoveColPos(int col, int from_col, int to_col)
+{
+  if (col == from_col)
+    return to_col;
+  if (from_col < to_col && col > from_col && col <= to_col)
+    return col - 1;
+  if (from_col > to_col && col >= to_col && col < from_col)
+    return col + 1;
+  return col;
+}
+
+static void iTableShiftAttribId2(Ihandle* ih, const char* name, int lin, int from_col, int to_col)
+{
+  char* value = iupAttribGetId2(ih, name, lin, from_col);
+  char* saved = value ? iupStrDup(value) : NULL;
+  int c;
+
+  if (from_col < to_col)
+  {
+    for (c = from_col; c < to_col; c++)
+      iupAttribSetStrId2(ih, name, lin, c, iupAttribGetId2(ih, name, lin, c + 1));
+  }
+  else
+  {
+    for (c = from_col; c > to_col; c--)
+      iupAttribSetStrId2(ih, name, lin, c, iupAttribGetId2(ih, name, lin, c - 1));
+  }
+
+  iupAttribSetStrId2(ih, name, lin, to_col, saved);
+  if (saved)
+    free(saved);
+}
+
+static void iTableShiftAttribId(Ihandle* ih, const char* name, int from_col, int to_col)
+{
+  char* value = iupAttribGetId(ih, name, from_col);
+  char* saved = value ? iupStrDup(value) : NULL;
+  int c;
+
+  if (from_col < to_col)
+  {
+    for (c = from_col; c < to_col; c++)
+      iupAttribSetStrId(ih, name, c, iupAttribGetId(ih, name, c + 1));
+  }
+  else
+  {
+    for (c = from_col; c > to_col; c--)
+      iupAttribSetStrId(ih, name, c, iupAttribGetId(ih, name, c - 1));
+  }
+
+  iupAttribSetStrId(ih, name, to_col, saved);
+  if (saved)
+    free(saved);
+}
+
+void iupTableMoveColAttribs(Ihandle* ih, int from_col, int to_col)
+{
+  static const char* id_attribs[6] = { "TITLE", "WIDTH", "RASTERWIDTH", "ALIGNMENT", "EDITABLE", "SORTSIGN" };
+  static const char* id2_attribs[5] = { "", "BGCOLOR", "FGCOLOR", "FONT", "IMAGE" };
+  int a, lin;
+
+  if (from_col == to_col)
+    return;
+
+  for (a = 0; a < 6; a++)
+    iTableShiftAttribId(ih, id_attribs[a], from_col, to_col);
+
+  for (a = 0; a < 5; a++)
+  {
+    for (lin = 0; lin <= ih->data->num_lin; lin++)  /* lin 0 is the per-column (0:C) entry */
+      iTableShiftAttribId2(ih, id2_attribs[a], lin, from_col, to_col);
+  }
+}
+
 void iupTableMoveLinAttribs(Ihandle* ih, int from_lin, int to_lin)
 {
   static const char* attribs[3] = { "BGCOLOR", "FGCOLOR", "FONT" };
@@ -1057,9 +1174,13 @@ Iclass* iupTableNewClass(void)
   iupClassRegisterAttribute(ic, "EDITABLE", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "EDITABLE", NULL, NULL, IUPAF_NO_INHERIT);  /* Per-column EDITABLE */
 
-  /* Cell color attributes (L:C notation for per-cell, :C for per-column, L:* for per-row) */
-  iupClassRegisterAttributeId2(ic, "BGCOLOR", NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttributeId2(ic, "FGCOLOR", NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  /* Table, per-cell (L:C), per-row (L:0) and per-column (0:C) style */
+  iupClassRegisterAttributeId2(ic, "BGCOLOR", NULL, iTableSetBgColorAttrib, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterReplaceAttribDef(ic, "BGCOLOR", IUPAF_SAMEASSYSTEM, "TXTBGCOLOR");
+  iupClassRegisterAttributeId2(ic, "FGCOLOR", NULL, iTableSetFgColorAttrib, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterReplaceAttribDef(ic, "FGCOLOR", IUPAF_SAMEASSYSTEM, "TXTFGCOLOR");
+  iupClassRegisterAttributeId2(ic, "FONT", NULL, iTableSetFontAttrib, IUPAF_NOT_MAPPED | IUPAF_NO_SAVE);
+  iupClassRegisterReplaceAttribDef(ic, "FONT", IUPAF_SAMEASSYSTEM, "DEFAULTFONT");
 
   /* Cell alignment attributes */
   iupClassRegisterAttributeId(ic, "ALIGNMENT", NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);  /* Per-column alignment: ALEFT, ACENTER, ARIGHT */

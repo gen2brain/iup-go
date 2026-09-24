@@ -135,18 +135,15 @@ JNIEXPORT jboolean JNICALL Java_io_github_gen2brain_iupgo_IupTableHelper_dispatc
   return (ret == IUP_IGNORE) ? JNI_FALSE : JNI_TRUE;
 }
 
-JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupTableHelper_dispatchReorder(
+JNIEXPORT jboolean JNICALL Java_io_github_gen2brain_iupgo_IupTableHelper_dispatchReorder(
     JNIEnv* jni_env, jclass cls, jlong ihandle_ptr, jint from_col, jint to_col)
 {
   (void)jni_env;
   (void)cls;
   Ihandle* ih = (Ihandle*)ihandle_ptr;
-  if (!ih) return;
+  if (!ih) return JNI_FALSE;
 
-  IFnii cb = (IFnii)IupGetCallback(ih, "REORDER_CB");
-  if (!cb) return;
-  int ret = cb(ih, (int)from_col, (int)to_col);
-  if (ret == IUP_CLOSE) IupExitLoop();
+  return iupAndroidTableReorder(ih, (int)from_col, (int)to_col) ? JNI_TRUE : JNI_FALSE;
 }
 
 JNIEXPORT jint JNICALL Java_io_github_gen2brain_iupgo_IupTableHelper_dispatchRowDragDrop(

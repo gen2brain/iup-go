@@ -470,7 +470,13 @@ static void winuiTableSetCellImageFromName(Ihandle* ih, Grid rowGrid, int col, c
     if (ih->data->fit_image && img_h > available_height && available_height > 0)
       winuiImageSetPixelSize(ih, img, (img_w * available_height) / img_h, available_height);
     else
+    {
+      double scale = iupwinuiGetScale(ih);
+      double needed = (img_h + ceil(5 * scale)) / scale;
       winuiImageSetPixelSize(ih, img, img_w, img_h);
+      if (rowGrid.Height() < needed)
+        rowGrid.Height(needed);
+    }
   }
 
   img.Source(bitmap);
@@ -481,6 +487,8 @@ static void winuiTablePopulateCellImages(Ihandle* ih, int lin, Grid rowGrid)
 {
   if (!ih->data->show_image)
     return;
+
+  rowGrid.Height(iupdrvTableGetRowHeight(ih) / iupwinuiGetScale(ih));
 
   for (int col = 1; col <= ih->data->num_col; col++)
   {
@@ -627,7 +635,14 @@ static int winuiTableCalculateColumnWidth(Ihandle* ih, int col_index)
       if (!image_name)
         image_name = iupTableGetCellImageCb(ih, lin, iup_col);
       if (image_name)
-        cell_width += image_extra;
+      {
+        void* imghandle = ih->data->fit_image ? NULL : iupImageGetImage(image_name, ih, 0, NULL);
+        int bmp_w, bmp_h, bpp;
+        if (imghandle && iupdrvImageGetInfo(imghandle, &bmp_w, &bmp_h, &bpp))
+          cell_width += bmp_w + (int)ceil(4 * iupwinuiGetScale(ih));
+        else
+          cell_width += image_extra;
+      }
     }
 
     if (cell_width > max_width)
@@ -860,54 +875,59 @@ static void winuiTableSort(Ihandle* ih, int col)
 }
 
 /****************************************************************************
- * Column Reorder
+ * Focus Visual
  ****************************************************************************/
 
-static void winuiTableShiftAttrib(Ihandle* ih, const char* fmt, int source, int target)
+static void winuiTableClearFocusVisual(Ihandle* ih)
 {
-  char src_name[50], dst_name[50];
-  snprintf(src_name, sizeof(src_name), fmt, source);
-  char* saved = iupAttribGet(ih, src_name);
-  saved = saved ? iupStrDup(saved) : NULL;
+  IupWinUITableAux* aux = winuiTableGetAux(ih);
+  if (!aux || aux->current_row <= 0 || aux->current_col <= 0)
+    return;
 
-  if (source < target)
-  {
-    for (int i = source; i < target; i++)
-    {
-      char from[50], to[50];
-      snprintf(from, sizeof(from), fmt, i + 1);
-      snprintf(to, sizeof(to), fmt, i);
-      char* val = iupAttribGet(ih, from);
-      if (val)
-        iupAttribSetStr(ih, to, val);
-      else
-        iupAttribSet(ih, to, NULL);
-    }
-  }
-  else
-  {
-    for (int i = source; i > target; i--)
-    {
-      char from[50], to[50];
-      snprintf(from, sizeof(from), fmt, i - 1);
-      snprintf(to, sizeof(to), fmt, i);
-      char* val = iupAttribGet(ih, from);
-      if (val)
-        iupAttribSetStr(ih, to, val);
-      else
-        iupAttribSet(ih, to, NULL);
-    }
-  }
+  Grid rowGrid = winuiTableGetRowGrid(ih, aux->current_row);
+  if (!rowGrid)
+    return;
 
-  snprintf(dst_name, sizeof(dst_name), fmt, target);
-  if (saved)
+  Border border = winuiTableGetCellBorder(rowGrid, aux->current_col - 1);
+  if (border)
   {
-    iupAttribSetStr(ih, dst_name, saved);
-    free(saved);
+    if (aux->show_grid)
+      border.BorderThickness(ThicknessHelper::FromLengths(0, 0, 1, 1));
+    else
+      border.BorderThickness(ThicknessHelper::FromLengths(0, 0, 0, 0));
+    border.Padding(ThicknessHelper::FromLengths(4, 2, 4, 2));
+    border.BorderBrush(winuiTableGridLineBrush());
   }
-  else
-    iupAttribSet(ih, dst_name, NULL);
 }
+
+static void winuiTableSetFocusVisual(Ihandle* ih, int lin, int col)
+{
+  if (lin <= 0 || col <= 0)
+    return;
+
+  if (!iupAttribGetBoolean(ih, "FOCUSRECT"))
+    return;
+
+  Grid rowGrid = winuiTableGetRowGrid(ih, lin);
+  if (!rowGrid)
+    return;
+
+  Border border = winuiTableGetCellBorder(rowGrid, col - 1);
+  if (border)
+  {
+    IupWinUITableAux* aux = winuiTableGetAux(ih);
+    border.BorderThickness(ThicknessHelper::FromLengths(1, 1, 1, 1));
+    border.BorderBrush(winuiTableFocusBrush());
+    if (aux && aux->show_grid)
+      border.Padding(ThicknessHelper::FromLengths(3, 1, 4, 2));
+    else
+      border.Padding(ThicknessHelper::FromLengths(3, 1, 3, 1));
+  }
+}
+
+/****************************************************************************
+ * Column Reorder
+ ****************************************************************************/
 
 static void winuiTableShiftAttribLinCol(Ihandle* ih, const char* fmt, int lin, int source, int target)
 {
@@ -1064,33 +1084,15 @@ static void winuiTableMoveColumn(Ihandle* ih, int source, int target)
     }
   }
 
-  winuiTableShiftAttrib(ih, "ALIGNMENT%d", source, target);
-  winuiTableShiftAttribLinCol(ih, "%d:%d", 0, source, target);
-  winuiTableShiftAttribLinCol(ih, "BGCOLOR%d:%d", 0, source, target);
-  winuiTableShiftAttribLinCol(ih, "FGCOLOR%d:%d", 0, source, target);
-  winuiTableShiftAttribLinCol(ih, "FONT%d:%d", 0, source, target);
-
   for (int lin = 1; lin <= num_lin; lin++)
-  {
-    winuiTableShiftAttribLinCol(ih, "CELLVALUE%d:%d", lin, source, target);
-    winuiTableShiftAttribLinCol(ih, "BGCOLOR%d:%d", lin, source, target);
-    winuiTableShiftAttribLinCol(ih, "FGCOLOR%d:%d", lin, source, target);
-    winuiTableShiftAttribLinCol(ih, "FONT%d:%d", lin, source, target);
-  }
+    winuiTableShiftAttribLinCol(ih, "_IUPWINUI_CELLIMAGE%d:%d", lin, source, target);
 
-  if (aux->sort_column == source)
-    aux->sort_column = target;
-  else if (source < target && aux->sort_column > source && aux->sort_column <= target)
-    aux->sort_column--;
-  else if (source > target && aux->sort_column >= target && aux->sort_column < source)
-    aux->sort_column++;
+  iupTableMoveColAttribs(ih, source, target);
 
-  if (aux->current_col == source)
-    aux->current_col = target;
-  else if (source < target && aux->current_col > source && aux->current_col <= target)
-    aux->current_col--;
-  else if (source > target && aux->current_col >= target && aux->current_col < source)
-    aux->current_col++;
+  if (aux->sort_column > 0)
+    aux->sort_column = iupTableMoveColPos(aux->sort_column, source, target);
+  if (aux->current_col > 0)
+    aux->current_col = iupTableMoveColPos(aux->current_col, source, target);
 }
 
 void winuiTableUpdateDpi(Ihandle* ih)
@@ -1133,8 +1135,23 @@ static void winuiTableRefreshAfterReorder(Ihandle* ih)
   if (aux->sort_column > 0)
     winuiTableUpdateSortArrow(ih, aux->sort_column);
 
+  int count = 0;
+  int* selected = iupdrvTableGetSelectedLins(ih, &count);
+
+  iupAttribSet(ih, "_IUPTABLE_IGNORE_SELECTION_CB", "1");
+  aux->suppress_callbacks = true;
   winuiTableRebuildListViewItems(ih);
+  for (int i = 0; i < count; i++)
+    iupdrvTableSelectLin(ih, selected[i], 1);
+  aux->suppress_callbacks = false;
+  iupAttribSet(ih, "_IUPTABLE_IGNORE_SELECTION_CB", NULL);
+  if (selected)
+    free(selected);
+
   winuiTableAdjustColumnWidths(ih);
+
+  if (aux->current_row > 0 && aux->current_col > 0)
+    winuiTableSetFocusVisual(ih, aux->current_row, aux->current_col);
 }
 
 static Border winuiTableGetDragIndicator(Ihandle* ih)
@@ -1390,57 +1407,6 @@ static int winuiTableSetUserResizeAttrib(Ihandle* ih, const char* value)
     ih->data->user_resize = 0;
 
   return 0;
-}
-
-/****************************************************************************
- * Focus Visual
- ****************************************************************************/
-
-static void winuiTableClearFocusVisual(Ihandle* ih)
-{
-  IupWinUITableAux* aux = winuiTableGetAux(ih);
-  if (!aux || aux->current_row <= 0 || aux->current_col <= 0)
-    return;
-
-  Grid rowGrid = winuiTableGetRowGrid(ih, aux->current_row);
-  if (!rowGrid)
-    return;
-
-  Border border = winuiTableGetCellBorder(rowGrid, aux->current_col - 1);
-  if (border)
-  {
-    if (aux->show_grid)
-      border.BorderThickness(ThicknessHelper::FromLengths(0, 0, 1, 1));
-    else
-      border.BorderThickness(ThicknessHelper::FromLengths(0, 0, 0, 0));
-    border.Padding(ThicknessHelper::FromLengths(4, 2, 4, 2));
-    border.BorderBrush(winuiTableGridLineBrush());
-  }
-}
-
-static void winuiTableSetFocusVisual(Ihandle* ih, int lin, int col)
-{
-  if (lin <= 0 || col <= 0)
-    return;
-
-  if (!iupAttribGetBoolean(ih, "FOCUSRECT"))
-    return;
-
-  Grid rowGrid = winuiTableGetRowGrid(ih, lin);
-  if (!rowGrid)
-    return;
-
-  Border border = winuiTableGetCellBorder(rowGrid, col - 1);
-  if (border)
-  {
-    IupWinUITableAux* aux = winuiTableGetAux(ih);
-    border.BorderThickness(ThicknessHelper::FromLengths(1, 1, 1, 1));
-    border.BorderBrush(winuiTableFocusBrush());
-    if (aux && aux->show_grid)
-      border.Padding(ThicknessHelper::FromLengths(3, 1, 4, 2));
-    else
-      border.Padding(ThicknessHelper::FromLengths(3, 1, 3, 1));
-  }
 }
 
 /****************************************************************************
@@ -1879,9 +1845,12 @@ extern "C" IUP_SDK_API void iupdrvTableSetFocusCell(Ihandle* ih, int lin, int co
     return;
   }
 
-  aux->suppress_callbacks = true;
-  listView.SelectedIndex(lin - 1);
-  aux->suppress_callbacks = false;
+  if (!iupStrEqualNoCase(iupAttribGetStr(ih, "SELECTIONMODE"), "NONE"))
+  {
+    aux->suppress_callbacks = true;
+    listView.SelectedIndex(lin - 1);
+    aux->suppress_callbacks = false;
+  }
 
   listView.ScrollIntoView(listView.Items().GetAt(lin - 1));
 
@@ -3489,14 +3458,26 @@ static int winuiTableSetDragSourceAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
+extern "C" IUP_SDK_API void iupdrvTableUpdateCellStyle(Ihandle* ih, int lin, int col)
+{
+  (void)col;
+
+  if (lin > 0)
+  {
+    winuiTableUpdateRowColors(ih, lin);
+    return;
+  }
+
+  for (int i = 1; i <= ih->data->num_lin; i++)
+    winuiTableUpdateRowColors(ih, i);
+}
+
 extern "C" IUP_SDK_API void iupdrvTableInitClass(Iclass* ic)
 {
   ic->Map = winuiTableMapMethod;
   ic->UnMap = winuiTableUnMapMethod;
   ic->LayoutUpdate = winuiTableLayoutUpdateMethod;
 
-  iupClassRegisterAttribute(ic, "FONT", NULL, iupdrvSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NO_SAVE|IUPAF_NOT_MAPPED);
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, NULL, IUPAF_SAMEASSYSTEM, "TXTBGCOLOR", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "SIZE", NULL, NULL, NULL, NULL, IUPAF_NO_SAVE|IUPAF_NOT_MAPPED);
 
   iupClassRegisterReplaceAttribFunc(ic, "SORTABLE", NULL, winuiTableSetSortableAttrib);

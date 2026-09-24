@@ -79,7 +79,7 @@ static void eflTableRefreshCells(Ihandle* ih);
 static void eflTableRefreshHeaders(Ihandle* ih);
 static void eflTableDoSort(Ihandle* ih, int col);
 static int eflTableFindTargetColumn(Ihandle* ih, int x);
-static void eflTableSwapColumns(Ihandle* ih, int col1, int col2);
+static void eflTableMoveColumn(Ihandle* ih, int from_col, int to_col);
 static void eflTableUpdateDragIndicator(Ihandle* ih, int target);
 static void eflTableHideDragIndicator(Ihandle* ih);
 static void eflTableDragPointerMove(void* cb_data, const Efl_Event* ev);
@@ -721,7 +721,14 @@ static void eflTableRefreshHeaders(Ihandle* ih)
     if (label)
     {
       char* title = eflTableGetHeaderText(ih, col + 1);
-      efl_text_set(label, title ? title : "");
+      eflTableApplyCellText(ih, label, 0, col + 1, title, 1);
+    }
+
+    if (data->header_bgs && data->header_bgs[col])
+    {
+      unsigned char r, g, b;
+      eflTableGetCellBgColor(ih, 0, col + 1, &r, &g, &b);
+      efl_gfx_color_set(data->header_bgs[col], r, g, b, 255);
     }
   }
 
@@ -803,81 +810,74 @@ static int eflTableIsNearColumnBorder(Ihandle* ih, int x)
   return 0;
 }
 
-static void eflTableSwapAttrib(Ihandle* ih, const char* name1, const char* name2)
+static void eflTableShiftAttrib(Ihandle* ih, const char* fmt, int lin, int from_col, int to_col)
 {
-  char* val1 = iupAttribGet(ih, name1);
-  char* val2 = iupAttribGet(ih, name2);
-  char* temp = val1 ? iupStrDup(val1) : NULL;
+  char name[80], src[80];
+  int step = (from_col < to_col) ? 1 : -1;
+  int c;
+  char* saved;
 
-  if (val2)
-    iupAttribSetStr(ih, name1, val2);
-  else
-    iupAttribSet(ih, name1, NULL);
+  snprintf(name, sizeof(name), fmt, lin, from_col);
+  saved = iupStrDup(iupAttribGet(ih, name));
 
-  if (temp)
+  for (c = from_col; c != to_col; c += step)
   {
-    iupAttribSetStr(ih, name2, temp);
-    free(temp);
+    snprintf(src, sizeof(src), fmt, lin, c + step);
+    snprintf(name, sizeof(name), fmt, lin, c);
+    iupAttribSetStr(ih, name, iupAttribGet(ih, src));
   }
-  else
-    iupAttribSet(ih, name2, NULL);
+
+  snprintf(name, sizeof(name), fmt, lin, to_col);
+  iupAttribSetStr(ih, name, saved);
+  if (saved)
+    free(saved);
 }
 
-static void eflTableSwapColumns(Ihandle* ih, int col1, int col2)
+static void eflTableMoveColumn(Ihandle* ih, int from_col, int to_col)
 {
+  IeflTableData* data = IEFL_TABLE_DATA(ih);
   int lin;
-  int num_lin = ih->data->num_lin;
-  char name1[50], name2[50];
 
-  snprintf(name1, sizeof(name1), "COLTITLE%d", col1);
-  snprintf(name2, sizeof(name2), "COLTITLE%d", col2);
-  eflTableSwapAttrib(ih, name1, name2);
+  if (from_col == to_col)
+    return;
 
-  snprintf(name1, sizeof(name1), "WIDTH%d", col1);
-  snprintf(name2, sizeof(name2), "WIDTH%d", col2);
-  eflTableSwapAttrib(ih, name1, name2);
-
-  snprintf(name1, sizeof(name1), "RASTERWIDTH%d", col1);
-  snprintf(name2, sizeof(name2), "RASTERWIDTH%d", col2);
-  eflTableSwapAttrib(ih, name1, name2);
-
-  snprintf(name1, sizeof(name1), "ALIGNMENT%d", col1);
-  snprintf(name2, sizeof(name2), "ALIGNMENT%d", col2);
-  eflTableSwapAttrib(ih, name1, name2);
-
-  snprintf(name1, sizeof(name1), "0:%d", col1);
-  snprintf(name2, sizeof(name2), "0:%d", col2);
-  eflTableSwapAttrib(ih, name1, name2);
-
-  snprintf(name1, sizeof(name1), "BGCOLOR0:%d", col1);
-  snprintf(name2, sizeof(name2), "BGCOLOR0:%d", col2);
-  eflTableSwapAttrib(ih, name1, name2);
-
-  snprintf(name1, sizeof(name1), "FGCOLOR0:%d", col1);
-  snprintf(name2, sizeof(name2), "FGCOLOR0:%d", col2);
-  eflTableSwapAttrib(ih, name1, name2);
-
-  snprintf(name1, sizeof(name1), "FONT0:%d", col1);
-  snprintf(name2, sizeof(name2), "FONT0:%d", col2);
-  eflTableSwapAttrib(ih, name1, name2);
-
-  for (lin = 1; lin <= num_lin; lin++)
   {
-    snprintf(name1, sizeof(name1), "CELLVALUE%d:%d", lin, col1);
-    snprintf(name2, sizeof(name2), "CELLVALUE%d:%d", lin, col2);
-    eflTableSwapAttrib(ih, name1, name2);
+    int step = (from_col < to_col) ? 1 : -1;
+    int c;
+    char* title = iupStrDup(iupAttribGetId(ih, "COLTITLE", from_col));
+    for (c = from_col; c != to_col; c += step)
+      iupAttribSetStrId(ih, "COLTITLE", c, iupAttribGetId(ih, "COLTITLE", c + step));
+    iupAttribSetStrId(ih, "COLTITLE", to_col, title);
+    if (title)
+      free(title);
+  }
 
-    snprintf(name1, sizeof(name1), "BGCOLOR%d:%d", lin, col1);
-    snprintf(name2, sizeof(name2), "BGCOLOR%d:%d", lin, col2);
-    eflTableSwapAttrib(ih, name1, name2);
+  for (lin = 1; lin <= ih->data->num_lin; lin++)
+  {
+    eflTableShiftAttrib(ih, "CELLVALUE%d:%d", lin, from_col, to_col);
+    eflTableShiftAttrib(ih, "_IUPEFL_CELLIMAGE%d:%d", lin, from_col, to_col);
+  }
 
-    snprintf(name1, sizeof(name1), "FGCOLOR%d:%d", lin, col1);
-    snprintf(name2, sizeof(name2), "FGCOLOR%d:%d", lin, col2);
-    eflTableSwapAttrib(ih, name1, name2);
+  iupTableMoveColAttribs(ih, from_col, to_col);
 
-    snprintf(name1, sizeof(name1), "FONT%d:%d", lin, col1);
-    snprintf(name2, sizeof(name2), "FONT%d:%d", lin, col2);
-    eflTableSwapAttrib(ih, name1, name2);
+  if (data)
+  {
+    if (data->col_widths)
+    {
+      int w = data->col_widths[from_col - 1];
+      int step = (from_col < to_col) ? 1 : -1;
+      int c;
+      for (c = from_col - 1; c != to_col - 1; c += step)
+        data->col_widths[c] = data->col_widths[c + step];
+      data->col_widths[to_col - 1] = w;
+    }
+
+    if (data->sort_column > 0)
+      data->sort_column = iupTableMoveColPos(data->sort_column, from_col, to_col);
+    if (data->selected_col > 0)
+      data->selected_col = iupTableMoveColPos(data->selected_col, from_col, to_col);
+    if (data->focus_cell_col > 0)
+      data->focus_cell_col = iupTableMoveColPos(data->focus_cell_col, from_col, to_col);
   }
 }
 
@@ -1035,15 +1035,10 @@ static void eflTableDragPointerUp(void* cb_data, const Efl_Event* ev)
     if (cb && cb(ih, source, target) == IUP_IGNORE)
       return;
 
-    eflTableSwapColumns(ih, source, target);
+    eflTableMoveColumn(ih, source, target);
 
     if (data)
     {
-      if (data->sort_column == source)
-        data->sort_column = target;
-      else if (data->sort_column == target)
-        data->sort_column = source;
-
       if (data->is_virtual)
         eflTableUpdateVisibleRows(ih, 1);
       else
@@ -2021,7 +2016,7 @@ static void eflTableRebuildCells(Ihandle* ih)
           efl_gfx_hint_align_set(box, EVAS_HINT_FILL, EVAS_HINT_FILL);
           efl_gfx_hint_weight_set(box, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
 
-          image = efl_add_ref(EFL_CANVAS_IMAGE_CLASS, box);
+          image = efl_add(EFL_CANVAS_IMAGE_CLASS, box);
           efl_gfx_hint_align_set(image, 0.0, 0.5);
           efl_gfx_entity_visible_set(image, EINA_FALSE);
           elm_box_pack_end(box, image);
@@ -2314,7 +2309,7 @@ static void eflTableRebuildVirtualCells(Ihandle* ih)
           efl_gfx_hint_align_set(box, EVAS_HINT_FILL, EVAS_HINT_FILL);
           efl_gfx_hint_weight_set(box, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
 
-          image = efl_add_ref(EFL_CANVAS_IMAGE_CLASS, box);
+          image = efl_add(EFL_CANVAS_IMAGE_CLASS, box);
           efl_gfx_hint_align_set(image, 0.0, 0.5);
           efl_gfx_entity_visible_set(image, EINA_FALSE);
           elm_box_pack_end(box, image);
@@ -2926,6 +2921,20 @@ IUP_SDK_API void iupdrvTableRedraw(Ihandle* ih)
   }
 }
 
+IUP_SDK_API void iupdrvTableUpdateCellStyle(Ihandle* ih, int lin, int col)
+{
+  int c;
+
+  if (lin < 1)
+  {
+    iupdrvTableRedraw(ih);
+    return;
+  }
+
+  for (c = (col > 0 ? col : 1); c <= (col > 0 ? col : ih->data->num_col); c++)
+    eflTableUpdateCellLabel(ih, lin, c);
+}
+
 IUP_SDK_API void iupdrvTableSetShowGrid(Ihandle* ih, int show)
 {
   IeflTableData* data = IEFL_TABLE_DATA(ih);
@@ -3477,9 +3486,6 @@ IUP_SDK_API void iupdrvTableInitClass(Iclass* ic)
   ic->UnMap = eflTableUnMapMethod;
   ic->LayoutUpdate = eflTableLayoutUpdateMethod;
 
-  iupClassRegisterAttribute(ic, "FONT", NULL, iupdrvSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NO_SAVE | IUPAF_NOT_MAPPED);
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, NULL, IUPAF_SAMEASSYSTEM, "TXTBGCOLOR", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, NULL, IUPAF_SAMEASSYSTEM, "TXTFGCOLOR", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "SIZE", NULL, NULL, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NOT_MAPPED);
 
   iupClassRegisterReplaceAttribFunc(ic, "SORTABLE", NULL, eflTableSetSortableAttrib);

@@ -974,6 +974,99 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
 /* NSTableViewDataSource Protocol Implementation                             */
 /* ========================================================================= */
 
+static void cocoaTableMoveColumn(Ihandle* ih, NSTableView* tableView, int from_col, int to_col)
+{
+  IcocoaTableData* table_data = cocoaTableGetData(ih);
+  NSArray* columns = [tableView tableColumns];
+  int num_col = (int)[columns count];
+  NSMutableArray* titles = [NSMutableArray arrayWithCapacity:num_col];
+  NSMutableArray* widths = [NSMutableArray arrayWithCapacity:num_col];
+  NSMutableDictionary* info = [NSMutableDictionary dictionary];
+  NSArray* descriptors = [tableView sortDescriptors];
+  NSIndexSet* selected = [[tableView selectedRowIndexes] copy];
+  int c, lin, step = (from_col < to_col) ? 1 : -1;
+
+  if (num_col > ih->data->num_col)
+    num_col = ih->data->num_col;
+
+  for (c = 0; c < num_col; c++)
+  {
+    NSTableColumn* column = [columns objectAtIndex:c];
+    NSString* title = [[column headerCell] stringValue];
+    [titles addObject:title ? title : @""];
+    [widths addObject:[NSNumber numberWithDouble:[column width]]];
+  }
+
+  if (!table_data->is_virtual_mode)
+  {
+    for (NSMutableArray* row in table_data->data_array)
+    {
+      while ((int)[row count] < num_col)
+        [row addObject:@""];
+      id moved = [[row objectAtIndex:from_col - 1] retain];
+      [row removeObjectAtIndex:from_col - 1];
+      [row insertObject:moved atIndex:to_col - 1];
+      [moved release];
+    }
+  }
+
+  for (NSNumber* key in table_data->column_info)
+    [info setObject:[table_data->column_info objectForKey:key] forKey:@(iupTableMoveColPos([key intValue] + 1, from_col, to_col) - 1)];
+  [table_data->column_info removeAllObjects];
+  [table_data->column_info addEntriesFromDictionary:info];
+
+  for (lin = 1; lin <= ih->data->num_lin; lin++)
+  {
+    char* saved = iupStrDup(iupAttribGetId2(ih, "_IUPCOCOA_CELLIMAGE", lin, from_col));
+    for (c = from_col; c != to_col; c += step)
+      iupAttribSetStrId2(ih, "_IUPCOCOA_CELLIMAGE", lin, c, iupAttribGetId2(ih, "_IUPCOCOA_CELLIMAGE", lin, c + step));
+    iupAttribSetStrId2(ih, "_IUPCOCOA_CELLIMAGE", lin, to_col, saved);
+    if (saved) free(saved);
+  }
+
+  {
+    char* saved = iupStrDup(iupAttribGetId(ih, "_IUP_TABLE_EXPWIDTH", from_col));
+    for (c = from_col; c != to_col; c += step)
+      iupAttribSetStrId(ih, "_IUP_TABLE_EXPWIDTH", c, iupAttribGetId(ih, "_IUP_TABLE_EXPWIDTH", c + step));
+    iupAttribSetStrId(ih, "_IUP_TABLE_EXPWIDTH", to_col, saved);
+    if (saved) free(saved);
+  }
+
+  iupTableMoveColAttribs(ih, from_col, to_col);
+
+  for (c = 0; c < num_col; c++)
+  {
+    NSTableColumn* column = [columns objectAtIndex:iupTableMoveColPos(c + 1, from_col, to_col) - 1];
+    [[column headerCell] setStringValue:[titles objectAtIndex:c]];
+    [column setWidth:[[widths objectAtIndex:c] doubleValue]];
+  }
+
+  if ([descriptors count] > 0)
+  {
+    NSSortDescriptor* old = [descriptors objectAtIndex:0];
+    int sort_col = [[old key] intValue] + 1;
+    NSSortDescriptor* descriptor = [NSSortDescriptor sortDescriptorWithKey:[NSString stringWithFormat:@"%d", iupTableMoveColPos(sort_col, from_col, to_col) - 1]
+                                                                ascending:[old ascending]];
+    iupAttribSet(ih, "_IUPCOCOA_SORTBUSY", "1");
+    [tableView setSortDescriptors:[NSArray arrayWithObject:descriptor]];
+    iupAttribSet(ih, "_IUPCOCOA_SORTBUSY", NULL);
+    [[tableView headerView] setNeedsDisplay:YES];
+  }
+
+  if (table_data->current_col > 0)
+    table_data->current_col = iupTableMoveColPos(table_data->current_col, from_col, to_col);
+
+  [tableView reloadData];
+
+  if (![[tableView selectedRowIndexes] isEqualToIndexSet:selected])
+  {
+    iupAttribSet(ih, "_IUPTABLE_IGNORE_SELECTION_CB", "1");
+    [tableView selectRowIndexes:selected byExtendingSelection:NO];
+    iupAttribSet(ih, "_IUPTABLE_IGNORE_SELECTION_CB", NULL);
+  }
+  [selected release];
+}
+
 @interface IupCocoaTableDataSource : NSObject <NSTableViewDataSource>
 {
   Ihandle* ih;
@@ -1433,9 +1526,6 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
 {
   NSColor* bgcolor = cocoaTableGetRowBackgroundColor(ih, (int)row);
 
-  if (!bgcolor)
-    return nil;
-
   static NSString* const kRowViewIdentifier = @"IupCocoaTableRowView";
   IupCocoaTableRowView* rowView = [tableView makeViewWithIdentifier:kRowViewIdentifier owner:self];
 
@@ -1527,7 +1617,7 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
   }
 
   IFnii enteritem_cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
-  if (enteritem_cb)
+  if (enteritem_cb && !iupAttribGet(ih, "_IUPTABLE_IGNORE_SELECTION_CB"))
   {
     enteritem_cb(ih, (int)selectedRow + 1, col);
   }
@@ -1831,15 +1921,14 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
   int new_pos = (int)new_native_pos + 1;
   if (old_pos == new_pos) return;
 
-  IFnii cb = (IFnii)IupGetCallback(ih, "REORDER_CB");
-  if (cb)
-    cb(ih, old_pos, new_pos);
+  [tableView moveColumn:new_pos - 1 toColumn:old_pos - 1];
 
-  for (NSUInteger i = 0; i < [columns count]; i++)
-  {
-    NSTableColumn* col = [columns objectAtIndex:i];
-    objc_setAssociatedObject(col, "iup_col", [NSNumber numberWithInt:(int)i + 1], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-  }
+  IFnii cb = (IFnii)IupGetCallback(ih, "REORDER_CB");
+  int ret = cb ? cb(ih, old_pos, new_pos) : IUP_DEFAULT;
+  if (ret != IUP_IGNORE)
+    cocoaTableMoveColumn(ih, tableView, old_pos, new_pos);
+  if (ret == IUP_CLOSE)
+    IupExitLoop();
 }
 
 @end
@@ -2025,6 +2114,14 @@ static int cocoaTableSetSortableAttrib(Ihandle* ih, const char* value)
     {
       [column setSortDescriptorPrototype:nil];
     }
+  }
+
+  if (!sortable && [[tableView sortDescriptors] count] > 0)
+  {
+    iupAttribSet(ih, "_IUPCOCOA_SORTBUSY", "1");
+    [tableView setSortDescriptors:[NSArray array]];
+    iupAttribSet(ih, "_IUPCOCOA_SORTBUSY", NULL);
+    [[tableView headerView] setNeedsDisplay:YES];
   }
 
   return 1;
@@ -2404,7 +2501,8 @@ IUP_SDK_API void iupdrvTableSetFocusCell(Ihandle* ih, int lin, int col)
 
   [tableView scrollRowToVisible:row];
   [tableView scrollColumnToVisible:column];
-  [tableView selectRowIndexes:[NSIndexSet indexSetWithIndex:row] byExtendingSelection:NO];
+  if (!iupStrEqualNoCase(iupAttribGetStr(ih, "SELECTIONMODE"), "NONE"))
+    [tableView selectRowIndexes:[NSIndexSet indexSetWithIndex:row] byExtendingSelection:NO];
 }
 
 IUP_SDK_API void iupdrvTableGetFocusCell(Ihandle* ih, int* lin, int* col)
@@ -2417,11 +2515,17 @@ IUP_SDK_API void iupdrvTableGetFocusCell(Ihandle* ih, int* lin, int* col)
     return;
   }
 
-  NSInteger selectedRow = [tableView selectedRow];
-  NSInteger selectedColumn = [tableView selectedColumn];
+  IcocoaTableData* table_data = ICOCOA_TABLE_DATA(ih);
+  if (table_data && table_data->current_row > 0)
+  {
+    *lin = table_data->current_row;
+    *col = table_data->current_col > 0 ? table_data->current_col : 1;
+    return;
+  }
 
+  NSInteger selectedRow = [tableView selectedRow];
   *lin = (selectedRow >= 0) ? (int)selectedRow + 1 : 0;
-  *col = (selectedColumn >= 0) ? (int)selectedColumn + 1 : 0;
+  *col = (selectedRow >= 0) ? 1 : 0;
 }
 
 IUP_SDK_API int iupdrvTableIsLinSelected(Ihandle* ih, int lin)
@@ -2496,6 +2600,34 @@ IUP_SDK_API void iupdrvTableRedraw(Ihandle* ih)
   if (tableView)
   {
     [tableView reloadData];
+  }
+}
+
+IUP_SDK_API void iupdrvTableUpdateCellStyle(Ihandle* ih, int lin, int col)
+{
+  NSTableView* tableView = cocoaTableGetTableView(ih);
+  NSInteger first, last, row;
+  (void)col;
+
+  if (!tableView || lin > [tableView numberOfRows])
+    return;
+
+  first = (lin > 0) ? lin - 1 : 0;
+  last = (lin > 0) ? lin - 1 : [tableView numberOfRows] - 1;
+  if (last < first)
+    return;
+
+  [tableView reloadDataForRowIndexes:[NSIndexSet indexSetWithIndexesInRange:NSMakeRange(first, last - first + 1)]
+                       columnIndexes:[NSIndexSet indexSetWithIndexesInRange:NSMakeRange(0, [tableView numberOfColumns])]];
+
+  for (row = first; row <= last; row++)
+  {
+    NSTableRowView* rowView = [tableView rowViewAtRow:row makeIfNecessary:NO];
+    if ([rowView isKindOfClass:[IupCocoaTableRowView class]])
+    {
+      [(IupCocoaTableRowView*)rowView setCustomBackgroundColor:cocoaTableGetRowBackgroundColor(ih, (int)row)];
+      [rowView setNeedsDisplay:YES];
+    }
   }
 }
 
@@ -2907,8 +3039,6 @@ IUP_SDK_API void iupdrvTableInitClass(Iclass* ic)
   ic->UnMap = cocoaTableUnMapMethod;
   ic->LayoutUpdate = cocoaTableLayoutUpdateMethod;
 
-  iupClassRegisterAttribute(ic, "FONT", NULL, iupdrvSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NO_SAVE|IUPAF_NOT_MAPPED);
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, NULL, IUPAF_SAMEASSYSTEM, "TXTBGCOLOR", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "FOCUSRECT", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
 
   iupClassRegisterReplaceAttribFunc(ic, "SORTABLE", NULL, cocoaTableSetSortableAttrib);

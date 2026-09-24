@@ -431,25 +431,23 @@ static void androidTableCallRgbId2(Ihandle* ih, const char* method, int lin, int
   (*env)->DeleteLocalRef(env, cls);
 }
 
-static int androidTableSetBgColorId2Attrib(Ihandle* ih, int lin, int col, const char* value)
+static void androidTableApplyBgColor(Ihandle* ih, int lin, int col, const char* value)
 {
   int r, g, b;
   androidTableParseRgb(value, &r, &g, &b);
   androidTableCallRgbId2(ih, "setBgColor", lin, col, r, g, b);
-  return 1;
 }
 
-static int androidTableSetFgColorId2Attrib(Ihandle* ih, int lin, int col, const char* value)
+static void androidTableApplyFgColor(Ihandle* ih, int lin, int col, const char* value)
 {
   int r, g, b;
   androidTableParseRgb(value, &r, &g, &b);
   androidTableCallRgbId2(ih, "setFgColor", lin, col, r, g, b);
-  return 1;
 }
 
-static int androidTableSetFontId2Attrib(Ihandle* ih, int lin, int col, const char* value)
+static void androidTableApplyFont(Ihandle* ih, int lin, int col, const char* value)
 {
-  if (!ih->handle) return 1;
+  if (!ih->handle) return;
 
   const char* family = NULL;
   int style = IUPANDROID_TYPEFACE_NORMAL;
@@ -480,7 +478,6 @@ static int androidTableSetFontId2Attrib(Ihandle* ih, int lin, int col, const cha
   iupAndroid_CheckException(env, "IupTableHelper.setCellFont");
   if (j_family) (*env)->DeleteLocalRef(env, j_family);
   (*env)->DeleteLocalRef(env, cls);
-  return 1;
 }
 
 static int androidTableSetAlignmentIdAttrib(Ihandle* ih, int col, const char* value)
@@ -541,6 +538,20 @@ static int androidTableSetBgColorAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
+IUP_SDK_API void iupdrvTableUpdateCellStyle(Ihandle* ih, int lin, int col)
+{
+  if (lin == 0 && col == 0)
+  {
+    androidTableSetBgColorAttrib(ih, iupAttribGetStr(ih, "BGCOLOR"));
+    androidTableSetFgColorAttrib(ih, iupAttribGetStr(ih, "FGCOLOR"));
+    return;
+  }
+
+  androidTableApplyBgColor(ih, lin, col, iupAttribGetId2(ih, "BGCOLOR", lin, col));
+  androidTableApplyFgColor(ih, lin, col, iupAttribGetId2(ih, "FGCOLOR", lin, col));
+  androidTableApplyFont(ih, lin, col, iupAttribGetId2(ih, "FONT", lin, col));
+}
+
 static int androidTableSetEditableAttrib(Ihandle* ih, const char* value)
 {
   if (!ih->handle) return 1;
@@ -593,6 +604,20 @@ static int androidTableSetUserResizeAttrib(Ihandle* ih, const char* value)
 static char* androidTableGetAllowReorderAttrib(Ihandle* ih)
 {
   return iupStrReturnBoolean(ih->data->allow_reorder);
+}
+
+int iupAndroidTableReorder(Ihandle* ih, int from_col, int to_col)
+{
+  IFnii cb = (IFnii)IupGetCallback(ih, "REORDER_CB");
+  if (cb)
+  {
+    int ret = cb(ih, from_col, to_col);
+    if (ret == IUP_CLOSE) IupExitLoop();
+    if (ret == IUP_IGNORE) return 0;
+  }
+
+  iupTableMoveColAttribs(ih, from_col, to_col);
+  return 1;
 }
 
 int iupAndroidTableRowDragDrop(Ihandle* ih, int from, int to)
@@ -712,21 +737,21 @@ static void androidTableReplayStoredCells(Ihandle* ih)
   for (c = 1; c <= ih->data->num_col; c++)
   {
     v = iupAttribGetId2(ih, "BGCOLOR", 0, c);
-    if (v) androidTableSetBgColorId2Attrib(ih, 0, c, v);
+    if (v) androidTableApplyBgColor(ih, 0, c, v);
     v = iupAttribGetId2(ih, "FGCOLOR", 0, c);
-    if (v) androidTableSetFgColorId2Attrib(ih, 0, c, v);
+    if (v) androidTableApplyFgColor(ih, 0, c, v);
     v = iupAttribGetId2(ih, "FONT", 0, c);
-    if (v) androidTableSetFontId2Attrib(ih, 0, c, v);
+    if (v) androidTableApplyFont(ih, 0, c, v);
   }
 
   for (l = 1; l <= ih->data->num_lin; l++)
   {
     v = iupAttribGetId2(ih, "BGCOLOR", l, 0);
-    if (v) androidTableSetBgColorId2Attrib(ih, l, 0, v);
+    if (v) androidTableApplyBgColor(ih, l, 0, v);
     v = iupAttribGetId2(ih, "FGCOLOR", l, 0);
-    if (v) androidTableSetFgColorId2Attrib(ih, l, 0, v);
+    if (v) androidTableApplyFgColor(ih, l, 0, v);
     v = iupAttribGetId2(ih, "FONT", l, 0);
-    if (v) androidTableSetFontId2Attrib(ih, l, 0, v);
+    if (v) androidTableApplyFont(ih, l, 0, v);
   }
 
   for (l = 1; l <= ih->data->num_lin; l++)
@@ -737,13 +762,13 @@ static void androidTableReplayStoredCells(Ihandle* ih)
       if (v) iupdrvTableSetCellValue(ih, l, c, v);
 
       v = iupAttribGetId2(ih, "BGCOLOR", l, c);
-      if (v) androidTableSetBgColorId2Attrib(ih, l, c, v);
+      if (v) androidTableApplyBgColor(ih, l, c, v);
 
       v = iupAttribGetId2(ih, "FGCOLOR", l, c);
-      if (v) androidTableSetFgColorId2Attrib(ih, l, c, v);
+      if (v) androidTableApplyFgColor(ih, l, c, v);
 
       v = iupAttribGetId2(ih, "FONT", l, c);
-      if (v) androidTableSetFontId2Attrib(ih, l, c, v);
+      if (v) androidTableApplyFont(ih, l, c, v);
 
       if (ih->data->show_image)
       {
@@ -830,13 +855,8 @@ IUP_SDK_API void iupdrvTableInitClass(Iclass* ic)
   ic->Map = androidTableMapMethod;
   ic->UnMap = iupdrvBaseUnMapMethod;
 
-  iupClassRegisterAttributeId2(ic, "BGCOLOR", NULL, androidTableSetBgColorId2Attrib, IUPAF_NO_INHERIT);
-  iupClassRegisterAttributeId2(ic, "FGCOLOR", NULL, androidTableSetFgColorId2Attrib, IUPAF_NO_INHERIT);
-  iupClassRegisterAttributeId2(ic, "FONT", NULL, androidTableSetFontId2Attrib, IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "ALIGNMENT", NULL, androidTableSetAlignmentIdAttrib, IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, androidTableSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTBGCOLOR", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, androidTableSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "ALTERNATECOLOR", NULL, androidTableSetAlternateColorAttrib, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "EVENROWCOLOR", NULL, androidTableSetEvenRowColorAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ODDROWCOLOR", NULL, androidTableSetOddRowColorAttrib, NULL, NULL, IUPAF_NO_INHERIT);

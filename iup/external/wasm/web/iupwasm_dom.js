@@ -2253,7 +2253,7 @@
           var tvcim = c.imgId ? (globalThis.__iupImg && globalThis.__iupImg.map[c.imgId]) : null;
           if (tvcim) { var tvcimg = document.createElement('img'); tvcimg.src = tvcim.url; tvcimg.style.verticalAlign = 'middle'; tvcimg.style.marginRight = '4px'; if (el.__iupFitImage && el.__iupImgMaxH) { tvcimg.style.maxHeight = el.__iupImgMaxH + 'px'; tvcimg.style.width = 'auto'; } tvctd.appendChild(tvcimg); }
           tvctd.appendChild(document.createTextNode(c.str || ''));
-          tvctd.dataset.lin = c.lin; tvctd.dataset.col = c.col + 1; if (el.__iupAligns && el.__iupAligns[c.col + 1]) tvctd.style.textAlign = el.__iupAligns[c.col + 1]; } } }
+          tvctd.style.background = c.bg; tvctd.style.color = c.fg; tvctd.dataset.lin = c.lin; tvctd.dataset.col = c.col + 1; if (el.__iupAligns && el.__iupAligns[c.col + 1]) tvctd.style.textAlign = el.__iupAligns[c.col + 1]; } } }
       } break;
       case 'tablevstripe': {
         if (el) { var tvstr = el.__iupVRows[c.rowIdx]; if (tvstr) tvstr.style.background = el.__iupAlt ? (((c.lin - 1) % 2) ? el.__iupOdd : el.__iupEven) : ''; }
