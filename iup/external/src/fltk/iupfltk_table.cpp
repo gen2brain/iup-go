@@ -125,7 +125,7 @@ static void fltkTableLayoutUpdateMethod(Ihandle* ih);
 static IupFltkTable* fltkTableGetWidget(Ihandle* ih);
 static void fltkTableSortRows(Ihandle* ih, int col, int ascending);
 static void fltkTableHandleHeaderClick(Ihandle* ih, int col);
-static void fltkTableSwapColumns(Ihandle* ih, int src, int dst);
+static void fltkTableMoveColumn(Ihandle* ih, int src, int dst);
 static int fltkTableFindTargetCol(IupFltkTable* table, int mx);
 static int fltkTableFindTargetRow(IupFltkTable* table, int my);
 static void fltkTableMoveRow(Ihandle* ih, int from, int to);
@@ -252,6 +252,8 @@ public:
   int drag_source_row;
   int drag_target_row;
   int row_dragging;
+  int fit_pending;
+  int pending_scroll_lin, pending_scroll_col;
   unsigned int selection_stamp;
 
   IupFltkTable(int X, int Y, int W, int H, Ihandle* ih)
@@ -260,9 +262,52 @@ public:
       auto_widths_rows(0),
       sort_column(0), sort_ascending(1),
       drag_source_col(-1), drag_target_col(-1), drag_start_x(0), drag_start_y(0), dragging(0),
-      drag_source_row(-1), drag_target_row(-1), row_dragging(0), selection_stamp(0)
+      drag_source_row(-1), drag_target_row(-1), row_dragging(0), fit_pending(0),
+      pending_scroll_lin(0), pending_scroll_col(0), selection_stamp(0)
   {
     selection_color(FL_SELECTION_COLOR);
+  }
+
+  void draw() override
+  {
+    if (pending_scroll_lin > 0)
+    {
+      int lin = pending_scroll_lin;
+      pending_scroll_lin = 0;
+      iupdrvTableScrollToCell(iup_handle, lin, pending_scroll_col);
+    }
+    Fl_Table_Row::draw();
+  }
+
+  void fitRowToImages(int R)
+  {
+    int needed = row_height(R);
+    for (int c = 1; c <= iup_handle->data->num_col; c++)
+    {
+      char key[50];
+      snprintf(key, sizeof(key), "_CELLIMAGE%d:%d", R + 1, c);
+      char* name = iupAttribGet(iup_handle, key);
+      if (!name)
+        name = iupTableGetCellImageCb(iup_handle, R + 1, c);
+      Fl_Image* img = name ? (Fl_Image*)iupImageGetImage(name, iup_handle, 0, NULL) : NULL;
+      if (img && img->h() + 4 > needed)
+        needed = img->h() + 4;
+    }
+    if (needed > row_height(R))
+      row_height(R, needed);
+  }
+
+  static void deferredFitRows(void* data)
+  {
+    Ihandle* ih = (Ihandle*)data;
+    if (!iupObjectCheck(ih) || !ih->handle)
+      return;
+    IupFltkTable* table = fltkTableGetWidget(ih);
+    if (!table)
+      return;
+    table->fit_pending = 0;
+    for (int r = 0; r < table->rows(); r++)
+      table->fitRowToImages(r);
   }
 
   int getCellRect(int R, int C, int &X, int &Y, int &W, int &H)
@@ -461,10 +506,15 @@ protected:
               {
                 Fl_Image* draw_img = img;
                 int avail_h = H - 2;
-                if (img->h() > avail_h && avail_h > 0)
+                if (iup_handle->data->fit_image && img->h() > avail_h && avail_h > 0)
                 {
                   int scaled_w = (img->w() * avail_h) / img->h();
                   draw_img = img->copy(scaled_w, avail_h);
+                }
+                else if (!iup_handle->data->fit_image && img->h() + 4 > H && !fit_pending)
+                {
+                  fit_pending = 1;
+                  Fl::add_timeout(0.0, deferredFitRows, (void*)iup_handle);
                 }
 
                 int iy = Y + (H - draw_img->h()) / 2;
@@ -719,7 +769,7 @@ protected:
               ret = reorder_cb(iup_handle, iup_src, iup_tgt);
 
             if (ret != IUP_IGNORE)
-              fltkTableSwapColumns(iup_handle, iup_src, iup_tgt);
+              fltkTableMoveColumn(iup_handle, iup_src, iup_tgt);
           }
           else if (!was_dragging && iup_handle->data->sortable)
           {
@@ -971,73 +1021,6 @@ static void fltkTableHandleHeaderClick(Ihandle* ih, int col)
   table->redraw();
 }
 
-static void fltkTableSwapColumns(Ihandle* ih, int src, int dst)
-{
-  IupFltkTable* table = (IupFltkTable*)ih->handle;
-  if (!table) return;
-
-  int s = src - 1;
-  int d = dst - 1;
-  int num_col = ih->data->num_col;
-
-  if (s < 0 || s >= num_col || d < 0 || d >= num_col || s == d)
-    return;
-
-  if (!table->is_virtual)
-  {
-    for (int r = 0; r < (int)table->cells.size(); r++)
-    {
-      if (s < (int)table->cells[r].size() && d < (int)table->cells[r].size())
-        std::swap(table->cells[r][s], table->cells[r][d]);
-    }
-  }
-
-  if (s < (int)table->col_titles.size() && d < (int)table->col_titles.size())
-    std::swap(table->col_titles[s], table->col_titles[d]);
-
-  int w_s = table->col_width(s);
-  int w_d = table->col_width(d);
-  table->col_width(s, w_d);
-  table->col_width(d, w_s);
-
-  char name_s[50], name_d[50];
-  snprintf(name_s, sizeof(name_s), "ALIGNMENT%d", src);
-  snprintf(name_d, sizeof(name_d), "ALIGNMENT%d", dst);
-  char* align_s = iupStrDup(iupAttribGet(ih, name_s));
-  char* align_d = iupStrDup(iupAttribGet(ih, name_d));
-  if (align_s) iupAttribSetStr(ih, name_d, align_s);
-  else iupAttribSet(ih, name_d, NULL);
-  if (align_d) iupAttribSetStr(ih, name_s, align_d);
-  else iupAttribSet(ih, name_s, NULL);
-  if (align_s) free(align_s);
-  if (align_d) free(align_d);
-
-  const char* swap_attrs[] = { "FONT", "FGCOLOR", "BGCOLOR", "EDITABLE", NULL };
-  for (int a = 0; swap_attrs[a]; a++)
-  {
-    snprintf(name_s, sizeof(name_s), "%s%d:%d", swap_attrs[a], 0, src);
-    snprintf(name_d, sizeof(name_d), "%s%d:%d", swap_attrs[a], 0, dst);
-    char* val_s = iupStrDup(iupAttribGet(ih, name_s));
-    char* val_d = iupStrDup(iupAttribGet(ih, name_d));
-    if (val_s) iupAttribSetStr(ih, name_d, val_s);
-    else iupAttribSet(ih, name_d, NULL);
-    if (val_d) iupAttribSetStr(ih, name_s, val_d);
-    else iupAttribSet(ih, name_s, NULL);
-    if (val_s) free(val_s);
-    if (val_d) free(val_d);
-  }
-
-  if (table->sort_column == src)
-    table->sort_column = dst;
-  else if (table->sort_column == dst)
-    table->sort_column = src;
-
-  if (table->focus_col == s)
-    table->focus_col = d;
-  else if (table->focus_col == d)
-    table->focus_col = s;
-}
-
 static int fltkTableFindTargetCol(IupFltkTable* table, int mx)
 {
   int num_col = table->iup_handle->data->num_col;
@@ -1127,123 +1110,112 @@ static int fltkTableColHasExplicitWidth(Ihandle* ih, int col)
   return (width_str && iupStrToInt(width_str, &width) && width > 0);
 }
 
-static void fltkTableAutoColumnWidths(Ihandle* ih, IupFltkTable* table)
+static void fltkTableAutoColumnWidth(Ihandle* ih, IupFltkTable* table, int c)
 {
-  int num_col = ih->data->num_col;
   int num_lin = ih->data->num_lin;
-
   int fl_font_face, fl_font_size;
   if (iupfltkGetFont(ih, &fl_font_face, &fl_font_size))
     fl_font(fl_font_face, fl_font_size);
 
-  for (int c = 0; c < num_col; c++)
+  int iup_col = c + 1;
+  int max_w = 0;
+  int check_rows = num_lin < 50 ? num_lin : 50;
+  int image_extra = 0;
+
+  if (ih->data->show_image)
   {
-    if (fltkTableColHasExplicitWidth(ih, c + 1))
-      continue;
-
-    int iup_col = c + 1;
-    int max_w = 0;
-    int check_rows = num_lin < 50 ? num_lin : 50;
-    int image_extra = 0;
-
-    if (ih->data->show_image)
-    {
-      int row_h = table->row_height(0);
-      int avail_h = row_h > 2 ? row_h - 2 : row_h;
-
-      for (int r = 0; r < check_rows; r++)
-      {
-        char* image_name = NULL;
-        char img_key[50];
-        snprintf(img_key, sizeof(img_key), "_CELLIMAGE%d:%d", r + 1, iup_col);
-        image_name = iupAttribGet(ih, img_key);
-        if (!image_name)
-          image_name = iupTableGetCellImageCb(ih, r + 1, iup_col);
-        if (image_name)
-        {
-          int img_w = 0, img_h = 0;
-          iupImageGetInfo(image_name, &img_w, &img_h, NULL);
-          if (img_h > avail_h && avail_h > 0)
-            img_w = (img_w * avail_h) / img_h;
-          if (img_w + 6 > image_extra)
-            image_extra = img_w + 6;
-        }
-      }
-    }
-
-    const char* title = NULL;
-    if (c < (int)table->col_titles.size() && !table->col_titles[c].empty())
-      title = table->col_titles[c].c_str();
-    if (!title)
-      title = iupAttribGetId(ih, "TITLE", iup_col);
-    if (title && title[0])
-    {
-      int tw = 0, th = 0;
-      fl_measure(title, tw, th, 0);
-      if (tw + 16 > max_w)
-        max_w = tw + 16;
-    }
+    int row_h = table->row_height(0);
+    int avail_h = row_h > 2 ? row_h - 2 : row_h;
 
     for (int r = 0; r < check_rows; r++)
     {
-      const char* text = NULL;
-
-      if (table->is_virtual)
+      char* image_name = NULL;
+      char img_key[50];
+      snprintf(img_key, sizeof(img_key), "_CELLIMAGE%d:%d", r + 1, iup_col);
+      image_name = iupAttribGet(ih, img_key);
+      if (!image_name)
+        image_name = iupTableGetCellImageCb(ih, r + 1, iup_col);
+      if (image_name)
       {
-        sIFnii value_cb = (sIFnii)IupGetCallback(ih, "VALUE_CB");
-        if (value_cb)
-          text = value_cb(ih, r + 1, iup_col);
-      }
-      else if (r < (int)table->cells.size() && c < (int)table->cells[r].size())
-        text = table->cells[r][c].c_str();
-
-      if (text && text[0])
-      {
-        char* cell_font = iupAttribGetId2(ih, "FONT", 0, iup_col);
-        if (cell_font)
-        {
-          int cf, cs;
-          if (iupfltkGetFontFromString(cell_font, &cf, &cs))
-            fl_font(cf, cs);
-        }
-
-        int tw = 0, th = 0;
-        fl_measure(text, tw, th, 0);
-        int cell_w = tw + 16;
-
-        if (cell_w > max_w)
-          max_w = cell_w;
-
-        if (cell_font && iupfltkGetFont(ih, &fl_font_face, &fl_font_size))
-          fl_font(fl_font_face, fl_font_size);
+        int img_w = 0, img_h = 0;
+        iupImageGetInfo(image_name, &img_w, &img_h, NULL);
+        if (img_h > avail_h && avail_h > 0)
+          img_w = (img_w * avail_h) / img_h;
+        if (img_w + 6 > image_extra)
+          image_extra = img_w + 6;
       }
     }
+  }
 
-    max_w += image_extra;
+  const char* title = NULL;
+  if (c < (int)table->col_titles.size() && !table->col_titles[c].empty())
+    title = table->col_titles[c].c_str();
+  if (!title)
+    title = iupAttribGetId(ih, "TITLE", iup_col);
+  if (title && title[0])
+  {
+    int tw = 0, th = 0;
+    fl_measure(title, tw, th, 0);
+    if (tw + 16 > max_w)
+      max_w = tw + 16;
+  }
 
-    if (max_w < 30)
-      max_w = 30;
+  for (int r = 0; r < check_rows; r++)
+  {
+    const char* text = NULL;
 
-    table->col_width(c, max_w);
+    if (table->is_virtual)
+    {
+      sIFnii value_cb = (sIFnii)IupGetCallback(ih, "VALUE_CB");
+      if (value_cb)
+        text = value_cb(ih, r + 1, iup_col);
+    }
+    else if (r < (int)table->cells.size() && c < (int)table->cells[r].size())
+      text = table->cells[r][c].c_str();
+
+    if (text && text[0])
+    {
+      char* cell_font = iupAttribGetId2(ih, "FONT", 0, iup_col);
+      if (cell_font)
+      {
+        int cf, cs;
+        if (iupfltkGetFontFromString(cell_font, &cf, &cs))
+          fl_font(cf, cs);
+      }
+
+      int tw = 0, th = 0;
+      fl_measure(text, tw, th, 0);
+      int cell_w = tw + 16;
+
+      if (cell_w > max_w)
+        max_w = cell_w;
+
+      if (cell_font && iupfltkGetFont(ih, &fl_font_face, &fl_font_size))
+        fl_font(fl_font_face, fl_font_size);
+    }
+  }
+
+  max_w += image_extra;
+
+  if (max_w < 30)
+    max_w = 30;
+
+  table->col_width(c, max_w);
+}
+
+static void fltkTableAutoColumnWidths(Ihandle* ih, IupFltkTable* table)
+{
+  for (int c = 0; c < ih->data->num_col; c++)
+  {
+    if (!fltkTableColHasExplicitWidth(ih, c + 1))
+      fltkTableAutoColumnWidth(ih, table, c);
   }
 }
 
-static void fltkTableLayoutUpdateMethod(Ihandle* ih)
+static void fltkTableFitColumns(Ihandle* ih, IupFltkTable* table)
 {
-  IupFltkTable* table = fltkTableGetWidget(ih);
-  if (!table)
-    return;
-
-  if (!table->auto_widths_done)
-  {
-    table->auto_widths_done = 1;
-    fltkTableAutoColumnWidths(ih, table);
-  }
-
   int width = ih->currentwidth;
   int height = ih->currentheight;
-
-  iupdrvBaseLayoutUpdateMethod(ih);
 
   if (ih->data->num_col > 0)
   {
@@ -1309,6 +1281,96 @@ static void fltkTableLayoutUpdateMethod(Ihandle* ih)
       }
     }
   }
+}
+
+static void fltkTableLayoutUpdateMethod(Ihandle* ih)
+{
+  IupFltkTable* table = fltkTableGetWidget(ih);
+  if (!table)
+    return;
+
+  if (!table->auto_widths_done)
+  {
+    table->auto_widths_done = 1;
+    fltkTableAutoColumnWidths(ih, table);
+  }
+
+  iupdrvBaseLayoutUpdateMethod(ih);
+
+  fltkTableFitColumns(ih, table);
+}
+
+static void fltkTableMoveColumn(Ihandle* ih, int src, int dst)
+{
+  IupFltkTable* table = (IupFltkTable*)ih->handle;
+  if (!table) return;
+
+  int s = src - 1;
+  int d = dst - 1;
+  int num_col = ih->data->num_col;
+
+  if (s < 0 || s >= num_col || d < 0 || d >= num_col || s == d)
+    return;
+
+  if (!table->is_virtual)
+  {
+    for (int r = 0; r < (int)table->cells.size(); r++)
+    {
+      std::vector<std::string>& row = table->cells[r];
+      if (s < (int)row.size() && d < (int)row.size())
+      {
+        std::string v = row[s];
+        row.erase(row.begin() + s);
+        row.insert(row.begin() + d, v);
+      }
+    }
+  }
+
+  if (s < (int)table->col_titles.size() && d < (int)table->col_titles.size())
+  {
+    std::string t = table->col_titles[s];
+    table->col_titles.erase(table->col_titles.begin() + s);
+    table->col_titles.insert(table->col_titles.begin() + d, t);
+  }
+
+  std::vector<int> widths(num_col);
+  for (int c = 0; c < num_col; c++)
+    widths[c] = table->col_width(c);
+  for (int c = 0; c < num_col; c++)
+    table->col_width(iupTableMoveColPos(c + 1, src, dst) - 1, widths[c]);
+
+  for (int lin = 1; lin <= ih->data->num_lin; lin++)
+  {
+    char name[50];
+    snprintf(name, sizeof(name), "_CELLIMAGE%d:%d", lin, src);
+    char* saved = iupStrDup(iupAttribGet(ih, name));
+    int step = (src < dst) ? 1 : -1;
+    for (int c = src; c != dst; c += step)
+    {
+      char from[50];
+      snprintf(from, sizeof(from), "_CELLIMAGE%d:%d", lin, c + step);
+      snprintf(name, sizeof(name), "_CELLIMAGE%d:%d", lin, c);
+      iupAttribSetStr(ih, name, iupAttribGet(ih, from));
+    }
+    snprintf(name, sizeof(name), "_CELLIMAGE%d:%d", lin, dst);
+    iupAttribSetStr(ih, name, saved);
+    if (saved) free(saved);
+  }
+
+  iupTableMoveColAttribs(ih, src, dst);
+
+  if (table->sort_column > 0)
+    table->sort_column = iupTableMoveColPos(table->sort_column, src, dst);
+  if (table->focus_col >= 0)
+    table->focus_col = iupTableMoveColPos(table->focus_col + 1, src, dst) - 1;
+
+  if (ih->data->stretch_last && (src == num_col || dst == num_col))
+  {
+    int moved = iupTableMoveColPos(num_col, src, dst) - 1;
+    if (!fltkTableColHasExplicitWidth(ih, moved + 1))
+      fltkTableAutoColumnWidth(ih, table, moved);
+  }
+  fltkTableFitColumns(ih, table);
 }
 
 static int fltkTableMapMethod(Ihandle* ih)
@@ -1647,6 +1709,9 @@ extern "C" IUP_SDK_API void iupdrvTableSetCellImage(Ihandle* ih, int lin, int co
   snprintf(name, sizeof(name), "_CELLIMAGE%d:%d", lin, col);
   iupAttribSetStr(ih, name, image);
 
+  if (image && !ih->data->fit_image && lin >= 1 && lin <= table->rows())
+    table->fitRowToImages(lin - 1);
+
   table->redraw();
 }
 
@@ -1746,7 +1811,13 @@ extern "C" IUP_SDK_API void iupdrvTableSetFocusCell(Ihandle* ih, int lin, int co
   table->focus_lin = r;
   table->focus_col = c;
 
-  table->select_row(r, 1);
+  if (!iupStrEqualNoCase(iupAttribGetStr(ih, "SELECTIONMODE"), "NONE"))
+  {
+    table->select_all_rows(0);
+    table->select_row(r, 1);
+  }
+
+  iupdrvTableScrollToCell(ih, lin, col);
   table->redraw();
 }
 
@@ -1823,11 +1894,21 @@ extern "C" IUP_SDK_API void iupdrvTableScrollToCell(Ihandle* ih, int lin, int co
 
   int r = lin - 1;
   int c = col - 1;
+  int r1, r2, c1, c2;
 
-  if (r >= 0 && r < table->rows())
-    table->row_position(r);
-  if (c >= 0 && c < table->cols())
-    table->col_position(c);
+  if (!table->window() || !table->window()->shown())
+  {
+    table->pending_scroll_lin = lin;
+    table->pending_scroll_col = col;
+    return;
+  }
+
+  table->visible_cells(r1, r2, c1, c2);
+
+  if (r >= 0 && r < table->rows() && (r < r1 || r >= r2))
+    table->row_position(r < r1 ? r : r - (r2 - r1) + 1);
+  if (c >= 0 && c < table->cols() && (c < c1 || c >= c2))
+    table->col_position(c < c1 ? c : c - (c2 - c1) + 1);
 }
 
 extern "C" IUP_SDK_API void iupdrvTableRedraw(Ihandle* ih)
@@ -1835,6 +1916,13 @@ extern "C" IUP_SDK_API void iupdrvTableRedraw(Ihandle* ih)
   IupFltkTable* table = fltkTableGetWidget(ih);
   if (table)
     table->redraw();
+}
+
+extern "C" IUP_SDK_API void iupdrvTableUpdateCellStyle(Ihandle* ih, int lin, int col)
+{
+  (void)lin;
+  (void)col;
+  iupdrvTableRedraw(ih);
 }
 
 extern "C" IUP_SDK_API void iupdrvTableSetShowGrid(Ihandle* ih, int show)

@@ -284,6 +284,19 @@ public:
  * Custom Table Widget
  ****************************************************************************/
 
+static void qtTableSetFullIcon(QTableWidget* table, QTableWidgetItem* item, int row, QPixmap* pixmap)
+{
+  item->setIcon(QIcon(*pixmap));
+
+  QSize size = table->iconSize().expandedTo(pixmap->size());
+  if (size != table->iconSize())
+    table->setIconSize(size);
+
+  int height = pixmap->height() + 4;
+  if (table->rowHeight(row) < height)
+    table->setRowHeight(row, height);
+}
+
 class IupQtTableWidget : public QTableWidget
 {
 private:
@@ -362,7 +375,7 @@ public:
                   existingItem->setIcon(QIcon(*pixImage));
               }
               else
-                existingItem->setIcon(QIcon(*pixImage));
+                qtTableSetFullIcon(this, existingItem, row, pixImage);
             }
             else
               existingItem->setIcon(QIcon());
@@ -746,7 +759,7 @@ private:
     int col = currentColumn + 1;
 
     IFnii cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
-    if (cb)
+    if (cb && !iupAttribGet(ih, "_IUPTABLE_IGNORE_SELECTION_CB"))
     {
       cb(ih, lin, col);
     }
@@ -948,6 +961,63 @@ static void qtTableLayoutUpdateMethod(Ihandle* ih)
   table->verticalScrollBar()->setValue(0);
 }
 
+static void qtTableMoveColumn(Ihandle* ih, int from_col, int to_col)
+{
+  QTableWidget* table = qtTableGetWidget(ih);
+  if (!table)
+    return;
+
+  int rows = table->rowCount();
+  int cols = table->columnCount();
+  int current_row = table->currentRow();
+  int current_col = table->currentColumn();
+  bool blocked = table->blockSignals(true);
+  QList<QTableWidgetItem*> headers;
+  QList<int> widths;
+
+  for (int c = 0; c < cols; c++)
+  {
+    headers << table->takeHorizontalHeaderItem(c);
+    widths << table->columnWidth(c);
+  }
+
+  for (int r = 0; r < rows; r++)
+  {
+    QList<QTableWidgetItem*> items;
+    for (int c = 0; c < cols; c++)
+      items << table->takeItem(r, c);
+    for (int c = 0; c < cols; c++)
+      table->setItem(r, iupTableMoveColPos(c + 1, from_col, to_col) - 1, items[c]);
+  }
+
+  for (int c = 0; c < cols; c++)
+  {
+    int n = iupTableMoveColPos(c + 1, from_col, to_col) - 1;
+    table->setHorizontalHeaderItem(n, headers[c]);
+    table->setColumnWidth(n, widths[c]);
+  }
+
+  if (current_row >= 0 && current_col >= 0)
+    table->setCurrentCell(current_row, iupTableMoveColPos(current_col + 1, from_col, to_col) - 1, QItemSelectionModel::NoUpdate);
+
+  table->blockSignals(blocked);
+
+  iupTableMoveColAttribs(ih, from_col, to_col);
+
+  int sort_col = iupAttribGetInt(ih, "_QT_SORT_COLUMN");
+  if (sort_col > 0)
+  {
+    sort_col = iupTableMoveColPos(sort_col, from_col, to_col);
+    iupAttribSetInt(ih, "_QT_SORT_COLUMN", sort_col);
+    table->horizontalHeader()->setSortIndicator(sort_col - 1, iupAttribGetInt(ih, "_QT_SORT_ASCENDING") ? Qt::AscendingOrder : Qt::DescendingOrder);
+  }
+
+  if (iupAttribGetBoolean(ih, "VIRTUALMODE"))
+    iupdrvTableRedraw(ih);
+  else
+    table->viewport()->update();
+}
+
 static int qtTableMapMethod(Ihandle* ih)
 {
   if (!ih->parent)
@@ -1010,11 +1080,18 @@ static int qtTableMapMethod(Ihandle* ih)
 
   hHeader->setSectionsMovable(ih->data->allow_reorder);
 
-  QObject::connect(hHeader, &QHeaderView::sectionMoved, [ih](int logicalIndex, int oldVisualIndex, int newVisualIndex) {
+  QObject::connect(hHeader, &QHeaderView::sectionMoved, [ih, hHeader](int logicalIndex, int oldVisualIndex, int newVisualIndex) {
     (void)logicalIndex;
+    bool blocked = hHeader->blockSignals(true);
+    hHeader->moveSection(newVisualIndex, oldVisualIndex);
+    hHeader->blockSignals(blocked);
+
     IFnii cb = (IFnii)IupGetCallback(ih, "REORDER_CB");
-    if (cb)
-      cb(ih, oldVisualIndex + 1, newVisualIndex + 1);
+    int ret = cb ? cb(ih, oldVisualIndex + 1, newVisualIndex + 1) : IUP_DEFAULT;
+    if (ret != IUP_IGNORE)
+      qtTableMoveColumn(ih, oldVisualIndex + 1, newVisualIndex + 1);
+    if (ret == IUP_CLOSE)
+      IupExitLoop();
   });
 
   bool last_col_has_width = false;
@@ -1321,7 +1398,7 @@ IUP_SDK_API void iupdrvTableSetCellImage(Ihandle* ih, int lin, int col, const ch
           item->setIcon(QIcon(*pixImage));
       }
       else
-        item->setIcon(QIcon(*pixImage));
+        qtTableSetFullIcon(table, item, qt_row, pixImage);
     }
     else
       item->setIcon(QIcon());
@@ -1456,7 +1533,11 @@ IUP_SDK_API void iupdrvTableSetFocusCell(Ihandle* ih, int lin, int col)
   if (qt_row >= 0 && qt_row < table->rowCount() &&
       qt_col >= 0 && qt_col < table->columnCount())
   {
-    table->setCurrentCell(qt_row, qt_col);
+    if (iupStrEqualNoCase(iupAttribGetStr(ih, "SELECTIONMODE"), "NONE"))
+      table->setCurrentCell(qt_row, qt_col, QItemSelectionModel::NoUpdate);
+    else
+      table->setCurrentCell(qt_row, qt_col, QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
+    table->scrollTo(table->model()->index(qt_row, qt_col));
   }
 }
 
@@ -1590,6 +1671,25 @@ IUP_SDK_API void iupdrvTableRedraw(Ihandle* ih)
   }
 }
 
+IUP_SDK_API void iupdrvTableUpdateCellStyle(Ihandle* ih, int lin, int col)
+{
+  QTableWidget* table = qtTableGetWidget(ih);
+  if (!table)
+    return;
+
+  for (int row = (lin > 0 ? lin - 1 : 0); row < (lin > 0 ? lin : table->rowCount()) && row < table->rowCount(); row++)
+  {
+    for (int c = (col > 0 ? col - 1 : 0); c < (col > 0 ? col : table->columnCount()) && c < table->columnCount(); c++)
+    {
+      QTableWidgetItem* item = table->item(row, c);
+      if (item)
+        qtTableConfigureItem(ih, item, row + 1, c + 1);
+    }
+  }
+
+  table->viewport()->update();
+}
+
 IUP_SDK_API void iupdrvTableSetShowGrid(Ihandle* ih, int show)
 {
   QTableWidget* table = qtTableGetWidget(ih);
@@ -1615,19 +1715,17 @@ static int qtTableSetSortableAttrib(Ihandle* ih, const char* value)
     QTableWidget* table = qtTableGetWidget(ih);
     if (table)
     {
-      char* virtualmode = iupAttribGet(ih, "VIRTUALMODE");
       QHeaderView* hHeader = table->horizontalHeader();
 
-      if (ih->data->sortable)
+      table->setSortingEnabled(false);
+      hHeader->setSectionsClickable(ih->data->sortable ? true : false);
+      hHeader->setSortIndicatorShown(ih->data->sortable ? true : false);
+
+      if (!ih->data->sortable)
       {
-        table->setSortingEnabled(!iupStrBoolean(virtualmode));
-        hHeader->setSectionsClickable(true);
-        hHeader->setSortIndicatorShown(true);
-      }
-      else
-      {
-        table->setSortingEnabled(false);
-        hHeader->setSectionsClickable(false);
+        iupAttribSet(ih, "_QT_SORT_COLUMN", NULL);
+        iupAttribSet(ih, "_QT_SORT_ASCENDING", NULL);
+        hHeader->setSortIndicator(-1, Qt::AscendingOrder);
       }
     }
   }

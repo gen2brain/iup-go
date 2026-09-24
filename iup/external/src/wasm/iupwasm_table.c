@@ -128,8 +128,8 @@ EM_JS(void, iupwasmJsTableVWindow, (int id, int count, int numCol, int top, int 
   globalThis.__iupApply({ op: 'tablevwindow', id: id, count: count, numCol: numCol, top: top, bot: bot });
 })
 
-EM_JS(void, iupwasmJsTableVCell, (int id, int rowIdx, int col, int lin, const char* str, int imgId), {
-  globalThis.__iupApply({ op: 'tablevcell', id: id, rowIdx: rowIdx, col: col, lin: lin, str: UTF8ToString(str), imgId: imgId });
+EM_JS(void, iupwasmJsTableVCell, (int id, int rowIdx, int col, int lin, const char* str, int imgId, const char* bg, const char* fg), {
+  globalThis.__iupApply({ op: 'tablevcell', id: id, rowIdx: rowIdx, col: col, lin: lin, str: UTF8ToString(str), imgId: imgId, bg: UTF8ToString(bg), fg: UTF8ToString(fg) });
 })
 
 EM_JS(void, iupwasmJsTableVStripe, (int id, int rowIdx, int lin), {
@@ -177,29 +177,34 @@ static void wasmTableApplyAlign(Ihandle* ih)
   }
 }
 
+static int wasmTableCellCss(Ihandle* ih, int lin, int col, char* bgcss, char* fgcss)
+{
+  unsigned char r, g, b;
+  char* bg = iupAttribGetId2(ih, "BGCOLOR", lin, col);
+  char* fg = iupAttribGetId2(ih, "FGCOLOR", lin, col);
+  if (!bg) bg = iupAttribGetId2(ih, "BGCOLOR", 0, col);
+  if (!bg) bg = iupAttribGetId2(ih, "BGCOLOR", lin, 0);
+  if (!fg) fg = iupAttribGetId2(ih, "FGCOLOR", 0, col);
+  if (!fg) fg = iupAttribGetId2(ih, "FGCOLOR", lin, 0);
+  bgcss[0] = 0;
+  fgcss[0] = 0;
+  if (bg && iupStrToRGB(bg, &r, &g, &b))
+    snprintf(bgcss, 20, "rgb(%d,%d,%d)", r, g, b);
+  if (fg && iupStrToRGB(fg, &r, &g, &b))
+    snprintf(fgcss, 20, "rgb(%d,%d,%d)", r, g, b);
+  return bgcss[0] || fgcss[0];
+}
+
 static void wasmTableApplyCellColors(Ihandle* ih)
 {
   int id = iupwasmIdOf(ih), lin, col;
+  char bgcss[20], fgcss[20];
   if (!id || iupAttribGetBoolean(ih, "VIRTUALMODE")) return;
   for (lin = 1; lin <= ih->data->num_lin; lin++)
     for (col = 1; col <= ih->data->num_col; col++)
     {
-      char* bg = iupAttribGetId2(ih, "BGCOLOR", lin, col);
-      char* fg = iupAttribGetId2(ih, "FGCOLOR", lin, col);
-      if (!bg) bg = iupAttribGetId2(ih, "BGCOLOR", 0, col);
-      if (!bg) bg = iupAttribGetId2(ih, "BGCOLOR", lin, 0);
-      if (!fg) fg = iupAttribGetId2(ih, "FGCOLOR", 0, col);
-      if (!fg) fg = iupAttribGetId2(ih, "FGCOLOR", lin, 0);
-      if (bg || fg)
-      {
-        unsigned char r, g, b;
-        char bgcss[20] = "", fgcss[20] = "";
-        if (bg && iupStrToRGB(bg, &r, &g, &b))
-          snprintf(bgcss, sizeof(bgcss), "rgb(%d,%d,%d)", r, g, b);
-        if (fg && iupStrToRGB(fg, &r, &g, &b))
-          snprintf(fgcss, sizeof(fgcss), "rgb(%d,%d,%d)", r, g, b);
+      if (wasmTableCellCss(ih, lin, col, bgcss, fgcss))
         iupwasmJsTableCellColor(id, lin, col, bgcss, fgcss);
-      }
     }
 }
 
@@ -207,6 +212,7 @@ static void wasmTableVirtualRender(Ihandle* ih)
 {
   int id = iupwasmIdOf(ih);
   int rowH, numLin, numCol, first, count, i, c, showImage;
+  char bgcss[20], fgcss[20];
   sIFnii value_cb, image_cb;
 
   if (!id || !iupAttribGetBoolean(ih, "VIRTUALMODE"))
@@ -240,8 +246,9 @@ static void wasmTableVirtualRender(Ihandle* ih)
         if (name && name[0])
           imgId = (int)(intptr_t)iupImageGetImage(name, ih, 0, NULL);
       }
+      wasmTableCellCss(ih, lin, c, bgcss, fgcss);
       v = value_cb ? value_cb(ih, lin, c) : NULL;  /* must be the last string dispatch before use: result lives in a single recycled slot */
-      iupwasmJsTableVCell(id, i, c - 1, lin, v ? v : "", imgId);
+      iupwasmJsTableVCell(id, i, c - 1, lin, v ? v : "", imgId, bgcss, fgcss);
     }
     iupwasmJsTableVStripe(id, i, lin);
   }
@@ -641,6 +648,28 @@ IUP_SDK_API void iupdrvTableRedraw(Ihandle* ih)
     wasmTableVirtualRender(ih);
 }
 
+IUP_SDK_API void iupdrvTableUpdateCellStyle(Ihandle* ih, int lin, int col)
+{
+  int id = iupwasmIdOf(ih), l, c;
+  char bgcss[20], fgcss[20];
+
+  if (!id)
+    return;
+
+  if ((lin < 1 && col < 1) || iupAttribGetBoolean(ih, "VIRTUALMODE"))
+  {
+    iupdrvTableRedraw(ih);
+    return;
+  }
+
+  for (l = (lin > 0 ? lin : 1); l <= (lin > 0 ? lin : ih->data->num_lin); l++)
+    for (c = (col > 0 ? col : 1); c <= (col > 0 ? col : ih->data->num_col); c++)
+    {
+      wasmTableCellCss(ih, l, c, bgcss, fgcss);
+      iupwasmJsTableCellColor(id, l, c, bgcss, fgcss);
+    }
+}
+
 IUP_SDK_API void iupdrvTableSetShowGrid(Ihandle* ih, int show)
 {
   int id = iupwasmIdOf(ih);
@@ -890,12 +919,35 @@ EMSCRIPTEN_KEEPALIVE void iupwasmTableReorder(int id, int oldCol, int newCol)
 {
   Ihandle* ih = iupwasmHandleFromId(id);
   IFnii cb;
+  int ret;
   if (!ih || !ih->data->allow_reorder)
     return;
   cb = (IFnii)IupGetCallback(ih, "REORDER_CB");
-  if (cb)
-    cb(ih, oldCol, newCol);
-  iupwasmJsTableReorderCols(id, oldCol, newCol);
+  ret = cb ? cb(ih, oldCol, newCol) : IUP_DEFAULT;
+  if (ret != IUP_IGNORE)
+  {
+    int c, step = (oldCol < newCol) ? 1 : -1;
+    char* title = iupStrDup(iupAttribGetId(ih, "_IUPWASM_COLTITLE", oldCol));
+    for (c = oldCol; c != newCol; c += step)
+      iupAttribSetStrId(ih, "_IUPWASM_COLTITLE", c, iupAttribGetId(ih, "_IUPWASM_COLTITLE", c + step));
+    iupAttribSetStrId(ih, "_IUPWASM_COLTITLE", newCol, title);
+    if (title)
+      free(title);
+
+    iupTableMoveColAttribs(ih, oldCol, newCol);
+    iupwasmJsTableReorderCols(id, oldCol, newCol);
+    wasmTableApplyAlign(ih);
+
+    if (iupAttribGetInt(ih, "_IUPWASM_SORTCOL") > 0)
+    {
+      int sort_col = iupTableMoveColPos(iupAttribGetInt(ih, "_IUPWASM_SORTCOL"), oldCol, newCol);
+      iupdrvTableSetSortSign(ih, sort_col, iupAttribGetInt(ih, "_IUPWASM_SORTASC") ? 1 : -1);
+    }
+    if (iupAttribGetInt(ih, "_IUPWASM_FOCUSCOL") > 0)
+      iupAttribSetInt(ih, "_IUPWASM_FOCUSCOL", iupTableMoveColPos(iupAttribGetInt(ih, "_IUPWASM_FOCUSCOL"), oldCol, newCol));
+  }
+  if (ret == IUP_CLOSE)
+    IupExitLoop();
 }
 
 EMSCRIPTEN_KEEPALIVE void iupwasmTableRowDragDrop(int id, int from, int before)
@@ -1002,6 +1054,20 @@ static int wasmTableSetUserResizeAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
+static int wasmTableSetSortableAttrib(Ihandle* ih, const char* value)
+{
+  ih->data->sortable = iupStrBoolean(value) ? 1 : 0;
+
+  if (!ih->data->sortable && iupAttribGetInt(ih, "_IUPWASM_SORTCOL") > 0)
+  {
+    iupAttribSet(ih, "_IUPWASM_SORTCOL", NULL);
+    iupAttribSet(ih, "_IUPWASM_SORTASC", NULL);
+    if (ih->handle)
+      wasmTableSortIndicator(ih, 0, 0);
+  }
+  return 0;
+}
+
 IUP_SDK_API void iupdrvTableInitClass(Iclass* ic)
 {
   ic->Map = wasmTableMapMethod;
@@ -1010,6 +1076,7 @@ IUP_SDK_API void iupdrvTableInitClass(Iclass* ic)
 
   iupClassRegisterAttribute(ic, "FITIMAGE", wasmTableGetFitImageAttrib, wasmTableSetFitImageAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
 
+  iupClassRegisterReplaceAttribFunc(ic, "SORTABLE", NULL, wasmTableSetSortableAttrib);
   iupClassRegisterReplaceAttribFunc(ic, "ALLOWREORDER", NULL, wasmTableSetAllowReorderAttrib);
   iupClassRegisterReplaceAttribFunc(ic, "USERRESIZE", NULL, wasmTableSetUserResizeAttrib);
 }

@@ -47,6 +47,8 @@ char* iupTableGetCellImageCb(Ihandle* ih, int lin, int col);
 int iupTableCallDragDropCb(Ihandle* ih, int drag_id, int drop_id, int* is_ctrl);
 void iupTableCallMultiSelectionCb(Ihandle* ih);
 void iupTableMoveLinAttribs(Ihandle* ih, int from_lin, int to_lin);
+void iupTableMoveColAttribs(Ihandle* ih, int from_col, int to_col);
+int iupTableMoveColPos(int col, int from_col, int to_col);
 
 /* ========================================================================= */
 /* Driver Functions                                                         */
@@ -90,6 +92,7 @@ IUP_SDK_API void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col);
 
 /* Display */
 IUP_SDK_API void iupdrvTableRedraw(Ihandle* ih);
+IUP_SDK_API void iupdrvTableUpdateCellStyle(Ihandle* ih, int lin, int col);  /* lin 0 = column, col 0 = line, both 0 = table */
 IUP_SDK_API void iupdrvTableSetShowGrid(Ihandle* ih, int show);
 
 /* Sizing */

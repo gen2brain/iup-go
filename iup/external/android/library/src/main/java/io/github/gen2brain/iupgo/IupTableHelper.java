@@ -690,8 +690,8 @@ public final class IupTableHelper
                         mode = 0;
                         if (a == MotionEvent.ACTION_UP && c >= 1 && targetCol != c && targetCol >= 1 && targetCol <= t.numCol)
                         {
-                            reorderColumn(t, c, targetCol);
-                            dispatchReorder(t.ihandlePtr, c, targetCol);
+                            if (dispatchReorder(t.ihandlePtr, c, targetCol))
+                                reorderColumn(t, c, targetCol);
                         }
                         return true;
                     }
@@ -846,6 +846,27 @@ public final class IupTableHelper
         t.colWidths = newWidths;
         t.colTitles = newTitles;
 
+        if (t.colExplicit.length == t.numCol)
+        {
+            boolean[] newExplicit = new boolean[t.numCol];
+            for (int i = 0; i < t.numCol; i++)
+                newExplicit[remapCol(i + 1, fromCol, toCol) - 1] = t.colExplicit[i];
+            t.colExplicit = newExplicit;
+        }
+
+        int lastIdx = t.numCol - 1;
+        if (t.stretchLast && (fromIdx == lastIdx || toIdx == lastIdx))
+        {
+            int movedAway = remapCol(t.numCol, fromCol, toCol) - 1;
+            boolean awayExplicit = movedAway < t.colExplicit.length && t.colExplicit[movedAway];
+            boolean lastExplicit = lastIdx < t.colExplicit.length && t.colExplicit[lastIdx];
+            int natural = t.lastColAutoWidth > 0 ? t.lastColAutoWidth : t.defaultColWidth;
+            if (!lastExplicit)
+                t.lastColAutoWidth = t.colWidths[lastIdx];
+            if (!awayExplicit)
+                t.colWidths[movedAway] = natural;
+        }
+
         for (int r = 0; r < t.rows.size(); r++)
         {
             String[] row = t.rows.get(r);
@@ -939,6 +960,7 @@ public final class IupTableHelper
 
         rebuildHeader(t);
         t.adapter.notifyDataSetChanged();
+        applyStretchLast(t);
     }
 
 
@@ -1699,6 +1721,7 @@ public final class IupTableHelper
         t.focusCol = col;
         refreshRowStyle(t, oldLin);
         refreshRowStyle(t, lin);
+        scrollToCell(v, lin, col);
     }
 
     @Keep
@@ -1765,7 +1788,14 @@ public final class IupTableHelper
             for (int c = 0; c < col - 1; c++)
                 x += (t.colWidths[c] > 0 ? t.colWidths[c] : t.defaultColWidth);
             final int fx = x;
-            t.bodyScroll.post(() -> t.bodyScroll.smoothScrollTo(fx, 0));
+            final int fw = (t.colWidths[col - 1] > 0 ? t.colWidths[col - 1] : t.defaultColWidth);
+            t.bodyScroll.post(() -> {
+                int sx = t.bodyScroll.getScrollX(), w = t.bodyScroll.getWidth();
+                if (fx < sx)
+                    t.bodyScroll.smoothScrollTo(fx, 0);
+                else if (fx + fw > sx + w)
+                    t.bodyScroll.smoothScrollTo(Math.min(fx, fx + fw - w), 0);
+            });
         }
     }
 
@@ -1859,7 +1889,7 @@ public final class IupTableHelper
     public static native int dispatchEditEnd(long ihandlePtr, int lin, int col, String text, int apply);
     public static native void dispatchValueChanged(long ihandlePtr, int lin, int col);
     public static native boolean dispatchSort(long ihandlePtr, int col, int asc);
-    public static native void dispatchReorder(long ihandlePtr, int fromCol, int toCol);
+    public static native boolean dispatchReorder(long ihandlePtr, int fromCol, int toCol);
     public static native int dispatchRowDragDrop(long ihandlePtr, int fromLin, int toLin);
     public static native String dispatchValueRequest(long ihandlePtr, int lin, int col);
 }

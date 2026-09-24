@@ -750,22 +750,6 @@ static void cell_factory_setup(GtkSignalListItemFactory* factory, GtkListItem* l
     widget = gtk_label_new(NULL);
   }
 
-  char align_name[50];
-  snprintf(align_name, sizeof(align_name), "ALIGNMENT%d", col + 1);
-  char* alignment = iupAttribGet(ih, align_name);
-  if (!alignment)
-    alignment = iupAttribGetId(ih, "ALIGNMENT", col + 1);
-
-  if (GTK_IS_LABEL(widget))
-  {
-    if (alignment && iupStrEqualNoCase(alignment, "ACENTER"))
-      gtk_label_set_xalign(GTK_LABEL(widget), 0.5);
-    else if (alignment && iupStrEqualNoCase(alignment, "ARIGHT"))
-      gtk_label_set_xalign(GTK_LABEL(widget), 1.0);
-    else
-      gtk_label_set_xalign(GTK_LABEL(widget), 0.0);
-  }
-
   if (ih->data->show_image)
   {
     GtkWidget* image = gtk_picture_new();
@@ -879,101 +863,27 @@ static void gtk4TableSetCellImage(Ihandle* ih, GtkWidget* picture, GdkPaintable*
   }
 }
 
-static void on_row_update(IupTableRow* row, GParamSpec* pspec, gpointer user_data)
+static void gtk4TableApplyAlignment(Ihandle* ih, GtkWidget* widget, int col)
 {
-  GtkListItem* list_item = GTK_LIST_ITEM(user_data);
-  GtkWidget* box = gtk_list_item_get_child(list_item);
-  if (!box)
-    return;
+  char* alignment = iupAttribGetId(ih, "ALIGNMENT", col);
+  float xalign = 0.0f;
 
-  IupCellFactoryData* data = g_object_get_data(G_OBJECT(box), "iup-factory-data");
-  if (!data)
-    return;
+  if (iupStrEqualNoCase(alignment, "ACENTER"))
+    xalign = 0.5f;
+  else if (iupStrEqualNoCase(alignment, "ARIGHT"))
+    xalign = 1.0f;
 
-  gint col = data->col_index;
-  if (col >= row->num_cols)
-    return;
-
-  GtkWidget* widget = gtk_widget_get_first_child(box);
-  if (!widget)
-    return;
-
-  if (GTK_IS_PICTURE(widget))
-  {
-    GdkPaintable* paintable = (row->images && col < row->num_cols) ? row->images[col] : NULL;
-    gtk4TableSetCellImage(data->ih, widget, paintable);
-    widget = gtk_widget_get_next_sibling(widget);
-    if (!widget)
-      return;
-  }
-
-  if (GTK_IS_EDITABLE_LABEL(widget))
-  {
-    gboolean editing = gtk_editable_label_get_editing(GTK_EDITABLE_LABEL(widget));
-    if (!editing)
-    {
-      g_signal_handlers_block_by_func(widget, G_CALLBACK(on_edit_done), data);
-      gtk_editable_set_text(GTK_EDITABLE(widget), row->values[col]);
-      g_signal_handlers_unblock_by_func(widget, G_CALLBACK(on_edit_done), data);
-    }
-  }
-  else if (GTK_IS_LABEL(widget))
-  {
-    gtk_label_set_text(GTK_LABEL(widget), row->values[col]);
-  }
-
-  gtk4TableUpdateCellFocusRect(data->ih, box, row->row_index, col);
+  if (GTK_IS_LABEL(widget))
+    gtk_label_set_xalign(GTK_LABEL(widget), xalign);
+  else if (GTK_IS_EDITABLE(widget))
+    gtk_editable_set_alignment(GTK_EDITABLE(widget), xalign);
 }
 
-static void cell_factory_bind(GtkSignalListItemFactory* factory, GtkListItem* list_item, gpointer user_data)
+static void gtk4TableApplyCellStyle(Ihandle* ih, GtkWidget* box, GtkWidget* widget, int lin, int col, gboolean is_selected)
 {
-  IupCellFactoryData* data = (IupCellFactoryData*)user_data;
-  Ihandle* ih = data->ih;
-  gint col = data->col_index;
-
-  GtkWidget* box = gtk_list_item_get_child(list_item);
-  GtkWidget* widget = gtk_widget_get_first_child(box);
-  IupTableRow* row = IUP_TABLE_ROW(gtk_list_item_get_item(list_item));
-
-  if (!row || col >= row->num_cols)
-  {
-    return;
-  }
-
-  g_object_set_data(G_OBJECT(box), "iup-factory-data", data);
-  g_object_set_data(G_OBJECT(box), "iup-row-index", GINT_TO_POINTER(row->row_index));
-  g_object_set_data(G_OBJECT(box), "iup-list-item", list_item);
-
-  gint lin = row->row_index;
-  gboolean is_selected = gtk_list_item_get_selected(list_item);
-
-  if (GTK_IS_PICTURE(widget))
-  {
-    GdkPaintable* paintable = (row->images && col < row->num_cols) ? row->images[col] : NULL;
-    gtk4TableSetCellImage(ih, widget, paintable);
-
-    widget = gtk_widget_get_next_sibling(widget);
-  }
-
-  if (GTK_IS_EDITABLE_LABEL(widget))
-  {
-    g_object_set_data(G_OBJECT(widget), "list_item", list_item);
-
-    g_signal_handlers_block_by_func(widget, G_CALLBACK(on_edit_done), data);
-    gtk_editable_set_text(GTK_EDITABLE(widget), row->values[col]);
-    g_signal_handlers_unblock_by_func(widget, G_CALLBACK(on_edit_done), data);
-  }
-  else if (GTK_IS_LABEL(widget))
-  {
-    gtk_label_set_text(GTK_LABEL(widget), row->values[col]);
-  }
-
-  gulong handler_id = g_signal_connect(row, "notify::update", G_CALLBACK(on_row_update), list_item);
-  g_object_set_data(G_OBJECT(list_item), "update-handler", GUINT_TO_POINTER(handler_id));
-  g_object_set_data(G_OBJECT(list_item), "bound-row", row);
-
-
   PangoAttrList* attr_list = NULL;
+
+  gtk4TableApplyAlignment(ih, widget, col + 1);
 
   char* fgcolor = iupAttribGetId2(ih, "FGCOLOR", lin, col + 1);
   if (!fgcolor)
@@ -1079,6 +989,103 @@ static void cell_factory_bind(GtkSignalListItemFactory* factory, GtkListItem* li
   {
     pango_attr_list_unref(attr_list);
   }
+}
+
+static void on_row_update(IupTableRow* row, GParamSpec* pspec, gpointer user_data)
+{
+  GtkListItem* list_item = GTK_LIST_ITEM(user_data);
+  GtkWidget* box = gtk_list_item_get_child(list_item);
+  if (!box)
+    return;
+
+  IupCellFactoryData* data = g_object_get_data(G_OBJECT(box), "iup-factory-data");
+  if (!data)
+    return;
+
+  gint col = data->col_index;
+  if (col >= row->num_cols)
+    return;
+
+  GtkWidget* widget = gtk_widget_get_first_child(box);
+  if (!widget)
+    return;
+
+  if (GTK_IS_PICTURE(widget))
+  {
+    GdkPaintable* paintable = (row->images && col < row->num_cols) ? row->images[col] : NULL;
+    gtk4TableSetCellImage(data->ih, widget, paintable);
+    widget = gtk_widget_get_next_sibling(widget);
+    if (!widget)
+      return;
+  }
+
+  if (GTK_IS_EDITABLE_LABEL(widget))
+  {
+    gboolean editing = gtk_editable_label_get_editing(GTK_EDITABLE_LABEL(widget));
+    if (!editing)
+    {
+      g_signal_handlers_block_by_func(widget, G_CALLBACK(on_edit_done), data);
+      gtk_editable_set_text(GTK_EDITABLE(widget), row->values[col]);
+      g_signal_handlers_unblock_by_func(widget, G_CALLBACK(on_edit_done), data);
+    }
+  }
+  else if (GTK_IS_LABEL(widget))
+  {
+    gtk_label_set_text(GTK_LABEL(widget), row->values[col]);
+  }
+
+  gtk4TableApplyCellStyle(data->ih, box, widget, row->row_index, col, gtk_list_item_get_selected(list_item));
+  gtk4TableUpdateCellFocusRect(data->ih, box, row->row_index, col);
+}
+
+static void cell_factory_bind(GtkSignalListItemFactory* factory, GtkListItem* list_item, gpointer user_data)
+{
+  IupCellFactoryData* data = (IupCellFactoryData*)user_data;
+  Ihandle* ih = data->ih;
+  gint col = data->col_index;
+
+  GtkWidget* box = gtk_list_item_get_child(list_item);
+  GtkWidget* widget = gtk_widget_get_first_child(box);
+  IupTableRow* row = IUP_TABLE_ROW(gtk_list_item_get_item(list_item));
+
+  if (!row || col >= row->num_cols)
+  {
+    return;
+  }
+
+  g_object_set_data(G_OBJECT(box), "iup-factory-data", data);
+  g_object_set_data(G_OBJECT(box), "iup-row-index", GINT_TO_POINTER(row->row_index));
+  g_object_set_data(G_OBJECT(box), "iup-list-item", list_item);
+
+  gint lin = row->row_index;
+  gboolean is_selected = gtk_list_item_get_selected(list_item);
+
+  if (GTK_IS_PICTURE(widget))
+  {
+    GdkPaintable* paintable = (row->images && col < row->num_cols) ? row->images[col] : NULL;
+    gtk4TableSetCellImage(ih, widget, paintable);
+
+    widget = gtk_widget_get_next_sibling(widget);
+  }
+
+  if (GTK_IS_EDITABLE_LABEL(widget))
+  {
+    g_object_set_data(G_OBJECT(widget), "list_item", list_item);
+
+    g_signal_handlers_block_by_func(widget, G_CALLBACK(on_edit_done), data);
+    gtk_editable_set_text(GTK_EDITABLE(widget), row->values[col]);
+    g_signal_handlers_unblock_by_func(widget, G_CALLBACK(on_edit_done), data);
+  }
+  else if (GTK_IS_LABEL(widget))
+  {
+    gtk_label_set_text(GTK_LABEL(widget), row->values[col]);
+  }
+
+  gulong handler_id = g_signal_connect(row, "notify::update", G_CALLBACK(on_row_update), list_item);
+  g_object_set_data(G_OBJECT(list_item), "update-handler", GUINT_TO_POINTER(handler_id));
+  g_object_set_data(G_OBJECT(list_item), "bound-row", row);
+
+  gtk4TableApplyCellStyle(ih, box, widget, lin, col, is_selected);
 
   gtk4TableUpdateCellFocusRect(ih, box, lin, col);
 }
@@ -1168,7 +1175,7 @@ static void on_selection_changed(GtkSelectionModel* selection, guint position, g
   }
 
   IFnii cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
-  if (cb)
+  if (cb && !iupAttribGet(ih, "_IUPTABLE_IGNORE_SELECTION_CB"))
   {
     cb(ih, gtk_data->current_row, gtk_data->current_col);
   }
@@ -1566,8 +1573,154 @@ static void gtk4TableLayoutUpdateMethod(Ihandle* ih)
     iupgtk4NativeContainerSetBounds(parent, widget, ih->x, ih->y, ih->currentwidth, ih->currentheight);
 }
 
+static void gtk4TableResetFactories(Igtk4TableData* gtk_data)
+{
+  GListModel* columns = gtk_column_view_get_columns(GTK_COLUMN_VIEW(gtk_data->column_view));
+  guint n_columns = g_list_model_get_n_items(columns);
+
+  for (guint i = 0; i < n_columns; i++)
+  {
+    GtkColumnViewColumn* column = g_list_model_get_item(columns, i);
+    if (column)
+    {
+      GtkListItemFactory* factory = gtk_column_view_column_get_factory(column);
+      if (factory)
+      {
+        g_object_ref(factory);
+        gtk_column_view_column_set_factory(column, NULL);
+        gtk_column_view_column_set_factory(column, factory);
+        g_object_unref(factory);
+      }
+      g_object_unref(column);
+    }
+  }
+}
+
+static void gtk4TableMoveColumn(Ihandle* ih, int from_col, int to_col)
+{
+  Igtk4TableData* gtk_data = IGTK4_TABLE_DATA(ih);
+  GtkColumnView* column_view = GTK_COLUMN_VIEW(gtk_data->column_view);
+  GListModel* columns = gtk_column_view_get_columns(column_view);
+  GtkColumnViewColumn* sort_col = (GtkColumnViewColumn*)iupAttribGet(ih, "_IUP_GTK4_SORTCOL");
+  int num_col = ih->data->num_col;
+  char** titles = (char**)calloc(num_col, sizeof(char*));
+  int* widths = (int*)calloc(num_col, sizeof(int));
+  int sort_pos = 0;
+  int c;
+
+  for (c = 0; c < num_col; c++)
+  {
+    GtkColumnViewColumn* column = GTK_COLUMN_VIEW_COLUMN(g_list_model_get_item(columns, c));
+    titles[c] = g_strdup(gtk_column_view_column_get_title(column));
+    widths[c] = gtk_column_view_column_get_fixed_width(column);
+    if (column == sort_col)
+      sort_pos = c + 1;
+    g_object_unref(column);
+  }
+
+  if (!gtk_data->is_virtual && gtk_data->model)
+  {
+    guint n = g_list_model_get_n_items(gtk_data->model);
+    guint i;
+    for (i = 0; i < n; i++)
+    {
+      IupTableRow* row = IUP_TABLE_ROW(g_list_model_get_item(gtk_data->model, i));
+      int cols = row->num_cols < num_col ? row->num_cols : num_col;
+      gchar** values = g_new0(gchar*, cols);
+      GdkPaintable** images = row->images ? g_new0(GdkPaintable*, cols) : NULL;
+
+      for (c = 0; c < cols; c++)
+      {
+        int nc = iupTableMoveColPos(c + 1, from_col, to_col) - 1;
+        if (nc >= cols)
+          nc = c;
+        values[nc] = row->values[c];
+        if (images)
+          images[nc] = row->images[c];
+      }
+      for (c = 0; c < cols; c++)
+      {
+        row->values[c] = values[c];
+        if (images)
+          row->images[c] = images[c];
+      }
+
+      g_free(values);
+      g_free(images);
+      g_object_unref(row);
+    }
+  }
+
+  iupTableMoveColAttribs(ih, from_col, to_col);
+
+  for (c = 0; c < num_col; c++)
+  {
+    GtkColumnViewColumn* column = GTK_COLUMN_VIEW_COLUMN(g_list_model_get_item(columns, iupTableMoveColPos(c + 1, from_col, to_col) - 1));
+    gtk_column_view_column_set_title(column, titles[c]);
+    gtk_column_view_column_set_fixed_width(column, widths[c]);
+    g_object_unref(column);
+    g_free(titles[c]);
+  }
+  free(titles);
+  free(widths);
+
+  if (sort_pos > 0)
+  {
+    GtkColumnViewColumn* column = GTK_COLUMN_VIEW_COLUMN(g_list_model_get_item(columns, iupTableMoveColPos(sort_pos, from_col, to_col) - 1));
+    iupAttribSet(ih, "_IUP_GTK4_SORTBUSY", "1");
+    gtk_column_view_sort_by_column(column_view, column, (GtkSortType)iupAttribGetInt(ih, "_IUP_GTK4_SORTORDER"));
+    iupAttribSet(ih, "_IUP_GTK4_SORTBUSY", NULL);
+    iupAttribSet(ih, "_IUP_GTK4_SORTCOL", (char*)column);
+    g_object_unref(column);
+  }
+
+  if (gtk_data->current_col > 0)
+    gtk_data->current_col = iupTableMoveColPos(gtk_data->current_col, from_col, to_col);
+
+  gtk4TableResetFactories(gtk_data);
+}
+
+static gboolean gtk4TableReorderIdle(gpointer user_data)
+{
+  Ihandle* ih = (Ihandle*)user_data;
+  Igtk4TableData* gtk_data;
+  GListModel* columns;
+  GtkColumnViewColumn* column;
+  int from, to, ret;
+  IFnii cb;
+
+  if (!iupObjectCheck(ih) || !ih->handle)
+    return G_SOURCE_REMOVE;
+
+  gtk_data = IGTK4_TABLE_DATA(ih);
+  from = iupAttribGetInt(ih, "_IUPTABLE_REORDER_OLD");
+  to = iupAttribGetInt(ih, "_IUPTABLE_REORDER_NEW");
+  iupAttribSet(ih, "_IUPTABLE_REORDER_OLD", NULL);
+  iupAttribSet(ih, "_IUPTABLE_REORDER_NEW", NULL);
+  if (from < 1 || to < 1 || from == to)
+    return G_SOURCE_REMOVE;
+
+  columns = gtk_column_view_get_columns(GTK_COLUMN_VIEW(gtk_data->column_view));
+  column = GTK_COLUMN_VIEW_COLUMN(g_list_model_get_item(columns, to - 1));
+  iupAttribSet(ih, "_IUPTABLE_IGNORE_COLUMNS_CHANGED", "1");
+  gtk_column_view_insert_column(GTK_COLUMN_VIEW(gtk_data->column_view), from - 1, column);
+  iupAttribSet(ih, "_IUPTABLE_IGNORE_COLUMNS_CHANGED", NULL);
+  g_object_unref(column);
+
+  cb = (IFnii)IupGetCallback(ih, "REORDER_CB");
+  ret = cb ? cb(ih, from, to) : IUP_DEFAULT;
+  if (ret != IUP_IGNORE)
+    gtk4TableMoveColumn(ih, from, to);
+  if (ret == IUP_CLOSE)
+    IupExitLoop();
+
+  return G_SOURCE_REMOVE;
+}
+
 static void gtk4TableColumnsChanged(GListModel* model, guint position, guint removed, guint added, Ihandle* ih)
 {
+  (void)model;
+
   if (!ih->data->allow_reorder)
     return;
 
@@ -1589,9 +1742,9 @@ static void gtk4TableColumnsChanged(GListModel* model, guint position, guint rem
 
       if (from != to)
       {
-        IFnii cb = (IFnii)IupGetCallback(ih, "REORDER_CB");
-        if (cb)
-          cb(ih, from, to);
+        iupAttribSetInt(ih, "_IUPTABLE_REORDER_OLD", from);
+        iupAttribSetInt(ih, "_IUPTABLE_REORDER_NEW", to);
+        g_idle_add(gtk4TableReorderIdle, ih);
       }
     }
   }
@@ -2332,16 +2485,19 @@ IUP_SDK_API void iupdrvTableSetFocusCell(Ihandle* ih, int lin, int col)
 
   {
     int old_row = gtk_data->current_row;
+    guint pos = gtk4TableViewPos(gtk_data, lin);
 
     gtk_data->current_row = lin;
     gtk_data->current_col = col;
 
-    if (GTK_IS_SINGLE_SELECTION(gtk_data->selection_model))
-      gtk_single_selection_set_selected(GTK_SINGLE_SELECTION(gtk_data->selection_model), gtk4TableViewPos(gtk_data, lin));
+    if (pos != GTK_INVALID_LIST_POSITION && !iupStrEqualNoCase(iupAttribGetStr(ih, "SELECTIONMODE"), "NONE"))
+      gtk_selection_model_select_item(gtk_data->selection_model, pos, TRUE);
 
     gtk4TableNotifyRow(gtk_data, old_row);
     if (lin != old_row)
       gtk4TableNotifyRow(gtk_data, lin);
+
+    iupdrvTableScrollToCell(ih, lin, col);
   }
 }
 
@@ -2451,7 +2607,10 @@ IUP_SDK_API void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col)
     if (columns && col >= 1 && (guint)col <= g_list_model_get_n_items(columns))
       column = GTK_COLUMN_VIEW_COLUMN(g_list_model_get_item(columns, col - 1));
 
-    gtk_column_view_scroll_to(column_view, lin - 1, column, GTK_LIST_SCROLL_NONE, NULL);
+    guint pos = gtk4TableViewPos(gtk_data, lin);
+
+    if (pos != GTK_INVALID_LIST_POSITION)
+      gtk_column_view_scroll_to(column_view, pos, column, GTK_LIST_SCROLL_NONE, NULL);
 
     if (column)
       g_object_unref(column);
@@ -2482,26 +2641,26 @@ IUP_SDK_API void iupdrvTableRedraw(Ihandle* ih)
     }
   }
   else
-  {
-    GListModel* columns = gtk_column_view_get_columns(GTK_COLUMN_VIEW(gtk_data->column_view));
-    guint n_columns = g_list_model_get_n_items(columns);
+    gtk4TableResetFactories(gtk_data);
+}
 
-    for (guint i = 0; i < n_columns; i++)
-    {
-      GtkColumnViewColumn* column = g_list_model_get_item(columns, i);
-      if (column)
-      {
-        GtkListItemFactory* factory = gtk_column_view_column_get_factory(column);
-        if (factory)
-        {
-          g_object_ref(factory);
-          gtk_column_view_column_set_factory(column, NULL);
-          gtk_column_view_column_set_factory(column, factory);
-          g_object_unref(factory);
-        }
-        g_object_unref(column);
-      }
-    }
+IUP_SDK_API void iupdrvTableUpdateCellStyle(Ihandle* ih, int lin, int col)
+{
+  Igtk4TableData* gtk_data = IGTK4_TABLE_DATA(ih);
+  (void)col;
+
+  if (!gtk_data || !gtk_data->model)
+    return;
+
+  if (lin > 0)
+    gtk4TableNotifyRow(gtk_data, lin);
+  else if (gtk_data->is_virtual)
+    iupdrvTableRedraw(ih);
+  else
+  {
+    int i;
+    for (i = 1; i <= ih->data->num_lin; i++)
+      gtk4TableNotifyRow(gtk_data, i);
   }
 }
 
@@ -2644,6 +2803,12 @@ static int gtk4TableSetSortableAttrib(Ihandle* ih, const char* value)
           g_object_unref(column);
         }
       }
+
+      if (!ih->data->sortable)
+      {
+        iupAttribSet(ih, "_IUP_GTK4_SORTCOL", NULL);
+        iupAttribSet(ih, "_IUP_GTK4_SORTSET", NULL);
+      }
     }
   }
 
@@ -2706,8 +2871,6 @@ IUP_SDK_API void iupdrvTableInitClass(Iclass* ic)
   ic->UnMap = gtk4TableUnMapMethod;
   ic->LayoutUpdate = gtk4TableLayoutUpdateMethod;
 
-  iupClassRegisterAttribute(ic, "FONT", NULL, iupdrvSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NO_SAVE | IUPAF_NOT_MAPPED);
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, NULL, IUPAF_SAMEASSYSTEM, "TXTBGCOLOR", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "SIZE", NULL, NULL, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NOT_MAPPED);
 
   iupClassRegisterAttribute(ic, "FOCUSRECT", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);

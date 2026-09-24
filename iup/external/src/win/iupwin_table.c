@@ -194,7 +194,17 @@ static void winTableAutoSizeColumns(Ihandle* ih)
         if (!image_name)
           image_name = iupTableGetCellImageCb(ih, lin, iup_col);
         if (image_name)
-          cell_width += image_extra;
+        {
+          HBITMAP hBitmap = ih->data->fit_image ? NULL : (HBITMAP)iupImageGetImage(image_name, ih, 0, NULL);
+          if (hBitmap)
+          {
+            int bmp_w, bmp_h, bpp;
+            iupdrvImageGetInfo(hBitmap, &bmp_w, &bmp_h, &bpp);
+            cell_width += bmp_w + 6;
+          }
+          else
+            cell_width += image_extra;
+        }
       }
 
       if (cell_width > max_width)
@@ -376,117 +386,76 @@ static void winTableSort(Ihandle* ih, int col)
  * Column Reorder
  ****************************************************************************/
 
-static void winTableSwapAttrib(Ihandle* ih, const char* name1, const char* name2)
-{
-  char* val1 = iupAttribGet(ih, name1);
-  char* val2 = iupAttribGet(ih, name2);
-  char* temp = val1 ? iupStrDup(val1) : NULL;
-
-  if (val2)
-    iupAttribSetStr(ih, name1, val2);
-  else
-    iupAttribSet(ih, name1, NULL);
-
-  if (temp)
-  {
-    iupAttribSetStr(ih, name2, temp);
-    free(temp);
-  }
-  else
-    iupAttribSet(ih, name2, NULL);
-}
-
-static void winTableSwapColumns(Ihandle* ih, int col1, int col2)
+static void winTableMoveColumn(Ihandle* ih, int from_col, int to_col)
 {
   IwinTableData* data = IWIN_TABLE_DATA(ih);
-  if (!data)
+  if (!data || from_col == to_col)
     return;
 
-  int idx1 = col1 - 1;
-  int idx2 = col2 - 1;
+  int from = from_col - 1;
+  int to = to_col - 1;
   int num_lin = ih->data->num_lin;
-  char name1[50], name2[50];
+  int i;
 
   HWND list_view = winTableGetListView(ih);
+  int last = ih->data->num_col - 1;
+  int stretch_last = ih->data->stretch_last && !data->col_width_set[last];
   if (list_view)
   {
-    data->col_widths[idx1] = ListView_GetColumnWidth(list_view, col1);
-    data->col_widths[idx2] = ListView_GetColumnWidth(list_view, col2);
+    for (i = 0; i < ih->data->num_col; i++)
+    {
+      if (!(stretch_last && i == last))
+        data->col_widths[i] = ListView_GetColumnWidth(list_view, i + 1);
+    }
   }
 
-  int tw = data->col_widths[idx1];
-  data->col_widths[idx1] = data->col_widths[idx2];
-  data->col_widths[idx2] = tw;
+  int tw = data->col_widths[from];
+  BOOL ts = data->col_width_set[from];
+  char* tt = data->col_titles[from];
+  int step = (from < to) ? 1 : -1;
 
-  BOOL ts = data->col_width_set[idx1];
-  data->col_width_set[idx1] = data->col_width_set[idx2];
-  data->col_width_set[idx2] = ts;
-
-  char* tt = data->col_titles[idx1];
-  data->col_titles[idx1] = data->col_titles[idx2];
-  data->col_titles[idx2] = tt;
+  for (i = from; i != to; i += step)
+  {
+    data->col_widths[i] = data->col_widths[i + step];
+    data->col_width_set[i] = data->col_width_set[i + step];
+    data->col_titles[i] = data->col_titles[i + step];
+  }
+  data->col_widths[to] = tw;
+  data->col_width_set[to] = ts;
+  data->col_titles[to] = tt;
 
   if (data->cell_values)
   {
     for (int lin = 0; lin < num_lin; lin++)
     {
-      if (data->cell_values[lin])
-      {
-        char* tv = data->cell_values[lin][idx1];
-        data->cell_values[lin][idx1] = data->cell_values[lin][idx2];
-        data->cell_values[lin][idx2] = tv;
-      }
+      char** row = data->cell_values[lin];
+      if (!row)
+        continue;
+
+      char* tv = row[from];
+      for (i = from; i != to; i += step)
+        row[i] = row[i + step];
+      row[to] = tv;
     }
   }
 
-  snprintf(name1, sizeof(name1), "ALIGNMENT%d", col1);
-  snprintf(name2, sizeof(name2), "ALIGNMENT%d", col2);
-  winTableSwapAttrib(ih, name1, name2);
-
-  snprintf(name1, sizeof(name1), "0:%d", col1);
-  snprintf(name2, sizeof(name2), "0:%d", col2);
-  winTableSwapAttrib(ih, name1, name2);
-
-  snprintf(name1, sizeof(name1), "BGCOLOR0:%d", col1);
-  snprintf(name2, sizeof(name2), "BGCOLOR0:%d", col2);
-  winTableSwapAttrib(ih, name1, name2);
-
-  snprintf(name1, sizeof(name1), "FGCOLOR0:%d", col1);
-  snprintf(name2, sizeof(name2), "FGCOLOR0:%d", col2);
-  winTableSwapAttrib(ih, name1, name2);
-
-  snprintf(name1, sizeof(name1), "FONT0:%d", col1);
-  snprintf(name2, sizeof(name2), "FONT0:%d", col2);
-  winTableSwapAttrib(ih, name1, name2);
-
   for (int lin = 1; lin <= num_lin; lin++)
   {
-    snprintf(name1, sizeof(name1), "CELLVALUE%d:%d", lin, col1);
-    snprintf(name2, sizeof(name2), "CELLVALUE%d:%d", lin, col2);
-    winTableSwapAttrib(ih, name1, name2);
-
-    snprintf(name1, sizeof(name1), "BGCOLOR%d:%d", lin, col1);
-    snprintf(name2, sizeof(name2), "BGCOLOR%d:%d", lin, col2);
-    winTableSwapAttrib(ih, name1, name2);
-
-    snprintf(name1, sizeof(name1), "FGCOLOR%d:%d", lin, col1);
-    snprintf(name2, sizeof(name2), "FGCOLOR%d:%d", lin, col2);
-    winTableSwapAttrib(ih, name1, name2);
-
-    snprintf(name1, sizeof(name1), "FONT%d:%d", lin, col1);
-    snprintf(name2, sizeof(name2), "FONT%d:%d", lin, col2);
-    winTableSwapAttrib(ih, name1, name2);
+    char* image = iupAttribGetId2(ih, "_IUPWIN_CELLIMAGE", lin, from_col);
+    char* saved = image ? iupStrDup(image) : NULL;
+    for (i = from_col; i != to_col; i += step)
+      iupAttribSetStrId2(ih, "_IUPWIN_CELLIMAGE", lin, i, iupAttribGetId2(ih, "_IUPWIN_CELLIMAGE", lin, i + step));
+    iupAttribSetStrId2(ih, "_IUPWIN_CELLIMAGE", lin, to_col, saved);
+    if (saved)
+      free(saved);
   }
 
-  if (data->sort_column == col1)
-    data->sort_column = col2;
-  else if (data->sort_column == col2)
-    data->sort_column = col1;
+  iupTableMoveColAttribs(ih, from_col, to_col);
 
-  if (data->current_col == col1)
-    data->current_col = col2;
-  else if (data->current_col == col2)
-    data->current_col = col1;
+  if (data->sort_column > 0)
+    data->sort_column = iupTableMoveColPos(data->sort_column, from_col, to_col);
+  if (data->current_col > 0)
+    data->current_col = iupTableMoveColPos(data->current_col, from_col, to_col);
 }
 
 static void winTableRefreshAfterReorder(Ihandle* ih)
@@ -709,8 +678,9 @@ static LRESULT CALLBACK winTableHeaderWndProc(HWND hwnd, UINT msg, WPARAM wp, LP
         IFnii cb = (IFnii)IupGetCallback(ih, "REORDER_CB");
         if (!cb || cb(ih, source, target) != IUP_IGNORE)
         {
-          winTableSwapColumns(ih, source, target);
+          winTableMoveColumn(ih, source, target);
           winTableRefreshAfterReorder(ih);
+          winTableAdjustColumnWidths(ih);
         }
       }
       else if (!was_dragging && source >= 1)
@@ -813,6 +783,25 @@ IUP_SDK_API char* iupdrvTableGetCellValue(Ihandle* ih, int lin, int col)
   }
 }
 
+static void winTableFitRowToImage(Ihandle* ih, HWND list_view, HBITMAP hBitmap)
+{
+  HIMAGELIST list;
+  int bmp_w, bmp_h, bpp, cx, cy;
+
+  if (ih->data->fit_image || !list_view || !hBitmap)
+    return;
+
+  list = ListView_GetImageList(list_view, LVSIL_SMALL);
+  iupdrvImageGetInfo(hBitmap, &bmp_w, &bmp_h, &bpp);
+  if (!list || !ImageList_GetIconSize(list, &cx, &cy) || cy >= bmp_h + 4)
+    return;
+
+  list = ListView_SetImageList(list_view, ImageList_Create(1, bmp_h + 4, ILC_COLOR, 1, 0), LVSIL_SMALL);
+  if (list)
+    ImageList_Destroy(list);
+  InvalidateRect(list_view, NULL, FALSE);
+}
+
 IUP_SDK_API void iupdrvTableSetCellImage(Ihandle* ih, int lin, int col, const char* image)
 {
   if (!ih->handle)
@@ -824,6 +813,8 @@ IUP_SDK_API void iupdrvTableSetCellImage(Ihandle* ih, int lin, int col, const ch
   iupAttribSetStrId2(ih, "_IUPWIN_CELLIMAGE", lin, col, image);
 
   HWND list_view = winTableGetListView(ih);
+  if (image)
+    winTableFitRowToImage(ih, list_view, (HBITMAP)iupImageGetImage(image, ih, 0, NULL));
   if (list_view)
     InvalidateRect(list_view, NULL, FALSE);
 }
@@ -985,10 +976,17 @@ IUP_SDK_API void iupdrvTableSetFocusCell(Ihandle* ih, int lin, int col)
 
   data->suppress_callbacks = 1;
 
-  ListView_SetItemState(list_view, -1, 0, LVIS_SELECTED);
-  ListView_SetItemState(list_view, lin - 1, LVIS_FOCUSED | LVIS_SELECTED, LVIS_FOCUSED | LVIS_SELECTED);
+  if (iupStrEqualNoCase(iupAttribGetStr(ih, "SELECTIONMODE"), "NONE"))
+  {
+    ListView_SetItemState(list_view, lin - 1, LVIS_FOCUSED, LVIS_FOCUSED);
+  }
+  else
+  {
+    ListView_SetItemState(list_view, -1, 0, LVIS_SELECTED);
+    ListView_SetItemState(list_view, lin - 1, LVIS_FOCUSED | LVIS_SELECTED, LVIS_FOCUSED | LVIS_SELECTED);
+  }
 
-  ListView_EnsureVisible(list_view, lin - 1, FALSE);
+  iupdrvTableScrollToCell(ih, lin, col);
 
   winTableInvalidateCell(list_view, lin, col);
 
@@ -1074,6 +1072,19 @@ IUP_SDK_API void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col)
     return;
 
   ListView_EnsureVisible(list_view, lin - 1, FALSE);
+
+  if (col >= 1 && col <= ih->data->num_col)
+  {
+    RECT client, cell;
+    GetClientRect(list_view, &client);
+    if (ListView_GetSubItemRect(list_view, lin - 1, col, LVIR_BOUNDS, &cell))
+    {
+      if (cell.left < client.left)
+        ListView_Scroll(list_view, cell.left - client.left, 0);
+      else if (cell.right > client.right)
+        ListView_Scroll(list_view, (cell.right - client.right < cell.left - client.left) ? cell.right - client.right : cell.left - client.left, 0);
+    }
+  }
 }
 
 /****************************************************************************
@@ -1085,6 +1096,19 @@ IUP_SDK_API void iupdrvTableRedraw(Ihandle* ih)
   HWND list_view = winTableGetListView(ih);
   if (list_view)
     InvalidateRect(list_view, NULL, TRUE);
+}
+
+IUP_SDK_API void iupdrvTableUpdateCellStyle(Ihandle* ih, int lin, int col)
+{
+  HWND list_view = winTableGetListView(ih);
+  (void)col;
+  if (!list_view)
+    return;
+
+  if (lin > 0)
+    ListView_RedrawItems(list_view, lin - 1, lin - 1);
+  else
+    InvalidateRect(list_view, NULL, FALSE);
 }
 
 IUP_SDK_API void iupdrvTableSetShowGrid(Ihandle* ih, int show)
@@ -2051,6 +2075,7 @@ static int winTableNotifyCallback(Ihandle* ih, void* msg_info, int* result)
                 int draw_w, draw_h;
 
                 iupdrvImageGetInfo(hBitmap, &bmp_w, &bmp_h, &bpp);
+                winTableFitRowToImage(ih, data->list_view, hBitmap);
 
                 draw_w = bmp_w;
                 draw_h = bmp_h;

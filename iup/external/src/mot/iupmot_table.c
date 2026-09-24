@@ -80,6 +80,7 @@ typedef struct _ImotTableData
   char* row_selected;        /* [num_lin] selection flags */
   int row_selected_size;     /* allocated size of row_selected */
   int anchor_row;            /* shift-click range anchor (1-based, 0=none) */
+  int pending_scroll_lin, pending_scroll_col;
 
   /* Row drag-reorder state (SHOWDRAGDROP) */
   int drag_source_row;       /* Row where the drag started (1-based, 0=none) */
@@ -975,8 +976,17 @@ static void motTableEndCellEdit(Ihandle* ih, int apply)
 static void motTableExposeCallback(Widget w, XtPointer client_data, XtPointer call_data)
 {
   Ihandle* ih = (Ihandle*)client_data;
+  ImotTableData* mot_data = IMOT_TABLE_DATA(ih);
   (void)w;
   (void)call_data;
+
+  if (mot_data && mot_data->pending_scroll_lin > 0)
+  {
+    int lin = mot_data->pending_scroll_lin;
+    mot_data->pending_scroll_lin = 0;
+    iupdrvTableScrollToCell(ih, lin, mot_data->pending_scroll_col);
+    return;
+  }
 
   motTableDrawTable(ih);
 }
@@ -2186,13 +2196,7 @@ IUP_SDK_API void iupdrvTableSetFocusCell(Ihandle* ih, int lin, int col)
     mot_data->anchor_row = lin;
   }
 
-  motTableRedraw(ih);
-
-  IFnii enteritem_cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
-  if (enteritem_cb)
-  {
-    enteritem_cb(ih, lin, col);
-  }
+  iupdrvTableScrollToCell(ih, lin, col);
 }
 
 IUP_SDK_API void iupdrvTableGetFocusCell(Ihandle* ih, int* lin, int* col)
@@ -2265,6 +2269,13 @@ IUP_SDK_API void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col)
 
   XtVaGetValues(mot_data->drawing_area, XmNwidth, &width, XmNheight, &height, NULL);
 
+  if (!XtWindow(mot_data->drawing_area) || height <= mot_data->header_height + 1)
+  {
+    mot_data->pending_scroll_lin = lin;
+    mot_data->pending_scroll_col = col;
+    return;
+  }
+
   visible_height = height - mot_data->header_height;
   row_top = (lin - 1) * mot_data->row_height;
   row_bottom = row_top + mot_data->row_height;
@@ -2299,6 +2310,13 @@ IUP_SDK_API void iupdrvTableRedraw(Ihandle* ih)
   motTableRedraw(ih);
 }
 
+IUP_SDK_API void iupdrvTableUpdateCellStyle(Ihandle* ih, int lin, int col)
+{
+  (void)lin;
+  (void)col;
+  motTableRedraw(ih);
+}
+
 /* ========================================================================= */
 /* Attribute Handlers                                                        */
 /* ========================================================================= */
@@ -2312,6 +2330,12 @@ static int motTableSetSortableAttrib(Ihandle* ih, const char* value)
 
   if (ih->handle)
   {
+    ImotTableData* mot_data = IMOT_TABLE_DATA(ih);
+    if (!ih->data->sortable && mot_data && mot_data->sort_signs && mot_data->sort_column > 0)
+    {
+      mot_data->sort_signs[mot_data->sort_column - 1] = 0;
+      mot_data->sort_column = 0;
+    }
     motTableRedraw(ih);
   }
 
@@ -2388,8 +2412,6 @@ IUP_SDK_API void iupdrvTableInitClass(Iclass* ic)
   ic->Map = motTableMapMethod;
   ic->UnMap = motTableUnMapMethod;
   ic->LayoutUpdate = motTableLayoutUpdateMethod;
-
-  iupClassRegisterAttribute(ic, "FONT", NULL, iupdrvSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NO_SAVE | IUPAF_NOT_MAPPED);
 
   iupClassRegisterAttribute(ic, "ALLOWREORDER", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "USERRESIZE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
