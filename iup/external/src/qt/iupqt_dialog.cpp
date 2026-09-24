@@ -1251,7 +1251,7 @@ extern "C" void qtDialogLayoutUpdateMethod(Ihandle* ih)
   if (width <= 0) width = 1;
   if (height <= 0) height = 1;
 
-  if (widget)
+  if (widget && !(widget->windowState() & (Qt::WindowMaximized | Qt::WindowFullScreen)))
   {
     widget->resize(width, height);
   }
