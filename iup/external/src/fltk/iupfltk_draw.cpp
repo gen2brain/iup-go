@@ -743,7 +743,10 @@ extern "C" IUP_SDK_API void iupdrvDrawFlush(IdrawCanvas* dc)
   Fl_Window* win = dc->widget->as_window();
   if (!win) win = dc->widget->window();
 
-  if (win && Fl_Window::current() != win)
+  if (!win || !win->shown())
+    return;
+
+  if (Fl_Window::current() != win)
     win->make_current();
 
   fl_copy_offscreen(dc->widget->x(), dc->widget->y(), dc->w, dc->h, dc->offscreen, 0, 0);
