@@ -96,9 +96,8 @@ func main() {
 		// Set per-row color for row 3
 		iup.SetAttributeId2(t, "BGCOLOR", 3, 0, "#FFECB3")
 		iup.SetAttributeId2(t, "FGCOLOR", 3, 0, "#E65100")
-		t.SetAttribute("REDRAW", "YES")
 		log := iup.GetHandle("log")
-		log.SetAttribute("APPEND", "Set row 3 background to orange\n")
+		log.SetAttribute("APPEND", "Set row 3 background to orange")
 		return iup.DEFAULT
 	}))
 
@@ -107,9 +106,8 @@ func main() {
 		// Clear per-row color for row 3
 		iup.SetAttributeId2(t, "BGCOLOR", 3, 0, nil)
 		iup.SetAttributeId2(t, "FGCOLOR", 3, 0, nil)
-		t.SetAttribute("REDRAW", "YES")
 		log := iup.GetHandle("log")
-		log.SetAttribute("APPEND", "Cleared row 3 colors\n")
+		log.SetAttribute("APPEND", "Cleared row 3 colors")
 		return iup.DEFAULT
 	}))
 
@@ -117,9 +115,8 @@ func main() {
 		t := iup.GetHandle("table")
 		// Set per-column color for column 1
 		iup.SetAttributeId2(t, "BGCOLOR", 0, 1, "#BBDEFB")
-		t.SetAttribute("REDRAW", "YES")
 		log := iup.GetHandle("log")
-		log.SetAttribute("APPEND", "Set column 1 background to blue\n")
+		log.SetAttribute("APPEND", "Set column 1 background to blue")
 		return iup.DEFAULT
 	}))
 
