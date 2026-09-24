@@ -201,7 +201,7 @@ See [iup/external/wasm/README.md](iup/external/wasm/README.md) for prerequisites
 
 The same `main()` compiles as a desktop binary, an Android shared library, and an iOS executable. Every example under [examples/](examples/) builds unchanged on all three.
 Most examples are laid out for desktop windows and will overflow a phone screen though; production mobile apps need a layout tuned for small screens.
-See [mobile_sample](examples/mobile_sample) and [mobile_hello](examples/mobile_hello) for examples designed for mobile. Also check [chat](examples/chat) that handles both desktop and mobile layouts.
+See [mobile_sample](examples/mobile_sample) and [mobile_hello](examples/mobile_hello) for examples designed for mobile. Also check [demo_chat](examples/demo_chat) that handles both desktop and mobile layouts.
 
 Examples without a top-level `Dialog` (e.g., `alarm`, `message`) will not run on mobile, the host platform requires a real Dialog as the root.
 
