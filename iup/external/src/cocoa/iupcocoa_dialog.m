@@ -924,7 +924,13 @@ static int cocoaDialogSetPlacement(Ihandle* ih)
   {
     ih->data->show_state = IUP_MAXIMIZE;
     if (!cocoaDialogIsMaximized(the_window))
+    {
+      NSRect frame;
       [the_window zoom:nil];
+      frame = [the_window frame];
+      if (ih->currentwidth != iupROUND(frame.size.width) || ih->currentheight != iupROUND(frame.size.height))
+        [[NSNotificationCenter defaultCenter] postNotificationName:NSWindowDidResizeNotification object:the_window];
+    }
   }
   else if (iupStrEqualNoCase(placement, "FULL"))
   {
