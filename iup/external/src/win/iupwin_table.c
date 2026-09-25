@@ -386,7 +386,7 @@ static void winTableSort(Ihandle* ih, int col)
  * Column Reorder
  ****************************************************************************/
 
-static void winTableMoveColumn(Ihandle* ih, int from_col, int to_col)
+static void winTableMoveColumn(Ihandle* ih, int from_col, int to_col, int attribs)
 {
   IwinTableData* data = IWIN_TABLE_DATA(ih);
   if (!data || from_col == to_col)
@@ -450,7 +450,8 @@ static void winTableMoveColumn(Ihandle* ih, int from_col, int to_col)
       free(saved);
   }
 
-  iupTableMoveColAttribs(ih, from_col, to_col);
+  if (attribs)
+    iupTableMoveColAttribs(ih, from_col, to_col);
 
   if (data->sort_column > 0)
     data->sort_column = iupTableMoveColPos(data->sort_column, from_col, to_col);
@@ -678,7 +679,7 @@ static LRESULT CALLBACK winTableHeaderWndProc(HWND hwnd, UINT msg, WPARAM wp, LP
         IFnii cb = (IFnii)IupGetCallback(ih, "REORDER_CB");
         if (!cb || cb(ih, source, target) != IUP_IGNORE)
         {
-          winTableMoveColumn(ih, source, target);
+          winTableMoveColumn(ih, source, target, 1);
           winTableRefreshAfterReorder(ih);
           winTableAdjustColumnWidths(ih);
         }
@@ -1426,6 +1427,12 @@ IUP_SDK_API void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
       data->cell_values[i] = new_row;
     }
   }
+
+  ih->data->num_col = num_col;
+  if (data->sort_column > num_col)
+    data->sort_column = 0;
+  if (data->current_col > num_col)
+    data->current_col = num_col;
 }
 
 IUP_SDK_API void iupdrvTableAddLin(Ihandle* ih, int pos)
@@ -1436,11 +1443,9 @@ IUP_SDK_API void iupdrvTableAddLin(Ihandle* ih, int pos)
   if (!data || !list_view)
     return;
 
-  if (pos < 0)
-    pos = ih->data->num_lin;  /* Append */
-
-  if (pos > ih->data->num_lin)
-    pos = ih->data->num_lin;
+  if (pos < 1 || pos > ih->data->num_lin + 1)
+    pos = ih->data->num_lin + 1;
+  pos--;
 
   char* virtualmode = iupAttribGet(ih, "VIRTUALMODE");
   if (iupStrBoolean(virtualmode))
@@ -1550,10 +1555,10 @@ IUP_SDK_API void iupdrvTableAddCol(Ihandle* ih, int pos)
   if (!list_view)
     return;
 
-  (void)pos;
-
   iupdrvTableSetNumCol(ih, ih->data->num_col + 1);
-  ih->data->num_col++;
+  if (pos < ih->data->num_col)
+    winTableMoveColumn(ih, ih->data->num_col, pos, 0);
+  winTableRefreshAfterReorder(ih);
 }
 
 IUP_SDK_API void iupdrvTableDelCol(Ihandle* ih, int pos)
@@ -1566,9 +1571,10 @@ IUP_SDK_API void iupdrvTableDelCol(Ihandle* ih, int pos)
   if (pos < 1 || pos > ih->data->num_col)
     return;
 
-  ListView_DeleteColumn(list_view, pos);
-  ih->data->num_col--;
-  iupdrvTableSetNumCol(ih, ih->data->num_col);
+  if (pos < ih->data->num_col)
+    winTableMoveColumn(ih, pos, ih->data->num_col, 0);
+  iupdrvTableSetNumCol(ih, ih->data->num_col - 1);
+  winTableRefreshAfterReorder(ih);
 }
 
 /****************************************************************************

@@ -79,14 +79,14 @@ static void eflTableRefreshCells(Ihandle* ih);
 static void eflTableRefreshHeaders(Ihandle* ih);
 static void eflTableDoSort(Ihandle* ih, int col);
 static int eflTableFindTargetColumn(Ihandle* ih, int x);
-static void eflTableMoveColumn(Ihandle* ih, int from_col, int to_col);
+static void eflTableMoveColumn(Ihandle* ih, int from_col, int to_col, int attribs);
 static void eflTableUpdateDragIndicator(Ihandle* ih, int target);
 static void eflTableHideDragIndicator(Ihandle* ih);
 static void eflTableDragPointerMove(void* cb_data, const Efl_Event* ev);
 static void eflTableDragPointerUp(void* cb_data, const Efl_Event* ev);
 static int eflTableIsNearColumnBorder(Ihandle* ih, int x);
 static int eflTableFindTargetRow(Ihandle* ih, int y);
-static void eflTableMoveRow(Ihandle* ih, int from, int to);
+static void eflTableMoveRow(Ihandle* ih, int from, int to, int attribs);
 static void eflTableUpdateRowDragIndicator(Ihandle* ih, int target);
 static void eflTableHideRowDragIndicator(Ihandle* ih);
 static void eflTableRowDragPointerMove(void* cb_data, const Efl_Event* ev);
@@ -833,7 +833,7 @@ static void eflTableShiftAttrib(Ihandle* ih, const char* fmt, int lin, int from_
     free(saved);
 }
 
-static void eflTableMoveColumn(Ihandle* ih, int from_col, int to_col)
+static void eflTableMoveColumn(Ihandle* ih, int from_col, int to_col, int attribs)
 {
   IeflTableData* data = IEFL_TABLE_DATA(ih);
   int lin;
@@ -858,7 +858,8 @@ static void eflTableMoveColumn(Ihandle* ih, int from_col, int to_col)
     eflTableShiftAttrib(ih, "_IUPEFL_CELLIMAGE%d:%d", lin, from_col, to_col);
   }
 
-  iupTableMoveColAttribs(ih, from_col, to_col);
+  if (attribs)
+    iupTableMoveColAttribs(ih, from_col, to_col);
 
   if (data)
   {
@@ -1035,7 +1036,7 @@ static void eflTableDragPointerUp(void* cb_data, const Efl_Event* ev)
     if (cb && cb(ih, source, target) == IUP_IGNORE)
       return;
 
-    eflTableMoveColumn(ih, source, target);
+    eflTableMoveColumn(ih, source, target, 1);
 
     if (data)
     {
@@ -1136,7 +1137,7 @@ static void eflTableMoveRowData(Ihandle* ih, int from, int to)
   }
 }
 
-static void eflTableMoveRow(Ihandle* ih, int from, int to)
+static void eflTableMoveRow(Ihandle* ih, int from, int to, int attribs)
 {
   IeflTableData* data = IEFL_TABLE_DATA(ih);
   int num_lin = ih->data->num_lin;
@@ -1145,7 +1146,8 @@ static void eflTableMoveRow(Ihandle* ih, int from, int to)
     return;
 
   eflTableMoveRowData(ih, from, to);
-  iupTableMoveLinAttribs(ih, from, to);
+  if (attribs)
+    iupTableMoveLinAttribs(ih, from, to);
 
   if (data)
   {
@@ -1283,7 +1285,7 @@ static void eflTableRowDragPointerUp(void* cb_data, const Efl_Event* ev)
       int to = (target > src0) ? target - 1 : target;
       if (to >= num_lin) to = num_lin - 1;
       if (to < 0) to = 0;
-      eflTableMoveRow(ih, source, to + 1);
+      eflTableMoveRow(ih, source, to + 1, 1);
     }
   }
 }
@@ -2511,6 +2513,14 @@ static void eflTableUpdateVisibleRows(Ihandle* ih, int force)
  * Driver Interface
  ****************************************************************************/
 
+static void eflTableClearCell(Ihandle* ih, int lin, int col)
+{
+  char name[50];
+  snprintf(name, sizeof(name), "CELLVALUE%d:%d", lin, col);
+  iupAttribSet(ih, name, NULL);
+  iupAttribSetId2(ih, "_IUPEFL_CELLIMAGE", lin, col, NULL);
+}
+
 IUP_SDK_API void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
 {
   IeflTableData* data = IEFL_TABLE_DATA(ih);
@@ -2518,6 +2528,16 @@ IUP_SDK_API void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
 
   if (num_col < 0)
     num_col = 0;
+
+  {
+    int col, lin;
+    for (col = num_col + 1; col <= old_num_col; col++)
+    {
+      iupAttribSetId(ih, "COLTITLE", col, NULL);
+      for (lin = 1; lin <= ih->data->num_lin; lin++)
+        eflTableClearCell(ih, lin, col);
+    }
+  }
 
   ih->data->num_col = num_col;
 
@@ -2573,12 +2593,17 @@ IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
   if (num_lin < 0)
     num_lin = 0;
 
+  for (i = num_lin + 1; i <= old_num_lin; i++)
+  {
+    int col;
+    for (col = 1; col <= ih->data->num_col; col++)
+      eflTableClearCell(ih, i, col);
+  }
+
   ih->data->num_lin = num_lin;
 
   if (data && data->row_selected && data->row_selected_size > num_lin)
     memset(data->row_selected + num_lin, 0, data->row_selected_size - num_lin);
-
-  (void)i;
 
   if (!ih->handle || num_lin == old_num_lin)
     return;
@@ -2593,30 +2618,53 @@ IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
   }
 }
 
+static void eflTableRefreshStructure(Ihandle* ih)
+{
+  IeflTableData* data = IEFL_TABLE_DATA(ih);
+  if (!data || !ih->handle)
+    return;
+  if (data->is_virtual)
+    eflTableUpdateVisibleRows(ih, 1);
+  else
+    eflTableRefreshCells(ih);
+  eflTableRefreshHeaders(ih);
+}
+
 IUP_SDK_API void iupdrvTableAddCol(Ihandle* ih, int pos)
 {
-  (void)pos;
   iupdrvTableSetNumCol(ih, ih->data->num_col + 1);
+  if (pos < ih->data->num_col)
+  {
+    eflTableMoveColumn(ih, ih->data->num_col, pos, 0);
+    eflTableRefreshStructure(ih);
+  }
 }
 
 IUP_SDK_API void iupdrvTableDelCol(Ihandle* ih, int pos)
 {
-  (void)pos;
-  if (ih->data->num_col > 0)
-    iupdrvTableSetNumCol(ih, ih->data->num_col - 1);
+  if (ih->data->num_col < 1)
+    return;
+  if (pos < ih->data->num_col)
+    eflTableMoveColumn(ih, pos, ih->data->num_col, 0);
+  iupdrvTableSetNumCol(ih, ih->data->num_col - 1);
 }
 
 IUP_SDK_API void iupdrvTableAddLin(Ihandle* ih, int pos)
 {
-  (void)pos;
+  IeflTableData* data = IEFL_TABLE_DATA(ih);
   iupdrvTableSetNumLin(ih, ih->data->num_lin + 1);
+  if (data && !data->is_virtual && pos < ih->data->num_lin)
+    eflTableMoveRow(ih, ih->data->num_lin, pos, 0);
 }
 
 IUP_SDK_API void iupdrvTableDelLin(Ihandle* ih, int pos)
 {
-  (void)pos;
-  if (ih->data->num_lin > 0)
-    iupdrvTableSetNumLin(ih, ih->data->num_lin - 1);
+  IeflTableData* data = IEFL_TABLE_DATA(ih);
+  if (ih->data->num_lin < 1)
+    return;
+  if (data && !data->is_virtual && pos < ih->data->num_lin)
+    eflTableMoveRow(ih, pos, ih->data->num_lin, 0);
+  iupdrvTableSetNumLin(ih, ih->data->num_lin - 1);
 }
 
 IUP_SDK_API void iupdrvTableSetCellValue(Ihandle* ih, int lin, int col, const char* value)

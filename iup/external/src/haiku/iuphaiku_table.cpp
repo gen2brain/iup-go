@@ -1425,7 +1425,7 @@ static void haikuTableAutoSizeColumns(Ihandle* ih, IupHaikuTableView* tv)
   }
 }
 
-static void haikuTableMoveColumn(Ihandle* ih, IupHaikuTableView* tv, int from_col, int to_col)
+static void haikuTableMoveColumn(Ihandle* ih, IupHaikuTableView* tv, int from_col, int to_col, int attribs)
 {
   int n = (int)tv->CountColumns();
   std::vector<BString> titles(n);
@@ -1475,7 +1475,8 @@ static void haikuTableMoveColumn(Ihandle* ih, IupHaikuTableView* tv, int from_co
     if (saved) free(saved);
   }
 
-  iupTableMoveColAttribs(ih, from_col, to_col);
+  if (attribs)
+    iupTableMoveColAttribs(ih, from_col, to_col);
 
   for (c = 0; c < n; c++)
   {
@@ -1534,7 +1535,7 @@ static void haikuTableCheckColumnMove(Ihandle* ih, IupHaikuTableView* tv)
   IFnii cb = (IFnii)IupGetCallback(ih, "REORDER_CB");
   int ret = cb ? cb(ih, from + 1, to + 1) : IUP_DEFAULT;
   if (ret != IUP_IGNORE)
-    haikuTableMoveColumn(ih, tv, from + 1, to + 1);
+    haikuTableMoveColumn(ih, tv, from + 1, to + 1, 1);
 
   tv->Invalidate();
   if (BView* outline = tv->ScrollView()) outline->Invalidate();
@@ -1636,6 +1637,24 @@ extern "C" IUP_SDK_API void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
       IupHaikuTableColumn* c = new IupHaikuTableColumn(ih, "", 100.0f, B_ALIGN_LEFT);
       tv->AddColumn(c, i);
     }
+
+    int nr = (int)tv->CountRows(NULL);
+    for (int r_i = 0; r_i < nr; r_i++)
+    {
+      BRow* r = tv->RowAt(r_i, NULL);
+      if (!r) continue;
+      for (int i = cur; i < num_col; ++i)
+      {
+        if (tv->IsVirtual())
+          r->SetField(&g_virtual_field, i);
+        else
+        {
+          IupHaikuTableField* f = new IupHaikuTableField("");
+          f->SetRow(r);
+          r->SetField(f, i);
+        }
+      }
+    }
   }
   else if (num_col < cur)
   {
@@ -1665,6 +1684,7 @@ extern "C" IUP_SDK_API void iupdrvTableAddLin(Ihandle* ih, int pos)
       r->SetField(f, c);
     }
   tv->AddRow(r, pos - 1, NULL);
+  ih->data->num_lin++;
 }
 
 extern "C" IUP_SDK_API void iupdrvTableDelLin(Ihandle* ih, int pos)
@@ -1673,38 +1693,31 @@ extern "C" IUP_SDK_API void iupdrvTableDelLin(Ihandle* ih, int pos)
   if (!tv) return;
   LooperLockGuard guard(tv->Looper());
   BRow* r = tv->RowAt(pos - 1, NULL);
-  if (r) { tv->RemoveRow(r); delete r; }
+  if (r) { tv->RemoveRow(r); delete r; ih->data->num_lin--; }
 }
 
 extern "C" IUP_SDK_API void iupdrvTableAddCol(Ihandle* ih, int pos)
 {
   IupHaikuTableView* tv = haikuTableGetView(ih);
   if (!tv) return;
-  LooperLockGuard guard(tv->Looper());
-  IupHaikuTableColumn* c = new IupHaikuTableColumn(ih, "", 100.0f, B_ALIGN_LEFT);
-  tv->AddColumn(c, pos - 1);
-
-  /* Virtual mode: backfill existing rows with the sentinel so DrawField fires. */
-  if (tv->IsVirtual())
+  iupdrvTableSetNumCol(ih, ih->data->num_col + 1);
+  if (pos < ih->data->num_col)
   {
-    int n = tv->CountRows(NULL);
-    for (int i = 0; i < n; i++)
-    {
-      BRow* r = tv->RowAt(i, NULL);
-      if (r) r->SetField(&g_virtual_field, pos - 1);
-    }
+    LooperLockGuard guard(tv->Looper());
+    haikuTableMoveColumn(ih, tv, ih->data->num_col, pos, 0);
   }
-  tv->RepositionTrail();
 }
 
 extern "C" IUP_SDK_API void iupdrvTableDelCol(Ihandle* ih, int pos)
 {
   IupHaikuTableView* tv = haikuTableGetView(ih);
-  if (!tv) return;
-  LooperLockGuard guard(tv->Looper());
-  BColumn* c = tv->ColumnAt(pos - 1);
-  if (c) { tv->RemoveColumn(c); delete c; }
-  tv->RepositionTrail();
+  if (!tv || ih->data->num_col < 1) return;
+  if (pos < ih->data->num_col)
+  {
+    LooperLockGuard guard(tv->Looper());
+    haikuTableMoveColumn(ih, tv, pos, ih->data->num_col, 0);
+  }
+  iupdrvTableSetNumCol(ih, ih->data->num_col - 1);
 }
 
 extern "C" IUP_SDK_API void iupdrvTableSetCellValue(Ihandle* ih, int lin, int col, const char* value)

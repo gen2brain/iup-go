@@ -974,12 +974,11 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
 /* NSTableViewDataSource Protocol Implementation                             */
 /* ========================================================================= */
 
-static void cocoaTableMoveColumn(Ihandle* ih, NSTableView* tableView, int from_col, int to_col)
+static void cocoaTableMoveColumn(Ihandle* ih, NSTableView* tableView, int from_col, int to_col, int attribs)
 {
   IcocoaTableData* table_data = cocoaTableGetData(ih);
   NSArray* columns = [tableView tableColumns];
   int num_col = (int)[columns count];
-  NSMutableArray* titles = [NSMutableArray arrayWithCapacity:num_col];
   NSMutableArray* widths = [NSMutableArray arrayWithCapacity:num_col];
   NSMutableDictionary* info = [NSMutableDictionary dictionary];
   NSArray* descriptors = [tableView sortDescriptors];
@@ -992,8 +991,6 @@ static void cocoaTableMoveColumn(Ihandle* ih, NSTableView* tableView, int from_c
   for (c = 0; c < num_col; c++)
   {
     NSTableColumn* column = [columns objectAtIndex:c];
-    NSString* title = [[column headerCell] stringValue];
-    [titles addObject:title ? title : @""];
     [widths addObject:[NSNumber numberWithDouble:[column width]]];
   }
 
@@ -1032,13 +1029,27 @@ static void cocoaTableMoveColumn(Ihandle* ih, NSTableView* tableView, int from_c
     if (saved) free(saved);
   }
 
-  iupTableMoveColAttribs(ih, from_col, to_col);
+  {
+    char* saved = iupStrDup(iupAttribGetId(ih, "_IUPCOCOA_COLTITLE", from_col));
+    for (c = from_col; c != to_col; c += step)
+      iupAttribSetStrId(ih, "_IUPCOCOA_COLTITLE", c, iupAttribGetId(ih, "_IUPCOCOA_COLTITLE", c + step));
+    iupAttribSetStrId(ih, "_IUPCOCOA_COLTITLE", to_col, saved);
+    if (saved) free(saved);
+  }
+
+  if (attribs)
+    iupTableMoveColAttribs(ih, from_col, to_col);
 
   for (c = 0; c < num_col; c++)
   {
     NSTableColumn* column = [columns objectAtIndex:iupTableMoveColPos(c + 1, from_col, to_col) - 1];
-    [[column headerCell] setStringValue:[titles objectAtIndex:c]];
     [column setWidth:[[widths objectAtIndex:c] doubleValue]];
+  }
+
+  for (c = 0; c < num_col; c++)
+  {
+    char* title = iupAttribGetId(ih, "_IUPCOCOA_COLTITLE", c + 1);
+    [[[columns objectAtIndex:c] headerCell] setStringValue:title ? [NSString stringWithUTF8String:title] : [NSString stringWithFormat:@"Col %d", c + 1]];
   }
 
   if ([descriptors count] > 0)
@@ -1926,7 +1937,7 @@ static void cocoaTableMoveColumn(Ihandle* ih, NSTableView* tableView, int from_c
   IFnii cb = (IFnii)IupGetCallback(ih, "REORDER_CB");
   int ret = cb ? cb(ih, old_pos, new_pos) : IUP_DEFAULT;
   if (ret != IUP_IGNORE)
-    cocoaTableMoveColumn(ih, tableView, old_pos, new_pos);
+    cocoaTableMoveColumn(ih, tableView, old_pos, new_pos, 1);
   if (ret == IUP_CLOSE)
     IupExitLoop();
 }
@@ -1949,17 +1960,28 @@ static int cocoaTableSetNumColAttrib(Ihandle* ih, const char* value)
     NSTableView* tableView = cocoaTableGetTableView(ih);
 
     NSArray* columns = [tableView tableColumns];
+    int old_count = (int)[columns count];
     for (NSTableColumn* col in columns)
     {
       [tableView removeTableColumn:col];
     }
 
+    for (NSMutableArray* row in table_data->data_array)
+    {
+      if ((int)[row count] > num_col)
+        [row removeObjectsInRange:NSMakeRange(num_col, [row count] - num_col)];
+    }
+
+    for (int i = num_col + 1; i <= old_count; i++)
+      iupAttribSetId(ih, "_IUPCOCOA_COLTITLE", i, NULL);
+
     for (int i = 0; i < num_col; i++)
     {
       NSString* identifier = [NSString stringWithFormat:@"%d", i];
       NSTableColumn* column = [[NSTableColumn alloc] initWithIdentifier:identifier];
+      char* col_title = iupAttribGetId(ih, "_IUPCOCOA_COLTITLE", i + 1);
 
-      IupCocoaTableHeaderCell* headerCell = [[IupCocoaTableHeaderCell alloc] initTextCell:[NSString stringWithFormat:@"Col %d", i + 1]];
+      IupCocoaTableHeaderCell* headerCell = [[IupCocoaTableHeaderCell alloc] initTextCell:col_title ? [NSString stringWithUTF8String:col_title] : [NSString stringWithFormat:@"Col %d", i + 1]];
       [column setHeaderCell:headerCell];
       [headerCell release];
 
@@ -2076,6 +2098,10 @@ static int cocoaTableSetNumLinAttrib(Ihandle* ih, const char* value)
   int num_lin = 0;
   if (iupStrToInt(value, &num_lin))
   {
+    IcocoaTableData* table_data = cocoaTableGetData(ih);
+    if (table_data && (int)[table_data->data_array count] > num_lin)
+      [table_data->data_array removeObjectsInRange:NSMakeRange(num_lin, [table_data->data_array count] - num_lin)];
+
     ih->data->num_lin = num_lin;
 
     NSTableView* tableView = cocoaTableGetTableView(ih);
@@ -2240,26 +2266,64 @@ IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
   }
 }
 
+static void cocoaTableShiftLinImages(Ihandle* ih, int from_lin, int to_lin)
+{
+  int c, l, step = (from_lin < to_lin) ? 1 : -1;
+  for (c = 1; c <= ih->data->num_col; c++)
+  {
+    char* saved = iupStrDup(iupAttribGetId2(ih, "_IUPCOCOA_CELLIMAGE", from_lin, c));
+    for (l = from_lin; l != to_lin; l += step)
+      iupAttribSetStrId2(ih, "_IUPCOCOA_CELLIMAGE", l, c, iupAttribGetId2(ih, "_IUPCOCOA_CELLIMAGE", l + step, c));
+    iupAttribSetStrId2(ih, "_IUPCOCOA_CELLIMAGE", to_lin, c, saved);
+    if (saved) free(saved);
+  }
+}
+
 IUP_SDK_API void iupdrvTableAddCol(Ihandle* ih, int pos)
 {
+  NSTableView* tableView = cocoaTableGetTableView(ih);
   iupdrvTableSetNumCol(ih, ih->data->num_col + 1);
+  if (tableView && pos < ih->data->num_col)
+    cocoaTableMoveColumn(ih, tableView, ih->data->num_col, pos, 0);
 }
 
 IUP_SDK_API void iupdrvTableDelCol(Ihandle* ih, int pos)
 {
-  if (ih->data->num_col > 0)
-    iupdrvTableSetNumCol(ih, ih->data->num_col - 1);
+  NSTableView* tableView = cocoaTableGetTableView(ih);
+  if (ih->data->num_col < 1)
+    return;
+  if (tableView && pos < ih->data->num_col)
+    cocoaTableMoveColumn(ih, tableView, pos, ih->data->num_col, 0);
+  iupdrvTableSetNumCol(ih, ih->data->num_col - 1);
 }
 
 IUP_SDK_API void iupdrvTableAddLin(Ihandle* ih, int pos)
 {
+  IcocoaTableData* table_data = cocoaTableGetData(ih);
+  if (table_data && !table_data->is_virtual_mode && pos - 1 < (int)[table_data->data_array count])
+  {
+    NSMutableArray* row = [[NSMutableArray alloc] init];
+    [table_data->data_array insertObject:row atIndex:pos - 1];
+    [row release];
+  }
+  cocoaTableShiftLinImages(ih, ih->data->num_lin + 1, pos);
   iupdrvTableSetNumLin(ih, ih->data->num_lin + 1);
 }
 
 IUP_SDK_API void iupdrvTableDelLin(Ihandle* ih, int pos)
 {
-  if (ih->data->num_lin > 0)
-    iupdrvTableSetNumLin(ih, ih->data->num_lin - 1);
+  IcocoaTableData* table_data = cocoaTableGetData(ih);
+  if (ih->data->num_lin < 1)
+    return;
+  if (table_data && !table_data->is_virtual_mode && pos - 1 < (int)[table_data->data_array count])
+    [table_data->data_array removeObjectAtIndex:pos - 1];
+  cocoaTableShiftLinImages(ih, pos, ih->data->num_lin);
+  {
+    int c;
+    for (c = 1; c <= ih->data->num_col; c++)
+      iupAttribSetId2(ih, "_IUPCOCOA_CELLIMAGE", ih->data->num_lin, c, NULL);
+  }
+  iupdrvTableSetNumLin(ih, ih->data->num_lin - 1);
 }
 
 /* ========================================================================= */
@@ -2344,6 +2408,7 @@ IUP_SDK_API void iupdrvTableSetColTitle(Ihandle* ih, int col, const char* title)
   {
     NSTableColumn* column = [columns objectAtIndex:(col - 1)];
     NSString* titleStr = title ? [NSString stringWithUTF8String:title] : @"";
+    iupAttribSetStrId(ih, "_IUPCOCOA_COLTITLE", col, title);
     [column.headerCell setStringValue:titleStr];
 
     int col_index = col - 1;
@@ -2364,25 +2429,10 @@ IUP_SDK_API void iupdrvTableSetColTitle(Ihandle* ih, int col, const char* title)
 
 IUP_SDK_API char* iupdrvTableGetColTitle(Ihandle* ih, int col)
 {
-  NSTableView* tableView = cocoaTableGetTableView(ih);
-  if (!tableView)
-    return NULL;
-
   if (col < 1 || col > ih->data->num_col)
     return NULL;
 
-  NSArray* columns = [tableView tableColumns];
-  if (col - 1 < [columns count])
-  {
-    NSTableColumn* column = [columns objectAtIndex:(col - 1)];
-    NSString* title = [column.headerCell stringValue];
-    if (title && [title length] > 0)
-    {
-      return iupStrReturnStr([title UTF8String]);
-    }
-  }
-
-  return NULL;
+  return iupAttribGetId(ih, "_IUPCOCOA_COLTITLE", col);
 }
 
 IUP_SDK_API void iupdrvTableSetSortSign(Ihandle* ih, int col, int sign)

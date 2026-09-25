@@ -1776,27 +1776,9 @@ static void gtk4TableFocusLeave(GtkEventControllerFocus* controller, Ihandle* ih
     iupCallKillFocusCb(ih);
 }
 
-static int gtk4TableMapMethod(Ihandle* ih)
+static void gtk4TableCreateColumns(Ihandle* ih)
 {
-  Igtk4TableData* gtk_data = (Igtk4TableData*)calloc(1, sizeof(Igtk4TableData));
-  if (!gtk_data)
-    return IUP_ERROR;
-  ih->data->native_data = gtk_data;
-
-  gtk_data->is_virtual = iupAttribGetBoolean(ih, "VIRTUALMODE");
-
-  if (gtk_data->is_virtual)
-  {
-    IupTableVirtualModel* vmodel = iup_table_virtual_model_new(ih);
-    gtk_data->model = G_LIST_MODEL(vmodel);
-  }
-  else
-  {
-    GListStore* store = g_list_store_new(IUP_TYPE_TABLE_ROW);
-    gtk_data->model = G_LIST_MODEL(store);
-  }
-
-  gtk_data->column_view = gtk_column_view_new(NULL);
+  Igtk4TableData* gtk_data = IGTK4_TABLE_DATA(ih);
 
   for (int col = 0; col < ih->data->num_col; col++)
   {
@@ -1906,6 +1888,164 @@ static int gtk4TableMapMethod(Ihandle* ih)
     gtk_column_view_append_column(GTK_COLUMN_VIEW(gtk_data->column_view), dummy_column);
     g_object_unref(dummy_column);
   }
+}
+
+static void gtk4TableRebuildColumns(Ihandle* ih, int old_num_col, int add_pos, int del_pos)
+{
+  Igtk4TableData* gtk_data = IGTK4_TABLE_DATA(ih);
+  GtkColumnView* column_view = GTK_COLUMN_VIEW(gtk_data->column_view);
+  GListModel* columns = gtk_column_view_get_columns(column_view);
+  GtkColumnViewColumn* sort_col = (GtkColumnViewColumn*)iupAttribGet(ih, "_IUP_GTK4_SORTCOL");
+  int num_col = ih->data->num_col;
+  int* src = (int*)malloc(sizeof(int) * (num_col > 0 ? num_col : 1));
+  char** titles = (char**)calloc(old_num_col > 0 ? old_num_col : 1, sizeof(char*));
+  int* widths = (int*)calloc(old_num_col > 0 ? old_num_col : 1, sizeof(int));
+  int sort_old = -1, c;
+  guint n;
+
+  for (c = 0; c < num_col; c++)
+  {
+    if (add_pos)
+      src[c] = (c < add_pos - 1) ? c : ((c == add_pos - 1) ? -1 : c - 1);
+    else if (del_pos)
+      src[c] = (c < del_pos - 1) ? c : c + 1;
+    else
+      src[c] = (c < old_num_col) ? c : -1;
+  }
+
+  for (c = 0; c < old_num_col && c < (int)g_list_model_get_n_items(columns); c++)
+  {
+    GtkColumnViewColumn* column = GTK_COLUMN_VIEW_COLUMN(g_list_model_get_item(columns, c));
+    titles[c] = g_strdup(gtk_column_view_column_get_title(column));
+    widths[c] = gtk_column_view_column_get_fixed_width(column);
+    if (column == sort_col)
+      sort_old = c;
+    g_object_unref(column);
+  }
+
+  if (!gtk_data->is_virtual && gtk_data->model)
+  {
+    guint i, rows = g_list_model_get_n_items(gtk_data->model);
+    for (i = 0; i < rows; i++)
+    {
+      IupTableRow* row = IUP_TABLE_ROW(g_list_model_get_item(gtk_data->model, i));
+      gchar** values = g_new0(gchar*, num_col > 0 ? num_col : 1);
+      GdkPaintable** images = row->images ? g_new0(GdkPaintable*, num_col > 0 ? num_col : 1) : NULL;
+      int* used = (int*)calloc(row->num_cols > 0 ? row->num_cols : 1, sizeof(int));
+
+      for (c = 0; c < num_col; c++)
+      {
+        int o = src[c];
+        if (o >= 0 && o < row->num_cols)
+        {
+          values[c] = row->values[o];
+          if (images)
+            images[c] = row->images[o];
+          used[o] = 1;
+        }
+        else
+          values[c] = g_strdup("");
+      }
+
+      for (c = 0; c < row->num_cols; c++)
+      {
+        if (!used[c])
+        {
+          g_free(row->values[c]);
+          if (row->images && row->images[c])
+            g_object_unref(row->images[c]);
+        }
+      }
+
+      g_free(row->values);
+      g_free(row->images);
+      free(used);
+      row->values = values;
+      row->images = images;
+      row->num_cols = num_col;
+      row->update_count++;
+      g_object_unref(row);
+    }
+  }
+
+  iupAttribSet(ih, "_IUP_GTK4_SORTCOL", NULL);
+  iupAttribSet(ih, "_IUPTABLE_IGNORE_COLUMNS_CHANGED", "1");
+  n = g_list_model_get_n_items(columns);
+  while (n > 0)
+  {
+    GtkColumnViewColumn* column = GTK_COLUMN_VIEW_COLUMN(g_list_model_get_item(columns, n - 1));
+    gtk_column_view_remove_column(column_view, column);
+    g_object_unref(column);
+    n = g_list_model_get_n_items(columns);
+  }
+  gtk_data->num_columns = 0;
+  gtk4TableCreateColumns(ih);
+  iupAttribSet(ih, "_IUPTABLE_IGNORE_COLUMNS_CHANGED", NULL);
+
+  for (c = 0; c < num_col; c++)
+  {
+    int o = src[c];
+    if (o < 0)
+      continue;
+    iupdrvTableSetColTitle(ih, c + 1, titles[o]);
+    if (widths[o] > 0)
+    {
+      GtkColumnViewColumn* column = GTK_COLUMN_VIEW_COLUMN(g_list_model_get_item(columns, c));
+      gtk_column_view_column_set_fixed_width(column, widths[o]);
+      g_object_unref(column);
+    }
+    if (o == sort_old)
+    {
+      GtkColumnViewColumn* column = GTK_COLUMN_VIEW_COLUMN(g_list_model_get_item(columns, c));
+      iupAttribSet(ih, "_IUP_GTK4_SORTBUSY", "1");
+      gtk_column_view_sort_by_column(column_view, column, (GtkSortType)iupAttribGetInt(ih, "_IUP_GTK4_SORTORDER"));
+      iupAttribSet(ih, "_IUP_GTK4_SORTBUSY", NULL);
+      iupAttribSet(ih, "_IUP_GTK4_SORTCOL", (char*)column);
+      g_object_unref(column);
+    }
+  }
+
+  if (gtk_data->current_col > 0)
+  {
+    int cur = 0;
+    for (c = 0; c < num_col; c++)
+    {
+      if (src[c] == gtk_data->current_col - 1)
+        cur = c + 1;
+    }
+    gtk_data->current_col = cur;
+  }
+
+  for (c = 0; c < old_num_col; c++)
+    g_free(titles[c]);
+  free(titles);
+  free(widths);
+  free(src);
+}
+
+static int gtk4TableMapMethod(Ihandle* ih)
+{
+  Igtk4TableData* gtk_data = (Igtk4TableData*)calloc(1, sizeof(Igtk4TableData));
+  if (!gtk_data)
+    return IUP_ERROR;
+  ih->data->native_data = gtk_data;
+
+  gtk_data->is_virtual = iupAttribGetBoolean(ih, "VIRTUALMODE");
+
+  if (gtk_data->is_virtual)
+  {
+    IupTableVirtualModel* vmodel = iup_table_virtual_model_new(ih);
+    gtk_data->model = G_LIST_MODEL(vmodel);
+  }
+  else
+  {
+    GListStore* store = g_list_store_new(IUP_TYPE_TABLE_ROW);
+    gtk_data->model = G_LIST_MODEL(store);
+  }
+
+  gtk_data->column_view = gtk_column_view_new(NULL);
+
+  gtk4TableCreateColumns(ih);
 
   GListModel* model_for_selection;
 
@@ -2096,10 +2236,17 @@ static void gtk4TableUnMapMethod(Ihandle* ih)
 
 IUP_SDK_API void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
 {
+  int old_num_col = ih->data->num_col;
+
   if (num_col < 0)
     num_col = 0;
 
+  if (num_col == old_num_col)
+    return;
+
   ih->data->num_col = num_col;
+  if (IGTK4_TABLE_DATA(ih))
+    gtk4TableRebuildColumns(ih, old_num_col, 0, 0);
 }
 
 IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
@@ -2147,21 +2294,31 @@ IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
 
 IUP_SDK_API void iupdrvTableAddCol(Ihandle* ih, int pos)
 {
-  iupdrvTableSetNumCol(ih, ih->data->num_col + 1);
+  ih->data->num_col++;
+  gtk4TableRebuildColumns(ih, ih->data->num_col - 1, pos, 0);
 }
 
 IUP_SDK_API void iupdrvTableDelCol(Ihandle* ih, int pos)
 {
-  if (ih->data->num_col > 0)
-    iupdrvTableSetNumCol(ih, ih->data->num_col - 1);
+  if (ih->data->num_col < 1)
+    return;
+  ih->data->num_col--;
+  gtk4TableRebuildColumns(ih, ih->data->num_col + 1, 0, pos);
 }
 
 IUP_SDK_API void iupdrvTableAddLin(Ihandle* ih, int pos)
 {
   Igtk4TableData* gtk_data = IGTK4_TABLE_DATA(ih);
 
-  if (!gtk_data || gtk_data->is_virtual)
+  if (!gtk_data)
     return;
+
+  if (gtk_data->is_virtual)
+  {
+    ih->data->num_lin++;
+    g_list_model_items_changed(gtk_data->model, (guint)(pos - 1), 0, 1);
+    return;
+  }
 
   GListStore* store = G_LIST_STORE(gtk_data->model);
 
@@ -2173,22 +2330,35 @@ IUP_SDK_API void iupdrvTableAddLin(Ihandle* ih, int pos)
   g_object_unref(row);
 
   ih->data->num_lin++;
+  if (gtk_data->current_row >= pos)
+    gtk_data->current_row++;
+  gtk4TableReindexRows(gtk_data);
 }
 
 IUP_SDK_API void iupdrvTableDelLin(Ihandle* ih, int pos)
 {
   Igtk4TableData* gtk_data = IGTK4_TABLE_DATA(ih);
 
-  if (!gtk_data || gtk_data->is_virtual)
+  if (!gtk_data)
     return;
 
   if (pos < 1 || pos > ih->data->num_lin)
     return;
 
+  if (gtk_data->is_virtual)
+  {
+    ih->data->num_lin--;
+    g_list_model_items_changed(gtk_data->model, (guint)(pos - 1), 1, 0);
+    return;
+  }
+
   GListStore* store = G_LIST_STORE(gtk_data->model);
   g_list_store_remove(store, pos - 1);
 
   ih->data->num_lin--;
+  if (gtk_data->current_row > pos)
+    gtk_data->current_row--;
+  gtk4TableReindexRows(gtk_data);
 }
 
 /* ========================================================================= */
