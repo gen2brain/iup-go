@@ -23,6 +23,7 @@ const char* iupwasmThemeColorVar(unsigned char r, unsigned char g, unsigned char
 
 void iupwasmRegisterHandle(int id, Ihandle* ih);
 void iupwasmUnregisterHandle(int id);
+void iupwasmTimerStopAll(void);
 void iupwasmSetVisibleState(int id, int visible);
 Ihandle* iupwasmHandleFromId(int id);
 void iupwasmFillStatus(char* status, int mods);

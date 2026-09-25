@@ -15,6 +15,8 @@
 #include "iup_class.h"
 #include "iup_timer.h"
 
+#include "iupwasm_drv.h"
+
 
 static int wasm_timer_last_id = 0;
 
@@ -24,6 +26,10 @@ EM_JS(void, iupwasmJsTimerRun, (int tid, int ihptr, int ms), {
 
 EM_JS(void, iupwasmJsTimerStop, (int tid), {
   globalThis.__iupApply({ op: 'timerstop', tid: tid });
+})
+
+EM_JS(void, iupwasmJsTimerStopAll, (void), {
+  globalThis.__iupApply({ op: 'timerstopall' });
 })
 
 EMSCRIPTEN_KEEPALIVE void iupwasmDispatchTimer(int ihptr)
@@ -57,6 +63,11 @@ IUP_SDK_API void iupdrvTimerStop(Ihandle* ih)
     iupwasmJsTimerStop(ih->serial);
     ih->serial = -1;
   }
+}
+
+void iupwasmTimerStopAll(void)
+{
+  iupwasmJsTimerStopAll();
 }
 
 IUP_SDK_API void iupdrvTimerInitClass(Iclass* ic)
