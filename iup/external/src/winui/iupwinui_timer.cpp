@@ -7,6 +7,7 @@
  */
 
 #include <chrono>
+#include <set>
 
 extern "C" {
 #include "iup.h"
@@ -35,6 +36,8 @@ struct IupWinUITimer
 };
 
 #define IUPWINUI_TIMER_DATA "_IUPWINUI_TIMER_DATA"
+
+static std::set<Ihandle*> winui_running_timers;
 
 static void winuiTimerProc(IupWinUITimer* timer_data)
 {
@@ -106,11 +109,14 @@ extern "C" IUP_SDK_API void iupdrvTimerRun(Ihandle* ih)
 
     ih->serial = 1;
     iupAttribSet(ih, IUPWINUI_TIMER_DATA, (char*)timer_data);
+    winui_running_timers.insert(ih);
   }
 }
 
 extern "C" IUP_SDK_API void iupdrvTimerStop(Ihandle* ih)
 {
+  winui_running_timers.erase(ih);
+
   if (ih->serial > 0)
   {
     IupWinUITimer* timer_data = (IupWinUITimer*)iupAttribGet(ih, IUPWINUI_TIMER_DATA);
@@ -134,6 +140,12 @@ extern "C" IUP_SDK_API void iupdrvTimerStop(Ihandle* ih)
 
     ih->serial = -1;
   }
+}
+
+IUP_DRV_API void iupwinuiTimerStopAll(void)
+{
+  while (!winui_running_timers.empty())
+    iupdrvTimerStop(*winui_running_timers.begin());
 }
 
 extern "C" IUP_SDK_API void iupdrvTimerInitClass(Iclass* ic)

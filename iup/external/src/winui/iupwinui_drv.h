@@ -84,6 +84,7 @@ IUP_DRV_API void iupwinuiSetGlobalColors(void);
 
 IUP_DRV_API void* iupwinuiGetDispatcherQueue(void);
 IUP_DRV_API void iupwinuiLoopCleanup(void);
+IUP_DRV_API void iupwinuiTimerStopAll(void);
 IUP_DRV_API BOOL iupwinuiContentPreTranslateMessage(const MSG* msg);
 IUP_DRV_API void iupwinuiProcessPendingMessages(void);
 IUP_DRV_API void iupwinuiBringWindowToForeground(HWND hwnd);
