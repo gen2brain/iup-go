@@ -507,6 +507,7 @@ IUP_DRV_API void iupwinuiDrawCleanup(void);
 
 extern "C" IUP_SDK_API void iupdrvClose(void)
 {
+  iupwinuiTimerStopAll();
   iupwinuiDrawCleanup();
   iupwinuiLoopCleanup();
 
