@@ -80,6 +80,7 @@ n starts at 1.
 Supports partial syntax: "2:" changes only the line, ":3" changes only the column.
 Setting it selects only that line, unless SELECTIONMODE=NONE, and scrolls the cell into view.
 No callback is called.
+When retrieved but no cell has the focus it returns "1:1", or "0:0" if the table has no lines or no columns.
 Default: "1:1".
 
 **SELECTIONMODE** (non-inheritable): Selection mode.

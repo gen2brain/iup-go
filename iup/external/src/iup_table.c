@@ -656,18 +656,33 @@ static int iTableSetRasterWidthIdAttrib(Ihandle* ih, int col, const char* value)
 /* Selection Attributes                                                      */
 /* ========================================================================= */
 
+static void iTableGetFocusCell(Ihandle* ih, int* lin, int* col)
+{
+  *lin = 0;
+  *col = 0;
+  if (ih->data->num_lin < 1 || ih->data->num_col < 1)
+    return;
+
+  if (ih->handle)
+    iupdrvTableGetFocusCell(ih, lin, col);
+  if (*lin < 1 || *lin > ih->data->num_lin)
+    *lin = 1;
+  if (*col < 1 || *col > ih->data->num_col)
+    *col = 1;
+}
+
 static char* iTableGetFocusCellAttrib(Ihandle* ih)
 {
+  int lin, col;
+
   if (!ih->handle)
   {
     char* value = iupAttribGet(ih, "FOCUSCELL");
     if (value)
       return value;
-    return "1:1";
   }
 
-  int lin, col;
-  iupdrvTableGetFocusCell(ih, &lin, &col);
+  iTableGetFocusCell(ih, &lin, &col);
   return iupStrReturnIntInt(lin, col, ':');
 }
 
@@ -684,7 +699,7 @@ static int iTableSetFocusCellAttrib(Ihandle* ih, const char* value)
     if (ih->handle)
     {
       int current_lin, current_col;
-      iupdrvTableGetFocusCell(ih, &current_lin, &current_col);
+      iTableGetFocusCell(ih, &current_lin, &current_col);
       lin = current_lin;
     }
     else
@@ -710,7 +725,7 @@ static int iTableSetFocusCellAttrib(Ihandle* ih, const char* value)
       if (ih->handle)
       {
         int current_lin, current_col;
-        iupdrvTableGetFocusCell(ih, &current_lin, &current_col);
+        iTableGetFocusCell(ih, &current_lin, &current_col);
         col = current_col;
       }
       else
@@ -826,7 +841,7 @@ static char* iTableGetValueAttrib(Ihandle* ih)
     return NULL;
 
   int lin, col;
-  iupdrvTableGetFocusCell(ih, &lin, &col);
+  iTableGetFocusCell(ih, &lin, &col);
 
   if (!iupTableCheckCellPos(ih, lin, col))
     return NULL;
@@ -840,7 +855,7 @@ static int iTableSetValueAttrib(Ihandle* ih, const char* value)
     return 0;
 
   int lin, col;
-  iupdrvTableGetFocusCell(ih, &lin, &col);
+  iTableGetFocusCell(ih, &lin, &col);
 
   if (!iupTableCheckCellPos(ih, lin, col))
     return 0;
