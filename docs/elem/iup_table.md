@@ -169,6 +169,7 @@ Can be "YES" or "NO". Default: "YES".
 
 **VIRTUALMODE** (non-inheritable): Enables virtual mode for large datasets.
 When enabled, cell values are not stored internally but retrieved on demand via VALUE_CB.
+Reading `L:C` or VALUE returns the text VALUE_CB returns for that cell.
 Can be "YES" or "NO". Default: "NO".
 Must be set before the control is mapped.
 

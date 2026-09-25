@@ -393,6 +393,17 @@ static int iTableSetDelColAttrib(Ihandle* ih, const char* value)
 /* Cell Value Attributes (L:C notation)                                     */
 /* ========================================================================= */
 
+static char* iTableGetCellValue(Ihandle* ih, int lin, int col)
+{
+  if (iupAttribGetBoolean(ih, "VIRTUALMODE"))
+  {
+    sIFnii value_cb = (sIFnii)IupGetCallback(ih, "VALUE_CB");
+    return value_cb ? value_cb(ih, lin, col) : NULL;
+  }
+
+  return iupdrvTableGetCellValue(ih, lin, col);
+}
+
 static char* iTableGetIdValueAttrib(Ihandle* ih, int lin, int col)
 {
   if (!iupTableCheckCellPos(ih, lin, col))
@@ -401,7 +412,7 @@ static char* iTableGetIdValueAttrib(Ihandle* ih, int lin, int col)
   if (!ih->handle)
     return NULL;
 
-  return iupdrvTableGetCellValue(ih, lin, col);
+  return iTableGetCellValue(ih, lin, col);
 }
 
 static int iTableSetIdValueAttrib(Ihandle* ih, int lin, int col, const char* value)
@@ -846,7 +857,7 @@ static char* iTableGetValueAttrib(Ihandle* ih)
   if (!iupTableCheckCellPos(ih, lin, col))
     return NULL;
 
-  return iupdrvTableGetCellValue(ih, lin, col);
+  return iTableGetCellValue(ih, lin, col);
 }
 
 static int iTableSetValueAttrib(Ihandle* ih, const char* value)
