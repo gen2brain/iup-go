@@ -530,6 +530,66 @@ static void eflDialogSizeLimitsJob(void* data)
   eflDialogSetResizeInc(ih, iupAttribGet(ih, "RESIZEINC"), min_w, min_h);
 }
 
+static void eflDialogSetTaskBarButton(Ihandle* ih, const char* value)
+{
+#ifdef HAVE_ECORE_X
+  Eo* win = iupeflGetWidget(ih);
+  Ecore_X_Window xwin;
+  Ecore_X_Window_State* states = NULL;
+  Ecore_X_Window_State* merged;
+  unsigned int num = 0, i, count = 0;
+  int hide;
+
+  if (!value || !win)
+    return;
+
+  xwin = elm_win_xwindow_get(win);
+  if (!xwin)
+    return;
+
+  hide = iupStrEqualNoCase(value, "HIDE");
+
+  if (efl_gfx_entity_visible_get(win))
+  {
+    ecore_x_netwm_state_request_send(xwin, ecore_x_window_root_get(xwin),
+                                     ECORE_X_WINDOW_STATE_SKIP_TASKBAR, ECORE_X_WINDOW_STATE_UNKNOWN,
+                                     hide? EINA_TRUE: EINA_FALSE);
+    return;
+  }
+
+  /* EFL rewrites the whole list for its own states, so merge instead of replacing */
+  if (!ecore_x_netwm_window_state_get(xwin, &states, &num))
+    num = 0;
+
+  merged = (Ecore_X_Window_State*)malloc((num + 1) * sizeof(Ecore_X_Window_State));
+  if (merged)
+  {
+    for (i = 0; i < num; i++)
+    {
+      if (states[i] != ECORE_X_WINDOW_STATE_SKIP_TASKBAR)
+        merged[count++] = states[i];
+    }
+    if (hide)
+      merged[count++] = ECORE_X_WINDOW_STATE_SKIP_TASKBAR;
+
+    ecore_x_netwm_window_state_set(xwin, merged, count);
+    free(merged);
+  }
+
+  free(states);
+#else
+  (void)ih;
+  (void)value;
+#endif
+}
+
+static int eflDialogSetTaskBarButtonAttrib(Ihandle* ih, const char* value)
+{
+  if (iupeflGetWidget(ih))
+    eflDialogSetTaskBarButton(ih, value);
+  return 1;
+}
+
 IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
 {
   Eo* win = iupeflGetWidget(ih);
@@ -549,6 +609,8 @@ IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
   {
     int width = ih->userwidth > 0 ? ih->userwidth : ih->currentwidth;
     int height = ih->userheight > 0 ? ih->userheight : ih->currentheight;
+
+    eflDialogSetTaskBarButton(ih, iupAttribGet(ih, "TASKBARBUTTON"));
 
     if (width > 0 && height > 0 && !iupAttribGet(ih, "_IUP_EFL_SHOWN"))
     {
@@ -1464,6 +1526,7 @@ IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "HIDETITLEBAR", NULL, eflDialogSetHideTitleBarAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "OPACITY", NULL, eflDialogSetOpacityAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TASKBARBUTTON", NULL, eflDialogSetTaskBarButtonAttrib, IUPAF_SAMEASSYSTEM, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "OPACITYIMAGE", NULL, eflDialogSetOpacityImageAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SHAPEIMAGE", NULL, eflDialogSetShapeImageAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CLIENTSIZE", eflDialogGetClientSizeAttrib, iupDialogSetClientSizeAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_SAVE|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);

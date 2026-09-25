@@ -9,6 +9,7 @@
 #include <QWindow>
 #include <QTimer>
 #include <QApplication>
+#include <QGuiApplication>
 #include <QMoveEvent>
 #include <QString>
 #include <QIcon>
@@ -36,6 +37,19 @@ extern "C" {
 }
 
 #include "iupqt_drv.h"
+
+#if QT_VERSION >= QT_VERSION_CHECK(6, 2, 0) && !defined(Q_OS_WIN) && !defined(Q_OS_MACOS) && !defined(Q_OS_HAIKU)
+  #include <QtGui/qguiapplication_platform.h>
+  #define IUP_QT_HAS_X11_APP 1
+#endif
+
+#ifdef IUPX11_USE_DLOPEN
+extern "C" {
+#include "iupunix_x11.h"
+}
+#elif !defined(_WIN32) && !defined(__APPLE__) && !defined(__HAIKU__)
+#include <X11/Xlib.h>
+#endif
 
 
 /****************************************************************************
@@ -436,6 +450,58 @@ static void qtDialogSetResizeInc(Ihandle* ih, const char* value, int min_w, int 
   widget->setSizeIncrement(inc_w > 1? inc_w: 1, inc_h > 1? inc_h: 1);
 }
 
+static void qtDialogSetTaskBarButton(Ihandle* ih, const char* value)
+{
+#ifdef IUP_QT_HAS_X11_APP
+  QWidget* widget = (QWidget*)ih->handle;
+
+  if (!value || !widget || !widget->windowHandle())
+    return;
+
+  if (QGuiApplication::platformName() != QLatin1String("xcb"))
+    return;
+
+  auto* x11_app = qApp->nativeInterface<QNativeInterface::QX11Application>();
+  if (!x11_app)
+    return;
+
+  Display* xdisplay = (Display*)x11_app->display();
+  if (!xdisplay)
+    return;
+
+#ifdef IUPX11_USE_DLOPEN
+  if (!iupX11Open())
+    return;
+#endif
+
+  Atom net_wm_state = XInternAtom(xdisplay, "_NET_WM_STATE", 0);
+  Atom skip_taskbar = XInternAtom(xdisplay, "_NET_WM_STATE_SKIP_TASKBAR", 0);
+
+  XEvent evt;
+  memset(&evt, 0, sizeof(evt));
+  evt.xclient.type = ClientMessage;
+  evt.xclient.window = (Window)widget->winId();
+  evt.xclient.message_type = net_wm_state;
+  evt.xclient.format = 32;
+  evt.xclient.data.l[0] = iupStrEqualNoCase(value, "HIDE")? 1: 0;
+  evt.xclient.data.l[1] = (long)skip_taskbar;
+  evt.xclient.data.l[3] = 1;
+
+  XSendEvent(xdisplay, XRootWindow(xdisplay, XDefaultScreen(xdisplay)), 0,
+             SubstructureNotifyMask | SubstructureRedirectMask, &evt);
+#else
+  (void)ih;
+  (void)value;
+#endif
+}
+
+static int qtDialogSetTaskBarButtonAttrib(Ihandle* ih, const char* value)
+{
+  if (ih->handle && ((QWidget*)ih->handle)->isVisible())
+    qtDialogSetTaskBarButton(ih, value);
+  return 1;
+}
+
 extern "C" IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
 {
   QWidget* widget = (QWidget*)ih->handle;
@@ -453,6 +519,8 @@ extern "C" IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
         widget->activateWindow();
         widget->raise();
       }
+
+      qtDialogSetTaskBarButton(ih, iupAttribGet(ih, "TASKBARBUTTON"));
 
       /* Qt keeps the size hints in the widget until the native window exists */
       if (iupAttribGet(ih, "RESIZEINC"))
@@ -1320,6 +1388,11 @@ extern "C" IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
 
   iupClassRegisterAttribute(ic, "COMPOSITED", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TOOLBOX", NULL, qtDialogSetToolBoxAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+#ifdef IUP_QT_HAS_X11_APP
+  iupClassRegisterAttribute(ic, "TASKBARBUTTON", NULL, qtDialogSetTaskBarButtonAttrib, IUPAF_SAMEASSYSTEM, NULL, IUPAF_NO_INHERIT);
+#else
+  iupClassRegisterAttribute(ic, "TASKBARBUTTON", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+#endif
   iupClassRegisterAttribute(ic, "HELPBUTTON", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SHOWNOACTIVATE", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CUSTOMFRAME", NULL, NULL, IUPAF_SAMEASSYSTEM, NULL, IUPAF_NO_INHERIT);

@@ -201,7 +201,7 @@ public:
   }
 };
 
-IUP_DRV_API void iupfltkX11SetSkipTaskbar(Fl_Window* window)
+IUP_DRV_API void iupfltkX11SetSkipTaskbar(Fl_Window* window, int skip)
 {
 #if defined(FLTK_USE_X11)
   if (!window || !iupfltkIsX11() || !fl_xid(window))
@@ -221,12 +221,13 @@ IUP_DRV_API void iupfltkX11SetSkipTaskbar(Fl_Window* window)
   xev.xclient.window = fl_xid(window);
   xev.xclient.message_type = net_wm_state;
   xev.xclient.format = 32;
-  xev.xclient.data.l[0] = 1;
+  xev.xclient.data.l[0] = skip? 1: 0;
   xev.xclient.data.l[1] = (long)skip_taskbar;
 
   XSendEvent(fl_display, root, 0, SubstructureNotifyMask | SubstructureRedirectMask, &xev);
 #else
   (void)window;
+  (void)skip;
 #endif
 }
 
@@ -343,6 +344,23 @@ static void fltkDialogSetTransient(Fl_Window* dialog, Fl_Window* parent)
 #endif
 }
 
+static void fltkDialogSetTaskBarButton(Ihandle* ih, const char* value)
+{
+  IupFltkDialog* dialog = (IupFltkDialog*)ih->handle;
+
+  if (value && dialog)
+    iupfltkX11SetSkipTaskbar(dialog, iupStrEqualNoCase(value, "HIDE"));
+}
+
+static int fltkDialogSetTaskBarButtonAttrib(Ihandle* ih, const char* value)
+{
+  IupFltkDialog* dialog = (IupFltkDialog*)ih->handle;
+
+  if (dialog && dialog->visible())
+    fltkDialogSetTaskBarButton(ih, value);
+  return 1;
+}
+
 extern "C" IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
 {
   IupFltkDialog* dialog = (IupFltkDialog*)ih->handle;
@@ -374,9 +392,11 @@ extern "C" IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
 
     if (iupDialogGetNativeParent(ih))
     {
-      iupfltkX11SetSkipTaskbar(dialog);
+      iupfltkX11SetSkipTaskbar(dialog, 1);
       fltkDialogSetTransient(dialog, (Fl_Window*)iupDialogGetNativeParent(ih));
     }
+
+    fltkDialogSetTaskBarButton(ih, iupAttribGet(ih, "TASKBARBUTTON"));
 
     const char* cursor = iupAttribGetStr(ih, "CURSOR");
     if (cursor)
@@ -1002,6 +1022,7 @@ extern "C" IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
 
   iupClassRegisterAttribute(ic, "BRINGFRONT", NULL, fltkDialogSetBringFrontAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TOPMOST", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TASKBARBUTTON", NULL, fltkDialogSetTaskBarButtonAttrib, IUPAF_SAMEASSYSTEM, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "OPACITY", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "CUSTOMFRAME", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);

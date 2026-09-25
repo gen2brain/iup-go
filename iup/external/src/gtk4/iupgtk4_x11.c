@@ -155,6 +155,41 @@ IUP_DRV_API int iupgtk4X11HideFromTaskbar(GdkSurface* surface)
   return 1;
 }
 
+IUP_DRV_API int iupgtk4X11SetSkipTaskbar(GdkSurface* surface, int skip)
+{
+  Display* xdisplay;
+  Atom net_wm_state, net_wm_state_skip_taskbar;
+  XEvent evt;
+
+  if (!surface || !GDK_IS_X11_SURFACE(surface))
+    return 0;
+
+  xdisplay = x11_get_xdisplay();
+  if (!xdisplay)
+    return 0;
+
+#ifdef IUPX11_USE_DLOPEN
+  if (!iupX11Open())
+    return 0;
+#endif
+
+  net_wm_state = XInternAtom(xdisplay, "_NET_WM_STATE", 0);
+  net_wm_state_skip_taskbar = XInternAtom(xdisplay, "_NET_WM_STATE_SKIP_TASKBAR", 0);
+
+  memset(&evt, 0, sizeof(evt));
+  evt.xclient.type = ClientMessage;
+  evt.xclient.window = gdk_x11_surface_get_xid(surface);
+  evt.xclient.message_type = net_wm_state;
+  evt.xclient.format = 32;
+  evt.xclient.data.l[0] = skip? 1: 0;
+  evt.xclient.data.l[1] = (long)net_wm_state_skip_taskbar;
+  evt.xclient.data.l[3] = 1;
+
+  XSendEvent(xdisplay, XRootWindow(xdisplay, XDefaultScreen(xdisplay)), 0,
+             SubstructureNotifyMask | SubstructureRedirectMask, &evt);
+  return 1;
+}
+
 /* Pointer operations */
 
 /* GTK4 dropped the geometry hints, so the resize increments go straight to the window manager */

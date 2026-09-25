@@ -112,7 +112,7 @@ IUP_DRV_API const char* iupfltkGetNativeFontIdName(void);
  ****************************************************************************/
 
 IUP_DRV_API Fl_Window* iupfltkGetParentWidget(Ihandle* ih);
-IUP_DRV_API void iupfltkX11SetSkipTaskbar(Fl_Window* window);
+IUP_DRV_API void iupfltkX11SetSkipTaskbar(Fl_Window* window, int skip);
 
 /****************************************************************************
  * System Utilities
