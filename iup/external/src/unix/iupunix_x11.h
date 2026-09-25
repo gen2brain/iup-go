@@ -153,6 +153,8 @@ typedef union _XEvent {
 #define PropModeReplace   0
 #define SubstructureRedirectMask  (1L << 20)
 #define SubstructureNotifyMask    (1L << 19)
+#define AnyPropertyType   0L
+#define Success           0
 
 #endif /* _X11_XLIB_H_ */
 
@@ -179,6 +181,8 @@ static int (*iupx11_XSendEvent)(Display*, Window, int, long, XEvent*) = NULL;
 static int (*iupx11_XSetTransientForHint)(Display*, Window, Window) = NULL;
 static int (*iupx11_XGetWindowAttributes)(Display*, Window, XWindowAttributes*) = NULL;
 static VisualID (*iupx11_XVisualIDFromVisual)(Visual*) = NULL;
+static int (*iupx11_XGetWindowProperty)(Display*, Window, Atom, long, long, Bool, Atom, Atom*, int*, unsigned long*, unsigned long*, unsigned char**) = NULL;
+static int (*iupx11_XFree)(void*) = NULL;
 
 #define XCreateGC iupx11_XCreateGC
 #define XFreeGC iupx11_XFreeGC
@@ -201,6 +205,8 @@ static VisualID (*iupx11_XVisualIDFromVisual)(Visual*) = NULL;
 #define XSetTransientForHint iupx11_XSetTransientForHint
 #define XGetWindowAttributes iupx11_XGetWindowAttributes
 #define XVisualIDFromVisual iupx11_XVisualIDFromVisual
+#define XGetWindowProperty iupx11_XGetWindowProperty
+#define XFree iupx11_XFree
 
 static int iupX11Open(void)
 {
@@ -235,6 +241,8 @@ static int iupX11Open(void)
   iupx11_XSetTransientForHint = (int (*)(Display*, Window, Window))dlsym(iupx11_handle, "XSetTransientForHint");
   iupx11_XGetWindowAttributes = (int (*)(Display*, Window, XWindowAttributes*))dlsym(iupx11_handle, "XGetWindowAttributes");
   iupx11_XVisualIDFromVisual = (VisualID (*)(Visual*))dlsym(iupx11_handle, "XVisualIDFromVisual");
+  iupx11_XGetWindowProperty = (int (*)(Display*, Window, Atom, long, long, Bool, Atom, Atom*, int*, unsigned long*, unsigned long*, unsigned char**))dlsym(iupx11_handle, "XGetWindowProperty");
+  iupx11_XFree = (int (*)(void*))dlsym(iupx11_handle, "XFree");
 
   if (!iupx11_XDefaultScreen || !iupx11_XServerVendor || !iupx11_XVendorRelease)
   {

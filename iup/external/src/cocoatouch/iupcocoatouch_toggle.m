@@ -425,7 +425,11 @@ static char* cocoaTouchToggleGetValueAttrib(Ihandle* ih)
 static int cocoaTouchToggleSetTitleAttrib(Ihandle* ih, const char* value)
 {
 	UISwitch* sw = cocoaTouchToggleGetSwitch(ih);
-	if (sw) return 1;
+	if (sw)
+	{
+		iupToggleSwitchSetAccessibleTitle(ih, value);
+		return 1;
+	}
 	UIButton* img_btn = cocoaTouchToggleGetImageButton(ih);
 	if (img_btn) return 1;
 

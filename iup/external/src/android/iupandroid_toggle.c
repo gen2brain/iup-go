@@ -104,8 +104,11 @@ static int androidToggleSetTitleAttrib(Ihandle* ih, const char* value)
     value = "";
 
   /* MaterialSwitch is TextView-based; suppress its built-in label */
-  if (iupAttribGetBoolean(ih, "SWITCH"))
+  if (!ih->data->is_radio && iupAttribGetBoolean(ih, "SWITCH"))
+  {
+    iupToggleSwitchSetAccessibleTitle(ih, value);
     value = "";
+  }
 
   int markup = iupAttribGetBoolean(ih, "MARKUP");
 

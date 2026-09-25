@@ -686,9 +686,11 @@ static char* qtToggleGetValueAttrib(Ihandle* ih)
 
 static int qtToggleSetTitleAttrib(Ihandle* ih, const char* value)
 {
-  /* Switch widgets do not have a title */
-  if (iupAttribGetBoolean(ih, "SWITCH"))
-    return 0;
+  if (!ih->data->is_radio && iupAttribGetBoolean(ih, "SWITCH"))
+  {
+    iupToggleSwitchSetAccessibleTitle(ih, value);
+    return 1;
+  }
 
   if (ih->data->type == IUP_TOGGLE_TEXT)
   {

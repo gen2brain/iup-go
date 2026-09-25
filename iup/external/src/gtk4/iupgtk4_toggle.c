@@ -382,7 +382,10 @@ static int gtk4ToggleSetTitleAttrib(Ihandle* ih, const char* value)
   if (iupAttribGetBoolean(ih, "SWITCH"))
   {
     if (GTK_IS_SWITCH(ih->handle))
-      return 0;
+    {
+      iupToggleSwitchSetAccessibleTitle(ih, value);
+      return 1;
+    }
   }
 
   if (ih->data->type == IUP_TOGGLE_TEXT)
