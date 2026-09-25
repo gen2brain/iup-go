@@ -430,6 +430,25 @@ static guint gtk4TableViewPos(Igtk4TableData* gtk_data, int lin)
   return GTK_INVALID_LIST_POSITION;
 }
 
+/* GtkListBase keeps its own cursor; when it is left on a removed or moved row its focus fallback selects row 0 */
+static void gtk4TableSyncCursor(Igtk4TableData* gtk_data)
+{
+  GtkScrollInfo* scroll;
+  guint pos;
+
+  if (gtk_data->current_row < 1)
+    return;
+
+  pos = gtk4TableViewPos(gtk_data, gtk_data->current_row);
+  if (pos == GTK_INVALID_LIST_POSITION)
+    return;
+
+  scroll = gtk_scroll_info_new();
+  gtk_scroll_info_set_enable_horizontal(scroll, FALSE);
+  gtk_scroll_info_set_enable_vertical(scroll, FALSE);
+  gtk_column_view_scroll_to(GTK_COLUMN_VIEW(gtk_data->column_view), pos, NULL, GTK_LIST_SCROLL_FOCUS, scroll);
+}
+
 static int gtk4TableLinFromViewPos(Igtk4TableData* gtk_data, guint pos)
 {
   GListModel* view = G_LIST_MODEL(gtk_data->selection_model);
@@ -713,6 +732,7 @@ static void gtk4TableMoveRow(Ihandle* ih, int from, int to)
   gtk_data->current_row = to;
   if (GTK_IS_SINGLE_SELECTION(gtk_data->selection_model))
     gtk_single_selection_set_selected(GTK_SINGLE_SELECTION(gtk_data->selection_model), gtk4TableViewPos(gtk_data, to));
+  gtk4TableSyncCursor(gtk_data);
 }
 
 static GdkContentProvider* on_row_drag_prepare(GtkDragSource* source, double x, double y, gpointer user_data)
@@ -1289,13 +1309,14 @@ static void on_selection_changed(GtkSelectionModel* selection, guint position, g
 
   if (old_row != gtk_data->current_row)
   {
+    IFnii cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
+
     gtk4TableNotifyRow(gtk_data, old_row);
     gtk4TableNotifyRow(gtk_data, gtk_data->current_row);
-  }
 
-  IFnii cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
-  if (cb)
-    cb(ih, gtk_data->current_row, gtk_data->current_col);
+    if (cb)
+      cb(ih, gtk_data->current_row, gtk_data->current_col);
+  }
 }
 
 static int gtk4TableFindClickedCell(Ihandle* ih, GtkWidget* column_view, double x, double y, int* out_row, int* out_col)
@@ -1330,6 +1351,7 @@ static void on_click(GtkGestureClick* gesture, int n_press, double x, double y, 
     return;
 
   int old_row = gtk_data->current_row;
+  int old_col = gtk_data->current_col;
   gtk_data->current_row = clicked_row;
   gtk_data->current_col = clicked_col;
 
@@ -1338,7 +1360,7 @@ static void on_click(GtkGestureClick* gesture, int n_press, double x, double y, 
   gtk4TableNotifyRow(gtk_data, gtk_data->current_row);
 
   IFnii enter_cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
-  if (enter_cb)
+  if (enter_cb && (old_row != clicked_row || old_col != clicked_col))
     enter_cb(ih, gtk_data->current_row, gtk_data->current_col);
 
   IFniis click_cb = (IFniis)IupGetCallback(ih, "CLICK_CB");
@@ -1680,6 +1702,7 @@ static void gtk4TableSortStore(Ihandle* ih, int col, int ascending)
   gtk_selection_model_unselect_all(gtk_data->selection_model);
   for (i = 0; i < sel_count; i++)
     iupdrvTableSelectLin(ih, new_pos[selected[i]], 1);
+  gtk4TableSyncCursor(gtk_data);
 
   iupAttribSet(ih, "_IUPTABLE_IGNORE_SELECTION_CB", ignore);
 
@@ -2496,6 +2519,7 @@ IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
     gtk_data->current_row = gtk4TableFollowPos(gtk_data->current_row, num_lin + 1, 0, num_lin);
     if (gtk_data->current_row >= 1)
       gtk4TableNotifyRow(gtk_data, gtk_data->current_row);
+    gtk4TableSyncCursor(gtk_data);
     return;
   }
 
@@ -2521,6 +2545,7 @@ IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
   gtk_data->current_row = gtk4TableFollowPos(gtk_data->current_row, num_lin + 1, 0, num_lin);
   if (gtk_data->current_row >= 1)
     gtk4TableNotifyRow(gtk_data, gtk_data->current_row);
+  gtk4TableSyncCursor(gtk_data);
 }
 
 IUP_SDK_API void iupdrvTableAddCol(Ihandle* ih, int pos)
@@ -2585,6 +2610,7 @@ IUP_SDK_API void iupdrvTableDelLin(Ihandle* ih, int pos)
     g_list_model_items_changed(gtk_data->model, (guint)(pos - 1), 1, 0);
     gtk_data->current_row = gtk4TableFollowPos(gtk_data->current_row, pos, -1, ih->data->num_lin);
     iup_table_virtual_model_refresh(IUP_TABLE_VIRTUAL_MODEL(gtk_data->model));
+    gtk4TableSyncCursor(gtk_data);
     return;
   }
 
@@ -2594,6 +2620,7 @@ IUP_SDK_API void iupdrvTableDelLin(Ihandle* ih, int pos)
   ih->data->num_lin--;
   gtk_data->current_row = gtk4TableFollowPos(gtk_data->current_row, pos, -1, ih->data->num_lin);
   gtk4TableReindexRows(gtk_data);
+  gtk4TableSyncCursor(gtk_data);
 }
 
 /* ========================================================================= */
@@ -2902,6 +2929,7 @@ IUP_SDK_API void iupdrvTableSetFocusCell(Ihandle* ih, int lin, int col)
     if (lin != old_row)
       gtk4TableNotifyRow(gtk_data, lin);
 
+    gtk4TableSyncCursor(gtk_data);
     iupdrvTableScrollToCell(ih, lin, col);
   }
 }
