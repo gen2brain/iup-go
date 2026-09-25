@@ -363,8 +363,14 @@ static int cocoaToggleSetTitleAttrib(Ihandle* ih, const char* value)
 
   if ([the_toggle isKindOfClass:[NSSwitch class]])
   {
-    /* NSSwitch does not have a title */
-    return 0;
+    if (!iupAttribGet(ih, "ACCESSIBLETITLE"))
+    {
+      char* stripped = value ? iupStrProcessMnemonic(value, NULL, 0) : NULL;
+      iupdrvSetAccessibleTitle(ih, stripped ? stripped : value);
+      if (stripped && stripped != value)
+        free(stripped);
+    }
+    return 1;
   }
 
   if (ih->data->type == IUP_TOGGLE_TEXT)

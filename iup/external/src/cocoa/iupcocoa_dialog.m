@@ -980,17 +980,6 @@ IUP_SDK_API void iupdrvDialogSetParent(Ihandle* ih, InativeHandle* parent)
  ********************** Attributes ******************************
  ****************************************************************/
 
-static int cocoaDialogSetMenuAttrib(Ihandle* ih, const char* value)
-{
-  if (ih->handle && [(NSWindow*)ih->handle isKeyWindow])
-  {
-    Ihandle* menu_ih = IupGetHandle(value);
-    iupcocoaMenuSetApplicationMenu(menu_ih);
-  }
-
-  return 1;
-}
-
 static void cocoaDialogSetMinMax(Ihandle* ih, int min_w, int min_h, int max_w, int max_h)
 {
   NSWindow* the_window = iupcocoaDialogGetWindow(ih);
@@ -1998,7 +1987,6 @@ IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "CLIENTSIZE", cocoaDialogGetClientSizeAttrib, iupDialogSetClientSizeAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_SAVE | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CLIENTOFFSET", cocoaDialogGetClientOffsetAttrib, NULL, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_DEFAULTVALUE | IUPAF_READONLY | IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "MENU", NULL, cocoaDialogSetMenuAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TITLE", NULL, cocoaDialogSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "RESIZE", cocoaDialogGetResizeAttrib, cocoaDialogSetResizeAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "BORDER", NULL, cocoaDialogSetBorderAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
