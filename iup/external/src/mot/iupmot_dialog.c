@@ -455,6 +455,23 @@ static int motDialogSetTopMostAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
+static int motDialogSetTaskBarButtonAttrib(Ihandle* ih, const char* value)
+{
+  static int support_skip = -1;
+  static Atom skip_taskbar = 0;
+  if (!skip_taskbar)
+    skip_taskbar = XInternAtom(iupmot_display, "_NET_WM_STATE_SKIP_TASKBAR", False);
+
+  if (support_skip == -1)
+    support_skip = motDialogQueryWMspecSupport(skip_taskbar);
+
+  if (!ih->handle || !support_skip)
+    return 1;
+
+  motDialogChangeWMState(ih, skip_taskbar, 0, iupStrEqualNoCase(value, "HIDE")? 1: 0);
+  return 1;
+}
+
 static int motDialogSetFullScreen(Ihandle* ih, int fullscreen)
 {
   static int support_fullscreen = -1;  /* WARNING: The WM can be changed dynamically */
@@ -1369,6 +1386,7 @@ IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "OPACITYIMAGE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SHAPEIMAGE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TOPMOST", NULL, motDialogSetTopMostAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TASKBARBUTTON", NULL, motDialogSetTaskBarButtonAttrib, IUPAF_SAMEASSYSTEM, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DIALOGHINT", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "BRINGFRONT", NULL, motDialogSetBringFrontAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MAXIMIZED", motDialogGetMaximizedAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);

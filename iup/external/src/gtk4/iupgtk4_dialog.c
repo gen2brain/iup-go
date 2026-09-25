@@ -142,9 +142,36 @@ static void gtk4DialogSetResizeInc(Ihandle* ih, const char* value, int min_w, in
 #endif
 }
 
+static void gtk4DialogSetTaskBarButton(Ihandle* ih, const char* value)
+{
+#ifdef GDK_WINDOWING_X11
+  GdkSurface* surface;
+
+  if (!value || !ih->handle || !iupgtk4X11IsBackend())
+    return;
+
+  surface = iupgtk4GetSurface(ih->handle);
+  if (surface)
+    iupgtk4X11SetSkipTaskbar(surface, iupStrEqualNoCase(value, "HIDE"));
+#else
+  (void)ih;
+  (void)value;
+#endif
+}
+
+static int gtk4DialogSetTaskBarButtonAttrib(Ihandle* ih, const char* value)
+{
+  if (ih->handle && gtk_widget_get_visible(ih->handle))
+    gtk4DialogSetTaskBarButton(ih, value);
+  return 1;
+}
+
 IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
 {
   gtk_widget_set_visible(ih->handle, visible);
+
+  if (visible)
+    gtk4DialogSetTaskBarButton(ih, iupAttribGet(ih, "TASKBARBUTTON"));
 
   /* the surface, and with it the window manager hints, exists only once shown */
   if (visible && iupAttribGet(ih, "RESIZEINC"))
@@ -1099,6 +1126,7 @@ IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "ACTIVEWINDOW", gtk4DialogGetActiveWindowAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TOPMOST", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DIALOGHINT", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TASKBARBUTTON", NULL, gtk4DialogSetTaskBarButtonAttrib, IUPAF_SAMEASSYSTEM, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "OPACITY", NULL, gtk4DialogSetOpacityAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "OPACITYIMAGE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SHAPEIMAGE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);

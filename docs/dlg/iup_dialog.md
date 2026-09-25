@@ -311,8 +311,11 @@ Possible values: NORMAL, PAUSED, ERROR, INDETERMINATE, NOPROGRESS. Default: NORM
 
 **TASKBARPROGRESSVALUE** [Win32, WinUI, Cocoa Only] (write-only): updates the progress bar to the given percentage. The value must be between 0 and 100.
 
-**TASKBARBUTTON** [Win32, WinUI Only]: If set to SHOW force the application button to be shown on the taskbar even if the dialog does not have decorations.
-If set to HIDE force the application button to be hidden from the taskbar, but also in this case the system menu, the maximize and minimize buttons will be hidden.
+**TASKBARBUTTON**: If set to SHOW force the application button to be shown on the taskbar even if the dialog does not have decorations.
+If set to HIDE force the application button to be hidden from the taskbar.
+In Win32 and WinUI HIDE also hides the system menu, the maximize and minimize buttons.
+In GTK, GTK 4, Qt, Motif, EFL and FLTK it requires X11; in Qt it needs Qt 6.2 or newer.
+Not supported in macOS, Haiku, Android, iOS and WebAssembly.
 
 #### Exclusive [Haiku Only]
 
@@ -331,7 +334,7 @@ If set to HIDE force the application button to be hidden from the taskbar, but a
 
 **TITLEBARSTYLE** (non-inheritable): toolbar tonal style. Values: "FLAT" (default), "LIFTED", "PRIMARY".
 
-Not supported: MAXBOX, MINBOX, MENUBOX, RESIZE, RESIZEINC, BORDER, DIALOGFRAME, CUSTOMFRAME, CUSTOMFRAMESIMULATE, HIDETASKBAR, TASKBARPROGRESS, HELPBUTTON, TOOLBOX, SAVEUNDER, COMPOSITED, TOPMOST, OPACITYIMAGE, SHAPEIMAGE.
+Not supported: MAXBOX, MINBOX, MENUBOX, RESIZE, RESIZEINC, BORDER, DIALOGFRAME, CUSTOMFRAME, CUSTOMFRAMESIMULATE, HIDETASKBAR, TASKBARPROGRESS, TASKBARBUTTON, HELPBUTTON, TOOLBOX, SAVEUNDER, COMPOSITED, TOPMOST, OPACITYIMAGE, SHAPEIMAGE.
 
 ### Callbacks
 

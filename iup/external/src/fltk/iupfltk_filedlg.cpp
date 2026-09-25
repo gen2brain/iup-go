@@ -427,7 +427,7 @@ static int fltkFileDlgPopup(Ihandle* ih, int x, int y)
       preview_canvas->resize(2, preview_canvas->y(), dlg_win->w() - 4, preview_canvas->h());
 
     if (iupDialogGetNativeParent(ih))
-      iupfltkX11SetSkipTaskbar(dlg_win);
+      iupfltkX11SetSkipTaskbar(dlg_win, 1);
 
     InativeHandle* saved_handle = ih->handle;
     ih->handle = (InativeHandle*)dlg_win;

@@ -1166,6 +1166,12 @@ static int gtkDialogSetTopMostAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
+static int gtkDialogSetTaskBarButtonAttrib(Ihandle* ih, const char* value)
+{
+  gtk_window_set_skip_taskbar_hint((GtkWindow*)ih->handle, iupStrEqualNoCase(value, "HIDE"));
+  return 1;
+}
+
 #if GTK_CHECK_VERSION(2, 12, 0)
 static int gtkDialogSetOpacityAttrib(Ihandle* ih, const char* value)
 {
@@ -1478,6 +1484,7 @@ IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "ACTIVEWINDOW", gtkDialogGetActiveWindowAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TOPMOST", NULL, gtkDialogSetTopMostAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DIALOGHINT", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TASKBARBUTTON", NULL, gtkDialogSetTaskBarButtonAttrib, IUPAF_SAMEASSYSTEM, NULL, IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "OPACITY", NULL, gtkDialogSetOpacityAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "OPACITYIMAGE", NULL, gtkDialogSetOpacityImageAttrib, NULL, NULL, IUPAF_NO_INHERIT);
