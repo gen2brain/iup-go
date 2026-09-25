@@ -77,6 +77,80 @@ protected:
   }
 };
 
+static int fltk_frame_left = -1;
+static int fltk_frame_top = -1;
+
+static int fltkDialogReadFrameExtents(Fl_Window* window, int* left, int* top)
+{
+#if defined(FLTK_USE_X11)
+  if (!window || !iupfltkIsX11() || !window->shown() || !window->visible() || !fl_xid(window))
+    return 0;
+#ifdef IUPX11_USE_DLOPEN
+  if (!iupX11Open() || !XGetWindowProperty || !XFree)
+    return 0;
+#endif
+
+  Atom extents = XInternAtom(fl_display, "_NET_FRAME_EXTENTS", 1);
+  Atom type;
+  int format, found = 0;
+  unsigned long count, after;
+  unsigned char* data = NULL;
+
+  if (extents && XGetWindowProperty(fl_display, fl_xid(window), extents, 0, 4, 0, AnyPropertyType,
+                                    &type, &format, &count, &after, &data) == Success && data)
+  {
+    if (format == 32 && count == 4)
+    {
+      long* value = (long*)data;
+      float scale = Fl::screen_scale(window->screen_num());
+      *left = (int)(value[0] / scale);
+      *top = (int)(value[2] / scale);
+      found = 1;
+    }
+    XFree(data);
+  }
+  return found;
+#else
+  (void)window;
+  (void)left;
+  (void)top;
+  return 0;
+#endif
+}
+
+/* FLTK windows use StaticGravity, their position is the client area, IUP positions the frame */
+static void fltkDialogGetFrameOffset(Ihandle* ih, int* dx, int* dy)
+{
+  int border, caption, menu;
+
+  if (fltkDialogReadFrameExtents((Fl_Window*)ih->handle, dx, dy))
+  {
+    iupAttribSetInt(ih, "_IUPFLTK_FRAME_LEFT", *dx);
+    iupAttribSetInt(ih, "_IUPFLTK_FRAME_TOP", *dy);
+    fltk_frame_left = *dx;
+    fltk_frame_top = *dy;
+    return;
+  }
+
+  if (iupAttribGet(ih, "_IUPFLTK_FRAME_LEFT"))
+  {
+    *dx = iupAttribGetInt(ih, "_IUPFLTK_FRAME_LEFT");
+    *dy = iupAttribGetInt(ih, "_IUPFLTK_FRAME_TOP");
+    return;
+  }
+
+  iupdrvDialogGetDecoration(ih, &border, &caption, &menu);
+  if (fltk_frame_left >= 0 && caption)
+  {
+    *dx = fltk_frame_left;
+    *dy = fltk_frame_top;
+    return;
+  }
+
+  *dx = border;
+  *dy = border + caption;
+}
+
 class IupFltkDialog : public Fl_Double_Window
 {
 public:
@@ -91,6 +165,13 @@ public:
   IupFltkDialog(int x, int y, int w, int h, Ihandle* ih)
     : Fl_Double_Window(x, y, w, h), iup_handle(ih), inner_group(nullptr)
   {
+  }
+
+  /* position() sets FORCE_POSITION only when the position changes, so a window already at x,y is placed by the WM */
+  void placeAt(int x, int y)
+  {
+    position(x, y);
+    force_position(1);
   }
 
   int handle(int event) override
@@ -163,11 +244,30 @@ public:
     if (!visible())
       return;
 
-    if (x_root() != old_x || y_root() != old_y)
+    int left, top;
+    if (iupAttribGet(iup_handle, "_IUPFLTK_PLACEX") && fltkDialogReadFrameExtents(this, &left, &top))
+    {
+      int dx, dy;
+      int place_x = iupAttribGetInt(iup_handle, "_IUPFLTK_PLACEX");
+      int place_y = iupAttribGetInt(iup_handle, "_IUPFLTK_PLACEY");
+      fltkDialogGetFrameOffset(iup_handle, &dx, &dy);
+      iupAttribSet(iup_handle, "_IUPFLTK_PLACEX", NULL);
+      if (dx != iupAttribGetInt(iup_handle, "_IUPFLTK_PLACEDX") || dy != iupAttribGetInt(iup_handle, "_IUPFLTK_PLACEDY"))
+      {
+        placeAt(place_x + dx, place_y + dy);
+        return;
+      }
+    }
+
+    if ((x_root() != old_x || y_root() != old_y) && iupAttribGet(iup_handle, "_IUPFLTK_FIRSTLAYOUT"))
     {
       IFnii move_cb = (IFnii)IupGetCallback(iup_handle, "MOVE_CB");
       if (move_cb)
-        move_cb(iup_handle, x_root(), y_root());
+      {
+        int dx, dy;
+        fltkDialogGetFrameOffset(iup_handle, &dx, &dy);
+        move_cb(iup_handle, x_root() - dx, y_root() - dy);
+      }
     }
 
     /* the first post-show relayout must run even if the size is unchanged; some layouts settle only on a second pass */
@@ -298,8 +398,10 @@ extern "C" IUP_SDK_API void iupdrvDialogGetPosition(Ihandle* ih, InativeHandle* 
 
   if (dialog)
   {
-    if (x) *x = dialog->x_root();
-    if (y) *y = dialog->y_root();
+    int dx, dy;
+    fltkDialogGetFrameOffset(ih, &dx, &dy);
+    if (x) *x = dialog->x_root() - dx;
+    if (y) *y = dialog->y_root() - dy;
   }
 }
 
@@ -307,7 +409,20 @@ extern "C" IUP_SDK_API void iupdrvDialogSetPosition(Ihandle* ih, int x, int y)
 {
   IupFltkDialog* dialog = (IupFltkDialog*)ih->handle;
   if (dialog)
-    dialog->position(x, y);
+  {
+    int dx, dy;
+    fltkDialogGetFrameOffset(ih, &dx, &dy);
+    dialog->placeAt(x + dx, y + dy);
+
+    if (!dialog->visible())
+    {
+      /* the frame is known only once the WM manages the window, the first resize that reads it corrects the estimate */
+      iupAttribSetInt(ih, "_IUPFLTK_PLACEX", x);
+      iupAttribSetInt(ih, "_IUPFLTK_PLACEY", y);
+      iupAttribSetInt(ih, "_IUPFLTK_PLACEDX", dx);
+      iupAttribSetInt(ih, "_IUPFLTK_PLACEDY", dy);
+    }
+  }
 }
 
 extern "C" IUP_SDK_API void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* handle, int* w, int* h)
@@ -481,11 +596,12 @@ extern "C" IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
   else if (iupStrEqualNoCase(placement, "FULL"))
   {
     int width, height;
-    int border, caption, menu;
+    int border, caption, menu, dx, dy;
     iupdrvDialogGetDecoration(ih, &border, &caption, &menu);
+    fltkDialogGetFrameOffset(ih, &dx, &dy);
 
-    int fx = -(border);
-    int fy = -(border + caption + menu);
+    int fx = -dx;
+    int fy = -(dy + menu);
 
     iupdrvGetFullSize(&width, &height);
     height += menu;
