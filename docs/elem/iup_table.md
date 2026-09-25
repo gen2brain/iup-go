@@ -40,6 +40,11 @@ Value is the 1-based column index to remove.
 The rows or columns after the given position move with their values, titles and attributes
 (ALIGNMENTcol, WIDTHcol, RASTERWIDTHcol, EDITABLEcol, and BGCOLOR, FGCOLOR and FONT of lines,
 columns and cells).
+The focused cell, the selected lines and SORTSIGNcol move with them too.
+When the focused line or column is removed, the focus goes to the one now at that position, or to the last one.
+A removed line leaves the selection, no other line is selected in its place.
+The same applies to lines and columns removed by NUMLIN and NUMCOL.
+No callback is called.
 
 #### Cell Values
 
@@ -58,8 +63,9 @@ n starts at 1.
 
 **RASTERWIDTHcol** (non-inheritable): Same as WIDTHcol.
 
-**SORTSIGNcol** (non-inheritable): Shows a sort sign (up or down arrow) in the column header.
-Can be "UP", "DOWN" or "NO". Default: NO.
+**SORTSIGNcol** (non-inheritable): Shows a sort sign in the column header.
+Can be "UP" (ascending), "DOWN" (descending) or "NO". Default: NO.
+The sign is the native sort arrow of each driver, its direction for the same order can differ between drivers.
 Only one column shows the sign, setting it in a column clears it in the others.
 It only draws the sign, the rows are not sorted.
 n starts at 1.

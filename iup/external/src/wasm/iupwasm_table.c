@@ -475,10 +475,78 @@ static void wasmTableShiftColTitles(Ihandle* ih, int from, int to)
     free(title);
 }
 
+static int wasmTableShiftPos(int cur, int pos, int delta)
+{
+  return (cur >= pos && !(delta < 0 && cur == pos)) ? cur + delta : cur;
+}
+
+static void wasmTableFollowSel(Ihandle* ih, int pos, int delta, int num_lin)
+{
+  int count, i;
+  int* lins = iupdrvTableGetSelectedLins(ih, &count);
+
+  for (i = 0; i < count; i++)
+    iupAttribSetId(ih, "_IUPWASM_TABLESEL", lins[i], NULL);
+  iupAttribSetInt(ih, "_IUPWASM_TABLESELFIRST", 0);
+  iupAttribSetInt(ih, "_IUPWASM_TABLESELLAST", 0);
+
+  for (i = 0; i < count; i++)
+  {
+    int lin = lins[i];
+    if (delta < 0 && lin == pos)
+      continue;
+    lin = wasmTableShiftPos(lin, pos, delta);
+    if (lin > num_lin)
+      continue;
+    iupAttribSetId(ih, "_IUPWASM_TABLESEL", lin, "1");
+    if (iupAttribGetInt(ih, "_IUPWASM_TABLESELFIRST") < 1)
+      iupAttribSetInt(ih, "_IUPWASM_TABLESELFIRST", lin);
+    iupAttribSetInt(ih, "_IUPWASM_TABLESELLAST", lin);
+  }
+
+  if (lins)
+    free(lins);
+}
+
+static void wasmTableFollowFocus(Ihandle* ih, int lin_pos, int lin_delta, int col_pos, int col_delta)
+{
+  int lin = iupAttribGetInt(ih, "_IUPWASM_FOCUSLIN");
+  int col = iupAttribGetInt(ih, "_IUPWASM_FOCUSCOL");
+  int new_lin, new_col;
+
+  if (lin < 1 || col < 1)
+    return;
+
+  new_lin = wasmTableShiftPos(lin, lin_pos, lin_delta);
+  new_col = wasmTableShiftPos(col, col_pos, col_delta);
+  if (new_lin > ih->data->num_lin)
+    new_lin = ih->data->num_lin;
+  if (new_col > ih->data->num_col)
+    new_col = ih->data->num_col;
+
+  if (new_lin < 1 || new_col < 1)
+  {
+    iupAttribSet(ih, "_IUPWASM_FOCUSLIN", NULL);
+    iupAttribSet(ih, "_IUPWASM_FOCUSCOL", NULL);
+    return;
+  }
+
+  if ((lin_delta < 0 && lin == lin_pos) || (col_delta < 0 && col == col_pos) ||
+      new_lin != wasmTableShiftPos(lin, lin_pos, lin_delta) || new_col != wasmTableShiftPos(col, col_pos, col_delta))
+    wasmTableSetFocus(ih, new_lin, new_col);
+  else
+  {
+    iupAttribSetInt(ih, "_IUPWASM_FOCUSLIN", new_lin);
+    iupAttribSetInt(ih, "_IUPWASM_FOCUSCOL", new_col);
+  }
+}
+
 IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
 {
+  wasmTableFollowSel(ih, num_lin + 1, 0, num_lin);
   ih->data->num_lin = num_lin;
   wasmTableRebuild(ih, 0);
+  wasmTableFollowFocus(ih, num_lin + 1, 0, ih->data->num_col + 1, 0);
 }
 
 IUP_SDK_API void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
@@ -488,11 +556,13 @@ IUP_SDK_API void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
     iupAttribSetId(ih, "_IUPWASM_COLTITLE", c, NULL);
   ih->data->num_col = num_col;
   wasmTableRebuild(ih, 1);
+  wasmTableFollowFocus(ih, ih->data->num_lin + 1, 0, num_col + 1, 0);
 }
 
 IUP_SDK_API void iupdrvTableAddLin(Ihandle* ih, int pos)
 {
   int id = iupwasmIdOf(ih);
+  wasmTableFollowSel(ih, pos, 1, ih->data->num_lin + 1);
   ih->data->num_lin++;
   wasmTableRebuild(ih, 0);
   if (id && !iupAttribGetBoolean(ih, "VIRTUALMODE") && pos < ih->data->num_lin)
@@ -500,15 +570,18 @@ IUP_SDK_API void iupdrvTableAddLin(Ihandle* ih, int pos)
     iupwasmJsTableMoveRow(id, ih->data->num_lin, pos);
     wasmTableApplyCellColors(ih);
   }
+  wasmTableFollowFocus(ih, pos, 1, ih->data->num_col + 1, 0);
 }
 
 IUP_SDK_API void iupdrvTableDelLin(Ihandle* ih, int pos)
 {
   int id = iupwasmIdOf(ih);
+  wasmTableFollowSel(ih, pos, -1, ih->data->num_lin - 1);
   if (id && !iupAttribGetBoolean(ih, "VIRTUALMODE") && pos < ih->data->num_lin)
     iupwasmJsTableMoveRow(id, pos, ih->data->num_lin);
   ih->data->num_lin--;
   wasmTableRebuild(ih, 0);
+  wasmTableFollowFocus(ih, pos, -1, ih->data->num_col + 1, 0);
 }
 
 IUP_SDK_API void iupdrvTableAddCol(Ihandle* ih, int pos)
@@ -523,6 +596,7 @@ IUP_SDK_API void iupdrvTableAddCol(Ihandle* ih, int pos)
       iupwasmJsTableReorderCols(id, ih->data->num_col, pos);
     wasmTableApplyAlign(ih);
   }
+  wasmTableFollowFocus(ih, ih->data->num_lin + 1, 0, pos, 1);
 }
 
 IUP_SDK_API void iupdrvTableDelCol(Ihandle* ih, int pos)
@@ -537,6 +611,7 @@ IUP_SDK_API void iupdrvTableDelCol(Ihandle* ih, int pos)
   iupAttribSetId(ih, "_IUPWASM_COLTITLE", ih->data->num_col, NULL);
   ih->data->num_col--;
   wasmTableRebuild(ih, 1);
+  wasmTableFollowFocus(ih, ih->data->num_lin + 1, 0, pos, -1);
 }
 
 IUP_SDK_API void iupdrvTableSetCellValue(Ihandle* ih, int lin, int col, const char* value)

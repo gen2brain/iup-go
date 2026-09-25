@@ -1776,6 +1776,23 @@ static void motTableUnMapMethod(Ihandle* ih)
 /* Driver Functions - iupdrvTable* API                                      */
 /* ========================================================================= */
 
+static int motTableFollowPos(int cur, int pos, int delta, int count)
+{
+  if (cur <= 0)
+    return cur;
+  if (cur >= pos && !(delta < 0 && cur == pos))
+    cur += delta;
+  if (cur > count)
+    cur = count;
+  return cur;
+}
+
+static void motTableFollowLins(ImotTableData* mot_data, int pos, int delta, int num_lin)
+{
+  mot_data->current_row = motTableFollowPos(mot_data->current_row, pos, delta, num_lin);
+  mot_data->anchor_row = motTableFollowPos(mot_data->anchor_row, pos, delta, num_lin);
+}
+
 IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
 {
   ImotTableData* mot_data = IMOT_TABLE_DATA(ih);
@@ -1788,29 +1805,33 @@ IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
   if (num_lin == old_num_lin)
     return;
 
-  for (i = num_lin; i < old_num_lin; i++)
+  if (!iupAttribGetBoolean(ih, "VIRTUALMODE"))
   {
-    for (col = 0; col < ih->data->num_col; col++)
+    for (i = num_lin; i < old_num_lin; i++)
     {
-      if (mot_data->cell_values[i][col])
-        free(mot_data->cell_values[i][col]);
+      for (col = 0; col < ih->data->num_col; col++)
+      {
+        if (mot_data->cell_values[i][col])
+          free(mot_data->cell_values[i][col]);
+      }
+      free(mot_data->cell_values[i]);
     }
-    free(mot_data->cell_values[i]);
-  }
 
-  if (num_lin == 0)
-  {
-    free(mot_data->cell_values);
-    mot_data->cell_values = NULL;
-  }
-  else
-  {
-    mot_data->cell_values = (char***)realloc(mot_data->cell_values, num_lin * sizeof(char**));
-    for (i = old_num_lin; i < num_lin; i++)
-      mot_data->cell_values[i] = (char**)calloc(ih->data->num_col, sizeof(char*));
+    if (num_lin == 0)
+    {
+      free(mot_data->cell_values);
+      mot_data->cell_values = NULL;
+    }
+    else
+    {
+      mot_data->cell_values = (char***)realloc(mot_data->cell_values, num_lin * sizeof(char**));
+      for (i = old_num_lin; i < num_lin; i++)
+        mot_data->cell_values[i] = (char**)calloc(ih->data->num_col, sizeof(char*));
+    }
   }
 
   ih->data->num_lin = num_lin;
+  motTableFollowLins(mot_data, num_lin + 1, 0, num_lin);
 
   if (mot_data->row_selected && mot_data->row_selected_size > num_lin)
     memset(mot_data->row_selected + num_lin, 0, mot_data->row_selected_size - num_lin);
@@ -1847,7 +1868,7 @@ IUP_SDK_API void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
   for (i = old_num_col; i < num_col; i++)
     mot_data->col_titles[i] = NULL;
 
-  for (i = 0; i < ih->data->num_lin; i++)
+  for (i = 0; mot_data->cell_values && i < ih->data->num_lin; i++)
   {
     mot_data->cell_values[i] = (char**)realloc(mot_data->cell_values[i], num_col * sizeof(char*));
     int j;
@@ -1856,6 +1877,7 @@ IUP_SDK_API void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
   }
 
   ih->data->num_col = num_col;
+  mot_data->current_col = motTableFollowPos(mot_data->current_col, num_col + 1, 0, num_col);
 
   motTableUpdateScrollbars(ih);
   motTableRedraw(ih);
@@ -1869,24 +1891,23 @@ IUP_SDK_API void iupdrvTableAddLin(Ihandle* ih, int pos)
   if (!mot_data)
     return;
 
-  if (!mot_data->cell_values)
-    return;
-
   /* pos is 1-based from core, convert to 0-based */
   pos = pos - 1;
 
   new_num_lin = ih->data->num_lin + 1;
 
-  mot_data->cell_values = (char***)realloc(mot_data->cell_values, new_num_lin * sizeof(char**));
-
-  for (lin = new_num_lin - 1; lin > pos; lin--)
+  if (!iupAttribGetBoolean(ih, "VIRTUALMODE"))
   {
-    mot_data->cell_values[lin] = mot_data->cell_values[lin - 1];
+    mot_data->cell_values = (char***)realloc(mot_data->cell_values, new_num_lin * sizeof(char**));
+
+    for (lin = new_num_lin - 1; lin > pos; lin--)
+      mot_data->cell_values[lin] = mot_data->cell_values[lin - 1];
+
+    mot_data->cell_values[pos] = (char**)calloc(ih->data->num_col, sizeof(char*));
   }
 
-  mot_data->cell_values[pos] = (char**)calloc(ih->data->num_col, sizeof(char*));
-
   ih->data->num_lin = new_num_lin;
+  motTableFollowLins(mot_data, pos + 1, 1, new_num_lin);
 
   if (mot_data->row_selected)
   {
@@ -1908,26 +1929,33 @@ IUP_SDK_API void iupdrvTableDelLin(Ihandle* ih, int pos)
   if (!mot_data)
     return;
 
-  if (!mot_data->cell_values)
-    return;
-
   /* pos is 1-based from core, convert to 0-based */
   pos = pos - 1;
 
   if (pos < 0 || pos >= ih->data->num_lin)
     return;
 
-  for (col = 0; col < ih->data->num_col; col++)
-  {
-    if (mot_data->cell_values[pos][col])
-      free(mot_data->cell_values[pos][col]);
-  }
-  free(mot_data->cell_values[pos]);
-
   new_num_lin = ih->data->num_lin - 1;
-  for (lin = pos; lin < new_num_lin; lin++)
+
+  if (!iupAttribGetBoolean(ih, "VIRTUALMODE"))
   {
-    mot_data->cell_values[lin] = mot_data->cell_values[lin + 1];
+    for (col = 0; col < ih->data->num_col; col++)
+    {
+      if (mot_data->cell_values[pos][col])
+        free(mot_data->cell_values[pos][col]);
+    }
+    free(mot_data->cell_values[pos]);
+
+    for (lin = pos; lin < new_num_lin; lin++)
+      mot_data->cell_values[lin] = mot_data->cell_values[lin + 1];
+
+    if (new_num_lin > 0)
+      mot_data->cell_values = (char***)realloc(mot_data->cell_values, new_num_lin * sizeof(char**));
+    else
+    {
+      free(mot_data->cell_values);
+      mot_data->cell_values = NULL;
+    }
   }
 
   if (mot_data->row_selected)
@@ -1937,15 +1965,8 @@ IUP_SDK_API void iupdrvTableDelLin(Ihandle* ih, int pos)
     mot_data->row_selected[mot_data->row_selected_size - 1] = 0;
   }
 
-  if (new_num_lin > 0)
-    mot_data->cell_values = (char***)realloc(mot_data->cell_values, new_num_lin * sizeof(char**));
-  else
-  {
-    free(mot_data->cell_values);
-    mot_data->cell_values = NULL;
-  }
-
   ih->data->num_lin = new_num_lin;
+  motTableFollowLins(mot_data, pos + 1, -1, new_num_lin);
 
   motTableUpdateScrollbars(ih);
   motTableRedraw(ih);
@@ -1957,9 +1978,6 @@ IUP_SDK_API void iupdrvTableAddCol(Ihandle* ih, int pos)
   int lin, col, new_num_col;
 
   if (!mot_data)
-    return;
-
-  if (!mot_data->cell_values)
     return;
 
   /* pos is 1-based from core, convert to 0-based */
@@ -1990,7 +2008,7 @@ IUP_SDK_API void iupdrvTableAddCol(Ihandle* ih, int pos)
   }
   mot_data->col_titles[pos] = NULL;
 
-  for (lin = 0; lin < ih->data->num_lin; lin++)
+  for (lin = 0; mot_data->cell_values && lin < ih->data->num_lin; lin++)
   {
     mot_data->cell_values[lin] = (char**)realloc(mot_data->cell_values[lin], new_num_col * sizeof(char*));
     for (col = new_num_col - 1; col > pos; col--)
@@ -2001,6 +2019,7 @@ IUP_SDK_API void iupdrvTableAddCol(Ihandle* ih, int pos)
   }
 
   ih->data->num_col = new_num_col;
+  mot_data->current_col = motTableFollowPos(mot_data->current_col, pos + 1, 1, new_num_col);
 
   motTableUpdateScrollbars(ih);
   motTableRedraw(ih);
@@ -2014,9 +2033,6 @@ IUP_SDK_API void iupdrvTableDelCol(Ihandle* ih, int pos)
   if (!mot_data)
     return;
 
-  if (!mot_data->cell_values)
-    return;
-
   /* pos is 1-based from core, convert to 0-based */
   pos = pos - 1;
 
@@ -2028,7 +2044,7 @@ IUP_SDK_API void iupdrvTableDelCol(Ihandle* ih, int pos)
   if (mot_data->col_titles[pos])
     free(mot_data->col_titles[pos]);
 
-  for (lin = 0; lin < ih->data->num_lin; lin++)
+  for (lin = 0; mot_data->cell_values && lin < ih->data->num_lin; lin++)
   {
     if (mot_data->cell_values[lin][pos])
       free(mot_data->cell_values[lin][pos]);
@@ -2082,6 +2098,7 @@ IUP_SDK_API void iupdrvTableDelCol(Ihandle* ih, int pos)
   }
 
   ih->data->num_col = new_num_col;
+  mot_data->current_col = motTableFollowPos(mot_data->current_col, pos + 1, -1, new_num_col);
 
   motTableUpdateScrollbars(ih);
   motTableRedraw(ih);

@@ -1146,6 +1146,9 @@ static void on_selection_changed(GtkSelectionModel* selection, guint position, g
 
   iupTableCallMultiSelectionCb(ih);
 
+  if (iupAttribGet(ih, "_IUPTABLE_IGNORE_SELECTION_CB"))
+    return;
+
   if (GTK_IS_SINGLE_SELECTION(selection))
   {
     GObject* item = gtk_single_selection_get_selected_item(GTK_SINGLE_SELECTION(selection));
@@ -1175,10 +1178,8 @@ static void on_selection_changed(GtkSelectionModel* selection, guint position, g
   }
 
   IFnii cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
-  if (cb && !iupAttribGet(ih, "_IUPTABLE_IGNORE_SELECTION_CB"))
-  {
+  if (cb)
     cb(ih, gtk_data->current_row, gtk_data->current_col);
-  }
 }
 
 static int gtk4TableFindClickedCell(Ihandle* ih, GtkWidget* column_view, double x, double y, int* out_row, int* out_col)
@@ -2013,6 +2014,8 @@ static void gtk4TableRebuildColumns(Ihandle* ih, int old_num_col, int add_pos, i
       if (src[c] == gtk_data->current_col - 1)
         cur = c + 1;
     }
+    if (!cur)
+      cur = gtk_data->current_col < num_col ? gtk_data->current_col : num_col;
     gtk_data->current_col = cur;
   }
 
@@ -2249,6 +2252,17 @@ IUP_SDK_API void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
     gtk4TableRebuildColumns(ih, old_num_col, 0, 0);
 }
 
+static int gtk4TableFollowPos(int cur, int pos, int delta, int count)
+{
+  if (cur <= 0)
+    return cur;
+  if (cur >= pos && !(delta < 0 && cur == pos))
+    cur += delta;
+  if (cur > count)
+    cur = count;
+  return cur;
+}
+
 IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
 {
   Igtk4TableData* gtk_data = IGTK4_TABLE_DATA(ih);
@@ -2269,6 +2283,7 @@ IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
       g_list_model_items_changed(gtk_data->model, old_count, 0, (guint)num_lin - old_count);
     else if ((guint)num_lin < old_count)
       g_list_model_items_changed(gtk_data->model, (guint)num_lin, old_count - (guint)num_lin, 0);
+    gtk_data->current_row = gtk4TableFollowPos(gtk_data->current_row, num_lin + 1, 0, num_lin);
     return;
   }
 
@@ -2290,6 +2305,10 @@ IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
   {
     g_list_store_splice(store, num_lin, current_rows - num_lin, NULL, 0);
   }
+
+  gtk_data->current_row = gtk4TableFollowPos(gtk_data->current_row, num_lin + 1, 0, num_lin);
+  if (gtk_data->current_row >= 1)
+    gtk4TableNotifyRow(gtk_data, gtk_data->current_row);
 }
 
 IUP_SDK_API void iupdrvTableAddCol(Ihandle* ih, int pos)
@@ -2317,6 +2336,7 @@ IUP_SDK_API void iupdrvTableAddLin(Ihandle* ih, int pos)
   {
     ih->data->num_lin++;
     g_list_model_items_changed(gtk_data->model, (guint)(pos - 1), 0, 1);
+    gtk_data->current_row = gtk4TableFollowPos(gtk_data->current_row, pos, 1, ih->data->num_lin);
     return;
   }
 
@@ -2330,8 +2350,7 @@ IUP_SDK_API void iupdrvTableAddLin(Ihandle* ih, int pos)
   g_object_unref(row);
 
   ih->data->num_lin++;
-  if (gtk_data->current_row >= pos)
-    gtk_data->current_row++;
+  gtk_data->current_row = gtk4TableFollowPos(gtk_data->current_row, pos, 1, ih->data->num_lin);
   gtk4TableReindexRows(gtk_data);
 }
 
@@ -2349,6 +2368,7 @@ IUP_SDK_API void iupdrvTableDelLin(Ihandle* ih, int pos)
   {
     ih->data->num_lin--;
     g_list_model_items_changed(gtk_data->model, (guint)(pos - 1), 1, 0);
+    gtk_data->current_row = gtk4TableFollowPos(gtk_data->current_row, pos, -1, ih->data->num_lin);
     return;
   }
 
@@ -2356,8 +2376,7 @@ IUP_SDK_API void iupdrvTableDelLin(Ihandle* ih, int pos)
   g_list_store_remove(store, pos - 1);
 
   ih->data->num_lin--;
-  if (gtk_data->current_row > pos)
-    gtk_data->current_row--;
+  gtk_data->current_row = gtk4TableFollowPos(gtk_data->current_row, pos, -1, ih->data->num_lin);
   gtk4TableReindexRows(gtk_data);
 }
 
@@ -2807,7 +2826,20 @@ IUP_SDK_API void iupdrvTableRedraw(Ihandle* ih)
 
     if (invalidate_count > 0)
     {
+      GtkBitset* current = gtk_selection_model_get_selection(gtk_data->selection_model);
+      GtkBitset* selected = gtk_bitset_copy(current);
+      GtkBitset* mask = gtk_bitset_new_range(0, invalidate_count);
+      char* ignore = iupAttribGet(ih, "_IUPTABLE_IGNORE_SELECTION_CB");
+
       g_list_model_items_changed(gtk_data->model, 0, invalidate_count, invalidate_count);
+
+      iupAttribSet(ih, "_IUPTABLE_IGNORE_SELECTION_CB", "1");
+      gtk_selection_model_set_selection(gtk_data->selection_model, selected, mask);
+      iupAttribSet(ih, "_IUPTABLE_IGNORE_SELECTION_CB", ignore);
+
+      gtk_bitset_unref(mask);
+      gtk_bitset_unref(selected);
+      gtk_bitset_unref(current);
     }
   }
   else

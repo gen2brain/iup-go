@@ -174,6 +174,28 @@ static void iTableClearColAttribs(Ihandle* ih, int col)
   }
 }
 
+static int iTableTakeSortSign(Ihandle* ih, int* sign)
+{
+  int col;
+  for (col = 1; col <= ih->data->num_col; col++)
+  {
+    *sign = iupdrvTableGetSortSign(ih, col);
+    if (*sign)
+    {
+      iupdrvTableSetSortSign(ih, col, 0);
+      return col;
+    }
+  }
+  *sign = 0;
+  return 0;
+}
+
+static void iTableRestoreSortSign(Ihandle* ih, int col, int sign)
+{
+  if (sign && col >= 1 && col <= ih->data->num_col)
+    iupdrvTableSetSortSign(ih, col, sign);
+}
+
 /* ========================================================================= */
 /* Attribute Get/Set Functions                                              */
 /* ========================================================================= */
@@ -196,7 +218,9 @@ static int iTableSetNumLinAttrib(Ihandle* ih, const char* value)
       int lin;
       for (lin = num_lin + 1; lin <= ih->data->num_lin; lin++)
         iTableClearLinAttribs(ih, lin);
+      iupAttribSet(ih, "_IUPTABLE_IGNORE_SELECTION_CB", "1");
       iupdrvTableSetNumLin(ih, num_lin);
+      iupAttribSet(ih, "_IUPTABLE_IGNORE_SELECTION_CB", NULL);
     }
     else
       ih->data->num_lin = num_lin;
@@ -219,10 +243,14 @@ static int iTableSetNumColAttrib(Ihandle* ih, const char* value)
 
     if (ih->handle)
     {
-      int col;
+      int col, sign;
+      int sort_col = iTableTakeSortSign(ih, &sign);
       for (col = num_col + 1; col <= ih->data->num_col; col++)
         iTableClearColAttribs(ih, col);
+      iupAttribSet(ih, "_IUPTABLE_IGNORE_SELECTION_CB", "1");
       iupdrvTableSetNumCol(ih, num_col);
+      iupAttribSet(ih, "_IUPTABLE_IGNORE_SELECTION_CB", NULL);
+      iTableRestoreSortSign(ih, sort_col, sign);
     }
     else
       ih->data->num_col = num_col;
@@ -250,7 +278,9 @@ static int iTableSetAddLinAttrib(Ihandle* ih, const char* value)
 
     iTableClearLinAttribs(ih, ih->data->num_lin + 1);
     iupTableMoveLinAttribs(ih, ih->data->num_lin + 1, pos);
+    iupAttribSet(ih, "_IUPTABLE_IGNORE_SELECTION_CB", "1");
     iupdrvTableAddLin(ih, pos);
+    iupAttribSet(ih, "_IUPTABLE_IGNORE_SELECTION_CB", NULL);
     iupdrvTableUpdateCellStyle(ih, 0, 0);
   }
   return 0;
@@ -269,7 +299,9 @@ static int iTableSetDelLinAttrib(Ihandle* ih, const char* value)
 
     iupTableMoveLinAttribs(ih, pos, ih->data->num_lin);
     iTableClearLinAttribs(ih, ih->data->num_lin);
+    iupAttribSet(ih, "_IUPTABLE_IGNORE_SELECTION_CB", "1");
     iupdrvTableDelLin(ih, pos);
+    iupAttribSet(ih, "_IUPTABLE_IGNORE_SELECTION_CB", NULL);
     iupdrvTableUpdateCellStyle(ih, 0, 0);
   }
   return 0;
@@ -277,7 +309,7 @@ static int iTableSetDelLinAttrib(Ihandle* ih, const char* value)
 
 static int iTableSetAddColAttrib(Ihandle* ih, const char* value)
 {
-  int pos = 0;
+  int pos = 0, sort_col, sign;
   if (!ih->handle)
     return 0;
 
@@ -288,9 +320,13 @@ static int iTableSetAddColAttrib(Ihandle* ih, const char* value)
     else if (pos > ih->data->num_col + 1)
       pos = ih->data->num_col + 1;
 
+    sort_col = iTableTakeSortSign(ih, &sign);
     iTableClearColAttribs(ih, ih->data->num_col + 1);
     iupTableMoveColAttribs(ih, ih->data->num_col + 1, pos);
+    iupAttribSet(ih, "_IUPTABLE_IGNORE_SELECTION_CB", "1");
     iupdrvTableAddCol(ih, pos);
+    iupAttribSet(ih, "_IUPTABLE_IGNORE_SELECTION_CB", NULL);
+    iTableRestoreSortSign(ih, sort_col >= pos ? sort_col + 1 : sort_col, sign);
     iupdrvTableUpdateCellStyle(ih, 0, 0);
   }
   return 0;
@@ -298,7 +334,7 @@ static int iTableSetAddColAttrib(Ihandle* ih, const char* value)
 
 static int iTableSetDelColAttrib(Ihandle* ih, const char* value)
 {
-  int pos = 0;
+  int pos = 0, sort_col, sign;
   if (!ih->handle)
     return 0;
 
@@ -307,9 +343,14 @@ static int iTableSetDelColAttrib(Ihandle* ih, const char* value)
     if (pos < 1 || pos > ih->data->num_col)
       return 0;
 
+    sort_col = iTableTakeSortSign(ih, &sign);
     iupTableMoveColAttribs(ih, pos, ih->data->num_col);
     iTableClearColAttribs(ih, ih->data->num_col);
+    iupAttribSet(ih, "_IUPTABLE_IGNORE_SELECTION_CB", "1");
     iupdrvTableDelCol(ih, pos);
+    iupAttribSet(ih, "_IUPTABLE_IGNORE_SELECTION_CB", NULL);
+    if (sort_col != pos)
+      iTableRestoreSortSign(ih, sort_col > pos ? sort_col - 1 : sort_col, sign);
     iupdrvTableUpdateCellStyle(ih, 0, 0);
   }
   return 0;

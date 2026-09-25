@@ -2521,6 +2521,17 @@ static void eflTableClearCell(Ihandle* ih, int lin, int col)
   iupAttribSetId2(ih, "_IUPEFL_CELLIMAGE", lin, col, NULL);
 }
 
+static int eflTableFollowPos(int cur, int pos, int delta, int count)
+{
+  if (cur <= 0)
+    return cur;
+  if (cur >= pos && !(delta < 0 && cur == pos))
+    cur += delta;
+  if (cur > count)
+    cur = count;
+  return cur;
+}
+
 IUP_SDK_API void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
 {
   IeflTableData* data = IEFL_TABLE_DATA(ih);
@@ -2540,6 +2551,13 @@ IUP_SDK_API void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
   }
 
   ih->data->num_col = num_col;
+
+  if (data)
+  {
+    data->selected_col = eflTableFollowPos(data->selected_col, num_col + 1, 0, num_col);
+    if (data->focus_cell_col > num_col)
+      data->focus_cell_col = 0;
+  }
 
   if (data && num_col != old_num_col)
   {
@@ -2605,6 +2623,14 @@ IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
   if (data && data->row_selected && data->row_selected_size > num_lin)
     memset(data->row_selected + num_lin, 0, data->row_selected_size - num_lin);
 
+  if (data)
+  {
+    data->selected_lin = eflTableFollowPos(data->selected_lin, num_lin + 1, 0, num_lin);
+    data->anchor_row = eflTableFollowPos(data->anchor_row, num_lin + 1, 0, num_lin);
+    if (data->focus_cell_lin > num_lin)
+      data->focus_cell_lin = 0;
+  }
+
   if (!ih->handle || num_lin == old_num_lin)
     return;
 
@@ -2632,39 +2658,94 @@ static void eflTableRefreshStructure(Ihandle* ih)
 
 IUP_SDK_API void iupdrvTableAddCol(Ihandle* ih, int pos)
 {
+  IeflTableData* data = IEFL_TABLE_DATA(ih);
+  int focus_col = data ? data->selected_col : 0;
   iupdrvTableSetNumCol(ih, ih->data->num_col + 1);
   if (pos < ih->data->num_col)
   {
     eflTableMoveColumn(ih, ih->data->num_col, pos, 0);
+    if (data)
+      data->selected_col = eflTableFollowPos(focus_col, pos, 1, ih->data->num_col);
     eflTableRefreshStructure(ih);
+    eflTableUpdateFocusCell(ih);
   }
 }
 
 IUP_SDK_API void iupdrvTableDelCol(Ihandle* ih, int pos)
 {
+  IeflTableData* data = IEFL_TABLE_DATA(ih);
+  int focus_col = data ? data->selected_col : 0;
   if (ih->data->num_col < 1)
     return;
   if (pos < ih->data->num_col)
     eflTableMoveColumn(ih, pos, ih->data->num_col, 0);
   iupdrvTableSetNumCol(ih, ih->data->num_col - 1);
+  if (data)
+  {
+    data->selected_col = eflTableFollowPos(focus_col, pos, -1, ih->data->num_col);
+    eflTableUpdateFocusCell(ih);
+  }
 }
 
 IUP_SDK_API void iupdrvTableAddLin(Ihandle* ih, int pos)
 {
   IeflTableData* data = IEFL_TABLE_DATA(ih);
+  int focus_lin = data ? data->selected_lin : 0;
+  int anchor_row = data ? data->anchor_row : 0;
+  char* sel;
+  int lin;
+
   iupdrvTableSetNumLin(ih, ih->data->num_lin + 1);
-  if (data && !data->is_virtual && pos < ih->data->num_lin)
+  if (!data)
+    return;
+
+  if (!data->is_virtual && pos < ih->data->num_lin)
     eflTableMoveRow(ih, ih->data->num_lin, pos, 0);
+
+  sel = data->row_selected ? eflTableSelection(ih) : NULL;
+  if (sel)
+  {
+    for (lin = ih->data->num_lin; lin > pos; lin--)
+      sel[lin - 1] = sel[lin - 2];
+    sel[pos - 1] = 0;
+  }
+
+  data->selected_lin = eflTableFollowPos(focus_lin, pos, 1, ih->data->num_lin);
+  data->anchor_row = eflTableFollowPos(anchor_row, pos, 1, ih->data->num_lin);
+  eflTableRefreshStructure(ih);
+  eflTableUpdateFocusCell(ih);
 }
 
 IUP_SDK_API void iupdrvTableDelLin(Ihandle* ih, int pos)
 {
   IeflTableData* data = IEFL_TABLE_DATA(ih);
-  if (ih->data->num_lin < 1)
+  int focus_lin = data ? data->selected_lin : 0;
+  int anchor_row = data ? data->anchor_row : 0;
+  int num_lin = ih->data->num_lin;
+  int lin;
+
+  if (num_lin < 1)
     return;
-  if (data && !data->is_virtual && pos < ih->data->num_lin)
-    eflTableMoveRow(ih, pos, ih->data->num_lin, 0);
-  iupdrvTableSetNumLin(ih, ih->data->num_lin - 1);
+
+  if (data && data->row_selected)
+  {
+    char* sel = eflTableSelection(ih);
+    for (lin = pos; lin < num_lin; lin++)
+      sel[lin - 1] = sel[lin];
+    sel[num_lin - 1] = 0;
+  }
+
+  if (data && !data->is_virtual && pos < num_lin)
+    eflTableMoveRow(ih, pos, num_lin, 0);
+  iupdrvTableSetNumLin(ih, num_lin - 1);
+
+  if (data)
+  {
+    data->selected_lin = eflTableFollowPos(focus_lin, pos, -1, ih->data->num_lin);
+    data->anchor_row = eflTableFollowPos(anchor_row, pos, -1, ih->data->num_lin);
+    eflTableRefreshStructure(ih);
+    eflTableUpdateFocusCell(ih);
+  }
 }
 
 IUP_SDK_API void iupdrvTableSetCellValue(Ihandle* ih, int lin, int col, const char* value)

@@ -2197,6 +2197,26 @@ extern "C" IUP_SDK_API void iupdrvTableAddBorders(Ihandle* ih, int* w, int* h)
  * Table Structure
  ****************************************************************************/
 
+static int winuiTableFollowPos(int cur, int pos, int delta, int count)
+{
+  if (cur <= 0)
+    return cur;
+  if (cur >= pos && !(delta < 0 && cur == pos))
+    cur += delta;
+  if (cur > count)
+    cur = count;
+  return cur;
+}
+
+static void winuiTableFollowFocus(Ihandle* ih, int focus_lin, int focus_col)
+{
+  IupWinUITableAux* aux = winuiTableGetAux(ih);
+  aux->current_row = focus_lin;
+  aux->current_col = focus_col;
+  if (aux->current_row > 0 && aux->current_col > 0)
+    winuiTableSetFocusVisual(ih, aux->current_row, aux->current_col);
+}
+
 extern "C" IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
 {
   IupWinUITableAux* aux = winuiTableGetAux(ih);
@@ -2212,6 +2232,7 @@ extern "C" IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
   {
     ih->data->num_lin = num_lin;
     winuiTableSetVirtualItems(listView, num_lin);
+    winuiTableFollowFocus(ih, winuiTableFollowPos(aux->current_row, num_lin + 1, 0, num_lin), aux->current_col);
     return;
   }
 
@@ -2260,6 +2281,7 @@ extern "C" IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
   }
 
   ih->data->num_lin = num_lin;
+  winuiTableFollowFocus(ih, winuiTableFollowPos(aux->current_row, num_lin + 1, 0, num_lin), aux->current_col);
 }
 
 extern "C" IUP_SDK_API void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
@@ -2428,6 +2450,7 @@ extern "C" IUP_SDK_API void iupdrvTableAddLin(Ihandle* ih, int pos)
     auto source = listView.ItemsSource().as<Collections::IVector<IInspectable>>();
     source.InsertAt(pos, box_value(pos));
     ih->data->num_lin++;
+    winuiTableFollowFocus(ih, winuiTableFollowPos(aux->current_row, pos + 1, 1, ih->data->num_lin), aux->current_col);
     return;
   }
 
@@ -2465,6 +2488,7 @@ extern "C" IUP_SDK_API void iupdrvTableAddLin(Ihandle* ih, int pos)
   }
 
   ih->data->num_lin++;
+  winuiTableFollowFocus(ih, winuiTableFollowPos(aux->current_row, pos + 1, 1, ih->data->num_lin), aux->current_col);
 }
 
 extern "C" IUP_SDK_API void iupdrvTableDelLin(Ihandle* ih, int pos)
@@ -2482,6 +2506,7 @@ extern "C" IUP_SDK_API void iupdrvTableDelLin(Ihandle* ih, int pos)
     auto source = listView.ItemsSource().as<Collections::IVector<IInspectable>>();
     source.RemoveAt(pos - 1);
     ih->data->num_lin--;
+    winuiTableFollowFocus(ih, winuiTableFollowPos(aux->current_row, pos, -1, ih->data->num_lin), aux->current_col);
     return;
   }
 
@@ -2519,13 +2544,19 @@ extern "C" IUP_SDK_API void iupdrvTableDelLin(Ihandle* ih, int pos)
   }
 
   ih->data->num_lin--;
+  winuiTableFollowFocus(ih, winuiTableFollowPos(aux->current_row, pos, -1, ih->data->num_lin), aux->current_col);
 }
 
 extern "C" IUP_SDK_API void iupdrvTableAddCol(Ihandle* ih, int pos)
 {
+  IupWinUITableAux* aux = winuiTableGetAux(ih);
+  int focus_col = aux ? aux->current_col : 0;
+
   iupdrvTableSetNumCol(ih, ih->data->num_col + 1);
   if (pos < ih->data->num_col)
     winuiTableMoveColumn(ih, ih->data->num_col, pos, 0);
+  if (aux)
+    aux->current_col = winuiTableFollowPos(focus_col, pos, 1, ih->data->num_col);
   winuiTableRefreshAfterReorder(ih);
 }
 
@@ -2534,9 +2565,14 @@ extern "C" IUP_SDK_API void iupdrvTableDelCol(Ihandle* ih, int pos)
   if (pos < 1 || pos > ih->data->num_col)
     return;
 
+  IupWinUITableAux* aux = winuiTableGetAux(ih);
+  int focus_col = aux ? aux->current_col : 0;
+
   if (pos < ih->data->num_col)
     winuiTableMoveColumn(ih, pos, ih->data->num_col, 0);
   iupdrvTableSetNumCol(ih, ih->data->num_col - 1);
+  if (aux)
+    aux->current_col = winuiTableFollowPos(focus_col, pos, -1, ih->data->num_col);
   winuiTableRefreshAfterReorder(ih);
 }
 
@@ -3163,7 +3199,7 @@ static int winuiTableMapMethod(Ihandle* ih)
     int old_row = a->current_row;
 
     int row = lv.SelectedIndex() + 1;
-    if (row > 0 && row != a->current_row)
+    if (row > 0 && row != a->current_row && !iupAttribGet(ih, "_IUPTABLE_IGNORE_SELECTION_CB"))
     {
       winuiTableClearFocusVisual(ih);
       a->current_row = row;

@@ -1516,6 +1516,49 @@ static int fltkTableSetUserResizeAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
+static void fltkTableFollowLins(IupFltkTable* table, int num_lin, int idx, int delta)
+{
+  std::vector<int> sel;
+  for (int r = 0; r < table->rows(); r++)
+  {
+    if (table->row_selected(r))
+      sel.push_back(r);
+  }
+
+  table->select_all_rows(0);
+  table->rows(num_lin);
+
+  for (int r : sel)
+  {
+    if (delta < 0 && r == idx)
+      continue;
+    if (r >= idx)
+      r += delta;
+    if (r < num_lin)
+      table->select_row(r, 1);
+  }
+  table->selection_stamp = table->selectionStamp();
+
+  if (table->focus_lin >= idx && !(delta < 0 && table->focus_lin == idx))
+    table->focus_lin += delta;
+  if (table->focus_lin >= num_lin)
+    table->focus_lin = num_lin - 1;
+  if (table->focus_lin < 0)
+    table->focus_lin = 0;
+}
+
+static void fltkTableFollowCols(IupFltkTable* table, int num_col, int idx, int delta)
+{
+  table->cols(num_col);
+
+  if (table->focus_col >= idx && !(delta < 0 && table->focus_col == idx))
+    table->focus_col += delta;
+  if (table->focus_col >= num_col)
+    table->focus_col = num_col - 1;
+  if (table->focus_col < 0)
+    table->focus_col = 0;
+}
+
 extern "C" IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
 {
   if (num_lin < 0)
@@ -1528,7 +1571,7 @@ extern "C" IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
     IupFltkTable* table = fltkTableGetWidget(ih);
     if (!table->is_virtual)
       table->resize_storage(num_lin, ih->data->num_col);
-    table->rows(num_lin);
+    fltkTableFollowLins(table, num_lin, num_lin, 0);
     table->redraw();
 
     /* the cells are filled after this returns, so measure the columns later */
@@ -1554,7 +1597,7 @@ extern "C" IUP_SDK_API void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
       table->col_titles.resize(num_col);
     else
       table->resize_storage(ih->data->num_lin, num_col);
-    table->cols(num_col);
+    fltkTableFollowCols(table, num_col, num_col, 0);
     table->redraw();
   }
 }
@@ -1579,7 +1622,7 @@ extern "C" IUP_SDK_API void iupdrvTableAddLin(Ihandle* ih, int pos)
   }
 
   ih->data->num_lin++;
-  table->rows(ih->data->num_lin);
+  fltkTableFollowLins(table, ih->data->num_lin, pos - 1, 1);
   table->redraw();
 }
 
@@ -1599,7 +1642,7 @@ extern "C" IUP_SDK_API void iupdrvTableDelLin(Ihandle* ih, int pos)
   }
 
   ih->data->num_lin--;
-  table->rows(ih->data->num_lin);
+  fltkTableFollowLins(table, ih->data->num_lin, pos - 1, -1);
   table->redraw();
 }
 
@@ -1622,7 +1665,7 @@ extern "C" IUP_SDK_API void iupdrvTableAddCol(Ihandle* ih, int pos)
   table->col_titles.insert(table->col_titles.begin() + idx, std::string());
 
   ih->data->num_col++;
-  table->cols(ih->data->num_col);
+  fltkTableFollowCols(table, ih->data->num_col, idx, 1);
   table->col_width(idx, 100);
   table->redraw();
 }
@@ -1647,7 +1690,7 @@ extern "C" IUP_SDK_API void iupdrvTableDelCol(Ihandle* ih, int pos)
     table->col_titles.erase(table->col_titles.begin() + idx);
 
   ih->data->num_col--;
-  table->cols(ih->data->num_col);
+  fltkTableFollowCols(table, ih->data->num_col, idx, -1);
   table->redraw();
 }
 

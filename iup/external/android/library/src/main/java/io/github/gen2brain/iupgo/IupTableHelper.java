@@ -1198,6 +1198,30 @@ public final class IupTableHelper
     }
 
 
+    private static int followPos(int cur, int pos, int delta, int count)
+    {
+        if (cur <= 0) return cur;
+        if (cur >= pos && !(delta < 0 && cur == pos)) cur += delta;
+        return Math.min(cur, count);
+    }
+
+    private static void followLins(IupTableView t, int pos, int delta)
+    {
+        ArrayList<Integer> old = new ArrayList<>(t.selectedLins);
+        t.selectedLins.clear();
+        for (int lin : old)
+        {
+            if (delta < 0 && lin == pos) continue;
+            if (lin >= pos) lin += delta;
+            if (lin <= t.numLin) t.selectedLins.add(lin);
+        }
+        int focus = t.focusLin;
+        t.focusLin = followPos(focus, pos, delta, t.numLin);
+        boolean moved = (delta < 0 && focus == pos) || t.focusLin != (focus >= pos ? focus + delta : focus);
+        if (moved && t.focusLin >= 1)
+            t.adapter.notifyItemChanged(t.focusLin - 1);
+    }
+
     @Keep
     public static void setNumCol(View v, int numCol)
     {
@@ -1206,6 +1230,7 @@ public final class IupTableHelper
         if (numCol == table.numCol) return;
 
         table.numCol = numCol;
+        table.focusCol = followPos(table.focusCol, numCol + 1, 0, numCol);
         resizeArrays(table, numCol);
 
         for (int i = 0; i < table.rows.size(); i++)
@@ -1240,6 +1265,7 @@ public final class IupTableHelper
             table.adapter.notifyItemRangeInserted(old, numLin - old);
         else
             table.adapter.notifyItemRangeRemoved(numLin, old - numLin);
+        followLins(table, numLin + 1, 0);
     }
 
     @Keep
@@ -1250,6 +1276,7 @@ public final class IupTableHelper
         table.rows.add(idx, new String[table.numCol]);
         table.numLin++;
         table.adapter.notifyItemInserted(idx);
+        followLins(table, idx + 1, 1);
     }
 
     @Keep
@@ -1261,6 +1288,7 @@ public final class IupTableHelper
         table.rows.remove(idx);
         table.numLin--;
         table.adapter.notifyItemRemoved(idx);
+        followLins(table, idx + 1, -1);
     }
 
     @Keep
@@ -1281,6 +1309,7 @@ public final class IupTableHelper
         table.colWidths = w;
         table.colTitles = t;
         table.numCol = newN;
+        table.focusCol = followPos(table.focusCol, idx + 1, 1, newN);
 
         for (int i = 0; i < table.rows.size(); i++)
         {
@@ -1332,6 +1361,7 @@ public final class IupTableHelper
         table.colWidths = w;
         table.colTitles = t;
         table.numCol = newN;
+        table.focusCol = followPos(table.focusCol, idx + 1, -1, newN);
         rebuildHeader(table);
         table.adapter.notifyDataSetChanged();
     }
