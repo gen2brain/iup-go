@@ -1579,7 +1579,7 @@ static void cocoaTableMoveColumn(Ihandle* ih, NSTableView* tableView, int from_c
     old_focused_col = table_data->current_col;
   }
 
-  if (table_data)
+  if (table_data && !iupAttribGet(ih, "_IUPTABLE_IGNORE_SELECTION_CB"))
     table_data->current_row = (int)(selectedRow + 1);
 
   if (table_data)
@@ -1613,6 +1613,8 @@ static void cocoaTableMoveColumn(Ihandle* ih, NSTableView* tableView, int from_c
     {
       NSInteger row = selectedRow;
       dispatch_async(dispatch_get_main_queue(), ^{
+        if (row >= [tableView numberOfRows])
+          return;
         NSTableRowView* rowView = [tableView rowViewAtRow:row makeIfNecessary:NO];
         if (rowView)
         {
@@ -1959,7 +1961,7 @@ static int cocoaTableSetNumColAttrib(Ihandle* ih, const char* value)
     IcocoaTableData* table_data = cocoaTableGetData(ih);
     NSTableView* tableView = cocoaTableGetTableView(ih);
 
-    NSArray* columns = [tableView tableColumns];
+    NSArray* columns = [[[tableView tableColumns] copy] autorelease];
     int old_count = (int)[columns count];
     for (NSTableColumn* col in columns)
     {
@@ -2207,8 +2209,21 @@ static int cocoaTableSetReorderAttrib(Ihandle* ih, const char* value)
 /* Driver Functions - Table Structure                                       */
 /* ========================================================================= */
 
-IUP_SDK_API void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
+static int cocoaTableFollowPos(int cur, int pos, int delta, int count)
 {
+  if (cur <= 0)
+    return cur;
+  if (cur >= pos && !(delta < 0 && cur == pos))
+    cur += delta;
+  if (cur > count)
+    cur = count;
+  return cur;
+}
+
+static void cocoaTableResizeCols(Ihandle* ih, int num_col, int pos, int delta, int focus_col)
+{
+  IcocoaTableData* table_data = cocoaTableGetData(ih);
+
   if (num_col < 0)
     num_col = 0;
 
@@ -2216,6 +2231,15 @@ IUP_SDK_API void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
 
   if (ih->handle)
     cocoaTableSetNumColAttrib(ih, iupStrReturnInt(num_col));
+
+  if (table_data)
+    table_data->current_col = cocoaTableFollowPos(focus_col, pos, delta, num_col);
+}
+
+IUP_SDK_API void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
+{
+  IcocoaTableData* table_data = cocoaTableGetData(ih);
+  cocoaTableResizeCols(ih, num_col, num_col + 1, 0, table_data ? table_data->current_col : 0);
 }
 
 /* sizeToFit only fits the header cell, and the rows can arrive after the columns are created */
@@ -2242,19 +2266,40 @@ static void cocoaTableAutoSizeColumns(Ihandle* ih)
   }
 }
 
-IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
+static void cocoaTableResizeLins(Ihandle* ih, int num_lin, int pos, int delta)
 {
+  IcocoaTableData* table_data = cocoaTableGetData(ih);
+  NSTableView* tableView = cocoaTableGetTableView(ih);
+  NSMutableIndexSet* selection = nil;
+
   if (num_lin < 0)
     num_lin = 0;
+
+  if (tableView)
+    selection = [[[tableView selectedRowIndexes] mutableCopy] autorelease];
 
   ih->data->num_lin = num_lin;
 
   if (ih->handle)
     cocoaTableSetNumLinAttrib(ih, iupStrReturnInt(num_lin));
 
+  if (selection)
   {
-    IcocoaTableData* table_data = cocoaTableGetData(ih);
-    if (table_data && !table_data->columns_autosized && num_lin > 0 && ih->handle)
+    if (delta < 0)
+      [selection removeIndex:(NSUInteger)(pos - 1)];
+    if (delta)
+      [selection shiftIndexesStartingAtIndex:(NSUInteger)(delta < 0 ? pos : pos - 1) by:delta];
+    [selection removeIndexesInRange:NSMakeRange((NSUInteger)num_lin, NSNotFound - (NSUInteger)num_lin)];
+    [tableView selectRowIndexes:selection byExtendingSelection:NO];
+  }
+
+  if (table_data)
+  {
+    table_data->current_row = cocoaTableFollowPos(table_data->current_row, pos, delta, num_lin);
+    if (tableView)
+      [tableView setNeedsDisplay:YES];
+
+    if (!table_data->columns_autosized && num_lin > 0 && ih->handle)
     {
       table_data->columns_autosized = YES;
       /* the cells are filled after this returns, so measure on the next run loop cycle */
@@ -2264,6 +2309,11 @@ IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
       });
     }
   }
+}
+
+IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
+{
+  cocoaTableResizeLins(ih, num_lin, num_lin + 1, 0);
 }
 
 static void cocoaTableShiftLinImages(Ihandle* ih, int from_lin, int to_lin)
@@ -2282,19 +2332,25 @@ static void cocoaTableShiftLinImages(Ihandle* ih, int from_lin, int to_lin)
 IUP_SDK_API void iupdrvTableAddCol(Ihandle* ih, int pos)
 {
   NSTableView* tableView = cocoaTableGetTableView(ih);
+  IcocoaTableData* table_data = cocoaTableGetData(ih);
+  int focus_col = table_data ? table_data->current_col : 0;
   iupdrvTableSetNumCol(ih, ih->data->num_col + 1);
   if (tableView && pos < ih->data->num_col)
     cocoaTableMoveColumn(ih, tableView, ih->data->num_col, pos, 0);
+  if (table_data)
+    table_data->current_col = cocoaTableFollowPos(focus_col, pos, 1, ih->data->num_col);
 }
 
 IUP_SDK_API void iupdrvTableDelCol(Ihandle* ih, int pos)
 {
   NSTableView* tableView = cocoaTableGetTableView(ih);
+  IcocoaTableData* table_data = cocoaTableGetData(ih);
+  int focus_col = table_data ? table_data->current_col : 0;
   if (ih->data->num_col < 1)
     return;
   if (tableView && pos < ih->data->num_col)
     cocoaTableMoveColumn(ih, tableView, pos, ih->data->num_col, 0);
-  iupdrvTableSetNumCol(ih, ih->data->num_col - 1);
+  cocoaTableResizeCols(ih, ih->data->num_col - 1, pos, -1, focus_col);
 }
 
 IUP_SDK_API void iupdrvTableAddLin(Ihandle* ih, int pos)
@@ -2307,7 +2363,7 @@ IUP_SDK_API void iupdrvTableAddLin(Ihandle* ih, int pos)
     [row release];
   }
   cocoaTableShiftLinImages(ih, ih->data->num_lin + 1, pos);
-  iupdrvTableSetNumLin(ih, ih->data->num_lin + 1);
+  cocoaTableResizeLins(ih, ih->data->num_lin + 1, pos, 1);
 }
 
 IUP_SDK_API void iupdrvTableDelLin(Ihandle* ih, int pos)
@@ -2323,7 +2379,7 @@ IUP_SDK_API void iupdrvTableDelLin(Ihandle* ih, int pos)
     for (c = 1; c <= ih->data->num_col; c++)
       iupAttribSetId2(ih, "_IUPCOCOA_CELLIMAGE", ih->data->num_lin, c, NULL);
   }
-  iupdrvTableSetNumLin(ih, ih->data->num_lin - 1);
+  cocoaTableResizeLins(ih, ih->data->num_lin - 1, pos, -1);
 }
 
 /* ========================================================================= */

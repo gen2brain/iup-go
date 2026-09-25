@@ -1397,15 +1397,29 @@ static void haikuTableAutoSizeColumn(Ihandle* ih, IupHaikuTableView* tv, int i)
   float w = header_font.StringWidth(name.String()) + 16.0f;
   if (sortable) w += 11.0f;
 
+  sIFnii vcb = tv->IsVirtual() ? (sIFnii)IupGetCallback(ih, "VALUE_CB") : NULL;
+  int col = c->LogicalFieldNum() + 1;
+
   for (int lin = 0; lin < max_rows; lin++)
   {
-    BRow* row = tv->RowAt(lin, NULL);
-    if (!row) continue;
-    IupHaikuTableField* f = (IupHaikuTableField*)row->GetField(i);
-    if (!f) continue;
-    const char* s = f->String();
+    const char* s;
+    bool icon;
+    if (tv->IsVirtual())
+    {
+      s = vcb ? vcb(ih, lin + 1, col) : NULL;
+      icon = iupTableGetCellImageCb(ih, lin + 1, col) != NULL;
+    }
+    else
+    {
+      BRow* row = tv->RowAt(lin, NULL);
+      if (!row) continue;
+      IupHaikuTableField* f = (IupHaikuTableField*)row->GetField(i);
+      if (!f) continue;
+      s = f->String();
+      icon = f->Icon() != NULL;
+    }
     float cw = (s && *s) ? row_font.StringWidth(s) : 0.0f;
-    if (f->Icon()) cw += 22.0f;
+    if (icon) cw += 22.0f;
     cw += 16.0f;
     if (cw > w) w = cw;
   }
@@ -1575,6 +1589,30 @@ static IupHaikuTableField* haikuTableEnsureField(IupHaikuTableView* tv, int lin,
   return f;
 }
 
+static int haikuTableFollowPos(int cur, int pos, int delta, int count)
+{
+  if (cur <= 0)
+    return cur;
+  if (cur >= pos && !(delta < 0 && cur == pos))
+    cur += delta;
+  if (cur > count)
+    cur = count;
+  return cur;
+}
+
+static int haikuTableFocusLin(IupHaikuTableView* tv)
+{
+  BRow* r = tv->FocusRow();
+  return r ? (int)tv->IndexOf(r) + 1 : 0;
+}
+
+static void haikuTableRestoreFocusLin(IupHaikuTableView* tv, int focus_lin, int pos, int delta, int num_lin)
+{
+  int lin = haikuTableFollowPos(focus_lin, pos, delta, num_lin);
+  if (lin > 0 && haikuTableFocusLin(tv) != lin)
+    tv->SetFocusRow(lin - 1, false);
+}
+
 extern "C" IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
 {
   IupHaikuTableView* tv = haikuTableGetView(ih);
@@ -1588,6 +1626,30 @@ extern "C" IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
     tv->ScheduleAutoSize();
 
   int cur = tv->CountRows(NULL);
+  int focus_lin = haikuTableFocusLin(tv);
+  std::vector<int> selected;
+  BView* outline = tv->ScrollView();
+  float top = outline ? outline->Bounds().top : 0.0f;
+  bool rebuilt = false;
+
+  if (tv->IsVirtual() && num_lin < cur)
+  {
+    for (BRow* row = tv->CurrentSelection(); row; row = tv->CurrentSelection(row))
+    {
+      int lin = (int)tv->IndexOf(row);
+      if (lin < num_lin)
+        selected.push_back(lin);
+    }
+    if (BRow* focus_row = tv->FocusRow())
+    {
+      tv->RemoveRow(focus_row);
+      delete focus_row;
+    }
+    tv->Clear();
+    cur = 0;
+    rebuilt = true;
+  }
+
   if (num_lin > cur)
   {
     int n_cols = tv->CountColumns();
@@ -1619,6 +1681,19 @@ extern "C" IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
       if (r) { tv->RemoveRow(r); delete r; }
     }
   }
+
+  if (rebuilt)
+  {
+    for (int lin : selected)
+      tv->AddToSelection(tv->RowAt(lin, NULL));
+    if (outline)
+    {
+      float max_top = num_lin * (haikuTableRowHeight(tv) + 1.0f) - outline->Bounds().Height();
+      outline->ScrollTo(outline->Bounds().left, top < max_top ? top : (max_top > 0.0f ? max_top : 0.0f));
+    }
+  }
+
+  haikuTableRestoreFocusLin(tv, focus_lin, num_lin + 1, 0, num_lin);
 }
 
 extern "C" IUP_SDK_API void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
@@ -1664,6 +1739,7 @@ extern "C" IUP_SDK_API void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
       if (c) { tv->RemoveColumn(c); delete c; }
     }
   }
+  tv->SetFocusCol(haikuTableFollowPos(tv->FocusCol(), num_col + 1, 0, num_col));
   tv->RepositionTrail();
 }
 
@@ -1692,32 +1768,37 @@ extern "C" IUP_SDK_API void iupdrvTableDelLin(Ihandle* ih, int pos)
   IupHaikuTableView* tv = haikuTableGetView(ih);
   if (!tv) return;
   LooperLockGuard guard(tv->Looper());
+  int focus_lin = haikuTableFocusLin(tv);
   BRow* r = tv->RowAt(pos - 1, NULL);
   if (r) { tv->RemoveRow(r); delete r; ih->data->num_lin--; }
+  haikuTableRestoreFocusLin(tv, focus_lin, pos, -1, ih->data->num_lin);
 }
 
 extern "C" IUP_SDK_API void iupdrvTableAddCol(Ihandle* ih, int pos)
 {
   IupHaikuTableView* tv = haikuTableGetView(ih);
   if (!tv) return;
+  int focus_col = tv->FocusCol();
   iupdrvTableSetNumCol(ih, ih->data->num_col + 1);
+  LooperLockGuard guard(tv->Looper());
   if (pos < ih->data->num_col)
-  {
-    LooperLockGuard guard(tv->Looper());
     haikuTableMoveColumn(ih, tv, ih->data->num_col, pos, 0);
-  }
+  tv->SetFocusCol(haikuTableFollowPos(focus_col, pos, 1, ih->data->num_col));
 }
 
 extern "C" IUP_SDK_API void iupdrvTableDelCol(Ihandle* ih, int pos)
 {
   IupHaikuTableView* tv = haikuTableGetView(ih);
   if (!tv || ih->data->num_col < 1) return;
+  int focus_col = tv->FocusCol();
   if (pos < ih->data->num_col)
   {
     LooperLockGuard guard(tv->Looper());
     haikuTableMoveColumn(ih, tv, pos, ih->data->num_col, 0);
   }
   iupdrvTableSetNumCol(ih, ih->data->num_col - 1);
+  LooperLockGuard guard(tv->Looper());
+  tv->SetFocusCol(haikuTableFollowPos(focus_col, pos, -1, ih->data->num_col));
 }
 
 extern "C" IUP_SDK_API void iupdrvTableSetCellValue(Ihandle* ih, int lin, int col, const char* value)

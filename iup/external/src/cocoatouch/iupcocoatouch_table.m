@@ -782,11 +782,21 @@ static IupCocoaTouchTableController* cocoaTouchTableGetController(Ihandle* ih)
 	return view ? objc_getAssociatedObject(view, IUP_COCOATOUCH_TABLE_CTRL_OBJ_KEY) : nil;
 }
 
+static NSInteger cocoaTouchTableFollowPos(NSInteger cur, NSInteger pos, NSInteger delta, NSInteger count)
+{
+	if (cur <= 0) return cur;
+	if (cur >= pos && !(delta < 0 && cur == pos)) cur += delta;
+	if (cur > count) cur = count;
+	return cur;
+}
+
 IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
 {
 	IupCocoaTouchTableController* ctrl = cocoaTouchTableGetController(ih);
 	if (!ctrl) return;
 	[ctrl resizeToLines:num_lin cols:[ctrl numberOfColumns]];
+	[ctrl.selectedLins removeIndexesInRange:NSMakeRange((NSUInteger)num_lin + 1, NSNotFound - (NSUInteger)num_lin - 1)];
+	ctrl.focusLin = cocoaTouchTableFollowPos(ctrl.focusLin, num_lin + 1, 0, num_lin);
 	ih->data->num_lin = num_lin;
 	[cocoaTouchTableGet(ih) reloadData];
 }
@@ -796,6 +806,7 @@ IUP_SDK_API void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
 	IupCocoaTouchTableController* ctrl = cocoaTouchTableGetController(ih);
 	if (!ctrl) return;
 	[ctrl resizeToLines:[ctrl numberOfLines] cols:num_col];
+	ctrl.focusCol = cocoaTouchTableFollowPos(ctrl.focusCol, num_col + 1, 0, num_col);
 	ih->data->num_col = num_col;
 	[cocoaTouchTableGet(ih) reloadData];
 }
@@ -811,6 +822,7 @@ IUP_SDK_API void iupdrvTableAddLin(Ihandle* ih, int pos)
 	[ctrl.cells insertObject:row atIndex:index];
 	[ctrl.selectedLins shiftIndexesStartingAtIndex:(index + 1) by:1];
 	ih->data->num_lin = (int)[ctrl.cells count];
+	ctrl.focusLin = cocoaTouchTableFollowPos(ctrl.focusLin, (NSInteger)index + 1, 1, ih->data->num_lin);
 	[cocoaTouchTableGet(ih) reloadData];
 }
 
@@ -824,6 +836,7 @@ IUP_SDK_API void iupdrvTableDelLin(Ihandle* ih, int pos)
 	[ctrl.selectedLins removeIndex:(index + 1)];
 	[ctrl.selectedLins shiftIndexesStartingAtIndex:(index + 2) by:-1];
 	ih->data->num_lin = (int)[ctrl.cells count];
+	ctrl.focusLin = cocoaTouchTableFollowPos(ctrl.focusLin, (NSInteger)index + 1, -1, ih->data->num_lin);
 	[cocoaTouchTableGet(ih) reloadData];
 }
 
@@ -842,6 +855,7 @@ IUP_SDK_API void iupdrvTableAddCol(Ihandle* ih, int pos)
 	[ctrl.headers insertObject:@"" atIndex:index];
 	[ctrl.colWidths insertObject:@0 atIndex:index];
 	ih->data->num_col++;
+	ctrl.focusCol = cocoaTouchTableFollowPos(ctrl.focusCol, pos, 1, ih->data->num_col);
 	[cocoaTouchTableGet(ih) reloadData];
 }
 
@@ -857,6 +871,7 @@ IUP_SDK_API void iupdrvTableDelCol(Ihandle* ih, int pos)
 	if (index < [ctrl.headers count])   [ctrl.headers   removeObjectAtIndex:index];
 	if (index < [ctrl.colWidths count]) [ctrl.colWidths removeObjectAtIndex:index];
 	if (ih->data->num_col > 0) ih->data->num_col--;
+	ctrl.focusCol = cocoaTouchTableFollowPos(ctrl.focusCol, pos, -1, ih->data->num_col);
 	[cocoaTouchTableGet(ih) reloadData];
 }
 

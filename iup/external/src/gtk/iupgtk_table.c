@@ -1761,6 +1761,9 @@ static void gtkTableRebuildColumns(Ihandle* ih, int old_num_col, int add_pos, in
   char** titles = (char**)calloc(old_num_col > 0 ? old_num_col : 1, sizeof(char*));
   int* selected;
   int sel_count = 0;
+  int focus_lin = 0, focus_col = 0;
+  GtkTreePath* cursor_path = NULL;
+  GtkTreeViewColumn* cursor_column = NULL;
   GList* columns;
   GList* l;
   int c;
@@ -1784,8 +1787,21 @@ static void gtkTableRebuildColumns(Ihandle* ih, int old_num_col, int add_pos, in
 
   selected = iupdrvTableGetSelectedLins(ih, &sel_count);
 
+  gtk_tree_view_get_cursor(tree_view, &cursor_path, &cursor_column);
+  if (cursor_path)
+  {
+    focus_lin = gtk_tree_path_get_indices(cursor_path)[0] + 1;
+    focus_col = 1;
+    if (cursor_column)
+    {
+      columns = gtk_tree_view_get_columns(tree_view);
+      focus_col = g_list_index(columns, cursor_column) + 1;
+      g_list_free(columns);
+    }
+    gtk_tree_path_free(cursor_path);
+  }
+
   iupAttribSet(ih, "_IUPTABLE_IGNORE_COLUMNS_CHANGED", "1");
-  iupAttribSet(ih, "_IUPTABLE_IGNORE_SELECTION_CB", "1");
 
   columns = gtk_tree_view_get_columns(tree_view);
   for (l = columns; l != NULL; l = l->next)
@@ -1841,15 +1857,38 @@ static void gtkTableRebuildColumns(Ihandle* ih, int old_num_col, int add_pos, in
     g_object_unref(old_store);
   }
 
+  for (c = num_col; c < old_num_col; c++)
+  {
+    char name[50];
+    snprintf(name, sizeof(name), "_IUPGTK_RENDERER_%d", c);
+    iupAttribSet(ih, name, NULL);
+  }
+
   gtkTableCreateColumns(ih);
 
   for (c = 0; c < num_col; c++)
     iupdrvTableSetColTitle(ih, c + 1, src[c] >= 0 ? titles[src[c]] : NULL);
 
+  if (focus_lin && num_col > 0)
+  {
+    int new_col = 0;
+    for (c = 0; c < num_col; c++)
+    {
+      if (src[c] == focus_col - 1)
+        new_col = c + 1;
+    }
+    if (!new_col)
+      new_col = focus_col < num_col ? focus_col : num_col;
+
+    cursor_path = gtk_tree_path_new_from_indices(focus_lin - 1, -1);
+    gtk_tree_view_set_cursor(tree_view, cursor_path, gtk_tree_view_get_column(tree_view, new_col - 1), FALSE);
+    gtk_tree_path_free(cursor_path);
+  }
+
+  gtk_tree_selection_unselect_all(gtk_tree_view_get_selection(tree_view));
   for (c = 0; c < sel_count; c++)
     iupdrvTableSelectLin(ih, selected[c], 1);
 
-  iupAttribSet(ih, "_IUPTABLE_IGNORE_SELECTION_CB", NULL);
   iupAttribSet(ih, "_IUPTABLE_IGNORE_COLUMNS_CHANGED", NULL);
 
   for (c = 0; c < old_num_col; c++)
@@ -2065,9 +2104,83 @@ IUP_SDK_API void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
   gtkTableRebuildColumns(ih, old_num_col, 0, 0);
 }
 
+static void gtkTableGetCursorCell(Ihandle* ih, int* lin, int* col)
+{
+  IgtkTableData* gtk_data = IGTK_TABLE_DATA(ih);
+  GtkTreePath* path = NULL;
+  GtkTreeViewColumn* column = NULL;
+
+  *lin = 0;
+  *col = 0;
+  gtk_tree_view_get_cursor(GTK_TREE_VIEW(gtk_data->tree_view), &path, &column);
+  if (!path)
+    return;
+
+  *lin = gtk_tree_path_get_indices(path)[0] + 1;
+  *col = 1;
+  if (column)
+  {
+    GList* columns = gtk_tree_view_get_columns(GTK_TREE_VIEW(gtk_data->tree_view));
+    *col = g_list_index(columns, column) + 1;
+    g_list_free(columns);
+  }
+  gtk_tree_path_free(path);
+}
+
+static void gtkTableFollowLins(Ihandle* ih, int* selected, int sel_count, int pos, int delta, int focus_lin, int focus_col)
+{
+  IgtkTableData* gtk_data = IGTK_TABLE_DATA(ih);
+  GtkTreeView* tree_view = GTK_TREE_VIEW(gtk_data->tree_view);
+  int num_lin = ih->data->num_lin;
+  int cur_lin, cur_col, cur_count = 0, new_count = 0, i;
+  int* current;
+
+  gtkTableGetCursorCell(ih, &cur_lin, &cur_col);
+
+  if (focus_lin > 0 && num_lin > 0)
+  {
+    if (focus_lin >= pos && !(delta < 0 && focus_lin == pos))
+      focus_lin += delta;
+    if (focus_lin > num_lin)
+      focus_lin = num_lin;
+    if (focus_lin != cur_lin || focus_col != cur_col)
+    {
+      GtkTreePath* path = gtk_tree_path_new_from_indices(focus_lin - 1, -1);
+      gtk_tree_view_set_cursor(tree_view, path, gtk_tree_view_get_column(tree_view, focus_col - 1), FALSE);
+      gtk_tree_path_free(path);
+    }
+  }
+
+  for (i = 0; i < sel_count; i++)
+  {
+    int lin = selected[i];
+    if (delta < 0 && lin == pos)
+      continue;
+    if (lin >= pos)
+      lin += delta;
+    if (lin <= num_lin)
+      selected[new_count++] = lin;
+  }
+
+  current = iupdrvTableGetSelectedLins(ih, &cur_count);
+  if (cur_count != new_count || (new_count && memcmp(current, selected, new_count * sizeof(int)) != 0))
+  {
+    gtk_tree_selection_unselect_all(gtk_tree_view_get_selection(tree_view));
+    for (i = 0; i < new_count; i++)
+      iupdrvTableSelectLin(ih, selected[i], 1);
+  }
+
+  if (current)
+    free(current);
+  if (selected)
+    free(selected);
+}
+
 IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
 {
   IgtkTableData* gtk_data = IGTK_TABLE_DATA(ih);
+  int focus_lin, focus_col, sel_count = 0;
+  int* selected;
 
   if (!gtk_data)
     return;
@@ -2075,81 +2188,85 @@ IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
   if (num_lin < 0)
     num_lin = 0;
 
+  if (gtk_data->is_virtual && !gtk_data->virtual_model)
+  {
+    ih->data->num_lin = num_lin;
+    return;
+  }
+
+  if (!gtk_data->is_virtual && !gtk_data->store)
+  {
+    ih->data->num_lin = num_lin;
+    return;
+  }
+
+  gtkTableGetCursorCell(ih, &focus_lin, &focus_col);
+  selected = iupdrvTableGetSelectedLins(ih, &sel_count);
+
+  if (focus_lin > num_lin && num_lin > 0)
+  {
+    GtkTreePath* path = gtk_tree_path_new_from_indices(num_lin - 1, -1);
+    GtkTreeView* tree_view = GTK_TREE_VIEW(gtk_data->tree_view);
+    gtk_tree_view_set_cursor(tree_view, path, gtk_tree_view_get_column(tree_view, focus_col - 1), FALSE);
+    gtk_tree_path_free(path);
+  }
+
   if (gtk_data->is_virtual)
   {
-    int old_lin = ih->data->num_lin;
-    ih->data->num_lin = num_lin;
+    GtkTreeModel* model = GTK_TREE_MODEL(gtk_data->virtual_model);
 
     /* GtkTreeView tracks the row count only through these signals */
-    if (gtk_data->virtual_model && num_lin != old_lin)
+    while (ih->data->num_lin < num_lin)
     {
-      GtkTreeModel* model = GTK_TREE_MODEL(gtk_data->virtual_model);
-      int i;
+      GtkTreePath* path = gtk_tree_path_new_from_indices(ih->data->num_lin, -1);
+      GtkTreeIter iter;
+      ih->data->num_lin++;
+      if (gtk_tree_model_get_iter(model, &iter, path))
+        gtk_tree_model_row_inserted(model, path, &iter);
+      gtk_tree_path_free(path);
+    }
 
-      for (i = old_lin; i < num_lin; i++)
-      {
-        GtkTreePath* path = gtk_tree_path_new_from_indices(i, -1);
-        GtkTreeIter iter;
-        if (gtk_tree_model_get_iter(model, &iter, path))
-          gtk_tree_model_row_inserted(model, path, &iter);
-        gtk_tree_path_free(path);
-      }
-
-      for (i = old_lin - 1; i >= num_lin; i--)
-      {
-        GtkTreePath* path = gtk_tree_path_new_from_indices(i, -1);
-        gtk_tree_model_row_deleted(model, path);
-        gtk_tree_path_free(path);
-      }
+    while (ih->data->num_lin > num_lin)
+    {
+      GtkTreePath* path;
+      ih->data->num_lin--;
+      path = gtk_tree_path_new_from_indices(ih->data->num_lin, -1);
+      gtk_tree_model_row_deleted(model, path);
+      gtk_tree_path_free(path);
     }
 
     if (gtk_data->tree_view)
       gtk_widget_queue_draw(gtk_data->tree_view);
-    return;
   }
-
-  ih->data->num_lin = num_lin;
-
-  if (!gtk_data->store)
-    return;
-
-  int current_rows = gtk_tree_model_iter_n_children(GTK_TREE_MODEL(gtk_data->store), NULL);
-
-  if (num_lin > current_rows)
+  else
   {
-    int i;
-    for (i = current_rows; i < num_lin; i++)
+    GtkTreeModel* model = GTK_TREE_MODEL(gtk_data->store);
+    int current_rows = gtk_tree_model_iter_n_children(model, NULL);
+
+    ih->data->num_lin = current_rows;
+
+    while (ih->data->num_lin < num_lin)
     {
       GtkTreeIter iter;
-      gtk_list_store_append(gtk_data->store, &iter);
-
       int col;
+
+      gtk_list_store_append(gtk_data->store, &iter);
       for (col = 0; col < ih->data->num_col; col++)
-      {
         gtk_list_store_set(gtk_data->store, &iter, gtkTableTextModelCol(ih, col), "", -1);
-      }
+      ih->data->num_lin++;
     }
-  }
-  else if (num_lin < current_rows)
-  {
-    while (current_rows > num_lin)
+
+    while (ih->data->num_lin > num_lin)
     {
       GtkTreeIter iter;
-      GtkTreePath* path = gtk_tree_path_new_from_indices(num_lin, -1);
-
-      if (gtk_tree_model_get_iter(GTK_TREE_MODEL(gtk_data->store), &iter, path))
-      {
-        gtk_list_store_remove(gtk_data->store, &iter);
-      }
-
-      gtk_tree_path_free(path);
-      current_rows--;
+      if (!gtk_tree_model_iter_nth_child(model, &iter, NULL, ih->data->num_lin - 1))
+        break;
+      gtk_list_store_remove(gtk_data->store, &iter);
+      ih->data->num_lin--;
     }
   }
 
-  ih->data->num_lin = num_lin;
-
-  int final_rows = gtk_tree_model_iter_n_children(GTK_TREE_MODEL(gtk_data->store), NULL);
+  gtkTableFollowLins(ih, selected, sel_count, num_lin + 1, 0, focus_lin, focus_col);
 }
 
 IUP_SDK_API void iupdrvTableAddCol(Ihandle* ih, int pos)
@@ -2170,7 +2287,30 @@ IUP_SDK_API void iupdrvTableAddLin(Ihandle* ih, int pos)
 {
   IgtkTableData* gtk_data = IGTK_TABLE_DATA(ih);
 
-  if (!gtk_data || !gtk_data->store)
+  if (!gtk_data)
+    return;
+
+  if (gtk_data->is_virtual)
+  {
+    GtkTreePath* path;
+    GtkTreeIter iter;
+
+    if (pos <= 0 || pos > ih->data->num_lin + 1)
+      pos = ih->data->num_lin + 1;
+
+    ih->data->num_lin++;
+    if (!gtk_data->virtual_model)
+      return;
+
+    path = gtk_tree_path_new_from_indices(pos - 1, -1);
+    if (gtk_tree_model_get_iter(GTK_TREE_MODEL(gtk_data->virtual_model), &iter, path))
+      gtk_tree_model_row_inserted(GTK_TREE_MODEL(gtk_data->virtual_model), path, &iter);
+    gtk_tree_path_free(path);
+    gtk_widget_queue_draw(gtk_data->tree_view);
+    return;
+  }
+
+  if (!gtk_data->store)
     return;
 
   GtkTreeIter iter;
@@ -2210,14 +2350,47 @@ IUP_SDK_API void iupdrvTableDelLin(Ihandle* ih, int pos)
 {
   IgtkTableData* gtk_data = IGTK_TABLE_DATA(ih);
 
-  if (!gtk_data || !gtk_data->store)
+  if (!gtk_data)
     return;
 
   if (pos < 1 || pos > ih->data->num_lin)
     return;
 
+  if (gtk_data->is_virtual)
+  {
+    int focus_lin, focus_col, sel_count = 0;
+    int* selected;
+    GtkTreePath* path;
+
+    if (!gtk_data->virtual_model)
+    {
+      ih->data->num_lin--;
+      return;
+    }
+
+    gtkTableGetCursorCell(ih, &focus_lin, &focus_col);
+    selected = iupdrvTableGetSelectedLins(ih, &sel_count);
+
+    ih->data->num_lin--;
+    path = gtk_tree_path_new_from_indices(pos - 1, -1);
+    gtk_tree_model_row_deleted(GTK_TREE_MODEL(gtk_data->virtual_model), path);
+    gtk_tree_path_free(path);
+    gtk_widget_queue_draw(gtk_data->tree_view);
+
+    gtkTableFollowLins(ih, selected, sel_count, pos, -1, focus_lin, focus_col);
+    return;
+  }
+
+  if (!gtk_data->store)
+    return;
+
   GtkTreeIter iter;
   GtkTreePath* path = gtk_tree_path_new_from_indices(pos - 1, -1);
+  int focus_lin, focus_col, sel_count = 0;
+  int* selected;
+
+  gtkTableGetCursorCell(ih, &focus_lin, &focus_col);
+  selected = iupdrvTableGetSelectedLins(ih, &sel_count);
 
   if (gtk_tree_model_get_iter(GTK_TREE_MODEL(gtk_data->store), &iter, path))
   {
@@ -2226,6 +2399,8 @@ IUP_SDK_API void iupdrvTableDelLin(Ihandle* ih, int pos)
   }
 
   gtk_tree_path_free(path);
+
+  gtkTableFollowLins(ih, selected, sel_count, pos, -1, focus_lin, focus_col);
 }
 
 /* ========================================================================= */

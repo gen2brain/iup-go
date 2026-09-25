@@ -1261,6 +1261,42 @@ IUP_SDK_API void iupdrvTableAddBorders(Ihandle* ih, int* w, int* h)
  * Table Structure
  ****************************************************************************/
 
+static int winTableFollowPos(int cur, int pos, int delta, int count)
+{
+  if (cur <= 0)
+    return cur;
+  if (cur >= pos && !(delta < 0 && cur == pos))
+    cur += delta;
+  if (cur > count)
+    cur = count;
+  return cur;
+}
+
+static void winTableFollowLins(Ihandle* ih, HWND list_view, int* selected, int sel_count, int pos, int delta)
+{
+  IwinTableData* data = IWIN_TABLE_DATA(ih);
+  int i;
+
+  if (selected)
+  {
+    ListView_SetItemState(list_view, -1, 0, LVIS_SELECTED);
+    for (i = 0; i < sel_count; i++)
+    {
+      int lin = selected[i];
+      if (delta < 0 && lin == pos)
+        continue;
+      if (lin >= pos)
+        lin += delta;
+      if (lin <= ih->data->num_lin)
+        ListView_SetItemState(list_view, lin - 1, LVIS_SELECTED, LVIS_SELECTED);
+    }
+    free(selected);
+  }
+
+  data->current_row = winTableFollowPos(data->current_row, pos, delta, ih->data->num_lin);
+  winTableInvalidateCell(list_view, data->current_row, data->current_col);
+}
+
 IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
 {
   IwinTableData* data = IWIN_TABLE_DATA(ih);
@@ -1275,6 +1311,8 @@ IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
     return;
 
   char* virtualmode = iupAttribGet(ih, "VIRTUALMODE");
+  int sel_count = 0;
+  int* selected = iupStrBoolean(virtualmode) ? iupdrvTableGetSelectedLins(ih, &sel_count) : NULL;
   if (iupStrBoolean(virtualmode))
   {
     ListView_SetItemCountEx(list_view, num_lin, LVSICF_NOINVALIDATEALL);
@@ -1329,6 +1367,7 @@ IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
   }
 
   ih->data->num_lin = num_lin;
+  winTableFollowLins(ih, list_view, selected, sel_count, num_lin + 1, 0);
 
   if (!data->autosized && num_lin > 0)
     PostMessage(list_view, WIN_TABLE_AUTOSIZE, 0, 0);
@@ -1448,6 +1487,8 @@ IUP_SDK_API void iupdrvTableAddLin(Ihandle* ih, int pos)
   pos--;
 
   char* virtualmode = iupAttribGet(ih, "VIRTUALMODE");
+  int sel_count = 0;
+  int* selected = iupStrBoolean(virtualmode) ? iupdrvTableGetSelectedLins(ih, &sel_count) : NULL;
   if (iupStrBoolean(virtualmode))
   {
     ListView_SetItemCountEx(list_view, ih->data->num_lin + 1, LVSICF_NOINVALIDATEALL);
@@ -1491,6 +1532,7 @@ IUP_SDK_API void iupdrvTableAddLin(Ihandle* ih, int pos)
   }
 
   ih->data->num_lin++;
+  winTableFollowLins(ih, list_view, selected, sel_count, pos + 1, 1);
 }
 
 IUP_SDK_API void iupdrvTableDelLin(Ihandle* ih, int pos)
@@ -1505,6 +1547,8 @@ IUP_SDK_API void iupdrvTableDelLin(Ihandle* ih, int pos)
     return;
 
   char* virtualmode = iupAttribGet(ih, "VIRTUALMODE");
+  int sel_count = 0;
+  int* selected = iupStrBoolean(virtualmode) ? iupdrvTableGetSelectedLins(ih, &sel_count) : NULL;
   if (iupStrBoolean(virtualmode))
   {
     ListView_SetItemCountEx(list_view, ih->data->num_lin - 1, LVSICF_NOINVALIDATEALL);
@@ -1546,6 +1590,7 @@ IUP_SDK_API void iupdrvTableDelLin(Ihandle* ih, int pos)
   }
 
   ih->data->num_lin--;
+  winTableFollowLins(ih, list_view, selected, sel_count, pos, -1);
 }
 
 IUP_SDK_API void iupdrvTableAddCol(Ihandle* ih, int pos)
@@ -1555,9 +1600,14 @@ IUP_SDK_API void iupdrvTableAddCol(Ihandle* ih, int pos)
   if (!list_view)
     return;
 
+  IwinTableData* data = IWIN_TABLE_DATA(ih);
+  int focus_col = data ? data->current_col : 0;
+
   iupdrvTableSetNumCol(ih, ih->data->num_col + 1);
   if (pos < ih->data->num_col)
     winTableMoveColumn(ih, ih->data->num_col, pos, 0);
+  if (data)
+    data->current_col = winTableFollowPos(focus_col, pos, 1, ih->data->num_col);
   winTableRefreshAfterReorder(ih);
 }
 
@@ -1571,9 +1621,14 @@ IUP_SDK_API void iupdrvTableDelCol(Ihandle* ih, int pos)
   if (pos < 1 || pos > ih->data->num_col)
     return;
 
+  IwinTableData* data = IWIN_TABLE_DATA(ih);
+  int focus_col = data ? data->current_col : 0;
+
   if (pos < ih->data->num_col)
     winTableMoveColumn(ih, pos, ih->data->num_col, 0);
   iupdrvTableSetNumCol(ih, ih->data->num_col - 1);
+  if (data)
+    data->current_col = winTableFollowPos(focus_col, pos, -1, ih->data->num_col);
   winTableRefreshAfterReorder(ih);
 }
 
@@ -1850,7 +1905,8 @@ static int winTableNotifyCallback(Ihandle* ih, void* msg_info, int* result)
     {
       LPNMLISTVIEW pnmv = (LPNMLISTVIEW)msg_info;
 
-      if ((pnmv->uChanged & LVIF_STATE) && (pnmv->uNewState & LVIS_SELECTED) && !(pnmv->uOldState & LVIS_SELECTED))
+      if ((pnmv->uChanged & LVIF_STATE) && (pnmv->uNewState & LVIS_SELECTED) && !(pnmv->uOldState & LVIS_SELECTED) &&
+          !iupAttribGet(ih, "_IUPTABLE_IGNORE_SELECTION_CB"))
       {
         int lin = pnmv->iItem + 1;  /* Convert to 1-based */
 

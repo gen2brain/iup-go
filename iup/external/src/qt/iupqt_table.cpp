@@ -1211,6 +1211,66 @@ static void qtTableUnMapMethod(Ihandle* ih)
  * Driver Functions - Table Structure
  ****************************************************************************/
 
+static int qtTableFollowPos(int cur, int pos, int delta, int count)
+{
+  if (cur <= 0)
+    return cur;
+  if (cur >= pos && !(delta < 0 && cur == pos))
+    cur += delta;
+  if (cur > count)
+    cur = count;
+  return cur;
+}
+
+struct IqtTableFollow
+{
+  int focus_lin, focus_col;
+  int* selected;
+  int sel_count;
+};
+
+static void qtTableFollowBegin(Ihandle* ih, QTableWidget* table, IqtTableFollow* follow)
+{
+  follow->focus_lin = table->currentRow() + 1;
+  follow->focus_col = table->currentColumn() + 1;
+  follow->selected = iupdrvTableGetSelectedLins(ih, &follow->sel_count);
+}
+
+static void qtTableFollowEnd(Ihandle* ih, QTableWidget* table, IqtTableFollow* follow, int lin_pos, int lin_delta, int col_pos, int col_delta)
+{
+  int lin = qtTableFollowPos(follow->focus_lin, lin_pos, lin_delta, table->rowCount());
+  int col = qtTableFollowPos(follow->focus_col, col_pos, col_delta, table->columnCount());
+  int new_count = 0, cur_count = 0;
+  int* current;
+
+  if (lin > 0 && col > 0 && (table->currentRow() != lin - 1 || table->currentColumn() != col - 1))
+    table->selectionModel()->setCurrentIndex(table->model()->index(lin - 1, col - 1), QItemSelectionModel::NoUpdate);
+
+  for (int i = 0; i < follow->sel_count; i++)
+  {
+    int l = follow->selected[i];
+    if (lin_delta < 0 && l == lin_pos)
+      continue;
+    if (l >= lin_pos)
+      l += lin_delta;
+    if (l <= table->rowCount())
+      follow->selected[new_count++] = l;
+  }
+
+  current = iupdrvTableGetSelectedLins(ih, &cur_count);
+  if (cur_count != new_count || (new_count && memcmp(current, follow->selected, new_count * sizeof(int)) != 0))
+  {
+    table->selectionModel()->clearSelection();
+    for (int i = 0; i < new_count; i++)
+      iupdrvTableSelectLin(ih, follow->selected[i], 1);
+  }
+
+  if (current)
+    free(current);
+  if (follow->selected)
+    free(follow->selected);
+}
+
 IUP_SDK_API void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
 {
   if (num_col < 0)
@@ -1221,7 +1281,10 @@ IUP_SDK_API void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
   if (ih->handle)
   {
     QTableWidget* table = qtTableGetWidget(ih);
+    IqtTableFollow follow;
+    qtTableFollowBegin(ih, table, &follow);
     table->setColumnCount(num_col);
+    qtTableFollowEnd(ih, table, &follow, ih->data->num_lin + 1, 0, num_col + 1, 0);
   }
 }
 
@@ -1235,7 +1298,10 @@ IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
   if (ih->handle)
   {
     QTableWidget* table = qtTableGetWidget(ih);
+    IqtTableFollow follow;
+    qtTableFollowBegin(ih, table, &follow);
     table->setRowCount(num_lin);
+    qtTableFollowEnd(ih, table, &follow, num_lin + 1, 0, ih->data->num_col + 1, 0);
   }
 }
 
@@ -1252,9 +1318,11 @@ IUP_SDK_API void iupdrvTableAddCol(Ihandle* ih, int pos)
   if (pos < 1 || pos > ih->data->num_col + 1)
     return;
 
-  int qt_col = pos - 1;
-  table->insertColumn(qt_col);
+  IqtTableFollow follow;
+  qtTableFollowBegin(ih, table, &follow);
+  table->insertColumn(pos - 1);
   ih->data->num_col++;
+  qtTableFollowEnd(ih, table, &follow, ih->data->num_lin + 1, 0, pos, 1);
 }
 
 IUP_SDK_API void iupdrvTableDelCol(Ihandle* ih, int pos)
@@ -1266,9 +1334,11 @@ IUP_SDK_API void iupdrvTableDelCol(Ihandle* ih, int pos)
   if (pos < 1 || pos > ih->data->num_col)
     return;
 
-  int qt_col = pos - 1;
-  table->removeColumn(qt_col);
+  IqtTableFollow follow;
+  qtTableFollowBegin(ih, table, &follow);
+  table->removeColumn(pos - 1);
   ih->data->num_col--;
+  qtTableFollowEnd(ih, table, &follow, ih->data->num_lin + 1, 0, pos, -1);
 }
 
 IUP_SDK_API void iupdrvTableAddLin(Ihandle* ih, int pos)
@@ -1284,9 +1354,11 @@ IUP_SDK_API void iupdrvTableAddLin(Ihandle* ih, int pos)
   if (pos < 1 || pos > ih->data->num_lin + 1)
     return;
 
-  int qt_row = pos - 1;
-  table->insertRow(qt_row);
+  IqtTableFollow follow;
+  qtTableFollowBegin(ih, table, &follow);
+  table->insertRow(pos - 1);
   ih->data->num_lin++;
+  qtTableFollowEnd(ih, table, &follow, pos, 1, ih->data->num_col + 1, 0);
 }
 
 IUP_SDK_API void iupdrvTableDelLin(Ihandle* ih, int pos)
@@ -1298,9 +1370,11 @@ IUP_SDK_API void iupdrvTableDelLin(Ihandle* ih, int pos)
   if (pos < 1 || pos > ih->data->num_lin)
     return;
 
-  int qt_row = pos - 1;
-  table->removeRow(qt_row);
+  IqtTableFollow follow;
+  qtTableFollowBegin(ih, table, &follow);
+  table->removeRow(pos - 1);
   ih->data->num_lin--;
+  qtTableFollowEnd(ih, table, &follow, pos, -1, ih->data->num_col + 1, 0);
 }
 
 /****************************************************************************
