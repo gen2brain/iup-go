@@ -1116,18 +1116,16 @@ IUP_DRV_API void iupcocoaGnustepFillCellRect(NSView* cellView, NSRect dirtyRect,
       tableView = (NSTableView*)[rowView superview];
   }
   NSColor* fill = nil;
-  if (rowView && [rowView isSelected])
+  NSInteger row = tableView ? [tableView rowForView:cellView] : -1;
+  BOOL selected = (row >= 0) ? [tableView isRowSelected:row] : (rowView && [rowView isSelected]);
+  if (selected)
     fill = [NSColor selectedControlColor];
   else if (customBackgroundColor)
     fill = customBackgroundColor;
-  else if (tableView && [tableView usesAlternatingRowBackgroundColors])
+  else if (row >= 0 && [tableView usesAlternatingRowBackgroundColors])
   {
-    NSInteger row = [tableView rowForView:cellView];
-    if (row >= 0)
-    {
-      NSArray* alt = [NSColor controlAlternatingRowBackgroundColors];
-      if ([alt count] > 0) fill = [alt objectAtIndex:(row % [alt count])];
-    }
+    NSArray* alt = [NSColor controlAlternatingRowBackgroundColors];
+    if ([alt count] > 0) fill = [alt objectAtIndex:(row % [alt count])];
   }
   if (!fill && tableView) fill = [tableView backgroundColor];
   if (!fill) fill = [NSColor controlBackgroundColor];

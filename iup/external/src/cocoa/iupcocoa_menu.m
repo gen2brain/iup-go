@@ -584,19 +584,37 @@ static void cocoaMenuCreateHelpMenu(NSMenu* main_menu)
   [help_item release];
 }
 
+static void cocoaMenuSetWindowsMenu(NSMenu* menu)
+{
+#ifdef GNUSTEP
+  /* GNUstep -setWindowsMenu: removes the window items of the old menu while iterating a stale count */
+  NSMenu* old = [[NSApplication sharedApplication] windowsMenu];
+  if (old && old != menu)
+  {
+    NSArray* items = [[[old itemArray] copy] autorelease];
+    for (NSMenuItem* item in items)
+    {
+      if ([[item target] isKindOfClass:[NSWindow class]])
+        [old removeItem:item];
+    }
+  }
+#endif
+  [[NSApplication sharedApplication] setWindowsMenu:menu];
+}
+
 static void cocoaMenuSynchronizeStandardMenus(NSMenu* menuBar)
 {
   if (!menuBar) {
-    [[NSApplication sharedApplication] setWindowsMenu:nil];
+    cocoaMenuSetWindowsMenu(nil);
     [[NSApplication sharedApplication] setHelpMenu:nil];
     return;
   }
 
   NSMenuItem* windowItem = cocoaMenuFindTitledItem(menuBar, @"Window");
   if (windowItem && [windowItem hasSubmenu]) {
-    [[NSApplication sharedApplication] setWindowsMenu:[windowItem submenu]];
+    cocoaMenuSetWindowsMenu([windowItem submenu]);
   } else {
-    [[NSApplication sharedApplication] setWindowsMenu:nil];
+    cocoaMenuSetWindowsMenu(nil);
   }
 
   NSMenuItem* helpItem = cocoaMenuFindTitledItem(menuBar, @"Help");
@@ -704,11 +722,16 @@ IUP_DRV_API void iupcocoaMenuSetApplicationMenu(Ihandle* ih)
 
     cocoaMenuSynchronizeStandardMenus(menu);
 
+#ifdef GNUSTEP
+    NSMenu* old_menu = [[NSApplication sharedApplication] mainMenu];
+#endif
     [[NSApplication sharedApplication] setMainMenu:menu];
     s_currentIupApplicationMenu = ih;
 
 #ifdef GNUSTEP
     /* GNUstep menus are windows; -[NSMenu setMain:NO] only lowers the level, so order it out */
+    if (old_menu && old_menu != menu && [[old_menu window] isVisible])
+      [[old_menu window] orderOut:nil];
     if (s_defaultApplicationMenu && s_defaultApplicationMenu != menu)
     {
       NSWindow* default_win = [s_defaultApplicationMenu window];
@@ -779,6 +802,9 @@ static int cocoaMenuMapMethod(Ihandle* ih)
   [delegate release];
 
   objc_setAssociatedObject(menu, IHANDLE_ASSOCIATED_OBJ_KEY, (id)ih, OBJC_ASSOCIATION_ASSIGN);
+
+  if (iupMenuIsMenuBar(ih) && ih->parent->handle && [(NSWindow*)ih->parent->handle isKeyWindow])
+    iupcocoaMenuSetApplicationMenu(ih);
 
   return IUP_NOERROR;
 }

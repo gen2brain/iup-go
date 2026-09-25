@@ -574,7 +574,12 @@ static void cocoaTableApplyCellColors(Ihandle* ih, NSTableCellView* cellView, in
     }
     else
     {
+#ifdef GNUSTEP
+      /* GNUstep never calls NSTableRowView -drawBackgroundInRect:, the cells carry the line color */
+      iupCellView.customBackgroundColor = cocoaTableGetRowBackgroundColor(ih, lin - 1);
+#else
       iupCellView.customBackgroundColor = nil;
+#endif
     }
   }
   else
@@ -652,6 +657,35 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
 @end
 
 @implementation IupNarrowTableHeaderView
+
+#ifdef GNUSTEP
+/* GNUstep moves the column during the drag and never sends tableView:didDragTableColumn: */
+- (void)mouseDown:(NSEvent*)event
+{
+  NSTableView* tableView = [self tableView];
+  NSTableColumn* moved = nil;
+  NSInteger distance = 0;
+  NSArray* columns;
+
+  [super mouseDown:event];
+
+  columns = [tableView tableColumns];
+  for (NSInteger i = 0; i < (NSInteger)[columns count]; i++)
+  {
+    NSTableColumn* column = [columns objectAtIndex:i];
+    NSNumber* stored = objc_getAssociatedObject(column, "iup_col");
+    NSInteger d = stored ? labs((long)([stored integerValue] - 1 - i)) : 0;
+    if (d > distance)
+    {
+      distance = d;
+      moved = column;
+    }
+  }
+
+  if (moved && [[tableView delegate] respondsToSelector:@selector(tableView:didDragTableColumn:)])
+    [(id)[tableView delegate] tableView:tableView didDragTableColumn:moved];
+}
+#endif
 
 - (NSRect)headerRectOfColumn:(NSInteger)column
 {
@@ -1005,6 +1039,32 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
 /* NSTableViewDataSource Protocol Implementation                             */
 /* ========================================================================= */
 
+static void cocoaTableUpdateResizingMasks(Ihandle* ih)
+{
+  NSTableView* tableView = cocoaTableGetTableView(ih);
+  NSArray* columns = [tableView tableColumns];
+  int count = (int)[columns count];
+  int last_set = 0;
+
+  for (int i = 0; i < count; i++)
+  {
+    NSTableColumn* column = [columns objectAtIndex:i];
+    int explicit_width = iupAttribGetId(ih, "_IUP_TABLE_EXPWIDTH", i + 1) != NULL;
+    NSUInteger mask = ih->data->user_resize ? NSTableColumnUserResizingMask : NSTableColumnNoResizing;
+
+    if (i == count - 1)
+    {
+      last_set = explicit_width || !ih->data->stretch_last;
+      if (!last_set)
+        mask |= NSTableColumnAutoresizingMask;
+    }
+
+    [column setResizingMask:mask];
+  }
+
+  iupAttribSet(ih, "_IUP_TABLE_LAST_COL_WIDTH_SET", last_set ? "YES" : "NO");
+}
+
 static void cocoaTableMoveColumn(Ihandle* ih, NSTableView* tableView, int from_col, int to_col, int attribs)
 {
   IcocoaTableData* table_data = cocoaTableGetData(ih);
@@ -1098,6 +1158,7 @@ static void cocoaTableMoveColumn(Ihandle* ih, NSTableView* tableView, int from_c
   if (table_data->current_col > 0)
     table_data->current_col = iupTableMoveColPos(table_data->current_col, from_col, to_col);
 
+  cocoaTableUpdateResizingMasks(ih);
   [tableView reloadData];
 
   if (![[tableView selectedRowIndexes] isEqualToIndexSet:selected])
@@ -1457,7 +1518,7 @@ static void cocoaTableMoveColumn(Ihandle* ih, NSTableView* tableView, int from_c
 
   iupAttribSetStrId(ih, "_IUP_TABLE_EXPWIDTH", (int)resized + 1, "1");
   if (resized == ih->data->num_col - 1)
-    iupAttribSet(ih, "_IUP_TABLE_LAST_COL_WIDTH_SET", "YES");
+    cocoaTableUpdateResizingMasks(ih);
 }
 
 - (NSView*)tableView:(NSTableView*)tableView
@@ -2057,9 +2118,18 @@ static int cocoaTableSetNumColAttrib(Ihandle* ih, const char* value)
 
     NSArray* columns = [[[tableView tableColumns] copy] autorelease];
     int old_count = (int)[columns count];
-    for (NSTableColumn* col in columns)
+    for (int i = num_col; i < old_count; i++)
     {
-      [tableView removeTableColumn:col];
+      [tableView removeTableColumn:[columns objectAtIndex:i]];
+      [table_data->column_info removeObjectForKey:@(i)];
+      iupAttribSetId(ih, "_IUP_TABLE_EXPWIDTH", i + 1, NULL);
+    }
+
+    if ([[tableView sortDescriptors] count] > 0 && [[[[tableView sortDescriptors] objectAtIndex:0] key] intValue] >= num_col)
+    {
+      iupAttribSet(ih, "_IUPCOCOA_SORTBUSY", "1");
+      [tableView setSortDescriptors:[NSArray array]];
+      iupAttribSet(ih, "_IUPCOCOA_SORTBUSY", NULL);
     }
 
     for (NSMutableArray* row in table_data->data_array)
@@ -2071,7 +2141,7 @@ static int cocoaTableSetNumColAttrib(Ihandle* ih, const char* value)
     for (int i = num_col + 1; i <= old_count; i++)
       iupAttribSetId(ih, "_IUPCOCOA_COLTITLE", i, NULL);
 
-    for (int i = 0; i < num_col; i++)
+    for (int i = old_count; i < num_col; i++)
     {
       NSString* identifier = [NSString stringWithFormat:@"%d", i];
       NSTableColumn* column = [[NSTableColumn alloc] initWithIdentifier:identifier];
@@ -2112,50 +2182,14 @@ static int cocoaTableSetNumColAttrib(Ihandle* ih, const char* value)
       snprintf(expwidth_name, sizeof(expwidth_name), "_IUP_TABLE_EXPWIDTH%d", i + 1);
       iupAttribSetStr(ih, expwidth_name, width_str ? "1" : NULL);
 
-      if (i == num_col - 1)
+      if (width_str)
       {
-        if (width_str || !ih->data->stretch_last)
-        {
-          iupAttribSet(ih, "_IUP_TABLE_LAST_COL_WIDTH_SET", "YES");
-
-          if (ih->data->user_resize)
-            [column setResizingMask:NSTableColumnUserResizingMask];
-          else
-            [column setResizingMask:NSTableColumnNoResizing];
-
-          if (width_str)
-          {
-            int width_val = 0;
-            if (iupStrToInt(width_str, &width_val) && width_val > 0)
-              [column setWidth:width_val];
-          }
-        }
-        else
-        {
-          iupAttribSet(ih, "_IUP_TABLE_LAST_COL_WIDTH_SET", "NO");
-
-          if (ih->data->user_resize)
-            [column setResizingMask:NSTableColumnUserResizingMask | NSTableColumnAutoresizingMask];
-          else
-            [column setResizingMask:NSTableColumnAutoresizingMask];
-        }
-      }
-      else if (width_str)
-      {
-        if (ih->data->user_resize)
-          [column setResizingMask:NSTableColumnUserResizingMask];
-        else
-          [column setResizingMask:NSTableColumnNoResizing];
-
         int width_val = 0;
         if (iupStrToInt(width_str, &width_val) && width_val > 0)
           [column setWidth:width_val];
       }
       else
-      {
-        [column setResizingMask:ih->data->user_resize ? NSTableColumnUserResizingMask : NSTableColumnNoResizing];
         [column sizeToFit];
-      }
 
       if (ih->data->sortable)
       {
@@ -2180,6 +2214,7 @@ static int cocoaTableSetNumColAttrib(Ihandle* ih, const char* value)
     }
 
     ih->data->num_col = num_col;
+    cocoaTableUpdateResizingMasks(ih);
     return 1;
   }
 
@@ -2257,30 +2292,7 @@ static int cocoaTableSetUserResizeAttrib(Ihandle* ih, const char* value)
   if (!ih->handle)
     return 0;
 
-  NSTableView* tableView = cocoaTableGetTableView(ih);
-
-  NSArray* columns = [tableView tableColumns];
-  NSUInteger col_count = [columns count];
-  for (NSUInteger i = 0; i < col_count; i++)
-  {
-    NSTableColumn* column = [columns objectAtIndex:i];
-
-    if (i == col_count - 1)
-    {
-      if (resizable)
-        [column setResizingMask:NSTableColumnUserResizingMask | NSTableColumnAutoresizingMask];
-      else
-        [column setResizingMask:NSTableColumnAutoresizingMask];
-    }
-    else
-    {
-      if (resizable)
-        [column setResizingMask:NSTableColumnUserResizingMask];
-      else
-        [column setResizingMask:NSTableColumnNoResizing];
-    }
-  }
-
+  cocoaTableUpdateResizingMasks(ih);
   return 1;
 }
 
@@ -2320,6 +2332,7 @@ static void cocoaTableAutoSizeColumns(Ihandle* ih)
   NSTableView* tableView = cocoaTableGetTableView(ih);
   NSArray* columns;
   NSFont* font;
+  BOOL changed = NO;
 
   if (!tableView)
     return;
@@ -2329,13 +2342,28 @@ static void cocoaTableAutoSizeColumns(Ihandle* ih)
 
   for (int col_index = 0; col_index < ih->data->num_col && col_index < (int)[columns count]; col_index++)
   {
+    NSTableColumn* column = [columns objectAtIndex:col_index];
+    CGFloat width;
     char expwidth_name[50];
     snprintf(expwidth_name, sizeof(expwidth_name), "_IUP_TABLE_EXPWIDTH%d", col_index + 1);
     if (iupAttribGet(ih, expwidth_name))
       continue;
 
-    [[columns objectAtIndex:col_index] setWidth:cocoaTableCalculateColumnWidth(ih, col_index, font)];
+    width = cocoaTableCalculateColumnWidth(ih, col_index, font);
+    if (width != [column width])
+    {
+      [column setWidth:width];
+      changed = YES;
+    }
   }
+
+#ifdef GNUSTEP
+  /* GNUstep keeps the cell views where the old column widths put them */
+  if (changed)
+    [tableView reloadData];
+#else
+  (void)changed;
+#endif
 }
 
 static void cocoaTableQueueAutoSize(Ihandle* ih)
@@ -2660,13 +2688,7 @@ IUP_SDK_API void iupdrvTableSetColWidth(Ihandle* ih, int col, int width)
     snprintf(expwidth_name, sizeof(expwidth_name), "_IUP_TABLE_EXPWIDTH%d", col);
     iupAttribSetStr(ih, expwidth_name, "1");
 
-    if (col - 1 == ih->data->num_col - 1)
-      iupAttribSet(ih, "_IUP_TABLE_LAST_COL_WIDTH_SET", "YES");
-
-    if (ih->data->user_resize)
-      [column setResizingMask:NSTableColumnUserResizingMask];
-    else
-      [column setResizingMask:NSTableColumnNoResizing];
+    cocoaTableUpdateResizingMasks(ih);
   }
 }
 
@@ -3100,6 +3122,7 @@ static int cocoaTableMapMethod(Ihandle* ih)
   }
 
   [tableView setAllowsColumnReordering:(ih->data->allow_reorder ? YES : NO)];
+  [tableView setAllowsColumnSelection:NO];
 
   char* selmode = iupAttribGetStr(ih, "SELECTIONMODE");
   if (!selmode)
