@@ -377,15 +377,35 @@ extern "C" IUP_SDK_API void iupdrvFontGetTextSize(const char* font, const char* 
   }
 
   int actual_len = (len < 0) ? (int)strlen(str) : len;
-  int wlen = MultiByteToWideChar(CP_UTF8, 0, str, actual_len, NULL, 0);
-  std::wstring wstr(wlen, L'\0');
-  MultiByteToWideChar(CP_UTF8, 0, str, actual_len, &wstr[0], wlen);
+  const char* end = str + actual_len;
+  const char* curstr = str;
+  int max_w = 0, line_count = 1;
 
-  float width, height;
-  winuiDWriteMeasureText(winfont->textFormat, wstr.c_str(), wlen, 1, &width, &height);
+  while (curstr < end)
+  {
+    const char* nextstr = (const char*)memchr(curstr, '\n', end - curstr);
+    int l_len = nextstr ? (int)(nextstr - curstr) : (int)(end - curstr);
 
-  if (w) *w = (int)ceil(width);
-  if (h) *h = winfont->drawcharheight;
+    if (l_len > 0)
+    {
+      int wlen = MultiByteToWideChar(CP_UTF8, 0, curstr, l_len, NULL, 0);
+      std::wstring wstr(wlen, L'\0');
+      MultiByteToWideChar(CP_UTF8, 0, curstr, l_len, &wstr[0], wlen);
+
+      float width;
+      winuiDWriteMeasureText(winfont->textFormat, wstr.c_str(), wlen, 1, &width, NULL);
+      if ((int)ceil(width) > max_w)
+        max_w = (int)ceil(width);
+    }
+
+    if (!nextstr || nextstr + 1 >= end)
+      break;
+    line_count++;
+    curstr = nextstr + 1;
+  }
+
+  if (w) *w = max_w;
+  if (h) *h = winfont->drawcharheight * line_count;
 }
 
 extern "C" IUP_SDK_API void iupdrvFontGetFontDim(const char* font, int* max_width, int* line_height, int* ascent, int* descent)

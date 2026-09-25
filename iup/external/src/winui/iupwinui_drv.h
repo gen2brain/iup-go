@@ -96,6 +96,7 @@ IUP_DRV_API void iupwinuiBringWindowToForeground(HWND hwnd);
 #include "pch.h"
 #include <string>
 #include <memory>
+#include <vector>
 #include "iup_attrib.h"
 
 struct IDWriteFactory;
@@ -431,6 +432,7 @@ struct IupWinUITreeAux
   winrt::event_token dragItemsCompletedToken;
   bool ignoreChange;
   int currentId;
+  std::vector<winrt::Microsoft::UI::Xaml::Controls::TreeViewNode> selectedNodes;
 
   winrt::event_token gotFocusToken{};
   winrt::event_token lostFocusToken{};
