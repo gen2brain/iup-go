@@ -152,6 +152,39 @@ void iupTableMoveLinAttribs(Ihandle* ih, int from_lin, int to_lin)
   }
 }
 
+void iupTableSortLinAttribs(Ihandle* ih, const int* order)
+{
+  int num_lin = ih->data->num_lin;
+  char** saved;
+  int a, col, lin;
+
+  if (num_lin < 2)
+    return;
+
+  saved = (char**)malloc(num_lin * sizeof(char*));
+
+  for (a = 0; a < 3; a++)
+  {
+    const char* name = iTableLinAttribs[a];
+    for (col = 0; col <= ih->data->num_col; col++)
+    {
+      for (lin = 1; lin <= num_lin; lin++)
+        saved[lin - 1] = iupStrDup(iupAttribGetId2(ih, name, lin, col));
+
+      for (lin = 1; lin <= num_lin; lin++)
+        iupAttribSetStrId2(ih, name, lin, col, saved[order[lin - 1] - 1]);
+
+      for (lin = 0; lin < num_lin; lin++)
+      {
+        if (saved[lin])
+          free(saved[lin]);
+      }
+    }
+  }
+
+  free(saved);
+}
+
 static void iTableClearLinAttribs(Ihandle* ih, int lin)
 {
   int a, col;

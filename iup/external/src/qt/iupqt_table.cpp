@@ -27,6 +27,7 @@
 #include <QItemSelectionModel>
 
 #include <algorithm>
+#include <vector>
 #include <cstdio>
 
 extern "C" {
@@ -961,6 +962,71 @@ static void qtTableLayoutUpdateMethod(Ihandle* ih)
   table->verticalScrollBar()->setValue(0);
 }
 
+static void qtTableSortRows(Ihandle* ih, QTableWidget* table, int col, int ascending)
+{
+  int num_lin = table->rowCount();
+  int num_col = table->columnCount();
+  int focus_lin = table->currentRow() + 1;
+  int focus_col = table->currentColumn() + 1;
+  int sel_count = 0;
+  int* selected;
+  char* ignore;
+
+  if (num_lin < 2 || col < 1 || col > num_col)
+    return;
+
+  std::vector<QByteArray> keys(num_lin);
+  std::vector<int> order(num_lin);
+  for (int r = 0; r < num_lin; r++)
+  {
+    QTableWidgetItem* item = table->item(r, col - 1);
+    keys[r] = item ? item->text().toUtf8() : QByteArray();
+    order[r] = r + 1;
+  }
+
+  std::stable_sort(order.begin(), order.end(), [&keys, ascending](int a, int b) {
+    int cmp = iupStrCompare(keys[a - 1].constData(), keys[b - 1].constData(), 0, 1);
+    return ascending ? cmp < 0 : cmp > 0;
+  });
+
+  std::vector<int> new_pos(num_lin + 1);
+  for (int i = 0; i < num_lin; i++)
+    new_pos[order[i]] = i + 1;
+
+  selected = iupdrvTableGetSelectedLins(ih, &sel_count);
+
+  ignore = iupAttribGet(ih, "_IUPTABLE_IGNORE_SELECTION_CB");
+  iupAttribSet(ih, "_IUPTABLE_IGNORE_SELECTION_CB", "1");
+
+  std::vector<QTableWidgetItem*> items((size_t)num_lin * num_col);
+  for (int r = 0; r < num_lin; r++)
+    for (int c = 0; c < num_col; c++)
+      items[(size_t)r * num_col + c] = table->takeItem(r, c);
+
+  for (int r = 0; r < num_lin; r++)
+    for (int c = 0; c < num_col; c++)
+    {
+      QTableWidgetItem* item = items[(size_t)(order[r] - 1) * num_col + c];
+      if (item)
+        table->setItem(r, c, item);
+    }
+
+  iupTableSortLinAttribs(ih, order.data());
+
+  if (focus_lin > 0 && focus_col > 0)
+    table->selectionModel()->setCurrentIndex(table->model()->index(new_pos[focus_lin] - 1, focus_col - 1), QItemSelectionModel::NoUpdate);
+
+  table->selectionModel()->clearSelection();
+  for (int i = 0; i < sel_count; i++)
+    iupdrvTableSelectLin(ih, new_pos[selected[i]], 1);
+
+  iupAttribSet(ih, "_IUPTABLE_IGNORE_SELECTION_CB", ignore);
+
+  if (selected)
+    free(selected);
+  table->viewport()->update();
+}
+
 static void qtTableMoveColumn(Ihandle* ih, int from_col, int to_col)
 {
   QTableWidget* table = qtTableGetWidget(ih);
@@ -1069,7 +1135,7 @@ static int qtTableMapMethod(Ihandle* ih)
       hHeader->setSortIndicator(logicalIndex, ascending ? Qt::AscendingOrder : Qt::DescendingOrder);
 
       if (!iupAttribGetBoolean(ih, "VIRTUALMODE"))
-        table->sortItems(logicalIndex, ascending ? Qt::AscendingOrder : Qt::DescendingOrder);
+        qtTableSortRows(ih, table, logicalIndex + 1, ascending);
     });
   }
   else

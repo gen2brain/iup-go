@@ -620,6 +620,12 @@ int iupAndroidTableReorder(Ihandle* ih, int from_col, int to_col)
   return 1;
 }
 
+void iupAndroidTableSortOrder(Ihandle* ih, const int* order, int count)
+{
+  if (count == ih->data->num_lin)
+    iupTableSortLinAttribs(ih, order);
+}
+
 int iupAndroidTableRowDragDrop(Ihandle* ih, int from, int to)
 {
   int from0 = from - 1;

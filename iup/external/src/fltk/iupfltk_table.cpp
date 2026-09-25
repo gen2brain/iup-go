@@ -11,6 +11,7 @@
 #include <FL/fl_draw.H>
 
 #include <vector>
+#include <algorithm>
 #include <string>
 #include <cstdlib>
 #include <cstdio>
@@ -977,27 +978,64 @@ static void fltkTableSortRows(Ihandle* ih, int col, int ascending)
     return;
 
   int num_lin = ih->data->num_lin;
+  int num_col = ih->data->num_col;
   int c = col - 1;
 
-  if (c < 0 || num_lin <= 1)
+  if (c < 0 || num_lin <= 1 || num_lin > (int)table->cells.size())
     return;
 
-  for (int i = 0; i < num_lin - 1; i++)
-  {
-    for (int j = i + 1; j < num_lin; j++)
-    {
-      const char* a = "";
-      const char* b = "";
-      if (i < (int)table->cells.size() && c < (int)table->cells[i].size())
-        a = table->cells[i][c].c_str();
-      if (j < (int)table->cells.size() && c < (int)table->cells[j].size())
-        b = table->cells[j][c].c_str();
+  std::vector<int> order(num_lin);
+  for (int i = 0; i < num_lin; i++)
+    order[i] = i + 1;
 
-      int cmp = iupStrCompare(a, b, 0, 1);
-      if (ascending ? (cmp > 0) : (cmp < 0))
-        std::swap(table->cells[i], table->cells[j]);
+  std::stable_sort(order.begin(), order.end(), [table, c, ascending](int a, int b) {
+    const char* va = c < (int)table->cells[a - 1].size() ? table->cells[a - 1][c].c_str() : "";
+    const char* vb = c < (int)table->cells[b - 1].size() ? table->cells[b - 1][c].c_str() : "";
+    int cmp = iupStrCompare(va, vb, 0, 1);
+    return ascending ? cmp < 0 : cmp > 0;
+  });
+
+  std::vector<std::vector<std::string>> cells(num_lin);
+  std::vector<int> new_pos(num_lin + 1);
+  std::vector<int> sel;
+  for (int i = 0; i < num_lin; i++)
+  {
+    cells[i] = table->cells[order[i] - 1];
+    new_pos[order[i]] = i + 1;
+    if (table->row_selected(order[i] - 1))
+      sel.push_back(i);
+  }
+  for (int i = 0; i < num_lin; i++)
+    table->cells[i] = cells[i];
+
+  for (int cc = 1; cc <= num_col; cc++)
+  {
+    std::vector<std::string> images(num_lin);
+    std::vector<bool> has(num_lin);
+    char name[50];
+    for (int l = 1; l <= num_lin; l++)
+    {
+      snprintf(name, sizeof(name), "_CELLIMAGE%d:%d", l, cc);
+      const char* v = iupAttribGet(ih, name);
+      has[l - 1] = v != NULL;
+      if (v) images[l - 1] = v;
+    }
+    for (int l = 1; l <= num_lin; l++)
+    {
+      snprintf(name, sizeof(name), "_CELLIMAGE%d:%d", l, cc);
+      iupAttribSetStr(ih, name, has[order[l - 1] - 1] ? images[order[l - 1] - 1].c_str() : NULL);
     }
   }
+
+  table->select_all_rows(0);
+  for (int r : sel)
+    table->select_row(r, 1);
+  table->selection_stamp = table->selectionStamp();
+
+  if (table->focus_lin >= 0 && table->focus_lin < num_lin)
+    table->focus_lin = new_pos[table->focus_lin + 1] - 1;
+
+  iupTableSortLinAttribs(ih, order.data());
 }
 
 static void fltkTableHandleHeaderClick(Ihandle* ih, int col)

@@ -153,15 +153,43 @@ static void motTableDrawSortArrow(Display* display, Window window, GC gc, int x,
   XFillPolygon(display, window, gc, points, 3, Convex, CoordModeOrigin);
 }
 
+/* ========================================================================= */
+/* Helper Functions - Selection                                             */
+/* ========================================================================= */
+
+static char* motTableSelection(Ihandle* ih)
+{
+  ImotTableData* mot_data = IMOT_TABLE_DATA(ih);
+
+  if (ih->data->num_lin <= 0)
+    return NULL;
+
+  if (mot_data->row_selected_size < ih->data->num_lin)
+  {
+    mot_data->row_selected = (char*)realloc(mot_data->row_selected, ih->data->num_lin);
+    memset(mot_data->row_selected + mot_data->row_selected_size, 0, ih->data->num_lin - mot_data->row_selected_size);
+    mot_data->row_selected_size = ih->data->num_lin;
+  }
+
+  return mot_data->row_selected;
+}
+
 static void motTableSortRows(Ihandle* ih, int col, int ascending)
 {
   ImotTableData* mot_data = IMOT_TABLE_DATA(ih);
   int i, j;
   int num_rows = ih->data->num_lin;
   int num_cols = ih->data->num_col;
+  int* order;
+  int* new_pos;
 
   if (!mot_data->cell_values || num_rows < 2 || col < 1 || col > num_cols)
     return;
+
+  order = (int*)malloc(num_rows * sizeof(int));
+  new_pos = (int*)malloc((num_rows + 1) * sizeof(int));
+  for (i = 0; i < num_rows; i++)
+    order[i] = i + 1;
 
   for (i = 0; i < num_rows - 1; i++)
   {
@@ -184,32 +212,37 @@ static void motTableSortRows(Ihandle* ih, int col, int ascending)
       if (should_swap)
       {
         char** temp_row = mot_data->cell_values[j];
+        int temp_order = order[j];
         mot_data->cell_values[j] = mot_data->cell_values[j + 1];
         mot_data->cell_values[j + 1] = temp_row;
+        order[j] = order[j + 1];
+        order[j + 1] = temp_order;
       }
     }
   }
-}
 
-/* ========================================================================= */
-/* Helper Functions - Selection                                             */
-/* ========================================================================= */
+  for (i = 0; i < num_rows; i++)
+    new_pos[order[i]] = i + 1;
 
-static char* motTableSelection(Ihandle* ih)
-{
-  ImotTableData* mot_data = IMOT_TABLE_DATA(ih);
-
-  if (ih->data->num_lin <= 0)
-    return NULL;
-
-  if (mot_data->row_selected_size < ih->data->num_lin)
+  if (mot_data->row_selected)
   {
-    mot_data->row_selected = (char*)realloc(mot_data->row_selected, ih->data->num_lin);
-    memset(mot_data->row_selected + mot_data->row_selected_size, 0, ih->data->num_lin - mot_data->row_selected_size);
-    mot_data->row_selected_size = ih->data->num_lin;
+    char* row_selected = motTableSelection(ih);
+    char* sel = (char*)malloc(num_rows);
+    memcpy(sel, row_selected, num_rows);
+    for (i = 0; i < num_rows; i++)
+      row_selected[i] = sel[order[i] - 1];
+    free(sel);
   }
 
-  return mot_data->row_selected;
+  if (mot_data->current_row > 0 && mot_data->current_row <= num_rows)
+    mot_data->current_row = new_pos[mot_data->current_row];
+  if (mot_data->anchor_row > 0 && mot_data->anchor_row <= num_rows)
+    mot_data->anchor_row = new_pos[mot_data->anchor_row];
+
+  iupTableSortLinAttribs(ih, order);
+
+  free(order);
+  free(new_pos);
 }
 
 static int motTableRowSelected(Ihandle* ih, int lin)

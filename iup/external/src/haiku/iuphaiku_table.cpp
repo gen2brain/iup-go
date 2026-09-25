@@ -11,6 +11,7 @@
 #include <cstdio>
 #include <cstring>
 #include <vector>
+#include <algorithm>
 
 #include <Bitmap.h>
 #include <ColumnListView.h>
@@ -112,10 +113,12 @@ static IupHaikuVirtualField g_virtual_field;
 class IupHaikuTableView;
 static void haikuTableAutoSizeColumns(Ihandle* ih, IupHaikuTableView* tv);
 static void haikuTableCheckColumnMove(Ihandle* ih, IupHaikuTableView* tv);
+static void haikuTableUserSort(Ihandle* ih, IupHaikuTableView* tv, int col);
 
 #define IUPHAIKU_TABLE_AUTOSIZE 'IupA'
 #define IUPHAIKU_TABLE_COLMOVE 'IupM'
 #define IUPHAIKU_TABLE_SCROLL 'IupS'
+#define IUPHAIKU_TABLE_SORTCLICK 'IupO'
 
 class IupHaikuTableEditor : public BTextView
 {
@@ -316,6 +319,12 @@ protected:
       return;
     }
 
+    if (msg->what == IUPHAIKU_TABLE_SORTCLICK)
+    {
+      haikuTableUserSort(fIhandle, this, msg->GetInt32("col", 0));
+      return;
+    }
+
     if (msg->what == IUPHAIKU_TABLE_AUTOSIZE)
     {
       delete fAutoSizeRunner;
@@ -447,7 +456,9 @@ public:
     BRow* row = RowAt(source, NULL);
     if (!row) return;
     RemoveRow(row);
+    SuspendSortColumn();
     AddRow(row, target, NULL);
+    RestoreSortColumn();
     iupTableMoveLinAttribs(fIhandle, source + 1, target + 1);
     SetFocusRow(row, true);
     Invalidate();
@@ -486,8 +497,8 @@ public:
       if (c && c->IsVisible()) total_w += c->Width() + 1.0f;
     }
     float trail_left = of.left + total_w;
-    BRow* focus = CurrentSelection();
-    if (!focus) focus = FocusRow();
+    BRow* focus = FocusRow();
+    if (!focus) focus = CurrentSelection();
 
     int n = (int)CountRows(NULL);
     float line = -scroll_y;
@@ -739,6 +750,16 @@ public:
   void SetMeasuredWithRows() { fMeasuredWithRows = true; }
 
   void SetTrailView(BView* v) { fTrail = v; }
+  void SuspendSortColumn() { ClearSortColumns(); }
+  void RestoreSortColumn()
+  {
+    int col = iupAttribGetInt(fIhandle, "_IUPHAIKU_SORTCOL");
+    if (col > 0 && ColumnAt(col - 1))
+      SetSortColumn(ColumnAt(col - 1), false, iupAttribGetInt(fIhandle, "_IUPHAIKU_SORTASC") != 0);
+  }
+  int HeaderPressCol() const { return fHeaderPressCol; }
+  BPoint HeaderPressPoint() const { return fHeaderPressPt; }
+  void SetHeaderPress(int col, BPoint pt) { fHeaderPressCol = col; fHeaderPressPt = pt; }
   void RepositionTrail();
 
 private:
@@ -756,6 +777,8 @@ private:
   int fDragTargetRow = -1;
   bool fRowDragging = false;
   int fDragStartY = 0;
+  int fHeaderPressCol = 0;
+  BPoint fHeaderPressPt;
 };
 
 
@@ -786,8 +809,8 @@ public:
     rgb_color foc  = fTv->Color(B_COLOR_ROW_DIVIDER);
     bool tv_focused = fTv->IsFocus() && fTv->Window() && fTv->Window()->IsActive();
 
-    BRow* focus = fTv->CurrentSelection();
-    if (!focus) focus = fTv->FocusRow();
+    BRow* focus = fTv->FocusRow();
+    if (!focus) focus = fTv->CurrentSelection();
 
     int n = fTv->CountRows(NULL);
     int first = (int)(updateRect.top / pitch);
@@ -1002,7 +1025,6 @@ static void haikuTableFillStatus(const BMessage* msg, char status[11])
 }
 
 /* MOUSE_MOVED keeps the trail overlay aligned while CLV does its offscreen column resize. */
-static void haikuTableSortByClick(BColumnListView* tv);
 
 class IupHaikuTableSortFilter : public BMessageFilter
 {
@@ -1062,6 +1084,23 @@ public:
 
     if (msg->what == B_MOUSE_UP)
     {
+      if (fTv->HeaderPressCol() > 0)
+      {
+        BPoint up;
+        int col = fTv->HeaderPressCol();
+        BPoint press = fTv->HeaderPressPoint();
+        fTv->SetHeaderPress(0, BPoint());
+        if (msg->FindPoint("be:view_where", &up) == B_OK && fTv->Looper())
+        {
+          BPoint delta = tgt->ConvertToScreen(up) - press;
+          if (fabsf(delta.x) <= 10.0f && fabsf(delta.y) <= 10.0f)
+          {
+            BMessage sort(IUPHAIKU_TABLE_SORTCLICK);
+            sort.AddInt32("col", col);
+            fTv->Looper()->PostMessage(&sort, fTv);
+          }
+        }
+      }
       if (fTv->GetIhandle()->data->show_dragdrop && fTv->DragSourceRow() >= 0)
       {
         int source = fTv->DragSourceRow();
@@ -1092,14 +1131,11 @@ public:
 
     if (clv_pt.y >= 0 && clv_pt.y <= hh + 4)
     {
-      if (col)
-      {
-        IFni cb = (IFni)IupGetCallback(ih, "SORT_CB");
-        /* the list view sorts when it gets the click, so a veto simply withholds it */
-        if (cb && cb(ih, (int)col->LogicalFieldNum() + 1) == IUP_IGNORE)
-          return B_SKIP_MESSAGE;
-      }
-      haikuTableSortByClick(fTv);
+      int32 buttons = B_PRIMARY_MOUSE_BUTTON;
+      msg->FindInt32("buttons", &buttons);
+      if (msg->what == B_MOUSE_DOWN && col && ih->data->sortable && (buttons & B_PRIMARY_MOUSE_BUTTON) &&
+          fTv->ColumnAt(clv_pt - BPoint(5, 0)) == col && fTv->ColumnAt(clv_pt + BPoint(5, 0)) == col)
+        fTv->SetHeaderPress((int)col->LogicalFieldNum() + 1, tgt->ConvertToScreen(where));
       return B_DISPATCH_MESSAGE;
     }
 
@@ -1158,7 +1194,7 @@ class IupHaikuTableColumn : public BTitledColumn
 {
 public:
   IupHaikuTableColumn(Ihandle* ih, const char* title, float width, alignment align)
-    : BTitledColumn(title ? title : "", width, 40.0f, 4096.0f, align), fIhandle(ih), fDisplayOnly(false) {}
+    : BTitledColumn(title ? title : "", width, 40.0f, 4096.0f, align), fIhandle(ih) {}
 
   void IconDrawSize(BBitmap* icon, float row_h, float* w, float* h) const
   {
@@ -1286,8 +1322,8 @@ public:
 
     if (tv && fIhandle && row && iupAttribGetBoolean(fIhandle, "FOCUSRECT"))
     {
-      BRow* fr = tv->CurrentSelection();
-      if (!fr) fr = tv->FocusRow();
+      BRow* fr = tv->FocusRow();
+      if (!fr) fr = tv->CurrentSelection();
       if (fr == row && col == tv->FocusCol())
       {
         parent->SetHighColor(selected ? iuphaikuColor(B_LIST_SELECTED_ITEM_TEXT_COLOR)
@@ -1306,16 +1342,10 @@ public:
 
   int CompareFields(BField* a, BField* b) override
   {
-    /* the application sorted its own rows, SetSortColumn only carries the arrow */
-    if (fDisplayOnly) return 0;
-
-    IupHaikuTableField* fa = dynamic_cast<IupHaikuTableField*>(a);
-    IupHaikuTableField* fb = dynamic_cast<IupHaikuTableField*>(b);
-    if (!fa || !fb) return 0;
-    return iupStrCompare(fa->String(), fb->String(), 0, 1);
+    (void)a;
+    (void)b;
+    return 0;
   }
-
-  void SetDisplayOnly(bool on) { fDisplayOnly = on; }
 
   /* Per-cell natural width; CLV maxes across rows, factors in the title, clamps to MinWidth. */
   float GetPreferredWidth(BField* field, BView* parent) const override
@@ -1344,7 +1374,6 @@ public:
 
 private:
   Ihandle* fIhandle;
-  bool fDisplayOnly;
 };
 
 /* All helpers below take IUP's 1-based lin/col. */
@@ -1353,18 +1382,6 @@ static IupHaikuTableView* haikuTableGetView(Ihandle* ih)
 {
   if (!ih || !ih->handle) return NULL;
   return (IupHaikuTableView*)ih->handle;
-}
-
-/* SetSortColumn sorts on its own thread, so the display-only compare stays until a real click */
-static void haikuTableSortByClick(BColumnListView* tv)
-{
-  if (!tv) return;
-
-  for (int i = 0; i < tv->CountColumns(); i++)
-  {
-    IupHaikuTableColumn* c = dynamic_cast<IupHaikuTableColumn*>(tv->ColumnAt(i));
-    if (c) c->SetDisplayOnly(false);
-  }
 }
 
 /* WIDTHn is dropped from the hash after map; track explicit width with a flag. */
@@ -1507,7 +1524,6 @@ static void haikuTableMoveColumn(Ihandle* ih, IupHaikuTableView* tv, int from_co
     iupAttribSetInt(ih, "_IUPHAIKU_SORTCOL", sort_col);
     IupHaikuTableColumn* col = (IupHaikuTableColumn*)tv->ColumnAt(sort_col - 1);
     tv->ClearSortColumns();
-    col->SetDisplayOnly(true);
     tv->SetSortColumn(col, false, iupAttribGetInt(ih, "_IUPHAIKU_SORTASC") != 0);
   }
 
@@ -1561,6 +1577,86 @@ static void haikuTableCheckColumnMove(Ihandle* ih, IupHaikuTableView* tv)
 static IupHaikuTableColumn* haikuTableGetColumn(IupHaikuTableView* tv, int col)
 {
   return tv ? (IupHaikuTableColumn*)tv->ColumnAt(col - 1) : NULL;
+}
+
+static void haikuTableUserSort(Ihandle* ih, IupHaikuTableView* tv, int col)
+{
+  IupHaikuTableColumn* column = haikuTableGetColumn(tv, col);
+  int prev_col = iupAttribGetInt(ih, "_IUPHAIKU_SORTCOL");
+  int prev_asc = iupAttribGetInt(ih, "_IUPHAIKU_SORTASC");
+  int ascending = (prev_col == col) ? !prev_asc : 1;
+  IFni cb = (IFni)IupGetCallback(ih, "SORT_CB");
+
+  if (!column || !ih->data->sortable)
+    return;
+
+  if (cb && cb(ih, col) == IUP_IGNORE)
+  {
+    tv->ClearSortColumns();
+    if (prev_col > 0 && haikuTableGetColumn(tv, prev_col))
+      tv->SetSortColumn(haikuTableGetColumn(tv, prev_col), false, prev_asc != 0);
+    tv->Invalidate();
+    return;
+  }
+
+  iupAttribSetInt(ih, "_IUPHAIKU_SORTCOL", col);
+  iupAttribSetInt(ih, "_IUPHAIKU_SORTASC", ascending);
+  tv->SetSortColumn(column, false, ascending != 0);
+
+  int n = (int)tv->CountRows(NULL);
+  if (tv->IsVirtual() || n < 2)
+  {
+    tv->Invalidate();
+    return;
+  }
+
+  tv->ClearSortColumns();
+
+  std::vector<BRow*> rows(n);
+  std::vector<int> order(n);
+  for (int i = 0; i < n; i++)
+  {
+    rows[i] = tv->RowAt(i, NULL);
+    order[i] = i + 1;
+  }
+
+  std::stable_sort(order.begin(), order.end(), [&rows, col, ascending](int a, int b) {
+    IupHaikuTableField* fa = dynamic_cast<IupHaikuTableField*>(rows[a - 1]->GetField(col - 1));
+    IupHaikuTableField* fb = dynamic_cast<IupHaikuTableField*>(rows[b - 1]->GetField(col - 1));
+    int cmp = iupStrCompare(fa ? fa->String() : "", fb ? fb->String() : "", 0, 1);
+    return ascending ? cmp < 0 : cmp > 0;
+  });
+
+  BRow* focus_row = tv->FocusRow();
+  std::vector<BRow*> selected;
+  for (BRow* row = tv->CurrentSelection(); row; row = tv->CurrentSelection(row))
+    selected.push_back(row);
+
+  BList old_rows, new_rows;
+  for (int i = 0; i < n; i++)
+  {
+    old_rows.AddItem(rows[i]);
+    new_rows.AddItem(rows[order[i] - 1]);
+  }
+
+  char* ignore = iupAttribGet(ih, "_IUPTABLE_IGNORE_SELECTION_CB");
+  iupAttribSet(ih, "_IUPTABLE_IGNORE_SELECTION_CB", "1");
+
+  tv->RemoveRows(&old_rows);
+  tv->AddRows(&new_rows, -1, NULL);
+
+  for (BRow* row : selected)
+    tv->AddToSelection(row);
+  if (focus_row)
+    tv->SetFocusRow(focus_row, false);
+
+  iupAttribSet(ih, "_IUPTABLE_IGNORE_SELECTION_CB", ignore);
+
+  tv->SetSortColumn(column, false, ascending != 0);
+  iupTableSortLinAttribs(ih, order.data());
+  tv->Invalidate();
+  if (BView* outline = tv->ScrollView())
+    outline->Invalidate();
 }
 
 static BRow* haikuTableGetRow(IupHaikuTableView* tv, int lin)
@@ -1671,7 +1767,9 @@ extern "C" IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
         }
       batch.AddItem(r);
     }
+    tv->SuspendSortColumn();
     tv->AddRows(&batch, -1, NULL);
+    tv->RestoreSortColumn();
   }
   else if (num_lin < cur)
   {
@@ -1759,7 +1857,9 @@ extern "C" IUP_SDK_API void iupdrvTableAddLin(Ihandle* ih, int pos)
       f->SetRow(r);
       r->SetField(f, c);
     }
+  tv->SuspendSortColumn();
   tv->AddRow(r, pos - 1, NULL);
+  tv->RestoreSortColumn();
   ih->data->num_lin++;
 }
 
@@ -1874,10 +1974,7 @@ extern "C" IUP_SDK_API void iupdrvTableSetSortSign(Ihandle* ih, int col, int sig
   tv->ClearSortColumns();
 
   if (sign != 0)
-  {
-    c->SetDisplayOnly(true);
     tv->SetSortColumn(c, false, sign > 0);
-  }
 
   tv->Invalidate();
 }

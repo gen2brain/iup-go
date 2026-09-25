@@ -1250,18 +1250,72 @@ static void cocoaTableMoveColumn(Ihandle* ih, NSTableView* tableView, int from_c
   if (table_data->is_virtual_mode)
     return;
 
-  [table_data->data_array sortUsingComparator:^NSComparisonResult(NSMutableArray* row1, NSMutableArray* row2) {
-    NSString* val1 = (col_index < [row1 count]) ? [row1 objectAtIndex:col_index] : @"";
-    NSString* val2 = (col_index < [row2 count]) ? [row2 objectAtIndex:col_index] : @"";
+  {
+    NSMutableArray* rows = table_data->data_array;
+    int num_lin = (int)[rows count];
+    int* order = (int*)malloc((num_lin > 0 ? num_lin : 1) * sizeof(int));
+    int* new_pos = (int*)malloc((num_lin + 1) * sizeof(int));
+    NSMutableArray* indexes = [NSMutableArray arrayWithCapacity:(NSUInteger)num_lin];
+    NSMutableArray* sorted_rows = [NSMutableArray arrayWithCapacity:(NSUInteger)num_lin];
+    NSMutableIndexSet* selection = [NSMutableIndexSet indexSet];
+    NSIndexSet* old_selection = [tableView selectedRowIndexes];
+    int i, c;
 
-    int cmp = iupStrCompare([val1 UTF8String], [val2 UTF8String], 0, 1);
-    if (![descriptor ascending])
-      cmp = -cmp;
+    for (i = 0; i < num_lin; i++)
+      [indexes addObject:[NSNumber numberWithInt:i]];
 
-    return cmp < 0 ? NSOrderedAscending : (cmp > 0 ? NSOrderedDescending : NSOrderedSame);
-  }];
+    [indexes sortWithOptions:NSSortStable usingComparator:^NSComparisonResult(NSNumber* n1, NSNumber* n2) {
+      NSMutableArray* row1 = [rows objectAtIndex:(NSUInteger)[n1 intValue]];
+      NSMutableArray* row2 = [rows objectAtIndex:(NSUInteger)[n2 intValue]];
+      NSString* val1 = (col_index < (int)[row1 count]) ? [row1 objectAtIndex:col_index] : @"";
+      NSString* val2 = (col_index < (int)[row2 count]) ? [row2 objectAtIndex:col_index] : @"";
 
-  [tableView reloadData];
+      int cmp = iupStrCompare([val1 UTF8String], [val2 UTF8String], 0, 1);
+      if (![descriptor ascending])
+        cmp = -cmp;
+
+      return cmp < 0 ? NSOrderedAscending : (cmp > 0 ? NSOrderedDescending : NSOrderedSame);
+    }];
+
+    for (i = 0; i < num_lin; i++)
+    {
+      order[i] = [[indexes objectAtIndex:(NSUInteger)i] intValue] + 1;
+      new_pos[order[i]] = i + 1;
+      [sorted_rows addObject:[rows objectAtIndex:(NSUInteger)(order[i] - 1)]];
+      if ([old_selection containsIndex:(NSUInteger)(order[i] - 1)])
+        [selection addIndex:(NSUInteger)i];
+    }
+    [rows setArray:sorted_rows];
+
+    for (c = 1; c <= ih->data->num_col; c++)
+    {
+      char** images = (char**)malloc((num_lin > 0 ? num_lin : 1) * sizeof(char*));
+      for (i = 0; i < num_lin; i++)
+        images[i] = iupStrDup(iupAttribGetId2(ih, "_IUPCOCOA_CELLIMAGE", i + 1, c));
+      for (i = 0; i < num_lin; i++)
+        iupAttribSetStrId2(ih, "_IUPCOCOA_CELLIMAGE", i + 1, c, images[order[i] - 1]);
+      for (i = 0; i < num_lin; i++)
+      {
+        if (images[i])
+          free(images[i]);
+      }
+      free(images);
+    }
+
+    iupTableSortLinAttribs(ih, order);
+
+    if (table_data->current_row > 0 && table_data->current_row <= num_lin)
+      table_data->current_row = new_pos[table_data->current_row];
+
+    [tableView reloadData];
+
+    iupAttribSet(ih, "_IUPTABLE_IGNORE_SELECTION_CB", "1");
+    [tableView selectRowIndexes:selection byExtendingSelection:NO];
+    iupAttribSet(ih, "_IUPTABLE_IGNORE_SELECTION_CB", NULL);
+
+    free(order);
+    free(new_pos);
+  }
 }
 
 @end

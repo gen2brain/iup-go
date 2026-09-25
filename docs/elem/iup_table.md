@@ -143,6 +143,8 @@ Only used when ALTERNATECOLOR=YES.
 **SORTABLE** (non-inheritable): Enables column sorting when the user clicks on a column header.
 Can be "YES" or "NO". Default: "NO".
 A click toggles the direction and shows an arrow in that column header.
+The sort is stable and renumbers the lines: line 1 is the top line afterwards.
+The per-line and per-cell attributes, the focused cell and the selected lines move with their rows, no callback is called.
 Setting it to NO removes the arrow and SORTSIGN returns NO for every column.
 In virtual mode the rows are not sorted, the application must sort its own data from SORT_CB.
 

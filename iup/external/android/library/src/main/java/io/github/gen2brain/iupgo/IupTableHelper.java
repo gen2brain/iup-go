@@ -723,13 +723,84 @@ public final class IupTableHelper
     static void sortRowsByColumn(IupTableView t, int col, final boolean asc)
     {
         final int ci = col - 1;
-        if (ci < 0 || ci >= t.numCol) return;
-        java.util.Collections.sort(t.rows, (a, b) -> {
+        final int n = t.rows.size();
+        if (ci < 0 || ci >= t.numCol || n < 2) return;
+
+        final ArrayList<String[]> rows = new ArrayList<>(t.rows);
+        Integer[] idx = new Integer[n];
+        for (int i = 0; i < n; i++) idx[i] = i;
+        java.util.Arrays.sort(idx, (ia, ib) -> {
+            String[] a = rows.get(ia);
+            String[] b = rows.get(ib);
             String sa = (a != null && ci < a.length && a[ci] != null) ? a[ci] : "";
             String sb = (b != null && ci < b.length && b[ci] != null) ? b[ci] : "";
             int cmp = naturalCompare(sa, sb);
             return asc ? cmp : -cmp;
         });
+
+        int[] order = new int[n];
+        int[] newPos = new int[n + 1];
+        for (int i = 0; i < n; i++)
+        {
+            order[i] = idx[i] + 1;
+            newPos[order[i]] = i + 1;
+            t.rows.set(i, rows.get(idx[i]));
+        }
+
+        permuteSparseInt(t.rowBg, newPos);
+        permuteSparseInt(t.rowFg, newPos);
+        permuteSparse(t.rowFont, newPos);
+        permuteCellLin(t.cellBg, newPos);
+        permuteCellLin(t.cellFg, newPos);
+        permuteCellLin(t.cellImage, newPos);
+        permuteCellLin(t.cellFont, newPos);
+
+        ArrayList<Integer> sel = new ArrayList<>(t.selectedLins);
+        t.selectedLins.clear();
+        for (int lin : sel)
+            t.selectedLins.add(lin >= 1 && lin <= n ? newPos[lin] : lin);
+        if (t.focusLin >= 1 && t.focusLin <= n)
+            t.focusLin = newPos[t.focusLin];
+
+        dispatchSortOrder(t.ihandlePtr, order);
+    }
+
+    static void permuteSparseInt(SparseIntArray map, int[] newPos)
+    {
+        SparseIntArray dst = new SparseIntArray(map.size());
+        for (int i = 0; i < map.size(); i++)
+        {
+            int k = map.keyAt(i);
+            dst.put(k >= 1 && k < newPos.length ? newPos[k] : k, map.valueAt(i));
+        }
+        map.clear();
+        for (int i = 0; i < dst.size(); i++) map.put(dst.keyAt(i), dst.valueAt(i));
+    }
+
+    static <V> void permuteSparse(SparseArray<V> map, int[] newPos)
+    {
+        SparseArray<V> dst = new SparseArray<>(map.size());
+        for (int i = 0; i < map.size(); i++)
+        {
+            int k = map.keyAt(i);
+            dst.put(k >= 1 && k < newPos.length ? newPos[k] : k, map.valueAt(i));
+        }
+        map.clear();
+        for (int i = 0; i < dst.size(); i++) map.put(dst.keyAt(i), dst.valueAt(i));
+    }
+
+    static <V> void permuteCellLin(HashMap<Long, V> map, int[] newPos)
+    {
+        HashMap<Long, V> dst = new HashMap<>();
+        for (HashMap.Entry<Long, V> e : map.entrySet())
+        {
+            long key = e.getKey();
+            int lin = (int)(key >> 32);
+            int col = (int)(key & 0xFFFFFFFFL);
+            dst.put(cellKey(lin >= 1 && lin < newPos.length ? newPos[lin] : lin, col), e.getValue());
+        }
+        map.clear();
+        map.putAll(dst);
     }
 
     /* Mirrors the C iupStrCompare so all drivers sort identically. */
@@ -1919,6 +1990,7 @@ public final class IupTableHelper
     public static native int dispatchEditEnd(long ihandlePtr, int lin, int col, String text, int apply);
     public static native void dispatchValueChanged(long ihandlePtr, int lin, int col);
     public static native boolean dispatchSort(long ihandlePtr, int col, int asc);
+    public static native void dispatchSortOrder(long ihandlePtr, int[] order);
     public static native boolean dispatchReorder(long ihandlePtr, int fromCol, int toCol);
     public static native int dispatchRowDragDrop(long ihandlePtr, int fromLin, int toLin);
     public static native String dispatchValueRequest(long ihandlePtr, int lin, int col);

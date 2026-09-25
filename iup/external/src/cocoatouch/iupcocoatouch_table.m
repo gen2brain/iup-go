@@ -649,7 +649,7 @@ static UICollectionViewLayout* cocoaTouchTableMakeLayout(IupCocoaTouchTableContr
 
 	NSMutableArray<NSNumber*>* indices = [NSMutableArray arrayWithCapacity:[_cells count]];
 	for (NSUInteger i = 0; i < [_cells count]; i++) [indices addObject:@(i)];
-	[indices sortUsingComparator:^NSComparisonResult(NSNumber* a, NSNumber* b) {
+	[indices sortWithOptions:NSSortStable usingComparator:^NSComparisonResult(NSNumber* a, NSNumber* b) {
 		NSMutableArray* ra = [_cells objectAtIndex:[a unsignedIntegerValue]];
 		NSMutableArray* rb = [_cells objectAtIndex:[b unsignedIntegerValue]];
 		NSString* va = (NSUInteger)col0 < [ra count] ? [ra objectAtIndex:(NSUInteger)col0] : @"";
@@ -669,6 +669,26 @@ static UICollectionViewLayout* cocoaTouchTableMakeLayout(IupCocoaTouchTableContr
 	}
 	[_cells setArray:new_cells];
 	[_images setArray:new_images];
+
+	NSUInteger n = [indices count];
+	int* order = (int*)malloc((n > 0 ? n : 1) * sizeof(int));
+	NSInteger* new_pos = (NSInteger*)malloc((n + 1) * sizeof(NSInteger));
+	NSMutableIndexSet* selected = [NSMutableIndexSet indexSet];
+	for (NSUInteger i = 0; i < n; i++)
+	{
+		order[i] = (int)[[indices objectAtIndex:i] unsignedIntegerValue] + 1;
+		new_pos[order[i]] = (NSInteger)i + 1;
+	}
+	[_selectedLins enumerateIndexesUsingBlock:^(NSUInteger lin, BOOL* stop) {
+		(void)stop;
+		if (lin >= 1 && lin <= n) [selected addIndex:(NSUInteger)new_pos[lin]];
+	}];
+	[_selectedLins removeAllIndexes];
+	[_selectedLins addIndexes:selected];
+	if (_focusLin >= 1 && (NSUInteger)_focusLin <= n) _focusLin = new_pos[_focusLin];
+	if (_ihandle && (int)n == _ihandle->data->num_lin) iupTableSortLinAttribs(_ihandle, order);
+	free(order);
+	free(new_pos);
 }
 
 - (void)collectionView:(UICollectionView*)cv didSelectItemAtIndexPath:(NSIndexPath*)ip
@@ -691,8 +711,6 @@ static UICollectionViewLayout* cocoaTouchTableMakeLayout(IupCocoaTouchTableContr
 			_sortCol = col;
 			_sortAscending = ascending;
 			[self sortByCol:col ascending:_sortAscending];
-			_focusLin = 0;
-			_focusCol = 0;
 		}
 		for (NSIndexPath* sel in [cv indexPathsForSelectedItems])
 			[cv deselectItemAtIndexPath:sel animated:NO];

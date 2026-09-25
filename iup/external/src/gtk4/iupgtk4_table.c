@@ -1496,6 +1496,87 @@ static gboolean gtk4TableReanchor(GtkWidget* widget, GdkFrameClock* clock, gpoin
   return G_SOURCE_REMOVE;
 }
 
+static void gtk4TableSortStore(Ihandle* ih, int col, int ascending)
+{
+  Igtk4TableData* gtk_data = IGTK4_TABLE_DATA(ih);
+  GListStore* store = G_LIST_STORE(gtk_data->model);
+  guint n = g_list_model_get_n_items(gtk_data->model);
+  IupTableRow** rows;
+  gpointer* items;
+  int* order;
+  int* new_pos;
+  int* selected;
+  int sel_count = 0, i;
+  char* ignore;
+
+  if (n < 2)
+    return;
+
+  rows = (IupTableRow**)malloc(n * sizeof(IupTableRow*));
+  items = (gpointer*)malloc(n * sizeof(gpointer));
+  order = (int*)malloc(n * sizeof(int));
+  new_pos = (int*)malloc((n + 1) * sizeof(int));
+
+  for (i = 0; i < (int)n; i++)
+  {
+    rows[i] = IUP_TABLE_ROW(g_list_model_get_item(gtk_data->model, (guint)i));
+    order[i] = i + 1;
+  }
+
+  for (i = 1; i < (int)n; i++)
+  {
+    int cur = order[i];
+    const char* cur_value = (col < rows[cur - 1]->num_cols && rows[cur - 1]->values[col]) ? rows[cur - 1]->values[col] : "";
+    int j = i - 1;
+    while (j >= 0)
+    {
+      IupTableRow* prev = rows[order[j] - 1];
+      const char* prev_value = (col < prev->num_cols && prev->values[col]) ? prev->values[col] : "";
+      int cmp = iupStrCompare(prev_value, cur_value, 0, 1);
+      if (!ascending)
+        cmp = -cmp;
+      if (cmp <= 0)
+        break;
+      order[j + 1] = order[j];
+      j--;
+    }
+    order[j + 1] = cur;
+  }
+
+  for (i = 0; i < (int)n; i++)
+  {
+    items[i] = rows[order[i] - 1];
+    new_pos[order[i]] = i + 1;
+  }
+
+  selected = iupdrvTableGetSelectedLins(ih, &sel_count);
+
+  ignore = iupAttribGet(ih, "_IUPTABLE_IGNORE_SELECTION_CB");
+  iupAttribSet(ih, "_IUPTABLE_IGNORE_SELECTION_CB", "1");
+
+  iupTableSortLinAttribs(ih, order);
+  if (gtk_data->current_row > 0 && gtk_data->current_row <= (int)n)
+    gtk_data->current_row = new_pos[gtk_data->current_row];
+
+  g_list_store_splice(store, 0, n, items, n);
+  gtk4TableReindexRows(gtk_data);
+
+  gtk_selection_model_unselect_all(gtk_data->selection_model);
+  for (i = 0; i < sel_count; i++)
+    iupdrvTableSelectLin(ih, new_pos[selected[i]], 1);
+
+  iupAttribSet(ih, "_IUPTABLE_IGNORE_SELECTION_CB", ignore);
+
+  for (i = 0; i < (int)n; i++)
+    g_object_unref(rows[i]);
+  if (selected)
+    free(selected);
+  free(rows);
+  free(items);
+  free(order);
+  free(new_pos);
+}
+
 static void gtk4TableSorterChanged(GtkSorter* sorter, GtkSorterChange change, gpointer user_data)
 {
   Ihandle* ih = (Ihandle*)user_data;
@@ -1524,7 +1605,6 @@ static void gtk4TableSorterChanged(GtkSorter* sorter, GtkSorterChange change, gp
     {
       IFni sort_cb = (IFni)IupGetCallback(ih, "SORT_CB");
 
-      gtk_data->sort_display_only = 0;
       iupAttribSet(ih, "_IUP_GTK4_SORTSET", NULL);
 
       if (sort_cb && sort_cb(ih, (int)i + 1) == IUP_IGNORE)
@@ -1545,6 +1625,15 @@ static void gtk4TableSorterChanged(GtkSorter* sorter, GtkSorterChange change, gp
 
         iupAttribSet(ih, "_IUP_GTK4_SORTCOL", (char*)primary_column);
         iupAttribSetInt(ih, "_IUP_GTK4_SORTORDER", (int)gtk_column_view_sorter_get_primary_sort_order(view_sorter));
+
+        if (!gtk_data->is_virtual)
+        {
+          gtk_data->sort_display_only = 1;
+          iupAttribSet(ih, "_IUP_GTK4_SORTBUSY", "1");
+          gtk_sorter_changed(sorter, GTK_SORTER_CHANGE_DIFFERENT);
+          iupAttribSet(ih, "_IUP_GTK4_SORTBUSY", NULL);
+          gtk4TableSortStore(ih, (int)i, gtk_column_view_sorter_get_primary_sort_order(view_sorter) == GTK_SORT_ASCENDING);
+        }
 
         if (vadj)
         {

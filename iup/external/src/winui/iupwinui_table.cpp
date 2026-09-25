@@ -808,11 +808,65 @@ static void winuiTableUpdateSortArrow(Ihandle* ih, int col)
   }
 }
 
-static void winuiTableSortRows(Ihandle* ih, int col, int ascending)
+/****************************************************************************
+ * Focus Visual
+ ****************************************************************************/
+
+static void winuiTableClearFocusVisual(Ihandle* ih)
+{
+  IupWinUITableAux* aux = winuiTableGetAux(ih);
+  if (!aux || aux->current_row <= 0 || aux->current_col <= 0)
+    return;
+
+  Grid rowGrid = winuiTableGetRowGrid(ih, aux->current_row);
+  if (!rowGrid)
+    return;
+
+  Border border = winuiTableGetCellBorder(rowGrid, aux->current_col - 1);
+  if (border)
+  {
+    if (aux->show_grid)
+      border.BorderThickness(ThicknessHelper::FromLengths(0, 0, 1, 1));
+    else
+      border.BorderThickness(ThicknessHelper::FromLengths(0, 0, 0, 0));
+    border.Padding(ThicknessHelper::FromLengths(4, 2, 4, 2));
+    border.BorderBrush(winuiTableGridLineBrush());
+  }
+}
+
+static void winuiTableSetFocusVisual(Ihandle* ih, int lin, int col)
+{
+  if (lin <= 0 || col <= 0)
+    return;
+
+  if (!iupAttribGetBoolean(ih, "FOCUSRECT"))
+    return;
+
+  Grid rowGrid = winuiTableGetRowGrid(ih, lin);
+  if (!rowGrid)
+    return;
+
+  Border border = winuiTableGetCellBorder(rowGrid, col - 1);
+  if (border)
+  {
+    IupWinUITableAux* aux = winuiTableGetAux(ih);
+    border.BorderThickness(ThicknessHelper::FromLengths(1, 1, 1, 1));
+    border.BorderBrush(winuiTableFocusBrush());
+    if (aux && aux->show_grid)
+      border.Padding(ThicknessHelper::FromLengths(3, 1, 4, 2));
+    else
+      border.Padding(ThicknessHelper::FromLengths(3, 1, 3, 1));
+  }
+}
+
+static void winuiTableSortRows(Ihandle* ih, int col, int ascending, int* order)
 {
   IupWinUITableAux* aux = winuiTableGetAux(ih);
   int num_rows = ih->data->num_lin;
   int num_cols = ih->data->num_col;
+
+  for (int i = 0; i < num_rows; i++)
+    order[i] = i + 1;
 
   if (!aux->cell_values || num_rows < 2 || col < 1 || col > num_cols)
     return;
@@ -833,8 +887,11 @@ static void winuiTableSortRows(Ihandle* ih, int col, int ascending)
       if (should_swap)
       {
         char** temp_row = aux->cell_values[j];
+        int temp_order = order[j];
         aux->cell_values[j] = aux->cell_values[j + 1];
         aux->cell_values[j + 1] = temp_row;
+        order[j] = order[j + 1];
+        order[j + 1] = temp_order;
       }
     }
   }
@@ -906,60 +963,54 @@ static void winuiTableSort(Ihandle* ih, int col)
   if (iupAttribGetBoolean(ih, "VIRTUALMODE"))
     return;
 
-  winuiTableSortRows(ih, col, (aux->sort_ascending == 1));
+  int num_rows = ih->data->num_lin;
+  if (num_rows < 2)
+    return;
+
+  std::vector<int> order(num_rows);
+  std::vector<int> new_pos(num_rows + 1);
+  int sel_count = 0;
+  int* selected = iupdrvTableGetSelectedLins(ih, &sel_count);
+
+  winuiTableSortRows(ih, col, (aux->sort_ascending == 1), order.data());
+  for (int i = 0; i < num_rows; i++)
+    new_pos[order[i]] = i + 1;
+
+  for (int c = 1; c <= ih->data->num_col; c++)
+  {
+    std::vector<std::string> images(num_rows);
+    std::vector<bool> has(num_rows);
+    for (int i = 0; i < num_rows; i++)
+    {
+      const char* v = iupAttribGetId2(ih, "_IUPWINUI_CELLIMAGE", i + 1, c);
+      has[i] = v != NULL;
+      if (v) images[i] = v;
+    }
+    for (int i = 0; i < num_rows; i++)
+      iupAttribSetStrId2(ih, "_IUPWINUI_CELLIMAGE", i + 1, c, has[order[i] - 1] ? images[order[i] - 1].c_str() : NULL);
+  }
+
+  iupTableSortLinAttribs(ih, order.data());
+  if (aux->current_row > 0 && aux->current_row <= num_rows)
+    aux->current_row = new_pos[aux->current_row];
+
+  iupAttribSet(ih, "_IUPTABLE_IGNORE_SELECTION_CB", "1");
+  aux->suppress_callbacks = true;
   winuiTableRebuildListViewItems(ih);
-}
-
-/****************************************************************************
- * Focus Visual
- ****************************************************************************/
-
-static void winuiTableClearFocusVisual(Ihandle* ih)
-{
-  IupWinUITableAux* aux = winuiTableGetAux(ih);
-  if (!aux || aux->current_row <= 0 || aux->current_col <= 0)
-    return;
-
-  Grid rowGrid = winuiTableGetRowGrid(ih, aux->current_row);
-  if (!rowGrid)
-    return;
-
-  Border border = winuiTableGetCellBorder(rowGrid, aux->current_col - 1);
-  if (border)
+  for (int i = 0; i < sel_count; i++)
   {
-    if (aux->show_grid)
-      border.BorderThickness(ThicknessHelper::FromLengths(0, 0, 1, 1));
-    else
-      border.BorderThickness(ThicknessHelper::FromLengths(0, 0, 0, 0));
-    border.Padding(ThicknessHelper::FromLengths(4, 2, 4, 2));
-    border.BorderBrush(winuiTableGridLineBrush());
+    iupdrvTableSelectLin(ih, new_pos[selected[i]], 1);
+    winuiTableUpdateRowColors(ih, new_pos[selected[i]]);
   }
+  aux->suppress_callbacks = false;
+  iupAttribSet(ih, "_IUPTABLE_IGNORE_SELECTION_CB", NULL);
+  if (selected)
+    free(selected);
+
+  if (aux->current_row > 0 && aux->current_col > 0)
+    winuiTableSetFocusVisual(ih, aux->current_row, aux->current_col);
 }
 
-static void winuiTableSetFocusVisual(Ihandle* ih, int lin, int col)
-{
-  if (lin <= 0 || col <= 0)
-    return;
-
-  if (!iupAttribGetBoolean(ih, "FOCUSRECT"))
-    return;
-
-  Grid rowGrid = winuiTableGetRowGrid(ih, lin);
-  if (!rowGrid)
-    return;
-
-  Border border = winuiTableGetCellBorder(rowGrid, col - 1);
-  if (border)
-  {
-    IupWinUITableAux* aux = winuiTableGetAux(ih);
-    border.BorderThickness(ThicknessHelper::FromLengths(1, 1, 1, 1));
-    border.BorderBrush(winuiTableFocusBrush());
-    if (aux && aux->show_grid)
-      border.Padding(ThicknessHelper::FromLengths(3, 1, 4, 2));
-    else
-      border.Padding(ThicknessHelper::FromLengths(3, 1, 3, 1));
-  }
-}
 
 /****************************************************************************
  * Column Reorder
