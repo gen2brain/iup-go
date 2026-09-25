@@ -421,8 +421,7 @@ static void winuiTableUpdateHeaderCell(Ihandle* ih, Border headerBorder, int col
   auto tb = headerBorder.Child().try_as<TextBlock>();
   if (tb)
   {
-    if (aux->col_titles && aux->col_titles[col])
-      tb.Text(iupwinuiStringToHString(aux->col_titles[col]));
+    tb.Text(iupwinuiStringToHString(aux->col_titles && aux->col_titles[col] ? aux->col_titles[col] : ""));
     tb.TextAlignment(winuiTableGetColumnAlignment(ih, col + 1));
   }
 }
@@ -1076,7 +1075,7 @@ static void winuiTableOnItemsChanged(Ihandle* ih,
   }
 }
 
-static void winuiTableMoveColumn(Ihandle* ih, int source, int target)
+static void winuiTableMoveColumn(Ihandle* ih, int source, int target, int attribs)
 {
   IupWinUITableAux* aux = winuiTableGetAux(ih);
   if (!aux || source == target)
@@ -1124,7 +1123,8 @@ static void winuiTableMoveColumn(Ihandle* ih, int source, int target)
   for (int lin = 1; lin <= num_lin; lin++)
     winuiTableShiftAttribLinCol(ih, "_IUPWINUI_CELLIMAGE%d:%d", lin, source, target);
 
-  iupTableMoveColAttribs(ih, source, target);
+  if (attribs)
+    iupTableMoveColAttribs(ih, source, target);
 
   if (aux->sort_column > 0)
     aux->sort_column = iupTableMoveColPos(aux->sort_column, source, target);
@@ -2274,6 +2274,40 @@ extern "C" IUP_SDK_API void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
   if (num_col == old_num_col)
     return;
 
+  int* new_col_widths = (int*)calloc(num_col, sizeof(int));
+  bool* new_col_width_set = (bool*)calloc(num_col, sizeof(bool));
+  char** new_col_titles = (char**)calloc(num_col, sizeof(char*));
+
+  for (int i = 0; i < num_col; i++)
+  {
+    if (i < old_num_col)
+    {
+      new_col_widths[i] = aux->col_widths[i];
+      new_col_width_set[i] = aux->col_width_set[i];
+      new_col_titles[i] = aux->col_titles[i];
+    }
+    else
+    {
+      new_col_widths[i] = 100;
+      new_col_width_set[i] = false;
+      new_col_titles[i] = NULL;
+    }
+  }
+
+  for (int i = num_col; i < old_num_col; i++)
+  {
+    if (aux->col_titles[i])
+      free(aux->col_titles[i]);
+  }
+
+  free(aux->col_widths);
+  free(aux->col_width_set);
+  free(aux->col_titles);
+
+  aux->col_widths = new_col_widths;
+  aux->col_width_set = new_col_width_set;
+  aux->col_titles = new_col_titles;
+
   if (header)
   {
     if (num_col < old_num_col)
@@ -2347,39 +2381,6 @@ extern "C" IUP_SDK_API void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
     }
   }
 
-  int* new_col_widths = (int*)calloc(num_col, sizeof(int));
-  bool* new_col_width_set = (bool*)calloc(num_col, sizeof(bool));
-  char** new_col_titles = (char**)calloc(num_col, sizeof(char*));
-
-  for (int i = 0; i < num_col; i++)
-  {
-    if (i < old_num_col)
-    {
-      new_col_widths[i] = aux->col_widths[i];
-      new_col_width_set[i] = aux->col_width_set[i];
-      new_col_titles[i] = aux->col_titles[i];
-    }
-    else
-    {
-      new_col_widths[i] = 100;
-      new_col_width_set[i] = false;
-      new_col_titles[i] = NULL;
-    }
-  }
-
-  for (int i = num_col; i < old_num_col; i++)
-  {
-    if (aux->col_titles[i])
-      free(aux->col_titles[i]);
-  }
-
-  free(aux->col_widths);
-  free(aux->col_width_set);
-  free(aux->col_titles);
-
-  aux->col_widths = new_col_widths;
-  aux->col_width_set = new_col_width_set;
-  aux->col_titles = new_col_titles;
 
   char* virtualmode = iupAttribGet(ih, "VIRTUALMODE");
   if (!iupStrBoolean(virtualmode) && aux->cell_values)
@@ -2403,6 +2404,12 @@ extern "C" IUP_SDK_API void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
       aux->cell_values[i] = new_row;
     }
   }
+
+  ih->data->num_col = num_col;
+  if (aux->sort_column > num_col)
+    aux->sort_column = 0;
+  if (aux->current_col > num_col)
+    aux->current_col = num_col;
 }
 
 extern "C" IUP_SDK_API void iupdrvTableAddLin(Ihandle* ih, int pos)
@@ -2412,10 +2419,9 @@ extern "C" IUP_SDK_API void iupdrvTableAddLin(Ihandle* ih, int pos)
   if (!aux || !listView)
     return;
 
-  if (pos < 0)
-    pos = ih->data->num_lin;
-  if (pos > ih->data->num_lin)
-    pos = ih->data->num_lin;
+  if (pos < 1 || pos > ih->data->num_lin + 1)
+    pos = ih->data->num_lin + 1;
+  pos--;
 
   if (aux->isVirtual)
   {
@@ -2517,13 +2523,10 @@ extern "C" IUP_SDK_API void iupdrvTableDelLin(Ihandle* ih, int pos)
 
 extern "C" IUP_SDK_API void iupdrvTableAddCol(Ihandle* ih, int pos)
 {
-  if (pos < 0)
-    pos = ih->data->num_col;
-  if (pos > ih->data->num_col)
-    pos = ih->data->num_col;
-
-  ih->data->num_col++;
-  iupdrvTableSetNumCol(ih, ih->data->num_col);
+  iupdrvTableSetNumCol(ih, ih->data->num_col + 1);
+  if (pos < ih->data->num_col)
+    winuiTableMoveColumn(ih, ih->data->num_col, pos, 0);
+  winuiTableRefreshAfterReorder(ih);
 }
 
 extern "C" IUP_SDK_API void iupdrvTableDelCol(Ihandle* ih, int pos)
@@ -2531,8 +2534,10 @@ extern "C" IUP_SDK_API void iupdrvTableDelCol(Ihandle* ih, int pos)
   if (pos < 1 || pos > ih->data->num_col)
     return;
 
-  ih->data->num_col--;
-  iupdrvTableSetNumCol(ih, ih->data->num_col);
+  if (pos < ih->data->num_col)
+    winuiTableMoveColumn(ih, pos, ih->data->num_col, 0);
+  iupdrvTableSetNumCol(ih, ih->data->num_col - 1);
+  winuiTableRefreshAfterReorder(ih);
 }
 
 /****************************************************************************
@@ -3076,7 +3081,7 @@ static int winuiTableMapMethod(Ihandle* ih)
       IFnii cb = (IFnii)IupGetCallback(ih, "REORDER_CB");
       if (!cb || cb(ih, source, target) != IUP_IGNORE)
       {
-        winuiTableMoveColumn(ih, source, target);
+        winuiTableMoveColumn(ih, source, target, 1);
         winuiTableRefreshAfterReorder(ih);
       }
     }

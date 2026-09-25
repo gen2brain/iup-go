@@ -14,10 +14,12 @@ Unlike [IupMatrix](../ctrl/iup_matrix.md) which is custom-drawn, IupTable uses n
 #### Dimensions
 
 **NUMLIN** (non-inheritable): Number of data rows in the table.
-Can be changed after creation to add or remove rows.
+Can be changed after creation to add or remove rows at the end.
+Removed rows lose their values and attributes.
 
 **NUMCOL** (non-inheritable): Number of columns in the table.
-Can be changed after creation to add or remove columns.
+Can be changed after creation to add or remove columns at the end.
+Removed columns lose their titles, values and attributes.
 
 **COUNT** (read-only) (non-inheritable): Returns the total number of cells (NUMLIN * NUMCOL).
 
@@ -34,6 +36,10 @@ Value is the 1-based column index where the column will be inserted.
 
 **DELCOL** (write-only) (non-inheritable): Deletes the column at the given position.
 Value is the 1-based column index to remove.
+
+The rows or columns after the given position move with their values, titles and attributes
+(ALIGNMENTcol, WIDTHcol, RASTERWIDTHcol, EDITABLEcol, and BGCOLOR, FGCOLOR and FONT of lines,
+columns and cells).
 
 #### Cell Values
 

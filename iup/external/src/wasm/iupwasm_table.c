@@ -447,50 +447,96 @@ static void wasmTableSetFocus(Ihandle* ih, int lin, int col)
   wasmTableUpdateFocus(ih, lin, col);
 }
 
-IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
+static void wasmTableRebuild(Ihandle* ih, int columns)
 {
   int id = iupwasmIdOf(ih);
-  (void)num_lin;
   if (!id) return;
   if (iupAttribGetBoolean(ih, "VIRTUALMODE"))
   {
+    if (columns)
+      iupwasmJsTableBuild(id, 0, ih->data->num_col);
     wasmTableVirtualRender(ih);
     return;
   }
   iupwasmJsTableBuild(id, ih->data->num_lin, ih->data->num_col);
   wasmTableApplyColors(ih);
+  wasmTableApplyAlign(ih);
+  wasmTableApplyCellColors(ih);
+}
+
+static void wasmTableShiftColTitles(Ihandle* ih, int from, int to)
+{
+  int c, step = (from < to) ? 1 : -1;
+  char* title = iupStrDup(iupAttribGetId(ih, "_IUPWASM_COLTITLE", from));
+  for (c = from; c != to; c += step)
+    iupAttribSetStrId(ih, "_IUPWASM_COLTITLE", c, iupAttribGetId(ih, "_IUPWASM_COLTITLE", c + step));
+  iupAttribSetStrId(ih, "_IUPWASM_COLTITLE", to, title);
+  if (title)
+    free(title);
+}
+
+IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
+{
+  ih->data->num_lin = num_lin;
+  wasmTableRebuild(ih, 0);
 }
 
 IUP_SDK_API void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
 {
-  int id = iupwasmIdOf(ih);
-  (void)num_col;
-  if (!id) return;
-  iupwasmJsTableBuild(id, ih->data->num_lin, ih->data->num_col);
+  int c;
+  for (c = num_col + 1; c <= ih->data->num_col; c++)
+    iupAttribSetId(ih, "_IUPWASM_COLTITLE", c, NULL);
+  ih->data->num_col = num_col;
+  wasmTableRebuild(ih, 1);
 }
 
 IUP_SDK_API void iupdrvTableAddLin(Ihandle* ih, int pos)
 {
-  (void)pos;
-  iupdrvTableSetNumLin(ih, ih->data->num_lin);
+  int id = iupwasmIdOf(ih);
+  ih->data->num_lin++;
+  wasmTableRebuild(ih, 0);
+  if (id && !iupAttribGetBoolean(ih, "VIRTUALMODE") && pos < ih->data->num_lin)
+  {
+    iupwasmJsTableMoveRow(id, ih->data->num_lin, pos);
+    wasmTableApplyCellColors(ih);
+  }
 }
 
 IUP_SDK_API void iupdrvTableDelLin(Ihandle* ih, int pos)
 {
-  (void)pos;
-  iupdrvTableSetNumLin(ih, ih->data->num_lin);
+  int id = iupwasmIdOf(ih);
+  if (id && !iupAttribGetBoolean(ih, "VIRTUALMODE") && pos < ih->data->num_lin)
+    iupwasmJsTableMoveRow(id, pos, ih->data->num_lin);
+  ih->data->num_lin--;
+  wasmTableRebuild(ih, 0);
 }
 
 IUP_SDK_API void iupdrvTableAddCol(Ihandle* ih, int pos)
 {
-  (void)pos;
-  iupdrvTableSetNumCol(ih, ih->data->num_col);
+  int id = iupwasmIdOf(ih);
+  ih->data->num_col++;
+  wasmTableRebuild(ih, 1);
+  if (pos < ih->data->num_col)
+  {
+    wasmTableShiftColTitles(ih, ih->data->num_col, pos);
+    if (id)
+      iupwasmJsTableReorderCols(id, ih->data->num_col, pos);
+    wasmTableApplyAlign(ih);
+  }
 }
 
 IUP_SDK_API void iupdrvTableDelCol(Ihandle* ih, int pos)
 {
-  (void)pos;
-  iupdrvTableSetNumCol(ih, ih->data->num_col);
+  int id = iupwasmIdOf(ih);
+  if (pos < ih->data->num_col)
+  {
+    wasmTableShiftColTitles(ih, pos, ih->data->num_col);
+    if (id)
+      iupwasmJsTableReorderCols(id, pos, ih->data->num_col);
+  }
+  iupAttribSetId(ih, "_IUPWASM_COLTITLE", ih->data->num_col, NULL);
+  ih->data->num_col--;
+  wasmTableRebuild(ih, 1);
 }
 
 IUP_SDK_API void iupdrvTableSetCellValue(Ihandle* ih, int lin, int col, const char* value)

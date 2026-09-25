@@ -419,120 +419,6 @@ static void gtkTableSortStore(Ihandle* ih, int col_index, int ascending)
   free(order);
 }
 
-static void gtkTableEnsureStore(Ihandle* ih)
-{
-  IgtkTableData* gtk_data = IGTK_TABLE_DATA(ih);
-  int model_cols = gtkTableModelColCount(ih);
-
-  if (gtk_data->store && gtk_tree_model_get_n_columns(GTK_TREE_MODEL(gtk_data->store)) == model_cols)
-    return;
-
-  if (gtk_data->column_types)
-    free(gtk_data->column_types);
-
-  gtk_data->column_types = (GType*)malloc(sizeof(GType) * model_cols);
-
-  int i;
-  if (ih->data->show_image)
-  {
-    for (i = 0; i < ih->data->num_col; i++)
-    {
-      gtk_data->column_types[i * 2] = GDK_TYPE_PIXBUF;
-      gtk_data->column_types[i * 2 + 1] = G_TYPE_STRING;
-    }
-  }
-  else
-  {
-    for (i = 0; i < ih->data->num_col; i++)
-      gtk_data->column_types[i] = G_TYPE_STRING;
-  }
-
-  if (gtk_data->store)
-    g_object_unref(gtk_data->store);
-
-  gtk_data->store = gtk_list_store_newv(model_cols, gtk_data->column_types);
-  gtk_tree_view_set_model(GTK_TREE_VIEW(gtk_data->tree_view), GTK_TREE_MODEL(gtk_data->store));
-}
-
-static void gtkTableUpdateColumns(Ihandle* ih)
-{
-  IgtkTableData* gtk_data = IGTK_TABLE_DATA(ih);
-
-  GList* columns = gtk_tree_view_get_columns(GTK_TREE_VIEW(gtk_data->tree_view));
-  GList* iter;
-  for (iter = columns; iter != NULL; iter = g_list_next(iter))
-  {
-    gtk_tree_view_remove_column(GTK_TREE_VIEW(gtk_data->tree_view), GTK_TREE_VIEW_COLUMN(iter->data));
-  }
-  g_list_free(columns);
-
-  int col;
-  for (col = 0; col < ih->data->num_col; col++)
-  {
-    int text_model_col = gtkTableTextModelCol(ih, col);
-    GtkTreeViewColumn* column = gtk_tree_view_column_new();
-
-    if (ih->data->show_image)
-    {
-      GtkCellRenderer* pix_renderer = gtk_cell_renderer_pixbuf_new();
-      gtk_tree_view_column_pack_start(column, pix_renderer, FALSE);
-      gtk_tree_view_column_add_attribute(column, pix_renderer, "pixbuf", gtkTableImageModelCol(col));
-    }
-
-    GtkCellRenderer* renderer = gtk_cell_renderer_text_new();
-    gtk_tree_view_column_pack_start(column, renderer, TRUE);
-    gtk_tree_view_column_add_attribute(column, renderer, "text", text_model_col);
-
-    if (ih->data->sortable)
-    {
-      if (gtk_data->is_virtual)
-      {
-        gtk_tree_view_column_set_sort_column_id(column, -1);
-        gtk_tree_view_column_set_clickable(column, TRUE);
-        g_signal_connect(G_OBJECT(column), "clicked", G_CALLBACK(gtkTableColumnClicked), ih);
-      }
-      else
-      {
-        gtk_tree_view_column_set_sort_column_id(column, -1);
-        gtk_tree_view_column_set_clickable(column, TRUE);
-        g_signal_connect(G_OBJECT(column), "clicked", G_CALLBACK(gtkTableColumnClicked), ih);
-      }
-    }
-    else
-    {
-      gtk_tree_view_column_set_sort_column_id(column, -1);
-      gtk_tree_view_column_set_clickable(column, FALSE);
-    }
-
-    gtk_tree_view_column_set_reorderable(column, ih->data->allow_reorder);
-
-    if (col == ih->data->num_col - 1)
-    {
-      if (ih->data->stretch_last)
-      {
-        gtk_tree_view_column_set_sizing(column, GTK_TREE_VIEW_COLUMN_AUTOSIZE);
-        gtk_tree_view_column_set_expand(column, TRUE);
-        gtk_tree_view_column_set_resizable(column, FALSE);
-      }
-      else
-      {
-        gtk_tree_view_column_set_sizing(column, GTK_TREE_VIEW_COLUMN_AUTOSIZE);
-        gtk_tree_view_column_set_expand(column, FALSE);
-        gtk_tree_view_column_set_resizable(column, FALSE);
-      }
-    }
-    else
-    {
-      gtk_tree_view_column_set_sizing(column, GTK_TREE_VIEW_COLUMN_AUTOSIZE);
-      gtk_tree_view_column_set_expand(column, FALSE);
-      gtk_tree_view_column_set_resizable(column, FALSE);
-    }
-
-    gtk_tree_view_append_column(GTK_TREE_VIEW(gtk_data->tree_view), column);
-    g_object_set_data(G_OBJECT(column), "iup_col", GINT_TO_POINTER(col + 1));
-  }
-}
-
 /* ========================================================================= */
 /* GTK Signal Callbacks                                                      */
 /* ========================================================================= */
@@ -692,6 +578,61 @@ static void gtkTableCellEdited(GtkCellRendererText* renderer, gchar* path_string
     free(old_text);
 }
 
+static void gtkTableCursorChanged(GtkTreeView* tree_view, Ihandle* ih)
+{
+  GtkTreePath* path = NULL;
+  GtkTreeViewColumn* column = NULL;
+  gtk_tree_view_get_cursor(tree_view, &path, &column);
+
+  GtkTreeViewColumn* dummy_column = (GtkTreeViewColumn*)iupAttribGet(ih, "_IUPGTK_DUMMY_COLUMN");
+  if (dummy_column && column == dummy_column && path)
+  {
+    GtkTreeViewColumn* last_real_col = gtk_tree_view_get_column(tree_view, ih->data->num_col - 1);
+    if (last_real_col)
+    {
+      gtk_tree_view_set_cursor(tree_view, path, last_real_col, FALSE);
+    }
+    gtk_tree_path_free(path);
+    return;
+  }
+
+  IFnii cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
+  if (!cb || iupAttribGet(ih, "_IUPTABLE_IGNORE_SELECTION_CB") || iupAttribGet(ih, "_IUPGTK_TABLE_SETCURSOR"))
+  {
+    if (path)
+      gtk_tree_path_free(path);
+    return;
+  }
+
+  if (path && column)
+  {
+    gint* indices = gtk_tree_path_get_indices(path);
+    int lin = indices[0] + 1;  /* Convert to 1-based */
+
+    int col = 1;
+    GList* columns = gtk_tree_view_get_columns(tree_view);
+    for (GList* l = columns; l != NULL; l = l->next, col++)
+    {
+      if ((GtkTreeViewColumn*)l->data == column)
+        break;
+    }
+    g_list_free(columns);
+
+    cb(ih, lin, col);
+  }
+
+  if (path)
+    gtk_tree_path_free(path);
+}
+
+static void gtkTableSetCursor(Ihandle* ih, GtkTreeView* tree_view, GtkTreePath* path, GtkTreeViewColumn* column, gboolean start_editing)
+{
+  iupAttribSet(ih, "_IUPGTK_TABLE_SETCURSOR", "1");
+  gtk_tree_view_set_cursor(tree_view, path, column, start_editing);
+  iupAttribSet(ih, "_IUPGTK_TABLE_SETCURSOR", NULL);
+  gtkTableCursorChanged(tree_view, ih);
+}
+
 static gboolean gtkTableButtonEvent(GtkWidget* widget, GdkEventButton* evt, Ihandle* ih)
 {
   /* Only cell-area clicks; a grip press has window-relative coords that would match a phantom cell and block resize. */
@@ -758,7 +699,7 @@ static gboolean gtkTableButtonEvent(GtkWidget* widget, GdkEventButton* evt, Ihan
       return FALSE;  /* set_cursor would clear the selection GtkTreeView is extending */
     }
 
-    gtk_tree_view_set_cursor(GTK_TREE_VIEW(widget), path, column, FALSE);
+    gtkTableSetCursor(ih, GTK_TREE_VIEW(widget), path, column, FALSE);
     gtk_tree_path_free(path);
     if (!gtk_widget_has_focus(widget))
       gtk_widget_grab_focus(widget);
@@ -766,7 +707,7 @@ static gboolean gtkTableButtonEvent(GtkWidget* widget, GdkEventButton* evt, Ihan
   }
   else if (evt->type == GDK_2BUTTON_PRESS)
   {
-    gtk_tree_view_set_cursor(GTK_TREE_VIEW(widget), path, column, TRUE);
+    gtkTableSetCursor(ih, GTK_TREE_VIEW(widget), path, column, TRUE);
     gtk_tree_path_free(path);
     return TRUE;
   }
@@ -1027,53 +968,6 @@ static void gtkTableColumnsChanged(GtkTreeView* tree_view, Ihandle* ih)
   }
 }
 
-static void gtkTableCursorChanged(GtkTreeView* tree_view, Ihandle* ih)
-{
-  GtkTreePath* path = NULL;
-  GtkTreeViewColumn* column = NULL;
-  gtk_tree_view_get_cursor(tree_view, &path, &column);
-
-  GtkTreeViewColumn* dummy_column = (GtkTreeViewColumn*)iupAttribGet(ih, "_IUPGTK_DUMMY_COLUMN");
-  if (dummy_column && column == dummy_column && path)
-  {
-    GtkTreeViewColumn* last_real_col = gtk_tree_view_get_column(tree_view, ih->data->num_col - 1);
-    if (last_real_col)
-    {
-      gtk_tree_view_set_cursor(tree_view, path, last_real_col, FALSE);
-    }
-    gtk_tree_path_free(path);
-    return;
-  }
-
-  IFnii cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
-  if (!cb || iupAttribGet(ih, "_IUPTABLE_IGNORE_SELECTION_CB"))
-  {
-    if (path)
-      gtk_tree_path_free(path);
-    return;
-  }
-
-  if (path && column)
-  {
-    gint* indices = gtk_tree_path_get_indices(path);
-    int lin = indices[0] + 1;  /* Convert to 1-based */
-
-    int col = 1;
-    GList* columns = gtk_tree_view_get_columns(tree_view);
-    for (GList* l = columns; l != NULL; l = l->next, col++)
-    {
-      if ((GtkTreeViewColumn*)l->data == column)
-        break;
-    }
-    g_list_free(columns);
-
-    cb(ih, lin, col);
-  }
-
-  if (path)
-    gtk_tree_path_free(path);
-}
-
 static void gtkTableSelectionChanged(GtkTreeSelection* selection, Ihandle* ih)
 {
   (void)selection;
@@ -1218,7 +1112,7 @@ static gboolean gtkTableKeyPressEvent(GtkWidget* widget, GdkEventKey* event, Iha
         GtkTreeViewColumn* prev_col = gtk_tree_view_get_column(GTK_TREE_VIEW(gtk_data->tree_view), col - 2);
         if (prev_col)
         {
-          gtk_tree_view_set_cursor(GTK_TREE_VIEW(gtk_data->tree_view), path, prev_col, FALSE);
+          gtkTableSetCursor(ih, GTK_TREE_VIEW(gtk_data->tree_view), path, prev_col, FALSE);
           handled = TRUE;
         }
       }
@@ -1230,7 +1124,7 @@ static gboolean gtkTableKeyPressEvent(GtkWidget* widget, GdkEventKey* event, Iha
         GtkTreeViewColumn* next_col = gtk_tree_view_get_column(GTK_TREE_VIEW(gtk_data->tree_view), col);
         if (next_col)
         {
-          gtk_tree_view_set_cursor(GTK_TREE_VIEW(gtk_data->tree_view), path, next_col, FALSE);
+          gtkTableSetCursor(ih, GTK_TREE_VIEW(gtk_data->tree_view), path, next_col, FALSE);
           handled = TRUE;
         }
       }
@@ -1614,89 +1508,44 @@ static void gtkTableEnableDragDrop(Ihandle* ih)
   g_signal_connect(G_OBJECT(ih->handle), "drag-data-received", G_CALLBACK(gtkTableDragDataReceived), ih);
 }
 
-static int gtkTableMapMethod(Ihandle* ih)
+static GtkListStore* gtkTableNewStore(Ihandle* ih)
 {
-  GtkListStore* store;
-  int i, col;
+  IgtkTableData* gtk_data = IGTK_TABLE_DATA(ih);
+  int model_cols = gtkTableModelColCount(ih);
+  int i;
 
-  IgtkTableData* gtk_data = (IgtkTableData*)malloc(sizeof(IgtkTableData));
-  memset(gtk_data, 0, sizeof(IgtkTableData));
-  ih->data->native_data = gtk_data;
+  if (gtk_data->column_types)
+    free(gtk_data->column_types);
 
-  gtk_data->is_virtual = iupAttribGetBoolean(ih, "VIRTUALMODE");
-
-  GtkTreeModel* model = NULL;
-
-  if (gtk_data->is_virtual)
+  if (model_cols < 1)
   {
-    gtk_data->virtual_model = iup_gtk_virtual_model_new(ih);
-    model = GTK_TREE_MODEL(gtk_data->virtual_model);
+    gtk_data->column_types = (GType*)malloc(sizeof(GType));
+    gtk_data->column_types[0] = G_TYPE_STRING;
+    return gtk_list_store_newv(1, gtk_data->column_types);
+  }
+
+  gtk_data->column_types = (GType*)malloc(sizeof(GType) * model_cols);
+  if (ih->data->show_image)
+  {
+    for (i = 0; i < ih->data->num_col; i++)
+    {
+      gtk_data->column_types[i * 2] = GDK_TYPE_PIXBUF;
+      gtk_data->column_types[i * 2 + 1] = G_TYPE_STRING;
+    }
   }
   else
   {
-    if (ih->data->num_col > 0)
-    {
-      int model_cols = gtkTableModelColCount(ih);
-      gtk_data->column_types = (GType*)malloc(sizeof(GType) * model_cols);
-      if (ih->data->show_image)
-      {
-        for (i = 0; i < ih->data->num_col; i++)
-        {
-          gtk_data->column_types[i * 2] = GDK_TYPE_PIXBUF;
-          gtk_data->column_types[i * 2 + 1] = G_TYPE_STRING;
-        }
-      }
-      else
-      {
-        for (i = 0; i < ih->data->num_col; i++)
-          gtk_data->column_types[i] = G_TYPE_STRING;
-      }
-
-      gtk_data->store = gtk_list_store_newv(model_cols, gtk_data->column_types);
-    }
-    else
-    {
-      GType type = G_TYPE_STRING;
-      gtk_data->column_types = (GType*)malloc(sizeof(GType));
-      gtk_data->column_types[0] = G_TYPE_STRING;
-      gtk_data->store = gtk_list_store_newv(1, gtk_data->column_types);
-    }
-
-    store = gtk_data->store;
-    model = GTK_TREE_MODEL(store);
+    for (i = 0; i < ih->data->num_col; i++)
+      gtk_data->column_types[i] = G_TYPE_STRING;
   }
 
-  gtk_data->scrolled_win = gtk_scrolled_window_new(NULL, NULL);
-  /* AUTOMATIC shows scrollbars only when needed */
-  gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(gtk_data->scrolled_win), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
+  return gtk_list_store_newv(model_cols, gtk_data->column_types);
+}
 
-  gtk_data->tree_view = gtk_tree_view_new_with_model(model);
-  if (!gtk_data->is_virtual)
-    g_object_unref(store);  /* Tree view holds reference */
-
-  gtk_tree_view_set_headers_visible(GTK_TREE_VIEW(gtk_data->tree_view), TRUE);
-  gtk_tree_view_set_enable_search(GTK_TREE_VIEW(gtk_data->tree_view), FALSE);
-
-  /* Enable fixed height mode for virtual mode, prevents GTK from iterating all rows */
-  if (gtk_data->is_virtual)
-    gtk_tree_view_set_fixed_height_mode(GTK_TREE_VIEW(gtk_data->tree_view), TRUE);
-
-  gtk_widget_set_can_focus(gtk_data->tree_view, TRUE);
-#if GTK_CHECK_VERSION(3, 0, 0)
-  gtk_widget_set_focus_on_click(gtk_data->tree_view, TRUE);
-#endif
-
-  GtkTreeSelection* selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(gtk_data->tree_view));
-  char* selmode = iupAttribGetStr(ih, "SELECTIONMODE");
-  if (!selmode)
-    selmode = "SINGLE";
-
-  if (iupStrEqualNoCase(selmode, "NONE"))
-    gtk_tree_selection_set_mode(selection, GTK_SELECTION_NONE);
-  else if (iupStrEqualNoCase(selmode, "MULTIPLE"))
-    gtk_tree_selection_set_mode(selection, GTK_SELECTION_MULTIPLE);
-  else
-    gtk_tree_selection_set_mode(selection, GTK_SELECTION_SINGLE);
+static void gtkTableCreateColumns(Ihandle* ih)
+{
+  IgtkTableData* gtk_data = IGTK_TABLE_DATA(ih);
+  int col;
 
   if (ih->data->num_col > 0)
   {
@@ -1901,6 +1750,178 @@ static int gtkTableMapMethod(Ihandle* ih)
       iupAttribSet(ih, "_IUPGTK_DUMMY_COLUMN", (char*)dummy_column);
     }
   }
+}
+
+static void gtkTableRebuildColumns(Ihandle* ih, int old_num_col, int add_pos, int del_pos)
+{
+  IgtkTableData* gtk_data = IGTK_TABLE_DATA(ih);
+  GtkTreeView* tree_view = GTK_TREE_VIEW(gtk_data->tree_view);
+  int num_col = ih->data->num_col;
+  int* src = (int*)malloc(sizeof(int) * (num_col > 0 ? num_col : 1));
+  char** titles = (char**)calloc(old_num_col > 0 ? old_num_col : 1, sizeof(char*));
+  int* selected;
+  int sel_count = 0;
+  GList* columns;
+  GList* l;
+  int c;
+
+  for (c = 0; c < num_col; c++)
+  {
+    if (add_pos)
+      src[c] = (c < add_pos - 1) ? c : ((c == add_pos - 1) ? -1 : c - 1);
+    else if (del_pos)
+      src[c] = (c < del_pos - 1) ? c : c + 1;
+    else
+      src[c] = (c < old_num_col) ? c : -1;
+  }
+
+  for (c = 0; c < old_num_col; c++)
+  {
+    GtkTreeViewColumn* column = gtk_tree_view_get_column(tree_view, c);
+    const gchar* title = column ? gtk_tree_view_column_get_title(column) : NULL;
+    titles[c] = title ? iupStrDup(title) : NULL;
+  }
+
+  selected = iupdrvTableGetSelectedLins(ih, &sel_count);
+
+  iupAttribSet(ih, "_IUPTABLE_IGNORE_COLUMNS_CHANGED", "1");
+  iupAttribSet(ih, "_IUPTABLE_IGNORE_SELECTION_CB", "1");
+
+  columns = gtk_tree_view_get_columns(tree_view);
+  for (l = columns; l != NULL; l = l->next)
+    gtk_tree_view_remove_column(tree_view, GTK_TREE_VIEW_COLUMN(l->data));
+  g_list_free(columns);
+  iupAttribSet(ih, "_IUPGTK_DUMMY_COLUMN", NULL);
+
+  if (gtk_data->is_virtual)
+  {
+    gtk_tree_view_set_model(tree_view, NULL);
+    gtk_tree_view_set_model(tree_view, GTK_TREE_MODEL(gtk_data->virtual_model));
+  }
+  else
+  {
+    GtkListStore* old_store = gtk_data->store;
+    GtkListStore* store;
+    GtkTreeIter old_iter;
+    gboolean valid;
+
+    g_object_ref(old_store);
+    store = gtkTableNewStore(ih);
+
+    valid = gtk_tree_model_get_iter_first(GTK_TREE_MODEL(old_store), &old_iter);
+    while (valid)
+    {
+      GtkTreeIter iter;
+      gtk_list_store_append(store, &iter);
+      for (c = 0; c < num_col; c++)
+      {
+        gchar* text = NULL;
+        if (src[c] >= 0)
+          gtk_tree_model_get(GTK_TREE_MODEL(old_store), &old_iter, gtkTableTextModelCol(ih, src[c]), &text, -1);
+        gtk_list_store_set(store, &iter, gtkTableTextModelCol(ih, c), text ? text : "", -1);
+        g_free(text);
+
+        if (ih->data->show_image && src[c] >= 0)
+        {
+          GdkPixbuf* pixbuf = NULL;
+          gtk_tree_model_get(GTK_TREE_MODEL(old_store), &old_iter, gtkTableImageModelCol(src[c]), &pixbuf, -1);
+          if (pixbuf)
+          {
+            gtk_list_store_set(store, &iter, gtkTableImageModelCol(c), pixbuf, -1);
+            g_object_unref(pixbuf);
+          }
+        }
+      }
+      valid = gtk_tree_model_iter_next(GTK_TREE_MODEL(old_store), &old_iter);
+    }
+
+    gtk_tree_view_set_model(tree_view, GTK_TREE_MODEL(store));
+    g_object_unref(store);
+    gtk_data->store = store;
+    g_object_unref(old_store);
+  }
+
+  gtkTableCreateColumns(ih);
+
+  for (c = 0; c < num_col; c++)
+    iupdrvTableSetColTitle(ih, c + 1, src[c] >= 0 ? titles[src[c]] : NULL);
+
+  for (c = 0; c < sel_count; c++)
+    iupdrvTableSelectLin(ih, selected[c], 1);
+
+  iupAttribSet(ih, "_IUPTABLE_IGNORE_SELECTION_CB", NULL);
+  iupAttribSet(ih, "_IUPTABLE_IGNORE_COLUMNS_CHANGED", NULL);
+
+  for (c = 0; c < old_num_col; c++)
+  {
+    if (titles[c])
+      free(titles[c]);
+  }
+  free(titles);
+  free(src);
+  if (selected)
+    free(selected);
+}
+
+static int gtkTableMapMethod(Ihandle* ih)
+{
+  GtkListStore* store;
+  int col;
+
+  IgtkTableData* gtk_data = (IgtkTableData*)malloc(sizeof(IgtkTableData));
+  memset(gtk_data, 0, sizeof(IgtkTableData));
+  ih->data->native_data = gtk_data;
+
+  gtk_data->is_virtual = iupAttribGetBoolean(ih, "VIRTUALMODE");
+
+  GtkTreeModel* model = NULL;
+
+  if (gtk_data->is_virtual)
+  {
+    gtk_data->virtual_model = iup_gtk_virtual_model_new(ih);
+    model = GTK_TREE_MODEL(gtk_data->virtual_model);
+  }
+  else
+  {
+    gtk_data->store = gtkTableNewStore(ih);
+
+    store = gtk_data->store;
+    model = GTK_TREE_MODEL(store);
+  }
+
+  gtk_data->scrolled_win = gtk_scrolled_window_new(NULL, NULL);
+  /* AUTOMATIC shows scrollbars only when needed */
+  gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(gtk_data->scrolled_win), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
+
+  gtk_data->tree_view = gtk_tree_view_new_with_model(model);
+  if (!gtk_data->is_virtual)
+    g_object_unref(store);  /* Tree view holds reference */
+
+  gtk_tree_view_set_headers_visible(GTK_TREE_VIEW(gtk_data->tree_view), TRUE);
+  gtk_tree_view_set_enable_search(GTK_TREE_VIEW(gtk_data->tree_view), FALSE);
+
+  /* Enable fixed height mode for virtual mode, prevents GTK from iterating all rows */
+  if (gtk_data->is_virtual)
+    gtk_tree_view_set_fixed_height_mode(GTK_TREE_VIEW(gtk_data->tree_view), TRUE);
+
+  gtk_widget_set_can_focus(gtk_data->tree_view, TRUE);
+#if GTK_CHECK_VERSION(3, 0, 0)
+  gtk_widget_set_focus_on_click(gtk_data->tree_view, TRUE);
+#endif
+
+  GtkTreeSelection* selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(gtk_data->tree_view));
+  char* selmode = iupAttribGetStr(ih, "SELECTIONMODE");
+  if (!selmode)
+    selmode = "SINGLE";
+
+  if (iupStrEqualNoCase(selmode, "NONE"))
+    gtk_tree_selection_set_mode(selection, GTK_SELECTION_NONE);
+  else if (iupStrEqualNoCase(selmode, "MULTIPLE"))
+    gtk_tree_selection_set_mode(selection, GTK_SELECTION_MULTIPLE);
+  else
+    gtk_tree_selection_set_mode(selection, GTK_SELECTION_SINGLE);
+
+  gtkTableCreateColumns(ih);
 
   gtk_container_add(GTK_CONTAINER(gtk_data->scrolled_win), gtk_data->tree_view);
 
@@ -2032,14 +2053,16 @@ IUP_DRV_API void iupgtkTableDetachVirtualModels(Ihandle* dialog)
 
 IUP_SDK_API void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
 {
+  int old_num_col = ih->data->num_col;
+
   if (num_col < 0)
     num_col = 0;
 
+  if (num_col == old_num_col)
+    return;
+
   ih->data->num_col = num_col;
-
-  gtkTableEnsureStore(ih);
-
-  gtkTableUpdateColumns(ih);
+  gtkTableRebuildColumns(ih, old_num_col, 0, 0);
 }
 
 IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
@@ -2131,13 +2154,16 @@ IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
 
 IUP_SDK_API void iupdrvTableAddCol(Ihandle* ih, int pos)
 {
-  iupdrvTableSetNumCol(ih, ih->data->num_col + 1);
+  ih->data->num_col++;
+  gtkTableRebuildColumns(ih, ih->data->num_col - 1, pos, 0);
 }
 
 IUP_SDK_API void iupdrvTableDelCol(Ihandle* ih, int pos)
 {
-  if (ih->data->num_col > 0)
-    iupdrvTableSetNumCol(ih, ih->data->num_col - 1);
+  if (ih->data->num_col < 1)
+    return;
+  ih->data->num_col--;
+  gtkTableRebuildColumns(ih, ih->data->num_col + 1, 0, pos);
 }
 
 IUP_SDK_API void iupdrvTableAddLin(Ihandle* ih, int pos)

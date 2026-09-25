@@ -42,6 +42,138 @@ int iupTableCheckCellPos(Ihandle* ih, int lin, int col)
   return 1;
 }
 
+int iupTableMoveColPos(int col, int from_col, int to_col)
+{
+  if (col == from_col)
+    return to_col;
+  if (from_col < to_col && col > from_col && col <= to_col)
+    return col - 1;
+  if (from_col > to_col && col >= to_col && col < from_col)
+    return col + 1;
+  return col;
+}
+
+static void iTableShiftAttribId2(Ihandle* ih, const char* name, int lin, int from_col, int to_col)
+{
+  char* value = iupAttribGetId2(ih, name, lin, from_col);
+  char* saved = value ? iupStrDup(value) : NULL;
+  int c;
+
+  if (from_col < to_col)
+  {
+    for (c = from_col; c < to_col; c++)
+      iupAttribSetStrId2(ih, name, lin, c, iupAttribGetId2(ih, name, lin, c + 1));
+  }
+  else
+  {
+    for (c = from_col; c > to_col; c--)
+      iupAttribSetStrId2(ih, name, lin, c, iupAttribGetId2(ih, name, lin, c - 1));
+  }
+
+  iupAttribSetStrId2(ih, name, lin, to_col, saved);
+  if (saved)
+    free(saved);
+}
+
+static void iTableShiftAttribId(Ihandle* ih, const char* name, int from_col, int to_col)
+{
+  char* value = iupAttribGetId(ih, name, from_col);
+  char* saved = value ? iupStrDup(value) : NULL;
+  int c;
+
+  if (from_col < to_col)
+  {
+    for (c = from_col; c < to_col; c++)
+      iupAttribSetStrId(ih, name, c, iupAttribGetId(ih, name, c + 1));
+  }
+  else
+  {
+    for (c = from_col; c > to_col; c--)
+      iupAttribSetStrId(ih, name, c, iupAttribGetId(ih, name, c - 1));
+  }
+
+  iupAttribSetStrId(ih, name, to_col, saved);
+  if (saved)
+    free(saved);
+}
+
+static const char* iTableColIdAttribs[6] = { "TITLE", "WIDTH", "RASTERWIDTH", "ALIGNMENT", "EDITABLE", "SORTSIGN" };
+static const char* iTableColId2Attribs[5] = { "", "BGCOLOR", "FGCOLOR", "FONT", "IMAGE" };
+static const char* iTableLinAttribs[3] = { "BGCOLOR", "FGCOLOR", "FONT" };
+
+void iupTableMoveColAttribs(Ihandle* ih, int from_col, int to_col)
+{
+  int a, lin;
+
+  if (from_col == to_col)
+    return;
+
+  for (a = 0; a < 6; a++)
+    iTableShiftAttribId(ih, iTableColIdAttribs[a], from_col, to_col);
+
+  for (a = 0; a < 5; a++)
+  {
+    for (lin = 0; lin <= ih->data->num_lin; lin++)  /* lin 0 is the per-column (0:C) entry */
+      iTableShiftAttribId2(ih, iTableColId2Attribs[a], lin, from_col, to_col);
+  }
+}
+
+void iupTableMoveLinAttribs(Ihandle* ih, int from_lin, int to_lin)
+{
+  int a, col;
+
+  if (from_lin == to_lin)
+    return;
+
+  for (a = 0; a < 3; a++)
+  {
+    const char* name = iTableLinAttribs[a];
+    for (col = 0; col <= ih->data->num_col; col++)  /* col 0 is the per-row (L:*) entry */
+    {
+      char* value = iupAttribGetId2(ih, name, from_lin, col);
+      char* saved = value ? iupStrDup(value) : NULL;
+      int l;
+
+      if (from_lin < to_lin)
+      {
+        for (l = from_lin; l < to_lin; l++)
+          iupAttribSetStrId2(ih, name, l, col, iupAttribGetId2(ih, name, l + 1, col));
+      }
+      else
+      {
+        for (l = from_lin; l > to_lin; l--)
+          iupAttribSetStrId2(ih, name, l, col, iupAttribGetId2(ih, name, l - 1, col));
+      }
+
+      iupAttribSetStrId2(ih, name, to_lin, col, saved);
+      if (saved)
+        free(saved);
+    }
+  }
+}
+
+static void iTableClearLinAttribs(Ihandle* ih, int lin)
+{
+  int a, col;
+  for (a = 0; a < 3; a++)
+  {
+    for (col = 0; col <= ih->data->num_col; col++)
+      iupAttribSetId2(ih, iTableLinAttribs[a], lin, col, NULL);
+  }
+}
+
+static void iTableClearColAttribs(Ihandle* ih, int col)
+{
+  int a, lin;
+  for (a = 0; a < 6; a++)
+    iupAttribSetId(ih, iTableColIdAttribs[a], col, NULL);
+  for (a = 0; a < 5; a++)
+  {
+    for (lin = 0; lin <= ih->data->num_lin; lin++)
+      iupAttribSetId2(ih, iTableColId2Attribs[a], lin, col, NULL);
+  }
+}
+
 /* ========================================================================= */
 /* Attribute Get/Set Functions                                              */
 /* ========================================================================= */
@@ -60,7 +192,12 @@ static int iTableSetNumLinAttrib(Ihandle* ih, const char* value)
       num_lin = 0;
 
     if (ih->handle)
+    {
+      int lin;
+      for (lin = num_lin + 1; lin <= ih->data->num_lin; lin++)
+        iTableClearLinAttribs(ih, lin);
       iupdrvTableSetNumLin(ih, num_lin);
+    }
     else
       ih->data->num_lin = num_lin;
   }
@@ -81,7 +218,12 @@ static int iTableSetNumColAttrib(Ihandle* ih, const char* value)
       num_col = 0;
 
     if (ih->handle)
+    {
+      int col;
+      for (col = num_col + 1; col <= ih->data->num_col; col++)
+        iTableClearColAttribs(ih, col);
       iupdrvTableSetNumCol(ih, num_col);
+    }
     else
       ih->data->num_col = num_col;
   }
@@ -106,7 +248,10 @@ static int iTableSetAddLinAttrib(Ihandle* ih, const char* value)
     else if (pos > ih->data->num_lin + 1)
       pos = ih->data->num_lin + 1;
 
+    iTableClearLinAttribs(ih, ih->data->num_lin + 1);
+    iupTableMoveLinAttribs(ih, ih->data->num_lin + 1, pos);
     iupdrvTableAddLin(ih, pos);
+    iupdrvTableUpdateCellStyle(ih, 0, 0);
   }
   return 0;
 }
@@ -122,7 +267,10 @@ static int iTableSetDelLinAttrib(Ihandle* ih, const char* value)
     if (pos < 1 || pos > ih->data->num_lin)
       return 0;
 
+    iupTableMoveLinAttribs(ih, pos, ih->data->num_lin);
+    iTableClearLinAttribs(ih, ih->data->num_lin);
     iupdrvTableDelLin(ih, pos);
+    iupdrvTableUpdateCellStyle(ih, 0, 0);
   }
   return 0;
 }
@@ -140,7 +288,10 @@ static int iTableSetAddColAttrib(Ihandle* ih, const char* value)
     else if (pos > ih->data->num_col + 1)
       pos = ih->data->num_col + 1;
 
+    iTableClearColAttribs(ih, ih->data->num_col + 1);
+    iupTableMoveColAttribs(ih, ih->data->num_col + 1, pos);
     iupdrvTableAddCol(ih, pos);
+    iupdrvTableUpdateCellStyle(ih, 0, 0);
   }
   return 0;
 }
@@ -156,7 +307,10 @@ static int iTableSetDelColAttrib(Ihandle* ih, const char* value)
     if (pos < 1 || pos > ih->data->num_col)
       return 0;
 
+    iupTableMoveColAttribs(ih, pos, ih->data->num_col);
+    iTableClearColAttribs(ih, ih->data->num_col);
     iupdrvTableDelCol(ih, pos);
+    iupdrvTableUpdateCellStyle(ih, 0, 0);
   }
   return 0;
 }
@@ -679,6 +833,17 @@ static int iTableSetFgColorAttrib(Ihandle* ih, int lin, int col, const char* val
   return iTableSetStyleAttrib(ih, "FGCOLOR", lin, col, value);
 }
 
+static int iTableSetAlignmentAttrib(Ihandle* ih, int col, const char* value)
+{
+  if (!ih->handle)
+    return 1;
+
+  if (iupAttribGetId(ih, "ALIGNMENT", col) != value)
+    iupAttribSetStrId(ih, "ALIGNMENT", col, value);
+  iupdrvTableUpdateCellStyle(ih, 0, col < 0 ? 0 : col);
+  return 1;
+}
+
 static int iTableSetFontAttrib(Ihandle* ih, int lin, int col, const char* value)
 {
   if (lin == IUP_INVALID_ID && col == IUP_INVALID_ID)
@@ -918,115 +1083,6 @@ void iupTableCallMultiSelectionCb(Ihandle* ih)
     free(lins);
 }
 
-int iupTableMoveColPos(int col, int from_col, int to_col)
-{
-  if (col == from_col)
-    return to_col;
-  if (from_col < to_col && col > from_col && col <= to_col)
-    return col - 1;
-  if (from_col > to_col && col >= to_col && col < from_col)
-    return col + 1;
-  return col;
-}
-
-static void iTableShiftAttribId2(Ihandle* ih, const char* name, int lin, int from_col, int to_col)
-{
-  char* value = iupAttribGetId2(ih, name, lin, from_col);
-  char* saved = value ? iupStrDup(value) : NULL;
-  int c;
-
-  if (from_col < to_col)
-  {
-    for (c = from_col; c < to_col; c++)
-      iupAttribSetStrId2(ih, name, lin, c, iupAttribGetId2(ih, name, lin, c + 1));
-  }
-  else
-  {
-    for (c = from_col; c > to_col; c--)
-      iupAttribSetStrId2(ih, name, lin, c, iupAttribGetId2(ih, name, lin, c - 1));
-  }
-
-  iupAttribSetStrId2(ih, name, lin, to_col, saved);
-  if (saved)
-    free(saved);
-}
-
-static void iTableShiftAttribId(Ihandle* ih, const char* name, int from_col, int to_col)
-{
-  char* value = iupAttribGetId(ih, name, from_col);
-  char* saved = value ? iupStrDup(value) : NULL;
-  int c;
-
-  if (from_col < to_col)
-  {
-    for (c = from_col; c < to_col; c++)
-      iupAttribSetStrId(ih, name, c, iupAttribGetId(ih, name, c + 1));
-  }
-  else
-  {
-    for (c = from_col; c > to_col; c--)
-      iupAttribSetStrId(ih, name, c, iupAttribGetId(ih, name, c - 1));
-  }
-
-  iupAttribSetStrId(ih, name, to_col, saved);
-  if (saved)
-    free(saved);
-}
-
-void iupTableMoveColAttribs(Ihandle* ih, int from_col, int to_col)
-{
-  static const char* id_attribs[6] = { "TITLE", "WIDTH", "RASTERWIDTH", "ALIGNMENT", "EDITABLE", "SORTSIGN" };
-  static const char* id2_attribs[5] = { "", "BGCOLOR", "FGCOLOR", "FONT", "IMAGE" };
-  int a, lin;
-
-  if (from_col == to_col)
-    return;
-
-  for (a = 0; a < 6; a++)
-    iTableShiftAttribId(ih, id_attribs[a], from_col, to_col);
-
-  for (a = 0; a < 5; a++)
-  {
-    for (lin = 0; lin <= ih->data->num_lin; lin++)  /* lin 0 is the per-column (0:C) entry */
-      iTableShiftAttribId2(ih, id2_attribs[a], lin, from_col, to_col);
-  }
-}
-
-void iupTableMoveLinAttribs(Ihandle* ih, int from_lin, int to_lin)
-{
-  static const char* attribs[3] = { "BGCOLOR", "FGCOLOR", "FONT" };
-  int a, col;
-
-  if (from_lin == to_lin)
-    return;
-
-  for (a = 0; a < 3; a++)
-  {
-    const char* name = attribs[a];
-    for (col = 0; col <= ih->data->num_col; col++)  /* col 0 is the per-row (L:*) entry */
-    {
-      char* value = iupAttribGetId2(ih, name, from_lin, col);
-      char* saved = value ? iupStrDup(value) : NULL;
-      int l;
-
-      if (from_lin < to_lin)
-      {
-        for (l = from_lin; l < to_lin; l++)
-          iupAttribSetStrId2(ih, name, l, col, iupAttribGetId2(ih, name, l + 1, col));
-      }
-      else
-      {
-        for (l = from_lin; l > to_lin; l--)
-          iupAttribSetStrId2(ih, name, l, col, iupAttribGetId2(ih, name, l - 1, col));
-      }
-
-      iupAttribSetStrId2(ih, name, to_lin, col, saved);
-      if (saved)
-        free(saved);
-    }
-  }
-}
-
 static char* iTableGetShowDragDropAttrib(Ihandle* ih)
 {
   return iupStrReturnBoolean(ih->data->show_dragdrop);
@@ -1183,7 +1239,7 @@ Iclass* iupTableNewClass(void)
   iupClassRegisterReplaceAttribDef(ic, "FONT", IUPAF_SAMEASSYSTEM, "DEFAULTFONT");
 
   /* Cell alignment attributes */
-  iupClassRegisterAttributeId(ic, "ALIGNMENT", NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);  /* Per-column alignment: ALEFT, ACENTER, ARIGHT */
+  iupClassRegisterAttributeId(ic, "ALIGNMENT", NULL, iTableSetAlignmentAttrib, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);  /* Per-column alignment: ALEFT, ACENTER, ARIGHT */
 
   /* Sorting attributes - driver will replace SET handler to update native widget */
   iupClassRegisterAttribute(ic, "SORTABLE", iTableGetSortableAttrib, iTableSetSortableAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);  /* Enable/disable column sorting: YES, NO */
