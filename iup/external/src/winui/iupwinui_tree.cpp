@@ -9,6 +9,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <cmath>
+#include <algorithm>
 #include <vector>
 
 extern "C" {
@@ -358,6 +359,13 @@ static void winuiTreeItemInvokedHandler(Ihandle* ih, TreeViewNode const& node)
   }
 }
 
+static void winuiTreeStoreSelection(IupWinUITreeAux* aux, TreeView const& treeView)
+{
+  aux->selectedNodes.clear();
+  for (TreeViewNode node : treeView.SelectedNodes())
+    aux->selectedNodes.push_back(node);
+}
+
 static void winuiTreeSyncCurrent(Ihandle* ih, TreeView const& treeView)
 {
   IupWinUITreeAux* aux = winuiGetAux<IupWinUITreeAux>(ih, IUPWINUI_TREE_AUX);
@@ -366,6 +374,7 @@ static void winuiTreeSyncCurrent(Ihandle* ih, TreeView const& treeView)
 
   auto selectedNodes = treeView.SelectedNodes();
   aux->currentId = selectedNodes.Size() > 0 ? winuiTreeFindNodeId(ih, selectedNodes.GetAt(0)) : -1;
+  winuiTreeStoreSelection(aux, treeView);
 }
 
 static void winuiTreeSelectionChangedHandler(Ihandle* ih)
@@ -381,28 +390,65 @@ static void winuiTreeSelectionChangedHandler(Ihandle* ih)
   if (!treeView)
     return;
 
-  auto selectedNodes = treeView.SelectedNodes();
-  if (selectedNodes.Size() == 0)
+  std::vector<TreeViewNode> previous = aux->selectedNodes;
+  std::vector<int> removed, added;
+  winuiTreeStoreSelection(aux, treeView);
+
+  for (TreeViewNode const& node : previous)
   {
-    aux->currentId = -1;
-    return;
+    if (std::find(aux->selectedNodes.begin(), aux->selectedNodes.end(), node) == aux->selectedNodes.end())
+    {
+      int id = winuiTreeFindNodeId(ih, node);
+      if (id >= 0)
+        removed.push_back(id);
+    }
   }
 
+  for (TreeViewNode const& node : aux->selectedNodes)
   {
-    TreeViewNode node = selectedNodes.GetAt(0);
-    int id = winuiTreeFindNodeId(ih, node);
-    if (id >= 0)
+    if (std::find(previous.begin(), previous.end(), node) == previous.end())
     {
-      /* only the single selection is tracked, a multiple one reports the first node either way */
-      if (ih->data->mark_mode == ITREE_MARK_SINGLE && id == aux->currentId)
-        return;
+      int id = winuiTreeFindNodeId(ih, node);
+      if (id >= 0)
+        added.push_back(id);
+    }
+  }
 
-      aux->currentId = id;
+  if (aux->selectedNodes.empty())
+    aux->currentId = -1;
+  else if (!added.empty())
+  {
+    aux->currentId = added.back();
+    winuiTreeSetFocus(ih, aux->currentId);
+  }
 
-      winuiTreeSetFocus(ih, id);
+  IFnii cb = (IFnii)IupGetCallback(ih, "SELECTION_CB");
+  IFnIi multi_cb = NULL;
+  IFnIi multi_un_cb = NULL;
+  if (ih->data->mark_mode == ITREE_MARK_MULTIPLE)
+  {
+    multi_cb = (IFnIi)IupGetCallback(ih, "MULTISELECTION_CB");
+    multi_un_cb = (IFnIi)IupGetCallback(ih, "MULTIUNSELECTION_CB");
+  }
 
-      IFnii cb = (IFnii)IupGetCallback(ih, "SELECTION_CB");
-      if (cb)
+  if (!removed.empty())
+  {
+    if (multi_un_cb)
+      multi_un_cb(ih, removed.data(), (int)removed.size());
+    else if (cb)
+    {
+      for (int id : removed)
+        cb(ih, id, 0);
+    }
+  }
+
+  if (!added.empty())
+  {
+    if (multi_cb)
+      multi_cb(ih, added.data(), (int)added.size());
+    else if (cb)
+    {
+      for (int id : added)
         cb(ih, id, 1);
     }
   }
@@ -2134,7 +2180,11 @@ static int winuiTreeMapMethod(Ihandle* ih)
               if (a) a->ignoreChange = true;
               tv.SelectedNodes().Clear();
               tv.SelectedNodes().Append(node);
-              if (a) a->ignoreChange = false;
+              if (a)
+              {
+                a->ignoreChange = false;
+                winuiTreeStoreSelection(a, tv);
+              }
 
               IFni cb = (IFni)IupGetCallback(ih, "RIGHTCLICK_CB");
               if (cb)
