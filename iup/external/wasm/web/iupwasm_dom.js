@@ -177,6 +177,11 @@
         var tmo = globalThis.__iupTimers && globalThis.__iupTimers[c.tid];
         if (tmo) { clearInterval(tmo); delete globalThis.__iupTimers[c.tid]; }
       } break;
+      case 'timerstopall': {
+        var tma = globalThis.__iupTimers || {};
+        for (var tk in tma) clearInterval(tma[tk]);
+        globalThis.__iupTimers = {};
+      } break;
       case 'create': {
         el = document.createElement(c.tag);
         el.style.position = 'absolute'; el.style.boxSizing = 'border-box'; el.style.margin = '0';

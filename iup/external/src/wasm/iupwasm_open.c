@@ -189,4 +189,5 @@ IUP_SDK_API int iupdrvOpen(int* argc, char*** argv)
 
 IUP_SDK_API void iupdrvClose(void)
 {
+  iupwasmTimerStopAll();
 }
