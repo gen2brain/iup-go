@@ -39,6 +39,7 @@ struct _IupTableRow
   gint num_cols;
   gint row_index;  /* 1-based row index for IUP callbacks */
   guint update_count;  /* Incremented whenever any value changes */
+  GHashTable* cache;
 };
 
 struct _IupTableRowClass
@@ -63,6 +64,9 @@ G_DEFINE_TYPE(IupTableRow, iup_table_row, G_TYPE_OBJECT)
 static void iup_table_row_finalize(GObject* object)
 {
   IupTableRow* row = IUP_TABLE_ROW(object);
+
+  if (row->cache)
+    g_hash_table_remove(row->cache, GINT_TO_POINTER(row->row_index));
 
   if (row->values)
   {
@@ -104,6 +108,7 @@ static void iup_table_row_init(IupTableRow* row)
   row->num_cols = 0;
   row->row_index = 0;
   row->update_count = 0;
+  row->cache = NULL;
 }
 
 static void iup_table_row_class_init(IupTableRowClass* klass)
@@ -175,6 +180,7 @@ struct _IupTableVirtualModel
 {
   GObject parent;
   Ihandle* ih;
+  GHashTable* rows;
 };
 
 struct _IupTableVirtualModelClass
@@ -194,10 +200,26 @@ G_DEFINE_TYPE_WITH_CODE(IupTableVirtualModel, iup_table_virtual_model, G_TYPE_OB
 static void iup_table_virtual_model_init(IupTableVirtualModel* model)
 {
   model->ih = NULL;
+  model->rows = g_hash_table_new(NULL, NULL);
+}
+
+static void iup_table_virtual_model_finalize(GObject* object)
+{
+  IupTableVirtualModel* model = IUP_TABLE_VIRTUAL_MODEL(object);
+  GHashTableIter iter;
+  gpointer value;
+
+  g_hash_table_iter_init(&iter, model->rows);
+  while (g_hash_table_iter_next(&iter, NULL, &value))
+    IUP_TABLE_ROW(value)->cache = NULL;
+  g_hash_table_destroy(model->rows);
+
+  G_OBJECT_CLASS(iup_table_virtual_model_parent_class)->finalize(object);
 }
 
 static void iup_table_virtual_model_class_init(IupTableVirtualModelClass* klass)
 {
+  G_OBJECT_CLASS(klass)->finalize = iup_table_virtual_model_finalize;
 }
 
 static GType iup_table_virtual_model_get_item_type(GListModel* list)
@@ -211,44 +233,136 @@ static guint iup_table_virtual_model_get_n_items(GListModel* list)
   return model->ih ? model->ih->data->num_lin : 0;
 }
 
+static void iup_table_virtual_model_load_row(IupTableVirtualModel* model, IupTableRow* row)
+{
+  Ihandle* ih = model->ih;
+  sIFnii value_cb = (sIFnii)IupGetCallback(ih, "VALUE_CB");
+  gint col;
+
+  for (col = 0; col < row->num_cols; col++)
+  {
+    g_free(row->values[col]);
+    if (row->images && row->images[col])
+      g_object_unref(row->images[col]);
+  }
+  g_free(row->values);
+  g_free(row->images);
+  row->images = NULL;
+  row->num_cols = ih->data->num_col;
+  row->values = g_new0(gchar*, row->num_cols > 0 ? row->num_cols : 1);
+
+  for (col = 0; col < row->num_cols; col++)
+  {
+    char* value = value_cb ? value_cb(ih, row->row_index, col + 1) : NULL;
+    row->values[col] = g_strdup(value ? value : "");
+  }
+
+  if (ih->data->show_image)
+  {
+    for (col = 0; col < row->num_cols; col++)
+    {
+      char* image_name = iupTableGetCellImageCb(ih, row->row_index, col + 1);
+      if (image_name)
+      {
+        GdkPaintable* paintable = (GdkPaintable*)iupImageGetImage(image_name, ih, 0, NULL);
+        if (paintable)
+        {
+          if (!row->images)
+            row->images = g_new0(GdkPaintable*, row->num_cols);
+          row->images[col] = g_object_ref(paintable);
+        }
+      }
+    }
+  }
+}
+
 static gpointer iup_table_virtual_model_get_item(GListModel* list, guint position)
 {
   IupTableVirtualModel* model = IUP_TABLE_VIRTUAL_MODEL(list);
+  IupTableRow* row;
 
   if (!model->ih || position >= (guint)model->ih->data->num_lin)
     return NULL;
 
-  IupTableRow* row = iup_table_row_new(model->ih->data->num_col, position + 1);
+  row = g_hash_table_lookup(model->rows, GINT_TO_POINTER(position + 1));
+  if (row)
+    return g_object_ref(row);
 
-  sIFnii value_cb = (sIFnii)IupGetCallback(model->ih, "VALUE_CB");
-  if (value_cb)
-  {
-    for (gint col = 0; col < model->ih->data->num_col; col++)
-    {
-      char* value = value_cb(model->ih, position + 1, col + 1);
-      if (value)
-      {
-        g_free(row->values[col]);
-        row->values[col] = g_strdup(value);
-      }
-    }
-  }
-
-  if (model->ih->data->show_image)
-  {
-    for (gint col = 0; col < model->ih->data->num_col; col++)
-    {
-      char* image_name = iupTableGetCellImageCb(model->ih, position + 1, col + 1);
-      if (image_name)
-      {
-        GdkPaintable* paintable = (GdkPaintable*)iupImageGetImage(image_name, model->ih, 0, NULL);
-        if (paintable)
-          iup_table_row_set_image(row, col, paintable);
-      }
-    }
-  }
-
+  row = iup_table_row_new(0, position + 1);
+  iup_table_virtual_model_load_row(model, row);
+  row->cache = model->rows;
+  g_hash_table_insert(model->rows, GINT_TO_POINTER(row->row_index), row);
   return row;
+}
+
+/* GtkListItemManager keeps the items after a change and only moves them, so the held rows are renumbered here */
+static void iup_table_virtual_model_shift(IupTableVirtualModel* model, int pos, int delta)
+{
+  GPtrArray* rows = g_ptr_array_new();
+  GHashTableIter iter;
+  gpointer value;
+  guint i;
+
+  g_hash_table_iter_init(&iter, model->rows);
+  while (g_hash_table_iter_next(&iter, NULL, &value))
+    g_ptr_array_add(rows, value);
+  g_hash_table_remove_all(model->rows);
+
+  for (i = 0; i < rows->len; i++)
+  {
+    IupTableRow* row = g_ptr_array_index(rows, i);
+    if (row->row_index >= pos)
+    {
+      if (delta < 0 && row->row_index == pos)
+      {
+        row->cache = NULL;
+        continue;
+      }
+      row->row_index += delta;
+    }
+    g_hash_table_insert(model->rows, GINT_TO_POINTER(row->row_index), row);
+  }
+
+  g_ptr_array_unref(rows);
+}
+
+static void iup_table_virtual_model_truncate(IupTableVirtualModel* model, int num_lin)
+{
+  GHashTableIter iter;
+  gpointer value;
+
+  g_hash_table_iter_init(&iter, model->rows);
+  while (g_hash_table_iter_next(&iter, NULL, &value))
+  {
+    IupTableRow* row = IUP_TABLE_ROW(value);
+    if (row->row_index > num_lin)
+    {
+      row->cache = NULL;
+      g_hash_table_iter_remove(&iter);
+    }
+  }
+}
+
+static void iup_table_virtual_model_refresh(IupTableVirtualModel* model)
+{
+  GPtrArray* rows = g_ptr_array_new_with_free_func(g_object_unref);
+  GHashTableIter iter;
+  gpointer value;
+  guint i;
+
+  g_hash_table_iter_init(&iter, model->rows);
+  while (g_hash_table_iter_next(&iter, NULL, &value))
+    g_ptr_array_add(rows, g_object_ref(value));
+
+  for (i = 0; i < rows->len; i++)
+  {
+    IupTableRow* row = g_ptr_array_index(rows, i);
+    iup_table_virtual_model_load_row(model, row);
+    row->update_count++;
+    g_object_notify_by_pspec(G_OBJECT(row), row_props[PROP_UPDATE]);
+  }
+
+  g_ptr_array_unref(rows);
 }
 
 static void iup_table_virtual_model_list_model_init(GListModelInterface* iface)
@@ -300,6 +414,9 @@ static guint gtk4TableViewPos(Igtk4TableData* gtk_data, int lin)
     return GTK_INVALID_LIST_POSITION;
 
   n = g_list_model_get_n_items(view);
+  if (gtk_data->is_virtual)
+    return (lin >= 1 && (guint)lin <= n) ? (guint)(lin - 1) : GTK_INVALID_LIST_POSITION;
+
   for (i = 0; i < n; i++)
   {
     IupTableRow* row = IUP_TABLE_ROW(g_list_model_get_item(view, i));
@@ -973,22 +1090,19 @@ static void gtk4TableApplyCellStyle(Ihandle* ih, GtkWidget* box, GtkWidget* widg
     }
   }
 
-  if (GTK_IS_LABEL(widget))
+  if (GTK_IS_EDITABLE_LABEL(widget))
   {
-    if (attr_list)
-    {
-      gtk_label_set_attributes(GTK_LABEL(widget), attr_list);
-      pango_attr_list_unref(attr_list);
-    }
-    else
-    {
-      gtk_label_set_attributes(GTK_LABEL(widget), NULL);
-    }
+    GtkWidget* child = gtk_widget_get_first_child(widget);
+    while (child && !GTK_IS_STACK(child))
+      child = gtk_widget_get_next_sibling(child);
+    widget = child ? gtk_stack_get_child_by_name(GTK_STACK(child), "label") : NULL;
   }
-  else if (attr_list)
-  {
+
+  if (widget && GTK_IS_LABEL(widget))
+    gtk_label_set_attributes(GTK_LABEL(widget), attr_list);
+
+  if (attr_list)
     pango_attr_list_unref(attr_list);
-  }
 }
 
 static void on_row_update(IupTableRow* row, GParamSpec* pspec, gpointer user_data)
@@ -1005,6 +1119,8 @@ static void on_row_update(IupTableRow* row, GParamSpec* pspec, gpointer user_dat
   gint col = data->col_index;
   if (col >= row->num_cols)
     return;
+
+  g_object_set_data(G_OBJECT(box), "iup-row-index", GINT_TO_POINTER(row->row_index));
 
   GtkWidget* widget = gtk_widget_get_first_child(box);
   if (!widget)
@@ -2057,6 +2173,8 @@ static void gtk4TableRebuildColumns(Ihandle* ih, int old_num_col, int add_pos, i
       g_object_unref(row);
     }
   }
+  else if (gtk_data->is_virtual && gtk_data->model)
+    iup_table_virtual_model_refresh(IUP_TABLE_VIRTUAL_MODEL(gtk_data->model));
 
   iupAttribSet(ih, "_IUP_GTK4_SORTCOL", NULL);
   iupAttribSet(ih, "_IUPTABLE_IGNORE_COLUMNS_CHANGED", "1");
@@ -2371,8 +2489,13 @@ IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
     if ((guint)num_lin > old_count)
       g_list_model_items_changed(gtk_data->model, old_count, 0, (guint)num_lin - old_count);
     else if ((guint)num_lin < old_count)
+    {
+      iup_table_virtual_model_truncate(IUP_TABLE_VIRTUAL_MODEL(gtk_data->model), num_lin);
       g_list_model_items_changed(gtk_data->model, (guint)num_lin, old_count - (guint)num_lin, 0);
+    }
     gtk_data->current_row = gtk4TableFollowPos(gtk_data->current_row, num_lin + 1, 0, num_lin);
+    if (gtk_data->current_row >= 1)
+      gtk4TableNotifyRow(gtk_data, gtk_data->current_row);
     return;
   }
 
@@ -2424,8 +2547,10 @@ IUP_SDK_API void iupdrvTableAddLin(Ihandle* ih, int pos)
   if (gtk_data->is_virtual)
   {
     ih->data->num_lin++;
+    iup_table_virtual_model_shift(IUP_TABLE_VIRTUAL_MODEL(gtk_data->model), pos, 1);
     g_list_model_items_changed(gtk_data->model, (guint)(pos - 1), 0, 1);
     gtk_data->current_row = gtk4TableFollowPos(gtk_data->current_row, pos, 1, ih->data->num_lin);
+    iup_table_virtual_model_refresh(IUP_TABLE_VIRTUAL_MODEL(gtk_data->model));
     return;
   }
 
@@ -2456,8 +2581,10 @@ IUP_SDK_API void iupdrvTableDelLin(Ihandle* ih, int pos)
   if (gtk_data->is_virtual)
   {
     ih->data->num_lin--;
+    iup_table_virtual_model_shift(IUP_TABLE_VIRTUAL_MODEL(gtk_data->model), pos, -1);
     g_list_model_items_changed(gtk_data->model, (guint)(pos - 1), 1, 0);
     gtk_data->current_row = gtk4TableFollowPos(gtk_data->current_row, pos, -1, ih->data->num_lin);
+    iup_table_virtual_model_refresh(IUP_TABLE_VIRTUAL_MODEL(gtk_data->model));
     return;
   }
 
@@ -2908,29 +3035,7 @@ IUP_SDK_API void iupdrvTableRedraw(Ihandle* ih)
   Igtk4TableData* gtk_data = IGTK4_TABLE_DATA(ih);
 
   if (gtk_data->is_virtual)
-  {
-    /* This avoids fetching all items while still updating the display */
-    guint n_items = g_list_model_get_n_items(gtk_data->model);
-    guint invalidate_count = (n_items > 100) ? 100 : n_items;
-
-    if (invalidate_count > 0)
-    {
-      GtkBitset* current = gtk_selection_model_get_selection(gtk_data->selection_model);
-      GtkBitset* selected = gtk_bitset_copy(current);
-      GtkBitset* mask = gtk_bitset_new_range(0, invalidate_count);
-      char* ignore = iupAttribGet(ih, "_IUPTABLE_IGNORE_SELECTION_CB");
-
-      g_list_model_items_changed(gtk_data->model, 0, invalidate_count, invalidate_count);
-
-      iupAttribSet(ih, "_IUPTABLE_IGNORE_SELECTION_CB", "1");
-      gtk_selection_model_set_selection(gtk_data->selection_model, selected, mask);
-      iupAttribSet(ih, "_IUPTABLE_IGNORE_SELECTION_CB", ignore);
-
-      gtk_bitset_unref(mask);
-      gtk_bitset_unref(selected);
-      gtk_bitset_unref(current);
-    }
-  }
+    iup_table_virtual_model_refresh(IUP_TABLE_VIRTUAL_MODEL(gtk_data->model));
   else
     gtk4TableResetFactories(gtk_data);
 }
