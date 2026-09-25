@@ -74,6 +74,11 @@ static char* wasmToggleGetValueAttrib(Ihandle* ih)
 static int wasmToggleSetTitleAttrib(Ihandle* ih, const char* value)
 {
   int id = iupwasmIdOf(ih);
+  if (id && !ih->data->is_radio && iupAttribGetBoolean(ih, "SWITCH"))
+  {
+    iupToggleSwitchSetAccessibleTitle(ih, value);
+    return 1;
+  }
   if (id)
   {
     if (iupAttribGetBoolean(ih, "MARKUP"))

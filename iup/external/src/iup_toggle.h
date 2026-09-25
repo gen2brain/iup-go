@@ -25,6 +25,7 @@ IUP_SDK_API void iupdrvToggleAddSwitch(Ihandle* ih, int* x, int* y, const char* 
 
 IUP_SDK_API Ihandle* iupRadioFindToggleParent(Ihandle* ih_toggle);
 char* iupToggleGetPaddingAttrib(Ihandle* ih);
+IUP_SDK_API void iupToggleSwitchSetAccessibleTitle(Ihandle* ih, const char* title);
 
 enum {IUP_TOGGLE_IMAGE, IUP_TOGGLE_TEXT};
 

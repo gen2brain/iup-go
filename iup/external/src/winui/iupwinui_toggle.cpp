@@ -258,7 +258,7 @@ static int winuiToggleSetTitleAttrib(Ihandle* ih, const char* value)
 
   if (aux->controlType == IUPWINUI_TOGGLE_TOGGLESWITCH)
   {
-    iupwinuiSetAutomationName(ih, value);
+    iupToggleSwitchSetAccessibleTitle(ih, value);
     return 1;
   }
 
@@ -550,7 +550,7 @@ static int winuiToggleMapMethod(Ihandle* ih)
       parentCanvas.Children().Append(ts);
 
     winuiStoreHandle(ih, ts);
-    iupwinuiSetAutomationName(ih, title);
+    iupToggleSwitchSetAccessibleTitle(ih, title);
   }
   else if (ih->data->type == IUP_TOGGLE_IMAGE)
   {

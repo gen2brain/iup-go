@@ -88,6 +88,7 @@ The toggle can be activated from any control in the dialog using the "Alt+key" c
 **SWITCH** (creation-only): displays the toggle as a switch control instead of a checkbox.
 Can be "YES" or "NO". Default: "NO".
 Ignored when the toggle is inside an IupRadio.
+The switch does not draw TITLE, it is the switch's accessible name unless [ACCESSIBLETITLE](../attrib/iup_accessibletitle.md) is set.
 
 **3STATE** (creation-only): Enable a three state toggle.
 Valid for toggles with text only, and that do not belong to a radio. Can be "YES" or "NO".

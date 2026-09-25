@@ -18,6 +18,7 @@
 #include "iup_image.h"
 #include "iup_class.h"
 #include "iup_markup.h"
+#include "iup_drv.h"
 
 
 static char* iToggleGetRadioAttrib(Ihandle* ih)
@@ -35,6 +36,20 @@ static int iToggleSetFlatAttrib(Ihandle* ih, const char* value)
 static char* iToggleGetFlatAttrib(Ihandle* ih)
 {
   return iupStrReturnBoolean (ih->data->flat);
+}
+
+/* a switch draws no TITLE, so it becomes the accessible name unless ACCESSIBLETITLE is set */
+IUP_SDK_API void iupToggleSwitchSetAccessibleTitle(Ihandle* ih, const char* title)
+{
+  char* stripped;
+
+  if (iupAttribGet(ih, "ACCESSIBLETITLE"))
+    return;
+
+  stripped = title ? iupStrProcessMnemonic(title, NULL, 0) : NULL;
+  iupdrvSetAccessibleTitle(ih, stripped ? stripped : title);
+  if (stripped && stripped != title)
+    free(stripped);
 }
 
 char* iupToggleGetPaddingAttrib(Ihandle* ih)
@@ -98,7 +113,7 @@ static void iToggleComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* ch
     char* str = iupStrProcessMnemonic(title, NULL, 0);   /* remove & */
     iupFontGetMultiLineStringSize(ih, str, &natural_w, &natural_h);
 
-    if (iupAttribGetBoolean(ih, "SWITCH"))
+    if (iupAttribGetBoolean(ih, "SWITCH") && !iupRadioFindToggleParent(ih))
     {
       natural_w = 0;  /* switch shows no title */
       iupdrvToggleAddSwitch(ih, &natural_w, &natural_h, str);

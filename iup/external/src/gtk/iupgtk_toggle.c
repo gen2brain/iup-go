@@ -603,7 +603,10 @@ static char* gtkToggleGetValueAttrib(Ihandle* ih)
 static int gtkToggleSetTitleAttrib(Ihandle* ih, const char* value)
 {
   if (iupAttribGetBoolean(ih, "SWITCH"))
-    return 0; /* Switch does not have a title */
+  {
+    iupToggleSwitchSetAccessibleTitle(ih, value);
+    return 1;
+  }
 
   if (ih->data->type == IUP_TOGGLE_TEXT)
   {
