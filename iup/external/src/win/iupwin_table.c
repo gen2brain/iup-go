@@ -46,16 +46,15 @@ static COLORREF winTableFocusRectColor(COLORREF bg_color)
  * Data Structure
  ****************************************************************************/
 
-/* the rows can arrive after the dialog is shown, when the first measure found empty columns */
 #define WIN_TABLE_AUTOSIZE (WM_APP + 1)
 
 typedef struct _IwinTableData {
   HWND list_view;
 
   int* col_widths;             /* Width of each column (pixels) */
-  BOOL* col_width_set;         /* TRUE if column has explicit RASTERWIDTH set */
+  BOOL* col_width_set;         /* TRUE if RASTERWIDTH was set or the user resized the column */
   char** col_titles;
-  BOOL autosized;              /* columns were measured with rows present */
+  BOOL autosize_pending;
 
   /* Cell storage (normal mode) */
   char*** cell_values;         /* [num_lin][num_col] -> string */
@@ -136,6 +135,17 @@ static UINT winTableGetColAlignment(Ihandle* ih, int col)
     return DT_CENTER;
 
   return DT_LEFT;
+}
+
+static void winTableQueueAutoSize(Ihandle* ih)
+{
+  IwinTableData* data = IWIN_TABLE_DATA(ih);
+
+  if (data && data->list_view && !data->autosize_pending)
+  {
+    data->autosize_pending = TRUE;
+    PostMessage(data->list_view, WIN_TABLE_AUTOSIZE, 0, 0);
+  }
 }
 
 static void winTableAutoSizeColumns(Ihandle* ih)
@@ -809,6 +819,7 @@ IUP_SDK_API void iupdrvTableSetCellValue(Ihandle* ih, int lin, int col, const ch
   item.iSubItem = col;  /* Dummy column at 0, real columns at 1..num_col */
   item.pszText = iupwinStrToSystem(value ? value : "");
   ListView_SetItem(list_view, &item);
+  winTableQueueAutoSize(ih);
 }
 
 IUP_SDK_API char* iupdrvTableGetCellValue(Ihandle* ih, int lin, int col)
@@ -870,6 +881,7 @@ IUP_SDK_API void iupdrvTableSetCellImage(Ihandle* ih, int lin, int col, const ch
     winTableFitRowToImage(ih, list_view, (HBITMAP)iupImageGetImage(image, ih, 0, NULL));
   if (list_view)
     InvalidateRect(list_view, NULL, FALSE);
+  winTableQueueAutoSize(ih);
 }
 
 /****************************************************************************
@@ -917,6 +929,7 @@ IUP_SDK_API void iupdrvTableSetColTitle(Ihandle* ih, int col, const char* title)
   }
 
   ListView_SetColumn(list_view, col, &lvc);
+  winTableQueueAutoSize(ih);
 }
 
 IUP_SDK_API char* iupdrvTableGetColTitle(Ihandle* ih, int col)
@@ -1149,6 +1162,7 @@ IUP_SDK_API void iupdrvTableRedraw(Ihandle* ih)
   HWND list_view = winTableGetListView(ih);
   if (list_view)
     InvalidateRect(list_view, NULL, TRUE);
+  winTableQueueAutoSize(ih);
 }
 
 IUP_SDK_API void iupdrvTableUpdateCellStyle(Ihandle* ih, int lin, int col)
@@ -1421,8 +1435,7 @@ IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
   ih->data->num_lin = num_lin;
   winTableFollowLins(ih, list_view, selected, sel_count, num_lin + 1, 0);
 
-  if (!data->autosized && num_lin > 0)
-    PostMessage(list_view, WIN_TABLE_AUTOSIZE, 0, 0);
+  winTableQueueAutoSize(ih);
 }
 
 IUP_SDK_API void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
@@ -1524,6 +1537,7 @@ IUP_SDK_API void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
     data->sort_column = 0;
   if (data->current_col > num_col)
     data->current_col = num_col;
+  winTableQueueAutoSize(ih);
 }
 
 IUP_SDK_API void iupdrvTableAddLin(Ihandle* ih, int pos)
@@ -1585,6 +1599,7 @@ IUP_SDK_API void iupdrvTableAddLin(Ihandle* ih, int pos)
 
   ih->data->num_lin++;
   winTableFollowLins(ih, list_view, selected, sel_count, pos + 1, 1);
+  winTableQueueAutoSize(ih);
 }
 
 IUP_SDK_API void iupdrvTableDelLin(Ihandle* ih, int pos)
@@ -1643,6 +1658,7 @@ IUP_SDK_API void iupdrvTableDelLin(Ihandle* ih, int pos)
 
   ih->data->num_lin--;
   winTableFollowLins(ih, list_view, selected, sel_count, pos, -1);
+  winTableQueueAutoSize(ih);
 }
 
 IUP_SDK_API void iupdrvTableAddCol(Ihandle* ih, int pos)
@@ -2778,6 +2794,25 @@ static LRESULT CALLBACK winTableListViewWndProc(HWND hwnd, UINT msg, WPARAM wp, 
     }
   }
 
+  if (msg == WM_NOTIFY)
+  {
+    NMHEADER* nmh = (NMHEADER*)lp;
+    IwinTableData* data = IWIN_TABLE_DATA(ih);
+    UINT code = nmh->hdr.code;
+    int col = (code == HDN_ENDTRACKW || code == HDN_ENDTRACKA || code == HDN_DIVIDERDBLCLICKW || code == HDN_DIVIDERDBLCLICKA) ? nmh->iItem : 0;
+
+    if (data && col >= 1 && col <= ih->data->num_col)
+    {
+      result = CallWindowProc(oldProc, hwnd, msg, wp, lp);
+      data->col_width_set[col - 1] = TRUE;
+      if ((code == HDN_ENDTRACKW || code == HDN_ENDTRACKA) && nmh->pitem && (nmh->pitem->mask & HDI_WIDTH))
+        data->col_widths[col - 1] = nmh->pitem->cxy;
+      else
+        data->col_widths[col - 1] = ListView_GetColumnWidth(hwnd, col);
+      return result;
+    }
+  }
+
   {
     IwinTableData* data = IWIN_TABLE_DATA(ih);
     if (data && data->row_dragging && (msg == WM_MOUSEMOVE || msg == WM_LBUTTONUP))
@@ -2823,13 +2858,13 @@ static LRESULT CALLBACK winTableListViewWndProc(HWND hwnd, UINT msg, WPARAM wp, 
   if (msg == WIN_TABLE_AUTOSIZE)
   {
     IwinTableData* data = IWIN_TABLE_DATA(ih);
-    if (data && !data->autosized && ih->data->num_lin > 0)
+    if (data)
     {
       RECT rect;
+      data->autosize_pending = FALSE;
       GetClientRect(hwnd, &rect);
       if (rect.right - rect.left > 100)
       {
-        data->autosized = TRUE;
         winTableAutoSizeColumns(ih);
         winTableAdjustColumnWidths(ih);
       }
@@ -3010,12 +3045,7 @@ static void winTableLayoutUpdateMethod(Ihandle* ih)
     if (width > 100)
     {
       if (!was_visible)
-      {
-        IwinTableData* data = IWIN_TABLE_DATA(ih);
         winTableAutoSizeColumns(ih);
-        if (data && ih->data->num_lin > 0)
-          data->autosized = TRUE;
-      }
 
       winTableAdjustColumnWidths(ih);
 
