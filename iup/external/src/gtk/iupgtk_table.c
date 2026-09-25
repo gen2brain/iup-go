@@ -1704,6 +1704,9 @@ static void gtkTableCreateColumns(Ihandle* ih)
         gtk_tree_view_column_set_alignment(column, xalign);
 
       gtk_tree_view_append_column(GTK_TREE_VIEW(gtk_data->tree_view), column);
+#if !GTK_CHECK_VERSION(3, 0, 0)
+      gtk_button_set_focus_on_click(GTK_BUTTON(column->button), FALSE);
+#endif
       g_object_set_data(G_OBJECT(column), "iup_col", GINT_TO_POINTER(col + 1));
     }
 
