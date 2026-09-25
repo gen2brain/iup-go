@@ -64,7 +64,7 @@ typedef struct _IcocoaTableData {
   int previous_selected_row;            /* Previously selected row (0-based, -1=none) for redraw */
   int previous_focused_row;             /* Previously focused row (1-based, 0=none) for focus rectangle redraw */
   int previous_focused_col;             /* Previously focused column (1-based, 0=none) for focus rectangle redraw */
-  BOOL columns_autosized;               /* columns were measured with rows present */
+  BOOL autosize_pending;
 } IcocoaTableData;
 
 #define ICOCOA_TABLE_DATA(ih) ((IcocoaTableData*)(ih->data->native_data))
@@ -118,10 +118,12 @@ typedef struct _IcocoaTableData {
 
   if (self.imageView && ![self.imageView isHidden])
   {
-    CGFloat imgSize = 16.0;
-    CGFloat imgY = floor((cellHeight - imgSize) / 2.0);
-    [self.imageView setFrame:NSMakeRect(xStart, imgY, imgSize, imgSize)];
-    xStart += imgSize + 4.0;
+    NSSize imgSize = NSMakeSize(16.0, 16.0);
+    if ([self.imageView imageScaling] == NSImageScaleNone && [self.imageView image])
+      imgSize = [[self.imageView image] size];
+    CGFloat imgY = floor((cellHeight - imgSize.height) / 2.0);
+    [self.imageView setFrame:NSMakeRect(xStart, imgY, imgSize.width, imgSize.height)];
+    xStart += imgSize.width + 4.0;
   }
 
   if (self.textField)
@@ -384,6 +386,35 @@ static int cocoaTableValueChanged(const char* old_value, const char* new_value)
   return 0;
 }
 
+static NSImage* cocoaTableGetCellImage(Ihandle* ih, int lin, int col)
+{
+  IcocoaTableData* table_data = cocoaTableGetData(ih);
+  char* image_name;
+
+  if (!ih->data->show_image)
+    return nil;
+
+  if (table_data->is_virtual_mode)
+    image_name = iupTableGetCellImageCb(ih, lin, col);
+  else
+    image_name = iupAttribGetId2(ih, "_IUPCOCOA_CELLIMAGE", lin, col);
+
+  return image_name ? (NSImage*)iupImageGetImage(image_name, ih, 0, NULL) : nil;
+}
+
+static void cocoaTableFitRowToImage(Ihandle* ih, NSImage* image)
+{
+  NSTableView* tableView = cocoaTableGetTableView(ih);
+  CGFloat height;
+
+  if (ih->data->fit_image || !image || !tableView)
+    return;
+
+  height = [image size].height + 4.0;
+  if (height > [tableView rowHeight])
+    [tableView setRowHeight:height];
+}
+
 static CGFloat cocoaTableCalculateColumnWidth(Ihandle* ih, int col_index, NSFont* font)
 {
   IcocoaTableData* table_data = cocoaTableGetData(ih);
@@ -411,23 +442,23 @@ static CGFloat cocoaTableCalculateColumnWidth(Ihandle* ih, int col_index, NSFont
     }
   }
 
-  CGFloat image_extra = 0.0;
-  if (ih->data->show_image)
-    image_extra = 16.0 + 4.0;
-
   for (int lin = 0; lin < max_rows_to_check; lin++)
   {
+    CGFloat cell_width = 16.0;
     NSString* cell_value = cocoaTableGetCellValue(ih, lin, col_index);
+    NSImage* image = cocoaTableGetCellImage(ih, lin + 1, col_index + 1);
+
     if (cell_value && [cell_value length] > 0)
     {
       NSDictionary* attrs = @{NSFontAttributeName: font};
-      NSSize cell_size = [cell_value sizeWithAttributes:attrs];
-      CGFloat cell_width = cell_size.width + 16.0 + image_extra;
-      if (cell_width > max_width)
-      {
-        max_width = cell_width;
-      }
+      cell_width += [cell_value sizeWithAttributes:attrs].width;
     }
+
+    if (image)
+      cell_width += (ih->data->fit_image ? 16.0 : [image size].width) + 4.0;
+
+    if (cell_width > max_width)
+      max_width = cell_width;
   }
 
   return max_width;
@@ -1414,6 +1445,21 @@ static void cocoaTableMoveColumn(Ihandle* ih, NSTableView* tableView, int from_c
   [super dealloc];
 }
 
+- (void)tableViewColumnDidResize:(NSNotification*)notification
+{
+  NSTableView* tableView = [notification object];
+  NSTableColumn* column = [[notification userInfo] objectForKey:@"NSTableColumn"];
+  NSInteger resized = [[tableView headerView] resizedColumn];
+  NSArray* columns = [tableView tableColumns];
+
+  if (!ih || resized < 0 || resized >= (NSInteger)[columns count] || [columns objectAtIndex:resized] != column)
+    return;
+
+  iupAttribSetStrId(ih, "_IUP_TABLE_EXPWIDTH", (int)resized + 1, "1");
+  if (resized == ih->data->num_col - 1)
+    iupAttribSet(ih, "_IUP_TABLE_LAST_COL_WIDTH_SET", "YES");
+}
+
 - (NSView*)tableView:(NSTableView*)tableView
     viewForTableColumn:(NSTableColumn*)tableColumn
     row:(NSInteger)row
@@ -1465,21 +1511,7 @@ static void cocoaTableMoveColumn(Ihandle* ih, NSTableView* tableView, int from_c
 
   if (ih->data->show_image)
   {
-    NSImage* ns_image = nil;
-    IcocoaTableData* td = cocoaTableGetData(ih);
-
-    if (td->is_virtual_mode)
-    {
-      char* image_name = iupTableGetCellImageCb(ih, row_1based, col_1based);
-      if (image_name)
-        ns_image = (NSImage*)iupImageGetImage(image_name, ih, 0, NULL);
-    }
-    else
-    {
-      char* image_name = iupAttribGetId2(ih, "_IUPCOCOA_CELLIMAGE", row_1based, col_1based);
-      if (image_name)
-        ns_image = (NSImage*)iupImageGetImage(image_name, ih, 0, NULL);
-    }
+    NSImage* ns_image = cocoaTableGetCellImage(ih, row_1based, col_1based);
 
     if (ns_image)
     {
@@ -1491,6 +1523,14 @@ static void cocoaTableMoveColumn(Ihandle* ih, NSTableView* tableView, int from_c
       [[cellView imageView] setImage:ns_image];
       [[cellView imageView] setHidden:NO];
       hasImage = YES;
+
+      if (!ih->data->fit_image && [ns_image size].height + 4.0 > [tableView rowHeight])
+      {
+        dispatch_async(dispatch_get_main_queue(), ^{
+          if (iupObjectCheck(ih))
+            cocoaTableFitRowToImage(ih, ns_image);
+        });
+      }
     }
     else
     {
@@ -2113,7 +2153,7 @@ static int cocoaTableSetNumColAttrib(Ihandle* ih, const char* value)
       }
       else
       {
-        [column setResizingMask:NSTableColumnNoResizing];
+        [column setResizingMask:ih->data->user_resize ? NSTableColumnUserResizingMask : NSTableColumnNoResizing];
         [column sizeToFit];
       }
 
@@ -2274,6 +2314,47 @@ static int cocoaTableFollowPos(int cur, int pos, int delta, int count)
   return cur;
 }
 
+/* sizeToFit only fits the header cell, and the rows can arrive after the columns are created */
+static void cocoaTableAutoSizeColumns(Ihandle* ih)
+{
+  NSTableView* tableView = cocoaTableGetTableView(ih);
+  NSArray* columns;
+  NSFont* font;
+
+  if (!tableView)
+    return;
+
+  columns = [tableView tableColumns];
+  font = [NSFont systemFontOfSize:[NSFont systemFontSize]];
+
+  for (int col_index = 0; col_index < ih->data->num_col && col_index < (int)[columns count]; col_index++)
+  {
+    char expwidth_name[50];
+    snprintf(expwidth_name, sizeof(expwidth_name), "_IUP_TABLE_EXPWIDTH%d", col_index + 1);
+    if (iupAttribGet(ih, expwidth_name))
+      continue;
+
+    [[columns objectAtIndex:col_index] setWidth:cocoaTableCalculateColumnWidth(ih, col_index, font)];
+  }
+}
+
+static void cocoaTableQueueAutoSize(Ihandle* ih)
+{
+  IcocoaTableData* table_data = cocoaTableGetData(ih);
+
+  if (!table_data || !ih->handle || table_data->autosize_pending)
+    return;
+
+  table_data->autosize_pending = YES;
+  dispatch_async(dispatch_get_main_queue(), ^{
+    if (iupObjectCheck(ih))
+    {
+      cocoaTableGetData(ih)->autosize_pending = NO;
+      cocoaTableAutoSizeColumns(ih);
+    }
+  });
+}
+
 static void cocoaTableResizeCols(Ihandle* ih, int num_col, int pos, int delta, int focus_col)
 {
   IcocoaTableData* table_data = cocoaTableGetData(ih);
@@ -2288,36 +2369,13 @@ static void cocoaTableResizeCols(Ihandle* ih, int num_col, int pos, int delta, i
 
   if (table_data)
     table_data->current_col = cocoaTableFollowPos(focus_col, pos, delta, num_col);
+  cocoaTableQueueAutoSize(ih);
 }
 
 IUP_SDK_API void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
 {
   IcocoaTableData* table_data = cocoaTableGetData(ih);
   cocoaTableResizeCols(ih, num_col, num_col + 1, 0, table_data ? table_data->current_col : 0);
-}
-
-/* sizeToFit only fits the header cell, and the rows can arrive after the columns are created */
-static void cocoaTableAutoSizeColumns(Ihandle* ih)
-{
-  NSTableView* tableView = cocoaTableGetTableView(ih);
-  NSArray* columns;
-  NSFont* font;
-
-  if (!tableView)
-    return;
-
-  columns = [tableView tableColumns];
-  font = [NSFont systemFontOfSize:[NSFont systemFontSize]];
-
-  for (int col_index = 0; col_index < ih->data->num_col - 1 && col_index < (int)[columns count]; col_index++)
-  {
-    char expwidth_name[50];
-    snprintf(expwidth_name, sizeof(expwidth_name), "_IUP_TABLE_EXPWIDTH%d", col_index + 1);
-    if (iupAttribGet(ih, expwidth_name))
-      continue;
-
-    [[columns objectAtIndex:col_index] setWidth:cocoaTableCalculateColumnWidth(ih, col_index, font)];
-  }
 }
 
 static void cocoaTableResizeLins(Ihandle* ih, int num_lin, int pos, int delta)
@@ -2353,15 +2411,7 @@ static void cocoaTableResizeLins(Ihandle* ih, int num_lin, int pos, int delta)
     if (tableView)
       [tableView setNeedsDisplay:YES];
 
-    if (!table_data->columns_autosized && num_lin > 0 && ih->handle)
-    {
-      table_data->columns_autosized = YES;
-      /* the cells are filled after this returns, so measure on the next run loop cycle */
-      dispatch_async(dispatch_get_main_queue(), ^{
-        if (iupObjectCheck(ih))
-          cocoaTableAutoSizeColumns(ih);
-      });
-    }
+    cocoaTableQueueAutoSize(ih);
   }
 }
 
@@ -2458,6 +2508,7 @@ IUP_SDK_API void iupdrvTableSetCellValue(Ihandle* ih, int lin, int col, const ch
     NSIndexSet* colSet = [NSIndexSet indexSetWithIndex:(col - 1)];
     [tableView reloadDataForRowIndexes:rowSet columnIndexes:colSet];
   }
+  cocoaTableQueueAutoSize(ih);
 }
 
 IUP_SDK_API char* iupdrvTableGetCellValue(Ihandle* ih, int lin, int col)
@@ -2495,9 +2546,11 @@ IUP_SDK_API void iupdrvTableSetCellImage(Ihandle* ih, int lin, int col, const ch
   NSTableView* tableView = cocoaTableGetTableView(ih);
   if (tableView)
   {
+    cocoaTableFitRowToImage(ih, cocoaTableGetCellImage(ih, lin, col));
     [tableView reloadDataForRowIndexes:[NSIndexSet indexSetWithIndex:lin - 1]
                          columnIndexes:[NSIndexSet indexSetWithIndex:col - 1]];
   }
+  cocoaTableQueueAutoSize(ih);
 }
 
 /* ========================================================================= */
@@ -2528,11 +2581,11 @@ IUP_SDK_API void iupdrvTableSetColTitle(Ihandle* ih, int col, const char* title)
     snprintf(expwidth_name, sizeof(expwidth_name), "_IUP_TABLE_EXPWIDTH%d", col);
     int has_explicit_width = iupAttribGet(ih, expwidth_name) != NULL;
 
-    if (!has_explicit_width && col_index < ih->data->num_col - 1)
+    if (!has_explicit_width)
     {
       NSFont* font = [NSFont systemFontOfSize:[NSFont systemFontSize]];
-      CGFloat calculated_width = cocoaTableCalculateColumnWidth(ih, col_index, font);
-      [column setWidth:calculated_width];
+      [column setWidth:cocoaTableCalculateColumnWidth(ih, col_index, font)];
+      cocoaTableQueueAutoSize(ih);
     }
   }
 }
@@ -2761,6 +2814,7 @@ IUP_SDK_API void iupdrvTableRedraw(Ihandle* ih)
   {
     [tableView reloadData];
   }
+  cocoaTableQueueAutoSize(ih);
 }
 
 IUP_SDK_API void iupdrvTableUpdateCellStyle(Ihandle* ih, int lin, int col)
