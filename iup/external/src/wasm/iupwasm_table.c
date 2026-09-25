@@ -328,7 +328,6 @@ static void wasmTableSortRows(Ihandle* ih, int col, int ascending)
     if (from == i)
       continue;
 
-    iupTableMoveLinAttribs(ih, from + 1, i + 1);
     iupwasmJsTableMoveRow(id, from + 1, i + 1);
 
     for (j = from; j > i; j--)
@@ -338,6 +337,38 @@ static void wasmTableSortRows(Ihandle* ih, int col, int ascending)
     }
     at[i] = want;
     pos[want] = i;
+  }
+
+  {
+    int sel_count = 0, focus = iupAttribGetInt(ih, "_IUPWASM_FOCUSLIN");
+    int* selected = iupdrvTableGetSelectedLins(ih, &sel_count);
+
+    for (i = 0; i < n; i++)
+    {
+      pos[order[i]] = i + 1;
+      order[i]++;
+    }
+
+    for (i = 0; i < sel_count; i++)
+      iupAttribSetId(ih, "_IUPWASM_TABLESEL", selected[i], NULL);
+    iupAttribSetInt(ih, "_IUPWASM_TABLESELFIRST", 0);
+    iupAttribSetInt(ih, "_IUPWASM_TABLESELLAST", 0);
+    for (i = 0; i < sel_count; i++)
+    {
+      int lin = pos[selected[i] - 1];
+      iupAttribSetId(ih, "_IUPWASM_TABLESEL", lin, "1");
+      if (iupAttribGetInt(ih, "_IUPWASM_TABLESELFIRST") < 1 || lin < iupAttribGetInt(ih, "_IUPWASM_TABLESELFIRST"))
+        iupAttribSetInt(ih, "_IUPWASM_TABLESELFIRST", lin);
+      if (lin > iupAttribGetInt(ih, "_IUPWASM_TABLESELLAST"))
+        iupAttribSetInt(ih, "_IUPWASM_TABLESELLAST", lin);
+    }
+    if (selected)
+      free(selected);
+
+    if (focus > 0 && focus <= n)
+      iupAttribSetInt(ih, "_IUPWASM_FOCUSLIN", pos[focus - 1]);
+
+    iupTableSortLinAttribs(ih, order);
   }
 
   for (i = 0; i < n; i++)

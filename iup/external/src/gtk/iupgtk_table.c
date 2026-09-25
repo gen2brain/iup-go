@@ -414,6 +414,11 @@ static void gtkTableSortStore(Ihandle* ih, int col_index, int ascending)
   gtk_list_store_reorder(gtk_data->store, order);
 
   for (i = 0; i < n; i++)
+    order[i]++;
+  iupTableSortLinAttribs(ih, order);
+  gtk_widget_queue_draw(gtk_data->tree_view);
+
+  for (i = 0; i < n; i++)
     g_free(values[i]);
   free(values);
   free(order);

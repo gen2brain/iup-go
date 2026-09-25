@@ -135,6 +135,21 @@ JNIEXPORT jboolean JNICALL Java_io_github_gen2brain_iupgo_IupTableHelper_dispatc
   return (ret == IUP_IGNORE) ? JNI_FALSE : JNI_TRUE;
 }
 
+JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupTableHelper_dispatchSortOrder(
+    JNIEnv* jni_env, jclass cls, jlong ihandle_ptr, jintArray order)
+{
+  (void)cls;
+  Ihandle* ih = (Ihandle*)ihandle_ptr;
+  if (!ih || !order) return;
+
+  jsize n = (*jni_env)->GetArrayLength(jni_env, order);
+  jint* values = (*jni_env)->GetIntArrayElements(jni_env, order, NULL);
+  if (!values) return;
+
+  iupAndroidTableSortOrder(ih, (const int*)values, (int)n);
+  (*jni_env)->ReleaseIntArrayElements(jni_env, order, values, JNI_ABORT);
+}
+
 JNIEXPORT jboolean JNICALL Java_io_github_gen2brain_iupgo_IupTableHelper_dispatchReorder(
     JNIEnv* jni_env, jclass cls, jlong ihandle_ptr, jint from_col, jint to_col)
 {

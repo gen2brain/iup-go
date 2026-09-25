@@ -306,11 +306,24 @@ static void winTableUpdateSortArrow(Ihandle* ih, int col)
 static void winTableSortRows(Ihandle* ih, int col, int ascending)
 {
   IwinTableData* data = IWIN_TABLE_DATA(ih);
+  HWND list_view = winTableGetListView(ih);
   int num_rows = ih->data->num_lin;
   int num_cols = ih->data->num_col;
+  int* order;
+  int* new_pos;
+  char** images;
+  char* selected;
 
   if (!data->cell_values || num_rows < 2 || col < 1 || col > num_cols)
     return;
+
+  order = (int*)malloc(num_rows * sizeof(int));
+  new_pos = (int*)malloc((num_rows + 1) * sizeof(int));
+  images = (char**)malloc(num_rows * sizeof(char*));
+  selected = (char*)malloc(num_rows);
+
+  for (int i = 0; i < num_rows; i++)
+    order[i] = i + 1;
 
   for (int i = 0; i < num_rows - 1; i++)
   {
@@ -333,11 +346,50 @@ static void winTableSortRows(Ihandle* ih, int col, int ascending)
       if (should_swap)
       {
         char** temp_row = data->cell_values[j];
+        int temp_order = order[j];
         data->cell_values[j] = data->cell_values[j + 1];
         data->cell_values[j + 1] = temp_row;
+        order[j] = order[j + 1];
+        order[j + 1] = temp_order;
       }
     }
   }
+
+  for (int i = 0; i < num_rows; i++)
+  {
+    new_pos[order[i]] = i + 1;
+    selected[i] = (ListView_GetItemState(list_view, i, LVIS_SELECTED) & LVIS_SELECTED) ? 1 : 0;
+  }
+
+  for (int c = 1; c <= num_cols; c++)
+  {
+    for (int i = 0; i < num_rows; i++)
+      images[i] = iupStrDup(iupAttribGetId2(ih, "_IUPWIN_CELLIMAGE", i + 1, c));
+    for (int i = 0; i < num_rows; i++)
+      iupAttribSetStrId2(ih, "_IUPWIN_CELLIMAGE", i + 1, c, images[order[i] - 1]);
+    for (int i = 0; i < num_rows; i++)
+    {
+      if (images[i])
+        free(images[i]);
+    }
+  }
+
+  if (data->current_row > 0 && data->current_row <= num_rows)
+    data->current_row = new_pos[data->current_row];
+
+  iupAttribSet(ih, "_IUPTABLE_IGNORE_SELECTION_CB", "1");
+  for (int i = 0; i < num_rows; i++)
+    ListView_SetItemState(list_view, i, selected[order[i] - 1] ? LVIS_SELECTED : 0, LVIS_SELECTED);
+  if (data->current_row > 0)
+    ListView_SetItemState(list_view, data->current_row - 1, LVIS_FOCUSED, LVIS_FOCUSED);
+  iupAttribSet(ih, "_IUPTABLE_IGNORE_SELECTION_CB", NULL);
+
+  iupTableSortLinAttribs(ih, order);
+
+  free(order);
+  free(new_pos);
+  free(images);
+  free(selected);
 }
 
 static void winTableSort(Ihandle* ih, int col)

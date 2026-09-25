@@ -640,17 +640,36 @@ static void eflTableRefreshCells(Ihandle* ih)
     {
       eflTableUpdateCellLabel(ih, lin, col);
     }
+
+    if (!data->is_virtual && data->table)
+    {
+      Evas_Object* dummy = elm_table_child_get(data->table, num_col, lin);
+      if (dummy)
+      {
+        unsigned char r, g, b;
+        eflTableGetCellBgColor(ih, lin, num_col + 1, &r, &g, &b);
+        efl_gfx_color_set(dummy, r, g, b, 255);
+      }
+    }
   }
 }
 
 static void eflTableSortRows(Ihandle* ih, int col, int ascending)
 {
+  IeflTableData* data = IEFL_TABLE_DATA(ih);
   int num_lin = ih->data->num_lin;
   int i, j;
   int swapped;
+  int* order;
+  int* new_pos;
 
   if (num_lin <= 1)
     return;
+
+  order = (int*)malloc(num_lin * sizeof(int));
+  new_pos = (int*)malloc((num_lin + 1) * sizeof(int));
+  for (i = 0; i < num_lin; i++)
+    order[i] = i + 1;
 
   for (i = 0; i < num_lin - 1; i++)
   {
@@ -664,7 +683,10 @@ static void eflTableSortRows(Ihandle* ih, int col, int ascending)
 
       if (should_swap)
       {
+        int temp = order[j];
         eflTableSwapRows(ih, j + 1, j + 2);
+        order[j] = order[j + 1];
+        order[j + 1] = temp;
         swapped = 1;
       }
     }
@@ -672,7 +694,32 @@ static void eflTableSortRows(Ihandle* ih, int col, int ascending)
       break;
   }
 
+  for (i = 0; i < num_lin; i++)
+    new_pos[order[i]] = i + 1;
+
+  if (data)
+  {
+    if (data->row_selected)
+    {
+      char* sel = eflTableSelection(ih);
+      char* old = (char*)malloc(num_lin);
+      memcpy(old, sel, num_lin);
+      for (i = 0; i < num_lin; i++)
+        sel[i] = old[order[i] - 1];
+      free(old);
+    }
+    if (data->selected_lin > 0 && data->selected_lin <= num_lin)
+      data->selected_lin = new_pos[data->selected_lin];
+    if (data->anchor_row > 0 && data->anchor_row <= num_lin)
+      data->anchor_row = new_pos[data->anchor_row];
+  }
+
+  iupTableSortLinAttribs(ih, order);
+  free(order);
+  free(new_pos);
+
   eflTableRefreshCells(ih);
+  eflTableUpdateFocusCell(ih);
 }
 
 static void eflTableUpdateSortIndicators(Ihandle* ih)
