@@ -495,11 +495,15 @@ IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int* x, int* y)
     {
       GtkRequisition rnat;
       int sb_size = iupdrvGetScrollbarSize();
+      int req_w, req_h;
+      gtk_widget_get_size_request(ih->handle, &req_w, &req_h);
+      gtk_widget_set_size_request(ih->handle, -1, -1);
 #if GTK_CHECK_VERSION(3, 0, 0)
       gtk_widget_get_preferred_size(ih->handle, NULL, &rnat);
 #else
       gtk_widget_size_request(ih->handle, &rnat);
 #endif
+      gtk_widget_set_size_request(ih->handle, req_w, req_h);
       *x = rnat.width - sb_size;
       if (*x < 0) *x = 0;
       *y = rnat.height;

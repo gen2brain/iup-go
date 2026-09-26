@@ -55,7 +55,7 @@ In Motif the button will lose its focus feedback also.
 **IMPRESSBORDER** (non-inheritable): if enabled, the button borders will be shown and computed even if IMPRESS is defined.
 Can be "YES" or "NO". Default: "NO".
 
-**IMAGEPOSITION** (non-inheritable): Position of the image relative to the text when both are displayed.
+**IMAGEPOSITION** (creation-only) (non-inheritable): Position of the image relative to the text when both are displayed.
 Can be: LEFT, RIGHT, TOP, BOTTOM. Default: LEFT.
 Not supported in Motif and EFL.
 
