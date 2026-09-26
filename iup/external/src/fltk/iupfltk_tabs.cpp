@@ -694,6 +694,18 @@ static int fltkTabsSetFontAttrib(Ihandle* ih, const char* value)
   if (!iupdrvSetFontAttrib(ih, value))
     return 0;
 
+  IupFltkTabs* tabs = (IupFltkTabs*)ih->handle;
+  int fl_font, fl_size;
+  if (tabs && iupfltkGetFontFromString(value, &fl_font, &fl_size))
+  {
+    for (int i = 0; i < tabs->children(); i++)
+    {
+      tabs->child(i)->labelfont((Fl_Font)fl_font);
+      tabs->child(i)->labelsize((Fl_Fontsize)fl_size);
+    }
+    tabs->redraw();
+  }
+
   return 1;
 }
 
@@ -774,6 +786,13 @@ static void fltkTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
       tabtitle = (char*)"     ";
 
     page->copy_label(tabtitle);
+
+    int fl_font, fl_size;
+    if (iupfltkGetFont(ih, &fl_font, &fl_size))
+    {
+      page->labelfont((Fl_Font)fl_font);
+      page->labelsize((Fl_Fontsize)fl_size);
+    }
 
     char* tabimage = iupAttribGet(child, "TABIMAGE");
     if (!tabimage)

@@ -1148,7 +1148,7 @@ static int fltkTextSetFontAttrib(Ihandle* ih, const char* value)
   if (ih->handle)
   {
     int fl_font, fl_size;
-    if (iupfltkGetFont(ih, &fl_font, &fl_size))
+    if (iupfltkGetFontFromString(value, &fl_font, &fl_size))
     {
       if (ih->data->is_multiline)
       {
@@ -1157,7 +1157,14 @@ static int fltkTextSetFontAttrib(Ihandle* ih, const char* value)
         editor->textsize((Fl_Fontsize)fl_size);
         editor->redraw();
       }
-      else if (!iupAttribGetBoolean(ih, "SPIN"))
+      else if (iupAttribGetBoolean(ih, "SPIN"))
+      {
+        Fl_Spinner* spinner = (Fl_Spinner*)ih->handle;
+        spinner->textfont((Fl_Font)fl_font);
+        spinner->textsize((Fl_Fontsize)fl_size);
+        spinner->redraw();
+      }
+      else
       {
         Fl_Input* input = (Fl_Input*)ih->handle;
         input->textfont((Fl_Font)fl_font);
