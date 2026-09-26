@@ -254,6 +254,7 @@ public:
   int drag_target_row;
   int row_dragging;
   int fit_pending;
+  int font_h;
   int pending_scroll_lin, pending_scroll_col;
   unsigned int selection_stamp;
 
@@ -263,7 +264,7 @@ public:
       auto_widths_rows(0),
       sort_column(0), sort_ascending(1),
       drag_source_col(-1), drag_target_col(-1), drag_start_x(0), drag_start_y(0), dragging(0),
-      drag_source_row(-1), drag_target_row(-1), row_dragging(0), fit_pending(0),
+      drag_source_row(-1), drag_target_row(-1), row_dragging(0), fit_pending(0), font_h(0),
       pending_scroll_lin(0), pending_scroll_col(0), selection_stamp(0)
   {
     selection_color(FL_SELECTION_COLOR);
@@ -1321,11 +1322,32 @@ static void fltkTableFitColumns(Ihandle* ih, IupFltkTable* table)
   }
 }
 
+static void fltkTableSyncRowHeight(Ihandle* ih, IupFltkTable* table)
+{
+  int charheight;
+  iupdrvFontGetCharSize(ih, NULL, &charheight);
+  if (charheight == table->font_h)
+    return;
+
+  int row_height = charheight + 6;
+  table->font_h = charheight;
+  table->row_height_all(row_height);
+  table->col_header_height(row_height + 2);
+
+  if (!ih->data->fit_image)
+  {
+    for (int r = 0; r < table->rows(); r++)
+      table->fitRowToImages(r);
+  }
+}
+
 static void fltkTableLayoutUpdateMethod(Ihandle* ih)
 {
   IupFltkTable* table = fltkTableGetWidget(ih);
   if (!table)
     return;
+
+  fltkTableSyncRowHeight(ih, table);
 
   if (!table->auto_widths_done)
   {
@@ -1429,6 +1451,7 @@ static int fltkTableMapMethod(Ihandle* ih)
   int charheight;
   iupdrvFontGetCharSize(ih, NULL, &charheight);
   int row_height = charheight + 6;
+  table->font_h = charheight;
 
   table->rows(1);
   table->row_height(0, row_height);
@@ -2027,6 +2050,8 @@ extern "C" IUP_SDK_API int iupdrvTableGetBorderWidth(Ihandle* ih)
 extern "C" IUP_SDK_API int iupdrvTableGetRowHeight(Ihandle* ih)
 {
   IupFltkTable* table = fltkTableGetWidget(ih);
+  if (table)
+    fltkTableSyncRowHeight(ih, table);
   if (table && table->rows() > 0)
   {
     int h = table->row_height(0);
@@ -2043,7 +2068,10 @@ extern "C" IUP_SDK_API int iupdrvTableGetHeaderHeight(Ihandle* ih)
 {
   IupFltkTable* table = fltkTableGetWidget(ih);
   if (table)
+  {
+    fltkTableSyncRowHeight(ih, table);
     return table->col_header_height();
+  }
 
   int charheight;
   iupdrvFontGetCharSize(ih, NULL, &charheight);
