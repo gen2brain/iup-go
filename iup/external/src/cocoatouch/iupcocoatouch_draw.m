@@ -245,14 +245,6 @@ IUP_SDK_API void iupdrvDrawKillCanvas(IdrawCanvas* dc)
 	free(dc);
 }
 
-IUP_SDK_API void iupdrvDrawUpdateSize(IdrawCanvas* dc)
-{
-	if (!dc || !dc->canvasView) return;
-	CGSize size = [(UIView*)dc->canvasView bounds].size;
-	dc->w = (int)size.width;
-	dc->h = (int)size.height;
-}
-
 IUP_SDK_API void iupdrvDrawFlush(IdrawCanvas* dc)
 {
 	if (!dc) return;

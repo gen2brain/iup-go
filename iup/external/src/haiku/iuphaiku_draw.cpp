@@ -141,13 +141,47 @@ static void haikuClipToRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2)
   dc->view->ClipToShape(&shape);
 }
 
+static void haikuDrawUpdateSize(IdrawCanvas* dc)
+{
+  if (!dc) return;
+  int w = dc->ih->currentwidth  > 0 ? dc->ih->currentwidth  : 1;
+  int h = dc->ih->currentheight > 0 ? dc->ih->currentheight : 1;
+
+  if (BView* view = (BView*)dc->ih->handle)
+  {
+    BRect bounds = view->Bounds();
+    if (bounds.IntegerWidth() > 0)  w = bounds.IntegerWidth() + 1;
+    if (bounds.IntegerHeight() > 0) h = bounds.IntegerHeight() + 1;
+  }
+  if (dc->bm && dc->w == w && dc->h == h) return;
+
+  if (dc->bm) { delete dc->bm; dc->bm = NULL; dc->view = NULL; dc->clip_state = 0; }
+  dc->w = w; dc->h = h;
+
+  dc->bm = new BBitmap(BRect(0, 0, w - 1, h - 1), B_BITMAP_ACCEPTS_VIEWS, B_RGBA32);
+  dc->view = new BView(dc->bm->Bounds(), "iup_dc", B_FOLLOW_ALL_SIDES, B_WILL_DRAW);
+  dc->bm->AddChild(dc->view);
+  dc->bm->Lock();
+  unsigned char r, g, b;
+  if (iupStrToRGB(iupAttribGetStr(dc->ih, "BGCOLOR"), &r, &g, &b))
+  {
+    rgb_color bg = { r, g, b, 255 };
+    dc->view->SetHighColor(bg);
+    dc->view->FillRect(dc->bm->Bounds());
+  }
+  dc->view->SetDrawingMode(B_OP_ALPHA);
+  dc->view->SetBlendingMode(B_PIXEL_ALPHA, B_ALPHA_OVERLAY);
+  haikuSetTransform(dc, &dc->matrix);
+  dc->bm->Unlock();
+}
+
 extern "C" IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
 {
   IdrawCanvas* dc = (IdrawCanvas*)calloc(1, sizeof(IdrawCanvas));
   dc->ih = ih;
   dc->matrix.a = 1;
   dc->matrix.d = 1;
-  iupdrvDrawUpdateSize(dc);
+  haikuDrawUpdateSize(dc);
   iupAttribSet(ih, "DRAWDRIVER", "HAIKU");
   return dc;
 }
@@ -219,40 +253,6 @@ extern "C" IUP_SDK_API void iupdrvDrawSetTransform(IdrawCanvas* dc, const IupDra
   if (dc->bm) dc->bm->Lock();
   haikuSetTransform(dc, matrix);
   if (dc->bm) dc->bm->Unlock();
-}
-
-extern "C" IUP_SDK_API void iupdrvDrawUpdateSize(IdrawCanvas* dc)
-{
-  if (!dc) return;
-  int w = dc->ih->currentwidth  > 0 ? dc->ih->currentwidth  : 1;
-  int h = dc->ih->currentheight > 0 ? dc->ih->currentheight : 1;
-
-  if (BView* view = (BView*)dc->ih->handle)
-  {
-    BRect bounds = view->Bounds();
-    if (bounds.IntegerWidth() > 0)  w = bounds.IntegerWidth() + 1;
-    if (bounds.IntegerHeight() > 0) h = bounds.IntegerHeight() + 1;
-  }
-  if (dc->bm && dc->w == w && dc->h == h) return;
-
-  if (dc->bm) { delete dc->bm; dc->bm = NULL; dc->view = NULL; dc->clip_state = 0; }
-  dc->w = w; dc->h = h;
-
-  dc->bm = new BBitmap(BRect(0, 0, w - 1, h - 1), B_BITMAP_ACCEPTS_VIEWS, B_RGBA32);
-  dc->view = new BView(dc->bm->Bounds(), "iup_dc", B_FOLLOW_ALL_SIDES, B_WILL_DRAW);
-  dc->bm->AddChild(dc->view);
-  dc->bm->Lock();
-  unsigned char r, g, b;
-  if (iupStrToRGB(iupAttribGetStr(dc->ih, "BGCOLOR"), &r, &g, &b))
-  {
-    rgb_color bg = { r, g, b, 255 };
-    dc->view->SetHighColor(bg);
-    dc->view->FillRect(dc->bm->Bounds());
-  }
-  dc->view->SetDrawingMode(B_OP_ALPHA);
-  dc->view->SetBlendingMode(B_PIXEL_ALPHA, B_ALPHA_OVERLAY);
-  haikuSetTransform(dc, &dc->matrix);
-  dc->bm->Unlock();
 }
 
 extern "C" IUP_SDK_API void iupdrvDrawFlush(IdrawCanvas* dc)

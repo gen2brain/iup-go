@@ -752,55 +752,6 @@ extern "C" IUP_SDK_API void iupdrvDrawFlush(IdrawCanvas* dc)
   fl_copy_offscreen(dc->widget->x(), dc->widget->y(), dc->w, dc->h, dc->offscreen, 0, 0);
 }
 
-extern "C" IUP_SDK_API void iupdrvDrawUpdateSize(IdrawCanvas* dc)
-{
-  if (!dc || !dc->widget) return;
-
-  int new_w = dc->widget->w();
-  int new_h = dc->widget->h();
-  if (new_w <= 0) new_w = 1;
-  if (new_h <= 0) new_h = 1;
-
-  if (new_w != dc->w || new_h != dc->h)
-  {
-    fltkDrawDropLayers(dc);
-
-    if (dc->clip_pushed)
-    {
-      fl_pop_clip();
-      dc->clip_pushed = 0;
-    }
-
-    if (dc->in_offscreen)
-    {
-      fl_end_offscreen();
-      dc->in_offscreen = 0;
-    }
-
-    if (dc->clip_offscreen)
-    {
-      fl_delete_offscreen(dc->clip_offscreen);
-      dc->clip_offscreen = 0;
-    }
-
-    if (dc->offscreen)
-      fl_delete_offscreen(dc->offscreen);
-
-    dc->w = new_w;
-    dc->h = new_h;
-    dc->clip_mask.clear();
-
-    dc->offscreen = fl_create_offscreen(dc->w, dc->h);
-    dc->target = dc->offscreen;
-    iupAttribSet(dc->ih, "_IUP_FLTK_OFFSCREEN", (char*)(size_t)dc->offscreen);
-    iupAttribSetInt(dc->ih, "_IUP_FLTK_OFFSCREEN_W", dc->w);
-    iupAttribSetInt(dc->ih, "_IUP_FLTK_OFFSCREEN_H", dc->h);
-
-    fl_begin_offscreen(dc->offscreen);
-    dc->in_offscreen = 1;
-  }
-}
-
 extern "C" IUP_SDK_API void iupdrvDrawGetSize(IdrawCanvas* dc, int* w, int* h)
 {
   if (!dc) return;

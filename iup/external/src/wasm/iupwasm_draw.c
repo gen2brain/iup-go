@@ -461,13 +461,6 @@ IUP_SDK_API void iupdrvDrawSetTransform(IdrawCanvas* dc, const IupDrawMatrix* ma
   iupwasmJsSetTransform(dc->cid, matrix->a, matrix->b, matrix->c, matrix->d, matrix->e, matrix->f);
 }
 
-IUP_SDK_API void iupdrvDrawUpdateSize(IdrawCanvas* dc)
-{
-  if (!dc) return;
-  dc->w = iupwasmJsCanvasClientW(dc->cid);
-  dc->h = iupwasmJsCanvasClientH(dc->cid);
-}
-
 EM_JS(void, iupwasmJsCanvasBlit, (int cid), {
   if (typeof document !== 'undefined') return;
   var local = globalThis.__iupLocal && globalThis.__iupLocal[cid];
