@@ -746,6 +746,9 @@ extern "C" IUP_SDK_API void iupdrvDrawFlush(IdrawCanvas* dc)
   if (!win || !win->shown())
     return;
 
+  if (iupfltkCanvasDeferBlit(dc->ih))
+    return;
+
   if (Fl_Window::current() != win)
     win->make_current();
 

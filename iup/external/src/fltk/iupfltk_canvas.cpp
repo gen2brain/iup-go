@@ -101,8 +101,10 @@ class IupFltkCanvas : public Fl_Widget
 {
 public:
   Ihandle* ih;
+  int in_draw;
+  int blit_pending;
   IupFltkCanvas(int x, int y, int w, int h, Ihandle* _ih)
-    : Fl_Widget(x, y, w, h), ih(_ih)
+    : Fl_Widget(x, y, w, h), ih(_ih), in_draw(0), blit_pending(0)
   {
   }
 
@@ -111,12 +113,27 @@ public:
     if (!ih)
       return;
 
+    if (blit_pending)
+    {
+      Fl_Offscreen offscreen = (Fl_Offscreen)(size_t)iupAttribGet(ih, "_IUP_FLTK_OFFSCREEN");
+      blit_pending = 0;
+      if (offscreen && iupAttribGetInt(ih, "_IUP_FLTK_OFFSCREEN_W") == w() && iupAttribGetInt(ih, "_IUP_FLTK_OFFSCREEN_H") == h())
+      {
+        fl_copy_offscreen(x(), y(), w(), h(), offscreen, 0, 0);
+        return;
+      }
+    }
+
     if (iupAttribGet(ih, "_IUPGL_COMPOSITE"))
     {
       IFn glcb = (IFn)IupGetCallback(ih, "ACTION");
       iupAttribSet(ih, "_IUPGL_IN_DRAW", "1");
       if (glcb && !(ih->data->inside_resize))
+      {
+        in_draw = 1;
         glcb(ih);
+        in_draw = 0;
+      }
       iupAttribSet(ih, "_IUPGL_IN_DRAW", NULL);
 
       unsigned char* px = (unsigned char*)iupAttribGet(ih, "_IUPGL_COMPOSITE_PIXELS");
@@ -160,7 +177,9 @@ public:
         cx = x(); cy = y(); cw = w(); ch = h();
       }
       iupAttribSetStrf(ih, "CLIPRECT", "%d %d %d %d", cx - x(), cy - y(), cx - x() + cw - 1, cy - y() + ch - 1);
+      in_draw = 1;
       cb(ih);
+      in_draw = 0;
       iupAttribSet(ih, "CLIPRECT", NULL);
 
       iupAttribSet(ih, "CAIRO_CR", NULL);
@@ -638,6 +657,17 @@ static char* fltkCanvasGetXDisplayAttrib(Ihandle* ih)
  * Map Method
  ****************************************************************************/
 
+IUP_DRV_API int iupfltkCanvasDeferBlit(Ihandle* ih)
+{
+  IupFltkCanvas* canvas = (IupFltkCanvas*)iupAttribGet(ih, "_IUPFLTK_CANVAS");
+  if (!canvas || canvas != (IupFltkCanvas*)ih->handle || canvas->in_draw)
+    return 0;
+
+  canvas->blit_pending = 1;
+  canvas->redraw();
+  return 1;
+}
+
 static int fltkCanvasMapMethod(Ihandle* ih)
 {
   if (!ih->parent)
@@ -682,6 +712,7 @@ static int fltkCanvasMapMethod(Ihandle* ih)
 
   ih->handle = (InativeHandle*)canvas;
   iupAttribSet(ih, "_IUP_EXTRAPARENT", (char*)sb_win);
+  iupAttribSet(ih, "_IUPFLTK_CANVAS", (char*)canvas);
 
   if (iupAttribGetBoolean(ih, "BORDER"))
   {
@@ -717,6 +748,7 @@ static void fltkCanvasUnMapMethod(Ihandle* ih)
   Fl::remove_timeout(fltkCanvasDeferredResize, (void*)ih);
   if (canvas)
     canvas->ih = NULL;
+  iupAttribSet(ih, "_IUPFLTK_CANVAS", NULL);
 
   {
     Fl_Offscreen offscreen = (Fl_Offscreen)(size_t)iupAttribGet(ih, "_IUP_FLTK_OFFSCREEN");
