@@ -241,7 +241,7 @@ IUP_SDK_API void iupdrvListSetItemCount(Ihandle* ih, int count)
   for (i = 0; i < count; i++)
   {
     char* text = iupListGetItemValueCb(ih, i + 1);
-    items[i] = XmStringCreateLocalized(text ? (char*)text : "");
+    items[i] = iupmotStringCreate(text ? text : "");
   }
 
   XmListAddItems(list_widget, items, count, 0);
