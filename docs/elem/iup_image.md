@@ -133,6 +133,7 @@ In all drivers, a path to a file name, or a system-specific stock / named image,
 #### Colors
 
 In Motif, the alpha channel in RGBA images is always composed with the control BGCOLOR by IUP prior to setting the image at the control, because the native image has no alpha channel.
+IupDrawImage in Motif keeps the alpha channel when the X11 RENDER extension is available.
 In all other drivers the alpha channel is composed internally by the system.
 But in Win32 a few controls compose the alpha a priori against BGCOLOR as well, controlled by the **FLAT_ALPHA** attribute (YES by default for them): **IupMenuItem**, **IupSubmenu**, **IupTabs**, **IupTree** and **IupToggle**.
 This implies that if the control background is not uniform, then probably there will be a visible difference where it should be transparent.

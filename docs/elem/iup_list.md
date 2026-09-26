@@ -168,6 +168,7 @@ Set this attribute to speed **Natural Size** computation for very large lists.
 In virtual mode, items are not stored internally, and the list queries the application for item text and images using callbacks.
 Set ITEMCOUNT to define the number of items, and use the list callbacks to provide item data.
 Can be "YES" or "NO". Default: "NO".
+In Motif and FLTK, VALUE_CB is called for every item when ITEMCOUNT is set.
 
 **ITEMCOUNT** (non-inheritable): number of items in the list when VIRTUALMODE=YES.
 Must be set after VIRTUALMODE is enabled.
