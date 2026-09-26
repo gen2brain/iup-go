@@ -74,11 +74,7 @@ static int gtk4PopoverSetVisibleAttrib(Ihandle* ih, const char* value)
     {
       int position = iupPopoverGetPosition(ih);
       GtkPositionType gtk_pos;
-      GdkRectangle pointing_to;
-      int use_pointing_to = 0;
-      GtkWidget* anchor_widget = (GtkWidget*)anchor->handle;
-      int aw = gtk_widget_get_width(anchor_widget);
-      int ah = gtk_widget_get_height(anchor_widget);
+      GtkAlign align = GTK_ALIGN_CENTER;
 
       switch (position)
       {
@@ -106,61 +102,67 @@ static int gtk4PopoverSetVisibleAttrib(Ihandle* ih, const char* value)
       {
       case IUP_POPOVER_BOTTOMLEFT:
       case IUP_POPOVER_TOPLEFT:
-        pointing_to.x = 0;
-        pointing_to.y = 0;
-        pointing_to.width = 1;
-        pointing_to.height = ah;
-        use_pointing_to = 1;
+      case IUP_POPOVER_LEFTTOP:
+      case IUP_POPOVER_RIGHTTOP:
+        align = GTK_ALIGN_START;
         break;
       case IUP_POPOVER_BOTTOMRIGHT:
       case IUP_POPOVER_TOPRIGHT:
-        pointing_to.x = aw - 1;
-        pointing_to.y = 0;
-        pointing_to.width = 1;
-        pointing_to.height = ah;
-        use_pointing_to = 1;
-        break;
-      case IUP_POPOVER_LEFTTOP:
-      case IUP_POPOVER_RIGHTTOP:
-        pointing_to.x = 0;
-        pointing_to.y = 0;
-        pointing_to.width = aw;
-        pointing_to.height = 1;
-        use_pointing_to = 1;
-        break;
       case IUP_POPOVER_LEFTBOTTOM:
       case IUP_POPOVER_RIGHTBOTTOM:
-        pointing_to.x = 0;
-        pointing_to.y = ah - 1;
-        pointing_to.width = aw;
-        pointing_to.height = 1;
-        use_pointing_to = 1;
+        align = GTK_ALIGN_END;
         break;
       }
+
+      if (gtk_pos == GTK_POS_TOP || gtk_pos == GTK_POS_BOTTOM)
+      {
+        gtk_widget_set_halign(GTK_WIDGET(popover), align);
+        gtk_widget_set_valign(GTK_WIDGET(popover), GTK_ALIGN_CENTER);
+      }
+      else
+      {
+        gtk_widget_set_halign(GTK_WIDGET(popover), GTK_ALIGN_CENTER);
+        gtk_widget_set_valign(GTK_WIDGET(popover), align);
+      }
+
+      gtk_popover_set_position(popover, gtk_pos);
 
       {
         int offsetx = iupAttribGetInt(ih, "OFFSETX");
         int offsety = iupAttribGetInt(ih, "OFFSETY");
+
         if (offsetx != 0 || offsety != 0)
         {
-          if (!use_pointing_to)
+          GtkWidget* anchor_widget = (GtkWidget*)anchor->handle;
+          int aw = gtk_widget_get_width(anchor_widget);
+          int ah = gtk_widget_get_height(anchor_widget);
+          GdkRectangle pointing_to;
+
+          pointing_to.x = offsetx;
+          pointing_to.y = offsety;
+          pointing_to.width = aw;
+          pointing_to.height = ah;
+
+          if (gtk_pos == GTK_POS_TOP || gtk_pos == GTK_POS_BOTTOM)
           {
-            pointing_to.x = 0;
-            pointing_to.y = 0;
-            pointing_to.width = aw;
-            pointing_to.height = ah;
-            use_pointing_to = 1;
+            if (align == GTK_ALIGN_END)
+              pointing_to.x += aw - 1;
+            if (align != GTK_ALIGN_CENTER)
+              pointing_to.width = 1;
           }
-          pointing_to.x += offsetx;
-          pointing_to.y += offsety;
+          else
+          {
+            if (align == GTK_ALIGN_END)
+              pointing_to.y += ah - 1;
+            if (align != GTK_ALIGN_CENTER)
+              pointing_to.height = 1;
+          }
+
+          gtk_popover_set_pointing_to(popover, &pointing_to);
         }
+        else
+          gtk_popover_set_pointing_to(popover, NULL);
       }
-
-      gtk_popover_set_position(popover, gtk_pos);
-      gtk_popover_set_offset(popover, 0, 0);
-
-      if (use_pointing_to)
-        gtk_popover_set_pointing_to(popover, &pointing_to);
     }
 
     gtk_popover_popup(popover);
