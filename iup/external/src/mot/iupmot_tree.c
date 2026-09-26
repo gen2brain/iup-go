@@ -1464,6 +1464,11 @@ static char* motTreeGetTitleAttrib(Ihandle* ih, int id)
   return title;
 }
 
+static void motTreeRelayoutNode(Widget wItem)
+{
+  XtChangeManagedSet(&wItem, 1, NULL, NULL, &wItem, 1);
+}
+
 static int motTreeSetTitleAttrib(Ihandle* ih, int id, const char* value)
 {
   Widget wItem = iupTreeGetNode(ih, id);
@@ -1474,6 +1479,7 @@ static int motTreeSetTitleAttrib(Ihandle* ih, int id, const char* value)
     value = "";
 
   iupmotSetXmString(wItem, XmNlabelString, value);
+  motTreeRelayoutNode(wItem);
 
   return 0;
 }
@@ -1489,6 +1495,7 @@ static int motTreeSetTitleFontAttrib(Ihandle* ih, int id, const char* value)
     fontlist = iupmotGetFontList(iupAttribGetId(ih, "TITLEFOUNDRY", id), value);
 
   XtVaSetValues(wItem, XmNrenderTable, fontlist, XmNfontList, fontlist, NULL);
+  motTreeRelayoutNode(wItem);
 
   return 0;
 }
