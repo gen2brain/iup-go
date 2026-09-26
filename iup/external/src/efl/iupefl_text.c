@@ -907,7 +907,10 @@ static int eflTextSetFgColorAttrib(Ihandle* ih, const char* value)
 
 static void eflTextScrollToCursor(Eo* entry, Efl_Text_Cursor_Object* cur)
 {
-  Eina_Rect rect = efl_text_cursor_object_cursor_geometry_get(cur, EFL_TEXT_CURSOR_TYPE_BEFORE);
+  Eina_Rect rect;
+  if (!efl_ui_textbox_scrollable_get(entry))
+    return;
+  rect = efl_text_cursor_object_cursor_geometry_get(cur, EFL_TEXT_CURSOR_TYPE_BEFORE);
   efl_ui_scrollable_scroll(entry, rect, EINA_FALSE);
 }
 
@@ -1608,7 +1611,7 @@ static int eflTextMapMethod(Ihandle* ih)
       Evas_Object* tb = eflTextGetTextblock(ih);
 
       efl_text_multiline_set(widget, EINA_TRUE);
-      efl_ui_textbox_scrollable_set(widget, has_border);
+      efl_ui_textbox_scrollable_set(widget, EINA_TRUE);
       if (tb)
         efl_canvas_textblock_newline_as_paragraph_separator_set(tb, EINA_TRUE);
 
@@ -1630,7 +1633,18 @@ static int eflTextMapMethod(Ihandle* ih)
         EINA_ITERATOR_FOREACH(it, child)
         {
           if (efl_isa(child, EFL_UI_SCROLLBAR_INTERFACE))
+          {
             efl_ui_scrollbar_bar_mode_set(child, hp, vp);
+            if (!has_border && efl_isa(child, EFL_UI_LAYOUT_BASE_CLASS))
+            {
+              Evas_Object* edje = elm_layout_edje_get(child);
+              if (edje)
+              {
+                edje_object_color_class_set(edje, "/bg/normal/entry", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+                edje_object_color_class_set(edje, "/bg/selected/entry/focus", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+              }
+            }
+          }
         }
         eina_iterator_free(it);
       }
