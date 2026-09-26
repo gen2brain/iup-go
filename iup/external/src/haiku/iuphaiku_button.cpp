@@ -205,7 +205,7 @@ public:
   IupHaikuButton(Ihandle* ih, const char* label)
     : BButton(BRect(0, 0, 0, 0), "iup_button", label,
               new BMessage(IUPHAIKU_BUTTON_INVOKE_MSG), B_FOLLOW_NONE),
-      fIhandle(ih)
+      fIhandle(ih), fInside(false)
   {
     SetExplicitMinSize(BSize(0, 0));
   }
@@ -214,6 +214,69 @@ public:
   {
     BButton::AttachedToWindow();
     SetTarget(this);
+  }
+
+  void MouseMoved(BPoint where, uint32 transit, const BMessage* drag) override
+  {
+    BButton::MouseMoved(where, transit, drag);
+    if (transit == B_ENTERED_VIEW) fInside = true;
+    else if (transit == B_EXITED_VIEW) fInside = false;
+  }
+
+  void Draw(BRect updateRect) override
+  {
+    int pos = fIhandle ? fIhandle->data->img_position : IUP_IMGPOS_LEFT;
+    const BBitmap* icon = IconBitmap((Value() == B_CONTROL_OFF ? B_INACTIVE_ICON_BITMAP : B_ACTIVE_ICON_BITMAP)
+                                     | (IsEnabled() ? 0 : B_DISABLED_ICON_BITMAP));
+    const char* label = Label();
+    if (pos == IUP_IMGPOS_LEFT || !icon || !label || !*label)
+    {
+      BButton::Draw(updateRect);
+      return;
+    }
+
+    BRect rect(Bounds());
+    rgb_color background = ViewColor();
+    rgb_color text = ui_color(B_CONTROL_TEXT_COLOR);
+    rgb_color base = ui_color(B_CONTROL_BACKGROUND_COLOR);
+
+    uint32 flags = be_control_look->Flags(this);
+    if (IsDefault()) flags |= BControlLook::B_DEFAULT_BUTTON;
+    if (IsFlat() && !IsTracking()) flags |= BControlLook::B_FLAT;
+    if (fInside) flags |= BControlLook::B_HOVER;
+
+    be_control_look->DrawButtonFrame(this, rect, updateRect, base, background, flags);
+    be_control_look->DrawButtonBackground(this, rect, updateRect, base, flags);
+
+    float spacing = fIhandle->data->spacing;
+    float icon_w = icon->Bounds().Width() + 1;
+    float icon_h = icon->Bounds().Height() + 1;
+    float text_w = ceilf(StringWidth(label));
+    font_height fh; GetFontHeight(&fh);
+    float text_h = ceilf(fh.ascent + fh.descent);
+
+    BPoint icon_at;
+    BRect text_rect;
+    if (pos == IUP_IMGPOS_RIGHT)
+    {
+      float x = rect.left + floorf((rect.Width() + 1 - (icon_w + spacing + text_w)) / 2);
+      text_rect.Set(x, rect.top, x + text_w - 1, rect.bottom);
+      icon_at.Set(x + text_w + spacing, rect.top + floorf((rect.Height() + 1 - icon_h) / 2));
+    }
+    else
+    {
+      float y = rect.top + floorf((rect.Height() + 1 - (icon_h + spacing + text_h)) / 2);
+      float icon_y = pos == IUP_IMGPOS_TOP ? y : y + text_h + spacing;
+      float text_y = pos == IUP_IMGPOS_TOP ? y + icon_h + spacing : y;
+      icon_at.Set(rect.left + floorf((rect.Width() + 1 - icon_w) / 2), icon_y);
+      text_rect.Set(rect.left, text_y, rect.right, text_y + text_h - 1);
+    }
+
+    SetDrawingMode(B_OP_ALPHA);
+    DrawBitmap(icon, icon_at);
+    SetDrawingMode(B_OP_COPY);
+    be_control_look->DrawLabel(this, label, text_rect, updateRect, base, flags,
+                               BAlignment(B_ALIGN_CENTER, B_ALIGN_MIDDLE), &text);
   }
 
   void MakeFocus(bool focus = true) override
@@ -278,6 +341,7 @@ public:
 
 private:
   Ihandle* fIhandle;
+  bool fInside;
 };
 
 
@@ -485,6 +549,9 @@ static int haikuButtonMapMethod(Ihandle* ih)
       if (image) haikuButtonApplyImage(ih, image, 0);
     }
 
+    if (iupAttribGetBoolean(ih, "FLAT"))
+      button->SetFlat(true);
+
     if (iupAttribGetBoolean(ih, "SHOWASDEFAULT"))
       haikuButtonSetShowAsDefaultAttrib(ih, "YES");
   }
@@ -528,7 +595,8 @@ extern "C" IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int* x, int* y)
   float insets_w = left + right + spacing - 1;
   int has_label = ih && (ih->data->type & IUP_BUTTON_TEXT);
   float chrome_w = has_label ? fmaxf(insets_w, ceilf(spacing * 3.3f)) : insets_w;
-  if (ih && (ih->data->type & IUP_BUTTON_IMAGE) && has_label)
+  if (ih && (ih->data->type & IUP_BUTTON_IMAGE) && has_label &&
+      (ih->data->img_position == IUP_IMGPOS_LEFT || ih->data->img_position == IUP_IMGPOS_RIGHT))
     chrome_w += spacing;
   if (x)
   {
@@ -555,7 +623,7 @@ extern "C" IUP_SDK_API void iupdrvButtonInitClass(Iclass* ic)
 
   iupClassRegisterAttribute(ic, "ALIGNMENT", NULL, NULL, "ACENTER:ACENTER", NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "PADDING", iupButtonGetPaddingAttrib, NULL, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
-  iupClassRegisterAttribute(ic, "FLAT", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FLAT", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "IMPRESSBORDER", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MARKUP", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED);
 
