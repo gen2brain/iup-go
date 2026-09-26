@@ -13,6 +13,7 @@
 
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #include <gdk/x11/gdkx.h>
+#include <X11/Xatom.h>
 
 #include <string.h>
 
@@ -115,6 +116,43 @@ IUP_DRV_API int iupgtk4X11GetWindowPosition(GdkSurface* surface, int* x, int* y)
   screen = XDefaultScreen(xdisplay);
   XTranslateCoordinates(xdisplay, xwindow, XRootWindow(xdisplay, screen), 0, 0, x, y, &child);
   return 1;
+}
+
+IUP_DRV_API int iupgtk4X11GetFrameExtents(GdkSurface* surface, int* left, int* top)
+{
+  Display* xdisplay;
+  Atom type;
+  int format, found = 0;
+  unsigned long nitems, bytes_after;
+  unsigned char* data = NULL;
+
+  if (!surface || !GDK_IS_X11_SURFACE(surface))
+    return 0;
+
+  xdisplay = x11_get_xdisplay();
+  if (!xdisplay)
+    return 0;
+
+#ifdef IUPX11_USE_DLOPEN
+  if (!iupX11Open())
+    return 0;
+#endif
+
+  if (XGetWindowProperty(xdisplay, gdk_x11_surface_get_xid(surface), XInternAtom(xdisplay, "_NET_FRAME_EXTENTS", False),
+                         0, 4, False, XA_CARDINAL, &type, &format, &nitems, &bytes_after, &data) == Success)
+  {
+    if (type == XA_CARDINAL && format == 32 && nitems == 4 && data)
+    {
+      long* extents = (long*)data;
+      *left = (int)extents[0];
+      *top = (int)extents[2];
+      found = 1;
+    }
+    if (data)
+      XFree(data);
+  }
+
+  return found;
 }
 
 IUP_DRV_API int iupgtk4X11HideFromTaskbar(GdkSurface* surface)
@@ -315,6 +353,34 @@ IUP_DRV_API int iupgtk4X11GetVendorRelease(void)
   return XVendorRelease(xdisplay);
 }
 
+/* Events */
+
+static void (*x11_configure_cb)(unsigned long xid) = NULL;
+static gulong x11_xevent_handler = 0;
+
+static gboolean x11_xevent(GdkX11Display* display, gpointer xevent, gpointer user_data)
+{
+  XEvent* ev = (XEvent*)xevent;
+  (void)display;
+  (void)user_data;
+
+  if (ev->type == ConfigureNotify && x11_configure_cb)
+    x11_configure_cb((unsigned long)ev->xconfigure.window);
+
+  return FALSE;
+}
+
+IUP_DRV_API void iupgtk4X11WatchConfigure(void (*cb)(unsigned long xid))
+{
+  GdkDisplay* display = gdk_display_get_default();
+
+  if (x11_xevent_handler || !display || !GDK_IS_X11_DISPLAY(display))
+    return;
+
+  x11_configure_cb = cb;
+  x11_xevent_handler = g_signal_connect(display, "xevent", G_CALLBACK(x11_xevent), NULL);
+}
+
 /* Lifecycle */
 
 IUP_DRV_API int iupgtk4X11Sync(void)
@@ -333,6 +399,13 @@ IUP_DRV_API int iupgtk4X11Sync(void)
 
 IUP_DRV_API void iupgtk4X11Cleanup(void)
 {
+  GdkDisplay* display = gdk_display_get_default();
+
+  if (x11_xevent_handler && display)
+    g_signal_handler_disconnect(display, x11_xevent_handler);
+  x11_xevent_handler = 0;
+  x11_configure_cb = NULL;
+
 #ifdef IUPX11_USE_DLOPEN
   iupX11Close();
 #endif
