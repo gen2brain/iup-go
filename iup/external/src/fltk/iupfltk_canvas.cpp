@@ -390,6 +390,35 @@ static void fltkCanvasUpdateChildLayout(Ihandle* ih)
     canvas->resize(ox + border, oy + border, width - sb_vert_width - 2 * border, height - sb_horiz_height - 2 * border);
 }
 
+static void fltkCanvasDeferredResize(void* data)
+{
+  Ihandle* ih = (Ihandle*)data;
+  IupFltkCanvas* canvas;
+
+  if (!iupObjectCheck(ih) || !ih->handle)
+    return;
+
+  canvas = (IupFltkCanvas*)ih->handle;
+
+  IFnii cb = (IFnii)IupGetCallback(ih, "RESIZE_CB");
+  if (cb && !ih->data->inside_resize)
+  {
+    ih->data->inside_resize = 1;
+    cb(ih, canvas->w(), canvas->h());
+    ih->data->inside_resize = 0;
+  }
+
+  canvas->redraw();
+}
+
+static void fltkCanvasScrollbarToggled(Ihandle* ih)
+{
+  iupAttribSet(ih, "SB_RESIZE", "YES");
+  fltkCanvasUpdateChildLayout(ih);
+  Fl::remove_timeout(fltkCanvasDeferredResize, (void*)ih);
+  Fl::add_timeout(0.0, fltkCanvasDeferredResize, (void*)ih);
+}
+
 /****************************************************************************
  * Scrollbar DX/DY Attributes
  ****************************************************************************/
@@ -401,6 +430,8 @@ static int fltkCanvasSetDXAttrib(Ihandle* ih, const char* value)
     double dx;
     if (!iupStrToDoubleDef(value, &dx, 0.1))
       return 1;
+
+    iupAttribSet(ih, "SB_RESIZE", NULL);
 
     Fl_Scrollbar* sb_horiz = (Fl_Scrollbar*)iupAttribGet(ih, "_IUPFLTK_SBHORIZ");
     if (!sb_horiz)
@@ -419,8 +450,7 @@ static int fltkCanvasSetDXAttrib(Ihandle* ih, const char* value)
         if (sb_horiz->visible())
         {
           sb_horiz->hide();
-          iupAttribSet(ih, "SB_RESIZE", "YES");
-          fltkCanvasUpdateChildLayout(ih);
+          fltkCanvasScrollbarToggled(ih);
         }
         iupAttribSet(ih, "XHIDDEN", "YES");
       }
@@ -435,8 +465,7 @@ static int fltkCanvasSetDXAttrib(Ihandle* ih, const char* value)
       if (!sb_horiz->visible())
       {
         sb_horiz->show();
-        iupAttribSet(ih, "SB_RESIZE", "YES");
-        fltkCanvasUpdateChildLayout(ih);
+        fltkCanvasScrollbarToggled(ih);
       }
       sb_horiz->activate();
 
@@ -457,6 +486,8 @@ static int fltkCanvasSetDYAttrib(Ihandle* ih, const char* value)
     if (!iupStrToDoubleDef(value, &dy, 0.1))
       return 1;
 
+    iupAttribSet(ih, "SB_RESIZE", NULL);
+
     Fl_Scrollbar* sb_vert = (Fl_Scrollbar*)iupAttribGet(ih, "_IUPFLTK_SBVERT");
     if (!sb_vert)
       return 1;
@@ -474,8 +505,7 @@ static int fltkCanvasSetDYAttrib(Ihandle* ih, const char* value)
         if (sb_vert->visible())
         {
           sb_vert->hide();
-          iupAttribSet(ih, "SB_RESIZE", "YES");
-          fltkCanvasUpdateChildLayout(ih);
+          fltkCanvasScrollbarToggled(ih);
         }
         iupAttribSet(ih, "YHIDDEN", "YES");
       }
@@ -490,8 +520,7 @@ static int fltkCanvasSetDYAttrib(Ihandle* ih, const char* value)
       if (!sb_vert->visible())
       {
         sb_vert->show();
-        iupAttribSet(ih, "SB_RESIZE", "YES");
-        fltkCanvasUpdateChildLayout(ih);
+        fltkCanvasScrollbarToggled(ih);
       }
       sb_vert->activate();
 
@@ -684,6 +713,8 @@ static int fltkCanvasMapMethod(Ihandle* ih)
 static void fltkCanvasUnMapMethod(Ihandle* ih)
 {
   IupFltkCanvas* canvas = (IupFltkCanvas*)ih->handle;
+
+  Fl::remove_timeout(fltkCanvasDeferredResize, (void*)ih);
   if (canvas)
     canvas->ih = NULL;
 
