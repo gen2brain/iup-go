@@ -1176,6 +1176,7 @@ static void motListDragStartFromEvent(Widget w, Ihandle* ih, XEvent* evt)
 
   if (drop_context)
   {
+    iupmotDragAddFinishLeave(drop_context);
     XtAddCallback(drop_context, XmNdragDropFinishCallback, (XtCallbackProc)motListDragDropFinishCallback, NULL);
     XtAddCallback(drop_context, XmNdragMotionCallback, (XtCallbackProc)motListDragMotionCallback, (XtPointer)ih);
   }
@@ -1260,7 +1261,6 @@ static void motListEnableDragDrop(Widget w, Ihandle* ih)
   iupMOT_SETARG(args, num_args, XmNdropProc, motListDropProc);
   iupMOT_SETARG(args, num_args, XmNanimationStyle, XmDRAG_UNDER_NONE);
   XmDropSiteRegister(w, args, num_args);
-  iupAttribSet(ih, "_IUPMOT_DROPSITE", "1");
 }
 
 /*********************************************************************************/
@@ -1675,8 +1675,7 @@ static int motListMapMethod(Ihandle* ih)
     XtRealizeWidget(parent);
 
   /* Enable internal drag and drop support */
-  if((ih->data->show_dragdrop && !ih->data->is_dropdown && !ih->data->is_multiple) ||
-    (IupGetInt(ih, "DRAGDROPLIST")))  /* Enable drag and drop support between lists */
+  if (ih->data->show_dragdrop && !ih->data->is_dropdown && !ih->data->is_multiple)
   {
     motListEnableDragDrop(ih->handle, ih);
     XtVaSetValues(ih->handle, XmNuserData, ih, NULL);  /* used by motListDropProc and motListDragTransferProc */
@@ -1703,8 +1702,7 @@ static int motListMapMethod(Ihandle* ih)
 
 static void motListUnMapMethod(Ihandle* ih)
 {
-  if ((ih->data->show_dragdrop && !ih->data->is_dropdown && !ih->data->is_multiple) ||
-      IupGetInt(ih, "DRAGDROPLIST"))
+  if (ih->data->show_dragdrop && !ih->data->is_dropdown && !ih->data->is_multiple)
   {
     XtRemoveEventHandler(ih->handle, ButtonPressMask|ButtonReleaseMask, False, motListDragButtonHandler, (XtPointer)ih);
     XtRemoveEventHandler(ih->handle, PointerMotionMask, False, motListDragMotionHandler, (XtPointer)ih);

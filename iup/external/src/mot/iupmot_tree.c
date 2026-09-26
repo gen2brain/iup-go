@@ -601,7 +601,7 @@ static void motTreeFocusChangeEvent(Widget w, Ihandle* ih, XEvent* evt, Boolean*
   Widget wItem = XmGetFocusWidget(w);  /* returns the focus in the dialog */
   Widget wRoot = (Widget)iupAttribGet(ih, "_IUPTREE_ROOTITEM");
 
-  if (XtParent(wItem) == w) /* is a node */
+  if (wItem && XtParent(wItem) == w) /* is a node */
     iupAttribSet(ih, "_IUPTREE_LAST_FOCUS", (char*)wItem);
 
   iupmotFocusChangeEvent(w, ih, evt, cont);
@@ -2606,6 +2606,7 @@ static void motTreeDragStart(Widget w, XButtonEvent* evt, String* params, Cardin
 
   /* start the drag and register a callback to clean up when done */
   drop_context = XmDragStart(w, (XEvent*)evt, args, num_args);
+  iupmotDragAddFinishLeave(drop_context);
   XtAddCallback(drop_context, XmNdragDropFinishCallback, (XtCallbackProc)motTreeDragDropFinishCallback, NULL);
   XtAddCallback(drop_context, XmNdragMotionCallback, (XtCallbackProc)motTreeDragMotionCallback, (XtPointer)wItemDrag);
 
@@ -3093,7 +3094,10 @@ static int motTreeMapMethod(Ihandle* ih)
     Widget sb_clipwin = NULL;
     XtVaGetValues(parent, XmNclipWindow, &sb_clipwin, NULL);
     if (sb_clipwin)
+    {
       XtAddEventHandler(sb_clipwin, ButtonPressMask, False, (XtEventHandler)iupmotScrolledWindowWheelEvent, (XtPointer)ih);
+      iupAttribSet(ih, "_IUPMOT_DROP_EXTRA", (char*)sb_clipwin);
+    }
   }
   XtAddEventHandler(ih->handle, PointerMotionMask, False, (XtEventHandler)iupmotPointerMotionEvent, (XtPointer)ih);
 
