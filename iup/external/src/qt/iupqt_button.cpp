@@ -15,6 +15,7 @@
 #include <QKeyEvent>
 #include <QString>
 #include <QStyle>
+#include <QStylePainter>
 #include <QStyleOptionButton>
 #include <QStyleOptionToolButton>
 
@@ -73,6 +74,65 @@ protected:
   { QPushButton::mousePressEvent(event); iupqtMouseButtonEvent(this, event, iup_handle); }
   void mouseReleaseEvent(QMouseEvent* event) override
   { QPushButton::mouseReleaseEvent(event); iupqtMouseButtonEvent(this, event, iup_handle); }
+
+  void paintEvent(QPaintEvent* event) override
+  {
+    int stacked = (iup_handle->data->type & IUP_BUTTON_IMAGE) && (iup_handle->data->type & IUP_BUTTON_TEXT) &&
+                  (iup_handle->data->img_position == IUP_IMGPOS_TOP || iup_handle->data->img_position == IUP_IMGPOS_BOTTOM);
+    if (!stacked || icon().isNull() || findChild<QLabel*>("_iup_markup_label"))
+    {
+      QPushButton::paintEvent(event);
+      return;
+    }
+
+    QStylePainter p(this);
+    QStyleOptionButton opt;
+    initStyleOption(&opt);
+    p.drawControl(QStyle::CE_PushButtonBevel, opt);
+
+    QIcon::Mode mode = isEnabled() ? QIcon::Normal : QIcon::Disabled;
+    if (mode == QIcon::Normal && (opt.state & QStyle::State_HasFocus))
+      mode = QIcon::Active;
+    QPixmap pix = opt.icon.pixmap(opt.iconSize, mode);
+    int pix_w = qRound(pix.width() / pix.devicePixelRatio());
+    int pix_h = qRound(pix.height() / pix.devicePixelRatio());
+    QSize text_size = fontMetrics().size(Qt::TextShowMnemonic, opt.text);
+    int spacing = opt.text.isEmpty() ? 0 : iup_handle->data->spacing;
+
+    QRect r = style()->subElementRect(QStyle::SE_PushButtonContents, &opt, this);
+    int block_w = qMax(pix_w, text_size.width());
+    int block_h = pix_h + spacing + text_size.height();
+    int x = r.x() + (r.width() - block_w) / 2;
+    int y = r.y() + (r.height() - block_h) / 2;
+    if (iup_handle->data->horiz_alignment == IUP_ALIGN_ALEFT) x = r.x();
+    else if (iup_handle->data->horiz_alignment == IUP_ALIGN_ARIGHT) x = r.right() + 1 - block_w;
+    if (iup_handle->data->vert_alignment == IUP_ALIGN_ATOP) y = r.y();
+    else if (iup_handle->data->vert_alignment == IUP_ALIGN_ABOTTOM) y = r.bottom() + 1 - block_h;
+    if (opt.state & (QStyle::State_Sunken | QStyle::State_On))
+    {
+      x += style()->pixelMetric(QStyle::PM_ButtonShiftHorizontal, &opt, this);
+      y += style()->pixelMetric(QStyle::PM_ButtonShiftVertical, &opt, this);
+    }
+
+    QRect pix_rect(x + (block_w - pix_w) / 2, y, pix_w, pix_h);
+    QRect text_rect(x, y + pix_h + spacing, block_w, text_size.height());
+    if (iup_handle->data->img_position == IUP_IMGPOS_BOTTOM)
+    {
+      text_rect.moveTop(y);
+      pix_rect.moveTop(y + text_size.height() + spacing);
+    }
+
+    p.drawPixmap(pix_rect.topLeft(), pix);
+    p.drawItemText(text_rect, Qt::AlignCenter | Qt::TextShowMnemonic, opt.palette, isEnabled(), opt.text, QPalette::ButtonText);
+
+    if (opt.state & QStyle::State_HasFocus)
+    {
+      QStyleOptionFocusRect fropt;
+      fropt.QStyleOption::operator=(opt);
+      fropt.rect = style()->subElementRect(QStyle::SE_PushButtonFocusRect, &opt, this);
+      p.drawPrimitive(QStyle::PE_FrameFocusRect, fropt);
+    }
+  }
 };
 
 class IupQtImageButton : public QToolButton
@@ -173,11 +233,10 @@ static void qtButtonUpdateLayout(Ihandle* ih)
         break;
       case IUP_IMGPOS_TOP:
       case IUP_IMGPOS_BOTTOM:
-        /* Qt has no top/bottom image placement; falls back to the default */
         button->setLayoutDirection(Qt::LeftToRight);
+        button->update();
         break;
     }
-
   }
 }
 
