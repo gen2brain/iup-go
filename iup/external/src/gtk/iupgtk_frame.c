@@ -63,6 +63,14 @@ static void gtkFrameMeasureDecor(int has_title, int* decor_w, int* decor_h, int*
 
   gtk_widget_destroy(temp_window);
 }
+
+static int gtk_frame_titled_w = -1, gtk_frame_titled_h = 0, gtk_frame_default_title_h = 0;
+
+static void gtkFrameMeasureTitled(void)
+{
+  if (gtk_frame_titled_w == -1)
+    gtkFrameMeasureDecor(1, &gtk_frame_titled_w, &gtk_frame_titled_h, &gtk_frame_default_title_h);
+}
 #endif
 
 IUP_SDK_API void iupdrvFrameGetDecorOffset(Ihandle* ih, int* x, int* y)
@@ -99,9 +107,6 @@ IUP_SDK_API int iupdrvFrameHasClientOffset(Ihandle* ih)
 IUP_SDK_API int iupdrvFrameGetTitleHeight(Ihandle* ih, int* h)
 {
 #if GTK_CHECK_VERSION(3, 0, 0)
-  static int measured = 0;
-  static int cached_title_h = 0;
-
   if (ih->handle)
   {
     GtkWidget* label = gtk_frame_get_label_widget((GtkFrame*)ih->handle);
@@ -114,16 +119,14 @@ IUP_SDK_API int iupdrvFrameGetTitleHeight(Ihandle* ih, int* h)
     }
   }
 
-  if (!measured)
-  {
-    int decor_w, decor_h;
-    gtkFrameMeasureDecor(1, &decor_w, &decor_h, &cached_title_h);
-    measured = 1;
-  }
+  gtkFrameMeasureTitled();
 
-  if (cached_title_h > 0)
+  if (gtk_frame_default_title_h > 0)
   {
-    *h = cached_title_h;
+    int system_h = 0, font_h = 0;
+    iupdrvFontGetTextSize(iupdrvGetSystemFont(), "Tj", 2, NULL, &system_h);
+    iupdrvFontGetTextSize(iupGetFontValue(ih), "Tj", 2, NULL, &font_h);
+    *h = gtk_frame_default_title_h + font_h - system_h;
     return 1;
   }
 
@@ -138,22 +141,21 @@ IUP_SDK_API int iupdrvFrameGetTitleHeight(Ihandle* ih, int* h)
 IUP_SDK_API int iupdrvFrameGetDecorSize(Ihandle* ih, int* w, int* h)
 {
 #if GTK_CHECK_VERSION(3, 0, 0)
-  static int titled_measured = 0, untitled_measured = 0;
-  static int titled_w = 0, titled_h = 0;
+  static int untitled_measured = 0;
   static int untitled_w = 0, untitled_h = 0;
   const char* title = iupAttribGet(ih, "TITLE");
   int has_title = (title && *title) ? 1 : 0;
 
   if (has_title)
   {
-    if (!titled_measured)
-    {
-      int title_h;
-      gtkFrameMeasureDecor(1, &titled_w, &titled_h, &title_h);
-      titled_measured = 1;
-    }
-    *w = titled_w;
-    *h = titled_h;
+    int title_h;
+
+    gtkFrameMeasureTitled();
+    *w = gtk_frame_titled_w;
+    *h = gtk_frame_titled_h;
+
+    if (gtk_frame_default_title_h > 0 && iupdrvFrameGetTitleHeight(ih, &title_h))
+      *h += title_h - gtk_frame_default_title_h;
   }
   else
   {
