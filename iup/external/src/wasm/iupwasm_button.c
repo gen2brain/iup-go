@@ -56,7 +56,7 @@ static int wasmButtonSetImageAttrib(Ihandle* ih, const char* value)
   int id = iupwasmIdOf(ih);
   void* img = value ? iupImageGetImage(value, ih, 0, NULL) : NULL;
   if (id && img)
-    iupwasmJsButtonSetImage(id, (int)(intptr_t)img, ih->data->spacing);
+    iupwasmJsButtonSetImage(id, (int)(intptr_t)img, ih->data->spacing, ih->data->img_position);
   return 1;
 }
 
@@ -134,11 +134,13 @@ static int wasmButtonMapMethod(Ihandle* ih)
   {
     void* img = iupImageGetImage(image, ih, 0, NULL);
     if (img)
-      iupwasmJsButtonSetImage(id, (int)(intptr_t)img, ih->data->spacing);
+      iupwasmJsButtonSetImage(id, (int)(intptr_t)img, ih->data->spacing, ih->data->img_position);
   }
 
   if (wasmButtonIsFlat(ih))
-    iupwasmJsButtonFlat(id);
+    iupwasmJsButtonFlat(id, 0);
+  else if (iupAttribGetBoolean(ih, "FLAT"))
+    iupwasmJsButtonFlat(id, 1);
 
   {
     char* impress = iupAttribGet(ih, "IMPRESS");

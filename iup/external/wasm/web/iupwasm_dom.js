@@ -163,6 +163,20 @@
       }
     }
 
+    var btnAlign = function (el) {
+      var a = el.__iupAlign || 'center';
+      var dir = el.style.flexDirection || 'row';
+      var start = a === 'left', end = a === 'right';
+      if (dir === 'column' || dir === 'column-reverse') {
+        el.style.justifyContent = 'center';
+        el.style.alignItems = start ? 'flex-start' : end ? 'flex-end' : 'center';
+        return;
+      }
+      if (dir === 'row-reverse') { var t = start; start = end; end = t; }
+      el.style.alignItems = 'center';
+      el.style.justifyContent = start ? 'flex-start' : end ? 'flex-end' : 'center';
+    };
+
     var apply = function (c) {
       var el = els[c.id];
       switch (c.op) {
@@ -280,7 +294,7 @@
         if (el) { el.style.display = 'flex'; el.style.alignItems = 'center'; el.style.justifyContent = 'center'; }
       } break;
       case 'btnalign': {
-        if (el) el.style.justifyContent = c.a === 'left' ? 'flex-start' : c.a === 'right' ? 'flex-end' : 'center';
+        if (el) { el.__iupAlign = c.a; btnAlign(el); }
       } break;
       case 'btntext': {
         if (el) {
@@ -302,7 +316,9 @@
             }
             el.__iupImg.src = bim.url; el.__iupImg.width = bim.w; el.__iupImg.height = bim.h;
             el.__iupNormalImg = bim.url;
-            if (el.__iupLabel && el.__iupLabel.textContent) el.__iupImg.style.marginRight = c.gap + 'px';
+            el.style.flexDirection = ['row', 'row-reverse', 'column', 'column-reverse'][c.pos] || 'row';
+            btnAlign(el);
+            if (el.__iupLabel && el.__iupLabel.textContent) el.style.gap = c.gap + 'px';
             if (el.firstChild) el.insertBefore(el.__iupImg, el.firstChild); else el.appendChild(el.__iupImg);
           }
         }
@@ -367,7 +383,13 @@
         if (el && el.__iupInput) el.style.flexDirection = c.on ? 'row-reverse' : 'row';
       } break;
       case 'btnflat': {
-        if (el) { el.style.border = 'none'; el.style.padding = '0'; el.style.background = 'transparent'; }
+        if (el && !c.hover) { el.style.border = 'none'; el.style.padding = '0'; el.style.background = 'transparent'; }
+        else if (el) {
+          var hide = function () { el.style.borderColor = 'transparent'; el.style.background = 'transparent'; };
+          hide();
+          el.addEventListener('mouseenter', function () { el.style.borderColor = ''; el.style.background = ''; });
+          el.addEventListener('mouseleave', hide);
+        }
       } break;
       case 'btndefault': {
         if (el) el.style.boxShadow = c.on ? '0 0 0 1px var(--iup-accent)' : '';

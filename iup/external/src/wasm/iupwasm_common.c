@@ -172,12 +172,13 @@ EM_JS(void, iupwasmJsButtonSetText, (int id, const char* txt), {
   globalThis.__iupApply({ op: 'btntext', id: id, text: UTF8ToString(txt) });
 })
 
-/* image before label (IMAGEPOSITION=LEFT); gap is button SPACING */
-EM_JS(void, iupwasmJsButtonSetImage, (int id, int imgId, int gap), {
-  globalThis.__iupApply({ op: 'btnimg', id: id, imgId: imgId, gap: gap });
+/* pos is IUP_IMGPOS_*; gap is button SPACING */
+EM_JS(void, iupwasmJsButtonSetImage, (int id, int imgId, int gap, int pos), {
+  globalThis.__iupApply({ op: 'btnimg', id: id, imgId: imgId, gap: gap, pos: pos });
 })
 
-EM_JS(void, iupwasmJsButtonFlat, (int id), { globalThis.__iupApply({ op: 'btnflat', id: id }); })
+/* hover 0 removes the chrome for good (IMPRESS), 1 hides it until the pointer enters (FLAT) */
+EM_JS(void, iupwasmJsButtonFlat, (int id, int hover), { globalThis.__iupApply({ op: 'btnflat', id: id, hover: hover }); })
 
 /* imgId 0 clears the pressed image */
 EM_JS(void, iupwasmJsButtonSetImpress, (int id, int imgId), {
