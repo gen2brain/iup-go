@@ -17,6 +17,7 @@
 #include "iup_image.h"
 #include "iup_button.h"
 #include "iup_drvinfo.h"
+#include "iup_drvfont.h"
 
 #include "iupandroid_drv.h"
 #include "iupandroid_jnimacros.h"
@@ -37,19 +38,40 @@ IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int* x, int* y)
   if (!iupAttribGet(ih, "PADDING"))
     iupAndroid_GetButtonBorderSize(&bw, &bh);
 
-  /* rebuildIcon floors to 24dp; compensate so natural size matches. */
+  /* rebuildIcon floors the icon to 24dp and uses an 8dp icon gap; compensate the core size. */
   if (ih && ih->data && (ih->data->type & IUP_BUTTON_IMAGE))
   {
     const char* image = iupAttribGet(ih, "IMAGE");
     int img_w = 0, img_h = 0;
     if (image) iupImageGetInfo(image, &img_w, &img_h, NULL);
     int min_icon = iupAndroid_DpToPx(24.0f);
-    if (min_icon > img_w) bw += (min_icon - img_w);
-    if (min_icon > img_h) bh += (min_icon - img_h);
+    int icon_w = iupMAX(img_w, min_icon), icon_h = iupMAX(img_h, min_icon);
 
-    /* Icon-text gap (matches setIconPadding(8dp) in IupButtonHelper.rebuildIcon). */
     if (ih->data->type & IUP_BUTTON_TEXT)
-      bw += iupAndroid_DpToPx(8.0f);
+    {
+      int text_w, text_h;
+      char* title = iupAttribGet(ih, "TITLE");
+      char* str = iupStrProcessMnemonic(title, NULL, 0);
+      iupFontGetMultiLineStringSize(ih, str, &text_w, &text_h);
+      if (str && str != title) free(str);
+      int gap = iupAndroid_DpToPx(8.0f) - ih->data->spacing;
+
+      if (ih->data->img_position == IUP_IMGPOS_LEFT || ih->data->img_position == IUP_IMGPOS_RIGHT)
+      {
+        bw += (icon_w - img_w) + gap;
+        bh += iupMAX(icon_h, text_h) - iupMAX(img_h, text_h);
+      }
+      else
+      {
+        bw += iupMAX(icon_w, text_w) - iupMAX(img_w, text_w);
+        bh += (icon_h - img_h) + gap;
+      }
+    }
+    else
+    {
+      bw += icon_w - img_w;
+      bh += icon_h - img_h;
+    }
   }
 
   if (x) *x += bw;
@@ -260,6 +282,15 @@ static int androidButtonSetImInactiveAttrib(Ihandle* ih, const char* value)
 
 static int androidButtonSetImagePositionAttrib(Ihandle* ih, const char* value)
 {
+  if (iupStrEqualNoCase(value, "RIGHT"))
+    ih->data->img_position = IUP_IMGPOS_RIGHT;
+  else if (iupStrEqualNoCase(value, "TOP"))
+    ih->data->img_position = IUP_IMGPOS_TOP;
+  else if (iupStrEqualNoCase(value, "BOTTOM"))
+    ih->data->img_position = IUP_IMGPOS_BOTTOM;
+  else
+    ih->data->img_position = IUP_IMGPOS_LEFT;
+
   if (!ih->handle) return 1;
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
   jclass java_class = androidButtonFindHelper(jni_env);
