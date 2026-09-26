@@ -263,11 +263,12 @@ static void fltkMenuAddItems(Fl_Menu_* menuwidget, Ihandle* ih_menu, const char*
         flags |= FL_MENU_INACTIVE;
 
       last_item_idx = menuwidget->add(path, 0, NULL, (void*)child, flags);
-      fltkMenuApplyImage(menuwidget, last_item_idx, child, labels);
 
       Ihandle* submenu_menu = child->firstchild;
       if (submenu_menu)
         fltkMenuAddItems(menuwidget, submenu_menu, path, labels);
+
+      fltkMenuApplyImage(menuwidget, last_item_idx, child, labels);
     }
     else if (iupStrEqual(class_name, "menuitem"))
     {
