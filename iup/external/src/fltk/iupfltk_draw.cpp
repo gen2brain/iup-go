@@ -24,6 +24,7 @@ extern "C" {
 #include "iup.h"
 #include "iup_object.h"
 #include "iup_attrib.h"
+#include "iup_str.h"
 #include "iup_image.h"
 #include "iup_drvdraw.h"
 #include "iup_draw.h"
@@ -666,12 +667,14 @@ extern "C" IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
     dc->offscreen = 0;
   }
 
+  int fresh = 0;
   if (!dc->offscreen)
   {
     dc->offscreen = fl_create_offscreen(dc->w, dc->h);
     iupAttribSet(ih, "_IUP_FLTK_OFFSCREEN", (char*)(size_t)dc->offscreen);
     iupAttribSetInt(ih, "_IUP_FLTK_OFFSCREEN_W", dc->w);
     iupAttribSetInt(ih, "_IUP_FLTK_OFFSCREEN_H", dc->h);
+    fresh = 1;
   }
 
   iupAttribSet(ih, "DRAWDRIVER", "FLTK");
@@ -679,6 +682,20 @@ extern "C" IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
   dc->target = dc->offscreen;
   fl_begin_offscreen(dc->offscreen);
   dc->in_offscreen = 1;
+
+  if (fresh)
+  {
+    unsigned char r, g, b;
+    char* bgcolor = iupAttribGetStr(ih, "BGCOLOR");
+    if (!iupStrToRGB(bgcolor, &r, &g, &b))
+    {
+      char* global = bgcolor ? IupGetGlobal(bgcolor) : NULL;
+      if (!global || !iupStrToRGB(global, &r, &g, &b))
+        r = g = b = 255;
+    }
+    fl_color(fl_rgb_color(r, g, b));
+    fl_rectf(0, 0, dc->w, dc->h);
+  }
 
   dc->clip_x1 = 0;
   dc->clip_y1 = 0;
