@@ -98,6 +98,7 @@ IUP_DRV_API int iupfltkGetFontFromString(const char* font, int* fl_font, int* fl
 IUP_DRV_API void iupfltkGetFontDecoration(Ihandle* ih, const char* font, int* underline, int* strikeout);
 IUP_DRV_API void iupfltkUpdateWidgetFont(Ihandle* ih, Fl_Widget* widget);
 IUP_DRV_API int iupfltkCanvasDeferBlit(Ihandle* ih);
+IUP_DRV_API void iupfltkTipsRemove(Ihandle* ih);
 
 /****************************************************************************
  * Native Handle Access

@@ -182,6 +182,8 @@ extern "C" IUP_SDK_API void iupdrvBaseUnMapMethod(Ihandle* ih)
       ih->iclass->nativetype == IUP_TYPEMENU)
     return;
 
+  iupfltkTipsRemove(ih);
+
   Fl_Widget* extra_parent = (Fl_Widget*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
 
   if (extra_parent)
