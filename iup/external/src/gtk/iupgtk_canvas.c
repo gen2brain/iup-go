@@ -58,6 +58,25 @@ static void gtkCanvasUpdateChildLayout(Ihandle* ih, int flush)
     IupFlush();
 }
 
+static gboolean gtkCanvasDeferredChildLayout(gpointer data)
+{
+  Ihandle* ih = (Ihandle*)data;
+  iupAttribSet(ih, "_IUPGTK_SB_LAYOUT_ID", NULL);
+  gtkCanvasUpdateChildLayout(ih, 0);
+  return FALSE;
+}
+
+static void gtkCanvasScrollbarToggled(Ihandle* ih)
+{
+  if (ih->data->inside_resize)
+  {
+    if (!iupAttribGet(ih, "_IUPGTK_SB_LAYOUT_ID"))
+      iupAttribSetInt(ih, "_IUPGTK_SB_LAYOUT_ID", (int)g_idle_add(gtkCanvasDeferredChildLayout, ih));
+  }
+  else
+    gtkCanvasUpdateChildLayout(ih, 1);
+}
+
 static int gtkCanvasScroll2Iup(GtkScrollType scroll, int vert)
 {
   switch(scroll)
@@ -603,7 +622,7 @@ static int gtkCanvasSetDXAttrib(Ihandle* ih, const char* value)
           if (iupdrvIsVisible(ih))
             iupAttribSet(ih, "SB_RESIZE", "YES");
           gtk_widget_hide(sb_horiz);
-          gtkCanvasUpdateChildLayout(ih, 1);
+          gtkCanvasScrollbarToggled(ih);
         }
 
         iupAttribSet(ih, "XHIDDEN", "YES");
@@ -621,7 +640,7 @@ static int gtkCanvasSetDXAttrib(Ihandle* ih, const char* value)
         if (iupdrvIsVisible(ih))
           iupAttribSet(ih, "SB_RESIZE", "YES");
         gtk_widget_show(sb_horiz);
-        gtkCanvasUpdateChildLayout(ih, 1);
+        gtkCanvasScrollbarToggled(ih);
       }
       gtk_widget_set_sensitive(sb_horiz, TRUE);
 
@@ -697,7 +716,7 @@ static int gtkCanvasSetDYAttrib(Ihandle* ih, const char* value)
           if (iupdrvIsVisible(ih))
             iupAttribSet(ih, "SB_RESIZE", "YES");
           gtk_widget_hide(sb_vert);
-          gtkCanvasUpdateChildLayout(ih, 1);
+          gtkCanvasScrollbarToggled(ih);
         }
 
         iupAttribSet(ih, "YHIDDEN", "YES");
@@ -715,7 +734,7 @@ static int gtkCanvasSetDYAttrib(Ihandle* ih, const char* value)
         if (iupdrvIsVisible(ih))
           iupAttribSet(ih, "SB_RESIZE", "YES");
         gtk_widget_show(sb_vert);
-        gtkCanvasUpdateChildLayout(ih, 1);
+        gtkCanvasScrollbarToggled(ih);
       }
       gtk_widget_set_sensitive(sb_vert, TRUE);
 
@@ -1295,6 +1314,13 @@ static int gtkCanvasMapMethod(Ihandle* ih)
 
 static void gtkCanvasUnMapMethod(Ihandle* ih)
 {
+  int sb_layout_id = iupAttribGetInt(ih, "_IUPGTK_SB_LAYOUT_ID");
+  if (sb_layout_id)
+  {
+    g_source_remove(sb_layout_id);
+    iupAttribSet(ih, "_IUPGTK_SB_LAYOUT_ID", NULL);
+  }
+
 #if GTK_CHECK_VERSION(3, 0, 0)
   cairo_surface_t* buffer = (cairo_surface_t*)iupAttribGet(ih, "_IUPGTK3_CANVAS_BUFFER");
   if (buffer)
