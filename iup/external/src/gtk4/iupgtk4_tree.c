@@ -415,21 +415,6 @@ iupgtk4TreeGetNodeFromId(Ihandle* ih, int id)
   return (IupGtk4TreeNode*)handle;
 }
 
-static int iupgtk4TreeFindPositionInParent(IupGtk4TreeNode* node);
-static GListStore* iupgtk4TreeGetParentStore(Ihandle* ih, IupGtk4TreeNode* node);
-
-static void
-iupgtk4TreeNotifyNodeChanged(Ihandle* ih, IupGtk4TreeNode* node)
-{
-  GListStore* parent_store = iupgtk4TreeGetParentStore(ih, node);
-  if (parent_store)
-  {
-    int pos = iupgtk4TreeFindPositionInParent(node);
-    if (pos >= 0)
-      g_list_model_items_changed(G_LIST_MODEL(parent_store), pos, 1, 1);
-  }
-}
-
 static int
 iupgtk4TreeFindNodeId(Ihandle* ih, IupGtk4TreeNode* node)
 {
@@ -543,31 +528,6 @@ iupgtk4TreeGetNodeFromVisiblePosition(Ihandle* ih, int pos)
     g_object_unref(item);
   }
   return node;
-}
-
-static void
-iupgtk4TreeSetFocusId(Ihandle* ih, int new_id)
-{
-  int old_id = iupAttribGetInt(ih, "_IUPGTK4_FOCUS_ID");
-  IupGtk4TreeNode* node;
-
-  if (old_id == new_id)
-    return;
-
-  iupAttribSetInt(ih, "_IUPGTK4_FOCUS_ID", new_id);
-
-  if (old_id >= 0)
-  {
-    node = iupgtk4TreeGetNodeFromId(ih, old_id);
-    if (node)
-      iupgtk4TreeNotifyNodeChanged(ih, node);
-  }
-  if (new_id >= 0)
-  {
-    node = iupgtk4TreeGetNodeFromId(ih, new_id);
-    if (node)
-      iupgtk4TreeNotifyNodeChanged(ih, node);
-  }
 }
 
 /*****************************************************************************/
@@ -884,6 +844,28 @@ iupgtk4TreeLabelClickPressed(GtkGestureClick* gesture, int n_press, double x, do
 /* GtkSignalListItemFactory callbacks                                        */
 /*****************************************************************************/
 
+static GdkTexture*
+iupgtk4TreeGetNodeTexture(Ihandle* ih, IupGtk4TreeNode* node, gboolean expanded)
+{
+  if (node->kind == ITREE_BRANCH)
+  {
+    if (expanded)
+    {
+      if (node->has_image_expanded && node->image_expanded)
+        return node->image_expanded;
+      return ih->data->def_image_expanded;
+    }
+
+    if (node->has_image && node->image)
+      return node->image;
+    return ih->data->def_image_collapsed;
+  }
+
+  if (node->has_image && node->image)
+    return node->image;
+  return ih->data->def_image_leaf;
+}
+
 static void
 iupgtk4TreeRowExpandedChanged(GObject* row, GParamSpec* pspec, gpointer user_data)
 {
@@ -902,24 +884,7 @@ iupgtk4TreeRowExpandedChanged(GObject* row, GParamSpec* pspec, gpointer user_dat
   Ihandle* ih = node->ih;
   gboolean expanded = gtk_tree_list_row_get_expanded(tree_row);
 
-  GdkTexture* texture = NULL;
-  if (node->kind == ITREE_BRANCH)
-  {
-    if (expanded)
-    {
-      if (node->has_image_expanded && node->image_expanded)
-        texture = node->image_expanded;
-      else
-        texture = ih->data->def_image_expanded;
-    }
-    else
-    {
-      if (node->has_image && node->image)
-        texture = node->image;
-      else
-        texture = ih->data->def_image_collapsed;
-    }
-  }
+  GdkTexture* texture = iupgtk4TreeGetNodeTexture(ih, node, expanded);
 
   if (texture && widgets->image)
   {
@@ -1044,27 +1009,9 @@ iupgtk4TreeSetupCb(GtkListItemFactory* factory, GtkListItem* list_item, gpointer
 }
 
 static void
-iupgtk4TreeBindCb(GtkListItemFactory* factory, GtkListItem* list_item, gpointer user_data)
+iupgtk4TreeUpdateItemWidgets(Ihandle* ih, IupGtk4TreeItemWidgets* widgets, IupGtk4TreeNode* node, GtkTreeListRow* row)
 {
-  Ihandle* ih = (Ihandle*)user_data;
-  IupGtk4TreeItemWidgets* widgets = g_object_get_data(G_OBJECT(list_item), "iup-widgets");
-  GtkTreeListRow* row = gtk_list_item_get_item(list_item);
-
-  if (!widgets || !row)
-    return;
-
-  gpointer item = gtk_tree_list_row_get_item(row);
-  if (!item)
-    return;
-
-  IupGtk4TreeNode* node = IUP_GTK4_TREE_NODE(item);
-
-  /* Store reference from node to its current list_item for rename lookup */
-  g_object_set_data(G_OBJECT(node), "_iup_list_item", list_item);
-
-  gtk_tree_expander_set_list_row(GTK_TREE_EXPANDER(widgets->expander), row);
-
-  /* Bind title - widgets->label is GtkOverlay (if show_rename) or GtkLabel */
+  /* widgets->label is GtkOverlay (if show_rename) or GtkLabel */
   if (ih->data->show_rename)
   {
     GtkWidget* label = gtk_overlay_get_child(GTK_OVERLAY(widgets->label));
@@ -1075,33 +1022,7 @@ iupgtk4TreeBindCb(GtkListItemFactory* factory, GtkListItem* list_item, gpointer 
     gtk_label_set_text(GTK_LABEL(widgets->label), node->title ? node->title : "");
   }
 
-  GdkTexture* texture = NULL;
-  gboolean expanded = gtk_tree_list_row_get_expanded(row);
-
-  if (node->kind == ITREE_BRANCH)
-  {
-    if (expanded)
-    {
-      if (node->has_image_expanded && node->image_expanded)
-        texture = node->image_expanded;
-      else
-        texture = ih->data->def_image_expanded;
-    }
-    else
-    {
-      if (node->has_image && node->image)
-        texture = node->image;
-      else
-        texture = ih->data->def_image_collapsed;
-    }
-  }
-  else
-  {
-    if (node->has_image && node->image)
-      texture = node->image;
-    else
-      texture = ih->data->def_image_leaf;
-  }
+  GdkTexture* texture = iupgtk4TreeGetNodeTexture(ih, node, gtk_tree_list_row_get_expanded(row));
 
   if (texture)
   {
@@ -1153,18 +1074,94 @@ iupgtk4TreeBindCb(GtkListItemFactory* factory, GtkListItem* list_item, gpointer 
 
     if (ih->data->show_toggle == 2)
       gtk_check_button_set_inconsistent(GTK_CHECK_BUTTON(widgets->check), node->three_state);
+  }
 
+  if (iupgtk4TreeFindNodeId(ih, node) == iupAttribGetInt(ih, "_IUPGTK4_FOCUS_ID"))
+    gtk_widget_add_css_class(widgets->box, "iup-tree-focus");
+  else
+    gtk_widget_remove_css_class(widgets->box, "iup-tree-focus");
+}
+
+static void
+iupgtk4TreeNotifyNodeChanged(Ihandle* ih, IupGtk4TreeNode* node)
+{
+  GtkListItem* list_item = g_object_get_data(G_OBJECT(node), "_iup_list_item");
+  IupGtk4TreeItemWidgets* widgets;
+  GtkTreeListRow* row;
+
+  if (!list_item)
+    return;
+
+  widgets = g_object_get_data(G_OBJECT(list_item), "iup-widgets");
+  row = gtk_list_item_get_item(list_item);
+  if (!widgets || !row)
+    return;
+
+  if (widgets->check_toggled_handler)
+    g_signal_handler_block(widgets->check, widgets->check_toggled_handler);
+
+  iupgtk4TreeUpdateItemWidgets(ih, widgets, node, row);
+
+  if (widgets->check_toggled_handler)
+    g_signal_handler_unblock(widgets->check, widgets->check_toggled_handler);
+}
+
+static void
+iupgtk4TreeSetFocusId(Ihandle* ih, int new_id)
+{
+  int old_id = iupAttribGetInt(ih, "_IUPGTK4_FOCUS_ID");
+  IupGtk4TreeNode* node;
+
+  if (old_id == new_id)
+    return;
+
+  iupAttribSetInt(ih, "_IUPGTK4_FOCUS_ID", new_id);
+
+  if (old_id >= 0)
+  {
+    node = iupgtk4TreeGetNodeFromId(ih, old_id);
+    if (node)
+      iupgtk4TreeNotifyNodeChanged(ih, node);
+  }
+  if (new_id >= 0)
+  {
+    node = iupgtk4TreeGetNodeFromId(ih, new_id);
+    if (node)
+      iupgtk4TreeNotifyNodeChanged(ih, node);
+  }
+}
+
+static void
+iupgtk4TreeBindCb(GtkListItemFactory* factory, GtkListItem* list_item, gpointer user_data)
+{
+  Ihandle* ih = (Ihandle*)user_data;
+  IupGtk4TreeItemWidgets* widgets = g_object_get_data(G_OBJECT(list_item), "iup-widgets");
+  GtkTreeListRow* row = gtk_list_item_get_item(list_item);
+
+  if (!widgets || !row)
+    return;
+
+  gpointer item = gtk_tree_list_row_get_item(row);
+  if (!item)
+    return;
+
+  IupGtk4TreeNode* node = IUP_GTK4_TREE_NODE(item);
+
+  /* Store reference from node to its current list_item */
+  g_object_set_data(G_OBJECT(node), "_iup_list_item", list_item);
+
+  gtk_tree_expander_set_list_row(GTK_TREE_EXPANDER(widgets->expander), row);
+
+  iupgtk4TreeUpdateItemWidgets(ih, widgets, node, row);
+
+  if (widgets->check)
+  {
     widgets->check_toggled_handler = g_signal_connect(widgets->check, "toggled",
                                                        G_CALLBACK(iupgtk4TreeCheckToggled), list_item);
   }
 
   widgets->row_notify_handler = g_signal_connect(row, "notify::expanded",
                                                   G_CALLBACK(iupgtk4TreeRowExpandedChanged), list_item);
-
-  if (iupgtk4TreeFindNodeId(ih, node) == iupAttribGetInt(ih, "_IUPGTK4_FOCUS_ID"))
-    gtk_widget_add_css_class(widgets->box, "iup-tree-focus");
-  else
-    gtk_widget_remove_css_class(widgets->box, "iup-tree-focus");
 
   g_object_unref(item);
   (void)factory;
@@ -1181,7 +1178,8 @@ iupgtk4TreeUnbindCb(GtkListItemFactory* factory, GtkListItem* list_item, gpointe
     gpointer item = gtk_tree_list_row_get_item(row);
     if (item)
     {
-      g_object_set_data(G_OBJECT(item), "_iup_list_item", NULL);
+      if (g_object_get_data(G_OBJECT(item), "_iup_list_item") == list_item)
+        g_object_set_data(G_OBJECT(item), "_iup_list_item", NULL);
       g_object_unref(item);
     }
   }
