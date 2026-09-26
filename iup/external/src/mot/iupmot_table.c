@@ -97,7 +97,7 @@ typedef struct _ImotTableData
 
   int show_grid;
 
-  int columns_autosized;
+  XtIntervalId autosize_timer;
 
   int sort_column;           /* Currently sorted column (1-based, 0=none) */
   char* sort_signs;
@@ -734,6 +734,73 @@ static void motTableDrawCell(Ihandle* ih, int lin, int col, int is_header)
   }
 }
 
+static void motTableAutoSizeColumns(Ihandle* ih)
+{
+  ImotTableData* mot_data = IMOT_TABLE_DATA(ih);
+  int c, lin1;
+  int max_rows_to_check = (ih->data->num_lin > 100) ? 100 : ih->data->num_lin;  /* Limit for performance */
+
+  for (c = 0; c < ih->data->num_col; c++)
+  {
+    int max_width = MOT_TABLE_DEF_COL_WIDTH;
+    int title_width, cell_width;
+
+    if (mot_data->col_width_set[c])
+    {
+      continue;
+    }
+
+    if (mot_data->col_titles[c])
+    {
+      ImotTableFont font;
+      motTableGetCellFont(ih, 0, c + 1, &font);
+      title_width = motTableGetTextWidth(&font, mot_data->col_titles[c], strlen(mot_data->col_titles[c]));
+      title_width += 20;  /* Add padding for sort indicator space */
+      if (title_width > max_width)
+        max_width = title_width;
+    }
+
+    for (lin1 = 0; lin1 < max_rows_to_check; lin1++)
+    {
+      const char* cell_value = IupGetAttributeId2(ih, "", lin1 + 1, c + 1);
+      if (cell_value && cell_value[0])
+      {
+        ImotTableFont font;
+        motTableGetCellFont(ih, lin1 + 1, c + 1, &font);
+        cell_width = motTableGetTextWidth(&font, cell_value, strlen(cell_value));
+        cell_width += 16;  /* Add padding (8px left + 8px right) */
+        if (cell_width > max_width)
+          max_width = cell_width;
+      }
+    }
+
+    mot_data->col_natural_widths[c] = max_width;
+  }
+}
+
+static void motTableAutoSizeTimeout(XtPointer client_data, XtIntervalId* id)
+{
+  Ihandle* ih = (Ihandle*)client_data;
+  ImotTableData* mot_data = IMOT_TABLE_DATA(ih);
+  (void)id;
+
+  if (!mot_data)
+    return;
+
+  mot_data->autosize_timer = 0;
+  motTableAutoSizeColumns(ih);
+  motTableUpdateScrollbars(ih);
+  motTableRedraw(ih);
+}
+
+static void motTableQueueAutoSize(Ihandle* ih)
+{
+  ImotTableData* mot_data = IMOT_TABLE_DATA(ih);
+
+  if (mot_data && !mot_data->autosize_timer)
+    mot_data->autosize_timer = XtAppAddTimeOut(iupmot_appcontext, 0, motTableAutoSizeTimeout, (XtPointer)ih);
+}
+
 static void motTableDrawTable(Ihandle* ih)
 {
   ImotTableData* mot_data = IMOT_TABLE_DATA(ih);
@@ -745,56 +812,6 @@ static void motTableDrawTable(Ihandle* ih)
   if (!window)
     return;
 
-  if (!mot_data->columns_autosized)
-  {
-    int c, lin1;
-    int max_rows_to_check = (ih->data->num_lin > 100) ? 100 : ih->data->num_lin;  /* Limit for performance */
-
-    for (c = 0; c < ih->data->num_col; c++)
-    {
-      int max_width = MOT_TABLE_DEF_COL_WIDTH;
-      int title_width, cell_width;
-
-      if (mot_data->col_width_set[c])
-      {
-        continue;
-      }
-
-      if (mot_data->col_titles[c])
-      {
-        ImotTableFont font;
-        motTableGetCellFont(ih, 0, c + 1, &font);
-        title_width = motTableGetTextWidth(&font, mot_data->col_titles[c], strlen(mot_data->col_titles[c]));
-        title_width += 20;  /* Add padding for sort indicator space */
-        if (title_width > max_width)
-          max_width = title_width;
-      }
-
-      for (lin1 = 0; lin1 < max_rows_to_check; lin1++)
-      {
-        const char* cell_value = IupGetAttributeId2(ih, "", lin1 + 1, c + 1);
-        if (cell_value && cell_value[0])
-        {
-          ImotTableFont font;
-          motTableGetCellFont(ih, lin1 + 1, c + 1, &font);
-          cell_width = motTableGetTextWidth(&font, cell_value, strlen(cell_value));
-          cell_width += 16;  /* Add padding (8px left + 8px right) */
-          if (cell_width > max_width)
-            max_width = cell_width;
-        }
-      }
-
-      if (max_width > mot_data->col_widths[c])
-      {
-        mot_data->col_widths[c] = max_width;
-        mot_data->col_natural_widths[c] = max_width;
-      }
-    }
-
-    mot_data->columns_autosized = 1;
-
-    motTableUpdateScrollbars(ih);
-  }
 
   XtVaGetValues(mot_data->drawing_area, XmNwidth, &width, XmNheight, &height, NULL);
 
@@ -1433,6 +1450,10 @@ static void motTableUpdateScrollbars(Ihandle* ih)
     natural_total_width += mot_data->col_natural_widths[c];
   }
 
+  for (c = 0; c < ih->data->num_col; c++)
+    mot_data->col_widths[c] = mot_data->col_natural_widths[c];
+  total_width = natural_total_width;
+
   if (ih->data->num_col > 0 && !mot_data->col_width_set[ih->data->num_col - 1] && ih->data->stretch_last)
   {
     int last_col = ih->data->num_col - 1;
@@ -1444,12 +1465,6 @@ static void motTableUpdateScrollbars(Ihandle* ih)
 
     mot_data->col_widths[last_col] = available_for_last;
     total_width = other_cols_width + available_for_last;
-  }
-  else
-  {
-    total_width = natural_total_width;
-    for (c = 0; c < ih->data->num_col; c++)
-      mot_data->col_widths[c] = mot_data->col_natural_widths[c];
   }
 
   total_height = mot_data->header_height + ih->data->num_lin * mot_data->row_height;
@@ -1725,9 +1740,8 @@ static int motTableMapMethod(Ihandle* ih)
   mot_data->current_row = 0;
   mot_data->current_col = 0;
 
-  mot_data->columns_autosized = 0;
-
   motTableUpdateScrollbars(ih);
+  motTableQueueAutoSize(ih);
 
   return IUP_NOERROR;
 }
@@ -1783,6 +1797,9 @@ static void motTableUnMapMethod(Ihandle* ih)
 
   if (!mot_data)
     return;
+
+  if (mot_data->autosize_timer)
+    XtRemoveTimeOut(mot_data->autosize_timer);
 
   if (mot_data->gc)
     XFreeGC(iupmot_display, mot_data->gc);
@@ -1912,6 +1929,7 @@ IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
     memset(mot_data->row_selected + num_lin, 0, mot_data->row_selected_size - num_lin);
 
   motTableUpdateScrollbars(ih);
+  motTableQueueAutoSize(ih);
   motTableRedraw(ih);
 }
 
@@ -1955,6 +1973,7 @@ IUP_SDK_API void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
   mot_data->current_col = motTableFollowPos(mot_data->current_col, num_col + 1, 0, num_col);
 
   motTableUpdateScrollbars(ih);
+  motTableQueueAutoSize(ih);
   motTableRedraw(ih);
 }
 
@@ -1993,6 +2012,7 @@ IUP_SDK_API void iupdrvTableAddLin(Ihandle* ih, int pos)
   }
 
   motTableUpdateScrollbars(ih);
+  motTableQueueAutoSize(ih);
   motTableRedraw(ih);
 }
 
@@ -2044,6 +2064,7 @@ IUP_SDK_API void iupdrvTableDelLin(Ihandle* ih, int pos)
   motTableFollowLins(mot_data, pos + 1, -1, new_num_lin);
 
   motTableUpdateScrollbars(ih);
+  motTableQueueAutoSize(ih);
   motTableRedraw(ih);
 }
 
@@ -2097,6 +2118,7 @@ IUP_SDK_API void iupdrvTableAddCol(Ihandle* ih, int pos)
   mot_data->current_col = motTableFollowPos(mot_data->current_col, pos + 1, 1, new_num_col);
 
   motTableUpdateScrollbars(ih);
+  motTableQueueAutoSize(ih);
   motTableRedraw(ih);
 }
 
@@ -2176,12 +2198,14 @@ IUP_SDK_API void iupdrvTableDelCol(Ihandle* ih, int pos)
   mot_data->current_col = motTableFollowPos(mot_data->current_col, pos + 1, -1, new_num_col);
 
   motTableUpdateScrollbars(ih);
+  motTableQueueAutoSize(ih);
   motTableRedraw(ih);
 }
 
 IUP_SDK_API void iupdrvTableSetCellValue(Ihandle* ih, int lin, int col, const char* value)
 {
   motTableSetCellValueInternal(ih, lin, col, value);
+  motTableQueueAutoSize(ih);
   motTableRedraw(ih);
 }
 
@@ -2209,6 +2233,7 @@ IUP_SDK_API void iupdrvTableSetColTitle(Ihandle* ih, int col, const char* title)
     free(mot_data->col_titles[col-1]);
 
   mot_data->col_titles[col-1] = title ? iupStrDup(title) : NULL;
+  motTableQueueAutoSize(ih);
   motTableRedraw(ih);
 }
 
@@ -2399,6 +2424,7 @@ IUP_SDK_API void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col)
 
 IUP_SDK_API void iupdrvTableRedraw(Ihandle* ih)
 {
+  motTableQueueAutoSize(ih);
   motTableRedraw(ih);
 }
 
@@ -2406,6 +2432,7 @@ IUP_SDK_API void iupdrvTableUpdateCellStyle(Ihandle* ih, int lin, int col)
 {
   (void)lin;
   (void)col;
+  motTableQueueAutoSize(ih);
   motTableRedraw(ih);
 }
 
