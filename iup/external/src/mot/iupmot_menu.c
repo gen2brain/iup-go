@@ -421,7 +421,7 @@ IUP_SDK_API int iupdrvRecentMenuUpdate(Ihandle* menu, const char** filenames, in
     snprintf(attr_name, sizeof(attr_name), "_IUP_RECENT_ITEM%d", i);
     item = (Widget)iupAttribGet(menu, attr_name);
 
-    xm_title = XmStringCreateLocalized((char*)filenames[i]);
+    xm_title = iupmotStringCreate(filenames[i]);
 
     if (item)
     {
@@ -429,12 +429,20 @@ IUP_SDK_API int iupdrvRecentMenuUpdate(Ihandle* menu, const char** filenames, in
     }
     else
     {
-      item = XtVaCreateManagedWidget("recentitem",
-        xmCascadeButtonWidgetClass, menu_widget,
-        XmNlabelString, xm_title,
-        XmNuserData, menu,
-        XmNpositionIndex, i,
-        NULL);
+      XmFontList fontlist = (XmFontList)iupmotGetFontListAttrib(menu);
+      Arg args[6];
+      int num_args = 0;
+
+      iupMOT_SETARG(args, num_args, XmNlabelString, xm_title);
+      iupMOT_SETARG(args, num_args, XmNuserData, menu);
+      iupMOT_SETARG(args, num_args, XmNpositionIndex, i);
+      if (fontlist)
+      {
+        iupMOT_SETARG(args, num_args, XmNrenderTable, fontlist);
+        iupMOT_SETARG(args, num_args, XmNfontList, fontlist);
+      }
+
+      item = XtCreateManagedWidget("recentitem", xmCascadeButtonWidgetClass, menu_widget, args, num_args);
 
       XtAddCallback(item, XmNactivateCallback,
         (XtCallbackProc)motRecentItemActivateCallback, (XtPointer)(intptr_t)i);
