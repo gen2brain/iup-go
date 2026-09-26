@@ -849,16 +849,9 @@ static void winuiToggleUnMapMethod(Ihandle* ih)
 
 extern "C" IUP_SDK_API void iupdrvToggleAddBorders(Ihandle* ih, int* x, int* y)
 {
-  if (ih->data->type == IUP_TOGGLE_IMAGE)
-  {
-    iupdrvButtonAddBorders(ih, x, y);
-  }
-  else
-  {
-    double scale = iupwinuiGetScale(ih);
-    *x += (int)ceil(8 * scale);
-    *y += (int)ceil(5 * scale);
-  }
+  int border_size = (int)ceil(4 * iupwinuiGetScale(ih));
+  *x += border_size;
+  *y += border_size;
 }
 
 extern "C" IUP_SDK_API void iupdrvToggleAddCheckBox(Ihandle* ih, int* x, int* y, const char* str)

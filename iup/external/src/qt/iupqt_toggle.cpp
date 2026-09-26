@@ -418,26 +418,16 @@ static void qtToggleMeasureBorders(void)
   if (qt_toggle_border_x < 0) qt_toggle_border_x = 0;
   if (qt_toggle_border_y < 0) qt_toggle_border_y = 0;
 
-  /* Structural border (frame only) for when user sets explicit PADDING */
-  QStyleOptionToolButton opt;
-  opt.initFrom(&temp_button);
-  opt.rect = QRect(0, 0, button_size.width(), button_size.height());
-  QStyle* style = temp_button.style();
-  QRect contentRect = style->subControlRect(QStyle::CC_ToolButton, &opt, QStyle::SC_ToolButton, &temp_button);
-  qt_toggle_struct_x = button_size.width() - contentRect.width();
-  qt_toggle_struct_y = button_size.height() - contentRect.height();
+  temp_button.setStyleSheet("QToolButton { padding: 0px; min-width: 0; min-height: 0; }");
+  button_size = temp_button.sizeHint();
+  qt_toggle_struct_x = button_size.width() - 64;
+  qt_toggle_struct_y = button_size.height() - 64;
   if (qt_toggle_struct_x < 0) qt_toggle_struct_x = 0;
   if (qt_toggle_struct_y < 0) qt_toggle_struct_y = 0;
 }
 
 extern "C" IUP_SDK_API void iupdrvToggleAddBorders(Ihandle* ih, int* x, int* y)
 {
-  if (ih && ih->data->type == IUP_TOGGLE_IMAGE)
-  {
-    iupdrvButtonAddBorders(ih, x, y);
-    return;
-  }
-
   int has_user_padding = 0;
 
   if (qt_toggle_border_x < 0)

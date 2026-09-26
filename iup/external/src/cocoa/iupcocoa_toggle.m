@@ -300,8 +300,28 @@ static void cocoaToggleDeselectRadio(Ihandle* radio, Ihandle* ih)
 
 IUP_SDK_API void iupdrvToggleAddBorders(Ihandle* ih, int* x, int* y)
 {
-  if (ih->data->type == IUP_TOGGLE_IMAGE)
-    iupdrvButtonAddBorders(ih, x, y);
+  static int border = -1;
+  (void)ih;
+
+  if (border == -1)
+  {
+    NSButton* temp_button = [[NSButton alloc] initWithFrame:NSZeroRect];
+    NSImage* temp_image = [[NSImage alloc] initWithSize:NSMakeSize(16, 16)];
+
+    [temp_button setButtonType:NSButtonTypePushOnPushOff];
+    [temp_button setBezelStyle:NSBezelStyleRegularSquare];
+    [temp_button setImage:temp_image];
+    [temp_button setImagePosition:NSImageOnly];
+
+    border = (int)lroundf([temp_button fittingSize].height) - 16;
+    if (border < 0) border = 0;
+
+    [temp_image release];
+    [temp_button release];
+  }
+
+  *x += border;
+  *y += border;
 }
 
 IUP_SDK_API void iupdrvToggleAddSwitch(Ihandle* ih, int* x, int* y, const char* str)
