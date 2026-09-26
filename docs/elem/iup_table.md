@@ -128,7 +128,6 @@ Same `L:C`, `L:0` and `0:C` notation as BGCOLOR.
 
 [FONT](../attrib/iup_font.md): Text font.
 Same `L:C`, `L:0` and `0:C` notation as BGCOLOR.
-Per-cell, per-line and per-column FONT is not supported in WinUI, Motif, iOS and WebAssembly.
 
 **ALTERNATECOLOR** (non-inheritable): Enables alternating row background colors.
 Can be "YES" or "NO". Default: "NO".
