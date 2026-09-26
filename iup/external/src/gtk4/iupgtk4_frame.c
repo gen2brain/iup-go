@@ -17,7 +17,7 @@
 #include "iupgtk4_drv.h"
 
 
-static void gtk4FrameMeasureDecor(int has_title, int* decor_w, int* decor_h)
+static void gtk4FrameMeasureDecor(int has_title, int* decor_w, int* decor_h, int* title_h)
 {
   GtkWidget* temp_frame = gtk_frame_new(NULL);
   GtkWidget* temp_child = gtk_fixed_new();
@@ -38,12 +38,32 @@ static void gtk4FrameMeasureDecor(int has_title, int* decor_w, int* decor_h)
 
   *decor_w = frame_nat_w - child_nat_w;
   *decor_h = frame_nat_h - child_nat_h;
+  *title_h = 0;
+
+  if (has_title)
+  {
+    GtkWidget* label = gtk_frame_get_label_widget(GTK_FRAME(temp_frame));
+    if (label)
+    {
+      int min_height, nat_height;
+      gtk_widget_measure(label, GTK_ORIENTATION_VERTICAL, -1, &min_height, &nat_height, NULL, NULL);
+      *title_h = nat_height;
+    }
+  }
 
   if (*decor_w < 0) *decor_w = 0;
   if (*decor_h < 0) *decor_h = 0;
 
   g_object_ref_sink(temp_frame);
   g_object_unref(temp_frame);
+}
+
+static int gtk4_frame_titled_w = -1, gtk4_frame_titled_h = 0, gtk4_frame_default_title_h = 0;
+
+static void gtk4FrameMeasureTitled(void)
+{
+  if (gtk4_frame_titled_w == -1)
+    gtk4FrameMeasureDecor(1, &gtk4_frame_titled_w, &gtk4_frame_titled_h, &gtk4_frame_default_title_h);
 }
 
 IUP_SDK_API void iupdrvFrameGetDecorOffset(Ihandle* ih, int* x, int* y)
@@ -54,8 +74,8 @@ IUP_SDK_API void iupdrvFrameGetDecorOffset(Ihandle* ih, int* x, int* y)
 
   if (!measured)
   {
-    int decor_w, decor_h;
-    gtk4FrameMeasureDecor(0, &decor_w, &decor_h);
+    int decor_w, decor_h, title_h;
+    gtk4FrameMeasureDecor(0, &decor_w, &decor_h, &title_h);
     offset_x = decor_w / 2;
     offset_y = decor_h / 2;
     measured = 1;
@@ -93,42 +113,42 @@ IUP_SDK_API int iupdrvFrameGetTitleHeight(Ihandle* ih, int* h)
     }
   }
 
-  GtkWidget* temp_label = gtk_label_new(title);
+  gtk4FrameMeasureTitled();
 
-  int min_height, nat_height;
-  gtk_widget_measure(temp_label, GTK_ORIENTATION_VERTICAL, -1, &min_height, &nat_height, NULL, NULL);
-
-  *h = nat_height;
-
-  g_object_ref_sink(temp_label);
-  g_object_unref(temp_label);
+  {
+    int system_h = 0, font_h = 0;
+    iupdrvFontGetTextSize(iupdrvGetSystemFont(), "Tj", 2, NULL, &system_h);
+    iupdrvFontGetTextSize(iupGetFontValue(ih), "Tj", 2, NULL, &font_h);
+    *h = gtk4_frame_default_title_h + font_h - system_h;
+  }
 
   return 1;
 }
 
 IUP_SDK_API int iupdrvFrameGetDecorSize(Ihandle* ih, int* w, int* h)
 {
-  static int titled_measured = 0, untitled_measured = 0;
-  static int titled_w = 0, titled_h = 0;
+  static int untitled_measured = 0;
   static int untitled_w = 0, untitled_h = 0;
   const char* title = iupAttribGet(ih, "TITLE");
   int has_title = (title && *title) ? 1 : 0;
 
   if (has_title)
   {
-    if (!titled_measured)
-    {
-      gtk4FrameMeasureDecor(1, &titled_w, &titled_h);
-      titled_measured = 1;
-    }
-    *w = titled_w;
-    *h = titled_h;
+    int title_h;
+
+    gtk4FrameMeasureTitled();
+    *w = gtk4_frame_titled_w;
+    *h = gtk4_frame_titled_h;
+
+    if (gtk4_frame_default_title_h > 0 && iupdrvFrameGetTitleHeight(ih, &title_h))
+      *h += title_h - gtk4_frame_default_title_h;
   }
   else
   {
     if (!untitled_measured)
     {
-      gtk4FrameMeasureDecor(0, &untitled_w, &untitled_h);
+      int title_h;
+      gtk4FrameMeasureDecor(0, &untitled_w, &untitled_h, &title_h);
       untitled_measured = 1;
     }
     *w = untitled_w;
