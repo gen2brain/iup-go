@@ -43,7 +43,16 @@ public:
   void draw() override
   {
     const char* full = label();
-    if (!ellipsis || image() || !full || !*full || (align() & FL_ALIGN_WRAP))
+    if (image())
+    {
+      draw_box();
+      int px = iup_handle->data->horiz_padding, py = iup_handle->data->vert_padding;
+      draw_label(x() + Fl::box_dx(box()) + px, y() + Fl::box_dy(box()) + py,
+                 w() - Fl::box_dw(box()) - 2 * px, h() - Fl::box_dh(box()) - 2 * py);
+      return;
+    }
+
+    if (!ellipsis || !full || !*full || (align() & FL_ALIGN_WRAP))
     {
       Fl_Box::draw();
       return;
