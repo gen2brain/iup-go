@@ -6,6 +6,7 @@
 
 #include <FL/Fl.H>
 #include <FL/Fl_Group.H>
+#include <FL/Fl_Window.H>
 #include <FL/Fl_Widget.H>
 #include <FL/Fl_Scrollbar.H>
 #include <FL/fl_draw.H>
@@ -34,13 +35,14 @@ extern "C" {
  * Canvas Container - routes events to scrollbars first
  ****************************************************************************/
 
-class IupFltkCanvasContainer : public Fl_Group
+template <class Base>
+class IupFltkCanvasContainer : public Base
 {
 public:
   Ihandle* iup_handle;
 
   IupFltkCanvasContainer(int x, int y, int w, int h, Ihandle* ih)
-    : Fl_Group(x, y, w, h), iup_handle(ih) {}
+    : Base(x, y, w, h), iup_handle(ih) {}
 
 protected:
   void draw() override
@@ -49,16 +51,16 @@ protected:
     if (canvas)
     {
       fl_push_clip(canvas->x(), canvas->y(), canvas->w(), canvas->h());
-      Fl_Group::draw();
+      Base::draw();
       fl_pop_clip();
 
       Fl_Scrollbar* sb_h = (Fl_Scrollbar*)iupAttribGet(iup_handle, "_IUPFLTK_SBHORIZ");
       Fl_Scrollbar* sb_v = (Fl_Scrollbar*)iupAttribGet(iup_handle, "_IUPFLTK_SBVERT");
-      if (sb_h && sb_h->visible()) draw_child(*sb_h);
-      if (sb_v && sb_v->visible()) draw_child(*sb_v);
+      if (sb_h && sb_h->visible()) this->draw_child(*sb_h);
+      if (sb_v && sb_v->visible()) this->draw_child(*sb_v);
     }
     else
-      Fl_Group::draw();
+      Base::draw();
   }
 
 public:
@@ -89,7 +91,7 @@ public:
       }
     }
 
-    return Fl_Group::handle(event);
+    return Base::handle(event);
   }
 };
 
@@ -395,8 +397,8 @@ static void fltkCanvasUpdateChildLayout(Ihandle* ih)
   if (sb_horiz && sb_horiz->visible())
     sb_horiz_height = sb_size;
 
-  int ox = sb_win->x();
-  int oy = sb_win->y();
+  int ox = sb_win->as_window() ? 0 : sb_win->x();
+  int oy = sb_win->as_window() ? 0 : sb_win->y();
 
   if (sb_vert && sb_vert->visible())
     sb_vert->resize(ox + width - sb_vert_width - border, oy + border, sb_vert_width, height - sb_horiz_height - 2 * border);
@@ -677,7 +679,11 @@ static int fltkCanvasMapMethod(Ihandle* ih)
 
   Fl_Group::current(NULL);
 
-  IupFltkCanvasContainer* sb_win = new IupFltkCanvasContainer(0, 0, 1, 1, ih);
+  Fl_Group* sb_win;
+  if (iupfltkIsX11() && IupClassMatch(ih, "glcanvas") && !IupClassMatch(ih, "glbackgroundbox"))
+    sb_win = new IupFltkCanvasContainer<Fl_Window>(0, 0, 1, 1, ih);
+  else
+    sb_win = new IupFltkCanvasContainer<Fl_Group>(0, 0, 1, 1, ih);
   sb_win->end();
   sb_win->resizable(NULL);
   sb_win->box(FL_NO_BOX);
