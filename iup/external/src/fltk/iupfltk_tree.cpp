@@ -24,6 +24,7 @@ extern "C" {
 #include "iup_str.h"
 #include "iup_image.h"
 #include "iup_drv.h"
+#include "iup_drvfont.h"
 #include "iup_tree.h"
 }
 
@@ -989,21 +990,50 @@ static int fltkTreeSetTitleFontAttrib(Ihandle* ih, int id, const char* value)
   if (!item)
     return 0;
 
-  int fl_font = 0, fl_size = 0;
-  if (value)
+  IupFltkTree* tree = (IupFltkTree*)ih->handle;
+  int fl_font, fl_size;
+  if (value && iupfltkGetFontFromString(value, &fl_font, &fl_size))
   {
-    iupAttribSetStr(ih, "_IUPFLTK_TMPFONT", value);
-    if (iupfltkGetFont(ih, &fl_font, &fl_size))
-    {
-      item->labelfont((Fl_Font)fl_font);
-      item->labelsize((Fl_Fontsize)fl_size);
-    }
-    iupAttribSet(ih, "_IUPFLTK_TMPFONT", NULL);
+    item->labelfont((Fl_Font)fl_font);
+    item->labelsize((Fl_Fontsize)fl_size);
+  }
+  else if (!value)
+  {
+    item->labelfont(tree->item_labelfont());
+    item->labelsize(tree->item_labelsize());
   }
 
-  IupFltkTree* tree = (IupFltkTree*)ih->handle;
   tree->redraw();
   return 0;
+}
+
+static int fltkTreeSetFontAttrib(Ihandle* ih, const char* value)
+{
+  if (!iupdrvSetFontAttrib(ih, value))
+    return 0;
+
+  IupFltkTree* tree = (IupFltkTree*)ih->handle;
+  int fl_font, fl_size;
+  if (tree && iupfltkGetFontFromString(value, &fl_font, &fl_size))
+  {
+    Fl_Font old_font = tree->item_labelfont();
+    Fl_Fontsize old_size = tree->item_labelsize();
+
+    tree->item_labelfont((Fl_Font)fl_font);
+    tree->item_labelsize((Fl_Fontsize)fl_size);
+
+    for (Fl_Tree_Item* item = tree->first(); item; item = tree->next(item))
+    {
+      if (item->labelfont() == old_font && item->labelsize() == old_size)
+      {
+        item->labelfont((Fl_Font)fl_font);
+        item->labelsize((Fl_Fontsize)fl_size);
+      }
+    }
+    tree->redraw();
+  }
+
+  return 1;
 }
 
 static int fltkTreeSetBgColorAttrib(Ihandle* ih, const char* value)
@@ -1780,6 +1810,13 @@ static int fltkTreeMapMethod(Ihandle* ih)
   tree->item_reselect_mode(FL_TREE_SELECTABLE_ALWAYS);
   tree->when(FL_WHEN_CHANGED);
 
+  int fl_font, fl_size;
+  if (iupfltkGetFont(ih, &fl_font, &fl_size))
+  {
+    tree->item_labelfont((Fl_Font)fl_font);
+    tree->item_labelsize((Fl_Fontsize)fl_size);
+  }
+
   iupdrvTreeUpdateMarkMode(ih);
 
   tree->callback(fltkTreeCallback, (void*)ih);
@@ -1843,6 +1880,7 @@ extern "C" IUP_SDK_API void iupdrvTreeInitClass(Iclass* ic)
   fltkTreeInitializeImages();
 
   /* Visual */
+  iupClassRegisterAttribute(ic, "FONT", NULL, fltkTreeSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "BGCOLOR", fltkTreeGetBgColorAttrib, fltkTreeSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTBGCOLOR", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "FGCOLOR", NULL, fltkTreeSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTFGCOLOR", IUPAF_DEFAULT);
 

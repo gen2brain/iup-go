@@ -337,9 +337,11 @@ extern "C" IUP_SDK_API int iupdrvSetFontAttrib(Ihandle* ih, const char* value)
       (ih->iclass->nativetype != IUP_TYPEMENU))
   {
     Fl_Widget* widget = (Fl_Widget*)ih->handle;
+    widget->redraw_label();
     widget->labelfont(fltkfont->fl_font);
     widget->labelsize(fltkfont->fl_size);
     widget->redraw_label();
+    widget->redraw();
   }
 
   return 1;
