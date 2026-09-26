@@ -72,6 +72,8 @@ static void fltkTableGetCellBgColor(Ihandle* ih, int lin, int col, unsigned char
 
   if (!bgcolor)
     bgcolor = iupAttribGet(ih, "BGCOLOR");
+  if (!bgcolor)
+    bgcolor = IupGetGlobal("TXTBGCOLOR");
 
   if (bgcolor && iupStrToRGB(bgcolor, r, g, b))
     return;
@@ -89,6 +91,8 @@ static void fltkTableGetCellFgColor(Ihandle* ih, int lin, int col, unsigned char
 
   if (!fgcolor)
     fgcolor = iupAttribGet(ih, "FGCOLOR");
+  if (!fgcolor)
+    fgcolor = IupGetGlobal("TXTFGCOLOR");
 
   if (fgcolor && iupStrToRGB(fgcolor, r, g, b))
     return;
@@ -356,7 +360,7 @@ protected:
 
         if (!has_dummy_col || C < iup_handle->data->num_col)
         {
-          fl_color(inactive ? fl_inactive(FL_BLACK) : FL_BLACK);
+          fl_color(inactive ? fl_inactive(FL_FOREGROUND_COLOR) : FL_FOREGROUND_COLOR);
           int fl_font_face, fl_font_size;
           if (iupfltkGetFont(iup_handle, &fl_font_face, &fl_font_size))
             fl_font(fl_font_face, fl_font_size);
@@ -410,7 +414,7 @@ protected:
         fl_color(FL_BACKGROUND_COLOR);
         fl_rectf(X, Y, W, H);
 
-        fl_color(inactive ? fl_inactive(FL_BLACK) : FL_BLACK);
+        fl_color(inactive ? fl_inactive(FL_FOREGROUND_COLOR) : FL_FOREGROUND_COLOR);
         int fl_font_face, fl_font_size;
         if (iupfltkGetFont(iup_handle, &fl_font_face, &fl_font_size))
           fl_font(fl_font_face, fl_font_size);
