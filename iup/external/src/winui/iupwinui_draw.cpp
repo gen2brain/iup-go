@@ -442,67 +442,6 @@ extern "C" IUP_SDK_API void iupdrvDrawKillCanvas(IdrawCanvas* dc)
   delete dc;
 }
 
-extern "C" IUP_SDK_API void iupdrvDrawUpdateSize(IdrawCanvas* dc)
-{
-  if (!dc)
-    return;
-
-  int w, h;
-  winuiDrawGetWidgetSize(dc->ih, &w, &h);
-  if (w <= 0) w = 1;
-  if (h <= 0) h = 1;
-
-  if (w != dc->w || h != dc->h)
-  {
-    winuiDrawEndAllLayers(dc);
-
-    if (dc->d2dContext)
-    {
-      if (dc->clipType == WINUI_CLIP_RECT)
-        dc->d2dContext->PopAxisAlignedClip();
-      else if (dc->clipType == WINUI_CLIP_LAYER)
-        dc->d2dContext->PopLayer();
-
-      if (dc->partial)
-        dc->d2dContext->PopAxisAlignedClip();
-
-      dc->solidBrush = nullptr;
-      dc->d2dContext->Release();
-      dc->d2dContext = nullptr;
-      dc->sisNative->EndDraw();
-    }
-
-    dc->w = w;
-    dc->h = h;
-    dc->partial = false;
-    dc->clipType = WINUI_CLIP_NONE;
-    dc->clip_x1 = dc->clip_y1 = dc->clip_x2 = dc->clip_y2 = 0;
-
-    dc->sisNative = nullptr;
-    dc->sis = SurfaceImageSource(dc->w, dc->h);
-    dc->sisIsNew = true;
-
-    {
-      IupWinUICanvasAux* aux = iupClassMatch(dc->ih->iclass, "canvas")
-        ? winuiGetAux<IupWinUICanvasAux>(dc->ih, IUPWINUI_CANVAS_AUX) : nullptr;
-      if (aux)
-      {
-        aux->sis = dc->sis;
-        aux->sisWidth = dc->w;
-        aux->sisHeight = dc->h;
-      }
-    }
-
-    com_ptr<::IUnknown> sisUnknown;
-    winrt::copy_to_abi(dc->sis, *sisUnknown.put_void());
-    sisUnknown->QueryInterface(IID_ISurfaceImageSourceNativeWithD2D,
-      dc->sisNative.put_void());
-
-    dc->sisNative->SetDevice(g_d2dDevice.get());
-    winuiDrawBeginSession(dc);
-  }
-}
-
 static void winuiDrawCopyToBuffer(IdrawCanvas* dc)
 {
   int isCanvas = iupClassMatch(dc->ih->iclass, "canvas");

@@ -192,33 +192,6 @@ IUP_SDK_API void iupdrvDrawKillCanvas(IdrawCanvas* dc)
   free(dc);
 }
 
-IUP_SDK_API void iupdrvDrawUpdateSize(IdrawCanvas* dc)
-{
-  int w, h;
-
-  w = gtk_widget_get_width(dc->widget);
-  h = gtk_widget_get_height(dc->widget);
-
-  if (w != dc->w || h != dc->h)
-  {
-    cairo_surface_t* surface;
-
-    dc->w = w;
-    dc->h = h;
-
-    if (dc->image_cr != dc->cr)
-    {
-      cairo_destroy(dc->image_cr);
-
-      surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, dc->w, dc->h);
-      dc->image_cr = cairo_create(surface);
-      cairo_surface_destroy(surface);
-      cairo_get_matrix(dc->image_cr, &dc->base_matrix);
-      iupdrvDrawSetTransform(dc, &dc->matrix);
-    }
-  }
-}
-
 IUP_SDK_API void iupdrvDrawFlush(IdrawCanvas* dc)
 {
   iupdrvDrawResetClip(dc);

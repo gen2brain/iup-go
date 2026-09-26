@@ -46,11 +46,6 @@ IUP_SDK_API void iupdrvDrawKillCanvas(IdrawCanvas* dc);
  * \ingroup drvdraw */
 IUP_SDK_API void iupdrvDrawFlush(IdrawCanvas* dc);
 
-/** Rebuild the offscreen image if the canvas size has changed.
- * Automatically done in iupdrvDrawCreateCanvas.
- * \ingroup drvdraw */
-IUP_SDK_API void iupdrvDrawUpdateSize(IdrawCanvas* dc);
-
 /** Returns the canvas size available for drawing.
  * \ingroup drvdraw */
 IUP_SDK_API void iupdrvDrawGetSize(IdrawCanvas* dc, int* w, int* h);

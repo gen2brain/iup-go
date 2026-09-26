@@ -330,19 +330,6 @@ IUP_SDK_API void iupdrvDrawKillCanvas(IdrawCanvas* dc)
   free(dc);
 }
 
-IUP_SDK_API void iupdrvDrawUpdateSize(IdrawCanvas* dc)
-{
-  CGRect bounds_rect = [dc->canvasView bounds];
-  CGFloat w = bounds_rect.size.width;
-  CGFloat h = bounds_rect.size.height;
-
-  if (w != dc->w || h != dc->h)
-  {
-    dc->w = w;
-    dc->h = h;
-  }
-}
-
 IUP_SDK_API void iupdrvDrawFlush(IdrawCanvas* dc)
 {
   if (dc->draw_focus)

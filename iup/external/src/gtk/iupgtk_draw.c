@@ -134,60 +134,6 @@ IUP_SDK_API void iupdrvDrawKillCanvas(IdrawCanvas* dc)
   free(dc);
 }
 
-IUP_SDK_API void iupdrvDrawUpdateSize(IdrawCanvas* dc)
-{
-  int w, h;
-#if !GTK_CHECK_VERSION(3, 0, 0)
-  gdk_window_get_geometry(dc->wnd, NULL, NULL, &w, &h, NULL);
-#else
-  w = gtk_widget_get_allocated_width(dc->widget);
-  h = gtk_widget_get_allocated_height(dc->widget);
-#endif
-
-  if (w != dc->w || h != dc->h)
-  {
-    cairo_surface_t* surface;
-
-    dc->w = w;
-    dc->h = h;
-
-#if GTK_CHECK_VERSION(3, 0, 0)
-    {
-      cairo_surface_t* buffer = (cairo_surface_t*)iupAttribGet(dc->ih, "_IUPGTK3_CANVAS_BUFFER");
-      if (buffer)
-      {
-        cairo_surface_destroy(buffer);
-        iupAttribSet(dc->ih, "_IUPGTK3_CANVAS_BUFFER", NULL);
-      }
-      buffer = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, dc->w, dc->h);
-      iupAttribSet(dc->ih, "_IUPGTK3_CANVAS_BUFFER", (char*)buffer);
-
-      if (dc->image_cr != dc->cr)
-        cairo_destroy(dc->image_cr);
-      if (dc->release_cr)
-      {
-        cairo_destroy(dc->cr);
-        dc->cr = cairo_create(buffer);
-        dc->image_cr = dc->cr;
-      }
-      else
-        dc->image_cr = cairo_create(buffer);
-
-      cairo_get_matrix(dc->image_cr, &dc->base_matrix);
-      iupdrvDrawSetTransform(dc, &dc->matrix);
-    }
-#else
-    cairo_destroy(dc->image_cr);
-
-    surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, dc->w, dc->h);
-    dc->image_cr = cairo_create(surface);
-    cairo_surface_destroy(surface);
-    cairo_get_matrix(dc->image_cr, &dc->base_matrix);
-    iupdrvDrawSetTransform(dc, &dc->matrix);
-#endif
-  }
-}
-
 #if !GTK_CHECK_VERSION(3, 0, 0)
 static void gdkDrawFocusRect(Ihandle* ih, int x, int y, int w, int h)
 {

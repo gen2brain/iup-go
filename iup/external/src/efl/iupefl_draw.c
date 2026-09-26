@@ -485,19 +485,6 @@ IUP_SDK_API void iupdrvDrawKillCanvas(IdrawCanvas* dc)
   free(dc);
 }
 
-IUP_SDK_API void iupdrvDrawUpdateSize(IdrawCanvas* dc)
-{
-  Eina_Size2D size;
-
-  size = efl_gfx_entity_size_get(dc->vg);
-
-  if (size.w != dc->w || size.h != dc->h)
-  {
-    dc->w = size.w;
-    dc->h = size.h;
-  }
-}
-
 IUP_SDK_API void iupdrvDrawFlush(IdrawCanvas* dc)
 {
   const void* src;

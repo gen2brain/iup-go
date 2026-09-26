@@ -361,61 +361,6 @@ IUP_SDK_API void iupdrvDrawSetTransform(IdrawCanvas* dc, const IupDrawMatrix* ma
   dc->matrix = *matrix;
 }
 
-IUP_SDK_API void iupdrvDrawUpdateSize(IdrawCanvas* dc)
-{
-  int w = 0, h = 0, depth = 0;
-
-  if (!dc || !dc->wnd)
-    return;
-
-  if (!motDrawGetGeometry(dc->ih, dc->wnd, &w, &h, &depth))
-    return;
-
-  if (w <= 0 || h <= 0)
-    return;
-
-  if (w != dc->w || h != dc->h)
-  {
-    dc->w = w;
-    dc->h = h;
-
-    if (dc->pict)
-      XRenderFreePicture(iupmot_display, dc->pict);
-    dc->pict = None;
-    if (dc->pixmap_gc)
-      XFreeGC(iupmot_display, dc->pixmap_gc);
-    if (dc->pixmap)
-      XFreePixmap(iupmot_display, dc->pixmap);
-    iupAttribSet(dc->ih, "_IUPMOT_CANVAS_PIXMAP", NULL);
-
-    dc->pixmap = XCreatePixmap(iupmot_display, dc->wnd, dc->w, dc->h, depth);
-    if (!dc->pixmap)
-    {
-      dc->pixmap_gc = NULL;
-      dc->w = 0;
-      dc->h = 0;
-      return;
-    }
-    iupAttribSet(dc->ih, "_IUPMOT_CANVAS_PIXMAP", (char*)(size_t)dc->pixmap);
-    iupAttribSetInt(dc->ih, "_IUPMOT_CANVAS_PIXMAP_W", dc->w);
-    iupAttribSetInt(dc->ih, "_IUPMOT_CANVAS_PIXMAP_H", dc->h);
-
-    dc->pixmap_gc = XCreateGC(iupmot_display, dc->pixmap, 0, NULL);
-    if (!dc->pixmap_gc)
-    {
-      XFreePixmap(iupmot_display, dc->pixmap);
-      dc->pixmap = None;
-      dc->w = 0;
-      dc->h = 0;
-      return;
-    }
-
-    motDrawCreatePicture(dc);
-
-    motDrawClearBackground(dc);
-  }
-}
-
 IUP_SDK_API void iupdrvDrawFlush(IdrawCanvas* dc)
 {
   if (!dc || !dc->wnd || !dc->pixmap || !dc->gc)

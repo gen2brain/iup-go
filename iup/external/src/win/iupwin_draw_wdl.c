@@ -304,30 +304,6 @@ IUP_SDK_API void iupdrvDrawKillCanvas(IdrawCanvas* dc)
   free(dc);
 }
 
-IUP_SDK_API void iupdrvDrawUpdateSize(IdrawCanvas* dc)
-{
-  int w, h;
-  RECT rect;
-
-  GetClientRect(dc->hWnd, &rect);
-  w = rect.right - rect.left;
-  h = rect.bottom - rect.top;
-
-  if (w != dc->w || h != dc->h)
-  {
-    dc->w = w;
-    dc->h = h;
-
-    wdResizeCanvas(dc->hCanvas, w, h);
-
-    if (dc->cached)
-    {
-      iupAttribSetInt(dc->ih, "_IUPWIN_WDCANVAS_W", w);
-      iupAttribSetInt(dc->ih, "_IUPWIN_WDCANVAS_H", h);
-    }
-  }
-}
-
 IUP_SDK_API void iupdrvDrawFlush(IdrawCanvas* dc)
 {
   iDrawEndAllLayers(dc);

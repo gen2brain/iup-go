@@ -184,22 +184,6 @@ IUP_SDK_API void iupdrvDrawSetTransform(IdrawCanvas* dc, const IupDrawMatrix* ma
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
 }
 
-IUP_SDK_API void iupdrvDrawUpdateSize(IdrawCanvas* dc)
-{
-  if (!dc || !dc->ih) return;
-  dc->w = dc->ih->currentwidth;
-  dc->h = dc->ih->currentheight;
-  if (dc->ih->handle)
-  {
-    JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
-    jclass java_class = androidDrawFindHelper(jni_env);
-    jmethodID method_id = (*jni_env)->GetStaticMethodID(jni_env, java_class, "ensureBackBuffer", "(Lio/github/gen2brain/iupgo/IupAndroidCanvas;)V");
-    (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, dc->ih->handle);
-    iupAndroid_CheckException(jni_env, "IupCanvasHelper.ensureBackBuffer");
-    (*jni_env)->DeleteLocalRef(jni_env, java_class);
-  }
-}
-
 IUP_SDK_API void iupdrvDrawFlush(IdrawCanvas* dc)
 {
   if (!dc || !dc->ih || !dc->ih->handle) return;
