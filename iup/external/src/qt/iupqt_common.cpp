@@ -8,6 +8,7 @@
 #include <cstdlib>
 
 #include <QWidget>
+#include <QAbstractScrollArea>
 #include <QLayout>
 #include <QWindow>
 #include <QApplication>
@@ -39,6 +40,7 @@ extern "C" {
 #include "iup_drv.h"
 #include "iup_dialog.h"
 #include "iup_dlglist.h"
+#include "iup_image.h"
 }
 
 #include "iupqt_drv.h"
@@ -582,7 +584,7 @@ IUP_DRV_API int iupqtMouseButtonEvent(QWidget* widget, QEvent* evt, Ihandle* ih)
  * Cursor Management
  ****************************************************************************/
 
-static Qt::CursorShape qtGetCursorShape(const char* name)
+static int qtGetCursorShape(const char* name, Qt::CursorShape* shape)
 {
   struct {
     const char* iupname;
@@ -619,10 +621,13 @@ static Qt::CursorShape qtGetCursorShape(const char* name)
   for (i = 0; i < count; i++)
   {
     if (iupStrEqualNoCase(name, table[i].iupname))
-      return table[i].qtshape;
+    {
+      *shape = table[i].qtshape;
+      return 1;
+    }
   }
 
-  return Qt::ArrowCursor;  /* Default */
+  return 0;
 }
 
 extern "C" IUP_SDK_API int iupdrvBaseSetCursorAttrib(Ihandle* ih, const char* value)
@@ -631,11 +636,29 @@ extern "C" IUP_SDK_API int iupdrvBaseSetCursorAttrib(Ihandle* ih, const char* va
     return 0;
 
   QWidget* widget = (QWidget*)ih->handle;
-  Qt::CursorShape shape = qtGetCursorShape(value);
+  Qt::CursorShape shape;
 
-  widget->setCursor(QCursor(shape));
+  if (qtGetCursorShape(value, &shape))
+    widget->setCursor(QCursor(shape));
+  else
+  {
+    QCursor* cursor = (QCursor*)iupImageGetCursor(value);
+    if (cursor)
+      widget->setCursor(*cursor);
+    else
+      widget->setCursor(QCursor(Qt::ArrowCursor));
+  }
 
   return 1;
+}
+
+IUP_DRV_API void iupqtSetWidgetPalette(QWidget* widget, const QPalette& palette)
+{
+  widget->setPalette(palette);
+
+  QAbstractScrollArea* scroll_area = qobject_cast<QAbstractScrollArea*>(widget);
+  if (scroll_area && scroll_area->viewport())
+    scroll_area->viewport()->setPalette(palette);
 }
 
 extern "C" IUP_SDK_API int iupdrvBaseSetBgColorAttrib(Ihandle* ih, const char* value)
@@ -653,7 +676,7 @@ extern "C" IUP_SDK_API int iupdrvBaseSetBgColorAttrib(Ihandle* ih, const char* v
   palette.setColor(QPalette::Window, color);
   palette.setColor(QPalette::Base, color);
   palette.setColor(widget->backgroundRole(), color);  /* a button fills from Button, not from Window */
-  widget->setPalette(palette);
+  iupqtSetWidgetPalette(widget, palette);
   widget->setAutoFillBackground(true);
 
   return 1;
@@ -673,7 +696,7 @@ extern "C" IUP_SDK_API int iupdrvBaseSetFgColorAttrib(Ihandle* ih, const char* v
   palette.setColor(QPalette::WindowText, QColor(r, g, b));
   palette.setColor(QPalette::ButtonText, QColor(r, g, b));
   palette.setColor(QPalette::Text, QColor(r, g, b));
-  widget->setPalette(palette);
+  iupqtSetWidgetPalette(widget, palette);
 
   return 1;
 }

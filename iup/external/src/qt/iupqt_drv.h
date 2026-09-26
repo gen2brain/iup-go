@@ -26,6 +26,7 @@ class QWidget;
 class QApplication;
 class QFont;
 class QColor;
+class QPalette;
 class QEvent;
 class QKeyEvent;
 class QMouseEvent;
@@ -117,6 +118,7 @@ IUP_DRV_API QFont* iupqtGetQFont(const char* value);
 IUP_DRV_API QFont* iupqtGetQFontLine(const char* value, int* ascent, int* charheight);
 IUP_DRV_API char* iupqtGetQFontAttrib(Ihandle* ih);
 IUP_DRV_API void iupqtUpdateWidgetFont(Ihandle* ih, QWidget* widget);
+IUP_DRV_API void iupqtSetWidgetPalette(QWidget* widget, const QPalette& palette);
 
 /****************************************************************************
  * Native Handle Access

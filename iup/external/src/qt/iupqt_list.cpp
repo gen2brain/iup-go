@@ -1647,7 +1647,7 @@ static int qtListSetBgColorAttrib(Ihandle* ih, const char* value)
     {
       QPalette palette = list->palette();
       palette.setColor(QPalette::Base, QColor(r, g, b));
-      list->setPalette(palette);
+      iupqtSetWidgetPalette(list, palette);
     }
   }
 
@@ -1675,7 +1675,7 @@ static int qtListSetFgColorAttrib(Ihandle* ih, const char* value)
     {
       QPalette palette = list->palette();
       palette.setColor(QPalette::Text, QColor(r, g, b));
-      list->setPalette(palette);
+      iupqtSetWidgetPalette(list, palette);
     }
   }
 

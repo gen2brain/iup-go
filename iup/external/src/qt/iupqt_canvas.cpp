@@ -7,6 +7,7 @@
 #include <QWidget>
 #include <QPainter>
 #include <QScrollBar>
+#include <QTimer>
 #include <QHBoxLayout>
 #include <QWheelEvent>
 #include <QMimeData>
@@ -173,7 +174,7 @@ protected:
     }
 
     QPixmap* buffer = (QPixmap*)iupAttribGet(ih, "_IUPQT_CANVAS_BUFFER");
-    if (buffer && !buffer->isNull() && !iupAttribGet(ih, "_IUPQT_UPDATERECT"))
+    if (buffer && !buffer->isNull() && buffer->size() == size() && !iupAttribGet(ih, "_IUPQT_UPDATERECT"))
     {
       QPainter painter(this);
       painter.drawPixmap(0, 0, *buffer);
@@ -222,21 +223,14 @@ protected:
       return;
 
     /* Qt6 sends 0x0 resize events during window setup; they would collapse the EGL window to 1x1 */
-    if (event->size().width() <= 0 || event->size().height() <= 0)
+    if (width() <= 0 || height() <= 0)
       return;
-
-    QPixmap* buffer = (QPixmap*)iupAttribGet(ih, "_IUPQT_CANVAS_BUFFER");
-    if (buffer)
-    {
-      delete buffer;
-      iupAttribSet(ih, "_IUPQT_CANVAS_BUFFER", NULL);
-    }
 
     IFnii cb = (IFnii)IupGetCallback(ih, "RESIZE_CB");
     if (cb && !ih->data->inside_resize)
     {
       ih->data->inside_resize = 1;
-      cb(ih, event->size().width(), event->size().height());
+      cb(ih, width(), height());
       ih->data->inside_resize = 0;
     }
 
@@ -665,6 +659,14 @@ static void qtCanvasProcessScroll(Ihandle* ih, QScrollBar* scrollbar, int orient
  * Scrollbar DX/DY Attributes
  ****************************************************************************/
 
+static void qtCanvasUpdateScrollbarVisibility(Ihandle* ih, QScrollBar* sb, const char* hidden_attr)
+{
+  if (ih->data->inside_resize)
+    QTimer::singleShot(0, sb, [ih, sb, hidden_attr]() { sb->setVisible(!iupAttribGetBoolean(ih, hidden_attr)); });
+  else
+    sb->setVisible(!iupAttribGetBoolean(ih, hidden_attr));
+}
+
 static int qtCanvasSetDXAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->sb & IUP_SB_HORIZ)
@@ -688,9 +690,9 @@ static int qtCanvasSetDXAttrib(Ihandle* ih, const char* value)
       {
         if (iupAttribGetBoolean(ih, "XAUTOHIDE"))
         {
-          sb->hide();
           iupAttribSet(ih, "SB_RESIZE", "YES");
           iupAttribSet(ih, "XHIDDEN", "YES");
+          qtCanvasUpdateScrollbarVisibility(ih, sb, "XHIDDEN");
         }
         else
         {
@@ -700,7 +702,8 @@ static int qtCanvasSetDXAttrib(Ihandle* ih, const char* value)
       }
       else
       {
-        sb->show();
+        iupAttribSet(ih, "XHIDDEN", "NO");
+        qtCanvasUpdateScrollbarVisibility(ih, sb, "XHIDDEN");
         iupAttribSet(ih, "SB_RESIZE", "YES");
         sb->setEnabled(true);
 
@@ -709,8 +712,6 @@ static int qtCanvasSetDXAttrib(Ihandle* ih, const char* value)
         sb->setRange(0, range);
         sb->setPageStep((int)dx);
         sb->setSingleStep((int)linex);
-
-        iupAttribSet(ih, "XHIDDEN", "NO");
       }
     }
   }
@@ -740,9 +741,9 @@ static int qtCanvasSetDYAttrib(Ihandle* ih, const char* value)
       {
         if (iupAttribGetBoolean(ih, "YAUTOHIDE"))
         {
-          sb->hide();
           iupAttribSet(ih, "SB_RESIZE", "YES");
           iupAttribSet(ih, "YHIDDEN", "YES");
+          qtCanvasUpdateScrollbarVisibility(ih, sb, "YHIDDEN");
         }
         else
         {
@@ -752,7 +753,8 @@ static int qtCanvasSetDYAttrib(Ihandle* ih, const char* value)
       }
       else
       {
-        sb->show();
+        iupAttribSet(ih, "YHIDDEN", "NO");
+        qtCanvasUpdateScrollbarVisibility(ih, sb, "YHIDDEN");
         iupAttribSet(ih, "SB_RESIZE", "YES");
         sb->setEnabled(true);
 
@@ -761,8 +763,6 @@ static int qtCanvasSetDYAttrib(Ihandle* ih, const char* value)
         sb->setRange(0, range);
         sb->setPageStep((int)dy);
         sb->setSingleStep((int)liney);
-
-        iupAttribSet(ih, "YHIDDEN", "NO");
       }
     }
   }
