@@ -973,12 +973,11 @@ static int qtToggleMapMethod(Ihandle* ih)
     {
       IupQtRadioButton* radio_btn = new IupQtRadioButton(ih);
       button = radio_btn;
-
-      Ihandle* last_toggle = (Ihandle*)iupAttribGet(radio, "_IUPQT_LASTRADIOBUTTON");
-      if (!last_toggle)
-        radio_btn->setChecked(true);
-      iupAttribSet(radio, "_IUPQT_LASTRADIOBUTTON", (char*)ih);
     }
+
+    if (!iupAttribGet(radio, "_IUPQT_LASTRADIOBUTTON"))
+      button->setChecked(true);
+    iupAttribSet(radio, "_IUPQT_LASTRADIOBUTTON", (char*)ih);
 
     if (!iupAttribGetHandleName(ih))
       iupAttribSetHandleName(ih);
@@ -1022,7 +1021,7 @@ static int qtToggleMapMethod(Ihandle* ih)
   {
     char* image = iupAttribGet(ih, "IMAGE");
     if (image)
-      qtToggleUpdateImage(ih, 1, 0);
+      qtToggleUpdateImage(ih, 1, qtToggleGetCheck(ih));
   }
 
   iupqtAddToParent(ih);

@@ -875,7 +875,14 @@ extern "C" IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, in
   {
     QStringList lines = qtext.split(QLatin1Char('\n'));
     for (int i = 0; i < lines.size(); i++)
-      lines[i] = fm.elidedText(lines[i], Qt::ElideRight, w);
+    {
+#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
+      if (fm.horizontalAdvance(lines[i]) > w)
+#else
+      if (fm.width(lines[i]) > w)
+#endif
+        lines[i] = fm.elidedText(lines[i], Qt::ElideRight, w);
+    }
     qtext = lines.join(QLatin1Char('\n'));
   }
 
@@ -1196,77 +1203,6 @@ extern "C" IUP_SDK_API void iupdrvDrawSetClipPath(IdrawCanvas* dc, const IupPath
 }
 
 /****************************************************************************
- * Get Text Size
- ****************************************************************************/
-
-void qtDrawGetTextSize(IdrawCanvas* dc, const char* text, int len, int* w, int* h, const char* font)
-{
-  if (!text)
-  {
-    *w = 0;
-    *h = 0;
-    return;
-  }
-
-  QFont* qfont = iupqtGetQFont(font);
-  if (!qfont)
-  {
-    *w = 0;
-    *h = 0;
-    return;
-  }
-
-  QFontMetrics metrics(*qfont);
-
-  QString qtext = QString::fromUtf8(text, len > 0 ? len : -1);
-
-  QRect rect = metrics.boundingRect(qtext);
-  *w = rect.width();
-  *h = rect.height();
-}
-
-/****************************************************************************
- * Get Image Info
- ****************************************************************************/
-
-void qtDrawGetImageInfo(const char* name, int* w, int* h, int* bpp)
-{
-  if (!name)
-  {
-    if (w) *w = 0;
-    if (h) *h = 0;
-    if (bpp) *bpp = 0;
-    return;
-  }
-
-  void* img_handle = IupGetHandle(name);
-  if (img_handle)
-  {
-    QPixmap* pixmap = (QPixmap*)iupImageGetImage(name, NULL, 0, NULL);
-    if (pixmap)
-    {
-      if (w) *w = pixmap->width();
-      if (h) *h = pixmap->height();
-      if (bpp) *bpp = pixmap->depth();
-      return;
-    }
-  }
-
-  QPixmap pixmap(QString::fromUtf8(name));
-  if (!pixmap.isNull())
-  {
-    if (w) *w = pixmap.width();
-    if (h) *h = pixmap.height();
-    if (bpp) *bpp = pixmap.depth();
-    return;
-  }
-
-  if (w) *w = 0;
-  if (h) *h = 0;
-  if (bpp) *bpp = 0;
-}
-
-/****************************************************************************
  * Winding Rule
  ****************************************************************************/
 
@@ -1308,75 +1244,6 @@ void qtDrawSetShapeAntiAlias(IdrawCanvas* dc, int antialias)
       dc->painter->setRenderHint(QPainter::Antialiasing, antialias ? true : false);
     }
   }
-}
-
-/****************************************************************************
- * Update Size (for buffering)
- ****************************************************************************/
-
-extern "C" IUP_SDK_API void iupdrvDrawUpdateSize(IdrawCanvas* dc)
-{
-  if (!dc || !dc->widget)
-    return;
-
-  QSize new_size = dc->widget->size();
-
-  if (!dc->buffer || dc->buffer->size() != new_size)
-  {
-    if (dc->buffer)
-    {
-      if (dc->ih)
-        iupAttribSet(dc->ih, "_IUPQT_CANVAS_BUFFER", NULL);
-      delete dc->buffer;
-    }
-
-    dc->buffer = new QPixmap(new_size);
-    dc->buffer->fill(Qt::white);
-
-    if (dc->ih)
-      iupAttribSet(dc->ih, "_IUPQT_CANVAS_BUFFER", (char*)dc->buffer);
-
-    if (dc->painter && dc->release_gc)
-    {
-      delete dc->painter;
-    }
-
-    dc->painter = new QPainter(dc->buffer);
-    dc->release_gc = 1;
-
-    dc->painter->setRenderHint(QPainter::Antialiasing, dc->shape_antialias ? true : false);
-    dc->painter->setRenderHint(QPainter::TextAntialiasing, dc->text_antialias ? true : false);
-    dc->base_transform = dc->painter->worldTransform();
-    dc->painter->setWorldTransform(dc->user_transform * dc->base_transform, false);
-  }
-}
-
-/****************************************************************************
- * Begin/End Drawing
- ****************************************************************************/
-
-void qtDrawBegin(IdrawCanvas* dc)
-{
-  if (!dc || !dc->widget)
-    return;
-
-  iupdrvDrawUpdateSize(dc);
-
-  if (!dc->painter)
-  {
-    dc->painter = new QPainter(dc->buffer);
-    dc->release_gc = 1;
-
-    dc->painter->setRenderHint(QPainter::Antialiasing, dc->shape_antialias ? true : false);
-    dc->painter->setRenderHint(QPainter::TextAntialiasing, dc->text_antialias ? true : false);
-    dc->base_transform = dc->painter->worldTransform();
-    dc->painter->setWorldTransform(dc->user_transform * dc->base_transform, false);
-  }
-}
-
-void qtDrawEnd(IdrawCanvas* dc)
-{
-  (void)dc;
 }
 
 extern "C" IUP_SDK_API int iupdrvDrawGetImageData(IdrawCanvas* dc, unsigned char* data)

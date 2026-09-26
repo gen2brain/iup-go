@@ -944,7 +944,7 @@ static int qtTreeSetHlColorAttrib(Ihandle* ih, const char* value)
     IupQtTree* tree = (IupQtTree*)ih->handle;
     QPalette palette = tree->palette();
     palette.setColor(QPalette::Highlight, QColor(r, g, b));
-    tree->setPalette(palette);
+    iupqtSetWidgetPalette(tree, palette);
   }
 
   return 1;
@@ -959,7 +959,7 @@ static int qtTreeSetBgColorAttrib(Ihandle* ih, const char* value)
   IupQtTree* tree = (IupQtTree*)ih->handle;
   QPalette palette = tree->palette();
   palette.setColor(QPalette::Base, QColor(r, g, b));
-  tree->setPalette(palette);
+  iupqtSetWidgetPalette(tree, palette);
 
   return 1;
 }
@@ -983,7 +983,7 @@ static int qtTreeSetFgColorAttrib(Ihandle* ih, const char* value)
   IupQtTree* tree = (IupQtTree*)ih->handle;
   QPalette palette = tree->palette();
   palette.setColor(QPalette::Text, QColor(r, g, b));
-  tree->setPalette(palette);
+  iupqtSetWidgetPalette(tree, palette);
 
   return 1;
 }

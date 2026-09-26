@@ -11,6 +11,7 @@
 #include <QLayout>
 #include <QVBoxLayout>
 #include <QFontMetrics>
+#include <QApplication>
 
 extern "C" {
 #include "iup.h"
@@ -24,61 +25,39 @@ extern "C" {
 #include "iupqt_drv.h"
 
 
-static void qtFrameMeasureDecor(int has_title, int* decor_w, int* decor_h, int* offset_x, int* offset_y, int* title_h)
+static int qtFrameTitleHeight(Ihandle* ih)
 {
-  QGroupBox tempBox;
+  QFont* qfont = iupqtGetQFont(iupGetFontValue(ih));
+  QFontMetrics fm(qfont ? *qfont : QApplication::font());
+  return fm.height();
+}
 
-  if (has_title)
+static int qtFrameHasTitle(Ihandle* ih)
+{
+  const char* title = iupAttribGet(ih, "TITLE");
+  return iupAttribGet(ih, "_IUPFRAME_HAS_TITLE") || (title && *title);
+}
+
+static void qtFrameUpdateStyleSheet(Ihandle* ih, QGroupBox* groupbox)
+{
+  if (iupAttribGet(ih, "_IUPFRAME_HAS_TITLE"))
   {
-    tempBox.setTitle(QString::fromUtf8("Tj"));
-    tempBox.setStyleSheet("QGroupBox { border: 1px solid gray; padding: 2px; margin-top: 0.5em; } "
-                          "QGroupBox::title { subcontrol-origin: margin; subcontrol-position: top left; padding: 0 3px; }");
+    int title_h = qtFrameTitleHeight(ih);
+    int margin = title_h / 2;
+    groupbox->setStyleSheet(QString("QGroupBox { border: 1px solid gray; padding: 2px; padding-top: %1px; margin-top: %2px; } "
+                                    "QGroupBox::title { subcontrol-origin: margin; subcontrol-position: top left; padding: 0 3px; }")
+                            .arg(title_h - margin + 1).arg(margin));
   }
+  else if (iupAttribGet(ih, "_IUPFRAME_SUNKEN"))
+    groupbox->setStyleSheet("QGroupBox { border: 1px inset gray; padding: 2px; margin-top: 0px; }");
   else
-  {
-    tempBox.setTitle(QString());
-    tempBox.setStyleSheet("QGroupBox { border: 1px solid gray; padding: 2px; margin-top: 0px; }");
-  }
-
-  tempBox.setMinimumSize(100, 100);
-  tempBox.adjustSize();
-
-  QRect contentsRect = tempBox.contentsRect();
-  QRect frameRect = tempBox.rect();
-
-  *decor_w = frameRect.width() - contentsRect.width();
-  *decor_h = frameRect.height() - contentsRect.height();
-  *offset_x = contentsRect.x();
-  *offset_y = contentsRect.y();
-
-  if (*decor_w < 0) *decor_w = 0;
-  if (*decor_h < 0) *decor_h = 0;
-  if (*offset_x < 0) *offset_x = 0;
-  if (*offset_y < 0) *offset_y = 0;
-
-  *title_h = 0;
-  if (has_title)
-  {
-    QFontMetrics fm(tempBox.font());
-    *title_h = fm.height();
-  }
+    groupbox->setStyleSheet("QGroupBox { border: 1px solid gray; padding: 2px; margin-top: 0px; }");
 }
 
 extern "C" IUP_SDK_API void iupdrvFrameGetDecorOffset(Ihandle* ih, int* x, int* y)
 {
-  static int measured = 0;
-  static int offset_x = 0, offset_y = 0;
-  (void)ih;
-
-  if (!measured)
-  {
-    int decor_w, decor_h, title_h;
-    qtFrameMeasureDecor(0, &decor_w, &decor_h, &offset_x, &offset_y, &title_h);
-    measured = 1;
-  }
-
-  *x = offset_x;
-  *y = offset_y;
+  *x = 3;
+  *y = qtFrameHasTitle(ih) ? 2 : 3;
 }
 
 extern "C" IUP_SDK_API int iupdrvFrameHasClientOffset(Ihandle* ih)
@@ -89,67 +68,14 @@ extern "C" IUP_SDK_API int iupdrvFrameHasClientOffset(Ihandle* ih)
 
 extern "C" IUP_SDK_API int iupdrvFrameGetTitleHeight(Ihandle* ih, int* h)
 {
-  static int measured = 0;
-  static int cached_title_h = 0;
-
-  if (ih->handle)
-  {
-    QGroupBox* groupbox = qobject_cast<QGroupBox*>((QWidget*)ih->handle);
-    if (groupbox && !groupbox->title().isEmpty())
-    {
-      QFontMetrics fm(groupbox->font());
-      *h = fm.height();
-      return 1;
-    }
-  }
-
-  if (!measured)
-  {
-    int decor_w, decor_h, offset_x, offset_y;
-    qtFrameMeasureDecor(1, &decor_w, &decor_h, &offset_x, &offset_y, &cached_title_h);
-    measured = 1;
-  }
-
-  if (cached_title_h > 0)
-  {
-    *h = cached_title_h;
-    return 1;
-  }
-
-  return 0;
+  *h = qtFrameTitleHeight(ih);
+  return 1;
 }
 
 extern "C" IUP_SDK_API int iupdrvFrameGetDecorSize(Ihandle* ih, int* w, int* h)
 {
-  static int titled_measured = 0, untitled_measured = 0;
-  static int titled_w = 0, titled_h = 0;
-  static int untitled_w = 0, untitled_h = 0;
-  const char* title = iupAttribGet(ih, "TITLE");
-  int has_title = (title && *title) ? 1 : 0;
-
-  if (has_title)
-  {
-    if (!titled_measured)
-    {
-      int offset_x, offset_y, title_h;
-      qtFrameMeasureDecor(1, &titled_w, &titled_h, &offset_x, &offset_y, &title_h);
-      titled_measured = 1;
-    }
-    *w = titled_w;
-    *h = titled_h;
-  }
-  else
-  {
-    if (!untitled_measured)
-    {
-      int offset_x, offset_y, title_h;
-      qtFrameMeasureDecor(0, &untitled_w, &untitled_h, &offset_x, &offset_y, &title_h);
-      untitled_measured = 1;
-    }
-    *w = untitled_w;
-    *h = untitled_h;
-  }
-
+  *w = 6;
+  *h = qtFrameHasTitle(ih) ? qtFrameTitleHeight(ih) + 5 : 6;
   return 1;
 }
 
@@ -197,16 +123,8 @@ static int qtFrameSetSunkenAttrib(Ihandle* ih, const char* value)
     QGroupBox* groupbox = qobject_cast<QGroupBox*>((QWidget*)ih->handle);
     if (groupbox)
     {
-      if (iupStrBoolean(value))
-      {
-        groupbox->setStyleSheet("QGroupBox { border: 1px inset gray; padding: 2px; margin-top: 0px; }");
-        iupAttribSet(ih, "_IUPFRAME_SUNKEN", "1");
-      }
-      else
-      {
-        groupbox->setStyleSheet("QGroupBox { border: 1px solid gray; padding: 2px; margin-top: 0px; }");
-        iupAttribSet(ih, "_IUPFRAME_SUNKEN", NULL);
-      }
+      iupAttribSet(ih, "_IUPFRAME_SUNKEN", iupStrBoolean(value) ? "1" : NULL);
+      qtFrameUpdateStyleSheet(ih, groupbox);
 
       return 1;
     }
@@ -298,7 +216,10 @@ static int qtFrameSetFontAttrib(Ihandle* ih, const char* value)
   {
     QGroupBox* groupbox = qobject_cast<QGroupBox*>((QWidget*)ih->handle);
     if (groupbox)
+    {
       iupqtUpdateWidgetFont(ih, groupbox);
+      qtFrameUpdateStyleSheet(ih, groupbox);
+    }
   }
 
   return 1;
@@ -349,19 +270,16 @@ static int qtFrameMapMethod(Ihandle* ih)
   {
     groupbox->setTitle(QString::fromUtf8(title));
     iupAttribSet(ih, "_IUPFRAME_HAS_TITLE", "1");
-
-    groupbox->setStyleSheet("QGroupBox { border: 1px solid gray; padding: 2px; margin-top: 0.5em; } "
-                           "QGroupBox::title { subcontrol-origin: margin; subcontrol-position: top left; padding: 0 3px; }");
   }
   else
   {
     groupbox->setTitle(QString());
 
-    groupbox->setStyleSheet("QGroupBox { border: 1px solid gray; padding: 2px; margin-top: 0px; }");
-
     if (iupAttribGet(ih, "BGCOLOR") || iupAttribGet(ih, "BACKCOLOR"))
       iupAttribSet(ih, "_IUPFRAME_HAS_BGCOLOR", "1");
   }
+
+  qtFrameUpdateStyleSheet(ih, groupbox);
 
   groupbox->setFlat(false);
   frame_widget = groupbox;

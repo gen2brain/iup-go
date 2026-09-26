@@ -119,8 +119,14 @@ public:
 
     if (isVisible())
     {
+      bool was_active = isActiveWindow();
       setWindowFlags(flags);
       show();
+      if (was_active)
+      {
+        raise();
+        activateWindow();
+      }
     }
     else if (windowHandle())
       setWindowFlags(flags);
@@ -199,14 +205,14 @@ protected:
     int border = 0, caption = 0, menu = 0;
     iupdrvDialogGetDecoration(iup_handle, &border, &caption, &menu);
 
-    int new_width = event->size().width() + 2*border;
-    int new_height = event->size().height() + 2*border + caption;
+    int new_width = width() + 2*border;
+    int new_height = height() + 2*border + caption;
 
     iup_handle->currentwidth = new_width;
     iup_handle->currentheight = new_height;
 
     IFnii cb = (IFnii)IupGetCallback(iup_handle, "RESIZE_CB");
-    if (!cb || cb(iup_handle, event->size().width(), event->size().height() - menu) != IUP_IGNORE)
+    if (!cb || cb(iup_handle, width(), height() - menu) != IUP_IGNORE)
     {
       iup_handle->data->ignore_resize = 1;
       IupRefresh(iup_handle);

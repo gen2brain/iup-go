@@ -6,6 +6,10 @@
 
 #include <QProgressBar>
 #include <QWidget>
+#include <QApplication>
+#include <QPainter>
+#include <QStyle>
+#include <QStyleOptionProgressBar>
 
 extern "C" {
 #include "iup.h"
@@ -17,6 +21,24 @@ extern "C" {
 
 #include "iupqt_drv.h"
 
+
+class IupQtProgressBar : public QProgressBar
+{
+protected:
+  void paintEvent(QPaintEvent* event) override
+  {
+    if (minimum() == 0 && maximum() == 0 && styleSheet().isEmpty())
+    {
+      QPainter painter(this);
+      QStyleOptionProgressBar opt;
+      initStyleOption(&opt);
+      QApplication::style()->drawControl(QStyle::CE_ProgressBar, &opt, &painter, this);
+      return;
+    }
+
+    QProgressBar::paintEvent(event);
+  }
+};
 
 /****************************************************************************
  * Min Size Calculation
@@ -285,7 +307,7 @@ static int qtProgressBarSetFgColorAttrib(Ihandle* ih, const char* value)
 
 static int qtProgressBarMapMethod(Ihandle* ih)
 {
-  QProgressBar* pbar = new QProgressBar();
+  QProgressBar* pbar = new IupQtProgressBar();
 
   ih->handle = (InativeHandle*)pbar;
 
