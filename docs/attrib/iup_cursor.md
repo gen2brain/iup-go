@@ -37,9 +37,11 @@ It will check first for the following predefined names:
 
 Default: "ARROW"
 
-If it is not a pre-defined name, drivers that map cursors via system-theme names (GTK, GTK4, Qt, Motif, EFL) try the platform's cursor theme. Win32 tries the application resources. Motif also accepts an X-Windows cursor number from `cursorfont.h` (or an Xcursor file on Motif 2.4.0+).
+If it is not a pre-defined name, drivers that map cursors via system-theme names (GTK, GTK4, Qt, Motif) try the platform's cursor theme. EFL on Wayland tries the EFL theme cursors. Win32 tries the application resources. Motif also accepts an X-Windows cursor number from `cursorfont.h` (or an Xcursor file on Motif 2.4.0+).
 
 In macOS, the RESIZE and SPLITTER names use the system frame, row and column resize cursors on macOS 15 and later. HELP shows the contextual menu cursor and UPARROW the arrow.
+
+In EFL on Wayland, the pre-defined names also come from the EFL theme; the default theme has ARROW, HAND, TEXT and the single-direction RESIZE names, and the others show the arrow.
 
 If no system cursors were found, then the value will be used to try to find an IUP image with the same name.
 Use **IupSetHandle** to define a name for an **IupImage**.
@@ -52,7 +54,7 @@ The default value is "0:0".
 
 Usually only color indices 0, 1 and 2 can be used in a cursor, where 0 will be transparent (must be "BGCOLOR").
 The RGB colors corresponding to indices 1 and 2 are defined just as in regular images.
-In Windows, GTK, macOS and Qt, the cursor can have more than 2 colors and support RGBA images.
+In Windows, GTK, macOS, Qt and EFL, the cursor can have more than 2 colors and support RGBA images.
 Cursor sizes are usually less than or equal to 32x32.
 
 The cursor will only change when the interface system regains control or when IupFlush is called.

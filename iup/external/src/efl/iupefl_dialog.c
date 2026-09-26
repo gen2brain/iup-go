@@ -860,6 +860,7 @@ static int eflDialogMapMethod(Ihandle* ih)
   efl_event_callback_add(win, EFL_EVENT_KEY_DOWN, eflDialogKeyDownCallback, ih);
   efl_event_callback_add(win, EFL_EVENT_POINTER_IN, iupeflPointerInEvent, ih);
   efl_event_callback_add(win, EFL_EVENT_POINTER_OUT, iupeflPointerOutEvent, ih);
+  iupeflCursorInit();
 
   if (iupAttribGet(ih, "TITLE"))
     has_titlebar = 1;

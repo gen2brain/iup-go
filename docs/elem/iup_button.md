@@ -58,6 +58,7 @@ Can be "YES" or "NO". Default: "NO".
 **IMAGEPOSITION** (creation-only) (non-inheritable): Position of the image relative to the text when both are displayed.
 Can be: LEFT, RIGHT, TOP, BOTTOM. Default: LEFT.
 Not supported in Motif and EFL.
+On Android BOTTOM is displayed as TOP.
 
 **MARKUP**: allows the title string to contain markup commands.
 Supports a Pango-like subset: `<b>`, `<i>`, `<u>`, `<s>`, `<sub>`, `<sup>`, `<big>`, `<small>`, and `<span>` with `foreground`, `background`, `font_family`, `font_size`, `font_weight`, `font_style` attributes.
