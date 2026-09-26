@@ -39,8 +39,14 @@ EMSCRIPTEN_KEEPALIVE void iupwasmDispatchTimer(int ihptr)
   if (!iupObjectCheck(ih))
     return;
   cb = IupGetCallback(ih, "ACTION_CB");
-  if (cb && cb(ih) == IUP_CLOSE)
-    IupExitLoop();
+  if (cb)
+  {
+    double start = iupAttribGetDouble(ih, "_IUPWASM_TIMER_START");
+    iupAttribSetInt(ih, "ELAPSEDTIME", (int)(emscripten_get_now() - start));
+
+    if (cb(ih) == IUP_CLOSE)
+      IupExitLoop();
+  }
 }
 
 IUP_SDK_API void iupdrvTimerRun(Ihandle* ih)
@@ -52,6 +58,7 @@ IUP_SDK_API void iupdrvTimerRun(Ihandle* ih)
   if (time_ms > 0)
   {
     ih->serial = ++wasm_timer_last_id;
+    iupAttribSetDouble(ih, "_IUPWASM_TIMER_START", emscripten_get_now());
     iupwasmJsTimerRun(ih->serial, (int)(intptr_t)ih, time_ms);
   }
 }
