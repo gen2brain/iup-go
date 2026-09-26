@@ -31,7 +31,7 @@ Can be "BOTTOM", "TOP", "LEFT", "RIGHT", "BOTTOMLEFT", "BOTTOMRIGHT", "TOPLEFT",
 
 The basic values (BOTTOM, TOP, LEFT, RIGHT) center the popover along the anchor edge. The compound values specify both the edge and the alignment: the first word is the edge where the popover appears, the second word is the alignment along that edge. For example, "BOTTOMLEFT" places the popover below the anchor with left edges aligned, and "RIGHTTOP" places it to the right with top edges aligned.
 
-In WinUI all positions map directly to native FlyoutPlacementMode. In GTK 3 and GTK 4 the edge-aligned positions are approximated using the native popover positioning with offsets. In other systems the positions are calculated manually.
+In WinUI all positions map directly to native FlyoutPlacementMode, in GTK 4 to the native popover alignment. In GTK 3 the edge-aligned positions are approximated using the native popover positioning with offsets. In other systems the positions are calculated manually.
 
 **OFFSETX** (non-inheritable): Horizontal pixel offset added to the computed popover position. Can be positive or negative. Default: "0".
 In macOS the offset is applied only while the resulting position stays inside the dialog.
