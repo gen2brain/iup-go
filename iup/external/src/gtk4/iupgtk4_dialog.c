@@ -23,6 +23,7 @@
 #include "iup_str.h"
 #define _IUPDLG_PRIVATE
 #include "iup_dialog.h"
+#include "iup_dlglist.h"
 #include "iup_image.h"
 
 #include "iupgtk4_drv.h"
@@ -194,9 +195,14 @@ IUP_SDK_API void iupdrvDialogGetPosition(Ihandle* ih, InativeHandle* handle, int
 #ifdef GDK_WINDOWING_X11
     if (surface && iupgtk4X11IsBackend())
     {
-      int gx = 0, gy = 0;
+      int gx = 0, gy = 0, left = 0, top = 0;
       if (iupgtk4X11GetWindowPosition(surface, &gx, &gy))
       {
+        if (iupgtk4X11GetFrameExtents(surface, &left, &top))
+        {
+          gx -= left;
+          gy -= top;
+        }
         if (x) *x = gx;
         if (y) *y = gy;
         return;
@@ -558,6 +564,34 @@ static void gtk4DialogSurfaceStateChanged(GObject* surface, GParamSpec* pspec, I
   }
 }
 
+#ifdef GDK_WINDOWING_X11
+static void gtk4DialogX11Configure(unsigned long xid)
+{
+  Ihandle* ih = iupDlgListFirst();
+  while (ih)
+  {
+    if (ih->handle && iupgtk4X11GetSurfaceXid(iupgtk4GetSurface(ih->handle)) == xid)
+    {
+      int x, y;
+      iupdrvDialogGetPosition(ih, NULL, &x, &y);
+
+      if (x != iupAttribGetInt(ih, "_IUPGTK4_OLD_X") || y != iupAttribGetInt(ih, "_IUPGTK4_OLD_Y"))
+      {
+        IFnii cb;
+        iupAttribSetInt(ih, "_IUPGTK4_OLD_X", x);
+        iupAttribSetInt(ih, "_IUPGTK4_OLD_Y", y);
+
+        cb = (IFnii)IupGetCallback(ih, "MOVE_CB");
+        if (cb)
+          cb(ih, x, y);
+      }
+      return;
+    }
+    ih = iupDlgListNext();
+  }
+}
+#endif
+
 /* The GdkSurface only exists after realize; connect the state signal there. */
 static void gtk4DialogRealize(GtkWidget* widget, Ihandle* ih)
 {
@@ -567,6 +601,11 @@ static void gtk4DialogRealize(GtkWidget* widget, Ihandle* ih)
     gulong handler_id = g_signal_connect(G_OBJECT(surface), "notify::state", G_CALLBACK(gtk4DialogSurfaceStateChanged), ih);
     iupAttribSet(ih, "_IUPGTK4_STATE_HANDLER", (char*)(uintptr_t)handler_id);
   }
+
+#ifdef GDK_WINDOWING_X11
+  if (iupgtk4X11IsBackend())
+    iupgtk4X11WatchConfigure(gtk4DialogX11Configure);
+#endif
 }
 
 static int gtk4DialogMapMethod(Ihandle* ih)

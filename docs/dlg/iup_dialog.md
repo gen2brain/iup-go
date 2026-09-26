@@ -380,7 +380,9 @@ It is called after the common callbacks GETFOCUS_CB and KILL_FOCUS_CB.
 
 **MOVE_CB**: Called after the dialog was moved on screen.
 The coordinates are the same as the [SCREENPOSITION](../attrib/iup_screenposition.md) attribute.
-Not supported in GTK 4 (no window position API), Android and iOS (dialogs are fullscreen).
+Not supported in Android and iOS.
+On X11 it may be called several times during a move, depending on the window manager.
+On Wayland it is not called when the dialog is moved; Qt and EFL call it when the dialog is shown, with 0,0 or the position passed to [IupShowXY](../func/iup_showxy.md).
 
     int function(Ihandle *ih, int x, int y);
 
