@@ -17,10 +17,18 @@
 #include "iupmot_drv.h"
 
 
+static long long motTimerNow(void)
+{
+  struct timespec ts;
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  return (long long)ts.tv_sec * 1000 + ts.tv_nsec / 1000000;
+}
+
 static void motTimerProc(XtPointer client_data, XtIntervalId* id)
 {
   Ihandle* ih = (Ihandle*)client_data;
   Icallback cb;
+  unsigned int time_ms;
   (void)id;
 
   if (!iupObjectCheck(ih))   /* control could be destroyed before timer callback */
@@ -28,15 +36,19 @@ static void motTimerProc(XtPointer client_data, XtIntervalId* id)
 
   ih->serial = -1;
   iupAttribSet(ih, "_IUPMOT_TIMERID", NULL);
-  /* we have to restart the timer every time */
-  iupdrvTimerRun(ih);
+
+  time_ms = iupAttribGetInt(ih, "TIME");
+  if (time_ms > 0)
+  {
+    ih->serial = 1;
+    iupAttribSet(ih, "_IUPMOT_TIMERID", (char*)XtAppAddTimeOut(iupmot_appcontext, time_ms, motTimerProc, (XtPointer)ih));
+  }
 
   cb = IupGetCallback(ih, "ACTION_CB");
   if (cb)
   {
-    long long end = (long long)clock();
     long long start = iupTimerGetLongLong(ih, "STARTCOUNT");
-    iupAttribSetInt(ih, "ELAPSEDTIME", (int)(end - start));
+    iupAttribSetInt(ih, "ELAPSEDTIME", (int)(motTimerNow() - start));
 
     if (cb(ih) == IUP_CLOSE)
       IupExitLoop();
@@ -53,15 +65,9 @@ IUP_SDK_API void iupdrvTimerRun(Ihandle* ih)
   time_ms = iupAttribGetInt(ih, "TIME");
   if (time_ms > 0)
   {
-    long long start;
-    XtIntervalId id;
-
-    id = XtAppAddTimeOut(iupmot_appcontext, time_ms, motTimerProc, (XtPointer)ih);
     ih->serial = 1;
-    iupAttribSet(ih, "_IUPMOT_TIMERID", (char*)id);
-
-    start = (long long)clock();
-    iupAttribSetStrf(ih, "STARTCOUNT", "%lld", start);
+    iupAttribSet(ih, "_IUPMOT_TIMERID", (char*)XtAppAddTimeOut(iupmot_appcontext, time_ms, motTimerProc, (XtPointer)ih));
+    iupAttribSetStrf(ih, "STARTCOUNT", "%lld", motTimerNow());
   }
 }
 
