@@ -1918,11 +1918,95 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
   }
 }
 
+static Pixmap motDrawGetImageARGB(IdrawCanvas* dc, const char* name, int make_inactive, const char* bgcolor, long tint)
+{
+  char cache_name[100];
+  Ihandle* image;
+  Pixmap pixmap;
+  XImage* ximage;
+  GC gc;
+  unsigned char* rgba;
+  int img_w, img_h, px, py, pos;
+
+  if (!name || !XRenderFindStandardFormat(iupmot_display, PictStandardARGB32))
+    return 0;
+
+  image = iupImageGetImageFromName(name);
+  if (!image)
+    return 0;
+
+  if (make_inactive)
+  {
+    char* img_bgcolor = iupAttribGet(image, "BGCOLOR");
+    if (img_bgcolor)
+      bgcolor = img_bgcolor;
+    else if (!bgcolor)
+      bgcolor = IupGetAttribute(dc->ih, "BGCOLOR");
+  }
+
+  pos = snprintf(cache_name, sizeof(cache_name), "_IUPIMAGE_IMAGE_ARGB%s(%ld)", make_inactive ? "_INACTIVE" : "", tint);
+  if (make_inactive && bgcolor)
+    snprintf(cache_name + pos, sizeof(cache_name) - pos, "(%s)", bgcolor);
+
+  pixmap = (Pixmap)iupAttribGet(image, cache_name);
+  if (pixmap)
+    return pixmap;
+
+  rgba = iupImageGetRGBAData(image, make_inactive, bgcolor, &img_w, &img_h);
+  if (!rgba)
+    return 0;
+
+  ximage = XCreateImage(iupmot_display, iupmot_visual, 32, ZPixmap, 0, NULL, img_w, img_h, 32, 0);
+  if (!ximage)
+  {
+    free(rgba);
+    return 0;
+  }
+
+  ximage->data = (char*)malloc((size_t)ximage->bytes_per_line * img_h);
+  if (!ximage->data)
+  {
+    XDestroyImage(ximage);
+    free(rgba);
+    return 0;
+  }
+
+  for (py = 0; py < img_h; py++)
+  {
+    for (px = 0; px < img_w; px++)
+    {
+      unsigned char* p = rgba + ((size_t)py * img_w + px) * 4;
+      unsigned long r = p[0], g = p[1], b = p[2], a = p[3];
+
+      if (tint != IUP_DRAW_NO_TINT)
+      {
+        r = iupDrawRed(tint);
+        g = iupDrawGreen(tint);
+        b = iupDrawBlue(tint);
+        a = (a * iupDrawAlpha(tint)) / 255;
+      }
+
+      XPutPixel(ximage, px, py, (a << 24) | ((r * a / 255) << 16) | ((g * a / 255) << 8) | (b * a / 255));
+    }
+  }
+  free(rgba);
+
+  pixmap = XCreatePixmap(iupmot_display, RootWindow(iupmot_display, iupmot_screen), img_w, img_h, 32);
+  gc = XCreateGC(iupmot_display, pixmap, 0, NULL);
+  XPutImage(iupmot_display, pixmap, gc, ximage, 0, 0, 0, 0, img_w, img_h);
+  XFreeGC(iupmot_display, gc);
+  XDestroyImage(ximage);
+
+  iupAttribSet(image, cache_name, (char*)pixmap);
+  return pixmap;
+}
+
 IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_inactive, const char* bgcolor, long tint, int opacity, int x, int y, int w, int h, int sx, int sy, int sw, int sh, int quality)
 {
   int img_w, img_h;
   int bpp;
-  Pixmap pixmap = (Pixmap)iupImageGetImageTint(name, dc->ih, make_inactive, bgcolor, tint);
+  Pixmap argb = dc->pict ? motDrawGetImageARGB(dc, name, make_inactive, bgcolor, tint) : 0;
+  Pixmap pixmap = argb ? argb : (Pixmap)iupImageGetImageTint(name, dc->ih, make_inactive, bgcolor, tint);
   if (!pixmap)
     return;
 
@@ -1941,7 +2025,7 @@ IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_ina
 
   if (motDrawTransformActive(dc) && dc->pict)
   {
-    XRenderPictFormat* fmt = XRenderFindVisualFormat(iupmot_display, iupmot_visual);
+    XRenderPictFormat* fmt = argb ? XRenderFindStandardFormat(iupmot_display, PictStandardARGB32) : XRenderFindVisualFormat(iupmot_display, iupmot_visual);
     ImotTransformMask m;
     if (fmt && motDrawTransformMaskBegin(dc, &m, x, y, x + w - 1, y + h - 1, 1, 1))
     {
@@ -1958,7 +2042,7 @@ IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_ina
 
   if (dc->pict)
   {
-    XRenderPictFormat* fmt = XRenderFindVisualFormat(iupmot_display, iupmot_visual);
+    XRenderPictFormat* fmt = argb ? XRenderFindStandardFormat(iupmot_display, PictStandardARGB32) : XRenderFindVisualFormat(iupmot_display, iupmot_visual);
     if (fmt)
     {
       Picture src = XRenderCreatePicture(iupmot_display, pixmap, fmt, 0, NULL);
