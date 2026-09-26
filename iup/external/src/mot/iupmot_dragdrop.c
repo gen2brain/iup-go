@@ -11,6 +11,10 @@
 
 #include <Xm/Xm.h>
 #include <Xm/DragDrop.h>
+#include <Xm/List.h>
+#include <Xm/DisplayP.h>
+#include <Xm/DragCP.h>
+#include <Xm/DropSMgrP.h>
 #include <X11/Xatom.h>
 
 #include "iup.h"
@@ -49,6 +53,55 @@ IUP_DRV_API void iupmotDisableDragSource(Widget w)
   XtOverrideTranslations(w, drag_translations);
 }
 
+/* same layout as XmDragTopLevelClientDataStruct in Motif's DragCI.h, which is not installed */
+typedef struct _ImotDragTopLevelClientData {
+  Widget destShell;
+  Position xOrigin, yOrigin;
+  Dimension width, height;
+  XtPointer iccInfo;
+  Boolean sourceIsExternal;
+  Window window;
+  Widget dragOver;
+} ImotDragTopLevelClientData;
+
+static void motDragDropFinishLeave(Widget w, XtPointer clientData, XtPointer callData)
+{
+  XmDragContext dc = (XmDragContext)w;
+  XmDropSiteManagerObject dsm = ((XmDisplay)XtParent(w))->display.dsm;
+  XmDragReceiverInfo receiver = dc->drag.currReceiverInfo;
+  ImotDragTopLevelClientData cd;
+  XmTopLevelLeaveCallbackStruct cb;
+
+  if (!dsm || dsm->dropManager.curDragContext != w || !receiver)
+    return;
+
+  cd.destShell = receiver->shell;
+  cd.xOrigin = (Position)receiver->xOrigin;
+  cd.yOrigin = (Position)receiver->yOrigin;
+  cd.width = (Dimension)receiver->width;
+  cd.height = (Dimension)receiver->height;
+  cd.iccInfo = receiver->iccInfo;
+  cd.sourceIsExternal = dc->drag.sourceIsExternal;
+  cd.window = receiver->window;
+  cd.dragOver = (Widget)dc->drag.curDragOver;
+
+  cb.reason = XmCR_TOP_LEVEL_LEAVE;
+  cb.event = NULL;
+  cb.timeStamp = dc->drag.dragFinishTime;
+  cb.screen = dc->drag.currScreen;
+  cb.window = dc->drag.srcWindow;
+
+  DSMChangeRoot(dsm, (XtPointer)&cd, (XtPointer)&cb);
+
+  (void)clientData;
+  (void)callData;
+}
+
+IUP_DRV_API void iupmotDragAddFinishLeave(Widget dragContext)
+{
+  XtAddCallback(dragContext, XmNdragDropFinishCallback, motDragDropFinishLeave, NULL);
+}
+
 static void motDropTransferProc(Widget dropTransfer, Ihandle* ih, Atom* selType, Atom* typeAtom,
                                 XtPointer targetData, unsigned long* length, int format)
 {
@@ -75,6 +128,25 @@ static void motDropTransferProc(Widget dropTransfer, Ihandle* ih, Atom* selType,
   (void)selType;
 }
 
+static void motDropSiteToControl(Ihandle* ih, Widget dropTarget, int* x, int* y)
+{
+  Widget extra = (Widget)iupAttribGet(ih, "_IUPMOT_DROP_EXTRA");
+  Widget w;
+  Position sx, sy, wx, wy;
+
+  if (!extra || dropTarget != extra)
+    return;
+
+  w = (Widget)iupAttribGet(ih, "_IUPMOT_DND_WIDGET");
+  if (!w)
+    w = ih->handle;
+
+  XtTranslateCoords(dropTarget, (Position)*x, (Position)*y, &sx, &sy);
+  XtTranslateCoords(w, 0, 0, &wx, &wy);
+  *x = sx - wx;
+  *y = sy - wy;
+}
+
 static void motDragProc(Widget dropTarget, XtPointer clientData, XmDragProcCallbackStruct* cbs)
 {
   (void)clientData;
@@ -95,6 +167,8 @@ static void motDragProc(Widget dropTarget, XtPointer clientData, XmDragProcCallb
       Window window;
       unsigned int state;
       char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
+
+      motDropSiteToControl(ih, dropTarget, &x, &y);
 
       XQueryPointer(iupmot_display, DefaultRootWindow(iupmot_display), &window, &window, &z, &z, &z, &z, &state);
       iupmotButtonKeySetStatus(state, 0, status, 0);
@@ -161,10 +235,13 @@ static void motDropProc(Widget dropTarget, XtPointer clientData, XmDropProcCallb
   }
   else
   {
-    XtVaGetValues(dropTarget, XmNuserData, &ih, NULL);
+    int x = (int)dropData->x, y = (int)dropData->y;
 
-    iupAttribSetInt(ih, "_IUPMOT_DROP_X", (int)dropData->x);
-    iupAttribSetInt(ih, "_IUPMOT_DROP_Y", (int)dropData->y);
+    XtVaGetValues(dropTarget, XmNuserData, &ih, NULL);
+    motDropSiteToControl(ih, dropTarget, &x, &y);
+
+    iupAttribSetInt(ih, "_IUPMOT_DROP_X", x);
+    iupAttribSetInt(ih, "_IUPMOT_DROP_Y", y);
 
     /* set up transfer requests for drop site */
     transferList[0].target = atomItem;
@@ -318,6 +395,23 @@ static void motDragStartFromEvent(Widget dragSource, Ihandle* ih, XEvent* evt)
       iupMOT_SETARG(args, num_args, XmNoperationCursorIcon, copy_icon);
   }
 
+  if (XmIsList(dragSource))
+  {
+    int pos = XmListYToPos(dragSource, (Position)evt->xbutton.y);
+    int* selected = NULL;
+    int count = 0, i, committed = 0;
+
+    XtVaGetValues(dragSource, XmNselectedPositions, &selected, XmNselectedPositionCount, &count, NULL);
+    for (i = 0; selected && i < count; i++)
+    {
+      if (selected[i] == pos)
+        committed = 1;
+    }
+
+    if (pos > 0 && !committed)
+      XmListSelectPos(dragSource, pos, True);
+  }
+
   /* creates a XmDragContext */
   dragContext = XmDragStart(dragSource, evt, args, num_args);
 
@@ -326,6 +420,7 @@ static void motDragStartFromEvent(Widget dragSource, Ihandle* ih, XEvent* evt)
     IFnii cbDragBegin;
 
     XtAddCallback(dragContext, XmNdropFinishCallback, (XtCallbackProc)motDropFinishCallback, (XtPointer)ih);
+    iupmotDragAddFinishLeave(dragContext);
 
     if (drag_icon)
       XtAddCallback(dragContext, XmNdragDropFinishCallback, (XtCallbackProc)motDragCursorFinishCallback, NULL);
@@ -462,9 +557,26 @@ static int motSetDropTypesAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
+static void motSetDropSite(Ihandle* ih, Widget w, Arg* args, int num_args)
+{
+  if (XmDropSiteRegistered(w))
+    XmDropSiteUpdate(w, args, num_args);
+  else
+    XmDropSiteRegister(w, args, num_args);
+
+  XtVaSetValues(w, XmNuserData, ih, NULL);  /* Warning: always check if this affects other controls */
+}
+
+static void motUnsetDropSite(Widget w)
+{
+  if (XmDropSiteRegistered(w))
+    XmDropSiteUnregister(w);
+}
+
 static int motSetDropTargetAttrib(Ihandle* ih, const char* value)
 {
   Widget w = (Widget)iupAttribGet(ih, "_IUPMOT_DND_WIDGET");
+  Widget extra = (Widget)iupAttribGet(ih, "_IUPMOT_DROP_EXTRA");
   if (!w)
     w = ih->handle;
 
@@ -484,15 +596,16 @@ static int motSetDropTargetAttrib(Ihandle* ih, const char* value)
     iupMOT_SETARG(args, num_args, XmNdropProc, motDropProc);
     iupMOT_SETARG(args, num_args, XmNdragProc, motDragProc);
 
-    if (iupAttribGet(ih, "_IUPMOT_DROPSITE"))
-      XmDropSiteUpdate(w, args, num_args);
-    else
-      XmDropSiteRegister(w, args, num_args);
-
-    XtVaSetValues(w, XmNuserData, ih, NULL);  /* Warning: always check if this affects other controls */
+    motSetDropSite(ih, w, args, num_args);
+    if (extra)
+      motSetDropSite(ih, extra, args, num_args);
   }
   else
-    XmDropSiteUnregister(w);
+  {
+    motUnsetDropSite(w);
+    if (extra)
+      motUnsetDropSite(extra);
+  }
 
   return 1;
 }
