@@ -109,16 +109,53 @@ IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
   }
 }
 
+static int motDialogGetFrameExtents(Widget shell, int* left, int* top)
+{
+  static Atom net_frame_extents = 0;
+  Atom type;
+  int format, found = 0;
+  unsigned long nitems, bytes_after;
+  unsigned char* data = NULL;
+
+  if (!XtIsRealized(shell))
+    return 0;
+
+  if (!net_frame_extents)
+    net_frame_extents = XInternAtom(iupmot_display, "_NET_FRAME_EXTENTS", False);
+
+  if (XGetWindowProperty(iupmot_display, XtWindow(shell), net_frame_extents, 0, 4, False, XA_CARDINAL,
+                         &type, &format, &nitems, &bytes_after, &data) == Success)
+  {
+    if (type == XA_CARDINAL && format == 32 && nitems == 4 && data)
+    {
+      long* extents = (long*)data;
+      *left = (int)extents[0];
+      *top = (int)extents[2];
+      found = 1;
+    }
+    if (data)
+      XFree(data);
+  }
+
+  return found;
+}
+
 IUP_SDK_API void iupdrvDialogGetPosition(Ihandle* ih, InativeHandle* handle, int* x, int* y)
 {
   Position cur_x, cur_y;
+  int left, top;
   if (!handle)
     handle = ih->handle;
   XtVaGetValues(handle, XmNx, &cur_x,
                         XmNy, &cur_y,
                         NULL);
 
-  if (ih)
+  if (motDialogGetFrameExtents((Widget)handle, &left, &top))
+  {
+    cur_x -= (Position)left;
+    cur_y -= (Position)top;
+  }
+  else if (ih)
   {
     int border, caption, menu;
     iupdrvDialogGetDecoration(ih, &border, &caption, &menu);
@@ -1016,18 +1053,19 @@ static void motDialogConfigureNotify(Widget w, XEvent* evt, String* s, Cardinal*
     IupRefresh(ih);
     ih->data->ignore_resize = 0;
   }
+}
 
+static void motDialogCheckMove(Ihandle* ih)
+{
+  int x, y;
+  iupdrvDialogGetPosition(ih, NULL, &x, &y);
+  if (x != iupAttribGetInt(ih, "_IUPMOT_OLD_X") || y != iupAttribGetInt(ih, "_IUPMOT_OLD_Y"))
   {
-    int x, y;
-    iupdrvDialogGetPosition(ih, NULL, &x, &y);
-    if (x != iupAttribGetInt(ih, "_IUPMOT_OLD_X") || y != iupAttribGetInt(ih, "_IUPMOT_OLD_Y"))
-    {
-      IFnii move_cb = (IFnii)IupGetCallback(ih, "MOVE_CB");
-      iupAttribSetInt(ih, "_IUPMOT_OLD_X", x);
-      iupAttribSetInt(ih, "_IUPMOT_OLD_Y", y);
-      if (move_cb)
-        move_cb(ih, x, y);
-    }
+    IFnii move_cb = (IFnii)IupGetCallback(ih, "MOVE_CB");
+    iupAttribSetInt(ih, "_IUPMOT_OLD_X", x);
+    iupAttribSetInt(ih, "_IUPMOT_OLD_Y", y);
+    if (move_cb)
+      move_cb(ih, x, y);
   }
 }
 
@@ -1043,6 +1081,8 @@ static void motDialogCBStructureNotifyEvent(Widget w, XtPointer data, XEvent* ev
     case ConfigureNotify:
     {
       int border, caption, menu;
+
+      motDialogCheckMove(ih);
 
       if (ih->data->ignore_resize || iupAttribGet(ih, "_IUPMOT_FS_STYLE") ||
           (ih->userwidth <= 0 && ih->userheight <= 0))
