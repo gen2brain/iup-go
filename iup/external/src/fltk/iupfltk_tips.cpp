@@ -6,9 +6,12 @@
 
 #include <FL/Fl.H>
 #include <FL/Fl_Widget.H>
+#include <FL/Fl_Group.H>
 #include <FL/Fl_Tooltip.H>
 
+#include <cstdio>
 #include <cstdlib>
+#include <map>
 
 extern "C" {
 #include "iup.h"
@@ -53,6 +56,52 @@ static void fltkTipUpdateStyle(Ihandle* ih)
     Fl_Tooltip::textcolor(fl_rgb_color(r, g, b));
 }
 
+static std::map<Fl_Widget*, Ihandle*> fltk_tip_owners;
+
+static void fltkTipUpdateRect(void)
+{
+  Fl_Widget* widget = Fl::belowmouse();
+  while (widget && !widget->tooltip())
+    widget = widget->parent();
+  if (!widget)
+    return;
+
+  std::map<Fl_Widget*, Ihandle*>::iterator found = fltk_tip_owners.find(widget);
+  if (found == fltk_tip_owners.end())
+    return;
+
+  Ihandle* ih = found->second;
+  if (!iupObjectCheck(ih) || fltkTipGetWidget(ih) != widget)
+    return;
+
+  int x1, y1, x2, y2;
+  char* rect = iupAttribGet(ih, "TIPRECT");
+  if (!rect || sscanf(rect, "%d %d %d %d", &x1, &y1, &x2, &y2) != 4)
+    return;
+
+  int x = Fl::event_x() - widget->x();
+  int y = Fl::event_y() - widget->y();
+  if (x >= x1 && x <= x2 && y >= y1 && y <= y2)
+    Fl_Tooltip::enter_area(widget, x1, y1, x2 - x1 + 1, y2 - y1 + 1, widget->tooltip());
+  else
+    Fl_Tooltip::enter_area(widget, 0, 0, 0, 0, NULL);
+}
+
+static int fltkTipDispatch(int event, Fl_Window* window)
+{
+  int ret = Fl::handle_(event, window);
+  if (event == FL_MOVE || event == FL_ENTER)
+    fltkTipUpdateRect();
+  return ret;
+}
+
+IUP_DRV_API void iupfltkTipsRemove(Ihandle* ih)
+{
+  std::map<Fl_Widget*, Ihandle*>::iterator found = fltk_tip_owners.find(fltkTipGetWidget(ih));
+  if (found != fltk_tip_owners.end() && found->second == ih)
+    fltk_tip_owners.erase(found);
+}
+
 extern "C" IUP_SDK_API int iupdrvBaseSetTipAttrib(Ihandle* ih, const char* value)
 {
   Fl_Widget* widget = fltkTipGetWidget(ih);
@@ -60,9 +109,17 @@ extern "C" IUP_SDK_API int iupdrvBaseSetTipAttrib(Ihandle* ih, const char* value
     return 0;
 
   if (!value || value[0] == 0)
+  {
     widget->copy_tooltip(NULL);
+    fltk_tip_owners.erase(widget);
+  }
   else
+  {
     widget->copy_tooltip(value);
+    fltk_tip_owners[widget] = ih;
+    if (!Fl::event_dispatch())
+      Fl::event_dispatch(fltkTipDispatch);
+  }
 
   const char* delay = iupAttribGet(ih, "TIPDELAY");
   if (delay)
