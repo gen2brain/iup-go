@@ -420,6 +420,13 @@ public final class IupButtonHelper
             g = MaterialButton.ICON_GRAVITY_TEXT_TOP;
         else g = MaterialButton.ICON_GRAVITY_TEXT_START;
         mb.setIconGravity(g);
+        /* Before layout the gravity change does not move an existing icon; re-setting it does. */
+        Drawable icon = mb.getIcon();
+        if (icon != null)
+        {
+            mb.setIcon(null);
+            mb.setIcon(icon);
+        }
     }
 
 
