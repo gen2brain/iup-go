@@ -14,6 +14,7 @@
 #include <FL/Fl_Widget.H>
 #include <FL/Fl_Group.H>
 #include <FL/Fl_Window.H>
+#include <FL/Fl_RGB_Image.H>
 #include <FL/Fl_Menu_Bar.H>
 #include <FL/fl_draw.H>
 #include <FL/Enumerations.H>
@@ -27,6 +28,7 @@ extern "C" {
 #include "iup_str.h"
 #include "iup_class.h"
 #include "iup_attrib.h"
+#include "iup_image.h"
 #include "iup_drv.h"
 #include "iup_dialog.h"
 #include "iup_dlglist.h"
@@ -317,6 +319,107 @@ extern "C" IUP_SDK_API void iupdrvClientToScreen(Ihandle* ih, int* x, int* y)
 }
 
 /****************************************************************************
+ * Cursor Management
+ ****************************************************************************/
+
+static int fltkFindCursorShape(const char* name, Fl_Cursor* shape)
+{
+  struct {
+    const char* iupname;
+    Fl_Cursor flcursor;
+  } table[] = {
+    { "NONE",           FL_CURSOR_NONE },
+    { "NULL",           FL_CURSOR_NONE },
+    { "ARROW",          FL_CURSOR_ARROW },
+    { "BUSY",           FL_CURSOR_WAIT },
+    { "CROSS",          FL_CURSOR_CROSS },
+    { "HAND",           FL_CURSOR_HAND },
+    { "HELP",           FL_CURSOR_HELP },
+    { "IUP",            FL_CURSOR_HELP },
+    { "MOVE",           FL_CURSOR_MOVE },
+    { "PEN",            FL_CURSOR_CROSS },
+    { "RESIZE_N",       FL_CURSOR_N },
+    { "RESIZE_S",       FL_CURSOR_S },
+    { "RESIZE_NS",      FL_CURSOR_NS },
+    { "SPLITTER_HORIZ", FL_CURSOR_NS },
+    { "RESIZE_W",       FL_CURSOR_W },
+    { "RESIZE_E",       FL_CURSOR_E },
+    { "RESIZE_WE",      FL_CURSOR_WE },
+    { "SPLITTER_VERT",  FL_CURSOR_WE },
+    { "RESIZE_NE",      FL_CURSOR_NE },
+    { "RESIZE_SE",      FL_CURSOR_SE },
+    { "RESIZE_NW",      FL_CURSOR_NW },
+    { "RESIZE_SW",      FL_CURSOR_SW },
+    { "TEXT",           FL_CURSOR_INSERT },
+    { "UPARROW",        FL_CURSOR_ARROW },
+  };
+
+  int i, count = sizeof(table) / sizeof(table[0]);
+
+  for (i = 0; i < count; i++)
+  {
+    if (iupStrEqualNoCase(name, table[i].iupname))
+    {
+      *shape = table[i].flcursor;
+      return 1;
+    }
+  }
+
+  return 0;
+}
+
+static void fltkWindowSetCursor(Fl_Window* win, const char* name)
+{
+  Fl_Cursor shape;
+  if (fltkFindCursorShape(name, &shape))
+  {
+    win->cursor(shape);
+    return;
+  }
+
+  Fl_RGB_Image* image = (Fl_RGB_Image*)iupImageGetCursor(name);
+  if (image)
+  {
+    int hx = 0, hy = 0;
+    Ihandle* image_ih = iupImageGetImageFromName(name);
+    if (image_ih)
+      iupStrToIntInt(iupAttribGet(image_ih, "HOTSPOT"), &hx, &hy, ':');
+    win->cursor(image, hx, hy);
+    return;
+  }
+
+  win->cursor(FL_CURSOR_ARROW);
+}
+
+static int fltkWidgetHasMouse(Fl_Widget* widget)
+{
+  Fl_Widget* below = Fl::belowmouse();
+  return below && (below == widget || below->inside(widget));
+}
+
+extern "C" IUP_SDK_API int iupdrvBaseSetCursorAttrib(Ihandle* ih, const char* value)
+{
+  if (!ih->handle || !value)
+    return 0;
+
+  Fl_Widget* widget = (Fl_Widget*)ih->handle;
+  Fl_Window* win = widget->as_window();
+
+  if (win)
+  {
+    Fl_Cursor shape;
+    if (fltkFindCursorShape(value, &shape))
+      win->default_cursor(shape);
+    else
+      fltkWindowSetCursor(win, value);
+  }
+  else if (fltkWidgetHasMouse(widget) && widget->window())
+    fltkWindowSetCursor(widget->window(), value);
+
+  return 1;
+}
+
+/****************************************************************************
  * Event Handlers
  ****************************************************************************/
 
@@ -330,26 +433,19 @@ IUP_DRV_API int iupfltkEnterLeaveEvent(Fl_Widget* widget, Ihandle* ih, int event
     Icallback cb = IupGetCallback(ih, "ENTERWINDOW_CB");
     if (cb) cb(ih);
 
-    int cursor = iupAttribGetInt(ih, "_IUPFLTK_CURSOR");
-    if (cursor)
-    {
-      Fl_Window* win = widget->window();
-      if (win)
-        win->cursor((Fl_Cursor)cursor);
-    }
+    char* cursor = iupAttribGet(ih, "CURSOR");
+    Fl_Window* win = widget->window();
+    if (cursor && win)
+      fltkWindowSetCursor(win, cursor);
   }
   else if (event == FL_LEAVE)
   {
     Icallback cb = IupGetCallback(ih, "LEAVEWINDOW_CB");
     if (cb) cb(ih);
 
-    int cursor = iupAttribGetInt(ih, "_IUPFLTK_CURSOR");
-    if (cursor)
-    {
-      Fl_Window* win = widget->window();
-      if (win)
-        win->cursor(FL_CURSOR_DEFAULT);
-    }
+    Fl_Window* win = widget->window();
+    if (iupAttribGet(ih, "CURSOR") && win)
+      win->cursor(FL_CURSOR_DEFAULT);
   }
 
   return 0;
@@ -451,73 +547,6 @@ IUP_DRV_API void iupfltkButtonKeySetStatus(int state, int button, char* status, 
 
   if (doubleclick)
     iupKEY_SETDOUBLE(status);
-}
-
-/****************************************************************************
- * Cursor Management
- ****************************************************************************/
-
-static Fl_Cursor fltkGetCursorShape(const char* name)
-{
-  struct {
-    const char* iupname;
-    Fl_Cursor flcursor;
-  } table[] = {
-    { "NONE",           FL_CURSOR_NONE },
-    { "NULL",           FL_CURSOR_NONE },
-    { "ARROW",          FL_CURSOR_ARROW },
-    { "BUSY",           FL_CURSOR_WAIT },
-    { "CROSS",          FL_CURSOR_CROSS },
-    { "HAND",           FL_CURSOR_HAND },
-    { "HELP",           FL_CURSOR_HELP },
-    { "IUP",            FL_CURSOR_HELP },
-    { "MOVE",           FL_CURSOR_MOVE },
-    { "PEN",            FL_CURSOR_CROSS },
-    { "RESIZE_N",       FL_CURSOR_N },
-    { "RESIZE_S",       FL_CURSOR_S },
-    { "RESIZE_NS",      FL_CURSOR_NS },
-    { "SPLITTER_HORIZ", FL_CURSOR_NS },
-    { "RESIZE_W",       FL_CURSOR_W },
-    { "RESIZE_E",       FL_CURSOR_E },
-    { "RESIZE_WE",      FL_CURSOR_WE },
-    { "SPLITTER_VERT",  FL_CURSOR_WE },
-    { "RESIZE_NE",      FL_CURSOR_NE },
-    { "RESIZE_SE",      FL_CURSOR_SE },
-    { "RESIZE_NW",      FL_CURSOR_NW },
-    { "RESIZE_SW",      FL_CURSOR_SW },
-    { "TEXT",           FL_CURSOR_INSERT },
-    { "UPARROW",        FL_CURSOR_ARROW },
-  };
-
-  int i, count = sizeof(table) / sizeof(table[0]);
-
-  for (i = 0; i < count; i++)
-  {
-    if (iupStrEqualNoCase(name, table[i].iupname))
-      return table[i].flcursor;
-  }
-
-  return FL_CURSOR_ARROW;
-}
-
-extern "C" IUP_SDK_API int iupdrvBaseSetCursorAttrib(Ihandle* ih, const char* value)
-{
-  if (!ih->handle || !value)
-    return 0;
-
-  Fl_Widget* widget = (Fl_Widget*)ih->handle;
-  Fl_Window* win = widget->as_window();
-
-  if (win)
-  {
-    win->default_cursor(fltkGetCursorShape(value));
-  }
-  else
-  {
-    iupAttribSetInt(ih, "_IUPFLTK_CURSOR", (int)fltkGetCursorShape(value));
-  }
-
-  return 1;
 }
 
 /****************************************************************************
