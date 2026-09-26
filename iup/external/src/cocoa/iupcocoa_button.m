@@ -361,7 +361,7 @@ static int text_border_x = -1, text_border_y = -1;
 static int image_border_x = -1, image_border_y = -1;
 static int image_text_border_x = -1, image_text_border_y = -1;
 
-static void cocoaButtonMeasureBorders(Ihandle* ih, int has_image, int has_text, int img_position, int* border_x, int* border_y)
+static void cocoaButtonMeasureBorders(Ihandle* ih, int has_image, int has_text, int* border_x, int* border_y)
 {
   NSButton* temp_button = [[NSButton alloc] initWithFrame:NSZeroRect];
   [temp_button setBezelStyle:NSBezelStyleRegularSquare];
@@ -376,7 +376,7 @@ static void cocoaButtonMeasureBorders(Ihandle* ih, int has_image, int has_text, 
     {
       [temp_button setTitle:@"Test"];
       [temp_button setImage:temp_image];
-      [temp_button setImagePosition:cocoaButtonGetImagePosition(img_position)];
+      [temp_button setImagePosition:NSImageLeft];
     }
     else
     {
@@ -436,7 +436,6 @@ IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int* x, int* y)
   int has_text = 0;
   int has_bgcolor = 0;
   int has_user_padding = 0;
-  int img_position = IUP_IMGPOS_LEFT;
 
   if (ih)
   {
@@ -446,7 +445,6 @@ IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int* x, int* y)
     has_image = (image != NULL);
     has_text = (title != NULL && *title != 0);
     has_bgcolor = (!has_image && !has_text && bgcolor != NULL);
-    img_position = ih->data->img_position;
 
     has_user_padding = (ih->data->horiz_padding > 0 || ih->data->vert_padding > 0);
   }
@@ -461,7 +459,7 @@ IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int* x, int* y)
   if (has_image && has_text)
   {
     if (image_text_border_x == -1)
-      cocoaButtonMeasureBorders(ih, 1, 1, img_position, &image_text_border_x, &image_text_border_y);
+      cocoaButtonMeasureBorders(ih, 1, 1, &image_text_border_x, &image_text_border_y);
 
     border_x = image_text_border_x;
     border_y = image_text_border_y;
@@ -469,7 +467,7 @@ IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int* x, int* y)
   else if (has_image)
   {
     if (image_border_x == -1)
-      cocoaButtonMeasureBorders(ih, 1, 0, IUP_IMGPOS_LEFT, &image_border_x, &image_border_y);
+      cocoaButtonMeasureBorders(ih, 1, 0, &image_border_x, &image_border_y);
 
     border_x = image_border_x;
     border_y = image_border_y;
@@ -477,7 +475,7 @@ IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int* x, int* y)
   else
   {
     if (text_border_x == -1)
-      cocoaButtonMeasureBorders(ih, 0, 1, IUP_IMGPOS_LEFT, &text_border_x, &text_border_y);
+      cocoaButtonMeasureBorders(ih, 0, 1, &text_border_x, &text_border_y);
 
     border_x = text_border_x;
     border_y = text_border_y;
