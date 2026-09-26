@@ -47,7 +47,7 @@ using namespace Microsoft::UI::Xaml::Markup;
 using namespace Windows::ApplicationModel::DataTransfer;
 
 
-static void winuiTableApplyCellColors(Ihandle* ih, int lin, int col, Border border, TextBlock tb);
+static void winuiTableApplyCellStyle(Ihandle* ih, int lin, int col, Border border, TextBlock tb);
 
 /****************************************************************************
  * Helper Functions
@@ -319,13 +319,27 @@ static void winuiTableUpdateRowColors(Ihandle* ih, int lin)
     Border border = winuiTableGetCellBorder(rowGrid, j);
     TextBlock tb = winuiTableGetCellTextBlock(rowGrid, j);
     if (border && tb)
-      winuiTableApplyCellColors(ih, lin, j + 1, border, tb);
+      winuiTableApplyCellStyle(ih, lin, j + 1, border, tb);
   }
 }
 
-static void winuiTableUpdateCellFont(Ihandle* ih, TextBlock tb)
+static char* winuiTableGetCellFont(Ihandle* ih, int lin, int col)
 {
-  iupwinuiUpdateTextBlockFont(ih, tb);
+  char* font = iupAttribGetId2(ih, "FONT", lin, col);
+  if (!font)
+    font = iupAttribGetId2(ih, "FONT", 0, col);
+  if (!font)
+    font = iupAttribGetId2(ih, "FONT", lin, 0);
+  return (font && *font) ? font : NULL;
+}
+
+static void winuiTableUpdateCellFont(Ihandle* ih, int lin, int col, TextBlock tb)
+{
+  char* font = lin > 0 ? winuiTableGetCellFont(ih, lin, col) : NULL;
+  if (font)
+    iupwinuiUpdateTextBlockFontStr(tb, font, ih);
+  else
+    iupwinuiUpdateTextBlockFont(ih, tb);
 }
 
 static TextAlignment winuiTableGetColumnAlignment(Ihandle* ih, int col)
@@ -379,7 +393,7 @@ static Grid winuiTableCreateRowGrid(Ihandle* ih, int num_col, bool show_grid)
 
     TextBlock tb;
     tb.TextTrimming(TextTrimming::CharacterEllipsis);
-    winuiTableUpdateCellFont(ih, tb);
+    winuiTableUpdateCellFont(ih, 0, i + 1, tb);
 
     if (ih->data->show_image)
     {
@@ -443,7 +457,7 @@ static Border winuiTableCreateHeaderCell(Ihandle* ih, int col)
   TextBlock tb;
   tb.FontWeight(Windows::UI::Text::FontWeights::SemiBold());
   tb.TextTrimming(TextTrimming::CharacterEllipsis);
-  winuiTableUpdateCellFont(ih, tb);
+  winuiTableUpdateCellFont(ih, 0, col + 1, tb);
 
   if (aux && aux->col_titles && aux->col_titles[col])
     tb.Text(iupwinuiStringToHString(aux->col_titles[col]));
@@ -580,7 +594,7 @@ static void winuiTablePopulateVirtualContainer(Ihandle* ih, int lin, Primitives:
     TextBlock tb = winuiTableGetCellTextBlock(rowGrid, j);
 
     if (border && tb)
-      winuiTableApplyCellColors(ih, lin, j + 1, border, tb);
+      winuiTableApplyCellStyle(ih, lin, j + 1, border, tb);
 
     if (tb)
       tb.TextAlignment(winuiTableGetColumnAlignment(ih, j + 1));
@@ -661,7 +675,13 @@ static int winuiTableCalculateColumnWidth(Ihandle* ih, int col_index)
     int cell_width = 0;
     char* value = iupdrvTableGetCellValue(ih, lin, iup_col);
     if (value && *value)
-      cell_width = iupdrvFontGetStringWidth(ih, value);
+    {
+      char* font = winuiTableGetCellFont(ih, lin, iup_col);
+      if (font)
+        iupdrvFontGetTextSize(font, value, (int)strlen(value), &cell_width, NULL);
+      else
+        cell_width = iupdrvFontGetStringWidth(ih, value);
+    }
     cell_width += 16;
 
     if (ih->data->show_image)
@@ -932,7 +952,7 @@ static void winuiTableRebuildListViewItems(Ihandle* ih)
         tb.TextAlignment(winuiTableGetColumnAlignment(ih, j + 1));
       }
       if (border && tb)
-        winuiTableApplyCellColors(ih, i + 1, j + 1, border, tb);
+        winuiTableApplyCellStyle(ih, i + 1, j + 1, border, tb);
     }
 
     winuiTablePopulateCellImages(ih, i + 1, rowGrid);
@@ -1604,7 +1624,7 @@ static void winuiTableEndEdit(Ihandle* ih, bool save)
 
   TextBlock tb;
   tb.TextTrimming(TextTrimming::CharacterEllipsis);
-  winuiTableUpdateCellFont(ih, tb);
+  winuiTableApplyCellStyle(ih, lin, col, cellBorder, tb);
 
   if (save)
   {
@@ -1770,7 +1790,7 @@ extern "C" IUP_SDK_API void iupdrvTableSetCellValue(Ihandle* ih, int lin, int co
     if (tb)
       tb.Text(iupwinuiStringToHString(value ? value : ""));
     if (border && tb)
-      winuiTableApplyCellColors(ih, lin, col, border, tb);
+      winuiTableApplyCellStyle(ih, lin, col, border, tb);
   }
 }
 
@@ -2093,7 +2113,7 @@ extern "C" IUP_SDK_API void iupdrvTableRedraw(Ihandle* ih)
       Border border = winuiTableGetCellBorder(rowGrid, j);
       TextBlock tb = winuiTableGetCellTextBlock(rowGrid, j);
       if (border && tb)
-        winuiTableApplyCellColors(ih, i + 1, j + 1, border, tb);
+        winuiTableApplyCellStyle(ih, i + 1, j + 1, border, tb);
     }
   }
 
@@ -2141,7 +2161,7 @@ void winuiTableRefreshThemeColors(Ihandle* ih)
         if (border)
           border.BorderBrush(gridBrush);
         if (border && tb)
-          winuiTableApplyCellColors(ih, i + 1, j + 1, border, tb);
+          winuiTableApplyCellStyle(ih, i + 1, j + 1, border, tb);
       }
     }
   }
@@ -2445,7 +2465,7 @@ extern "C" IUP_SDK_API void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
 
           TextBlock tb;
           tb.TextTrimming(TextTrimming::CharacterEllipsis);
-          winuiTableUpdateCellFont(ih, tb);
+          winuiTableUpdateCellFont(ih, 0, i + 1, tb);
           border.Child(tb);
 
           rowGrid.Children().Append(border);
@@ -2631,9 +2651,11 @@ extern "C" IUP_SDK_API void iupdrvTableDelCol(Ihandle* ih, int pos)
  * Custom Colors
  ****************************************************************************/
 
-static void winuiTableApplyCellColors(Ihandle* ih, int lin, int col, Border border, TextBlock tb)
+static void winuiTableApplyCellStyle(Ihandle* ih, int lin, int col, Border border, TextBlock tb)
 {
   bool is_selected = winuiTableIsRowSelected(ih, lin);
+
+  winuiTableUpdateCellFont(ih, lin, col, tb);
 
   if (is_selected)
   {

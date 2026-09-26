@@ -210,6 +210,7 @@ static const void* IUP_COCOATOUCH_TABLE_CTRL_OBJ_KEY = "IUP_COCOATOUCH_TABLE_CTR
 - (CGFloat)naturalWidthForCol:(NSInteger)col;
 - (NSString*)cellAtLin:(NSInteger)lin col:(NSInteger)col;
 - (NSString*)imageAtLin:(NSInteger)lin col:(NSInteger)col;
+- (UIFont*)fontAtLin:(NSInteger)lin col:(NSInteger)col;
 - (void)setCell:(NSString*)value atLin:(NSInteger)lin col:(NSInteger)col;
 - (void)setImage:(NSString*)name atLin:(NSInteger)lin col:(NSInteger)col;
 - (void)resizeToLines:(NSInteger)num_lin cols:(NSInteger)num_col;
@@ -297,9 +298,9 @@ static UICollectionViewLayout* cocoaTouchTableMakeLayout(IupCocoaTouchTableContr
 
 - (CGFloat)naturalWidthForCol:(NSInteger)col
 {
-	UIFont* font = [UIFont systemFontOfSize:[UIFont systemFontSize]];
 	UIFont* hfont = [UIFont boldSystemFontOfSize:[UIFont systemFontSize]];
 	CGFloat max_w = 0;
+	NSInteger lin = 0;
 	if ((NSUInteger)col < [_headers count])
 	{
 		NSString* header = [[_headers objectAtIndex:(NSUInteger)col] stringByAppendingString:@"  ▲"];
@@ -308,8 +309,9 @@ static UICollectionViewLayout* cocoaTouchTableMakeLayout(IupCocoaTouchTableContr
 	}
 	for (NSMutableArray* row in _cells)
 	{
+		lin++;
 		if ((NSUInteger)col >= [row count]) continue;
-		CGSize cs = [[row objectAtIndex:(NSUInteger)col] sizeWithAttributes:@{NSFontAttributeName: font}];
+		CGSize cs = [[row objectAtIndex:(NSUInteger)col] sizeWithAttributes:@{NSFontAttributeName: [self fontAtLin:lin col:col + 1]}];
 		if (cs.width > max_w) max_w = cs.width;
 	}
 	max_w = ceil(max_w) + 2 * IUPCOCOATOUCH_TABLE_CELL_PAD + 4;
@@ -361,6 +363,22 @@ static UICollectionViewLayout* cocoaTouchTableMakeLayout(IupCocoaTouchTableContr
 	for (NSInteger c = 0; c < [self numberOfColumns]; c++)
 		total += [self widthForCol:c container:container_w];
 	return total;
+}
+
+- (UIFont*)fontAtLin:(NSInteger)lin col:(NSInteger)col
+{
+	if (_ihandle)
+	{
+		const char* font_str = iupAttribGetId2(_ihandle, "FONT", (int)lin, (int)col);
+		if (!font_str) font_str = iupAttribGetId2(_ihandle, "FONT", 0, (int)col);
+		if (!font_str) font_str = iupAttribGetId2(_ihandle, "FONT", (int)lin, 0);
+		if (font_str && *font_str)
+		{
+			IupCocoaTouchFont* font = iupCocoaTouchFindFont(font_str);
+			if (font && [font nativeFont]) return [font nativeFont];
+		}
+	}
+	return [UIFont systemFontOfSize:[UIFont systemFontSize]];
 }
 
 - (NSString*)cellAtLin:(NSInteger)lin col:(NSInteger)col
@@ -531,7 +549,7 @@ static UICollectionViewLayout* cocoaTouchTableMakeLayout(IupCocoaTouchTableContr
 	{
 		NSInteger lin = [ip item] / num_col;
 		cell.label.text = [self cellAtLin:lin + 1 col:col + 1];
-		cell.label.font = [UIFont systemFontOfSize:[UIFont systemFontSize]];
+		cell.label.font = [self fontAtLin:lin + 1 col:col + 1];
 		cell.label.textColor = [UIColor labelColor];
 		cell.userInteractionEnabled = YES;
 		cell.rowSelected = [_selectedLins containsIndex:(NSUInteger)(lin + 1)];

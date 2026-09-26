@@ -112,6 +112,14 @@ typedef struct _ImotTableData
 
 #define IMOT_TABLE_DATA(ih) ((ImotTableData*)(ih->data->native_data))
 
+typedef struct _ImotTableFont
+{
+  XFontStruct* font_struct;
+#ifdef IUP_USE_XFT
+  XftFont* xft_font;
+#endif
+} ImotTableFont;
+
 /* ========================================================================= */
 /* Forward Declarations                                                      */
 /* ========================================================================= */
@@ -469,6 +477,60 @@ static void motTableRowDragMotion(Widget w, XtPointer client_data, XEvent* event
 /* Drawing Functions                                                         */
 /* ========================================================================= */
 
+static void motTableGetCellFont(Ihandle* ih, int lin, int col, ImotTableFont* font)
+{
+  ImotTableData* mot_data = IMOT_TABLE_DATA(ih);
+  char* value = NULL;
+
+  font->font_struct = mot_data->font_struct;
+#ifdef IUP_USE_XFT
+  font->xft_font = mot_data->xft_font;
+#endif
+
+  if (lin > 0)
+  {
+    value = iupAttribGetId2(ih, "FONT", lin, col);
+    if (!value)
+      value = iupAttribGetId2(ih, "FONT", 0, col);
+    if (!value)
+      value = iupAttribGetId2(ih, "FONT", lin, 0);
+  }
+
+  if (!value || !*value)
+    return;
+
+#ifdef IUP_USE_XFT
+  if (font->xft_font)
+  {
+    XftFont* xft_font = (XftFont*)iupmotGetXftFont(value);
+    if (xft_font)
+      font->xft_font = xft_font;
+    return;
+  }
+#endif
+
+  {
+    XFontStruct* font_struct = iupmotGetFontStruct(value);
+    if (font_struct)
+      font->font_struct = font_struct;
+  }
+}
+
+static int motTableGetTextWidth(ImotTableFont* font, const char* text, int len)
+{
+#ifdef IUP_USE_XFT
+  if (font->xft_font)
+  {
+    XGlyphInfo extents;
+    XftTextExtentsUtf8(iupmot_display, font->xft_font, (FcChar8*)text, len, &extents);
+    return extents.width;
+  }
+#endif
+  if (font->font_struct)
+    return XTextWidth(font->font_struct, text, len);
+  return len * 7;
+}
+
 static void motTableDrawCell(Ihandle* ih, int lin, int col, int is_header)
 {
   ImotTableData* mot_data = IMOT_TABLE_DATA(ih);
@@ -552,6 +614,7 @@ static void motTableDrawCell(Ihandle* ih, int lin, int col, int is_header)
   if (text && text[0])
   {
     char* fgcolor = NULL;
+    ImotTableFont font;
 
     /* Get foreground color with hierarchy: per-cell > per-column > per-row > default */
     if (!is_header)
@@ -562,6 +625,8 @@ static void motTableDrawCell(Ihandle* ih, int lin, int col, int is_header)
       if (!fgcolor)
         fgcolor = iupAttribGetId2(ih, "FGCOLOR", lin, 0);
     }
+
+    motTableGetCellFont(ih, is_header ? 0 : lin, col, &font);
 
     unsigned char tr, tg, tb;
     if (fgcolor && *fgcolor)
@@ -579,20 +644,7 @@ static void motTableDrawCell(Ihandle* ih, int lin, int col, int is_header)
     XSetForeground(display, mot_data->gc, iupmotColorGetPixel(tr, tg, tb));
 
     text_len = strlen(text);
-
-#ifdef IUP_USE_XFT
-    if (mot_data->xft_font)
-    {
-      XGlyphInfo extents;
-      XftTextExtentsUtf8(display, mot_data->xft_font, (FcChar8*)text, text_len, &extents);
-      text_width = extents.width;
-    }
-    else
-#endif
-    if (mot_data->font_struct)
-      text_width = XTextWidth(mot_data->font_struct, text, text_len);
-    else
-      text_width = text_len * 7;
+    text_width = motTableGetTextWidth(&font, text, text_len);
 
     char align_attr[64];
     char* align_str = NULL;
@@ -613,14 +665,14 @@ static void motTableDrawCell(Ihandle* ih, int lin, int col, int is_header)
     }
 
 #ifdef IUP_USE_XFT
-    if (mot_data->xft_font)
-      text_y = y + h / 2 + mot_data->xft_font->ascent / 2;
+    if (font.xft_font)
+      text_y = y + h / 2 + font.xft_font->ascent / 2;
     else
 #endif
-      text_y = y + h / 2 + (mot_data->font_struct ? mot_data->font_struct->ascent / 2 : 6);
+      text_y = y + h / 2 + (font.font_struct ? font.font_struct->ascent / 2 : 6);
 
 #ifdef IUP_USE_XFT
-    if (mot_data->xft_draw && mot_data->xft_font)
+    if (mot_data->xft_draw && font.xft_font)
     {
       XftColor xft_color;
       XRenderColor render_color;
@@ -631,12 +683,16 @@ static void motTableDrawCell(Ihandle* ih, int lin, int col, int is_header)
       render_color.alpha = 0xffff;
 
       XftColorAllocValue(display, DefaultVisual(display, iupmot_screen), DefaultColormap(display, iupmot_screen), &render_color, &xft_color);
-      XftDrawStringUtf8(mot_data->xft_draw, &xft_color, mot_data->xft_font, text_x, text_y, (FcChar8*)text, text_len);
+      XftDrawStringUtf8(mot_data->xft_draw, &xft_color, font.xft_font, text_x, text_y, (FcChar8*)text, text_len);
       XftColorFree(display, DefaultVisual(display, iupmot_screen), DefaultColormap(display, iupmot_screen), &xft_color);
     }
     else
 #endif
+    {
+      if (font.font_struct)
+        XSetFont(display, mot_data->gc, font.font_struct->fid);
       XDrawString(display, window, mot_data->gc, text_x, text_y, text, text_len);
+    }
 
     if (is_header && mot_data->sort_column == col && mot_data->sort_signs)
     {
@@ -706,16 +762,9 @@ static void motTableDrawTable(Ihandle* ih)
 
       if (mot_data->col_titles[c])
       {
-#ifdef IUP_USE_XFT
-        if (mot_data->xft_font)
-        {
-          XGlyphInfo extents;
-          XftTextExtentsUtf8(iupmot_display, mot_data->xft_font, (FcChar8*)mot_data->col_titles[c], strlen(mot_data->col_titles[c]), &extents);
-          title_width = extents.width;
-        }
-        else
-#endif
-          title_width = XTextWidth(mot_data->font_struct, mot_data->col_titles[c], strlen(mot_data->col_titles[c]));
+        ImotTableFont font;
+        motTableGetCellFont(ih, 0, c + 1, &font);
+        title_width = motTableGetTextWidth(&font, mot_data->col_titles[c], strlen(mot_data->col_titles[c]));
         title_width += 20;  /* Add padding for sort indicator space */
         if (title_width > max_width)
           max_width = title_width;
@@ -726,16 +775,9 @@ static void motTableDrawTable(Ihandle* ih)
         const char* cell_value = IupGetAttributeId2(ih, "", lin1 + 1, c + 1);
         if (cell_value && cell_value[0])
         {
-#ifdef IUP_USE_XFT
-          if (mot_data->xft_font)
-          {
-            XGlyphInfo extents;
-            XftTextExtentsUtf8(iupmot_display, mot_data->xft_font, (FcChar8*)cell_value, strlen(cell_value), &extents);
-            cell_width = extents.width;
-          }
-          else
-#endif
-            cell_width = XTextWidth(mot_data->font_struct, cell_value, strlen(cell_value));
+          ImotTableFont font;
+          motTableGetCellFont(ih, lin1 + 1, c + 1, &font);
+          cell_width = motTableGetTextWidth(&font, cell_value, strlen(cell_value));
           cell_width += 16;  /* Add padding (8px left + 8px right) */
           if (cell_width > max_width)
             max_width = cell_width;

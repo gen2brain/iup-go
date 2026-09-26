@@ -106,8 +106,8 @@ EM_JS(void, iupwasmJsTableColAlign, (int id, int col, const char* css), {
   globalThis.__iupApply({ op: 'tablecolalign', id: id, col: col, css: UTF8ToString(css) });
 })
 
-EM_JS(void, iupwasmJsTableCellColor, (int id, int lin, int col, const char* bg, const char* fg), {
-  globalThis.__iupApply({ op: 'tablecellcolor', id: id, lin: lin, col: col, bg: UTF8ToString(bg), fg: UTF8ToString(fg) });
+EM_JS(void, iupwasmJsTableCellStyle, (int id, int lin, int col, const char* bg, const char* fg, const char* font), {
+  globalThis.__iupApply({ op: 'tablecellstyle', id: id, lin: lin, col: col, bg: UTF8ToString(bg), fg: UTF8ToString(fg), font: UTF8ToString(font) });
 })
 
 EM_JS(int, iupwasmJsTableVScrollTop, (int id), {
@@ -128,8 +128,8 @@ EM_JS(void, iupwasmJsTableVWindow, (int id, int count, int numCol, int top, int 
   globalThis.__iupApply({ op: 'tablevwindow', id: id, count: count, numCol: numCol, top: top, bot: bot });
 })
 
-EM_JS(void, iupwasmJsTableVCell, (int id, int rowIdx, int col, int lin, const char* str, int imgId, const char* bg, const char* fg), {
-  globalThis.__iupApply({ op: 'tablevcell', id: id, rowIdx: rowIdx, col: col, lin: lin, str: UTF8ToString(str), imgId: imgId, bg: UTF8ToString(bg), fg: UTF8ToString(fg) });
+EM_JS(void, iupwasmJsTableVCell, (int id, int rowIdx, int col, int lin, const char* str, int imgId, const char* bg, const char* fg, const char* font), {
+  globalThis.__iupApply({ op: 'tablevcell', id: id, rowIdx: rowIdx, col: col, lin: lin, str: UTF8ToString(str), imgId: imgId, bg: UTF8ToString(bg), fg: UTF8ToString(fg), font: UTF8ToString(font) });
 })
 
 EM_JS(void, iupwasmJsTableVStripe, (int id, int rowIdx, int lin), {
@@ -177,34 +177,40 @@ static void wasmTableApplyAlign(Ihandle* ih)
   }
 }
 
-static int wasmTableCellCss(Ihandle* ih, int lin, int col, char* bgcss, char* fgcss)
+static int wasmTableCellCss(Ihandle* ih, int lin, int col, char* bgcss, char* fgcss, char* fontcss)
 {
   unsigned char r, g, b;
   char* bg = iupAttribGetId2(ih, "BGCOLOR", lin, col);
   char* fg = iupAttribGetId2(ih, "FGCOLOR", lin, col);
+  char* font = iupAttribGetId2(ih, "FONT", lin, col);
   if (!bg) bg = iupAttribGetId2(ih, "BGCOLOR", 0, col);
   if (!bg) bg = iupAttribGetId2(ih, "BGCOLOR", lin, 0);
   if (!fg) fg = iupAttribGetId2(ih, "FGCOLOR", 0, col);
   if (!fg) fg = iupAttribGetId2(ih, "FGCOLOR", lin, 0);
+  if (!font) font = iupAttribGetId2(ih, "FONT", 0, col);
+  if (!font) font = iupAttribGetId2(ih, "FONT", lin, 0);
   bgcss[0] = 0;
   fgcss[0] = 0;
+  fontcss[0] = 0;
   if (bg && iupStrToRGB(bg, &r, &g, &b))
     snprintf(bgcss, 20, "rgb(%d,%d,%d)", r, g, b);
   if (fg && iupStrToRGB(fg, &r, &g, &b))
     snprintf(fgcss, 20, "rgb(%d,%d,%d)", r, g, b);
-  return bgcss[0] || fgcss[0];
+  if (font && *font)
+    iupwasmFontToCss(font, fontcss, 256);
+  return bgcss[0] || fgcss[0] || fontcss[0];
 }
 
-static void wasmTableApplyCellColors(Ihandle* ih)
+static void wasmTableApplyCellStyles(Ihandle* ih)
 {
   int id = iupwasmIdOf(ih), lin, col;
-  char bgcss[20], fgcss[20];
+  char bgcss[20], fgcss[20], fontcss[256];
   if (!id || iupAttribGetBoolean(ih, "VIRTUALMODE")) return;
   for (lin = 1; lin <= ih->data->num_lin; lin++)
     for (col = 1; col <= ih->data->num_col; col++)
     {
-      if (wasmTableCellCss(ih, lin, col, bgcss, fgcss))
-        iupwasmJsTableCellColor(id, lin, col, bgcss, fgcss);
+      if (wasmTableCellCss(ih, lin, col, bgcss, fgcss, fontcss))
+        iupwasmJsTableCellStyle(id, lin, col, bgcss, fgcss, fontcss);
     }
 }
 
@@ -212,7 +218,7 @@ static void wasmTableVirtualRender(Ihandle* ih)
 {
   int id = iupwasmIdOf(ih);
   int rowH, numLin, numCol, first, count, i, c, showImage;
-  char bgcss[20], fgcss[20];
+  char bgcss[20], fgcss[20], fontcss[256];
   sIFnii value_cb, image_cb;
 
   if (!id || !iupAttribGetBoolean(ih, "VIRTUALMODE"))
@@ -246,9 +252,9 @@ static void wasmTableVirtualRender(Ihandle* ih)
         if (name && name[0])
           imgId = (int)(intptr_t)iupImageGetImage(name, ih, 0, NULL);
       }
-      wasmTableCellCss(ih, lin, c, bgcss, fgcss);
+      wasmTableCellCss(ih, lin, c, bgcss, fgcss, fontcss);
       v = value_cb ? value_cb(ih, lin, c) : NULL;  /* must be the last string dispatch before use: result lives in a single recycled slot */
-      iupwasmJsTableVCell(id, i, c - 1, lin, v ? v : "", imgId, bgcss, fgcss);
+      iupwasmJsTableVCell(id, i, c - 1, lin, v ? v : "", imgId, bgcss, fgcss, fontcss);
     }
     iupwasmJsTableVStripe(id, i, lin);
   }
@@ -404,7 +410,7 @@ EMSCRIPTEN_KEEPALIVE void iupwasmTableHeaderClick(int id, int col)
   if (!iupAttribGetBoolean(ih, "VIRTUALMODE"))
   {
     wasmTableSortRows(ih, col, ascending);
-    wasmTableApplyCellColors(ih);
+    wasmTableApplyCellStyles(ih);
   }
 }
 
@@ -492,7 +498,7 @@ static void wasmTableRebuild(Ihandle* ih, int columns)
   iupwasmJsTableBuild(id, ih->data->num_lin, ih->data->num_col);
   wasmTableApplyColors(ih);
   wasmTableApplyAlign(ih);
-  wasmTableApplyCellColors(ih);
+  wasmTableApplyCellStyles(ih);
 }
 
 static void wasmTableShiftColTitles(Ihandle* ih, int from, int to)
@@ -599,7 +605,7 @@ IUP_SDK_API void iupdrvTableAddLin(Ihandle* ih, int pos)
   if (id && !iupAttribGetBoolean(ih, "VIRTUALMODE") && pos < ih->data->num_lin)
   {
     iupwasmJsTableMoveRow(id, ih->data->num_lin, pos);
-    wasmTableApplyCellColors(ih);
+    wasmTableApplyCellStyles(ih);
   }
   wasmTableFollowFocus(ih, pos, 1, ih->data->num_col + 1, 0);
 }
@@ -795,7 +801,7 @@ IUP_SDK_API void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col)
 IUP_SDK_API void iupdrvTableRedraw(Ihandle* ih)
 {
   wasmTableApplyColors(ih);
-  wasmTableApplyCellColors(ih);
+  wasmTableApplyCellStyles(ih);
   if (iupAttribGetBoolean(ih, "VIRTUALMODE"))
     wasmTableVirtualRender(ih);
 }
@@ -803,7 +809,7 @@ IUP_SDK_API void iupdrvTableRedraw(Ihandle* ih)
 IUP_SDK_API void iupdrvTableUpdateCellStyle(Ihandle* ih, int lin, int col)
 {
   int id = iupwasmIdOf(ih), l, c;
-  char bgcss[20], fgcss[20];
+  char bgcss[20], fgcss[20], fontcss[256];
 
   if (!id)
     return;
@@ -817,8 +823,8 @@ IUP_SDK_API void iupdrvTableUpdateCellStyle(Ihandle* ih, int lin, int col)
   for (l = (lin > 0 ? lin : 1); l <= (lin > 0 ? lin : ih->data->num_lin); l++)
     for (c = (col > 0 ? col : 1); c <= (col > 0 ? col : ih->data->num_col); c++)
     {
-      wasmTableCellCss(ih, l, c, bgcss, fgcss);
-      iupwasmJsTableCellColor(id, l, c, bgcss, fgcss);
+      wasmTableCellCss(ih, l, c, bgcss, fgcss, fontcss);
+      iupwasmJsTableCellStyle(id, l, c, bgcss, fgcss, fontcss);
     }
 }
 
@@ -1120,7 +1126,7 @@ EMSCRIPTEN_KEEPALIVE void iupwasmTableRowDragDrop(int id, int from, int before)
 
   iupTableMoveLinAttribs(ih, from, to);
   iupwasmJsTableMoveRow(id, from, to);
-  wasmTableApplyCellColors(ih);
+  wasmTableApplyCellStyles(ih);
   wasmTableUpdateFocus(ih, to, ih->data->num_col > 0 ? 1 : 0);
 }
 
@@ -1164,7 +1170,7 @@ static int wasmTableMapMethod(Ihandle* ih)
   }
 
   wasmTableApplyAlign(ih);
-  wasmTableApplyCellColors(ih);
+  wasmTableApplyCellStyles(ih);
 
   iupwasmAddToParent(ih);
   return IUP_NOERROR;
