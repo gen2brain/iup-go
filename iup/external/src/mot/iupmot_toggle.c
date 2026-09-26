@@ -45,7 +45,16 @@ typedef struct _IupMotSwitchData
 
 IUP_SDK_API void iupdrvToggleAddBorders(Ihandle* ih, int* x, int* y)
 {
-  iupdrvButtonAddBorders(ih, x, y);
+  if (ih->data->horiz_padding > 0 || ih->data->vert_padding > 0)
+  {
+    (*x) += 2 * (2 + 2);
+    (*y) += 2 * (2 + 2);
+  }
+  else
+  {
+    (*x) += 2 * 5;
+    (*y) += 2 * 5;
+  }
 }
 
 IUP_SDK_API void iupdrvToggleAddSwitch(Ihandle* ih, int* x, int* y, const char* str)

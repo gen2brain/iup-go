@@ -276,7 +276,16 @@ static void fltkToggleSetPixmap(Ihandle* ih, const char* name, int make_inactive
 
 extern "C" IUP_SDK_API void iupdrvToggleAddBorders(Ihandle* ih, int* x, int* y)
 {
-  iupdrvButtonAddBorders(ih, x, y);
+  if (ih->data->horiz_padding > 0 || ih->data->vert_padding > 0)
+  {
+    (*x) += Fl::box_dw(FL_UP_BOX);
+    (*y) += Fl::box_dh(FL_UP_BOX);
+  }
+  else
+  {
+    (*x) += 2 * 5;
+    (*y) += 2 * 5;
+  }
 }
 
 extern "C" IUP_SDK_API void iupdrvToggleAddCheckBox(Ihandle* ih, int* x, int* y, const char* str)
