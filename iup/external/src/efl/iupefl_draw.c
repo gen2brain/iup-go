@@ -201,9 +201,91 @@ static void iDrawTransformShape(const IdrawCanvas* dc, Efl_VG* shape, int stroke
   }
 }
 
+static void iDrawFlattenDashedShape(Efl_VG* shape)
+{
+  const Efl_Gfx_Dash* dash = NULL;
+  unsigned int dash_count = 0, cmd_count = 0, pt_count = 0, c, p = 0;
+  const Efl_Gfx_Path_Command* cmds = NULL;
+  const double* pts = NULL;
+  IupPathSeg* segs;
+  IupPathSeg* flat = NULL;
+  Efl_Gfx_Path_Command* new_cmds;
+  double* new_pts;
+  int i, count = 0, flat_count = 0, has_cubic = 0;
+
+  efl_gfx_shape_stroke_dash_get(shape, &dash, &dash_count);
+  if (!dash || !dash_count)
+    return;
+
+  efl_gfx_path_get(shape, &cmds, &pts);
+  efl_gfx_path_length_get(shape, &cmd_count, &pt_count);
+  if (!cmds || !pts || !cmd_count)
+    return;
+
+  segs = calloc(cmd_count, sizeof(IupPathSeg));
+  if (!segs)
+    return;
+
+  for (c = 0; c < cmd_count && cmds[c] != EFL_GFX_PATH_COMMAND_TYPE_END; c++)
+  {
+    IupPathSeg* seg = &segs[count++];
+    switch (cmds[c])
+    {
+    case EFL_GFX_PATH_COMMAND_TYPE_MOVE_TO:
+    case EFL_GFX_PATH_COMMAND_TYPE_LINE_TO:
+      seg->op = cmds[c] == EFL_GFX_PATH_COMMAND_TYPE_MOVE_TO ? IUP_PATHSEG_MOVE_TO : IUP_PATHSEG_LINE_TO;
+      seg->x1 = pts[p]; seg->y1 = pts[p + 1];
+      p += 2;
+      break;
+    case EFL_GFX_PATH_COMMAND_TYPE_CUBIC_TO:
+      seg->op = IUP_PATHSEG_CURVE_TO;
+      seg->x1 = pts[p]; seg->y1 = pts[p + 1];
+      seg->x2 = pts[p + 2]; seg->y2 = pts[p + 3];
+      seg->x3 = pts[p + 4]; seg->y3 = pts[p + 5];
+      p += 6;
+      has_cubic = 1;
+      break;
+    default:
+      seg->op = IUP_PATHSEG_CLOSE;
+      break;
+    }
+  }
+
+  if (has_cubic)
+    flat_count = iupDrawPathFlatten(segs, count, &flat);
+  free(segs);
+  if (!flat)
+    return;
+
+  new_cmds = malloc(sizeof(Efl_Gfx_Path_Command) * (flat_count + 1));
+  new_pts = malloc(sizeof(double) * 2 * (flat_count + 1));
+  if (new_cmds && new_pts)
+  {
+    p = 0;
+    for (i = 0; i < flat_count; i++)
+    {
+      if (flat[i].op == IUP_PATHSEG_CLOSE)
+        new_cmds[i] = EFL_GFX_PATH_COMMAND_TYPE_CLOSE;
+      else
+      {
+        new_cmds[i] = flat[i].op == IUP_PATHSEG_MOVE_TO ? EFL_GFX_PATH_COMMAND_TYPE_MOVE_TO : EFL_GFX_PATH_COMMAND_TYPE_LINE_TO;
+        new_pts[p++] = flat[i].x1;
+        new_pts[p++] = flat[i].y1;
+      }
+    }
+    new_cmds[flat_count] = EFL_GFX_PATH_COMMAND_TYPE_END;
+    efl_gfx_path_set(shape, new_cmds, new_pts);
+  }
+  free(new_cmds);
+  free(new_pts);
+  free(flat);
+}
+
 static void iDrawAddShape(IdrawCanvas* dc, Efl_VG* shape, int stroke)
 {
   iDrawTransformShape(dc, shape, stroke);
+  if (stroke)
+    iDrawFlattenDashedShape(shape);
   dc->shapes = eina_list_append(dc->shapes, shape);
 }
 
