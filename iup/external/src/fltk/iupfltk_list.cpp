@@ -574,6 +574,14 @@ public:
     redraw();
   }
 
+  void textFont(Fl_Font font, Fl_Fontsize size)
+  {
+    textfont(font);
+    textsize(size);
+    row_h = 0;
+    redraw();
+  }
+
   int size() const { return count; }
   const char* text(int l) const { return iupListGetItemValueCb(iup_handle, l); }
   int value() const { return line(selection()); }
@@ -634,6 +642,59 @@ static Fl_Browser_* fltkListGetBrowserBase(Ihandle* ih)
   if (ih->data->is_virtual)
     return fltkListGetVirtualBrowser(ih);
   return fltkListGetBrowser(ih);
+}
+
+static void fltkListUpdateTextFont(Ihandle* ih, int font, int size)
+{
+  if (ih->data->is_dropdown)
+  {
+    if (ih->data->has_editbox)
+    {
+      Fl_Input_Choice* input_choice = (Fl_Input_Choice*)ih->handle;
+      input_choice->textfont((Fl_Font)font);
+      input_choice->textsize((Fl_Fontsize)size);
+      input_choice->menubutton()->textfont((Fl_Font)font);
+      input_choice->menubutton()->textsize((Fl_Fontsize)size);
+      input_choice->redraw();
+    }
+    else
+    {
+      Fl_Choice* choice = (Fl_Choice*)ih->handle;
+      choice->textfont((Fl_Font)font);
+      choice->textsize((Fl_Fontsize)size);
+      choice->redraw();
+    }
+    return;
+  }
+
+  if (ih->data->has_editbox)
+  {
+    Fl_Input* edit = (Fl_Input*)iupAttribGet(ih, "_IUPFLTK_EDIT");
+    if (edit)
+    {
+      edit->textfont((Fl_Font)font);
+      edit->textsize((Fl_Fontsize)size);
+      edit->redraw();
+    }
+  }
+
+  IupFltkVirtualBrowser* vbrowser = fltkListGetVirtualBrowser(ih);
+  Fl_Browser* browser = fltkListGetBrowser(ih);
+  if (vbrowser)
+    vbrowser->textFont((Fl_Font)font, (Fl_Fontsize)size);
+  else if (browser)
+  {
+    browser->textfont((Fl_Font)font);
+    browser->textsize((Fl_Fontsize)size);
+    browser->redraw();
+  }
+}
+
+static void fltkListInitTextFont(Ihandle* ih)
+{
+  int font, size;
+  if (iupfltkGetFont(ih, &font, &size))
+    fltkListUpdateTextFont(ih, font, size);
 }
 
 static Fl_Input* fltkListGetEditBox(Ihandle* ih)
@@ -1485,14 +1546,11 @@ static int fltkListSetFontAttrib(Ihandle* ih, const char* value)
   if (!iupdrvSetFontAttrib(ih, value))
     return 0;
 
-  if (ih->handle && ih->data->has_editbox && !ih->data->is_dropdown)
+  if (ih->handle)
   {
-    Fl_Input* edit = (Fl_Input*)iupAttribGet(ih, "_IUPFLTK_EDIT");
-    Fl_Browser* browser = fltkListGetBrowser(ih);
-    if (edit)
-      iupfltkUpdateWidgetFont(ih, edit);
-    if (browser)
-      iupfltkUpdateWidgetFont(ih, browser);
+    int font, size;
+    if (iupfltkGetFontFromString(value, &font, &size))
+      fltkListUpdateTextFont(ih, font, size);
   }
 
   return 1;
@@ -1853,6 +1911,7 @@ static int fltkListMapMethod(Ihandle* ih)
       ih->handle = (InativeHandle*)input_choice;
 
       iupfltkUpdateWidgetFont(ih, input_choice);
+      fltkListInitTextFont(ih);
 
       input_choice->callback(fltkListInputChoiceCallback, (void*)ih);
 
@@ -1879,6 +1938,7 @@ static int fltkListMapMethod(Ihandle* ih)
       ih->handle = (InativeHandle*)choice;
 
       iupfltkUpdateWidgetFont(ih, choice);
+      fltkListInitTextFont(ih);
 
       choice->callback(fltkListChoiceCallback, (void*)ih);
 
@@ -1915,6 +1975,7 @@ static int fltkListMapMethod(Ihandle* ih)
 
     iupfltkUpdateWidgetFont(ih, edit);
     iupfltkUpdateWidgetFont(ih, browser);
+    fltkListInitTextFont(ih);
 
     edit->callback(fltkListEditCallback, (void*)ih);
     browser->callback(fltkListBrowserCallback, (void*)ih);
@@ -1945,6 +2006,7 @@ static int fltkListMapMethod(Ihandle* ih)
     iupAttribSet(ih, "_IUP_EXTRAPARENT", (char*)group);
 
     iupfltkUpdateWidgetFont(ih, browser);
+    fltkListInitTextFont(ih);
 
     browser->callback(fltkListBrowserCallback, (void*)ih);
     browser->when(FL_WHEN_RELEASE);
@@ -1968,6 +2030,7 @@ static int fltkListMapMethod(Ihandle* ih)
     iupAttribSet(ih, "_IUP_EXTRAPARENT", (char*)group);
 
     iupfltkUpdateWidgetFont(ih, browser);
+    fltkListInitTextFont(ih);
 
     browser->callback(fltkListBrowserCallback, (void*)ih);
     browser->when(FL_WHEN_RELEASE);
@@ -1991,6 +2054,7 @@ static int fltkListMapMethod(Ihandle* ih)
     iupAttribSet(ih, "_IUP_EXTRAPARENT", (char*)group);
 
     iupfltkUpdateWidgetFont(ih, browser);
+    fltkListInitTextFont(ih);
 
     browser->callback(fltkListBrowserCallback, (void*)ih);
     browser->when(FL_WHEN_RELEASE);
