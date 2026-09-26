@@ -8,6 +8,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 
 #ifndef _WIN32
 #include <unistd.h>
@@ -23,11 +24,19 @@
 #include "iup_key.h"
 #include "iup_childtree.h"
 #include "iup_markup.h"
+#include "iup_image.h"
 
 #include "iupefl_drv.h"
 
 #ifdef HAVE_ECORE_X
 #include <Ecore_X.h>
+#endif
+
+#ifdef HAVE_ECORE_WL2
+#include <Ecore_Wl2.h>
+#include <sys/mman.h>
+#include <fcntl.h>
+#include <string.h>
 #endif
 
 #ifdef _WIN32
@@ -523,6 +532,342 @@ IUP_DRV_API void iupeflBaseRemoveCallbacks(Ihandle* ih, Eo* widget)
 }
 
 /****************************************************************************
+ * Cursor
+ ****************************************************************************/
+
+#ifdef HAVE_ECORE_X
+#define EFL_XSHAPE(_s) ECORE_X_CURSOR_##_s
+#else
+#define EFL_XSHAPE(_s) 0
+#endif
+
+static const struct {
+  const char* iupname;
+  const char* xcursorname;
+  int xshape;
+} efl_cursors[] = {
+  { "NONE",           NULL,                  0 },
+  { "NULL",           NULL,                  0 },
+  { "ARROW",          "left_ptr",            EFL_XSHAPE(LEFT_PTR) },
+  { "BUSY",           "watch",               EFL_XSHAPE(WATCH) },
+  { "CROSS",          "crosshair",           EFL_XSHAPE(CROSSHAIR) },
+  { "HAND",           "hand2",               EFL_XSHAPE(HAND2) },
+  { "HELP",           "question_arrow",      EFL_XSHAPE(QUESTION_ARROW) },
+  { "IUP",            "question_arrow",      EFL_XSHAPE(QUESTION_ARROW) },
+  { "MOVE",           "fleur",               EFL_XSHAPE(FLEUR) },
+  { "PEN",            "pencil",              EFL_XSHAPE(PENCIL) },
+  { "RESIZE_N",       "top_side",            EFL_XSHAPE(TOP_SIDE) },
+  { "RESIZE_S",       "bottom_side",         EFL_XSHAPE(BOTTOM_SIDE) },
+  { "RESIZE_NS",      "sb_v_double_arrow",   EFL_XSHAPE(SB_V_DOUBLE_ARROW) },
+  { "SPLITTER_HORIZ", "sb_v_double_arrow",   EFL_XSHAPE(SB_V_DOUBLE_ARROW) },
+  { "RESIZE_W",       "left_side",           EFL_XSHAPE(LEFT_SIDE) },
+  { "RESIZE_E",       "right_side",          EFL_XSHAPE(RIGHT_SIDE) },
+  { "RESIZE_WE",      "sb_h_double_arrow",   EFL_XSHAPE(SB_H_DOUBLE_ARROW) },
+  { "SPLITTER_VERT",  "sb_h_double_arrow",   EFL_XSHAPE(SB_H_DOUBLE_ARROW) },
+  { "RESIZE_NE",      "top_right_corner",    EFL_XSHAPE(TOP_RIGHT_CORNER) },
+  { "RESIZE_SE",      "bottom_right_corner", EFL_XSHAPE(BOTTOM_RIGHT_CORNER) },
+  { "RESIZE_NW",      "top_left_corner",     EFL_XSHAPE(TOP_LEFT_CORNER) },
+  { "RESIZE_SW",      "bottom_left_corner",  EFL_XSHAPE(BOTTOM_LEFT_CORNER) },
+  { "TEXT",           "xterm",               EFL_XSHAPE(XTERM) },
+  { "UPARROW",        "center_ptr",          EFL_XSHAPE(CENTER_PTR) }
+};
+
+#define EFL_CURSOR_COUNT ((int)(sizeof(efl_cursors) / sizeof(efl_cursors[0])))
+
+static Ihandle* efl_cursor_hover_ih = NULL;
+static Eo* efl_cursor_hover_obj = NULL;
+
+static int eflCursorFindIndex(const char* name)
+{
+  int i;
+  for (i = 0; i < EFL_CURSOR_COUNT; i++)
+  {
+    if (iupStrEqualNoCase(name, efl_cursors[i].iupname))
+      return i;
+  }
+  return -1;
+}
+
+static unsigned int* eflCursorImagePixels(const char* name, int* w, int* h, int* hx, int* hy)
+{
+  Eo* img = (Eo*)iupImageGetCursor(name);
+  Ihandle* image_ih = iupImageGetImageFromName(name);
+
+  if (!img || !image_ih)
+    return NULL;
+
+  evas_object_image_size_get(img, w, h);
+  *hx = 0;
+  *hy = 0;
+  iupStrToIntInt(iupAttribGet(image_ih, "HOTSPOT"), hx, hy, ':');
+  return (unsigned int*)evas_object_image_data_get(img, EINA_FALSE);
+}
+
+#ifdef HAVE_ECORE_X
+static void eflCursorApplyX11(Ecore_X_Window xwin, const char* name)
+{
+  static Ecore_X_Cursor shapes[EFL_CURSOR_COUNT];
+  int i = name ? eflCursorFindIndex(name) : -1;
+
+  if (i >= 0 && !efl_cursors[i].xshape)
+  {
+    ecore_x_window_cursor_set(xwin, 0);
+    ecore_x_window_cursor_show(xwin, EINA_FALSE);
+    return;
+  }
+
+  ecore_x_window_cursor_show(xwin, EINA_TRUE);
+
+  if (i >= 0)
+  {
+    if (!shapes[i])
+      shapes[i] = ecore_x_cursor_shape_get(efl_cursors[i].xshape);
+    ecore_x_window_cursor_set(xwin, shapes[i]);
+    return;
+  }
+
+  if (name)
+  {
+    Ihandle* image_ih = iupImageGetImageFromName(name);
+    Ecore_X_Cursor cursor = image_ih ? (Ecore_X_Cursor)(uintptr_t)iupAttribGet(image_ih, "_IUPEFL_XCURSOR") : 0;
+    if (!cursor)
+    {
+      int w, h, hx, hy;
+      unsigned int* pixels = eflCursorImagePixels(name, &w, &h, &hx, &hy);
+      if (pixels)
+      {
+        cursor = ecore_x_cursor_new(xwin, (int*)pixels, w, h, hx, hy);
+        iupAttribSet(image_ih, "_IUPEFL_XCURSOR", (char*)(uintptr_t)cursor);
+      }
+    }
+    if (cursor)
+    {
+      ecore_x_window_cursor_set(xwin, cursor);
+      return;
+    }
+  }
+
+  ecore_x_window_cursor_set(xwin, 0);
+}
+#endif
+
+#ifdef HAVE_ECORE_WL2
+static struct wl_buffer* eflCursorWlImageBuffer(struct wl_shm* shm, const char* name, int* w, int* h, int* hx, int* hy)
+{
+  Ihandle* image_ih = iupImageGetImageFromName(name);
+  struct wl_buffer* buffer;
+  unsigned int* pixels;
+  struct wl_shm_pool* pool;
+  void* data;
+  char shm_name[64];
+  int fd, size;
+
+  if (!image_ih)
+    return NULL;
+
+  buffer = (struct wl_buffer*)iupAttribGet(image_ih, "_IUPEFL_WLBUFFER");
+  if (buffer)
+  {
+    iupStrToIntInt(iupAttribGet(image_ih, "_IUPEFL_WLBUFFER_SIZE"), w, h, 'x');
+    iupStrToIntInt(iupAttribGet(image_ih, "HOTSPOT"), hx, hy, ':');
+    return buffer;
+  }
+
+  pixels = eflCursorImagePixels(name, w, h, hx, hy);
+  if (!pixels)
+    return NULL;
+
+  size = *w * *h * 4;
+  snprintf(shm_name, sizeof(shm_name), "/iup-efl-cursor-%d-%p", (int)getpid(), (void*)image_ih);
+  fd = shm_open(shm_name, O_RDWR | O_CREAT | O_EXCL, 0600);
+  if (fd < 0)
+    return NULL;
+  shm_unlink(shm_name);
+
+  if (ftruncate(fd, size) < 0)
+  {
+    close(fd);
+    return NULL;
+  }
+
+  data = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+  if (data == MAP_FAILED)
+  {
+    close(fd);
+    return NULL;
+  }
+  memcpy(data, pixels, size);
+  munmap(data, size);
+
+  pool = wl_shm_create_pool(shm, fd, size);
+  buffer = wl_shm_pool_create_buffer(pool, 0, *w, *h, *w * 4, WL_SHM_FORMAT_ARGB8888);
+  wl_shm_pool_destroy(pool);
+  close(fd);
+
+  iupAttribSet(image_ih, "_IUPEFL_WLBUFFER", (char*)buffer);
+  iupAttribSetStrf(image_ih, "_IUPEFL_WLBUFFER_SIZE", "%dx%d", *w, *h);
+  return buffer;
+}
+
+static void eflCursorWlPointerSet(Ecore_Wl2_Display* display, struct wl_surface* surface, int hx, int hy)
+{
+  Eina_Iterator* it = ecore_wl2_display_inputs_get(display);
+  Ecore_Wl2_Input* input;
+
+  if (!it)
+    return;
+
+  EINA_ITERATOR_FOREACH(it, input)
+    ecore_wl2_input_pointer_set(input, surface, hx, hy);
+  eina_iterator_free(it);
+}
+
+static void eflCursorApplyWayland(Ecore_Wl2_Window* wl_win, const char* name)
+{
+  static struct wl_cursor_theme* theme = NULL;
+  static struct wl_surface* surface = NULL;
+  Ecore_Wl2_Display* display = ecore_wl2_window_display_get(wl_win);
+  struct wl_shm* shm = display ? ecore_wl2_display_shm_get(display) : NULL;
+  struct wl_buffer* buffer = NULL;
+  int i, w = 0, h = 0, hx = 0, hy = 0;
+
+  if (!shm)
+    return;
+
+  i = name ? eflCursorFindIndex(name) : -1;
+  if (i >= 0 && !efl_cursors[i].xcursorname)
+  {
+    eflCursorWlPointerSet(display, NULL, 0, 0);
+    return;
+  }
+
+  if (!surface)
+  {
+    struct wl_compositor* compositor = ecore_wl2_display_compositor_get(display);
+    if (!compositor)
+      return;
+    surface = wl_compositor_create_surface(compositor);
+  }
+
+  if (i < 0 && name)
+    buffer = eflCursorWlImageBuffer(shm, name, &w, &h, &hx, &hy);
+
+  if (!buffer)
+  {
+    struct wl_cursor* cursor;
+    const char* size_str = getenv("XCURSOR_SIZE");
+
+    if (!theme)
+      theme = wl_cursor_theme_load(getenv("XCURSOR_THEME"), size_str ? atoi(size_str) : 24, shm);
+    if (!theme)
+      return;
+
+    cursor = wl_cursor_theme_get_cursor(theme, i >= 0 ? efl_cursors[i].xcursorname : "left_ptr");
+    if (!cursor)
+      cursor = wl_cursor_theme_get_cursor(theme, "left_ptr");
+    if (!cursor || !cursor->image_count)
+      return;
+
+    buffer = wl_cursor_image_get_buffer(cursor->images[0]);
+    w = (int)cursor->images[0]->width;
+    h = (int)cursor->images[0]->height;
+    hx = (int)cursor->images[0]->hotspot_x;
+    hy = (int)cursor->images[0]->hotspot_y;
+  }
+
+  wl_surface_attach(surface, buffer, 0, 0);
+  wl_surface_damage(surface, 0, 0, w, h);
+  wl_surface_commit(surface);
+  eflCursorWlPointerSet(display, surface, hx, hy);
+}
+#endif
+
+static int efl_cursor_applied = 0;
+
+static void eflCursorApply(Ihandle* ih, const char* name)
+{
+  Eo* widget = iupeflGetWidget(ih);
+  Ecore_Evas* ee;
+
+  if (!widget || (!name && !efl_cursor_applied))
+    return;
+
+  efl_cursor_applied = name ? 1 : 0;
+
+  ee = ecore_evas_ecore_evas_get(evas_object_evas_get(widget));
+  if (!ee)
+    return;
+
+#ifdef HAVE_ECORE_X
+  if (iupeflIsX11())
+  {
+    Ecore_X_Window xwin = (Ecore_X_Window)ecore_evas_window_get(ee);
+    if (xwin)
+      eflCursorApplyX11(xwin, name);
+  }
+#endif
+
+#ifdef HAVE_ECORE_WL2
+  if (iupeflIsWayland())
+  {
+    Ecore_Wl2_Window* wl_win = ecore_evas_wayland2_window_get(ee);
+    if (wl_win)
+      eflCursorApplyWayland(wl_win, name);
+  }
+#endif
+}
+
+static const char* eflCursorFind(Ihandle* ih, Ihandle* changed, const char* value)
+{
+  for (; ih; ih = ih->parent)
+  {
+    const char* cursor = (ih == changed) ? value : iupAttribGet(ih, "CURSOR");
+    if (cursor)
+      return cursor;
+  }
+  return NULL;
+}
+
+static Ecore_Job* efl_cursor_job = NULL;
+
+static void eflCursorApplyJob(void* data)
+{
+  (void)data;
+  efl_cursor_job = NULL;
+  if (efl_cursor_hover_obj)
+    eflCursorApply(efl_cursor_hover_ih, eflCursorFind(efl_cursor_hover_ih, NULL, NULL));
+}
+
+static int eflCursorIsAncestor(Ihandle* ancestor, Ihandle* ih)
+{
+  for (; ih; ih = ih->parent)
+  {
+    if (ih == ancestor)
+      return 1;
+  }
+  return 0;
+}
+
+static void eflCursorSetHover(Ihandle* ih, Eo* obj)
+{
+  if (efl_cursor_hover_obj)
+    efl_wref_del(efl_cursor_hover_obj, &efl_cursor_hover_obj);
+
+  efl_cursor_hover_ih = ih;
+  efl_cursor_hover_obj = obj;
+
+  if (obj)
+    efl_wref_add(obj, &efl_cursor_hover_obj);
+}
+
+IUP_SDK_API int iupdrvBaseSetCursorAttrib(Ihandle* ih, const char* value)
+{
+  if (efl_cursor_hover_obj && eflCursorIsAncestor(ih, efl_cursor_hover_ih))
+    eflCursorApply(efl_cursor_hover_ih, eflCursorFind(efl_cursor_hover_ih, ih, value));
+  return 1;
+}
+
+/****************************************************************************
  * Event Handlers
  ****************************************************************************/
 
@@ -700,7 +1045,10 @@ IUP_DRV_API void iupeflPointerInEvent(void* data, const Efl_Event* ev)
   Ihandle* ih = (Ihandle*)data;
   IFn cb;
 
-  (void)ev;
+  if (!efl_cursor_hover_obj || !eflCursorIsAncestor(ih, efl_cursor_hover_ih))
+    eflCursorSetHover(ih, ev->object);
+  if (!efl_cursor_job)
+    efl_cursor_job = ecore_job_add(eflCursorApplyJob, NULL);
 
   cb = (IFn)IupGetCallback(ih, "ENTERWINDOW_CB");
   if (cb)
@@ -712,7 +1060,16 @@ IUP_DRV_API void iupeflPointerOutEvent(void* data, const Efl_Event* ev)
   Ihandle* ih = (Ihandle*)data;
   IFn cb;
 
-  (void)ev;
+  if (efl_cursor_hover_obj == ev->object)
+  {
+    Ihandle* parent = ih->parent;
+    Eo* parent_obj = NULL;
+    while (parent && (parent->iclass->nativetype == IUP_TYPEVOID || !(parent_obj = iupeflGetWidget(parent))))
+      parent = parent->parent;
+    eflCursorSetHover(parent, parent_obj);
+    if (parent_obj)
+      eflCursorApply(parent, eflCursorFind(parent, NULL, NULL));
+  }
 
   cb = (IFn)IupGetCallback(ih, "LEAVEWINDOW_CB");
   if (cb)
@@ -914,65 +1271,6 @@ IUP_SDK_API int iupdrvBaseSetBgColorAttrib(Ihandle* ih, const char* value)
 
   iupeflColorSet(widget, r, g, b, 255);
   return 1;
-}
-
-IUP_SDK_API int iupdrvBaseSetCursorAttrib(Ihandle* ih, const char* value)
-{
-  static struct {
-    const char* iupname;
-    const char* sysname;
-  } table[] = {
-    { "NONE",           NULL},
-    { "NULL",           NULL},
-    { "ARROW",          "left_ptr"},
-    { "BUSY",           "watch"},
-    { "CROSS",          "crosshair"},
-    { "HAND",           "hand2"},
-    { "HELP",           "question_arrow"},
-    { "IUP",            "question_arrow"},
-    { "MOVE",           "fleur"},
-    { "PEN",            "pencil"},
-    { "RESIZE_N",       "top_side"},
-    { "RESIZE_S",       "bottom_side"},
-    { "RESIZE_NS",      "sb_v_double_arrow"},
-    { "SPLITTER_HORIZ", "sb_v_double_arrow"},
-    { "RESIZE_W",       "left_side"},
-    { "RESIZE_E",       "right_side"},
-    { "RESIZE_WE",      "sb_h_double_arrow"},
-    { "SPLITTER_VERT",  "sb_h_double_arrow"},
-    { "RESIZE_NE",      "top_right_corner"},
-    { "RESIZE_SE",      "bottom_right_corner"},
-    { "RESIZE_NW",      "top_left_corner"},
-    { "RESIZE_SW",      "bottom_left_corner"},
-    { "TEXT",           "xterm"},
-    { "UPARROW",        "center_ptr"}
-  };
-
-  Eo* widget = iupeflGetWidget(ih);
-  int i, count = sizeof(table) / sizeof(table[0]);
-
-  if (widget && !efl_isa(widget, EFL_UI_WIDGET_CLASS))
-    widget = (Eo*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
-
-  if (!widget || !efl_isa(widget, EFL_UI_WIDGET_CLASS))
-    return 0;
-
-  if (!value)
-  {
-    efl_ui_widget_cursor_set(widget, NULL);
-    return 0;
-  }
-
-  for (i = 0; i < count; i++)
-  {
-    if (iupStrEqualNoCase(value, table[i].iupname))
-    {
-      efl_ui_widget_cursor_set(widget, table[i].sysname);
-      return 1;
-    }
-  }
-
-  return 0;
 }
 
 IUP_SDK_API int iupdrvBaseSetZorderAttrib(Ihandle* ih, const char* value)
