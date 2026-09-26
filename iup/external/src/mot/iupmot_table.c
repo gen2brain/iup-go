@@ -12,6 +12,7 @@
 #include <X11/Xlib.h>
 #include <X11/keysym.h>
 #include <X11/XKBlib.h>
+#include <X11/extensions/Xrender.h>
 
 #ifdef IUP_USE_XFT
 #include <X11/Xft/Xft.h>
@@ -28,6 +29,7 @@
 #include "iup_str.h"
 #include "iup_childtree.h"
 #include "iup_dialog.h"
+#include "iup_image.h"
 
 #include "iupmot_drv.h"
 #include "iupmot_color.h"
@@ -45,6 +47,12 @@
 /* ========================================================================= */
 /* Motif-specific data structure (XmDrawingArea-based)                      */
 /* ========================================================================= */
+
+typedef struct
+{
+  char* value;
+  char* image;
+} ImotTableCell;
 
 typedef struct _ImotTableData
 {
@@ -89,7 +97,7 @@ typedef struct _ImotTableData
   int drag_start_x;
   int drag_start_y;
 
-  char*** cell_values;       /* [num_lin][num_col] -> string */
+  ImotTableCell** cells;     /* [num_lin][num_col] */
   char** col_titles;         /* [num_col] -> string */
 
   int edit_lin;              /* Row being edited (1-based, 0=not editing) */
@@ -182,6 +190,14 @@ static char* motTableSelection(Ihandle* ih)
   return mot_data->row_selected;
 }
 
+static void motTableFreeCell(ImotTableCell* cell)
+{
+  if (cell->value)
+    free(cell->value);
+  if (cell->image)
+    free(cell->image);
+}
+
 static void motTableSortRows(Ihandle* ih, int col, int ascending)
 {
   ImotTableData* mot_data = IMOT_TABLE_DATA(ih);
@@ -191,7 +207,7 @@ static void motTableSortRows(Ihandle* ih, int col, int ascending)
   int* order;
   int* new_pos;
 
-  if (!mot_data->cell_values || num_rows < 2 || col < 1 || col > num_cols)
+  if (!mot_data->cells || num_rows < 2 || col < 1 || col > num_cols)
     return;
 
   order = (int*)malloc(num_rows * sizeof(int));
@@ -203,8 +219,8 @@ static void motTableSortRows(Ihandle* ih, int col, int ascending)
   {
     for (j = 0; j < num_rows - i - 1; j++)
     {
-      const char* val1 = mot_data->cell_values[j][col - 1];
-      const char* val2 = mot_data->cell_values[j + 1][col - 1];
+      const char* val1 = mot_data->cells[j][col - 1].value;
+      const char* val2 = mot_data->cells[j + 1][col - 1].value;
       int should_swap = 0;
 
       if (!val1) val1 = "";
@@ -219,10 +235,10 @@ static void motTableSortRows(Ihandle* ih, int col, int ascending)
 
       if (should_swap)
       {
-        char** temp_row = mot_data->cell_values[j];
+        ImotTableCell* temp_row = mot_data->cells[j];
         int temp_order = order[j];
-        mot_data->cell_values[j] = mot_data->cell_values[j + 1];
-        mot_data->cell_values[j + 1] = temp_row;
+        mot_data->cells[j] = mot_data->cells[j + 1];
+        mot_data->cells[j + 1] = temp_row;
         order[j] = order[j + 1];
         order[j + 1] = temp_order;
       }
@@ -318,30 +334,59 @@ static char* motTableGetCellValueInternal(Ihandle* ih, int lin, int col)
     return value_cb(ih, lin, col);
   }
 
-  if (!mot_data || !mot_data->cell_values)
+  if (!mot_data || !mot_data->cells)
     return NULL;
 
-  return mot_data->cell_values[lin-1][col-1];
+  return mot_data->cells[lin-1][col-1].value;
+}
+
+static char* motTableGetCellImage(Ihandle* ih, int lin, int col)
+{
+  ImotTableData* mot_data = IMOT_TABLE_DATA(ih);
+
+  if (mot_data->cells && lin >= 1 && lin <= ih->data->num_lin && col >= 1 && col <= ih->data->num_col &&
+      mot_data->cells[lin-1][col-1].image)
+    return mot_data->cells[lin-1][col-1].image;
+
+  return iupTableGetCellImageCb(ih, lin, col);
+}
+
+static int motTableGetCellImageSize(Ihandle* ih, const char* name, int* img_w, int* img_h)
+{
+  int avail_h = IMOT_TABLE_DATA(ih)->row_height - 2;
+
+  *img_w = 0;
+  *img_h = 0;
+  iupImageGetInfo(name, img_w, img_h, NULL);
+  if (*img_w <= 0 || *img_h <= 0)
+    return 0;
+
+  if (ih->data->fit_image && *img_h > avail_h && avail_h > 0)
+  {
+    *img_w = (*img_w * avail_h) / *img_h;
+    *img_h = avail_h;
+  }
+  return 1;
 }
 
 static void motTableSetCellValueInternal(Ihandle* ih, int lin, int col, const char* value)
 {
   ImotTableData* mot_data = IMOT_TABLE_DATA(ih);
 
-  if (!mot_data || !mot_data->cell_values)
+  if (!mot_data || !mot_data->cells)
     return;
 
   if (lin < 1 || lin > ih->data->num_lin || col < 1 || col > ih->data->num_col)
     return;
 
-  if (mot_data->cell_values[lin-1][col-1])
+  if (mot_data->cells[lin-1][col-1].value)
   {
-    free(mot_data->cell_values[lin-1][col-1]);
-    mot_data->cell_values[lin-1][col-1] = NULL;
+    free(mot_data->cells[lin-1][col-1].value);
+    mot_data->cells[lin-1][col-1].value = NULL;
   }
 
   if (value)
-    mot_data->cell_values[lin-1][col-1] = iupStrDup(value);
+    mot_data->cells[lin-1][col-1].value = iupStrDup(value);
 }
 
 /* ========================================================================= */
@@ -420,22 +465,22 @@ static void motTableMoveRow(Ihandle* ih, int from, int to)
 {
   ImotTableData* mot_data = IMOT_TABLE_DATA(ih);
   int num_lin = ih->data->num_lin;
-  char** row;
+  ImotTableCell* row;
   int l;
 
   if (from == to || from < 1 || to < 1 || from > num_lin || to > num_lin)
     return;
-  if (!mot_data->cell_values)
+  if (!mot_data->cells)
     return;
 
-  row = mot_data->cell_values[from - 1];
+  row = mot_data->cells[from - 1];
   if (from < to)
     for (l = from - 1; l < to - 1; l++)
-      mot_data->cell_values[l] = mot_data->cell_values[l + 1];
+      mot_data->cells[l] = mot_data->cells[l + 1];
   else
     for (l = from - 1; l > to - 1; l--)
-      mot_data->cell_values[l] = mot_data->cell_values[l - 1];
-  mot_data->cell_values[to - 1] = row;
+      mot_data->cells[l] = mot_data->cells[l - 1];
+  mot_data->cells[to - 1] = row;
 
   iupTableMoveLinAttribs(ih, from, to);
 
@@ -531,6 +576,80 @@ static int motTableGetTextWidth(ImotTableFont* font, const char* text, int len)
   return len * 7;
 }
 
+static int motTableDrawCellImage(Ihandle* ih, Window window, int lin, int col, int x, int y, int w, int h, Pixel bg_pixel)
+{
+  ImotTableData* mot_data = IMOT_TABLE_DATA(ih);
+  Display* display = iupmot_display;
+  char* name = motTableGetCellImage(ih, lin, col);
+  char bgcolor[30];
+  unsigned char r, g, b;
+  int img_w, img_h, bpp, draw_w, draw_h, dx, dy;
+  Pixmap pixmap;
+
+  if (!name)
+    return 0;
+
+  iupmotColorGetRGB(bg_pixel, &r, &g, &b);
+  snprintf(bgcolor, sizeof(bgcolor), "%d %d %d", (int)r, (int)g, (int)b);
+
+  pixmap = (Pixmap)iupImageGetImage(name, ih, !XtIsSensitive(ih->handle), bgcolor);
+  if (!pixmap)
+    return 0;
+
+  iupdrvImageGetInfo((void*)pixmap, &img_w, &img_h, &bpp);
+  if (img_w <= 0 || img_h <= 0)
+    return 0;
+
+  draw_w = img_w;
+  draw_h = img_h;
+  if (ih->data->fit_image && img_h > h - 2 && h > 2)
+  {
+    draw_h = h - 2;
+    draw_w = (img_w * draw_h) / img_h;
+  }
+  if (draw_w > w - 4)
+    draw_w = w - 4;
+  if (draw_w <= 0)
+    return 0;
+
+  dx = x + 2;
+  dy = y + (h - draw_h) / 2;
+
+  if (draw_h != img_h)
+  {
+    XRenderPictFormat* fmt = XRenderFindVisualFormat(display, iupmot_visual);
+    if (fmt)
+    {
+      Picture src = XRenderCreatePicture(display, pixmap, fmt, 0, NULL);
+      Picture dst = XRenderCreatePicture(display, window, fmt, 0, NULL);
+      double scale = (double)img_h / (double)draw_h;
+      XTransform xf = {{
+        { XDoubleToFixed(scale), XDoubleToFixed(0), XDoubleToFixed(0) },
+        { XDoubleToFixed(0), XDoubleToFixed(scale), XDoubleToFixed(0) },
+        { XDoubleToFixed(0), XDoubleToFixed(0), XDoubleToFixed(1) }
+      }};
+      XRenderSetPictureTransform(display, src, &xf);
+      XRenderSetPictureFilter(display, src, FilterBilinear, NULL, 0);
+      XRenderComposite(display, PictOpSrc, src, None, dst, 0, 0, 0, 0, dx, dy, (unsigned int)draw_w, (unsigned int)draw_h);
+      XRenderFreePicture(display, dst);
+      XRenderFreePicture(display, src);
+    }
+  }
+  else
+  {
+    int src_y = 0;
+    if (draw_h > h)
+    {
+      src_y = (draw_h - h) / 2;
+      draw_h = h;
+      dy = y;
+    }
+    XCopyArea(display, pixmap, window, mot_data->gc, 0, src_y, (unsigned int)draw_w, (unsigned int)draw_h, dx, dy);
+  }
+
+  return draw_w + 4;
+}
+
 static void motTableDrawCell(Ihandle* ih, int lin, int col, int is_header)
 {
   ImotTableData* mot_data = IMOT_TABLE_DATA(ih);
@@ -541,6 +660,8 @@ static void motTableDrawCell(Ihandle* ih, int lin, int col, int is_header)
   int text_len, text_width, text_x, text_y;
   int is_focused_cell = (lin == mot_data->current_row && col == mot_data->current_col);
   int is_focused_row = (!is_header && motTableRowSelected(ih, lin));
+  int img_offset = 0;
+  Pixel cell_bg;
 
   if (is_header)
   {
@@ -586,22 +707,15 @@ static void motTableDrawCell(Ihandle* ih, int lin, int col, int is_header)
   }
 
   if (is_focused_row)
-  {
-    XSetForeground(display, mot_data->gc, mot_data->select_bg_pixel);
-  }
+    cell_bg = mot_data->select_bg_pixel;
   else if (is_header)
-  {
-    XSetForeground(display, mot_data->gc, mot_data->header_bg_pixel);
-  }
+    cell_bg = mot_data->header_bg_pixel;
   else if (bgcolor && *bgcolor)
-  {
-    XSetForeground(display, mot_data->gc, iupmotColorGetPixelStr(bgcolor));
-  }
+    cell_bg = iupmotColorGetPixelStr(bgcolor);
   else
-  {
-    XSetForeground(display, mot_data->gc, mot_data->bg_pixel);
-  }
+    cell_bg = mot_data->bg_pixel;
 
+  XSetForeground(display, mot_data->gc, cell_bg);
   XFillRectangle(display, window, mot_data->gc, x, y, w, h);
 
   if (mot_data->show_grid)
@@ -610,6 +724,9 @@ static void motTableDrawCell(Ihandle* ih, int lin, int col, int is_header)
     XDrawLine(display, window, mot_data->gc, x, y + h - 1, x + w, y + h - 1); /* Bottom */
     XDrawLine(display, window, mot_data->gc, x + w - 1, y, x + w - 1, y + h); /* Right */
   }
+
+  if (!is_header && ih->data->show_image)
+    img_offset = motTableDrawCellImage(ih, window, lin, col, x, y, w, h, cell_bg);
 
   if (text && text[0])
   {
@@ -657,11 +774,11 @@ static void motTableDrawCell(Ihandle* ih, int lin, int col, int is_header)
     }
     else if (align_str && (iupStrEqualNoCase(align_str, "ACENTER") || iupStrEqualNoCase(align_str, "CENTER")))
     {
-      text_x = x + (w - text_width) / 2;
+      text_x = x + img_offset + (w - img_offset - text_width) / 2;
     }
     else
     {
-      text_x = x + MOT_TABLE_CELL_PADDING;
+      text_x = x + img_offset + MOT_TABLE_CELL_PADDING;
     }
 
 #ifdef IUP_USE_XFT
@@ -740,6 +857,22 @@ static void motTableAutoSizeColumns(Ihandle* ih)
   int c, lin1;
   int max_rows_to_check = (ih->data->num_lin > 100) ? 100 : ih->data->num_lin;  /* Limit for performance */
 
+  if (ih->data->show_image)
+  {
+    int row_height = MOT_TABLE_DEF_ROW_HEIGHT;
+    for (lin1 = 1; !ih->data->fit_image && lin1 <= max_rows_to_check; lin1++)
+    {
+      for (c = 1; c <= ih->data->num_col; c++)
+      {
+        char* name = motTableGetCellImage(ih, lin1, c);
+        int img_w, img_h;
+        if (name && motTableGetCellImageSize(ih, name, &img_w, &img_h) && img_h + 4 > row_height)
+          row_height = img_h + 4;
+      }
+    }
+    mot_data->row_height = row_height;
+  }
+
   for (c = 0; c < ih->data->num_col; c++)
   {
     int max_width = MOT_TABLE_DEF_COL_WIDTH;
@@ -763,15 +896,22 @@ static void motTableAutoSizeColumns(Ihandle* ih)
     for (lin1 = 0; lin1 < max_rows_to_check; lin1++)
     {
       const char* cell_value = IupGetAttributeId2(ih, "", lin1 + 1, c + 1);
+      cell_width = 16;  /* Add padding (8px left + 8px right) */
       if (cell_value && cell_value[0])
       {
         ImotTableFont font;
         motTableGetCellFont(ih, lin1 + 1, c + 1, &font);
-        cell_width = motTableGetTextWidth(&font, cell_value, strlen(cell_value));
-        cell_width += 16;  /* Add padding (8px left + 8px right) */
-        if (cell_width > max_width)
-          max_width = cell_width;
+        cell_width += motTableGetTextWidth(&font, cell_value, strlen(cell_value));
       }
+      if (ih->data->show_image)
+      {
+        char* name = motTableGetCellImage(ih, lin1 + 1, c + 1);
+        int img_w, img_h;
+        if (name && motTableGetCellImageSize(ih, name, &img_w, &img_h))
+          cell_width += img_w + 4;
+      }
+      if (cell_width > max_width)
+        max_width = cell_width;
     }
 
     mot_data->col_natural_widths[c] = max_width;
@@ -1590,16 +1730,16 @@ static int motTableMapMethod(Ihandle* ih)
 
   if (!iupAttribGetBoolean(ih, "VIRTUALMODE"))
   {
-    mot_data->cell_values = (char***)calloc(ih->data->num_lin, sizeof(char**));
+    mot_data->cells = (ImotTableCell**)calloc(ih->data->num_lin, sizeof(ImotTableCell*));
     for (i = 0; i < ih->data->num_lin; i++)
     {
-      mot_data->cell_values[i] = (char**)calloc(ih->data->num_col, sizeof(char*));
+      mot_data->cells[i] = (ImotTableCell*)calloc(ih->data->num_col, sizeof(ImotTableCell));
     }
   }
   else
   {
     /* Virtual mode: no cell storage needed, VALUE_CB provides data on demand */
-    mot_data->cell_values = NULL;
+    mot_data->cells = NULL;
   }
 
   mot_data->col_titles = (char**)calloc(ih->data->num_col, sizeof(char*));
@@ -1812,21 +1952,20 @@ static void motTableUnMapMethod(Ihandle* ih)
   if (mot_data->font_struct && mot_data->font_struct_owned)
     XFreeFont(iupmot_display, mot_data->font_struct);
 
-  if (mot_data->cell_values)
+  if (mot_data->cells)
   {
     for (i = 0; i < ih->data->num_lin; i++)
     {
-      if (mot_data->cell_values[i])
+      if (mot_data->cells[i])
       {
         for (c = 0; c < ih->data->num_col; c++)
         {
-          if (mot_data->cell_values[i][c])
-            free(mot_data->cell_values[i][c]);
+          motTableFreeCell(&mot_data->cells[i][c]);
         }
-        free(mot_data->cell_values[i]);
+        free(mot_data->cells[i]);
       }
     }
-    free(mot_data->cell_values);
+    free(mot_data->cells);
   }
 
   if (mot_data->col_titles)
@@ -1903,22 +2042,21 @@ IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
     {
       for (col = 0; col < ih->data->num_col; col++)
       {
-        if (mot_data->cell_values[i][col])
-          free(mot_data->cell_values[i][col]);
+        motTableFreeCell(&mot_data->cells[i][col]);
       }
-      free(mot_data->cell_values[i]);
+      free(mot_data->cells[i]);
     }
 
     if (num_lin == 0)
     {
-      free(mot_data->cell_values);
-      mot_data->cell_values = NULL;
+      free(mot_data->cells);
+      mot_data->cells = NULL;
     }
     else
     {
-      mot_data->cell_values = (char***)realloc(mot_data->cell_values, num_lin * sizeof(char**));
+      mot_data->cells = (ImotTableCell**)realloc(mot_data->cells, num_lin * sizeof(ImotTableCell*));
       for (i = old_num_lin; i < num_lin; i++)
-        mot_data->cell_values[i] = (char**)calloc(ih->data->num_col, sizeof(char*));
+        mot_data->cells[i] = (ImotTableCell*)calloc(ih->data->num_col, sizeof(ImotTableCell));
     }
   }
 
@@ -1957,16 +2095,26 @@ IUP_SDK_API void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
     mot_data->sort_signs[i] = 0;
   }
 
+  for (i = num_col; i < old_num_col; i++)
+  {
+    if (mot_data->col_titles[i])
+      free(mot_data->col_titles[i]);
+  }
   mot_data->col_titles = (char**)realloc(mot_data->col_titles, num_col * sizeof(char*));
   for (i = old_num_col; i < num_col; i++)
     mot_data->col_titles[i] = NULL;
 
-  for (i = 0; mot_data->cell_values && i < ih->data->num_lin; i++)
+  for (i = 0; mot_data->cells && i < ih->data->num_lin; i++)
   {
-    mot_data->cell_values[i] = (char**)realloc(mot_data->cell_values[i], num_col * sizeof(char*));
     int j;
+    for (j = num_col; j < old_num_col; j++)
+      motTableFreeCell(&mot_data->cells[i][j]);
+    mot_data->cells[i] = (ImotTableCell*)realloc(mot_data->cells[i], num_col * sizeof(ImotTableCell));
     for (j = old_num_col; j < num_col; j++)
-      mot_data->cell_values[i][j] = NULL;
+    {
+      mot_data->cells[i][j].value = NULL;
+      mot_data->cells[i][j].image = NULL;
+    }
   }
 
   ih->data->num_col = num_col;
@@ -1992,12 +2140,12 @@ IUP_SDK_API void iupdrvTableAddLin(Ihandle* ih, int pos)
 
   if (!iupAttribGetBoolean(ih, "VIRTUALMODE"))
   {
-    mot_data->cell_values = (char***)realloc(mot_data->cell_values, new_num_lin * sizeof(char**));
+    mot_data->cells = (ImotTableCell**)realloc(mot_data->cells, new_num_lin * sizeof(ImotTableCell*));
 
     for (lin = new_num_lin - 1; lin > pos; lin--)
-      mot_data->cell_values[lin] = mot_data->cell_values[lin - 1];
+      mot_data->cells[lin] = mot_data->cells[lin - 1];
 
-    mot_data->cell_values[pos] = (char**)calloc(ih->data->num_col, sizeof(char*));
+    mot_data->cells[pos] = (ImotTableCell*)calloc(ih->data->num_col, sizeof(ImotTableCell));
   }
 
   ih->data->num_lin = new_num_lin;
@@ -2036,20 +2184,19 @@ IUP_SDK_API void iupdrvTableDelLin(Ihandle* ih, int pos)
   {
     for (col = 0; col < ih->data->num_col; col++)
     {
-      if (mot_data->cell_values[pos][col])
-        free(mot_data->cell_values[pos][col]);
+      motTableFreeCell(&mot_data->cells[pos][col]);
     }
-    free(mot_data->cell_values[pos]);
+    free(mot_data->cells[pos]);
 
     for (lin = pos; lin < new_num_lin; lin++)
-      mot_data->cell_values[lin] = mot_data->cell_values[lin + 1];
+      mot_data->cells[lin] = mot_data->cells[lin + 1];
 
     if (new_num_lin > 0)
-      mot_data->cell_values = (char***)realloc(mot_data->cell_values, new_num_lin * sizeof(char**));
+      mot_data->cells = (ImotTableCell**)realloc(mot_data->cells, new_num_lin * sizeof(ImotTableCell*));
     else
     {
-      free(mot_data->cell_values);
-      mot_data->cell_values = NULL;
+      free(mot_data->cells);
+      mot_data->cells = NULL;
     }
   }
 
@@ -2104,14 +2251,15 @@ IUP_SDK_API void iupdrvTableAddCol(Ihandle* ih, int pos)
   }
   mot_data->col_titles[pos] = NULL;
 
-  for (lin = 0; mot_data->cell_values && lin < ih->data->num_lin; lin++)
+  for (lin = 0; mot_data->cells && lin < ih->data->num_lin; lin++)
   {
-    mot_data->cell_values[lin] = (char**)realloc(mot_data->cell_values[lin], new_num_col * sizeof(char*));
+    mot_data->cells[lin] = (ImotTableCell*)realloc(mot_data->cells[lin], new_num_col * sizeof(ImotTableCell));
     for (col = new_num_col - 1; col > pos; col--)
     {
-      mot_data->cell_values[lin][col] = mot_data->cell_values[lin][col - 1];
+      mot_data->cells[lin][col] = mot_data->cells[lin][col - 1];
     }
-    mot_data->cell_values[lin][pos] = NULL;
+    mot_data->cells[lin][pos].value = NULL;
+    mot_data->cells[lin][pos].image = NULL;
   }
 
   ih->data->num_col = new_num_col;
@@ -2141,22 +2289,21 @@ IUP_SDK_API void iupdrvTableDelCol(Ihandle* ih, int pos)
   if (mot_data->col_titles[pos])
     free(mot_data->col_titles[pos]);
 
-  for (lin = 0; mot_data->cell_values && lin < ih->data->num_lin; lin++)
+  for (lin = 0; mot_data->cells && lin < ih->data->num_lin; lin++)
   {
-    if (mot_data->cell_values[lin][pos])
-      free(mot_data->cell_values[lin][pos]);
+    motTableFreeCell(&mot_data->cells[lin][pos]);
 
     for (col = pos; col < new_num_col; col++)
     {
-      mot_data->cell_values[lin][col] = mot_data->cell_values[lin][col + 1];
+      mot_data->cells[lin][col] = mot_data->cells[lin][col + 1];
     }
 
     if (new_num_col > 0)
-      mot_data->cell_values[lin] = (char**)realloc(mot_data->cell_values[lin], new_num_col * sizeof(char*));
+      mot_data->cells[lin] = (ImotTableCell*)realloc(mot_data->cells[lin], new_num_col * sizeof(ImotTableCell));
     else
     {
-      free(mot_data->cell_values[lin]);
-      mot_data->cell_values[lin] = NULL;
+      free(mot_data->cells[lin]);
+      mot_data->cells[lin] = NULL;
     }
   }
 
@@ -2216,10 +2363,19 @@ IUP_SDK_API char* iupdrvTableGetCellValue(Ihandle* ih, int lin, int col)
 
 IUP_SDK_API void iupdrvTableSetCellImage(Ihandle* ih, int lin, int col, const char* image)
 {
-  (void)ih;
-  (void)lin;
-  (void)col;
-  (void)image;
+  ImotTableData* mot_data = IMOT_TABLE_DATA(ih);
+  ImotTableCell* cell;
+
+  if (!mot_data || !mot_data->cells || lin < 1 || lin > ih->data->num_lin || col < 1 || col > ih->data->num_col)
+    return;
+
+  cell = &mot_data->cells[lin-1][col-1];
+  if (cell->image)
+    free(cell->image);
+  cell->image = image ? iupStrDup(image) : NULL;
+
+  motTableQueueAutoSize(ih);
+  motTableRedraw(ih);
 }
 
 IUP_SDK_API void iupdrvTableSetColTitle(Ihandle* ih, int col, const char* title)
@@ -2534,9 +2690,6 @@ IUP_SDK_API void iupdrvTableInitClass(Iclass* ic)
 
   iupClassRegisterAttribute(ic, "ALLOWREORDER", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "USERRESIZE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SHOWIMAGE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "FITIMAGE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttributeId2(ic, "IMAGE", NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 
   iupClassRegisterReplaceAttribFunc(ic, "SORTABLE", NULL, motTableSetSortableAttrib);
   iupClassRegisterReplaceAttribFunc(ic, "ACTIVE", iupBaseGetActiveAttrib, motTableSetActiveAttrib);

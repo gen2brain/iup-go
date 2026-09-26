@@ -340,7 +340,7 @@ Called only when SHOWDRAGDROP=YES.
 
 Column and line indices are 1-based throughout the IupTable API.
 
-In Motif, images (SHOWIMAGE, FITIMAGE, IMAGE), column reordering (ALLOWREORDER) and user column resizing (USERRESIZE) are not supported.
+In Motif, column reordering (ALLOWREORDER) and user column resizing (USERRESIZE) are not supported.
 
 In virtual mode, the table does not store cell values internally.
 Instead, it calls VALUE_CB (and optionally IMAGE_CB) to retrieve the data to display.
