@@ -52,6 +52,53 @@ static void gtk4CanvasUpdateChildLayout(Ihandle* ih, int flush)
     IupFlush();
 }
 
+static void gtk4CanvasUpdateContentSize(Ihandle* ih)
+{
+  int sb_vert_width = 0, sb_horiz_height = 0;
+
+  if (!ih->handle || !GTK_IS_DRAWING_AREA(ih->handle))
+    return;
+
+  if (ih->data->sb)
+  {
+    GtkWidget* sb_vert = (GtkWidget*)iupAttribGet(ih, "_IUPGTK4_SBVERT");
+    GtkWidget* sb_horiz = (GtkWidget*)iupAttribGet(ih, "_IUPGTK4_SBHORIZ");
+
+    if (sb_vert && iupgtk4IsVisible(sb_vert))
+      sb_vert_width = iupdrvGetScrollbarSize();
+    if (sb_horiz && iupgtk4IsVisible(sb_horiz))
+      sb_horiz_height = iupdrvGetScrollbarSize();
+  }
+
+  /* the border is drawn by the container snapshot, not part of the content size */
+  /* a GtkDrawingArea has no size without content_width/height */
+  gtk_drawing_area_set_content_width(GTK_DRAWING_AREA(ih->handle), ih->currentwidth - sb_vert_width);
+  gtk_drawing_area_set_content_height(GTK_DRAWING_AREA(ih->handle), ih->currentheight - sb_horiz_height);
+}
+
+static gboolean gtk4CanvasDeferredScrollbarLayout(gpointer data)
+{
+  Ihandle* ih = (Ihandle*)data;
+  iupAttribSet(ih, "_IUPGTK4_SB_LAYOUT_ID", NULL);
+  gtk4CanvasUpdateContentSize(ih);
+  gtk4CanvasUpdateChildLayout(ih, 0);
+  return G_SOURCE_REMOVE;
+}
+
+static void gtk4CanvasScrollbarToggled(Ihandle* ih)
+{
+  if (ih->data->inside_resize)
+  {
+    if (!iupAttribGet(ih, "_IUPGTK4_SB_LAYOUT_ID"))
+      iupAttribSetInt(ih, "_IUPGTK4_SB_LAYOUT_ID", (int)g_idle_add(gtk4CanvasDeferredScrollbarLayout, ih));
+  }
+  else
+  {
+    gtk4CanvasUpdateContentSize(ih);
+    gtk4CanvasUpdateChildLayout(ih, 1);
+  }
+}
+
 static void gtk4CanvasAdjustmentSetValue(Ihandle* ih, GtkAdjustment* adjustment, double value)
 {
   iupAttribSet(ih, "_IUPGTK4_SETSBPOS", "1");
@@ -603,7 +650,7 @@ static int gtk4CanvasSetDXAttrib(Ihandle* ih, const char* value)
           if (iupdrvIsVisible(ih))
             iupAttribSet(ih, "SB_RESIZE", "YES");
           gtk_widget_set_visible(sb_horiz, FALSE);
-          gtk4CanvasUpdateChildLayout(ih, 1);
+          gtk4CanvasScrollbarToggled(ih);
         }
 
         iupAttribSet(ih, "XHIDDEN", "YES");
@@ -621,7 +668,7 @@ static int gtk4CanvasSetDXAttrib(Ihandle* ih, const char* value)
         if (iupdrvIsVisible(ih))
           iupAttribSet(ih, "SB_RESIZE", "YES");
         gtk_widget_set_visible(sb_horiz, TRUE);
-        gtk4CanvasUpdateChildLayout(ih, 1);
+        gtk4CanvasScrollbarToggled(ih);
       }
       gtk_widget_set_sensitive(sb_horiz, TRUE);
 
@@ -680,7 +727,7 @@ static int gtk4CanvasSetDYAttrib(Ihandle* ih, const char* value)
           if (iupdrvIsVisible(ih))
             iupAttribSet(ih, "SB_RESIZE", "YES");
           gtk_widget_set_visible(sb_vert, FALSE);
-          gtk4CanvasUpdateChildLayout(ih, 1);
+          gtk4CanvasScrollbarToggled(ih);
         }
 
         iupAttribSet(ih, "YHIDDEN", "YES");
@@ -698,7 +745,7 @@ static int gtk4CanvasSetDYAttrib(Ihandle* ih, const char* value)
         if (iupdrvIsVisible(ih))
           iupAttribSet(ih, "SB_RESIZE", "YES");
         gtk_widget_set_visible(sb_vert, TRUE);
-        gtk4CanvasUpdateChildLayout(ih, 1);
+        gtk4CanvasScrollbarToggled(ih);
       }
       gtk_widget_set_sensitive(sb_vert, TRUE);
 
@@ -797,30 +844,10 @@ static int gtk4CanvasSetBgColorAttrib(Ihandle* ih, const char* value)
 
 static void gtk4CanvasLayoutUpdateMethod(Ihandle* ih)
 {
-  int sb_vert_width = 0, sb_horiz_height = 0;
-  int width, height;
-
   if (!ih->handle || !GTK_IS_DRAWING_AREA(ih->handle))
     return;
 
-  if (ih->data->sb)
-  {
-    GtkWidget* sb_vert = (GtkWidget*)iupAttribGet(ih, "_IUPGTK4_SBVERT");
-    GtkWidget* sb_horiz = (GtkWidget*)iupAttribGet(ih, "_IUPGTK4_SBHORIZ");
-
-    if (sb_vert && iupgtk4IsVisible(sb_vert))
-      sb_vert_width = iupdrvGetScrollbarSize();
-    if (sb_horiz && iupgtk4IsVisible(sb_horiz))
-      sb_horiz_height = iupdrvGetScrollbarSize();
-  }
-
-  /* the border is drawn by the container snapshot, not part of the content size */
-  width = ih->currentwidth - sb_vert_width;
-  height = ih->currentheight - sb_horiz_height;
-
-  /* a GtkDrawingArea has no size without content_width/height */
-  gtk_drawing_area_set_content_width(GTK_DRAWING_AREA(ih->handle), width);
-  gtk_drawing_area_set_content_height(GTK_DRAWING_AREA(ih->handle), height);
+  gtk4CanvasUpdateContentSize(ih);
 
   iupdrvBaseLayoutUpdateMethod(ih);
 
@@ -1196,6 +1223,13 @@ static int gtk4CanvasMapMethod(Ihandle* ih)
 
 static void gtk4CanvasUnMapMethod(Ihandle* ih)
 {
+  int sb_layout_id = iupAttribGetInt(ih, "_IUPGTK4_SB_LAYOUT_ID");
+  if (sb_layout_id)
+  {
+    g_source_remove(sb_layout_id);
+    iupAttribSet(ih, "_IUPGTK4_SB_LAYOUT_ID", NULL);
+  }
+
   cairo_surface_t* buffer = (cairo_surface_t*)iupAttribGet(ih, "_IUPGTK4_CANVAS_BUFFER");
   if (buffer)
     cairo_surface_destroy(buffer);
