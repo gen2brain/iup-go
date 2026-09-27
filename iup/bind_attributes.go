@@ -194,6 +194,52 @@ func GetAttribute(ih Ihandle, name string) string {
 	return C.GoString(value)
 }
 
+// GetBytes returns a copy of a clipboard data attribute (FORMATDATA, NATIVEVECTORIMAGE), FORMATDATASIZE bytes long.
+//
+// https://gen2brain.github.io/iup-go/elem/iup_clipboard.html
+func GetBytes(ih Ihandle, name string) []byte {
+	checkUIThread()
+
+	cName := C.CString(name)
+	defer C.free(unsafe.Pointer(cName))
+
+	value := C.IupGetAttribute(ih.ptr(), cName)
+	if value == nil {
+		return nil
+	}
+
+	size := GetInt(ih, "FORMATDATASIZE")
+	if size <= 0 {
+		return nil
+	}
+
+	return bytes.Clone(unsafe.Slice((*byte)(unsafe.Pointer(value)), size))
+}
+
+// SetBytes sets FORMATDATASIZE to the data length and stores data in a clipboard data attribute (FORMATDATA, NATIVEVECTORIMAGE).
+//
+// https://gen2brain.github.io/iup-go/elem/iup_clipboard.html
+func SetBytes(ih Ihandle, name string, data []byte) {
+	checkUIThread()
+
+	cSize := C.CString("FORMATDATASIZE")
+	defer C.free(unsafe.Pointer(cSize))
+	C.IupSetInt(ih.ptr(), cSize, C.int(len(data)))
+
+	cName := C.CString(name)
+	defer C.free(unsafe.Pointer(cName))
+
+	if len(data) == 0 {
+		C.IupSetAttribute(ih.ptr(), cName, nil)
+		return
+	}
+
+	cData := C.CBytes(data)
+	defer C.free(cData)
+
+	C.IupSetAttribute(ih.ptr(), cName, (*C.char)(cData))
+}
+
 // attribIsNotString reports whether name is registered IUPAF_NO_STRING for the
 // class of ih, meaning its value is a native handle and not a C string.
 func attribIsNotString(ih Ihandle, cName *C.char) bool {

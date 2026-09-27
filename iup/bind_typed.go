@@ -224,3 +224,18 @@ func rgbBytes(value []interface{}) ([3]uint8, bool) {
 	}
 	return c, true
 }
+
+// GetBytes returns a copy of a clipboard data attribute (FORMATDATA, NATIVEVECTORIMAGE), FORMATDATASIZE bytes long.
+//
+// https://gen2brain.github.io/iup-go/elem/iup_clipboard.html
+func (ih Ihandle) GetBytes(name string) []byte {
+	return GetBytes(ih, name)
+}
+
+// SetBytes sets FORMATDATASIZE to the data length and stores data in a clipboard data attribute (FORMATDATA, NATIVEVECTORIMAGE).
+//
+// https://gen2brain.github.io/iup-go/elem/iup_clipboard.html
+func (ih Ihandle) SetBytes(name string, data []byte) Ihandle {
+	SetBytes(ih, name, data)
+	return ih
+}

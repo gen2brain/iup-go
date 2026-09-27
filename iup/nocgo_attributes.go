@@ -7,9 +7,11 @@ import (
 	"fmt"
 	"image/color"
 	"reflect"
+	"runtime"
 	"strings"
 	"sync"
 	"sync/atomic"
+	"unsafe"
 )
 
 var uiThread atomic.Uint64
@@ -133,6 +135,42 @@ func GetAttribute(ih Ihandle, name string) string {
 	}
 
 	return iupGetAttribute(uintptr(ih), name)
+}
+
+// GetBytes returns a copy of a clipboard data attribute (FORMATDATA, NATIVEVECTORIMAGE), FORMATDATASIZE bytes long.
+//
+// https://gen2brain.github.io/iup-go/elem/iup_clipboard.html
+func GetBytes(ih Ihandle, name string) []byte {
+	checkUIThread()
+
+	ptr := iupGetAttributeRaw(uintptr(ih), name)
+	if ptr == 0 {
+		return nil
+	}
+
+	size := GetInt(ih, "FORMATDATASIZE")
+	if size <= 0 {
+		return nil
+	}
+
+	return bytes.Clone(unsafe.Slice((*byte)(goPtr(ptr)), size))
+}
+
+// SetBytes sets FORMATDATASIZE to the data length and stores data in a clipboard data attribute (FORMATDATA, NATIVEVECTORIMAGE).
+//
+// https://gen2brain.github.io/iup-go/elem/iup_clipboard.html
+func SetBytes(ih Ihandle, name string, data []byte) {
+	checkUIThread()
+
+	iupSetInt(uintptr(ih), "FORMATDATASIZE", int32(len(data)))
+
+	if len(data) == 0 {
+		iupSetAttribute(uintptr(ih), name, 0)
+		return
+	}
+
+	iupSetAttribute(uintptr(ih), name, uintptr(unsafe.Pointer(&data[0])))
+	runtime.KeepAlive(data)
 }
 
 // attribIsNotString reports whether name is registered IUPAF_NO_STRING for the
