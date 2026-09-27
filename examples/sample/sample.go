@@ -25,6 +25,7 @@ func main() {
 	//iup.SetGlobal("FLTKTHEME", "oxy")
 	//iup.SetGlobal("GNUSTEPTHEME", "Rik")
 	//iup.SetGlobal("QTSTYLE", "Fusion")
+	//iup.SetGlobal("APPEARANCE", "DARK")
 
 	iup.Image(imgDiamondSize, imgDiamondSize, imgDiamond).SetAttributes(map[string]string{
 		"0": "BGCOLOR",
