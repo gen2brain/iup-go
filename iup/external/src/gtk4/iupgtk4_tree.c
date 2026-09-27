@@ -4,7 +4,7 @@
  * See Copyright Notice in iup.h
  */
 
-#include <gdk/gdkkeysyms.h>
+#include <gtk/gtk.h>
 
 #include <stdlib.h>
 #include <stdio.h>
