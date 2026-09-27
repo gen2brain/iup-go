@@ -408,13 +408,13 @@ static void eflCanvasWheelCallback(void* data, const Efl_Event* ev)
                      Tooltip Support
 ****************************************************************/
 
-static Eo* eflCanvasGetTooltipWidget(Ihandle* ih)
+IUP_DRV_API Eo* iupeflCanvasGetOverlayWidget(Ihandle* ih)
 {
   Eo* wrap = (Eo*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
   if (wrap)
     return wrap;
 
-  Eo* overlay = (Eo*)iupAttribGet(ih, "_IUP_EFL_TOOLTIP_OVERLAY");
+  Eo* overlay = (Eo*)iupAttribGet(ih, "_IUP_EFL_OVERLAY");
   if (overlay)
     return overlay;
 
@@ -438,16 +438,17 @@ static Eo* eflCanvasGetTooltipWidget(Ihandle* ih)
     Eina_Size2D size = efl_gfx_entity_size_get(vg);
     efl_gfx_entity_position_set(overlay, pos);
     efl_gfx_entity_size_set(overlay, size);
-    efl_gfx_stack_above(overlay, vg);
+    if (evas_object_smart_parent_get(overlay) == evas_object_smart_parent_get(vg))
+      efl_gfx_stack_above(overlay, vg);
   }
 
-  iupAttribSet(ih, "_IUP_EFL_TOOLTIP_OVERLAY", (char*)overlay);
+  iupAttribSet(ih, "_IUP_EFL_OVERLAY", (char*)overlay);
   return overlay;
 }
 
 static int eflCanvasSetTipAttrib(Ihandle* ih, const char* value)
 {
-  Eo* widget = eflCanvasGetTooltipWidget(ih);
+  Eo* widget = iupeflCanvasGetOverlayWidget(ih);
   if (!widget)
     return 1;
 
@@ -465,7 +466,7 @@ static int eflCanvasSetTipAttrib(Ihandle* ih, const char* value)
 
 static int eflCanvasSetTipVisibleAttrib(Ihandle* ih, const char* value)
 {
-  Eo* widget = eflCanvasGetTooltipWidget(ih);
+  Eo* widget = iupeflCanvasGetOverlayWidget(ih);
   if (!widget)
     return 0;
 
@@ -783,11 +784,11 @@ static void eflCanvasUnMapMethod(Ihandle* ih)
   }
 
   {
-    Eo* overlay = (Eo*)iupAttribGet(ih, "_IUP_EFL_TOOLTIP_OVERLAY");
+    Eo* overlay = (Eo*)iupAttribGet(ih, "_IUP_EFL_OVERLAY");
     if (overlay)
     {
       efl_del(overlay);
-      iupAttribSet(ih, "_IUP_EFL_TOOLTIP_OVERLAY", NULL);
+      iupAttribSet(ih, "_IUP_EFL_OVERLAY", NULL);
     }
   }
 
@@ -856,7 +857,7 @@ static void eflCanvasLayoutUpdateMethod(Ihandle* ih)
   }
 
   {
-    Eo* overlay = (Eo*)iupAttribGet(ih, "_IUP_EFL_TOOLTIP_OVERLAY");
+    Eo* overlay = (Eo*)iupAttribGet(ih, "_IUP_EFL_OVERLAY");
     if (overlay && vg)
     {
       Eina_Position2D pos = efl_gfx_entity_position_get(vg);

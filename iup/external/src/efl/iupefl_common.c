@@ -1328,6 +1328,24 @@ IUP_DRV_API int iupeflCanvasHasSize(Ihandle* ih)
   return (size.w > 1 && size.h > 1);
 }
 
+static int eflWindowCanRender(Eo* win)
+{
+  if (!efl_gfx_entity_visible_get(win))
+    return 0;
+
+#ifdef HAVE_ECORE_WL2
+  if (iupeflIsWayland())
+  {
+    Ecore_Evas* ee = ecore_evas_ecore_evas_get(evas_object_evas_get(win));
+    Ecore_Wl2_Window* wl_win = ee ? ecore_evas_wayland2_window_get(ee) : NULL;
+    if (wl_win && !ecore_wl2_window_shell_surface_exists(wl_win))
+      return 0;
+  }
+#endif
+
+  return 1;
+}
+
 IUP_SDK_API void iupdrvRedrawNow(Ihandle* ih)
 {
   Ihandle* dialog;
@@ -1341,7 +1359,7 @@ IUP_SDK_API void iupdrvRedrawNow(Ihandle* ih)
   win = dialog? iupeflGetWidget(dialog): NULL;
 
   /* Wayland rejects a buffer attached before the surface has a role */
-  if (win && !efl_gfx_entity_visible_get(win))
+  if (win && !eflWindowCanRender(win))
   {
     if (ih->iclass->nativetype == IUP_TYPECANVAS)
       iupeflRedrawSetPending(ih);
