@@ -1326,6 +1326,34 @@ static void fltkTableFitColumns(Ihandle* ih, IupFltkTable* table)
   }
 }
 
+static void fltkTableSetRows(IupFltkTable* table, int num_lin, int idx, int delta)
+{
+  int base = table->font_h + 6;
+  int old = table->rows();
+
+  std::vector<int> heights(old);
+  for (int r = 0; r < old; r++)
+    heights[r] = table->row_height(r);
+  if (delta > 0 && idx <= old)
+    heights.insert(heights.begin() + idx, delta, base);
+  else if (delta < 0 && idx < old)
+    heights.erase(heights.begin() + idx);
+  heights.resize(num_lin, base);
+
+  if (num_lin > old && (old == 0 || table->row_height(old - 1) != base))
+  {
+    table->rows(old + 1);
+    table->row_height(old, base);
+  }
+  table->rows(num_lin);
+
+  for (int r = 0; r < num_lin; r++)
+  {
+    if (table->row_height(r) != heights[r])
+      table->row_height(r, heights[r]);
+  }
+}
+
 static void fltkTableSyncRowHeight(Ihandle* ih, IupFltkTable* table)
 {
   int charheight;
@@ -1457,9 +1485,7 @@ static int fltkTableMapMethod(Ihandle* ih)
   int row_height = charheight + 6;
   table->font_h = charheight;
 
-  table->rows(1);
-  table->row_height(0, row_height);
-  table->rows(num_lin);
+  fltkTableSetRows(table, num_lin, 0, 0);
   table->cols(num_col);
 
   if (table->is_virtual)
@@ -1591,7 +1617,7 @@ static void fltkTableFollowLins(IupFltkTable* table, int num_lin, int idx, int d
   }
 
   table->select_all_rows(0);
-  table->rows(num_lin);
+  fltkTableSetRows(table, num_lin, idx, delta);
 
   for (int r : sel)
   {
