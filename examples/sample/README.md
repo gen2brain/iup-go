@@ -60,6 +60,9 @@
 ### Linux FLTK
 [<img src="sample_fltk.png" width="700" title="Linux FLTK" alt="Linux FLTK" />](sample_fltk.png)
 
+### Linux FLTK Dark
+[<img src="sample_fltk_dark.png" width="700" title="Linux FLTK Dark" alt="Linux FLTK Dark" />](sample_fltk_dark.png)
+
 ### Linux EFL
 [<img src="sample_efl.png" width="700" title="Linux EFL" alt="Linux EFL" />](sample_efl.png)
 
@@ -80,6 +83,9 @@
 
 ### Haiku
 [<img src="sample_haiku.png" width="700" title="Haiku" alt="Haiku" />](sample_haiku.png)
+
+### Haiku Dark
+[<img src="sample_haiku_dark.png" width="700" title="Haiku Dark" alt="Haiku Dark" />](sample_haiku_dark.png)
 
 ### WebAssembly
 [<img src="sample_wasm.png" width="700" title="Wasm" alt="Wasm" />](sample_wasm.png)
