@@ -876,18 +876,10 @@ static int eflTextSetActiveAttrib(Ihandle* ih, const char* value)
 
 static int eflTextSetBgColorAttrib(Ihandle* ih, const char* value)
 {
-  Eo* entry = iupeflGetWidget(ih);
-  unsigned char r, g, b;
-
-  if (!entry || iupAttribGet(ih, "_IUP_EFL_IS_SPINNER"))
+  if (iupAttribGet(ih, "_IUP_EFL_IS_SPINNER"))
     return 0;
 
-  if (!iupStrToRGB(value, &r, &g, &b))
-    return 0;
-
-  efl_text_background_type_set(entry, EFL_TEXT_STYLE_BACKGROUND_TYPE_SOLID_COLOR);
-  efl_text_background_color_set(entry, r, g, b, 255);
-  return 1;
+  return iupeflSetBgColorAttrib(ih, value);
 }
 
 static int eflTextSetFgColorAttrib(Ihandle* ih, const char* value)
@@ -1683,6 +1675,9 @@ static int eflTextMapMethod(Ihandle* ih)
   }
 
   iupeflAddToParent(ih);
+
+  if (!iupAttribGet(ih, "_IUP_EFL_IS_SPINNER") && iupAttribGetBoolean(ih, "BORDER"))
+    iupeflSetBgColorAttrib(ih, iupAttribGetStr(ih, "BGCOLOR"));
 
   iupeflApplyTextStyle(ih, widget);
 

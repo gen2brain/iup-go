@@ -912,12 +912,17 @@ IUP_SDK_API void iupdrvToggleAddCheckBox(Ihandle* ih, int* x, int* y, const char
     }
   }
 
+  if (str && str[0])
+  {
+    int border_x, border_y;
+    iupeflTextGetBorder(&border_x, &border_y);
+    (*x) += 2 + border_x;
+    (*y) += border_y;
+  }
+
   (*x) += check_w;
   if ((*y) < check_h)
     (*y) = check_h;
-
-  if (str && str[0])
-    (*x) += 2;
 }
 
 IUP_SDK_API void iupdrvToggleAddSwitch(Ihandle* ih, int* x, int* y, const char* str)
