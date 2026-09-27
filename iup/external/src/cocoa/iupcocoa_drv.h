@@ -23,6 +23,13 @@ extern "C" {
 #include "iupcocoa_gnustep.h"
 #endif
 
+/* GNUstep's theme draws its native push button bevel only for the default style */
+#ifdef GNUSTEP
+#define IUPCOCOA_PUSH_BEZEL ((NSBezelStyle)0)
+#else
+#define IUPCOCOA_PUSH_BEZEL NSBezelStyleRegularSquare
+#endif
+
 #include "iup_export.h"
 #include "iup_image.h"
 

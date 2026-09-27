@@ -360,11 +360,12 @@ static NSCellImagePosition cocoaButtonGetImagePosition(int img_position)
 static int text_border_x = -1, text_border_y = -1;
 static int image_border_x = -1, image_border_y = -1;
 static int image_text_border_x = -1, image_text_border_y = -1;
+static int default_extra_x = -1, default_extra_y = -1;
 
 static void cocoaButtonMeasureBorders(Ihandle* ih, int has_image, int has_text, int* border_x, int* border_y)
 {
   NSButton* temp_button = [[NSButton alloc] initWithFrame:NSZeroRect];
-  [temp_button setBezelStyle:NSBezelStyleRegularSquare];
+  [temp_button setBezelStyle:IUPCOCOA_PUSH_BEZEL];
   [temp_button setFont:[NSFont systemFontOfSize:0]];
   [temp_button setBordered:YES];
 
@@ -429,6 +430,26 @@ static void cocoaButtonMeasureBorders(Ihandle* ih, int has_image, int has_text, 
   [temp_button release];
 }
 
+static void cocoaButtonMeasureDefaultExtra(int* extra_x, int* extra_y)
+{
+  NSButton* temp_button = [[NSButton alloc] initWithFrame:NSZeroRect];
+  [temp_button setBezelStyle:IUPCOCOA_PUSH_BEZEL];
+  [temp_button setFont:[NSFont systemFontOfSize:0]];
+  [temp_button setBordered:YES];
+  [temp_button setTitle:@"WWWWWWWWWW"];
+
+  NSSize plain_size = [temp_button fittingSize];
+  [temp_button setKeyEquivalent:@"\r"];
+  NSSize default_size = [temp_button fittingSize];
+
+  *extra_x = (int)ceilf(default_size.width - plain_size.width);
+  *extra_y = (int)ceilf(default_size.height - plain_size.height);
+  if (*extra_x < 0) *extra_x = 0;
+  if (*extra_y < 0) *extra_y = 0;
+
+  [temp_button release];
+}
+
 IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int* x, int* y)
 {
   int border_x = 0, border_y = 0;
@@ -484,6 +505,16 @@ IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int* x, int* y)
   /* user PADDING replaces the theme padding; keep only the bezel frame */
   if (has_user_padding)
     border_x = border_y;
+
+  /* the theme may add an image to a default button, as GNUstep does */
+  if (ih && !has_image && iupAttribGetBoolean(ih, "SHOWASDEFAULT"))
+  {
+    if (default_extra_x == -1)
+      cocoaButtonMeasureDefaultExtra(&default_extra_x, &default_extra_y);
+
+    border_x += default_extra_x;
+    border_y += default_extra_y;
+  }
 
   *x += border_x;
   *y += border_y;
@@ -829,7 +860,7 @@ static int cocoaButtonMapMethod(Ihandle* ih)
   [cell release];
 
   [the_button setTitle:@""];
-  [the_button setBezelStyle:NSBezelStyleRegularSquare];
+  [the_button setBezelStyle:IUPCOCOA_PUSH_BEZEL];
   [the_button setButtonType:NSButtonTypeMomentaryPushIn];
 
   value = iupAttribGet(ih, "IMAGE");
