@@ -132,6 +132,7 @@ static int eflButtonSetTitleAttrib(Ihandle* ih, const char* value)
     {
       markup_label = efl_add(EFL_UI_TEXTBOX_CLASS, btn,
         efl_text_interactive_editable_set(efl_added, EINA_FALSE),
+        efl_ui_textbox_cnp_dnd_mode_set(efl_added, EFL_UI_TEXTBOX_CNP_CONTENT_NOTHING),
         efl_text_interactive_selection_allowed_set(efl_added, EINA_FALSE));
       efl_content_set(btn, markup_label);
       iupAttribSet(ih, "_IUP_EFL_MARKUP_LABEL", (char*)markup_label);

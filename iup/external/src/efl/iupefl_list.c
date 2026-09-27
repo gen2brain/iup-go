@@ -353,6 +353,26 @@ static void eflListEditCursorChangedCallback(void* data, const Efl_Event* ev)
                      Callbacks
 ****************************************************************/
 
+static void eflListItemPressedCallback(void* data, const Efl_Event* ev)
+{
+  Ihandle* ih = (Ihandle*)data;
+  Efl_Ui_Item_Clickable_Pressed* pressed = ev->info;
+
+  if (ih->data->is_multiple || !pressed || pressed->button != 1 || !pressed->item)
+    return;
+
+  if (!efl_ui_selectable_selected_get(pressed->item))
+    efl_ui_selectable_selected_set(pressed->item, EINA_TRUE);
+}
+
+static void eflListItemUnpressedCallback(void* data, const Efl_Event* ev)
+{
+  (void)data;
+
+  if (efl_ui_selectable_selected_get(ev->object))
+    efl_layout_signal_emit(ev->object, "efl,state,selected", "efl");
+}
+
 static void eflListItemClickedCallback(void* data, const Efl_Event* ev)
 {
   Ihandle* ih = (Ihandle*)data;
@@ -1501,7 +1521,8 @@ static void eflListDragPointerMoveCb(void* data, const Efl_Event* ev)
           int w = 100, h = 30;
 
           drag_label = efl_add(EFL_UI_TEXTBOX_CLASS, drag_win,
-                               efl_text_interactive_editable_set(efl_added, EINA_FALSE));
+                               efl_text_interactive_editable_set(efl_added, EINA_FALSE),
+                               efl_ui_textbox_cnp_dnd_mode_set(efl_added, EFL_UI_TEXTBOX_CNP_CONTENT_NOTHING));
           if (drag_label)
           {
             efl_text_set(drag_label, item_text ? item_text : "");
@@ -1696,6 +1717,7 @@ static int eflListMapMethod(Ihandle* ih)
       if (arrow_label)
       {
         efl_text_interactive_editable_set(arrow_label, EINA_FALSE);
+        efl_ui_textbox_cnp_dnd_mode_set(arrow_label, EFL_UI_TEXTBOX_CNP_CONTENT_NOTHING);
         efl_text_multiline_set(arrow_label, EINA_FALSE);
         efl_text_set(arrow_label, "\u25BC");
         efl_content_set(arrow_button, arrow_label);
@@ -1785,6 +1807,8 @@ static int eflListMapMethod(Ihandle* ih)
     efl_gfx_hint_align_set(list, -1.0, -1.0);
     efl_pack_end(box, list);
 
+    efl_ui_selectable_allow_manual_deselection_set(list, EINA_FALSE);
+    efl_event_callback_add(list, EFL_UI_EVENT_ITEM_PRESSED, eflListItemPressedCallback, ih);
     efl_event_callback_add(list, EFL_UI_SELECTABLE_EVENT_SELECTION_CHANGED, eflListSelectionChangedCallback, ih);
     efl_event_callback_add(list, EFL_UI_EVENT_ITEM_CLICKED, eflListItemClickedCallback, ih);
     efl_event_callback_add(list, EFL_EVENT_POINTER_DOWN, iupeflPointerDownEvent, ih);
@@ -1832,6 +1856,7 @@ static int eflListMapMethod(Ihandle* ih)
     if (text_label)
     {
       efl_text_interactive_editable_set(text_label, EINA_FALSE);
+      efl_ui_textbox_cnp_dnd_mode_set(text_label, EFL_UI_TEXTBOX_CNP_CONTENT_NOTHING);
       efl_text_multiline_set(text_label, EINA_FALSE);
       efl_gfx_hint_weight_set(text_label, 1.0, 1.0);
       efl_gfx_hint_align_set(text_label, 0.0, 0.5);
@@ -1844,6 +1869,7 @@ static int eflListMapMethod(Ihandle* ih)
     if (arrow_label)
     {
       efl_text_interactive_editable_set(arrow_label, EINA_FALSE);
+      efl_ui_textbox_cnp_dnd_mode_set(arrow_label, EFL_UI_TEXTBOX_CNP_CONTENT_NOTHING);
       efl_text_multiline_set(arrow_label, EINA_FALSE);
       efl_text_set(arrow_label, "\u25BC");
       efl_gfx_hint_weight_set(arrow_label, 0.0, 1.0);
@@ -1928,6 +1954,11 @@ static int eflListMapMethod(Ihandle* ih)
 
     if (ih->data->is_multiple)
       efl_ui_multi_selectable_select_mode_set(list, EFL_UI_SELECT_MODE_MULTI);
+    else
+    {
+      efl_ui_selectable_allow_manual_deselection_set(list, EINA_FALSE);
+      efl_event_callback_add(list, EFL_UI_EVENT_ITEM_PRESSED, eflListItemPressedCallback, ih);
+    }
 
     efl_event_callback_add(list, EFL_UI_SELECTABLE_EVENT_SELECTION_CHANGED, eflListSelectionChangedCallback, ih);
     efl_event_callback_add(list, EFL_UI_EVENT_ITEM_CLICKED, eflListItemClickedCallback, ih);
@@ -2039,6 +2070,7 @@ static void eflListUnMapMethod(Ihandle* ih)
     {
       Eo* box = (Eo*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
       Eo* entry = (Eo*)iupAttribGet(ih, "_IUPEFL_ENTRY");
+      efl_event_callback_del(list, EFL_UI_EVENT_ITEM_PRESSED, eflListItemPressedCallback, ih);
       efl_event_callback_del(list, EFL_UI_SELECTABLE_EVENT_SELECTION_CHANGED, eflListSelectionChangedCallback, ih);
       efl_event_callback_del(list, EFL_UI_EVENT_ITEM_CLICKED, eflListItemClickedCallback, ih);
       efl_event_callback_del(list, EFL_EVENT_POINTER_DOWN, iupeflPointerDownEvent, ih);
@@ -2093,6 +2125,7 @@ static void eflListUnMapMethod(Ihandle* ih)
         efl_event_callback_del(list, EFL_EVENT_POINTER_UP, eflListDragPointerUpCb, ih);
         efl_event_callback_del(list, EFL_UI_DND_EVENT_DROP_DROPPED, eflListDropCb, ih);
       }
+      efl_event_callback_del(list, EFL_UI_EVENT_ITEM_PRESSED, eflListItemPressedCallback, ih);
       efl_event_callback_del(list, EFL_UI_SELECTABLE_EVENT_SELECTION_CHANGED, eflListSelectionChangedCallback, ih);
       efl_event_callback_del(list, EFL_UI_EVENT_ITEM_CLICKED, eflListItemClickedCallback, ih);
       efl_event_callback_del(list, EFL_EVENT_POINTER_DOWN, iupeflPointerDownEvent, ih);
@@ -2209,7 +2242,10 @@ IUP_SDK_API void iupdrvListAppendItem(Ihandle* ih, const char* value)
     if (value)
       efl_text_set(item, value);
     if (!is_dropdown)
+    {
       eflListApplyItemSpacing(ih, item);
+      efl_event_callback_priority_add(item, EFL_INPUT_EVENT_UNPRESSED, EFL_CALLBACK_PRIORITY_AFTER, eflListItemUnpressedCallback, NULL);
+    }
     if (iupAttribGetBoolean(ih, "SORT"))
       eflListPackAt(list, item, eflListSortPos(list, value));
     else
@@ -2238,7 +2274,10 @@ IUP_SDK_API void iupdrvListInsertItem(Ihandle* ih, int pos, const char* value)
     if (value)
       efl_text_set(item, value);
     if (!is_dropdown)
+    {
       eflListApplyItemSpacing(ih, item);
+      efl_event_callback_priority_add(item, EFL_INPUT_EVENT_UNPRESSED, EFL_CALLBACK_PRIORITY_AFTER, eflListItemUnpressedCallback, NULL);
+    }
 
     if (iupAttribGetBoolean(ih, "SORT"))
       eflListPackAt(list, item, eflListSortPos(list, value));

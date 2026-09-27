@@ -532,6 +532,7 @@ static void eflStartDrag(Ihandle* ih, int x, int y)
 
           drag_content = efl_add(EFL_UI_TEXTBOX_CLASS, drag_win,
                                  efl_text_interactive_editable_set(efl_added, EINA_FALSE),
+                                 efl_ui_textbox_cnp_dnd_mode_set(efl_added, EFL_UI_TEXTBOX_CNP_CONTENT_NOTHING),
                                  efl_text_set(efl_added, drag_text));
           w = 80;
           h = 24;

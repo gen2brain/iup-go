@@ -160,6 +160,7 @@ static int eflMessageDlgPopup(Ihandle* ih, int x, int y)
 
   label = efl_add(EFL_UI_TEXTBOX_CLASS, win,
                   efl_text_interactive_editable_set(efl_added, EINA_FALSE),
+                  efl_ui_textbox_cnp_dnd_mode_set(efl_added, EFL_UI_TEXTBOX_CNP_CONTENT_NOTHING),
                   efl_text_multiline_set(efl_added, EINA_TRUE),
                   efl_text_wrap_set(efl_added, EFL_TEXT_FORMAT_WRAP_WORD),
                   efl_text_horizontal_align_set(efl_added, has_icon ? 0.0 : 0.5),
