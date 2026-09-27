@@ -1022,7 +1022,9 @@ static void gtk4TableApplyCellStyle(Ihandle* ih, GtkWidget* box, GtkWidget* widg
 
   gtk4TableApplyAlignment(ih, widget, col + 1);
 
-  char* fgcolor = iupAttribGetId2(ih, "FGCOLOR", lin, col + 1);
+  int cells_selected = iupTableCellsIsSelected(ih, lin, col + 1);
+
+  char* fgcolor = cells_selected ? iupTableCellsFgColor() : iupAttribGetId2(ih, "FGCOLOR", lin, col + 1);
   if (!fgcolor)
     fgcolor = iupAttribGetId2(ih, "FGCOLOR", 0, col + 1);
   if (!fgcolor)
@@ -1039,7 +1041,9 @@ static void gtk4TableApplyCellStyle(Ihandle* ih, GtkWidget* box, GtkWidget* widg
   }
 
   char* bgcolor = NULL;
-  if (!is_selected)
+  if (cells_selected)
+    bgcolor = iupTableCellsBgColor();
+  else if (!is_selected)
   {
     bgcolor = iupAttribGetId2(ih, "BGCOLOR", lin, col + 1);
     if (!bgcolor)
@@ -1350,6 +1354,14 @@ static void on_click(GtkGestureClick* gesture, int n_press, double x, double y, 
   if (!gtk4TableFindClickedCell(ih, gtk_data->column_view, x, y, &clicked_row, &clicked_col))
     return;
 
+  if (button == GDK_BUTTON_PRIMARY && iupTableCellsMode(ih) &&
+      (gtk_event_controller_get_current_event_state(GTK_EVENT_CONTROLLER(gesture)) & GDK_SHIFT_MASK))
+  {
+    gtk_gesture_set_state(GTK_GESTURE(gesture), GTK_EVENT_SEQUENCE_CLAIMED);
+    iupTableCellsExtendTo(ih, clicked_row, clicked_col);
+    return;
+  }
+
   int old_row = gtk_data->current_row;
   int old_col = gtk_data->current_col;
   gtk_data->current_row = clicked_row;
@@ -1358,6 +1370,11 @@ static void on_click(GtkGestureClick* gesture, int n_press, double x, double y, 
   if (old_row != gtk_data->current_row && old_row >= 1)
     gtk4TableNotifyRow(gtk_data, old_row);
   gtk4TableNotifyRow(gtk_data, gtk_data->current_row);
+
+  if (button == GDK_BUTTON_SECONDARY)
+    iupAttribSet(ih, "_IUPTABLE_CELLS_KEEP", "1");
+  iupTableCellsCollapse(ih);
+  iupAttribSet(ih, "_IUPTABLE_CELLS_KEEP", NULL);
 
   IFnii enter_cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
   if (enter_cb && (old_row != clicked_row || old_col != clicked_col))
@@ -1387,9 +1404,68 @@ static void on_click(GtkGestureClick* gesture, int n_press, double x, double y, 
   }
 }
 
+static void on_drag_update(GtkGestureDrag* gesture, double offset_x, double offset_y, Ihandle* ih)
+{
+  Igtk4TableData* gtk_data = IGTK4_TABLE_DATA(ih);
+  double start_x, start_y;
+  int lin = 0, col = 0;
+
+  if (!iupTableCellsMode(ih))
+    return;
+
+  if (!gtk_gesture_drag_get_start_point(gesture, &start_x, &start_y))
+    return;
+
+  if (gtk4TableFindClickedCell(ih, gtk_data->column_view, start_x + offset_x, start_y + offset_y, &lin, &col))
+    iupTableCellsExtendTo(ih, lin, col);
+}
+
 static gboolean on_key_pressed(GtkEventControllerKey* controller, guint keyval, guint keycode, GdkModifierType state, Ihandle* ih)
 {
   Igtk4TableData* gtk_data = IGTK4_TABLE_DATA(ih);
+
+  if (iupTableCellsMode(ih))
+  {
+    if (state & GDK_SHIFT_MASK)
+    {
+      int dlin = 0, dcol = 0;
+      switch (keyval)
+      {
+        case GDK_KEY_Left:  dcol = -1; break;
+        case GDK_KEY_Right: dcol = 1; break;
+        case GDK_KEY_Up:    dlin = -1; break;
+        case GDK_KEY_Down:  dlin = 1; break;
+      }
+      if (dlin || dcol)
+      {
+        iupTableCellsExtendBy(ih, dlin, dcol);
+        return TRUE;
+      }
+    }
+    else if ((keyval == GDK_KEY_a || keyval == GDK_KEY_A) && (state & GDK_CONTROL_MASK))
+    {
+      iupTableCellsSelectAll(ih);
+      return TRUE;
+    }
+    else if ((keyval == GDK_KEY_Up && gtk_data->current_row > 1) || (keyval == GDK_KEY_Down && gtk_data->current_row < ih->data->num_lin))
+    {
+      int old_row = gtk_data->current_row;
+      gtk_data->current_row += (keyval == GDK_KEY_Up) ? -1 : 1;
+      if (gtk_data->current_col == 0)
+        gtk_data->current_col = 1;
+
+      gtk4TableNotifyRow(gtk_data, old_row);
+      gtk4TableNotifyRow(gtk_data, gtk_data->current_row);
+      gtk4TableSyncCursor(gtk_data);
+      iupTableCellsCollapse(ih);
+
+      IFnii cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
+      if (cb)
+        cb(ih, gtk_data->current_row, gtk_data->current_col);
+
+      return TRUE;
+    }
+  }
 
   if (keyval == GDK_KEY_Left || keyval == GDK_KEY_Right)
   {
@@ -1413,6 +1489,7 @@ static gboolean on_key_pressed(GtkEventControllerKey* controller, guint keyval, 
 
       if (old_col != gtk_data->current_col)
         gtk4TableNotifyRow(gtk_data, gtk_data->current_row);
+      iupTableCellsCollapse(ih);
 
       IFnii cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
       if (cb)
@@ -1427,6 +1504,7 @@ static gboolean on_key_pressed(GtkEventControllerKey* controller, guint keyval, 
 
       if (old_col != gtk_data->current_col)
         gtk4TableNotifyRow(gtk_data, gtk_data->current_row);
+      iupTableCellsCollapse(ih);
 
       IFnii cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
       if (cb)
@@ -2322,7 +2400,7 @@ static int gtk4TableMapMethod(Ihandle* ih)
   if (!selmode)
     selmode = "SINGLE";
 
-  if (iupStrEqualNoCase(selmode, "NONE"))
+  if (iupStrEqualNoCase(selmode, "NONE") || iupStrEqualNoCase(selmode, "CELLS"))
   {
     gtk_data->selection_model = GTK_SELECTION_MODEL(gtk_no_selection_new(model_for_selection));
   }
@@ -2401,6 +2479,13 @@ static int gtk4TableMapMethod(Ihandle* ih)
   gtk_gesture_single_set_button(GTK_GESTURE_SINGLE(gtk_data->click_controller), 0);
   gtk_widget_add_controller(gtk_data->column_view, gtk_data->click_controller);
   g_signal_connect(gtk_data->click_controller, "pressed", G_CALLBACK(on_click), ih);
+
+  {
+    GtkGesture* drag = gtk_gesture_drag_new();
+    gtk_gesture_single_set_button(GTK_GESTURE_SINGLE(drag), GDK_BUTTON_PRIMARY);
+    gtk_widget_add_controller(gtk_data->column_view, GTK_EVENT_CONTROLLER(drag));
+    g_signal_connect(drag, "drag-update", G_CALLBACK(on_drag_update), ih);
+  }
 
   gtk_data->key_controller = gtk_event_controller_key_new();
   gtk_event_controller_set_propagation_phase(gtk_data->key_controller, GTK_PHASE_CAPTURE);

@@ -431,6 +431,9 @@ type TableEditionFunc func(ih Ihandle, lin, col int, update string) int
 // TableRightClickFunc is the type for the table RIGHTCLICK_CB callback.
 type TableRightClickFunc func(ih Ihandle, lin, col int) int
 
+// CellSelectionFunc is the type for the table CELLSELECTION_CB callback.
+type CellSelectionFunc func(ih Ihandle, lin1, col1, lin2, col2 int) int
+
 // TableValueChangedFunc is the type for the table VALUECHANGED_CB callback.
 type TableValueChangedFunc func(ih Ihandle, lin, col int) int
 

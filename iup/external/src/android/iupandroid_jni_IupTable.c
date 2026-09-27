@@ -10,6 +10,7 @@
 #include "iupcbs.h"
 
 #include "iup_object.h"
+#include "iup_attrib.h"
 #include "iup_key.h"
 
 #include "iupandroid_drv.h"
@@ -34,6 +35,8 @@ JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupTableHelper_dispatchCli
   (void)cls;
   Ihandle* ih = (Ihandle*)ihandle_ptr;
   if (!ih) return;
+
+  iupAndroidTableCellsCollapse(ih);
 
   if (focus_changed)
   {
@@ -65,6 +68,10 @@ JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupTableHelper_dispatchRig
   Ihandle* ih = (Ihandle*)ihandle_ptr;
   if (!ih) return;
 
+  iupAttribSet(ih, "_IUPTABLE_CELLS_KEEP", "1");
+  iupAndroidTableCellsCollapse(ih);
+  iupAttribSet(ih, "_IUPTABLE_CELLS_KEEP", NULL);
+
   if (focus_changed)
   {
     IFnii enter_cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
@@ -73,6 +80,16 @@ JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupTableHelper_dispatchRig
 
   IFnii cb = (IFnii)IupGetCallback(ih, "RIGHTCLICK_CB");
   if (cb && cb(ih, (int)lin, (int)col) == IUP_CLOSE) IupExitLoop();
+}
+
+JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupTableHelper_dispatchCellsExtend(
+    JNIEnv* jni_env, jclass cls, jlong ihandle_ptr, jint lin, jint col)
+{
+  (void)jni_env;
+  (void)cls;
+  Ihandle* ih = (Ihandle*)ihandle_ptr;
+  if (!ih) return;
+  iupAndroidTableCellsExtendTo(ih, (int)lin, (int)col);
 }
 
 JNIEXPORT jint JNICALL Java_io_github_gen2brain_iupgo_IupTableHelper_dispatchEditBegin(

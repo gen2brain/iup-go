@@ -135,6 +135,9 @@ static void eflTableGetCellBgColor(Ihandle* ih, int lin, int col, unsigned char*
   char* bgcolor = NULL;
   char* alternate_color;
 
+  if (lin > 0 && col > 0 && iupTableCellsIsSelected(ih, lin, col) && iupStrToRGB(iupTableCellsBgColor(), r, g, b))
+    return;
+
   if (lin > 0 && col > 0)
     bgcolor = iupAttribGetId2(ih, "BGCOLOR", lin, col);
 
@@ -187,6 +190,9 @@ static char* eflTableGetCellFont(Ihandle* ih, int lin, int col)
 static void eflTableGetCellFgColor(Ihandle* ih, int lin, int col, unsigned char* r, unsigned char* g, unsigned char* b)
 {
   char* fgcolor = NULL;
+
+  if (lin > 0 && col > 0 && iupTableCellsIsSelected(ih, lin, col) && iupStrToRGB(iupTableCellsFgColor(), r, g, b))
+    return;
 
   if (lin > 0 && col > 0)
     fgcolor = iupAttribGetId2(ih, "FGCOLOR", lin, col);
@@ -1128,6 +1134,56 @@ static int eflTableFindTargetRow(Ihandle* ih, int y)
   return num_lin;
 }
 
+static int eflTableCellAt(Ihandle* ih, int x, int y, int* lin, int* col)
+{
+  IeflTableData* data = IEFL_TABLE_DATA(ih);
+  int num_col = ih->data->num_col;
+  int max_lin, i;
+
+  if (!data || !data->cell_bgs || num_col < 1)
+    return 0;
+
+  max_lin = data->is_virtual ? data->alloc_num_lin : ih->data->num_lin;
+  for (i = 0; i < max_lin * num_col; i++)
+  {
+    Evas_Object* cell = data->cell_bgs[i];
+    if (cell)
+    {
+      Eina_Rect geom = efl_gfx_entity_geometry_get(cell);
+      if (x >= geom.x && x < geom.x + geom.w && y >= geom.y && y < geom.y + geom.h)
+      {
+        int pool_row = i / num_col + 1;
+        *lin = data->is_virtual ? data->first_visible_row + pool_row - 1 : pool_row;
+        *col = i % num_col + 1;
+        return *lin >= 1 && *lin <= ih->data->num_lin;
+      }
+    }
+  }
+  return 0;
+}
+
+static void eflTableCellsPointerMove(void* data, const Efl_Event* ev)
+{
+  Ihandle* ih = (Ihandle*)data;
+  Efl_Input_Pointer* pointer = ev->info;
+  Eina_Position2D pos;
+  int lin, col;
+
+  if (!iupAttribGet(ih, "_IUPEFL_CELLS_PRESS"))
+    return;
+
+  pos = efl_input_pointer_position_get(pointer);
+  if (eflTableCellAt(ih, pos.x, pos.y, &lin, &col))
+    iupTableCellsExtendTo(ih, lin, col);
+}
+
+static void eflTableCellsPointerUp(void* data, const Efl_Event* ev)
+{
+  Ihandle* ih = (Ihandle*)data;
+  (void)ev;
+  iupAttribSet(ih, "_IUPEFL_CELLS_PRESS", NULL);
+}
+
 static void eflTableMoveRowData(Ihandle* ih, int from, int to)
 {
   int col;
@@ -1712,15 +1768,32 @@ static void eflTableCellClickCallback(void* data, const Efl_Event* ev)
     iupAttribSetInt(ih, "_IUPTABLE_ROWDRAG_START_Y", pos.y);
   }
 
+  if (iupTableCellsMode(ih) && efl_input_pointer_button_get(pointer) == 1)
+  {
+    Evas* evas = evas_object_evas_get(iupeflGetWidget(ih));
+    const Evas_Modifier* mods = evas ? evas_key_modifier_get(evas) : NULL;
+    if (mods && evas_key_modifier_is_set(mods, "Shift"))
+    {
+      iupTableCellsExtendTo(ih, lin, col);
+      return;
+    }
+  }
+
   int prev_lin = table_data->selected_lin;
   int prev_col = table_data->selected_col;
 
   table_data->selected_lin = lin;
   table_data->selected_col = col;
+  if (efl_input_pointer_button_get(pointer) == 3)
+    iupAttribSet(ih, "_IUPTABLE_CELLS_KEEP", "1");
+  iupTableCellsCollapse(ih);
+  iupAttribSet(ih, "_IUPTABLE_CELLS_KEEP", NULL);
+  if (iupTableCellsMode(ih) && efl_input_pointer_button_get(pointer) == 1)
+    iupAttribSet(ih, "_IUPEFL_CELLS_PRESS", "1");
 
   char* selmode = iupAttribGetStr(ih, "SELECTIONMODE");
 
-  if (!iupStrEqualNoCase(selmode, "NONE"))
+  if (!iupStrEqualNoCase(selmode, "NONE") && !iupTableCellsMode(ih))
   {
     Evas* evas = evas_object_evas_get(iupeflGetWidget(ih));
     const Evas_Modifier* mods = evas ? evas_key_modifier_get(evas) : NULL;
@@ -2087,6 +2160,8 @@ static void eflTableRebuildCells(Ihandle* ih)
           efl_gfx_entity_visible_set(box, EINA_TRUE);
 
           efl_event_callback_add(label, EFL_EVENT_POINTER_DOWN, eflTableCellClickCallback, ih);
+          efl_event_callback_add(label, EFL_EVENT_POINTER_MOVE, eflTableCellsPointerMove, ih);
+          efl_event_callback_add(label, EFL_EVENT_POINTER_UP, eflTableCellsPointerUp, ih);
           if (ih->data->show_dragdrop)
           {
             efl_event_callback_add(label, EFL_EVENT_POINTER_MOVE, eflTableRowDragPointerMove, ih);
@@ -2107,6 +2182,8 @@ static void eflTableRebuildCells(Ihandle* ih)
           efl_gfx_hint_weight_set(label, weight_x, 0.0);
 
           efl_event_callback_add(label, EFL_EVENT_POINTER_DOWN, eflTableCellClickCallback, ih);
+          efl_event_callback_add(label, EFL_EVENT_POINTER_MOVE, eflTableCellsPointerMove, ih);
+          efl_event_callback_add(label, EFL_EVENT_POINTER_UP, eflTableCellsPointerUp, ih);
           if (ih->data->show_dragdrop)
           {
             efl_event_callback_add(label, EFL_EVENT_POINTER_MOVE, eflTableRowDragPointerMove, ih);
@@ -2951,7 +3028,7 @@ IUP_SDK_API void iupdrvTableSetFocusCell(Ihandle* ih, int lin, int col)
   data->selected_lin = lin;
   data->selected_col = col;
 
-  if (!iupStrEqualNoCase(iupAttribGetStr(ih, "SELECTIONMODE"), "NONE"))
+  if (!iupStrEqualNoCase(iupAttribGetStr(ih, "SELECTIONMODE"), "NONE") && !iupTableCellsMode(ih))
   {
     eflTableSelectRow(ih, lin, 1, 1);
     data->anchor_row = lin;
@@ -3202,6 +3279,31 @@ static void eflTableKeyDownCallback(void* data, const Efl_Event* ev)
   new_lin = lin;
   new_col = col;
 
+  if (!is_editing && iupTableCellsMode(ih))
+  {
+    int shift = efl_input_modifier_enabled_get(key_ev, EFL_INPUT_MODIFIER_SHIFT, NULL);
+    int ctrl = efl_input_modifier_enabled_get(key_ev, EFL_INPUT_MODIFIER_CONTROL, NULL);
+    int dlin = 0, dcol = 0;
+
+    if (shift && !strcmp(keyname, "Up")) dlin = -1;
+    else if (shift && !strcmp(keyname, "Down")) dlin = 1;
+    else if (shift && !strcmp(keyname, "Left")) dcol = -1;
+    else if (shift && !strcmp(keyname, "Right")) dcol = 1;
+
+    if (dlin || dcol)
+    {
+      iupTableCellsExtendBy(ih, dlin, dcol);
+      efl_input_processed_set(key_ev, EINA_TRUE);
+      return;
+    }
+    if (ctrl && (!strcmp(keyname, "a") || !strcmp(keyname, "A")))
+    {
+      iupTableCellsSelectAll(ih);
+      efl_input_processed_set(key_ev, EINA_TRUE);
+      return;
+    }
+  }
+
   if (!strcmp(keyname, "Up"))
   {
     key = K_UP;
@@ -3352,6 +3454,7 @@ static void eflTableKeyDownCallback(void* data, const Efl_Event* ev)
   if (new_lin != lin || new_col != col)
   {
     iupdrvTableSetFocusCell(ih, new_lin, new_col);
+    iupTableCellsCollapse(ih);
 
     enteritem_cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
     if (enteritem_cb)

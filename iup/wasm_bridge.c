@@ -147,6 +147,7 @@ static int wasmCbTableClick(Ihandle* ih, int lin, int col, char* status) { retur
 static int wasmCbEnterItem(Ihandle* ih, int lin, int col) { return iupwasmGoDispatch(ih, "ENTERITEM_CB", lin, col, 0, 0, 0); }
 static int wasmCbTableEdition(Ihandle* ih, int lin, int col, char* text) { return iupwasmGoDispatch(ih, "EDITION_CB", lin, col, 0, 0, text); }
 static int wasmCbTableRightClick(Ihandle* ih, int lin, int col) { return iupwasmGoDispatch(ih, "RIGHTCLICK_CB", lin, col, 0, 0, 0); }
+static int wasmCbCellSelection(Ihandle* ih, int lin1, int col1, int lin2, int col2) { return iupwasmGoDispatch(ih, "CELLSELECTION_CB", lin1, col1, lin2, col2, 0); }
 static int wasmCbTableValueChanged(Ihandle* ih, int lin, int col) { return iupwasmGoDispatch(ih, "VALUECHANGED_CB", lin, col, 0, 0, 0); }
 static int wasmCbThemeChanged(Ihandle* ih, int dark) { return iupwasmGoDispatch(ih, "THEMECHANGED_CB", dark, 0, 0, 0, 0); }
 static int wasmCbShow(Ihandle* ih, int state) { return iupwasmGoDispatch(ih, "SHOW_CB", state, 0, 0, 0, 0); }
@@ -425,6 +426,8 @@ EMSCRIPTEN_KEEPALIVE void iupwasmGoSetCallback(Ihandle* ih, const char* name)
     IupSetCallback(ih, name, (Icallback)wasmCbRename);
   else if (strcmp(name, "NODEREMOVED_CB") == 0)
     IupSetCallback(ih, name, (Icallback)wasmCbNodeRemoved);
+  else if (strcmp(name, "CELLSELECTION_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbCellSelection);
   else if (strcmp(name, "MULTISELECTION_CB") == 0)
     IupSetCallback(ih, name, (Icallback)wasmCbMultiSelection);
   else if (strcmp(name, "MULTIUNSELECTION_CB") == 0)

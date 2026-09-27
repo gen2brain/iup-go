@@ -104,6 +104,9 @@ public final class IupTableHelper
         int focusCellBg;
         GradientDrawable focusCellDrawable;
         boolean focusRect = true;
+        int cellsLin1, cellsCol1, cellsLin2, cellsCol2;
+        int cellsBg, cellsFg;
+        GradientDrawable cellsFocusDrawable;
 
         boolean editableAll;
         final SparseBooleanArray editableCol = new SparseBooleanArray();
@@ -244,6 +247,22 @@ public final class IupTableHelper
         return t.focusCellDrawable;
     }
 
+    static boolean inCellRange(IupTableView t, int lin, int col)
+    {
+        return t.cellsLin1 > 0 && lin >= t.cellsLin1 && lin <= t.cellsLin2 && col >= t.cellsCol1 && col <= t.cellsCol2;
+    }
+
+    static Drawable cellsFocusDrawable(IupTableView t)
+    {
+        if (t.cellsFocusDrawable == null)
+        {
+            GradientDrawable gd = new GradientDrawable();
+            gd.setColor(t.cellsBg);
+            t.cellsFocusDrawable = gd;
+        }
+        return t.cellsFocusDrawable;
+    }
+
     static int gravityFromAlign(String align)
     {
         if (align == null) return Gravity.CENTER_VERTICAL | Gravity.START;
@@ -343,15 +362,21 @@ public final class IupTableHelper
                 tv.setText(text);
                 tv.setGravity(gravityFromAlign(table.colAlign.get(col)));
 
-                boolean rowSelected = table.selectedLins.contains(lin);
+                boolean cellsMode = "CELLS".equalsIgnoreCase(table.selectionMode);
+                boolean inRange = cellsMode && inCellRange(table, lin, col);
+                boolean rowSelected = !cellsMode && table.selectedLins.contains(lin);
                 boolean focusCell = (lin == table.focusLin) && (col == table.focusCol) && table.focusRect;
                 if (focusCell)
                 {
-                    tv.setBackground(focusCellDrawable(table));
+                    tv.setBackground(inRange ? cellsFocusDrawable(table) : focusCellDrawable(table));
                 }
                 else if (rowSelected)
                 {
                     tv.setBackgroundColor(table.rowSelectBg);
+                }
+                else if (inRange)
+                {
+                    tv.setBackgroundColor(table.cellsBg);
                 }
                 else
                 {
@@ -360,7 +385,7 @@ public final class IupTableHelper
                     else tv.setBackground(null);
                 }
 
-                tv.setTextColor(rowSelected ? table.rowSelectFg : resolveFg(table, lin, col));
+                tv.setTextColor(rowSelected ? table.rowSelectFg : inRange ? table.cellsFg : resolveFg(table, lin, col));
 
                 ensureDefaultCellTextSize(table, tv);
                 applyCellFont(table, tv, resolveFont(table, lin, col));
@@ -398,7 +423,7 @@ public final class IupTableHelper
             if (!t.selectedLins.remove(Integer.valueOf(lin)))
                 t.selectedLins.add(lin);
         }
-        else if (!"NONE".equalsIgnoreCase(t.selectionMode))
+        else if (!"NONE".equalsIgnoreCase(t.selectionMode) && !"CELLS".equalsIgnoreCase(t.selectionMode))
         {
             selectOnly(t, lin);
         }
@@ -416,6 +441,12 @@ public final class IupTableHelper
 
     static void handleCellLongPress(IupTableView t, int lin, int col)
     {
+        if ("CELLS".equalsIgnoreCase(t.selectionMode) && !inCellRange(t, lin, col))
+        {
+            t.recyclerView.post(() -> dispatchCellsExtend(t.ihandlePtr, lin, col));
+            return;
+        }
+
         int oldLin = t.focusLin, oldCol = t.focusCol;
         boolean changed = (oldLin != lin || oldCol != col);
 
@@ -426,7 +457,7 @@ public final class IupTableHelper
         {
             if (!t.selectedLins.contains(lin)) t.selectedLins.add(lin);
         }
-        else if (!"NONE".equalsIgnoreCase(t.selectionMode))
+        else if (!"NONE".equalsIgnoreCase(t.selectionMode) && !"CELLS".equalsIgnoreCase(t.selectionMode))
         {
             selectOnly(t, lin);
         }
@@ -456,15 +487,21 @@ public final class IupTableHelper
 
     static void applyCellStyle(IupTableView t, TextView tv, int lin, int col)
     {
-        boolean rowSelected = t.selectedLins.contains(lin);
+        boolean cellsMode = "CELLS".equalsIgnoreCase(t.selectionMode);
+        boolean inRange = cellsMode && inCellRange(t, lin, col);
+        boolean rowSelected = !cellsMode && t.selectedLins.contains(lin);
         boolean focusCell = (lin == t.focusLin) && (col == t.focusCol) && t.focusRect;
         if (focusCell)
         {
-            tv.setBackground(focusCellDrawable(t));
+            tv.setBackground(inRange ? cellsFocusDrawable(t) : focusCellDrawable(t));
         }
         else if (rowSelected)
         {
             tv.setBackgroundColor(t.rowSelectBg);
+        }
+        else if (inRange)
+        {
+            tv.setBackgroundColor(t.cellsBg);
         }
         else
         {
@@ -472,7 +509,7 @@ public final class IupTableHelper
             if (bg != 0) tv.setBackgroundColor(bg);
             else tv.setBackground(null);
         }
-        tv.setTextColor(rowSelected ? t.rowSelectFg : resolveFg(t, lin, col));
+        tv.setTextColor(rowSelected ? t.rowSelectFg : inRange ? t.cellsFg : resolveFg(t, lin, col));
         ensureDefaultCellTextSize(t, tv);
         applyCellFont(t, tv, resolveFont(t, lin, col));
     }
@@ -1847,7 +1884,7 @@ public final class IupTableHelper
         if (lin < 1 || lin > t.numLin || col < 1 || col > t.numCol) return;
         int oldLin = t.focusLin, oldCol = t.focusCol;
 
-        if (!"NONE".equalsIgnoreCase(t.selectionMode))
+        if (!"NONE".equalsIgnoreCase(t.selectionMode) && !"CELLS".equalsIgnoreCase(t.selectionMode))
             selectOnly(t, lin);
 
         t.focusLin = lin;
@@ -1855,6 +1892,15 @@ public final class IupTableHelper
         refreshRowStyle(t, oldLin);
         refreshRowStyle(t, lin);
         scrollToCell(v, lin, col);
+    }
+
+    @Keep
+    public static void setCellRange(View v, int lin1, int col1, int lin2, int col2, int bg, int fg)
+    {
+        if (!(v instanceof IupTableView t)) return;
+        t.cellsLin1 = lin1; t.cellsCol1 = col1; t.cellsLin2 = lin2; t.cellsCol2 = col2;
+        t.cellsBg = bg; t.cellsFg = fg;
+        if (t.adapter != null) t.adapter.notifyDataSetChanged();
     }
 
     @Keep
@@ -2017,6 +2063,7 @@ public final class IupTableHelper
 
     public static native void dispatchClick(long ihandlePtr, int lin, int col, int focusChanged);
     public static native void dispatchRightClick(long ihandlePtr, int lin, int col, int focusChanged);
+    public static native void dispatchCellsExtend(long ihandlePtr, int lin, int col);
     public static native void dispatchSelection(long ihandlePtr);
     public static native int dispatchEditBegin(long ihandlePtr, int lin, int col);
     public static native void dispatchEdition(long ihandlePtr, int lin, int col, String text);

@@ -2141,6 +2141,25 @@ func setTableRightClickFunc(ih Ihandle, f TableRightClickFunc) {
 
 //--------------------
 
+// CellSelectionFunc for CELLSELECTION_CB callback.
+// Called when the selected cell range of a table changes in CELLS selection mode.
+type CellSelectionFunc func(ih Ihandle, lin1, col1, lin2, col2 int) int
+
+//export goIupCellSelectionCB
+func goIupCellSelectionCB(ih unsafe.Pointer, lin1, col1, lin2, col2 C.int) C.int {
+	f := loadCallback((Ihandle)(ih), "_IUPGO_CELLSELECTION_CB").Value().(CellSelectionFunc)
+
+	return C.int(f((Ihandle)(ih), int(lin1), int(col1), int(lin2), int(col2)))
+}
+
+// setCellSelectionFunc for CELLSELECTION_CB.
+func setCellSelectionFunc(ih Ihandle, f CellSelectionFunc) {
+	storeCallback(ih, "_IUPGO_CELLSELECTION_CB", f)
+	C.goIupSetCellSelectionFunc(ih.ptr())
+}
+
+//--------------------
+
 // TableValueChangedFunc for VALUECHANGED_CB callback.
 // Called after a cell value has been changed in a table/matrix control.
 // Triggered by edits, paste operations, or programmatic value changes.

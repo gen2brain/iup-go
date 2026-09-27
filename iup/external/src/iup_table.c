@@ -770,7 +770,182 @@ static int iTableSetFocusCellAttrib(Ihandle* ih, const char* value)
 
   iupAttribSet(ih, "_IUPTABLE_IGNORE_SELECTION_CB", "1");
   iupdrvTableSetFocusCell(ih, lin, col);
+  iupTableCellsCollapse(ih);
   iupAttribSet(ih, "_IUPTABLE_IGNORE_SELECTION_CB", NULL);
+  return 0;
+}
+
+int iupTableCellsMode(Ihandle* ih)
+{
+  return iupStrEqualNoCase(iupAttribGetStr(ih, "SELECTIONMODE"), "CELLS");
+}
+
+void iupTableCellsGetRange(Ihandle* ih, int* lin1, int* col1, int* lin2, int* col2)
+{
+  int lin, col;
+
+  *lin1 = *col1 = *lin2 = *col2 = 0;
+
+  if (!ih->handle || !iupTableCellsMode(ih) || ih->data->num_lin == 0 || ih->data->num_col == 0)
+    return;
+
+  iTableGetFocusCell(ih, &lin, &col);
+
+  if (!ih->data->cells_lin1)
+  {
+    *lin1 = *lin2 = lin;
+    *col1 = *col2 = col;
+    return;
+  }
+
+  *lin1 = ih->data->cells_lin1;
+  *col1 = ih->data->cells_col1;
+  *lin2 = ih->data->cells_lin2 > ih->data->num_lin ? ih->data->num_lin : ih->data->cells_lin2;
+  *col2 = ih->data->cells_col2 > ih->data->num_col ? ih->data->num_col : ih->data->cells_col2;
+  if (*lin1 > *lin2) *lin1 = *lin2;
+  if (*col1 > *col2) *col1 = *col2;
+}
+
+int iupTableCellsIsSelected(Ihandle* ih, int lin, int col)
+{
+  int lin1, col1, lin2, col2;
+
+  if (!iupTableCellsMode(ih))
+    return 0;
+
+  iupTableCellsGetRange(ih, &lin1, &col1, &lin2, &col2);
+  return lin1 && lin >= lin1 && lin <= lin2 && col >= col1 && col <= col2;
+}
+
+static void iTableCellsSetRange(Ihandle* ih, int lin1, int col1, int lin2, int col2)
+{
+  int cur[4];
+  IFniiii cb;
+
+  if (!ih->handle || !iupTableCellsMode(ih))
+    return;
+
+  ih->data->cells_lin1 = lin1 < lin2 ? lin1 : lin2;
+  ih->data->cells_lin2 = lin1 < lin2 ? lin2 : lin1;
+  ih->data->cells_col1 = col1 < col2 ? col1 : col2;
+  ih->data->cells_col2 = col1 < col2 ? col2 : col1;
+  iupTableCellsGetRange(ih, &cur[0], &cur[1], &cur[2], &cur[3]);
+
+  if (memcmp(ih->data->cells_last, cur, sizeof(cur)) == 0)
+    return;
+  memcpy(ih->data->cells_last, cur, sizeof(cur));
+
+  iupdrvTableUpdateCellStyle(ih, 0, 0);
+
+  if (iupAttribGet(ih, "_IUPTABLE_IGNORE_SELECTION_CB"))
+    return;
+
+  cb = (IFniiii)IupGetCallback(ih, "CELLSELECTION_CB");
+  if (cb)
+    cb(ih, cur[0], cur[1], cur[2], cur[3]);
+}
+
+void iupTableCellsCollapse(Ihandle* ih)
+{
+  if (iupAttribGet(ih, "_IUPTABLE_CELLS_KEEP") && ih->data->cells_lin1)
+  {
+    int lin1, col1, lin2, col2, lin, col;
+    iupTableCellsGetRange(ih, &lin1, &col1, &lin2, &col2);
+    iTableGetFocusCell(ih, &lin, &col);
+    if (lin >= lin1 && lin <= lin2 && col >= col1 && col <= col2)
+      return;
+  }
+  iTableCellsSetRange(ih, 0, 0, 0, 0);
+}
+
+void iupTableCellsExtendTo(Ihandle* ih, int lin, int col)
+{
+  int focus_lin, focus_col;
+
+  if (!ih->handle || !iupTableCellsMode(ih) || !iupTableCheckCellPos(ih, lin, col))
+    return;
+
+  iTableGetFocusCell(ih, &focus_lin, &focus_col);
+  iTableCellsSetRange(ih, focus_lin, focus_col, lin, col);
+}
+
+void iupTableCellsExtendBy(Ihandle* ih, int dlin, int dcol)
+{
+  int lin1, col1, lin2, col2, focus_lin, focus_col, far_lin, far_col;
+
+  if (!ih->handle || !iupTableCellsMode(ih))
+    return;
+
+  iupTableCellsGetRange(ih, &lin1, &col1, &lin2, &col2);
+  if (!lin1)
+    return;
+
+  iTableGetFocusCell(ih, &focus_lin, &focus_col);
+  far_lin = (focus_lin == lin1) ? lin2 : lin1;
+  far_col = (focus_col == col1) ? col2 : col1;
+
+  far_lin += dlin;
+  far_col += dcol;
+  if (far_lin < 1) far_lin = 1;
+  if (far_col < 1) far_col = 1;
+  if (far_lin > ih->data->num_lin) far_lin = ih->data->num_lin;
+  if (far_col > ih->data->num_col) far_col = ih->data->num_col;
+
+  iTableCellsSetRange(ih, focus_lin, focus_col, far_lin, far_col);
+  iupdrvTableScrollToCell(ih, far_lin, far_col);
+}
+
+void iupTableCellsSelectAll(Ihandle* ih)
+{
+  if (!ih->handle || !iupTableCellsMode(ih) || ih->data->num_lin == 0 || ih->data->num_col == 0)
+    return;
+
+  iTableCellsSetRange(ih, 1, 1, ih->data->num_lin, ih->data->num_col);
+}
+
+char* iupTableCellsBgColor(void)
+{
+  char* color = IupGetGlobal("TXTHLCOLOR");
+  return color ? color : "0 120 215";
+}
+
+char* iupTableCellsFgColor(void)
+{
+  unsigned char r, g, b;
+  if (iupStrToRGB(iupTableCellsBgColor(), &r, &g, &b) && (r * 299 + g * 587 + b * 114) / 1000 > 127)
+    return "0 0 0";
+  return "255 255 255";
+}
+
+static char* iTableGetSelectedCellsAttrib(Ihandle* ih)
+{
+  int lin1, col1, lin2, col2;
+
+  iupTableCellsGetRange(ih, &lin1, &col1, &lin2, &col2);
+  if (!lin1)
+    return NULL;
+
+  return iupStrReturnStrf("%d:%d-%d:%d", lin1, col1, lin2, col2);
+}
+
+static int iTableSetSelectedCellsAttrib(Ihandle* ih, const char* value)
+{
+  int lin1, col1, lin2, col2;
+
+  if (!ih->handle || !value || !iupTableCellsMode(ih))
+    return 0;
+
+  if (sscanf(value, "%d:%d-%d:%d", &lin1, &col1, &lin2, &col2) != 4)
+    return 0;
+
+  if (!iupTableCheckCellPos(ih, lin1, col1) || !iupTableCheckCellPos(ih, lin2, col2))
+    return 0;
+
+  iupAttribSet(ih, "_IUPTABLE_IGNORE_SELECTION_CB", "1");
+  iupdrvTableSetFocusCell(ih, lin1, col1);
+  iTableCellsSetRange(ih, lin1, col1, lin2, col2);
+  iupAttribSet(ih, "_IUPTABLE_IGNORE_SELECTION_CB", NULL);
+  iupdrvTableScrollToCell(ih, lin2, col2);
   return 0;
 }
 
@@ -778,6 +953,13 @@ static char* iTableGetSelectedIdAttrib(Ihandle* ih, int lin)
 {
   if (!ih->handle || lin < 1 || lin > ih->data->num_lin)
     return NULL;
+
+  if (iupTableCellsMode(ih))
+  {
+    int lin1, col1, lin2, col2;
+    iupTableCellsGetRange(ih, &lin1, &col1, &lin2, &col2);
+    return iupStrReturnBoolean(lin1 && lin >= lin1 && lin <= lin2);
+  }
 
   return iupStrReturnBoolean(iupdrvTableIsLinSelected(ih, lin));
 }
@@ -787,7 +969,7 @@ static int iTableSetSelectedIdAttrib(Ihandle* ih, int lin, const char* value)
   if (!ih->handle || lin < 1 || lin > ih->data->num_lin)
     return 0;
 
-  if (iupStrEqualNoCase(iupAttribGetStr(ih, "SELECTIONMODE"), "NONE"))
+  if (iupStrEqualNoCase(iupAttribGetStr(ih, "SELECTIONMODE"), "NONE") || iupTableCellsMode(ih))
     return 0;
 
   iupAttribSet(ih, "_IUPTABLE_IGNORE_SELECTION_CB", "1");
@@ -808,6 +990,15 @@ static char* iTableGetSelectedLinesAttrib(Ihandle* ih)
   str = iupStrGetMemory(ih->data->num_lin + 1);
   memset(str, '-', ih->data->num_lin);
   str[ih->data->num_lin] = 0;
+
+  if (iupTableCellsMode(ih))
+  {
+    int lin1, col1, lin2, col2;
+    iupTableCellsGetRange(ih, &lin1, &col1, &lin2, &col2);
+    if (lin1)
+      memset(str + lin1 - 1, '+', lin2 - lin1 + 1);
+    return str;
+  }
 
   lins = iupdrvTableGetSelectedLins(ih, &count);
   if (lins)
@@ -1278,6 +1469,7 @@ Iclass* iupTableNewClass(void)
   iupClassRegisterCallback(ic, "REORDER_CB", "ii");
   iupClassRegisterCallback(ic, "DRAGDROP_CB", "iiii");
   iupClassRegisterCallback(ic, "MULTISELECTION_CB", "Ii");
+  iupClassRegisterCallback(ic, "CELLSELECTION_CB", "iiii");
 
   /* Common Callbacks */
   iupBaseRegisterCommonCallbacks(ic);
@@ -1322,6 +1514,7 @@ Iclass* iupTableNewClass(void)
   iupClassRegisterAttribute(ic, "SELECTIONMODE", NULL, NULL, IUPAF_SAMEASSYSTEM, "SINGLE", IUPAF_NO_INHERIT);  /* NONE, SINGLE, MULTIPLE */
   iupClassRegisterAttributeId(ic, "SELECTED", iTableGetSelectedIdAttrib, iTableSetSelectedIdAttrib, IUPAF_NO_SAVE | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SELECTEDLINES", iTableGetSelectedLinesAttrib, iTableSetSelectedLinesAttrib, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTEDCELLS", iTableGetSelectedCellsAttrib, iTableSetSelectedCellsAttrib, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
 
   /* Display attributes */
   iupClassRegisterAttribute(ic, "SHOWGRID", NULL, iTableSetShowGridAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);

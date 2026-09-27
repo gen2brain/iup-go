@@ -117,8 +117,9 @@ public:
 
     int lin = index.row() + 1;
     int col = index.column() + 1;
+    int cells_selected = iupTableCellsIsSelected(ih, lin, col);
 
-    char* bgcolor = iupAttribGetId2(ih, "BGCOLOR", lin, col);
+    char* bgcolor = cells_selected ? iupTableCellsBgColor() : iupAttribGetId2(ih, "BGCOLOR", lin, col);
     if (!bgcolor)
       bgcolor = iupAttribGetId2(ih, "BGCOLOR", 0, col);
     if (!bgcolor)
@@ -133,7 +134,7 @@ public:
         option->backgroundBrush = QBrush(QColor(r, g, b));
     }
 
-    char* fgcolor = iupAttribGetId2(ih, "FGCOLOR", lin, col);
+    char* fgcolor = cells_selected ? iupTableCellsFgColor() : iupAttribGetId2(ih, "FGCOLOR", lin, col);
     if (!fgcolor)
       fgcolor = iupAttribGetId2(ih, "FGCOLOR", 0, col);
     if (!fgcolor)
@@ -525,6 +526,33 @@ protected:
       return;
     }
 
+    if (iupTableCellsMode(ih))
+    {
+      if (event->modifiers() & Qt::ShiftModifier)
+      {
+        int dlin = 0, dcol = 0;
+        switch (event->key())
+        {
+          case Qt::Key_Left:  dcol = -1; break;
+          case Qt::Key_Right: dcol = 1; break;
+          case Qt::Key_Up:    dlin = -1; break;
+          case Qt::Key_Down:  dlin = 1; break;
+        }
+        if (dlin || dcol)
+        {
+          iupTableCellsExtendBy(ih, dlin, dcol);
+          event->accept();
+          return;
+        }
+      }
+      else if (event->matches(QKeySequence::SelectAll))
+      {
+        iupTableCellsSelectAll(ih);
+        event->accept();
+        return;
+      }
+    }
+
     if (event->matches(QKeySequence::Copy))
     {
       copySelection();
@@ -586,7 +614,24 @@ protected:
       }
     }
 
+    if (event->button() == Qt::LeftButton && iupTableCellsMode(ih))
+    {
+      QModelIndex index = indexAt(pos);
+      if (index.isValid() && (event->modifiers() & Qt::ShiftModifier))
+      {
+        iupTableCellsExtendTo(ih, index.row() + 1, index.column() + 1);
+        return;
+      }
+      QTableWidget::mousePressEvent(event);
+      if (index.isValid())
+        iupTableCellsCollapse(ih);
+      return;
+    }
+
+    if (event->button() == Qt::RightButton)
+      iupAttribSet(ih, "_IUPTABLE_CELLS_KEEP", "1");
     QTableWidget::mousePressEvent(event);
+    iupAttribSet(ih, "_IUPTABLE_CELLS_KEEP", NULL);
 
     if (event->button() == Qt::RightButton)
     {
@@ -598,6 +643,23 @@ protected:
           rcb(ih, index.row() + 1, index.column() + 1);
       }
     }
+  }
+
+  void mouseMoveEvent(QMouseEvent* event) override
+  {
+    if ((event->buttons() & Qt::LeftButton) && iupTableCellsMode(ih))
+    {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+      QModelIndex index = indexAt(event->position().toPoint());
+#else
+      QModelIndex index = indexAt(event->pos());
+#endif
+      if (index.isValid())
+        iupTableCellsExtendTo(ih, index.row() + 1, index.column() + 1);
+      return;
+    }
+
+    QTableWidget::mouseMoveEvent(event);
   }
 
   void startDrag(Qt::DropActions /*supportedActions*/) override
@@ -771,8 +833,13 @@ private:
     int lin = currentRow + 1;
     int col = currentColumn + 1;
 
+    if (iupAttribGet(ih, "_IUPTABLE_IGNORE_SELECTION_CB"))
+      return;
+
+    iupTableCellsCollapse(ih);
+
     IFnii cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
-    if (cb && !iupAttribGet(ih, "_IUPTABLE_IGNORE_SELECTION_CB"))
+    if (cb)
     {
       cb(ih, lin, col);
     }
@@ -1269,7 +1336,7 @@ static int qtTableMapMethod(Ihandle* ih)
       /* Qt has one ExtendedSelection for both MULTIPLE and EXTENDED */
       table->setSelectionMode(QAbstractItemView::ExtendedSelection);
     }
-    else if (iupStrEqualNoCase(sel_mode, "NONE"))
+    else if (iupStrEqualNoCase(sel_mode, "NONE") || iupStrEqualNoCase(sel_mode, "CELLS"))
     {
       table->setSelectionMode(QAbstractItemView::NoSelection);
     }

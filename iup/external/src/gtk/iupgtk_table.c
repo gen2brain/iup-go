@@ -602,7 +602,7 @@ static void gtkTableCursorChanged(GtkTreeView* tree_view, Ihandle* ih)
   }
 
   IFnii cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
-  if (!cb || iupAttribGet(ih, "_IUPTABLE_IGNORE_SELECTION_CB") || iupAttribGet(ih, "_IUPGTK_TABLE_SETCURSOR"))
+  if (iupAttribGet(ih, "_IUPTABLE_IGNORE_SELECTION_CB") || iupAttribGet(ih, "_IUPGTK_TABLE_SETCURSOR"))
   {
     if (path)
       gtk_tree_path_free(path);
@@ -623,7 +623,10 @@ static void gtkTableCursorChanged(GtkTreeView* tree_view, Ihandle* ih)
     }
     g_list_free(columns);
 
-    cb(ih, lin, col);
+    iupTableCellsCollapse(ih);
+
+    if (cb)
+      cb(ih, lin, col);
   }
 
   if (path)
@@ -675,6 +678,18 @@ static gboolean gtkTableButtonEvent(GtkWidget* widget, GdkEventButton* evt, Ihan
     }
   }
 
+  if (evt->button == 1 && evt->type == GDK_BUTTON_PRESS && (evt->state & GDK_SHIFT_MASK) && iupTableCellsMode(ih))
+  {
+    int lin = gtk_tree_path_get_indices(path)[0] + 1;
+    GList* columns = gtk_tree_view_get_columns(GTK_TREE_VIEW(widget));
+    int col = g_list_index(columns, column) + 1;
+    g_list_free(columns);
+
+    gtk_tree_path_free(path);
+    iupTableCellsExtendTo(ih, lin, col);
+    return TRUE;
+  }
+
   if (evt->button == 3 && evt->type == GDK_BUTTON_PRESS)
   {
     int lin = gtk_tree_path_get_indices(path)[0] + 1;
@@ -682,7 +697,9 @@ static gboolean gtkTableButtonEvent(GtkWidget* widget, GdkEventButton* evt, Ihan
     int col = g_list_index(columns, column) + 1;
     g_list_free(columns);
 
+    iupAttribSet(ih, "_IUPTABLE_CELLS_KEEP", "1");
     gtkTableSetCursor(ih, GTK_TREE_VIEW(widget), path, column, FALSE);
+    iupAttribSet(ih, "_IUPTABLE_CELLS_KEEP", NULL);
     gtk_tree_path_free(path);
     if (!gtk_widget_has_focus(widget))
       gtk_widget_grab_focus(widget);
@@ -737,6 +754,33 @@ static gboolean gtkTableButtonEvent(GtkWidget* widget, GdkEventButton* evt, Ihan
 
   gtk_tree_path_free(path);
   return FALSE;
+}
+
+static gboolean gtkTableMotionEvent(GtkWidget* widget, GdkEventMotion* evt, Ihandle* ih)
+{
+  GtkTreePath* path;
+  GtkTreeViewColumn* column;
+
+  if (!(evt->state & GDK_BUTTON1_MASK) || !iupTableCellsMode(ih))
+    return FALSE;
+
+  if (evt->window != gtk_tree_view_get_bin_window(GTK_TREE_VIEW(widget)))
+    return FALSE;
+
+  if (!gtk_tree_view_get_path_at_pos(GTK_TREE_VIEW(widget), (gint)evt->x, (gint)evt->y, &path, &column, NULL, NULL))
+    return FALSE;
+
+  GtkTreeViewColumn* dummy_column = (GtkTreeViewColumn*)iupAttribGet(ih, "_IUPGTK_DUMMY_COLUMN");
+  if (!dummy_column || column != dummy_column)
+  {
+    GList* columns = gtk_tree_view_get_columns(GTK_TREE_VIEW(widget));
+    int col = g_list_index(columns, column) + 1;
+    g_list_free(columns);
+    iupTableCellsExtendTo(ih, gtk_tree_path_get_indices(path)[0] + 1, col);
+  }
+
+  gtk_tree_path_free(path);
+  return TRUE;
 }
 
 static void gtkTableColumnClicked(GtkTreeViewColumn* column, Ihandle* ih)
@@ -1023,7 +1067,9 @@ static void gtkTableCellDataFunc(GtkTreeViewColumn* column, GtkCellRenderer* ren
 
   /* Hierarchy: per-cell (L:C) > per-column (:C) > per-row (L:*) > alternating > default */
 
-  char* bgcolor = iupAttribGetId2(ih, "BGCOLOR", lin, col);
+  int cells_selected = iupTableCellsIsSelected(ih, lin, col);
+
+  char* bgcolor = cells_selected ? iupTableCellsBgColor() : iupAttribGetId2(ih, "BGCOLOR", lin, col);
   if (!bgcolor)
     bgcolor = iupAttribGetId2(ih, "BGCOLOR", 0, col);
   if (!bgcolor)
@@ -1056,7 +1102,7 @@ static void gtkTableCellDataFunc(GtkTreeViewColumn* column, GtkCellRenderer* ren
   else
     g_object_set(renderer, "background-set", FALSE, NULL);
 
-  char* fgcolor = iupAttribGetId2(ih, "FGCOLOR", lin, col);
+  char* fgcolor = cells_selected ? iupTableCellsFgColor() : iupAttribGetId2(ih, "FGCOLOR", lin, col);
   if (!fgcolor)
     fgcolor = iupAttribGetId2(ih, "FGCOLOR", 0, col);
   if (!fgcolor)
@@ -1126,6 +1172,33 @@ static gboolean gtkTableKeyPressEvent(GtkWidget* widget, GdkEventKey* event, Iha
   g_list_free(columns);
 
   gboolean handled = FALSE;
+
+  if (iupTableCellsMode(ih))
+  {
+    if (event->state & GDK_SHIFT_MASK)
+    {
+      int dlin = 0, dcol = 0;
+      switch (event->keyval)
+      {
+        case GDK_KEY_Left:  dcol = -1; break;
+        case GDK_KEY_Right: dcol = 1; break;
+        case GDK_KEY_Up:    dlin = -1; break;
+        case GDK_KEY_Down:  dlin = 1; break;
+      }
+      if (dlin || dcol)
+      {
+        iupTableCellsExtendBy(ih, dlin, dcol);
+        gtk_tree_path_free(path);
+        return TRUE;
+      }
+    }
+    else if ((event->keyval == GDK_KEY_a || event->keyval == GDK_KEY_A) && (event->state & GDK_CONTROL_MASK))
+    {
+      iupTableCellsSelectAll(ih);
+      gtk_tree_path_free(path);
+      return TRUE;
+    }
+  }
 
   switch (event->keyval)
   {
@@ -1979,7 +2052,7 @@ static int gtkTableMapMethod(Ihandle* ih)
   if (!selmode)
     selmode = "SINGLE";
 
-  if (iupStrEqualNoCase(selmode, "NONE"))
+  if (iupStrEqualNoCase(selmode, "NONE") || iupStrEqualNoCase(selmode, "CELLS"))
     gtk_tree_selection_set_mode(selection, GTK_SELECTION_NONE);
   else if (iupStrEqualNoCase(selmode, "MULTIPLE"))
     gtk_tree_selection_set_mode(selection, GTK_SELECTION_MULTIPLE);
@@ -2004,6 +2077,7 @@ static int gtkTableMapMethod(Ihandle* ih)
 #endif
 
   g_signal_connect(gtk_data->tree_view, "button-press-event", G_CALLBACK(gtkTableButtonEvent), ih);
+  g_signal_connect(gtk_data->tree_view, "motion-notify-event", G_CALLBACK(gtkTableMotionEvent), ih);
   g_signal_connect(gtk_data->tree_view, "focus-in-event", G_CALLBACK(iupgtkFocusInOutEvent), ih);
   g_signal_connect(gtk_data->tree_view, "focus-out-event", G_CALLBACK(iupgtkFocusInOutEvent), ih);
   g_signal_connect(gtk_data->tree_view, "key-press-event", G_CALLBACK(gtkTableKeyPressEvent), ih);

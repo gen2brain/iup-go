@@ -552,7 +552,8 @@ static UICollectionViewLayout* cocoaTouchTableMakeLayout(IupCocoaTouchTableContr
 		cell.label.font = [self fontAtLin:lin + 1 col:col + 1];
 		cell.label.textColor = [UIColor labelColor];
 		cell.userInteractionEnabled = YES;
-		cell.rowSelected = [_selectedLins containsIndex:(NSUInteger)(lin + 1)];
+		BOOL cells_mode = _ihandle && iupTableCellsMode(_ihandle);
+		cell.rowSelected = !cells_mode && [_selectedLins containsIndex:(NSUInteger)(lin + 1)];
 		cell.cellFocused = ((lin + 1) == _focusLin) && ((col + 1) == _focusCol);
 
 		const char* align = _ihandle ? iupAttribGetId(_ihandle, "ALIGNMENT", (int)col + 1) : NULL;
@@ -591,6 +592,12 @@ static UICollectionViewLayout* cocoaTouchTableMakeLayout(IupCocoaTouchTableContr
 			if (!fg_str) fg_str = iupAttribGetId2(_ihandle, "FGCOLOR", 0, (int)col + 1);  /* :C per-column */
 			if (!fg_str) fg_str = iupAttribGetId2(_ihandle, "FGCOLOR", (int)lin + 1, 0);  /* L:* per-row */
 			if (fg_str) fg = iupCocoaTouchToNativeColor(fg_str);
+
+			if (cells_mode && iupTableCellsIsSelected(_ihandle, (int)lin + 1, (int)col + 1))
+			{
+				bg = iupCocoaTouchToNativeColor(iupTableCellsBgColor());
+				fg = iupCocoaTouchToNativeColor(iupTableCellsFgColor());
+			}
 		}
 		if (fg) cell.label.textColor = fg;
 		[cell setBackgroundColorForState:bg];
@@ -742,9 +749,10 @@ static UICollectionViewLayout* cocoaTouchTableMakeLayout(IupCocoaTouchTableContr
 	NSInteger prev_lin = _focusLin;
 	_focusLin = lin + 1;
 	_focusCol = col + 1;
+	iupTableCellsCollapse(_ihandle);
 
 	const char* selmode = iupAttribGetStr(_ihandle, "SELECTIONMODE");
-	if (!iupStrEqualNoCase(selmode, "NONE"))
+	if (!iupStrEqualNoCase(selmode, "NONE") && !iupTableCellsMode(_ihandle))
 	{
 		if (iupStrEqualNoCase(selmode, "MULTIPLE"))
 		{
@@ -804,13 +812,21 @@ static UICollectionViewLayout* cocoaTouchTableMakeLayout(IupCocoaTouchTableContr
 	if (num_col <= 0) return;
 	NSInteger col = [ip item] % num_col;
 	NSInteger lin = [ip item] / num_col;
+	if (iupTableCellsMode(_ihandle) && !iupTableCellsIsSelected(_ihandle, (int)lin + 1, (int)col + 1))
+	{
+		iupTableCellsExtendTo(_ihandle, (int)lin + 1, (int)col + 1);
+		return;
+	}
 	NSInteger prev_lin = _focusLin;
 	NSInteger prev_col = _focusCol;
 	_focusLin = lin + 1;
 	_focusCol = col + 1;
+	iupAttribSet(_ihandle, "_IUPTABLE_CELLS_KEEP", "1");
+	iupTableCellsCollapse(_ihandle);
+	iupAttribSet(_ihandle, "_IUPTABLE_CELLS_KEEP", NULL);
 
 	const char* selmode = iupAttribGetStr(_ihandle, "SELECTIONMODE");
-	if (!iupStrEqualNoCase(selmode, "NONE"))
+	if (!iupStrEqualNoCase(selmode, "NONE") && !iupTableCellsMode(_ihandle))
 	{
 		if (!iupStrEqualNoCase(selmode, "MULTIPLE"))
 			[_selectedLins removeAllIndexes];
@@ -1077,7 +1093,7 @@ IUP_SDK_API void iupdrvTableSetFocusCell(Ihandle* ih, int lin, int col)
 	if (!ctrl || !view) return;
 	ctrl.focusLin = lin;
 	ctrl.focusCol = col;
-	if (!iupStrEqualNoCase(iupAttribGetStr(ih, "SELECTIONMODE"), "NONE"))
+	if (!iupStrEqualNoCase(iupAttribGetStr(ih, "SELECTIONMODE"), "NONE") && !iupTableCellsMode(ih))
 	{
 		[ctrl.selectedLins removeAllIndexes];
 		[ctrl.selectedLins addIndex:(NSUInteger)lin];

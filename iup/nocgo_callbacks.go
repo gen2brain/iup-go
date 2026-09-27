@@ -347,6 +347,8 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 		setSelectionFunc(ih, fn.(SelectionFunc))
 	case "MULTISELECTION_CB":
 		setMultiSelectionFunc(ih, fn.(MultiSelectionFunc))
+	case "CELLSELECTION_CB":
+		setCellSelectionFunc(ih, fn.(CellSelectionFunc))
 	case "BRANCHOPEN_CB":
 		setBranchOpenFunc(ih, fn.(BranchOpenFunc))
 	case "BRANCHCLOSE_CB":
@@ -1908,6 +1910,20 @@ var tableRightClickCB = purego.NewCallback(func(ih uintptr, lin, col int32) int 
 func setTableRightClickFunc(ih Ihandle, f TableRightClickFunc) {
 	storeCallback(ih, "_IUPGO_RIGHTCLICK_CB", f)
 	iupSetCallback(uintptr(ih), "RIGHTCLICK_CB", tableRightClickCB)
+}
+
+type CellSelectionFunc func(ih Ihandle, lin1, col1, lin2, col2 int) int
+
+var cellSelectionCB = purego.NewCallback(func(ih uintptr, lin1, col1, lin2, col2 int32) int {
+	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_CELLSELECTION_CB").(CellSelectionFunc); ok {
+		return f(Ihandle(ih), int(lin1), int(col1), int(lin2), int(col2))
+	}
+	return 0
+})
+
+func setCellSelectionFunc(ih Ihandle, f CellSelectionFunc) {
+	storeCallback(ih, "_IUPGO_CELLSELECTION_CB", f)
+	iupSetCallback(uintptr(ih), "CELLSELECTION_CB", cellSelectionCB)
 }
 
 type TableSortFunc func(ih Ihandle, col int) int

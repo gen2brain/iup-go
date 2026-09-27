@@ -52,6 +52,9 @@ static Fl_Align fltkTableGetColumnAlignment(Ihandle* ih, int col)
 
 static void fltkTableGetCellBgColor(Ihandle* ih, int lin, int col, unsigned char* r, unsigned char* g, unsigned char* b)
 {
+  if (iupTableCellsIsSelected(ih, lin, col) && iupStrToRGB(iupTableCellsBgColor(), r, g, b))
+    return;
+
   char* bgcolor = iupAttribGetId2(ih, "BGCOLOR", lin, col);  /* L:C per-cell */
   if (!bgcolor)
     bgcolor = iupAttribGetId2(ih, "BGCOLOR", 0, col);  /* :C per-column */
@@ -83,6 +86,9 @@ static void fltkTableGetCellBgColor(Ihandle* ih, int lin, int col, unsigned char
 
 static void fltkTableGetCellFgColor(Ihandle* ih, int lin, int col, unsigned char* r, unsigned char* g, unsigned char* b)
 {
+  if (iupTableCellsIsSelected(ih, lin, col) && iupStrToRGB(iupTableCellsFgColor(), r, g, b))
+    return;
+
   char* fgcolor = iupAttribGetId2(ih, "FGCOLOR", lin, col);  /* L:C per-cell */
   if (!fgcolor)
     fgcolor = iupAttribGetId2(ih, "FGCOLOR", 0, col);  /* :C per-column */
@@ -638,10 +644,20 @@ protected:
 
         if (context == CONTEXT_CELL && (!has_dummy_col || C < iup_handle->data->num_col))
         {
+          if (iupTableCellsMode(iup_handle) && Fl::event_button() == FL_LEFT_MOUSE && (Fl::event_state() & FL_SHIFT))
+          {
+            iupTableCellsExtendTo(iup_handle, R + 1, C + 1);
+            return 1;
+          }
+
           int prev_lin = focus_lin;
           int prev_col = focus_col;
           focus_lin = R;
           focus_col = C;
+          if (Fl::event_button() == FL_RIGHT_MOUSE)
+            iupAttribSet(iup_handle, "_IUPTABLE_CELLS_KEEP", "1");
+          iupTableCellsCollapse(iup_handle);
+          iupAttribSet(iup_handle, "_IUPTABLE_CELLS_KEEP", NULL);
 
           if (iup_handle->data->show_dragdrop)
           {
@@ -726,6 +742,15 @@ protected:
       {
         if (iupfltkDragDropHandleEvent(this, iup_handle, event))
           return 1;
+
+        if (iupTableCellsMode(iup_handle) && (Fl::event_state() & FL_BUTTON1))
+        {
+          int R, C;
+          ResizeFlag resizeflag;
+          if (cursor2rowcol(R, C, resizeflag) == CONTEXT_CELL && (!has_dummy_col || C < iup_handle->data->num_col))
+            iupTableCellsExtendTo(iup_handle, R + 1, C + 1);
+          return 1;
+        }
 
         if (drag_source_col >= 0 && iup_handle->data->allow_reorder)
         {
@@ -856,6 +881,29 @@ protected:
           return 1;
         }
 
+        if (iupTableCellsMode(iup_handle))
+        {
+          int key = Fl::event_key();
+          if (Fl::event_state() & FL_SHIFT)
+          {
+            int dlin = 0, dcol = 0;
+            if (key == FL_Up) dlin = -1;
+            else if (key == FL_Down) dlin = 1;
+            else if (key == FL_Left) dcol = -1;
+            else if (key == FL_Right) dcol = 1;
+            if (dlin || dcol)
+            {
+              iupTableCellsExtendBy(iup_handle, dlin, dcol);
+              return 1;
+            }
+          }
+          else if ((key == 'a' || key == 'A') && (Fl::event_state() & FL_CTRL))
+          {
+            iupTableCellsSelectAll(iup_handle);
+            return 1;
+          }
+        }
+
         {
           int num_lin = iup_handle->data->num_lin;
           int num_col = iup_handle->data->num_col;
@@ -881,13 +929,17 @@ protected:
 
             focus_lin = new_lin;
             focus_col = new_col;
+            iupTableCellsCollapse(iup_handle);
 
             IFnii enter_cb = (IFnii)IupGetCallback(iup_handle, "ENTERITEM_CB");
             if (enter_cb)
               enter_cb(iup_handle, focus_lin + 1, focus_col + 1);
 
-            select_all_rows(0);
-            select_row(focus_lin, 1);
+            if (!iupTableCellsMode(iup_handle))
+            {
+              select_all_rows(0);
+              select_row(focus_lin, 1);
+            }
 
             int X, Y, W, H;
             if (getCellRect(focus_lin, focus_col, X, Y, W, H) == 0)
@@ -1554,7 +1606,7 @@ static int fltkTableMapMethod(Ihandle* ih)
   {
     if (iupStrEqualNoCase(sel_mode, "MULTIPLE") || iupStrEqualNoCase(sel_mode, "EXTENDED"))
       table->type(Fl_Table_Row::SELECT_MULTI);
-    else if (iupStrEqualNoCase(sel_mode, "NONE"))
+    else if (iupStrEqualNoCase(sel_mode, "NONE") || iupStrEqualNoCase(sel_mode, "CELLS"))
       table->type(Fl_Table_Row::SELECT_NONE);
   }
 
