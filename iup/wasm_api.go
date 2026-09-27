@@ -655,6 +655,19 @@ func SetAttributes(ih Ihandle, str string) Ihandle {
 	return ih
 }
 
+// GetBytes returns a copy of a clipboard data attribute (FORMATDATA, NATIVEVECTORIMAGE), FORMATDATASIZE bytes long.
+//
+// https://gen2brain.github.io/iup-go/elem/iup_clipboard.html
+func GetBytes(ih Ihandle, name string) []byte {
+	return nil
+}
+
+// SetBytes sets FORMATDATASIZE to the data length and stores data in a clipboard data attribute (FORMATDATA, NATIVEVECTORIMAGE).
+//
+// https://gen2brain.github.io/iup-go/elem/iup_clipboard.html
+func SetBytes(ih Ihandle, name string, data []byte) {
+}
+
 // GetAttribute returns an interface element attribute value.
 //
 // https://gen2brain.github.io/iup-go/func/iup_getattribute.html
