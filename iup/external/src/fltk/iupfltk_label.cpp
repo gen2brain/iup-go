@@ -43,25 +43,34 @@ public:
   void draw() override
   {
     const char* full = label();
+    int px = iup_handle->data->horiz_padding, py = iup_handle->data->vert_padding;
+    int X = x() + Fl::box_dx(box()) + px, Y = y() + Fl::box_dy(box()) + py;
+    int W = w() - Fl::box_dw(box()) - 2 * px, H = h() - Fl::box_dh(box()) - 2 * py;
+
+    draw_box();
+
     if (image())
     {
-      draw_box();
-      int px = iup_handle->data->horiz_padding, py = iup_handle->data->vert_padding;
-      draw_label(x() + Fl::box_dx(box()) + px, y() + Fl::box_dy(box()) + py,
-                 w() - Fl::box_dw(box()) - 2 * px, h() - Fl::box_dh(box()) - 2 * py);
+      draw_label(X, Y, W, H);
       return;
+    }
+
+    if (W > 11 && (align() & (FL_ALIGN_LEFT | FL_ALIGN_RIGHT)))
+    {
+      X += 3;
+      W -= 6;
     }
 
     if (!ellipsis || !full || !*full || (align() & FL_ALIGN_WRAP))
     {
-      Fl_Box::draw();
+      draw_label(X, Y, W, H);
       return;
     }
 
     fl_font(labelfont(), labelsize());
-    if ((int)fl_width(full) <= w())
+    if ((int)fl_width(full) <= W)
     {
-      Fl_Box::draw();
+      draw_label(X, Y, W, H);
       return;
     }
 
@@ -71,7 +80,7 @@ public:
     {
       int clen = fl_utf8len1(full[k]);
       if (clen < 1) clen = 1;
-      if (k + clen > len || (int)fl_width(full, k + clen) + ellw > w())
+      if (k + clen > len || (int)fl_width(full, k + clen) + ellw > W)
         break;
       k += clen;
       fit = k;
@@ -80,9 +89,8 @@ public:
     std::string elided(full, fit);
     elided += "...";
 
-    draw_box();
     fl_color(active_r() ? labelcolor() : fl_inactive(labelcolor()));
-    fl_draw(elided.c_str(), x(), y(), w(), h(), align());
+    fl_draw(elided.c_str(), X, Y, W, H, align());
   }
 
   int handle(int event) override
@@ -382,7 +390,10 @@ static int fltkLabelSetPaddingAttrib(Ihandle* ih, const char* value)
   iupStrToIntInt(value, &ih->data->horiz_padding, &ih->data->vert_padding, 'x');
 
   if (ih->handle)
+  {
+    ((Fl_Widget*)ih->handle)->redraw();
     return 0;
+  }
   else
     return 1;
 }
