@@ -703,6 +703,13 @@ protected:
               iupfltkButtonKeySetStatus(Fl::event_state(), button, status, 0);
               click_cb(iup_handle, R + 1, C + 1, status);
             }
+
+            if (Fl::event_button() == FL_RIGHT_MOUSE)
+            {
+              IFnii cb = (IFnii)IupGetCallback(iup_handle, "RIGHTCLICK_CB");
+              if (cb)
+                cb(iup_handle, R + 1, C + 1);
+            }
           }
         }
         break;
