@@ -49,30 +49,39 @@ static const void* IUP_COCOA_BUTTON_RECEIVER_OBJ_KEY = @"IUP_COCOA_BUTTON_RECEIV
 @end
 
 @interface IupCocoaFlatButton : NSButton
+{
+  NSTrackingArea* _hoverTrackingArea;
+}
 @property (nonatomic, assign) BOOL isFlat;
 @property (nonatomic, assign) BOOL isHovering;
 @end
 
 @implementation IupCocoaFlatButton
 
+- (void)dealloc
+{
+  [_hoverTrackingArea release];
+  [super dealloc];
+}
+
 - (void)updateTrackingAreas
 {
   [super updateTrackingAreas];
 
-  for (NSTrackingArea* area in [self trackingAreas])
+  if (_hoverTrackingArea)
   {
-    [self removeTrackingArea:area];
+    [self removeTrackingArea:_hoverTrackingArea];
+    [_hoverTrackingArea release];
   }
 
-  NSTrackingArea* trackingArea = [[NSTrackingArea alloc]
+  _hoverTrackingArea = [[NSTrackingArea alloc]
     initWithRect:[self bounds]
          options:(NSTrackingMouseEnteredAndExited | NSTrackingMouseMoved |
                   NSTrackingActiveInKeyWindow | NSTrackingInVisibleRect)
            owner:self
         userInfo:nil];
 
-  [self addTrackingArea:trackingArea];
-  [trackingArea release];
+  [self addTrackingArea:_hoverTrackingArea];
 }
 
 - (void)mouseEntered:(NSEvent*)event
@@ -828,6 +837,8 @@ void cocoaButtonLayoutUpdateMethod(Ihandle* ih)
   }
 
   iupcocoaSetViewFrame(child_view, NSIntegralRect(child_rect));
+
+  iupcocoaUpdateTip(ih);
 }
 
 static int cocoaButtonSetShowAsDefaultAttrib(Ihandle* ih, const char* value)

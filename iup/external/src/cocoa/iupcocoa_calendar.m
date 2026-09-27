@@ -143,6 +143,8 @@ static void cocoaCalendarLayoutUpdateMethod(Ihandle* ih)
       [date_picker setBoundsSize:child_rect.size];
     }
   }
+
+  iupcocoaUpdateTip(ih);
 }
 
 static void cocoaCalendarComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* children_expand)

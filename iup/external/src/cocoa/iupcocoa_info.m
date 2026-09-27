@@ -212,6 +212,7 @@ static char * cocoaGetSystemName(void)
   {
     switch (version.majorVersion)
     {
+      case 27: codename = "Golden Gate"; break;
       case 26: codename = "Tahoe"; break;
       case 15: codename = "Sequoia"; break;
       case 14: codename = "Sonoma"; break;

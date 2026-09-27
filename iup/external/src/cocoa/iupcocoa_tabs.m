@@ -710,9 +710,10 @@ IUP_SDK_API void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_title, const 
     }
   }
 
-  width += 6;
+  width += 2 * kTabCellPadding;
 
-  width += 20;
+  if (ih->data->show_close)
+    width += kTabCloseButtonArea;
 
   /* the bar splits its own width evenly, so every tab carries a share of its side padding */
   {

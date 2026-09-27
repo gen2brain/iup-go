@@ -1682,6 +1682,26 @@ static char* cocoaTextGetValueAttrib(Ihandle* ih)
   return value;
 }
 
+static void cocoaTextFieldSetBackground(Ihandle* ih, NSTextField* text_field, NSColor* color)
+{
+  if (!iupAttribGetBoolean(ih, "BORDER"))
+  {
+    [text_field setBezeled:NO];
+    [text_field setBordered:NO];
+  }
+  else
+  {
+#ifndef GNUSTEP
+    [text_field setBezeled:color == nil];
+    [text_field setBordered:YES];
+#else
+    [text_field setBezeled:YES];
+#endif
+  }
+  [text_field setDrawsBackground:YES];
+  [text_field setBackgroundColor:color ? color : [NSColor textBackgroundColor]];
+}
+
 static int cocoaTextSetBgColorAttrib(Ihandle* ih, const char* value)
 {
   IupCocoaTextSubType sub_type = cocoaTextGetSubType(ih);
@@ -1707,16 +1727,12 @@ static int cocoaTextSetBgColorAttrib(Ihandle* ih, const char* value)
       }
     case IUPCOCOATEXTSUBTYPE_FIELD:
       {
-        NSTextField* text_field = cocoaTextGetTextField(ih);
-        NSColor* the_color = cocoaTextColorFromStr(value);
-        [text_field setBackgroundColor:the_color];
+        cocoaTextFieldSetBackground(ih, cocoaTextGetTextField(ih), cocoaTextColorFromStr(value));
         return 1;
       }
     case IUPCOCOATEXTSUBTYPE_STEPPER:
       {
-        NSTextField* text_field = cocoaTextGetStepperTextField(ih);
-        NSColor* the_color = cocoaTextColorFromStr(value);
-        [text_field setBackgroundColor:the_color];
+        cocoaTextFieldSetBackground(ih, cocoaTextGetStepperTextField(ih), cocoaTextColorFromStr(value));
         return 1;
       }
     default:
@@ -5414,7 +5430,9 @@ static int cocoaTextMapMethod(Ihandle* ih)
       [(id)main_view setFont:[iup_font nativeFont]];
   }
 
-  if (iupAttribGet(ih, "BGCOLOR"))
+  if (!ih->data->is_multiline && !iupAttribGetBoolean(ih, "BORDER"))
+    cocoaTextSetBgColorAttrib(ih, iupAttribGet(ih, "BGCOLOR"));
+  else if (iupAttribGet(ih, "BGCOLOR"))
     cocoaTextSetBgColorAttrib(ih, iupAttribGetStr(ih, "BGCOLOR"));
   if (iupAttribGet(ih, "FGCOLOR"))
     cocoaTextSetFgColorAttrib(ih, iupAttribGetStr(ih, "FGCOLOR"));

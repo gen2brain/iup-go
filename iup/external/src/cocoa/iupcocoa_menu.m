@@ -295,13 +295,7 @@ static void cocoaMenuUpdateImage(Ihandle* ih)
     char* image_off = iupAttribGet(ih, "IMAGE");
     char* image_on = iupAttribGet(ih, "IMPRESS");
 
-    if (iupAttribGetBoolean(ih, "HIDEMARK") && !iupAttribGetBoolean(ih->parent, "RADIO"))
-    {
-      [menu_item setOnStateImage:nil];
-      [menu_item setOffStateImage:nil];
-      [menu_item setMixedStateImage:nil];
-    }
-    else if (image_off || image_on)
+    if (image_off || image_on)
     {
       NSImage* ns_image_off = nil;
       if (image_off)
@@ -321,6 +315,12 @@ static void cocoaMenuUpdateImage(Ihandle* ih)
 
       [menu_item setOffStateImage:ns_image_off];
       [menu_item setOnStateImage:ns_image_on];
+    }
+    else if (iupAttribGetBoolean(ih, "HIDEMARK") && !iupAttribGetBoolean(ih->parent, "RADIO"))
+    {
+      [menu_item setOnStateImage:nil];
+      [menu_item setOffStateImage:nil];
+      [menu_item setMixedStateImage:nil];
     }
     else
     {
@@ -995,7 +995,7 @@ static char* cocoaMenuItemGetValueAttrib(Ihandle* ih)
 {
   NSMenuItem* item = (NSMenuItem*)ih->handle;
   if (!item) return "OFF";
-  return iupStrReturnBoolean([item state] == NSControlStateValueOn);
+  return iupStrReturnChecked([item state] == NSControlStateValueOn);
 }
 
 static int cocoaMenuItemSetActiveAttrib(Ihandle* ih, const char* value)
