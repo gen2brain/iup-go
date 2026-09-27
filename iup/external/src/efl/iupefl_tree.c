@@ -2392,7 +2392,7 @@ static int eflTreeSetRenameAttrib(Ihandle* ih, const char* value)
                      Drag and Drop Support
 ****************************************************************/
 
-static int eflTreeConvertXYToPos(Ihandle* ih, int x, int y);
+static int eflTreeCanvasXYToPos(Ihandle* ih, int x, int y);
 
 static int efl_tree_drag_start_x = 0;
 static int efl_tree_drag_start_y = 0;
@@ -2452,7 +2452,7 @@ static void eflTreeDragPointerMoveCb(void* data, const Efl_Event* ev)
     iupAttribSet(ih, "_IUPEFL_TREE_DRAG_PENDING", NULL);
 
     tree = iupeflGetWidget(ih);
-    idDrag = eflTreeConvertXYToPos(ih, efl_tree_drag_start_x, efl_tree_drag_start_y);
+    idDrag = eflTreeCanvasXYToPos(ih, efl_tree_drag_start_x, efl_tree_drag_start_y);
 
     if (idDrag >= 0 && tree)
     {
@@ -2502,7 +2502,7 @@ static void eflTreeDropCb(void* data, const Efl_Event* ev)
   if (!ih || !efl_tree_drag_source || !iupObjectCheck(efl_tree_drag_source))
     return;
 
-  idDrop = eflTreeConvertXYToPos(ih, drop_ev->dnd.position.x, drop_ev->dnd.position.y);
+  idDrop = eflTreeCanvasXYToPos(ih, drop_ev->dnd.position.x, drop_ev->dnd.position.y);
   if (idDrop < 0)
     idDrop = ih->data->node_count - 1;
 
@@ -2590,7 +2590,7 @@ static int eflTreeSetShowDragDropAttrib(Ihandle* ih, const char* value)
                      XY to Position Conversion
 ****************************************************************/
 
-static int eflTreeConvertXYToPos(Ihandle* ih, int x, int y)
+static int eflTreeCanvasXYToPos(Ihandle* ih, int x, int y)
 {
   Evas_Object* tree = iupeflGetWidget(ih);
   Elm_Object_Item* item;
@@ -2614,6 +2614,46 @@ static int eflTreeConvertXYToPos(Ihandle* ih, int x, int y)
   }
 
   return -1;
+}
+
+static int eflTreeConvertXYToPos(Ihandle* ih, int x, int y)
+{
+  Evas_Object* tree = iupeflGetWidget(ih);
+  Eina_Position2D origin;
+
+  if (!tree)
+    return -1;
+
+  origin = efl_gfx_entity_position_get(tree);
+  return eflTreeCanvasXYToPos(ih, x + origin.x, y + origin.y);
+}
+
+IUP_DRV_API void iupeflTreeDragSelect(Ihandle* ih, int x, int y)
+{
+  Evas_Object* tree = iupeflGetWidget(ih);
+  Elm_Object_Item* item;
+  Eina_Position2D origin;
+
+  if (!tree)
+    return;
+
+  origin = efl_gfx_entity_position_get(tree);
+  item = elm_genlist_at_xy_item_get(tree, x + origin.x, y + origin.y, NULL);
+  if (item && !elm_genlist_item_selected_get(item))
+  {
+    if (ih->data->mark_mode == ITREE_MARK_MULTIPLE)
+    {
+      Eina_List* selected = eina_list_clone(elm_genlist_selected_items_get(tree));
+      Elm_Object_Item* sel;
+      EINA_LIST_FREE(selected, sel)
+        elm_genlist_item_selected_set(sel, EINA_FALSE);
+    }
+
+    elm_genlist_item_selected_set(item, EINA_TRUE);
+  }
+
+  /* genlist unselects an item dragged off unless it was selected at press, and toggles it on release */
+  evas_event_feed_mouse_cancel(evas_object_evas_get(tree), (unsigned int)(ecore_loop_time_get() * 1000), NULL);
 }
 
 /****************************************************************

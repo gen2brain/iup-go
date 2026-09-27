@@ -1401,7 +1401,7 @@ static char* eflListGetCountAttrib(Ihandle* ih)
                      Drag and Drop Support
 ****************************************************************/
 
-static int eflListConvertXYToPos(Ihandle* ih, int x, int y);
+static int eflListCanvasXYToPos(Ihandle* ih, int x, int y);
 
 static int efl_list_drag_start_x = 0;
 static int efl_list_drag_start_y = 0;
@@ -1450,7 +1450,7 @@ static void eflListDragPointerDownCb(void* data, const Efl_Event* ev)
   efl_list_drag_start_x = pos.x;
   efl_list_drag_start_y = pos.y;
 
-  idDrag = eflListConvertXYToPos(ih, pos.x, pos.y);
+  idDrag = eflListCanvasXYToPos(ih, pos.x, pos.y);
   if (idDrag > 0)
   {
     item_text = IupGetAttributeId(ih, "", idDrag);
@@ -1487,7 +1487,7 @@ static void eflListDragPointerMoveCb(void* data, const Efl_Event* ev)
     iupAttribSet(ih, "_IUPEFL_LIST_DRAG_PENDING", NULL);
 
     list = iupeflGetWidget(ih);
-    idDrag = eflListConvertXYToPos(ih, efl_list_drag_start_x, efl_list_drag_start_y);
+    idDrag = eflListCanvasXYToPos(ih, efl_list_drag_start_x, efl_list_drag_start_y);
 
     if (idDrag > 0 && list)
     {
@@ -1574,7 +1574,7 @@ static void eflListDropCb(void* data, const Efl_Event* ev)
 
   drop_x = drop_ev->dnd.position.x;
   drop_y = drop_ev->dnd.position.y;
-  idDrop = eflListConvertXYToPos(ih, drop_x, drop_y);  /* 1-based or -1 */
+  idDrop = eflListCanvasXYToPos(ih, drop_x, drop_y);  /* 1-based or -1 */
 
   if (idDrop > 0 && !ih->data->is_virtual)
   {
@@ -1634,7 +1634,7 @@ static void eflListEnableDragDrop(Ihandle* ih)
                      XY to Position Conversion
 ****************************************************************/
 
-static int eflListConvertXYToPos(Ihandle* ih, int x, int y)
+static int eflListCanvasXYToPos(Ihandle* ih, int x, int y)
 {
   Eo* list;
   int count, i;
@@ -1670,6 +1670,18 @@ static int eflListConvertXYToPos(Ihandle* ih, int x, int y)
   }
 
   return -1;
+}
+
+static int eflListConvertXYToPos(Ihandle* ih, int x, int y)
+{
+  Eo* list = iupeflGetWidget(ih);
+  Eina_Position2D origin;
+
+  if (!list)
+    return -1;
+
+  origin = efl_gfx_entity_position_get(list);
+  return eflListCanvasXYToPos(ih, x + origin.x, y + origin.y);
 }
 
 /****************************************************************
