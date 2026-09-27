@@ -55,6 +55,14 @@ IUP_DRV_API void iupeflColorSet(Eo* obj, unsigned char r, unsigned char g, unsig
   iupeflSetColor(obj, pr, pg, pb, a);
 }
 
+static void eflBgRectDelCallback(void* data, const Efl_Event* ev)
+{
+  Ihandle* ih = (Ihandle*)data;
+
+  if (iupObjectCheck(ih) && iupAttribGet(ih, "_IUP_EFL_BGRECT") == (char*)ev->object)
+    iupAttribSet(ih, "_IUP_EFL_BGRECT", NULL);
+}
+
 IUP_DRV_API int iupeflSetBgColorAttrib(Ihandle* ih, const char* value)
 {
   Eo* widget = iupeflGetWidget(ih);
@@ -74,6 +82,7 @@ IUP_DRV_API int iupeflSetBgColorAttrib(Ihandle* ih, const char* value)
 
     bg_rect = efl_add(EFL_CANVAS_RECTANGLE_CLASS, widget);
     iupAttribSet(ih, "_IUP_EFL_BGRECT", (char*)bg_rect);
+    efl_event_callback_add(bg_rect, EFL_EVENT_DEL, eflBgRectDelCallback, ih);
 
     /* set after the layout ran there is no later update to place it, follow the widget now */
     if (geom.w > 0 && geom.h > 0)
