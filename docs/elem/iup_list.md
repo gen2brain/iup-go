@@ -144,7 +144,7 @@ It will actually set the SPACING attribute.
 
 - EDITBOX=YES: Text entered by the user.
 - MULTIPLE=YES: Sequence of '+' and '-' symbols indicating the state of each item. When setting this value, the user must provide the same amount of '+' and '-' symbols as the amount of items in the list, otherwise the specified items will be deselected.
-- Others: Integer number representing the selected item in the list (begins at 1). It can be zero if there is no selected item. (In Motif when DROPDOWN=YES there is always an item selected, except when the list is empty).
+- Others: Integer number representing the selected item in the list (begins at 1). It can be zero if there is no selected item. (In Motif and GTK 4 when DROPDOWN=YES there is always an item selected, except when the list is empty).
 - Should return a non-NULL value, even when the list is empty or the text box is empty. It can be NULL when no item is selected.
 
 **VALUESTRING** (non-inheritable): changes or retrieves the value attribute using a string of an item.

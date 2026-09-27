@@ -33,6 +33,10 @@ Not supported in WinUI, macOS, EFL, Android and iOS.
 
 [MAP_CB](../call/iup_map_cb.md), [UNMAP_CB](../call/iup_unmap_cb.md), [DESTROY_CB](../call/iup_destroy_cb.md), [GETFOCUS_CB](../call/iup_getfocus_cb.md), [KILLFOCUS_CB](../call/iup_killfocus_cb.md), [ENTERWINDOW_CB](../call/iup_enterwindow_cb.md), [LEAVEWINDOW_CB](../call/iup_leavewindow_cb.md), [K_ANY](../call/iup_k_any.md), [HELP_CB](../call/iup_help_cb.md): All common callbacks are supported.
 
+### Notes
+
+In GTK 2 and GTK 3, the calendar grid stretches only horizontally; its rows keep their natural height.
+
 ### Examples
 
 |                                     |                                   |                                    |                                    |
