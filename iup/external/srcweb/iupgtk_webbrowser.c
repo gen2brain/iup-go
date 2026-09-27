@@ -19,6 +19,9 @@
 #include <string.h>
 #include <memory.h>
 #include <stdarg.h>
+#ifndef _WIN32
+#include <signal.h>
+#endif
 
 #include "iup.h"
 #include "iupcbs.h"
@@ -2343,12 +2346,36 @@ static void gtkWebBrowserDummyLogFunc(const gchar* log_domain, GLogLevelFlags lo
   (void)user_data;
 }
 
+static void gtkWebBrowserReleaseGCSignal(void)
+{
+#ifndef _WIN32
+  static int released = 0;
+  const char* value = getenv("JSC_SIGNAL_FOR_GC");
+  int sig = value ? atoi(value) : SIGUSR1;
+  struct sigaction action;
+
+  if (released)
+    return;
+  released = 1;
+
+  if (sig <= 0 || sig >= NSIG)
+    return;
+
+  memset(&action, 0, sizeof(action));
+  action.sa_handler = SIG_DFL;
+  sigemptyset(&action.sa_mask);
+  sigaction(sig, &action, NULL);
+#endif
+}
+
 static int gtkWebBrowserMapMethod(Ihandle* ih)
 {
   GtkScrolledWindow* scrolled_window = NULL;
 
   if (s_use_webkit2 == -1)
     return IUP_ERROR;
+
+  gtkWebBrowserReleaseGCSignal();
 
 #if (defined(IUPWEB_USE_WEBKIT2) || defined(IUPWEB_USE_DLOPEN))
   #ifdef IUPWEB_USE_DLOPEN
