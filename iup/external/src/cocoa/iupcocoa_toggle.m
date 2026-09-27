@@ -710,10 +710,26 @@ static int cocoaToggleMapMethod(Ihandle* ih)
   else
   {
     ih->data->type = IUP_TOGGLE_TEXT;
-    if (iupAttribGetBoolean(ih, "SWITCH"))
+    if (radio)
+      iupAttribSet(ih, "SWITCH", "NO");
+    else if (iupAttribGetBoolean(ih, "SWITCH"))
     {
       is_switch = 1;
     }
+  }
+
+  if (radio)
+  {
+    ih->data->is_radio = 1;
+
+    if (!iupAttribGet(radio, "_IUPCOCOA_LASTTOGGLE"))
+    {
+      iupAttribSet(ih, "VALUE", "ON");
+      initial_checked = 1;
+    }
+
+    if (!iupAttribGetHandleName(ih))
+      iupAttribSetHandleName(ih);
   }
 
   if (is_switch)
@@ -748,19 +764,7 @@ static int cocoaToggleMapMethod(Ihandle* ih)
     else
     {
       if (radio)
-      {
         [the_toggle setButtonType:NSButtonTypeRadio];
-        ih->data->is_radio = 1;
-
-        if (!iupAttribGet(radio, "_IUPCOCOA_LASTTOGGLE"))
-        {
-          iupAttribSet(ih, "VALUE", "ON");
-          initial_checked = 1;
-        }
-
-        if (!iupAttribGetHandleName(ih))
-          iupAttribSetHandleName(ih);
-      }
       else
       {
         [the_toggle setButtonType:NSButtonTypeSwitch];

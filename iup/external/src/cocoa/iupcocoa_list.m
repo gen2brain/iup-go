@@ -1230,6 +1230,7 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
 }
 @property (nonatomic, retain) NSColor* customBackgroundColor;
 @property (nonatomic, retain) NSColor* customTextColor;
+- (void)updateTextColorSelected:(BOOL)selected;
 @end
 
 @implementation IupCocoaListTableCellView
@@ -1240,12 +1241,6 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
 {
 #ifdef GNUSTEP
   iupcocoaGnustepFillCellRect(self, dirtyRect, self.customBackgroundColor);
-#else
-  if (self.customBackgroundColor)
-  {
-    [self.customBackgroundColor setFill];
-    NSRectFill(dirtyRect);
-  }
 #endif
   [super drawRect:dirtyRect];
 }
@@ -1341,33 +1336,35 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
 - (void)setBackgroundStyle:(NSBackgroundStyle)backgroundStyle
 {
   [super setBackgroundStyle:backgroundStyle];
+#ifndef GNUSTEP
+  [self updateTextColorSelected:NO];
+#endif
+}
 
-  if (backgroundStyle == NSBackgroundStyleNormal)
+- (void)updateTextColorSelected:(BOOL)selected
+{
+#ifdef GNUSTEP
+  if (selected)
+    [self.textField setTextColor:[NSColor selectedControlTextColor]];
+  else if (self.customTextColor)
+    [self.textField setTextColor:self.customTextColor];
+  else
+    [self.textField setTextColor:[NSColor controlTextColor]];
+#else
+  (void)selected;
+  if ([self backgroundStyle] == NSBackgroundStyleNormal)
   {
-    if (self.customTextColor)
-    {
+    NSView* row_view = [self superview];
+    if ([row_view isKindOfClass:[NSTableRowView class]] && [(NSTableRowView*)row_view isSelected])
+      [self.textField setTextColor:[NSColor unemphasizedSelectedTextColor]];
+    else if (self.customTextColor)
       [self.textField setTextColor:self.customTextColor];
-    }
     else
-    {
       [self.textField setTextColor:[NSColor controlTextColor]];
-    }
   }
   else
-  {
-#ifdef GNUSTEP
-    if (self.customTextColor)
-    {
-      [self.textField setTextColor:self.customTextColor];
-    }
-    else
-    {
-      [self.textField setTextColor:[NSColor controlTextColor]];
-    }
-#else
     [self.textField setTextColor:[NSColor selectedControlTextColor]];
 #endif
-  }
 
   [self setNeedsDisplay:YES];
 }
@@ -1555,6 +1552,7 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
   }
 
   [[cell_view textField] setStringValue:string_item];
+  [cell_view updateTextColorSelected:[table_view isRowSelected:the_row]];
 
   if (ih && ih->data->show_image && image_item)
   {
@@ -1637,6 +1635,18 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
   NSTableView* table_view = [the_notification object];
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(table_view, IHANDLE_ASSOCIATED_OBJ_KEY);
   if (!ih) return;
+
+#ifdef GNUSTEP
+  {
+    NSInteger row, count = [table_view numberOfRows];
+    for (row = 0; row < count; row++)
+    {
+      id cell_view = [table_view viewAtColumn:0 row:row makeIfNecessary:NO];
+      if ([cell_view isKindOfClass:[IupCocoaListTableCellView class]])
+        [(IupCocoaListTableCellView*)cell_view updateTextColorSelected:[table_view isRowSelected:row]];
+    }
+  }
+#endif
 
   if (iupAttribGet(ih, "_IUPLIST_IGNORE_ACTION"))
     return;
@@ -2251,7 +2261,7 @@ IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int* x, int* y)
 
           int text_width = iupdrvFontGetStringWidth(ih, "WWWWWWWWWW");
           int sb_size = iupdrvGetScrollbarSize();
-          combo_decor_w = (int)lroundf(intrinsic_size.width) - text_width - sb_size;
+          combo_decor_w = (int)lroundf([[tempComboBox cell] cellSize].width) - text_width - sb_size;
           if (combo_decor_w < 0) combo_decor_w = 0;
 
 #ifdef GNUSTEP
@@ -3439,6 +3449,76 @@ static int cocoaListSetScrollToPosAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
+static NSColor* cocoaListColorFromString(const char* value)
+{
+  unsigned char r, g, b;
+  if (!iupStrToRGB(value, &r, &g, &b))
+    return nil;
+  return [NSColor colorWithSRGBRed:r/255.0 green:g/255.0 blue:b/255.0 alpha:1.0];
+}
+
+static void cocoaListReloadRows(NSTableView* table_view)
+{
+  NSIndexSet* rows = [NSIndexSet indexSetWithIndexesInRange:NSMakeRange(0, (NSUInteger)[table_view numberOfRows])];
+  [table_view reloadDataForRowIndexes:rows columnIndexes:[NSIndexSet indexSetWithIndex:0]];
+}
+
+static int cocoaListSetBgColorAttrib(Ihandle* ih, const char* value)
+{
+  IupCocoaListSubType sub_type = cocoaListGetSubType(ih);
+  NSColor* color = cocoaListColorFromString(value);
+
+  if (sub_type == IUPCOCOALISTSUBTYPE_DROPDOWN)
+    return 1;
+
+  if (sub_type == IUPCOCOALISTSUBTYPE_EDITBOXDROPDOWN)
+  {
+    NSComboBox* combo_box = (NSComboBox*)cocoaListGetBaseWidget(ih);
+    [combo_box setBackgroundColor:color ? color : [NSColor textBackgroundColor]];
+    return 1;
+  }
+
+  iupAttribSet(ih, "BGCOLOR", value);
+
+  if (sub_type == IUPCOCOALISTSUBTYPE_EDITBOX)
+  {
+    NSTextField* text_field = (NSTextField*)iupAttribGet(ih, "_IUPCOCOA_EDITFIELD");
+    [text_field setBackgroundColor:color ? color : [NSColor textBackgroundColor]];
+  }
+
+  NSTableView* table_view = (NSTableView*)cocoaListGetBaseWidget(ih);
+  [table_view setBackgroundColor:color ? color : [NSColor controlBackgroundColor]];
+  cocoaListReloadRows(table_view);
+  return 1;
+}
+
+static int cocoaListSetFgColorAttrib(Ihandle* ih, const char* value)
+{
+  IupCocoaListSubType sub_type = cocoaListGetSubType(ih);
+  NSColor* color = cocoaListColorFromString(value);
+
+  if (sub_type == IUPCOCOALISTSUBTYPE_DROPDOWN)
+    return iupdrvBaseSetFgColorAttrib(ih, value);
+
+  if (sub_type == IUPCOCOALISTSUBTYPE_EDITBOXDROPDOWN)
+  {
+    NSComboBox* combo_box = (NSComboBox*)cocoaListGetBaseWidget(ih);
+    [combo_box setTextColor:color ? color : [NSColor textColor]];
+    return 1;
+  }
+
+  iupAttribSet(ih, "FGCOLOR", value);
+
+  if (sub_type == IUPCOCOALISTSUBTYPE_EDITBOX)
+  {
+    NSTextField* text_field = (NSTextField*)iupAttribGet(ih, "_IUPCOCOA_EDITFIELD");
+    [text_field setTextColor:color ? color : [NSColor textColor]];
+  }
+
+  cocoaListReloadRows((NSTableView*)cocoaListGetBaseWidget(ih));
+  return 1;
+}
+
 static int cocoaListSetFontAttrib(Ihandle* ih, const char* value)
 {
   if (!iupdrvSetFontAttrib(ih, value))
@@ -3455,7 +3535,8 @@ static int cocoaListSetFontAttrib(Ihandle* ih, const char* value)
     {
       NSTableView* table_view = (NSTableView*)cocoaListGetBaseWidget(ih);
 
-      [table_view reloadData];
+      cocoaListReloadRows(table_view);
+      [table_view noteHeightOfRowsWithIndexesChanged:[NSIndexSet indexSetWithIndexesInRange:NSMakeRange(0, (NSUInteger)[table_view numberOfRows])]];
       cocoaListUpdateColumnWidth(ih);
       [table_view setNeedsDisplay:YES];
     }
@@ -4153,8 +4234,8 @@ IUP_SDK_API void iupdrvListInitClass(Iclass* ic)
   ic->UnMap = cocoaListUnMapMethod;
 
   iupClassRegisterAttribute(ic, "FONT", NULL, cocoaListSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTBGCOLOR", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, iupdrvBaseSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTFGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, cocoaListSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, cocoaListSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTFGCOLOR", IUPAF_DEFAULT);
 
   iupClassRegisterAttributeId(ic, "IDVALUE", cocoaListGetIdValueAttrib, iupListSetIdValueAttrib, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "VALUE", cocoaListGetValueAttrib, cocoaListSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);

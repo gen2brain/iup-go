@@ -399,19 +399,22 @@ IUP_SDK_API int iupdrvTraySetImage(Ihandle* ih, const char* value)
     unsigned char* pixels;
     if (value && iupdrvGetIconPixels(ih, value, &img_width, &img_height, &pixels))
     {
-      user_image = cocoaTrayCreateImageFromPixels(img_width, img_height, pixels);
+      user_image = [cocoaTrayCreateImageFromPixels(img_width, img_height, pixels) autorelease];
       free(pixels);
     }
   }
 #else
-  user_image = (NSImage*)iupImageGetIcon(value);
+  {
+    NSImage* icon = (NSImage*)iupImageGetIcon(value);
+    if (icon)
+      user_image = [[icon copy] autorelease];
+  }
 #endif
 
   if (user_image)
   {
     CGFloat barHeight = [[NSStatusBar systemStatusBar] thickness];
     [user_image setSize:NSMakeSize(barHeight-4, barHeight-4)];
-    [user_image setTemplate:YES];
     [[status_item button] setImage:user_image];
     return 1;
   }

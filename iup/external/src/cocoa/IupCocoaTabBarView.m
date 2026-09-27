@@ -97,6 +97,9 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
 
   width += 2 * kTabCellPadding;
 
+  if ([tab hasCloseButton])
+    width += kTabCloseButtonArea;
+
   if (width < kMinTabCellWidth)
     width = kMinTabCellWidth;
   if (width > kMaxTabCellWidth)
@@ -869,11 +872,19 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
   [self redraw];
 }
 
+- (void)mouseEntered:(NSEvent*)theEvent
+{
+  [self mouseMoved:theEvent];
+}
+
 - (void)mouseExited:(NSEvent*)theEvent
 {
   NSUInteger index = 0;
   for (index = 0; index < [tabs count]; ++index)
+  {
     [[tabs objectAtIndex:index] setIsHovered:NO];
+    [[tabs objectAtIndex:index] setCanDrawCloseButton:NO];
+  }
 
   [self redraw];
 }
@@ -1219,24 +1230,21 @@ static CGFloat cocoaTabBarEase(CGFloat from, CGFloat to, BOOL* done)
   NSRect tabRect = [self frame];
   NSRect rect;
 
-  CGFloat buttonAreaSize = 20.0;
-  CGFloat maxX = NSMaxX(tabRect);
+  CGFloat buttonAreaSize = kTabCloseButtonArea;
   CGFloat midY = NSMidY(tabRect);
+#ifdef GNUSTEP
+  CGFloat x = NSMaxX(tabRect) - buttonAreaSize;
+#else
+  CGFloat x = NSMinX(tabRect) + 2.0;
+#endif
 
-  if ([[self tabBarView] orientation] == IupCocoaTabBarHorizontal)
-  {
-    rect = NSMakeRect(maxX - buttonAreaSize, midY - buttonAreaSize / 2.0, buttonAreaSize, buttonAreaSize);
-  }
-  else
-  {
-    rect = NSMakeRect(maxX - buttonAreaSize, midY - buttonAreaSize / 2.0, buttonAreaSize, buttonAreaSize);
-  }
+  rect = NSMakeRect(x, midY - buttonAreaSize / 2.0, buttonAreaSize, buttonAreaSize);
 
   rect = CGRectInset(rect, (buttonAreaSize - kCloseButtonWidth) / 2.0, (buttonAreaSize - kCloseButtonWidth) / 2.0);
   return rect;
 }
 
-- (void)drawCloseButton
+- (void)drawCloseButtonWithColor:(NSColor*)color
 {
   NSRect closeButtonRect = [self closeButtonRect];
   NSBezierPath* closeButtonPath = [NSBezierPath bezierPath];
@@ -1257,7 +1265,7 @@ static CGFloat cocoaTabBarEase(CGFloat from, CGFloat to, BOOL* done)
   [closeButtonPath lineToPoint:rightBottomPoint];
 
   [closeButtonPath setLineWidth:2.0];
-  [[[self tabBarView] smallControlColor] set];
+  [color set];
 
   [closeButtonPath stroke];
 }
@@ -1412,6 +1420,11 @@ static CGFloat cocoaTabBarEase(CGFloat from, CGFloat to, BOOL* done)
   [self setTitleAttributedString:mas];
 
   CGFloat leftOffset = 0.0;
+#ifndef GNUSTEP
+  CGFloat closeOffset = [self hasCloseButton] ? kTabCloseButtonArea : 0.0;
+#else
+  CGFloat closeOffset = 0.0;
+#endif
   if (self.image)
   {
     CGFloat imageSize = 16.0;
@@ -1421,10 +1434,9 @@ static CGFloat cocoaTabBarEase(CGFloat from, CGFloat to, BOOL* done)
     NSRect imageRect;
     imageRect.size = NSMakeSize(imageSize, imageSize);
 
-    /* The layout *within* a tab is always horizontal (Image | Text | Close) */
-    imageRect.origin.x = tabFrame.origin.x + 4.0;
+    imageRect.origin.x = tabFrame.origin.x + closeOffset + 4.0;
     imageRect.origin.y = tabFrame.origin.y + (tabFrame.size.height - imageSize) / 2.0;
-    leftOffset = 4.0 + imageSize + imagePadding;
+    leftOffset = closeOffset + 4.0 + imageSize + imagePadding;
 
     [self.image drawInRect:imageRect
                   fromRect:NSZeroRect
@@ -1488,12 +1500,12 @@ static CGFloat cocoaTabBarEase(CGFloat from, CGFloat to, BOOL* done)
     titleRect.size.height = fontHeight;
     titleRect.origin.y += yOffset;
 
-    CGFloat leftInset = (leftOffset > 0.0) ? leftOffset : 6.0;
+    CGFloat leftInset = (leftOffset > 0.0) ? leftOffset : closeOffset + 6.0;
     CGFloat rightInset;
 
-    if ([self hasCloseButton])
+    if ([self hasCloseButton] && closeOffset == 0.0)
     {
-      rightInset = 20.0;
+      rightInset = kTabCloseButtonArea;
     }
     else
     {
@@ -1508,15 +1520,16 @@ static CGFloat cocoaTabBarEase(CGFloat from, CGFloat to, BOOL* done)
 
   if ([self hasCloseButton])
   {
+    NSColor* closeColor = accentActive ? fontColor : [[self tabBarView] smallControlColor];
     if (![[self tabBarView] showsCloseButtonOnHover])
     {
-      [self drawCloseButton];
+      [self drawCloseButtonWithColor:closeColor];
     }
     else
     {
       if ([self canDrawCloseButton])
       {
-        [self drawCloseButton];
+        [self drawCloseButtonWithColor:closeColor];
       }
     }
   }
@@ -1596,7 +1609,7 @@ static CGFloat cocoaTabBarEase(CGFloat from, CGFloat to, BOOL* done)
     return;
   }
 
-  canDrawCloseButton = NSPointInRect(p, [self closeButtonRect]);
+  canDrawCloseButton = isHovered;
 }
 
 - (void)setIsHovered:(BOOL)flag

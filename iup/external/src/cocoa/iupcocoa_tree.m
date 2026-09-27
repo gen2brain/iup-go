@@ -1216,6 +1216,7 @@ static NSImage* helperGetActiveImageForTreeItem(IupCocoaTreeItem* tree_item, Iup
       [new_check_box setAutoresizingMask:NSViewMaxXMargin | NSViewHeightSizable];
 #else
       [new_check_box setTranslatesAutoresizingMaskIntoConstraints:NO];
+      [new_check_box setContentHuggingPriority:NSLayoutPriorityRequired forOrientation:NSLayoutConstraintOrientationHorizontal];
 #endif
       [table_cell_view addSubview:new_check_box];
       [(IupCocoaTreeToggleTableCellView*)table_cell_view setCheckBox:new_check_box];

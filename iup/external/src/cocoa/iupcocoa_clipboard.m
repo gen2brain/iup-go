@@ -115,11 +115,9 @@ static char* cocoaClipboardGetNativeImageAttrib(Ihandle* ih)
 
   if (tiff_data)
   {
-    NSImage* ns_image = [[[NSImage alloc] initWithData:tiff_data] autorelease];
+    NSImage* ns_image = [[NSImage alloc] initWithData:tiff_data];
     if (ns_image)
-    {
       return (char*)ns_image;
-    }
   }
 
   return NULL;

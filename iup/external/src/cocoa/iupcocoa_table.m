@@ -3503,6 +3503,7 @@ static void cocoaTableLayoutUpdateMethod(Ihandle* ih)
     [tableView setFrame:tableFrame];
   }
 
+  iupcocoaUpdateTip(ih);
 }
 
 /* ========================================================================= */

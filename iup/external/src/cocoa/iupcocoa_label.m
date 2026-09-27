@@ -252,12 +252,41 @@ static NSImageView* cocoaLabelGetImageView(Ihandle* ih)
   return (NSImageView*)iupcocoaGetMainView(ih);
 }
 
+static int cocoaLabelCenterExtra(void)
+{
+  static int extra = -1;
+
+  if (extra < 0)
+  {
+    NSTextField* temp_field = [[NSTextField alloc] initWithFrame:NSZeroRect];
+    [temp_field setBezeled:NO];
+    [temp_field setDrawsBackground:NO];
+    [temp_field setEditable:NO];
+    [temp_field setSelectable:NO];
+    [temp_field setFont:[NSFont systemFontOfSize:0]];
+    [temp_field setStringValue:@"WWWWWWWWWW"];
+
+    CGFloat natural_w = [[temp_field cell] cellSize].width;
+    [temp_field setAlignment:NSTextAlignmentCenter];
+    extra = (int)ceil([[temp_field cell] cellSize].width - natural_w);
+    if (extra < 0) extra = 0;
+
+    [temp_field release];
+  }
+
+  return extra;
+}
+
 IUP_SDK_API void iupdrvLabelAddExtraPadding(Ihandle* ih, int* x, int* y)
 {
   (void)y;
 
   if (ih->data->type == IUP_LABEL_TEXT && x)
+  {
     *x += iupcocoaTextFieldCellInset();
+    if (ih->data->horiz_alignment == IUP_ALIGN_ACENTER)
+      *x += cocoaLabelCenterExtra();
+  }
 }
 
 static int cocoaLabelSetPaddingAttrib(Ihandle* ih, const char* value)
