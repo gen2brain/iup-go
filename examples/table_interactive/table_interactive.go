@@ -93,6 +93,7 @@ func main() {
 		"REORDERING: Drag column headers to rearrange columns\n"+
 		"SELECTION: Ctrl+Click for multiple, Shift+Click for range\n"+
 		"USER RESIZE: Manually resize columns by dragging column borders\n"+
+		"CONTEXT MENU: Right-click a cell (long press on Android and iOS)\n"+
 		"---\n")
 
 	iup.SetHandle("table", table)
@@ -194,6 +195,37 @@ func main() {
 	iup.SetCallback(table, "REORDER_CB", iup.ReorderFunc(func(ih iup.Ihandle, oldPos, newPos int) int {
 		log := iup.GetHandle("log")
 		log.SetAttribute("APPEND", fmt.Sprintf("REORDER_CB: column moved from %d to %d\n", oldPos, newPos))
+		return iup.DEFAULT
+	}))
+
+	// Context menu on the right-clicked cell
+	iup.SetCallback(table, "RIGHTCLICK_CB", iup.TableRightClickFunc(func(ih iup.Ihandle, lin, col int) int {
+		log := iup.GetHandle("log")
+		value := iup.GetAttributeId2(ih, "", lin, col)
+		log.SetAttribute("APPEND", fmt.Sprintf("RIGHTCLICK_CB: [%d,%d] - %s\n", lin, col, value))
+
+		menu := iup.Menu(
+			iup.MenuItem("Copy Cell").SetCallback("ACTION", iup.ActionFunc(func(iup.Ihandle) int {
+				clipboard := iup.Clipboard()
+				clipboard.SetAttribute("TEXT", value)
+				clipboard.Destroy()
+				log.SetAttribute("APPEND", fmt.Sprintf("Copied [%d,%d]: %s\n", lin, col, value))
+				return iup.DEFAULT
+			})),
+			iup.MenuItem("Clear Cell").SetCallback("ACTION", iup.ActionFunc(func(iup.Ihandle) int {
+				iup.SetAttributeId2(ih, "", lin, col, "")
+				log.SetAttribute("APPEND", fmt.Sprintf("Cleared [%d,%d]\n", lin, col))
+				return iup.DEFAULT
+			})),
+			iup.MenuSeparator(),
+			iup.MenuItem("Delete Line").SetCallback("ACTION", iup.ActionFunc(func(iup.Ihandle) int {
+				ih.SetAttribute("DELLIN", fmt.Sprintf("%d", lin))
+				log.SetAttribute("APPEND", fmt.Sprintf("Deleted line %d\n", lin))
+				return iup.DEFAULT
+			})),
+		)
+		iup.Popup(menu, iup.MOUSEPOS, iup.MOUSEPOS)
+		menu.Destroy()
 		return iup.DEFAULT
 	}))
 

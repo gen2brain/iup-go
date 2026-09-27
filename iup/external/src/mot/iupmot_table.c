@@ -1332,6 +1332,13 @@ static void motTableInputCallback(Widget w, XtPointer client_data, XtPointer cal
         cb(ih, lin, col, status);
       }
 
+      if (button_event->button == Button3)
+      {
+        IFnii rcb = (IFnii)IupGetCallback(ih, "RIGHTCLICK_CB");
+        if (rcb)
+          rcb(ih, lin, col);
+      }
+
       IFnii enteritem_cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
       if (enteritem_cb)
         enteritem_cb(ih, lin, col);

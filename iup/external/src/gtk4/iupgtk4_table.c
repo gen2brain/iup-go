@@ -1372,6 +1372,19 @@ static void on_click(GtkGestureClick* gesture, int n_press, double x, double y, 
 
     click_cb(ih, gtk_data->current_row, gtk_data->current_col, status);
   }
+
+  if (button == GDK_BUTTON_SECONDARY)
+  {
+    gtk_gesture_set_state(GTK_GESTURE(gesture), GTK_EVENT_SEQUENCE_CLAIMED);
+
+    guint pos = gtk4TableViewPos(gtk_data, clicked_row);
+    if (pos != GTK_INVALID_LIST_POSITION && !iupStrEqualNoCase(iupAttribGetStr(ih, "SELECTIONMODE"), "NONE"))
+      gtk_selection_model_select_item(gtk_data->selection_model, pos, TRUE);
+
+    IFnii cb = (IFnii)IupGetCallback(ih, "RIGHTCLICK_CB");
+    if (cb)
+      cb(ih, gtk_data->current_row, gtk_data->current_col);
+  }
 }
 
 static gboolean on_key_pressed(GtkEventControllerKey* controller, guint keyval, guint keycode, GdkModifierType state, Ihandle* ih)

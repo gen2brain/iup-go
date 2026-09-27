@@ -428,6 +428,9 @@ type EnterItemFunc func(ih Ihandle, lin, col int) int
 // TableEditionFunc is the type for the table EDITION_CB callback.
 type TableEditionFunc func(ih Ihandle, lin, col int, update string) int
 
+// TableRightClickFunc is the type for the table RIGHTCLICK_CB callback.
+type TableRightClickFunc func(ih Ihandle, lin, col int) int
+
 // TableValueChangedFunc is the type for the table VALUECHANGED_CB callback.
 type TableValueChangedFunc func(ih Ihandle, lin, col int) int
 

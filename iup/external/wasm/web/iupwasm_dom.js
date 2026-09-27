@@ -2073,6 +2073,11 @@
           var td = e.target.closest('td'); if (!td || td.dataset.lin === undefined) return;
           D('iupwasmTableCellClick', tcid, +td.dataset.lin, +td.dataset.col, mmods(e));
         });
+        ttable.addEventListener('contextmenu', function (e) {
+          var td = e.target.closest('td'); if (!td || td.dataset.lin === undefined) return;
+          e.preventDefault();
+          D('iupwasmTableRightClick', tcid, +td.dataset.lin, +td.dataset.col, mmods(e) | 32);
+        });
         // EDITBEGIN_CB can veto, so the model opens the editor through 'tableeditopen'
         ttable.addEventListener('dblclick', function (e) {
           var td = e.target.closest('td'); if (!td || td.__iupEditing) return;

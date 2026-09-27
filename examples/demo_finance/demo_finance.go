@@ -157,6 +157,24 @@ func (app *dashboard) build() {
 		app.summary.SetAttribute("TITLE", fmt.Sprintf("%d matching  |  %d selected", len(app.visible), n))
 		return iup.DEFAULT
 	}))
+	app.table.SetCallback("RIGHTCLICK_CB", iup.TableRightClickFunc(func(_ iup.Ihandle, lin, _ int) int {
+		if lin < 1 || lin > len(app.visible) {
+			return iup.DEFAULT
+		}
+		var items []iup.Ihandle
+		for _, category := range categories {
+			c := category
+			items = append(items, menuItem(c, func() { app.setCategory(c) }))
+		}
+		menu := iup.Menu(
+			iup.Submenu("Set category", iup.Menu(items...)),
+			iup.Separator(),
+			menuItem("Copy row", func() { app.copyRow(app.visible[lin-1]) }),
+		)
+		iup.Popup(menu, iup.MOUSEPOS, iup.MOUSEPOS)
+		iup.Destroy(menu)
+		return iup.DEFAULT
+	}))
 
 	now := time.Now()
 	first := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.Local).AddDate(0, -5, 0)
@@ -444,14 +462,26 @@ func (app *dashboard) bulkCategory() {
 	if index < 0 || index >= len(categories) {
 		return
 	}
+	app.setCategory(categories[index])
+}
+
+func (app *dashboard) setCategory(category string) {
+	selected := app.selectedIDs()
 	for i := range app.transactions {
 		if selected[app.transactions[i].ID] {
-			app.transactions[i].Category = categories[index]
+			app.transactions[i].Category = category
 		}
 	}
 	app.refresh()
 	app.save()
-	app.log.SetAttribute("APPEND", fmt.Sprintf("Categorized %d transactions as %s", len(selected), categories[index]))
+	app.log.SetAttribute("APPEND", fmt.Sprintf("Categorized %d transactions as %s", len(selected), category))
+}
+
+func (app *dashboard) copyRow(item *transaction) {
+	clipboard := iup.Clipboard()
+	clipboard.SetAttribute("TEXT", strings.Join([]string{item.Date, item.Payee, item.Category, amount(item.Cents), item.Note}, "\t"))
+	clipboard.Destroy()
+	app.log.SetAttribute("APPEND", "Copied "+item.Payee+" "+amount(item.Cents))
 }
 
 func (app *dashboard) refreshPlots() {
@@ -723,6 +753,13 @@ func amount(cents int64) string {
 		return fmt.Sprintf("-$%d.%02d", -cents/100, -cents%100)
 	}
 	return fmt.Sprintf("$%d.%02d", cents/100, cents%100)
+}
+
+func menuItem(title string, action func()) iup.Ihandle {
+	return iup.MenuItem(title).SetCallback("ACTION", iup.ActionFunc(func(iup.Ihandle) int {
+		action()
+		return iup.DEFAULT
+	}))
 }
 
 func button(title string, action func()) iup.Ihandle {

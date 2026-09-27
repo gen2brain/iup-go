@@ -452,6 +452,19 @@ func pairTable(values *[]entry) iup.Ihandle {
 		}
 		return iup.DEFAULT
 	}))
+	table.SetCallback("RIGHTCLICK_CB", iup.TableRightClickFunc(func(_ iup.Ihandle, lin, _ int) int {
+		if lin < 1 || lin > len(*values) {
+			return iup.DEFAULT
+		}
+		menu := iup.Menu(iup.MenuItem("Remove row").SetCallback("ACTION", iup.ActionFunc(func(iup.Ihandle) int {
+			*values = append((*values)[:lin-1], (*values)[lin:]...)
+			updatePairs(table, *values)
+			return iup.DEFAULT
+		})))
+		iup.Popup(menu, iup.MOUSEPOS, iup.MOUSEPOS)
+		iup.Destroy(menu)
+		return iup.DEFAULT
+	}))
 	return table
 }
 

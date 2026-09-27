@@ -1166,12 +1166,32 @@ public:
 
       if (hit_lin > 0 && col)
       {
+        int32 buttons = 0;
+        msg->FindInt32("buttons", &buttons);
+
+        if (buttons & B_SECONDARY_MOUSE_BUTTON)
+        {
+          bool select = !iupStrEqualNoCase(iupAttribGetStr(ih, "SELECTIONMODE"), "NONE");
+          iupAttribSet(ih, "_IUPTABLE_IGNORE_SELECTION_CB", "1");
+          if (select) fTv->DeselectAll();
+          fTv->SetFocusRow(hit_lin - 1, select);
+          iupAttribSet(ih, "_IUPTABLE_IGNORE_SELECTION_CB", NULL);
+          outline->Invalidate();
+        }
+
         IFniis cb = (IFniis)IupGetCallback(ih, "CLICK_CB");
         if (cb)
         {
           char status[11];
           haikuTableFillStatus(msg, status);
           cb(ih, hit_lin, col->LogicalFieldNum() + 1, status);
+        }
+
+        if (buttons & B_SECONDARY_MOUSE_BUTTON)
+        {
+          IFnii rcb = (IFnii)IupGetCallback(ih, "RIGHTCLICK_CB");
+          if (rcb)
+            rcb(ih, hit_lin, col->LogicalFieldNum() + 1);
         }
       }
     }

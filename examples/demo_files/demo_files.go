@@ -57,6 +57,7 @@ func main() {
 		"ALIGNMENT2": "ARIGHT",
 	})
 	table.SetCallback("CLICK_CB", iup.ClickFunc(clicked))
+	table.SetCallback("RIGHTCLICK_CB", iup.TableRightClickFunc(rightClicked))
 	table.SetCallback("SORT_CB", iup.TableSortFunc(sortRequested))
 	table.SetCallback("DRAGBEGIN_CB", iup.DragBeginFunc(dragBegin))
 	table.SetCallback("DRAGDATASIZE_CB", iup.DragDataSizeFunc(func(iup.Ihandle, string) int {
@@ -265,21 +266,27 @@ func clicked(ih iup.Ihandle, lin, col int, status string) int {
 		return iup.DEFAULT
 	}
 	e := shown[lin-1]
-	switch {
-	case iup.IsDouble(status) && e.dir:
+	if iup.IsDouble(status) && e.dir {
 		current = filepath.Join(current, e.name)
 		fillTable()
-	case iup.IsButton3(status):
-		menu := iup.Menu(
-			item("Rename "+e.name, renameSelected),
-			item("Delete "+e.name, deleteSelected),
-			iup.Submenu("Move to", moveMenu(e)),
-			iup.Separator(),
-			item("Copy path", func() { copyPath(filepath.Join(current, e.name)) }),
-		)
-		iup.Popup(menu, iup.MOUSEPOS, iup.MOUSEPOS)
-		iup.Destroy(menu)
 	}
+	return iup.DEFAULT
+}
+
+func rightClicked(ih iup.Ihandle, lin, col int) int {
+	if lin < 1 || lin > len(shown) {
+		return iup.DEFAULT
+	}
+	e := shown[lin-1]
+	menu := iup.Menu(
+		item("Rename "+e.name, renameSelected),
+		item("Delete "+e.name, deleteSelected),
+		iup.Submenu("Move to", moveMenu(e)),
+		iup.Separator(),
+		item("Copy path", func() { copyPath(filepath.Join(current, e.name)) }),
+	)
+	iup.Popup(menu, iup.MOUSEPOS, iup.MOUSEPOS)
+	iup.Destroy(menu)
 	return iup.DEFAULT
 }
 

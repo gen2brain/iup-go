@@ -199,6 +199,26 @@ func photoTable() iup.Ihandle {
 		return iup.DEFAULT
 	}))
 	table.SetCallback("EDITEND_CB", iup.EditEndFunc(editRating))
+	table.SetCallback("RIGHTCLICK_CB", iup.TableRightClickFunc(func(_ iup.Ihandle, lin, _ int) int {
+		if lin < 1 || lin > len(shown) {
+			return iup.DEFAULT
+		}
+		var ratings []iup.Ihandle
+		for rating := 0; rating <= 5; rating++ {
+			r := rating
+			ratings = append(ratings, menuItem(strconv.Itoa(r), func() { applyRating(r) }))
+		}
+		menu := iup.Menu(
+			menuItem("Pick", func() { applyFlag("pick") }),
+			menuItem("Reject", func() { applyFlag("reject") }),
+			menuItem("Clear flag", func() { applyFlag("clear") }),
+			iup.Separator(),
+			iup.Submenu("Rating", iup.Menu(ratings...)),
+		)
+		iup.Popup(menu, iup.MOUSEPOS, iup.MOUSEPOS)
+		iup.Destroy(menu)
+		return iup.DEFAULT
+	}))
 	return table
 }
 
@@ -256,6 +276,13 @@ func toolbar() iup.Ihandle {
 	}
 	return iup.Hbox(append(first, append([]iup.Ihandle{iup.Label("").SetAttribute("SEPARATOR", "VERTICAL")}, second...)...)...).
 		SetAttributes("NGAP=4, NMARGIN=7x5, ALIGNMENT=ACENTER")
+}
+
+func menuItem(title string, action func()) iup.Ihandle {
+	return iup.MenuItem(title).SetCallback("ACTION", iup.ActionFunc(func(iup.Ihandle) int {
+		action()
+		return iup.DEFAULT
+	}))
 }
 
 func button(title string, action func()) iup.Ihandle {

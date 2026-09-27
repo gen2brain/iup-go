@@ -356,6 +356,21 @@ func (app *studio) takesPanel() iup.Ihandle {
 		}
 		return iup.DEFAULT
 	}))
+	app.table.SetCallback("RIGHTCLICK_CB", iup.TableRightClickFunc(func(_ iup.Ihandle, lin, _ int) int {
+		if lin < 1 || lin > len(app.takes) {
+			return iup.DEFAULT
+		}
+		app.selectedTake = lin - 1
+		items := []iup.Ihandle{menuItem("Play", app.play)}
+		if runtime.GOOS != "js" {
+			items = append(items, menuItem("Export", app.exportTake))
+		}
+		items = append(items, iup.Separator(), menuItem("Delete", app.deleteTake))
+		menu := iup.Menu(items...)
+		iup.Popup(menu, iup.MOUSEPOS, iup.MOUSEPOS)
+		iup.Destroy(menu)
+		return iup.DEFAULT
+	}))
 
 	app.playbackSeek = iup.Val("HORIZONTAL").SetAttributes("MIN=0, MAX=1, VALUE=0, EXPAND=HORIZONTAL")
 	app.playbackSeek.SetCallback("VALUECHANGED_CB", iup.ValueChangedFunc(func(ih iup.Ihandle) int {
@@ -372,6 +387,13 @@ func (app *studio) takesPanel() iup.Ihandle {
 	controls := iup.Hbox(buttons, iup.Fill()).SetAttributes("NGAP=5, ALIGNMENT=ACENTER")
 	position := iup.Hbox(iup.Label("Position"), app.playbackSeek, app.playbackTime).SetAttributes("NGAP=7, ALIGNMENT=ACENTER")
 	return iup.Vbox(controls, app.table, position).SetAttributes("NGAP=7, NMARGIN=8x8")
+}
+
+func menuItem(title string, action func()) iup.Ihandle {
+	return iup.MenuItem(title).SetCallback("ACTION", iup.ActionFunc(func(iup.Ihandle) int {
+		action()
+		return iup.DEFAULT
+	}))
 }
 
 func button(title string, action func()) iup.Ihandle {

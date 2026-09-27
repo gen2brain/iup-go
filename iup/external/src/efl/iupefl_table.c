@@ -1799,6 +1799,13 @@ static void eflTableCellClickCallback(void* data, const Efl_Event* ev)
                                efl_input_pointer_button_get(pointer), status, is_double_click);
       cb(ih, lin, col, status);
     }
+
+    if (efl_input_pointer_button_get(pointer) == 3)
+    {
+      IFnii rcb = (IFnii)IupGetCallback(ih, "RIGHTCLICK_CB");
+      if (rcb)
+        rcb(ih, lin, col);
+    }
   }
 
   iupTableCallMultiSelectionCb(ih);

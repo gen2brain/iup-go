@@ -190,11 +190,12 @@ function serve(dir) {
       const ci = st.indexOf(':');
       const cmd = ci < 0 ? st : st.slice(0, ci);
       const arg = ci < 0 ? '' : st.slice(ci + 1);
-      if (cmd === 'click' || cmd === 'dblclick') {
+      if (cmd === 'click' || cmd === 'dblclick' || cmd === 'rclick') {
         // x,y clicks inside the element, the only way to reach a canvas-drawn control
         var cp = arg.split('##'), copt = {};
         if (cp[1]) { var cxy = cp[1].split(','); copt.position = { x: +cxy[0], y: +cxy[1] }; }
-        await page[cmd](cp[0], copt).catch((e) => logs.push(cmd + ' failed: ' + e.message));
+        if (cmd === 'rclick') copt.button = 'right';
+        await page[cmd === 'rclick' ? 'click' : cmd](cp[0], copt).catch((e) => logs.push(cmd + ' failed: ' + e.message));
       }
       else if (cmd === 'type') await page.keyboard.type(arg).catch((e) => logs.push('type failed: ' + e.message));
       else if (cmd === 'press') await page.keyboard.press(arg).catch((e) => logs.push('press failed: ' + e.message));

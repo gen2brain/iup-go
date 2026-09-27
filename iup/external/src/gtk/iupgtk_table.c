@@ -675,6 +675,24 @@ static gboolean gtkTableButtonEvent(GtkWidget* widget, GdkEventButton* evt, Ihan
     }
   }
 
+  if (evt->button == 3 && evt->type == GDK_BUTTON_PRESS)
+  {
+    int lin = gtk_tree_path_get_indices(path)[0] + 1;
+    GList* columns = gtk_tree_view_get_columns(GTK_TREE_VIEW(widget));
+    int col = g_list_index(columns, column) + 1;
+    g_list_free(columns);
+
+    gtkTableSetCursor(ih, GTK_TREE_VIEW(widget), path, column, FALSE);
+    gtk_tree_path_free(path);
+    if (!gtk_widget_has_focus(widget))
+      gtk_widget_grab_focus(widget);
+
+    IFnii cb = (IFnii)IupGetCallback(ih, "RIGHTCLICK_CB");
+    if (cb)
+      cb(ih, lin, col);
+    return TRUE;
+  }
+
   if (evt->button != 1)
   {
     gtk_tree_path_free(path);

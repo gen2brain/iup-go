@@ -2122,6 +2122,25 @@ func setTableEditionFunc(ih Ihandle, f TableEditionFunc) {
 
 //--------------------
 
+// TableRightClickFunc for RIGHTCLICK_CB callback.
+// Called when the right mouse button is pressed over a table cell.
+type TableRightClickFunc func(ih Ihandle, lin, col int) int
+
+//export goIupTableRightClickCB
+func goIupTableRightClickCB(ih unsafe.Pointer, lin, col C.int) C.int {
+	f := loadCallback((Ihandle)(ih), "_IUPGO_RIGHTCLICK_CB").Value().(TableRightClickFunc)
+
+	return C.int(f((Ihandle)(ih), int(lin), int(col)))
+}
+
+// setTableRightClickFunc for RIGHTCLICK_CB (Table version).
+func setTableRightClickFunc(ih Ihandle, f TableRightClickFunc) {
+	storeCallback(ih, "_IUPGO_RIGHTCLICK_CB", f)
+	C.goIupSetTableRightClickFunc(ih.ptr())
+}
+
+//--------------------
+
 // TableValueChangedFunc for VALUECHANGED_CB callback.
 // Called after a cell value has been changed in a table/matrix control.
 // Triggered by edits, paste operations, or programmatic value changes.

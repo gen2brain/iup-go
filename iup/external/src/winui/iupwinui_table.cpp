@@ -3342,12 +3342,33 @@ static int winuiTableMapMethod(Ihandle* ih)
 
     if (lin > 0 && col > 0)
     {
+      IupWinUITableAux* a = winuiTableGetAux(ih);
+      if (a && (lin != a->current_row || col != a->current_col))
+      {
+        winuiTableClearFocusVisual(ih);
+        a->current_row = lin;
+        a->current_col = col;
+        winuiTableSetFocusVisual(ih, lin, col);
+      }
+
+      if (a && !iupStrEqualNoCase(iupAttribGetStr(ih, "SELECTIONMODE"), "NONE"))
+      {
+        ListView lv = winuiTableGetListView(ih);
+        a->suppress_callbacks = true;
+        lv.SelectedIndex(lin - 1);
+        a->suppress_callbacks = false;
+      }
+
       char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
       iupwinuiButtonKeySetStatus(iupwinuiGetModifierKeys() | MK_RBUTTON, 0, status, 0);
 
       IFniis click_cb = (IFniis)IupGetCallback(ih, "CLICK_CB");
       if (click_cb)
         click_cb(ih, lin, col, status);
+
+      IFnii cb = (IFnii)IupGetCallback(ih, "RIGHTCLICK_CB");
+      if (cb)
+        cb(ih, lin, col);
     }
   });
 

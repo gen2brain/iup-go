@@ -256,7 +256,12 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 	case "RESTORED_CB":
 		setRestoredFunc(ih, fn.(RestoredFunc))
 	case "RIGHTCLICK_CB":
-		setRightClickFunc(ih, fn.(RightClickFunc))
+		switch v := fn.(type) {
+		case RightClickFunc:
+			setRightClickFunc(ih, v)
+		case TableRightClickFunc:
+			setTableRightClickFunc(ih, v)
+		}
 	case "SELECT_CB":
 		switch v := fn.(type) {
 		case SelectFunc:
@@ -1889,6 +1894,20 @@ var tableEditionCB = purego.NewCallback(func(ih uintptr, lin, col int32, update 
 func setTableEditionFunc(ih Ihandle, f TableEditionFunc) {
 	storeCallback(ih, "_IUPGO_EDITION_CB", f)
 	iupSetCallback(uintptr(ih), "EDITION_CB", tableEditionCB)
+}
+
+type TableRightClickFunc func(ih Ihandle, lin, col int) int
+
+var tableRightClickCB = purego.NewCallback(func(ih uintptr, lin, col int32) int {
+	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_RIGHTCLICK_CB").(TableRightClickFunc); ok {
+		return f(Ihandle(ih), int(lin), int(col))
+	}
+	return 0
+})
+
+func setTableRightClickFunc(ih Ihandle, f TableRightClickFunc) {
+	storeCallback(ih, "_IUPGO_RIGHTCLICK_CB", f)
+	iupSetCallback(uintptr(ih), "RIGHTCLICK_CB", tableRightClickCB)
 }
 
 type TableSortFunc func(ih Ihandle, col int) int

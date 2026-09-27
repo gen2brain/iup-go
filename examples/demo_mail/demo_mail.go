@@ -68,6 +68,32 @@ func main() {
 		}
 		return iup.DEFAULT
 	}))
+	table.SetCallback("RIGHTCLICK_CB", iup.TableRightClickFunc(func(ih iup.Ihandle, lin, col int) int {
+		if lin < 1 || lin > len(shown) {
+			return iup.DEFAULT
+		}
+		m := shown[lin-1]
+		flag, read := "Flag", "Mark as read"
+		if m.flagged {
+			flag = "Unflag"
+		}
+		if !m.unread {
+			read = "Mark as unread"
+		}
+		menu := iup.Menu(
+			item("Reply", func() { reply(false) }),
+			item("Reply to all", func() { reply(true) }),
+			item("Forward", forward),
+			iup.Separator(),
+			item(flag, toggleFlag),
+			item(read, toggleRead),
+			iup.Separator(),
+			item("Delete", deleteMessage),
+		)
+		iup.Popup(menu, iup.MOUSEPOS, iup.MOUSEPOS)
+		iup.Destroy(menu)
+		return iup.DEFAULT
+	}))
 	table.SetCallback("SORT_CB", iup.TableSortFunc(sortRequested))
 
 	preview := iup.Text().SetAttributes(`MULTILINE=YES, FORMATTING=YES, READONLY=YES, EXPAND=YES,
@@ -421,9 +447,9 @@ func quote(m *mail) string {
 }
 
 func composeDialog(to, subject, body string) {
-	toText := iup.Text().SetAttributes(fmt.Sprintf("EXPAND=HORIZONTAL, VALUE=%q, CUEBANNER=\"someone@example.org\"", to))
-	subjectText := iup.Text().SetAttributes(fmt.Sprintf("EXPAND=HORIZONTAL, VALUE=%q", subject))
-	bodyText := iup.Text().SetAttributes(fmt.Sprintf("MULTILINE=YES, EXPAND=YES, WORDWRAP=YES, VISIBLELINES=14, VISIBLECOLUMNS=60, VALUE=%q", body))
+	toText := iup.Text().SetAttributes(`EXPAND=HORIZONTAL, CUEBANNER="someone@example.org"`).SetAttribute("VALUE", to)
+	subjectText := iup.Text().SetAttribute("EXPAND", "HORIZONTAL").SetAttribute("VALUE", subject)
+	bodyText := iup.Text().SetAttributes("MULTILINE=YES, EXPAND=YES, WORDWRAP=YES, VISIBLELINES=14, VISIBLECOLUMNS=60").SetAttribute("VALUE", body)
 
 	var win iup.Ihandle
 	send := iup.Button("Send").SetAttribute("PADDING", "12x4")
