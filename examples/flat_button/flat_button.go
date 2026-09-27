@@ -144,7 +144,7 @@ func textLayout() iup.Ihandle {
 	ellipsis.SetAttributes("TEXTELLIPSIS=YES, EXPAND=HORIZONTAL, PADDING=8x4")
 
 	wrap := iup.FlatButton("This long title wraps onto several lines when the button shrinks")
-	wrap.SetAttributes("TEXTWRAP=YES, TEXTCLIP=YES, EXPAND=HORIZONTAL, PADDING=8x4")
+	wrap.SetAttributes("TEXTWRAP=YES, TEXTCLIP=YES, EXPAND=YES, PADDING=8x4")
 
 	split := iup.Split(
 		iup.Vbox(ellipsis, wrap).SetAttributes("NGAP=8"),

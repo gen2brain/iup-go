@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/gen2brain/iup-go/iup"
@@ -73,12 +75,12 @@ func main() {
 	txtFormatData.SetAttribute("VALUE", "Custom format data")
 
 	// HTML field (Qt driver only)
-	txtHTML := iup.Text().SetAttributes("MULTILINE=YES, EXPAND=HORIZONTAL, VISIBLELINES=2")
+	txtHTML := iup.Text().SetAttributes("MULTILINE=YES, WORDWRAP=YES, EXPAND=HORIZONTAL, VISIBLELINES=2")
 	txtHTML.SetAttribute("VALUE", "<h1>HTML Content</h1><p>This is <b>bold</b> text.</p>")
 
 	// Log widget
 	txtLog := iup.Text()
-	txtLog.SetAttributes("MULTILINE=YES, EXPAND=HORIZONTAL, READONLY=YES, VISIBLELINES=6")
+	txtLog.SetAttributes("MULTILINE=YES, EXPAND=YES, READONLY=YES, VISIBLELINES=4")
 	driver := iup.GetGlobal("DRIVER")
 	txtLog.SetAttribute("VALUE", "=== IUP Clipboard Demo ===\n"+
 		"Platform: "+system+"\n"+
@@ -133,7 +135,7 @@ func main() {
 		formatData := txtFormatData.GetAttribute("VALUE")
 
 		clipboard.SetAttribute("FORMAT", formatName)
-		clipboard.SetAttribute("FORMATDATASTRING", formatData)
+		clipboard.SetBytes("FORMATDATA", []byte(formatData))
 
 		logMsg(fmt.Sprintf("Copied custom format '%s': '%s'", formatName, formatData))
 		updateStatus()
@@ -145,10 +147,9 @@ func main() {
 		clipboard.SetAttribute("FORMAT", formatName)
 
 		if clipboard.GetBool("FORMATAVAILABLE") {
-			data := clipboard.GetAttribute("FORMATDATASTRING")
-			size := clipboard.GetAttribute("FORMATDATASIZE")
-			txtFormatData.SetAttribute("VALUE", data)
-			logMsg(fmt.Sprintf("Pasted custom format '%s' (size: %s): '%s'", formatName, size, data))
+			data := clipboard.GetBytes("FORMATDATA")
+			txtFormatData.SetAttribute("VALUE", string(data))
+			logMsg(fmt.Sprintf("Pasted custom format '%s' (%d bytes): '%s'", formatName, len(data), data))
 		} else {
 			logMsg(fmt.Sprintf("Custom format '%s' not available in clipboard", formatName))
 		}
@@ -213,35 +214,41 @@ func main() {
 		hboxPlatform := iup.Hbox(platformButtons...).SetAttribute("GAP", "5")
 		platformFrame = iup.Frame(hboxPlatform).SetAttributes("TITLE=Windows Metafiles, MARGIN=5x5")
 	} else if driver == "Cocoa" || driver == "CocoaTouch" || driver == "Qt" {
-		// PDF vector image support
+		pdf := []byte(samplePDF())
+
 		txtPDFInfo := iup.Text().SetAttributes("EXPAND=HORIZONTAL, READONLY=YES")
-		txtPDFInfo.SetAttribute("VALUE", "No PDF data")
+		txtPDFInfo.SetAttribute("VALUE", "No PDF pasted")
 
 		txtPDFFile := iup.Text().SetAttributes("EXPAND=HORIZONTAL")
 		txtPDFFile.SetAttribute("VALUE", "/tmp/clipboard_vector.pdf")
 
-		btnCheckPDF := iup.Button("Check PDF").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
-			pdfAvail := clipboard.GetAttribute("PDFAVAILABLE")
-			logMsg(fmt.Sprintf("PDF vector image available: %s", pdfAvail))
+		btnCopyPDF := iup.Button("Copy PDF").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
+			clipboard.SetBytes("NATIVEVECTORIMAGE", pdf)
+			logMsg(fmt.Sprintf("Copied a %d byte PDF to the clipboard", len(pdf)))
 			updateStatus()
 			return iup.DEFAULT
 		}))
 
-		btnGetPDF := iup.Button("Get PDF Info").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
-			if clipboard.GetBool("PDFAVAILABLE") {
-				pdfData := clipboard.GetAttribute("NATIVEVECTORIMAGE")
-				size := clipboard.GetAttribute("FORMATDATASIZE")
-				if pdfData != "" {
-					logMsg(fmt.Sprintf("Retrieved PDF vector image from clipboard (size: %s bytes)", size))
-					txtPDFInfo.SetAttribute("VALUE", fmt.Sprintf("PDF data: %s bytes", size))
-				} else {
-					logMsg("Failed to retrieve PDF data")
-					txtPDFInfo.SetAttribute("VALUE", "Failed to get PDF")
-				}
-			} else {
+		btnPastePDF := iup.Button("Paste PDF").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
+			if !clipboard.GetBool("PDFAVAILABLE") {
 				logMsg("No PDF available in clipboard")
 				txtPDFInfo.SetAttribute("VALUE", "No PDF available")
+				updateStatus()
+				return iup.DEFAULT
 			}
+			data := clipboard.GetBytes("NATIVEVECTORIMAGE")
+			if data == nil {
+				logMsg("Clipboard PDF could not be retrieved")
+				updateStatus()
+				return iup.DEFAULT
+			}
+			header, _, _ := bytes.Cut(data, []byte("\n"))
+			verdict := "differs from the copied PDF"
+			if bytes.Equal(data, pdf) {
+				verdict = "identical to the copied PDF"
+			}
+			txtPDFInfo.SetAttribute("VALUE", fmt.Sprintf("%d bytes, %s, %s", len(data), header, verdict))
+			logMsg(fmt.Sprintf("Pasted PDF from clipboard: %d bytes, %s", len(data), verdict))
 			updateStatus()
 			return iup.DEFAULT
 		}))
@@ -258,16 +265,15 @@ func main() {
 		}))
 
 		platformFrame = iup.Frame(iup.Vbox(
-			iup.Label("PDF Vector Image (Cocoa):"),
-			txtPDFInfo,
 			iup.Hbox(
-				btnCheckPDF,
-				btnGetPDF,
+				btnCopyPDF,
+				btnPastePDF,
 			).SetAttribute("GAP", "5"),
+			txtPDFInfo,
 			iup.Label("Save to file:"),
 			txtPDFFile,
 			btnSavePDF,
-		)).SetAttributes("TITLE=macOS PDF Vector Images, MARGIN=5x5, GAP=5")
+		)).SetAttributes(`TITLE="PDF Vector Image", MARGIN=5x5, GAP=5`)
 	}
 
 	btnCheckStatus := iup.Button("Refresh Status").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
@@ -359,12 +365,13 @@ func main() {
 		).SetAttribute("GAP", "5"),
 	)).SetAttributes(`TITLE="Custom Format Operations", MARGIN=5x5, GAP=5`)
 
-	// Two columns keep the dialog short enough to fit on smaller desktops.
+	// Three columns keep the dialog short enough to fit on smaller desktops.
 	leftCol := iup.Vbox(textFrame).SetAttributes("GAP=10, EXPAND=HORIZONTAL")
-	rightCol := iup.Vbox(imageFrame, formatFrame).SetAttributes("GAP=10, EXPAND=HORIZONTAL")
+	midCol := iup.Vbox(formatFrame).SetAttributes("GAP=10, EXPAND=HORIZONTAL")
+	rightCol := iup.Vbox(imageFrame).SetAttributes("GAP=10, EXPAND=HORIZONTAL")
 
 	if btnCopyHTML != 0 {
-		rightCol = iup.Append(rightCol, iup.Frame(iup.Vbox(
+		leftCol = iup.Append(leftCol, iup.Frame(iup.Vbox(
 			iup.Label("HTML Content (Qt Driver):"),
 			txtHTML,
 			iup.Hbox(
@@ -375,7 +382,7 @@ func main() {
 	}
 
 	if platformFrame != 0 {
-		rightCol = iup.Append(rightCol, platformFrame)
+		midCol = iup.Append(midCol, platformFrame)
 	}
 
 	statusChildren := []iup.Ihandle{btnCheckStatus}
@@ -387,7 +394,7 @@ func main() {
 
 	vboxMain := iup.Vbox(
 		iup.Label("IUP Clipboard Demo").SetAttributes(`FONT="Sans, Bold 12"`),
-		iup.Hbox(leftCol, rightCol).SetAttributes("GAP=10, ALIGNMENT=ATOP"),
+		iup.Hbox(leftCol, midCol, rightCol).SetAttributes("GAP=10, ALIGNMENT=ATOP"),
 		statusRow,
 		iup.Frame(txtLog).SetAttributes(`TITLE="Event Log", MARGIN=5x5`),
 	)
@@ -404,4 +411,30 @@ func main() {
 	logMsg(fmt.Sprintf("Clipboard demo ready. Platform: %s, Driver: %s", system, driver))
 
 	iup.MainLoop()
+}
+
+func samplePDF() string {
+	content := "0.2 0.5 0.9 rg 20 20 160 50 re f\nBT /F1 18 Tf 0 0 0 rg 30 90 Td (IUP clipboard) Tj ET\n"
+	objects := []string{
+		"<< /Type /Catalog /Pages 2 0 R >>",
+		"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+		"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 120] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>",
+		fmt.Sprintf("<< /Length %d >>\nstream\n%sendstream", len(content), content),
+		"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+	}
+
+	var b strings.Builder
+	b.WriteString("%PDF-1.4\n")
+	offsets := make([]int, len(objects))
+	for i, obj := range objects {
+		offsets[i] = b.Len()
+		fmt.Fprintf(&b, "%d 0 obj\n%s\nendobj\n", i+1, obj)
+	}
+	xref := b.Len()
+	fmt.Fprintf(&b, "xref\n0 %d\n0000000000 65535 f \n", len(objects)+1)
+	for _, off := range offsets {
+		fmt.Fprintf(&b, "%010d 00000 n \n", off)
+	}
+	fmt.Fprintf(&b, "trailer\n<< /Size %d /Root 1 0 R >>\nstartxref\n%d\n%%%%EOF\n", len(objects)+1, xref)
+	return b.String()
 }

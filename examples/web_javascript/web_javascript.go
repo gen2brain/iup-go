@@ -85,8 +85,6 @@ func main() {
 	dlg.SetAttribute("TITLE", "JAVASCRIPT Attribute Demo")
 	dlg.SetAttribute("RASTERSIZE", "800x600")
 
-	iup.Show(dlg)
-
 	web.SetAttribute("HTML", `<html>
 <head><title>JAVASCRIPT Attribute Test</title></head>
 <body>
@@ -94,6 +92,8 @@ func main() {
 <p id="info">This page tests the JAVASCRIPT attribute.</p>
 </body>
 </html>`)
+
+	iup.Show(dlg)
 
 	iup.MainLoop()
 }

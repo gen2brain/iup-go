@@ -95,11 +95,18 @@ func main() {
 		}
 		return iup.DEFAULT
 	}))
+	title.SetCallback("K_ANY", iup.KAnyFunc(func(ih iup.Ihandle, c int) int {
+		if c == iup.K_CR {
+			done()
+			return iup.IGNORE
+		}
+		return iup.DEFAULT
+	}))
 
 	editor := iup.Popover(iup.Vbox(
 		iup.Label("Appointment").SetAttributes("FONTSTYLE=Bold"),
 		title,
-		iup.Hbox(kindList(), button("Delete", remove)).SetAttributes("NGAP=6, ALIGNMENT=ACENTER"),
+		iup.Hbox(kindList(), button("Delete", remove), button("Done", done)).SetAttributes("NGAP=6, ALIGNMENT=ACENTER"),
 	).SetAttributes("NMARGIN=10x8, NGAP=6")).SetHandle("sc_editor")
 	editor.SetAttributes("POSITION=BOTTOMLEFT, AUTOHIDE=YES, ARROW=YES")
 	editor.SetAttributeHandle("ANCHOR", canvas)
@@ -349,6 +356,10 @@ func add() {
 	picked = create((int(time.Now().Weekday())+6)%7, 12)
 	refresh()
 	edit()
+}
+
+func done() {
+	iup.GetHandle("sc_editor").SetAttribute("VISIBLE", "NO")
 }
 
 func remove() {

@@ -67,6 +67,8 @@ func buildMainDialog() {
 		"EXPAND":          "YES",
 		"SCROLLBAR":       "YES",
 		"WORDWRAP":        "NO",
+		"VISIBLECOLUMNS":  "80",
+		"VISIBLELINES":    "25",
 		"DROPFILESTARGET": "YES",
 	})
 	multitext.SetCallback("CARET_CB", iup.CaretFunc(caretCb))
@@ -86,10 +88,7 @@ func buildMainDialog() {
 
 	vbox := iup.Vbox(toolbar, multitext, statusbar)
 
-	dlg = iup.Dialog(vbox).SetAttributes(map[string]string{
-		"SIZE":   "HALFxHALF",
-		"SHRINK": "YES",
-	})
+	dlg = iup.Dialog(vbox).SetAttribute("SHRINK", "YES")
 	iup.SetAttributeHandle(dlg, "MENU", mainMenu)
 	dlg.SetCallback("CLOSE_CB", iup.CloseFunc(closeCb))
 	dlg.SetCallback("DROPFILES_CB", iup.DropFilesFunc(dropFilesCb))
