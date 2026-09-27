@@ -309,7 +309,7 @@ IUP_SDK_API void iupdrvToggleAddBorders(Ihandle* ih, int* x, int* y)
     NSImage* temp_image = [[NSImage alloc] initWithSize:NSMakeSize(16, 16)];
 
     [temp_button setButtonType:NSButtonTypePushOnPushOff];
-    [temp_button setBezelStyle:NSBezelStyleRegularSquare];
+    [temp_button setBezelStyle:IUPCOCOA_PUSH_BEZEL];
     [temp_button setImage:temp_image];
     [temp_button setImagePosition:NSImageOnly];
 
@@ -669,7 +669,7 @@ static int cocoaToggleSetFlatAttrib(Ihandle* ih, const char* value)
     else
     {
       [the_toggle setBordered:YES];
-      [the_toggle setBezelStyle:NSBezelStyleRegularSquare];
+      [the_toggle setBezelStyle:IUPCOCOA_PUSH_BEZEL];
     }
 
     return 1;
@@ -739,7 +739,7 @@ static int cocoaToggleMapMethod(Ihandle* ih)
       }
       else
       {
-        [the_toggle setBezelStyle:NSBezelStyleRegularSquare];
+        [the_toggle setBezelStyle:IUPCOCOA_PUSH_BEZEL];
       }
 
       [[the_toggle cell] setImagePosition:NSImageOnly];

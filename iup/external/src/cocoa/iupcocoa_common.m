@@ -32,6 +32,7 @@
 - (void)setLineBreakMode:(NSLineBreakMode)mode { (void)mode; }
 - (void)setTruncatesLastVisibleLine:(BOOL)flag { (void)flag; }
 - (void)setControlSize:(NSInteger)size         { (void)size; }
+- (NSSize)fittingSize                          { return [self cell] ? [[self cell] cellSize] : [self frame].size; }
 @end
 
 /* NSCell base does not declare setTextColor:, and some call sites get a plain NSCell */
@@ -47,7 +48,6 @@
 @implementation NSView (IupGnustepShimImpl)
 - (void)setClipsToBounds:(BOOL)flag { (void)flag; }
 - (void)setAccessibilityLabel:(NSString*)label { (void)label; }
-/* fittingSize: callers size the temp widget first, so returning -frame is fine. */
 - (NSSize)fittingSize { return [self frame].size; }
 - (NSRect)convertRectToBacking:(NSRect)rect { return rect; }
 /* Tracking areas are accepted but never wired on GNUstep */
