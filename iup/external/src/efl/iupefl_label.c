@@ -355,6 +355,7 @@ static int eflLabelMapMethod(Ihandle* ih)
 
       label = efl_add(EFL_UI_TEXTBOX_CLASS, parent,
         efl_text_interactive_editable_set(efl_added, EINA_FALSE),
+        efl_ui_textbox_cnp_dnd_mode_set(efl_added, EFL_UI_TEXTBOX_CNP_CONTENT_NOTHING),
         efl_text_interactive_selection_allowed_set(efl_added, EINA_FALSE));
       if (!label)
         return IUP_ERROR;

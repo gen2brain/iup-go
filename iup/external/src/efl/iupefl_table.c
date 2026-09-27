@@ -1812,6 +1812,7 @@ static Evas_Object* eflTableCreateCellWidget(Ihandle* ih, Evas_Object* parent, c
   efl_text_multiline_set(entry, EINA_FALSE);
   efl_text_interactive_editable_set(entry, EINA_FALSE);
   efl_text_interactive_selection_allowed_set(entry, EINA_FALSE);
+  efl_ui_textbox_cnp_dnd_mode_set(entry, EFL_UI_TEXTBOX_CNP_CONTENT_NOTHING);
 
   eflTableApplyCellText(ih, entry, lin, col, text, is_header);
 

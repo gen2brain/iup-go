@@ -623,6 +623,7 @@ static int eflToggleMapMethod(Ihandle* ih)
       {
         label = efl_add(EFL_UI_TEXTBOX_CLASS, toggle,
                         efl_text_interactive_editable_set(efl_added, EINA_FALSE),
+                        efl_ui_textbox_cnp_dnd_mode_set(efl_added, EFL_UI_TEXTBOX_CNP_CONTENT_NOTHING),
                         efl_text_interactive_selection_allowed_set(efl_added, EINA_FALSE),
                         efl_gfx_hint_weight_set(efl_added, 1.0, 0.0),
                         efl_gfx_hint_align_set(efl_added, 0.0, 0.5));
@@ -684,6 +685,7 @@ static int eflToggleMapMethod(Ihandle* ih)
     {
       label = efl_add(EFL_UI_TEXTBOX_CLASS, toggle,
                       efl_text_interactive_editable_set(efl_added, EINA_FALSE),
+                      efl_ui_textbox_cnp_dnd_mode_set(efl_added, EFL_UI_TEXTBOX_CNP_CONTENT_NOTHING),
                       efl_text_interactive_selection_allowed_set(efl_added, EINA_FALSE),
                       efl_gfx_hint_weight_set(efl_added, 1.0, 0.0),
                       efl_gfx_hint_align_set(efl_added, 0.0, 0.5));
