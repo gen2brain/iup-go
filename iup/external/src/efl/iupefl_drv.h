@@ -94,6 +94,7 @@ IUP_DRV_API void iupeflPointerOutEvent(void* data, const Efl_Event* ev);
 IUP_DRV_API void iupeflCursorInit(void);
 IUP_DRV_API void iupeflCanvasSetScrollBarsVisible(Ihandle* ih, int visible);
 IUP_DRV_API Eo* iupeflCanvasGetOverlayWidget(Ihandle* ih);
+IUP_DRV_API void iupeflTreeDragSelect(Ihandle* ih, int x, int y);
 IUP_DRV_API void iupeflChildFocusChangedEvent(void* data, const Efl_Event* ev);
 IUP_DRV_API void iupeflManagerFocusChangedEvent(void* data, const Efl_Event* ev);
 

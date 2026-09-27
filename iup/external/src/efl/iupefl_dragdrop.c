@@ -19,6 +19,10 @@
 
 #include "iupefl_drv.h"
 
+#ifdef HAVE_ECORE_X
+#include <Ecore_X.h>
+#endif
+
 
 /*****************************************************************************
  * Static storage for drag data (avoids async issues with EFL selection)
@@ -61,6 +65,25 @@ static Eina_Bool eflDragEndIdleCb(void* data)
   return ECORE_CALLBACK_CANCEL;
 }
 
+#ifdef HAVE_ECORE_X
+static Ecore_Event_Handler* efl_drag_x11_finished_handler = NULL;
+
+static Eina_Bool eflDragX11FinishedCb(void* data, int type, void* event)
+{
+  (void)data;
+  (void)type;
+  (void)event;
+
+  ecore_event_handler_del(efl_drag_x11_finished_handler);
+  efl_drag_x11_finished_handler = NULL;
+
+  if (efl_drag_source_ih)
+    eflDragEndIdleCb(efl_drag_source_ih);
+
+  return ECORE_CALLBACK_PASS_ON;
+}
+#endif
+
 static void eflDragFinishedCb(void* data, const Efl_Event* ev)
 {
   Ihandle* ih = (Ihandle*)data;
@@ -75,6 +98,16 @@ static void eflDragFinishedCb(void* data, const Efl_Event* ev)
 
   iupAttribSet(ih, "_IUPEFL_DRAG_ACTIVE", NULL);
   iupAttribSet(ih, "_IUPEFL_DRAGEND_PENDING", "1");
+
+#ifdef HAVE_ECORE_X
+  /* on X11 this is emitted at release, the target reads the data and sends XdndFinished afterwards */
+  if (efl_drag_accepted && iupeflIsX11())
+  {
+    if (!efl_drag_x11_finished_handler)
+      efl_drag_x11_finished_handler = ecore_event_handler_add(ECORE_X_EVENT_XDND_FINISHED, eflDragX11FinishedCb, NULL);
+    return;
+  }
+#endif
 
   ecore_idler_add(eflDragEndIdleCb, ih);
 }
@@ -100,6 +133,22 @@ static void eflDragCompleteLocal(void)
   }
   else
     eflDragCleanup();
+}
+
+static void eflDragEndUnread(void)
+{
+  efl_drag_accepted = 0;
+
+#ifdef HAVE_ECORE_X
+  if (efl_drag_x11_finished_handler)
+  {
+    eflDragX11FinishedCb(NULL, 0, NULL);
+    return;
+  }
+#endif
+
+  if (iupeflIsWayland())
+    eflDragCompleteLocal();
 }
 
 /*****************************************************************************
@@ -293,6 +342,7 @@ static void eflDropDroppedCb(void* data, const Efl_Event* ev)
   Ihandle* ih = (Ihandle*)data;
   Efl_Ui_Drop_Dropped_Event* drop_ev = ev->info;
   int drop_x = 0, drop_y = 0;
+  int requested = 0;
 
   if (drop_ev)
   {
@@ -333,6 +383,7 @@ static void eflDropDroppedCb(void* data, const Efl_Event* ev)
       if (future)
       {
         eflDropRequest* req = (eflDropRequest*)calloc(1, sizeof(eflDropRequest));
+        requested = 1;
         if (req)
         {
           req->ih = ih;
@@ -345,17 +396,12 @@ static void eflDropDroppedCb(void* data, const Efl_Event* ev)
       }
       eina_array_free(mimes);
 
-      if (efl_drag_source_ih)
-      {
+      if (requested && efl_drag_source_ih)
         efl_drag_accepted = 1;
-        if (!iupeflIsWayland() && iupObjectCheck(efl_drag_source_ih) && iupAttribGet(efl_drag_source_ih, "_IUPEFL_DRAGEND_PENDING"))
-          eflDragEndIdleCb(efl_drag_source_ih);
-      }
-      return;
     }
   }
 
-  if (drop_ev && iupAttribGet(ih, "_IUPEFL_DROPFILES_ACTIVE") && IupGetCallback(ih, "DROPFILES_CB"))
+  if (!requested && drop_ev && iupAttribGet(ih, "_IUPEFL_DROPFILES_ACTIVE") && IupGetCallback(ih, "DROPFILES_CB"))
   {
     Eina_Array* types = eina_array_new(1);
     Eina_Future* future;
@@ -365,6 +411,7 @@ static void eflDropDroppedCb(void* data, const Efl_Event* ev)
     if (future)
     {
       eflDropRequest* dfd = (eflDropRequest*)calloc(1, sizeof(eflDropRequest));
+      requested = 1;
       if (dfd)
       {
         dfd->ih = ih;
@@ -375,6 +422,9 @@ static void eflDropDroppedCb(void* data, const Efl_Event* ev)
     }
     eina_array_free(types);
   }
+
+  if (!requested && efl_drag_source_ih)
+    eflDragEndUnread();
 }
 
 /*****************************************************************************
@@ -437,6 +487,77 @@ static int eflSetDropTargetAttrib(Ihandle* ih, const char* value)
  * Drag Source Callbacks (Modern EFL API)
  *****************************************************************************/
 
+#ifdef HAVE_ECORE_X
+static char* efl_drag_x11_target = NULL;
+static char* efl_drag_x11_data = NULL;
+static int efl_drag_x11_size = 0;
+
+static Eina_Bool eflDragX11Converter(char* target, void* data, int size, void** data_ret, int* size_ret, Ecore_X_Atom* ttype, int* typesize)
+{
+  (void)data;
+  (void)size;
+
+  if (!efl_drag_x11_data || !efl_drag_x11_target || strcmp(target, efl_drag_x11_target) != 0)
+    return EINA_FALSE;
+
+  *data_ret = malloc(efl_drag_x11_size);
+  if (!*data_ret)
+    return EINA_FALSE;
+
+  memcpy(*data_ret, efl_drag_x11_data, efl_drag_x11_size);
+  *size_ret = efl_drag_x11_size;
+  *ttype = ecore_x_atom_get(target);
+  *typesize = 8;
+  return EINA_TRUE;
+}
+
+static int eflDragX11HasConverter(const char* mime)
+{
+  static const char* efl_x11_types[] = {
+    "text/plain", "text/plain;charset=utf-8", "image/png", "image/jpeg", "image/x-ms-bmp", "image/gif",
+    "image/tiff", "image/svg+xml", "image/x-xpixmap", "image/x-tga", "image/x-portable-pixmap",
+    "text/x-vcard", "text/uri-list", "application/x-elementary-markup", NULL
+  };
+  int i;
+
+  for (i = 0; efl_x11_types[i]; i++)
+  {
+    if (strcmp(mime, efl_x11_types[i]) == 0)
+      return 1;
+  }
+  return 0;
+}
+
+/* ecore_evas_x converts only the types above, others are refused to the drop target */
+static void eflDragX11SetData(const char* mime, const char* data, int size)
+{
+  free(efl_drag_x11_data);
+  efl_drag_x11_data = NULL;
+  efl_drag_x11_size = 0;
+
+  if (!iupeflIsX11() || eflDragX11HasConverter(mime))
+    return;
+
+  if (!efl_drag_x11_target || strcmp(efl_drag_x11_target, mime) != 0)
+  {
+    if (efl_drag_x11_target)
+    {
+      ecore_x_selection_converter_del(efl_drag_x11_target);
+      free(efl_drag_x11_target);
+    }
+    efl_drag_x11_target = strdup(mime);
+    ecore_x_selection_converter_add(efl_drag_x11_target, eflDragX11Converter);
+  }
+
+  efl_drag_x11_data = (char*)malloc(size);
+  if (efl_drag_x11_data)
+  {
+    memcpy(efl_drag_x11_data, data, size);
+    efl_drag_x11_size = size;
+  }
+}
+#endif
+
 static void eflStartDrag(Ihandle* ih, int x, int y)
 {
   IFnii cbDragBegin;
@@ -452,6 +573,14 @@ static void eflStartDrag(Ihandle* ih, int x, int y)
 
   if (iupAttribGet(ih, "_IUPEFL_DRAG_ACTIVE"))
     return;
+
+#ifdef HAVE_ECORE_X
+  if (efl_drag_x11_finished_handler)
+    eflDragX11FinishedCb(NULL, 0, NULL);
+#endif
+
+  if (IupClassMatch(ih, "tree"))
+    iupeflTreeDragSelect(ih, x, y);
 
   cbDragBegin = (IFnii)IupGetCallback(ih, "DRAGBEGIN_CB");
   if (cbDragBegin && cbDragBegin(ih, x, y) == IUP_IGNORE)
@@ -494,6 +623,11 @@ static void eflStartDrag(Ihandle* ih, int x, int y)
   slice.mem = dragData;
   slice.len = size;
   content = eina_content_new(slice, mime_type);
+
+#ifdef HAVE_ECORE_X
+  if (content)
+    eflDragX11SetData(mime_type, dragData, size);
+#endif
 
   if (content)
   {
