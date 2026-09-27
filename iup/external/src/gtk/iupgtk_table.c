@@ -1607,8 +1607,6 @@ static void gtkTableCreateColumns(Ihandle* ih)
       gtk_tree_view_column_pack_start(column, renderer, TRUE);
       gtk_tree_view_column_add_attribute(column, renderer, "text", text_model_col);
 
-      gtk_tree_view_column_set_resizable(column, TRUE);
-
       gtk_tree_view_column_set_reorderable(column, ih->data->allow_reorder);
 
       IgtkCellDataInfo* data_info = (IgtkCellDataInfo*)malloc(sizeof(IgtkCellDataInfo));
@@ -1676,6 +1674,8 @@ static void gtkTableCreateColumns(Ihandle* ih)
         }
         gtk_tree_view_column_set_expand(column, FALSE);
       }
+
+      gtk_tree_view_column_set_resizable(column, ih->data->user_resize ? TRUE : FALSE);
 
       IgtkTableData* gtk_data = IGTK_TABLE_DATA(ih);
       if (ih->data->sortable)
