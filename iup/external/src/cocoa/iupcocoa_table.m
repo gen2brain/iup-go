@@ -2364,6 +2364,8 @@ static void cocoaTableAutoSizeColumns(Ihandle* ih)
 #else
   (void)changed;
 #endif
+
+  cocoaTableUpdateResizingMasks(ih);
 }
 
 static void cocoaTableQueueAutoSize(Ihandle* ih)

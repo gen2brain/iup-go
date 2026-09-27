@@ -6,6 +6,7 @@
 
 #include <QTableWidget>
 #include <QHeaderView>
+#include <QTimer>
 #include <QTableWidgetItem>
 #include <QScrollBar>
 #include <QApplication>
@@ -788,6 +789,55 @@ static QTableWidget* qtTableGetWidget(Ihandle* ih)
   return (QTableWidget*)ih->handle;
 }
 
+static int qtTableColWidthAttrib(Ihandle* ih, int col)
+{
+  char name[50];
+  int w = 0;
+  snprintf(name, sizeof(name), "RASTERWIDTH%d", col);
+  char* ws = iupAttribGet(ih, name);
+  if (!ws)
+  {
+    snprintf(name, sizeof(name), "WIDTH%d", col);
+    ws = iupAttribGet(ih, name);
+  }
+  if (ws && iupStrToInt(ws, &w) && w > 0)
+    return w;
+  return 0;
+}
+
+/* a column whose width no longer matches the last fit was sized by the user or by WIDTHn */
+static void qtTableAutoSizeColumns(Ihandle* ih)
+{
+  QTableWidget* table = qtTableGetWidget(ih);
+  if (!table)
+    return;
+
+  QHeaderView* hHeader = table->horizontalHeader();
+  for (int col = 1; col <= ih->data->num_col && col <= table->columnCount(); col++)
+  {
+    if (hHeader->sectionResizeMode(col - 1) != QHeaderView::Interactive || qtTableColWidthAttrib(ih, col) > 0)
+      continue;
+    if (iupAttribGetId(ih, "_IUPQT_COLFIT", col) && table->columnWidth(col - 1) != iupAttribGetIntId(ih, "_IUPQT_COLFIT", col))
+      continue;
+    table->resizeColumnToContents(col - 1);
+    iupAttribSetIntId(ih, "_IUPQT_COLFIT", col, table->columnWidth(col - 1));
+  }
+}
+
+static void qtTableQueueAutoSize(Ihandle* ih)
+{
+  if (!ih->handle || !ih->data->user_resize || iupAttribGet(ih, "_IUPQT_AUTOSIZE_PENDING"))
+    return;
+
+  iupAttribSet(ih, "_IUPQT_AUTOSIZE_PENDING", "1");
+  QTimer::singleShot(0, [ih]() {
+    if (!iupObjectCheck(ih))
+      return;
+    iupAttribSet(ih, "_IUPQT_AUTOSIZE_PENDING", NULL);
+    qtTableAutoSizeColumns(ih);
+  });
+}
+
 static void qtTableReapplyAllColors(Ihandle* ih)
 {
   QTableWidget* table = qtTableGetWidget(ih);
@@ -1160,21 +1210,7 @@ static int qtTableMapMethod(Ihandle* ih)
       IupExitLoop();
   });
 
-  bool last_col_has_width = false;
-  {
-    char name[50];
-    int width = 0;
-
-    snprintf(name, sizeof(name), "RASTERWIDTH%d", num_col);
-    char* width_str = iupAttribGet(ih, name);
-    if (!width_str)
-    {
-      snprintf(name, sizeof(name), "WIDTH%d", num_col);
-      width_str = iupAttribGet(ih, name);
-    }
-
-    last_col_has_width = (width_str && iupStrToInt(width_str, &width) && width > 0);
-  }
+  bool last_col_has_width = qtTableColWidthAttrib(ih, num_col) > 0;
 
   {
     int header_height = hHeader->sizeHint().height();
@@ -1188,19 +1224,9 @@ static int qtTableMapMethod(Ihandle* ih)
   for (int col = 1; col <= num_col; col++)
   {
     int qt_col = col - 1;
-    char name[50];
-    char* width_str = NULL;
-    int width = 0;
+    int width = qtTableColWidthAttrib(ih, col);
 
-    snprintf(name, sizeof(name), "RASTERWIDTH%d", col);
-    width_str = iupAttribGet(ih, name);
-    if (!width_str)
-    {
-      snprintf(name, sizeof(name), "WIDTH%d", col);
-      width_str = iupAttribGet(ih, name);
-    }
-
-    if (width_str && iupStrToInt(width_str, &width) && width > 0)
+    if (width > 0)
     {
       table->setColumnWidth(qt_col, width);
 
@@ -1213,11 +1239,16 @@ static int qtTableMapMethod(Ihandle* ih)
     {
       hHeader->setSectionResizeMode(qt_col, QHeaderView::Stretch);
     }
+    else if (ih->data->user_resize)
+    {
+      hHeader->setSectionResizeMode(qt_col, QHeaderView::Interactive);
+    }
     else
     {
       hHeader->setSectionResizeMode(qt_col, QHeaderView::ResizeToContents);
     }
   }
+  qtTableQueueAutoSize(ih);
 
   char* sel_mode = iupAttribGetStr(ih, "SELECTIONMODE");
   if (sel_mode)
@@ -1352,6 +1383,7 @@ IUP_SDK_API void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
     table->setColumnCount(num_col);
     qtTableFollowEnd(ih, table, &follow, ih->data->num_lin + 1, 0, num_col + 1, 0);
   }
+  qtTableQueueAutoSize(ih);
 }
 
 IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
@@ -1369,6 +1401,7 @@ IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
     table->setRowCount(num_lin);
     qtTableFollowEnd(ih, table, &follow, num_lin + 1, 0, ih->data->num_col + 1, 0);
   }
+  qtTableQueueAutoSize(ih);
 }
 
 IUP_SDK_API void iupdrvTableAddCol(Ihandle* ih, int pos)
@@ -1389,6 +1422,7 @@ IUP_SDK_API void iupdrvTableAddCol(Ihandle* ih, int pos)
   table->insertColumn(pos - 1);
   ih->data->num_col++;
   qtTableFollowEnd(ih, table, &follow, ih->data->num_lin + 1, 0, pos, 1);
+  qtTableQueueAutoSize(ih);
 }
 
 IUP_SDK_API void iupdrvTableDelCol(Ihandle* ih, int pos)
@@ -1425,6 +1459,7 @@ IUP_SDK_API void iupdrvTableAddLin(Ihandle* ih, int pos)
   table->insertRow(pos - 1);
   ih->data->num_lin++;
   qtTableFollowEnd(ih, table, &follow, pos, 1, ih->data->num_col + 1, 0);
+  qtTableQueueAutoSize(ih);
 }
 
 IUP_SDK_API void iupdrvTableDelLin(Ihandle* ih, int pos)
@@ -1475,6 +1510,7 @@ IUP_SDK_API void iupdrvTableSetCellValue(Ihandle* ih, int lin, int col, const ch
 
     table->blockSignals(wasBlocked);
   }
+  qtTableQueueAutoSize(ih);
 }
 
 IUP_SDK_API char* iupdrvTableGetCellValue(Ihandle* ih, int lin, int col)
@@ -1545,6 +1581,7 @@ IUP_SDK_API void iupdrvTableSetCellImage(Ihandle* ih, int lin, int col, const ch
   }
   else
     item->setIcon(QIcon());
+  qtTableQueueAutoSize(ih);
 }
 
 /****************************************************************************
@@ -1564,6 +1601,7 @@ IUP_SDK_API void iupdrvTableSetColTitle(Ihandle* ih, int col, const char* title)
 
   QTableWidgetItem* headerItem = new QTableWidgetItem(title ? QString::fromUtf8(title) : QString());
   table->setHorizontalHeaderItem(qt_col, headerItem);
+  qtTableQueueAutoSize(ih);
 }
 
 IUP_SDK_API char* iupdrvTableGetColTitle(Ihandle* ih, int col)
@@ -1901,15 +1939,7 @@ static int qtTableSetUserResizeAttrib(Ihandle* ih, const char* value)
   if (!table)
     return 0;
 
-  bool last_col_has_width = false;
-  {
-    char name[50];
-    int w = 0;
-    snprintf(name, sizeof(name), "RASTERWIDTH%d", ih->data->num_col);
-    char* ws = iupAttribGet(ih, name);
-    if (!ws) { snprintf(name, sizeof(name), "WIDTH%d", ih->data->num_col); ws = iupAttribGet(ih, name); }
-    last_col_has_width = (ws && iupStrToInt(ws, &w) && w > 0);
-  }
+  bool last_col_has_width = qtTableColWidthAttrib(ih, ih->data->num_col) > 0;
   bool stretch_last = (ih->data->stretch_last && !last_col_has_width);
 
   QHeaderView* hHeader = table->horizontalHeader();
@@ -1933,6 +1963,7 @@ static int qtTableSetUserResizeAttrib(Ihandle* ih, const char* value)
       hHeader->setSectionResizeMode(col, QHeaderView::ResizeToContents);
     }
   }
+  qtTableQueueAutoSize(ih);
 
   return 0; /* do not store in hash table */
 }
