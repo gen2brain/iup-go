@@ -557,10 +557,14 @@ static void cocoaTableApplyCellColors(Ihandle* ih, NSTableCellView* cellView, in
   NSTextField* textField = cellView.textField;
 
   IupCocoaTableCellView* iupCellView = (IupCocoaTableCellView*)cellView;
+  int cells_selected = iupTableCellsIsSelected(ih, lin, col);
+  if (cells_selected)
+    isSelected = NO;
+
   if (!isSelected)
   {
     /* Background color - hierarchy: L:C > :C > L:0 */
-    char* bgcolor = iupAttribGetId2(ih, "BGCOLOR", lin, col);
+    char* bgcolor = cells_selected ? iupTableCellsBgColor() : iupAttribGetId2(ih, "BGCOLOR", lin, col);
     if (!bgcolor)
       bgcolor = iupAttribGetId2(ih, "BGCOLOR", 0, col);
 
@@ -589,7 +593,7 @@ static void cocoaTableApplyCellColors(Ihandle* ih, NSTableCellView* cellView, in
   [iupCellView setNeedsDisplay:YES];
 
   /* Foreground color - hierarchy: L:C > :C > L:0 */
-  char* fgcolor = iupAttribGetId2(ih, "FGCOLOR", lin, col);
+  char* fgcolor = cells_selected ? iupTableCellsFgColor() : iupAttribGetId2(ih, "FGCOLOR", lin, col);
   if (!fgcolor)
     fgcolor = iupAttribGetId2(ih, "FGCOLOR", 0, col);
   if (!fgcolor)
@@ -727,9 +731,22 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
 /* Custom Table View                                                        */
 /* ========================================================================= */
 
+static void cocoaTableBeginEdit(NSTableView* tableView, NSInteger col, NSInteger row, NSEvent* event)
+{
+#ifdef GNUSTEP
+  NSTableCellView* cellView = [tableView viewAtColumn:col row:row makeIfNecessary:NO];
+  [cellView.textField setEditable:YES];
+  [[tableView window] makeFirstResponder:cellView.textField];
+  (void)event;
+#else
+  [tableView editColumn:col row:row withEvent:event select:YES];
+#endif
+}
+
 @interface IupCocoaTableView : NSTableView
 {
   Ihandle* ih;
+  BOOL cells_tracking;
 }
 - (id)initWithIhandle:(Ihandle*)ihandle;
 @end
@@ -807,10 +824,97 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
   }
 }
 
+- (void)cellsFocusLin:(int)lin col:(int)col
+{
+  IcocoaTableData* table_data = ICOCOA_TABLE_DATA(ih);
+  int old_row = table_data->current_row;
+  int old_col = table_data->current_col;
+
+  if (lin < 1 || lin > ih->data->num_lin || col < 1 || col > ih->data->num_col)
+    return;
+
+  table_data->current_row = lin;
+  table_data->current_col = col;
+  [self scrollRowToVisible:lin - 1];
+  [self scrollColumnToVisible:col - 1];
+  iupTableCellsCollapse(ih);
+
+  if (old_row != lin || old_col != col)
+  {
+    IFnii enteritem_cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
+    if (enteritem_cb)
+      enteritem_cb(ih, lin, col);
+  }
+}
+
 - (void)mouseDown:(NSEvent*)event
 {
-  [self trackPressAtPoint:[self convertPoint:[event locationInWindow] fromView:nil]];
+  NSPoint point = [self convertPoint:[event locationInWindow] fromView:nil];
+
+  if (iupTableCellsMode(ih))
+  {
+    NSInteger clickedCol = [self columnAtPoint:point];
+    NSInteger clickedRow = [self rowAtPoint:point];
+
+    if (clickedRow < 0 || clickedCol < 0)
+    {
+      [super mouseDown:event];
+      return;
+    }
+
+    [[self window] makeFirstResponder:self];
+
+    if ([event modifierFlags] & NSEventModifierFlagShift)
+    {
+      iupTableCellsExtendTo(ih, (int)clickedRow + 1, (int)clickedCol + 1);
+      return;
+    }
+
+    [self cellsFocusLin:(int)clickedRow + 1 col:(int)clickedCol + 1];
+
+    IFniis click_cb = (IFniis)IupGetCallback(ih, "CLICK_CB");
+    if (click_cb)
+    {
+      char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
+      iupcocoaButtonKeySetStatus(event, status);
+      click_cb(ih, (int)clickedRow + 1, (int)clickedCol + 1, status);
+    }
+
+    cells_tracking = YES;
+    return;
+  }
+
+#ifdef GNUSTEP
+  [[self window] makeFirstResponder:self];
+#endif
+  [self trackPressAtPoint:point];
   [super mouseDown:event];
+}
+
+- (void)mouseDragged:(NSEvent*)event
+{
+  if (!cells_tracking)
+  {
+    [super mouseDragged:event];
+    return;
+  }
+
+  NSPoint point = [self convertPoint:[event locationInWindow] fromView:nil];
+  NSInteger col = [self columnAtPoint:point];
+  NSInteger row = [self rowAtPoint:point];
+  if (row >= 0 && col >= 0)
+    iupTableCellsExtendTo(ih, (int)row + 1, (int)col + 1);
+}
+
+- (void)mouseUp:(NSEvent*)event
+{
+  if (!cells_tracking)
+  {
+    [super mouseUp:event];
+    return;
+  }
+
+  cells_tracking = NO;
 }
 
 - (void)rightMouseDown:(NSEvent*)event
@@ -821,9 +925,19 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
 
   if (clickedRow >= 0 && clickedCol >= 0)
   {
-    [self trackPressAtPoint:point];
-    if (!iupStrEqualNoCase(iupAttribGetStr(ih, "SELECTIONMODE"), "NONE"))
-      [self selectRowIndexes:[NSIndexSet indexSetWithIndex:clickedRow] byExtendingSelection:NO];
+    if (iupTableCellsMode(ih))
+    {
+      [[self window] makeFirstResponder:self];
+      iupAttribSet(ih, "_IUPTABLE_CELLS_KEEP", "1");
+      [self cellsFocusLin:(int)clickedRow + 1 col:(int)clickedCol + 1];
+      iupAttribSet(ih, "_IUPTABLE_CELLS_KEEP", NULL);
+    }
+    else
+    {
+      [self trackPressAtPoint:point];
+      if (!iupStrEqualNoCase(iupAttribGetStr(ih, "SELECTIONMODE"), "NONE"))
+        [self selectRowIndexes:[NSIndexSet indexSetWithIndex:clickedRow] byExtendingSelection:NO];
+    }
 
     IFnii cb = (IFnii)IupGetCallback(ih, "RIGHTCLICK_CB");
     if (cb)
@@ -875,9 +989,10 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
 
   if ((modifiers & NSEventModifierFlagCommand) && (ch == 'c' || ch == 'C'))
   {
-    IcocoaTableData* table_data = ICOCOA_TABLE_DATA(ih);
-    NSInteger selectedRow = [self selectedRow];
-    int selectedColumn = (table_data && table_data->current_col > 0) ? table_data->current_col - 1 : 0;
+    int focus_lin, focus_col;
+    iupdrvTableGetFocusCell(ih, &focus_lin, &focus_col);
+    NSInteger selectedRow = focus_lin - 1;
+    int selectedColumn = focus_col - 1;
 
     if (selectedRow >= 0 && selectedColumn >= 0)
     {
@@ -891,9 +1006,10 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
 
   if ((modifiers & NSEventModifierFlagCommand) && (ch == 'v' || ch == 'V'))
   {
-    IcocoaTableData* table_data = ICOCOA_TABLE_DATA(ih);
-    NSInteger selectedRow = [self selectedRow];
-    int selectedColumn = (table_data && table_data->current_col > 0) ? table_data->current_col - 1 : 0;
+    int focus_lin, focus_col;
+    iupdrvTableGetFocusCell(ih, &focus_lin, &focus_col);
+    NSInteger selectedRow = focus_lin - 1;
+    int selectedColumn = focus_col - 1;
 
     if (selectedRow >= 0 && selectedColumn >= 0)
     {
@@ -955,9 +1071,9 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
 
   if (ch == NSCarriageReturnCharacter || ch == NSEnterCharacter)
   {
-    IcocoaTableData* table_data = ICOCOA_TABLE_DATA(ih);
-    NSInteger selectedRow = [self selectedRow];
-    int col_1based = (table_data && table_data->current_col > 0) ? table_data->current_col : 1;
+    int focus_lin, col_1based;
+    iupdrvTableGetFocusCell(ih, &focus_lin, &col_1based);
+    NSInteger selectedRow = focus_lin - 1;
     NSInteger selectedColumn = col_1based - 1;
 
     if (selectedRow >= 0 && selectedColumn >= 0)
@@ -981,11 +1097,38 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
           objc_setAssociatedObject(self, &kEditEndedKey, @(NO), OBJC_ASSOCIATION_RETAIN);
           objc_setAssociatedObject(self, &kEditBeginCalledKey, @(YES), OBJC_ASSOCIATION_RETAIN);
 
-          [self editColumn:selectedColumn row:selectedRow withEvent:event select:YES];
+          cocoaTableBeginEdit(self, selectedColumn, selectedRow, event);
         }
       }
     }
     return;
+  }
+
+  if (table_data && iupTableCellsMode(ih))
+  {
+    NSEventModifierFlags mods = [event modifierFlags];
+    int dlin = 0, dcol = 0;
+
+    if (ch == NSUpArrowFunctionKey) dlin = -1;
+    else if (ch == NSDownArrowFunctionKey) dlin = 1;
+    else if (ch == NSLeftArrowFunctionKey) dcol = -1;
+    else if (ch == NSRightArrowFunctionKey) dcol = 1;
+
+    if ((dlin || dcol) && (mods & NSEventModifierFlagShift))
+    {
+      iupTableCellsExtendBy(ih, dlin, dcol);
+      return;
+    }
+    if (dlin || dcol)
+    {
+      [self cellsFocusLin:table_data->current_row + dlin col:table_data->current_col + dcol];
+      return;
+    }
+    if ((ch == 'a' || ch == 'A') && (mods & NSEventModifierFlagCommand))
+    {
+      iupTableCellsSelectAll(ih);
+      return;
+    }
   }
 
   if (table_data)
@@ -1501,6 +1644,18 @@ static void cocoaTableMoveColumn(Ihandle* ih, NSTableView* tableView, int from_c
 - (id)initWithIhandle:(Ihandle*)ihandle;
 @end
 
+static NSInteger cocoaTableRowOfField(Ihandle* ih, NSTableView* tableView, NSView* field, NSInteger* col)
+{
+  NSView* cellView = [field superview];
+  if (![cellView isKindOfClass:[IupCocoaTableCellView class]] || [(IupCocoaTableCellView*)cellView ih] != ih)
+  {
+    *col = -1;
+    return -1;
+  }
+  *col = [tableView columnForView:cellView];
+  return [tableView rowForView:cellView];
+}
+
 @implementation IupCocoaTableDelegate
 
 - (id)initWithIhandle:(Ihandle*)ihandle
@@ -1628,7 +1783,12 @@ static void cocoaTableMoveColumn(Ihandle* ih, NSTableView* tableView, int from_c
     [[cellView imageView] setHidden:YES];
   }
 
+#ifdef GNUSTEP
+  /* an editable NSTextField swallows clicks on GNUstep, it is enabled only while editing */
+  [cellView.textField setEditable:NO];
+#else
   [cellView.textField setEditable:cocoaTableIsCellEditable(ih, col_1based)];
+#endif
 
   /* Set delegate every time due to cell reuse */
   [cellView.textField setDelegate:self];
@@ -1733,7 +1893,7 @@ static void cocoaTableMoveColumn(Ihandle* ih, NSTableView* tableView, int from_c
 {
   (void)tableView;
   (void)row;
-  return iupStrEqualNoCase(iupAttribGetStr(ih, "SELECTIONMODE"), "NONE") ? NO : YES;
+  return (iupStrEqualNoCase(iupAttribGetStr(ih, "SELECTIONMODE"), "NONE") || iupTableCellsMode(ih)) ? NO : YES;
 }
 
 - (void)tableViewSelectionDidChange:(NSNotification*)notification
@@ -1881,7 +2041,7 @@ static void cocoaTableMoveColumn(Ihandle* ih, NSTableView* tableView, int from_c
       objc_setAssociatedObject(tableView, &kEditEndedKey, @(NO), OBJC_ASSOCIATION_RETAIN);
       objc_setAssociatedObject(tableView, &kEditBeginCalledKey, @(YES), OBJC_ASSOCIATION_RETAIN);
 
-      [tableView editColumn:clickedCol row:clickedRow withEvent:nil select:YES];
+      cocoaTableBeginEdit(tableView, clickedCol, clickedRow, nil);
     }
   }
 }
@@ -1894,8 +2054,8 @@ static void cocoaTableMoveColumn(Ihandle* ih, NSTableView* tableView, int from_c
   if (existingRow)
       return YES;
 
-  NSInteger row = [tableView rowForView:control];
-  NSInteger col = [tableView columnForView:control];
+  NSInteger col;
+  NSInteger row = cocoaTableRowOfField(ih, tableView, control, &col);
 
   if (row < 0 || col < 0) {
       IcocoaTableData* table_data = ICOCOA_TABLE_DATA(ih);
@@ -1932,21 +2092,27 @@ static void cocoaTableMoveColumn(Ihandle* ih, NSTableView* tableView, int from_c
 
 - (BOOL)control:(NSControl*)control textView:(NSTextView*)textView doCommandBySelector:(SEL)commandSelector
 {
-  if (commandSelector == @selector(cancelOperation:))
+#ifdef GNUSTEP
+  /* GNUstep binds Escape to complete: */
+  if (sel_isEqual(commandSelector, @selector(complete:)))
+    commandSelector = @selector(cancelOperation:);
+#endif
+  if (sel_isEqual(commandSelector, @selector(cancelOperation:)))
   {
     NSTableView* tableView = cocoaTableGetTableView(ih);
     NSTextField* textField = (NSTextField*)control;
+    NSNumber* nRow = objc_getAssociatedObject(tableView, &kEditingRowKey);
+    NSNumber* nCol = objc_getAssociatedObject(tableView, &kEditingColKey);
+    NSInteger row, col;
 
-    NSInteger row = [tableView rowForView:textField];
-    NSInteger col = [tableView columnForView:textField];
-
-    if (row < 0 || col < 0) {
-      NSNumber* nRow = objc_getAssociatedObject(tableView, &kEditingRowKey);
-      NSNumber* nCol = objc_getAssociatedObject(tableView, &kEditingColKey);
-      if (nRow && nCol) {
-        row = [nRow integerValue];
-        col = [nCol integerValue];
-      }
+    if (nRow && nCol)
+    {
+      row = [nRow integerValue];
+      col = [nCol integerValue];
+    }
+    else
+    {
+      row = cocoaTableRowOfField(ih, tableView, textField, &col);
     }
 
     if (row >= 0 && col >= 0)
@@ -1976,7 +2142,13 @@ static void cocoaTableMoveColumn(Ihandle* ih, NSTableView* tableView, int from_c
       if (original) [textField setStringValue:original];
     }
 
+#ifdef GNUSTEP
+    [textField abortEditing];
+    [[tableView window] makeFirstResponder:tableView];
+    return YES;
+#else
     return NO;
+#endif
   }
 
   return NO;
@@ -1987,8 +2159,8 @@ static void cocoaTableMoveColumn(Ihandle* ih, NSTableView* tableView, int from_c
   NSTableView* tableView = cocoaTableGetTableView(ih);
 
   NSTextField* textField = [notification object];
-  NSInteger row = [tableView rowForView:textField];
-  NSInteger col = [tableView columnForView:textField];
+  NSInteger col;
+  NSInteger row = cocoaTableRowOfField(ih, tableView, textField, &col);
   if (row < 0 || col < 0)
     return;
 
@@ -2015,9 +2187,14 @@ static void cocoaTableMoveColumn(Ihandle* ih, NSTableView* tableView, int from_c
 {
   NSTableView* tableView = cocoaTableGetTableView(ih);
   NSTextField* textField = [notification object];
+#ifdef GNUSTEP
+  [textField setEditable:NO];
+  [textField setSelectable:NO];
+  [[tableView window] performSelector:@selector(makeFirstResponder:) withObject:tableView afterDelay:0];
+#endif
 
-  NSInteger row = [tableView rowForView:textField];
-  NSInteger col = [tableView columnForView:textField];
+  NSInteger col;
+  NSInteger row = cocoaTableRowOfField(ih, tableView, textField, &col);
   if (row < 0 || col < 0)
   {
     NSNumber* editBeginCalled = objc_getAssociatedObject(tableView, &kEditBeginCalledKey);
@@ -2761,8 +2938,10 @@ IUP_SDK_API void iupdrvTableSetFocusCell(Ihandle* ih, int lin, int col)
 
   [tableView scrollRowToVisible:row];
   [tableView scrollColumnToVisible:column];
-  if (!iupStrEqualNoCase(iupAttribGetStr(ih, "SELECTIONMODE"), "NONE"))
+  if (!iupStrEqualNoCase(iupAttribGetStr(ih, "SELECTIONMODE"), "NONE") && !iupTableCellsMode(ih))
     [tableView selectRowIndexes:[NSIndexSet indexSetWithIndex:row] byExtendingSelection:NO];
+  else
+    iupdrvTableUpdateCellStyle(ih, 0, 0);
 }
 
 IUP_SDK_API void iupdrvTableGetFocusCell(Ihandle* ih, int* lin, int* col)
@@ -3219,6 +3398,7 @@ static void cocoaTableUnMapMethod(Ihandle* ih)
     NSTableView* tableView = [scroll_view documentView];
     if (tableView)
     {
+      [tableView abortEditing];
       [tableView setTarget:nil];
       [tableView setDataSource:nil];
       [tableView setDelegate:nil];

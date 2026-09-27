@@ -353,6 +353,8 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 		setNodeRemovedFunc(ih, fn.(NodeRemovedFunc))
 	case "MULTISELECTION_CB":
 		setMultiSelectionFunc(ih, fn.(MultiSelectionFunc))
+	case "CELLSELECTION_CB":
+		setCellSelectionFunc(ih, fn.(CellSelectionFunc))
 	case "MULTIUNSELECTION_CB":
 		setMultiUnselectionFunc(ih, fn.(MultiUnselectionFunc))
 	case "MENUOPEN_CB":

@@ -542,8 +542,28 @@ IUP_SDK_API void iupdrvTableUpdateCellStyle(Ihandle* ih, int lin, int col)
 {
   if (lin == 0 && col == 0)
   {
+    int lin1, col1, lin2, col2;
+    unsigned char r, g, b;
+    jint bg = 0, fg = 0;
+    JNIEnv* env;
+    jclass cls;
+    jmethodID m;
+
     androidTableSetBgColorAttrib(ih, iupAttribGetStr(ih, "BGCOLOR"));
     androidTableSetFgColorAttrib(ih, iupAttribGetStr(ih, "FGCOLOR"));
+
+    iupTableCellsGetRange(ih, &lin1, &col1, &lin2, &col2);
+    if (iupStrToRGB(iupTableCellsBgColor(), &r, &g, &b))
+      bg = (jint)(0xFF000000u | ((unsigned)r << 16) | ((unsigned)g << 8) | b);
+    if (iupStrToRGB(iupTableCellsFgColor(), &r, &g, &b))
+      fg = (jint)(0xFF000000u | ((unsigned)r << 16) | ((unsigned)g << 8) | b);
+
+    env = iupAndroid_GetEnvThreadSafe();
+    cls = androidTableFindClass(env);
+    m = (*env)->GetStaticMethodID(env, cls, "setCellRange", "(Landroid/view/View;IIIIII)V");
+    (*env)->CallStaticVoidMethod(env, cls, m, ih->handle, (jint)lin1, (jint)col1, (jint)lin2, (jint)col2, bg, fg);
+    iupAndroid_CheckException(env, "IupTableHelper.setCellRange");
+    (*env)->DeleteLocalRef(env, cls);
     return;
   }
 
@@ -618,6 +638,16 @@ int iupAndroidTableReorder(Ihandle* ih, int from_col, int to_col)
 
   iupTableMoveColAttribs(ih, from_col, to_col);
   return 1;
+}
+
+void iupAndroidTableCellsCollapse(Ihandle* ih)
+{
+  iupTableCellsCollapse(ih);
+}
+
+void iupAndroidTableCellsExtendTo(Ihandle* ih, int lin, int col)
+{
+  iupTableCellsExtendTo(ih, lin, col);
 }
 
 void iupAndroidTableSortOrder(Ihandle* ih, const int* order, int count)

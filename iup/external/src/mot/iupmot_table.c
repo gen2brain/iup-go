@@ -498,6 +498,15 @@ static void motTableRowDragMotion(Widget w, XtPointer client_data, XEvent* event
   (void)w;
   (void)cont;
 
+  if (mot_data && iupTableCellsMode(ih))
+  {
+    int lin, col;
+    motTablePixelToCell(ih, motion->x, motion->y, &lin, &col);
+    if (lin > 0 && col > 0)
+      iupTableCellsExtendTo(ih, lin, col);
+    return;
+  }
+
   if (!mot_data || mot_data->drag_source_row < 1 || !ih->data->show_dragdrop)
     return;
 
@@ -706,6 +715,10 @@ static void motTableDrawCell(Ihandle* ih, int lin, int col, int is_header)
     }
   }
 
+  int cells_selected = !is_header && iupTableCellsIsSelected(ih, lin, col);
+  if (cells_selected)
+    bgcolor = iupTableCellsBgColor();
+
   if (is_focused_row)
     cell_bg = mot_data->select_bg_pixel;
   else if (is_header)
@@ -741,6 +754,8 @@ static void motTableDrawCell(Ihandle* ih, int lin, int col, int is_header)
         fgcolor = iupAttribGetId2(ih, "FGCOLOR", 0, col);
       if (!fgcolor)
         fgcolor = iupAttribGetId2(ih, "FGCOLOR", lin, 0);
+      if (cells_selected)
+        fgcolor = iupTableCellsFgColor();
     }
 
     motTableGetCellFont(ih, is_header ? 0 : lin, col, &font);
@@ -1150,13 +1165,8 @@ static void motTableEndCellEdit(Ihandle* ih, int apply)
   if (editend_cb)
   {
     int ret = editend_cb(ih, lin, col, text, apply ? 1 : 0);
-    if (ret == IUP_IGNORE && apply)
-    {
-      XtFree(text);
-      XmProcessTraversal(mot_data->edit_text, XmTRAVERSE_CURRENT);
-      XmTextSetSelection(mot_data->edit_text, 0, XmTextGetLastPosition(mot_data->edit_text), CurrentTime);
-      return;
-    }
+    if (ret == IUP_IGNORE)
+      apply = 0;
   }
 
   if (apply)
@@ -1291,15 +1301,25 @@ static void motTableInputCallback(Widget w, XtPointer client_data, XtPointer cal
     }
     else if (lin > 0 && col > 0)
     {
+      if (iupTableCellsMode(ih) && button_event->button == Button1 && (button_event->state & ShiftMask))
+      {
+        iupTableCellsExtendTo(ih, lin, col);
+        return;
+      }
+
       if (mot_data->edit_lin != 0)
         motTableEndCellEdit(ih, 1);
 
       mot_data->current_row = lin;
       mot_data->current_col = col;
+      if (button_event->button == Button3)
+        iupAttribSet(ih, "_IUPTABLE_CELLS_KEEP", "1");
+      iupTableCellsCollapse(ih);
+      iupAttribSet(ih, "_IUPTABLE_CELLS_KEEP", NULL);
 
       char* selmode = iupAttribGetStr(ih, "SELECTIONMODE");
 
-      if (!iupStrEqualNoCase(selmode, "NONE"))
+      if (!iupStrEqualNoCase(selmode, "NONE") && !iupTableCellsMode(ih))
       {
         if (iupStrEqualNoCase(selmode, "MULTIPLE") && (button_event->state & ShiftMask) && mot_data->anchor_row > 0)
           motTableSelectRange(ih, mot_data->anchor_row, lin);
@@ -1429,9 +1449,33 @@ static void motTableKeyPressCallback(Widget w, XtPointer client_data, XEvent* ev
     return;
   }
 
+  if (iupTableCellsMode(ih))
+  {
+    unsigned int state = ((XKeyEvent*)event)->state;
+    if (state & ShiftMask)
+    {
+      int dlin = 0, dcol = 0;
+      if (keysym == XK_Up) dlin = -1;
+      else if (keysym == XK_Down) dlin = 1;
+      else if (keysym == XK_Left) dcol = -1;
+      else if (keysym == XK_Right) dcol = 1;
+      if (dlin || dcol)
+      {
+        iupTableCellsExtendBy(ih, dlin, dcol);
+        return;
+      }
+    }
+    else if ((keysym == XK_a || keysym == XK_A) && (state & ControlMask))
+    {
+      iupTableCellsSelectAll(ih);
+      return;
+    }
+  }
+
   if (keysym == XK_Up && mot_data->current_row > 1)
   {
     mot_data->current_row--;
+    iupTableCellsCollapse(ih);
     redraw = 1;
 
     IFnii enteritem_cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
@@ -1441,6 +1485,7 @@ static void motTableKeyPressCallback(Widget w, XtPointer client_data, XEvent* ev
   else if (keysym == XK_Down && mot_data->current_row < ih->data->num_lin)
   {
     mot_data->current_row++;
+    iupTableCellsCollapse(ih);
     redraw = 1;
 
     IFnii enteritem_cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
@@ -1450,6 +1495,7 @@ static void motTableKeyPressCallback(Widget w, XtPointer client_data, XEvent* ev
   else if (keysym == XK_Left && mot_data->current_col > 1)
   {
     mot_data->current_col--;
+    iupTableCellsCollapse(ih);
     redraw = 1;
 
     IFnii enteritem_cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
@@ -1459,6 +1505,7 @@ static void motTableKeyPressCallback(Widget w, XtPointer client_data, XEvent* ev
   else if (keysym == XK_Right && mot_data->current_col < ih->data->num_col)
   {
     mot_data->current_col++;
+    iupTableCellsCollapse(ih);
     redraw = 1;
 
     IFnii enteritem_cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
@@ -1543,7 +1590,7 @@ static void motTableKeyPressCallback(Widget w, XtPointer client_data, XEvent* ev
 
   if (redraw)
   {
-    if (!iupStrEqualNoCase(iupAttribGetStr(ih, "SELECTIONMODE"), "NONE"))
+    if (!iupStrEqualNoCase(iupAttribGetStr(ih, "SELECTIONMODE"), "NONE") && !iupTableCellsMode(ih))
     {
       motTableSelectRow(ih, mot_data->current_row, 1, 1);
       mot_data->anchor_row = mot_data->current_row;
@@ -2470,7 +2517,7 @@ IUP_SDK_API void iupdrvTableSetFocusCell(Ihandle* ih, int lin, int col)
   mot_data->current_row = lin;
   mot_data->current_col = col;
 
-  if (!iupStrEqualNoCase(iupAttribGetStr(ih, "SELECTIONMODE"), "NONE"))
+  if (!iupStrEqualNoCase(iupAttribGetStr(ih, "SELECTIONMODE"), "NONE") && !iupTableCellsMode(ih))
   {
     motTableSelectRow(ih, lin, 1, 1);
     mot_data->anchor_row = lin;

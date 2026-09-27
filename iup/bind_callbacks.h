@@ -551,6 +551,11 @@ static void goIupSetTableRightClickFunc(Ihandle *ih) {
 	IupSetCallback(ih, "RIGHTCLICK_CB", (Icallback) goIupTableRightClickCB);
 }
 
+CGO_EXPORT extern int goIupCellSelectionCB(void *, int lin1, int col1, int lin2, int col2);
+static void goIupSetCellSelectionFunc(Ihandle *ih) {
+	IupSetCallback(ih, "CELLSELECTION_CB", (Icallback) goIupCellSelectionCB);
+}
+
 CGO_EXPORT extern int goIupTableValueChangedCB(void *, int lin, int col);
 static void goIupSetTableValueChangedFunc(Ihandle *ih) {
 	IupSetCallback(ih, "VALUECHANGED_CB", (Icallback) goIupTableValueChangedCB);

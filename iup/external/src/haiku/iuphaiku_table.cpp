@@ -166,10 +166,12 @@ public:
   {
     SetColor(B_COLOR_BACKGROUND, iuphaikuColor(B_LIST_BACKGROUND_COLOR));
     SetColor(B_COLOR_TEXT, iuphaikuColor(B_LIST_ITEM_TEXT_COLOR));
-    SetColor(B_COLOR_ROW_DIVIDER, GridLineColor());
-    SetColor(B_COLOR_SELECTION, iuphaikuColor(B_LIST_SELECTED_BACKGROUND_COLOR));
+    bool cells_mode = fIhandle && iupTableCellsMode(fIhandle);
+    SetColor(B_COLOR_ROW_DIVIDER, cells_mode ? iuphaikuColor(B_LIST_BACKGROUND_COLOR) : GridLineColor());
+    rgb_color selection = iuphaikuColor(cells_mode ? B_LIST_BACKGROUND_COLOR : B_LIST_SELECTED_BACKGROUND_COLOR);
+    SetColor(B_COLOR_SELECTION, selection);
     SetColor(B_COLOR_SELECTION_TEXT, iuphaikuColor(B_LIST_SELECTED_ITEM_TEXT_COLOR));
-    SetColor(B_COLOR_NON_FOCUS_SELECTION, iuphaikuColor(B_LIST_SELECTED_BACKGROUND_COLOR));
+    SetColor(B_COLOR_NON_FOCUS_SELECTION, selection);
     SetColor(B_COLOR_HEADER_BACKGROUND, iuphaikuColor(B_CONTROL_BACKGROUND_COLOR));
     SetColor(B_COLOR_HEADER_TEXT, iuphaikuColor(B_PANEL_TEXT_COLOR));
     SetViewColor(iuphaikuColor(B_PANEL_BACKGROUND_COLOR));
@@ -225,6 +227,8 @@ public:
     int lin = IndexOf(row);
     if (lin < 0) return;
 
+    iupTableCellsCollapse(fIhandle);
+
     IFnii cb = (IFnii)IupGetCallback(fIhandle, "ENTERITEM_CB");
     if (cb) cb(fIhandle, lin + 1, fFocusCol);
   }
@@ -271,6 +275,23 @@ protected:
       if (ret == IUP_IGNORE) return;
     }
 
+    if (iupTableCellsMode(fIhandle))
+    {
+      if (mods & B_SHIFT_KEY)
+      {
+        int dlin = 0, dcol = 0;
+        if (bytes[0] == B_UP_ARROW) dlin = -1;
+        else if (bytes[0] == B_DOWN_ARROW) dlin = 1;
+        else if (bytes[0] == B_LEFT_ARROW) dcol = -1;
+        else if (bytes[0] == B_RIGHT_ARROW) dcol = 1;
+        if (dlin || dcol)
+        {
+          iupTableCellsExtendBy(fIhandle, dlin, dcol);
+          return;
+        }
+      }
+    }
+
     if (bytes[0] == B_LEFT_ARROW || bytes[0] == B_RIGHT_ARROW)
     {
       int nc = (int)CountColumns();
@@ -279,6 +300,7 @@ protected:
       if (new_col >= 1 && new_col <= nc)
       {
         fFocusCol = new_col;
+        iupTableCellsCollapse(fIhandle);
         BRow* r = FocusRow();
         if (r)
         {
@@ -347,6 +369,10 @@ protected:
           char* val = iupdrvTableGetCellValue(fIhandle, lin, fFocusCol);
           if (val) IupSetGlobal("CLIPBOARD", val);
         }
+        return;
+
+      case B_SELECT_ALL:
+        iupTableCellsSelectAll(fIhandle);
         return;
 
       case B_CUT:
@@ -499,6 +525,7 @@ public:
     float trail_left = of.left + total_w;
     BRow* focus = FocusRow();
     if (!focus) focus = CurrentSelection();
+    bool cells_mode = iupTableCellsMode(fIhandle);
 
     int n = (int)CountRows(NULL);
     float line = -scroll_y;
@@ -511,7 +538,7 @@ public:
       float row_bot = of.top + line + rh;
       if (row_top > of.bottom) break;
 
-      if (trail_left < of.right && row_bot >= of.top && !row->IsSelected())
+      if (trail_left < of.right && row_bot >= of.top && (!row->IsSelected() || cells_mode))
       {
         rgb_color bg = base;
         unsigned char r, g, b;
@@ -532,7 +559,7 @@ public:
       if (showgrid && row_bot >= of.top && row_bot <= of.bottom)
       {
         const BRow* next = (i + 1 < n) ? RowAt(i + 1, NULL) : NULL;
-        if (!next || next != focus)
+        if (!next || next != focus || cells_mode)
         {
           SetHighColor(divider);
           StrokeLine(BPoint(of.left, row_bot), BPoint(of.right, row_bot));
@@ -1032,6 +1059,32 @@ public:
   explicit IupHaikuTableSortFilter(IupHaikuTableView* tv)
     : BMessageFilter(B_ANY_DELIVERY, B_ANY_SOURCE), fTv(tv) {}
 
+  bool HitCell(BView* tgt, BPoint where, int* lin, int* col)
+  {
+    BPoint clv_pt = fTv->ConvertFromScreen(tgt->ConvertToScreen(where));
+    BColumn* c = fTv->ColumnAt(clv_pt);
+    BView* outline = fTv->ScrollView();
+    if (!c || !outline) return false;
+
+    BPoint ov_pt = outline->ConvertFromScreen(tgt->ConvertToScreen(where));
+    int nr = fTv->CountRows(NULL);
+    float y = 0.0f;
+    for (int i = 0; i < nr; i++)
+    {
+      const BRow* row = fTv->RowAt(i, NULL);
+      if (!row) continue;
+      float rh = row->Height();
+      if (ov_pt.y >= y && ov_pt.y <= y + rh)
+      {
+        *lin = i + 1;
+        *col = (int)c->LogicalFieldNum() + 1;
+        return true;
+      }
+      y += rh + 1.0f;
+    }
+    return false;
+  }
+
   filter_result Filter(BMessage* msg, BHandler** target) override
   {
     if (!fTv || !target || !*target) return B_DISPATCH_MESSAGE;
@@ -1059,6 +1112,18 @@ public:
     if (msg->what == B_MOUSE_MOVED)
     {
       fTv->RepositionTrail();
+
+      int32 moved_buttons = 0;
+      msg->FindInt32("buttons", &moved_buttons);
+      if ((moved_buttons & B_PRIMARY_MOUSE_BUTTON) && iupTableCellsMode(fTv->GetIhandle()))
+      {
+        BPoint where;
+        int lin, col;
+        if (msg->FindPoint("be:view_where", &where) == B_OK && HitCell(tgt, where, &lin, &col))
+          iupTableCellsExtendTo(fTv->GetIhandle(), lin, col);
+        return B_SKIP_MESSAGE;
+      }
+
       if (fTv->GetIhandle()->data->show_dragdrop && fTv->DragSourceRow() >= 0)
       {
         BPoint where;
@@ -1139,6 +1204,18 @@ public:
       return B_DISPATCH_MESSAGE;
     }
 
+    int32 buttons = 0, mods = 0;
+    msg->FindInt32("buttons", &buttons);
+    msg->FindInt32("modifiers", &mods);
+
+    if (col && (buttons & B_PRIMARY_MOUSE_BUTTON) && (mods & B_SHIFT_KEY) && iupTableCellsMode(ih))
+    {
+      int lin, c;
+      if (HitCell(tgt, where, &lin, &c))
+        iupTableCellsExtendTo(ih, lin, c);
+      return B_SKIP_MESSAGE;
+    }
+
     if (col) fTv->SetFocusCol(col->LogicalFieldNum() + 1);
 
     BView* outline = fTv->ScrollView();
@@ -1166,9 +1243,6 @@ public:
 
       if (hit_lin > 0 && col)
       {
-        int32 buttons = 0;
-        msg->FindInt32("buttons", &buttons);
-
         if (buttons & B_SECONDARY_MOUSE_BUTTON)
         {
           bool select = !iupStrEqualNoCase(iupAttribGetStr(ih, "SELECTIONMODE"), "NONE");
@@ -1176,6 +1250,9 @@ public:
           if (select) fTv->DeselectAll();
           fTv->SetFocusRow(hit_lin - 1, select);
           iupAttribSet(ih, "_IUPTABLE_IGNORE_SELECTION_CB", NULL);
+          iupAttribSet(ih, "_IUPTABLE_CELLS_KEEP", "1");
+          iupTableCellsCollapse(ih);
+          iupAttribSet(ih, "_IUPTABLE_CELLS_KEEP", NULL);
           outline->Invalidate();
         }
 
@@ -1241,7 +1318,8 @@ public:
     if (tv && f && f->Row()) row = f->Row();
     else if (tv && parent->Parent()) row = tv->RowAt(BPoint(rect.left, rect.top + 1));
 
-    bool selected = row && row->IsSelected();
+    bool cells_mode = fIhandle && iupTableCellsMode(fIhandle);
+    bool selected = row && row->IsSelected() && !cells_mode;
     bool virt = tv && tv->IsVirtual() && fIhandle && row;
     if (virt) f = NULL;
     if (!virt && !f) { BTitledColumn::DrawField(field, rect, parent); return; }
@@ -1264,7 +1342,8 @@ public:
     {
       bool drew = false;
       unsigned char r, g, b;
-      const char* bg = fIhandle ? haikuTableLookupId2(fIhandle, "BGCOLOR", lin, col) : NULL;
+      bool cells_selected = cells_mode && iupTableCellsIsSelected(fIhandle, lin, col);
+      const char* bg = cells_selected ? iupTableCellsBgColor() : (fIhandle ? haikuTableLookupId2(fIhandle, "BGCOLOR", lin, col) : NULL);
       if (bg && iupStrToRGB(bg, &r, &g, &b))
       {
         rgb_color c = { r, g, b, 255 };
@@ -1311,7 +1390,7 @@ public:
     if (fIhandle)
     {
       unsigned char r, g, b;
-      const char* fg = haikuTableLookupId2(fIhandle, "FGCOLOR", lin, col);
+      const char* fg = (cells_mode && iupTableCellsIsSelected(fIhandle, lin, col)) ? iupTableCellsFgColor() : haikuTableLookupId2(fIhandle, "FGCOLOR", lin, col);
       if (fg && iupStrToRGB(fg, &r, &g, &b))
       {
         rgb_color c = { r, g, b, 255 };
@@ -2032,7 +2111,7 @@ extern "C" IUP_SDK_API void iupdrvTableSetFocusCell(Ihandle* ih, int lin, int co
   IupHaikuTableView* tv = haikuTableGetView(ih);
   if (!tv) return;
   LooperLockGuard guard(tv->Looper());
-  bool select = !iupStrEqualNoCase(iupAttribGetStr(ih, "SELECTIONMODE"), "NONE");
+  bool select = !iupStrEqualNoCase(iupAttribGetStr(ih, "SELECTIONMODE"), "NONE") && !iupTableCellsMode(ih);
   if (col > 0) tv->SetFocusCol(col);
   iupAttribSet(ih, "_IUPTABLE_IGNORE_SELECTION_CB", "1");
   if (select) tv->DeselectAll();
@@ -2333,6 +2412,7 @@ static int haikuTableSetSelectionModeAttrib(Ihandle* ih, const char* value)
   list_view_type t = iupStrEqualNoCase(value, "MULTIPLE")
                         ? B_MULTIPLE_SELECTION_LIST : B_SINGLE_SELECTION_LIST;
   tv->SetSelectionMode(t);
+  tv->ApplyColors();
   return 1;
 }
 

@@ -2073,6 +2073,14 @@
           var td = e.target.closest('td'); if (!td || td.dataset.lin === undefined) return;
           D('iupwasmTableCellClick', tcid, +td.dataset.lin, +td.dataset.col, mmods(e));
         });
+        ttable.addEventListener('mousedown', function (e) {
+          var td = e.target.closest('td'); if (e.button !== 0 || !td || td.dataset.lin === undefined) return;
+          D('iupwasmTableCellPress', tcid, +td.dataset.lin, +td.dataset.col, mmods(e));
+        });
+        ttable.addEventListener('mousemove', function (e) {
+          var td = e.target.closest('td'); if (!(e.buttons & 1) || !td || td.dataset.lin === undefined) return;
+          D('iupwasmTableCellDrag', tcid, +td.dataset.lin, +td.dataset.col);
+        });
         ttable.addEventListener('contextmenu', function (e) {
           var td = e.target.closest('td'); if (!td || td.dataset.lin === undefined) return;
           e.preventDefault();

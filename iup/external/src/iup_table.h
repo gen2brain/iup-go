@@ -33,6 +33,10 @@ struct _IcontrolData
   int fit_image;      /* default 1 */
   int show_dragdrop;  /* set before map only */
 
+  int cells_lin1, cells_col1;  /* the CELLS range, 0 = only the focus cell */
+  int cells_lin2, cells_col2;
+  int cells_last[4];           /* range last reported to CELLSELECTION_CB */
+
   void* native_data;
 };
 
@@ -46,6 +50,17 @@ char* iupTableGetCellImageCb(Ihandle* ih, int lin, int col);
 
 int iupTableCallDragDropCb(Ihandle* ih, int drag_id, int drop_id, int* is_ctrl);
 void iupTableCallMultiSelectionCb(Ihandle* ih);
+
+/* SELECTIONMODE=CELLS: the focus cell is the anchor, the driver reports the user's moves */
+int iupTableCellsMode(Ihandle* ih);
+int iupTableCellsIsSelected(Ihandle* ih, int lin, int col);
+void iupTableCellsGetRange(Ihandle* ih, int* lin1, int* col1, int* lin2, int* col2);
+void iupTableCellsCollapse(Ihandle* ih);                     /* the focus cell moved */
+void iupTableCellsExtendTo(Ihandle* ih, int lin, int col);   /* drag or shift+click */
+void iupTableCellsExtendBy(Ihandle* ih, int dlin, int dcol); /* shift+arrows */
+void iupTableCellsSelectAll(Ihandle* ih);
+char* iupTableCellsBgColor(void);
+char* iupTableCellsFgColor(void);
 void iupTableMoveLinAttribs(Ihandle* ih, int from_lin, int to_lin);
 void iupTableSortLinAttribs(Ihandle* ih, const int* order);
 void iupTableMoveColAttribs(Ihandle* ih, int from_col, int to_col);

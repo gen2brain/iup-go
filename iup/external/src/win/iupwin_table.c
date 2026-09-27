@@ -1042,7 +1042,7 @@ IUP_SDK_API void iupdrvTableSetFocusCell(Ihandle* ih, int lin, int col)
 
   data->suppress_callbacks = 1;
 
-  if (iupStrEqualNoCase(iupAttribGetStr(ih, "SELECTIONMODE"), "NONE"))
+  if (iupStrEqualNoCase(iupAttribGetStr(ih, "SELECTIONMODE"), "NONE") || iupTableCellsMode(ih))
   {
     ListView_SetItemState(list_view, lin - 1, LVIS_FOCUSED, LVIS_FOCUSED);
   }
@@ -1961,7 +1961,7 @@ static int winTableNotifyCallback(Ihandle* ih, void* msg_info, int* result)
       LPNMLISTVIEW pnmv = (LPNMLISTVIEW)msg_info;
 
       if ((pnmv->uChanged & LVIF_STATE) && (pnmv->uNewState & LVIS_SELECTED) && !(pnmv->uOldState & LVIS_SELECTED) &&
-          iupStrEqualNoCase(iupAttribGetStr(ih, "SELECTIONMODE"), "NONE"))
+          (iupStrEqualNoCase(iupAttribGetStr(ih, "SELECTIONMODE"), "NONE") || iupTableCellsMode(ih)))
       {
         *result = TRUE;
         return 1;
@@ -2007,6 +2007,8 @@ static int winTableNotifyCallback(Ihandle* ih, void* msg_info, int* result)
           winTableInvalidateCell(winTableGetListView(ih), lin, col);
         }
 
+        iupTableCellsCollapse(ih);
+
         char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
         iupwinButtonKeySetStatus(winTableGetKeyFlags(MK_LBUTTON), status, 0);
 
@@ -2036,6 +2038,10 @@ static int winTableNotifyCallback(Ihandle* ih, void* msg_info, int* result)
 
           winTableInvalidateCell(winTableGetListView(ih), lin, col);
         }
+
+        iupAttribSet(ih, "_IUPTABLE_CELLS_KEEP", "1");
+        iupTableCellsCollapse(ih);
+        iupAttribSet(ih, "_IUPTABLE_CELLS_KEEP", NULL);
 
         char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
         iupwinButtonKeySetStatus(winTableGetKeyFlags(MK_RBUTTON), status, 0);
@@ -2107,9 +2113,10 @@ static int winTableNotifyCallback(Ihandle* ih, void* msg_info, int* result)
 
           UINT itemState = ListView_GetItemState(data->list_view, lplvcd->nmcd.dwItemSpec, LVIS_SELECTED);
           int is_row_selected = (itemState & LVIS_SELECTED) != 0;
+          int cells_selected = iupTableCellsIsSelected(ih, lin, col);
 
           /* Background color: per-cell > per-column > per-row > alternating */
-          char* bgcolor = iupAttribGetId2(ih, "BGCOLOR", lin, col);
+          char* bgcolor = cells_selected ? iupTableCellsBgColor() : iupAttribGetId2(ih, "BGCOLOR", lin, col);
           if (!bgcolor)
             bgcolor = iupAttribGetId2(ih, "BGCOLOR", 0, col);
           if (!bgcolor)
@@ -2129,7 +2136,9 @@ static int winTableNotifyCallback(Ihandle* ih, void* msg_info, int* result)
 
           /* Foreground color: per-cell > per-column > per-row */
           char* fgcolor = NULL;
-          if (!is_row_selected)
+          if (cells_selected)
+            fgcolor = iupTableCellsFgColor();
+          else if (!is_row_selected)
           {
             fgcolor = iupAttribGetId2(ih, "FGCOLOR", lin, col);
             if (!fgcolor)
@@ -2476,13 +2485,8 @@ static void winTableEndEdit(Ihandle* ih, BOOL save)
   if (editend_cb)
   {
     int ret = editend_cb(ih, lin, col, buffer, save ? 1 : 0);
-    if (ret == IUP_IGNORE && save)
-    {
-      data->edit_ending = FALSE;
-      SetFocus(data->edit_control);
-      SendMessage(data->edit_control, EM_SETSEL, 0, -1);
-      return;
-    }
+    if (ret == IUP_IGNORE)
+      save = FALSE;
   }
 
   if (save)
@@ -2649,12 +2653,38 @@ static int winTableKeyProc(Ihandle* ih, HWND hwnd, UINT msg, WPARAM wp, LPARAM l
         iupStrEqualNoCase(iupAttribGetStr(ih, "SELECTIONMODE"), "MULTIPLE"))
       return 0;  /* the list view extends the selection itself */
 
+    if (iupTableCellsMode(ih))
+    {
+      if (GetKeyState(VK_SHIFT) & 0x8000)
+      {
+        int dlin = 0, dcol = 0;
+        switch (wp)
+        {
+          case VK_UP:    dlin = -1; break;
+          case VK_DOWN:  dlin = 1; break;
+          case VK_LEFT:  dcol = -1; break;
+          case VK_RIGHT: dcol = 1; break;
+        }
+        if (dlin || dcol)
+        {
+          iupTableCellsExtendBy(ih, dlin, dcol);
+          return 1;
+        }
+      }
+      else if (wp == 'A' && (GetKeyState(VK_CONTROL) & 0x8000))
+      {
+        iupTableCellsSelectAll(ih);
+        return 1;
+      }
+    }
+
     switch (wp)
     {
       case VK_UP:
         if (lin > 1)
         {
           iupdrvTableSetFocusCell(ih, lin - 1, col);
+          iupTableCellsCollapse(ih);
 
           IFnii enteritem_cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
           if (enteritem_cb)
@@ -2669,6 +2699,7 @@ static int winTableKeyProc(Ihandle* ih, HWND hwnd, UINT msg, WPARAM wp, LPARAM l
         if (lin < ih->data->num_lin)
         {
           iupdrvTableSetFocusCell(ih, lin + 1, col);
+          iupTableCellsCollapse(ih);
 
           IFnii enteritem_cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
           if (enteritem_cb)
@@ -2684,6 +2715,7 @@ static int winTableKeyProc(Ihandle* ih, HWND hwnd, UINT msg, WPARAM wp, LPARAM l
         if (col > 1)
         {
           iupdrvTableSetFocusCell(ih, lin, col - 1);
+          iupTableCellsCollapse(ih);
 
           IFnii enteritem_cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
           if (enteritem_cb)
@@ -2697,6 +2729,7 @@ static int winTableKeyProc(Ihandle* ih, HWND hwnd, UINT msg, WPARAM wp, LPARAM l
         if (col < ih->data->num_col)
         {
           iupdrvTableSetFocusCell(ih, lin, col + 1);
+          iupTableCellsCollapse(ih);
 
           IFnii enteritem_cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
           if (enteritem_cb)
@@ -2827,6 +2860,23 @@ static LRESULT CALLBACK winTableListViewWndProc(HWND hwnd, UINT msg, WPARAM wp, 
       else
         data->col_widths[col - 1] = ListView_GetColumnWidth(hwnd, col);
       return result;
+    }
+  }
+
+  if ((msg == WM_LBUTTONDOWN || msg == WM_MOUSEMOVE) && iupTableCellsMode(ih))
+  {
+    int shift_press = (msg == WM_LBUTTONDOWN) && (wp & MK_SHIFT);
+    int drag = (msg == WM_MOUSEMOVE) && (wp & MK_LBUTTON);
+
+    if (shift_press || drag)
+    {
+      LVHITTESTINFO ht;
+      ZeroMemory(&ht, sizeof(ht));
+      ht.pt.x = GET_X_LPARAM(lp);
+      ht.pt.y = GET_Y_LPARAM(lp);
+      if (ListView_SubItemHitTest(hwnd, &ht) >= 0 && ht.iItem >= 0 && ht.iSubItem > 0)
+        iupTableCellsExtendTo(ih, ht.iItem + 1, ht.iSubItem);
+      return 0;
     }
   }
 

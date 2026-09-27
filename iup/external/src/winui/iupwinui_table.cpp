@@ -1608,18 +1608,8 @@ static void winuiTableEndEdit(Ihandle* ih, bool save)
   if (editend_cb)
   {
     int ret = editend_cb(ih, lin, col, new_value ? new_value : (char*)"", save ? 1 : 0);
-    if (ret == IUP_IGNORE && save)
-    {
-      aux->editing = true;
-      aux->edit_row = lin;
-      aux->edit_col = col;
-      if (editBox)
-      {
-        editBox.Focus(FocusState::Programmatic);
-        editBox.SelectAll();
-      }
-      return;
-    }
+    if (ret == IUP_IGNORE)
+      save = false;
   }
 
   TextBlock tb;
@@ -1958,7 +1948,7 @@ extern "C" IUP_SDK_API void iupdrvTableSetFocusCell(Ihandle* ih, int lin, int co
     return;
   }
 
-  if (!iupStrEqualNoCase(iupAttribGetStr(ih, "SELECTIONMODE"), "NONE"))
+  if (!iupStrEqualNoCase(iupAttribGetStr(ih, "SELECTIONMODE"), "NONE") && !iupTableCellsMode(ih))
   {
     aux->suppress_callbacks = true;
     listView.SelectedIndex(lin - 1);
@@ -2653,7 +2643,8 @@ extern "C" IUP_SDK_API void iupdrvTableDelCol(Ihandle* ih, int pos)
 
 static void winuiTableApplyCellStyle(Ihandle* ih, int lin, int col, Border border, TextBlock tb)
 {
-  bool is_selected = winuiTableIsRowSelected(ih, lin);
+  int cells_selected = iupTableCellsIsSelected(ih, lin, col);
+  bool is_selected = !cells_selected && winuiTableIsRowSelected(ih, lin);
 
   winuiTableUpdateCellFont(ih, lin, col, tb);
 
@@ -2664,7 +2655,7 @@ static void winuiTableApplyCellStyle(Ihandle* ih, int lin, int col, Border borde
     return;
   }
 
-  char* bgcolor = iupAttribGetId2(ih, "BGCOLOR", lin, col);
+  char* bgcolor = cells_selected ? iupTableCellsBgColor() : iupAttribGetId2(ih, "BGCOLOR", lin, col);
   if (!bgcolor)
     bgcolor = iupAttribGetId2(ih, "BGCOLOR", 0, col);
   if (!bgcolor)
@@ -2695,7 +2686,7 @@ static void winuiTableApplyCellStyle(Ihandle* ih, int lin, int col, Border borde
     border.ClearValue(Border::BackgroundProperty());
   }
 
-  char* fgcolor = iupAttribGetId2(ih, "FGCOLOR", lin, col);
+  char* fgcolor = cells_selected ? iupTableCellsFgColor() : iupAttribGetId2(ih, "FGCOLOR", lin, col);
   if (!fgcolor)
     fgcolor = iupAttribGetId2(ih, "FGCOLOR", 0, col);
   if (!fgcolor)
@@ -2712,6 +2703,50 @@ static void winuiTableApplyCellStyle(Ihandle* ih, int lin, int col, Border borde
   else
   {
     tb.ClearValue(TextBlock::ForegroundProperty());
+  }
+}
+
+static void winuiTableCellsFocus(Ihandle* ih, int lin, int col)
+{
+  IupWinUITableAux* aux = winuiTableGetAux(ih);
+  int old_row = aux->current_row;
+  int old_col = aux->current_col;
+
+  if (lin < 1 || lin > ih->data->num_lin || col < 1 || col > ih->data->num_col)
+    return;
+
+  iupdrvTableSetFocusCell(ih, lin, col);
+  iupTableCellsCollapse(ih);
+
+  ListView listView = winuiTableGetListView(ih);
+  auto container = listView ? listView.ContainerFromIndex(lin - 1).try_as<Control>() : nullptr;
+  if (container)
+    container.Focus(FocusState::Programmatic);
+
+  if (old_row != lin || old_col != col)
+  {
+    IFnii cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
+    if (cb) cb(ih, lin, col);
+  }
+}
+
+static void winuiTableCellsExtendToPoint(Ihandle* ih, PointerRoutedEventArgs const& args)
+{
+  ListView listView = winuiTableGetListView(ih);
+  if (!listView)
+    return;
+
+  auto hostPoint = args.GetCurrentPoint(nullptr).Position();
+  auto elements = VisualTreeHelper::FindElementsInHostCoordinates(hostPoint, listView.as<UIElement>());
+  for (auto const& elem : elements)
+  {
+    int lin = 0, col = 0;
+    winuiTableGetCellFromPoint(ih, elem.as<DependencyObject>(), &lin, &col);
+    if (lin > 0 && col > 0)
+    {
+      iupTableCellsExtendTo(ih, lin, col);
+      return;
+    }
   }
 }
 
@@ -2733,6 +2768,31 @@ static void winuiTableKeyDown(Ihandle* ih, KeyRoutedEventArgs const& args)
   bool handled = false;
 
   auto key = args.Key();
+
+  if (iupTableCellsMode(ih))
+  {
+    int dlin = 0, dcol = 0;
+    if (key == Windows::System::VirtualKey::Up) dlin = -1;
+    else if (key == Windows::System::VirtualKey::Down) dlin = 1;
+    else if (key == Windows::System::VirtualKey::Left) dcol = -1;
+    else if (key == Windows::System::VirtualKey::Right) dcol = 1;
+
+    if (dlin || dcol)
+    {
+      if (GetKeyState(VK_SHIFT) & 0x8000)
+        iupTableCellsExtendBy(ih, dlin, dcol);
+      else
+        winuiTableCellsFocus(ih, lin + dlin, col + dcol);
+      args.Handled(true);
+      return;
+    }
+    if (key == Windows::System::VirtualKey::A && (GetKeyState(VK_CONTROL) & 0x8000))
+    {
+      iupTableCellsSelectAll(ih);
+      args.Handled(true);
+      return;
+    }
+  }
 
   switch (key)
   {
@@ -3209,7 +3269,7 @@ static int winuiTableMapMethod(Ihandle* ih)
   {
     if (iupStrEqualNoCase(selmode, "MULTIPLE"))
       listView.SelectionMode(ListViewSelectionMode::Extended);
-    else if (iupStrEqualNoCase(selmode, "NONE"))
+    else if (iupStrEqualNoCase(selmode, "NONE") || iupStrEqualNoCase(selmode, "CELLS"))
       listView.SelectionMode(ListViewSelectionMode::None);
   }
 
@@ -3238,6 +3298,8 @@ static int winuiTableMapMethod(Ihandle* ih)
         int lin = args.ItemIndex() + 1;
         winuiTablePopulateVirtualContainer(ih, lin, args.ItemContainer());
         winuiTableSetRowAutomationName(ih, lin, args.ItemContainer());
+        if (iupTableCellsMode(ih))
+          args.ItemContainer().UseSystemFocusVisuals(false);
 
         args.Handled(true);
       });
@@ -3256,6 +3318,8 @@ static int winuiTableMapMethod(Ihandle* ih)
           return;
 
         winuiTableSetRowAutomationName(ih, args.ItemIndex() + 1, args.ItemContainer());
+        if (iupTableCellsMode(ih))
+          args.ItemContainer().UseSystemFocusVisuals(false);
       });
   }
 
@@ -3316,7 +3380,16 @@ static int winuiTableMapMethod(Ihandle* ih)
 
     if (lin > 0 && col > 0)
     {
-      if (lin != a->current_row || col != a->current_col)
+      if (iupTableCellsMode(ih))
+      {
+        if (GetKeyState(VK_SHIFT) & 0x8000)
+        {
+          iupTableCellsExtendTo(ih, lin, col);
+          return;
+        }
+        winuiTableCellsFocus(ih, lin, col);
+      }
+      else if (lin != a->current_row || col != a->current_col)
       {
         winuiTableClearFocusVisual(ih);
         a->current_row = lin;
@@ -3343,20 +3416,29 @@ static int winuiTableMapMethod(Ihandle* ih)
     if (lin > 0 && col > 0)
     {
       IupWinUITableAux* a = winuiTableGetAux(ih);
-      if (a && (lin != a->current_row || col != a->current_col))
+      if (iupTableCellsMode(ih))
       {
-        winuiTableClearFocusVisual(ih);
-        a->current_row = lin;
-        a->current_col = col;
-        winuiTableSetFocusVisual(ih, lin, col);
+        iupAttribSet(ih, "_IUPTABLE_CELLS_KEEP", "1");
+        winuiTableCellsFocus(ih, lin, col);
+        iupAttribSet(ih, "_IUPTABLE_CELLS_KEEP", NULL);
       }
-
-      if (a && !iupStrEqualNoCase(iupAttribGetStr(ih, "SELECTIONMODE"), "NONE"))
+      else
       {
-        ListView lv = winuiTableGetListView(ih);
-        a->suppress_callbacks = true;
-        lv.SelectedIndex(lin - 1);
-        a->suppress_callbacks = false;
+        if (a && (lin != a->current_row || col != a->current_col))
+        {
+          winuiTableClearFocusVisual(ih);
+          a->current_row = lin;
+          a->current_col = col;
+          winuiTableSetFocusVisual(ih, lin, col);
+        }
+
+        if (a && !iupStrEqualNoCase(iupAttribGetStr(ih, "SELECTIONMODE"), "NONE"))
+        {
+          ListView lv = winuiTableGetListView(ih);
+          a->suppress_callbacks = true;
+          lv.SelectedIndex(lin - 1);
+          a->suppress_callbacks = false;
+        }
       }
 
       char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
@@ -3370,6 +3452,53 @@ static int winuiTableMapMethod(Ihandle* ih)
       if (cb)
         cb(ih, lin, col);
     }
+  });
+
+  listView.AddHandler(UIElement::PointerPressedEvent(), winrt::box_value(PointerEventHandler([ih](IInspectable const&, PointerRoutedEventArgs const& args) {
+    if (!iupTableCellsMode(ih) || !args.GetCurrentPoint(nullptr).Properties().IsLeftButtonPressed())
+      return;
+
+    auto source = args.OriginalSource().try_as<DependencyObject>();
+    int lin = 0, col = 0;
+    if (source)
+      winuiTableGetCellFromPoint(ih, source, &lin, &col);
+    if (lin > 0 && col > 0)
+    {
+      if (!(GetKeyState(VK_SHIFT) & 0x8000))
+        winuiTableCellsFocus(ih, lin, col);
+      iupAttribSet(ih, "_IUPWINUI_CELLS_PRESS", "1");
+      winuiTableGetListView(ih).CapturePointer(args.Pointer());
+    }
+  })), true);
+
+  listView.AddHandler(UIElement::PointerMovedEvent(), winrt::box_value(PointerEventHandler([ih](IInspectable const&, PointerRoutedEventArgs const& args) {
+    if (!iupAttribGet(ih, "_IUPWINUI_CELLS_PRESS"))
+      return;
+
+    auto point = args.GetCurrentPoint(nullptr);
+    if (!point.Properties().IsLeftButtonPressed())
+    {
+      iupAttribSet(ih, "_IUPWINUI_CELLS_PRESS", NULL);
+      return;
+    }
+
+    iupAttribSet(ih, "_IUPWINUI_CELLS_PRESS", "2");
+    winuiTableCellsExtendToPoint(ih, args);
+  })), true);
+
+  listView.AddHandler(UIElement::PointerReleasedEvent(), winrt::box_value(PointerEventHandler([ih](IInspectable const&, PointerRoutedEventArgs const& args) {
+    if (!iupAttribGet(ih, "_IUPWINUI_CELLS_PRESS"))
+      return;
+
+    int dragged = iupAttribGetInt(ih, "_IUPWINUI_CELLS_PRESS") == 2;
+    iupAttribSet(ih, "_IUPWINUI_CELLS_PRESS", NULL);
+    winuiTableGetListView(ih).ReleasePointerCapture(args.Pointer());
+    if (dragged)
+      winuiTableCellsExtendToPoint(ih, args);
+  })), true);
+
+  listView.PointerCaptureLost([ih](IInspectable const&, PointerRoutedEventArgs const&) {
+    iupAttribSet(ih, "_IUPWINUI_CELLS_PRESS", NULL);
   });
 
   aux->sizeChangedToken = listView.SizeChanged([ih](IInspectable const&, SizeChangedEventArgs const&) {

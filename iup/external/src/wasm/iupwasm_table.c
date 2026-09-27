@@ -189,6 +189,11 @@ static int wasmTableCellCss(Ihandle* ih, int lin, int col, char* bgcss, char* fg
   if (!fg) fg = iupAttribGetId2(ih, "FGCOLOR", lin, 0);
   if (!font) font = iupAttribGetId2(ih, "FONT", 0, col);
   if (!font) font = iupAttribGetId2(ih, "FONT", lin, 0);
+  if (iupTableCellsIsSelected(ih, lin, col))
+  {
+    bg = iupTableCellsBgColor();
+    fg = iupTableCellsFgColor();
+  }
   bgcss[0] = 0;
   fgcss[0] = 0;
   fontcss[0] = 0;
@@ -417,7 +422,7 @@ EMSCRIPTEN_KEEPALIVE void iupwasmTableHeaderClick(int id, int col)
 static void wasmTableUpdateFocus(Ihandle* ih, int lin, int col)
 {
   int id = iupwasmIdOf(ih);
-  int select = !iupStrEqualNoCase(IupGetAttribute(ih, "SELECTIONMODE"), "NONE");
+  int select = !iupStrEqualNoCase(IupGetAttribute(ih, "SELECTIONMODE"), "NONE") && !iupTableCellsMode(ih);
   int focusrect = iupAttribGetBoolean(ih, "FOCUSRECT");
   if (id && !iupAttribGetBoolean(ih, "VIRTUALMODE"))  /* virtual rows aren't lin-indexed in the DOM */
     iupwasmJsTableFocus(id, lin, col, select, focusrect);
@@ -814,7 +819,7 @@ IUP_SDK_API void iupdrvTableUpdateCellStyle(Ihandle* ih, int lin, int col)
   if (!id)
     return;
 
-  if ((lin < 1 && col < 1) || iupAttribGetBoolean(ih, "VIRTUALMODE"))
+  if (iupAttribGetBoolean(ih, "VIRTUALMODE"))
   {
     iupdrvTableRedraw(ih);
     return;
@@ -870,6 +875,36 @@ static void wasmTableLayoutUpdate(Ihandle* ih)
     iupwasmJsSetPos(id, ih->x, ih->y, ih->currentwidth, ih->currentheight);
 }
 
+EMSCRIPTEN_KEEPALIVE void iupwasmTableCellPress(int id, int lin, int col, int mods)
+{
+  Ihandle* ih = iupwasmHandleFromId(id);
+  IFnii enter_cb;
+  int old_lin, old_col;
+  if (!ih || !iupTableCellsMode(ih))
+    return;
+
+  if (mods & 1)
+  {
+    iupTableCellsExtendTo(ih, lin, col);
+    return;
+  }
+
+  iupdrvTableGetFocusCell(ih, &old_lin, &old_col);
+  wasmTableSetFocus(ih, lin, col);
+  iupTableCellsCollapse(ih);
+
+  enter_cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
+  if (enter_cb && (old_lin != lin || old_col != col) && enter_cb(ih, lin, col) == IUP_CLOSE)
+    IupExitLoop();
+}
+
+EMSCRIPTEN_KEEPALIVE void iupwasmTableCellDrag(int id, int lin, int col)
+{
+  Ihandle* ih = iupwasmHandleFromId(id);
+  if (ih)
+    iupTableCellsExtendTo(ih, lin, col);
+}
+
 EMSCRIPTEN_KEEPALIVE void iupwasmTableCellClick(int id, int lin, int col, int mods)
 {
   Ihandle* ih = iupwasmHandleFromId(id);
@@ -877,6 +912,19 @@ EMSCRIPTEN_KEEPALIVE void iupwasmTableCellClick(int id, int lin, int col, int mo
   IFnii enter_cb;
   if (!ih)
     return;
+
+  if (iupTableCellsMode(ih))
+  {
+    click_cb = (IFniis)IupGetCallback(ih, "CLICK_CB");
+    if (click_cb)
+    {
+      char status[IUPKEY_STATUS_SIZE];
+      iupwasmFillStatus(status, mods);
+      if (click_cb(ih, lin, col, status) == IUP_CLOSE)
+        IupExitLoop();
+    }
+    return;
+  }
 
   wasmTableSetFocus(ih, lin, col);
 
@@ -940,6 +988,9 @@ EMSCRIPTEN_KEEPALIVE void iupwasmTableRightClick(int id, int lin, int col, int m
   if (!ih)
     return;
 
+  iupAttribSet(ih, "_IUPTABLE_CELLS_KEEP", "1");
+  iupwasmTableCellPress(id, lin, col, mods & ~1);
+  iupAttribSet(ih, "_IUPTABLE_CELLS_KEEP", NULL);
   iupwasmTableCellClick(id, lin, col, mods);
 
   cb = (IFnii)IupGetCallback(ih, "RIGHTCLICK_CB");
@@ -1019,6 +1070,27 @@ int iupwasmTableKeyNav(Ihandle* ih, int code)
   new_lin = lin;
   new_col = col;
 
+  if (iupTableCellsMode(ih))
+  {
+    int dlin = 0, dcol = 0;
+    switch (code)
+    {
+      case K_sUP:    dlin = -1; break;
+      case K_sDOWN:  dlin = 1; break;
+      case K_sLEFT:  dcol = -1; break;
+      case K_sRIGHT: dcol = 1; break;
+      case K_cA:
+      case iup_XkeyCtrl(K_a):
+        iupTableCellsSelectAll(ih);
+        return 1;
+    }
+    if (dlin || dcol)
+    {
+      iupTableCellsExtendBy(ih, dlin, dcol);
+      return 1;
+    }
+  }
+
   switch (code)
   {
     case K_UP:    new_lin = lin - 1; break;
@@ -1078,6 +1150,7 @@ int iupwasmTableKeyNav(Ihandle* ih, int code)
 
   iupdrvTableSetFocusCell(ih, new_lin, new_col);
   iupdrvTableScrollToCell(ih, new_lin, new_col);
+  iupTableCellsCollapse(ih);
 
   cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
   if (cb)

@@ -183,6 +183,7 @@ var (
 	MouseMotionCB                 = newCallback[MouseMotionFunc]("MOUSEMOTION_CB")
 	MoveCB                        = newCallback[MoveFunc]("MOVE_CB")
 	MultiSelectionCB              = newCallback[MultiSelectionFunc]("MULTISELECTION_CB")
+	CellSelectionCB               = newCallback[CellSelectionFunc]("CELLSELECTION_CB")
 	MultiTouchCB                  = newCallback[MultiTouchFunc]("MULTITOUCH_CB")
 	MultiUnselectionCB            = newCallback[MultiUnselectionFunc]("MULTIUNSELECTION_CB")
 	MultiselectCB                 = newCallback[MultiselectFunc]("MULTISELECT_CB")
