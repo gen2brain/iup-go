@@ -206,7 +206,7 @@ func inspector() iup.Ihandle {
 		iup.Label("Description").SetAttribute("FONTSTYLE", "Bold"), detail,
 		iup.Label("Shape").SetAttribute("FONTSTYLE", "Bold"), shape,
 		iup.Label("Color").SetAttribute("FONTSTYLE", "Bold"), color,
-		iup.Label("").SetHandle("diagram_position"),
+		iup.Label("").SetAttribute("EXPAND", "HORIZONTAL").SetHandle("diagram_position"),
 	).SetAttributes("NGAP=5")
 
 	help := iup.Vbox(
