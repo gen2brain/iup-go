@@ -73,15 +73,78 @@ typedef struct _IcocoaTableData {
 /* Custom NSTableCellView with Focus Rectangle                              */
 /* ========================================================================= */
 
+#ifdef GNUSTEP
+@class IupCocoaTableFocusView;
+#endif
+
 @interface IupCocoaTableCellView : NSTableCellView
 {
   BOOL isFocusedCell;
   Ihandle* ih;
+#ifdef GNUSTEP
+  IupCocoaTableFocusView* focusView;
+#endif
 }
 @property (nonatomic, assign) BOOL isFocusedCell;
 @property (nonatomic, assign) Ihandle* ih;
 @property (nonatomic, retain) NSColor* customBackgroundColor;
 @end
+
+static void cocoaTableDrawFocusRect(IupCocoaTableCellView* cellView, NSRect bounds)
+{
+  Ihandle* ih = cellView.ih;
+  if (!cellView.isFocusedCell || !ih || !iupAttribGetBoolean(ih, "FOCUSRECT"))
+    return;
+
+  NSView* rowView = [cellView superview];
+  NSTableView* tableView = rowView ? (NSTableView*)[rowView superview] : nil;
+  if (!tableView || ![tableView isKindOfClass:[NSTableView class]])
+    return;
+
+  NSResponder* firstResp = [[cellView window] firstResponder];
+  BOOL tableHasFocus = NO;
+  if ([firstResp isEqual:tableView])
+    tableHasFocus = YES;
+  else if ([firstResp isKindOfClass:[NSView class]] && [(NSView*)firstResp isDescendantOf:tableView])
+    tableHasFocus = YES;
+  else if ([firstResp isKindOfClass:[NSText class]])
+  {
+    id textDelegate = [(NSText*)firstResp delegate];
+    if (textDelegate && [textDelegate isKindOfClass:[NSView class]] && [(NSView*)textDelegate isDescendantOf:tableView])
+      tableHasFocus = YES;
+  }
+
+  if (!tableHasFocus)
+    return;
+
+  NSBezierPath* path = [NSBezierPath bezierPathWithRect:NSInsetRect(bounds, 1.5, 1.5)];
+  CGFloat dashPattern[] = {2.0, 2.0};
+  [path setLineDash:dashPattern count:2 phase:0.0];
+  [path setLineWidth:1.0];
+  [[NSColor labelColor] setStroke];
+  [path stroke];
+}
+
+#ifdef GNUSTEP
+/* GNUstep's cell text field paints over its superview, so the focus rectangle is drawn above it */
+@interface IupCocoaTableFocusView : NSView
+@property (nonatomic, assign) IupCocoaTableCellView* cellView;
+@end
+
+@implementation IupCocoaTableFocusView
+@synthesize cellView;
+
+- (BOOL)isOpaque { return NO; }
+- (NSView*)hitTest:(NSPoint)point { (void)point; return nil; }
+
+- (void)drawRect:(NSRect)dirtyRect
+{
+  (void)dirtyRect;
+  if (cellView)
+    cocoaTableDrawFocusRect(cellView, [self bounds]);
+}
+@end
+#endif
 
 @implementation IupCocoaTableCellView
 
@@ -91,6 +154,9 @@ typedef struct _IcocoaTableData {
 
 - (void)dealloc
 {
+#ifdef GNUSTEP
+  [focusView setCellView:nil];
+#endif
   [customBackgroundColor release];
   [super dealloc];
 }
@@ -152,6 +218,24 @@ typedef struct _IcocoaTableData {
 
     [self.textField setFrame:textFrame];
   }
+
+#ifdef GNUSTEP
+  if (!focusView)
+  {
+    focusView = [[IupCocoaTableFocusView alloc] initWithFrame:[self bounds]];
+    [focusView setCellView:self];
+    [self addSubview:focusView];
+    [focusView release];
+  }
+  else if ([[self subviews] lastObject] != focusView)
+  {
+    [focusView retain];
+    [focusView removeFromSuperview];
+    [self addSubview:focusView];
+    [focusView release];
+  }
+  [focusView setFrame:[self bounds]];
+#endif
 }
 
 #ifdef GNUSTEP
@@ -180,47 +264,9 @@ typedef struct _IcocoaTableData {
 #endif
   [super drawRect:dirtyRect];
 
-  if (isFocusedCell && ih && iupAttribGetBoolean(ih, "FOCUSRECT"))
-  {
-    NSView* rowView = [self superview];
-    NSTableView* tableView = nil;
-    if (rowView)
-      tableView = (NSTableView*)[rowView superview];
-
-    if (tableView && [tableView isKindOfClass:[NSTableView class]])
-    {
-      NSWindow* window = [self window];
-      NSResponder* firstResp = [window firstResponder];
-
-      BOOL tableHasFocus = NO;
-      if ([firstResp isEqual:tableView])
-        tableHasFocus = YES;
-      else if ([firstResp isKindOfClass:[NSView class]] && [(NSView*)firstResp isDescendantOf:tableView])
-        tableHasFocus = YES;
-      else if ([firstResp isKindOfClass:[NSText class]])
-      {
-        NSText* text = (NSText*)firstResp;
-        id textDelegate = [text delegate];
-        if (textDelegate && [textDelegate isKindOfClass:[NSView class]])
-        {
-          if ([(NSView*)textDelegate isDescendantOf:tableView])
-            tableHasFocus = YES;
-        }
-      }
-
-      if (tableHasFocus)
-      {
-        NSBezierPath* path = [NSBezierPath bezierPathWithRect:NSInsetRect(self.bounds, 1.5, 1.5)];
-
-        CGFloat dashPattern[] = {2.0, 2.0};
-        [path setLineDash:dashPattern count:2 phase:0.0];
-        [path setLineWidth:1.0];
-
-        [[NSColor labelColor] setStroke];
-        [path stroke];
-      }
-    }
-  }
+#ifndef GNUSTEP
+  cocoaTableDrawFocusRect(self, [self bounds]);
+#endif
 }
 
 @end
