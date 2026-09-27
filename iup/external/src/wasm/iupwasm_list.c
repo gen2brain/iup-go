@@ -541,6 +541,7 @@ static int wasmListMapMethod(Ihandle* ih)
   if (ih->data->show_dragdrop)
     iupwasmJsListDragDrop(id);
   iupwasmAddToParent(ih);
+  iupListSetInitialItems(ih);
   return IUP_NOERROR;
 }
 
