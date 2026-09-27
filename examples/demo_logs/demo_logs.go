@@ -52,6 +52,7 @@ func main() {
 	})
 	table.SetCallback("VALUE_CB", iup.TableValueFunc(cellValue))
 	table.SetCallback("CLICK_CB", iup.ClickFunc(clicked))
+	table.SetCallback("RIGHTCLICK_CB", iup.TableRightClickFunc(rightClicked))
 
 	search := iup.Text().SetAttributes("EXPAND=HORIZONTAL, CUEBANNER=Filter").SetHandle("log_search")
 	search.SetCallback("VALUECHANGED_CB", iup.ValueChangedFunc(func(ih iup.Ihandle) int {
@@ -193,6 +194,23 @@ func clicked(ih iup.Ihandle, lin, col int, status string) int {
 	l := lines[matches[lin-1]]
 	iup.GetHandle("log_detail").SetAttribute("VALUE", fmt.Sprintf("%s  %s  [%s]\n%s",
 		l.when.Format("2006-01-02 15:04:05.000"), l.level, l.source, l.message))
+	return iup.DEFAULT
+}
+
+func rightClicked(ih iup.Ihandle, lin, col int) int {
+	if lin < 1 || lin > len(matches) {
+		return iup.DEFAULT
+	}
+	l := lines[matches[lin-1]]
+	menu := iup.Menu(iup.MenuItem("Copy line").SetCallback("ACTION", iup.ActionFunc(func(iup.Ihandle) int {
+		clipboard := iup.Clipboard()
+		clipboard.SetAttribute("TEXT", fmt.Sprintf("%s  %s  [%s]  %s",
+			l.when.Format("2006-01-02 15:04:05.000"), l.level, l.source, l.message))
+		clipboard.Destroy()
+		return iup.DEFAULT
+	})))
+	iup.Popup(menu, iup.MOUSEPOS, iup.MOUSEPOS)
+	iup.Destroy(menu)
 	return iup.DEFAULT
 }
 

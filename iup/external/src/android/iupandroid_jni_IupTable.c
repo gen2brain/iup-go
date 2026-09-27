@@ -56,6 +56,25 @@ JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupTableHelper_dispatchCli
 }
 
 
+JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupTableHelper_dispatchRightClick(
+    JNIEnv* jni_env, jclass cls, jlong ihandle_ptr,
+    jint lin, jint col, jint focus_changed)
+{
+  (void)jni_env;
+  (void)cls;
+  Ihandle* ih = (Ihandle*)ihandle_ptr;
+  if (!ih) return;
+
+  if (focus_changed)
+  {
+    IFnii enter_cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
+    if (enter_cb && enter_cb(ih, (int)lin, (int)col) == IUP_CLOSE) IupExitLoop();
+  }
+
+  IFnii cb = (IFnii)IupGetCallback(ih, "RIGHTCLICK_CB");
+  if (cb && cb(ih, (int)lin, (int)col) == IUP_CLOSE) IupExitLoop();
+}
+
 JNIEXPORT jint JNICALL Java_io_github_gen2brain_iupgo_IupTableHelper_dispatchEditBegin(
     JNIEnv* jni_env, jclass cls, jlong ihandle_ptr, jint lin, jint col)
 {

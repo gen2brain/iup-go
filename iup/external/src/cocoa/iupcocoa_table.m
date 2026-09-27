@@ -762,9 +762,8 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
 }
 #endif
 
-- (void)mouseDown:(NSEvent*)event
+- (void)trackPressAtPoint:(NSPoint)point
 {
-  NSPoint point = [self convertPoint:[event locationInWindow] fromView:nil];
   NSInteger clickedCol = [self columnAtPoint:point];
   NSInteger clickedRow = [self rowAtPoint:point];
 
@@ -806,8 +805,32 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
       enteritem_cb(ih, table_data->current_row, table_data->current_col);
     }
   }
+}
 
+- (void)mouseDown:(NSEvent*)event
+{
+  [self trackPressAtPoint:[self convertPoint:[event locationInWindow] fromView:nil]];
   [super mouseDown:event];
+}
+
+- (void)rightMouseDown:(NSEvent*)event
+{
+  NSPoint point = [self convertPoint:[event locationInWindow] fromView:nil];
+  NSInteger clickedCol = [self columnAtPoint:point];
+  NSInteger clickedRow = [self rowAtPoint:point];
+
+  if (clickedRow >= 0 && clickedCol >= 0)
+  {
+    [self trackPressAtPoint:point];
+    if (!iupStrEqualNoCase(iupAttribGetStr(ih, "SELECTIONMODE"), "NONE"))
+      [self selectRowIndexes:[NSIndexSet indexSetWithIndex:clickedRow] byExtendingSelection:NO];
+
+    IFnii cb = (IFnii)IupGetCallback(ih, "RIGHTCLICK_CB");
+    if (cb)
+      cb(ih, (int)clickedRow + 1, (int)clickedCol + 1);
+  }
+
+  [super rightMouseDown:event];
 }
 
 - (NSRect)frameOfCellAtColumn:(NSInteger)column row:(NSInteger)row

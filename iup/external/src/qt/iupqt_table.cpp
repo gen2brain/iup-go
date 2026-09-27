@@ -587,6 +587,17 @@ protected:
     }
 
     QTableWidget::mousePressEvent(event);
+
+    if (event->button() == Qt::RightButton)
+    {
+      QModelIndex index = indexAt(pos);
+      if (index.isValid())
+      {
+        IFnii rcb = (IFnii)IupGetCallback(ih, "RIGHTCLICK_CB");
+        if (rcb)
+          rcb(ih, index.row() + 1, index.column() + 1);
+      }
+    }
   }
 
   void startDrag(Qt::DropActions /*supportedActions*/) override

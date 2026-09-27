@@ -2024,10 +2024,27 @@ static int winTableNotifyCallback(Ihandle* ih, void* msg_info, int* result)
 
       if (pnmia->iItem >= 0 && pnmia->iSubItem > 0)
       {
+        int lin = pnmia->iItem + 1;
+        int col = pnmia->iSubItem;
+
+        if (lin != data->current_row || col != data->current_col)
+        {
+          winTableInvalidateCell(winTableGetListView(ih), data->current_row, data->current_col);
+
+          data->current_row = lin;
+          data->current_col = col;
+
+          winTableInvalidateCell(winTableGetListView(ih), lin, col);
+        }
+
         char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
         iupwinButtonKeySetStatus(winTableGetKeyFlags(MK_RBUTTON), status, 0);
 
-        winTableCallClickCB(ih, pnmia->iItem + 1, pnmia->iSubItem, status);
+        winTableCallClickCB(ih, lin, col, status);
+
+        IFnii cb = (IFnii)IupGetCallback(ih, "RIGHTCLICK_CB");
+        if (cb)
+          cb(ih, lin, col);
       }
       break;
     }

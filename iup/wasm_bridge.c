@@ -146,6 +146,7 @@ static int wasmCbScroll(Ihandle* ih, int op, float posx, float posy) { return iu
 static int wasmCbTableClick(Ihandle* ih, int lin, int col, char* status) { return iupwasmGoDispatch(ih, "CLICK_CB", lin, col, 0, 0, status); }
 static int wasmCbEnterItem(Ihandle* ih, int lin, int col) { return iupwasmGoDispatch(ih, "ENTERITEM_CB", lin, col, 0, 0, 0); }
 static int wasmCbTableEdition(Ihandle* ih, int lin, int col, char* text) { return iupwasmGoDispatch(ih, "EDITION_CB", lin, col, 0, 0, text); }
+static int wasmCbTableRightClick(Ihandle* ih, int lin, int col) { return iupwasmGoDispatch(ih, "RIGHTCLICK_CB", lin, col, 0, 0, 0); }
 static int wasmCbTableValueChanged(Ihandle* ih, int lin, int col) { return iupwasmGoDispatch(ih, "VALUECHANGED_CB", lin, col, 0, 0, 0); }
 static int wasmCbThemeChanged(Ihandle* ih, int dark) { return iupwasmGoDispatch(ih, "THEMECHANGED_CB", dark, 0, 0, 0, 0); }
 static int wasmCbShow(Ihandle* ih, int state) { return iupwasmGoDispatch(ih, "SHOW_CB", state, 0, 0, 0, 0); }
@@ -469,7 +470,13 @@ EMSCRIPTEN_KEEPALIVE void iupwasmGoSetCallback(Ihandle* ih, const char* name)
   else if (strcmp(name, "TABCLOSE_CB") == 0)
     IupSetCallback(ih, name, (Icallback)wasmCbTabClose);
   else if (strcmp(name, "RIGHTCLICK_CB") == 0)
-    IupSetCallback(ih, name, (Icallback)wasmCbRightClick);
+  {
+    const char* cls = IupGetClassName(ih);
+    if (cls && strcmp(cls, "table") == 0)
+      IupSetCallback(ih, name, (Icallback)wasmCbTableRightClick);
+    else
+      IupSetCallback(ih, name, (Icallback)wasmCbRightClick);
+  }
   else if (strcmp(name, "ACTION_CB") == 0)
     IupSetCallback(ih, name, (Icallback)wasmCbActionCb);
   else if (strcmp(name, "NOTIFY_CB") == 0)

@@ -414,6 +414,33 @@ public final class IupTableHelper
         });
     }
 
+    static void handleCellLongPress(IupTableView t, int lin, int col)
+    {
+        int oldLin = t.focusLin, oldCol = t.focusCol;
+        boolean changed = (oldLin != lin || oldCol != col);
+
+        t.focusLin = lin;
+        t.focusCol = col;
+
+        if ("MULTIPLE".equalsIgnoreCase(t.selectionMode))
+        {
+            if (!t.selectedLins.contains(lin)) t.selectedLins.add(lin);
+        }
+        else if (!"NONE".equalsIgnoreCase(t.selectionMode))
+        {
+            selectOnly(t, lin);
+        }
+
+        refreshRowStyle(t, oldLin);
+        refreshRowStyle(t, lin);
+
+        final boolean changedFinal = changed;
+        t.recyclerView.post(() -> {
+            dispatchRightClick(t.ihandlePtr, lin, col, changedFinal ? 1 : 0);
+            dispatchSelection(t.ihandlePtr);
+        });
+    }
+
     static void refreshRowStyle(IupTableView t, int lin)
     {
         if (lin < 1 || lin > t.numLin) return;
@@ -479,6 +506,11 @@ public final class IupTableHelper
                     if (state.lin > 0 && state.col > 0 && isCellEditable(t, state.col))
                         tv.post(() -> startEditCell(t, state.lin, state.col));
                     return true;
+                }
+                @Override public void onLongPress(@NonNull MotionEvent e)
+                {
+                    if (t.showDragDrop || state.lin <= 0 || state.col <= 0) return;
+                    handleCellLongPress(t, state.lin, state.col);
                 }
             });
         tv.setOnTouchListener((v, ev) -> gd.onTouchEvent(ev));
@@ -1984,6 +2016,7 @@ public final class IupTableHelper
     }
 
     public static native void dispatchClick(long ihandlePtr, int lin, int col, int focusChanged);
+    public static native void dispatchRightClick(long ihandlePtr, int lin, int col, int focusChanged);
     public static native void dispatchSelection(long ihandlePtr);
     public static native int dispatchEditBegin(long ihandlePtr, int lin, int col);
     public static native void dispatchEdition(long ihandlePtr, int lin, int col, String text);

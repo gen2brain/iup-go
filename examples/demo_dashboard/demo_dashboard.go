@@ -175,7 +175,7 @@ func workerTab() iup.Ihandle {
 		"ALIGNMENT3": "ARIGHT", "ALIGNMENT4": "ARIGHT",
 	})
 	table.SetCallback("SORT_CB", iup.TableSortFunc(sortRequested))
-	table.SetCallback("CLICK_CB", iup.ClickFunc(clicked))
+	table.SetCallback("RIGHTCLICK_CB", iup.TableRightClickFunc(rightClicked))
 
 	return iup.Vbox(
 		iup.Hbox(filter, button("Reset counters", resetCounters)).SetAttributes("NGAP=6"),
@@ -388,8 +388,8 @@ func sortRequested(ih iup.Ihandle, col int) int {
 	return iup.IGNORE
 }
 
-func clicked(ih iup.Ihandle, lin, col int, status string) int {
-	if iup.IsButton3(status) && lin > 0 && lin <= len(shown) {
+func rightClicked(ih iup.Ihandle, lin, col int) int {
+	if lin > 0 && lin <= len(shown) {
 		w := shown[lin-1]
 		menu := iup.Menu(
 			item("Copy "+w.name, func() { copyWorker(w) }),

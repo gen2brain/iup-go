@@ -247,6 +247,13 @@ func toolbar() iup.Ihandle {
 		SetAttributes("NMARGIN=8x5, NGAP=5, ALIGNMENT=ACENTER")
 }
 
+func menuItem(title string, action func()) iup.Ihandle {
+	return iup.MenuItem(title).SetCallback("ACTION", iup.ActionFunc(func(iup.Ihandle) int {
+		action()
+		return iup.DEFAULT
+	}))
+}
+
 func button(title string, action func()) iup.Ihandle {
 	b := iup.Button(title).SetAttributes("PADDING=6x3")
 	b.SetCallback("ACTION", iup.ActionFunc(func(iup.Ihandle) int {
@@ -298,6 +305,17 @@ func queueTable() iup.Ihandle {
 		return iup.DEFAULT
 	}))
 	table.SetCallback("EDITEND_CB", iup.EditEndFunc(editPriority))
+	table.SetCallback("RIGHTCLICK_CB", iup.TableRightClickFunc(func(_ iup.Ihandle, lin, _ int) int {
+		menu := iup.Menu(
+			menuItem("Cancel", cancelSelected),
+			menuItem("Retry", retrySelected),
+			iup.Separator(),
+			menuItem("Clear finished", clearFinished),
+		)
+		iup.Popup(menu, iup.MOUSEPOS, iup.MOUSEPOS)
+		iup.Destroy(menu)
+		return iup.DEFAULT
+	}))
 	return table
 }
 

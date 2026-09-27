@@ -17,7 +17,7 @@
 #   -y TEXT      type TEXT into SELECTOR (or first input), then screenshot _after.png
 #                (IUP_WAIT=ms overrides the 20s wait for heavy/slow-loading apps)
 #   -K SEQ       scripted sequence, steps split by ';', each "cmd:arg":
-#                click:SEL[##x,y] / dblclick:SEL[##x,y] (x,y clicks inside the element),
+#                click:SEL[##x,y] / dblclick:SEL[##x,y] / rclick:SEL[##x,y] (x,y clicks inside the element),
 #                type:TEXT (ASCII; uses
 #                insertText, fires no keydown),
 #                rawkey:CHAR (trusted keydown carrying any character, incl. non-ASCII),

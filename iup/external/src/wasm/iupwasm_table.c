@@ -933,6 +933,20 @@ EMSCRIPTEN_KEEPALIVE void iupwasmTableCellClick(int id, int lin, int col, int mo
   iupTableCallMultiSelectionCb(ih);
 }
 
+EMSCRIPTEN_KEEPALIVE void iupwasmTableRightClick(int id, int lin, int col, int mods)
+{
+  Ihandle* ih = iupwasmHandleFromId(id);
+  IFnii cb;
+  if (!ih)
+    return;
+
+  iupwasmTableCellClick(id, lin, col, mods);
+
+  cb = (IFnii)IupGetCallback(ih, "RIGHTCLICK_CB");
+  if (cb && cb(ih, lin, col) == IUP_CLOSE)
+    IupExitLoop();
+}
+
 static int wasmTableCellEditable(Ihandle* ih, int col)
 {
   return iupAttribGetIntId(ih, "EDITABLE", col) || iupAttribGetBoolean(ih, "EDITABLE");

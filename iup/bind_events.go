@@ -263,7 +263,12 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 	case "TABCLOSE_CB":
 		setTabCloseFunc(ih, fn.(TabCloseFunc))
 	case "RIGHTCLICK_CB":
-		setRightClickFunc(ih, fn.(RightClickFunc))
+		switch v := fn.(type) {
+		case RightClickFunc:
+			setRightClickFunc(ih, v)
+		case TableRightClickFunc:
+			setTableRightClickFunc(ih, v)
+		}
 	case "FLAT_BUTTON_CB":
 		setFlatButtonFunc(ih, fn.(ButtonFunc))
 	case "FLAT_MOTION_CB":

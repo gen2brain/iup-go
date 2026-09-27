@@ -189,7 +189,7 @@ static const void* IUP_COCOATOUCH_TABLE_CTRL_OBJ_KEY = "IUP_COCOATOUCH_TABLE_CTR
 @end
 
 
-@interface IupCocoaTouchTableController : NSObject <UICollectionViewDataSource, UICollectionViewDelegate>
+@interface IupCocoaTouchTableController : NSObject <UICollectionViewDataSource, UICollectionViewDelegate, UIGestureRecognizerDelegate>
 @property(nonatomic, assign) Ihandle* ihandle;
 @property(nonatomic, retain) NSMutableArray<NSMutableArray<NSString*>*>* cells;
 @property(nonatomic, retain) NSMutableArray<NSMutableArray<NSString*>*>* images;
@@ -780,6 +780,62 @@ static UICollectionViewLayout* cocoaTouchTableMakeLayout(IupCocoaTouchTableContr
 	}
 	IFnii enter_cb = (IFnii)IupGetCallback(_ihandle, "ENTERITEM_CB");
 	if (enter_cb && enter_cb(_ihandle, (int)_focusLin, (int)_focusCol) == IUP_CLOSE) IupExitLoop();
+
+	iupTableCallMultiSelectionCb(_ihandle);
+}
+
+- (BOOL)gestureRecognizer:(UIGestureRecognizer*)gr shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer*)other
+{
+	(void)gr; (void)other;
+	return YES;
+}
+
+- (void)onLongPress:(UILongPressGestureRecognizer*)gr
+{
+	if (!_ihandle || !iupObjectCheck(_ihandle)) return;
+	if (gr.state != UIGestureRecognizerStateBegan) return;
+	if (_ihandle->data->show_dragdrop) return;
+	UICollectionView* cv = (UICollectionView*)gr.view;
+	if (![cv isKindOfClass:[UICollectionView class]]) return;
+	CGPoint pt = [gr locationInView:cv];
+	NSIndexPath* ip = [cv indexPathForItemAtPoint:pt];
+	if (!ip || [ip section] != IUPCOCOATOUCH_TABLE_BODY_SECTION) return;
+	NSInteger num_col = [self numberOfColumns];
+	if (num_col <= 0) return;
+	NSInteger col = [ip item] % num_col;
+	NSInteger lin = [ip item] / num_col;
+	NSInteger prev_lin = _focusLin;
+	NSInteger prev_col = _focusCol;
+	_focusLin = lin + 1;
+	_focusCol = col + 1;
+
+	const char* selmode = iupAttribGetStr(_ihandle, "SELECTIONMODE");
+	if (!iupStrEqualNoCase(selmode, "NONE"))
+	{
+		if (!iupStrEqualNoCase(selmode, "MULTIPLE"))
+			[_selectedLins removeAllIndexes];
+		[_selectedLins addIndex:(NSUInteger)_focusLin];
+	}
+
+	NSMutableArray<NSIndexPath*>* reload = [NSMutableArray array];
+	for (NSInteger c = 0; c < num_col; c++)
+	{
+		[reload addObject:[NSIndexPath indexPathForItem:lin * num_col + c
+		                                       inSection:IUPCOCOATOUCH_TABLE_BODY_SECTION]];
+		if (prev_lin > 0 && prev_lin != _focusLin)
+			[reload addObject:[NSIndexPath indexPathForItem:(prev_lin - 1) * num_col + c
+			                                       inSection:IUPCOCOATOUCH_TABLE_BODY_SECTION]];
+	}
+	[cv reloadItemsAtIndexPaths:reload];
+
+	if (prev_lin != _focusLin || prev_col != _focusCol)
+	{
+		IFnii enter_cb = (IFnii)IupGetCallback(_ihandle, "ENTERITEM_CB");
+		if (enter_cb && enter_cb(_ihandle, (int)_focusLin, (int)_focusCol) == IUP_CLOSE) IupExitLoop();
+	}
+
+	IFnii cb = (IFnii)IupGetCallback(_ihandle, "RIGHTCLICK_CB");
+	if (cb && cb(_ihandle, (int)_focusLin, (int)_focusCol) == IUP_CLOSE) IupExitLoop();
 
 	iupTableCallMultiSelectionCb(_ihandle);
 }
@@ -1469,6 +1525,13 @@ static int cocoaTouchTableMapMethod(Ihandle* ih)
 	dbl.numberOfTapsRequired = 2;
 	[view addGestureRecognizer:dbl];
 	[dbl release];
+
+	UILongPressGestureRecognizer* lp = [[UILongPressGestureRecognizer alloc] initWithTarget:ctrl action:@selector(onLongPress:)];
+	lp.minimumPressDuration = 0.5;
+	lp.cancelsTouchesInView = NO;
+	lp.delegate = ctrl;
+	[view addGestureRecognizer:lp];
+	[lp release];
 
 	ih->handle = view;
 	objc_setAssociatedObject(view, IHANDLE_ASSOCIATED_OBJ_KEY,        (id)ih, OBJC_ASSOCIATION_ASSIGN);

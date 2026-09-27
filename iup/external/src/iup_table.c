@@ -1266,6 +1266,7 @@ Iclass* iupTableNewClass(void)
 
   /* IupTable Callbacks */
   iupClassRegisterCallback(ic, "CLICK_CB", "iis");
+  iupClassRegisterCallback(ic, "RIGHTCLICK_CB", "ii");
   iupClassRegisterCallback(ic, "ENTERITEM_CB", "ii");
   iupClassRegisterCallback(ic, "SORT_CB", "i");
   iupClassRegisterCallback(ic, "VALUECHANGED_CB", "ii");
