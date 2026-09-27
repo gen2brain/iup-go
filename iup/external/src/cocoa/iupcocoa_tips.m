@@ -58,7 +58,8 @@ static NSAttributedString* cocoaTipsMarkupString(Ihandle* ih, const char* tip, N
 {
   NSMutableAttributedString* str = iupcocoaBuildMarkupAttributedString(ih, tip);
   NSFont* base_font = [[iupcocoaGetFont(ih) nativeFont] retain];
-  NSRange all;
+  NSUInteger index, length;
+  NSRange range;
 
   if (!str)
   {
@@ -66,24 +67,28 @@ static NSAttributedString* cocoaTipsMarkupString(Ihandle* ih, const char* tip, N
     return nil;
   }
 
-  all = NSMakeRange(0, [str length]);
-  [str enumerateAttribute:NSForegroundColorAttributeName inRange:all options:0 usingBlock:^(id value, NSRange range, BOOL* stop) {
-    (void)stop;
-    if (!value)
+  length = [str length];
+  for (index = 0; index < length; index = NSMaxRange(range))
+  {
+    if (![str attribute:NSForegroundColorAttributeName atIndex:index effectiveRange:&range])
       [str addAttribute:NSForegroundColorAttributeName value:fg range:range];
-  }];
+  }
 
   if (font && base_font && ![[font fontName] isEqualToString:[base_font fontName]])
   {
+    NSFontManager* font_manager = [NSFontManager sharedFontManager];
     CGFloat scale = [font pointSize] / [base_font pointSize];
-    [str enumerateAttribute:NSFontAttributeName inRange:all options:0 usingBlock:^(id value, NSRange range, BOOL* stop) {
-      NSFont* run_font = value ? (NSFont*)value : base_font;
-      NSFontTraitMask traits = [[NSFontManager sharedFontManager] traitsOfFont:run_font];
-      NSFont* new_font = [[NSFontManager sharedFontManager] fontWithFamily:[font familyName] traits:traits weight:5 size:[run_font pointSize] * scale];
-      (void)stop;
+
+    for (index = 0; index < length; index = NSMaxRange(range))
+    {
+      NSFont* run_font = [str attribute:NSFontAttributeName atIndex:index effectiveRange:&range];
+      NSFont* new_font;
+      if (!run_font)
+        run_font = base_font;
+      new_font = [font_manager fontWithFamily:[font familyName] traits:[font_manager traitsOfFont:run_font] weight:5 size:[run_font pointSize] * scale];
       if (new_font)
         [str addAttribute:NSFontAttributeName value:new_font range:range];
-    }];
+    }
   }
 
   [base_font release];
