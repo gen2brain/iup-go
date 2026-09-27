@@ -740,27 +740,39 @@ static int gtkDialogMapMethod(Ihandle* ih)
 
   /* the GtkViewport clips content on Wayland CSD */
   {
-    GtkWidget* viewport = gtk_viewport_new(NULL, NULL);
-    gtk_viewport_set_shadow_type(GTK_VIEWPORT(viewport), GTK_SHADOW_NONE);
-    gtk_container_add((GtkContainer*)ih->handle, viewport);
-    gtk_widget_show(viewport);
+    GtkWidget* content = ih->handle;
+
+#if !GTK_CHECK_VERSION(3, 0, 0)
+    if (!iupAttribGet(ih, "OPACITYIMAGE"))
+#endif
+    {
+      GtkWidget* viewport = gtk_viewport_new(NULL, NULL);
+      gtk_viewport_set_shadow_type(GTK_VIEWPORT(viewport), GTK_SHADOW_NONE);
+      gtk_container_add((GtkContainer*)ih->handle, viewport);
+      gtk_widget_show(viewport);
+      content = viewport;
+    }
 
     inner_parent = iupgtkNativeContainerNew(0);
-    gtk_container_add((GtkContainer*)viewport, inner_parent);
+    gtk_container_add((GtkContainer*)content, inner_parent);
     gtk_widget_show(inner_parent);
 
     iupAttribSet(ih, "_IUP_GTK_INNER_PARENT", (char*)inner_parent);
   }
 
-#if GTK_CHECK_VERSION(3, 0, 0)
   /* the ARGB visual has to be selected before the window is realized */
   if (iupAttribGet(ih, "OPACITYIMAGE"))
   {
+#if GTK_CHECK_VERSION(3, 0, 0)
     GdkVisual* visual = gdk_screen_get_rgba_visual(gtk_widget_get_screen(ih->handle));
     if (visual)
       gtk_widget_set_visual(ih->handle, visual);
-  }
+#else
+    GdkColormap* colormap = gdk_screen_get_rgba_colormap(gtk_widget_get_screen(ih->handle));
+    if (colormap)
+      gtk_widget_set_colormap(ih->handle, colormap);
 #endif
+  }
 
   if (!g_get_prgname())
   {
@@ -1201,11 +1213,27 @@ static gboolean gtkDialogOpacityImageDraw(GtkWidget* widget, cairo_t* cr, Ihandl
   (void)widget;
   return FALSE;
 }
+#else
+static gboolean gtkDialogOpacityImageExpose(GtkWidget* widget, GdkEventExpose* evt, Ihandle* ih)
+{
+  GdkPixbuf* pixbuf = (GdkPixbuf*)iupAttribGet(ih, "_IUPGTK_OPACITY_IMAGE");
+  if (pixbuf)
+  {
+    cairo_t* cr = gdk_cairo_create(gtk_widget_get_window(widget));
+    gdk_cairo_region(cr, evt->region);
+    cairo_clip(cr);
+    gdk_cairo_set_source_pixbuf(cr, pixbuf, 0, 0);
+    cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+    cairo_paint(cr);
+    cairo_destroy(cr);
+  }
+
+  return FALSE;
+}
 #endif
 
 static int gtkDialogSetOpacityImageAttrib(Ihandle* ih, const char* value)
 {
-#if GTK_CHECK_VERSION(3, 0, 0)
   GdkPixbuf* pixbuf;
 
   if (!value)
@@ -1223,18 +1251,17 @@ static int gtkDialogSetOpacityImageAttrib(Ihandle* ih, const char* value)
 
   if (!iupAttribGet(ih, "_IUPGTK_OPACITY_DRAW_HANDLER"))
   {
+#if GTK_CHECK_VERSION(3, 0, 0)
     gulong handler_id = g_signal_connect(G_OBJECT(ih->handle), "draw", G_CALLBACK(gtkDialogOpacityImageDraw), ih);
+#else
+    gulong handler_id = g_signal_connect(G_OBJECT(ih->handle), "expose-event", G_CALLBACK(gtkDialogOpacityImageExpose), ih);
+#endif
     iupAttribSet(ih, "_IUPGTK_OPACITY_DRAW_HANDLER", (char*)(uintptr_t)handler_id);
     gtk_widget_set_app_paintable(ih->handle, TRUE);
   }
 
   gtk_widget_queue_draw(ih->handle);
   return 1;
-#else
-  (void)ih;
-  (void)value;
-  return 0;
-#endif
 }
 
 static int gtkDialogSetShapeImageAttrib(Ihandle* ih, const char* value)
