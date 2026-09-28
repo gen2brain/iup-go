@@ -349,7 +349,7 @@ static int iColorbarSetPrimaryCellAttrib(Ihandle* ih, const char* value)
   int new_val;
   if (iupStrToInt(value, &new_val))
   {
-    if (new_val > 0 && new_val < ih->data->num_cells)
+    if (new_val >= 0 && new_val < ih->data->num_cells)
     {
       ih->data->fgcolor_idx = new_val;
       IupUpdate(ih);
@@ -368,7 +368,7 @@ static int iColorbarSetSecondaryCellAttrib(Ihandle* ih, const char* value)
   int new_val;
   if (iupStrToInt(value, &new_val))
   {
-    if (new_val > 0 && new_val < ih->data->num_cells)
+    if (new_val >= 0 && new_val < ih->data->num_cells)
     {
       ih->data->bgcolor_idx = new_val;
       IupUpdate(ih);
@@ -825,11 +825,9 @@ static int iColorbarButton_CB(Ihandle* ih, int b, int m, int x, int y, char* r)
       return IUP_DEFAULT;
 
     if (ih->data->focus_cell != idx)
-    {
       ih->data->focus_cell = idx;
 
-      iColorbarCallSelectCb(ih, idx, ICOLORBAR_PRIMARY);
-    }
+    iColorbarCallSelectCb(ih, idx, ICOLORBAR_PRIMARY);
   }
   else if (b == IUP_BUTTON3 && iup_isshift(r))
   {
