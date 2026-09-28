@@ -24,6 +24,10 @@
 
 #include "iupwin_webbrowser.h"
 
+#ifdef IUP_USE_WINUI
+extern "C" IUP_DRV_API void iupwinuiHwndHostRemove(Ihandle* ih);
+#endif
+
 
 static WCHAR* iupwinStrChar2Wide(const char* str)
 {
@@ -2023,7 +2027,12 @@ static int winWebBrowserMapMethod(Ihandle* ih)
     }
   }
 
+#ifdef IUP_USE_WINUI
+  Ihandle* dialog = IupGetDialog(ih);
+  HWND parent = dialog ? (HWND)dialog->handle : NULL;
+#else
   HWND parent = (HWND)iupChildTreeGetNativeParentHandle(ih);
+#endif
   if (!parent)
     return IUP_ERROR;
 
@@ -2117,6 +2126,10 @@ static int winWebBrowserMapMethod(Ihandle* ih)
 
 static void winWebBrowserUnMapMethod(Ihandle* ih)
 {
+#ifdef IUP_USE_WINUI
+  iupwinuiHwndHostRemove(ih);
+#endif
+
   if (ih->data->webviewWindow)
   {
     ih->data->webviewWindow->remove_NavigationStarting(ih->data->navigationStartingToken);
