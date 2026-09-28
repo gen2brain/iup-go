@@ -30,6 +30,7 @@
 #include "iupwin_info.h"
 #include "iupwin_draw.h"
 #include "iupwin_str.h"
+#include "iupwin_darkmode.h"
 
 
 #ifndef TABP_AEROWIZARDBODY
@@ -100,7 +101,7 @@ IUP_DRV_API int iupwinDrawToggleGlyph(HWND hWnd, HDC hDC, RECT* item, int is_rad
   if (!winDrawThemeEnabled())
     return 0;
 
-  hTheme = winThemeOpenData(NULL, L"DarkMode_Explorer::Button");  /* NULL hwnd forces the dark glyph */
+  hTheme = iupwinDarkModeEnabled()? winThemeOpenData(NULL, L"DarkMode_Explorer::Button"): NULL;  /* NULL hwnd forces the dark glyph */
   if (!hTheme)
     hTheme = winThemeOpenData(hWnd, L"BUTTON");
   if (!hTheme)
