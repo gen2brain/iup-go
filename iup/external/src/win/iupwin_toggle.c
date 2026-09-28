@@ -455,8 +455,8 @@ static void winToggleDrawItem(Ihandle* ih, DRAWITEMSTRUCT* drawitem)
   iupwinDrawDestroyBitmapDC(&bmpDC);
 }
 
-/* Dark checkbox/radio stays a real auto button (native nav + state); only WM_PAINT is intercepted
-   to draw the themed glyph + the IUP FGCOLOR text the control would otherwise paint frozen-light. */
+/* Checkbox/radio stays a real auto button (native nav + state); only WM_PAINT is intercepted
+   to draw the themed glyph + the IUP FGCOLOR text, which the themed control ignores. */
 static void winToggleDrawDark(Ihandle* ih)
 {
   HWND hWnd = ih->handle;
@@ -504,7 +504,7 @@ static void winToggleDrawDark(Ihandle* ih)
   if (!iupwinGetColorRef(ih, "FGCOLOR", &fgcolor))
     fgcolor = GetSysColor(COLOR_WINDOWTEXT);
   if (itemState & ODS_DISABLED)
-    fgcolor = RGB(113, 113, 113);
+    fgcolor = iupwinDarkModeEnabled()? RGB(113, 113, 113): GetSysColor(COLOR_GRAYTEXT);
 
   if (align_right)
   {
@@ -525,19 +525,22 @@ static void winToggleDrawDark(Ihandle* ih)
   EndPaint(hWnd, &ps);
 }
 
+static int winToggleHasFgColor(Ihandle* ih)
+{
+  unsigned char r, g, b, dr, dg, db;
+  if (!iupStrToRGB(IupGetAttribute(ih, "FGCOLOR"), &r, &g, &b) ||
+      !iupStrToRGB(IupGetGlobal("DLGFGCOLOR"), &dr, &dg, &db))
+    return 0;
+  return r != dr || g != dg || b != db;
+}
+
 static int winToggleDarkMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT* result)
 {
-  if (!iupwinDarkModeEnabled())
-    return iupwinBaseMsgProc(ih, msg, wp, lp, result);
-
-  switch (msg)
+  if ((msg == WM_ERASEBKGND || msg == WM_PAINT) && (iupwinDarkModeEnabled() || winToggleHasFgColor(ih)))
   {
-  case WM_ERASEBKGND:
-    *result = 1;
-    return 1;
-  case WM_PAINT:
-    winToggleDrawDark(ih);
-    *result = 0;
+    if (msg == WM_PAINT)
+      winToggleDrawDark(ih);
+    *result = (msg == WM_ERASEBKGND)? 1: 0;
     return 1;
   }
 
