@@ -2915,19 +2915,6 @@ static int winuiTreeSetDragSourceAttrib(Ihandle* ih, const char* value)
       if (!drag_types)
         return;
 
-      IFnii dragbegin_cb = (IFnii)IupGetCallback(ih, "DRAGBEGIN_CB");
-      if (dragbegin_cb)
-      {
-        int x, y;
-        iupdrvGetCursorPos(&x, &y);
-        iupdrvScreenToClient(ih, &x, &y);
-        if (dragbegin_cb(ih, x, y) == IUP_IGNORE)
-        {
-          e.Cancel(true);
-          return;
-        }
-      }
-
       auto items = e.Items();
       if (items.Size() == 0)
         return;
@@ -2954,6 +2941,33 @@ static int winuiTreeSetDragSourceAttrib(Ihandle* ih, const char* value)
       int id = iupTreeFindNodeId(ih, (InodeHandle*)winrt::get_abi(node));
       if (id < 0)
         return;
+
+      uint32_t index;
+      if (!tv.SelectedNodes().IndexOf(node, index))
+      {
+        IupWinUITreeAux* treeAux = winuiGetAux<IupWinUITreeAux>(ih, IUPWINUI_TREE_AUX);
+        if (treeAux)
+          treeAux->ignoreChange = true;
+        tv.SelectedNodes().Clear();
+        tv.SelectedNodes().Append(node);
+        if (treeAux)
+          treeAux->ignoreChange = false;
+        winuiTreeSyncCurrent(ih, tv);
+      }
+      winuiTreeSetFocus(ih, id);
+
+      IFnii dragbegin_cb = (IFnii)IupGetCallback(ih, "DRAGBEGIN_CB");
+      if (dragbegin_cb)
+      {
+        int x, y;
+        iupdrvGetCursorPos(&x, &y);
+        iupdrvScreenToClient(ih, &x, &y);
+        if (dragbegin_cb(ih, x, y) == IUP_IGNORE)
+        {
+          e.Cancel(true);
+          return;
+        }
+      }
 
       iupAttribSetInt(ih, "_IUP_TREE_SOURCEID", id);
 

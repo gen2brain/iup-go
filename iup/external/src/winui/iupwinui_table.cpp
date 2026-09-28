@@ -1134,7 +1134,15 @@ static void winuiTableOnItemsChanged(Ihandle* ih,
     int drop0 = (to > from) ? to + 1 : to;  /* insert-before index in original order */
     int is_ctrl = 0;
     if (iupTableCallDragDropCb(ih, from, drop0, &is_ctrl) == IUP_CONTINUE)
+    {
       winuiTableMoveRow(ih, from + 1, to + 1);
+
+      ListView listView = winuiTableGetListView(ih);
+      int first = from < to ? from : to;
+      int last = from < to ? to : from;
+      for (int i = first; listView && i <= last; i++)
+        winuiTableSetRowAutomationName(ih, i + 1, listView.ContainerFromIndex(i));
+    }
     else
     {
       aux->suppress_reorder = true;
@@ -3516,6 +3524,8 @@ static int winuiTableMapMethod(Ihandle* ih)
         winuiTableOnItemsChanged(ih, sender, args);
       });
   }
+  else
+    listView.AllowDrop(false);
 
   void* headerPtr = nullptr;
   winrt::copy_to_abi(headerPanel, headerPtr);
@@ -3716,6 +3726,25 @@ static int winuiTableSetDragSourceAttrib(Ihandle* ih, const char* value)
     char* drag_types = iupAttribGet(ih, "DRAGTYPES");
     if (!drag_types)
       return;
+
+    uint32_t index, selected_index;
+    ListView lv = winuiTableGetListView(ih);
+    IupWinUITableAux* tableAux = winuiTableGetAux(ih);
+    if (lv && tableAux && e.Items().Size() > 0 && lv.Items().IndexOf(e.Items().GetAt(0), index) &&
+        (int)index + 1 != tableAux->current_row)
+    {
+      int lin = (int)index + 1;
+      int col = tableAux->current_col > 0 ? tableAux->current_col : 1;
+      if (lv.SelectedItems().IndexOf(e.Items().GetAt(0), selected_index))
+      {
+        winuiTableClearFocusVisual(ih);
+        tableAux->current_row = lin;
+        tableAux->current_col = col;
+        winuiTableSetFocusVisual(ih, lin, col);
+      }
+      else
+        iupdrvTableSetFocusCell(ih, lin, col);
+    }
 
     IFnii dragbegin_cb = (IFnii)IupGetCallback(ih, "DRAGBEGIN_CB");
     if (dragbegin_cb)

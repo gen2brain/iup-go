@@ -44,6 +44,19 @@ using namespace Microsoft::UI::Xaml::Input;
 using namespace Microsoft::UI::Xaml::Media;
 
 
+static DataPackageOperation winuiDropAcceptedOperation(DragEventArgs const& e)
+{
+  DataPackageOperation allowed = e.AllowedOperations();
+  bool copy_allowed = (allowed & DataPackageOperation::Copy) == DataPackageOperation::Copy;
+  bool move_allowed = (allowed & DataPackageOperation::Move) == DataPackageOperation::Move;
+
+  if (move_allowed && (!copy_allowed || !(GetKeyState(VK_CONTROL) & 0x8000)))
+    return DataPackageOperation::Move;
+  if (copy_allowed)
+    return DataPackageOperation::Copy;
+  return DataPackageOperation::None;
+}
+
 /****************************************************************************
  * Drop Files Target (DROPFILESTARGET attribute)
  ****************************************************************************/
@@ -365,7 +378,7 @@ static int winuiSetDropTargetAttrib(Ihandle* ih, const char* value)
         dropmotion_cb(ih, (int)(pos.X * scale), (int)(pos.Y * scale), status);
       }
 
-      e.AcceptedOperation(DataPackageOperation::Copy | DataPackageOperation::Move);
+      e.AcceptedOperation(winuiDropAcceptedOperation(e));
       e.Handled(true);
     }));
     elem.AddHandler(UIElement::DragEnterEvent(), dragOverHandler, true);
