@@ -265,7 +265,11 @@ static IhaikuFont* haikuFontGet(Ihandle* ih)
 {
   IhaikuFont* hf = NULL;
   if (ih)
-    hf = haikuFindFont(iupGetFontValue(ih));
+  {
+    hf = (IhaikuFont*)iupAttribGet(ih, "_IUPHAIKU_SETFONT");
+    if (!hf)
+      hf = haikuFindFont(iupGetFontValue(ih));
+  }
   if (!hf)
     hf = haikuFindFont(IupGetGlobal("DEFAULTFONT"));
   if (!hf)
@@ -312,14 +316,14 @@ extern "C" IUP_SDK_API int iupdrvSetFontAttrib(Ihandle* ih, const char* value)
   if (!hf)
     return 0;
 
-  iupAttribSetStr(ih, "FONT", value);
+  iupAttribSet(ih, "_IUPHAIKU_SETFONT", (char*)hf);
   iupBaseUpdateAttribFromFont(ih);
 
   /* TYPEVOID handle is (void*)-1, TYPEDIALOG is BWindow*; neither takes SetFont */
-  if (!ih->iclass || ih->iclass->nativetype != IUP_TYPECONTROL || !ih->handle)
-    return 1;
+  if (ih->iclass && ih->iclass->nativetype == IUP_TYPECONTROL && ih->handle)
+    iuphaikuUpdateWidgetFont(ih, (BView*)ih->handle);
 
-  iuphaikuUpdateWidgetFont(ih, (BView*)ih->handle);
+  iupAttribSet(ih, "_IUPHAIKU_SETFONT", NULL);
   return 1;
 }
 
@@ -361,6 +365,7 @@ IUP_DRV_API void iuphaikuUpdateWidgetFont(Ihandle* ih, BView* widget)
 
   LooperLockGuard guard(widget->Looper());
   widget->SetFont(hf->bfont);
+  iupAttribSet(ih, "_IUPHAIKU_FONT_APPLIED", (char*)hf->bfont);
 
   /* BTextView/BTextControl don't re-style rendered text from BView::SetFont. */
   if (BTextView* tv = (BTextView*)iupAttribGet(ih, "_IUPHAIKU_TEXT_INNER"))

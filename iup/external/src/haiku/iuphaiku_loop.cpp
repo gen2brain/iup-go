@@ -268,6 +268,7 @@ extern "C" IUP_API int IupMainLoop(void)
   else
   {
     /* Nested: Run() is single-shot, so spin a private pump. */
+    iuphaikuModalBegin();
     BLooper* self_looper = BLooper::LooperForThread(find_thread(NULL));
     BWindow* self_window = dynamic_cast<BWindow*>(self_looper);
     sem_id sem = haikuWakeSem();
@@ -291,6 +292,7 @@ extern "C" IUP_API int IupMainLoop(void)
       acquire_sem_etc(sem, 1, B_RELATIVE_TIMEOUT, timeout);
       while (relock--) self_looper->Lock();
     }
+    iuphaikuModalEnd();
   }
 
   haiku_loop_exit_flag[current_level] = false;
@@ -348,6 +350,45 @@ IUP_DRV_API void iuphaikuLoopCleanup(void)
   }
 
   if (haiku_wake_sem >= B_OK) { delete_sem(haiku_wake_sem); haiku_wake_sem = -1; }
+}
+
+static int haiku_modal_depth = 0;
+static bigtime_t haiku_modal_start = 0;
+static bigtime_t haiku_modal_end = 0;
+
+IUP_DRV_API void iuphaikuModalBegin(void)
+{
+  if (haiku_modal_depth++ == 0)
+    haiku_modal_start = system_time();
+}
+
+IUP_DRV_API void iuphaikuModalEnd(void)
+{
+  if (haiku_modal_depth > 0 && --haiku_modal_depth == 0)
+    haiku_modal_end = system_time();
+}
+
+IUP_DRV_API bool iuphaikuIsModalStaleInput(BMessage* msg)
+{
+  if (haiku_modal_depth > 0 || !msg) return false;
+
+  switch (msg->what)
+  {
+    case B_MOUSE_DOWN:
+    case B_MOUSE_UP:
+    case B_MOUSE_WHEEL_CHANGED:
+    case B_KEY_DOWN:
+    case B_KEY_UP:
+    case B_UNMAPPED_KEY_DOWN:
+    case B_UNMAPPED_KEY_UP:
+      break;
+    default:
+      return false;
+  }
+
+  bigtime_t when = 0;
+  if (msg->FindInt64("when", &when) != B_OK) return false;
+  return when >= haiku_modal_start && when <= haiku_modal_end;
 }
 
 IUP_DRV_API int iuphaikuLockLooper(BLooper* looper)

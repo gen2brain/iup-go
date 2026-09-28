@@ -68,7 +68,7 @@ Setting these attributes here will not change the current setting in **IupText**
 Not supported in FLTK and Haiku.
 
 **INDENT**: paragraph indentation, the distance between the margin and the paragraph.
-Not supported in Haiku.
+In FLTK and Haiku it is inserted as leading spaces that become part of VALUE.
 
 **INDENTRIGHT**, **INDENTOFFSET**: the right indentation, and the indentation of the second and subsequent lines relative to the first line. Used only when INDENT is set.
 Not supported in iOS, FLTK, Haiku, Android and WebAssembly. INDENTOFFSET is also not supported in EFL.
@@ -79,11 +79,10 @@ Not supported in FLTK and Haiku.
 
 **NUMBERING**: Can be BULLET (bullet symbol), ARABIC (arabic numbers - 1,2,3...), LCLETTER (lower case letters - a,b,c...), UCLETTER (upper case letters - A,B,C...), LCROMAN (lower case Roman numerals - i,ii,iii...), UCROMAN (upper case Roman numerals - I,II,III...) and NONE.
 Default: NONE.
-Not supported in Haiku.
+In FLTK and Haiku the bullet or number is inserted as text that becomes part of VALUE.
 
 **NUMBERINGSTYLE**: Can be RIGHTPARENTHESIS "a)", PARENTHESES "(a)", PERIOD "a.", NONUMBER (it will skip the numbering or bullet for the item) and NONE "".
 Default: NONE.
-Not supported in Haiku.
 
 **NUMBERINGTAB**: Minimum distance from a paragraph numbering or bullet to the paragraph text.
 Not supported in FLTK, Android, WebAssembly, iOS and Haiku.

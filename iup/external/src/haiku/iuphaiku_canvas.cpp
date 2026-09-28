@@ -38,7 +38,11 @@ extern "C" {
 void iuphaikuCanvasOnDraw(Ihandle* ih, BView* view, BRect dirty)
 {
   if (!ih || !ih->data) return;
-  if (ih->data->inside_resize) return;
+  if (ih->data->inside_resize)
+  {
+    view->Invalidate(dirty);
+    return;
+  }
 
   IFn cb = IupGetCallback(ih, "ACTION");
   if (!cb)

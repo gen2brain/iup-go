@@ -27,23 +27,23 @@ Values can be:
 
 **TIPBGCOLOR**: The tip background color.
 Default: "255 255 225" (Light Yellow).
-Supported in Win32, WinUI, GTK, GTK 4, Motif, Qt, EFL and FLTK.
+Supported in Win32, WinUI, GTK, GTK 4, Motif, Qt, EFL, FLTK and macOS.
 
 **TIPDELAY** [Win32, Motif and FLTK Only]: Time the tip will remain visible. Default: "5000".
 In Windows the maximum value is 32767 milliseconds.
 
 **TIPFGCOLOR**: The tip text color. Default: "0 0 0" (Black).
-Supported in Win32, WinUI, GTK, GTK 4, Motif, Qt, EFL and FLTK.
+Supported in Win32, WinUI, GTK, GTK 4, Motif, Qt, EFL, FLTK and macOS.
 
 **TIPFONT**: The font for the tip text.
 If not defined the font used for the text is the same as the FONT attribute for the element.
 If the value is SYSTEM then, no font is selected and the default system font for the tip will be used.
-Supported in Win32, WinUI, GTK, GTK 4, Motif, Qt, EFL and FLTK.
+Supported in Win32, WinUI, GTK, GTK 4, Motif, Qt, EFL, FLTK and macOS.
 
 **TIPICON** [GTK, GTK 4 and EFL Only]: name of an image to be displayed in the TIP.
 See [IupImage](../elem/iup_image.md).
 
-**TIPMARKUP** [GTK and GTK 4 Only]: allows the tip string to contain Pango markup commands.
+**TIPMARKUP** [GTK, GTK 4 and macOS Only]: allows the tip string to contain Pango markup commands.
 Can be "YES" or "NO". Default: "NO". Must be set before setting the TIP attribute.
 
 **TIPRECT** (non-inheritable): Specifies a rectangle inside the element where the tip will be activated.

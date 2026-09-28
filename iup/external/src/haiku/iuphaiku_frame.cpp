@@ -124,6 +124,18 @@ static void* haikuFrameGetInnerNativeContainerHandleMethod(Ihandle* ih, Ihandle*
   return iupAttribGet(ih, "_IUPHAIKU_FRAME_INNER");
 }
 
+static void haikuFrameUpdateInner(Ihandle* ih, BBox* box)
+{
+  box->InvalidateLayout();
+  if (BView* inner = (BView*)iupAttribGet(ih, "_IUPHAIKU_FRAME_INNER"))
+  {
+    BRect r = box->InnerFrame();
+    inner->MoveTo(r.LeftTop());
+    inner->ResizeTo(r.Width(), r.Height());
+  }
+  box->Invalidate();
+}
+
 static int haikuFrameSetTitleAttrib(Ihandle* ih, const char* value)
 {
   BBox* box = (BBox*)ih->handle;
@@ -134,6 +146,21 @@ static int haikuFrameSetTitleAttrib(Ihandle* ih, const char* value)
 
   LooperLockGuard guard(box->Looper());
   box->SetLabel(value ? value : "");
+  haikuFrameUpdateInner(ih, box);
+  return 1;
+}
+
+static int haikuFrameSetFontAttrib(Ihandle* ih, const char* value)
+{
+  if (!iupdrvSetFontAttrib(ih, value))
+    return 0;
+
+  BBox* box = (BBox*)ih->handle;
+  if (box)
+  {
+    LooperLockGuard guard(box->Looper());
+    haikuFrameUpdateInner(ih, box);
+  }
   return 1;
 }
 
@@ -182,6 +209,9 @@ extern "C" IUP_SDK_API int iupdrvFrameGetTitleHeight(Ihandle* ih, int* h)
 extern "C" IUP_SDK_API int iupdrvFrameGetDecorSize(Ihandle* ih, int* w, int* h)
 {
   BBox temp(BRect(0, 0, 99, 99), "iup_frame_probe", B_FOLLOW_NONE, kFrameFlags, haikuFrameResolveBorder(ih));
+
+  if (BFont* bf = iuphaikuGetBFont(iupGetFontValue(ih)))
+    temp.SetFont(bf);
 
   const char* title = iupAttribGet(ih, "TITLE");
   if (title && *title)
@@ -235,7 +265,7 @@ extern "C" IUP_SDK_API void iupdrvFrameInitClass(Iclass* ic)
   ic->UnMap = haikuFrameUnMapMethod;
   ic->GetInnerNativeContainerHandle = haikuFrameGetInnerNativeContainerHandleMethod;
 
-  iupClassRegisterAttribute(ic, "FONT", NULL, iupdrvSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
+  iupClassRegisterAttribute(ic, "FONT", NULL, haikuFrameSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "TITLE", NULL, haikuFrameSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "BGCOLOR", iupFrameGetBgColorAttrib, haikuFrameSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "FGCOLOR", NULL, iupdrvBaseSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);

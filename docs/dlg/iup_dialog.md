@@ -223,7 +223,7 @@ Valid values range from 0 (completely transparent) to 255 (opaque).
 In Windows (Win32) must be set before map so the native window would be properly initialized when mapped.
 In Motif requires a running compositor.
 In EFL requires X11 and a running compositor.
-Not supported in FLTK.
+Not supported in FLTK and Haiku.
 
 **OPACITYIMAGE**: sets an RGBA image as the dialog background so it is possible to create a non rectangle window with transparency, but it can not have children.
 Used usually for splash screens. It must be set before map so the native window would be properly initialized when mapped.

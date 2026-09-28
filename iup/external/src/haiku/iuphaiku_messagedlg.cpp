@@ -16,6 +16,8 @@ extern "C" {
 #include "iup_str.h"
 }
 
+#include "iuphaiku_drv.h"
+
 
 /* BAlert::Go() is blocking and modal, so no nested run loop or window subset is needed. */
 
@@ -36,7 +38,9 @@ static int haikuRunAlert(const char* title, const char* text, alert_type type, c
   if (default_idx >= 0)
     if (BButton* btn = alert->ButtonAt(default_idx)) btn->MakeDefault(true);
   /* Go() deletes the BAlert. */
+  iuphaikuModalBegin();
   int32 r = alert->Go();
+  iuphaikuModalEnd();
   return r + 1;
 }
 

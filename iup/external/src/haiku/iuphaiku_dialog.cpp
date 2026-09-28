@@ -354,6 +354,9 @@ public:
 
   void DispatchMessage(BMessage* msg, BHandler* target) override
   {
+    if (iuphaikuIsModalStaleInput(msg))
+      return;
+
     if (msg && iupStrBoolean(IupGetGlobal("INPUTCALLBACKS")))
       iuphaikuFireGlobalInputCB(msg);
 
@@ -926,6 +929,7 @@ static char* haikuDialogGetClientSizeAttrib(Ihandle* ih)
 {
   IupHaikuWindow* win = (IupHaikuWindow*)ih->handle;
   if (!win) return NULL;
+  LooperLockGuard guard(win);
   BRect b = win->RootView()->Bounds();
   return iupStrReturnIntInt((int)(b.Width() + 1), (int)(b.Height() + 1), 'x');
 }

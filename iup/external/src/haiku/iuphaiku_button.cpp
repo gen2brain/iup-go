@@ -299,6 +299,8 @@ public:
 
   void MouseDown(BPoint where) override
   {
+    if (fIhandle && IsEnabled() && iupAttribGetBoolean(fIhandle, "CANFOCUS"))
+      MakeFocus(true);
     BButton::MouseDown(where);
     if (!fIhandle) return;
 
