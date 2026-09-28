@@ -2989,7 +2989,7 @@ static int winuiTreeSetDragSourceAttrib(Ihandle* ih, const char* value)
       }
 
       if (iupAttribGetBoolean(ih, "DRAGSOURCEMOVE"))
-        e.Data().RequestedOperation(DataPackageOperation::Move);
+        e.Data().RequestedOperation(DataPackageOperation::Move | DataPackageOperation::Copy);
       else
         e.Data().RequestedOperation(DataPackageOperation::Copy);
     });

@@ -251,7 +251,7 @@ static void winuiDragStartingHandler(Ihandle* ih, DragStartingEventArgs const& e
 
   char* move = iupAttribGet(ih, "DRAGSOURCEMOVE");
   if (iupStrBoolean(move))
-    e.Data().RequestedOperation(DataPackageOperation::Move);
+    e.Data().RequestedOperation(DataPackageOperation::Move | DataPackageOperation::Copy);
   else
     e.Data().RequestedOperation(DataPackageOperation::Copy);
 }
@@ -261,7 +261,7 @@ static void winuiDropCompletedHandler(Ihandle* ih, DropCompletedEventArgs const&
   IFni dragend_cb = (IFni)IupGetCallback(ih, "DRAGEND_CB");
   if (dragend_cb)
   {
-    int del = (e.DropResult() == DataPackageOperation::Move) ? 1 : 0;
+    int del = (e.DropResult() == DataPackageOperation::Move) ? 1 : ((e.DropResult() == DataPackageOperation::Copy) ? 0 : -1);
     dragend_cb(ih, del);
   }
 

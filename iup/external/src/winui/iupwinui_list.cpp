@@ -870,7 +870,7 @@ static void winuiListSetItemDragSource(Ihandle* ih, ListBoxItem const& item)
 
     char* move = iupAttribGet(ih, "DRAGSOURCEMOVE");
     if (iupStrBoolean(move))
-      e.Data().RequestedOperation(DataPackageOperation::Move);
+      e.Data().RequestedOperation(DataPackageOperation::Move | DataPackageOperation::Copy);
     else
       e.Data().RequestedOperation(DataPackageOperation::Copy);
   });
@@ -879,7 +879,7 @@ static void winuiListSetItemDragSource(Ihandle* ih, ListBoxItem const& item)
     IFni dragend_cb = (IFni)IupGetCallback(ih, "DRAGEND_CB");
     if (dragend_cb)
     {
-      int del = (e.DropResult() == DataPackageOperation::Move) ? 1 : 0;
+      int del = (e.DropResult() == DataPackageOperation::Move) ? 1 : ((e.DropResult() == DataPackageOperation::Copy) ? 0 : -1);
       dragend_cb(ih, del);
     }
     winuiDragDataCleanup();
@@ -1225,7 +1225,7 @@ static int winuiListSetDragSourceAttrib(Ihandle* ih, const char* value)
 
           char* move = iupAttribGet(ih, "DRAGSOURCEMOVE");
           if (iupStrBoolean(move))
-            e.Data().RequestedOperation(DataPackageOperation::Move);
+            e.Data().RequestedOperation(DataPackageOperation::Move | DataPackageOperation::Copy);
           else
             e.Data().RequestedOperation(DataPackageOperation::Copy);
 
@@ -1237,7 +1237,7 @@ static int winuiListSetDragSourceAttrib(Ihandle* ih, const char* value)
           IFni dragend_cb = (IFni)IupGetCallback(ih, "DRAGEND_CB");
           if (dragend_cb)
           {
-            int del = (e.DropResult() == DataPackageOperation::Move) ? 1 : 0;
+            int del = (e.DropResult() == DataPackageOperation::Move) ? 1 : ((e.DropResult() == DataPackageOperation::Copy) ? 0 : -1);
             dragend_cb(ih, del);
           }
           winuiDragDataCleanup();
