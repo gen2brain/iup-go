@@ -41,6 +41,7 @@ static void iHandleDestroy(Ihandle* ih)
 {
   iupTableDestroy(ih->attrib);
   memset(ih, 0, sizeof(Ihandle));
+  ((volatile char*)ih->sig)[0] = 0;  /* the memset is a dead store before free and gets dropped */
   free(ih);
 }
 

@@ -111,52 +111,37 @@ IUP_SDK_API int iupDlgListVisibleCount(void)
   return idlg_nvisiblewin;
 }
 
-void iupDlgListDestroyAll(void)
+static Ihandle* iDlgListNextToDestroy(const char* name, void* value)
 {
-  int i, count = 0;
-  Ihandle** ih_array = (Ihandle**)malloc(idlg_count * sizeof(Ihandle*));
   Idiallst* list;
-  if (!ih_array)
-    return;
   for (list = idlglist; list; list = list->next)
   {
-    if (iupObjectCheck(list->ih))
-    {
-      ih_array[count] = list->ih;
-      count++;
-    }
+    Ihandle* ih = list->ih;
+    if (!iupObjectCheck(ih) || iupAttribGet(ih, "_IUP_DLGLIST_DESTROY"))
+      continue;
+    if (name && !((value && iupAttribGet(ih, name) == value) || (!value && iupAttribGet(ih, name))))
+      continue;
+    return ih;
   }
+  return NULL;
+}
 
-  for (i = 0; i < count; i++)
+static void iDlgListDestroy(const char* name, void* value)
+{
+  Ihandle* ih;
+  while ((ih = iDlgListNextToDestroy(name, value)) != NULL)
   {
-    if (iupObjectCheck(ih_array[i]))
-      IupDestroy(ih_array[i]);   /* this will also destroy the list eventually */
+    iupAttribSet(ih, "_IUP_DLGLIST_DESTROY", "1");
+    IupDestroy(ih);   /* this also removes it, and any dialog it owns, from the list */
   }
+}
 
-  free(ih_array);
+void iupDlgListDestroyAll(void)
+{
+  iDlgListDestroy(NULL, NULL);
 }
 
 IUP_SDK_API void iupDlgListDestroySelected(const char* name, void* value)
 {
-  int i, count = 0;
-  Ihandle** ih_array = (Ihandle**)malloc(idlg_count * sizeof(Ihandle*));
-  Idiallst* list;
-  if (!ih_array)
-    return;
-  for (list = idlglist; list; list = list->next)
-  {
-    if (iupObjectCheck(list->ih) && ((value && iupAttribGet(list->ih, name) == value) || (!value && iupAttribGet(list->ih, name))))
-    {
-      ih_array[count] = list->ih;
-      count++;
-    }
-  }
-
-  for (i = 0; i < count; i++)
-  {
-    if (iupObjectCheck(ih_array[i]))
-      IupDestroy(ih_array[i]);
-  }
-
-  free(ih_array);
+  iDlgListDestroy(name, value);
 }
