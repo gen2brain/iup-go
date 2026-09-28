@@ -57,6 +57,8 @@ package iup
 #cgo windows,!winui LDFLAGS: -lgdi32 -lcomdlg32 -lcomctl32 -luuid -loleaut32 -lole32
 #cgo windows,gl LDFLAGS: -lopengl32
 #cgo windows,media LDFLAGS: -lmfuuid -lole32
+#cgo windows,!gtk,!gtk4,!qt,!winui,!efl,!fltk,web LDFLAGS: -static-libgcc -static-libstdc++
+#cgo windows,!gtk,!gtk4,!qt,!winui,!efl,!fltk,plot LDFLAGS: -static-libgcc -static-libstdc++
 
 #cgo windows,gtk CFLAGS: -Iexternal/src/gtk -Iexternal/src/unix -DIUP_USE_GTK3
 #cgo windows,gtk,!nopkgconfig pkg-config: gtk+-3.0 gdk-3.0
