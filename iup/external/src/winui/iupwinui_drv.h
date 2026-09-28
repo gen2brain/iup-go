@@ -88,6 +88,8 @@ IUP_DRV_API void iupwinuiTimerStopAll(void);
 IUP_DRV_API BOOL iupwinuiContentPreTranslateMessage(const MSG* msg);
 IUP_DRV_API void iupwinuiProcessPendingMessages(void);
 IUP_DRV_API void iupwinuiBringWindowToForeground(HWND hwnd);
+IUP_DRV_API Ihandle* iupwinuiDialogFromHwnd(HWND hwnd);
+IUP_DRV_API void iupwinuiHwndHostRemove(Ihandle* ih);
 
 
 #ifdef __cplusplus
@@ -115,7 +117,7 @@ extern float winui_screen_dpi;
 inline bool winuiHandleIsHWND(Ihandle* ih)
 {
   return IupClassMatch(ih, "dialog") ||
-         iupAttribGet(ih, "_IUP_GLCONTROLDATA") != NULL ||
+         (iupAttribGet(ih, "_IUP_GLCONTROLDATA") != NULL && !IupClassMatch(ih, "glbackgroundbox")) ||
          IupClassMatch(ih, "webbrowser");
 }
 
@@ -150,6 +152,8 @@ IUP_DRV_API winrt::Microsoft::UI::Xaml::Controls::ScrollViewer iupwinuiFindScrol
 IUP_DRV_API char* iupwinuiScrollViewerVisible(winrt::Microsoft::UI::Xaml::Controls::ScrollViewer const& sv);
 
 IUP_DRV_API void iupwinuiUpdateControlFont(Ihandle* ih, winrt::Microsoft::UI::Xaml::Controls::Control control);
+IUP_DRV_API void iupwinuiSetStateBrushes(Ihandle* ih, winrt::Microsoft::UI::Xaml::FrameworkElement const& fe, const wchar_t* const* keys, int count, winrt::Windows::UI::Color color);
+IUP_DRV_API void iupwinuiReleaseStateBrushes(Ihandle* ih);
 IUP_DRV_API void iupwinuiUpdateTextBlockFont(Ihandle* ih, winrt::Microsoft::UI::Xaml::Controls::TextBlock textBlock);
 IUP_DRV_API void iupwinuiUpdateTextBlockFontStr(winrt::Microsoft::UI::Xaml::Controls::TextBlock textBlock, const char* value, Ihandle* ih);
 
@@ -169,6 +173,7 @@ void winuiTreeRefreshThemeColors(Ihandle* ih);
 
 void winuiDragSetInProcessData(const char* type, void* data, int size);
 void winuiDragDataCleanup(void);
+void winuiDropTargetRemoveHandlers(Ihandle* ih, winrt::Microsoft::UI::Xaml::UIElement const& elem);
 
 winrt::Microsoft::UI::Xaml::Media::Imaging::WriteableBitmap winuiGetBitmapFromHandle(void* handle);
 void winuiImageSetPixelSize(Ihandle* ih, winrt::Microsoft::UI::Xaml::Controls::Image const& img, int w, int h);
@@ -196,7 +201,7 @@ template<typename T>
 inline T winuiGetHandle(Ihandle* ih)
 {
   T widget{nullptr};
-  if (ih && ih->handle)
+  if (ih && ih->handle && !winuiHandleIsHWND(ih))
   {
     winrt::Windows::Foundation::IInspectable obj{nullptr};
     winrt::copy_from_abi(obj, ih->handle);
@@ -242,6 +247,16 @@ inline int iupwinuiGetModifierKeys(void)
 
 inline int iupwinuiGetPointerButton(winrt::Microsoft::UI::Input::PointerPointProperties const& props)
 {
+  using winrt::Microsoft::UI::Input::PointerUpdateKind;
+  switch (props.PointerUpdateKind())
+  {
+  case PointerUpdateKind::LeftButtonPressed:   return IUP_BUTTON1;
+  case PointerUpdateKind::MiddleButtonPressed: return IUP_BUTTON2;
+  case PointerUpdateKind::RightButtonPressed:  return IUP_BUTTON3;
+  case PointerUpdateKind::XButton1Pressed:     return IUP_BUTTON4;
+  case PointerUpdateKind::XButton2Pressed:     return IUP_BUTTON5;
+  default: break;
+  }
   if (props.IsLeftButtonPressed())
     return IUP_BUTTON1;
   if (props.IsMiddleButtonPressed())
@@ -253,13 +268,15 @@ inline int iupwinuiGetPointerButton(winrt::Microsoft::UI::Input::PointerPointPro
 
 inline int iupwinuiGetPointerReleasedButton(winrt::Microsoft::UI::Input::PointerPointProperties const& props)
 {
-  if (!props.IsLeftButtonPressed())
-    return IUP_BUTTON1;
-  if (!props.IsMiddleButtonPressed())
-    return IUP_BUTTON2;
-  if (!props.IsRightButtonPressed())
-    return IUP_BUTTON3;
-  return IUP_BUTTON1;
+  using winrt::Microsoft::UI::Input::PointerUpdateKind;
+  switch (props.PointerUpdateKind())
+  {
+  case PointerUpdateKind::MiddleButtonReleased: return IUP_BUTTON2;
+  case PointerUpdateKind::RightButtonReleased:  return IUP_BUTTON3;
+  case PointerUpdateKind::XButton1Released:     return IUP_BUTTON4;
+  case PointerUpdateKind::XButton2Released:     return IUP_BUTTON5;
+  default: return IUP_BUTTON1;
+  }
 }
 
 inline void iupwinuiPointerToPixel(Ihandle* ih, winrt::Windows::Foundation::Point const& pos, int* x, int* y)
@@ -432,6 +449,8 @@ struct IupWinUITreeAux
   winrt::event_token dragItemsCompletedToken;
   bool ignoreChange;
   int currentId;
+  int clickId;
+  int anchorId;
   std::vector<winrt::Microsoft::UI::Xaml::Controls::TreeViewNode> selectedNodes;
 
   winrt::event_token gotFocusToken{};
@@ -444,7 +463,7 @@ struct IupWinUITreeAux
                        itemInvokedToken{}, selectionChangedToken{},
                        rightTappedToken{}, keyDownToken{}, doubleTappedToken{},
                        dragItemsStartingToken{}, dragItemsCompletedToken{},
-                       ignoreChange(false), currentId(-1), namesDirty(false) {}
+                       ignoreChange(false), currentId(-1), clickId(-1), anchorId(-1), namesDirty(false) {}
 };
 
 struct IupWinUIMenuAux

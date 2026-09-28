@@ -195,6 +195,17 @@ static void winuiMenuItemClickHandler(Ihandle* ih)
   }
 }
 
+static int winui_menu_popup_level = 0;
+static Ihandle* winui_menu_popup_item = NULL;
+
+static void winuiMenuItemClick(Ihandle* ih)
+{
+  if (winui_menu_popup_level > 0)
+    winui_menu_popup_item = ih;
+  else
+    winuiMenuItemClickHandler(ih);
+}
+
 IUP_DRV_API int iupwinuiMenuActivateAccel(Ihandle* ih_dialog, int code)
 {
   Ihandle* menu = IupGetAttributeHandle(ih_dialog, "MENU");
@@ -361,7 +372,7 @@ static int winuiMenuItemMapMethod(Ihandle* ih)
       item.IsEnabled(false);
 
     aux->clickToken = item.Click([ih](IInspectable const&, RoutedEventArgs const&) {
-      winuiMenuItemClickHandler(ih);
+      winuiMenuItemClick(ih);
     });
 
     winuiMenuItemAddToParent(ih, item);
@@ -382,7 +393,7 @@ static int winuiMenuItemMapMethod(Ihandle* ih)
       item.IsEnabled(false);
 
     aux->clickToken = item.Click([ih](IInspectable const&, RoutedEventArgs const&) {
-      winuiMenuItemClickHandler(ih);
+      winuiMenuItemClick(ih);
     });
 
     winuiMenuItemAddToParent(ih, item);
@@ -764,6 +775,7 @@ extern "C" IUP_SDK_API int iupdrvMenuPopup(Ihandle* ih, int x, int y)
     menuClosed = true;
   });
 
+  winui_menu_popup_level++;
   flyout.ShowAt(dlgAux->contentCanvas, options);
 
   MSG msg;
@@ -782,6 +794,10 @@ extern "C" IUP_SDK_API int iupdrvMenuPopup(Ihandle* ih, int x, int y)
   }
 
   flyout.Closed(closedToken);
+  winui_menu_popup_level--;
+
+  Ihandle* clicked = winui_menu_popup_item;
+  winui_menu_popup_item = NULL;
 
   if (wasHidden)
   {
@@ -793,6 +809,9 @@ extern "C" IUP_SDK_API int iupdrvMenuPopup(Ihandle* ih, int x, int y)
     if (!da || !da->isVisible)
       ShowWindow(hWndActive, SW_HIDE);
   }
+
+  if (clicked && iupObjectCheck(clicked))
+    winuiMenuItemClickHandler(clicked);
 
   return IUP_NOERROR;
 }

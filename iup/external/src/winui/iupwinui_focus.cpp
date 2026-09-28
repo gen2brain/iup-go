@@ -86,8 +86,6 @@ static UIElement winuiGetFocusableElement(Ihandle* ih)
     IupWinUITextAux* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
     if (aux && aux->isPassword)
       return winuiGetHandle<PasswordBox>(ih);
-    else
-      return winuiGetHandle<TextBox>(ih);
   }
   else if (IupClassMatch(ih, "list"))
   {

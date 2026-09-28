@@ -421,9 +421,96 @@ extern "C" IUP_SDK_API int iupdrvImageGetInfo(void* handle, int* w, int* h, int*
   return 1;
 }
 
+static IWICImagingFactory* iWinUIGetWicFactory(void)
+{
+  static IWICImagingFactory* factory = NULL;
+  if (!factory)
+  {
+    CoCreateInstance(CLSID_WICImagingFactory, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&factory));
+  }
+  return factory;
+}
+
+static int winuiImageReadDib(void* handle, int* w, int* h, unsigned char* imgdata)
+{
+  BITMAPINFOHEADER* bmih = (BITMAPINFOHEADER*)GlobalLock((HGLOBAL)handle);
+  if (!bmih)
+    return 0;
+  if ((void*)bmih == handle)
+  {
+    GlobalUnlock((HGLOBAL)handle);
+    return 0;
+  }
+
+  IWICImagingFactory* factory = iWinUIGetWicFactory();
+  SIZE_T dib_size = GlobalSize((HGLOBAL)handle);
+  DWORD colors = bmih->biClrUsed;
+  if (!colors && bmih->biBitCount <= 8)
+    colors = 1 << bmih->biBitCount;
+  DWORD masks = (bmih->biSize == sizeof(BITMAPINFOHEADER) && bmih->biCompression == BI_BITFIELDS) ? 3 * sizeof(DWORD) : 0;
+
+  BITMAPFILEHEADER bf = {};
+  bf.bfType = 0x4D42;
+  bf.bfSize = (DWORD)(sizeof(BITMAPFILEHEADER) + dib_size);
+  bf.bfOffBits = (DWORD)(sizeof(BITMAPFILEHEADER) + bmih->biSize + masks + colors * sizeof(RGBQUAD));
+
+  BYTE* file = (BYTE*)malloc(bf.bfSize);
+  int ret = 0;
+  if (factory && file && dib_size >= sizeof(BITMAPINFOHEADER))
+  {
+    memcpy(file, &bf, sizeof(BITMAPFILEHEADER));
+    memcpy(file + sizeof(BITMAPFILEHEADER), bmih, dib_size);
+
+    IWICStream* stream = NULL;
+    IWICBitmapDecoder* decoder = NULL;
+    IWICBitmapFrameDecode* frame = NULL;
+    IWICBitmapSource* source = NULL;
+    UINT width = 0, height = 0;
+
+    if (SUCCEEDED(factory->CreateStream(&stream)) &&
+        SUCCEEDED(stream->InitializeFromMemory(file, bf.bfSize)) &&
+        SUCCEEDED(factory->CreateDecoderFromStream(stream, &GUID_ContainerFormatBmp, WICDecodeMetadataCacheOnDemand, &decoder)) &&
+        SUCCEEDED(decoder->GetFrame(0, &frame)) &&
+        SUCCEEDED(WICConvertBitmapSource(GUID_WICPixelFormat32bppBGRA, frame, &source)) &&
+        SUCCEEDED(source->GetSize(&width, &height)))
+    {
+      if (w) *w = (int)width;
+      if (h) *h = (int)height;
+      ret = 1;
+
+      if (imgdata)
+      {
+        UINT stride = width * 4;
+        if (SUCCEEDED(source->CopyPixels(NULL, stride, stride * height, imgdata)))
+        {
+          size_t count = (size_t)width * height;
+          for (size_t i = 0; i < count; i++)
+          {
+            unsigned char b = imgdata[i * 4];
+            imgdata[i * 4] = imgdata[i * 4 + 2];
+            imgdata[i * 4 + 2] = b;
+          }
+        }
+      }
+    }
+
+    if (source) source->Release();
+    if (frame) frame->Release();
+    if (decoder) decoder->Release();
+    if (stream) stream->Release();
+  }
+
+  free(file);
+  GlobalUnlock((HGLOBAL)handle);
+  return ret;
+}
+
 extern "C" IUP_SDK_API void iupdrvImageGetData(void* handle, unsigned char* imgdata)
 {
   if (!handle || !imgdata)
+    return;
+
+  if (winuiImageReadDib(handle, NULL, NULL, imgdata))
     return;
 
   WriteableBitmap bitmap = winuiGetBitmapFromHandle(handle);
@@ -472,6 +559,11 @@ extern "C" IUP_SDK_API int iupdrvImageGetRawInfo(void* handle, int* w, int* h, i
 {
   (void)colors;
   if (colors_count) *colors_count = 0;
+  if (winuiImageReadDib(handle, w, h, NULL))
+  {
+    if (bpp) *bpp = 32;
+    return 1;
+  }
   return iupdrvImageGetInfo(handle, w, h, bpp);
 }
 
@@ -495,16 +587,6 @@ extern "C" IUP_SDK_API void iupdrvImageDestroy(void* handle, int type)
     break;
   }
   }
-}
-
-static IWICImagingFactory* iWinUIGetWicFactory(void)
-{
-  static IWICImagingFactory* factory = NULL;
-  if (!factory)
-  {
-    CoCreateInstance(CLSID_WICImagingFactory, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&factory));
-  }
-  return factory;
 }
 
 static const GUID* iWinUIImageGetContainerFormat(const char* format)

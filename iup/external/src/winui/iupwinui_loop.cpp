@@ -91,10 +91,7 @@ static int winuiLoopProcessMessage(MSG* msg)
       Ihandle* dlg = focus ? IupGetDialog(focus) : NULL;
       if (!dlg)
       {
-        HWND active = GetActiveWindow();
-        Ihandle* ih = active ? (Ihandle*)GetWindowLongPtr(active, GWLP_USERDATA) : NULL;
-        if (ih && iupObjectCheck(ih))
-          dlg = IupGetDialog(ih);
+        dlg = iupwinuiDialogFromHwnd(GetActiveWindow());
       }
       if (dlg)
       {
@@ -115,15 +112,7 @@ static int winuiLoopProcessMessage(MSG* msg)
       {
         Ihandle* ih = IupGetFocus();
         if (!ih)
-        {
-          HWND active = GetActiveWindow();
-          if (active)
-          {
-            Ihandle* dlg = (Ihandle*)GetWindowLongPtr(active, GWLP_USERDATA);
-            if (dlg && iupObjectCheck(dlg))
-              ih = dlg;
-          }
-        }
+          ih = iupwinuiDialogFromHwnd(GetActiveWindow());
         int alt_numpad_compose = ih &&
             (GetKeyState(VK_MENU) & 0x8000) && !(GetKeyState(VK_CONTROL) & 0x8000) &&
             wincode >= VK_NUMPAD0 && wincode <= VK_NUMPAD9 &&

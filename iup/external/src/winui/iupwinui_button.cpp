@@ -296,6 +296,21 @@ static TextBlock winuiButtonGetTextBlock(Ihandle* ih)
   return nullptr;
 }
 
+static int winuiButtonSetBgColorAttrib(Ihandle* ih, const char* value)
+{
+  int has_content = iupAttribGet(ih, "IMAGE") || (iupAttribGet(ih, "TITLE") && *iupAttribGet(ih, "TITLE"));
+  if (has_content && !iupAttribGet(ih, "BGCOLOR") && ih->parent &&
+      iupStrEqualNoCase(value, IupGetAttribute(ih->parent, "BGCOLOR")))
+  {
+    Button btn = winuiGetHandle<Button>(ih);
+    if (btn)
+      btn.ClearValue(Control::BackgroundProperty());
+    return 1;
+  }
+
+  return iupdrvBaseSetBgColorAttrib(ih, value);
+}
+
 static int winuiButtonSetFgColorAttrib(Ihandle* ih, const char* value)
 {
   unsigned char r, g, b;
@@ -735,7 +750,7 @@ extern "C" IUP_SDK_API void iupdrvButtonInitClass(Iclass* ic)
 
   /* Visual */
   iupClassRegisterAttribute(ic, "ACTIVE", NULL, winuiButtonSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_NO_SAVE);
+  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, winuiButtonSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_NO_SAVE);
   iupClassRegisterAttribute(ic, "FGCOLOR", NULL, winuiButtonSetFgColorAttrib, "DLGFGCOLOR", NULL, IUPAF_NOT_MAPPED);
 
   /* Special */

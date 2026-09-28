@@ -21,7 +21,8 @@ In GTK, horizontal alignment for multiple lines will align only the text block.
 
 [BGCOLOR](../attrib/iup_bgcolor.md): Background color.
 If text and image are not defined, the button is configured to simply show a color, in this case set the button size because the natural size will be very small.
-In Windows and in GTK 3, the BGCOLOR attribute is ignored if text or image is defined.
+In Win32 and in GTK 3, the BGCOLOR attribute is ignored if text or image is defined.
+In WinUI, when text or image is defined, a BGCOLOR inherited from the parent is ignored.
 Default: the global attribute DLGBGCOLOR.
 BGCOLOR is ignored when FLAT=YES because it will be used the background from the native parent.
 

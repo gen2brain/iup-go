@@ -18,6 +18,7 @@ extern "C" {
 #include "iup_drv.h"
 #include "iup_drvinfo.h"
 #include "iup_drvfont.h"
+#include "iup_markup.h"
 }
 
 #include "iupwinui_drv.h"
@@ -29,6 +30,14 @@ using namespace Microsoft::UI::Xaml::Media;
 using namespace Windows::Foundation;
 
 
+static void winuiTipSetText(Ihandle* ih, TextBlock const& tb, const char* text)
+{
+  if (iupAttribGetBoolean(ih, "TIPMARKUP"))
+    iupwinuiApplyMarkupToTextBlock(tb, text);
+  else
+    tb.Text(iupwinuiStringToHString(text));
+}
+
 static ToolTip winuiTipCreateStyled(Ihandle* ih, const char* text)
 {
   unsigned char r, g, b;
@@ -39,7 +48,7 @@ static ToolTip winuiTipCreateStyled(Ihandle* ih, const char* text)
   TextBlock tb;
   tb.TextWrapping(TextWrapping::Wrap);
   tb.MaxWidth(400);
-  tb.Text(iupwinuiStringToHString(text));
+  winuiTipSetText(ih, tb, text);
 
   value = iupAttribGet(ih, "TIPFONT");
   if (value && !iupStrEqualNoCase(value, "SYSTEM"))
@@ -146,7 +155,8 @@ extern "C" IUP_SDK_API int iupdrvBaseSetTipAttrib(Ihandle* ih, const char* value
     int need_styled = iupAttribGet(ih, "TIPFONT") ||
                       iupAttribGet(ih, "TIPBGCOLOR") ||
                       iupAttribGet(ih, "TIPFGCOLOR") ||
-                      iupAttribGet(ih, "TIPRECT");
+                      iupAttribGet(ih, "TIPRECT") ||
+                      iupAttribGetBoolean(ih, "TIPMARKUP");
 
     IFnii tips_cb = (IFnii)IupGetCallback(ih, "TIPS_CB");
 
@@ -194,7 +204,7 @@ extern "C" IUP_SDK_API int iupdrvBaseSetTipAttrib(Ihandle* ih, const char* value
               {
                 TextBlock tb = tt.Content().try_as<TextBlock>();
                 if (tb)
-                  tb.Text(iupwinuiStringToHString(tip_text));
+                  winuiTipSetText(ih, tb, tip_text);
               }
             }
           }
@@ -214,7 +224,16 @@ extern "C" IUP_SDK_API int iupdrvBaseSetTipAttrib(Ihandle* ih, const char* value
   }
 
   if (!iupAttribGet(ih, "ACCESSIBLEDESCRIPTION"))
-    iupdrvSetAccessibleDescription(ih, value);
+  {
+    if (value && iupAttribGetBoolean(ih, "TIPMARKUP"))
+    {
+      char* plain = iupMarkupStripTags(value);
+      iupdrvSetAccessibleDescription(ih, plain);
+      free(plain);
+    }
+    else
+      iupdrvSetAccessibleDescription(ih, value);
+  }
 
   return 1;
 }
@@ -242,8 +261,7 @@ extern "C" IUP_SDK_API int iupdrvBaseSetTipVisibleAttrib(Ihandle* ih, const char
 
     if (!tt)
     {
-      tt = ToolTip();
-      tt.Content(box_value(iupwinuiStringToHString(tip)));
+      tt = winuiTipCreateStyled(ih, tip);
       ToolTipService::SetToolTip(elem, tt);
     }
 
