@@ -590,6 +590,23 @@ static LRESULT winDialogCustomFrameHitTest(Ihandle* ih, LPARAM lp)
   return result;
 }
 
+IUP_DRV_API int iupwinDialogIsCustomFrameCaption(Ihandle* ih, LPARAM lp)
+{
+  Ihandle* dialog = IupGetDialog(ih);
+  Ihandle* caption;
+
+  if (!dialog || !dialog->handle || !iupAttribGetBoolean(dialog, "CUSTOMFRAME"))
+    return 0;
+
+  caption = IupGetDialogChild(dialog, "CUSTOMFRAMECAPTION");
+  while (caption && caption != ih)
+    caption = caption->parent;
+  if (!caption)
+    return 0;
+
+  return winDialogCustomFrameHitTest(dialog, lp) == HTCAPTION;
+}
+
 static int winDialogCustomFrameProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT* result)
 {
   switch (msg)
@@ -801,6 +818,19 @@ static int winDialogBaseProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESUL
 
   switch (msg)
   {
+  case WM_NCCALCSIZE:
+    {
+      LONG_PTR style = GetWindowLongPtr(ih->handle, GWL_STYLE);
+      if (wp && !(style & WS_CAPTION) && (style & WS_THICKFRAME) && !IsZoomed(ih->handle))
+      {
+        NCCALCSIZE_PARAMS* params = (NCCALCSIZE_PARAMS*)lp;
+        LONG top = params->rgrc[0].top;
+        *result = DefWindowProc(ih->handle, msg, wp, lp);
+        params->rgrc[0].top = top;
+        return 1;
+      }
+      break;
+    }
   case WM_GETMINMAXINFO:
     {
       if (winDialogCheckMinMaxInfo(ih, (MINMAXINFO*)lp))
@@ -1575,6 +1605,7 @@ static int winDialogSetTopMostAttrib(Ihandle* ih, const char* value)
 
 static int winDialogSetHideTitleBarAttrib(Ihandle* ih, const char* value)
 {
+  RECT client_before, client_after, window;
   if (!ih->handle)
     return 1;
   LONG_PTR style = GetWindowLongPtr(ih->handle, GWL_STYLE);
@@ -1582,12 +1613,26 @@ static int winDialogSetHideTitleBarAttrib(Ihandle* ih, const char* value)
     style &= ~WS_CAPTION;
   else
     style |= WS_CAPTION;
+
+  GetClientRect(ih->handle, &client_before);
   SetWindowLongPtr(ih->handle, GWL_STYLE, style);
 
   if (!ih->currentwidth)
     ih->data->ignore_resize = 1;
 
   SetWindowPos(ih->handle, NULL, 0, 0, 0, 0, SWP_NOZORDER | SWP_NOMOVE | SWP_NOSIZE | SWP_FRAMECHANGED);
+
+  if (!IsZoomed(ih->handle) && !IsIconic(ih->handle))
+  {
+    GetClientRect(ih->handle, &client_after);
+    GetWindowRect(ih->handle, &window);
+    SetWindowPos(ih->handle, NULL, 0, 0,
+                 (window.right - window.left) + (client_before.right - client_after.right),
+                 (window.bottom - window.top) + (client_before.bottom - client_after.bottom),
+                 SWP_NOZORDER | SWP_NOMOVE | SWP_NOACTIVATE);
+  }
+
+  RedrawWindow(ih->handle, NULL, NULL, RDW_INVALIDATE | RDW_ERASE | RDW_FRAME | RDW_ALLCHILDREN);
 
   ih->data->ignore_resize = 0;
 

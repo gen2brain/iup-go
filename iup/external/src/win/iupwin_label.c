@@ -25,6 +25,7 @@
 
 #include "iupwin_drv.h"
 #include "iupwin_draw.h"
+#include "iupwin_str.h"
 
 
 /* Not defined in MingW and Cygwin */
@@ -183,7 +184,7 @@ static void winLabelDrawItem(Ihandle* ih, DRAWITEMSTRUCT* drawitem)
 static int winLabelSetTitleAttrib(Ihandle* ih, const char* value)
 {
   iupwinSetMnemonicTitle(ih, 0, value);
-  iupwinSetTitleAttrib(ih, value);
+  DefWindowProc(ih->handle, WM_SETTEXT, 0, (LPARAM)(value ? iupwinStrToSystem(value) : TEXT("")));
   iupdrvPostRedraw(ih);
   return 1;
 }
@@ -357,7 +358,7 @@ static int winLabelMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT*
     }
   case WM_NCHITTEST:
     {
-      if (iupAttribGetBoolean(ih, "HTTRANSPARENT"))
+      if (iupAttribGetBoolean(ih, "HTTRANSPARENT") || iupwinDialogIsCustomFrameCaption(ih, lp))
       {
         *result = HTTRANSPARENT;
         return 1;

@@ -648,7 +648,7 @@ static int winCanvasMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT
     break;
   case WM_NCHITTEST:
     {
-      if (iupAttribGetBoolean(ih, "HTTRANSPARENT"))
+      if (iupAttribGetBoolean(ih, "HTTRANSPARENT") || iupwinDialogIsCustomFrameCaption(ih, lp))
       {
         *result = HTTRANSPARENT;
         return 1;
@@ -715,8 +715,6 @@ static void winCanvasUnMapMethod(Ihandle* ih)
   /* remove the association before destroying */
   iupwinHandleRemove(ih->handle);
 
-  /* remove from parent and destroys window */
-  SetParent(ih->handle, NULL);
   DestroyWindow(ih->handle);
 }
 

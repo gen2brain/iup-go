@@ -5,6 +5,8 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
 
 #include <windows.h>
 #include <commctrl.h>
@@ -17,6 +19,7 @@
 #include "iup_drvinfo.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
+#include "iup_markup.h"
 
 #include "iupwin_drv.h"
 #include "iupwin_handle.h"
@@ -274,7 +277,210 @@ IUP_DRV_API void iupwinTipsGetDispInfo(LPARAM lp)
     cb(ih, x, y);
   }
 
-  tips_info->lpszText = iupwinStrToSystem(iupAttribGet(ih, "TIP"));
+  if (iupAttribGetBoolean(ih, "TIPMARKUP"))
+  {
+    char* plain = iupMarkupStripTags(iupAttribGet(ih, "TIP"));
+    tips_info->lpszText = iupwinStrToSystem(plain);
+    free(plain);
+  }
+  else
+    tips_info->lpszText = iupwinStrToSystem(iupAttribGet(ih, "TIP"));
 
   iupwinTipsUpdateInfo(ih, tips_hwnd);
+}
+
+static HFONT winTipsMarkupFont(HDC hdc, const LOGFONT* base, ImarkupRun* run)
+{
+  LOGFONT lf = *base;
+  double scale = pow(1.2, run->big) * pow(0.83, run->small_size);
+
+  if (run->superscript || run->subscript)
+    scale *= 0.8;
+
+  if (run->font_size > 0)
+    lf.lfHeight = -MulDiv(run->font_size, GetDeviceCaps(hdc, LOGPIXELSY), 72);
+  lf.lfHeight = (LONG)floor(lf.lfHeight * scale + (lf.lfHeight < 0 ? -0.5 : 0.5));
+
+  if (run->bold || run->font_weight >= 600)
+    lf.lfWeight = FW_BOLD;
+  else if (run->font_weight > 0)
+    lf.lfWeight = run->font_weight;
+  if (run->italic || run->font_style)
+    lf.lfItalic = TRUE;
+  if (run->underline)
+    lf.lfUnderline = TRUE;
+  if (run->strikethrough)
+    lf.lfStrikeOut = TRUE;
+  if (run->font_family)
+    MultiByteToWideChar(CP_UTF8, 0, run->font_family, -1, lf.lfFaceName, LF_FACESIZE);
+
+  return CreateFontIndirect(&lf);
+}
+
+static SIZE winTipsMarkupPaint(Ihandle* ih, HDC hdc, HFONT base_font, const RECT* rect, int draw)
+{
+  SIZE total = {0, 0};
+  LOGFONT base;
+  ImarkupData* data = iupMarkupParse(iupAttribGet(ih, "TIP"));
+  int line = 0, max_lines = 1, i, pass;
+  int* ascent, *descent, *width;
+  HFONT old_font;
+
+  if (!data)
+    return total;
+
+  GetObject(base_font, sizeof(LOGFONT), &base);
+
+  for (i = 0; i < data->count; i++)
+  {
+    const char* c;
+    for (c = data->runs[i].text; c && *c; c++)
+    {
+      if (*c == '\n')
+        max_lines++;
+    }
+  }
+
+  ascent = (int*)calloc(max_lines, sizeof(int));
+  descent = (int*)calloc(max_lines, sizeof(int));
+  width = (int*)calloc(max_lines, sizeof(int));
+  old_font = (HFONT)SelectObject(hdc, base_font);
+
+  if (ascent && descent && width)
+  {
+    for (pass = 0; pass < 2; pass++)
+    {
+      int x = rect->left, y = rect->top;
+      line = 0;
+
+      if (pass == 1)
+      {
+        if (!draw)
+          break;
+        SetBkMode(hdc, TRANSPARENT);
+        SetTextAlign(hdc, TA_BASELINE | TA_LEFT);
+      }
+
+      for (i = 0; i < data->count; i++)
+      {
+        ImarkupRun* run = &data->runs[i];
+        const char* text = run->text;
+        HFONT font = winTipsMarkupFont(hdc, &base, run);
+        TEXTMETRIC tm;
+        int shift;
+
+        SelectObject(hdc, font);
+        GetTextMetrics(hdc, &tm);
+        shift = run->superscript ? -(tm.tmAscent / 2) : (run->subscript ? tm.tmAscent / 3 : 0);
+
+        while (text)
+        {
+          const char* nl = strchr(text, '\n');
+          int len = nl ? (int)(nl - text) : (int)strlen(text);
+          int wlen = len ? MultiByteToWideChar(CP_UTF8, 0, text, len, NULL, 0) : 0;
+          WCHAR* wtext = wlen ? (WCHAR*)malloc(wlen * sizeof(WCHAR)) : NULL;
+          SIZE ext = {0, 0};
+
+          if (wtext)
+          {
+            MultiByteToWideChar(CP_UTF8, 0, text, len, wtext, wlen);
+            GetTextExtentPoint32W(hdc, wtext, wlen, &ext);
+          }
+
+          if (pass == 0)
+          {
+            if (tm.tmAscent - shift > ascent[line]) ascent[line] = tm.tmAscent - shift;
+            if (tm.tmDescent + shift > descent[line]) descent[line] = tm.tmDescent + shift;
+            width[line] += ext.cx;
+          }
+          else if (wtext)
+          {
+            int baseline = y + ascent[line];
+            unsigned char r, g, b;
+
+            if (run->bg_color && iupStrToRGB(run->bg_color, &r, &g, &b))
+            {
+              RECT bg = {x, y, x + ext.cx, y + ascent[line] + descent[line]};
+              SetDCBrushColor(hdc, RGB(r, g, b));
+              FillRect(hdc, &bg, (HBRUSH)GetStockObject(DC_BRUSH));
+            }
+
+            if (run->fg_color && iupStrToRGB(run->fg_color, &r, &g, &b))
+              SetTextColor(hdc, RGB(r, g, b));
+            else
+              SetTextColor(hdc, (COLORREF)SendMessage((HWND)iupAttribGet(ih, "_IUPWIN_TIPSWIN"), TTM_GETTIPTEXTCOLOR, 0, 0));
+
+            TextOutW(hdc, x, baseline + shift, wtext, wlen);
+          }
+
+          x += ext.cx;
+          free(wtext);
+
+          if (nl)
+          {
+            if (pass == 1)
+              y += ascent[line] + descent[line];
+            line++;
+            x = rect->left;
+            text = nl + 1;
+          }
+          else
+            text = NULL;
+        }
+
+        SelectObject(hdc, base_font);
+        DeleteObject(font);
+      }
+    }
+
+    for (i = 0; i < max_lines; i++)
+    {
+      if (width[i] > total.cx)
+        total.cx = width[i];
+      total.cy += ascent[i] + descent[i];
+    }
+  }
+
+  SelectObject(hdc, old_font);
+  free(ascent);
+  free(descent);
+  free(width);
+  iupMarkupFree(data);
+  return total;
+}
+
+IUP_DRV_API int iupwinTipsNotify(Ihandle* ih, NMHDR* msg_info, LRESULT* result)
+{
+  HWND tips_hwnd = (HWND)iupAttribGet(ih, "_IUPWIN_TIPSWIN");
+  if (!tips_hwnd || msg_info->hwndFrom != tips_hwnd || !iupAttribGetBoolean(ih, "TIPMARKUP"))
+    return 0;
+
+  if (msg_info->code == NM_CUSTOMDRAW)
+  {
+    NMTTCUSTOMDRAW* cd = (NMTTCUSTOMDRAW*)msg_info;
+    if (cd->nmcd.dwDrawStage == CDDS_PREPAINT)
+    {
+      winTipsMarkupPaint(ih, cd->nmcd.hdc, (HFONT)SendMessage(tips_hwnd, WM_GETFONT, 0, 0), &cd->nmcd.rc, 1);
+      *result = CDRF_SKIPDEFAULT;
+      return 1;
+    }
+  }
+  else if (msg_info->code == TTN_SHOW)
+  {
+    HDC hdc = GetDC(tips_hwnd);
+    RECT rect, text_rect = {0, 0, 0, 0};
+    SIZE size = winTipsMarkupPaint(ih, hdc, (HFONT)SendMessage(tips_hwnd, WM_GETFONT, 0, 0), &text_rect, 0);
+    ReleaseDC(tips_hwnd, hdc);
+
+    GetWindowRect(tips_hwnd, &rect);
+    text_rect.right = size.cx;
+    text_rect.bottom = size.cy;
+    SendMessage(tips_hwnd, TTM_ADJUSTRECT, TRUE, (LPARAM)&text_rect);
+    SetWindowPos(tips_hwnd, NULL, rect.left, rect.top, text_rect.right - text_rect.left, text_rect.bottom - text_rect.top,
+                 SWP_NOZORDER | SWP_NOACTIVATE);
+    *result = TRUE;
+    return 1;
+  }
+
+  return 0;
 }

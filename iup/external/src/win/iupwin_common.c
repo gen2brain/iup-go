@@ -505,6 +505,8 @@ IUP_DRV_API int iupwinBaseMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, L
       NMHDR* msg_info = (NMHDR*)lp;
       if (msg_info->code == TTN_GETDISPINFO)
         iupwinTipsGetDispInfo(lp);
+      else if (iupwinTipsNotify(ih, msg_info, result))
+        return 1;
       break;
     }
   case WM_DROPFILES:
@@ -643,6 +645,16 @@ IUP_DRV_API int iupwinBaseMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, L
         else if (iupAttribGet(ih, "CURSOR"))
         {
           SetCursor(NULL);
+          *result = 1;
+          return 1;
+        }
+      }
+      else if (LOWORD(lp)==HTCLIENT && iupAttribGet(ih, "CURSOR"))
+      {
+        HCURSOR hClassCur = (HCURSOR)GetClassLongPtr((HWND)wp, GCLP_HCURSOR);
+        if (!hClassCur || hClassCur == LoadCursor(NULL, IDC_ARROW))
+        {
+          SetCursor((HCURSOR)iupAttribGet(ih, "_IUPWIN_HCURSOR"));
           *result = 1;
           return 1;
         }
@@ -1176,6 +1188,7 @@ IUP_SDK_API void iupdrvBaseRegisterVisualAttrib(Iclass* ic)
     iupwinTouchRegisterAttrib(ic);
 
   iupClassRegisterAttribute(ic, "TIPBALLOON", NULL, NULL, IUPAF_SAMEASSYSTEM, NULL, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "TIPMARKUP", NULL, NULL, IUPAF_SAMEASSYSTEM, NULL, IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "TIPBALLOONTITLE", NULL, NULL, IUPAF_SAMEASSYSTEM, NULL, IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "TIPBALLOONTITLEICON", NULL, NULL, IUPAF_SAMEASSYSTEM, NULL, IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "ACCESSIBLEDESCRIPTION", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_DEFAULT);
@@ -1371,6 +1384,8 @@ IUP_DRV_API int iupwinCreateWindow(Ihandle* ih, LPCTSTR lpClassName, DWORD dwExS
   ih->handle = iupwinCreateWindowEx(iupChildTreeGetNativeParentHandle(ih), lpClassName, dwExStyle, dwStyle, ih->serial, clientdata);
   if (!ih->handle)
     return 0;
+
+  SetWindowPos(ih->handle, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOOWNERZORDER);
 
   /* associate HWND with Ihandle*, all Win32 controls must call this. */
   iupwinHandleAdd(ih, ih->handle);
