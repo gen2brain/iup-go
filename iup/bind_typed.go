@@ -38,7 +38,7 @@ func GetGlobalRGB(name string) (r, g, b uint8) {
 // SetAttributeId sets an interface element attribute for an id.
 //
 // https://gen2brain.github.io/iup-go/func/iup_setattribute.html
-func (ih Ihandle) SetAttributeId(name string, id int, value interface{}) Ihandle {
+func (ih Ihandle) SetAttributeId(name string, id int, value any) Ihandle {
 	SetAttributeId(ih, name, id, value)
 	return ih
 }
@@ -46,7 +46,7 @@ func (ih Ihandle) SetAttributeId(name string, id int, value interface{}) Ihandle
 // SetAttributeId2 sets an interface element attribute for a (lin, col) position.
 //
 // https://gen2brain.github.io/iup-go/func/iup_setattribute.html
-func (ih Ihandle) SetAttributeId2(name string, lin, col int, value interface{}) Ihandle {
+func (ih Ihandle) SetAttributeId2(name string, lin, col int, value any) Ihandle {
 	SetAttributeId2(ih, name, lin, col, value)
 	return ih
 }
@@ -177,7 +177,7 @@ func strToRGB(s string) (r, g, b uint8) {
 	return c[0], c[1], c[2]
 }
 
-func attribValueString(value interface{}) (string, bool) {
+func attribValueString(value any) (string, bool) {
 	switch v := value.(type) {
 	case bool:
 		if v {
@@ -202,7 +202,7 @@ func attribValueString(value interface{}) (string, bool) {
 	return "", false
 }
 
-func rgbBytes(value []interface{}) ([3]uint8, bool) {
+func rgbBytes(value []any) ([3]uint8, bool) {
 	var c [3]uint8
 	for i, v := range value {
 		switch n := v.(type) {

@@ -3,6 +3,7 @@ package iup
 import (
 	"fmt"
 	"reflect"
+	"slices"
 	"strings"
 )
 
@@ -41,10 +42,8 @@ func checkCallback(name string, fn any) any {
 	}
 
 	t := v.Type()
-	for _, ct := range types {
-		if t == ct {
-			return fn
-		}
+	if slices.Contains(types, t) {
+		return fn
 	}
 
 	var match []reflect.Type
