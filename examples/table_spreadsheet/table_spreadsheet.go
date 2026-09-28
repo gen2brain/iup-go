@@ -97,7 +97,7 @@ func main() {
 		return iup.DEFAULT
 	}))
 
-	where := iup.Label("A1").SetAttributes("VISIBLECOLUMNS=6, ALIGNMENT=ACENTER").SetHandle("where")
+	where := iup.Label("A1").SetAttributes("ALIGNMENT=ACENTER").SetHandle("where")
 	formula := iup.Text().SetAttributes("EXPAND=HORIZONTAL").SetHandle("formula")
 	formula.SetCallback("K_ANY", iup.KAnyFunc(formulaKey))
 
@@ -228,7 +228,9 @@ func summarize() bool {
 }
 
 func show(c cell) {
-	iup.GetHandle("where").SetAttribute("TITLE", name(c))
+	where := iup.GetHandle("where")
+	where.SetAttribute("TITLE", name(c))
+	iup.Refresh(where)
 	iup.GetHandle("formula").SetAttribute("VALUE", sheet[c])
 	if summarize() {
 		return
