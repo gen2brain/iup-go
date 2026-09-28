@@ -157,6 +157,13 @@ public:
     if (fIhandle) iuphaikuFocusInOutEvent(fIhandle, focus ? 1 : 0);
   }
 
+  void MouseDown(BPoint where) override
+  {
+    if (fIhandle && this->IsEnabled() && iupAttribGetBoolean(fIhandle, "CANFOCUS"))
+      this->MakeFocus(true);
+    Base::MouseDown(where);
+  }
+
   void MessageReceived(BMessage* msg) override
   {
     if (msg && msg->what == IUPHAIKU_TOGGLE_MSG && fIhandle)
@@ -243,6 +250,13 @@ public:
   {
     BButton::MakeFocus(focus);
     if (fIhandle) iuphaikuFocusInOutEvent(fIhandle, focus ? 1 : 0);
+  }
+
+  void MouseDown(BPoint where) override
+  {
+    if (fIhandle && IsEnabled() && iupAttribGetBoolean(fIhandle, "CANFOCUS"))
+      MakeFocus(true);
+    BButton::MouseDown(where);
   }
 
   void MessageReceived(BMessage* msg) override
@@ -356,6 +370,7 @@ public:
   void MouseDown(BPoint /*where*/) override
   {
     if (!fEnabled || !fIhandle) return;
+    if (iupAttribGetBoolean(fIhandle, "CANFOCUS")) MakeFocus(true);
     SetMouseEventMask(B_POINTER_EVENTS, B_LOCK_WINDOW_FOCUS);
     fPressed = true;
     Invalidate();

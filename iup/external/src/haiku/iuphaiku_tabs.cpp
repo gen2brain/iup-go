@@ -480,6 +480,7 @@ public:
   }
 
   void SetIhandle(Ihandle* ih) { fIhandle = ih; }
+  void SetSuppressSelectCallbacks(bool suppress) { fSuppressSelectCallbacks = suppress; }
 
 private:
   Ihandle* fIhandle;
@@ -600,7 +601,9 @@ static void haikuTabsChildRemovedMethod(Ihandle* ih, Ihandle* child, int pos)
     if (iupAttribGet(c, "_IUPHAIKU_HIDDEN_TAB")) hidden_before++;
 
   int btab_pos = pos - hidden_before;
+  tabs->SetSuppressSelectCallbacks(true);
   BTab* tab = tabs->RemoveTab(btab_pos);
+  tabs->SetSuppressSelectCallbacks(false);
   delete tab;
 
   iupAttribSet(child, "_IUPTAB_CONTAINER", NULL);

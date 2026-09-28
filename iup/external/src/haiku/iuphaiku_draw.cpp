@@ -149,6 +149,7 @@ static void haikuDrawUpdateSize(IdrawCanvas* dc)
 
   if (BView* view = (BView*)dc->ih->handle)
   {
+    LooperLockGuard guard(view->Looper());
     BRect bounds = view->Bounds();
     if (bounds.IntegerWidth() > 0)  w = bounds.IntegerWidth() + 1;
     if (bounds.IntegerHeight() > 0) h = bounds.IntegerHeight() + 1;
@@ -266,6 +267,7 @@ extern "C" IUP_SDK_API void iupdrvDrawFlush(IdrawCanvas* dc)
   BView* canvas = (BView*)dc->ih->handle;
   if (!canvas) return;
 
+  LooperLockGuard guard(canvas->Looper());
   canvas->DrawBitmap(dc->bm, BPoint(0, 0));
 }
 
@@ -1019,11 +1021,11 @@ extern "C" IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, in
     }
 
     int line_x = x;
-    if ((flags & 0x000F) == IUP_DRAW_CENTER || (flags & 0x000F) == IUP_DRAW_RIGHT)
+    if (flags & (IUP_DRAW_CENTER | IUP_DRAW_RIGHT))
     {
       float lw = dc->view->StringWidth(draw_text, draw_len);
-      if ((flags & 0x000F) == IUP_DRAW_CENTER) line_x = x + (w - (int)lw) / 2;
-      else                                     line_x = x + (w - (int)lw);
+      if (flags & IUP_DRAW_RIGHT) line_x = x + (w - (int)lw);
+      else                        line_x = x + (w - (int)lw) / 2;
     }
 
     dc->view->DrawString(draw_text, draw_len, BPoint((float)line_x, (float)line_y + fh.ascent));

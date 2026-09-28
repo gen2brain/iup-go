@@ -96,7 +96,8 @@ class IupHaikuLabelString : public BStringView
 public:
   IupHaikuLabelString(Ihandle* ih, const char* text)
     : BStringView(BRect(0, 0, 0, 0), "iup_label", text ? text : "", B_FOLLOW_NONE),
-      fIhandle(ih) {}
+      fIhandle(ih), fWordWrap(false) {}
+  void SetWordWrap(bool wrap) { fWordWrap = wrap; Invalidate(); }
   void MouseDown(BPoint where) override
   { BStringView::MouseDown(where); haikuLabelFireMouseCb(fIhandle, this, where, 1); }
   void MouseUp(BPoint where) override
@@ -130,8 +131,36 @@ public:
     float lineHeight = ceilf(fh.ascent + fh.descent + fh.leading);
     BRect bounds = Bounds();
 
+    BStringList paragraphs;
+    BString(full).Split("\n", false, paragraphs);
     BStringList lines;
-    BString(full).Split("\n", false, lines);
+    for (int p = 0; p < paragraphs.CountStrings(); p++)
+    {
+      BString para = paragraphs.StringAt(p);
+      if (!fWordWrap || StringWidth(para.String()) <= bounds.Width())
+      {
+        lines.Add(para);
+        continue;
+      }
+
+      BStringList words;
+      para.Split(" ", false, words);
+      BString current;
+      for (int w = 0; w < words.CountStrings(); w++)
+      {
+        BString candidate = current;
+        if (w > 0) candidate << " ";
+        candidate << words.StringAt(w);
+        if (w > 0 && StringWidth(candidate.String()) > bounds.Width())
+        {
+          lines.Add(current);
+          current = words.StringAt(w);
+        }
+        else
+          current = candidate;
+      }
+      lines.Add(current);
+    }
     int n = lines.CountStrings();
     float blockHeight = (n - 1) * lineHeight + ceilf(fh.ascent + fh.descent);
 
@@ -174,6 +203,7 @@ public:
   }
 private:
   Ihandle* fIhandle;
+  bool fWordWrap;
 };
 
 /* Image label: weak ref into the IUP image cache. */
@@ -340,6 +370,19 @@ static int haikuLabelSetEllipsisAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
+static int haikuLabelSetWordWrapAttrib(Ihandle* ih, const char* value)
+{
+  if (ih->data->type != IUP_LABEL_TEXT)
+    return 0;
+
+  IupHaikuLabelString* view = (IupHaikuLabelString*)ih->handle;
+  if (!view) return 1;
+
+  LooperLockGuard guard(view->Looper());
+  view->SetWordWrap(iupStrBoolean(value));
+  return 1;
+}
+
 static int haikuLabelSetActiveAttrib(Ihandle* ih, const char* value)
 {
   /* BStringView does not dim visually; iupBaseSetActiveAttrib gates input via iupdrvIsActive */
@@ -482,6 +525,6 @@ extern "C" IUP_SDK_API void iupdrvLabelInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "IMAGE", NULL, haikuLabelSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "IMINACTIVE", NULL, haikuLabelSetImInactiveAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MARKUP", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED);
-  iupClassRegisterAttribute(ic, "WORDWRAP", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "WORDWRAP", NULL, haikuLabelSetWordWrapAttrib, NULL, NULL, IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "SELECTABLE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 }

@@ -128,7 +128,7 @@ class IupHaikuListItem : public BStringItem
 {
 public:
   IupHaikuListItem(Ihandle* ih, int pos, const char* text, BBitmap* icon = NULL)
-    : BStringItem(text ? text : ""), fIhandle(ih), fPos(pos), fIcon(icon) {}
+    : BStringItem(text), fIhandle(ih), fPos(pos), fIcon(icon) {}
 
   BBitmap* Icon() const { return fIcon; }
   void SetIcon(BBitmap* b) { fIcon = b; }
@@ -1033,16 +1033,25 @@ extern "C" IUP_SDK_API void iupdrvListSetItemCount(Ihandle* ih, int count)
   {
     BList batch;
     for (int i = cur; i < count; ++i)
-      batch.AddItem(new IupHaikuListItem(ih, i, ""));
+      batch.AddItem(new IupHaikuListItem(ih, i, NULL));
     lv->AddList(&batch);
   }
   else if (count < cur)
   {
-    /* RemoveItems doesn't delete; pre-delete the tail then bulk-unlink. */
+    if (count > 0) lv->DeselectExcept(0, count - 1);
+    else           lv->DeselectAll();
+
+    BList tail;
     for (int i = count; i < cur; ++i)
-      delete lv->ItemAt(i);
+      tail.AddItem(lv->ItemAt(i));
     lv->RemoveItems(count, cur - count);
+    for (int i = 0; i < tail.CountItems(); ++i)
+      delete (BListItem*)tail.ItemAtFast(i);
+
+    BRect b = lv->Bounds();
+    lv->FrameResized(b.Width(), b.Height());
   }
+  if (IupHaikuListWrap* w = dynamic_cast<IupHaikuListWrap*>((BView*)ih->handle)) w->RelayoutChildren();
   lv->Invalidate();
 }
 

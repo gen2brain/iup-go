@@ -195,11 +195,14 @@ extern "C" IUP_SDK_API void iupdrvSetVisible(Ihandle* ih, int enable)
   if (ih->iclass && ih->iclass->nativetype == IUP_TYPEDIALOG) return;
 
   BView* view = (BView*)ih->handle;
+  BView* container = (BView*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
   LooperLockGuard guard(view->Looper());
   /* IsHidden(view) checks this view's own counter; bare IsHidden() walks parents and reports hidden during Map. */
   if (enable) {
+    if (container && container->IsHidden(container)) container->Show();
     if (view->IsHidden(view)) view->Show();
   } else {
+    if (container && !container->IsHidden(container)) container->Hide();
     if (!view->IsHidden(view)) view->Hide();
   }
 }

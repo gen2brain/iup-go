@@ -49,6 +49,7 @@ Default "NO". It is always enabled when TABTYPE=LEFT or TABTYPE=RIGHT.
 
 **SHOWCLOSE** (non-inheritable): enables the close button on each tab.
 Default value: "NO". In Windows the close button implies the classic visual for the control.
+In macOS the close button is at the left side of the tab.
 By default, when closed the tab is hidden.
 To change that behavior, use the TABCLOSE_CB callback.
 

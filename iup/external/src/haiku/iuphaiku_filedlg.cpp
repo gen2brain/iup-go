@@ -27,6 +27,8 @@ extern "C" {
 #include "iup_str.h"
 }
 
+#include "iuphaiku_drv.h"
+
 
 /* async BFilePanel bridged to IupPopup's blocking contract via sem on a private looper */
 
@@ -89,6 +91,7 @@ public:
   {
     /* Blocked here, so repaint the caller's window. */
     BWindow* window = dynamic_cast<BWindow*>(BLooper::LooperForThread(find_thread(NULL)));
+    iuphaikuModalBegin();
     for (;;)
     {
       status_t status = acquire_sem_etc(fSem, 1, B_RELATIVE_TIMEOUT, 50000);
@@ -99,6 +102,7 @@ public:
       }
       break;
     }
+    iuphaikuModalEnd();
   }
   int Status() const { return fStatus; }
   const std::vector<BString>& Paths() const { return fPaths; }

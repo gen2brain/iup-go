@@ -6,6 +6,7 @@
  * See Copyright Notice in "iup.h"
  */
 
+#include <cmath>
 #include <cstddef>
 #include <cstdio>
 #include <cstdlib>
@@ -25,6 +26,7 @@
 #include <MessageFilter.h>
 #include <Rect.h>
 #include <Region.h>
+#include <String.h>
 #include <ScrollView.h>
 #include <TextControl.h>
 #include <TextView.h>
@@ -485,13 +487,22 @@ public:
       if (fImageRanges[i].offset >= from) fImageRanges[i].offset += delta;
   }
 
+  void ShiftBgRanges(int32 from, int32 delta)
+  {
+    for (size_t i = 0; i < fBgRanges.size(); ++i)
+    {
+      if (fBgRanges[i].start >= from) fBgRanges[i].start += delta;
+      if (fBgRanges[i].end >= from) fBgRanges[i].end += delta;
+    }
+  }
+
 protected:
   void InsertText(const char* text, int32 length, int32 offset, const text_run_array* runs) override
   {
     if (fSuppress || !fIhandle || fIhandle->data->disable_callbacks)
     {
       BTextView::InsertText(text, length, offset, runs);
-      ShiftImageRanges(offset + 1, length);
+      ShiftImageRanges(offset, length);
       return;
     }
 
@@ -550,7 +561,7 @@ protected:
       {
         char rep = (char)ret;
         BTextView::InsertText(&rep, 1, offset, runs);
-        ShiftImageRanges(offset + 1, 1);
+        ShiftImageRanges(offset, 1);
         fireValueChanged();
         free(filter_buf);
         return;
@@ -558,7 +569,7 @@ protected:
     }
 
     BTextView::InsertText(text, length, offset, runs);
-    ShiftImageRanges(offset + 1, length);
+    ShiftImageRanges(offset, length);
     fireValueChanged();
     free(filter_buf);
   }
@@ -861,12 +872,14 @@ static int32 haikuTextCharToByte(BTextView* tv, int char_pos)
   return byte;
 }
 
-static int haikuTextParseRange(BTextView* tv, const char* sel, bool one_based, int32* start, int32* end)
+static int haikuTextParseRange(BTextView* tv, const char* sel, bool one_based, int32* start, int32* end, int char_offset = 0)
 {
   if (!tv || !sel) return 0;
   int s = 0, e = 0;
   if (sscanf(sel, "%d:%d", &s, &e) != 2) return 0;
   if (one_based) { s -= 1; e -= 1; }
+  s += char_offset;
+  e += char_offset;
   if (s < 0) s = 0;
   if (e < s) e = s;
   *start = haikuTextCharToByte(tv, s);
@@ -971,6 +984,14 @@ static int haikuTextSetBgColorAttrib(Ihandle* ih, const char* value)
   }
   tv->Invalidate();
   return 1;
+}
+
+static int haikuTextSetFontAttrib(Ihandle* ih, const char* value)
+{
+  if (ih->data->has_formatting && ih->handle &&
+      iuphaikuGetBFont(value) == (BFont*)iupAttribGet(ih, "_IUPHAIKU_FONT_APPLIED"))
+    return 1;
+  return iupdrvSetFontAttrib(ih, value);
 }
 
 static int haikuTextSetFgColorAttrib(Ihandle* ih, const char* value)
@@ -1496,7 +1517,178 @@ static void haikuTextApplyFormatTagFont(BFont& bfont, Ihandle* tag, uint32* mode
   }
 }
 
-extern "C" IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* tag, int /*bulk*/)
+static void haikuTextIntToRoman(int value, char* buf, int bufsize, int upper)
+{
+  static const int vals[] = { 1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1 };
+  static const char* syms_lower[] = { "m","cm","d","cd","c","xc","l","xl","x","ix","v","iv","i" };
+  static const char* syms_upper[] = { "M","CM","D","CD","C","XC","L","XL","X","IX","V","IV","I" };
+  const char** syms = upper ? syms_upper : syms_lower;
+
+  buf[0] = '\0';
+  for (int i = 0; i < 13 && value > 0; i++)
+  {
+    while (value >= vals[i])
+    {
+      if ((int)strlen(buf) + (int)strlen(syms[i]) < bufsize - 1)
+        strcat(buf, syms[i]);
+      value -= vals[i];
+    }
+  }
+}
+
+static bool haikuTextNumberingPrefix(int counter, const char* numbering, const char* style, BString& prefix)
+{
+  char number[64] = "";
+
+  if (iupStrEqualNoCase(numbering, "BULLET"))
+  {
+    prefix = "  \xe2\x80\xa2 ";
+    return true;
+  }
+
+  if (iupStrEqualNoCase(numbering, "ARABIC"))
+    snprintf(number, sizeof(number), "%d", counter);
+  else if (iupStrEqualNoCase(numbering, "LCLETTER") || iupStrEqualNoCase(numbering, "UCLETTER"))
+  {
+    char first = iupStrEqualNoCase(numbering, "LCLETTER") ? 'a' : 'A';
+    if (counter >= 1 && counter <= 26)
+      snprintf(number, sizeof(number), "%c", first + counter - 1);
+    else
+      snprintf(number, sizeof(number), "%d", counter);
+  }
+  else if (iupStrEqualNoCase(numbering, "LCROMAN"))
+    haikuTextIntToRoman(counter, number, sizeof(number), 0);
+  else if (iupStrEqualNoCase(numbering, "UCROMAN"))
+    haikuTextIntToRoman(counter, number, sizeof(number), 1);
+  else
+    return false;
+
+  if (style && iupStrEqualNoCase(style, "RIGHTPARENTHESIS"))
+    prefix.SetToFormat("  %s) ", number);
+  else if (style && iupStrEqualNoCase(style, "PARENTHESES"))
+    prefix.SetToFormat("  (%s) ", number);
+  else if (style && iupStrEqualNoCase(style, "NONUMBER"))
+    prefix = "    ";
+  else
+    prefix.SetToFormat("  %s. ", number);
+  return true;
+}
+
+static int haikuTextUtf8Count(const char* s, int32 bytes)
+{
+  int count = 0;
+  for (int32 i = 0; i < bytes; i++)
+    if (((unsigned char)s[i] & 0xC0) != 0x80) count++;
+  return count;
+}
+
+static void haikuTextShiftLinks(Ihandle* ih, int32 from, int32 delta)
+{
+  int count = iupAttribGetInt(ih, "_IUPHAIKU_LINK_COUNT");
+  for (int i = 0; i < count; i++)
+  {
+    char key[64];
+    snprintf(key, sizeof(key), "_IUPHAIKU_LINK_RANGE_%d", i);
+    int s = 0, e = 0;
+    const char* range = iupAttribGet(ih, key);
+    if (!range || sscanf(range, "%d:%d", &s, &e) != 2) continue;
+    if (s >= from) s += delta;
+    if (e >= from) e += delta;
+    iupAttribSetStrf(ih, key, "%d:%d", s, e);
+  }
+}
+
+static int32 haikuTextInsertPrefix(Ihandle* ih, IupHaikuTextView* tv, int32 pos, const char* text, int32 len, float indent)
+{
+  BFont font;
+  rgb_color color;
+  tv->GetFontAndColor(pos, &font, &color);
+
+  tv->SetSuppress(true);
+  tv->Insert(pos, text, len);
+  tv->SetSuppress(false);
+  tv->SetFontAndColor(pos, pos + len, &font, B_FONT_ALL, &color);
+
+  if (indent > 0)
+  {
+    BFont probe(font);
+    probe.SetSize(100.0f);
+    float ratio = probe.StringWidth(" ") / 100.0f;
+    if (ratio > 0)
+    {
+      BFont space(font);
+      space.SetSize(indent / (len * ratio));
+      tv->SetFontAndColor(pos, pos + len, &space, B_FONT_SIZE, NULL);
+    }
+  }
+
+  tv->ShiftBgRanges(pos, len);
+  haikuTextShiftLinks(ih, pos, len);
+  return len;
+}
+
+/* NUMBERING and INDENT insert per-paragraph prefixes (bullet/number text, sized spaces), like FLTK. */
+static void haikuTextApplyParagraphPrefixes(Ihandle* ih, IupHaikuTextView* tv, Ihandle* tag, int32* start, int32* end, bool batch)
+{
+  const char* numbering = iupAttribGet(tag, "NUMBERING");
+  if (numbering && iupStrEqualNoCase(numbering, "NONE")) numbering = NULL;
+  int indent = 0;
+  char* indent_value = iupAttribGet(tag, "INDENT");
+  if (indent_value) iupStrToInt(indent_value, &indent);
+  if (!numbering && indent <= 0) return;
+
+  const char* text = tv->Text();
+  int32 length = tv->TextLength();
+  if (*start > length) *start = length;
+  if (*end > length) *end = length;
+
+  int32 first = *start;
+  while (first > 0 && text[first - 1] != '\n') first--;
+
+  std::vector<int32> paragraphs;
+  if (numbering || first == *start) paragraphs.push_back(first);
+  for (int32 i = *start; i < *end; i++)
+    if (text[i] == '\n' && i + 1 < *end) paragraphs.push_back(i + 1);
+
+  const char* style = iupAttribGet(tag, "NUMBERINGSTYLE");
+  int32 inserted = 0;
+  int32 before_start = 0;
+  int chars = 0;
+  for (size_t n = paragraphs.size(); n-- > 0; )
+  {
+    int32 pos = paragraphs[n];
+    BString prefix;
+    if (numbering && haikuTextNumberingPrefix((int)n + 1, numbering, style, prefix))
+    {
+      int32 len = haikuTextInsertPrefix(ih, tv, pos, prefix.String(), prefix.Length(), 0);
+      inserted += len;
+      if (pos < *start) before_start += len;
+      chars += haikuTextUtf8Count(prefix.String(), len);
+    }
+    if (indent > 0)
+    {
+      BFont font;
+      tv->GetFontAndColor(pos, &font, NULL);
+      BFont probe(font);
+      probe.SetSize(100.0f);
+      float em = probe.StringWidth(" ") / 100.0f * font.Size();
+      int count = em > 0 ? (int)ceilf((float)indent / em) : 1;
+      if (count < 1) count = 1;
+      BString spaces;
+      spaces.Append(' ', count);
+      inserted += haikuTextInsertPrefix(ih, tv, pos, spaces.String(), count, (float)indent);
+      if (pos < *start) before_start += count;
+      chars += count;
+    }
+  }
+
+  *start += before_start;
+  *end += inserted;
+  if (batch)
+    iupAttribSetInt(ih, "_IUPHAIKU_FORMAT_OFFSET", iupAttribGetInt(ih, "_IUPHAIKU_FORMAT_OFFSET") + chars);
+}
+
+extern "C" IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* tag, int bulk)
 {
   if (!ih->data->is_multiline) return;
   BTextView* tv = haikuTextGetEditor(ih);
@@ -1504,6 +1696,7 @@ extern "C" IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* tag, in
 
   LooperLockGuard guard(haikuTextGetLooper(ih));
 
+  bool batch = bulk || iupAttribGet(ih, "_IUPHAIKU_FORMAT_MAPPING") != NULL;
   int32 start = 0, end = 0;
   char* sel = iupAttribGet(tag, "SELECTION");
   char* sel_pos = iupAttribGet(tag, "SELECTIONPOS");
@@ -1523,7 +1716,7 @@ extern "C" IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* tag, in
   }
   else if (sel_pos)
   {
-    if (!haikuTextParseRange(tv, sel_pos, false, &start, &end)) return;
+    if (!haikuTextParseRange(tv, sel_pos, false, &start, &end, batch ? iupAttribGetInt(ih, "_IUPHAIKU_FORMAT_OFFSET") : 0)) return;
   }
   else
   {
@@ -1531,6 +1724,8 @@ extern "C" IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* tag, in
     tv->GetSelection(&s, &e);
     start = s; end = e;
   }
+
+  haikuTextApplyParagraphPrefixes(ih, (IupHaikuTextView*)tv, tag, &start, &end, batch);
 
   /* IMAGE replaces the range with a U+FFFC placeholder; BBitmap drawn over it. */
   char* image_name = iupAttribGet(tag, "IMAGE");
@@ -1601,8 +1796,10 @@ extern "C" IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* tag, in
     color_changed = true;
   }
 
-  if (mode == 0) mode = B_FONT_ALL;
-  tv->SetFontAndColor(start, end, &bfont, mode, color_changed ? &color : NULL);
+  if (mode != 0)
+    tv->SetFontAndColor(start, end, &bfont, mode, NULL);
+  if (color_changed)
+    tv->SetFontAndColor(start, end, NULL, 0, &color);
 
   char* bg = iupAttribGet(tag, "BGCOLOR");
   if (bg)
@@ -1616,7 +1813,12 @@ extern "C" IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* tag, in
   }
 }
 
-extern "C" IUP_SDK_API void* iupdrvTextAddFormatTagStartBulk(Ihandle* /*ih*/) { return NULL; }
+extern "C" IUP_SDK_API void* iupdrvTextAddFormatTagStartBulk(Ihandle* ih)
+{
+  if (!iupAttribGet(ih, "_IUPHAIKU_FORMAT_MAPPING"))
+    iupAttribSet(ih, "_IUPHAIKU_FORMAT_OFFSET", NULL);
+  return NULL;
+}
 extern "C" IUP_SDK_API void  iupdrvTextAddFormatTagStopBulk (Ihandle* /*ih*/, void* /*state*/) {}
 
 static int haikuTextSetRemoveFormattingAttrib(Ihandle* ih, const char* value)
@@ -1703,7 +1905,12 @@ static int haikuTextMapMethod(Ihandle* ih)
   iuphaikuUpdateWidgetFont(ih, (BView*)ih->handle);
 
   if (ih->data->is_multiline && ih->data->formattags)
+  {
+    iupAttribSet(ih, "_IUPHAIKU_FORMAT_OFFSET", NULL);
+    iupAttribSet(ih, "_IUPHAIKU_FORMAT_MAPPING", "1");
     iupTextUpdateFormatTags(ih);
+    iupAttribSet(ih, "_IUPHAIKU_FORMAT_MAPPING", NULL);
+  }
 
   if (!iupAttribGetBoolean(ih, "CANFOCUS"))
   {
@@ -2058,7 +2265,7 @@ extern "C" IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
   ic->Map = haikuTextMapMethod;
   ic->UnMap = haikuTextUnMapMethod;
 
-  iupClassRegisterAttribute(ic, "FONT", NULL, iupdrvSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
+  iupClassRegisterAttribute(ic, "FONT", NULL, haikuTextSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, haikuTextSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTBGCOLOR", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "FGCOLOR", NULL, haikuTextSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTFGCOLOR", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "ACTIVE", iupBaseGetActiveAttrib, haikuTextSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);

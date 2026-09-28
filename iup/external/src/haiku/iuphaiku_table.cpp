@@ -154,6 +154,17 @@ public:
   Ihandle* GetIhandle() const { return fIhandle; }
   void SetIhandle(Ihandle* ih) { fIhandle = ih; }
 
+  bool InitiateDrag(BPoint where, bool wasSelected) override
+  {
+    if (fIhandle && iupAttribGetBoolean(fIhandle, "DRAGSOURCE"))
+    {
+      BView* outline = ScrollView();
+      BPoint pt = outline ? ConvertFromScreen(outline->ConvertToScreen(where)) : where;
+      return iuphaikuDnDInitiateDrag(fIhandle, this, pt);
+    }
+    return BColumnListView::InitiateDrag(where, wasSelected);
+  }
+
   bool IsVirtual() const { return fIsVirtual; }
   void SetVirtual(bool v) { fIsVirtual = v; }
 
@@ -327,6 +338,9 @@ protected:
   void MessageReceived(BMessage* msg) override
   {
     if (!fIhandle) { BColumnListView::MessageReceived(msg); return; }
+
+    if (!msg->WasDropped() && iuphaikuDnDMessageReceived(fIhandle, this, msg))
+      return;
 
     if (msg->what == IUPHAIKU_TABLE_SCROLL)
     {
@@ -1103,6 +1117,12 @@ public:
       if (iuphaikuDnDMessageReceived(fTv->GetIhandle(), fTv, msg)) return B_SKIP_MESSAGE;
     }
 
+    if (msg->what == B_SELECT_ALL || msg->what == B_COPY || msg->what == B_CUT || msg->what == B_PASTE)
+    {
+      *target = fTv;
+      return B_DISPATCH_MESSAGE;
+    }
+
     if (msg->what != B_MOUSE_DOWN && msg->what != B_MOUSE_UP &&
         msg->what != B_MOUSE_MOVED) return B_DISPATCH_MESSAGE;
 
@@ -1115,6 +1135,10 @@ public:
 
       int32 moved_buttons = 0;
       msg->FindInt32("buttons", &moved_buttons);
+      if (!moved_buttons && !fTv->GetIhandle()->data->user_resize &&
+          tgt->Name() && strcmp(tgt->Name(), "title_view") == 0)
+        return B_SKIP_MESSAGE;
+
       if ((moved_buttons & B_PRIMARY_MOUSE_BUTTON) && iupTableCellsMode(fTv->GetIhandle()))
       {
         BPoint where;
@@ -1269,6 +1293,8 @@ public:
           IFnii rcb = (IFnii)IupGetCallback(ih, "RIGHTCLICK_CB");
           if (rcb)
             rcb(ih, hit_lin, col->LogicalFieldNum() + 1);
+          if (iupTableCellsMode(ih))
+            return B_SKIP_MESSAGE;
         }
       }
     }
@@ -2352,14 +2378,7 @@ static void haikuTableUnMapMethod(Ihandle* ih)
     tv->CancelAutoSize();
     tv->SetIhandle(NULL);
 
-    /* BColumnListView::Clear() does NOT delete rows; RemoveColumn / RemoveRow leave items to the caller. */
-    while (tv->CountRows(NULL) > 0)
-    {
-      BRow* r = const_cast<BRow*>(tv->RowAt(0, NULL));
-      if (!r) break;
-      tv->RemoveRow(r);
-      delete r;
-    }
+    tv->Clear();
     while (tv->CountColumns() > 0)
     {
       BColumn* c = tv->ColumnAt(0);
