@@ -28,6 +28,9 @@ IUP_DRV_API void iupwinSetInstance(HINSTANCE hInstance);
 IUP_DRV_API void iupwinSetGlobalColors(void);
 IUP_DRV_API COLORREF iupwinGetAccentColor(void);
 
+/* dialog */
+IUP_DRV_API int iupwinDialogIsCustomFrameCaption(Ihandle* ih, LPARAM lp);
+
 /* focus */
 IUP_DRV_API void iupwinWmSetFocus(Ihandle* ih);
 IUP_DRV_API int iupwinGetKeyBoardCues(void);
@@ -42,6 +45,7 @@ IUP_DRV_API void iupwinKeyInit(void);
 
 /* tips */
 IUP_DRV_API void iupwinTipsGetDispInfo(LPARAM lp);
+IUP_DRV_API int iupwinTipsNotify(Ihandle* ih, NMHDR* msg_info, LRESULT* result);
 IUP_DRV_API void iupwinTipsUpdateInfo(Ihandle* ih, HWND tips_hwnd);
 IUP_DRV_API void iupwinTipsDestroy(Ihandle* ih);
 
@@ -125,6 +129,9 @@ IUP_DRV_API void iupwinFlagButtonDown(Ihandle* ih, UINT msg);
 IUP_DRV_API int iupwinFlagButtonUp(Ihandle* ih, UINT msg);
 
 IUP_DRV_API int iupwinListDND(Ihandle* ih, UINT uNotification, POINT pt);
+
+IUP_DRV_API void iupwinPostMessageOpen(void);
+IUP_DRV_API void iupwinPostMessageClose(void);
 
 #ifdef USE_WINHOOKPOST
 LRESULT CALLBACK iupwinPostMessageFilterProc(int code, WPARAM wParam, LPARAM lParam);

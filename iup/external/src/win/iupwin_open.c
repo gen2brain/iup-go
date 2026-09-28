@@ -179,6 +179,7 @@ IUP_SDK_API int iupdrvOpen(int* argc, char*** argv)
     iupwin_comctl32ver6 = 0;
 
   iupwin_mainthreadid = GetCurrentThreadId();
+  iupwinPostMessageOpen();
 #ifdef USE_WINHOOKPOST
   iupwin_threadmsghook = SetWindowsHookEx(WH_MSGFILTER, iupwinPostMessageFilterProc, NULL, iupwin_mainthreadid);
 #endif
@@ -227,6 +228,7 @@ IUP_SDK_API int iupdrvSetGlobalAppNameAttrib(const char* value)
 
 IUP_SDK_API void iupdrvClose(void)
 {
+  iupwinPostMessageClose();
   iupwinHandleFinish();
   iupwinBrushFinish();
   iupwinStrRelease();

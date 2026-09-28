@@ -250,40 +250,125 @@ IUP_API void IupFlush(void)
 }
 
 
-typedef struct {
+typedef struct _winPostMessageUserData {
   Ihandle* ih;
   char* s;
   int i;
   double d;
   char* p;
+  struct _winPostMessageUserData* next;
 } winPostMessageUserData;
+
+static SRWLOCK win_postmessage_lock = SRWLOCK_INIT;
+static winPostMessageUserData* win_postmessage_first = NULL;
+static winPostMessageUserData* win_postmessage_last = NULL;
+static HWND win_postmessage_hwnd = NULL;
 
 IUP_API void IupPostMessage(Ihandle* ih, const char* s, int i, double d, void* p)
 {
+  int wake;
   winPostMessageUserData* user_data = (winPostMessageUserData*)malloc(sizeof(winPostMessageUserData));
   user_data->ih = ih;
   user_data->s = iupStrDup(s);
   user_data->i = i;
   user_data->d = d;
   user_data->p = p;
-  PostThreadMessage(iupwin_mainthreadid, WM_APP, (WPARAM)IWIN_POSTMESSAGE_ID, (LPARAM)user_data);
+  user_data->next = NULL;
+
+  AcquireSRWLockExclusive(&win_postmessage_lock);
+  wake = (win_postmessage_first == NULL);
+  if (win_postmessage_last)
+    win_postmessage_last->next = user_data;
+  else
+    win_postmessage_first = user_data;
+  win_postmessage_last = user_data;
+  ReleaseSRWLockExclusive(&win_postmessage_lock);
+
+  if (wake)
+  {
+    if (win_postmessage_hwnd)
+      PostMessage(win_postmessage_hwnd, WM_APP, (WPARAM)IWIN_POSTMESSAGE_ID, 0);
+    else
+      PostThreadMessage(iupwin_mainthreadid, WM_APP, (WPARAM)IWIN_POSTMESSAGE_ID, 0);
+  }
 }
 
 static void winProcessPostMessage(LPARAM lParam)
 {
-  winPostMessageUserData* user_data = (winPostMessageUserData*)lParam;
-  Ihandle* ih = user_data->ih;
-  if (iupObjectCheck(ih))
+  winPostMessageUserData* user_data;
+  (void)lParam;
+
+  AcquireSRWLockExclusive(&win_postmessage_lock);
+  user_data = win_postmessage_first;
+  win_postmessage_first = NULL;
+  win_postmessage_last = NULL;
+  ReleaseSRWLockExclusive(&win_postmessage_lock);
+
+  while (user_data)
   {
-    IFnsidv cb = (IFnsidv)IupGetCallback(ih, "POSTMESSAGE_CB");
-    if (cb)
+    winPostMessageUserData* next = user_data->next;
+    Ihandle* ih = user_data->ih;
+    if (iupObjectCheck(ih))
     {
-      if (cb(ih, user_data->s, user_data->i, user_data->d, user_data->p) == IUP_CLOSE)
-        IupExitLoop();
+      IFnsidv cb = (IFnsidv)IupGetCallback(ih, "POSTMESSAGE_CB");
+      if (cb)
+      {
+        if (cb(ih, user_data->s, user_data->i, user_data->d, user_data->p) == IUP_CLOSE)
+          IupExitLoop();
+      }
     }
+    if (user_data->s) free(user_data->s);
+    free(user_data);
+    user_data = next;
   }
-  if (user_data->s) free(user_data->s);
-  free(user_data);
+}
+
+static LRESULT CALLBACK winPostMessageWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
+{
+  if (msg == WM_APP && wp == IWIN_POSTMESSAGE_ID)
+  {
+    winProcessPostMessage(lp);
+    return 0;
+  }
+  return DefWindowProc(hwnd, msg, wp, lp);
+}
+
+IUP_DRV_API void iupwinPostMessageOpen(void)
+{
+  HINSTANCE hInstance = GetModuleHandle(NULL);
+  WNDCLASSW wc;
+  memset(&wc, 0, sizeof(WNDCLASSW));
+  wc.lpfnWndProc = winPostMessageWndProc;
+  wc.hInstance = hInstance;
+  wc.lpszClassName = L"IupPostMessageWindow";
+  RegisterClassW(&wc);
+
+  win_postmessage_hwnd = CreateWindowW(L"IupPostMessageWindow", L"", 0, 0, 0, 0, 0, HWND_MESSAGE, NULL, hInstance, NULL);
+}
+
+IUP_DRV_API void iupwinPostMessageClose(void)
+{
+  winPostMessageUserData* user_data;
+
+  if (win_postmessage_hwnd)
+  {
+    DestroyWindow(win_postmessage_hwnd);
+    win_postmessage_hwnd = NULL;
+  }
+
+  AcquireSRWLockExclusive(&win_postmessage_lock);
+  user_data = win_postmessage_first;
+  win_postmessage_first = NULL;
+  win_postmessage_last = NULL;
+  ReleaseSRWLockExclusive(&win_postmessage_lock);
+
+  while (user_data)
+  {
+    winPostMessageUserData* next = user_data->next;
+    if (user_data->s) free(user_data->s);
+    free(user_data);
+    user_data = next;
+  }
 }
 
 #ifdef USE_WINHOOKPOST

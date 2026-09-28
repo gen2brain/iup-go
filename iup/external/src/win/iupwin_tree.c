@@ -34,6 +34,8 @@
 #include "iupwin_str.h"
 #include "iupwin_darkmode.h"
 
+#define IUPWIN_TREE_RENAME_TIMER 0x1A2B
+
 
 /* Not defined for Cygwin and MingW */
 #ifndef TVN_ITEMCHANGING
@@ -2374,6 +2376,13 @@ static int winTreeMouseMultiSelect(Ihandle* ih, int x, int y)
 
   old_select = winTreeIsNodeSelected(ih, hItem);
 
+  if (ih->data->show_rename && old_select && (info.flags & TVHT_ONITEMLABEL) &&
+      hItem == (HTREEITEM)SendMessage(ih->handle, TVM_GETNEXTITEM, TVGN_CARET, 0))
+  {
+    iupAttribSet(ih, "_IUPTREE_RENAMEITEM", (char*)hItem);
+    SetTimer(ih->handle, IUPWIN_TREE_RENAME_TIMER, GetDoubleClickTime(), NULL);
+  }
+
   /* simple click with mark_mode==ITREE_MARK_MULTIPLE and !Shift and !Ctrl */
   /* do not call the callback for the new selected item */
   winTreeCallMultiUnSelectionCb(ih, iupTreeFindNodeId(ih, hItem));
@@ -2564,7 +2573,25 @@ static int winTreeMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT* 
 
       return 0;
     }
+  case WM_TIMER:
+    if (wp == IUPWIN_TREE_RENAME_TIMER)
+    {
+      HTREEITEM hItem = (HTREEITEM)iupAttribGet(ih, "_IUPTREE_RENAMEITEM");
+      KillTimer(ih->handle, IUPWIN_TREE_RENAME_TIMER);
+      iupAttribSet(ih, "_IUPTREE_RENAMEITEM", NULL);
+      if (hItem && !(GetKeyState(VK_LBUTTON) & 0x8000) &&
+          hItem == (HTREEITEM)SendMessage(ih->handle, TVM_GETNEXTITEM, TVGN_CARET, 0))
+      {
+        iupAttribSet(ih, "_IUPTREE_EXTENDSELECT", NULL);
+        SendMessage(ih->handle, TVM_EDITLABEL, 0, (LPARAM)hItem);
+      }
+      *result = 0;
+      return 1;
+    }
+    break;
   case WM_LBUTTONDOWN:
+    KillTimer(ih->handle, IUPWIN_TREE_RENAME_TIMER);
+    iupAttribSet(ih, "_IUPTREE_RENAMEITEM", NULL);
     iupwinFlagButtonDown(ih, msg);
 
     if (iupwinButtonDown(ih, msg, wp, lp)==-1)
@@ -2610,6 +2637,8 @@ static int winTreeMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT* 
   case WM_LBUTTONDBLCLK:
   case WM_MBUTTONDBLCLK:
   case WM_RBUTTONDBLCLK:
+    KillTimer(ih->handle, IUPWIN_TREE_RENAME_TIMER);
+    iupAttribSet(ih, "_IUPTREE_RENAMEITEM", NULL);
     iupwinFlagButtonDown(ih, msg);
 
     if (iupwinButtonDown(ih, msg, wp, lp)==-1)
@@ -2945,6 +2974,22 @@ static int winTreeWmNotify(Ihandle* ih, NMHDR* msg_info, int* result)
       }
 
       return 1;
+    }
+
+    if (customdraw->nmcd.dwDrawStage == CDDS_ITEMPOSTPAINT)
+    {
+      HTREEITEM hItem = (HTREEITEM)customdraw->nmcd.dwItemSpec;
+
+      if (ih->data->mark_mode == ITREE_MARK_MULTIPLE && GetFocus() != ih->handle &&
+          hItem == (HTREEITEM)SendMessage(ih->handle, TVM_GETNEXTITEM, TVGN_CARET, 0))
+      {
+        RECT rect;
+        *(HTREEITEM*)&rect = hItem;
+        if (SendMessage(ih->handle, TVM_GETITEMRECT, TRUE, (LPARAM)&rect))
+          DrawFocusRect(customdraw->nmcd.hdc, &rect);
+      }
+
+      return 0;
     }
   }
   else if (msg_info->code == TVN_GETINFOTIP)

@@ -1973,6 +1973,15 @@ static int winTableNotifyCallback(Ihandle* ih, void* msg_info, int* result)
     {
       LPNMLISTVIEW pnmv = (LPNMLISTVIEW)msg_info;
 
+      if ((pnmv->uChanged & LVIF_STATE) && (pnmv->uNewState & LVIS_SELECTED) &&
+          (iupStrEqualNoCase(iupAttribGetStr(ih, "SELECTIONMODE"), "NONE") || iupTableCellsMode(ih)))
+      {
+        if (pnmv->iItem >= 0 && !iupAttribGet(ih, "_IUPTABLE_IGNORE_SELECTION_CB"))
+          data->current_row = pnmv->iItem + 1;
+        ListView_SetItemState(data->list_view, pnmv->iItem, 0, LVIS_SELECTED);
+        break;
+      }
+
       if ((pnmv->uChanged & LVIF_STATE) && (pnmv->uNewState & LVIS_SELECTED) && !(pnmv->uOldState & LVIS_SELECTED) &&
           !iupAttribGet(ih, "_IUPTABLE_IGNORE_SELECTION_CB"))
       {

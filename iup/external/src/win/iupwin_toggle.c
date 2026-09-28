@@ -428,8 +428,6 @@ static void winToggleDrawItem(Ihandle* ih, DRAWITEMSTRUCT* drawitem)
   check = winToggleGetCheck(ih);
   if (check)
     drawitem->itemState |= ODS_SELECTED;
-  else
-    drawitem->itemState |= ODS_DEFAULT;  /* use default mark for NOT checked */
 
   if (!check && ih->data->flat)
   {
@@ -529,6 +527,9 @@ static void winToggleDrawDark(Ihandle* ih)
 
 static int winToggleDarkMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT* result)
 {
+  if (!iupwinDarkModeEnabled())
+    return iupwinBaseMsgProc(ih, msg, wp, lp, result);
+
   switch (msg)
   {
   case WM_ERASEBKGND:
@@ -1215,7 +1216,7 @@ regular_toggle:
       }
     }
   }
-  else if (iupwinDarkModeEnabled() && ih->data->type == IUP_TOGGLE_TEXT)
+  else if (ih->data->type == IUP_TOGGLE_TEXT)
     IupSetCallback(ih, "_IUPWIN_CTRLMSGPROC_CB", (Icallback)winToggleDarkMsgProc);
 
   return IUP_NOERROR;
