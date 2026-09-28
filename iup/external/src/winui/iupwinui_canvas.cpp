@@ -38,7 +38,7 @@ using namespace Windows::Foundation;
 
 static int winuiCanvasIsGLCanvas(Ihandle* ih)
 {
-  return iupAttribGet(ih, "_IUP_GLCONTROLDATA") != NULL;
+  return iupAttribGet(ih, "_IUP_GLCONTROLDATA") != NULL && !IupClassMatch(ih, "glbackgroundbox");
 }
 
 /***********************************************************************************
@@ -283,6 +283,8 @@ static int winuiGLCanvasMapMethod(Ihandle* ih)
 
 static void winuiGLCanvasUnMapMethod(Ihandle* ih)
 {
+  iupwinuiHwndHostRemove(ih);
+
   HWND glHwnd = (HWND)iupAttribGet(ih, "HWND");
   if (glHwnd)
   {
@@ -296,6 +298,23 @@ static void winuiGLCanvasUnMapMethod(Ihandle* ih)
 static void winuiGLCanvasLayoutUpdateMethod(Ihandle* ih)
 {
   iupdrvBaseLayoutUpdateMethod(ih);
+}
+
+static void winuiCanvasGLComposite(Ihandle* ih, const unsigned char* bgra, int w, int h)
+{
+  IupWinUICanvasAux* aux = winuiGetAux<IupWinUICanvasAux>(ih, IUPWINUI_CANVAS_AUX);
+  if (!aux || !aux->displayImage)
+    return;
+
+  WriteableBitmap bitmap = aux->displayImage.Source().try_as<WriteableBitmap>();
+  if (!bitmap || bitmap.PixelWidth() != w || bitmap.PixelHeight() != h)
+  {
+    bitmap = WriteableBitmap(w, h);
+    aux->displayImage.Source(bitmap);
+  }
+
+  memcpy(bitmap.PixelBuffer().data(), bgra, (size_t)w * h * 4);
+  bitmap.Invalidate();
 }
 
 /***********************************************************************************
@@ -754,11 +773,26 @@ static int winuiCanvasMapMethod(Ihandle* ih)
 
   if (iupAttribGetBoolean(ih, "CANFOCUS"))
     canvas.IsTabStop(true);
+  canvas.AllowFocusOnInteraction(false);
 
   Image displayImage;
   displayImage.Stretch(Stretch::Fill);
   canvas.Children().Append(displayImage);
   aux->displayImage = displayImage;
+
+  if (iupAttribGet(ih, "_IUP_GLCONTROLDATA"))
+  {
+    Ihandle* dialog = IupGetDialog(ih);
+    HWND glHwnd = NULL;
+
+    winuiGLCanvasRegisterClass();
+    if (dialog && dialog->handle)
+      glHwnd = CreateWindowExW(0, TEXT("IupWinUIGLCanvas"), NULL, WS_CHILD | WS_CLIPSIBLINGS,
+                               0, 0, 1, 1, (HWND)dialog->handle, NULL, GetModuleHandle(NULL), NULL);
+
+    iupAttribSet(ih, "HWND", (char*)glHwnd);
+    iupAttribSet(ih, "_IUPGL_COMPOSITE_CB", (char*)winuiCanvasGLComposite);
+  }
 
   ih->data->sb = iupBaseGetScrollbar(ih);
 
@@ -843,6 +877,13 @@ static int winuiCanvasMapMethod(Ihandle* ih)
       c.ReleasePointerCapture(args.Pointer());
 
     iupAttribSet(ih, "_IUPWINUI_DRAGPRESSED", NULL);
+
+    Ihandle* dlg = IupGetDialog(ih);
+    if (dlg && dlg->handle && !IsWindowEnabled((HWND)dlg->handle))
+    {
+      args.Handled(true);
+      return;
+    }
 
     IFniiiis cb = (IFniiiis)IupGetCallback(ih, "BUTTON_CB");
     if (cb)
@@ -1106,6 +1147,8 @@ static int winuiCanvasMapMethod(Ihandle* ih)
   canvas.ManipulationMode(ManipulationModes::Scale | ManipulationModes::Rotate | ManipulationModes::TranslateX | ManipulationModes::TranslateY);
 
   aux->manipulationStartedToken = canvas.ManipulationStarted([ih](IInspectable const&, ManipulationStartedRoutedEventArgs const& args) {
+    if (args.PointerDeviceType() == Microsoft::UI::Input::PointerDeviceType::Mouse)
+      return;
     auto p = args.Position();
     winuiCanvasFireGesture(ih, IUP_GESTURE_PINCH, IUP_GESTURE_BEGIN, p, 1.0, 0);
     winuiCanvasFireGesture(ih, IUP_GESTURE_ROTATE, IUP_GESTURE_BEGIN, p, 0, 0);
@@ -1113,6 +1156,8 @@ static int winuiCanvasMapMethod(Ihandle* ih)
   });
 
   aux->manipulationDeltaToken = canvas.ManipulationDelta([ih](IInspectable const&, ManipulationDeltaRoutedEventArgs const& args) {
+    if (args.PointerDeviceType() == Microsoft::UI::Input::PointerDeviceType::Mouse)
+      return;
     auto p = args.Position();
     auto c = args.Cumulative();
     winuiCanvasFireGesture(ih, IUP_GESTURE_PINCH, IUP_GESTURE_CHANGED, p, c.Scale, 0);
@@ -1121,6 +1166,8 @@ static int winuiCanvasMapMethod(Ihandle* ih)
   });
 
   aux->manipulationCompletedToken = canvas.ManipulationCompleted([ih](IInspectable const&, ManipulationCompletedRoutedEventArgs const& args) {
+    if (args.PointerDeviceType() == Microsoft::UI::Input::PointerDeviceType::Mouse)
+      return;
     auto p = args.Position();
     auto c = args.Cumulative();
     winuiCanvasFireGesture(ih, IUP_GESTURE_PINCH, IUP_GESTURE_END, p, c.Scale, 0);
@@ -1179,6 +1226,14 @@ static void winuiCanvasUnMapMethod(Ihandle* ih)
   }
 
   IupWinUICanvasAux* aux = winuiGetAux<IupWinUICanvasAux>(ih, IUPWINUI_CANVAS_AUX);
+
+  {
+    HWND glHwnd = (HWND)iupAttribGet(ih, "HWND");
+    if (glHwnd)
+      DestroyWindow(glHwnd);
+    iupAttribSet(ih, "HWND", NULL);
+    iupAttribSet(ih, "_IUPGL_COMPOSITE_CB", NULL);
+  }
 
   if (ih->handle && aux)
   {

@@ -59,6 +59,8 @@ Cursor sizes are usually less than or equal to 32x32.
 
 The cursor will only change when the interface system regains control or when IupFlush is called.
 
+In Win32 and WinUI, the cursor of a dialog or container is also shown over child controls that do not define their own cursor, except over text inputs.
+
 Not supported on Android and iOS (touch UIs have no cursor).
 
 The Windows SDK recommends that cursors and icons should be implemented as resources rather than created at run time.

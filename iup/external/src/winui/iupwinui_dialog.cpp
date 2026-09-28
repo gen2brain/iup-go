@@ -246,6 +246,21 @@ static LRESULT CALLBACK winuiDialogWndProc(HWND hwnd, UINT msg, WPARAM wParam, L
       return 0;
     }
 
+    case WM_NCCALCSIZE:
+    {
+      LONG_PTR style = GetWindowLongPtr(hwnd, GWL_STYLE);
+      if (wParam && ih && !(style & WS_CAPTION) && (style & WS_THICKFRAME) && !IsZoomed(hwnd) &&
+          !iupAttribGetBoolean(ih, "CUSTOMFRAME"))
+      {
+        NCCALCSIZE_PARAMS* params = (NCCALCSIZE_PARAMS*)lParam;
+        LONG top = params->rgrc[0].top;
+        LRESULT result = DefWindowProc(hwnd, msg, wParam, lParam);
+        params->rgrc[0].top = top;
+        return result;
+      }
+      break;
+    }
+
     case WM_ERASEBKGND:
     {
       if (ih)
@@ -547,6 +562,16 @@ static void winuiDialogRegisterClass(void)
 
   RegisterClassExW(&wc);
   registered = true;
+}
+
+IUP_DRV_API Ihandle* iupwinuiDialogFromHwnd(HWND hwnd)
+{
+  wchar_t name[32];
+  if (!hwnd || !GetClassNameW(hwnd, name, 32) || lstrcmpW(name, WINUI_DIALOG_CLASS) != 0)
+    return NULL;
+
+  Ihandle* ih = (Ihandle*)GetWindowLongPtr(hwnd, GWLP_USERDATA);
+  return (ih && iupObjectCheck(ih)) ? ih : NULL;
 }
 
 static int winuiDialogSetBackdropAttrib(Ihandle* ih, const char* value)
@@ -1032,13 +1057,29 @@ static int winuiDialogSetHideTitleBarAttrib(Ihandle* ih, const char* value)
   if (!ih->handle)
     return 1;
   HWND hwnd = (HWND)ih->handle;
+  RECT client_before, client_after, window;
   LONG_PTR style = GetWindowLongPtr(hwnd, GWL_STYLE);
   if (iupStrBoolean(value))
     style &= ~WS_CAPTION;
   else
     style |= WS_CAPTION;
+
+  GetClientRect(hwnd, &client_before);
   SetWindowLongPtr(hwnd, GWL_STYLE, style);
   SetWindowPos(hwnd, NULL, 0, 0, 0, 0, SWP_NOZORDER | SWP_NOMOVE | SWP_NOSIZE | SWP_FRAMECHANGED);
+
+  if (!IsZoomed(hwnd) && !IsIconic(hwnd))
+  {
+    GetClientRect(hwnd, &client_after);
+    GetWindowRect(hwnd, &window);
+    SetWindowPos(hwnd, NULL, 0, 0,
+                 (window.right - window.left) + (client_before.right - client_after.right),
+                 (window.bottom - window.top) + (client_before.bottom - client_after.bottom),
+                 SWP_NOZORDER | SWP_NOMOVE | SWP_NOACTIVATE);
+  }
+
+  winuiDialogUpdateXamlIsland(ih);
+  RedrawWindow(hwnd, NULL, NULL, RDW_INVALIDATE | RDW_ERASE | RDW_FRAME | RDW_ALLCHILDREN);
   return 1;
 }
 

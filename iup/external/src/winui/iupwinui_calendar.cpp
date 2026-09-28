@@ -7,6 +7,7 @@
 #include <windows.h>
 
 #include <cstdlib>
+#include <cmath>
 
 extern "C" {
 #include "iup.h"
@@ -14,6 +15,7 @@ extern "C" {
 #include "iup_object.h"
 #include "iup_str.h"
 #include "iup_class.h"
+#include "iup_dlglist.h"
 }
 
 #include "iupwinui_drv.h"
@@ -32,11 +34,12 @@ using namespace Windows::Foundation::Collections;
 struct IupWinUICalendarAux
 {
   event_token selectedDatesChangedToken;
+  bool ignoreChange;
 
   winrt::event_token gotFocusToken{};
   winrt::event_token lostFocusToken{};
 
-  IupWinUICalendarAux() : selectedDatesChangedToken{} {}
+  IupWinUICalendarAux() : selectedDatesChangedToken{}, ignoreChange(false) {}
 };
 
 static DateTime winuiCalendarMakeDateTime(int year, int month, int day)
@@ -89,9 +92,11 @@ static void winuiCalendarCallValueChanged(Ihandle* ih)
 static int winuiCalendarSetValueAttrib(Ihandle* ih, const char* value)
 {
   CalendarView cv = winuiGetHandle<CalendarView>(ih);
-  if (!cv)
+  IupWinUICalendarAux* aux = winuiGetAux<IupWinUICalendarAux>(ih, IUPWINUI_CALENDAR_AUX);
+  if (!cv || !aux)
     return 0;
 
+  aux->ignoreChange = true;
   if (value && iupStrEqualNoCase(value, "TODAY"))
   {
     auto now = winrt::clock::now();
@@ -110,6 +115,7 @@ static int winuiCalendarSetValueAttrib(Ihandle* ih, const char* value)
       cv.SetDisplayDate(dt);
     }
   }
+  aux->ignoreChange = false;
 
   return 0;
 }
@@ -135,11 +141,17 @@ static char* winuiCalendarGetTodayAttrib(Ihandle* ih)
   return iupStrReturnStrf("%d/%02d/%02d", st.wYear, st.wMonth, st.wDay);
 }
 
+static void winuiCalendarInitResources(CalendarView const& cv)
+{
+  cv.Resources().Insert(box_value(L"CalendarViewWeekDayPadding"), box_value(Thickness{0, 12, 0, 12}));
+}
+
 static int winuiCalendarMapMethod(Ihandle* ih)
 {
   IupWinUICalendarAux* aux = new IupWinUICalendarAux();
 
   CalendarView cv = CalendarView();
+  winuiCalendarInitResources(cv);
   cv.HorizontalAlignment(HorizontalAlignment::Left);
   cv.VerticalAlignment(VerticalAlignment::Top);
   cv.SelectionMode(CalendarViewSelectionMode::Single);
@@ -148,7 +160,9 @@ static int winuiCalendarMapMethod(Ihandle* ih)
   cv.SelectedDates().Append(now);
 
   aux->selectedDatesChangedToken = cv.SelectedDatesChanged([ih](CalendarView const&, CalendarViewSelectedDatesChangedEventArgs const&) {
-    winuiCalendarCallValueChanged(ih);
+    IupWinUICalendarAux* a = winuiGetAux<IupWinUICalendarAux>(ih, IUPWINUI_CALENDAR_AUX);
+    if (a && !a->ignoreChange)
+      winuiCalendarCallValueChanged(ih);
   });
 
   Canvas parentCanvas = iupwinuiGetParentCanvas(ih);
@@ -189,10 +203,43 @@ static void winuiCalendarUnMapMethod(Ihandle* ih)
 
 static void winuiCalendarComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* children_expand)
 {
-  (void)ih;
+  static Size desired = {0, 0};
   (void)children_expand;
-  *w = 250;
-  *h = 300;
+
+  if (desired.Width <= 0 || desired.Height <= 0)
+  {
+    Ihandle* dlg;
+    for (dlg = iupDlgListFirst(); dlg; dlg = iupDlgListNext())
+    {
+      IupWinUIDialogAux* dlgAux = dlg->handle ? winuiGetAux<IupWinUIDialogAux>(dlg, IUPWINUI_DIALOG_AUX) : NULL;
+      if (dlgAux && dlgAux->rootPanel && dlgAux->rootPanel.XamlRoot())
+      {
+        CalendarView cv;
+        winuiCalendarInitResources(cv);
+        cv.Opacity(0);
+        dlgAux->rootPanel.Children().Append(cv);
+        cv.UpdateLayout();
+        cv.Measure(Size(10000, 10000));
+        desired = cv.DesiredSize();
+
+        uint32_t index;
+        if (dlgAux->rootPanel.Children().IndexOf(cv, index))
+          dlgAux->rootPanel.Children().RemoveAt(index);
+        break;
+      }
+    }
+  }
+
+  if (desired.Width <= 0 || desired.Height <= 0)
+  {
+    *w = 300;
+    *h = 330;
+    return;
+  }
+
+  double scale = iupwinuiGetScale(ih);
+  *w = (int)ceil(desired.Width * scale);
+  *h = (int)ceil(desired.Height * scale);
 }
 
 extern "C" Iclass* iupCalendarNewClass(void)

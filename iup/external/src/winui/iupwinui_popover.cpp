@@ -168,7 +168,7 @@ static int winuiPopoverSetVisibleAttrib(Ihandle* ih, const char* value)
     }
     aux->isVisible = true;
 
-    winuiPopoverCallShowCB(ih, 1);
+    winuiPopoverCallShowCB(ih, IUP_SHOW);
   }
   else
   {
@@ -179,7 +179,7 @@ static int winuiPopoverSetVisibleAttrib(Ihandle* ih, const char* value)
       aux->flyout.Hide();
       aux->programmaticClose = false;
       aux->isVisible = false;
-      winuiPopoverCallShowCB(ih, 0);
+      winuiPopoverCallShowCB(ih, IUP_HIDE);
     }
   }
 
@@ -211,7 +211,7 @@ static int winuiPopoverMapMethod(Ihandle* ih)
     if (a && a->isVisible)
     {
       a->isVisible = false;
-      winuiPopoverCallShowCB(ih, 0);
+      winuiPopoverCallShowCB(ih, IUP_HIDE);
     }
   });
 

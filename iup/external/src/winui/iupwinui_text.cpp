@@ -1281,6 +1281,15 @@ static int winuiTextMapMethod(Ihandle* ih)
       tb.Padding(Thickness{0, 0, 0, 0});
     }
 
+    if (!ih->data->is_multiline)
+    {
+      tb.Loaded([](IInspectable const& sender, RoutedEventArgs const&) {
+        TextBox box = sender.as<TextBox>();
+        box.ApplyTemplate();
+        winuiRemoveDeleteButton(box.as<DependencyObject>());
+      });
+    }
+
     int isReadOnly = iupAttribGetBoolean(ih, "READONLY");
     tb.IsReadOnly(isReadOnly ? true : false);
 
@@ -1467,6 +1476,8 @@ static void winuiTextUnMapMethod(Ihandle* ih)
     winuiReleaseHandle<RichEditBox>(ih);
   else
     winuiReleaseHandle<TextBox>(ih);
+
+  iupwinuiReleaseStateBrushes(ih);
 }
 
 static int winuiTextSetSpinMinAttrib(Ihandle* ih, const char* value)
@@ -3540,6 +3551,9 @@ static int winuiTextSetBgColorAttrib(Ihandle* ih, const char* value)
       tb.Background(brush);
   }
 
+  static const wchar_t* keys[] = {L"TextControlBackgroundPointerOver", L"TextControlBackgroundFocused"};
+  iupwinuiSetStateBrushes(ih, winuiGetHandle<FrameworkElement>(ih), keys, 2, color);
+
   return 1;
 }
 
@@ -3581,6 +3595,9 @@ static int winuiTextSetFgColorAttrib(Ihandle* ih, const char* value)
     if (tb)
       tb.Foreground(brush);
   }
+
+  static const wchar_t* keys[] = {L"TextControlForegroundPointerOver", L"TextControlForegroundFocused"};
+  iupwinuiSetStateBrushes(ih, winuiGetHandle<FrameworkElement>(ih), keys, 2, color);
 
   return 1;
 }

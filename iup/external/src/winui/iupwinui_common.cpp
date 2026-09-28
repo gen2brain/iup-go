@@ -55,6 +55,59 @@ IUP_DRV_API void iupwinuiSetBgColor(InativeHandle* handle, unsigned char r, unsi
   }
 }
 
+IUP_DRV_API void iupwinuiSetStateBrushes(Ihandle* ih, FrameworkElement const& fe, const wchar_t* const* keys, int count, Windows::UI::Color color)
+{
+  if (!fe)
+    return;
+
+  auto resources = fe.Resources();
+  for (int i = 0; i < count; i++)
+  {
+    char name[100];
+    snprintf(name, sizeof(name), "_IUPWINUI_BRUSH_%ls", keys[i]);
+
+    auto key = box_value(keys[i]);
+    void* abi = iupAttribGet(ih, name);
+    SolidColorBrush current = resources.HasKey(key) ? resources.Lookup(key).try_as<SolidColorBrush>() : nullptr;
+    if (abi && current && winrt::get_abi(current) == abi)
+    {
+      SolidColorBrush brush{nullptr};
+      winrt::copy_from_abi(brush, abi);
+      brush.Color(color);
+    }
+    else
+    {
+      SolidColorBrush brush(color);
+      resources.Insert(key, brush);
+      if (abi)
+      {
+        SolidColorBrush old{nullptr};
+        winrt::attach_abi(old, abi);
+      }
+      iupAttribSet(ih, name, (char*)winrt::detach_abi(brush));
+    }
+  }
+}
+
+IUP_DRV_API void iupwinuiReleaseStateBrushes(Ihandle* ih)
+{
+  char* name = iupTableFirst(ih->attrib);
+  while (name)
+  {
+    if (iupStrEqualPartial(name, "_IUPWINUI_BRUSH_"))
+    {
+      void* abi = iupTableGetCurr(ih->attrib);
+      if (abi)
+      {
+        SolidColorBrush brush{nullptr};
+        winrt::attach_abi(brush, abi);
+        iupTableSetCurr(ih->attrib, NULL, IUPTABLE_POINTER);
+      }
+    }
+    name = iupTableNext(ih->attrib);
+  }
+}
+
 IUP_DRV_API void iupwinuiSetFgColor(InativeHandle* handle, unsigned char r, unsigned char g, unsigned char b)
 {
   if (!handle)
@@ -118,22 +171,22 @@ IUP_DRV_API void iupwinuiRemoveFromParent(Ihandle* ih)
  * Base Driver Functions
  ****************************************************************************/
 
-static void winuiSubtractHwndChildren(Ihandle* ih, HRGN rgn)
+static void winuiSubtractHwndChildren(Ihandle* ih, HRGN rgn, HWND dialogHwnd)
 {
   while (ih)
   {
-    if (ih->handle && winuiHandleIsHWND(ih) && ih->iclass->nativetype != IUP_TYPEDIALOG)
+    if (ih->handle && winuiHandleIsHWND(ih) && ih->iclass->nativetype != IUP_TYPEDIALOG && IsWindowVisible((HWND)ih->handle))
     {
-      if (ih->currentwidth > 0 && ih->currentheight > 0)
-      {
-        HRGN childRgn = CreateRectRgn(ih->x, ih->y, ih->x + ih->currentwidth, ih->y + ih->currentheight);
-        CombineRgn(rgn, rgn, childRgn, RGN_DIFF);
-        DeleteObject(childRgn);
-      }
+      RECT r;
+      GetWindowRect((HWND)ih->handle, &r);
+      MapWindowPoints(NULL, dialogHwnd, (POINT*)&r, 2);
+      HRGN childRgn = CreateRectRgnIndirect(&r);
+      CombineRgn(rgn, rgn, childRgn, RGN_DIFF);
+      DeleteObject(childRgn);
     }
 
     if (ih->firstchild)
-      winuiSubtractHwndChildren(ih->firstchild, rgn);
+      winuiSubtractHwndChildren(ih->firstchild, rgn, dialogHwnd);
 
     ih = ih->brother;
   }
@@ -153,8 +206,94 @@ static void winuiUpdateIslandClipRegion(Ihandle* ih)
   GetClientRect((HWND)dialog->handle, &rect);
 
   HRGN rgn = CreateRectRgn(0, 0, rect.right, rect.bottom);
-  winuiSubtractHwndChildren(dialog->firstchild, rgn);
+  winuiSubtractHwndChildren(dialog->firstchild, rgn, (HWND)dialog->handle);
   SetWindowRgn(aux->islandHwnd, rgn, TRUE);
+}
+
+static bool winuiElementShown(UIElement const& elem)
+{
+  DependencyObject obj = elem;
+  while (obj)
+  {
+    UIElement u = obj.try_as<UIElement>();
+    if (u && u.Visibility() == Visibility::Collapsed)
+      return false;
+    obj = Media::VisualTreeHelper::GetParent(obj);
+  }
+  return true;
+}
+
+static void winuiHwndHostPlace(Ihandle* ih, FrameworkElement const& host)
+{
+  HWND hwnd = (HWND)ih->handle;
+
+  if (!host.IsLoaded() || !winuiElementShown(host) || iupStrEqualNoCase(iupAttribGet(ih, "VISIBLE"), "NO"))
+    ShowWindow(hwnd, SW_HIDE);
+  else
+  {
+    double scale = iupwinuiGetScale(ih);
+    Windows::Foundation::Point p = host.TransformToVisual(nullptr).TransformPoint(Windows::Foundation::Point{0, 0});
+    SetWindowPos(hwnd, NULL, (int)floor(p.X * scale + 0.5), (int)floor(p.Y * scale + 0.5), ih->currentwidth, ih->currentheight,
+                 SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOOWNERZORDER | SWP_SHOWWINDOW);
+  }
+
+  winuiUpdateIslandClipRegion(ih);
+}
+
+static FrameworkElement winuiHwndHostGet(Ihandle* ih)
+{
+  void* abi = iupAttribGet(ih, "_IUPWINUI_HWNDHOST");
+  if (abi)
+  {
+    Border host{nullptr};
+    winrt::copy_from_abi(host, abi);
+    return host;
+  }
+
+  Canvas parentCanvas = iupwinuiGetParentCanvas(ih);
+  if (!parentCanvas)
+    return nullptr;
+
+  Border host;
+  host.IsHitTestVisible(false);
+  parentCanvas.Children().Append(host);
+
+  Ihandle* dialog = IupGetDialog(ih);
+  host.LayoutUpdated([ih, dialog, weak = winrt::make_weak(host)](Windows::Foundation::IInspectable const&, Windows::Foundation::IInspectable const&) {
+    Border h = weak.get();
+    if (!h)
+      return;
+    if (!iupObjectCheck(ih) || !ih->handle || iupAttribGet(ih, "_IUPWINUI_HWNDHOST") != winrt::get_abi(h))
+    {
+      Panel panel = Media::VisualTreeHelper::GetParent(h).try_as<Panel>();
+      uint32_t index;
+      if (panel && panel.Children().IndexOf(h, index))
+        panel.Children().RemoveAt(index);
+      if (iupObjectCheck(dialog))
+        winuiUpdateIslandClipRegion(dialog);
+      return;
+    }
+    winuiHwndHostPlace(ih, h);
+  });
+
+  iupAttribSet(ih, "_IUPWINUI_HWNDHOST", (char*)winrt::get_abi(host));
+  return host;
+}
+
+IUP_DRV_API void iupwinuiHwndHostRemove(Ihandle* ih)
+{
+  void* abi = iupAttribGet(ih, "_IUPWINUI_HWNDHOST");
+  if (!abi)
+    return;
+
+  Border host{nullptr};
+  winrt::copy_from_abi(host, abi);
+  iupAttribSet(ih, "_IUPWINUI_HWNDHOST", NULL);
+
+  Panel panel = Media::VisualTreeHelper::GetParent(host).try_as<Panel>();
+  uint32_t index;
+  if (panel && panel.Children().IndexOf(host, index))
+    panel.Children().RemoveAt(index);
 }
 
 /* XAML positions and sizes are DIPs, IUP computes physical pixels, and the island rasterizes by the monitor scale on top */
@@ -188,6 +327,18 @@ extern "C" IUP_SDK_API void iupdrvBaseLayoutUpdateMethod(Ihandle* ih)
   if (winuiHandleIsHWND(ih))
   {
     HWND hwnd = (HWND)ih->handle;
+    FrameworkElement host = (ih->iclass->nativetype != IUP_TYPEDIALOG) ? winuiHwndHostGet(ih) : nullptr;
+    if (host)
+    {
+      double scale = iupwinuiGetScale(ih);
+      Canvas::SetLeft(host, ih->x / scale);
+      Canvas::SetTop(host, ih->y / scale);
+      host.Width(ih->currentwidth / scale);
+      host.Height(ih->currentheight / scale);
+      winuiHwndHostPlace(ih, host);
+      return;
+    }
+
     if (ih->currentwidth > 0 && ih->currentheight > 0)
       SetWindowPos(hwnd, NULL, ih->x, ih->y, ih->currentwidth, ih->currentheight, SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOOWNERZORDER);
     else
@@ -226,7 +377,10 @@ extern "C" IUP_SDK_API void iupdrvBaseUnMapMethod(Ihandle* ih)
   iupwinuiTipsDestroy(ih);
 
   if (winuiHandleIsHWND(ih))
+  {
+    iupwinuiHwndHostRemove(ih);
     return;
+  }
 
   iupwinuiRemoveFromParent(ih);
 
@@ -830,11 +984,37 @@ static HCURSOR winuiGetCursor(Ihandle* ih, const char* name)
   return LoadCursor(NULL, IDC_ARROW);
 }
 
-static void winuiSetXamlCursor(Ihandle* ih, const char* name)
+struct IInputCursorStaticsInterop : ::IUnknown
+{
+  virtual HRESULT __stdcall GetIids(ULONG* count, GUID** iids) = 0;
+  virtual HRESULT __stdcall GetRuntimeClassName(void** name) = 0;
+  virtual HRESULT __stdcall GetTrustLevel(int* level) = 0;
+  virtual HRESULT __stdcall CreateFromHCursor(HCURSOR hcursor, void** inputCursor) = 0;
+};
+
+static Microsoft::UI::Input::InputCursor winuiCreateInputCursor(HCURSOR hcursor)
+{
+  static const GUID iid = {0xac6f5065, 0x90c4, 0x46ce, {0xbe, 0xb7, 0x05, 0xe1, 0x38, 0xe5, 0x41, 0x17}};
+  Microsoft::UI::Input::InputCursor cursor{nullptr};
+
+  auto factory = winrt::get_activation_factory<Microsoft::UI::Input::InputCursor>();
+  IInputCursorStaticsInterop* interop = NULL;
+  if (FAILED(((::IUnknown*)winrt::get_abi(factory))->QueryInterface(iid, (void**)&interop)))
+    return cursor;
+
+  void* abi = NULL;
+  if (SUCCEEDED(interop->CreateFromHCursor(hcursor, &abi)) && abi)
+    cursor = Microsoft::UI::Input::InputCursor{abi, winrt::take_ownership_from_abi};
+  interop->Release();
+  return cursor;
+}
+
+static void winuiSetXamlCursor(UIElement const& element, const char* name)
 {
   using namespace Microsoft::UI::Input;
 
   int shape = -1;
+  bool found = false;
   int i, count = sizeof(winuiCursorTable) / sizeof(winuiCursorTable[0]);
 
   for (i = 0; i < count; i++)
@@ -842,24 +1022,47 @@ static void winuiSetXamlCursor(Ihandle* ih, const char* name)
     if (iupStrEqualNoCase(name, winuiCursorTable[i].iupname))
     {
       shape = winuiCursorTable[i].xamlShape;
+      found = true;
       break;
+    }
+  }
+
+  if (!element)
+    return;
+
+  auto protectedUI = element.try_as<Microsoft::UI::Xaml::IUIElementProtected>();
+  if (!protectedUI)
+    return;
+
+  if (!found || shape < 0)
+  {
+    HCURSOR hcursor;
+    if (found)
+    {
+      static HCURSOR blank = NULL;
+      if (!blank)
+      {
+        BYTE and_mask[4] = {0xFF, 0xFF, 0xFF, 0xFF};
+        BYTE xor_mask[4] = {0, 0, 0, 0};
+        blank = CreateCursor(GetModuleHandle(NULL), 0, 0, 1, 1, and_mask, xor_mask);
+      }
+      hcursor = blank;
+    }
+    else
+      hcursor = (HCURSOR)iupImageGetCursor(name);
+
+    InputCursor cursor = hcursor ? winuiCreateInputCursor(hcursor) : InputCursor{nullptr};
+    if (cursor)
+    {
+      protectedUI.ProtectedCursor(cursor);
+      return;
     }
   }
 
   if (shape < 0)
     shape = 0;  /* Arrow */
 
-  UIElement element{nullptr};
-  Windows::Foundation::IInspectable obj{nullptr};
-  winrt::copy_from_abi(obj, ih->handle);
-  element = obj.try_as<UIElement>();
-
-  if (element)
-  {
-    auto protectedUI = element.try_as<Microsoft::UI::Xaml::IUIElementProtected>();
-    if (protectedUI)
-      protectedUI.ProtectedCursor(InputSystemCursor::Create(static_cast<InputSystemCursorShape>(shape)));
-  }
+  protectedUI.ProtectedCursor(InputSystemCursor::Create(static_cast<InputSystemCursorShape>(shape)));
 }
 
 extern "C" IUP_SDK_API int iupdrvBaseSetCursorAttrib(Ihandle* ih, const char* value)
@@ -873,9 +1076,16 @@ extern "C" IUP_SDK_API int iupdrvBaseSetCursorAttrib(Ihandle* ih, const char* va
     iupAttribSet(ih, "_IUPWIN_HCURSOR", (char*)hCur);
     if (hCur)
       SetCursor(hCur);
+
+    if (ih->iclass->nativetype == IUP_TYPEDIALOG)
+    {
+      IupWinUIDialogAux* aux = winuiGetAux<IupWinUIDialogAux>(ih, IUPWINUI_DIALOG_AUX);
+      if (aux && aux->rootPanel)
+        winuiSetXamlCursor(aux->rootPanel, value);
+    }
   }
   else
-    winuiSetXamlCursor(ih, value);
+    winuiSetXamlCursor(winuiGetHandle<UIElement>(ih), value);
 
   return 1;
 }
@@ -956,7 +1166,7 @@ extern "C" IUP_SDK_API void iupdrvBaseRegisterCommonAttrib(Iclass* ic)
 
 extern "C" IUP_SDK_API void iupdrvBaseRegisterVisualAttrib(Iclass* ic)
 {
-  iupClassRegisterAttribute(ic, "TIPMARKUP", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "TIPMARKUP", NULL, NULL, IUPAF_SAMEASSYSTEM, NULL, IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "TIPICON", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "TIPDELAY", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "TIPRECT", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);

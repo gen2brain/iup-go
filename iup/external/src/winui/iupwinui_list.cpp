@@ -826,12 +826,22 @@ static int winuiListSetTopItemAttrib(Ihandle* ih, const char* value)
 
 static void winuiListSetItemDragSource(Ihandle* ih, ListBoxItem const& item)
 {
-  item.DragStarting([ih](UIElement const&, DragStartingEventArgs const& e) {
+  item.DragStarting([ih](UIElement const& sender, DragStartingEventArgs const& e) {
+    ListBoxItem lbi = sender.try_as<ListBoxItem>();
+    ListBox listBox = winuiListGetListBox(ih);
+    if (lbi && listBox && !lbi.IsSelected())
+    {
+      if (ih->data->is_multiple)
+        listBox.SelectedItems().Clear();
+      lbi.IsSelected(true);
+    }
+
     IFnii dragbegin_cb = (IFnii)IupGetCallback(ih, "DRAGBEGIN_CB");
     if (dragbegin_cb)
     {
-      auto pos = e.GetPosition(nullptr);
-      int ret = dragbegin_cb(ih, (int)pos.X, (int)pos.Y);
+      double scale = iupwinuiGetScale(ih);
+      auto pos = e.GetPosition(listBox);
+      int ret = dragbegin_cb(ih, (int)(pos.X * scale), (int)(pos.Y * scale));
       if (ret == IUP_IGNORE)
       {
         e.Cancel(true);
@@ -938,8 +948,11 @@ static ListBoxItem winuiListCreateItem(Ihandle* ih, const char* value)
   item.MinHeight(0);
   item.MinWidth(0);
 
-  if (iupStrBoolean(iupAttribGet(ih, "DRAGSOURCE")))
+  if (iupStrBoolean(iupAttribGet(ih, "DRAGSOURCE")) || iupAttribGet(ih, "_IUPWINUI_LIST_ITEMDRAG"))
+  {
     winuiListSetItemDragSource(ih, item);
+    iupAttribSet(ih, "_IUPWINUI_LIST_ITEMDRAG", "1");
+  }
   else if (iupStrBoolean(iupAttribGet(ih, "SHOWDRAGDROP")))
     winuiListSetItemShowDragDrop(ih, item);
 
@@ -992,7 +1005,8 @@ static int winuiListConvertXYToPos(Ihandle* ih, int x, int y)
   if (!listBox)
     return -1;
 
-  Point pt{(float)x, (float)y};
+  double scale = iupwinuiGetScale(ih);
+  Point pt = listBox.TransformToVisual(nullptr).TransformPoint(Point{(float)(x / scale), (float)(y / scale)});
   auto elements = Media::VisualTreeHelper::FindElementsInHostCoordinates(pt, listBox);
 
   for (auto const& elem : elements)
@@ -1027,8 +1041,15 @@ static int winuiListHitTestItem(ListBox const& listBox, Point hostPt)
 
 static void winuiListSetupDragTracking(Ihandle* ih, ListBox const& listBox)
 {
+  if (iupAttribGet(ih, "_IUPWINUI_LIST_DRAGTRACKING"))
+    return;
+  iupAttribSet(ih, "_IUPWINUI_LIST_DRAGTRACKING", "1");
+
   listBox.AddHandler(UIElement::PointerPressedEvent(), winrt::box_value(
-    PointerEventHandler([listBox](IInspectable const&, PointerRoutedEventArgs const& e) {
+    PointerEventHandler([ih, listBox](IInspectable const&, PointerRoutedEventArgs const& e) {
+      if (!iupAttribGetBoolean(ih, "DRAGSOURCE") && !iupAttribGetBoolean(ih, "SHOWDRAGDROP"))
+        return;
+
       auto hostPt = e.GetCurrentPoint(nullptr);
       Point pt{hostPt.Position().X, hostPt.Position().Y};
       auto elements = VisualTreeHelper::FindElementsInHostCoordinates(pt, listBox);
@@ -1234,20 +1255,23 @@ static int winuiListSetDragSourceAttrib(Ihandle* ih, const char* value)
       return 1;
 
     bool enable = iupStrBoolean(value) ? true : false;
+    bool registered = iupAttribGet(ih, "_IUPWINUI_LIST_ITEMDRAG") != NULL;
     for (uint32_t i = 0; i < listBox.Items().Size(); i++)
     {
       auto item = listBox.Items().GetAt(i).try_as<ListBoxItem>();
       if (item)
       {
-        if (enable)
-          winuiListSetItemDragSource(ih, item);
-        else
+        if (!enable)
           item.CanDrag(false);
+        else if (!registered)
+          winuiListSetItemDragSource(ih, item);
       }
     }
-
     if (enable)
+    {
+      iupAttribSet(ih, "_IUPWINUI_LIST_ITEMDRAG", "1");
       winuiListSetupDragTracking(ih, listBox);
+    }
   }
 
   return 1;
@@ -1775,6 +1799,10 @@ static int winuiListMapMethod(Ihandle* ih)
 static void winuiListUnMapMethod(Ihandle* ih)
 {
   IupWinUIListAux* aux = winuiGetAux<IupWinUIListAux>(ih, IUPWINUI_LIST_AUX);
+
+  iupAttribSet(ih, "_IUPWINUI_LIST_DRAGTRACKING", NULL);
+  iupAttribSet(ih, "_IUPWINUI_LIST_ITEMDRAG", NULL);
+  iupwinuiReleaseStateBrushes(ih);
 
   if (ih->handle && aux)
   {
@@ -2636,13 +2664,21 @@ static int winuiListSetFgColorAttrib(Ihandle* ih, const char* value)
   {
     ListBox listBox = winuiListGetListBox(ih);
     if (listBox)
+    {
+      static const wchar_t* keys[] = {L"ListBoxItemForeground"};
       listBox.Foreground(brush);
+      iupwinuiSetStateBrushes(ih, listBox, keys, 1, color);
+    }
 
     if (ih->data->has_editbox)
     {
       TextBox textBox = winuiListGetTextBox(ih);
       if (textBox)
+      {
+        static const wchar_t* keys[] = {L"TextControlForegroundPointerOver", L"TextControlForegroundFocused"};
         textBox.Foreground(brush);
+        iupwinuiSetStateBrushes(ih, textBox, keys, 2, color);
+      }
     }
   }
 

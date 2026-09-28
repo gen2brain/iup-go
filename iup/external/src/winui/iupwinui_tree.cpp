@@ -374,6 +374,7 @@ static void winuiTreeSyncCurrent(Ihandle* ih, TreeView const& treeView)
 
   auto selectedNodes = treeView.SelectedNodes();
   aux->currentId = selectedNodes.Size() > 0 ? winuiTreeFindNodeId(ih, selectedNodes.GetAt(0)) : -1;
+  aux->anchorId = -1;
   winuiTreeStoreSelection(aux, treeView);
 }
 
@@ -414,11 +415,17 @@ static void winuiTreeSelectionChangedHandler(Ihandle* ih)
     }
   }
 
-  if (aux->selectedNodes.empty())
+  if (aux->clickId >= 0)
+  {
+    aux->currentId = aux->clickId;
+    aux->clickId = -1;
+    winuiTreeSetFocus(ih, aux->currentId);
+  }
+  else if (aux->selectedNodes.empty())
     aux->currentId = -1;
   else if (!added.empty())
   {
-    aux->currentId = added.back();
+    aux->currentId = added.front();
     winuiTreeSetFocus(ih, aux->currentId);
   }
 
@@ -452,6 +459,66 @@ static void winuiTreeSelectionChangedHandler(Ihandle* ih)
         cb(ih, id, 1);
     }
   }
+}
+
+static void winuiTreeClickMark(Ihandle* ih, TreeViewNode const& node)
+{
+  IupWinUITreeAux* aux = winuiGetAux<IupWinUITreeAux>(ih, IUPWINUI_TREE_AUX);
+  TreeView treeView = winuiTreeGetTreeView(ih);
+  if (!aux || !treeView || !node)
+    return;
+
+  int id = winuiTreeFindNodeId(ih, node);
+  if (id < 0)
+    return;
+
+  auto selected = treeView.SelectedNodes();
+  int anchor = aux->anchorId >= 0 ? aux->anchorId : aux->currentId;
+  aux->ignoreChange = true;
+  if ((GetKeyState(VK_SHIFT) & 0x8000) && anchor >= 0)
+  {
+    int first = anchor < id ? anchor : id;
+    int last = anchor < id ? id : anchor;
+    if (!(GetKeyState(VK_CONTROL) & 0x8000))
+      selected.Clear();
+    for (int i = first; i <= last; i++)
+    {
+      uint32_t index;
+      TreeViewNode n = winuiTreeGetNode(ih, i);
+      if (n && !selected.IndexOf(n, index))
+        selected.Append(n);
+    }
+  }
+  else
+  {
+    uint32_t index;
+    if (GetKeyState(VK_CONTROL) & 0x8000)
+    {
+      if (selected.IndexOf(node, index))
+        selected.RemoveAt(index);
+      else
+        selected.Append(node);
+    }
+    else
+    {
+      selected.Clear();
+      selected.Append(node);
+    }
+    aux->anchorId = id;
+  }
+  aux->ignoreChange = false;
+  aux->clickId = id;
+
+  Microsoft::UI::Dispatching::DispatcherQueue dq = Microsoft::UI::Dispatching::DispatcherQueue::GetForCurrentThread();
+  if (dq)
+  {
+    dq.TryEnqueue([ih]() {
+      if (iupObjectCheck(ih))
+        winuiTreeSelectionChangedHandler(ih);
+    });
+  }
+  else
+    winuiTreeSelectionChangedHandler(ih);
 }
 
 /****************************************************************************
@@ -809,6 +876,68 @@ static ListView winuiTreeFindListView(DependencyObject const& parent)
   return nullptr;
 }
 
+static Grid winuiTreeFindTemplateGrid(DependencyObject const& parent, const wchar_t* name)
+{
+  int count = VisualTreeHelper::GetChildrenCount(parent);
+  for (int i = 0; i < count; i++)
+  {
+    DependencyObject child = VisualTreeHelper::GetChild(parent, i);
+    FrameworkElement fe = child.try_as<FrameworkElement>();
+    if (fe && fe.Name() == name)
+      return child.try_as<Grid>();
+
+    Grid grid = winuiTreeFindTemplateGrid(child, name);
+    if (grid)
+      return grid;
+  }
+  return nullptr;
+}
+
+static void winuiTreeApplyItemMetrics(Ihandle* ih, TreeViewNode const& node, TreeViewItem const& tvi)
+{
+  if (!node || !tvi)
+    return;
+
+  tvi.ApplyTemplate();
+
+  double scale = iupwinuiGetScale(ih);
+  double spacing = ih->data->spacing / scale;
+  tvi.MinHeight(spacing > 0 ? spacing * 2 : 0.0);
+
+  Grid presenter = winuiTreeFindTemplateGrid(tvi, L"ContentPresenterGrid");
+  if (presenter)
+  {
+    presenter.Margin(Thickness{0, spacing, 0, spacing});
+    presenter.Padding(Thickness{0, 0, 0, 0});
+  }
+
+  int indent;
+  if (iupStrToInt(iupAttribGet(ih, "INDENTATION"), &indent))
+  {
+    Grid multiSelect = winuiTreeFindTemplateGrid(tvi, L"MultiSelectGrid");
+    if (multiSelect)
+      multiSelect.Padding(Thickness{node.Depth() * indent / scale, 0, 0, 0});
+  }
+}
+
+static void winuiTreeApplyItemMetricsAll(Ihandle* ih)
+{
+  TreeView treeView = winuiTreeGetTreeView(ih);
+  if (!treeView)
+    return;
+
+  for (int i = 0; i < ih->data->node_count; i++)
+  {
+    TreeViewNode node = winuiTreeGetNode(ih, i);
+    if (!node)
+      continue;
+
+    DependencyObject container = treeView.ContainerFromNode(node);
+    if (container)
+      winuiTreeApplyItemMetrics(ih, node, container.try_as<TreeViewItem>());
+  }
+}
+
 static void winuiTreeHookContainerContentChanging(Ihandle* ih, IupWinUITreeAux* aux)
 {
   if (aux->containerContentChangingToken.value)
@@ -823,8 +952,10 @@ static void winuiTreeHookContainerContentChanging(Ihandle* ih, IupWinUITreeAux* 
       if (args.InRecycleQueue())
         return;
 
-      winuiTreeApplyNodeFont(ih, args.Item().try_as<TreeViewNode>(),
-                             args.ItemContainer().try_as<TreeViewItem>());
+      TreeViewNode node = args.Item().try_as<TreeViewNode>();
+      TreeViewItem tvi = args.ItemContainer().try_as<TreeViewItem>();
+      winuiTreeApplyNodeFont(ih, node, tvi);
+      winuiTreeApplyItemMetrics(ih, node, tvi);
     });
 }
 
@@ -1815,32 +1946,18 @@ static int winuiTreeSetIndentationAttrib(Ihandle* ih, const char* value)
   if (!iupStrToInt(value, &indent))
     return 0;
 
-  TreeView treeView = winuiTreeGetTreeView(ih);
-  if (treeView)
-  {
-    auto key = box_value(L"TreeViewItemIndentation");
-    treeView.Resources().Insert(key, box_value(indent / iupwinuiGetScale(ih)));
-  }
-
+  iupAttribSetInt(ih, "INDENTATION", indent);
+  winuiTreeApplyItemMetricsAll(ih);
   return 0;
 }
 
 static char* winuiTreeGetIndentationAttrib(Ihandle* ih)
 {
-  TreeView treeView = winuiTreeGetTreeView(ih);
-  if (!treeView)
-    return NULL;
+  char* value = iupAttribGet(ih, "INDENTATION");
+  if (value)
+    return value;
 
-  auto key = box_value(L"TreeViewItemIndentation");
-  if (treeView.Resources().HasKey(key))
-  {
-    auto val = treeView.Resources().Lookup(key);
-    auto ref = val.try_as<Windows::Foundation::IReference<double>>();
-    if (ref)
-      return iupStrReturnInt((int)(ref.Value() * iupwinuiGetScale(ih) + 0.5));
-  }
-
-  return NULL;
+  return iupStrReturnInt((int)(16 * iupwinuiGetScale(ih) + 0.5));
 }
 
 static void winuiTreeUpdateSpacingResources(Ihandle* ih, TreeView treeView)
@@ -1865,6 +1982,7 @@ static int winuiTreeSetSpacingAttrib(Ihandle* ih, const char* value)
     TreeView treeView = winuiTreeGetTreeView(ih);
     if (treeView)
       winuiTreeUpdateSpacingResources(ih, treeView);
+    winuiTreeApplyItemMetricsAll(ih);
     return 0;
   }
 
@@ -1893,7 +2011,8 @@ static int winuiTreeConvertXYToPos(Ihandle* ih, int x, int y)
   if (!treeView)
     return -1;
 
-  Point pt{(float)x, (float)y};
+  double scale = iupwinuiGetScale(ih);
+  Point pt = treeView.TransformToVisual(nullptr).TransformPoint(Point{(float)(x / scale), (float)(y / scale)});
   auto elements = Media::VisualTreeHelper::FindElementsInHostCoordinates(pt, treeView);
 
   for (auto const& elem : elements)
@@ -2139,6 +2258,8 @@ static int winuiTreeMapMethod(Ihandle* ih)
 
   aux->itemInvokedToken = treeView.ItemInvoked([ih](TreeView const&, TreeViewItemInvokedEventArgs const& args) {
     TreeViewNode node = args.InvokedItem().try_as<TreeViewNode>();
+    if (ih->data->mark_mode == ITREE_MARK_MULTIPLE)
+      winuiTreeClickMark(ih, node);
     winuiTreeItemInvokedHandler(ih, node);
   });
 
@@ -2309,10 +2430,7 @@ static void winuiTreeUnMapMethod(Ihandle* ih)
         treeView.DragItemsCompleted(aux->dragItemsCompletedToken);
 
       event_token* token;
-      token = (event_token*)iupAttribGet(ih, "_IUPWINUI_CUSTOMDRAGOVER_TOKEN");
-      if (token) { treeView.DragOver(*token); delete token; iupAttribSet(ih, "_IUPWINUI_CUSTOMDRAGOVER_TOKEN", NULL); }
-      token = (event_token*)iupAttribGet(ih, "_IUPWINUI_CUSTOMDROP_TOKEN");
-      if (token) { treeView.Drop(*token); delete token; iupAttribSet(ih, "_IUPWINUI_CUSTOMDROP_TOKEN", NULL); }
+      winuiDropTargetRemoveHandlers(ih, treeView);
       token = (event_token*)iupAttribGet(ih, "_IUPWINUI_DRAGOVER_TOKEN");
       if (token) { treeView.DragOver(*token); delete token; iupAttribSet(ih, "_IUPWINUI_DRAGOVER_TOKEN", NULL); }
       token = (event_token*)iupAttribGet(ih, "_IUPWINUI_DROP_TOKEN");

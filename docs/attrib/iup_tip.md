@@ -43,7 +43,7 @@ Supported in Win32, WinUI, GTK, GTK 4, Motif, Qt, EFL, FLTK and macOS.
 **TIPICON** [GTK, GTK 4 and EFL Only]: name of an image to be displayed in the TIP.
 See [IupImage](../elem/iup_image.md).
 
-**TIPMARKUP** [GTK, GTK 4 and macOS Only]: allows the tip string to contain Pango markup commands.
+**TIPMARKUP** [GTK, GTK 4, macOS, Win32 and WinUI Only]: allows the tip string to contain Pango markup commands.
 Can be "YES" or "NO". Default: "NO". Must be set before setting the TIP attribute.
 
 **TIPRECT** (non-inheritable): Specifies a rectangle inside the element where the tip will be activated.

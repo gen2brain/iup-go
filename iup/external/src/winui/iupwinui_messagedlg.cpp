@@ -65,12 +65,9 @@ static Ihandle* winuiMsgDlgFindParent(Ihandle* ih)
   if (!parent || !parent->handle)
   {
     HWND active = GetActiveWindow();
-    if (active)
-    {
-      Ihandle* ih_active = (Ihandle*)GetWindowLongPtr(active, GWLP_USERDATA);
-      if (ih_active && iupObjectCheck(ih_active))
-        parent = ih_active;
-    }
+    parent = iupwinuiDialogFromHwnd(active);
+    if (!parent && active)
+      parent = iupwinuiDialogFromHwnd(GetWindow(active, GW_OWNER));
   }
 
   return (parent && parent->handle) ? parent : NULL;
