@@ -10,6 +10,17 @@
 #ifndef GL_BGRA
 #define GL_BGRA 0x80E1
 #endif
+#ifndef GL_FRAMEBUFFER
+#define GL_FRAMEBUFFER                0x8D40
+#define GL_RENDERBUFFER               0x8D41
+#define GL_COLOR_ATTACHMENT0          0x8CE0
+#define GL_DEPTH_STENCIL_ATTACHMENT   0x821A
+#define GL_DEPTH24_STENCIL8           0x88F0
+#define GL_FRAMEBUFFER_COMPLETE       0x8CD5
+#endif
+#ifndef GL_CLAMP_TO_EDGE
+#define GL_CLAMP_TO_EDGE 0x812F
+#endif
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -55,7 +66,150 @@ typedef struct _IGlControlData
   int is_owned_dc;
   int owns_window;
   int lazy_init;
+
+  GLuint fbo, color_tex, depth_rbo;
+  int fbo_w, fbo_h;
+  unsigned char* composite_pixels;
+  size_t composite_cap;
 } IGlControlData;
+
+typedef void (*IFnComposite)(Ihandle* ih, const unsigned char* bgra, int w, int h);
+
+typedef void (APIENTRY* wglGenFramebuffers_PROC)(GLsizei, GLuint*);
+typedef void (APIENTRY* wglBindFramebuffer_PROC)(GLenum, GLuint);
+typedef void (APIENTRY* wglDeleteFramebuffers_PROC)(GLsizei, const GLuint*);
+typedef void (APIENTRY* wglFramebufferTexture2D_PROC)(GLenum, GLenum, GLenum, GLuint, GLint);
+typedef GLenum (APIENTRY* wglCheckFramebufferStatus_PROC)(GLenum);
+typedef void (APIENTRY* wglGenRenderbuffers_PROC)(GLsizei, GLuint*);
+typedef void (APIENTRY* wglBindRenderbuffer_PROC)(GLenum, GLuint);
+typedef void (APIENTRY* wglDeleteRenderbuffers_PROC)(GLsizei, const GLuint*);
+typedef void (APIENTRY* wglRenderbufferStorage_PROC)(GLenum, GLenum, GLsizei, GLsizei);
+typedef void (APIENTRY* wglFramebufferRenderbuffer_PROC)(GLenum, GLenum, GLenum, GLuint);
+
+static wglGenFramebuffers_PROC         wGLGenFramebuffers;
+static wglBindFramebuffer_PROC         wGLBindFramebuffer;
+static wglDeleteFramebuffers_PROC      wGLDeleteFramebuffers;
+static wglFramebufferTexture2D_PROC    wGLFramebufferTexture2D;
+static wglCheckFramebufferStatus_PROC  wGLCheckFramebufferStatus;
+static wglGenRenderbuffers_PROC        wGLGenRenderbuffers;
+static wglBindRenderbuffer_PROC        wGLBindRenderbuffer;
+static wglDeleteRenderbuffers_PROC     wGLDeleteRenderbuffers;
+static wglRenderbufferStorage_PROC     wGLRenderbufferStorage;
+static wglFramebufferRenderbuffer_PROC wGLFramebufferRenderbuffer;
+
+static int wGLLoadFBOProcs(void)
+{
+  if (wGLGenFramebuffers)
+    return 1;
+  wGLGenFramebuffers         = (wglGenFramebuffers_PROC)wglGetProcAddress("glGenFramebuffers");
+  wGLBindFramebuffer         = (wglBindFramebuffer_PROC)wglGetProcAddress("glBindFramebuffer");
+  wGLDeleteFramebuffers      = (wglDeleteFramebuffers_PROC)wglGetProcAddress("glDeleteFramebuffers");
+  wGLFramebufferTexture2D    = (wglFramebufferTexture2D_PROC)wglGetProcAddress("glFramebufferTexture2D");
+  wGLCheckFramebufferStatus  = (wglCheckFramebufferStatus_PROC)wglGetProcAddress("glCheckFramebufferStatus");
+  wGLGenRenderbuffers        = (wglGenRenderbuffers_PROC)wglGetProcAddress("glGenRenderbuffers");
+  wGLBindRenderbuffer        = (wglBindRenderbuffer_PROC)wglGetProcAddress("glBindRenderbuffer");
+  wGLDeleteRenderbuffers     = (wglDeleteRenderbuffers_PROC)wglGetProcAddress("glDeleteRenderbuffers");
+  wGLRenderbufferStorage     = (wglRenderbufferStorage_PROC)wglGetProcAddress("glRenderbufferStorage");
+  wGLFramebufferRenderbuffer = (wglFramebufferRenderbuffer_PROC)wglGetProcAddress("glFramebufferRenderbuffer");
+  return wGLGenFramebuffers && wGLBindFramebuffer && wGLFramebufferTexture2D && wGLCheckFramebufferStatus &&
+         wGLGenRenderbuffers && wGLBindRenderbuffer && wGLRenderbufferStorage && wGLFramebufferRenderbuffer;
+}
+
+static int wGLCompositeEnsureFBO(IGlControlData* gldata, int w, int h)
+{
+  if (w < 1) w = 1;
+  if (h < 1) h = 1;
+
+  if (!wGLLoadFBOProcs())
+    return 0;
+
+  if (gldata->fbo && gldata->fbo_w == w && gldata->fbo_h == h)
+  {
+    wGLBindFramebuffer(GL_FRAMEBUFFER, gldata->fbo);
+    return 1;
+  }
+
+  if (!gldata->fbo)       wGLGenFramebuffers(1, &gldata->fbo);
+  if (!gldata->color_tex) glGenTextures(1, &gldata->color_tex);
+  if (!gldata->depth_rbo) wGLGenRenderbuffers(1, &gldata->depth_rbo);
+
+  glBindTexture(GL_TEXTURE_2D, gldata->color_tex);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  glBindTexture(GL_TEXTURE_2D, 0);
+
+  wGLBindRenderbuffer(GL_RENDERBUFFER, gldata->depth_rbo);
+  wGLRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, w, h);
+  wGLBindRenderbuffer(GL_RENDERBUFFER, 0);
+
+  wGLBindFramebuffer(GL_FRAMEBUFFER, gldata->fbo);
+  wGLFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gldata->color_tex, 0);
+  wGLFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, gldata->depth_rbo);
+
+  if (wGLCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+  {
+    wGLBindFramebuffer(GL_FRAMEBUFFER, 0);
+    return 0;
+  }
+
+  gldata->fbo_w = w;
+  gldata->fbo_h = h;
+  return 1;
+}
+
+static void wGLCompositeRelease(IGlControlData* gldata)
+{
+  if (gldata->fbo && wGLDeleteFramebuffers) wGLDeleteFramebuffers(1, &gldata->fbo);
+  if (gldata->depth_rbo && wGLDeleteRenderbuffers) wGLDeleteRenderbuffers(1, &gldata->depth_rbo);
+  if (gldata->color_tex) glDeleteTextures(1, &gldata->color_tex);
+  free(gldata->composite_pixels);
+  gldata->fbo = gldata->depth_rbo = gldata->color_tex = 0;
+  gldata->composite_pixels = NULL;
+  gldata->composite_cap = 0;
+}
+
+static void wGLCompositeReadbackFBO(Ihandle* ih, IGlControlData* gldata, IFnComposite cb)
+{
+  int w = gldata->fbo_w, h = gldata->fbo_h, y;
+  size_t rowbytes = (size_t)w * 4, need = rowbytes * h, i;
+  unsigned char* px;
+
+  if (!gldata->fbo || w < 1 || h < 1)
+    return;
+
+  if (gldata->composite_cap < need)
+  {
+    unsigned char* nb = (unsigned char*)realloc(gldata->composite_pixels, need);
+    if (!nb)
+      return;
+    gldata->composite_pixels = nb;
+    gldata->composite_cap = need;
+  }
+  px = gldata->composite_pixels;
+
+  wGLBindFramebuffer(GL_FRAMEBUFFER, gldata->fbo);
+  glPixelStorei(GL_PACK_ALIGNMENT, 1);
+  glReadPixels(0, 0, w, h, GL_BGRA, GL_UNSIGNED_BYTE, px);
+
+  for (y = 0; y < h / 2; y++)
+  {
+    unsigned char* a = px + (size_t)y * rowbytes;
+    unsigned char* b = px + (size_t)(h - 1 - y) * rowbytes;
+    for (i = 0; i < rowbytes; i++)
+    {
+      unsigned char t = a[i];
+      a[i] = b[i];
+      b[i] = t;
+    }
+  }
+  for (i = 0; i < (size_t)w * h; i++)
+    px[i * 4 + 3] = 255;
+
+  cb(ih, px, w, h);
+}
 
 static int wGLCreateContext(Ihandle* ih, IGlControlData* gldata);
 
@@ -445,6 +599,11 @@ static void wGLCanvasUnMapMethod(Ihandle* ih)
 {
   IGlControlData* gldata = (IGlControlData*)iupAttribGet(ih, "_IUP_GLCONTROLDATA");
 
+  if (gldata->context && gldata->fbo && wglMakeCurrent(gldata->device, gldata->context))
+    wGLCompositeRelease(gldata);
+  else
+    free(gldata->composite_pixels);
+
   wGLReleaseContext(gldata);
 
   if (gldata->palette)
@@ -567,6 +726,9 @@ IUPGL_API void IupGLMakeCurrent(Ihandle* ih)
     iupAttribSet(ih, "ERROR", NULL);
     iupAttribSet(ih, "LASTERROR", NULL);
 
+    if (iupAttribGet(ih, "_IUPGL_COMPOSITE_CB"))
+      wGLCompositeEnsureFBO(gldata, ih->currentwidth, ih->currentheight);
+
     if (!IupGetGlobal("GL_VERSION"))
     {
       IupSetStrGlobal("GL_VENDOR", (char*)glGetString(GL_VENDOR));
@@ -646,6 +808,15 @@ IUPGL_API void IupGLSwapBuffers(Ihandle* ih)
   cb = IupGetCallback(ih, "SWAPBUFFERS_CB");
   if (cb)
     cb(ih);
+
+  {
+    IFnComposite composite_cb = (IFnComposite)iupAttribGet(ih, "_IUPGL_COMPOSITE_CB");
+    if (composite_cb)
+    {
+      wGLCompositeReadbackFBO(ih, gldata, composite_cb);
+      return;
+    }
+  }
 
   if (IupClassMatch(ih, "glbackgroundbox"))
     wGLCompositeReadback(ih);
