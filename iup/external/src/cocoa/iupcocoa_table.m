@@ -2982,8 +2982,13 @@ IUP_SDK_API void iupdrvTableSetFocusCell(Ihandle* ih, int lin, int col)
     table_data->current_col = col;
   }
 
-  [tableView scrollRowToVisible:row];
-  [tableView scrollColumnToVisible:column];
+  if (iupAttribGet(ih, "_IUPCOCOA_TABLE_LAIDOUT"))
+  {
+    [tableView scrollRowToVisible:row];
+    [tableView scrollColumnToVisible:column];
+  }
+  else
+    iupAttribSetStrf(ih, "_IUPCOCOA_TABLE_SCROLLTO", "%d:%d", row, column);
   if (!iupStrEqualNoCase(iupAttribGetStr(ih, "SELECTIONMODE"), "NONE") && !iupTableCellsMode(ih))
     [tableView selectRowIndexes:[NSIndexSet indexSetWithIndex:row] byExtendingSelection:NO];
   else
@@ -3075,8 +3080,13 @@ IUP_SDK_API void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col)
   int row = lin - 1;
   int column = col - 1;
 
-  [tableView scrollRowToVisible:row];
-  [tableView scrollColumnToVisible:column];
+  if (iupAttribGet(ih, "_IUPCOCOA_TABLE_LAIDOUT"))
+  {
+    [tableView scrollRowToVisible:row];
+    [tableView scrollColumnToVisible:column];
+  }
+  else
+    iupAttribSetStrf(ih, "_IUPCOCOA_TABLE_SCROLLTO", "%d:%d", row, column);
 }
 
 IUP_SDK_API void iupdrvTableRedraw(Ihandle* ih)
@@ -3235,6 +3245,18 @@ IUP_SDK_API void iupdrvTableAddBorders(Ihandle* ih, int* w, int* h)
     NSSize content = [scroll contentSize];
     int border_x = (int)(NSWidth(frame) - content.width);
     int border_y = (int)(NSHeight(frame) - content.height);
+#ifdef GNUSTEP
+    /* the content size also excludes the header and an auto-shown horizontal scroller, both added by the core */
+    {
+      NSView* top_view = [[cocoaTableGetTableView(ih) headerView] superview];
+      NSView* bottom_view = [scroll contentView];
+      if (!top_view || [top_view superview] != scroll)
+        top_view = [scroll contentView];
+      if ([scroll hasHorizontalScroller])
+        bottom_view = [scroll horizontalScroller];
+      border_y = (int)(NSMinY([top_view frame]) + NSHeight(frame) - NSMaxY([bottom_view frame]));
+    }
+#endif
 
     if (border_x > 0 && border_y > 0)
     {
@@ -3430,6 +3452,9 @@ static int cocoaTableMapMethod(Ihandle* ih)
 
 static void cocoaTableUnMapMethod(Ihandle* ih)
 {
+  iupAttribSet(ih, "_IUPCOCOA_TABLE_LAIDOUT", NULL);
+  iupAttribSet(ih, "_IUPCOCOA_TABLE_SCROLLTO", NULL);
+
   cocoaSourceDragDestroyAssociatedData(ih);
   cocoaTargetDropDestroyAssociatedData(ih);
 
@@ -3501,6 +3526,15 @@ static void cocoaTableLayoutUpdateMethod(Ihandle* ih)
     NSRect tableFrame = [tableView frame];
     tableFrame.size.width = newDocumentVisibleRect.size.width;
     [tableView setFrame:tableFrame];
+
+    int scroll_row, scroll_col;
+    if (iupStrToIntInt(iupAttribGet(ih, "_IUPCOCOA_TABLE_SCROLLTO"), &scroll_row, &scroll_col, ':') == 2)
+    {
+      [tableView scrollRowToVisible:scroll_row];
+      [tableView scrollColumnToVisible:scroll_col];
+    }
+    iupAttribSet(ih, "_IUPCOCOA_TABLE_SCROLLTO", NULL);
+    iupAttribSet(ih, "_IUPCOCOA_TABLE_LAIDOUT", "1");
   }
 
   iupcocoaUpdateTip(ih);

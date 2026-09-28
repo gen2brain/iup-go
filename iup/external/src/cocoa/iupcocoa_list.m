@@ -148,6 +148,14 @@ static NSView* cocoaListGetBaseWidget(Ihandle* ih)
   }
 }
 
+static void cocoaListScrollRowToVisible(Ihandle* ih, NSTableView* table_view, NSInteger row)
+{
+  if (iupAttribGet(ih, "_IUPCOCOA_LIST_LAIDOUT"))
+    [table_view scrollRowToVisible:row];
+  else
+    iupAttribSetInt(ih, "_IUPCOCOA_LIST_SCROLLTO", (int)row + 1);
+}
+
 static int cocoaListGetMaxWidth(Ihandle* ih)
 {
   int max_width = 0;
@@ -2968,7 +2976,7 @@ static int cocoaListSetValueAttrib(Ihandle* ih, const char* value)
         {
           NSInteger adjusted_index = (NSInteger)(iup_pos-1);
           [table_view selectRowIndexes:[NSIndexSet indexSetWithIndex:adjusted_index] byExtendingSelection:NO];
-          [table_view scrollRowToVisible:adjusted_index];
+          cocoaListScrollRowToVisible(ih, table_view, adjusted_index);
           iupAttribSetInt(ih, "_IUPLIST_OLDVALUE", iup_pos);
         }
         else
@@ -3686,9 +3694,7 @@ static int cocoaListSetTopItemAttrib(Ihandle* ih, const char* value)
       NSTableView* table_view = (NSTableView*)cocoaListGetBaseWidget(ih);
       NSInteger adjusted_pos = pos - 1;
       if (adjusted_pos >= 0 && adjusted_pos < [table_view numberOfRows])
-      {
-        [table_view scrollRowToVisible:adjusted_pos];
-      }
+        cocoaListScrollRowToVisible(ih, table_view, adjusted_pos);
     }
   }
   return 0;
@@ -4149,8 +4155,25 @@ static int cocoaListMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
+static void cocoaListLayoutUpdateMethod(Ihandle* ih)
+{
+  iupdrvBaseLayoutUpdateMethod(ih);
+
+  if (ih->data->is_dropdown || !ih->handle)
+    return;
+
+  int row = iupAttribGetInt(ih, "_IUPCOCOA_LIST_SCROLLTO");
+  if (row > 0)
+    [(NSTableView*)cocoaListGetBaseWidget(ih) scrollRowToVisible:row - 1];
+  iupAttribSet(ih, "_IUPCOCOA_LIST_SCROLLTO", NULL);
+  iupAttribSet(ih, "_IUPCOCOA_LIST_LAIDOUT", "1");
+}
+
 static void cocoaListUnMapMethod(Ihandle* ih)
 {
+  iupAttribSet(ih, "_IUPCOCOA_LIST_LAIDOUT", NULL);
+  iupAttribSet(ih, "_IUPCOCOA_LIST_SCROLLTO", NULL);
+
   NSView* root_view = ih->handle;
   if (!root_view) return;
 
@@ -4232,6 +4255,7 @@ IUP_SDK_API void iupdrvListInitClass(Iclass* ic)
   /* Driver Dependent Class functions */
   ic->Map = cocoaListMapMethod;
   ic->UnMap = cocoaListUnMapMethod;
+  ic->LayoutUpdate = cocoaListLayoutUpdateMethod;
 
   iupClassRegisterAttribute(ic, "FONT", NULL, cocoaListSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, cocoaListSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTBGCOLOR", IUPAF_DEFAULT);
