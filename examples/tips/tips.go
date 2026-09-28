@@ -26,7 +26,7 @@ func main() {
 	plain := iup.Label("Plain TIP").SetAttribute("TIP", "A plain tip")
 
 	styled := iup.Button("TIPBGCOLOR, TIPFGCOLOR, TIPFONT and TIPDELAY")
-	styled.SetAttributes(`TIP="Dark tip in a bold font, shown after one second", TIPBGCOLOR="40 40 60", TIPFGCOLOR="255 230 120", TIPFONT="Sans, Bold 12", TIPDELAY=1000`)
+	styled.SetAttributes(`TIP="Dark tip in a bold font, hidden after one second", TIPBGCOLOR="40 40 60", TIPFGCOLOR="255 230 120", TIPFONT="Sans, Bold 12", TIPDELAY=1000`)
 
 	markup := iup.Text()
 	markup.SetAttributes(`VALUE="TIPMARKUP and TIPICON", EXPAND=HORIZONTAL, TIPMARKUP=YES, TIP="<b>Bold</b> and <i>italic</i> Pango markup with an icon", TIPICON=tip_icon`)
