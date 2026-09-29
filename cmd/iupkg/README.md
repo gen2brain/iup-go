@@ -47,7 +47,7 @@ iupkg staple <app>
  | `--tags`                                             |                     | Go build tags (`gl,ctrl,web,...`)                                                                                           |
  | `--ldflags`                                          |                     | extra linker flags                                                                                                          |
  | `--cgo`                                              |                     | build with cgo (default: `go env CGO_ENABLED` for the host platform, off when cross-compiling, always on with a driver tag) |
- | `--release`                                          |                     | `-trimpath -ldflags "-s -w"`                                                                                                |
+ | `--debug`                                            |                     | keep symbols, debug info and file paths; otherwise `-trimpath -ldflags "-s -w"`                                             |
  | `--console`                                          |                     | windows: console application                                                                                                |
  | `--format`                                           | linux: `targz`      | linux: comma list of `targz`, `deb`, `rpm`; windows: `msix`, written next to the `.exe`                                     |
  | `--category`                                         | `Utility`           | linux: desktop entry categories                                                                                             |
@@ -79,7 +79,7 @@ Built as a GUI application unless `--console`. A cross build with `--cgo` or a d
 
 ```sh
 iupkg package --os windows --arch amd64 --name "My App" --version 1.2.0 --icon icon.png ./cmd/myapp
-iupkg package --os windows --tags winui --release ./cmd/myapp                  # on a Windows host
+iupkg package --os windows --tags winui ./cmd/myapp                            # on a Windows host
 ```
 
 `--format msix` also writes `<exe>-<version>-<arch>.msix`, a full trust package with the identity `--id` and the version `<version>.<build>`.
@@ -106,7 +106,7 @@ iupkg package --os darwin --arch universal --name "My App" --id com.example.myap
 The desktop file and icons are named after the executable, which is the app id GTK, Qt and FLTK report when the program does not set `APPID`; with `--id` they take that name.
 
 ```sh
-iupkg package --os linux --arch arm64 --release ./cmd/myapp
+iupkg package --os linux --arch arm64 ./cmd/myapp
 tar xzf myapp-1.0.0-linux-arm64.tar.gz && make -C myapp-1.0.0 user-install
 ```
 
@@ -146,7 +146,7 @@ A directory `<exe>/` ready to serve: `index.html`, the worker and DOM bridge scr
 The page needs the `Cross-Origin-Opener-Policy: same-origin` and `Cross-Origin-Embedder-Policy: require-corp` headers for `SharedArrayBuffer`; `iupkg serve` is a static server that sets them.
 
 ```sh
-iupkg package --os js --name "My App" --release ./cmd/myapp
+iupkg package --os js --name "My App" ./cmd/myapp
 iupkg serve myapp
 ```
 
@@ -223,7 +223,7 @@ Without `--sign` a debug key is generated once and kept in the user cache direct
 
 ```sh
 keytool -importkeystore -srckeystore release.jks -destkeystore release.p12 -deststoretype PKCS12
-IUPKG_P12_PASSWORD=secret iupkg package --os android --sign release.p12 --release ./cmd/myapp
+IUPKG_P12_PASSWORD=secret iupkg package --os android --sign release.p12 ./cmd/myapp
 ```
 
 ### Signing existing files

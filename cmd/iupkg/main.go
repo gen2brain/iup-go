@@ -58,7 +58,7 @@ type config struct {
 	tags        []string
 	ldflags     string
 	cgo         bool
-	release     bool
+	debug       bool
 	console     bool
 	install     bool
 	simulator   bool
@@ -168,7 +168,7 @@ func newFlagSet(c *config) *flag.FlagSet {
 	})
 	fs.StringVar(&c.ldflags, "ldflags", "", "extra linker `flags`")
 	fs.BoolVar(&c.cgo, "cgo", false, "build with cgo (default: go env CGO_ENABLED for the host platform, off when cross-compiling, on with a driver tag)")
-	fs.BoolVar(&c.release, "release", false, "strip symbols and file paths")
+	fs.BoolVar(&c.debug, "debug", false, "keep symbols, debug info and file paths")
 	fs.BoolVar(&c.console, "console", false, "windows: build a console application")
 	fs.BoolVar(&c.install, "install", false, "android, ios: install on the connected device")
 	fs.BoolVar(&c.simulator, "simulator", false, "ios: build for the simulator")
@@ -418,7 +418,7 @@ func goBuildCmd(c *config, goCmd string, env []string, out string, tags, ldflags
 	if len(tags) > 0 {
 		args = append(args, "-tags", strings.Join(tags, ","))
 	}
-	if c.release {
+	if !c.debug {
 		args = append(args, "-trimpath")
 		ldflags = append(ldflags, "-s", "-w")
 	}
