@@ -12,7 +12,7 @@
 #include <QString>
 #include <QAbstractItemView>
 #include <QScrollBar>
-#include <QCompleter>
+#include <QSignalBlocker>
 #include <QStyledItemDelegate>
 #include <QPainter>
 #include <QPixmap>
@@ -1604,25 +1604,47 @@ static int qtListSetPaddingAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
+static void qtListApplyFilter(QLineEdit* edit, Ihandle* ih)
+{
+  const char* filter = iupAttribGet(ih, "FILTER");
+  if (!filter)
+    return;
+
+  bool is_number = iupStrEqualNoCase(filter, "NUMBER");
+  bool is_upper = iupStrEqualNoCase(filter, "UPPERCASE");
+  bool is_lower = iupStrEqualNoCase(filter, "LOWERCASE");
+  if (!is_number && !is_upper && !is_lower)
+    return;
+
+  QString text = edit->text();
+  QString filtered;
+  if (is_number)
+  {
+    for (QChar c : text)
+      if (c.isDigit())
+        filtered.append(c);
+  }
+  else
+    filtered = is_upper ? text.toUpper() : text.toLower();
+
+  if (filtered == text)
+    return;
+
+  int pos = edit->cursorPosition() - (int)(text.length() - filtered.length());
+  QSignalBlocker blocker(edit);
+  edit->setText(filtered);
+  edit->setCursorPosition(qBound(0, pos, (int)filtered.length()));
+}
+
 static int qtListSetFilterAttrib(Ihandle* ih, const char* value)
 {
-  if (ih->data->is_dropdown && ih->data->has_editbox)
-  {
-    QComboBox* combo = (QComboBox*)ih->handle;
+  (void)value;
+  if (!ih->data->has_editbox)
+    return 0;
 
-    if (value && iupStrBoolean(value))
-    {
-      combo->setInsertPolicy(QComboBox::NoInsert);
-      QCompleter* completer = new QCompleter(combo->model(), combo);
-      completer->setCompletionMode(QCompleter::PopupCompletion);
-      completer->setCaseSensitivity(Qt::CaseInsensitive);
-      combo->setCompleter(completer);
-    }
-    else
-    {
-      combo->setCompleter(nullptr);
-    }
-  }
+  QLineEdit* edit = qtListGetEditBox(ih);
+  if (edit)
+    qtListApplyFilter(edit, ih);
   return 1;
 }
 
@@ -1763,6 +1785,8 @@ static void qtListEditTextChanged(QLineEdit* edit, Ihandle* ih)
     return;
   if (iupAttribGet(ih, "_IUPLIST_IGNORE_ACTION"))
     return;
+
+  qtListApplyFilter(edit, ih);
 
   IFnis cb = (IFnis)IupGetCallback(ih, "EDIT_CB");
   if ((cb || ih->data->mask || ih->data->nc) && !iupAttribGet(ih, "_IUPQT_LIST_KEYCHECKED"))
