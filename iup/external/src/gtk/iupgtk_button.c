@@ -55,6 +55,7 @@ IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int* x, int* y)
 #if GTK_CHECK_VERSION(3, 0, 0)
   /* Measure border deltas using preferred (not allocated) child size */
   static int text_border_x = -1, text_border_y = -1;
+  static int text_min_w = 0;
   static int image_text_border_x = -1, image_text_border_y = -1;
   static int image_border_x = -1, image_border_y = -1;
   static int text_struct_x = 0, text_struct_y = 0;
@@ -242,6 +243,9 @@ IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int* x, int* y)
         if (text_struct_y < 0) text_struct_y = 0;
       }
 
+      gtk_button_set_label(GTK_BUTTON(temp_button), "");
+      gtk_widget_get_preferred_width(temp_button, &text_min_w, NULL);
+
       gtk_widget_destroy(temp_window);
     }
     if (has_user_padding || has_user_size)
@@ -254,6 +258,8 @@ IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int* x, int* y)
       (*x) += text_border_x;
       (*y) += text_border_y;
     }
+    if (!has_user_padding && !has_user_size && !has_bgcolor && *x < text_min_w)
+      *x = text_min_w;
   }
 #else
   /* GTK2: Measure actual borders since they depend on theme AND button type */
