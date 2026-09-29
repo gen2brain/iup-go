@@ -97,22 +97,6 @@ static void cocoaTouchMenuFireActionDirect(Ihandle* item_ih)
 	if (cb && cb(item_ih) == IUP_CLOSE) IupExitLoop();
 }
 
-static void cocoaTouchMenuFireActionAfterDismiss(Ihandle* item_ih)
-{
-	Ihandle* menu_ih = item_ih ? item_ih->parent : NULL;
-	if (item_ih && iupObjectCheck(item_ih))
-	{
-		cocoaTouchMenuToggleState(item_ih);
-		Icallback cb = IupGetCallback(item_ih, "ACTION");
-		if (cb) cb(item_ih);
-	}
-	if (menu_ih && iupObjectCheck(menu_ih))
-	{
-		BOOL* done_ptr = (BOOL*)iupAttribGet(menu_ih, "_IUPCOCOA_MENU_DONE_PTR");
-		if (done_ptr) *done_ptr = YES;
-	}
-}
-
 static void cocoaTouchMenuFireOpen(Ihandle* menu_ih)
 {
 	if (!menu_ih || !iupObjectCheck(menu_ih)) return;
@@ -277,230 +261,105 @@ static UIMenu* cocoaTouchMenuBuildUIMenu(Ihandle* menu_ih)
 }
 
 
-/* custom action sheet; UIAlertController doesn't survive a nested CFRunLoop pump */
-@interface IupCocoaTouchActionSheetView : UIView <UIGestureRecognizerDelegate>
-@property(nonatomic, copy) void (^onPick)(int index);
-@property(nonatomic, copy) void (^onCancel)(void);
-@property(nonatomic, retain) UIView* itemsCard;
-@property(nonatomic, retain) UIView* cancelCard;
+@interface IupCocoaTouchMenuRow : NSObject
+@property(nonatomic, assign) Ihandle* item;
+@property(nonatomic, assign) int recentIndex;
+@property(nonatomic, assign) BOOL isBack;
 @end
 
-@implementation IupCocoaTouchActionSheetView
+@implementation IupCocoaTouchMenuRow
+@end
 
-static UIButton* iupCocoaTouchMakeRow(NSString* title, BOOL bold, BOOL enabled, UIImage* image, NSInteger tag, id target, SEL action)
+@interface IupCocoaTouchMenuPopupVC : UIViewController <UITableViewDataSource, UITableViewDelegate, UIPopoverPresentationControllerDelegate>
+@property(nonatomic, assign) Ihandle* picked;
+@property(nonatomic, assign) int pickedRecent;
+@property(nonatomic, assign) Ihandle* pickedRecentMenu;
+@property(nonatomic, assign) BOOL done;
+- (instancetype)initWithMenu:(Ihandle*)menu_ih;
+- (NSArray<NSValue*>*)openMenus;
+- (void)placeAt:(CGPoint)anchor inView:(UIView*)view;
+@end
+
+@implementation IupCocoaTouchMenuPopupVC
 {
-	UIButtonConfiguration* cfg = [UIButtonConfiguration plainButtonConfiguration];
-	NSDictionary* attrs = @{ NSFontAttributeName: bold ? [UIFont systemFontOfSize:18 weight:UIFontWeightSemibold]
-	                                                   : [UIFont systemFontOfSize:18] };
-	cfg.attributedTitle = [[[NSAttributedString alloc] initWithString:title attributes:attrs] autorelease];
-	if (image)
-	{
-		cfg.image = image;
-		cfg.imagePlacement = NSDirectionalRectEdgeLeading;
-		cfg.imagePadding = 8;
-	}
-	cfg.contentInsets = NSDirectionalEdgeInsetsMake(14, 16, 14, 16);
-	UIButton* btn = [UIButton buttonWithConfiguration:cfg primaryAction:nil];
-	btn.translatesAutoresizingMaskIntoConstraints = NO;
-	btn.enabled = enabled;
-	btn.tag = tag;
-	[btn addTarget:target action:action forControlEvents:UIControlEventTouchUpInside];
-	[btn.heightAnchor constraintEqualToConstant:50].active = YES;
-	return btn;
+	NSMutableArray<NSValue*>* _levels;
+	NSMutableArray<NSArray<IupCocoaTouchMenuRow*>*>* _sections;
+	BOOL _hasCheck;
+	UITableView* _table;
+	NSIndexPath* _focused;
+	UIView* _sourceView;
+	CGPoint _anchor;
 }
 
-- (instancetype)initWithTitles:(NSArray<NSString*>*)titles
-                        images:(NSArray*)images
-                       enabled:(NSArray<NSNumber*>*)enabled
-                   cancelTitle:(NSString*)cancelTitle
-                        onPick:(void (^)(int))onPick
-                      onCancel:(void (^)(void))onCancel
+- (instancetype)initWithMenu:(Ihandle*)menu_ih
 {
-	self = [super initWithFrame:CGRectZero];
-	if (!self) return nil;
-	_onPick = [onPick copy];
-	_onCancel = [onCancel copy];
-	self.backgroundColor = [UIColor.blackColor colorWithAlphaComponent:0.45];
-	self.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-
-	UITapGestureRecognizer* tap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(backdropTapped:)];
-	tap.delegate = self;
-	[self addGestureRecognizer:tap];
-	[tap release];
-
-	UIView* items = [[UIView alloc] init];
-	items.backgroundColor = [UIColor secondarySystemBackgroundColor];
-	items.layer.cornerRadius = 14;
-	items.layer.masksToBounds = YES;
-	items.translatesAutoresizingMaskIntoConstraints = NO;
-	[self addSubview:items];
-	_itemsCard = [items retain];
-	[items release];
-
-	UIView* prev = nil;
-	for (NSUInteger i = 0; i < titles.count; i++)
+	self = [super initWithNibName:nil bundle:nil];
+	if (self)
 	{
-		BOOL en = !enabled || i >= enabled.count || [enabled[i] boolValue];
-		UIImage* img = (images && i < images.count && ![images[i] isKindOfClass:[NSNull class]]) ? images[i] : nil;
-		UIButton* row = iupCocoaTouchMakeRow(titles[i], NO, en, img, (NSInteger)i, self, @selector(itemTapped:));
-		[_itemsCard addSubview:row];
-		[row.leadingAnchor constraintEqualToAnchor:_itemsCard.leadingAnchor].active = YES;
-		[row.trailingAnchor constraintEqualToAnchor:_itemsCard.trailingAnchor].active = YES;
-		if (prev == nil)
-		{
-			[row.topAnchor constraintEqualToAnchor:_itemsCard.topAnchor].active = YES;
-		}
-		else
-		{
-			UIView* sep = [[UIView alloc] init];
-			sep.backgroundColor = [UIColor separatorColor];
-			sep.translatesAutoresizingMaskIntoConstraints = NO;
-			[_itemsCard addSubview:sep];
-			[sep.leadingAnchor constraintEqualToAnchor:_itemsCard.leadingAnchor constant:16].active = YES;
-			[sep.trailingAnchor constraintEqualToAnchor:_itemsCard.trailingAnchor].active = YES;
-			[sep.heightAnchor constraintEqualToConstant:0.5].active = YES;
-			[sep.topAnchor constraintEqualToAnchor:prev.bottomAnchor].active = YES;
-			[row.topAnchor constraintEqualToAnchor:sep.bottomAnchor].active = YES;
-			[sep release];
-		}
-		prev = row;
+		_levels = [[NSMutableArray alloc] initWithObjects:[NSValue valueWithPointer:menu_ih], nil];
+		_sections = [[NSMutableArray alloc] init];
+		_pickedRecent = -1;
+		self.modalPresentationStyle = UIModalPresentationPopover;
 	}
-	if (prev) [prev.bottomAnchor constraintEqualToAnchor:_itemsCard.bottomAnchor].active = YES;
-
-	UIView* cancel = [[UIView alloc] init];
-	cancel.backgroundColor = [UIColor secondarySystemBackgroundColor];
-	cancel.layer.cornerRadius = 14;
-	cancel.layer.masksToBounds = YES;
-	cancel.translatesAutoresizingMaskIntoConstraints = NO;
-	[self addSubview:cancel];
-	_cancelCard = [cancel retain];
-	[cancel release];
-
-	UIButton* cancelBtn = iupCocoaTouchMakeRow(cancelTitle, YES, YES, nil, -1, self, @selector(cancelTapped:));
-	[_cancelCard addSubview:cancelBtn];
-	[NSLayoutConstraint activateConstraints:@[
-		[cancelBtn.topAnchor constraintEqualToAnchor:_cancelCard.topAnchor],
-		[cancelBtn.bottomAnchor constraintEqualToAnchor:_cancelCard.bottomAnchor],
-		[cancelBtn.leadingAnchor constraintEqualToAnchor:_cancelCard.leadingAnchor],
-		[cancelBtn.trailingAnchor constraintEqualToAnchor:_cancelCard.trailingAnchor],
-	]];
-
-	UILayoutGuide* g = self.safeAreaLayoutGuide;
-	[NSLayoutConstraint activateConstraints:@[
-		[_itemsCard.leadingAnchor constraintEqualToAnchor:g.leadingAnchor constant:10],
-		[_itemsCard.trailingAnchor constraintEqualToAnchor:g.trailingAnchor constant:-10],
-		[_cancelCard.leadingAnchor constraintEqualToAnchor:g.leadingAnchor constant:10],
-		[_cancelCard.trailingAnchor constraintEqualToAnchor:g.trailingAnchor constant:-10],
-		[_itemsCard.bottomAnchor constraintEqualToAnchor:_cancelCard.topAnchor constant:-8],
-		[_cancelCard.bottomAnchor constraintEqualToAnchor:g.bottomAnchor constant:-8],
-	]];
 	return self;
 }
 
 - (void)dealloc
 {
-	[_onPick release];
-	[_onCancel release];
-	[_itemsCard release];
-	[_cancelCard release];
+	[_levels release];
+	[_sections release];
+	[_table release];
+	[_focused release];
 	[super dealloc];
 }
 
-- (void)itemTapped:(UIButton*)sender
+- (NSArray<NSValue*>*)openMenus
 {
-	if (_onPick) _onPick((int)sender.tag);
+	return _levels;
 }
 
-- (void)cancelTapped:(UIButton*)sender
+- (Ihandle*)currentMenu
 {
-	(void)sender;
-	if (_onCancel) _onCancel();
+	return (Ihandle*)[[_levels lastObject] pointerValue];
 }
 
-- (void)backdropTapped:(UITapGestureRecognizer*)g
+static BOOL cocoaTouchMenuRowEnabled(IupCocoaTouchMenuRow* row)
 {
-	(void)g;
-	if (_onCancel) _onCancel();
+	if (row.isBack || row.recentIndex >= 0) return YES;
+	return !(iupAttribGet(row.item, "ACTIVE") && !iupAttribGetBoolean(row.item, "ACTIVE"));
 }
 
-- (BOOL)gestureRecognizer:(UIGestureRecognizer*)gr shouldReceiveTouch:(UITouch*)touch
+static IupCocoaTouchMenuRow* cocoaTouchMenuNewRow(Ihandle* item, int recent_index, BOOL is_back)
 {
-	(void)gr;
-	CGPoint p = [touch locationInView:self];
-	if (CGRectContainsPoint(_itemsCard.frame, p)) return NO;
-	if (CGRectContainsPoint(_cancelCard.frame, p)) return NO;
-	return YES;
+	IupCocoaTouchMenuRow* row = [[[IupCocoaTouchMenuRow alloc] init] autorelease];
+	row.item = item;
+	row.recentIndex = recent_index;
+	row.isBack = is_back;
+	return row;
 }
 
-- (void)showInWindow:(UIWindow*)window
+- (void)rebuildRows
 {
-	self.frame = window.bounds;
-	[window addSubview:self];
-	[self layoutIfNeeded];
-	self.alpha = 0.0;
-	CGAffineTransform slide = CGAffineTransformMakeTranslation(0, 80);
-	_itemsCard.transform = slide;
-	_cancelCard.transform = slide;
-	[UIView animateWithDuration:0.25
-	                      delay:0.0
-	     usingSpringWithDamping:0.9
-	      initialSpringVelocity:0.0
-	                    options:UIViewAnimationOptionCurveEaseOut
-	                 animations:^{
-		self.alpha = 1.0;
-		_itemsCard.transform = CGAffineTransformIdentity;
-		_cancelCard.transform = CGAffineTransformIdentity;
-	} completion:nil];
-}
+	Ihandle* menu_ih = [self currentMenu];
+	[_sections removeAllObjects];
+	_hasCheck = iupAttribGetBoolean(menu_ih, "RADIO") ? YES : NO;
 
-- (void)dismissAnimated
-{
-	[UIView animateWithDuration:0.20
-	                 animations:^{
-		self.alpha = 0.0;
-		CGAffineTransform slide = CGAffineTransformMakeTranslation(0, 80);
-		_itemsCard.transform = slide;
-		_cancelCard.transform = slide;
-	} completion:^(BOOL done) { (void)done; [self removeFromSuperview]; }];
-}
-
-@end
-
-
-static void cocoaTouchMenuPresentSheet(Ihandle* menu_ih, UIViewController* host, CGPoint anchor);
-
-static NSString* cocoaTouchMenuDecorateTitle(Ihandle* item_ih)
-{
-	NSString* base = cocoaTouchMenuItemDisplayTitle(item_ih);
-	if (iupAttribGetBoolean(item_ih, "HIDEMARK")) return base;
-	const char* value = iupAttribGet(item_ih, "VALUE");
-	if (!value) return base;
-	if (iupStrEqualNoCase(value, "ON")) return [@"✓  " stringByAppendingString:base];
-	return base;
-}
-
-
-static void cocoaTouchMenuPresentSheet(Ihandle* menu_ih, UIViewController* host, CGPoint anchor)
-{
-	(void)anchor;
-	if (!host) return;
-	cocoaTouchMenuFireOpen(menu_ih);
-
-	NSMutableArray* titles  = [NSMutableArray array];
-	NSMutableArray* images  = [NSMutableArray array];
-	NSMutableArray* enabled = [NSMutableArray array];
-	NSMutableArray* rows    = [NSMutableArray array];
+	NSMutableArray<IupCocoaTouchMenuRow*>* section = [NSMutableArray array];
+	if (_levels.count > 1)
+	{
+		[section addObject:cocoaTouchMenuNewRow(menu_ih->parent, -1, YES)];
+		[_sections addObject:section];
+		section = [NSMutableArray array];
+	}
 
 	int recent_count = iupAttribGetInt(menu_ih, "_IUP_RECENT_COUNT");
 	for (int i = 0; i < recent_count; i++)
 	{
-		char attr[32]; snprintf(attr, sizeof(attr), "_IUP_RECENT_FILE%d", i);
+		char attr[32];
+		snprintf(attr, sizeof(attr), "_IUP_RECENT_FILE%d", i);
 		const char* path = iupAttribGet(menu_ih, attr);
-		if (!path || !*path) continue;
-		[titles addObject:[NSString stringWithUTF8String:path]];
-		[images addObject:[NSNull null]];
-		[enabled addObject:@YES];
-		[rows addObject:[NSValue valueWithPointer:NULL]];
+		if (path && *path)
+			[section addObject:cocoaTouchMenuNewRow(NULL, i, NO)];
 	}
 
 	int count = IupGetChildCount(menu_ih);
@@ -509,75 +368,341 @@ static void cocoaTouchMenuPresentSheet(Ihandle* menu_ih, UIViewController* host,
 		Ihandle* child = IupGetChild(menu_ih, i);
 		if (!child || !child->iclass || !child->iclass->name) continue;
 		const char* cname = child->iclass->name;
-		if (iupStrEqual(cname, "menuseparator")) continue;
+		if (iupStrEqual(cname, "menuseparator"))
+		{
+			if (section.count)
+			{
+				[_sections addObject:section];
+				section = [NSMutableArray array];
+			}
+			continue;
+		}
 		if (!iupStrEqual(cname, "menuitem") && !iupStrEqual(cname, "submenu")) continue;
-		NSString* t = iupStrEqual(cname, "menuitem") ? cocoaTouchMenuDecorateTitle(child) : cocoaTouchMenuItemDisplayTitle(child);
-		[titles addObject:t];
-		UIImage* img = cocoaTouchMenuResolveImage(child);
-		[images addObject:img ?: (id)[NSNull null]];
-		BOOL en = !(iupAttribGet(child, "ACTIVE") && !iupAttribGetBoolean(child, "ACTIVE"));
-		[enabled addObject:@(en)];
-		[rows addObject:[NSValue valueWithPointer:child]];
+		if (iupStrEqual(cname, "menuitem") && iupAttribGet(child, "VALUE") && !iupAttribGetBoolean(child, "HIDEMARK"))
+			_hasCheck = YES;
+		[section addObject:cocoaTouchMenuNewRow(child, -1, NO)];
+	}
+	if (section.count)
+		[_sections addObject:section];
+}
+
+- (NSString*)titleForRow:(IupCocoaTouchMenuRow*)row
+{
+	if (row.recentIndex >= 0)
+	{
+		char attr[32];
+		snprintf(attr, sizeof(attr), "_IUP_RECENT_FILE%d", row.recentIndex);
+		const char* path = iupAttribGet([self currentMenu], attr);
+		return path ? [NSString stringWithUTF8String:path] : @"";
+	}
+	return cocoaTouchMenuItemDisplayTitle(row.item);
+}
+
+- (void)updatePreferredSize
+{
+	UIFont* font = [UIFont preferredFontForTextStyle:UIFontTextStyleBody];
+	UIFont* bold = [UIFont boldSystemFontOfSize:font.pointSize];
+	CGFloat text_w = 0;
+	CGFloat height = 0;
+	for (NSUInteger s = 0; s < _sections.count; s++)
+	{
+		if (s > 0) height += 8;
+		for (IupCocoaTouchMenuRow* row in _sections[s])
+		{
+			NSDictionary* attrs = @{ NSFontAttributeName: row.isBack ? bold : font };
+			CGFloat w = ceil([[self titleForRow:row] sizeWithAttributes:attrs].width);
+			if (w > text_w) text_w = w;
+			height += 44;
+		}
 	}
 
-	UIWindow* window = [[host view] window];
-	if (!window) return;
-
-	__block IupCocoaTouchActionSheetView* view = nil;
-	int recent_n = recent_count;
-	Ihandle* menu_capture = menu_ih;
-
-	view = [[IupCocoaTouchActionSheetView alloc]
-		initWithTitles:titles
-		        images:images
-		       enabled:enabled
-		   cancelTitle:@"Cancel"
-		        onPick:^(int idx) {
-			[view dismissAnimated];
-			BOOL* done_ptr = iupObjectCheck(menu_capture)
-			    ? (BOOL*)iupAttribGet(menu_capture, "_IUPCOCOA_MENU_DONE_PTR") : NULL;
-			if (idx < recent_n)
-			{
-				if (iupObjectCheck(menu_capture))
-				{
-					Icallback rcb = (Icallback)iupAttribGet(menu_capture, "_IUP_RECENT_CB");
-					char attr[32]; snprintf(attr, sizeof(attr), "_IUP_RECENT_FILE%d", idx);
-					iupAttribSetStr(menu_capture, "TITLE", iupAttribGet(menu_capture, attr));
-					if (rcb) rcb(menu_capture);
-				}
-				if (done_ptr) *done_ptr = YES;
-				return;
-			}
-			Ihandle* row = (Ihandle*)[rows[idx] pointerValue];
-			if (row && iupObjectCheck(row))
-			{
-				if (iupStrEqual(row->iclass->name, "submenu"))
-				{
-					Ihandle* child_menu = IupGetChild(row, 0);
-					dispatch_async(dispatch_get_main_queue(), ^{
-						if (child_menu && iupObjectCheck(child_menu))
-							cocoaTouchMenuPresentSheet(child_menu, host, CGPointZero);
-						else if (done_ptr) *done_ptr = YES;
-					});
-					return;
-				}
-				cocoaTouchMenuFireActionAfterDismiss(row);
-			}
-			if (done_ptr) *done_ptr = YES;
-		}
-		      onCancel:^{
-			[view dismissAnimated];
-			if (iupObjectCheck(menu_capture))
-			{
-				cocoaTouchMenuFireClose(menu_capture);
-				BOOL* done_ptr = (BOOL*)iupAttribGet(menu_capture, "_IUPCOCOA_MENU_DONE_PTR");
-				if (done_ptr) *done_ptr = YES;
-			}
-		}];
-
-	[view showInWindow:window];
-	[view release];
+	/* leading inset and check or back column, trailing icon or chevron */
+	CGFloat width = text_w + 16 + ((_hasCheck || _levels.count > 1) ? 32 : 0) + 44;
+	UIWindow* window = iupCocoaTouchFindCurrentWindow();
+	CGFloat max_w = window ? MIN(320, window.bounds.size.width - 32) : 320;
+	CGFloat max_h = window ? window.bounds.size.height * 0.7 : 480;
+	CGSize size = CGSizeMake(MAX(200, MIN(width, max_w)), MIN(height + 16, max_h));
+	[self placeForSize:size];
+	self.preferredContentSize = size;
 }
+
+- (void)placeAt:(CGPoint)anchor inView:(UIView*)view
+{
+	_sourceView = view;
+	_anchor = anchor;
+	[self placeForSize:self.preferredContentSize];
+}
+
+/* x,y is the top-left of the menu, it flips above the point when only that side fits;
+   with no arrow direction the popover has no arrow and is centered on the source rect */
+- (void)placeForSize:(CGSize)size
+{
+	if (!_sourceView) return;
+	CGRect safe = CGRectInset(UIEdgeInsetsInsetRect(_sourceView.bounds, _sourceView.safeAreaInsets), 8, 8);
+	CGFloat below = CGRectGetMaxY(safe) - _anchor.y;
+	CGFloat above = _anchor.y - CGRectGetMinY(safe);
+	BOOL place_below = below >= size.height || (above < size.height && below >= above);
+	CGFloat left = MAX(CGRectGetMinX(safe), MIN(_anchor.x, CGRectGetMaxX(safe) - size.width));
+	CGFloat top = place_below ? _anchor.y : _anchor.y - size.height;
+	top = MAX(CGRectGetMinY(safe), MIN(top, CGRectGetMaxY(safe) - size.height));
+
+	UIPopoverPresentationController* ppc = [self popoverPresentationController];
+	ppc.sourceView = _sourceView;
+	ppc.sourceRect = CGRectMake(left + size.width / 2, top + size.height / 2, 1, 1);
+	ppc.permittedArrowDirections = 0;
+}
+
+- (void)loadView
+{
+	_table = [[UITableView alloc] initWithFrame:CGRectZero style:UITableViewStylePlain];
+	_table.dataSource = self;
+	_table.delegate = self;
+	_table.backgroundColor = [UIColor clearColor];
+	_table.rowHeight = 44;
+	_table.alwaysBounceVertical = NO;
+	_table.contentInset = UIEdgeInsetsMake(8, 0, 8, 0);
+	_table.sectionHeaderTopPadding = 0;
+	_table.separatorInset = UIEdgeInsetsMake(0, 16, 0, 0);
+	[_table registerClass:[UITableViewCell class] forCellReuseIdentifier:@"row"];
+	self.view = _table;
+	[self rebuildRows];
+	[self updatePreferredSize];
+}
+
+- (void)viewDidAppear:(BOOL)animated
+{
+	[super viewDidAppear:animated];
+	/* keyboard navigation, but a focused text input keeps its focus */
+	if (![iupCocoaTouchKeyFirstResponder() conformsToProtocol:@protocol(UIKeyInput)])
+		[self becomeFirstResponder];
+}
+
+- (BOOL)canBecomeFirstResponder
+{
+	return YES;
+}
+
+- (NSInteger)numberOfSectionsInTableView:(UITableView*)tableView
+{
+	(void)tableView;
+	return (NSInteger)_sections.count;
+}
+
+- (NSInteger)tableView:(UITableView*)tableView numberOfRowsInSection:(NSInteger)section
+{
+	(void)tableView;
+	return (NSInteger)_sections[(NSUInteger)section].count;
+}
+
+- (CGFloat)tableView:(UITableView*)tableView heightForHeaderInSection:(NSInteger)section
+{
+	(void)tableView;
+	return section > 0 ? 8 : 0;
+}
+
+- (UIView*)tableView:(UITableView*)tableView viewForHeaderInSection:(NSInteger)section
+{
+	(void)tableView;
+	if (section == 0) return nil;
+	UIView* gap = [[[UIView alloc] init] autorelease];
+	gap.backgroundColor = [UIColor tertiarySystemFillColor];
+	return gap;
+}
+
+- (IupCocoaTouchMenuRow*)rowAt:(NSIndexPath*)path
+{
+	return _sections[(NSUInteger)path.section][(NSUInteger)path.row];
+}
+
+- (UITableViewCell*)tableView:(UITableView*)tableView cellForRowAtIndexPath:(NSIndexPath*)path
+{
+	UITableViewCell* cell = [tableView dequeueReusableCellWithIdentifier:@"row" forIndexPath:path];
+	IupCocoaTouchMenuRow* row = [self rowAt:path];
+	BOOL enabled = cocoaTouchMenuRowEnabled(row);
+	BOOL is_submenu = row.item && !row.isBack && iupStrEqual(row.item->iclass->name, "submenu");
+
+	UIListContentConfiguration* content = [UIListContentConfiguration cellConfiguration];
+	content.text = [self titleForRow:row];
+	content.textProperties.numberOfLines = 1;
+	content.textProperties.color = enabled ? [UIColor labelColor] : [UIColor tertiaryLabelColor];
+	content.imageProperties.reservedLayoutSize = CGSizeMake(20, 20);
+	content.imageProperties.tintColor = [UIColor labelColor];
+	if (row.isBack)
+	{
+		content.textProperties.font = [UIFont boldSystemFontOfSize:[UIFont preferredFontForTextStyle:UIFontTextStyleBody].pointSize];
+		content.image = [UIImage systemImageNamed:@"chevron.backward"];
+	}
+	else if (_hasCheck || _levels.count > 1)
+	{
+		const char* value = row.item ? iupAttribGet(row.item, "VALUE") : NULL;
+		BOOL checked = value && iupStrEqualNoCase(value, "ON") && !iupAttribGetBoolean(row.item, "HIDEMARK");
+		content.image = [UIImage systemImageNamed:@"checkmark"];
+		if (!checked)
+			content.imageProperties.tintColor = [UIColor clearColor];
+	}
+	cell.contentConfiguration = content;
+	cell.backgroundColor = [UIColor clearColor];
+	BOOL last = (NSUInteger)path.row + 1 == _sections[(NSUInteger)path.section].count;
+	cell.separatorInset = UIEdgeInsetsMake(0, last ? 10000 : 16, 0, 0);
+	cell.selectionStyle = enabled ? UITableViewCellSelectionStyleDefault : UITableViewCellSelectionStyleNone;
+
+	UIImage* image = (row.item && !row.isBack) ? cocoaTouchMenuResolveImage(row.item) : nil;
+	if (is_submenu)
+	{
+		UIImageView* chevron = [[[UIImageView alloc] initWithImage:[UIImage systemImageNamed:@"chevron.forward"]] autorelease];
+		chevron.tintColor = enabled ? [UIColor secondaryLabelColor] : [UIColor tertiaryLabelColor];
+		cell.accessoryView = chevron;
+	}
+	else if (image)
+	{
+		UIImageView* icon = [[[UIImageView alloc] initWithImage:image] autorelease];
+		icon.frame = CGRectMake(0, 0, 22, 22);
+		icon.contentMode = UIViewContentModeScaleAspectFit;
+		icon.alpha = enabled ? 1.0 : 0.4;
+		cell.accessoryView = icon;
+	}
+	else
+		cell.accessoryView = nil;
+	return cell;
+}
+
+- (NSIndexPath*)tableView:(UITableView*)tableView willSelectRowAtIndexPath:(NSIndexPath*)path
+{
+	(void)tableView;
+	return cocoaTouchMenuRowEnabled([self rowAt:path]) ? path : nil;
+}
+
+- (void)reloadLevel
+{
+	[_focused release];
+	_focused = nil;
+	[self rebuildRows];
+	[_table reloadData];
+	[self updatePreferredSize];
+}
+
+- (void)finish
+{
+	[self dismissViewControllerAnimated:YES completion:^{ self.done = YES; }];
+}
+
+- (void)activateRow:(IupCocoaTouchMenuRow*)row
+{
+	if (!cocoaTouchMenuRowEnabled(row)) return;
+
+	if (row.isBack)
+	{
+		cocoaTouchMenuFireClose([self currentMenu]);
+		[_levels removeLastObject];
+		[self reloadLevel];
+		return;
+	}
+
+	if (row.recentIndex >= 0)
+	{
+		_pickedRecent = row.recentIndex;
+		_pickedRecentMenu = [self currentMenu];
+		[self finish];
+		return;
+	}
+
+	if (iupStrEqual(row.item->iclass->name, "submenu"))
+	{
+		Ihandle* sub = IupGetChild(row.item, 0);
+		if (!sub) return;
+		[_levels addObject:[NSValue valueWithPointer:sub]];
+		cocoaTouchMenuFireOpen(sub);
+		[self reloadLevel];
+		return;
+	}
+
+	_picked = row.item;
+	[self finish];
+}
+
+- (void)tableView:(UITableView*)tableView didSelectRowAtIndexPath:(NSIndexPath*)path
+{
+	[tableView deselectRowAtIndexPath:path animated:YES];
+	[self activateRow:[self rowAt:path]];
+}
+
+- (void)moveFocus:(int)delta
+{
+	NSMutableArray<NSIndexPath*>* paths = [NSMutableArray array];
+	for (NSUInteger s = 0; s < _sections.count; s++)
+		for (NSUInteger r = 0; r < _sections[s].count; r++)
+			if (cocoaTouchMenuRowEnabled(_sections[s][r]))
+				[paths addObject:[NSIndexPath indexPathForRow:(NSInteger)r inSection:(NSInteger)s]];
+	if (!paths.count) return;
+
+	NSUInteger idx = _focused ? [paths indexOfObject:_focused] : NSNotFound;
+	if (idx == NSNotFound)
+		idx = delta > 0 ? 0 : paths.count - 1;
+	else
+		idx = (idx + paths.count + (NSUInteger)(delta > 0 ? 1 : paths.count - 1)) % paths.count;
+
+	[_focused release];
+	_focused = [paths[idx] retain];
+	[_table selectRowAtIndexPath:_focused animated:NO scrollPosition:UITableViewScrollPositionNone];
+}
+
+- (void)pressesBegan:(NSSet<UIPress*>*)presses withEvent:(UIPressesEvent*)event
+{
+	BOOL handled = NO;
+	for (UIPress* press in presses)
+	{
+		switch ([[press key] keyCode])
+		{
+			case UIKeyboardHIDUsageKeyboardEscape:
+				[self finish];
+				handled = YES;
+				break;
+			case UIKeyboardHIDUsageKeyboardDownArrow:
+				[self moveFocus:1];
+				handled = YES;
+				break;
+			case UIKeyboardHIDUsageKeyboardUpArrow:
+				[self moveFocus:-1];
+				handled = YES;
+				break;
+			case UIKeyboardHIDUsageKeyboardLeftArrow:
+				if (_levels.count > 1)
+					[self activateRow:[self rowAt:[NSIndexPath indexPathForRow:0 inSection:0]]];
+				handled = YES;
+				break;
+			case UIKeyboardHIDUsageKeyboardRightArrow:
+			case UIKeyboardHIDUsageKeyboardReturnOrEnter:
+			case UIKeyboardHIDUsageKeypadEnter:
+				if (_focused)
+				{
+					IupCocoaTouchMenuRow* row = [self rowAt:_focused];
+					BOOL is_submenu = row.item && !row.isBack && iupStrEqual(row.item->iclass->name, "submenu");
+					if (is_submenu || [[press key] keyCode] != UIKeyboardHIDUsageKeyboardRightArrow)
+						[self activateRow:row];
+				}
+				handled = YES;
+				break;
+			default:
+				break;
+		}
+	}
+	if (!handled)
+		[super pressesBegan:presses withEvent:event];
+}
+
+- (UIModalPresentationStyle)adaptivePresentationStyleForPresentationController:(UIPresentationController*)controller traitCollection:(UITraitCollection*)traitCollection
+{
+	(void)controller; (void)traitCollection;
+	return UIModalPresentationNone;
+}
+
+- (void)presentationControllerDidDismiss:(UIPresentationController*)presentationController
+{
+	(void)presentationController;
+	self.done = YES;
+}
+
+@end
 
 
 static const void* IUPCOCOATOUCH_BARBUTTON_MENU_IH_KEY = "IUPCOCOATOUCH_BARBUTTON_MENU_IH_KEY";
@@ -630,27 +755,50 @@ IUP_SDK_API int iupdrvMenuPopup(Ihandle* ih, int x, int y)
 	UIViewController* host = cocoaTouchMenuHostViewController(ih);
 	if (!host) return IUP_ERROR;
 
-	UIWindow* window = [[host view] window];
+	UIView* view = [host view];
 	CGPoint anchor = CGPointMake(x, y);
+	UIWindow* window = [view window];
 	if (window)
-	{
-		CGPoint window_pt = [window convertPoint:anchor fromWindow:nil];
-		anchor = [[host view] convertPoint:window_pt fromView:nil];
-	}
+		anchor = [view convertPoint:[window convertPoint:anchor fromWindow:nil] fromView:nil];
 
-	cocoaTouchMenuPresentSheet(ih, host, anchor);
+	IupCocoaTouchMenuPopupVC* vc = [[IupCocoaTouchMenuPopupVC alloc] initWithMenu:ih];
+	[vc loadViewIfNeeded];
+	[vc placeAt:anchor inView:view];
 
-	__block BOOL menu_done = NO;
-	iupAttribSet(ih, "_IUPCOCOA_MENU_DONE_PTR", (char*)&menu_done);
+	UIPopoverPresentationController* ppc = [vc popoverPresentationController];
+	ppc.delegate = vc;
 
-	while (!menu_done)
+	cocoaTouchMenuFireOpen(ih);
+	[host presentViewController:vc animated:YES completion:nil];
+
+	while (!vc.done)
 	{
 		@autoreleasepool {
 			CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.1, false);
 		}
 	}
 
-	iupAttribSet(ih, "_IUPCOCOA_MENU_DONE_PTR", NULL);
+	NSArray<NSValue*>* open_menus = [[[vc openMenus] copy] autorelease];
+	for (NSInteger i = (NSInteger)open_menus.count - 1; i >= 0; i--)
+		cocoaTouchMenuFireClose((Ihandle*)[open_menus[(NSUInteger)i] pointerValue]);
+
+	Ihandle* picked = vc.picked;
+	int picked_recent = vc.pickedRecent;
+	Ihandle* recent_menu = vc.pickedRecentMenu;
+	ppc.delegate = nil;
+	[vc release];
+
+	if (picked_recent >= 0 && iupObjectCheck(recent_menu))
+	{
+		char attr[32];
+		snprintf(attr, sizeof(attr), "_IUP_RECENT_FILE%d", picked_recent);
+		iupAttribSetStr(recent_menu, "TITLE", iupAttribGet(recent_menu, attr));
+		Icallback cb = (Icallback)iupAttribGet(recent_menu, "_IUP_RECENT_CB");
+		if (cb && cb(recent_menu) == IUP_CLOSE) IupExitLoop();
+	}
+	else if (picked)
+		cocoaTouchMenuFireActionDirect(picked);
+
 	return IUP_NOERROR;
 }
 
