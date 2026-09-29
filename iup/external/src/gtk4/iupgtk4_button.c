@@ -31,6 +31,7 @@ static int gtk4_button_struct_image_x = 0, gtk4_button_struct_image_y = 0;
 static int gtk4_button_struct_both_x = 0, gtk4_button_struct_both_y = 0;
 static int gtk4_button_image_css_pad = 0;
 static int gtk4_button_padding_measured = 0;
+static int gtk4_button_min_text_w = 0;
 
 static int gtk4ButtonGetCharHeight(GtkWidget* widget)
 {
@@ -77,6 +78,13 @@ static void gtk4ButtonMeasurePadding(void)
   if (gtk4_button_struct_text_x < 0) gtk4_button_struct_text_x = 0;
   if (gtk4_button_struct_text_y < 0) gtk4_button_struct_text_y = 0;
 
+  gtk_window_destroy(GTK_WINDOW(temp_window));
+
+  temp_window = gtk_window_new();
+  temp_button = gtk_button_new_with_label("");
+  gtk_window_set_child(GTK_WINDOW(temp_window), temp_button);
+  gtk_widget_get_preferred_size(temp_button, &button_size, NULL);
+  gtk4_button_min_text_w = button_size.width;
   gtk_window_destroy(GTK_WINDOW(temp_window));
 
   temp_window = gtk_window_new();
@@ -162,6 +170,7 @@ IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int* x, int* y)
   int button_type;
   int has_user_padding = 0;
   int has_user_size = 0;
+  int has_bgcolor;
   char* image;
   char* title;
 
@@ -171,7 +180,8 @@ IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int* x, int* y)
   image = iupAttribGet(ih, "IMAGE");
   title = iupAttribGet(ih, "TITLE");
 
-  if (!image && (!title || !*title) && iupAttribGet(ih, "BGCOLOR"))
+  has_bgcolor = (!image && (!title || !*title) && iupAttribGet(ih, "BGCOLOR"));
+  if (has_bgcolor)
   {
     int charwidth, charheight;
     iupdrvFontGetCharSize(ih, &charwidth, &charheight);
@@ -201,6 +211,7 @@ IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int* x, int* y)
     {
       (*x) += gtk4_button_padding_text_x;
       (*y) += gtk4_button_padding_text_y;
+      if (!has_bgcolor && *x < gtk4_button_min_text_w) *x = gtk4_button_min_text_w;
     }
   }
   else if (button_type == IUP_BUTTON_IMAGE)
