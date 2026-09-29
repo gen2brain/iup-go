@@ -20,6 +20,8 @@
 #include "iup_key.h"
 #include "iup_class.h"
 #include "iup_singleinstance.h"
+#include "iup_dlglist.h"
+#include "iup_object.h"
 
 #include "iupwin_drv.h"
 #include "iupwin_str.h"
@@ -244,6 +246,16 @@ static LRESULT CALLBACK winHookGetMessageProc(int hcode, WPARAM gm_wp, LPARAM gm
 
 IUP_SDK_API int iupdrvSetGlobal(const char* name, const char* value)
 {
+  if (iupStrEqual(name, "ACCENTCOLOR"))
+  {
+    Ihandle* dialog;
+    for (dialog = iupDlgListFirst(); dialog; dialog = iupDlgListNext())
+    {
+      if (dialog->handle)
+        RedrawWindow((HWND)dialog->handle, NULL, NULL, RDW_INVALIDATE | RDW_ERASE | RDW_ALLCHILDREN);
+    }
+    return 1;
+  }
   if (iupStrEqual(name, "INPUTCALLBACKS"))
   {
     if (iupStrBoolean(value))

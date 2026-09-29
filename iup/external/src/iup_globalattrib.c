@@ -296,8 +296,12 @@ static void iGlobalSet(const char* name, const char* value, int store)
     return;
   }
 
-  if (iGlobalChangingDefaultColor(name) ||
-      iupdrvSetGlobal(name, value))
+  if (iGlobalChangingDefaultColor(name))
+  {
+    iGlobalTableSet(name, value, store);
+    iupdrvSetGlobal(name, value);
+  }
+  else if (iupdrvSetGlobal(name, value))
     iGlobalTableSet(name, value, store);
 }
 

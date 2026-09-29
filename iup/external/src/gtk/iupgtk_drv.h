@@ -24,6 +24,7 @@ IUP_DRV_API int iupgtkSetMnemonicTitle(Ihandle* ih, GtkLabel* label, const char*
 IUP_DRV_API void iupgtkUpdateMnemonic(Ihandle* ih);
 
 IUP_DRV_API void iupgdkColorSetRGB(GdkColor* color, unsigned char r, unsigned char g, unsigned char b);
+IUP_DRV_API void iupgtkProgressBarUpdateColors(Ihandle* ih);
 #if GTK_CHECK_VERSION(3, 0, 0)
 IUP_DRV_API void iupgdkRGBASet(GdkRGBA* rgba, unsigned char r, unsigned char g, unsigned char b);
 #endif

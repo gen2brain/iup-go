@@ -37,6 +37,7 @@ extern "C" {
 #include "iup_drvfont.h"
 #include "iup_toggle.h"
 #include "iup_markup.h"
+#include "iup_globalattrib.h"
 }
 
 #include "iupqt_drv.h"
@@ -352,6 +353,9 @@ public:
 #else
       QColor track_on_color = pal.color(QPalette::Active, QPalette::Highlight);
 #endif
+      unsigned char ar, ag, ab;
+      if (iupGlobalDefaultColorChanged("ACCENTCOLOR") && iupStrToRGB(IupGetGlobal("ACCENTCOLOR"), &ar, &ag, &ab))
+        track_on_color = QColor(ar, ag, ab);
 
       track_color = QColor(
         track_off_color.red() + (track_on_color.red() - track_off_color.red()) * thumb_position,

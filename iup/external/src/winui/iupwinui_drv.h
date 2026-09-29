@@ -153,6 +153,7 @@ IUP_DRV_API char* iupwinuiScrollViewerVisible(winrt::Microsoft::UI::Xaml::Contro
 
 IUP_DRV_API void iupwinuiUpdateControlFont(Ihandle* ih, winrt::Microsoft::UI::Xaml::Controls::Control control);
 IUP_DRV_API void iupwinuiSetStateBrushes(Ihandle* ih, winrt::Microsoft::UI::Xaml::FrameworkElement const& fe, const wchar_t* const* keys, int count, winrt::Windows::UI::Color color);
+IUP_DRV_API void iupwinuiApplyAccent(Ihandle* ih);
 IUP_DRV_API void iupwinuiReleaseStateBrushes(Ihandle* ih);
 IUP_DRV_API void iupwinuiUpdateTextBlockFont(Ihandle* ih, winrt::Microsoft::UI::Xaml::Controls::TextBlock textBlock);
 IUP_DRV_API void iupwinuiUpdateTextBlockFontStr(winrt::Microsoft::UI::Xaml::Controls::TextBlock textBlock, const char* value, Ihandle* ih);

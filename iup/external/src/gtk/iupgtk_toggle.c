@@ -24,6 +24,7 @@
 #include "iup_drv.h"
 #include "iup_drvfont.h"
 #include "iup_toggle.h"
+#include "iup_globalattrib.h"
 
 #include "iupgtk_drv.h"
 
@@ -59,6 +60,13 @@ typedef struct _IupGtkSwitchData
   GtkWidget* drawing_area;
 } IupGtkSwitchData;
 
+static void gtkSwitchAccentColor(GdkColor* color)
+{
+  unsigned char r, g, b;
+  if (iupGlobalDefaultColorChanged("ACCENTCOLOR") && iupStrToRGB(IupGetGlobal("ACCENTCOLOR"), &r, &g, &b))
+    iupgdkColorSetRGB(color, r, g, b);
+}
+
 static void gtkSwitchDrawCairo(Ihandle* ih, IupGtkSwitchData* switch_data, cairo_t* cr)
 {
   int is_checked = switch_data->checked_state;
@@ -80,6 +88,7 @@ static void gtkSwitchDrawCairo(Ihandle* ih, IupGtkSwitchData* switch_data, cairo
     track_color = style->bg[GTK_STATE_SELECTED];
     thumb_color = style->light[GTK_STATE_NORMAL];
     border_color = style->dark[GTK_STATE_SELECTED];
+    gtkSwitchAccentColor(&track_color);
   }
   else
   {
@@ -137,6 +146,7 @@ static void gtkSwitchDrawGdk(Ihandle* ih, IupGtkSwitchData* switch_data, GdkWind
     track_color = style->bg[GTK_STATE_SELECTED];
     thumb_color = style->light[GTK_STATE_NORMAL];
     border_color = style->dark[GTK_STATE_SELECTED];
+    gtkSwitchAccentColor(&track_color);
   }
   else
   {

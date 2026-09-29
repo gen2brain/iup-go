@@ -15,6 +15,7 @@ extern "C" {
 #include "iupcbs.h"
 #include "iup_str.h"
 #include "iup_drv.h"
+#include "iup_dlglist.h"
 #include "iup_drvinfo.h"
 #include "iup_key.h"
 #include "iup_singleinstance.h"
@@ -257,8 +258,25 @@ static BOOL CALLBACK winuiMonitorInfoEnum(HMONITOR handle, HDC handle_dc, LPRECT
   return TRUE;
 }
 
+static void winuiUpdateAccentTree(Ihandle* ih)
+{
+  for (; ih; ih = ih->brother)
+  {
+    iupwinuiApplyAccent(ih);
+    if (ih->firstchild)
+      winuiUpdateAccentTree(ih->firstchild);
+  }
+}
+
 extern "C" IUP_SDK_API int iupdrvSetGlobal(const char* name, const char* value)
 {
+  if (iupStrEqual(name, "ACCENTCOLOR"))
+  {
+    Ihandle* dialog;
+    for (dialog = iupDlgListFirst(); dialog; dialog = iupDlgListNext())
+      winuiUpdateAccentTree(dialog->firstchild);
+    return 1;
+  }
   if (iupStrEqual(name, "SINGLEINSTANCE"))
   {
     if (iupdrvSingleInstanceSet(value))

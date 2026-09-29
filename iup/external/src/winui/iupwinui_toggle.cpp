@@ -550,6 +550,7 @@ static int winuiToggleMapMethod(Ihandle* ih)
       parentCanvas.Children().Append(ts);
 
     winuiStoreHandle(ih, ts);
+    iupwinuiApplyAccent(ih);
     iupToggleSwitchSetAccessibleTitle(ih, title);
   }
   else if (ih->data->type == IUP_TOGGLE_IMAGE)

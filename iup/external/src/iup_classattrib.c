@@ -49,6 +49,10 @@ int iupClassIsGlobalDefault(const char* name, int colors)
     return 1;
   if (iupStrEqual(name, "MENUBGCOLOR"))
     return 1;
+  if (iupStrEqual(name, "MENUFGCOLOR"))
+    return 1;
+  if (iupStrEqual(name, "ACCENTCOLOR"))
+    return 1;
   return 0;
 }
 

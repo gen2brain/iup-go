@@ -17,6 +17,7 @@ extern "C" {
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_progressbar.h"
+#include "iup_globalattrib.h"
 }
 
 #include "iupqt_drv.h"
@@ -175,6 +176,8 @@ static void qtProgressBarApplyChunkStyle(Ihandle* ih)
   QString rules;
   unsigned char r, g, b;
   char* fg = iupAttribGet(ih, "FGCOLOR");
+  if (!fg && iupGlobalDefaultColorChanged("ACCENTCOLOR"))
+    fg = IupGetGlobal("ACCENTCOLOR");
   int has_fg = fg && iupStrToRGB(fg, &r, &g, &b);
   if (has_fg)
     rules += QString("background-color: rgb(%1,%2,%3); ").arg(r).arg(g).arg(b);
@@ -284,6 +287,11 @@ static int qtProgressBarSetBgColorAttrib(Ihandle* ih, const char* value)
   }
 
   return 0;
+}
+
+IUP_DRV_API void iupqtProgressBarUpdateAccent(Ihandle* ih)
+{
+  qtProgressBarApplyChunkStyle(ih);
 }
 
 static int qtProgressBarSetFgColorAttrib(Ihandle* ih, const char* value)
