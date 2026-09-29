@@ -694,8 +694,10 @@ static int qtFileDlgPopup(Ihandle* ih, int x, int y)
         free(final_filename);
 
       QFileInfo fileInfo(final_path);
-      QByteArray dirBytes = fileInfo.absolutePath().toUtf8();
-      iupAttribSetStr(ih, "DIRECTORY", dirBytes.constData());
+      QString dir = fileInfo.absolutePath();
+      if (!dir.endsWith('/') && !dir.endsWith('\\'))
+        dir += '/';
+      iupAttribSetStr(ih, "DIRECTORY", dir.toUtf8().constData());
 
       int file_exist = qtIsFile(final_path);
       int dir_exist = qtIsDirectory(final_path);
