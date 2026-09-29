@@ -148,7 +148,7 @@ func main() {
 			iup.Toggle("Enable sync").SetAttribute("VALUE", "ON"),
 			iup.Toggle("Notify"),
 		).SetAttribute("GAP", "12"),
-		iup.Link("https://iup-go", "Learn more about theming"),
+		iup.Link("https://gen2brain.github.io/iup-go/attrib/iup_globals.html#default-attributes", "Learn more about theming"),
 	).SetAttributes("GAP=6"))
 
 	currentLabel = iup.Label("Active theme: Light").SetAttributes(`FONT="Sans, Bold 10"`)

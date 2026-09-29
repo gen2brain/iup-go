@@ -159,7 +159,7 @@ func main() {
 		btn("Expand all", func() int { return state("YES") }),
 		btn("Collapse all", func() int { return state("NO") }),
 		btn("Color red", func() int { return style("COLOR", "255 0 0") }),
-		btn("Bold title", func() int { return style("TITLEFONT", "Bold") }),
+		btn("Bold title", func() int { return style("TITLEFONTSTYLE", "Bold") }),
 	)
 
 	info := iup.Frame(

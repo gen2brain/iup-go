@@ -12,7 +12,7 @@ func main() {
 	iup.Open()
 	defer iup.Close()
 
-	link1 := iup.Link("https://www.tecgraf.puc-rio.br/iup/", "IUP Documentation")
+	link1 := iup.Link("https://gen2brain.github.io/iup-go/", "IUP Documentation")
 	link2 := iup.Link("https://github.com/gen2brain/iup-go", "IUP-Go on GitHub")
 	link3 := iup.Link("https://example.com", "Example Link with Custom Handler")
 

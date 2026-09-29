@@ -209,7 +209,7 @@ func doReset(ih iup.Ihandle) int {
 
 func playbackSupported(driver string) bool {
 	switch driver {
-	case "Win32", "WinUI", "Cocoa", "GTK", "Motif", "Qt", "FLTK", "Android", "Haiku":
+	case "Win32", "WinUI", "Cocoa", "GTK", "Motif", "Qt", "QML", "FLTK", "Android", "Haiku":
 		return true
 	}
 	return false

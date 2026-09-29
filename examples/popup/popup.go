@@ -164,13 +164,13 @@ func main() {
 	dlg := iup.Dialog(
 		iup.Vbox(
 			iup.Label("Click buttons to show different popup menus:"),
-			iup.Hbox(btn1, btn2, btn3, btn4).SetAttributes("GAP=10"),
+			iup.GridBox(btn1, btn2, btn3, btn4).SetAttributes("NUMDIV=2, SIZELIN=-1, GAPLIN=10, GAPCOL=10"),
 			iup.Label(""),
 			canvasLabel,
 			canvas,
 			iup.Fill(),
 		).SetAttributes("MARGIN=20x20, GAP=10"),
-	).SetAttributes("TITLE=Popup Menu Examples, SIZE=550x300")
+	).SetAttribute("TITLE", "Popup Menu Examples")
 
 	iup.Show(dlg)
 	iup.MainLoop()
