@@ -65,6 +65,7 @@ IUP_DRV_API void iupqtUpdateMnemonic(Ihandle* ih);
  ****************************************************************************/
 
 IUP_DRV_API void iupqtAddToParent(Ihandle* ih);
+IUP_DRV_API void iupqtProgressBarUpdateAccent(Ihandle* ih);
 IUP_DRV_API void iupqtSetPosSize(QWidget* parent, QWidget* widget, int x, int y, int width, int height);
 
 /****************************************************************************

@@ -17,6 +17,7 @@
 #include "iup_drv.h"
 #include "iup_key.h"
 #include "iup_singleinstance.h"
+#include "iup_dlglist.h"
 
 #include "iupgtk_drv.h"
 
@@ -112,8 +113,62 @@ static void iGdkEventFunc(GdkEvent* evt, gpointer data)
   gtk_main_do_event(evt);
 }
 
+#if GTK_CHECK_VERSION(3, 0, 0)
+static void gtkSetAccentColor(const char* value)
+{
+  static GtkCssProvider* provider = NULL;
+  unsigned char r, g, b;
+  char* css = NULL;
+
+  if (iupStrToRGB(value, &r, &g, &b))
+    css = g_strdup_printf(
+      "progressbar progress { background-image: none; background-color: rgb(%d,%d,%d); border-color: rgb(%d,%d,%d); }\n"
+      "switch:checked { background-image: none; background-color: rgb(%d,%d,%d); border-color: rgb(%d,%d,%d); }\n"
+      "switch:checked slider { border-color: rgb(%d,%d,%d); }\n",
+      r, g, b, r, g, b, r, g, b, r, g, b, r, g, b);
+
+  if (!provider)
+  {
+    if (!css)
+      return;
+    provider = gtk_css_provider_new();
+    gtk_style_context_add_provider_for_screen(gdk_screen_get_default(), GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+  }
+
+  gtk_css_provider_load_from_data(provider, css ? css : "", -1, NULL);
+  g_free(css);
+}
+#else
+static void gtkUpdateAccentTree(Ihandle* ih)
+{
+  for (; ih; ih = ih->brother)
+  {
+    if (ih->handle && IupClassMatch(ih, "progressbar"))
+      iupgtkProgressBarUpdateColors(ih);
+    if (ih->firstchild)
+      gtkUpdateAccentTree(ih->firstchild);
+  }
+}
+
+static void gtkSetAccentColor(const char* value)
+{
+  Ihandle* dialog;
+  (void)value;
+  for (dialog = iupDlgListFirst(); dialog; dialog = iupDlgListNext())
+  {
+    gtkUpdateAccentTree(dialog->firstchild);
+    IupRedraw(dialog, 1);
+  }
+}
+#endif
+
 IUP_SDK_API int iupdrvSetGlobal(const char* name, const char* value)
 {
+  if (iupStrEqual(name, "ACCENTCOLOR"))
+  {
+    gtkSetAccentColor(value);
+    return 1;
+  }
   if (iupStrEqual(name, "SINGLEINSTANCE"))
   {
     if (iupdrvSingleInstanceSet(value))

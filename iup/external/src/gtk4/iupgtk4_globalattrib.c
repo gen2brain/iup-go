@@ -153,8 +153,38 @@ static void gtk4ToggleGlobalInput(int enabled)
 }
 
 
+static void gtk4SetAccentColor(const char* value)
+{
+  static GtkCssProvider* provider = NULL;
+  unsigned char r, g, b;
+  char* css = NULL;
+
+  if (iupStrToRGB(value, &r, &g, &b))
+    css = g_strdup_printf(
+      "progressbar > trough > progress { background-image: none; background-color: rgb(%d,%d,%d); border-color: rgb(%d,%d,%d); }\n"
+      "switch:checked { background-image: none; background-color: rgb(%d,%d,%d); border-color: rgb(%d,%d,%d); }\n"
+      "switch:checked > slider { border-color: rgb(%d,%d,%d); }\n",
+      r, g, b, r, g, b, r, g, b, r, g, b, r, g, b);
+
+  if (!provider)
+  {
+    if (!css)
+      return;
+    provider = gtk_css_provider_new();
+    gtk_style_context_add_provider_for_display(gdk_display_get_default(), GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+  }
+
+  gtk_css_provider_load_from_string(provider, css ? css : "");
+  g_free(css);
+}
+
 IUP_SDK_API int iupdrvSetGlobal(const char* name, const char* value)
 {
+  if (iupStrEqual(name, "ACCENTCOLOR"))
+  {
+    gtk4SetAccentColor(value);
+    return 1;
+  }
   if (iupStrEqual(name, "GSKRENDERER"))
   {
     GdkDisplay* display = gdk_display_get_default();

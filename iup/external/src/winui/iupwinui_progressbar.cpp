@@ -109,6 +109,7 @@ static int winuiProgressBarMapMethod(Ihandle* ih)
     parentCanvas.Children().Append(pb);
 
   winuiStoreHandle(ih, pb);
+  iupwinuiApplyAccent(ih);
   return IUP_NOERROR;
 }
 

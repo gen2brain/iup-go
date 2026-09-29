@@ -25,6 +25,8 @@ extern "C" {
 #include "iup_drv.h"
 #include "iup_key.h"
 #include "iup_singleinstance.h"
+#include "iup_dlglist.h"
+#include "iup_object.h"
 }
 
 #include "iupqt_drv.h"
@@ -169,8 +171,29 @@ public:
  * Global Set/Get
  ****************************************************************************/
 
+static void qtUpdateAccentTree(Ihandle* ih)
+{
+  for (; ih; ih = ih->brother)
+  {
+    if (ih->handle && IupClassMatch(ih, "progressbar"))
+      iupqtProgressBarUpdateAccent(ih);
+    if (ih->firstchild)
+      qtUpdateAccentTree(ih->firstchild);
+  }
+}
+
 extern "C" IUP_SDK_API int iupdrvSetGlobal(const char* name, const char* value)
 {
+  if (iupStrEqual(name, "ACCENTCOLOR"))
+  {
+    Ihandle* dialog;
+    for (dialog = iupDlgListFirst(); dialog; dialog = iupDlgListNext())
+    {
+      qtUpdateAccentTree(dialog->firstchild);
+      IupRedraw(dialog, 1);
+    }
+    return 1;
+  }
   if (iupStrEqual(name, "SINGLEINSTANCE"))
   {
     if (iupdrvSingleInstanceSet(value))

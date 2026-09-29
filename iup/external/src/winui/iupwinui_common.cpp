@@ -17,6 +17,7 @@ extern "C" {
 #include "iup_canvas.h"
 #include "iup_image.h"
 #include "iup_dlglist.h"
+#include "iup_globalattrib.h"
 }
 
 #include <string>
@@ -105,6 +106,31 @@ IUP_DRV_API void iupwinuiReleaseStateBrushes(Ihandle* ih)
       }
     }
     name = iupTableNext(ih->attrib);
+  }
+}
+
+IUP_DRV_API void iupwinuiApplyAccent(Ihandle* ih)
+{
+  static const wchar_t* switch_keys[] = {L"ToggleSwitchFillOn", L"ToggleSwitchFillOnPointerOver", L"ToggleSwitchFillOnPressed",
+                                         L"ToggleSwitchStrokeOn", L"ToggleSwitchStrokeOnPointerOver", L"ToggleSwitchStrokeOnPressed"};
+  unsigned char r, g, b;
+
+  if (!ih->handle || !iupGlobalDefaultColorChanged("ACCENTCOLOR") || !iupStrToRGB(IupGetGlobal("ACCENTCOLOR"), &r, &g, &b))
+    return;
+
+  Windows::UI::Color color{255, r, g, b};
+
+  if (IupClassMatch(ih, "progressbar"))
+  {
+    ProgressBar pb = winuiGetHandle<ProgressBar>(ih);
+    if (pb && !iupAttribGet(ih, "FGCOLOR"))
+      pb.Foreground(SolidColorBrush(color));
+  }
+  else if (IupClassMatch(ih, "toggle") && iupAttribGetBoolean(ih, "SWITCH"))
+  {
+    ToggleSwitch ts = winuiGetHandle<ToggleSwitch>(ih);
+    if (ts)
+      iupwinuiSetStateBrushes(ih, ts, switch_keys, 6, color);
   }
 }
 

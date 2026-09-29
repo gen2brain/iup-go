@@ -18,6 +18,7 @@
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_progressbar.h"
+#include "iup_globalattrib.h"
 
 #include "iupgtk_drv.h"
 
@@ -121,12 +122,19 @@ static void gtkProgressBarApplyColors(Ihandle* ih)
     iupgdkColorSetRGB(&color, r, g, b);
     gtk_widget_modify_bg(ih->handle, GTK_STATE_NORMAL, &color);
   }
+  if (!fg && iupGlobalDefaultColorChanged("ACCENTCOLOR"))
+    fg = IupGetGlobal("ACCENTCOLOR");
   if (fg && iupStrToRGB(fg, &r, &g, &b))
   {
     iupgdkColorSetRGB(&color, r, g, b);
     gtk_widget_modify_bg(ih->handle, GTK_STATE_PRELIGHT, &color);
   }
 #endif
+}
+
+IUP_DRV_API void iupgtkProgressBarUpdateColors(Ihandle* ih)
+{
+  gtkProgressBarApplyColors(ih);
 }
 
 static int gtkProgressBarTimeCb(Ihandle* timer)
