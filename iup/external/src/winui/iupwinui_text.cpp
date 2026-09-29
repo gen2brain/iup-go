@@ -478,6 +478,65 @@ static std::wstring winuiTextToControl(Ihandle* ih, const char* value)
   return iupwinuiStringToWString(value);
 }
 
+static hstring winuiTextFaceName(const char* face)
+{
+  const char* mapped_name = iupFontGetWinName(face);
+  return iupwinuiStringToHString(mapped_name ? mapped_name : face);
+}
+
+static void winuiTextReapplyFaces(Ihandle* ih)
+{
+  IupWinUITextAux* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
+  RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
+  if (!aux || !reb || aux->faceRanges.empty())
+    return;
+
+  bool wasReadOnly = reb.IsReadOnly();
+  if (wasReadOnly)
+    reb.IsReadOnly(false);
+
+  for (auto const& entry : aux->faceRanges)
+  {
+    if (entry.first.StartPosition() < entry.first.EndPosition())
+    {
+      auto cf = entry.first.CharacterFormat();
+      cf.Name(entry.second);
+      entry.first.CharacterFormat(cf);
+    }
+  }
+
+  if (wasReadOnly)
+    reb.IsReadOnly(true);
+}
+
+static void winuiTextForgetFaces(IupWinUITextAux* aux, int start, int end)
+{
+  std::vector<std::pair<ITextRange, hstring>> kept;
+  for (auto const& entry : aux->faceRanges)
+  {
+    int s = entry.first.StartPosition();
+    int e = entry.first.EndPosition();
+    if (e <= start || s >= end)
+    {
+      kept.push_back(entry);
+      continue;
+    }
+    if (s < start)
+    {
+      ITextRange head = entry.first.GetClone();
+      head.SetRange(s, start);
+      kept.emplace_back(head, entry.second);
+    }
+    if (e > end)
+    {
+      ITextRange tail = entry.first.GetClone();
+      tail.SetRange(end, e);
+      kept.emplace_back(tail, entry.second);
+    }
+  }
+  aux->faceRanges.swap(kept);
+}
+
 static int winuiTextSetValueAttrib(Ihandle* ih, const char* value)
 {
   IupWinUITextAux* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
@@ -526,6 +585,7 @@ static int winuiTextSetValueAttrib(Ihandle* ih, const char* value)
       if (wasReadOnly)
         reb.IsReadOnly(true);
     }
+    aux->faceRanges.clear();
   }
   else
   {
@@ -1198,7 +1258,6 @@ static int winuiTextMapMethod(Ihandle* ih)
     iupwinuiUpdateControlFont(ih, reb);
 
     reb.ClearValue(Control::FontSizeProperty());
-    reb.ClearValue(Control::FontFamilyProperty());
 
     {
       auto doc = reb.Document();
@@ -1223,8 +1282,14 @@ static int winuiTextMapMethod(Ihandle* ih)
 
     reb.ApplyTemplate();
 
-    reb.Loaded([](IInspectable const& sender, RoutedEventArgs const&) {
+    reb.Loaded([ih](IInspectable const& sender, RoutedEventArgs const&) {
       winuiTextSetScrollBarArrowCursors(sender.as<DependencyObject>());
+      Microsoft::UI::Dispatching::DispatcherQueue dq = Microsoft::UI::Dispatching::DispatcherQueue::GetForCurrentThread();
+      if (dq)
+        dq.TryEnqueue(Microsoft::UI::Dispatching::DispatcherQueuePriority::Low, [ih]() {
+          if (iupObjectCheck(ih))
+            winuiTextReapplyFaces(ih);
+        });
     });
 
     winuiStoreHandle(ih, reb);
@@ -1972,11 +2037,7 @@ static void winuiTextParseCharacterFormat(Ihandle* formattag, ITextRange const& 
   val = iupAttribGet(formattag, "FONTFACE");
   if (val)
   {
-    const char* mapped_name = iupFontGetWinName(val);
-    if (mapped_name)
-      cf.Name(iupwinuiStringToHString(mapped_name));
-    else
-      cf.Name(iupwinuiStringToHString(val));
+    cf.Name(winuiTextFaceName(val));
     changed = true;
   }
 
@@ -2499,6 +2560,16 @@ extern "C" IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formatt
     }
 
     winuiTextParseParagraphFormat(formattag, selRange);
+
+    {
+      char* face = iupAttribGet(formattag, "FONTFACE");
+      if (face && range_start < range_end)
+      {
+        ITextRange faceRange = selRange.GetClone();
+        faceRange.SetRange(range_start, range_end);
+        aux->faceRanges.emplace_back(faceRange, winuiTextFaceName(face));
+      }
+    }
 
     {
       char* link_url = iupAttribGet(formattag, "LINK");
@@ -3698,6 +3769,7 @@ static int winuiTextSetRemoveFormattingAttrib(Ihandle* ih, const char* value)
     auto range = doc.GetRange(0, (int32_t)text.size());
     range.CharacterFormat().SetClone(defaultCF);
     range.ParagraphFormat().SetClone(defaultPF);
+    aux->faceRanges.clear();
   }
   else
   {
@@ -3707,6 +3779,7 @@ static int winuiTextSetRemoveFormattingAttrib(Ihandle* ih, const char* value)
       auto range = sel.GetClone();
       range.CharacterFormat().SetClone(defaultCF);
       range.ParagraphFormat().SetClone(defaultPF);
+      winuiTextForgetFaces(aux, sel.StartPosition(), sel.EndPosition());
     }
   }
 
@@ -3748,6 +3821,7 @@ static int winuiTextSetLoadRtfAttrib(Ihandle* ih, const char* value)
   try
   {
     reb.Document().SetText(TextSetOptions::FormatRtf, hstring(wide));
+    aux->faceRanges.clear();
     iupAttribSet(ih, "LOADRTFSTATUS", "OK");
   }
   catch (...)
@@ -3818,7 +3892,7 @@ static int winuiTextSetFontAttrib(Ihandle* ih, const char* value)
     if (reb)
     {
       reb.ClearValue(Control::FontSizeProperty());
-      reb.ClearValue(Control::FontFamilyProperty());
+      winuiTextReapplyFaces(ih);
     }
 
     return ret;
@@ -3955,7 +4029,6 @@ extern "C" IUP_SDK_API int iupdrvTextGetFormatTags(Ihandle* ih, Ihandle* bulk_ta
 
 extern "C" IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
 {
-  iupClassRegisterReplaceAttribFlags(ic, "FONTFACE", IUPAF_NOT_SUPPORTED|IUPAF_NO_SAVE|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   ic->Map = winuiTextMapMethod;
   ic->UnMap = winuiTextUnMapMethod;
 
