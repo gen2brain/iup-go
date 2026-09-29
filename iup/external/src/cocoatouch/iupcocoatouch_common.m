@@ -350,7 +350,15 @@ IUP_DRV_API NSAttributedString* iupCocoaTouchParseMarkup(const char* raw, UIFont
 
 static void cocoaTouchActivate(Ihandle* ih)
 {
-	(void)ih;
+	id control = ih->handle;
+	if ([control isKindOfClass:[UISwitch class]])
+	{
+		UISwitch* sw = (UISwitch*)control;
+		[sw setOn:!sw.on animated:YES];
+		[sw sendActionsForControlEvents:UIControlEventValueChanged];
+	}
+	else if ([control isKindOfClass:[UIControl class]])
+		[(UIControl*)control sendActionsForControlEvents:UIControlEventTouchUpInside];
 }
 
 IUP_SDK_API void iupdrvActivate(Ihandle* ih)

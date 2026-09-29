@@ -62,8 +62,19 @@ IUP_DRV_API char* iupCocoaTouchColorFromNative(UIColor* color);
 IUP_DRV_API void iupCocoaTouchAddToParent(Ihandle* ih);
 IUP_DRV_API void iupCocoaTouchRemoveFromParent(Ihandle* ih);
 
+@interface UIResponder (IupCocoaTouchKeyCommand)
+- (void)iupCocoaTouchKeyCommand:(UIKeyCommand*)command;
+@end
+
 /* returns true when handled (stops propagation) */
 IUP_DRV_API bool iupCocoaTouchKeyEvent(Ihandle* ih, UIPress* press, bool is_pressed);
+IUP_DRV_API bool iupCocoaTouchKeyPresses(Ihandle* ih, NSSet<UIPress*>* presses, bool is_pressed);
+IUP_DRV_API void iupCocoaTouchKeyUpdateResponder(void);
+
+/* Tab, Shift+Tab and Esc go to the text input system before any press */
+IUP_DRV_API NSArray<UIKeyCommand*>* iupCocoaTouchKeyCommands(void);
+IUP_DRV_API bool iupCocoaTouchKeyCommandAllowed(UIResponder* responder);
+IUP_DRV_API void iupCocoaTouchKeyCommandEvent(Ihandle* ih, UIKeyCommand* command, UIResponder* responder);
 
 /* fills IUP status string (10 chars + NUL) */
 IUP_DRV_API void iupCocoaTouchButtonKeySetStatus(UIEvent* event, UIKeyModifierFlags modifier_flags, int pressed_button, int doubleclick, char* out_status);

@@ -5,6 +5,7 @@
  */
 
 #import <UIKit/UIKit.h>
+#import <objc/runtime.h>
 
 #include <stdbool.h>
 
@@ -214,6 +215,11 @@ static int cocoaTouchKeyDecode(UIKey* key)
 		return 0;
 	}
 
+	if ((base >= K_LSHIFT && base <= K_RCTRL) || base == K_LALT || base == K_RALT || base == K_CAPS)
+	{
+		return base;
+	}
+
 	int has_ctrl = (flags & UIKeyModifierControl)   != 0;
 	int has_alt  = (flags & UIKeyModifierAlternate) != 0;
 	int has_sys  = (flags & UIKeyModifierCommand)   != 0;
@@ -235,12 +241,68 @@ static int cocoaTouchKeyDecode(UIKey* key)
 	return cocoaTouchKeyApplyModifiers(base, flags);
 }
 
+static const void* IUPCOCOATOUCH_KEY_PHASE = &IUPCOCOATOUCH_KEY_PHASE;
+
+static UIResponder* s_first_responder = nil;
+
+@interface UIResponder (IupCocoaTouchKey)
+- (void)iupCocoaTouchCaptureFirstResponder:(id)sender;
+@end
+
+@implementation UIResponder (IupCocoaTouchKey)
+- (void)iupCocoaTouchCaptureFirstResponder:(id)sender
+{
+	(void)sender;
+	s_first_responder = self;
+}
+@end
+
+static UIResponder* cocoaTouchKeyFirstResponder(void)
+{
+	s_first_responder = nil;
+	[[UIApplication sharedApplication] sendAction:@selector(iupCocoaTouchCaptureFirstResponder:) to:nil from:nil forEvent:nil];
+	return s_first_responder;
+}
+
+/* a press no view claims reaches no one, so the topmost dialog or popover takes it */
+IUP_DRV_API void iupCocoaTouchKeyUpdateResponder(void)
+{
+	UIViewController* top = iupCocoaTouchFindTopPresentedViewController();
+	if ([top isKindOfClass:[UINavigationController class]])
+		top = [(UINavigationController*)top topViewController];
+	if (!top || ![top respondsToSelector:@selector(ihandle)] || ![top canBecomeFirstResponder])
+		return;
+
+	UIResponder* responder = cocoaTouchKeyFirstResponder();
+	if (responder == top)
+		return;
+	if ([responder isKindOfClass:[UIView class]] && [(UIView*)responder isDescendantOfView:top.view])
+		return;
+
+	[top becomeFirstResponder];
+}
+
+IUP_DRV_API bool iupCocoaTouchKeyPresses(Ihandle* ih, NSSet<UIPress*>* presses, bool is_pressed)
+{
+	NSString* phase = is_pressed ? @"down" : @"up";
+	bool handled = false;
+	for (UIPress* press in presses)
+	{
+		if ([objc_getAssociatedObject(press, IUPCOCOATOUCH_KEY_PHASE) isEqualToString:phase])
+			continue;
+		if (iupCocoaTouchKeyEvent(ih, press, is_pressed))
+			handled = true;
+	}
+	return handled;
+}
+
 IUP_DRV_API bool iupCocoaTouchKeyEvent(Ihandle* ih, UIPress* press, bool is_pressed)
 {
-	if (!ih || !press || !ih->iclass->is_interactive)
+	if (!ih || !press)
 	{
 		return false;
 	}
+	objc_setAssociatedObject(press, IUPCOCOATOUCH_KEY_PHASE, is_pressed ? @"down" : @"up", OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 	UIKey* key = [press key];
 	if (!key)
 	{
@@ -330,6 +392,85 @@ IUP_DRV_API bool iupCocoaTouchKeyEvent(Ihandle* ih, UIPress* press, bool is_pres
 }
 
 
+
+IUP_DRV_API NSArray<UIKeyCommand*>* iupCocoaTouchKeyCommands(void)
+{
+	static NSArray<UIKeyCommand*>* commands = nil;
+	if (!commands)
+	{
+		UIKeyCommand* tab = [UIKeyCommand keyCommandWithInput:@"\t" modifierFlags:0 action:@selector(iupCocoaTouchKeyCommand:)];
+		UIKeyCommand* back_tab = [UIKeyCommand keyCommandWithInput:@"\t" modifierFlags:UIKeyModifierShift action:@selector(iupCocoaTouchKeyCommand:)];
+		UIKeyCommand* esc = [UIKeyCommand keyCommandWithInput:UIKeyInputEscape modifierFlags:0 action:@selector(iupCocoaTouchKeyCommand:)];
+		tab.wantsPriorityOverSystemBehavior = YES;
+		back_tab.wantsPriorityOverSystemBehavior = YES;
+		esc.wantsPriorityOverSystemBehavior = YES;
+		commands = [[NSArray alloc] initWithObjects:tab, back_tab, esc, nil];
+	}
+	return commands;
+}
+
+/* an IME composition keeps Esc and Tab */
+IUP_DRV_API bool iupCocoaTouchKeyCommandAllowed(UIResponder* responder)
+{
+	if ([responder conformsToProtocol:@protocol(UITextInput)] && [(id<UITextInput>)responder markedTextRange])
+		return false;
+	return true;
+}
+
+IUP_DRV_API void iupCocoaTouchKeyCommandEvent(Ihandle* ih, UIKeyCommand* command, UIResponder* responder)
+{
+	if (!ih)
+	{
+		return;
+	}
+
+	int shift = ([command modifierFlags] & UIKeyModifierShift) ? 1 : 0;
+	int code = [[command input] isEqualToString:UIKeyInputEscape] ? K_ESC : (shift ? K_sTAB : K_TAB);
+
+	int result = iupKeyCallKeyCb(ih, code);
+	if (result == IUP_CLOSE)
+	{
+		IupExitLoop();
+		return;
+	}
+	if (result == IUP_IGNORE || !iupObjectCheck(ih))
+	{
+		return;
+	}
+
+	if (ih->iclass->nativetype == IUP_TYPECANVAS)
+	{
+		result = iupKeyCallKeyPressCb(ih, code, 1);
+		if (result == IUP_CLOSE)
+		{
+			IupExitLoop();
+			return;
+		}
+		if (!iupObjectCheck(ih))
+		{
+			return;
+		}
+		if (iupKeyCallKeyPressCb(ih, code, 0) == IUP_CLOSE)
+		{
+			IupExitLoop();
+			return;
+		}
+		if (result == IUP_IGNORE || !iupObjectCheck(ih))
+		{
+			return;
+		}
+	}
+
+	if (iupKeyProcessNavigation(ih, code, shift))
+	{
+		return;
+	}
+
+	if (code == K_TAB && iupAttribGetInt(ih, "_IUP_MULTILINE_TEXT") && [responder conformsToProtocol:@protocol(UIKeyInput)])
+	{
+		[(id<UIKeyInput>)responder insertText:@"\t"];
+	}
+}
 
 IUP_SDK_API void iupdrvKeyEncode(int code, unsigned int* keyval, unsigned int* state)
 {

@@ -230,6 +230,23 @@ static void cocoaTouchFireGesture(Ihandle* ih, int gesture, int state, int x, in
 	return _canFocus && _ihandle != NULL;
 }
 
+- (NSArray<UIKeyCommand*>*)keyCommands
+{
+	return iupCocoaTouchKeyCommands();
+}
+
+- (BOOL)canPerformAction:(SEL)action withSender:(id)sender
+{
+	if (action == @selector(iupCocoaTouchKeyCommand:))
+		return iupCocoaTouchKeyCommandAllowed(self);
+	return [super canPerformAction:action withSender:sender];
+}
+
+- (void)iupCocoaTouchKeyCommand:(UIKeyCommand*)command
+{
+	iupCocoaTouchKeyCommandEvent(_ihandle, command, self);
+}
+
 - (BOOL)hasText
 {
 	return YES;
