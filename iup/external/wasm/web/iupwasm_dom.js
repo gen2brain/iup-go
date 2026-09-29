@@ -498,6 +498,8 @@
             'button:hover{background:var(--iup-face2);}' +
             'input,textarea,select{background:var(--iup-txtbg);color:var(--iup-txtfg);border:1px solid var(--iup-bd);}' +
             'option{background:var(--iup-txtbg);color:var(--iup-txtfg);padding-top:0;padding-bottom:0;}' +
+            // the rule above hides the browser's selection once the list loses focus
+            'option:checked{background:var(--iup-accent-bg);}' +
             'input[type=number]::-webkit-inner-spin-button{opacity:1;height:auto;}' +
             '::-webkit-scrollbar{width:14px;height:14px;}' +
             '::-webkit-scrollbar-track{background:var(--iup-track);}' +
