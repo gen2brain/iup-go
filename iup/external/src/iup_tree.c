@@ -597,6 +597,10 @@ static int iTreeDragEnd_CB(Ihandle* ih, int del)
 static int iTreeDragBegin_CB(Ihandle* ih, int x, int y)
 {
   int id = IupConvertXYToPos(ih, x, y);
+
+  if (id < 0)
+    return IUP_IGNORE;
+
   iupAttribSetInt(ih, "_IUP_TREE_SOURCEID", id);
   return IUP_DEFAULT;
 }
