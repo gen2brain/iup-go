@@ -82,6 +82,34 @@ static void cocoaToggleCycle3State(Ihandle* ih, NSButton* button)
   return YES;
 }
 
+#ifdef GNUSTEP
+/* GNUstep draws any nonzero state with the checked image and ships no mixed one */
+static NSImage* cocoaToggleMixedImage(void)
+{
+  NSImage* box = [NSImage imageNamed:@"NSSwitch"];
+  NSSize size = [box size];
+  NSImage* image = [[[NSImage alloc] initWithSize:size] autorelease];
+  [image lockFocus];
+  [box drawAtPoint:NSZeroPoint fromRect:NSZeroRect operation:NSCompositeSourceOver fraction:1.0];
+  [[NSColor controlTextColor] set];
+  NSRectFill(NSMakeRect(floor(size.width / 4), floor(size.height / 2) - 1, size.width - 2 * floor(size.width / 4), 2));
+  [image unlockFocus];
+  return image;
+}
+
+- (void)setState:(NSInteger)state
+{
+  [super setState:state];
+  Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
+  if (!ih || ih->data->is_radio || ih->data->type != IUP_TOGGLE_TEXT || ![self allowsMixedState])
+    return;
+  if (state == NSMixedState)
+    [self setAlternateImage:cocoaToggleMixedImage()];
+  else
+    [self setAlternateImage:[NSImage imageNamed:@"NSHighlightedSwitch"]];
+}
+#endif
+
 - (void)mouseDown:(NSEvent*)event
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
