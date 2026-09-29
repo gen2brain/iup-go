@@ -257,7 +257,7 @@ static UIResponder* s_first_responder = nil;
 }
 @end
 
-static UIResponder* cocoaTouchKeyFirstResponder(void)
+IUP_DRV_API UIResponder* iupCocoaTouchKeyFirstResponder(void)
 {
 	s_first_responder = nil;
 	[[UIApplication sharedApplication] sendAction:@selector(iupCocoaTouchCaptureFirstResponder:) to:nil from:nil forEvent:nil];
@@ -273,7 +273,7 @@ IUP_DRV_API void iupCocoaTouchKeyUpdateResponder(void)
 	if (!top || ![top respondsToSelector:@selector(ihandle)] || ![top canBecomeFirstResponder])
 		return;
 
-	UIResponder* responder = cocoaTouchKeyFirstResponder();
+	UIResponder* responder = iupCocoaTouchKeyFirstResponder();
 	if (responder == top)
 		return;
 	if ([responder isKindOfClass:[UIView class]] && [(UIView*)responder isDescendantOfView:top.view])
