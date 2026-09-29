@@ -377,6 +377,7 @@ struct IupWinUITextAux
   winrt::event_token tappedToken;
   winrt::event_token selectionChangedToken;
   std::wstring savedText;
+  std::vector<std::pair<winrt::Microsoft::UI::Text::ITextRange, winrt::hstring>> faceRanges;
   bool isPassword;
   bool isMultiline;
   bool isSpin;
