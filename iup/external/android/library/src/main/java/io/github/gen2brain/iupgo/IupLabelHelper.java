@@ -108,11 +108,24 @@ public final class IupLabelHelper
         });
     }
 
+    private static final java.util.WeakHashMap<TextView, Object[]> sPendingText = new java.util.WeakHashMap<>();
+
     @Keep
     public static void setText(final long ihandlePtr, TextView textView, String text, boolean markup)
     {
         if (text == null) text = "";
-        textView.setText(markup ? IupCommon.parseMarkup(text) : text);
+        boolean scheduled = sPendingText.containsKey(textView);
+        sPendingText.put(textView, new Object[] { text, markup });
+        if (scheduled)
+            return;
+
+        textView.postOnAnimation(() -> {
+            Object[] pending = sPendingText.remove(textView);
+            if (pending == null)
+                return;
+            String value = (String)pending[0];
+            textView.setText((Boolean)pending[1] ? IupCommon.parseMarkup(value) : value);
+        });
     }
 
     /* TextView ellipsizes only with a bounded line count and no horizontal scrolling */
