@@ -3536,6 +3536,7 @@ static int winuiTableMapMethod(Ihandle* ih)
   iupAttribSet(ih, "_IUPWINUI_TABLE_LISTVIEW", (char*)lvPtr);
 
   Grid containerGrid;
+  containerGrid.Background(SolidColorBrush(Microsoft::UI::Colors::Transparent()));
 
   RowDefinition headerRow;
   headerRow.Height(GridLengthHelper::Auto());
