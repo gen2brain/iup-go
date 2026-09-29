@@ -118,20 +118,22 @@ public:
       return;
 
     char* value = iupAttribGetStr(ih, "RENAMECARET");
-    if (value)
-    {
-      int pos = 0;
-      iupStrToInt(value, &pos);
-      lineEdit->setCursorPosition(pos);
-    }
+    int pos = 1;
+    bool has_caret = value && iupStrToInt(value, &pos);
 
     value = iupAttribGetStr(ih, "RENAMESELECTION");
-    if (value)
-    {
-      int start = 0, end = 0;
-      iupStrToIntInt(value, &start, &end, ':');
-      lineEdit->setSelection(start, end - start);
-    }
+    int start = 1, end = 1;
+    bool has_selection = value && iupStrToIntInt(value, &start, &end, ':') == 2 && start >= 1 && end >= 1;
+
+    if (!has_caret && !has_selection)
+      return;
+
+    QMetaObject::invokeMethod(lineEdit, [lineEdit, has_caret, pos, has_selection, start, end]() {
+      if (has_caret)
+        lineEdit->setCursorPosition(pos < 1 ? 0 : pos - 1);
+      if (has_selection)
+        lineEdit->setSelection(start - 1, end - start);
+    }, Qt::QueuedConnection);
   }
 
   void setModelData(QWidget* editor, QAbstractItemModel* model, const QModelIndex& index) const override
