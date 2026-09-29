@@ -92,10 +92,24 @@ IUP_SDK_API int iupdrvTabsGetLineCountAttrib(Ihandle* ih)
   return 1;
 }
 
+static Ihandle* motTabsChildAtPage(Ihandle* ih, int pos)
+{
+  Ihandle* removed = (Ihandle*)iupAttribGet(ih, "_IUPMOT_REMOVED_CHILD");
+  if (removed)
+  {
+    int removed_pos = iupAttribGetInt(ih, "_IUPMOT_REMOVED_POS");
+    if (pos == removed_pos)
+      return removed;
+    if (pos > removed_pos)
+      pos--;
+  }
+  return IupGetChild(ih, pos);
+}
+
 IUP_SDK_API void iupdrvTabsSetCurrentTab(Ihandle* ih, int pos)
 {
-  Ihandle* child = IupGetChild(ih, pos);
-  Ihandle* curr_child = IupGetChild(ih, iupdrvTabsGetCurrentTab(ih));
+  Ihandle* child = motTabsChildAtPage(ih, pos);
+  Ihandle* curr_child = motTabsChildAtPage(ih, iupdrvTabsGetCurrentTab(ih));
   Widget child_manager = (Widget)iupAttribGet(child, "_IUPTAB_CONTAINER");
   Widget curr_child_manager = (Widget)iupAttribGet(curr_child, "_IUPTAB_CONTAINER");
   XtMapWidget(child_manager);
@@ -831,16 +845,24 @@ static void motTabsChildRemovedMethod(Ihandle* ih, Ihandle* child, int pos)
     if (child_manager)
     {
       Widget tab_button = (Widget)iupAttribGet(child, "_IUPMOT_TABBUTTON");
+      Ihandle* current;
 
       if (iupdrvTabsGetCurrentTab(ih) == pos)
         iupAttribSet(ih, "_IUPMOT_IGNORE_PAGECHANGE", "1");
 
+      iupAttribSet(ih, "_IUPMOT_REMOVED_CHILD", (char*)child);
+      iupAttribSetInt(ih, "_IUPMOT_REMOVED_POS", pos);
       iupTabsCheckCurrentTab(ih, pos, 1);
+      current = motTabsChildAtPage(ih, iupdrvTabsGetCurrentTab(ih));
+      iupAttribSet(ih, "_IUPMOT_REMOVED_CHILD", NULL);
 
       XtDestroyWidget(tab_button);
       XtDestroyWidget(child_manager);
 
       motTabsUpdatePageNumber(ih);
+
+      if (current && current != child)
+        XtVaSetValues(ih->handle, XmNcurrentPageNumber, IupGetChildPos(ih, current), NULL);
 
       iupAttribSet(child, "_IUPTAB_CONTAINER", NULL);
       iupAttribSet(child, "_IUPMOT_TABBUTTON", NULL);
