@@ -431,6 +431,118 @@ static int cocoaMenuItemSetFontAttrib(Ihandle* ih, const char* value)
 /* Driver Functions                                                                        */
 /*******************************************************************************************/
 
+#ifdef GNUSTEP
+@interface IupGnustepMenuPickObserver : NSObject
+@property(nonatomic, assign) BOOL picked;
+@end
+
+@implementation IupGnustepMenuPickObserver
+- (void)menuWillSendAction:(NSNotification*)note
+{
+  NSMenuItem* item = [[note userInfo] objectForKey:@"MenuItem"];
+  if (![item hasSubmenu])
+    _picked = YES;
+}
+@end
+
+/* GNUstep's popUpMenuPositioningItem only shows the menu, so track it the way popUpContextMenu does */
+static void cocoaMenuPopupTransient(NSMenu* menu, NSPoint top_left)
+{
+  IupGnustepMenuPickObserver* observer = [[IupGnustepMenuPickObserver alloc] init];
+  [[NSNotificationCenter defaultCenter] addObserver:observer selector:@selector(menuWillSendAction:) name:NSMenuWillSendActionNotification object:nil];
+
+  NSEvent* current = [NSApp currentEvent];
+  NSEventType type = current ? [current type] : NSAppKitDefined;
+  BOOL held = type == NSLeftMouseDown || type == NSRightMouseDown || type == NSOtherMouseDown;
+  NSDate* start = [NSDate date];
+  NSMutableArray* path = [NSMutableArray array];
+  NSMutableArray* level_frames = [NSMutableArray array];
+  NSMutableArray* submenu_items = [NSMutableArray array];
+
+  for (;;)
+  {
+    [menu displayTransient];
+    NSMenuView* view = (NSMenuView*)[menu menuRepresentation];
+    [[view window] setFrameTopLeftPoint:top_left];
+
+    NSMenu* level = menu;
+    NSUInteger depth = 0;
+    [level_frames removeAllObjects];
+    [submenu_items removeAllObjects];
+    for (;;)
+    {
+      /* GNUstep moves the views out of the transient windows when tracking ends, so keep the screen geometry now */
+      NSWindow* window = [view window];
+      [level_frames addObject:[NSValue valueWithRect:[window frame]]];
+      NSInteger count = [level numberOfItems];
+      for (NSInteger i = 0; i < count; i++)
+      {
+        if (![[level itemAtIndex:i] hasSubmenu])
+          continue;
+        NSRect rect = [view convertRect:[view rectOfItemAtIndex:i] toView:nil];
+        rect.origin = [window convertBaseToScreen:rect.origin];
+        [submenu_items addObject:@[@(depth), @(i), [NSValue valueWithRect:rect]]];
+      }
+
+      if (depth >= [path count])
+        break;
+      NSInteger index = [[path objectAtIndex:depth] integerValue];
+      [view setHighlightedItemIndex:index];
+      [view attachSubmenuForItemAtIndex:index];
+      level = [[level itemAtIndex:index] submenu];
+      view = (NSMenuView*)[level menuRepresentation];
+      depth++;
+    }
+
+    NSEvent* event = [NSEvent mouseEventWithType:held ? type : NSLeftMouseDown
+                                        location:[[view window] mouseLocationOutsideOfEventStream]
+                                   modifierFlags:0
+                                       timestamp:0
+                                    windowNumber:[[view window] windowNumber]
+                                         context:nil
+                                     eventNumber:0
+                                      clickCount:1
+                                        pressure:1.0];
+    [view mouseDown:event];
+    [menu closeTransient];
+
+    if (observer.picked)
+      break;
+
+    /* a press that opened the menu and let go at once leaves it open for the next click, as elsewhere */
+    if (held && [[NSDate date] timeIntervalSinceDate:start] <= 0.4)
+    {
+      held = NO;
+      continue;
+    }
+    held = NO;
+
+    /* a click on a submenu item ends GNUstep's tracking; reopen with that submenu attached */
+    NSPoint location = [NSEvent mouseLocation];
+    NSInteger hit_depth = (NSInteger)[level_frames count] - 1;
+    while (hit_depth >= 0 && !NSPointInRect(location, [[level_frames objectAtIndex:(NSUInteger)hit_depth] rectValue]))
+      hit_depth--;
+
+    BOOL reopen = NO;
+    for (NSArray* entry in submenu_items)
+    {
+      if ([[entry objectAtIndex:0] integerValue] == hit_depth && NSPointInRect(location, [[entry objectAtIndex:2] rectValue]))
+      {
+        [path removeObjectsInRange:NSMakeRange((NSUInteger)hit_depth, [path count] - (NSUInteger)hit_depth)];
+        [path addObject:[entry objectAtIndex:1]];
+        reopen = YES;
+        break;
+      }
+    }
+    if (!reopen)
+      break;
+  }
+
+  [[NSNotificationCenter defaultCenter] removeObserver:observer];
+  [observer release];
+}
+#endif
+
 IUP_SDK_API int iupdrvMenuPopup(Ihandle* ih, int x, int y)
 {
   NSMenu* menu = (NSMenu*)ih->handle;
@@ -459,7 +571,11 @@ IUP_SDK_API int iupdrvMenuPopup(Ihandle* ih, int x, int y)
       location.y += menu_size.height / 2;
   }
 
+#ifdef GNUSTEP
+  cocoaMenuPopupTransient(menu, location);
+#else
   [menu popUpMenuPositioningItem:nil atLocation:location inView:nil];
+#endif
 
   return IUP_NOERROR;
 }
@@ -475,12 +591,19 @@ IUP_SDK_API int iupdrvMenuGetMenuBarSize(Ihandle* ih)
 /* Application Menu Functions                                                              */
 /*******************************************************************************************/
 
-static void cocoaMenuCreateAppMenu(NSMenu* main_menu)
+static NSString* cocoaMenuAppName(void)
 {
   NSString* app_name = [[NSProcessInfo processInfo] processName];
   if (!app_name || [app_name length] == 0) app_name = @"Application";
+  return app_name;
+}
 
-  NSMenuItem* app_item = [[NSMenuItem alloc] initWithTitle:@"" action:nil keyEquivalent:@""];
+/* macOS draws the application name in place of these titles, GNUstep shows them */
+static void cocoaMenuCreateAppMenu(NSMenu* main_menu)
+{
+  NSString* app_name = cocoaMenuAppName();
+
+  NSMenuItem* app_item = [[NSMenuItem alloc] initWithTitle:app_name action:nil keyEquivalent:@""];
   NSMenu* app_menu = [[NSMenu alloc] initWithTitle:app_name];
 
   [app_menu addItemWithTitle:[NSString stringWithFormat:@"About %@", app_name] action:@selector(orderFrontStandardAboutPanel:) keyEquivalent:@""];
@@ -573,9 +696,7 @@ static void cocoaMenuCreateHelpMenu(NSMenu* main_menu)
   NSMenuItem* help_item = [[NSMenuItem alloc] initWithTitle:@"Help" action:nil keyEquivalent:@""];
   NSMenu* help_menu = [[NSMenu alloc] initWithTitle:@"Help"];
 
-  NSString* app_name = [[NSProcessInfo processInfo] processName];
-  if (!app_name || [app_name length] == 0) app_name = @"Application";
-  [help_menu addItemWithTitle:[NSString stringWithFormat:@"%@ Help", app_name] action:@selector(showHelp:) keyEquivalent:@"?"];
+  [help_menu addItemWithTitle:[NSString stringWithFormat:@"%@ Help", cocoaMenuAppName()] action:@selector(showHelp:) keyEquivalent:@"?"];
 
   [help_item setSubmenu:help_menu];
   [main_menu addItem:help_item];
@@ -629,7 +750,7 @@ IUP_DRV_API void iupcocoaEnsureDefaultApplicationMenu(void)
 {
   if (s_defaultApplicationMenu == nil)
   {
-    s_defaultApplicationMenu = [[NSMenu alloc] initWithTitle:@"DefaultMainMenu"];
+    s_defaultApplicationMenu = [[NSMenu alloc] initWithTitle:cocoaMenuAppName()];
     [s_defaultApplicationMenu setAutoenablesItems:NO];
 
     if (s_defaultApplicationMenu)
@@ -755,7 +876,7 @@ static int cocoaMenuMapMethod(Ihandle* ih)
 
   if (iupMenuIsMenuBar(ih))
   {
-    menu = [[NSMenu alloc] initWithTitle:@"MainMenu"];
+    menu = [[NSMenu alloc] initWithTitle:cocoaMenuAppName()];
     if (!menu) return IUP_ERROR;
     [menu setAutoenablesItems:NO];
     ih->handle = menu;
