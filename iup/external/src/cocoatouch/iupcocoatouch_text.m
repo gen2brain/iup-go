@@ -33,13 +33,37 @@ static const void* IUPCOCOATOUCH_TEXT_DELEGATE_KEY = "IUPCOCOATOUCH_TEXT_DELEGAT
 @property(nonatomic, assign) Ihandle* ihandle;
 @end
 
+static BOOL cocoaTouchTextIsReturnPress(UIPress* press)
+{
+	UIKeyboardHIDUsage hid = [[press key] keyCode];
+	return hid == UIKeyboardHIDUsageKeyboardReturnOrEnter || hid == UIKeyboardHIDUsageKeypadEnter;
+}
+
 @implementation IupCocoaTouchTextField
 
+- (NSArray<UIKeyCommand*>*)keyCommands
+{
+	return iupCocoaTouchKeyCommands();
+}
+
+- (BOOL)canPerformAction:(SEL)action withSender:(id)sender
+{
+	if (action == @selector(iupCocoaTouchKeyCommand:))
+		return iupCocoaTouchKeyCommandAllowed(self);
+	return [super canPerformAction:action withSender:sender];
+}
+
+- (void)iupCocoaTouchKeyCommand:(UIKeyCommand*)command
+{
+	iupCocoaTouchKeyCommandEvent(_ihandle, command, self);
+}
+
+/* a hardware Return already went through K_ANY here; UIKit would repeat it in textFieldShouldReturn */
 - (void)pressesBegan:(NSSet<UIPress*>*)presses withEvent:(UIPressesEvent*)event
 {
 	BOOL handled = NO;
 	for (UIPress* p in presses)
-		if (iupCocoaTouchKeyEvent(_ihandle, p, true)) handled = YES;
+		if (iupCocoaTouchKeyEvent(_ihandle, p, true) || cocoaTouchTextIsReturnPress(p)) handled = YES;
 	if (!handled) [super pressesBegan:presses withEvent:event];
 }
 
@@ -47,7 +71,7 @@ static const void* IUPCOCOATOUCH_TEXT_DELEGATE_KEY = "IUPCOCOATOUCH_TEXT_DELEGAT
 {
 	BOOL handled = NO;
 	for (UIPress* p in presses)
-		if (iupCocoaTouchKeyEvent(_ihandle, p, false)) handled = YES;
+		if (iupCocoaTouchKeyEvent(_ihandle, p, false) || cocoaTouchTextIsReturnPress(p)) handled = YES;
 	if (!handled) [super pressesEnded:presses withEvent:event];
 }
 
@@ -60,6 +84,23 @@ static const void* IUPCOCOATOUCH_TEXT_DELEGATE_KEY = "IUPCOCOATOUCH_TEXT_DELEGAT
 @end
 
 @implementation IupCocoaTouchTextView
+
+- (NSArray<UIKeyCommand*>*)keyCommands
+{
+	return iupCocoaTouchKeyCommands();
+}
+
+- (BOOL)canPerformAction:(SEL)action withSender:(id)sender
+{
+	if (action == @selector(iupCocoaTouchKeyCommand:))
+		return iupCocoaTouchKeyCommandAllowed(self);
+	return [super canPerformAction:action withSender:sender];
+}
+
+- (void)iupCocoaTouchKeyCommand:(UIKeyCommand*)command
+{
+	iupCocoaTouchKeyCommandEvent(_ihandle, command, self);
+}
 
 /* UITextView puts width tracking back on every time it lays out, which re-wraps a WORDWRAP=NO text */
 - (void)layoutSubviews

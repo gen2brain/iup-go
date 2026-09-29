@@ -88,6 +88,8 @@ static void iosGlobalTouchPhase(UITouchPhase phase, CGPoint screen_pt)
 			iosGlobalTouchPhase(t.phase, screen_pt);
 		}
 	}
+	else if ([event isKindOfClass:[UIPressesEvent class]])
+		iupCocoaTouchKeyUpdateResponder();
 	[super sendEvent:event];
 }
 @end

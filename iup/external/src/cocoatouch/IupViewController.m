@@ -143,6 +143,23 @@
 		completion:nil];
 }
 
+- (BOOL)canBecomeFirstResponder
+{
+	return YES;
+}
+
+- (void)pressesBegan:(NSSet<UIPress*>*)presses withEvent:(UIPressesEvent*)event
+{
+	if (!iupCocoaTouchKeyPresses(_ihandle, presses, true))
+		[super pressesBegan:presses withEvent:event];
+}
+
+- (void)pressesEnded:(NSSet<UIPress*>*)presses withEvent:(UIPressesEvent*)event
+{
+	if (!iupCocoaTouchKeyPresses(_ihandle, presses, false))
+		[super pressesEnded:presses withEvent:event];
+}
+
 - (BOOL)prefersStatusBarHidden
 {
 	return _hideStatusBar;

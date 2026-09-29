@@ -53,6 +53,23 @@ static const void* IUPCOCOATOUCH_POPOVER_DELEGATE_KEY = @"IUPCOCOATOUCH_POPOVER_
 	iupLayoutUpdate(_ihandle->firstchild);
 }
 
+- (BOOL)canBecomeFirstResponder
+{
+	return YES;
+}
+
+- (void)pressesBegan:(NSSet<UIPress*>*)presses withEvent:(UIPressesEvent*)event
+{
+	if (!iupCocoaTouchKeyPresses(_ihandle, presses, true))
+		[super pressesBegan:presses withEvent:event];
+}
+
+- (void)pressesEnded:(NSSet<UIPress*>*)presses withEvent:(UIPressesEvent*)event
+{
+	if (!iupCocoaTouchKeyPresses(_ihandle, presses, false))
+		[super pressesEnded:presses withEvent:event];
+}
+
 - (void)dealloc
 {
 	[_clientArea release];
