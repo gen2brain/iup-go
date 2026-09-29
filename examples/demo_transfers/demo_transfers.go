@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -148,8 +149,8 @@ func main() {
 			iup.Label("Local workspace  ->  Backup vault").SetAttribute("FGCOLOR", "128 128 128"),
 		).SetAttributes("NGAP=2, EXPAND=HORIZONTAL"),
 		iup.Vbox(
-			iup.Label("Ready").SetAttributes("FONTSTYLE=Bold, ALIGNMENT=ARIGHT").SetHandle("transfer_state"),
-			iup.Label("").SetAttribute("ALIGNMENT", "ARIGHT").SetHandle("transfer_summary"),
+			iup.Label("Ready").SetAttributes("FONTSTYLE=Bold, ALIGNMENT=ARIGHT, EXPAND=HORIZONTAL").SetHandle("transfer_state"),
+			iup.Label("").SetAttributes("ALIGNMENT=ARIGHT, EXPAND=HORIZONTAL").SetHandle("transfer_summary"),
 		).SetAttributes("NGAP=2"),
 	).SetAttributes("NMARGIN=10x8, NGAP=10, ALIGNMENT=ACENTER")
 
@@ -168,7 +169,7 @@ func main() {
 	).SetAttributes("NMARGIN=10x8, NGAP=5")
 
 	dlg := iup.Dialog(iup.Vbox(header, toolbar(), center, footer).SetAttributes("NGAP=0")).SetHandle("transfer_dlg")
-	dlg.SetAttribute("TITLE", "Backup and Transfer Center")
+	dlg.SetAttributes("TITLE=\"Backup and Transfer Center\", ICON=transfer_icon")
 	dlg.SetCallback("CLOSE_CB", iup.CloseFunc(closeDialog))
 	dlg.SetCallback("THEMECHANGED_CB", iup.ThemeChangedFunc(func(iup.Ihandle, int) int {
 		refreshTable()
@@ -823,7 +824,7 @@ func refreshSummary() {
 	}
 	iup.GetHandle("transfer_progress").SetAttribute("VALUE", float64(percent)/100)
 	iup.GetHandle("transfer_percent").SetAttribute("TITLE", fmt.Sprintf("%d%%", percent))
-	iup.GetHandle("transfer_summary").SetAttribute("TITLE", fmt.Sprintf("%d files  |  %s", len(snapshot), bytes(total)))
+	setHeaderLabel("transfer_summary", fmt.Sprintf("%d files  |  %s", len(snapshot), bytes(total)))
 	iup.GetHandle("transfer_dlg").SetAttribute("TASKBARPROGRESSVALUE", percent)
 	if errors > 0 {
 		setStatus(fmt.Sprintf("%d complete, %d active, %d need attention", complete, active, errors))
@@ -1094,7 +1095,7 @@ func notify(title, body string) {
 	}
 	notice = iup.Notify()
 	notice.SetAttributes(map[string]string{
-		"TITLE": title, "BODY": body, "ICON": "transfer_icon", "ACTION1": "Show", "SILENT": "YES",
+		"TITLE": title, "BODY": body, "ICON": "transfer_icon_large", "ACTION1": "Show", "SILENT": "YES",
 	})
 	notice.SetCallback("NOTIFY_CB", iup.NotifyFunc(func(iup.Ihandle, int) int {
 		iup.GetHandle("transfer_dlg").SetAttribute("HIDETASKBAR", "NO")
@@ -1108,22 +1109,53 @@ func notify(title, body string) {
 }
 
 func createImages() {
-	const size = 32
+	iup.ImageRGBA(32, 32, transferIcon(32)).SetHandle("transfer_icon")
+	iup.ImageRGBA(64, 64, transferIcon(64)).SetHandle("transfer_icon_large")
+}
+
+func transferIcon(size int) []byte {
+	const samples = 4
+	inside := func(u, v float64) (disc, glyph bool) {
+		dx, dy := u-0.5, v-0.5
+		disc = dx*dx+dy*dy <= 0.47*0.47
+		shaft := u >= 0.44 && u <= 0.56 && v >= 0.20 && v <= 0.50
+		head := v >= 0.46 && v <= 0.68 && math.Abs(u-0.5) <= (0.68-v)*0.95
+		tray := v >= 0.73 && v <= 0.79 && u >= 0.27 && u <= 0.73
+		sides := v >= 0.62 && v <= 0.79 && ((u >= 0.27 && u <= 0.33) || (u >= 0.67 && u <= 0.73))
+		glyph = shaft || head || tray || sides
+		return
+	}
+
 	pixels := make([]byte, size*size*4)
 	for y := 0; y < size; y++ {
 		for x := 0; x < size; x++ {
-			dx, dy := x-16, y-16
-			if dx*dx+dy*dy > 14*14 {
+			var disc, glyph int
+			for sy := 0; sy < samples; sy++ {
+				for sx := 0; sx < samples; sx++ {
+					u := (float64(x) + (float64(sx)+0.5)/samples) / float64(size)
+					v := (float64(y) + (float64(sy)+0.5)/samples) / float64(size)
+					d, g := inside(u, v)
+					if d {
+						disc++
+						if g {
+							glyph++
+						}
+					}
+				}
+			}
+			if disc == 0 {
 				continue
 			}
+			t := float64(y) / float64(size-1)
+			r, g, b := 88-40*t, 150-50*t, 240-30*t
+			w := float64(glyph) / float64(disc)
+			r, g, b = r+(255-r)*w, g+(255-g)*w, b+(255-b)*w
 			i := (y*size + x) * 4
-			pixels[i], pixels[i+1], pixels[i+2], pixels[i+3] = 64, 122, 224, 255
-			if (x >= 14 && x <= 18 && y >= 7 && y <= 21) || (y >= 17 && y <= 21 && x >= 10 && x <= 22) || (y-x >= 7 && y-x <= 10 && x >= 9 && x <= 16) || (x+y >= 37 && x+y <= 40 && x >= 16 && x <= 23) {
-				pixels[i], pixels[i+1], pixels[i+2] = 255, 255, 255
-			}
+			pixels[i], pixels[i+1], pixels[i+2] = byte(r), byte(g), byte(b)
+			pixels[i+3] = byte(255 * disc / (samples * samples))
 		}
 	}
-	iup.ImageRGBA(size, size, pixels).SetHandle("transfer_icon")
+	return pixels
 }
 
 func toggleTheme() {
@@ -1141,7 +1173,16 @@ func appendLog(message string) {
 }
 
 func setState(value string) {
-	iup.GetHandle("transfer_state").SetAttribute("TITLE", value)
+	setHeaderLabel("transfer_state", value)
+}
+
+func setHeaderLabel(name, value string) {
+	label := iup.GetHandle(name)
+	if label.GetAttribute("TITLE") == value {
+		return
+	}
+	label.SetAttribute("TITLE", value)
+	iup.Refresh(label)
 }
 
 func setStatus(value string) {

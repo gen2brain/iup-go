@@ -31,7 +31,7 @@ func main() {
 }
 ` + "```" + `
 
-[Click here for IUP docs](https://www.tecgraf.puc-rio.br/iup/)
+[Click here for IUP docs](https://gen2brain.github.io/iup-go/)
 
 ![Gopher](gopher.png)
 

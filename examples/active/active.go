@@ -104,7 +104,7 @@ func main() {
 		return iup.Label("").SetAttributes(`IMAGE=activeimg`)
 	})
 	simple("Link", func() iup.Ihandle {
-		return iup.Link("https://www.tecgraf.puc-rio.br/iup/", "IUP site")
+		return iup.Link("https://gen2brain.github.io/iup-go/", "IUP site")
 	})
 	simple("DatePick", func() iup.Ihandle { return iup.DatePick() })
 	simple("ColorBrowser", func() iup.Ihandle {
@@ -157,6 +157,7 @@ func main() {
 			h.SetAttribute("ACTIVE", v)
 		}
 		stateLbl.SetAttribute("TITLE", "Test column: "+s)
+		iup.Refresh(stateLbl)
 	}
 	testActive := true
 

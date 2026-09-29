@@ -119,7 +119,7 @@ func main() {
 
 	// Hyperlink on "IUP Documentation" (line 10, cols 7-23)
 	formattag = iup.User()
-	iup.SetAttribute(formattag, "LINK", "https://www.tecgraf.puc-rio.br/iup/")
+	iup.SetAttribute(formattag, "LINK", "https://gen2brain.github.io/iup-go/")
 	iup.SetAttribute(formattag, "SELECTION", "10,7:10,24")
 	iup.SetAttributeHandle(mltline, "ADDFORMATTAG", formattag)
 
