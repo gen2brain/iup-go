@@ -5,6 +5,7 @@
  */
 
 #include <QTabWidget>
+#include <QPointer>
 #include <QWidget>
 #include <QLayout>
 #include <QHBoxLayout>
@@ -111,6 +112,63 @@ public:
  * Custom Tab Bar with Enhanced Features
  ****************************************************************************/
 
+static Ihandle* qtTabsChildAtPos(Ihandle* ih, int pos)
+{
+  Ihandle* removed = (Ihandle*)iupAttribGet(ih, "_IUPQT_REMOVED_CHILD");
+  if (removed)
+  {
+    int removed_pos = iupAttribGetInt(ih, "_IUPQT_REMOVED_POS");
+    if (pos == removed_pos)
+      return removed;
+    if (pos > removed_pos)
+      pos--;
+  }
+  return IupGetChild(ih, pos);
+}
+
+static int qtTabsIndexToPos(Ihandle* ih, int index)
+{
+  QTabWidget* tabs = (QTabWidget*)ih->handle;
+  QWidget* page = (tabs && index >= 0) ? tabs->widget(index) : nullptr;
+  if (!page)
+    return -1;
+
+  Ihandle* removed = (Ihandle*)iupAttribGet(ih, "_IUPQT_REMOVED_CHILD");
+  int removed_pos = removed ? iupAttribGetInt(ih, "_IUPQT_REMOVED_POS") : -1;
+  int pos = 0;
+  for (Ihandle* c = ih->firstchild; c; c = c->brother, pos++)
+  {
+    if (pos == removed_pos)
+      pos++;
+    if ((QWidget*)iupAttribGet(c, "_IUPTAB_PAGE") == page)
+      return pos;
+  }
+  if (removed && (QWidget*)iupAttribGet(removed, "_IUPTAB_PAGE") == page)
+    return removed_pos;
+  return -1;
+}
+
+static int qtTabsPosToIndex(Ihandle* ih, int pos)
+{
+  QTabWidget* tabs = (QTabWidget*)ih->handle;
+  Ihandle* child = qtTabsChildAtPos(ih, pos);
+  QWidget* page = child ? (QWidget*)iupAttribGet(child, "_IUPTAB_PAGE") : nullptr;
+  return (tabs && page) ? tabs->indexOf(page) : -1;
+}
+
+static int qtTabsInsertIndex(Ihandle* ih, int pos)
+{
+  QTabWidget* tabs = (QTabWidget*)ih->handle;
+  int index = 0, p = 0;
+  for (Ihandle* c = ih->firstchild; c && p < pos; c = c->brother, p++)
+  {
+    QWidget* page = (QWidget*)iupAttribGet(c, "_IUPTAB_PAGE");
+    if (tabs && page && tabs->indexOf(page) >= 0)
+      index++;
+  }
+  return index;
+}
+
 class IupQtTabBar : public QTabBar
 {
 private:
@@ -125,7 +183,7 @@ protected:
       IFni cb = (IFni)IupGetCallback(ih, "RIGHTCLICK_CB");
       if (cb)
       {
-        int pos = tabAt(event->pos());
+        int pos = qtTabsIndexToPos(ih, tabAt(event->pos()));
         if (pos >= 0)
           cb(ih, pos);
       }
@@ -143,7 +201,7 @@ protected:
   {
     if (!ih) return;
 
-    Ihandle* child = IupGetChild(ih, index);
+    Ihandle* child = IupGetChild(ih, qtTabsIndexToPos(ih, index));
     if (!child) return;
 
     char* child_show_close = iupAttribGet(child, "SHOWCLOSE");
@@ -238,7 +296,7 @@ public:
 
 class IupQtTabWidget;
 
-static void qtTabsHandleCurrentChanged(IupQtTabWidget* tabs, int index, Ihandle* ih, int* prev_index);
+static void qtTabsHandleCurrentChanged(IupQtTabWidget* tabs, int index, Ihandle* ih, QPointer<QWidget>* prev_page);
 static void qtTabsHandleTabCloseRequested(IupQtTabWidget* tabs, int index, Ihandle* ih);
 static void qtTabsHandleTabMoved(int from, int to, Ihandle* ih);
 
@@ -246,10 +304,10 @@ class IupQtTabWidget : public QTabWidget
 {
 private:
   Ihandle* ih;
-  int prev_index;
+  QPointer<QWidget> prev_page;
 
 public:
-  IupQtTabWidget(Ihandle* ih_param) : QTabWidget(), ih(ih_param), prev_index(-1)
+  IupQtTabWidget(Ihandle* ih_param) : QTabWidget(), ih(ih_param)
   {
     IupQtTabBar* custom_bar = new IupQtTabBar(ih);
     setTabBar(custom_bar);
@@ -259,7 +317,7 @@ public:
     });
 
     QObject::connect(this, &QTabWidget::currentChanged, [this, ih_param](int index) {
-      qtTabsHandleCurrentChanged(this, index, ih_param, &prev_index);
+      qtTabsHandleCurrentChanged(this, index, ih_param, &prev_page);
     });
 
     QObject::connect(custom_bar, &QTabBar::tabMoved, [ih_param](int from, int to) {
@@ -281,7 +339,7 @@ public:
     }
   }
 
-  void setPrevIndex(int index) { prev_index = index; }
+  void setPrevIndex(int index) { prev_page = widget(index); }
 
   void updateAllTabCloseButtons()
   {
@@ -295,7 +353,7 @@ public:
  * Static Callback Function Implementations
  ****************************************************************************/
 
-static void qtTabsHandleCurrentChanged(IupQtTabWidget* tabs, int index, Ihandle* ih, int* prev_index)
+static void qtTabsHandleCurrentChanged(IupQtTabWidget* tabs, int index, Ihandle* ih, QPointer<QWidget>* prev_page_ptr)
 {
   if (!ih)
     return;
@@ -304,7 +362,9 @@ static void qtTabsHandleCurrentChanged(IupQtTabWidget* tabs, int index, Ihandle*
     return;
 
   QWidget* current_page = tabs->widget(index);
-  QWidget* prev_page = *prev_index >= 0 ? tabs->widget(*prev_index) : nullptr;
+  QWidget* prev_page = prev_page_ptr->data();
+  if (current_page == prev_page)
+    return;
 
   Ihandle* child = nullptr;
   Ihandle* prev_child = nullptr;
@@ -342,27 +402,30 @@ static void qtTabsHandleCurrentChanged(IupQtTabWidget* tabs, int index, Ihandle*
     else
     {
       IFnii cb2 = (IFnii)IupGetCallback(ih, "TABCHANGEPOS_CB");
-      if (cb2 && *prev_index >= 0)
-        cb2(ih, index, *prev_index);
+      if (cb2 && prev_child)
+        cb2(ih, IupGetChildPos(ih, child), IupGetChildPos(ih, prev_child));
     }
   }
 
-  *prev_index = index;
+  *prev_page_ptr = current_page;
 }
 
 static void qtTabsHandleTabCloseRequested(IupQtTabWidget* tabs, int index, Ihandle* ih)
 {
   if (!ih) return;
 
+  int pos = qtTabsIndexToPos(ih, index);
+  if (pos < 0) return;
+
   IFni cb = (IFni)IupGetCallback(ih, "TABCLOSE_CB");
   int ret = IUP_DEFAULT;
 
   if (cb)
-    ret = cb(ih, index);
+    ret = cb(ih, pos);
 
   if (ret == IUP_CONTINUE)
   {
-    Ihandle* child = IupGetChild(ih, index);
+    Ihandle* child = IupGetChild(ih, pos);
     if (child)
     {
       IupDestroy(child);
@@ -371,7 +434,7 @@ static void qtTabsHandleTabCloseRequested(IupQtTabWidget* tabs, int index, Ihand
   }
   else if (ret == IUP_DEFAULT)
   {
-    Ihandle* child = IupGetChild(ih, index);
+    Ihandle* child = IupGetChild(ih, pos);
     if (child)
     {
       QWidget* tab_page = (QWidget*)iupAttribGet(child, "_IUPTAB_PAGE");
@@ -392,29 +455,37 @@ static void qtTabsHandleTabMoved(int from, int to, Ihandle* ih)
   if (iupAttribGet(ih, "_IUPTABS_REORDERING"))
     return;
 
+  QTabWidget* tabs = (QTabWidget*)ih->handle;
+  if (!tabs)
+    return;
+
+  int old_pos = qtTabsIndexToPos(ih, to);
+  Ihandle* child = IupGetChild(ih, old_pos);
+  if (!child)
+    return;
+
+  Ihandle* ref_child = IupGetChild(ih, qtTabsIndexToPos(ih, to + 1));
+  int new_pos;
+  if (ref_child)
+  {
+    int ref_pos = IupGetChildPos(ih, ref_child);
+    new_pos = old_pos < ref_pos ? ref_pos - 1 : ref_pos;
+  }
+  else
+    new_pos = IupGetChildCount(ih) - 1;
+
   IFnii cb = (IFnii)IupGetCallback(ih, "REORDER_CB");
-  if (cb && cb(ih, from, to) == IUP_IGNORE)
+  if (cb && cb(ih, old_pos, new_pos) == IUP_IGNORE)
   {
     iupAttribSet(ih, "_IUPTABS_REORDERING", "1");
-    IupQtTabWidget* tabs = (IupQtTabWidget*)ih->handle;
-    if (tabs)
-      tabs->tabBar()->moveTab(to, from);
+    tabs->tabBar()->moveTab(to, from);
     iupAttribSet(ih, "_IUPTABS_REORDERING", NULL);
     return;
   }
 
-  Ihandle* child = IupGetChild(ih, from);
-  if (child)
-  {
-    Ihandle* ref_child;
-    if (from < to)
-      ref_child = IupGetChild(ih, to + 1);
-    else
-      ref_child = IupGetChild(ih, to);
-    iupAttribSet(ih, "_IUPTABS_REORDERING", "1");
-    IupReparent(child, ih, ref_child);
-    iupAttribSet(ih, "_IUPTABS_REORDERING", NULL);
-  }
+  iupAttribSet(ih, "_IUPTABS_REORDERING", "1");
+  IupReparent(child, ih, ref_child);
+  iupAttribSet(ih, "_IUPTABS_REORDERING", NULL);
 }
 
 /****************************************************************************
@@ -444,9 +515,13 @@ extern "C" IUP_SDK_API void iupdrvTabsSetCurrentTab(Ihandle* ih, int pos)
   if (!tabs)
     return;
 
+  int index = qtTabsPosToIndex(ih, pos);
+  if (index < 0)
+    return;
+
   iupAttribSet(ih, "_IUPQT_IGNORE_CHANGE", "1");
-  tabs->setCurrentIndex(pos);
-  tabs->setPrevIndex(pos);
+  tabs->setCurrentIndex(index);
+  tabs->setPrevIndex(index);
   iupAttribSet(ih, "_IUPQT_IGNORE_CHANGE", nullptr);
 }
 
@@ -456,7 +531,7 @@ extern "C" IUP_SDK_API int iupdrvTabsGetCurrentTab(Ihandle* ih)
   if (!tabs)
     return -1;
 
-  return tabs->currentIndex();
+  return qtTabsIndexToPos(ih, tabs->currentIndex());
 }
 
 extern "C" IUP_SDK_API void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_title, const char* tab_image, int* tab_width, int* tab_height)
@@ -848,7 +923,7 @@ static int qtTabsSetTabVisibleAttrib(Ihandle* ih, int pos, const char* value)
               icon = QIcon(*pixmap);
           }
 
-          tabs->insertTab(pos, tab_page, icon, title);
+          tabs->insertTab(qtTabsInsertIndex(ih, pos), tab_page, icon, title);
         }
       }
       else
@@ -856,7 +931,9 @@ static int qtTabsSetTabVisibleAttrib(Ihandle* ih, int pos, const char* value)
         if (index >= 0)
         {
           iupTabsCheckCurrentTab(ih, pos, 0);
+          iupAttribSet(ih, "_IUPQT_IGNORE_CHANGE", "1");
           tabs->removeTab(index);
+          iupAttribSet(ih, "_IUPQT_IGNORE_CHANGE", nullptr);
         }
       }
     }
@@ -1078,20 +1155,21 @@ static void qtTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
     iupAttribSet(ih, "_IUPQT_IGNORE_CHANGE", "1");
 
     QString title = QString::fromUtf8(tabtitle ? tabtitle : "");
+    int index = qtTabsInsertIndex(ih, pos);
+
+    iupAttribSet(child, "_IUPTAB_CONTAINER", (char*)tab_container);
+    iupAttribSet(child, "_IUPTAB_PAGE", (char*)tab_page);
 
     if (tabimage)
     {
       QPixmap* pixbuf = (QPixmap*)iupImageGetImage(tabimage, ih, 0, nullptr);
       if (pixbuf)
-        tabs->insertTab(pos, tab_page, QIcon(*pixbuf), title);
+        tabs->insertTab(index, tab_page, QIcon(*pixbuf), title);
       else
-        tabs->insertTab(pos, tab_page, title);
+        tabs->insertTab(index, tab_page, title);
     }
     else
-      tabs->insertTab(pos, tab_page, title);
-
-    iupAttribSet(child, "_IUPTAB_CONTAINER", (char*)tab_container);
-    iupAttribSet(child, "_IUPTAB_PAGE", (char*)tab_page);
+      tabs->insertTab(index, tab_page, title);
 
     iupStrToRGB(IupGetAttribute(ih, "BGCOLOR"), &r, &g, &b);
     QPalette palette = tab_container->palette();
@@ -1122,7 +1200,10 @@ static void qtTabsChildRemovedMethod(Ihandle* ih, Ihandle* child, int pos)
 
       if (index >= 0)
       {
+        iupAttribSet(ih, "_IUPQT_REMOVED_CHILD", (char*)child);
+        iupAttribSetInt(ih, "_IUPQT_REMOVED_POS", pos);
         iupTabsCheckCurrentTab(ih, pos, 1);
+        iupAttribSet(ih, "_IUPQT_REMOVED_CHILD", nullptr);
 
         iupAttribSet(ih, "_IUPQT_IGNORE_CHANGE", "1");
         tabs->removeTab(index);
@@ -1200,11 +1281,11 @@ static int qtTabsMapMethod(Ihandle* ih)
 
     if (current_child)
     {
-      int pos = IupGetChildPos(ih, current_child);
-      if (pos >= 0)
+      int index = qtTabsPosToIndex(ih, IupGetChildPos(ih, current_child));
+      if (index >= 0)
       {
-        tabs->setCurrentIndex(pos);
-        tabs->setPrevIndex(pos);
+        tabs->setCurrentIndex(index);
+        tabs->setPrevIndex(index);
       }
 
       iupAttribSet(ih, "_IUPTABS_VALUE_HANDLE", nullptr);
