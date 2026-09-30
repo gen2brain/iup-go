@@ -1,5 +1,5 @@
 /* This file is in UTF-8 encoding */
-static Ihandle* iup_load_lng_czech_plot(void)
+static Ihandle* iup_load_lng_czech_plot()
 {
   return IupSetAtt( "CZECH", IupUser(),
     "IUP_ANGLE", "Úhel:",

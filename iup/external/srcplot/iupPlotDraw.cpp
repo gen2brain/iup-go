@@ -9,7 +9,7 @@ void iupPlotBuildFont(Ihandle* ih, int fontStyle, int fontSize, char* fontStr, i
 {
   char* fontFace = IupGetAttribute(ih, "FONTFACE");
   if (!fontFace)
-    fontFace = (char*)"";
+    fontFace = const_cast<char*>("");
 
   const char* styleStr = "";
   switch (fontStyle)
@@ -85,7 +85,7 @@ void iupPlotDrawAlignedText(iupPlotDrawContext* ctx, double refX, double refY,
   int absX = iupPlotDrawCalcX(ctx, refX);
   int absY = iupPlotDrawCalcY(ctx, refY);
 
-  int len = (int)strlen(text);
+  int len = static_cast<int>(strlen(text));
   int w = 0, h = 0;
 
   IupSetAttribute(ctx->ih, "DRAWFONT", font);
@@ -165,7 +165,7 @@ bool iupPlotGrid::DrawX(iupPlotTickIter* inTickIter, iupPlotTrafo* inTrafo, cons
     int absY1 = iupPlotDrawCalcY(ctx, inRect.mY);
     int absY2 = iupPlotDrawCalcY(ctx, inRect.mY + inRect.mHeight - 1);
 
-    while (inTickIter->GetNextTick(theX, theIsMajorTick, NULL))
+    while (inTickIter->GetNextTick(theX, theIsMajorTick, nullptr))
     {
       if ((theIsMajorTick && mMajor) || (!theIsMajorTick && !mMajor))
       {
@@ -194,7 +194,7 @@ bool iupPlotGrid::DrawY(iupPlotTickIter* inTickIter, iupPlotTrafo* inTrafo, cons
     int absX1 = iupPlotDrawCalcX(ctx, inRect.mX);
     int absX2 = iupPlotDrawCalcX(ctx, inRect.mX + inRect.mWidth - 1);
 
-    while (inTickIter->GetNextTick(theY, theIsMajorTick, NULL))
+    while (inTickIter->GetNextTick(theY, theIsMajorTick, nullptr))
     {
       if ((theIsMajorTick && mMajor) || (!theIsMajorTick && !mMajor))
       {
@@ -216,7 +216,7 @@ void iupPlot::DrawCrossSamplesH(const iupPlotRect &inRect, const iupPlotData* in
   if (theCount == 0)
     return;
 
-  double theXTarget = mAxisX.mTrafo->TransformBack((double)mCrossHairX);
+  double theXTarget = mAxisX.mTrafo->TransformBack(static_cast<double>(mCrossHairX));
   bool theFirstIsLess = inXData->GetSample(0) < theXTarget;
 
   int absX1 = iupPlotDrawCalcX(ctx, inRect.mX);
@@ -268,7 +268,7 @@ void iupPlot::DrawCrossSamplesV(const iupPlotRect &inRect, const iupPlotData* in
   if (theCount == 0)
     return;
 
-  double theYTarget = mAxisY.mTrafo->TransformBack((double)mCrossHairY);
+  double theYTarget = mAxisY.mTrafo->TransformBack(static_cast<double>(mCrossHairY));
   bool theFirstIsLess = inYData->GetSample(0) < theYTarget;
 
   int absY1 = iupPlotDrawCalcY(ctx, inRect.mY);
@@ -384,7 +384,7 @@ void iupPlot::DrawBackgroundImage(iupPlotDrawContext* ctx) const
     int theW = iupPlotRound(theScreenW);
     int theH = iupPlotRound(theScreenH);
 
-    iupPlotDrawImage(ctx->ih, mBack.GetImage(), 0, NULL, theX, theY, theW, theH);
+    iupPlotDrawImage(ctx->ih, mBack.GetImage(), 0, nullptr, theX, theY, theW, theH);
   }
 }
 
@@ -401,7 +401,7 @@ bool iupPlot::DrawLegend(const iupPlotRect &inRect, iupPlotDrawContext* ctx, iup
     iupPlotBuildFont(ctx->ih, fontStyle, fontSize, fontStr, sizeof(fontStr));
     SetFont(ctx->ih, mLegend.mFontStyle, mLegend.mFontSize);
 
-    iupdrvFontGetFontDim(IupGetAttribute(ctx->ih, "DRAWFONT"), NULL, &theFontHeight, NULL, NULL);
+    iupdrvFontGetFontDim(IupGetAttribute(ctx->ih, "DRAWFONT"), nullptr, &theFontHeight, nullptr, nullptr);
 
     int theMargin = theFontHeight / 2;
     if (mLegend.mPosition == IUP_PLOT_BOTTOMCENTER)
@@ -415,7 +415,7 @@ bool iupPlot::DrawLegend(const iupPlotRect &inRect, iupPlotDrawContext* ctx, iup
       iupPlotDataSet* dataset = mDataSetList[ds];
 
       IupSetAttribute(ctx->ih, "DRAWFONT", fontStr);
-      iupDrawGetTextSize(ctx->ih, dataset->GetName(), (int)strlen(dataset->GetName()), &theWidth, NULL, 0);
+      iupDrawGetTextSize(ctx->ih, dataset->GetName(), static_cast<int>(strlen(dataset->GetName())), &theWidth, nullptr, 0);
 
       if (dataset->mMode == IUP_PLOT_MARK || dataset->mMode == IUP_PLOT_MARKLINE)
       {
@@ -569,7 +569,7 @@ bool iupPlot::DrawSampleColorLegend(iupPlotDataSet* dataset, const iupPlotRect &
     iupPlotBuildFont(ctx->ih, fontStyle, fontSize, fontStr, sizeof(fontStr));
     SetFont(ctx->ih, mLegend.mFontStyle, mLegend.mFontSize);
 
-    iupdrvFontGetFontDim(IupGetAttribute(ctx->ih, "DRAWFONT"), NULL, &theFontHeight, NULL, NULL);
+    iupdrvFontGetFontDim(IupGetAttribute(ctx->ih, "DRAWFONT"), nullptr, &theFontHeight, nullptr, nullptr);
 
     int theMargin = theFontHeight / 2;
     if (mLegend.mPosition == IUP_PLOT_BOTTOMCENTER)
@@ -582,8 +582,8 @@ bool iupPlot::DrawSampleColorLegend(iupPlotDataSet* dataset, const iupPlotRect &
     for (int i = 0; i < theCount; i++)
     {
       IupSetAttribute(ctx->ih, "DRAWFONT", fontStr);
-      const char* sampleStr = ((iupPlotDataString*)dataset->GetDataX())->GetSampleString(i);
-      iupDrawGetTextSize(ctx->ih, sampleStr, (int)strlen(sampleStr), &theWidth, NULL, 0);
+      const char* sampleStr = static_cast<const iupPlotDataString*>(dataset->GetDataX())->GetSampleString(i);
+      iupDrawGetTextSize(ctx->ih, sampleStr, static_cast<int>(strlen(sampleStr)), &theWidth, nullptr, 0);
 
       theWidth += theLineSpace;
 
@@ -672,7 +672,7 @@ bool iupPlot::DrawSampleColorLegend(iupPlotDataSet* dataset, const iupPlotRect &
       double textRefX = theLegendX + theLineSpace;
       double textRefY = theLegendY + boxSize / 2;
       iupPlotDrawAlignedText(ctx, textRefX, textRefY, IUP_PLOT_WEST,
-                             ((iupPlotDataString*)dataset->GetDataX())->GetSampleString(i),
+                             static_cast<const iupPlotDataString*>(dataset->GetDataX())->GetSampleString(i),
                              sampleColor, fontStr, 0);
     }
   }

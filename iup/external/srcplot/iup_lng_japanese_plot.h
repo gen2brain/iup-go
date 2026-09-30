@@ -1,5 +1,5 @@
 /* This file is in UTF-8 encoding */
-static Ihandle* iup_load_lng_japanese_plot(void)
+static Ihandle* iup_load_lng_japanese_plot()
 {
   return IupSetAtt( "JAPANESE", IupUser(),
     "IUP_ANGLE", "角度:",

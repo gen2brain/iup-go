@@ -97,7 +97,7 @@ int iupPlotCalcPrecision(double inValue);
 
 inline int iupPlotRound(double inFloat)
 {
-  return (int)(inFloat > 0 ? inFloat + 0.5 : inFloat - 0.5);
+  return static_cast<int>(inFloat > 0 ? inFloat + 0.5 : inFloat - 0.5);
 }
 
 inline double iupPlotLog(double inFloat, double inBase)
@@ -231,21 +231,21 @@ inline int iupPlotDrawCalcAbsY(double y, int viewportY, int viewportH)
 
 class iupPlotPointBuffer {
 public:
-  iupPlotPointBuffer() : mPoints(NULL), mCount(0), mCapacity(0) {}
+  iupPlotPointBuffer() : mPoints(nullptr), mCount(0), mCapacity(0) {}
   ~iupPlotPointBuffer() { if (mPoints) free(mPoints); }
 
   void Begin(int estimatedCount) {
     mCount = 0;
     if (estimatedCount > mCapacity) {
       mCapacity = estimatedCount + 64;
-      mPoints = (int*)realloc(mPoints, mCapacity * 2 * sizeof(int));
+      mPoints = static_cast<int*>(realloc(mPoints, mCapacity * 2 * sizeof(int)));
     }
   }
 
   void AddVertex(int x, int y) {
     if (mCount * 2 + 1 >= mCapacity * 2) {
       mCapacity = mCapacity * 2 + 64;
-      mPoints = (int*)realloc(mPoints, mCapacity * 2 * sizeof(int));
+      mPoints = static_cast<int*>(realloc(mPoints, mCapacity * 2 * sizeof(int)));
     }
     mPoints[mCount * 2] = x;
     mPoints[mCount * 2 + 1] = y;
@@ -369,16 +369,16 @@ protected:
 class iupPlotDataReal : public iupPlotData
 {
 public:
-  iupPlotDataReal() :iupPlotData(sizeof(double)) { mData = (double*)iupArrayGetData(mArray); }
+  iupPlotDataReal() :iupPlotData(sizeof(double)) { mData = static_cast<double*>(iupArrayGetData(mArray)); }
 
   double GetSample(int inSampleIndex) const override { return mData[inSampleIndex]; }
   void SetSample(int inSampleIndex, double inReal) const { mData[inSampleIndex] = inReal; }
 
-  void AddSample(double inReal) { mData = (double*)iupArrayInc(mArray); mData[mCount] = inReal; mCount++; }
+  void AddSample(double inReal) { mData = static_cast<double*>(iupArrayInc(mArray)); mData[mCount] = inReal; mCount++; }
   void InsertSample(int inSampleIndex, double inReal) {
     if (inSampleIndex < 0) inSampleIndex = 0;
     if (inSampleIndex > mCount) inSampleIndex = mCount;
-    mData = (double*)iupArrayInsert(mArray, inSampleIndex, 1); mData[inSampleIndex] = inReal; mCount++;
+    mData = static_cast<double*>(iupArrayInsert(mArray, inSampleIndex, 1)); mData[inSampleIndex] = inReal; mCount++;
   }
 
   bool CalculateRange(double &outMin, double &outMax) const override;
@@ -390,7 +390,7 @@ protected:
 class iupPlotDataString : public iupPlotData
 {
 public:
-  iupPlotDataString() :iupPlotData(sizeof(char*)) { mIsString = true; mData = (char**)iupArrayGetData(mArray); }
+  iupPlotDataString() :iupPlotData(sizeof(char*)) { mIsString = true; mData = static_cast<char**>(iupArrayGetData(mArray)); }
   ~iupPlotDataString() override;
 
   double GetSample(int inSampleIndex) const override { return inSampleIndex; }
@@ -402,11 +402,11 @@ public:
     mData[inSampleIndex] = iupStrDup(inString);
   }
 
-  void AddSample(const char* inString) { mData = (char**)iupArrayInc(mArray); mData[mCount] = iupStrDup(inString); mCount++; }
+  void AddSample(const char* inString) { mData = static_cast<char**>(iupArrayInc(mArray)); mData[mCount] = iupStrDup(inString); mCount++; }
   void InsertSample(int inSampleIndex, const char* inString) {
     if (inSampleIndex < 0) inSampleIndex = 0;
     if (inSampleIndex > mCount) inSampleIndex = mCount;
-    mData = (char**)iupArrayInsert(mArray, inSampleIndex, 1); mData[inSampleIndex] = iupStrDup(inString); mCount++;
+    mData = static_cast<char**>(iupArrayInsert(mArray, inSampleIndex, 1)); mData[inSampleIndex] = iupStrDup(inString); mCount++;
   }
 
   bool CalculateRange(double &outMin, double &outMax) const override;
@@ -418,18 +418,18 @@ protected:
 class iupPlotDataBool : public iupPlotData
 {
 public:
-  iupPlotDataBool() :iupPlotData(sizeof(bool)) { mData = (bool*)iupArrayGetData(mArray); }
+  iupPlotDataBool() :iupPlotData(sizeof(bool)) { mData = static_cast<bool*>(iupArrayGetData(mArray)); }
 
-  double GetSample(int inSampleIndex) const override { return (int)mData[inSampleIndex]; }
+  double GetSample(int inSampleIndex) const override { return static_cast<int>(mData[inSampleIndex]); }
 
   bool GetSampleBool(int inSampleIndex) const { return mData[inSampleIndex]; }
   void SetSampleBool(int inSampleIndex, bool inBool) { mData[inSampleIndex] = inBool; }
 
-  void AddSample(bool inBool) { mData = (bool*)iupArrayInc(mArray); mData[mCount] = inBool; mCount++; }
+  void AddSample(bool inBool) { mData = static_cast<bool*>(iupArrayInc(mArray)); mData[mCount] = inBool; mCount++; }
   void InsertSample(int inSampleIndex, bool inBool) {
     if (inSampleIndex < 0) inSampleIndex = 0;
     if (inSampleIndex > mCount) inSampleIndex = mCount;
-    mData = (bool*)iupArrayInsert(mArray, inSampleIndex, 1); mData[inSampleIndex] = inBool; mCount++;
+    mData = static_cast<bool*>(iupArrayInsert(mArray, inSampleIndex, 1)); mData[inSampleIndex] = inBool; mCount++;
   }
 
   bool CalculateRange(double &outMin, double &outMax) const override;
@@ -551,7 +551,7 @@ class iupPlotTick;
 class iupPlotTickIter
 {
 public:
-  iupPlotTickIter() :mAxis(NULL){}
+  iupPlotTickIter() :mAxis(nullptr){}
   virtual ~iupPlotTickIter() {}
 
   virtual bool Init() = 0;
@@ -655,13 +655,13 @@ public:
     mShowArrow(true), mReverseTicksLabel(false), mFontSize(0), mFontStyle(-1),
     mLabelCentered(true), mDefaultFontSize(inDefaultFontSize), mDefaultFontStyle(inDefaultFontStyle), mLabelSpacing(-1), mLogScale(false),
     mMaxDecades(-1), mLogBase(10), mDiscrete(false),
-    mLineWidth(1), mTrafo(NULL), mTickIter(NULL),
-    mLabel(NULL), mHasZoom(false), mNoZoomMin(0), mNoZoomMax(0),
+    mLineWidth(1), mTrafo(nullptr), mTickIter(nullptr),
+    mLabel(nullptr), mHasZoom(false), mNoZoomMin(0), mNoZoomMax(0),
     mNoZoomAutoScaleMin(false), mNoZoomAutoScaleMax(false), mPanMin(0)
   {
     iupStrCopyN(mTipFormatString, sizeof(mTipFormatString), IUP_PLOT_DEF_TIPFORMAT);
   }
-  ~iupPlotAxis() { SetLabel(NULL); }
+  ~iupPlotAxis() { SetLabel(nullptr); }
 
   void SetLabel(const char* inLabel) { if (inLabel == mLabel) return; if (mLabel) free(mLabel); mLabel = iupStrDup(inLabel); }
   const char* GetLabel() const { return mLabel; }
@@ -822,7 +822,7 @@ class iupPlotTitle
 public:
   iupPlotTitle()
     : mColor(iupDrawColor(0,0,0,255)), mFontSize(0), mFontStyle(-1), mAutoPos(true),
-    mPosX(0), mPosY(0), mText(NULL) {}
+    mPosX(0), mPosY(0), mText(nullptr) {}
   ~iupPlotTitle() { if (mText) free(mText); }
 
   void SetText(const char* inText) { if (inText == mText) return; if (mText) free(mText); mText = iupStrDup(inText); }
@@ -842,7 +842,7 @@ class iupPlotBackground
 {
 public:
   iupPlotBackground()
-    : mMarginAuto(1, 1, 1, 1), mColor(iupDrawColor(255,255,255,255)), mHorizPadding(5), mVertPadding(5), mTransparent(false), mImage(NULL){}
+    : mMarginAuto(1, 1, 1, 1), mColor(iupDrawColor(255,255,255,255)), mHorizPadding(5), mVertPadding(5), mTransparent(false), mImage(nullptr){}
   ~iupPlotBackground() { if (mImage) free(mImage); }
 
   void SetImage(const char* inImage) { if (inImage == mImage) return; if (mImage) free(mImage); mImage = iupStrDup(inImage); }
@@ -916,8 +916,8 @@ public:
   void ScrollTo(double inMinX, double inMinY) { if (mAxisX.ScrollTo(inMinX)) mRedraw = true; if (mAxisY.ScrollTo(inMinY)) mRedraw = true; }
 
   void TransformBack(int inX, int inY, double &outX, double &outY) const {
-    outX = mAxisX.mTrafo->TransformBack((double)inX);
-    outY = mAxisY.mTrafo->TransformBack((double)inY);
+    outX = mAxisX.mTrafo->TransformBack(static_cast<double>(inX));
+    outY = mAxisY.mTrafo->TransformBack(static_cast<double>(inY));
   }
 
   bool CheckInsideTitle(Ihandle* ih, int x, int y) const;

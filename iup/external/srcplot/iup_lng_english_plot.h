@@ -1,5 +1,5 @@
 /* This file is in ASCii encoding */
-static Ihandle* iup_load_lng_english_plot (void)
+static Ihandle* iup_load_lng_english_plot ()
 {
   return IupSetAtt( "ENGLISH", IupUser(),
     "IUP_ANGLE", "Angle:",

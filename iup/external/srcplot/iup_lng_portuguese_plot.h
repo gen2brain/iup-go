@@ -1,5 +1,5 @@
 /* This file is in UTF-8 encoding */
-static Ihandle* iup_load_lng_portuguese_plot(void)
+static Ihandle* iup_load_lng_portuguese_plot()
 {
   return IupSetAtt( "PORTUGUESE", IupUser(),
     "IUP_ANGLE", "Ângulo:",

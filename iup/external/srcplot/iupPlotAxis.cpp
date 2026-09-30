@@ -64,7 +64,7 @@ static bool iPlotGetTickFormat(Ihandle* ih, IFnssds formatticknumber_cb, char* i
 
   if (formatticknumber_cb)
   {
-    int ret = formatticknumber_cb(ih, inBuf, (char*)inFormatString, inValue, decimal_symbol);
+    int ret = formatticknumber_cb(ih, inBuf, const_cast<char*>(inFormatString), inValue, decimal_symbol);
     if (ret == IUP_IGNORE)
       return false;
     else if (ret == IUP_CONTINUE)
@@ -427,13 +427,13 @@ int iupPlotAxis::GetTickNumberHeight(Ihandle* ih) const
   if (mTick.mRotateNumber)
   {
     int theXTickNumberWidth;
-    GetTickNumberSize(ih, &theXTickNumberWidth, NULL);
+    GetTickNumberSize(ih, &theXTickNumberWidth, nullptr);
     height = theXTickNumberWidth;
   }
   else
   {
     int theXTickNumberHeight;
-    GetTickNumberSize(ih, NULL, &theXTickNumberHeight);
+    GetTickNumberSize(ih, nullptr, &theXTickNumberHeight);
     height = theXTickNumberHeight;
   }
   return height;
@@ -445,13 +445,13 @@ int iupPlotAxis::GetTickNumberWidth(Ihandle* ih) const
   if (mTick.mRotateNumber)
   {
     int theYTickNumberHeight;
-    GetTickNumberSize(ih, NULL, &theYTickNumberHeight);
+    GetTickNumberSize(ih, nullptr, &theYTickNumberHeight);
     width = theYTickNumberHeight;
   }
   else
   {
     int theYTickNumberWidth;
-    GetTickNumberSize(ih, &theYTickNumberWidth, NULL);
+    GetTickNumberSize(ih, &theYTickNumberWidth, nullptr);
     width = theYTickNumberWidth;
   }
   return width;
@@ -522,7 +522,7 @@ bool iupPlotAxisX::DrawX(const iupPlotRect &inRect, iupPlotDrawContext* ctx, con
     char theFormatString[30];
     iupStrCopyN(theFormatString, sizeof(theFormatString), mTick.mFormatString);
 
-    IFnssds formatticknumber_cb = (IFnssds)IupGetCallback(ctx->ih, "XTICKFORMATNUMBER_CB");
+    auto formatticknumber_cb = reinterpret_cast<IFnssds>(IupGetCallback(ctx->ih, "XTICKFORMATNUMBER_CB"));
 
     if (mTick.mShowNumber)
       SetFont(ctx->ih, mTick.mFontStyle, mTick.mFontSize);
@@ -548,7 +548,7 @@ bool iupPlotAxisX::DrawX(const iupPlotRect &inRect, iupPlotDrawContext* ctx, con
     if (mLabelSpacing == -1)
     {
       int theXFontHeight;
-      iupdrvFontGetFontDim(IupGetAttribute(ctx->ih, "DRAWFONT"), NULL, &theXFontHeight, NULL, NULL);
+      iupdrvFontGetFontDim(IupGetAttribute(ctx->ih, "DRAWFONT"), nullptr, &theXFontHeight, nullptr, nullptr);
       theLabelSpacing = theXFontHeight / 10;
     }
 
@@ -684,7 +684,7 @@ bool iupPlotAxisY::DrawY(const iupPlotRect &inRect, iupPlotDrawContext* ctx, con
     char theFormatString[30];
     iupStrCopyN(theFormatString, sizeof(theFormatString), mTick.mFormatString);
 
-    IFnssds formatticknumber_cb = (IFnssds)IupGetCallback(ctx->ih, "YTICKFORMATNUMBER_CB");
+    auto formatticknumber_cb = reinterpret_cast<IFnssds>(IupGetCallback(ctx->ih, "YTICKFORMATNUMBER_CB"));
 
     if (mTick.mShowNumber)
       SetFont(ctx->ih, mTick.mFontStyle, mTick.mFontSize);
@@ -710,7 +710,7 @@ bool iupPlotAxisY::DrawY(const iupPlotRect &inRect, iupPlotDrawContext* ctx, con
     if (mLabelSpacing == -1)
     {
       int theYFontHeight;
-      iupdrvFontGetFontDim(IupGetAttribute(ctx->ih, "DRAWFONT"), NULL, &theYFontHeight, NULL, NULL);
+      iupdrvFontGetFontDim(IupGetAttribute(ctx->ih, "DRAWFONT"), nullptr, &theYFontHeight, nullptr, nullptr);
       theLabelSpacing = theYFontHeight / 10;  // default spacing
     }
 
