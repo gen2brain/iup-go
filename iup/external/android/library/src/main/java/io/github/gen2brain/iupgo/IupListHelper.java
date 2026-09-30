@@ -435,6 +435,8 @@ public final class IupListHelper
             til.setDefaultHintTextColor(ColorStateList.valueOf(onSurfaceVar));
             til.setHintTextColor(ColorStateList.valueOf(primary));
             til.setBoxBackgroundColor(IupCommon.paletteTxtBg);
+            til.setEndIconTintList(androidx.appcompat.content.res.AppCompatResources.getColorStateList(
+                ctx, com.google.android.material.R.color.m3_textfield_indicator_text_color));
             Object tag = til.getTag();
             if (tag instanceof MaterialAutoCompleteTextView m)
             {
