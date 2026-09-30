@@ -31,7 +31,7 @@ IUP_DRV_API void iupfltkSetCanFocus(Fl_Widget* widget, int can)
 
 extern "C" IUP_SDK_API void iupdrvSetFocus(Ihandle* ih)
 {
-  Fl_Widget* widget = (Fl_Widget*)ih->handle;
+  auto* widget = reinterpret_cast<Fl_Widget*>(ih->handle);
 
   if (!widget)
     return;
@@ -39,7 +39,7 @@ extern "C" IUP_SDK_API void iupdrvSetFocus(Ihandle* ih)
   Ihandle* dialog = IupGetDialog(ih);
   if (dialog && dialog->handle)
   {
-    Fl_Window* dialog_window = ((Fl_Widget*)dialog->handle)->as_window();
+    Fl_Window* dialog_window = (reinterpret_cast<Fl_Widget*>(dialog->handle))->as_window();
     if (dialog_window && dialog_window->shown())
       dialog_window->show();
   }
@@ -61,7 +61,7 @@ IUP_DRV_API int iupfltkFocusInOutEvent(Fl_Widget* widget, Ihandle* ih, int event
 
     Ihandle* dialog = IupGetDialog(ih);
     if (dialog && ih != dialog)
-      iupAttribSet(dialog, "_IUPFLTK_LASTFOCUS", (char*)ih);
+      iupAttribSet(dialog, "_IUPFLTK_LASTFOCUS", reinterpret_cast<char*>(ih));
 
     iupCallGetFocusCb(ih);
   }

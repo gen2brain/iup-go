@@ -23,8 +23,8 @@ extern "C" {
 }
 
 
-static char* fltk_clipboard_text = NULL;
-static Fl_RGB_Image* fltk_clipboard_image = NULL;
+static char* fltk_clipboard_text = nullptr;
+static Fl_RGB_Image* fltk_clipboard_image = nullptr;
 static int fltk_clipboard_received = 0;
 
 class FltkClipboardReceiver : public Fl_Widget
@@ -40,9 +40,9 @@ public:
 
       if (Fl::event_clipboard_type() == Fl::clipboard_image)
       {
-        Fl_RGB_Image* img = (Fl_RGB_Image*)Fl::event_clipboard();
+        auto* img = static_cast<Fl_RGB_Image*>(Fl::event_clipboard());
         if (img)
-          fltk_clipboard_image = (Fl_RGB_Image*)img->copy();
+          fltk_clipboard_image = static_cast<Fl_RGB_Image*>(img->copy());
       }
       else
       {
@@ -52,12 +52,12 @@ public:
         if (fltk_clipboard_text)
         {
           free(fltk_clipboard_text);
-          fltk_clipboard_text = NULL;
+          fltk_clipboard_text = nullptr;
         }
 
         if (text && len > 0)
         {
-          fltk_clipboard_text = (char*)malloc(len + 1);
+          fltk_clipboard_text = static_cast<char*>(malloc(len + 1));
           memcpy(fltk_clipboard_text, text, len);
           fltk_clipboard_text[len] = 0;
         }
@@ -71,9 +71,9 @@ public:
   void draw() override {}
 };
 
-static FltkClipboardReceiver* fltk_clipboard_receiver = NULL;
+static FltkClipboardReceiver* fltk_clipboard_receiver = nullptr;
 
-static FltkClipboardReceiver* fltkClipboardGetReceiver(void)
+static FltkClipboardReceiver* fltkClipboardGetReceiver()
 {
   if (!fltk_clipboard_receiver)
     fltk_clipboard_receiver = new FltkClipboardReceiver();
@@ -81,7 +81,7 @@ static FltkClipboardReceiver* fltkClipboardGetReceiver(void)
 }
 
 /* Fl::check does not wait, and the X reply needs time to arrive */
-static void fltkClipboardWaitPaste(void)
+static void fltkClipboardWaitPaste()
 {
   double remaining = 1.0;
 
@@ -104,7 +104,7 @@ static void fltkClipboardRequestText(int buffer)
   if (fltk_clipboard_text)
   {
     free(fltk_clipboard_text);
-    fltk_clipboard_text = NULL;
+    fltk_clipboard_text = nullptr;
   }
 
   fltk_clipboard_received = 0;
@@ -112,14 +112,14 @@ static void fltkClipboardRequestText(int buffer)
   fltkClipboardWaitPaste();
 }
 
-static void fltkClipboardRequestImage(void)
+static void fltkClipboardRequestImage()
 {
   FltkClipboardReceiver* receiver = fltkClipboardGetReceiver();
 
   if (fltk_clipboard_image)
   {
     delete fltk_clipboard_image;
-    fltk_clipboard_image = NULL;
+    fltk_clipboard_image = nullptr;
   }
 
   fltk_clipboard_received = 0;
@@ -141,7 +141,7 @@ static int fltkClipboardSetTextAttrib(Ihandle* ih, const char* value)
     return 0;
   }
 
-  Fl::copy(value, (int)strlen(value), buffer);
+  Fl::copy(value, static_cast<int>(strlen(value)), buffer);
   return 0;
 }
 
@@ -152,7 +152,7 @@ static char* fltkClipboardGetTextAttrib(Ihandle* ih)
   if (fltk_clipboard_text)
     return iupStrReturnStr(fltk_clipboard_text);
 
-  return NULL;
+  return nullptr;
 }
 
 static char* fltkClipboardGetTextAvailableAttrib(Ihandle* ih)
@@ -178,7 +178,7 @@ static void fltkClipboardCopyImage(Fl_Image* image)
   int w = image->data_w();
   int h = image->data_h();
 
-  Fl_Copy_Surface* surface = new Fl_Copy_Surface(w, h);
+  auto* surface = new Fl_Copy_Surface(w, h);
   Fl_Surface_Device::push_current(surface);
   image->draw(0, 0);
   Fl_Surface_Device::pop_current();
@@ -190,7 +190,7 @@ static int fltkClipboardSetImageAttrib(Ihandle* ih, const char* value)
   if (!value)
     return 0;
 
-  Fl_Image* image = (Fl_Image*)iupImageGetImage(value, ih, 0, NULL);
+  auto* image = static_cast<Fl_Image*>(iupImageGetImage(value, ih, 0, nullptr));
   fltkClipboardCopyImage(image);
   return 0;
 }
@@ -202,7 +202,7 @@ static int fltkClipboardSetNativeImageAttrib(Ihandle* ih, const char* value)
   if (!value)
     return 0;
 
-  fltkClipboardCopyImage((Fl_Image*)value);
+  fltkClipboardCopyImage(reinterpret_cast<Fl_Image*>(const_cast<char*>(value)));
   return 0;
 }
 
@@ -213,9 +213,9 @@ static char* fltkClipboardGetNativeImageAttrib(Ihandle* ih)
   fltkClipboardRequestImage();
 
   if (fltk_clipboard_image)
-    return (char*)fltk_clipboard_image;
+    return reinterpret_cast<char*>(fltk_clipboard_image);
 
-  return NULL;
+  return nullptr;
 }
 
 static char* fltkClipboardGetImageAvailableAttrib(Ihandle* ih)
@@ -235,31 +235,31 @@ extern "C" IUP_API Ihandle* IupClipboard(void)
 
 extern "C" Iclass* iupClipboardNewClass(void)
 {
-  Iclass* ic = iupClassNew(NULL);
+  Iclass* ic = iupClassNew(nullptr);
 
-  ic->name = (char*)"clipboard";
-  ic->format = NULL;
+  ic->name = const_cast<char*>("clipboard");
+  ic->format = nullptr;
   ic->nativetype = IUP_TYPEOTHER;
   ic->childtype = IUP_CHILDNONE;
   ic->is_interactive = 0;
 
   ic->New = iupClipboardNewClass;
 
-  iupClassRegisterAttribute(ic, "TEXT", fltkClipboardGetTextAttrib, fltkClipboardSetTextAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TEXTAVAILABLE", fltkClipboardGetTextAvailableAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TEXT", fltkClipboardGetTextAttrib, fltkClipboardSetTextAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TEXTAVAILABLE", fltkClipboardGetTextAvailableAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "NATIVEIMAGE", fltkClipboardGetNativeImageAttrib, fltkClipboardSetNativeImageAttrib, NULL, NULL, IUPAF_NO_STRING | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "IMAGE", NULL, fltkClipboardSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_WRITEONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "IMAGEAVAILABLE", fltkClipboardGetImageAvailableAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "NATIVEIMAGE", fltkClipboardGetNativeImageAttrib, fltkClipboardSetNativeImageAttrib, nullptr, nullptr, IUPAF_NO_STRING | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMAGE", nullptr, fltkClipboardSetImageAttrib, nullptr, nullptr, IUPAF_IHANDLENAME | IUPAF_WRITEONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMAGEAVAILABLE", fltkClipboardGetImageAvailableAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "ADDFORMAT", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "FORMAT", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "FORMATAVAILABLE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "FORMATDATA", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "FORMATDATASTRING", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "FORMATDATASIZE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ADDFORMAT", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FORMAT", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FORMATAVAILABLE", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FORMATDATA", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FORMATDATASTRING", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FORMATDATASIZE", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "SELECTION", NULL, NULL, "CLIPBOARD", NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTION", nullptr, nullptr, "CLIPBOARD", nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
 
   return ic;
 }

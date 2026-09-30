@@ -34,9 +34,9 @@ extern "C" {
 
 static int fltkFilterCheckText(Ihandle* ih, const char* text, char** out_buf)
 {
-  *out_buf = NULL;
+  *out_buf = nullptr;
   const char* filter = iupAttribGet(ih, "FILTER");
-  if (!filter || !text || !text[0] || (unsigned char)text[0] < 32)
+  if (!filter || !text || !text[0] || static_cast<unsigned char>(text[0]) < 32)
     return 0;
 
   size_t n = strlen(text);
@@ -50,10 +50,10 @@ static int fltkFilterCheckText(Ihandle* ih, const char* text, char** out_buf)
   if (iupStrEqualNoCase(filter, "UPPERCASE") || iupStrEqualNoCase(filter, "LOWERCASE"))
   {
     bool to_upper = iupStrEqualNoCase(filter, "UPPERCASE");
-    char* buf = (char*)malloc(n + 1);
+    char* buf = static_cast<char*>(malloc(n + 1));
     if (!buf) return 0;
     for (size_t i = 0; i < n; i++)
-      buf[i] = (char)(to_upper ? iup_toupper(text[i]) : iup_tolower(text[i]));
+      buf[i] = static_cast<char>(to_upper ? iup_toupper(text[i]) : iup_tolower(text[i]));
     buf[n] = 0;
     if (memcmp(buf, text, n) == 0)
     {
@@ -68,7 +68,7 @@ static int fltkFilterCheckText(Ihandle* ih, const char* text, char** out_buf)
 
 static int fltkApplyFilter(Ihandle* ih, Fl_Input_* input, const char* text)
 {
-  char* xform = NULL;
+  char* xform = nullptr;
   int r = fltkFilterCheckText(ih, text, &xform);
   if (r < 0) return 1;
   if (r == 0) return 0;
@@ -82,7 +82,7 @@ static int fltkApplyFilter(Ihandle* ih, Fl_Input_* input, const char* text)
 
 static int fltkApplyFilterEditor(Ihandle* ih, Fl_Text_Editor* editor, const char* text)
 {
-  char* xform = NULL;
+  char* xform = nullptr;
   int r = fltkFilterCheckText(ih, text, &xform);
   if (r < 0) return 1;
   if (r == 0) return 0;
@@ -96,7 +96,7 @@ IUP_DRV_API int iupfltkEditCheckMask(Ihandle* ih, Fl_Input_* input, int event, c
   if (event != FL_KEYBOARD)
     return 0;
 
-  IFnis cb = (IFnis)IupGetCallback(ih, cb_name);
+  auto cb = reinterpret_cast<IFnis>(IupGetCallback(ih, cb_name));
   if (!cb && !mask && nc == 0)
     return 0;
 
@@ -108,7 +108,7 @@ IUP_DRV_API int iupfltkEditCheckMask(Ihandle* ih, Fl_Input_* input, int event, c
     if (start > end) { int t = start; start = end; end = t; }
     if (start == end && ((key == FL_BackSpace && start == 0) || (key == FL_Delete && start >= input->size())))
       return 0;
-    return iupEditCallActionCb(ih, cb, NULL, start, end, mask, nc, key == FL_Delete ? 1 : -1, 1) == 0;
+    return iupEditCallActionCb(ih, cb, nullptr, start, end, mask, nc, key == FL_Delete ? 1 : -1, 1) == 0;
   }
 
   const char* text = Fl::event_text();
@@ -123,7 +123,7 @@ IUP_DRV_API int iupfltkEditCheckMask(Ihandle* ih, Fl_Input_* input, int event, c
 
   if (ret != -1)
   {
-    char replacement[2] = { (char)ret, '\0' };
+    char replacement[2] = { static_cast<char>(ret), '\0' };
     input->replace(pos, pos, replacement);
     return 1;
   }
@@ -132,7 +132,7 @@ IUP_DRV_API int iupfltkEditCheckMask(Ihandle* ih, Fl_Input_* input, int event, c
 }
 
 
-static int fltkTextHistoryKey(void)
+static int fltkTextHistoryKey()
 {
   int key = Fl::event_key();
   int mods = Fl::event_state() & (FL_SHIFT|FL_CTRL|FL_ALT|FL_META);
@@ -148,7 +148,7 @@ static int fltkTextHistoryKey(void)
 
 static void fltkTextArbitrateHistory(Ihandle* ih, Fl_Input_* input, Fl_Text_Buffer* buf, int redo, char* before)
 {
-  IFnis cb = (IFnis)IupGetCallback(ih, "ACTION");
+  auto cb = reinterpret_cast<IFnis>(IupGetCallback(ih, "ACTION"));
   char* value = iupStrDup(IupGetAttribute(ih, "VALUE"));
 
   if (value && !iupStrEqual(before, value) && (cb || ih->data->mask || ih->data->nc) &&
@@ -172,15 +172,15 @@ static void fltkTextArbitrateHistory(Ihandle* ih, Fl_Input_* input, Fl_Text_Buff
 
 static void fltkTextCallCaretCb(Ihandle* ih)
 {
-  IFniii cb = (IFniii)IupGetCallback(ih, "CARET_CB");
+  auto cb = reinterpret_cast<IFniii>(IupGetCallback(ih, "CARET_CB"));
   if (!cb) return;
 
   int lin = 1, col = 1, pos = 0;
 
   if (ih->data->is_multiline)
   {
-    Fl_Text_Editor* editor = (Fl_Text_Editor*)ih->handle;
-    Fl_Text_Buffer* buf = editor ? editor->buffer() : NULL;
+    auto* editor = reinterpret_cast<Fl_Text_Editor*>(ih->handle);
+    Fl_Text_Buffer* buf = editor ? editor->buffer() : nullptr;
     if (!editor || !buf) return;
 
     pos = editor->insert_position();
@@ -189,7 +189,7 @@ static void fltkTextCallCaretCb(Ihandle* ih)
   }
   else
   {
-    Fl_Input* input = (Fl_Input*)ih->handle;
+    auto* input = reinterpret_cast<Fl_Input*>(ih->handle);
     if (!input) return;
 
     pos = input->insert_position();
@@ -220,7 +220,7 @@ static void fltkInputOverwriteHook(Ihandle* ih, Fl_Input_* input)
   if (Fl::event() != FL_KEYBOARD)
     return;
   const char* text = Fl::event_text();
-  if (!text || !text[0] || (unsigned char)text[0] < 32 || text[0] == '\n')
+  if (!text || !text[0] || static_cast<unsigned char>(text[0]) < 32 || text[0] == '\n')
     return;
   if (strlen(text) != 1)
     return;
@@ -233,7 +233,7 @@ static void fltkInputOverwriteHook(Ihandle* ih, Fl_Input_* input)
   const char* current = input->value();
   if (current && current[pos] == '\n')
     return;
-  input->replace(pos, pos + 1, NULL);
+  input->replace(pos, pos + 1, nullptr);
 }
 
 static void fltkEditorOverwriteHook(Ihandle* ih, Fl_Text_Editor* editor)
@@ -243,7 +243,7 @@ static void fltkEditorOverwriteHook(Ihandle* ih, Fl_Text_Editor* editor)
   if (Fl::event() != FL_KEYBOARD)
     return;
   const char* text = Fl::event_text();
-  if (!text || !text[0] || (unsigned char)text[0] < 32 || text[0] == '\n')
+  if (!text || !text[0] || static_cast<unsigned char>(text[0]) < 32 || text[0] == '\n')
     return;
   if (strlen(text) != 1)
     return;
@@ -288,7 +288,7 @@ static void fltkInputDrawCue(Fl_Input* input, Ihandle* ih)
   fl_draw(cue,
           input->x() + dx + 2, input->y() + dy,
           input->w() - dw - 2, input->h() - dh,
-          (Fl_Align)((input->align() & FL_ALIGN_CENTER ? FL_ALIGN_CENTER : FL_ALIGN_LEFT) | FL_ALIGN_INSIDE | FL_ALIGN_CLIP));
+          (input->align() & FL_ALIGN_CENTER ? FL_ALIGN_CENTER : FL_ALIGN_LEFT) | FL_ALIGN_INSIDE | FL_ALIGN_CLIP);
   fl_pop_clip();
 }
 
@@ -336,7 +336,7 @@ public:
           {
             char* before = iupStrDup(IupGetAttribute(iup_handle, "VALUE"));
             int ret = Fl_Input::handle(event);
-            fltkTextArbitrateHistory(iup_handle, this, NULL, history == 2, before);
+            fltkTextArbitrateHistory(iup_handle, this, nullptr, history == 2, before);
             fltkTextCallCaretCb(iup_handle);
             return ret;
           }
@@ -412,7 +412,7 @@ public:
 
   ~IupFltkTextEditor() override
   {
-    buffer(NULL);
+    buffer(nullptr);
     delete text_buffer;
   }
 
@@ -455,10 +455,10 @@ public:
           const char* url = iupfltkFormatGetLinkAtPos(iup_handle, pos);
           if (url)
           {
-            IFns cb = (IFns)IupGetCallback(iup_handle, "LINK_CB");
+            IFns cb = reinterpret_cast<IFns>(IupGetCallback(iup_handle, "LINK_CB"));
             if (cb)
             {
-              int ret = cb(iup_handle, (char*)url);
+              int ret = cb(iup_handle, const_cast<char*>(url));
               if (ret == IUP_CLOSE)
                 IupExitLoop();
               else if (ret == IUP_DEFAULT)
@@ -482,14 +482,14 @@ public:
           int key = Fl::event_key();
           if ((key == FL_BackSpace || key == FL_Delete) && !(Fl::event_state() & (FL_CTRL | FL_ALT | FL_META)) && !iup_handle->data->disable_callbacks)
           {
-            IFnis cb = (IFnis)IupGetCallback(iup_handle, "ACTION");
+            auto cb = reinterpret_cast<IFnis>(IupGetCallback(iup_handle, "ACTION"));
             if (cb || iup_handle->data->mask || iup_handle->data->nc > 0)
             {
               int start, end;
               if (!text_buffer->selection_position(&start, &end))
                 start = end = insert_position();
               if (!(start == end && ((key == FL_BackSpace && start == 0) || (key == FL_Delete && start >= text_buffer->length()))) &&
-                  iupEditCallActionCb(iup_handle, cb, NULL, start, end, iup_handle->data->mask, iup_handle->data->nc, key == FL_Delete ? 1 : -1, 1) == 0)
+                  iupEditCallActionCb(iup_handle, cb, nullptr, start, end, iup_handle->data->mask, iup_handle->data->nc, key == FL_Delete ? 1 : -1, 1) == 0)
                 return 1;
             }
           }
@@ -498,7 +498,7 @@ public:
           const char* text = Fl::event_text();
           if (text && text[0] && text[0] >= 32 && !iup_handle->data->disable_callbacks)
           {
-            IFnis cb = (IFnis)IupGetCallback(iup_handle, "ACTION");
+            auto cb = reinterpret_cast<IFnis>(IupGetCallback(iup_handle, "ACTION"));
             if (cb || iup_handle->data->mask || iup_handle->data->nc > 0)
             {
               int pos = insert_position();
@@ -509,7 +509,7 @@ public:
               if (ret != -1)
               {
                 iup_handle->data->disable_callbacks = 1;
-                char replacement[2] = { (char)ret, '\0' };
+                char replacement[2] = { static_cast<char>(ret), '\0' };
                 text_buffer->insert(pos, replacement);
                 insert_position(pos + 1);
                 iup_handle->data->disable_callbacks = 0;
@@ -524,7 +524,7 @@ public:
           {
             char* before = iupStrDup(IupGetAttribute(iup_handle, "VALUE"));
             int ret = Fl_Text_Editor::handle(event);
-            fltkTextArbitrateHistory(iup_handle, NULL, text_buffer, history == 2, before);
+            fltkTextArbitrateHistory(iup_handle, nullptr, text_buffer, history == 2, before);
             fltkTextCallCaretCb(iup_handle);
             return ret;
           }
@@ -549,9 +549,9 @@ public:
 
 static void fltkTextInputCallback(Fl_Widget* w, void* data)
 {
-  Ihandle* ih = (Ihandle*)data;
+  auto* ih = static_cast<Ihandle*>(data);
   if (ih->data->disable_callbacks) return;
-  IFn cb = (IFn)IupGetCallback(ih, "VALUECHANGED_CB");
+  IFn cb = static_cast<IFn>(IupGetCallback(ih, "VALUECHANGED_CB"));
   if (cb)
   {
     if (cb(ih) == IUP_CLOSE)
@@ -561,7 +561,7 @@ static void fltkTextInputCallback(Fl_Widget* w, void* data)
 
 static void fltkTextEditorModifyCallback(int pos, int nInserted, int nDeleted, int nRestyled, const char* deletedText, void* data)
 {
-  Ihandle* ih = (Ihandle*)data;
+  auto* ih = static_cast<Ihandle*>(data);
   (void)pos;
   (void)nRestyled;
   (void)deletedText;
@@ -570,7 +570,7 @@ static void fltkTextEditorModifyCallback(int pos, int nInserted, int nDeleted, i
     return;
   if (ih->data->disable_callbacks) return;
 
-  IFn cb = (IFn)IupGetCallback(ih, "VALUECHANGED_CB");
+  IFn cb = static_cast<IFn>(IupGetCallback(ih, "VALUECHANGED_CB"));
   if (cb)
   {
     if (cb(ih) == IUP_CLOSE)
@@ -606,14 +606,14 @@ public:
     }
     if (noauto && (event == FL_PUSH || event == FL_KEYBOARD))
     {
-      Fl_Input* inp = (Fl_Input*)child(0);
+      auto* inp = static_cast<Fl_Input*>(child(0));
       if (inp && inp->value())
         iupStrCopyN(saved_text, sizeof(saved_text), inp->value());
     }
     int ret = Fl_Spinner::handle(event);
     if (noauto && (event == FL_PUSH || event == FL_KEYBOARD))
     {
-      Fl_Input* inp = (Fl_Input*)child(0);
+      auto* inp = static_cast<Fl_Input*>(child(0));
       if (inp)
         inp->value(saved_text);
     }
@@ -623,11 +623,11 @@ public:
 
 static void fltkSpinCallback(Fl_Widget* w, void* data)
 {
-  Ihandle* ih = (Ihandle*)data;
-  IupFltkSpinner* spinner = (IupFltkSpinner*)w;
-  int pos = (int)spinner->value();
+  auto* ih = static_cast<Ihandle*>(data);
+  auto* spinner = static_cast<IupFltkSpinner*>(w);
+  int pos = static_cast<int>(spinner->value());
 
-  IFni cb = (IFni)IupGetCallback(ih, "SPIN_CB");
+  IFni cb = reinterpret_cast<IFni>(IupGetCallback(ih, "SPIN_CB"));
   if (cb)
   {
     int ret = cb(ih, pos);
@@ -635,7 +635,7 @@ static void fltkSpinCallback(Fl_Widget* w, void* data)
       IupExitLoop();
   }
 
-  IFn vcb = (IFn)IupGetCallback(ih, "VALUECHANGED_CB");
+  IFn vcb = static_cast<IFn>(IupGetCallback(ih, "VALUECHANGED_CB"));
   if (vcb)
   {
     if (vcb(ih) == IUP_CLOSE)
@@ -646,25 +646,25 @@ static void fltkSpinCallback(Fl_Widget* w, void* data)
 static Fl_Input* fltkTextGetInputWidget(Ihandle* ih)
 {
   if (ih->data->is_multiline)
-    return NULL;
+    return nullptr;
 
   if (iupAttribGetBoolean(ih, "SPIN"))
   {
-    Fl_Spinner* spinner = (Fl_Spinner*)ih->handle;
-    return (Fl_Input*)spinner->child(0);
+    auto* spinner = reinterpret_cast<Fl_Spinner*>(ih->handle);
+    return static_cast<Fl_Input*>(spinner->child(0));
   }
 
-  return (Fl_Input*)ih->handle;
+  return reinterpret_cast<Fl_Input*>(ih->handle);
 }
 
 static Fl_Text_Buffer* fltkTextGetBuffer(Ihandle* ih)
 {
   if (ih->data->is_multiline)
   {
-    IupFltkTextEditor* editor = (IupFltkTextEditor*)ih->handle;
+    auto* editor = reinterpret_cast<IupFltkTextEditor*>(ih->handle);
     return editor->text_buffer;
   }
-  return NULL;
+  return nullptr;
 }
 
 static int fltkTextSetValueAttrib(Ihandle* ih, const char* value)
@@ -703,27 +703,27 @@ static char* fltkTextGetValueAttrib(Ihandle* ih)
     if (input)
       return iupStrReturnStr(input->value());
   }
-  return NULL;
+  return nullptr;
 }
 
 static char* fltkTextGetScrollVisibleAttrib(Ihandle* ih)
 {
-  if (!ih->data->is_multiline) return (char*)"NO";
-  IupFltkTextEditor* editor = (IupFltkTextEditor*)ih->handle;
-  if (!editor) return (char*)"NO";
+  if (!ih->data->is_multiline) return const_cast<char*>("NO");
+  auto* editor = reinterpret_cast<IupFltkTextEditor*>(ih->handle);
+  if (!editor) return const_cast<char*>("NO");
   bool sb_h = editor->hScrollVisible();
   bool sb_v = editor->vScrollVisible();
-  if (sb_h && sb_v) return (char*)"YES";
-  if (sb_h) return (char*)"HORIZONTAL";
-  if (sb_v) return (char*)"VERTICAL";
-  return (char*)"NO";
+  if (sb_h && sb_v) return const_cast<char*>("YES");
+  if (sb_h) return const_cast<char*>("HORIZONTAL");
+  if (sb_v) return const_cast<char*>("VERTICAL");
+  return const_cast<char*>("NO");
 }
 
 static int fltkTextSetReadOnlyAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->is_multiline)
   {
-    IupFltkTextEditor* editor = (IupFltkTextEditor*)ih->handle;
+    auto* editor = reinterpret_cast<IupFltkTextEditor*>(ih->handle);
     if (editor)
       editor->is_readonly = iupStrBoolean(value);
   }
@@ -740,7 +740,7 @@ static char* fltkTextGetReadOnlyAttrib(Ihandle* ih)
 {
   if (ih->data->is_multiline)
   {
-    IupFltkTextEditor* editor = (IupFltkTextEditor*)ih->handle;
+    auto* editor = reinterpret_cast<IupFltkTextEditor*>(ih->handle);
     if (editor)
       return iupStrReturnBoolean(editor->is_readonly);
   }
@@ -750,7 +750,7 @@ static char* fltkTextGetReadOnlyAttrib(Ihandle* ih)
     if (input)
       return iupStrReturnBoolean(input->readonly());
   }
-  return NULL;
+  return nullptr;
 }
 
 static int fltkTextSetCaretAttrib(Ihandle* ih, const char* value)
@@ -762,7 +762,7 @@ static int fltkTextSetCaretAttrib(Ihandle* ih, const char* value)
   {
     int lin = 1, col = 1;
     Fl_Text_Buffer* buf = fltkTextGetBuffer(ih);
-    IupFltkTextEditor* editor = (IupFltkTextEditor*)ih->handle;
+    auto* editor = reinterpret_cast<IupFltkTextEditor*>(ih->handle);
     iupStrToIntInt(value, &lin, &col, ',');
     if (lin < 1) lin = 1;
     if (col < 1) col = 1;
@@ -794,7 +794,7 @@ static char* fltkTextGetCaretAttrib(Ihandle* ih)
   if (ih->data->is_multiline)
   {
     Fl_Text_Buffer* buf = fltkTextGetBuffer(ih);
-    IupFltkTextEditor* editor = (IupFltkTextEditor*)ih->handle;
+    auto* editor = reinterpret_cast<IupFltkTextEditor*>(ih->handle);
     if (buf && editor)
     {
       int pos = editor->insert_position();
@@ -813,7 +813,7 @@ static char* fltkTextGetCaretAttrib(Ihandle* ih)
       return iupStrReturnInt(pos + 1);
     }
   }
-  return NULL;
+  return nullptr;
 }
 
 static int fltkTextSetSelectionAttrib(Ihandle* ih, const char* value)
@@ -824,7 +824,7 @@ static int fltkTextSetSelectionAttrib(Ihandle* ih, const char* value)
   if (ih->data->is_multiline)
   {
     Fl_Text_Buffer* buf = fltkTextGetBuffer(ih);
-    IupFltkTextEditor* editor = (IupFltkTextEditor*)ih->handle;
+    auto* editor = reinterpret_cast<IupFltkTextEditor*>(ih->handle);
     if (!buf || !editor)
       return 0;
 
@@ -867,7 +867,7 @@ static int fltkTextSetSelectionAttrib(Ihandle* ih, const char* value)
     {
       Fl_Input* input = fltkTextGetInputWidget(ih);
       if (input)
-        input->insert_position(0, (int)strlen(input->value()));
+        input->insert_position(0, static_cast<int>(strlen(input->value())));
       return 0;
     }
 
@@ -927,7 +927,7 @@ static char* fltkTextGetSelectionAttrib(Ihandle* ih)
       }
     }
   }
-  return NULL;
+  return nullptr;
 }
 
 static char* fltkTextGetSelectedTextAttrib(Ihandle* ih)
@@ -935,7 +935,7 @@ static char* fltkTextGetSelectedTextAttrib(Ihandle* ih)
   if (ih->data->is_multiline)
   {
     Fl_Text_Buffer* buf = fltkTextGetBuffer(ih);
-    IupFltkTextEditor* editor = (IupFltkTextEditor*)ih->handle;
+    auto* editor = reinterpret_cast<IupFltkTextEditor*>(ih->handle);
     if (buf && editor)
     {
       int start, end;
@@ -961,7 +961,7 @@ static char* fltkTextGetSelectedTextAttrib(Ihandle* ih)
         int end = mark > pos ? mark : pos;
         const char* val = input->value();
         int len = end - start;
-        char* text = (char*)malloc(len + 1);
+        char* text = static_cast<char*>(malloc(len + 1));
         memcpy(text, val + start, len);
         text[len] = 0;
         char* ret = iupStrReturnStr(text);
@@ -970,7 +970,7 @@ static char* fltkTextGetSelectedTextAttrib(Ihandle* ih)
       }
     }
   }
-  return NULL;
+  return nullptr;
 }
 
 static int fltkTextSetSelectedTextAttrib(Ihandle* ih, const char* value)
@@ -989,7 +989,7 @@ static int fltkTextSetSelectedTextAttrib(Ihandle* ih, const char* value)
       if (buf->selection_position(&start, &end))
       {
         buf->replace(start, end, value);
-        buf->select(start, start + (int)strlen(value));
+        buf->select(start, start + static_cast<int>(strlen(value)));
       }
     }
   }
@@ -1041,8 +1041,8 @@ static int fltkTextSetAppendAttrib(Ihandle* ih, const char* value)
 
   if (ih->data->is_multiline)
   {
-    IupFltkTextEditor* editor = (IupFltkTextEditor*)ih->handle;
-    Fl_Text_Buffer* buf = editor ? editor->text_buffer : NULL;
+    auto* editor = reinterpret_cast<IupFltkTextEditor*>(ih->handle);
+    Fl_Text_Buffer* buf = editor ? editor->text_buffer : nullptr;
     if (buf)
     {
       int len = buf->length();
@@ -1064,9 +1064,9 @@ static int fltkTextSetAppendAttrib(Ihandle* ih, const char* value)
     if (input)
     {
       const char* old_val = input->value();
-      int old_len = (int)strlen(old_val);
-      int new_len = (int)strlen(value);
-      char* new_val = (char*)malloc(old_len + new_len + 1);
+      int old_len = static_cast<int>(strlen(old_val));
+      int new_len = static_cast<int>(strlen(value));
+      char* new_val = static_cast<char*>(malloc(old_len + new_len + 1));
       strcpy(new_val, old_val);
       strcat(new_val, value);
       input->value(new_val);
@@ -1085,7 +1085,7 @@ static int fltkTextSetInsertAttrib(Ihandle* ih, const char* value)
 
   if (ih->data->is_multiline)
   {
-    IupFltkTextEditor* editor = (IupFltkTextEditor*)ih->handle;
+    auto* editor = reinterpret_cast<IupFltkTextEditor*>(ih->handle);
     if (editor)
       editor->insert(value);
   }
@@ -1109,7 +1109,7 @@ static int fltkTextSetBgColorAttrib(Ihandle* ih, const char* value)
   if (!iupStrToRGB(value, &r, &g, &b))
     return 0;
 
-  Fl_Widget* widget = (Fl_Widget*)ih->handle;
+  auto* widget = reinterpret_cast<Fl_Widget*>(ih->handle);
   if (widget)
     widget->color(fl_rgb_color(r, g, b));
 
@@ -1126,7 +1126,7 @@ static int fltkTextSetFgColorAttrib(Ihandle* ih, const char* value)
 
   if (ih->data->is_multiline)
   {
-    IupFltkTextEditor* editor = (IupFltkTextEditor*)ih->handle;
+    auto* editor = reinterpret_cast<IupFltkTextEditor*>(ih->handle);
     if (editor)
       editor->textcolor(color);
   }
@@ -1152,23 +1152,23 @@ static int fltkTextSetFontAttrib(Ihandle* ih, const char* value)
     {
       if (ih->data->is_multiline)
       {
-        Fl_Text_Editor* editor = (Fl_Text_Editor*)ih->handle;
-        editor->textfont((Fl_Font)fl_font);
-        editor->textsize((Fl_Fontsize)fl_size);
+        auto* editor = reinterpret_cast<Fl_Text_Editor*>(ih->handle);
+        editor->textfont(static_cast<Fl_Font>(fl_font));
+        editor->textsize(static_cast<Fl_Fontsize>(fl_size));
         editor->redraw();
       }
       else if (iupAttribGetBoolean(ih, "SPIN"))
       {
-        Fl_Spinner* spinner = (Fl_Spinner*)ih->handle;
-        spinner->textfont((Fl_Font)fl_font);
-        spinner->textsize((Fl_Fontsize)fl_size);
+        auto* spinner = reinterpret_cast<Fl_Spinner*>(ih->handle);
+        spinner->textfont(static_cast<Fl_Font>(fl_font));
+        spinner->textsize(static_cast<Fl_Fontsize>(fl_size));
         spinner->redraw();
       }
       else
       {
-        Fl_Input* input = (Fl_Input*)ih->handle;
-        input->textfont((Fl_Font)fl_font);
-        input->textsize((Fl_Fontsize)fl_size);
+        auto* input = reinterpret_cast<Fl_Input*>(ih->handle);
+        input->textfont(static_cast<Fl_Font>(fl_font));
+        input->textsize(static_cast<Fl_Fontsize>(fl_size));
         input->redraw();
       }
     }
@@ -1181,7 +1181,7 @@ static int fltkTextSetSpinMinAttrib(Ihandle* ih, const char* value)
 {
   if (iupAttribGetBoolean(ih, "SPIN"))
   {
-    Fl_Spinner* spinner = (Fl_Spinner*)ih->handle;
+    auto* spinner = reinterpret_cast<Fl_Spinner*>(ih->handle);
     int min_val = 0;
     iupStrToInt(value, &min_val);
     spinner->minimum(min_val);
@@ -1193,7 +1193,7 @@ static int fltkTextSetSpinMaxAttrib(Ihandle* ih, const char* value)
 {
   if (iupAttribGetBoolean(ih, "SPIN"))
   {
-    Fl_Spinner* spinner = (Fl_Spinner*)ih->handle;
+    auto* spinner = reinterpret_cast<Fl_Spinner*>(ih->handle);
     int max_val = 100;
     iupStrToInt(value, &max_val);
     spinner->maximum(max_val);
@@ -1205,14 +1205,14 @@ static int fltkTextSetSpinValueAttrib(Ihandle* ih, const char* value)
 {
   if (iupAttribGetBoolean(ih, "SPIN"))
   {
-    IupFltkSpinner* spinner = (IupFltkSpinner*)ih->handle;
+    auto* spinner = reinterpret_cast<IupFltkSpinner*>(ih->handle);
     int val = 0;
     iupStrToInt(value, &val);
 
     if (spinner->noauto)
     {
-      Fl_Input* input = (Fl_Input*)spinner->child(0);
-      const char* saved = input ? input->value() : NULL;
+      auto* input = static_cast<Fl_Input*>(spinner->child(0));
+      const char* saved = input ? input->value() : nullptr;
       char saved_buf[256] = "";
       if (saved)
         iupStrCopyN(saved_buf, sizeof(saved_buf), saved);
@@ -1232,17 +1232,17 @@ static char* fltkTextGetSpinValueAttrib(Ihandle* ih)
 {
   if (iupAttribGetBoolean(ih, "SPIN"))
   {
-    Fl_Spinner* spinner = (Fl_Spinner*)ih->handle;
-    return iupStrReturnInt((int)spinner->value());
+    auto* spinner = reinterpret_cast<Fl_Spinner*>(ih->handle);
+    return iupStrReturnInt(static_cast<int>(spinner->value()));
   }
-  return NULL;
+  return nullptr;
 }
 
 static int fltkTextSetSpinIncAttrib(Ihandle* ih, const char* value)
 {
   if (iupAttribGetBoolean(ih, "SPIN"))
   {
-    Fl_Spinner* spinner = (Fl_Spinner*)ih->handle;
+    auto* spinner = reinterpret_cast<Fl_Spinner*>(ih->handle);
     int inc = 1;
     iupStrToInt(value, &inc);
     spinner->step(inc);
@@ -1262,7 +1262,7 @@ static int fltkTextSetCaretPosAttrib(Ihandle* ih, const char* value)
 
   if (ih->data->is_multiline)
   {
-    IupFltkTextEditor* editor = (IupFltkTextEditor*)ih->handle;
+    auto* editor = reinterpret_cast<IupFltkTextEditor*>(ih->handle);
     if (editor)
       editor->insert_position(pos);
   }
@@ -1282,11 +1282,11 @@ static char* fltkTextGetCaretPosAttrib(Ihandle* ih)
 
   if (ih->data->is_multiline)
   {
-    IupFltkTextEditor* editor = (IupFltkTextEditor*)ih->handle;
+    auto* editor = reinterpret_cast<IupFltkTextEditor*>(ih->handle);
     if (editor)
       pos = editor->insert_position();
     else
-      return NULL;
+      return nullptr;
   }
   else
   {
@@ -1294,7 +1294,7 @@ static char* fltkTextGetCaretPosAttrib(Ihandle* ih)
     if (input)
       pos = input->insert_position();
     else
-      return NULL;
+      return nullptr;
   }
 
   return iupStrReturnInt(pos);
@@ -1333,7 +1333,7 @@ static int fltkTextSetSelectionPosAttrib(Ihandle* ih, const char* value)
     {
       Fl_Input* input = fltkTextGetInputWidget(ih);
       if (input)
-        input->insert_position(0, (int)strlen(input->value()));
+        input->insert_position(0, static_cast<int>(strlen(input->value())));
     }
     return 0;
   }
@@ -1387,7 +1387,7 @@ static char* fltkTextGetSelectionPosAttrib(Ihandle* ih)
       }
     }
   }
-  return NULL;
+  return nullptr;
 }
 
 static char* fltkTextGetCountAttrib(Ihandle* ih)
@@ -1414,12 +1414,12 @@ static char* fltkTextGetCountAttrib(Ihandle* ih)
       int count = 0;
       const char* v = input->value();
       for (; *v; v++)
-        if (((unsigned char)*v & 0xC0) != 0x80)
+        if ((static_cast<unsigned char>(*v) & 0xC0) != 0x80)
           count++;
       return iupStrReturnInt(count);
     }
   }
-  return NULL;
+  return nullptr;
 }
 
 static char* fltkTextGetLineCountAttrib(Ihandle* ih)
@@ -1443,14 +1443,14 @@ static int fltkTextSetClipboardAttrib(Ihandle* ih, const char* value)
     if (ih->data->is_multiline)
     {
       Fl_Text_Buffer* buf = fltkTextGetBuffer(ih);
-      IupFltkTextEditor* editor = (IupFltkTextEditor*)ih->handle;
+      auto* editor = reinterpret_cast<IupFltkTextEditor*>(ih->handle);
       if (buf && editor)
       {
         int start, end;
         if (buf->selection_position(&start, &end))
         {
           char* text = buf->selection_text();
-          Fl::copy(text, (int)strlen(text), 1);
+          Fl::copy(text, static_cast<int>(strlen(text)), 1);
           free(text);
         }
       }
@@ -1467,14 +1467,14 @@ static int fltkTextSetClipboardAttrib(Ihandle* ih, const char* value)
     if (ih->data->is_multiline)
     {
       Fl_Text_Buffer* buf = fltkTextGetBuffer(ih);
-      IupFltkTextEditor* editor = (IupFltkTextEditor*)ih->handle;
+      auto* editor = reinterpret_cast<IupFltkTextEditor*>(ih->handle);
       if (buf && editor)
       {
         int start, end;
         if (buf->selection_position(&start, &end))
         {
           char* text = buf->selection_text();
-          Fl::copy(text, (int)strlen(text), 1);
+          Fl::copy(text, static_cast<int>(strlen(text)), 1);
           free(text);
           buf->remove_selection();
         }
@@ -1491,7 +1491,7 @@ static int fltkTextSetClipboardAttrib(Ihandle* ih, const char* value)
   {
     if (ih->data->is_multiline)
     {
-      IupFltkTextEditor* editor = (IupFltkTextEditor*)ih->handle;
+      auto* editor = reinterpret_cast<IupFltkTextEditor*>(ih->handle);
       if (editor)
         Fl::paste(*editor, 1);
     }
@@ -1561,7 +1561,7 @@ static int fltkTextSetScrollToAttrib(Ihandle* ih, const char* value)
 
   if (ih->data->is_multiline)
   {
-    IupFltkTextEditor* editor = (IupFltkTextEditor*)ih->handle;
+    auto* editor = reinterpret_cast<IupFltkTextEditor*>(ih->handle);
     if (editor)
       editor->scroll(lin - 1, 0);
   }
@@ -1588,7 +1588,7 @@ static int fltkTextSetScrollToPosAttrib(Ihandle* ih, const char* value)
   if (ih->data->is_multiline)
   {
     Fl_Text_Buffer* buf = fltkTextGetBuffer(ih);
-    IupFltkTextEditor* editor = (IupFltkTextEditor*)ih->handle;
+    auto* editor = reinterpret_cast<IupFltkTextEditor*>(ih->handle);
     if (buf && editor)
     {
       int lin = buf->count_lines(0, pos);
@@ -1610,7 +1610,7 @@ static char* fltkTextGetLineValueAttrib(Ihandle* ih)
   if (ih->data->is_multiline)
   {
     Fl_Text_Buffer* buf = fltkTextGetBuffer(ih);
-    IupFltkTextEditor* editor = (IupFltkTextEditor*)ih->handle;
+    auto* editor = reinterpret_cast<IupFltkTextEditor*>(ih->handle);
     if (buf && editor)
     {
       int pos = editor->insert_position();
@@ -1625,7 +1625,7 @@ static char* fltkTextGetLineValueAttrib(Ihandle* ih)
   else
     return fltkTextGetValueAttrib(ih);
 
-  return NULL;
+  return nullptr;
 }
 
 static int fltkTextSetTabSizeAttrib(Ihandle* ih, const char* value)
@@ -1635,7 +1635,7 @@ static int fltkTextSetTabSizeAttrib(Ihandle* ih, const char* value)
     int tabsize = 8;
     iupStrToInt(value, &tabsize);
 
-    IupFltkTextEditor* editor = (IupFltkTextEditor*)ih->handle;
+    auto* editor = reinterpret_cast<IupFltkTextEditor*>(ih->handle);
     if (editor && editor->text_buffer)
       editor->text_buffer->tab_distance(tabsize);
   }
@@ -1659,7 +1659,7 @@ extern "C" IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int* w, int* h)
 
   if (ih->handle)
   {
-    Fl_Widget* widget = (Fl_Widget*)ih->handle;
+    auto* widget = reinterpret_cast<Fl_Widget*>(ih->handle);
     box = widget->box();
   }
 
@@ -1720,8 +1720,8 @@ static int fltkTextMapMethod(Ihandle* ih)
 
   if (ih->data->is_multiline)
   {
-    IupFltkTextEditor* editor = new IupFltkTextEditor(0, 0, 10, 10, ih);
-    ih->handle = (InativeHandle*)editor;
+    auto* editor = new IupFltkTextEditor(0, 0, 10, 10, ih);
+    ih->handle = reinterpret_cast<InativeHandle*>(editor);
 
     if (iupAttribGetBoolean(ih, "WORDWRAP") || !(ih->data->sb & IUP_SB_HORIZ))
       editor->wrap_mode(Fl_Text_Display::WRAP_AT_BOUNDS, 0);
@@ -1733,7 +1733,7 @@ static int fltkTextMapMethod(Ihandle* ih)
     if (value)
       editor->text_buffer->text(value);
 
-    editor->text_buffer->add_modify_callback(fltkTextEditorModifyCallback, (void*)ih);
+    editor->text_buffer->add_modify_callback(fltkTextEditorModifyCallback, reinterpret_cast<void*>(ih));
 
     iupfltkAddToParent(ih);
 
@@ -1750,8 +1750,8 @@ static int fltkTextMapMethod(Ihandle* ih)
   }
   else if (iupAttribGetBoolean(ih, "SPIN"))
   {
-    IupFltkSpinner* spinner = new IupFltkSpinner(0, 0, 10, 10, ih);
-    ih->handle = (InativeHandle*)spinner;
+    auto* spinner = new IupFltkSpinner(0, 0, 10, 10, ih);
+    ih->handle = reinterpret_cast<InativeHandle*>(spinner);
 
     spinner->minimum(iupAttribGetInt(ih, "SPINMIN"));
     spinner->maximum(iupAttribGetInt(ih, "SPINMAX"));
@@ -1763,12 +1763,12 @@ static int fltkTextMapMethod(Ihandle* ih)
 
     if (!has_border)
     {
-      Fl_Input* inp = (Fl_Input*)spinner->child(0);
+      auto* inp = static_cast<Fl_Input*>(spinner->child(0));
       if (inp) inp->box(FL_FLAT_BOX);
       spinner->box(FL_FLAT_BOX);
     }
 
-    spinner->callback(fltkSpinCallback, (void*)ih);
+    spinner->callback(fltkSpinCallback, reinterpret_cast<void*>(ih));
 
     iupfltkAddToParent(ih);
 
@@ -1777,8 +1777,8 @@ static int fltkTextMapMethod(Ihandle* ih)
   }
   else if (iupAttribGetBoolean(ih, "PASSWORD"))
   {
-    IupFltkSecretInput* input = new IupFltkSecretInput(0, 0, 10, 10, ih);
-    ih->handle = (InativeHandle*)input;
+    auto* input = new IupFltkSecretInput(0, 0, 10, 10, ih);
+    ih->handle = reinterpret_cast<InativeHandle*>(input);
 
     if (!has_border)
       input->box(FL_FLAT_BOX);
@@ -1788,7 +1788,7 @@ static int fltkTextMapMethod(Ihandle* ih)
       input->value(value);
 
     input->when(FL_WHEN_CHANGED);
-    input->callback(fltkTextInputCallback, (void*)ih);
+    input->callback(fltkTextInputCallback, reinterpret_cast<void*>(ih));
 
     iupfltkAddToParent(ih);
 
@@ -1797,8 +1797,8 @@ static int fltkTextMapMethod(Ihandle* ih)
   }
   else
   {
-    IupFltkInput* input = new IupFltkInput(0, 0, 10, 10, ih);
-    ih->handle = (InativeHandle*)input;
+    auto* input = new IupFltkInput(0, 0, 10, 10, ih);
+    ih->handle = reinterpret_cast<InativeHandle*>(input);
 
     if (!has_border)
       input->box(FL_FLAT_BOX);
@@ -1808,7 +1808,7 @@ static int fltkTextMapMethod(Ihandle* ih)
       input->value(value);
 
     input->when(FL_WHEN_CHANGED);
-    input->callback(fltkTextInputCallback, (void*)ih);
+    input->callback(fltkTextInputCallback, reinterpret_cast<void*>(ih));
 
     if (ih->data->nc > 0)
       input->maximum_size(ih->data->nc);
@@ -1840,11 +1840,11 @@ static void fltkTextUnMapMethod(Ihandle* ih)
 {
   iupfltkFormatCleanup(ih);
 
-  Fl_Widget* widget = (Fl_Widget*)ih->handle;
+  auto* widget = reinterpret_cast<Fl_Widget*>(ih->handle);
   if (widget)
   {
     delete widget;
-    ih->handle = NULL;
+    ih->handle = nullptr;
   }
 }
 
@@ -1854,42 +1854,42 @@ extern "C" IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
   ic->UnMap = fltkTextUnMapMethod;
 
   /* Visual */
-  iupClassRegisterAttribute(ic, "FONT", NULL, fltkTextSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, fltkTextSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTBGCOLOR", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, fltkTextSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTFGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "FONT", nullptr, fltkTextSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
+  iupClassRegisterAttribute(ic, "BGCOLOR", nullptr, fltkTextSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "FGCOLOR", nullptr, fltkTextSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTFGCOLOR", IUPAF_DEFAULT);
 
   /* IupText only */
   iupClassRegisterAttribute(ic, "PADDING", iupTextGetPaddingAttrib, fltkTextSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
-  iupClassRegisterAttribute(ic, "VALUE", fltkTextGetValueAttrib, fltkTextSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "LINEVALUE", fltkTextGetLineValueAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SELECTEDTEXT", fltkTextGetSelectedTextAttrib, fltkTextSetSelectedTextAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SELECTION", fltkTextGetSelectionAttrib, fltkTextSetSelectionAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SELECTIONPOS", fltkTextGetSelectionPosAttrib, fltkTextSetSelectionPosAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "CARET", fltkTextGetCaretAttrib, fltkTextSetCaretAttrib, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "VALUE", fltkTextGetValueAttrib, fltkTextSetValueAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "LINEVALUE", fltkTextGetLineValueAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTEDTEXT", fltkTextGetSelectedTextAttrib, fltkTextSetSelectedTextAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTION", fltkTextGetSelectionAttrib, fltkTextSetSelectionAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTIONPOS", fltkTextGetSelectionPosAttrib, fltkTextSetSelectionPosAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CARET", fltkTextGetCaretAttrib, fltkTextSetCaretAttrib, nullptr, nullptr, IUPAF_NO_SAVE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CARETPOS", fltkTextGetCaretPosAttrib, fltkTextSetCaretPosAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_SAVE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "READONLY", fltkTextGetReadOnlyAttrib, fltkTextSetReadOnlyAttrib, NULL, NULL, IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "SCROLLVISIBLE", fltkTextGetScrollVisibleAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "NC", iupTextGetNCAttrib, fltkTextSetNCAttrib, NULL, NULL, IUPAF_NOT_MAPPED);
-  iupClassRegisterAttribute(ic, "CLIPBOARD", NULL, fltkTextSetClipboardAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SCROLLTO", NULL, fltkTextSetScrollToAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SCROLLTOPOS", NULL, fltkTextSetScrollToPosAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "APPEND", NULL, fltkTextSetAppendAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "INSERT", NULL, fltkTextSetInsertAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "ALIGNMENT", NULL, NULL, IUPAF_SAMEASSYSTEM, "ALEFT", IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "COUNT", fltkTextGetCountAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "LINECOUNT", fltkTextGetLineCountAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "FORMATTING", iupTextGetFormattingAttrib, iupTextSetFormattingAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TABSARRAY", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "ADDFORMATTAG", NULL, iupTextSetAddFormatTagAttrib, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "ADDFORMATTAG_HANDLE", NULL, iupTextSetAddFormatTagHandleAttrib, NULL, NULL, IUPAF_IHANDLE | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "REMOVEFORMATTING", NULL, iupfltkFormatSetRemoveFormattingAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "OVERWRITE", fltkTextGetOverwriteAttrib, fltkTextSetOverwriteAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TABSIZE", NULL, fltkTextSetTabSizeAttrib, IUPAF_SAMEASSYSTEM, "8", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "CUEBANNER", NULL, fltkTextSetCueBannerAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "FILTER", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "READONLY", fltkTextGetReadOnlyAttrib, fltkTextSetReadOnlyAttrib, nullptr, nullptr, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "SCROLLVISIBLE", fltkTextGetScrollVisibleAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "NC", iupTextGetNCAttrib, fltkTextSetNCAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED);
+  iupClassRegisterAttribute(ic, "CLIPBOARD", nullptr, fltkTextSetClipboardAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SCROLLTO", nullptr, fltkTextSetScrollToAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SCROLLTOPOS", nullptr, fltkTextSetScrollToPosAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "APPEND", nullptr, fltkTextSetAppendAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "INSERT", nullptr, fltkTextSetInsertAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ALIGNMENT", nullptr, nullptr, IUPAF_SAMEASSYSTEM, "ALEFT", IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "COUNT", fltkTextGetCountAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "LINECOUNT", fltkTextGetLineCountAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FORMATTING", iupTextGetFormattingAttrib, iupTextSetFormattingAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TABSARRAY", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ADDFORMATTAG", nullptr, iupTextSetAddFormatTagAttrib, nullptr, nullptr, IUPAF_IHANDLENAME | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ADDFORMATTAG_HANDLE", nullptr, iupTextSetAddFormatTagHandleAttrib, nullptr, nullptr, IUPAF_IHANDLE | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "REMOVEFORMATTING", nullptr, iupfltkFormatSetRemoveFormattingAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "OVERWRITE", fltkTextGetOverwriteAttrib, fltkTextSetOverwriteAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TABSIZE", nullptr, fltkTextSetTabSizeAttrib, IUPAF_SAMEASSYSTEM, "8", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "CUEBANNER", nullptr, fltkTextSetCueBannerAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FILTER", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "SPINMIN", NULL, fltkTextSetSpinMinAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SPINMAX", NULL, fltkTextSetSpinMaxAttrib, IUPAF_SAMEASSYSTEM, "100", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SPINMIN", nullptr, fltkTextSetSpinMinAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SPINMAX", nullptr, fltkTextSetSpinMaxAttrib, IUPAF_SAMEASSYSTEM, "100", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SPINVALUE", fltkTextGetSpinValueAttrib, fltkTextSetSpinValueAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SPININC", NULL, fltkTextSetSpinIncAttrib, IUPAF_SAMEASSYSTEM, "1", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SPININC", nullptr, fltkTextSetSpinIncAttrib, IUPAF_SAMEASSYSTEM, "1", IUPAF_NO_INHERIT);
 }

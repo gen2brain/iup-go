@@ -46,7 +46,7 @@ public:
     int by = Fl::box_dy(FL_DOWN_BOX);
     int bw = w() - Fl::box_dw(FL_DOWN_BOX);
     int bh = h() - Fl::box_dh(FL_DOWN_BOX);
-    int fh = (int)(frac * bh + 0.5);
+    int fh = static_cast<int>(frac * bh + 0.5);
 
     if (fh > 0)
     {
@@ -63,14 +63,14 @@ typedef struct _IupFltkMarquee {
 
 static void fltkProgressBarMarqueeTimeout(void* data)
 {
-  Ihandle* ih = (Ihandle*)data;
+  auto* ih = static_cast<Ihandle*>(data);
   if (!ih || !iupObjectCheck(ih))
     return;
 
   if (!ih->handle)
     return;
 
-  IupFltkMarquee* mq = (IupFltkMarquee*)iupAttribGet(ih, "_IUP_FLTK_MARQUEE");
+  auto* mq = reinterpret_cast<IupFltkMarquee*>(iupAttribGet(ih, "_IUP_FLTK_MARQUEE"));
   if (!mq)
     return;
 
@@ -88,13 +88,13 @@ static void fltkProgressBarMarqueeTimeout(void* data)
 
   if (iupStrEqualNoCase(iupAttribGetStr(ih, "ORIENTATION"), "VERTICAL"))
   {
-    IupFltkVertProgress* vp = (IupFltkVertProgress*)ih->handle;
+    auto* vp = reinterpret_cast<IupFltkVertProgress*>(ih->handle);
     vp->value(mq->pos);
   }
   else
   {
-    Fl_Progress* pbar = (Fl_Progress*)ih->handle;
-    pbar->value((float)mq->pos);
+    auto* pbar = reinterpret_cast<Fl_Progress*>(ih->handle);
+    pbar->value(static_cast<float>(mq->pos));
   }
 
   Fl::repeat_timeout(0.05, fltkProgressBarMarqueeTimeout, data);
@@ -129,16 +129,16 @@ static int fltkProgressBarSetValueAttrib(Ihandle* ih, const char* value)
   if (ih->handle)
   {
     double range = ih->data->vmax - ih->data->vmin;
-    float fraction = (range != 0) ? (float)((ih->data->value - ih->data->vmin) / range) : 0;
+    float fraction = (range != 0) ? static_cast<float>((ih->data->value - ih->data->vmin) / range) : 0;
 
     if (iupStrEqualNoCase(iupAttribGetStr(ih, "ORIENTATION"), "VERTICAL"))
     {
-      IupFltkVertProgress* vp = (IupFltkVertProgress*)ih->handle;
+      auto* vp = reinterpret_cast<IupFltkVertProgress*>(ih->handle);
       vp->value(fraction * 100.0);
     }
     else
     {
-      Fl_Progress* pbar = (Fl_Progress*)ih->handle;
+      auto* pbar = reinterpret_cast<Fl_Progress*>(ih->handle);
       pbar->value(fraction * 100.0f);
     }
   }
@@ -153,30 +153,30 @@ static int fltkProgressBarSetMarqueeAttrib(Ihandle* ih, const char* value)
 
   if (iupStrBoolean(value))
   {
-    IupFltkMarquee* mq = (IupFltkMarquee*)iupAttribGet(ih, "_IUP_FLTK_MARQUEE");
+    auto* mq = reinterpret_cast<IupFltkMarquee*>(iupAttribGet(ih, "_IUP_FLTK_MARQUEE"));
     if (!mq)
     {
-      mq = (IupFltkMarquee*)malloc(sizeof(IupFltkMarquee));
-      iupAttribSet(ih, "_IUP_FLTK_MARQUEE", (char*)mq);
+      mq = static_cast<IupFltkMarquee*>(malloc(sizeof(IupFltkMarquee)));
+      iupAttribSet(ih, "_IUP_FLTK_MARQUEE", reinterpret_cast<char*>(mq));
     }
     mq->pos = 0.0;
     mq->dir = 1;
-    Fl::add_timeout(0.05, fltkProgressBarMarqueeTimeout, (void*)ih);
+    Fl::add_timeout(0.05, fltkProgressBarMarqueeTimeout, reinterpret_cast<void*>(ih));
   }
   else
   {
-    Fl::remove_timeout(fltkProgressBarMarqueeTimeout, (void*)ih);
+    Fl::remove_timeout(fltkProgressBarMarqueeTimeout, reinterpret_cast<void*>(ih));
 
     if (ih->handle)
     {
       if (iupStrEqualNoCase(iupAttribGetStr(ih, "ORIENTATION"), "VERTICAL"))
       {
-        IupFltkVertProgress* vp = (IupFltkVertProgress*)ih->handle;
+        auto* vp = reinterpret_cast<IupFltkVertProgress*>(ih->handle);
         vp->value(0);
       }
       else
       {
-        Fl_Progress* pbar = (Fl_Progress*)ih->handle;
+        auto* pbar = reinterpret_cast<Fl_Progress*>(ih->handle);
         pbar->value(0);
       }
     }
@@ -191,7 +191,7 @@ static int fltkProgressBarSetBgColorAttrib(Ihandle* ih, const char* value)
   if (!iupStrToRGB(value, &r, &g, &b))
     return 0;
 
-  Fl_Widget* widget = (Fl_Widget*)ih->handle;
+  auto* widget = reinterpret_cast<Fl_Widget*>(ih->handle);
   if (widget)
     widget->color(fl_rgb_color(r, g, b));
 
@@ -204,7 +204,7 @@ static int fltkProgressBarSetFgColorAttrib(Ihandle* ih, const char* value)
   if (!iupStrToRGB(value, &r, &g, &b))
     return 0;
 
-  Fl_Widget* widget = (Fl_Widget*)ih->handle;
+  auto* widget = reinterpret_cast<Fl_Widget*>(ih->handle);
   if (widget)
     widget->selection_color(fl_rgb_color(r, g, b));
 
@@ -222,14 +222,14 @@ static int fltkProgressBarMapMethod(Ihandle* ih)
       ih->userwidth = tmp;
     }
 
-    IupFltkVertProgress* pbar = new IupFltkVertProgress(0, 0, 20, 100);
-    ih->handle = (InativeHandle*)pbar;
+    auto* pbar = new IupFltkVertProgress(0, 0, 20, 100);
+    ih->handle = reinterpret_cast<InativeHandle*>(pbar);
     pbar->selection_color(FL_SELECTION_COLOR);
   }
   else
   {
-    Fl_Progress* pbar = new Fl_Progress(0, 0, 100, 20);
-    ih->handle = (InativeHandle*)pbar;
+    auto* pbar = new Fl_Progress(0, 0, 100, 20);
+    ih->handle = reinterpret_cast<InativeHandle*>(pbar);
     pbar->minimum(0);
     pbar->maximum(100);
     pbar->value(0);
@@ -246,20 +246,20 @@ static int fltkProgressBarMapMethod(Ihandle* ih)
 
 static void fltkProgressBarUnMapMethod(Ihandle* ih)
 {
-  Fl::remove_timeout(fltkProgressBarMarqueeTimeout, (void*)ih);
+  Fl::remove_timeout(fltkProgressBarMarqueeTimeout, reinterpret_cast<void*>(ih));
 
-  IupFltkMarquee* mq = (IupFltkMarquee*)iupAttribGet(ih, "_IUP_FLTK_MARQUEE");
+  auto* mq = reinterpret_cast<IupFltkMarquee*>(iupAttribGet(ih, "_IUP_FLTK_MARQUEE"));
   if (mq)
   {
     free(mq);
-    iupAttribSet(ih, "_IUP_FLTK_MARQUEE", NULL);
+    iupAttribSet(ih, "_IUP_FLTK_MARQUEE", nullptr);
   }
 
-  Fl_Widget* widget = (Fl_Widget*)ih->handle;
+  auto* widget = reinterpret_cast<Fl_Widget*>(ih->handle);
   if (widget)
   {
     delete widget;
-    ih->handle = NULL;
+    ih->handle = nullptr;
   }
 }
 
@@ -268,11 +268,11 @@ extern "C" IUP_SDK_API void iupdrvProgressBarInitClass(Iclass* ic)
   ic->Map = fltkProgressBarMapMethod;
   ic->UnMap = fltkProgressBarUnMapMethod;
 
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, fltkProgressBarSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, fltkProgressBarSetFgColorAttrib, NULL, NULL, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", nullptr, fltkProgressBarSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "FGCOLOR", nullptr, fltkProgressBarSetFgColorAttrib, nullptr, nullptr, IUPAF_DEFAULT);
 
-  iupClassRegisterAttribute(ic, "VALUE", iProgressBarGetValueAttrib, fltkProgressBarSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "ORIENTATION", NULL, NULL, IUPAF_SAMEASSYSTEM, "HORIZONTAL", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "MARQUEE", NULL, fltkProgressBarSetMarqueeAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DASHED", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "VALUE", iProgressBarGetValueAttrib, fltkProgressBarSetValueAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ORIENTATION", nullptr, nullptr, IUPAF_SAMEASSYSTEM, "HORIZONTAL", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MARQUEE", nullptr, fltkProgressBarSetMarqueeAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DASHED", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
 }

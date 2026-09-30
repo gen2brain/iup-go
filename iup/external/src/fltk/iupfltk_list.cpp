@@ -47,7 +47,7 @@ static int fltkListBrowserHandleMouseEvent(B* browser, Ihandle* ih, int event)
 {
   if (event == FL_PUSH || event == FL_RELEASE)
   {
-    IFniiiis cb = (IFniiiis)IupGetCallback(ih, "BUTTON_CB");
+    auto cb = reinterpret_cast<IFniiiis>(IupGetCallback(ih, "BUTTON_CB"));
     if (cb)
     {
       int button = IUP_BUTTON1;
@@ -66,7 +66,7 @@ static int fltkListBrowserHandleMouseEvent(B* browser, Ihandle* ih, int event)
 
     if (event == FL_PUSH && Fl::event_clicks() > 0 && Fl::event_button() == FL_LEFT_MOUSE)
     {
-      IFnis dblclick_cb = (IFnis)IupGetCallback(ih, "DBLCLICK_CB");
+      auto dblclick_cb = reinterpret_cast<IFnis>(IupGetCallback(ih, "DBLCLICK_CB"));
       if (dblclick_cb)
       {
         int line = browser->value();
@@ -229,7 +229,7 @@ public:
           {
             const char* text_src = text(src);
             Fl_Image* icon_src = icon(src);
-            char* text_copy = text_src ? strdup(text_src) : NULL;
+            char* text_copy = text_src ? strdup(text_src) : nullptr;
 
             remove(src);
 
@@ -310,7 +310,7 @@ static bool fltkListIsDropdownTrigger(int event)
 
 static void fltkListCallDropdownCb(Ihandle* ih, int show)
 {
-  IFni cb = (IFni)IupGetCallback(ih, "DROPDOWN_CB");
+  IFni cb = reinterpret_cast<IFni>(IupGetCallback(ih, "DROPDOWN_CB"));
   if (cb) cb(ih, show);
 }
 
@@ -419,7 +419,7 @@ static Fl_Image* fltkListFitImage(Ihandle* ih, Fl_Image* image)
     return image;
 
   int charheight = 0;
-  iupdrvFontGetCharSize(ih, NULL, &charheight);
+  iupdrvFontGetCharSize(ih, nullptr, &charheight);
   int available_height = charheight + 2 * ih->data->spacing;
 
   if (image->h() > available_height && available_height > 0)
@@ -445,8 +445,8 @@ class IupFltkVirtualBrowser : public Fl_Browser_
   mutable int row_h;
   mutable int icon_h;
 
-  static void* item(int line) { return (void*)(intptr_t)line; }
-  static int line(void* item) { return (int)(intptr_t)item; }
+  static void* item(int line) { return reinterpret_cast<void*>(static_cast<intptr_t>(line)); }
+  static int line(void* item) { return static_cast<int>(reinterpret_cast<intptr_t>(item)); }
 
   int rowHeight() const
   {
@@ -463,17 +463,17 @@ class IupFltkVirtualBrowser : public Fl_Browser_
   Fl_Image* icon(int l) const
   {
     if (!iup_handle->data->show_image)
-      return NULL;
+      return nullptr;
 
     char* name = iupListGetItemImageCb(iup_handle, l);
     if (!name)
-      return NULL;
+      return nullptr;
 
-    std::map<std::string, IconEntry>::iterator found = icons.find(name);
+    auto found = icons.find(name);
     if (found != icons.end())
       return found->second.image;
 
-    Fl_Image* image = (Fl_Image*)iupImageGetImage(name, iup_handle, 0, NULL);
+    auto* image = static_cast<Fl_Image*>(iupImageGetImage(name, iup_handle, 0, nullptr));
     Fl_Image* fitted = fltkListFitImage(iup_handle, image);
     IconEntry entry = { fitted, fitted != image };
     icons[name] = entry;
@@ -492,11 +492,11 @@ class IupFltkVirtualBrowser : public Fl_Browser_
   }
 
 protected:
-  void* item_first() const override { return count > 0 ? item(1) : NULL; }
-  void* item_next(void* i) const override { return line(i) < count ? item(line(i) + 1) : NULL; }
-  void* item_prev(void* i) const override { return line(i) > 1 ? item(line(i) - 1) : NULL; }
-  void* item_last() const override { return count > 0 ? item(count) : NULL; }
-  void* item_at(int index) const override { return (index >= 1 && index <= count) ? item(index) : NULL; }
+  void* item_first() const override { return count > 0 ? item(1) : nullptr; }
+  void* item_next(void* i) const override { return line(i) < count ? item(line(i) + 1) : nullptr; }
+  void* item_prev(void* i) const override { return line(i) > 1 ? item(line(i) - 1) : nullptr; }
+  void* item_last() const override { return count > 0 ? item(count) : nullptr; }
+  void* item_at(int index) const override { return (index >= 1 && index <= count) ? item(index) : nullptr; }
 
   int item_height(void* i) const override { (void)i; return rowHeight(); }
   int item_quick_height(void* i) const override { (void)i; return rowHeight(); }
@@ -508,7 +508,7 @@ protected:
     const char* str = text(line(i));
     Fl_Image* img = icon(line(i));
     fl_font(textfont(), textsize());
-    return (img ? img->w() + 2 : 0) + (int)fl_width(str ? str : "") + 6;
+    return (img ? img->w() + 2 : 0) + static_cast<int>(fl_width(str ? str : "")) + 6;
   }
 
   void item_draw(void* i, int X, int Y, int W, int H) const override
@@ -530,7 +530,7 @@ protected:
     const char* str = text(line(i));
     fl_font(textfont(), textsize());
     fl_color(lcol);
-    fl_draw(str ? str : "", X + 3, Y, W - 6, H, FL_ALIGN_LEFT, 0, 0);
+    fl_draw(str ? str : "", X + 3, Y, W - 6, H, FL_ALIGN_LEFT, nullptr, 0);
   }
 
   void item_select(void* i, int val) override
@@ -555,19 +555,19 @@ public:
     type(ih->data->is_multiple ? FL_MULTI_BROWSER : FL_HOLD_BROWSER);
   }
 
-  ~IupFltkVirtualBrowser()
+  ~IupFltkVirtualBrowser() override
   {
-    for (std::map<std::string, IconEntry>::iterator it = icons.begin(); it != icons.end(); ++it)
+    for (auto& icon : icons)
     {
-      if (it->second.owned)
-        delete it->second.image;
+      if (icon.second.owned)
+        delete icon.second.image;
     }
   }
 
   void setCount(int n)
   {
     count = n;
-    sel.assign((size_t)n + 1, 0);
+    sel.assign(static_cast<size_t>(n) + 1, 0);
     if (count > 0)
       icon(1);
     new_list();
@@ -622,19 +622,19 @@ public:
 static Fl_Browser* fltkListGetBrowser(Ihandle* ih)
 {
   if (ih->data->is_dropdown || ih->data->is_virtual)
-    return NULL;
+    return nullptr;
 
   if (ih->data->has_editbox)
-    return (Fl_Browser*)iupAttribGet(ih, "_IUPFLTK_LIST");
+    return reinterpret_cast<Fl_Browser*>(iupAttribGet(ih, "_IUPFLTK_LIST"));
 
-  return (Fl_Browser*)ih->handle;
+  return reinterpret_cast<Fl_Browser*>(ih->handle);
 }
 
 static IupFltkVirtualBrowser* fltkListGetVirtualBrowser(Ihandle* ih)
 {
   if (!ih->data->is_virtual)
-    return NULL;
-  return (IupFltkVirtualBrowser*)ih->handle;
+    return nullptr;
+  return reinterpret_cast<IupFltkVirtualBrowser*>(ih->handle);
 }
 
 static Fl_Browser_* fltkListGetBrowserBase(Ihandle* ih)
@@ -650,18 +650,18 @@ static void fltkListUpdateTextFont(Ihandle* ih, int font, int size)
   {
     if (ih->data->has_editbox)
     {
-      Fl_Input_Choice* input_choice = (Fl_Input_Choice*)ih->handle;
-      input_choice->textfont((Fl_Font)font);
-      input_choice->textsize((Fl_Fontsize)size);
-      input_choice->menubutton()->textfont((Fl_Font)font);
-      input_choice->menubutton()->textsize((Fl_Fontsize)size);
+      auto* input_choice = reinterpret_cast<Fl_Input_Choice*>(ih->handle);
+      input_choice->textfont(static_cast<Fl_Font>(font));
+      input_choice->textsize(static_cast<Fl_Fontsize>(size));
+      input_choice->menubutton()->textfont(static_cast<Fl_Font>(font));
+      input_choice->menubutton()->textsize(static_cast<Fl_Fontsize>(size));
       input_choice->redraw();
     }
     else
     {
-      Fl_Choice* choice = (Fl_Choice*)ih->handle;
-      choice->textfont((Fl_Font)font);
-      choice->textsize((Fl_Fontsize)size);
+      auto* choice = reinterpret_cast<Fl_Choice*>(ih->handle);
+      choice->textfont(static_cast<Fl_Font>(font));
+      choice->textsize(static_cast<Fl_Fontsize>(size));
       choice->redraw();
     }
     return;
@@ -669,11 +669,11 @@ static void fltkListUpdateTextFont(Ihandle* ih, int font, int size)
 
   if (ih->data->has_editbox)
   {
-    Fl_Input* edit = (Fl_Input*)iupAttribGet(ih, "_IUPFLTK_EDIT");
+    auto* edit = reinterpret_cast<Fl_Input*>(iupAttribGet(ih, "_IUPFLTK_EDIT"));
     if (edit)
     {
-      edit->textfont((Fl_Font)font);
-      edit->textsize((Fl_Fontsize)size);
+      edit->textfont(static_cast<Fl_Font>(font));
+      edit->textsize(static_cast<Fl_Fontsize>(size));
       edit->redraw();
     }
   }
@@ -681,11 +681,11 @@ static void fltkListUpdateTextFont(Ihandle* ih, int font, int size)
   IupFltkVirtualBrowser* vbrowser = fltkListGetVirtualBrowser(ih);
   Fl_Browser* browser = fltkListGetBrowser(ih);
   if (vbrowser)
-    vbrowser->textFont((Fl_Font)font, (Fl_Fontsize)size);
+    vbrowser->textFont(static_cast<Fl_Font>(font), static_cast<Fl_Fontsize>(size));
   else if (browser)
   {
-    browser->textfont((Fl_Font)font);
-    browser->textsize((Fl_Fontsize)size);
+    browser->textfont(static_cast<Fl_Font>(font));
+    browser->textsize(static_cast<Fl_Fontsize>(size));
     browser->redraw();
   }
 }
@@ -700,22 +700,22 @@ static void fltkListInitTextFont(Ihandle* ih)
 static Fl_Input* fltkListGetEditBox(Ihandle* ih)
 {
   if (!ih->data->has_editbox)
-    return NULL;
+    return nullptr;
 
   if (ih->data->is_dropdown)
   {
-    Fl_Input_Choice* input_choice = (Fl_Input_Choice*)ih->handle;
+    auto* input_choice = reinterpret_cast<Fl_Input_Choice*>(ih->handle);
     return input_choice->input();
   }
 
-  return (Fl_Input*)iupAttribGet(ih, "_IUPFLTK_EDIT");
+  return reinterpret_cast<Fl_Input*>(iupAttribGet(ih, "_IUPFLTK_EDIT"));
 }
 
 static int fltkListGetChoiceCount(Ihandle* ih)
 {
   if (ih->data->has_editbox)
   {
-    Fl_Input_Choice* input_choice = (Fl_Input_Choice*)ih->handle;
+    auto* input_choice = reinterpret_cast<Fl_Input_Choice*>(ih->handle);
     const Fl_Menu_Item* menu = input_choice->menubutton()->menu();
     if (!menu)
       return 0;
@@ -723,7 +723,7 @@ static int fltkListGetChoiceCount(Ihandle* ih)
   }
   else
   {
-    Fl_Choice* choice = (Fl_Choice*)ih->handle;
+    auto* choice = reinterpret_cast<Fl_Choice*>(ih->handle);
     const Fl_Menu_Item* menu = choice->menu();
     if (!menu)
       return 0;
@@ -737,18 +737,18 @@ static int fltkListGetChoiceCount(Ihandle* ih)
 
 static void fltkListChoiceCallback(Fl_Widget* w, void* data)
 {
-  Ihandle* ih = (Ihandle*)data;
+  auto* ih = static_cast<Ihandle*>(data);
 
   if (iupAttribGet(ih, "_IUPLIST_IGNORE_ACTION"))
     return;
 
-  Fl_Choice* choice = (Fl_Choice*)w;
+  auto* choice = static_cast<Fl_Choice*>(w);
   int index = choice->value();
   if (index < 0)
     return;
 
   int pos = index + 1;
-  IFnsii cb = (IFnsii)IupGetCallback(ih, "ACTION");
+  auto cb = reinterpret_cast<IFnsii>(IupGetCallback(ih, "ACTION"));
   if (cb)
     iupListSingleCallActionCb(ih, cb, pos);
 
@@ -757,12 +757,12 @@ static void fltkListChoiceCallback(Fl_Widget* w, void* data)
 
 static void fltkListInputChoiceCallback(Fl_Widget* w, void* data)
 {
-  Ihandle* ih = (Ihandle*)data;
+  auto* ih = static_cast<Ihandle*>(data);
 
   if (iupAttribGet(ih, "_IUPLIST_IGNORE_ACTION"))
     return;
 
-  Fl_Input_Choice* input_choice = (Fl_Input_Choice*)w;
+  auto* input_choice = static_cast<Fl_Input_Choice*>(w);
   int index = input_choice->menubutton()->value();
   if (index < 0)
     return;
@@ -770,7 +770,7 @@ static void fltkListInputChoiceCallback(Fl_Widget* w, void* data)
   iupAttribSetStr(ih, "_IUPFLTK_EDIT_LAST", input_choice->value());
 
   int pos = index + 1;
-  IFnsii cb = (IFnsii)IupGetCallback(ih, "ACTION");
+  auto cb = reinterpret_cast<IFnsii>(IupGetCallback(ih, "ACTION"));
   if (cb)
     iupListSingleCallActionCb(ih, cb, pos);
 
@@ -788,13 +788,13 @@ static void fltkListBrowserNotify(Ihandle* ih, B* browser)
 
     int pos = line;
 
-    IFnsii cb = (IFnsii)IupGetCallback(ih, "ACTION");
+    auto cb = reinterpret_cast<IFnsii>(IupGetCallback(ih, "ACTION"));
     if (cb)
       iupListSingleCallActionCb(ih, cb, pos);
 
     if (ih->data->has_editbox)
     {
-      Fl_Input* edit = (Fl_Input*)iupAttribGet(ih, "_IUPFLTK_EDIT");
+      auto* edit = reinterpret_cast<Fl_Input*>(iupAttribGet(ih, "_IUPFLTK_EDIT"));
       if (edit)
       {
         const char* text = browser->text(line);
@@ -802,7 +802,7 @@ static void fltkListBrowserNotify(Ihandle* ih, B* browser)
         {
           iupAttribSet(ih, "_IUPFLTK_DISABLE_TEXT_CB", "1");
           edit->value(text);
-          iupAttribSet(ih, "_IUPFLTK_DISABLE_TEXT_CB", NULL);
+          iupAttribSet(ih, "_IUPFLTK_DISABLE_TEXT_CB", nullptr);
           iupAttribSetStr(ih, "_IUPFLTK_EDIT_LAST", text);
         }
       }
@@ -810,14 +810,14 @@ static void fltkListBrowserNotify(Ihandle* ih, B* browser)
   }
   else
   {
-    IFns multi_cb = (IFns)IupGetCallback(ih, "MULTISELECT_CB");
-    IFnsii action_cb = (IFnsii)IupGetCallback(ih, "ACTION");
+    IFns multi_cb = reinterpret_cast<IFns>(IupGetCallback(ih, "MULTISELECT_CB"));
+    auto action_cb = reinterpret_cast<IFnsii>(IupGetCallback(ih, "ACTION"));
 
     if (multi_cb || action_cb)
     {
       int count = browser->size();
       int sel_count = 0;
-      int* pos = NULL;
+      int* pos = nullptr;
 
       for (int i = 1; i <= count; i++)
       {
@@ -827,7 +827,7 @@ static void fltkListBrowserNotify(Ihandle* ih, B* browser)
 
       if (sel_count > 0)
       {
-        pos = (int*)malloc(sel_count * sizeof(int));
+        pos = static_cast<int*>(malloc(sel_count * sizeof(int)));
         int j = 0;
         for (int i = 1; i <= count; i++)
         {
@@ -846,42 +846,42 @@ static void fltkListBrowserNotify(Ihandle* ih, B* browser)
 
 static void fltkListBrowserCallback(Fl_Widget* w, void* data)
 {
-  Ihandle* ih = (Ihandle*)data;
+  auto* ih = static_cast<Ihandle*>(data);
 
   if (iupAttribGet(ih, "_IUPLIST_IGNORE_ACTION"))
     return;
 
   if (ih->data->is_virtual)
-    fltkListBrowserNotify(ih, (IupFltkVirtualBrowser*)w);
+    fltkListBrowserNotify(ih, static_cast<IupFltkVirtualBrowser*>(w));
   else
-    fltkListBrowserNotify(ih, (Fl_Browser*)w);
+    fltkListBrowserNotify(ih, static_cast<Fl_Browser*>(w));
 }
 
 static void fltkListEditCallback(Fl_Widget* w, void* data)
 {
-  Ihandle* ih = (Ihandle*)data;
+  auto* ih = static_cast<Ihandle*>(data);
 
   if (iupAttribGet(ih, "_IUPFLTK_DISABLE_TEXT_CB"))
     return;
 
-  Fl_Input* edit = (Fl_Input*)w;
-  IFnis cb = (IFnis)IupGetCallback(ih, "EDIT_CB");
+  auto* edit = static_cast<Fl_Input*>(w);
+  auto cb = reinterpret_cast<IFnis>(IupGetCallback(ih, "EDIT_CB"));
   const char* value = edit->value();
   const char* typed = Fl::event_text();
   int key = (typed && typed[0] >= 32 && !typed[1]) ? typed[0] : 0;
   int ret = 1;
 
-  if (ih->data->nc && (int)strlen(value) > ih->data->nc)
+  if (ih->data->nc && static_cast<int>(strlen(value)) > ih->data->nc)
     ret = 0;
-  else if (ih->data->mask && iupMaskCheck((Imask*)ih->data->mask, value) == 0)
+  else if (ih->data->mask && iupMaskCheck(ih->data->mask, value) == 0)
   {
-    IFns fail_cb = (IFns)IupGetCallback(ih, "MASKFAIL_CB");
-    if (fail_cb) fail_cb(ih, (char*)value);
+    IFns fail_cb = reinterpret_cast<IFns>(IupGetCallback(ih, "MASKFAIL_CB"));
+    if (fail_cb) fail_cb(ih, const_cast<char*>(value));
     ret = 0;
   }
   else if (cb)
   {
-    int cb_ret = cb(ih, key, (char*)value);
+    int cb_ret = cb(ih, key, const_cast<char*>(value));
     if (cb_ret == IUP_IGNORE)
       ret = 0;
     else if (cb_ret == IUP_CLOSE)
@@ -898,7 +898,7 @@ static void fltkListEditCallback(Fl_Widget* w, void* data)
     iupAttribSet(ih, "_IUPFLTK_DISABLE_TEXT_CB", "1");
     edit->value(last ? last : "");
     edit->insert_position(pos > 0 ? pos - 1 : 0);
-    iupAttribSet(ih, "_IUPFLTK_DISABLE_TEXT_CB", NULL);
+    iupAttribSet(ih, "_IUPFLTK_DISABLE_TEXT_CB", nullptr);
     return;
   }
 
@@ -908,11 +908,11 @@ static void fltkListEditCallback(Fl_Widget* w, void* data)
 
 static void fltkListCaretCallback(Fl_Widget* w, void* data)
 {
-  Ihandle* ih = (Ihandle*)data;
+  auto* ih = static_cast<Ihandle*>(data);
 
-  Fl_Input* edit = (Fl_Input*)w;
+  auto* edit = static_cast<Fl_Input*>(w);
 
-  IFnii cb = (IFnii)IupGetCallback(ih, "CARET_CB");
+  auto cb = reinterpret_cast<IFnii>(IupGetCallback(ih, "CARET_CB"));
   if (cb)
   {
     int pos = edit->insert_position() + 1;
@@ -930,22 +930,22 @@ extern "C" IUP_SDK_API void iupdrvListAddItemSpace(Ihandle* ih, int* h)
   (void)h;
 }
 
-extern "C" IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int* x, int* y)
+extern "C" IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int* w, int* h)
 {
   if (ih->data->is_dropdown)
   {
-    *x += 22;
-    *y += 6;
+    *w += 22;
+    *h += 6;
   }
   else
   {
-    *x += 4 + 6;
-    *y += 4;
+    *w += 4 + 6;
+    *h += 4;
 
     if (ih->data->has_editbox)
     {
       int char_height;
-      iupdrvFontGetCharSize(ih, NULL, &char_height);
+      iupdrvFontGetCharSize(ih, nullptr, &char_height);
       int edit_height = char_height + 8;
 
       int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
@@ -953,10 +953,10 @@ extern "C" IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int* x, int* y)
       {
         int item_height = char_height;
         iupdrvListAddItemSpace(ih, &item_height);
-        *y -= item_height;
+        *h -= item_height;
       }
 
-      *y += edit_height;
+      *h += edit_height;
     }
   }
 }
@@ -1008,17 +1008,17 @@ extern "C" IUP_SDK_API void iupdrvListAppendItem(Ihandle* ih, const char* value)
   {
     if (ih->data->has_editbox)
     {
-      Fl_Input_Choice* input_choice = (Fl_Input_Choice*)ih->handle;
+      auto* input_choice = reinterpret_cast<Fl_Input_Choice*>(ih->handle);
       if (sort)
-        input_choice->menubutton()->insert(fltkListMenuSortPos(input_choice->menubutton(), value), value, 0, NULL);
+        input_choice->menubutton()->insert(fltkListMenuSortPos(input_choice->menubutton(), value), value, 0, nullptr);
       else
         input_choice->add(value);
     }
     else
     {
-      Fl_Choice* choice = (Fl_Choice*)ih->handle;
+      auto* choice = reinterpret_cast<Fl_Choice*>(ih->handle);
       if (sort)
-        choice->insert(fltkListMenuSortPos(choice, value), value, 0, NULL);
+        choice->insert(fltkListMenuSortPos(choice, value), value, 0, nullptr);
       else
         choice->add(value);
     }
@@ -1035,7 +1035,7 @@ extern "C" IUP_SDK_API void iupdrvListAppendItem(Ihandle* ih, const char* value)
     }
   }
 
-  iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", NULL);
+  iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", nullptr);
 }
 
 extern "C" IUP_SDK_API void iupdrvListInsertItem(Ihandle* ih, int pos, const char* value)
@@ -1047,13 +1047,13 @@ extern "C" IUP_SDK_API void iupdrvListInsertItem(Ihandle* ih, int pos, const cha
   {
     if (ih->data->has_editbox)
     {
-      Fl_Input_Choice* input_choice = (Fl_Input_Choice*)ih->handle;
-      input_choice->menubutton()->insert(sort ? fltkListMenuSortPos(input_choice->menubutton(), value) : pos, value, 0, NULL);
+      auto* input_choice = reinterpret_cast<Fl_Input_Choice*>(ih->handle);
+      input_choice->menubutton()->insert(sort ? fltkListMenuSortPos(input_choice->menubutton(), value) : pos, value, 0, nullptr);
     }
     else
     {
-      Fl_Choice* choice = (Fl_Choice*)ih->handle;
-      choice->insert(sort ? fltkListMenuSortPos(choice, value) : pos, value, 0, NULL);
+      auto* choice = reinterpret_cast<Fl_Choice*>(ih->handle);
+      choice->insert(sort ? fltkListMenuSortPos(choice, value) : pos, value, 0, nullptr);
     }
   }
   else
@@ -1063,7 +1063,7 @@ extern "C" IUP_SDK_API void iupdrvListInsertItem(Ihandle* ih, int pos, const cha
       browser->insert(sort ? fltkListBrowserSortPos(browser, value) : pos + 1, value);
   }
 
-  iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", NULL);
+  iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", nullptr);
   iupListUpdateOldValue(ih, pos, 0);
 }
 
@@ -1075,7 +1075,7 @@ extern "C" IUP_SDK_API void iupdrvListRemoveItem(Ihandle* ih, int pos)
   {
     if (ih->data->has_editbox)
     {
-      Fl_Input_Choice* input_choice = (Fl_Input_Choice*)ih->handle;
+      auto* input_choice = reinterpret_cast<Fl_Input_Choice*>(ih->handle);
       Fl_Menu_Button* mb = input_choice->menubutton();
       int count = mb->size() - 1;
 
@@ -1084,7 +1084,7 @@ extern "C" IUP_SDK_API void iupdrvListRemoveItem(Ihandle* ih, int pos)
     }
     else
     {
-      Fl_Choice* choice = (Fl_Choice*)ih->handle;
+      auto* choice = reinterpret_cast<Fl_Choice*>(ih->handle);
       int count = choice->size() - 1;
       int curval = choice->value();
 
@@ -1111,7 +1111,7 @@ extern "C" IUP_SDK_API void iupdrvListRemoveItem(Ihandle* ih, int pos)
       browser->remove(pos + 1);
   }
 
-  iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", NULL);
+  iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", nullptr);
   iupListUpdateOldValue(ih, pos, 1);
 }
 
@@ -1121,11 +1121,11 @@ static void fltkListDropdownFreeMultiLabels(Ihandle* ih, int count)
   {
     char ml_key[32];
     snprintf(ml_key, sizeof(ml_key), "_IUPFLTK_ML%d", i);
-    Fl_Multi_Label* ml = (Fl_Multi_Label*)iupAttribGet(ih, ml_key);
+    auto* ml = reinterpret_cast<Fl_Multi_Label*>(iupAttribGet(ih, ml_key));
     if (ml)
     {
       delete ml;
-      iupAttribSet(ih, ml_key, NULL);
+      iupAttribSet(ih, ml_key, nullptr);
     }
   }
 }
@@ -1140,12 +1140,12 @@ extern "C" IUP_SDK_API void iupdrvListRemoveAllItems(Ihandle* ih)
 
     if (ih->data->has_editbox)
     {
-      Fl_Input_Choice* input_choice = (Fl_Input_Choice*)ih->handle;
+      auto* input_choice = reinterpret_cast<Fl_Input_Choice*>(ih->handle);
       input_choice->clear();
     }
     else
     {
-      Fl_Choice* choice = (Fl_Choice*)ih->handle;
+      auto* choice = reinterpret_cast<Fl_Choice*>(ih->handle);
       choice->clear();
       choice->value(-1);
     }
@@ -1157,23 +1157,23 @@ extern "C" IUP_SDK_API void iupdrvListRemoveAllItems(Ihandle* ih)
       browser->clear();
   }
 
-  iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", NULL);
+  iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", nullptr);
 }
 
 static void fltkListDropdownSetImage(Ihandle* ih, int pos, Fl_Image* image)
 {
-  const Fl_Menu_Item* menu = NULL;
+  const Fl_Menu_Item* menu = nullptr;
   int menu_size = 0;
 
   if (ih->data->has_editbox)
   {
-    Fl_Input_Choice* ic = (Fl_Input_Choice*)ih->handle;
+    auto* ic = reinterpret_cast<Fl_Input_Choice*>(ih->handle);
     menu = ic->menubutton()->menu();
     menu_size = ic->menubutton()->size() - 1;
   }
   else
   {
-    Fl_Choice* choice = (Fl_Choice*)ih->handle;
+    auto* choice = reinterpret_cast<Fl_Choice*>(ih->handle);
     menu = choice->menu();
     menu_size = choice->size() - 1;
   }
@@ -1181,20 +1181,20 @@ static void fltkListDropdownSetImage(Ihandle* ih, int pos, Fl_Image* image)
   if (!menu || pos < 0 || pos >= menu_size)
     return;
 
-  Fl_Menu_Item* item = (Fl_Menu_Item*)&menu[pos];
+  auto* item = const_cast<Fl_Menu_Item*>(&menu[pos]);
 
   char ml_key[32];
   snprintf(ml_key, sizeof(ml_key), "_IUPFLTK_ML%d", pos);
 
-  Fl_Multi_Label* ml = (Fl_Multi_Label*)iupAttribGet(ih, ml_key);
+  auto* ml = reinterpret_cast<Fl_Multi_Label*>(iupAttribGet(ih, ml_key));
   if (!ml)
   {
     ml = new Fl_Multi_Label;
-    iupAttribSet(ih, ml_key, (char*)ml);
+    iupAttribSet(ih, ml_key, reinterpret_cast<char*>(ml));
   }
 
   ml->typea = FL_IMAGE_LABEL;
-  ml->labela = (const char*)image;
+  ml->labela = reinterpret_cast<const char*>(image);
   ml->typeb = FL_NORMAL_LABEL;
   ml->labelb = item->text;
 
@@ -1205,7 +1205,7 @@ extern "C" IUP_SDK_API int iupdrvListSetImageHandle(Ihandle* ih, int id, void* h
 {
   if (ih->data->is_dropdown)
   {
-    Fl_Image* img = fltkListFitImage(ih, (Fl_Image*)hImage);
+    Fl_Image* img = fltkListFitImage(ih, static_cast<Fl_Image*>(hImage));
     fltkListDropdownSetImage(ih, id, img);
     return 1;
   }
@@ -1218,7 +1218,7 @@ extern "C" IUP_SDK_API int iupdrvListSetImageHandle(Ihandle* ih, int id, void* h
   if (line < 1 || line > browser->size())
     return 0;
 
-  Fl_Image* img = fltkListFitImage(ih, (Fl_Image*)hImage);
+  Fl_Image* img = fltkListFitImage(ih, static_cast<Fl_Image*>(hImage));
   browser->icon(line, img);
 
   if (img)
@@ -1235,16 +1235,16 @@ extern "C" IUP_SDK_API int iupdrvListSetImageHandle(Ihandle* ih, int id, void* h
 extern "C" IUP_SDK_API void* iupdrvListGetImageHandle(Ihandle* ih, int id)
 {
   if (ih->data->is_dropdown)
-    return NULL;
+    return nullptr;
 
   Fl_Browser* browser = fltkListGetBrowser(ih);
   if (!browser)
-    return NULL;
+    return nullptr;
 
   if (id < 1 || id > browser->size())
-    return NULL;
+    return nullptr;
 
-  return (void*)browser->icon(id);
+  return reinterpret_cast<void*>(browser->icon(id));
 }
 
 extern "C" IUP_SDK_API void iupdrvListSetItemCount(Ihandle* ih, int count)
@@ -1262,13 +1262,13 @@ static char* fltkListGetIdValueAttrib(Ihandle* ih, int id)
 {
   int pos = iupListGetPosAttrib(ih, id);
   if (pos < 0)
-    return NULL;
+    return nullptr;
 
   if (ih->data->is_dropdown)
   {
     if (ih->data->has_editbox)
     {
-      Fl_Input_Choice* input_choice = (Fl_Input_Choice*)ih->handle;
+      auto* input_choice = reinterpret_cast<Fl_Input_Choice*>(ih->handle);
       int count = fltkListGetChoiceCount(ih);
       if (pos < count)
       {
@@ -1278,7 +1278,7 @@ static char* fltkListGetIdValueAttrib(Ihandle* ih, int id)
     }
     else
     {
-      Fl_Choice* choice = (Fl_Choice*)ih->handle;
+      auto* choice = reinterpret_cast<Fl_Choice*>(ih->handle);
       int count = fltkListGetChoiceCount(ih);
       if (pos < count)
       {
@@ -1303,7 +1303,7 @@ static char* fltkListGetIdValueAttrib(Ihandle* ih, int id)
     }
   }
 
-  return NULL;
+  return nullptr;
 }
 
 template <class B>
@@ -1314,7 +1314,7 @@ static char* fltkListBrowserGetValue(Ihandle* ih, B* browser)
     int line = browser->value();
     if (line > 0)
       return iupStrReturnInt(line);
-    return NULL;
+    return nullptr;
   }
 
   int count = browser->size();
@@ -1346,7 +1346,7 @@ static void fltkListBrowserSetValue(Ihandle* ih, B* browser, const char* value)
     else
     {
       browser->deselect();
-      iupAttribSet(ih, "_IUPLIST_OLDVALUE", NULL);
+      iupAttribSet(ih, "_IUPLIST_OLDVALUE", nullptr);
     }
   }
   else
@@ -1358,7 +1358,7 @@ static void fltkListBrowserSetValue(Ihandle* ih, B* browser, const char* value)
 
     if (value)
     {
-      len = (int)strlen(value);
+      len = static_cast<int>(strlen(value));
       count = browser->size();
       if (len < count)
         count = len;
@@ -1370,10 +1370,10 @@ static void fltkListBrowserSetValue(Ihandle* ih, B* browser, const char* value)
       }
     }
 
-    iupAttribSet(ih, "_IUPLIST_OLDVALUE", NULL);
+    iupAttribSet(ih, "_IUPLIST_OLDVALUE", nullptr);
   }
 
-  iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", NULL);
+  iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", nullptr);
 }
 
 static char* fltkListGetValueAttrib(Ihandle* ih)
@@ -1386,7 +1386,7 @@ static char* fltkListGetValueAttrib(Ihandle* ih)
   }
   else if (ih->data->is_dropdown)
   {
-    Fl_Choice* choice = (Fl_Choice*)ih->handle;
+    auto* choice = reinterpret_cast<Fl_Choice*>(ih->handle);
     int val = choice->value();
     if (val >= 0)
       return iupStrReturnInt(val + 1);
@@ -1404,7 +1404,7 @@ static char* fltkListGetValueAttrib(Ihandle* ih)
       return fltkListBrowserGetValue(ih, browser);
   }
 
-  return NULL;
+  return nullptr;
 }
 
 static int fltkListSetValueAttrib(Ihandle* ih, const char* value)
@@ -1416,13 +1416,13 @@ static int fltkListSetValueAttrib(Ihandle* ih, const char* value)
     {
       iupAttribSet(ih, "_IUPFLTK_DISABLE_TEXT_CB", "1");
       edit->value(value ? value : "");
-      iupAttribSet(ih, "_IUPFLTK_DISABLE_TEXT_CB", NULL);
+      iupAttribSet(ih, "_IUPFLTK_DISABLE_TEXT_CB", nullptr);
       iupAttribSetStr(ih, "_IUPFLTK_EDIT_LAST", value);
     }
   }
   else if (ih->data->is_dropdown)
   {
-    Fl_Choice* choice = (Fl_Choice*)ih->handle;
+    auto* choice = reinterpret_cast<Fl_Choice*>(ih->handle);
     int pos;
 
     iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", "1");
@@ -1435,10 +1435,10 @@ static int fltkListSetValueAttrib(Ihandle* ih, const char* value)
     else
     {
       choice->value(-1);
-      iupAttribSet(ih, "_IUPLIST_OLDVALUE", NULL);
+      iupAttribSet(ih, "_IUPLIST_OLDVALUE", nullptr);
     }
 
-    iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", NULL);
+    iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", nullptr);
   }
   else if (ih->data->is_virtual)
   {
@@ -1497,7 +1497,7 @@ static int fltkListSetBgColorAttrib(Ihandle* ih, const char* value)
 
   if (ih->data->is_dropdown)
   {
-    Fl_Widget* w = (Fl_Widget*)ih->handle;
+    auto* w = reinterpret_cast<Fl_Widget*>(ih->handle);
     w->color(color);
     w->redraw();
   }
@@ -1524,7 +1524,7 @@ static int fltkListSetFgColorAttrib(Ihandle* ih, const char* value)
 
   if (ih->data->is_dropdown)
   {
-    Fl_Widget* w = (Fl_Widget*)ih->handle;
+    auto* w = reinterpret_cast<Fl_Widget*>(ih->handle);
     w->labelcolor(color);
     w->redraw();
   }
@@ -1561,7 +1561,7 @@ static char* fltkListGetReadOnlyAttrib(Ihandle* ih)
   Fl_Input* edit = fltkListGetEditBox(ih);
   if (edit)
     return iupStrReturnBoolean(edit->readonly());
-  return NULL;
+  return nullptr;
 }
 
 static int fltkListSetReadOnlyAttrib(Ihandle* ih, const char* value)
@@ -1576,12 +1576,12 @@ static char* fltkListGetSelectedTextAttrib(Ihandle* ih)
 {
   Fl_Input* edit = fltkListGetEditBox(ih);
   if (!edit)
-    return NULL;
+    return nullptr;
 
   int start = edit->insert_position();
   int end = edit->mark();
   if (start == end)
-    return NULL;
+    return nullptr;
 
   if (start > end)
   {
@@ -1624,13 +1624,13 @@ static char* fltkListGetSelectionAttrib(Ihandle* ih)
 {
   Fl_Input* edit = fltkListGetEditBox(ih);
   if (!edit)
-    return NULL;
+    return nullptr;
 
   int start = edit->insert_position();
   int end = edit->mark();
 
   if (start == end)
-    return NULL;
+    return nullptr;
 
   if (start > end)
   {
@@ -1657,7 +1657,7 @@ static int fltkListSetSelectionAttrib(Ihandle* ih, const char* value)
 
   if (iupStrEqualNoCase(value, "ALL"))
   {
-    edit->insert_position(0, (int)strlen(edit->value()));
+    edit->insert_position(0, static_cast<int>(strlen(edit->value())));
     return 0;
   }
 
@@ -1681,7 +1681,7 @@ static char* fltkListGetCaretAttrib(Ihandle* ih)
   Fl_Input* edit = fltkListGetEditBox(ih);
   if (edit)
     return iupStrReturnInt(edit->insert_position() + 1);
-  return NULL;
+  return nullptr;
 }
 
 static int fltkListSetCaretAttrib(Ihandle* ih, const char* value)
@@ -1716,7 +1716,7 @@ static int fltkListSetAppendAttrib(Ihandle* ih, const char* value)
   Fl_Input* edit = fltkListGetEditBox(ih);
   if (edit && value)
   {
-    int len = (int)strlen(edit->value());
+    int len = static_cast<int>(strlen(edit->value()));
     edit->replace(len, len, value);
   }
   return 0;
@@ -1800,7 +1800,7 @@ static int fltkListSetImageAttrib(Ihandle* ih, int id, const char* value)
   {
     if (value)
     {
-      Fl_Image* image = (Fl_Image*)iupImageGetImage(value, ih, 0, NULL);
+      auto* image = static_cast<Fl_Image*>(iupImageGetImage(value, ih, 0, nullptr));
       Fl_Image* scaled = fltkListFitImage(ih, image);
       fltkListDropdownSetImage(ih, pos, scaled);
     }
@@ -1815,7 +1815,7 @@ static int fltkListSetImageAttrib(Ihandle* ih, int id, const char* value)
   if (line < 1 || line > browser->size())
     return 0;
 
-  Fl_Image* image = (Fl_Image*)iupImageGetImage(value, ih, 0, NULL);
+  auto* image = static_cast<Fl_Image*>(iupImageGetImage(value, ih, 0, nullptr));
   Fl_Image* scaled = fltkListFitImage(ih, image);
   browser->icon(line, scaled);
 
@@ -1832,7 +1832,7 @@ static int fltkListSetImageAttrib(Ihandle* ih, int id, const char* value)
 
 static char* fltkListGetImageNativeHandleAttribId(Ihandle* ih, int id)
 {
-  return (char*)iupdrvListGetImageHandle(ih, id);
+  return static_cast<char*>(iupdrvListGetImageHandle(ih, id));
 }
 
 static int fltkListSetVisibleItemsAttrib(Ihandle* ih, const char* value)
@@ -1869,7 +1869,7 @@ static int fltkListConvertXYToPos(Ihandle* ih, int x, int y)
     return -1;
 
   int char_height;
-  iupdrvFontGetCharSize(ih, NULL, &char_height);
+  iupdrvFontGetCharSize(ih, nullptr, &char_height);
   int item_height = char_height + ih->data->spacing + 4;
 
   int topline = browser->topline();
@@ -1907,18 +1907,18 @@ static int fltkListMapMethod(Ihandle* ih)
   {
     if (ih->data->has_editbox)
     {
-      IupFltkInputChoice* input_choice = new IupFltkInputChoice(0, 0, 10, 10, ih);
-      ih->handle = (InativeHandle*)input_choice;
+      auto* input_choice = new IupFltkInputChoice(0, 0, 10, 10, ih);
+      ih->handle = reinterpret_cast<InativeHandle*>(input_choice);
 
       iupfltkUpdateWidgetFont(ih, input_choice);
       fltkListInitTextFont(ih);
 
-      input_choice->callback(fltkListInputChoiceCallback, (void*)ih);
+      input_choice->callback(fltkListInputChoiceCallback, reinterpret_cast<void*>(ih));
 
       Fl_Input* edit = input_choice->input();
       if (edit)
       {
-        edit->callback(fltkListEditCallback, (void*)ih);
+        edit->callback(fltkListEditCallback, reinterpret_cast<void*>(ih));
         edit->when(FL_WHEN_CHANGED);
 
         if (ih->data->nc > 0)
@@ -1934,13 +1934,13 @@ static int fltkListMapMethod(Ihandle* ih)
     }
     else
     {
-      IupFltkChoice* choice = new IupFltkChoice(0, 0, 10, 10, ih);
-      ih->handle = (InativeHandle*)choice;
+      auto* choice = new IupFltkChoice(0, 0, 10, 10, ih);
+      ih->handle = reinterpret_cast<InativeHandle*>(choice);
 
       iupfltkUpdateWidgetFont(ih, choice);
       fltkListInitTextFont(ih);
 
-      choice->callback(fltkListChoiceCallback, (void*)ih);
+      choice->callback(fltkListChoiceCallback, reinterpret_cast<void*>(ih));
 
       iupfltkAddToParent(ih);
 
@@ -1957,28 +1957,28 @@ static int fltkListMapMethod(Ihandle* ih)
     Fl_Group* group = iupfltkNativeContainerNew();
 
     int char_height;
-    iupdrvFontGetCharSize(ih, NULL, &char_height);
+    iupdrvFontGetCharSize(ih, nullptr, &char_height);
     int edit_height = char_height + 8;
 
-    IupFltkListInput* edit = new IupFltkListInput(0, 0, 10, edit_height, ih);
+    auto* edit = new IupFltkListInput(0, 0, 10, edit_height, ih);
     group->add(edit);
     edit->when(FL_WHEN_CHANGED);
 
-    IupFltkHoldBrowser* browser = new IupFltkHoldBrowser(0, edit_height, 10, 10, ih);
+    auto* browser = new IupFltkHoldBrowser(0, edit_height, 10, 10, ih);
     fltkListSetScrollbarMode(browser, ih);
     group->add(browser);
 
-    ih->handle = (InativeHandle*)group;
-    iupAttribSet(ih, "_IUP_EXTRAPARENT", (char*)group);
-    iupAttribSet(ih, "_IUPFLTK_EDIT", (char*)edit);
-    iupAttribSet(ih, "_IUPFLTK_LIST", (char*)browser);
+    ih->handle = reinterpret_cast<InativeHandle*>(group);
+    iupAttribSet(ih, "_IUP_EXTRAPARENT", reinterpret_cast<char*>(group));
+    iupAttribSet(ih, "_IUPFLTK_EDIT", reinterpret_cast<char*>(edit));
+    iupAttribSet(ih, "_IUPFLTK_LIST", reinterpret_cast<char*>(browser));
 
     iupfltkUpdateWidgetFont(ih, edit);
     iupfltkUpdateWidgetFont(ih, browser);
     fltkListInitTextFont(ih);
 
-    edit->callback(fltkListEditCallback, (void*)ih);
-    browser->callback(fltkListBrowserCallback, (void*)ih);
+    edit->callback(fltkListEditCallback, reinterpret_cast<void*>(ih));
+    browser->callback(fltkListBrowserCallback, reinterpret_cast<void*>(ih));
     browser->when(FL_WHEN_RELEASE);
 
     if (ih->data->nc > 0)
@@ -1998,17 +1998,17 @@ static int fltkListMapMethod(Ihandle* ih)
   {
     Fl_Group* group = iupfltkNativeContainerNew();
 
-    IupFltkVirtualBrowser* browser = new IupFltkVirtualBrowser(0, 0, 10, 10, ih);
+    auto* browser = new IupFltkVirtualBrowser(0, 0, 10, 10, ih);
     fltkListSetScrollbarMode(browser, ih);
     group->add(browser);
 
-    ih->handle = (InativeHandle*)browser;
-    iupAttribSet(ih, "_IUP_EXTRAPARENT", (char*)group);
+    ih->handle = reinterpret_cast<InativeHandle*>(browser);
+    iupAttribSet(ih, "_IUP_EXTRAPARENT", reinterpret_cast<char*>(group));
 
     iupfltkUpdateWidgetFont(ih, browser);
     fltkListInitTextFont(ih);
 
-    browser->callback(fltkListBrowserCallback, (void*)ih);
+    browser->callback(fltkListBrowserCallback, reinterpret_cast<void*>(ih));
     browser->when(FL_WHEN_RELEASE);
 
     iupfltkAddToParent(ih);
@@ -2022,17 +2022,17 @@ static int fltkListMapMethod(Ihandle* ih)
   {
     Fl_Group* group = iupfltkNativeContainerNew();
 
-    IupFltkMultiBrowser* browser = new IupFltkMultiBrowser(0, 0, 10, 10, ih);
+    auto* browser = new IupFltkMultiBrowser(0, 0, 10, 10, ih);
     fltkListSetScrollbarMode(browser, ih);
     group->add(browser);
 
-    ih->handle = (InativeHandle*)browser;
-    iupAttribSet(ih, "_IUP_EXTRAPARENT", (char*)group);
+    ih->handle = reinterpret_cast<InativeHandle*>(browser);
+    iupAttribSet(ih, "_IUP_EXTRAPARENT", reinterpret_cast<char*>(group));
 
     iupfltkUpdateWidgetFont(ih, browser);
     fltkListInitTextFont(ih);
 
-    browser->callback(fltkListBrowserCallback, (void*)ih);
+    browser->callback(fltkListBrowserCallback, reinterpret_cast<void*>(ih));
     browser->when(FL_WHEN_RELEASE);
 
     iupfltkAddToParent(ih);
@@ -2046,17 +2046,17 @@ static int fltkListMapMethod(Ihandle* ih)
   {
     Fl_Group* group = iupfltkNativeContainerNew();
 
-    IupFltkHoldBrowser* browser = new IupFltkHoldBrowser(0, 0, 10, 10, ih);
+    auto* browser = new IupFltkHoldBrowser(0, 0, 10, 10, ih);
     fltkListSetScrollbarMode(browser, ih);
     group->add(browser);
 
-    ih->handle = (InativeHandle*)browser;
-    iupAttribSet(ih, "_IUP_EXTRAPARENT", (char*)group);
+    ih->handle = reinterpret_cast<InativeHandle*>(browser);
+    iupAttribSet(ih, "_IUP_EXTRAPARENT", reinterpret_cast<char*>(group));
 
     iupfltkUpdateWidgetFont(ih, browser);
     fltkListInitTextFont(ih);
 
-    browser->callback(fltkListBrowserCallback, (void*)ih);
+    browser->callback(fltkListBrowserCallback, reinterpret_cast<void*>(ih));
     browser->when(FL_WHEN_RELEASE);
 
     iupfltkAddToParent(ih);
@@ -2070,7 +2070,7 @@ static int fltkListMapMethod(Ihandle* ih)
   if (IupGetCallback(ih, "DROPFILES_CB"))
     iupAttribSet(ih, "DROPFILESTARGET", "YES");
 
-  IupSetCallback(ih, "_IUP_XY2POS_CB", (Icallback)fltkListConvertXYToPos);
+  IupSetCallback(ih, "_IUP_XY2POS_CB", reinterpret_cast<Icallback>(fltkListConvertXYToPos));
 
   return IUP_NOERROR;
 }
@@ -2085,9 +2085,9 @@ static void fltkListLayoutUpdateMethod(Ihandle* ih)
   {
     iupdrvBaseLayoutUpdateMethod(ih);
 
-    Fl_Group* group = (Fl_Group*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
-    Fl_Input* edit = (Fl_Input*)iupAttribGet(ih, "_IUPFLTK_EDIT");
-    Fl_Browser* browser = (Fl_Browser*)iupAttribGet(ih, "_IUPFLTK_LIST");
+    auto* group = reinterpret_cast<Fl_Group*>(iupAttribGet(ih, "_IUP_EXTRAPARENT"));
+    auto* edit = reinterpret_cast<Fl_Input*>(iupAttribGet(ih, "_IUPFLTK_EDIT"));
+    auto* browser = reinterpret_cast<Fl_Browser*>(iupAttribGet(ih, "_IUPFLTK_LIST"));
 
     if (group && edit && browser)
     {
@@ -2095,7 +2095,7 @@ static void fltkListLayoutUpdateMethod(Ihandle* ih)
       int oy = group->y();
 
       int char_height;
-      iupdrvFontGetCharSize(ih, NULL, &char_height);
+      iupdrvFontGetCharSize(ih, nullptr, &char_height);
       int edit_height = char_height + 8;
 
       edit->resize(ox, oy, group->w(), edit_height);
@@ -2106,7 +2106,7 @@ static void fltkListLayoutUpdateMethod(Ihandle* ih)
   {
     iupdrvBaseLayoutUpdateMethod(ih);
 
-    Fl_Group* group = (Fl_Group*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
+    auto* group = reinterpret_cast<Fl_Group*>(iupAttribGet(ih, "_IUP_EXTRAPARENT"));
     Fl_Browser_* browser = fltkListGetBrowserBase(ih);
 
     if (group && browser)
@@ -2128,34 +2128,34 @@ extern "C" IUP_SDK_API void iupdrvListInitClass(Iclass* ic)
   ic->LayoutUpdate = fltkListLayoutUpdateMethod;
 
   /* Visual */
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, fltkListSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTBGCOLOR", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, fltkListSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTFGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", nullptr, fltkListSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "FGCOLOR", nullptr, fltkListSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTFGCOLOR", IUPAF_DEFAULT);
 
   /* Special */
-  iupClassRegisterAttribute(ic, "FONT", NULL, fltkListSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
+  iupClassRegisterAttribute(ic, "FONT", nullptr, fltkListSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
 
   /* IupList only */
   iupClassRegisterAttributeId(ic, "IDVALUE", fltkListGetIdValueAttrib, iupListSetIdValueAttrib, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "VALUE", fltkListGetValueAttrib, fltkListSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SHOWDROPDOWN", NULL, fltkListSetShowDropdownAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TOPITEM", NULL, fltkListSetTopItemAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "VISIBLEITEMS", NULL, NULL, IUPAF_SAMEASSYSTEM, "5", IUPAF_NOT_SUPPORTED | IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "DROPEXPAND", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "AUTOREDRAW", NULL, NULL, IUPAF_SAMEASSYSTEM, "Yes", IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "VALUE", fltkListGetValueAttrib, fltkListSetValueAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SHOWDROPDOWN", nullptr, fltkListSetShowDropdownAttrib, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TOPITEM", nullptr, fltkListSetTopItemAttrib, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "VISIBLEITEMS", nullptr, nullptr, IUPAF_SAMEASSYSTEM, "5", IUPAF_NOT_SUPPORTED | IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "DROPEXPAND", nullptr, nullptr, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "AUTOREDRAW", nullptr, nullptr, IUPAF_SAMEASSYSTEM, "Yes", IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SPACING", iupListGetSpacingAttrib, fltkListSetSpacingAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "PADDING", iupListGetPaddingAttrib, fltkListSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
-  iupClassRegisterAttribute(ic, "NC", iupListGetNCAttrib, fltkListSetNCAttrib, NULL, NULL, IUPAF_NOT_MAPPED);
-  iupClassRegisterAttribute(ic, "SCROLLBAR", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NOT_MAPPED);
+  iupClassRegisterAttribute(ic, "NC", iupListGetNCAttrib, fltkListSetNCAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED);
+  iupClassRegisterAttribute(ic, "SCROLLBAR", nullptr, nullptr, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NOT_MAPPED);
 
-  iupClassRegisterAttribute(ic, "SELECTEDTEXT", fltkListGetSelectedTextAttrib, fltkListSetSelectedTextAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SELECTION", fltkListGetSelectionAttrib, fltkListSetSelectionAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "CARET", fltkListGetCaretAttrib, fltkListSetCaretAttrib, NULL, NULL, IUPAF_NO_SAVE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "INSERT", NULL, fltkListSetInsertAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "APPEND", NULL, fltkListSetAppendAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "READONLY", fltkListGetReadOnlyAttrib, fltkListSetReadOnlyAttrib, NULL, NULL, IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "CLIPBOARD", NULL, fltkListSetClipboardAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SCROLLTO", NULL, fltkListSetScrollToAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTEDTEXT", fltkListGetSelectedTextAttrib, fltkListSetSelectedTextAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTION", fltkListGetSelectionAttrib, fltkListSetSelectionAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CARET", fltkListGetCaretAttrib, fltkListSetCaretAttrib, nullptr, nullptr, IUPAF_NO_SAVE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "INSERT", nullptr, fltkListSetInsertAttrib, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "APPEND", nullptr, fltkListSetAppendAttrib, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "READONLY", fltkListGetReadOnlyAttrib, fltkListSetReadOnlyAttrib, nullptr, nullptr, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "CLIPBOARD", nullptr, fltkListSetClipboardAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SCROLLTO", nullptr, fltkListSetScrollToAttrib, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttributeId(ic, "IMAGE", NULL, fltkListSetImageAttrib, IUPAF_IHANDLENAME|IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttributeId(ic, "IMAGENATIVEHANDLE", fltkListGetImageNativeHandleAttribId, NULL, IUPAF_NO_STRING|IUPAF_READONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "IMAGE", nullptr, fltkListSetImageAttrib, IUPAF_IHANDLENAME|IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "IMAGENATIVEHANDLE", fltkListGetImageNativeHandleAttribId, nullptr, IUPAF_NO_STRING|IUPAF_READONLY|IUPAF_NO_INHERIT);
 }

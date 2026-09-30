@@ -26,7 +26,7 @@ extern "C" {
 #include "iupfltk_drv.h"
 
 
-static Ihandle* fltk_drag_source_ih = NULL;
+static Ihandle* fltk_drag_source_ih = nullptr;
 static int fltk_drag_start_x = 0;
 static int fltk_drag_start_y = 0;
 static int fltk_drag_tracking = 0;
@@ -67,26 +67,26 @@ IUP_DRV_API int iupfltkDragDropHandleEvent(Fl_Widget* widget, Ihandle* ih, int e
           int wx = Fl::event_x() - widget->x();
           int wy = Fl::event_y() - widget->y();
 
-          IFnii dragbegin_cb = (IFnii)IupGetCallback(ih, "DRAGBEGIN_CB");
+          auto dragbegin_cb = reinterpret_cast<IFnii>(IupGetCallback(ih, "DRAGBEGIN_CB"));
           if (dragbegin_cb && dragbegin_cb(ih, wx, wy) == IUP_IGNORE)
           {
-            fltk_drag_source_ih = NULL;
+            fltk_drag_source_ih = nullptr;
             return 1;
           }
 
           char* type = iupAttribGet(ih, "DRAGTYPES");
-          if (!type) type = (char*)"text/plain";
+          if (!type) type = const_cast<char*>("text/plain");
 
-          IFns datasize_cb = (IFns)IupGetCallback(ih, "DRAGDATASIZE_CB");
+          IFns datasize_cb = reinterpret_cast<IFns>(IupGetCallback(ih, "DRAGDATASIZE_CB"));
           int data_size = 0;
           if (datasize_cb)
             data_size = datasize_cb(ih, type);
 
           if (data_size > 0)
           {
-            char* data = (char*)calloc(1, data_size + 1);
+            char* data = static_cast<char*>(calloc(1, data_size + 1));
 
-            IFnsVi dragdata_cb = (IFnsVi)IupGetCallback(ih, "DRAGDATA_CB");
+            auto dragdata_cb = reinterpret_cast<IFnsVi>(IupGetCallback(ih, "DRAGDATA_CB"));
             if (dragdata_cb)
               dragdata_cb(ih, type, data, data_size);
 
@@ -95,7 +95,7 @@ IUP_DRV_API int iupfltkDragDropHandleEvent(Fl_Widget* widget, Ihandle* ih, int e
 
             Fl::dnd();
 
-            IFni dragend_cb = (IFni)IupGetCallback(ih, "DRAGEND_CB");
+            IFni dragend_cb = reinterpret_cast<IFni>(IupGetCallback(ih, "DRAGEND_CB"));
             if (dragend_cb)
             {
               int action = iupAttribGetBoolean(ih, "DRAGSOURCEMOVE") ? 1 : 0;
@@ -103,7 +103,7 @@ IUP_DRV_API int iupfltkDragDropHandleEvent(Fl_Widget* widget, Ihandle* ih, int e
             }
           }
 
-          fltk_drag_source_ih = NULL;
+          fltk_drag_source_ih = nullptr;
           return 1;
         }
       }
@@ -115,7 +115,7 @@ IUP_DRV_API int iupfltkDragDropHandleEvent(Fl_Widget* widget, Ihandle* ih, int e
       if (fltk_drag_tracking && fltk_drag_source_ih == ih)
       {
         fltk_drag_tracking = 0;
-        fltk_drag_source_ih = NULL;
+        fltk_drag_source_ih = nullptr;
       }
       return 0;
     }
@@ -131,7 +131,7 @@ IUP_DRV_API int iupfltkDragDropHandleEvent(Fl_Widget* widget, Ihandle* ih, int e
 
         if (event == FL_DND_DRAG)
         {
-          IFniis dropmotion_cb = (IFniis)IupGetCallback(ih, "DROPMOTION_CB");
+          auto dropmotion_cb = reinterpret_cast<IFniis>(IupGetCallback(ih, "DROPMOTION_CB"));
           if (dropmotion_cb)
           {
             char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
@@ -155,7 +155,7 @@ IUP_DRV_API int iupfltkDragDropHandleEvent(Fl_Widget* widget, Ihandle* ih, int e
     case FL_DND_LEAVE:
       if (iupAttribGetBoolean(ih, "DROPTARGET") || IupGetCallback(ih, "DROPFILES_CB") || IupGetCallback(IupGetDialog(ih), "DROPFILES_CB"))
       {
-        iupAttribSet(ih, "_IUPFLTK_DND_TARGET_LINE", NULL);
+        iupAttribSet(ih, "_IUPFLTK_DND_TARGET_LINE", nullptr);
         widget->redraw();
         return 1;
       }
@@ -166,7 +166,7 @@ IUP_DRV_API int iupfltkDragDropHandleEvent(Fl_Widget* widget, Ihandle* ih, int e
       {
         fltk_drop_x = Fl::event_x() - widget->x();
         fltk_drop_y = Fl::event_y() - widget->y();
-        iupAttribSet(ih, "_IUPFLTK_DND_TARGET_LINE", NULL);
+        iupAttribSet(ih, "_IUPFLTK_DND_TARGET_LINE", nullptr);
         widget->redraw();
         return 1;
       }
@@ -174,7 +174,7 @@ IUP_DRV_API int iupfltkDragDropHandleEvent(Fl_Widget* widget, Ihandle* ih, int e
 
     case FL_PASTE:
     {
-      iupAttribSet(ih, "_IUPFLTK_DND_TARGET_LINE", NULL);
+      iupAttribSet(ih, "_IUPFLTK_DND_TARGET_LINE", nullptr);
       widget->redraw();
 
       if (iupAttribGetBoolean(ih, "DROPTARGET"))
@@ -191,12 +191,12 @@ IUP_DRV_API int iupfltkDragDropHandleEvent(Fl_Widget* widget, Ihandle* ih, int e
           }
 
           char* type = iupAttribGet(ih, "DROPTYPES");
-          if (!type) type = (char*)"text/plain";
+          if (!type) type = const_cast<char*>("text/plain");
 
-          IFnsViii dropdata_cb = (IFnsViii)IupGetCallback(ih, "DROPDATA_CB");
+          auto dropdata_cb = reinterpret_cast<IFnsViii>(IupGetCallback(ih, "DROPDATA_CB"));
           if (dropdata_cb)
           {
-            dropdata_cb(ih, type, (void*)text, len, fltk_drop_x, fltk_drop_y);
+            dropdata_cb(ih, type, const_cast<char*>(text), len, fltk_drop_x, fltk_drop_y);
             return 1;
           }
         }
@@ -230,14 +230,14 @@ extern "C" IUP_SDK_API void iupdrvRegisterDragDropAttrib(Iclass* ic)
   iupClassRegisterCallback(ic, "DROPDATA_CB", "sViii");
   iupClassRegisterCallback(ic, "DROPMOTION_CB", "iis");
 
-  iupClassRegisterAttribute(ic, "DRAGTYPES", NULL, NULL, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DROPTYPES", NULL, NULL, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DRAGSOURCE", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DROPTARGET", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DRAGSOURCEMOVE", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DRAGCURSOR", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DRAGCURSORCOPY", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DRAGTYPES", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DROPTYPES", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DRAGSOURCE", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DROPTARGET", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DRAGSOURCEMOVE", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DRAGCURSOR", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DRAGCURSORCOPY", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "DRAGDROP", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DROPFILESTARGET", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DRAGDROP", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DROPFILESTARGET", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
 }

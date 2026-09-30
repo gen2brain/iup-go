@@ -46,23 +46,23 @@ extern "C" {
 #include "iupunix_x11.h"
 #endif
 
-IUP_DRV_API int iupfltkIsX11(void)
+IUP_DRV_API int iupfltkIsX11()
 {
 #if defined(FLTK_USE_WAYLAND)
   if (fl_wl_display())
     return 0;
 #endif
 #if defined(FLTK_USE_X11)
-  return fl_display != NULL;
+  return fl_display != nullptr;
 #else
   return 0;
 #endif
 }
 
-IUP_DRV_API int iupfltkIsWayland(void)
+IUP_DRV_API int iupfltkIsWayland()
 {
 #if defined(FLTK_USE_WAYLAND)
-  return fl_wl_display() != NULL;
+  return fl_wl_display() != nullptr;
 #else
   return 0;
 #endif
@@ -75,42 +75,42 @@ IUP_DRV_API int iupfltkIsWayland(void)
 IUP_DRV_API char* iupfltkGetNativeWindowHandle(Fl_Window* window)
 {
   if (!window || !window->shown())
-    return NULL;
+    return nullptr;
 
 #if defined(FLTK_USE_WAYLAND)
   if (iupfltkIsWayland())
   {
     struct wld_window* wld = fl_wl_xid(window);
     if (wld)
-      return (char*)fl_wl_surface(wld);
-    return NULL;
+      return reinterpret_cast<char*>(fl_wl_surface(wld));
+    return nullptr;
   }
 #endif
 
 #if defined(__APPLE__)
   {
-    void* xid = (void*)fl_xid(window);
+    void* xid = reinterpret_cast<void*>(fl_xid(window));
     if (xid)
     {
       /* fl_xid() on macOS returns FLWindow (NSWindow*), not NSView* */
-      void* nsview = ((void* (*)(void*, void*))objc_msgSend)(xid, sel_getUid("contentView"));
-      return (char*)nsview;
+      void* nsview = reinterpret_cast<void* (*)(void*, void*)>(objc_msgSend)(xid, sel_getUid("contentView"));
+      return static_cast<char*>(nsview);
     }
-    return NULL;
+    return nullptr;
   }
 #elif defined(FLTK_USE_X11) || defined(_WIN32)
-  return (char*)(uintptr_t)fl_xid(window);
+  return reinterpret_cast<char*>(fl_xid(window));
 #else
-  return NULL;
+  return nullptr;
 #endif
 }
 
 IUP_DRV_API char* iupfltkGetNativeWindowHandleAttrib(Ihandle* ih)
 {
   if (!ih->handle)
-    return NULL;
+    return nullptr;
 
-  Fl_Widget* widget = (Fl_Widget*)ih->handle;
+  auto* widget = reinterpret_cast<Fl_Widget*>(ih->handle);
   Fl_Window* window = widget->as_window();
   if (!window)
     window = widget->window();
@@ -135,7 +135,7 @@ IUP_DRV_API char* iupfltkGetNativeWindowHandleAttrib(Ihandle* ih)
   return iupfltkGetNativeWindowHandle(window);
 }
 
-IUP_DRV_API const char* iupfltkGetNativeWindowHandleName(void)
+IUP_DRV_API const char* iupfltkGetNativeWindowHandleName()
 {
 #if defined(_WIN32)
   return "HWND";
@@ -150,14 +150,14 @@ IUP_DRV_API const char* iupfltkGetNativeWindowHandleName(void)
 #endif
 }
 
-IUP_DRV_API const char* iupfltkGetNativeFontIdName(void)
+IUP_DRV_API const char* iupfltkGetNativeFontIdName()
 {
 #if defined(_WIN32)
   return "HFONT";
 #elif defined(FLTK_USE_X11)
   return "XFONTID";
 #else
-  return NULL;
+  return nullptr;
 #endif
 }
 
@@ -165,7 +165,7 @@ IUP_DRV_API const char* iupfltkGetNativeFontIdName(void)
  * Global Colors
  ****************************************************************************/
 
-IUP_DRV_API void iupfltkSetGlobalColors(void)
+IUP_DRV_API void iupfltkSetGlobalColors()
 {
   unsigned char r, g, b;
 
@@ -204,7 +204,7 @@ static unsigned char fltk_system_bg2[3] = { 255, 255, 255 };
 
 extern "C" IUP_SDK_API int iupdrvIsSystemDarkMode(void)
 {
-  int luminance = (int)(0.299 * fltk_system_bg[0] + 0.587 * fltk_system_bg[1] + 0.114 * fltk_system_bg[2]);
+  int luminance = static_cast<int>(0.299 * fltk_system_bg[0] + 0.587 * fltk_system_bg[1] + 0.114 * fltk_system_bg[2]);
   return (luminance < 128) ? 1 : 0;
 }
 
@@ -255,7 +255,7 @@ extern "C" IUP_SDK_API int iupdrvOpen(int* argc, char*** argv)
 
   IupSetGlobal("DRIVER", "FLTK");
 
-  IupSetfAttribute(NULL, "FLTKVERSION", "%d.%d.%d", FL_MAJOR_VERSION, FL_MINOR_VERSION, FL_PATCH_VERSION);
+  IupSetfAttribute(nullptr, "FLTKVERSION", "%d.%d.%d", FL_MAJOR_VERSION, FL_MINOR_VERSION, FL_PATCH_VERSION);
 
 #if defined(__APPLE__)
   IupSetGlobal("WINDOWING", "QUARTZ");
@@ -276,22 +276,22 @@ extern "C" IUP_SDK_API int iupdrvOpen(int* argc, char*** argv)
 #if defined(FLTK_USE_X11)
   if (iupfltkIsX11())
   {
-    IupSetGlobal("XDISPLAY", (char*)fl_display);
-    IupSetGlobal("XSCREEN", (char*)(long)fl_screen);
+    IupSetGlobal("XDISPLAY", reinterpret_cast<char*>(fl_display));
+    IupSetGlobal("XSCREEN", reinterpret_cast<char*>(static_cast<intptr_t>(fl_screen)));
 
 #ifdef IUPX11_USE_DLOPEN
     if (iupX11Open())
 #endif
     {
       IupSetGlobal("XSERVERVENDOR", XServerVendor(fl_display));
-      IupSetInt(NULL, "XVENDORRELEASE", XVendorRelease(fl_display));
+      IupSetInt(nullptr, "XVENDORRELEASE", XVendorRelease(fl_display));
     }
   }
 #endif
 
 #if defined(FLTK_USE_WAYLAND)
   if (iupfltkIsWayland())
-    IupSetGlobal("WL_DISPLAY", (char*)fl_wl_display());
+    IupSetGlobal("WL_DISPLAY", reinterpret_cast<char*>(fl_wl_display()));
 #endif
 
   {

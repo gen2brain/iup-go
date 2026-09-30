@@ -47,15 +47,15 @@ public:
 protected:
   void draw() override
   {
-    Fl_Widget* canvas = (Fl_Widget*)iup_handle->handle;
+    auto* canvas = reinterpret_cast<Fl_Widget*>(iup_handle->handle);
     if (canvas)
     {
       fl_push_clip(canvas->x(), canvas->y(), canvas->w(), canvas->h());
       Base::draw();
       fl_pop_clip();
 
-      Fl_Scrollbar* sb_h = (Fl_Scrollbar*)iupAttribGet(iup_handle, "_IUPFLTK_SBHORIZ");
-      Fl_Scrollbar* sb_v = (Fl_Scrollbar*)iupAttribGet(iup_handle, "_IUPFLTK_SBVERT");
+      auto* sb_h = reinterpret_cast<Fl_Scrollbar*>(iupAttribGet(iup_handle, "_IUPFLTK_SBHORIZ"));
+      auto* sb_v = reinterpret_cast<Fl_Scrollbar*>(iupAttribGet(iup_handle, "_IUPFLTK_SBVERT"));
       if (sb_h && sb_h->visible()) this->draw_child(*sb_h);
       if (sb_v && sb_v->visible()) this->draw_child(*sb_v);
     }
@@ -70,8 +70,8 @@ public:
         event == FL_MOUSEWHEEL || event == FL_ENTER || event == FL_LEAVE ||
         event == FL_MOVE)
     {
-      Fl_Scrollbar* sb_h = (Fl_Scrollbar*)iupAttribGet(iup_handle, "_IUPFLTK_SBHORIZ");
-      Fl_Scrollbar* sb_v = (Fl_Scrollbar*)iupAttribGet(iup_handle, "_IUPFLTK_SBVERT");
+      auto* sb_h = reinterpret_cast<Fl_Scrollbar*>(iupAttribGet(iup_handle, "_IUPFLTK_SBHORIZ"));
+      auto* sb_v = reinterpret_cast<Fl_Scrollbar*>(iupAttribGet(iup_handle, "_IUPFLTK_SBVERT"));
 
       int ex = Fl::event_x();
       int ey = Fl::event_y();
@@ -117,7 +117,7 @@ public:
 
     if (blit_pending)
     {
-      Fl_Offscreen offscreen = (Fl_Offscreen)(size_t)iupAttribGet(ih, "_IUP_FLTK_OFFSCREEN");
+      auto offscreen = static_cast<Fl_Offscreen>(reinterpret_cast<size_t>(iupAttribGet(ih, "_IUP_FLTK_OFFSCREEN")));
       blit_pending = 0;
       if (offscreen && iupAttribGetInt(ih, "_IUP_FLTK_OFFSCREEN_W") == w() && iupAttribGetInt(ih, "_IUP_FLTK_OFFSCREEN_H") == h())
       {
@@ -128,7 +128,7 @@ public:
 
     if (iupAttribGet(ih, "_IUPGL_COMPOSITE"))
     {
-      IFn glcb = (IFn)IupGetCallback(ih, "ACTION");
+      IFn glcb = static_cast<IFn>(IupGetCallback(ih, "ACTION"));
       iupAttribSet(ih, "_IUPGL_IN_DRAW", "1");
       if (glcb && !(ih->data->inside_resize))
       {
@@ -136,17 +136,17 @@ public:
         glcb(ih);
         in_draw = 0;
       }
-      iupAttribSet(ih, "_IUPGL_IN_DRAW", NULL);
+      iupAttribSet(ih, "_IUPGL_IN_DRAW", nullptr);
 
-      unsigned char* px = (unsigned char*)iupAttribGet(ih, "_IUPGL_COMPOSITE_PIXELS");
+      auto* px = reinterpret_cast<unsigned char*>(iupAttribGet(ih, "_IUPGL_COMPOSITE_PIXELS"));
       int pw = iupAttribGetInt(ih, "_IUPGL_COMPOSITE_W");
       int ph = iupAttribGetInt(ih, "_IUPGL_COMPOSITE_H");
       if (px && pw > 0 && ph > 0)
       {
-        unsigned char* rgb = (unsigned char*)malloc((size_t)pw * ph * 3);
+        auto* rgb = static_cast<unsigned char*>(malloc(static_cast<size_t>(pw) * ph * 3));
         if (rgb)
         {
-          size_t i, n = (size_t)pw * ph;
+          size_t i, n = static_cast<size_t>(pw) * ph;
           for (i = 0; i < n; i++)   /* BGRA (top-left) -> RGB for fl_draw_image */
           {
             rgb[i*3+0] = px[i*4+2];
@@ -160,16 +160,16 @@ public:
       return;
     }
 
-    IFn cb = (IFn)IupGetCallback(ih, "ACTION");
+    IFn cb = static_cast<IFn>(IupGetCallback(ih, "ACTION"));
     if (cb && !(ih->data->inside_resize))
     {
 #if defined(FLTK_USE_WAYLAND)
       if (iupfltkIsWayland())
-        iupAttribSet(ih, "CAIRO_CR", (char*)fl_wl_gc());
+        iupAttribSet(ih, "CAIRO_CR", reinterpret_cast<char*>(fl_wl_gc()));
       else
 #endif
 #if FLTK_USE_CAIRO
-        iupAttribSet(ih, "CAIRO_CR", (char*)fl_cairo_gc());
+        iupAttribSet(ih, "CAIRO_CR", reinterpret_cast<char*>(fl_cairo_gc()));
 #endif
 
       int cx, cy, cw, ch;
@@ -182,9 +182,9 @@ public:
       in_draw = 1;
       cb(ih);
       in_draw = 0;
-      iupAttribSet(ih, "CLIPRECT", NULL);
+      iupAttribSet(ih, "CLIPRECT", nullptr);
 
-      iupAttribSet(ih, "CAIRO_CR", NULL);
+      iupAttribSet(ih, "CAIRO_CR", nullptr);
     }
     else
     {
@@ -251,7 +251,7 @@ public:
 
       case FL_MOUSEWHEEL:
       {
-        IFnfiis wcb = (IFnfiis)IupGetCallback(ih, "WHEEL_CB");
+        auto wcb = reinterpret_cast<IFnfiis>(IupGetCallback(ih, "WHEEL_CB"));
 
         if (iupAttribGetBoolean(ih, "WHEELDROPFOCUS"))
         {
@@ -265,7 +265,7 @@ public:
           int delta = -Fl::event_dy();
           char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
           iupfltkButtonKeySetStatus(Fl::event_state(), 0, status, 0);
-          wcb(ih, (float)delta, Fl::event_x() - x(), Fl::event_y() - y(), status);
+          wcb(ih, static_cast<float>(delta), Fl::event_x() - x(), Fl::event_y() - y(), status);
         }
         else
         {
@@ -285,13 +285,13 @@ public:
             IupSetDouble(ih, "POSX", posx);
           }
 
-          IFniff scb = (IFniff)IupGetCallback(ih, "SCROLL_CB");
+          auto scb = reinterpret_cast<IFniff>(IupGetCallback(ih, "SCROLL_CB"));
           if (scb)
           {
             int op = delta > 0 ? IUP_SBUP : IUP_SBDN;
             if (delta == 0)
               op = deltax > 0 ? IUP_SBLEFT : IUP_SBRIGHT;
-            scb(ih, op, (float)ih->data->posx, (float)ih->data->posy);
+            scb(ih, op, static_cast<float>(ih->data->posx), static_cast<float>(ih->data->posy));
           }
         }
         return 1;
@@ -322,8 +322,8 @@ public:
 
 static void fltkCanvasScrollHorizCallback(Fl_Widget* widget, void* data)
 {
-  Ihandle* ih = (Ihandle*)data;
-  Fl_Scrollbar* sb = (Fl_Scrollbar*)widget;
+  auto* ih = static_cast<Ihandle*>(data);
+  auto* sb = static_cast<Fl_Scrollbar*>(widget);
 
   double xmin = iupAttribGetDouble(ih, "XMIN");
   double xmax = iupAttribGetDouble(ih, "XMAX");
@@ -335,14 +335,14 @@ static void fltkCanvasScrollHorizCallback(Fl_Widget* widget, void* data)
   else
     ih->data->posx = xmin;
 
-  IFniff scroll_cb = (IFniff)IupGetCallback(ih, "SCROLL_CB");
+  auto scroll_cb = reinterpret_cast<IFniff>(IupGetCallback(ih, "SCROLL_CB"));
   if (scroll_cb)
   {
-    scroll_cb(ih, IUP_SBPOSH, (float)ih->data->posx, (float)ih->data->posy);
+    scroll_cb(ih, IUP_SBPOSH, static_cast<float>(ih->data->posx), static_cast<float>(ih->data->posy));
   }
   else
   {
-    IFn action_cb = (IFn)IupGetCallback(ih, "ACTION");
+    IFn action_cb = static_cast<IFn>(IupGetCallback(ih, "ACTION"));
     if (action_cb)
       iupdrvRedrawNow(ih);
   }
@@ -350,8 +350,8 @@ static void fltkCanvasScrollHorizCallback(Fl_Widget* widget, void* data)
 
 static void fltkCanvasScrollVertCallback(Fl_Widget* widget, void* data)
 {
-  Ihandle* ih = (Ihandle*)data;
-  Fl_Scrollbar* sb = (Fl_Scrollbar*)widget;
+  auto* ih = static_cast<Ihandle*>(data);
+  auto* sb = static_cast<Fl_Scrollbar*>(widget);
 
   double ymin = iupAttribGetDouble(ih, "YMIN");
   double ymax = iupAttribGetDouble(ih, "YMAX");
@@ -363,14 +363,14 @@ static void fltkCanvasScrollVertCallback(Fl_Widget* widget, void* data)
   else
     ih->data->posy = ymin;
 
-  IFniff scroll_cb = (IFniff)IupGetCallback(ih, "SCROLL_CB");
+  auto scroll_cb = reinterpret_cast<IFniff>(IupGetCallback(ih, "SCROLL_CB"));
   if (scroll_cb)
   {
-    scroll_cb(ih, IUP_SBPOSV, (float)ih->data->posx, (float)ih->data->posy);
+    scroll_cb(ih, IUP_SBPOSV, static_cast<float>(ih->data->posx), static_cast<float>(ih->data->posy));
   }
   else
   {
-    IFn action_cb = (IFn)IupGetCallback(ih, "ACTION");
+    IFn action_cb = static_cast<IFn>(IupGetCallback(ih, "ACTION"));
     if (action_cb)
       iupdrvRedrawNow(ih);
   }
@@ -382,10 +382,10 @@ static void fltkCanvasScrollVertCallback(Fl_Widget* widget, void* data)
 
 static void fltkCanvasUpdateChildLayout(Ihandle* ih)
 {
-  Fl_Group* sb_win = (Fl_Group*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
+  auto* sb_win = reinterpret_cast<Fl_Group*>(iupAttribGet(ih, "_IUP_EXTRAPARENT"));
   if (!sb_win) return;
-  Fl_Scrollbar* sb_horiz = (Fl_Scrollbar*)iupAttribGet(ih, "_IUPFLTK_SBHORIZ");
-  Fl_Scrollbar* sb_vert = (Fl_Scrollbar*)iupAttribGet(ih, "_IUPFLTK_SBVERT");
+  auto* sb_horiz = reinterpret_cast<Fl_Scrollbar*>(iupAttribGet(ih, "_IUPFLTK_SBHORIZ"));
+  auto* sb_vert = reinterpret_cast<Fl_Scrollbar*>(iupAttribGet(ih, "_IUPFLTK_SBVERT"));
   int sb_vert_width = 0, sb_horiz_height = 0;
   int width = sb_win->w();
   int height = sb_win->h();
@@ -406,22 +406,22 @@ static void fltkCanvasUpdateChildLayout(Ihandle* ih)
   if (sb_horiz && sb_horiz->visible())
     sb_horiz->resize(ox + border, oy + height - sb_horiz_height - border, width - sb_vert_width - 2 * border, sb_horiz_height);
 
-  IupFltkCanvas* canvas = (IupFltkCanvas*)ih->handle;
+  auto* canvas = reinterpret_cast<IupFltkCanvas*>(ih->handle);
   if (canvas)
     canvas->resize(ox + border, oy + border, width - sb_vert_width - 2 * border, height - sb_horiz_height - 2 * border);
 }
 
 static void fltkCanvasDeferredResize(void* data)
 {
-  Ihandle* ih = (Ihandle*)data;
+  auto* ih = static_cast<Ihandle*>(data);
   IupFltkCanvas* canvas;
 
   if (!iupObjectCheck(ih) || !ih->handle)
     return;
 
-  canvas = (IupFltkCanvas*)ih->handle;
+  canvas = reinterpret_cast<IupFltkCanvas*>(ih->handle);
 
-  IFnii cb = (IFnii)IupGetCallback(ih, "RESIZE_CB");
+  auto cb = reinterpret_cast<IFnii>(IupGetCallback(ih, "RESIZE_CB"));
   if (cb && !ih->data->inside_resize)
   {
     ih->data->inside_resize = 1;
@@ -436,8 +436,8 @@ static void fltkCanvasScrollbarToggled(Ihandle* ih)
 {
   iupAttribSet(ih, "SB_RESIZE", "YES");
   fltkCanvasUpdateChildLayout(ih);
-  Fl::remove_timeout(fltkCanvasDeferredResize, (void*)ih);
-  Fl::add_timeout(0.0, fltkCanvasDeferredResize, (void*)ih);
+  Fl::remove_timeout(fltkCanvasDeferredResize, reinterpret_cast<void*>(ih));
+  Fl::add_timeout(0.0, fltkCanvasDeferredResize, reinterpret_cast<void*>(ih));
 }
 
 /****************************************************************************
@@ -452,9 +452,9 @@ static int fltkCanvasSetDXAttrib(Ihandle* ih, const char* value)
     if (!iupStrToDoubleDef(value, &dx, 0.1))
       return 1;
 
-    iupAttribSet(ih, "SB_RESIZE", NULL);
+    iupAttribSet(ih, "SB_RESIZE", nullptr);
 
-    Fl_Scrollbar* sb_horiz = (Fl_Scrollbar*)iupAttribGet(ih, "_IUPFLTK_SBHORIZ");
+    auto* sb_horiz = reinterpret_cast<Fl_Scrollbar*>(iupAttribGet(ih, "_IUPFLTK_SBHORIZ"));
     if (!sb_horiz)
       return 1;
 
@@ -507,9 +507,9 @@ static int fltkCanvasSetDYAttrib(Ihandle* ih, const char* value)
     if (!iupStrToDoubleDef(value, &dy, 0.1))
       return 1;
 
-    iupAttribSet(ih, "SB_RESIZE", NULL);
+    iupAttribSet(ih, "SB_RESIZE", nullptr);
 
-    Fl_Scrollbar* sb_vert = (Fl_Scrollbar*)iupAttribGet(ih, "_IUPFLTK_SBVERT");
+    auto* sb_vert = reinterpret_cast<Fl_Scrollbar*>(iupAttribGet(ih, "_IUPFLTK_SBVERT"));
     if (!sb_vert)
       return 1;
 
@@ -577,7 +577,7 @@ static int fltkCanvasSetPosXAttrib(Ihandle* ih, const char* value)
     if (posx > (xmax - dx)) posx = xmax - dx;
     ih->data->posx = posx;
 
-    Fl_Scrollbar* sb_horiz = (Fl_Scrollbar*)iupAttribGet(ih, "_IUPFLTK_SBHORIZ");
+    auto* sb_horiz = reinterpret_cast<Fl_Scrollbar*>(iupAttribGet(ih, "_IUPFLTK_SBHORIZ"));
     if (sb_horiz)
     {
       sb_horiz->value(posx, dx, xmin, xmax);
@@ -606,7 +606,7 @@ static int fltkCanvasSetPosYAttrib(Ihandle* ih, const char* value)
     if (posy > (ymax - dy)) posy = ymax - dy;
     ih->data->posy = posy;
 
-    Fl_Scrollbar* sb_vert = (Fl_Scrollbar*)iupAttribGet(ih, "_IUPFLTK_SBVERT");
+    auto* sb_vert = reinterpret_cast<Fl_Scrollbar*>(iupAttribGet(ih, "_IUPFLTK_SBVERT"));
     if (sb_vert)
     {
       sb_vert->value(posy, dy, ymin, ymax);
@@ -625,7 +625,7 @@ static int fltkCanvasSetBgColorAttrib(Ihandle* ih, const char* value)
   unsigned char r, g, b;
   if (iupStrToRGB(value, &r, &g, &b))
   {
-    IupFltkCanvas* canvas = (IupFltkCanvas*)ih->handle;
+    auto* canvas = reinterpret_cast<IupFltkCanvas*>(ih->handle);
     if (canvas)
     {
       canvas->color(fl_rgb_color(r, g, b));
@@ -638,21 +638,21 @@ static int fltkCanvasSetBgColorAttrib(Ihandle* ih, const char* value)
 
 static char* fltkCanvasGetDrawSizeAttrib(Ihandle* ih)
 {
-  IupFltkCanvas* canvas = (IupFltkCanvas*)ih->handle;
+  auto* canvas = reinterpret_cast<IupFltkCanvas*>(ih->handle);
   if (canvas)
     return iupStrReturnIntInt(canvas->w(), canvas->h(), 'x');
-  return NULL;
+  return nullptr;
 }
 
 static char* fltkCanvasGetDrawableAttrib(Ihandle* ih)
 {
-  return (char*)ih->handle;
+  return reinterpret_cast<char*>(ih->handle);
 }
 
 static char* fltkCanvasGetXDisplayAttrib(Ihandle* ih)
 {
   (void)ih;
-  return (char*)iupdrvGetDisplay();
+  return static_cast<char*>(iupdrvGetDisplay());
 }
 
 /****************************************************************************
@@ -661,8 +661,8 @@ static char* fltkCanvasGetXDisplayAttrib(Ihandle* ih)
 
 IUP_DRV_API int iupfltkCanvasDeferBlit(Ihandle* ih)
 {
-  IupFltkCanvas* canvas = (IupFltkCanvas*)iupAttribGet(ih, "_IUPFLTK_CANVAS");
-  if (!canvas || canvas != (IupFltkCanvas*)ih->handle || canvas->in_draw)
+  auto* canvas = reinterpret_cast<IupFltkCanvas*>(iupAttribGet(ih, "_IUPFLTK_CANVAS"));
+  if (!canvas || canvas != reinterpret_cast<IupFltkCanvas*>(ih->handle) || canvas->in_draw)
     return 0;
 
   canvas->blit_pending = 1;
@@ -677,7 +677,7 @@ static int fltkCanvasMapMethod(Ihandle* ih)
 
   ih->data->sb = iupBaseGetScrollbar(ih);
 
-  Fl_Group::current(NULL);
+  Fl_Group::current(nullptr);
 
   Fl_Group* sb_win;
   if (iupfltkIsX11() && IupClassMatch(ih, "glcanvas") && !IupClassMatch(ih, "glbackgroundbox"))
@@ -685,40 +685,40 @@ static int fltkCanvasMapMethod(Ihandle* ih)
   else
     sb_win = new IupFltkCanvasContainer<Fl_Group>(0, 0, 1, 1, ih);
   sb_win->end();
-  sb_win->resizable(NULL);
+  sb_win->resizable(nullptr);
   sb_win->box(FL_NO_BOX);
 
   sb_win->begin();
 
-  IupFltkCanvas* canvas = new IupFltkCanvas(0, 0, 1, 1, ih);
+  auto* canvas = new IupFltkCanvas(0, 0, 1, 1, ih);
 
   if (ih->data->sb & IUP_SB_HORIZ)
   {
-    Fl_Scrollbar* sb_horiz = new Fl_Scrollbar(0, 0, 1, 1);
+    auto* sb_horiz = new Fl_Scrollbar(0, 0, 1, 1);
     sb_horiz->type(FL_HORIZONTAL);
     sb_horiz->hide();
     sb_horiz->when(FL_WHEN_CHANGED);
     sb_horiz->callback(fltkCanvasScrollHorizCallback, ih);
-    iupAttribSet(ih, "_IUPFLTK_SBHORIZ", (char*)sb_horiz);
+    iupAttribSet(ih, "_IUPFLTK_SBHORIZ", reinterpret_cast<char*>(sb_horiz));
     iupAttribSet(ih, "XHIDDEN", "YES");
   }
 
   if (ih->data->sb & IUP_SB_VERT)
   {
-    Fl_Scrollbar* sb_vert = new Fl_Scrollbar(0, 0, 1, 1);
+    auto* sb_vert = new Fl_Scrollbar(0, 0, 1, 1);
     sb_vert->type(FL_VERTICAL);
     sb_vert->hide();
     sb_vert->when(FL_WHEN_CHANGED);
     sb_vert->callback(fltkCanvasScrollVertCallback, ih);
-    iupAttribSet(ih, "_IUPFLTK_SBVERT", (char*)sb_vert);
+    iupAttribSet(ih, "_IUPFLTK_SBVERT", reinterpret_cast<char*>(sb_vert));
     iupAttribSet(ih, "YHIDDEN", "YES");
   }
 
   sb_win->end();
 
-  ih->handle = (InativeHandle*)canvas;
-  iupAttribSet(ih, "_IUP_EXTRAPARENT", (char*)sb_win);
-  iupAttribSet(ih, "_IUPFLTK_CANVAS", (char*)canvas);
+  ih->handle = reinterpret_cast<InativeHandle*>(canvas);
+  iupAttribSet(ih, "_IUP_EXTRAPARENT", reinterpret_cast<char*>(sb_win));
+  iupAttribSet(ih, "_IUPFLTK_CANVAS", reinterpret_cast<char*>(canvas));
 
   if (iupAttribGetBoolean(ih, "BORDER"))
   {
@@ -737,8 +737,8 @@ static int fltkCanvasMapMethod(Ihandle* ih)
   if (IupGetCallback(ih, "DROPFILES_CB"))
     iupAttribSet(ih, "DROPFILESTARGET", "YES");
 
-  fltkCanvasSetDXAttrib(ih, NULL);
-  fltkCanvasSetDYAttrib(ih, NULL);
+  fltkCanvasSetDXAttrib(ih, nullptr);
+  fltkCanvasSetDYAttrib(ih, nullptr);
 
   return IUP_NOERROR;
 }
@@ -749,19 +749,19 @@ static int fltkCanvasMapMethod(Ihandle* ih)
 
 static void fltkCanvasUnMapMethod(Ihandle* ih)
 {
-  IupFltkCanvas* canvas = (IupFltkCanvas*)ih->handle;
+  auto* canvas = reinterpret_cast<IupFltkCanvas*>(ih->handle);
 
-  Fl::remove_timeout(fltkCanvasDeferredResize, (void*)ih);
+  Fl::remove_timeout(fltkCanvasDeferredResize, reinterpret_cast<void*>(ih));
   if (canvas)
-    canvas->ih = NULL;
-  iupAttribSet(ih, "_IUPFLTK_CANVAS", NULL);
+    canvas->ih = nullptr;
+  iupAttribSet(ih, "_IUPFLTK_CANVAS", nullptr);
 
   {
-    Fl_Offscreen offscreen = (Fl_Offscreen)(size_t)iupAttribGet(ih, "_IUP_FLTK_OFFSCREEN");
+    auto offscreen = static_cast<Fl_Offscreen>(reinterpret_cast<size_t>(iupAttribGet(ih, "_IUP_FLTK_OFFSCREEN")));
     if (offscreen)
     {
       fl_delete_offscreen(offscreen);
-      iupAttribSet(ih, "_IUP_FLTK_OFFSCREEN", NULL);
+      iupAttribSet(ih, "_IUP_FLTK_OFFSCREEN", nullptr);
     }
   }
 
@@ -777,10 +777,10 @@ static void fltkCanvasLayoutUpdateMethod(Ihandle* ih)
   iupdrvBaseLayoutUpdateMethod(ih);
   fltkCanvasUpdateChildLayout(ih);
 
-  IupFltkCanvas* canvas = (IupFltkCanvas*)ih->handle;
+  auto* canvas = reinterpret_cast<IupFltkCanvas*>(ih->handle);
   if (canvas)
   {
-    IFnii cb = (IFnii)IupGetCallback(ih, "RESIZE_CB");
+    auto cb = reinterpret_cast<IFnii>(IupGetCallback(ih, "RESIZE_CB"));
     if (cb && !ih->data->inside_resize)
     {
       ih->data->inside_resize = 1;
@@ -797,15 +797,15 @@ static void fltkCanvasLayoutUpdateMethod(Ihandle* ih)
 static void* fltkCanvasGetInnerNativeContainerHandleMethod(Ihandle* ih, Ihandle* child)
 {
   (void)child;
-  Fl_Group* extra_parent = (Fl_Group*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
+  auto* extra_parent = reinterpret_cast<Fl_Group*>(iupAttribGet(ih, "_IUP_EXTRAPARENT"));
   if (extra_parent)
-    return (void*)extra_parent;
+    return reinterpret_cast<void*>(extra_parent);
   return ih->handle;
 }
 
 static int fltkCanvasSetUpdateRectAttrib(Ihandle* ih, const char* value)
 {
-  Fl_Widget* widget = (Fl_Widget*)ih->handle;
+  auto* widget = reinterpret_cast<Fl_Widget*>(ih->handle);
   int x1, y1, x2, y2;
   if (widget && value && sscanf(value, "%d %d %d %d", &x1, &y1, &x2, &y2) == 4)
     widget->damage(FL_DAMAGE_ALL, widget->x() + x1, widget->y() + y1, x2 - x1 + 1, y2 - y1 + 1);
@@ -825,31 +825,31 @@ extern "C" IUP_SDK_API void iupdrvCanvasInitClass(Iclass* ic)
   ic->LayoutUpdate = fltkCanvasLayoutUpdateMethod;
   ic->GetInnerNativeContainerHandle = fltkCanvasGetInnerNativeContainerHandleMethod;
 
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, fltkCanvasSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "DRAWSIZE", fltkCanvasGetDrawSizeAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DRAWABLE", fltkCanvasGetDrawableAttrib, NULL, NULL, NULL, IUPAF_NO_STRING | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, iupfltkGetNativeWindowHandleName(), iupfltkGetNativeWindowHandleAttrib, NULL, NULL, NULL, IUPAF_NO_STRING | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", nullptr, fltkCanvasSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "DRAWSIZE", fltkCanvasGetDrawSizeAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DRAWABLE", fltkCanvasGetDrawableAttrib, nullptr, nullptr, nullptr, IUPAF_NO_STRING | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, iupfltkGetNativeWindowHandleName(), iupfltkGetNativeWindowHandleAttrib, nullptr, nullptr, nullptr, IUPAF_NO_STRING | IUPAF_NO_INHERIT);
   if (iupdrvGetDisplay())
-    iupClassRegisterAttribute(ic, "XDISPLAY", fltkCanvasGetXDisplayAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT | IUPAF_NO_STRING);
-  iupClassRegisterAttribute(ic, "CAIRO_CR", NULL, NULL, NULL, NULL, IUPAF_NO_STRING);
-  iupClassRegisterAttribute(ic, "UPDATERECT", NULL, fltkCanvasSetUpdateRectAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+    iupClassRegisterAttribute(ic, "XDISPLAY", fltkCanvasGetXDisplayAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT | IUPAF_NO_STRING);
+  iupClassRegisterAttribute(ic, "CAIRO_CR", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_STRING);
+  iupClassRegisterAttribute(ic, "UPDATERECT", nullptr, fltkCanvasSetUpdateRectAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "DX", NULL, fltkCanvasSetDXAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DY", NULL, fltkCanvasSetDYAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "POSX", iupCanvasGetPosXAttrib, fltkCanvasSetPosXAttrib, "0", NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "POSY", iupCanvasGetPosYAttrib, fltkCanvasSetPosYAttrib, "0", NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "XMIN", NULL, NULL, "0", NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "XMAX", NULL, NULL, "1", NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "YMIN", NULL, NULL, "0", NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "YMAX", NULL, NULL, "1", NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "LINEX", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "LINEY", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "XAUTOHIDE", NULL, NULL, "YES", NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "YAUTOHIDE", NULL, NULL, "YES", NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "XHIDDEN", NULL, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "YHIDDEN", NULL, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DX", nullptr, fltkCanvasSetDXAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DY", nullptr, fltkCanvasSetDYAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "POSX", iupCanvasGetPosXAttrib, fltkCanvasSetPosXAttrib, "0", nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "POSY", iupCanvasGetPosYAttrib, fltkCanvasSetPosYAttrib, "0", nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "XMIN", nullptr, nullptr, "0", nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "XMAX", nullptr, nullptr, "1", nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "YMIN", nullptr, nullptr, "0", nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "YMAX", nullptr, nullptr, "1", nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "LINEX", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "LINEY", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "XAUTOHIDE", nullptr, nullptr, "YES", nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "YAUTOHIDE", nullptr, nullptr, "YES", nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "XHIDDEN", nullptr, nullptr, nullptr, nullptr, IUPAF_READONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "YHIDDEN", nullptr, nullptr, nullptr, nullptr, IUPAF_READONLY | IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "BACKINGSTORE", NULL, NULL, "YES", NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TOUCH", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SCROLLVISIBLE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BACKINGSTORE", nullptr, nullptr, "YES", nullptr, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TOUCH", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SCROLLVISIBLE", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
 }

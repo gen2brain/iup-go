@@ -168,7 +168,7 @@ static int fltkKeyPadCode(int key, int original)
   return 0;
 }
 
-IUP_DRV_API int iupfltkKeyDecode(void)
+IUP_DRV_API int iupfltkKeyDecode()
 {
   int key = Fl::event_key();
   int state = Fl::event_state();
@@ -191,7 +191,7 @@ IUP_DRV_API int iupfltkKeyDecode(void)
   int text_len = Fl::event_length();
   if (text_len == 1 && !(state & FL_CTRL))
   {
-    unsigned char ch = (unsigned char)text[0];
+    auto ch = static_cast<unsigned char>(text[0]);
     if (ch >= 32 && ch < 127)
       key = ch;
   }
@@ -229,7 +229,7 @@ static int fltkKeyTextInput(Ihandle* ih)
   int len = Fl::event_length();
   if (len <= 0 || !text || !text[0])
     return 0;
-  if (len == 1 && ((unsigned char)text[0] < 0x20 || (unsigned char)text[0] == 0x7F))
+  if (len == 1 && (static_cast<unsigned char>(text[0]) < 0x20 || static_cast<unsigned char>(text[0]) == 0x7F))
     return 0;
   return iupKeyCallTextInputCb(ih, text) == IUP_IGNORE;
 }
@@ -255,7 +255,7 @@ IUP_DRV_API int iupfltkKeyPressEvent(Fl_Widget* widget, Ihandle* ih)
 
   {
     Ihandle* dialog = IupGetDialog(ih);
-    Ihandle* menu = dialog ? IupGetAttributeHandle(dialog, "MENU") : NULL;
+    Ihandle* menu = dialog ? IupGetAttributeHandle(dialog, "MENU") : nullptr;
     if (menu && iupMenuFindAccel(menu, code))
       return 0;
   }
@@ -331,11 +331,11 @@ IUP_DRV_API int iupfltkKeyReleaseEvent(Fl_Widget* widget, Ihandle* ih)
  * Key Encoding (IUP to FLTK)
  ****************************************************************************/
 
-extern "C" IUP_SDK_API void iupdrvKeyEncode(int code, unsigned int* keyval, unsigned int* state)
+extern "C" IUP_SDK_API void iupdrvKeyEncode(int key, unsigned int* keyval, unsigned int* state)
 {
-  *keyval = (unsigned int)iup_XkeyBase(code);
+  *keyval = static_cast<unsigned int>(iup_XkeyBase(key));
 
-  if (*keyval >= K_A && *keyval <= K_Z) *keyval = (unsigned int)iup_tolower(*keyval);
+  if (*keyval >= K_A && *keyval <= K_Z) *keyval = iup_tolower(*keyval);
   if (*keyval == K_BS)  *keyval = FL_BackSpace;
   if (*keyval == K_TAB) *keyval = FL_Tab;
   if (*keyval == K_CR)  *keyval = FL_Enter;
@@ -343,16 +343,16 @@ extern "C" IUP_SDK_API void iupdrvKeyEncode(int code, unsigned int* keyval, unsi
 
   *state = 0;
 
-  if (iup_isCtrlXkey(code))
+  if (iup_isCtrlXkey(key))
     *state |= FL_CTRL;
 
-  if (iup_isAltXkey(code))
+  if (iup_isAltXkey(key))
     *state |= FL_ALT;
 
-  if (iup_isSysXkey(code))
+  if (iup_isSysXkey(key))
     *state |= FL_META;
 
-  if (iup_isShiftXkey(code))
+  if (iup_isShiftXkey(key))
     *state |= FL_SHIFT;
 }
 
@@ -385,9 +385,9 @@ extern "C" IUP_SDK_API void iupdrvSendKey(int key, int press)
   Fl_Window* win = Fl::focus() ? Fl::focus()->window() : Fl::first_window();
   if (!win) return;
 
-  Fl::e_keysym = (int)keyval;
-  Fl::e_state = (int)state;
-  Fl::e_text = (char*)"";
+  Fl::e_keysym = static_cast<int>(keyval);
+  Fl::e_state = static_cast<int>(state);
+  Fl::e_text = const_cast<char*>("");
   Fl::e_length = 0;
 
   if (press & 0x01) Fl::handle(FL_KEYDOWN, win);

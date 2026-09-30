@@ -93,7 +93,7 @@ public:
         checked = !checked;
         redraw();
 
-        IFni cb = (IFni)IupGetCallback(iup_handle, "ACTION");
+        IFni cb = reinterpret_cast<IFni>(IupGetCallback(iup_handle, "ACTION"));
         if (cb && cb(iup_handle, checked) == IUP_CLOSE)
           IupExitLoop();
 
@@ -110,7 +110,7 @@ public:
           checked = !checked;
           redraw();
 
-          IFni cb = (IFni)IupGetCallback(iup_handle, "ACTION");
+          IFni cb = reinterpret_cast<IFni>(IupGetCallback(iup_handle, "ACTION"));
           if (cb && cb(iup_handle, checked) == IUP_CLOSE)
             IupExitLoop();
 
@@ -155,13 +155,13 @@ public:
         break;
       case FL_ENTER:
       {
-        IFn cb = (IFn)IupGetCallback(iup_handle, "ENTERWINDOW_CB");
+        IFn cb = static_cast<IFn>(IupGetCallback(iup_handle, "ENTERWINDOW_CB"));
         if (cb) cb(iup_handle);
         break;
       }
       case FL_LEAVE:
       {
-        IFn cb = (IFn)IupGetCallback(iup_handle, "LEAVEWINDOW_CB");
+        IFn cb = static_cast<IFn>(IupGetCallback(iup_handle, "LEAVEWINDOW_CB"));
         if (cb) cb(iup_handle);
         break;
       }
@@ -217,7 +217,7 @@ public:
         break;
       case FL_ENTER:
       {
-        IFn cb = (IFn)IupGetCallback(iup_handle, "ENTERWINDOW_CB");
+        IFn cb = static_cast<IFn>(IupGetCallback(iup_handle, "ENTERWINDOW_CB"));
         if (cb) cb(iup_handle);
         if (iup_handle->data->flat)
           box(FL_UP_BOX);
@@ -226,7 +226,7 @@ public:
       }
       case FL_LEAVE:
       {
-        IFn cb = (IFn)IupGetCallback(iup_handle, "LEAVEWINDOW_CB");
+        IFn cb = static_cast<IFn>(IupGetCallback(iup_handle, "LEAVEWINDOW_CB"));
         if (cb) cb(iup_handle);
         if (iup_handle->data->flat && !value())
           box(FL_FLAT_BOX);
@@ -240,18 +240,18 @@ public:
 
 static void fltkToggleCallback(Fl_Widget* w, void* data)
 {
-  Ihandle* ih = (Ihandle*)data;
-  Fl_Button* button = (Fl_Button*)w;
+  auto* ih = static_cast<Ihandle*>(data);
+  auto* button = static_cast<Fl_Button*>(w);
   int state = button->value();
 
-  IFni cb = (IFni)IupGetCallback(ih, "ACTION");
+  IFni cb = reinterpret_cast<IFni>(IupGetCallback(ih, "ACTION"));
   if (cb)
   {
     if (cb(ih, state) == IUP_CLOSE)
       IupExitLoop();
   }
 
-  IFn vcb = (IFn)IupGetCallback(ih, "VALUECHANGED_CB");
+  IFn vcb = static_cast<IFn>(IupGetCallback(ih, "VALUECHANGED_CB"));
   if (vcb)
   {
     if (vcb(ih) == IUP_CLOSE)
@@ -264,12 +264,12 @@ static void fltkToggleSetPixmap(Ihandle* ih, const char* name, int make_inactive
   if (!name)
     return;
 
-  Fl_Button* button = (Fl_Button*)ih->handle;
+  auto* button = reinterpret_cast<Fl_Button*>(ih->handle);
   if (!button)
     return;
 
   const char* bgcolor = iupBaseNativeParentGetBgColorAttrib(ih);
-  Fl_Image* image = (Fl_Image*)iupImageGetImage(name, ih, make_inactive, bgcolor);
+  auto* image = static_cast<Fl_Image*>(iupImageGetImage(name, ih, make_inactive, bgcolor));
   if (image)
     button->image(image);
 }
@@ -301,7 +301,7 @@ static int fltkToggleSetValueAttrib(Ihandle* ih, const char* value)
 {
   if (iupAttribGetBoolean(ih, "SWITCH"))
   {
-    IupFltkSwitch* sw = (IupFltkSwitch*)ih->handle;
+    auto* sw = reinterpret_cast<IupFltkSwitch*>(ih->handle);
     if (sw)
     {
       sw->checked = iupStrBoolean(value);
@@ -310,7 +310,7 @@ static int fltkToggleSetValueAttrib(Ihandle* ih, const char* value)
     return 0;
   }
 
-  Fl_Button* button = (Fl_Button*)ih->handle;
+  auto* button = reinterpret_cast<Fl_Button*>(ih->handle);
   if (!button)
     return 0;
 
@@ -328,15 +328,15 @@ static char* fltkToggleGetValueAttrib(Ihandle* ih)
 {
   if (iupAttribGetBoolean(ih, "SWITCH"))
   {
-    IupFltkSwitch* sw = (IupFltkSwitch*)ih->handle;
+    auto* sw = reinterpret_cast<IupFltkSwitch*>(ih->handle);
     if (sw)
       return iupStrReturnChecked(sw->checked);
     return iupStrReturnChecked(0);
   }
 
-  Fl_Button* button = (Fl_Button*)ih->handle;
+  auto* button = reinterpret_cast<Fl_Button*>(ih->handle);
   if (!button)
-    return NULL;
+    return nullptr;
 
   return iupStrReturnChecked(button->value());
 }
@@ -345,7 +345,7 @@ static int fltkToggleSetTitleAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->type == IUP_TOGGLE_TEXT)
   {
-    Fl_Button* button = (Fl_Button*)ih->handle;
+    auto* button = reinterpret_cast<Fl_Button*>(ih->handle);
     if (button)
     {
       button->copy_label(value ? value : "");
@@ -372,7 +372,7 @@ static int fltkToggleSetAlignmentAttrib(Ihandle* ih, const char* value)
     if (iupStrEqualNoCase(value2, "ATOP"))         align |= FL_ALIGN_TOP;
     else if (iupStrEqualNoCase(value2, "ABOTTOM")) align |= FL_ALIGN_BOTTOM;
 
-    ((Fl_Button*)ih->handle)->align(align);
+    (reinterpret_cast<Fl_Button*>(ih->handle))->align(align);
     iupdrvPostRedraw(ih);
   }
 
@@ -382,11 +382,11 @@ static int fltkToggleSetAlignmentAttrib(Ihandle* ih, const char* value)
 static char* fltkToggleGetAlignmentAttrib(Ihandle* ih)
 {
   if (ih->data->type == IUP_TOGGLE_TEXT)
-    return NULL;
+    return nullptr;
 
   char* value = iupAttribGet(ih, "ALIGNMENT");
   if (!value)
-    return (char*)"ACENTER:ACENTER";
+    return const_cast<char*>("ACENTER:ACENTER");
 
   return value;
 }
@@ -397,7 +397,7 @@ static int fltkToggleSetBgColorAttrib(Ihandle* ih, const char* value)
   if (!iupStrToRGB(value, &r, &g, &b))
     return 0;
 
-  Fl_Widget* widget = (Fl_Widget*)ih->handle;
+  auto* widget = reinterpret_cast<Fl_Widget*>(ih->handle);
   if (widget)
     widget->color(fl_rgb_color(r, g, b));
 
@@ -410,7 +410,7 @@ static int fltkToggleSetFgColorAttrib(Ihandle* ih, const char* value)
   if (!iupStrToRGB(value, &r, &g, &b))
     return 0;
 
-  Fl_Widget* widget = (Fl_Widget*)ih->handle;
+  auto* widget = reinterpret_cast<Fl_Widget*>(ih->handle);
   if (widget)
     widget->labelcolor(fl_rgb_color(r, g, b));
 
@@ -502,7 +502,7 @@ static int fltkToggleSetFlatAttrib(Ihandle* ih, const char* value)
     ih->data->flat = iupStrBoolean(value);
     if (ih->handle)
     {
-      Fl_Button* button = (Fl_Button*)ih->handle;
+      auto* button = reinterpret_cast<Fl_Button*>(ih->handle);
       if (ih->data->flat)
         button->box(FL_FLAT_BOX);
       else
@@ -524,14 +524,14 @@ static int fltkToggleMapMethod(Ihandle* ih)
     ih->data->type = IUP_TOGGLE_TEXT;
 
   Ihandle* radio = iupRadioFindToggleParent(ih);
-  int is_radio = (radio != NULL);
+  int is_radio = (radio != nullptr);
 
   if (iupAttribGetBoolean(ih, "SWITCH") && !is_radio)
   {
     ih->data->type = IUP_TOGGLE_TEXT;
 
-    IupFltkSwitch* sw = new IupFltkSwitch(0, 0, SWITCH_TRACK_WIDTH, SWITCH_TRACK_HEIGHT, ih);
-    ih->handle = (InativeHandle*)sw;
+    auto* sw = new IupFltkSwitch(0, 0, SWITCH_TRACK_WIDTH, SWITCH_TRACK_HEIGHT, ih);
+    ih->handle = reinterpret_cast<InativeHandle*>(sw);
 
     value = iupAttribGet(ih, "VALUE");
     if (value && iupStrBoolean(value))
@@ -552,7 +552,7 @@ static int fltkToggleMapMethod(Ihandle* ih)
 
   if (ih->data->type == IUP_TOGGLE_IMAGE)
   {
-    IupFltkToggleButton* toggle = new IupFltkToggleButton(0, 0, 10, 10, ih);
+    auto* toggle = new IupFltkToggleButton(0, 0, 10, 10, ih);
     button = toggle;
 
     if (is_radio)
@@ -571,7 +571,7 @@ static int fltkToggleMapMethod(Ihandle* ih)
   }
   else if (is_radio)
   {
-    IupFltkRadioButton* radio_btn = new IupFltkRadioButton(0, 0, 10, 10, ih);
+    auto* radio_btn = new IupFltkRadioButton(0, 0, 10, 10, ih);
     button = radio_btn;
 
     ih->data->is_radio = 1;
@@ -583,11 +583,11 @@ static int fltkToggleMapMethod(Ihandle* ih)
   }
   else
   {
-    IupFltkCheckButton* check = new IupFltkCheckButton(0, 0, 10, 10, ih);
+    auto* check = new IupFltkCheckButton(0, 0, 10, 10, ih);
     button = check;
   }
 
-  ih->handle = (InativeHandle*)button;
+  ih->handle = reinterpret_cast<InativeHandle*>(button);
 
   if (ih->data->type == IUP_TOGGLE_IMAGE)
   {
@@ -604,7 +604,7 @@ static int fltkToggleMapMethod(Ihandle* ih)
 
   iupfltkAddToParent(ih);
 
-  button->callback(fltkToggleCallback, (void*)ih);
+  button->callback(fltkToggleCallback, reinterpret_cast<void*>(ih));
 
   if (!iupAttribGetBoolean(ih, "CANFOCUS"))
     button->visible_focus(0);
@@ -634,18 +634,18 @@ extern "C" IUP_SDK_API void iupdrvToggleInitClass(Iclass* ic)
 {
   ic->Map = fltkToggleMapMethod;
 
-  iupClassRegisterAttribute(ic, "FONT", NULL, fltkToggleSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
+  iupClassRegisterAttribute(ic, "FONT", nullptr, fltkToggleSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "ACTIVE", iupBaseGetActiveAttrib, fltkToggleSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, fltkToggleSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, fltkToggleSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "TITLE", NULL, fltkToggleSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "VALUE", fltkToggleGetValueAttrib, fltkToggleSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "ALIGNMENT", fltkToggleGetAlignmentAttrib, fltkToggleSetAlignmentAttrib, "ACENTER:ACENTER", NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "IMAGE", NULL, fltkToggleSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "IMINACTIVE", NULL, fltkToggleSetImInactiveAttrib, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "IMPRESS", NULL, NULL, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", nullptr, fltkToggleSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "FGCOLOR", nullptr, fltkToggleSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "TITLE", nullptr, fltkToggleSetTitleAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "VALUE", fltkToggleGetValueAttrib, fltkToggleSetValueAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ALIGNMENT", fltkToggleGetAlignmentAttrib, fltkToggleSetAlignmentAttrib, "ACENTER:ACENTER", nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMAGE", nullptr, fltkToggleSetImageAttrib, nullptr, nullptr, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMINACTIVE", nullptr, fltkToggleSetImInactiveAttrib, nullptr, nullptr, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMPRESS", nullptr, nullptr, nullptr, nullptr, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "PADDING", iupToggleGetPaddingAttrib, fltkToggleSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
-  iupClassRegisterAttribute(ic, "FLAT", NULL, fltkToggleSetFlatAttrib, NULL, NULL, IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "MARKUP", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED);
-  iupClassRegisterAttribute(ic, "RIGHTBUTTON", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED);
+  iupClassRegisterAttribute(ic, "FLAT", nullptr, fltkToggleSetFlatAttrib, nullptr, nullptr, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "MARKUP", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED);
+  iupClassRegisterAttribute(ic, "RIGHTBUTTON", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED);
 }

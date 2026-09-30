@@ -26,7 +26,7 @@ typedef struct _IupFltkTimer
 
 static void fltkTimerProc(void* data)
 {
-  IupFltkTimer* timer_data = (IupFltkTimer*)data;
+  auto* timer_data = static_cast<IupFltkTimer*>(data);
   if (!timer_data || !timer_data->active)
     return;
 
@@ -35,7 +35,7 @@ static void fltkTimerProc(void* data)
     return;
 
   double elapsed = Fl::seconds_since(timer_data->start_time);
-  iupAttribSetInt(ih, "ELAPSEDTIME", (int)(elapsed * 1000));
+  iupAttribSetInt(ih, "ELAPSEDTIME", static_cast<int>(elapsed * 1000));
 
   Icallback cb = IupGetCallback(ih, "ACTION_CB");
   if (cb)
@@ -50,7 +50,7 @@ static void fltkTimerProc(void* data)
   /* the callback may have stopped or destroyed the timer, freeing timer_data */
   if (!iupObjectCheck(ih))
     return;
-  if ((IupFltkTimer*)iupAttribGet(ih, "_IUP_FLTKTIMER") != timer_data)
+  if (reinterpret_cast<IupFltkTimer*>(iupAttribGet(ih, "_IUP_FLTKTIMER")) != timer_data)
     return;
 
   if (timer_data->active)
@@ -67,16 +67,16 @@ extern "C" IUP_SDK_API void iupdrvTimerRun(Ihandle* ih)
   time_ms = iupAttribGetInt(ih, "TIME");
   if (time_ms > 0)
   {
-    IupFltkTimer* timer_data = (IupFltkTimer*)malloc(sizeof(IupFltkTimer));
+    auto* timer_data = static_cast<IupFltkTimer*>(malloc(sizeof(IupFltkTimer)));
     timer_data->ih = ih;
     timer_data->interval_sec = time_ms / 1000.0;
     timer_data->active = 1;
     timer_data->start_time = Fl::now();
 
-    Fl::add_timeout(timer_data->interval_sec, fltkTimerProc, (void*)timer_data);
+    Fl::add_timeout(timer_data->interval_sec, fltkTimerProc, reinterpret_cast<void*>(timer_data));
 
     ih->serial = 1;
-    iupAttribSet(ih, "_IUP_FLTKTIMER", (char*)timer_data);
+    iupAttribSet(ih, "_IUP_FLTKTIMER", reinterpret_cast<char*>(timer_data));
   }
 }
 
@@ -84,15 +84,15 @@ extern "C" IUP_SDK_API void iupdrvTimerStop(Ihandle* ih)
 {
   if (ih->serial > 0)
   {
-    IupFltkTimer* timer_data = (IupFltkTimer*)iupAttribGet(ih, "_IUP_FLTKTIMER");
+    auto* timer_data = reinterpret_cast<IupFltkTimer*>(iupAttribGet(ih, "_IUP_FLTKTIMER"));
 
     if (timer_data)
     {
       timer_data->active = 0;
-      Fl::remove_timeout(fltkTimerProc, (void*)timer_data);
+      Fl::remove_timeout(fltkTimerProc, reinterpret_cast<void*>(timer_data));
 
       free(timer_data);
-      iupAttribSet(ih, "_IUP_FLTKTIMER", NULL);
+      iupAttribSet(ih, "_IUP_FLTKTIMER", nullptr);
     }
 
     ih->serial = -1;

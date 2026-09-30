@@ -49,15 +49,15 @@ IUP_DRV_API void iupfltkSetPosSize(Fl_Widget* widget, int x, int y, int width, i
  * Container Management
  ****************************************************************************/
 
-IUP_DRV_API Fl_Group* iupfltkNativeContainerNew(void);
+IUP_DRV_API Fl_Group* iupfltkNativeContainerNew();
 IUP_DRV_API void iupfltkNativeContainerAdd(Fl_Group* container, Fl_Widget* widget);
 
 /****************************************************************************
  * Platform Detection (runtime)
  ****************************************************************************/
 
-IUP_DRV_API int iupfltkIsX11(void);
-IUP_DRV_API int iupfltkIsWayland(void);
+IUP_DRV_API int iupfltkIsX11();
+IUP_DRV_API int iupfltkIsWayland();
 
 /****************************************************************************
  * Focus Management
@@ -72,7 +72,7 @@ IUP_DRV_API void iupfltkSetCanFocus(Fl_Widget* widget, int can);
 
 IUP_DRV_API int iupfltkKeyPressEvent(Fl_Widget* widget, Ihandle* ih);
 IUP_DRV_API int iupfltkKeyReleaseEvent(Fl_Widget* widget, Ihandle* ih);
-IUP_DRV_API int iupfltkKeyDecode(void);
+IUP_DRV_API int iupfltkKeyDecode();
 IUP_DRV_API void iupfltkButtonKeySetStatus(int state, int button, char* status, int doubleclick);
 
 IUP_DRV_API int iupfltkIsUriList(const char* text);
@@ -106,8 +106,8 @@ IUP_DRV_API void iupfltkTipsRemove(Ihandle* ih);
 
 IUP_DRV_API char* iupfltkGetNativeWindowHandle(Fl_Window* window);
 IUP_DRV_API char* iupfltkGetNativeWindowHandleAttrib(Ihandle* ih);
-IUP_DRV_API const char* iupfltkGetNativeWindowHandleName(void);
-IUP_DRV_API const char* iupfltkGetNativeFontIdName(void);
+IUP_DRV_API const char* iupfltkGetNativeWindowHandleName();
+IUP_DRV_API const char* iupfltkGetNativeFontIdName();
 
 /****************************************************************************
  * Dialog Management
@@ -120,13 +120,13 @@ IUP_DRV_API void iupfltkX11SetSkipTaskbar(Fl_Window* window, int skip);
  * System Utilities
  ****************************************************************************/
 
-IUP_DRV_API void iupfltkSetGlobalColors(void);
+IUP_DRV_API void iupfltkSetGlobalColors();
 
 /****************************************************************************
  * Cleanup
  ****************************************************************************/
 
-IUP_DRV_API void iupfltkLoopCleanup(void);
+IUP_DRV_API void iupfltkLoopCleanup();
 
 
 #endif

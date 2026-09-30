@@ -44,7 +44,7 @@ public:
   Ihandle* iup_handle;
 
   IupFltkDialogInner(int x, int y, int w, int h, Ihandle* ih)
-    : Fl_Group(x, y, w, h), bg_image(NULL), iup_handle(ih) {}
+    : Fl_Group(x, y, w, h), bg_image(nullptr), iup_handle(ih) {}
 
 protected:
   void draw() override
@@ -94,17 +94,17 @@ static int fltkDialogReadFrameExtents(Fl_Window* window, int* left, int* top)
   Atom type;
   int format, found = 0;
   unsigned long count, after;
-  unsigned char* data = NULL;
+  unsigned char* data = nullptr;
 
   if (extents && XGetWindowProperty(fl_display, fl_xid(window), extents, 0, 4, 0, AnyPropertyType,
                                     &type, &format, &count, &after, &data) == Success && data)
   {
     if (format == 32 && count == 4)
     {
-      long* value = (long*)data;
+      long* value = reinterpret_cast<long*>(data);
       float scale = Fl::screen_scale(window->screen_num());
-      *left = (int)(value[0] / scale);
-      *top = (int)(value[2] / scale);
+      *left = static_cast<int>(value[0] / scale);
+      *top = static_cast<int>(value[2] / scale);
       found = 1;
     }
     XFree(data);
@@ -123,7 +123,7 @@ static void fltkDialogGetFrameOffset(Ihandle* ih, int* dx, int* dy)
 {
   int border, caption, menu;
 
-  if (fltkDialogReadFrameExtents((Fl_Window*)ih->handle, dx, dy))
+  if (fltkDialogReadFrameExtents(reinterpret_cast<Fl_Window*>(ih->handle), dx, dy))
   {
     iupAttribSetInt(ih, "_IUPFLTK_FRAME_LEFT", *dx);
     iupAttribSetInt(ih, "_IUPFLTK_FRAME_TOP", *dy);
@@ -232,7 +232,7 @@ public:
     if (iup_handle->data->menu && iup_handle->data->menu->handle)
     {
       menu_h = iupdrvMenuGetMenuBarSize(iup_handle->data->menu);
-      Fl_Menu_Bar* menubar = (Fl_Menu_Bar*)iup_handle->data->menu->handle;
+      auto* menubar = reinterpret_cast<Fl_Menu_Bar*>(iup_handle->data->menu->handle);
       menubar->resize(0, 0, w, menu_h);
     }
     if (inner_group)
@@ -251,7 +251,7 @@ public:
       int place_x = iupAttribGetInt(iup_handle, "_IUPFLTK_PLACEX");
       int place_y = iupAttribGetInt(iup_handle, "_IUPFLTK_PLACEY");
       fltkDialogGetFrameOffset(iup_handle, &dx, &dy);
-      iupAttribSet(iup_handle, "_IUPFLTK_PLACEX", NULL);
+      iupAttribSet(iup_handle, "_IUPFLTK_PLACEX", nullptr);
       if (dx != iupAttribGetInt(iup_handle, "_IUPFLTK_PLACEDX") || dy != iupAttribGetInt(iup_handle, "_IUPFLTK_PLACEDY"))
       {
         placeAt(place_x + dx, place_y + dy);
@@ -261,7 +261,7 @@ public:
 
     if ((x_root() != old_x || y_root() != old_y) && iupAttribGet(iup_handle, "_IUPFLTK_FIRSTLAYOUT"))
     {
-      IFnii move_cb = (IFnii)IupGetCallback(iup_handle, "MOVE_CB");
+      auto move_cb = reinterpret_cast<IFnii>(IupGetCallback(iup_handle, "MOVE_CB"));
       if (move_cb)
       {
         int dx, dy;
@@ -291,7 +291,7 @@ public:
     int client_w = w;
     int client_h = h - menu;
 
-    IFnii cb = (IFnii)IupGetCallback(iup_handle, "RESIZE_CB");
+    auto cb = reinterpret_cast<IFnii>(IupGetCallback(iup_handle, "RESIZE_CB"));
     if (!cb || cb(iup_handle, client_w, client_h) != IUP_IGNORE)
     {
       iup_handle->data->ignore_resize = 1;
@@ -322,7 +322,7 @@ IUP_DRV_API void iupfltkX11SetSkipTaskbar(Fl_Window* window, int skip)
   xev.xclient.message_type = net_wm_state;
   xev.xclient.format = 32;
   xev.xclient.data.l[0] = skip? 1: 0;
-  xev.xclient.data.l[1] = (long)skip_taskbar;
+  xev.xclient.data.l[1] = static_cast<long>(skip_taskbar);
 
   XSendEvent(fl_display, root, 0, SubstructureNotifyMask | SubstructureRedirectMask, &xev);
 #else
@@ -346,7 +346,7 @@ extern "C" IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int* border, 
   *menu = fltkDialogGetMenuSize(ih);
 
   if (iupAttribGetBoolean(ih, "CUSTOMFRAME") || iupAttribGetBoolean(ih, "HIDETITLEBAR") ||
-      (ih->handle && ((IupFltkDialog*)ih->handle)->fullscreen_active()))
+      (ih->handle && (reinterpret_cast<IupFltkDialog*>(ih->handle))->fullscreen_active()))
   {
     *border = 0;
     *caption = 0;
@@ -365,7 +365,7 @@ extern "C" IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int* border, 
 
   if (ih->handle)
   {
-    IupFltkDialog* dialog = (IupFltkDialog*)ih->handle;
+    auto* dialog = reinterpret_cast<IupFltkDialog*>(ih->handle);
     int dw = dialog->decorated_w() - dialog->w();
     int dh = dialog->decorated_h() - dialog->h();
 
@@ -394,7 +394,7 @@ extern "C" IUP_SDK_API void iupdrvDialogGetPosition(Ihandle* ih, InativeHandle* 
   if (!handle)
     handle = ih->handle;
 
-  dialog = (IupFltkDialog*)handle;
+  dialog = reinterpret_cast<IupFltkDialog*>(handle);
 
   if (dialog)
   {
@@ -407,7 +407,7 @@ extern "C" IUP_SDK_API void iupdrvDialogGetPosition(Ihandle* ih, InativeHandle* 
 
 extern "C" IUP_SDK_API void iupdrvDialogSetPosition(Ihandle* ih, int x, int y)
 {
-  IupFltkDialog* dialog = (IupFltkDialog*)ih->handle;
+  auto* dialog = reinterpret_cast<IupFltkDialog*>(ih->handle);
   if (dialog)
   {
     int dx, dy;
@@ -432,7 +432,7 @@ extern "C" IUP_SDK_API void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* hand
   if (!handle)
     handle = ih->handle;
 
-  IupFltkDialog* dialog = (IupFltkDialog*)handle;
+  auto* dialog = reinterpret_cast<IupFltkDialog*>(handle);
 
   if (dialog)
   {
@@ -461,7 +461,7 @@ static void fltkDialogSetTransient(Fl_Window* dialog, Fl_Window* parent)
 
 static void fltkDialogSetTaskBarButton(Ihandle* ih, const char* value)
 {
-  IupFltkDialog* dialog = (IupFltkDialog*)ih->handle;
+  auto* dialog = reinterpret_cast<IupFltkDialog*>(ih->handle);
 
   if (value && dialog)
     iupfltkX11SetSkipTaskbar(dialog, iupStrEqualNoCase(value, "HIDE"));
@@ -469,7 +469,7 @@ static void fltkDialogSetTaskBarButton(Ihandle* ih, const char* value)
 
 static int fltkDialogSetTaskBarButtonAttrib(Ihandle* ih, const char* value)
 {
-  IupFltkDialog* dialog = (IupFltkDialog*)ih->handle;
+  auto* dialog = reinterpret_cast<IupFltkDialog*>(ih->handle);
 
   if (dialog && dialog->visible())
     fltkDialogSetTaskBarButton(ih, value);
@@ -478,7 +478,7 @@ static int fltkDialogSetTaskBarButtonAttrib(Ihandle* ih, const char* value)
 
 extern "C" IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
 {
-  IupFltkDialog* dialog = (IupFltkDialog*)ih->handle;
+  auto* dialog = reinterpret_cast<IupFltkDialog*>(ih->handle);
   if (!dialog)
     return;
 
@@ -508,7 +508,7 @@ extern "C" IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
     if (iupDialogGetNativeParent(ih))
     {
       iupfltkX11SetSkipTaskbar(dialog, 1);
-      fltkDialogSetTransient(dialog, (Fl_Window*)iupDialogGetNativeParent(ih));
+      fltkDialogSetTransient(dialog, reinterpret_cast<Fl_Window*>(iupDialogGetNativeParent(ih)));
     }
 
     fltkDialogSetTaskBarButton(ih, iupAttribGet(ih, "TASKBARBUTTON"));
@@ -523,7 +523,7 @@ extern "C" IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
 
 extern "C" IUP_SDK_API int iupdrvDialogIsVisible(Ihandle* ih)
 {
-  IupFltkDialog* dialog = (IupFltkDialog*)ih->handle;
+  auto* dialog = reinterpret_cast<IupFltkDialog*>(ih->handle);
   if (!dialog)
     return 0;
   return dialog->visible();
@@ -542,7 +542,7 @@ static void fltkDialogSaveNormalRect(Ihandle* ih, IupFltkDialog* dialog)
 
 extern "C" IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
 {
-  IupFltkDialog* dialog = (IupFltkDialog*)ih->handle;
+  auto* dialog = reinterpret_cast<IupFltkDialog*>(ih->handle);
   if (!dialog)
     return 0;
 
@@ -550,8 +550,8 @@ extern "C" IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
   int old_state = ih->data->show_state;
 
   ih->data->show_state = IUP_SHOW;
-  iupAttribSet(ih, "MAXIMIZED", NULL);
-  iupAttribSet(ih, "MINIMIZED", NULL);
+  iupAttribSet(ih, "MAXIMIZED", nullptr);
+  iupAttribSet(ih, "MINIMIZED", nullptr);
 
   if (iupAttribGetBoolean(ih, "FULLSCREEN"))
   {
@@ -613,20 +613,20 @@ extern "C" IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
       ih->data->show_state = IUP_RESTORE;
   }
 
-  iupAttribSet(ih, "PLACEMENT", NULL);
+  iupAttribSet(ih, "PLACEMENT", nullptr);
   return 1;
 }
 
 extern "C" IUP_SDK_API void iupdrvDialogSetParent(Ihandle* ih, InativeHandle* parent)
 {
-  IupFltkDialog* dialog = (IupFltkDialog*)ih->handle;
+  auto* dialog = reinterpret_cast<IupFltkDialog*>(ih->handle);
   if (!dialog)
     return;
 
   if (parent)
   {
     dialog->set_non_modal();
-    fltkDialogSetTransient(dialog, (Fl_Window*)parent);
+    fltkDialogSetTransient(dialog, reinterpret_cast<Fl_Window*>(parent));
   }
   else
     dialog->clear_modal_states();
@@ -634,7 +634,7 @@ extern "C" IUP_SDK_API void iupdrvDialogSetParent(Ihandle* ih, InativeHandle* pa
 
 static int fltkDialogSetTitleAttrib(Ihandle* ih, const char* value)
 {
-  IupFltkDialog* dialog = (IupFltkDialog*)ih->handle;
+  auto* dialog = reinterpret_cast<IupFltkDialog*>(ih->handle);
   if (dialog)
     dialog->label(value ? value : "");
   return 1;
@@ -642,7 +642,7 @@ static int fltkDialogSetTitleAttrib(Ihandle* ih, const char* value)
 
 static int fltkDialogSetResizeAttrib(Ihandle* ih, const char* value)
 {
-  IupFltkDialog* dialog = (IupFltkDialog*)ih->handle;
+  auto* dialog = reinterpret_cast<IupFltkDialog*>(ih->handle);
   if (dialog)
   {
     if (iupStrBoolean(value))
@@ -652,7 +652,7 @@ static int fltkDialogSetResizeAttrib(Ihandle* ih, const char* value)
     }
     else
     {
-      dialog->resizable(NULL);
+      dialog->resizable(nullptr);
       dialog->size_range(dialog->w(), dialog->h(), dialog->w(), dialog->h());
     }
   }
@@ -661,7 +661,7 @@ static int fltkDialogSetResizeAttrib(Ihandle* ih, const char* value)
 
 static void fltkDialogSetMinMax(Ihandle* ih, int min_w, int min_h, int max_w, int max_h, const char* resize_inc)
 {
-  IupFltkDialog* dialog = (IupFltkDialog*)ih->handle;
+  auto* dialog = reinterpret_cast<IupFltkDialog*>(ih->handle);
   int inc_w = 0, inc_h = 0;
 
   int border = 0, caption = 0, menu = 0;
@@ -737,7 +737,7 @@ static int fltkDialogSetResizeIncAttrib(Ihandle* ih, const char* value)
 
 static int fltkDialogSetHideTitleBarAttrib(Ihandle* ih, const char* value)
 {
-  IupFltkDialog* dialog = (IupFltkDialog*)ih->handle;
+  auto* dialog = reinterpret_cast<IupFltkDialog*>(ih->handle);
   if (!dialog)
     return 1;
   int visible = dialog->visible();
@@ -754,7 +754,7 @@ static int fltkDialogSetBringFrontAttrib(Ihandle* ih, const char* value)
 {
   if (iupStrBoolean(value))
   {
-    IupFltkDialog* dialog = (IupFltkDialog*)ih->handle;
+    auto* dialog = reinterpret_cast<IupFltkDialog*>(ih->handle);
     if (dialog)
       dialog->show();
   }
@@ -764,17 +764,17 @@ static int fltkDialogSetBringFrontAttrib(Ihandle* ih, const char* value)
 
 static int fltkDialogSetIconAttrib(Ihandle* ih, const char* value)
 {
-  IupFltkDialog* dialog = (IupFltkDialog*)ih->handle;
+  auto* dialog = reinterpret_cast<IupFltkDialog*>(ih->handle);
   if (!dialog)
     return 1;
 
   if (!value)
   {
-    dialog->icon((const Fl_RGB_Image*)NULL);
+    dialog->icon(static_cast<const Fl_RGB_Image*>(nullptr));
     return 1;
   }
 
-  Fl_RGB_Image* icon = (Fl_RGB_Image*)iupImageGetIcon(value);
+  auto* icon = static_cast<Fl_RGB_Image*>(iupImageGetIcon(value));
   if (icon)
     dialog->icon(icon);
 
@@ -787,7 +787,7 @@ static int fltkDialogSetBgColorAttrib(Ihandle* ih, const char* value)
   if (!iupStrToRGB(value, &r, &g, &b))
     return 0;
 
-  IupFltkDialog* dialog = (IupFltkDialog*)ih->handle;
+  auto* dialog = reinterpret_cast<IupFltkDialog*>(ih->handle);
   if (dialog)
   {
     Fl_Color c = fl_rgb_color(r, g, b);
@@ -803,7 +803,7 @@ static int fltkDialogSetBgColorAttrib(Ihandle* ih, const char* value)
 static int fltkDialogSetBackgroundAttrib(Ihandle* ih, const char* value)
 {
   unsigned char r, g, b;
-  IupFltkDialog* dialog = (IupFltkDialog*)ih->handle;
+  auto* dialog = reinterpret_cast<IupFltkDialog*>(ih->handle);
   if (!dialog)
     return 0;
 
@@ -814,14 +814,14 @@ static int fltkDialogSetBackgroundAttrib(Ihandle* ih, const char* value)
     if (dialog->inner_group)
     {
       dialog->inner_group->color(c);
-      dialog->inner_group->bg_image = NULL;
+      dialog->inner_group->bg_image = nullptr;
     }
     dialog->redraw();
     return 1;
   }
   else
   {
-    Fl_Image* image = (Fl_Image*)iupImageGetImage(value, ih, 0, NULL);
+    auto* image = static_cast<Fl_Image*>(iupImageGetImage(value, ih, 0, nullptr));
     if (image)
     {
       if (dialog->inner_group)
@@ -836,15 +836,15 @@ static int fltkDialogSetBackgroundAttrib(Ihandle* ih, const char* value)
 
 static int fltkDialogSetShapeImageAttrib(Ihandle* ih, const char* value)
 {
-  IupFltkDialog* dialog = (IupFltkDialog*)ih->handle;
+  auto* dialog = reinterpret_cast<IupFltkDialog*>(ih->handle);
   if (!dialog) return 0;
   if (!value)
   {
-    dialog->shape(NULL);
+    dialog->shape(nullptr);
     dialog->redraw();
     return 1;
   }
-  Fl_Image* image = (Fl_Image*)iupImageGetImage(value, ih, 0, NULL);
+  auto* image = static_cast<Fl_Image*>(iupImageGetImage(value, ih, 0, nullptr));
   if (!image) return 0;
   dialog->shape(image);
   dialog->redraw();
@@ -853,7 +853,7 @@ static int fltkDialogSetShapeImageAttrib(Ihandle* ih, const char* value)
 
 static int fltkDialogSetFullScreenAttrib(Ihandle* ih, const char* value)
 {
-  IupFltkDialog* dialog = (IupFltkDialog*)ih->handle;
+  auto* dialog = reinterpret_cast<IupFltkDialog*>(ih->handle);
   if (!dialog)
     return 0;
 
@@ -871,10 +871,10 @@ static int fltkDialogSetFullScreenAttrib(Ihandle* ih, const char* value)
 
       dialog->fullscreen_off(fs_x, fs_y, fs_w, fs_h);
       dialog->resize(fs_x, fs_y, fs_w, fs_h);
-      iupAttribSet(ih, "_IUPFLTK_FS_X", NULL);
-      iupAttribSet(ih, "_IUPFLTK_FS_Y", NULL);
-      iupAttribSet(ih, "_IUPFLTK_FS_W", NULL);
-      iupAttribSet(ih, "_IUPFLTK_FS_H", NULL);
+      iupAttribSet(ih, "_IUPFLTK_FS_X", nullptr);
+      iupAttribSet(ih, "_IUPFLTK_FS_Y", nullptr);
+      iupAttribSet(ih, "_IUPFLTK_FS_W", nullptr);
+      iupAttribSet(ih, "_IUPFLTK_FS_H", nullptr);
     }
     else
       dialog->fullscreen_off();
@@ -887,7 +887,7 @@ static char* fltkDialogGetClientSizeAttrib(Ihandle* ih)
 {
   if (ih->handle)
   {
-    IupFltkDialog* dialog = (IupFltkDialog*)ih->handle;
+    auto* dialog = reinterpret_cast<IupFltkDialog*>(ih->handle);
     int menu = fltkDialogGetMenuSize(ih);
     return iupStrReturnIntInt(dialog->w(), dialog->h() - menu, 'x');
   }
@@ -918,15 +918,15 @@ static void fltkDialogSetChildrenPositionMethod(Ihandle* ih, int x, int y)
 static void* fltkDialogGetInnerNativeContainerHandleMethod(Ihandle* ih, Ihandle* child)
 {
   (void)child;
-  IupFltkDialog* dialog = (IupFltkDialog*)ih->handle;
+  auto* dialog = reinterpret_cast<IupFltkDialog*>(ih->handle);
   if (dialog)
-    return (void*)dialog->inner_group;
-  return NULL;
+    return reinterpret_cast<void*>(dialog->inner_group);
+  return nullptr;
 }
 
 static void fltkDialogCloseCallback(Fl_Widget* w, void* data)
 {
-  Ihandle* ih = (Ihandle*)data;
+  auto* ih = static_cast<Ihandle*>(data);
 
   if (!iupdrvIsActive(ih))
     return;
@@ -944,7 +944,7 @@ static void fltkDialogCloseCallback(Fl_Widget* w, void* data)
   IupHide(ih);
 }
 
-static void fltkDialogDefaultXClass(void)
+static void fltkDialogDefaultXClass()
 {
   static int done = 0;
   if (done)
@@ -971,23 +971,23 @@ static int fltkDialogMapMethod(Ihandle* ih)
 {
   fltkDialogDefaultXClass();
 
-  IupFltkDialog* dialog = new IupFltkDialog(100, 100, ih);
+  auto* dialog = new IupFltkDialog(100, 100, ih);
   dialog->end();
 
-  ih->handle = (InativeHandle*)dialog;
+  ih->handle = reinterpret_cast<InativeHandle*>(dialog);
 
   dialog->begin();
-  IupFltkDialogInner* inner = new IupFltkDialogInner(0, 0, 100, 100, ih);
+  auto* inner = new IupFltkDialogInner(0, 0, 100, 100, ih);
   inner->end();
   inner->box(FL_FLAT_BOX);
-  inner->resizable(NULL);
+  inner->resizable(nullptr);
   dialog->end();
   dialog->inner_group = inner;
 
   if (iupAttribGetBoolean(ih, "RESIZE"))
     dialog->resizable(inner);
   else
-    dialog->resizable(NULL);
+    dialog->resizable(nullptr);
 
   const char* title = iupAttribGetStr(ih, "TITLE");
   if (title)
@@ -1015,12 +1015,12 @@ static int fltkDialogMapMethod(Ihandle* ih)
     IupMap(ih->data->menu);
   }
 
-  dialog->callback(fltkDialogCloseCallback, (void*)ih);
+  dialog->callback(fltkDialogCloseCallback, reinterpret_cast<void*>(ih));
 
   if (iupAttribGetBoolean(ih, "CUSTOMFRAME"))
     iupDialogCustomFrameSimulateCheckCallbacks(ih);
 
-  iupAttribSet(ih, "VISIBLE", NULL);
+  iupAttribSet(ih, "VISIBLE", nullptr);
 
   return IUP_NOERROR;
 }
@@ -1042,20 +1042,20 @@ static void fltkDialogDestroyChildDialogs(Ihandle* ih)
 
 static void fltkDialogUnMapMethod(Ihandle* ih)
 {
-  IupFltkDialog* dialog = (IupFltkDialog*)ih->handle;
+  auto* dialog = reinterpret_cast<IupFltkDialog*>(ih->handle);
   if (dialog)
   {
     fltkDialogDestroyChildDialogs(ih);
 
     if (ih->data->menu)
     {
-      ih->data->menu->handle = NULL;
+      ih->data->menu->handle = nullptr;
       IupDestroy(ih->data->menu);
-      ih->data->menu = NULL;
+      ih->data->menu = nullptr;
     }
 
     delete dialog;
-    ih->handle = NULL;
+    ih->handle = nullptr;
   }
 }
 
@@ -1064,7 +1064,7 @@ static void fltkDialogLayoutUpdateMethod(Ihandle* ih)
   int border, caption, menu;
   int width, height;
 
-  IupFltkDialog* dialog = (IupFltkDialog*)ih->handle;
+  auto* dialog = reinterpret_cast<IupFltkDialog*>(ih->handle);
 
   if (ih->data->ignore_resize)
     return;
@@ -1085,7 +1085,7 @@ static void fltkDialogLayoutUpdateMethod(Ihandle* ih)
 
     if (ih->data->menu && ih->data->menu->handle)
     {
-      Fl_Menu_Bar* menubar = (Fl_Menu_Bar*)ih->data->menu->handle;
+      auto* menubar = reinterpret_cast<Fl_Menu_Bar*>(ih->data->menu->handle);
       menubar->resize(0, 0, width, menu);
     }
 
@@ -1097,7 +1097,7 @@ static void fltkDialogLayoutUpdateMethod(Ihandle* ih)
 
   if (!iupAttribGetBoolean(ih, "RESIZE"))
   {
-    dialog->resizable(NULL);
+    dialog->resizable(nullptr);
     dialog->size_range(width, height, width, height);
   }
   else
@@ -1117,37 +1117,37 @@ extern "C" IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
   ic->GetInnerNativeContainerHandle = fltkDialogGetInnerNativeContainerHandleMethod;
   ic->SetChildrenPosition = fltkDialogSetChildrenPositionMethod;
 
-  iupClassRegisterAttribute(ic, "CLIENTSIZE", fltkDialogGetClientSizeAttrib, iupDialogSetClientSizeAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_SAVE | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "CLIENTOFFSET", fltkDialogGetClientOffsetAttrib, NULL, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_DEFAULTVALUE | IUPAF_READONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CLIENTSIZE", fltkDialogGetClientSizeAttrib, iupDialogSetClientSizeAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_SAVE | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CLIENTOFFSET", fltkDialogGetClientOffsetAttrib, nullptr, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_DEFAULTVALUE | IUPAF_READONLY | IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, fltkDialogSetBgColorAttrib, "DLGBGCOLOR", NULL, IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "BACKGROUND", NULL, fltkDialogSetBackgroundAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "ICON", NULL, fltkDialogSetIconAttrib, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "FULLSCREEN", NULL, fltkDialogSetFullScreenAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "MINSIZE", NULL, fltkDialogSetMinSizeAttrib, IUPAF_SAMEASSYSTEM, "1x1", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "MAXSIZE", NULL, fltkDialogSetMaxSizeAttrib, IUPAF_SAMEASSYSTEM, "65535x65535", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "RESIZEINC", NULL, fltkDialogSetResizeIncAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TITLE", NULL, fltkDialogSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "RESIZE", NULL, fltkDialogSetResizeAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "BORDER", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "MINBOX", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "MAXBOX", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "MENUBOX", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", nullptr, fltkDialogSetBgColorAttrib, "DLGBGCOLOR", nullptr, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BACKGROUND", nullptr, fltkDialogSetBackgroundAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ICON", nullptr, fltkDialogSetIconAttrib, nullptr, nullptr, IUPAF_IHANDLENAME | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FULLSCREEN", nullptr, fltkDialogSetFullScreenAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MINSIZE", nullptr, fltkDialogSetMinSizeAttrib, IUPAF_SAMEASSYSTEM, "1x1", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MAXSIZE", nullptr, fltkDialogSetMaxSizeAttrib, IUPAF_SAMEASSYSTEM, "65535x65535", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "RESIZEINC", nullptr, fltkDialogSetResizeIncAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TITLE", nullptr, fltkDialogSetTitleAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "RESIZE", nullptr, fltkDialogSetResizeAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BORDER", nullptr, nullptr, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MINBOX", nullptr, nullptr, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MAXBOX", nullptr, nullptr, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MENUBOX", nullptr, nullptr, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, iupfltkGetNativeWindowHandleName(), iupfltkGetNativeWindowHandleAttrib, NULL, NULL, NULL, IUPAF_NO_INHERIT | IUPAF_NO_STRING);
+  iupClassRegisterAttribute(ic, iupfltkGetNativeWindowHandleName(), iupfltkGetNativeWindowHandleAttrib, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT | IUPAF_NO_STRING);
 
-  iupClassRegisterAttribute(ic, "BRINGFRONT", NULL, fltkDialogSetBringFrontAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TOPMOST", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TASKBARBUTTON", NULL, fltkDialogSetTaskBarButtonAttrib, IUPAF_SAMEASSYSTEM, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "OPACITY", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BRINGFRONT", nullptr, fltkDialogSetBringFrontAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TOPMOST", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TASKBARBUTTON", nullptr, fltkDialogSetTaskBarButtonAttrib, IUPAF_SAMEASSYSTEM, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "OPACITY", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "CUSTOMFRAME", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "HIDETITLEBAR", NULL, fltkDialogSetHideTitleBarAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CUSTOMFRAME", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "HIDETITLEBAR", nullptr, fltkDialogSetHideTitleBarAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "MAXIMIZED", NULL, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "MINIMIZED", NULL, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SAVEUNDER", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "COMPOSITED", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "CONTROL", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SHAPEIMAGE", NULL, fltkDialogSetShapeImageAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MAXIMIZED", nullptr, nullptr, nullptr, nullptr, IUPAF_READONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MINIMIZED", nullptr, nullptr, nullptr, nullptr, IUPAF_READONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SAVEUNDER", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "COMPOSITED", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CONTROL", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SHAPEIMAGE", nullptr, fltkDialogSetShapeImageAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
 }

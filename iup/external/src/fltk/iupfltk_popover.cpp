@@ -33,14 +33,14 @@ public:
   int autohide_enabled;
 
   IupFltkPopover(int w, int h, Ihandle* ih, int autohide)
-    : Fl_Window(w, h), iup_handle(ih), content_group(NULL), autohide_enabled(autohide)
+    : Fl_Window(w, h), iup_handle(ih), content_group(nullptr), autohide_enabled(autohide)
   {
     border(0);
     set_non_modal();
 
     content_group = new Fl_Group(1, 1, w - 2, h - 2);
     content_group->end();
-    content_group->resizable(NULL);
+    content_group->resizable(nullptr);
 
     end();
   }
@@ -61,14 +61,14 @@ public:
     {
       case FL_HIDE:
       {
-        IFni cb = (IFni)IupGetCallback(iup_handle, "SHOW_CB");
+        IFni cb = reinterpret_cast<IFni>(IupGetCallback(iup_handle, "SHOW_CB"));
         if (cb)
           cb(iup_handle, IUP_HIDE);
         break;
       }
       case FL_SHOW:
       {
-        IFni cb = (IFni)IupGetCallback(iup_handle, "SHOW_CB");
+        IFni cb = reinterpret_cast<IFni>(IupGetCallback(iup_handle, "SHOW_CB"));
         if (cb)
           cb(iup_handle, IUP_SHOW);
         break;
@@ -90,9 +90,9 @@ public:
           if (f && (f == this || contains(f)))
             break;
 
-          Ihandle* anchor = (Ihandle*)iupAttribGet(iup_handle, "_IUP_POPOVER_ANCHOR");
+          auto* anchor = reinterpret_cast<Ihandle*>(iupAttribGet(iup_handle, "_IUP_POPOVER_ANCHOR"));
           Fl_Widget* below = Fl::belowmouse();
-          if (anchor && anchor->handle && below == (Fl_Widget*)anchor->handle)
+          if (anchor && anchor->handle && below == reinterpret_cast<Fl_Widget*>(anchor->handle))
             break;
 
           hide();
@@ -110,7 +110,7 @@ static int fltkPopoverSetVisibleAttrib(Ihandle* ih, const char* value)
 {
   if (iupStrBoolean(value))
   {
-    Ihandle* anchor = (Ihandle*)iupAttribGet(ih, "_IUP_POPOVER_ANCHOR");
+    auto* anchor = reinterpret_cast<Ihandle*>(iupAttribGet(ih, "_IUP_POPOVER_ANCHOR"));
     if (!anchor || !anchor->handle)
       return 0;
 
@@ -120,8 +120,8 @@ static int fltkPopoverSetVisibleAttrib(Ihandle* ih, const char* value)
         return 0;
     }
 
-    IupFltkPopover* popover = (IupFltkPopover*)ih->handle;
-    Fl_Widget* anchor_widget = (Fl_Widget*)anchor->handle;
+    auto* popover = reinterpret_cast<IupFltkPopover*>(ih->handle);
+    auto* anchor_widget = reinterpret_cast<Fl_Widget*>(anchor->handle);
 
     popover->autohide_enabled = iupAttribGetBoolean(ih, "AUTOHIDE");
 
@@ -134,8 +134,8 @@ static int fltkPopoverSetVisibleAttrib(Ihandle* ih, const char* value)
     int ax, ay;
     if (anchor_widget->as_window())
     {
-      ax = ((Fl_Window*)anchor_widget)->x_root();
-      ay = ((Fl_Window*)anchor_widget)->y_root();
+      ax = (static_cast<Fl_Window*>(anchor_widget))->x_root();
+      ay = (static_cast<Fl_Window*>(anchor_widget))->y_root();
     }
     else
     {
@@ -161,7 +161,7 @@ static int fltkPopoverSetVisibleAttrib(Ihandle* ih, const char* value)
   {
     if (ih->handle)
     {
-      IupFltkPopover* popover = (IupFltkPopover*)ih->handle;
+      auto* popover = reinterpret_cast<IupFltkPopover*>(ih->handle);
       popover->hide();
     }
   }
@@ -172,9 +172,9 @@ static int fltkPopoverSetVisibleAttrib(Ihandle* ih, const char* value)
 static char* fltkPopoverGetVisibleAttrib(Ihandle* ih)
 {
   if (!ih->handle)
-    return (char*)"NO";
+    return const_cast<char*>("NO");
 
-  IupFltkPopover* popover = (IupFltkPopover*)ih->handle;
+  auto* popover = reinterpret_cast<IupFltkPopover*>(ih->handle);
   return iupStrReturnBoolean(popover->visible());
 }
 
@@ -190,26 +190,26 @@ static void fltkPopoverLayoutUpdateMethod(Ihandle* ih)
 static void* fltkPopoverGetInnerNativeContainerHandleMethod(Ihandle* ih, Ihandle* child)
 {
   (void)child;
-  IupFltkPopover* popover = (IupFltkPopover*)ih->handle;
+  auto* popover = reinterpret_cast<IupFltkPopover*>(ih->handle);
   if (popover)
-    return (void*)popover->content_group;
-  return NULL;
+    return reinterpret_cast<void*>(popover->content_group);
+  return nullptr;
 }
 
 static int fltkPopoverMapMethod(Ihandle* ih)
 {
   int autohide = iupAttribGetBoolean(ih, "AUTOHIDE");
 
-  IupFltkPopover* popover = new IupFltkPopover(100, 100, ih, autohide);
+  auto* popover = new IupFltkPopover(100, 100, ih, autohide);
 
-  ih->handle = (InativeHandle*)popover;
+  ih->handle = reinterpret_cast<InativeHandle*>(popover);
 
   return IUP_NOERROR;
 }
 
 static void fltkPopoverUnMapMethod(Ihandle* ih)
 {
-  IupFltkPopover* popover = (IupFltkPopover*)ih->handle;
+  auto* popover = reinterpret_cast<IupFltkPopover*>(ih->handle);
 
   if (popover)
   {
@@ -217,7 +217,7 @@ static void fltkPopoverUnMapMethod(Ihandle* ih)
     delete popover;
   }
 
-  ih->handle = NULL;
+  ih->handle = nullptr;
 }
 
 extern "C" IUP_SDK_API void iupdrvPopoverInitClass(Iclass* ic)
@@ -227,5 +227,5 @@ extern "C" IUP_SDK_API void iupdrvPopoverInitClass(Iclass* ic)
   ic->LayoutUpdate = fltkPopoverLayoutUpdateMethod;
   ic->GetInnerNativeContainerHandle = fltkPopoverGetInnerNativeContainerHandleMethod;
 
-  iupClassRegisterAttribute(ic, "VISIBLE", fltkPopoverGetVisibleAttrib, fltkPopoverSetVisibleAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "VISIBLE", fltkPopoverGetVisibleAttrib, fltkPopoverSetVisibleAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
 }

@@ -31,12 +31,12 @@ static void fltkButtonSetPixmap(Ihandle* ih, const char* name, int make_inactive
   if (!name)
     return;
 
-  Fl_Button* button = (Fl_Button*)ih->handle;
+  auto* button = reinterpret_cast<Fl_Button*>(ih->handle);
   if (!button)
     return;
 
   const char* bgcolor = iupBaseNativeParentGetBgColorAttrib(ih);
-  Fl_Image* image = (Fl_Image*)iupImageGetImage(name, ih, make_inactive, bgcolor);
+  auto* image = static_cast<Fl_Image*>(iupImageGetImage(name, ih, make_inactive, bgcolor));
   if (image)
     button->image(image);
 }
@@ -61,7 +61,7 @@ public:
         break;
       case FL_ENTER:
       {
-        IFn cb = (IFn)IupGetCallback(iup_handle, "ENTERWINDOW_CB");
+        IFn cb = static_cast<IFn>(IupGetCallback(iup_handle, "ENTERWINDOW_CB"));
         if (cb)
           cb(iup_handle);
         if (iupAttribGetBoolean(iup_handle, "FLAT"))
@@ -71,7 +71,7 @@ public:
       }
       case FL_LEAVE:
       {
-        IFn cb = (IFn)IupGetCallback(iup_handle, "LEAVEWINDOW_CB");
+        IFn cb = static_cast<IFn>(IupGetCallback(iup_handle, "LEAVEWINDOW_CB"));
         if (cb)
           cb(iup_handle);
         if (iupAttribGetBoolean(iup_handle, "FLAT"))
@@ -88,7 +88,7 @@ public:
           if (impress)
             fltkButtonSetPixmap(iup_handle, impress, 0);
         }
-        IFniiiis cb = (IFniiiis)IupGetCallback(iup_handle, "BUTTON_CB");
+        auto cb = reinterpret_cast<IFniiiis>(IupGetCallback(iup_handle, "BUTTON_CB"));
         if (cb)
         {
           int button = IUP_BUTTON1;
@@ -113,7 +113,7 @@ public:
               fltkButtonSetPixmap(iup_handle, image, 0);
           }
         }
-        IFniiiis cb = (IFniiiis)IupGetCallback(iup_handle, "BUTTON_CB");
+        auto cb = reinterpret_cast<IFniiiis>(IupGetCallback(iup_handle, "BUTTON_CB"));
         if (cb)
         {
           int button = IUP_BUTTON1;
@@ -179,7 +179,7 @@ public:
 
 static void fltkButtonCallback(Fl_Widget* w, void* data)
 {
-  Ihandle* ih = (Ihandle*)data;
+  auto* ih = static_cast<Ihandle*>(data);
   Icallback cb = IupGetCallback(ih, "ACTION");
   if (cb)
   {
@@ -225,7 +225,7 @@ static int fltkButtonSetTitleAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->type & IUP_BUTTON_TEXT)
   {
-    IupFltkButton* button = (IupFltkButton*)ih->handle;
+    auto* button = reinterpret_cast<IupFltkButton*>(ih->handle);
     if (button)
     {
       button->copy_label(value ? value : "");
@@ -256,7 +256,7 @@ static int fltkButtonSetAlignmentAttrib(Ihandle* ih, const char* value)
 
   if (ih->handle)
   {
-    IupFltkButton* button = (IupFltkButton*)ih->handle;
+    auto* button = reinterpret_cast<IupFltkButton*>(ih->handle);
     Fl_Align align = FL_ALIGN_INSIDE;
 
     if (ih->data->horiz_alignment == IUP_ALIGN_ALEFT) align |= FL_ALIGN_LEFT;
@@ -282,8 +282,8 @@ static int fltkButtonSetAlignmentAttrib(Ihandle* ih, const char* value)
 
 static char* fltkButtonGetAlignmentAttrib(Ihandle* ih)
 {
-  char* horiz_align2str[3] = {(char*)"ALEFT", (char*)"ACENTER", (char*)"ARIGHT"};
-  char* vert_align2str[3] = {(char*)"ATOP", (char*)"ACENTER", (char*)"ABOTTOM"};
+  char* horiz_align2str[3] = {const_cast<char*>("ALEFT"), const_cast<char*>("ACENTER"), const_cast<char*>("ARIGHT")};
+  char* vert_align2str[3] = {const_cast<char*>("ATOP"), const_cast<char*>("ACENTER"), const_cast<char*>("ABOTTOM")};
   return iupStrReturnStrf("%s:%s", horiz_align2str[ih->data->horiz_alignment], vert_align2str[ih->data->vert_alignment]);
 }
 
@@ -306,7 +306,7 @@ static int fltkButtonSetBgColorAttrib(Ihandle* ih, const char* value)
   if (!iupStrToRGB(value, &r, &g, &b))
     return 0;
 
-  IupFltkButton* button = (IupFltkButton*)ih->handle;
+  auto* button = reinterpret_cast<IupFltkButton*>(ih->handle);
   if (button)
     button->color(fl_rgb_color(r, g, b));
 
@@ -319,7 +319,7 @@ static int fltkButtonSetFgColorAttrib(Ihandle* ih, const char* value)
   if (!iupStrToRGB(value, &r, &g, &b))
     return 0;
 
-  IupFltkButton* button = (IupFltkButton*)ih->handle;
+  auto* button = reinterpret_cast<IupFltkButton*>(ih->handle);
   if (button)
     button->labelcolor(fl_rgb_color(r, g, b));
 
@@ -402,7 +402,7 @@ static int fltkButtonSetImPressAttrib(Ihandle* ih, const char* value)
     {
       if (!iupAttribGetBoolean(ih, "IMPRESSBORDER"))
       {
-        IupFltkButton* button = (IupFltkButton*)ih->handle;
+        auto* button = reinterpret_cast<IupFltkButton*>(ih->handle);
         if (button)
           button->box(FL_FLAT_BOX);
       }
@@ -416,7 +416,7 @@ static int fltkButtonSetFlatAttrib(Ihandle* ih, const char* value)
 {
   if (ih->handle)
   {
-    IupFltkButton* button = (IupFltkButton*)ih->handle;
+    auto* button = reinterpret_cast<IupFltkButton*>(ih->handle);
     if (iupStrBoolean(value))
       button->box(FL_FLAT_BOX);
     else
@@ -438,8 +438,8 @@ static int fltkButtonMapMethod(Ihandle* ih)
   else
     ih->data->type = IUP_BUTTON_TEXT;
 
-  IupFltkButton* button = new IupFltkButton(0, 0, 10, 10, ih);
-  ih->handle = (InativeHandle*)button;
+  auto* button = new IupFltkButton(0, 0, 10, 10, ih);
+  ih->handle = reinterpret_cast<InativeHandle*>(button);
 
   char* title = iupAttribGet(ih, "TITLE");
   if (title)
@@ -477,7 +477,7 @@ static int fltkButtonMapMethod(Ihandle* ih)
 
   iupfltkAddToParent(ih);
 
-  button->callback(fltkButtonCallback, (void*)ih);
+  button->callback(fltkButtonCallback, reinterpret_cast<void*>(ih));
 
   if (iupAttribGetBoolean(ih, "FLAT") ||
       (iupAttribGet(ih, "IMPRESS") && !iupAttribGetBoolean(ih, "IMPRESSBORDER")))
@@ -495,7 +495,7 @@ static int fltkButtonMapMethod(Ihandle* ih)
 
 static int fltkButtonSetShowAsDefaultAttrib(Ihandle* ih, const char* value)
 {
-  IupFltkButton* button = (IupFltkButton*)ih->handle;
+  auto* button = reinterpret_cast<IupFltkButton*>(ih->handle);
   if (button)
     button->redraw();
   (void)value;
@@ -506,18 +506,18 @@ extern "C" IUP_SDK_API void iupdrvButtonInitClass(Iclass* ic)
 {
   ic->Map = fltkButtonMapMethod;
 
-  iupClassRegisterAttribute(ic, "FONT", NULL, fltkButtonSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
+  iupClassRegisterAttribute(ic, "FONT", nullptr, fltkButtonSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "ACTIVE", iupBaseGetActiveAttrib, fltkButtonSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, fltkButtonSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, fltkButtonSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "TITLE", NULL, fltkButtonSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "ALIGNMENT", fltkButtonGetAlignmentAttrib, fltkButtonSetAlignmentAttrib, "ACENTER:ACENTER", NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "IMAGE", NULL, fltkButtonSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "IMINACTIVE", NULL, fltkButtonSetImInactiveAttrib, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "IMPRESS", NULL, fltkButtonSetImPressAttrib, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", nullptr, fltkButtonSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "FGCOLOR", nullptr, fltkButtonSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "TITLE", nullptr, fltkButtonSetTitleAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ALIGNMENT", fltkButtonGetAlignmentAttrib, fltkButtonSetAlignmentAttrib, "ACENTER:ACENTER", nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMAGE", nullptr, fltkButtonSetImageAttrib, nullptr, nullptr, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMINACTIVE", nullptr, fltkButtonSetImInactiveAttrib, nullptr, nullptr, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMPRESS", nullptr, fltkButtonSetImPressAttrib, nullptr, nullptr, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "PADDING", iupButtonGetPaddingAttrib, fltkButtonSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
-  iupClassRegisterAttribute(ic, "FLAT", NULL, fltkButtonSetFlatAttrib, NULL, NULL, IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "IMPRESSBORDER", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "MARKUP", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED);
-  iupClassRegisterAttribute(ic, "SHOWASDEFAULT", NULL, fltkButtonSetShowAsDefaultAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FLAT", nullptr, fltkButtonSetFlatAttrib, nullptr, nullptr, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "IMPRESSBORDER", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MARKUP", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED);
+  iupClassRegisterAttribute(ic, "SHOWASDEFAULT", nullptr, fltkButtonSetShowAsDefaultAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
 }

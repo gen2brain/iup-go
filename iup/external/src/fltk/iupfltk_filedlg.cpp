@@ -49,13 +49,13 @@ static char* fltkFileCheckExt(Ihandle* ih, const char* filename)
   char* ext = iupAttribGet(ih, "EXTDEFAULT");
   if (ext)
   {
-    int len = (int)strlen(filename);
-    int ext_len = (int)strlen(ext);
+    int len = static_cast<int>(strlen(filename));
+    int ext_len = static_cast<int>(strlen(ext));
 
     if (len > ext_len && filename[len - ext_len - 1] == '.')
     {
       if (strcmp(filename + len - ext_len, ext) == 0)
-        return (char*)filename;
+        return const_cast<char*>(filename);
     }
 
     const char* dot = strrchr(filename, '.');
@@ -64,13 +64,13 @@ static char* fltkFileCheckExt(Ihandle* ih, const char* filename)
     if (!dot || (slash && dot < slash))
     {
       int new_len = len + ext_len + 2;
-      char* new_filename = (char*)malloc(new_len);
+      char* new_filename = static_cast<char*>(malloc(new_len));
       snprintf(new_filename, new_len, "%s.%s", filename, ext);
       return new_filename;
     }
   }
 
-  return (char*)filename;
+  return const_cast<char*>(filename);
 }
 
 /* "*.png;*.jpg" -> "{*.png,*.jpg}", "*.*" -> "*", a single pattern stays as-is */
@@ -105,7 +105,7 @@ static void fltkConvertPattern(const char* pattern, char* out, int out_size)
 static char* fltkConvertExtFilter(const char* extfilter)
 {
   if (!extfilter || !extfilter[0])
-    return NULL;
+    return nullptr;
 
   char* copy = strdup(extfilter);
   Iarray* result = iupArrayCreate(256, sizeof(char));
@@ -126,7 +126,7 @@ static char* fltkConvertExtFilter(const char* extfilter)
     if (!first)
     {
       int cur = iupArrayCount(result);
-      char* buf = (char*)iupArrayAdd(result, 1);
+      char* buf = static_cast<char*>(iupArrayAdd(result, 1));
       buf[cur] = '\t';
     }
     first = 0;
@@ -137,16 +137,16 @@ static char* fltkConvertExtFilter(const char* extfilter)
     char entry[1024];
     snprintf(entry, sizeof(entry), "%s (%s)", label, converted_pattern);
 
-    int entry_len = (int)strlen(entry);
+    int entry_len = static_cast<int>(strlen(entry));
     int cur = iupArrayCount(result);
-    char* buf = (char*)iupArrayAdd(result, entry_len);
+    char* buf = static_cast<char*>(iupArrayAdd(result, entry_len));
     memcpy(buf + cur, entry, entry_len);
 
-    p = sep ? sep + 1 : NULL;
+    p = sep ? sep + 1 : nullptr;
   }
 
   int cur = iupArrayCount(result);
-  char* buf = (char*)iupArrayInc(result);
+  char* buf = static_cast<char*>(iupArrayInc(result));
   buf[cur] = '\0';
 
   char* out = strdup(buf);
@@ -159,7 +159,7 @@ static char* fltkConvertExtFilter(const char* extfilter)
 static char* fltkConvertFilter(const char* filter)
 {
   if (!filter || !filter[0])
-    return NULL;
+    return nullptr;
 
   char out[512];
   fltkConvertPattern(filter, out, sizeof(out));
@@ -177,7 +177,7 @@ static void fltkFileDlgGetMultipleFiles(Ihandle* ih, Fl_File_Chooser* chooser)
     return;
 
   char* dir = iupStrFileGetPath(first_file);
-  int dir_len = (int)strlen(dir);
+  int dir_len = static_cast<int>(strlen(dir));
 
   iupAttribSetStr(ih, "DIRECTORY", dir);
 
@@ -203,7 +203,7 @@ static void fltkFileDlgGetMultipleFiles(Ihandle* ih, Fl_File_Chooser* chooser)
     if (len > 0 && (dir[len - 1] == '/' || dir[len - 1] == '\\'))
       len--;
 
-    char* all_names = (char*)iupArrayAdd(names_array, len + 1);
+    char* all_names = static_cast<char*>(iupArrayAdd(names_array, len + 1));
     memcpy(all_names, dir, len);
     all_names[len] = '|';
 
@@ -219,10 +219,10 @@ static void fltkFileDlgGetMultipleFiles(Ihandle* ih, Fl_File_Chooser* chooser)
       const char* file = chooser->value(i);
       if (!file) continue;
 
-      len = (int)strlen(file) - offset;
+      len = static_cast<int>(strlen(file)) - offset;
 
       cur_len = iupArrayCount(names_array);
-      all_names = (char*)iupArrayAdd(names_array, len + 1);
+      all_names = static_cast<char*>(iupArrayAdd(names_array, len + 1));
       memcpy(all_names + cur_len, file + offset, len);
       all_names[cur_len + len] = '|';
 
@@ -233,7 +233,7 @@ static void fltkFileDlgGetMultipleFiles(Ihandle* ih, Fl_File_Chooser* chooser)
     iupAttribSetInt(ih, "MULTIVALUECOUNT", item_count);
 
     cur_len = iupArrayCount(names_array);
-    all_names = (char*)iupArrayInc(names_array);
+    all_names = static_cast<char*>(iupArrayInc(names_array));
     all_names[cur_len] = 0;
 
     iupAttribSetStr(ih, "VALUE", all_names);
@@ -263,37 +263,37 @@ public:
   {
     draw_box();
 
-    IFnss cb = (IFnss)IupGetCallback(iup_handle, "FILE_CB");
+    auto cb = reinterpret_cast<IFnss>(IupGetCallback(iup_handle, "FILE_CB"));
     if (cb)
     {
       iupAttribSetInt(iup_handle, "PREVIEWWIDTH", w() - Fl::box_dw(box()));
       iupAttribSetInt(iup_handle, "PREVIEWHEIGHT", h() - Fl::box_dh(box()));
 
-      Fl_File_Chooser* fc = (Fl_File_Chooser*)iupAttribGet(iup_handle, "_IUPFLTK_FILECHOOSER");
+      auto* fc = reinterpret_cast<Fl_File_Chooser*>(iupAttribGet(iup_handle, "_IUPFLTK_FILECHOOSER"));
       if (fc && fc->value() && fltkIsFile(fc->value()))
-        cb(iup_handle, (char*)fc->value(), (char*)"PAINT");
+        cb(iup_handle, const_cast<char*>(fc->value()), const_cast<char*>("PAINT"));
       else
-        cb(iup_handle, NULL, (char*)"PAINT");
+        cb(iup_handle, nullptr, const_cast<char*>("PAINT"));
     }
   }
 };
 
 static void fltkFileDlgChooserCallback(Fl_File_Chooser* fc, void* data)
 {
-  Ihandle* ih = (Ihandle*)data;
-  IFnss cb = (IFnss)IupGetCallback(ih, "FILE_CB");
+  auto* ih = static_cast<Ihandle*>(data);
+  auto cb = reinterpret_cast<IFnss>(IupGetCallback(ih, "FILE_CB"));
   if (!cb)
     return;
 
   const char* filename = fc->value();
   if (filename && fltkIsFile(filename))
-    cb(ih, (char*)filename, (char*)"SELECT");
+    cb(ih, const_cast<char*>(filename), const_cast<char*>("SELECT"));
   else if (filename)
-    cb(ih, (char*)filename, (char*)"OTHER");
+    cb(ih, const_cast<char*>(filename), const_cast<char*>("OTHER"));
 
   if (iupAttribGetBoolean(ih, "SHOWPREVIEW"))
   {
-    IupFltkPreviewCanvas* preview = (IupFltkPreviewCanvas*)iupAttribGet(ih, "WID");
+    auto* preview = reinterpret_cast<IupFltkPreviewCanvas*>(iupAttribGet(ih, "WID"));
     if (preview)
       preview->redraw();
   }
@@ -353,7 +353,7 @@ static int fltkFileDlgPopup(Ihandle* ih, int x, int y)
   if (value && value[0] != 0 && (value[0] == '/' || value[1] == ':'))
   {
     char* dir = iupStrFileGetPath(value);
-    int len = (int)strlen(dir);
+    int len = static_cast<int>(strlen(dir));
     iupAttribSetStr(ih, "DIRECTORY", dir);
     iupAttribSetStr(ih, "FILE", value + len);
     free(dir);
@@ -361,7 +361,7 @@ static int fltkFileDlgPopup(Ihandle* ih, int x, int y)
 
   const char* directory = iupAttribGet(ih, "DIRECTORY");
 
-  char* fc_filter = NULL;
+  char* fc_filter = nullptr;
   value = iupAttribGet(ih, "EXTFILTER");
   if (value)
     fc_filter = fltkConvertExtFilter(value);
@@ -374,7 +374,7 @@ static int fltkFileDlgPopup(Ihandle* ih, int x, int y)
 
   value = iupAttribGet(ih, "TITLE");
 
-  Fl_File_Chooser* chooser = new Fl_File_Chooser(directory, fc_filter, fc_type, value);
+  auto* chooser = new Fl_File_Chooser(directory, fc_filter, fc_type, value);
 
   if (fc_filter)
     free(fc_filter);
@@ -393,13 +393,13 @@ static int fltkFileDlgPopup(Ihandle* ih, int x, int y)
   if (iupAttribGetBoolean(ih, "SHOWHIDDEN"))
     chooser->showHiddenButton->value(1);
 
-  IupFltkPreviewCanvas* preview_canvas = NULL;
-  IFnss file_cb = (IFnss)IupGetCallback(ih, "FILE_CB");
+  IupFltkPreviewCanvas* preview_canvas = nullptr;
+  auto file_cb = reinterpret_cast<IFnss>(IupGetCallback(ih, "FILE_CB"));
 
   if (file_cb && dialogtype != 2)
   {
     chooser->callback(fltkFileDlgChooserCallback, ih);
-    iupAttribSet(ih, "_IUPFLTK_FILECHOOSER", (char*)chooser);
+    iupAttribSet(ih, "_IUPFLTK_FILECHOOSER", reinterpret_cast<char*>(chooser));
 
     if (iupAttribGetBoolean(ih, "SHOWPREVIEW"))
     {
@@ -413,8 +413,8 @@ static int fltkFileDlgPopup(Ihandle* ih, int x, int y)
       preview_canvas = new IupFltkPreviewCanvas(0, 0, preview_width, preview_height, ih);
       chooser->add_extra(preview_canvas);
 
-      ih->handle = (InativeHandle*)preview_canvas;
-      iupAttribSet(ih, "WID", (char*)preview_canvas);
+      ih->handle = reinterpret_cast<InativeHandle*>(preview_canvas);
+      iupAttribSet(ih, "WID", reinterpret_cast<char*>(preview_canvas));
     }
   }
 
@@ -430,19 +430,19 @@ static int fltkFileDlgPopup(Ihandle* ih, int x, int y)
       iupfltkX11SetSkipTaskbar(dlg_win, 1);
 
     InativeHandle* saved_handle = ih->handle;
-    ih->handle = (InativeHandle*)dlg_win;
+    ih->handle = reinterpret_cast<InativeHandle*>(dlg_win);
     iupDialogUpdatePosition(ih);
     ih->handle = saved_handle;
   }
 
   if (file_cb)
-    file_cb(ih, NULL, (char*)"INIT");
+    file_cb(ih, nullptr, const_cast<char*>("INIT"));
 
   while (chooser->shown())
     Fl::wait();
 
   if (file_cb)
-    file_cb(ih, NULL, (char*)"FINISH");
+    file_cb(ih, nullptr, const_cast<char*>("FINISH"));
 
   int got_value = (chooser->value() && chooser->value()[0]);
 
@@ -466,19 +466,19 @@ static int fltkFileDlgPopup(Ihandle* ih, int x, int y)
       {
         if (fltkIsFile(final_filename))
         {
-          if (!fl_choice("File already exists. Overwrite?", "Cancel", "OK", NULL))
+          if (!fl_choice("File already exists. Overwrite?", "Cancel", "OK", nullptr))
           {
             if (final_filename != filename)
               free(final_filename);
 
-            iupAttribSet(ih, "FILTERUSED", NULL);
-            iupAttribSet(ih, "VALUE", NULL);
-            iupAttribSet(ih, "FILEEXIST", NULL);
+            iupAttribSet(ih, "FILTERUSED", nullptr);
+            iupAttribSet(ih, "VALUE", nullptr);
+            iupAttribSet(ih, "FILEEXIST", nullptr);
             iupAttribSet(ih, "STATUS", "-1");
 
-            iupAttribSet(ih, "_IUPFLTK_FILECHOOSER", NULL);
-            iupAttribSet(ih, "WID", NULL);
-            ih->handle = NULL;
+            iupAttribSet(ih, "_IUPFLTK_FILECHOOSER", nullptr);
+            iupAttribSet(ih, "WID", nullptr);
+            ih->handle = nullptr;
             delete chooser;
             delete preview_canvas;
             return IUP_NOERROR;
@@ -499,7 +499,7 @@ static int fltkFileDlgPopup(Ihandle* ih, int x, int y)
 
       if (dialogtype == 2)
       {
-        iupAttribSet(ih, "FILEEXIST", NULL);
+        iupAttribSet(ih, "FILEEXIST", nullptr);
         iupAttribSet(ih, "STATUS", "0");
       }
       else if (file_exist)
@@ -523,15 +523,15 @@ static int fltkFileDlgPopup(Ihandle* ih, int x, int y)
   }
   else
   {
-    iupAttribSet(ih, "FILTERUSED", NULL);
-    iupAttribSet(ih, "VALUE", NULL);
-    iupAttribSet(ih, "FILEEXIST", NULL);
+    iupAttribSet(ih, "FILTERUSED", nullptr);
+    iupAttribSet(ih, "VALUE", nullptr);
+    iupAttribSet(ih, "FILEEXIST", nullptr);
     iupAttribSet(ih, "STATUS", "-1");
   }
 
-  iupAttribSet(ih, "_IUPFLTK_FILECHOOSER", NULL);
-  iupAttribSet(ih, "WID", NULL);
-  ih->handle = NULL;
+  iupAttribSet(ih, "_IUPFLTK_FILECHOOSER", nullptr);
+  iupAttribSet(ih, "WID", nullptr);
+  ih->handle = nullptr;
 
   delete chooser;
   delete preview_canvas;
@@ -543,7 +543,7 @@ extern "C" IUP_SDK_API void iupdrvFileDlgInitClass(Iclass* ic)
 {
   ic->DlgPopup = fltkFileDlgPopup;
 
-  iupClassRegisterAttribute(ic, "EXTFILTER", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "FILTERINFO", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "FILTERUSED", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "EXTFILTER", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FILTERINFO", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FILTERUSED", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
 }

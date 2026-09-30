@@ -39,7 +39,7 @@ typedef struct _IfltkFont
   int is_strikeout;
 } IfltkFont;
 
-static Iarray* fltk_fonts = NULL;
+static Iarray* fltk_fonts = nullptr;
 
 /****************************************************************************
  * Font Name Mapping
@@ -81,7 +81,7 @@ IUP_DRV_API int iupfltkMapFontFace(const char* typeface, int is_bold, int is_ita
   }
 
   if (fltk_font_count == 0)
-    fltk_font_count = Fl::set_fonts(NULL);
+    fltk_font_count = Fl::set_fonts(nullptr);
 
   int want_attr = (is_bold ? FL_BOLD : 0) | (is_italic ? FL_ITALIC : 0);
   Fl_Font base_match = -1;
@@ -92,8 +92,8 @@ IUP_DRV_API int iupfltkMapFontFace(const char* typeface, int is_bold, int is_ita
     const char* name = Fl::get_font_name(i, &attr);
     if (!name) continue;
 
-    int namelen = (int)strlen(typeface);
-    int fontnamelen = (int)strlen(name);
+    int namelen = static_cast<int>(strlen(typeface));
+    int fontnamelen = static_cast<int>(strlen(name));
     if (fontnamelen < namelen) continue;
 
     if (strncasecmp(name, typeface, namelen) == 0 &&
@@ -134,10 +134,10 @@ static IfltkFont* fltkFindFont(const char* font)
   IfltkFont* fonts;
 
   if (!fltk_fonts)
-    return NULL;
+    return nullptr;
 
   count = iupArrayCount(fltk_fonts);
-  fonts = (IfltkFont*)iupArrayGetData(fltk_fonts);
+  fonts = static_cast<IfltkFont*>(iupArrayGetData(fltk_fonts));
 
   for (i = 0; i < count; i++)
   {
@@ -150,7 +150,7 @@ static IfltkFont* fltkFindFont(const char* font)
     if (!iupFontParseX(font, typeface, sizeof(typeface), &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
     {
       if (!iupFontParsePango(font, typeface, &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
-        return NULL;
+        return nullptr;
     }
   }
 
@@ -162,16 +162,16 @@ static IfltkFont* fltkFindFont(const char* font)
   if (size < 0)
     pixel_size = -size;
   else
-    pixel_size = (int)(size * FL_NORMAL_SIZE / 10.0 + 0.5);
+    pixel_size = static_cast<int>(size * FL_NORMAL_SIZE / 10.0 + 0.5);
 
   if (pixel_size <= 0)
-    return NULL;
+    return nullptr;
 
   int fl_font_id = iupfltkMapFontFace(typeface, is_bold, is_italic);
 
   fl_font(fl_font_id, pixel_size);
 
-  fonts = (IfltkFont*)iupArrayInc(fltk_fonts);
+  fonts = static_cast<IfltkFont*>(iupArrayInc(fltk_fonts));
 
   iupStrCopyN(fonts[i].font, sizeof(fonts[i].font), font);
   fonts[i].fl_font = fl_font_id;
@@ -179,11 +179,11 @@ static IfltkFont* fltkFindFont(const char* font)
   fonts[i].is_underline = is_underline;
   fonts[i].is_strikeout = is_strikeout;
 
-  fonts[i].charheight = (int)(fl_height() + 0.5);
-  fonts[i].charwidth = (int)(fl_width("x", 1) + 0.5);
-  fonts[i].max_width = (int)(fl_width("W", 1) + 0.5);
-  fonts[i].ascent = (int)(fl_height() - fl_descent() + 0.5);
-  fonts[i].descent = (int)(fl_descent() + 0.5);
+  fonts[i].charheight = static_cast<int>(fl_height() + 0.5);
+  fonts[i].charwidth = static_cast<int>(fl_width("x", 1) + 0.5);
+  fonts[i].max_width = static_cast<int>(fl_width("W", 1) + 0.5);
+  fonts[i].ascent = static_cast<int>(fl_height() - fl_descent() + 0.5);
+  fonts[i].descent = static_cast<int>(fl_descent() + 0.5);
 
   return &fonts[i];
 }
@@ -194,10 +194,10 @@ static IfltkFont* fltkFontCreateNativeFont(Ihandle* ih, const char* value)
   if (!fltkfont)
   {
     iupERROR1("Failed to create Font: %s", value);
-    return NULL;
+    return nullptr;
   }
 
-  iupAttribSet(ih, "_IUP_FLTKFONT", (char*)fltkfont);
+  iupAttribSet(ih, "_IUP_FLTKFONT", reinterpret_cast<char*>(fltkfont));
   return fltkfont;
 }
 
@@ -294,7 +294,7 @@ static void fltkFontGetTextSize(Ihandle* ih, IfltkFont* fltkfont, const char* st
 
       if (l_len)
       {
-        int line_w = (int)(fl_width(curstr, l_len) + 0.5);
+        int line_w = static_cast<int>(fl_width(curstr, l_len) + 0.5);
         max_w = iupMAX(max_w, line_w);
       }
 
@@ -336,7 +336,7 @@ extern "C" IUP_SDK_API int iupdrvSetFontAttrib(Ihandle* ih, const char* value)
       (ih->iclass->nativetype != IUP_TYPEVOID) &&
       (ih->iclass->nativetype != IUP_TYPEMENU))
   {
-    Fl_Widget* widget = (Fl_Widget*)ih->handle;
+    auto* widget = reinterpret_cast<Fl_Widget*>(ih->handle);
     widget->redraw_label();
     widget->labelfont(fltkfont->fl_font);
     widget->labelsize(fltkfont->fl_size);
@@ -351,14 +351,14 @@ extern "C" IUP_SDK_API void iupdrvFontGetMultiLineStringSize(Ihandle* ih, const 
 {
   IfltkFont* fltkfont = fltkFontGet(ih);
   if (fltkfont)
-    fltkFontGetTextSize(ih, fltkfont, str, str ? (int)strlen(str) : 0, w, h);
+    fltkFontGetTextSize(ih, fltkfont, str, str ? static_cast<int>(strlen(str)) : 0, w, h);
 }
 
 extern "C" IUP_SDK_API void iupdrvFontGetTextSize(const char* font, const char* str, int len, int* w, int* h)
 {
   IfltkFont* fltkfont = fltkFindFont(font);
   if (fltkfont)
-    fltkFontGetTextSize(NULL, fltkfont, str, len, w, h);
+    fltkFontGetTextSize(nullptr, fltkfont, str, len, w, h);
 }
 
 extern "C" IUP_SDK_API void iupdrvFontGetFontDim(const char* font, int* max_width, int* line_height, int* ascent, int* descent)
@@ -388,12 +388,12 @@ extern "C" IUP_SDK_API int iupdrvFontGetStringWidth(Ihandle* ih, const char* str
 
   line_end = strchr(str, '\n');
   if (line_end)
-    len = (int)(line_end - str);
+    len = static_cast<int>(line_end - str);
   else
-    len = (int)strlen(str);
+    len = static_cast<int>(strlen(str));
 
   fl_font(fltkfont->fl_font, fltkfont->fl_size);
-  return (int)(fl_width(str, len) + 0.5);
+  return static_cast<int>(fl_width(str, len) + 0.5);
 }
 
 extern "C" IUP_SDK_API void iupdrvFontGetCharSize(Ihandle* ih, int* charwidth, int* charheight)
@@ -412,21 +412,21 @@ extern "C" IUP_SDK_API void iupdrvFontGetCharSize(Ihandle* ih, int* charwidth, i
 
 static int fltkFontFamilyCompare(const void* a, const void* b)
 {
-  return iupStrCompare(*(const char**)a, *(const char**)b, 0, 1);
+  return iupStrCompare(*static_cast<const char* const*>(a), *static_cast<const char* const*>(b), 0, 1);
 }
 
 extern "C" IUP_SDK_API int iupdrvFontGetFamilyList(char*** list)
 {
-  Fl_Font total = Fl::set_fonts(NULL);
+  Fl_Font total = Fl::set_fonts(nullptr);
   int i, count = 0;
   char prev[256] = "";
 
-  char** temp = (char**)malloc(total * sizeof(char*));
+  char** temp = static_cast<char**>(malloc(total * sizeof(char*)));
 
   for (i = 0; i < total; i++)
   {
     int attr = 0;
-    const char* name = Fl::get_font_name((Fl_Font)i, &attr);
+    const char* name = Fl::get_font_name(static_cast<Fl_Font>(i), &attr);
     if (!name || !name[0]) continue;
     if (attr != 0) continue;
     if (iupStrEqual(name, prev)) continue;
@@ -439,11 +439,11 @@ extern "C" IUP_SDK_API int iupdrvFontGetFamilyList(char*** list)
   if (count == 0)
   {
     free(temp);
-    *list = NULL;
+    *list = nullptr;
     return 0;
   }
 
-  *list = (char**)realloc(temp, count * sizeof(char*));
+  *list = static_cast<char**>(realloc(temp, count * sizeof(char*)));
   qsort(*list, count, sizeof(char*), fltkFontFamilyCompare);
 
   return count;
@@ -460,5 +460,5 @@ extern "C" IUP_SDK_API void iupdrvFontFinish(void)
     return;
 
   iupArrayDestroy(fltk_fonts);
-  fltk_fonts = NULL;
+  fltk_fonts = nullptr;
 }

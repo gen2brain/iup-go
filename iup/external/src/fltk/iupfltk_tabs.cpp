@@ -60,9 +60,9 @@ static int fltkTabsIndexToPos(Ihandle* ih, int index)
 static Ihandle* fltkTabsChildFromPage(Ihandle* ih, void* page)
 {
   for (Ihandle* c = ih->firstchild; c; c = c->brother)
-    if (iupAttribGet(c, "_IUPTAB_PAGE") == (char*)page)
+    if (iupAttribGet(c, "_IUPTAB_PAGE") == static_cast<char*>(page))
       return c;
-  return NULL;
+  return nullptr;
 }
 
 
@@ -141,7 +141,7 @@ public:
 
     if (event == FL_PUSH && Fl::event_button() == FL_RIGHT_MOUSE)
     {
-      IFni cb = (IFni)IupGetCallback(iup_handle, "RIGHTCLICK_CB");
+      IFni cb = reinterpret_cast<IFni>(IupGetCallback(iup_handle, "RIGHTCLICK_CB"));
       if (cb)
       {
         int idx = findTabIndex(Fl::event_x(), Fl::event_y());
@@ -228,7 +228,7 @@ public:
           int iup_src = fltkTabsIndexToPos(iup_handle, src);
           int iup_dst = fltkTabsIndexToPos(iup_handle, dst);
 
-          IFnii reorder_cb = (IFnii)IupGetCallback(iup_handle, "REORDER_CB");
+          auto reorder_cb = reinterpret_cast<IFnii>(IupGetCallback(iup_handle, "REORDER_CB"));
           int ret = IUP_DEFAULT;
           if (reorder_cb)
             ret = reorder_cb(iup_handle, iup_src, iup_dst);
@@ -245,8 +245,8 @@ public:
             if (src_child)
             {
               int new_index = find(fl_child);
-              Fl_Widget* ref_widget = (new_index + 1 < children()) ? child(new_index + 1) : NULL;
-              Ihandle* ref_child = ref_widget ? fltkTabsChildFromPage(iup_handle, ref_widget) : NULL;
+              Fl_Widget* ref_widget = (new_index + 1 < children()) ? child(new_index + 1) : nullptr;
+              Ihandle* ref_child = ref_widget ? fltkTabsChildFromPage(iup_handle, ref_widget) : nullptr;
 
               IupReparent(src_child, iup_handle, ref_child);
 
@@ -254,7 +254,7 @@ public:
               prev_index = new_index;
             }
 
-            iupAttribSet(iup_handle, "_IUPTABS_REORDERING", NULL);
+            iupAttribSet(iup_handle, "_IUPTABS_REORDERING", nullptr);
           }
         }
       }
@@ -278,15 +278,15 @@ public:
           int new_pos = fltkTabsIndexToPos(iup_handle, new_index);
           int prev_pos = prev_index >= 0 ? fltkTabsIndexToPos(iup_handle, prev_index) : -1;
 
-          Ihandle* child_ih = new_pos >= 0 ? IupGetChild(iup_handle, new_pos) : NULL;
-          Ihandle* prev_child = prev_pos >= 0 ? IupGetChild(iup_handle, prev_pos) : NULL;
+          Ihandle* child_ih = new_pos >= 0 ? IupGetChild(iup_handle, new_pos) : nullptr;
+          Ihandle* prev_child = prev_pos >= 0 ? IupGetChild(iup_handle, prev_pos) : nullptr;
 
-          IFnnn cb = (IFnnn)IupGetCallback(iup_handle, "TABCHANGE_CB");
+          auto cb = reinterpret_cast<IFnnn>(IupGetCallback(iup_handle, "TABCHANGE_CB"));
           if (cb)
             cb(iup_handle, child_ih, prev_child);
           else
           {
-            IFnii cb2 = (IFnii)IupGetCallback(iup_handle, "TABCHANGEPOS_CB");
+            auto cb2 = reinterpret_cast<IFnii>(IupGetCallback(iup_handle, "TABCHANGEPOS_CB"));
             if (cb2 && prev_pos >= 0)
               cb2(iup_handle, new_pos, prev_pos);
           }
@@ -303,7 +303,7 @@ public:
 static int fltkTabsGetTabHeight(Ihandle* ih)
 {
   int ch;
-  iupdrvFontGetCharSize(ih, NULL, &ch);
+  iupdrvFontGetCharSize(ih, nullptr, &ch);
   int h = ch;
 
   int has_image = 0;
@@ -366,10 +366,10 @@ extern "C" IUP_SDK_API void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_ti
 
   if (tab_image)
   {
-    void* img = iupImageGetImage(tab_image, ih, 0, NULL);
+    void* img = iupImageGetImage(tab_image, ih, 0, nullptr);
     if (img)
     {
-      Fl_Image* fl_img = (Fl_Image*)img;
+      auto* fl_img = static_cast<Fl_Image*>(img);
       int iw = fl_img->w();
       int ih_img = fl_img->h();
       iupTabsScaleImageSize(ih, iw, ih_img, &iw, &ih_img);
@@ -392,7 +392,7 @@ extern "C" IUP_SDK_API void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_ti
 
 extern "C" IUP_SDK_API void iupdrvTabsSetCurrentTab(Ihandle* ih, int pos)
 {
-  IupFltkTabs* tabs = (IupFltkTabs*)ih->handle;
+  auto* tabs = reinterpret_cast<IupFltkTabs*>(ih->handle);
   if (!tabs) return;
 
   int index = fltkTabsPosToIndex(ih, pos);
@@ -406,7 +406,7 @@ extern "C" IUP_SDK_API void iupdrvTabsSetCurrentTab(Ihandle* ih, int pos)
 
 extern "C" IUP_SDK_API int iupdrvTabsGetCurrentTab(Ihandle* ih)
 {
-  IupFltkTabs* tabs = (IupFltkTabs*)ih->handle;
+  auto* tabs = reinterpret_cast<IupFltkTabs*>(ih->handle);
   if (!tabs) return -1;
 
   Fl_Widget* cur = tabs->value();
@@ -428,7 +428,7 @@ extern "C" IUP_SDK_API int iupdrvTabsIsTabVisible(Ihandle* child, int pos)
 
 static int fltkTabsSetTabTitleAttrib(Ihandle* ih, int pos, const char* value)
 {
-  IupFltkTabs* tabs = (IupFltkTabs*)ih->handle;
+  auto* tabs = reinterpret_cast<IupFltkTabs*>(ih->handle);
   if (!tabs) return 0;
 
   if (pos >= 0 && pos < tabs->children())
@@ -443,7 +443,7 @@ static int fltkTabsSetTabTitleAttrib(Ihandle* ih, int pos, const char* value)
 
 static int fltkTabsSetTabTipAttrib(Ihandle* ih, int pos, const char* value)
 {
-  IupFltkTabs* tabs = (IupFltkTabs*)ih->handle;
+  auto* tabs = reinterpret_cast<IupFltkTabs*>(ih->handle);
   if (!tabs) return 0;
 
   if (pos >= 0 && pos < tabs->children())
@@ -457,13 +457,13 @@ static int fltkTabsSetTabTipAttrib(Ihandle* ih, int pos, const char* value)
 
 static void fltkTabsAssignTabImage(Ihandle* ih, Ihandle* child, Fl_Widget* page, Fl_Image* src)
 {
-  Fl_Image* prev = (Fl_Image*)iupAttribGet(child, "_IUPFLTK_TABIMAGE_OWNED");
-  iupAttribSet(child, "_IUPFLTK_TABIMAGE_OWNED", NULL);
+  auto* prev = reinterpret_cast<Fl_Image*>(iupAttribGet(child, "_IUPFLTK_TABIMAGE_OWNED"));
+  iupAttribSet(child, "_IUPFLTK_TABIMAGE_OWNED", nullptr);
 
   if (!src)
   {
-    page->image(NULL);
-    if (prev) delete prev;
+    page->image(nullptr);
+    delete prev;
     return;
   }
 
@@ -482,14 +482,14 @@ static void fltkTabsAssignTabImage(Ihandle* ih, Ihandle* child, Fl_Widget* page,
     Fl_Image* scaled = src->copy(dst_w, dst_h);
     Fl_Image::RGB_scaling(prev);
     page->image(scaled);
-    iupAttribSet(child, "_IUPFLTK_TABIMAGE_OWNED", (char*)scaled);
+    iupAttribSet(child, "_IUPFLTK_TABIMAGE_OWNED", reinterpret_cast<char*>(scaled));
   }
-  if (prev) delete prev;
+  delete prev;
 }
 
 static int fltkTabsSetTabImageAttrib(Ihandle* ih, int pos, const char* value)
 {
-  IupFltkTabs* tabs = (IupFltkTabs*)ih->handle;
+  auto* tabs = reinterpret_cast<IupFltkTabs*>(ih->handle);
   if (!tabs) return 0;
 
   Ihandle* child = IupGetChild(ih, pos);
@@ -501,7 +501,7 @@ static int fltkTabsSetTabImageAttrib(Ihandle* ih, int pos, const char* value)
     if (value)
     {
       const char* bgcolor = iupBaseNativeParentGetBgColorAttrib(ih);
-      Fl_Image* image = (Fl_Image*)iupImageGetImage(value, ih, 0, bgcolor);
+      auto* image = static_cast<Fl_Image*>(iupImageGetImage(value, ih, 0, bgcolor));
       if (image)
       {
         fltkTabsAssignTabImage(ih, child, page, image);
@@ -510,7 +510,7 @@ static int fltkTabsSetTabImageAttrib(Ihandle* ih, int pos, const char* value)
     }
     else
     {
-      fltkTabsAssignTabImage(ih, child, page, NULL);
+      fltkTabsAssignTabImage(ih, child, page, nullptr);
     }
     tabs->redraw();
   }
@@ -519,10 +519,10 @@ static int fltkTabsSetTabImageAttrib(Ihandle* ih, int pos, const char* value)
 
 static void fltkTabsShowTab(Ihandle* ih, Ihandle* child, int show)
 {
-  IupFltkTabs* tabs = (IupFltkTabs*)ih->handle;
+  auto* tabs = reinterpret_cast<IupFltkTabs*>(ih->handle);
   if (!tabs) return;
 
-  Fl_Group* page = (Fl_Group*)iupAttribGet(child, "_IUPTAB_PAGE");
+  auto* page = reinterpret_cast<Fl_Group*>(iupAttribGet(child, "_IUPTAB_PAGE"));
   if (!page) return;
 
   int hidden = iupAttribGet(child, "_IUPFLTK_TAB_HIDDEN") ? 1 : 0;
@@ -536,7 +536,7 @@ static void fltkTabsShowTab(Ihandle* ih, Ihandle* child, int show)
   }
   else if (show && hidden)
   {
-    iupAttribSet(child, "_IUPFLTK_TAB_HIDDEN", NULL);
+    iupAttribSet(child, "_IUPFLTK_TAB_HIDDEN", nullptr);
     int index = fltkTabsPosToIndex(ih, pos);
     if (index < 0) index = tabs->children();
     tabs->insert(*page, index);
@@ -553,7 +553,7 @@ static void fltkTabsShowTab(Ihandle* ih, Ihandle* child, int show)
 static void fltkTabsCloseCallback(Fl_Widget* w, void* data)
 {
   (void)w;
-  Ihandle* child = (Ihandle*)data;
+  auto* child = static_cast<Ihandle*>(data);
   if (!child) return;
 
   if (Fl::callback_reason() != FL_REASON_CLOSED)
@@ -564,7 +564,7 @@ static void fltkTabsCloseCallback(Fl_Widget* w, void* data)
 
   int pos = IupGetChildPos(ih, child);
 
-  IFni cb = (IFni)IupGetCallback(ih, "TABCLOSE_CB");
+  IFni cb = reinterpret_cast<IFni>(IupGetCallback(ih, "TABCLOSE_CB"));
   if (cb)
   {
     int ret = cb(ih, pos);
@@ -589,7 +589,7 @@ static void fltkTabsApplyShowClose(Ihandle* ih, IupFltkTabs* tabs, int pos, Ihan
   if (show)
   {
     page->when(page->when() | FL_WHEN_CLOSED);
-    page->callback(fltkTabsCloseCallback, (void*)child);
+    page->callback(fltkTabsCloseCallback, reinterpret_cast<void*>(child));
   }
   else
   {
@@ -605,7 +605,7 @@ static int fltkTabsSetShowCloseAttrib(Ihandle* ih, int pos, const char* value)
 
     if (ih->handle)
     {
-      IupFltkTabs* tabs = (IupFltkTabs*)ih->handle;
+      auto* tabs = reinterpret_cast<IupFltkTabs*>(ih->handle);
       for (int i = 0; i < tabs->children(); i++)
       {
         Ihandle* child = IupGetChild(ih, i);
@@ -617,7 +617,7 @@ static int fltkTabsSetShowCloseAttrib(Ihandle* ih, int pos, const char* value)
     return 1;
   }
 
-  IupFltkTabs* tabs = (IupFltkTabs*)ih->handle;
+  auto* tabs = reinterpret_cast<IupFltkTabs*>(ih->handle);
   if (!tabs) return 0;
 
   Ihandle* child = IupGetChild(ih, pos);
@@ -665,7 +665,7 @@ static int fltkTabsSetBgColorAttrib(Ihandle* ih, const char* value)
   if (!iupStrToRGB(value, &r, &g, &b))
     return 0;
 
-  IupFltkTabs* tabs = (IupFltkTabs*)ih->handle;
+  auto* tabs = reinterpret_cast<IupFltkTabs*>(ih->handle);
   if (tabs)
   {
     tabs->selection_color(fl_rgb_color(r, g, b));
@@ -680,7 +680,7 @@ static int fltkTabsSetFgColorAttrib(Ihandle* ih, const char* value)
   if (!iupStrToRGB(value, &r, &g, &b))
     return 0;
 
-  IupFltkTabs* tabs = (IupFltkTabs*)ih->handle;
+  auto* tabs = reinterpret_cast<IupFltkTabs*>(ih->handle);
   if (tabs)
   {
     tabs->labelcolor(fl_rgb_color(r, g, b));
@@ -694,14 +694,14 @@ static int fltkTabsSetFontAttrib(Ihandle* ih, const char* value)
   if (!iupdrvSetFontAttrib(ih, value))
     return 0;
 
-  IupFltkTabs* tabs = (IupFltkTabs*)ih->handle;
+  auto* tabs = reinterpret_cast<IupFltkTabs*>(ih->handle);
   int fl_font, fl_size;
   if (tabs && iupfltkGetFontFromString(value, &fl_font, &fl_size))
   {
     for (int i = 0; i < tabs->children(); i++)
     {
-      tabs->child(i)->labelfont((Fl_Font)fl_font);
-      tabs->child(i)->labelsize((Fl_Fontsize)fl_size);
+      tabs->child(i)->labelfont(static_cast<Fl_Font>(fl_font));
+      tabs->child(i)->labelsize(static_cast<Fl_Fontsize>(fl_size));
     }
     tabs->redraw();
   }
@@ -711,8 +711,8 @@ static int fltkTabsSetFontAttrib(Ihandle* ih, const char* value)
 
 static char* fltkTabsGetClientSizeAttrib(Ihandle* ih)
 {
-  IupFltkTabs* tabs = (IupFltkTabs*)ih->handle;
-  if (!tabs) return NULL;
+  auto* tabs = reinterpret_cast<IupFltkTabs*>(ih->handle);
+  if (!tabs) return nullptr;
 
   int tab_h = fltkTabsGetTabHeight(ih);
   int w = tabs->w() - 4;
@@ -743,12 +743,12 @@ static void* fltkTabsGetInnerNativeContainerHandleMethod(Ihandle* ih, Ihandle* c
 
   if (parent)
   {
-    Fl_Group* page = (Fl_Group*)iupAttribGet(parent, "_IUPTAB_CONTAINER");
+    auto* page = reinterpret_cast<Fl_Group*>(iupAttribGet(parent, "_IUPTAB_CONTAINER"));
     if (page)
-      return (void*)page;
+      return reinterpret_cast<void*>(page);
   }
 
-  return (void*)ih->handle;
+  return reinterpret_cast<void*>(ih->handle);
 }
 
 static void fltkTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
@@ -761,18 +761,18 @@ static void fltkTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
 
   if (ih->handle)
   {
-    IupFltkTabs* tabs = (IupFltkTabs*)ih->handle;
+    auto* tabs = reinterpret_cast<IupFltkTabs*>(ih->handle);
     int pos = IupGetChildPos(ih, child);
     int tab_h = fltkTabsGetTabHeight(ih);
 
     tabs->begin();
 
     int page_y = (ih->data->type == ITABS_BOTTOM) ? (tabs->y() + 2) : (tabs->y() + tab_h + 2);
-    Fl_Group* page = new Fl_Group(tabs->x() + 2, page_y,
+    auto* page = new Fl_Group(tabs->x() + 2, page_y,
                                   tabs->w() - 4, tabs->h() - tab_h - 4);
     page->end();
     page->box(FL_NO_BOX);
-    page->resizable(NULL);
+    page->resizable(nullptr);
 
     char* tabtitle = iupAttribGet(child, "TABTITLE");
     if (!tabtitle)
@@ -783,15 +783,15 @@ static void fltkTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
     }
 
     if (!tabtitle)
-      tabtitle = (char*)"     ";
+      tabtitle = const_cast<char*>("     ");
 
     page->copy_label(tabtitle);
 
     int fl_font, fl_size;
     if (iupfltkGetFont(ih, &fl_font, &fl_size))
     {
-      page->labelfont((Fl_Font)fl_font);
-      page->labelsize((Fl_Fontsize)fl_size);
+      page->labelfont(static_cast<Fl_Font>(fl_font));
+      page->labelsize(static_cast<Fl_Fontsize>(fl_size));
     }
 
     char* tabimage = iupAttribGet(child, "TABIMAGE");
@@ -800,7 +800,7 @@ static void fltkTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
     if (tabimage)
     {
       const char* bgcolor = iupBaseNativeParentGetBgColorAttrib(ih);
-      Fl_Image* img = (Fl_Image*)iupImageGetImage(tabimage, ih, 0, bgcolor);
+      auto* img = static_cast<Fl_Image*>(iupImageGetImage(tabimage, ih, 0, bgcolor));
       if (img)
       {
         fltkTabsAssignTabImage(ih, child, page, img);
@@ -813,7 +813,7 @@ static void fltkTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
     if (do_show_close)
     {
       page->when(page->when() | FL_WHEN_CLOSED);
-      page->callback(fltkTabsCloseCallback, (void*)child);
+      page->callback(fltkTabsCloseCallback, reinterpret_cast<void*>(child));
     }
 
     char* tabtip = iupAttribGet(child, "TABTIP");
@@ -824,8 +824,8 @@ static void fltkTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
 
     tabs->end();
 
-    iupAttribSet(child, "_IUPTAB_CONTAINER", (char*)page);
-    iupAttribSet(child, "_IUPTAB_PAGE", (char*)page);
+    iupAttribSet(child, "_IUPTAB_CONTAINER", reinterpret_cast<char*>(page));
+    iupAttribSet(child, "_IUPTAB_PAGE", reinterpret_cast<char*>(page));
 
     if (pos != iupdrvTabsGetCurrentTab(ih))
       page->hide();
@@ -845,24 +845,24 @@ static void fltkTabsChildRemovedMethod(Ihandle* ih, Ihandle* child, int pos)
 
   if (ih->handle)
   {
-    IupFltkTabs* tabs = (IupFltkTabs*)ih->handle;
-    Fl_Group* page = (Fl_Group*)iupAttribGet(child, "_IUPTAB_CONTAINER");
+    auto* tabs = reinterpret_cast<IupFltkTabs*>(ih->handle);
+    auto* page = reinterpret_cast<Fl_Group*>(iupAttribGet(child, "_IUPTAB_CONTAINER"));
 
     if (page)
     {
-      page->image(NULL);
+      page->image(nullptr);
       tabs->remove(page);
       delete page;
     }
 
     {
-      Fl_Image* owned = (Fl_Image*)iupAttribGet(child, "_IUPFLTK_TABIMAGE_OWNED");
-      if (owned) delete owned;
-      iupAttribSet(child, "_IUPFLTK_TABIMAGE_OWNED", NULL);
+      auto* owned = reinterpret_cast<Fl_Image*>(iupAttribGet(child, "_IUPFLTK_TABIMAGE_OWNED"));
+      delete owned;
+      iupAttribSet(child, "_IUPFLTK_TABIMAGE_OWNED", nullptr);
     }
 
-    iupAttribSet(child, "_IUPTAB_CONTAINER", NULL);
-    iupAttribSet(child, "_IUPTAB_PAGE", NULL);
+    iupAttribSet(child, "_IUPTAB_CONTAINER", nullptr);
+    iupAttribSet(child, "_IUPTAB_PAGE", nullptr);
 
     if (tabs->children() > 0)
     {
@@ -883,7 +883,7 @@ static void fltkTabsLayoutUpdateMethod(Ihandle* ih)
 {
   iupdrvBaseLayoutUpdateMethod(ih);
 
-  IupFltkTabs* tabs = (IupFltkTabs*)ih->handle;
+  auto* tabs = reinterpret_cast<IupFltkTabs*>(ih->handle);
   if (!tabs) return;
 
   int tab_h = fltkTabsGetTabHeight(ih);
@@ -907,17 +907,17 @@ static void fltkTabsLayoutUpdateMethod(Ihandle* ih)
 
 static int fltkTabsMapMethod(Ihandle* ih)
 {
-  IupFltkTabs* tabs = new IupFltkTabs(0, 0, 10, 10, ih);
+  auto* tabs = new IupFltkTabs(0, 0, 10, 10, ih);
   tabs->end();
 
-  ih->handle = (InativeHandle*)tabs;
+  ih->handle = reinterpret_cast<InativeHandle*>(tabs);
 
   iupfltkAddToParent(ih);
 
   if (ih->firstchild)
   {
     Ihandle* child;
-    Ihandle* current_child = (Ihandle*)iupAttribGet(ih, "_IUPTABS_VALUE_HANDLE");
+    auto* current_child = reinterpret_cast<Ihandle*>(iupAttribGet(ih, "_IUPTABS_VALUE_HANDLE"));
 
     for (child = ih->firstchild; child; child = child->brother)
       fltkTabsChildAddedMethod(ih, child);
@@ -928,7 +928,7 @@ static int fltkTabsMapMethod(Ihandle* ih)
       if (pos >= 0)
         iupdrvTabsSetCurrentTab(ih, pos);
 
-      iupAttribSet(ih, "_IUPTABS_VALUE_HANDLE", NULL);
+      iupAttribSet(ih, "_IUPTABS_VALUE_HANDLE", nullptr);
     }
     else
     {
@@ -943,33 +943,33 @@ static void fltkTabsUnMapMethod(Ihandle* ih)
 {
   for (Ihandle* child = ih->firstchild; child; child = child->brother)
   {
-    Fl_Image* owned = (Fl_Image*)iupAttribGet(child, "_IUPFLTK_TABIMAGE_OWNED");
+    auto* owned = reinterpret_cast<Fl_Image*>(iupAttribGet(child, "_IUPFLTK_TABIMAGE_OWNED"));
     if (owned)
     {
-      Fl_Widget* page = (Fl_Widget*)iupAttribGet(child, "_IUPTAB_PAGE");
-      if (page) page->image(NULL);
+      auto* page = reinterpret_cast<Fl_Widget*>(iupAttribGet(child, "_IUPTAB_PAGE"));
+      if (page) page->image(nullptr);
       delete owned;
-      iupAttribSet(child, "_IUPFLTK_TABIMAGE_OWNED", NULL);
+      iupAttribSet(child, "_IUPFLTK_TABIMAGE_OWNED", nullptr);
     }
 
     if (iupAttribGet(child, "_IUPFLTK_TAB_HIDDEN"))
     {
-      Fl_Group* page = (Fl_Group*)iupAttribGet(child, "_IUPTAB_PAGE");
+      auto* page = reinterpret_cast<Fl_Group*>(iupAttribGet(child, "_IUPTAB_PAGE"));
       if (page)
       {
-        page->image(NULL);
+        page->image(nullptr);
         delete page;
       }
-      iupAttribSet(child, "_IUPTAB_PAGE", NULL);
-      iupAttribSet(child, "_IUPTAB_CONTAINER", NULL);
+      iupAttribSet(child, "_IUPTAB_PAGE", nullptr);
+      iupAttribSet(child, "_IUPTAB_CONTAINER", nullptr);
     }
   }
 
-  IupFltkTabs* tabs = (IupFltkTabs*)ih->handle;
+  auto* tabs = reinterpret_cast<IupFltkTabs*>(ih->handle);
   if (tabs)
   {
     delete tabs;
-    ih->handle = NULL;
+    ih->handle = nullptr;
   }
 }
 
@@ -990,23 +990,23 @@ extern "C" IUP_SDK_API void iupdrvTabsInitClass(Iclass* ic)
   iupClassRegisterCallback(ic, "TABCHANGEPOS_CB", "ii");
   iupClassRegisterCallback(ic, "TABCLOSE_CB", "i");
 
-  iupClassRegisterAttribute(ic, "FONT", NULL, fltkTabsSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, fltkTabsSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, fltkTabsSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "FONT", nullptr, fltkTabsSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
+  iupClassRegisterAttribute(ic, "BGCOLOR", nullptr, fltkTabsSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "FGCOLOR", nullptr, fltkTabsSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
 
   iupClassRegisterAttribute(ic, "TABPADDING", iupTabsGetTabPaddingAttrib, fltkTabsSetTabPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttributeId(ic, "TABTITLE", iupTabsGetTitleAttrib, (IattribSetIdFunc)fltkTabsSetTabTitleAttrib, IUPAF_NO_INHERIT);
-  iupClassRegisterAttributeId(ic, "TABVISIBLE", iupTabsGetTabVisibleAttrib, (IattribSetIdFunc)fltkTabsSetTabVisibleAttrib, IUPAF_NO_INHERIT);
-  iupClassRegisterAttributeId(ic, "TABIMAGE", NULL, (IattribSetIdFunc)fltkTabsSetTabImageAttrib, IUPAF_IHANDLENAME | IUPAF_NO_INHERIT);
-  iupClassRegisterAttributeId(ic, "TABTIP", NULL, (IattribSetIdFunc)fltkTabsSetTabTipAttrib, IUPAF_NO_INHERIT);
-  iupClassRegisterAttributeId(ic, "SHOWCLOSE", NULL, (IattribSetIdFunc)fltkTabsSetShowCloseAttrib, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "TABTITLE", iupTabsGetTitleAttrib, static_cast<IattribSetIdFunc>(fltkTabsSetTabTitleAttrib), IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "TABVISIBLE", iupTabsGetTabVisibleAttrib, static_cast<IattribSetIdFunc>(fltkTabsSetTabVisibleAttrib), IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "TABIMAGE", nullptr, static_cast<IattribSetIdFunc>(fltkTabsSetTabImageAttrib), IUPAF_IHANDLENAME | IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "TABTIP", nullptr, static_cast<IattribSetIdFunc>(fltkTabsSetTabTipAttrib), IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "SHOWCLOSE", nullptr, static_cast<IattribSetIdFunc>(fltkTabsSetShowCloseAttrib), IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "MULTILINE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED);
-  iupClassRegisterAttribute(ic, "ALLOWREORDER", NULL, NULL, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TABORIENTATION", iupTabsGetTabOrientationAttrib, NULL, IUPAF_SAMEASSYSTEM, "HORIZONTAL", IUPAF_READONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MULTILINE", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED);
+  iupClassRegisterAttribute(ic, "ALLOWREORDER", nullptr, nullptr, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TABORIENTATION", iupTabsGetTabOrientationAttrib, nullptr, IUPAF_SAMEASSYSTEM, "HORIZONTAL", IUPAF_READONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TABTYPE", iupTabsGetTabTypeAttrib, fltkTabsSetTabTypeAttrib, IUPAF_SAMEASSYSTEM, "TOP", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "CLIENTSIZE", fltkTabsGetClientSizeAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "CLIENTOFFSET", fltkTabsGetClientOffsetAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CLIENTSIZE", fltkTabsGetClientSizeAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CLIENTOFFSET", fltkTabsGetClientOffsetAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY | IUPAF_NO_INHERIT);
 }
