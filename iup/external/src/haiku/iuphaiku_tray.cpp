@@ -50,8 +50,8 @@ private:
 
 static int haikuTrayStubMap(Ihandle* ih)
 {
-  BView* v = new BView(BRect(0, 0, 0, 0), "iup_tray_stub", B_FOLLOW_NONE, B_WILL_DRAW);
-  ih->handle = (InativeHandle*)v;
+  auto* v = new BView(BRect(0, 0, 0, 0), "iup_tray_stub", B_FOLLOW_NONE, B_WILL_DRAW);
+  ih->handle = reinterpret_cast<InativeHandle*>(v);
   return IUP_NOERROR;
 }
 
@@ -79,14 +79,14 @@ public:
       int btn = (buttons & 0x01) ? 1 : (buttons & 0x02) ? 3 : 2;
 
       /* Right-click pops up the bound menu at the cursor before the user callback fires. */
-      Ihandle* menu = (Ihandle*)iupAttribGet(fIhandle, "_IUPHAIKU_TRAY_MENU");
+      auto* menu = reinterpret_cast<Ihandle*>(iupAttribGet(fIhandle, "_IUPHAIKU_TRAY_MENU"));
       if (btn == 3 && menu)
         IupPopup(menu, sx, sy);
 
-      IFniii cb = (IFniii)IupGetCallback(fIhandle, "TRAYCLICK_CB");
+      auto cb = reinterpret_cast<IFniii>(IupGetCallback(fIhandle, "TRAYCLICK_CB"));
       if (cb)
       {
-        int ret = cb(fIhandle, btn, (int)clicks, 0);
+        int ret = cb(fIhandle, btn, static_cast<int>(clicks), 0);
         if (ret == IUP_CLOSE) IupExitLoop();
       }
       return;
@@ -106,22 +106,22 @@ public:
   IupHaikuTrayView(BBitmap* icon, BMessenger app_handler, const char* tip)
     : BView(BRect(0, 0, 15, 15), "iup_tray", B_FOLLOW_NONE,
             B_WILL_DRAW | B_FRAME_EVENTS),
-      fIcon(icon ? new BBitmap(icon) : NULL),
+      fIcon(icon ? new BBitmap(icon) : nullptr),
       fMessenger(app_handler),
-      fPulse(NULL),
+      fPulse(nullptr),
       fTip(tip ? tip : "")
   {
     BView::SetViewColor(B_TRANSPARENT_COLOR);
   }
 
   explicit IupHaikuTrayView(BMessage* archive)
-    : BView(archive), fIcon(NULL), fPulse(NULL)
+    : BView(archive), fIcon(nullptr), fPulse(nullptr)
   {
     archive->FindMessenger("iup:messenger", &fMessenger);
     BMessage iconMsg;
     if (archive->FindMessage("iup:icon", &iconMsg) == B_OK)
       fIcon = new BBitmap(&iconMsg);
-    const char* tip = NULL;
+    const char* tip = nullptr;
     if (archive->FindString("iup:tip", &tip) == B_OK && tip) fTip = tip;
   }
 
@@ -160,7 +160,7 @@ public:
   {
     if (validate_instantiation(archive, "IupHaikuTrayView"))
       return new IupHaikuTrayView(archive);
-    return NULL;
+    return nullptr;
   }
 
   status_t Archive(BMessage* archive, bool deep = true) const override
@@ -192,7 +192,7 @@ public:
 
   void MouseDown(BPoint where) override
   {
-    BMessage* current = NULL;
+    BMessage* current = nullptr;
     if (Looper()) current = Looper()->CurrentMessage();
     int32 buttons = 1, clicks = 1;
     if (current)
@@ -205,8 +205,8 @@ public:
     BMessage out(IUPHAIKU_TRAY_CLICK_MSG);
     out.AddInt32("buttons", buttons);
     out.AddInt32("clicks", clicks);
-    out.AddInt32("screen_x", (int32)screen.x);
-    out.AddInt32("screen_y", (int32)screen.y);
+    out.AddInt32("screen_x", static_cast<int32>(screen.x));
+    out.AddInt32("screen_y", static_cast<int32>(screen.y));
     fMessenger.SendMessage(&out);
   }
 
@@ -231,12 +231,12 @@ static void haikuTrayEnsureHandler(Ihandle* ih)
 {
   if (iupAttribGet(ih, "_IUPHAIKU_TRAY_HANDLER")) return;
   if (!be_app) return;
-  IupHaikuTrayHandler* h = new IupHaikuTrayHandler(ih);
+  auto* h = new IupHaikuTrayHandler(ih);
   {
     LooperLockGuard guard(be_app);
     be_app->AddHandler(h);
   }
-  iupAttribSet(ih, "_IUPHAIKU_TRAY_HANDLER", (char*)h);
+  iupAttribSet(ih, "_IUPHAIKU_TRAY_HANDLER", reinterpret_cast<char*>(h));
 }
 
 static void haikuTrayRemoveFromDeskbar(Ihandle* ih)
@@ -244,7 +244,7 @@ static void haikuTrayRemoveFromDeskbar(Ihandle* ih)
   if (!iupAttribGet(ih, "_IUPHAIKU_TRAY_VISIBLE")) return;
   BDeskbar deskbar;
   deskbar.RemoveItem(haikuTrayUniqueName(ih));
-  iupAttribSet(ih, "_IUPHAIKU_TRAY_VISIBLE", NULL);
+  iupAttribSet(ih, "_IUPHAIKU_TRAY_VISIBLE", nullptr);
 }
 
 static int haikuTrayInstall(Ihandle* ih)
@@ -252,15 +252,15 @@ static int haikuTrayInstall(Ihandle* ih)
   if (iupAttribGet(ih, "_IUPHAIKU_TRAY_VISIBLE")) return 1;
 
   haikuTrayEnsureHandler(ih);
-  IupHaikuTrayHandler* handler = (IupHaikuTrayHandler*)iupAttribGet(ih, "_IUPHAIKU_TRAY_HANDLER");
+  auto* handler = reinterpret_cast<IupHaikuTrayHandler*>(iupAttribGet(ih, "_IUPHAIKU_TRAY_HANDLER"));
   if (!handler) return 0;
 
   const char* image = iupAttribGet(ih, "IMAGE");
-  BBitmap* icon = image ? (BBitmap*)iupImageGetIcon(image) : NULL;
+  BBitmap* icon = image ? static_cast<BBitmap*>(iupImageGetIcon(image)) : nullptr;
 
   const char* tip = iupAttribGet(ih, "TIP");
   BMessenger msgr(handler);
-  IupHaikuTrayView* view = new IupHaikuTrayView(icon, msgr, tip);
+  auto* view = new IupHaikuTrayView(icon, msgr, tip);
   view->SetName(haikuTrayUniqueName(ih));
 
   BDeskbar deskbar;
@@ -314,7 +314,7 @@ extern "C" IUP_SDK_API int iupdrvTraySetTip(Ihandle* ih, const char* value)
 extern "C" IUP_SDK_API int iupdrvTraySetMenu(Ihandle* ih, Ihandle* menu)
 {
   /* The menu lives in this process; the replicant's right-click message drives IupPopup. */
-  iupAttribSet(ih, "_IUPHAIKU_TRAY_MENU", (char*)menu);
+  iupAttribSet(ih, "_IUPHAIKU_TRAY_MENU", reinterpret_cast<char*>(menu));
   return 1;
 }
 
@@ -322,7 +322,7 @@ extern "C" IUP_SDK_API void iupdrvTrayDestroy(Ihandle* ih)
 {
   haikuTrayRemoveFromDeskbar(ih);
 
-  IupHaikuTrayHandler* h = (IupHaikuTrayHandler*)iupAttribGet(ih, "_IUPHAIKU_TRAY_HANDLER");
+  auto* h = reinterpret_cast<IupHaikuTrayHandler*>(iupAttribGet(ih, "_IUPHAIKU_TRAY_HANDLER"));
   if (h && be_app)
   {
     {
@@ -330,9 +330,9 @@ extern "C" IUP_SDK_API void iupdrvTrayDestroy(Ihandle* ih)
       be_app->RemoveHandler(h);
     }
     delete h;
-    iupAttribSet(ih, "_IUPHAIKU_TRAY_HANDLER", NULL);
+    iupAttribSet(ih, "_IUPHAIKU_TRAY_HANDLER", nullptr);
   }
-  iupAttribSet(ih, "_IUPHAIKU_TRAY_MENU", NULL);
+  iupAttribSet(ih, "_IUPHAIKU_TRAY_MENU", nullptr);
 }
 
 extern "C" IUP_SDK_API int iupdrvTrayIsAvailable(void)

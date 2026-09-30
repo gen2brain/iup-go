@@ -29,7 +29,7 @@ extern "C" IUP_SDK_API void iupdrvLocationStop(Ihandle* ih) { (void)ih; }
 extern "C" IUP_SDK_API char* iupdrvLocationGetPermission(Ihandle* ih)
 {
   (void)ih;
-  return (char*)"UNAVAILABLE";
+  return const_cast<char*>("UNAVAILABLE");
 }
 
 extern "C" IUP_SDK_API void iupdrvLocationDestroy(Ihandle* ih) { (void)ih; }

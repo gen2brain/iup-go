@@ -101,8 +101,8 @@ IUP_DRV_API void iuphaikuSingleInstanceDispatch(BMessage* msg);
 IUP_DRV_API int iuphaikuLockLooper(BLooper* looper);
 IUP_DRV_API void iuphaikuUnlockLooper(BLooper* looper);
 
-IUP_DRV_API void iuphaikuModalBegin(void);
-IUP_DRV_API void iuphaikuModalEnd(void);
+IUP_DRV_API void iuphaikuModalBegin();
+IUP_DRV_API void iuphaikuModalEnd();
 IUP_DRV_API bool iuphaikuIsModalStaleInput(BMessage* msg);
 
 IUP_DRV_API void iuphaikuFireGlobalInputCB(BMessage* msg);

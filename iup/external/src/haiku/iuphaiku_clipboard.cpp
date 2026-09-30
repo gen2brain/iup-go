@@ -40,15 +40,15 @@ static int haikuClipSetText(Ihandle* /*ih*/, const char* value)
 
 static char* haikuClipGetText(Ihandle* /*ih*/)
 {
-  if (!be_clipboard) return NULL;
-  if (!be_clipboard->Lock()) return NULL;
+  if (!be_clipboard) return nullptr;
+  if (!be_clipboard->Lock()) return nullptr;
   BMessage* data = be_clipboard->Data();
-  const void* bytes = NULL;
+  const void* bytes = nullptr;
   ssize_t len = 0;
-  char* result = NULL;
+  char* result = nullptr;
   if (data && data->FindData("text/plain", B_MIME_TYPE, &bytes, &len) == B_OK && bytes && len > 0)
   {
-    char* buf = iupStrGetMemory((int)len + 1);
+    char* buf = iupStrGetMemory(static_cast<int>(len) + 1);
     memcpy(buf, bytes, len);
     buf[len] = 0;
     result = buf;
@@ -66,7 +66,7 @@ static char* haikuClipGetTextAvailable(Ihandle* /*ih*/)
     BMessage* data = be_clipboard->Data();
     if (data)
     {
-      const void* bytes = NULL; ssize_t len = 0;
+      const void* bytes = nullptr; ssize_t len = 0;
       has = (data->FindData("text/plain", B_MIME_TYPE, &bytes, &len) == B_OK);
     }
     be_clipboard->Unlock();
@@ -74,7 +74,7 @@ static char* haikuClipGetTextAvailable(Ihandle* /*ih*/)
   return iupStrReturnBoolean(has);
 }
 
-static int haikuClipPutBitmap(BBitmap* bm)
+static int haikuClipPutBitmap(const BBitmap* bm)
 {
   if (!be_clipboard || !be_clipboard->Lock()) return 0;
   be_clipboard->Clear();
@@ -95,21 +95,21 @@ static int haikuClipPutBitmap(BBitmap* bm)
 
 static int haikuClipSetImage(Ihandle* ih, const char* value)
 {
-  if (!value) { haikuClipPutBitmap(NULL); return 0; }
-  BBitmap* bm = (BBitmap*)iupImageGetImage(value, ih, 0, NULL);
+  if (!value) { haikuClipPutBitmap(nullptr); return 0; }
+  auto* bm = static_cast<BBitmap*>(iupImageGetImage(value, ih, 0, nullptr));
   return haikuClipPutBitmap(bm);
 }
 
 static int haikuClipSetNativeImage(Ihandle* /*ih*/, const char* value)
 {
-  return haikuClipPutBitmap((BBitmap*)value);
+  return haikuClipPutBitmap(reinterpret_cast<const BBitmap*>(value));
 }
 
 static char* haikuClipGetNativeImage(Ihandle* ih)
 {
-  if (!be_clipboard || !be_clipboard->Lock()) return NULL;
+  if (!be_clipboard || !be_clipboard->Lock()) return nullptr;
   BMessage* data = be_clipboard->Data();
-  BBitmap* bm = NULL;
+  BBitmap* bm = nullptr;
   if (data)
   {
     BMessage archive;
@@ -119,10 +119,10 @@ static char* haikuClipGetNativeImage(Ihandle* ih)
   be_clipboard->Unlock();
 
   /* Cache so successive Get returns the same pointer until Destroy. */
-  BBitmap* prev = (BBitmap*)iupAttribGet(ih, "_IUPHAIKU_CLIP_IMAGE");
+  auto* prev = reinterpret_cast<BBitmap*>(iupAttribGet(ih, "_IUPHAIKU_CLIP_IMAGE"));
   delete prev;
-  iupAttribSet(ih, "_IUPHAIKU_CLIP_IMAGE", (char*)bm);
-  return (char*)bm;
+  iupAttribSet(ih, "_IUPHAIKU_CLIP_IMAGE", reinterpret_cast<char*>(bm));
+  return reinterpret_cast<char*>(bm);
 }
 
 static char* haikuClipGetImageAvailable(Ihandle* /*ih*/)
@@ -144,9 +144,9 @@ static char* haikuClipGetImageAvailable(Ihandle* /*ih*/)
 
 static void haikuClipDestroy(Ihandle* ih)
 {
-  BBitmap* cached = (BBitmap*)iupAttribGet(ih, "_IUPHAIKU_CLIP_IMAGE");
+  auto* cached = reinterpret_cast<BBitmap*>(iupAttribGet(ih, "_IUPHAIKU_CLIP_IMAGE"));
   delete cached;
-  iupAttribSet(ih, "_IUPHAIKU_CLIP_IMAGE", NULL);
+  iupAttribSet(ih, "_IUPHAIKU_CLIP_IMAGE", nullptr);
 }
 
 /* Custom format: FORMAT names a BMessage data slot (MIME-typed via B_MIME_TYPE) */
@@ -174,19 +174,19 @@ static int haikuClipSetFormatDataAttrib(Ihandle* ih, const char* value)
 static char* haikuClipGetFormatDataAttrib(Ihandle* ih)
 {
   const char* format = iupAttribGet(ih, "FORMAT");
-  if (!format || !*format || !be_clipboard) return NULL;
-  if (!be_clipboard->Lock()) return NULL;
+  if (!format || !*format || !be_clipboard) return nullptr;
+  if (!be_clipboard->Lock()) return nullptr;
   BMessage* msg = be_clipboard->Data();
-  char* result = NULL;
+  char* result = nullptr;
   if (msg)
   {
-    const void* bytes = NULL;
+    const void* bytes = nullptr;
     ssize_t len = 0;
     if (msg->FindData(format, B_MIME_TYPE, &bytes, &len) == B_OK && bytes && len > 0)
     {
-      char* buf = iupStrGetMemory((int)len);
+      char* buf = iupStrGetMemory(static_cast<int>(len));
       memcpy(buf, bytes, len);
-      iupAttribSetInt(ih, "FORMATDATASIZE", (int)len);
+      iupAttribSetInt(ih, "FORMATDATASIZE", static_cast<int>(len));
       result = buf;
     }
   }
@@ -196,15 +196,15 @@ static char* haikuClipGetFormatDataAttrib(Ihandle* ih)
 
 static int haikuClipSetFormatDataStringAttrib(Ihandle* ih, const char* value)
 {
-  if (!value) return haikuClipSetFormatDataAttrib(ih, NULL);
-  iupAttribSetInt(ih, "FORMATDATASIZE", (int)strlen(value) + 1);
+  if (!value) return haikuClipSetFormatDataAttrib(ih, nullptr);
+  iupAttribSetInt(ih, "FORMATDATASIZE", static_cast<int>(strlen(value)) + 1);
   return haikuClipSetFormatDataAttrib(ih, value);
 }
 
 static char* haikuClipGetFormatDataStringAttrib(Ihandle* ih)
 {
   char* data = haikuClipGetFormatDataAttrib(ih);
-  if (!data) return NULL;
+  if (!data) return nullptr;
   int size = iupAttribGetInt(ih, "FORMATDATASIZE");
   data[size - 1] = 0;
   return data;
@@ -220,7 +220,7 @@ static char* haikuClipGetFormatAvailableAttrib(Ihandle* ih)
     BMessage* data = be_clipboard->Data();
     if (data)
     {
-      const void* bytes = NULL;
+      const void* bytes = nullptr;
       ssize_t len = 0;
       has = (data->FindData(format, B_MIME_TYPE, &bytes, &len) == B_OK);
     }
@@ -236,28 +236,28 @@ extern "C" IUP_API Ihandle* IupClipboard(void)
 
 extern "C" Iclass* iupClipboardNewClass(void)
 {
-  Iclass* ic = iupClassNew(NULL);
-  ic->name = (char*)"clipboard";
-  ic->format = NULL;
+  Iclass* ic = iupClassNew(nullptr);
+  ic->name = const_cast<char*>("clipboard");
+  ic->format = nullptr;
   ic->nativetype = IUP_TYPEOTHER;
   ic->childtype = IUP_CHILDNONE;
   ic->is_interactive = 0;
   ic->New = iupClipboardNewClass;
   ic->Destroy = haikuClipDestroy;
 
-  iupClassRegisterAttribute(ic, "TEXT", haikuClipGetText, haikuClipSetText, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TEXTAVAILABLE", haikuClipGetTextAvailable, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TEXT", haikuClipGetText, haikuClipSetText, nullptr, nullptr, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TEXTAVAILABLE", haikuClipGetTextAvailable, nullptr, nullptr, nullptr, IUPAF_READONLY|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "IMAGE", NULL, haikuClipSetImage, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_WRITEONLY|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "NATIVEIMAGE", haikuClipGetNativeImage, haikuClipSetNativeImage, NULL, NULL, IUPAF_NO_STRING|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "IMAGEAVAILABLE", haikuClipGetImageAvailable, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMAGE", nullptr, haikuClipSetImage, nullptr, nullptr, IUPAF_IHANDLENAME|IUPAF_WRITEONLY|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "NATIVEIMAGE", haikuClipGetNativeImage, haikuClipSetNativeImage, nullptr, nullptr, IUPAF_NO_STRING|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMAGEAVAILABLE", haikuClipGetImageAvailable, nullptr, nullptr, nullptr, IUPAF_READONLY|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
 
   /* ADDFORMAT is a no-op (BMessage accepts any name) */
-  iupClassRegisterAttribute(ic, "ADDFORMAT", NULL, NULL, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "FORMAT", NULL, NULL, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "FORMATAVAILABLE", haikuClipGetFormatAvailableAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "FORMATDATA", haikuClipGetFormatDataAttrib, haikuClipSetFormatDataAttrib, NULL, NULL, IUPAF_NO_STRING|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "FORMATDATASTRING", haikuClipGetFormatDataStringAttrib, haikuClipSetFormatDataStringAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "FORMATDATASIZE", NULL, NULL, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ADDFORMAT", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FORMAT", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FORMATAVAILABLE", haikuClipGetFormatAvailableAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FORMATDATA", haikuClipGetFormatDataAttrib, haikuClipSetFormatDataAttrib, nullptr, nullptr, IUPAF_NO_STRING|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FORMATDATASTRING", haikuClipGetFormatDataStringAttrib, haikuClipSetFormatDataStringAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FORMATDATASIZE", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   return ic;
 }

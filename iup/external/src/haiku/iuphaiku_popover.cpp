@@ -53,7 +53,7 @@ public:
     : BWindow(BRect(0, 0, 99, 99), "iup_popover",
               B_NO_BORDER_WINDOW_LOOK, B_FLOATING_APP_WINDOW_FEEL,
               B_NOT_RESIZABLE | B_NOT_ZOOMABLE | B_NOT_MINIMIZABLE),
-      fIhandle(ih), fRootView(NULL)
+      fIhandle(ih), fRootView(nullptr)
   {
     fRootView = new IupHaikuPopoverRoot(Bounds());
     AddChild(fRootView);
@@ -72,7 +72,7 @@ public:
     if (msg && msg->what == B_KEY_DOWN && fIhandle && iupObjectCheck(fIhandle) &&
         iupAttribGetBoolean(fIhandle, "AUTOHIDE"))
     {
-      const char* bytes = NULL;
+      const char* bytes = nullptr;
       if (msg->FindString("bytes", &bytes) == B_OK && bytes && bytes[0] == B_ESCAPE)
       {
         IupSetAttribute(fIhandle, "VISIBLE", "NO");
@@ -117,53 +117,53 @@ private:
 
 static void* haikuPopoverGetInnerNativeContainerHandleMethod(Ihandle* ih, Ihandle* /*child*/)
 {
-  IupHaikuPopover* p = (IupHaikuPopover*)ih->handle;
-  return p ? (void*)p->RootView() : NULL;
+  auto* p = reinterpret_cast<IupHaikuPopover*>(ih->handle);
+  return p ? reinterpret_cast<void*>(p->RootView()) : nullptr;
 }
 
 static int haikuPopoverMapMethod(Ihandle* ih)
 {
-  IupHaikuPopover* popover = new IupHaikuPopover(ih);
-  ih->handle = (InativeHandle*)popover;
+  auto* popover = new IupHaikuPopover(ih);
+  ih->handle = reinterpret_cast<InativeHandle*>(popover);
   return IUP_NOERROR;
 }
 
 static void haikuPopoverUnMapMethod(Ihandle* ih)
 {
-  IupHaikuPopover* popover = (IupHaikuPopover*)ih->handle;
+  auto* popover = reinterpret_cast<IupHaikuPopover*>(ih->handle);
   /* Quit() UnlockFully()s + deletes the looper; LooperLockGuard would unlock freed memory. */
   if (popover && popover->Lock())
   {
-    popover->SetIhandle(NULL);
+    popover->SetIhandle(nullptr);
     popover->Quit();  /* deletes the window + its child views */
   }
-  ih->handle = NULL;
+  ih->handle = nullptr;
 }
 
 static void haikuPopoverLayoutUpdateMethod(Ihandle* ih)
 {
-  IupHaikuPopover* popover = (IupHaikuPopover*)ih->handle;
+  auto* popover = reinterpret_cast<IupHaikuPopover*>(ih->handle);
   if (!popover) return;
 
   int w = ih->currentwidth  > 0 ? ih->currentwidth  : 1;
   int h = ih->currentheight > 0 ? ih->currentheight : 1;
 
   LooperLockGuard guard(popover);
-  popover->ResizeTo((float)(w - 1), (float)(h - 1));
+  popover->ResizeTo(static_cast<float>(w - 1), static_cast<float>(h - 1));
 }
 
 static void haikuPopoverSetVisible(Ihandle* ih, int visible)
 {
   if (!visible)
   {
-    IupHaikuPopover* popover = (IupHaikuPopover*)ih->handle;
+    auto* popover = reinterpret_cast<IupHaikuPopover*>(ih->handle);
     if (!popover) return;
     LooperLockGuard guard(popover);
     if (!popover->IsHidden()) popover->Hide();
     return;
   }
 
-  Ihandle* anchor = (Ihandle*)iupAttribGet(ih, "_IUP_POPOVER_ANCHOR");
+  auto* anchor = reinterpret_cast<Ihandle*>(iupAttribGet(ih, "_IUP_POPOVER_ANCHOR"));
   if (!anchor) anchor = IupGetAttributeHandle(ih, "ANCHOR");
   if (!anchor || !anchor->handle) return;
 
@@ -175,20 +175,20 @@ static void haikuPopoverSetVisible(Ihandle* ih, int visible)
     iupLayoutUpdate(ih->firstchild);
   }
 
-  IupHaikuPopover* popover = (IupHaikuPopover*)ih->handle;
+  auto* popover = reinterpret_cast<IupHaikuPopover*>(ih->handle);
   if (!popover) return;
 
   int ax = 0, ay = 0, aw = 0, ah = 0;
   if (anchor->iclass && anchor->iclass->nativetype != IUP_TYPEVOID)
   {
-    BView* av = (BView*)anchor->handle;
+    auto* av = reinterpret_cast<BView*>(anchor->handle);
     LooperLockGuard guard(av->Looper());
     BPoint origin = av->ConvertToScreen(BPoint(0, 0));
     BRect bounds = av->Bounds();
-    ax = (int)origin.x;
-    ay = (int)origin.y;
-    aw = (int)(bounds.Width() + 1);
-    ah = (int)(bounds.Height() + 1);
+    ax = static_cast<int>(origin.x);
+    ay = static_cast<int>(origin.y);
+    aw = static_cast<int>(bounds.Width() + 1);
+    ah = static_cast<int>(bounds.Height() + 1);
   }
   iupAttribSetStrf(ih, "_IUPHAIKU_POPOVER_ANCHOR_RECT", "%d %d %d %d", ax, ay, aw, ah);
 
@@ -203,8 +203,8 @@ static void haikuPopoverSetVisible(Ihandle* ih, int visible)
   /* Show() unlocks the looper internally via Run(); keep it outside the guard. */
   {
     LooperLockGuard guard(popover);
-    popover->MoveTo((float)px, (float)py);
-    popover->ResizeTo((float)(pw - 1), (float)(ph - 1));
+    popover->MoveTo(static_cast<float>(px), static_cast<float>(py));
+    popover->ResizeTo(static_cast<float>(pw - 1), static_cast<float>(ph - 1));
   }
   if (popover->IsHidden()) popover->Show();
 }
@@ -217,7 +217,7 @@ static int haikuPopoverSetVisibleAttrib(Ihandle* ih, const char* value)
 
 static char* haikuPopoverGetVisibleAttrib(Ihandle* ih)
 {
-  IupHaikuPopover* popover = (IupHaikuPopover*)ih->handle;
+  auto* popover = reinterpret_cast<IupHaikuPopover*>(ih->handle);
   if (!popover) return iupStrReturnBoolean(0);
   return iupStrReturnBoolean(popover->IsHidden() ? 0 : 1);
 }
@@ -229,7 +229,7 @@ extern "C" IUP_SDK_API void iupdrvPopoverInitClass(Iclass* ic)
   ic->LayoutUpdate = haikuPopoverLayoutUpdateMethod;
   ic->GetInnerNativeContainerHandle = haikuPopoverGetInnerNativeContainerHandleMethod;
 
-  iupClassRegisterAttribute(ic, "VISIBLE", haikuPopoverGetVisibleAttrib, haikuPopoverSetVisibleAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_SAVE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "VISIBLE", haikuPopoverGetVisibleAttrib, haikuPopoverSetVisibleAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED|IUPAF_NO_SAVE|IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "ARROW", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ARROW", nullptr, nullptr, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 }

@@ -62,13 +62,13 @@ void iuphaikuCanvasOnDraw(Ihandle* ih, BView* view, BRect dirty)
 
   /* Save/restore so a nested draw triggered by cb sees its outer's value. */
   const char* prev = iupAttribGet(ih, "CLIPRECT");
-  char* saved = prev ? iupStrDup(prev) : NULL;
+  char* saved = prev ? iupStrDup(prev) : nullptr;
   iupAttribSetStrf(ih, "CLIPRECT", "%d %d %d %d",
-                   (int)dirty.left, (int)dirty.top,
-                   (int)dirty.right, (int)dirty.bottom);
+                   static_cast<int>(dirty.left), static_cast<int>(dirty.top),
+                   static_cast<int>(dirty.right), static_cast<int>(dirty.bottom));
   cb(ih);
   if (saved) { iupAttribSetStr(ih, "CLIPRECT", saved); free(saved); }
-  else { iupAttribSet(ih, "CLIPRECT", NULL); }
+  else { iupAttribSet(ih, "CLIPRECT", nullptr); }
 }
 
 void iuphaikuCanvasOnFrameResized(Ihandle* ih, BView* view, float new_w, float new_h)
@@ -76,8 +76,8 @@ void iuphaikuCanvasOnFrameResized(Ihandle* ih, BView* view, float new_w, float n
   (void)view;
   if (!ih || !ih->data) return;
   ih->data->inside_resize = 1;
-  IFnii cb = (IFnii)IupGetCallback(ih, "RESIZE_CB");
-  if (cb) cb(ih, (int)(new_w + 1), (int)(new_h + 1));
+  auto cb = reinterpret_cast<IFnii>(IupGetCallback(ih, "RESIZE_CB"));
+  if (cb) cb(ih, static_cast<int>(new_w + 1), static_cast<int>(new_h + 1));
   ih->data->inside_resize = 0;
 }
 
@@ -86,9 +86,9 @@ void iuphaikuCanvasOnAttachedToWindow(Ihandle* ih, BView* view)
   /* BView::ResizeTo skips FrameResized when detached: catch up here. */
   if (!ih || !ih->data) return;
   BRect b = view->Bounds();
-  int w = (int)(b.Width() + 1), h = (int)(b.Height() + 1);
+  int w = static_cast<int>(b.Width() + 1), h = static_cast<int>(b.Height() + 1);
   if (w <= 1 && h <= 1) return;
-  IFnii cb = (IFnii)IupGetCallback(ih, "RESIZE_CB");
+  auto cb = reinterpret_cast<IFnii>(IupGetCallback(ih, "RESIZE_CB"));
   if (!cb) return;
   ih->data->inside_resize = 1;
   cb(ih, w, h);
@@ -108,7 +108,7 @@ void iuphaikuCanvasOnMouseDown(Ihandle* ih, BView* view, BPoint where)
   if (iupAttribGetBoolean(ih, "CANFOCUS"))
     view->MakeFocus(true);
 
-  BMessage* msg = NULL;
+  BMessage* msg = nullptr;
   if (view->Looper()) msg = view->Looper()->CurrentMessage();
   int32 buttons = 0, mods = 0, clicks = 1;
   if (msg)
@@ -126,19 +126,19 @@ void iuphaikuCanvasOnMouseDown(Ihandle* ih, BView* view, BPoint where)
   else if (buttons & B_TERTIARY_MOUSE_BUTTON)  btn = IUP_BUTTON2;
 
   char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
-  iuphaikuButtonKeySetStatus((unsigned)mods, (unsigned)buttons, 0, status, clicks == 2 ? 1 : 0);
+  iuphaikuButtonKeySetStatus(static_cast<unsigned>(mods), static_cast<unsigned>(buttons), 0, status, clicks == 2 ? 1 : 0);
 
-  iuphaikuDnDMouseDown(ih, where, (unsigned)buttons);
+  iuphaikuDnDMouseDown(ih, where, static_cast<unsigned>(buttons));
 
-  IFniiiis cb = (IFniiiis)IupGetCallback(ih, "BUTTON_CB");
-  if (cb) cb(ih, btn, 1, (int)where.x, (int)where.y, status);
+  auto cb = reinterpret_cast<IFniiiis>(IupGetCallback(ih, "BUTTON_CB"));
+  if (cb) cb(ih, btn, 1, static_cast<int>(where.x), static_cast<int>(where.y), status);
 }
 
 void iuphaikuCanvasOnMouseUp(Ihandle* ih, BView* view, BPoint where)
 {
   if (!ih) return;
 
-  BMessage* msg = NULL;
+  BMessage* msg = nullptr;
   if (view->Looper()) msg = view->Looper()->CurrentMessage();
   int32 mods = 0;
   if (msg) msg->FindInt32("modifiers", &mods);
@@ -147,10 +147,10 @@ void iuphaikuCanvasOnMouseUp(Ihandle* ih, BView* view, BPoint where)
 
   int btn = IUP_BUTTON1;
   char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
-  iuphaikuButtonKeySetStatus((unsigned)mods, 0, 0, status, 0);
+  iuphaikuButtonKeySetStatus(static_cast<unsigned>(mods), 0, 0, status, 0);
 
-  IFniiiis cb = (IFniiiis)IupGetCallback(ih, "BUTTON_CB");
-  if (cb) cb(ih, btn, 0, (int)where.x, (int)where.y, status);
+  auto cb = reinterpret_cast<IFniiiis>(IupGetCallback(ih, "BUTTON_CB"));
+  if (cb) cb(ih, btn, 0, static_cast<int>(where.x), static_cast<int>(where.y), status);
 }
 
 void iuphaikuCanvasOnMouseMoved(Ihandle* ih, BView* view, BPoint where, unsigned int transit, const BMessage* drag)
@@ -170,7 +170,7 @@ void iuphaikuCanvasOnMouseMoved(Ihandle* ih, BView* view, BPoint where, unsigned
     return;
   }
 
-  BMessage* msg = NULL;
+  BMessage* msg = nullptr;
   if (view->Looper()) msg = view->Looper()->CurrentMessage();
   int32 buttons = 0, mods = 0;
   if (msg)
@@ -180,13 +180,13 @@ void iuphaikuCanvasOnMouseMoved(Ihandle* ih, BView* view, BPoint where, unsigned
   }
 
   char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
-  iuphaikuButtonKeySetStatus((unsigned)mods, (unsigned)buttons, 0, status, 0);
+  iuphaikuButtonKeySetStatus(static_cast<unsigned>(mods), static_cast<unsigned>(buttons), 0, status, 0);
 
   if (iuphaikuDnDMouseMoved(ih, view, where, transit, drag))
     return;
 
-  IFniis cb = (IFniis)IupGetCallback(ih, "MOTION_CB");
-  if (cb) cb(ih, (int)where.x, (int)where.y, status);
+  auto cb = reinterpret_cast<IFniis>(IupGetCallback(ih, "MOTION_CB"));
+  if (cb) cb(ih, static_cast<int>(where.x), static_cast<int>(where.y), status);
 }
 
 /* KeyDown bytes are already UTF-8 from the input server, dead keys and IME included */
@@ -200,9 +200,9 @@ static bool haikuCanvasTextInput(Ihandle* ih, const char* bytes, int numBytes, i
     return false;
   if (iup_isKeyPadXkey(iuphaikuKeyDecode((int)(unsigned char)bytes[0], raw_char, raw_key, mods)))
     return false;
-  if (numBytes < 1 || numBytes > (int)sizeof(utf8) - 1)
+  if (numBytes < 1 || numBytes > static_cast<int>(sizeof(utf8)) - 1)
     return false;
-  if (numBytes == 1 && ((unsigned char)bytes[0] < 0x20 || (unsigned char)bytes[0] == 0x7F))
+  if (numBytes == 1 && (static_cast<unsigned char>(bytes[0]) < 0x20 || static_cast<unsigned char>(bytes[0]) == 0x7F))
     return false;
 
   memcpy(utf8, bytes, numBytes);
@@ -215,7 +215,7 @@ bool iuphaikuCanvasOnKeyDown(Ihandle* ih, BView* view, const char* bytes, int nu
 {
   if (!ih || numBytes < 1) return false;
 
-  BMessage* msg = NULL;
+  BMessage* msg = nullptr;
   if (view->Looper()) msg = view->Looper()->CurrentMessage();
   int32 raw_char = 0, mods = 0, raw_key = 0;
   if (msg)
@@ -225,10 +225,10 @@ bool iuphaikuCanvasOnKeyDown(Ihandle* ih, BView* view, const char* bytes, int nu
     msg->FindInt32("modifiers", &mods);
   }
 
-  if (haikuCanvasTextInput(ih, bytes, numBytes, (int)raw_char, (int)raw_key, (unsigned)mods))
+  if (haikuCanvasTextInput(ih, bytes, numBytes, static_cast<int>(raw_char), static_cast<int>(raw_key), static_cast<unsigned>(mods)))
     return true;
 
-  int code = iuphaikuKeyDecode((unsigned char)bytes[0], (int)raw_char, (int)raw_key, (unsigned)mods);
+  int code = iuphaikuKeyDecode(static_cast<unsigned char>(bytes[0]), static_cast<int>(raw_char), static_cast<int>(raw_key), static_cast<unsigned>(mods));
   if (code == 0) return false;
 
   int ret_press = iupKeyCallKeyPressCb(ih, code, 1);
@@ -242,7 +242,7 @@ bool iuphaikuCanvasOnKeyUp(Ihandle* ih, BView* view, const char* bytes, int numB
 {
   if (!ih || numBytes < 1) return false;
 
-  BMessage* msg = NULL;
+  BMessage* msg = nullptr;
   if (view->Looper()) msg = view->Looper()->CurrentMessage();
   int32 raw_char = 0, mods = 0, raw_key = 0;
   if (msg)
@@ -252,7 +252,7 @@ bool iuphaikuCanvasOnKeyUp(Ihandle* ih, BView* view, const char* bytes, int numB
     msg->FindInt32("modifiers", &mods);
   }
 
-  int code = iuphaikuKeyDecode((int)(unsigned char)bytes[0], (int)raw_char, (int)raw_key, (unsigned)mods);
+  int code = iuphaikuKeyDecode(static_cast<int>(static_cast<unsigned char>(bytes[0])), static_cast<int>(raw_char), static_cast<int>(raw_key), static_cast<unsigned>(mods));
   if (code) iupKeyCallKeyPressCb(ih, code, 0);
   return code != 0;
 }
@@ -269,20 +269,20 @@ bool iuphaikuCanvasOnMessageReceived(Ihandle* ih, BView* view, BMessage* msg)
 
     int32 mods = 0;
     if (msg->FindInt32("modifiers", &mods) != B_OK)
-      mods = (int32)modifiers();
+      mods = static_cast<int32>(modifiers());
 
     BPoint pt;
     uint32 buttons = 0;
     view->GetMouse(&pt, &buttons, false);
 
     char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
-    iuphaikuButtonKeySetStatus((unsigned)mods, buttons, 0, status, 0);
+    iuphaikuButtonKeySetStatus(static_cast<unsigned>(mods), buttons, 0, status, 0);
 
     /* Haiku wheel delta is positive-down; IUP convention positive-up. */
-    IFnfiis cb = (IFnfiis)IupGetCallback(ih, "WHEEL_CB");
+    auto cb = reinterpret_cast<IFnfiis>(IupGetCallback(ih, "WHEEL_CB"));
     if (cb)
     {
-      cb(ih, -dy, (int)pt.x, (int)pt.y, status);
+      cb(ih, -dy, static_cast<int>(pt.x), static_cast<int>(pt.y), status);
       return true;
     }
 
@@ -299,8 +299,8 @@ bool iuphaikuCanvasOnMessageReceived(Ihandle* ih, BView* view, BMessage* msg)
         double newpos = ih->data->posy + dy * step;
         if (newpos < ymin) newpos = ymin;
         if (newpos > ymax - page) newpos = ymax - page;
-        if (BScrollBar* vsb = (BScrollBar*)iupAttribGet(ih, "_IUPHAIKU_CANVAS_VSB"))
-          vsb->SetValue((float)newpos);
+        if (auto* vsb = reinterpret_cast<BScrollBar*>(iupAttribGet(ih, "_IUPHAIKU_CANVAS_VSB")))
+          vsb->SetValue(static_cast<float>(newpos));
       }
     }
     return true;
@@ -401,7 +401,7 @@ public:
   IupHaikuCanvasScrollBar(Ihandle* ih, orientation dir)
     : BScrollBar(BRect(0, 0, 0, 0),
                  dir == B_HORIZONTAL ? "iup_canvas_hsb" : "iup_canvas_vsb",
-                 NULL, 0, 0, dir),
+                 nullptr, 0, 0, dir),
       fIhandle(ih), fHoriz(dir == B_HORIZONTAL), fSilent(false),
       fMouseDown(false), fIsDragging(false) {}
 
@@ -441,11 +441,11 @@ public:
     if (fHoriz) { fIhandle->data->posx = pos; iupAttribSetDouble(fIhandle, "POSX", pos); }
     else        { fIhandle->data->posy = pos; iupAttribSetDouble(fIhandle, "POSY", pos); }
 
-    IFniff cb = (IFniff)IupGetCallback(fIhandle, "SCROLL_CB");
+    auto cb = reinterpret_cast<IFniff>(IupGetCallback(fIhandle, "SCROLL_CB"));
     if (cb)
       firePosCallback(classifyOp(pos - old_pos));
-    else if (IupHaikuCanvasView* inner =
-        (IupHaikuCanvasView*)fIhandle->handle)
+    else if (auto* inner =
+        reinterpret_cast<IupHaikuCanvasView*>(fIhandle->handle))
       inner->Invalidate();
   }
 
@@ -474,9 +474,9 @@ private:
 
   void firePosCallback(int op)
   {
-    IFniff cb = (IFniff)IupGetCallback(fIhandle, "SCROLL_CB");
+    auto cb = reinterpret_cast<IFniff>(IupGetCallback(fIhandle, "SCROLL_CB"));
     if (cb)
-      cb(fIhandle, op, (float)fIhandle->data->posx, (float)fIhandle->data->posy);
+      cb(fIhandle, op, static_cast<float>(fIhandle->data->posx), static_cast<float>(fIhandle->data->posy));
   }
 
   Ihandle* fIhandle;
@@ -494,7 +494,7 @@ public:
   explicit IupHaikuCanvasWrap(Ihandle* ih)
     : BView(BRect(0, 0, 0, 0), "iup_canvas_wrap", B_FOLLOW_NONE,
             B_WILL_DRAW | B_FRAME_EVENTS),
-      fIhandle(ih), fCanvas(NULL), fHSB(NULL), fVSB(NULL)
+      fIhandle(ih), fCanvas(nullptr), fHSB(nullptr), fVSB(nullptr)
   {
     SetViewUIColor(B_PANEL_BACKGROUND_COLOR);
   }
@@ -583,12 +583,12 @@ void IupHaikuCanvasWrap::RelayoutChildren()
 
 static IupHaikuCanvasView* haikuCanvasGetInner(Ihandle* ih)
 {
-  return dynamic_cast<IupHaikuCanvasView*>((BView*)ih->handle);
+  return dynamic_cast<IupHaikuCanvasView*>(reinterpret_cast<BView*>(ih->handle));
 }
 
 static IupHaikuCanvasWrap* haikuCanvasGetWrap(Ihandle* ih)
 {
-  return dynamic_cast<IupHaikuCanvasWrap*>((BView*)iupAttribGet(ih, "_IUP_EXTRAPARENT"));
+  return dynamic_cast<IupHaikuCanvasWrap*>(reinterpret_cast<BView*>(iupAttribGet(ih, "_IUP_EXTRAPARENT")));
 }
 
 static void haikuCanvasSyncScrollBar(Ihandle* ih, bool horiz)
@@ -616,10 +616,10 @@ static void haikuCanvasSyncScrollBar(Ihandle* ih, bool horiz)
   {
     if (pos < lo) pos = lo;
     if (pos > hi - page) pos = hi - page;
-    sb->SetRange((float)lo, (float)(hi - page));
-    sb->SetProportion((float)(page / range));
-    sb->SetSteps((float)haikuCanvasLineStep(ih, horiz, page), (float)page);
-    sb->SetValue((float)pos);
+    sb->SetRange(static_cast<float>(lo), static_cast<float>(hi - page));
+    sb->SetProportion(static_cast<float>(page / range));
+    sb->SetSteps(static_cast<float>(haikuCanvasLineStep(ih, horiz, page)), static_cast<float>(page));
+    sb->SetValue(static_cast<float>(pos));
   }
   sb->SetSilent(false);
 }
@@ -641,24 +641,24 @@ static int haikuCanvasMapMethod(Ihandle* ih)
 {
   ih->data->sb = iupBaseGetScrollbar(ih);
 
-  IupHaikuCanvasView* canvas = new IupHaikuCanvasView(ih);
+  auto* canvas = new IupHaikuCanvasView(ih);
 
   if (ih->data->sb == 0)
   {
-    ih->handle = (InativeHandle*)canvas;
+    ih->handle = reinterpret_cast<InativeHandle*>(canvas);
     iuphaikuAddToParent(ih);
     return IUP_NOERROR;
   }
 
-  IupHaikuCanvasScrollBar* hsb = (ih->data->sb & IUP_SB_HORIZ) ? new IupHaikuCanvasScrollBar(ih, B_HORIZONTAL) : NULL;
-  IupHaikuCanvasScrollBar* vsb = (ih->data->sb & IUP_SB_VERT) ? new IupHaikuCanvasScrollBar(ih, B_VERTICAL) : NULL;
+  IupHaikuCanvasScrollBar* hsb = (ih->data->sb & IUP_SB_HORIZ) ? new IupHaikuCanvasScrollBar(ih, B_HORIZONTAL) : nullptr;
+  IupHaikuCanvasScrollBar* vsb = (ih->data->sb & IUP_SB_VERT) ? new IupHaikuCanvasScrollBar(ih, B_VERTICAL) : nullptr;
 
-  IupHaikuCanvasWrap* wrap = new IupHaikuCanvasWrap(ih);
+  auto* wrap = new IupHaikuCanvasWrap(ih);
   wrap->Attach(canvas, hsb, vsb);
 
-  ih->handle = (InativeHandle*)canvas;
-  iupAttribSet(ih, "_IUP_EXTRAPARENT", (char*)wrap);
-  if (vsb) iupAttribSet(ih, "_IUPHAIKU_CANVAS_VSB", (char*)vsb);
+  ih->handle = reinterpret_cast<InativeHandle*>(canvas);
+  iupAttribSet(ih, "_IUP_EXTRAPARENT", reinterpret_cast<char*>(wrap));
+  if (vsb) iupAttribSet(ih, "_IUPHAIKU_CANVAS_VSB", reinterpret_cast<char*>(vsb));
   iuphaikuAddToParent(ih);
 
   haikuCanvasSyncScrollBar(ih, true);
@@ -670,26 +670,26 @@ static void haikuCanvasUnMapMethod(Ihandle* ih)
 {
   if (IupHaikuCanvasWrap* wrap = haikuCanvasGetWrap(ih))
   {
-    if (wrap->CanvasView()) wrap->CanvasView()->SetIhandle(NULL);
-    if (wrap->HSB())        wrap->HSB()->SetIhandle(NULL);
-    if (wrap->VSB())        wrap->VSB()->SetIhandle(NULL);
+    if (wrap->CanvasView()) wrap->CanvasView()->SetIhandle(nullptr);
+    if (wrap->HSB())        wrap->HSB()->SetIhandle(nullptr);
+    if (wrap->VSB())        wrap->VSB()->SetIhandle(nullptr);
   }
-  else if (IupHaikuCanvasView* v = dynamic_cast<IupHaikuCanvasView*>((BView*)ih->handle))
+  else if (auto* v = dynamic_cast<IupHaikuCanvasView*>(reinterpret_cast<BView*>(ih->handle)))
   {
-    v->SetIhandle(NULL);
+    v->SetIhandle(nullptr);
   }
-  iupAttribSet(ih, "_IUP_EXTRAPARENT", NULL);
-  iupAttribSet(ih, "_IUPHAIKU_CANVAS_VSB", NULL);
+  iupAttribSet(ih, "_IUP_EXTRAPARENT", nullptr);
+  iupAttribSet(ih, "_IUPHAIKU_CANVAS_VSB", nullptr);
   iupdrvBaseUnMapMethod(ih);
 }
 
 static char* haikuCanvasGetDrawSizeAttrib(Ihandle* ih)
 {
   IupHaikuCanvasView* inner = haikuCanvasGetInner(ih);
-  if (!inner) return NULL;
+  if (!inner) return nullptr;
   LooperLockGuard guard(inner->Looper());
   BRect b = inner->Bounds();
-  return iupStrReturnIntInt((int)(b.Width() + 1), (int)(b.Height() + 1), 'x');
+  return iupStrReturnIntInt(static_cast<int>(b.Width() + 1), static_cast<int>(b.Height() + 1), 'x');
 }
 
 static int haikuCanvasSetPosXAttrib(Ihandle* ih, const char* value)
@@ -774,7 +774,7 @@ static void* haikuCanvasGetInnerNativeContainerMethod(Ihandle* ih, Ihandle* /*ch
 static int haikuCanvasSetUpdateRectAttrib(Ihandle* ih, const char* value)
 {
   int x1, y1, x2, y2;
-  BView* view = (BView*)ih->handle;
+  auto* view = reinterpret_cast<BView*>(ih->handle);
   if (view && value && std::sscanf(value, "%d %d %d %d", &x1, &y1, &x2, &y2) == 4)
   {
     BLooper* loop = view->Looper();
@@ -794,14 +794,14 @@ extern "C" IUP_SDK_API void iupdrvCanvasInitClass(Iclass* ic)
   ic->LayoutUpdate = haikuCanvasLayoutUpdateMethod;
   ic->GetInnerNativeContainerHandle = haikuCanvasGetInnerNativeContainerMethod;
 
-  iupClassRegisterAttribute(ic, "DRAWSIZE", haikuCanvasGetDrawSizeAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "UPDATERECT", NULL, haikuCanvasSetUpdateRectAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "BORDER", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DRAWFONT", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, haikuCanvasSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "DRAWSIZE", haikuCanvasGetDrawSizeAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "UPDATERECT", nullptr, haikuCanvasSetUpdateRectAttrib, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BORDER", nullptr, nullptr, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DRAWFONT", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", nullptr, haikuCanvasSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
 
-  iupClassRegisterAttribute(ic, "DX",   NULL,                   haikuCanvasSetDXAttrib,   NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DY",   NULL,                   haikuCanvasSetDYAttrib,   NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "POSX", iupCanvasGetPosXAttrib, haikuCanvasSetPosXAttrib, "0",  NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "POSY", iupCanvasGetPosYAttrib, haikuCanvasSetPosYAttrib, "0",  NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DX",   nullptr,                   haikuCanvasSetDXAttrib,   nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DY",   nullptr,                   haikuCanvasSetDYAttrib,   nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "POSX", iupCanvasGetPosXAttrib, haikuCanvasSetPosXAttrib, "0",  nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "POSY", iupCanvasGetPosYAttrib, haikuCanvasSetPosYAttrib, "0",  nullptr, IUPAF_NO_INHERIT);
 }

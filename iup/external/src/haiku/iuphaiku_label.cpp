@@ -40,7 +40,7 @@ static void haikuLabelFireMouseCb(Ihandle* ih, BView* view, BPoint where, int pr
 {
   if (!ih) return;
   if (!iupdrvIsActive(ih)) return;
-  BMessage* msg = view->Looper() ? view->Looper()->CurrentMessage() : NULL;
+  BMessage* msg = view->Looper() ? view->Looper()->CurrentMessage() : nullptr;
   int32 buttons = 0, mods = 0, clicks = 1;
   if (msg)
   {
@@ -52,9 +52,9 @@ static void haikuLabelFireMouseCb(Ihandle* ih, BView* view, BPoint where, int pr
   if      (buttons & B_SECONDARY_MOUSE_BUTTON) btn = IUP_BUTTON3;
   else if (buttons & B_TERTIARY_MOUSE_BUTTON)  btn = IUP_BUTTON2;
   char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
-  iuphaikuButtonKeySetStatus((unsigned)mods, (unsigned)buttons, 0, status, clicks == 2 ? 1 : 0);
-  IFniiiis cb = (IFniiiis)IupGetCallback(ih, "BUTTON_CB");
-  if (cb) cb(ih, btn, pressed, (int)where.x, (int)where.y, status);
+  iuphaikuButtonKeySetStatus(static_cast<unsigned>(mods), static_cast<unsigned>(buttons), 0, status, clicks == 2 ? 1 : 0);
+  auto cb = reinterpret_cast<IFniiiis>(IupGetCallback(ih, "BUTTON_CB"));
+  if (cb) cb(ih, btn, pressed, static_cast<int>(where.x), static_cast<int>(where.y), status);
 }
 
 static void haikuLabelFireTransitCb(Ihandle* ih, uint32 transit)
@@ -77,9 +77,9 @@ static void haikuLabelFireMotionCb(Ihandle* ih, BView* view, BPoint where)
 {
   if (!ih) return;
   if (!iupdrvIsActive(ih)) return;
-  IFniis cb = (IFniis)IupGetCallback(ih, "MOTION_CB");
+  auto cb = reinterpret_cast<IFniis>(IupGetCallback(ih, "MOTION_CB"));
   if (!cb) return;
-  BMessage* msg = view->Looper() ? view->Looper()->CurrentMessage() : NULL;
+  BMessage* msg = view->Looper() ? view->Looper()->CurrentMessage() : nullptr;
   int32 buttons = 0, mods = 0;
   if (msg)
   {
@@ -87,8 +87,8 @@ static void haikuLabelFireMotionCb(Ihandle* ih, BView* view, BPoint where)
     msg->FindInt32("modifiers", &mods);
   }
   char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
-  iuphaikuButtonKeySetStatus((unsigned)mods, (unsigned)buttons, 0, status, 0);
-  cb(ih, (int)where.x, (int)where.y, status);
+  iuphaikuButtonKeySetStatus(static_cast<unsigned>(mods), static_cast<unsigned>(buttons), 0, status, 0);
+  cb(ih, static_cast<int>(where.x), static_cast<int>(where.y), status);
 }
 
 class IupHaikuLabelString : public BStringView
@@ -120,7 +120,7 @@ public:
     if (inactive)
     {
       rgb_color bg = iuphaikuColor(B_PANEL_BACKGROUND_COLOR);
-      rgb_color dim = { (uint8)((hc.red + bg.red) / 2), (uint8)((hc.green + bg.green) / 2), (uint8)((hc.blue + bg.blue) / 2), 255 };
+      rgb_color dim = { static_cast<uint8>((hc.red + bg.red) / 2), static_cast<uint8>((hc.green + bg.green) / 2), static_cast<uint8>((hc.blue + bg.blue) / 2), 255 };
       SetHighColor(dim);
     }
     if (!over_gl && LowColor() != ViewColor())
@@ -213,7 +213,7 @@ class IupHaikuLabelImage : public BView
 public:
   explicit IupHaikuLabelImage(Ihandle* ih)
     : BView(BRect(0, 0, 0, 0), "iup_label_img", B_FOLLOW_NONE, B_WILL_DRAW),
-      fIhandle(ih), fBitmap(NULL)
+      fIhandle(ih), fBitmap(nullptr)
   {
     SetViewUIColor(B_PANEL_BACKGROUND_COLOR);
   }
@@ -289,9 +289,9 @@ private:
 
 static char* haikuStrippedMnemonic(const char* title)
 {
-  if (!title) return NULL;
+  if (!title) return nullptr;
   if (!strchr(title, '&')) return iupStrDup(title);
-  return iupStrProcessMnemonic(title, NULL, 0);
+  return iupStrProcessMnemonic(title, nullptr, 0);
 }
 
 static alignment haikuParseAlignment(const char* value)
@@ -303,11 +303,11 @@ static alignment haikuParseAlignment(const char* value)
 
 static void haikuLabelApplyImage(Ihandle* ih, const char* name, int make_inactive)
 {
-  IupHaikuLabelImage* view = (IupHaikuLabelImage*)ih->handle;
+  auto* view = reinterpret_cast<IupHaikuLabelImage*>(ih->handle);
   if (!view || !name) return;
 
   const char* bgcolor = iupBaseNativeParentGetBgColorAttrib(ih);
-  BBitmap* bm = (BBitmap*)iupImageGetImage(name, ih, make_inactive, bgcolor);
+  auto* bm = static_cast<BBitmap*>(iupImageGetImage(name, ih, make_inactive, bgcolor));
 
   LooperLockGuard guard(view->Looper());
   view->SetBitmap(bm);
@@ -318,7 +318,7 @@ static int haikuLabelSetTitleAttrib(Ihandle* ih, const char* value)
   if (ih->data->type != IUP_LABEL_TEXT)
     return 1;
 
-  BStringView* view = (BStringView*)ih->handle;
+  auto* view = reinterpret_cast<BStringView*>(ih->handle);
   if (!view) return 1;
 
   int mn = iupStrFindMnemonic(value);
@@ -336,7 +336,7 @@ static int haikuLabelSetAlignmentAttrib(Ihandle* ih, const char* value)
   if (ih->data->type != IUP_LABEL_TEXT)
     return 1;
 
-  BStringView* view = (BStringView*)ih->handle;
+  auto* view = reinterpret_cast<BStringView*>(ih->handle);
   if (!view) return 1;
 
   /* IUP "HALIGN:VALIGN"; horizontal via SetAlignment, vertical handled in Draw */
@@ -362,7 +362,7 @@ static int haikuLabelSetEllipsisAttrib(Ihandle* ih, const char* value)
   if (ih->data->type != IUP_LABEL_TEXT)
     return 0;
 
-  BStringView* view = (BStringView*)ih->handle;
+  auto* view = reinterpret_cast<BStringView*>(ih->handle);
   if (!view) return 1;
 
   LooperLockGuard guard(view->Looper());
@@ -375,7 +375,7 @@ static int haikuLabelSetWordWrapAttrib(Ihandle* ih, const char* value)
   if (ih->data->type != IUP_LABEL_TEXT)
     return 0;
 
-  IupHaikuLabelString* view = (IupHaikuLabelString*)ih->handle;
+  auto* view = reinterpret_cast<IupHaikuLabelString*>(ih->handle);
   if (!view) return 1;
 
   LooperLockGuard guard(view->Looper());
@@ -452,7 +452,7 @@ static int haikuLabelMapMethod(Ihandle* ih)
   else
     ih->data->type = IUP_LABEL_TEXT;
 
-  BView* native = NULL;
+  BView* native = nullptr;
 
   if (ih->data->type == IUP_LABEL_SEP_HORIZ)
   {
@@ -470,7 +470,7 @@ static int haikuLabelMapMethod(Ihandle* ih)
   {
     char* title = iupAttribGet(ih, "TITLE");
     char* stripped = haikuStrippedMnemonic(title);
-    IupHaikuLabelString* sv = new IupHaikuLabelString(ih, stripped ? stripped : "");
+    auto* sv = new IupHaikuLabelString(ih, stripped ? stripped : "");
     if (stripped) free(stripped);
 
     char* align = iupAttribGet(ih, "ALIGNMENT");
@@ -485,7 +485,7 @@ static int haikuLabelMapMethod(Ihandle* ih)
     native = sv;
   }
 
-  ih->handle = (InativeHandle*)native;
+  ih->handle = reinterpret_cast<InativeHandle*>(native);
   iuphaikuAddToParent(ih);
 
   iuphaikuSetGLBackgroundChild(ih, native);
@@ -512,19 +512,19 @@ extern "C" IUP_SDK_API void iupdrvLabelInitClass(Iclass* ic)
 {
   ic->Map = haikuLabelMapMethod;
 
-  iupClassRegisterAttribute(ic, "FONT", NULL, iupdrvSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
+  iupClassRegisterAttribute(ic, "FONT", nullptr, iupdrvSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "ACTIVE", iupBaseGetActiveAttrib, haikuLabelSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, iupdrvBaseSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", nullptr, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "FGCOLOR", nullptr, iupdrvBaseSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
 
-  iupClassRegisterAttribute(ic, "TITLE", NULL, haikuLabelSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "ALIGNMENT", NULL, haikuLabelSetAlignmentAttrib, "ALEFT:ACENTER", NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "ELLIPSIS", NULL, haikuLabelSetEllipsisAttrib, NULL, NULL, IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "PADDING", iupLabelGetPaddingAttrib, NULL, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
+  iupClassRegisterAttribute(ic, "TITLE", nullptr, haikuLabelSetTitleAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ALIGNMENT", nullptr, haikuLabelSetAlignmentAttrib, "ALEFT:ACENTER", nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ELLIPSIS", nullptr, haikuLabelSetEllipsisAttrib, nullptr, nullptr, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "PADDING", iupLabelGetPaddingAttrib, nullptr, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
 
-  iupClassRegisterAttribute(ic, "IMAGE", NULL, haikuLabelSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "IMINACTIVE", NULL, haikuLabelSetImInactiveAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "MARKUP", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED);
-  iupClassRegisterAttribute(ic, "WORDWRAP", NULL, haikuLabelSetWordWrapAttrib, NULL, NULL, IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "SELECTABLE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMAGE", nullptr, haikuLabelSetImageAttrib, nullptr, nullptr, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMINACTIVE", nullptr, haikuLabelSetImInactiveAttrib, nullptr, nullptr, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MARKUP", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED);
+  iupClassRegisterAttribute(ic, "WORDWRAP", nullptr, haikuLabelSetWordWrapAttrib, nullptr, nullptr, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "SELECTABLE", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 }

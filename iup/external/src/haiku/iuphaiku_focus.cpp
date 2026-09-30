@@ -53,13 +53,13 @@ extern "C" IUP_SDK_API void iupdrvSetFocus(Ihandle* ih)
 
   if (ih->iclass->nativetype == IUP_TYPEDIALOG)
   {
-    BWindow* win = (BWindow*)ih->handle;
+    auto* win = reinterpret_cast<BWindow*>(ih->handle);
     LooperLockGuard guard(win);
     win->Activate(true);
     return;
   }
 
-  BView* view = (BView*)ih->handle;
+  auto* view = reinterpret_cast<BView*>(ih->handle);
 
   /* MakeFocus stays queued until the owning window is active. */
   BWindow* win = view->Window();
@@ -67,13 +67,13 @@ extern "C" IUP_SDK_API void iupdrvSetFocus(Ihandle* ih)
   {
     LooperLockGuard guard(win);
     if (!win->IsActive()) win->Activate(true);
-    BTextControl* tc = dynamic_cast<BTextControl*>(view);
-    BView* inner = NULL;
+    auto* tc = dynamic_cast<BTextControl*>(view);
+    BView* inner = nullptr;
     if (tc) inner = tc->TextView();
     else
     {
-      inner = (BView*)iupAttribGet(ih, "_IUPHAIKU_LIST_INNER");
-      if (!inner) inner = (BView*)iupAttribGet(ih, "_IUPHAIKU_TEXT_INNER");
+      inner = reinterpret_cast<BView*>(iupAttribGet(ih, "_IUPHAIKU_LIST_INNER"));
+      if (!inner) inner = reinterpret_cast<BView*>(iupAttribGet(ih, "_IUPHAIKU_TEXT_INNER"));
     }
     (inner ? inner : view)->MakeFocus(true);
   }

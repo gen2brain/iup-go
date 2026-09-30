@@ -35,13 +35,13 @@ extern "C" {
 
 #define IUPHAIKU_TIMER_TICK 'IupT'
 
-static BLocker& haikuTimerRegistryLock(void)
+static BLocker& haikuTimerRegistryLock()
 {
   static BLocker lock("iup_timer_registry");
   return lock;
 }
 
-static std::map<int, Ihandle*>& haikuTimerRegistry(void)
+static std::map<int, Ihandle*>& haikuTimerRegistry()
 {
   static std::map<int, Ihandle*> registry;
   return registry;
@@ -62,38 +62,38 @@ static void haikuTimerUnregister(int serial)
 Ihandle* iuphaikuTimerFromSerial(int serial)
 {
   BAutolock guard(haikuTimerRegistryLock());
-  std::map<int, Ihandle*>::iterator found = haikuTimerRegistry().find(serial);
-  return found == haikuTimerRegistry().end() ? NULL : found->second;
+  auto found = haikuTimerRegistry().find(serial);
+  return found == haikuTimerRegistry().end() ? nullptr : found->second;
 }
 
 class IupHaikuTimer : public BHandler
 {
 public:
-  explicit IupHaikuTimer(Ihandle* ih) : BHandler("iup_timer"), fIhandle(ih), fRunner(NULL), fStart(0) {}
+  explicit IupHaikuTimer(Ihandle* ih) : BHandler("iup_timer"), fIhandle(ih), fRunner(nullptr), fStart(0) {}
   ~IupHaikuTimer() override { delete fRunner; }
 
   void MessageReceived(BMessage* msg) override
   {
     if (msg && msg->what == IUPHAIKU_TIMER_TICK && fIhandle)
     {
-      iupAttribSetInt(fIhandle, "ELAPSEDTIME", (int)((system_time() - fStart) / 1000));
+      iupAttribSetInt(fIhandle, "ELAPSEDTIME", static_cast<int>((system_time() - fStart) / 1000));
 
       /* the play timer stays on be_app because its sleep would freeze the dialog */
-      BWindow* target = NULL;
+      BWindow* target = nullptr;
       if (!iupAttribGet(fIhandle, "_IUP_PLAYFILE"))
       {
         for (Ihandle* dlg = iupDlgListFirst(); dlg; dlg = iupDlgListNext())
         {
-          if (!dlg->handle || dlg->handle == (InativeHandle*)-1) continue;
+          if (!dlg->handle || dlg->handle == reinterpret_cast<InativeHandle*>(-1)) continue;
           if (!iupdrvDialogIsVisible(dlg)) continue;
-          target = (BWindow*)dlg->handle;
+          target = reinterpret_cast<BWindow*>(dlg->handle);
           break;
         }
       }
       if (target)
       {
         BMessage hop(IUPHAIKU_TIMER_HOP_MSG);
-        hop.AddInt32("serial", (int32)fIhandle->serial);
+        hop.AddInt32("serial", static_cast<int32>(fIhandle->serial));
         BMessenger msgr(target);
         if (msgr.IsValid() && msgr.SendMessage(&hop) == B_OK)
           return;
@@ -127,7 +127,7 @@ public:
   void Stop()
   {
     delete fRunner;
-    fRunner = NULL;
+    fRunner = nullptr;
   }
 
 private:
@@ -137,7 +137,7 @@ private:
 };
 
 
-static int haikuTimerNextSerial(void)
+static int haikuTimerNextSerial()
 {
   static int next_serial = 0;
   if (next_serial == INT_MAX) next_serial = 0;
@@ -146,23 +146,23 @@ static int haikuTimerNextSerial(void)
 
 extern "C" IUP_SDK_API void iupdrvTimerRun(Ihandle* ih)
 {
-  IupHaikuTimer* t = (IupHaikuTimer*)iupAttribGet(ih, "_IUPHAIKU_TIMER");
+  auto* t = reinterpret_cast<IupHaikuTimer*>(iupAttribGet(ih, "_IUPHAIKU_TIMER"));
   if (!t)
   {
     t = new IupHaikuTimer(ih);
-    iupAttribSet(ih, "_IUPHAIKU_TIMER", (char*)t);
+    iupAttribSet(ih, "_IUPHAIKU_TIMER", reinterpret_cast<char*>(t));
   }
   int time_ms = iupAttribGetInt(ih, "TIME");
   if (time_ms <= 0) time_ms = 100;
   haikuTimerUnregister(ih->serial);
-  t->Start((bigtime_t)time_ms * 1000);
+  t->Start(static_cast<bigtime_t>(time_ms) * 1000);
   ih->serial = haikuTimerNextSerial();
   haikuTimerRegister(ih->serial, ih);
 }
 
 extern "C" IUP_SDK_API void iupdrvTimerStop(Ihandle* ih)
 {
-  IupHaikuTimer* t = (IupHaikuTimer*)iupAttribGet(ih, "_IUPHAIKU_TIMER");
+  auto* t = reinterpret_cast<IupHaikuTimer*>(iupAttribGet(ih, "_IUPHAIKU_TIMER"));
   if (t) t->Stop();
   haikuTimerUnregister(ih->serial);
   ih->serial = -1;
@@ -170,14 +170,14 @@ extern "C" IUP_SDK_API void iupdrvTimerStop(Ihandle* ih)
 
 static void haikuTimerDestroy(Ihandle* ih)
 {
-  IupHaikuTimer* t = (IupHaikuTimer*)iupAttribGet(ih, "_IUPHAIKU_TIMER");
+  auto* t = reinterpret_cast<IupHaikuTimer*>(iupAttribGet(ih, "_IUPHAIKU_TIMER"));
   haikuTimerUnregister(ih->serial);
   if (t)
   {
     BLooper* l = t->Looper();
     if (l) { LooperLockGuard guard(l); l->RemoveHandler(t); }
     delete t;
-    iupAttribSet(ih, "_IUPHAIKU_TIMER", NULL);
+    iupAttribSet(ih, "_IUPHAIKU_TIMER", nullptr);
   }
 }
 

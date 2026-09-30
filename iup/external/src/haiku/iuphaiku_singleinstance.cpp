@@ -46,8 +46,8 @@ static void haikuSiDeliverData(const char* data, int len)
 {
   for (Ihandle* dlg = iupDlgListFirst(); dlg; dlg = iupDlgListNext())
   {
-    IFnsi cb = (IFnsi)IupGetCallback(dlg, "COPYDATA_CB");
-    if (cb) { cb(dlg, (char*)data, len); return; }
+    auto cb = reinterpret_cast<IFnsi>(IupGetCallback(dlg, "COPYDATA_CB"));
+    if (cb) { cb(dlg, const_cast<char*>(data), len); return; }
   }
 }
 
@@ -59,8 +59,8 @@ static int32 haikuSiReaderThread(void* /*arg*/)
     if (size == B_TIMED_OUT) continue;
     if (size < 0) break;
 
-    char* buf = (char*)malloc(size + 1);
-    if (!buf) { read_port(si_port, NULL, NULL, 0); continue; }
+    char* buf = static_cast<char*>(malloc(size + 1));
+    if (!buf) { read_port(si_port, nullptr, nullptr, 0); continue; }
     int32 code = 0;
     ssize_t got = read_port(si_port, &code, buf, size);
     if (got < 0) { free(buf); break; }
@@ -80,10 +80,10 @@ static int32 haikuSiReaderThread(void* /*arg*/)
 IUP_DRV_API void iuphaikuSingleInstanceDispatch(BMessage* msg)
 {
   if (!msg) return;
-  const void* data = NULL;
+  const void* data = nullptr;
   ssize_t len = 0;
   if (msg->FindData("data", B_RAW_TYPE, &data, &len) == B_OK && data && len > 0)
-    haikuSiDeliverData((const char*)data, (int)len);
+    haikuSiDeliverData(static_cast<const char*>(data), static_cast<int>(len));
 }
 
 extern "C" IUP_SDK_API int iupdrvSingleInstanceSet(const char* name)
@@ -98,7 +98,7 @@ extern "C" IUP_SDK_API int iupdrvSingleInstanceSet(const char* name)
   {
     char* argv0 = IupGetGlobal("ARGV0");
     const char* data = argv0 ? argv0 : "";
-    write_port_etc(existing, 0, data, (ssize_t)strlen(data) + 1, B_RELATIVE_TIMEOUT, 1000000);
+    write_port_etc(existing, 0, data, static_cast<ssize_t>(strlen(data)) + 1, B_RELATIVE_TIMEOUT, 1000000);
     return 1;
   }
 
@@ -106,7 +106,7 @@ extern "C" IUP_SDK_API int iupdrvSingleInstanceSet(const char* name)
   if (si_port < B_OK) return 0;
 
   si_thread_quit = false;
-  si_thread = spawn_thread(haikuSiReaderThread, "iup_si_reader", B_NORMAL_PRIORITY, NULL);
+  si_thread = spawn_thread(haikuSiReaderThread, "iup_si_reader", B_NORMAL_PRIORITY, nullptr);
   if (si_thread < B_OK) { delete_port(si_port); si_port = -1; return 0; }
   resume_thread(si_thread);
   return 0;

@@ -35,9 +35,9 @@ extern "C" {
 
 
 /* plain BView, no BLayout: IUP positions children itself */
-IUP_DRV_API BView* iuphaikuNativeContainerNew(void)
+IUP_DRV_API BView* iuphaikuNativeContainerNew()
 {
-  BView* container = new BView(BRect(0, 0, 0, 0), "iup_container",
+  auto* container = new BView(BRect(0, 0, 0, 0), "iup_container",
                                B_FOLLOW_NONE, B_WILL_DRAW);
   container->SetViewUIColor(B_PANEL_BACKGROUND_COLOR);
   return container;
@@ -57,9 +57,9 @@ IUP_DRV_API void iuphaikuAddToParent(Ihandle* ih)
   if (!ih || !ih->handle)
     return;
 
-  BView* widget = (BView*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
-  if (!widget) widget = (BView*)ih->handle;
-  BView* parent = (BView*)iupChildTreeGetNativeParentHandle(ih);
+  auto* widget = reinterpret_cast<BView*>(iupAttribGet(ih, "_IUP_EXTRAPARENT"));
+  if (!widget) widget = reinterpret_cast<BView*>(ih->handle);
+  auto* parent = reinterpret_cast<BView*>(iupChildTreeGetNativeParentHandle(ih));
   if (!parent)
     return;
 
@@ -71,7 +71,7 @@ IUP_DRV_API void iuphaikuAddToParent(Ihandle* ih)
   {
     if (a->iclass && a->iclass->nativetype == IUP_TYPEDIALOG)
     {
-      if (BCursor* c = (BCursor*)iupAttribGet(a, "_IUPHAIKU_CURSOR"))
+      if (auto* c = reinterpret_cast<BCursor*>(iupAttribGet(a, "_IUPHAIKU_CURSOR")))
         widget->SetViewCursor(c, true);
       break;
     }
@@ -87,23 +87,23 @@ IUP_DRV_API void iuphaikuSetPosSize(BView* widget, int x, int y, int width, int 
   if (height < 1) height = 1;
 
   LooperLockGuard guard(widget->Looper());
-  widget->MoveTo((float)x, (float)y);
-  widget->ResizeTo((float)(width - 1), (float)(height - 1));
+  widget->MoveTo(static_cast<float>(x), static_cast<float>(y));
+  widget->ResizeTo(static_cast<float>(width - 1), static_cast<float>(height - 1));
 }
 
 IUP_DRV_API BWindow* iuphaikuGetParentWindow(Ihandle* ih)
 {
   InativeHandle* parent = iupDialogGetNativeParent(ih);
-  return (BWindow*)parent;
+  return reinterpret_cast<BWindow*>(parent);
 }
 
 /* Stub Map - placeholder BView so AddToParent/Layout/UnMap work uniformly. */
 IUP_DRV_API int iuphaikuStubMap(Ihandle* ih)
 {
-  BView* view = new BView(BRect(0, 0, 0, 0), "iup_stub", B_FOLLOW_NONE, B_WILL_DRAW);
+  auto* view = new BView(BRect(0, 0, 0, 0), "iup_stub", B_FOLLOW_NONE, B_WILL_DRAW);
   view->SetViewUIColor(B_PANEL_BACKGROUND_COLOR);
 
-  ih->handle = (InativeHandle*)view;
+  ih->handle = reinterpret_cast<InativeHandle*>(view);
   iuphaikuAddToParent(ih);
   return IUP_NOERROR;
 }
@@ -122,19 +122,19 @@ extern "C" IUP_SDK_API void iupdrvScreenToClient(Ihandle* ih, int* x, int* y)
 
   if (ih->iclass && ih->iclass->nativetype == IUP_TYPEDIALOG)
   {
-    BWindow* win = (BWindow*)ih->handle;
+    auto* win = reinterpret_cast<BWindow*>(ih->handle);
     LooperLockGuard guard(win);
     BRect frame = win->Frame();
-    if (x) *x -= (int)frame.left;
-    if (y) *y -= (int)frame.top;
+    if (x) *x -= static_cast<int>(frame.left);
+    if (y) *y -= static_cast<int>(frame.top);
     return;
   }
 
-  BView* view = (BView*)ih->handle;
+  auto* view = reinterpret_cast<BView*>(ih->handle);
   LooperLockGuard guard(view->Looper());
   BPoint origin = view->ConvertToScreen(BPoint(0, 0));
-  if (x) *x -= (int)origin.x;
-  if (y) *y -= (int)origin.y;
+  if (x) *x -= static_cast<int>(origin.x);
+  if (y) *y -= static_cast<int>(origin.y);
 }
 
 extern "C" IUP_SDK_API void iupdrvClientToScreen(Ihandle* ih, int* x, int* y)
@@ -143,19 +143,19 @@ extern "C" IUP_SDK_API void iupdrvClientToScreen(Ihandle* ih, int* x, int* y)
 
   if (ih->iclass && ih->iclass->nativetype == IUP_TYPEDIALOG)
   {
-    BWindow* win = (BWindow*)ih->handle;
+    auto* win = reinterpret_cast<BWindow*>(ih->handle);
     LooperLockGuard guard(win);
     BRect frame = win->Frame();
-    if (x) *x += (int)frame.left;
-    if (y) *y += (int)frame.top;
+    if (x) *x += static_cast<int>(frame.left);
+    if (y) *y += static_cast<int>(frame.top);
     return;
   }
 
-  BView* view = (BView*)ih->handle;
+  auto* view = reinterpret_cast<BView*>(ih->handle);
   LooperLockGuard guard(view->Looper());
   BPoint origin = view->ConvertToScreen(BPoint(0, 0));
-  if (x) *x += (int)origin.x;
-  if (y) *y += (int)origin.y;
+  if (x) *x += static_cast<int>(origin.x);
+  if (y) *y += static_cast<int>(origin.y);
 }
 
 extern "C" IUP_SDK_API int iupdrvIsVisible(Ihandle* ih)
@@ -166,7 +166,7 @@ extern "C" IUP_SDK_API int iupdrvIsVisible(Ihandle* ih)
   if (ih->iclass && ih->iclass->nativetype == IUP_TYPEDIALOG)
     return iupdrvDialogIsVisible(ih);
 
-  BView* view = (BView*)ih->handle;
+  auto* view = reinterpret_cast<BView*>(ih->handle);
   LooperLockGuard guard(view->Looper());
   return view->IsHidden() ? 0 : 1;
 }
@@ -179,8 +179,8 @@ extern "C" IUP_SDK_API int iupdrvIsActive(Ihandle* ih)
                      ih->iclass->nativetype == IUP_TYPEDIALOG))
     return 1;
 
-  BView* view = (BView*)ih->handle;
-  BControl* ctrl = dynamic_cast<BControl*>(view);
+  auto* view = reinterpret_cast<BView*>(ih->handle);
+  auto* ctrl = dynamic_cast<BControl*>(view);
   if (ctrl)
   {
     LooperLockGuard guard(view->Looper());
@@ -194,8 +194,8 @@ extern "C" IUP_SDK_API void iupdrvSetVisible(Ihandle* ih, int enable)
   if (!ih || !ih->handle) return;
   if (ih->iclass && ih->iclass->nativetype == IUP_TYPEDIALOG) return;
 
-  BView* view = (BView*)ih->handle;
-  BView* container = (BView*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
+  auto* view = reinterpret_cast<BView*>(ih->handle);
+  auto* container = reinterpret_cast<BView*>(iupAttribGet(ih, "_IUP_EXTRAPARENT"));
   LooperLockGuard guard(view->Looper());
   /* IsHidden(view) checks this view's own counter; bare IsHidden() walks parents and reports hidden during Map. */
   if (enable) {
@@ -215,21 +215,21 @@ static void haikuSetActiveSelf(Ihandle* ih, int enable)
                      ih->iclass->nativetype == IUP_TYPEDIALOG))
     return;
 
-  BView* view = (BView*)ih->handle;
+  auto* view = reinterpret_cast<BView*>(ih->handle);
   LooperLockGuard guard(view->Looper());
 
-  BControl* ctrl = dynamic_cast<BControl*>(view);
+  auto* ctrl = dynamic_cast<BControl*>(view);
   if (ctrl)
   {
     ctrl->SetEnabled(enable ? true : false);
     return;
   }
 
-  BMenuField* field = dynamic_cast<BMenuField*>(view);
+  auto* field = dynamic_cast<BMenuField*>(view);
   if (field)
     field->SetEnabled(enable ? true : false);
 
-  iupAttribSet(ih, "_IUPHAIKU_INACTIVE", enable ? NULL : (char*)"1");
+  iupAttribSet(ih, "_IUPHAIKU_INACTIVE", enable ? nullptr : const_cast<char*>("1"));
 
   view->Invalidate();
 }
@@ -252,8 +252,8 @@ extern "C" IUP_SDK_API void iupdrvSetActive(Ihandle* ih, int enable)
 extern "C" IUP_SDK_API void iupdrvActivate(Ihandle* ih)
 {
   if (!ih || !ih->handle) return;
-  BView* view = (BView*)ih->handle;
-  BControl* ctrl = dynamic_cast<BControl*>(view);
+  auto* view = reinterpret_cast<BView*>(ih->handle);
+  auto* ctrl = dynamic_cast<BControl*>(view);
   if (!ctrl) return;
   LooperLockGuard guard(view->Looper());
   ctrl->Invoke();
@@ -264,7 +264,7 @@ extern "C" IUP_SDK_API void iupdrvPostRedraw(Ihandle* ih)
   if (!ih || !ih->handle) return;
   if (ih->iclass && ih->iclass->nativetype == IUP_TYPEDIALOG) return;
 
-  BView* view = (BView*)ih->handle;
+  auto* view = reinterpret_cast<BView*>(ih->handle);
   BLooper* loop = view->Looper();
   if (!loop) return;
 
@@ -277,7 +277,7 @@ extern "C" IUP_SDK_API void iupdrvRedrawNow(Ihandle* ih)
   if (!ih || !ih->handle) return;
   if (ih->iclass && ih->iclass->nativetype == IUP_TYPEDIALOG) return;
 
-  BView* view = (BView*)ih->handle;
+  auto* view = reinterpret_cast<BView*>(ih->handle);
   BWindow* win = view->Window();
   if (!win) return;
 
@@ -290,8 +290,8 @@ extern "C" IUP_SDK_API void iupdrvReparent(Ihandle* ih)
 {
   if (!ih || !ih->handle) return;
 
-  BView* view = (BView*)ih->handle;
-  BView* new_parent = (BView*)iupChildTreeGetNativeParentHandle(ih);
+  auto* view = reinterpret_cast<BView*>(ih->handle);
+  auto* new_parent = reinterpret_cast<BView*>(iupChildTreeGetNativeParentHandle(ih));
   BView* old_parent = view->Parent();
 
   if (!new_parent || new_parent == old_parent)
@@ -310,14 +310,14 @@ extern "C" IUP_SDK_API void iupdrvReparent(Ihandle* ih)
 extern "C" IUP_SDK_API int iupdrvGetScrollbarSize(void)
 {
   if (be_control_look)
-    return (int)(be_control_look->GetScrollBarWidth(B_VERTICAL) + 0.5f);
+    return static_cast<int>(be_control_look->GetScrollBarWidth(B_VERTICAL) + 0.5f);
   return 14;
 }
 
 /* pt is given in the parent coordinate system */
 static BView* haikuViewAtPoint(BView* parent, BPoint pt)
 {
-  if (!parent) return NULL;
+  if (!parent) return nullptr;
   for (int32 i = parent->CountChildren() - 1; i >= 0; --i)
   {
     BView* child = parent->ChildAt(i);
@@ -328,7 +328,7 @@ static BView* haikuViewAtPoint(BView* parent, BPoint pt)
     BView* leaf = haikuViewAtPoint(child, child_pt);
     return leaf ? leaf : child;
   }
-  return NULL;
+  return nullptr;
 }
 
 static BWindow* haikuWindowAtPoint(BPoint screen)
@@ -336,10 +336,10 @@ static BWindow* haikuWindowAtPoint(BPoint screen)
   for (Ihandle* dlg = iupDlgListFirst(); dlg; dlg = iupDlgListNext())
   {
     if (!dlg->handle) continue;
-    BWindow* win = (BWindow*)dlg->handle;
+    auto* win = reinterpret_cast<BWindow*>(dlg->handle);
     if (!win->IsHidden() && win->Frame().Contains(screen)) return win;
   }
-  return NULL;
+  return nullptr;
 }
 
 IUP_DRV_API void iuphaikuFireGlobalInputCB(BMessage* msg)
@@ -349,7 +349,7 @@ IUP_DRV_API void iuphaikuFireGlobalInputCB(BMessage* msg)
     case B_MOUSE_DOWN:
     case B_MOUSE_UP:
     {
-      IFiiiis cb = (IFiiiis)IupGetFunction("GLOBALBUTTON_CB");
+      auto cb = reinterpret_cast<IFiiiis>(IupGetFunction("GLOBALBUTTON_CB"));
       if (!cb) return;
       BPoint where;
       if (msg->FindPoint("screen_where", &where) != B_OK) return;
@@ -362,13 +362,13 @@ IUP_DRV_API void iuphaikuFireGlobalInputCB(BMessage* msg)
       else if (buttons & B_SECONDARY_MOUSE_BUTTON) btn = IUP_BUTTON3;
       else if (buttons & B_TERTIARY_MOUSE_BUTTON)  btn = IUP_BUTTON2;
       char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
-      iuphaikuButtonKeySetStatus((unsigned)mods, (unsigned)buttons, 0, status, clicks == 2 ? 1 : 0);
-      cb(btn, msg->what == B_MOUSE_DOWN ? 1 : 0, (int)where.x, (int)where.y, status);
+      iuphaikuButtonKeySetStatus(static_cast<unsigned>(mods), static_cast<unsigned>(buttons), 0, status, clicks == 2 ? 1 : 0);
+      cb(btn, msg->what == B_MOUSE_DOWN ? 1 : 0, static_cast<int>(where.x), static_cast<int>(where.y), status);
       break;
     }
     case B_MOUSE_MOVED:
     {
-      IFiis cb = (IFiis)IupGetFunction("GLOBALMOTION_CB");
+      auto cb = reinterpret_cast<IFiis>(IupGetFunction("GLOBALMOTION_CB"));
       if (!cb) return;
       BPoint where;
       if (msg->FindPoint("screen_where", &where) != B_OK) return;
@@ -376,36 +376,36 @@ IUP_DRV_API void iuphaikuFireGlobalInputCB(BMessage* msg)
       msg->FindInt32("buttons", &buttons);
       msg->FindInt32("modifiers", &mods);
       char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
-      iuphaikuButtonKeySetStatus((unsigned)mods, (unsigned)buttons, 0, status, 0);
-      cb((int)where.x, (int)where.y, status);
+      iuphaikuButtonKeySetStatus(static_cast<unsigned>(mods), static_cast<unsigned>(buttons), 0, status, 0);
+      cb(static_cast<int>(where.x), static_cast<int>(where.y), status);
       break;
     }
     case B_MOUSE_WHEEL_CHANGED:
     {
-      IFfiis cb = (IFfiis)IupGetFunction("GLOBALWHEEL_CB");
+      auto cb = reinterpret_cast<IFfiis>(IupGetFunction("GLOBALWHEEL_CB"));
       if (!cb) return;
       float delta = 0.0f;
       msg->FindFloat("be:wheel_delta_y", &delta);
       int32 mods = 0;
       msg->FindInt32("modifiers", &mods);
       BPoint screen(0, 0);
-      get_mouse(&screen, NULL);
+      get_mouse(&screen, nullptr);
       char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
-      iuphaikuButtonKeySetStatus((unsigned)mods, 0, 0, status, 0);
-      cb(-delta, (int)screen.x, (int)screen.y, status);
+      iuphaikuButtonKeySetStatus(static_cast<unsigned>(mods), 0, 0, status, 0);
+      cb(-delta, static_cast<int>(screen.x), static_cast<int>(screen.y), status);
       break;
     }
     case B_KEY_DOWN:
     case B_KEY_UP:
     {
-      IFii cb = (IFii)IupGetFunction("GLOBALKEYPRESS_CB");
+      IFii cb = reinterpret_cast<IFii>(IupGetFunction("GLOBALKEYPRESS_CB"));
       if (!cb) return;
       int32 byte_val = 0, raw_char = 0, mods = 0, raw_key = 0;
       msg->FindInt32("byte", &byte_val);
       msg->FindInt32("raw_char", &raw_char);
       msg->FindInt32("key", &raw_key);
       msg->FindInt32("modifiers", &mods);
-      int code = iuphaikuKeyDecode((int)byte_val, (int)raw_char, (int)raw_key, (unsigned)mods);
+      int code = iuphaikuKeyDecode(static_cast<int>(byte_val), static_cast<int>(raw_char), static_cast<int>(raw_key), static_cast<unsigned>(mods));
       if (code) cb(code, msg->what == B_KEY_DOWN ? 1 : 0);
       break;
     }
@@ -416,8 +416,8 @@ extern "C" IUP_SDK_API void iupdrvSendKey(int key, int press)
 {
   Ihandle* focus = IupGetFocus();
   if (!focus || !focus->handle) return;
-  BView* target = (BView*)focus->handle;
-  if (target == (BView*)-1) return;
+  auto* target = reinterpret_cast<BView*>(focus->handle);
+  if (target == reinterpret_cast<BView*>(-1)) return;
 
   unsigned int byte_val = 0, state = 0;
   int pad_byte = 0;
@@ -425,7 +425,7 @@ extern "C" IUP_SDK_API void iupdrvSendKey(int key, int press)
 
   if (scancode)
   {
-    byte_val = (unsigned int)pad_byte;
+    byte_val = static_cast<unsigned int>(pad_byte);
     if (iup_isShiftXkey(key)) state |= B_SHIFT_KEY;
     if (iup_isCtrlXkey(key))  state |= B_COMMAND_KEY;
     if (iup_isAltXkey(key))   state |= B_CONTROL_KEY;
@@ -437,28 +437,28 @@ extern "C" IUP_SDK_API void iupdrvSendKey(int key, int press)
     if (!byte_val) return;
   }
 
-  char buf[2] = { (char)byte_val, 0 };
+  char buf[2] = { static_cast<char>(byte_val), 0 };
 
   if (press & 0x01)
   {
     BMessage msg(B_KEY_DOWN);
     msg.AddInt64("when", system_time());
-    msg.AddInt32("modifiers", (int32)state);
-    msg.AddInt8("byte", (int8)byte_val);
+    msg.AddInt32("modifiers", static_cast<int32>(state));
+    msg.AddInt8("byte", static_cast<int8>(byte_val));
     msg.AddString("bytes", buf);
-    msg.AddInt32("raw_char", (int32)byte_val);
-    msg.AddInt32("key", scancode? (int32)scancode: (int32)byte_val);
+    msg.AddInt32("raw_char", static_cast<int32>(byte_val));
+    msg.AddInt32("key", scancode? static_cast<int32>(scancode): static_cast<int32>(byte_val));
     BMessenger(target).SendMessage(&msg);
   }
   if (press & 0x02)
   {
     BMessage msg(B_KEY_UP);
     msg.AddInt64("when", system_time());
-    msg.AddInt32("modifiers", (int32)state);
-    msg.AddInt8("byte", (int8)byte_val);
+    msg.AddInt32("modifiers", static_cast<int32>(state));
+    msg.AddInt8("byte", static_cast<int8>(byte_val));
     msg.AddString("bytes", buf);
-    msg.AddInt32("raw_char", (int32)byte_val);
-    msg.AddInt32("key", scancode? (int32)scancode: (int32)byte_val);
+    msg.AddInt32("raw_char", static_cast<int32>(byte_val));
+    msg.AddInt32("key", scancode? static_cast<int32>(scancode): static_cast<int32>(byte_val));
     BMessenger(target).SendMessage(&msg);
   }
 }
@@ -473,7 +473,7 @@ extern "C" IUP_SDK_API void iupdrvSendMouse(int x, int y, int bt, int status)
 
   if (!win->Lock()) return;
 
-  BView* target = NULL;
+  BView* target = nullptr;
   if (win->ChildAt(0))
   {
     BView* root = win->ChildAt(0);
@@ -495,7 +495,7 @@ extern "C" IUP_SDK_API void iupdrvSendMouse(int x, int y, int bt, int status)
     BMessage msg(B_MOUSE_WHEEL_CHANGED);
     msg.AddInt64("when", system_time());
     msg.AddFloat("be:wheel_delta_x", 0.0f);
-    msg.AddFloat("be:wheel_delta_y", (float)-status);
+    msg.AddFloat("be:wheel_delta_y", static_cast<float>(-status));
     msgr.SendMessage(&msg);
     return;
   }
@@ -527,8 +527,8 @@ extern "C" IUP_SDK_API void iupdrvSendMouse(int x, int y, int bt, int status)
   msg.AddInt64("when", system_time());
   msg.AddPoint("where", view_pt);
   msg.AddPoint("be:view_where", view_pt);
-  msg.AddInt32("buttons", (int32)buttons);
-  msg.AddInt32("modifiers", (int32)modifiers());
+  msg.AddInt32("buttons", static_cast<int32>(buttons));
+  msg.AddInt32("modifiers", static_cast<int32>(modifiers()));
   if (msg.what == B_MOUSE_DOWN)
     msg.AddInt32("clicks", (status == 2) ? 2 : 1);
 
@@ -539,7 +539,7 @@ extern "C" IUP_SDK_API void iupdrvWarpPointer(int x, int y)
 {
   static BMessenger sInputServer;
   if (!sInputServer.IsValid())
-    sInputServer = BMessenger("application/x-vnd.Be-input_server", -1, NULL);
+    sInputServer = BMessenger("application/x-vnd.Be-input_server", -1, nullptr);
   BMessage cmd('Ismp');  /* IS_SET_MOUSE_POSITION */
   BMessage reply;
   cmd.AddPoint("where", BPoint(x, y));
@@ -548,7 +548,7 @@ extern "C" IUP_SDK_API void iupdrvWarpPointer(int x, int y)
 
 extern "C" IUP_SDK_API void iupdrvSleep(int time)
 {
-  snooze((bigtime_t)time * 1000);
+  snooze(static_cast<bigtime_t>(time) * 1000);
 }
 
 extern "C" IUP_SDK_API void iupdrvSetAccessibleTitle(Ihandle* ih, const char* title)
@@ -568,8 +568,8 @@ extern "C" IUP_SDK_API void iupdrvBaseLayoutUpdateMethod(Ihandle* ih)
   if (!ih || !ih->handle)
     return;
 
-  BView* view = (BView*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
-  if (!view) view = (BView*)ih->handle;
+  auto* view = reinterpret_cast<BView*>(iupAttribGet(ih, "_IUP_EXTRAPARENT"));
+  if (!view) view = reinterpret_cast<BView*>(ih->handle);
   iuphaikuSetPosSize(view, ih->x, ih->y, ih->currentwidth, ih->currentheight);
 }
 
@@ -578,7 +578,7 @@ extern "C" IUP_SDK_API void iupdrvBaseUnMapMethod(Ihandle* ih)
   if (!ih || !ih->handle)
     return;
 
-  BView* view = (BView*)ih->handle;
+  auto* view = reinterpret_cast<BView*>(ih->handle);
   BWindow* window = view->Window();
 
   if (window)
@@ -591,7 +591,7 @@ extern "C" IUP_SDK_API void iupdrvBaseUnMapMethod(Ihandle* ih)
   }
 
   delete view;
-  ih->handle = NULL;
+  ih->handle = nullptr;
 }
 
 IUP_DRV_API void iuphaikuSetGLBackgroundChild(Ihandle* ih, BView* view)
@@ -619,11 +619,11 @@ IUP_DRV_API bool iuphaikuPaintGLBackgroundSlice(BView* view, Ihandle* ih)
   if (!box || !box->handle)
     return false;
 
-  BBitmap* bmp = (BBitmap*)iupAttribGet(box, "_IUPHAIKU_GLBITMAP");
+  auto* bmp = reinterpret_cast<BBitmap*>(iupAttribGet(box, "_IUPHAIKU_GLBITMAP"));
   if (!bmp)
     return false;
 
-  BView* boxview = (BView*)box->handle;
+  auto* boxview = reinterpret_cast<BView*>(box->handle);
   BRect bounds = view->Bounds();
   BRect src(boxview->ConvertFromScreen(view->ConvertToScreen(bounds.LeftTop())),
             boxview->ConvertFromScreen(view->ConvertToScreen(bounds.RightBottom())));
@@ -643,7 +643,7 @@ extern "C" IUP_SDK_API int iupdrvBaseSetBgColorAttrib(Ihandle* ih, const char* v
   if (!iupStrToRGB(value, &r, &g, &b))
     return 1;
 
-  BView* view = (BView*)ih->handle;
+  auto* view = reinterpret_cast<BView*>(ih->handle);
   rgb_color color = { r, g, b, 255 };
 
   LooperLockGuard guard(view->Looper());
@@ -662,7 +662,7 @@ extern "C" IUP_SDK_API int iupdrvBaseSetFgColorAttrib(Ihandle* ih, const char* v
   if (!iupStrToRGB(value, &r, &g, &b))
     return 1;
 
-  BView* view = (BView*)ih->handle;
+  auto* view = reinterpret_cast<BView*>(ih->handle);
   rgb_color color = { r, g, b, 255 };
 
   LooperLockGuard guard(view->Looper());
@@ -702,8 +702,8 @@ static bool haikuCursorIdForName(const char* name, BCursorID* out)
     { "SPLITTER_HORIZ", B_CURSOR_ID_RESIZE_NORTH_SOUTH },
     { "SPLITTER_VERT",  B_CURSOR_ID_RESIZE_EAST_WEST },
   };
-  for (size_t i = 0; i < sizeof(table) / sizeof(table[0]); ++i)
-    if (iupStrEqualNoCase(name, table[i].iup)) { *out = table[i].hk; return true; }
+  for (const auto& entry : table)
+    if (iupStrEqualNoCase(name, entry.iup)) { *out = entry.hk; return true; }
   return false;
 }
 
@@ -711,14 +711,14 @@ IUP_DRV_API BCursor* iuphaikuGetCursor(Ihandle* ih, const char* name, bool* owne
 {
   (void)ih;
   if (owned) *owned = false;
-  if (!name) return NULL;
+  if (!name) return nullptr;
   BCursorID id;
   if (haikuCursorIdForName(name, &id))
   {
     if (owned) *owned = true;
     return new BCursor(id);
   }
-  return (BCursor*)iupImageGetCursor(name);
+  return static_cast<BCursor*>(iupImageGetCursor(name));
 }
 
 static void haikuApplyCursorRecursive(BView* view, BCursor* cursor)
@@ -733,18 +733,18 @@ extern "C" IUP_SDK_API int iupdrvBaseSetCursorAttrib(Ihandle* ih, const char* va
 {
   if (!ih || !ih->handle) return 1;
   bool is_dialog = ih->iclass && ih->iclass->nativetype == IUP_TYPEDIALOG;
-  BView* view = is_dialog ? iuphaikuDialogRootView((BWindow*)ih->handle) : (BView*)ih->handle;
+  BView* view = is_dialog ? iuphaikuDialogRootView(reinterpret_cast<BWindow*>(ih->handle)) : reinterpret_cast<BView*>(ih->handle);
   if (!view) return 1;
 
-  BCursor* prev = (BCursor*)iupAttribGet(ih, "_IUPHAIKU_CURSOR");
-  bool prev_owned = iupAttribGet(ih, "_IUPHAIKU_CURSOR_OWNED") != NULL;
+  auto* prev = reinterpret_cast<BCursor*>(iupAttribGet(ih, "_IUPHAIKU_CURSOR"));
+  bool prev_owned = iupAttribGet(ih, "_IUPHAIKU_CURSOR_OWNED") != nullptr;
 
   bool owned = false;
   BCursor* cursor = iuphaikuGetCursor(ih, value, &owned);
   if (!cursor) { cursor = new BCursor(B_CURSOR_ID_SYSTEM_DEFAULT); owned = true; }
 
-  iupAttribSet(ih, "_IUPHAIKU_CURSOR", (char*)cursor);
-  iupAttribSet(ih, "_IUPHAIKU_CURSOR_OWNED", owned ? "1" : NULL);
+  iupAttribSet(ih, "_IUPHAIKU_CURSOR", reinterpret_cast<char*>(cursor));
+  iupAttribSet(ih, "_IUPHAIKU_CURSOR_OWNED", owned ? "1" : nullptr);
 
   LooperLockGuard guard(view->Looper());
   if (is_dialog)
@@ -758,7 +758,7 @@ extern "C" IUP_SDK_API int iupdrvBaseSetCursorAttrib(Ihandle* ih, const char* va
 extern "C" IUP_SDK_API int iupdrvBaseSetTipAttrib(Ihandle* ih, const char* value)
 {
   if (!ih || !ih->handle) return 1;
-  BView* view = (ih->iclass && ih->iclass->nativetype == IUP_TYPEDIALOG) ? iuphaikuDialogRootView((BWindow*)ih->handle) : (BView*)ih->handle;
+  BView* view = (ih->iclass && ih->iclass->nativetype == IUP_TYPEDIALOG) ? iuphaikuDialogRootView(reinterpret_cast<BWindow*>(ih->handle)) : reinterpret_cast<BView*>(ih->handle);
   if (!view) return 1;
   LooperLockGuard guard(view->Looper());
   view->SetToolTip(value);
@@ -775,7 +775,7 @@ extern "C" IUP_SDK_API int iupdrvBaseSetTipVisibleAttrib(Ihandle* ih, const char
 extern "C" IUP_SDK_API char* iupdrvBaseGetTipVisibleAttrib(Ihandle* ih)
 {
   (void)ih;
-  return NULL;
+  return nullptr;
 }
 
 extern "C" IUP_SDK_API int iupdrvBaseSetZorderAttrib(Ihandle* ih, const char* value)
@@ -788,30 +788,30 @@ extern "C" IUP_SDK_API int iupdrvBaseSetZorderAttrib(Ihandle* ih, const char* va
 extern "C" IUP_SDK_API void iupdrvBaseRegisterCommonAttrib(Iclass* ic)
 {
   const char* font_id_name = iuphaikuGetNativeFontIdName();
-  iupClassRegisterAttribute(ic, font_id_name, NULL, NULL, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT|IUPAF_NO_STRING);
+  iupClassRegisterAttribute(ic, font_id_name, nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT|IUPAF_NO_STRING);
 }
 
 extern "C" IUP_SDK_API void iupdrvBaseRegisterVisualAttrib(Iclass* ic)
 {
-  iupClassRegisterAttribute(ic, "TIPMARKUP", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "TIPICON", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "ACCESSIBLETITLE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "ACCESSIBLEDESCRIPTION", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "TIPMARKUP", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED|IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "TIPICON", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED|IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "ACCESSIBLETITLE", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED|IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "ACCESSIBLEDESCRIPTION", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED|IUPAF_DEFAULT);
 }
 
 IUP_DRV_API char* iuphaikuGetNativeWindowHandleAttrib(Ihandle* ih)
 {
   if (!ih || !ih->handle)
-    return NULL;
-  return (char*)ih->handle;
+    return nullptr;
+  return reinterpret_cast<char*>(ih->handle);
 }
 
-IUP_DRV_API const char* iuphaikuGetNativeWindowHandleName(void)
+IUP_DRV_API const char* iuphaikuGetNativeWindowHandleName()
 {
   return "BWINDOW";
 }
 
-IUP_DRV_API const char* iuphaikuGetNativeFontIdName(void)
+IUP_DRV_API const char* iuphaikuGetNativeFontIdName()
 {
   return "BFONT";
 }

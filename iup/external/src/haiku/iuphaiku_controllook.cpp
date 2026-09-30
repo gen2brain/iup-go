@@ -23,8 +23,8 @@ static const color_which kTextColors[] = {
   B_PANEL_TEXT_COLOR, B_CONTROL_TEXT_COLOR, B_DOCUMENT_TEXT_COLOR, B_LIST_ITEM_TEXT_COLOR,
   B_LIST_SELECTED_ITEM_TEXT_COLOR, B_MENU_ITEM_TEXT_COLOR, B_MENU_SELECTED_ITEM_TEXT_COLOR, B_WINDOW_TEXT_COLOR
 };
-static const int kBaseCount = (int)(sizeof(kBaseColors) / sizeof(kBaseColors[0]));
-static const int kTextCount = (int)(sizeof(kTextColors) / sizeof(kTextColors[0]));
+static const int kBaseCount = static_cast<int>(sizeof(kBaseColors) / sizeof(kBaseColors[0]));
+static const int kTextCount = static_cast<int>(sizeof(kTextColors) / sizeof(kTextColors[0]));
 
 class IupHaikuControlLook : public BControlLook
 {
@@ -203,7 +203,7 @@ private:
   rgb_color fForcedText[kTextCount];
 };
 
-static IupHaikuControlLook* iuphaiku_look = NULL;
+static IupHaikuControlLook* iuphaiku_look = nullptr;
 
 IUP_DRV_API void iuphaikuControlLookInstall()
 {

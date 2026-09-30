@@ -37,7 +37,7 @@ public:
     : BView(BRect(0, 0, 0, 0), "iup_progressbar", B_FOLLOW_NONE,
             B_WILL_DRAW | B_FULL_UPDATE_ON_RESIZE),
       fOrientation(o), fValue(0.0f), fMarquee(false), fPhase(0.0f),
-      fRunner(NULL),
+      fRunner(nullptr),
       fHasBarColor(false), fHasBgColor(false)
   {
     SetViewUIColor(B_PANEL_BACKGROUND_COLOR);
@@ -66,7 +66,7 @@ public:
     else
     {
       delete fRunner;
-      fRunner = NULL;
+      fRunner = nullptr;
     }
     Invalidate();
   }
@@ -180,11 +180,11 @@ static int haikuPbSetValueAttrib(Ihandle* ih, const char* value)
 {
   if (!iupStrToDouble(value, &(ih->data->value))) return 0;
   iProgressBarCropValue(ih);
-  IupHaikuProgressBar* bar = (IupHaikuProgressBar*)ih->handle;
+  auto* bar = reinterpret_cast<IupHaikuProgressBar*>(ih->handle);
   if (bar)
   {
     double range = ih->data->vmax - ih->data->vmin;
-    float t = (range > 0) ? (float)((ih->data->value - ih->data->vmin) / range) : 0.0f;
+    float t = (range > 0) ? static_cast<float>((ih->data->value - ih->data->vmin) / range) : 0.0f;
     LooperLockGuard guard(bar->Looper());
     bar->SetValue(t);
   }
@@ -193,7 +193,7 @@ static int haikuPbSetValueAttrib(Ihandle* ih, const char* value)
 
 static int haikuPbSetMarqueeAttrib(Ihandle* ih, const char* value)
 {
-  IupHaikuProgressBar* bar = (IupHaikuProgressBar*)ih->handle;
+  auto* bar = reinterpret_cast<IupHaikuProgressBar*>(ih->handle);
   ih->data->marquee = iupStrBoolean(value) ? 1 : 0;
   if (bar)
   {
@@ -205,7 +205,7 @@ static int haikuPbSetMarqueeAttrib(Ihandle* ih, const char* value)
 
 static int haikuPbSetBgColorAttrib(Ihandle* ih, const char* value)
 {
-  IupHaikuProgressBar* bar = (IupHaikuProgressBar*)ih->handle;
+  auto* bar = reinterpret_cast<IupHaikuProgressBar*>(ih->handle);
   if (!bar || !value) return 1;
   unsigned char r, g, b;
   if (!iupStrToRGB(value, &r, &g, &b)) return 1;
@@ -217,7 +217,7 @@ static int haikuPbSetBgColorAttrib(Ihandle* ih, const char* value)
 
 static int haikuPbSetFgColorAttrib(Ihandle* ih, const char* value)
 {
-  IupHaikuProgressBar* bar = (IupHaikuProgressBar*)ih->handle;
+  auto* bar = reinterpret_cast<IupHaikuProgressBar*>(ih->handle);
   if (!bar || !value) return 1;
   unsigned char r, g, b;
   if (!iupStrToRGB(value, &r, &g, &b)) return 1;
@@ -232,14 +232,14 @@ static int haikuPbMapMethod(Ihandle* ih)
   bool vertical = iupStrEqualNoCase(iupAttribGetStr(ih, "ORIENTATION"), "VERTICAL");
   orientation o = vertical ? B_VERTICAL : B_HORIZONTAL;
 
-  IupHaikuProgressBar* bar = new IupHaikuProgressBar(o);
-  ih->handle = (InativeHandle*)bar;
+  auto* bar = new IupHaikuProgressBar(o);
+  ih->handle = reinterpret_cast<InativeHandle*>(bar);
 
   iuphaikuAddToParent(ih);
   iuphaikuUpdateWidgetFont(ih, bar);
 
   double range = ih->data->vmax - ih->data->vmin;
-  float t = (range > 0) ? (float)((ih->data->value - ih->data->vmin) / range) : 0.0f;
+  float t = (range > 0) ? static_cast<float>((ih->data->value - ih->data->vmin) / range) : 0.0f;
   {
     LooperLockGuard guard(bar->Looper());
     bar->SetValue(t);
@@ -259,15 +259,15 @@ extern "C" IUP_SDK_API void iupdrvProgressBarInitClass(Iclass* ic)
 {
   ic->Map = haikuPbMapMethod;
 
-  iupClassRegisterAttribute(ic, "FONT", NULL, iupdrvSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
+  iupClassRegisterAttribute(ic, "FONT", nullptr, iupdrvSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "ACTIVE", iupBaseGetActiveAttrib, iupBaseSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, haikuPbSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, haikuPbSetFgColorAttrib, IUPAF_SAMEASSYSTEM, NULL, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", nullptr, haikuPbSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "FGCOLOR", nullptr, haikuPbSetFgColorAttrib, IUPAF_SAMEASSYSTEM, nullptr, IUPAF_DEFAULT);
 
-  iupClassRegisterAttribute(ic, "VALUE", iProgressBarGetValueAttrib, haikuPbSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "VALUE", iProgressBarGetValueAttrib, haikuPbSetValueAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "ORIENTATION", NULL, haikuPbSetOrientationAttrib, IUPAF_SAMEASSYSTEM, "HORIZONTAL", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ORIENTATION", nullptr, haikuPbSetOrientationAttrib, IUPAF_SAMEASSYSTEM, "HORIZONTAL", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "MARQUEE", NULL, haikuPbSetMarqueeAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DASHED", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MARQUEE", nullptr, haikuPbSetMarqueeAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DASHED", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 }

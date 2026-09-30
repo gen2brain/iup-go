@@ -57,29 +57,29 @@ static void haikuToggleApplyCheck(Ihandle* ih, int check)
   Ihandle* radio = iupRadioFindToggleParent(ih);
   if (radio)
   {
-    Ihandle* last = (Ihandle*)iupAttribGet(radio, "_IUPHAIKU_LASTTOGGLE");
+    auto* last = reinterpret_cast<Ihandle*>(iupAttribGet(radio, "_IUPHAIKU_LASTTOGGLE"));
     if (check)
     {
       if (iupObjectCheck(last) && last != ih)
       {
-        BView* lastV = (BView*)last->handle;
+        auto* lastV = reinterpret_cast<BView*>(last->handle);
         if (lastV)
         {
           LooperLockGuard g(lastV->Looper());
           haikuToggleNativeSetValue(lastV, B_CONTROL_OFF);
         }
-        IFni acb = (IFni)IupGetCallback(last, "ACTION");
+        IFni acb = reinterpret_cast<IFni>(IupGetCallback(last, "ACTION"));
         if (acb && acb(last, 0) == IUP_CLOSE) IupExitLoop();
         Icallback vcb = IupGetCallback(last, "VALUECHANGED_CB");
         if (vcb && vcb(last) == IUP_CLOSE) IupExitLoop();
         /* Peer callbacks may have destroyed ih/radio. */
         if (!iupObjectCheck(ih) || !iupObjectCheck(radio)) return;
       }
-      iupAttribSet(radio, "_IUPHAIKU_LASTTOGGLE", (char*)ih);
+      iupAttribSet(radio, "_IUPHAIKU_LASTTOGGLE", reinterpret_cast<char*>(ih));
     }
   }
 
-  self = (BView*)ih->handle;
+  self = reinterpret_cast<BView*>(ih->handle);
   if (self)
   {
     LooperLockGuard g(self->Looper());
@@ -90,7 +90,7 @@ static void haikuToggleApplyCheck(Ihandle* ih, int check)
 static void haikuToggleDispatchClick(Ihandle* ih)
 {
   if (!ih || !iupObjectCheck(ih)) return;
-  BView* self = (BView*)ih->handle;
+  auto* self = reinterpret_cast<BView*>(ih->handle);
   if (!self) return;
 
   if (!iupRadioFindToggleParent(ih) && ih->data->type == IUP_TOGGLE_TEXT &&
@@ -102,11 +102,11 @@ static void haikuToggleDispatchClick(Ihandle* ih)
     int32 nat = (next < 0) ? B_CONTROL_PARTIALLY_ON : (next > 0) ? B_CONTROL_ON : B_CONTROL_OFF;
     {
       LooperLockGuard g(self->Looper());
-      if (BControl* c = dynamic_cast<BControl*>(self)) c->SetValue(nat);
+      if (auto* c = dynamic_cast<BControl*>(self)) c->SetValue(nat);
     }
     iupAttribSetInt(ih, "_IUPHAIKU_TRISTATE", next);
 
-    IFni cb = (IFni)IupGetCallback(ih, "ACTION");
+    IFni cb = reinterpret_cast<IFni>(IupGetCallback(ih, "ACTION"));
     int ret = IUP_DEFAULT;
     if (cb) ret = cb(ih, next);
     Icallback vc = IupGetCallback(ih, "VALUECHANGED_CB");
@@ -129,7 +129,7 @@ static void haikuToggleDispatchClick(Ihandle* ih)
   if (radio)
     haikuToggleApplyCheck(ih, 1);
 
-  IFni cb = (IFni)IupGetCallback(ih, "ACTION");
+  IFni cb = reinterpret_cast<IFni>(IupGetCallback(ih, "ACTION"));
   int ret = IUP_DEFAULT;
   if (cb) ret = cb(ih, now);
   Icallback vc = IupGetCallback(ih, "VALUECHANGED_CB");
@@ -209,9 +209,9 @@ public:
       be_control_look->DrawRadioButton(this, rect, updateRect, base, flags);
 
     BAlignment alignment(B_ALIGN_LEFT, B_ALIGN_VERTICAL_CENTER);
-    be_control_look->DrawLabel(this, this->Label(), (const BBitmap*)NULL,
+    be_control_look->DrawLabel(this, this->Label(), static_cast<const BBitmap*>(nullptr),
                                labelRect, updateRect, base, flags, alignment,
-                               fHasFgColor ? &fForeColor : (const rgb_color*)NULL);
+                               fHasFgColor ? &fForeColor : static_cast<const rgb_color*>(nullptr));
   }
 
   void SetForeColor(rgb_color c) { fForeColor = c; fHasFgColor = true; this->Invalidate(); }
@@ -289,7 +289,7 @@ public:
   IupHaikuSwitchToggle(Ihandle* ih, const char* label)
     : BView(BRect(0, 0, 0, 0), "iup_switch", B_FOLLOW_NONE,
             B_WILL_DRAW | B_FRAME_EVENTS | B_NAVIGABLE),
-      fIhandle(ih), fLabel(NULL), fValue(0),
+      fIhandle(ih), fLabel(nullptr), fValue(0),
       fEnabled(true), fHover(false), fPressed(false), fHasFgColor(false)
   {
     SetViewUIColor(B_PANEL_BACKGROUND_COLOR);
@@ -337,9 +337,9 @@ public:
     if (fHover && fEnabled)
     {
       rgb_color hi = ui_color(B_CONTROL_HIGHLIGHT_COLOR);
-      thumb_base.red   = (uint8)((base.red   * 7 + hi.red   * 3) / 10);
-      thumb_base.green = (uint8)((base.green * 7 + hi.green * 3) / 10);
-      thumb_base.blue  = (uint8)((base.blue  * 7 + hi.blue  * 3) / 10);
+      thumb_base.red   = static_cast<uint8>((base.red   * 7 + hi.red   * 3) / 10);
+      thumb_base.green = static_cast<uint8>((base.green * 7 + hi.green * 3) / 10);
+      thumb_base.blue  = static_cast<uint8>((base.blue  * 7 + hi.blue  * 3) / 10);
     }
     if (be_control_look)
       be_control_look->DrawSliderThumb(this, thumb, b, thumb_base, flags, B_HORIZONTAL);
@@ -357,7 +357,7 @@ public:
       rgb_color text = fHasFgColor ? fForeColor
                        : fEnabled ? iuphaikuColor(B_PANEL_TEXT_COLOR)
                                   : tint_color(iuphaikuColor(B_PANEL_TEXT_COLOR), B_DISABLED_LABEL_TINT);
-      float gap = be_control_look ? be_control_look->DefaultLabelSpacing() : (float)kGap;
+      float gap = be_control_look ? be_control_look->DefaultLabelSpacing() : static_cast<float>(kGap);
       float text_x = track.right + gap + 1;
       float text_y = (b.Height() - (fh.ascent + fh.descent)) / 2.0f + fh.ascent;
       SetHighColor(text);
@@ -455,7 +455,7 @@ private:
   BRect TrackRect() const
   {
     BRect b = Bounds();
-    int y_off = (int)((b.Height() + 1 - kTrackH) / 2.0f);
+    int y_off = static_cast<int>((b.Height() + 1 - kTrackH) / 2.0f);
     if (y_off < 0) y_off = 0;
     return BRect(0, y_off, kTrackW - 1, y_off + kTrackH - 1);
   }
@@ -467,7 +467,7 @@ private:
     float x_min = t.left + kMargin;
     float x_max = t.right - kMargin - kThumbW + 1;
     float x = fValue ? x_max : x_min;
-    return BRect(x, t.top + margin_y, x + kThumbW - 1, t.top + margin_y + kThumbH - 1);
+    return {x, t.top + margin_y, x + kThumbW - 1, t.top + margin_y + kThumbH - 1};
   }
 
   Ihandle* fIhandle;
@@ -483,32 +483,32 @@ private:
 
 static int32 haikuToggleNativeValue(BView* v)
 {
-  if (IupHaikuSwitchToggle* sw = dynamic_cast<IupHaikuSwitchToggle*>(v)) return sw->Value();
-  if (BControl* c = dynamic_cast<BControl*>(v)) return c->Value();
+  if (auto* sw = dynamic_cast<IupHaikuSwitchToggle*>(v)) return sw->Value();
+  if (auto* c = dynamic_cast<BControl*>(v)) return c->Value();
   return B_CONTROL_OFF;
 }
 
 static void haikuToggleNativeSetValue(BView* v, int32 val)
 {
-  if (IupHaikuSwitchToggle* sw = dynamic_cast<IupHaikuSwitchToggle*>(v)) { sw->SetValue(val); return; }
-  if (BControl* c = dynamic_cast<BControl*>(v)) c->SetValue(val);
+  if (auto* sw = dynamic_cast<IupHaikuSwitchToggle*>(v)) { sw->SetValue(val); return; }
+  if (auto* c = dynamic_cast<BControl*>(v)) c->SetValue(val);
 }
 
 static void haikuToggleNativeSetEnabled(BView* v, bool enabled)
 {
-  if (IupHaikuSwitchToggle* sw = dynamic_cast<IupHaikuSwitchToggle*>(v)) { sw->SetEnabled(enabled); return; }
-  if (BControl* c = dynamic_cast<BControl*>(v)) c->SetEnabled(enabled);
+  if (auto* sw = dynamic_cast<IupHaikuSwitchToggle*>(v)) { sw->SetEnabled(enabled); return; }
+  if (auto* c = dynamic_cast<BControl*>(v)) c->SetEnabled(enabled);
 }
 
 static void haikuToggleNativeSetLabel(BView* v, const char* s)
 {
-  if (IupHaikuSwitchToggle* sw = dynamic_cast<IupHaikuSwitchToggle*>(v)) { sw->SetLabel(s); return; }
-  if (BControl* c = dynamic_cast<BControl*>(v)) c->SetLabel(s);
+  if (auto* sw = dynamic_cast<IupHaikuSwitchToggle*>(v)) { sw->SetLabel(s); return; }
+  if (auto* c = dynamic_cast<BControl*>(v)) c->SetLabel(s);
 }
 
 static bool haikuToggleNativeSetForeColor(BView* v, rgb_color c)
 {
-  if (IupHaikuSwitchToggle* sw = dynamic_cast<IupHaikuSwitchToggle*>(v)) { sw->SetForeColor(c); return true; }
+  if (auto* sw = dynamic_cast<IupHaikuSwitchToggle*>(v)) { sw->SetForeColor(c); return true; }
   if (auto* cb = dynamic_cast<IupHaikuCheckBox*>(v))    { cb->SetForeColor(c); return true; }
   if (auto* rb = dynamic_cast<IupHaikuRadioButton*>(v)) { rb->SetForeColor(c); return true; }
   return false;
@@ -518,14 +518,14 @@ static bool haikuToggleNativeSetForeColor(BView* v, rgb_color c)
 
 static char* haikuStrippedMnemonic(const char* title)
 {
-  if (!title) return NULL;
+  if (!title) return nullptr;
   if (!strchr(title, '&')) return iupStrDup(title);
-  return iupStrProcessMnemonic(title, NULL, 0);
+  return iupStrProcessMnemonic(title, nullptr, 0);
 }
 
 static int haikuToggleSetValueAttrib(Ihandle* ih, const char* value)
 {
-  BView* v = (BView*)ih->handle;
+  auto* v = reinterpret_cast<BView*>(ih->handle);
   if (!v) return 0;
 
   int three = (ih->data->type == IUP_TOGGLE_TEXT && !ih->data->is_radio &&
@@ -550,7 +550,7 @@ static int haikuToggleSetValueAttrib(Ihandle* ih, const char* value)
   {
     /* 3STATE is BCheckBox-only. */
     LooperLockGuard guard(v->Looper());
-    if (BControl* c = dynamic_cast<BControl*>(v)) c->SetValue(want);
+    if (auto* c = dynamic_cast<BControl*>(v)) c->SetValue(want);
   }
   else
     haikuToggleApplyCheck(ih, want == B_CONTROL_ON);
@@ -563,8 +563,8 @@ static int haikuToggleSetValueAttrib(Ihandle* ih, const char* value)
 
 static char* haikuToggleGetValueAttrib(Ihandle* ih)
 {
-  BView* v = (BView*)ih->handle;
-  if (!v) return NULL;
+  auto* v = reinterpret_cast<BView*>(ih->handle);
+  if (!v) return nullptr;
   switch (haikuToggleNativeValue(v))
   {
     case B_CONTROL_ON:           return iupStrReturnStr("ON");
@@ -576,7 +576,7 @@ static char* haikuToggleGetValueAttrib(Ihandle* ih)
 static int haikuToggleSetTitleAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->type != IUP_TOGGLE_TEXT) return 0;
-  BView* v = (BView*)ih->handle;
+  auto* v = reinterpret_cast<BView*>(ih->handle);
   if (!v) return 1;
   int mn = iupStrFindMnemonic(value);
   if (mn) iupKeySetMnemonic(ih, mn, 0);
@@ -593,7 +593,7 @@ static int haikuToggleSetFgColorAttrib(Ihandle* ih, const char* value)
   unsigned char r, g, b;
   if (!iupStrToRGB(value, &r, &g, &b)) return 1;
   rgb_color c = { r, g, b, 255 };
-  BView* v = (BView*)ih->handle;
+  auto* v = reinterpret_cast<BView*>(ih->handle);
   LooperLockGuard guard(v->Looper());
   if (!haikuToggleNativeSetForeColor(v, c)) v->SetHighColor(c);
   return 1;
@@ -601,7 +601,7 @@ static int haikuToggleSetFgColorAttrib(Ihandle* ih, const char* value)
 
 static int haikuToggleSetActiveAttrib(Ihandle* ih, const char* value)
 {
-  BView* v = (BView*)ih->handle;
+  auto* v = reinterpret_cast<BView*>(ih->handle);
   if (v)
   {
     LooperLockGuard guard(v->Looper());
@@ -613,10 +613,10 @@ static int haikuToggleSetActiveAttrib(Ihandle* ih, const char* value)
 static void haikuToggleApplyImage(Ihandle* ih, const char* name, int make_inactive)
 {
   if (ih->data->type != IUP_TOGGLE_IMAGE || !name) return;
-  IupHaikuImageToggle* btn = (IupHaikuImageToggle*)ih->handle;
+  auto* btn = reinterpret_cast<IupHaikuImageToggle*>(ih->handle);
   if (!btn) return;
   const char* bgcolor = iupBaseNativeParentGetBgColorAttrib(ih);
-  BBitmap* bm = (BBitmap*)iupImageGetImage(name, ih, make_inactive, bgcolor);
+  auto* bm = static_cast<BBitmap*>(iupImageGetImage(name, ih, make_inactive, bgcolor));
   if (!bm) return;
   LooperLockGuard guard(btn->Looper());
   btn->SetIcon(bm, 0);
@@ -662,7 +662,7 @@ static int haikuToggleMapMethod(Ihandle* ih)
   int is_switch = (ih->data->type == IUP_TOGGLE_TEXT) && !radio
                   && iupAttribGetBoolean(ih, "SWITCH");
 
-  BView* native = NULL;
+  BView* native = nullptr;
   if (ih->data->type == IUP_TOGGLE_IMAGE)
   {
     native = new IupHaikuImageToggle(ih, "");
@@ -685,7 +685,7 @@ static int haikuToggleMapMethod(Ihandle* ih)
     if (stripped) free(stripped);
   }
 
-  ih->handle = (InativeHandle*)native;
+  ih->handle = reinterpret_cast<InativeHandle*>(native);
   iuphaikuAddToParent(ih);
 
   iuphaikuSetGLBackgroundChild(ih, native);
@@ -708,13 +708,13 @@ static int haikuToggleMapMethod(Ihandle* ih)
 static void haikuToggleUnMapMethod(Ihandle* ih)
 {
   /* Null the back-pointer; in-flight messages become no-ops. */
-  BView* v = (BView*)ih->handle;
+  auto* v = reinterpret_cast<BView*>(ih->handle);
   if (v)
   {
-    if (IupHaikuImageToggle* it = dynamic_cast<IupHaikuImageToggle*>(v))      it->SetIhandle(NULL);
-    else if (IupHaikuSwitchToggle* sw = dynamic_cast<IupHaikuSwitchToggle*>(v)) sw->SetIhandle(NULL);
-    else if (IupHaikuCheckBox* cb = dynamic_cast<IupHaikuCheckBox*>(v))        cb->SetIhandle(NULL);
-    else if (IupHaikuRadioButton* rb = dynamic_cast<IupHaikuRadioButton*>(v))  rb->SetIhandle(NULL);
+    if (auto* it = dynamic_cast<IupHaikuImageToggle*>(v))      it->SetIhandle(nullptr);
+    else if (auto* sw = dynamic_cast<IupHaikuSwitchToggle*>(v)) sw->SetIhandle(nullptr);
+    else if (auto* cb = dynamic_cast<IupHaikuCheckBox*>(v))        cb->SetIhandle(nullptr);
+    else if (auto* rb = dynamic_cast<IupHaikuRadioButton*>(v))  rb->SetIhandle(nullptr);
   }
   iupdrvBaseUnMapMethod(ih);
 }
@@ -729,8 +729,8 @@ extern "C" IUP_SDK_API void iupdrvToggleAddBorders(Ihandle* ih, int* x, int* y)
                                BControlLook::B_BUTTON_BACKGROUND, 0,
                                left, top, right, bottom);
     float spacing = be_control_look->DefaultLabelSpacing();
-    if (x) *x += (int)(left + right + spacing - 1 + 0.5f);
-    if (y) *y += (int)(top + bottom + spacing + 0.5f);
+    if (x) *x += static_cast<int>(left + right + spacing - 1 + 0.5f);
+    if (y) *y += static_cast<int>(top + bottom + spacing + 0.5f);
     return;
   }
   if (x) *x += 4;
@@ -741,8 +741,8 @@ static void haikuToggleProbeChrome(Ihandle* ih, int* chrome_w, int* min_h)
 {
   static const char* kProbe = "Mg";  /* short label for ascender + descender sample */
 
-  BCheckBox probe(BRect(0, 0, 0, 0), "iup_probe", kProbe, NULL);
-  BFont* bf = ih ? iuphaikuGetBFont(iupGetFontValue(ih)) : NULL;
+  BCheckBox probe(BRect(0, 0, 0, 0), "iup_probe", kProbe, nullptr);
+  BFont* bf = ih ? iuphaikuGetBFont(iupGetFontValue(ih)) : nullptr;
   if (bf) probe.SetFont(bf);
 
   float pw = 0, ph = 0;
@@ -750,8 +750,8 @@ static void haikuToggleProbeChrome(Ihandle* ih, int* chrome_w, int* min_h)
 
   float lw = probe.StringWidth(kProbe);
 
-  *chrome_w = (int)ceilf(pw - lw) + 2;
-  *min_h    = (int)ceilf(ph);
+  *chrome_w = static_cast<int>(ceilf(pw - lw)) + 2;
+  *min_h    = static_cast<int>(ceilf(ph));
 }
 
 extern "C" IUP_SDK_API void iupdrvToggleAddCheckBox(Ihandle* ih, int* x, int* y, const char* /*str*/)
@@ -764,8 +764,8 @@ extern "C" IUP_SDK_API void iupdrvToggleAddCheckBox(Ihandle* ih, int* x, int* y,
 
 extern "C" IUP_SDK_API void iupdrvToggleAddSwitch(Ihandle* ih, int* x, int* y, const char* /*str*/)
 {
-  float gap = be_control_look ? be_control_look->DefaultLabelSpacing() : (float)IupHaikuSwitchToggle::kGap;
-  int chrome = IupHaikuSwitchToggle::kTrackW + (int)gap + 1;
+  float gap = be_control_look ? be_control_look->DefaultLabelSpacing() : static_cast<float>(IupHaikuSwitchToggle::kGap);
+  int chrome = IupHaikuSwitchToggle::kTrackW + static_cast<int>(gap) + 1;
   if (x) *x += chrome;
 
   int min_h = IupHaikuSwitchToggle::kTrackH;
@@ -775,7 +775,7 @@ extern "C" IUP_SDK_API void iupdrvToggleAddSwitch(Ihandle* ih, int* x, int* y, c
     if (bf)
     {
       font_height fh; bf->GetHeight(&fh);
-      int label_h = (int)ceilf(fh.ascent + fh.descent);
+      int label_h = static_cast<int>(ceilf(fh.ascent + fh.descent));
       if (label_h > min_h) min_h = label_h;
     }
   }
@@ -785,7 +785,7 @@ extern "C" IUP_SDK_API void iupdrvToggleAddSwitch(Ihandle* ih, int* x, int* y, c
 static int haikuToggleSetRightButtonAttrib(Ihandle* ih, const char* value)
 {
   (void)value;
-  BView* v = (BView*)ih->handle;
+  auto* v = reinterpret_cast<BView*>(ih->handle);
   if (v && v->Window())
   {
     LooperLockGuard g(v->Looper());
@@ -799,27 +799,27 @@ extern "C" IUP_SDK_API void iupdrvToggleInitClass(Iclass* ic)
   ic->Map = haikuToggleMapMethod;
   ic->UnMap = haikuToggleUnMapMethod;
 
-  iupClassRegisterAttribute(ic, "FONT", NULL, iupdrvSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
+  iupClassRegisterAttribute(ic, "FONT", nullptr, iupdrvSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "ACTIVE", iupBaseGetActiveAttrib, haikuToggleSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, haikuToggleSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", nullptr, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "FGCOLOR", nullptr, haikuToggleSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
 
-  iupClassRegisterAttribute(ic, "VALUE", haikuToggleGetValueAttrib, haikuToggleSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TITLE", NULL, haikuToggleSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "VALUE", haikuToggleGetValueAttrib, haikuToggleSetValueAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TITLE", nullptr, haikuToggleSetTitleAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "IMAGE", NULL, haikuToggleSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "IMINACTIVE", NULL, haikuToggleSetImInactiveAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "IMPRESS", NULL, NULL, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMAGE", nullptr, haikuToggleSetImageAttrib, nullptr, nullptr, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMINACTIVE", nullptr, haikuToggleSetImInactiveAttrib, nullptr, nullptr, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMPRESS", nullptr, nullptr, nullptr, nullptr, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "PADDING", iupToggleGetPaddingAttrib, NULL, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
+  iupClassRegisterAttribute(ic, "PADDING", iupToggleGetPaddingAttrib, nullptr, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
 
   /* SWITCH is pre-map only; haikuToggleMapMethod consumes it. */
-  iupClassRegisterAttribute(ic, "SWITCH", NULL, NULL, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SWITCH", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_MAPPED|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   /* 3STATE: VALUE=NOTDEF maps to B_CONTROL_PARTIALLY_ON. */
-  iupClassRegisterAttribute(ic, "3STATE", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "3STATE", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "ALIGNMENT", NULL, NULL, "ACENTER:ACENTER", NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "FLAT", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "MARKUP", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED);
-  iupClassRegisterAttribute(ic, "RIGHTBUTTON", NULL, haikuToggleSetRightButtonAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ALIGNMENT", nullptr, nullptr, "ACENTER:ACENTER", nullptr, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FLAT", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MARKUP", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED);
+  iupClassRegisterAttribute(ic, "RIGHTBUTTON", nullptr, haikuToggleSetRightButtonAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
 }

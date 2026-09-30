@@ -34,11 +34,11 @@ extern "C" {
 class IupHaikuApp : public BApplication {
 public:
   explicit IupHaikuApp(const char* sig)
-    : BApplication(sig), fIdleRunner(NULL) {}
+    : BApplication(sig), fIdleRunner(nullptr) {}
 
   ~IupHaikuApp() override
   {
-    if (fIdleRunner) { delete fIdleRunner; fIdleRunner = NULL; }
+    if (fIdleRunner) { delete fIdleRunner; fIdleRunner = nullptr; }
   }
 
   void DispatchMessage(BMessage* msg, BHandler* handler) override
@@ -60,18 +60,18 @@ public:
         {
           if (!dlg->handle) continue;
           BMessage tc(IUPHAIKU_THEME_CHANGED_MSG);
-          BMessenger((BWindow*)dlg->handle).SendMessage(&tc);
+          BMessenger(reinterpret_cast<BWindow*>(dlg->handle)).SendMessage(&tc);
         }
         break;
       case IUPHAIKU_APP_DESTROY_DLG: {
-        Ihandle* dlg = NULL;
-        if (msg->FindPointer("ih", (void**)&dlg) == B_OK && dlg && iupObjectCheck(dlg))
+        Ihandle* dlg = nullptr;
+        if (msg->FindPointer("ih", reinterpret_cast<void**>(&dlg)) == B_OK && dlg && iupObjectCheck(dlg))
           IupDestroy(dlg);
         return;
       }
       case IUPHAIKU_APP_SHOW_WIN: {
-        BWindow* win = NULL;
-        if (msg->FindPointer("win", (void**)&win) == B_OK && win)
+        BWindow* win = nullptr;
+        if (msg->FindPointer("win", reinterpret_cast<void**>(&win)) == B_OK && win)
         {
           if (win->Lock())
           {
@@ -82,8 +82,8 @@ public:
         return;
       }
       case IUPHAIKU_MENU_ITEM_MSG: {
-        Ihandle* item_ih = NULL;
-        msg->FindPointer("ih", (void**)&item_ih);
+        Ihandle* item_ih = nullptr;
+        msg->FindPointer("ih", reinterpret_cast<void**>(&item_ih));
         if (item_ih && iupObjectCheck(item_ih))
         {
           if (iupAttribGetBoolean(item_ih, "AUTOTOGGLE"))
@@ -97,11 +97,11 @@ public:
         return;
       }
       case IUPHAIKU_MENU_RECENT_MSG: {
-        Ihandle* menu_ih = NULL;
+        Ihandle* menu_ih = nullptr;
         int32 index = -1;
-        msg->FindPointer("menu", (void**)&menu_ih);
+        msg->FindPointer("menu", reinterpret_cast<void**>(&menu_ih));
         msg->FindInt32("index", &index);
-        iuphaikuRecentDispatch(menu_ih, (int)index);
+        iuphaikuRecentDispatch(menu_ih, static_cast<int>(index));
         return;
       }
     }
@@ -124,7 +124,7 @@ public:
 
   void StopIdleRunner()
   {
-    if (fIdleRunner) { delete fIdleRunner; fIdleRunner = NULL; }
+    if (fIdleRunner) { delete fIdleRunner; fIdleRunner = nullptr; }
   }
 
 private:
@@ -132,7 +132,7 @@ private:
 };
 
 
-static IupHaikuApp* iuphaiku_app = NULL;
+static IupHaikuApp* iuphaiku_app = nullptr;
 static int iuphaiku_owns_app = 0;
 
 
@@ -183,7 +183,7 @@ IUP_DRV_API void iuphaikuSetGlobalColors()
 extern "C" IUP_SDK_API int iupdrvIsSystemDarkMode(void)
 {
   rgb_color c = ui_color(B_PANEL_BACKGROUND_COLOR);
-  int luminance = (int)(0.299 * c.red + 0.587 * c.green + 0.114 * c.blue);
+  int luminance = static_cast<int>(0.299 * c.red + 0.587 * c.green + 0.114 * c.blue);
   return luminance < 128 ? 1 : 0;
 }
 
@@ -199,9 +199,9 @@ static rgb_color haikuGlobalColor(const char* name)
 static rgb_color haikuMixColor(rgb_color a, rgb_color b, float t)
 {
   rgb_color c;
-  c.red = (uint8)(a.red + (b.red - a.red) * t);
-  c.green = (uint8)(a.green + (b.green - a.green) * t);
-  c.blue = (uint8)(a.blue + (b.blue - a.blue) * t);
+  c.red = static_cast<uint8>(a.red + (b.red - a.red) * t);
+  c.green = static_cast<uint8>(a.green + (b.green - a.green) * t);
+  c.blue = static_cast<uint8>(a.blue + (b.blue - a.blue) * t);
   c.alpha = 255;
   return c;
 }
@@ -290,7 +290,7 @@ extern "C" IUP_SDK_API void iupdrvSetAppearance(int appearance)
 
 extern "C" IUP_SDK_API int iupdrvOpen(int* argc, char*** argv)
 {
-  if (be_app == NULL)
+  if (be_app == nullptr)
   {
     const char* sig = "application/x-vnd.iup-Application";
     char* user_sig = IupGetGlobal("APPID");
@@ -320,7 +320,7 @@ extern "C" IUP_SDK_API int iupdrvOpen(int* argc, char*** argv)
   }
   else
   {
-    iuphaiku_app = (IupHaikuApp*)be_app;
+    iuphaiku_app = static_cast<IupHaikuApp*>(be_app);
     iuphaiku_owns_app = 0;
   }
 
@@ -365,6 +365,6 @@ extern "C" IUP_SDK_API void iupdrvClose(void)
 
   if (iuphaiku_app && iuphaiku_owns_app)
     delete iuphaiku_app;
-  iuphaiku_app = NULL;
+  iuphaiku_app = nullptr;
   iuphaiku_owns_app = 0;
 }

@@ -89,7 +89,7 @@ static void haikuSetLineMode(BView* view, const IupDrawStroke* stroke)
                  stroke->cap == IUP_DRAW_CAP_SQUARE ? B_SQUARE_CAP : B_BUTT_CAP;
   join_mode join = stroke->join == IUP_DRAW_JOIN_ROUND ? B_ROUND_JOIN :
                    stroke->join == IUP_DRAW_JOIN_BEVEL ? B_BEVEL_JOIN : B_MITER_JOIN;
-  view->SetLineMode(cap, join, (float)IUP_DRAW_MITER_LIMIT);
+  view->SetLineMode(cap, join, static_cast<float>(IUP_DRAW_MITER_LIMIT));
 }
 
 static void haikuBeginStroke(IdrawCanvas* dc, long color, int style, int line_width, int center, IupDrawStroke* stroke)
@@ -97,7 +97,7 @@ static void haikuBeginStroke(IdrawCanvas* dc, long color, int style, int line_wi
   const IupDrawMatrix* m = &dc->matrix;
   iupDrawGetStroke(dc->ih, style, stroke);
   dc->view->SetHighColor(haikuColorFromLong(color));
-  dc->view->SetPenSize(line_width > 0 ? (float)line_width : 1.0f);
+  dc->view->SetPenSize(line_width > 0 ? static_cast<float>(line_width) : 1.0f);
   haikuSetLineMode(dc->view, stroke);
   if (center && !haikuIsIdentity(dc) && (line_width <= 0 || line_width % 2))
     dc->view->SetTransform(BAffineTransform(m->a, m->b, m->c, m->d, m->e + 0.5 * (m->a + m->c), m->f + 0.5 * (m->b + m->d)));
@@ -147,7 +147,7 @@ static void haikuDrawUpdateSize(IdrawCanvas* dc)
   int w = dc->ih->currentwidth  > 0 ? dc->ih->currentwidth  : 1;
   int h = dc->ih->currentheight > 0 ? dc->ih->currentheight : 1;
 
-  if (BView* view = (BView*)dc->ih->handle)
+  if (auto* view = reinterpret_cast<BView*>(dc->ih->handle))
   {
     LooperLockGuard guard(view->Looper());
     BRect bounds = view->Bounds();
@@ -156,7 +156,7 @@ static void haikuDrawUpdateSize(IdrawCanvas* dc)
   }
   if (dc->bm && dc->w == w && dc->h == h) return;
 
-  if (dc->bm) { delete dc->bm; dc->bm = NULL; dc->view = NULL; dc->clip_state = 0; }
+  if (dc->bm) { delete dc->bm; dc->bm = nullptr; dc->view = nullptr; dc->clip_state = 0; }
   dc->w = w; dc->h = h;
 
   dc->bm = new BBitmap(BRect(0, 0, w - 1, h - 1), B_BITMAP_ACCEPTS_VIEWS, B_RGBA32);
@@ -178,7 +178,7 @@ static void haikuDrawUpdateSize(IdrawCanvas* dc)
 
 extern "C" IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
 {
-  IdrawCanvas* dc = (IdrawCanvas*)calloc(1, sizeof(IdrawCanvas));
+  auto* dc = static_cast<IdrawCanvas*>(calloc(1, sizeof(IdrawCanvas)));
   dc->ih = ih;
   dc->matrix.a = 1;
   dc->matrix.d = 1;
@@ -199,7 +199,7 @@ static void haikuDrawPopLayer(IdrawCanvas* dc, int alpha, int composite)
 
   if (composite && alpha > 0)
   {
-    uint8* bits = (uint8*)group->Bits();
+    auto* bits = static_cast<uint8*>(group->Bits());
     int32 bpr = group->BytesPerRow();
     int w = group->Bounds().IntegerWidth() + 1;
     int h = group->Bounds().IntegerHeight() + 1;
@@ -222,7 +222,7 @@ static void haikuDrawPopLayer(IdrawCanvas* dc, int alpha, int composite)
     dc->view->PushState();
     dc->view->SetDrawingMode(B_OP_ALPHA);
     dc->view->SetBlendingMode(B_CONSTANT_ALPHA, B_ALPHA_OVERLAY);
-    rgb_color c = { 0, 0, 0, (uint8)alpha };
+    rgb_color c = { 0, 0, 0, static_cast<uint8>(alpha) };
     dc->view->SetHighColor(c);
     dc->view->DrawBitmap(group, BPoint(0, 0));
     dc->view->PopState();
@@ -241,10 +241,7 @@ extern "C" IUP_SDK_API void iupdrvDrawKillCanvas(IdrawCanvas* dc)
   if (!dc) return;
   while (dc->layers)
     haikuDrawPopLayer(dc, 0, 0);
-  if (dc->bm)
-  {
-    delete dc->bm;
-  }
+  delete dc->bm;
   free(dc);
 }
 
@@ -264,7 +261,7 @@ extern "C" IUP_SDK_API void iupdrvDrawFlush(IdrawCanvas* dc)
   dc->view->Sync();
   dc->bm->Unlock();
 
-  BView* canvas = (BView*)dc->ih->handle;
+  auto* canvas = reinterpret_cast<BView*>(dc->ih->handle);
   if (!canvas) return;
 
   LooperLockGuard guard(canvas->Looper());
@@ -357,7 +354,7 @@ static void haikuStrokeDashCubic(BView* view, HaikuDash* dash, double x0, double
 
   for (i = 1; i <= 20; i++)
   {
-    double t = (double)i / 20.0;
+    double t = static_cast<double>(i) / 20.0;
     double mt = 1.0 - t;
     double x = mt * mt * mt * x0 + 3.0 * mt * mt * t * x1 + 3.0 * mt * t * t * x2 + t * t * t * x3;
     double y = mt * mt * mt * y0 + 3.0 * mt * mt * t * y1 + 3.0 * mt * t * t * y2 + t * t * t * y3;
@@ -441,7 +438,7 @@ static IupPathSeg haikuSegPoint(int op, int x, int y)
 {
   IupPathSeg seg;
   memset(&seg, 0, sizeof(seg));
-  seg.op = (unsigned char)op;
+  seg.op = static_cast<unsigned char>(op);
   seg.x1 = x;
   seg.y1 = y;
   return seg;
@@ -485,8 +482,8 @@ static IupPathSeg haikuSegClose()
 
 static void haikuArcStart(int cx, int cy, int rx, int ry, double angle, int* x, int* y)
 {
-  *x = (int)floor(cx + rx * cos(angle * IUP_DEG2RAD) + 0.5);
-  *y = (int)floor(cy - ry * sin(angle * IUP_DEG2RAD) + 0.5);
+  *x = static_cast<int>(floor(cx + rx * cos(angle * IUP_DEG2RAD) + 0.5));
+  *y = static_cast<int>(floor(cy - ry * sin(angle * IUP_DEG2RAD) + 0.5));
 }
 
 extern "C" IUP_SDK_API void iupdrvDrawLine(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color, int style, int line_width)
@@ -547,7 +544,7 @@ extern "C" IUP_SDK_API void iupdrvDrawRoundedRectangle(IdrawCanvas* dc, int x1, 
   iupDrawCheckSwapCoord(x1, x2);
   iupDrawCheckSwapCoord(y1, y2);
   BRect r(x1, y1, x2, y2);
-  float rad = (float)corner_radius;
+  auto rad = static_cast<float>(corner_radius);
   dc->bm->Lock();
   if (style == IUP_DRAW_FILL)
   {
@@ -600,8 +597,8 @@ extern "C" IUP_SDK_API void iupdrvDrawArc(IdrawCanvas* dc, int x1, int y1, int x
   BRect r(x1, y1, x2, y2);
   while (a2 < a1)
     a2 += 360;
-  float start = (float)a1;
-  float sweep = (float)(a2 - a1);
+  auto start = static_cast<float>(a1);
+  auto sweep = static_cast<float>(a2 - a1);
   dc->bm->Lock();
   if (style == IUP_DRAW_FILL)
   {
@@ -665,9 +662,9 @@ extern "C" IUP_SDK_API void iupdrvDrawEllipse(IdrawCanvas* dc, int x1, int y1, i
 extern "C" IUP_SDK_API void iupdrvDrawPolygon(IdrawCanvas* dc, int* points, int count, long color, int style, int line_width)
 {
   if (!dc || !dc->bm || !points || count < 2) return;
-  BPoint* pts = (BPoint*)malloc(sizeof(BPoint) * count);
+  auto* pts = static_cast<BPoint*>(malloc(sizeof(BPoint) * count));
   for (int i = 0; i < count; ++i)
-    pts[i] = BPoint((float)points[i*2], (float)points[i*2 + 1]);
+    pts[i] = BPoint(static_cast<float>(points[i*2]), static_cast<float>(points[i*2 + 1]));
 
   dc->bm->Lock();
   if (style == IUP_DRAW_FILL)
@@ -681,7 +678,7 @@ extern "C" IUP_SDK_API void iupdrvDrawPolygon(IdrawCanvas* dc, int* points, int 
     haikuBeginStroke(dc, color, style, line_width, 1, &stroke);
     if (stroke.dash_count > 0)
     {
-      IupPathSeg* segs = (IupPathSeg*)malloc(sizeof(IupPathSeg) * (count + 1));
+      auto* segs = static_cast<IupPathSeg*>(malloc(sizeof(IupPathSeg) * (count + 1)));
       for (int i = 0; i < count; ++i)
         segs[i] = haikuSegPoint(i == 0 ? IUP_PATHSEG_MOVE_TO : IUP_PATHSEG_LINE_TO, points[i*2], points[i*2 + 1]);
       segs[count] = haikuSegClose();
@@ -767,7 +764,7 @@ extern "C" IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, in
 {
   if (!dc || !dc->bm) return;
   BPoint c(cx, cy);
-  BGradientRadial grad(c, (float)radius);
+  BGradientRadial grad(c, static_cast<float>(radius));
   for (int i = 0; i < count; i++)
     grad.AddColor(haikuColorFromLong(colors[i]), offsets[i] * 255.0f);
 
@@ -779,7 +776,7 @@ extern "C" IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, in
 
 static BShape* haikuBuildShape(const IupPathSeg* segs, int count)
 {
-  BShape* shape = new BShape();
+  auto* shape = new BShape();
   float cur_x = 0.0f, cur_y = 0.0f;
   float sub_x = 0.0f, sub_y = 0.0f;
 
@@ -788,29 +785,29 @@ static BShape* haikuBuildShape(const IupPathSeg* segs, int count)
     switch (segs[i].op)
     {
     case IUP_PATHSEG_MOVE_TO:
-      shape->MoveTo(BPoint((float)segs[i].x1, (float)segs[i].y1));
+      shape->MoveTo(BPoint(static_cast<float>(segs[i].x1), static_cast<float>(segs[i].y1)));
       cur_x = sub_x = segs[i].x1;
       cur_y = sub_y = segs[i].y1;
       break;
     case IUP_PATHSEG_LINE_TO:
-      shape->LineTo(BPoint((float)segs[i].x1, (float)segs[i].y1));
+      shape->LineTo(BPoint(static_cast<float>(segs[i].x1), static_cast<float>(segs[i].y1)));
       cur_x = segs[i].x1;
       cur_y = segs[i].y1;
       break;
     case IUP_PATHSEG_CURVE_TO:
-      shape->BezierTo(BPoint((float)segs[i].x1, (float)segs[i].y1),
-                      BPoint((float)segs[i].x2, (float)segs[i].y2),
-                      BPoint((float)segs[i].x3, (float)segs[i].y3));
+      shape->BezierTo(BPoint(static_cast<float>(segs[i].x1), static_cast<float>(segs[i].y1)),
+                      BPoint(static_cast<float>(segs[i].x2), static_cast<float>(segs[i].y2)),
+                      BPoint(static_cast<float>(segs[i].x3), static_cast<float>(segs[i].y3)));
       cur_x = segs[i].x3;
       cur_y = segs[i].y3;
       break;
     case IUP_PATHSEG_QUAD_TO:
     {
-      float c1x = cur_x + 2.0f / 3.0f * ((float)segs[i].x1 - cur_x);
-      float c1y = cur_y + 2.0f / 3.0f * ((float)segs[i].y1 - cur_y);
-      float c2x = (float)segs[i].x2 + 2.0f / 3.0f * ((float)segs[i].x1 - (float)segs[i].x2);
-      float c2y = (float)segs[i].y2 + 2.0f / 3.0f * ((float)segs[i].y1 - (float)segs[i].y2);
-      shape->BezierTo(BPoint(c1x, c1y), BPoint(c2x, c2y), BPoint((float)segs[i].x2, (float)segs[i].y2));
+      float c1x = cur_x + 2.0f / 3.0f * (static_cast<float>(segs[i].x1) - cur_x);
+      float c1y = cur_y + 2.0f / 3.0f * (static_cast<float>(segs[i].y1) - cur_y);
+      float c2x = static_cast<float>(segs[i].x2) + 2.0f / 3.0f * (static_cast<float>(segs[i].x1) - static_cast<float>(segs[i].x2));
+      float c2y = static_cast<float>(segs[i].y2) + 2.0f / 3.0f * (static_cast<float>(segs[i].y1) - static_cast<float>(segs[i].y2));
+      shape->BezierTo(BPoint(c1x, c1y), BPoint(c2x, c2y), BPoint(static_cast<float>(segs[i].x2), static_cast<float>(segs[i].y2)));
       cur_x = segs[i].x2;
       cur_y = segs[i].y2;
       break;
@@ -820,13 +817,13 @@ static BShape* haikuBuildShape(const IupPathSeg* segs, int count)
       double bez[24];
       int j, n = iupDrawPathArcToCurves(&segs[i], bez);
       for (j = 0; j < n; j++)
-        shape->BezierTo(BPoint((float)bez[j * 6], (float)bez[j * 6 + 1]),
-                        BPoint((float)bez[j * 6 + 2], (float)bez[j * 6 + 3]),
-                        BPoint((float)bez[j * 6 + 4], (float)bez[j * 6 + 5]));
+        shape->BezierTo(BPoint(static_cast<float>(bez[j * 6]), static_cast<float>(bez[j * 6 + 1])),
+                        BPoint(static_cast<float>(bez[j * 6 + 2]), static_cast<float>(bez[j * 6 + 3])),
+                        BPoint(static_cast<float>(bez[j * 6 + 4]), static_cast<float>(bez[j * 6 + 5])));
       if (n > 0)
       {
-        cur_x = (float)bez[n * 6 - 2];
-        cur_y = (float)bez[n * 6 - 1];
+        cur_x = static_cast<float>(bez[n * 6 - 2]);
+        cur_y = static_cast<float>(bez[n * 6 - 1]);
       }
       break;
     }
@@ -854,14 +851,14 @@ static BGradient* haikuBuildGradient(const IupDrawSource* src)
     float dx = cosf(rad) * (gx2 - gx1) * 0.5f;
     float dy = sinf(rad) * (gy2 - gy1) * 0.5f;
 
-    BGradientLinear* g = new BGradientLinear(BPoint(cx - dx, cy - dy), BPoint(cx + dx, cy + dy));
+    auto* g = new BGradientLinear(BPoint(cx - dx, cy - dy), BPoint(cx + dx, cy + dy));
     for (int i = 0; i < src->count; i++)
       g->AddColor(haikuColorFromLong(src->colors[i]), src->offsets[i] * 255.0f);
     return g;
   }
   else
   {
-    BGradientRadial* g = new BGradientRadial(BPoint((float)src->cx, (float)src->cy), (float)src->radius);
+    auto* g = new BGradientRadial(BPoint(static_cast<float>(src->cx), static_cast<float>(src->cy)), static_cast<float>(src->radius));
     for (int i = 0; i < src->count; i++)
       g->AddColor(haikuColorFromLong(src->colors[i]), src->offsets[i] * 255.0f);
     return g;
@@ -905,7 +902,7 @@ extern "C" IUP_SDK_API void iupdrvDrawPathStroke(IdrawCanvas* dc, const IupPathS
 
   dc->bm->Lock();
   dc->view->MovePenTo(0, 0);
-  dc->view->SetPenSize(line_width > 0 ? (float)line_width : 1.0f);
+  dc->view->SetPenSize(line_width > 0 ? static_cast<float>(line_width) : 1.0f);
   haikuSetLineMode(dc->view, &stroke);
   if (src->type == IUP_SOURCE_SOLID && stroke.dash_count > 0)
   {
@@ -986,16 +983,16 @@ extern "C" IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, in
       iupDrawGetTextSize(dc->ih, text, len, &layout_w, &layout_h, 0);
       px = x + w / 2.0;
       py = y + h / 2.0;
-      x = (int)floor(px - layout_w / 2.0 + 0.5);
-      y = (int)floor(py - layout_h / 2.0 + 0.5);
+      x = static_cast<int>(floor(px - layout_w / 2.0 + 0.5));
+      y = static_cast<int>(floor(py - layout_h / 2.0 + 0.5));
       w = layout_w;
     }
-    trans.RotateBy(BPoint((float)px, (float)py), -text_orientation * 3.14159265358979323846 / 180.0);
+    trans.RotateBy(BPoint(static_cast<float>(px), static_cast<float>(py)), -text_orientation * 3.14159265358979323846 / 180.0);
     dc->view->SetTransform(trans);
   }
 
-  int line_h = (int)(fh.ascent + fh.descent + fh.leading + 0.5f);
-  int total_len = (len < 0) ? (int)strlen(text) : len;
+  int line_h = static_cast<int>(fh.ascent + fh.descent + fh.leading + 0.5f);
+  int total_len = (len < 0) ? static_cast<int>(strlen(text)) : len;
   const char* line = text;
   const char* end  = text + total_len;
   int line_y = y;
@@ -1004,31 +1001,31 @@ extern "C" IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, in
   {
     const char* nl = line;
     while (nl < end && *nl != '\n') ++nl;
-    int line_len = (int)(nl - line);
+    int line_len = static_cast<int>(nl - line);
 
     const char* draw_text = line;
     int draw_len = line_len;
     BString truncated;
 
-    if ((flags & IUP_DRAW_ELLIPSIS) && w > 0 && dc->view->StringWidth(line, line_len) > (float)w)
+    if ((flags & IUP_DRAW_ELLIPSIS) && w > 0 && dc->view->StringWidth(line, line_len) > static_cast<float>(w))
     {
       BFont view_font;
       dc->view->GetFont(&view_font);
       truncated.SetTo(line, line_len);
-      view_font.TruncateString(&truncated, B_TRUNCATE_END, (float)w);
+      view_font.TruncateString(&truncated, B_TRUNCATE_END, static_cast<float>(w));
       draw_text = truncated.String();
-      draw_len = (int)truncated.Length();
+      draw_len = static_cast<int>(truncated.Length());
     }
 
     int line_x = x;
     if (flags & (IUP_DRAW_CENTER | IUP_DRAW_RIGHT))
     {
       float lw = dc->view->StringWidth(draw_text, draw_len);
-      if (flags & IUP_DRAW_RIGHT) line_x = x + (w - (int)lw);
-      else                        line_x = x + (w - (int)lw) / 2;
+      if (flags & IUP_DRAW_RIGHT) line_x = x + (w - static_cast<int>(lw));
+      else                        line_x = x + (w - static_cast<int>(lw)) / 2;
     }
 
-    dc->view->DrawString(draw_text, draw_len, BPoint((float)line_x, (float)line_y + fh.ascent));
+    dc->view->DrawString(draw_text, draw_len, BPoint(static_cast<float>(line_x), static_cast<float>(line_y) + fh.ascent));
 
     if (nl >= end) break;
     line = nl + 1;
@@ -1042,11 +1039,11 @@ extern "C" IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, in
 extern "C" IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_inactive, const char* bgcolor, long tint, int opacity, int x, int y, int w, int h, int sx, int sy, int sw, int sh, int quality)
 {
   if (!dc || !dc->bm || !name) return;
-  BBitmap* img = (BBitmap*)iupImageGetImageTint(name, dc->ih, make_inactive, bgcolor, tint);
+  auto* img = static_cast<BBitmap*>(iupImageGetImageTint(name, dc->ih, make_inactive, bgcolor, tint));
   if (!img) return;
 
-  int img_w = (int)(img->Bounds().Width() + 1);
-  int img_h = (int)(img->Bounds().Height() + 1);
+  int img_w = static_cast<int>(img->Bounds().Width() + 1);
+  int img_h = static_cast<int>(img->Bounds().Height() + 1);
 
   if (sw <= 0 || sh <= 0)
   {
@@ -1058,24 +1055,24 @@ extern "C" IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, i
   if (w <= 0) w = sw;
   if (h <= 0) h = sh;
 
-  BBitmap* faded = NULL;
+  BBitmap* faded = nullptr;
   if (opacity < 255 && img->ColorSpace() == B_RGBA32)
   {
     faded = new BBitmap(img->Bounds(), B_RGBA32);
     if (faded->IsValid())
     {
-      uint8* d = (uint8*)faded->Bits();
-      uint8* s = (uint8*)img->Bits();
+      auto* d = static_cast<uint8*>(faded->Bits());
+      auto* s = static_cast<uint8*>(img->Bits());
       int32 len = img->BitsLength();
       memcpy(d, s, len);
       for (int32 i = 3; i < len; i += 4)
-        d[i] = (uint8)((d[i] * opacity) / 255);
+        d[i] = static_cast<uint8>((d[i] * opacity) / 255);
       img = faded;
     }
     else
     {
       delete faded;
-      faded = NULL;
+      faded = nullptr;
     }
   }
 
@@ -1119,7 +1116,7 @@ extern "C" IUP_SDK_API void iupdrvDrawSetClipRoundedRect(IdrawCanvas* dc, int x1
   iupDrawCheckSwapCoord(x1, x2);
   iupDrawCheckSwapCoord(y1, y2);
 
-  float r = (float)corner_radius;
+  auto r = static_cast<float>(corner_radius);
   float max_r = ((x2 - x1 + 1) < (y2 - y1 + 1) ? (x2 - x1 + 1) : (y2 - y1 + 1)) / 2.0f;
   if (r > max_r) r = max_r;
   if (r <= 0)
@@ -1130,7 +1127,7 @@ extern "C" IUP_SDK_API void iupdrvDrawSetClipRoundedRect(IdrawCanvas* dc, int x1
 
   iupAttribSetStrf(dc->ih, "_IUPHAIKU_CLIP", "%d %d %d %d", x1, y1, x2, y2);
 
-  float l = (float)x1, t = (float)y1, rt = (float)(x2 + 1), b = (float)(y2 + 1), k = r * 0.5522847f;
+  float l = static_cast<float>(x1), t = static_cast<float>(y1), rt = static_cast<float>(x2 + 1), b = static_cast<float>(y2 + 1), k = r * 0.5522847f;
   BShape shape;
   shape.MoveTo(BPoint(l + r, t));
   shape.LineTo(BPoint(rt - r, t));
@@ -1152,7 +1149,7 @@ extern "C" IUP_SDK_API void iupdrvDrawSetClipRoundedRect(IdrawCanvas* dc, int x1
 extern "C" IUP_SDK_API void iupdrvDrawResetClip(IdrawCanvas* dc)
 {
   if (!dc || !dc->bm) return;
-  iupAttribSet(dc->ih, "_IUPHAIKU_CLIP", NULL);
+  iupAttribSet(dc->ih, "_IUPHAIKU_CLIP", nullptr);
   dc->bm->Lock();
   if (dc->clip_state)
   {
@@ -1167,17 +1164,17 @@ extern "C" IUP_SDK_API int iupdrvDrawBeginLayer(IdrawCanvas* dc, int alpha)
 {
   (void)alpha;
   if (!dc || !dc->bm) return 0;
-  IhaikuDrawLayer* layer = (IhaikuDrawLayer*)calloc(1, sizeof(IhaikuDrawLayer));
+  auto* layer = static_cast<IhaikuDrawLayer*>(calloc(1, sizeof(IhaikuDrawLayer)));
   if (!layer) return 0;
 
-  BBitmap* bm = new BBitmap(dc->bm->Bounds(), B_BITMAP_ACCEPTS_VIEWS, B_RGBA32);
+  auto* bm = new BBitmap(dc->bm->Bounds(), B_BITMAP_ACCEPTS_VIEWS, B_RGBA32);
   if (!bm || bm->InitCheck() != B_OK)
   {
     delete bm;
     free(layer);
     return 0;
   }
-  BView* view = new BView(bm->Bounds(), "iup_layer", B_FOLLOW_ALL_SIDES, B_WILL_DRAW);
+  auto* view = new BView(bm->Bounds(), "iup_layer", B_FOLLOW_ALL_SIDES, B_WILL_DRAW);
   bm->AddChild(view);
 
   dc->bm->Lock();
@@ -1201,7 +1198,7 @@ extern "C" IUP_SDK_API int iupdrvDrawBeginLayer(IdrawCanvas* dc, int alpha)
   dc->bm = bm;
   dc->view = view;
   dc->clip_state = 0;
-  iupAttribSet(dc->ih, "_IUPHAIKU_CLIP", NULL);
+  iupAttribSet(dc->ih, "_IUPHAIKU_CLIP", nullptr);
 
   bm->Lock();
   view->SetDrawingMode(B_OP_ALPHA);
