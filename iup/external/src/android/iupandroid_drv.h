@@ -59,6 +59,8 @@ IUP_SDK_API float iupAndroid_PxToDp(int px);
 IUP_SDK_API void  iupAndroid_GetButtonBorderSize(int* w, int* h);
 
 IUP_SDK_API void  iupAndroid_ScrollbarDispatch(Ihandle* ih, int op, double value);
+IUP_SDK_API int   iupAndroid_CanvasIsScrollable(Ihandle* ih);
+IUP_SDK_API void  iupAndroid_CanvasScrollBy(Ihandle* ih, float move_x, float move_y, int width, int height);
 IUP_SDK_API void  iupAndroid_ToggleActionFromJava(Ihandle* ih, int state);
 IUP_SDK_API void  iupAndroid_TreeToggleValueChanged(Ihandle* ih, int id, int state);
 

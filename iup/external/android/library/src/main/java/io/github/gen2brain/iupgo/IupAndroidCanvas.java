@@ -10,6 +10,7 @@ import android.view.GestureDetector;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
+import android.view.ViewConfiguration;
 import android.view.inputmethod.BaseInputConnection;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputConnection;
@@ -40,6 +41,10 @@ public class IupAndroidCanvas extends IupAndroidFixed
     private float panDx, panDy;
     private boolean rotateActive;
     private float rotateLast, rotateAngle;
+    private static final int TOUCH_IDLE = 0, TOUCH_PENDING = 1, TOUCH_SCROLL = 2, TOUCH_DIRECT = 3, TOUCH_CONSUMED = 4;
+    private int touchState = TOUCH_IDLE;
+    private float touchStartX, touchStartY, touchLastX, touchLastY;
+    private int touchSlop;
     /* Tracks an outstanding clip save() for setClipRect's restore-then-replace contract. */
     boolean clipSaved;
     final ArrayList<int[]> layers = new ArrayList<>();
@@ -160,12 +165,14 @@ public class IupAndroidCanvas extends IupAndroidFixed
 
     private void initGestureDetectors(Context ctx)
     {
+        this.touchSlop = ViewConfiguration.get(ctx).getScaledTouchSlop();
         this.gestureDetector = new GestureDetector(ctx,
             new GestureDetector.SimpleOnGestureListener()
             {
                 @Override public void onLongPress(@NonNull MotionEvent e)
                 {
                     if (ihandlePtr == 0) return;
+                    if (touchState == TOUCH_PENDING) touchState = TOUCH_CONSUMED;
                     int x = (int) e.getX();
                     int y = (int) e.getY();
                     IupCanvasHelper.dispatchGesture(ihandlePtr, GESTURE_LONGPRESS, GESTURE_END, x, y, 0, 0);
@@ -411,18 +418,46 @@ public class IupAndroidCanvas extends IupAndroidFixed
         switch (action)
         {
             case MotionEvent.ACTION_DOWN:
+                if (IupCanvasHelper.isScrollable(ihandlePtr))
+                {
+                    touchState = TOUCH_PENDING;
+                    touchStartX = touchLastX = ev.getX();
+                    touchStartY = touchLastY = ev.getY();
+                    if (getParent() != null)
+                        getParent().requestDisallowInterceptTouchEvent(true);
+                    return true;
+                }
+                touchState = TOUCH_DIRECT;
                 /* Drag-interactive or gesture canvas owns the sequence; parent must not intercept. */
                 if (getParent() != null && (IupCanvasHelper.isDragInteractive(ihandlePtr) || IupCanvasHelper.isGestureEnabled(ihandlePtr)))
                     getParent().requestDisallowInterceptTouchEvent(true);
                 IupCanvasHelper.dispatchButton(ihandlePtr, 1, 1, x, y, mods);
                 return true;
             case MotionEvent.ACTION_MOVE:
-                IupCanvasHelper.dispatchMotion(ihandlePtr, x, y, mods, 1);
+                if (touchState == TOUCH_PENDING && ev.getPointerCount() == 1 &&
+                    Math.hypot(ev.getX() - touchStartX, ev.getY() - touchStartY) > touchSlop)
+                    touchState = TOUCH_SCROLL;
+                if (touchState == TOUCH_SCROLL)
+                {
+                    float dx = ev.getX() - touchLastX, dy = ev.getY() - touchLastY;
+                    touchLastX = ev.getX();
+                    touchLastY = ev.getY();
+                    IupCanvasHelper.dispatchScroll(ihandlePtr, dx, dy, getWidth(), getHeight());
+                }
+                else if (touchState == TOUCH_DIRECT)
+                    IupCanvasHelper.dispatchMotion(ihandlePtr, x, y, mods, 1);
                 return true;
             case MotionEvent.ACTION_UP:
             case MotionEvent.ACTION_CANCEL:
-                /* Touch has no hover; release + fire LEAVEWINDOW_CB to clear it. */
-                IupCanvasHelper.dispatchButton(ihandlePtr, 1, 0, x, y, mods);
+                if (touchState == TOUCH_PENDING && action == MotionEvent.ACTION_UP)
+                {
+                    IupCanvasHelper.dispatchButton(ihandlePtr, 1, 1, x, y, mods);
+                    IupCanvasHelper.dispatchButton(ihandlePtr, 1, 0, x, y, mods);
+                }
+                else if (touchState == TOUCH_DIRECT)
+                    IupCanvasHelper.dispatchButton(ihandlePtr, 1, 0, x, y, mods);
+                touchState = TOUCH_IDLE;
+                /* Touch has no hover; fire LEAVEWINDOW_CB to clear it. */
                 IupCanvasHelper.dispatchLeaveWindow(ihandlePtr);
                 if (action == MotionEvent.ACTION_UP)
                     performClick();
