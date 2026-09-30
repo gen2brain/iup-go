@@ -390,7 +390,16 @@ public final class IupTableHelper
                 ensureDefaultCellTextSize(table, tv);
                 applyCellFont(table, tv, resolveFont(table, lin, col));
 
-                Drawable img = table.showImage ? table.cellImage.get(cellKey(lin, col)) : null;
+                Drawable img = null;
+                if (table.showImage)
+                {
+                    if (table.virtualMode)
+                    {
+                        Bitmap bmp = dispatchImageRequest(table.ihandlePtr, lin, col);
+                        if (bmp != null) img = cellDrawable(table, bmp);
+                    }
+                    else img = table.cellImage.get(cellKey(lin, col));
+                }
                 if (img != null) tv.setCompoundDrawablePadding(table.iconPaddingPx);
                 tv.setCompoundDrawablesRelative(img, null, null, null);
 
@@ -434,7 +443,7 @@ public final class IupTableHelper
         final boolean changedFinal = changed;
         /* Defer; sync CLICK_CB that opens a modal would race the touch dispatcher Surface teardown. */
         t.recyclerView.post(() -> {
-            dispatchClick(t.ihandlePtr, lin, col, changedFinal ? 1 : 0);
+            dispatchClick(t.ihandlePtr, lin, col, changedFinal ? 1 : 0, 0);
             dispatchSelection(t.ihandlePtr);
         });
     }
@@ -539,9 +548,13 @@ public final class IupTableHelper
                 }
                 @Override public boolean onDoubleTap(@NonNull MotionEvent e)
                 {
+                    if (state.lin <= 0 || state.col <= 0) return true;
+                    final int lin = state.lin, col = state.col;
                     /* defer; startEditCell + AlertDialog handlers all fire user CBs */
-                    if (state.lin > 0 && state.col > 0 && isCellEditable(t, state.col))
-                        tv.post(() -> startEditCell(t, state.lin, state.col));
+                    tv.post(() -> {
+                        if (dispatchClick(t.ihandlePtr, lin, col, 0, 1) == 0 && isCellEditable(t, col))
+                            startEditCell(t, lin, col);
+                    });
                     return true;
                 }
                 @Override public void onLongPress(@NonNull MotionEvent e)
@@ -1848,27 +1861,29 @@ public final class IupTableHelper
         ((IupTableView) v).fitImage = fit;
     }
 
+    static Drawable cellDrawable(IupTableView t, Bitmap bmp)
+    {
+        BitmapDrawable d = new BitmapDrawable(t.getResources(), bmp);
+        int dw, dh;
+        if (t.fitImage)
+        {
+            int box = Math.max(1, t.rowHeightPx - Math.round(4 * IupCommon.getDisplayDensity()));
+            int sw = bmp.getWidth(), sh = bmp.getHeight();
+            int max = Math.max(sw, sh);
+            dw = sw * box / max;
+            dh = sh * box / max;
+        }
+        else { dw = d.getIntrinsicWidth(); dh = d.getIntrinsicHeight(); }
+        d.setBounds(0, 0, dw, dh);
+        return d;
+    }
+
     @Keep
     public static void setCellImage(View v, int lin, int col, Bitmap bmp)
     {
         if (!(v instanceof IupTableView t)) return;
         if (bmp == null) { t.cellImage.remove(cellKey(lin, col)); }
-        else
-        {
-            BitmapDrawable d = new BitmapDrawable(v.getResources(), bmp);
-            int dw, dh;
-            if (t.fitImage)
-            {
-                int box = Math.max(1, t.rowHeightPx - Math.round(4 * IupCommon.getDisplayDensity()));
-                int sw = bmp.getWidth(), sh = bmp.getHeight();
-                int max = Math.max(sw, sh);
-                dw = sw * box / max;
-                dh = sh * box / max;
-            }
-            else { dw = d.getIntrinsicWidth(); dh = d.getIntrinsicHeight(); }
-            d.setBounds(0, 0, dw, dh);
-            t.cellImage.put(cellKey(lin, col), d);
-        }
+        else t.cellImage.put(cellKey(lin, col), cellDrawable(t, bmp));
         if (t.showImage)
         {
             int lin0 = lin - 1;
@@ -2061,7 +2076,8 @@ public final class IupTableHelper
         t.stretchLast = on;
     }
 
-    public static native void dispatchClick(long ihandlePtr, int lin, int col, int focusChanged);
+    public static native int dispatchClick(long ihandlePtr, int lin, int col, int focusChanged, int doubleClick);
+    public static native Bitmap dispatchImageRequest(long ihandlePtr, int lin, int col);
     public static native void dispatchRightClick(long ihandlePtr, int lin, int col, int focusChanged);
     public static native void dispatchCellsExtend(long ihandlePtr, int lin, int col);
     public static native void dispatchSelection(long ihandlePtr);

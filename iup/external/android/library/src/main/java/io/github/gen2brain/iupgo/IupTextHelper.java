@@ -184,6 +184,8 @@ public final class IupTextHelper
     {
         IupEditText tv = new IupEditText(ctx, ihandlePtr);
         if (maxLines > 0) tv.setMaxLines(maxLines);
+        if (maxLines == 1 && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P)
+            tv.setFallbackLineSpacing(false);
         applyTextPalette(tv);
         sThemableTexts.put(tv, Boolean.TRUE);
         tv.savedKeyListener = tv.getKeyListener();
@@ -261,6 +263,10 @@ public final class IupTextHelper
             sv.addView(hsv, new ViewGroup.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT));
+            sv.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) -> {
+                int h = (b - t) - sv.getPaddingTop() - sv.getPaddingBottom();
+                if (h > 0 && tv.getMinHeight() != h) tv.post(() -> tv.setMinHeight(h));
+            });
         }
         sv.setTag(tv);
         tv.setBackground(null);

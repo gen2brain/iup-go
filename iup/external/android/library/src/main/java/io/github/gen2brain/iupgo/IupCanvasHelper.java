@@ -43,6 +43,14 @@ public final class IupCanvasHelper
 
 
     @Keep
+    public static void setBorder(View v, boolean on)
+    {
+        if (!(v instanceof IupAndroidCanvas c)) return;
+        c.drawBorder = on;
+        c.invalidate();
+    }
+
+    @Keep
     public static IupAndroidCanvas createCanvas(final long ihandlePtr)
     {
         ContextThemeWrapper themeContext = IupCommon.getContextThemeWrapper();

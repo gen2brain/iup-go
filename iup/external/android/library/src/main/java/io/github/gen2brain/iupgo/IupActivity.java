@@ -56,6 +56,8 @@ public class IupActivity extends AppCompatActivity
     private static int sLastTouchX;
     private static int sLastTouchY;
 
+    private static int sLiveCount;
+
     public static Activity currentActivity()
     {
         return sCurrentActivityRef != null ? sCurrentActivityRef.get() : null;
@@ -271,6 +273,7 @@ public class IupActivity extends AppCompatActivity
     public void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
+        sLiveCount++;
 
         final Intent intent = getIntent();
         final long ihandlePtr = intent.getLongExtra("Ihandle", 0);
@@ -387,6 +390,10 @@ public class IupActivity extends AppCompatActivity
         }
 
         IupCommon.modalPumpExitTopmost();
+
+        sLiveCount--;
+        if (sLiveCount == 0 && isFinishing())
+            IupTimerHelper.stopAll();
 
         super.onDestroy();
     }
@@ -539,7 +546,7 @@ public class IupActivity extends AppCompatActivity
     }
 
 
-    /** consumes system-bar insets as ScrollView padding; required for edge-to-edge on API 30+ */
+    /** consumes system-bar and keyboard insets as ScrollView padding; required for edge-to-edge on API 30+ */
     private static void installInsetHandler(final android.view.View host)
     {
         host.setFitsSystemWindows(true);
@@ -547,7 +554,8 @@ public class IupActivity extends AppCompatActivity
             Insets bars = insets.getInsets(
                 WindowInsetsCompat.Type.systemBars() |
                 WindowInsetsCompat.Type.displayCutout());
-            view.setPadding(bars.left, bars.top, bars.right, bars.bottom);
+            Insets ime = insets.getInsets(WindowInsetsCompat.Type.ime());
+            view.setPadding(bars.left, bars.top, bars.right, Math.max(bars.bottom, ime.bottom));
             return WindowInsetsCompat.CONSUMED;
         });
     }

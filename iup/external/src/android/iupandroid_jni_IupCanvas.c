@@ -227,9 +227,16 @@ JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupCanvasHelper_dispatchTo
   jint* ys = (*jni_env)->GetIntArrayElements(jni_env, jys, NULL);
   jint* states = (*jni_env)->GetIntArrayElements(jni_env, jstates, NULL);
 
+  float d = iupAndroid_GetDisplayDensity(); if (d < 1.0f) d = 1.0f;
+  int i;
+  for (i = 0; i < count; i++)
+  {
+    xs[i] = (jint)((float)xs[i] / d);
+    ys[i] = (jint)((float)ys[i] / d);
+  }
+
   if (single_cb)
   {
-    int i;
     for (i = 0; i < count; i++)
     {
       char st = (char)states[i];

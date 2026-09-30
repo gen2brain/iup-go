@@ -407,7 +407,8 @@ void iupAndroidListDispatchMultiSelection(Ihandle* ih, int* pos, int count)
 {
   IFnsii cb = (IFnsii)IupGetCallback(ih, "ACTION");
   IFns mcb = (IFns)IupGetCallback(ih, "MULTISELECT_CB");
-  iupListMultipleCallActionCb(ih, cb, mcb, pos, count);
+  if (cb || mcb)
+    iupListMultipleCallActionCb(ih, cb, mcb, pos, count);
   IFn changed_cb = (IFn)IupGetCallback(ih, "VALUECHANGED_CB");
   if (changed_cb && changed_cb(ih) == IUP_CLOSE) IupExitLoop();
 }

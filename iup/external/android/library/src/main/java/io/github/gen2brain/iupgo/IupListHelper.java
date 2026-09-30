@@ -256,6 +256,8 @@ public final class IupListHelper
             int padH = (int)(ROW_HORIZ_PAD_DP * IupCommon.getDisplayDensity()) + spacingPx;
             tv.setMinHeight(0);
             tv.setMinimumHeight(0);
+            tv.setSingleLine(true);
+            tv.setEllipsize(android.text.TextUtils.TruncateAt.END);
             /* explicit padding so iupdrvListAddBorders matches; theme listPreferredItemPaddingStart varies */
             tv.setPadding(padH, padV, padH, padV);
             int rowH = getPreferredRowHeightPx() + 2 * spacingPx;
@@ -524,7 +526,13 @@ public final class IupListHelper
     {
         if (count <= 0) return;
         if (widget instanceof TextInputLayout til && til.getTag() instanceof MaterialAutoCompleteTextView m)
-            m.setDropDownHeight(count * getPreferredRowHeightPx());
+        {
+            int padding = 0;
+            android.graphics.drawable.Drawable bg = m.getDropDownBackground();
+            android.graphics.Rect pad = new android.graphics.Rect();
+            if (bg != null && bg.getPadding(pad)) padding = pad.top + pad.bottom;
+            m.setDropDownHeight(count * getPreferredRowHeightPx() + padding);
+        }
     }
 
     public static void setShowDropdown(View widget, boolean show)

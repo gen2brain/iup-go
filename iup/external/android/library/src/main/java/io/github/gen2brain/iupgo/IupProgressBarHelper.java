@@ -68,7 +68,12 @@ public final class IupProgressBarHelper
 
         /* Material has no vertical indicator; fall back to a rotated plain ProgressBar. */
         if (vertical)
-            return new IupProgressBarVertical(themeContext, null, android.R.attr.progressBarStyleHorizontal);
+        {
+            IupProgressBarVertical pb = new IupProgressBarVertical(themeContext, null, android.R.attr.progressBarStyleHorizontal);
+            LinearProgressIndicator reference = new LinearProgressIndicator(themeContext);
+            pb.setTrack(getTrackThicknessPx(), reference.getIndicatorColor()[0], reference.getTrackColor());
+            return pb;
+        }
 
         IupLinearProgressIndicator lpi = new IupLinearProgressIndicator(themeContext);
         lpi.setIndeterminate(marquee);

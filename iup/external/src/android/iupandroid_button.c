@@ -188,10 +188,10 @@ static int androidButtonSetBgColorAttrib(Ihandle* ih, const char* value)
 }
 
 
-static int androidButtonSetImageGeneric(Ihandle* ih, const char* image_name, const char* java_method)
+static int androidButtonSetImageGenericEx(Ihandle* ih, const char* image_name, const char* java_method, int make_inactive)
 {
   if (!ih->handle) return 1;
-  void* bmp = image_name ? iupImageGetImage(image_name, ih, 0, NULL) : NULL;
+  void* bmp = image_name ? iupImageGetImage(image_name, ih, make_inactive, NULL) : NULL;
 
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
   jclass java_class = androidButtonFindHelper(jni_env);
@@ -202,8 +202,15 @@ static int androidButtonSetImageGeneric(Ihandle* ih, const char* image_name, con
   return 1;
 }
 
+static int androidButtonSetImageGeneric(Ihandle* ih, const char* image_name, const char* java_method)
+{
+  return androidButtonSetImageGenericEx(ih, image_name, java_method, 0);
+}
+
 static int androidButtonSetImageAttrib(Ihandle* ih, const char* value)
 {
+  if (!iupAttribGet(ih, "IMINACTIVE"))
+    androidButtonSetImageGenericEx(ih, value, "setInactiveImage", 1);
   return androidButtonSetImageGeneric(ih, value, "setImage");
 }
 
@@ -277,6 +284,8 @@ static int androidButtonSetImPressAttrib(Ihandle* ih, const char* value)
 
 static int androidButtonSetImInactiveAttrib(Ihandle* ih, const char* value)
 {
+  if (!value)
+    return androidButtonSetImageGenericEx(ih, iupAttribGet(ih, "IMAGE"), "setInactiveImage", 1);
   return androidButtonSetImageGeneric(ih, value, "setInactiveImage");
 }
 

@@ -339,7 +339,7 @@ public final class IupToggleHelper
     }
 
     @Keep
-    public static void setImage(View widget, Bitmap bmp, Bitmap impress)
+    public static void setImage(View widget, Bitmap bmp, Bitmap impress, Bitmap inactive)
     {
         if (widget instanceof MaterialButton btn)
         {
@@ -348,13 +348,7 @@ public final class IupToggleHelper
             btn.setIconSize(d.getBounds().width());
             int pad = (int)(8 * IupCommon.getDisplayDensity());
             btn.setPadding(pad, pad, pad, pad);
-            if (impress == null) { btn.setIcon(d); return; }
-            BitmapDrawable imp = makeBitmapDrawable(widget, impress);
-            StateListDrawable sld = new StateListDrawable();
-            sld.addState(new int[]{ android.R.attr.state_pressed }, imp);
-            sld.addState(new int[]{ android.R.attr.state_checked }, imp);
-            sld.addState(new int[0], d);
-            btn.setIcon(sld);
+            btn.setIcon(stateImage(widget, d, impress, inactive));
             return;
         }
 
@@ -366,7 +360,24 @@ public final class IupToggleHelper
         }
         BitmapDrawable d = makeBitmapDrawable(widget, bmp);
         cb.setCompoundDrawablePadding((int)(8 * IupCommon.getDisplayDensity()));
-        cb.setCompoundDrawablesRelative(d, null, null, null);
+        cb.setCompoundDrawablesRelative(stateImage(widget, d, null, inactive), null, null, null);
+    }
+
+    private static android.graphics.drawable.Drawable stateImage(View widget, BitmapDrawable normal, Bitmap impress, Bitmap inactive)
+    {
+        if (impress == null && inactive == null) return normal;
+        StateListDrawable sld = new StateListDrawable();
+        if (inactive != null)
+            sld.addState(new int[]{ -android.R.attr.state_enabled }, makeBitmapDrawable(widget, inactive));
+        if (impress != null)
+        {
+            BitmapDrawable imp = makeBitmapDrawable(widget, impress);
+            sld.addState(new int[]{ android.R.attr.state_pressed }, imp);
+            sld.addState(new int[]{ android.R.attr.state_checked }, imp);
+        }
+        sld.addState(new int[0], normal);
+        sld.setBounds(normal.getBounds());
+        return sld;
     }
 
 

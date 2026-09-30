@@ -33,9 +33,10 @@ public final class IupMessageDialogHelper
     {
         Activity activity = resolveActivity(parentHandle);
         if (activity == null) activity = IupApplication.getIupApplication().getCurrentActivity();
-        Context ctx = activity != null
-            ? activity
-            : new ContextThemeWrapper(IupApplication.getIupApplication(), R.style.AppTheme);
+        Context ctx;
+        if (activity instanceof androidx.appcompat.app.AppCompatActivity) ctx = activity;
+        else if (activity != null) ctx = new ContextThemeWrapper(activity, R.style.AppTheme);
+        else ctx = new ContextThemeWrapper(IupApplication.getIupApplication(), R.style.AppTheme);
 
         final int[] result = { RESP_CANCELED };
         final boolean[] done = { false };

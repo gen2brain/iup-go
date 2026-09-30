@@ -44,6 +44,7 @@ public class IupAndroidCanvas extends IupAndroidFixed
     boolean clipSaved;
     final ArrayList<int[]> layers = new ArrayList<>();
     boolean inDraw;
+    boolean drawBorder;
 
     public IupAndroidCanvas(Context ctx, long ihandlePtr)
     {
@@ -331,6 +332,15 @@ public class IupAndroidCanvas extends IupAndroidFixed
             inDraw = false;
         }
         if (back != null) canvas.drawBitmap(back, 0, 0, null);
+        if (drawBorder)
+        {
+            float stroke = Math.max(1f, IupCommon.getDisplayDensity());
+            android.graphics.Paint p = new android.graphics.Paint();
+            p.setStyle(android.graphics.Paint.Style.STROKE);
+            p.setStrokeWidth(stroke);
+            p.setColor(IupCommon.resolveThemeColorByName("colorOutline", IupCommon.blendColor(IupCommon.paletteDlgBg, IupCommon.paletteDlgFg, 0.4f)));
+            canvas.drawRect(stroke / 2, stroke / 2, getWidth() - stroke / 2, getHeight() - stroke / 2, p);
+        }
     }
 
     @Override
