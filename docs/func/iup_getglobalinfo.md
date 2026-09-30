@@ -36,6 +36,8 @@ Returns the registered metadata of a global attribute: flag bits and the set of 
 | IUPDRV_ANDROID    | 512   | Android                 |
 | IUPDRV_COCOATOUCH | 1024  | iOS (Cocoa Touch)       |
 | IUPDRV_HAIKU      | 2048  | Haiku                   |
+| IUPDRV_WASM       | 4096  | WebAssembly             |
+| IUPDRV_QML        | 8192  | QML (Qt Quick)          |
 
 A binding can compare `drivers` against the bit for the current driver (matched from `IupGetGlobal("DRIVER")`) to know whether a global is supported on this build.
 

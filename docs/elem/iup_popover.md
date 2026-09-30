@@ -41,7 +41,7 @@ In macOS the offset is applied only while the resulting position stays inside th
 
 **AUTOFLIP** (non-inheritable): When enabled, the popover automatically flips to the opposite side if it would extend beyond the screen boundaries. The alignment is preserved when flipping (e.g. BOTTOMLEFT flips to TOPLEFT).
 Can be "YES" or "NO". Default: "YES".
-Only affects Win32, Qt, FLTK, EFL, Motif, Android and Haiku. In GTK 3 the native popover flips at window boundaries. In GTK 4, WinUI and macOS the native popover flips at screen boundaries. In all native cases auto-flip is always enabled and this attribute has no effect.
+Only affects Win32, Qt, QML, FLTK, EFL, Motif, Android and Haiku. In GTK 3 the native popover flips at window boundaries. In GTK 4, WinUI and macOS the native popover flips at screen boundaries. In all native cases auto-flip is always enabled and this attribute has no effect.
 
 [VISIBLE](../attrib/iup_visible.md) (non-inheritable): Shows or hides the popover.
 The popover is mapped on the first time VISIBLE is set to "YES".

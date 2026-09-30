@@ -16,6 +16,8 @@ In macOS, the implementation uses WKWebView from the WebKit framework.
 
 In Qt, the implementation uses QWebEngineView from QtWebEngine (Chromium-based).
 
+In QML, the implementation uses WebEngineView from QtWebEngine Quick (Chromium-based).
+
 In Haiku, the implementation uses BWebView from the system Legacy WebKit library (libWebKitLegacy).
 
 In Android, the implementation uses the system WebView.
@@ -79,6 +81,7 @@ The name of the content attribute is given by the attribute ATTRIBUTE_NAME.
 **PRINT** (write-only): shows the print dialog.
 
 **PRINTPREVIEW** (write-only): shows a print preview dialog.
+Not supported in QML.
 
 **RELOAD** (write-only): reloads the page in the webbrowser.
 

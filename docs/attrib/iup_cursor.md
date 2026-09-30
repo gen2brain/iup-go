@@ -54,7 +54,7 @@ The default value is "0:0".
 
 Usually only color indices 0, 1 and 2 can be used in a cursor, where 0 will be transparent (must be "BGCOLOR").
 The RGB colors corresponding to indices 1 and 2 are defined just as in regular images.
-In Windows, GTK, macOS, Qt and EFL, the cursor can have more than 2 colors and support RGBA images.
+In Windows, GTK, macOS, Qt, QML and EFL, the cursor can have more than 2 colors and support RGBA images.
 Cursor sizes are usually less than or equal to 32x32.
 
 The cursor will only change when the interface system regains control or when IupFlush is called.

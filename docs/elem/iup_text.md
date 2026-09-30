@@ -23,6 +23,7 @@ Ignored if set before map.
 Ignored in GTK when MULTILINE=NO.
 
 **BORDER** (creation-only): Shows a border around the text. Default: "YES".
+In QML, BORDER=NO also removes the padding around the text.
 
 **CANFOCUS** (creation-only) (non-inheritable): enables the focus traversal of the control.
 In Windows the control will still get the focus when clicked. Default: YES.
@@ -59,8 +60,8 @@ Does not depend on current locale.
 **CLIPBOARD** (write-only): clear, cut, copy or paste the selection to or from the clipboard.
 Values: "CLEAR", "CUT", "COPY", "PASTE", "UNDO", "REDO", "CLEARUNDO".
 UNDO and REDO are not supported in GTK 2, GTK 3, Motif, EFL and WebAssembly. In Win32 REDO requires FORMATTING=YES.
-CLEARUNDO empties the undo and redo history; only in Win32, WinUI, GTK 4, Qt, macOS and iOS.
-WinUI CLEARUNDO requires FORMATTING=YES. Qt CLEARUNDO requires MULTILINE=YES.
+CLEARUNDO empties the undo and redo history; only in Win32, WinUI, GTK 4, Qt, QML, macOS and iOS.
+WinUI CLEARUNDO requires FORMATTING=YES. Qt and QML CLEARUNDO requires MULTILINE=YES.
 
 **COUNT** (read-only): returns the number of **characters** in the text, including the line breaks.
 
@@ -68,6 +69,7 @@ WinUI CLEARUNDO requires FORMATTING=YES. Qt CLEARUNDO requires MULTILINE=YES.
 It works as a textual cue, or tip to prompt the user for input.
 Valid only for MULTILINE=NO. In Windows, works only when Visual Styles are enabled.
 Not supported in Motif.
+In QML it has no effect when SPIN=YES.
 
 **DROPFILESTARGET** (non-inheritable): Enable or disable the drop of files.
 Default: NO, but if DROPFILES_CB is defined when the element is mapped then it will be automatically enabled.
@@ -119,7 +121,7 @@ Emphasis, strikeout, code spans, code blocks, links, headings, blockquotes, list
 Headings are recognized from a bold line whose font size differs from the control font, code from a monospaced font, lists from the line text, tables from their column layout.
 A single monospaced line is converted to a code span, a run of them to a code block.
 Tables are written back as pipe syntax with per-column alignment.
-Inline images are converted only in Qt. Blockquotes are not converted in FLTK and Haiku, code spans and code blocks not in WinUI.
+Inline images are converted only in Qt and QML. Blockquotes are not converted in FLTK and Haiku, code spans and code blocks not in WinUI.
 Requires FORMATTING=YES and MULTILINE=YES. Not supported in Motif.
 
 **SAVEMARKDOWN** (write-only): saves the result of GETMARKDOWNVALUE to a file given its filename.
@@ -144,7 +146,7 @@ Default: YES.
 Pressing the Insert key toggles the value.
 In Win32, requires FORMATTING=YES.
 In GTK, GTK 4, macOS and Haiku, requires MULTILINE=YES.
-In Qt, WinUI, Motif, FLTK, EFL, Android and iOS, works in both single-line and multiline.
+In Qt, QML, WinUI, Motif, FLTK, EFL, Android and iOS, works in both single-line and multiline.
 
 **PADDING**: internal margin. Works just like the MARGIN attribute of the **IupHbox** and **IupVbox** containers, but uses a different name to avoid inheritance problems.
 Default value: "0x0". In Windows, only the horizontal value is used.
@@ -154,7 +156,7 @@ It will actually set the PADDING attribute.
 
 **PASSWORD** (non-inheritable): Hide the typed character using an "*".
 Default: "NO".
-Creation-only in Win32, WinUI, macOS and FLTK. Runtime toggle is supported in GTK, GTK 4, Qt, iOS, EFL, Android and Haiku.
+Creation-only in Win32, WinUI, macOS and FLTK. Runtime toggle is supported in GTK, GTK 4, Qt, QML, iOS, EFL, Android and Haiku.
 Not supported in Motif.
 
 **READONLY**: Allows the user only to read the contents, without changing it.

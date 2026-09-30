@@ -105,7 +105,7 @@ In Windows, if DROPEXPAND=YES then the horizontal scrollbar is never shown.
 
 **SCROLLVISIBLE** (read-only): Returns which scrollbars are visible at the moment.
 Can be: YES (both), VERTICAL, HORIZONTAL, NO.
-Supported in Windows, WinUI, Qt, macOS, iOS and WebAssembly.
+Supported in Windows, WinUI, Qt, QML, macOS, iOS and WebAssembly.
 
 **SHOWDRAGDROP** (creation-only) (non-inheritable): enables the internal drag and drop of items in the same list, and enables the **DRAGDROP_CB** callback.
 Default: "NO". Works only if DROPDOWN=NO and MULTIPLE=NO.
@@ -178,6 +178,7 @@ Must be set after VIRTUALMODE is enabled.
 > ------------------------------------------------------------------------
 
 **APPEND, CARET, CARETPOS**, **CLIPBOARD**, **CUEBANNER, FILTER, INSERT, PADDING**, **MASK, NC, READONLY, SELECTEDTEXT, SELECTION, SELECTIONPOS**, **SCROLLTO**, **SCROLLTOPOS** : Same as the [IupText](iup_text.md) attributes, but are valid only when EDITBOX=YES and effective only for the edit box inside the list.
+SELECTIONPOS, CARETPOS and SCROLLTOPOS are not supported in Qt, QML, FLTK and Haiku.
 
 > 
 >

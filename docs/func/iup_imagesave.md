@@ -23,7 +23,7 @@ The image is encoded using the native GUI toolkit, with no external library depe
 - **GTK 4**: PNG, JPEG, BMP via GDK-PixBuf
 - **macOS**: PNG, JPEG, BMP via NSBitmapImageRep
 - **iOS**: PNG, JPEG, BMP, TIFF, GIF via UIImage / CGImageDestination
-- **Qt**: PNG, JPEG, BMP via QImage
+- **Qt and QML**: PNG, JPEG, BMP via QImage
 - **FLTK**: PNG, JPEG, BMP via Fl_Image_Surface
 - **EFL**: PNG, JPEG, BMP via Evas image savers
 - **Motif**: BMP only (pure C implementation)

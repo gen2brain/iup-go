@@ -27,18 +27,18 @@ Values can be:
 
 **TIPBGCOLOR**: The tip background color.
 Default: "255 255 225" (Light Yellow).
-Supported in Win32, WinUI, GTK, GTK 4, Motif, Qt, EFL, FLTK and macOS.
+Supported in Win32, WinUI, GTK, GTK 4, Motif, Qt, QML, EFL, FLTK and macOS.
 
 **TIPDELAY** [Win32, Motif and FLTK Only]: Time the tip will remain visible. Default: "5000".
 In Windows the maximum value is 32767 milliseconds.
 
 **TIPFGCOLOR**: The tip text color. Default: "0 0 0" (Black).
-Supported in Win32, WinUI, GTK, GTK 4, Motif, Qt, EFL, FLTK and macOS.
+Supported in Win32, WinUI, GTK, GTK 4, Motif, Qt, QML, EFL, FLTK and macOS.
 
 **TIPFONT**: The font for the tip text.
 If not defined the font used for the text is the same as the FONT attribute for the element.
 If the value is SYSTEM then, no font is selected and the default system font for the tip will be used.
-Supported in Win32, WinUI, GTK, GTK 4, Motif, Qt, EFL, FLTK and macOS.
+Supported in Win32, WinUI, GTK, GTK 4, Motif, Qt, QML, EFL, FLTK and macOS.
 
 **TIPICON** [GTK, GTK 4 and EFL Only]: name of an image to be displayed in the TIP.
 See [IupImage](../elem/iup_image.md).

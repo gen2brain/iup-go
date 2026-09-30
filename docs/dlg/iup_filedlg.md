@@ -71,12 +71,14 @@ Default is "NO", i.e., prompt before overwrite.
 **PORTAL** [Unix Only]: When set to "YES", forces the use of the XDG Desktop Portal for the file dialog via D-Bus, instead of the native toolkit dialog.
 When the global attribute SANDBOX is set, the portal is used automatically.
 If the portal is not available, falls back to the native dialog.
-Supported in GTK 3, Motif and EFL.
+Supported in GTK 3, Motif, EFL and QML.
+In QML, MULTIPLEFILES=YES also uses the portal when it is available.
 In GTK 4, the native GtkFileDialog already uses portals when appropriate.
 
 **SHOWEDITBOX** [Windows Only]: Show an edit box in the directory selection dialog (DIALOGTYPE=DIR).
 
 **SHOWHIDDEN**: Show hidden files. Default: NO.
+Not supported in Haiku, Android, iOS, WebAssembly and QML.
 
 **SHOWPREVIEW**: A preview area is shown inside the file dialog. Can have values "YES" or "NO". Default: "NO".
 Valid only if the FILE_CB callback is defined, use it to retrieve the file name and the necessary attributes to paint the preview area.
@@ -142,7 +144,7 @@ When MULTIPLEFILES=YES it is called only for one file.
 >   FILTERUSED attribute will be updated to reflect the change. If returns IUP_CONTINUE, the FILE attribute if defined will update the current filename.
 
 [HELP_CB](../call/iup_help_cb.md): Action generated when the Help button is pressed.
-Not supported in Cocoa Touch, FLTK, EFL, Android and Haiku.
+Not supported in Cocoa Touch, FLTK, EFL, Android, Haiku, WebAssembly and QML.
 
 [BUTTON_CB](../call/iup_button_cb.md): Action generated when any mouse button is pressed or released over the preview canvas.
 
@@ -196,6 +198,7 @@ The underlying native widget per driver:
 - **Cocoa**: NSOpenPanel / NSSavePanel.
 - **Cocoa Touch**: UIDocumentPickerViewController.
 - **Qt**: QFileDialog.
+- **QML**: FileDialog / FolderDialog.
 - **FLTK**: Fl_File_Chooser.
 - **EFL**: elm_fileselector.
 - **Android**: Storage Access Framework (`ACTION_OPEN_DOCUMENT` / `ACTION_CREATE_DOCUMENT`).

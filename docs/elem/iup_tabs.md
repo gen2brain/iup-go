@@ -61,6 +61,7 @@ Can be "YES" or "NO". Default: "NO".
 
 [SIZE](../attrib/iup_size.md) (non-inheritable): The default size is the smallest size that fits its largest child.
 All child elements are considered even invisible ones.
+In QML the tab buttons keep their natural width and are clipped when they do not fit.
 
 **TABORIENTATION** (non-inheritable): Indicates the orientation of tab text, which can be "HORIZONTAL" or "VERTICAL".
 Default is "HORIZONTAL". VERTICAL can be set in GTK, GTK 4, Qt, macOS and WebAssembly.
@@ -72,8 +73,8 @@ Default value: "0x0".
 
 **TABTYPE** (non-inheritable): Indicates the type of tab, which can be "TOP", "BOTTOM", "LEFT" or "RIGHT".
 Default is "TOP".
-LEFT and RIGHT are supported in Win32, GTK, GTK 4, Motif, Qt, macOS and Haiku. In iOS, FLTK and Android only TOP and BOTTOM are supported. In EFL and WinUI only TOP is supported.
-It can be changed after map in GTK, GTK 4, Motif, macOS, iOS, Android and WebAssembly; in Win32, Qt, FLTK and Haiku it is set only before mapping.
+LEFT and RIGHT are supported in Win32, GTK, GTK 4, Motif, Qt, QML, macOS and Haiku. In iOS, FLTK and Android only TOP and BOTTOM are supported. In EFL and WinUI only TOP is supported.
+It can be changed after map in GTK, GTK 4, Motif, macOS, iOS, Android and WebAssembly; in Win32, Qt, QML, FLTK and Haiku it is set only before mapping.
 In Win32, TABTYPE=LEFT or TABTYPE=RIGHT also sets MULTILINE=YES and TABORIENTATION=VERTICAL, and TABTYPE=TOP or TABTYPE=BOTTOM sets TABORIENTATION=HORIZONTAL.
 In Win32, when not TOP the visual style is removed from the tabs.
 

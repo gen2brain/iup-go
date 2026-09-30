@@ -34,12 +34,13 @@ Available in GTK 3, GTK 4 and FLTK (FLTK only when built with Cairo).
 The application may repaint only this rectangle; pixels outside it are preserved.
 Format: "%d %d %d %d"="x1 y1 x2 y2".
 Not supported in WASM.
+In QML it is always the whole canvas.
 
 **UPDATERECT** (write-only): Requests a redraw limited to a rectangle of the canvas, received in the ACTION callback as CLIPRECT.
 The driver can expand the rectangle; successive values set before the redraw happens are combined into their bounding rectangle.
 Format: "%d %d %d %d"="x1 y1 x2 y2".
 An invalid value or a driver without support redraws the whole canvas.
-Not supported in iOS, Android and WASM.
+Not supported in iOS, Android, WASM and QML.
 
 [CURSOR](../attrib/iup_cursor.md) (non-inheritable): Defines a cursor for the canvas.
 The Windows SDK recommends that cursors and icons should be implemented as resources rather than created at run time.
@@ -95,10 +96,10 @@ Default: "YES".\
 Default: "YES".\
 **SCROLLVISIBLE** (read-only): Returns which scrollbars are visible at the moment.
 Can be: YES (both), VERTICAL, HORIZONTAL, NO.
-Supported in Win32, WinUI, Qt and macOS.
+Supported in Win32, WinUI, Qt, QML and macOS.
 
 **TOUCH** [Win32, GTK, GTK 4, WebAssembly, iOS and Android Only]: enable the touch processing if touch support is available.
-In GTK, GTK 4, Qt, WebAssembly, iOS and Android, touch events are always enabled.
+In GTK, GTK 4, Qt, QML, WebAssembly, iOS and Android, touch events are always enabled.
 
 **GESTURE** [Win32 Only]: disable the OS gesture processing so raw touch events are delivered to TOUCH_CB/MULTITOUCH_CB.
 Accepts only the NO value.
@@ -168,9 +169,9 @@ If your callback process the arrow keys, we recommend you to return IUP_IGNORE s
 
 [SCROLL_CB](../call/iup_scroll_cb.md): Called when the scrollbar is manipulated.
 
-**TOUCH_CB** [Win32, GTK, GTK 4, Qt, WebAssembly, iOS and Android Only]: Action generated when a touch event occurred.
+**TOUCH_CB** [Win32, GTK, GTK 4, Qt, QML, WebAssembly, iOS and Android Only]: Action generated when a touch event occurred.
 Multiple touch events will trigger several calls.
-In Win32 must set TOUCH=YES to receive this event. In GTK, GTK 4, Qt, iOS and Android, touch events are always enabled.
+In Win32 must set TOUCH=YES to receive this event. In GTK, GTK 4, Qt, QML, iOS and Android, touch events are always enabled.
 
     int function(Ihandle* ih, int id, int x, int y, char* state);
 
@@ -182,8 +183,8 @@ If the point is a "primary" point, then "-PRIMARY" is appended to the string.
 
 **Returns**: IUP_CLOSE will be processed.
 
-**MULTITOUCH_CB** [Win32, GTK, GTK 4, Qt, WebAssembly, iOS and Android Only]: Action generated when multiple touch events occurred.
-In Win32 must set TOUCH=YES to receive this event; in GTK, GTK 4, Qt, iOS and Android touch events are always enabled.
+**MULTITOUCH_CB** [Win32, GTK, GTK 4, Qt, QML, WebAssembly, iOS and Android Only]: Action generated when multiple touch events occurred.
+In Win32 must set TOUCH=YES to receive this event; in GTK, GTK 4, Qt, QML, iOS and Android touch events are always enabled.
 
     int function(Ihandle *ih, int count, int* pid, int* px, int* py, int* pstate)
 
@@ -200,6 +201,7 @@ In Win32 must set TOUCH=YES to receive this event; in GTK, GTK 4, Qt, iOS and An
 Not supported in Motif, FLTK and Haiku.
 On Win32 only PINCH, ROTATE and PAN are reported, and only when TOUCH is not set.
 On Cocoa only PINCH, ROTATE and SWIPE are reported.
+In QML SWIPE is not reported.
 From a mouse, GTK, GTK 4 and EFL report SWIPE, TAP and LONGPRESS, Qt reports LONGPRESS and WinUI reports TAP; the other gestures need a touch screen or a trackpad.
 
     int function(Ihandle* ih, int gesture, int state, int x, int y, double v1, double v2);

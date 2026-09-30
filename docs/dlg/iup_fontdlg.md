@@ -32,6 +32,7 @@ Has the same format as the [FONT](../attrib/iup_font.md) attribute.
 ### Callbacks
 
 [HELP_CB](../call/iup_help_cb.md): Action generated when the Help button is pressed.
+Not supported in GTK 4, iOS and QML.
 
 ### Notes
 
@@ -43,7 +44,7 @@ The dialog is mapped only inside **IupPopup**, **IupMap** does nothing.
 
 In Windows, the dialog will be modal relative only to its parent or to the active dialog.
 
-In Win32 uses ChooseFont, in GTK 3 uses GtkFontChooser, in GTK 4 uses GtkFontDialog, in macOS uses NSFontPanel, in Qt uses QFontDialog, in iOS uses UIFontPickerViewController, and in WinUI, Motif, FLTK, EFL, Android, Haiku and WebAssembly uses a custom dialog implemented using IUP controls.
+In Win32 uses ChooseFont, in GTK 3 uses GtkFontChooser, in GTK 4 uses GtkFontDialog, in macOS uses NSFontPanel, in Qt uses QFontDialog, in QML uses FontDialog, in iOS uses UIFontPickerViewController, and in WinUI, Motif, FLTK, EFL, Android, Haiku and WebAssembly uses a custom dialog implemented using IUP controls.
 
 ### Examples
 

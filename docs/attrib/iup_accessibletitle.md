@@ -2,7 +2,7 @@
 
 Accessible name announced by screen readers for the element.
 Set it to give an image-only control or a custom-drawn flat control a spoken label, or to override the label otherwise derived from TITLE.
-Not supported in Motif, FLTK, EFL and Haiku.
+Not supported in Motif, FLTK, EFL, Haiku and QML.
 
 ### Value
 
@@ -12,7 +12,7 @@ Text.
 
 Accessible description announced by screen readers after the name (help or hint text).
 When not set, the TIP text is used instead.
-Not supported in Win32, Motif, FLTK, EFL and Haiku.
+Not supported in Win32, Motif, FLTK, EFL, Haiku and QML.
 On Android it maps to the tooltip text, announced by the screen reader (API 26+).
 
 ### Value

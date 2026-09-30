@@ -13,6 +13,7 @@ The native handle type depends on the driver:
 - **macOS**: returns the **NSView*** or **NSWindow*** handle (as void*).
 - **iOS**: returns the **UIView*** or **UIViewController*** handle (as void*).
 - **Qt**: returns the **QWidget*** handle.
+- **QML**: returns the **QQuickItem*** handle for controls, **QQuickWindow*** for dialogs.
 - **FLTK**: returns the **Fl_Widget*** handle.
 - **EFL**: returns the **Evas_Object*** (Eo*) handle.
 - **Android**: returns a JNI **GlobalRef** to the Java widget (as void*).

@@ -65,7 +65,7 @@ These attributes are only supported in Windows (Win32 and WinUI).
 IupTray does not create a visible IUP element. It is a non-interactive control that interfaces with the operating system's system tray or notification area.
 
 On Linux/Unix, two tray protocols are supported depending on the build configuration and driver:
-- **SNI (StatusNotifierItem)**: Used by GTK 4, Qt, FLTK, EFL, and optionally GTK 3 and Motif. Communicates via D-Bus and supports the MENU attribute via the dbusmenu protocol.
+- **SNI (StatusNotifierItem)**: Used by GTK 4, Qt, QML, FLTK, EFL, and optionally GTK 3 and Motif. Communicates via D-Bus and supports the MENU attribute via the dbusmenu protocol.
 - **XEmbed**: Legacy protocol used by GTK 3 and Motif when built with the `xembed` build tag (Go) or `IUP_USE_XEMBED` option (CMake). Uses GtkStatusIcon (GTK) or X11 XEmbed protocol (Motif). Does not support the MENU attribute.
 
 On Haiku the tray uses a Deskbar replicant. The executable must export its Instantiate symbol; link with `-Wl,-soname,_APP_` so Deskbar can `dlopen` the team and resolve the replicant constructor.
