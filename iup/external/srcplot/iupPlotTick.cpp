@@ -20,7 +20,7 @@ static double iPlotRoundSpan(double inSpan)
   // write it in the form inSpan = a*SafeExp10 (b)
 
   if (inSpan<=0)
-    return (double)-1.234567;  // error
+    return -1.234567;  // error
 
   int thePow = 0;
   double theSpan = inSpan;
@@ -30,7 +30,7 @@ static double iPlotRoundSpan(double inSpan)
     {
       theSpan/=10;
       if (theSpan == inSpan)  // not a number
-          return (double)-1.234567;
+          return -1.234567;
       thePow++;
     }
   }
@@ -68,7 +68,7 @@ static double iPlotRoundSpan(double inSpan)
     break;
   default:
     // error
-    return (double)-1.234567;
+    return -1.234567;
   }
   double theRes = thePreferredFirstDigit*pow (10., thePow);
   return theRes;
@@ -126,13 +126,13 @@ static void iPlotMakeAutoFormatString(double inValue, char* outFormatString, boo
     if (sign_space)
     {
       char theBuf[128] = IUP_PLOT_DEF_NUMBERFORMATSIGNED;
-      theBuf[3] = (char)('0' + thePrecision); // "% ."
+      theBuf[3] = static_cast<char>('0' + thePrecision); // "% ."
       iupStrCopyN(outFormatString, 30, theBuf);
     }
     else
     {
       char theBuf[128] = IUP_PLOT_DEF_NUMBERFORMAT;
-      theBuf[2] = (char)('0' + thePrecision);  // "%."
+      theBuf[2] = static_cast<char>('0' + thePrecision);  // "%."
       iupStrCopyN(outFormatString, 30, theBuf);
     }
   }
@@ -152,7 +152,7 @@ bool iupPlotTickIterLinear::Init()
     return false;
 
   mDelta = theMajorTickSpan/theDiv;
-  mCount = (long)ceil(theMin/mDelta);
+  mCount = static_cast<long>(ceil(theMin/mDelta));
   mCurrentTick = mCount*mDelta;
 
   return true;
@@ -216,7 +216,7 @@ bool iupPlotTickIterLog::Init ()
 
   mDelta = theMajorTickSpan/theDiv;
   double theBase = mAxis->mLogBase;
-  long thePowMin = (long)floor(iupPlotLog(theMin, theBase));
+  long thePowMin = static_cast<long>(floor(iupPlotLog(theMin, theBase)));
   mCurrentTick = iupPlotExp (thePowMin, theBase);
   mCount = 0;
 
@@ -269,7 +269,7 @@ bool iupPlotTickIterLog::GetNextTick (double &outTick, bool &outIsMajorTick, cha
 
   double theBase = mAxis->mLogBase;
   double theLogNow = iupPlotLog(mCurrentTick, theBase);
-  int thePowNow = (int)floor(theLogNow);
+  int thePowNow = static_cast<int>(floor(theLogNow));
   outIsMajorTick = false;
   if (fabs (theLogNow-thePowNow)<kEps)
     outIsMajorTick = true;
@@ -309,14 +309,14 @@ bool iupPlotTickIterLog::AdjustRange (double &ioMin, double &ioMax) const
 double iupPlotTickIterLog::RoundUp (double inFloat) const
 {
   double theBase = mAxis->mLogBase;
-  int thePow = (int)ceil(iupPlotLog(inFloat, theBase));
+  int thePow = static_cast<int>(ceil(iupPlotLog(inFloat, theBase)));
   return pow (theBase, thePow);
 }
 
 double iupPlotTickIterLog::RoundDown (double inFloat) const
 {
   double theBase = mAxis->mLogBase;
-  int thePow = (int)floor(iupPlotLog(inFloat,theBase));
+  int thePow = static_cast<int>(floor(iupPlotLog(inFloat,theBase)));
   return pow (theBase, thePow);
 }
 
@@ -329,7 +329,7 @@ bool iupPlotTickIterNamed::GetNextTick (double &outTick, bool &outIsMajorTick, c
     int theSampleIndex = iupPlotRound(outTick);
 
     // TODO: improve this
-    if (fabs(outTick - (double)theSampleIndex) > 0.1)
+    if (fabs(outTick - static_cast<double>(theSampleIndex)) > 0.1)
     {
       if (outFormatString) outFormatString[0] = '\0';
       return true;

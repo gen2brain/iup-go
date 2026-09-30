@@ -54,7 +54,7 @@ static int iPlotSelectFile(Ihandle* parent, char* filename, const char* title, c
 
 static double iPlotDataSetValuesMatrixNumericGetValue_CB(Ihandle* ih_matrix, int lin, int col)
 {
-  Ihandle* ih = (Ihandle*)IupGetAttribute(ih_matrix, "PLOT");
+  auto* ih = reinterpret_cast<Ihandle*>(IupGetAttribute(ih_matrix, "PLOT"));
   int plot_current = iupAttribGetInt(ih_matrix, "_IUP_PLOT_CURRENT");
   int ds = iupAttribGetInt(ih_matrix, "_IUP_DS");
 
@@ -70,7 +70,7 @@ static double iPlotDataSetValuesMatrixNumericGetValue_CB(Ihandle* ih_matrix, int
     {
       char* str_x;
       double y;
-      IupPlotGetSampleStr(ih, ds, lin - 1, (const char**)&str_x, &y);
+      IupPlotGetSampleStr(ih, ds, lin - 1, const_cast<const char**>(&str_x), &y);
       return y;
     }
   }
@@ -86,7 +86,7 @@ static double iPlotDataSetValuesMatrixNumericGetValue_CB(Ihandle* ih_matrix, int
 
 static char* iPlotDataSetValuesMatrixValue_CB(Ihandle* ih_matrix, int lin, int col)
 {
-  Ihandle* ih = (Ihandle*)IupGetAttribute(ih_matrix, "PLOT");
+  auto* ih = reinterpret_cast<Ihandle*>(IupGetAttribute(ih_matrix, "PLOT"));
   int plot_current = iupAttribGetInt(ih_matrix, "_IUP_PLOT_CURRENT");
   int ds = iupAttribGetInt(ih_matrix, "_IUP_DS");
 
@@ -94,7 +94,7 @@ static char* iPlotDataSetValuesMatrixValue_CB(Ihandle* ih_matrix, int lin, int c
   IupSetInt(ih, "CURRENT", ds);
 
   if (lin == 0 && col == 0)
-    return (char*)"";
+    return const_cast<char*>("");
 
   if (lin == 0)
     return (col == 1) ? IupGetAttribute(ih, "AXS_XLABEL") : IupGetAttribute(ih, "AXS_YLABEL");
@@ -103,7 +103,7 @@ static char* iPlotDataSetValuesMatrixValue_CB(Ihandle* ih_matrix, int lin, int c
   {
     char* str_x;
     double y;
-    IupPlotGetSampleStr(ih, ds, lin - 1, (const char**)&str_x, &y);
+    IupPlotGetSampleStr(ih, ds, lin - 1, const_cast<const char**>(&str_x), &y);
     return str_x;
   }
 
@@ -114,12 +114,12 @@ static char* iPlotDataSetValuesMatrixValue_CB(Ihandle* ih_matrix, int lin, int c
     return str;
   }
 
-  return NULL;
+  return nullptr;
 }
 
 static int iPlotDataSetValuesMatrixNumericSetValue_CB(Ihandle* ih_matrix, int lin, int col, double new_value)
 {
-  Ihandle* ih = (Ihandle*)IupGetAttribute(ih_matrix, "PLOT");
+  auto* ih = reinterpret_cast<Ihandle*>(IupGetAttribute(ih_matrix, "PLOT"));
   int plot_current = iupAttribGetInt(ih_matrix, "_IUP_PLOT_CURRENT");
   int ds = iupAttribGetInt(ih_matrix, "_IUP_DS");
   int sample_index = lin - 1;
@@ -131,7 +131,7 @@ static int iPlotDataSetValuesMatrixNumericSetValue_CB(Ihandle* ih_matrix, int li
   if (col == 2 && IupGetInt(ih, "DS_STRXDATA"))
   {
     char* str_x;
-    IupPlotGetSampleStr(ih, ds, sample_index, (const char**)&str_x, &y);
+    IupPlotGetSampleStr(ih, ds, sample_index, const_cast<const char**>(&str_x), &y);
     x = sample_index;
 
     IupPlotSetSampleStr(ih, ds, sample_index, str_x, new_value);
@@ -149,7 +149,7 @@ static int iPlotDataSetValuesMatrixNumericSetValue_CB(Ihandle* ih_matrix, int li
     IupPlotGetSample(ih, ds, sample_index, &x, &y);
   }
 
-  IFniidd editsample_cb = (IFniidd)IupGetCallback(ih, "EDITSAMPLE_CB");
+  auto editsample_cb = reinterpret_cast<IFniidd>(IupGetCallback(ih, "EDITSAMPLE_CB"));
   if (editsample_cb)
     editsample_cb(ih, ds, sample_index, x, y);
 
@@ -158,7 +158,7 @@ static int iPlotDataSetValuesMatrixNumericSetValue_CB(Ihandle* ih_matrix, int li
 
 static int iPlotDataSetValuesMatrixValueEdit_CB(Ihandle* ih_matrix, int lin, int col, char* new_value)
 {
-  Ihandle* ih = (Ihandle*)IupGetAttribute(ih_matrix, "PLOT");
+  auto* ih = reinterpret_cast<Ihandle*>(IupGetAttribute(ih_matrix, "PLOT"));
   int plot_current = iupAttribGetInt(ih_matrix, "_IUP_PLOT_CURRENT");
   int ds = iupAttribGetInt(ih_matrix, "_IUP_DS");
   int sample_index = lin - 1;
@@ -171,12 +171,12 @@ static int iPlotDataSetValuesMatrixValueEdit_CB(Ihandle* ih_matrix, int lin, int
     char* str_x;
     double x, y;
 
-    IupPlotGetSampleStr(ih, ds, sample_index, (const char**)&str_x, &y);
+    IupPlotGetSampleStr(ih, ds, sample_index, const_cast<const char**>(&str_x), &y);
     x = sample_index;
 
     IupPlotSetSampleStr(ih, ds, sample_index, new_value, y);
 
-    IFniidd editsample_cb = (IFniidd)IupGetCallback(ih, "EDITSAMPLE_CB");
+    auto editsample_cb = reinterpret_cast<IFniidd>(IupGetCallback(ih, "EDITSAMPLE_CB"));
     if (editsample_cb)
       editsample_cb(ih, ds, sample_index, x, y);
   }
@@ -186,8 +186,8 @@ static int iPlotDataSetValuesMatrixValueEdit_CB(Ihandle* ih_matrix, int lin, int
 
 static int iPlotDataSetValuesMatrixResize_CB(Ihandle* ih, int, int)
 {
-  IupSetAttribute(ih, "RASTERWIDTH1", NULL);
-  IupSetAttribute(ih, "RASTERWIDTH2", NULL);
+  IupSetAttribute(ih, "RASTERWIDTH1", nullptr);
+  IupSetAttribute(ih, "RASTERWIDTH2", nullptr);
 
   IupSetAttribute(ih, "FITTOSIZE", "COLUMNS");
 
@@ -201,7 +201,7 @@ static int iPlotDataSetValuesButton_CB(Ihandle*)
 
 static int iPlotDataSetValues_CB(Ihandle* ih_item)
 {
-  Ihandle* ih = (Ihandle*)IupGetAttribute(ih_item, "PLOT");
+  auto* ih = reinterpret_cast<Ihandle*>(IupGetAttribute(ih_item, "PLOT"));
   Ihandle* ih_menu = IupGetParent(ih_item);
   int plot_current = iupAttribGetInt(ih_menu, "_IUP_PLOT_CURRENT");
   int ds = iupAttribGetInt(ih_menu, "_IUP_DS");
@@ -266,26 +266,26 @@ static int iPlotDataSetValues_CB(Ihandle* ih_item)
   IupSetStrAttribute(matrix, "NUMERICFORMAT2", IupGetAttribute(ih, "AXS_YTICKFORMAT"));
   IupSetAttribute(matrix, "MASK*:2", IUP_MASK_FLOAT);
 
-  IupSetCallback(matrix, "NUMERICGETVALUE_CB", (Icallback)iPlotDataSetValuesMatrixNumericGetValue_CB);
-  IupSetCallback(matrix, "RESIZEMATRIX_CB", (Icallback)iPlotDataSetValuesMatrixResize_CB);
-  IupSetCallback(matrix, "VALUE_CB", (Icallback)iPlotDataSetValuesMatrixValue_CB);
+  IupSetCallback(matrix, "NUMERICGETVALUE_CB", reinterpret_cast<Icallback>(iPlotDataSetValuesMatrixNumericGetValue_CB));
+  IupSetCallback(matrix, "RESIZEMATRIX_CB", reinterpret_cast<Icallback>(iPlotDataSetValuesMatrixResize_CB));
+  IupSetCallback(matrix, "VALUE_CB", reinterpret_cast<Icallback>(iPlotDataSetValuesMatrixValue_CB));
 
   if (IupGetInt(ih, "EDITABLEVALUES"))
   {
-    IupSetCallback(matrix, "NUMERICSETVALUE_CB", (Icallback)iPlotDataSetValuesMatrixNumericSetValue_CB);
-    IupSetCallback(matrix, "VALUE_EDIT_CB", (Icallback)iPlotDataSetValuesMatrixValueEdit_CB);
+    IupSetCallback(matrix, "NUMERICSETVALUE_CB", reinterpret_cast<Icallback>(iPlotDataSetValuesMatrixNumericSetValue_CB));
+    IupSetCallback(matrix, "VALUE_EDIT_CB", reinterpret_cast<Icallback>(iPlotDataSetValuesMatrixValueEdit_CB));
   }
 
-  IupSetCallback(button, "ACTION", (Icallback)iPlotDataSetValuesButton_CB);
+  IupSetCallback(button, "ACTION", static_cast<Icallback>(iPlotDataSetValuesButton_CB));
 
-  IupSetAttribute(matrix, "PLOT", (char*)ih);
+  IupSetAttribute(matrix, "PLOT", reinterpret_cast<char*>(ih));
   iupAttribSetInt(matrix, "_IUP_PLOT_CURRENT", plot_current);
   iupAttribSetInt(matrix, "_IUP_DS", ds);
 
   IupPopup(dlg, IUP_CENTERPARENT, IUP_CENTERPARENT);
 
   if (IupGetInt(ih, "EDITABLEVALUES"))
-    IupSetAttribute(ih, "REDRAW", NULL);
+    IupSetAttribute(ih, "REDRAW", nullptr);
 
   IupDestroy(dlg);
 
@@ -297,25 +297,25 @@ static void iPlotRedrawInteract(Ihandle* ih);
 
 static int iPlotZoomIn_CB(Ihandle* self)
 {
-  Ihandle* ih = (Ihandle*)IupGetAttribute(self, "PLOT");
+  auto* ih = reinterpret_cast<Ihandle*>(IupGetAttribute(self, "PLOT"));
   return iPlotKeyPress_CB(ih, K_plus, 1);
 }
 
 static int iPlotZoomOut_CB(Ihandle* self)
 {
-  Ihandle* ih = (Ihandle*)IupGetAttribute(self, "PLOT");
+  auto* ih = reinterpret_cast<Ihandle*>(IupGetAttribute(self, "PLOT"));
   return iPlotKeyPress_CB(ih, K_minus, 1);
 }
 
 static int iPlotZoomReset_CB(Ihandle* self)
 {
-  Ihandle* ih = (Ihandle*)IupGetAttribute(self, "PLOT");
+  auto* ih = reinterpret_cast<Ihandle*>(IupGetAttribute(self, "PLOT"));
   return iPlotKeyPress_CB(ih, K_period, 1);
 }
 
 static int iPlotShowLegend_CB(Ihandle* self)
 {
-  Ihandle* ih = (Ihandle*)IupGetAttribute(self, "PLOT");
+  auto* ih = reinterpret_cast<Ihandle*>(IupGetAttribute(self, "PLOT"));
   if (ih->data->current_plot->mLegend.mShow)
     ih->data->current_plot->mLegend.mShow = false;
   else
@@ -328,7 +328,7 @@ static int iPlotShowLegend_CB(Ihandle* self)
 
 static int iPlotShowGrid_CB(Ihandle* self)
 {
-  Ihandle* ih = (Ihandle*)IupGetAttribute(self, "PLOT");
+  auto* ih = reinterpret_cast<Ihandle*>(IupGetAttribute(self, "PLOT"));
   if (ih->data->current_plot->mGrid.mShowX || ih->data->current_plot->mGrid.mShowY)
   {
     ih->data->current_plot->mGrid.mShowY = false;
@@ -371,12 +371,12 @@ struct iPlotAttribParam
   const char** list;
 };
 
-static const char* iplot_linestyle_list[] = { "CONTINUOUS", "DASHED", "DOTTED", "DASH_DOT", "DASH_DOT_DOT", NULL };
-static const char* iplot_fontstyle_list[] = { "", "BOLD", "ITALIC", "BOLDITALIC", NULL };
-static const char* iplot_legendpos_list[] = { "TOPRIGHT", "TOPLEFT", "BOTTOMRIGHT", "BOTTOMLEFT", "BOTTOMCENTER", "XY", NULL };
-static const char* iplot_grid_list[] = { "NO", "YES", "HORIZONTAL", "VERTICAL", NULL };
-static const char* iplot_scale_list[] = { "LIN", "LOG10", "LOG2", "LOGN", NULL };
-static const char* iplot_axispos_list[] = { "START", "CROSSORIGIN", "END", NULL };
+static const char* iplot_linestyle_list[] = { "CONTINUOUS", "DASHED", "DOTTED", "DASH_DOT", "DASH_DOT_DOT", nullptr };
+static const char* iplot_fontstyle_list[] = { "", "BOLD", "ITALIC", "BOLDITALIC", nullptr };
+static const char* iplot_legendpos_list[] = { "TOPRIGHT", "TOPLEFT", "BOTTOMRIGHT", "BOTTOMLEFT", "BOTTOMCENTER", "XY", nullptr };
+static const char* iplot_grid_list[] = { "NO", "YES", "HORIZONTAL", "VERTICAL", nullptr };
+static const char* iplot_scale_list[] = { "LIN", "LOG10", "LOG2", "LOGN", nullptr };
+static const char* iplot_axispos_list[] = { "START", "CROSSORIGIN", "END", nullptr };
 
 static const char* iplot_linestyle_extra = { "|_@IUP_CONTINUOUS|_@IUP_DASHED|_@IUP_DOTTED|_@IUP_DASH_DOT|_@IUP_DASH_DOT_DOT|" };
 static const char* iplot_fontstyle_extra = { "|_@IUP_PLAIN|_@IUP_BOLD|_@IUP_ITALIC|_@IUP_BOLDITALIC|" };
@@ -413,174 +413,174 @@ static int iPlotCheckLegendXY(Ihandle* param)
 }
 
 static iPlotAttribParam iplot_background_attribs[] = {
-  { "", NULL, "_@IUP_MARGIN", "t", NULL, NULL, NULL },
-  { "MARGINLEFTAUTO", iPlotCheckAuto, "_@IUP_LEFT", "b", "[ ,Auto]", "", NULL },
-  { "MARGINLEFT", NULL, "\t_@IUP_VALUE", "i", "", "", NULL },
-  { "MARGINRIGHTAUTO", iPlotCheckAuto, "_@IUP_RIGHT", "b", "", "", NULL },
-  { "MARGINRIGHT", NULL, "\t_@IUP_VALUE", "i", "", "", NULL },
-  { "MARGINTOPAUTO", iPlotCheckAuto, "_@IUP_TOP", "b", "[ ,Auto]", "", NULL },
-  { "MARGINTOP", NULL, "\t_@IUP_VALUE", "i", "", "", NULL },
-  { "MARGINBOTTOMAUTO", iPlotCheckAuto, "_@IUP_BOTTOM", "b", "[ ,Auto]", "", NULL },
-  { "MARGINBOTTOM", NULL, "\t_@IUP_VALUE", "i", "", "", NULL },
-  { "", NULL, "", "t", NULL, NULL, NULL },
-  { "PADDING", NULL, "_@IUP_PADDING", "s", "[+/-]?/d+[x][+/-]?/d+", "{_@IUP_INTERNALMARGIN}", NULL },
-  { "BACKCOLOR", NULL, "_@IUP_COLOR", "c", "", "", NULL },
-  { NULL, NULL, NULL, NULL, NULL, NULL, NULL }
+  { "", nullptr, "_@IUP_MARGIN", "t", nullptr, nullptr, nullptr },
+  { "MARGINLEFTAUTO", iPlotCheckAuto, "_@IUP_LEFT", "b", "[ ,Auto]", "", nullptr },
+  { "MARGINLEFT", nullptr, "\t_@IUP_VALUE", "i", "", "", nullptr },
+  { "MARGINRIGHTAUTO", iPlotCheckAuto, "_@IUP_RIGHT", "b", "", "", nullptr },
+  { "MARGINRIGHT", nullptr, "\t_@IUP_VALUE", "i", "", "", nullptr },
+  { "MARGINTOPAUTO", iPlotCheckAuto, "_@IUP_TOP", "b", "[ ,Auto]", "", nullptr },
+  { "MARGINTOP", nullptr, "\t_@IUP_VALUE", "i", "", "", nullptr },
+  { "MARGINBOTTOMAUTO", iPlotCheckAuto, "_@IUP_BOTTOM", "b", "[ ,Auto]", "", nullptr },
+  { "MARGINBOTTOM", nullptr, "\t_@IUP_VALUE", "i", "", "", nullptr },
+  { "", nullptr, "", "t", nullptr, nullptr, nullptr },
+  { "PADDING", nullptr, "_@IUP_PADDING", "s", "[+/-]?/d+[x][+/-]?/d+", "{_@IUP_INTERNALMARGIN}", nullptr },
+  { "BACKCOLOR", nullptr, "_@IUP_COLOR", "c", "", "", nullptr },
+  { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr }
 };
 
 static iPlotAttribParam iplot_title_attribs[] = {
-  { "TITLE", NULL, "_@IUP_TEXT", "s", "", "", NULL },
-  { "TITLECOLOR", NULL, "_@IUP_COLOR", "c", "", "", NULL },
-  { "TITLEFONTSTYLE", NULL, "_@IUP_FONTSTYLE", "l", iplot_fontstyle_extra, "", iplot_fontstyle_list },
-  { "TITLEFONTSIZE", NULL, "_@IUP_FONTSIZE", "i", "[1,,]", "", NULL },
-  { "TITLEPOSAUTO", iPlotCheckAutoXY, "_@IUP_POSITION", "b", "[ ,Auto]", "", NULL },
-  { "TITLEPOSXY", NULL, "\t_@IUP_POSXY", "s", "[+/-]?/d+[,][+/-]?/d+", "{(pixels)}", NULL },
-  { NULL, NULL, NULL, NULL, NULL, NULL, NULL }
+  { "TITLE", nullptr, "_@IUP_TEXT", "s", "", "", nullptr },
+  { "TITLECOLOR", nullptr, "_@IUP_COLOR", "c", "", "", nullptr },
+  { "TITLEFONTSTYLE", nullptr, "_@IUP_FONTSTYLE", "l", iplot_fontstyle_extra, "", iplot_fontstyle_list },
+  { "TITLEFONTSIZE", nullptr, "_@IUP_FONTSIZE", "i", "[1,,]", "", nullptr },
+  { "TITLEPOSAUTO", iPlotCheckAutoXY, "_@IUP_POSITION", "b", "[ ,Auto]", "", nullptr },
+  { "TITLEPOSXY", nullptr, "\t_@IUP_POSXY", "s", "[+/-]?/d+[,][+/-]?/d+", "{(pixels)}", nullptr },
+  { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr }
 };
 
 static iPlotAttribParam iplot_legend_attribs[] = {
-  { "LEGEND", NULL, "_@IUP_SHOW", "b", "", "", NULL },
-  { "LEGENDFONTSTYLE", NULL, "_@IUP_FONTSTYLE", "l", iplot_fontstyle_extra, "", iplot_fontstyle_list },
-  { "LEGENDFONTSIZE", NULL, "_@IUP_FONTSIZE", "i", "[1,,]", "", NULL },
+  { "LEGEND", nullptr, "_@IUP_SHOW", "b", "", "", nullptr },
+  { "LEGENDFONTSTYLE", nullptr, "_@IUP_FONTSTYLE", "l", iplot_fontstyle_extra, "", iplot_fontstyle_list },
+  { "LEGENDFONTSIZE", nullptr, "_@IUP_FONTSIZE", "i", "[1,,]", "", nullptr },
   { "LEGENDPOS", iPlotCheckLegendXY, "_@IUP_POSITION", "l", iplot_legendpos_extra, "", iplot_legendpos_list },
-  { "LEGENDPOSXY", NULL, "\t_@IUP_POSXY", "s", "[+/-]?/d+[,][+/-]?/d+", "{(pixels)}", NULL },
-  { NULL, NULL, NULL, NULL, NULL, NULL, NULL }
+  { "LEGENDPOSXY", nullptr, "\t_@IUP_POSXY", "s", "[+/-]?/d+[,][+/-]?/d+", "{(pixels)}", nullptr },
+  { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr }
 };
 
 static iPlotAttribParam iplot_legendbox_attribs[] = {
-  { "LEGENDBOX", NULL, "_@IUP_SHOW", "b", "", "", NULL },
-  { "LEGENDBOXCOLOR", NULL, "_@IUP_COLOR", "c", "", "", NULL },
-  { "LEGENDBOXBACKCOLOR", NULL, "_@IUP_COLOR", "c", "", "", NULL },
-  { "LEGENDBOXLINESTYLE", NULL, "_@IUP_LINESTYLE", "l", iplot_linestyle_extra, "", iplot_linestyle_list },
-  { "LEGENDBOXLINEWIDTH", NULL, "_@IUP_LINEWIDTH", "i", "[1,,]", "", NULL },
-  { NULL, NULL, NULL, NULL, NULL, NULL, NULL }
+  { "LEGENDBOX", nullptr, "_@IUP_SHOW", "b", "", "", nullptr },
+  { "LEGENDBOXCOLOR", nullptr, "_@IUP_COLOR", "c", "", "", nullptr },
+  { "LEGENDBOXBACKCOLOR", nullptr, "_@IUP_COLOR", "c", "", "", nullptr },
+  { "LEGENDBOXLINESTYLE", nullptr, "_@IUP_LINESTYLE", "l", iplot_linestyle_extra, "", iplot_linestyle_list },
+  { "LEGENDBOXLINEWIDTH", nullptr, "_@IUP_LINEWIDTH", "i", "[1,,]", "", nullptr },
+  { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr }
 };
 
 static iPlotAttribParam iplot_grid_attribs[] = {
-  { "GRID", NULL, "_@IUP_SHOW", "l", iplot_grid_extra, "", iplot_grid_list },
-  { "GRIDCOLOR", NULL, "_@IUP_COLOR", "c", "", "", NULL },
-  { "GRIDLINESTYLE", NULL, "_@IUP_LINESTYLE", "l", iplot_linestyle_extra, "", iplot_linestyle_list },
-  { "GRIDLINEWIDTH", NULL, "_@IUP_LINEWIDTH", "i", "[1,,]", "", NULL },
-  { NULL, NULL, NULL, NULL, NULL, NULL, NULL }
+  { "GRID", nullptr, "_@IUP_SHOW", "l", iplot_grid_extra, "", iplot_grid_list },
+  { "GRIDCOLOR", nullptr, "_@IUP_COLOR", "c", "", "", nullptr },
+  { "GRIDLINESTYLE", nullptr, "_@IUP_LINESTYLE", "l", iplot_linestyle_extra, "", iplot_linestyle_list },
+  { "GRIDLINEWIDTH", nullptr, "_@IUP_LINEWIDTH", "i", "[1,,]", "", nullptr },
+  { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr }
 };
 
 static iPlotAttribParam iplot_gridminor_attribs[] = {
-  { "GRIDMINOR", NULL, "_@IUP_SHOW", "l", iplot_grid_extra, "", iplot_grid_list },
-  { "GRIDMINORCOLOR", NULL, "_@IUP_COLOR", "c", "", "", NULL },
-  { "GRIDMINORLINESTYLE", NULL, "_@IUP_LINESTYLE", "l", iplot_linestyle_extra, "", iplot_linestyle_list },
-  { "GRIDMINORLINEWIDTH", NULL, "_@IUP_LINEWIDTH", "i", "[1,,]", "", NULL },
-  { NULL, NULL, NULL, NULL, NULL, NULL, NULL }
+  { "GRIDMINOR", nullptr, "_@IUP_SHOW", "l", iplot_grid_extra, "", iplot_grid_list },
+  { "GRIDMINORCOLOR", nullptr, "_@IUP_COLOR", "c", "", "", nullptr },
+  { "GRIDMINORLINESTYLE", nullptr, "_@IUP_LINESTYLE", "l", iplot_linestyle_extra, "", iplot_linestyle_list },
+  { "GRIDMINORLINEWIDTH", nullptr, "_@IUP_LINEWIDTH", "i", "[1,,]", "", nullptr },
+  { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr }
 };
 
 static iPlotAttribParam iplot_box_attribs[] = {
-  { "BOX", NULL, "_@IUP_SHOW", "b", "", "", NULL },
-  { "BOXCOLOR", NULL, "_@IUP_COLOR", "c", "", "", NULL },
-  { "BOXLINESTYLE", NULL, "_@IUP_LINESTYLE", "l", iplot_linestyle_extra, "", iplot_linestyle_list },
-  { "BOXLINEWIDTH", NULL, "_@IUP_LINEWIDTH", "i", "[1,,]", "", NULL },
-  { NULL, NULL, NULL, NULL, NULL, NULL, NULL }
+  { "BOX", nullptr, "_@IUP_SHOW", "b", "", "", nullptr },
+  { "BOXCOLOR", nullptr, "_@IUP_COLOR", "c", "", "", nullptr },
+  { "BOXLINESTYLE", nullptr, "_@IUP_LINESTYLE", "l", iplot_linestyle_extra, "", iplot_linestyle_list },
+  { "BOXLINEWIDTH", nullptr, "_@IUP_LINEWIDTH", "i", "[1,,]", "", nullptr },
+  { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr }
 };
 
 static iPlotAttribParam iplot_axisX_attribs[] = {
-  { "AXS_X", NULL, "_@IUP_SHOW", "b", "", "", NULL },
-  { "AXS_XARROW", NULL, "_@IUP_SHOWARROW", "b", "", "", NULL },
-  { "AXS_XCOLOR", NULL, "_@IUP_COLOR", "c", "", "", NULL },
-  { "AXS_XLINEWIDTH", NULL, "_@IUP_LINEWIDTH", "i", "[1,,]", "", NULL },
-  { "", NULL, "", "t", NULL, NULL, NULL },
-  { "AXS_XAUTOMIN", iPlotCheckAuto, "_@IUP_MIN", "b", "[ ,Auto]", "", NULL },
-  { "AXS_XMIN", NULL, "\t_@IUP_VALUE", "R", "", "", NULL },
-  { "AXS_XAUTOMAX", iPlotCheckAuto, "_@IUP_MAX", "b", "[ ,Auto]", "", NULL },
-  { "AXS_XMAX", NULL, "\t_@IUP_VALUE", "R", "", "", NULL },
-  { "AXS_XSCALE", NULL, "_@IUP_SCALE", "l", iplot_scale_extra, "", iplot_scale_list },
-  { "AXS_XREVERSE", NULL, "_@IUP_REVERSE", "b", "", "", NULL },
-  { "AXS_XPOSITION", NULL, "_@IUP_POSITION", "l", iplot_axispos_extra, "", iplot_axispos_list },
-  { "AXS_XREVERSETICKSLABEL", NULL, "_@IUP_REVERSETICKSLABEL", "b", "", "", NULL },
-  { NULL, NULL, NULL, NULL, NULL, NULL, NULL }
+  { "AXS_X", nullptr, "_@IUP_SHOW", "b", "", "", nullptr },
+  { "AXS_XARROW", nullptr, "_@IUP_SHOWARROW", "b", "", "", nullptr },
+  { "AXS_XCOLOR", nullptr, "_@IUP_COLOR", "c", "", "", nullptr },
+  { "AXS_XLINEWIDTH", nullptr, "_@IUP_LINEWIDTH", "i", "[1,,]", "", nullptr },
+  { "", nullptr, "", "t", nullptr, nullptr, nullptr },
+  { "AXS_XAUTOMIN", iPlotCheckAuto, "_@IUP_MIN", "b", "[ ,Auto]", "", nullptr },
+  { "AXS_XMIN", nullptr, "\t_@IUP_VALUE", "R", "", "", nullptr },
+  { "AXS_XAUTOMAX", iPlotCheckAuto, "_@IUP_MAX", "b", "[ ,Auto]", "", nullptr },
+  { "AXS_XMAX", nullptr, "\t_@IUP_VALUE", "R", "", "", nullptr },
+  { "AXS_XSCALE", nullptr, "_@IUP_SCALE", "l", iplot_scale_extra, "", iplot_scale_list },
+  { "AXS_XREVERSE", nullptr, "_@IUP_REVERSE", "b", "", "", nullptr },
+  { "AXS_XPOSITION", nullptr, "_@IUP_POSITION", "l", iplot_axispos_extra, "", iplot_axispos_list },
+  { "AXS_XREVERSETICKSLABEL", nullptr, "_@IUP_REVERSETICKSLABEL", "b", "", "", nullptr },
+  { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr }
 };
 
 static iPlotAttribParam iplot_axisY_attribs[] = {
-  { "AXS_Y", NULL, "_@IUP_SHOW", "b", "", "", NULL },
-  { "AXS_YARROW", NULL, "_@IUP_SHOWARROW", "b", "", "", NULL },
-  { "AXS_YCOLOR", NULL, "_@IUP_COLOR", "c", "", "", NULL },
-  { "AXS_YLINEWIDTH", NULL, "_@IUP_LINEWIDTH", "i", "[1,,]", "", NULL },
-  { "", NULL, "", "t", NULL, NULL, NULL },
-  { "AXS_YAUTOMIN", iPlotCheckAuto, "_@IUP_MIN", "b", "[ ,Auto]", "", NULL },
-  { "AXS_YMIN", NULL, "\t_@IUP_VALUE", "R", "", "", NULL },
-  { "AXS_YAUTOMAX", iPlotCheckAuto, "_@IUP_MAX", "b", "[ ,Auto]", "", NULL },
-  { "AXS_YMAX", NULL, "\t_@IUP_VALUE", "R", "", "", NULL },
-  { "AXS_YSCALE", NULL, "_@IUP_SCALE", "l", iplot_scale_extra, "", iplot_scale_list },
-  { "AXS_YREVERSE", NULL, "_@IUP_REVERSE", "b", "", "", NULL },
-  { "AXS_YPOSITION", NULL, "_@IUP_POSITION", "l", iplot_axispos_extra, "", iplot_axispos_list },
-  { "AXS_YREVERSETICKSLABEL", NULL, "_@IUP_REVERSETICKSLABEL", "b", "", "", NULL },
-  { NULL, NULL, NULL, NULL, NULL, NULL, NULL }
+  { "AXS_Y", nullptr, "_@IUP_SHOW", "b", "", "", nullptr },
+  { "AXS_YARROW", nullptr, "_@IUP_SHOWARROW", "b", "", "", nullptr },
+  { "AXS_YCOLOR", nullptr, "_@IUP_COLOR", "c", "", "", nullptr },
+  { "AXS_YLINEWIDTH", nullptr, "_@IUP_LINEWIDTH", "i", "[1,,]", "", nullptr },
+  { "", nullptr, "", "t", nullptr, nullptr, nullptr },
+  { "AXS_YAUTOMIN", iPlotCheckAuto, "_@IUP_MIN", "b", "[ ,Auto]", "", nullptr },
+  { "AXS_YMIN", nullptr, "\t_@IUP_VALUE", "R", "", "", nullptr },
+  { "AXS_YAUTOMAX", iPlotCheckAuto, "_@IUP_MAX", "b", "[ ,Auto]", "", nullptr },
+  { "AXS_YMAX", nullptr, "\t_@IUP_VALUE", "R", "", "", nullptr },
+  { "AXS_YSCALE", nullptr, "_@IUP_SCALE", "l", iplot_scale_extra, "", iplot_scale_list },
+  { "AXS_YREVERSE", nullptr, "_@IUP_REVERSE", "b", "", "", nullptr },
+  { "AXS_YPOSITION", nullptr, "_@IUP_POSITION", "l", iplot_axispos_extra, "", iplot_axispos_list },
+  { "AXS_YREVERSETICKSLABEL", nullptr, "_@IUP_REVERSETICKSLABEL", "b", "", "", nullptr },
+  { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr }
 };
 
 static iPlotAttribParam iplot_axisXlabel_attribs[] = {
-  { "AXS_XLABEL", NULL, "_@IUP_TEXT", "s", "", "", NULL },
-  { "AXS_XLABELCENTERED", NULL, "_@IUP_CENTERED", "b", "", "", NULL },
-  { "AXS_XLABELSPACING", NULL, "_@IUP_SPACING", "i", "[-1,,]", "", NULL },
-  { "AXS_XFONTSTYLE", NULL, "_@IUP_FONTSTYLE", "l", iplot_fontstyle_extra, "", iplot_fontstyle_list },
-  { "AXS_XFONTSIZE", NULL, "_@IUP_FONTSIZE", "i", "[1,,]", "", NULL },
-  { NULL, NULL, NULL, NULL, NULL, NULL, NULL }
+  { "AXS_XLABEL", nullptr, "_@IUP_TEXT", "s", "", "", nullptr },
+  { "AXS_XLABELCENTERED", nullptr, "_@IUP_CENTERED", "b", "", "", nullptr },
+  { "AXS_XLABELSPACING", nullptr, "_@IUP_SPACING", "i", "[-1,,]", "", nullptr },
+  { "AXS_XFONTSTYLE", nullptr, "_@IUP_FONTSTYLE", "l", iplot_fontstyle_extra, "", iplot_fontstyle_list },
+  { "AXS_XFONTSIZE", nullptr, "_@IUP_FONTSIZE", "i", "[1,,]", "", nullptr },
+  { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr }
 };
 
 static iPlotAttribParam iplot_axisYlabel_attribs[] = {
-  { "AXS_YLABEL", NULL, "_@IUP_TEXT", "s", "", "", NULL },
-  { "AXS_YLABELCENTERED", NULL, "_@IUP_CENTERED", "b", "", "", NULL },
-  { "AXS_YLABELSPACING", NULL, "_@IUP_SPACING", "i", "[-1,,]", "", NULL },
-  { "AXS_YFONTSTYLE", NULL, "_@IUP_FONTSTYLE", "l", iplot_fontstyle_extra, "", iplot_fontstyle_list },
-  { "AXS_YFONTSIZE", NULL, "_@IUP_FONTSIZE", "i", "[1,,]", "", NULL },
-  { NULL, NULL, NULL, NULL, NULL, NULL, NULL }
+  { "AXS_YLABEL", nullptr, "_@IUP_TEXT", "s", "", "", nullptr },
+  { "AXS_YLABELCENTERED", nullptr, "_@IUP_CENTERED", "b", "", "", nullptr },
+  { "AXS_YLABELSPACING", nullptr, "_@IUP_SPACING", "i", "[-1,,]", "", nullptr },
+  { "AXS_YFONTSTYLE", nullptr, "_@IUP_FONTSTYLE", "l", iplot_fontstyle_extra, "", iplot_fontstyle_list },
+  { "AXS_YFONTSIZE", nullptr, "_@IUP_FONTSIZE", "i", "[1,,]", "", nullptr },
+  { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr }
 };
 
 static iPlotAttribParam iplot_axisXticks_attribs[] = {
-  { "AXS_XTICK", NULL, "_@IUP_SHOW", "b", "", "", NULL },
-  { "AXS_XTICKAUTO", iPlotCheckAuto2, "_@IUP_SPACING", "b", "[ ,Auto]", "", NULL },
-  { "AXS_XTICKMAJORSPAN", NULL, "\t_@IUP_MAJORSPAN", "R", "", "", NULL },
-  { "AXS_XTICKMINORDIVISION", NULL, "\t_@IUP_MINORDIVISION", "i", "[1,,]", "", NULL },
-  { "AXS_XTICKSIZEAUTO", iPlotCheckAuto2, "_@IUP_SIZE", "b", "[ ,Auto]", "", NULL },
-  { "AXS_XTICKMAJORSIZE", NULL, "\t_@IUP_MAJOR", "i", "[1,,]", "", NULL },
-  { "AXS_XTICKMINORSIZE", NULL, "\t_@IUP_MINOR", "i", "[1,,]", "", NULL },
-  { NULL, NULL, NULL, NULL, NULL, NULL, NULL }
+  { "AXS_XTICK", nullptr, "_@IUP_SHOW", "b", "", "", nullptr },
+  { "AXS_XTICKAUTO", iPlotCheckAuto2, "_@IUP_SPACING", "b", "[ ,Auto]", "", nullptr },
+  { "AXS_XTICKMAJORSPAN", nullptr, "\t_@IUP_MAJORSPAN", "R", "", "", nullptr },
+  { "AXS_XTICKMINORDIVISION", nullptr, "\t_@IUP_MINORDIVISION", "i", "[1,,]", "", nullptr },
+  { "AXS_XTICKSIZEAUTO", iPlotCheckAuto2, "_@IUP_SIZE", "b", "[ ,Auto]", "", nullptr },
+  { "AXS_XTICKMAJORSIZE", nullptr, "\t_@IUP_MAJOR", "i", "[1,,]", "", nullptr },
+  { "AXS_XTICKMINORSIZE", nullptr, "\t_@IUP_MINOR", "i", "[1,,]", "", nullptr },
+  { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr }
 };
 
 static iPlotAttribParam iplot_axisYticks_attribs[] = {
-  { "AXS_YTICK", NULL, "_@IUP_SHOW", "b", "", "", NULL },
-  { "AXS_YTICKAUTO", iPlotCheckAuto2, "_@IUP_SPACING", "b", "[ ,Auto]", "", NULL },
-  { "AXS_YTICKMAJORSPAN", NULL, "\t_@IUP_MAJORSPAN", "R", "", "", NULL },
-  { "AXS_YTICKMINORDIVISION", NULL, "\t_@IUP_MINORDIVISION", "i", "[1,,]", "", NULL },
-  { "AXS_YTICKSIZEAUTO", iPlotCheckAuto2, "_@IUP_SIZE", "b", "[ ,Auto]", "", NULL },
-  { "AXS_YTICKMAJORSIZE", NULL, "\t_@IUP_MAJOR", "i", "[1,,]", "", NULL },
-  { "AXS_YTICKMINORSIZE", NULL, "\t_@IUP_MINOR", "i", "[1,,]", "", NULL },
-  { NULL, NULL, NULL, NULL, NULL, NULL, NULL }
+  { "AXS_YTICK", nullptr, "_@IUP_SHOW", "b", "", "", nullptr },
+  { "AXS_YTICKAUTO", iPlotCheckAuto2, "_@IUP_SPACING", "b", "[ ,Auto]", "", nullptr },
+  { "AXS_YTICKMAJORSPAN", nullptr, "\t_@IUP_MAJORSPAN", "R", "", "", nullptr },
+  { "AXS_YTICKMINORDIVISION", nullptr, "\t_@IUP_MINORDIVISION", "i", "[1,,]", "", nullptr },
+  { "AXS_YTICKSIZEAUTO", iPlotCheckAuto2, "_@IUP_SIZE", "b", "[ ,Auto]", "", nullptr },
+  { "AXS_YTICKMAJORSIZE", nullptr, "\t_@IUP_MAJOR", "i", "[1,,]", "", nullptr },
+  { "AXS_YTICKMINORSIZE", nullptr, "\t_@IUP_MINOR", "i", "[1,,]", "", nullptr },
+  { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr }
 };
 
 static iPlotAttribParam iplot_axisXticksnumber_attribs[] = {
-  { "AXS_XTICKNUMBER", NULL, "_@IUP_SHOW", "b", "", "", NULL },
-  { "AXS_XTICKROTATENUMBER", iPlotCheckBool, "_@IUP_ROTATE", "b", "", "", NULL },
-  { "AXS_XTICKROTATENUMBERANGLE", NULL, "\t_@IUP_ANGLE", "A", "", "", NULL },
-  { "AXS_XTICKFORMATAUTO", iPlotCheckAuto, "_@IUP_FORMAT", "b", "[ ,Auto]", "", NULL },
-  { "AXS_XTICKFORMATPRECISION", NULL, "\t_@IUP_DECIMALS", "i", "[0,,]", "", NULL },
-  { "AXS_XTICKFONTSTYLE", NULL, "_@IUP_FONTSTYLE", "l", iplot_fontstyle_extra, "", iplot_fontstyle_list },
-  { "AXS_XTICKFONTSIZE", NULL, "_@IUP_FONTSIZE", "i", "[1,,]", "", NULL },
-  { NULL, NULL, NULL, NULL, NULL, NULL, NULL }
+  { "AXS_XTICKNUMBER", nullptr, "_@IUP_SHOW", "b", "", "", nullptr },
+  { "AXS_XTICKROTATENUMBER", iPlotCheckBool, "_@IUP_ROTATE", "b", "", "", nullptr },
+  { "AXS_XTICKROTATENUMBERANGLE", nullptr, "\t_@IUP_ANGLE", "A", "", "", nullptr },
+  { "AXS_XTICKFORMATAUTO", iPlotCheckAuto, "_@IUP_FORMAT", "b", "[ ,Auto]", "", nullptr },
+  { "AXS_XTICKFORMATPRECISION", nullptr, "\t_@IUP_DECIMALS", "i", "[0,,]", "", nullptr },
+  { "AXS_XTICKFONTSTYLE", nullptr, "_@IUP_FONTSTYLE", "l", iplot_fontstyle_extra, "", iplot_fontstyle_list },
+  { "AXS_XTICKFONTSIZE", nullptr, "_@IUP_FONTSIZE", "i", "[1,,]", "", nullptr },
+  { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr }
 };
 
 static iPlotAttribParam iplot_axisYticksnumber_attribs[] = {
-  { "AXS_YTICKNUMBER", NULL, "_@IUP_SHOW", "b", "", "", NULL },
-  { "AXS_YTICKROTATENUMBER", iPlotCheckBool, "_@IUP_ROTATE", "b", "", "", NULL },
-  { "AXS_YTICKROTATENUMBERANGLE", NULL, "\t_@IUP_ANGLE", "A", "", "", NULL },
-  { "AXS_YTICKFORMATAUTO", iPlotCheckAuto, "_@IUP_FORMAT", "b", "[ ,Auto]", "", NULL },
-  { "AXS_YTICKFORMATPRECISION", NULL, "\t_@IUP_DECIMALS", "i", "[0,,]", "", NULL },
-  { "AXS_YTICKFONTSTYLE", NULL, "_@IUP_FONTSTYLE", "l", iplot_fontstyle_extra, "", iplot_fontstyle_list },
-  { "AXS_YTICKFONTSIZE", NULL, "_@IUP_FONTSIZE", "i", "[1,,]", "", NULL },
-  { NULL, NULL, NULL, NULL, NULL, NULL, NULL }
+  { "AXS_YTICKNUMBER", nullptr, "_@IUP_SHOW", "b", "", "", nullptr },
+  { "AXS_YTICKROTATENUMBER", iPlotCheckBool, "_@IUP_ROTATE", "b", "", "", nullptr },
+  { "AXS_YTICKROTATENUMBERANGLE", nullptr, "\t_@IUP_ANGLE", "A", "", "", nullptr },
+  { "AXS_YTICKFORMATAUTO", iPlotCheckAuto, "_@IUP_FORMAT", "b", "[ ,Auto]", "", nullptr },
+  { "AXS_YTICKFORMATPRECISION", nullptr, "\t_@IUP_DECIMALS", "i", "[0,,]", "", nullptr },
+  { "AXS_YTICKFONTSTYLE", nullptr, "_@IUP_FONTSTYLE", "l", iplot_fontstyle_extra, "", iplot_fontstyle_list },
+  { "AXS_YTICKFONTSIZE", nullptr, "_@IUP_FONTSIZE", "i", "[1,,]", "", nullptr },
+  { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr }
 };
 
 static void iPlotSetParamDouble(Ihandle* control, const char* name, double num)
 {
   char value[80];
   char format[30];
-  int prec = IupGetInt(NULL, "DEFAULTPRECISION");
+  int prec = IupGetInt(nullptr, "DEFAULTPRECISION");
   snprintf(format, sizeof(format), "%%.%df", prec);
   iupStrPrintfDoubleLocale(value, format, num, IupGetGlobal("DEFAULTDECIMALSYMBOL"));
 
@@ -589,12 +589,12 @@ static void iPlotSetParamDouble(Ihandle* control, const char* name, double num)
 
 static void iPlotSetParamValue(Ihandle* param, const char* value)
 {
-  Ihandle* control = (Ihandle*)IupGetAttribute(param, "CONTROL");
-  Ihandle* auxcontrol = (Ihandle*)IupGetAttribute(param, "AUXCONTROL");
+  auto* control = reinterpret_cast<Ihandle*>(IupGetAttribute(param, "CONTROL"));
+  auto* auxcontrol = reinterpret_cast<Ihandle*>(IupGetAttribute(param, "AUXCONTROL"));
 
   if (value && iupStrEqualNoCase(IupGetAttribute(param, "TYPE"), "LIST"))
   {
-    const char** list = (const char**)IupGetAttribute(param, "PLOT_ATTRIBLIST");
+    const char** list = reinterpret_cast<const char**>(IupGetAttribute(param, "PLOT_ATTRIBLIST"));
     int index = iPlotGetListIndex(list, value);
 
     IupSetInt(param, "VALUE", index);
@@ -622,12 +622,12 @@ static const char* iPlotGetParamValue(Ihandle* param)
 {
   char* value = IupGetAttribute(param, "VALUE");
   if (!value || value[0] == 0)
-    return NULL;  /* reset to default */
+    return nullptr;  /* reset to default */
   else
   {
     if (iupStrEqualNoCase(IupGetAttribute(param, "TYPE"), "LIST"))
     {
-      const char** list = (const char**)IupGetAttribute(param, "PLOT_ATTRIBLIST");
+      const char** list = reinterpret_cast<const char**>(IupGetAttribute(param, "PLOT_ATTRIBLIST"));
       int index;
       iupStrToInt(value, &index);
       return list[index];
@@ -648,7 +648,7 @@ static void iPlotPropertiesCheckUpdateXY(Ihandle* ih, Ihandle* parambox, Ihandle
     {
       /* if not active is automatically calculated every draw, must update param */
 
-      param = (Ihandle*)IupGetAttributeId(parambox, "PARAM", param_index + 1);
+      param = reinterpret_cast<Ihandle*>(IupGetAttributeId(parambox, "PARAM", param_index + 1));
 
       char* name = IupGetAttribute(param, "PLOT_ATTRIB");
       // From Plot
@@ -670,9 +670,9 @@ static void iPlotPropertiesCheckParam(Ihandle* parambox, Ihandle* param, int par
     if (count == 0) count = 1;
     while (count)
     {
-      param = (Ihandle*)IupGetAttributeId(parambox, "PARAM", param_index + count);
+      param = reinterpret_cast<Ihandle*>(IupGetAttributeId(parambox, "PARAM", param_index + count));
 
-      Ihandle* control = (Ihandle*)IupGetAttribute(param, "CONTROL");
+      auto* control = reinterpret_cast<Ihandle*>(IupGetAttribute(param, "CONTROL"));
       IupSetInt(IupGetParent(control), "ACTIVE", active);
 
       count--;
@@ -682,7 +682,7 @@ static void iPlotPropertiesCheckParam(Ihandle* parambox, Ihandle* param, int par
 
 static void iPlotPropertiesInit(Ihandle* parambox)
 {
-  Ihandle* ih = (Ihandle*)IupGetAttribute(parambox, "PLOT");
+  auto* ih = reinterpret_cast<Ihandle*>(IupGetAttribute(parambox, "PLOT"));
   Ihandle* zbox = IupGetParent(parambox);
 
   int plot_current = iupAttribGetInt(zbox, "_IUP_PLOT_CURRENT");
@@ -692,7 +692,7 @@ static void iPlotPropertiesInit(Ihandle* parambox)
   int i, count = IupGetInt(parambox, "PARAMCOUNT");
   for (i = 0; i < count; i++)
   {
-    Ihandle* param = (Ihandle*)IupGetAttributeId(parambox, "PARAM", i);
+    auto* param = reinterpret_cast<Ihandle*>(IupGetAttributeId(parambox, "PARAM", i));
     char* name = IupGetAttribute(param, "PLOT_ATTRIB");
 
     // From Plot
@@ -703,13 +703,13 @@ static void iPlotPropertiesInit(Ihandle* parambox)
     iPlotPropertiesCheckParam(parambox, param, i);
   }
 
-  IupSetAttribute(parambox, "PLOT_CHANGED", NULL);
-  IupSetAttribute(ih, "REDRAW", NULL);
+  IupSetAttribute(parambox, "PLOT_CHANGED", nullptr);
+  IupSetAttribute(ih, "REDRAW", nullptr);
 }
 
 static void iPlotPropertiesResetChanges(Ihandle* parambox)
 {
-  Ihandle* ih = (Ihandle*)IupGetAttribute(parambox, "PLOT");
+  auto* ih = reinterpret_cast<Ihandle*>(IupGetAttribute(parambox, "PLOT"));
   Ihandle* zbox = IupGetParent(parambox);
 
   int plot_current = iupAttribGetInt(zbox, "_IUP_PLOT_CURRENT");
@@ -719,7 +719,7 @@ static void iPlotPropertiesResetChanges(Ihandle* parambox)
   int i, count = IupGetInt(parambox, "PARAMCOUNT");
   for (i = count - 1; i >= 0; i--) // backwards to avoid dependencies
   {
-    Ihandle* param = (Ihandle*)IupGetAttributeId(parambox, "PARAM", i);
+    auto* param = reinterpret_cast<Ihandle*>(IupGetAttributeId(parambox, "PARAM", i));
     char* name = IupGetAttribute(param, "PLOT_ATTRIB");
 
     // From Original Value
@@ -735,8 +735,8 @@ static void iPlotPropertiesResetChanges(Ihandle* parambox)
     IupSetStrAttribute(ih, name, value);
   }
 
-  IupSetAttribute(parambox, "PLOT_CHANGED", NULL);
-  IupSetAttribute(ih, "REDRAW", NULL);
+  IupSetAttribute(parambox, "PLOT_CHANGED", nullptr);
+  IupSetAttribute(ih, "REDRAW", nullptr);
 
   Icallback cb = IupGetCallback(ih, "PROPERTIESCHANGED_CB");
   if (cb)
@@ -745,9 +745,9 @@ static void iPlotPropertiesResetChanges(Ihandle* parambox)
 
 static void iPlotPropertiesApplyChanges(Ihandle* parambox)
 {
-  Ihandle* ih = (Ihandle*)IupGetAttribute(parambox, "PLOT");
+  auto* ih = reinterpret_cast<Ihandle*>(IupGetAttribute(parambox, "PLOT"));
   Ihandle* zbox = IupGetParent(parambox);
-  IFnss validate_cb = (IFnss)IupGetCallback(ih, "PROPERTIESVALIDATE_CB");
+  auto validate_cb = reinterpret_cast<IFnss>(IupGetCallback(ih, "PROPERTIESVALIDATE_CB"));
 
   int plot_current = iupAttribGetInt(zbox, "_IUP_PLOT_CURRENT");
   // make sure we are changing the right plot
@@ -756,12 +756,12 @@ static void iPlotPropertiesApplyChanges(Ihandle* parambox)
   int i, count = IupGetInt(parambox, "PARAMCOUNT");
   for (i = count - 1; i >= 0; i--) // backwards to avoid dependencies
   {
-    Ihandle* param = (Ihandle*)IupGetAttributeId(parambox, "PARAM", i);
+    auto* param = reinterpret_cast<Ihandle*>(IupGetAttributeId(parambox, "PARAM", i));
     char* name = IupGetAttribute(param, "PLOT_ATTRIB");
 
     // From Param
     const char* value = iPlotGetParamValue(param);
-    if (validate_cb && validate_cb(ih, name, (char*)value) == IUP_IGNORE)
+    if (validate_cb && validate_cb(ih, name, const_cast<char*>(value)) == IUP_IGNORE)
       continue;
     else
     {
@@ -770,12 +770,12 @@ static void iPlotPropertiesApplyChanges(Ihandle* parambox)
     }
   }
 
-  IupSetAttribute(parambox, "PLOT_CHANGED", NULL);
-  IupSetAttribute(ih, "REDRAW", NULL);
+  IupSetAttribute(parambox, "PLOT_CHANGED", nullptr);
+  IupSetAttribute(ih, "REDRAW", nullptr);
 
   for (i = 0; i < count; i++)
   {
-    Ihandle* param = (Ihandle*)IupGetAttributeId(parambox, "PARAM", i);
+    auto* param = reinterpret_cast<Ihandle*>(IupGetAttributeId(parambox, "PARAM", i));
     iPlotPropertiesCheckUpdateXY(ih, parambox, param, i);
   }
 
@@ -806,7 +806,7 @@ static void iPlotPropertiesCheckChanges(Ihandle* parambox)
     if (ret == 1)
       iPlotPropertiesApplyChanges(parambox);
     else
-      IupSetAttribute(parambox, "PLOT_CHANGED", NULL);
+      IupSetAttribute(parambox, "PLOT_CHANGED", nullptr);
   }
 }
 
@@ -815,14 +815,14 @@ static int iPlotPropertiesTreeSelection_CB(Ihandle* ih_tree, int id, int status)
   if (status == 0)
   {
     Ihandle* zbox = IupGetBrother(ih_tree);
-    Ihandle* parambox = (Ihandle*)IupGetAttribute(zbox, "VALUE_HANDLE");
+    auto* parambox = reinterpret_cast<Ihandle*>(IupGetAttribute(zbox, "VALUE_HANDLE"));
     iPlotPropertiesCheckChanges(parambox);
   }
   if (status == 1)
   {
     Ihandle* zbox = IupGetBrother(ih_tree);
     IupSetInt(zbox, "VALUEPOS", id);
-    Ihandle* parambox = (Ihandle*)IupGetAttribute(zbox, "VALUE_HANDLE");
+    auto* parambox = reinterpret_cast<Ihandle*>(IupGetAttribute(zbox, "VALUE_HANDLE"));
     iPlotPropertiesInit(parambox);
   }
   return IUP_DEFAULT;
@@ -848,7 +848,7 @@ static int iPlotPropertiesParam_CB(Ihandle* parambox, int param_index, void*)
     return 0;
   }
 
-  Ihandle* param = (Ihandle*)IupGetAttributeId(parambox, "PARAM", param_index);
+  auto* param = reinterpret_cast<Ihandle*>(IupGetAttributeId(parambox, "PARAM", param_index));
   iPlotPropertiesCheckParam(parambox, param, param_index);
 
   IupSetAttribute(parambox, "PLOT_CHANGED", "1");
@@ -858,7 +858,7 @@ static int iPlotPropertiesParam_CB(Ihandle* parambox, int param_index, void*)
 static int iPlotPropertiesClose_CB(Ihandle* dlg)
 {
   Ihandle* zbox = IupGetChild(dlg, 1);
-  Ihandle* parambox = (Ihandle*)IupGetAttribute(zbox, "VALUE_HANDLE");
+  auto* parambox = reinterpret_cast<Ihandle*>(IupGetAttribute(zbox, "VALUE_HANDLE"));
   iPlotPropertiesCheckChanges(parambox);
   return IUP_CLOSE;
 }
@@ -877,7 +877,7 @@ static void iPlotPropertiesAddParamBox(Ihandle* ih, Ihandle* zbox, iPlotAttribPa
     if (attribs[count].name[0] != 0)
     {
       IupSetStrAttribute(params[count], "PLOT_ATTRIB", attribs[count].name);
-      IupSetAttribute(params[count], "PLOT_ATTRIBLIST", (char*)(attribs[count].list));
+      IupSetAttribute(params[count], "PLOT_ATTRIBLIST", reinterpret_cast<char*>(attribs[count].list));
       IupSetCallback(params[count], "PLOT_ATTRIBCHECK_CB", attribs[count].check);
 
       // From Plot
@@ -892,24 +892,24 @@ static void iPlotPropertiesAddParamBox(Ihandle* ih, Ihandle* zbox, iPlotAttribPa
 
   params[count] = IupParam("%u[,,_@IUP_CLOSE]");
   count++;
-  params[count] = NULL;
+  params[count] = nullptr;
 
   Ihandle* parambox = IupParamBoxv(params);
-  IupSetCallback(parambox, "PARAM_CB", (Icallback)iPlotPropertiesParam_CB);
+  IupSetCallback(parambox, "PARAM_CB", reinterpret_cast<Icallback>(iPlotPropertiesParam_CB));
 
   IupAppend(zbox, parambox);
 
   count = IupGetInt(parambox, "PARAMCOUNT");
   for (int i = 0; i < count; i++)
   {
-    Ihandle* param = (Ihandle*)IupGetAttributeId(parambox, "PARAM", i);
+    auto* param = reinterpret_cast<Ihandle*>(IupGetAttributeId(parambox, "PARAM", i));
     iPlotPropertiesCheckParam(parambox, param, i);
   }
 }
 
 static int iPlotProperties_CB(Ihandle* ih_item)
 {
-  Ihandle* ih = (Ihandle*)IupGetAttribute(ih_item, "PLOT");
+  auto* ih = reinterpret_cast<Ihandle*>(IupGetAttribute(ih_item, "PLOT"));
   Ihandle* parent = IupGetDialog(ih);
   Ihandle* ih_menu = IupGetParent(ih_item);
   int plot_current = iupAttribGetInt(ih_menu, "_IUP_PLOT_CURRENT");
@@ -917,12 +917,12 @@ static int iPlotProperties_CB(Ihandle* ih_item)
 
   Ihandle* tree = IupTree();
   IupSetAttribute(tree, "ADDROOT", "NO");
-  IupSetCallback(tree, "SELECTION_CB", (Icallback)iPlotPropertiesTreeSelection_CB);
+  IupSetCallback(tree, "SELECTION_CB", reinterpret_cast<Icallback>(iPlotPropertiesTreeSelection_CB));
   IupSetAttribute(tree, "EXPAND", "VERTICAL");
   IupSetAttribute(tree, "SIZE", "100x140");
   IupSetAttribute(tree, "IMAGELEAF", "IMGPAPER");
 
-  Ihandle* zbox = IupZbox(NULL);
+  Ihandle* zbox = IupZbox(nullptr);
   iPlotPropertiesAddParamBox(ih, zbox, iplot_background_attribs);    /* 0 */
   iPlotPropertiesAddParamBox(ih, zbox, iplot_title_attribs);         /* 1 */
   iPlotPropertiesAddParamBox(ih, zbox, iplot_legend_attribs);        /* 2 */
@@ -939,14 +939,14 @@ static int iPlotProperties_CB(Ihandle* ih_item)
   iPlotPropertiesAddParamBox(ih, zbox, iplot_axisYticks_attribs);        /* 13 */
   iPlotPropertiesAddParamBox(ih, zbox, iplot_axisYticksnumber_attribs);  /* 14 */
 
-  IupSetAttribute(zbox, "PLOT", (char*)ih);
+  IupSetAttribute(zbox, "PLOT", reinterpret_cast<char*>(ih));
   iupAttribSetInt(zbox, "_IUP_PLOT_CURRENT", plot_current);
 
   Ihandle* dlg = IupDialog(IupHbox(tree, zbox, NULL));
   IupSetAttributeHandle(dlg, "PARENTDIALOG", parent);
   IupSetStrAttribute(dlg, "TITLE", "_@IUP_PROPERTIESDLG");
   IupSetCallback(dlg, "K_ESC", iPlotPropertiesClose_CB);
-  IupSetCallback(dlg, "CLOSE_CB", (Icallback)iPlotPropertiesClose_CB);
+  IupSetCallback(dlg, "CLOSE_CB", static_cast<Icallback>(iPlotPropertiesClose_CB));
   IupSetAttribute(dlg, "MINBOX", "NO");
   IupSetAttribute(dlg, "MAXBOX", "NO");
 
@@ -975,7 +975,7 @@ static int iPlotProperties_CB(Ihandle* ih_item)
 
   IupPopup(dlg, IUP_CENTERPARENT, IUP_CENTERPARENT);
 
-  IupSetAttribute(ih, "REDRAW", NULL);
+  IupSetAttribute(ih, "REDRAW", nullptr);
 
   IupDestroy(dlg);
 
@@ -986,19 +986,19 @@ static int iPlotDataSetPropertiesParam_cb(Ihandle* param_dialog, int param_index
 {
   if (param_index == IUP_GETPARAM_MAP)
   {
-    Ihandle* ih = (Ihandle*)user_data;
+    auto* ih = static_cast<Ihandle*>(user_data);
     IupSetAttributeHandle(param_dialog, "PARENTDIALOG", IupGetDialog(ih));
   }
   else if (param_index == IUP_GETPARAM_INIT)
   {
-    Ihandle* param = (Ihandle*)IupGetAttributeId(param_dialog, "PARAM", 0);
+    auto* param = reinterpret_cast<Ihandle*>(IupGetAttributeId(param_dialog, "PARAM", 0));
     if (param)
       IupSetInt(param, "MAXSTR", IUP_PLOT_DSNAME_MAXSTR);
   }
   else if (param_index == IUP_GETPARAM_BUTTON1)
   {
-    Ihandle* ih = (Ihandle*)user_data;
-    IFnni cb = (IFnni)IupGetCallback(ih, "DSPROPERTIESVALIDATE_CB");
+    auto* ih = static_cast<Ihandle*>(user_data);
+    auto cb = reinterpret_cast<IFnni>(IupGetCallback(ih, "DSPROPERTIESVALIDATE_CB"));
     int ds = IupGetInt(ih, "_IUP_DS");
     if (cb && cb(ih, param_dialog, ds) == IUP_IGNORE)
       return 0;
@@ -1009,7 +1009,7 @@ static int iPlotDataSetPropertiesParam_cb(Ihandle* param_dialog, int param_index
 
 static int iPlotDataSetProperties_CB(Ihandle* ih_item)
 {
-  Ihandle* ih = (Ihandle*)IupGetAttribute(ih_item, "PLOT");
+  auto* ih = reinterpret_cast<Ihandle*>(IupGetAttribute(ih_item, "PLOT"));
   Ihandle* ih_menu = IupGetParent(ih_item);
   int plot_current = iupAttribGetInt(ih_menu, "_IUP_PLOT_CURRENT");
   int ds = iupAttribGetInt(ih_menu, "_IUP_DS");
@@ -1027,7 +1027,7 @@ static int iPlotDataSetProperties_CB(Ihandle* ih_item)
   iupStrCopyN(color, sizeof(color), ds_color);
 
   const char* ds_mode = IupGetAttribute(ih, "DS_MODE");
-  const char* mode_list[] = { "LINE", "MARK", "MARKLINE", "AREA", "BAR", "STEM", "MARKSTEM", "HORIZONTALBAR", "MULTIBAR", "STEP", "ERRORBAR", "PIE", NULL };
+  const char* mode_list[] = { "LINE", "MARK", "MARKLINE", "AREA", "BAR", "STEM", "MARKSTEM", "HORIZONTALBAR", "MULTIBAR", "STEP", "ERRORBAR", "PIE", nullptr };
   int mode = iPlotGetListIndex(mode_list, ds_mode);
 
   const char* ds_linestyle = IupGetAttribute(ih, "DS_LINESTYLE");
@@ -1036,7 +1036,7 @@ static int iPlotDataSetProperties_CB(Ihandle* ih_item)
   int linewidth = IupGetInt(ih, "DS_LINEWIDTH");
 
   const char* ds_markstyle = IupGetAttribute(ih, "DS_MARKSTYLE");
-  const char* markstyle_list[] = { "PLUS", "STAR", "CIRCLE", "X", "BOX", "DIAMOND", "HOLLOW_CIRCLE", "HOLLOW_BOX", "HOLLOW_DIAMOND", NULL };
+  const char* markstyle_list[] = { "PLUS", "STAR", "CIRCLE", "X", "BOX", "DIAMOND", "HOLLOW_CIRCLE", "HOLLOW_BOX", "HOLLOW_DIAMOND", nullptr };
   int markstyle = iPlotGetListIndex(markstyle_list, ds_markstyle);
 
   int marksize = IupGetInt(ih, "DS_MARKSIZE");
@@ -1056,7 +1056,7 @@ static int iPlotDataSetProperties_CB(Ihandle* ih_item)
   int pieContour = IupGetInt(ih, "DS_PIECONTOUR");
   double pieHole = IupGetDouble(ih, "DS_PIEHOLE");
   const char* pieSliceLabel = IupGetAttribute(ih, "DS_PIESLICELABEL");
-  const char* pieSliceLabel_list[] = { "NONE", "X", "Y", "PERCENT", NULL };
+  const char* pieSliceLabel_list[] = { "NONE", "X", "Y", "PERCENT", nullptr };
   int pieSliceLabel_index = iPlotGetListIndex(pieSliceLabel_list, pieSliceLabel);
   double pieSliceLabelPos = IupGetDouble(ih, "DS_PIESLICELABELPOS");
 
@@ -1090,7 +1090,7 @@ static int iPlotDataSetProperties_CB(Ihandle* ih_item)
   // make sure we are changing the right plot
   IupSetInt(ih, "PLOT_CURRENT", plot_current);
   IupSetInt(ih, "CURRENT", ds);
-  IupSetAttribute(ih, "_IUP_DS", NULL);
+  IupSetAttribute(ih, "_IUP_DS", nullptr);
 
   IupSetStrAttribute(ih, "DS_NAME", name);
   IupSetStrAttribute(ih, "DS_COLOR", color);
@@ -1125,9 +1125,9 @@ static int iPlotDataSetProperties_CB(Ihandle* ih_item)
   IupSetStrAttribute(ih, "DS_PIESLICELABEL", pieSliceLabel);
   IupSetDouble(ih, "DS_PIESLICELABELPOS", pieSliceLabelPos);
 
-  IupSetAttribute(ih, "REDRAW", NULL);
+  IupSetAttribute(ih, "REDRAW", nullptr);
 
-  IFni cb = (IFni)IupGetCallback(ih, "DSPROPERTIESCHANGED_CB");
+  IFni cb = reinterpret_cast<IFni>(IupGetCallback(ih, "DSPROPERTIESCHANGED_CB"));
   if (cb)
     cb(ih, ds);
 
@@ -1147,7 +1147,7 @@ static Ihandle* iPlotCreateMenuContext(Ihandle* ih, int x, int y)
 
   if (IupGetInt(ih, "MENUITEMPROPERTIES") || IupGetInt(ih, "MENUITEMVALUES"))
   {
-    Ihandle* itemProp = NULL, *itemVal = NULL;
+    Ihandle* itemProp = nullptr, *itemVal = nullptr;
     IupAppend(menu, IupMenuSeparator());
     if (iupRegisterFindClass("matrixex") && !iupStrEqualNoCase(iupAttribGet(ih, "MENUITEMVALUES"), "HIDE"))
       IupAppend(menu, IupSetCallbacks(itemVal = IupMenuItem("_@IUP_DATASETVALUESDLG"), "ACTION", iPlotDataSetValues_CB, NULL));
@@ -1162,8 +1162,8 @@ static Ihandle* iPlotCreateMenuContext(Ihandle* ih, int x, int y)
     double rx1, ry1, rx2, ry2;
     const char* ds_name;
     const char* strX;
-    if (ih->data->current_plot->FindDataSetSample((double)x, (double)y, ds, ds_name, sample1, rx1, ry1, strX) ||
-        ((ih->data->current_plot->mHighlightMode == IUP_PLOT_HIGHLIGHT_CURVE || ih->data->current_plot->mHighlightMode == IUP_PLOT_HIGHLIGHT_BOTH) && ih->data->current_plot->FindDataSetSegment((double)x, (double)y, ds, ds_name, sample1, rx1, ry1, sample2, rx2, ry2)))
+    if (ih->data->current_plot->FindDataSetSample(static_cast<double>(x), static_cast<double>(y), ds, ds_name, sample1, rx1, ry1, strX) ||
+        ((ih->data->current_plot->mHighlightMode == IUP_PLOT_HIGHLIGHT_CURVE || ih->data->current_plot->mHighlightMode == IUP_PLOT_HIGHLIGHT_BOTH) && ih->data->current_plot->FindDataSetSegment(static_cast<double>(x), static_cast<double>(y), ds, ds_name, sample1, rx1, ry1, sample2, rx2, ry2)))
     {
       // save plot info because it may have changed by the time the callback is called
       iupAttribSetInt(menu, "_IUP_DS", ds);
@@ -1181,7 +1181,7 @@ static Ihandle* iPlotCreateMenuContext(Ihandle* ih, int x, int y)
     iupAttribSetInt(menu, "_IUP_PLOT_CURRENT", ih->data->current_plot_index);
   }
 
-  IupSetAttribute(menu, "PLOT", (char*)ih);
+  IupSetAttribute(menu, "PLOT", reinterpret_cast<char*>(ih));
 
   return menu;
 }
@@ -1191,13 +1191,13 @@ void iupPlotShowMenuContext(Ihandle* ih, int screen_x, int screen_y, int x, int 
   Ihandle* menu = iPlotCreateMenuContext(ih, x, y);
   IFnnii menucontext_cb;
 
-  menucontext_cb = (IFnnii)IupGetCallback(ih, "MENUCONTEXT_CB");
+  menucontext_cb = reinterpret_cast<IFnnii>(IupGetCallback(ih, "MENUCONTEXT_CB"));
   if (menucontext_cb)
     menucontext_cb(ih, menu, x, y);
 
   IupPopup(menu, screen_x, screen_y);
 
-  menucontext_cb = (IFnnii)IupGetCallback(ih, "MENUCONTEXTCLOSE_CB");
+  menucontext_cb = reinterpret_cast<IFnnii>(IupGetCallback(ih, "MENUCONTEXTCLOSE_CB"));
   if (menucontext_cb)
     menucontext_cb(ih, menu, x, y);
 
@@ -1591,7 +1591,7 @@ static int iPlotButton_CB(Ihandle* ih, int button, int press, int x, int y, char
   x -= ih->data->current_plot->mViewport.mX;
   y = ih->data->current_plot->mViewport.mHeight - 1 - (y - ih->data->current_plot->mViewport.mY);
 
-  IFniidds cb = (IFniidds)IupGetCallback(ih, "PLOTBUTTON_CB");
+  auto cb = reinterpret_cast<IFniidds>(IupGetCallback(ih, "PLOTBUTTON_CB"));
   if (cb)
   {
     double rx, ry;
@@ -1689,11 +1689,11 @@ static int iPlotButton_CB(Ihandle* ih, int button, int press, int x, int y, char
       double rx1, ry1, rx2, ry2;
       const char* ds_name;
       const char* strX;
-      IFniiddi clicksample_cb = (IFniiddi)IupGetCallback(ih, "CLICKSAMPLE_CB");
-      IFniiddiddi clicksegment_cb = (IFniiddiddi)IupGetCallback(ih, "CLICKSEGMENT_CB");
-      if (clicksample_cb && ih->data->current_plot->FindDataSetSample((double)x, (double)y, ds, ds_name, sample1, rx1, ry1, strX))
+      auto clicksample_cb = reinterpret_cast<IFniiddi>(IupGetCallback(ih, "CLICKSAMPLE_CB"));
+      auto clicksegment_cb = reinterpret_cast<IFniiddiddi>(IupGetCallback(ih, "CLICKSEGMENT_CB"));
+      if (clicksample_cb && ih->data->current_plot->FindDataSetSample(static_cast<double>(x), static_cast<double>(y), ds, ds_name, sample1, rx1, ry1, strX))
         clicksample_cb(ih, ds, sample1, rx1, ry1, button);
-      else if (clicksegment_cb && ih->data->current_plot->FindDataSetSegment((double)x, (double)y, ds, ds_name, sample1, rx1, ry1, sample2, rx2, ry2))
+      else if (clicksegment_cb && ih->data->current_plot->FindDataSetSegment(static_cast<double>(x), static_cast<double>(y), ds, ds_name, sample1, rx1, ry1, sample2, rx2, ry2))
         clicksegment_cb(ih, ds, sample1, rx1, ry1, sample2, rx2, ry2, button);
     }
   }
@@ -1704,7 +1704,7 @@ static int iPlotButton_CB(Ihandle* ih, int button, int press, int x, int y, char
 static int iPlotMotion_CB(Ihandle* ih, int x, int y, char* status)
 {
   if (iupStrEqualNoCase(IupGetAttribute(ih, "CURSOR"), "HAND"))
-    IupSetAttribute(ih, "CURSOR", NULL);
+    IupSetAttribute(ih, "CURSOR", nullptr);
 
   int index = iPlotFindPlot(ih, x, y, status);
   if (index < 0)
@@ -1720,7 +1720,7 @@ static int iPlotMotion_CB(Ihandle* ih, int x, int y, char* status)
 
   //////////// PLOTMOTION_CB
 
-  IFndds cb = (IFndds)IupGetCallback(ih, "PLOTMOTION_CB");
+  auto cb = reinterpret_cast<IFndds>(IupGetCallback(ih, "PLOTMOTION_CB"));
   if (cb)
   {
     double rx, ry;
@@ -1794,7 +1794,7 @@ static int iPlotMotion_CB(Ihandle* ih, int x, int y, char* status)
   const char* ds_name;
   const char* strX;
   int prev_cursor_plot = ih->data->last_cursor_plot;
-  if (ih->data->current_plot->FindDataSetSample((double)x, (double)y, ds, ds_name, sample, rx, ry, strX))
+  if (ih->data->current_plot->FindDataSetSample(static_cast<double>(x), static_cast<double>(y), ds, ds_name, sample, rx, ry, strX))
   {
     found = true;
 
@@ -1828,7 +1828,7 @@ static int iPlotMotion_CB(Ihandle* ih, int x, int y, char* status)
   {
     if (ih->data->current_plot->mHighlightMode == IUP_PLOT_HIGHLIGHT_CURVE || ih->data->current_plot->mHighlightMode == IUP_PLOT_HIGHLIGHT_BOTH)
     {
-      if (ih->data->current_plot->FindDataSetSegment((double)x, (double)y, ds, ds_name, sample1, rx1, ry1, sample2, rx2, ry2))
+      if (ih->data->current_plot->FindDataSetSegment(static_cast<double>(x), static_cast<double>(y), ds, ds_name, sample1, rx1, ry1, sample2, rx2, ry2))
       {
         found = true;
 
@@ -1860,7 +1860,7 @@ static int iPlotMotion_CB(Ihandle* ih, int x, int y, char* status)
       ih->data->last_cursor_ds = -1;
       ih->data->last_cursor_sample = -1;
 
-      IupSetAttribute(ih, "TIP", NULL);
+      IupSetAttribute(ih, "TIP", nullptr);
       IupSetAttribute(ih, "TIPVISIBLE", "Yes");
     }
     else if (changed)
@@ -2050,12 +2050,11 @@ IUPPLOT_API void IupPlotBegin(Ihandle* ih, int strXdata)
       !IupClassMatch(ih, "plot"))
       return;
 
-  iupPlotDataSet* theDataSet = (iupPlotDataSet*)iupAttribGet(ih, "_IUP_PLOT_DATASET");
-  if (theDataSet)
-    delete theDataSet;
+  auto* theDataSet = reinterpret_cast<iupPlotDataSet*>(iupAttribGet(ih, "_IUP_PLOT_DATASET"));
+  delete theDataSet;
 
   theDataSet = new iupPlotDataSet(strXdata ? true : false);
-  iupAttribSet(ih, "_IUP_PLOT_DATASET", (char*)theDataSet);
+  iupAttribSet(ih, "_IUP_PLOT_DATASET", reinterpret_cast<char*>(theDataSet));
 }
 
 IUPPLOT_API void IupPlotAdd(Ihandle* ih, double x, double y)
@@ -2068,7 +2067,7 @@ IUPPLOT_API void IupPlotAdd(Ihandle* ih, double x, double y)
       !IupClassMatch(ih, "plot"))
       return;
 
-  iupPlotDataSet* theDataSet = (iupPlotDataSet*)iupAttribGet(ih, "_IUP_PLOT_DATASET");
+  auto* theDataSet = reinterpret_cast<iupPlotDataSet*>(iupAttribGet(ih, "_IUP_PLOT_DATASET"));
   if (!theDataSet)
     return;
 
@@ -2085,7 +2084,7 @@ IUPPLOT_API void IupPlotAddStr(Ihandle* ih, const char* x, double y)
       !IupClassMatch(ih, "plot"))
       return;
 
-  iupPlotDataSet* theDataSet = (iupPlotDataSet*)iupAttribGet(ih, "_IUP_PLOT_DATASET");
+  auto* theDataSet = reinterpret_cast<iupPlotDataSet*>(iupAttribGet(ih, "_IUP_PLOT_DATASET"));
   if (!theDataSet)
     return;
 
@@ -2102,7 +2101,7 @@ IUPPLOT_API void IupPlotAddSegment(Ihandle* ih, double x, double y)
       !IupClassMatch(ih, "plot"))
       return;
 
-  iupPlotDataSet* theDataSet = (iupPlotDataSet*)iupAttribGet(ih, "_IUP_PLOT_DATASET");
+  auto* theDataSet = reinterpret_cast<iupPlotDataSet*>(iupAttribGet(ih, "_IUP_PLOT_DATASET"));
   if (!theDataSet)
     return;
 
@@ -2119,13 +2118,13 @@ IUPPLOT_API int IupPlotEnd(Ihandle* ih)
       !IupClassMatch(ih, "plot"))
       return -1;
 
-  iupPlotDataSet* theDataSet = (iupPlotDataSet*)iupAttribGet(ih, "_IUP_PLOT_DATASET");
+  auto* theDataSet = reinterpret_cast<iupPlotDataSet*>(iupAttribGet(ih, "_IUP_PLOT_DATASET"));
   if (!theDataSet)
     return -1;
 
   ih->data->current_plot->AddDataSet(theDataSet);
 
-  iupAttribSet(ih, "_IUP_PLOT_DATASET", NULL);
+  iupAttribSet(ih, "_IUP_PLOT_DATASET", nullptr);
 
   ih->data->current_plot->mRedraw = true;
   return ih->data->current_plot->mCurrentDataSet;
@@ -2567,7 +2566,7 @@ static int iPlotLoadDataFile(Ihandle* ih, IlineFile* line_file, int strXdata)
 
       for (ds = 0; ds < ds_count - 1; ds++)
       {
-        iupPlotDataSet* theDataSet = new iupPlotDataSet(strXdata ? true : false);
+        auto* theDataSet = new iupPlotDataSet(strXdata ? true : false);
         ih->data->current_plot->AddDataSet(theDataSet);
       }
 
@@ -2685,9 +2684,8 @@ static void iPlotDestroyMethod(Ihandle* ih)
   for (int p = 0; p < ih->data->plot_list_count; p++)
     delete ih->data->plot_list[p];
 
-  iupPlotDataSet* theDataSet = (iupPlotDataSet*)iupAttribGet(ih, "_IUP_PLOT_DATASET");
-  if (theDataSet)
-    delete theDataSet;
+  auto* theDataSet = reinterpret_cast<iupPlotDataSet*>(iupAttribGet(ih, "_IUP_PLOT_DATASET"));
+  delete theDataSet;
 }
 
 static int iPlotCreateMethod(Ihandle* ih, void** params)
@@ -2709,12 +2707,12 @@ static int iPlotCreateMethod(Ihandle* ih, void** params)
   ih->data->current_plot = ih->data->plot_list[ih->data->current_plot_index];
 
   /* IupCanvas callbacks */
-  IupSetCallback(ih, "ACTION", (Icallback)iPlotAction_CB);
-  IupSetCallback(ih, "RESIZE_CB", (Icallback)iPlotResize_CB);
-  IupSetCallback(ih, "BUTTON_CB", (Icallback)iPlotButton_CB);
-  IupSetCallback(ih, "MOTION_CB", (Icallback)iPlotMotion_CB);
-  IupSetCallback(ih, "WHEEL_CB", (Icallback)iPlotWheel_CB);
-  IupSetCallback(ih, "KEYPRESS_CB", (Icallback)iPlotKeyPress_CB);
+  IupSetCallback(ih, "ACTION", static_cast<Icallback>(iPlotAction_CB));
+  IupSetCallback(ih, "RESIZE_CB", reinterpret_cast<Icallback>(iPlotResize_CB));
+  IupSetCallback(ih, "BUTTON_CB", reinterpret_cast<Icallback>(iPlotButton_CB));
+  IupSetCallback(ih, "MOTION_CB", reinterpret_cast<Icallback>(iPlotMotion_CB));
+  IupSetCallback(ih, "WHEEL_CB", reinterpret_cast<Icallback>(iPlotWheel_CB));
+  IupSetCallback(ih, "KEYPRESS_CB", reinterpret_cast<Icallback>(iPlotKeyPress_CB));
 
   return IUP_NOERROR;
 }
@@ -2732,7 +2730,7 @@ static int iPlotCreateMethod(Ihandle* ih, void** params)
 
 static void iPlotSetClassUpdate(Iclass* ic)
 {
-  Ihandle* lng = NULL;
+  Ihandle* lng = nullptr;
 
   (void)ic;
 
@@ -2784,12 +2782,12 @@ static void iPlotSetClassUpdate(Iclass* ic)
   }
 }
 
-static Iclass* iPlotNewClass(void)
+static Iclass* iPlotNewClass()
 {
   Iclass* ic = iupClassNew(iupRegisterFindClass("canvas"));
 
-  ic->name = (char*)"plot";
-  ic->format = NULL;  /* none */
+  ic->name = const_cast<char*>("plot");
+  ic->format = nullptr;  /* none */
   ic->nativetype = IUP_TYPECANVAS;
   ic->childtype = IUP_CHILDNONE;
   ic->is_interactive = 1;
@@ -2827,7 +2825,7 @@ static Iclass* iPlotNewClass(void)
 
   iupPlotRegisterAttributes(ic);
 
-  iupClassRegisterAttribute(ic, "CLASSUPDATE", NULL, (IattribSetFunc)iPlotSetClassUpdate, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CLASSUPDATE", nullptr, reinterpret_cast<IattribSetFunc>(iPlotSetClassUpdate), nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
 
   iPlotSetClassUpdate(ic);
 

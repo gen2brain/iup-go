@@ -9,7 +9,7 @@
 
 const double kMajorTickXInitialFac = 2.0;
 const double kMajorTickYInitialFac = 3.0;
-const double kRangeVerySmall = (double)1.0e-3;
+const double kRangeVerySmall = 1.0e-3;
 
 void iupPlot::CalculateTitlePos()
 {
@@ -28,7 +28,7 @@ bool iupPlot::CheckInsideTitle(Ihandle* ih, int x, int y) const
     SetTitleFont(ih);
 
     int w, h;
-    iupDrawGetTextSize(ih, mTitle.GetText(), (int)strlen(mTitle.GetText()), &w, &h, 0);
+    iupDrawGetTextSize(ih, mTitle.GetText(), static_cast<int>(strlen(mTitle.GetText())), &w, &h, 0);
 
     int xmin = mTitle.mPosX - w / 2;
     int xmax = mTitle.mPosX + w / 2;
@@ -60,7 +60,7 @@ int iupPlot::CalcTitleVerticalMargin(Ihandle* ih) const
   SetTitleFont(ih);
 
   int theTextHeight;
-  iupDrawGetTextSize(ih, mTitle.GetText(), (int)strlen(mTitle.GetText()), NULL, &theTextHeight, 0);
+  iupDrawGetTextSize(ih, mTitle.GetText(), static_cast<int>(strlen(mTitle.GetText())), nullptr, &theTextHeight, 0);
   return theTextHeight + 5 + theTextHeight / 2;
 }
 
@@ -114,7 +114,7 @@ int iupPlot::CalcXTickVerticalMargin(Ihandle* ih) const
   {
     int theXFontHeight;
     SetFont(ih, mAxisX.mFontStyle, mAxisX.mFontSize);
-    iupdrvFontGetFontDim(IupGetAttribute(ih, "DRAWFONT"), NULL, &theXFontHeight, NULL, NULL);
+    iupdrvFontGetFontDim(IupGetAttribute(ih, "DRAWFONT"), nullptr, &theXFontHeight, nullptr, nullptr);
 
     theXTickVerticalMargin += theXFontHeight + (mAxisX.mLabelSpacing == -1 ? theXFontHeight / 10 : mAxisX.mLabelSpacing);
   }
@@ -138,7 +138,7 @@ int iupPlot::CalcYTickHorizontalMargin(Ihandle* ih) const
   {
     int theYFontHeight;
     SetFont(ih, mAxisY.mFontStyle, mAxisY.mFontSize);
-    iupdrvFontGetFontDim(IupGetAttribute(ih, "DRAWFONT"), NULL, &theYFontHeight, NULL, NULL);
+    iupdrvFontGetFontDim(IupGetAttribute(ih, "DRAWFONT"), nullptr, &theYFontHeight, nullptr, nullptr);
 
     theYTickHorizontalMargin += theYFontHeight + (mAxisY.mLabelSpacing == -1 ? theYFontHeight / 10 : mAxisY.mLabelSpacing);
   }
@@ -382,7 +382,7 @@ void iupPlot::CalculateTickSize(Ihandle* ih, iupPlotTick &ioTick)
   {
     int theFontHeight;
     SetFont(ih, ioTick.mFontStyle, ioTick.mFontSize);
-    iupdrvFontGetFontDim(IupGetAttribute(ih, "DRAWFONT"), NULL, &theFontHeight, NULL, NULL);
+    iupdrvFontGetFontDim(IupGetAttribute(ih, "DRAWFONT"), nullptr, &theFontHeight, nullptr, nullptr);
 
     ioTick.mMajorSize = theFontHeight / 2;
     ioTick.mMinorSize = theFontHeight / 4;
@@ -412,10 +412,10 @@ bool iupPlot::CalculateTickSpacing(const iupPlotRect &inRect, Ihandle* ih)
   {
     int theXFontHeight;
     SetFont(ih, mAxisX.mTick.mFontStyle, mAxisX.mTick.mFontSize);
-    iupdrvFontGetFontDim(IupGetAttribute(ih, "DRAWFONT"), NULL, &theXFontHeight, NULL, NULL);
+    iupdrvFontGetFontDim(IupGetAttribute(ih, "DRAWFONT"), nullptr, &theXFontHeight, nullptr, nullptr);
 
     int theTextWidth;
-    iupDrawGetTextSize(ih, "12345", 5, &theTextWidth, NULL, 0);
+    iupDrawGetTextSize(ih, "12345", 5, &theTextWidth, nullptr, 0);
 
     double theDivGuess = inRect.mWidth / (kMajorTickXInitialFac*theTextWidth);
     if (!mAxisX.mTickIter->CalculateSpacing(theXRange, theDivGuess, mAxisX.mTick))
@@ -426,7 +426,7 @@ bool iupPlot::CalculateTickSpacing(const iupPlotRect &inRect, Ihandle* ih)
   {
     int theYFontHeight;
     SetFont(ih, mAxisY.mTick.mFontStyle, mAxisY.mTick.mFontSize);
-    iupdrvFontGetFontDim(IupGetAttribute(ih, "DRAWFONT"), NULL, &theYFontHeight, NULL, NULL);
+    iupdrvFontGetFontDim(IupGetAttribute(ih, "DRAWFONT"), nullptr, &theYFontHeight, nullptr, nullptr);
 
     double theDivGuess = inRect.mHeight / (kMajorTickYInitialFac*theYFontHeight);
     if (!mAxisY.mTickIter->CalculateSpacing(theYRange, theDivGuess, mAxisY.mTick))

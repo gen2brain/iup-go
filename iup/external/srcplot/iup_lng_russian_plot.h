@@ -1,5 +1,5 @@
 /* This file is in UTF-8 encoding */
-static Ihandle* iup_load_lng_russian_plot(void)
+static Ihandle* iup_load_lng_russian_plot()
 {
   return IupSetAtt( "RUSSIAN", IupUser(),
     "IUP_ANGLE", "Угол:",

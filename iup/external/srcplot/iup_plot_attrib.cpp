@@ -54,7 +54,7 @@ static void iPlotPlotRemove(Ihandle* ih, int p)
   for (int i = p; i < ih->data->plot_list_count; i++)
     ih->data->plot_list[i] = ih->data->plot_list[i + 1];
 
-  ih->data->plot_list[ih->data->plot_list_count - 1] = NULL;
+  ih->data->plot_list[ih->data->plot_list_count - 1] = nullptr;
 
   ih->data->plot_list_count--;
 
@@ -66,10 +66,10 @@ static void iPlotPlotRemove(Ihandle* ih, int p)
 
 static char* iupStrReturnColor(long color)
 {
-  unsigned char r = iupDrawRed(color);
-  unsigned char g = iupDrawGreen(color);
-  unsigned char b = iupDrawBlue(color);
-  unsigned char a = iupDrawAlpha(color);
+  auto r = iupDrawRed(color);
+  auto g = iupDrawGreen(color);
+  auto b = iupDrawBlue(color);
+  auto a = iupDrawAlpha(color);
   return iupStrReturnRGBA(r, g, b, a);
 }
 
@@ -139,7 +139,7 @@ static char* iPlotGetPlotFontStyle(Ihandle* ih, int style)
   if (style >= IUP_PLOT_FONT_PLAIN && style <= IUP_PLOT_FONT_BOLD_ITALIC)
   {
     const char* style_str[4] = { "Plain", "Bold", "Italic", "Bold Italic" };
-    return (char*)style_str[style];
+    return const_cast<char*>(style_str[style]);
   }
   else
     return IupGetAttribute(ih, "FONTSTYLE");
@@ -150,10 +150,10 @@ static char* iPlotGetPlotPenStyle(int style)
   if (style >= IUP_PLOT_LINE_CONTINUOUS && style <= IUP_PLOT_LINE_DASH_DOT_DOT)
   {
     const char* style_str[5] = { "CONTINUOUS", "DASHED", "DOTTED", "DASH_DOT", "DASH_DOT_DOT" };
-    return (char*)style_str[style];
+    return const_cast<char*>(style_str[style]);
   }
   else
-    return (char*)"CONTINUOUS";
+    return const_cast<char*>("CONTINUOUS");
 }
 
 static int iPlotGetCDPenStyle(const char* value)
@@ -177,10 +177,10 @@ static char* iPlotGetPlotMarkStyle(int style)
   if (style >= IUP_PLOT_MARK_PLUS && style <= IUP_PLOT_MARK_HOLLOW_DIAMOND)
   {
     const char* style_str[9] = { "PLUS", "STAR", "CIRCLE", "X", "BOX", "DIAMOND", "HOLLOW_CIRCLE", "HOLLOW_BOX", "HOLLOW_DIAMOND" };
-    return (char*)style_str[style];
+    return const_cast<char*>(style_str[style]);
   }
   else
-    return (char*)"X";
+    return const_cast<char*>("X");
 }
 
 static int iPlotGetCDMarkStyle(const char* value)
@@ -223,7 +223,7 @@ static int iPlotSetShowCrossHairAttrib(Ihandle* ih, const char* value)
 static char* iPlotGetShowCrossHairAttrib(Ihandle* ih)
 {
   const char* cross_hair_str[3] = { "NONE", "VERTICAL", "HORIZONTAL" };
-  return (char*)cross_hair_str[ih->data->show_cross_hair];
+  return const_cast<char*>(cross_hair_str[ih->data->show_cross_hair]);
 }
 
 static int iPlotSetAntialiasAttrib(Ihandle* ih, const char* value)
@@ -236,7 +236,7 @@ static int iPlotSetAntialiasAttrib(Ihandle* ih, const char* value)
 static char* iPlotGetAntialiasAttrib(Ihandle* ih)
 {
   (void)ih;
-  return NULL;
+  return nullptr;
 }
 
 static int iPlotSetRedrawAttrib(Ihandle* ih, const char* value)
@@ -302,7 +302,7 @@ static int iPlotSetLegendPosAttrib(Ihandle* ih, const char* value)
 static char* iPlotGetLegendPosAttrib(Ihandle* ih)
 {
   const char* legendpos_str[] = { "TOPRIGHT", "TOPLEFT", "BOTTOMRIGHT", "BOTTOMLEFT", "BOTTOMCENTER", "XY" };
-  return (char*)legendpos_str[ih->data->current_plot->mLegend.mPosition];
+  return const_cast<char*>(legendpos_str[ih->data->current_plot->mLegend.mPosition]);
 }
 
 static int iPlotSetBackImageAttrib(Ihandle* ih, const char* value)
@@ -314,7 +314,7 @@ static int iPlotSetBackImageAttrib(Ihandle* ih, const char* value)
 
 static char* iPlotGetBackImageAttrib(Ihandle* ih)
 {
-  return (char*)(ih->data->current_plot->mBack.GetImage());
+  return const_cast<char*>(ih->data->current_plot->mBack.GetImage());
 }
 
 static int iPlotSetLegendPosXYAttrib(Ihandle* ih, const char* value)
@@ -790,13 +790,13 @@ static int iPlotSetGridAttrib(Ihandle* ih, const char* value)
 static char* iPlotGetGridAttrib(Ihandle* ih)
 {
   if (ih->data->current_plot->mGrid.mShowX && ih->data->current_plot->mGrid.mShowY)
-    return (char*)"YES";
+    return const_cast<char*>("YES");
   else if (ih->data->current_plot->mGrid.mShowY)
-    return (char*)"HORIZONTAL";
+    return const_cast<char*>("HORIZONTAL");
   else if (ih->data->current_plot->mGrid.mShowX)
-    return (char*)"VERTICAL";
+    return const_cast<char*>("VERTICAL");
   else
-    return (char*)"NO";
+    return const_cast<char*>("NO");
 }
 
 static int iPlotSetGridColorAttrib(Ihandle* ih, const char* value)
@@ -847,7 +847,7 @@ static char* iPlotGetGridLineWidthAttrib(Ihandle* ih)
 {
   if (ih->data->current_plot->mCurrentDataSet < 0 ||
       ih->data->current_plot->mCurrentDataSet >= ih->data->current_plot->mDataSetListCount)
-      return NULL;
+      return nullptr;
 
   return iupStrReturnInt(ih->data->current_plot->mGrid.mLineWidth);
 }
@@ -882,13 +882,13 @@ static int iPlotSetGridMinorAttrib(Ihandle* ih, const char* value)
 static char* iPlotGetGridMinorAttrib(Ihandle* ih)
 {
   if (ih->data->current_plot->mGridMinor.mShowX && ih->data->current_plot->mGridMinor.mShowY)
-    return (char*)"YES";
+    return const_cast<char*>("YES");
   else if (ih->data->current_plot->mGridMinor.mShowY)
-    return (char*)"HORIZONTAL";
+    return const_cast<char*>("HORIZONTAL");
   else if (ih->data->current_plot->mGridMinor.mShowX)
-    return (char*)"VERTICAL";
+    return const_cast<char*>("VERTICAL");
   else
-    return (char*)"NO";
+    return const_cast<char*>("NO");
 }
 
 static int iPlotSetGridMinorColorAttrib(Ihandle* ih, const char* value)
@@ -939,7 +939,7 @@ static char* iPlotGetGridMinorLineWidthAttrib(Ihandle* ih)
 {
   if (ih->data->current_plot->mCurrentDataSet < 0 ||
       ih->data->current_plot->mCurrentDataSet >= ih->data->current_plot->mDataSetListCount)
-      return NULL;
+      return nullptr;
 
   return iupStrReturnInt(ih->data->current_plot->mGridMinor.mLineWidth);
 }
@@ -1051,7 +1051,7 @@ static char* iPlotGetLegendBoxLineWidthAttrib(Ihandle* ih)
 {
   if (ih->data->current_plot->mCurrentDataSet < 0 ||
       ih->data->current_plot->mCurrentDataSet >= ih->data->current_plot->mDataSetListCount)
-      return NULL;
+      return nullptr;
 
   return iupStrReturnInt(ih->data->current_plot->mLegend.mBoxLineWidth);
 }
@@ -1081,7 +1081,7 @@ static char* iPlotGetBoxLineWidthAttrib(Ihandle* ih)
 {
   if (ih->data->current_plot->mCurrentDataSet < 0 ||
       ih->data->current_plot->mCurrentDataSet >= ih->data->current_plot->mDataSetListCount)
-      return NULL;
+      return nullptr;
 
   return iupStrReturnInt(ih->data->current_plot->mBox.mLineWidth);
 }
@@ -1164,7 +1164,7 @@ static int iPlotSetPlotCountAttrib(Ihandle* ih, const char* value)
           for (int i = count; i < ih->data->plot_list_count; i++)
           {
             delete ih->data->plot_list[i];
-            ih->data->plot_list[i] = NULL;
+            ih->data->plot_list[i] = nullptr;
           }
         }
         else
@@ -1324,7 +1324,7 @@ static int iPlotSetGraphicsModeAttrib(Ihandle* ih, const char* value)
 static char* iPlotGetGraphicsModeAttrib(Ihandle* ih)
 {
   (void)ih;
-  return (char*)"NATIVE";
+  return const_cast<char*>("NATIVE");
 }
 
 static int iPlotSetDataSetClippingAttrib(Ihandle* ih, const char* value)
@@ -1342,7 +1342,7 @@ static int iPlotSetDataSetClippingAttrib(Ihandle* ih, const char* value)
 static char* iPlotGetDataSetClippingAttrib(Ihandle* ih)
 {
   const char* dataset_clipping_str[] = { "NONE", "AREA", "AREAOFFSET" };
-  return (char*)dataset_clipping_str[ih->data->current_plot->mDataSetClipping];
+  return const_cast<char*>(dataset_clipping_str[ih->data->current_plot->mDataSetClipping]);
 }
 
 static int iPlotSetUseImageRGBAttrib(Ihandle* ih, const char* value)
@@ -1392,7 +1392,7 @@ static int iPlotSetZoomAttrib(Ihandle* ih, const char* value)
 static char* iPlotGetCanvasAttrib(Ihandle* ih)
 {
   (void)ih;
-  return NULL;
+  return nullptr;
 }
 
 static int iPlotSetRemoveAttrib(Ihandle* ih, const char* value)
@@ -1453,7 +1453,7 @@ static char* iPlotGetDSLineStyleAttrib(Ihandle* ih)
 {
   if (ih->data->current_plot->mCurrentDataSet < 0 ||
       ih->data->current_plot->mCurrentDataSet >= ih->data->current_plot->mDataSetListCount)
-      return NULL;
+      return nullptr;
 
   iupPlotDataSet* dataset = ih->data->current_plot->mDataSetList[ih->data->current_plot->mCurrentDataSet];
 
@@ -1481,7 +1481,7 @@ static char* iPlotGetDSAreaTransparencyAttrib(Ihandle* ih)
 {
   if (ih->data->current_plot->mCurrentDataSet < 0 ||
       ih->data->current_plot->mCurrentDataSet >= ih->data->current_plot->mDataSetListCount)
-      return NULL;
+      return nullptr;
 
   iupPlotDataSet* dataset = ih->data->current_plot->mDataSetList[ih->data->current_plot->mCurrentDataSet];
   return iupStrReturnInt(dataset->mAreaTransparency);
@@ -1498,7 +1498,7 @@ static int iPlotSetDSAreaTransparencyAttrib(Ihandle* ih, const char* value)
   if (iupStrToInt(value, &ii))
   {
     iupPlotDataSet* dataset = ih->data->current_plot->mDataSetList[ih->data->current_plot->mCurrentDataSet];
-    dataset->mAreaTransparency = (unsigned char)ii;
+    dataset->mAreaTransparency = static_cast<unsigned char>(ii);
     ih->data->current_plot->mRedraw = true;
   }
   return 0;
@@ -1508,7 +1508,7 @@ static char* iPlotGetDSLineWidthAttrib(Ihandle* ih)
 {
   if (ih->data->current_plot->mCurrentDataSet < 0 ||
       ih->data->current_plot->mCurrentDataSet >= ih->data->current_plot->mDataSetListCount)
-      return NULL;
+      return nullptr;
 
   iupPlotDataSet* dataset = ih->data->current_plot->mDataSetList[ih->data->current_plot->mCurrentDataSet];
   return iupStrReturnInt(dataset->mLineWidth);
@@ -1530,7 +1530,7 @@ static char* iPlotGetDSMarkStyleAttrib(Ihandle* ih)
 {
   if (ih->data->current_plot->mCurrentDataSet < 0 ||
       ih->data->current_plot->mCurrentDataSet >= ih->data->current_plot->mDataSetListCount)
-      return NULL;
+      return nullptr;
 
   iupPlotDataSet* dataset = ih->data->current_plot->mDataSetList[ih->data->current_plot->mCurrentDataSet];
 
@@ -1558,7 +1558,7 @@ static char* iPlotGetDSMarkSizeAttrib(Ihandle* ih)
 {
   if (ih->data->current_plot->mCurrentDataSet < 0 ||
       ih->data->current_plot->mCurrentDataSet >= ih->data->current_plot->mDataSetListCount)
-      return NULL;
+      return nullptr;
 
   iupPlotDataSet* dataset = ih->data->current_plot->mDataSetList[ih->data->current_plot->mCurrentDataSet];
   return iupStrReturnInt(dataset->mMarkSize);
@@ -1583,7 +1583,7 @@ static char* iPlotGetDSNameAttrib(Ihandle* ih)
 {
   if (ih->data->current_plot->mCurrentDataSet < 0 ||
       ih->data->current_plot->mCurrentDataSet >= ih->data->current_plot->mDataSetListCount)
-      return NULL;
+      return nullptr;
 
   iupPlotDataSet* dataset = ih->data->current_plot->mDataSetList[ih->data->current_plot->mCurrentDataSet];
   return iupStrReturnStr(dataset->GetName());
@@ -1596,7 +1596,7 @@ static int iPlotSetDSUserDataAttrib(Ihandle* ih, const char* value)
       return 0;
 
   iupPlotDataSet* dataset = ih->data->current_plot->mDataSetList[ih->data->current_plot->mCurrentDataSet];
-  dataset->mUserData = (void*)value;
+  dataset->mUserData = const_cast<char*>(value);
   ih->data->current_plot->mRedraw = true;
   return 0;
 }
@@ -1605,10 +1605,10 @@ static char* iPlotGetDSUserDataAttrib(Ihandle* ih)
 {
   if (ih->data->current_plot->mCurrentDataSet < 0 ||
       ih->data->current_plot->mCurrentDataSet >= ih->data->current_plot->mDataSetListCount)
-      return NULL;
+      return nullptr;
 
   iupPlotDataSet* dataset = ih->data->current_plot->mDataSetList[ih->data->current_plot->mCurrentDataSet];
-  return (char*)dataset->mUserData;
+  return static_cast<char*>(dataset->mUserData);
 }
 
 static int iPlotSetDSColorAttrib(Ihandle* ih, const char* value)
@@ -1632,7 +1632,7 @@ static char* iPlotGetDSColorAttrib(Ihandle* ih)
 {
   if (ih->data->current_plot->mCurrentDataSet < 0 ||
       ih->data->current_plot->mCurrentDataSet >= ih->data->current_plot->mDataSetListCount)
-      return NULL;
+      return nullptr;
 
   iupPlotDataSet* dataset = ih->data->current_plot->mDataSetList[ih->data->current_plot->mCurrentDataSet];
   return iupStrReturnColor(dataset->mColor);
@@ -1655,17 +1655,17 @@ static void iPlotSetPieDefaults(Ihandle* ih)
 
 static void iPlotResetPieDefaults(Ihandle* ih)
 {
-  IupSetAttribute(ih, "AXS_XAUTOMIN", NULL);
-  IupSetAttribute(ih, "AXS_XAUTOMAX", NULL);
-  IupSetAttribute(ih, "AXS_YAUTOMIN", NULL);
-  IupSetAttribute(ih, "AXS_YAUTOMAX", NULL);
-  IupSetAttribute(ih, "AXS_XMIN", NULL);
-  IupSetAttribute(ih, "AXS_XMAX", NULL);
-  IupSetAttribute(ih, "AXS_YMIN", NULL);
-  IupSetAttribute(ih, "AXS_YMAX", NULL);
-  IupSetAttribute(ih, "AXS_X", NULL);
-  IupSetAttribute(ih, "AXS_Y", NULL);
-  iupAttribSet(ih, "_IUP_PIE_DEFAULTS", NULL);
+  IupSetAttribute(ih, "AXS_XAUTOMIN", nullptr);
+  IupSetAttribute(ih, "AXS_XAUTOMAX", nullptr);
+  IupSetAttribute(ih, "AXS_YAUTOMIN", nullptr);
+  IupSetAttribute(ih, "AXS_YAUTOMAX", nullptr);
+  IupSetAttribute(ih, "AXS_XMIN", nullptr);
+  IupSetAttribute(ih, "AXS_XMAX", nullptr);
+  IupSetAttribute(ih, "AXS_YMIN", nullptr);
+  IupSetAttribute(ih, "AXS_YMAX", nullptr);
+  IupSetAttribute(ih, "AXS_X", nullptr);
+  IupSetAttribute(ih, "AXS_Y", nullptr);
+  iupAttribSet(ih, "_IUP_PIE_DEFAULTS", nullptr);
 }
 
 static int iPlotSetDSModeAttrib(Ihandle* ih, const char* value)
@@ -1724,12 +1724,12 @@ static char* iPlotGetDSModeAttrib(Ihandle* ih)
 {
   if (ih->data->current_plot->mCurrentDataSet < 0 ||
       ih->data->current_plot->mCurrentDataSet >= ih->data->current_plot->mDataSetListCount)
-      return NULL;
+      return nullptr;
 
   const char* mode_str[] = { "LINE", "MARK", "MARKLINE", "AREA", "BAR", "STEM", "MARKSTEM", "HORIZONTALBAR", "MULTIBAR", "STEP", "ERRORBAR", "PIE" };
 
   iupPlotDataSet* dataset = ih->data->current_plot->mDataSetList[ih->data->current_plot->mCurrentDataSet];
-  return (char*)mode_str[dataset->mMode];
+  return const_cast<char*>(mode_str[dataset->mMode]);
 }
 
 static int iPlotSetDSRemoveAttrib(Ihandle* ih, const char* value)
@@ -1754,7 +1754,7 @@ static char* iPlotGetDSCountAttrib(Ihandle* ih)
 {
   if (ih->data->current_plot->mCurrentDataSet < 0 ||
       ih->data->current_plot->mCurrentDataSet >= ih->data->current_plot->mDataSetListCount)
-      return NULL;
+      return nullptr;
 
   iupPlotDataSet* dataset = ih->data->current_plot->mDataSetList[ih->data->current_plot->mCurrentDataSet];
   return iupStrReturnInt(dataset->GetCount());
@@ -1781,7 +1781,7 @@ static char* iPlotGetDSBarOutlineColorAttrib(Ihandle* ih)
 {
   if (ih->data->current_plot->mCurrentDataSet < 0 ||
       ih->data->current_plot->mCurrentDataSet >= ih->data->current_plot->mDataSetListCount)
-      return NULL;
+      return nullptr;
 
   iupPlotDataSet* dataset = ih->data->current_plot->mDataSetList[ih->data->current_plot->mCurrentDataSet];
   return iupStrReturnColor(dataset->mBarOutlineColor);
@@ -1803,7 +1803,7 @@ static char* iPlotGetDSBarOutlineAttrib(Ihandle* ih)
 {
   if (ih->data->current_plot->mCurrentDataSet < 0 ||
       ih->data->current_plot->mCurrentDataSet >= ih->data->current_plot->mDataSetListCount)
-      return NULL;
+      return nullptr;
 
   iupPlotDataSet* dataset = ih->data->current_plot->mDataSetList[ih->data->current_plot->mCurrentDataSet];
   return iupStrReturnBoolean(dataset->mBarShowOutline ? 1 : 0);
@@ -1825,7 +1825,7 @@ static char* iPlotGetDSBarMulticolorAttrib(Ihandle* ih)
 {
   if (ih->data->current_plot->mCurrentDataSet < 0 ||
       ih->data->current_plot->mCurrentDataSet >= ih->data->current_plot->mDataSetListCount)
-      return NULL;
+      return nullptr;
 
   iupPlotDataSet* dataset = ih->data->current_plot->mDataSetList[ih->data->current_plot->mCurrentDataSet];
   return iupStrReturnBoolean(dataset->mBarMulticolor ? 1 : 0);
@@ -1855,7 +1855,7 @@ static char* iPlotGetDSBarSpacingAttrib(Ihandle* ih)
 {
   if (ih->data->current_plot->mCurrentDataSet < 0 ||
       ih->data->current_plot->mCurrentDataSet >= ih->data->current_plot->mDataSetListCount)
-      return NULL;
+      return nullptr;
 
   iupPlotDataSet* dataset = ih->data->current_plot->mDataSetList[ih->data->current_plot->mCurrentDataSet];
   return iupStrReturnInt(dataset->mBarSpacingPercent);
@@ -1882,7 +1882,7 @@ static char* iPlotGetDSPieRadiusAttrib(Ihandle* ih)
 {
   if (ih->data->current_plot->mCurrentDataSet < 0 ||
       ih->data->current_plot->mCurrentDataSet >= ih->data->current_plot->mDataSetListCount)
-      return NULL;
+      return nullptr;
 
   iupPlotDataSet* dataset = ih->data->current_plot->mDataSetList[ih->data->current_plot->mCurrentDataSet];
   return iupStrReturnDouble(dataset->mPieRadius);
@@ -1909,7 +1909,7 @@ static char* iPlotGetDSPieStartAngleAttrib(Ihandle* ih)
 {
   if (ih->data->current_plot->mCurrentDataSet < 0 ||
       ih->data->current_plot->mCurrentDataSet >= ih->data->current_plot->mDataSetListCount)
-      return NULL;
+      return nullptr;
 
   iupPlotDataSet* dataset = ih->data->current_plot->mDataSetList[ih->data->current_plot->mCurrentDataSet];
   return iupStrReturnDouble(dataset->mPieStartAngle);
@@ -1938,7 +1938,7 @@ static char* iPlotGetDSPieHoleAttrib(Ihandle* ih)
 {
   if (ih->data->current_plot->mCurrentDataSet < 0 ||
       ih->data->current_plot->mCurrentDataSet >= ih->data->current_plot->mDataSetListCount)
-      return NULL;
+      return nullptr;
 
   iupPlotDataSet* dataset = ih->data->current_plot->mDataSetList[ih->data->current_plot->mCurrentDataSet];
   return iupStrReturnDouble(dataset->mPieHole);
@@ -1960,7 +1960,7 @@ static char* iPlotGetDSPieContourAttrib(Ihandle* ih)
 {
   if (ih->data->current_plot->mCurrentDataSet < 0 ||
       ih->data->current_plot->mCurrentDataSet >= ih->data->current_plot->mDataSetListCount)
-      return NULL;
+      return nullptr;
 
   iupPlotDataSet* dataset = ih->data->current_plot->mDataSetList[ih->data->current_plot->mCurrentDataSet];
   return iupStrReturnBoolean(dataset->mPieContour ? 1 : 0);
@@ -1991,19 +1991,19 @@ static char* iPlotGetDSPieSliceLabelAttrib(Ihandle* ih)
 {
   if (ih->data->current_plot->mCurrentDataSet < 0 ||
       ih->data->current_plot->mCurrentDataSet >= ih->data->current_plot->mDataSetListCount)
-      return NULL;
+      return nullptr;
 
   const char* mode_str[] = { "NONE", "X", "Y", "PERCENT" };
 
   iupPlotDataSet* dataset = ih->data->current_plot->mDataSetList[ih->data->current_plot->mCurrentDataSet];
-  return (char*)mode_str[dataset->mPieSliceLabel];
+  return const_cast<char*>(mode_str[dataset->mPieSliceLabel]);
 }
 
 static char* iPlotGetDSPieSliceLabelPosAttrib(Ihandle* ih)
 {
   if (ih->data->current_plot->mCurrentDataSet < 0 ||
       ih->data->current_plot->mCurrentDataSet >= ih->data->current_plot->mDataSetListCount)
-      return NULL;
+      return nullptr;
 
   iupPlotDataSet* dataset = ih->data->current_plot->mDataSetList[ih->data->current_plot->mCurrentDataSet];
   return iupStrReturnDouble(dataset->mPieSliceLabelPos);
@@ -2013,7 +2013,7 @@ static char* iPlotGetDSStrXDataAttrib(Ihandle* ih)
 {
   if (ih->data->current_plot->mCurrentDataSet < 0 ||
       ih->data->current_plot->mCurrentDataSet >= ih->data->current_plot->mDataSetListCount)
-      return NULL;
+      return nullptr;
 
   iupPlotDataSet* dataset = ih->data->current_plot->mDataSetList[ih->data->current_plot->mCurrentDataSet];
   return iupStrReturnBoolean(dataset->GetDataX()->IsString() ? 1 : 0);
@@ -2023,7 +2023,7 @@ static char* iPlotGetDSExtraAttrib(Ihandle* ih)
 {
   if (ih->data->current_plot->mCurrentDataSet < 0 ||
       ih->data->current_plot->mCurrentDataSet >= ih->data->current_plot->mDataSetListCount)
-      return NULL;
+      return nullptr;
 
   iupPlotDataSet* dataset = ih->data->current_plot->mDataSetList[ih->data->current_plot->mCurrentDataSet];
   return iupStrReturnBoolean(dataset->GetExtra() ? 1 : 0);
@@ -2045,7 +2045,7 @@ static char* iPlotGetDSOrderedXAttrib(Ihandle* ih)
 {
   if (ih->data->current_plot->mCurrentDataSet < 0 ||
       ih->data->current_plot->mCurrentDataSet >= ih->data->current_plot->mDataSetListCount)
-      return NULL;
+      return nullptr;
 
   iupPlotDataSet* dataset = ih->data->current_plot->mDataSetList[ih->data->current_plot->mCurrentDataSet];
   return iupStrReturnBoolean(dataset->mOrderedX ? 1 : 0);
@@ -2067,7 +2067,7 @@ static char* iPlotGetDSSelectedAttrib(Ihandle* ih)
 {
   if (ih->data->current_plot->mCurrentDataSet < 0 ||
       ih->data->current_plot->mCurrentDataSet >= ih->data->current_plot->mDataSetListCount)
-    return NULL;
+    return nullptr;
 
   iupPlotDataSet* dataset = ih->data->current_plot->mDataSetList[ih->data->current_plot->mCurrentDataSet];
   return iupStrReturnBoolean(dataset->mSelectedCurve ? 1 : 0);
@@ -2093,7 +2093,7 @@ static int iPlotSetDSPieSliceLabelPosAttrib(Ihandle* ih, const char* value)
 static char* iPlotGetHighlightModeAttrib(Ihandle* ih)
 {
   const char* mode_str[] = { "NONE", "SAMPLE", "CURVE", "BOTH" };
-  return (char*)mode_str[ih->data->current_plot->mHighlightMode];
+  return const_cast<char*>(mode_str[ih->data->current_plot->mHighlightMode]);
 }
 
 static int iPlotSetHighlightModeAttrib(Ihandle* ih, const char* value)
@@ -2352,7 +2352,7 @@ static char* iPlotGetAxisXLabelSpacingAttrib(Ihandle* ih)
 {
   iupPlotAxis* axis = &ih->data->current_plot->mAxisX;
   if (axis->mLabelSpacing == -1)
-    return (char*)"AUTO";
+    return const_cast<char*>("AUTO");
   else
     return iupStrReturnInt(axis->mLabelSpacing);
 }
@@ -2380,7 +2380,7 @@ static char* iPlotGetAxisYLabelSpacingAttrib(Ihandle* ih)
 {
   iupPlotAxis* axis = &ih->data->current_plot->mAxisY;
   if (axis->mLabelSpacing == -1)
-    return (char*)"AUTO";
+    return const_cast<char*>("AUTO");
   else
     return iupStrReturnInt(axis->mLabelSpacing);
 }
@@ -2733,14 +2733,14 @@ static char* iPlotGetAxisXPositionAttrib(Ihandle* ih)
 {
   iupPlotAxis* axis = &ih->data->current_plot->mAxisX;
   const char* originpos_str[] = { "START", "CROSSORIGIN", "END" };
-  return (char*)originpos_str[axis->mPosition];
+  return const_cast<char*>(originpos_str[axis->mPosition]);
 }
 
 static char* iPlotGetAxisYPositionAttrib(Ihandle* ih)
 {
   iupPlotAxis* axis = &ih->data->current_plot->mAxisY;
   const char* originpos_str[] = { "START", "CROSSORIGIN", "END" };
-  return (char*)originpos_str[axis->mPosition];
+  return const_cast<char*>(originpos_str[axis->mPosition]);
 }
 
 static int iPlotSetAxisXScaleAttrib(Ihandle* ih, const char* value)
@@ -2764,7 +2764,7 @@ static int iPlotSetAxisXScaleAttrib(Ihandle* ih, const char* value)
   else
   {
     axis->mLogScale = true;
-    axis->mLogBase = (double)M_E;
+    axis->mLogBase = M_E;
   }
 
   ih->data->current_plot->mRedraw = true;
@@ -2792,7 +2792,7 @@ static int iPlotSetAxisYScaleAttrib(Ihandle* ih, const char* value)
   else
   {
     axis->mLogScale = true;
-    axis->mLogBase = (double)M_E;
+    axis->mLogBase = M_E;
   }
 
   ih->data->current_plot->mRedraw = true;
@@ -2806,14 +2806,14 @@ static char* iPlotGetAxisXScaleAttrib(Ihandle* ih)
   if (axis->mLogScale)
   {
     if (axis->mLogBase == 10.0)
-      return (char*)"LOG10";
+      return const_cast<char*>("LOG10");
     else if (axis->mLogBase == 2.0)
-      return (char*)"LOG2";
+      return const_cast<char*>("LOG2");
     else
-      return (char*)"LOGN";
+      return const_cast<char*>("LOGN");
   }
   else
-    return (char*)"LIN";
+    return const_cast<char*>("LIN");
 }
 
 static char* iPlotGetAxisYScaleAttrib(Ihandle* ih)
@@ -2823,14 +2823,14 @@ static char* iPlotGetAxisYScaleAttrib(Ihandle* ih)
   if (axis->mLogScale)
   {
     if (axis->mLogBase == 10.0)
-      return (char*)"LOG10";
+      return const_cast<char*>("LOG10");
     else if (axis->mLogBase == 2.0)
-      return (char*)"LOG2";
+      return const_cast<char*>("LOG2");
     else
-      return (char*)"LOGN";
+      return const_cast<char*>("LOGN");
   }
   else
-    return (char*)"LIN";
+    return const_cast<char*>("LIN");
 }
 
 static int iPlotSetAxisXFontSizeAttrib(Ihandle* ih, const char* value)
@@ -3568,30 +3568,30 @@ static char* iPlotGetAxisYAutoTickAttrib(Ihandle* ih)
 void iupPlotRegisterAttributes(Iclass* ic)
 {
   /* Visual */
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iPlotSetBGColorAttrib, IUPAF_SAMEASSYSTEM, "255 255 255", IUPAF_NOT_MAPPED);
-  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, iPlotSetFGColorAttrib, IUPAF_SAMEASSYSTEM, "0 0 0", IUPAF_NOT_MAPPED);
-  iupClassRegisterAttribute(ic, "FONT", NULL, iPlotSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);  /* inherited */
+  iupClassRegisterAttribute(ic, "BGCOLOR", nullptr, iPlotSetBGColorAttrib, IUPAF_SAMEASSYSTEM, "255 255 255", IUPAF_NOT_MAPPED);
+  iupClassRegisterAttribute(ic, "FGCOLOR", nullptr, iPlotSetFGColorAttrib, IUPAF_SAMEASSYSTEM, "0 0 0", IUPAF_NOT_MAPPED);
+  iupClassRegisterAttribute(ic, "FONT", nullptr, iPlotSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);  /* inherited */
 
   /* IupPlot only */
 
   iupClassRegisterAttribute(ic, "ANTIALIAS", iPlotGetAntialiasAttrib, iPlotSetAntialiasAttrib, IUPAF_SAMEASSYSTEM, "No", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "REDRAW", NULL, iPlotSetRedrawAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SYNCVIEW", iPlotGetSyncViewAttrib, iPlotSetSyncViewAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "MERGEVIEW", iPlotGetMergeViewAttrib, iPlotSetMergeViewAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "REDRAW", nullptr, iPlotSetRedrawAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SYNCVIEW", iPlotGetSyncViewAttrib, iPlotSetSyncViewAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MERGEVIEW", iPlotGetMergeViewAttrib, iPlotSetMergeViewAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "READONLY", iPlotGetReadOnlyAttrib, iPlotSetReadOnlyAttrib, IUPAF_SAMEASSYSTEM, "Yes", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "CANVAS", iPlotGetCanvasAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CANVAS", iPlotGetCanvasAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "GRAPHICSMODE", iPlotGetGraphicsModeAttrib, iPlotSetGraphicsModeAttrib, IUPAF_SAMEASSYSTEM, "NATIVEPLUS", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  /*OLD*/iupClassRegisterAttribute(ic, "USE_IMAGERGB", NULL, iPlotSetUseImageRGBAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  /*OLD*/iupClassRegisterAttribute(ic, "USE_CONTEXTPLUS", NULL, iPlotSetUseContextPlusAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "MENUCONTEXT", NULL, NULL, IUPAF_SAMEASSYSTEM, "Yes", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "MENUITEMPROPERTIES", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "MENUITEMVALUES", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SHOWMENUCONTEXT", NULL, iPlotSetShowMenuContextAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TIPFORMAT", NULL, NULL, IUPAF_SAMEASSYSTEM, "%s (%s, %s)", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "ZOOM", NULL, iPlotSetZoomAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "EDITABLEVALUES", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  /*OLD*/iupClassRegisterAttribute(ic, "USE_IMAGERGB", nullptr, iPlotSetUseImageRGBAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  /*OLD*/iupClassRegisterAttribute(ic, "USE_CONTEXTPLUS", nullptr, iPlotSetUseContextPlusAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MENUCONTEXT", nullptr, nullptr, IUPAF_SAMEASSYSTEM, "Yes", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MENUITEMPROPERTIES", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MENUITEMVALUES", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SHOWMENUCONTEXT", nullptr, iPlotSetShowMenuContextAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TIPFORMAT", nullptr, nullptr, IUPAF_SAMEASSYSTEM, "%s (%s, %s)", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ZOOM", nullptr, iPlotSetZoomAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "EDITABLEVALUES", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DATASETCLIPPING", iPlotGetDataSetClippingAttrib, iPlotSetDataSetClippingAttrib, IUPAF_SAMEASSYSTEM, "AREA", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SHOWCROSSHAIR", iPlotGetShowCrossHairAttrib, iPlotSetShowCrossHairAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SHOWCROSSHAIR", iPlotGetShowCrossHairAttrib, iPlotSetShowCrossHairAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "MARGINLEFTAUTO", iPlotGetMarginLeftAutoAttrib, iPlotSetMarginLeftAutoAttrib, IUPAF_SAMEASSYSTEM, "Yes", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MARGINRIGHTAUTO", iPlotGetMarginRightAutoAttrib, iPlotSetMarginRightAutoAttrib, IUPAF_SAMEASSYSTEM, "Yes", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
@@ -3603,46 +3603,46 @@ void iupPlotRegisterAttributes(Iclass* ic)
   iupClassRegisterAttribute(ic, "MARGINBOTTOM", iPlotGetMarginBottomAttrib, iPlotSetMarginBottomAttrib, IUPAF_SAMEASSYSTEM, "AUTO", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "PADDING", iPlotGetPaddingAttrib, iPlotSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "5x5", IUPAF_NOT_MAPPED);
 
-  iupClassRegisterAttribute(ic, "BACKCOLOR", iPlotGetBackColorAttrib, iPlotSetBackColorAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "BACKIMAGE", iPlotGetBackImageAttrib, iPlotSetBackImageAttrib, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "BACKIMAGE_XMIN", iPlotGetBackImageXMinAttrib, iPlotSetBackImageXMinAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "BACKIMAGE_YMIN", iPlotGetBackImageYMinAttrib, iPlotSetBackImageYMinAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "BACKIMAGE_XMAX", iPlotGetBackImageXMaxAttrib, iPlotSetBackImageXMaxAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "BACKIMAGE_YMAX", iPlotGetBackImageYMaxAttrib, iPlotSetBackImageYMaxAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BACKCOLOR", iPlotGetBackColorAttrib, iPlotSetBackColorAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BACKIMAGE", iPlotGetBackImageAttrib, iPlotSetBackImageAttrib, nullptr, nullptr, IUPAF_IHANDLENAME | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BACKIMAGE_XMIN", iPlotGetBackImageXMinAttrib, iPlotSetBackImageXMinAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BACKIMAGE_YMIN", iPlotGetBackImageYMinAttrib, iPlotSetBackImageYMinAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BACKIMAGE_XMAX", iPlotGetBackImageXMaxAttrib, iPlotSetBackImageXMaxAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BACKIMAGE_YMAX", iPlotGetBackImageYMaxAttrib, iPlotSetBackImageYMaxAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "HIGHLIGHTMODE", iPlotGetHighlightModeAttrib, iPlotSetHighlightModeAttrib, IUPAF_SAMEASSYSTEM, "NONE", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SCREENTOLERANCE", iPlotGetScreenToleranceAttrib, iPlotSetScreenToleranceAttrib, IUPAF_SAMEASSYSTEM, "5", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "TITLE", iPlotGetTitleAttrib, iPlotSetTitleAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TITLECOLOR", iPlotGetTitleColorAttrib, iPlotSetTitleColorAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TITLEFONTSIZE", iPlotGetTitleFontSizeAttrib, iPlotSetTitleFontSizeAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TITLEFONTSTYLE", iPlotGetTitleFontStyleAttrib, iPlotSetTitleFontStyleAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TITLE", iPlotGetTitleAttrib, iPlotSetTitleAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TITLECOLOR", iPlotGetTitleColorAttrib, iPlotSetTitleColorAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TITLEFONTSIZE", iPlotGetTitleFontSizeAttrib, iPlotSetTitleFontSizeAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TITLEFONTSTYLE", iPlotGetTitleFontStyleAttrib, iPlotSetTitleFontStyleAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TITLEPOSAUTO", iPlotGetTitlePosAutoAttrib, iPlotSetTitlePosAutoAttrib, IUPAF_SAMEASSYSTEM, "Yes", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TITLEPOSXY", iPlotGetTitlePosXYAttrib, iPlotSetTitlePosXYAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TITLEPOSXY", iPlotGetTitlePosXYAttrib, iPlotSetTitlePosXYAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "LEGEND", iPlotGetLegendAttrib, iPlotSetLegendAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  /*OLD*/iupClassRegisterAttribute(ic, "LEGENDSHOW", iPlotGetLegendAttrib, iPlotSetLegendAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "LEGEND", iPlotGetLegendAttrib, iPlotSetLegendAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  /*OLD*/iupClassRegisterAttribute(ic, "LEGENDSHOW", iPlotGetLegendAttrib, iPlotSetLegendAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "LEGENDPOS", iPlotGetLegendPosAttrib, iPlotSetLegendPosAttrib, IUPAF_SAMEASSYSTEM, "TOPRIGHT", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "LEGENDPOSXY", iPlotGetLegendPosXYAttrib, iPlotSetLegendPosXYAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "LEGENDFONTSIZE", iPlotGetLegendFontSizeAttrib, iPlotSetLegendFontSizeAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "LEGENDFONTSTYLE", iPlotGetLegendFontStyleAttrib, iPlotSetLegendFontStyleAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "LEGENDPOSXY", iPlotGetLegendPosXYAttrib, iPlotSetLegendPosXYAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "LEGENDFONTSIZE", iPlotGetLegendFontSizeAttrib, iPlotSetLegendFontSizeAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "LEGENDFONTSTYLE", iPlotGetLegendFontStyleAttrib, iPlotSetLegendFontStyleAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "LEGENDBOX", iPlotGetLegendBoxAttrib, iPlotSetLegendBoxAttrib, IUPAF_SAMEASSYSTEM, "Yes", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "LEGENDBOXCOLOR", iPlotGetLegendBoxColorAttrib, iPlotSetLegendBoxColorAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "LEGENDBOXBACKCOLOR", iPlotGetLegendBoxBackColorAttrib, iPlotSetLegendBoxBackColorAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "LEGENDBOXCOLOR", iPlotGetLegendBoxColorAttrib, iPlotSetLegendBoxColorAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "LEGENDBOXBACKCOLOR", iPlotGetLegendBoxBackColorAttrib, iPlotSetLegendBoxBackColorAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "LEGENDBOXLINESTYLE", iPlotGetLegendBoxLineStyleAttrib, iPlotSetLegendBoxLineStyleAttrib, IUPAF_SAMEASSYSTEM, "CONTINUOUS", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "LEGENDBOXLINEWIDTH", iPlotGetLegendBoxLineWidthAttrib, iPlotSetLegendBoxLineWidthAttrib, IUPAF_SAMEASSYSTEM, "1", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "GRID", iPlotGetGridAttrib, iPlotSetGridAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "GRID", iPlotGetGridAttrib, iPlotSetGridAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "GRIDCOLOR", iPlotGetGridColorAttrib, iPlotSetGridColorAttrib, IUPAF_SAMEASSYSTEM, "200 200 200", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "GRIDLINESTYLE", iPlotGetGridLineStyleAttrib, iPlotSetGridLineStyleAttrib, IUPAF_SAMEASSYSTEM, "CONTINUOUS", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "GRIDLINEWIDTH", iPlotGetGridLineWidthAttrib, iPlotSetGridLineWidthAttrib, IUPAF_SAMEASSYSTEM, "1", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "GRIDMINOR", iPlotGetGridMinorAttrib, iPlotSetGridMinorAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "GRIDMINOR", iPlotGetGridMinorAttrib, iPlotSetGridMinorAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "GRIDMINORCOLOR", iPlotGetGridMinorColorAttrib, iPlotSetGridMinorColorAttrib, IUPAF_SAMEASSYSTEM, "200 200 200", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "GRIDMINORLINESTYLE", iPlotGetGridMinorLineStyleAttrib, iPlotSetGridMinorLineStyleAttrib, IUPAF_SAMEASSYSTEM, "CONTINUOUS", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "GRIDMINORLINEWIDTH", iPlotGetGridMinorLineWidthAttrib, iPlotSetGridMinorLineWidthAttrib, IUPAF_SAMEASSYSTEM, "1", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "BOX", iPlotGetBoxAttrib, iPlotSetBoxAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "BOXCOLOR", iPlotGetBoxColorAttrib, iPlotSetBoxColorAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BOX", iPlotGetBoxAttrib, iPlotSetBoxAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BOXCOLOR", iPlotGetBoxColorAttrib, iPlotSetBoxColorAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "BOXLINESTYLE", iPlotGetBoxLineStyleAttrib, iPlotSetBoxLineStyleAttrib, IUPAF_SAMEASSYSTEM, "CONTINUOUS", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "BOXLINEWIDTH", iPlotGetBoxLineWidthAttrib, iPlotSetBoxLineWidthAttrib, IUPAF_SAMEASSYSTEM, "1", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
 
@@ -3651,27 +3651,27 @@ void iupPlotRegisterAttributes(Iclass* ic)
   iupClassRegisterAttribute(ic, "DS_AREATRANSPARENCY", iPlotGetDSAreaTransparencyAttrib, iPlotSetDSAreaTransparencyAttrib, IUPAF_SAMEASSYSTEM, "255", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DS_MARKSTYLE", iPlotGetDSMarkStyleAttrib, iPlotSetDSMarkStyleAttrib, IUPAF_SAMEASSYSTEM, "X", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DS_MARKSIZE", iPlotGetDSMarkSizeAttrib, iPlotSetDSMarkSizeAttrib, IUPAF_SAMEASSYSTEM, "7", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DS_NAME", iPlotGetDSNameAttrib, iPlotSetDSNameAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  /*OLD*/iupClassRegisterAttribute(ic, "DS_LEGEND", iPlotGetDSNameAttrib, iPlotSetDSNameAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DS_COLOR", iPlotGetDSColorAttrib, iPlotSetDSColorAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DS_NAME", iPlotGetDSNameAttrib, iPlotSetDSNameAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  /*OLD*/iupClassRegisterAttribute(ic, "DS_LEGEND", iPlotGetDSNameAttrib, iPlotSetDSNameAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DS_COLOR", iPlotGetDSColorAttrib, iPlotSetDSColorAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DS_MODE", iPlotGetDSModeAttrib, iPlotSetDSModeAttrib, IUPAF_SAMEASSYSTEM, "LINE", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DS_REMOVE", NULL, iPlotSetDSRemoveAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DS_COUNT", iPlotGetDSCountAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DS_USERDATA", iPlotGetDSUserDataAttrib, iPlotSetDSUserDataAttrib, NULL, NULL, IUPAF_NO_STRING | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DS_BAROUTLINE", iPlotGetDSBarOutlineAttrib, iPlotSetDSBarOutlineAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DS_BAROUTLINECOLOR", iPlotGetDSBarOutlineColorAttrib, iPlotSetDSBarOutlineColorAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DS_BARMULTICOLOR", iPlotGetDSBarMulticolorAttrib, iPlotSetDSBarMulticolorAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DS_REMOVE", nullptr, iPlotSetDSRemoveAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DS_COUNT", iPlotGetDSCountAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DS_USERDATA", iPlotGetDSUserDataAttrib, iPlotSetDSUserDataAttrib, nullptr, nullptr, IUPAF_NO_STRING | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DS_BAROUTLINE", iPlotGetDSBarOutlineAttrib, iPlotSetDSBarOutlineAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DS_BAROUTLINECOLOR", iPlotGetDSBarOutlineColorAttrib, iPlotSetDSBarOutlineColorAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DS_BARMULTICOLOR", iPlotGetDSBarMulticolorAttrib, iPlotSetDSBarMulticolorAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DS_BARSPACING", iPlotGetDSBarSpacingAttrib, iPlotSetDSBarSpacingAttrib, IUPAF_SAMEASSYSTEM, "1", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DS_PIERADIUS", iPlotGetDSPieRadiusAttrib, iPlotSetDSPieRadiusAttrib, IUPAF_SAMEASSYSTEM, "0.95", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DS_PIESTARTANGLE", iPlotGetDSPieStartAngleAttrib, iPlotSetDSPieStartAngleAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DS_PIECONTOUR", iPlotGetDSPieContourAttrib, iPlotSetDSPieContourAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DS_PIEHOLE", iPlotGetDSPieHoleAttrib, iPlotSetDSPieHoleAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DS_PIECONTOUR", iPlotGetDSPieContourAttrib, iPlotSetDSPieContourAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DS_PIEHOLE", iPlotGetDSPieHoleAttrib, iPlotSetDSPieHoleAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DS_PIESLICELABEL", iPlotGetDSPieSliceLabelAttrib, iPlotSetDSPieSliceLabelAttrib, IUPAF_SAMEASSYSTEM, "NONE", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DS_PIESLICELABELPOS", iPlotGetDSPieSliceLabelPosAttrib, iPlotSetDSPieSliceLabelPosAttrib, IUPAF_SAMEASSYSTEM, "0.95", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DS_STRXDATA", iPlotGetDSStrXDataAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DS_EXTRA", iPlotGetDSExtraAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DS_ORDEREDX", iPlotGetDSOrderedXAttrib, iPlotSetDSOrderedXAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DS_SELECTED", iPlotGetDSSelectedAttrib, iPlotSetDSSelectedAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DS_STRXDATA", iPlotGetDSStrXDataAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DS_EXTRA", iPlotGetDSExtraAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DS_ORDEREDX", iPlotGetDSOrderedXAttrib, iPlotSetDSOrderedXAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DS_SELECTED", iPlotGetDSSelectedAttrib, iPlotSetDSSelectedAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "VIEWPORTSQUARE", iPlotGetViewportSquareAttrib, iPlotSetViewportSquareAttrib, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "AXS_SCALEEQUAL", iPlotGetAxisScaleEqualAttrib, iPlotSetAxisScaleEqualAttrib, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
@@ -3680,35 +3680,35 @@ void iupPlotRegisterAttributes(Iclass* ic)
   iupClassRegisterAttribute(ic, "AXS_X", iPlotGetAxisXAttrib, iPlotSetAxisXAttrib, IUPAF_SAMEASSYSTEM, "Yes", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "AXS_Y", iPlotGetAxisYAttrib, iPlotSetAxisYAttrib, IUPAF_SAMEASSYSTEM, "Yes", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "AXS_XLABEL", iPlotGetAxisXLabelAttrib, iPlotSetAxisXLabelAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "AXS_YLABEL", iPlotGetAxisYLabelAttrib, iPlotSetAxisYLabelAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "AXS_XLABEL", iPlotGetAxisXLabelAttrib, iPlotSetAxisXLabelAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "AXS_YLABEL", iPlotGetAxisYLabelAttrib, iPlotSetAxisYLabelAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "AXS_XLABELCENTERED", iPlotGetAxisXLabelCenteredAttrib, iPlotSetAxisXLabelCenteredAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "AXS_YLABELCENTERED", iPlotGetAxisYLabelCenteredAttrib, iPlotSetAxisYLabelCenteredAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "AXS_XLABELSPACING", iPlotGetAxisXLabelSpacingAttrib, iPlotSetAxisXLabelSpacingAttrib, IUPAF_SAMEASSYSTEM, "AUTO", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "AXS_YLABELSPACING", iPlotGetAxisYLabelSpacingAttrib, iPlotSetAxisYLabelSpacingAttrib, IUPAF_SAMEASSYSTEM, "AUTO", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "AXS_XFONTSIZE", iPlotGetAxisXFontSizeAttrib, iPlotSetAxisXFontSizeAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "AXS_YFONTSIZE", iPlotGetAxisYFontSizeAttrib, iPlotSetAxisYFontSizeAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "AXS_XFONTSTYLE", iPlotGetAxisXFontStyleAttrib, iPlotSetAxisXFontStyleAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "AXS_YFONTSTYLE", iPlotGetAxisYFontStyleAttrib, iPlotSetAxisYFontStyleAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "AXS_XDISCRETE", iPlotGetAxisXDiscreteAttrib, iPlotSetAxisXDiscreteAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "AXS_YDISCRETE", iPlotGetAxisYDiscreteAttrib, iPlotSetAxisYDiscreteAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "AXS_XFONTSIZE", iPlotGetAxisXFontSizeAttrib, iPlotSetAxisXFontSizeAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "AXS_YFONTSIZE", iPlotGetAxisYFontSizeAttrib, iPlotSetAxisYFontSizeAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "AXS_XFONTSTYLE", iPlotGetAxisXFontStyleAttrib, iPlotSetAxisXFontStyleAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "AXS_YFONTSTYLE", iPlotGetAxisYFontStyleAttrib, iPlotSetAxisYFontStyleAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "AXS_XDISCRETE", iPlotGetAxisXDiscreteAttrib, iPlotSetAxisXDiscreteAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "AXS_YDISCRETE", iPlotGetAxisYDiscreteAttrib, iPlotSetAxisYDiscreteAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "AXS_XLINEWIDTH", iPlotGetAxisXLineWidthAttrib, iPlotSetAxisXLineWidthAttrib, IUPAF_SAMEASSYSTEM, "1", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "AXS_YLINEWIDTH", iPlotGetAxisYLineWidthAttrib, iPlotSetAxisYLineWidthAttrib, IUPAF_SAMEASSYSTEM, "1", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "AXS_XCOLOR", iPlotGetAxisXColorAttrib, iPlotSetAxisXColorAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "AXS_YCOLOR", iPlotGetAxisYColorAttrib, iPlotSetAxisYColorAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "AXS_XCOLOR", iPlotGetAxisXColorAttrib, iPlotSetAxisXColorAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "AXS_YCOLOR", iPlotGetAxisYColorAttrib, iPlotSetAxisYColorAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "AXS_XAUTOMIN", iPlotGetAxisXAutoMinAttrib, iPlotSetAxisXAutoMinAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "AXS_YAUTOMIN", iPlotGetAxisYAutoMinAttrib, iPlotSetAxisYAutoMinAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "AXS_XAUTOMAX", iPlotGetAxisXAutoMaxAttrib, iPlotSetAxisXAutoMaxAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "AXS_YAUTOMAX", iPlotGetAxisYAutoMaxAttrib, iPlotSetAxisYAutoMaxAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "AXS_XMIN", iPlotGetAxisXMinAttrib, iPlotSetAxisXMinAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "AXS_YMIN", iPlotGetAxisYMinAttrib, iPlotSetAxisYMinAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "AXS_XMAX", iPlotGetAxisXMaxAttrib, iPlotSetAxisXMaxAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "AXS_YMAX", iPlotGetAxisYMaxAttrib, iPlotSetAxisYMaxAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "AXS_XREVERSE", iPlotGetAxisXReverseAttrib, iPlotSetAxisXReverseAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "AXS_YREVERSE", iPlotGetAxisYReverseAttrib, iPlotSetAxisYReverseAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "AXS_XREVERSETICKSLABEL", iPlotGetAxisXReverseTicksLabelAttrib, iPlotSetAxisXReverseTicksLabelAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "AXS_YREVERSETICKSLABEL", iPlotGetAxisYReverseTicksLabelAttrib, iPlotSetAxisYReverseTicksLabelAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "AXS_XMIN", iPlotGetAxisXMinAttrib, iPlotSetAxisXMinAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "AXS_YMIN", iPlotGetAxisYMinAttrib, iPlotSetAxisYMinAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "AXS_XMAX", iPlotGetAxisXMaxAttrib, iPlotSetAxisXMaxAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "AXS_YMAX", iPlotGetAxisYMaxAttrib, iPlotSetAxisYMaxAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "AXS_XREVERSE", iPlotGetAxisXReverseAttrib, iPlotSetAxisXReverseAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "AXS_YREVERSE", iPlotGetAxisYReverseAttrib, iPlotSetAxisYReverseAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "AXS_XREVERSETICKSLABEL", iPlotGetAxisXReverseTicksLabelAttrib, iPlotSetAxisXReverseTicksLabelAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "AXS_YREVERSETICKSLABEL", iPlotGetAxisYReverseTicksLabelAttrib, iPlotSetAxisYReverseTicksLabelAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "AXS_XCROSSORIGIN", iPlotGetAxisXCrossOriginAttrib, iPlotSetAxisXCrossOriginAttrib, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "AXS_YCROSSORIGIN", iPlotGetAxisYCrossOriginAttrib, iPlotSetAxisYCrossOriginAttrib, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "AXS_XPOSITION", iPlotGetAxisXPositionAttrib, iPlotSetAxisXPositionAttrib, IUPAF_SAMEASSYSTEM, "START", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
@@ -3753,30 +3753,30 @@ void iupPlotRegisterAttributes(Iclass* ic)
   iupClassRegisterAttribute(ic, "AXS_YTICKFORMATAUTO", iPlotGetAxisYTickFormatAutoAttrib, iPlotSetAxisYTickFormatAutoAttrib, IUPAF_SAMEASSYSTEM, "Yes", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "AXS_XTICKFORMAT", iPlotGetAxisXTickFormatAttrib, iPlotSetAxisXTickFormatAttrib, IUPAF_SAMEASSYSTEM, IUP_PLOT_DEF_NUMBERFORMAT, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "AXS_YTICKFORMAT", iPlotGetAxisYTickFormatAttrib, iPlotSetAxisYTickFormatAttrib, IUPAF_SAMEASSYSTEM, IUP_PLOT_DEF_NUMBERFORMAT, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "AXS_XTICKFORMATPRECISION", iPlotGetAxisXTickFormatPrecisionAttrib, iPlotSetAxisXTickFormatPrecisionAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "AXS_YTICKFORMATPRECISION", iPlotGetAxisYTickFormatPrecisionAttrib, iPlotSetAxisYTickFormatPrecisionAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "AXS_XTICKFONTSIZE", iPlotGetAxisXTickFontSizeAttrib, iPlotSetAxisXTickFontSizeAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "AXS_YTICKFONTSIZE", iPlotGetAxisYTickFontSizeAttrib, iPlotSetAxisYTickFontSizeAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "AXS_XTICKFONTSTYLE", iPlotGetAxisXTickFontStyleAttrib, iPlotSetAxisXTickFontStyleAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "AXS_YTICKFONTSTYLE", iPlotGetAxisYTickFontStyleAttrib, iPlotSetAxisYTickFontStyleAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "AXS_XTICKFORMATPRECISION", iPlotGetAxisXTickFormatPrecisionAttrib, iPlotSetAxisXTickFormatPrecisionAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "AXS_YTICKFORMATPRECISION", iPlotGetAxisYTickFormatPrecisionAttrib, iPlotSetAxisYTickFormatPrecisionAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "AXS_XTICKFONTSIZE", iPlotGetAxisXTickFontSizeAttrib, iPlotSetAxisXTickFontSizeAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "AXS_YTICKFONTSIZE", iPlotGetAxisYTickFontSizeAttrib, iPlotSetAxisYTickFontSizeAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "AXS_XTICKFONTSTYLE", iPlotGetAxisXTickFontStyleAttrib, iPlotSetAxisXTickFontStyleAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "AXS_YTICKFONTSTYLE", iPlotGetAxisYTickFontStyleAttrib, iPlotSetAxisYTickFontStyleAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "AXS_XTIPFORMAT", iPlotGetAxisXTipFormatAttrib, iPlotSetAxisXTipFormatAttrib, IUPAF_SAMEASSYSTEM, IUP_PLOT_DEF_TIPFORMAT, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "AXS_YTIPFORMAT", iPlotGetAxisYTipFormatAttrib, iPlotSetAxisYTipFormatAttrib, IUPAF_SAMEASSYSTEM, IUP_PLOT_DEF_TIPFORMAT, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "AXS_XTIPFORMATPRECISION", iPlotGetAxisXTipFormatPrecisionAttrib, iPlotSetAxisXTipFormatPrecisionAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "AXS_YTIPFORMATPRECISION", iPlotGetAxisYTipFormatPrecisionAttrib, iPlotSetAxisYTipFormatPrecisionAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "AXS_XTIPFORMATPRECISION", iPlotGetAxisXTipFormatPrecisionAttrib, iPlotSetAxisXTipFormatPrecisionAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "AXS_YTIPFORMATPRECISION", iPlotGetAxisYTipFormatPrecisionAttrib, iPlotSetAxisYTipFormatPrecisionAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "REMOVE", NULL, iPlotSetRemoveAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "CLEAR", NULL, iPlotSetClearAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "COUNT", iPlotGetCountAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "REMOVE", nullptr, iPlotSetRemoveAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CLEAR", nullptr, iPlotSetClearAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "COUNT", iPlotGetCountAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CURRENT", iPlotGetCurrentAttrib, iPlotSetCurrentAttrib, IUPAF_SAMEASSYSTEM, "-1", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "PLOT_NUMCOL", iPlotGetPlotNumColAttrib, iPlotSetPlotNumColAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "PLOT_CURRENT", iPlotGetPlotCurrentAttrib, iPlotSetPlotCurrentAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "PLOT_COUNT", iPlotGetPlotCountAttrib, iPlotSetPlotCountAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "PLOT_REMOVE", NULL, iPlotSetPlotRemoveAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "PLOT_INSERT", NULL, iPlotSetPlotInsertAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "PLOT_NUMCOL", iPlotGetPlotNumColAttrib, iPlotSetPlotNumColAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "PLOT_CURRENT", iPlotGetPlotCurrentAttrib, iPlotSetPlotCurrentAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "PLOT_COUNT", iPlotGetPlotCountAttrib, iPlotSetPlotCountAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "PLOT_REMOVE", nullptr, iPlotSetPlotRemoveAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "PLOT_INSERT", nullptr, iPlotSetPlotInsertAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "FORMULA_MIN", NULL, NULL, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "FORMULA_MAX", NULL, NULL, IUPAF_SAMEASSYSTEM, "1", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "FORMULA_PARAMETRIC", NULL, NULL, IUPAF_SAMEASSYSTEM, "No", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FORMULA_MIN", nullptr, nullptr, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FORMULA_MAX", nullptr, nullptr, IUPAF_SAMEASSYSTEM, "1", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FORMULA_PARAMETRIC", nullptr, nullptr, IUPAF_SAMEASSYSTEM, "No", IUPAF_NO_INHERIT);
 }

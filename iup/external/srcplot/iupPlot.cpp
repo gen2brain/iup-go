@@ -15,7 +15,7 @@ iupPlot::iupPlot(Ihandle* _ih, int inDefaultFontStyle, int inDefaultFontSize)
    mAxisX(inDefaultFontStyle, inDefaultFontSize), mAxisY(inDefaultFontStyle, inDefaultFontSize),
    mCrossHairX(0), mCrossHairY(0), mShowSelectionBand(false), mDataSetListMax(20), mDataSetClipping(IUP_PLOT_CLIPAREA)
 {
-  mDataSetList = (iupPlotDataSet**)malloc(sizeof(iupPlotDataSet*)* mDataSetListMax); /* use malloc because we will use realloc */
+  mDataSetList = static_cast<iupPlotDataSet**>(malloc(sizeof(iupPlotDataSet*)* mDataSetListMax)); /* use malloc because we will use realloc */
   memset(mDataSetList, 0, sizeof(iupPlotDataSet*)* mDataSetListMax);
 }
 
@@ -149,7 +149,7 @@ void iupPlot::AddDataSet(iupPlotDataSet* inDataSet)
   {
     int old_max = mDataSetListMax;
     mDataSetListMax += 20;
-    mDataSetList = (iupPlotDataSet**)realloc(mDataSetList, sizeof(iupPlotDataSet*)* mDataSetListMax);
+    mDataSetList = static_cast<iupPlotDataSet**>(realloc(mDataSetList, sizeof(iupPlotDataSet*)* mDataSetListMax));
     memset(mDataSetList + old_max, 0, sizeof(iupPlotDataSet*)* (mDataSetListMax - old_max));
   }
 
@@ -183,7 +183,7 @@ void iupPlot::RemoveDataSet(int inIndex)
   for (int i = inIndex; i < mDataSetListCount - 1; i++)
     mDataSetList[i] = mDataSetList[i + 1];
 
-  mDataSetList[mDataSetListCount - 1] = NULL;
+  mDataSetList[mDataSetListCount - 1] = nullptr;
 
   mDataSetListCount--;
 }
@@ -232,11 +232,11 @@ bool iupPlot::FindDataSetSample(double inScreenX, double inScreenY, int &outInde
       const iupPlotData* theXData = dataset->GetDataX();
       if (theXData->IsString())
       {
-        const iupPlotDataString* theStringXData = (const iupPlotDataString*)(theXData);
+        const auto* theStringXData = static_cast<const iupPlotDataString*>(theXData);
         outStrX = theStringXData->GetSampleString(outSampleIndex);
       }
       else
-        outStrX = NULL;
+        outStrX = nullptr;
 
       outIndex = ds;
       outName = dataset->GetName();
@@ -281,7 +281,7 @@ void iupPlot::SelectDataSetSamples(double inMinX, double inMaxX, double inMinY, 
   iPlotCheckMinMax(inMinX, inMaxX);
   iPlotCheckMinMax(inMinY, inMaxY);
 
-  IFniiddi select_cb = (IFniiddi)IupGetCallback(ih, "SELECT_CB");
+  auto select_cb = reinterpret_cast<IFniiddi>(IupGetCallback(ih, "SELECT_CB"));
   if (select_cb)
   {
     Icallback cb = IupGetCallback(ih, "SELECTBEGIN_CB");
@@ -312,7 +312,7 @@ void iupPlot::ClearDataSetSelection()
 {
   bool theChanged = false;
 
-  IFniiddi select_cb = (IFniiddi)IupGetCallback(ih, "SELECT_CB");
+  auto select_cb = reinterpret_cast<IFniiddi>(IupGetCallback(ih, "SELECT_CB"));
   if (select_cb)
   {
     Icallback cb = IupGetCallback(ih, "SELECTBEGIN_CB");
@@ -343,7 +343,7 @@ void iupPlot::DeleteSelectedDataSetSamples()
 {
   bool theChanged = false;
 
-  IFniiddi delete_cb = (IFniiddi)IupGetCallback(ih, "DELETE_CB");
+  auto delete_cb = reinterpret_cast<IFniiddi>(IupGetCallback(ih, "DELETE_CB"));
   if (delete_cb)
   {
     Icallback cb = IupGetCallback(ih, "DELETEBEGIN_CB");
@@ -384,7 +384,7 @@ void iupPlot::ConfigureAxis()
       const iupPlotData* theXData = mDataSetList[0]->GetDataX();   // The first dataset will define the named tick usage
       if (theXData->IsString())
       {
-        const iupPlotDataString* theStringXData = (const iupPlotDataString*)(theXData);
+        const auto* theStringXData = static_cast<const iupPlotDataString*>(theXData);
         mAxisX.SetNamedTickIter(theStringXData);
       }
     }
@@ -402,7 +402,7 @@ iupPlotDataSet* iupPlot::HasPie() const
     if (dataset->mMode == IUP_PLOT_PIE)
       return dataset;
   }
-  return NULL;
+  return nullptr;
 }
 
 void iupPlot::DataSetClipArea(iupPlotDrawContext* ctx, int xmin, int xmax, int ymin, int ymax) const
@@ -502,7 +502,7 @@ bool iupPlot::Render(iupPlotDrawContext* ctx)
     return false;
   }
 
-  IFn pre_cb = (IFn)IupGetCallback(ih, "PREDRAW_CB");
+  IFn pre_cb = static_cast<IFn>(IupGetCallback(ih, "PREDRAW_CB"));
   if (pre_cb)
     pre_cb(ih);
 
@@ -532,7 +532,7 @@ bool iupPlot::Render(iupPlotDrawContext* ctx)
 
   DataSetClipArea(ctx, theDataSetArea.mX, theDataSetArea.mX + theDataSetArea.mWidth - 1, theDataSetArea.mY, theDataSetArea.mY + theDataSetArea.mHeight - 1);
 
-  IFniiddi drawsample_cb = (IFniiddi)IupGetCallback(ih, "DRAWSAMPLE_CB");
+  auto drawsample_cb = reinterpret_cast<IFniiddi>(IupGetCallback(ih, "DRAWSAMPLE_CB"));
 
   iupPlotDataSet* pie_dataset = HasPie();
 
@@ -585,7 +585,7 @@ bool iupPlot::Render(iupPlotDrawContext* ctx)
     mBox.Draw(mSelectionBand, ctx);
   }
 
-  IFn post_cb = (IFn)IupGetCallback(ih, "POSTDRAW_CB");
+  IFn post_cb = static_cast<IFn>(IupGetCallback(ih, "POSTDRAW_CB"));
   if (post_cb)
     post_cb(ih);
 

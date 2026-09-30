@@ -21,7 +21,7 @@ bool iupPlotDataReal::CalculateRange(double &outMin, double &outMax) const
   int theCount = iupArrayCount(mArray);
   if (theCount > 0)
   {
-    double* theData = (double*)iupArrayGetData(mArray);
+    auto* theData = static_cast<double*>(iupArrayGetData(mArray));
     outMax = outMin = theData[0];
     for (int i = 1; i < theCount; i++)
     {
@@ -73,31 +73,29 @@ iupPlotDataSet::iupPlotDataSet(bool strXdata)
   mMultibarIndex(-1), mMultibarCount(0), mBarOutlineColor(0), mBarShowOutline(false), mBarSpacingPercent(10),
   mPieStartAngle(0), mPieRadius(0.95), mPieContour(false), mPieHole(0), mPieSliceLabelPos(0.95),
   mHighlightedSample(-1), mHighlightedCurve(false), mBarMulticolor(false), mOrderedX(false), mSelectedCurve(false),
-  mPieSliceLabel(IUP_PLOT_NONE), mMode(IUP_PLOT_LINE), mName(NULL), mHasSelected(false), mUserData(0)
+  mPieSliceLabel(IUP_PLOT_NONE), mMode(IUP_PLOT_LINE), mName(nullptr), mHasSelected(false), mUserData(nullptr)
 {
   if (strXdata)
-    mDataX = (iupPlotData*)(new iupPlotDataString());
+    mDataX = new iupPlotDataString();
   else
-    mDataX = (iupPlotData*)(new iupPlotDataReal());
+    mDataX = new iupPlotDataReal();
 
-  mDataY = (iupPlotData*)new iupPlotDataReal();
+  mDataY = new iupPlotDataReal();
 
   mSelection = new iupPlotDataBool();
-  mSegment = NULL;
-  mExtra = NULL;
+  mSegment = nullptr;
+  mExtra = nullptr;
 }
 
 iupPlotDataSet::~iupPlotDataSet()
 {
-  SetName(NULL);
+  SetName(nullptr);
 
   delete mDataX;
   delete mDataY;
   delete mSelection;
-  if (mSegment)
-    delete mSegment;
-  if (mExtra)
-    delete mExtra;
+  delete mSegment;
+  delete mExtra;
 }
 
 bool iupPlotDataSet::FindSample(iupPlotTrafo* inTrafoX, iupPlotTrafo* inTrafoY, double inScreenX, double inScreenY, double inScreenTolerance,
@@ -173,7 +171,7 @@ bool iupPlotDataSet::FindMultipleBarSample(iupPlotTrafo* inTrafoX, iupPlotTrafo*
   double theScreenMaxX = inTrafoX->Transform(theMaxX);
 
   double theTotalBarWidth = (theScreenMaxX - theScreenMinX) / (theCount - 1);
-  theTotalBarWidth *= 1 - (double)mBarSpacingPercent / 100.0;
+  theTotalBarWidth *= 1 - static_cast<double>(mBarSpacingPercent) / 100.0;
   double theBarWidth = theTotalBarWidth / mMultibarCount;
 
   for (int i = 0; i < theCount; i++)
@@ -213,7 +211,7 @@ bool iupPlotDataSet::FindBarSample(iupPlotTrafo* inTrafoX, iupPlotTrafo* inTrafo
   double theScreenMaxX = inTrafoX->Transform(theMaxX);
 
   double theBarWidth = (theScreenMaxX - theScreenMinX) / (theCount - 1);
-  theBarWidth *= 1 - (double)mBarSpacingPercent / 100.0;
+  theBarWidth *= 1 - static_cast<double>(mBarSpacingPercent) / 100.0;
 
   for (int i = 0; i < theCount; i++)
   {
@@ -252,7 +250,7 @@ bool iupPlotDataSet::FindHorizontalBarSample(iupPlotTrafo* inTrafoX, iupPlotTraf
   double theScreenMaxY = inTrafoY->Transform(theMaxY);
 
   double theBarHeight = (theScreenMaxY - theScreenMinY) / (theCount - 1);
-  theBarHeight *= 1 - (double)mBarSpacingPercent / 100.0;
+  theBarHeight *= 1 - static_cast<double>(mBarSpacingPercent) / 100.0;
 
   for (int i = 0; i < theCount; i++)
   {
@@ -502,7 +500,7 @@ bool iupPlotDataSet::SelectSamples(double inMinX, double inMaxX, double inMinY, 
       {
         if (inNotify->cb)
         {
-          int ret = inNotify->cb(inNotify->ih, inNotify->ds, i, theX, theY, (int)!theSelected);
+          int ret = inNotify->cb(inNotify->ih, inNotify->ds, i, theX, theY, static_cast<int>(!theSelected));
           if (ret == IUP_IGNORE)
             continue;
         }
@@ -517,7 +515,7 @@ bool iupPlotDataSet::SelectSamples(double inMinX, double inMaxX, double inMinY, 
       {
         if (inNotify->cb)
         {
-          int ret = inNotify->cb(inNotify->ih, inNotify->ds, i, theX, theY, (int)!theSelected);
+          int ret = inNotify->cb(inNotify->ih, inNotify->ds, i, theX, theY, static_cast<int>(!theSelected));
           if (ret == IUP_IGNORE)
             continue;
         }
@@ -550,7 +548,7 @@ bool iupPlotDataSet::ClearSelection(const iupPlotSampleNotify* inNotify)
       {
         double theX = mDataX->GetSample(i);
         double theY = mDataY->GetSample(i);
-        int ret = inNotify->cb(inNotify->ih, inNotify->ds, i, theX, theY, (int)!theSelected);
+        int ret = inNotify->cb(inNotify->ih, inNotify->ds, i, theX, theY, static_cast<int>(!theSelected));
         if (ret == IUP_IGNORE)
           continue;
       }
@@ -582,7 +580,7 @@ bool iupPlotDataSet::DeleteSelectedSamples(const iupPlotSampleNotify* inNotify)
       {
         double theX = mDataX->GetSample(i);
         double theY = mDataY->GetSample(i);
-        int ret = inNotify->cb(inNotify->ih, inNotify->ds, i, theX, theY, (int)!theSelected);
+        int ret = inNotify->cb(inNotify->ih, inNotify->ds, i, theX, theY, static_cast<int>(!theSelected));
         if (ret == IUP_IGNORE)
           continue;
       }
@@ -602,8 +600,8 @@ int iupPlotDataSet::GetCount()
 
 void iupPlotDataSet::AddSample(double inX, double inY)
 {
-  iupPlotDataReal* theXData = (iupPlotDataReal*)mDataX;
-  iupPlotDataReal* theYData = (iupPlotDataReal*)mDataY;
+  auto* theXData = static_cast<iupPlotDataReal*>(mDataX);
+  auto* theYData = static_cast<iupPlotDataReal*>(mDataY);
 
   if (theXData->IsString())
     return;
@@ -619,8 +617,8 @@ void iupPlotDataSet::AddSample(double inX, double inY)
 
 void iupPlotDataSet::InsertSample(int inSampleIndex, double inX, double inY)
 {
-  iupPlotDataReal* theXData = (iupPlotDataReal*)mDataX;
-  iupPlotDataReal* theYData = (iupPlotDataReal*)mDataY;
+  auto* theXData = static_cast<iupPlotDataReal*>(mDataX);
+  auto* theYData = static_cast<iupPlotDataReal*>(mDataY);
 
   if (theXData->IsString())
     return;
@@ -654,8 +652,8 @@ void iupPlotDataSet::InitExtra()
 
 void iupPlotDataSet::AddSampleSegment(double inX, double inY, bool inSegment)
 {
-  iupPlotDataReal* theXData = (iupPlotDataReal*)mDataX;
-  iupPlotDataReal* theYData = (iupPlotDataReal*)mDataY;
+  auto* theXData = static_cast<iupPlotDataReal*>(mDataX);
+  auto* theYData = static_cast<iupPlotDataReal*>(mDataY);
 
   if (theXData->IsString())
     return;
@@ -673,8 +671,8 @@ void iupPlotDataSet::AddSampleSegment(double inX, double inY, bool inSegment)
 
 void iupPlotDataSet::InsertSampleSegment(int inSampleIndex, double inX, double inY, bool inSegment)
 {
-  iupPlotDataReal* theXData = (iupPlotDataReal*)mDataX;
-  iupPlotDataReal* theYData = (iupPlotDataReal*)mDataY;
+  auto* theXData = static_cast<iupPlotDataReal*>(mDataX);
+  auto* theYData = static_cast<iupPlotDataReal*>(mDataY);
 
   if (theXData->IsString())
     return;
@@ -692,8 +690,8 @@ void iupPlotDataSet::InsertSampleSegment(int inSampleIndex, double inX, double i
 
 void iupPlotDataSet::AddSample(const char* inX, double inY)
 {
-  iupPlotDataString* theXData = (iupPlotDataString*)mDataX;
-  iupPlotDataReal* theYData = (iupPlotDataReal*)mDataY;
+  auto* theXData = static_cast<iupPlotDataString*>(mDataX);
+  auto* theYData = static_cast<iupPlotDataReal*>(mDataY);
 
   if (!theXData->IsString())
     return;
@@ -709,8 +707,8 @@ void iupPlotDataSet::AddSample(const char* inX, double inY)
 
 void iupPlotDataSet::InsertSample(int inSampleIndex, const char* inX, double inY)
 {
-  iupPlotDataString* theXData = (iupPlotDataString*)mDataX;
-  iupPlotDataReal* theYData = (iupPlotDataReal*)mDataY;
+  auto* theXData = static_cast<iupPlotDataString*>(mDataX);
+  auto* theYData = static_cast<iupPlotDataReal*>(mDataY);
 
   if (!theXData->IsString())
     return;
@@ -737,8 +735,8 @@ void iupPlotDataSet::RemoveSample(int inSampleIndex)
 
 void iupPlotDataSet::GetSample(int inSampleIndex, double* inX, double* inY)
 {
-  iupPlotDataReal* theXData = (iupPlotDataReal*)mDataX;
-  iupPlotDataReal* theYData = (iupPlotDataReal*)mDataY;
+  auto* theXData = static_cast<iupPlotDataReal*>(mDataX);
+  auto* theYData = static_cast<iupPlotDataReal*>(mDataY);
 
   if (theXData->IsString())
     return;
@@ -753,8 +751,8 @@ void iupPlotDataSet::GetSample(int inSampleIndex, double* inX, double* inY)
 
 void iupPlotDataSet::GetSample(int inSampleIndex, const char* *inX, double* inY)
 {
-  iupPlotDataString* theXData = (iupPlotDataString*)mDataX;
-  iupPlotDataReal* theYData = (iupPlotDataReal*)mDataY;
+  auto* theXData = static_cast<iupPlotDataString*>(mDataX);
+  auto* theYData = static_cast<iupPlotDataReal*>(mDataY);
 
   if (!theXData->IsString())
     return;
@@ -787,8 +785,8 @@ double iupPlotDataSet::GetSampleExtra(int inSampleIndex)
 
 void iupPlotDataSet::SetSample(int inSampleIndex, double inX, double inY)
 {
-  iupPlotDataReal* theXData = (iupPlotDataReal*)mDataX;
-  iupPlotDataReal* theYData = (iupPlotDataReal*)mDataY;
+  auto* theXData = static_cast<iupPlotDataReal*>(mDataX);
+  auto* theYData = static_cast<iupPlotDataReal*>(mDataY);
 
   if (theXData->IsString())
     return;
@@ -803,8 +801,8 @@ void iupPlotDataSet::SetSample(int inSampleIndex, double inX, double inY)
 
 void iupPlotDataSet::SetSample(int inSampleIndex, const char* inX, double inY)
 {
-  iupPlotDataString* theXData = (iupPlotDataString*)mDataX;
-  iupPlotDataReal* theYData = (iupPlotDataReal*)mDataY;
+  auto* theXData = static_cast<iupPlotDataString*>(mDataX);
+  auto* theYData = static_cast<iupPlotDataReal*>(mDataY);
 
   if (!theXData->IsString())
     return;
@@ -925,7 +923,7 @@ void iupPlotDataSet::DrawDataLine(const iupPlotTrafo* inTrafoX, const iupPlotTra
     int absY = iupPlotDrawCalcY(ctx, theScreenY);
 
     if (inNotify->cb)
-      inNotify->cb(inNotify->ih, inNotify->ds, i, theX, theY, (int)mSelection->GetSampleBool(i));
+      inNotify->cb(inNotify->ih, inNotify->ds, i, theX, theY, static_cast<int>(mSelection->GetSampleBool(i)));
 
     if (inShowMark)
     {
@@ -967,7 +965,7 @@ void iupPlotDataSet::DrawErrorBar(const iupPlotTrafo* inTrafoY, iupPlotDrawConte
   double theError = mExtra->GetSample(index);
   double theScreenErrorY1 = inTrafoY->Transform(theY - theError);
   double theScreenErrorY2 = inTrafoY->Transform(theY + theError);
-  double theBarWidth = (double)mMarkSize;
+  auto theBarWidth = static_cast<double>(mMarkSize);
 
   int absX = iupPlotDrawCalcX(ctx, theScreenX);
   int absY1 = iupPlotDrawCalcY(ctx, theScreenErrorY1);
@@ -1004,7 +1002,7 @@ void iupPlotDataSet::DrawDataMark(const iupPlotTrafo* inTrafoX, const iupPlotTra
     int absY = iupPlotDrawCalcY(ctx, theScreenY);
 
     if (inNotify->cb)
-      inNotify->cb(inNotify->ih, inNotify->ds, i, theX, theY, (int)mSelection->GetSampleBool(i));
+      inNotify->cb(inNotify->ih, inNotify->ds, i, theX, theY, static_cast<int>(mSelection->GetSampleBool(i)));
 
     int theMarkSize = mMarkSize;
     if (mExtra)
@@ -1033,7 +1031,7 @@ void iupPlotDataSet::DrawDataStem(const iupPlotTrafo* inTrafoX, const iupPlotTra
     int absY = iupPlotDrawCalcY(ctx, theScreenY);
 
     if (inNotify->cb)
-      inNotify->cb(inNotify->ih, inNotify->ds, i, theX, theY, (int)mSelection->GetSampleBool(i));
+      inNotify->cb(inNotify->ih, inNotify->ds, i, theX, theY, static_cast<int>(mSelection->GetSampleBool(i)));
 
     if (inShowMark)
     {
@@ -1075,7 +1073,7 @@ void iupPlotDataSet::DrawDataArea(const iupPlotTrafo* inTrafoX, const iupPlotTra
     int absY = iupPlotDrawCalcY(ctx, theScreenY);
 
     if (inNotify->cb)
-      inNotify->cb(inNotify->ih, inNotify->ds, i, theX, theY, (int)mSelection->GetSampleBool(i));
+      inNotify->cb(inNotify->ih, inNotify->ds, i, theX, theY, static_cast<int>(mSelection->GetSampleBool(i)));
 
     if (i == 0)
     {
@@ -1165,7 +1163,7 @@ void iupPlotDataSet::DrawDataBar(const iupPlotTrafo* inTrafoX, const iupPlotTraf
   double theScreenMaxX = inTrafoX->Transform(theMaxX);
 
   double theBarWidth = (theScreenMaxX - theScreenMinX) / (theCount - 1);
-  theBarWidth *= 1 - (double)mBarSpacingPercent / 100.0;
+  theBarWidth *= 1 - static_cast<double>(mBarSpacingPercent) / 100.0;
 
   for (int i = 0; i < theCount; i++)
   {
@@ -1178,7 +1176,7 @@ void iupPlotDataSet::DrawDataBar(const iupPlotTrafo* inTrafoX, const iupPlotTraf
     double theBarHeight = theScreenY - theScreenY0;
 
     if (inNotify->cb)
-      inNotify->cb(inNotify->ih, inNotify->ds, i, theX, theY, (int)mSelection->GetSampleBool(i));
+      inNotify->cb(inNotify->ih, inNotify->ds, i, theX, theY, static_cast<int>(mSelection->GetSampleBool(i)));
 
     if (theBarHeight == 0)
       continue;
@@ -1213,7 +1211,7 @@ void iupPlotDataSet::DrawDataHorizontalBar(const iupPlotTrafo* inTrafoX, const i
   double theScreenMaxY = inTrafoY->Transform(theMaxY);
 
   double theBarHeight = (theScreenMaxY - theScreenMinY) / (theCount - 1);
-  theBarHeight *= 1 - (double)mBarSpacingPercent / 100.0;
+  theBarHeight *= 1 - static_cast<double>(mBarSpacingPercent) / 100.0;
 
   for (int i = 0; i < theCount; i++)
   {
@@ -1226,7 +1224,7 @@ void iupPlotDataSet::DrawDataHorizontalBar(const iupPlotTrafo* inTrafoX, const i
     double theBarWidth = theScreenX - theScreenX0;
 
     if (inNotify->cb)
-      inNotify->cb(inNotify->ih, inNotify->ds, i, theX, theY, (int)mSelection->GetSampleBool(i));
+      inNotify->cb(inNotify->ih, inNotify->ds, i, theX, theY, static_cast<int>(mSelection->GetSampleBool(i)));
 
     if (theBarWidth == 0)
       continue;
@@ -1261,7 +1259,7 @@ void iupPlotDataSet::DrawDataMultiBar(const iupPlotTrafo* inTrafoX, const iupPlo
   double theScreenMaxX = inTrafoX->Transform(theMaxX);
 
   double theTotalBarWidth = (theScreenMaxX - theScreenMinX) / (theCount - 1);
-  theTotalBarWidth *= 1 - (double)mBarSpacingPercent / 100.0;
+  theTotalBarWidth *= 1 - static_cast<double>(mBarSpacingPercent) / 100.0;
   double theBarWidth = theTotalBarWidth / mMultibarCount;
 
   for (int i = 0; i < theCount; i++)
@@ -1275,7 +1273,7 @@ void iupPlotDataSet::DrawDataMultiBar(const iupPlotTrafo* inTrafoX, const iupPlo
     double theBarHeight = theScreenY - theScreenY0;
 
     if (inNotify->cb)
-      inNotify->cb(inNotify->ih, inNotify->ds, i, theX, theY, (int)mSelection->GetSampleBool(i));
+      inNotify->cb(inNotify->ih, inNotify->ds, i, theX, theY, static_cast<int>(mSelection->GetSampleBool(i)));
 
     if (theBarHeight == 0)
       continue;
@@ -1312,7 +1310,7 @@ void iupPlotDataSet::DrawDataStep(const iupPlotTrafo* inTrafoX, const iupPlotTra
     int absY = iupPlotDrawCalcY(ctx, theScreenY);
 
     if (inNotify->cb)
-      inNotify->cb(inNotify->ih, inNotify->ds, i, theX, theY, (int)mSelection->GetSampleBool(i));
+      inNotify->cb(inNotify->ih, inNotify->ds, i, theX, theY, static_cast<int>(mSelection->GetSampleBool(i)));
 
     if (i > 0 && mSegment && mSegment->GetSampleBool(i))
     {
@@ -1388,13 +1386,13 @@ void iupPlotDataSet::DrawDataPie(const iupPlotTrafo* inTrafoX, const iupPlotTraf
 
   w = 2.0 * mPieRadius;
   h = 2.0 * mPieRadius;
-  w *= ((iupPlotTrafoLinear*)inTrafoX)->mSlope;
-  h *= ((iupPlotTrafoLinear*)inTrafoY)->mSlope;
+  w *= static_cast<const iupPlotTrafoLinear*>(inTrafoX)->mSlope;
+  h *= static_cast<const iupPlotTrafoLinear*>(inTrafoY)->mSlope;
 
   double w1 = 2.0 * (mPieRadius * 1.01);
   double h1 = 2.0 * (mPieRadius * 1.01);
-  w1 *= ((iupPlotTrafoLinear*)inTrafoX)->mSlope;
-  h1 *= ((iupPlotTrafoLinear*)inTrafoY)->mSlope;
+  w1 *= static_cast<const iupPlotTrafoLinear*>(inTrafoX)->mSlope;
+  h1 *= static_cast<const iupPlotTrafoLinear*>(inTrafoY)->mSlope;
 
   double startAngle = mPieStartAngle;
 
@@ -1418,7 +1416,7 @@ void iupPlotDataSet::DrawDataPie(const iupPlotTrafo* inTrafoX, const iupPlotTraf
     double angle = (theY * 360.) / sum;
 
     if (inNotify->cb)
-      inNotify->cb(inNotify->ih, inNotify->ds, i, theX, theY, (int)mSelection->GetSampleBool(i));
+      inNotify->cb(inNotify->ih, inNotify->ds, i, theX, theY, static_cast<int>(mSelection->GetSampleBool(i)));
 
     long sampleColor = iupPlotDrawGetSampleColorTable(inNotify->ih, i);
 
@@ -1453,7 +1451,7 @@ void iupPlotDataSet::DrawDataPie(const iupPlotTrafo* inTrafoX, const iupPlotTraf
       {
       case IUP_PLOT_X:
         if (mDataX->IsString())
-          iupPlotDrawAlignedText(ctx, px, py, text_alignment, ((iupPlotDataString*)mDataX)->GetSampleString(i), inAxisY.mColor, fontStr, 0);
+          iupPlotDrawAlignedText(ctx, px, py, text_alignment, (static_cast<iupPlotDataString*>(mDataX))->GetSampleString(i), inAxisY.mColor, fontStr, 0);
         else
         {
           snprintf(theBuf, sizeof(theBuf), "%d", i);
@@ -1468,7 +1466,7 @@ void iupPlotDataSet::DrawDataPie(const iupPlotTrafo* inTrafoX, const iupPlotTraf
       {
         double percent = (theY * 100.) / sum;
         iupStrPrintfDoubleLocale(theBuf, inAxisY.mTick.mFormatString, percent, IupGetGlobal("DEFAULTDECIMALSYMBOL"));
-        { int p = (int)strlen(theBuf); snprintf(theBuf + p, sizeof(theBuf) - p, " %%"); }
+        { int p = static_cast<int>(strlen(theBuf)); snprintf(theBuf + p, sizeof(theBuf) - p, " %%"); }
         iupPlotDrawAlignedText(ctx, px, py, text_alignment, theBuf, inAxisY.mColor, fontStr, 0);
         break;
       }
@@ -1484,8 +1482,8 @@ void iupPlotDataSet::DrawDataPie(const iupPlotTrafo* inTrafoX, const iupPlotTraf
   {
     double hw = mPieHole * 2.0 * mPieRadius;
     double hh = mPieHole * 2.0 * mPieRadius;
-    hw *= ((iupPlotTrafoLinear*)inTrafoX)->mSlope;
-    hh *= ((iupPlotTrafoLinear*)inTrafoY)->mSlope;
+    hw *= static_cast<const iupPlotTrafoLinear*>(inTrafoX)->mSlope;
+    hh *= static_cast<const iupPlotTrafoLinear*>(inTrafoY)->mSlope;
 
     int hx1 = iupPlotDrawCalcX(ctx, xc - hw / 2);
     int hy1 = iupPlotDrawCalcY(ctx, yc + hh / 2);
@@ -1515,7 +1513,7 @@ void iupPlotDataSet::DrawSelection(const iupPlotTrafo* inTrafoX, const iupPlotTr
 
       if (inNotify->cb)
       {
-        int ret = inNotify->cb(inNotify->ih, inNotify->ds, i, theX, theY, (int)mSelection->GetSampleBool(i));
+        int ret = inNotify->cb(inNotify->ih, inNotify->ds, i, theX, theY, static_cast<int>(mSelection->GetSampleBool(i)));
         if (ret == IUP_IGNORE)
           continue;
       }
