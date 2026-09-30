@@ -22,7 +22,7 @@ typedef LONG (WINAPI* PFN_RtlGetVersion)(OSVERSIONINFOW*);
 static void iupwinuiGetVersionInfo(OSVERSIONINFOW* osvi)
 {
   HMODULE ntdll = GetModuleHandleA("ntdll.dll");
-  PFN_RtlGetVersion pRtlGetVersion = (PFN_RtlGetVersion)GetProcAddress(ntdll, "RtlGetVersion");
+  auto pRtlGetVersion = reinterpret_cast<PFN_RtlGetVersion>(GetProcAddress(ntdll, "RtlGetVersion"));
   ZeroMemory(osvi, sizeof(OSVERSIONINFOW));
   osvi->dwOSVersionInfoSize = sizeof(OSVERSIONINFOW);
   pRtlGetVersion(osvi);
@@ -36,35 +36,35 @@ extern "C" IUP_SDK_API char* iupdrvGetSystemName(void)
   if (osvi.dwPlatformId == VER_PLATFORM_WIN32_NT)
   {
     if (osvi.dwMajorVersion <= 4)
-      return (char*)"WinNT";
+      return const_cast<char*>("WinNT");
 
     if (osvi.dwMajorVersion == 5 && osvi.dwMinorVersion == 0)
-      return (char*)"Win2K";
+      return const_cast<char*>("Win2K");
 
     if (osvi.dwMajorVersion == 5 && osvi.dwMinorVersion > 0)
-      return (char*)"WinXP";
+      return const_cast<char*>("WinXP");
 
     if (osvi.dwMajorVersion == 6 && osvi.dwMinorVersion == 0)
-      return (char*)"Vista";
+      return const_cast<char*>("Vista");
 
     if (osvi.dwMajorVersion == 6 && osvi.dwMinorVersion == 1)
-      return (char*)"Win7";
+      return const_cast<char*>("Win7");
 
     if (osvi.dwMajorVersion == 6 && osvi.dwMinorVersion == 2)
-      return (char*)"Win8";
+      return const_cast<char*>("Win8");
 
     if (osvi.dwMajorVersion == 6 && osvi.dwMinorVersion == 3)
-      return (char*)"Win81";
+      return const_cast<char*>("Win81");
 
     if (osvi.dwMajorVersion == 10 && osvi.dwMinorVersion == 0)
     {
       if (osvi.dwBuildNumber >= 22000)
-        return (char*)"Win11";
-      return (char*)"Win10";
+        return const_cast<char*>("Win11");
+      return const_cast<char*>("Win10");
     }
   }
 
-  return (char*)"Windows";
+  return const_cast<char*>("Windows");
 }
 
 extern "C" IUP_SDK_API char* iupdrvGetSystemVersion(void)
@@ -87,7 +87,7 @@ extern "C" IUP_SDK_API char* iupdrvGetComputerName(void)
 {
   DWORD size = MAX_COMPUTERNAME_LENGTH + 1;
   char* str = iupStrGetMemory(size);
-  GetComputerNameA((LPSTR)str, &size);
+  GetComputerNameA(static_cast<LPSTR>(str), &size);
   return str;
 }
 
@@ -95,7 +95,7 @@ extern "C" IUP_SDK_API char* iupdrvGetUserName(void)
 {
   DWORD size = 256;
   char* str = iupStrGetMemory(size);
-  GetUserNameA((LPSTR)str, &size);
+  GetUserNameA(static_cast<LPSTR>(str), &size);
   return str;
 }
 
@@ -108,7 +108,7 @@ static int iupwinuiMakeDirectory(const char* path)
       return 1;
     return 0;
   }
-  return CreateDirectoryA(path, NULL) ? 1 : 0;
+  return CreateDirectoryA(path, nullptr) ? 1 : 0;
 }
 
 extern "C" IUP_SDK_API int iupdrvGetPreferencePath(char* filename, const char* app_name, int use_system)
@@ -154,14 +154,14 @@ extern "C" IUP_SDK_API int iupdrvGetUserDir(char* path, int size, int kind)
 
   if (kind == IUP_USER_DIR_TEMP)
   {
-    DWORD n = GetTempPathA((DWORD)size, path);
-    if (n == 0 || n >= (DWORD)size) return 0;
+    DWORD n = GetTempPathA(static_cast<DWORD>(size), path);
+    if (n == 0 || n >= static_cast<DWORD>(size)) return 0;
     if (n >= 1 && (path[n - 1] == '\\' || path[n - 1] == '/'))
       path[n - 1] = '\0';
     return 1;
   }
 
-  if (SHGetFolderPathA(NULL, CSIDL_LOCAL_APPDATA, NULL, SHGFP_TYPE_CURRENT, path) != S_OK)
+  if (SHGetFolderPathA(nullptr, CSIDL_LOCAL_APPDATA, nullptr, SHGFP_TYPE_CURRENT, path) != S_OK)
     return 0;
   return 1;
 }
@@ -170,8 +170,8 @@ extern "C" IUP_SDK_API void iupdrvGetScreenSize(int* width, int* height)
 {
   RECT area;
   SystemParametersInfoA(SPI_GETWORKAREA, 0, &area, 0);
-  *width = (int)(area.right - area.left);
-  *height = (int)(area.bottom - area.top);
+  *width = static_cast<int>(area.right - area.left);
+  *height = static_cast<int>(area.bottom - area.top);
 }
 
 extern "C" IUP_SDK_API void iupdrvGetFullSize(int* width, int* height)
@@ -185,18 +185,18 @@ extern "C" IUP_SDK_API void iupdrvGetFullSize(int* width, int* height)
 extern "C" IUP_SDK_API int iupdrvGetScreenDepth(void)
 {
   int bpp;
-  HDC hDCDisplay = GetDC(NULL);
+  HDC hDCDisplay = GetDC(nullptr);
   bpp = GetDeviceCaps(hDCDisplay, BITSPIXEL);
-  ReleaseDC(NULL, hDCDisplay);
+  ReleaseDC(nullptr, hDCDisplay);
   return bpp;
 }
 
 extern "C" IUP_SDK_API double iupdrvGetScreenDpi(void)
 {
   double dpi;
-  HDC hDCDisplay = GetDC(NULL);
-  dpi = (double)GetDeviceCaps(hDCDisplay, LOGPIXELSY);
-  ReleaseDC(NULL, hDCDisplay);
+  HDC hDCDisplay = GetDC(nullptr);
+  dpi = static_cast<double>(GetDeviceCaps(hDCDisplay, LOGPIXELSY));
+  ReleaseDC(nullptr, hDCDisplay);
   return dpi;
 }
 
@@ -209,8 +209,8 @@ extern "C" IUP_SDK_API void iupdrvGetCursorPos(int* x, int* y)
 {
   POINT cursorPoint;
   GetCursorPos(&cursorPoint);
-  *x = (int)cursorPoint.x;
-  *y = (int)cursorPoint.y;
+  *x = static_cast<int>(cursorPoint.x);
+  *y = static_cast<int>(cursorPoint.y);
 
   iupdrvAddScreenOffset(x, y, -1);
 }
@@ -244,15 +244,15 @@ extern "C" IUP_SDK_API char* iupdrvLocaleInfo(void)
 {
   UINT codepage = GetACP();
   if (codepage == CP_UTF8)
-    return (char*)"UTF-8";
+    return const_cast<char*>("UTF-8");
   return iupStrReturnStrf("CP%u", codepage);
 }
 
 extern "C" IUP_SDK_API char* iupdrvExeFileName(void)
 {
   wchar_t filename[10240];
-  if (GetModuleFileNameW(NULL, filename, 10240) == 0)
-    return NULL;
+  if (GetModuleFileNameW(nullptr, filename, 10240) == 0)
+    return nullptr;
   return iupwinuiHStringToString(winrt::hstring(filename));
 }
 
@@ -262,9 +262,9 @@ extern "C" IUP_SDK_API char* iupdrvLanguageInfo(void)
   char name[LOCALE_NAME_MAX_LENGTH];
 
   if (!LCIDToLocaleName(MAKELCID(GetUserDefaultUILanguage(), SORT_DEFAULT), wname, LOCALE_NAME_MAX_LENGTH, 0))
-    return NULL;
-  if (!WideCharToMultiByte(CP_UTF8, 0, wname, -1, name, sizeof(name), NULL, NULL))
-    return NULL;
+    return nullptr;
+  if (!WideCharToMultiByte(CP_UTF8, 0, wname, -1, name, sizeof(name), nullptr, nullptr))
+    return nullptr;
   return iupStrLanguageTag(name);
 }
 
@@ -286,15 +286,15 @@ extern "C" IUP_SDK_API void iupdrvAddScreenOffset(int* x, int* y, int add)
 
 extern "C" IUP_SDK_API void* iupdrvGetDisplay(void)
 {
-  return NULL;
+  return nullptr;
 }
 
 extern "C" IUP_SDK_API char* iupdrvGetCurrentDirectory(void)
 {
-  char* cur_dir = NULL;
+  char* cur_dir = nullptr;
 
-  int len = GetCurrentDirectoryA(0, NULL);
-  if (len == 0) return NULL;
+  int len = GetCurrentDirectoryA(0, nullptr);
+  if (len == 0) return nullptr;
 
   cur_dir = iupStrGetMemory(len + 2);
   GetCurrentDirectoryA(len + 1, cur_dir);
@@ -304,7 +304,7 @@ extern "C" IUP_SDK_API char* iupdrvGetCurrentDirectory(void)
   return cur_dir;
 }
 
-extern "C" IUP_SDK_API int iupdrvSetCurrentDirectory(const char* path)
+extern "C" IUP_SDK_API int iupdrvSetCurrentDirectory(const char* dir)
 {
-  return SetCurrentDirectoryA(path);
+  return SetCurrentDirectoryA(dir);
 }

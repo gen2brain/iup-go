@@ -38,7 +38,7 @@ IUP_DRV_API void iupwinuiFocusInOutEvent(Ihandle* ih, int got)
 
     Ihandle* dialog = IupGetDialog(ih);
     if (dialog && ih != dialog)
-      iupAttribSet(dialog, "_IUPWINUI_LASTFOCUS", (char*)ih);
+      iupAttribSet(dialog, "_IUPWINUI_LASTFOCUS", reinterpret_cast<char*>(ih));
 
     iupCallGetFocusCb(ih);
   }
@@ -63,7 +63,7 @@ static UIElement winuiGetFocusableElement(Ihandle* ih)
 
   if (IupClassMatch(ih, "toggle"))
   {
-    IupWinUIToggleAux* aux = winuiGetAux<IupWinUIToggleAux>(ih, IUPWINUI_TOGGLE_AUX);
+    auto* aux = winuiGetAux<IupWinUIToggleAux>(ih, IUPWINUI_TOGGLE_AUX);
     if (aux)
     {
       switch (aux->controlType)
@@ -83,13 +83,13 @@ static UIElement winuiGetFocusableElement(Ihandle* ih)
   }
   else if (IupClassMatch(ih, "text") || IupClassMatch(ih, "multiline"))
   {
-    IupWinUITextAux* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
+    auto* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
     if (aux && aux->isPassword)
       return winuiGetHandle<PasswordBox>(ih);
   }
   else if (IupClassMatch(ih, "list"))
   {
-    IupWinUIListAux* aux = winuiGetAux<IupWinUIListAux>(ih, IUPWINUI_LIST_AUX);
+    auto* aux = winuiGetAux<IupWinUIListAux>(ih, IUPWINUI_LIST_AUX);
     if (aux && aux->isDropdown)
       return winuiGetHandle<ComboBox>(ih);
     else
@@ -149,9 +149,9 @@ static void winuiSetFocusToIsland(Ihandle* dialog)
   if (!dialog || !dialog->handle)
     return;
 
-  iupwinuiBringWindowToForeground((HWND)dialog->handle);
+  iupwinuiBringWindowToForeground(reinterpret_cast<HWND>(dialog->handle));
 
-  IupWinUIDialogAux* aux = winuiGetAux<IupWinUIDialogAux>(dialog, IUPWINUI_DIALOG_AUX);
+  auto* aux = winuiGetAux<IupWinUIDialogAux>(dialog, IUPWINUI_DIALOG_AUX);
   if (aux && aux->xamlSource)
   {
     XamlSourceFocusNavigationRequest request(XamlSourceFocusNavigationReason::First);
@@ -173,7 +173,7 @@ extern "C" IUP_SDK_API void iupdrvSetFocus(Ihandle* ih)
 
   if (iupAttribGet(ih, "_IUP_GLCONTROLDATA"))
   {
-    SetFocus((HWND)ih->handle);
+    SetFocus(reinterpret_cast<HWND>(ih->handle));
     iupSetCurrentFocus(ih);
     return;
   }
@@ -181,7 +181,7 @@ extern "C" IUP_SDK_API void iupdrvSetFocus(Ihandle* ih)
   Ihandle* dialog = IupGetDialog(ih);
 
   if (dialog && dialog->handle)
-    iupwinuiBringWindowToForeground((HWND)dialog->handle);
+    iupwinuiBringWindowToForeground(reinterpret_cast<HWND>(dialog->handle));
 
   UIElement elem = winuiGetFocusableElement(ih);
   if (elem)
@@ -199,10 +199,10 @@ extern "C" IUP_SDK_API void iupdrvActivate(Ihandle* ih)
 
   if (IupClassMatch(ih, "button"))
   {
-    Button btn = winuiGetHandle<Button>(ih);
+    auto btn = winuiGetHandle<Button>(ih);
     if (btn)
     {
-      IFn cb = (IFn)IupGetCallback(ih, "ACTION");
+      IFn cb = static_cast<IFn>(IupGetCallback(ih, "ACTION"));
       if (cb)
       {
         int ret = cb(ih);

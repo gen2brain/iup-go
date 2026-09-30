@@ -108,13 +108,13 @@ static void winuiTableSetVirtualItems(ListView listView, int count)
   }
 
   uint32_t size = items.Size();
-  while (size > (uint32_t)count)
+  while (size > static_cast<uint32_t>(count))
   {
     items.RemoveAtEnd();
     size--;
   }
-  while (size < (uint32_t)count)
-    items.Append(box_value((int)size++));
+  while (size < static_cast<uint32_t>(count))
+    items.Append(box_value(static_cast<int>(size++)));
 }
 
 static StackPanel winuiTableGetHeader(Ihandle* ih)
@@ -136,7 +136,7 @@ static Grid winuiTableGetRowGrid(Ihandle* ih, int lin)
   if (!listView)
     return nullptr;
 
-  uint32_t index = (uint32_t)(lin - 1);
+  auto index = static_cast<uint32_t>(lin - 1);
   if (index >= listView.Items().Size())
     return nullptr;
 
@@ -224,7 +224,7 @@ static void winuiTableFreeCell(char** cell)
   if (cell && *cell)
   {
     free(*cell);
-    *cell = NULL;
+    *cell = nullptr;
   }
 }
 
@@ -236,7 +236,7 @@ static void winuiTableSetCell(char** cell, const char* value)
   if (value && value[0])
     *cell = iupStrDup(value);
   else
-    *cell = NULL;
+    *cell = nullptr;
 }
 
 static SolidColorBrush winuiTableGridLineBrush()
@@ -296,9 +296,9 @@ static bool winuiTableIsRowSelected(Ihandle* ih, int lin)
     return false;
 
   if (listView.SelectionMode() == ListViewSelectionMode::Single)
-    return listView.SelectedIndex() == (int)(lin - 1);
+    return listView.SelectedIndex() == lin - 1;
 
-  uint32_t index = (uint32_t)(lin - 1);
+  auto index = static_cast<uint32_t>(lin - 1);
   if (index >= listView.Items().Size())
     return false;
 
@@ -330,12 +330,12 @@ static char* winuiTableGetCellFont(Ihandle* ih, int lin, int col)
     font = iupAttribGetId2(ih, "FONT", 0, col);
   if (!font)
     font = iupAttribGetId2(ih, "FONT", lin, 0);
-  return (font && *font) ? font : NULL;
+  return (font && *font) ? font : nullptr;
 }
 
 static void winuiTableUpdateCellFont(Ihandle* ih, int lin, int col, TextBlock tb)
 {
-  char* font = lin > 0 ? winuiTableGetCellFont(ih, lin, col) : NULL;
+  char* font = lin > 0 ? winuiTableGetCellFont(ih, lin, col) : nullptr;
   if (font)
     iupwinuiUpdateTextBlockFontStr(tb, font, ih);
   else
@@ -486,7 +486,7 @@ static void winuiTableSetCellImageFromName(Ihandle* ih, Grid rowGrid, int col, c
     return;
   }
 
-  void* imghandle = iupImageGetImage(image_name, ih, 0, NULL);
+  void* imghandle = iupImageGetImage(image_name, ih, 0, nullptr);
   WriteableBitmap bitmap = winuiGetBitmapFromHandle(imghandle);
   if (!bitmap)
   {
@@ -498,7 +498,7 @@ static void winuiTableSetCellImageFromName(Ihandle* ih, Grid rowGrid, int col, c
   {
     int img_w = bitmap.PixelWidth();
     int img_h = bitmap.PixelHeight();
-    int available_height = iupdrvTableGetRowHeight(ih) - (int)ceil(5 * iupwinuiGetScale(ih));
+    int available_height = iupdrvTableGetRowHeight(ih) - static_cast<int>(ceil(5 * iupwinuiGetScale(ih)));
     if (ih->data->fit_image && img_h > available_height && available_height > 0)
       winuiImageSetPixelSize(ih, img, (img_w * available_height) / img_h, available_height);
     else
@@ -541,7 +541,7 @@ static void winuiTablePopulateVirtualRow(Ihandle* ih, int lin, Grid rowGrid)
   if (!rowGrid)
     return;
 
-  sIFnii value_cb = (sIFnii)IupGetCallback(ih, "VALUE_CB");
+  auto value_cb = reinterpret_cast<sIFnii>(IupGetCallback(ih, "VALUE_CB"));
   if (!value_cb)
     return;
 
@@ -561,7 +561,7 @@ static void winuiTablePopulateVirtualRow(Ihandle* ih, int lin, Grid rowGrid)
 static void winuiTableApplyColumnWidthsToRowGrid(Ihandle* ih, Grid rowGrid, IupWinUITableAux* aux, int num_col)
 {
   double scale = iupwinuiGetScale(ih);
-  for (int c = 0; c < num_col && (uint32_t)c < rowGrid.ColumnDefinitions().Size(); c++)
+  for (int c = 0; c < num_col && static_cast<uint32_t>(c) < rowGrid.ColumnDefinitions().Size(); c++)
     rowGrid.ColumnDefinitions().GetAt(c).Width(GridLength{aux->col_widths[c] / scale, GridUnitType::Pixel});
 }
 
@@ -578,7 +578,7 @@ static void winuiTablePopulateVirtualContainer(Ihandle* ih, int lin, Primitives:
   int num_col = ih->data->num_col;
 
   Grid rowGrid = presenter.Content().try_as<Grid>();
-  if (!rowGrid || (int)rowGrid.ColumnDefinitions().Size() != num_col)
+  if (!rowGrid || static_cast<int>(rowGrid.ColumnDefinitions().Size()) != num_col)
   {
     rowGrid = winuiTableCreateRowGrid(ih, num_col, aux->show_grid);
     presenter.Content(rowGrid);
@@ -656,7 +656,7 @@ static int winuiTableCalculateColumnWidth(Ihandle* ih, int col_index)
 
   if (ih->data->show_image)
   {
-    iupdrvFontGetCharSize(ih, NULL, &charheight);
+    iupdrvFontGetCharSize(ih, nullptr, &charheight);
     image_extra = charheight + 4;
   }
 
@@ -678,7 +678,7 @@ static int winuiTableCalculateColumnWidth(Ihandle* ih, int col_index)
     {
       char* font = winuiTableGetCellFont(ih, lin, iup_col);
       if (font)
-        iupdrvFontGetTextSize(font, value, (int)strlen(value), &cell_width, NULL);
+        iupdrvFontGetTextSize(font, value, static_cast<int>(strlen(value)), &cell_width, nullptr);
       else
         cell_width = iupdrvFontGetStringWidth(ih, value);
     }
@@ -691,10 +691,10 @@ static int winuiTableCalculateColumnWidth(Ihandle* ih, int col_index)
         image_name = iupTableGetCellImageCb(ih, lin, iup_col);
       if (image_name)
       {
-        void* imghandle = ih->data->fit_image ? NULL : iupImageGetImage(image_name, ih, 0, NULL);
+        void* imghandle = ih->data->fit_image ? nullptr : iupImageGetImage(image_name, ih, 0, nullptr);
         int bmp_w, bmp_h, bpp;
         if (imghandle && iupdrvImageGetInfo(imghandle, &bmp_w, &bmp_h, &bpp))
-          cell_width += bmp_w + (int)ceil(4 * iupwinuiGetScale(ih));
+          cell_width += bmp_w + static_cast<int>(ceil(4 * iupwinuiGetScale(ih)));
         else
           cell_width += image_extra;
       }
@@ -720,7 +720,7 @@ static void winuiTableAdjustColumnWidths(Ihandle* ih)
   if (num_col <= 0)
     return;
 
-  double available_width = (double)ih->currentwidth;
+  auto available_width = static_cast<double>(ih->currentwidth);
   if (available_width <= 0)
     return;
 
@@ -738,7 +738,7 @@ static void winuiTableAdjustColumnWidths(Ihandle* ih)
     int content_width = winuiTableCalculateColumnWidth(ih, last_col);
     if (ih->data->stretch_last)
     {
-      int remaining = (int)available_width - used_width;
+      int remaining = static_cast<int>(available_width) - used_width;
       if (remaining > content_width)
         aux->col_widths[last_col] = remaining;
       else
@@ -753,7 +753,7 @@ static void winuiTableAdjustColumnWidths(Ihandle* ih)
   StackPanel header = winuiTableGetHeader(ih);
   if (header)
   {
-    for (uint32_t i = 0; i < header.Children().Size() && (int)i < num_col; i++)
+    for (uint32_t i = 0; i < header.Children().Size() && static_cast<int>(i) < num_col; i++)
     {
       auto border = header.Children().GetAt(i).try_as<Border>();
       if (border)
@@ -805,7 +805,7 @@ static void winuiTableUpdateSortArrow(Ihandle* ih, int col)
   if (!aux || !header)
     return;
 
-  for (uint32_t i = 0; i < header.Children().Size() && (int)i < ih->data->num_col; i++)
+  for (uint32_t i = 0; i < header.Children().Size() && static_cast<int>(i) < ih->data->num_col; i++)
   {
     auto border = header.Children().GetAt(i).try_as<Border>();
     if (!border)
@@ -816,7 +816,7 @@ static void winuiTableUpdateSortArrow(Ihandle* ih, int col)
 
     const char* title = (aux->col_titles && aux->col_titles[i]) ? aux->col_titles[i] : "";
 
-    if ((int)i == col - 1)
+    if (static_cast<int>(i) == col - 1)
     {
       hstring arrow = (aux->sort_ascending == 1) ? L" \u25B2" : L" \u25BC";
       tb.Text(iupwinuiStringToHString(title) + arrow);
@@ -944,7 +944,7 @@ static void winuiTableRebuildListViewItems(Ihandle* ih)
       TextBlock tb = winuiTableGetCellTextBlock(rowGrid, j);
       if (tb)
       {
-        const char* value = NULL;
+        const char* value = nullptr;
         if (aux->cell_values && aux->cell_values[i])
           value = aux->cell_values[i][j];
         if (value)
@@ -971,7 +971,7 @@ static void winuiTableSort(Ihandle* ih, int col)
 
   int ascending = (aux->sort_column == col && aux->sort_ascending == 1) ? -1 : 1;
 
-  IFni sort_cb = (IFni)IupGetCallback(ih, "SORT_CB");
+  IFni sort_cb = reinterpret_cast<IFni>(IupGetCallback(ih, "SORT_CB"));
   if (sort_cb && sort_cb(ih, col) == IUP_IGNORE)
     return;
 
@@ -1003,11 +1003,11 @@ static void winuiTableSort(Ihandle* ih, int col)
     for (int i = 0; i < num_rows; i++)
     {
       const char* v = iupAttribGetId2(ih, "_IUPWINUI_CELLIMAGE", i + 1, c);
-      has[i] = v != NULL;
+      has[i] = v != nullptr;
       if (v) images[i] = v;
     }
     for (int i = 0; i < num_rows; i++)
-      iupAttribSetStrId2(ih, "_IUPWINUI_CELLIMAGE", i + 1, c, has[order[i] - 1] ? images[order[i] - 1].c_str() : NULL);
+      iupAttribSetStrId2(ih, "_IUPWINUI_CELLIMAGE", i + 1, c, has[order[i] - 1] ? images[order[i] - 1].c_str() : nullptr);
   }
 
   iupTableSortLinAttribs(ih, order.data());
@@ -1023,7 +1023,7 @@ static void winuiTableSort(Ihandle* ih, int col)
     winuiTableUpdateRowColors(ih, new_pos[selected[i]]);
   }
   aux->suppress_callbacks = false;
-  iupAttribSet(ih, "_IUPTABLE_IGNORE_SELECTION_CB", NULL);
+  iupAttribSet(ih, "_IUPTABLE_IGNORE_SELECTION_CB", nullptr);
   if (selected)
     free(selected);
 
@@ -1041,7 +1041,7 @@ static void winuiTableShiftAttribLinCol(Ihandle* ih, const char* fmt, int lin, i
   char src_name[50], dst_name[50];
   snprintf(src_name, sizeof(src_name), fmt, lin, source);
   char* saved = iupAttribGet(ih, src_name);
-  saved = saved ? iupStrDup(saved) : NULL;
+  saved = saved ? iupStrDup(saved) : nullptr;
 
   if (source < target)
   {
@@ -1054,7 +1054,7 @@ static void winuiTableShiftAttribLinCol(Ihandle* ih, const char* fmt, int lin, i
       if (val)
         iupAttribSetStr(ih, to, val);
       else
-        iupAttribSet(ih, to, NULL);
+        iupAttribSet(ih, to, nullptr);
     }
   }
   else
@@ -1068,7 +1068,7 @@ static void winuiTableShiftAttribLinCol(Ihandle* ih, const char* fmt, int lin, i
       if (val)
         iupAttribSetStr(ih, to, val);
       else
-        iupAttribSet(ih, to, NULL);
+        iupAttribSet(ih, to, nullptr);
     }
   }
 
@@ -1079,7 +1079,7 @@ static void winuiTableShiftAttribLinCol(Ihandle* ih, const char* fmt, int lin, i
     free(saved);
   }
   else
-    iupAttribSet(ih, dst_name, NULL);
+    iupAttribSet(ih, dst_name, nullptr);
 }
 
 static void winuiTableMoveRow(Ihandle* ih, int source, int target)
@@ -1118,14 +1118,14 @@ static void winuiTableOnItemsChanged(Ihandle* ih,
 
   if (args.CollectionChange() == Windows::Foundation::Collections::CollectionChange::ItemRemoved)
   {
-    aux->reorder_from = (int)args.Index();
+    aux->reorder_from = static_cast<int>(args.Index());
     return;
   }
 
   if (args.CollectionChange() == Windows::Foundation::Collections::CollectionChange::ItemInserted)
   {
     int from = aux->reorder_from;
-    int to = (int)args.Index();
+    int to = static_cast<int>(args.Index());
     aux->reorder_from = -1;
 
     if (from < 0 || from == to)
@@ -1242,13 +1242,13 @@ static void winuiTableRefreshAfterReorder(Ihandle* ih)
   StackPanel header = winuiTableGetHeader(ih);
   if (header)
   {
-    for (uint32_t i = 0; i < header.Children().Size() && (int)i < ih->data->num_col; i++)
+    for (uint32_t i = 0; i < header.Children().Size() && static_cast<int>(i) < ih->data->num_col; i++)
     {
       auto border = header.Children().GetAt(i).try_as<Border>();
       if (border)
       {
-        winuiTableUpdateHeaderCell(ih, border, (int)i);
-        border.Tag(box_value((int)i));
+        winuiTableUpdateHeaderCell(ih, border, static_cast<int>(i));
+        border.Tag(box_value(static_cast<int>(i)));
       }
     }
   }
@@ -1265,7 +1265,7 @@ static void winuiTableRefreshAfterReorder(Ihandle* ih)
   for (int i = 0; i < count; i++)
     iupdrvTableSelectLin(ih, selected[i], 1);
   aux->suppress_callbacks = false;
-  iupAttribSet(ih, "_IUPTABLE_IGNORE_SELECTION_CB", NULL);
+  iupAttribSet(ih, "_IUPTABLE_IGNORE_SELECTION_CB", nullptr);
   if (selected)
     free(selected);
 
@@ -1309,7 +1309,7 @@ static Border winuiTableGetOrCreateDragIndicator(Ihandle* ih)
 
   void* indicatorPtr = nullptr;
   winrt::copy_to_abi(indicator, indicatorPtr);
-  iupAttribSet(ih, "_IUPWINUI_TABLE_DRAG_INDICATOR", (char*)indicatorPtr);
+  iupAttribSet(ih, "_IUPWINUI_TABLE_DRAG_INDICATOR", static_cast<char*>(indicatorPtr));
 
   return indicator;
 }
@@ -1329,7 +1329,7 @@ static int winuiTableFindColumnAtPoint(Ihandle* ih, double pointer_x)
 
   int num_col = ih->data->num_col;
 
-  for (uint32_t i = 0; i < header.Children().Size() && (int)i < num_col; i++)
+  for (uint32_t i = 0; i < header.Children().Size() && static_cast<int>(i) < num_col; i++)
   {
     auto border = header.Children().GetAt(i).try_as<Border>();
     if (!border)
@@ -1341,7 +1341,7 @@ static int winuiTableFindColumnAtPoint(Ihandle* ih, double pointer_x)
     double col_width = border.ActualWidth();
 
     if (pointer_x >= col_left && pointer_x < col_left + col_width)
-      return (int)i + 1;
+      return static_cast<int>(i) + 1;
   }
 
   return num_col;
@@ -1355,7 +1355,7 @@ static int winuiTableFindTargetColumn(Ihandle* ih, double pointer_x)
 
   int num_col = ih->data->num_col;
 
-  for (uint32_t i = 0; i < header.Children().Size() && (int)i < num_col; i++)
+  for (uint32_t i = 0; i < header.Children().Size() && static_cast<int>(i) < num_col; i++)
   {
     auto border = header.Children().GetAt(i).try_as<Border>();
     if (!border)
@@ -1368,7 +1368,7 @@ static int winuiTableFindTargetColumn(Ihandle* ih, double pointer_x)
     double mid_x = col_left + col_width / 2.0;
 
     if (pointer_x < mid_x)
-      return (int)i + 1;
+      return static_cast<int>(i) + 1;
   }
 
   return num_col;
@@ -1433,7 +1433,7 @@ static int winuiTableFindDividerColumn(Ihandle* ih, double pointer_x)
 
   int num_col = ih->data->num_col;
 
-  for (uint32_t i = 0; i < header.Children().Size() && (int)i < num_col; i++)
+  for (uint32_t i = 0; i < header.Children().Size() && static_cast<int>(i) < num_col; i++)
   {
     auto border = header.Children().GetAt(i).try_as<Border>();
     if (!border)
@@ -1444,7 +1444,7 @@ static int winuiTableFindDividerColumn(Ihandle* ih, double pointer_x)
     double col_right = pt.X + border.ActualWidth();
 
     if (pointer_x >= col_right - 4 && pointer_x <= col_right + 4)
-      return (int)i + 1;
+      return static_cast<int>(i) + 1;
   }
 
   return 0;
@@ -1485,7 +1485,7 @@ static Border winuiTableGetOrCreateResizeIndicator(Ihandle* ih)
 
   void* indicatorPtr = nullptr;
   winrt::copy_to_abi(indicator, indicatorPtr);
-  iupAttribSet(ih, "_IUPWINUI_TABLE_RESIZE_INDICATOR", (char*)indicatorPtr);
+  iupAttribSet(ih, "_IUPWINUI_TABLE_RESIZE_INDICATOR", static_cast<char*>(indicatorPtr));
 
   return indicator;
 }
@@ -1604,7 +1604,7 @@ static void winuiTableEndEdit(Ihandle* ih, bool save)
   }
 
   auto editBox = cellBorder.Child().try_as<TextBox>();
-  char* new_value = NULL;
+  char* new_value = nullptr;
   if (editBox)
     new_value = iupwinuiHStringToString(editBox.Text());
 
@@ -1612,10 +1612,10 @@ static void winuiTableEndEdit(Ihandle* ih, bool save)
   aux->edit_row = 0;
   aux->edit_col = 0;
 
-  IFniisi editend_cb = (IFniisi)IupGetCallback(ih, "EDITEND_CB");
+  auto editend_cb = reinterpret_cast<IFniisi>(IupGetCallback(ih, "EDITEND_CB"));
   if (editend_cb)
   {
-    int ret = editend_cb(ih, lin, col, new_value ? new_value : (char*)"", save ? 1 : 0);
+    int ret = editend_cb(ih, lin, col, new_value ? new_value : const_cast<char*>(""), save ? 1 : 0);
     if (ret == IUP_IGNORE)
       save = false;
   }
@@ -1627,12 +1627,12 @@ static void winuiTableEndEdit(Ihandle* ih, bool save)
   if (save)
   {
     char* old_value = iupdrvTableGetCellValue(ih, lin, col);
-    char* old_copy = old_value ? iupStrDup(old_value) : NULL;
+    char* old_copy = old_value ? iupStrDup(old_value) : nullptr;
 
-    IFniis edition_cb = (IFniis)IupGetCallback(ih, "EDITION_CB");
+    auto edition_cb = reinterpret_cast<IFniis>(IupGetCallback(ih, "EDITION_CB"));
     if (edition_cb)
     {
-      int ret = edition_cb(ih, lin, col, new_value ? new_value : (char*)"");
+      int ret = edition_cb(ih, lin, col, new_value ? new_value : const_cast<char*>(""));
       if (ret == IUP_IGNORE)
       {
         tb.Text(iupwinuiStringToHString(old_copy ? old_copy : ""));
@@ -1654,7 +1654,7 @@ static void winuiTableEndEdit(Ihandle* ih, bool save)
 
     if (text_changed)
     {
-      IFnii value_cb = (IFnii)IupGetCallback(ih, "VALUECHANGED_CB");
+      auto value_cb = reinterpret_cast<IFnii>(IupGetCallback(ih, "VALUECHANGED_CB"));
       if (value_cb)
         value_cb(ih, lin, col);
     }
@@ -1701,7 +1701,7 @@ static void winuiTableStartEdit(Ihandle* ih, int lin, int col)
   if (!winuiTableIsCellEditable(ih, lin, col))
     return;
 
-  IFnii editbegin_cb = (IFnii)IupGetCallback(ih, "EDITBEGIN_CB");
+  auto editbegin_cb = reinterpret_cast<IFnii>(IupGetCallback(ih, "EDITBEGIN_CB"));
   if (editbegin_cb)
   {
     int ret = editbegin_cb(ih, lin, col);
@@ -1796,24 +1796,24 @@ extern "C" IUP_SDK_API char* iupdrvTableGetCellValue(Ihandle* ih, int lin, int c
 {
   IupWinUITableAux* aux = winuiTableGetAux(ih);
   if (!aux)
-    return NULL;
+    return nullptr;
 
   if (lin < 1 || lin > ih->data->num_lin || col < 1 || col > ih->data->num_col)
-    return NULL;
+    return nullptr;
 
   char* virtualmode = iupAttribGet(ih, "VIRTUALMODE");
   if (iupStrBoolean(virtualmode))
   {
-    sIFnii value_cb = (sIFnii)IupGetCallback(ih, "VALUE_CB");
+    auto value_cb = reinterpret_cast<sIFnii>(IupGetCallback(ih, "VALUE_CB"));
     if (value_cb)
       return value_cb(ih, lin, col);
-    return NULL;
+    return nullptr;
   }
 
   if (aux->cell_values)
     return aux->cell_values[lin - 1][col - 1];
 
-  return NULL;
+  return nullptr;
 }
 
 extern "C" IUP_SDK_API void iupdrvTableSetCellImage(Ihandle* ih, int lin, int col, const char* image)
@@ -1845,10 +1845,10 @@ extern "C" IUP_SDK_API void iupdrvTableSetColTitle(Ihandle* ih, int col, const c
 
   if (aux->col_titles[col - 1])
     free(aux->col_titles[col - 1]);
-  aux->col_titles[col - 1] = title ? iupStrDup(title) : NULL;
+  aux->col_titles[col - 1] = title ? iupStrDup(title) : nullptr;
 
   StackPanel header = winuiTableGetHeader(ih);
-  if (header && (uint32_t)(col - 1) < header.Children().Size())
+  if (header && static_cast<uint32_t>(col - 1) < header.Children().Size())
   {
     auto border = header.Children().GetAt(col - 1).try_as<Border>();
     if (border)
@@ -1872,7 +1872,7 @@ extern "C" IUP_SDK_API char* iupdrvTableGetColTitle(Ihandle* ih, int col)
 {
   IupWinUITableAux* aux = winuiTableGetAux(ih);
   if (!aux || col < 1 || col > ih->data->num_col)
-    return NULL;
+    return nullptr;
 
   return aux->col_titles[col - 1];
 }
@@ -1910,7 +1910,7 @@ extern "C" IUP_SDK_API void iupdrvTableSetColWidth(Ihandle* ih, int col, int wid
   aux->col_width_set[col - 1] = true;
 
   StackPanel header = winuiTableGetHeader(ih);
-  if (header && (uint32_t)(col - 1) < header.Children().Size())
+  if (header && static_cast<uint32_t>(col - 1) < header.Children().Size())
   {
     auto border = header.Children().GetAt(col - 1).try_as<Border>();
     if (border)
@@ -2000,13 +2000,13 @@ extern "C" IUP_SDK_API void iupdrvTableSelectLin(Ihandle* ih, int lin, int selec
   if (!listView || lin < 1 || lin > ih->data->num_lin)
     return;
 
-  uint32_t index = (uint32_t)(lin - 1);
+  auto index = static_cast<uint32_t>(lin - 1);
   if (index >= listView.Items().Size())
     return;
 
   if (listView.SelectionMode() == ListViewSelectionMode::Single)
   {
-    listView.SelectedIndex(select ? (int)index : -1);
+    listView.SelectedIndex(select ? static_cast<int>(index) : -1);
     return;
   }
 
@@ -2026,18 +2026,18 @@ extern "C" IUP_SDK_API int* iupdrvTableGetSelectedLins(Ihandle* ih, int* count)
   *count = 0;
 
   if (!listView)
-    return NULL;
+    return nullptr;
 
   if (listView.SelectionMode() == ListViewSelectionMode::None)
-    return NULL;
+    return nullptr;
 
   if (listView.SelectionMode() == ListViewSelectionMode::Single)
   {
     int index = listView.SelectedIndex();
     if (index < 0)
-      return NULL;
+      return nullptr;
 
-    int* single = (int*)malloc(sizeof(int));
+    int* single = static_cast<int*>(malloc(sizeof(int)));
     single[0] = index + 1;
     *count = 1;
     return single;
@@ -2047,16 +2047,16 @@ extern "C" IUP_SDK_API int* iupdrvTableGetSelectedLins(Ihandle* ih, int* count)
   auto selected = listView.SelectedItems();
   uint32_t total = selected.Size();
   if (total == 0)
-    return NULL;
+    return nullptr;
 
-  int* lins = (int*)malloc(sizeof(int) * total);
+  int* lins = static_cast<int*>(malloc(sizeof(int) * total));
   int i = 0;
 
   for (uint32_t lin = 0; lin < items.Size(); lin++)
   {
     uint32_t sel_idx;
     if (selected.IndexOf(items.GetAt(lin), sel_idx))
-      lins[i++] = (int)lin + 1;
+      lins[i++] = static_cast<int>(lin) + 1;
   }
 
   *count = i;
@@ -2130,7 +2130,7 @@ void winuiTableRefreshThemeColors(Ihandle* ih)
   StackPanel header = winuiTableGetHeader(ih);
   if (header)
   {
-    for (uint32_t i = 0; i < header.Children().Size() && (int)i < ih->data->num_col; i++)
+    for (uint32_t i = 0; i < header.Children().Size() && static_cast<int>(i) < ih->data->num_col; i++)
     {
       auto border = header.Children().GetAt(i).try_as<Border>();
       if (border)
@@ -2197,7 +2197,7 @@ extern "C" IUP_SDK_API void iupdrvTableSetShowGrid(Ihandle* ih, int show)
       if (!border)
         continue;
 
-      bool is_focused = ((int)r + 1 == aux->current_row && Grid::GetColumn(border) == aux->current_col - 1);
+      bool is_focused = (static_cast<int>(r) + 1 == aux->current_row && Grid::GetColumn(border) == aux->current_col - 1);
       if (is_focused)
         continue;
 
@@ -2215,7 +2215,7 @@ extern "C" IUP_SDK_API void iupdrvTableSetShowGrid(Ihandle* ih, int show)
 
 extern "C" IUP_SDK_API int iupdrvTableGetBorderWidth(Ihandle* ih)
 {
-  return (int)ceil(2 * iupwinuiGetScale(ih));
+  return static_cast<int>(ceil(2 * iupwinuiGetScale(ih)));
 }
 
 static int winuiTableMeasureTextHeight(Ihandle* ih)
@@ -2224,7 +2224,7 @@ static int winuiTableMeasureTextHeight(Ihandle* ih)
   iupwinuiUpdateTextBlockFont(ih, tb);
   tb.Text(L"Wg");
   tb.Measure(Size(10000, 10000));
-  return (int)ceil(tb.DesiredSize().Height);
+  return static_cast<int>(ceil(tb.DesiredSize().Height));
 }
 
 extern "C" IUP_SDK_API int iupdrvTableGetRowHeight(Ihandle* ih)
@@ -2232,13 +2232,13 @@ extern "C" IUP_SDK_API int iupdrvTableGetRowHeight(Ihandle* ih)
   double scale = iupwinuiGetScale(ih);
   int text_height = winuiTableMeasureTextHeight(ih);
   /* Cell Border: Padding(4,2,4,2) + BorderThickness(0,0,1,1) = 2 top + 2 bottom + 1 grid bottom = 5 */
-  int row_height = (int)ceil((text_height + 5) * scale);
+  int row_height = static_cast<int>(ceil((text_height + 5) * scale));
 
   if (ih->data->show_image)
   {
     int charheight;
-    iupdrvFontGetCharSize(ih, NULL, &charheight);
-    int image_height = charheight + (int)ceil(8 * scale);
+    iupdrvFontGetCharSize(ih, nullptr, &charheight);
+    int image_height = charheight + static_cast<int>(ceil(8 * scale));
     if (image_height > row_height)
       row_height = image_height;
   }
@@ -2250,7 +2250,7 @@ extern "C" IUP_SDK_API int iupdrvTableGetHeaderHeight(Ihandle* ih)
 {
   int text_height = winuiTableMeasureTextHeight(ih);
   /* Header Border: Padding(4,4,4,4) + BorderThickness(0,0,1,1) = 4 top + 4 bottom + 1 grid bottom = 9 */
-  return (int)ceil((text_height + 9) * iupwinuiGetScale(ih));
+  return static_cast<int>(ceil((text_height + 9) * iupwinuiGetScale(ih)));
 }
 
 extern "C" IUP_SDK_API void iupdrvTableAddBorders(Ihandle* ih, int* w, int* h)
@@ -2320,11 +2320,11 @@ extern "C" IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
   }
 
   {
-    char*** new_cell_values = (char***)calloc(num_lin, sizeof(char**));
+    char*** new_cell_values = static_cast<char***>(calloc(num_lin, sizeof(char**)));
 
     for (int i = 0; i < num_lin; i++)
     {
-      new_cell_values[i] = (char**)calloc(ih->data->num_col, sizeof(char*));
+      new_cell_values[i] = static_cast<char**>(calloc(ih->data->num_col, sizeof(char*)));
 
       if (i < old_num_lin && aux->cell_values)
       {
@@ -2365,9 +2365,9 @@ extern "C" IUP_SDK_API void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
   if (num_col == old_num_col)
     return;
 
-  int* new_col_widths = (int*)calloc(num_col, sizeof(int));
-  bool* new_col_width_set = (bool*)calloc(num_col, sizeof(bool));
-  char** new_col_titles = (char**)calloc(num_col, sizeof(char*));
+  int* new_col_widths = static_cast<int*>(calloc(num_col, sizeof(int)));
+  bool* new_col_width_set = static_cast<bool*>(calloc(num_col, sizeof(bool)));
+  char** new_col_titles = static_cast<char**>(calloc(num_col, sizeof(char*)));
 
   for (int i = 0; i < num_col; i++)
   {
@@ -2381,7 +2381,7 @@ extern "C" IUP_SDK_API void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
     {
       new_col_widths[i] = 100;
       new_col_width_set[i] = false;
-      new_col_titles[i] = NULL;
+      new_col_titles[i] = nullptr;
     }
   }
 
@@ -2435,7 +2435,7 @@ extern "C" IUP_SDK_API void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
       {
         for (int i = old_num_col - 1; i >= num_col; i--)
         {
-          if ((uint32_t)i < rowGrid.ColumnDefinitions().Size())
+          if (static_cast<uint32_t>(i) < rowGrid.ColumnDefinitions().Size())
             rowGrid.ColumnDefinitions().RemoveAt(i);
           Border border = winuiTableGetCellBorder(rowGrid, i);
           if (border)
@@ -2478,14 +2478,14 @@ extern "C" IUP_SDK_API void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
   {
     for (int i = 0; i < ih->data->num_lin; i++)
     {
-      char** new_row = (char**)calloc(num_col, sizeof(char*));
+      char** new_row = static_cast<char**>(calloc(num_col, sizeof(char*)));
 
       for (int j = 0; j < num_col; j++)
       {
         if (j < old_num_col)
           new_row[j] = aux->cell_values[i][j];
         else
-          new_row[j] = NULL;
+          new_row[j] = nullptr;
       }
 
       for (int j = num_col; j < old_num_col; j++)
@@ -2528,11 +2528,11 @@ extern "C" IUP_SDK_API void iupdrvTableAddLin(Ihandle* ih, int pos)
 
   {
     int new_num_lin = ih->data->num_lin + 1;
-    char*** new_cell_values = (char***)calloc(new_num_lin, sizeof(char**));
+    char*** new_cell_values = static_cast<char***>(calloc(new_num_lin, sizeof(char**)));
 
     for (int i = 0; i < new_num_lin; i++)
     {
-      new_cell_values[i] = (char**)calloc(ih->data->num_col, sizeof(char*));
+      new_cell_values[i] = static_cast<char**>(calloc(ih->data->num_col, sizeof(char*)));
 
       if (i < pos && aux->cell_values)
       {
@@ -2587,11 +2587,11 @@ extern "C" IUP_SDK_API void iupdrvTableDelLin(Ihandle* ih, int pos)
       winuiTableFreeCell(&aux->cell_values[pos - 1][j]);
 
     int new_num_lin = ih->data->num_lin - 1;
-    char*** new_cell_values = (char***)calloc(new_num_lin, sizeof(char**));
+    char*** new_cell_values = static_cast<char***>(calloc(new_num_lin, sizeof(char**)));
 
     for (int i = 0; i < new_num_lin; i++)
     {
-      new_cell_values[i] = (char**)calloc(ih->data->num_col, sizeof(char*));
+      new_cell_values[i] = static_cast<char**>(calloc(ih->data->num_col, sizeof(char*)));
 
       if (i < pos - 1)
       {
@@ -2733,7 +2733,7 @@ static void winuiTableCellsFocus(Ihandle* ih, int lin, int col)
 
   if (old_row != lin || old_col != col)
   {
-    IFnii cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
+    auto cb = reinterpret_cast<IFnii>(IupGetCallback(ih, "ENTERITEM_CB"));
     if (cb) cb(ih, lin, col);
   }
 }
@@ -2808,7 +2808,7 @@ static void winuiTableKeyDown(Ihandle* ih, KeyRoutedEventArgs const& args)
       if (lin > 1)
       {
         iupdrvTableSetFocusCell(ih, lin - 1, col);
-        IFnii cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
+        auto cb = reinterpret_cast<IFnii>(IupGetCallback(ih, "ENTERITEM_CB"));
         if (cb) cb(ih, lin - 1, col);
         handled = true;
       }
@@ -2818,7 +2818,7 @@ static void winuiTableKeyDown(Ihandle* ih, KeyRoutedEventArgs const& args)
       if (lin < ih->data->num_lin)
       {
         iupdrvTableSetFocusCell(ih, lin + 1, col);
-        IFnii cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
+        auto cb = reinterpret_cast<IFnii>(IupGetCallback(ih, "ENTERITEM_CB"));
         if (cb) cb(ih, lin + 1, col);
         handled = true;
       }
@@ -2828,7 +2828,7 @@ static void winuiTableKeyDown(Ihandle* ih, KeyRoutedEventArgs const& args)
       if (col > 1)
       {
         iupdrvTableSetFocusCell(ih, lin, col - 1);
-        IFnii cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
+        auto cb = reinterpret_cast<IFnii>(IupGetCallback(ih, "ENTERITEM_CB"));
         if (cb) cb(ih, lin, col - 1);
         handled = true;
       }
@@ -2838,7 +2838,7 @@ static void winuiTableKeyDown(Ihandle* ih, KeyRoutedEventArgs const& args)
       if (col < ih->data->num_col)
       {
         iupdrvTableSetFocusCell(ih, lin, col + 1);
-        IFnii cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
+        auto cb = reinterpret_cast<IFnii>(IupGetCallback(ih, "ENTERITEM_CB"));
         if (cb) cb(ih, lin, col + 1);
         handled = true;
       }
@@ -2876,7 +2876,7 @@ static void winuiTableKeyDown(Ihandle* ih, KeyRoutedEventArgs const& args)
           if (text && *text)
           {
             char* old_ptr = iupdrvTableGetCellValue(ih, lin, col);
-            char* old_copy = old_ptr ? iupStrDup(old_ptr) : NULL;
+            char* old_copy = old_ptr ? iupStrDup(old_ptr) : nullptr;
 
             iupdrvTableSetCellValue(ih, lin, col, text);
 
@@ -2887,7 +2887,7 @@ static void winuiTableKeyDown(Ihandle* ih, KeyRoutedEventArgs const& args)
 
             if (changed)
             {
-              IFnii value_cb = (IFnii)IupGetCallback(ih, "VALUECHANGED_CB");
+              auto value_cb = reinterpret_cast<IFnii>(IupGetCallback(ih, "VALUECHANGED_CB"));
               if (value_cb) value_cb(ih, lin, col);
             }
 
@@ -2935,7 +2935,7 @@ static int winuiTableSetSortableAttrib(Ihandle* ih, const char* value)
           auto tb = border.Child().try_as<TextBlock>();
           if (!tb) continue;
 
-          const char* title = (aux->col_titles && (int)i < ih->data->num_col && aux->col_titles[i]) ? aux->col_titles[i] : "";
+          const char* title = (aux->col_titles && static_cast<int>(i) < ih->data->num_col && aux->col_titles[i]) ? aux->col_titles[i] : "";
           tb.Text(iupwinuiStringToHString(title));
         }
       }
@@ -2959,7 +2959,7 @@ static int winuiTableSetAlignmentAttrib(Ihandle* ih, int col, const char* value)
     align = TextAlignment::Center;
 
   StackPanel headerPanel = winuiTableGetHeader(ih);
-  if (headerPanel && (uint32_t)(col - 1) < headerPanel.Children().Size())
+  if (headerPanel && static_cast<uint32_t>(col - 1) < headerPanel.Children().Size())
   {
     auto hdrBorder = headerPanel.Children().GetAt(col - 1).try_as<Border>();
     if (hdrBorder)
@@ -3050,15 +3050,15 @@ static int winuiTableMapMethod(Ihandle* ih)
   if (!ih->parent)
     return IUP_ERROR;
 
-  IupWinUITableAux* aux = new IupWinUITableAux();
+  auto* aux = new IupWinUITableAux();
   winuiSetAux(ih, IUPWINUI_TABLE_AUX, aux);
 
   int num_col = ih->data->num_col;
   int num_lin = ih->data->num_lin;
 
-  aux->col_widths = (int*)calloc(num_col > 0 ? num_col : 1, sizeof(int));
-  aux->col_width_set = (bool*)calloc(num_col > 0 ? num_col : 1, sizeof(bool));
-  aux->col_titles = (char**)calloc(num_col > 0 ? num_col : 1, sizeof(char*));
+  aux->col_widths = static_cast<int*>(calloc(num_col > 0 ? num_col : 1, sizeof(int)));
+  aux->col_width_set = static_cast<bool*>(calloc(num_col > 0 ? num_col : 1, sizeof(bool)));
+  aux->col_titles = static_cast<char**>(calloc(num_col > 0 ? num_col : 1, sizeof(char*)));
 
   for (int i = 0; i < num_col; i++)
   {
@@ -3071,9 +3071,9 @@ static int winuiTableMapMethod(Ihandle* ih)
 
   if (!is_virtual && num_lin > 0 && num_col > 0)
   {
-    aux->cell_values = (char***)calloc(num_lin, sizeof(char**));
+    aux->cell_values = static_cast<char***>(calloc(num_lin, sizeof(char**)));
     for (int i = 0; i < num_lin; i++)
-      aux->cell_values[i] = (char**)calloc(num_col, sizeof(char*));
+      aux->cell_values[i] = static_cast<char**>(calloc(num_col, sizeof(char*)));
   }
 
   aux->current_row = 0;
@@ -3161,7 +3161,7 @@ static int winuiTableMapMethod(Ihandle* ih)
     {
       double scale = iupwinuiGetScale(ih);
       double delta = x - a->resize_start_x;
-      int new_width = a->resize_start_width + (int)(delta * scale);
+      int new_width = a->resize_start_width + static_cast<int>(delta * scale);
       if (new_width < 20)
         new_width = 20;
 
@@ -3223,7 +3223,7 @@ static int winuiTableMapMethod(Ihandle* ih)
 
       auto point = args.GetCurrentPoint(header);
       double delta = point.Position().X - a->resize_start_x;
-      int new_width = a->resize_start_width + (int)(delta * iupwinuiGetScale(ih));
+      int new_width = a->resize_start_width + static_cast<int>(delta * iupwinuiGetScale(ih));
       if (new_width < 20)
         new_width = 20;
 
@@ -3255,7 +3255,7 @@ static int winuiTableMapMethod(Ihandle* ih)
 
     if (was_dragging && source != target && source >= 1 && target >= 1)
     {
-      IFnii cb = (IFnii)IupGetCallback(ih, "REORDER_CB");
+      auto cb = reinterpret_cast<IFnii>(IupGetCallback(ih, "REORDER_CB"));
       if (!cb || cb(ih, source, target) != IUP_IGNORE)
       {
         winuiTableMoveColumn(ih, source, target, 1);
@@ -3357,7 +3357,7 @@ static int winuiTableMapMethod(Ihandle* ih)
 
       winuiTableSetFocusVisual(ih, a->current_row, a->current_col);
 
-      IFnii cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
+      auto cb = reinterpret_cast<IFnii>(IupGetCallback(ih, "ENTERITEM_CB"));
       if (cb) cb(ih, a->current_row, a->current_col);
     }
   });
@@ -3408,7 +3408,7 @@ static int winuiTableMapMethod(Ihandle* ih)
       char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
       iupwinuiButtonKeySetStatus(iupwinuiGetModifierKeys() | MK_LBUTTON, 0, status, 0);
 
-      IFniis click_cb = (IFniis)IupGetCallback(ih, "CLICK_CB");
+      auto click_cb = reinterpret_cast<IFniis>(IupGetCallback(ih, "CLICK_CB"));
       if (click_cb)
         click_cb(ih, lin, col, status);
     }
@@ -3428,7 +3428,7 @@ static int winuiTableMapMethod(Ihandle* ih)
       {
         iupAttribSet(ih, "_IUPTABLE_CELLS_KEEP", "1");
         winuiTableCellsFocus(ih, lin, col);
-        iupAttribSet(ih, "_IUPTABLE_CELLS_KEEP", NULL);
+        iupAttribSet(ih, "_IUPTABLE_CELLS_KEEP", nullptr);
       }
       else
       {
@@ -3452,11 +3452,11 @@ static int winuiTableMapMethod(Ihandle* ih)
       char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
       iupwinuiButtonKeySetStatus(iupwinuiGetModifierKeys() | MK_RBUTTON, 0, status, 0);
 
-      IFniis click_cb = (IFniis)IupGetCallback(ih, "CLICK_CB");
+      auto click_cb = reinterpret_cast<IFniis>(IupGetCallback(ih, "CLICK_CB"));
       if (click_cb)
         click_cb(ih, lin, col, status);
 
-      IFnii cb = (IFnii)IupGetCallback(ih, "RIGHTCLICK_CB");
+      auto cb = reinterpret_cast<IFnii>(IupGetCallback(ih, "RIGHTCLICK_CB"));
       if (cb)
         cb(ih, lin, col);
     }
@@ -3486,7 +3486,7 @@ static int winuiTableMapMethod(Ihandle* ih)
     auto point = args.GetCurrentPoint(nullptr);
     if (!point.Properties().IsLeftButtonPressed())
     {
-      iupAttribSet(ih, "_IUPWINUI_CELLS_PRESS", NULL);
+      iupAttribSet(ih, "_IUPWINUI_CELLS_PRESS", nullptr);
       return;
     }
 
@@ -3499,14 +3499,14 @@ static int winuiTableMapMethod(Ihandle* ih)
       return;
 
     int dragged = iupAttribGetInt(ih, "_IUPWINUI_CELLS_PRESS") == 2;
-    iupAttribSet(ih, "_IUPWINUI_CELLS_PRESS", NULL);
+    iupAttribSet(ih, "_IUPWINUI_CELLS_PRESS", nullptr);
     winuiTableGetListView(ih).ReleasePointerCapture(args.Pointer());
     if (dragged)
       winuiTableCellsExtendToPoint(ih, args);
   })), true);
 
   listView.PointerCaptureLost([ih](IInspectable const&, PointerRoutedEventArgs const&) {
-    iupAttribSet(ih, "_IUPWINUI_CELLS_PRESS", NULL);
+    iupAttribSet(ih, "_IUPWINUI_CELLS_PRESS", nullptr);
   });
 
   aux->sizeChangedToken = listView.SizeChanged([ih](IInspectable const&, SizeChangedEventArgs const&) {
@@ -3529,11 +3529,11 @@ static int winuiTableMapMethod(Ihandle* ih)
 
   void* headerPtr = nullptr;
   winrt::copy_to_abi(headerPanel, headerPtr);
-  iupAttribSet(ih, "_IUPWINUI_TABLE_HEADER", (char*)headerPtr);
+  iupAttribSet(ih, "_IUPWINUI_TABLE_HEADER", static_cast<char*>(headerPtr));
 
   void* lvPtr = nullptr;
   winrt::copy_to_abi(listView, lvPtr);
-  iupAttribSet(ih, "_IUPWINUI_TABLE_LISTVIEW", (char*)lvPtr);
+  iupAttribSet(ih, "_IUPWINUI_TABLE_LISTVIEW", static_cast<char*>(lvPtr));
 
   Grid containerGrid;
   containerGrid.Background(SolidColorBrush(Microsoft::UI::Colors::Transparent()));
@@ -3701,7 +3701,7 @@ static void winuiTableUnMapMethod(Ihandle* ih)
 static int winuiTableSetDragSourceAttrib(Ihandle* ih, const char* value)
 {
   ListView listView = winuiTableGetListView(ih);
-  IupWinUITableAux* aux = winuiGetAux<IupWinUITableAux>(ih, IUPWINUI_TABLE_AUX);
+  auto* aux = winuiGetAux<IupWinUITableAux>(ih, IUPWINUI_TABLE_AUX);
 
   if (!listView || !aux)
     return 1;
@@ -3732,9 +3732,9 @@ static int winuiTableSetDragSourceAttrib(Ihandle* ih, const char* value)
     ListView lv = winuiTableGetListView(ih);
     IupWinUITableAux* tableAux = winuiTableGetAux(ih);
     if (lv && tableAux && e.Items().Size() > 0 && lv.Items().IndexOf(e.Items().GetAt(0), index) &&
-        (int)index + 1 != tableAux->current_row)
+        static_cast<int>(index) + 1 != tableAux->current_row)
     {
-      int lin = (int)index + 1;
+      int lin = static_cast<int>(index) + 1;
       int col = tableAux->current_col > 0 ? tableAux->current_col : 1;
       if (lv.SelectedItems().IndexOf(e.Items().GetAt(0), selected_index))
       {
@@ -3747,7 +3747,7 @@ static int winuiTableSetDragSourceAttrib(Ihandle* ih, const char* value)
         iupdrvTableSetFocusCell(ih, lin, col);
     }
 
-    IFnii dragbegin_cb = (IFnii)IupGetCallback(ih, "DRAGBEGIN_CB");
+    auto dragbegin_cb = reinterpret_cast<IFnii>(IupGetCallback(ih, "DRAGBEGIN_CB"));
     if (dragbegin_cb)
     {
       int x, y;
@@ -3760,8 +3760,8 @@ static int winuiTableSetDragSourceAttrib(Ihandle* ih, const char* value)
       }
     }
 
-    IFns datasize_cb = (IFns)IupGetCallback(ih, "DRAGDATASIZE_CB");
-    IFnsVi dragdata_cb = (IFnsVi)IupGetCallback(ih, "DRAGDATA_CB");
+    IFns datasize_cb = reinterpret_cast<IFns>(IupGetCallback(ih, "DRAGDATASIZE_CB"));
+    auto dragdata_cb = reinterpret_cast<IFnsVi>(IupGetCallback(ih, "DRAGDATA_CB"));
 
     if (datasize_cb && dragdata_cb)
     {
@@ -3785,7 +3785,7 @@ static int winuiTableSetDragSourceAttrib(Ihandle* ih, const char* value)
   });
 
   aux->dragItemsCompletedToken = listView.DragItemsCompleted([ih](ListViewBase const&, DragItemsCompletedEventArgs const& e) {
-    IFni dragend_cb = (IFni)IupGetCallback(ih, "DRAGEND_CB");
+    IFni dragend_cb = reinterpret_cast<IFni>(IupGetCallback(ih, "DRAGEND_CB"));
     if (dragend_cb)
     {
       int del = -1;
@@ -3821,16 +3821,16 @@ extern "C" IUP_SDK_API void iupdrvTableInitClass(Iclass* ic)
   ic->UnMap = winuiTableUnMapMethod;
   ic->LayoutUpdate = winuiTableLayoutUpdateMethod;
 
-  iupClassRegisterAttribute(ic, "SIZE", NULL, NULL, NULL, NULL, IUPAF_NO_SAVE|IUPAF_NOT_MAPPED);
+  iupClassRegisterAttribute(ic, "SIZE", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_SAVE|IUPAF_NOT_MAPPED);
 
-  iupClassRegisterReplaceAttribFunc(ic, "SORTABLE", NULL, winuiTableSetSortableAttrib);
-  iupClassRegisterReplaceAttribFunc(ic, "ALLOWREORDER", NULL, winuiTableSetAllowReorderAttrib);
-  iupClassRegisterReplaceAttribFunc(ic, "USERRESIZE", NULL, winuiTableSetUserResizeAttrib);
-  iupClassRegisterReplaceAttribFunc(ic, "ACTIVE", NULL, winuiTableSetActiveAttrib);
+  iupClassRegisterReplaceAttribFunc(ic, "SORTABLE", nullptr, winuiTableSetSortableAttrib);
+  iupClassRegisterReplaceAttribFunc(ic, "ALLOWREORDER", nullptr, winuiTableSetAllowReorderAttrib);
+  iupClassRegisterReplaceAttribFunc(ic, "USERRESIZE", nullptr, winuiTableSetUserResizeAttrib);
+  iupClassRegisterReplaceAttribFunc(ic, "ACTIVE", nullptr, winuiTableSetActiveAttrib);
 
-  iupClassRegisterAttribute(ic, "FOCUSRECT", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FOCUSRECT", nullptr, nullptr, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttributeId(ic, "ALIGNMENT", NULL, (IattribSetIdFunc)winuiTableSetAlignmentAttrib, IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "ALIGNMENT", nullptr, static_cast<IattribSetIdFunc>(winuiTableSetAlignmentAttrib), IUPAF_NO_INHERIT);
 
-  iupClassRegisterReplaceAttribFunc(ic, "DRAGSOURCE", NULL, winuiTableSetDragSourceAttrib);
+  iupClassRegisterReplaceAttribFunc(ic, "DRAGSOURCE", nullptr, winuiTableSetDragSourceAttrib);
 }

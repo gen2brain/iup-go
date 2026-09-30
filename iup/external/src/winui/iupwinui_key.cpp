@@ -35,7 +35,7 @@ IUP_DRV_API int iupwinuiKeyIsDispatched(int wincode)
   return wincode != 0 && wincode == winui_key_dispatched;
 }
 
-static void winuiKeyInit(void)
+static void winuiKeyInit()
 {
   if (winui_key_initialized)
     return;
@@ -288,14 +288,14 @@ IUP_DRV_API int iupwinuiKeyIsExtended(int code)
   return 0;
 }
 
-IUP_DRV_API int iupwinuiKeyDecode(int wincode, int extended)
+IUP_DRV_API int iupwinuiKeyDecode(int keyval, int extended)
 {
   int iupcode;
   int has_shift, has_ctrl, has_alt, has_sys;
 
   winuiKeyInit();
 
-  if (wincode < 0 || wincode > 255)
+  if (keyval < 0 || keyval > 255)
     return 0;
 
   has_shift = GetKeyState(VK_SHIFT) & 0x8000;
@@ -303,23 +303,23 @@ IUP_DRV_API int iupwinuiKeyDecode(int wincode, int extended)
   has_alt = GetKeyState(VK_MENU) & 0x8000;
   has_sys = (GetKeyState(VK_LWIN) & 0x8000) || (GetKeyState(VK_RWIN) & 0x8000);
 
-  iupcode = winuiKeyPadCode(wincode, extended);
+  iupcode = winuiKeyPadCode(keyval, extended);
 
   if (iupcode)
     { }
-  else if (wincode == VK_SHIFT && (GetKeyState(VK_RSHIFT) & 0x8000))
+  else if (keyval == VK_SHIFT && (GetKeyState(VK_RSHIFT) & 0x8000))
     iupcode = K_RSHIFT;
-  else if (wincode == VK_CONTROL && (GetKeyState(VK_RCONTROL) & 0x8000))
+  else if (keyval == VK_CONTROL && (GetKeyState(VK_RCONTROL) & 0x8000))
     iupcode = K_RCTRL;
-  else if (wincode == VK_MENU && (GetKeyState(VK_RMENU) & 0x8000))
+  else if (keyval == VK_MENU && (GetKeyState(VK_RMENU) & 0x8000))
     iupcode = K_RALT;
-  else if (has_shift && winuiKeyMapShift[wincode])
-    iupcode = winuiKeyMapShift[wincode];
+  else if (has_shift && winuiKeyMapShift[keyval])
+    iupcode = winuiKeyMapShift[keyval];
   else
-    iupcode = winuiKeyMap[wincode];
+    iupcode = winuiKeyMap[keyval];
 
   if (!iupcode)
-    iupcode = wincode;
+    iupcode = keyval;
 
   if (has_ctrl || has_alt || has_sys)
   {
@@ -345,21 +345,21 @@ IUP_DRV_API int iupwinuiKeyDecode(int wincode, int extended)
   return iupcode;
 }
 
-IUP_DRV_API void iupwinuiButtonKeySetStatus(int keys, int button, char* status, int doubleclick)
+IUP_DRV_API void iupwinuiButtonKeySetStatus(int modifiers, int button, char* status, int doubleclick)
 {
-  if (keys & MK_SHIFT)
+  if (modifiers & MK_SHIFT)
     iupKEY_SETSHIFT(status);
 
-  if (keys & MK_CONTROL)
+  if (modifiers & MK_CONTROL)
     iupKEY_SETCONTROL(status);
 
-  if (keys & MK_LBUTTON)
+  if (modifiers & MK_LBUTTON)
     iupKEY_SETBUTTON1(status);
 
-  if (keys & MK_MBUTTON)
+  if (modifiers & MK_MBUTTON)
     iupKEY_SETBUTTON2(status);
 
-  if (keys & MK_RBUTTON)
+  if (modifiers & MK_RBUTTON)
     iupKEY_SETBUTTON3(status);
 
   if (doubleclick)
@@ -371,23 +371,23 @@ IUP_DRV_API void iupwinuiButtonKeySetStatus(int keys, int button, char* status, 
   if ((GetKeyState(VK_LWIN) & 0x8000) || (GetKeyState(VK_RWIN) & 0x8000))
     iupKEY_SETSYS(status);
 
-  if (keys & MK_XBUTTON1)
+  if (modifiers & MK_XBUTTON1)
     iupKEY_SETBUTTON4(status);
 
-  if (keys & MK_XBUTTON2)
+  if (modifiers & MK_XBUTTON2)
     iupKEY_SETBUTTON5(status);
 
   (void)button;
 }
 
-extern "C" IUP_SDK_API void iupdrvKeyEncode(int code, unsigned int* wincode, unsigned int* state)
+extern "C" IUP_SDK_API void iupdrvKeyEncode(int key, unsigned int* keyval, unsigned int* state)
 {
   int i, iupcode;
 
   winuiKeyInit();
 
-  iupcode = iup_XkeyBase(code);
-  *wincode = 0;
+  iupcode = iup_XkeyBase(key);
+  *keyval = 0;
   *state = 0;
 
   switch (iupcode)
@@ -410,23 +410,23 @@ extern "C" IUP_SDK_API void iupdrvKeyEncode(int code, unsigned int* wincode, uns
   {
     if (winuiKeyMap[i] == iupcode)
     {
-      *wincode = i;
+      *keyval = i;
       break;
     }
     if (winuiKeyMapShift[i] == iupcode)
     {
-      *wincode = i;
-      code = iup_XkeyShift(code);
+      *keyval = i;
+      key = iup_XkeyShift(key);
       break;
     }
   }
 
-  if (iup_isShiftXkey(code))
+  if (iup_isShiftXkey(key))
     *state = VK_SHIFT;
-  else if (iup_isCtrlXkey(code))
+  else if (iup_isCtrlXkey(key))
     *state = VK_CONTROL;
-  else if (iup_isAltXkey(code))
+  else if (iup_isAltXkey(key))
     *state = VK_MENU;
-  else if (iup_isSysXkey(code))
+  else if (iup_isSysXkey(key))
     *state = VK_LWIN;
 }

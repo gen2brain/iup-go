@@ -70,7 +70,7 @@ static void winuiDropFilesDragOver(IInspectable const&, DragEventArgs const& e)
 
 static void winuiDropFilesDrop(Ihandle* ih, IInspectable const& sender, DragEventArgs const& e)
 {
-  IFnsiii cb = (IFnsiii)IupGetCallback(ih, "DROPFILES_CB");
+  auto cb = reinterpret_cast<IFnsiii>(IupGetCallback(ih, "DROPFILES_CB"));
   if (!cb)
     return;
 
@@ -82,7 +82,7 @@ static void winuiDropFilesDrop(Ihandle* ih, IInspectable const& sender, DragEven
   if (!items)
     return;
 
-  int count = (int)items.Size();
+  int count = static_cast<int>(items.Size());
   double scale = iupwinuiGetScale(ih);
   auto pos = e.GetPosition(sender.try_as<UIElement>());
 
@@ -94,7 +94,7 @@ static void winuiDropFilesDrop(Ihandle* ih, IInspectable const& sender, DragEven
       continue;
 
     char* filename = iupwinuiHStringToString(path);
-    if (cb(ih, filename, count - i - 1, (int)(pos.X * scale), (int)(pos.Y * scale)) == IUP_IGNORE)
+    if (cb(ih, filename, count - i - 1, static_cast<int>(pos.X * scale), static_cast<int>(pos.Y * scale)) == IUP_IGNORE)
       break;
   }
 }
@@ -103,7 +103,7 @@ static UIElement winuiGetDropFilesElement(Ihandle* ih)
 {
   if (ih->iclass->nativetype == IUP_TYPEDIALOG)
   {
-    IupWinUIDialogAux* aux = winuiGetAux<IupWinUIDialogAux>(ih, IUPWINUI_DIALOG_AUX);
+    auto* aux = winuiGetAux<IupWinUIDialogAux>(ih, IUPWINUI_DIALOG_AUX);
     if (aux && aux->rootPanel)
       return aux->rootPanel.try_as<UIElement>();
     return nullptr;
@@ -121,20 +121,20 @@ static int winuiSetDropFilesTargetAttrib(Ihandle* ih, const char* value)
   if (!elem)
     return 1;
 
-  event_token* dragOverToken = (event_token*)iupAttribGet(ih, "_IUPWINUI_DRAGOVER_TOKEN");
-  event_token* dropToken = (event_token*)iupAttribGet(ih, "_IUPWINUI_DROP_TOKEN");
+  auto* dragOverToken = reinterpret_cast<event_token*>(iupAttribGet(ih, "_IUPWINUI_DRAGOVER_TOKEN"));
+  auto* dropToken = reinterpret_cast<event_token*>(iupAttribGet(ih, "_IUPWINUI_DROP_TOKEN"));
 
   if (dragOverToken)
   {
     elem.DragOver(*dragOverToken);
     delete dragOverToken;
-    iupAttribSet(ih, "_IUPWINUI_DRAGOVER_TOKEN", NULL);
+    iupAttribSet(ih, "_IUPWINUI_DRAGOVER_TOKEN", nullptr);
   }
   if (dropToken)
   {
     elem.Drop(*dropToken);
     delete dropToken;
-    iupAttribSet(ih, "_IUPWINUI_DROP_TOKEN", NULL);
+    iupAttribSet(ih, "_IUPWINUI_DROP_TOKEN", nullptr);
   }
 
   if (iupStrBoolean(value))
@@ -143,13 +143,13 @@ static int winuiSetDropFilesTargetAttrib(Ihandle* ih, const char* value)
 
     dragOverToken = new event_token();
     *dragOverToken = elem.DragOver(winuiDropFilesDragOver);
-    iupAttribSet(ih, "_IUPWINUI_DRAGOVER_TOKEN", (char*)dragOverToken);
+    iupAttribSet(ih, "_IUPWINUI_DRAGOVER_TOKEN", reinterpret_cast<char*>(dragOverToken));
 
     dropToken = new event_token();
     *dropToken = elem.Drop([ih](IInspectable const& sender, DragEventArgs const& args) {
       winuiDropFilesDrop(ih, sender, args);
     });
-    iupAttribSet(ih, "_IUPWINUI_DROP_TOKEN", (char*)dropToken);
+    iupAttribSet(ih, "_IUPWINUI_DROP_TOKEN", reinterpret_cast<char*>(dropToken));
   }
   else
   {
@@ -166,16 +166,16 @@ static int winuiSetDropFilesTargetAttrib(Ihandle* ih, const char* value)
  * carries only the type string.
  ****************************************************************************/
 
-static void* winui_drag_data = NULL;
+static void* winui_drag_data = nullptr;
 static int winui_drag_data_size = 0;
 static char winui_drag_type[256] = "";
 
-void winuiDragDataCleanup(void)
+void winuiDragDataCleanup()
 {
   if (winui_drag_data)
   {
     free(winui_drag_data);
-    winui_drag_data = NULL;
+    winui_drag_data = nullptr;
   }
   winui_drag_data_size = 0;
   winui_drag_type[0] = '\0';
@@ -196,7 +196,7 @@ static void winuiDragSetCursor(Ihandle* ih, DragStartingEventArgs const& e)
   if (!name)
     return;
 
-  void* handle = iupImageGetImage(name, ih, 0, NULL);
+  void* handle = iupImageGetImage(name, ih, 0, nullptr);
   auto bitmap = winuiGetBitmapFromHandle(handle);
   if (!bitmap)
     return;
@@ -214,12 +214,12 @@ static void winuiDragSetCursor(Ihandle* ih, DragStartingEventArgs const& e)
 
 static void winuiDragStartingHandler(Ihandle* ih, DragStartingEventArgs const& e, UIElement const& posRelativeTo)
 {
-  IFnii dragbegin_cb = (IFnii)IupGetCallback(ih, "DRAGBEGIN_CB");
+  auto dragbegin_cb = reinterpret_cast<IFnii>(IupGetCallback(ih, "DRAGBEGIN_CB"));
   if (dragbegin_cb)
   {
     double scale = iupwinuiGetScale(ih);
     auto pos = e.GetPosition(posRelativeTo);
-    int ret = dragbegin_cb(ih, (int)(pos.X * scale), (int)(pos.Y * scale));
+    int ret = dragbegin_cb(ih, static_cast<int>(pos.X * scale), static_cast<int>(pos.Y * scale));
     if (ret == IUP_IGNORE)
     {
       e.Cancel(true);
@@ -229,8 +229,8 @@ static void winuiDragStartingHandler(Ihandle* ih, DragStartingEventArgs const& e
 
   winuiDragSetCursor(ih, e);
 
-  IFns datasize_cb = (IFns)IupGetCallback(ih, "DRAGDATASIZE_CB");
-  IFnsVi dragdata_cb = (IFnsVi)IupGetCallback(ih, "DRAGDATA_CB");
+  IFns datasize_cb = reinterpret_cast<IFns>(IupGetCallback(ih, "DRAGDATASIZE_CB"));
+  auto dragdata_cb = reinterpret_cast<IFnsVi>(IupGetCallback(ih, "DRAGDATA_CB"));
 
   char* drag_types = iupAttribGet(ih, "DRAGTYPES");
 
@@ -258,7 +258,7 @@ static void winuiDragStartingHandler(Ihandle* ih, DragStartingEventArgs const& e
 
 static void winuiDropCompletedHandler(Ihandle* ih, DropCompletedEventArgs const& e)
 {
-  IFni dragend_cb = (IFni)IupGetCallback(ih, "DRAGEND_CB");
+  IFni dragend_cb = reinterpret_cast<IFni>(IupGetCallback(ih, "DRAGEND_CB"));
   if (dragend_cb)
   {
     int del = (e.DropResult() == DataPackageOperation::Move) ? 1 : ((e.DropResult() == DataPackageOperation::Copy) ? 0 : -1);
@@ -281,20 +281,20 @@ static int winuiSetDragSourceAttrib(Ihandle* ih, const char* value)
 
   bool enable = iupStrBoolean(value) ? true : false;
 
-  event_token* dragStartToken = (event_token*)iupAttribGet(ih, "_IUPWINUI_DRAGSTART_TOKEN");
+  auto* dragStartToken = reinterpret_cast<event_token*>(iupAttribGet(ih, "_IUPWINUI_DRAGSTART_TOKEN"));
   if (dragStartToken)
   {
     elem.DragStarting(*dragStartToken);
     delete dragStartToken;
-    iupAttribSet(ih, "_IUPWINUI_DRAGSTART_TOKEN", NULL);
+    iupAttribSet(ih, "_IUPWINUI_DRAGSTART_TOKEN", nullptr);
   }
 
-  event_token* dropCompletedToken = (event_token*)iupAttribGet(ih, "_IUPWINUI_DROPCOMPLETED_TOKEN");
+  auto* dropCompletedToken = reinterpret_cast<event_token*>(iupAttribGet(ih, "_IUPWINUI_DROPCOMPLETED_TOKEN"));
   if (dropCompletedToken)
   {
     elem.DropCompleted(*dropCompletedToken);
     delete dropCompletedToken;
-    iupAttribSet(ih, "_IUPWINUI_DROPCOMPLETED_TOKEN", NULL);
+    iupAttribSet(ih, "_IUPWINUI_DROPCOMPLETED_TOKEN", nullptr);
   }
 
   if (enable)
@@ -305,13 +305,13 @@ static int winuiSetDragSourceAttrib(Ihandle* ih, const char* value)
     *dragStartToken = elem.DragStarting([ih](UIElement const& sender, DragStartingEventArgs const& e) {
       winuiDragStartingHandler(ih, e, sender);
     });
-    iupAttribSet(ih, "_IUPWINUI_DRAGSTART_TOKEN", (char*)dragStartToken);
+    iupAttribSet(ih, "_IUPWINUI_DRAGSTART_TOKEN", reinterpret_cast<char*>(dragStartToken));
 
     dropCompletedToken = new event_token();
     *dropCompletedToken = elem.DropCompleted([ih](UIElement const&, DropCompletedEventArgs const& e) {
       winuiDropCompletedHandler(ih, e);
     });
-    iupAttribSet(ih, "_IUPWINUI_DROPCOMPLETED_TOKEN", (char*)dropCompletedToken);
+    iupAttribSet(ih, "_IUPWINUI_DROPCOMPLETED_TOKEN", reinterpret_cast<char*>(dropCompletedToken));
   }
   else
   {
@@ -330,7 +330,7 @@ void winuiDropTargetRemoveHandlers(Ihandle* ih, UIElement const& elem)
     winrt::attach_abi(handler, abi);
     elem.RemoveHandler(UIElement::DragEnterEvent(), handler);
     elem.RemoveHandler(UIElement::DragOverEvent(), handler);
-    iupAttribSet(ih, "_IUPWINUI_CUSTOMDRAGOVER_HANDLER", NULL);
+    iupAttribSet(ih, "_IUPWINUI_CUSTOMDRAGOVER_HANDLER", nullptr);
   }
 
   abi = iupAttribGet(ih, "_IUPWINUI_CUSTOMDROP_HANDLER");
@@ -339,7 +339,7 @@ void winuiDropTargetRemoveHandlers(Ihandle* ih, UIElement const& elem)
     IInspectable handler{nullptr};
     winrt::attach_abi(handler, abi);
     elem.RemoveHandler(UIElement::DropEvent(), handler);
-    iupAttribSet(ih, "_IUPWINUI_CUSTOMDROP_HANDLER", NULL);
+    iupAttribSet(ih, "_IUPWINUI_CUSTOMDROP_HANDLER", nullptr);
   }
 }
 
@@ -368,14 +368,14 @@ static int winuiSetDropTargetAttrib(Ihandle* ih, const char* value)
       if (winui_drag_type[0] == '\0' || strcmp(winui_drag_type, drop_types) != 0)
         return;
 
-      IFniis dropmotion_cb = (IFniis)IupGetCallback(ih, "DROPMOTION_CB");
+      auto dropmotion_cb = reinterpret_cast<IFniis>(IupGetCallback(ih, "DROPMOTION_CB"));
       if (dropmotion_cb)
       {
         char status[20] = "";
         iupdrvGetKeyState(status);
         double scale = iupwinuiGetScale(ih);
         auto pos = e.GetPosition(sender.try_as<UIElement>());
-        dropmotion_cb(ih, (int)(pos.X * scale), (int)(pos.Y * scale), status);
+        dropmotion_cb(ih, static_cast<int>(pos.X * scale), static_cast<int>(pos.Y * scale), status);
       }
 
       e.AcceptedOperation(winuiDropAcceptedOperation(e));
@@ -383,10 +383,10 @@ static int winuiSetDropTargetAttrib(Ihandle* ih, const char* value)
     }));
     elem.AddHandler(UIElement::DragEnterEvent(), dragOverHandler, true);
     elem.AddHandler(UIElement::DragOverEvent(), dragOverHandler, true);
-    iupAttribSet(ih, "_IUPWINUI_CUSTOMDRAGOVER_HANDLER", (char*)winrt::detach_abi(dragOverHandler));
+    iupAttribSet(ih, "_IUPWINUI_CUSTOMDRAGOVER_HANDLER", static_cast<char*>(winrt::detach_abi(dragOverHandler)));
 
     IInspectable dropHandler = winrt::box_value(DragEventHandler([ih](IInspectable const& sender, DragEventArgs const& e) {
-      IFnsViii dropdata_cb = (IFnsViii)IupGetCallback(ih, "DROPDATA_CB");
+      auto dropdata_cb = reinterpret_cast<IFnsViii>(IupGetCallback(ih, "DROPDATA_CB"));
       if (!dropdata_cb)
         return;
 
@@ -399,12 +399,12 @@ static int winuiSetDropTargetAttrib(Ihandle* ih, const char* value)
 
       double scale = iupwinuiGetScale(ih);
       auto pos = e.GetPosition(sender.try_as<UIElement>());
-      dropdata_cb(ih, winui_drag_type, winui_drag_data, winui_drag_data_size, (int)(pos.X * scale), (int)(pos.Y * scale));
+      dropdata_cb(ih, winui_drag_type, winui_drag_data, winui_drag_data_size, static_cast<int>(pos.X * scale), static_cast<int>(pos.Y * scale));
 
       e.Handled(true);
     }));
     elem.AddHandler(UIElement::DropEvent(), dropHandler, true);
-    iupAttribSet(ih, "_IUPWINUI_CUSTOMDROP_HANDLER", (char*)winrt::detach_abi(dropHandler));
+    iupAttribSet(ih, "_IUPWINUI_CUSTOMDROP_HANDLER", static_cast<char*>(winrt::detach_abi(dropHandler)));
   }
   else
   {
@@ -425,14 +425,14 @@ extern "C" IUP_SDK_API void iupdrvRegisterDragDropAttrib(Iclass* ic)
   iupClassRegisterCallback(ic, "DROPDATA_CB", "sViii");
   iupClassRegisterCallback(ic, "DROPMOTION_CB", "iis");
 
-  iupClassRegisterAttribute(ic, "DRAGTYPES", NULL, NULL, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DROPTYPES", NULL, NULL, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DRAGSOURCE", NULL, winuiSetDragSourceAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DROPTARGET", NULL, winuiSetDropTargetAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DRAGSOURCEMOVE", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DRAGCURSOR", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DRAGCURSORCOPY", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DRAGTYPES", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DROPTYPES", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DRAGSOURCE", nullptr, winuiSetDragSourceAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DROPTARGET", nullptr, winuiSetDropTargetAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DRAGSOURCEMOVE", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DRAGCURSOR", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DRAGCURSORCOPY", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "DRAGDROP", NULL, winuiSetDropFilesTargetAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DROPFILESTARGET", NULL, winuiSetDropFilesTargetAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DRAGDROP", nullptr, winuiSetDropFilesTargetAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DROPFILESTARGET", nullptr, winuiSetDropFilesTargetAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
 }

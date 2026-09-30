@@ -45,7 +45,7 @@ static com_ptr<ID2D1Factory1>   g_d2dFactory;
 static com_ptr<ID2D1Device>     g_d2dDevice;
 static com_ptr<IDWriteFactory>  g_dwriteFactory;
 
-static bool winuiDrawEnsureDevices(void)
+static bool winuiDrawEnsureDevices()
 {
   if (g_d2dDevice)
     return true;
@@ -91,7 +91,7 @@ static IupDrawStroke g_strokeStyleKey;
 static float g_strokeStyleWidth = 0;
 static bool g_strokeStyleValid = false;
 
-IUP_DRV_API void iupwinuiDrawCleanup(void)
+IUP_DRV_API void iupwinuiDrawCleanup()
 {
   g_strokeStyle = nullptr;
   g_strokeStyleValid = false;
@@ -112,23 +112,23 @@ enum WinUIClipType
 
 struct WinUIDrawLayer
 {
-  WinUIClipType clipType;
-  int clip_x1, clip_y1, clip_x2, clip_y2;
+  WinUIClipType clipType{};
+  int clip_x1{0}, clip_y1{0}, clip_x2{0}, clip_y2{0};
   D2D1_TEXT_ANTIALIAS_MODE textAntialias;
   WinUIDrawLayer* next;
 };
 
 struct _IdrawCanvas
 {
-  Ihandle* ih;
-  int w, h;
+  Ihandle* ih{nullptr};
+  int w{0}, h{0};
 
   SurfaceImageSource sis{nullptr};
   bool sisIsNew{false};
   com_ptr<ISurfaceImageSourceNativeWithD2D> sisNative;
-  ID2D1DeviceContext* d2dContext;
-  POINT drawOffset;
-  D2D1_MATRIX_3X2_F baseTransform;
+  ID2D1DeviceContext* d2dContext{nullptr};
+  POINT drawOffset{};
+  D2D1_MATRIX_3X2_F baseTransform{};
   D2D1_MATRIX_3X2_F userTransform{D2D1::Matrix3x2F::Identity()};
 
   bool partial{false};
@@ -136,8 +136,8 @@ struct _IdrawCanvas
 
   com_ptr<ID2D1SolidColorBrush> solidBrush;
 
-  WinUIClipType clipType;
-  int clip_x1, clip_y1, clip_x2, clip_y2;
+  WinUIClipType clipType{};
+  int clip_x1{0}, clip_y1{0}, clip_x2{0}, clip_y2{0};
   WinUIDrawLayer* layers{nullptr};
 };
 
@@ -168,7 +168,7 @@ static ID2D1StrokeStyle* winuiDrawStrokeStyle(IdrawCanvas* dc, int style, int li
 {
   IupDrawStroke stroke;
   float dashes[IUP_DRAW_MAX_DASHES];
-  float width = (float)line_width;
+  auto width = static_cast<float>(line_width);
 
   if (width <= 0)
     width = 1.0f;
@@ -182,7 +182,7 @@ static ID2D1StrokeStyle* winuiDrawStrokeStyle(IdrawCanvas* dc, int style, int li
     return g_strokeStyle.get();
 
   for (int i = 0; i < stroke.dash_count; i++)
-    dashes[i] = (float)(stroke.dashes[i] / width);
+    dashes[i] = static_cast<float>(stroke.dashes[i] / width);
 
   D2D1_CAP_STYLE cap = stroke.cap == IUP_DRAW_CAP_ROUND ? D2D1_CAP_STYLE_ROUND :
                        stroke.cap == IUP_DRAW_CAP_SQUARE ? D2D1_CAP_STYLE_SQUARE : D2D1_CAP_STYLE_FLAT;
@@ -190,12 +190,12 @@ static ID2D1StrokeStyle* winuiDrawStrokeStyle(IdrawCanvas* dc, int style, int li
                         stroke.join == IUP_DRAW_JOIN_BEVEL ? D2D1_LINE_JOIN_BEVEL : D2D1_LINE_JOIN_MITER;
 
   D2D1_STROKE_STYLE_PROPERTIES props = D2D1::StrokeStyleProperties(
-    cap, cap, cap, join, (float)IUP_DRAW_MITER_LIMIT,
+    cap, cap, cap, join, static_cast<float>(IUP_DRAW_MITER_LIMIT),
     stroke.dash_count > 0 ? D2D1_DASH_STYLE_CUSTOM : D2D1_DASH_STYLE_SOLID,
-    stroke.dash_count > 0 ? (float)(stroke.dash_offset / width) : 0.0f);
+    stroke.dash_count > 0 ? static_cast<float>(stroke.dash_offset / width) : 0.0f);
 
   g_strokeStyle = nullptr;
-  g_d2dFactory->CreateStrokeStyle(props, stroke.dash_count > 0 ? dashes : nullptr, (UINT32)stroke.dash_count, g_strokeStyle.put());
+  g_d2dFactory->CreateStrokeStyle(props, stroke.dash_count > 0 ? dashes : nullptr, static_cast<UINT32>(stroke.dash_count), g_strokeStyle.put());
 
   g_strokeStyleKey = stroke;
   g_strokeStyleWidth = width;
@@ -211,7 +211,7 @@ static void winuiDrawGetWidgetSize(Ihandle* ih, int* w, int* h)
 
   if (iupClassMatch(ih->iclass, "canvas"))
   {
-    IupWinUICanvasAux* aux = winuiGetAux<IupWinUICanvasAux>(ih, IUPWINUI_CANVAS_AUX);
+    auto* aux = winuiGetAux<IupWinUICanvasAux>(ih, IUPWINUI_CANVAS_AUX);
     if (aux)
     {
       if (aux->sbVert && aux->sbVert.Visibility() == Visibility::Visible)
@@ -243,12 +243,12 @@ static bool winuiDrawBeginSession(IdrawCanvas* dc)
   dc->d2dContext = ctx;
   dc->drawOffset = offset;
 
-  dc->baseTransform = D2D1::Matrix3x2F::Translation((float)(offset.x - updateRect.left), (float)(offset.y - updateRect.top));
+  dc->baseTransform = D2D1::Matrix3x2F::Translation(static_cast<float>(offset.x - updateRect.left), static_cast<float>(offset.y - updateRect.top));
   dc->d2dContext->SetTransform(dc->userTransform * dc->baseTransform);
 
   if (dc->partial)
     dc->d2dContext->PushAxisAlignedClip(
-      D2D1::RectF((float)dc->px1, (float)dc->py1, (float)(dc->px2 + 1), (float)(dc->py2 + 1)),
+      D2D1::RectF(static_cast<float>(dc->px1), static_cast<float>(dc->py1), static_cast<float>(dc->px2 + 1), static_cast<float>(dc->py2 + 1)),
       D2D1_ANTIALIAS_MODE_ALIASED);
 
   dc->d2dContext->CreateSolidColorBrush(D2D1::ColorF(0, 0, 0), dc->solidBrush.put());
@@ -261,7 +261,7 @@ extern "C" IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
   if (!winuiDrawEnsureDevices())
     return nullptr;
 
-  IdrawCanvas* dc = new IdrawCanvas();
+  auto* dc = new IdrawCanvas();
 
   dc->ih = ih;
   winuiDrawGetWidgetSize(ih, &dc->w, &dc->h);
@@ -344,9 +344,9 @@ extern "C" IUP_SDK_API void iupdrvDrawSetTransform(IdrawCanvas* dc, const IupDra
 {
   if (!dc || !dc->d2dContext)
     return;
-  dc->userTransform = D2D1::Matrix3x2F((float)matrix->a, (float)matrix->b,
-                                       (float)matrix->c, (float)matrix->d,
-                                       (float)matrix->e, (float)matrix->f);
+  dc->userTransform = D2D1::Matrix3x2F(static_cast<float>(matrix->a), static_cast<float>(matrix->b),
+                                       static_cast<float>(matrix->c), static_cast<float>(matrix->d),
+                                       static_cast<float>(matrix->e), static_cast<float>(matrix->f));
   dc->d2dContext->SetTransform(dc->userTransform * dc->baseTransform);
 }
 
@@ -355,7 +355,7 @@ extern "C" IUP_SDK_API int iupdrvDrawBeginLayer(IdrawCanvas* dc, int alpha)
   if (!dc || !dc->d2dContext)
     return 0;
 
-  WinUIDrawLayer* layer = new WinUIDrawLayer();
+  auto* layer = new WinUIDrawLayer();
   layer->clipType = dc->clipType;
   layer->clip_x1 = dc->clip_x1;
   layer->clip_y1 = dc->clip_y1;
@@ -450,14 +450,14 @@ static void winuiDrawCopyToBuffer(IdrawCanvas* dc)
 
   dc->d2dContext->Flush();
 
-  ID2D1Bitmap1* oldBuffer = (ID2D1Bitmap1*)iupAttribGet(dc->ih, "_IUPWINUI_CANVAS_BUFFER");
+  auto* oldBuffer = reinterpret_cast<ID2D1Bitmap1*>(iupAttribGet(dc->ih, "_IUPWINUI_CANVAS_BUFFER"));
 
   if (dc->partial)
   {
     if (oldBuffer)
     {
       D2D1_SIZE_U oldSize = oldBuffer->GetPixelSize();
-      if (oldSize.width == (UINT32)dc->w && oldSize.height == (UINT32)dc->h)
+      if (oldSize.width == static_cast<UINT32>(dc->w) && oldSize.height == static_cast<UINT32>(dc->h))
       {
         com_ptr<ID2D1Image> target;
         dc->d2dContext->GetTarget(target.put());
@@ -467,11 +467,11 @@ static void winuiDrawCopyToBuffer(IdrawCanvas* dc)
           target->QueryInterface(targetBitmap.put());
           if (targetBitmap)
           {
-            D2D1_POINT_2U destPoint = {(UINT32)dc->px1, (UINT32)dc->py1};
+            D2D1_POINT_2U destPoint = {static_cast<UINT32>(dc->px1), static_cast<UINT32>(dc->py1)};
             D2D1_RECT_U srcRect = {
-              (UINT32)dc->drawOffset.x, (UINT32)dc->drawOffset.y,
-              (UINT32)(dc->drawOffset.x + (dc->px2 - dc->px1 + 1)),
-              (UINT32)(dc->drawOffset.y + (dc->py2 - dc->py1 + 1))
+              static_cast<UINT32>(dc->drawOffset.x), static_cast<UINT32>(dc->drawOffset.y),
+              static_cast<UINT32>(dc->drawOffset.x + (dc->px2 - dc->px1 + 1)),
+              static_cast<UINT32>(dc->drawOffset.y + (dc->py2 - dc->py1 + 1))
             };
             oldBuffer->CopyFromBitmap(&destPoint, targetBitmap.get(), &srcRect);
           }
@@ -484,7 +484,7 @@ static void winuiDrawCopyToBuffer(IdrawCanvas* dc)
   if (oldBuffer)
   {
     oldBuffer->Release();
-    iupAttribSet(dc->ih, "_IUPWINUI_CANVAS_BUFFER", NULL);
+    iupAttribSet(dc->ih, "_IUPWINUI_CANVAS_BUFFER", nullptr);
   }
 
   com_ptr<ID2D1Image> target;
@@ -509,8 +509,8 @@ static void winuiDrawCopyToBuffer(IdrawCanvas* dc)
 
   D2D1_POINT_2U destPoint = {0, 0};
   D2D1_RECT_U srcRect = {
-    (UINT32)dc->drawOffset.x, (UINT32)dc->drawOffset.y,
-    (UINT32)(dc->drawOffset.x + dc->w), (UINT32)(dc->drawOffset.y + dc->h)
+    static_cast<UINT32>(dc->drawOffset.x), static_cast<UINT32>(dc->drawOffset.y),
+    static_cast<UINT32>(dc->drawOffset.x + dc->w), static_cast<UINT32>(dc->drawOffset.y + dc->h)
   };
 
   hr = stagingBitmap->CopyFromBitmap(&destPoint, targetBitmap.get(), &srcRect);
@@ -520,7 +520,7 @@ static void winuiDrawCopyToBuffer(IdrawCanvas* dc)
     return;
   }
 
-  iupAttribSet(dc->ih, "_IUPWINUI_CANVAS_BUFFER", (char*)stagingBitmap);
+  iupAttribSet(dc->ih, "_IUPWINUI_CANVAS_BUFFER", reinterpret_cast<char*>(stagingBitmap));
 }
 
 extern "C" IUP_SDK_API void iupdrvDrawFlush(IdrawCanvas* dc)
@@ -554,13 +554,13 @@ extern "C" IUP_SDK_API void iupdrvDrawFlush(IdrawCanvas* dc)
 
   if (isCanvas)
   {
-    IupWinUICanvasAux* aux = winuiGetAux<IupWinUICanvasAux>(dc->ih, IUPWINUI_CANVAS_AUX);
+    auto* aux = winuiGetAux<IupWinUICanvasAux>(dc->ih, IUPWINUI_CANVAS_AUX);
     if (aux && aux->displayImage)
     {
       if (dc->sisIsNew)
         aux->displayImage.Source(dc->sis);
 
-      Canvas canvas = winuiGetHandle<Canvas>(dc->ih);
+      auto canvas = winuiGetHandle<Canvas>(dc->ih);
       if (canvas)
         canvas.InvalidateArrange();
     }
@@ -593,25 +593,25 @@ extern "C" IUP_SDK_API void iupdrvDrawLine(IdrawCanvas* dc, int x1, int y1, int 
 
   dc->solidBrush->SetColor(winuiDrawColor(color));
 
-  D2D1_POINT_2F p1 = D2D1::Point2F((float)x1, (float)y1);
-  D2D1_POINT_2F p2 = D2D1::Point2F((float)x2, (float)y2);
+  D2D1_POINT_2F p1 = D2D1::Point2F(static_cast<float>(x1), static_cast<float>(y1));
+  D2D1_POINT_2F p2 = D2D1::Point2F(static_cast<float>(x2), static_cast<float>(y2));
   if (line_width == 1 && (x1 == x2 || y1 == y2))
   {
     iupDrawCheckSwapCoord(x1, x2);
     iupDrawCheckSwapCoord(y1, y2);
     if (x1 == x2)
     {
-      p1 = D2D1::Point2F(x1 + 0.5f, (float)y1);
-      p2 = D2D1::Point2F(x1 + 0.5f, (float)(y2 + 1));
+      p1 = D2D1::Point2F(x1 + 0.5f, static_cast<float>(y1));
+      p2 = D2D1::Point2F(x1 + 0.5f, static_cast<float>(y2 + 1));
     }
     else
     {
-      p1 = D2D1::Point2F((float)x1, y1 + 0.5f);
-      p2 = D2D1::Point2F((float)(x2 + 1), y1 + 0.5f);
+      p1 = D2D1::Point2F(static_cast<float>(x1), y1 + 0.5f);
+      p2 = D2D1::Point2F(static_cast<float>(x2 + 1), y1 + 0.5f);
     }
   }
 
-  dc->d2dContext->DrawLine(p1, p2, dc->solidBrush.get(), (float)line_width, winuiDrawStrokeStyle(dc, style, line_width));
+  dc->d2dContext->DrawLine(p1, p2, dc->solidBrush.get(), static_cast<float>(line_width), winuiDrawStrokeStyle(dc, style, line_width));
 }
 
 extern "C" IUP_SDK_API void iupdrvDrawRectangle(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color, int style, int line_width)
@@ -624,7 +624,7 @@ extern "C" IUP_SDK_API void iupdrvDrawRectangle(IdrawCanvas* dc, int x1, int y1,
   iupDrawCheckSwapCoord(x1, x2);
   iupDrawCheckSwapCoord(y1, y2);
 
-  D2D1_RECT_F rect = D2D1::RectF((float)x1, (float)y1, (float)(x2 + 1), (float)(y2 + 1));
+  D2D1_RECT_F rect = D2D1::RectF(static_cast<float>(x1), static_cast<float>(y1), static_cast<float>(x2 + 1), static_cast<float>(y2 + 1));
   if (style != IUP_DRAW_FILL)
   {
     float offset = (line_width % 2) ? 0.5f : 0.0f;
@@ -638,7 +638,7 @@ extern "C" IUP_SDK_API void iupdrvDrawRectangle(IdrawCanvas* dc, int x1, int y1,
   else
   {
     auto strokeStyle = winuiDrawStrokeStyle(dc, style, line_width);
-    dc->d2dContext->DrawRectangle(rect, dc->solidBrush.get(), (float)line_width, strokeStyle);
+    dc->d2dContext->DrawRectangle(rect, dc->solidBrush.get(), static_cast<float>(line_width), strokeStyle);
   }
 }
 
@@ -652,14 +652,14 @@ extern "C" IUP_SDK_API void iupdrvDrawArc(IdrawCanvas* dc, int x1, int y1, int x
   iupDrawCheckSwapCoord(x1, x2);
   iupDrawCheckSwapCoord(y1, y2);
 
-  float w = (float)(x2 - x1);
-  float h = (float)(y2 - y1);
+  auto w = static_cast<float>(x2 - x1);
+  auto h = static_cast<float>(y2 - y1);
   float cx = x1 + w / 2.0f;
   float cy = y1 + h / 2.0f;
   float rx = w / 2.0f;
   float ry = h / 2.0f;
 
-  float sweep = (float)(a2 - a1);
+  auto sweep = static_cast<float>(a2 - a1);
   while (sweep < 0) sweep += 360.0f;
   while (sweep > 360) sweep = 360.0f;
 
@@ -673,13 +673,13 @@ extern "C" IUP_SDK_API void iupdrvDrawArc(IdrawCanvas* dc, int x1, int y1, int x
     else
     {
       auto strokeStyle = winuiDrawStrokeStyle(dc, style, line_width);
-      dc->d2dContext->DrawEllipse(ellipse, dc->solidBrush.get(), (float)line_width, strokeStyle);
+      dc->d2dContext->DrawEllipse(ellipse, dc->solidBrush.get(), static_cast<float>(line_width), strokeStyle);
     }
     return;
   }
 
-  float startRad = (float)(a1 * IUP_DEG2RAD);
-  float endRad = (float)(a2 * IUP_DEG2RAD);
+  auto startRad = static_cast<float>(a1 * IUP_DEG2RAD);
+  auto endRad = static_cast<float>(a2 * IUP_DEG2RAD);
 
   float startX = cx + rx * cosf(startRad);
   float startY = cy - ry * sinf(startRad);
@@ -720,7 +720,7 @@ extern "C" IUP_SDK_API void iupdrvDrawArc(IdrawCanvas* dc, int x1, int y1, int x
   else
   {
     auto strokeStyle = winuiDrawStrokeStyle(dc, style, line_width);
-    dc->d2dContext->DrawGeometry(pathGeometry.get(), dc->solidBrush.get(), (float)line_width, strokeStyle);
+    dc->d2dContext->DrawGeometry(pathGeometry.get(), dc->solidBrush.get(), static_cast<float>(line_width), strokeStyle);
   }
 }
 
@@ -734,8 +734,8 @@ extern "C" IUP_SDK_API void iupdrvDrawEllipse(IdrawCanvas* dc, int x1, int y1, i
   iupDrawCheckSwapCoord(x1, x2);
   iupDrawCheckSwapCoord(y1, y2);
 
-  float w = (float)(x2 - x1);
-  float h = (float)(y2 - y1);
+  auto w = static_cast<float>(x2 - x1);
+  auto h = static_cast<float>(y2 - y1);
   float cx = x1 + w / 2.0f;
   float cy = y1 + h / 2.0f;
   float rx = w / 2.0f;
@@ -750,7 +750,7 @@ extern "C" IUP_SDK_API void iupdrvDrawEllipse(IdrawCanvas* dc, int x1, int y1, i
   else
   {
     auto strokeStyle = winuiDrawStrokeStyle(dc, style, line_width);
-    dc->d2dContext->DrawEllipse(ellipse, dc->solidBrush.get(), (float)line_width, strokeStyle);
+    dc->d2dContext->DrawEllipse(ellipse, dc->solidBrush.get(), static_cast<float>(line_width), strokeStyle);
   }
 }
 
@@ -768,11 +768,11 @@ extern "C" IUP_SDK_API void iupdrvDrawPolygon(IdrawCanvas* dc, int* points, int 
   pathGeometry->Open(sink.put());
 
   sink->BeginFigure(
-    D2D1::Point2F((float)points[0], (float)points[1]),
+    D2D1::Point2F(static_cast<float>(points[0]), static_cast<float>(points[1])),
     (style == IUP_DRAW_FILL) ? D2D1_FIGURE_BEGIN_FILLED : D2D1_FIGURE_BEGIN_HOLLOW);
 
   for (int i = 1; i < count; i++)
-    sink->AddLine(D2D1::Point2F((float)points[2 * i], (float)points[2 * i + 1]));
+    sink->AddLine(D2D1::Point2F(static_cast<float>(points[2 * i]), static_cast<float>(points[2 * i + 1])));
 
   sink->EndFigure(D2D1_FIGURE_END_CLOSED);
   sink->Close();
@@ -784,7 +784,7 @@ extern "C" IUP_SDK_API void iupdrvDrawPolygon(IdrawCanvas* dc, int* points, int 
   else
   {
     auto strokeStyle = winuiDrawStrokeStyle(dc, style, line_width);
-    dc->d2dContext->DrawGeometry(pathGeometry.get(), dc->solidBrush.get(), (float)line_width, strokeStyle);
+    dc->d2dContext->DrawGeometry(pathGeometry.get(), dc->solidBrush.get(), static_cast<float>(line_width), strokeStyle);
   }
 }
 
@@ -794,7 +794,7 @@ extern "C" IUP_SDK_API void iupdrvDrawPixel(IdrawCanvas* dc, int x, int y, long 
     return;
 
   dc->solidBrush->SetColor(winuiDrawColor(color));
-  dc->d2dContext->FillRectangle(D2D1::RectF((float)x, (float)y, (float)(x + 1), (float)(y + 1)), dc->solidBrush.get());
+  dc->d2dContext->FillRectangle(D2D1::RectF(static_cast<float>(x), static_cast<float>(y), static_cast<float>(x + 1), static_cast<float>(y + 1)), dc->solidBrush.get());
 }
 
 extern "C" IUP_SDK_API void iupdrvDrawRoundedRectangle(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int radius, long color, int style, int line_width)
@@ -812,8 +812,8 @@ extern "C" IUP_SDK_API void iupdrvDrawRoundedRectangle(IdrawCanvas* dc, int x1, 
     radius = max_radius;
 
   D2D1_ROUNDED_RECT roundedRect = D2D1::RoundedRect(
-    D2D1::RectF((float)x1, (float)y1, (float)(x2 + 1), (float)(y2 + 1)),
-    (float)radius, (float)radius);
+    D2D1::RectF(static_cast<float>(x1), static_cast<float>(y1), static_cast<float>(x2 + 1), static_cast<float>(y2 + 1)),
+    static_cast<float>(radius), static_cast<float>(radius));
 
   if (style == IUP_DRAW_FILL)
   {
@@ -822,7 +822,7 @@ extern "C" IUP_SDK_API void iupdrvDrawRoundedRectangle(IdrawCanvas* dc, int x1, 
   else
   {
     auto strokeStyle = winuiDrawStrokeStyle(dc, style, line_width);
-    dc->d2dContext->DrawRoundedRectangle(roundedRect, dc->solidBrush.get(), (float)line_width, strokeStyle);
+    dc->d2dContext->DrawRoundedRectangle(roundedRect, dc->solidBrush.get(), static_cast<float>(line_width), strokeStyle);
   }
 }
 
@@ -839,12 +839,12 @@ extern "C" IUP_SDK_API void iupdrvDrawBezier(IdrawCanvas* dc, int x1, int y1, in
   com_ptr<ID2D1GeometrySink> sink;
   pathGeometry->Open(sink.put());
 
-  sink->BeginFigure(D2D1::Point2F((float)x1, (float)y1), D2D1_FIGURE_BEGIN_HOLLOW);
+  sink->BeginFigure(D2D1::Point2F(static_cast<float>(x1), static_cast<float>(y1)), D2D1_FIGURE_BEGIN_HOLLOW);
 
   D2D1_BEZIER_SEGMENT bezier = {
-    D2D1::Point2F((float)x2, (float)y2),
-    D2D1::Point2F((float)x3, (float)y3),
-    D2D1::Point2F((float)x4, (float)y4)};
+    D2D1::Point2F(static_cast<float>(x2), static_cast<float>(y2)),
+    D2D1::Point2F(static_cast<float>(x3), static_cast<float>(y3)),
+    D2D1::Point2F(static_cast<float>(x4), static_cast<float>(y4))};
   sink->AddBezier(bezier);
 
   sink->EndFigure(D2D1_FIGURE_END_OPEN);
@@ -857,7 +857,7 @@ extern "C" IUP_SDK_API void iupdrvDrawBezier(IdrawCanvas* dc, int x1, int y1, in
   else
   {
     auto strokeStyle = winuiDrawStrokeStyle(dc, style, line_width);
-    dc->d2dContext->DrawGeometry(pathGeometry.get(), dc->solidBrush.get(), (float)line_width, strokeStyle);
+    dc->d2dContext->DrawGeometry(pathGeometry.get(), dc->solidBrush.get(), static_cast<float>(line_width), strokeStyle);
   }
 }
 
@@ -874,11 +874,11 @@ extern "C" IUP_SDK_API void iupdrvDrawQuadraticBezier(IdrawCanvas* dc, int x1, i
   com_ptr<ID2D1GeometrySink> sink;
   pathGeometry->Open(sink.put());
 
-  sink->BeginFigure(D2D1::Point2F((float)x1, (float)y1), D2D1_FIGURE_BEGIN_HOLLOW);
+  sink->BeginFigure(D2D1::Point2F(static_cast<float>(x1), static_cast<float>(y1)), D2D1_FIGURE_BEGIN_HOLLOW);
 
   D2D1_QUADRATIC_BEZIER_SEGMENT qbezier = {
-    D2D1::Point2F((float)x2, (float)y2),
-    D2D1::Point2F((float)x3, (float)y3)};
+    D2D1::Point2F(static_cast<float>(x2), static_cast<float>(y2)),
+    D2D1::Point2F(static_cast<float>(x3), static_cast<float>(y3))};
   sink->AddQuadraticBezier(qbezier);
 
   sink->EndFigure(D2D1_FIGURE_END_OPEN);
@@ -891,7 +891,7 @@ extern "C" IUP_SDK_API void iupdrvDrawQuadraticBezier(IdrawCanvas* dc, int x1, i
   else
   {
     auto strokeStyle = winuiDrawStrokeStyle(dc, style, line_width);
-    dc->d2dContext->DrawGeometry(pathGeometry.get(), dc->solidBrush.get(), (float)line_width, strokeStyle);
+    dc->d2dContext->DrawGeometry(pathGeometry.get(), dc->solidBrush.get(), static_cast<float>(line_width), strokeStyle);
   }
 }
 
@@ -943,7 +943,7 @@ extern "C" IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, in
       iupStrCopyN(typeface, sizeof(typeface), mapped_name);
   }
 
-  font_size = (size < 0) ? (float)(-size) : iupWINUI_PT2PIXEL((float)size, winui_screen_dpi);
+  font_size = (size < 0) ? static_cast<float>(-size) : iupWINUI_PT2PIXEL(static_cast<float>(size), winui_screen_dpi);
   if (font_size <= 0)
     return;
 
@@ -990,21 +990,21 @@ extern "C" IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, in
   if (len > 0)
   {
     wlen = MultiByteToWideChar(CP_UTF8, 0, text, len, nullptr, 0);
-    wtext = (wchar_t*)malloc((wlen + 1) * sizeof(wchar_t));
+    wtext = static_cast<wchar_t*>(malloc((wlen + 1) * sizeof(wchar_t)));
     MultiByteToWideChar(CP_UTF8, 0, text, len, wtext, wlen);
     wtext[wlen] = 0;
   }
   else
   {
     wlen = MultiByteToWideChar(CP_UTF8, 0, text, -1, nullptr, 0) - 1;
-    wtext = (wchar_t*)malloc((wlen + 1) * sizeof(wchar_t));
+    wtext = static_cast<wchar_t*>(malloc((wlen + 1) * sizeof(wchar_t)));
     MultiByteToWideChar(CP_UTF8, 0, text, -1, wtext, wlen + 1);
   }
 
-  float fx = (float)x;
-  float fy = (float)y;
-  float fw = (w > 0) ? (float)w : (float)dc->w;
-  float fh = (h > 0) ? (float)h : (float)dc->h;
+  auto fx = static_cast<float>(x);
+  auto fy = static_cast<float>(y);
+  float fw = (w > 0) ? static_cast<float>(w) : static_cast<float>(dc->w);
+  float fh = (h > 0) ? static_cast<float>(h) : static_cast<float>(dc->h);
 
   int layout_w = w, layout_h = h;
   int layout_center = flags & IUP_DRAW_LAYOUTCENTER;
@@ -1012,8 +1012,8 @@ extern "C" IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, in
   if (text_orientation)
     iupDrawGetTextSize(dc->ih, text, len, &layout_w, &layout_h, 0);
 
-  float flw = (layout_w > 0) ? (float)layout_w : (float)dc->w;
-  float flh = (layout_h > 0) ? (float)layout_h : (float)dc->h;
+  float flw = (layout_w > 0) ? static_cast<float>(layout_w) : static_cast<float>(dc->w);
+  float flh = (layout_h > 0) ? static_cast<float>(layout_h) : static_cast<float>(dc->h);
 
   com_ptr<IDWriteTextLayout> textLayout;
   g_dwriteFactory->CreateGdiCompatibleTextLayout(wtext, wlen, textFormat.get(), flw, flh, 1.0f, nullptr, FALSE, textLayout.put());
@@ -1021,7 +1021,7 @@ extern "C" IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, in
   {
     if (is_underline || is_strikeout)
     {
-      DWRITE_TEXT_RANGE range = {0, (UINT32)wlen};
+      DWRITE_TEXT_RANGE range = {0, static_cast<UINT32>(wlen)};
       if (is_underline)
         textLayout->SetUnderline(TRUE, range);
       if (is_strikeout)
@@ -1046,7 +1046,7 @@ extern "C" IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, in
       float tcy = fy + fh / 2.0f;
 
       D2D1_MATRIX_3X2_F rotation = D2D1::Matrix3x2F::Rotation(
-        (float)(-text_orientation), D2D1::Point2F(tcx, tcy));
+        static_cast<float>(-text_orientation), D2D1::Point2F(tcx, tcy));
 
       dc->d2dContext->SetTransform(rotation * oldTransform);
 
@@ -1055,7 +1055,7 @@ extern "C" IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, in
     else
     {
       D2D1_MATRIX_3X2_F rotation = D2D1::Matrix3x2F::Rotation(
-        (float)(-text_orientation), D2D1::Point2F(fx, fy));
+        static_cast<float>(-text_orientation), D2D1::Point2F(fx, fy));
 
       dc->d2dContext->SetTransform(rotation * oldTransform);
     }
@@ -1131,8 +1131,8 @@ extern "C" IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, i
   if (FAILED(hr) || !d2dBitmap)
     return;
 
-  D2D1_RECT_F destRect = D2D1::RectF((float)x, (float)y, (float)(x + w), (float)(y + h));
-  D2D1_RECT_F srcRect = D2D1::RectF((float)sx, (float)sy, (float)(sx + sw), (float)(sy + sh));
+  D2D1_RECT_F destRect = D2D1::RectF(static_cast<float>(x), static_cast<float>(y), static_cast<float>(x + w), static_cast<float>(y + h));
+  D2D1_RECT_F srcRect = D2D1::RectF(static_cast<float>(sx), static_cast<float>(sy), static_cast<float>(sx + sw), static_cast<float>(sy + sh));
   dc->d2dContext->DrawBitmap(d2dBitmap.get(), destRect, opacity / 255.0f,
     quality == IUP_DRAW_IMAGE_NEAREST ? D2D1_BITMAP_INTERPOLATION_MODE_NEAREST_NEIGHBOR : D2D1_BITMAP_INTERPOLATION_MODE_LINEAR,
     srcRect);
@@ -1157,7 +1157,7 @@ extern "C" IUP_SDK_API void iupdrvDrawSetClipRect(IdrawCanvas* dc, int x1, int y
   iupDrawCheckSwapCoord(x1, x2);
   iupDrawCheckSwapCoord(y1, y2);
 
-  D2D1_RECT_F clipRect = D2D1::RectF((float)x1, (float)y1, (float)(x2 + 1), (float)(y2 + 1));
+  D2D1_RECT_F clipRect = D2D1::RectF(static_cast<float>(x1), static_cast<float>(y1), static_cast<float>(x2 + 1), static_cast<float>(y2 + 1));
   dc->clipType = winuiDrawPushRectClip(dc, clipRect) ? WINUI_CLIP_LAYER : WINUI_CLIP_RECT;
 
   dc->clip_x1 = x1;
@@ -1190,8 +1190,8 @@ extern "C" IUP_SDK_API void iupdrvDrawSetClipRoundedRect(IdrawCanvas* dc, int x1
     radius = max_radius;
 
   D2D1_ROUNDED_RECT roundedRect = D2D1::RoundedRect(
-    D2D1::RectF((float)x1, (float)y1, (float)x2, (float)y2),
-    (float)radius, (float)radius);
+    D2D1::RectF(static_cast<float>(x1), static_cast<float>(y1), static_cast<float>(x2), static_cast<float>(y2)),
+    static_cast<float>(radius), static_cast<float>(radius));
 
   com_ptr<ID2D1RoundedRectangleGeometry> geometry;
   g_d2dFactory->CreateRoundedRectangleGeometry(roundedRect, geometry.put());
@@ -1259,7 +1259,7 @@ extern "C" IUP_SDK_API void iupdrvDrawSelectRect(IdrawCanvas* dc, int x1, int y1
   dc->solidBrush->SetColor(c);
 
   dc->d2dContext->FillRectangle(
-    D2D1::RectF((float)x1, (float)y1, (float)(x2 + 1), (float)(y2 + 1)),
+    D2D1::RectF(static_cast<float>(x1), static_cast<float>(y1), static_cast<float>(x2 + 1), static_cast<float>(y2 + 1)),
     dc->solidBrush.get());
 }
 
@@ -1282,12 +1282,12 @@ extern "C" IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, in
   iupDrawCheckSwapCoord(x1, x2);
   iupDrawCheckSwapCoord(y1, y2);
 
-  float w = (float)(x2 - x1);
-  float h = (float)(y2 - y1);
+  auto w = static_cast<float>(x2 - x1);
+  auto h = static_cast<float>(y2 - y1);
   float cx = x1 + w / 2.0f;
   float cy = y1 + h / 2.0f;
 
-  float rad = angle * (float)IUP_DEG2RAD;
+  float rad = angle * static_cast<float>(IUP_DEG2RAD);
   float sx = cx - (w * cosf(rad)) / 2.0f;
   float sy = cy - (h * sinf(rad)) / 2.0f;
   float ex = cx + (w * cosf(rad)) / 2.0f;
@@ -1305,7 +1305,7 @@ extern "C" IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, in
     collection.get(), brush.put());
 
   dc->d2dContext->FillRectangle(
-    D2D1::RectF((float)x1, (float)y1, (float)x1 + w, (float)y1 + h),
+    D2D1::RectF(static_cast<float>(x1), static_cast<float>(y1), static_cast<float>(x1) + w, static_cast<float>(y1) + h),
     brush.get());
 }
 
@@ -1323,13 +1323,13 @@ extern "C" IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, in
   com_ptr<ID2D1RadialGradientBrush> brush;
   dc->d2dContext->CreateRadialGradientBrush(
     D2D1::RadialGradientBrushProperties(
-      D2D1::Point2F((float)cx, (float)cy),
+      D2D1::Point2F(static_cast<float>(cx), static_cast<float>(cy)),
       D2D1::Point2F(0.0f, 0.0f),
-      (float)radius, (float)radius),
+      static_cast<float>(radius), static_cast<float>(radius)),
     collection.get(), brush.put());
 
   dc->d2dContext->FillEllipse(
-    D2D1::Ellipse(D2D1::Point2F((float)cx, (float)cy), (float)radius, (float)radius),
+    D2D1::Ellipse(D2D1::Point2F(static_cast<float>(cx), static_cast<float>(cy)), static_cast<float>(radius), static_cast<float>(radius)),
     brush.get());
 }
 
@@ -1356,9 +1356,9 @@ static com_ptr<ID2D1PathGeometry> winuiDrawBuildPathGeometry(const IupPathSeg* s
     case IUP_PATHSEG_MOVE_TO:
       if (in_figure)
         sink->EndFigure(D2D1_FIGURE_END_OPEN);
-      sink->BeginFigure(D2D1::Point2F((float)segs[i].x1, (float)segs[i].y1), D2D1_FIGURE_BEGIN_FILLED);
-      sub_x = (float)segs[i].x1;
-      sub_y = (float)segs[i].y1;
+      sink->BeginFigure(D2D1::Point2F(static_cast<float>(segs[i].x1), static_cast<float>(segs[i].y1)), D2D1_FIGURE_BEGIN_FILLED);
+      sub_x = static_cast<float>(segs[i].x1);
+      sub_y = static_cast<float>(segs[i].y1);
       in_figure = true;
       break;
     case IUP_PATHSEG_LINE_TO:
@@ -1367,7 +1367,7 @@ static com_ptr<ID2D1PathGeometry> winuiDrawBuildPathGeometry(const IupPathSeg* s
         sink->BeginFigure(D2D1::Point2F(sub_x, sub_y), D2D1_FIGURE_BEGIN_FILLED);
         in_figure = true;
       }
-      sink->AddLine(D2D1::Point2F((float)segs[i].x1, (float)segs[i].y1));
+      sink->AddLine(D2D1::Point2F(static_cast<float>(segs[i].x1), static_cast<float>(segs[i].y1)));
       break;
     case IUP_PATHSEG_CURVE_TO:
       if (!in_figure)
@@ -1376,9 +1376,9 @@ static com_ptr<ID2D1PathGeometry> winuiDrawBuildPathGeometry(const IupPathSeg* s
         in_figure = true;
       }
       sink->AddBezier(D2D1::BezierSegment(
-        D2D1::Point2F((float)segs[i].x1, (float)segs[i].y1),
-        D2D1::Point2F((float)segs[i].x2, (float)segs[i].y2),
-        D2D1::Point2F((float)segs[i].x3, (float)segs[i].y3)));
+        D2D1::Point2F(static_cast<float>(segs[i].x1), static_cast<float>(segs[i].y1)),
+        D2D1::Point2F(static_cast<float>(segs[i].x2), static_cast<float>(segs[i].y2)),
+        D2D1::Point2F(static_cast<float>(segs[i].x3), static_cast<float>(segs[i].y3))));
       break;
     case IUP_PATHSEG_QUAD_TO:
       if (!in_figure)
@@ -1387,8 +1387,8 @@ static com_ptr<ID2D1PathGeometry> winuiDrawBuildPathGeometry(const IupPathSeg* s
         in_figure = true;
       }
       sink->AddQuadraticBezier(D2D1::QuadraticBezierSegment(
-        D2D1::Point2F((float)segs[i].x1, (float)segs[i].y1),
-        D2D1::Point2F((float)segs[i].x2, (float)segs[i].y2)));
+        D2D1::Point2F(static_cast<float>(segs[i].x1), static_cast<float>(segs[i].y1)),
+        D2D1::Point2F(static_cast<float>(segs[i].x2), static_cast<float>(segs[i].y2))));
       break;
     case IUP_PATHSEG_ARC_TO:
     {
@@ -1401,9 +1401,9 @@ static com_ptr<ID2D1PathGeometry> winuiDrawBuildPathGeometry(const IupPathSeg* s
       }
       for (j = 0; j < n; j++)
         sink->AddBezier(D2D1::BezierSegment(
-          D2D1::Point2F((float)bez[j * 6], (float)bez[j * 6 + 1]),
-          D2D1::Point2F((float)bez[j * 6 + 2], (float)bez[j * 6 + 3]),
-          D2D1::Point2F((float)bez[j * 6 + 4], (float)bez[j * 6 + 5])));
+          D2D1::Point2F(static_cast<float>(bez[j * 6]), static_cast<float>(bez[j * 6 + 1])),
+          D2D1::Point2F(static_cast<float>(bez[j * 6 + 2]), static_cast<float>(bez[j * 6 + 3])),
+          D2D1::Point2F(static_cast<float>(bez[j * 6 + 4]), static_cast<float>(bez[j * 6 + 5]))));
       break;
     }
     case IUP_PATHSEG_CLOSE:
@@ -1442,11 +1442,11 @@ static void winuiDrawFillWithSource(IdrawCanvas* dc, ID2D1Geometry* geometry, co
     iupDrawCheckSwapCoord(gx1, gx2);
     iupDrawCheckSwapCoord(gy1, gy2);
 
-    float w = (float)(gx2 - gx1);
-    float h = (float)(gy2 - gy1);
+    auto w = static_cast<float>(gx2 - gx1);
+    auto h = static_cast<float>(gy2 - gy1);
     float cx = gx1 + w / 2.0f;
     float cy = gy1 + h / 2.0f;
-    float rad = src->angle * (float)IUP_DEG2RAD;
+    float rad = src->angle * static_cast<float>(IUP_DEG2RAD);
     float sx = cx - (w * cosf(rad)) / 2.0f;
     float sy = cy - (h * sinf(rad)) / 2.0f;
     float ex = cx + (w * cosf(rad)) / 2.0f;
@@ -1463,9 +1463,9 @@ static void winuiDrawFillWithSource(IdrawCanvas* dc, ID2D1Geometry* geometry, co
     com_ptr<ID2D1RadialGradientBrush> brush;
     dc->d2dContext->CreateRadialGradientBrush(
       D2D1::RadialGradientBrushProperties(
-        D2D1::Point2F((float)src->cx, (float)src->cy),
+        D2D1::Point2F(static_cast<float>(src->cx), static_cast<float>(src->cy)),
         D2D1::Point2F(0.0f, 0.0f),
-        (float)src->radius, (float)src->radius),
+        static_cast<float>(src->radius), static_cast<float>(src->radius)),
       collection.get(), brush.put());
     dc->d2dContext->FillGeometry(geometry, brush.get());
   }
@@ -1478,7 +1478,7 @@ static void winuiDrawStrokeWithSource(IdrawCanvas* dc, ID2D1Geometry* geometry, 
   if (src->type == IUP_SOURCE_SOLID)
   {
     dc->solidBrush->SetColor(winuiDrawColor(src->color));
-    dc->d2dContext->DrawGeometry(geometry, dc->solidBrush.get(), (float)line_width, strokeStyle);
+    dc->d2dContext->DrawGeometry(geometry, dc->solidBrush.get(), static_cast<float>(line_width), strokeStyle);
     return;
   }
 
@@ -1494,11 +1494,11 @@ static void winuiDrawStrokeWithSource(IdrawCanvas* dc, ID2D1Geometry* geometry, 
     iupDrawCheckSwapCoord(gx1, gx2);
     iupDrawCheckSwapCoord(gy1, gy2);
 
-    float w = (float)(gx2 - gx1);
-    float h = (float)(gy2 - gy1);
+    auto w = static_cast<float>(gx2 - gx1);
+    auto h = static_cast<float>(gy2 - gy1);
     float cx = gx1 + w / 2.0f;
     float cy = gy1 + h / 2.0f;
-    float rad = src->angle * (float)IUP_DEG2RAD;
+    float rad = src->angle * static_cast<float>(IUP_DEG2RAD);
     float sx = cx - (w * cosf(rad)) / 2.0f;
     float sy = cy - (h * sinf(rad)) / 2.0f;
     float ex = cx + (w * cosf(rad)) / 2.0f;
@@ -1508,18 +1508,18 @@ static void winuiDrawStrokeWithSource(IdrawCanvas* dc, ID2D1Geometry* geometry, 
     dc->d2dContext->CreateLinearGradientBrush(
       D2D1::LinearGradientBrushProperties(D2D1::Point2F(sx, sy), D2D1::Point2F(ex, ey)),
       collection.get(), brush.put());
-    dc->d2dContext->DrawGeometry(geometry, brush.get(), (float)line_width, strokeStyle);
+    dc->d2dContext->DrawGeometry(geometry, brush.get(), static_cast<float>(line_width), strokeStyle);
   }
   else
   {
     com_ptr<ID2D1RadialGradientBrush> brush;
     dc->d2dContext->CreateRadialGradientBrush(
       D2D1::RadialGradientBrushProperties(
-        D2D1::Point2F((float)src->cx, (float)src->cy),
+        D2D1::Point2F(static_cast<float>(src->cx), static_cast<float>(src->cy)),
         D2D1::Point2F(0.0f, 0.0f),
-        (float)src->radius, (float)src->radius),
+        static_cast<float>(src->radius), static_cast<float>(src->radius)),
       collection.get(), brush.put());
-    dc->d2dContext->DrawGeometry(geometry, brush.get(), (float)line_width, strokeStyle);
+    dc->d2dContext->DrawGeometry(geometry, brush.get(), static_cast<float>(line_width), strokeStyle);
   }
 }
 
@@ -1592,9 +1592,9 @@ static void iD2DCopyBgraPremulToRgba(unsigned char* dst, const unsigned char* sr
 
       if (a != 0 && a != 255)
       {
-        r = (unsigned char)((r * 255) / a);
-        g = (unsigned char)((g * 255) / a);
-        b = (unsigned char)((b * 255) / a);
+        r = static_cast<unsigned char>((r * 255) / a);
+        g = static_cast<unsigned char>((g * 255) / a);
+        b = static_cast<unsigned char>((b * 255) / a);
       }
 
       dst_line[x * 4 + 0] = r;
@@ -1634,8 +1634,8 @@ extern "C" IUP_SDK_API int iupdrvDrawGetImageData(IdrawCanvas* dc, unsigned char
 
   D2D1_POINT_2U destPoint = {0, 0};
   D2D1_RECT_U srcRect = {
-    (UINT32)dc->drawOffset.x, (UINT32)dc->drawOffset.y,
-    (UINT32)(dc->drawOffset.x + dc->w), (UINT32)(dc->drawOffset.y + dc->h)
+    static_cast<UINT32>(dc->drawOffset.x), static_cast<UINT32>(dc->drawOffset.y),
+    static_cast<UINT32>(dc->drawOffset.x + dc->w), static_cast<UINT32>(dc->drawOffset.y + dc->h)
   };
 
   hr = stagingBitmap->CopyFromBitmap(&destPoint, targetBitmap.get(), &srcRect);
@@ -1655,7 +1655,7 @@ extern "C" IUP_SDK_API int iupdrvDrawGetImageData(IdrawCanvas* dc, unsigned char
 
 extern "C" IUP_SDK_API int iupdrvCanvasGetImageData(Ihandle* ih, unsigned char* data, int w, int h)
 {
-  ID2D1Bitmap1* buffer = (ID2D1Bitmap1*)iupAttribGet(ih, "_IUPWINUI_CANVAS_BUFFER");
+  auto* buffer = reinterpret_cast<ID2D1Bitmap1*>(iupAttribGet(ih, "_IUPWINUI_CANVAS_BUFFER"));
   if (!buffer)
     return 0;
 
@@ -1665,8 +1665,8 @@ extern "C" IUP_SDK_API int iupdrvCanvasGetImageData(Ihandle* ih, unsigned char* 
     return 0;
 
   D2D1_SIZE_U size = buffer->GetPixelSize();
-  int copyW = (w < (int)size.width) ? w : (int)size.width;
-  int copyH = (h < (int)size.height) ? h : (int)size.height;
+  int copyW = (w < static_cast<int>(size.width)) ? w : static_cast<int>(size.width);
+  int copyH = (h < static_cast<int>(size.height)) ? h : static_cast<int>(size.height);
 
   iD2DCopyBgraPremulToRgba(data, mapped.bits, copyW, copyH, w, mapped.pitch);
 

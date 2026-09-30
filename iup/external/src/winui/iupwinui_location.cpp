@@ -67,17 +67,17 @@ static void winuiLocationPostFix(Ihandle* ih, Geoposition const& pos)
   auto heading = pos.Coordinate().Heading();
   msg.has_heading = heading != nullptr && !std::isnan(heading.Value());
   msg.heading = msg.has_heading? heading.Value(): 0;
-  msg.timestamp = (long long)(winrt::clock::to_time_t(pos.Coordinate().Timestamp())) * 1000;
+  msg.timestamp = static_cast<long long>(winrt::clock::to_time_t(pos.Coordinate().Timestamp())) * 1000;
   iupLocationPost(ih, &msg);
 }
 
 static IupWinUILocation* winuiLocationGet(Ihandle* ih, int create)
 {
-  IupWinUILocation* loc = (IupWinUILocation*)iupAttribGet(ih, IUPWINUI_LOCATION_KEY);
+  auto* loc = reinterpret_cast<IupWinUILocation*>(iupAttribGet(ih, IUPWINUI_LOCATION_KEY));
   if (!loc && create)
   {
     loc = new IupWinUILocation();
-    iupAttribSet(ih, IUPWINUI_LOCATION_KEY, (char*)loc);
+    iupAttribSet(ih, IUPWINUI_LOCATION_KEY, reinterpret_cast<char*>(loc));
   }
   return loc;
 }
@@ -101,7 +101,7 @@ extern "C" IUP_SDK_API int iupdrvLocationStart(Ihandle* ih)
   {
     loc->locator = Geolocator();
     loc->locator.DesiredAccuracy(fine? PositionAccuracy::High: PositionAccuracy::Default);
-    loc->locator.ReportInterval((uint32_t)iupAttribGetInt(ih, "INTERVAL"));
+    loc->locator.ReportInterval(static_cast<uint32_t>(iupAttribGetInt(ih, "INTERVAL")));
     loc->locator.MovementThreshold(iupAttribGetDouble(ih, "DISTANCE"));
 
     loc->token = loc->locator.PositionChanged([ih](Geolocator const&, PositionChangedEventArgs const& args) {
@@ -110,7 +110,7 @@ extern "C" IUP_SDK_API int iupdrvLocationStart(Ihandle* ih)
 
     Geolocator::RequestAccessAsync().Completed([ih](IAsyncOperation<GeolocationAccessStatus> const& op, AsyncStatus status) {
       GeolocationAccessStatus access = status == AsyncStatus::Completed? op.GetResults(): GeolocationAccessStatus::Unspecified;
-      IupWinUILocation* loc = iupObjectCheck(ih)? winuiLocationGet(ih, 0): NULL;
+      IupWinUILocation* loc = iupObjectCheck(ih)? winuiLocationGet(ih, 0): nullptr;
       if (!loc)
         return;
       if (access != GeolocationAccessStatus::Allowed)
@@ -153,10 +153,10 @@ extern "C" IUP_SDK_API void iupdrvLocationStop(Ihandle* ih)
 extern "C" IUP_SDK_API char* iupdrvLocationGetPermission(Ihandle* ih)
 {
   IupWinUILocation* loc = winuiLocationGet(ih, 0);
-  if (!iupdrvLocationIsAvailable()) return (char*)"UNAVAILABLE";
-  if (loc && loc->permission == 1) return (char*)"GRANTED";
-  if (loc && loc->permission == 2) return (char*)"DENIED";
-  return (char*)"PROMPT";
+  if (!iupdrvLocationIsAvailable()) return const_cast<char*>("UNAVAILABLE");
+  if (loc && loc->permission == 1) return const_cast<char*>("GRANTED");
+  if (loc && loc->permission == 2) return const_cast<char*>("DENIED");
+  return const_cast<char*>("PROMPT");
 }
 
 extern "C" IUP_SDK_API void iupdrvLocationDestroy(Ihandle* ih)
@@ -166,7 +166,7 @@ extern "C" IUP_SDK_API void iupdrvLocationDestroy(Ihandle* ih)
     return;
   iupdrvLocationStop(ih);
   delete loc;
-  iupAttribSet(ih, IUPWINUI_LOCATION_KEY, NULL);
+  iupAttribSet(ih, IUPWINUI_LOCATION_KEY, nullptr);
 }
 
 extern "C" IUP_SDK_API void iupdrvLocationInitClass(Iclass* ic)

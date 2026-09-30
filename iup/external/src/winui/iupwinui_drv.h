@@ -26,8 +26,8 @@ extern "C" {
  * Macros and Type Definitions
  ****************************************************************************/
 
-#define iupwinuiColorFromDouble(_x) ((int)((_x)*255.0))
-#define iupwinuiColorToDouble(_x) ((double)(_x)/255.0)
+#define iupwinuiColorFromDouble(_x) (static_cast<int>((_x)*255.0))
+#define iupwinuiColorToDouble(_x) (static_cast<double>(_x)/255.0)
 
 /****************************************************************************
  * Color Management
@@ -117,7 +117,7 @@ extern float winui_screen_dpi;
 inline bool winuiHandleIsHWND(Ihandle* ih)
 {
   return IupClassMatch(ih, "dialog") ||
-         (iupAttribGet(ih, "_IUP_GLCONTROLDATA") != NULL && !IupClassMatch(ih, "glbackgroundbox")) ||
+         (iupAttribGet(ih, "_IUP_GLCONTROLDATA") != nullptr && !IupClassMatch(ih, "glbackgroundbox")) ||
          IupClassMatch(ih, "webbrowser");
 }
 
@@ -137,8 +137,8 @@ IUP_DRV_API winrt::hstring iupwinuiProcessMnemonic(const char* str, char* c);
 IUP_DRV_API void iupwinuiSetMnemonicText(winrt::Microsoft::UI::Xaml::Controls::TextBlock const& tb, const char* title, char* c);
 IUP_DRV_API void iupwinuiSetAutomationName(Ihandle* ih, const char* title);
 IUP_DRV_API winrt::hstring iupwinuiTextBlockText(winrt::Microsoft::UI::Xaml::Controls::TextBlock const& tb);
-IUP_DRV_API int iupwinuiShowAccelCues(void);
-IUP_DRV_API void iupwinuiRefreshAccelCues(void);
+IUP_DRV_API int iupwinuiShowAccelCues();
+IUP_DRV_API void iupwinuiRefreshAccelCues();
 IUP_DRV_API void iupwinuiSetAccelCueAlt(int down);
 
 /****************************************************************************
@@ -173,7 +173,7 @@ void winuiTableRefreshThemeColors(Ihandle* ih);
 void winuiTreeRefreshThemeColors(Ihandle* ih);
 
 void winuiDragSetInProcessData(const char* type, void* data, int size);
-void winuiDragDataCleanup(void);
+void winuiDragDataCleanup();
 void winuiDropTargetRemoveHandlers(Ihandle* ih, winrt::Microsoft::UI::Xaml::UIElement const& elem);
 
 winrt::Microsoft::UI::Xaml::Media::Imaging::WriteableBitmap winuiGetBitmapFromHandle(void* handle);
@@ -226,7 +226,7 @@ inline void winuiReleaseHandle(Ihandle* ih)
  * Pointer Event Helpers
  ****************************************************************************/
 
-inline int iupwinuiGetModifierKeys(void)
+inline int iupwinuiGetModifierKeys()
 {
   int keys = 0;
   if (GetKeyState(VK_SHIFT) & 0x8000)
@@ -283,8 +283,8 @@ inline int iupwinuiGetPointerReleasedButton(winrt::Microsoft::UI::Input::Pointer
 inline void iupwinuiPointerToPixel(Ihandle* ih, winrt::Windows::Foundation::Point const& pos, int* x, int* y)
 {
   double scale = iupwinuiGetScale(ih);
-  *x = (int)(pos.X * scale);
-  *y = (int)(pos.Y * scale);
+  *x = static_cast<int>(pos.X * scale);
+  *y = static_cast<int>(pos.Y * scale);
 }
 
 /****************************************************************************
@@ -324,7 +324,7 @@ struct IupWinUIDialogAux
   IupWinUIDialogAux() : xamlSource(nullptr), siteBridge(nullptr),
                         rootPanel(nullptr), contentCanvas(nullptr), menuBar(nullptr),
                         appWindow(nullptr),
-                        islandHwnd(NULL), lastFocusedHwnd(NULL),
+                        islandHwnd(nullptr), lastFocusedHwnd(nullptr),
                         isVisible(false), windowCreated(false) {}
 };
 
@@ -625,7 +625,7 @@ inline void winuiSetAux(Ihandle* ih, const char* attr_name, AuxType* aux)
 template<typename AuxType>
 inline void winuiFreeAux(Ihandle* ih, const char* attr_name)
 {
-  AuxType* aux = winuiGetAux<AuxType>(ih, attr_name);
+  auto* aux = winuiGetAux<AuxType>(ih, attr_name);
   if (aux)
   {
     delete aux;

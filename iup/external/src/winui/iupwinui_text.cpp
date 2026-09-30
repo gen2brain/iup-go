@@ -121,11 +121,11 @@ static void winuiTextCallValueChanged(Ihandle* ih)
 
   if (iupAttribGet(ih, "_IUPWINUI_IGNORE_VALUECHANGED"))
   {
-    iupAttribSet(ih, "_IUPWINUI_IGNORE_VALUECHANGED", NULL);
+    iupAttribSet(ih, "_IUPWINUI_IGNORE_VALUECHANGED", nullptr);
     return;
   }
 
-  IFn cb = (IFn)IupGetCallback(ih, "VALUECHANGED_CB");
+  IFn cb = static_cast<IFn>(IupGetCallback(ih, "VALUECHANGED_CB"));
   if (cb)
   {
     int ret = cb(ih);
@@ -144,13 +144,13 @@ static void winuiTextBoxApplyCaseFilter(Ihandle* ih)
   if (!is_upper && !is_lower)
     return;
 
-  IupWinUITextAux* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
+  auto* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
   if (!aux || aux->isSpin || aux->isPassword)
     return;
 
   if (aux->isFormatted)
   {
-    RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
+    auto reb = winuiGetHandle<RichEditBox>(ih);
     if (!reb) return;
     auto sel = reb.Document().Selection();
     int32_t start = sel.StartPosition();
@@ -175,7 +175,7 @@ static void winuiTextBoxApplyCaseFilter(Ihandle* ih)
   }
   else
   {
-    TextBox tb = winuiGetHandle<TextBox>(ih);
+    auto tb = winuiGetHandle<TextBox>(ih);
     if (!tb) return;
     int start = tb.SelectionStart();
     int len = tb.SelectionLength();
@@ -201,7 +201,7 @@ static void winuiTextBoxTextChanged(Ihandle* ih)
 {
   if (ih->data->disable_callbacks)
   {
-    iupAttribSet(ih, "_IUPWINUI_IGNORE_VALUECHANGED", NULL);
+    iupAttribSet(ih, "_IUPWINUI_IGNORE_VALUECHANGED", nullptr);
     return;
   }
 
@@ -211,12 +211,12 @@ static void winuiTextBoxTextChanged(Ihandle* ih)
 
 static void winuiTextRichTextChanged(Ihandle* ih)
 {
-  IFnis cb = (IFnis)IupGetCallback(ih, "ACTION");
+  auto cb = reinterpret_cast<IFnis>(IupGetCallback(ih, "ACTION"));
   char* saved = iupAttribGet(ih, "_IUPWINUI_RICH_SAVED");
   char* current = IupGetAttribute(ih, "VALUE");
 
   if (!current)
-    current = (char*)"";
+    current = const_cast<char*>("");
 
   if (!saved)
   {
@@ -267,7 +267,7 @@ static void winuiTextBeforeTextChanging(Ihandle* ih, TextBox const& sender, Text
 
   if (iupAttribGetBoolean(ih, "OVERWRITE"))
   {
-    IupWinUITextAux* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
+    auto* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
     if (aux)
     {
       hstring newH = args.NewText();
@@ -285,7 +285,7 @@ static void winuiTextBeforeTextChanging(Ihandle* ih, TextBox const& sender, Text
           ih->data->disable_callbacks = 1;
           iupAttribSet(ih, "_IUPWINUI_IGNORE_VALUECHANGED", "1");
           tb.Text(hstring(desired));
-          tb.SelectionStart((int)(ipos + 1));
+          tb.SelectionStart(static_cast<int>(ipos + 1));
           tb.SelectionLength(0);
           aux->savedText = desired;
           ih->data->disable_callbacks = 0;
@@ -296,11 +296,11 @@ static void winuiTextBeforeTextChanging(Ihandle* ih, TextBox const& sender, Text
     }
   }
 
-  IFnis cb = (IFnis)IupGetCallback(ih, "ACTION");
+  auto cb = reinterpret_cast<IFnis>(IupGetCallback(ih, "ACTION"));
   if (!cb && !ih->data->mask && !ih->data->nc)
     return;
 
-  IupWinUITextAux* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
+  auto* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
   if (!aux)
     return;
 
@@ -311,16 +311,16 @@ static void winuiTextBeforeTextChanging(Ihandle* ih, TextBox const& sender, Text
   if (ih->data->is_multiline)
     iupStrToUnix(new_value);
 
-  if (ih->data->nc && (int)strlen(new_value) > ih->data->nc)
+  if (ih->data->nc && static_cast<int>(strlen(new_value)) > ih->data->nc)
   {
     free(new_value);
     args.Cancel(true);
     return;
   }
 
-  if (ih->data->mask && iupMaskCheck((Imask*)ih->data->mask, new_value) == 0)
+  if (ih->data->mask && iupMaskCheck(ih->data->mask, new_value) == 0)
   {
-    IFns fail_cb = (IFns)IupGetCallback(ih, "MASKFAIL_CB");
+    IFns fail_cb = reinterpret_cast<IFns>(IupGetCallback(ih, "MASKFAIL_CB"));
     if (fail_cb) fail_cb(ih, new_value);
     free(new_value);
     args.Cancel(true);
@@ -329,8 +329,8 @@ static void winuiTextBeforeTextChanging(Ihandle* ih, TextBox const& sender, Text
 
   if (cb)
   {
-    int oldLen = (int)aux->savedText.size();
-    int newLen = (int)newHStr.size();
+    int oldLen = static_cast<int>(aux->savedText.size());
+    int newLen = static_cast<int>(newHStr.size());
 
     const wchar_t* oldStr = aux->savedText.c_str();
     const wchar_t* newStr = newHStr.c_str();
@@ -345,7 +345,7 @@ static void winuiTextBeforeTextChanging(Ihandle* ih, TextBox const& sender, Text
       if (wch == L'\r')
         wch = L'\n';
       if (wch > 0 && wch < 128)
-        key = (int)wch;
+        key = static_cast<int>(wch);
     }
 
     int cb_ret = cb(ih, key, new_value);
@@ -379,16 +379,16 @@ static void winuiTextBeforeTextChanging(Ihandle* ih, TextBox const& sender, Text
           if (!iupObjectCheck(ih))
             return;
 
-          IupWinUITextAux* a = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
+          auto* a = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
           if (!a)
             return;
 
-          TextBox tb = winuiGetHandle<TextBox>(ih);
+          auto tb = winuiGetHandle<TextBox>(ih);
           if (!tb)
             return;
 
           std::wstring text(a->savedText);
-          text.insert(text.begin() + insertPos, (wchar_t)replaceCh);
+          text.insert(text.begin() + insertPos, static_cast<wchar_t>(replaceCh));
 
           iupAttribSet(ih, "_IUPWINUI_IGNORE_VALUECHANGED", "1");
           ih->data->disable_callbacks = 1;
@@ -416,23 +416,23 @@ static void winuiTextSpinValueChanged(Ihandle* ih, NumberBox const& nb, NumberBo
 
   if (ih->data->disable_callbacks)
   {
-    iupAttribSet(ih, "_IUPWINUI_IGNORE_VALUECHANGED", NULL);
+    iupAttribSet(ih, "_IUPWINUI_IGNORE_VALUECHANGED", nullptr);
     return;
   }
 
   if (iupAttribGet(ih, "_IUPWINUI_IGNORE_VALUECHANGED"))
   {
-    iupAttribSet(ih, "_IUPWINUI_IGNORE_VALUECHANGED", NULL);
+    iupAttribSet(ih, "_IUPWINUI_IGNORE_VALUECHANGED", nullptr);
     return;
   }
 
-  IupWinUITextAux* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
+  auto* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
 
   int newValue, oldValue;
   if (aux && !aux->spinauto && aux->spinStep > 0)
   {
-    newValue = (int)round((args.NewValue() - aux->spinActualMin) / aux->spinStep);
-    oldValue = (int)round((args.OldValue() - aux->spinActualMin) / aux->spinStep);
+    newValue = static_cast<int>(round((args.NewValue() - aux->spinActualMin) / aux->spinStep));
+    oldValue = static_cast<int>(round((args.OldValue() - aux->spinActualMin) / aux->spinStep));
     int spinMin = iupAttribGetInt(ih, "_IUPWINUI_SPINMIN");
     int spinMax = iupAttribGetInt(ih, "_IUPWINUI_SPINMAX");
     if (newValue < spinMin) newValue = spinMin;
@@ -440,17 +440,17 @@ static void winuiTextSpinValueChanged(Ihandle* ih, NumberBox const& nb, NumberBo
   }
   else
   {
-    newValue = (int)args.NewValue();
-    oldValue = (int)args.OldValue();
+    newValue = static_cast<int>(args.NewValue());
+    oldValue = static_cast<int>(args.OldValue());
   }
 
-  IFni cb = (IFni)IupGetCallback(ih, "SPIN_CB");
+  IFni cb = reinterpret_cast<IFni>(IupGetCallback(ih, "SPIN_CB"));
   if (cb)
   {
     int ret = cb(ih, newValue);
     if (ret == IUP_IGNORE)
     {
-      NumberBox numberBox = winuiGetHandle<NumberBox>(ih);
+      auto numberBox = winuiGetHandle<NumberBox>(ih);
       if (numberBox)
       {
         ih->data->disable_callbacks = 1;
@@ -469,10 +469,10 @@ static std::wstring winuiTextToControl(Ihandle* ih, const char* value)
   if (!value)
     value = "";
 
-  if (ih->data->is_multiline && strchr(value, '\n') != NULL)
+  if (ih->data->is_multiline && strchr(value, '\n') != nullptr)
   {
     value = iupStrReturnStr(value);
-    iupStrToMac((char*)value);
+    iupStrToMac(const_cast<char*>(value));
   }
 
   return iupwinuiStringToWString(value);
@@ -486,8 +486,8 @@ static hstring winuiTextFaceName(const char* face)
 
 static void winuiTextReapplyFaces(Ihandle* ih)
 {
-  IupWinUITextAux* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
-  RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
+  auto* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
+  auto reb = winuiGetHandle<RichEditBox>(ih);
   if (!aux || !reb || aux->faceRanges.empty())
     return;
 
@@ -539,7 +539,7 @@ static void winuiTextForgetFaces(IupWinUITextAux* aux, int start, int end)
 
 static int winuiTextSetValueAttrib(Ihandle* ih, const char* value)
 {
-  IupWinUITextAux* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
+  auto* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
   if (!aux)
     return 0;
 
@@ -548,7 +548,7 @@ static int winuiTextSetValueAttrib(Ihandle* ih, const char* value)
 
   if (aux->isSpin)
   {
-    NumberBox nb = winuiGetHandle<NumberBox>(ih);
+    auto nb = winuiGetHandle<NumberBox>(ih);
     if (nb)
     {
       if (!aux->spinauto && aux->spinStep > 0)
@@ -563,19 +563,19 @@ static int winuiTextSetValueAttrib(Ihandle* ih, const char* value)
         int val = 0;
         if (value)
           iupStrToInt(value, &val);
-        nb.Value((double)val);
+        nb.Value(static_cast<double>(val));
       }
     }
   }
   else if (aux->isPassword)
   {
-    PasswordBox pb = winuiGetHandle<PasswordBox>(ih);
+    auto pb = winuiGetHandle<PasswordBox>(ih);
     if (pb)
       pb.Password(iupwinuiStringToHString(value ? value : ""));
   }
   else if (aux->isFormatted)
   {
-    RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
+    auto reb = winuiGetHandle<RichEditBox>(ih);
     if (reb)
     {
       bool wasReadOnly = reb.IsReadOnly();
@@ -589,7 +589,7 @@ static int winuiTextSetValueAttrib(Ihandle* ih, const char* value)
   }
   else
   {
-    TextBox tb = winuiGetHandle<TextBox>(ih);
+    auto tb = winuiGetHandle<TextBox>(ih);
     std::wstring text = winuiTextToControl(ih, value);
     if (tb)
       tb.Text(hstring(text));
@@ -603,30 +603,30 @@ static int winuiTextSetValueAttrib(Ihandle* ih, const char* value)
 
 static char* winuiTextGetValueAttrib(Ihandle* ih)
 {
-  IupWinUITextAux* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
+  auto* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
   if (!aux)
-    return NULL;
+    return nullptr;
 
   if (aux->isSpin)
   {
-    NumberBox nb = winuiGetHandle<NumberBox>(ih);
+    auto nb = winuiGetHandle<NumberBox>(ih);
     if (nb)
     {
       if (!aux->spinauto && aux->spinStep > 0)
         return iupStrReturnDouble(nb.Value());
       else
-        return iupStrReturnInt((int)nb.Value());
+        return iupStrReturnInt(static_cast<int>(nb.Value()));
     }
   }
   else if (aux->isPassword)
   {
-    PasswordBox pb = winuiGetHandle<PasswordBox>(ih);
+    auto pb = winuiGetHandle<PasswordBox>(ih);
     if (pb)
       return iupwinuiHStringToString(pb.Password());
   }
   else if (aux->isFormatted)
   {
-    RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
+    auto reb = winuiGetHandle<RichEditBox>(ih);
     if (reb)
     {
       hstring text;
@@ -643,24 +643,24 @@ static char* winuiTextGetValueAttrib(Ihandle* ih)
   }
   else
   {
-    TextBox tb = winuiGetHandle<TextBox>(ih);
+    auto tb = winuiGetHandle<TextBox>(ih);
     if (tb)
     {
       char* str = iupwinuiHStringToString(tb.Text());
       if (!str)
-        return (char*)"";
+        return const_cast<char*>("");
       if (ih->data->is_multiline)
         iupStrToUnix(str);
       return str;
     }
   }
 
-  return NULL;
+  return nullptr;
 }
 
 static int winuiTextSetAppendAttrib(Ihandle* ih, const char* value)
 {
-  IupWinUITextAux* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
+  auto* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
   if (!aux || aux->isSpin)
     return 0;
 
@@ -672,7 +672,7 @@ static int winuiTextSetAppendAttrib(Ihandle* ih, const char* value)
 
   if (aux->isPassword)
   {
-    PasswordBox pb = winuiGetHandle<PasswordBox>(ih);
+    auto pb = winuiGetHandle<PasswordBox>(ih);
     if (pb)
     {
       std::wstring newText(pb.Password().c_str());
@@ -682,7 +682,7 @@ static int winuiTextSetAppendAttrib(Ihandle* ih, const char* value)
   }
   else if (aux->isFormatted)
   {
-    RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
+    auto reb = winuiGetHandle<RichEditBox>(ih);
     if (reb)
     {
       hstring currentText;
@@ -697,7 +697,7 @@ static int winuiTextSetAppendAttrib(Ihandle* ih, const char* value)
         appendStr = L"\r";
       appendStr += winuiTextToControl(ih, value);
 
-      int32_t endPos = (int32_t)currentText.size();
+      auto endPos = static_cast<int32_t>(currentText.size());
       auto range = reb.Document().GetRange(endPos, endPos);
       range.SetText(TextSetOptions::None, hstring(appendStr));
 
@@ -712,7 +712,7 @@ static int winuiTextSetAppendAttrib(Ihandle* ih, const char* value)
   }
   else
   {
-    TextBox tb = winuiGetHandle<TextBox>(ih);
+    auto tb = winuiGetHandle<TextBox>(ih);
     if (tb)
     {
       std::wstring newText(tb.Text().c_str());
@@ -740,19 +740,19 @@ static int winuiTextSetAppendAttrib(Ihandle* ih, const char* value)
 
 static int winuiTextSetReadOnlyAttrib(Ihandle* ih, const char* value)
 {
-  IupWinUITextAux* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
+  auto* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
   if (!aux || aux->isPassword)
     return 0;
 
   if (aux->isFormatted)
   {
-    RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
+    auto reb = winuiGetHandle<RichEditBox>(ih);
     if (reb)
       reb.IsReadOnly(iupStrBoolean(value));
   }
   else
   {
-    TextBox tb = winuiGetHandle<TextBox>(ih);
+    auto tb = winuiGetHandle<TextBox>(ih);
     if (tb)
       tb.IsReadOnly(iupStrBoolean(value));
   }
@@ -762,21 +762,21 @@ static int winuiTextSetReadOnlyAttrib(Ihandle* ih, const char* value)
 
 static char* winuiTextGetScrollVisibleAttrib(Ihandle* ih)
 {
-  IupWinUITextAux* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
+  auto* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
   if (!aux || aux->isPassword || aux->isSpin)
-    return (char*)"NO";
+    return const_cast<char*>("NO");
   if (!ih->data->is_multiline)
-    return (char*)"NO";
+    return const_cast<char*>("NO");
 
   ScrollViewer sv = nullptr;
   if (aux->isFormatted)
   {
-    RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
+    auto reb = winuiGetHandle<RichEditBox>(ih);
     if (reb) sv = iupwinuiFindScrollViewer(reb);
   }
   else
   {
-    TextBox tb = winuiGetHandle<TextBox>(ih);
+    auto tb = winuiGetHandle<TextBox>(ih);
     if (tb) sv = iupwinuiFindScrollViewer(tb);
   }
   return iupwinuiScrollViewerVisible(sv);
@@ -784,39 +784,39 @@ static char* winuiTextGetScrollVisibleAttrib(Ihandle* ih)
 
 static char* winuiTextGetReadOnlyAttrib(Ihandle* ih)
 {
-  IupWinUITextAux* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
+  auto* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
   if (!aux || aux->isPassword || aux->isSpin)
-    return NULL;
+    return nullptr;
 
   if (aux->isFormatted)
   {
-    RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
+    auto reb = winuiGetHandle<RichEditBox>(ih);
     if (reb)
       return iupStrReturnBoolean(reb.IsReadOnly());
   }
   else
   {
-    TextBox tb = winuiGetHandle<TextBox>(ih);
+    auto tb = winuiGetHandle<TextBox>(ih);
     if (tb)
       return iupStrReturnBoolean(tb.IsReadOnly());
   }
 
-  return NULL;
+  return nullptr;
 }
 
 static char* winuiTextGetLineValueAttrib(Ihandle* ih)
 {
-  IupWinUITextAux* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
+  auto* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
   if (!aux || aux->isPassword || aux->isSpin)
-    return NULL;
+    return nullptr;
 
   hstring fullText;
   int caretPos = 0;
 
   if (aux->isFormatted)
   {
-    RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
-    if (!reb) return NULL;
+    auto reb = winuiGetHandle<RichEditBox>(ih);
+    if (!reb) return nullptr;
     hstring val;
     reb.Document().GetText(winrt::Microsoft::UI::Text::TextGetOptions::None, val);
     fullText = val;
@@ -825,22 +825,22 @@ static char* winuiTextGetLineValueAttrib(Ihandle* ih)
   }
   else
   {
-    TextBox tb = winuiGetHandle<TextBox>(ih);
-    if (!tb) return NULL;
+    auto tb = winuiGetHandle<TextBox>(ih);
+    if (!tb) return nullptr;
     fullText = tb.Text();
     caretPos = tb.SelectionStart();
   }
 
   std::wstring text(fullText.c_str(), fullText.size());
   if (text.empty())
-    return NULL;
+    return nullptr;
 
   int lineStart = caretPos;
   while (lineStart > 0 && text[lineStart - 1] != L'\r' && text[lineStart - 1] != L'\n')
     lineStart--;
 
   int lineEnd = caretPos;
-  int len = (int)text.size();
+  int len = static_cast<int>(text.size());
   while (lineEnd < len && text[lineEnd] != L'\r' && text[lineEnd] != L'\n')
     lineEnd++;
 
@@ -850,7 +850,7 @@ static char* winuiTextGetLineValueAttrib(Ihandle* ih)
 
 static int winuiTextSetActiveAttrib(Ihandle* ih, const char* value)
 {
-  IupWinUITextAux* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
+  auto* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
   if (!aux)
     return 0;
 
@@ -858,25 +858,25 @@ static int winuiTextSetActiveAttrib(Ihandle* ih, const char* value)
 
   if (aux->isSpin)
   {
-    NumberBox nb = winuiGetHandle<NumberBox>(ih);
+    auto nb = winuiGetHandle<NumberBox>(ih);
     if (nb)
       nb.IsEnabled(enabled);
   }
   else if (aux->isPassword)
   {
-    PasswordBox pb = winuiGetHandle<PasswordBox>(ih);
+    auto pb = winuiGetHandle<PasswordBox>(ih);
     if (pb)
       pb.IsEnabled(enabled);
   }
   else if (aux->isFormatted)
   {
-    RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
+    auto reb = winuiGetHandle<RichEditBox>(ih);
     if (reb)
       reb.IsEnabled(enabled);
   }
   else
   {
-    TextBox tb = winuiGetHandle<TextBox>(ih);
+    auto tb = winuiGetHandle<TextBox>(ih);
     if (tb)
       tb.IsEnabled(enabled);
   }
@@ -888,7 +888,7 @@ static const char* winuiTextFindLinkUrl(Ihandle* ih, int pos);
 
 static int winuiTextGetPosFromPoint(Ihandle* ih, Windows::Foundation::Point point)
 {
-  RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
+  auto reb = winuiGetHandle<RichEditBox>(ih);
   if (!reb)
     return -1;
 
@@ -916,10 +916,10 @@ static void winuiTextLinkTapped(Ihandle* ih, Windows::Foundation::Point point)
   const char* url = winuiTextFindLinkUrl(ih, pos);
   if (url)
   {
-    IFns cb = (IFns)IupGetCallback(ih, "LINK_CB");
+    IFns cb = reinterpret_cast<IFns>(IupGetCallback(ih, "LINK_CB"));
     if (cb)
     {
-      int ret = cb(ih, (char*)url);
+      int ret = cb(ih, const_cast<char*>(url));
       if (ret == IUP_CLOSE)
         IupExitLoop();
       else if (ret == IUP_DEFAULT)
@@ -934,12 +934,12 @@ static void winuiTextLinkPointerMoved(Ihandle* ih, Windows::Foundation::Point cl
 {
   using namespace Microsoft::UI::Input;
 
-  RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
+  auto reb = winuiGetHandle<RichEditBox>(ih);
   if (!reb)
     return;
 
   int pos = winuiTextGetPosFromPoint(ih, clientPoint);
-  const char* url = (pos >= 0) ? winuiTextFindLinkUrl(ih, pos) : NULL;
+  const char* url = (pos >= 0) ? winuiTextFindLinkUrl(ih, pos) : nullptr;
   InputSystemCursorShape shape = url ? InputSystemCursorShape::Hand : InputSystemCursorShape::IBeam;
 
   auto elements = VisualTreeHelper::FindElementsInHostCoordinates(hostPoint, reb.as<UIElement>());
@@ -956,7 +956,7 @@ static void winuiTextLinkPointerMoved(Ihandle* ih, Windows::Foundation::Point cl
 
 static int winuiTextMapMethod(Ihandle* ih)
 {
-  IupWinUITextAux* aux = new IupWinUITextAux();
+  auto* aux = new IupWinUITextAux();
   int isPassword = iupAttribGetBoolean(ih, "PASSWORD");
   int isMultiline = ih->data->is_multiline;
   int isSpin = !isMultiline && !isPassword && iupAttribGetBoolean(ih, "SPIN");
@@ -997,7 +997,7 @@ static int winuiTextMapMethod(Ihandle* ih)
 
         int spinRange = spinMax - spinMin;
         if (spinRange <= 0) spinRange = 100;
-        double step = (actualMax - actualMin) / (double)spinRange * (double)spinInc;
+        double step = (actualMax - actualMin) / static_cast<double>(spinRange) * static_cast<double>(spinInc);
 
         aux->spinStep = step;
         aux->spinActualMin = actualMin;
@@ -1011,7 +1011,7 @@ static int winuiTextMapMethod(Ihandle* ih)
         nb.LargeChange(step);
 
         {
-          int precision = IupGetInt(NULL, "DEFAULTPRECISION");
+          int precision = IupGetInt(nullptr, "DEFAULTPRECISION");
           if (precision <= 0) precision = 2;
           using IFmtOpts = winrt::Windows::Globalization::NumberFormatting::INumberFormatterOptions;
           auto opts = nb.NumberFormatter().as<IFmtOpts>();
@@ -1022,26 +1022,26 @@ static int winuiTextMapMethod(Ihandle* ih)
         if (value)
           iupStrToDouble(value, &dval);
         else
-          dval = (double)spinValue * step + actualMin;
+          dval = static_cast<double>(spinValue) * step + actualMin;
         nb.Value(dval);
 
         goto spin_events;
       }
     }
 
-    nb.Minimum((double)spinMin);
-    nb.Maximum((double)spinMax);
-    nb.SmallChange((double)spinInc);
-    nb.LargeChange((double)spinInc);
+    nb.Minimum(static_cast<double>(spinMin));
+    nb.Maximum(static_cast<double>(spinMax));
+    nb.SmallChange(static_cast<double>(spinInc));
+    nb.LargeChange(static_cast<double>(spinInc));
 
     if (value)
     {
       int val = 0;
       iupStrToInt(value, &val);
-      nb.Value((double)val);
+      nb.Value(static_cast<double>(val));
     }
     else
-      nb.Value((double)spinValue);
+      nb.Value(static_cast<double>(spinValue));
 
     spin_events:
 
@@ -1058,7 +1058,7 @@ static int winuiTextMapMethod(Ihandle* ih)
     });
 
     aux->keyDownToken = nb.PreviewKeyDown([ih](IInspectable const&, KeyRoutedEventArgs const& args) {
-      if (!iupwinuiKeyEvent(ih, (int)args.Key(), args.KeyStatus().IsExtendedKey? 1: 0, 1))
+      if (!iupwinuiKeyEvent(ih, static_cast<int>(args.Key()), args.KeyStatus().IsExtendedKey? 1: 0, 1))
         args.Handled(true);
     });
 
@@ -1103,7 +1103,7 @@ static int winuiTextMapMethod(Ihandle* ih)
     });
 
     aux->keyDownToken = pb.PreviewKeyDown([ih](IInspectable const&, KeyRoutedEventArgs const& args) {
-      if (!iupwinuiKeyEvent(ih, (int)args.Key(), args.KeyStatus().IsExtendedKey? 1: 0, 1))
+      if (!iupwinuiKeyEvent(ih, static_cast<int>(args.Key()), args.KeyStatus().IsExtendedKey? 1: 0, 1))
         args.Handled(true);
     });
 
@@ -1159,9 +1159,9 @@ static int winuiTextMapMethod(Ihandle* ih)
 
     aux->selectionChangedToken = reb.SelectionChanged([ih](IInspectable const&, RoutedEventArgs const&) {
       if (ih->data->disable_callbacks) return;
-      IFniii cb = (IFniii)IupGetCallback(ih, "CARET_CB");
+      auto cb = reinterpret_cast<IFniii>(IupGetCallback(ih, "CARET_CB"));
       if (!cb) return;
-      RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
+      auto reb = winuiGetHandle<RichEditBox>(ih);
       if (!reb) return;
       auto sel = reb.Document().Selection();
       int pos = sel.StartPosition();
@@ -1183,7 +1183,7 @@ static int winuiTextMapMethod(Ihandle* ih)
       {
         bool cur = iupAttribGetBoolean(ih, "OVERWRITE");
         iupAttribSet(ih, "OVERWRITE", cur ? "NO" : "YES");
-        RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
+        auto reb = winuiGetHandle<RichEditBox>(ih);
         if (reb)
         {
           auto sel = reb.Document().Selection();
@@ -1193,7 +1193,7 @@ static int winuiTextMapMethod(Ihandle* ih)
             auto range = reb.Document().GetRange(pos, pos + 1);
             hstring rt;
             range.GetText(Microsoft::UI::Text::TextGetOptions::None, rt);
-            if (rt.size() > 0 && rt[0] != L'\n')
+            if (!rt.empty() && rt[0] != L'\n')
               sel.SetRange(pos, pos + 1);
           }
         }
@@ -1203,9 +1203,9 @@ static int winuiTextMapMethod(Ihandle* ih)
       if (args.Key() == Windows::System::VirtualKey::Tab && ih->data->is_multiline &&
           !(GetKeyState(VK_CONTROL) & 0x8000) && !(GetKeyState(VK_MENU) & 0x8000))
       {
-        if (iupwinuiKeyEvent(ih, (int)args.Key(), args.KeyStatus().IsExtendedKey? 1: 0, 1))
+        if (iupwinuiKeyEvent(ih, static_cast<int>(args.Key()), args.KeyStatus().IsExtendedKey? 1: 0, 1))
         {
-          RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
+          auto reb = winuiGetHandle<RichEditBox>(ih);
           if (reb && !reb.IsReadOnly())
             reb.Document().Selection().SetText(TextSetOptions::None, L"\t");
         }
@@ -1214,7 +1214,7 @@ static int winuiTextMapMethod(Ihandle* ih)
       }
       if (iupAttribGetBoolean(ih, "OVERWRITE"))
       {
-        RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
+        auto reb = winuiGetHandle<RichEditBox>(ih);
         if (reb)
         {
           auto sel = reb.Document().Selection();
@@ -1224,20 +1224,20 @@ static int winuiTextMapMethod(Ihandle* ih)
             auto range = reb.Document().GetRange(pos, pos + 1);
             hstring rt;
             range.GetText(Microsoft::UI::Text::TextGetOptions::None, rt);
-            if (rt.size() > 0 && rt[0] != L'\n' && rt[0] != L'\r')
+            if (!rt.empty() && rt[0] != L'\n' && rt[0] != L'\r')
             {
               auto k = args.Key();
               bool is_text_key =
                 (k >= Windows::System::VirtualKey::Number0 && k <= Windows::System::VirtualKey::Z) ||
                 (k >= Windows::System::VirtualKey::NumberPad0 && k <= Windows::System::VirtualKey::Divide) ||
-                ((int)k >= 0xBA && (int)k <= 0xE2);
+                (static_cast<int>(k) >= 0xBA && static_cast<int>(k) <= 0xE2);
               if (is_text_key)
                 sel.SetRange(pos, pos + 1);
             }
           }
         }
       }
-      if (!iupwinuiKeyEvent(ih, (int)args.Key(), args.KeyStatus().IsExtendedKey? 1: 0, 1))
+      if (!iupwinuiKeyEvent(ih, static_cast<int>(args.Key()), args.KeyStatus().IsExtendedKey? 1: 0, 1))
         args.Handled(true);
     });
 
@@ -1267,8 +1267,8 @@ static int winuiTextMapMethod(Ihandle* ih)
       if (szStr && iupStrToInt(szStr, &fontSize))
       {
         if (fontSize < 0)
-          fontSize = (-fontSize) * 72 / (int)iupdrvGetScreenDpi();
-        dcf.Size((float)fontSize);
+          fontSize = (-fontSize) * 72 / static_cast<int>(iupdrvGetScreenDpi());
+        dcf.Size(static_cast<float>(fontSize));
       }
       char* fontFace = iupGetFontFaceAttrib(ih);
       if (fontFace)
@@ -1374,9 +1374,9 @@ static int winuiTextMapMethod(Ihandle* ih)
 
     aux->selectionChangedToken = tb.SelectionChanged([ih](IInspectable const&, RoutedEventArgs const&) {
       if (ih->data->disable_callbacks) return;
-      IFniii cb = (IFniii)IupGetCallback(ih, "CARET_CB");
+      auto cb = reinterpret_cast<IFniii>(IupGetCallback(ih, "CARET_CB"));
       if (!cb) return;
-      TextBox tb = winuiGetHandle<TextBox>(ih);
+      auto tb = winuiGetHandle<TextBox>(ih);
       if (!tb) return;
       int pos = tb.SelectionStart();
       int lin, col;
@@ -1403,9 +1403,9 @@ static int winuiTextMapMethod(Ihandle* ih)
       if (args.Key() == Windows::System::VirtualKey::Tab && ih->data->is_multiline &&
           !(GetKeyState(VK_CONTROL) & 0x8000) && !(GetKeyState(VK_MENU) & 0x8000))
       {
-        if (iupwinuiKeyEvent(ih, (int)args.Key(), args.KeyStatus().IsExtendedKey? 1: 0, 1))
+        if (iupwinuiKeyEvent(ih, static_cast<int>(args.Key()), args.KeyStatus().IsExtendedKey? 1: 0, 1))
         {
-          TextBox tbox = winuiGetHandle<TextBox>(ih);
+          auto tbox = winuiGetHandle<TextBox>(ih);
           if (tbox && !tbox.IsReadOnly())
           {
             int start = tbox.SelectionStart();
@@ -1418,7 +1418,7 @@ static int winuiTextMapMethod(Ihandle* ih)
         args.Handled(true);
         return;
       }
-      if (!iupwinuiKeyEvent(ih, (int)args.Key(), args.KeyStatus().IsExtendedKey? 1: 0, 1))
+      if (!iupwinuiKeyEvent(ih, static_cast<int>(args.Key()), args.KeyStatus().IsExtendedKey? 1: 0, 1))
         args.Handled(true);
     });
 
@@ -1452,13 +1452,13 @@ static int winuiTextMapMethod(Ihandle* ih)
 
 static void winuiTextUnMapMethod(Ihandle* ih)
 {
-  IupWinUITextAux* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
+  auto* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
 
   if (ih->handle && aux)
   {
     if (aux->isSpin)
     {
-      NumberBox nb = winuiGetHandle<NumberBox>(ih);
+      auto nb = winuiGetHandle<NumberBox>(ih);
       if (nb)
       {
         if (aux->valueChangedToken)
@@ -1473,7 +1473,7 @@ static void winuiTextUnMapMethod(Ihandle* ih)
     }
     else if (aux->isPassword)
     {
-      PasswordBox pb = winuiGetHandle<PasswordBox>(ih);
+      auto pb = winuiGetHandle<PasswordBox>(ih);
       if (pb)
       {
         if (aux->textChangedToken)
@@ -1488,7 +1488,7 @@ static void winuiTextUnMapMethod(Ihandle* ih)
     }
     else if (aux->isFormatted)
     {
-      RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
+      auto reb = winuiGetHandle<RichEditBox>(ih);
       if (reb)
       {
         if (aux->textChangedToken)
@@ -1507,7 +1507,7 @@ static void winuiTextUnMapMethod(Ihandle* ih)
     }
     else
     {
-      TextBox tb = winuiGetHandle<TextBox>(ih);
+      auto tb = winuiGetHandle<TextBox>(ih);
       if (tb)
       {
         if (aux->beforeTextChangingToken)
@@ -1547,7 +1547,7 @@ static void winuiTextUnMapMethod(Ihandle* ih)
 
 static int winuiTextSetSpinMinAttrib(Ihandle* ih, const char* value)
 {
-  IupWinUITextAux* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
+  auto* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
   if (!aux || !aux->isSpin)
     return 1;
 
@@ -1558,9 +1558,9 @@ static int winuiTextSetSpinMinAttrib(Ihandle* ih, const char* value)
     iupAttribSetInt(ih, "_IUPWINUI_SPINMIN", val);
   else
   {
-    NumberBox nb = winuiGetHandle<NumberBox>(ih);
+    auto nb = winuiGetHandle<NumberBox>(ih);
     if (nb)
-      nb.Minimum((double)val);
+      nb.Minimum(static_cast<double>(val));
   }
 
   return 1;
@@ -1568,7 +1568,7 @@ static int winuiTextSetSpinMinAttrib(Ihandle* ih, const char* value)
 
 static int winuiTextSetSpinMaxAttrib(Ihandle* ih, const char* value)
 {
-  IupWinUITextAux* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
+  auto* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
   if (!aux || !aux->isSpin)
     return 1;
 
@@ -1579,9 +1579,9 @@ static int winuiTextSetSpinMaxAttrib(Ihandle* ih, const char* value)
     iupAttribSetInt(ih, "_IUPWINUI_SPINMAX", val);
   else
   {
-    NumberBox nb = winuiGetHandle<NumberBox>(ih);
+    auto nb = winuiGetHandle<NumberBox>(ih);
     if (nb)
-      nb.Maximum((double)val);
+      nb.Maximum(static_cast<double>(val));
   }
 
   return 1;
@@ -1589,7 +1589,7 @@ static int winuiTextSetSpinMaxAttrib(Ihandle* ih, const char* value)
 
 static int winuiTextSetSpinIncAttrib(Ihandle* ih, const char* value)
 {
-  IupWinUITextAux* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
+  auto* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
   if (!aux || !aux->isSpin)
     return 1;
 
@@ -1599,11 +1599,11 @@ static int winuiTextSetSpinIncAttrib(Ihandle* ih, const char* value)
   int val = 1;
   iupStrToInt(value, &val);
 
-  NumberBox nb = winuiGetHandle<NumberBox>(ih);
+  auto nb = winuiGetHandle<NumberBox>(ih);
   if (nb)
   {
-    nb.SmallChange((double)val);
-    nb.LargeChange((double)val);
+    nb.SmallChange(static_cast<double>(val));
+    nb.LargeChange(static_cast<double>(val));
   }
 
   return 1;
@@ -1611,7 +1611,7 @@ static int winuiTextSetSpinIncAttrib(Ihandle* ih, const char* value)
 
 static int winuiTextSetSpinValueAttrib(Ihandle* ih, const char* value)
 {
-  IupWinUITextAux* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
+  auto* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
   if (!aux || !aux->isSpin)
     return 1;
 
@@ -1621,12 +1621,12 @@ static int winuiTextSetSpinValueAttrib(Ihandle* ih, const char* value)
   if (!aux->spinauto && aux->spinStep > 0)
     return 1;
 
-  NumberBox nb = winuiGetHandle<NumberBox>(ih);
+  auto nb = winuiGetHandle<NumberBox>(ih);
   if (nb)
   {
     iupAttribSet(ih, "_IUPWINUI_IGNORE_VALUECHANGED", "1");
     ih->data->disable_callbacks = 1;
-    nb.Value((double)val);
+    nb.Value(static_cast<double>(val));
     ih->data->disable_callbacks = 0;
   }
 
@@ -1635,27 +1635,27 @@ static int winuiTextSetSpinValueAttrib(Ihandle* ih, const char* value)
 
 static char* winuiTextGetSpinValueAttrib(Ihandle* ih)
 {
-  IupWinUITextAux* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
+  auto* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
   if (!aux || !aux->isSpin)
-    return NULL;
+    return nullptr;
 
-  NumberBox nb = winuiGetHandle<NumberBox>(ih);
+  auto nb = winuiGetHandle<NumberBox>(ih);
   if (nb)
   {
     if (!aux->spinauto && aux->spinStep > 0)
-      return iupStrReturnInt((int)round((nb.Value() - aux->spinActualMin) / aux->spinStep));
+      return iupStrReturnInt(static_cast<int>(round((nb.Value() - aux->spinActualMin) / aux->spinStep)));
     else
-      return iupStrReturnInt((int)nb.Value());
+      return iupStrReturnInt(static_cast<int>(nb.Value()));
   }
 
-  return NULL;
+  return nullptr;
 }
 
 static float winui_multiline_border_height = -1;
 static int winui_border_x = -1;
 static int winui_border_y = -1;
 
-static void winuiTextMeasureBorderMetrics(void)
+static void winuiTextMeasureBorderMetrics()
 {
   if (winui_border_x >= 0)
     return;
@@ -1668,28 +1668,28 @@ static void winuiTextMeasureBorderMetrics(void)
   if (resources.HasKey(borderKey))
   {
     auto bt = unbox_value<Thickness>(resources.Lookup(borderKey));
-    border_v += (float)(bt.Top + bt.Bottom);
-    border_h += (float)(bt.Left + bt.Right);
+    border_v += static_cast<float>(bt.Top + bt.Bottom);
+    border_h += static_cast<float>(bt.Left + bt.Right);
   }
 
   auto paddingKey = box_value(L"TextControlThemePadding");
   if (resources.HasKey(paddingKey))
   {
     auto pd = unbox_value<Thickness>(resources.Lookup(paddingKey));
-    border_v += (float)(pd.Top + pd.Bottom);
-    border_h += (float)(pd.Left + pd.Right);
+    border_v += static_cast<float>(pd.Top + pd.Bottom);
+    border_h += static_cast<float>(pd.Left + pd.Right);
   }
 
   winui_multiline_border_height = border_v;
   if (winui_multiline_border_height < 2) winui_multiline_border_height = 6;
 
-  winui_border_x = (int)ceil(border_h);
-  winui_border_y = (int)ceil(border_v);
+  winui_border_x = static_cast<int>(ceil(border_h));
+  winui_border_y = static_cast<int>(ceil(border_v));
   if (winui_border_x < 6) winui_border_x = 6;
   if (winui_border_y < 6) winui_border_y = 6;
 }
 
-extern "C" IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int* x, int* y)
+extern "C" IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int* w, int* h)
 {
   winuiTextMeasureBorderMetrics();
 
@@ -1699,27 +1699,27 @@ extern "C" IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int* x, int* y)
   {
     int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
 
-    *x += (int)ceil(winui_border_x * scale);
+    *w += static_cast<int>(ceil(winui_border_x * scale));
 
     if (visiblelines > 0)
     {
       int char_height;
-      iupdrvFontGetCharSize(ih, NULL, &char_height);
+      iupdrvFontGetCharSize(ih, nullptr, &char_height);
 
       float line_height_f = iupwinuiFontGetMultilineLineHeightF(ih);
 
-      *y -= char_height * visiblelines;
-      *y += (int)ceil(winui_multiline_border_height * scale + line_height_f * visiblelines);
+      *h -= char_height * visiblelines;
+      *h += static_cast<int>(ceil(winui_multiline_border_height * scale + line_height_f * visiblelines));
     }
     else
     {
-      *y += (int)ceil(winui_multiline_border_height * scale);
+      *h += static_cast<int>(ceil(winui_multiline_border_height * scale));
     }
   }
   else
   {
-    *x += (int)ceil(winui_border_x * scale);
-    *y += (int)ceil(winui_border_y * scale);
+    *w += static_cast<int>(ceil(winui_border_x * scale));
+    *h += static_cast<int>(ceil(winui_border_y * scale));
   }
 }
 
@@ -1727,7 +1727,7 @@ extern "C" IUP_SDK_API void iupdrvTextAddSpin(Ihandle* ih, int* w, int h)
 {
   (void)h;
   /* two spin buttons at 32 DIP each, from NumberBoxSpinButtonStyle MinWidth */
-  *w += (int)ceil(64 * iupwinuiGetScale(ih));
+  *w += static_cast<int>(ceil(64 * iupwinuiGetScale(ih)));
 }
 
 static int winuiTextLinColToPos(ITextDocument const& doc, int lin, int col);
@@ -1784,7 +1784,7 @@ static void winuiTextStringPosToLinCol(const wchar_t* text, int textLen, int pos
 
 extern "C" IUP_SDK_API void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, int col, int* pos)
 {
-  IupWinUITextAux* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
+  auto* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
   if (!aux)
   {
     *pos = 0;
@@ -1800,7 +1800,7 @@ extern "C" IUP_SDK_API void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, i
 
   if (aux->isFormatted)
   {
-    RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
+    auto reb = winuiGetHandle<RichEditBox>(ih);
     if (reb)
       *pos = winuiTextLinColToPos(reb.Document(), lin, col);
     else
@@ -1808,11 +1808,11 @@ extern "C" IUP_SDK_API void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, i
   }
   else
   {
-    TextBox tb = winuiGetHandle<TextBox>(ih);
+    auto tb = winuiGetHandle<TextBox>(ih);
     if (tb)
     {
       hstring text = tb.Text();
-      *pos = winuiTextStringLinColToPos(text.c_str(), (int)text.size(), lin, col);
+      *pos = winuiTextStringLinColToPos(text.c_str(), static_cast<int>(text.size()), lin, col);
     }
     else
       *pos = 0;
@@ -1821,7 +1821,7 @@ extern "C" IUP_SDK_API void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, i
 
 extern "C" IUP_SDK_API void iupdrvTextConvertPosToLinCol(Ihandle* ih, int pos, int* lin, int* col)
 {
-  IupWinUITextAux* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
+  auto* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
   if (!aux)
   {
     *lin = 0;
@@ -1838,12 +1838,12 @@ extern "C" IUP_SDK_API void iupdrvTextConvertPosToLinCol(Ihandle* ih, int pos, i
 
   if (aux->isFormatted)
   {
-    RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
+    auto reb = winuiGetHandle<RichEditBox>(ih);
     if (reb)
     {
       hstring text;
       reb.Document().GetText(TextGetOptions::None, text);
-      winuiTextStringPosToLinCol(text.c_str(), (int)text.size(), pos, lin, col);
+      winuiTextStringPosToLinCol(text.c_str(), static_cast<int>(text.size()), pos, lin, col);
     }
     else
     {
@@ -1853,11 +1853,11 @@ extern "C" IUP_SDK_API void iupdrvTextConvertPosToLinCol(Ihandle* ih, int pos, i
   }
   else
   {
-    TextBox tb = winuiGetHandle<TextBox>(ih);
+    auto tb = winuiGetHandle<TextBox>(ih);
     if (tb)
     {
       hstring text = tb.Text();
-      winuiTextStringPosToLinCol(text.c_str(), (int)text.size(), pos, lin, col);
+      winuiTextStringPosToLinCol(text.c_str(), static_cast<int>(text.size()), pos, lin, col);
     }
     else
     {
@@ -1870,7 +1870,7 @@ extern "C" IUP_SDK_API void iupdrvTextConvertPosToLinCol(Ihandle* ih, int pos, i
 extern "C" IUP_SDK_API void* iupdrvTextAddFormatTagStartBulk(Ihandle* ih)
 {
   (void)ih;
-  return NULL;
+  return nullptr;
 }
 
 extern "C" IUP_SDK_API void iupdrvTextAddFormatTagStopBulk(Ihandle* ih, void* state)
@@ -1884,7 +1884,7 @@ static int winuiTextLinColToPos(ITextDocument const& doc, int lin, int col)
   hstring text;
   doc.GetText(TextGetOptions::None, text);
   std::wstring_view wtext(text.c_str(), text.size());
-  int textLen = (int)wtext.size();
+  int textLen = static_cast<int>(wtext.size());
 
   int currentLine = 1;
   int lineStart = 0;
@@ -2008,9 +2008,9 @@ static void winuiTextParseCharacterFormat(Ihandle* formattag, ITextRange const& 
     {
       float fontSize;
       if (size > 0)
-        fontSize = (float)size;
+        fontSize = static_cast<float>(size);
       else
-        fontSize = (float)(-size) * 72.0f / (float)iupdrvGetScreenDpi();
+        fontSize = static_cast<float>(-size) * 72.0f / static_cast<float>(iupdrvGetScreenDpi());
 
       char* fontscale = iupAttribGet(formattag, "FONTSCALE");
       if (fontscale)
@@ -2026,7 +2026,7 @@ static void winuiTextParseCharacterFormat(Ihandle* formattag, ITextRange const& 
         else iupStrToDouble(fontscale, &scale);
 
         if (scale > 0)
-          fontSize = (float)(fontSize * scale);
+          fontSize = static_cast<float>(fontSize * scale);
       }
 
       cf.Size(fontSize);
@@ -2066,7 +2066,7 @@ static void winuiTextParseParagraphFormat(Ihandle* formattag, ITextRange const& 
   auto pf = range.ParagraphFormat();
   bool changed = false;
   char* val;
-  float pixelToPoint = 72.0f / (float)iupdrvGetScreenDpi();
+  float pixelToPoint = 72.0f / static_cast<float>(iupdrvGetScreenDpi());
 
   val = iupAttribGet(formattag, "UNITS");
   if (val && iupStrEqualNoCase(val, "TWIPS"))
@@ -2092,13 +2092,13 @@ static void winuiTextParseParagraphFormat(Ihandle* formattag, ITextRange const& 
     int ival = 0;
     if (iupStrToInt(val, &ival))
     {
-      float leftIndent = (float)ival * pixelToPoint;
+      float leftIndent = static_cast<float>(ival) * pixelToPoint;
 
       char* indentRight = iupAttribGet(formattag, "INDENTRIGHT");
       int irval = ival;
       if (indentRight)
         iupStrToInt(indentRight, &irval);
-      float rightIndent = (float)irval * pixelToPoint;
+      float rightIndent = static_cast<float>(irval) * pixelToPoint;
 
       float firstLineIndent = 0;
       char* indentOffset = iupAttribGet(formattag, "INDENTOFFSET");
@@ -2106,7 +2106,7 @@ static void winuiTextParseParagraphFormat(Ihandle* formattag, ITextRange const& 
       {
         int ioval = 0;
         iupStrToInt(indentOffset, &ioval);
-        firstLineIndent = (float)ioval * pixelToPoint;
+        firstLineIndent = static_cast<float>(ioval) * pixelToPoint;
       }
 
       pf.SetIndents(firstLineIndent, leftIndent, rightIndent);
@@ -2120,7 +2120,7 @@ static void winuiTextParseParagraphFormat(Ihandle* formattag, ITextRange const& 
     int ival = 0;
     if (iupStrToInt(val, &ival))
     {
-      pf.SpaceBefore((float)ival * pixelToPoint);
+      pf.SpaceBefore(static_cast<float>(ival) * pixelToPoint);
       changed = true;
     }
   }
@@ -2131,7 +2131,7 @@ static void winuiTextParseParagraphFormat(Ihandle* formattag, ITextRange const& 
     int ival = 0;
     if (iupStrToInt(val, &ival))
     {
-      pf.SpaceAfter((float)ival * pixelToPoint);
+      pf.SpaceAfter(static_cast<float>(ival) * pixelToPoint);
       changed = true;
     }
   }
@@ -2149,7 +2149,7 @@ static void winuiTextParseParagraphFormat(Ihandle* formattag, ITextRange const& 
     {
       int ival = 0;
       if (iupStrToInt(val, &ival))
-        pf.SetLineSpacing(LineSpacingRule::AtLeast, (float)ival * pixelToPoint);
+        pf.SetLineSpacing(LineSpacingRule::AtLeast, static_cast<float>(ival) * pixelToPoint);
     }
     changed = true;
   }
@@ -2162,13 +2162,13 @@ static void winuiTextParseParagraphFormat(Ihandle* formattag, ITextRange const& 
     pf.ClearAllTabs();
     while (str && count < 32)
     {
-      char* postok = iupStrDupUntil((const char**)&str, ' ');
+      char* postok = iupStrDupUntil(const_cast<const char**>(&str), ' ');
       if (!postok) break;
       int pos = 0;
       iupStrToInt(postok, &pos);
       free(postok);
 
-      char* aligntok = iupStrDupUntil((const char**)&str, ' ');
+      char* aligntok = iupStrDupUntil(const_cast<const char**>(&str), ' ');
       if (!aligntok) break;
       TabAlignment ta = TabAlignment::Left;
       if (iupStrEqualNoCase(aligntok, "DECIMAL")) ta = TabAlignment::Decimal;
@@ -2176,7 +2176,7 @@ static void winuiTextParseParagraphFormat(Ihandle* formattag, ITextRange const& 
       else if (iupStrEqualNoCase(aligntok, "CENTER")) ta = TabAlignment::Center;
       free(aligntok);
 
-      pf.AddTab((float)pos * pixelToPoint, ta, TabLeader::Spaces);
+      pf.AddTab(static_cast<float>(pos) * pixelToPoint, ta, TabLeader::Spaces);
       count++;
     }
     changed = true;
@@ -2220,7 +2220,7 @@ static void winuiTextParseParagraphFormat(Ihandle* formattag, ITextRange const& 
     {
       int tabval = 0;
       if (iupStrToInt(numberingtab, &tabval))
-        pf.ListTab((float)tabval * pixelToPoint);
+        pf.ListTab(static_cast<float>(tabval) * pixelToPoint);
     }
 
     changed = true;
@@ -2232,7 +2232,7 @@ static void winuiTextParseParagraphFormat(Ihandle* formattag, ITextRange const& 
 
 static int winuiTextHasRtfCharAttribs(Ihandle* formattag)
 {
-  return iupAttribGet(formattag, "RISE") != NULL;
+  return iupAttribGet(formattag, "RISE") != nullptr;
 }
 
 static void winuiTextApplyCharFormatViaRtf(Ihandle* ih, Ihandle* formattag, ITextSelection const& sel)
@@ -2240,7 +2240,7 @@ static void winuiTextApplyCharFormatViaRtf(Ihandle* ih, Ihandle* formattag, ITex
   hstring plainText;
   sel.GetText(TextGetOptions::None, plainText);
   auto wtext = plainText.c_str();
-  int textLen = (int)plainText.size();
+  int textLen = static_cast<int>(plainText.size());
 
   if (textLen <= 0)
     return;
@@ -2253,7 +2253,7 @@ static void winuiTextApplyCharFormatViaRtf(Ihandle* ih, Ihandle* formattag, ITex
   {
     const char* mapped_name = iupFontGetWinName(fontFace);
     if (mapped_name)
-      fontFace = (char*)mapped_name;
+      fontFace = const_cast<char*>(mapped_name);
   }
   else
   {
@@ -2278,7 +2278,7 @@ static void winuiTextApplyCharFormatViaRtf(Ihandle* ih, Ihandle* formattag, ITex
     hasBg = 1;
 
   size_t bufSize = 1024 + textLen * 12;
-  char* rtf = (char*)malloc(bufSize);
+  char* rtf = static_cast<char*>(malloc(bufSize));
   int pos = 0;
 
   pos += snprintf(rtf + pos, bufSize - pos, "{\\rtf1\\ansi\\deff0{\\fonttbl{\\f0\\fnil %s;}}",
@@ -2308,9 +2308,9 @@ static void winuiTextApplyCharFormatViaRtf(Ihandle* ih, Ihandle* formattag, ITex
     {
       float fontSize;
       if (size > 0)
-        fontSize = (float)size;
+        fontSize = static_cast<float>(size);
       else
-        fontSize = (float)(-size) * 72.0f / (float)iupdrvGetScreenDpi();
+        fontSize = static_cast<float>(-size) * 72.0f / static_cast<float>(iupdrvGetScreenDpi());
 
       char* fontscale = iupAttribGet(formattag, "FONTSCALE");
       if (fontscale)
@@ -2326,10 +2326,10 @@ static void winuiTextApplyCharFormatViaRtf(Ihandle* ih, Ihandle* formattag, ITex
         else iupStrToDouble(fontscale, &scale);
 
         if (scale > 0)
-          fontSize = (float)(fontSize * scale);
+          fontSize = static_cast<float>(fontSize * scale);
       }
 
-      pos += snprintf(rtf + pos, bufSize - pos, "\\fs%d", (int)(fontSize * 2.0f));
+      pos += snprintf(rtf + pos, bufSize - pos, "\\fs%d", static_cast<int>(fontSize * 2.0f));
     }
   }
 
@@ -2405,9 +2405,9 @@ static void winuiTextApplyCharFormatViaRtf(Ihandle* ih, Ihandle* formattag, ITex
       pos += 5;
     }
     else if (ch < 128)
-      rtf[pos++] = (char)ch;
+      rtf[pos++] = static_cast<char>(ch);
     else
-      pos += snprintf(rtf + pos, bufSize - pos, "\\u%d?", (int)(int16_t)ch);
+      pos += snprintf(rtf + pos, bufSize - pos, "\\u%d?", static_cast<int>(static_cast<int16_t>(ch)));
   }
 
   rtf[pos++] = '}';
@@ -2419,11 +2419,11 @@ static void winuiTextApplyCharFormatViaRtf(Ihandle* ih, Ihandle* formattag, ITex
 
 extern "C" IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bulk)
 {
-  IupWinUITextAux* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
+  auto* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
   if (!aux || !aux->isFormatted)
     return;
 
-  RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
+  auto reb = winuiGetHandle<RichEditBox>(ih);
   if (!reb)
     return;
 
@@ -2452,7 +2452,7 @@ extern "C" IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formatt
       hstring text;
       doc.GetText(TextGetOptions::None, text);
       start_pos = 0;
-      end_pos = (int)text.size();
+      end_pos = static_cast<int>(text.size());
     }
     else if (!iupStrEqualNoCase(selection, "NONE"))
     {
@@ -2474,7 +2474,7 @@ extern "C" IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formatt
         hstring text;
         doc.GetText(TextGetOptions::None, text);
         start_pos = 0;
-        end_pos = (int)text.size();
+        end_pos = static_cast<int>(text.size());
       }
       else if (!iupStrEqualNoCase(selectionpos, "NONE"))
       {
@@ -2490,7 +2490,7 @@ extern "C" IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formatt
     char* image_name = iupAttribGet(formattag, "IMAGE");
     if (image_name)
     {
-      void* handle = iupImageGetImage(image_name, ih, 0, NULL);
+      void* handle = iupImageGetImage(image_name, ih, 0, nullptr);
       WriteableBitmap bitmap = winuiGetBitmapFromHandle(handle);
 
       if (bitmap)
@@ -2499,7 +2499,7 @@ extern "C" IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formatt
         int new_w = 0, new_h = 0;
         char* attr;
 
-        iupImageGetInfo(image_name, &img_w, &img_h, NULL);
+        iupImageGetInfo(image_name, &img_w, &img_h, nullptr);
 
         attr = iupAttribGet(formattag, "WIDTH");
         if (attr) iupStrToInt(attr, &new_w);
@@ -2533,7 +2533,7 @@ extern "C" IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formatt
         pngStream.Seek(0);
 
         double scale = iupwinuiGetScale(ih);
-        sel.InsertImage((int)(new_w / scale + 0.5), (int)(new_h / scale + 0.5), 0, VerticalCharacterAlignment::Baseline, iupwinuiStringToHString(image_name), pngStream);
+        sel.InsertImage(static_cast<int>(new_w / scale + 0.5), static_cast<int>(new_h / scale + 0.5), 0, VerticalCharacterAlignment::Baseline, iupwinuiStringToHString(image_name), pngStream);
       }
 
       sel.SetRange(save_start, save_end);
@@ -2615,12 +2615,12 @@ static const char* winuiTextFindLinkUrl(Ihandle* ih, int pos)
     }
   }
 
-  return NULL;
+  return nullptr;
 }
 
 static int winui_singleline_extra_h = -1;
 
-static void winuiTextMeasureSingleLineMetrics(void)
+static void winuiTextMeasureSingleLineMetrics()
 {
   if (winui_singleline_extra_h >= 0)
     return;
@@ -2630,35 +2630,35 @@ static void winuiTextMeasureSingleLineMetrics(void)
   tb.Padding(Thickness{0, 0, 0, 0});
   tb.Text(L"Wj");
   tb.Measure(Size(10000, 10000));
-  int textbox_height = (int)ceil(tb.DesiredSize().Height);
+  int textbox_height = static_cast<int>(ceil(tb.DesiredSize().Height));
 
   TextBlock tblock;
   tblock.Text(L"Wj");
   tblock.Measure(Size(10000, 10000));
-  int text_height = (int)ceil(tblock.DesiredSize().Height);
+  int text_height = static_cast<int>(ceil(tblock.DesiredSize().Height));
 
   winui_singleline_extra_h = textbox_height - text_height;
   if (winui_singleline_extra_h < 0) winui_singleline_extra_h = 0;
 }
 
-extern "C" IUP_SDK_API void iupdrvTextAddExtraPadding(Ihandle* ih, int* x, int* y)
+extern "C" IUP_SDK_API void iupdrvTextAddExtraPadding(Ihandle* ih, int* w, int* h)
 {
   winuiTextMeasureSingleLineMetrics();
 
-  int extra = (int)ceil(winui_singleline_extra_h * iupwinuiGetScale(ih));
-  *x += extra;
-  *y += extra;
+  int extra = static_cast<int>(ceil(winui_singleline_extra_h * iupwinuiGetScale(ih)));
+  *w += extra;
+  *h += extra;
 }
 
 static char* winuiTextGetSelectedTextAttrib(Ihandle* ih)
 {
-  IupWinUITextAux* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
+  auto* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
   if (!aux || aux->isSpin || aux->isPassword)
-    return NULL;
+    return nullptr;
 
   if (aux->isFormatted)
   {
-    RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
+    auto reb = winuiGetHandle<RichEditBox>(ih);
     if (reb)
     {
       auto sel = reb.Document().Selection();
@@ -2675,7 +2675,7 @@ static char* winuiTextGetSelectedTextAttrib(Ihandle* ih)
   }
   else
   {
-    TextBox tb = winuiGetHandle<TextBox>(ih);
+    auto tb = winuiGetHandle<TextBox>(ih);
     if (tb)
     {
       int start = tb.SelectionStart();
@@ -2692,12 +2692,12 @@ static char* winuiTextGetSelectedTextAttrib(Ihandle* ih)
     }
   }
 
-  return NULL;
+  return nullptr;
 }
 
 static int winuiTextSetSelectedTextAttrib(Ihandle* ih, const char* value)
 {
-  IupWinUITextAux* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
+  auto* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
   if (!aux || aux->isSpin || aux->isPassword)
     return 0;
 
@@ -2708,7 +2708,7 @@ static int winuiTextSetSelectedTextAttrib(Ihandle* ih, const char* value)
 
   if (aux->isFormatted)
   {
-    RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
+    auto reb = winuiGetHandle<RichEditBox>(ih);
     if (reb)
     {
       auto sel = reb.Document().Selection();
@@ -2718,7 +2718,7 @@ static int winuiTextSetSelectedTextAttrib(Ihandle* ih, const char* value)
   }
   else
   {
-    TextBox tb = winuiGetHandle<TextBox>(ih);
+    auto tb = winuiGetHandle<TextBox>(ih);
     if (tb)
     {
       int start = tb.SelectionStart();
@@ -2730,7 +2730,7 @@ static int winuiTextSetSelectedTextAttrib(Ihandle* ih, const char* value)
         fullText.replace(start, len, replacement);
         iupAttribSet(ih, "_IUPWINUI_IGNORE_VALUECHANGED", "1");
         tb.Text(hstring(fullText));
-        tb.Select(start + (int)replacement.size(), 0);
+        tb.Select(start + static_cast<int>(replacement.size()), 0);
         aux->savedText = fullText;
       }
     }
@@ -2742,30 +2742,30 @@ static int winuiTextSetSelectedTextAttrib(Ihandle* ih, const char* value)
 
 static char* winuiTextGetSelectionAttrib(Ihandle* ih)
 {
-  IupWinUITextAux* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
+  auto* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
   if (!aux || aux->isSpin || aux->isPassword)
-    return NULL;
+    return nullptr;
 
   int start, end;
 
   if (aux->isFormatted)
   {
-    RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
-    if (!reb) return NULL;
+    auto reb = winuiGetHandle<RichEditBox>(ih);
+    if (!reb) return nullptr;
     auto sel = reb.Document().Selection();
     start = sel.StartPosition();
     end = sel.EndPosition();
   }
   else
   {
-    TextBox tb = winuiGetHandle<TextBox>(ih);
-    if (!tb) return NULL;
+    auto tb = winuiGetHandle<TextBox>(ih);
+    if (!tb) return nullptr;
     start = tb.SelectionStart();
     end = start + tb.SelectionLength();
   }
 
   if (start == end)
-    return NULL;
+    return nullptr;
 
   if (ih->data->is_multiline)
   {
@@ -2780,7 +2780,7 @@ static char* winuiTextGetSelectionAttrib(Ihandle* ih)
 
 static int winuiTextSetSelectionAttrib(Ihandle* ih, const char* value)
 {
-  IupWinUITextAux* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
+  auto* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
   if (!aux || aux->isSpin || aux->isPassword)
     return 0;
   if (!value)
@@ -2790,7 +2790,7 @@ static int winuiTextSetSelectionAttrib(Ihandle* ih, const char* value)
   {
     if (aux->isFormatted)
     {
-      RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
+      auto reb = winuiGetHandle<RichEditBox>(ih);
       if (reb)
       {
         auto sel = reb.Document().Selection();
@@ -2799,7 +2799,7 @@ static int winuiTextSetSelectionAttrib(Ihandle* ih, const char* value)
     }
     else
     {
-      TextBox tb = winuiGetHandle<TextBox>(ih);
+      auto tb = winuiGetHandle<TextBox>(ih);
       if (tb)
         tb.Select(tb.SelectionStart(), 0);
     }
@@ -2810,17 +2810,17 @@ static int winuiTextSetSelectionAttrib(Ihandle* ih, const char* value)
   {
     if (aux->isFormatted)
     {
-      RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
+      auto reb = winuiGetHandle<RichEditBox>(ih);
       if (reb)
       {
         hstring text;
         reb.Document().GetText(TextGetOptions::None, text);
-        reb.Document().Selection().SetRange(0, (int32_t)text.size());
+        reb.Document().Selection().SetRange(0, static_cast<int32_t>(text.size()));
       }
     }
     else
     {
-      TextBox tb = winuiGetHandle<TextBox>(ih);
+      auto tb = winuiGetHandle<TextBox>(ih);
       if (tb)
         tb.SelectAll();
     }
@@ -2839,13 +2839,13 @@ static int winuiTextSetSelectionAttrib(Ihandle* ih, const char* value)
 
     if (aux->isFormatted)
     {
-      RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
+      auto reb = winuiGetHandle<RichEditBox>(ih);
       if (reb)
         reb.Document().Selection().SetRange(start, end);
     }
     else
     {
-      TextBox tb = winuiGetHandle<TextBox>(ih);
+      auto tb = winuiGetHandle<TextBox>(ih);
       if (tb)
         tb.Select(start, end - start);
     }
@@ -2860,7 +2860,7 @@ static int winuiTextSetSelectionAttrib(Ihandle* ih, const char* value)
     if (start < 0) start = 0;
     if (end < 0) end = 0;
 
-    TextBox tb = winuiGetHandle<TextBox>(ih);
+    auto tb = winuiGetHandle<TextBox>(ih);
     if (tb)
       tb.Select(start, end - start);
   }
@@ -2870,37 +2870,37 @@ static int winuiTextSetSelectionAttrib(Ihandle* ih, const char* value)
 
 static char* winuiTextGetSelectionPosAttrib(Ihandle* ih)
 {
-  IupWinUITextAux* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
+  auto* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
   if (!aux || aux->isSpin || aux->isPassword)
-    return NULL;
+    return nullptr;
 
   int start, end;
 
   if (aux->isFormatted)
   {
-    RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
-    if (!reb) return NULL;
+    auto reb = winuiGetHandle<RichEditBox>(ih);
+    if (!reb) return nullptr;
     auto sel = reb.Document().Selection();
     start = sel.StartPosition();
     end = sel.EndPosition();
   }
   else
   {
-    TextBox tb = winuiGetHandle<TextBox>(ih);
-    if (!tb) return NULL;
+    auto tb = winuiGetHandle<TextBox>(ih);
+    if (!tb) return nullptr;
     start = tb.SelectionStart();
     end = start + tb.SelectionLength();
   }
 
   if (start == end)
-    return NULL;
+    return nullptr;
 
   return iupStrReturnIntInt(start, end, ':');
 }
 
 static int winuiTextSetSelectionPosAttrib(Ihandle* ih, const char* value)
 {
-  IupWinUITextAux* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
+  auto* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
   if (!aux || aux->isSpin || aux->isPassword)
     return 0;
   if (!value)
@@ -2910,7 +2910,7 @@ static int winuiTextSetSelectionPosAttrib(Ihandle* ih, const char* value)
   {
     if (aux->isFormatted)
     {
-      RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
+      auto reb = winuiGetHandle<RichEditBox>(ih);
       if (reb)
       {
         auto sel = reb.Document().Selection();
@@ -2919,7 +2919,7 @@ static int winuiTextSetSelectionPosAttrib(Ihandle* ih, const char* value)
     }
     else
     {
-      TextBox tb = winuiGetHandle<TextBox>(ih);
+      auto tb = winuiGetHandle<TextBox>(ih);
       if (tb)
         tb.Select(tb.SelectionStart(), 0);
     }
@@ -2930,17 +2930,17 @@ static int winuiTextSetSelectionPosAttrib(Ihandle* ih, const char* value)
   {
     if (aux->isFormatted)
     {
-      RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
+      auto reb = winuiGetHandle<RichEditBox>(ih);
       if (reb)
       {
         hstring text;
         reb.Document().GetText(TextGetOptions::None, text);
-        reb.Document().Selection().SetRange(0, (int32_t)text.size());
+        reb.Document().Selection().SetRange(0, static_cast<int32_t>(text.size()));
       }
     }
     else
     {
-      TextBox tb = winuiGetHandle<TextBox>(ih);
+      auto tb = winuiGetHandle<TextBox>(ih);
       if (tb)
         tb.SelectAll();
     }
@@ -2955,13 +2955,13 @@ static int winuiTextSetSelectionPosAttrib(Ihandle* ih, const char* value)
 
   if (aux->isFormatted)
   {
-    RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
+    auto reb = winuiGetHandle<RichEditBox>(ih);
     if (reb)
       reb.Document().Selection().SetRange(start, end);
   }
   else
   {
-    TextBox tb = winuiGetHandle<TextBox>(ih);
+    auto tb = winuiGetHandle<TextBox>(ih);
     if (tb)
       tb.Select(start, end - start);
   }
@@ -2971,22 +2971,22 @@ static int winuiTextSetSelectionPosAttrib(Ihandle* ih, const char* value)
 
 static char* winuiTextGetCaretAttrib(Ihandle* ih)
 {
-  IupWinUITextAux* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
+  auto* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
   if (!aux || aux->isSpin || aux->isPassword)
-    return NULL;
+    return nullptr;
 
   int pos;
 
   if (aux->isFormatted)
   {
-    RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
-    if (!reb) return NULL;
+    auto reb = winuiGetHandle<RichEditBox>(ih);
+    if (!reb) return nullptr;
     pos = reb.Document().Selection().StartPosition();
   }
   else
   {
-    TextBox tb = winuiGetHandle<TextBox>(ih);
-    if (!tb) return NULL;
+    auto tb = winuiGetHandle<TextBox>(ih);
+    if (!tb) return nullptr;
     pos = tb.SelectionStart();
   }
 
@@ -3002,7 +3002,7 @@ static char* winuiTextGetCaretAttrib(Ihandle* ih)
 
 static int winuiTextSetCaretAttrib(Ihandle* ih, const char* value)
 {
-  IupWinUITextAux* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
+  auto* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
   if (!aux || aux->isSpin || aux->isPassword)
     return 0;
   if (!value)
@@ -3027,13 +3027,13 @@ static int winuiTextSetCaretAttrib(Ihandle* ih, const char* value)
 
   if (aux->isFormatted)
   {
-    RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
+    auto reb = winuiGetHandle<RichEditBox>(ih);
     if (reb)
       reb.Document().Selection().SetRange(pos, pos);
   }
   else
   {
-    TextBox tb = winuiGetHandle<TextBox>(ih);
+    auto tb = winuiGetHandle<TextBox>(ih);
     if (tb)
       tb.Select(pos, 0);
   }
@@ -3043,22 +3043,22 @@ static int winuiTextSetCaretAttrib(Ihandle* ih, const char* value)
 
 static char* winuiTextGetCaretPosAttrib(Ihandle* ih)
 {
-  IupWinUITextAux* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
+  auto* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
   if (!aux || aux->isSpin || aux->isPassword)
-    return NULL;
+    return nullptr;
 
   int pos;
 
   if (aux->isFormatted)
   {
-    RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
-    if (!reb) return NULL;
+    auto reb = winuiGetHandle<RichEditBox>(ih);
+    if (!reb) return nullptr;
     pos = reb.Document().Selection().StartPosition();
   }
   else
   {
-    TextBox tb = winuiGetHandle<TextBox>(ih);
-    if (!tb) return NULL;
+    auto tb = winuiGetHandle<TextBox>(ih);
+    if (!tb) return nullptr;
     pos = tb.SelectionStart();
   }
 
@@ -3067,7 +3067,7 @@ static char* winuiTextGetCaretPosAttrib(Ihandle* ih)
 
 static int winuiTextSetCaretPosAttrib(Ihandle* ih, const char* value)
 {
-  IupWinUITextAux* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
+  auto* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
   if (!aux || aux->isSpin || aux->isPassword)
     return 0;
   if (!value)
@@ -3079,13 +3079,13 @@ static int winuiTextSetCaretPosAttrib(Ihandle* ih, const char* value)
 
   if (aux->isFormatted)
   {
-    RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
+    auto reb = winuiGetHandle<RichEditBox>(ih);
     if (reb)
       reb.Document().Selection().SetRange(pos, pos);
   }
   else
   {
-    TextBox tb = winuiGetHandle<TextBox>(ih);
+    auto tb = winuiGetHandle<TextBox>(ih);
     if (tb)
       tb.Select(pos, 0);
   }
@@ -3098,7 +3098,7 @@ static int winuiTextSetInsertAttrib(Ihandle* ih, const char* value)
   if (!ih->handle || !value)
     return 0;
 
-  IupWinUITextAux* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
+  auto* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
   if (!aux || aux->isSpin || aux->isPassword)
     return 0;
 
@@ -3106,13 +3106,13 @@ static int winuiTextSetInsertAttrib(Ihandle* ih, const char* value)
 
   if (aux->isFormatted)
   {
-    RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
+    auto reb = winuiGetHandle<RichEditBox>(ih);
     if (reb)
       reb.Document().Selection().SetText(TextSetOptions::None, hstring(winuiTextToControl(ih, value)));
   }
   else
   {
-    TextBox tb = winuiGetHandle<TextBox>(ih);
+    auto tb = winuiGetHandle<TextBox>(ih);
     if (tb)
     {
       int pos = tb.SelectionStart();
@@ -3122,7 +3122,7 @@ static int winuiTextSetInsertAttrib(Ihandle* ih, const char* value)
       fullText.replace(pos, len, insertText);
       iupAttribSet(ih, "_IUPWINUI_IGNORE_VALUECHANGED", "1");
       tb.Text(hstring(fullText));
-      tb.Select(pos + (int)insertText.size(), 0);
+      tb.Select(pos + static_cast<int>(insertText.size()), 0);
       aux->savedText = fullText;
     }
   }
@@ -3133,27 +3133,27 @@ static int winuiTextSetInsertAttrib(Ihandle* ih, const char* value)
 
 static char* winuiTextGetCountAttrib(Ihandle* ih)
 {
-  IupWinUITextAux* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
+  auto* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
   if (!aux || aux->isSpin || aux->isPassword)
-    return NULL;
+    return nullptr;
 
   int count;
 
   if (aux->isFormatted)
   {
-    RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
-    if (!reb) return NULL;
+    auto reb = winuiGetHandle<RichEditBox>(ih);
+    if (!reb) return nullptr;
     hstring text;
     reb.Document().GetText(TextGetOptions::None, text);
-    count = (int)text.size();
+    count = static_cast<int>(text.size());
     if (count > 0 && text.c_str()[count - 1] == L'\r')
       count--;
   }
   else
   {
-    TextBox tb = winuiGetHandle<TextBox>(ih);
-    if (!tb) return NULL;
-    count = (int)tb.Text().size();
+    auto tb = winuiGetHandle<TextBox>(ih);
+    if (!tb) return nullptr;
+    count = static_cast<int>(tb.Text().size());
   }
 
   return iupStrReturnInt(count);
@@ -3161,9 +3161,9 @@ static char* winuiTextGetCountAttrib(Ihandle* ih)
 
 static char* winuiTextGetLineCountAttrib(Ihandle* ih)
 {
-  IupWinUITextAux* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
+  auto* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
   if (!aux)
-    return NULL;
+    return nullptr;
 
   if (!ih->data->is_multiline)
     return iupStrReturnInt(1);
@@ -3172,11 +3172,11 @@ static char* winuiTextGetLineCountAttrib(Ihandle* ih)
 
   if (aux->isFormatted)
   {
-    RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
-    if (!reb) return NULL;
+    auto reb = winuiGetHandle<RichEditBox>(ih);
+    if (!reb) return nullptr;
     hstring text;
     reb.Document().GetText(TextGetOptions::None, text);
-    int len = (int)text.size();
+    int len = static_cast<int>(text.size());
     if (len > 0 && text.c_str()[len - 1] == L'\r')
       len--;
     for (int i = 0; i < len; i++)
@@ -3187,8 +3187,8 @@ static char* winuiTextGetLineCountAttrib(Ihandle* ih)
   }
   else
   {
-    TextBox tb = winuiGetHandle<TextBox>(ih);
-    if (!tb) return NULL;
+    auto tb = winuiGetHandle<TextBox>(ih);
+    if (!tb) return nullptr;
     hstring text = tb.Text();
     for (uint32_t i = 0; i < text.size(); i++)
     {
@@ -3210,13 +3210,13 @@ static int winuiTextSetNCAttrib(Ihandle* ih, const char* value)
   if (!ih->handle)
     return 1;
 
-  IupWinUITextAux* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
+  auto* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
   if (!aux || aux->isFormatted)
     return 0;
 
   if (!ih->data->is_multiline)
   {
-    TextBox tb = winuiGetHandle<TextBox>(ih);
+    auto tb = winuiGetHandle<TextBox>(ih);
     if (tb)
       tb.MaxLength(nc);
   }
@@ -3226,7 +3226,7 @@ static int winuiTextSetNCAttrib(Ihandle* ih, const char* value)
 
 static void winuiTextCopyToClipboard(const wchar_t* text)
 {
-  if (!OpenClipboard(NULL))
+  if (!OpenClipboard(nullptr))
     return;
   EmptyClipboard();
 
@@ -3241,7 +3241,7 @@ static void winuiTextCopyToClipboard(const wchar_t* text)
   HGLOBAL hMem = GlobalAlloc(GMEM_MOVEABLE, len * sizeof(wchar_t));
   if (hMem)
   {
-    wchar_t* pMem = (wchar_t*)GlobalLock(hMem);
+    auto* pMem = static_cast<wchar_t*>(GlobalLock(hMem));
     if (pMem)
     {
       wchar_t* d = pMem;
@@ -3259,19 +3259,19 @@ static void winuiTextCopyToClipboard(const wchar_t* text)
   CloseClipboard();
 }
 
-static wchar_t* winuiTextGetFromClipboard(void)
+static wchar_t* winuiTextGetFromClipboard()
 {
-  if (!OpenClipboard(NULL))
-    return NULL;
+  if (!OpenClipboard(nullptr))
+    return nullptr;
   HANDLE hData = GetClipboardData(CF_UNICODETEXT);
-  wchar_t* result = NULL;
+  wchar_t* result = nullptr;
   if (hData)
   {
-    wchar_t* pszText = (wchar_t*)GlobalLock(hData);
+    auto* pszText = static_cast<wchar_t*>(GlobalLock(hData));
     if (pszText)
     {
       size_t len = wcslen(pszText) + 1;
-      result = (wchar_t*)malloc(len * sizeof(wchar_t));
+      result = static_cast<wchar_t*>(malloc(len * sizeof(wchar_t)));
       if (result)
       {
         wchar_t* d = result;
@@ -3292,7 +3292,7 @@ static wchar_t* winuiTextGetFromClipboard(void)
 
 static int winuiTextSetClipboardAttrib(Ihandle* ih, const char* value)
 {
-  IupWinUITextAux* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
+  auto* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
   if (!aux || aux->isSpin || aux->isPassword)
     return 0;
 
@@ -3300,13 +3300,13 @@ static int winuiTextSetClipboardAttrib(Ihandle* ih, const char* value)
   {
     if (aux->isFormatted)
     {
-      RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
+      auto reb = winuiGetHandle<RichEditBox>(ih);
       if (reb)
         reb.Document().Selection().Copy();
     }
     else
     {
-      TextBox tb = winuiGetHandle<TextBox>(ih);
+      auto tb = winuiGetHandle<TextBox>(ih);
       if (tb)
       {
         int start = tb.SelectionStart();
@@ -3324,13 +3324,13 @@ static int winuiTextSetClipboardAttrib(Ihandle* ih, const char* value)
   {
     if (aux->isFormatted)
     {
-      RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
+      auto reb = winuiGetHandle<RichEditBox>(ih);
       if (reb)
         reb.Document().Selection().Cut();
     }
     else
     {
-      TextBox tb = winuiGetHandle<TextBox>(ih);
+      auto tb = winuiGetHandle<TextBox>(ih);
       if (tb)
       {
         int start = tb.SelectionStart();
@@ -3356,13 +3356,13 @@ static int winuiTextSetClipboardAttrib(Ihandle* ih, const char* value)
   {
     if (aux->isFormatted)
     {
-      RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
+      auto reb = winuiGetHandle<RichEditBox>(ih);
       if (reb)
         reb.Document().Selection().Paste(0);
     }
     else
     {
-      TextBox tb = winuiGetHandle<TextBox>(ih);
+      auto tb = winuiGetHandle<TextBox>(ih);
       if (tb)
       {
         wchar_t* pasteText = winuiTextGetFromClipboard();
@@ -3376,7 +3376,7 @@ static int winuiTextSetClipboardAttrib(Ihandle* ih, const char* value)
           iupAttribSet(ih, "_IUPWINUI_IGNORE_VALUECHANGED", "1");
           fullText.replace(start, len, paste);
           tb.Text(hstring(fullText));
-          tb.Select(start + (int)paste.size(), 0);
+          tb.Select(start + static_cast<int>(paste.size()), 0);
           aux->savedText = fullText;
           ih->data->disable_callbacks = 0;
           free(pasteText);
@@ -3388,13 +3388,13 @@ static int winuiTextSetClipboardAttrib(Ihandle* ih, const char* value)
   {
     if (aux->isFormatted)
     {
-      RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
+      auto reb = winuiGetHandle<RichEditBox>(ih);
       if (reb)
         reb.Document().Selection().SetText(TextSetOptions::None, L"");
     }
     else
     {
-      TextBox tb = winuiGetHandle<TextBox>(ih);
+      auto tb = winuiGetHandle<TextBox>(ih);
       if (tb)
       {
         int start = tb.SelectionStart();
@@ -3417,7 +3417,7 @@ static int winuiTextSetClipboardAttrib(Ihandle* ih, const char* value)
   {
     if (aux->isFormatted)
     {
-      RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
+      auto reb = winuiGetHandle<RichEditBox>(ih);
       if (reb)
         reb.Document().Undo();
     }
@@ -3426,7 +3426,7 @@ static int winuiTextSetClipboardAttrib(Ihandle* ih, const char* value)
   {
     if (aux->isFormatted)
     {
-      RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
+      auto reb = winuiGetHandle<RichEditBox>(ih);
       if (reb)
         reb.Document().Redo();
     }
@@ -3435,7 +3435,7 @@ static int winuiTextSetClipboardAttrib(Ihandle* ih, const char* value)
   {
     if (aux->isFormatted)
     {
-      RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
+      auto reb = winuiGetHandle<RichEditBox>(ih);
       if (reb)
       {
         auto doc = reb.Document();
@@ -3451,7 +3451,7 @@ static int winuiTextSetClipboardAttrib(Ihandle* ih, const char* value)
 
 static int winuiTextSetScrollToAttrib(Ihandle* ih, const char* value)
 {
-  IupWinUITextAux* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
+  auto* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
   if (!aux || aux->isSpin || aux->isPassword)
     return 0;
   if (!value)
@@ -3466,7 +3466,7 @@ static int winuiTextSetScrollToAttrib(Ihandle* ih, const char* value)
 
     if (aux->isFormatted)
     {
-      RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
+      auto reb = winuiGetHandle<RichEditBox>(ih);
       if (reb)
       {
         int pos = winuiTextLinColToPos(reb.Document(), lin, col);
@@ -3476,7 +3476,7 @@ static int winuiTextSetScrollToAttrib(Ihandle* ih, const char* value)
     }
     else
     {
-      TextBox tb = winuiGetHandle<TextBox>(ih);
+      auto tb = winuiGetHandle<TextBox>(ih);
       if (tb)
       {
         ScrollViewer sv = iupwinuiFindScrollViewer(tb);
@@ -3496,7 +3496,7 @@ static int winuiTextSetScrollToAttrib(Ihandle* ih, const char* value)
     if (pos < 1) pos = 1;
     pos--;
 
-    TextBox tb = winuiGetHandle<TextBox>(ih);
+    auto tb = winuiGetHandle<TextBox>(ih);
     if (tb)
       tb.Select(pos, 0);
   }
@@ -3506,7 +3506,7 @@ static int winuiTextSetScrollToAttrib(Ihandle* ih, const char* value)
 
 static int winuiTextSetScrollToPosAttrib(Ihandle* ih, const char* value)
 {
-  IupWinUITextAux* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
+  auto* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
   if (!aux || aux->isSpin || aux->isPassword)
     return 0;
   if (!value)
@@ -3520,7 +3520,7 @@ static int winuiTextSetScrollToPosAttrib(Ihandle* ih, const char* value)
   {
     if (aux->isFormatted)
     {
-      RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
+      auto reb = winuiGetHandle<RichEditBox>(ih);
       if (reb)
       {
         auto range = reb.Document().GetRange(pos, pos);
@@ -3529,12 +3529,12 @@ static int winuiTextSetScrollToPosAttrib(Ihandle* ih, const char* value)
     }
     else
     {
-      TextBox tb = winuiGetHandle<TextBox>(ih);
+      auto tb = winuiGetHandle<TextBox>(ih);
       if (tb)
       {
         int lin, col;
         hstring text = tb.Text();
-        winuiTextStringPosToLinCol(text.c_str(), (int)text.size(), pos, &lin, &col);
+        winuiTextStringPosToLinCol(text.c_str(), static_cast<int>(text.size()), pos, &lin, &col);
         ScrollViewer sv = iupwinuiFindScrollViewer(tb);
         if (sv)
         {
@@ -3547,7 +3547,7 @@ static int winuiTextSetScrollToPosAttrib(Ihandle* ih, const char* value)
   }
   else
   {
-    TextBox tb = winuiGetHandle<TextBox>(ih);
+    auto tb = winuiGetHandle<TextBox>(ih);
     if (tb)
       tb.Select(pos, 0);
   }
@@ -3557,7 +3557,7 @@ static int winuiTextSetScrollToPosAttrib(Ihandle* ih, const char* value)
 
 static int winuiTextSetAlignmentAttrib(Ihandle* ih, const char* value)
 {
-  IupWinUITextAux* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
+  auto* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
   if (!aux || aux->isSpin || aux->isPassword)
     return 0;
 
@@ -3569,13 +3569,13 @@ static int winuiTextSetAlignmentAttrib(Ihandle* ih, const char* value)
 
   if (aux->isFormatted)
   {
-    RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
+    auto reb = winuiGetHandle<RichEditBox>(ih);
     if (reb)
       reb.TextAlignment(align);
   }
   else
   {
-    TextBox tb = winuiGetHandle<TextBox>(ih);
+    auto tb = winuiGetHandle<TextBox>(ih);
     if (tb)
       tb.TextAlignment(align);
   }
@@ -3589,7 +3589,7 @@ static int winuiTextSetBgColorAttrib(Ihandle* ih, const char* value)
   if (!iupStrToRGB(value, &r, &g, &b))
     return 0;
 
-  IupWinUITextAux* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
+  auto* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
   if (!aux)
     return 0;
 
@@ -3599,25 +3599,25 @@ static int winuiTextSetBgColorAttrib(Ihandle* ih, const char* value)
 
   if (aux->isSpin)
   {
-    NumberBox nb = winuiGetHandle<NumberBox>(ih);
+    auto nb = winuiGetHandle<NumberBox>(ih);
     if (nb)
       nb.Background(brush);
   }
   else if (aux->isPassword)
   {
-    PasswordBox pb = winuiGetHandle<PasswordBox>(ih);
+    auto pb = winuiGetHandle<PasswordBox>(ih);
     if (pb)
       pb.Background(brush);
   }
   else if (aux->isFormatted)
   {
-    RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
+    auto reb = winuiGetHandle<RichEditBox>(ih);
     if (reb)
       reb.Background(brush);
   }
   else
   {
-    TextBox tb = winuiGetHandle<TextBox>(ih);
+    auto tb = winuiGetHandle<TextBox>(ih);
     if (tb)
       tb.Background(brush);
   }
@@ -3634,7 +3634,7 @@ static int winuiTextSetFgColorAttrib(Ihandle* ih, const char* value)
   if (!iupStrToRGB(value, &r, &g, &b))
     return 0;
 
-  IupWinUITextAux* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
+  auto* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
   if (!aux)
     return 0;
 
@@ -3644,25 +3644,25 @@ static int winuiTextSetFgColorAttrib(Ihandle* ih, const char* value)
 
   if (aux->isSpin)
   {
-    NumberBox nb = winuiGetHandle<NumberBox>(ih);
+    auto nb = winuiGetHandle<NumberBox>(ih);
     if (nb)
       nb.Foreground(brush);
   }
   else if (aux->isPassword)
   {
-    PasswordBox pb = winuiGetHandle<PasswordBox>(ih);
+    auto pb = winuiGetHandle<PasswordBox>(ih);
     if (pb)
       pb.Foreground(brush);
   }
   else if (aux->isFormatted)
   {
-    RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
+    auto reb = winuiGetHandle<RichEditBox>(ih);
     if (reb)
       reb.Foreground(brush);
   }
   else
   {
-    TextBox tb = winuiGetHandle<TextBox>(ih);
+    auto tb = winuiGetHandle<TextBox>(ih);
     if (tb)
       tb.Foreground(brush);
   }
@@ -3680,7 +3680,7 @@ static int winuiTextSetPaddingAttrib(Ihandle* ih, const char* value)
   if (!ih->handle)
     return 1;
 
-  IupWinUITextAux* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
+  auto* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
   if (!aux || aux->isSpin || aux->isPassword)
     return 0;
 
@@ -3690,13 +3690,13 @@ static int winuiTextSetPaddingAttrib(Ihandle* ih, const char* value)
 
   if (aux->isFormatted)
   {
-    RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
+    auto reb = winuiGetHandle<RichEditBox>(ih);
     if (reb)
       reb.Padding(padding);
   }
   else
   {
-    TextBox tb = winuiGetHandle<TextBox>(ih);
+    auto tb = winuiGetHandle<TextBox>(ih);
     if (tb)
       tb.Padding(padding);
   }
@@ -3706,14 +3706,14 @@ static int winuiTextSetPaddingAttrib(Ihandle* ih, const char* value)
 
 static int winuiTextSetCueBannerAttrib(Ihandle* ih, const char* value)
 {
-  IupWinUITextAux* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
+  auto* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
   if (!aux || aux->isSpin || aux->isPassword)
     return 0;
 
   if (ih->data->is_multiline)
     return 0;
 
-  TextBox tb = winuiGetHandle<TextBox>(ih);
+  auto tb = winuiGetHandle<TextBox>(ih);
   if (tb)
     tb.PlaceholderText(iupwinuiStringToHString(value ? value : ""));
 
@@ -3722,7 +3722,7 @@ static int winuiTextSetCueBannerAttrib(Ihandle* ih, const char* value)
 
 static int winuiTextSetTabSizeAttrib(Ihandle* ih, const char* value)
 {
-  IupWinUITextAux* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
+  auto* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
   if (!aux || !ih->data->is_multiline)
     return 0;
 
@@ -3731,12 +3731,12 @@ static int winuiTextSetTabSizeAttrib(Ihandle* ih, const char* value)
 
   if (aux->isFormatted)
   {
-    RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
+    auto reb = winuiGetHandle<RichEditBox>(ih);
     if (reb)
     {
       int charwidth;
-      iupdrvFontGetCharSize(ih, &charwidth, NULL);
-      float tabStopPoints = (float)(tabsize * charwidth) * 72.0f / (float)iupdrvGetScreenDpi();
+      iupdrvFontGetCharSize(ih, &charwidth, nullptr);
+      float tabStopPoints = static_cast<float>(tabsize * charwidth) * 72.0f / static_cast<float>(iupdrvGetScreenDpi());
       reb.Document().DefaultTabStop(tabStopPoints);
     }
   }
@@ -3746,11 +3746,11 @@ static int winuiTextSetTabSizeAttrib(Ihandle* ih, const char* value)
 
 static int winuiTextSetRemoveFormattingAttrib(Ihandle* ih, const char* value)
 {
-  IupWinUITextAux* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
+  auto* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
   if (!aux || !aux->isFormatted)
     return 0;
 
-  RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
+  auto reb = winuiGetHandle<RichEditBox>(ih);
   if (!reb)
     return 0;
 
@@ -3766,7 +3766,7 @@ static int winuiTextSetRemoveFormattingAttrib(Ihandle* ih, const char* value)
   {
     hstring text;
     doc.GetText(TextGetOptions::None, text);
-    auto range = doc.GetRange(0, (int32_t)text.size());
+    auto range = doc.GetRange(0, static_cast<int32_t>(text.size()));
     range.CharacterFormat().SetClone(defaultCF);
     range.ParagraphFormat().SetClone(defaultPF);
     aux->faceRanges.clear();
@@ -3791,7 +3791,7 @@ static int winuiTextSetRemoveFormattingAttrib(Ihandle* ih, const char* value)
 
 static int winuiTextSetLoadRtfAttrib(Ihandle* ih, const char* value)
 {
-  IupWinUITextAux* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
+  auto* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
   if (!aux || !aux->isFormatted)
   {
     iupAttribSet(ih, "LOADRTFSTATUS", "FAILED");
@@ -3809,7 +3809,7 @@ static int winuiTextSetLoadRtfAttrib(Ihandle* ih, const char* value)
   std::string bytes((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
   std::wstring wide(bytes.begin(), bytes.end());  /* RTF is 7-bit ASCII; widen byte-for-byte */
 
-  RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
+  auto reb = winuiGetHandle<RichEditBox>(ih);
   if (!reb)
   {
     iupAttribSet(ih, "LOADRTFSTATUS", "FAILED");
@@ -3834,7 +3834,7 @@ static int winuiTextSetLoadRtfAttrib(Ihandle* ih, const char* value)
 
 static int winuiTextSetSaveRtfAttrib(Ihandle* ih, const char* value)
 {
-  IupWinUITextAux* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
+  auto* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
   if (!aux || !aux->isFormatted)
   {
     iupAttribSet(ih, "SAVERTFSTATUS", "FAILED");
@@ -3843,7 +3843,7 @@ static int winuiTextSetSaveRtfAttrib(Ihandle* ih, const char* value)
   if (!value)
     return 0;
 
-  RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
+  auto reb = winuiGetHandle<RichEditBox>(ih);
   if (!reb)
   {
     iupAttribSet(ih, "SAVERTFSTATUS", "FAILED");
@@ -3884,11 +3884,11 @@ static int winuiTextSetFontAttrib(Ihandle* ih, const char* value)
       if (iupStrEqual(value, cur_value))
         return 0;
     }
-    iupAttribSet(ih, "_IUPWINUI_FONTUPDATECHECK", NULL);
+    iupAttribSet(ih, "_IUPWINUI_FONTUPDATECHECK", nullptr);
 
     int ret = iupdrvSetFontAttrib(ih, value);
 
-    RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
+    auto reb = winuiGetHandle<RichEditBox>(ih);
     if (reb)
     {
       reb.ClearValue(Control::FontSizeProperty());
@@ -3908,7 +3908,7 @@ static int winuiTextSetMaskFloatAttrib(Ihandle* ih, const char* value)
     if (ih->data->mask)
     {
       iupMaskDestroy(ih->data->mask);
-      ih->data->mask = NULL;
+      ih->data->mask = nullptr;
     }
   }
   else
@@ -3922,8 +3922,8 @@ static int winuiTextSetMaskFloatAttrib(Ihandle* ih, const char* value)
     if (iupStrToFloatFloat(value, &min, &max, ':') != 2)
       return 0;
 
-    iupAttribSetDouble(ih, "_IUPWINUI_MASKFLOAT_MIN", (double)min);
-    iupAttribSetDouble(ih, "_IUPWINUI_MASKFLOAT_MAX", (double)max);
+    iupAttribSetDouble(ih, "_IUPWINUI_MASKFLOAT_MIN", static_cast<double>(min));
+    iupAttribSetDouble(ih, "_IUPWINUI_MASKFLOAT_MAX", static_cast<double>(max));
 
     mask = iupMaskCreateFloat(min, max, decimal_symbol);
     if (mask)
@@ -3942,11 +3942,11 @@ static int winuiTextSetMaskFloatAttrib(Ihandle* ih, const char* value)
 
 extern "C" IUP_SDK_API int iupdrvTextGetFormatTags(Ihandle* ih, Ihandle* bulk_tag)
 {
-  IupWinUITextAux* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
+  auto* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
   if (!aux || !aux->isFormatted)
     return 0;
 
-  RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
+  auto reb = winuiGetHandle<RichEditBox>(ih);
   if (!reb)
     return 0;
 
@@ -3954,7 +3954,7 @@ extern "C" IUP_SDK_API int iupdrvTextGetFormatTags(Ihandle* ih, Ihandle* bulk_ta
   hstring text;
   doc.GetText(TextGetOptions::None, text);
 
-  int count = (int)text.size();
+  int count = static_cast<int>(text.size());
   if (count <= 0)
     return 1;
 
@@ -4009,9 +4009,9 @@ extern "C" IUP_SDK_API int iupdrvTextGetFormatTags(Ihandle* ih, Ihandle* bulk_ta
       if (!run_name.empty())
         IupSetStrAttribute(formattag, "FONTFACE", winrt::to_string(run_name).c_str());
       if (run_size > 0)
-        IupSetInt(formattag, "FONTSIZE", (int)(run_size + 0.5f));
+        IupSetInt(formattag, "FONTSIZE", static_cast<int>(run_size + 0.5f));
       if (run_indent > 0)
-        IupSetInt(formattag, "INDENT", (int)run_indent);
+        IupSetInt(formattag, "INDENT", static_cast<int>(run_indent));
 
       url = winuiTextFindLinkUrl(ih, run_start);
       if (url)
@@ -4032,57 +4032,57 @@ extern "C" IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
   ic->Map = winuiTextMapMethod;
   ic->UnMap = winuiTextUnMapMethod;
 
-  iupClassRegisterAttribute(ic, "FONT", NULL, winuiTextSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
+  iupClassRegisterAttribute(ic, "FONT", nullptr, winuiTextSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
 
-  iupClassRegisterAttribute(ic, "VALUE", winuiTextGetValueAttrib, winuiTextSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "APPEND", NULL, winuiTextSetAppendAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "READONLY", winuiTextGetReadOnlyAttrib, winuiTextSetReadOnlyAttrib, NULL, NULL, IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "LINEVALUE", winuiTextGetLineValueAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "ACTIVE", NULL, winuiTextSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "VALUE", winuiTextGetValueAttrib, winuiTextSetValueAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "APPEND", nullptr, winuiTextSetAppendAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED|IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "READONLY", winuiTextGetReadOnlyAttrib, winuiTextSetReadOnlyAttrib, nullptr, nullptr, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "LINEVALUE", winuiTextGetLineValueAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ACTIVE", nullptr, winuiTextSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
 
-  iupClassRegisterAttribute(ic, "SPINMIN", NULL, winuiTextSetSpinMinAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SPINMAX", NULL, winuiTextSetSpinMaxAttrib, IUPAF_SAMEASSYSTEM, "100", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SPININC", NULL, winuiTextSetSpinIncAttrib, IUPAF_SAMEASSYSTEM, "1", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SPINMIN", nullptr, winuiTextSetSpinMinAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SPINMAX", nullptr, winuiTextSetSpinMaxAttrib, IUPAF_SAMEASSYSTEM, "100", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SPININC", nullptr, winuiTextSetSpinIncAttrib, IUPAF_SAMEASSYSTEM, "1", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SPINVALUE", winuiTextGetSpinValueAttrib, winuiTextSetSpinValueAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "MASKFLOAT", NULL, winuiTextSetMaskFloatAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MASKFLOAT", nullptr, winuiTextSetMaskFloatAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "FORMATTING", iupTextGetFormattingAttrib, iupTextSetFormattingAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TABSARRAY", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "ADDFORMATTAG", NULL, iupTextSetAddFormatTagAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "ADDFORMATTAG_HANDLE", NULL, iupTextSetAddFormatTagHandleAttrib, NULL, NULL, IUPAF_IHANDLE|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FORMATTING", iupTextGetFormattingAttrib, iupTextSetFormattingAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TABSARRAY", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ADDFORMATTAG", nullptr, iupTextSetAddFormatTagAttrib, nullptr, nullptr, IUPAF_IHANDLENAME|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ADDFORMATTAG_HANDLE", nullptr, iupTextSetAddFormatTagHandleAttrib, nullptr, nullptr, IUPAF_IHANDLE|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "SELECTEDTEXT", winuiTextGetSelectedTextAttrib, winuiTextSetSelectedTextAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SELECTION", winuiTextGetSelectionAttrib, winuiTextSetSelectionAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SELECTIONPOS", winuiTextGetSelectionPosAttrib, winuiTextSetSelectionPosAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTEDTEXT", winuiTextGetSelectedTextAttrib, winuiTextSetSelectedTextAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTION", winuiTextGetSelectionAttrib, winuiTextSetSelectionAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTIONPOS", winuiTextGetSelectionPosAttrib, winuiTextSetSelectionPosAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "CARET", winuiTextGetCaretAttrib, winuiTextSetCaretAttrib, NULL, NULL, IUPAF_NO_SAVE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CARET", winuiTextGetCaretAttrib, winuiTextSetCaretAttrib, nullptr, nullptr, IUPAF_NO_SAVE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CARETPOS", winuiTextGetCaretPosAttrib, winuiTextSetCaretPosAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_SAVE|IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "INSERT", NULL, winuiTextSetInsertAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "CLIPBOARD", NULL, winuiTextSetClipboardAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "INSERT", nullptr, winuiTextSetInsertAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED|IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CLIPBOARD", nullptr, winuiTextSetClipboardAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "COUNT", winuiTextGetCountAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "LINECOUNT", winuiTextGetLineCountAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "COUNT", winuiTextGetCountAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "LINECOUNT", winuiTextGetLineCountAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY|IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "NC", iupTextGetNCAttrib, winuiTextSetNCAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NOT_MAPPED);
 
-  iupClassRegisterAttribute(ic, "SCROLLTO", NULL, winuiTextSetScrollToAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SCROLLTOPOS", NULL, winuiTextSetScrollToPosAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SCROLLTO", nullptr, winuiTextSetScrollToAttrib, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SCROLLTOPOS", nullptr, winuiTextSetScrollToPosAttrib, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "ALIGNMENT", NULL, winuiTextSetAlignmentAttrib, IUPAF_SAMEASSYSTEM, "ALEFT", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, winuiTextSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTBGCOLOR", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, winuiTextSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTFGCOLOR", IUPAF_NOT_MAPPED);
+  iupClassRegisterAttribute(ic, "ALIGNMENT", nullptr, winuiTextSetAlignmentAttrib, IUPAF_SAMEASSYSTEM, "ALEFT", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", nullptr, winuiTextSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "FGCOLOR", nullptr, winuiTextSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTFGCOLOR", IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "PADDING", iupTextGetPaddingAttrib, winuiTextSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
-  iupClassRegisterAttribute(ic, "CUEBANNER", NULL, winuiTextSetCueBannerAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TABSIZE", NULL, winuiTextSetTabSizeAttrib, IUPAF_SAMEASSYSTEM, "8", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "REMOVEFORMATTING", NULL, winuiTextSetRemoveFormattingAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "LOADRTF", NULL, winuiTextSetLoadRtfAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SAVERTF", NULL, winuiTextSetSaveRtfAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "PASSWORD", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "APPENDNEWLINE", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CUEBANNER", nullptr, winuiTextSetCueBannerAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TABSIZE", nullptr, winuiTextSetTabSizeAttrib, IUPAF_SAMEASSYSTEM, "8", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "REMOVEFORMATTING", nullptr, winuiTextSetRemoveFormattingAttrib, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "LOADRTF", nullptr, winuiTextSetLoadRtfAttrib, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SAVERTF", nullptr, winuiTextSetSaveRtfAttrib, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "PASSWORD", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "APPENDNEWLINE", nullptr, nullptr, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "OVERWRITE", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "FILTER", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SCROLLVISIBLE", winuiTextGetScrollVisibleAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "OVERWRITE", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FILTER", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SCROLLVISIBLE", winuiTextGetScrollVisibleAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY|IUPAF_NO_INHERIT);
 }

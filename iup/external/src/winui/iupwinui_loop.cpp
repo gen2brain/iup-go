@@ -28,9 +28,9 @@ using namespace Microsoft::UI::Xaml::Controls;
 
 static int winui_main_loop_level = 0;
 static int winui_exit_loop = 0;
-static IFidle winui_idle_cb = NULL;
+static IFidle winui_idle_cb = nullptr;
 
-static void winuiFlushXamlLayout(void)
+static void winuiFlushXamlLayout()
 {
   Ihandle* ih;
   for (ih = iupDlgListFirst(); ih; ih = iupDlgListNext())
@@ -40,7 +40,7 @@ static void winuiFlushXamlLayout(void)
     if (!IupClassMatch(ih, "dialog"))
       continue;
 
-    IupWinUIDialogAux* aux = winuiGetAux<IupWinUIDialogAux>(ih, IUPWINUI_DIALOG_AUX);
+    auto* aux = winuiGetAux<IupWinUIDialogAux>(ih, IUPWINUI_DIALOG_AUX);
     if (aux && aux->rootPanel)
       aux->rootPanel.UpdateLayout();
   }
@@ -48,7 +48,7 @@ static void winuiFlushXamlLayout(void)
 
 IUP_DRV_API void iupwinuiLoopCleanup(void)
 {
-  winui_idle_cb = NULL;
+  winui_idle_cb = nullptr;
   winui_exit_loop = 0;
   winui_main_loop_level = 0;
 }
@@ -83,12 +83,12 @@ static int winuiLoopProcessMessage(MSG* msg)
 
   if (msg->message == WM_KEYDOWN || msg->message == WM_SYSKEYDOWN)
   {
-    int wincode = (int)msg->wParam;
+    int wincode = static_cast<int>(msg->wParam);
     if (wincode != VK_SHIFT && wincode != VK_CONTROL && wincode != VK_MENU &&
         wincode != VK_LWIN && wincode != VK_RWIN)
     {
       Ihandle* focus = IupGetFocus();
-      Ihandle* dlg = focus ? IupGetDialog(focus) : NULL;
+      Ihandle* dlg = focus ? IupGetDialog(focus) : nullptr;
       if (!dlg)
       {
         dlg = iupwinuiDialogFromHwnd(GetActiveWindow());
@@ -99,7 +99,7 @@ static int winuiLoopProcessMessage(MSG* msg)
         if (code && iupwinuiMenuActivateAccel(dlg, code))
         {
           MSG flush;
-          while (PeekMessage(&flush, NULL, WM_KEYFIRST, WM_KEYLAST, PM_REMOVE)) {}
+          while (PeekMessage(&flush, nullptr, WM_KEYFIRST, WM_KEYLAST, PM_REMOVE)) {}
           return IUP_DEFAULT;
         }
       }
@@ -116,13 +116,13 @@ static int winuiLoopProcessMessage(MSG* msg)
         int alt_numpad_compose = ih &&
             (GetKeyState(VK_MENU) & 0x8000) && !(GetKeyState(VK_CONTROL) & 0x8000) &&
             wincode >= VK_NUMPAD0 && wincode <= VK_NUMPAD9 &&
-            IupGetCallback(ih, "TEXTINPUT_CB") != NULL;
+            IupGetCallback(ih, "TEXTINPUT_CB") != nullptr;
         if (ih && !alt_numpad_compose)
         {
           if (!iupwinuiKeyEvent(ih, wincode, (msg->lParam & 0x01000000)? 1: 0, 1))
           {
             MSG flush;
-            while (PeekMessage(&flush, NULL, WM_KEYFIRST, WM_KEYLAST, PM_REMOVE)) {}
+            while (PeekMessage(&flush, nullptr, WM_KEYFIRST, WM_KEYLAST, PM_REMOVE)) {}
             return IUP_DEFAULT;
           }
 
@@ -133,7 +133,7 @@ static int winuiLoopProcessMessage(MSG* msg)
           if (!still_modified)
           {
             MSG flush;
-            while (PeekMessage(&flush, NULL, WM_KEYFIRST, WM_KEYLAST, PM_REMOVE)) {}
+            while (PeekMessage(&flush, nullptr, WM_KEYFIRST, WM_KEYLAST, PM_REMOVE)) {}
             return IUP_DEFAULT;
           }
 
@@ -175,7 +175,7 @@ extern "C" int IupMainLoop(void)
   {
     if (winui_idle_cb)
     {
-      if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
+      if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
       {
         if (winuiLoopProcessMessage(&msg) == IUP_CLOSE)
         {
@@ -192,13 +192,13 @@ extern "C" int IupMainLoop(void)
           break;
         }
         if (idle_ret == IUP_IGNORE)
-          winui_idle_cb = NULL;
+          winui_idle_cb = nullptr;
       }
       ret = 1;
     }
     else
     {
-      ret = GetMessage(&msg, NULL, 0, 0);
+      ret = GetMessage(&msg, nullptr, 0, 0);
       if (ret == -1)
         return_code = IUP_ERROR;
       if (ret == 0 || winuiLoopProcessMessage(&msg) == IUP_CLOSE)
@@ -221,7 +221,7 @@ extern "C" int IupMainLoop(void)
 extern "C" int IupLoopStepWait(void)
 {
   MSG msg;
-  int ret = GetMessage(&msg, NULL, 0, 0);
+  int ret = GetMessage(&msg, nullptr, 0, 0);
   if (ret == -1)
     return IUP_ERROR;
   if (ret == 0 || winuiLoopProcessMessage(&msg) == IUP_CLOSE)
@@ -232,7 +232,7 @@ extern "C" int IupLoopStepWait(void)
 extern "C" int IupLoopStep(void)
 {
   MSG msg;
-  if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
+  if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
     return winuiLoopProcessMessage(&msg);
   else if (winui_idle_cb)
   {
@@ -240,7 +240,7 @@ extern "C" int IupLoopStep(void)
     if (ret == IUP_CLOSE)
       return IUP_CLOSE;
     if (ret == IUP_IGNORE)
-      winui_idle_cb = NULL;
+      winui_idle_cb = nullptr;
   }
   return IUP_DEFAULT;
 }
@@ -251,7 +251,7 @@ extern "C" void IupFlush(void)
   int count = 0;
   MSG msg;
 
-  while (count < 100 && PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
+  while (count < 100 && PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
   {
     if (winuiLoopProcessMessage(&msg) == IUP_CLOSE)
     {
@@ -279,7 +279,7 @@ typedef struct {
 
 extern "C" void IupPostMessage(Ihandle* ih, const char* s, int i, double d, void* p)
 {
-  winuiPostMessageData* data = (winuiPostMessageData*)malloc(sizeof(winuiPostMessageData));
+  auto* data = static_cast<winuiPostMessageData*>(malloc(sizeof(winuiPostMessageData)));
   if (!data)
     return;
 
@@ -305,7 +305,7 @@ extern "C" void IupPostMessage(Ihandle* ih, const char* s, int i, double d, void
   {
     if (iupObjectCheck(data->ih))
     {
-      IFnsidv cb = (IFnsidv)IupGetCallback(data->ih, "POSTMESSAGE_CB");
+      auto cb = reinterpret_cast<IFnsidv>(IupGetCallback(data->ih, "POSTMESSAGE_CB"));
       if (cb)
       {
         if (cb(data->ih, data->s, data->i, data->d, data->p) == IUP_CLOSE)
@@ -324,7 +324,7 @@ extern "C" IUP_SDK_API void iupdrvSetEntryFunction(Icallback func)
 
 extern "C" IUP_SDK_API void* iupdrvNativeScopeBegin(void)
 {
-  return NULL;
+  return nullptr;
 }
 
 extern "C" IUP_SDK_API void iupdrvNativeScopeEnd(void* scope)
@@ -334,7 +334,7 @@ extern "C" IUP_SDK_API void iupdrvNativeScopeEnd(void* scope)
 
 extern "C" IUP_SDK_API void iupdrvSetIdleFunction(Icallback func)
 {
-  winui_idle_cb = (IFidle)func;
+  winui_idle_cb = reinterpret_cast<IFidle>(func);
 }
 
 extern "C" IUP_SDK_API void iupdrvSleep(int time)

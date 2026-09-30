@@ -48,7 +48,7 @@ static int winui_frame_border_width = 1;
 static int winui_frame_title_height = 0;
 static int winui_frame_measured = 0;
 
-static void winuiFrameMeasureDecor(void)
+static void winuiFrameMeasureDecor()
 {
   if (winui_frame_measured)
     return;
@@ -58,7 +58,7 @@ static void winuiFrameMeasureDecor(void)
   tempText.Measure(Size(10000, 10000));
 
   Size textSize = tempText.DesiredSize();
-  winui_frame_title_height = (int)ceil(textSize.Height);
+  winui_frame_title_height = static_cast<int>(ceil(textSize.Height));
 
   if (winui_frame_title_height < 16)
     winui_frame_title_height = 16;
@@ -68,7 +68,7 @@ static void winuiFrameMeasureDecor(void)
 
 static void winuiFrameUpdateTitleBackground(Ihandle* ih)
 {
-  IupWinUIFrameAux* aux = winuiGetAux<IupWinUIFrameAux>(ih, IUPWINUI_FRAME_AUX);
+  auto* aux = winuiGetAux<IupWinUIFrameAux>(ih, IUPWINUI_FRAME_AUX);
   if (!aux || !aux->titleBorder)
     return;
 
@@ -106,7 +106,7 @@ static void winuiFrameUpdateTitleBackground(Ihandle* ih)
     return;
   }
 
-  IupWinUIDialogAux* dlg_aux = winuiGetAux<IupWinUIDialogAux>(dlg, IUPWINUI_DIALOG_AUX);
+  auto* dlg_aux = winuiGetAux<IupWinUIDialogAux>(dlg, IUPWINUI_DIALOG_AUX);
   if (dlg_aux && dlg_aux->rootPanel)
   {
     Brush bg = dlg_aux->rootPanel.Background();
@@ -139,7 +139,7 @@ static int winuiFrameSetFontAttrib(Ihandle* ih, const char* value)
   if (!iupdrvSetFontAttrib(ih, value))
     return 0;
 
-  IupWinUIFrameAux* aux = winuiGetAux<IupWinUIFrameAux>(ih, IUPWINUI_FRAME_AUX);
+  auto* aux = winuiGetAux<IupWinUIFrameAux>(ih, IUPWINUI_FRAME_AUX);
   if (aux && aux->titleBlock)
     iupwinuiUpdateTextBlockFont(ih, aux->titleBlock);
 
@@ -148,7 +148,7 @@ static int winuiFrameSetFontAttrib(Ihandle* ih, const char* value)
 
 static int winuiFrameSetTitleAttrib(Ihandle* ih, const char* value)
 {
-  IupWinUIFrameAux* aux = winuiGetAux<IupWinUIFrameAux>(ih, IUPWINUI_FRAME_AUX);
+  auto* aux = winuiGetAux<IupWinUIFrameAux>(ih, IUPWINUI_FRAME_AUX);
   if (!aux)
     return 1;
 
@@ -185,7 +185,7 @@ static int winuiFrameSetBgColorAttrib(Ihandle* ih, const char* value)
   unsigned char r, g, b;
   if (iupStrToRGB(value, &r, &g, &b))
   {
-    IupWinUIFrameAux* aux = winuiGetAux<IupWinUIFrameAux>(ih, IUPWINUI_FRAME_AUX);
+    auto* aux = winuiGetAux<IupWinUIFrameAux>(ih, IUPWINUI_FRAME_AUX);
     if (aux && aux->frameBorder)
     {
       Color color;
@@ -201,7 +201,7 @@ static int winuiFrameSetBgColorAttrib(Ihandle* ih, const char* value)
 
 void winuiFrameUpdateBorderColor(Ihandle* ih)
 {
-  IupWinUIFrameAux* aux = winuiGetAux<IupWinUIFrameAux>(ih, IUPWINUI_FRAME_AUX);
+  auto* aux = winuiGetAux<IupWinUIFrameAux>(ih, IUPWINUI_FRAME_AUX);
   if (!aux || !aux->frameBorder)
     return;
 
@@ -228,7 +228,7 @@ static int winuiFrameMapMethod(Ihandle* ih)
 
   const char* title = iupAttribGet(ih, "TITLE");
 
-  IupWinUIFrameAux* aux = new IupWinUIFrameAux();
+  auto* aux = new IupWinUIFrameAux();
   aux->hasTitle = (title && title[0]) ? true : false;
 
   aux->innerCanvas = Canvas();
@@ -301,11 +301,11 @@ static void winuiFrameUpdateDescendants(Ihandle* ih)
 
 static void winuiFrameLayoutUpdateMethod(Ihandle* ih)
 {
-  IupWinUIFrameAux* aux = winuiGetAux<IupWinUIFrameAux>(ih, IUPWINUI_FRAME_AUX);
+  auto* aux = winuiGetAux<IupWinUIFrameAux>(ih, IUPWINUI_FRAME_AUX);
   if (!aux)
     return;
 
-  Canvas outerCanvas = winuiGetHandle<Canvas>(ih);
+  auto outerCanvas = winuiGetHandle<Canvas>(ih);
   if (!outerCanvas)
     return;
 
@@ -353,7 +353,7 @@ static int winuiFrameSetFgColorAttrib(Ihandle* ih, const char* value)
   unsigned char r, g, b;
   if (iupStrToRGB(value, &r, &g, &b))
   {
-    IupWinUIFrameAux* aux = winuiGetAux<IupWinUIFrameAux>(ih, IUPWINUI_FRAME_AUX);
+    auto* aux = winuiGetAux<IupWinUIFrameAux>(ih, IUPWINUI_FRAME_AUX);
     if (aux && aux->titleBlock)
     {
       Color color;
@@ -377,7 +377,7 @@ extern "C" IUP_SDK_API int iupdrvFrameHasClientOffset(Ihandle* ih)
 
 static int winuiFrameGetPadding(Ihandle* ih)
 {
-  return (int)ceil((winui_frame_border_width + 4) * iupwinuiGetScale(ih));
+  return static_cast<int>(ceil((winui_frame_border_width + 4) * iupwinuiGetScale(ih)));
 }
 
 extern "C" IUP_SDK_API void iupdrvFrameGetDecorOffset(Ihandle* ih, int* x, int* y)
@@ -397,7 +397,7 @@ extern "C" IUP_SDK_API int iupdrvFrameGetDecorSize(Ihandle* ih, int* w, int* h)
 
   const char* title = iupAttribGet(ih, "TITLE");
   if (title && title[0])
-    *h = (int)ceil((winui_frame_title_height / 2) * iupwinuiGetScale(ih)) + 2 * padding;
+    *h = static_cast<int>(ceil((winui_frame_title_height / 2) * iupwinuiGetScale(ih))) + 2 * padding;
   else
     *h = 2 * padding;
 
@@ -416,7 +416,7 @@ extern "C" IUP_SDK_API int iupdrvFrameGetTitleHeight(Ihandle* ih, int* h)
   if (!winui_frame_measured)
     winuiFrameMeasureDecor();
 
-  *h = (int)ceil((winui_frame_title_height / 2) * iupwinuiGetScale(ih));
+  *h = static_cast<int>(ceil((winui_frame_title_height / 2) * iupwinuiGetScale(ih)));
   return 1;
 }
 
@@ -427,11 +427,11 @@ extern "C" IUP_SDK_API void iupdrvFrameInitClass(Iclass* ic)
   ic->LayoutUpdate = winuiFrameLayoutUpdateMethod;
   ic->GetInnerNativeContainerHandle = winuiFrameGetInnerNativeContainerHandleMethod;
 
-  iupClassRegisterAttribute(ic, "FONT", NULL, winuiFrameSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
+  iupClassRegisterAttribute(ic, "FONT", nullptr, winuiFrameSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
 
   iupClassRegisterAttribute(ic, "BGCOLOR", iupFrameGetBgColorAttrib, winuiFrameSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, winuiFrameSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "TITLE", NULL, winuiFrameSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FGCOLOR", nullptr, winuiFrameSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "TITLE", nullptr, winuiFrameSetTitleAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "SUNKEN", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SUNKEN", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 }

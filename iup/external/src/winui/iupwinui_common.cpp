@@ -85,7 +85,7 @@ IUP_DRV_API void iupwinuiSetStateBrushes(Ihandle* ih, FrameworkElement const& fe
         SolidColorBrush old{nullptr};
         winrt::attach_abi(old, abi);
       }
-      iupAttribSet(ih, name, (char*)winrt::detach_abi(brush));
+      iupAttribSet(ih, name, static_cast<char*>(winrt::detach_abi(brush)));
     }
   }
 }
@@ -102,7 +102,7 @@ IUP_DRV_API void iupwinuiReleaseStateBrushes(Ihandle* ih)
       {
         SolidColorBrush brush{nullptr};
         winrt::attach_abi(brush, abi);
-        iupTableSetCurr(ih->attrib, NULL, IUPTABLE_POINTER);
+        iupTableSetCurr(ih->attrib, nullptr, IUPTABLE_POINTER);
       }
     }
     name = iupTableNext(ih->attrib);
@@ -122,13 +122,13 @@ IUP_DRV_API void iupwinuiApplyAccent(Ihandle* ih)
 
   if (IupClassMatch(ih, "progressbar"))
   {
-    ProgressBar pb = winuiGetHandle<ProgressBar>(ih);
+    auto pb = winuiGetHandle<ProgressBar>(ih);
     if (pb && !iupAttribGet(ih, "FGCOLOR"))
       pb.Foreground(SolidColorBrush(color));
   }
   else if (IupClassMatch(ih, "toggle") && iupAttribGetBoolean(ih, "SWITCH"))
   {
-    ToggleSwitch ts = winuiGetHandle<ToggleSwitch>(ih);
+    auto ts = winuiGetHandle<ToggleSwitch>(ih);
     if (ts)
       iupwinuiSetStateBrushes(ih, ts, switch_keys, 6, color);
   }
@@ -166,7 +166,7 @@ IUP_DRV_API void iupwinuiAddToParent(Ihandle* ih)
   if (!parentCanvas)
     return;
 
-  UIElement elem = winuiGetHandle<UIElement>(ih);
+  auto elem = winuiGetHandle<UIElement>(ih);
   if (elem)
     parentCanvas.Children().Append(elem);
 }
@@ -176,7 +176,7 @@ IUP_DRV_API void iupwinuiRemoveFromParent(Ihandle* ih)
   if (!ih || !ih->handle || winuiHandleIsHWND(ih))
     return;
 
-  UIElement elem = winuiGetHandle<UIElement>(ih);
+  auto elem = winuiGetHandle<UIElement>(ih);
   if (!elem)
     return;
 
@@ -201,11 +201,11 @@ static void winuiSubtractHwndChildren(Ihandle* ih, HRGN rgn, HWND dialogHwnd)
 {
   while (ih)
   {
-    if (ih->handle && winuiHandleIsHWND(ih) && ih->iclass->nativetype != IUP_TYPEDIALOG && IsWindowVisible((HWND)ih->handle))
+    if (ih->handle && winuiHandleIsHWND(ih) && ih->iclass->nativetype != IUP_TYPEDIALOG && IsWindowVisible(reinterpret_cast<HWND>(ih->handle)))
     {
       RECT r;
-      GetWindowRect((HWND)ih->handle, &r);
-      MapWindowPoints(NULL, dialogHwnd, (POINT*)&r, 2);
+      GetWindowRect(reinterpret_cast<HWND>(ih->handle), &r);
+      MapWindowPoints(nullptr, dialogHwnd, reinterpret_cast<POINT*>(&r), 2);
       HRGN childRgn = CreateRectRgnIndirect(&r);
       CombineRgn(rgn, rgn, childRgn, RGN_DIFF);
       DeleteObject(childRgn);
@@ -224,15 +224,15 @@ static void winuiUpdateIslandClipRegion(Ihandle* ih)
   if (!dialog || !dialog->handle)
     return;
 
-  IupWinUIDialogAux* aux = winuiGetAux<IupWinUIDialogAux>(dialog, IUPWINUI_DIALOG_AUX);
+  auto* aux = winuiGetAux<IupWinUIDialogAux>(dialog, IUPWINUI_DIALOG_AUX);
   if (!aux || !aux->islandHwnd)
     return;
 
   RECT rect;
-  GetClientRect((HWND)dialog->handle, &rect);
+  GetClientRect(reinterpret_cast<HWND>(dialog->handle), &rect);
 
   HRGN rgn = CreateRectRgn(0, 0, rect.right, rect.bottom);
-  winuiSubtractHwndChildren(dialog->firstchild, rgn, (HWND)dialog->handle);
+  winuiSubtractHwndChildren(dialog->firstchild, rgn, reinterpret_cast<HWND>(dialog->handle));
   SetWindowRgn(aux->islandHwnd, rgn, TRUE);
 }
 
@@ -251,7 +251,7 @@ static bool winuiElementShown(UIElement const& elem)
 
 static void winuiHwndHostPlace(Ihandle* ih, FrameworkElement const& host)
 {
-  HWND hwnd = (HWND)ih->handle;
+  HWND hwnd = reinterpret_cast<HWND>(ih->handle);
 
   if (!host.IsLoaded() || !winuiElementShown(host) || iupStrEqualNoCase(iupAttribGet(ih, "VISIBLE"), "NO"))
     ShowWindow(hwnd, SW_HIDE);
@@ -259,7 +259,7 @@ static void winuiHwndHostPlace(Ihandle* ih, FrameworkElement const& host)
   {
     double scale = iupwinuiGetScale(ih);
     Windows::Foundation::Point p = host.TransformToVisual(nullptr).TransformPoint(Windows::Foundation::Point{0, 0});
-    SetWindowPos(hwnd, NULL, (int)floor(p.X * scale + 0.5), (int)floor(p.Y * scale + 0.5), ih->currentwidth, ih->currentheight,
+    SetWindowPos(hwnd, nullptr, static_cast<int>(floor(p.X * scale + 0.5)), static_cast<int>(floor(p.Y * scale + 0.5)), ih->currentwidth, ih->currentheight,
                  SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOOWNERZORDER | SWP_SHOWWINDOW);
   }
 
@@ -302,7 +302,7 @@ static FrameworkElement winuiHwndHostGet(Ihandle* ih)
     winuiHwndHostPlace(ih, h);
   });
 
-  iupAttribSet(ih, "_IUPWINUI_HWNDHOST", (char*)winrt::get_abi(host));
+  iupAttribSet(ih, "_IUPWINUI_HWNDHOST", static_cast<char*>(winrt::get_abi(host)));
   return host;
 }
 
@@ -314,7 +314,7 @@ IUP_DRV_API void iupwinuiHwndHostRemove(Ihandle* ih)
 
   Border host{nullptr};
   winrt::copy_from_abi(host, abi);
-  iupAttribSet(ih, "_IUPWINUI_HWNDHOST", NULL);
+  iupAttribSet(ih, "_IUPWINUI_HWNDHOST", nullptr);
 
   Panel panel = Media::VisualTreeHelper::GetParent(host).try_as<Panel>();
   uint32_t index;
@@ -325,16 +325,16 @@ IUP_DRV_API void iupwinuiHwndHostRemove(Ihandle* ih)
 /* XAML positions and sizes are DIPs, IUP computes physical pixels, and the island rasterizes by the monitor scale on top */
 IUP_DRV_API UINT iupwinuiGetDpi(Ihandle* ih)
 {
-  Ihandle* dialog = ih ? IupGetDialog(ih) : NULL;
-  HWND hwnd = (dialog && dialog->handle) ? (HWND)dialog->handle : NULL;
+  Ihandle* dialog = ih ? IupGetDialog(ih) : nullptr;
+  HWND hwnd = (dialog && dialog->handle) ? reinterpret_cast<HWND>(dialog->handle) : nullptr;
   UINT dpi = hwnd ? GetDpiForWindow(hwnd) : 0;
-  return dpi ? dpi : (UINT)iupdrvGetScreenDpi();
+  return dpi ? dpi : static_cast<UINT>(iupdrvGetScreenDpi());
 }
 
 IUP_DRV_API double iupwinuiGetScale(Ihandle* ih)
 {
-  Ihandle* dialog = ih ? IupGetDialog(ih) : NULL;
-  HWND hwnd = (dialog && dialog->handle) ? (HWND)dialog->handle : NULL;
+  Ihandle* dialog = ih ? IupGetDialog(ih) : nullptr;
+  HWND hwnd = (dialog && dialog->handle) ? reinterpret_cast<HWND>(dialog->handle) : nullptr;
   if (!hwnd)
     return 1.0;
 
@@ -342,7 +342,7 @@ IUP_DRV_API double iupwinuiGetScale(Ihandle* ih)
   if (!dpi)
     return 1.0;
 
-  return (double)dpi / 96.0;
+  return static_cast<double>(dpi) / 96.0;
 }
 
 extern "C" IUP_SDK_API void iupdrvBaseLayoutUpdateMethod(Ihandle* ih)
@@ -352,7 +352,7 @@ extern "C" IUP_SDK_API void iupdrvBaseLayoutUpdateMethod(Ihandle* ih)
 
   if (winuiHandleIsHWND(ih))
   {
-    HWND hwnd = (HWND)ih->handle;
+    HWND hwnd = reinterpret_cast<HWND>(ih->handle);
     FrameworkElement host = (ih->iclass->nativetype != IUP_TYPEDIALOG) ? winuiHwndHostGet(ih) : nullptr;
     if (host)
     {
@@ -366,9 +366,9 @@ extern "C" IUP_SDK_API void iupdrvBaseLayoutUpdateMethod(Ihandle* ih)
     }
 
     if (ih->currentwidth > 0 && ih->currentheight > 0)
-      SetWindowPos(hwnd, NULL, ih->x, ih->y, ih->currentwidth, ih->currentheight, SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOOWNERZORDER);
+      SetWindowPos(hwnd, nullptr, ih->x, ih->y, ih->currentwidth, ih->currentheight, SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOOWNERZORDER);
     else
-      SetWindowPos(hwnd, NULL, ih->x, ih->y, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOOWNERZORDER);
+      SetWindowPos(hwnd, nullptr, ih->x, ih->y, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOOWNERZORDER);
 
     if (ih->iclass->nativetype != IUP_TYPEDIALOG)
       winuiUpdateIslandClipRegion(ih);
@@ -376,7 +376,7 @@ extern "C" IUP_SDK_API void iupdrvBaseLayoutUpdateMethod(Ihandle* ih)
     return;
   }
 
-  UIElement elem = winuiGetHandle<UIElement>(ih);
+  auto elem = winuiGetHandle<UIElement>(ih);
   if (elem)
   {
     double scale = iupwinuiGetScale(ih);
@@ -415,11 +415,11 @@ extern "C" IUP_SDK_API void iupdrvBaseUnMapMethod(Ihandle* ih)
 
 static int winuiGetDialogMenuHeight(Ihandle* dialog)
 {
-  IupWinUIDialogAux* aux = winuiGetAux<IupWinUIDialogAux>(dialog, IUPWINUI_DIALOG_AUX);
+  auto* aux = winuiGetAux<IupWinUIDialogAux>(dialog, IUPWINUI_DIALOG_AUX);
   if (aux && aux->menuBar)
   {
     double h = aux->menuBar.ActualHeight();
-    return (h > 0) ? (int)h : 40;
+    return (h > 0) ? static_cast<int>(h) : 40;
   }
   return 0;
 }
@@ -433,7 +433,7 @@ extern "C" IUP_SDK_API void iupdrvScreenToClient(Ihandle* ih, int* x, int* y)
   if (!dialog || !dialog->handle)
     return;
 
-  HWND hwnd = (HWND)dialog->handle;
+  HWND hwnd = reinterpret_cast<HWND>(dialog->handle);
   POINT p;
   p.x = *x;
   p.y = *y;
@@ -458,7 +458,7 @@ extern "C" IUP_SDK_API void iupdrvClientToScreen(Ihandle* ih, int* x, int* y)
   if (!dialog || !dialog->handle)
     return;
 
-  HWND hwnd = (HWND)dialog->handle;
+  HWND hwnd = reinterpret_cast<HWND>(dialog->handle);
   POINT p;
 
   if (ih != dialog)
@@ -482,7 +482,7 @@ extern "C" IUP_SDK_API int iupdrvBaseSetZorderAttrib(Ihandle* ih, const char* va
   if (!ih || !ih->handle || winuiHandleIsHWND(ih))
     return 0;
 
-  UIElement elem = winuiGetHandle<UIElement>(ih);
+  auto elem = winuiGetHandle<UIElement>(ih);
   if (elem)
   {
     if (iupStrEqualNoCase(value, "TOP"))
@@ -501,22 +501,22 @@ extern "C" IUP_SDK_API int iupdrvBaseSetZorderAttrib(Ihandle* ih, const char* va
   return 0;
 }
 
-extern "C" IUP_SDK_API void iupdrvSetVisible(Ihandle* ih, int visible)
+extern "C" IUP_SDK_API void iupdrvSetVisible(Ihandle* ih, int enable)
 {
   if (!ih || !ih->handle)
     return;
 
   if (winuiHandleIsHWND(ih))
   {
-    HWND hwnd = (HWND)ih->handle;
+    HWND hwnd = reinterpret_cast<HWND>(ih->handle);
     if (hwnd)
-      ShowWindow(hwnd, visible ? SW_SHOWNORMAL : SW_HIDE);
+      ShowWindow(hwnd, enable ? SW_SHOWNORMAL : SW_HIDE);
     return;
   }
 
-  UIElement elem = winuiGetHandle<UIElement>(ih);
+  auto elem = winuiGetHandle<UIElement>(ih);
   if (elem)
-    elem.Visibility(visible ? Visibility::Visible : Visibility::Collapsed);
+    elem.Visibility(enable ? Visibility::Visible : Visibility::Collapsed);
 }
 
 extern "C" IUP_SDK_API int iupdrvIsVisible(Ihandle* ih)
@@ -526,13 +526,13 @@ extern "C" IUP_SDK_API int iupdrvIsVisible(Ihandle* ih)
 
   if (winuiHandleIsHWND(ih))
   {
-    HWND hwnd = (HWND)ih->handle;
+    HWND hwnd = reinterpret_cast<HWND>(ih->handle);
     if (hwnd)
       return IsWindowVisible(hwnd);
     return 0;
   }
 
-  UIElement elem = winuiGetHandle<UIElement>(ih);
+  auto elem = winuiGetHandle<UIElement>(ih);
   if (elem)
   {
     if (elem.Visibility() != Visibility::Visible)
@@ -544,7 +544,7 @@ extern "C" IUP_SDK_API int iupdrvIsVisible(Ihandle* ih)
   return 0;
 }
 
-extern "C" IUP_SDK_API void iupdrvSetActive(Ihandle* ih, int active)
+extern "C" IUP_SDK_API void iupdrvSetActive(Ihandle* ih, int enable)
 {
   if (!ih || !ih->handle)
     return;
@@ -553,28 +553,28 @@ extern "C" IUP_SDK_API void iupdrvSetActive(Ihandle* ih, int active)
   {
     if (IupClassMatch(ih, "dialog"))
     {
-      IupWinUIDialogAux* dlgaux = winuiGetAux<IupWinUIDialogAux>(ih, IUPWINUI_DIALOG_AUX);
+      auto* dlgaux = winuiGetAux<IupWinUIDialogAux>(ih, IUPWINUI_DIALOG_AUX);
       if (dlgaux && dlgaux->rootPanel)
-        dlgaux->rootPanel.IsHitTestVisible(active ? true : false);
+        dlgaux->rootPanel.IsHitTestVisible(enable ? true : false);
       return;
     }
 
-    HWND hwnd = (HWND)ih->handle;
+    HWND hwnd = reinterpret_cast<HWND>(ih->handle);
     if (hwnd)
-      EnableWindow(hwnd, active);
+      EnableWindow(hwnd, enable);
     return;
   }
 
-  Control ctrl = winuiGetHandle<Control>(ih);
+  auto ctrl = winuiGetHandle<Control>(ih);
   if (ctrl)
   {
-    ctrl.IsEnabled(active ? true : false);
+    ctrl.IsEnabled(enable ? true : false);
     return;
   }
 
-  UIElement elem = winuiGetHandle<UIElement>(ih);
+  auto elem = winuiGetHandle<UIElement>(ih);
   if (elem)
-    elem.IsHitTestVisible(active ? true : false);
+    elem.IsHitTestVisible(enable ? true : false);
 }
 
 extern "C" IUP_SDK_API int iupdrvIsActive(Ihandle* ih)
@@ -584,17 +584,17 @@ extern "C" IUP_SDK_API int iupdrvIsActive(Ihandle* ih)
 
   if (winuiHandleIsHWND(ih))
   {
-    HWND hwnd = (HWND)ih->handle;
+    HWND hwnd = reinterpret_cast<HWND>(ih->handle);
     if (hwnd)
       return IsWindowEnabled(hwnd);
     return 0;
   }
 
-  Control ctrl = winuiGetHandle<Control>(ih);
+  auto ctrl = winuiGetHandle<Control>(ih);
   if (ctrl)
     return ctrl.IsEnabled() ? 1 : 0;
 
-  UIElement elem = winuiGetHandle<UIElement>(ih);
+  auto elem = winuiGetHandle<UIElement>(ih);
   if (elem)
     return elem.IsHitTestVisible() ? 1 : 0;
 
@@ -603,13 +603,13 @@ extern "C" IUP_SDK_API int iupdrvIsActive(Ihandle* ih)
 
 IUP_DRV_API void iupwinuiCanvasCallAction(Ihandle* ih)
 {
-  IFn cb = (IFn)IupGetCallback(ih, "ACTION");
-  iupAttribSet(ih, "_IUPWINUI_UPDATERECT", NULL);
+  IFn cb = static_cast<IFn>(IupGetCallback(ih, "ACTION"));
+  iupAttribSet(ih, "_IUPWINUI_UPDATERECT", nullptr);
   if (cb && !(ih->data->inside_resize) && ih->currentwidth > 0 && ih->currentheight > 0)
   {
     iupAttribSetStrf(ih, "CLIPRECT", "%d %d %d %d", 0, 0, ih->currentwidth - 1, ih->currentheight - 1);
     cb(ih);
-    iupAttribSet(ih, "CLIPRECT", NULL);
+    iupAttribSet(ih, "CLIPRECT", nullptr);
   }
 }
 
@@ -617,11 +617,11 @@ static void winuiCanvasRedraw(Ihandle* ih)
 {
   int x1, y1, x2, y2;
   char* rect = iupAttribGet(ih, "_IUPWINUI_UPDATERECT");
-  IFn cb = (IFn)IupGetCallback(ih, "ACTION");
+  IFn cb = static_cast<IFn>(IupGetCallback(ih, "ACTION"));
   if (rect && cb && !(ih->data->inside_resize) && ih->currentwidth > 0 && ih->currentheight > 0
       && sscanf(rect, "%d %d %d %d", &x1, &y1, &x2, &y2) == 4)
   {
-    iupAttribSet(ih, "_IUPWINUI_UPDATERECT", NULL);
+    iupAttribSet(ih, "_IUPWINUI_UPDATERECT", nullptr);
     if (x1 < 0) x1 = 0;
     if (y1 < 0) y1 = 0;
     if (x2 > ih->currentwidth - 1) x2 = ih->currentwidth - 1;
@@ -630,7 +630,7 @@ static void winuiCanvasRedraw(Ihandle* ih)
       return;
     iupAttribSetStrf(ih, "CLIPRECT", "%d %d %d %d", x1, y1, x2, y2);
     cb(ih);
-    iupAttribSet(ih, "CLIPRECT", NULL);
+    iupAttribSet(ih, "CLIPRECT", nullptr);
     return;
   }
   iupwinuiCanvasCallAction(ih);
@@ -646,7 +646,7 @@ IUP_DRV_API void iupwinuiCanvasQueueRedraw(Ihandle* ih)
   void* dq_ptr = iupwinuiGetDispatcherQueue();
   if (dq_ptr)
   {
-    IupWinUICanvasAux* aux = winuiGetAux<IupWinUICanvasAux>(ih, IUPWINUI_CANVAS_AUX);
+    auto* aux = winuiGetAux<IupWinUICanvasAux>(ih, IUPWINUI_CANVAS_AUX);
     if (!aux)
       return;
     auto alive = aux->alive;
@@ -658,13 +658,13 @@ IUP_DRV_API void iupwinuiCanvasQueueRedraw(Ihandle* ih)
     dq.TryEnqueue([ih, alive]() {
       if (!*alive)
         return;
-      iupAttribSet(ih, "_IUPWINUI_REDRAW_PENDING", NULL);
+      iupAttribSet(ih, "_IUPWINUI_REDRAW_PENDING", nullptr);
       winuiCanvasRedraw(ih);
     });
   }
   else
   {
-    iupAttribSet(ih, "_IUPWINUI_REDRAW_PENDING", NULL);
+    iupAttribSet(ih, "_IUPWINUI_REDRAW_PENDING", nullptr);
     winuiCanvasRedraw(ih);
   }
 }
@@ -676,20 +676,20 @@ extern "C" IUP_SDK_API void iupdrvPostRedraw(Ihandle* ih)
 
   if (winuiHandleIsHWND(ih))
   {
-    HWND hwnd = (HWND)ih->handle;
+    HWND hwnd = reinterpret_cast<HWND>(ih->handle);
     if (hwnd)
-      InvalidateRect(hwnd, NULL, FALSE);
+      InvalidateRect(hwnd, nullptr, FALSE);
     return;
   }
 
   if (IupClassMatch(ih, "canvas"))
   {
-    iupAttribSet(ih, "_IUPWINUI_UPDATERECT", NULL);
+    iupAttribSet(ih, "_IUPWINUI_UPDATERECT", nullptr);
     iupwinuiCanvasQueueRedraw(ih);
     return;
   }
 
-  UIElement elem = winuiGetHandle<UIElement>(ih);
+  auto elem = winuiGetHandle<UIElement>(ih);
   if (elem)
     elem.InvalidateArrange();
 }
@@ -701,9 +701,9 @@ extern "C" IUP_SDK_API void iupdrvRedrawNow(Ihandle* ih)
 
   if (winuiHandleIsHWND(ih))
   {
-    HWND hwnd = (HWND)ih->handle;
+    HWND hwnd = reinterpret_cast<HWND>(ih->handle);
     if (hwnd)
-      RedrawWindow(hwnd, NULL, NULL, RDW_ERASE | RDW_INVALIDATE | RDW_INTERNALPAINT | RDW_UPDATENOW);
+      RedrawWindow(hwnd, nullptr, nullptr, RDW_ERASE | RDW_INVALIDATE | RDW_INTERNALPAINT | RDW_UPDATENOW);
     return;
   }
 
@@ -713,7 +713,7 @@ extern "C" IUP_SDK_API void iupdrvRedrawNow(Ihandle* ih)
     return;
   }
 
-  UIElement elem = winuiGetHandle<UIElement>(ih);
+  auto elem = winuiGetHandle<UIElement>(ih);
   if (elem)
   {
     elem.InvalidateArrange();
@@ -730,11 +730,11 @@ extern "C" IUP_SDK_API void iupdrvReparent(Ihandle* ih)
   {
     Ihandle* dialog = IupGetDialog(ih);
     if (dialog && dialog->handle)
-      SetParent((HWND)ih->handle, (HWND)dialog->handle);
+      SetParent(reinterpret_cast<HWND>(ih->handle), reinterpret_cast<HWND>(dialog->handle));
     return;
   }
 
-  UIElement elem = winuiGetHandle<UIElement>(ih);
+  auto elem = winuiGetHandle<UIElement>(ih);
   if (!elem)
     return;
 
@@ -772,8 +772,8 @@ extern "C" IUP_SDK_API void iupdrvSendKey(int key, int press)
 
   LPARAM extra_info = GetMessageExtraInfo();
   if (state)
-    state_scan = (WORD)MapVirtualKey(state, MAPVK_VK_TO_VSC);
-  key_scan = (WORD)MapVirtualKey(keyval, MAPVK_VK_TO_VSC);
+    state_scan = static_cast<WORD>(MapVirtualKey(state, MAPVK_VK_TO_VSC));
+  key_scan = static_cast<WORD>(MapVirtualKey(keyval, MAPVK_VK_TO_VSC));
   DWORD key_flags = iupwinuiKeyIsExtended(key)? KEYEVENTF_EXTENDEDKEY: 0;
 
   if (press & 0x01)
@@ -781,13 +781,13 @@ extern "C" IUP_SDK_API void iupdrvSendKey(int key, int press)
     if (state)
     {
       input[0].type = INPUT_KEYBOARD;
-      input[0].ki.wVk = (WORD)state;
+      input[0].ki.wVk = static_cast<WORD>(state);
       input[0].ki.wScan = state_scan;
       input[0].ki.dwExtraInfo = extra_info;
 
       input[1].type = INPUT_KEYBOARD;
       input[1].ki.dwFlags = key_flags;
-      input[1].ki.wVk = (WORD)keyval;
+      input[1].ki.wVk = static_cast<WORD>(keyval);
       input[1].ki.wScan = key_scan;
       input[1].ki.dwExtraInfo = extra_info;
 
@@ -797,7 +797,7 @@ extern "C" IUP_SDK_API void iupdrvSendKey(int key, int press)
     {
       input[0].type = INPUT_KEYBOARD;
       input[0].ki.dwFlags = key_flags;
-      input[0].ki.wVk = (WORD)keyval;
+      input[0].ki.wVk = static_cast<WORD>(keyval);
       input[0].ki.wScan = key_scan;
       input[0].ki.dwExtraInfo = extra_info;
 
@@ -813,13 +813,13 @@ extern "C" IUP_SDK_API void iupdrvSendKey(int key, int press)
     {
       input[0].type = INPUT_KEYBOARD;
       input[0].ki.dwFlags = KEYEVENTF_KEYUP | key_flags;
-      input[0].ki.wVk = (WORD)keyval;
+      input[0].ki.wVk = static_cast<WORD>(keyval);
       input[0].ki.wScan = key_scan;
       input[0].ki.dwExtraInfo = extra_info;
 
       input[1].type = INPUT_KEYBOARD;
       input[1].ki.dwFlags = KEYEVENTF_KEYUP;
-      input[1].ki.wVk = (WORD)state;
+      input[1].ki.wVk = static_cast<WORD>(state);
       input[1].ki.wScan = state_scan;
       input[1].ki.dwExtraInfo = extra_info;
 
@@ -829,7 +829,7 @@ extern "C" IUP_SDK_API void iupdrvSendKey(int key, int press)
     {
       input[0].type = INPUT_KEYBOARD;
       input[0].ki.dwFlags = KEYEVENTF_KEYUP | key_flags;
-      input[0].ki.wVk = (WORD)keyval;
+      input[0].ki.wVk = static_cast<WORD>(keyval);
       input[0].ki.wScan = key_scan;
       input[0].ki.dwExtraInfo = extra_info;
 
@@ -884,8 +884,8 @@ extern "C" IUP_SDK_API void iupdrvSendMouse(int x, int y, int bt, int status)
 
   ZeroMemory(&input, sizeof(INPUT));
   input.type = INPUT_MOUSE;
-  input.mi.dx = (LONG)(((LONGLONG)(x - vx) * 65535 + vw / 2) / vw);
-  input.mi.dy = (LONG)(((LONGLONG)(y - vy) * 65535 + vh / 2) / vh);
+  input.mi.dx = static_cast<LONG>((static_cast<LONGLONG>(x - vx) * 65535 + vw / 2) / vw);
+  input.mi.dy = static_cast<LONG>((static_cast<LONGLONG>(y - vy) * 65535 + vh / 2) / vh);
   input.mi.dwFlags = MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_VIRTUALDESK;
   input.mi.dwExtraInfo = GetMessageExtraInfo();
 
@@ -984,8 +984,8 @@ static struct {
   { "UPARROW",        IDC_UPARROW,     12 },  /* UpArrow */
   { "APPSTARTING",    IDC_APPSTARTING,  16 },  /* AppStarting */
   { "NO",             IDC_NO,          11 },   /* UniversalNo */
-  { "NONE",           NULL,            -1 },
-  { "NULL",           NULL,            -1 }
+  { "NONE",           nullptr,            -1 },
+  { "NULL",           nullptr,            -1 }
 };
 
 static HCURSOR winuiGetCursor(Ihandle* ih, const char* name)
@@ -997,17 +997,17 @@ static HCURSOR winuiGetCursor(Ihandle* ih, const char* name)
     if (iupStrEqualNoCase(name, winuiCursorTable[i].iupname))
     {
       if (!winuiCursorTable[i].sysid)
-        return NULL;
-      return LoadCursor(NULL, winuiCursorTable[i].sysid);
+        return nullptr;
+      return LoadCursor(nullptr, winuiCursorTable[i].sysid);
     }
   }
 
-  HCURSOR cur = (HCURSOR)iupImageGetCursor(name);
+  auto cur = static_cast<HCURSOR>(iupImageGetCursor(name));
   if (cur)
     return cur;
 
   (void)ih;
-  return LoadCursor(NULL, IDC_ARROW);
+  return LoadCursor(nullptr, IDC_ARROW);
 }
 
 struct IInputCursorStaticsInterop : ::IUnknown
@@ -1024,11 +1024,11 @@ static Microsoft::UI::Input::InputCursor winuiCreateInputCursor(HCURSOR hcursor)
   Microsoft::UI::Input::InputCursor cursor{nullptr};
 
   auto factory = winrt::get_activation_factory<Microsoft::UI::Input::InputCursor>();
-  IInputCursorStaticsInterop* interop = NULL;
+  IInputCursorStaticsInterop* interop = nullptr;
   if (FAILED(((::IUnknown*)winrt::get_abi(factory))->QueryInterface(iid, (void**)&interop)))
     return cursor;
 
-  void* abi = NULL;
+  void* abi = nullptr;
   if (SUCCEEDED(interop->CreateFromHCursor(hcursor, &abi)) && abi)
     cursor = Microsoft::UI::Input::InputCursor{abi, winrt::take_ownership_from_abi};
   interop->Release();
@@ -1065,17 +1065,17 @@ static void winuiSetXamlCursor(UIElement const& element, const char* name)
     HCURSOR hcursor;
     if (found)
     {
-      static HCURSOR blank = NULL;
+      static HCURSOR blank = nullptr;
       if (!blank)
       {
         BYTE and_mask[4] = {0xFF, 0xFF, 0xFF, 0xFF};
         BYTE xor_mask[4] = {0, 0, 0, 0};
-        blank = CreateCursor(GetModuleHandle(NULL), 0, 0, 1, 1, and_mask, xor_mask);
+        blank = CreateCursor(GetModuleHandle(nullptr), 0, 0, 1, 1, and_mask, xor_mask);
       }
       hcursor = blank;
     }
     else
-      hcursor = (HCURSOR)iupImageGetCursor(name);
+      hcursor = static_cast<HCURSOR>(iupImageGetCursor(name));
 
     InputCursor cursor = hcursor ? winuiCreateInputCursor(hcursor) : InputCursor{nullptr};
     if (cursor)
@@ -1099,13 +1099,13 @@ extern "C" IUP_SDK_API int iupdrvBaseSetCursorAttrib(Ihandle* ih, const char* va
   if (winuiHandleIsHWND(ih))
   {
     HCURSOR hCur = winuiGetCursor(ih, value);
-    iupAttribSet(ih, "_IUPWIN_HCURSOR", (char*)hCur);
+    iupAttribSet(ih, "_IUPWIN_HCURSOR", reinterpret_cast<char*>(hCur));
     if (hCur)
       SetCursor(hCur);
 
     if (ih->iclass->nativetype == IUP_TYPEDIALOG)
     {
-      IupWinUIDialogAux* aux = winuiGetAux<IupWinUIDialogAux>(ih, IUPWINUI_DIALOG_AUX);
+      auto* aux = winuiGetAux<IupWinUIDialogAux>(ih, IUPWINUI_DIALOG_AUX);
       if (aux && aux->rootPanel)
         winuiSetXamlCursor(aux->rootPanel, value);
     }
@@ -1118,7 +1118,7 @@ extern "C" IUP_SDK_API int iupdrvBaseSetCursorAttrib(Ihandle* ih, const char* va
 
 extern "C" IUP_SDK_API int iupdrvGetScrollbarSize(void)
 {
-  UINT dpi = (UINT)iupdrvGetScreenDpi();
+  UINT dpi = static_cast<UINT>(iupdrvGetScreenDpi());
   int xv = GetSystemMetricsForDpi(SM_CXVSCROLL, dpi);
   int yh = GetSystemMetricsForDpi(SM_CYHSCROLL, dpi);
   return xv > yh ? xv : yh;
@@ -1131,7 +1131,7 @@ extern "C" IUP_SDK_API void iupdrvSetAccessibleTitle(Ihandle* ih, const char* ti
 
   if (winuiHandleIsHWND(ih))
   {
-    HWND hwnd = (HWND)ih->handle;
+    HWND hwnd = reinterpret_cast<HWND>(ih->handle);
     if (hwnd)
     {
       if (!title)
@@ -1142,7 +1142,7 @@ extern "C" IUP_SDK_API void iupdrvSetAccessibleTitle(Ihandle* ih, const char* ti
     return;
   }
 
-  UIElement elem = winuiGetHandle<UIElement>(ih);
+  auto elem = winuiGetHandle<UIElement>(ih);
   if (elem)
   {
     DependencyObject dep = elem.try_as<DependencyObject>();
@@ -1162,7 +1162,7 @@ IUP_DRV_API void iupwinuiSetAutomationName(Ihandle* ih, const char* title)
   if (!ih || !ih->handle || iupAttribGet(ih, "ACCESSIBLETITLE"))
     return;
 
-  stripped = title ? iupStrProcessMnemonic(title, NULL, 0) : NULL;
+  stripped = title ? iupStrProcessMnemonic(title, nullptr, 0) : nullptr;
   iupdrvSetAccessibleTitle(ih, stripped ? stripped : title);
   if (stripped && stripped != title)
     free(stripped);
@@ -1173,7 +1173,7 @@ extern "C" IUP_SDK_API void iupdrvSetAccessibleDescription(Ihandle* ih, const ch
   if (!ih || !ih->handle || winuiHandleIsHWND(ih))
     return;
 
-  UIElement elem = winuiGetHandle<UIElement>(ih);
+  auto elem = winuiGetHandle<UIElement>(ih);
   if (elem)
   {
     DependencyObject dep = elem.try_as<DependencyObject>();
@@ -1192,10 +1192,10 @@ extern "C" IUP_SDK_API void iupdrvBaseRegisterCommonAttrib(Iclass* ic)
 
 extern "C" IUP_SDK_API void iupdrvBaseRegisterVisualAttrib(Iclass* ic)
 {
-  iupClassRegisterAttribute(ic, "TIPMARKUP", NULL, NULL, IUPAF_SAMEASSYSTEM, NULL, IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "TIPICON", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "TIPDELAY", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "TIPRECT", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "TIPMARKUP", nullptr, nullptr, IUPAF_SAMEASSYSTEM, nullptr, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "TIPICON", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED|IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "TIPDELAY", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED|IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "TIPRECT", nullptr, nullptr, nullptr, nullptr, IUPAF_DEFAULT);
 }
 
 IUP_DRV_API Canvas iupwinuiGetParentCanvas(Ihandle* ih)
@@ -1206,19 +1206,19 @@ IUP_DRV_API Canvas iupwinuiGetParentCanvas(Ihandle* ih)
 
   if (IupClassMatch(parent, "dialog"))
   {
-    IupWinUIDialogAux* aux = winuiGetAux<IupWinUIDialogAux>(parent, IUPWINUI_DIALOG_AUX);
+    auto* aux = winuiGetAux<IupWinUIDialogAux>(parent, IUPWINUI_DIALOG_AUX);
     if (aux)
       return aux->contentCanvas;
   }
   else if (IupClassMatch(parent, "frame"))
   {
-    IupWinUIFrameAux* aux = winuiGetAux<IupWinUIFrameAux>(parent, IUPWINUI_FRAME_AUX);
+    auto* aux = winuiGetAux<IupWinUIFrameAux>(parent, IUPWINUI_FRAME_AUX);
     if (aux)
       return aux->innerCanvas;
   }
   else if (IupClassMatch(parent, "popover"))
   {
-    IupWinUIPopoverAux* aux = winuiGetAux<IupWinUIPopoverAux>(parent, IUPWINUI_POPOVER_AUX);
+    auto* aux = winuiGetAux<IupWinUIPopoverAux>(parent, IUPWINUI_POPOVER_AUX);
     if (aux)
       return aux->innerCanvas;
   }
@@ -1250,11 +1250,11 @@ IUP_DRV_API Canvas iupwinuiGetParentCanvas(Ihandle* ih)
 IUP_DRV_API hstring iupwinuiStringToHString(const char* str)
 {
   if (!str || !str[0])
-    return hstring();
+    return {};
 
-  int wlen = MultiByteToWideChar(CP_UTF8, 0, str, -1, NULL, 0);
+  int wlen = MultiByteToWideChar(CP_UTF8, 0, str, -1, nullptr, 0);
   if (wlen <= 0)
-    return hstring();
+    return {};
 
   std::wstring wstr(wlen - 1, L'\0');
   MultiByteToWideChar(CP_UTF8, 0, str, -1, &wstr[0], wlen);
@@ -1265,14 +1265,14 @@ IUP_DRV_API hstring iupwinuiStringToHString(const char* str)
 IUP_DRV_API char* iupwinuiHStringToString(const hstring& str)
 {
   if (str.empty())
-    return NULL;
+    return nullptr;
 
-  int len = WideCharToMultiByte(CP_UTF8, 0, str.c_str(), -1, NULL, 0, NULL, NULL);
+  int len = WideCharToMultiByte(CP_UTF8, 0, str.c_str(), -1, nullptr, 0, nullptr, nullptr);
   if (len <= 0)
-    return NULL;
+    return nullptr;
 
   char* buf = iupStrGetMemory(len);
-  WideCharToMultiByte(CP_UTF8, 0, str.c_str(), -1, buf, len, NULL, NULL);
+  WideCharToMultiByte(CP_UTF8, 0, str.c_str(), -1, buf, len, nullptr, nullptr);
 
   return buf;
 }
@@ -1280,11 +1280,11 @@ IUP_DRV_API char* iupwinuiHStringToString(const hstring& str)
 IUP_DRV_API std::wstring iupwinuiStringToWString(const char* str)
 {
   if (!str || !str[0])
-    return std::wstring();
+    return {};
 
-  int wlen = MultiByteToWideChar(CP_UTF8, 0, str, -1, NULL, 0);
+  int wlen = MultiByteToWideChar(CP_UTF8, 0, str, -1, nullptr, 0);
   if (wlen <= 0)
-    return std::wstring();
+    return {};
 
   std::wstring wstr(wlen - 1, L'\0');
   MultiByteToWideChar(CP_UTF8, 0, str, -1, &wstr[0], wlen);
@@ -1298,12 +1298,12 @@ IUP_DRV_API hstring iupwinuiProcessMnemonic(const char* str, char* c)
     *c = 0;
 
   if (!str || !str[0])
-    return hstring();
+    return {};
 
   char mnemonic = 0;
   char* processed = iupStrProcessMnemonic(str, &mnemonic, -1);
   if (!processed)
-    return hstring();
+    return {};
 
   hstring result = iupwinuiStringToHString(processed);
 
@@ -1318,7 +1318,7 @@ IUP_DRV_API hstring iupwinuiProcessMnemonic(const char* str, char* c)
 
 static bool winui_accel_alt_down = false;
 
-IUP_DRV_API int iupwinuiShowAccelCues(void)
+IUP_DRV_API int iupwinuiShowAccelCues()
 {
   BOOL always = FALSE;
   SystemParametersInfo(SPI_GETKEYBOARDCUES, 0, &always, 0);
@@ -1374,7 +1374,7 @@ static void winuiBuildMnemonicInlines(TextBlock const& tb, std::wstring const& c
   underline.Inlines().Append(mnemonic);
   tb.Inlines().Append(underline);
 
-  if ((size_t)(idx + 1) < clean.size())
+  if (static_cast<size_t>(idx + 1) < clean.size())
   {
     Documents::Run post;
     post.Text(hstring(clean.substr(idx + 1)));
@@ -1417,9 +1417,9 @@ IUP_DRV_API void iupwinuiSetMnemonicText(TextBlock const& tb, const char* title,
   std::wstring clean_w(iupwinuiStringToHString(clean.c_str()).c_str());
   int idx = -1;
   if (byte_idx >= 0)
-    idx = (int)std::wstring(iupwinuiStringToHString(clean.substr(0, byte_idx).c_str()).c_str()).size();
+    idx = static_cast<int>(std::wstring(iupwinuiStringToHString(clean.substr(0, byte_idx).c_str()).c_str()).size());
 
-  tb.Tag(idx >= 0 ? box_value((int32_t)idx) : nullptr);
+  tb.Tag(idx >= 0 ? box_value(static_cast<int32_t>(idx)) : nullptr);
   winuiBuildMnemonicInlines(tb, clean_w, idx);
 
   if (c)
@@ -1451,15 +1451,15 @@ IUP_DRV_API ScrollViewer iupwinuiFindScrollViewer(DependencyObject const& parent
 IUP_DRV_API char* iupwinuiScrollViewerVisible(ScrollViewer const& sv)
 {
   if (!sv)
-    return (char*)"NO";
+    return const_cast<char*>("NO");
 
   int sb_h = (sv.ComputedHorizontalScrollBarVisibility() == Visibility::Visible) ? 1 : 0;
   int sb_v = (sv.ComputedVerticalScrollBarVisibility() == Visibility::Visible) ? 1 : 0;
 
-  if (sb_h && sb_v) return (char*)"YES";
-  if (sb_h) return (char*)"HORIZONTAL";
-  if (sb_v) return (char*)"VERTICAL";
-  return (char*)"NO";
+  if (sb_h && sb_v) return const_cast<char*>("YES");
+  if (sb_h) return const_cast<char*>("HORIZONTAL");
+  if (sb_v) return const_cast<char*>("VERTICAL");
+  return const_cast<char*>("NO");
 }
 
 static void winuiRefreshTextBlocks(Windows::Foundation::IInspectable const& node)
@@ -1487,14 +1487,14 @@ static void winuiRefreshTextBlocks(Windows::Foundation::IInspectable const& node
   }
 }
 
-IUP_DRV_API void iupwinuiRefreshAccelCues(void)
+IUP_DRV_API void iupwinuiRefreshAccelCues()
 {
   for (Ihandle* dlg = iupDlgListFirst(); dlg; dlg = iupDlgListNext())
   {
     if (!IupClassMatch(dlg, "dialog"))
       continue;
 
-    IupWinUIDialogAux* aux = winuiGetAux<IupWinUIDialogAux>(dlg, IUPWINUI_DIALOG_AUX);
+    auto* aux = winuiGetAux<IupWinUIDialogAux>(dlg, IUPWINUI_DIALOG_AUX);
     if (aux && aux->rootPanel)
       winuiRefreshTextBlocks(aux->rootPanel);
   }

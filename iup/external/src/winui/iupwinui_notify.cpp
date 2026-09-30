@@ -88,7 +88,7 @@ static void winuiNotifyParseArguments(const std::wstring& arg_str, int* action_i
  * Global Manager Registration
  ****************************************************************************/
 
-static void winuiNotifyEnsureRegistered(void)
+static void winuiNotifyEnsureRegistered()
 {
   if (winui_notify_registered)
     return;
@@ -103,7 +103,7 @@ static void winuiNotifyEnsureRegistered(void)
       std::wstring tag_value;
       winuiNotifyParseArguments(arg_str, &action_id, &tag_value);
 
-      Ihandle* ih = NULL;
+      Ihandle* ih = nullptr;
       {
         std::lock_guard<std::mutex> lock(winui_notify_map_mutex);
         auto it = winui_notify_map.find(tag_value);
@@ -127,7 +127,7 @@ static void winuiNotifyEnsureRegistered(void)
         if (!iupObjectCheck(ih))
           return;
 
-        IFni notify_cb = (IFni)IupGetCallback(ih, "NOTIFY_CB");
+        IFni notify_cb = reinterpret_cast<IFni>(IupGetCallback(ih, "NOTIFY_CB"));
         if (notify_cb)
         {
           int ret = notify_cb(ih, action_id);
@@ -155,8 +155,8 @@ static std::wstring winuiNotifySaveTempBMP(int width, int height, unsigned char*
   swprintf_s(tempFile, MAX_PATH, L"%siup_notify_%u_%d.bmp",
              tempDir, GetCurrentProcessId(), winui_notify_tag_counter);
 
-  HANDLE hFile = CreateFileW(tempFile, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS,
-                             FILE_ATTRIBUTE_NORMAL, NULL);
+  HANDLE hFile = CreateFileW(tempFile, GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS,
+                             FILE_ATTRIBUTE_NORMAL, nullptr);
   if (hFile == INVALID_HANDLE_VALUE)
     return L"";
 
@@ -182,7 +182,7 @@ static std::wstring winuiNotifySaveTempBMP(int width, int height, unsigned char*
   bf.bfOffBits = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPV5HEADER);
   bf.bfSize = bf.bfOffBits + bi.bV5SizeImage;
 
-  unsigned char* bmpData = (unsigned char*)malloc(width * height * 4);
+  auto* bmpData = static_cast<unsigned char*>(malloc(width * height * 4));
   if (!bmpData)
   {
     CloseHandle(hFile);
@@ -208,14 +208,14 @@ static std::wstring winuiNotifySaveTempBMP(int width, int height, unsigned char*
   }
 
   DWORD written;
-  WriteFile(hFile, &bf, sizeof(bf), &written, NULL);
-  WriteFile(hFile, &bi, sizeof(bi), &written, NULL);
-  WriteFile(hFile, bmpData, width * height * 4, &written, NULL);
+  WriteFile(hFile, &bf, sizeof(bf), &written, nullptr);
+  WriteFile(hFile, &bi, sizeof(bi), &written, nullptr);
+  WriteFile(hFile, bmpData, width * height * 4, &written, nullptr);
 
   free(bmpData);
   CloseHandle(hFile);
 
-  return std::wstring(tempFile);
+  return {tempFile};
 }
 
 /****************************************************************************
@@ -231,7 +231,7 @@ extern "C" IUP_SDK_API int iupdrvNotifyShow(Ihandle* ih)
 
   winuiNotifyEnsureRegistered();
 
-  IupWinUINotifyAux* aux = winuiGetAux<IupWinUINotifyAux>(ih, IUPWINUI_NOTIFY_AUX);
+  auto* aux = winuiGetAux<IupWinUINotifyAux>(ih, IUPWINUI_NOTIFY_AUX);
   if (!aux)
   {
     aux = new IupWinUINotifyAux();
@@ -240,9 +240,9 @@ extern "C" IUP_SDK_API int iupdrvNotifyShow(Ihandle* ih)
 
   if (!winui_notify_registered)
   {
-    IFns error_cb = (IFns)IupGetCallback(ih, "ERROR_CB");
+    IFns error_cb = reinterpret_cast<IFns>(IupGetCallback(ih, "ERROR_CB"));
     if (error_cb)
-      error_cb(ih, (char*)"Failed to register notification manager");
+      error_cb(ih, const_cast<char*>("Failed to register notification manager"));
     return 0;
   }
 
@@ -271,29 +271,29 @@ extern "C" IUP_SDK_API int iupdrvNotifyShow(Ihandle* ih)
     if (icon && icon[0])
     {
       int img_width, img_height;
-      unsigned char* pixels = NULL;
+      unsigned char* pixels = nullptr;
 
       if (iupdrvGetIconPixels(ih, icon, &img_width, &img_height, &pixels))
       {
         unsigned char* use_pixels = pixels;
         int use_width = img_width;
         int use_height = img_height;
-        unsigned char* scaled_pixels = NULL;
+        unsigned char* scaled_pixels = nullptr;
 
         if (img_width > IUPWINUI_NOTIFY_MAX_ICON_SIZE || img_height > IUPWINUI_NOTIFY_MAX_ICON_SIZE)
         {
           double scale;
           if (img_width > img_height)
-            scale = (double)IUPWINUI_NOTIFY_MAX_ICON_SIZE / img_width;
+            scale = static_cast<double>(IUPWINUI_NOTIFY_MAX_ICON_SIZE) / img_width;
           else
-            scale = (double)IUPWINUI_NOTIFY_MAX_ICON_SIZE / img_height;
+            scale = static_cast<double>(IUPWINUI_NOTIFY_MAX_ICON_SIZE) / img_height;
 
-          use_width = (int)(img_width * scale);
-          use_height = (int)(img_height * scale);
+          use_width = static_cast<int>(img_width * scale);
+          use_height = static_cast<int>(img_height * scale);
           if (use_width < 1) use_width = 1;
           if (use_height < 1) use_height = 1;
 
-          scaled_pixels = (unsigned char*)malloc(use_width * use_height * 4);
+          scaled_pixels = static_cast<unsigned char*>(malloc(use_width * use_height * 4));
           if (scaled_pixels)
           {
             iupImageResizeRGBA(img_width, img_height, pixels, use_width, use_height, scaled_pixels, 4);
@@ -376,16 +376,16 @@ extern "C" IUP_SDK_API int iupdrvNotifyShow(Ihandle* ih)
   }
   catch (...)
   {
-    IFns error_cb = (IFns)IupGetCallback(ih, "ERROR_CB");
+    IFns error_cb = reinterpret_cast<IFns>(IupGetCallback(ih, "ERROR_CB"));
     if (error_cb)
-      error_cb(ih, (char*)"Failed to show notification");
+      error_cb(ih, const_cast<char*>("Failed to show notification"));
     return 0;
   }
 }
 
 extern "C" IUP_SDK_API int iupdrvNotifyClose(Ihandle* ih)
 {
-  IupWinUINotifyAux* aux = winuiGetAux<IupWinUINotifyAux>(ih, IUPWINUI_NOTIFY_AUX);
+  auto* aux = winuiGetAux<IupWinUINotifyAux>(ih, IUPWINUI_NOTIFY_AUX);
   if (!aux)
     return 0;
 
@@ -409,7 +409,7 @@ extern "C" IUP_SDK_API int iupdrvNotifyClose(Ihandle* ih)
 
 extern "C" IUP_SDK_API void iupdrvNotifyDestroy(Ihandle* ih)
 {
-  IupWinUINotifyAux* aux = winuiGetAux<IupWinUINotifyAux>(ih, IUPWINUI_NOTIFY_AUX);
+  auto* aux = winuiGetAux<IupWinUINotifyAux>(ih, IUPWINUI_NOTIFY_AUX);
   if (aux)
   {
     if (!aux->tag.empty())
@@ -432,5 +432,5 @@ extern "C" IUP_SDK_API int iupdrvNotifyIsAvailable(void)
 
 extern "C" IUP_SDK_API void iupdrvNotifyInitClass(Iclass* ic)
 {
-  iupClassRegisterAttribute(ic, "TIMEOUT", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TIMEOUT", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
 }

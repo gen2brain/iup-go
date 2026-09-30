@@ -62,12 +62,12 @@ static void winuiDialogSetPanelBgColor(Grid rootPanel, const char* color)
 
 static void winuiDialogUpdateXamlIsland(Ihandle* ih)
 {
-  IupWinUIDialogAux* aux = winuiGetAux<IupWinUIDialogAux>(ih, IUPWINUI_DIALOG_AUX);
+  auto* aux = winuiGetAux<IupWinUIDialogAux>(ih, IUPWINUI_DIALOG_AUX);
   if (!aux)
     return;
 
   RECT rect;
-  GetClientRect((HWND)ih->handle, &rect);
+  GetClientRect(static_cast<HWND>(ih->handle), &rect);
 
   if (aux->siteBridge)
   {
@@ -82,8 +82,8 @@ static void winuiDialogUpdateXamlIsland(Ihandle* ih)
   if (aux->rootPanel)
   {
     double scale = iupwinuiGetScale(ih);
-    aux->rootPanel.Width((double)rect.right / scale);
-    aux->rootPanel.Height((double)rect.bottom / scale);
+    aux->rootPanel.Width(static_cast<double>(rect.right) / scale);
+    aux->rootPanel.Height(static_cast<double>(rect.bottom) / scale);
   }
 }
 
@@ -91,9 +91,9 @@ static void winuiDialogResize(Ihandle* ih, int width, int height)
 {
   IFnii cb;
 
-  iupdrvDialogGetSize(ih, NULL, &(ih->currentwidth), &(ih->currentheight));
+  iupdrvDialogGetSize(ih, nullptr, &(ih->currentwidth), &(ih->currentheight));
 
-  cb = (IFnii)IupGetCallback(ih, "RESIZE_CB");
+  cb = reinterpret_cast<IFnii>(IupGetCallback(ih, "RESIZE_CB"));
   if (!cb || cb(ih, width, height) != IUP_IGNORE)
   {
     ih->data->ignore_resize = 1;
@@ -139,14 +139,14 @@ static void winuiDialogUpdateDpi(Ihandle* ih)
 static void winuiDialogTitleBarThemeColor(HWND hwnd)
 {
   typedef HRESULT(STDAPICALLTYPE* PtrDwmSetWindowAttribute)(HWND, DWORD, LPCVOID, DWORD);
-  static PtrDwmSetWindowAttribute pDwmSetWindowAttribute = NULL;
+  static PtrDwmSetWindowAttribute pDwmSetWindowAttribute = nullptr;
   static int initialized = 0;
 
   if (!initialized)
   {
     HMODULE dwmLibrary = LoadLibrary(TEXT("dwmapi.dll"));
     if (dwmLibrary)
-      pDwmSetWindowAttribute = (PtrDwmSetWindowAttribute)GetProcAddress(dwmLibrary, "DwmSetWindowAttribute");
+      pDwmSetWindowAttribute = reinterpret_cast<PtrDwmSetWindowAttribute>(GetProcAddress(dwmLibrary, "DwmSetWindowAttribute"));
     initialized = 1;
   }
 
@@ -165,7 +165,7 @@ extern "C" IUP_SDK_API void iupdrvSetAppearance(int appearance)
 
   for (ih = iupDlgListFirst(); ih; ih = iupDlgListNext())
   {
-    IupWinUIDialogAux* dlgaux = winuiGetAux<IupWinUIDialogAux>(ih, IUPWINUI_DIALOG_AUX);
+    auto* dlgaux = winuiGetAux<IupWinUIDialogAux>(ih, IUPWINUI_DIALOG_AUX);
     const char* bgcolor;
 
     if (!dlgaux || !dlgaux->rootPanel)
@@ -177,7 +177,7 @@ extern "C" IUP_SDK_API void iupdrvSetAppearance(int appearance)
       dlgaux->rootPanel.RequestedTheme(appearance == IUP_APPEARANCE_DARK? ElementTheme::Dark: ElementTheme::Light);
 
     if (ih->handle)
-      winuiDialogTitleBarThemeColor((HWND)ih->handle);
+      winuiDialogTitleBarThemeColor(static_cast<HWND>(ih->handle));
 
     bgcolor = IupGetGlobal("DLGBGCOLOR");
     if (bgcolor)
@@ -235,14 +235,14 @@ static int winuiDialogCheckSizing(Ihandle* ih, WPARAM edge, RECT* rect)
 
 static LRESULT CALLBACK winuiDialogWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-  Ihandle* ih = (Ihandle*)GetWindowLongPtr(hwnd, GWLP_USERDATA);
+  auto* ih = reinterpret_cast<Ihandle*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
 
   switch (msg)
   {
     case WM_CREATE:
     {
-      CREATESTRUCT* cs = (CREATESTRUCT*)lParam;
-      SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)cs->lpCreateParams);
+      auto* cs = reinterpret_cast<CREATESTRUCT*>(lParam);
+      SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(cs->lpCreateParams));
       return 0;
     }
 
@@ -252,7 +252,7 @@ static LRESULT CALLBACK winuiDialogWndProc(HWND hwnd, UINT msg, WPARAM wParam, L
       if (wParam && ih && !(style & WS_CAPTION) && (style & WS_THICKFRAME) && !IsZoomed(hwnd) &&
           !iupAttribGetBoolean(ih, "CUSTOMFRAME"))
       {
-        NCCALCSIZE_PARAMS* params = (NCCALCSIZE_PARAMS*)lParam;
+        auto* params = reinterpret_cast<NCCALCSIZE_PARAMS*>(lParam);
         LONG top = params->rgrc[0].top;
         LRESULT result = DefWindowProc(hwnd, msg, wParam, lParam);
         params->rgrc[0].top = top;
@@ -272,11 +272,11 @@ static LRESULT CALLBACK winuiDialogWndProc(HWND hwnd, UINT msg, WPARAM wParam, L
         const char* color = iupAttribGet(ih, "_IUPWINUI_BACKGROUND_COLOR");
         if (color && iupStrToRGB(color, &r, &g, &b))
         {
-          HDC hdc = (HDC)wParam;
+          HDC hdc = reinterpret_cast<HDC>(wParam);
           RECT rect;
           GetClientRect(hwnd, &rect);
           SetDCBrushColor(hdc, RGB(r, g, b));
-          FillRect(hdc, &rect, (HBRUSH)GetStockObject(DC_BRUSH));
+          FillRect(hdc, &rect, static_cast<HBRUSH>(GetStockObject(DC_BRUSH)));
           return 1;
         }
       }
@@ -287,8 +287,8 @@ static LRESULT CALLBACK winuiDialogWndProc(HWND hwnd, UINT msg, WPARAM wParam, L
     {
       if (LOWORD(lParam) == HTCLIENT)
       {
-        HCURSOR hCur = ih ? (HCURSOR)iupAttribGet(ih, "_IUPWIN_HCURSOR") : NULL;
-        SetCursor(hCur ? hCur : LoadCursor(NULL, IDC_ARROW));
+        HCURSOR hCur = ih ? reinterpret_cast<HCURSOR>(iupAttribGet(ih, "_IUPWIN_HCURSOR")) : nullptr;
+        SetCursor(hCur ? hCur : LoadCursor(nullptr, IDC_ARROW));
         return TRUE;
       }
       break;
@@ -298,7 +298,7 @@ static LRESULT CALLBACK winuiDialogWndProc(HWND hwnd, UINT msg, WPARAM wParam, L
     {
       if (ih)
       {
-        IupWinUIDialogAux* dlgaux = winuiGetAux<IupWinUIDialogAux>(ih, IUPWINUI_DIALOG_AUX);
+        auto* dlgaux = winuiGetAux<IupWinUIDialogAux>(ih, IUPWINUI_DIALOG_AUX);
         if (dlgaux && dlgaux->windowCreated)
         {
           if (LOWORD(wParam) == WA_INACTIVE)
@@ -317,7 +317,7 @@ static LRESULT CALLBACK winuiDialogWndProc(HWND hwnd, UINT msg, WPARAM wParam, L
     {
       if (ih)
       {
-        IupWinUIDialogAux* dlgaux = winuiGetAux<IupWinUIDialogAux>(ih, IUPWINUI_DIALOG_AUX);
+        auto* dlgaux = winuiGetAux<IupWinUIDialogAux>(ih, IUPWINUI_DIALOG_AUX);
         if (dlgaux && dlgaux->lastFocusedHwnd && dlgaux->lastFocusedHwnd != hwnd)
           SetFocus(dlgaux->lastFocusedHwnd);
         else if (dlgaux && dlgaux->xamlSource)
@@ -326,7 +326,7 @@ static LRESULT CALLBACK winuiDialogWndProc(HWND hwnd, UINT msg, WPARAM wParam, L
           dlgaux->xamlSource.NavigateFocus(request);
         }
 
-        Ihandle* lastfocus = (Ihandle*)iupAttribGet(ih, "_IUPWINUI_LASTFOCUS");
+        auto* lastfocus = reinterpret_cast<Ihandle*>(iupAttribGet(ih, "_IUPWINUI_LASTFOCUS"));
         if (iupObjectCheck(lastfocus) && IupGetFocus() != lastfocus &&
             !iupAttribGetBoolean(ih, "IGNORELASTFOCUS"))
           IupSetFocus(lastfocus);
@@ -336,7 +336,7 @@ static LRESULT CALLBACK winuiDialogWndProc(HWND hwnd, UINT msg, WPARAM wParam, L
 
     case WM_SIZE:
     {
-      IupWinUIDialogAux* dlgaux = ih ? winuiGetAux<IupWinUIDialogAux>(ih, IUPWINUI_DIALOG_AUX) : NULL;
+      IupWinUIDialogAux* dlgaux = ih ? winuiGetAux<IupWinUIDialogAux>(ih, IUPWINUI_DIALOG_AUX) : nullptr;
       if (ih && !ih->data->ignore_resize && dlgaux && dlgaux->windowCreated)
       {
         winuiDialogUpdateXamlIsland(ih);
@@ -346,7 +346,7 @@ static LRESULT CALLBACK winuiDialogWndProc(HWND hwnd, UINT msg, WPARAM wParam, L
         case SIZE_MINIMIZED:
           if (ih->data->show_state != IUP_MINIMIZE)
           {
-            IFni show_cb = (IFni)IupGetCallback(ih, "SHOW_CB");
+            IFni show_cb = reinterpret_cast<IFni>(IupGetCallback(ih, "SHOW_CB"));
             ih->data->show_state = IUP_MINIMIZE;
             if (show_cb && show_cb(ih, IUP_MINIMIZE) == IUP_CLOSE)
               IupExitLoop();
@@ -355,7 +355,7 @@ static LRESULT CALLBACK winuiDialogWndProc(HWND hwnd, UINT msg, WPARAM wParam, L
         case SIZE_MAXIMIZED:
           if (ih->data->show_state != IUP_MAXIMIZE)
           {
-            IFni show_cb = (IFni)IupGetCallback(ih, "SHOW_CB");
+            IFni show_cb = reinterpret_cast<IFni>(IupGetCallback(ih, "SHOW_CB"));
             ih->data->show_state = IUP_MAXIMIZE;
             if (show_cb && show_cb(ih, IUP_MAXIMIZE) == IUP_CLOSE)
               IupExitLoop();
@@ -365,7 +365,7 @@ static LRESULT CALLBACK winuiDialogWndProc(HWND hwnd, UINT msg, WPARAM wParam, L
         case SIZE_RESTORED:
           if (ih->data->show_state == IUP_MAXIMIZE || ih->data->show_state == IUP_MINIMIZE)
           {
-            IFni show_cb = (IFni)IupGetCallback(ih, "SHOW_CB");
+            IFni show_cb = reinterpret_cast<IFni>(IupGetCallback(ih, "SHOW_CB"));
             ih->data->show_state = IUP_RESTORE;
             if (show_cb && show_cb(ih, IUP_RESTORE) == IUP_CLOSE)
               IupExitLoop();
@@ -382,14 +382,14 @@ static LRESULT CALLBACK winuiDialogWndProc(HWND hwnd, UINT msg, WPARAM wParam, L
 
     case WM_SIZING:
     {
-      if (ih && winuiDialogCheckSizing(ih, wParam, (RECT*)lParam))
+      if (ih && winuiDialogCheckSizing(ih, wParam, reinterpret_cast<RECT*>(lParam)))
         return TRUE;
       break;
     }
 
     case WM_DPICHANGED:
     {
-      IupWinUIDialogAux* dlgaux = ih ? winuiGetAux<IupWinUIDialogAux>(ih, IUPWINUI_DIALOG_AUX) : NULL;
+      IupWinUIDialogAux* dlgaux = ih ? winuiGetAux<IupWinUIDialogAux>(ih, IUPWINUI_DIALOG_AUX) : nullptr;
       if (dlgaux)
       {
         iupBaseUpdateAttribFromFont(ih);
@@ -405,7 +405,7 @@ static LRESULT CALLBACK winuiDialogWndProc(HWND hwnd, UINT msg, WPARAM wParam, L
     {
       if (ih)
       {
-        MINMAXINFO* minmax = (MINMAXINFO*)lParam;
+        auto* minmax = reinterpret_cast<MINMAXINFO*>(lParam);
         int min_w = 1, min_h = 1;
         int max_w = 65535, max_h = 65535;
 
@@ -425,11 +425,11 @@ static LRESULT CALLBACK winuiDialogWndProc(HWND hwnd, UINT msg, WPARAM wParam, L
     {
       if (ih)
       {
-        IFnii cb = (IFnii)IupGetCallback(ih, "MOVE_CB");
+        auto cb = reinterpret_cast<IFnii>(IupGetCallback(ih, "MOVE_CB"));
         if (cb)
         {
           int x, y;
-          iupdrvDialogGetPosition(ih, NULL, &x, &y);
+          iupdrvDialogGetPosition(ih, nullptr, &x, &y);
           cb(ih, x, y);
         }
       }
@@ -490,7 +490,7 @@ static LRESULT CALLBACK winuiDialogWndProc(HWND hwnd, UINT msg, WPARAM wParam, L
     {
       if (ih && wParam == 0 && lParam != 0)
       {
-        LPCTSTR area = (LPCTSTR)lParam;
+        auto area = reinterpret_cast<LPCTSTR>(lParam);
         if (lstrcmp(area, TEXT("ImmersiveColorSet")) == 0)
         {
           winuiDialogTitleBarThemeColor(hwnd);
@@ -498,7 +498,7 @@ static LRESULT CALLBACK winuiDialogWndProc(HWND hwnd, UINT msg, WPARAM wParam, L
 
           int dark_mode = iupGlobalIsDarkMode();
 
-          IupWinUIDialogAux* dlgaux = winuiGetAux<IupWinUIDialogAux>(ih, IUPWINUI_DIALOG_AUX);
+          auto* dlgaux = winuiGetAux<IupWinUIDialogAux>(ih, IUPWINUI_DIALOG_AUX);
           if (dlgaux && dlgaux->rootPanel)
             dlgaux->rootPanel.RequestedTheme(dark_mode ? ElementTheme::Dark : ElementTheme::Light);
 
@@ -514,7 +514,7 @@ static LRESULT CALLBACK winuiDialogWndProc(HWND hwnd, UINT msg, WPARAM wParam, L
 
           winuiDialogRefreshThemeColors(ih);
 
-          RedrawWindow(hwnd, NULL, NULL, RDW_INVALIDATE | RDW_ERASE | RDW_ALLCHILDREN);
+          RedrawWindow(hwnd, nullptr, nullptr, RDW_INVALIDATE | RDW_ERASE | RDW_ALLCHILDREN);
         }
       }
       break;
@@ -533,31 +533,31 @@ static LRESULT CALLBACK winuiDialogWndProc(HWND hwnd, UINT msg, WPARAM wParam, L
 
 static BOOL CALLBACK winuiDialogFirstIconProc(HMODULE module, LPCWSTR type, LPWSTR name, LONG_PTR param)
 {
-  HICON* icons = (HICON*)param;
+  auto* icons = reinterpret_cast<HICON*>(param);
   (void)type;
-  icons[0] = (HICON)LoadImageW(module, name, IMAGE_ICON, 0, 0, LR_DEFAULTSIZE);
-  icons[1] = (HICON)LoadImageW(module, name, IMAGE_ICON, GetSystemMetrics(SM_CXSMICON), GetSystemMetrics(SM_CYSMICON), 0);
+  icons[0] = static_cast<HICON>(LoadImageW(module, name, IMAGE_ICON, 0, 0, LR_DEFAULTSIZE));
+  icons[1] = static_cast<HICON>(LoadImageW(module, name, IMAGE_ICON, GetSystemMetrics(SM_CXSMICON), GetSystemMetrics(SM_CYSMICON), 0));
   return FALSE;
 }
 
-static void winuiDialogRegisterClass(void)
+static void winuiDialogRegisterClass()
 {
   static bool registered = false;
   if (registered)
     return;
 
-  HICON icons[2] = { NULL, NULL };
-  EnumResourceNamesW(GetModuleHandle(NULL), RT_GROUP_ICON, winuiDialogFirstIconProc, (LONG_PTR)icons);
+  HICON icons[2] = { nullptr, nullptr };
+  EnumResourceNamesW(GetModuleHandle(nullptr), RT_GROUP_ICON, winuiDialogFirstIconProc, reinterpret_cast<LONG_PTR>(icons));
 
   WNDCLASSEXW wc = {};
   wc.cbSize = sizeof(WNDCLASSEXW);
   wc.style = CS_HREDRAW | CS_VREDRAW;
   wc.lpfnWndProc = winuiDialogWndProc;
-  wc.hInstance = GetModuleHandle(NULL);
+  wc.hInstance = GetModuleHandle(nullptr);
   wc.hIcon = icons[0];
   wc.hIconSm = icons[1];
-  wc.hCursor = LoadCursor(NULL, IDC_ARROW);
-  wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+  wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
+  wc.hbrBackground = reinterpret_cast<HBRUSH>(static_cast<INT_PTR>(COLOR_WINDOW + 1));
   wc.lpszClassName = WINUI_DIALOG_CLASS;
 
   RegisterClassExW(&wc);
@@ -568,10 +568,10 @@ IUP_DRV_API Ihandle* iupwinuiDialogFromHwnd(HWND hwnd)
 {
   wchar_t name[32];
   if (!hwnd || !GetClassNameW(hwnd, name, 32) || lstrcmpW(name, WINUI_DIALOG_CLASS) != 0)
-    return NULL;
+    return nullptr;
 
-  Ihandle* ih = (Ihandle*)GetWindowLongPtr(hwnd, GWLP_USERDATA);
-  return (ih && iupObjectCheck(ih)) ? ih : NULL;
+  auto* ih = reinterpret_cast<Ihandle*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
+  return (ih && iupObjectCheck(ih)) ? ih : nullptr;
 }
 
 static int winuiDialogSetBackdropAttrib(Ihandle* ih, const char* value)
@@ -579,14 +579,14 @@ static int winuiDialogSetBackdropAttrib(Ihandle* ih, const char* value)
   if (!ih->handle)
     return 1;
 
-  IupWinUIDialogAux* aux = winuiGetAux<IupWinUIDialogAux>(ih, IUPWINUI_DIALOG_AUX);
+  auto* aux = winuiGetAux<IupWinUIDialogAux>(ih, IUPWINUI_DIALOG_AUX);
   if (!aux || !aux->xamlSource)
     return 1;
 
   if (!value || value[0] == '\0')
   {
     aux->xamlSource.SystemBackdrop(nullptr);
-    iupAttribSet(ih, "_IUPWINUI_BACKDROP_ACTIVE", NULL);
+    iupAttribSet(ih, "_IUPWINUI_BACKDROP_ACTIVE", nullptr);
 
     if (aux->rootPanel)
       winuiDialogSetPanelBgColor(aux->rootPanel, iupAttribGet(ih, "_IUPWINUI_BACKGROUND_COLOR"));
@@ -625,7 +625,7 @@ static int winuiDialogSetBackdropAttrib(Ihandle* ih, const char* value)
 
 static int winuiDialogMapMethod(Ihandle* ih)
 {
-  IupWinUIDialogAux* aux = new IupWinUIDialogAux();
+  auto* aux = new IupWinUIDialogAux();
   winuiSetAux(ih, IUPWINUI_DIALOG_AUX, aux);
 
   winuiDialogRegisterClass();
@@ -728,7 +728,7 @@ static int winuiDialogMapMethod(Ihandle* ih)
   }
 
   std::wstring wtitle = title ? iupwinuiStringToWString(title) : L"";
-  HWND parentHwnd = (HWND)iupDialogGetNativeParent(ih);
+  HWND parentHwnd = static_cast<HWND>(iupDialogGetNativeParent(ih));
 
   HWND hwnd = CreateWindowExW(
     dwExStyle,
@@ -738,8 +738,8 @@ static int winuiDialogMapMethod(Ihandle* ih)
     0, 0,
     100, 100,
     parentHwnd,
-    NULL,
-    GetModuleHandle(NULL),
+    nullptr,
+    GetModuleHandle(nullptr),
     ih
   );
 
@@ -749,7 +749,7 @@ static int winuiDialogMapMethod(Ihandle* ih)
     return IUP_ERROR;
   }
 
-  ih->handle = (InativeHandle*)hwnd;
+  ih->handle = static_cast<InativeHandle*>(hwnd);
 
   winuiDialogTitleBarThemeColor(hwnd);
 
@@ -783,8 +783,8 @@ static int winuiDialogMapMethod(Ihandle* ih)
   aux->rootPanel = Grid();
   {
     double scale = iupwinuiGetScale(ih);
-    aux->rootPanel.Width((double)rect.right / scale);
-    aux->rootPanel.Height((double)rect.bottom / scale);
+    aux->rootPanel.Width(static_cast<double>(rect.right) / scale);
+    aux->rootPanel.Height(static_cast<double>(rect.bottom) / scale);
   }
 
   RowDefinition menuRow;
@@ -806,7 +806,7 @@ static int winuiDialogMapMethod(Ihandle* ih)
     if (args.Handled())
       return;
 
-    int code = iupwinuiKeyDecode((int)args.Key(), args.KeyStatus().IsExtendedKey? 1: 0);
+    int code = iupwinuiKeyDecode(static_cast<int>(args.Key()), args.KeyStatus().IsExtendedKey? 1: 0);
     if (code == K_ESC || code == K_CR)
     {
       Ihandle* focus = IupGetFocus();
@@ -860,7 +860,7 @@ static int winuiDialogMapMethod(Ihandle* ih)
   if (customframe)
   {
     SetWindowLong(hwnd, GWL_STYLE, WS_POPUP | WS_CLIPSIBLINGS);
-    SetWindowPos(hwnd, NULL, 0, 0, 0, 0,
+    SetWindowPos(hwnd, nullptr, 0, 0, 0, 0,
       SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
 
     iupDialogCustomFrameSimulateCheckCallbacks(ih);
@@ -870,10 +870,10 @@ static int winuiDialogMapMethod(Ihandle* ih)
 
   if (iupAttribGetInt(ih, "TASKBARPROGRESS"))
   {
-    ITaskbarList3* tbl = NULL;
-    CoCreateInstance(CLSID_TaskbarList, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&tbl));
+    ITaskbarList3* tbl = nullptr;
+    CoCreateInstance(CLSID_TaskbarList, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&tbl));
     if (tbl)
-      iupAttribSet(ih, "_IUPWINUI_TASKBARLIST", (char*)tbl);
+      iupAttribSet(ih, "_IUPWINUI_TASKBARLIST", reinterpret_cast<char*>(tbl));
   }
 
   aux->windowCreated = true;
@@ -889,19 +889,19 @@ static void winuiDialogUnMapMethod(Ihandle* ih)
   if (ih->data->menu)
   {
     IupDestroy(ih->data->menu);
-    ih->data->menu = NULL;
+    ih->data->menu = nullptr;
   }
 
   iupwinuiTipsDestroy(ih);
 
-  ITaskbarList3* tbl = (ITaskbarList3*)iupAttribGet(ih, "_IUPWINUI_TASKBARLIST");
+  auto* tbl = reinterpret_cast<ITaskbarList3*>(iupAttribGet(ih, "_IUPWINUI_TASKBARLIST"));
   if (tbl)
   {
     tbl->Release();
-    iupAttribSet(ih, "_IUPWINUI_TASKBARLIST", NULL);
+    iupAttribSet(ih, "_IUPWINUI_TASKBARLIST", nullptr);
   }
 
-  IupWinUIDialogAux* aux = winuiGetAux<IupWinUIDialogAux>(ih, IUPWINUI_DIALOG_AUX);
+  auto* aux = winuiGetAux<IupWinUIDialogAux>(ih, IUPWINUI_DIALOG_AUX);
   if (aux)
   {
     if (aux->xamlSource)
@@ -923,11 +923,11 @@ static void winuiDialogUnMapMethod(Ihandle* ih)
 
   if (ih->handle)
   {
-    HWND hwnd = (HWND)ih->handle;
+    HWND hwnd = static_cast<HWND>(ih->handle);
     DestroyWindow(hwnd);
   }
   winuiFreeAux<IupWinUIDialogAux>(ih, IUPWINUI_DIALOG_AUX);
-  ih->handle = NULL;
+  ih->handle = nullptr;
 }
 
 static void winuiDialogUpdateDescendants(Ihandle* ih)
@@ -953,7 +953,7 @@ static void winuiDialogLayoutUpdateMethod(Ihandle* ih)
 
   ih->data->ignore_resize = 1;
 
-  SetWindowPos((HWND)ih->handle, 0, 0, 0, ih->currentwidth, ih->currentheight,
+  SetWindowPos(static_cast<HWND>(ih->handle), nullptr, 0, 0, ih->currentwidth, ih->currentheight,
                SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOOWNERZORDER | SWP_NOSENDCHANGING);
 
   winuiDialogUpdateXamlIsland(ih);
@@ -975,7 +975,7 @@ static int winuiDialogSetTitleAttrib(Ihandle* ih, const char* value)
 {
   if (ih->handle)
   {
-    HWND hwnd = (HWND)ih->handle;
+    HWND hwnd = static_cast<HWND>(ih->handle);
     std::wstring wtitle = value ? iupwinuiStringToWString(value) : L"";
     SetWindowTextW(hwnd, wtitle.c_str());
   }
@@ -986,7 +986,7 @@ static char* winuiDialogGetTitleAttrib(Ihandle* ih)
 {
   if (ih->handle)
   {
-    HWND hwnd = (HWND)ih->handle;
+    HWND hwnd = static_cast<HWND>(ih->handle);
     int len = GetWindowTextLengthW(hwnd);
     if (len > 0)
     {
@@ -995,7 +995,7 @@ static char* winuiDialogGetTitleAttrib(Ihandle* ih)
       return iupwinuiHStringToString(hstring(wtitle.c_str()));
     }
   }
-  return NULL;
+  return nullptr;
 }
 
 static void* winuiDialogGetInnerNativeContainerHandleMethod(Ihandle* ih, Ihandle* child)
@@ -1009,10 +1009,10 @@ static char* winuiDialogGetClientSizeAttrib(Ihandle* ih)
   if (ih->handle)
   {
     RECT rect;
-    GetClientRect((HWND)ih->handle, &rect);
-    return iupStrReturnIntInt((int)(rect.right - rect.left), (int)(rect.bottom - rect.top), 'x');
+    GetClientRect(static_cast<HWND>(ih->handle), &rect);
+    return iupStrReturnIntInt(static_cast<int>(rect.right - rect.left), static_cast<int>(rect.bottom - rect.top), 'x');
   }
-  return NULL;
+  return nullptr;
 }
 
 static char* winuiDialogGetClientOffsetAttrib(Ihandle* ih)
@@ -1029,10 +1029,10 @@ static int winuiDialogSetBgColorAttrib(Ihandle* ih, const char* value)
     iupAttribSetStr(ih, "_IUPWINUI_BACKGROUND_COLOR", value);
     if (ih->handle)
     {
-      IupWinUIDialogAux* aux = winuiGetAux<IupWinUIDialogAux>(ih, IUPWINUI_DIALOG_AUX);
+      auto* aux = winuiGetAux<IupWinUIDialogAux>(ih, IUPWINUI_DIALOG_AUX);
       if (aux && aux->rootPanel && !iupAttribGet(ih, "_IUPWINUI_BACKDROP_ACTIVE"))
         winuiDialogSetPanelBgColor(aux->rootPanel, value);
-      RedrawWindow((HWND)ih->handle, NULL, NULL, RDW_INVALIDATE | RDW_ERASE | RDW_ALLCHILDREN);
+      RedrawWindow(static_cast<HWND>(ih->handle), nullptr, nullptr, RDW_INVALIDATE | RDW_ERASE | RDW_ALLCHILDREN);
       winuiDialogRefreshThemeColors(ih);
     }
     return 1;
@@ -1042,7 +1042,7 @@ static int winuiDialogSetBgColorAttrib(Ihandle* ih, const char* value)
 
 static int winuiDialogSetTopMostAttrib(Ihandle* ih, const char* value)
 {
-  IupWinUIDialogAux* aux = winuiGetAux<IupWinUIDialogAux>(ih, IUPWINUI_DIALOG_AUX);
+  auto* aux = winuiGetAux<IupWinUIDialogAux>(ih, IUPWINUI_DIALOG_AUX);
   if (aux && aux->appWindow)
   {
     OverlappedPresenter presenter = aux->appWindow.Presenter().try_as<OverlappedPresenter>();
@@ -1056,7 +1056,7 @@ static int winuiDialogSetHideTitleBarAttrib(Ihandle* ih, const char* value)
 {
   if (!ih->handle)
     return 1;
-  HWND hwnd = (HWND)ih->handle;
+  HWND hwnd = static_cast<HWND>(ih->handle);
   RECT client_before, client_after, window;
   LONG_PTR style = GetWindowLongPtr(hwnd, GWL_STYLE);
   if (iupStrBoolean(value))
@@ -1066,20 +1066,20 @@ static int winuiDialogSetHideTitleBarAttrib(Ihandle* ih, const char* value)
 
   GetClientRect(hwnd, &client_before);
   SetWindowLongPtr(hwnd, GWL_STYLE, style);
-  SetWindowPos(hwnd, NULL, 0, 0, 0, 0, SWP_NOZORDER | SWP_NOMOVE | SWP_NOSIZE | SWP_FRAMECHANGED);
+  SetWindowPos(hwnd, nullptr, 0, 0, 0, 0, SWP_NOZORDER | SWP_NOMOVE | SWP_NOSIZE | SWP_FRAMECHANGED);
 
   if (!IsZoomed(hwnd) && !IsIconic(hwnd))
   {
     GetClientRect(hwnd, &client_after);
     GetWindowRect(hwnd, &window);
-    SetWindowPos(hwnd, NULL, 0, 0,
+    SetWindowPos(hwnd, nullptr, 0, 0,
                  (window.right - window.left) + (client_before.right - client_after.right),
                  (window.bottom - window.top) + (client_before.bottom - client_after.bottom),
                  SWP_NOZORDER | SWP_NOMOVE | SWP_NOACTIVATE);
   }
 
   winuiDialogUpdateXamlIsland(ih);
-  RedrawWindow(hwnd, NULL, NULL, RDW_INVALIDATE | RDW_ERASE | RDW_FRAME | RDW_ALLCHILDREN);
+  RedrawWindow(hwnd, nullptr, nullptr, RDW_INVALIDATE | RDW_ERASE | RDW_FRAME | RDW_ALLCHILDREN);
   return 1;
 }
 
@@ -1087,7 +1087,7 @@ static int winuiDialogSetBringFrontAttrib(Ihandle* ih, const char* value)
 {
   if (ih->handle && iupStrBoolean(value))
   {
-    HWND hwnd = (HWND)ih->handle;
+    HWND hwnd = static_cast<HWND>(ih->handle);
 
     if (IsIconic(hwnd))
       ShowWindow(hwnd, SW_RESTORE);
@@ -1103,24 +1103,24 @@ static char* winuiDialogGetActiveWindowAttrib(Ihandle* ih)
   {
     WINDOWINFO wi;
     wi.cbSize = sizeof(WINDOWINFO);
-    GetWindowInfo((HWND)ih->handle, &wi);
+    GetWindowInfo(static_cast<HWND>(ih->handle), &wi);
     return iupStrReturnBoolean(wi.dwWindowStatus & WS_ACTIVECAPTION);
   }
-  return NULL;
+  return nullptr;
 }
 
 static char* winuiDialogGetMaximizedAttrib(Ihandle* ih)
 {
   if (ih->handle)
-    return iupStrReturnBoolean(IsZoomed((HWND)ih->handle));
-  return NULL;
+    return iupStrReturnBoolean(IsZoomed(static_cast<HWND>(ih->handle)));
+  return nullptr;
 }
 
 static char* winuiDialogGetMinimizedAttrib(Ihandle* ih)
 {
   if (ih->handle)
-    return iupStrReturnBoolean(IsIconic((HWND)ih->handle));
-  return NULL;
+    return iupStrReturnBoolean(IsIconic(static_cast<HWND>(ih->handle)));
+  return nullptr;
 }
 
 static int winuiDialogSetIconAttrib(Ihandle* ih, const char* value)
@@ -1128,27 +1128,27 @@ static int winuiDialogSetIconAttrib(Ihandle* ih, const char* value)
   if (!ih->handle)
     return 1;
 
-  HWND hwnd = (HWND)ih->handle;
+  HWND hwnd = static_cast<HWND>(ih->handle);
 
   if (!value)
   {
-    SendMessage(hwnd, WM_SETICON, (WPARAM)ICON_SMALL, (LPARAM)NULL);
-    SendMessage(hwnd, WM_SETICON, (WPARAM)ICON_BIG, (LPARAM)NULL);
+    SendMessage(hwnd, WM_SETICON, static_cast<WPARAM>(ICON_SMALL), 0);
+    SendMessage(hwnd, WM_SETICON, static_cast<WPARAM>(ICON_BIG), 0);
   }
   else
   {
-    HICON icon = (HICON)iupImageGetIcon(value);
+    auto icon = static_cast<HICON>(iupImageGetIcon(value));
     if (icon)
     {
-      SendMessage(hwnd, WM_SETICON, (WPARAM)ICON_SMALL, (LPARAM)icon);
-      SendMessage(hwnd, WM_SETICON, (WPARAM)ICON_BIG, (LPARAM)icon);
+      SendMessage(hwnd, WM_SETICON, static_cast<WPARAM>(ICON_SMALL), reinterpret_cast<LPARAM>(icon));
+      SendMessage(hwnd, WM_SETICON, static_cast<WPARAM>(ICON_BIG), reinterpret_cast<LPARAM>(icon));
     }
   }
 
   if (IsIconic(hwnd))
-    RedrawWindow(hwnd, NULL, NULL, RDW_INVALIDATE | RDW_ERASE | RDW_UPDATENOW);
+    RedrawWindow(hwnd, nullptr, nullptr, RDW_INVALIDATE | RDW_ERASE | RDW_UPDATENOW);
   else
-    RedrawWindow(hwnd, NULL, NULL, RDW_FRAME | RDW_UPDATENOW);
+    RedrawWindow(hwnd, nullptr, nullptr, RDW_FRAME | RDW_UPDATENOW);
 
   return 1;
 }
@@ -1158,7 +1158,7 @@ extern "C" IUP_SDK_API void iupdrvDialogGetPosition(Ihandle* ih, InativeHandle* 
   RECT rect;
   if (!handle)
     handle = ih->handle;
-  GetWindowRect((HWND)handle, &rect);
+  GetWindowRect(static_cast<HWND>(handle), &rect);
   if (x) *x = rect.left;
   if (y) *y = rect.top;
 }
@@ -1168,7 +1168,7 @@ extern "C" IUP_SDK_API void iupdrvDialogSetPosition(Ihandle* ih, int x, int y)
   int flags = SWP_NOSIZE;
   if (iupAttribGetBoolean(ih, "SHOWNOACTIVATE"))
     flags |= SWP_NOACTIVATE;
-  SetWindowPos((HWND)ih->handle, HWND_TOP, x, y, 0, 0, flags);
+  SetWindowPos(static_cast<HWND>(ih->handle), HWND_TOP, x, y, 0, 0, flags);
 }
 
 extern "C" IUP_SDK_API void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* handle, int* w, int* h)
@@ -1176,20 +1176,20 @@ extern "C" IUP_SDK_API void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* hand
   RECT rect;
   if (!handle)
     handle = ih->handle;
-  GetWindowRect((HWND)handle, &rect);
+  GetWindowRect(static_cast<HWND>(handle), &rect);
   if (w) *w = rect.right - rect.left;
   if (h) *h = rect.bottom - rect.top;
 }
 
 extern "C" IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
 {
-  IupWinUIDialogAux* aux = winuiGetAux<IupWinUIDialogAux>(ih, IUPWINUI_DIALOG_AUX);
+  auto* aux = winuiGetAux<IupWinUIDialogAux>(ih, IUPWINUI_DIALOG_AUX);
   if (aux)
     aux->isVisible = visible ? true : false;
 
   if (ih->handle)
   {
-    HWND hwnd = (HWND)ih->handle;
+    HWND hwnd = static_cast<HWND>(ih->handle);
 
     if (visible)
     {
@@ -1221,7 +1221,7 @@ extern "C" IUP_SDK_API int iupdrvDialogIsVisible(Ihandle* ih)
 {
   if (ih->handle)
   {
-    HWND hwnd = (HWND)ih->handle;
+    HWND hwnd = static_cast<HWND>(ih->handle);
     return IsWindowVisible(hwnd) ? 1 : 0;
   }
   return 0;
@@ -1244,7 +1244,7 @@ extern "C" IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
   placement = iupAttribGet(ih, "PLACEMENT");
   if (!placement)
   {
-    if (IsIconic((HWND)ih->handle) || IsZoomed((HWND)ih->handle))
+    if (IsIconic(static_cast<HWND>(ih->handle)) || IsZoomed(static_cast<HWND>(ih->handle)))
       ih->data->show_state = IUP_RESTORE;
 
     return 0;
@@ -1282,13 +1282,13 @@ extern "C" IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
     width += 2 * border;
     height += 2 * border + caption + menu;
 
-    SetWindowPos((HWND)ih->handle, HWND_TOP, x, y, width, height, 0);
+    SetWindowPos(static_cast<HWND>(ih->handle), HWND_TOP, x, y, width, height, 0);
 
-    if (IsIconic((HWND)ih->handle) || IsZoomed((HWND)ih->handle))
+    if (IsIconic(static_cast<HWND>(ih->handle)) || IsZoomed(static_cast<HWND>(ih->handle)))
       ih->data->show_state = IUP_RESTORE;
   }
 
-  iupAttribSet(ih, "PLACEMENT", NULL);
+  iupAttribSet(ih, "PLACEMENT", nullptr);
   return 1;
 }
 
@@ -1297,8 +1297,8 @@ extern "C" IUP_SDK_API void iupdrvDialogSetParent(Ihandle* ih, InativeHandle* pa
   if (!ih || !ih->handle)
     return;
 
-  HWND hwnd = (HWND)ih->handle;
-  SetWindowLongPtr(hwnd, GWLP_HWNDPARENT, (LONG_PTR)parent);
+  HWND hwnd = static_cast<HWND>(ih->handle);
+  SetWindowLongPtr(hwnd, GWLP_HWNDPARENT, reinterpret_cast<LONG_PTR>(parent));
 }
 
 extern "C" IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int* border, int* caption, int* menu)
@@ -1312,7 +1312,7 @@ extern "C" IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int* border, 
   {
     WINDOWINFO wi;
     wi.cbSize = sizeof(WINDOWINFO);
-    GetWindowInfo((HWND)ih->handle, &wi);
+    GetWindowInfo(static_cast<HWND>(ih->handle), &wi);
     *border = wi.cxWindowBorders;
 
     *caption = iupAttribGetInt(ih, "CUSTOMFRAMECAPTIONHEIGHT");
@@ -1384,13 +1384,13 @@ static int winuiDialogSetFullScreenAttrib(Ihandle* ih, const char* value)
     {
       int width, height;
       LONG off_style, new_style;
-      HWND hwnd = (HWND)ih->handle;
+      HWND hwnd = static_cast<HWND>(ih->handle);
       BOOL visible = ShowWindow(hwnd, SW_HIDE);
 
       off_style = WS_BORDER | WS_THICKFRAME | WS_CAPTION |
                   WS_SYSMENU | WS_MAXIMIZEBOX | WS_MINIMIZEBOX;
       new_style = GetWindowLong(hwnd, GWL_STYLE);
-      iupAttribSet(ih, "_IUPWINUI_FS_STYLE", (char*)(intptr_t)new_style);
+      iupAttribSet(ih, "_IUPWINUI_FS_STYLE", reinterpret_cast<char*>(static_cast<intptr_t>(new_style)));
       new_style &= (~off_style);
       SetWindowLong(hwnd, GWL_STYLE, new_style);
 
@@ -1408,7 +1408,7 @@ static int winuiDialogSetFullScreenAttrib(Ihandle* ih, const char* value)
       iupAttribSet(ih, "MAXBOX", "NO");
       iupAttribSet(ih, "MINBOX", "NO");
       iupAttribSet(ih, "MENUBOX", "NO");
-      IupSetAttribute(ih, "TITLE", NULL);
+      IupSetAttribute(ih, "TITLE", nullptr);
       iupAttribSet(ih, "RESIZE", "NO");
       iupAttribSet(ih, "BORDER", "NO");
 
@@ -1424,10 +1424,10 @@ static int winuiDialogSetFullScreenAttrib(Ihandle* ih, const char* value)
   }
   else
   {
-    LONG style = (LONG)(intptr_t)iupAttribGet(ih, "_IUPWINUI_FS_STYLE");
+    LONG style = static_cast<LONG>(reinterpret_cast<intptr_t>(iupAttribGet(ih, "_IUPWINUI_FS_STYLE")));
     if (style)
     {
-      HWND hwnd = (HWND)ih->handle;
+      HWND hwnd = static_cast<HWND>(ih->handle);
       BOOL visible = ShowWindow(hwnd, SW_HIDE);
 
       iupAttribSetStr(ih, "MAXBOX", iupAttribGet(ih, "_IUPWINUI_FS_MAXBOX"));
@@ -1450,16 +1450,16 @@ static int winuiDialogSetFullScreenAttrib(Ihandle* ih, const char* value)
       if (visible)
         ShowWindow(hwnd, SW_SHOW);
 
-      iupAttribSet(ih, "_IUPWINUI_FS_STYLE", NULL);
-      iupAttribSet(ih, "_IUPWINUI_FS_MAXBOX", NULL);
-      iupAttribSet(ih, "_IUPWINUI_FS_MINBOX", NULL);
-      iupAttribSet(ih, "_IUPWINUI_FS_MENUBOX", NULL);
-      iupAttribSet(ih, "_IUPWINUI_FS_TITLE", NULL);
-      iupAttribSet(ih, "_IUPWINUI_FS_RESIZE", NULL);
-      iupAttribSet(ih, "_IUPWINUI_FS_BORDER", NULL);
-      iupAttribSet(ih, "_IUPWINUI_FS_X", NULL);
-      iupAttribSet(ih, "_IUPWINUI_FS_Y", NULL);
-      iupAttribSet(ih, "_IUPWINUI_FS_SIZE", NULL);
+      iupAttribSet(ih, "_IUPWINUI_FS_STYLE", nullptr);
+      iupAttribSet(ih, "_IUPWINUI_FS_MAXBOX", nullptr);
+      iupAttribSet(ih, "_IUPWINUI_FS_MINBOX", nullptr);
+      iupAttribSet(ih, "_IUPWINUI_FS_MENUBOX", nullptr);
+      iupAttribSet(ih, "_IUPWINUI_FS_TITLE", nullptr);
+      iupAttribSet(ih, "_IUPWINUI_FS_RESIZE", nullptr);
+      iupAttribSet(ih, "_IUPWINUI_FS_BORDER", nullptr);
+      iupAttribSet(ih, "_IUPWINUI_FS_X", nullptr);
+      iupAttribSet(ih, "_IUPWINUI_FS_Y", nullptr);
+      iupAttribSet(ih, "_IUPWINUI_FS_SIZE", nullptr);
     }
   }
   return 1;
@@ -1471,13 +1471,13 @@ static int winuiDialogSetOpacityAttrib(Ihandle* ih, const char* value)
   if (!iupStrToInt(value, &opacity))
     return 0;
 
-  HWND hwnd = (HWND)ih->handle;
+  HWND hwnd = static_cast<HWND>(ih->handle);
   LONG exstyle = GetWindowLong(hwnd, GWL_EXSTYLE);
   if (!(exstyle & WS_EX_LAYERED))
     SetWindowLong(hwnd, GWL_EXSTYLE, exstyle | WS_EX_LAYERED);
 
-  SetLayeredWindowAttributes(hwnd, 0, (BYTE)opacity, LWA_ALPHA);
-  RedrawWindow(hwnd, NULL, NULL, RDW_ERASE | RDW_INVALIDATE | RDW_FRAME | RDW_ALLCHILDREN);
+  SetLayeredWindowAttributes(hwnd, 0, static_cast<BYTE>(opacity), LWA_ALPHA);
+  RedrawWindow(hwnd, nullptr, nullptr, RDW_ERASE | RDW_INVALIDATE | RDW_FRAME | RDW_ALLCHILDREN);
   return 1;
 }
 
@@ -1522,17 +1522,17 @@ static int winuiDialogSetBackgroundAttrib(Ihandle* ih, const char* value)
     return 1;
   }
 
-  void* handle = iupImageGetImage(value, ih, 0, NULL);
+  void* handle = iupImageGetImage(value, ih, 0, nullptr);
   if (handle)
   {
     WriteableBitmap bitmap = winuiGetBitmapFromHandle(handle);
     if (bitmap)
     {
-      iupAttribSet(ih, "_IUPWINUI_BACKGROUND_COLOR", NULL);
+      iupAttribSet(ih, "_IUPWINUI_BACKGROUND_COLOR", nullptr);
 
       if (ih->handle)
       {
-        IupWinUIDialogAux* aux = winuiGetAux<IupWinUIDialogAux>(ih, IUPWINUI_DIALOG_AUX);
+        auto* aux = winuiGetAux<IupWinUIDialogAux>(ih, IUPWINUI_DIALOG_AUX);
         if (aux && aux->rootPanel && !iupAttribGet(ih, "_IUPWINUI_BACKDROP_ACTIVE"))
         {
           ImageBrush brush;
@@ -1550,7 +1550,7 @@ static int winuiDialogSetBackgroundAttrib(Ihandle* ih, const char* value)
           aux->rootPanel.Background(brush);
         }
         winuiDialogRefreshThemeColors(ih);
-        RedrawWindow((HWND)ih->handle, NULL, NULL, RDW_INVALIDATE | RDW_ERASE | RDW_ALLCHILDREN);
+        RedrawWindow(static_cast<HWND>(ih->handle), nullptr, nullptr, RDW_INVALIDATE | RDW_ERASE | RDW_ALLCHILDREN);
       }
       return 1;
     }
@@ -1564,11 +1564,11 @@ static int winuiDialogSetShapeImageAttrib(Ihandle* ih, const char* value)
   Ihandle* image = IupGetHandle(value);
   if (!image)
   {
-    SetWindowRgn((HWND)ih->handle, NULL, TRUE);
+    SetWindowRgn(static_cast<HWND>(ih->handle), nullptr, TRUE);
     return 0;
   }
 
-  unsigned char* imgdata = (unsigned char*)iupAttribGet(image, "WID");
+  auto* imgdata = reinterpret_cast<unsigned char*>(iupAttribGet(image, "WID"));
   int channels = iupAttribGetInt(image, "CHANNELS");
   int w = image->currentwidth;
   int h = image->currentheight;
@@ -1604,19 +1604,19 @@ static int winuiDialogSetShapeImageAttrib(Ihandle* ih, const char* value)
     }
   }
 
-  SetWindowRgn((HWND)ih->handle, hRgn, TRUE);
+  SetWindowRgn(static_cast<HWND>(ih->handle), hRgn, TRUE);
 
   return 1;
 }
 
 static ITaskbarList3* winuiDialogEnsureTaskBar(Ihandle* ih)
 {
-  ITaskbarList3* tbl = (ITaskbarList3*)iupAttribGet(ih, "_IUPWINUI_TASKBARLIST");
+  auto* tbl = reinterpret_cast<ITaskbarList3*>(iupAttribGet(ih, "_IUPWINUI_TASKBARLIST"));
   if (!tbl && ih->handle)
   {
-    CoCreateInstance(CLSID_TaskbarList, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&tbl));
+    CoCreateInstance(CLSID_TaskbarList, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&tbl));
     if (tbl)
-      iupAttribSet(ih, "_IUPWINUI_TASKBARLIST", (char*)tbl);
+      iupAttribSet(ih, "_IUPWINUI_TASKBARLIST", reinterpret_cast<char*>(tbl));
   }
   return tbl;
 }
@@ -1627,9 +1627,9 @@ static int winuiDialogSetTaskBarProgressAttrib(Ihandle* ih, const char* value)
     winuiDialogEnsureTaskBar(ih);
   else
   {
-    ITaskbarList3* tbl = (ITaskbarList3*)iupAttribGet(ih, "_IUPWINUI_TASKBARLIST");
+    auto* tbl = reinterpret_cast<ITaskbarList3*>(iupAttribGet(ih, "_IUPWINUI_TASKBARLIST"));
     if (tbl && ih->handle)
-      tbl->SetProgressState((HWND)ih->handle, TBPF_NOPROGRESS);
+      tbl->SetProgressState(static_cast<HWND>(ih->handle), TBPF_NOPROGRESS);
   }
   return 1;
 }
@@ -1641,10 +1641,10 @@ static int winuiDialogSetTaskBarProgressValueAttrib(Ihandle* ih, const char* val
   {
     int perc;
     iupStrToInt(value, &perc);
-    tbl->SetProgressValue((HWND)ih->handle, perc, 100);
+    tbl->SetProgressValue(static_cast<HWND>(ih->handle), perc, 100);
 
     if (perc == 100)
-      tbl->SetProgressState((HWND)ih->handle, TBPF_NOPROGRESS);
+      tbl->SetProgressState(static_cast<HWND>(ih->handle), TBPF_NOPROGRESS);
   }
 
   return 0;
@@ -1656,15 +1656,15 @@ static int winuiDialogSetTaskBarProgressStateAttrib(Ihandle* ih, const char* val
   if (tbl)
   {
     if (iupStrEqualNoCase(value, "NOPROGRESS"))
-      tbl->SetProgressState((HWND)ih->handle, TBPF_NOPROGRESS);
+      tbl->SetProgressState(static_cast<HWND>(ih->handle), TBPF_NOPROGRESS);
     else if (iupStrEqualNoCase(value, "INDETERMINATE"))
-      tbl->SetProgressState((HWND)ih->handle, TBPF_INDETERMINATE);
+      tbl->SetProgressState(static_cast<HWND>(ih->handle), TBPF_INDETERMINATE);
     else if (iupStrEqualNoCase(value, "ERROR"))
-      tbl->SetProgressState((HWND)ih->handle, TBPF_ERROR);
+      tbl->SetProgressState(static_cast<HWND>(ih->handle), TBPF_ERROR);
     else if (iupStrEqualNoCase(value, "PAUSED"))
-      tbl->SetProgressState((HWND)ih->handle, TBPF_PAUSED);
+      tbl->SetProgressState(static_cast<HWND>(ih->handle), TBPF_PAUSED);
     else
-      tbl->SetProgressState((HWND)ih->handle, TBPF_NORMAL);
+      tbl->SetProgressState(static_cast<HWND>(ih->handle), TBPF_NORMAL);
   }
 
   return 0;
@@ -1672,7 +1672,7 @@ static int winuiDialogSetTaskBarProgressStateAttrib(Ihandle* ih, const char* val
 
 void winuiDialogSetMenuBar(Ihandle* ih, MenuBar menuBar)
 {
-  IupWinUIDialogAux* aux = winuiGetAux<IupWinUIDialogAux>(ih, IUPWINUI_DIALOG_AUX);
+  auto* aux = winuiGetAux<IupWinUIDialogAux>(ih, IUPWINUI_DIALOG_AUX);
   if (!aux || !aux->rootPanel)
     return;
 
@@ -1708,56 +1708,56 @@ extern "C" IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
   ic->LayoutUpdate = winuiDialogLayoutUpdateMethod;
   ic->GetInnerNativeContainerHandle = winuiDialogGetInnerNativeContainerHandleMethod;
 
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, winuiDialogSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", nullptr, winuiDialogSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
 
-  iupClassRegisterAttribute(ic, "TITLE", winuiDialogGetTitleAttrib, winuiDialogSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TITLE", winuiDialogGetTitleAttrib, winuiDialogSetTitleAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "CLIENTSIZE", winuiDialogGetClientSizeAttrib, iupDialogSetClientSizeAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_SAVE | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "CLIENTOFFSET", winuiDialogGetClientOffsetAttrib, NULL, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_DEFAULTVALUE | IUPAF_READONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CLIENTSIZE", winuiDialogGetClientSizeAttrib, iupDialogSetClientSizeAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_SAVE | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CLIENTOFFSET", winuiDialogGetClientOffsetAttrib, nullptr, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_DEFAULTVALUE | IUPAF_READONLY | IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "MINSIZE", NULL, iupBaseSetMinSizeAttrib, IUPAF_SAMEASSYSTEM, "1x1", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "MAXSIZE", NULL, iupBaseSetMaxSizeAttrib, IUPAF_SAMEASSYSTEM, "65535x65535", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "RESIZEINC", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MINSIZE", nullptr, iupBaseSetMinSizeAttrib, IUPAF_SAMEASSYSTEM, "1x1", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MAXSIZE", nullptr, iupBaseSetMaxSizeAttrib, IUPAF_SAMEASSYSTEM, "65535x65535", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "RESIZEINC", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "ACTIVEWINDOW", winuiDialogGetActiveWindowAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TOPMOST", NULL, winuiDialogSetTopMostAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "BRINGFRONT", NULL, winuiDialogSetBringFrontAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ACTIVEWINDOW", winuiDialogGetActiveWindowAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TOPMOST", nullptr, winuiDialogSetTopMostAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BRINGFRONT", nullptr, winuiDialogSetBringFrontAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "MAXIMIZED", winuiDialogGetMaximizedAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "MINIMIZED", winuiDialogGetMinimizedAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MAXIMIZED", winuiDialogGetMaximizedAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MINIMIZED", winuiDialogGetMinimizedAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY | IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "ICON", NULL, winuiDialogSetIconAttrib, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ICON", nullptr, winuiDialogSetIconAttrib, nullptr, nullptr, IUPAF_IHANDLENAME | IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "HWND", iupBaseGetWidAttrib, NULL, NULL, NULL, IUPAF_NO_STRING | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "HWND", iupBaseGetWidAttrib, nullptr, nullptr, nullptr, IUPAF_NO_STRING | IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "CUSTOMFRAME", NULL, NULL, IUPAF_SAMEASSYSTEM, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "HIDETITLEBAR", NULL, winuiDialogSetHideTitleBarAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "CUSTOMFRAMECAPTIONHEIGHT", NULL, NULL, IUPAF_SAMEASSYSTEM, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CUSTOMFRAME", nullptr, nullptr, IUPAF_SAMEASSYSTEM, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "HIDETITLEBAR", nullptr, winuiDialogSetHideTitleBarAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CUSTOMFRAMECAPTIONHEIGHT", nullptr, nullptr, IUPAF_SAMEASSYSTEM, nullptr, IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "FULLSCREEN", NULL, winuiDialogSetFullScreenAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FULLSCREEN", nullptr, winuiDialogSetFullScreenAttrib, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "OPACITY", NULL, winuiDialogSetOpacityAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "LAYERALPHA", NULL, winuiDialogSetOpacityAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "OPACITY", nullptr, winuiDialogSetOpacityAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "LAYERALPHA", nullptr, winuiDialogSetOpacityAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "BACKGROUND", NULL, winuiDialogSetBackgroundAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "BACKIMAGEZOOM", NULL, winuiDialogSetBackImageZoomAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BACKGROUND", nullptr, winuiDialogSetBackgroundAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BACKIMAGEZOOM", nullptr, winuiDialogSetBackImageZoomAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "SHAPEIMAGE", NULL, winuiDialogSetShapeImageAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SHAPEIMAGE", nullptr, winuiDialogSetShapeImageAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "BACKDROP", NULL, winuiDialogSetBackdropAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BACKDROP", nullptr, winuiDialogSetBackdropAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "TASKBARPROGRESS", NULL, winuiDialogSetTaskBarProgressAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TASKBARPROGRESSSTATE", NULL, winuiDialogSetTaskBarProgressStateAttrib, IUPAF_SAMEASSYSTEM, "NORMAL", IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TASKBARPROGRESSVALUE", NULL, winuiDialogSetTaskBarProgressValueAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TASKBARPROGRESS", nullptr, winuiDialogSetTaskBarProgressAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TASKBARPROGRESSSTATE", nullptr, winuiDialogSetTaskBarProgressStateAttrib, IUPAF_SAMEASSYSTEM, "NORMAL", IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TASKBARPROGRESSVALUE", nullptr, winuiDialogSetTaskBarProgressValueAttrib, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "SHOWNOACTIVATE", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SHOWMINIMIZENEXT", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SHOWNOACTIVATE", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SHOWMINIMIZENEXT", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "OPACITYIMAGE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "COMPOSITED", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "CONTROL", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "HELPBUTTON", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TOOLBOX", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DIALOGHINT", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SAVEUNDER", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "OPACITYIMAGE", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "COMPOSITED", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CONTROL", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "HELPBUTTON", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TOOLBOX", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DIALOGHINT", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SAVEUNDER", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 }
