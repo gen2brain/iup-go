@@ -94,6 +94,7 @@ static BOOL cocoaTouchTextIsReturnPress(UIPress* press)
 @interface IupCocoaTouchTextView : UITextView
 @property(nonatomic, assign) Ihandle* ihandle;
 @property(nonatomic, assign) BOOL unwrapped;
+@property(nonatomic, assign) CGFloat contentWidth;
 @end
 
 @implementation IupCocoaTouchTextView
@@ -107,8 +108,24 @@ static BOOL cocoaTouchTextIsReturnPress(UIPress* press)
 		self.autocorrectionType = UITextAutocorrectionTypeNo;
 		self.smartQuotesType = UITextSmartQuotesTypeNo;
 		self.smartDashesType = UITextSmartDashesTypeNo;
+		_contentWidth = -1;
+		[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(textStorageEdited:)
+		                                             name:NSTextStorageDidProcessEditingNotification object:self.textStorage];
 	}
 	return self;
+}
+
+- (void)dealloc
+{
+	[[NSNotificationCenter defaultCenter] removeObserver:self];
+	[super dealloc];
+}
+
+- (void)textStorageEdited:(NSNotification*)note
+{
+	(void)note;
+	_contentWidth = -1;
+	if (_unwrapped) [self setNeedsLayout];
 }
 
 - (NSArray<UIKeyCommand*>*)keyCommands
@@ -133,10 +150,19 @@ static BOOL cocoaTouchTextIsReturnPress(UIPress* press)
 {
 	[super layoutSubviews];
 	if (!_unwrapped) return;
-	if (self.textContainer.widthTracksTextView || self.textContainer.size.width != CGFLOAT_MAX)
+	NSTextContainer* tc = self.textContainer;
+	if (_contentWidth < 0)
 	{
-		self.textContainer.widthTracksTextView = NO;
-		self.textContainer.size = CGSizeMake(CGFLOAT_MAX, CGFLOAT_MAX);
+		CGRect r = [self.textStorage boundingRectWithSize:CGSizeMake(CGFLOAT_MAX, CGFLOAT_MAX)
+		                                          options:NSStringDrawingUsesLineFragmentOrigin context:nil];
+		_contentWidth = ceil(r.size.width) + 2 * tc.lineFragmentPadding;
+	}
+	UIEdgeInsets inset = self.textContainerInset;
+	CGFloat width = MAX(self.bounds.size.width - inset.left - inset.right, _contentWidth);
+	if (tc.widthTracksTextView || tc.size.width != width)
+	{
+		tc.widthTracksTextView = NO;
+		tc.size = CGSizeMake(width, CGFLOAT_MAX);
 	}
 }
 
