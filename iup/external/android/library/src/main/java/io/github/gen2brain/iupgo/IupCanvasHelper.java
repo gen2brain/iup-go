@@ -105,6 +105,8 @@ public final class IupCanvasHelper
     {
         Canvas c = view.getBackCanvas(); if (c == null) return;
         Paint p = stylePaint(color, style, width);
+        /* dp coordinates land between device pixels; aliased fills tile without seams */
+        if (style == STYLE_FILL && view.drawTransformKeepsRects()) p.setAntiAlias(false);
         normalize(tmpRect, x1, y1, x2, y2, style == STYLE_FILL);
         c.drawRect(tmpRect.left, tmpRect.top, tmpRect.right, tmpRect.bottom, p);
     }
