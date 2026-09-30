@@ -110,7 +110,7 @@ static void qtCalendarComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int*
 
   if (ih->handle)
   {
-    IupQtCalendar* calendar = (IupQtCalendar*)ih->handle;
+    auto* calendar = reinterpret_cast<IupQtCalendar*>(ih->handle);
     QSize size = calendar->sizeHint();
     *w = size.width();
     *h = size.height();
@@ -136,7 +136,7 @@ static void qtCalendarComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int*
 
 static int qtCalendarSetWeekNumbersAttrib(Ihandle* ih, const char* value)
 {
-  IupQtCalendar* calendar = (IupQtCalendar*)ih->handle;
+  auto* calendar = reinterpret_cast<IupQtCalendar*>(ih->handle);
 
   if (calendar)
   {
@@ -153,7 +153,7 @@ static int qtCalendarSetWeekNumbersAttrib(Ihandle* ih, const char* value)
 
 static int qtCalendarSetValueAttrib(Ihandle* ih, const char* value)
 {
-  IupQtCalendar* calendar = (IupQtCalendar*)ih->handle;
+  auto* calendar = reinterpret_cast<IupQtCalendar*>(ih->handle);
 
   if (!calendar)
     return 0;
@@ -184,7 +184,7 @@ static int qtCalendarSetValueAttrib(Ihandle* ih, const char* value)
 
 static char* qtCalendarGetValueAttrib(Ihandle* ih)
 {
-  IupQtCalendar* calendar = (IupQtCalendar*)ih->handle;
+  auto* calendar = reinterpret_cast<IupQtCalendar*>(ih->handle);
 
   if (calendar)
   {
@@ -214,7 +214,7 @@ static void qtCalendarSelectionChanged(Ihandle* ih)
 
 static void qtCalendarActivated(const QDate& date, Ihandle* ih)
 {
-  IFns cb = (IFns)IupGetCallback(ih, "SELECT_CB");
+  IFns cb = reinterpret_cast<IFns>(IupGetCallback(ih, "SELECT_CB"));
   if (cb)
   {
     char date_str[64];
@@ -229,9 +229,9 @@ static void qtCalendarActivated(const QDate& date, Ihandle* ih)
 
 static int qtCalendarMapMethod(Ihandle* ih)
 {
-  IupQtCalendar* calendar = new IupQtCalendar(ih);
+  auto* calendar = new IupQtCalendar(ih);
 
-  ih->handle = (InativeHandle*)calendar;
+  ih->handle = reinterpret_cast<InativeHandle*>(calendar);
 
   if (iupAttribGetBoolean(ih, "WEEKNUMBERS"))
     calendar->setVerticalHeaderFormat(QCalendarWidget::ISOWeekNumbers);
@@ -260,7 +260,7 @@ static void qtCalendarUnMapMethod(Ihandle* ih)
 {
   if (ih->handle)
   {
-    IupQtCalendar* calendar = (IupQtCalendar*)ih->handle;
+    auto* calendar = reinterpret_cast<IupQtCalendar*>(ih->handle);
 
     iupqtTipsDestroy(ih);
 
@@ -275,10 +275,10 @@ static void qtCalendarUnMapMethod(Ihandle* ih)
 
 extern "C" Iclass* iupCalendarNewClass(void)
 {
-  Iclass* ic = iupClassNew(NULL);
+  Iclass* ic = iupClassNew(nullptr);
 
-  ic->name = (char*)"calendar";
-  ic->format = NULL;
+  ic->name = const_cast<char*>("calendar");
+  ic->format = nullptr;
   ic->nativetype = IUP_TYPECONTROL;
   ic->childtype = IUP_CHILDNONE;
   ic->is_interactive = 1;
@@ -298,9 +298,9 @@ extern "C" Iclass* iupCalendarNewClass(void)
   iupBaseRegisterCommonAttrib(ic);
   iupBaseRegisterVisualAttrib(ic);
 
-  iupClassRegisterAttribute(ic, "VALUE", qtCalendarGetValueAttrib, qtCalendarSetValueAttrib, NULL, "TODAY", IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "WEEKNUMBERS", NULL, qtCalendarSetWeekNumbersAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TODAY", qtCalendarGetTodayAttrib, NULL, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_READONLY | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "VALUE", qtCalendarGetValueAttrib, qtCalendarSetValueAttrib, nullptr, "TODAY", IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "WEEKNUMBERS", nullptr, qtCalendarSetWeekNumbersAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TODAY", qtCalendarGetTodayAttrib, nullptr, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_READONLY | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
 
   return ic;
 }

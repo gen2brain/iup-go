@@ -40,7 +40,7 @@ struct IupQtDragDropData
 
 static IupQtDragDropData* qtDragDropGetData(Ihandle* ih, int create)
 {
-  IupQtDragDropData* dd_data = (IupQtDragDropData*)iupAttribGet(ih, "_IUPQT_DRAGDROP_DATA");
+  auto* dd_data = reinterpret_cast<IupQtDragDropData*>(iupAttribGet(ih, "_IUPQT_DRAGDROP_DATA"));
 
   if (!dd_data && create)
   {
@@ -51,7 +51,7 @@ static IupQtDragDropData* qtDragDropGetData(Ihandle* ih, int create)
     dd_data->last_x = 0;
     dd_data->last_y = 0;
 
-    iupAttribSet(ih, "_IUPQT_DRAGDROP_DATA", (char*)dd_data);
+    iupAttribSet(ih, "_IUPQT_DRAGDROP_DATA", reinterpret_cast<char*>(dd_data));
   }
 
   return dd_data;
@@ -90,9 +90,9 @@ public:
         if (!dd_data->is_target)
           return false;
 
-        QDragEnterEvent* de = static_cast<QDragEnterEvent*>(event);
+        auto* de = static_cast<QDragEnterEvent*>(event);
 
-        IFniis cb = (IFniis)IupGetCallback(ih, "DROPMOTION_CB");
+        auto cb = reinterpret_cast<IFniis>(IupGetCallback(ih, "DROPMOTION_CB"));
         if (cb)
         {
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
@@ -125,9 +125,9 @@ public:
         if (!dd_data->is_target)
           return false;
 
-        QDragMoveEvent* dm = static_cast<QDragMoveEvent*>(event);
+        auto* dm = static_cast<QDragMoveEvent*>(event);
 
-        IFniis cb = (IFniis)IupGetCallback(ih, "DROPMOTION_CB");
+        auto cb = reinterpret_cast<IFniis>(IupGetCallback(ih, "DROPMOTION_CB"));
         if (cb)
         {
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
@@ -168,7 +168,7 @@ public:
         if (!dd_data->is_target)
           return false;
 
-        QDropEvent* drop = static_cast<QDropEvent*>(event);
+        auto* drop = static_cast<QDropEvent*>(event);
         const QMimeData* mime = drop->mimeData();
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
@@ -188,11 +188,11 @@ public:
 
           if (mime->hasFormat(mime_type))
           {
-            IFnsViii cbDropData = (IFnsViii)IupGetCallback(ih, "DROPDATA_CB");
+            auto cbDropData = reinterpret_cast<IFnsViii>(IupGetCallback(ih, "DROPDATA_CB"));
             if (cbDropData)
             {
               QByteArray data = mime->data(mime_type);
-              cbDropData(ih, (char*)drop_types, (void*)data.constData(), data.size(), x, y);
+              cbDropData(ih, const_cast<char*>(drop_types), const_cast<char*>(data.constData()), data.size(), x, y);
               drop->acceptProposedAction();
               return true;
             }
@@ -201,7 +201,7 @@ public:
 
         if (mime->hasUrls())
         {
-          IFnsiii cbDropFiles = (IFnsiii)IupGetCallback(ih, "DROPFILES_CB");
+          auto cbDropFiles = reinterpret_cast<IFnsiii>(IupGetCallback(ih, "DROPFILES_CB"));
           if (cbDropFiles)
           {
             QList<QUrl> urls = mime->urls();
@@ -213,7 +213,7 @@ public:
               if (!filePath.isEmpty())
               {
                 QByteArray fileArray = filePath.toUtf8();
-                if (cbDropFiles(ih, (char*)fileArray.constData(), count - i - 1, x, y) == IUP_IGNORE)
+                if (cbDropFiles(ih, const_cast<char*>(fileArray.constData()), count - i - 1, x, y) == IUP_IGNORE)
                   break;
               }
             }
@@ -232,7 +232,7 @@ public:
         if (!dd_data->is_source)
           return false;
 
-        QMouseEvent* me = static_cast<QMouseEvent*>(event);
+        auto* me = static_cast<QMouseEvent*>(event);
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
         iupAttribSetInt(ih, "_IUPQT_DRAG_START_X", me->position().x());
         iupAttribSetInt(ih, "_IUPQT_DRAG_START_Y", me->position().y());
@@ -249,7 +249,7 @@ public:
         if (!dd_data->is_source)
           return false;
 
-        QMouseEvent* me = static_cast<QMouseEvent*>(event);
+        auto* me = static_cast<QMouseEvent*>(event);
 
         if (me->buttons() & Qt::LeftButton)
         {
@@ -267,7 +267,7 @@ public:
 
           if (distance > 25)
           {
-            IFnii cb = (IFnii)IupGetCallback(ih, "DRAGBEGIN_CB");
+            auto cb = reinterpret_cast<IFnii>(IupGetCallback(ih, "DRAGBEGIN_CB"));
             if (cb)
             {
               int ret = cb(ih, start_x, start_y);
@@ -277,22 +277,22 @@ public:
               const char* drag_types = iupAttribGetStr(ih, "DRAGTYPES");
               if (drag_types)
               {
-                IFns cbDragDataSize = (IFns)IupGetCallback(ih, "DRAGDATASIZE_CB");
-                IFnsVi cbDragData = (IFnsVi)IupGetCallback(ih, "DRAGDATA_CB");
+                IFns cbDragDataSize = reinterpret_cast<IFns>(IupGetCallback(ih, "DRAGDATASIZE_CB"));
+                auto cbDragData = reinterpret_cast<IFnsVi>(IupGetCallback(ih, "DRAGDATA_CB"));
 
                 if (cbDragDataSize && cbDragData)
                 {
-                  int size = cbDragDataSize(ih, (char*)drag_types);
+                  int size = cbDragDataSize(ih, const_cast<char*>(drag_types));
                   if (size > 0)
                   {
-                    QDrag* drag = new QDrag(widget);
-                    QMimeData* mime_data = new QMimeData();
+                    auto* drag = new QDrag(widget);
+                    auto* mime_data = new QMimeData();
 
                     void* data = malloc(size);
-                    cbDragData(ih, (char*)drag_types, data, size);
+                    cbDragData(ih, const_cast<char*>(drag_types), data, size);
 
                     QString mime_type = QString("application/x-iup-") + QString::fromUtf8(drag_types).toLower();
-                    QByteArray byte_array((const char*)data, size);
+                    QByteArray byte_array(static_cast<const char*>(data), size);
                     mime_data->setData(mime_type, byte_array);
                     free(data);
 
@@ -301,7 +301,7 @@ public:
                     char* drag_cursor = iupAttribGet(ih, "DRAGCURSOR");
                     if (drag_cursor)
                     {
-                      QPixmap* pixmap = (QPixmap*)iupImageGetImage(drag_cursor, ih, 0, NULL);
+                      auto* pixmap = static_cast<QPixmap*>(iupImageGetImage(drag_cursor, ih, 0, nullptr));
                       if (pixmap)
                       {
                         drag->setDragCursor(*pixmap, Qt::MoveAction);
@@ -311,7 +311,7 @@ public:
                     char* drag_cursor_copy = iupAttribGet(ih, "DRAGCURSORCOPY");
                     if (drag_cursor_copy)
                     {
-                      QPixmap* pixmap = (QPixmap*)iupImageGetImage(drag_cursor_copy, ih, 0, NULL);
+                      auto* pixmap = static_cast<QPixmap*>(iupImageGetImage(drag_cursor_copy, ih, 0, nullptr));
                       if (pixmap)
                         drag->setDragCursor(*pixmap, Qt::CopyAction);
                     }
@@ -323,7 +323,7 @@ public:
 
                     Qt::DropAction result = drag->exec(actions);
 
-                    IFni end_cb = (IFni)IupGetCallback(ih, "DRAGEND_CB");
+                    IFni end_cb = reinterpret_cast<IFni>(IupGetCallback(ih, "DRAGEND_CB"));
                     if (end_cb)
                     {
                       int remove = -1;
@@ -360,7 +360,7 @@ static int qtDragDropSetDragSourceAttrib(Ihandle* ih, const char* value)
 {
   IupQtDragDropData* dd_data = qtDragDropGetData(ih, 1);
 
-  QWidget* widget = (QWidget*)ih->handle;
+  auto* widget = reinterpret_cast<QWidget*>(ih->handle);
   if (!widget)
     return 0;
 
@@ -370,16 +370,16 @@ static int qtDragDropSetDragSourceAttrib(Ihandle* ih, const char* value)
   {
     dd_data->is_source = 1;
 
-    IupQtDragDropFilter* filter = new IupQtDragDropFilter(ih);
+    auto* filter = new IupQtDragDropFilter(ih);
     widget->installEventFilter(filter);
-    iupAttribSet(ih, "_IUPQT_DRAGDROP_FILTER", (char*)filter);
+    iupAttribSet(ih, "_IUPQT_DRAGDROP_FILTER", reinterpret_cast<char*>(filter));
 
-    QAbstractItemView* view = qobject_cast<QAbstractItemView*>(widget);
+    auto* view = qobject_cast<QAbstractItemView*>(widget);
     if (view && view->viewport())
     {
       view->viewport()->installEventFilter(filter);
 
-      QTreeWidget* tree = qobject_cast<QTreeWidget*>(widget);
+      auto* tree = qobject_cast<QTreeWidget*>(widget);
       if (tree)
       {
         tree->setDragEnabled(false);
@@ -396,7 +396,7 @@ static int qtDragDropSetDragSourceAttrib(Ihandle* ih, const char* value)
   {
     dd_data->is_source = 0;
 
-    IupQtDragDropFilter* filter = (IupQtDragDropFilter*)iupAttribGet(ih, "_IUPQT_DRAGDROP_FILTER");
+    auto* filter = reinterpret_cast<IupQtDragDropFilter*>(iupAttribGet(ih, "_IUPQT_DRAGDROP_FILTER"));
     if (filter && !dd_data->is_target)
     {
       widget->removeEventFilter(filter);
@@ -404,7 +404,7 @@ static int qtDragDropSetDragSourceAttrib(Ihandle* ih, const char* value)
       iupAttribSet(ih, "_IUPQT_DRAGDROP_FILTER", nullptr);
     }
 
-    QTreeWidget* tree = qobject_cast<QTreeWidget*>(widget);
+    auto* tree = qobject_cast<QTreeWidget*>(widget);
     if (tree && dd_data->is_target)
     {
       tree->setDragDropMode(QAbstractItemView::DropOnly);
@@ -418,7 +418,7 @@ static int qtDragDropSetDropTargetAttrib(Ihandle* ih, const char* value)
 {
   IupQtDragDropData* dd_data = qtDragDropGetData(ih, 1);
 
-  QWidget* widget = (QWidget*)ih->handle;
+  auto* widget = reinterpret_cast<QWidget*>(ih->handle);
   if (!widget)
     return 0;
 
@@ -429,20 +429,20 @@ static int qtDragDropSetDropTargetAttrib(Ihandle* ih, const char* value)
     dd_data->is_target = 1;
     widget->setAcceptDrops(true);
 
-    IupQtDragDropFilter* filter = (IupQtDragDropFilter*)iupAttribGet(ih, "_IUPQT_DRAGDROP_FILTER");
+    auto* filter = reinterpret_cast<IupQtDragDropFilter*>(iupAttribGet(ih, "_IUPQT_DRAGDROP_FILTER"));
     if (!filter)
     {
       filter = new IupQtDragDropFilter(ih);
       widget->installEventFilter(filter);
-      iupAttribSet(ih, "_IUPQT_DRAGDROP_FILTER", (char*)filter);
+      iupAttribSet(ih, "_IUPQT_DRAGDROP_FILTER", reinterpret_cast<char*>(filter));
     }
 
-    QAbstractItemView* view = qobject_cast<QAbstractItemView*>(widget);
+    auto* view = qobject_cast<QAbstractItemView*>(widget);
     if (view && view->viewport())
     {
       view->viewport()->installEventFilter(filter);
 
-      QTreeWidget* tree = qobject_cast<QTreeWidget*>(widget);
+      auto* tree = qobject_cast<QTreeWidget*>(widget);
       if (tree)
       {
         tree->setAcceptDrops(true);
@@ -458,7 +458,7 @@ static int qtDragDropSetDropTargetAttrib(Ihandle* ih, const char* value)
 
     if (!dd_data->is_source)
     {
-      IupQtDragDropFilter* filter = (IupQtDragDropFilter*)iupAttribGet(ih, "_IUPQT_DRAGDROP_FILTER");
+      auto* filter = reinterpret_cast<IupQtDragDropFilter*>(iupAttribGet(ih, "_IUPQT_DRAGDROP_FILTER"));
       if (filter)
       {
         widget->removeEventFilter(filter);
@@ -467,7 +467,7 @@ static int qtDragDropSetDropTargetAttrib(Ihandle* ih, const char* value)
       }
     }
 
-    QTreeWidget* tree = qobject_cast<QTreeWidget*>(widget);
+    auto* tree = qobject_cast<QTreeWidget*>(widget);
     if (tree && !dd_data->is_source)
     {
       tree->setDragDropMode(QAbstractItemView::NoDragDrop);
@@ -484,14 +484,14 @@ static int qtDragDropSetDropFilesTargetAttrib(Ihandle* ih, const char* value)
 
 IUP_DRV_API void iupqtDragDropCleanup(Ihandle* ih)
 {
-  IupQtDragDropData* dd_data = (IupQtDragDropData*)iupAttribGet(ih, "_IUPQT_DRAGDROP_DATA");
+  auto* dd_data = reinterpret_cast<IupQtDragDropData*>(iupAttribGet(ih, "_IUPQT_DRAGDROP_DATA"));
 
   if (dd_data)
   {
-    QWidget* widget = (QWidget*)ih->handle;
+    auto* widget = reinterpret_cast<QWidget*>(ih->handle);
     if (widget)
     {
-      IupQtDragDropFilter* filter = (IupQtDragDropFilter*)iupAttribGet(ih, "_IUPQT_DRAGDROP_FILTER");
+      auto* filter = reinterpret_cast<IupQtDragDropFilter*>(iupAttribGet(ih, "_IUPQT_DRAGDROP_FILTER"));
       if (filter)
       {
         widget->removeEventFilter(filter);

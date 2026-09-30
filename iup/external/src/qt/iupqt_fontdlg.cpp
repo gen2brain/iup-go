@@ -73,7 +73,7 @@ static int qtFontDlgPopup(Ihandle* ih, int x, int y)
         if (parent)
         {
 #if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
-          dpi = (int)parent->screen()->logicalDotsPerInch();
+          dpi = static_cast<int>(parent->screen()->logicalDotsPerInch());
 #else
           dpi = parent->logicalDpiY();
 #endif
@@ -98,7 +98,7 @@ static int qtFontDlgPopup(Ihandle* ih, int x, int y)
     initial_font = QFont();
   }
 
-  QFontDialog* dialog = new QFontDialog(parent);
+  auto* dialog = new QFontDialog(parent);
   dialog->setCurrentFont(initial_font);
 
   /* PREVIEWTEXT and HELP_CB need the non-native dialog */
@@ -139,21 +139,21 @@ static int qtFontDlgPopup(Ihandle* ih, int x, int y)
 
   if (has_help)
   {
-    QDialogButtonBox* button_box = dialog->findChild<QDialogButtonBox*>();
+    auto* button_box = dialog->findChild<QDialogButtonBox*>();
     if (button_box)
     {
       QPushButton* help_button = button_box->addButton(
         QString::fromUtf8("Help"), QDialogButtonBox::HelpRole);
 
       QObject::connect(help_button, &QPushButton::clicked, [ih, dialog]() {
-        Icallback cb = (Icallback)IupGetCallback(ih, "HELP_CB");
+        auto cb = static_cast<Icallback>(IupGetCallback(ih, "HELP_CB"));
         if (cb && cb(ih) == IUP_CLOSE)
           dialog->reject();
       });
     }
   }
 
-  ih->handle = (InativeHandle*)dialog;
+  ih->handle = reinterpret_cast<InativeHandle*>(dialog);
   iupDialogUpdatePosition(ih);
   ih->handle = nullptr;
 

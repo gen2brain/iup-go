@@ -217,7 +217,7 @@ extern "C" IUP_SDK_API char* iupdrvGetCurrentDirectory(void)
 {
   QDir current = QDir::current();
   QByteArray path = current.absolutePath().toUtf8();
-  char* buffer = (char*)iupStrGetMemory(path.length() + 1);
+  char* buffer = iupStrGetMemory(path.length() + 1);
   iupStrCopyN(buffer, path.length() + 1, path.constData());
   return buffer;
 }
@@ -311,7 +311,7 @@ extern "C" IUP_SDK_API char* iupdrvLocaleInfo(void)
 #else
   UINT codepage = GetACP();
   if (codepage == CP_UTF8)
-    return (char*)"UTF-8";
+    return const_cast<char*>("UTF-8");
   return iupStrReturnStrf("CP%u", codepage);
 #endif
 }
@@ -320,7 +320,7 @@ extern "C" IUP_SDK_API char* iupdrvExeFileName(void)
 {
   QByteArray path = QCoreApplication::applicationFilePath().toUtf8();
   if (path.isEmpty())
-    return NULL;
+    return nullptr;
   return iupStrReturnStr(path.constData());
 }
 
@@ -331,19 +331,19 @@ extern "C" IUP_SDK_API char* iupdrvLanguageInfo(void)
   char name[LOCALE_NAME_MAX_LENGTH];
 
   if (!LCIDToLocaleName(MAKELCID(GetUserDefaultUILanguage(), SORT_DEFAULT), wname, LOCALE_NAME_MAX_LENGTH, 0))
-    return NULL;
-  if (!WideCharToMultiByte(CP_UTF8, 0, wname, -1, name, sizeof(name), NULL, NULL))
-    return NULL;
+    return nullptr;
+  if (!WideCharToMultiByte(CP_UTF8, 0, wname, -1, name, sizeof(name), nullptr, nullptr))
+    return nullptr;
   return iupStrLanguageTag(name);
 #elif defined(__APPLE__)
   char name[64];
-  char* tag = NULL;
+  char* tag = nullptr;
   CFArrayRef languages = CFLocaleCopyPreferredLanguages();
 
   if (!languages)
-    return NULL;
+    return nullptr;
   if (CFArrayGetCount(languages) > 0 &&
-      CFStringGetCString((CFStringRef)CFArrayGetValueAtIndex(languages, 0), name, sizeof(name), kCFStringEncodingUTF8))
+      CFStringGetCString(static_cast<CFStringRef>(CFArrayGetValueAtIndex(languages, 0)), name, sizeof(name), kCFStringEncodingUTF8))
     tag = iupStrLanguageTag(name);
   CFRelease(languages);
   return tag;
@@ -352,9 +352,9 @@ extern "C" IUP_SDK_API char* iupdrvLanguageInfo(void)
   const char* language;
 
   if (BLocaleRoster::Default()->GetPreferredLanguages(&languages) != B_OK)
-    return NULL;
+    return nullptr;
   if (languages.FindString("language", 0, &language) != B_OK)
-    return NULL;
+    return nullptr;
   return iupStrLanguageTag(language);
 #else
   return iupStrLanguageTagFromEnv();

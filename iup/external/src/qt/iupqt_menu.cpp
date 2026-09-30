@@ -47,7 +47,7 @@ typedef struct _ImenuPos
 
 extern "C" IUP_SDK_API int iupdrvMenuPopup(Ihandle* ih, int x, int y)
 {
-  QMenu* menu = (QMenu*)ih->handle;
+  auto* menu = reinterpret_cast<QMenu*>(ih->handle);
 
   if (!menu)
   {
@@ -98,7 +98,7 @@ extern "C" IUP_SDK_API int iupdrvMenuGetMenuBarSize(Ihandle* ih)
 {
   if (ih && ih->handle && iupMenuIsMenuBar(ih))
   {
-    QMenuBar* menubar = (QMenuBar*)ih->handle;
+    auto* menubar = reinterpret_cast<QMenuBar*>(ih->handle);
     int h = menubar->height();
     if (h <= 0)
       h = menubar->sizeHint().height();
@@ -121,24 +121,24 @@ static QAction* qtMenuGetNextAction(Ihandle* ih)
   Ihandle* next;
   for (next = ih->brother; next; next = next->brother)
     if (next->handle)
-      return (QAction*)next->handle;
-  return NULL;
+      return reinterpret_cast<QAction*>(next->handle);
+  return nullptr;
 }
 
 static void qtMenuAboutToShow(Ihandle* ih)
 {
-  Icallback cb = (Icallback)IupGetCallback(ih, "MENUOPEN_CB");
+  auto cb = static_cast<Icallback>(IupGetCallback(ih, "MENUOPEN_CB"));
   if (!cb && ih->parent)
-    cb = (Icallback)IupGetCallback(ih->parent, "MENUOPEN_CB");
+    cb = static_cast<Icallback>(IupGetCallback(ih->parent, "MENUOPEN_CB"));
   if (cb)
     cb(ih);
 }
 
 static void qtMenuAboutToHide(Ihandle* ih)
 {
-  Icallback cb = (Icallback)IupGetCallback(ih, "MENUCLOSE_CB");
+  auto cb = static_cast<Icallback>(IupGetCallback(ih, "MENUCLOSE_CB"));
   if (!cb && ih->parent)
-    cb = (Icallback)IupGetCallback(ih->parent, "MENUCLOSE_CB");
+    cb = static_cast<Icallback>(IupGetCallback(ih->parent, "MENUCLOSE_CB"));
   if (cb)
     cb(ih);
 }
@@ -149,14 +149,14 @@ static void qtMenuAboutToHide(Ihandle* ih)
 
 static void qtMenuItemHighlight(Ihandle* ih)
 {
-  Icallback cb = (Icallback)IupGetCallback(ih, "HIGHLIGHT_CB");
+  auto cb = static_cast<Icallback>(IupGetCallback(ih, "HIGHLIGHT_CB"));
   if (cb)
     cb(ih);
 }
 
 static void qtMenuItemTriggered(Ihandle* ih)
 {
-  QAction* action = (QAction*)ih->handle;
+  auto* action = reinterpret_cast<QAction*>(ih->handle);
 
   /* Undo Qt's auto-toggle so user callback sees the original state */
   if (action->isCheckable() && !iupAttribGetBoolean(ih, "AUTOTOGGLE") && !iupAttribGetBoolean(ih->parent, "RADIO"))
@@ -174,18 +174,18 @@ static void qtMenuItemTriggered(Ihandle* ih)
     else
       iupAttribSet(ih, "VALUE", "ON");
 
-    QPixmap* pixbuf = (QPixmap*)iupImageGetImage(iupAttribGet(ih, "IMAGE"), ih, 0, nullptr);
+    auto* pixbuf = static_cast<QPixmap*>(iupImageGetImage(iupAttribGet(ih, "IMAGE"), ih, 0, nullptr));
     if (iupStrBoolean(iupAttribGet(ih, "VALUE")))
     {
       const char* impress = iupAttribGet(ih, "IMPRESS");
       if (impress)
-        pixbuf = (QPixmap*)iupImageGetImage(impress, ih, 0, nullptr);
+        pixbuf = static_cast<QPixmap*>(iupImageGetImage(impress, ih, 0, nullptr));
     }
     if (pixbuf)
       action->setIcon(QIcon(*pixbuf));
   }
 
-  Icallback cb = (Icallback)IupGetCallback(ih, "ACTION");
+  auto cb = static_cast<Icallback>(IupGetCallback(ih, "ACTION"));
   if (cb && cb(ih) == IUP_CLOSE)
     IupExitLoop();
 }
@@ -196,13 +196,13 @@ static void qtMenuItemTriggered(Ihandle* ih)
 
 static void qtMenuItemUpdateImage(Ihandle* ih, const char* value, const char* image, const char* impress)
 {
-  QAction* action = (QAction*)ih->handle;
+  auto* action = reinterpret_cast<QAction*>(ih->handle);
   QPixmap* pixbuf = nullptr;
 
   if (!impress || !iupStrBoolean(value))
-    pixbuf = (QPixmap*)iupImageGetImage(image, ih, 0, nullptr);
+    pixbuf = static_cast<QPixmap*>(iupImageGetImage(image, ih, 0, nullptr));
   else
-    pixbuf = (QPixmap*)iupImageGetImage(impress, ih, 0, nullptr);
+    pixbuf = static_cast<QPixmap*>(iupImageGetImage(impress, ih, 0, nullptr));
 
   if (pixbuf)
     action->setIcon(QIcon(*pixbuf));
@@ -218,12 +218,12 @@ static int qtMenuMapMethod(Ihandle* ih)
 {
   if (iupMenuIsMenuBar(ih))
   {
-    QMenuBar* menubar = new QMenuBar();
+    auto* menubar = new QMenuBar();
 
     /* QMenuBar sizes to its contents; it has to span the whole window width */
     menubar->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
-    ih->handle = (InativeHandle*)menubar;
+    ih->handle = reinterpret_cast<InativeHandle*>(menubar);
 
     /* children add themselves to the bar when IUP maps them */
 
@@ -231,13 +231,13 @@ static int qtMenuMapMethod(Ihandle* ih)
   }
   else
   {
-    QMenu* menu = new QMenu();
+    auto* menu = new QMenu();
 
-    ih->handle = (InativeHandle*)menu;
+    ih->handle = reinterpret_cast<InativeHandle*>(menu);
 
     if (ih->parent)
     {
-      QAction* parent_action = (QAction*)ih->parent->handle;
+      auto* parent_action = reinterpret_cast<QAction*>(ih->parent->handle);
       parent_action->setMenu(menu);
 
       QObject::connect(menu, &QMenu::aboutToShow, [ih]() {
@@ -265,16 +265,14 @@ static int qtMenuMapMethod(Ihandle* ih)
 
 static void qtMenuUnMapMethod(Ihandle* ih)
 {
-  QActionGroup* radio_group = (QActionGroup*)iupAttribGet(ih, "_IUPQT_RADIOGROUP");
-  if (radio_group)
-    delete radio_group;
+  auto* radio_group = reinterpret_cast<QActionGroup*>(iupAttribGet(ih, "_IUPQT_RADIOGROUP"));
+  delete radio_group;
 
   if (iupMenuIsMenuBar(ih))
     ih->parent = nullptr;
 
-  QWidget* widget = (QWidget*)ih->handle;
-  if (widget)
-    delete widget;
+  auto* widget = reinterpret_cast<QWidget*>(ih->handle);
+  delete widget;
 }
 
 /****************************************************************************
@@ -299,7 +297,7 @@ extern "C" IUP_SDK_API void iupdrvMenuInitClass(Iclass* ic)
 
 static char* qtMenuItemGetActiveAttrib(Ihandle* ih)
 {
-  QAction* action = (QAction*)ih->handle;
+  auto* action = reinterpret_cast<QAction*>(ih->handle);
   if (!action)
     return iupBaseGetActiveAttrib(ih);
 
@@ -340,17 +338,17 @@ static void qtMenuItemSetAccel(Ihandle* ih, QAction* action, const char* title)
   }
 
   iupdrvKeyEncode(code, &keyval, &state);
-  action->setShortcut(QKeySequence((int)(keyval | state)));
+  action->setShortcut(QKeySequence(static_cast<int>(keyval | state)));
 }
 
 static int qtMenuItemSetTitleAttrib(Ihandle* ih, const char* value)
 {
-  QAction* action = (QAction*)ih->handle;
+  auto* action = reinterpret_cast<QAction*>(ih->handle);
   char* str;
 
   if (!value)
   {
-    str = (char*)"     ";
+    str = const_cast<char*>("     ");
     value = str;
   }
   else
@@ -367,7 +365,7 @@ static int qtMenuItemSetTitleAttrib(Ihandle* ih, const char* value)
 
 static int qtMenuItemSetValueAttrib(Ihandle* ih, const char* value)
 {
-  QAction* action = (QAction*)ih->handle;
+  auto* action = reinterpret_cast<QAction*>(ih->handle);
 
   if (action->isCheckable())
   {
@@ -386,7 +384,7 @@ static int qtMenuItemSetValueAttrib(Ihandle* ih, const char* value)
 
 static char* qtMenuItemGetValueAttrib(Ihandle* ih)
 {
-  QAction* action = (QAction*)ih->handle;
+  auto* action = reinterpret_cast<QAction*>(ih->handle);
 
   if (action->isCheckable())
     return iupStrReturnChecked(action->isChecked());
@@ -403,9 +401,9 @@ static int qtMenuItemMapMethod(Ihandle* ih)
   if (!ih->parent)
     return IUP_ERROR;
 
-  QAction* action = new QAction();
+  auto* action = new QAction();
 
-  ih->handle = (InativeHandle*)action;
+  ih->handle = reinterpret_cast<InativeHandle*>(action);
   ih->serial = iupMenuGetChildId(ih);
 
   bool is_radio = iupAttribGetBoolean(ih->parent, "RADIO");
@@ -415,12 +413,12 @@ static int qtMenuItemMapMethod(Ihandle* ih)
   {
     action->setCheckable(true);
 
-    QActionGroup* radio_group = (QActionGroup*)iupAttribGet(ih->parent, "_IUPQT_RADIOGROUP");
+    auto* radio_group = reinterpret_cast<QActionGroup*>(iupAttribGet(ih->parent, "_IUPQT_RADIOGROUP"));
     if (!radio_group)
     {
       radio_group = new QActionGroup(nullptr);
       radio_group->setExclusive(true);
-      iupAttribSet(ih->parent, "_IUPQT_RADIOGROUP", (char*)radio_group);
+      iupAttribSet(ih->parent, "_IUPQT_RADIOGROUP", reinterpret_cast<char*>(radio_group));
     }
     action->setActionGroup(radio_group);
   }
@@ -448,12 +446,12 @@ static int qtMenuItemMapMethod(Ihandle* ih)
     QAction* before = qtMenuGetNextAction(ih);
     if (iupMenuIsMenuBar(ih->parent))
     {
-      QMenuBar* menubar = (QMenuBar*)ih->parent->handle;
+      auto* menubar = reinterpret_cast<QMenuBar*>(ih->parent->handle);
       menubar->insertAction(before, action);
     }
     else
     {
-      QMenu* menu = (QMenu*)ih->parent->handle;
+      auto* menu = reinterpret_cast<QMenu*>(ih->parent->handle);
       menu->insertAction(before, action);
     }
   }
@@ -469,9 +467,8 @@ static int qtMenuItemMapMethod(Ihandle* ih)
 
 static void qtMenuItemUnMapMethod(Ihandle* ih)
 {
-  QAction* action = (QAction*)ih->handle;
-  if (action)
-    delete action;
+  auto* action = reinterpret_cast<QAction*>(ih->handle);
+  delete action;
 }
 
 extern "C" IUP_SDK_API void iupdrvMenuItemInitClass(Iclass* ic)
@@ -505,7 +502,7 @@ extern "C" IUP_SDK_API void iupdrvMenuItemInitClass(Iclass* ic)
 
 static char* qtSubmenuGetActiveAttrib(Ihandle* ih)
 {
-  QAction* action = (QAction*)ih->handle;
+  auto* action = reinterpret_cast<QAction*>(ih->handle);
   if (!action)
     return iupBaseGetActiveAttrib(ih);
 
@@ -518,11 +515,11 @@ static char* qtSubmenuGetActiveAttrib(Ihandle* ih)
 
 static int qtSubmenuSetImageAttrib(Ihandle* ih, const char* value)
 {
-  QAction* action = (QAction*)ih->handle;
+  auto* action = reinterpret_cast<QAction*>(ih->handle);
 
   if (value)
   {
-    QPixmap* pixbuf = (QPixmap*)iupImageGetImage(value, ih, 0, nullptr);
+    auto* pixbuf = static_cast<QPixmap*>(iupImageGetImage(value, ih, 0, nullptr));
     if (pixbuf)
       action->setIcon(QIcon(*pixbuf));
   }
@@ -536,12 +533,12 @@ static int qtSubmenuSetImageAttrib(Ihandle* ih, const char* value)
 
 static int qtSubmenuSetTitleAttrib(Ihandle* ih, const char* value)
 {
-  QAction* action = (QAction*)ih->handle;
+  auto* action = reinterpret_cast<QAction*>(ih->handle);
   char* str;
 
   if (!value)
   {
-    str = (char*)"     ";
+    str = const_cast<char*>("     ");
     value = str;
   }
   else
@@ -565,9 +562,9 @@ static int qtSubmenuMapMethod(Ihandle* ih)
   if (!ih->parent)
     return IUP_ERROR;
 
-  QAction* action = new QAction();
+  auto* action = new QAction();
 
-  ih->handle = (InativeHandle*)action;
+  ih->handle = reinterpret_cast<InativeHandle*>(action);
   ih->serial = iupMenuGetChildId(ih);
 
   QObject::connect(action, &QAction::hovered, [ih]() {
@@ -588,12 +585,12 @@ static int qtSubmenuMapMethod(Ihandle* ih)
     QAction* before = qtMenuGetNextAction(ih);
     if (iupMenuIsMenuBar(ih->parent))
     {
-      QMenuBar* menubar = (QMenuBar*)ih->parent->handle;
+      auto* menubar = reinterpret_cast<QMenuBar*>(ih->parent->handle);
       menubar->insertAction(before, action);
     }
     else
     {
-      QMenu* menu = (QMenu*)ih->parent->handle;
+      auto* menu = reinterpret_cast<QMenu*>(ih->parent->handle);
       menu->insertAction(before, action);
     }
   }
@@ -609,9 +606,8 @@ static int qtSubmenuMapMethod(Ihandle* ih)
 
 static void qtSubmenuUnMapMethod(Ihandle* ih)
 {
-  QAction* action = (QAction*)ih->handle;
-  if (action)
-    delete action;
+  auto* action = reinterpret_cast<QAction*>(ih->handle);
+  delete action;
 }
 
 extern "C" IUP_SDK_API void iupdrvSubmenuInitClass(Iclass* ic)
@@ -642,22 +638,22 @@ static int qtMenuSeparatorMapMethod(Ihandle* ih)
   if (!ih->parent)
     return IUP_ERROR;
 
-  QAction* action = new QAction();
+  auto* action = new QAction();
   action->setSeparator(true);
 
-  ih->handle = (InativeHandle*)action;
+  ih->handle = reinterpret_cast<InativeHandle*>(action);
   ih->serial = iupMenuGetChildId(ih);
 
   {
     QAction* before = qtMenuGetNextAction(ih);
     if (iupMenuIsMenuBar(ih->parent))
     {
-      QMenuBar* menubar = (QMenuBar*)ih->parent->handle;
+      auto* menubar = reinterpret_cast<QMenuBar*>(ih->parent->handle);
       menubar->insertAction(before, action);
     }
     else
     {
-      QMenu* menu = (QMenu*)ih->parent->handle;
+      auto* menu = reinterpret_cast<QMenu*>(ih->parent->handle);
       menu->insertAction(before, action);
     }
   }
@@ -671,9 +667,8 @@ static int qtMenuSeparatorMapMethod(Ihandle* ih)
 
 static void qtMenuSeparatorUnMapMethod(Ihandle* ih)
 {
-  QAction* action = (QAction*)ih->handle;
-  if (action)
-    delete action;
+  auto* action = reinterpret_cast<QAction*>(ih->handle);
+  delete action;
 }
 
 extern "C" IUP_SDK_API void iupdrvMenuSeparatorInitClass(Iclass* ic)
@@ -689,8 +684,8 @@ extern "C" IUP_SDK_API void iupdrvMenuSeparatorInitClass(Iclass* ic)
 
 static void qtRecentItemTriggered(Ihandle* menu, int index)
 {
-  Icallback recent_cb = (Icallback)iupAttribGet(menu, "_IUP_RECENT_CB");
-  Ihandle* config = (Ihandle*)iupAttribGet(menu, "_IUP_CONFIG");
+  auto recent_cb = reinterpret_cast<Icallback>(iupAttribGet(menu, "_IUP_RECENT_CB"));
+  auto* config = reinterpret_cast<Ihandle*>(iupAttribGet(menu, "_IUP_CONFIG"));
 
   if (recent_cb && config)
   {
@@ -719,7 +714,7 @@ static void qtRecentItemTriggered(Ihandle* menu, int index)
 extern "C" IUP_SDK_API int iupdrvRecentMenuInit(Ihandle* menu, int max_recent, Icallback recent_cb)
 {
   iupAttribSetInt(menu, "_IUP_RECENT_MAX", max_recent);
-  iupAttribSet(menu, "_IUP_RECENT_CB", (char*)recent_cb);
+  iupAttribSet(menu, "_IUP_RECENT_CB", reinterpret_cast<char*>(recent_cb));
   iupAttribSetInt(menu, "_IUP_RECENT_COUNT", 0);
   return 0;
 }
@@ -732,14 +727,14 @@ extern "C" IUP_SDK_API int iupdrvRecentMenuUpdate(Ihandle* menu, const char** fi
   if (!menu || !menu->handle)
     return -1;
 
-  qmenu = (QMenu*)menu->handle;
+  qmenu = reinterpret_cast<QMenu*>(menu->handle);
   max_recent = iupAttribGetInt(menu, "_IUP_RECENT_MAX");
   existing = iupAttribGetInt(menu, "_IUP_RECENT_COUNT");
 
   if (count > max_recent)
     count = max_recent;
 
-  iupAttribSet(menu, "_IUP_RECENT_CB", (char*)recent_cb);
+  iupAttribSet(menu, "_IUP_RECENT_CB", reinterpret_cast<char*>(recent_cb));
 
   QList<QAction*> actions = qmenu->actions();
 
@@ -757,7 +752,7 @@ extern "C" IUP_SDK_API int iupdrvRecentMenuUpdate(Ihandle* menu, const char** fi
     }
     else
     {
-      QAction* action = new QAction(title, qmenu);
+      auto* action = new QAction(title, qmenu);
       action->setData(QVariant(i));
 
       QObject::connect(action, &QAction::triggered, [menu, i]() {

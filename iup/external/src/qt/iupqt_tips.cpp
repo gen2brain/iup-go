@@ -77,7 +77,7 @@ public:
   {
     if (event->type() == QEvent::ToolTip)
     {
-      QHelpEvent* helpEvent = static_cast<QHelpEvent*>(event);
+      auto* helpEvent = static_cast<QHelpEvent*>(event);
       QWidget* widget = qobject_cast<QWidget*>(obj);
 
       if (widget)
@@ -107,7 +107,7 @@ public:
             }
           }
 
-          IFnii cb = (IFnii)IupGetCallback(ih, "TIPS_CB");
+          auto cb = reinterpret_cast<IFnii>(IupGetCallback(ih, "TIPS_CB"));
           if (cb)
           {
             int x, y;
@@ -154,9 +154,9 @@ static void qtTooltipSetTitle(Ihandle* ih, QWidget* widget, const char* value)
 
 static QWidget* qtTipGetWidget(Ihandle* ih)
 {
-  QWidget* widget = (QWidget*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
+  auto* widget = reinterpret_cast<QWidget*>(iupAttribGet(ih, "_IUP_EXTRAPARENT"));
   if (!widget)
-    widget = (QWidget*)ih->handle;
+    widget = reinterpret_cast<QWidget*>(ih->handle);
   return widget;
 }
 
@@ -177,7 +177,7 @@ extern "C" IUP_SDK_API int iupdrvBaseSetTipAttrib(Ihandle* ih, const char* value
     QApplication::instance()->installEventFilter(qt_tooltip_filter);
   }
 
-  widget->setProperty("IUP_HANDLE", QVariant::fromValue((void*)ih));
+  widget->setProperty("IUP_HANDLE", QVariant::fromValue(reinterpret_cast<void*>(ih)));
 
   qtTooltipSetTitle(ih, widget, value);
 

@@ -92,19 +92,19 @@ public:
     if (!ih || !ih->data->show_rename)
       return nullptr;
 
-    QTreeWidgetItem* item = static_cast<QTreeWidgetItem*>(index.internalPointer());
+    auto* item = static_cast<QTreeWidgetItem*>(index.internalPointer());
     if (!item)
       return nullptr;
 
     int id = qtTreeFindNodeId(ih, item);
 
-    IFni cbShowRename = (IFni)IupGetCallback(ih, "SHOWRENAME_CB");
+    IFni cbShowRename = reinterpret_cast<IFni>(IupGetCallback(ih, "SHOWRENAME_CB"));
     if (cbShowRename && cbShowRename(ih, id) == IUP_IGNORE)
       return nullptr;
 
     const_cast<IupQtTreeDelegate*>(this)->old_text = item->text(0);
 
-    QLineEdit* editor = new QLineEdit(parent);
+    auto* editor = new QLineEdit(parent);
     (void)option;
     return editor;
   }
@@ -113,7 +113,7 @@ public:
   {
     QStyledItemDelegate::setEditorData(editor, index);
 
-    QLineEdit* lineEdit = qobject_cast<QLineEdit*>(editor);
+    auto* lineEdit = qobject_cast<QLineEdit*>(editor);
     if (!lineEdit || !ih)
       return;
 
@@ -138,7 +138,7 @@ public:
 
   void setModelData(QWidget* editor, QAbstractItemModel* model, const QModelIndex& index) const override
   {
-    QLineEdit* lineEdit = qobject_cast<QLineEdit*>(editor);
+    auto* lineEdit = qobject_cast<QLineEdit*>(editor);
     if (!lineEdit || !ih)
     {
       QStyledItemDelegate::setModelData(editor, model, index);
@@ -150,16 +150,16 @@ public:
     if (new_text == old_text)
       return;
 
-    QTreeWidgetItem* item = static_cast<QTreeWidgetItem*>(index.internalPointer());
+    auto* item = static_cast<QTreeWidgetItem*>(index.internalPointer());
     if (!item)
       return;
 
     int id = qtTreeFindNodeId(ih, item);
 
-    IFnis cbRename = (IFnis)IupGetCallback(ih, "RENAME_CB");
+    auto cbRename = reinterpret_cast<IFnis>(IupGetCallback(ih, "RENAME_CB"));
     if (cbRename)
     {
-      if (cbRename(ih, id, (char*)new_text.toUtf8().constData()) == IUP_IGNORE)
+      if (cbRename(ih, id, const_cast<char*>(new_text.toUtf8().constData())) == IUP_IGNORE)
         return;
     }
 
@@ -197,7 +197,7 @@ static QPixmap* qtTreeGetThemeIcon(Ihandle* ih, const char* icon_name, int size)
 
   if (!icon.isNull())
   {
-    QPixmap* pixmap = new QPixmap(icon.pixmap(QSize(size, size)));
+    auto* pixmap = new QPixmap(icon.pixmap(QSize(size, size)));
     return pixmap;
   }
 
@@ -228,10 +228,10 @@ protected:
       QTreeWidgetItem* item = itemAt(event->pos());
       if (item)
       {
-        IFni cb = (IFni)IupGetCallback(ih, "RIGHTCLICK_CB");
+        IFni cb = reinterpret_cast<IFni>(IupGetCallback(ih, "RIGHTCLICK_CB"));
         if (cb)
         {
-          int id = (int)(size_t)item->data(0, Qt::UserRole).value<void*>();
+          int id = static_cast<int>(reinterpret_cast<size_t>(item->data(0, Qt::UserRole).value<void*>()));
           cb(ih, id);
         }
       }
@@ -256,18 +256,18 @@ protected:
     QTreeWidgetItem* item = itemAt(event->pos());
     if (item)
     {
-      int id = (int)(size_t)item->data(0, Qt::UserRole).value<void*>();
+      int id = static_cast<int>(reinterpret_cast<size_t>(item->data(0, Qt::UserRole).value<void*>()));
       int kind = item->childCount() > 0 || item->data(0, Qt::UserRole + 1).toBool() ? ITREE_BRANCH : ITREE_LEAF;
 
       if (kind == ITREE_LEAF)
       {
-        IFni cb = (IFni)IupGetCallback(ih, "EXECUTELEAF_CB");
+        IFni cb = reinterpret_cast<IFni>(IupGetCallback(ih, "EXECUTELEAF_CB"));
         if (cb)
           cb(ih, id);
       }
       else
       {
-        IFni cb = (IFni)IupGetCallback(ih, "EXECUTEBRANCH_CB");
+        IFni cb = reinterpret_cast<IFni>(IupGetCallback(ih, "EXECUTEBRANCH_CB"));
         if (cb)
           cb(ih, id);
       }
@@ -283,10 +283,10 @@ protected:
 
     if (e->type() == QEvent::ToolTip)
     {
-      IFnii cb = (IFnii)IupGetCallback(ih, "TIPS_CB");
+      auto cb = reinterpret_cast<IFnii>(IupGetCallback(ih, "TIPS_CB"));
       if (cb && !iupAttribGetBoolean(ih, "INFOTIP"))
       {
-        QHelpEvent* helpEvent = static_cast<QHelpEvent*>(e);
+        auto* helpEvent = static_cast<QHelpEvent*>(e);
         cb(ih, helpEvent->pos().x(), helpEvent->pos().y());
         return true;
       }
@@ -322,7 +322,7 @@ public:
 
 static QTreeWidgetItem* qtTreeFindNode(Ihandle* ih, int id)
 {
-  return (QTreeWidgetItem*)iupTreeGetNode(ih, id);
+  return reinterpret_cast<QTreeWidgetItem*>(iupTreeGetNode(ih, id));
 }
 
 static int qtTreeFindNodeId(Ihandle* ih, QTreeWidgetItem* item)
@@ -330,7 +330,7 @@ static int qtTreeFindNodeId(Ihandle* ih, QTreeWidgetItem* item)
   if (!item)
     return -1;
 
-  return iupTreeFindNodeId(ih, (InodeHandle*)item);
+  return iupTreeFindNodeId(ih, reinterpret_cast<InodeHandle*>(item));
 }
 
 static void qtTreeRebuildNodeCacheRec(Ihandle* ih, QTreeWidgetItem* item, int* id)
@@ -340,8 +340,8 @@ static void qtTreeRebuildNodeCacheRec(Ihandle* ih, QTreeWidgetItem* item, int* i
   {
     (*id)++;
     QTreeWidgetItem* child = item->child(i);
-    ih->data->node_cache[*id].node_handle = (InodeHandle*)child;
-    child->setData(0, Qt::UserRole, QVariant::fromValue((void*)(size_t)(*id)));
+    ih->data->node_cache[*id].node_handle = reinterpret_cast<InodeHandle*>(child);
+    child->setData(0, Qt::UserRole, QVariant::fromValue(reinterpret_cast<void*>(static_cast<size_t>(*id))));
 
     qtTreeRebuildNodeCacheRec(ih, child, id);
   }
@@ -349,15 +349,15 @@ static void qtTreeRebuildNodeCacheRec(Ihandle* ih, QTreeWidgetItem* item, int* i
 
 static void qtTreeRebuildNodeCache(Ihandle* ih, int& id, QTreeWidgetItem* item)
 {
-  ih->data->node_cache[id].node_handle = (InodeHandle*)item;
-  item->setData(0, Qt::UserRole, QVariant::fromValue((void*)(size_t)id));
+  ih->data->node_cache[id].node_handle = reinterpret_cast<InodeHandle*>(item);
+  item->setData(0, Qt::UserRole, QVariant::fromValue(reinterpret_cast<void*>(static_cast<size_t>(id))));
 
   qtTreeRebuildNodeCacheRec(ih, item, &id);
 }
 
 static void qtTreeRebuildEntireCache(Ihandle* ih)
 {
-  IupQtTree* tree = (IupQtTree*)ih->handle;
+  auto* tree = reinterpret_cast<IupQtTree*>(ih->handle);
   if (!tree)
     return;
 
@@ -404,7 +404,7 @@ static QTreeWidgetItem* qtTreeGetNextItem(Ihandle* ih, QTreeWidgetItem* item, in
       index = parent->indexOfChild(next_item);
     else
     {
-      IupQtTree* tree = (IupQtTree*)ih->handle;
+      auto* tree = reinterpret_cast<IupQtTree*>(ih->handle);
       index = tree->indexOfTopLevelItem(next_item);
     }
 
@@ -412,7 +412,7 @@ static QTreeWidgetItem* qtTreeGetNextItem(Ihandle* ih, QTreeWidgetItem* item, in
       return parent->child(index + 1);
     else if (!parent)
     {
-      IupQtTree* tree = (IupQtTree*)ih->handle;
+      auto* tree = reinterpret_cast<IupQtTree*>(ih->handle);
       if (index < tree->topLevelItemCount() - 1)
         return tree->topLevelItem(index + 1);
       else
@@ -438,7 +438,7 @@ static QTreeWidgetItem* qtTreeGetPreviousItem(Ihandle* ih, QTreeWidgetItem* item
     index = parent->indexOfChild(item);
   else
   {
-    IupQtTree* tree = (IupQtTree*)ih->handle;
+    auto* tree = reinterpret_cast<IupQtTree*>(ih->handle);
     index = tree->indexOfTopLevelItem(item);
   }
 
@@ -449,7 +449,7 @@ static QTreeWidgetItem* qtTreeGetPreviousItem(Ihandle* ih, QTreeWidgetItem* item
       prev = parent->child(index - 1);
     else
     {
-      IupQtTree* tree = (IupQtTree*)ih->handle;
+      auto* tree = reinterpret_cast<IupQtTree*>(ih->handle);
       prev = tree->topLevelItem(index - 1);
     }
 
@@ -468,7 +468,7 @@ static QTreeWidgetItem* qtTreeGetPreviousItem(Ihandle* ih, QTreeWidgetItem* item
 
 extern "C" IUP_SDK_API int iupdrvTreeTotalChildCount(Ihandle* ih, InodeHandle* node_handle)
 {
-  QTreeWidgetItem* item = (QTreeWidgetItem*)node_handle;
+  auto* item = reinterpret_cast<QTreeWidgetItem*>(node_handle);
   if (!item)
     return 0;
 
@@ -487,7 +487,7 @@ extern "C" IUP_SDK_API int iupdrvTreeTotalChildCount(Ihandle* ih, InodeHandle* n
 
 extern "C" IUP_SDK_API void iupdrvTreeUpdateMarkMode(Ihandle* ih)
 {
-  IupQtTree* tree = (IupQtTree*)ih->handle;
+  auto* tree = reinterpret_cast<IupQtTree*>(ih->handle);
 
   if (ih->data->mark_mode == ITREE_MARK_SINGLE)
     tree->setSelectionMode(QAbstractItemView::SingleSelection);
@@ -506,7 +506,7 @@ extern "C" IUP_SDK_API void iupdrvTreeUpdateMarkMode(Ihandle* ih)
 
 extern "C" IUP_SDK_API void iupdrvTreeAddNode(Ihandle* ih, int id, int kind, const char* title, int add)
 {
-  IupQtTree* tree = (IupQtTree*)ih->handle;
+  auto* tree = reinterpret_cast<IupQtTree*>(ih->handle);
   QTreeWidgetItem* new_item = nullptr;
   QTreeWidgetItem* ref_item = nullptr;
   int kindPrev = -1;
@@ -531,16 +531,16 @@ extern "C" IUP_SDK_API void iupdrvTreeAddNode(Ihandle* ih, int id, int kind, con
 
   QPixmap* def_image = nullptr;
   if (kind == ITREE_BRANCH)
-    def_image = (QPixmap*)ih->data->def_image_collapsed;
+    def_image = static_cast<QPixmap*>(ih->data->def_image_collapsed);
   else
-    def_image = (QPixmap*)ih->data->def_image_leaf;
+    def_image = static_cast<QPixmap*>(ih->data->def_image_leaf);
 
   if (def_image)
     new_item->setIcon(0, QIcon(*def_image));
 
   if (ih->data->show_toggle)
   {
-    new_item->setData(0, Qt::UserRole + 3, (int)Qt::Unchecked);
+    new_item->setData(0, Qt::UserRole + 3, static_cast<int>(Qt::Unchecked));
     new_item->setCheckState(0, Qt::Unchecked);
   }
 
@@ -564,7 +564,7 @@ extern "C" IUP_SDK_API void iupdrvTreeAddNode(Ihandle* ih, int id, int kind, con
         tree->insertTopLevelItem(index + 1, new_item);
       }
     }
-    iupTreeAddToCache(ih, add, kindPrev, (InodeHandle*)ref_item, (InodeHandle*)new_item);
+    iupTreeAddToCache(ih, add, kindPrev, reinterpret_cast<InodeHandle*>(ref_item), reinterpret_cast<InodeHandle*>(new_item));
   }
   else
   {
@@ -573,7 +573,7 @@ extern "C" IUP_SDK_API void iupdrvTreeAddNode(Ihandle* ih, int id, int kind, con
     else /* Append (first node in empty tree) */
       tree->addTopLevelItem(new_item);
 
-    iupTreeAddToCache(ih, 0, 0, NULL, (InodeHandle*)new_item);
+    iupTreeAddToCache(ih, 0, 0, nullptr, reinterpret_cast<InodeHandle*>(new_item));
   }
 
   QTreeWidgetItem* parent = new_item->parent();
@@ -592,7 +592,7 @@ extern "C" IUP_SDK_API void iupdrvTreeAddNode(Ihandle* ih, int id, int kind, con
     tree->setCurrentItem(new_item);
     if (ih->data->mark_mode != ITREE_MARK_SINGLE)
       new_item->setSelected(false);
-    iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", NULL);
+    iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", nullptr);
   }
 
   qtTreeRebuildEntireCache(ih);
@@ -604,7 +604,7 @@ extern "C" IUP_SDK_API void iupdrvTreeAddNode(Ihandle* ih, int id, int kind, con
 
 static QTreeWidgetItem* qtTreeCopyNode(Ihandle* ih, QTreeWidgetItem* src, QTreeWidgetItem* dst_parent, int dst_index)
 {
-  QTreeWidgetItem* new_item = new QTreeWidgetItem();
+  auto* new_item = new QTreeWidgetItem();
 
   new_item->setText(0, src->text(0));
   new_item->setIcon(0, src->icon(0));
@@ -618,7 +618,7 @@ static QTreeWidgetItem* qtTreeCopyNode(Ihandle* ih, QTreeWidgetItem* src, QTreeW
 
   if (ih->data->show_toggle)
   {
-    new_item->setData(0, Qt::UserRole + 3, (int)src->checkState(0));
+    new_item->setData(0, Qt::UserRole + 3, static_cast<int>(src->checkState(0)));
     new_item->setCheckState(0, src->checkState(0));
   }
 
@@ -628,7 +628,7 @@ static QTreeWidgetItem* qtTreeCopyNode(Ihandle* ih, QTreeWidgetItem* src, QTreeW
     dst_parent->insertChild(dst_index, new_item);
   else
   {
-    IupQtTree* tree = (IupQtTree*)ih->handle;
+    auto* tree = reinterpret_cast<IupQtTree*>(ih->handle);
     tree->insertTopLevelItem(dst_index, new_item);
   }
 
@@ -643,7 +643,7 @@ static QTreeWidgetItem* qtTreeCopyNode(Ihandle* ih, QTreeWidgetItem* src, QTreeW
 static QTreeWidgetItem* qtTreeDragDropCopyItem(Ihandle* src_ih, Ihandle* dst_ih, QTreeWidgetItem* src_item,
                                                 QTreeWidgetItem* dst_parent, int dst_index)
 {
-  QTreeWidgetItem* new_item = new QTreeWidgetItem();
+  auto* new_item = new QTreeWidgetItem();
 
   new_item->setText(0, src_item->text(0));
   new_item->setIcon(0, src_item->icon(0));
@@ -658,7 +658,7 @@ static QTreeWidgetItem* qtTreeDragDropCopyItem(Ihandle* src_ih, Ihandle* dst_ih,
 
   if (dst_ih->data->show_toggle)
   {
-    new_item->setData(0, Qt::UserRole + 3, (int)src_item->checkState(0));
+    new_item->setData(0, Qt::UserRole + 3, static_cast<int>(src_item->checkState(0)));
     new_item->setCheckState(0, src_item->checkState(0));
   }
 
@@ -668,7 +668,7 @@ static QTreeWidgetItem* qtTreeDragDropCopyItem(Ihandle* src_ih, Ihandle* dst_ih,
     dst_parent->insertChild(dst_index, new_item);
   else
   {
-    IupQtTree* dst_tree = (IupQtTree*)dst_ih->handle;
+    auto* dst_tree = reinterpret_cast<IupQtTree*>(dst_ih->handle);
     dst_tree->insertTopLevelItem(dst_index, new_item);
   }
 
@@ -722,7 +722,7 @@ static int qtTreeSetCopyNodeAttrib(Ihandle* ih, int id_src, const char* name_dst
         dst_index = dst_parent->indexOfChild(dst) + 1;
       else
       {
-        IupQtTree* tree = (IupQtTree*)ih->handle;
+        auto* tree = reinterpret_cast<IupQtTree*>(ih->handle);
         dst_index = tree->indexOfTopLevelItem(dst) + 1;
       }
     }
@@ -730,13 +730,13 @@ static int qtTreeSetCopyNodeAttrib(Ihandle* ih, int id_src, const char* name_dst
     int old_count = ih->data->node_count;
     QTreeWidgetItem* new_item = qtTreeCopyNode(ih, src, dst_parent, dst_index);
 
-    int count = 1 + iupdrvTreeTotalChildCount(ih, (InodeHandle*)src);
+    int count = 1 + iupdrvTreeTotalChildCount(ih, reinterpret_cast<InodeHandle*>(src));
     ih->data->node_count = old_count + count;
 
     int id_new = id_dst + 1;
     if (qtTreeGetNodeKind(dst) == ITREE_BRANCH && !dst->isExpanded())
     {
-      id_new += iupdrvTreeTotalChildCount(ih, (InodeHandle*)dst);
+      id_new += iupdrvTreeTotalChildCount(ih, reinterpret_cast<InodeHandle*>(dst));
     }
 
     iupTreeCopyMoveCache(ih, id_src, id_new, count, 1);
@@ -772,7 +772,7 @@ static int qtTreeSetMoveNodeAttrib(Ihandle* ih, int id_src, const char* name_dst
       src_parent->removeChild(src);
     else
     {
-      IupQtTree* tree = (IupQtTree*)ih->handle;
+      auto* tree = reinterpret_cast<IupQtTree*>(ih->handle);
       int index = tree->indexOfTopLevelItem(src);
       tree->takeTopLevelItem(index);
     }
@@ -794,14 +794,14 @@ static int qtTreeSetMoveNodeAttrib(Ihandle* ih, int id_src, const char* name_dst
         dst_index = dst_parent->indexOfChild(dst) + 1;
       else
       {
-        IupQtTree* tree = (IupQtTree*)ih->handle;
+        auto* tree = reinterpret_cast<IupQtTree*>(ih->handle);
         dst_index = tree->indexOfTopLevelItem(dst) + 1;
       }
 
       id_new = id_dst + 1;
       if (qtTreeGetNodeKind(dst) == ITREE_BRANCH)
       {
-        id_new += iupdrvTreeTotalChildCount(ih, (InodeHandle*)dst);
+        id_new += iupdrvTreeTotalChildCount(ih, reinterpret_cast<InodeHandle*>(dst));
       }
     }
 
@@ -809,11 +809,11 @@ static int qtTreeSetMoveNodeAttrib(Ihandle* ih, int id_src, const char* name_dst
       dst_parent->insertChild(dst_index, src);
     else
     {
-      IupQtTree* tree = (IupQtTree*)ih->handle;
+      auto* tree = reinterpret_cast<IupQtTree*>(ih->handle);
       tree->insertTopLevelItem(dst_index, src);
     }
 
-    int count = 1 + iupdrvTreeTotalChildCount(ih, (InodeHandle*)src);
+    int count = 1 + iupdrvTreeTotalChildCount(ih, reinterpret_cast<InodeHandle*>(src));
     if (id_new > id_src)
       id_new -= count;
 
@@ -854,7 +854,7 @@ static int qtTreeSetImageAttrib(Ihandle* ih, int id, const char* value)
 
   if (value)
   {
-    QPixmap* pixmap = (QPixmap*)iupImageGetImage(value, ih, 0, nullptr);
+    auto* pixmap = static_cast<QPixmap*>(iupImageGetImage(value, ih, 0, nullptr));
     if (pixmap)
       item->setIcon(0, QIcon(*pixmap));
   }
@@ -866,12 +866,12 @@ static int qtTreeSetImageAttrib(Ihandle* ih, int id, const char* value)
     if (kind == ITREE_BRANCH)
     {
       if (item->isExpanded())
-        def_image = (QPixmap*)ih->data->def_image_expanded;
+        def_image = static_cast<QPixmap*>(ih->data->def_image_expanded);
       else
-        def_image = (QPixmap*)ih->data->def_image_collapsed;
+        def_image = static_cast<QPixmap*>(ih->data->def_image_collapsed);
     }
     else
-      def_image = (QPixmap*)ih->data->def_image_leaf;
+      def_image = static_cast<QPixmap*>(ih->data->def_image_leaf);
 
     if (def_image)
       item->setIcon(0, QIcon(*def_image));
@@ -890,7 +890,7 @@ static int qtTreeSetImageExpandedAttrib(Ihandle* ih, int id, const char* value)
 
   if (item->isExpanded() && value)
   {
-    QPixmap* pixmap = (QPixmap*)iupImageGetImage(value, ih, 0, nullptr);
+    auto* pixmap = static_cast<QPixmap*>(iupImageGetImage(value, ih, 0, nullptr));
     if (pixmap)
       item->setIcon(0, QIcon(*pixmap));
   }
@@ -906,7 +906,7 @@ static int qtTreeSetIndentationAttrib(Ihandle* ih, const char* value)
   int indent = 0;
   iupStrToInt(value, &indent);
 
-  IupQtTree* tree = (IupQtTree*)ih->handle;
+  auto* tree = reinterpret_cast<IupQtTree*>(ih->handle);
   tree->setIndentation(indent);
 
   return 1;
@@ -917,7 +917,7 @@ static char* qtTreeGetIndentationAttrib(Ihandle* ih)
   if (!ih->handle)
     return nullptr;
 
-  IupQtTree* tree = (IupQtTree*)ih->handle;
+  auto* tree = reinterpret_cast<IupQtTree*>(ih->handle);
   return iupStrReturnInt(tree->indentation());
 }
 
@@ -930,7 +930,7 @@ static int qtTreeSetSpacingAttrib(Ihandle* ih, const char* value)
   if (!ih->handle)
     return 1;
 
-  IupQtTree* tree = (IupQtTree*)ih->handle;
+  auto* tree = reinterpret_cast<IupQtTree*>(ih->handle);
   tree->doItemsLayout();
   return 0;
 }
@@ -943,7 +943,7 @@ static int qtTreeSetHlColorAttrib(Ihandle* ih, const char* value)
 
   if (ih->handle)
   {
-    IupQtTree* tree = (IupQtTree*)ih->handle;
+    auto* tree = reinterpret_cast<IupQtTree*>(ih->handle);
     QPalette palette = tree->palette();
     palette.setColor(QPalette::Highlight, QColor(r, g, b));
     iupqtSetWidgetPalette(tree, palette);
@@ -958,7 +958,7 @@ static int qtTreeSetBgColorAttrib(Ihandle* ih, const char* value)
   if (!iupStrToRGB(value, &r, &g, &b))
     return 0;
 
-  IupQtTree* tree = (IupQtTree*)ih->handle;
+  auto* tree = reinterpret_cast<IupQtTree*>(ih->handle);
   QPalette palette = tree->palette();
   palette.setColor(QPalette::Base, QColor(r, g, b));
   iupqtSetWidgetPalette(tree, palette);
@@ -971,7 +971,7 @@ static char* qtTreeGetBgColorAttrib(Ihandle* ih)
   if (!ih->handle)
     return nullptr;
 
-  IupQtTree* tree = (IupQtTree*)ih->handle;
+  auto* tree = reinterpret_cast<IupQtTree*>(ih->handle);
   QColor color = tree->palette().color(QPalette::Base);
   return iupStrReturnStrf("%d %d %d", color.red(), color.green(), color.blue());
 }
@@ -982,7 +982,7 @@ static int qtTreeSetFgColorAttrib(Ihandle* ih, const char* value)
   if (!iupStrToRGB(value, &r, &g, &b))
     return 0;
 
-  IupQtTree* tree = (IupQtTree*)ih->handle;
+  auto* tree = reinterpret_cast<IupQtTree*>(ih->handle);
   QPalette palette = tree->palette();
   palette.setColor(QPalette::Text, QColor(r, g, b));
   iupqtSetWidgetPalette(tree, palette);
@@ -996,7 +996,7 @@ static int qtTreeSetTitleAttrib(Ihandle* ih, int id, const char* value)
 
   if (!item && id == 0 && ih->data->node_count == 0)
   {
-    IupQtTree* tree = (IupQtTree*)ih->handle;
+    auto* tree = reinterpret_cast<IupQtTree*>(ih->handle);
     if (tree)
     {
       item = new QTreeWidgetItem(tree);
@@ -1007,10 +1007,10 @@ static int qtTreeSetTitleAttrib(Ihandle* ih, int id, const char* value)
         item->setFlags(item->flags() | Qt::ItemIsEditable);
 
       ih->data->node_count = 1;
-      ih->data->node_cache[0].node_handle = (InodeHandle*)item;
-      item->setData(0, Qt::UserRole, QVariant::fromValue((void*)(size_t)0));
+      ih->data->node_cache[0].node_handle = reinterpret_cast<InodeHandle*>(item);
+      item->setData(0, Qt::UserRole, QVariant::fromValue(static_cast<void*>(nullptr)));
 
-      QPixmap* def_image = (QPixmap*)ih->data->def_image_collapsed;
+      auto* def_image = static_cast<QPixmap*>(ih->data->def_image_collapsed);
       if (def_image)
         item->setIcon(0, QIcon(*def_image));
 
@@ -1077,13 +1077,13 @@ static char* qtTreeGetColorAttrib(Ihandle* ih, int id)
 {
   QTreeWidgetItem* item = qtTreeFindNode(ih, id);
   if (!item)
-    return NULL;
+    return nullptr;
 
   QBrush brush = item->foreground(0);
   QColor color = brush.color();
 
   if (!color.isValid())
-    return NULL;
+    return nullptr;
 
   return iupStrReturnRGB(color.red(), color.green(), color.blue());
 }
@@ -1112,9 +1112,9 @@ static void qtTreeUpdateExpandImage(Ihandle* ih, QTreeWidgetItem* item)
   QPixmap* pixmap = nullptr;
   QString expanded_img = item->data(0, Qt::UserRole + 2).toString();
   if (!expanded_img.isEmpty())
-    pixmap = (QPixmap*)iupImageGetImage(expanded_img.toUtf8().constData(), ih, 0, nullptr);
+    pixmap = static_cast<QPixmap*>(iupImageGetImage(expanded_img.toUtf8().constData(), ih, 0, nullptr));
   if (!pixmap)
-    pixmap = (QPixmap*)ih->data->def_image_expanded;
+    pixmap = static_cast<QPixmap*>(ih->data->def_image_expanded);
   if (pixmap)
     item->setIcon(0, QIcon(*pixmap));
 }
@@ -1133,7 +1133,7 @@ static int qtTreeSetStateAttrib(Ihandle* ih, int id, const char* value)
   if (item->isExpanded())
     qtTreeUpdateExpandImage(ih, item);
   else if (ih->data->def_image_collapsed)
-    item->setIcon(0, QIcon(*(QPixmap*)ih->data->def_image_collapsed));
+    item->setIcon(0, QIcon(*static_cast<QPixmap*>(ih->data->def_image_collapsed)));
 
   return 1;
 }
@@ -1145,9 +1145,9 @@ static char* qtTreeGetStateAttrib(Ihandle* ih, int id)
     return nullptr;
 
   if (item->isExpanded())
-    return (char*)"EXPANDED";
+    return const_cast<char*>("EXPANDED");
   else
-    return (char*)"COLLAPSED";
+    return const_cast<char*>("COLLAPSED");
 }
 
 static char* qtTreeGetDepthAttrib(Ihandle* ih, int id)
@@ -1175,9 +1175,9 @@ static char* qtTreeGetKindAttrib(Ihandle* ih, int id)
 
   int kind = qtTreeGetNodeKind(item);
   if (kind == ITREE_BRANCH)
-    return (char*)"BRANCH";
+    return const_cast<char*>("BRANCH");
   else
-    return (char*)"LEAF";
+    return const_cast<char*>("LEAF");
 }
 
 static char* qtTreeGetParentAttrib(Ihandle* ih, int id)
@@ -1259,7 +1259,7 @@ static char* qtTreeGetRootCountAttrib(Ihandle* ih)
   if (!ih->handle)
     return nullptr;
 
-  IupQtTree* tree = (IupQtTree*)ih->handle;
+  auto* tree = reinterpret_cast<IupQtTree*>(ih->handle);
   return iupStrReturnInt(tree->topLevelItemCount());
 }
 
@@ -1270,12 +1270,12 @@ static char* qtTreeGetCountAttrib(Ihandle* ih)
 
 static int qtTreeSetValueAttrib(Ihandle* ih, const char* value)
 {
-  IupQtTree* tree = (IupQtTree*)ih->handle;
+  auto* tree = reinterpret_cast<IupQtTree*>(ih->handle);
   QTreeWidgetItem* cur = tree->currentItem();
   if (!cur)
     cur = tree->topLevelItem(0);
 
-  QTreeWidgetItem* item = NULL;
+  QTreeWidgetItem* item = nullptr;
 
   if (iupStrEqualNoCase(value, "ROOT") || iupStrEqualNoCase(value, "FIRST"))
     item = tree->topLevelItem(0);
@@ -1286,9 +1286,9 @@ static int qtTreeSetValueAttrib(Ihandle* ih, const char* value)
       item = tree->itemBelow(item);
   }
   else if (iupStrEqualNoCase(value, "NEXT"))
-    item = cur ? tree->itemBelow(cur) : NULL;
+    item = cur ? tree->itemBelow(cur) : nullptr;
   else if (iupStrEqualNoCase(value, "PREVIOUS"))
-    item = cur ? tree->itemAbove(cur) : NULL;
+    item = cur ? tree->itemAbove(cur) : nullptr;
   else if (iupStrEqualNoCase(value, "PGDN"))
   {
     item = cur;
@@ -1303,7 +1303,7 @@ static int qtTreeSetValueAttrib(Ihandle* ih, const char* value)
   }
   else if (iupStrEqualNoCase(value, "CLEAR"))
   {
-    tree->setCurrentItem(NULL);
+    tree->setCurrentItem(nullptr);
     return 0;
   }
   else
@@ -1331,7 +1331,7 @@ static int qtTreeSetValueAttrib(Ihandle* ih, const char* value)
 
 static char* qtTreeGetValueAttrib(Ihandle* ih)
 {
-  IupQtTree* tree = (IupQtTree*)ih->handle;
+  auto* tree = reinterpret_cast<IupQtTree*>(ih->handle);
   QTreeWidgetItem* item = tree->currentItem();
 
   if (!item)
@@ -1362,7 +1362,7 @@ static char* qtTreeGetMarkedAttrib(Ihandle* ih, int id)
 
 static int qtTreeSetMarkAttrib(Ihandle* ih, const char* value)
 {
-  IupQtTree* tree = (IupQtTree*)ih->handle;
+  auto* tree = reinterpret_cast<IupQtTree*>(ih->handle);
 
   if (iupStrEqualNoCase(value, "BLOCK"))
   {
@@ -1442,7 +1442,7 @@ static int qtTreeSetMarkStartAttrib(Ihandle* ih, const char* value)
 
   if (item)
   {
-    IupQtTree* tree = (IupQtTree*)ih->handle;
+    auto* tree = reinterpret_cast<IupQtTree*>(ih->handle);
     tree->setMarkStartNode(item);
   }
 
@@ -1463,7 +1463,7 @@ static char* qtTreeGetMarkedNodesAttrib(Ihandle* ih)
 
 static int qtTreeSetMarkedNodesAttrib(Ihandle* ih, const char* value)
 {
-  IupQtTree* tree = (IupQtTree*)ih->handle;
+  auto* tree = reinterpret_cast<IupQtTree*>(ih->handle);
 
   tree->clearSelection();
 
@@ -1504,8 +1504,8 @@ static int qtTreeSetToggleValueAttrib(Ihandle* ih, int id, const char* value)
 
   /* programmatic change: do not fire TOGGLEVALUE_CB */
   {
-    QSignalBlocker blocker((IupQtTree*)ih->handle);
-    item->setData(0, Qt::UserRole + 3, (int)target);
+    QSignalBlocker blocker(reinterpret_cast<IupQtTree*>(ih->handle));
+    item->setData(0, Qt::UserRole + 3, static_cast<int>(target));
     item->setCheckState(0, target);
   }
 
@@ -1523,11 +1523,11 @@ static char* qtTreeGetToggleValueAttrib(Ihandle* ih, int id)
 
   Qt::CheckState state = item->checkState(0);
   if (state == Qt::Checked)
-    return (char*)"ON";
+    return const_cast<char*>("ON");
   else if (state == Qt::Unchecked)
-    return (char*)"OFF";
+    return const_cast<char*>("OFF");
   else if (state == Qt::PartiallyChecked && ih->data->show_toggle == 2)
-    return (char*)"NOTDEF";
+    return const_cast<char*>("NOTDEF");
 
   return nullptr;
 }
@@ -1568,7 +1568,7 @@ static char* qtTreeGetToggleVisibleAttrib(Ihandle* ih, int id)
 
 static char* qtTreeGetScrollVisibleAttrib(Ihandle* ih)
 {
-  IupQtTree* tree = (IupQtTree*)ih->handle;
+  auto* tree = reinterpret_cast<IupQtTree*>(ih->handle);
 
   int horiz_visible = 0, vert_visible = 0;
 
@@ -1581,13 +1581,13 @@ static char* qtTreeGetScrollVisibleAttrib(Ihandle* ih)
     vert_visible = 1;
 
   if (horiz_visible && vert_visible)
-    return (char*)"YES";
+    return const_cast<char*>("YES");
   else if (horiz_visible)
-    return (char*)"HORIZONTAL";
+    return const_cast<char*>("HORIZONTAL");
   else if (vert_visible)
-    return (char*)"VERTICAL";
+    return const_cast<char*>("VERTICAL");
   else
-    return (char*)"NO";
+    return const_cast<char*>("NO");
 }
 
 static int qtTreeSetShowRenameAttrib(Ihandle* ih, const char* value)
@@ -1596,7 +1596,7 @@ static int qtTreeSetShowRenameAttrib(Ihandle* ih, const char* value)
 
   if (ih->handle)
   {
-    IupQtTree* tree = (IupQtTree*)ih->handle;
+    auto* tree = reinterpret_cast<IupQtTree*>(ih->handle);
     if (ih->data->show_rename)
       tree->setEditTriggers(QAbstractItemView::SelectedClicked | QAbstractItemView::EditKeyPressed);
     else
@@ -1604,7 +1604,7 @@ static int qtTreeSetShowRenameAttrib(Ihandle* ih, const char* value)
 
     for (int i = 0; i < ih->data->node_count; i++)
     {
-      QTreeWidgetItem* item = (QTreeWidgetItem*)ih->data->node_cache[i].node_handle;
+      auto* item = reinterpret_cast<QTreeWidgetItem*>(ih->data->node_cache[i].node_handle);
       if (item)
       {
         if (ih->data->show_rename)
@@ -1622,7 +1622,7 @@ static int qtTreeSetRenameAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->show_rename)
   {
-    IupQtTree* tree = (IupQtTree*)ih->handle;
+    auto* tree = reinterpret_cast<IupQtTree*>(ih->handle);
     QTreeWidgetItem* item = tree->currentItem();
     if (item)
       tree->editItem(item, 0);
@@ -1634,7 +1634,7 @@ static int qtTreeSetRenameAttrib(Ihandle* ih, const char* value)
 
 static int qtTreeSetTopItemAttrib(Ihandle* ih, const char* value)
 {
-  IupQtTree* tree = (IupQtTree*)ih->handle;
+  auto* tree = reinterpret_cast<IupQtTree*>(ih->handle);
   int id = 0;
   iupStrToInt(value, &id);
   QTreeWidgetItem* item = qtTreeFindNode(ih, id);
@@ -1668,7 +1668,7 @@ static int qtTreeSetDelNodeAttrib(Ihandle* ih, int id, const char* value)
   if (!ih->handle)
     return 0;
 
-  IupQtTree* tree = (IupQtTree*)ih->handle;
+  auto* tree = reinterpret_cast<IupQtTree*>(ih->handle);
 
   if (iupStrEqualNoCase(value, "ALL"))
   {
@@ -1676,11 +1676,11 @@ static int qtTreeSetDelNodeAttrib(Ihandle* ih, int id, const char* value)
 
     tree->setMarkStartNode(nullptr);
 
-    IFns cb = (IFns)IupGetCallback(ih, "NODEREMOVED_CB");
+    IFns cb = reinterpret_cast<IFns>(IupGetCallback(ih, "NODEREMOVED_CB"));
     if (cb)
     {
       for (int i = 0; i < ih->data->node_count; i++)
-        cb(ih, (char*)ih->data->node_cache[i].userdata);
+        cb(ih, static_cast<char*>(ih->data->node_cache[i].userdata));
     }
 
     tree->clear();
@@ -1698,7 +1698,7 @@ static int qtTreeSetDelNodeAttrib(Ihandle* ih, int id, const char* value)
 
     iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", "1");
 
-    IFns cb = (IFns)IupGetCallback(ih, "NODEREMOVED_CB");
+    IFns cb = reinterpret_cast<IFns>(IupGetCallback(ih, "NODEREMOVED_CB"));
     if (cb)
     {
       std::function<void(QTreeWidgetItem*)> call_rec = [&](QTreeWidgetItem* it) {
@@ -1707,13 +1707,13 @@ static int qtTreeSetDelNodeAttrib(Ihandle* ih, int id, const char* value)
         {
           for (int i = 0; i < it->childCount(); i++)
             call_rec(it->child(i));
-          cb(ih, (char*)ih->data->node_cache[it_id].userdata);
+          cb(ih, static_cast<char*>(ih->data->node_cache[it_id].userdata));
         }
       };
       call_rec(item);
     }
 
-    int count = 1 + iupdrvTreeTotalChildCount(ih, (InodeHandle*)item);
+    int count = 1 + iupdrvTreeTotalChildCount(ih, reinterpret_cast<InodeHandle*>(item));
 
     qtTreeClearMarkStartIfNeeded(tree, item);
 
@@ -1749,7 +1749,7 @@ static int qtTreeSetDelNodeAttrib(Ihandle* ih, int id, const char* value)
       QTreeWidgetItem* child = item->child(0);
       int child_id = qtTreeFindNodeId(ih, child);
 
-      IFns cb = (IFns)IupGetCallback(ih, "NODEREMOVED_CB");
+      IFns cb = reinterpret_cast<IFns>(IupGetCallback(ih, "NODEREMOVED_CB"));
       if (cb)
       {
         std::function<void(QTreeWidgetItem*)> call_rec = [&](QTreeWidgetItem* it) {
@@ -1758,13 +1758,13 @@ static int qtTreeSetDelNodeAttrib(Ihandle* ih, int id, const char* value)
           {
             for (int i = 0; i < it->childCount(); i++)
               call_rec(it->child(i));
-            cb(ih, (char*)ih->data->node_cache[it_id].userdata);
+            cb(ih, static_cast<char*>(ih->data->node_cache[it_id].userdata));
           }
         };
         call_rec(child);
       }
 
-      int count = 1 + iupdrvTreeTotalChildCount(ih, (InodeHandle*)child);
+      int count = 1 + iupdrvTreeTotalChildCount(ih, reinterpret_cast<InodeHandle*>(child));
       qtTreeClearMarkStartIfNeeded(tree, child);
       item->removeChild(child);
       delete child;
@@ -1814,7 +1814,7 @@ static int qtTreeSetDelNodeAttrib(Ihandle* ih, int id, const char* value)
       if (item_id == -1)
         continue;
 
-      IFns cb = (IFns)IupGetCallback(ih, "NODEREMOVED_CB");
+      IFns cb = reinterpret_cast<IFns>(IupGetCallback(ih, "NODEREMOVED_CB"));
       if (cb)
       {
         std::function<void(QTreeWidgetItem*)> call_rec = [&](QTreeWidgetItem* it) {
@@ -1823,13 +1823,13 @@ static int qtTreeSetDelNodeAttrib(Ihandle* ih, int id, const char* value)
           {
             for (int j = 0; j < it->childCount(); j++)
               call_rec(it->child(j));
-            cb(ih, (char*)ih->data->node_cache[it_id].userdata);
+            cb(ih, static_cast<char*>(ih->data->node_cache[it_id].userdata));
           }
         };
         call_rec(item);
       }
 
-      int count = 1 + iupdrvTreeTotalChildCount(ih, (InodeHandle*)item);
+      int count = 1 + iupdrvTreeTotalChildCount(ih, reinterpret_cast<InodeHandle*>(item));
 
       qtTreeClearMarkStartIfNeeded(tree, item);
 
@@ -1858,7 +1858,7 @@ static int qtTreeSetDelNodeAttrib(Ihandle* ih, int id, const char* value)
   QTreeWidgetItem* item = qtTreeFindNode(ih, id);
   if (item)
   {
-    IFns cb = (IFns)IupGetCallback(ih, "NODEREMOVED_CB");
+    IFns cb = reinterpret_cast<IFns>(IupGetCallback(ih, "NODEREMOVED_CB"));
     if (cb)
     {
       std::function<void(QTreeWidgetItem*)> call_rec = [&](QTreeWidgetItem* it) {
@@ -1867,13 +1867,13 @@ static int qtTreeSetDelNodeAttrib(Ihandle* ih, int id, const char* value)
         {
           for (int i = 0; i < it->childCount(); i++)
             call_rec(it->child(i));
-          cb(ih, (char*)ih->data->node_cache[it_id].userdata);
+          cb(ih, static_cast<char*>(ih->data->node_cache[it_id].userdata));
         }
       };
       call_rec(item);
     }
 
-    int count = 1 + iupdrvTreeTotalChildCount(ih, (InodeHandle*)item);
+    int count = 1 + iupdrvTreeTotalChildCount(ih, reinterpret_cast<InodeHandle*>(item));
 
     QTreeWidgetItem* parent = item->parent();
     if (parent)
@@ -1898,7 +1898,7 @@ static int qtTreeSetDelNodeAttrib(Ihandle* ih, int id, const char* value)
 
 static int qtTreeSetExpandAllAttrib(Ihandle* ih, const char* value)
 {
-  IupQtTree* tree = (IupQtTree*)ih->handle;
+  auto* tree = reinterpret_cast<IupQtTree*>(ih->handle);
   bool expand = iupStrBoolean(value);
 
   if (expand)
@@ -1918,10 +1918,10 @@ static void qtTreeSelectionChanged(Ihandle* ih)
   if (iupAttribGet(ih, "_IUPTREE_IGNORE_SELECTION_CB"))
     return;
 
-  IupQtTree* tree = (IupQtTree*)ih->handle;
+  auto* tree = reinterpret_cast<IupQtTree*>(ih->handle);
   QList<QTreeWidgetItem*> selected = tree->selectedItems();
 
-  IFnii cb = (IFnii)IupGetCallback(ih, "SELECTION_CB");
+  auto cb = reinterpret_cast<IFnii>(IupGetCallback(ih, "SELECTION_CB"));
   if (cb)
   {
     if (selected.count() > 0)
@@ -1941,7 +1941,7 @@ static void qtTreeItemExpanded(Ihandle* ih, QTreeWidgetItem* item)
 
   qtTreeUpdateExpandImage(ih, item);
 
-  IFni cb = (IFni)IupGetCallback(ih, "BRANCHOPEN_CB");
+  IFni cb = reinterpret_cast<IFni>(IupGetCallback(ih, "BRANCHOPEN_CB"));
   if (cb)
   {
     if (cb(ih, id) == IUP_IGNORE)
@@ -1953,11 +1953,11 @@ static void qtTreeItemCollapsed(Ihandle* ih, QTreeWidgetItem* item)
 {
   int id = qtTreeFindNodeId(ih, item);
 
-  QPixmap* def_image = (QPixmap*)ih->data->def_image_collapsed;
+  auto* def_image = static_cast<QPixmap*>(ih->data->def_image_collapsed);
   if (def_image)
     item->setIcon(0, QIcon(*def_image));
 
-  IFni cb = (IFni)IupGetCallback(ih, "BRANCHCLOSE_CB");
+  IFni cb = reinterpret_cast<IFni>(IupGetCallback(ih, "BRANCHCLOSE_CB"));
   if (cb)
   {
     if (cb(ih, id) == IUP_IGNORE)
@@ -1974,12 +1974,12 @@ static void qtTreeItemChanged(Ihandle* ih, QTreeWidgetItem* item, int column)
   {
     Qt::CheckState state = item->checkState(0);
     QVariant last = item->data(0, Qt::UserRole + 3);
-    if (last.isValid() && last.toInt() == (int)state)
+    if (last.isValid() && last.toInt() == static_cast<int>(state))
       return;
-    item->setData(0, Qt::UserRole + 3, (int)state);
+    item->setData(0, Qt::UserRole + 3, static_cast<int>(state));
 
     int id = qtTreeFindNodeId(ih, item);
-    IFnii cb = (IFnii)IupGetCallback(ih, "TOGGLEVALUE_CB");
+    auto cb = reinterpret_cast<IFnii>(IupGetCallback(ih, "TOGGLEVALUE_CB"));
     if (cb)
     {
       int value = (state == Qt::Checked) ? 1 : (state == Qt::Unchecked ? 0 : -1);
@@ -2000,7 +2000,7 @@ static void qtTreeItemChanged(Ihandle* ih, QTreeWidgetItem* item, int column)
 
 static int qtTreeConvertXYToPos(Ihandle* ih, int x, int y)
 {
-  IupQtTree* tree = (IupQtTree*)ih->handle;
+  auto* tree = reinterpret_cast<IupQtTree*>(ih->handle);
   QTreeWidgetItem* item = tree->itemAt(QPoint(x, y));
 
   if (item)
@@ -2019,9 +2019,9 @@ static int qtTreeConvertXYToPos(Ihandle* ih, int x, int y)
 
 static int qtTreeMapMethod(Ihandle* ih)
 {
-  IupQtTree* tree = new IupQtTree(ih);
+  auto* tree = new IupQtTree(ih);
 
-  ih->handle = (InativeHandle*)tree;
+  ih->handle = reinterpret_cast<InativeHandle*>(tree);
 
   tree->setColumnCount(1);
   tree->setHeaderHidden(true);
@@ -2040,7 +2040,7 @@ static int qtTreeMapMethod(Ihandle* ih)
     bool hb = iupAttribGetBoolean(ih, "HIDEBUTTONS");
     if (hl || hb)
     {
-      IupQtTreeBranchStyle* branch_style = new IupQtTreeBranchStyle(hl, hb);
+      auto* branch_style = new IupQtTreeBranchStyle(hl, hb);
       branch_style->setParent(tree);
       tree->setStyle(branch_style);
     }
@@ -2051,7 +2051,7 @@ static int qtTreeMapMethod(Ihandle* ih)
   else
     tree->setEditTriggers(QAbstractItemView::NoEditTriggers);
 
-  IupQtTreeDelegate* delegate = new IupQtTreeDelegate(ih, tree);
+  auto* delegate = new IupQtTreeDelegate(ih, tree);
   tree->setItemDelegate(delegate);
 
   iupdrvTreeUpdateMarkMode(ih);
@@ -2088,7 +2088,7 @@ static int qtTreeMapMethod(Ihandle* ih)
     {
       ih->data->def_image_leaf = qtTreeGetThemeIcon(ih, "text-x-generic", 16);
       if (ih->data->def_image_leaf)
-        iupAttribSet(ih, "_IUPQT_THEMED_LEAF", (char*)ih->data->def_image_leaf);
+        iupAttribSet(ih, "_IUPQT_THEMED_LEAF", static_cast<char*>(ih->data->def_image_leaf));
     }
   }
 
@@ -2100,7 +2100,7 @@ static int qtTreeMapMethod(Ihandle* ih)
     {
       ih->data->def_image_collapsed = qtTreeGetThemeIcon(ih, "folder", 16);
       if (ih->data->def_image_collapsed)
-        iupAttribSet(ih, "_IUPQT_THEMED_COLLAPSED", (char*)ih->data->def_image_collapsed);
+        iupAttribSet(ih, "_IUPQT_THEMED_COLLAPSED", static_cast<char*>(ih->data->def_image_collapsed));
     }
   }
 
@@ -2114,11 +2114,11 @@ static int qtTreeMapMethod(Ihandle* ih)
       if (!ih->data->def_image_expanded)
         ih->data->def_image_expanded = qtTreeGetThemeIcon(ih, "folder", 16);
       if (ih->data->def_image_expanded)
-        iupAttribSet(ih, "_IUPQT_THEMED_EXPANDED", (char*)ih->data->def_image_expanded);
+        iupAttribSet(ih, "_IUPQT_THEMED_EXPANDED", static_cast<char*>(ih->data->def_image_expanded));
     }
   }
 
-  IupSetCallback(ih, "_IUP_XY2POS_CB", (Icallback)qtTreeConvertXYToPos);
+  IupSetCallback(ih, "_IUP_XY2POS_CB", reinterpret_cast<Icallback>(qtTreeConvertXYToPos));
 
   if (IupGetCallback(ih, "DROPFILES_CB"))
     iupAttribSet(ih, "DROPFILESTARGET", "YES");
@@ -2128,25 +2128,25 @@ static int qtTreeMapMethod(Ihandle* ih)
 
 static void qtTreeUnMapMethod(Ihandle* ih)
 {
-  IupQtTree* tree = (IupQtTree*)ih->handle;
+  auto* tree = reinterpret_cast<IupQtTree*>(ih->handle);
 
   if (tree)
   {
-    QPixmap* pixmap = (QPixmap*)iupAttribGet(ih, "_IUPQT_THEMED_LEAF");
+    auto* pixmap = reinterpret_cast<QPixmap*>(iupAttribGet(ih, "_IUPQT_THEMED_LEAF"));
     if (pixmap)
     {
       delete pixmap;
       iupAttribSet(ih, "_IUPQT_THEMED_LEAF", nullptr);
     }
 
-    pixmap = (QPixmap*)iupAttribGet(ih, "_IUPQT_THEMED_COLLAPSED");
+    pixmap = reinterpret_cast<QPixmap*>(iupAttribGet(ih, "_IUPQT_THEMED_COLLAPSED"));
     if (pixmap)
     {
       delete pixmap;
       iupAttribSet(ih, "_IUPQT_THEMED_COLLAPSED", nullptr);
     }
 
-    pixmap = (QPixmap*)iupAttribGet(ih, "_IUPQT_THEMED_EXPANDED");
+    pixmap = reinterpret_cast<QPixmap*>(iupAttribGet(ih, "_IUPQT_THEMED_EXPANDED"));
     if (pixmap)
     {
       delete pixmap;
@@ -2246,10 +2246,10 @@ extern "C" IUP_SDK_API InodeHandle* iupdrvTreeGetFocusNode(Ihandle* ih)
   if (!ih->handle)
     return nullptr;
 
-  IupQtTree* tree = (IupQtTree*)ih->handle;
+  auto* tree = reinterpret_cast<IupQtTree*>(ih->handle);
   QTreeWidgetItem* item = tree->currentItem();
 
-  return (InodeHandle*)item;
+  return reinterpret_cast<InodeHandle*>(item);
 }
 
 extern "C" IUP_SDK_API void iupdrvTreeDragDropCopyNode(Ihandle* src, Ihandle* dst, InodeHandle* itemSrc, InodeHandle* itemDst)
@@ -2257,8 +2257,8 @@ extern "C" IUP_SDK_API void iupdrvTreeDragDropCopyNode(Ihandle* src, Ihandle* ds
   if (!src || !dst || !itemSrc || !itemDst)
     return;
 
-  QTreeWidgetItem* src_item = (QTreeWidgetItem*)itemSrc;
-  QTreeWidgetItem* dst_item = (QTreeWidgetItem*)itemDst;
+  auto* src_item = reinterpret_cast<QTreeWidgetItem*>(itemSrc);
+  auto* dst_item = reinterpret_cast<QTreeWidgetItem*>(itemDst);
 
   int old_count = dst->data->node_count;
 
@@ -2282,13 +2282,13 @@ extern "C" IUP_SDK_API void iupdrvTreeDragDropCopyNode(Ihandle* src, Ihandle* ds
       dst_index = dst_parent->indexOfChild(dst_item) + 1;
     else
     {
-      IupQtTree* tree = (IupQtTree*)dst->handle;
+      auto* tree = reinterpret_cast<IupQtTree*>(dst->handle);
       dst_index = tree->indexOfTopLevelItem(dst_item) + 1;
     }
 
     if (kind == ITREE_BRANCH)
     {
-      int child_count = iupdrvTreeTotalChildCount(dst, (InodeHandle*)dst_item);
+      int child_count = iupdrvTreeTotalChildCount(dst, reinterpret_cast<InodeHandle*>(dst_item));
       id_new += child_count;
     }
   }

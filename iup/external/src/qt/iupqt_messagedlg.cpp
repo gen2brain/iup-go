@@ -131,7 +131,7 @@ static int qtMessageDlgPopup(Ihandle* ih, int x, int y)
   /* Only force position if no parent, Qt centers on parent automatically */
   if (!parent)
   {
-    ih->handle = (InativeHandle*)dialog;
+    ih->handle = reinterpret_cast<InativeHandle*>(dialog);
     iupDialogUpdatePosition(ih);
     ih->handle = nullptr;
   }
@@ -195,5 +195,5 @@ extern "C" IUP_SDK_API void iupdrvMessageDlgInitClass(Iclass* ic)
 {
   ic->DlgPopup = qtMessageDlgPopup;
 
-  iupClassRegisterAttribute(ic, "AUTOMODAL", qtMessageDlgGetAutoModalAttrib, NULL, IUPAF_SAMEASSYSTEM, "1", IUPAF_NOT_MAPPED|IUPAF_READONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "AUTOMODAL", qtMessageDlgGetAutoModalAttrib, nullptr, IUPAF_SAMEASSYSTEM, "1", IUPAF_NOT_MAPPED|IUPAF_READONLY|IUPAF_NO_INHERIT);
 }

@@ -72,8 +72,7 @@ public:
     QSize widget_size = size();
     if (!m_buffer || m_buffer->size() != widget_size)
     {
-      if (m_buffer)
-        delete m_buffer;
+      delete m_buffer;
       m_buffer = new QPixmap(widget_size);
       m_buffer->fill(Qt::white);
     }
@@ -96,18 +95,18 @@ protected:
   {
     Q_UNUSED(event);
 
-    iupAttribSet(m_ih, "_IUPQT_PREVIEW_CANVAS", (char*)this);
-    iupAttribSet(m_ih, "_IUPQT_PREVIEW_BUFFER", (char*)buffer());
+    iupAttribSet(m_ih, "_IUPQT_PREVIEW_CANVAS", reinterpret_cast<char*>(this));
+    iupAttribSet(m_ih, "_IUPQT_PREVIEW_BUFFER", reinterpret_cast<char*>(buffer()));
 
-    IFnss cb = (IFnss)IupGetCallback(m_ih, "FILE_CB");
+    auto cb = reinterpret_cast<IFnss>(IupGetCallback(m_ih, "FILE_CB"));
     if (cb)
     {
       QFileInfo fi(m_currentFile);
       QByteArray fileBytes = m_currentFile.toUtf8();
       if (fi.isFile())
-        cb(m_ih, (char*)fileBytes.constData(), (char*)"PAINT");
+        cb(m_ih, const_cast<char*>(fileBytes.constData()), const_cast<char*>("PAINT"));
       else
-        cb(m_ih, nullptr, (char*)"PAINT");
+        cb(m_ih, nullptr, const_cast<char*>("PAINT"));
     }
 
     iupAttribSet(m_ih, "_IUPQT_PREVIEW_CANVAS", nullptr);
@@ -133,7 +132,7 @@ static void qtFileDlgUpdatePreviewGLCanvas(Ihandle* ih, QWidget* preview_widget)
     if (handle_name && strcmp(handle_name, "XWINDOW") == 0)
     {
       WId xid = preview_widget->winId();
-      iupAttribSet(glcanvas, "XWINDOW", (char*)(uintptr_t)xid);
+      iupAttribSet(glcanvas, "XWINDOW", reinterpret_cast<char*>(static_cast<uintptr_t>(xid)));
       glcanvas->iclass->Map(glcanvas);
     }
   }
@@ -164,13 +163,13 @@ public:
     iupAttribSetInt(ih, "PREVIEWWIDTH", preview_width);
     iupAttribSetInt(ih, "PREVIEWHEIGHT", preview_height);
 
-    QSplitter* splitter = new QSplitter(Qt::Horizontal, this);
+    auto* splitter = new QSplitter(Qt::Horizontal, this);
     splitter->addWidget(m_fileDialog);
     splitter->addWidget(m_previewCanvas);
     splitter->setStretchFactor(0, 1);
     splitter->setStretchFactor(1, 0);
 
-    QVBoxLayout* layout = new QVBoxLayout(this);
+    auto* layout = new QVBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
     layout->addWidget(splitter);
     setLayout(layout);
@@ -189,29 +188,29 @@ public:
 private:
   void onCurrentChanged(const QString& path)
   {
-    IFnss cb = (IFnss)IupGetCallback(m_ih, "FILE_CB");
+    auto cb = reinterpret_cast<IFnss>(IupGetCallback(m_ih, "FILE_CB"));
     if (cb)
     {
       QFileInfo fi(path);
       QByteArray pathBytes = path.toUtf8();
       if (fi.isFile())
-        cb(m_ih, (char*)pathBytes.constData(), (char*)"SELECT");
+        cb(m_ih, const_cast<char*>(pathBytes.constData()), const_cast<char*>("SELECT"));
       else
-        cb(m_ih, (char*)pathBytes.constData(), (char*)"OTHER");
+        cb(m_ih, const_cast<char*>(pathBytes.constData()), const_cast<char*>("OTHER"));
     }
     m_previewCanvas->setCurrentFile(path);
   }
 
   void onAccepted()
   {
-    IFnss cb = (IFnss)IupGetCallback(m_ih, "FILE_CB");
+    auto cb = reinterpret_cast<IFnss>(IupGetCallback(m_ih, "FILE_CB"));
     if (cb)
     {
       QStringList selectedFiles = m_fileDialog->selectedFiles();
       if (!selectedFiles.isEmpty())
       {
         QByteArray pathBytes = selectedFiles[0].toUtf8();
-        int ret = cb(m_ih, (char*)pathBytes.constData(), (char*)"OK");
+        int ret = cb(m_ih, const_cast<char*>(pathBytes.constData()), const_cast<char*>("OK"));
         if (ret == IUP_IGNORE)
           return;
         if (ret == IUP_CONTINUE)
@@ -261,13 +260,13 @@ static char* qtFileCheckExt(Ihandle* ih, const char* filename)
   char* ext = iupAttribGet(ih, "EXTDEFAULT");
   if (ext)
   {
-    int len = (int)strlen(filename);
-    int ext_len = (int)strlen(ext);
+    int len = static_cast<int>(strlen(filename));
+    int ext_len = static_cast<int>(strlen(ext));
 
     if (len > ext_len && filename[len - ext_len - 1] == '.')
     {
       if (strcmp(filename + len - ext_len, ext) == 0)
-        return (char*)filename;
+        return const_cast<char*>(filename);
     }
 
     const char* dot = strrchr(filename, '.');
@@ -277,13 +276,13 @@ static char* qtFileCheckExt(Ihandle* ih, const char* filename)
     if (!dot || (slash && dot < slash) || (backslash && dot < backslash))
     {
       int new_len = len + ext_len + 2;
-      char* new_filename = (char*)malloc(new_len);
+      char* new_filename = static_cast<char*>(malloc(new_len));
       snprintf(new_filename, new_len, "%s.%s", filename, ext);
       return new_filename;
     }
   }
 
-  return (char*)filename;
+  return const_cast<char*>(filename);
 }
 
 static void qtFileDlgGetMultipleFiles(Ihandle* ih, const QStringList& files)
@@ -291,7 +290,7 @@ static void qtFileDlgGetMultipleFiles(Ihandle* ih, const QStringList& files)
   if (files.isEmpty())
     return;
 
-  QString firstFile = files[0];
+  const QString& firstFile = files[0];
   QFileInfo fileInfo(firstFile);
   QString dir = fileInfo.absolutePath();
 
@@ -326,7 +325,7 @@ static void qtFileDlgGetMultipleFiles(Ihandle* ih, const QStringList& files)
     if (dirBytes[len - 1] == '/' || dirBytes[len - 1] == '\\')
       len--; /* remove last separator */
 
-    all_names = (char*)iupArrayAdd(names_array, len + 1);
+    all_names = static_cast<char*>(iupArrayAdd(names_array, len + 1));
     memcpy(all_names, dirBytes.constData(), len);
     all_names[len] = '|';
 
@@ -343,7 +342,7 @@ static void qtFileDlgGetMultipleFiles(Ihandle* ih, const QStringList& files)
 
       cur_len = iupArrayCount(names_array);
 
-      all_names = (char*)iupArrayAdd(names_array, len + 1);
+      all_names = static_cast<char*>(iupArrayAdd(names_array, len + 1));
       memcpy(all_names + cur_len, fileBytes.constData() + dir_len, len);
       all_names[cur_len + len] = '|';
 
@@ -354,7 +353,7 @@ static void qtFileDlgGetMultipleFiles(Ihandle* ih, const QStringList& files)
     iupAttribSetInt(ih, "MULTIVALUECOUNT", count);
 
     cur_len = iupArrayCount(names_array);
-    all_names = (char*)iupArrayInc(names_array);
+    all_names = static_cast<char*>(iupArrayInc(names_array));
     all_names[cur_len] = 0;
 
     iupAttribSetStr(ih, "VALUE", all_names);
@@ -376,7 +375,7 @@ static int qtFileDlgPopup(Ihandle* ih, int x, int y)
   const char* value;
   int dialogtype;
   IupQtFileDialogWithPreview* preview_dialog = nullptr;
-  IFnss file_cb = (IFnss)IupGetCallback(ih, "FILE_CB");
+  auto file_cb = reinterpret_cast<IFnss>(IupGetCallback(ih, "FILE_CB"));
 
   iupAttribSetInt(ih, "_IUPDLG_X", x);
   iupAttribSetInt(ih, "_IUPDLG_Y", y);
@@ -444,7 +443,7 @@ static int qtFileDlgPopup(Ihandle* ih, int x, int y)
   if (value && value[0] != 0 && (value[0] == '/' || value[1] == ':'))
   {
     char* dir = iupStrFileGetPath(value);
-    int len = (int)strlen(dir);
+    int len = static_cast<int>(strlen(dir));
     iupAttribSetStr(ih, "DIRECTORY", dir);
     free(dir);
 
@@ -507,7 +506,7 @@ static int qtFileDlgPopup(Ihandle* ih, int x, int y)
     {
       char* info = iupAttribGet(ih, "FILTERINFO");
       if (!info)
-        info = (char*)value;
+        info = const_cast<char*>(value);
 
       char* filters_str = iupStrDup(value);
       iupStrReplace(filters_str, ';', ' ');
@@ -521,14 +520,14 @@ static int qtFileDlgPopup(Ihandle* ih, int x, int y)
 
   if (IupGetCallback(ih, "HELP_CB"))
   {
-    QPushButton* help_button = dialog->findChild<QPushButton*>("qt_custom_help_button");
+    auto* help_button = dialog->findChild<QPushButton*>("qt_custom_help_button");
     if (!help_button)
     {
       help_button = new QPushButton(QString::fromUtf8(IupGetLanguageString("IUP_HELP")));
       help_button->setObjectName("qt_custom_help_button");
 
       QObject::connect(help_button, &QPushButton::clicked, [ih, dialog]() {
-        Icallback cb = (Icallback)IupGetCallback(ih, "HELP_CB");
+        auto cb = static_cast<Icallback>(IupGetCallback(ih, "HELP_CB"));
         if (cb && cb(ih) == IUP_CLOSE)
           dialog->reject();
       });
@@ -546,10 +545,10 @@ static int qtFileDlgPopup(Ihandle* ih, int x, int y)
     }
   }
 
-  QDialog* exec_dialog = preview_dialog ? (QDialog*)preview_dialog : (QDialog*)dialog;
-  ih->handle = (InativeHandle*)exec_dialog;
+  QDialog* exec_dialog = preview_dialog ? static_cast<QDialog*>(preview_dialog) : static_cast<QDialog*>(dialog);
+  ih->handle = reinterpret_cast<InativeHandle*>(exec_dialog);
   iupDialogUpdatePosition(ih);
-  ih->handle = NULL;
+  ih->handle = nullptr;
 
   if (preview_dialog)
   {
@@ -559,7 +558,7 @@ static int qtFileDlgPopup(Ihandle* ih, int x, int y)
   }
 
   if (file_cb)
-    file_cb(ih, nullptr, (char*)"INIT");
+    file_cb(ih, nullptr, const_cast<char*>("INIT"));
 
   int result;
   for (;;)
@@ -575,7 +574,7 @@ static int qtFileDlgPopup(Ihandle* ih, int x, int y)
       if (!selectedFiles.isEmpty())
       {
         QByteArray pathBytes = selectedFiles[0].toUtf8();
-        int ret = file_cb(ih, (char*)pathBytes.constData(), (char*)"OK");
+        int ret = file_cb(ih, const_cast<char*>(pathBytes.constData()), const_cast<char*>("OK"));
         if (ret == IUP_IGNORE)
         {
           if (dialog->testOption(QFileDialog::DontUseNativeDialog))
@@ -601,7 +600,7 @@ static int qtFileDlgPopup(Ihandle* ih, int x, int y)
 
   if (file_cb)
   {
-    file_cb(ih, nullptr, (char*)"FINISH");
+    file_cb(ih, nullptr, const_cast<char*>("FINISH"));
   }
 
   if (result == QDialog::Accepted)
@@ -610,7 +609,7 @@ static int qtFileDlgPopup(Ihandle* ih, int x, int y)
 
     if (selectedFiles.isEmpty())
     {
-      iupAttribSet(ih, "VALUE", NULL);
+      iupAttribSet(ih, "VALUE", nullptr);
       iupAttribSet(ih, "STATUS", "-1");
       if (preview_dialog)
         delete preview_dialog;
@@ -637,7 +636,7 @@ static int qtFileDlgPopup(Ihandle* ih, int x, int y)
 
     if (dialogtype == 0) /* OPEN */
     {
-      QString filename = selectedFiles[0];
+      const QString& filename = selectedFiles[0];
       int file_exist = qtIsFile(filename);
       int dir_exist = qtIsDirectory(filename);
 
@@ -649,7 +648,7 @@ static int qtFileDlgPopup(Ihandle* ih, int x, int y)
           delete preview_dialog;
         else
           delete dialog;
-        iupAttribSet(ih, "VALUE", NULL);
+        iupAttribSet(ih, "VALUE", nullptr);
         iupAttribSet(ih, "STATUS", "-1");
         return IUP_NOERROR;
       }
@@ -668,7 +667,7 @@ static int qtFileDlgPopup(Ihandle* ih, int x, int y)
             delete preview_dialog;
           else
             delete dialog;
-          iupAttribSet(ih, "VALUE", NULL);
+          iupAttribSet(ih, "VALUE", nullptr);
           iupAttribSet(ih, "STATUS", "-1");
           return IUP_NOERROR;
         }
@@ -682,7 +681,7 @@ static int qtFileDlgPopup(Ihandle* ih, int x, int y)
     }
     else
     {
-      QString filename = selectedFiles[0];
+      const QString& filename = selectedFiles[0];
       QByteArray filenameBytes = filename.toUtf8();
 
       char* final_filename = qtFileCheckExt(ih, filenameBytes.constData());
@@ -704,7 +703,7 @@ static int qtFileDlgPopup(Ihandle* ih, int x, int y)
 
       if (dir_exist)
       {
-        iupAttribSet(ih, "FILEEXIST", NULL);
+        iupAttribSet(ih, "FILEEXIST", nullptr);
         iupAttribSet(ih, "STATUS", "0");
       }
       else
@@ -729,9 +728,9 @@ static int qtFileDlgPopup(Ihandle* ih, int x, int y)
   }
   else
   {
-    iupAttribSet(ih, "FILTERUSED", NULL);
-    iupAttribSet(ih, "VALUE", NULL);
-    iupAttribSet(ih, "FILEEXIST", NULL);
+    iupAttribSet(ih, "FILTERUSED", nullptr);
+    iupAttribSet(ih, "VALUE", nullptr);
+    iupAttribSet(ih, "FILEEXIST", nullptr);
     iupAttribSet(ih, "STATUS", "-1");
   }
 
@@ -751,7 +750,7 @@ extern "C" IUP_SDK_API void iupdrvFileDlgInitClass(Iclass* ic)
 {
   ic->DlgPopup = qtFileDlgPopup;
 
-  iupClassRegisterAttribute(ic, "EXTFILTER", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "FILTERINFO", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "FILTERUSED", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "EXTFILTER", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FILTERINFO", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FILTERUSED", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
 }

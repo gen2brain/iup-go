@@ -81,14 +81,14 @@ IUP_DRV_API void iupqtNativeContainerMove(QWidget* container, QWidget* widget, i
  ****************************************************************************/
 
 /* Qt uses UTF-8 internally, so conversions are mostly pass-through */
-IUP_DRV_API void iupqtStrRelease(void);
+IUP_DRV_API void iupqtStrRelease();
 IUP_DRV_API char* iupqtStrConvertToSystem(const char* str);
 IUP_DRV_API char* iupqtStrConvertToSystemLen(const char* str, int* len);
 IUP_DRV_API char* iupqtStrConvertFromSystem(const char* str);
 IUP_DRV_API char* iupqtStrConvertFromFilename(const char* str);
 IUP_DRV_API char* iupqtStrConvertToFilename(const char* str);
 IUP_DRV_API void iupqtStrSetUTF8Mode(int utf8mode);
-IUP_DRV_API int iupqtStrGetUTF8Mode(void);
+IUP_DRV_API int iupqtStrGetUTF8Mode();
 
 /****************************************************************************
  * Focus Management
@@ -127,8 +127,8 @@ IUP_DRV_API void iupqtSetWidgetPalette(QWidget* widget, const QPalette& palette)
 
 IUP_DRV_API char* iupqtGetNativeWidgetHandle(QWidget* widget);
 IUP_DRV_API char* iupqtGetNativeWindowHandleAttrib(Ihandle* ih);
-IUP_DRV_API const char* iupqtGetNativeWindowHandleName(void);
-IUP_DRV_API const char* iupqtGetNativeFontIdName(void);
+IUP_DRV_API const char* iupqtGetNativeWindowHandleName();
+IUP_DRV_API const char* iupqtGetNativeFontIdName();
 
 /****************************************************************************
  * Dialog Management
@@ -141,11 +141,11 @@ IUP_DRV_API QWidget* iupqtGetParentWidget(Ihandle* ih);
  * System Utilities
  ****************************************************************************/
 
-IUP_DRV_API void iupqtSetGlobalColors(void);
-IUP_DRV_API void iupqtUpdateSystemPalette(void);
-IUP_DRV_API int iupqtSystemPaletteChanged(void);
+IUP_DRV_API void iupqtSetGlobalColors();
+IUP_DRV_API void iupqtUpdateSystemPalette();
+IUP_DRV_API int iupqtSystemPaletteChanged();
 
-IUP_DRV_API QApplication* iupqtGetApplication(void);
+IUP_DRV_API QApplication* iupqtGetApplication();
 
 /****************************************************************************
  * Canvas Support

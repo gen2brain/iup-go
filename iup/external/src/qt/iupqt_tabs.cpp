@@ -23,6 +23,7 @@
 #include <QApplication>
 
 #include <functional>
+#include <utility>
 
 extern "C" {
 #include "iup.h"
@@ -55,7 +56,7 @@ public:
   {
     if (element == CE_TabBarTabLabel)
     {
-      if (const QStyleOptionTab* tab = qstyleoption_cast<const QStyleOptionTab*>(option))
+      if (const auto* tab = qstyleoption_cast<const QStyleOptionTab*>(option))
       {
         bool isVerticalTab = (tab->shape == QTabBar::RoundedWest ||
                               tab->shape == QTabBar::RoundedEast ||
@@ -114,7 +115,7 @@ public:
 
 static Ihandle* qtTabsChildAtPos(Ihandle* ih, int pos)
 {
-  Ihandle* removed = (Ihandle*)iupAttribGet(ih, "_IUPQT_REMOVED_CHILD");
+  auto* removed = reinterpret_cast<Ihandle*>(iupAttribGet(ih, "_IUPQT_REMOVED_CHILD"));
   if (removed)
   {
     int removed_pos = iupAttribGetInt(ih, "_IUPQT_REMOVED_POS");
@@ -128,41 +129,41 @@ static Ihandle* qtTabsChildAtPos(Ihandle* ih, int pos)
 
 static int qtTabsIndexToPos(Ihandle* ih, int index)
 {
-  QTabWidget* tabs = (QTabWidget*)ih->handle;
+  auto* tabs = reinterpret_cast<QTabWidget*>(ih->handle);
   QWidget* page = (tabs && index >= 0) ? tabs->widget(index) : nullptr;
   if (!page)
     return -1;
 
-  Ihandle* removed = (Ihandle*)iupAttribGet(ih, "_IUPQT_REMOVED_CHILD");
+  auto* removed = reinterpret_cast<Ihandle*>(iupAttribGet(ih, "_IUPQT_REMOVED_CHILD"));
   int removed_pos = removed ? iupAttribGetInt(ih, "_IUPQT_REMOVED_POS") : -1;
   int pos = 0;
   for (Ihandle* c = ih->firstchild; c; c = c->brother, pos++)
   {
     if (pos == removed_pos)
       pos++;
-    if ((QWidget*)iupAttribGet(c, "_IUPTAB_PAGE") == page)
+    if (reinterpret_cast<QWidget*>(iupAttribGet(c, "_IUPTAB_PAGE")) == page)
       return pos;
   }
-  if (removed && (QWidget*)iupAttribGet(removed, "_IUPTAB_PAGE") == page)
+  if (removed && reinterpret_cast<QWidget*>(iupAttribGet(removed, "_IUPTAB_PAGE")) == page)
     return removed_pos;
   return -1;
 }
 
 static int qtTabsPosToIndex(Ihandle* ih, int pos)
 {
-  QTabWidget* tabs = (QTabWidget*)ih->handle;
+  auto* tabs = reinterpret_cast<QTabWidget*>(ih->handle);
   Ihandle* child = qtTabsChildAtPos(ih, pos);
-  QWidget* page = child ? (QWidget*)iupAttribGet(child, "_IUPTAB_PAGE") : nullptr;
+  QWidget* page = child ? reinterpret_cast<QWidget*>(iupAttribGet(child, "_IUPTAB_PAGE")) : nullptr;
   return (tabs && page) ? tabs->indexOf(page) : -1;
 }
 
 static int qtTabsInsertIndex(Ihandle* ih, int pos)
 {
-  QTabWidget* tabs = (QTabWidget*)ih->handle;
+  auto* tabs = reinterpret_cast<QTabWidget*>(ih->handle);
   int index = 0, p = 0;
   for (Ihandle* c = ih->firstchild; c && p < pos; c = c->brother, p++)
   {
-    QWidget* page = (QWidget*)iupAttribGet(c, "_IUPTAB_PAGE");
+    auto* page = reinterpret_cast<QWidget*>(iupAttribGet(c, "_IUPTAB_PAGE"));
     if (tabs && page && tabs->indexOf(page) >= 0)
       index++;
   }
@@ -180,7 +181,7 @@ protected:
   {
     if (event->button() == Qt::RightButton)
     {
-      IFni cb = (IFni)IupGetCallback(ih, "RIGHTCLICK_CB");
+      IFni cb = reinterpret_cast<IFni>(IupGetCallback(ih, "RIGHTCLICK_CB"));
       if (cb)
       {
         int pos = qtTabsIndexToPos(ih, tabAt(event->pos()));
@@ -209,7 +210,7 @@ protected:
 
     if (do_show_close)
     {
-      QToolButton* close_btn = new QToolButton();
+      auto* close_btn = new QToolButton();
       close_btn->setIcon(style()->standardIcon(QStyle::SP_TitleBarCloseButton));
       close_btn->setAutoRaise(true);
       close_btn->setFixedSize(16, 16);
@@ -254,7 +255,7 @@ protected:
     {
       if (ih && ih->data->orientation == ITABS_HORIZONTAL)
       {
-        return QSize(size.height(), size.width());
+        return {size.height(), size.width()};
       }
     }
 
@@ -281,7 +282,7 @@ public:
 
   void setIhandle(Ihandle* ih_param) { ih = ih_param; }
 
-  void setCloseCallback(std::function<void(int)> callback) { closeCallback = callback; }
+  void setCloseCallback(std::function<void(int)> callback) { closeCallback = std::move(callback); }
 
   void updateAllTabCloseButtons()
   {
@@ -309,7 +310,7 @@ private:
 public:
   IupQtTabWidget(Ihandle* ih_param) : QTabWidget(), ih(ih_param)
   {
-    IupQtTabBar* custom_bar = new IupQtTabBar(ih);
+    auto* custom_bar = new IupQtTabBar(ih);
     setTabBar(custom_bar);
 
     custom_bar->setCloseCallback([this, ih_param](int index) {
@@ -328,7 +329,7 @@ public:
   void setIhandle(Ihandle* ih_param)
   {
     ih = ih_param;
-    IupQtTabBar* tab_bar = (IupQtTabBar*)tabBar();
+    auto* tab_bar = static_cast<IupQtTabBar*>(tabBar());
     if (tab_bar)
     {
       tab_bar->setIhandle(ih_param);
@@ -343,7 +344,7 @@ public:
 
   void updateAllTabCloseButtons()
   {
-    IupQtTabBar* tab_bar = (IupQtTabBar*)tabBar();
+    auto* tab_bar = static_cast<IupQtTabBar*>(tabBar());
     if (tab_bar)
       tab_bar->updateAllTabCloseButtons();
   }
@@ -371,7 +372,7 @@ static void qtTabsHandleCurrentChanged(IupQtTabWidget* tabs, int index, Ihandle*
 
   for (Ihandle* c = ih->firstchild; c; c = c->brother)
   {
-    QWidget* page = (QWidget*)iupAttribGet(c, "_IUPTAB_PAGE");
+    auto* page = reinterpret_cast<QWidget*>(iupAttribGet(c, "_IUPTAB_PAGE"));
     if (page == current_page)
       child = c;
     if (page == prev_page)
@@ -380,28 +381,28 @@ static void qtTabsHandleCurrentChanged(IupQtTabWidget* tabs, int index, Ihandle*
 
   if (prev_child)
   {
-    QWidget* prev_container = (QWidget*)iupAttribGet(prev_child, "_IUPTAB_CONTAINER");
+    auto* prev_container = reinterpret_cast<QWidget*>(iupAttribGet(prev_child, "_IUPTAB_CONTAINER"));
     if (prev_container)
       prev_container->hide();
   }
 
   if (child)
   {
-    QWidget* container = (QWidget*)iupAttribGet(child, "_IUPTAB_CONTAINER");
+    auto* container = reinterpret_cast<QWidget*>(iupAttribGet(child, "_IUPTAB_CONTAINER"));
     if (container)
       container->show();
   }
 
   if (!iupAttribGet(ih, "_IUPQT_IGNORE_CHANGE"))
   {
-    IFnnn cb = (IFnnn)IupGetCallback(ih, "TABCHANGE_CB");
+    auto cb = reinterpret_cast<IFnnn>(IupGetCallback(ih, "TABCHANGE_CB"));
     if (cb)
     {
       cb(ih, child, prev_child);
     }
     else
     {
-      IFnii cb2 = (IFnii)IupGetCallback(ih, "TABCHANGEPOS_CB");
+      auto cb2 = reinterpret_cast<IFnii>(IupGetCallback(ih, "TABCHANGEPOS_CB"));
       if (cb2 && prev_child)
         cb2(ih, IupGetChildPos(ih, child), IupGetChildPos(ih, prev_child));
     }
@@ -417,7 +418,7 @@ static void qtTabsHandleTabCloseRequested(IupQtTabWidget* tabs, int index, Ihand
   int pos = qtTabsIndexToPos(ih, index);
   if (pos < 0) return;
 
-  IFni cb = (IFni)IupGetCallback(ih, "TABCLOSE_CB");
+  IFni cb = reinterpret_cast<IFni>(IupGetCallback(ih, "TABCLOSE_CB"));
   int ret = IUP_DEFAULT;
 
   if (cb)
@@ -437,7 +438,7 @@ static void qtTabsHandleTabCloseRequested(IupQtTabWidget* tabs, int index, Ihand
     Ihandle* child = IupGetChild(ih, pos);
     if (child)
     {
-      QWidget* tab_page = (QWidget*)iupAttribGet(child, "_IUPTAB_PAGE");
+      auto* tab_page = reinterpret_cast<QWidget*>(iupAttribGet(child, "_IUPTAB_PAGE"));
       if (tab_page)
       {
         int idx = tabs->indexOf(tab_page);
@@ -455,7 +456,7 @@ static void qtTabsHandleTabMoved(int from, int to, Ihandle* ih)
   if (iupAttribGet(ih, "_IUPTABS_REORDERING"))
     return;
 
-  QTabWidget* tabs = (QTabWidget*)ih->handle;
+  auto* tabs = reinterpret_cast<QTabWidget*>(ih->handle);
   if (!tabs)
     return;
 
@@ -474,18 +475,18 @@ static void qtTabsHandleTabMoved(int from, int to, Ihandle* ih)
   else
     new_pos = IupGetChildCount(ih) - 1;
 
-  IFnii cb = (IFnii)IupGetCallback(ih, "REORDER_CB");
+  auto cb = reinterpret_cast<IFnii>(IupGetCallback(ih, "REORDER_CB"));
   if (cb && cb(ih, old_pos, new_pos) == IUP_IGNORE)
   {
     iupAttribSet(ih, "_IUPTABS_REORDERING", "1");
     tabs->tabBar()->moveTab(to, from);
-    iupAttribSet(ih, "_IUPTABS_REORDERING", NULL);
+    iupAttribSet(ih, "_IUPTABS_REORDERING", nullptr);
     return;
   }
 
   iupAttribSet(ih, "_IUPTABS_REORDERING", "1");
   IupReparent(child, ih, ref_child);
-  iupAttribSet(ih, "_IUPTABS_REORDERING", NULL);
+  iupAttribSet(ih, "_IUPTABS_REORDERING", nullptr);
 }
 
 /****************************************************************************
@@ -511,7 +512,7 @@ extern "C" IUP_SDK_API int iupdrvTabsGetLineCountAttrib(Ihandle* ih)
 
 extern "C" IUP_SDK_API void iupdrvTabsSetCurrentTab(Ihandle* ih, int pos)
 {
-  IupQtTabWidget* tabs = (IupQtTabWidget*)ih->handle;
+  auto* tabs = reinterpret_cast<IupQtTabWidget*>(ih->handle);
   if (!tabs)
     return;
 
@@ -527,7 +528,7 @@ extern "C" IUP_SDK_API void iupdrvTabsSetCurrentTab(Ihandle* ih, int pos)
 
 extern "C" IUP_SDK_API int iupdrvTabsGetCurrentTab(Ihandle* ih)
 {
-  QTabWidget* tabs = (QTabWidget*)ih->handle;
+  auto* tabs = reinterpret_cast<QTabWidget*>(ih->handle);
   if (!tabs)
     return -1;
 
@@ -541,7 +542,7 @@ extern "C" IUP_SDK_API void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_ti
 
   if (ih->handle)
   {
-    QTabWidget* tabWidget = (QTabWidget*)ih->handle;
+    auto* tabWidget = reinterpret_cast<QTabWidget*>(ih->handle);
     QTabBar* tabBar = tabWidget->tabBar();
     if (tabBar && tabBar->count() > 0)
     {
@@ -583,18 +584,18 @@ extern "C" IUP_SDK_API void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_ti
   if (tab_title)
   {
     text_width = iupdrvFontGetStringWidth(ih, tab_title);
-    iupdrvFontGetCharSize(ih, NULL, &text_height);
+    iupdrvFontGetCharSize(ih, nullptr, &text_height);
     width = text_width;
     height = text_height;
   }
 
   if (tab_image)
   {
-    void* img = iupImageGetImage(tab_image, ih, 0, NULL);
+    void* img = iupImageGetImage(tab_image, ih, 0, nullptr);
     if (img)
     {
       int img_w, img_h;
-      iupdrvImageGetInfo(img, &img_w, &img_h, NULL);
+      iupdrvImageGetInfo(img, &img_w, &img_h, nullptr);
       iupTabsScaleImageSize(ih, img_w, img_h, &img_w, &img_h);
       width += img_w;
       width += 4;  /* Qt adds 4px padding when icon is present */
@@ -635,8 +636,8 @@ extern "C" IUP_SDK_API int iupdrvTabsIsTabVisible(Ihandle* child, int pos)
   if (!ih || !ih->handle)
     return 1;
 
-  QTabWidget* tabs = (QTabWidget*)ih->handle;
-  QWidget* tab_page = (QWidget*)iupAttribGet(child, "_IUPTAB_PAGE");
+  auto* tabs = reinterpret_cast<QTabWidget*>(ih->handle);
+  auto* tab_page = reinterpret_cast<QWidget*>(iupAttribGet(child, "_IUPTAB_PAGE"));
 
   (void)pos;
 
@@ -652,7 +653,7 @@ extern "C" IUP_SDK_API int iupdrvTabsIsTabVisible(Ihandle* child, int pos)
 
 static void qtTabsUpdatePageFont(Ihandle* ih)
 {
-  QTabWidget* tabs = (QTabWidget*)ih->handle;
+  auto* tabs = reinterpret_cast<QTabWidget*>(ih->handle);
   QFont* font = iupqtGetQFont(iupGetFontValue(ih));
 
   if (font)
@@ -668,7 +669,7 @@ static void qtTabsUpdatePageBgColor(Ihandle* ih, unsigned char r, unsigned char 
 
   for (child = ih->firstchild; child; child = child->brother)
   {
-    QWidget* tab_container = (QWidget*)iupAttribGet(child, "_IUPTAB_CONTAINER");
+    auto* tab_container = reinterpret_cast<QWidget*>(iupAttribGet(child, "_IUPTAB_CONTAINER"));
     if (tab_container)
     {
       QPalette palette = tab_container->palette();
@@ -681,7 +682,7 @@ static void qtTabsUpdatePageBgColor(Ihandle* ih, unsigned char r, unsigned char 
 
 static void qtTabsUpdatePageFgColor(Ihandle* ih, unsigned char r, unsigned char g, unsigned char b)
 {
-  QTabWidget* tabs = (QTabWidget*)ih->handle;
+  auto* tabs = reinterpret_cast<QTabWidget*>(ih->handle);
   QTabBar* tab_bar = tabs->tabBar();
 
   QString styleSheet = tab_bar->styleSheet();
@@ -691,7 +692,7 @@ static void qtTabsUpdatePageFgColor(Ihandle* ih, unsigned char r, unsigned char 
 
 static void qtTabsUpdateTabType(Ihandle* ih)
 {
-  QTabWidget* tabs = (QTabWidget*)ih->handle;
+  auto* tabs = reinterpret_cast<QTabWidget*>(ih->handle);
 
   switch (ih->data->type)
   {
@@ -725,7 +726,7 @@ static int qtTabsSetTabPaddingAttrib(Ihandle* ih, const char* value)
 
   if (ih->handle)
   {
-    QTabWidget* tabs = (QTabWidget*)ih->handle;
+    auto* tabs = reinterpret_cast<QTabWidget*>(ih->handle);
     QString styleSheet = tabs->tabBar()->styleSheet();
 
     QStringList lines = styleSheet.split(';');
@@ -819,8 +820,8 @@ static int qtTabsSetTabTitleAttrib(Ihandle* ih, int pos, const char* value)
 
     if (ih->handle)
     {
-      QTabWidget* tabs = (QTabWidget*)ih->handle;
-      QWidget* tab_page = (QWidget*)iupAttribGet(child, "_IUPTAB_PAGE");
+      auto* tabs = reinterpret_cast<QTabWidget*>(ih->handle);
+      auto* tab_page = reinterpret_cast<QWidget*>(iupAttribGet(child, "_IUPTAB_PAGE"));
 
       if (tab_page)
       {
@@ -842,8 +843,8 @@ static int qtTabsSetTabTipAttrib(Ihandle* ih, int pos, const char* value)
   Ihandle* child = IupGetChild(ih, pos);
   if (child && ih->handle)
   {
-    QTabWidget* tabs = (QTabWidget*)ih->handle;
-    QWidget* tab_page = (QWidget*)iupAttribGet(child, "_IUPTAB_PAGE");
+    auto* tabs = reinterpret_cast<QTabWidget*>(ih->handle);
+    auto* tab_page = reinterpret_cast<QWidget*>(iupAttribGet(child, "_IUPTAB_PAGE"));
 
     if (tab_page)
     {
@@ -865,8 +866,8 @@ static int qtTabsSetTabImageAttrib(Ihandle* ih, int pos, const char* value)
 
     if (ih->handle)
     {
-      QTabWidget* tabs = (QTabWidget*)ih->handle;
-      QWidget* tab_page = (QWidget*)iupAttribGet(child, "_IUPTAB_PAGE");
+      auto* tabs = reinterpret_cast<QTabWidget*>(ih->handle);
+      auto* tab_page = reinterpret_cast<QWidget*>(iupAttribGet(child, "_IUPTAB_PAGE"));
 
       if (tab_page)
       {
@@ -875,7 +876,7 @@ static int qtTabsSetTabImageAttrib(Ihandle* ih, int pos, const char* value)
         {
           if (value)
           {
-            QPixmap* pixbuf = (QPixmap*)iupImageGetImage(value, ih, 0, nullptr);
+            auto* pixbuf = static_cast<QPixmap*>(iupImageGetImage(value, ih, 0, nullptr));
             if (pixbuf)
               tabs->setTabIcon(index, QIcon(*pixbuf));
             else
@@ -899,8 +900,8 @@ static int qtTabsSetTabVisibleAttrib(Ihandle* ih, int pos, const char* value)
 
   if (ih->handle)
   {
-    QTabWidget* tabs = (QTabWidget*)ih->handle;
-    QWidget* tab_page = (QWidget*)iupAttribGet(child, "_IUPTAB_PAGE");
+    auto* tabs = reinterpret_cast<QTabWidget*>(ih->handle);
+    auto* tab_page = reinterpret_cast<QWidget*>(iupAttribGet(child, "_IUPTAB_PAGE"));
 
     if (tab_page)
     {
@@ -918,7 +919,7 @@ static int qtTabsSetTabVisibleAttrib(Ihandle* ih, int pos, const char* value)
 
           if (tabimage)
           {
-            QPixmap* pixmap = (QPixmap*)iupImageGetImage(tabimage, ih, 0, nullptr);
+            auto* pixmap = static_cast<QPixmap*>(iupImageGetImage(tabimage, ih, 0, nullptr));
             if (pixmap)
               icon = QIcon(*pixmap);
           }
@@ -950,7 +951,7 @@ static int qtTabsSetShowCloseAttrib(Ihandle* ih, int pos, const char* value)
 
     if (ih->handle)
     {
-      IupQtTabWidget* tabs = (IupQtTabWidget*)ih->handle;
+      auto* tabs = reinterpret_cast<IupQtTabWidget*>(ih->handle);
       tabs->updateAllTabCloseButtons();
     }
 
@@ -964,19 +965,19 @@ static int qtTabsSetShowCloseAttrib(Ihandle* ih, int pos, const char* value)
 
     if (ih->handle)
     {
-      IupQtTabWidget* tabs = (IupQtTabWidget*)ih->handle;
-      IupQtTabBar* tab_bar = (IupQtTabBar*)tabs->tabBar();
+      auto* tabs = reinterpret_cast<IupQtTabWidget*>(ih->handle);
+      auto* tab_bar = static_cast<IupQtTabBar*>(tabs->tabBar());
 
       if (iupStrBoolean(value))
       {
-        QToolButton* close_btn = new QToolButton();
+        auto* close_btn = new QToolButton();
         close_btn->setIcon(tabs->style()->standardIcon(QStyle::SP_TitleBarCloseButton));
         close_btn->setAutoRaise(true);
         close_btn->setFixedSize(16, 16);
         close_btn->setFocusPolicy(Qt::NoFocus);
 
         QObject::connect(close_btn, &QToolButton::clicked, [tabs, close_btn, ih]() {
-          IupQtTabBar* bar = (IupQtTabBar*)tabs->tabBar();
+          auto* bar = static_cast<IupQtTabBar*>(tabs->tabBar());
           for (int i = 0; i < bar->count(); i++)
           {
             if (bar->tabButton(i, QTabBar::RightSide) == close_btn)
@@ -1008,7 +1009,7 @@ static int qtTabsSetAllowReorderAttrib(Ihandle* ih, const char* value)
 {
   if (ih->handle)
   {
-    QTabWidget* tabs = (QTabWidget*)ih->handle;
+    auto* tabs = reinterpret_cast<QTabWidget*>(ih->handle);
     tabs->setMovable(iupStrBoolean(value));
   }
 
@@ -1046,7 +1047,7 @@ static int qtTabsSetBgColorAttrib(Ihandle* ih, const char* value)
 
   if (ih->handle)
   {
-    QTabWidget* tabs = (QTabWidget*)ih->handle;
+    auto* tabs = reinterpret_cast<QTabWidget*>(ih->handle);
     QPalette palette = tabs->palette();
     palette.setColor(QPalette::Window, QColor(r, g, b));
     tabs->setPalette(palette);
@@ -1062,7 +1063,7 @@ static char* qtTabsGetClientSizeAttrib(Ihandle* ih)
 {
   if (ih->handle)
   {
-    QTabWidget* tabs = (QTabWidget*)ih->handle;
+    auto* tabs = reinterpret_cast<QTabWidget*>(ih->handle);
     QRect content_rect = tabs->contentsRect();
     QTabBar* tab_bar = tabs->tabBar();
 
@@ -1084,7 +1085,7 @@ static char* qtTabsGetClientOffsetAttrib(Ihandle* ih)
 {
   if (ih->handle)
   {
-    QTabWidget* tabs = (QTabWidget*)ih->handle;
+    auto* tabs = reinterpret_cast<QTabWidget*>(ih->handle);
     QTabBar* tab_bar = tabs->tabBar();
 
     int x = 0, y = 0;
@@ -1114,7 +1115,7 @@ static void qtTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
 
   if (ih->handle)
   {
-    IupQtTabWidget* tabs = (IupQtTabWidget*)ih->handle;
+    auto* tabs = reinterpret_cast<IupQtTabWidget*>(ih->handle);
     QWidget* tab_page;
     QWidget* tab_container;
     char* tabtitle;
@@ -1125,7 +1126,7 @@ static void qtTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
     pos = IupGetChildPos(ih, child);
 
     tab_page = new QWidget();
-    QVBoxLayout* pageLayout = new QVBoxLayout(tab_page);
+    auto* pageLayout = new QVBoxLayout(tab_page);
     pageLayout->setContentsMargins(0, 0, 0, 0);
     pageLayout->setSpacing(0);
 
@@ -1150,19 +1151,19 @@ static void qtTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
     }
 
     if (!tabtitle && !tabimage)
-      tabtitle = (char*)"     ";
+      tabtitle = const_cast<char*>("     ");
 
     iupAttribSet(ih, "_IUPQT_IGNORE_CHANGE", "1");
 
     QString title = QString::fromUtf8(tabtitle ? tabtitle : "");
     int index = qtTabsInsertIndex(ih, pos);
 
-    iupAttribSet(child, "_IUPTAB_CONTAINER", (char*)tab_container);
-    iupAttribSet(child, "_IUPTAB_PAGE", (char*)tab_page);
+    iupAttribSet(child, "_IUPTAB_CONTAINER", reinterpret_cast<char*>(tab_container));
+    iupAttribSet(child, "_IUPTAB_PAGE", reinterpret_cast<char*>(tab_page));
 
     if (tabimage)
     {
-      QPixmap* pixbuf = (QPixmap*)iupImageGetImage(tabimage, ih, 0, nullptr);
+      auto* pixbuf = static_cast<QPixmap*>(iupImageGetImage(tabimage, ih, 0, nullptr));
       if (pixbuf)
         tabs->insertTab(index, tab_page, QIcon(*pixbuf), title);
       else
@@ -1191,8 +1192,8 @@ static void qtTabsChildRemovedMethod(Ihandle* ih, Ihandle* child, int pos)
 
   if (ih->handle)
   {
-    QTabWidget* tabs = (QTabWidget*)ih->handle;
-    QWidget* tab_page = (QWidget*)iupAttribGet(child, "_IUPTAB_PAGE");
+    auto* tabs = reinterpret_cast<QTabWidget*>(ih->handle);
+    auto* tab_page = reinterpret_cast<QWidget*>(iupAttribGet(child, "_IUPTAB_PAGE"));
 
     if (tab_page)
     {
@@ -1200,7 +1201,7 @@ static void qtTabsChildRemovedMethod(Ihandle* ih, Ihandle* child, int pos)
 
       if (index >= 0)
       {
-        iupAttribSet(ih, "_IUPQT_REMOVED_CHILD", (char*)child);
+        iupAttribSet(ih, "_IUPQT_REMOVED_CHILD", reinterpret_cast<char*>(child));
         iupAttribSetInt(ih, "_IUPQT_REMOVED_POS", pos);
         iupTabsCheckCurrentTab(ih, pos, 1);
         iupAttribSet(ih, "_IUPQT_REMOVED_CHILD", nullptr);
@@ -1225,9 +1226,9 @@ static void qtTabsChildRemovedMethod(Ihandle* ih, Ihandle* child, int pos)
 
 static int qtTabsMapMethod(Ihandle* ih)
 {
-  IupQtTabWidget* tabs = new IupQtTabWidget(ih);
+  auto* tabs = new IupQtTabWidget(ih);
 
-  ih->handle = (InativeHandle*)tabs;
+  ih->handle = reinterpret_cast<InativeHandle*>(tabs);
   tabs->setIhandle(ih);
 
   tabs->setTabsClosable(false); /* close buttons are added per tab */
@@ -1274,7 +1275,7 @@ static int qtTabsMapMethod(Ihandle* ih)
   if (ih->firstchild)
   {
     Ihandle* child;
-    Ihandle* current_child = (Ihandle*)iupAttribGet(ih, "_IUPTABS_VALUE_HANDLE");
+    auto* current_child = reinterpret_cast<Ihandle*>(iupAttribGet(ih, "_IUPTABS_VALUE_HANDLE"));
 
     for (child = ih->firstchild; child; child = child->brother)
       qtTabsChildAddedMethod(ih, child);
@@ -1327,7 +1328,7 @@ extern "C" IUP_SDK_API void iupdrvTabsInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "TABPADDING", qtTabsGetTabPaddingAttrib, qtTabsSetTabPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
 
   iupClassRegisterAttributeId(ic, "TABTITLE", iupTabsGetTitleAttrib, qtTabsSetTabTitleAttrib, IUPAF_NO_INHERIT);
-  iupClassRegisterAttributeId(ic, "TABTIP", NULL, qtTabsSetTabTipAttrib, IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "TABTIP", nullptr, qtTabsSetTabTipAttrib, IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "TABIMAGE", nullptr, qtTabsSetTabImageAttrib, IUPAF_IHANDLENAME | IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "TABVISIBLE", iupTabsGetTabVisibleAttrib, qtTabsSetTabVisibleAttrib, IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "SHOWCLOSE", nullptr, qtTabsSetShowCloseAttrib, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);

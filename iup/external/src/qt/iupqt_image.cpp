@@ -31,7 +31,7 @@ extern "C" {
 
 extern "C" IUP_SDK_API void iupdrvImageGetData(void* handle, unsigned char* imgdata)
 {
-  QPixmap* pixmap = (QPixmap*)handle;
+  auto* pixmap = static_cast<QPixmap*>(handle);
 
   if (!pixmap || pixmap->isNull())
     return;
@@ -47,7 +47,7 @@ extern "C" IUP_SDK_API void iupdrvImageGetData(void* handle, unsigned char* imgd
     {
       unsigned char* line_data = imgdata + y * w;
       for (int x = 0; x < w; x++)
-        line_data[x] = (unsigned char)image.pixelIndex(x, y);
+        line_data[x] = static_cast<unsigned char>(image.pixelIndex(x, y));
     }
     return;
   }
@@ -101,9 +101,9 @@ extern "C" IUP_SDK_API void* iupdrvImageCreateImage(Ihandle* ih, const char* bgc
   QImage image(ih->currentwidth, ih->currentheight, format);
 
   if (image.isNull())
-    return NULL;
+    return nullptr;
 
-  unsigned char* imgdata = (unsigned char*)iupAttribGetStr(ih, "WID");
+  auto* imgdata = reinterpret_cast<unsigned char*>(iupAttribGetStr(ih, "WID"));
 
   if (make_inactive || flat_alpha)
     iupStrToRGB(bgcolor, &bg_r, &bg_g, &bg_b);
@@ -128,7 +128,7 @@ extern "C" IUP_SDK_API void* iupdrvImageCreateImage(Ihandle* ih, const char* bgc
 
     for (int y = 0; y < ih->currentheight; y++)
     {
-      QRgb* scanline = (QRgb*)image.scanLine(y);
+      QRgb* scanline = reinterpret_cast<QRgb*>(image.scanLine(y));
       unsigned char* line_data = imgdata + y * ih->currentwidth;
 
       for (int x = 0; x < ih->currentwidth; x++)
@@ -146,7 +146,7 @@ extern "C" IUP_SDK_API void* iupdrvImageCreateImage(Ihandle* ih, const char* bgc
 
     for (int y = 0; y < ih->currentheight; y++)
     {
-      QRgb* scanline = (QRgb*)image.scanLine(y);
+      QRgb* scanline = reinterpret_cast<QRgb*>(image.scanLine(y));
       unsigned char* line_data = imgdata + y * ih->currentwidth * channels;
 
       if (!make_inactive && !flat_alpha && bpp == 32)
@@ -193,13 +193,13 @@ extern "C" IUP_SDK_API void* iupdrvImageCreateImage(Ihandle* ih, const char* bgc
     }
   }
 
-  QPixmap* pixmap = new QPixmap();
+  auto* pixmap = new QPixmap();
   *pixmap = QPixmap::fromImage(image);
 
   if (make_inactive || (has_alpha && flat_alpha))
     iupAttribSet(ih, "_IUP_BGCOLOR_DEPEND", "1");
 
-  IFvs cb = (IFvs)IupGetFunction("IMAGECREATE_CB");
+  IFvs cb = reinterpret_cast<IFvs>(IupGetFunction("IMAGECREATE_CB"));
   if (cb)
     cb(pixmap, const_cast<char*>("QPixmap"));
 
@@ -208,24 +208,24 @@ extern "C" IUP_SDK_API void* iupdrvImageCreateImage(Ihandle* ih, const char* bgc
 
 extern "C" IUP_SDK_API void* iupdrvImageCreateIcon(Ihandle* ih)
 {
-  return iupdrvImageCreateImage(ih, NULL, 0);
+  return iupdrvImageCreateImage(ih, nullptr, 0);
 }
 
 extern "C" IUP_SDK_API void* iupdrvImageCreateCursor(Ihandle* ih)
 {
-  QPixmap* pixmap = (QPixmap*)iupdrvImageCreateImage(ih, NULL, 0);
+  auto* pixmap = static_cast<QPixmap*>(iupdrvImageCreateImage(ih, nullptr, 0));
 
   if (!pixmap)
-    return NULL;
+    return nullptr;
 
   int hx = 0, hy = 0;
   iupStrToIntInt(iupAttribGet(ih, "HOTSPOT"), &hx, &hy, ':');
 
-  QCursor* cursor = new QCursor(*pixmap, hx, hy);
+  auto* cursor = new QCursor(*pixmap, hx, hy);
 
   delete pixmap;
 
-  IFvs cb = (IFvs)IupGetFunction("IMAGECREATE_CB");
+  IFvs cb = reinterpret_cast<IFvs>(IupGetFunction("IMAGECREATE_CB"));
   if (cb)
     cb(cursor, const_cast<char*>("CURSOR"));
 
@@ -239,7 +239,7 @@ extern "C" IUP_SDK_API void* iupdrvImageCreateCursor(Ihandle* ih)
 extern "C" IUP_SDK_API void* iupdrvImageLoad(const char* name, int type)
 {
   if (!name)
-    return NULL;
+    return nullptr;
 
   (void)type;
 
@@ -276,14 +276,14 @@ extern "C" IUP_SDK_API void* iupdrvImageLoad(const char* name, int type)
         QPixmap pixmap = style->standardPixmap(std_pixmap);
         if (!pixmap.isNull())
         {
-          QPixmap* result = new QPixmap(pixmap);
+          auto* result = new QPixmap(pixmap);
 
-          IFvs cb = (IFvs)IupGetFunction("IMAGECREATE_CB");
+          IFvs cb = reinterpret_cast<IFvs>(IupGetFunction("IMAGECREATE_CB"));
           if (cb)
           {
             const char* type_str = (type == IUPIMAGE_CURSOR) ? "CURSOR" :
                                    (type == IUPIMAGE_ICON) ? "ICON" : "QPixmap";
-            cb(result, (char*)type_str);
+            cb(result, const_cast<char*>(type_str));
           }
 
           return result;
@@ -292,19 +292,19 @@ extern "C" IUP_SDK_API void* iupdrvImageLoad(const char* name, int type)
     }
   }
 
-  QPixmap* pixmap = new QPixmap();
+  auto* pixmap = new QPixmap();
   if (!pixmap->load(QString::fromUtf8(name)))
   {
     delete pixmap;
-    return NULL;
+    return nullptr;
   }
 
-  IFvs cb = (IFvs)IupGetFunction("IMAGECREATE_CB");
+  IFvs cb = reinterpret_cast<IFvs>(IupGetFunction("IMAGECREATE_CB"));
   if (cb)
   {
     const char* type_str = (type == IUPIMAGE_CURSOR) ? "CURSOR" :
                            (type == IUPIMAGE_ICON) ? "ICON" : "QPixmap";
-    cb(pixmap, (char*)type_str);
+    cb(pixmap, const_cast<char*>(type_str));
   }
 
   return pixmap;
@@ -316,7 +316,7 @@ extern "C" IUP_SDK_API void* iupdrvImageLoad(const char* name, int type)
 
 extern "C" IUP_SDK_API int iupdrvImageGetInfo(void* handle, int* w, int* h, int* bpp)
 {
-  QPixmap* pixmap = (QPixmap*)handle;
+  auto* pixmap = static_cast<QPixmap*>(handle);
 
   if (!pixmap || pixmap->isNull())
   {
@@ -361,16 +361,16 @@ extern "C" IUP_SDK_API void iupdrvImageDestroy(void* handle, int type)
   if (!handle)
     return;
 
-  const char* type_str = NULL;
+  const char* type_str = nullptr;
 
   if (type == IUPIMAGE_CURSOR)
   {
     type_str = "CURSOR";
-    QCursor* cursor = (QCursor*)handle;
+    auto* cursor = static_cast<QCursor*>(handle);
 
-    IFvs cb = (IFvs)IupGetFunction("IMAGEDESTROY_CB");
+    IFvs cb = reinterpret_cast<IFvs>(IupGetFunction("IMAGEDESTROY_CB"));
     if (cb)
-      cb(handle, (char*)type_str);
+      cb(handle, const_cast<char*>(type_str));
 
     delete cursor;
   }
@@ -381,11 +381,11 @@ extern "C" IUP_SDK_API void iupdrvImageDestroy(void* handle, int type)
     else
       type_str = "QPixmap";
 
-    QPixmap* pixmap = (QPixmap*)handle;
+    auto* pixmap = static_cast<QPixmap*>(handle);
 
-    IFvs cb = (IFvs)IupGetFunction("IMAGEDESTROY_CB");
+    IFvs cb = reinterpret_cast<IFvs>(IupGetFunction("IMAGEDESTROY_CB"));
     if (cb)
-      cb(handle, (char*)type_str);
+      cb(handle, const_cast<char*>(type_str));
 
     delete pixmap;
   }
@@ -426,7 +426,8 @@ extern "C" IUP_SDK_API int iupdrvImageSave(unsigned char* imgdata, int width, in
   if (iupStrEqualNoCase(format, "JPEG"))
   {
     const char* q = IupGetGlobal("IMAGESAVEQUALITY");
-    quality = q ? atoi(q) : 85;
+    if (!q || !iupStrToInt(q, &quality))
+      quality = 85;
   }
 
   return image.save(QString::fromUtf8(filename), format, quality) ? 1 : 0;
@@ -435,13 +436,14 @@ extern "C" IUP_SDK_API int iupdrvImageSave(unsigned char* imgdata, int width, in
 extern "C" IUP_SDK_API unsigned char* iupdrvImageSaveToBuffer(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count, const char* format, int* size)
 {
   QImage image = iQtImageCreate(imgdata, width, height, bpp, colors, colors_count);
-  if (image.isNull()) return NULL;
+  if (image.isNull()) return nullptr;
 
   int quality = -1;
   if (iupStrEqualNoCase(format, "JPEG"))
   {
     const char* q = IupGetGlobal("IMAGESAVEQUALITY");
-    quality = q ? atoi(q) : 85;
+    if (!q || !iupStrToInt(q, &quality))
+      quality = 85;
   }
 
   QByteArray ba;
@@ -449,11 +451,11 @@ extern "C" IUP_SDK_API unsigned char* iupdrvImageSaveToBuffer(unsigned char* img
   buffer.open(QIODevice::WriteOnly);
 
   if (!image.save(&buffer, format, quality))
-    return NULL;
+    return nullptr;
 
   *size = ba.size();
-  unsigned char* result = (unsigned char*)malloc(*size);
-  if (!result) return NULL;
+  auto* result = static_cast<unsigned char*>(malloc(*size));
+  if (!result) return nullptr;
 
   memcpy(result, ba.constData(), *size);
   return result;
@@ -471,7 +473,7 @@ extern "C" IUP_SDK_API int iupdrvGetIconPixels(Ihandle* ih, const char* value, i
   if (!value)
     return 0;
 
-  pixmap = (QPixmap*)iupImageGetIcon(value);
+  pixmap = static_cast<QPixmap*>(iupImageGetIcon(value));
   if (!pixmap || pixmap->isNull())
   {
     QPixmap file_pixmap(QString::fromUtf8(value));
@@ -491,13 +493,13 @@ extern "C" IUP_SDK_API int iupdrvGetIconPixels(Ihandle* ih, const char* value, i
   w = image.width();
   h = image.height();
 
-  dst = (unsigned char*)malloc((size_t)w * h * 4);
+  dst = static_cast<unsigned char*>(malloc(static_cast<size_t>(w) * h * 4));
   if (!dst)
     return 0;
 
   for (int y = 0; y < h; y++)
   {
-    const QRgb* src_line = (const QRgb*)image.constScanLine(y);
+    const QRgb* src_line = reinterpret_cast<const QRgb*>(image.constScanLine(y));
     for (int x = 0; x < w; x++)
     {
       QRgb pixel = src_line[x];

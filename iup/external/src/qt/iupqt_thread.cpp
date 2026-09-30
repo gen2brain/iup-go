@@ -34,19 +34,19 @@ private:
 
 extern "C" IUP_SDK_API void* iupdrvThreadStart(Ihandle* ih)
 {
-  IupQtThread* thread = new IupQtThread(ih);
+  auto* thread = new IupQtThread(ih);
 
   const char* name = iupAttribGet(ih, "THREADNAME");
   if (name)
     thread->setObjectName(QString::fromUtf8(name));
 
   thread->start();
-  return (void*)thread;
+  return reinterpret_cast<void*>(thread);
 }
 
 extern "C" IUP_SDK_API void iupdrvThreadJoin(void* handle)
 {
-  ((IupQtThread*)handle)->wait();
+  (static_cast<IupQtThread*>(handle))->wait();
 }
 
 extern "C" IUP_SDK_API void iupdrvThreadYield(void)
@@ -56,7 +56,7 @@ extern "C" IUP_SDK_API void iupdrvThreadYield(void)
 
 extern "C" IUP_SDK_API int iupdrvThreadIsCurrent(void* handle)
 {
-  return (IupQtThread*)handle == QThread::currentThread();
+  return static_cast<IupQtThread*>(handle) == QThread::currentThread();
 }
 
 extern "C" IUP_SDK_API void iupdrvThreadExit(int code)
@@ -69,7 +69,7 @@ extern "C" IUP_SDK_API void iupdrvThreadDestroy(void* handle)
 {
   if (handle)
   {
-    IupQtThread* thread = (IupQtThread*)handle;
+    auto* thread = static_cast<IupQtThread*>(handle);
     if (thread->isRunning())
     {
       thread->wait();
@@ -80,20 +80,20 @@ extern "C" IUP_SDK_API void iupdrvThreadDestroy(void* handle)
 
 extern "C" IUP_SDK_API void* iupdrvMutexCreate(void)
 {
-  return (void*)new QMutex();
+  return reinterpret_cast<void*>(new QMutex());
 }
 
 extern "C" IUP_SDK_API void iupdrvMutexLock(void* handle)
 {
-  ((QMutex*)handle)->lock();
+  (static_cast<QMutex*>(handle))->lock();
 }
 
 extern "C" IUP_SDK_API void iupdrvMutexUnlock(void* handle)
 {
-  ((QMutex*)handle)->unlock();
+  (static_cast<QMutex*>(handle))->unlock();
 }
 
 extern "C" IUP_SDK_API void iupdrvMutexDestroy(void* handle)
 {
-  delete (QMutex*)handle;
+  delete static_cast<QMutex*>(handle);
 }

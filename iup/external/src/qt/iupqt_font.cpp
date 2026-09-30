@@ -67,7 +67,7 @@ static IqtFont* qtFindFont(const char* font)
     return nullptr;
 
   count = iupArrayCount(qt_fonts);
-  fonts = (IqtFont*)iupArrayGetData(qt_fonts);
+  fonts = static_cast<IqtFont*>(iupArrayGetData(qt_fonts));
 
   for (i = 0; i < count; i++)
   {
@@ -100,7 +100,7 @@ static IqtFont* qtFindFont(const char* font)
     if (widget)
     {
 #if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
-      dpi = (int)widget->screen()->logicalDotsPerInch();
+      dpi = static_cast<int>(widget->screen()->logicalDotsPerInch());
 #else
       dpi = widget->logicalDpiY();
 #endif
@@ -112,7 +112,7 @@ static IqtFont* qtFindFont(const char* font)
   if (point_size <= 0)
     return nullptr;
 
-  QFont* qfont = new QFont(QString::fromUtf8(typeface), point_size);
+  auto* qfont = new QFont(QString::fromUtf8(typeface), point_size);
   qfont->setBold(is_bold);
   qfont->setItalic(is_italic);
   qfont->setUnderline(is_underline);
@@ -120,7 +120,7 @@ static IqtFont* qtFindFont(const char* font)
 
   QFontMetrics metrics(*qfont);
 
-  fonts = (IqtFont*)iupArrayInc(qt_fonts);
+  fonts = static_cast<IqtFont*>(iupArrayInc(qt_fonts));
 
   iupStrCopyN(fonts[i].font, sizeof(fonts[i].font), font);
   fonts[i].qfont = qfont;
@@ -150,7 +150,7 @@ static IqtFont* qtFontCreateNativeFont(Ihandle* ih, const char* value)
     return nullptr;
   }
 
-  iupAttribSet(ih, "_IUP_QTFONT", (char*)qtfont);
+  iupAttribSet(ih, "_IUP_QTFONT", reinterpret_cast<char*>(qtfont));
   return qtfont;
 }
 
@@ -191,7 +191,7 @@ IUP_DRV_API char* iupqtGetQFontAttrib(Ihandle* ih)
 {
   IqtFont* qtfont = qtFontGet(ih);
   if (qtfont)
-    return (char*)qtfont->qfont;
+    return reinterpret_cast<char*>(qtfont->qfont);
   else
     return nullptr;
 }
@@ -202,7 +202,7 @@ IUP_DRV_API char* iupqtFindQFont(QFont* qfont)
     return nullptr;
 
   int i, count = iupArrayCount(qt_fonts);
-  IqtFont* fonts = (IqtFont*)iupArrayGetData(qt_fonts);
+  auto* fonts = static_cast<IqtFont*>(iupArrayGetData(qt_fonts));
 
   for (i = 0; i < count; i++)
   {
@@ -221,7 +221,7 @@ IUP_DRV_API char* iupqtGetFontIdAttrib(Ihandle* ih)
     return nullptr;
 
   static char buffer[64];
-  snprintf(buffer, sizeof(buffer), "%p", (void*)qtfont->qfont);
+  snprintf(buffer, sizeof(buffer), "%p", reinterpret_cast<void*>(qtfont->qfont));
   return buffer;
 }
 
@@ -277,7 +277,7 @@ extern "C" IUP_SDK_API int iupdrvSetFontAttrib(Ihandle* ih, const char* value)
       (ih->iclass->nativetype != IUP_TYPEVOID) &&
       (ih->iclass->nativetype != IUP_TYPEMENU))
   {
-    QWidget* widget = (QWidget*)ih->handle;
+    auto* widget = reinterpret_cast<QWidget*>(ih->handle);
     widget->setFont(*qtfont->qfont);
   }
 
@@ -366,7 +366,7 @@ extern "C" IUP_SDK_API void iupdrvFontGetMultiLineStringSize(Ihandle* ih, const 
 {
   IqtFont* qtfont = qtFontGet(ih);
   if (qtfont)
-    qtFontGetTextSize(ih, qtfont, str, str ? (int)strlen(str) : 0, w, h);
+    qtFontGetTextSize(ih, qtfont, str, str ? static_cast<int>(strlen(str)) : 0, w, h);
 }
 
 extern "C" IUP_SDK_API void iupdrvFontGetTextSize(const char* font, const char* str, int len, int* w, int* h)
@@ -406,9 +406,9 @@ extern "C" IUP_SDK_API int iupdrvFontGetStringWidth(Ihandle* ih, const char* str
 
   line_end = strchr(str, '\n');
   if (line_end)
-    len = (int)(line_end - str);
+    len = static_cast<int>(line_end - str);
   else
-    len = (int)strlen(str);
+    len = static_cast<int>(strlen(str));
 
   bool use_markup = iupAttribGetBoolean(ih, "MARKUP");
 
@@ -452,7 +452,7 @@ extern "C" IUP_SDK_API void iupdrvFontGetCharSize(Ihandle* ih, int* charwidth, i
 
 static int qtFontFamilyCompare(const void* a, const void* b)
 {
-  return iupStrCompare(*(const char**)a, *(const char**)b, 0, 1);
+  return iupStrCompare(*static_cast<const char* const*>(a), *static_cast<const char* const*>(b), 0, 1);
 }
 
 extern "C" IUP_SDK_API int iupdrvFontGetFamilyList(char*** list)
@@ -466,11 +466,11 @@ extern "C" IUP_SDK_API int iupdrvFontGetFamilyList(char*** list)
 
   if (count == 0)
   {
-    *list = NULL;
+    *list = nullptr;
     return 0;
   }
 
-  *list = (char**)malloc(count * sizeof(char*));
+  *list = static_cast<char**>(malloc(count * sizeof(char*)));
   for (int i = 0; i < count; i++)
     (*list)[i] = iupStrDup(families.at(i).toUtf8().constData());
 
@@ -494,7 +494,7 @@ extern "C" IUP_SDK_API void iupdrvFontFinish(void)
     return;
 
   int i, count = iupArrayCount(qt_fonts);
-  IqtFont* fonts = (IqtFont*)iupArrayGetData(qt_fonts);
+  auto* fonts = static_cast<IqtFont*>(iupArrayGetData(qt_fonts));
 
   for (i = 0; i < count; i++)
   {

@@ -52,10 +52,10 @@ extern "C" {
 #endif
 
 
-static QApplication* qt_application = NULL;
+static QApplication* qt_application = nullptr;
 static int qt_application_owned = 0;
 
-IUP_DRV_API void iupqtLoopCleanup(void);
+IUP_DRV_API void iupqtLoopCleanup();
 
 /****************************************************************************
  * Native Handle Access
@@ -64,7 +64,7 @@ IUP_DRV_API void iupqtLoopCleanup(void);
 IUP_DRV_API char* iupqtGetNativeWidgetHandle(QWidget* widget)
 {
   if (!widget)
-    return NULL;
+    return nullptr;
 
   if (!widget->windowHandle())
   {
@@ -76,7 +76,7 @@ IUP_DRV_API char* iupqtGetNativeWidgetHandle(QWidget* widget)
 
   QWindow* window = widget->windowHandle();
   if (!window)
-    return NULL;
+    return nullptr;
 
   QString platform = QGuiApplication::platformName();
 
@@ -85,15 +85,15 @@ IUP_DRV_API char* iupqtGetNativeWidgetHandle(QWidget* widget)
   if (platform == "wayland")
   {
 #ifndef IUP_QT_HAS_WAYLAND_WINID
-    return NULL;
+    return nullptr;
 #endif
   }
 
   WId native_id = window->winId();
-  return (char*)(uintptr_t)native_id;
+  return reinterpret_cast<char*>(static_cast<uintptr_t>(native_id));
 }
 
-IUP_DRV_API const char* iupqtGetNativeWindowHandleName(void)
+IUP_DRV_API const char* iupqtGetNativeWindowHandleName()
 {
   QByteArray platformUtf8 = QGuiApplication::platformName().toUtf8();
   const char* platform = platformUtf8.constData();
@@ -113,7 +113,7 @@ IUP_DRV_API const char* iupqtGetNativeWindowHandleName(void)
   return "UNKNOWN";
 }
 
-IUP_DRV_API const char* iupqtGetNativeFontIdName(void)
+IUP_DRV_API const char* iupqtGetNativeFontIdName()
 {
   QByteArray platformUtf8 = QGuiApplication::platformName().toUtf8();
   const char* platform = platformUtf8.constData();
@@ -124,53 +124,53 @@ IUP_DRV_API const char* iupqtGetNativeFontIdName(void)
   if (strcmp(platform, "windows") == 0)
     return "HFONT";
 
-  return NULL;
+  return nullptr;
 }
 
 IUP_DRV_API char* iupqtGetNativeWindowHandleAttrib(Ihandle* ih)
 {
 #ifndef __APPLE__
-  QWidget* gl_canvas = (QWidget*)iupAttribGet(ih, "_IUPQT_CANVAS_WIDGET");
+  auto* gl_canvas = reinterpret_cast<QWidget*>(iupAttribGet(ih, "_IUPQT_CANVAS_WIDGET"));
   if (gl_canvas)
     return iupqtGetNativeWidgetHandle(gl_canvas);
 #endif
 
-  return iupqtGetNativeWidgetHandle((QWidget*)ih->handle);
+  return iupqtGetNativeWidgetHandle(reinterpret_cast<QWidget*>(ih->handle));
 }
 
 /****************************************************************************
  * String Conversion (UTF-8 handling)
  ****************************************************************************/
 
-IUP_DRV_API void iupqtStrRelease(void)
+IUP_DRV_API void iupqtStrRelease()
 {
 }
 
 IUP_DRV_API char* iupqtStrConvertToSystem(const char* str)
 {
-  return (char*)str;
+  return const_cast<char*>(str);
 }
 
 IUP_DRV_API char* iupqtStrConvertToSystemLen(const char* str, int* len)
 {
   if (len)
-    *len = (int)strlen(str);
-  return (char*)str;
+    *len = static_cast<int>(strlen(str));
+  return const_cast<char*>(str);
 }
 
 IUP_DRV_API char* iupqtStrConvertFromSystem(const char* str)
 {
-  return (char*)str;
+  return const_cast<char*>(str);
 }
 
 IUP_DRV_API char* iupqtStrConvertFromFilename(const char* str)
 {
-  return (char*)str;
+  return const_cast<char*>(str);
 }
 
 IUP_DRV_API char* iupqtStrConvertToFilename(const char* str)
 {
-  return (char*)str;
+  return const_cast<char*>(str);
 }
 
 IUP_DRV_API void iupqtStrSetUTF8Mode(int utf8mode)
@@ -178,7 +178,7 @@ IUP_DRV_API void iupqtStrSetUTF8Mode(int utf8mode)
   (void)utf8mode;
 }
 
-IUP_DRV_API int iupqtStrGetUTF8Mode(void)
+IUP_DRV_API int iupqtStrGetUTF8Mode()
 {
   return 1;
 }
@@ -195,7 +195,7 @@ static void qtSetGlobalColorAttrib(const char* name, const QColor &color)
 static QPalette qt_last_palette;
 static int qt_last_palette_set = 0;
 
-IUP_DRV_API int iupqtSystemPaletteChanged(void)
+IUP_DRV_API int iupqtSystemPaletteChanged()
 {
   QPalette palette = QApplication::palette();
 
@@ -207,7 +207,7 @@ IUP_DRV_API int iupqtSystemPaletteChanged(void)
   return 1;
 }
 
-IUP_DRV_API void iupqtSetGlobalColors(void)
+IUP_DRV_API void iupqtSetGlobalColors()
 {
   QWidget dialog;
   QPalette palette = dialog.palette();
@@ -230,7 +230,7 @@ IUP_DRV_API void iupqtSetGlobalColors(void)
   qtSetGlobalColorAttrib("LINKFGCOLOR", palette.color(QPalette::Link));
 }
 
-static void qtSetGlobalAttrib(void)
+static void qtSetGlobalAttrib()
 {
   QString platform = QGuiApplication::platformName();
 
@@ -241,17 +241,17 @@ static void qtSetGlobalAttrib(void)
 #if QT_VERSION >= QT_VERSION_CHECK(6, 2, 0) && !defined(Q_OS_WIN) && !defined(Q_OS_MACOS) && !defined(Q_OS_HAIKU)
     if (auto* x11App = qApp->nativeInterface<QNativeInterface::QX11Application>())
     {
-      Display* xdisplay = (Display*)x11App->display();
+      Display* xdisplay = x11App->display();
       if (xdisplay)
       {
-        IupSetGlobal("XDISPLAY", (char*)xdisplay);
+        IupSetGlobal("XDISPLAY", reinterpret_cast<char*>(xdisplay));
 #ifdef IUPX11_USE_DLOPEN
         if (iupX11Open())
 #endif
         {
-          IupSetGlobal("XSCREEN", (char*)(long)XDefaultScreen(xdisplay));
+          IupSetGlobal("XSCREEN", reinterpret_cast<char*>(static_cast<intptr_t>(XDefaultScreen(xdisplay))));
           IupSetGlobal("XSERVERVENDOR", XServerVendor(xdisplay));
-          IupSetInt(NULL, "XVENDORRELEASE", XVendorRelease(xdisplay));
+          IupSetInt(nullptr, "XVENDORRELEASE", XVendorRelease(xdisplay));
         }
       }
     }
@@ -266,7 +266,7 @@ static void qtSetGlobalAttrib(void)
     {
       void* wl_display = waylandApp->display();
       if (wl_display)
-        IupSetGlobal("WL_DISPLAY", (char*)wl_display);
+        IupSetGlobal("WL_DISPLAY", static_cast<char*>(wl_display));
     }
 #endif
   }
@@ -288,7 +288,7 @@ static void qtSetGlobalAttrib(void)
  * Qt Application Management
  ****************************************************************************/
 
-IUP_DRV_API QApplication* iupqtGetApplication(void)
+IUP_DRV_API QApplication* iupqtGetApplication()
 {
   return qt_application;
 }
@@ -376,7 +376,7 @@ extern "C" IUP_SDK_API void iupdrvSetAppearance(int appearance)
   iupqtSetGlobalColors();
 }
 
-IUP_DRV_API void iupqtUpdateSystemPalette(void)
+IUP_DRV_API void iupqtUpdateSystemPalette()
 {
   if (qt_appearance == IUP_APPEARANCE_SYSTEM)
     qt_system_palette = QApplication::palette();
@@ -399,7 +399,7 @@ extern "C" IUP_SDK_API int iupdrvOpen(int* argc, char*** argv)
     static int original_argc = 1;
     static int default_argc = 1;
     static char exe_path[4096] = {0};
-    static char* default_argv_data[2] = { exe_path, NULL };
+    static char* default_argv_data[2] = { exe_path, nullptr };
     static char** default_argv = default_argv_data;
 
     if (exe_path[0] == 0)
@@ -425,7 +425,7 @@ extern "C" IUP_SDK_API int iupdrvOpen(int* argc, char*** argv)
     qt_application = new QApplication(*argc, *argv);
     qt_application_owned = 1;
 
-    qt_application->setQuitOnLastWindowClosed(false);
+    QGuiApplication::setQuitOnLastWindowClosed(false);
   }
   else
   {
@@ -434,15 +434,15 @@ extern "C" IUP_SDK_API int iupdrvOpen(int* argc, char*** argv)
     if (!qt_application)
       return IUP_ERROR;
 
-    qt_application->setQuitOnLastWindowClosed(false);
+    QGuiApplication::setQuitOnLastWindowClosed(false);
   }
 
   setlocale(LC_NUMERIC, "C");
 
   IupSetGlobal("DRIVER", "Qt");
 
-  IupSetfAttribute(NULL, "QTVERSION", "%s", qVersion());
-  IupSetfAttribute(NULL, "QTDEVVERSION", "%d.%d.%d", QT_VERSION_MAJOR, QT_VERSION_MINOR, QT_VERSION_PATCH);
+  IupSetfAttribute(nullptr, "QTVERSION", "%s", qVersion());
+  IupSetfAttribute(nullptr, "QTDEVVERSION", "%d.%d.%d", QT_VERSION_MAJOR, QT_VERSION_MINOR, QT_VERSION_PATCH);
 
 #ifdef QT_DEBUG
   IupSetGlobal("QTBUILDTYPE", "Debug");
@@ -483,7 +483,7 @@ extern "C" IUP_SDK_API int iupdrvSetGlobalAppIDAttrib(const char* value)
   if (!app)
     return 0;
 
-  app->setDesktopFileName(QString::fromUtf8(value));
+  QGuiApplication::setDesktopFileName(QString::fromUtf8(value));
   qputenv("RESOURCE_NAME", QByteArray(value));
   appid_set = 1;
   return 1;
@@ -499,7 +499,7 @@ extern "C" IUP_SDK_API int iupdrvSetGlobalAppNameAttrib(const char* value)
   if (!app)
     return 0;
 
-  app->setApplicationName(QString::fromUtf8(value));
+  QCoreApplication::setApplicationName(QString::fromUtf8(value));
   appname_set = 1;
   return 1;
 }
@@ -512,7 +512,7 @@ extern "C" IUP_SDK_API void iupdrvClose(void)
   if (qt_application_owned)
   {
     delete qt_application;
-    qt_application = NULL;
+    qt_application = nullptr;
     qt_application_owned = 0;
   }
 

@@ -46,35 +46,35 @@ IUP_DRV_API void* iupqtCanvasGetContext(Ihandle* ih);
 
 struct IqtDrawLayer
 {
-  QPainter* painter;
-  QImage* image;
+  QPainter* painter = nullptr;
+  QImage* image = nullptr;
   QTransform base_transform;
-  int clip_x1, clip_y1, clip_x2, clip_y2;
-  IqtDrawLayer* next;
+  int clip_x1 = 0, clip_y1 = 0, clip_x2 = 0, clip_y2 = 0;
+  IqtDrawLayer* next = nullptr;
 };
 
 struct _IdrawCanvas
 {
-  Ihandle* ih;
-  QPainter* painter;
-  QWidget* widget;
-  QPixmap* buffer;
+  Ihandle* ih = nullptr;
+  QPainter* painter = nullptr;
+  QWidget* widget = nullptr;
+  QPixmap* buffer = nullptr;
   QTransform base_transform;
   QTransform user_transform;
 
-  int release_gc;
+  int release_gc = 0;
 
   QColor fg_color;
   QColor bg_color;
-  int line_width;
-  int line_style;
-  int text_antialias;
-  int shape_antialias;
-  int winding_rule;  /* Qt::FillRule */
+  int line_width = 0;
+  int line_style = 0;
+  int text_antialias = 0;
+  int shape_antialias = 0;
+  int winding_rule = 0;  /* Qt::FillRule */
 
-  int clip_x1, clip_y1, clip_x2, clip_y2;
+  int clip_x1 = 0, clip_y1 = 0, clip_x2 = 0, clip_y2 = 0;
 
-  IqtDrawLayer* layers;
+  IqtDrawLayer* layers = nullptr;
 };
 
 /****************************************************************************
@@ -126,18 +126,18 @@ static void qtDrawApplyStroke(QPen& pen, IdrawCanvas* dc, int style, int line_wi
                   stroke.cap == IUP_DRAW_CAP_SQUARE ? Qt::SquareCap : Qt::FlatCap);
   pen.setJoinStyle(stroke.join == IUP_DRAW_JOIN_ROUND ? Qt::RoundJoin :
                    stroke.join == IUP_DRAW_JOIN_BEVEL ? Qt::BevelJoin : Qt::MiterJoin);
-  pen.setMiterLimit((qreal)(IUP_DRAW_MITER_LIMIT / 2.0));
+  pen.setMiterLimit(static_cast<qreal>(IUP_DRAW_MITER_LIMIT / 2.0));
 
   if (stroke.dash_count > 0)
   {
-    double width = line_width > 0 ? (double)line_width : 1.0;
+    double width = line_width > 0 ? static_cast<double>(line_width) : 1.0;
     QVector<qreal> pattern;
     pattern.reserve(stroke.dash_count);
     for (int i = 0; i < stroke.dash_count; i++)
-      pattern << (qreal)(stroke.dashes[i] / width);
+      pattern << static_cast<qreal>(stroke.dashes[i] / width);
 
     pen.setDashPattern(pattern);
-    pen.setDashOffset((qreal)(stroke.dash_offset / width));
+    pen.setDashOffset(static_cast<qreal>(stroke.dash_offset / width));
   }
   else
     pen.setStyle(Qt::SolidLine);
@@ -149,15 +149,15 @@ static void qtDrawApplyStroke(QPen& pen, IdrawCanvas* dc, int style, int line_wi
 
 extern "C" IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
 {
-  IdrawCanvas* dc = new IdrawCanvas();
+  auto* dc = new IdrawCanvas();
 
   dc->ih = ih;
 
   /* ih->handle is the container, not the canvas widget */
-  dc->widget = (QWidget*)iupqtCanvasGetContext(ih);
+  dc->widget = static_cast<QWidget*>(iupqtCanvasGetContext(ih));
 
   if (!dc->widget)
-    dc->widget = (QWidget*)iupAttribGet(ih, "_IUPQT_PREVIEW_CANVAS");
+    dc->widget = reinterpret_cast<QWidget*>(iupAttribGet(ih, "_IUPQT_PREVIEW_CANVAS"));
 
   dc->painter = nullptr;
   dc->release_gc = 0;
@@ -167,14 +167,14 @@ extern "C" IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
   {
     QSize widget_size = dc->widget->size();
 
-    QPixmap* preview_buffer = (QPixmap*)iupAttribGet(ih, "_IUPQT_PREVIEW_BUFFER");
+    auto* preview_buffer = reinterpret_cast<QPixmap*>(iupAttribGet(ih, "_IUPQT_PREVIEW_BUFFER"));
     if (preview_buffer)
     {
       dc->buffer = preview_buffer;
     }
     else
     {
-      QPixmap* old_buffer = (QPixmap*)iupAttribGet(ih, "_IUPQT_CANVAS_BUFFER");
+      auto* old_buffer = reinterpret_cast<QPixmap*>(iupAttribGet(ih, "_IUPQT_CANVAS_BUFFER"));
       if (old_buffer)
       {
         if (old_buffer->size() != widget_size)
@@ -198,7 +198,7 @@ extern "C" IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
         dc->buffer = new QPixmap(widget_size);
         dc->buffer->fill(QColor(r, g, b));
 
-        iupAttribSet(ih, "_IUPQT_CANVAS_BUFFER", (char*)dc->buffer);
+        iupAttribSet(ih, "_IUPQT_CANVAS_BUFFER", reinterpret_cast<char*>(dc->buffer));
       }
     }
   }
@@ -419,7 +419,7 @@ extern "C" IUP_SDK_API int iupdrvDrawBeginLayer(IdrawCanvas* dc, int alpha)
   if (!dc || !dc->painter || !dc->buffer)
     return 0;
 
-  IqtDrawLayer* layer = new IqtDrawLayer();
+  auto* layer = new IqtDrawLayer();
   layer->painter = dc->painter;
   layer->base_transform = dc->base_transform;
   layer->clip_x1 = dc->clip_x1;
@@ -475,7 +475,7 @@ void qtDrawParentBackground(IdrawCanvas* dc)
   unsigned char r, g, b;
   char* color = iupBaseNativeParentGetBgColor(dc->ih);
   if (!color)
-    color = (char*)"255 255 255";
+    color = const_cast<char*>("255 255 255");
 
   long c = iupDrawStrToColor(color, 0);
   r = iupDrawRed(c);
@@ -559,8 +559,8 @@ extern "C" IUP_SDK_API void iupdrvDrawArc(IdrawCanvas* dc, int x1, int y1, int x
   double span = a2 - a1;
   while (span < 0)
     span += 360;
-  int start_angle = (int)(a1 * 16.0);
-  int span_angle = (int)(span * 16.0);
+  int start_angle = static_cast<int>(a1 * 16.0);
+  int span_angle = static_cast<int>(span * 16.0);
 
   if (style == IUP_DRAW_FILL)
   {
@@ -639,7 +639,7 @@ extern "C" IUP_SDK_API void iupdrvDrawPolygon(IdrawCanvas* dc, int* points, int 
     dc->painter->setBrush(qcolor);
 
     QPainterPath path;
-    path.setFillRule((Qt::FillRule)dc->winding_rule);
+    path.setFillRule(static_cast<Qt::FillRule>(dc->winding_rule));
     path.addPolygon(polygon);
     path.closeSubpath();
     dc->painter->drawPath(path);
@@ -874,14 +874,14 @@ extern "C" IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, in
   else if ((flags & IUP_DRAW_ELLIPSIS) && w > 0)
   {
     QStringList lines = qtext.split(QLatin1Char('\n'));
-    for (int i = 0; i < lines.size(); i++)
+    for (QString& line : lines)
     {
 #if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
-      if (fm.horizontalAdvance(lines[i]) > w)
+      if (fm.horizontalAdvance(line) > w)
 #else
-      if (fm.width(lines[i]) > w)
+      if (fm.width(line) > w)
 #endif
-        lines[i] = fm.elidedText(lines[i], Qt::ElideRight, w);
+        line = fm.elidedText(line, Qt::ElideRight, w);
     }
     qtext = lines.join(QLatin1Char('\n'));
   }
@@ -932,7 +932,7 @@ extern "C" IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, i
   if (!dc || !dc->painter || !name)
     return;
 
-  QPixmap* pixmap = (QPixmap*)iupImageGetImageTint(name, dc->ih, make_inactive, bgcolor, tint);
+  auto* pixmap = static_cast<QPixmap*>(iupImageGetImageTint(name, dc->ih, make_inactive, bgcolor, tint));
   if (!pixmap)
     return;
 
@@ -1017,7 +1017,7 @@ static QLinearGradient* qtDrawCreateLinearGradient(int x1, int y1, int x2, int y
   QPointF start(cx - (w * cos(rad)) / 2.0, cy - (h * sin(rad)) / 2.0);
   QPointF end(cx + (w * cos(rad)) / 2.0, cy + (h * sin(rad)) / 2.0);
 
-  QLinearGradient* gradient = new QLinearGradient(start, end);
+  auto* gradient = new QLinearGradient(start, end);
   for (int i = 0; i < count; i++)
     gradient->setColorAt(offsets[i], QColor(iupDrawRed(colors[i]), iupDrawGreen(colors[i]), iupDrawBlue(colors[i]), iupDrawAlpha(colors[i])));
   return gradient;
@@ -1025,7 +1025,7 @@ static QLinearGradient* qtDrawCreateLinearGradient(int x1, int y1, int x2, int y
 
 static QRadialGradient* qtDrawCreateRadialGradient(int cx, int cy, int radius, const long* colors, const float* offsets, int count)
 {
-  QRadialGradient* gradient = new QRadialGradient(cx, cy, radius, cx, cy);
+  auto* gradient = new QRadialGradient(cx, cy, radius, cx, cy);
   for (int i = 0; i < count; i++)
     gradient->setColorAt(offsets[i], QColor(iupDrawRed(colors[i]), iupDrawGreen(colors[i]), iupDrawBlue(colors[i]), iupDrawAlpha(colors[i])));
   return gradient;
@@ -1267,9 +1267,9 @@ extern "C" IUP_SDK_API int iupdrvDrawGetImageData(IdrawCanvas* dc, unsigned char
 
 extern "C" IUP_SDK_API int iupdrvCanvasGetImageData(Ihandle* ih, unsigned char* data, int w, int h)
 {
-  QPixmap* buffer = (QPixmap*)iupAttribGet(ih, "_IUPQT_CANVAS_BUFFER");
+  auto* buffer = reinterpret_cast<QPixmap*>(iupAttribGet(ih, "_IUPQT_CANVAS_BUFFER"));
   if (!buffer)
-    buffer = (QPixmap*)iupAttribGet(ih, "_IUPQT_PREVIEW_BUFFER");
+    buffer = reinterpret_cast<QPixmap*>(iupAttribGet(ih, "_IUPQT_PREVIEW_BUFFER"));
   if (!buffer)
     return 0;
 
@@ -1284,7 +1284,7 @@ extern "C" IUP_SDK_API int iupdrvCanvasGetImageData(Ihandle* ih, unsigned char* 
   {
     const unsigned char* src_line = img.constScanLine(y);
     unsigned char* dst_line = data + y * w * 4;
-    memcpy(dst_line, src_line, (size_t)w * 4);
+    memcpy(dst_line, src_line, static_cast<size_t>(w) * 4);
   }
 
   return 1;
