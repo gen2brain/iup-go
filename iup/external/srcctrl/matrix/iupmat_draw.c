@@ -1100,7 +1100,10 @@ static void iMatrixDrawTitleLines(Ihandle* ih, int lin1, int lin2)
   x2 = ih->data->columns.dt[0].size;
 
   iupMATRIX_CLIPAREA(ih, x1, x2, y1, iupMatrixGetHeight(ih) - 1);
-  /* Clip enabled */;
+  ih->data->clip_x1 = x1;
+  ih->data->clip_y1 = y1;
+  ih->data->clip_x2 = x2;
+  ih->data->clip_y2 = iupMatrixGetHeight(ih) - 1;
 
   /* Find the initial position of the first line */
   if (first_lin == ih->data->lines.first)
@@ -1166,7 +1169,11 @@ static void iMatrixDrawTitleLines(Ihandle* ih, int lin1, int lin2)
     y1 = y2;
   }
 
-  /* Clip disabled */;
+  IupDrawResetClip(ih);
+  ih->data->clip_x1 = 0;
+  ih->data->clip_y1 = 0;
+  ih->data->clip_x2 = 0;
+  ih->data->clip_y2 = 0;
 }
 
 /* Draw the column titles, visible, between col and lastcol, include it.
@@ -1215,7 +1222,10 @@ static void iMatrixDrawTitleColumns(Ihandle* ih, int col1, int col2)
   y2 = ih->data->lines.dt[0].size;
 
   iupMATRIX_CLIPAREA(ih, x1, iupMatrixGetWidth(ih) - 1, y1, y2);
-  /* Clip enabled */;
+  ih->data->clip_x1 = x1;
+  ih->data->clip_y1 = y1;
+  ih->data->clip_x2 = iupMatrixGetWidth(ih) - 1;
+  ih->data->clip_y2 = y2;
 
   /* Find the initial position of the first column */
   if (first_col == ih->data->columns.first)
@@ -1284,7 +1294,11 @@ static void iMatrixDrawTitleColumns(Ihandle* ih, int col1, int col2)
     x1 = x2;
   }
 
-  /* Clip disabled */;
+  IupDrawResetClip(ih);
+  ih->data->clip_x1 = 0;
+  ih->data->clip_y1 = 0;
+  ih->data->clip_x2 = 0;
+  ih->data->clip_y2 = 0;
 }
 
 /* Redraw a block of cells of the matrix. Handle marked cells, change
