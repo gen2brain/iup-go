@@ -366,6 +366,7 @@ static int cocoaTouchProgressBarSetFgColorAttrib(Ihandle* ih, const char* color_
 {
 	UIColor* color = iupCocoaTouchToNativeColor(color_str);
 	if (!color) return IUP_ERROR;
+	if (iupStrEqualNoCase(color_str, IupGetGlobal("DLGFGCOLOR"))) color = nil;
 	UIActivityIndicatorView* spinner = cocoaTouchProgressBarGetSpinner(ih);
 	if (spinner)
 	{
