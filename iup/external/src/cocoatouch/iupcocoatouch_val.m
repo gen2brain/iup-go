@@ -223,8 +223,9 @@ static int cocoaTouchValSetFgColorAttrib(Ihandle* ih, const char* value)
 	{
 		return 0;
 	}
-	[slider setMinimumTrackTintColor:color];
-	[slider setThumbTintColor:color];
+	UIColor* tint = iupStrEqualNoCase(value, IupGetGlobal("DLGFGCOLOR")) ? nil : color;
+	[slider setMinimumTrackTintColor:tint];
+	[slider setThumbTintColor:tint];
 	return 1;
 }
 

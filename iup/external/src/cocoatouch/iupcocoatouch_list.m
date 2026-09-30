@@ -1129,6 +1129,7 @@ static int cocoaTouchListSetBgColorAttrib(Ihandle* ih, const char* value)
 {
 	UIColor* color = iupCocoaTouchToNativeColor(value);
 	if (!color) return 0;
+	if (iupStrEqualNoCase(value, IupGetGlobal("TXTBGCOLOR"))) color = nil;
 	UITableView* table = cocoaTouchListGetTable(ih);
 	if (table) [table setBackgroundColor:color];
 	UIButton* button = cocoaTouchListGetDropdown(ih);

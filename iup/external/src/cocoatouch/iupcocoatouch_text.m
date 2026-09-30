@@ -1208,6 +1208,7 @@ static int cocoaTouchTextSetBgColorAttrib(Ihandle* ih, const char* value)
 {
 	UIColor* color = iupCocoaTouchToNativeColor(value);
 	if (!color) return 0;
+	if (iupStrEqualNoCase(value, IupGetGlobal("TXTBGCOLOR"))) color = nil;
 
 	UITextField* field = cocoaTouchTextField(ih);
 	if (field) [field setBackgroundColor:color];

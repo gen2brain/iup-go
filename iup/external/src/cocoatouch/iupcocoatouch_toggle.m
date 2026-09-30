@@ -535,6 +535,7 @@ static int cocoaTouchToggleSetFgColorAttrib(Ihandle* ih, const char* value)
 {
 	UIColor* color = iupCocoaTouchToNativeColor(value);
 	if (!color) return 0;
+	UIColor* tint = iupStrEqualNoCase(value, IupGetGlobal("DLGFGCOLOR")) ? nil : color;
 
 	IupCocoaTouchToggleButton* button = cocoaTouchToggleGetButton(ih);
 	if (button)
@@ -544,7 +545,7 @@ static int cocoaTouchToggleSetFgColorAttrib(Ihandle* ih, const char* value)
 		cfg.baseForegroundColor = color;
 		button.configuration = cfg;
 		[cfg release];
-		[button setTintColor:color];
+		[button setTintColor:tint];
 		[button refreshIndicator];
 		return 1;
 	}
@@ -557,7 +558,7 @@ static int cocoaTouchToggleSetFgColorAttrib(Ihandle* ih, const char* value)
 	UISwitch* sw = cocoaTouchToggleGetSwitch(ih);
 	if (sw)
 	{
-		[sw setOnTintColor:color];
+		[sw setOnTintColor:tint];
 		return 1;
 	}
 	return 0;

@@ -690,7 +690,12 @@ static int cocoaTouchTabsSetFgColorAttrib(Ihandle* ih, const char* value)
 	UIColor* color = iupCocoaTouchToNativeColor(value);
 	IupCocoaTouchTabsView* root = cocoaTouchTabsGetRoot(ih);
 	if (!root || !color) return 0;
-	NSDictionary* attrs = @{ NSForegroundColorAttributeName: color };
+	NSMutableDictionary* attrs = [[[root.segmentedControl titleTextAttributesForState:UIControlStateNormal] mutableCopy] autorelease];
+	if (!attrs) attrs = [NSMutableDictionary dictionary];
+	if (iupStrEqualNoCase(value, IupGetGlobal("DLGFGCOLOR")))
+		[attrs removeObjectForKey:NSForegroundColorAttributeName];
+	else
+		attrs[NSForegroundColorAttributeName] = color;
 	[root.segmentedControl setTitleTextAttributes:attrs forState:UIControlStateNormal];
 	[root.segmentedControl setTitleTextAttributes:attrs forState:UIControlStateSelected];
 	return 1;
@@ -705,7 +710,8 @@ static int cocoaTouchTabsSetFontAttrib(Ihandle* ih, const char* value)
 	IupCocoaTouchFont* font = iupCocoaTouchGetFont(ih);
 	if (font && font.nativeFont)
 	{
-		NSMutableDictionary* attrs = [NSMutableDictionary dictionary];
+		NSMutableDictionary* attrs = [[[root.segmentedControl titleTextAttributesForState:UIControlStateNormal] mutableCopy] autorelease];
+		if (!attrs) attrs = [NSMutableDictionary dictionary];
 		attrs[NSFontAttributeName] = font.nativeFont;
 		[root.segmentedControl setTitleTextAttributes:attrs forState:UIControlStateNormal];
 		[root.segmentedControl setTitleTextAttributes:attrs forState:UIControlStateSelected];
