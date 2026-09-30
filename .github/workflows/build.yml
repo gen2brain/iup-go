@@ -127,6 +127,22 @@ jobs:
       run: go build -tags qt,qt5
       working-directory: iup
 
+  linux-qml:
+    runs-on: ubuntu-latest
+    container: debian:trixie
+    steps:
+    - name: Install dependencies
+      run: apt-get update -y && apt-get install -y --no-install-recommends ca-certificates git gcc g++ pkg-config libx11-dev qt6-base-dev qt6-declarative-dev
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: Install Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: stable
+    - name: Build
+      run: go build -tags qml
+      working-directory: iup
+
   linux-motif:
     runs-on: ubuntu-latest
     steps:
@@ -305,6 +321,22 @@ jobs:
       run: sudo apt-get update -y && sudo apt-get install -y qt6-base-dev qt6-webengine-dev
     - name: Build
       run: go build -tags qt,web
+      working-directory: iup
+
+  linux-qml-web:
+    runs-on: ubuntu-latest
+    container: debian:trixie
+    steps:
+    - name: Install dependencies
+      run: apt-get update -y && apt-get install -y --no-install-recommends ca-certificates git gcc g++ pkg-config libx11-dev qt6-base-dev qt6-declarative-dev qt6-webengine-dev
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: Install Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: stable
+    - name: Build
+      run: go build -tags qml,web
       working-directory: iup
 
   macos-cocoa:
@@ -696,3 +728,16 @@ jobs:
       run: |
         cmake -S iup/external -B build/motif -DBUILD_SHARED_LIBS=ON -DIUP_BACKEND=motif -DIUP_BUILD_GL=ON -DIUP_BUILD_CTRL=ON -DIUP_BUILD_PLOT=ON -DIUP_BUILD_MEDIA=ON -DCMAKE_COMPILE_WARNING_AS_ERROR=ON
         cmake --build build/motif --parallel
+
+  linux-cmake-qml:
+    runs-on: ubuntu-latest
+    container: debian:trixie
+    steps:
+    - name: Install dependencies
+      run: apt-get update -y && apt-get install -y --no-install-recommends ca-certificates git cmake make gcc g++ pkg-config libx11-dev libwayland-dev libgl-dev libegl-dev qt6-base-dev qt6-declarative-dev qt6-webengine-dev
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: CMake QML
+      run: |
+        cmake -S iup/external -B build/qml -DBUILD_SHARED_LIBS=ON -DIUP_BACKEND=qml -DIUP_BUILD_GL=ON -DIUP_BUILD_WEB=ON -DIUP_BUILD_CTRL=ON -DIUP_BUILD_PLOT=ON -DIUP_BUILD_MEDIA=ON -DCMAKE_COMPILE_WARNING_AS_ERROR=ON
+        cmake --build build/qml --parallel
