@@ -5,7 +5,6 @@ import (
 	"math"
 	"os"
 	"path/filepath"
-	"runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -185,7 +184,7 @@ func main() {
 	buildSourceTree()
 	refreshSummary()
 	appendLog("Sample workspace scanned. Seven files are queued; two archive files remain available.")
-	if runtime.GOOS == "darwin" || runtime.GOOS == "ios" {
+	if driver := iup.GetGlobal("DRIVER"); driver == "Cocoa" || driver == "CocoaTouch" {
 		notice = iup.Notify()
 		notice.SetAttribute("REQUESTPERMISSION", "YES")
 	}
@@ -1008,7 +1007,7 @@ func jobByIDLocked(id int) *job {
 }
 
 func setupTray(dlg iup.Ihandle) {
-	canUseTray = !phone() && runtime.GOOS != "js"
+	canUseTray = !phone() && iup.GetGlobal("DRIVER") != "WASM"
 	if !canUseTray {
 		iup.GetHandle("transfer_hide").SetAttribute("ACTIVE", "NO")
 		return

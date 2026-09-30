@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -56,7 +55,7 @@ func main() {
 	iup.Show(app.dialog)
 	app.log.SetAttribute("APPEND", "Sample ledger ready. Edit a cell, select rows, or change the date range.")
 	iup.MainLoop()
-	if runtime.GOOS == "android" || runtime.GOOS == "ios" {
+	if phone() {
 		return
 	}
 	app.save()
@@ -65,11 +64,14 @@ func main() {
 	iup.Close()
 }
 
-func phone() bool { return runtime.GOOS == "android" || runtime.GOOS == "ios" }
+func phone() bool {
+	driver := iup.GetGlobal("DRIVER")
+	return driver == "Android" || driver == "CocoaTouch"
+}
 
 func fileButton(title string, action func()) iup.Ihandle {
 	b := button(title, action)
-	if runtime.GOOS == "js" {
+	if browser() {
 		b.SetAttributes("VISIBLE=NO, FLOATING=YES")
 	}
 	return b
@@ -766,4 +768,8 @@ func button(title string, action func()) iup.Ihandle {
 	b := iup.Button(title).SetAttribute("PADDING", "5x3")
 	b.SetCallback("ACTION", iup.ActionFunc(func(iup.Ihandle) int { action(); return iup.DEFAULT }))
 	return b
+}
+
+func browser() bool {
+	return iup.GetGlobal("DRIVER") == "WASM"
 }

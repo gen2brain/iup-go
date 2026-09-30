@@ -8,7 +8,6 @@ import (
 	"math"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"time"
 
@@ -67,14 +66,14 @@ func main() {
 		app.activity.SetAttribute("APPEND", message)
 	}
 	app.pendingLog = nil
-	if runtime.GOOS == "js" {
+	if browser() {
 		app.log("Recording, snapshots and export need a filesystem and are disabled in the browser")
 	}
 	app.updatePermissionStatus()
 	app.timer.SetAttribute("RUN", "YES")
 	iup.MainLoop()
 
-	if runtime.GOOS == "android" || runtime.GOOS == "ios" {
+	if phone() {
 		return
 	}
 	app.stopAll()
@@ -281,7 +280,7 @@ func (app *studio) cameraPanel() iup.Ihandle {
 	} else {
 		deviceRow = iup.Hbox(iup.Label("Camera"), app.cameraDevices, button("Refresh", app.refreshCameraDevices)).SetAttributes("NGAP=5, ALIGNMENT=ACENTER")
 	}
-	actionRow := iup.Hbox(app.cameraRun, mirror, button("Snapshot", app.snapshot).SetAttribute("ACTIVE", yesNo(runtime.GOOS != "js")), iup.Fill()).SetAttributes("NGAP=7, ALIGNMENT=ACENTER")
+	actionRow := iup.Hbox(app.cameraRun, mirror, button("Snapshot", app.snapshot).SetAttribute("ACTIVE", yesNo(!browser())), iup.Fill()).SetAttributes("NGAP=7, ALIGNMENT=ACENTER")
 	return iup.Vbox(deviceRow, actionRow, app.camera).SetAttributes("NGAP=6, NMARGIN=8x8")
 }
 
@@ -311,7 +310,7 @@ func (app *studio) microphonePanel() iup.Ihandle {
 		app.updatePermissionStatus()
 		return iup.DEFAULT
 	}))
-	app.recordButton = button("Record", app.toggleRecording).SetAttribute("ACTIVE", yesNo(runtime.GOOS != "js"))
+	app.recordButton = button("Record", app.toggleRecording).SetAttribute("ACTIVE", yesNo(!browser()))
 	app.destinationText = iup.Text().SetAttributes("VISIBLECOLUMNS=28, EXPAND=HORIZONTAL").SetAttribute("VALUE", app.destination)
 	if phone() {
 		app.destinationText.SetAttribute("READONLY", "YES")
@@ -330,7 +329,7 @@ func (app *studio) microphonePanel() iup.Ihandle {
 	actionRow := iup.Hbox(app.microphoneRun, app.recordButton, iup.Fill()).SetAttributes("NGAP=7, ALIGNMENT=ACENTER")
 	destinationRow := iup.Hbox(
 		iup.Label("Destination"), app.destinationText,
-		button("Browse", app.chooseDestination).SetAttribute("ACTIVE", yesNo(!phone() && runtime.GOOS != "js")),
+		button("Browse", app.chooseDestination).SetAttribute("ACTIVE", yesNo(!phone() && !browser())),
 	).SetAttributes("NGAP=5, ALIGNMENT=ACENTER")
 	levelRow := iup.Hbox(iup.Label("Level"), app.level, app.recordingTime).SetAttributes("NGAP=7, ALIGNMENT=ACENTER")
 	return iup.Vbox(deviceRow, actionRow, destinationRow, levelRow, app.waveform).SetAttributes("NGAP=6, NMARGIN=8x8")
@@ -362,7 +361,7 @@ func (app *studio) takesPanel() iup.Ihandle {
 		}
 		app.selectedTake = lin - 1
 		items := []iup.Ihandle{menuItem("Play", app.play)}
-		if runtime.GOOS != "js" {
+		if !browser() {
 			items = append(items, menuItem("Export", app.exportTake))
 		}
 		items = append(items, iup.Separator(), menuItem("Delete", app.deleteTake))
@@ -382,7 +381,7 @@ func (app *studio) takesPanel() iup.Ihandle {
 	app.playbackTime = iup.Label("0:00 / 0:00")
 	buttons := iup.Hbox(
 		button("Play", app.play), button("Pause", func() { app.player.SetAttribute("PAUSE", "YES") }),
-		button("Stop", app.stopPlayback), button("Export", app.exportTake).SetAttribute("ACTIVE", yesNo(runtime.GOOS != "js")), button("Delete", app.deleteTake),
+		button("Stop", app.stopPlayback), button("Export", app.exportTake).SetAttribute("ACTIVE", yesNo(!browser())), button("Delete", app.deleteTake),
 	).SetAttributes("NGAP=5, ALIGNMENT=ACENTER")
 	controls := iup.Hbox(buttons, iup.Fill()).SetAttributes("NGAP=5, ALIGNMENT=ACENTER")
 	position := iup.Hbox(iup.Label("Position"), app.playbackSeek, app.playbackTime).SetAttributes("NGAP=7, ALIGNMENT=ACENTER")
@@ -415,7 +414,8 @@ func (app *studio) log(message string) {
 }
 
 func phone() bool {
-	return runtime.GOOS == "android" || runtime.GOOS == "ios"
+	driver := iup.GetGlobal("DRIVER")
+	return driver == "Android" || driver == "CocoaTouch"
 }
 
 func (app *studio) currentPage() iup.Ihandle {
@@ -928,4 +928,8 @@ func yesNo(value bool) string {
 		return "YES"
 	}
 	return "NO"
+}
+
+func browser() bool {
+	return iup.GetGlobal("DRIVER") == "WASM"
 }

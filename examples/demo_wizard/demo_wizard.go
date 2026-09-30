@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/mail"
-	"runtime"
 	"strings"
 	"time"
 
@@ -42,7 +41,7 @@ func main() {
 	app.show(app.welcome, false)
 	app.log("Wizard ready. Tab moves between fields; Enter advances.")
 	iup.MainLoop()
-	if runtime.GOOS == "android" || runtime.GOOS == "ios" {
+	if mobile() {
 		return
 	}
 	app.hideError()
@@ -50,7 +49,10 @@ func main() {
 	iup.Close()
 }
 
-func mobile() bool { return runtime.GOOS == "android" || runtime.GOOS == "ios" }
+func mobile() bool {
+	driver := iup.GetGlobal("DRIVER")
+	return driver == "Android" || driver == "CocoaTouch"
+}
 
 func (app *wizard) build() {
 	app.name = app.field("Full name", "Alex Morgan")
@@ -100,7 +102,7 @@ func (app *wizard) build() {
 	app.back = button("&Back", "Go to previous step", app.previous)
 	app.next = button("&Next", "Go to next step", app.advance)
 	app.cancel = button("&Cancel", "Cancel setup", app.abort)
-	if runtime.GOOS == "ios" {
+	if iup.GetGlobal("DRIVER") == "CocoaTouch" {
 		app.cancel.SetAttributes("VISIBLE=NO, FLOATING=YES")
 	}
 	navigation := iup.Hbox(app.back, iup.Fill(), app.cancel, app.next).SetAttributes("NGAP=7, ALIGNMENT=ACENTER")
@@ -409,7 +411,7 @@ func (app *wizard) updateNavigation() {
 		switch {
 		case app.finished:
 			app.next.SetAttribute("TITLE", "Cl&ose")
-			app.next.SetAttribute("VISIBLE", yesNo(runtime.GOOS != "ios"))
+			app.next.SetAttribute("VISIBLE", yesNo(iup.GetGlobal("DRIVER") != "CocoaTouch"))
 		case item == app.review:
 			app.next.SetAttribute("TITLE", "&Install")
 		default:

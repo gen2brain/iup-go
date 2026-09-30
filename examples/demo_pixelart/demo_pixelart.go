@@ -7,7 +7,6 @@ import (
 	"image/png"
 	"os"
 	"path/filepath"
-	"runtime"
 
 	"github.com/gen2brain/iup-go/iup"
 )
@@ -116,7 +115,10 @@ func main() {
 	iup.MainLoop()
 }
 
-func phone() bool { return runtime.GOOS == "android" || runtime.GOOS == "ios" }
+func phone() bool {
+	driver := iup.GetGlobal("DRIVER")
+	return driver == "Android" || driver == "CocoaTouch"
+}
 
 func (app *editor) build() {
 	app.canvas = iup.Canvas().SetAttributes("BORDER=NO, CANFOCUS=YES, EXPAND=YES, TOUCH=YES")
@@ -184,9 +186,6 @@ func (app *editor) build() {
 		app.action("-", func() { app.changeZoom(-2) }),
 		app.action("+", func() { app.changeZoom(2) }),
 		app.action("Save PNG", app.savePNG),
-	}
-	if runtime.GOOS == "js" {
-		commands[4].SetAttribute("TITLE", "Save BMP")
 	}
 	grid := iup.Toggle("Grid").SetAttribute("VALUE", "ON")
 	grid.SetCallback("ACTION", iup.ToggleActionFunc(func(_ iup.Ihandle, state int) int {
@@ -604,9 +603,6 @@ func (app *editor) refreshPreview() {
 func (app *editor) savePNG() {
 	app.finish()
 	dlg := iup.FileDlg().SetAttributes(`DIALOGTYPE=SAVE, TITLE="Export sprite", FILTER=*.png, EXTDEFAULT=png, FILE=sprite.png`)
-	if runtime.GOOS == "js" {
-		dlg.SetAttributes("FILTER=*.bmp, EXTDEFAULT=bmp, FILE=sprite.bmp")
-	}
 	iup.SetAttributeHandle(dlg, "PARENTDIALOG", app.dialog)
 	iup.Popup(dlg, iup.CENTERPARENT, iup.CENTERPARENT)
 	defer dlg.Destroy()
@@ -617,14 +613,14 @@ func (app *editor) savePNG() {
 	if name == "" {
 		return
 	}
-	if runtime.GOOS == "js" {
+	if browser() {
 		if filepath.Ext(name) == "" {
-			name += ".bmp"
+			name += ".png"
 		}
 		img := iup.ImageFromImage(app.sprite())
 		defer img.Destroy()
-		if iup.ImageSave(img, name, "BMP") == 0 {
-			app.setStatus("BMP download failed")
+		if iup.ImageSave(img, name, "PNG") == 0 {
+			app.setStatus("PNG download failed")
 		} else {
 			app.setStatus("Downloaded " + name)
 		}
@@ -642,4 +638,8 @@ func (app *editor) savePNG() {
 	} else {
 		app.setStatus("Saved " + name)
 	}
+}
+
+func browser() bool {
+	return iup.GetGlobal("DRIVER") == "WASM"
 }
