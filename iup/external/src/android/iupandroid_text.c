@@ -1167,7 +1167,7 @@ static int androidTextSetBgColorAttrib(Ihandle* ih, const char* value)
 {
   unsigned char r, g, b;
   if (!iupStrToRGB(value, &r, &g, &b)) return 0;
-  if (!ih->handle) return 1;
+  if (!ih->handle || iupStrEqualNoCase(value, IupGetGlobal("TXTBGCOLOR"))) return 1;
 
   JNIEnv* env = iupAndroid_GetEnvThreadSafe();
   jclass cls = IUPJNI_FindClass(IupTextHelper, env, "io/github/gen2brain/iupgo/IupTextHelper");
