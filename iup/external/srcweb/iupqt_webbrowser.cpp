@@ -61,7 +61,7 @@ static char* qtWebBrowserEscapeJavaScript(const char* str)
 
   size_t len = strlen(str);
   size_t escaped_len = len * 6 + 3;  /* Worst case: every char becomes \uXXXX */
-  char* result = (char*)malloc(escaped_len);
+  char* result = static_cast<char*>(malloc(escaped_len));
   if (!result)
     return iupStrDup("null");
 
@@ -70,10 +70,10 @@ static char* qtWebBrowserEscapeJavaScript(const char* str)
 
   for (const char* s = str; *s; s++)
   {
-    if ((unsigned char)*s == 0xE2 && (unsigned char)*(s+1) == 0x80 &&
-        ((unsigned char)*(s+2) == 0xA8 || (unsigned char)*(s+2) == 0xA9))
+    if (static_cast<unsigned char>(*s) == 0xE2 && static_cast<unsigned char>(*(s+1)) == 0x80 &&
+        (static_cast<unsigned char>(*(s+2)) == 0xA8 || static_cast<unsigned char>(*(s+2)) == 0xA9))
     {
-      snprintf(p, (size_t)((result + escaped_len) - p), "\\u202%c", (unsigned char)*(s+2) == 0xA8 ? '8' : '9');
+      snprintf(p, static_cast<size_t>((result + escaped_len) - p), "\\u202%c", static_cast<unsigned char>(*(s+2)) == 0xA8 ? '8' : '9');
       p += 6;
       s += 2;
       continue;
@@ -89,9 +89,9 @@ static char* qtWebBrowserEscapeJavaScript(const char* str)
       case '\r': *p++ = '\\'; *p++ = 'r'; break;
       case '\t': *p++ = '\\'; *p++ = 't'; break;
       default:
-        if ((unsigned char)*s < 32)
+        if (static_cast<unsigned char>(*s) < 32)
         {
-          snprintf(p, (size_t)((result + escaped_len) - p), "\\u%04x", (unsigned char)*s);
+          snprintf(p, static_cast<size_t>((result + escaped_len) - p), "\\u%04x", static_cast<unsigned char>(*s));
           p += 6;
         }
         else
@@ -136,7 +136,7 @@ static char* qtWebBrowserTakeResult(JavaScriptResult* async)
 
 static void qtWebBrowserRunJavaScript(Ihandle* ih, const char* format, ...)
 {
-  QWebEngineView* webview = (QWebEngineView*)ih->handle;
+  auto* webview = reinterpret_cast<QWebEngineView*>(ih->handle);
   if (!webview)
     return;
 
@@ -151,11 +151,11 @@ static void qtWebBrowserRunJavaScript(Ihandle* ih, const char* format, ...)
 
 static char* qtWebBrowserExecJavaScriptSync(Ihandle* ih, const char* js)
 {
-  QWebEngineView* webview = (QWebEngineView*)ih->handle;
+  auto* webview = reinterpret_cast<QWebEngineView*>(ih->handle);
   if (!webview)
     return nullptr;
 
-  JavaScriptResult* async = new JavaScriptResult();
+  auto* async = new JavaScriptResult();
 
   webview->page()->runJavaScript(QString::fromUtf8(js),
     [async](const QVariant &result) {
@@ -198,7 +198,7 @@ static char* qtWebBrowserRunJavaScriptSync(Ihandle* ih, const char* format, ...)
 
 static void qtWebBrowserUpdateHistory(Ihandle* ih)
 {
-  QWebEngineView* webview = (QWebEngineView*)ih->handle;
+  auto* webview = reinterpret_cast<QWebEngineView*>(ih->handle);
   if (!webview)
     return;
 
@@ -219,7 +219,7 @@ static void qtWebBrowserUpdateHistory(Ihandle* ih)
 
 static char* qtWebBrowserGetItemHistoryAttrib(Ihandle* ih, int id)
 {
-  QWebEngineView* webview = (QWebEngineView*)ih->handle;
+  auto* webview = reinterpret_cast<QWebEngineView*>(ih->handle);
   if (!webview)
     return nullptr;
 
@@ -236,7 +236,7 @@ static char* qtWebBrowserGetItemHistoryAttrib(Ihandle* ih, int id)
 
 static char* qtWebBrowserGetForwardCountAttrib(Ihandle* ih)
 {
-  QWebEngineView* webview = (QWebEngineView*)ih->handle;
+  auto* webview = reinterpret_cast<QWebEngineView*>(ih->handle);
   if (!webview)
     return nullptr;
 
@@ -249,7 +249,7 @@ static char* qtWebBrowserGetForwardCountAttrib(Ihandle* ih)
 
 static char* qtWebBrowserGetBackCountAttrib(Ihandle* ih)
 {
-  QWebEngineView* webview = (QWebEngineView*)ih->handle;
+  auto* webview = reinterpret_cast<QWebEngineView*>(ih->handle);
   if (!webview)
     return nullptr;
 
@@ -262,7 +262,7 @@ static char* qtWebBrowserGetBackCountAttrib(Ihandle* ih)
 
 static char* qtWebBrowserGetCanGoBackAttrib(Ihandle* ih)
 {
-  QWebEngineView* webview = (QWebEngineView*)ih->handle;
+  auto* webview = reinterpret_cast<QWebEngineView*>(ih->handle);
   if (!webview)
     return iupStrReturnBoolean(0);
 
@@ -271,7 +271,7 @@ static char* qtWebBrowserGetCanGoBackAttrib(Ihandle* ih)
 
 static char* qtWebBrowserGetCanGoForwardAttrib(Ihandle* ih)
 {
-  QWebEngineView* webview = (QWebEngineView*)ih->handle;
+  auto* webview = reinterpret_cast<QWebEngineView*>(ih->handle);
   if (!webview)
     return iupStrReturnBoolean(0);
 
@@ -284,7 +284,7 @@ static char* qtWebBrowserGetCanGoForwardAttrib(Ihandle* ih)
 
 static int qtWebBrowserSetHTMLAttrib(Ihandle* ih, const char* value)
 {
-  QWebEngineView* webview = (QWebEngineView*)ih->handle;
+  auto* webview = reinterpret_cast<QWebEngineView*>(ih->handle);
   if (!webview || !value)
     return 0;
 
@@ -299,7 +299,7 @@ static int qtWebBrowserSetHTMLAttrib(Ihandle* ih, const char* value)
 
 static char* qtWebBrowserGetHTMLAttrib(Ihandle* ih)
 {
-  QWebEngineView* webview = (QWebEngineView*)ih->handle;
+  auto* webview = reinterpret_cast<QWebEngineView*>(ih->handle);
   if (!webview)
     return nullptr;
 
@@ -309,7 +309,7 @@ static char* qtWebBrowserGetHTMLAttrib(Ihandle* ih)
       "'<html><head>' + document.head.innerHTML + '</head><body>' + document.body.innerHTML + '</body></html>';");
   }
 
-  JavaScriptResult* async = new JavaScriptResult();
+  auto* async = new JavaScriptResult();
 
   webview->page()->toHtml([async](const QString &html) {
     if (async->abandoned)
@@ -335,7 +335,7 @@ static char* qtWebBrowserGetHTMLAttrib(Ihandle* ih)
 
 static int qtWebBrowserSetValueAttrib(Ihandle* ih, const char* value)
 {
-  QWebEngineView* webview = (QWebEngineView*)ih->handle;
+  auto* webview = reinterpret_cast<QWebEngineView*>(ih->handle);
   if (!webview || !value)
     return 0;
 
@@ -348,7 +348,7 @@ static int qtWebBrowserSetValueAttrib(Ihandle* ih, const char* value)
 
 static char* qtWebBrowserGetValueAttrib(Ihandle* ih)
 {
-  QWebEngineView* webview = (QWebEngineView*)ih->handle;
+  auto* webview = reinterpret_cast<QWebEngineView*>(ih->handle);
   if (!webview)
     return nullptr;
 
@@ -361,7 +361,7 @@ static char* qtWebBrowserGetValueAttrib(Ihandle* ih)
 
 static char* qtWebBrowserGetStatusAttrib(Ihandle* ih)
 {
-  QWebEngineView* webview = (QWebEngineView*)ih->handle;
+  auto* webview = reinterpret_cast<QWebEngineView*>(ih->handle);
   if (!webview)
     return nullptr;
 
@@ -379,7 +379,7 @@ static char* qtWebBrowserGetStatusAttrib(Ihandle* ih)
 
 static int qtWebBrowserSetGoBackAttrib(Ihandle* ih, const char* value)
 {
-  QWebEngineView* webview = (QWebEngineView*)ih->handle;
+  auto* webview = reinterpret_cast<QWebEngineView*>(ih->handle);
   if (!webview)
     return 0;
 
@@ -401,7 +401,7 @@ static int qtWebBrowserSetGoBackAttrib(Ihandle* ih, const char* value)
 
 static int qtWebBrowserSetGoForwardAttrib(Ihandle* ih, const char* value)
 {
-  QWebEngineView* webview = (QWebEngineView*)ih->handle;
+  auto* webview = reinterpret_cast<QWebEngineView*>(ih->handle);
   if (!webview)
     return 0;
 
@@ -424,7 +424,7 @@ static int qtWebBrowserSetGoForwardAttrib(Ihandle* ih, const char* value)
 static int qtWebBrowserSetStopAttrib(Ihandle* ih, const char* value)
 {
   (void)value;
-  QWebEngineView* webview = (QWebEngineView*)ih->handle;
+  auto* webview = reinterpret_cast<QWebEngineView*>(ih->handle);
   if (!webview)
     return 0;
 
@@ -435,7 +435,7 @@ static int qtWebBrowserSetStopAttrib(Ihandle* ih, const char* value)
 static int qtWebBrowserSetReloadAttrib(Ihandle* ih, const char* value)
 {
   (void)value;
-  QWebEngineView* webview = (QWebEngineView*)ih->handle;
+  auto* webview = reinterpret_cast<QWebEngineView*>(ih->handle);
   if (!webview)
     return 0;
 
@@ -445,7 +445,7 @@ static int qtWebBrowserSetReloadAttrib(Ihandle* ih, const char* value)
 
 static int qtWebBrowserSetBackForwardAttrib(Ihandle* ih, const char* value)
 {
-  QWebEngineView* webview = (QWebEngineView*)ih->handle;
+  auto* webview = reinterpret_cast<QWebEngineView*>(ih->handle);
   if (!webview || !value)
     return 0;
 
@@ -494,7 +494,7 @@ static int qtWebBrowserSetSaveAttrib(Ihandle* ih, const char* value)
 
 static int qtWebBrowserSetOpenAttrib(Ihandle* ih, const char* value)
 {
-  QWebEngineView* webview = (QWebEngineView*)ih->handle;
+  auto* webview = reinterpret_cast<QWebEngineView*>(ih->handle);
   if (!webview || !value)
     return 0;
 
@@ -542,7 +542,7 @@ static char* qtWebBrowserGetInnerTextAttrib(Ihandle* ih)
 
 static int qtWebBrowserSetInnerTextAttrib(Ihandle* ih, const char* value)
 {
-  QWebEngineView* webview = (QWebEngineView*)ih->handle;
+  auto* webview = reinterpret_cast<QWebEngineView*>(ih->handle);
   char* element_id = iupAttribGet(ih, "ELEMENT_ID");
 
   if (!webview || !element_id)
@@ -591,7 +591,7 @@ static int qtWebBrowserSetJavascriptAttrib(Ihandle* ih, const char* value)
 
 static int qtWebBrowserSetZoomAttrib(Ihandle* ih, const char* value)
 {
-  QWebEngineView* webview = (QWebEngineView*)ih->handle;
+  auto* webview = reinterpret_cast<QWebEngineView*>(ih->handle);
   if (!webview || !value)
     return 0;
 
@@ -599,7 +599,7 @@ static int qtWebBrowserSetZoomAttrib(Ihandle* ih, const char* value)
   if (!iupStrToInt(value, &zoom_percent))
     return 0;
 
-  qreal zoom_factor = (qreal)zoom_percent / 100.0;
+  qreal zoom_factor = static_cast<qreal>(zoom_percent) / 100.0;
   webview->setZoomFactor(zoom_factor);
 
   return 0;
@@ -607,12 +607,12 @@ static int qtWebBrowserSetZoomAttrib(Ihandle* ih, const char* value)
 
 static char* qtWebBrowserGetZoomAttrib(Ihandle* ih)
 {
-  QWebEngineView* webview = (QWebEngineView*)ih->handle;
+  auto* webview = reinterpret_cast<QWebEngineView*>(ih->handle);
   if (!webview)
     return nullptr;
 
   qreal zoom_factor = webview->zoomFactor();
-  int zoom_percent = (int)(zoom_factor * 100.0);
+  int zoom_percent = static_cast<int>(zoom_factor * 100.0);
 
   return iupStrReturnInt(zoom_percent);
 }
@@ -624,7 +624,7 @@ static char* qtWebBrowserGetZoomAttrib(Ihandle* ih)
 static int qtWebBrowserSetPrintAttrib(Ihandle* ih, const char* value)
 {
   (void)value;
-  QWebEngineView* webview = (QWebEngineView*)ih->handle;
+  auto* webview = reinterpret_cast<QWebEngineView*>(ih->handle);
   if (!webview)
     return 0;
 
@@ -649,7 +649,7 @@ static int qtWebBrowserSetPrintAttrib(Ihandle* ih, const char* value)
 static int qtWebBrowserSetPrintPreviewAttrib(Ihandle* ih, const char* value)
 {
   (void)value;
-  QWebEngineView* webview = (QWebEngineView*)ih->handle;
+  auto* webview = reinterpret_cast<QWebEngineView*>(ih->handle);
   if (!webview)
     return 0;
 
@@ -678,7 +678,7 @@ static int qtWebBrowserSetPrintPreviewAttrib(Ihandle* ih, const char* value)
 
 static int qtWebBrowserSetEditableAttrib(Ihandle* ih, const char* value)
 {
-  QWebEngineView* webview = (QWebEngineView*)ih->handle;
+  auto* webview = reinterpret_cast<QWebEngineView*>(ih->handle);
   if (!webview)
     return 0;
 
@@ -698,7 +698,7 @@ static int qtWebBrowserSetEditableAttrib(Ihandle* ih, const char* value)
 
 static char* qtWebBrowserGetEditableAttrib(Ihandle* ih)
 {
-  QWebEngineView* webview = (QWebEngineView*)ih->handle;
+  auto* webview = reinterpret_cast<QWebEngineView*>(ih->handle);
   if (!webview)
     return nullptr;
 
@@ -719,7 +719,7 @@ static char* qtWebBrowserGetEditableAttrib(Ihandle* ih)
 static int qtWebBrowserSetCopyAttrib(Ihandle* ih, const char* value)
 {
   (void)value;
-  QWebEngineView* webview = (QWebEngineView*)ih->handle;
+  auto* webview = reinterpret_cast<QWebEngineView*>(ih->handle);
   if (!webview)
     return 0;
 
@@ -730,7 +730,7 @@ static int qtWebBrowserSetCopyAttrib(Ihandle* ih, const char* value)
 static int qtWebBrowserSetCutAttrib(Ihandle* ih, const char* value)
 {
   (void)value;
-  QWebEngineView* webview = (QWebEngineView*)ih->handle;
+  auto* webview = reinterpret_cast<QWebEngineView*>(ih->handle);
   if (!webview)
     return 0;
 
@@ -741,7 +741,7 @@ static int qtWebBrowserSetCutAttrib(Ihandle* ih, const char* value)
 static int qtWebBrowserSetPasteAttrib(Ihandle* ih, const char* value)
 {
   (void)value;
-  QWebEngineView* webview = (QWebEngineView*)ih->handle;
+  auto* webview = reinterpret_cast<QWebEngineView*>(ih->handle);
   if (!webview)
     return 0;
 
@@ -752,7 +752,7 @@ static int qtWebBrowserSetPasteAttrib(Ihandle* ih, const char* value)
 static int qtWebBrowserSetSelectAllAttrib(Ihandle* ih, const char* value)
 {
   (void)value;
-  QWebEngineView* webview = (QWebEngineView*)ih->handle;
+  auto* webview = reinterpret_cast<QWebEngineView*>(ih->handle);
   if (!webview)
     return 0;
 
@@ -763,7 +763,7 @@ static int qtWebBrowserSetSelectAllAttrib(Ihandle* ih, const char* value)
 static int qtWebBrowserSetUndoAttrib(Ihandle* ih, const char* value)
 {
   (void)value;
-  QWebEngineView* webview = (QWebEngineView*)ih->handle;
+  auto* webview = reinterpret_cast<QWebEngineView*>(ih->handle);
   if (!webview)
     return 0;
 
@@ -774,7 +774,7 @@ static int qtWebBrowserSetUndoAttrib(Ihandle* ih, const char* value)
 static int qtWebBrowserSetRedoAttrib(Ihandle* ih, const char* value)
 {
   (void)value;
-  QWebEngineView* webview = (QWebEngineView*)ih->handle;
+  auto* webview = reinterpret_cast<QWebEngineView*>(ih->handle);
   if (!webview)
     return 0;
 
@@ -788,7 +788,7 @@ static int qtWebBrowserSetRedoAttrib(Ihandle* ih, const char* value)
 
 static int qtWebBrowserExecCommandAttrib(Ihandle* ih, const char* value)
 {
-  QWebEngineView* webview = (QWebEngineView*)ih->handle;
+  auto* webview = reinterpret_cast<QWebEngineView*>(ih->handle);
   if (!webview || !value)
     return 0;
 
@@ -809,7 +809,7 @@ static int qtWebBrowserExecCommandAttrib(Ihandle* ih, const char* value)
 
 static int qtWebBrowserExecCommandWithParamAttrib(Ihandle* ih, const char* cmd, const char* param)
 {
-  QWebEngineView* webview = (QWebEngineView*)ih->handle;
+  auto* webview = reinterpret_cast<QWebEngineView*>(ih->handle);
   if (!webview)
     return 0;
 
@@ -1047,7 +1047,7 @@ static int qtWebBrowserSetInsertImageFileAttrib(Ihandle* ih, const char* value)
 static int qtWebBrowserSetNewAttrib(Ihandle* ih, const char* value)
 {
   (void)value;
-  QWebEngineView* webview = (QWebEngineView*)ih->handle;
+  auto* webview = reinterpret_cast<QWebEngineView*>(ih->handle);
   if (!webview)
     return 0;
 
@@ -1293,7 +1293,7 @@ static int qtWebBrowserSetAttributeAttrib(Ihandle* ih, const char* value)
 
 static int qtWebBrowserSetFindAttrib(Ihandle* ih, const char* value)
 {
-  QWebEngineView* webview = (QWebEngineView*)ih->handle;
+  auto* webview = reinterpret_cast<QWebEngineView*>(ih->handle);
   if (!webview || !value)
     return 0;
 
@@ -1344,13 +1344,13 @@ private:
 
     iupAttribSet(ih, "_IUPQT_WEB_LOADING", "YES");
 
-    IFns cb = (IFns)IupGetCallback(ih, "NAVIGATE_CB");
+    IFns cb = reinterpret_cast<IFns>(IupGetCallback(ih, "NAVIGATE_CB"));
     if (cb)
     {
       QUrl url = this->url();
       QString url_str = url.toString();
 
-      int result = cb(ih, (char*)url_str.toUtf8().constData());
+      int result = cb(ih, const_cast<char*>(url_str.toUtf8().constData()));
       if (result == IUP_IGNORE)
       {
         this->stop();
@@ -1374,28 +1374,28 @@ private:
       else
         page()->runJavaScript("document.body.contentEditable = 'false';");
 
-      IFns cb = (IFns)IupGetCallback(ih, "COMPLETED_CB");
+      IFns cb = reinterpret_cast<IFns>(IupGetCallback(ih, "COMPLETED_CB"));
       if (cb)
       {
         QUrl url = this->url();
         QString url_str = url.toString();
-        cb(ih, (char*)url_str.toUtf8().constData());
+        cb(ih, const_cast<char*>(url_str.toUtf8().constData()));
       }
     }
     else
     {
-      IFns cb = (IFns)IupGetCallback(ih, "ERROR_CB");
+      IFns cb = reinterpret_cast<IFns>(IupGetCallback(ih, "ERROR_CB"));
       if (cb)
       {
         QUrl url = this->url();
         QString url_str = url.toString();
-        cb(ih, (char*)url_str.toUtf8().constData());
+        cb(ih, const_cast<char*>(url_str.toUtf8().constData()));
       }
     }
 
     qtWebBrowserUpdateHistory(ih);
 
-    IFn update_cb = (IFn)IupGetCallback(ih, "UPDATE_CB");
+    IFn update_cb = static_cast<IFn>(IupGetCallback(ih, "UPDATE_CB"));
     if (update_cb)
       update_cb(ih);
   }
@@ -1413,12 +1413,12 @@ private:
 
   void onWindowCloseRequested()
   {
-    IFns cb = (IFns)IupGetCallback(ih, "NEWWINDOW_CB");
+    IFns cb = reinterpret_cast<IFns>(IupGetCallback(ih, "NEWWINDOW_CB"));
     if (cb)
     {
       QUrl url = this->url();
       QString url_str = url.toString();
-      cb(ih, (char*)url_str.toUtf8().constData());
+      cb(ih, const_cast<char*>(url_str.toUtf8().constData()));
     }
   }
 };
@@ -1442,13 +1442,13 @@ protected:
   {
     (void)type;
 
-    IFns cb = (IFns)IupGetCallback(ih, "NEWWINDOW_CB");
+    IFns cb = reinterpret_cast<IFns>(IupGetCallback(ih, "NEWWINDOW_CB"));
     if (cb)
     {
       QUrl url = this->url();
       QString url_str = url.toString();
 
-      int result = cb(ih, (char*)url_str.toUtf8().constData());
+      int result = cb(ih, const_cast<char*>(url_str.toUtf8().constData()));
       if (result == IUP_IGNORE)
       {
         return nullptr;
@@ -1465,9 +1465,9 @@ protected:
 
 static int qtWebBrowserMapMethod(Ihandle* ih)
 {
-  IupQtWebBrowser* webview = new IupQtWebBrowser(ih);
+  auto* webview = new IupQtWebBrowser(ih);
 
-  IupQtWebPage* page = new IupQtWebPage(QWebEngineProfile::defaultProfile(), ih);
+  auto* page = new IupQtWebPage(QWebEngineProfile::defaultProfile(), ih);
   webview->setPage(page);
 
   QWebEngineSettings* settings = page->settings();
@@ -1516,7 +1516,7 @@ static int qtWebBrowserMapMethod(Ihandle* ih)
   script.setWorldId(QWebEngineScript::MainWorld);
   page->scripts().insert(script);
 
-  ih->handle = (InativeHandle*)webview;
+  ih->handle = reinterpret_cast<InativeHandle*>(webview);
 
   iupqtAddToParent(ih);
 
@@ -1533,10 +1533,10 @@ static void qtWebBrowserUnMapMethod(Ihandle* ih)
 {
   if (ih->handle)
   {
-    IupQtWebBrowser* webview = (IupQtWebBrowser*)ih->handle;
+    auto* webview = reinterpret_cast<IupQtWebBrowser*>(ih->handle);
 
     QPointer<QWebEnginePage> page = webview->page();
-    IupQtWebPage* iup_page = static_cast<IupQtWebPage*>(page.data());
+    auto* iup_page = static_cast<IupQtWebPage*>(page.data());
 
     /* Clear the ihandle pointer to prevent callbacks during destruction */
     webview->ih = nullptr;
@@ -1545,8 +1545,7 @@ static void qtWebBrowserUnMapMethod(Ihandle* ih)
 
     delete webview;
 
-    if (page)
-      delete page;
+    delete page;
 
     ih->handle = nullptr;
   }
@@ -1586,7 +1585,7 @@ static void qtWebBrowserLayoutUpdateMethod(Ihandle* ih)
 
   if (ih->handle)
   {
-    QWebEngineView* webview = (QWebEngineView*)ih->handle;
+    auto* webview = reinterpret_cast<QWebEngineView*>(ih->handle);
 
     webview->resize(ih->currentwidth, ih->currentheight);
   }
@@ -1600,8 +1599,8 @@ extern "C" Iclass* iupWebBrowserNewClass(void)
 {
   Iclass* ic = iupClassNew(nullptr);
 
-  ic->name = (char*)"webbrowser";
-  ic->cons = (char*)"WebBrowser";
+  ic->name = const_cast<char*>("webbrowser");
+  ic->cons = const_cast<char*>("WebBrowser");
   ic->format = nullptr;
   ic->nativetype = IUP_TYPECONTROL;
   ic->childtype = IUP_CHILDNONE;
