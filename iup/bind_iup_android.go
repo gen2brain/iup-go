@@ -3,17 +3,38 @@
 package iup
 
 /*
+#include <stdlib.h>
+#include <sys/system_properties.h>
 #include "iup.h"
 #include "iupandroid_drv.h"
 */
 import "C"
 
-import "os"
+import (
+	"os"
+	"time"
+	"unsafe"
+)
 
 // Pre-open IUP so users can register ENTRY_POINT from a package
 // init() before Java fires it.
 func init() {
 	Open()
+	setTimeLocal()
+}
+
+// setTimeLocal loads the system time zone, an Android app has neither TZ nor /etc/localtime.
+func setTimeLocal() {
+	key := C.CString("persist.sys.timezone")
+	defer C.free(unsafe.Pointer(key))
+	var buf [C.PROP_VALUE_MAX]C.char
+	n := C.__system_property_get(key, &buf[0])
+	if n <= 0 {
+		return
+	}
+	if loc, err := time.LoadLocation(C.GoStringN(&buf[0], n)); err == nil {
+		time.Local = loc
+	}
 }
 
 // Open initializes the IUP toolkit. Repeat calls return NOERROR
