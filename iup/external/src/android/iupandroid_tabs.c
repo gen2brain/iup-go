@@ -315,8 +315,9 @@ static int androidTabsSetFgColorAttrib(Ihandle* ih, const char* value)
 
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
   jclass java_class = androidTabsFindHelper(jni_env);
-  jmethodID method_id = (*jni_env)->GetStaticMethodID(jni_env, java_class, "setFgColor", "(Landroid/view/View;I)V");
-  (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, (jobject)ih->handle, color);
+  jmethodID method_id = (*jni_env)->GetStaticMethodID(jni_env, java_class, "setFgColor", "(Landroid/view/View;ZI)V");
+  jboolean themed = iupStrEqualNoCase(value, IupGetGlobal("DLGFGCOLOR")) ? JNI_TRUE : JNI_FALSE;
+  (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, (jobject)ih->handle, themed, color);
   iupAndroid_CheckException(jni_env, "IupTabsHelper.setFgColor");
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
   return 1;

@@ -833,6 +833,21 @@ public final class IupCommon
         return config;
     }
 
+    /* outlined MaterialButton colors resolve at construction; re-resolve them against the current theme */
+    public static void applyOutlinedButtonColors(com.google.android.material.button.MaterialButton b)
+    {
+        android.content.Context ctx = new android.view.ContextThemeWrapper(getThemeContext(),
+            com.google.android.material.R.style.ThemeOverlay_Material3_Button_TextButton);
+        b.setTextColor(androidx.appcompat.content.res.AppCompatResources.getColorStateList(
+            ctx, com.google.android.material.R.color.m3_text_button_foreground_color_selector));
+        b.setBackgroundTintList(androidx.appcompat.content.res.AppCompatResources.getColorStateList(
+            ctx, com.google.android.material.R.color.m3_text_button_background_color_selector));
+        b.setRippleColor(androidx.appcompat.content.res.AppCompatResources.getColorStateList(
+            ctx, com.google.android.material.R.color.m3_text_button_ripple_color_selector));
+        b.setStrokeColor(androidx.appcompat.content.res.AppCompatResources.getColorStateList(
+            ctx, com.google.android.material.R.color.m3_button_outline_color_selector));
+    }
+
     /* AppTheme-bearing wrapper used when no Activity exists yet (early widget creation) */
     private static ContextThemeWrapper sContextThemeWrapper = null;
     public static synchronized ContextThemeWrapper getContextThemeWrapper()

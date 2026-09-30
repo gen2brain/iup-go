@@ -363,10 +363,10 @@ public final class IupTabsHelper
     }
 
     @Keep
-    public static void setFgColor(View tabs, int color)
+    public static void setFgColor(View tabs, boolean themed, int color)
     {
         if (!(tabs instanceof IupAndroidTabs t)) return;
-        t.fgColor = color;
+        t.fgColor = themed ? null : color;
         applyTabsPalette(t);
     }
 

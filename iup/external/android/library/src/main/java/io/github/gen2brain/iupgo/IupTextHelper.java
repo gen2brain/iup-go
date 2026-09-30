@@ -59,10 +59,21 @@ public final class IupTextHelper
     private static final java.util.WeakHashMap<TextInputLayout, Boolean> sThemableTils = new java.util.WeakHashMap<>();
     private static final java.util.WeakHashMap<NestedScrollView, Boolean> sThemableBoxes = new java.util.WeakHashMap<>();
 
+    private static final java.util.WeakHashMap<MaterialButton, Boolean> sThemableSpinButtons = new java.util.WeakHashMap<>();
+
     static {
+        IupTheme.register(IupTextHelper::refreshAllSpinButtons);
         IupTheme.register(IupTextHelper::refreshAllTexts);
         IupTheme.register(IupTextHelper::refreshAllTils);
         IupTheme.register(IupTextHelper::refreshAllBoxes);
+    }
+
+    private static void refreshAllSpinButtons()
+    {
+        for (MaterialButton b : new java.util.ArrayList<>(sThemableSpinButtons.keySet()))
+        {
+            if (b != null) IupCommon.applyOutlinedButtonColors(b);
+        }
     }
 
     private static void refreshAllTexts()
@@ -342,6 +353,7 @@ public final class IupTextHelper
         b.setPadding(0, 0, 0, 0);
         b.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 16);
         b.setCornerRadius(0);
+        sThemableSpinButtons.put(b, Boolean.TRUE);
         return b;
     }
 

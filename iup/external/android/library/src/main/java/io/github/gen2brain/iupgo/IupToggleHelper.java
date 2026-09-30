@@ -24,8 +24,10 @@ public final class IupToggleHelper
 {
     private IupToggleHelper() {}
 
-    /* Image-toggle outlined stroke captures colorPrimary at construction; rebuild it on theme flip. Value = FLAT. */
+    /* Image-toggle outlined colors resolve at construction; rebuild them on theme flip. Value = FLAT. */
     private static final java.util.WeakHashMap<MaterialButton, Boolean> sThemableImageToggles = new java.util.WeakHashMap<>();
+    private static final java.util.WeakHashMap<MaterialButton, Integer> sImageToggleBg = new java.util.WeakHashMap<>();
+    private static final java.util.WeakHashMap<MaterialButton, ColorStateList> sImageToggleFg = new java.util.WeakHashMap<>();
     /* CompoundButton (checkbox/switch/radio) tint state-lists also resolve at construction. */
     private static final java.util.WeakHashMap<CompoundButton, Boolean> sThemableTextToggles = new java.util.WeakHashMap<>();
     /* no native 3-state click cycle; track tri-state (0/1/-1) per widget */
@@ -41,7 +43,7 @@ public final class IupToggleHelper
         for (MaterialButton btn : new java.util.ArrayList<>(sThemableImageToggles.keySet()))
         {
             if (btn == null) continue;
-            applyImageToggleStroke(btn);
+            applyImageTogglePalette(btn);
         }
     }
 
@@ -83,9 +85,10 @@ public final class IupToggleHelper
         }
     }
 
-    /* checked: primary stroke; unchecked: colorOutline, or transparent when FLAT */
-    private static void applyImageToggleStroke(MaterialButton btn)
+    /* checked: primary stroke; unchecked: colorOutline, or transparent when FLAT; app BGCOLOR/FGCOLOR kept */
+    private static void applyImageTogglePalette(MaterialButton btn)
     {
+        IupCommon.applyOutlinedButtonColors(btn);
         android.content.Context ctx = IupCommon.getThemeContext();
         int primary = MaterialColors.getColor(ctx, com.google.android.material.R.attr.colorPrimary, Color.BLUE);
         Boolean flat = sThemableImageToggles.get(btn);
@@ -98,8 +101,10 @@ public final class IupToggleHelper
             },
             new int[] { primary, unchecked });
         btn.setStrokeColor(stroke);
-        btn.setRippleColor(androidx.appcompat.content.res.AppCompatResources.getColorStateList(
-            ctx, com.google.android.material.R.color.m3_text_button_ripple_color_selector));
+        Integer bg = sImageToggleBg.get(btn);
+        if (bg != null) btn.setBackgroundColor(bg);
+        ColorStateList fg = sImageToggleFg.get(btn);
+        if (fg != null) btn.setTextColor(fg);
     }
 
 
@@ -175,7 +180,7 @@ public final class IupToggleHelper
         /* Material3 default radius would round square icons into circles; pin to small rounded-square */
         btn.setCornerRadius((int)(6 * IupCommon.getDisplayDensity()));
         /* drive stroke visibility off checked state; outlined-style is always-on otherwise */
-        applyImageToggleStroke(btn);
+        applyImageTogglePalette(btn);
         sThemableImageToggles.put(btn, Boolean.FALSE);
         btn.setInsetTop(0);
         btn.setInsetBottom(0);
@@ -241,7 +246,7 @@ public final class IupToggleHelper
     {
         if (!(widget instanceof MaterialButton b)) return;
         sThemableImageToggles.put(b, flat);
-        applyImageToggleStroke(b);
+        applyImageTogglePalette(b);
     }
 
     @Keep
@@ -311,7 +316,9 @@ public final class IupToggleHelper
     @Keep
     public static void setBgColor(View widget, int r, int g, int b)
     {
-        if (widget != null) widget.setBackgroundColor(Color.rgb(r, g, b));
+        if (widget == null) return;
+        widget.setBackgroundColor(Color.rgb(r, g, b));
+        if (widget instanceof MaterialButton mb) sImageToggleBg.put(mb, Color.rgb(r, g, b));
     }
 
     @Keep
@@ -334,8 +341,11 @@ public final class IupToggleHelper
             new int[] { disabled, base });
         if (widget instanceof CompoundButton)
             ((CompoundButton)widget).setTextColor(csl);
-        else if (widget instanceof MaterialButton)
-            ((MaterialButton)widget).setTextColor(csl);
+        else if (widget instanceof MaterialButton mb)
+        {
+            mb.setTextColor(csl);
+            sImageToggleFg.put(mb, csl);
+        }
     }
 
     @Keep
