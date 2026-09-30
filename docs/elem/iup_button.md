@@ -83,7 +83,7 @@ Normally set automatically when the button is assigned to the parent dialog's [D
 Not supported in EFL (the attribute is accepted but has no visual effect).
 
 **BUTTONSTYLE** [Android and iOS Only] (non-inheritable): button visual style.
-Values: "FILLED" (default), "TONAL", "OUTLINED", "ELEVATED", "TEXT".
+Values: "FILLED", "TONAL", "OUTLINED", "ELEVATED", "TEXT". Default: "FILLED" in Android, "TONAL" in iOS.
 When set, takes precedence over FLAT and SHOWASDEFAULT.
 
 **CORNERSTYLE** [Android and iOS Only] (non-inheritable): button corner shape.
@@ -148,6 +148,18 @@ The buttons with no text and BGCOLOR defined have their RASTERSIZE set.
 |-----------------------------------|---------------------------------|----------------------------------|----------------------------------|
 | GTK                               | Qt                              | Win32                            | macOS                            |
 | ![](../images/iupbutton_gtk3.png) | ![](../images/iupbutton_qt.png) | ![](../images/iupbutton_win.png) | ![](../images/iupbutton_mac.png) |
+
+|                                      |                                  |
+|--------------------------------------|----------------------------------|
+| Android                              | iOS                              |
+| ![](../images/iupbutton_android.png) | ![](../images/iupbutton_ios.png) |
+
+BUTTONSTYLE and CORNERSTYLE values:
+
+|                                           |                                       |
+|-------------------------------------------|---------------------------------------|
+| Android                                   | iOS                                   |
+| ![](../images/iupbuttonstyle_android.png) | ![](../images/iupbuttonstyle_ios.png) |
 
 ### See Also
 
