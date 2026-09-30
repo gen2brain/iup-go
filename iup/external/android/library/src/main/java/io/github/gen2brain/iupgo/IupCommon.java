@@ -479,11 +479,7 @@ public final class IupCommon
         {
             IupApplication app = IupApplication.getIupApplication();
             if (app == null) return false;
-            /* Application's config doesn't refresh on Day/Night flip; the Activity's does. */
-            Activity a = app.getCurrentActivity();
-            android.content.res.Resources res = (a != null) ? a.getResources() : app.getResources();
-            int mode = res.getConfiguration().uiMode
-                       & android.content.res.Configuration.UI_MODE_NIGHT_MASK;
+            int mode = appConfiguration(app).uiMode & android.content.res.Configuration.UI_MODE_NIGHT_MASK;
             return mode == android.content.res.Configuration.UI_MODE_NIGHT_YES;
         }
         catch (Throwable t) { return false; }
@@ -820,6 +816,23 @@ public final class IupCommon
     }
 
 
+    /* Application's config doesn't refresh on Day/Night flip and an existing Activity takes a forced night mode only later */
+    private static android.content.res.Configuration appConfiguration(IupApplication app)
+    {
+        Activity a = app.getCurrentActivity();
+        android.content.res.Configuration config = new android.content.res.Configuration(
+            (a != null) ? a.getResources().getConfiguration() : app.getResources().getConfiguration());
+        int mode = AppCompatDelegate.getDefaultNightMode();
+        if (mode == AppCompatDelegate.MODE_NIGHT_YES || mode == AppCompatDelegate.MODE_NIGHT_NO)
+        {
+            int night = (mode == AppCompatDelegate.MODE_NIGHT_YES)
+                ? android.content.res.Configuration.UI_MODE_NIGHT_YES
+                : android.content.res.Configuration.UI_MODE_NIGHT_NO;
+            config.uiMode = (config.uiMode & ~android.content.res.Configuration.UI_MODE_NIGHT_MASK) | night;
+        }
+        return config;
+    }
+
     /* AppTheme-bearing wrapper used when no Activity exists yet (early widget creation) */
     private static ContextThemeWrapper sContextThemeWrapper = null;
     public static synchronized ContextThemeWrapper getContextThemeWrapper()
@@ -827,11 +840,7 @@ public final class IupCommon
         if (sContextThemeWrapper == null)
         {
             IupApplication app = IupApplication.getIupApplication();
-            /* Activity config tracks Day/Night, Application's doesn't; wrap from the Activity */
-            Activity a = app.getCurrentActivity();
-            android.content.Context base = (a != null)
-                ? app.createConfigurationContext(a.getResources().getConfiguration())
-                : app;
+            android.content.Context base = app.createConfigurationContext(appConfiguration(app));
             sContextThemeWrapper = new ContextThemeWrapper(base, R.style.AppTheme);
         }
         return sContextThemeWrapper;

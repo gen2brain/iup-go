@@ -267,7 +267,7 @@ static int androidToggleSetBgColorAttrib(Ihandle* ih, const char* value)
   unsigned char r, g, b;
 
   if (!iupStrToRGB(value, &r, &g, &b)) return 0;
-  if (!ih->handle) return 1;
+  if (!ih->handle || iupStrEqualNoCase(value, IupGetGlobal("DLGBGCOLOR"))) return 1;
 
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
   jclass cls = IUPJNI_FindClass(IupToggleHelper, jni_env, "io/github/gen2brain/iupgo/IupToggleHelper");
