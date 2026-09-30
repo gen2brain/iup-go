@@ -60,10 +60,10 @@ char* iupdrvMicrophoneGetDeviceName(int index)
 {
   media_node node;
   live_node_info info;
-  char* name = NULL;
+  char* name = nullptr;
 
   if (index != 0 || !haikuMicrophoneInput(&node))
-    return NULL;
+    return nullptr;
   if (BMediaRoster::Roster()->GetLiveNodeInfo(node, &info) == B_OK)
     name = iupStrReturnStr(info.name);
   BMediaRoster::Roster()->ReleaseNode(node);
@@ -73,12 +73,12 @@ char* iupdrvMicrophoneGetDeviceName(int index)
 char* iupdrvMicrophoneGetPermission(Ihandle* ih)
 {
   (void)ih;
-  return iupdrvMicrophoneIsAvailable() ? (char*)"GRANTED" : (char*)"UNAVAILABLE";
+  return iupdrvMicrophoneIsAvailable() ? const_cast<char*>("GRANTED") : const_cast<char*>("UNAVAILABLE");
 }
 
 static void haikuMicrophoneProcess(void* cookie, bigtime_t timestamp, void* data, size_t size, const media_format& format)
 {
-  IhaikuMicrophone* mic = (IhaikuMicrophone*)cookie;
+  auto* mic = static_cast<IhaikuMicrophone*>(cookie);
   const media_raw_audio_format& raw = mic->raw;
   int sample_size = raw.format & 0xf;
   size_t samples = sample_size ? size / sample_size : 0;
@@ -90,13 +90,13 @@ static void haikuMicrophoneProcess(void* cookie, bigtime_t timestamp, void* data
     return;
 
   if (raw.format == media_raw_audio_format::B_AUDIO_SHORT)
-    pcm = (const short*)data;
+    pcm = static_cast<const short*>(data);
   else
   {
     size_t k;
     if (mic->convert_size < samples)
     {
-      short* buffer = (short*)realloc(mic->convert, samples * sizeof(short));
+      auto* buffer = static_cast<short*>(realloc(mic->convert, samples * sizeof(short)));
       if (!buffer)
         return;
       mic->convert = buffer;
@@ -107,25 +107,25 @@ static void haikuMicrophoneProcess(void* cookie, bigtime_t timestamp, void* data
       int v;
       switch (raw.format)
       {
-      case media_raw_audio_format::B_AUDIO_FLOAT: v = (int)(((const float*)data)[k] * 32767.0f); break;
-      case media_raw_audio_format::B_AUDIO_INT: v = ((const int*)data)[k] >> 16; break;
-      case media_raw_audio_format::B_AUDIO_UCHAR: v = (((const unsigned char*)data)[k] - 128) << 8; break;
-      case media_raw_audio_format::B_AUDIO_CHAR: v = ((const signed char*)data)[k] << 8; break;
+      case media_raw_audio_format::B_AUDIO_FLOAT: v = static_cast<int>((static_cast<const float*>(data))[k] * 32767.0f); break;
+      case media_raw_audio_format::B_AUDIO_INT: v = (static_cast<const int*>(data))[k] >> 16; break;
+      case media_raw_audio_format::B_AUDIO_UCHAR: v = ((static_cast<const unsigned char*>(data))[k] - 128) << 8; break;
+      case media_raw_audio_format::B_AUDIO_CHAR: v = (static_cast<const signed char*>(data))[k] << 8; break;
       default: v = 0; break;
       }
       if (v > 32767) v = 32767;
       if (v < -32768) v = -32768;
-      mic->convert[k] = (short)v;
+      mic->convert[k] = static_cast<short>(v);
     }
     pcm = mic->convert;
   }
 
-  iupMicrophoneSamples(mic->ih, pcm, (int)(samples / channels));
+  iupMicrophoneSamples(mic->ih, pcm, static_cast<int>(samples / channels));
 }
 
 static void haikuMicrophoneNotify(void* cookie, BMediaRecorder::notification what, ...)
 {
-  IhaikuMicrophone* mic = (IhaikuMicrophone*)cookie;
+  auto* mic = static_cast<IhaikuMicrophone*>(cookie);
   if (what == BMediaRecorder::B_WILL_STOP && !mic->stopping)
     iupMicrophoneError(mic->ih, "Capture stopped");
 }
@@ -134,7 +134,7 @@ static void haikuMicrophoneRelease(IhaikuMicrophone* mic)
 {
   if (mic->recorder)
   {
-    mic->recorder->SetHooks(NULL, NULL, NULL);
+    mic->recorder->SetHooks(nullptr, nullptr, nullptr);
     mic->recorder->Disconnect();
     delete mic->recorder;
   }
@@ -156,7 +156,7 @@ int iupdrvMicrophoneStart(Ihandle* ih, int device, int* channels, int* samplerat
     return 0;
   }
 
-  mic = (IhaikuMicrophone*)calloc(1, sizeof(IhaikuMicrophone));
+  mic = static_cast<IhaikuMicrophone*>(calloc(1, sizeof(IhaikuMicrophone)));
   if (!mic)
   {
     BMediaRoster::Roster()->ReleaseNode(input);
@@ -197,9 +197,9 @@ int iupdrvMicrophoneStart(Ihandle* ih, int device, int* channels, int* samplerat
 
   mic->raw = mic->recorder->MediaInput().format.u.raw_audio;
   if (mic->raw.channel_count > 0)
-    *channels = (int)mic->raw.channel_count;
+    *channels = static_cast<int>(mic->raw.channel_count);
   if (mic->raw.frame_rate > 0)
-    *samplerate = (int)mic->raw.frame_rate;
+    *samplerate = static_cast<int>(mic->raw.frame_rate);
 
   if (mic->recorder->Start() != B_OK)
   {
@@ -208,20 +208,20 @@ int iupdrvMicrophoneStart(Ihandle* ih, int device, int* channels, int* samplerat
     return 0;
   }
 
-  iupAttribSet(ih, "_IUP_MICROPHONE", (char*)mic);
+  iupAttribSet(ih, "_IUP_MICROPHONE", reinterpret_cast<char*>(mic));
   return 1;
 }
 
 void iupdrvMicrophoneStop(Ihandle* ih)
 {
-  IhaikuMicrophone* mic = (IhaikuMicrophone*)iupAttribGet(ih, "_IUP_MICROPHONE");
+  auto* mic = reinterpret_cast<IhaikuMicrophone*>(iupAttribGet(ih, "_IUP_MICROPHONE"));
   if (!mic)
     return;
 
   mic->stopping = 1;
   mic->recorder->Stop(true);
   haikuMicrophoneRelease(mic);
-  iupAttribSet(ih, "_IUP_MICROPHONE", NULL);
+  iupAttribSet(ih, "_IUP_MICROPHONE", nullptr);
 }
 
 void iupdrvMicrophoneInitClass(Iclass* ic)
