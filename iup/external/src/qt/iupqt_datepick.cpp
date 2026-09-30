@@ -100,7 +100,7 @@ protected:
 
 static void qtDatePickUpdateDisplayFormat(Ihandle* ih)
 {
-  IupQtDatePick* datepick = (IupQtDatePick*)ih->handle;
+  auto* datepick = reinterpret_cast<IupQtDatePick*>(ih->handle);
   if (!datepick)
     return;
 
@@ -149,7 +149,7 @@ static void qtDatePickComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int*
 
   if (ih->handle)
   {
-    IupQtDatePick* datepick = (IupQtDatePick*)ih->handle;
+    auto* datepick = reinterpret_cast<IupQtDatePick*>(ih->handle);
     QSize size = datepick->sizeHint();
     *w = size.width();
     *h = size.height();
@@ -163,7 +163,7 @@ static void qtDatePickComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int*
 
 static int qtDatePickSetValueAttrib(Ihandle* ih, const char* value)
 {
-  IupQtDatePick* datepick = (IupQtDatePick*)ih->handle;
+  auto* datepick = reinterpret_cast<IupQtDatePick*>(ih->handle);
 
   if (!datepick)
     return 0;
@@ -193,7 +193,7 @@ static int qtDatePickSetValueAttrib(Ihandle* ih, const char* value)
 
 static char* qtDatePickGetValueAttrib(Ihandle* ih)
 {
-  IupQtDatePick* datepick = (IupQtDatePick*)ih->handle;
+  auto* datepick = reinterpret_cast<IupQtDatePick*>(ih->handle);
 
   if (datepick)
   {
@@ -251,7 +251,7 @@ static int qtDatePickSetMonthshortnamesAttrib(Ihandle* ih, const char* value)
 
 static int qtDatePickSetCalendarweeknumbersAttrib(Ihandle* ih, const char* value)
 {
-  IupQtDatePick* datepick = (IupQtDatePick*)ih->handle;
+  auto* datepick = reinterpret_cast<IupQtDatePick*>(ih->handle);
 
   if (datepick)
   {
@@ -270,7 +270,7 @@ static int qtDatePickSetCalendarweeknumbersAttrib(Ihandle* ih, const char* value
 
 static int qtDatePickSetFormatAttrib(Ihandle* ih, const char* value)
 {
-  IupQtDatePick* datepick = (IupQtDatePick*)ih->handle;
+  auto* datepick = reinterpret_cast<IupQtDatePick*>(ih->handle);
 
   if (datepick && value)
   {
@@ -282,9 +282,9 @@ static int qtDatePickSetFormatAttrib(Ihandle* ih, const char* value)
 
 static int qtDatePickMapMethod(Ihandle* ih)
 {
-  IupQtDatePick* datepick = new IupQtDatePick(ih);
+  auto* datepick = new IupQtDatePick(ih);
 
-  ih->handle = (InativeHandle*)datepick;
+  ih->handle = reinterpret_cast<InativeHandle*>(datepick);
 
   datepick->setDate(QDate::currentDate());
 
@@ -310,7 +310,7 @@ static void qtDatePickUnMapMethod(Ihandle* ih)
 {
   if (ih->handle)
   {
-    IupQtDatePick* datepick = (IupQtDatePick*)ih->handle;
+    auto* datepick = reinterpret_cast<IupQtDatePick*>(ih->handle);
 
     iupqtTipsDestroy(ih);
 
@@ -321,11 +321,11 @@ static void qtDatePickUnMapMethod(Ihandle* ih)
 
 extern "C" Iclass* iupDatePickNewClass(void)
 {
-  Iclass* ic = iupClassNew(NULL);
+  Iclass* ic = iupClassNew(nullptr);
 
-  ic->name = (char*)"datepick";
-  ic->cons = (char*)"DatePick";
-  ic->format = NULL;
+  ic->name = const_cast<char*>("datepick");
+  ic->cons = const_cast<char*>("DatePick");
+  ic->format = nullptr;
   ic->nativetype = IUP_TYPECONTROL;
   ic->childtype = IUP_CHILDNONE;
   ic->is_interactive = 1;
@@ -344,18 +344,18 @@ extern "C" Iclass* iupDatePickNewClass(void)
   iupBaseRegisterCommonAttrib(ic);
   iupBaseRegisterVisualAttrib(ic);
 
-  iupClassRegisterAttribute(ic, "VALUE", qtDatePickGetValueAttrib, qtDatePickSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TODAY", qtDatePickGetTodayAttrib, NULL, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_READONLY | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "VALUE", qtDatePickGetValueAttrib, qtDatePickSetValueAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TODAY", qtDatePickGetTodayAttrib, nullptr, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_READONLY | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "SEPARATOR", NULL, qtDatePickSetSeparatorAttrib, IUPAF_SAMEASSYSTEM, "/", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "ZEROPRECED", NULL, qtDatePickSetZeroprecedAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "ORDER", NULL, qtDatePickSetOrderAttrib, IUPAF_SAMEASSYSTEM, "DMY", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "CALENDARWEEKNUMBERS", NULL, qtDatePickSetCalendarweeknumbersAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "MONTHSHORTNAMES", NULL, qtDatePickSetMonthshortnamesAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "FORMAT", NULL, qtDatePickSetFormatAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SEPARATOR", nullptr, qtDatePickSetSeparatorAttrib, IUPAF_SAMEASSYSTEM, "/", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ZEROPRECED", nullptr, qtDatePickSetZeroprecedAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ORDER", nullptr, qtDatePickSetOrderAttrib, IUPAF_SAMEASSYSTEM, "DMY", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CALENDARWEEKNUMBERS", nullptr, qtDatePickSetCalendarweeknumbersAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MONTHSHORTNAMES", nullptr, qtDatePickSetMonthshortnamesAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FORMAT", nullptr, qtDatePickSetFormatAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
 
   /* Qt has no API to open or close the calendar popup */
-  iupClassRegisterAttribute(ic, "SHOWDROPDOWN", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SHOWDROPDOWN", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED | IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
 
   return ic;
 }

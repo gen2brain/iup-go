@@ -261,7 +261,7 @@ public:
       }
       else
       {
-        qreal t = (qreal)elapsed / (qreal)animation_duration;
+        qreal t = static_cast<qreal>(elapsed) / static_cast<qreal>(animation_duration);
         qreal eased_t = easeInOutQuad(t);
         thumb_position = animation_start + (animation_end - animation_start) * eased_t;
       }
@@ -301,12 +301,12 @@ public:
 
   QSize sizeHint() const override
   {
-    return QSize(TRACK_WIDTH, TRACK_HEIGHT);
+    return {TRACK_WIDTH, TRACK_HEIGHT};
   }
 
   QSize minimumSizeHint() const override
   {
-    return QSize(TRACK_WIDTH, TRACK_HEIGHT);
+    return {TRACK_WIDTH, TRACK_HEIGHT};
   }
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
@@ -408,7 +408,7 @@ static int qt_toggle_border_y = -1;
 static int qt_toggle_struct_x = 0;
 static int qt_toggle_struct_y = 0;
 
-static void qtToggleMeasureBorders(void)
+static void qtToggleMeasureBorders()
 {
   QToolButton temp_button;
   QPixmap pixmap(64, 64);
@@ -466,7 +466,7 @@ extern "C" IUP_SDK_API void iupdrvToggleAddSwitch(Ihandle* ih, int* x, int* y, c
 
   if (switch_w < 0)
   {
-    IupQtSwitch temp_switch(NULL);
+    IupQtSwitch temp_switch(nullptr);
     QSize hint = temp_switch.sizeHint();
 
     switch_w = hint.width();
@@ -503,12 +503,12 @@ extern "C" IUP_SDK_API void iupdrvToggleAddCheckBox(Ihandle* ih, int* x, int* y,
 
 static int qtToggleGetCheck(Ihandle* ih)
 {
-  QAbstractButton* button = (QAbstractButton*)ih->handle;
+  auto* button = reinterpret_cast<QAbstractButton*>(ih->handle);
 
   if (!button)
     return 0;
 
-  QCheckBox* checkbox = qobject_cast<QCheckBox*>(button);
+  auto* checkbox = qobject_cast<QCheckBox*>(button);
   if (checkbox && checkbox->isTristate())
   {
     Qt::CheckState state = checkbox->checkState();
@@ -528,12 +528,12 @@ static void qtToggleSetPixmap(Ihandle* ih, const char* name, int make_inactive)
   if (!name || ih->data->type != IUP_TOGGLE_IMAGE)
     return;
 
-  QAbstractButton* button = (QAbstractButton*)ih->handle;
+  auto* button = reinterpret_cast<QAbstractButton*>(ih->handle);
 
   if (button)
   {
     const char* bgcolor = iupBaseNativeParentGetBgColorAttrib(ih);
-    QPixmap* pixmap = (QPixmap*)iupImageGetImage(name, ih, make_inactive, bgcolor);
+    auto* pixmap = static_cast<QPixmap*>(iupImageGetImage(name, ih, make_inactive, bgcolor));
 
     if (pixmap && !pixmap->isNull())
     {
@@ -589,7 +589,7 @@ static void qtToggleUpdateLayout(Ihandle* ih)
   if (ih->data->type != IUP_TOGGLE_IMAGE)
     return;
 
-  QAbstractButton* button = (QAbstractButton*)ih->handle;
+  auto* button = reinterpret_cast<QAbstractButton*>(ih->handle);
   if (!button)
     return;
 
@@ -633,7 +633,7 @@ static void qtToggleUpdateLayout(Ihandle* ih)
 
 static int qtToggleSetValueAttrib(Ihandle* ih, const char* value)
 {
-  QAbstractButton* button = (QAbstractButton*)ih->handle;
+  auto* button = reinterpret_cast<QAbstractButton*>(ih->handle);
 
   if (!button)
     return 0;
@@ -642,7 +642,7 @@ static int qtToggleSetValueAttrib(Ihandle* ih, const char* value)
 
   if (iupStrEqualNoCase(value, "NOTDEF"))
   {
-    QCheckBox* checkbox = qobject_cast<QCheckBox*>(button);
+    auto* checkbox = qobject_cast<QCheckBox*>(button);
     if (checkbox && checkbox->isTristate())
       checkbox->setCheckState(Qt::PartiallyChecked);
   }
@@ -666,7 +666,7 @@ static int qtToggleSetValueAttrib(Ihandle* ih, const char* value)
 
   if (ih->data->type == IUP_TOGGLE_TEXT && !ih->data->is_radio && iupAttribGetBoolean(ih, "SWITCH"))
   {
-    IupQtSwitch* switch_widget = static_cast<IupQtSwitch*>(button);
+    auto* switch_widget = static_cast<IupQtSwitch*>(button);
     switch_widget->setThumbPosition(button->isChecked() ? 1.0 : 0.0);
   }
 
@@ -688,7 +688,7 @@ static int qtToggleSetTitleAttrib(Ihandle* ih, const char* value)
 
   if (ih->data->type == IUP_TOGGLE_TEXT)
   {
-    QAbstractButton* button = (QAbstractButton*)ih->handle;
+    auto* button = reinterpret_cast<QAbstractButton*>(ih->handle);
 
     if (button)
     {
@@ -700,8 +700,8 @@ static int qtToggleSetTitleAttrib(Ihandle* ih, const char* value)
         button->setText(QString::fromUtf8(stripped));
         free(stripped);
 
-        IupQtCheckBox* cb = dynamic_cast<IupQtCheckBox*>(button);
-        IupQtRadioButton* rb = dynamic_cast<IupQtRadioButton*>(button);
+        auto* cb = dynamic_cast<IupQtCheckBox*>(button);
+        auto* rb = dynamic_cast<IupQtRadioButton*>(button);
         if (cb)
           cb->setMarkupHtml(QString::fromUtf8(html));
         else if (rb)
@@ -744,7 +744,7 @@ static int qtToggleSetPaddingAttrib(Ihandle* ih, const char* value)
 
   if (ih->handle && ih->data->type == IUP_TOGGLE_IMAGE)
   {
-    QAbstractButton* button = (QAbstractButton*)ih->handle;
+    auto* button = reinterpret_cast<QAbstractButton*>(ih->handle);
 
     if (ih->data->horiz_padding > 0 || ih->data->vert_padding > 0)
     {
@@ -776,7 +776,7 @@ static int qtToggleSetImagePositionAttrib(Ihandle* ih, const char* value)
   if (ih->data->type != IUP_TOGGLE_IMAGE)
     return 0;
 
-  iupAttribSet(ih, "IMAGEPOSITION", (char*)value);
+  iupAttribSet(ih, "IMAGEPOSITION", const_cast<char*>(value));
 
   if (ih->handle)
     qtToggleUpdateLayout(ih);
@@ -787,7 +787,7 @@ static int qtToggleSetImagePositionAttrib(Ihandle* ih, const char* value)
 static int qtToggleSetFgColorAttrib(Ihandle* ih, const char* value)
 {
   unsigned char r, g, b;
-  QAbstractButton* button = (QAbstractButton*)ih->handle;
+  auto* button = reinterpret_cast<QAbstractButton*>(ih->handle);
 
   if (!button || !iupStrToRGB(value, &r, &g, &b))
     return 0;
@@ -812,7 +812,7 @@ static char* qtToggleGetBgColorAttrib(Ihandle* ih)
     char* color = iupBaseNativeParentGetBgColorAttrib(ih);
     if (iupStrToRGB(color, &r, &g, &b))
       return iupStrReturnRGB(r, g, b);
-    return NULL;
+    return nullptr;
   }
 }
 
@@ -823,7 +823,7 @@ static int qtToggleSetFontAttrib(Ihandle* ih, const char* value)
 
   if (ih->handle)
   {
-    QAbstractButton* button = (QAbstractButton*)ih->handle;
+    auto* button = reinterpret_cast<QAbstractButton*>(ih->handle);
     if (button)
       iupqtUpdateWidgetFont(ih, button);
   }
@@ -838,7 +838,7 @@ static int qtToggleSetMarkupAttrib(Ihandle* ih, const char* value)
     if (iupStrBoolean(value))
       iupAttribSet(ih, "MARKUP", "1");
     else
-      iupAttribSet(ih, "MARKUP", NULL);
+      iupAttribSet(ih, "MARKUP", nullptr);
 
     char* title = iupAttribGet(ih, "TITLE");
     if (title)
@@ -853,7 +853,7 @@ static int qtToggleSetRightButtonAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->type == IUP_TOGGLE_TEXT && ih->handle)
   {
-    QAbstractButton* button = (QAbstractButton*)ih->handle;
+    auto* button = reinterpret_cast<QAbstractButton*>(ih->handle);
 
     if (iupStrBoolean(value))
       button->setLayoutDirection(Qt::RightToLeft);
@@ -870,7 +870,7 @@ static int qtToggleSetImageAttrib(Ihandle* ih, const char* value)
   if (ih->data->type == IUP_TOGGLE_IMAGE)
   {
     if (value != iupAttribGet(ih, "IMAGE"))
-      iupAttribSet(ih, "IMAGE", (char*)value);
+      iupAttribSet(ih, "IMAGE", const_cast<char*>(value));
 
     qtToggleUpdateImage(ih, iupdrvIsActive(ih), qtToggleGetCheck(ih));
     return 1;
@@ -884,7 +884,7 @@ static int qtToggleSetImInactiveAttrib(Ihandle* ih, const char* value)
   if (ih->data->type == IUP_TOGGLE_IMAGE)
   {
     if (value != iupAttribGet(ih, "IMINACTIVE"))
-      iupAttribSet(ih, "IMINACTIVE", (char*)value);
+      iupAttribSet(ih, "IMINACTIVE", const_cast<char*>(value));
 
     qtToggleUpdateImage(ih, iupdrvIsActive(ih), qtToggleGetCheck(ih));
     return 1;
@@ -898,7 +898,7 @@ static int qtToggleSetImPressAttrib(Ihandle* ih, const char* value)
   if (ih->data->type == IUP_TOGGLE_IMAGE)
   {
     if (value != iupAttribGet(ih, "IMPRESS"))
-      iupAttribSet(ih, "IMPRESS", (char*)value);
+      iupAttribSet(ih, "IMPRESS", const_cast<char*>(value));
 
     qtToggleUpdateImage(ih, iupdrvIsActive(ih), qtToggleGetCheck(ih));
     return 1;
@@ -929,7 +929,7 @@ static void qtToggleToggled(Ihandle* ih, bool checked)
   if (ih->data->type == IUP_TOGGLE_IMAGE)
     qtToggleUpdateImage(ih, iupdrvIsActive(ih), check);
 
-  IFni cb = (IFni)IupGetCallback(ih, "ACTION");
+  IFni cb = reinterpret_cast<IFni>(IupGetCallback(ih, "ACTION"));
   if (cb && cb(ih, check) == IUP_CLOSE)
     IupExitLoop();
 
@@ -959,19 +959,19 @@ static int qtToggleMapMethod(Ihandle* ih)
   {
     if (ih->data->type == IUP_TOGGLE_IMAGE)
     {
-      IupQtToolButton* tool_btn = new IupQtToolButton(ih);
+      auto* tool_btn = new IupQtToolButton(ih);
       tool_btn->setAutoExclusive(true);
       button = tool_btn;
     }
     else
     {
-      IupQtRadioButton* radio_btn = new IupQtRadioButton(ih);
+      auto* radio_btn = new IupQtRadioButton(ih);
       button = radio_btn;
     }
 
     if (!iupAttribGet(radio, "_IUPQT_LASTRADIOBUTTON"))
       button->setChecked(true);
-    iupAttribSet(radio, "_IUPQT_LASTRADIOBUTTON", (char*)ih);
+    iupAttribSet(radio, "_IUPQT_LASTRADIOBUTTON", reinterpret_cast<char*>(ih));
 
     if (!iupAttribGetHandleName(ih))
       iupAttribSetHandleName(ih);
@@ -984,12 +984,12 @@ static int qtToggleMapMethod(Ihandle* ih)
     {
       if (iupAttribGetBoolean(ih, "SWITCH"))
       {
-        IupQtSwitch* switch_widget = new IupQtSwitch(ih);
+        auto* switch_widget = new IupQtSwitch(ih);
         button = switch_widget;
       }
       else
       {
-        IupQtCheckBox* checkbox = new IupQtCheckBox(ih);
+        auto* checkbox = new IupQtCheckBox(ih);
         button = checkbox;
 
         if (iupAttribGetBoolean(ih, "3STATE"))
@@ -998,12 +998,12 @@ static int qtToggleMapMethod(Ihandle* ih)
     }
     else
     {
-      IupQtToolButton* tool_btn = new IupQtToolButton(ih);
+      auto* tool_btn = new IupQtToolButton(ih);
       button = tool_btn;
     }
   }
 
-  ih->handle = (InativeHandle*)button;
+  ih->handle = reinterpret_cast<InativeHandle*>(button);
 
   if (ih->data->type == IUP_TOGGLE_TEXT)
   {
@@ -1026,7 +1026,7 @@ static int qtToggleMapMethod(Ihandle* ih)
   if (ih->data->type == IUP_TOGGLE_IMAGE && iupAttribGetBoolean(ih, "FLAT"))
   {
     ih->data->flat = 1;
-    QToolButton* tool_btn = qobject_cast<QToolButton*>(button);
+    auto* tool_btn = qobject_cast<QToolButton*>(button);
     if (tool_btn)
       tool_btn->setAutoRaise(true);
   }
@@ -1054,7 +1054,7 @@ static int qtToggleMapMethod(Ihandle* ih)
 
   if (ih->data->type == IUP_TOGGLE_TEXT && !ih->data->is_radio && iupAttribGetBoolean(ih, "SWITCH"))
   {
-    IupQtSwitch* switch_widget = static_cast<IupQtSwitch*>(button);
+    auto* switch_widget = static_cast<IupQtSwitch*>(button);
     switch_widget->initializeThumbPosition();
   }
 
@@ -1073,7 +1073,7 @@ extern "C" IUP_SDK_API void iupdrvToggleInitClass(Iclass* ic)
   /* Driver Dependent Attribute functions */
 
   /* Common */
-  iupClassRegisterAttribute(ic, "FONT", NULL, qtToggleSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
+  iupClassRegisterAttribute(ic, "FONT", nullptr, qtToggleSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
 
   /* Overwrite Visual */
   iupClassRegisterAttribute(ic, "ACTIVE", iupBaseGetActiveAttrib, qtToggleSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
@@ -1082,23 +1082,23 @@ extern "C" IUP_SDK_API void iupdrvToggleInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "BGCOLOR", qtToggleGetBgColorAttrib, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
 
   /* Special */
-  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, qtToggleSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "TITLE", NULL, qtToggleSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FGCOLOR", nullptr, qtToggleSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "TITLE", nullptr, qtToggleSetTitleAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 
   /* IupToggle only */
-  iupClassRegisterAttribute(ic, "ALIGNMENT", NULL, NULL, "ACENTER:ACENTER", NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "IMAGE", NULL, qtToggleSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "IMINACTIVE", NULL, qtToggleSetImInactiveAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "IMPRESS", NULL, qtToggleSetImPressAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "VALUE", qtToggleGetValueAttrib, qtToggleSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ALIGNMENT", nullptr, nullptr, "ACENTER:ACENTER", nullptr, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMAGE", nullptr, qtToggleSetImageAttrib, nullptr, nullptr, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMINACTIVE", nullptr, qtToggleSetImInactiveAttrib, nullptr, nullptr, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMPRESS", nullptr, qtToggleSetImPressAttrib, nullptr, nullptr, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "VALUE", qtToggleGetValueAttrib, qtToggleSetValueAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "PADDING", iupToggleGetPaddingAttrib, qtToggleSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
 
-  iupClassRegisterAttribute(ic, "SPACING", NULL, qtToggleSetSpacingAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "IMAGEPOSITION", NULL, qtToggleSetImagePositionAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "MARKUP", NULL, qtToggleSetMarkupAttrib, NULL, NULL, IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "RIGHTBUTTON", NULL, qtToggleSetRightButtonAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "IGNOREDOUBLECLICK", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SPACING", nullptr, qtToggleSetSpacingAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMAGEPOSITION", nullptr, qtToggleSetImagePositionAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MARKUP", nullptr, qtToggleSetMarkupAttrib, nullptr, nullptr, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "RIGHTBUTTON", nullptr, qtToggleSetRightButtonAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IGNOREDOUBLECLICK", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "3STATE", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "3STATE", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
 }

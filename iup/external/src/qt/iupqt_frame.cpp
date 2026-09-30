@@ -87,7 +87,7 @@ static int qtFrameSetTitleAttrib(Ihandle* ih, const char* value)
 {
   if (iupAttribGetStr(ih, "_IUPFRAME_HAS_TITLE"))
   {
-    QGroupBox* groupbox = qobject_cast<QGroupBox*>((QWidget*)ih->handle);
+    auto* groupbox = qobject_cast<QGroupBox*>(reinterpret_cast<QWidget*>(ih->handle));
     if (groupbox)
     {
       if (value)
@@ -104,7 +104,7 @@ static char* qtFrameGetTitleAttrib(Ihandle* ih)
 {
   if (iupAttribGetStr(ih, "_IUPFRAME_HAS_TITLE"))
   {
-    QGroupBox* groupbox = qobject_cast<QGroupBox*>((QWidget*)ih->handle);
+    auto* groupbox = qobject_cast<QGroupBox*>(reinterpret_cast<QWidget*>(ih->handle));
     if (groupbox)
     {
       QString title = groupbox->title();
@@ -120,10 +120,10 @@ static int qtFrameSetSunkenAttrib(Ihandle* ih, const char* value)
   /* SUNKEN only applies to untitled frames */
   if (!iupAttribGetStr(ih, "_IUPFRAME_HAS_TITLE"))
   {
-    QGroupBox* groupbox = qobject_cast<QGroupBox*>((QWidget*)ih->handle);
+    auto* groupbox = qobject_cast<QGroupBox*>(reinterpret_cast<QWidget*>(ih->handle));
     if (groupbox)
     {
-      iupAttribSet(ih, "_IUPFRAME_SUNKEN", iupStrBoolean(value) ? "1" : NULL);
+      iupAttribSet(ih, "_IUPFRAME_SUNKEN", iupStrBoolean(value) ? "1" : nullptr);
       qtFrameUpdateStyleSheet(ih, groupbox);
 
       return 1;
@@ -136,7 +136,7 @@ static char* qtFrameGetSunkenAttrib(Ihandle* ih)
 {
   if (!iupAttribGetStr(ih, "_IUPFRAME_HAS_TITLE"))
   {
-    return iupStrReturnBoolean(iupAttribGet(ih, "_IUPFRAME_SUNKEN") != NULL);
+    return iupStrReturnBoolean(iupAttribGet(ih, "_IUPFRAME_SUNKEN") != nullptr);
   }
   return nullptr;
 }
@@ -144,7 +144,7 @@ static char* qtFrameGetSunkenAttrib(Ihandle* ih)
 static int qtFrameSetBgColorAttrib(Ihandle* ih, const char* value)
 {
   unsigned char r, g, b;
-  QWidget* widget = (QWidget*)ih->handle;
+  auto* widget = reinterpret_cast<QWidget*>(ih->handle);
 
   if (!iupAttribGet(ih, "_IUPFRAME_HAS_BGCOLOR"))
   {
@@ -158,7 +158,7 @@ static int qtFrameSetBgColorAttrib(Ihandle* ih, const char* value)
   {
     QWidget* inner = nullptr;
 
-    QGroupBox* groupbox = qobject_cast<QGroupBox*>(widget);
+    auto* groupbox = qobject_cast<QGroupBox*>(widget);
     if (groupbox)
     {
       QList<QWidget*> children = groupbox->findChildren<QWidget*>(QString(), Qt::FindDirectChildrenOnly);
@@ -192,7 +192,7 @@ static int qtFrameSetBgColorAttrib(Ihandle* ih, const char* value)
 static int qtFrameSetFgColorAttrib(Ihandle* ih, const char* value)
 {
   unsigned char r, g, b;
-  QGroupBox* groupbox = qobject_cast<QGroupBox*>((QWidget*)ih->handle);
+  auto* groupbox = qobject_cast<QGroupBox*>(reinterpret_cast<QWidget*>(ih->handle));
 
   if (!groupbox)
     return 0;
@@ -214,7 +214,7 @@ static int qtFrameSetFontAttrib(Ihandle* ih, const char* value)
 
   if (ih->handle)
   {
-    QGroupBox* groupbox = qobject_cast<QGroupBox*>((QWidget*)ih->handle);
+    auto* groupbox = qobject_cast<QGroupBox*>(reinterpret_cast<QWidget*>(ih->handle));
     if (groupbox)
     {
       iupqtUpdateWidgetFont(ih, groupbox);
@@ -233,12 +233,12 @@ static void* qtFrameGetInnerNativeContainerHandleMethod(Ihandle* ih, Ihandle* ch
 {
   (void)child;
 
-  QWidget* widget = (QWidget*)ih->handle;
+  auto* widget = reinterpret_cast<QWidget*>(ih->handle);
 
   if (!widget)
-    return NULL;
+    return nullptr;
 
-  QGroupBox* groupbox = qobject_cast<QGroupBox*>(widget);
+  auto* groupbox = qobject_cast<QGroupBox*>(widget);
   if (groupbox)
   {
     QList<QWidget*> children = groupbox->findChildren<QWidget*>(QString(), Qt::FindDirectChildrenOnly);
@@ -246,7 +246,7 @@ static void* qtFrameGetInnerNativeContainerHandleMethod(Ihandle* ih, Ihandle* ch
       return children.first();
   }
 
-  return NULL;
+  return nullptr;
 }
 
 /****************************************************************************
@@ -264,7 +264,7 @@ static int qtFrameMapMethod(Ihandle* ih)
 
   title = iupAttribGet(ih, "TITLE");
 
-  QGroupBox* groupbox = new QGroupBox();
+  auto* groupbox = new QGroupBox();
 
   if (title)
   {
@@ -284,23 +284,23 @@ static int qtFrameMapMethod(Ihandle* ih)
   groupbox->setFlat(false);
   frame_widget = groupbox;
 
-  ih->handle = (InativeHandle*)frame_widget;
+  ih->handle = reinterpret_cast<InativeHandle*>(frame_widget);
 
   inner_parent = iupqtNativeContainerNew(0);
 
-  QVBoxLayout* layout = new QVBoxLayout();
+  auto* layout = new QVBoxLayout();
   layout->setContentsMargins(0, 0, 0, 0);
   layout->setSpacing(0);
   layout->addWidget(inner_parent);
 
   frame_widget->setLayout(layout);
 
-  iupAttribSet(ih, "_IUPQT_FRAME_INNER", (char*)inner_parent);
+  iupAttribSet(ih, "_IUPQT_FRAME_INNER", reinterpret_cast<char*>(inner_parent));
 
   iupqtAddToParent(ih);
 
   if (!iupAttribGet(ih, "_IUPFRAME_HAS_BGCOLOR"))
-    qtFrameSetBgColorAttrib(ih, NULL);
+    qtFrameSetBgColorAttrib(ih, nullptr);
 
   return IUP_NOERROR;
 }
@@ -314,12 +314,12 @@ extern "C" IUP_SDK_API void iupdrvFrameInitClass(Iclass* ic)
   ic->Map = qtFrameMapMethod;
   ic->GetInnerNativeContainerHandle = qtFrameGetInnerNativeContainerHandleMethod;
 
-  iupClassRegisterAttribute(ic, "FONT", NULL, qtFrameSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
+  iupClassRegisterAttribute(ic, "FONT", nullptr, qtFrameSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
 
   iupClassRegisterAttribute(ic, "BGCOLOR", iupFrameGetBgColorAttrib, qtFrameSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "BACKCOLOR", iupFrameGetBgColorAttrib, qtFrameSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SUNKEN", qtFrameGetSunkenAttrib, qtFrameSetSunkenAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SUNKEN", qtFrameGetSunkenAttrib, qtFrameSetSunkenAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, qtFrameSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "TITLE", qtFrameGetTitleAttrib, qtFrameSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FGCOLOR", nullptr, qtFrameSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "TITLE", qtFrameGetTitleAttrib, qtFrameSetTitleAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 }

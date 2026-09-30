@@ -181,7 +181,7 @@ public:
     int lin = index.row() + 1;  /* 1-based */
     int col = index.column() + 1;  /* 1-based */
 
-    IFnii editbegin_cb = (IFnii)IupGetCallback(ih, "EDITBEGIN_CB");
+    auto editbegin_cb = reinterpret_cast<IFnii>(IupGetCallback(ih, "EDITBEGIN_CB"));
     if (editbegin_cb)
     {
       int ret = editbegin_cb(ih, lin, col);
@@ -189,7 +189,7 @@ public:
         return nullptr;
     }
 
-    IupQtFixedLineEdit* fixedLineEdit = new IupQtFixedLineEdit(parent);
+    auto* fixedLineEdit = new IupQtFixedLineEdit(parent);
     fixedLineEdit->setFrame(false);
     fixedLineEdit->setTextMargins(0, 0, 0, 0);
     fixedLineEdit->setContentsMargins(0, 0, 0, 0);
@@ -197,7 +197,7 @@ public:
     fixedLineEdit->installEventFilter(const_cast<IupQtTableDelegate*>(this));
     fixedLineEdit->setProperty("iup_row", lin);
     fixedLineEdit->setProperty("iup_col", col);
-    fixedLineEdit->setProperty("iup_fixed_lineedit_ptr", QVariant::fromValue((void*)fixedLineEdit));
+    fixedLineEdit->setProperty("iup_fixed_lineedit_ptr", QVariant::fromValue(reinterpret_cast<void*>(fixedLineEdit)));
 
     return fixedLineEdit;
   }
@@ -209,7 +209,7 @@ public:
 
     QRect editorRect = option.rect;
 
-    QLineEdit* lineEdit = qobject_cast<QLineEdit*>(editor);
+    auto* lineEdit = qobject_cast<QLineEdit*>(editor);
     if (lineEdit)
     {
       /* setTextMargins() calls updateGeometry(), so the fixed size has to come after it */
@@ -223,7 +223,7 @@ public:
       QVariant ptrVariant = lineEdit->property("iup_fixed_lineedit_ptr");
       if (ptrVariant.isValid())
       {
-        IupQtFixedLineEdit* fixedLineEdit = static_cast<IupQtFixedLineEdit*>(ptrVariant.value<void*>());
+        auto* fixedLineEdit = static_cast<IupQtFixedLineEdit*>(ptrVariant.value<void*>());
         if (fixedLineEdit)
         {
           fixedLineEdit->setFixedSizeHint(QSize(editorRect.width(), editorRect.height()));
@@ -239,7 +239,7 @@ protected:
   {
     if (event->type() == QEvent::KeyPress)
     {
-      QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
+      auto* keyEvent = static_cast<QKeyEvent*>(event);
       if (keyEvent->key() == Qt::Key_Escape)
       {
         QWidget* editor = qobject_cast<QWidget*>(object);
@@ -251,10 +251,10 @@ protected:
           QVariant value = editor->property("text");
           QString current_text = value.toString();
 
-          IFniisi editend_cb = (IFniisi)IupGetCallback(ih, "EDITEND_CB");
+          auto editend_cb = reinterpret_cast<IFniisi>(IupGetCallback(ih, "EDITEND_CB"));
           if (editend_cb)
           {
-            editend_cb(ih, lin, col, (char*)current_text.toUtf8().constData(), 0);  /* 0 = cancelled */
+            editend_cb(ih, lin, col, const_cast<char*>(current_text.toUtf8().constData()), 0);  /* 0 = cancelled */
           }
         }
       }
@@ -271,10 +271,10 @@ public:
     QVariant value = editor->property("text");
     QString new_text = value.toString();
 
-    IFniisi editend_cb = (IFniisi)IupGetCallback(ih, "EDITEND_CB");
+    auto editend_cb = reinterpret_cast<IFniisi>(IupGetCallback(ih, "EDITEND_CB"));
     if (editend_cb)
     {
-      int ret = editend_cb(ih, lin, col, (char*)new_text.toUtf8().constData(), 1);  /* 1 = accepted */
+      int ret = editend_cb(ih, lin, col, const_cast<char*>(new_text.toUtf8().constData()), 1);  /* 1 = accepted */
       if (ret == IUP_IGNORE)
         return;
     }
@@ -328,7 +328,7 @@ public:
     if (!iupStrBoolean(virtualmode))
       return;
 
-    sIFnii value_cb = (sIFnii)IupGetCallback(ih, "VALUE_CB");
+    auto value_cb = reinterpret_cast<sIFnii>(IupGetCallback(ih, "VALUE_CB"));
     if (!value_cb)
       return;
 
@@ -361,13 +361,13 @@ public:
           char* image_name = iupTableGetCellImageCb(ih, row + 1, col + 1);
           if (image_name)
           {
-            QPixmap* pixImage = (QPixmap*)iupImageGetImage(image_name, ih, 0, NULL);
+            auto* pixImage = static_cast<QPixmap*>(iupImageGetImage(image_name, ih, 0, nullptr));
             if (pixImage)
             {
               if (ih->data->fit_image)
               {
                 int charheight;
-                iupdrvFontGetCharSize(ih, NULL, &charheight);
+                iupdrvFontGetCharSize(ih, nullptr, &charheight);
                 int available_height = charheight + 4;
                 if (pixImage->height() > available_height)
                 {
@@ -407,7 +407,7 @@ public:
     int w = charWidth * 10;
     int h = charHeight * 3;
 
-    return QSize(w, h);
+    return {w, h};
   }
 
   QSize minimumSizeHint() const override
@@ -420,7 +420,7 @@ public:
 #endif
     int charHeight = fm.height();
 
-    return QSize(charWidth * 5, charHeight * 2);
+    return {charWidth * 5, charHeight * 2};
   }
 
 protected:
@@ -473,7 +473,7 @@ protected:
 
     unsigned char r, g, b;
     if (bgcolor && *bgcolor && iupStrToRGB(bgcolor, &r, &g, &b))
-      return QColor(r, g, b);
+      return {r, g, b};
     return palette().color(QPalette::Base);
   }
 
@@ -590,7 +590,7 @@ protected:
     if (event->button() == Qt::LeftButton)
       press_pos = pos;
 
-    IFniis cb = (IFniis)IupGetCallback(ih, "CLICK_CB");
+    auto cb = reinterpret_cast<IFniis>(IupGetCallback(ih, "CLICK_CB"));
     if (cb)
     {
       QModelIndex index = indexAt(pos);
@@ -631,14 +631,14 @@ protected:
     if (event->button() == Qt::RightButton)
       iupAttribSet(ih, "_IUPTABLE_CELLS_KEEP", "1");
     QTableWidget::mousePressEvent(event);
-    iupAttribSet(ih, "_IUPTABLE_CELLS_KEEP", NULL);
+    iupAttribSet(ih, "_IUPTABLE_CELLS_KEEP", nullptr);
 
     if (event->button() == Qt::RightButton)
     {
       QModelIndex index = indexAt(pos);
       if (index.isValid())
       {
-        IFnii rcb = (IFnii)IupGetCallback(ih, "RIGHTCLICK_CB");
+        auto rcb = reinterpret_cast<IFnii>(IupGetCallback(ih, "RIGHTCLICK_CB"));
         if (rcb)
           rcb(ih, index.row() + 1, index.column() + 1);
       }
@@ -670,10 +670,10 @@ protected:
 
     iupAttribSetInt(ih, "_IUPTABLE_DRAGITEM", row + 1);  /* 1-based for the drop side */
 
-    QMimeData* data = new QMimeData();
+    auto* data = new QMimeData();
     data->setData("application/x-iup-table-row", QByteArray::number(row));
 
-    QDrag* drag = new QDrag(this);
+    auto* drag = new QDrag(this);
     drag->setMimeData(data);
 
     QRect rect = visualRect(model()->index(row, 0));
@@ -686,7 +686,7 @@ protected:
 
     drag->exec(Qt::MoveAction, Qt::MoveAction);
 
-    iupAttribSet(ih, "_IUPTABLE_DRAGITEM", NULL);
+    iupAttribSet(ih, "_IUPTABLE_DRAGITEM", nullptr);
   }
 
   void dragEnterEvent(QDragEnterEvent* event) override
@@ -838,7 +838,7 @@ private:
 
     iupTableCellsCollapse(ih);
 
-    IFnii cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
+    auto cb = reinterpret_cast<IFnii>(IupGetCallback(ih, "ENTERITEM_CB"));
     if (cb)
     {
       cb(ih, lin, col);
@@ -850,7 +850,7 @@ private:
     int lin = row + 1;
     int col = column + 1;
 
-    IFnii cb = (IFnii)IupGetCallback(ih, "VALUECHANGED_CB");
+    auto cb = reinterpret_cast<IFnii>(IupGetCallback(ih, "VALUECHANGED_CB"));
     if (cb)
     {
       cb(ih, lin, col);
@@ -864,7 +864,7 @@ private:
 
 static QTableWidget* qtTableGetWidget(Ihandle* ih)
 {
-  return (QTableWidget*)ih->handle;
+  return reinterpret_cast<QTableWidget*>(ih->handle);
 }
 
 static int qtTableColWidthAttrib(Ihandle* ih, int col)
@@ -911,7 +911,7 @@ static void qtTableQueueAutoSize(Ihandle* ih)
   QTimer::singleShot(0, [ih]() {
     if (!iupObjectCheck(ih))
       return;
-    iupAttribSet(ih, "_IUPQT_AUTOSIZE_PENDING", NULL);
+    iupAttribSet(ih, "_IUPQT_AUTOSIZE_PENDING", nullptr);
     qtTableAutoSizeColumns(ih);
   });
 }
@@ -1126,15 +1126,15 @@ static void qtTableSortRows(Ihandle* ih, QTableWidget* table, int col, int ascen
   ignore = iupAttribGet(ih, "_IUPTABLE_IGNORE_SELECTION_CB");
   iupAttribSet(ih, "_IUPTABLE_IGNORE_SELECTION_CB", "1");
 
-  std::vector<QTableWidgetItem*> items((size_t)num_lin * num_col);
+  std::vector<QTableWidgetItem*> items(static_cast<size_t>(num_lin) * num_col);
   for (int r = 0; r < num_lin; r++)
     for (int c = 0; c < num_col; c++)
-      items[(size_t)r * num_col + c] = table->takeItem(r, c);
+      items[static_cast<size_t>(r) * num_col + c] = table->takeItem(r, c);
 
   for (int r = 0; r < num_lin; r++)
     for (int c = 0; c < num_col; c++)
     {
-      QTableWidgetItem* item = items[(size_t)(order[r] - 1) * num_col + c];
+      QTableWidgetItem* item = items[static_cast<size_t>(order[r] - 1) * num_col + c];
       if (item)
         table->setItem(r, c, item);
     }
@@ -1220,9 +1220,9 @@ static int qtTableMapMethod(Ihandle* ih)
   int num_col = ih->data->num_col;
   int num_lin = ih->data->num_lin;
 
-  IupQtTableWidget* table = new IupQtTableWidget(ih, nullptr);
+  auto* table = new IupQtTableWidget(ih, nullptr);
 
-  IupQtTableDelegate* delegate = new IupQtTableDelegate(ih, table);
+  auto* delegate = new IupQtTableDelegate(ih, table);
   table->setItemDelegate(delegate);
 
   table->setRowCount(num_lin);
@@ -1250,7 +1250,7 @@ static int qtTableMapMethod(Ihandle* ih)
       int prev_ascending = iupAttribGetInt(ih, "_QT_SORT_ASCENDING");
       int ascending = (prev_col == (logicalIndex + 1)) ? !prev_ascending : 1;
 
-      IFni sort_cb = (IFni)IupGetCallback(ih, "SORT_CB");
+      IFni sort_cb = reinterpret_cast<IFni>(IupGetCallback(ih, "SORT_CB"));
       if (sort_cb && sort_cb(ih, logicalIndex + 1) == IUP_IGNORE)
       {
         /* QHeaderView flips its own indicator before emitting this, so put it back */
@@ -1280,7 +1280,7 @@ static int qtTableMapMethod(Ihandle* ih)
     hHeader->moveSection(newVisualIndex, oldVisualIndex);
     hHeader->blockSignals(blocked);
 
-    IFnii cb = (IFnii)IupGetCallback(ih, "REORDER_CB");
+    auto cb = reinterpret_cast<IFnii>(IupGetCallback(ih, "REORDER_CB"));
     int ret = cb ? cb(ih, oldVisualIndex + 1, newVisualIndex + 1) : IUP_DEFAULT;
     if (ret != IUP_IGNORE)
       qtTableMoveColumn(ih, oldVisualIndex + 1, newVisualIndex + 1);
@@ -1363,7 +1363,7 @@ static int qtTableMapMethod(Ihandle* ih)
     table->setDefaultDropAction(Qt::MoveAction);
   }
 
-  ih->handle = (InativeHandle*)table;
+  ih->handle = reinterpret_cast<InativeHandle*>(table);
 
   iupqtAddToParent(ih);
 
@@ -1399,9 +1399,9 @@ static int qtTableFollowPos(int cur, int pos, int delta, int count)
 
 struct IqtTableFollow
 {
-  int focus_lin, focus_col;
-  int* selected;
-  int sel_count;
+  int focus_lin = 0, focus_col = 0;
+  int* selected = nullptr;
+  int sel_count = 0;
 };
 
 static void qtTableFollowBegin(Ihandle* ih, QTableWidget* table, IqtTableFollow* follow)
@@ -1635,13 +1635,13 @@ IUP_SDK_API void iupdrvTableSetCellImage(Ihandle* ih, int lin, int col, const ch
 
   if (image)
   {
-    QPixmap* pixImage = (QPixmap*)iupImageGetImage(image, ih, 0, NULL);
+    auto* pixImage = static_cast<QPixmap*>(iupImageGetImage(image, ih, 0, nullptr));
     if (pixImage)
     {
       if (ih->data->fit_image)
       {
         int charheight;
-        iupdrvFontGetCharSize(ih, NULL, &charheight);
+        iupdrvFontGetCharSize(ih, nullptr, &charheight);
         int available_height = charheight + 4;
         if (pixImage->height() > available_height)
         {
@@ -1677,7 +1677,7 @@ IUP_SDK_API void iupdrvTableSetColTitle(Ihandle* ih, int col, const char* title)
   if (qt_col < 0 || qt_col >= table->columnCount())
     return;
 
-  QTableWidgetItem* headerItem = new QTableWidgetItem(title ? QString::fromUtf8(title) : QString());
+  auto* headerItem = new QTableWidgetItem(title ? QString::fromUtf8(title) : QString());
   table->setHorizontalHeaderItem(qt_col, headerItem);
   qtTableQueueAutoSize(ih);
 }
@@ -1846,11 +1846,11 @@ IUP_SDK_API int* iupdrvTableGetSelectedLins(Ihandle* ih, int* count)
   *count = 0;
 
   if (!table || !table->selectionModel())
-    return NULL;
+    return nullptr;
 
   QModelIndexList rows = table->selectionModel()->selectedRows();
   if (rows.isEmpty())
-    return NULL;
+    return nullptr;
 
   QList<int> lins;
   for (const QModelIndex& index : rows)
@@ -1858,11 +1858,11 @@ IUP_SDK_API int* iupdrvTableGetSelectedLins(Ihandle* ih, int* count)
 
   std::sort(lins.begin(), lins.end());
 
-  int* result = (int*)malloc(sizeof(int) * lins.size());
+  int* result = static_cast<int*>(malloc(sizeof(int) * lins.size()));
   for (int i = 0; i < lins.size(); i++)
     result[i] = lins[i];
 
-  *count = (int)lins.size();
+  *count = static_cast<int>(lins.size());
   return result;
 }
 
@@ -1895,7 +1895,7 @@ IUP_SDK_API void iupdrvTableRedraw(Ihandle* ih)
     char* virtualmode = iupAttribGet(ih, "VIRTUALMODE");
     if (iupStrBoolean(virtualmode))
     {
-      sIFnii value_cb = (sIFnii)IupGetCallback(ih, "VALUE_CB");
+      auto value_cb = reinterpret_cast<sIFnii>(IupGetCallback(ih, "VALUE_CB"));
       if (value_cb)
       {
         bool wasBlocked = table->signalsBlocked();
@@ -1979,8 +1979,8 @@ static int qtTableSetSortableAttrib(Ihandle* ih, const char* value)
 
       if (!ih->data->sortable)
       {
-        iupAttribSet(ih, "_QT_SORT_COLUMN", NULL);
-        iupAttribSet(ih, "_QT_SORT_ASCENDING", NULL);
+        iupAttribSet(ih, "_QT_SORT_COLUMN", nullptr);
+        iupAttribSet(ih, "_QT_SORT_ASCENDING", nullptr);
         hHeader->setSortIndicator(-1, Qt::AscendingOrder);
       }
     }
@@ -2066,7 +2066,7 @@ static void qtTableMeasureRowMetrics(Ihandle* ih)
   if (qt_table_row_height >= 0)
     return;
 
-  QTableWidget* temp_table = new QTableWidget(1, 1);
+  auto* temp_table = new QTableWidget(1, 1);
   temp_table->setItem(0, 0, new QTableWidgetItem("WWWWWWWWWW"));
 
   QFontMetrics fm(temp_table->font());
@@ -2141,9 +2141,9 @@ IUP_SDK_API void iupdrvTableInitClass(Iclass* ic)
   ic->UnMap = qtTableUnMapMethod;
   ic->LayoutUpdate = qtTableLayoutUpdateMethod;
 
-  iupClassRegisterReplaceAttribFunc(ic, "SORTABLE", NULL, qtTableSetSortableAttrib);
-  iupClassRegisterReplaceAttribFunc(ic, "ALLOWREORDER", NULL, qtTableSetAllowReorderAttrib);
-  iupClassRegisterReplaceAttribFunc(ic, "USERRESIZE", NULL, qtTableSetUserResizeAttrib);
+  iupClassRegisterReplaceAttribFunc(ic, "SORTABLE", nullptr, qtTableSetSortableAttrib);
+  iupClassRegisterReplaceAttribFunc(ic, "ALLOWREORDER", nullptr, qtTableSetAllowReorderAttrib);
+  iupClassRegisterReplaceAttribFunc(ic, "USERRESIZE", nullptr, qtTableSetUserResizeAttrib);
 }
 
 } /* extern "C" */

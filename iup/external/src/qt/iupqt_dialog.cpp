@@ -150,7 +150,7 @@ protected:
 
   void closeEvent(QCloseEvent* event) override
   {
-    if (iupqtDialogCloseEvent(this, (QEvent*)event, iup_handle))
+    if (iupqtDialogCloseEvent(this, event, iup_handle))
       event->ignore();
     else
       event->accept();
@@ -181,7 +181,7 @@ protected:
     if (!iup_handle)
       return;
 
-    if (iupAttribGet(iup_handle, "_IUPQT_FIRST_SHOW_DONE") == NULL)
+    if (iupAttribGet(iup_handle, "_IUPQT_FIRST_SHOW_DONE") == nullptr)
     {
       iupAttribSet(iup_handle, "_IUPQT_FIRST_SHOW_DONE", "1");
 
@@ -211,7 +211,7 @@ protected:
     iup_handle->currentwidth = new_width;
     iup_handle->currentheight = new_height;
 
-    IFnii cb = (IFnii)IupGetCallback(iup_handle, "RESIZE_CB");
+    auto cb = reinterpret_cast<IFnii>(IupGetCallback(iup_handle, "RESIZE_CB"));
     if (!cb || cb(iup_handle, width(), height() - menu) != IUP_IGNORE)
     {
       iup_handle->data->ignore_resize = 1;
@@ -221,7 +221,7 @@ protected:
 
     if (iupAttribGetBoolean(iup_handle, "BACKIMAGEZOOM"))
     {
-      QPixmap* pixmap = (QPixmap*)iupAttribGet(iup_handle, "_IUPQT_BACKGROUND_IMAGE");
+      auto* pixmap = reinterpret_cast<QPixmap*>(iupAttribGet(iup_handle, "_IUPQT_BACKGROUND_IMAGE"));
       if (pixmap)
       {
         QPalette palette = this->palette();
@@ -239,7 +239,7 @@ protected:
     if (!iup_handle)
       return;
 
-    IFnii cb = (IFnii)IupGetCallback(iup_handle, "MOVE_CB");
+    auto cb = reinterpret_cast<IFnii>(IupGetCallback(iup_handle, "MOVE_CB"));
     if (cb)
     {
       cb(iup_handle, event->pos().x(), event->pos().y());
@@ -273,7 +273,7 @@ protected:
 
       if (iup_handle->data->show_state != iup_state)
       {
-        IFni cb = (IFni)IupGetCallback(iup_handle, "SHOW_CB");
+        IFni cb = reinterpret_cast<IFni>(IupGetCallback(iup_handle, "SHOW_CB"));
         iup_handle->data->show_state = iup_state;
         if (cb && cb(iup_handle, iup_state) == IUP_CLOSE)
           IupExitLoop();
@@ -359,18 +359,18 @@ IUP_DRV_API int iupqtDialogCloseEvent(QWidget* widget, QEvent* evt, Ihandle* ih)
 
 static void qtDialogDisconnectParent(Ihandle* ih)
 {
-  QMetaObject::Connection* conn = (QMetaObject::Connection*)iupAttribGet(ih, "_IUPQT_PARENT_DESTROYED");
+  auto* conn = reinterpret_cast<QMetaObject::Connection*>(iupAttribGet(ih, "_IUPQT_PARENT_DESTROYED"));
   if (conn)
   {
     QObject::disconnect(*conn);
     delete conn;
-    iupAttribSet(ih, "_IUPQT_PARENT_DESTROYED", NULL);
+    iupAttribSet(ih, "_IUPQT_PARENT_DESTROYED", nullptr);
   }
 }
 
 extern "C" IUP_SDK_API void iupdrvDialogSetParent(Ihandle* ih, InativeHandle* parent)
 {
-  IupQtDialog* dialog = (IupQtDialog*)ih->handle;
+  auto* dialog = reinterpret_cast<IupQtDialog*>(ih->handle);
   if (!dialog)
     return;
 
@@ -379,7 +379,7 @@ extern "C" IUP_SDK_API void iupdrvDialogSetParent(Ihandle* ih, InativeHandle* pa
 
   if (parent)
   {
-    QWidget* parent_widget = (QWidget*)parent;
+    auto* parent_widget = reinterpret_cast<QWidget*>(parent);
 
     dialog->ensureWindowHandle();
 
@@ -390,14 +390,14 @@ extern "C" IUP_SDK_API void iupdrvDialogSetParent(Ihandle* ih, InativeHandle* pa
 
     QMetaObject::Connection conn = QObject::connect(parent_widget, &QObject::destroyed, [ih]() {
       qtDialogDisconnectParent(ih);
-      iupAttribSet(ih, "PARENTDIALOG", NULL);
-      iupAttribSet(ih, "NATIVEPARENT", NULL);
+      iupAttribSet(ih, "PARENTDIALOG", nullptr);
+      iupAttribSet(ih, "NATIVEPARENT", nullptr);
       QTimer::singleShot(0, [ih]() {
         if (iupObjectCheck(ih))
           IupDestroy(ih);
       });
     });
-    iupAttribSet(ih, "_IUPQT_PARENT_DESTROYED", (char*)new QMetaObject::Connection(conn));
+    iupAttribSet(ih, "_IUPQT_PARENT_DESTROYED", reinterpret_cast<char*>(new QMetaObject::Connection(conn)));
   }
 }
 
@@ -414,7 +414,7 @@ extern "C" IUP_SDK_API void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* hand
   if (!handle)
     handle = ih->handle;
 
-  widget = (QWidget*)handle;
+  widget = reinterpret_cast<QWidget*>(handle);
 
   if (widget)
   {
@@ -433,7 +433,7 @@ extern "C" IUP_SDK_API void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* hand
 
 static void qtDialogSetResizeInc(Ihandle* ih, const char* value, int min_w, int min_h)
 {
-  QWidget* widget = (QWidget*)ih->handle;
+  auto* widget = reinterpret_cast<QWidget*>(ih->handle);
   int inc_w = 0, inc_h = 0;
 
   if (!widget || !widget->windowHandle())
@@ -459,7 +459,7 @@ static void qtDialogSetResizeInc(Ihandle* ih, const char* value, int min_w, int 
 static void qtDialogSetTaskBarButton(Ihandle* ih, const char* value)
 {
 #ifdef IUP_QT_HAS_X11_APP
-  QWidget* widget = (QWidget*)ih->handle;
+  auto* widget = reinterpret_cast<QWidget*>(ih->handle);
 
   if (!value || !widget || !widget->windowHandle())
     return;
@@ -471,7 +471,7 @@ static void qtDialogSetTaskBarButton(Ihandle* ih, const char* value)
   if (!x11_app)
     return;
 
-  Display* xdisplay = (Display*)x11_app->display();
+  Display* xdisplay = x11_app->display();
   if (!xdisplay)
     return;
 
@@ -486,11 +486,11 @@ static void qtDialogSetTaskBarButton(Ihandle* ih, const char* value)
   XEvent evt;
   memset(&evt, 0, sizeof(evt));
   evt.xclient.type = ClientMessage;
-  evt.xclient.window = (Window)widget->winId();
+  evt.xclient.window = static_cast<Window>(widget->winId());
   evt.xclient.message_type = net_wm_state;
   evt.xclient.format = 32;
   evt.xclient.data.l[0] = iupStrEqualNoCase(value, "HIDE")? 1: 0;
-  evt.xclient.data.l[1] = (long)skip_taskbar;
+  evt.xclient.data.l[1] = static_cast<long>(skip_taskbar);
   evt.xclient.data.l[3] = 1;
 
   XSendEvent(xdisplay, XRootWindow(xdisplay, XDefaultScreen(xdisplay)), 0,
@@ -503,14 +503,14 @@ static void qtDialogSetTaskBarButton(Ihandle* ih, const char* value)
 
 static int qtDialogSetTaskBarButtonAttrib(Ihandle* ih, const char* value)
 {
-  if (ih->handle && ((QWidget*)ih->handle)->isVisible())
+  if (ih->handle && (reinterpret_cast<QWidget*>(ih->handle))->isVisible())
     qtDialogSetTaskBarButton(ih, value);
   return 1;
 }
 
 extern "C" IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
 {
-  QWidget* widget = (QWidget*)ih->handle;
+  auto* widget = reinterpret_cast<QWidget*>(ih->handle);
 
   if (widget)
   {
@@ -550,7 +550,7 @@ extern "C" IUP_SDK_API void iupdrvDialogGetPosition(Ihandle* ih, InativeHandle* 
   if (!handle)
     handle = ih->handle;
 
-  widget = (QWidget*)handle;
+  widget = reinterpret_cast<QWidget*>(handle);
 
   if (widget && widget->isVisible())
   {
@@ -567,7 +567,7 @@ extern "C" IUP_SDK_API void iupdrvDialogGetPosition(Ihandle* ih, InativeHandle* 
 
 extern "C" IUP_SDK_API void iupdrvDialogSetPosition(Ihandle* ih, int x, int y)
 {
-  QWidget* widget = (QWidget*)ih->handle;
+  auto* widget = reinterpret_cast<QWidget*>(ih->handle);
 
   if (widget)
   {
@@ -628,7 +628,7 @@ extern "C" IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int* border, 
 
   if (ih->handle && iupdrvDialogIsVisible(ih))
   {
-    QWidget* widget = (QWidget*)ih->handle;
+    auto* widget = reinterpret_cast<QWidget*>(ih->handle);
     QWindow* window = widget->windowHandle();
 
     if (window)
@@ -677,7 +677,7 @@ extern "C" IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int* border, 
 
 static void qtDialogGetClientSize(Ihandle* ih, int* width, int* height)
 {
-  QWidget* widget = (QWidget*)ih->handle;
+  auto* widget = reinterpret_cast<QWidget*>(ih->handle);
 
   if (widget)
   {
@@ -692,7 +692,7 @@ static void qtDialogGetClientSize(Ihandle* ih, int* width, int* height)
 
 extern "C" IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
 {
-  QWidget* widget = (QWidget*)ih->handle;
+  auto* widget = reinterpret_cast<QWidget*>(ih->handle);
   if (!widget)
     return 0;
 
@@ -728,7 +728,7 @@ extern "C" IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
   if (iupAttribGetBoolean(ih, "CUSTOMFRAMESIMULATE") && iupStrEqualNoCase(placement, "MAXIMIZED"))
   {
     iupDialogCustomFrameMaximize(ih);
-    iupAttribSet(ih, "PLACEMENT", NULL);
+    iupAttribSet(ih, "PLACEMENT", nullptr);
     ih->data->show_state = IUP_MAXIMIZE;
     return 1;
   }
@@ -764,7 +764,7 @@ extern "C" IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
       ih->data->show_state = IUP_RESTORE;
   }
 
-  iupAttribSet(ih, "PLACEMENT", NULL);
+  iupAttribSet(ih, "PLACEMENT", nullptr);
   return 1;
 }
 
@@ -774,7 +774,7 @@ extern "C" IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
 
 static void qtDialogSetMinMax(Ihandle* ih, int min_w, int min_h, int max_w, int max_h)
 {
-  QWidget* widget = (QWidget*)ih->handle;
+  auto* widget = reinterpret_cast<QWidget*>(ih->handle);
   if (!widget)
     return;
 
@@ -870,7 +870,7 @@ static int qtDialogSetResizeAttrib(Ihandle* ih, const char* value)
   iupAttribSetStr(ih, "RESIZE", value);
   if (ih->handle)
   {
-    IupQtDialog* dialog = (IupQtDialog*)ih->handle;
+    auto* dialog = reinterpret_cast<IupQtDialog*>(ih->handle);
     dialog->updateWindowFlags();
   }
   return 1;
@@ -881,7 +881,7 @@ static int qtDialogSetMinBoxAttrib(Ihandle* ih, const char* value)
   iupAttribSetStr(ih, "MINBOX", value);
   if (ih->handle)
   {
-    IupQtDialog* dialog = (IupQtDialog*)ih->handle;
+    auto* dialog = reinterpret_cast<IupQtDialog*>(ih->handle);
     dialog->updateWindowFlags();
   }
   return 1;
@@ -892,7 +892,7 @@ static int qtDialogSetMaxBoxAttrib(Ihandle* ih, const char* value)
   iupAttribSetStr(ih, "MAXBOX", value);
   if (ih->handle)
   {
-    IupQtDialog* dialog = (IupQtDialog*)ih->handle;
+    auto* dialog = reinterpret_cast<IupQtDialog*>(ih->handle);
     dialog->updateWindowFlags();
   }
   return 1;
@@ -903,7 +903,7 @@ static int qtDialogSetMenuBoxAttrib(Ihandle* ih, const char* value)
   iupAttribSetStr(ih, "MENUBOX", value);
   if (ih->handle)
   {
-    IupQtDialog* dialog = (IupQtDialog*)ih->handle;
+    auto* dialog = reinterpret_cast<IupQtDialog*>(ih->handle);
     dialog->updateWindowFlags();
   }
   return 1;
@@ -914,7 +914,7 @@ static int qtDialogSetBorderAttrib(Ihandle* ih, const char* value)
   iupAttribSetStr(ih, "BORDER", value);
   if (ih->handle)
   {
-    IupQtDialog* dialog = (IupQtDialog*)ih->handle;
+    auto* dialog = reinterpret_cast<IupQtDialog*>(ih->handle);
     dialog->updateWindowFlags();
   }
   return 1;
@@ -922,7 +922,7 @@ static int qtDialogSetBorderAttrib(Ihandle* ih, const char* value)
 
 static int qtDialogSetTitleAttrib(Ihandle* ih, const char* value)
 {
-  QWidget* widget = (QWidget*)ih->handle;
+  auto* widget = reinterpret_cast<QWidget*>(ih->handle);
   if (widget)
   {
     QString title = value ? QString::fromUtf8(value) : QString();
@@ -937,7 +937,7 @@ static int qtDialogSetTitleAttrib(Ihandle* ih, const char* value)
 
 static int qtDialogSetFullScreenAttrib(Ihandle* ih, const char* value)
 {
-  QWidget* widget = (QWidget*)ih->handle;
+  auto* widget = reinterpret_cast<QWidget*>(ih->handle);
   if (!widget)
     return 0;
 
@@ -955,7 +955,7 @@ static int qtDialogSetFullScreenAttrib(Ihandle* ih, const char* value)
       iupAttribSet(ih, "MAXBOX", "NO");
       iupAttribSet(ih, "MINBOX", "NO");
       iupAttribSet(ih, "MENUBOX", "NO");
-      IupSetAttribute(ih, "TITLE", NULL);
+      IupSetAttribute(ih, "TITLE", nullptr);
       iupAttribSet(ih, "RESIZE", "NO");
       iupAttribSet(ih, "BORDER", "NO");
 
@@ -968,7 +968,7 @@ static int qtDialogSetFullScreenAttrib(Ihandle* ih, const char* value)
   {
     if (iupAttribGet(ih, "_IUPQT_FS_STYLE"))
     {
-      iupAttribSet(ih, "_IUPQT_FS_STYLE", NULL);
+      iupAttribSet(ih, "_IUPQT_FS_STYLE", nullptr);
 
       iupAttribSetStr(ih, "MAXBOX", iupAttribGet(ih, "_IUPQT_FS_MAXBOX"));
       iupAttribSetStr(ih, "MINBOX", iupAttribGet(ih, "_IUPQT_FS_MINBOX"));
@@ -980,12 +980,12 @@ static int qtDialogSetFullScreenAttrib(Ihandle* ih, const char* value)
       widget->setWindowState(widget->windowState() & ~Qt::WindowFullScreen);
 
       /* Clean up */
-      iupAttribSet(ih, "_IUPQT_FS_MAXBOX", NULL);
-      iupAttribSet(ih, "_IUPQT_FS_MINBOX", NULL);
-      iupAttribSet(ih, "_IUPQT_FS_MENUBOX", NULL);
-      iupAttribSet(ih, "_IUPQT_FS_TITLE", NULL);
-      iupAttribSet(ih, "_IUPQT_FS_RESIZE", NULL);
-      iupAttribSet(ih, "_IUPQT_FS_BORDER", NULL);
+      iupAttribSet(ih, "_IUPQT_FS_MAXBOX", nullptr);
+      iupAttribSet(ih, "_IUPQT_FS_MINBOX", nullptr);
+      iupAttribSet(ih, "_IUPQT_FS_MENUBOX", nullptr);
+      iupAttribSet(ih, "_IUPQT_FS_TITLE", nullptr);
+      iupAttribSet(ih, "_IUPQT_FS_RESIZE", nullptr);
+      iupAttribSet(ih, "_IUPQT_FS_BORDER", nullptr);
     }
   }
 
@@ -997,7 +997,7 @@ static int qtDialogSetDialogHintAttrib(Ihandle* ih, const char* value)
   iupAttribSetStr(ih, "DIALOGHINT", value);
   if (ih->handle)
   {
-    IupQtDialog* dialog = (IupQtDialog*)ih->handle;
+    auto* dialog = reinterpret_cast<IupQtDialog*>(ih->handle);
     dialog->updateWindowFlags();
   }
   return 1;
@@ -1008,7 +1008,7 @@ static int qtDialogSetToolBoxAttrib(Ihandle* ih, const char* value)
   iupAttribSetStr(ih, "TOOLBOX", value);
   if (ih->handle)
   {
-    IupQtDialog* dialog = (IupQtDialog*)ih->handle;
+    auto* dialog = reinterpret_cast<IupQtDialog*>(ih->handle);
     dialog->updateWindowFlags();
   }
   return 1;
@@ -1019,7 +1019,7 @@ static int qtDialogSetHideTitleBarAttrib(Ihandle* ih, const char* value)
   iupAttribSetStr(ih, "HIDETITLEBAR", value);
   if (ih->handle)
   {
-    IupQtDialog* dialog = (IupQtDialog*)ih->handle;
+    auto* dialog = reinterpret_cast<IupQtDialog*>(ih->handle);
     dialog->updateWindowFlags();
   }
   return 1;
@@ -1027,9 +1027,9 @@ static int qtDialogSetHideTitleBarAttrib(Ihandle* ih, const char* value)
 
 static char* qtDialogGetActiveWindowAttrib(Ihandle* ih)
 {
-  QWidget* widget = (QWidget*)ih->handle;
+  auto* widget = reinterpret_cast<QWidget*>(ih->handle);
   if (!widget)
-    return NULL;
+    return nullptr;
 
   return iupStrReturnBoolean(widget->isActiveWindow());
 }
@@ -1039,7 +1039,7 @@ static int qtDialogSetTopMostAttrib(Ihandle* ih, const char* value)
   iupAttribSetStr(ih, "TOPMOST", value);
   if (ih->handle)
   {
-    IupQtDialog* dialog = (IupQtDialog*)ih->handle;
+    auto* dialog = reinterpret_cast<IupQtDialog*>(ih->handle);
     dialog->updateWindowFlags();
   }
   return 1;
@@ -1049,7 +1049,7 @@ static int qtDialogSetBringFrontAttrib(Ihandle* ih, const char* value)
 {
   if (iupStrBoolean(value))
   {
-    QWidget* widget = (QWidget*)ih->handle;
+    auto* widget = reinterpret_cast<QWidget*>(ih->handle);
     if (widget)
     {
       widget->raise();
@@ -1061,7 +1061,7 @@ static int qtDialogSetBringFrontAttrib(Ihandle* ih, const char* value)
 
 static int qtDialogSetOpacityAttrib(Ihandle* ih, const char* value)
 {
-  QWidget* widget = (QWidget*)ih->handle;
+  auto* widget = reinterpret_cast<QWidget*>(ih->handle);
   if (!widget)
     return 0;
 
@@ -1070,7 +1070,7 @@ static int qtDialogSetOpacityAttrib(Ihandle* ih, const char* value)
   {
     if (opacity < 0) opacity = 0;
     if (opacity > 255) opacity = 255;
-    widget->setWindowOpacity((qreal)opacity / 255.0);
+    widget->setWindowOpacity(static_cast<qreal>(opacity) / 255.0);
     return 1;
   }
   return 0;
@@ -1078,7 +1078,7 @@ static int qtDialogSetOpacityAttrib(Ihandle* ih, const char* value)
 
 static int qtDialogSetIconAttrib(Ihandle* ih, const char* value)
 {
-  QWidget* widget = (QWidget*)ih->handle;
+  auto* widget = reinterpret_cast<QWidget*>(ih->handle);
   if (!widget)
     return 0;
 
@@ -1088,7 +1088,7 @@ static int qtDialogSetIconAttrib(Ihandle* ih, const char* value)
   }
   else
   {
-    QPixmap* pixmap = (QPixmap*)iupImageGetIcon(value);
+    auto* pixmap = static_cast<QPixmap*>(iupImageGetIcon(value));
     if (pixmap)
     {
       QIcon icon(*pixmap);
@@ -1102,7 +1102,7 @@ static int qtDialogSetIconAttrib(Ihandle* ih, const char* value)
 
 static int qtDialogSetBackgroundAttrib(Ihandle* ih, const char* value)
 {
-  QWidget* widget = (QWidget*)ih->handle;
+  auto* widget = reinterpret_cast<QWidget*>(ih->handle);
   if (!widget)
     return 0;
 
@@ -1113,16 +1113,16 @@ static int qtDialogSetBackgroundAttrib(Ihandle* ih, const char* value)
     palette.setColor(QPalette::Window, QColor(r, g, b));
     widget->setPalette(palette);
     widget->setAutoFillBackground(true);
-    iupAttribSet(ih, "_IUPQT_BACKGROUND_IMAGE", NULL);
+    iupAttribSet(ih, "_IUPQT_BACKGROUND_IMAGE", nullptr);
     return 1;
   }
   else
   {
-    QPixmap* pixmap = (QPixmap*)iupImageGetImage(value, ih, 0, NULL);
+    auto* pixmap = static_cast<QPixmap*>(iupImageGetImage(value, ih, 0, nullptr));
     if (pixmap)
     {
       QPalette palette = widget->palette();
-      iupAttribSet(ih, "_IUPQT_BACKGROUND_IMAGE", (char*)pixmap);
+      iupAttribSet(ih, "_IUPQT_BACKGROUND_IMAGE", reinterpret_cast<char*>(pixmap));
 
       if (iupAttribGetBoolean(ih, "BACKIMAGEZOOM"))
       {
@@ -1143,7 +1143,7 @@ static int qtDialogSetBackgroundAttrib(Ihandle* ih, const char* value)
 
 static int qtDialogSetShapeImageAttrib(Ihandle* ih, const char* value)
 {
-  QWidget* widget = (QWidget*)ih->handle;
+  auto* widget = reinterpret_cast<QWidget*>(ih->handle);
   if (!widget)
     return 0;
 
@@ -1153,7 +1153,7 @@ static int qtDialogSetShapeImageAttrib(Ihandle* ih, const char* value)
     return 1;
   }
 
-  QPixmap* pixmap = (QPixmap*)iupImageGetImage(value, ih, 0, NULL);
+  auto* pixmap = static_cast<QPixmap*>(iupImageGetImage(value, ih, 0, nullptr));
   if (pixmap)
   {
     widget->setMask(pixmap->mask());
@@ -1165,7 +1165,7 @@ static int qtDialogSetShapeImageAttrib(Ihandle* ih, const char* value)
 
 static int qtDialogSetOpacityImageAttrib(Ihandle* ih, const char* value)
 {
-  IupQtDialog* dialog = dynamic_cast<IupQtDialog*>((QWidget*)ih->handle);
+  auto* dialog = dynamic_cast<IupQtDialog*>(reinterpret_cast<QWidget*>(ih->handle));
   if (!dialog)
     return 0;
 
@@ -1177,7 +1177,7 @@ static int qtDialogSetOpacityImageAttrib(Ihandle* ih, const char* value)
     return 0;
   }
 
-  QPixmap* pixmap = (QPixmap*)iupImageGetImage(value, ih, 0, NULL);
+  auto* pixmap = static_cast<QPixmap*>(iupImageGetImage(value, ih, 0, nullptr));
   if (!pixmap)
     return 0;
 
@@ -1190,18 +1190,18 @@ static int qtDialogSetOpacityImageAttrib(Ihandle* ih, const char* value)
 
 static char* qtDialogGetMaximizedAttrib(Ihandle* ih)
 {
-  QWidget* widget = (QWidget*)ih->handle;
+  auto* widget = reinterpret_cast<QWidget*>(ih->handle);
   if (!widget)
-    return NULL;
+    return nullptr;
 
   return iupStrReturnBoolean(widget->isMaximized());
 }
 
 static char* qtDialogGetMinimizedAttrib(Ihandle* ih)
 {
-  QWidget* widget = (QWidget*)ih->handle;
+  auto* widget = reinterpret_cast<QWidget*>(ih->handle);
   if (!widget)
-    return NULL;
+    return nullptr;
 
   return iupStrReturnBoolean(widget->isMinimized());
 }
@@ -1229,17 +1229,17 @@ static void qtDialogSetChildrenPositionMethod(Ihandle* ih, int x, int y)
 static void* qtDialogGetInnerNativeContainerHandleMethod(Ihandle* ih, Ihandle* child)
 {
   (void)child;
-  QMainWindow* main_window = (QMainWindow*)ih->handle;
+  auto* main_window = reinterpret_cast<QMainWindow*>(ih->handle);
   if (main_window)
-    return (void*)main_window->centralWidget();
-  return NULL;
+    return reinterpret_cast<void*>(main_window->centralWidget());
+  return nullptr;
 }
 
 extern "C" int qtDialogMapMethod(Ihandle* ih)
 {
-  IupQtDialog* dialog = new IupQtDialog(ih);
+  auto* dialog = new IupQtDialog(ih);
 
-  ih->handle = (InativeHandle*)dialog;
+  ih->handle = reinterpret_cast<InativeHandle*>(dialog);
 
   if (iupAttribGetBoolean(ih, "CUSTOMFRAME"))
   {
@@ -1275,30 +1275,30 @@ extern "C" int qtDialogMapMethod(Ihandle* ih)
     dialog->setAttribute(Qt::WA_TranslucentBackground);
 
   /* Ignore VISIBLE before mapping */
-  iupAttribSet(ih, "VISIBLE", NULL);
+  iupAttribSet(ih, "VISIBLE", nullptr);
 
   return IUP_NOERROR;
 }
 
 extern "C" void qtDialogUnMapMethod(Ihandle* ih)
 {
-  QWidget* widget = (QWidget*)ih->handle;
+  auto* widget = reinterpret_cast<QWidget*>(ih->handle);
 
   if (widget)
   {
     if (ih->data->menu)
     {
-      ih->data->menu->handle = NULL;
+      ih->data->menu->handle = nullptr;
       IupDestroy(ih->data->menu);
-      ih->data->menu = NULL;
+      ih->data->menu = nullptr;
     }
 
-    iupAttribSet(ih, "_IUPQT_FIRST_SHOW_DONE", NULL);
+    iupAttribSet(ih, "_IUPQT_FIRST_SHOW_DONE", nullptr);
     qtDialogDisconnectParent(ih);
 
     /* Qt will handle widget deletion */
     delete widget;
-    ih->handle = NULL;
+    ih->handle = nullptr;
   }
 }
 
@@ -1307,7 +1307,7 @@ extern "C" void qtDialogLayoutUpdateMethod(Ihandle* ih)
   int border, caption, menu;
   int width, height;
 
-  QWidget* widget = (QWidget*)ih->handle;
+  auto* widget = reinterpret_cast<QWidget*>(ih->handle);
 
   if (ih->data->ignore_resize ||
       iupAttribGet(ih, "_IUPQT_FS_STYLE"))
@@ -1358,52 +1358,52 @@ extern "C" IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
   ic->SetChildrenPosition = qtDialogSetChildrenPositionMethod;
 
   /* Base Container */
-  iupClassRegisterAttribute(ic, "CLIENTSIZE", qtDialogGetClientSizeAttrib, iupDialogSetClientSizeAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_SAVE | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "CLIENTOFFSET", qtDialogGetClientOffsetAttrib, NULL, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_DEFAULTVALUE | IUPAF_READONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CLIENTSIZE", qtDialogGetClientSizeAttrib, iupDialogSetClientSizeAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_SAVE | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CLIENTOFFSET", qtDialogGetClientOffsetAttrib, nullptr, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_DEFAULTVALUE | IUPAF_READONLY | IUPAF_NO_INHERIT);
 
   /* IupDialog */
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, "DLGBGCOLOR", NULL, IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "BACKGROUND", NULL, qtDialogSetBackgroundAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "BACKIMAGEZOOM", NULL, qtDialogSetBackImageZoomAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "ICON", NULL, qtDialogSetIconAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "FULLSCREEN", NULL, qtDialogSetFullScreenAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "MINSIZE", NULL, qtDialogSetMinSizeAttrib, IUPAF_SAMEASSYSTEM, "1x1", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "RESIZEINC", NULL, qtDialogSetResizeIncAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "MAXSIZE", NULL, qtDialogSetMaxSizeAttrib, IUPAF_SAMEASSYSTEM, "65535x65535", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TITLE", NULL, qtDialogSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "RESIZE", NULL, qtDialogSetResizeAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "BORDER", NULL, qtDialogSetBorderAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "MINBOX", NULL, qtDialogSetMinBoxAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "MAXBOX", NULL, qtDialogSetMaxBoxAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "MENUBOX", NULL, qtDialogSetMenuBoxAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", nullptr, iupdrvBaseSetBgColorAttrib, "DLGBGCOLOR", nullptr, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BACKGROUND", nullptr, qtDialogSetBackgroundAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BACKIMAGEZOOM", nullptr, qtDialogSetBackImageZoomAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ICON", nullptr, qtDialogSetIconAttrib, nullptr, nullptr, IUPAF_IHANDLENAME|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FULLSCREEN", nullptr, qtDialogSetFullScreenAttrib, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MINSIZE", nullptr, qtDialogSetMinSizeAttrib, IUPAF_SAMEASSYSTEM, "1x1", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "RESIZEINC", nullptr, qtDialogSetResizeIncAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MAXSIZE", nullptr, qtDialogSetMaxSizeAttrib, IUPAF_SAMEASSYSTEM, "65535x65535", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TITLE", nullptr, qtDialogSetTitleAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "RESIZE", nullptr, qtDialogSetResizeAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BORDER", nullptr, qtDialogSetBorderAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MINBOX", nullptr, qtDialogSetMinBoxAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MAXBOX", nullptr, qtDialogSetMaxBoxAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MENUBOX", nullptr, qtDialogSetMenuBoxAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
 
   /* IupDialog Windows and GTK Only */
-  iupClassRegisterAttribute(ic, "ACTIVEWINDOW", qtDialogGetActiveWindowAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TOPMOST", NULL, qtDialogSetTopMostAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DIALOGHINT", NULL, qtDialogSetDialogHintAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "OPACITY", NULL, qtDialogSetOpacityAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "OPACITYIMAGE", NULL, qtDialogSetOpacityImageAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SHAPEIMAGE", NULL, qtDialogSetShapeImageAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "BRINGFRONT", NULL, qtDialogSetBringFrontAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "HIDETITLEBAR", NULL, qtDialogSetHideTitleBarAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "MAXIMIZED", qtDialogGetMaximizedAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "MINIMIZED", qtDialogGetMinimizedAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ACTIVEWINDOW", qtDialogGetActiveWindowAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TOPMOST", nullptr, qtDialogSetTopMostAttrib, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DIALOGHINT", nullptr, qtDialogSetDialogHintAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "OPACITY", nullptr, qtDialogSetOpacityAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "OPACITYIMAGE", nullptr, qtDialogSetOpacityImageAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SHAPEIMAGE", nullptr, qtDialogSetShapeImageAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BRINGFRONT", nullptr, qtDialogSetBringFrontAttrib, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "HIDETITLEBAR", nullptr, qtDialogSetHideTitleBarAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MAXIMIZED", qtDialogGetMaximizedAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MINIMIZED", qtDialogGetMinimizedAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY|IUPAF_NO_INHERIT);
 
   /* Native Window Handle (platform-specific: XWINDOW, WL_SURFACE, HWND, NSVIEW) */
-  iupClassRegisterAttribute(ic, iupqtGetNativeWindowHandleName(), iupqtGetNativeWindowHandleAttrib, NULL, NULL, NULL, IUPAF_NO_STRING|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, iupqtGetNativeWindowHandleName(), iupqtGetNativeWindowHandleAttrib, nullptr, nullptr, nullptr, IUPAF_NO_STRING|IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "COMPOSITED", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TOOLBOX", NULL, qtDialogSetToolBoxAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "COMPOSITED", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TOOLBOX", nullptr, qtDialogSetToolBoxAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
 #ifdef IUP_QT_HAS_X11_APP
-  iupClassRegisterAttribute(ic, "TASKBARBUTTON", NULL, qtDialogSetTaskBarButtonAttrib, IUPAF_SAMEASSYSTEM, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TASKBARBUTTON", nullptr, qtDialogSetTaskBarButtonAttrib, IUPAF_SAMEASSYSTEM, nullptr, IUPAF_NO_INHERIT);
 #else
-  iupClassRegisterAttribute(ic, "TASKBARBUTTON", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TASKBARBUTTON", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 #endif
-  iupClassRegisterAttribute(ic, "HELPBUTTON", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SHOWNOACTIVATE", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "CUSTOMFRAME", NULL, NULL, IUPAF_SAMEASSYSTEM, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "HELPBUTTON", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SHOWNOACTIVATE", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CUSTOMFRAME", nullptr, nullptr, IUPAF_SAMEASSYSTEM, nullptr, IUPAF_NO_INHERIT);
 
   /* Not Supported */
-  iupClassRegisterAttribute(ic, "SAVEUNDER", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "CONTROL", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SAVEUNDER", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CONTROL", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 }

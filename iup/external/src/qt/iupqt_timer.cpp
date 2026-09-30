@@ -40,7 +40,7 @@ static void qtTimerProc(IupQtTimer* timer_data)
   if (cb)
   {
     qint64 elapsed = timer_data->elapsed_timer->elapsed();
-    iupAttribSetInt(ih, "ELAPSEDTIME", (int)elapsed);
+    iupAttribSetInt(ih, "ELAPSEDTIME", static_cast<int>(elapsed));
 
     if (cb(ih) == IUP_CLOSE)
       IupExitLoop();
@@ -61,7 +61,7 @@ extern "C" IUP_SDK_API void iupdrvTimerRun(Ihandle* ih)
   time_ms = iupAttribGetInt(ih, "TIME");
   if (time_ms > 0)
   {
-    IupQtTimer* timer_data = new IupQtTimer();
+    auto* timer_data = new IupQtTimer();
 
     timer_data->ih = ih;
     timer_data->qtimer = new QTimer();
@@ -82,7 +82,7 @@ extern "C" IUP_SDK_API void iupdrvTimerRun(Ihandle* ih)
     timer_data->qtimer->start();
 
     ih->serial = 1;
-    iupAttribSet(ih, "_IUP_QTTIMER", (char*)timer_data);
+    iupAttribSet(ih, "_IUP_QTTIMER", reinterpret_cast<char*>(timer_data));
   }
 }
 
@@ -90,7 +90,7 @@ extern "C" IUP_SDK_API void iupdrvTimerStop(Ihandle* ih)
 {
   if (ih->serial > 0)
   {
-    IupQtTimer* timer_data = (IupQtTimer*)iupAttribGet(ih, "_IUP_QTTIMER");
+    auto* timer_data = reinterpret_cast<IupQtTimer*>(iupAttribGet(ih, "_IUP_QTTIMER"));
 
     if (timer_data)
     {
@@ -100,8 +100,7 @@ extern "C" IUP_SDK_API void iupdrvTimerStop(Ihandle* ih)
         delete timer_data->qtimer;
       }
 
-      if (timer_data->elapsed_timer)
-        delete timer_data->elapsed_timer;
+      delete timer_data->elapsed_timer;
 
       delete timer_data;
 

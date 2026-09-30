@@ -73,7 +73,7 @@ public:
 
   void fireGesture(int gesture, int state, const QPointF& global_pt, double v1, double v2)
   {
-    IFniiiidd cb = (IFniiiidd)IupGetCallback(ih, "GESTURE_CB");
+    auto cb = reinterpret_cast<IFniiiidd>(IupGetCallback(ih, "GESTURE_CB"));
     if (!cb)
       return;
     QPoint local = mapFromGlobal(global_pt.toPoint());
@@ -85,20 +85,20 @@ public:
   {
     if (QGesture* g = ge->gesture(Qt::PinchGesture))
     {
-      QPinchGesture* p = static_cast<QPinchGesture*>(g);
+      auto* p = static_cast<QPinchGesture*>(g);
       int st = gestureState(p->state());
       fireGesture(IUP_GESTURE_PINCH, st, p->centerPoint(), p->totalScaleFactor(), 0.0);
       fireGesture(IUP_GESTURE_ROTATE, st, p->centerPoint(), p->totalRotationAngle(), 0.0);
     }
     if (QGesture* g = ge->gesture(Qt::PanGesture))
     {
-      QPanGesture* p = static_cast<QPanGesture*>(g);
+      auto* p = static_cast<QPanGesture*>(g);
       QPointF off = p->offset();
       fireGesture(IUP_GESTURE_PAN, gestureState(p->state()), p->hotSpot(), off.x(), off.y());
     }
     if (QGesture* g = ge->gesture(Qt::SwipeGesture))
     {
-      QSwipeGesture* p = static_cast<QSwipeGesture*>(g);
+      auto* p = static_cast<QSwipeGesture*>(g);
       if (p->state() == Qt::GestureFinished)
       {
         int dir;
@@ -139,16 +139,16 @@ protected:
 
     if (iupAttribGet(ih, "_IUP_GLCONTROLDATA"))
     {
-      IFn cb = (IFn)IupGetCallback(ih, "ACTION");
+      IFn cb = static_cast<IFn>(IupGetCallback(ih, "ACTION"));
 
       if (iupAttribGet(ih, "_IUPGL_COMPOSITE"))
       {
         iupAttribSet(ih, "_IUPGL_IN_DRAW", "1");
         if (cb && !(ih->data->inside_resize))
           cb(ih);
-        iupAttribSet(ih, "_IUPGL_IN_DRAW", NULL);
+        iupAttribSet(ih, "_IUPGL_IN_DRAW", nullptr);
 
-        unsigned char* px = (unsigned char*)iupAttribGet(ih, "_IUPGL_COMPOSITE_PIXELS");
+        auto* px = reinterpret_cast<unsigned char*>(iupAttribGet(ih, "_IUPGL_COMPOSITE_PIXELS"));
         int pw = iupAttribGetInt(ih, "_IUPGL_COMPOSITE_W");
         int ph = iupAttribGetInt(ih, "_IUPGL_COMPOSITE_H");
         if (px && pw > 0 && ph > 0)
@@ -167,13 +167,13 @@ protected:
                          event->rect().left(), event->rect().top(),
                          event->rect().right(), event->rect().bottom());
         cb(ih);
-        iupAttribSet(ih, "CLIPRECT", NULL);
+        iupAttribSet(ih, "CLIPRECT", nullptr);
       }
       event->accept();
       return;
     }
 
-    QPixmap* buffer = (QPixmap*)iupAttribGet(ih, "_IUPQT_CANVAS_BUFFER");
+    auto* buffer = reinterpret_cast<QPixmap*>(iupAttribGet(ih, "_IUPQT_CANVAS_BUFFER"));
     if (buffer && !buffer->isNull() && buffer->size() == size() && !iupAttribGet(ih, "_IUPQT_UPDATERECT"))
     {
       QPainter painter(this);
@@ -183,8 +183,8 @@ protected:
       return;
     }
 
-    IFn cb = (IFn)IupGetCallback(ih, "ACTION");
-    iupAttribSet(ih, "_IUPQT_UPDATERECT", NULL);
+    IFn cb = static_cast<IFn>(IupGetCallback(ih, "ACTION"));
+    iupAttribSet(ih, "_IUPQT_UPDATERECT", nullptr);
     if (cb && !(ih->data->inside_resize))
     {
       iupAttribSetStrf(ih, "CLIPRECT", "%d %d %d %d",
@@ -193,9 +193,9 @@ protected:
 
       cb(ih);
 
-      iupAttribSet(ih, "CLIPRECT", NULL);
+      iupAttribSet(ih, "CLIPRECT", nullptr);
 
-      buffer = (QPixmap*)iupAttribGet(ih, "_IUPQT_CANVAS_BUFFER");
+      buffer = reinterpret_cast<QPixmap*>(iupAttribGet(ih, "_IUPQT_CANVAS_BUFFER"));
       if (buffer && !buffer->isNull())
       {
         QPainter painter(this);
@@ -226,7 +226,7 @@ protected:
     if (width() <= 0 || height() <= 0)
       return;
 
-    IFnii cb = (IFnii)IupGetCallback(ih, "RESIZE_CB");
+    auto cb = reinterpret_cast<IFnii>(IupGetCallback(ih, "RESIZE_CB"));
     if (cb && !ih->data->inside_resize)
     {
       ih->data->inside_resize = 1;
@@ -270,7 +270,7 @@ protected:
         iupAttribSetClassObject(ih_focus, "SHOWDROPDOWN", "NO");
     }
 
-    IFnfiis cb = (IFnfiis)IupGetCallback(ih, "WHEEL_CB");
+    auto cb = reinterpret_cast<IFnfiis>(IupGetCallback(ih, "WHEEL_CB"));
     if (cb)
     {
       QPoint numDegrees = event->angleDelta() / 8;
@@ -287,7 +287,7 @@ protected:
       char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
       iupqtButtonKeySetStatus(event->modifiers(), Qt::NoButton, 0, status, 0);
 
-      cb(ih, (float)delta, x, y, status);
+      cb(ih, static_cast<float>(delta), x, y, status);
       event->accept();
       return;
     }
@@ -309,13 +309,13 @@ protected:
       IupSetDouble(ih, "POSX", posx);
     }
 
-    IFniff scb = (IFniff)IupGetCallback(ih, "SCROLL_CB");
+    auto scb = reinterpret_cast<IFniff>(IupGetCallback(ih, "SCROLL_CB"));
     if (scb)
     {
       int op = delta > 0 ? IUP_SBUP : IUP_SBDN;
       if (numDegrees.y() == 0)
         op = (numDegrees.x() / 15) > 0 ? IUP_SBLEFT : IUP_SBRIGHT;
-      scb(ih, op, (float)ih->data->posx, (float)ih->data->posy);
+      scb(ih, op, static_cast<float>(ih->data->posx), static_cast<float>(ih->data->posy));
     }
 
     event->accept();
@@ -408,7 +408,7 @@ protected:
     if (!ih)
       return;
 
-    IFnsiii cb = (IFnsiii)IupGetCallback(ih, "DROPFILES_CB");
+    auto cb = reinterpret_cast<IFnsiii>(IupGetCallback(ih, "DROPFILES_CB"));
     if (cb && event->mimeData()->hasUrls())
     {
       QList<QUrl> urls = event->mimeData()->urls();
@@ -428,7 +428,7 @@ protected:
         if (!filePath.isEmpty())
         {
           QByteArray fileArray = filePath.toUtf8();
-          if (cb(ih, (char*)fileArray.constData(), count - i - 1, x, y) == IUP_IGNORE)
+          if (cb(ih, const_cast<char*>(fileArray.constData()), count - i - 1, x, y) == IUP_IGNORE)
             break;
         }
       }
@@ -449,11 +449,11 @@ protected:
         event->type() == QEvent::TouchUpdate ||
         event->type() == QEvent::TouchEnd)
     {
-      IFniiis single_cb = (IFniiis)IupGetCallback(ih, "TOUCH_CB");
-      IFniIIII multi_cb = (IFniIIII)IupGetCallback(ih, "MULTITOUCH_CB");
+      auto single_cb = reinterpret_cast<IFniiis>(IupGetCallback(ih, "TOUCH_CB"));
+      auto multi_cb = reinterpret_cast<IFniIIII>(IupGetCallback(ih, "MULTITOUCH_CB"));
       if (single_cb || multi_cb)
       {
-        QTouchEvent* touchEvent = static_cast<QTouchEvent*>(event);
+        auto* touchEvent = static_cast<QTouchEvent*>(event);
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
         const QList<QEventPoint>& points = touchEvent->points();
 #else
@@ -469,13 +469,13 @@ protected:
             const auto& tp = points[i];
             int id = tp.id();
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-            int x = (int)tp.position().x();
-            int y = (int)tp.position().y();
+            int x = static_cast<int>(tp.position().x());
+            int y = static_cast<int>(tp.position().y());
             bool down = (tp.state() == QEventPoint::Pressed);
             bool up = (tp.state() == QEventPoint::Released);
 #else
-            int x = (int)tp.pos().x();
-            int y = (int)tp.pos().y();
+            int x = static_cast<int>(tp.pos().x());
+            int y = static_cast<int>(tp.pos().y());
             bool down = (tp.state() == Qt::TouchPointPressed);
             bool up = (tp.state() == Qt::TouchPointReleased);
 #endif
@@ -491,7 +491,7 @@ protected:
                 str = down ? "DOWN-PRIMARY" : (up ? "UP-PRIMARY" : "MOVE-PRIMARY");
               else
                 str = down ? "DOWN" : (up ? "UP" : "MOVE");
-              if (single_cb(ih, id, x, y, (char*)str) == IUP_CLOSE)
+              if (single_cb(ih, id, x, y, const_cast<char*>(str)) == IUP_CLOSE)
                 IupExitLoop();
             }
           }
@@ -549,7 +549,7 @@ struct IupQtCanvasContainer
 
 static IupQtCanvasContainer* qtCanvasGetContainer(Ihandle* ih)
 {
-  return (IupQtCanvasContainer*)iupAttribGet(ih, "_IUPQT_CANVAS_CONTAINER");
+  return reinterpret_cast<IupQtCanvasContainer*>(iupAttribGet(ih, "_IUPQT_CANVAS_CONTAINER"));
 }
 
 IUP_DRV_API QWidget* iupqtCanvasGetWidget(Ihandle* ih)
@@ -557,7 +557,7 @@ IUP_DRV_API QWidget* iupqtCanvasGetWidget(Ihandle* ih)
   IupQtCanvasContainer* container = qtCanvasGetContainer(ih);
   if (container)
     return container->canvas;
-  return NULL;
+  return nullptr;
 }
 
 /****************************************************************************
@@ -566,17 +566,17 @@ IUP_DRV_API QWidget* iupqtCanvasGetWidget(Ihandle* ih)
 
 static void qtCanvasScrollCallback(Ihandle* ih, QScrollBar* scrollbar, int orientation, int op)
 {
-  IFniff cb = (IFniff)IupGetCallback(ih, "SCROLL_CB");
+  auto cb = reinterpret_cast<IFniff>(IupGetCallback(ih, "SCROLL_CB"));
   if (cb)
   {
-    float posx = (float)ih->data->posx;
-    float posy = (float)ih->data->posy;
+    auto posx = static_cast<float>(ih->data->posx);
+    auto posy = static_cast<float>(ih->data->posy);
 
     cb(ih, op, posx, posy);
   }
   else
   {
-    IFn action_cb = (IFn)IupGetCallback(ih, "ACTION");
+    IFn action_cb = static_cast<IFn>(IupGetCallback(ih, "ACTION"));
     if (action_cb)
       iupdrvRedrawNow(ih);
   }
@@ -648,7 +648,7 @@ static void qtCanvasProcessScroll(Ihandle* ih, QScrollBar* scrollbar, int orient
     if (iupAttribGet(ih, opname))
     {
       op = iupAttribGetInt(ih, opname);
-      iupAttribSet(ih, opname, NULL);
+      iupAttribSet(ih, opname, nullptr);
     }
   }
 
@@ -707,11 +707,11 @@ static int qtCanvasSetDXAttrib(Ihandle* ih, const char* value)
         iupAttribSet(ih, "SB_RESIZE", "YES");
         sb->setEnabled(true);
 
-        int range = (int)(xmax - xmin - dx);
+        int range = static_cast<int>(xmax - xmin - dx);
         if (range < 0) range = 0;
         sb->setRange(0, range);
-        sb->setPageStep((int)dx);
-        sb->setSingleStep((int)linex);
+        sb->setPageStep(static_cast<int>(dx));
+        sb->setSingleStep(static_cast<int>(linex));
       }
     }
   }
@@ -758,11 +758,11 @@ static int qtCanvasSetDYAttrib(Ihandle* ih, const char* value)
         iupAttribSet(ih, "SB_RESIZE", "YES");
         sb->setEnabled(true);
 
-        int range = (int)(ymax - ymin - dy);
+        int range = static_cast<int>(ymax - ymin - dy);
         if (range < 0) range = 0;
         sb->setRange(0, range);
-        sb->setPageStep((int)dy);
-        sb->setSingleStep((int)liney);
+        sb->setPageStep(static_cast<int>(dy));
+        sb->setSingleStep(static_cast<int>(liney));
       }
     }
   }
@@ -775,15 +775,15 @@ static int qtCanvasSetDYAttrib(Ihandle* ih, const char* value)
 
 static int qtCanvasMapMethod(Ihandle* ih)
 {
-  IupQtCanvasContainer* container_data = new IupQtCanvasContainer();
+  auto* container_data = new IupQtCanvasContainer();
 
   /* the extra parent has no layout, so IUP children can be placed with move() */
   QWidget* extra_parent = iupqtNativeContainerNew(0);
 
-  QWidget* container = new QWidget(extra_parent);
+  auto* container = new QWidget(extra_parent);
   container_data->container = container;
 
-  IupQtCanvas* canvas = new IupQtCanvas();
+  auto* canvas = new IupQtCanvas();
   canvas->ih = ih;
   container_data->canvas = canvas;
   QWidget* canvas_widget = canvas;
@@ -799,7 +799,7 @@ static int qtCanvasMapMethod(Ihandle* ih)
       canvas->setAttribute(Qt::WA_NoSystemBackground, true);
       canvas->setAttribute(Qt::WA_PaintOnScreen, true);
     }
-    iupAttribSet(ih, "_IUPQT_CANVAS_WIDGET", (char*)canvas_widget);
+    iupAttribSet(ih, "_IUPQT_CANVAS_WIDGET", reinterpret_cast<char*>(canvas_widget));
   }
 
   ih->data->sb = iupBaseGetScrollbar(ih);
@@ -808,11 +808,11 @@ static int qtCanvasMapMethod(Ihandle* ih)
 
   if (has_sb)
   {
-    QVBoxLayout* vbox = new QVBoxLayout(container);
+    auto* vbox = new QVBoxLayout(container);
     vbox->setContentsMargins(0, 0, 0, 0);
     vbox->setSpacing(0);
 
-    QHBoxLayout* hbox = new QHBoxLayout();
+    auto* hbox = new QHBoxLayout();
     hbox->setContentsMargins(0, 0, 0, 0);
     hbox->setSpacing(0);
 
@@ -820,7 +820,7 @@ static int qtCanvasMapMethod(Ihandle* ih)
 
     if (ih->data->sb & IUP_SB_VERT)
     {
-      QScrollBar* sb_vert = new QScrollBar(Qt::Vertical);
+      auto* sb_vert = new QScrollBar(Qt::Vertical);
       container_data->sb_vert = sb_vert;
       hbox->addWidget(sb_vert);
 
@@ -840,7 +840,7 @@ static int qtCanvasMapMethod(Ihandle* ih)
 
     if (ih->data->sb & IUP_SB_HORIZ)
     {
-      QScrollBar* sb_horiz = new QScrollBar(Qt::Horizontal);
+      auto* sb_horiz = new QScrollBar(Qt::Horizontal);
       container_data->sb_horiz = sb_horiz;
       vbox->addWidget(sb_horiz);
 
@@ -858,7 +858,7 @@ static int qtCanvasMapMethod(Ihandle* ih)
   }
   else
   {
-    QHBoxLayout* layout = new QHBoxLayout(container);
+    auto* layout = new QHBoxLayout(container);
     layout->setContentsMargins(0, 0, 0, 0);
     layout->addWidget(canvas_widget);
 
@@ -866,18 +866,18 @@ static int qtCanvasMapMethod(Ihandle* ih)
     container_data->sb_vert = nullptr;
   }
 
-  iupAttribSet(ih, "_IUPQT_CANVAS_CONTAINER", (char*)container_data);
+  iupAttribSet(ih, "_IUPQT_CANVAS_CONTAINER", reinterpret_cast<char*>(container_data));
 
-  ih->handle = (InativeHandle*)container;
-  iupAttribSet(ih, "_IUP_EXTRAPARENT", (char*)extra_parent);
+  ih->handle = reinterpret_cast<InativeHandle*>(container);
+  iupAttribSet(ih, "_IUP_EXTRAPARENT", reinterpret_cast<char*>(extra_parent));
 
   if (IupGetCallback(ih, "DROPFILES_CB"))
     iupAttribSet(ih, "DROPFILESTARGET", "YES");
 
   iupqtAddToParent(ih);
 
-  qtCanvasSetDXAttrib(ih, NULL);
-  qtCanvasSetDYAttrib(ih, NULL);
+  qtCanvasSetDXAttrib(ih, nullptr);
+  qtCanvasSetDYAttrib(ih, nullptr);
 
   return IUP_NOERROR;
 }
@@ -888,7 +888,7 @@ static int qtCanvasMapMethod(Ihandle* ih)
 
 static void qtCanvasUnMapMethod(Ihandle* ih)
 {
-  QPixmap* buffer = (QPixmap*)iupAttribGet(ih, "_IUPQT_CANVAS_BUFFER");
+  auto* buffer = reinterpret_cast<QPixmap*>(iupAttribGet(ih, "_IUPQT_CANVAS_BUFFER"));
   if (buffer)
   {
     delete buffer;
@@ -908,7 +908,7 @@ static void qtCanvasUnMapMethod(Ihandle* ih)
     iupAttribSet(ih, "_IUPQT_CANVAS_CONTAINER", nullptr);
   }
 
-  QWidget* extra_parent = (QWidget*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
+  auto* extra_parent = reinterpret_cast<QWidget*>(iupAttribGet(ih, "_IUP_EXTRAPARENT"));
   if (extra_parent)
   {
     delete extra_parent;
@@ -917,7 +917,7 @@ static void qtCanvasUnMapMethod(Ihandle* ih)
   }
   else if (ih->handle)
   {
-    QWidget* widget = (QWidget*)ih->handle;
+    auto* widget = reinterpret_cast<QWidget*>(ih->handle);
     delete widget;
     ih->handle = nullptr;
   }
@@ -927,7 +927,7 @@ static void qtCanvasLayoutUpdateMethod(Ihandle* ih)
 {
   iupdrvBaseLayoutUpdateMethod(ih);
 
-  QWidget* container = (QWidget*)ih->handle;
+  auto* container = reinterpret_cast<QWidget*>(ih->handle);
   if (container)
   {
     container->move(0, 0);
@@ -959,7 +959,7 @@ IUP_DRV_API void* iupqtCanvasGetContext(Ihandle* ih)
 
   if (container_data && container_data->canvas)
   {
-    return (void*)container_data->canvas;
+    return reinterpret_cast<void*>(container_data->canvas);
   }
 
   return nullptr;
@@ -989,7 +989,7 @@ void qtCanvasUpdateScrollPos(Ihandle* ih, float posx, float posy)
     double range = xmax - xmin - dx;
     int pos = 0;
     if (range > 0)
-      pos = (int)((posx - xmin) * max / range);
+      pos = static_cast<int>((posx - xmin) * max / range);
 
     container_data->sb_horiz->blockSignals(true);
     container_data->sb_horiz->setValue(pos);
@@ -1002,7 +1002,7 @@ void qtCanvasUpdateScrollPos(Ihandle* ih, float posx, float posy)
     double range = ymax - ymin - dy;
     int pos = 0;
     if (range > 0)
-      pos = (int)((posy - ymin) * max / range);
+      pos = static_cast<int>((posy - ymin) * max / range);
 
     container_data->sb_vert->blockSignals(true);
     container_data->sb_vert->setValue(pos);
@@ -1033,7 +1033,7 @@ static int qtCanvasSetPosXAttrib(Ihandle* ih, const char* value)
     if (posx > (xmax - dx)) posx = xmax - dx;
     ih->data->posx = posx;
 
-    qtCanvasUpdateScrollPos(ih, (float)posx, (float)ih->data->posy);
+    qtCanvasUpdateScrollPos(ih, static_cast<float>(posx), static_cast<float>(ih->data->posy));
   }
   return 1;
 }
@@ -1057,7 +1057,7 @@ static int qtCanvasSetPosYAttrib(Ihandle* ih, const char* value)
     if (posy > (ymax - dy)) posy = ymax - dy;
     ih->data->posy = posy;
 
-    qtCanvasUpdateScrollPos(ih, (float)ih->data->posx, (float)posy);
+    qtCanvasUpdateScrollPos(ih, static_cast<float>(ih->data->posx), static_cast<float>(posy));
   }
   return 1;
 }
@@ -1114,7 +1114,7 @@ static char* qtCanvasGetDrawSizeAttrib(Ihandle* ih)
 
 static char* qtCanvasGetDrawableAttrib(Ihandle* ih)
 {
-  return (char*)iupqtCanvasGetContext(ih);
+  return static_cast<char*>(iupqtCanvasGetContext(ih));
 }
 
 static char* qtCanvasGetScrollVisibleAttrib(Ihandle* ih)
@@ -1134,13 +1134,13 @@ static char* qtCanvasGetScrollVisibleAttrib(Ihandle* ih)
     vert_visible = 1;
 
   if (horiz_visible && vert_visible)
-    return (char*)"YES";
+    return const_cast<char*>("YES");
   else if (horiz_visible)
-    return (char*)"HORIZONTAL";
+    return const_cast<char*>("HORIZONTAL");
   else if (vert_visible)
-    return (char*)"VERTICAL";
+    return const_cast<char*>("VERTICAL");
   else
-    return (char*)"NO";
+    return const_cast<char*>("NO");
 }
 
 /****************************************************************************
@@ -1164,9 +1164,9 @@ static int qtCanvasSetUpdateRectAttrib(Ihandle* ih, const char* value)
 static void* qtCanvasGetInnerNativeContainerHandleMethod(Ihandle* ih, Ihandle* child)
 {
   (void)child;
-  QWidget* extra_parent = (QWidget*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
+  auto* extra_parent = reinterpret_cast<QWidget*>(iupAttribGet(ih, "_IUP_EXTRAPARENT"));
   if (extra_parent)
-    return (void*)extra_parent;
+    return reinterpret_cast<void*>(extra_parent);
   return ih->handle;
 }
 

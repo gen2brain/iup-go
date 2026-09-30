@@ -110,7 +110,7 @@ public:
       if (action != QAbstractSlider::SliderPageStepAdd && action != QAbstractSlider::SliderPageStepSub)
         return;
 
-      int step = (int)(iup_handle->data->pagestep * ISCROLLBAR_RANGE);
+      int step = static_cast<int>(iup_handle->data->pagestep * ISCROLLBAR_RANGE);
       if (step < 1) step = 1;
       if (action == QAbstractSlider::SliderPageStepSub)
         step = -step;
@@ -190,23 +190,23 @@ protected:
 
 extern "C" IUP_SDK_API void iupdrvScrollbarUpdate(Ihandle* ih)
 {
-  IupQtScrollBar* sb = (IupQtScrollBar*)ih->handle;
+  auto* sb = reinterpret_cast<IupQtScrollBar*>(ih->handle);
   if (!sb) return;
 
   double range = ih->data->vmax - ih->data->vmin;
   if (range <= 0) return;
 
-  int ipage = (int)((ih->data->pagesize / range) * ISCROLLBAR_RANGE);
+  int ipage = static_cast<int>((ih->data->pagesize / range) * ISCROLLBAR_RANGE);
   if (ipage < 1) ipage = 1;
   if (ipage > ISCROLLBAR_RANGE) ipage = ISCROLLBAR_RANGE;
 
   int imax = ISCROLLBAR_RANGE - ipage;
   if (imax < 0) imax = 0;
 
-  int istep = (int)(ih->data->linestep * ISCROLLBAR_RANGE);
+  int istep = static_cast<int>(ih->data->linestep * ISCROLLBAR_RANGE);
   if (istep < 1) istep = 1;
 
-  int ipos = (int)(((ih->data->val - ih->data->vmin) / range) * ISCROLLBAR_RANGE);
+  int ipos = static_cast<int>(((ih->data->val - ih->data->vmin) / range) * ISCROLLBAR_RANGE);
   if (ipos < 0) ipos = 0;
   if (ipos > imax) ipos = imax;
 
@@ -230,7 +230,7 @@ static void qtScrollbarActionTriggered(IupQtScrollBar* sb, Ihandle* ih, int acti
   int ipos = sb->sliderPosition();
 
   if (imax > 0)
-    ih->data->val = ((double)ipos / (double)ISCROLLBAR_RANGE) * range + ih->data->vmin;
+    ih->data->val = (static_cast<double>(ipos) / static_cast<double>(ISCROLLBAR_RANGE)) * range + ih->data->vmin;
   else
     ih->data->val = ih->data->vmin;
   iupScrollbarCropValue(ih);
@@ -261,19 +261,19 @@ static void qtScrollbarActionTriggered(IupQtScrollBar* sb, Ihandle* ih, int acti
     }
   }
 
-  IFniff scroll_cb = (IFniff)IupGetCallback(ih, "SCROLL_CB");
+  auto scroll_cb = reinterpret_cast<IFniff>(IupGetCallback(ih, "SCROLL_CB"));
   if (scroll_cb)
   {
     float posx = 0, posy = 0;
     if (ih->data->orientation == ISCROLLBAR_HORIZONTAL)
-      posx = (float)ih->data->val;
+      posx = static_cast<float>(ih->data->val);
     else
-      posy = (float)ih->data->val;
+      posy = static_cast<float>(ih->data->val);
 
     scroll_cb(ih, op, posx, posy);
   }
 
-  IFn valuechanged_cb = (IFn)IupGetCallback(ih, "VALUECHANGED_CB");
+  IFn valuechanged_cb = static_cast<IFn>(IupGetCallback(ih, "VALUECHANGED_CB"));
   if (valuechanged_cb)
   {
     if (ih->data->val != old_val)
@@ -368,9 +368,9 @@ static int qtScrollbarMapMethod(Ihandle* ih)
   else
     orientation = Qt::Vertical;
 
-  IupQtScrollBar* sb = new IupQtScrollBar(orientation, ih);
+  auto* sb = new IupQtScrollBar(orientation, ih);
 
-  ih->handle = (InativeHandle*)sb;
+  ih->handle = reinterpret_cast<InativeHandle*>(sb);
 
   if (ih->data->inverted)
   {
@@ -398,7 +398,7 @@ static void qtScrollbarUnMapMethod(Ihandle* ih)
 {
   if (ih->handle)
   {
-    IupQtScrollBar* sb = (IupQtScrollBar*)ih->handle;
+    auto* sb = reinterpret_cast<IupQtScrollBar*>(ih->handle);
 
     iupqtTipsDestroy(ih);
 
@@ -412,10 +412,10 @@ extern "C" IUP_SDK_API void iupdrvScrollbarInitClass(Iclass* ic)
   ic->Map = qtScrollbarMapMethod;
   ic->UnMap = qtScrollbarUnMapMethod;
 
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", nullptr, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
 
   iupClassRegisterAttribute(ic, "VALUE", iupScrollbarGetValueAttrib, qtScrollbarSetValueAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "LINESTEP", iupScrollbarGetLineStepAttrib, qtScrollbarSetLineStepAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "PAGESTEP", iupScrollbarGetPageStepAttrib, qtScrollbarSetPageStepAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "PAGESIZE", iupScrollbarGetPageSizeAttrib, qtScrollbarSetPageSizeAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "LINESTEP", iupScrollbarGetLineStepAttrib, qtScrollbarSetLineStepAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "PAGESTEP", iupScrollbarGetPageStepAttrib, qtScrollbarSetPageStepAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "PAGESIZE", iupScrollbarGetPageSizeAttrib, qtScrollbarSetPageSizeAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
 }

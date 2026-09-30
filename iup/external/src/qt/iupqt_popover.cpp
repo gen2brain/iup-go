@@ -44,7 +44,7 @@ public:
     setFrameStyle(QFrame::NoFrame);
 
     content_widget = new QWidget(this);
-    QVBoxLayout* layout = new QVBoxLayout(this);
+    auto* layout = new QVBoxLayout(this);
     layout->setContentsMargins(1, 1, 1, 1);
     layout->addWidget(content_widget);
     setLayout(layout);
@@ -64,7 +64,7 @@ protected:
   {
     QFrame::hideEvent(event);
 
-    IFni show_cb = (IFni)IupGetCallback(iup_handle, "SHOW_CB");
+    IFni show_cb = reinterpret_cast<IFni>(IupGetCallback(iup_handle, "SHOW_CB"));
     if (show_cb)
       show_cb(iup_handle, IUP_HIDE);
   }
@@ -73,7 +73,7 @@ protected:
   {
     QFrame::showEvent(event);
 
-    IFni show_cb = (IFni)IupGetCallback(iup_handle, "SHOW_CB");
+    IFni show_cb = reinterpret_cast<IFni>(IupGetCallback(iup_handle, "SHOW_CB"));
     if (show_cb)
       show_cb(iup_handle, IUP_SHOW);
   }
@@ -111,7 +111,7 @@ static int qtPopoverSetVisibleAttrib(Ihandle* ih, const char* value)
 
   if (iupStrBoolean(value))
   {
-    Ihandle* anchor = (Ihandle*)iupAttribGet(ih, "_IUP_POPOVER_ANCHOR");
+    auto* anchor = reinterpret_cast<Ihandle*>(iupAttribGet(ih, "_IUP_POPOVER_ANCHOR"));
     QWidget* anchor_widget;
     QPoint anchor_pos;
     QSize anchor_size;
@@ -125,8 +125,8 @@ static int qtPopoverSetVisibleAttrib(Ihandle* ih, const char* value)
         return 0;
     }
 
-    popover = (IupQtPopover*)ih->handle;
-    anchor_widget = (QWidget*)anchor->handle;
+    popover = reinterpret_cast<IupQtPopover*>(ih->handle);
+    anchor_widget = reinterpret_cast<QWidget*>(anchor->handle);
 
     {
       bool autohide = iupAttribGetBoolean(ih, "AUTOHIDE") != 0;
@@ -163,7 +163,7 @@ static int qtPopoverSetVisibleAttrib(Ihandle* ih, const char* value)
   {
     if (ih->handle)
     {
-      popover = (IupQtPopover*)ih->handle;
+      popover = reinterpret_cast<IupQtPopover*>(ih->handle);
       popover->hide();
     }
   }
@@ -176,9 +176,9 @@ static char* qtPopoverGetVisibleAttrib(Ihandle* ih)
   IupQtPopover* popover;
 
   if (!ih->handle)
-    return (char*)"NO";
+    return const_cast<char*>("NO");
 
-  popover = (IupQtPopover*)ih->handle;
+  popover = reinterpret_cast<IupQtPopover*>(ih->handle);
   return iupStrReturnBoolean(popover->isVisible());
 }
 
@@ -198,24 +198,24 @@ static int qtPopoverMapMethod(Ihandle* ih)
 
   if (!autohide)
   {
-    Ihandle* anchor = (Ihandle*)iupAttribGet(ih, "_IUP_POPOVER_ANCHOR");
+    auto* anchor = reinterpret_cast<Ihandle*>(iupAttribGet(ih, "_IUP_POPOVER_ANCHOR"));
     if (anchor && anchor->handle)
     {
-      QWidget* anchor_widget = (QWidget*)anchor->handle;
+      auto* anchor_widget = reinterpret_cast<QWidget*>(anchor->handle);
       anchor_toplevel = anchor_widget->window();
     }
   }
 
-  IupQtPopover* popover = new IupQtPopover(ih, autohide != 0, anchor_toplevel);
+  auto* popover = new IupQtPopover(ih, autohide != 0, anchor_toplevel);
 
-  ih->handle = (InativeHandle*)popover;
+  ih->handle = reinterpret_cast<InativeHandle*>(popover);
 
   return IUP_NOERROR;
 }
 
 static void qtPopoverUnMapMethod(Ihandle* ih)
 {
-  IupQtPopover* popover = (IupQtPopover*)ih->handle;
+  auto* popover = reinterpret_cast<IupQtPopover*>(ih->handle);
 
   if (popover)
   {
@@ -230,10 +230,10 @@ static void qtPopoverChildAddedMethod(Ihandle* ih, Ihandle* child)
 {
   if (child->handle)
   {
-    IupQtPopover* popover = (IupQtPopover*)ih->handle;
+    auto* popover = reinterpret_cast<IupQtPopover*>(ih->handle);
     if (popover && popover->content_widget)
     {
-      QWidget* child_widget = (QWidget*)child->handle;
+      auto* child_widget = reinterpret_cast<QWidget*>(child->handle);
       child_widget->setParent(popover->content_widget);
     }
   }

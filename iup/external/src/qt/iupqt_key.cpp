@@ -135,16 +135,16 @@ static Iqt2iupkey other_remap[] = {
  * Key Encoding (IUP to Qt)
  ****************************************************************************/
 
-extern "C" IUP_SDK_API void iupdrvKeyEncode(int code, unsigned int* keyval, unsigned int* state)
+extern "C" IUP_SDK_API void iupdrvKeyEncode(int key, unsigned int* keyval, unsigned int* state)
 {
-  int base = iup_XkeyBase(code);
+  int base = iup_XkeyBase(key);
   int i, count;
 
-  *keyval = (unsigned int)base;
+  *keyval = static_cast<unsigned int>(base);
   *state = 0;
 
   if (base >= K_a && base <= K_z)
-    *keyval = (unsigned int)iup_toupper(base);
+    *keyval = static_cast<unsigned int>(iup_toupper(base));
 
   count = sizeof(other_remap) / sizeof(other_remap[0]);
   for (i = 0; i < count; i++)
@@ -167,16 +167,16 @@ extern "C" IUP_SDK_API void iupdrvKeyEncode(int code, unsigned int* keyval, unsi
     }
   }
 
-  if (iup_isCtrlXkey(code))
+  if (iup_isCtrlXkey(key))
     *state |= Qt::ControlModifier;
 
-  if (iup_isAltXkey(code))
+  if (iup_isAltXkey(key))
     *state |= Qt::AltModifier;
 
-  if (iup_isSysXkey(code))
+  if (iup_isSysXkey(key))
     *state |= Qt::MetaModifier;
 
-  if (iup_isShiftXkey(code))
+  if (iup_isShiftXkey(key))
     *state |= Qt::ShiftModifier;
 }
 

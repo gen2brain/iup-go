@@ -26,10 +26,10 @@ extern "C" {
  * Idle Callback Management
  ****************************************************************************/
 
-static IFidle qt_idle_cb = NULL;
-static QTimer* qt_idle_timer = NULL;
+static IFidle qt_idle_cb = nullptr;
+static QTimer* qt_idle_timer = nullptr;
 
-static void qtIdleFunc(void)
+static void qtIdleFunc()
 {
   if (qt_idle_cb)
   {
@@ -37,7 +37,7 @@ static void qtIdleFunc(void)
 
     if (ret == IUP_CLOSE)
     {
-      qt_idle_cb = NULL;
+      qt_idle_cb = nullptr;
       IupExitLoop();
       if (qt_idle_timer)
         qt_idle_timer->stop();
@@ -46,7 +46,7 @@ static void qtIdleFunc(void)
 
     if (ret == IUP_IGNORE)
     {
-      qt_idle_cb = NULL;
+      qt_idle_cb = nullptr;
       if (qt_idle_timer)
         qt_idle_timer->stop();
       return;
@@ -66,7 +66,7 @@ extern "C" IUP_SDK_API void iupdrvSetEntryFunction(Icallback func)
 
 extern "C" IUP_SDK_API void* iupdrvNativeScopeBegin(void)
 {
-  return NULL;
+  return nullptr;
 }
 
 extern "C" IUP_SDK_API void iupdrvNativeScopeEnd(void* scope)
@@ -80,10 +80,10 @@ extern "C" IUP_SDK_API void iupdrvSetIdleFunction(Icallback f)
   {
     qt_idle_timer->stop();
     delete qt_idle_timer;
-    qt_idle_timer = NULL;
+    qt_idle_timer = nullptr;
   }
 
-  qt_idle_cb = (IFidle)f;
+  qt_idle_cb = reinterpret_cast<IFidle>(f);
 
   if (qt_idle_cb)
   {
@@ -145,7 +145,7 @@ extern "C" IUP_API int IupMainLoop(void)
   QApplication* app = iupqtGetApplication();
   if (app)
   {
-    while (!qt_loop_exit_flag[current_level] && !app->closingDown())
+    while (!qt_loop_exit_flag[current_level] && !QCoreApplication::closingDown())
     {
       QCoreApplication::processEvents(QEventLoop::WaitForMoreEvents | QEventLoop::AllEvents);
 
@@ -154,12 +154,12 @@ extern "C" IUP_API int IupMainLoop(void)
         int ret = qt_idle_cb();
         if (ret == IUP_CLOSE)
         {
-          qt_idle_cb = NULL;
+          qt_idle_cb = nullptr;
           IupExitLoop();
           break;
         }
         if (ret == IUP_IGNORE)
-          qt_idle_cb = NULL;
+          qt_idle_cb = nullptr;
       }
     }
   }
@@ -181,7 +181,7 @@ extern "C" IUP_API int IupLoopStepWait(void)
 
   QCoreApplication::processEvents(QEventLoop::WaitForMoreEvents);
 
-  if (app->closingDown())
+  if (QCoreApplication::closingDown())
     return IUP_CLOSE;
 
   return IUP_DEFAULT;
@@ -200,14 +200,14 @@ extern "C" IUP_API int IupLoopStep(void)
     int ret = qt_idle_cb();
     if (ret == IUP_CLOSE)
     {
-      qt_idle_cb = NULL;
+      qt_idle_cb = nullptr;
       return IUP_CLOSE;
     }
     if (ret == IUP_IGNORE)
-      qt_idle_cb = NULL;
+      qt_idle_cb = nullptr;
   }
 
-  if (app->closingDown())
+  if (QCoreApplication::closingDown())
     return IUP_CLOSE;
 
   return IUP_DEFAULT;
@@ -217,11 +217,11 @@ extern "C" IUP_API void IupFlush(void)
 {
   int count = 0;
 
-  IFidle old_qt_idle_cb = NULL;
+  IFidle old_qt_idle_cb = nullptr;
   if (qt_idle_cb)
   {
     old_qt_idle_cb = qt_idle_cb;
-    iupdrvSetIdleFunction(NULL);
+    iupdrvSetIdleFunction(nullptr);
   }
 
   for (int i = 0; i < 10 && count < 100; i++, count++)
@@ -230,7 +230,7 @@ extern "C" IUP_API void IupFlush(void)
   }
 
   if (old_qt_idle_cb)
-    iupdrvSetIdleFunction((Icallback)old_qt_idle_cb);
+    iupdrvSetIdleFunction(reinterpret_cast<Icallback>(old_qt_idle_cb));
 }
 
 /****************************************************************************
@@ -255,7 +255,7 @@ static void qtPostMessageExecute(qtPostMessageUserData* user_data)
   Ihandle* ih = user_data->ih;
   if (iupObjectCheck(ih))
   {
-    IFnsidv cb = (IFnsidv)IupGetCallback(ih, "POSTMESSAGE_CB");
+    auto cb = reinterpret_cast<IFnsidv>(IupGetCallback(ih, "POSTMESSAGE_CB"));
     if (cb)
     {
       if (cb(ih, user_data->s, user_data->i, user_data->d, user_data->p) == IUP_CLOSE)
@@ -270,7 +270,7 @@ static void qtPostMessageExecute(qtPostMessageUserData* user_data)
 
 extern "C" IUP_API void IupPostMessage(Ihandle* ih, const char* s, int i, double d, void* p)
 {
-  qtPostMessageUserData* user_data = (qtPostMessageUserData*)malloc(sizeof(qtPostMessageUserData));
+  auto* user_data = static_cast<qtPostMessageUserData*>(malloc(sizeof(qtPostMessageUserData)));
   user_data->ih = ih;
   user_data->s = iupStrDup(s);
   user_data->i = i;
@@ -287,15 +287,15 @@ extern "C" IUP_API void IupPostMessage(Ihandle* ih, const char* s, int i, double
  * Loop Cleanup
  ****************************************************************************/
 
-IUP_DRV_API void iupqtLoopCleanup(void)
+IUP_DRV_API void iupqtLoopCleanup()
 {
   if (qt_idle_timer)
   {
     qt_idle_timer->stop();
     delete qt_idle_timer;
-    qt_idle_timer = NULL;
+    qt_idle_timer = nullptr;
   }
 
-  qt_idle_cb = NULL;
+  qt_idle_cb = nullptr;
   qt_main_loop_level = 0;
 }

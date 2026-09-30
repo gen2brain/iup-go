@@ -143,12 +143,12 @@ static void qtValUpdateValue(IupQtSlider* slider, Ihandle* ih)
   double old_val = ih->data->val;
   int ival = slider->value();
 
-  double fval = (double)ival / (double)IVAL_RANGE;
+  double fval = static_cast<double>(ival) / static_cast<double>(IVAL_RANGE);
 
   ih->data->val = fval * (ih->data->vmax - ih->data->vmin) + ih->data->vmin;
   iupValCropValue(ih);
 
-  IFn cb = (IFn)IupGetCallback(ih, "VALUECHANGED_CB");
+  IFn cb = static_cast<IFn>(IupGetCallback(ih, "VALUECHANGED_CB"));
   if (cb)
   {
     if (ih->data->val == old_val)
@@ -216,10 +216,10 @@ static int qtValSetStepAttrib(Ihandle* ih, const char* value)
 {
   if (iupStrToDoubleDef(value, &(ih->data->step), 0.01))
   {
-    IupQtSlider* slider = (IupQtSlider*)ih->handle;
+    auto* slider = reinterpret_cast<IupQtSlider*>(ih->handle);
     if (slider)
     {
-      int istep = (int)(ih->data->step * IVAL_RANGE);
+      int istep = static_cast<int>(ih->data->step * IVAL_RANGE);
       if (istep < 1) istep = 1;
       slider->setSingleStep(istep);
     }
@@ -231,10 +231,10 @@ static int qtValSetPageStepAttrib(Ihandle* ih, const char* value)
 {
   if (iupStrToDoubleDef(value, &(ih->data->pagestep), 0.1))
   {
-    IupQtSlider* slider = (IupQtSlider*)ih->handle;
+    auto* slider = reinterpret_cast<IupQtSlider*>(ih->handle);
     if (slider)
     {
-      int ipagestep = (int)(ih->data->pagestep * IVAL_RANGE);
+      int ipagestep = static_cast<int>(ih->data->pagestep * IVAL_RANGE);
       if (ipagestep < 1) ipagestep = 1;
       slider->setPageStep(ipagestep);
     }
@@ -246,7 +246,7 @@ static int qtValSetValueAttrib(Ihandle* ih, const char* value)
 {
   if (iupStrToDouble(value, &(ih->data->val)))
   {
-    IupQtSlider* slider = (IupQtSlider*)ih->handle;
+    auto* slider = reinterpret_cast<IupQtSlider*>(ih->handle);
     if (slider)
     {
       double range = ih->data->vmax - ih->data->vmin;
@@ -261,7 +261,7 @@ static int qtValSetValueAttrib(Ihandle* ih, const char* value)
       if (fval < 0.0) fval = 0.0;
       if (fval > 1.0) fval = 1.0;
 
-      ival = (int)(fval * IVAL_RANGE);
+      ival = static_cast<int>(fval * IVAL_RANGE);
 
       slider->blockSignals(true);
       slider->setValue(ival);
@@ -282,7 +282,7 @@ static int qtValSetShowTicksAttrib(Ihandle* ih, const char* value)
 
   ih->data->show_ticks = show_ticks;
 
-  IupQtSlider* slider = (IupQtSlider*)ih->handle;
+  auto* slider = reinterpret_cast<IupQtSlider*>(ih->handle);
   if (slider)
   {
     if (show_ticks > 0)
@@ -321,7 +321,7 @@ static int qtValSetShowTicksAttrib(Ihandle* ih, const char* value)
 
 static int qtValSetTicksPosAttrib(Ihandle* ih, const char* value)
 {
-  IupQtSlider* slider = (IupQtSlider*)ih->handle;
+  auto* slider = reinterpret_cast<IupQtSlider*>(ih->handle);
   if (!slider)
     return 0;
 
@@ -367,7 +367,7 @@ static int qtValSetInvertedAttrib(Ihandle* ih, const char* value)
 {
   ih->data->inverted = iupStrBoolean(value);
 
-  IupQtSlider* slider = (IupQtSlider*)ih->handle;
+  auto* slider = reinterpret_cast<IupQtSlider*>(ih->handle);
   if (slider)
   {
     int invert_qt = (ih->data->orientation == IVAL_VERTICAL && !ih->data->inverted) ||
@@ -385,7 +385,7 @@ static int qtValSetBgColorAttrib(Ihandle* ih, const char* value)
   if (!iupStrToRGB(value, &r, &g, &b))
     return 0;
 
-  IupQtSlider* slider = (IupQtSlider*)ih->handle;
+  auto* slider = reinterpret_cast<IupQtSlider*>(ih->handle);
 
   if (slider)
   {
@@ -426,9 +426,9 @@ static int qtValMapMethod(Ihandle* ih)
   else
     orientation = Qt::Vertical;
 
-  IupQtSlider* slider = new IupQtSlider(orientation, ih);
+  auto* slider = new IupQtSlider(orientation, ih);
 
-  ih->handle = (InativeHandle*)slider;
+  ih->handle = reinterpret_cast<InativeHandle*>(slider);
 
   if (ih->data->orientation == IVAL_VERTICAL && !ih->data->inverted)
   {
@@ -441,11 +441,11 @@ static int qtValMapMethod(Ihandle* ih)
     slider->setInvertedControls(true);
   }
 
-  int istep = (int)(ih->data->step * IVAL_RANGE);
+  int istep = static_cast<int>(ih->data->step * IVAL_RANGE);
   if (istep < 1) istep = 1;
   slider->setSingleStep(istep);
 
-  int ipagestep = (int)(ih->data->pagestep * IVAL_RANGE);
+  int ipagestep = static_cast<int>(ih->data->pagestep * IVAL_RANGE);
   if (ipagestep < 1) ipagestep = 1;
   slider->setPageStep(ipagestep);
 
@@ -456,7 +456,7 @@ static int qtValMapMethod(Ihandle* ih)
       double fval = (ih->data->val - ih->data->vmin) / range;
       if (fval < 0.0) fval = 0.0;
       if (fval > 1.0) fval = 1.0;
-      slider->setValue((int)(fval * IVAL_RANGE));
+      slider->setValue(static_cast<int>(fval * IVAL_RANGE));
     }
   }
 
@@ -489,7 +489,7 @@ static void qtValUnMapMethod(Ihandle* ih)
 {
   if (ih->handle)
   {
-    IupQtSlider* slider = (IupQtSlider*)ih->handle;
+    auto* slider = reinterpret_cast<IupQtSlider*>(ih->handle);
 
     iupqtTipsDestroy(ih);
 
@@ -511,18 +511,18 @@ extern "C" IUP_SDK_API void iupdrvValInitClass(Iclass* ic)
   /* Driver Dependent Attribute functions */
 
   /* Visual */
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, qtValSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", nullptr, qtValSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
 
   /* Common */
-  iupClassRegisterAttribute(ic, "TIP", NULL, qtValSetTipAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TIP", nullptr, qtValSetTipAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 
   /* IupVal only */
   iupClassRegisterAttribute(ic, "VALUE", iupValGetValueAttrib, qtValSetValueAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "INVERTED", NULL, qtValSetInvertedAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "PAGESTEP", iupValGetPageStepAttrib, qtValSetPageStepAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "STEP", iupValGetStepAttrib, qtValSetStepAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "INVERTED", nullptr, qtValSetInvertedAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "PAGESTEP", iupValGetPageStepAttrib, qtValSetPageStepAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "STEP", iupValGetStepAttrib, qtValSetStepAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "SHOWTICKS", iupValGetShowTicksAttrib, qtValSetShowTicksAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "TICKSPOS", NULL, qtValSetTicksPosAttrib, "NORMAL", NULL, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "TICKSPOS", nullptr, qtValSetTicksPosAttrib, "NORMAL", nullptr, IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "STEPONTICKS", qtValGetStepOnTicksAttrib, qtValSetStepOnTicksAttrib, IUPAF_SAMEASSYSTEM, "NO", IUPAF_DEFAULT);
 }

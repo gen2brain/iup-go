@@ -197,12 +197,12 @@ static void qtButtonSetPixmap(Ihandle* ih, const char* name, int make_inactive)
   if (!name)
     return;
 
-  QAbstractButton* button = (QAbstractButton*)ih->handle;
+  auto* button = reinterpret_cast<QAbstractButton*>(ih->handle);
   if (!button)
     return;
 
   const char* bgcolor = iupBaseNativeParentGetBgColorAttrib(ih);
-  QPixmap* pixmap = (QPixmap*)iupImageGetImage(name, ih, make_inactive, bgcolor);
+  auto* pixmap = static_cast<QPixmap*>(iupImageGetImage(name, ih, make_inactive, bgcolor));
 
   if (pixmap && !pixmap->isNull())
   {
@@ -217,7 +217,7 @@ static void qtButtonSetPixmap(Ihandle* ih, const char* name, int make_inactive)
 
 static void qtButtonUpdateLayout(Ihandle* ih)
 {
-  QAbstractButton* button = (QAbstractButton*)ih->handle;
+  auto* button = reinterpret_cast<QAbstractButton*>(ih->handle);
   if (!button)
     return;
 
@@ -252,9 +252,9 @@ extern "C" IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int* x, int* y)
     char* image = iupAttribGet(ih, "IMAGE");
     char* title = iupAttribGet(ih, "TITLE");
     char* bgcolor = iupAttribGet(ih, "BGCOLOR");
-    has_image = (image != NULL);
-    has_text = (title != NULL && *title != 0);
-    has_bgcolor = (!has_image && !has_text && bgcolor != NULL);
+    has_image = (image != nullptr);
+    has_text = (title != nullptr && *title != 0);
+    has_bgcolor = (!has_image && !has_text && bgcolor != nullptr);
     has_user_padding = (ih->data->horiz_padding > 0 || ih->data->vert_padding > 0);
 
     if (has_bgcolor)
@@ -317,7 +317,7 @@ static int qtButtonSetTitleAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->type & IUP_BUTTON_TEXT)
   {
-    QAbstractButton* button = (QAbstractButton*)ih->handle;
+    auto* button = reinterpret_cast<QAbstractButton*>(ih->handle);
 
     if (button)
     {
@@ -326,7 +326,7 @@ static int qtButtonSetTitleAttrib(Ihandle* ih, const char* value)
         char* html = iupMarkupToHtml(value ? value : "");
         button->setText(QString());
 
-        QLabel* markupLabel = button->findChild<QLabel*>("_iup_markup_label");
+        auto* markupLabel = button->findChild<QLabel*>("_iup_markup_label");
         if (!markupLabel)
         {
           markupLabel = new QLabel(button);
@@ -365,8 +365,8 @@ static int qtButtonSetTitleAttrib(Ihandle* ih, const char* value)
 
 static char* qtButtonGetAlignmentAttrib(Ihandle* ih)
 {
-  char* horiz_align2str[3] = {(char*)"ALEFT", (char*)"ACENTER", (char*)"ARIGHT"};
-  char* vert_align2str[3] = {(char*)"ATOP", (char*)"ACENTER", (char*)"ABOTTOM"};
+  char* horiz_align2str[3] = {const_cast<char*>("ALEFT"), const_cast<char*>("ACENTER"), const_cast<char*>("ARIGHT")};
+  char* vert_align2str[3] = {const_cast<char*>("ATOP"), const_cast<char*>("ACENTER"), const_cast<char*>("ABOTTOM")};
   return iupStrReturnStrf("%s:%s", horiz_align2str[ih->data->horiz_alignment],
                                    vert_align2str[ih->data->vert_alignment]);
 }
@@ -460,7 +460,7 @@ static char* qtButtonGetBgColorAttrib(Ihandle* ih)
   if (ih->data->type & IUP_BUTTON_IMAGE || iupAttribGet(ih, "IMPRESS"))
     return iupBaseNativeParentGetBgColorAttrib(ih);
 
-  return NULL;
+  return nullptr;
 }
 
 static int qtButtonSetBgColorAttrib(Ihandle* ih, const char* value)
@@ -469,7 +469,7 @@ static int qtButtonSetBgColorAttrib(Ihandle* ih, const char* value)
   if (!value || !iupStrToRGB(value, &r, &g, &b))
     return 0;
 
-  QAbstractButton* button = (QAbstractButton*)ih->handle;
+  auto* button = reinterpret_cast<QAbstractButton*>(ih->handle);
   if (button)
   {
     if (ih->data->type == IUP_BUTTON_TEXT && !iupAttribGet(ih, "TITLE"))
@@ -495,7 +495,7 @@ static int qtButtonSetFgColorAttrib(Ihandle* ih, const char* value)
   if (!iupStrToRGB(value, &r, &g, &b))
     return 0;
 
-  QAbstractButton* button = (QAbstractButton*)ih->handle;
+  auto* button = reinterpret_cast<QAbstractButton*>(ih->handle);
 
   if (button)
   {
@@ -515,7 +515,7 @@ static int qtButtonSetFontAttrib(Ihandle* ih, const char* value)
 
   if (ih->handle)
   {
-    QAbstractButton* button = (QAbstractButton*)ih->handle;
+    auto* button = reinterpret_cast<QAbstractButton*>(ih->handle);
     if (button)
       iupqtUpdateWidgetFont(ih, button);
   }
@@ -566,9 +566,9 @@ static int qtButtonSetImInactiveAttrib(Ihandle* ih, const char* value)
 
 static void qtButtonApplyFlat(Ihandle* ih, int flat)
 {
-  QPushButton* pb = dynamic_cast<QPushButton*>((QWidget*)ih->handle);
+  auto* pb = dynamic_cast<QPushButton*>(reinterpret_cast<QWidget*>(ih->handle));
   if (pb) { pb->setFlat(flat); return; }
-  QToolButton* tb = dynamic_cast<QToolButton*>((QWidget*)ih->handle);
+  auto* tb = dynamic_cast<QToolButton*>(reinterpret_cast<QWidget*>(ih->handle));
   if (tb) tb->setAutoRaise(flat);
 }
 
@@ -659,7 +659,7 @@ static void qtButtonClicked(Ihandle* ih)
 
 static void qtButtonLayoutUpdateMethod(Ihandle* ih)
 {
-  QAbstractButton* button = (QAbstractButton*)ih->handle;
+  auto* button = reinterpret_cast<QAbstractButton*>(ih->handle);
   if (!button)
     return;
 
@@ -694,7 +694,7 @@ static int qtButtonMapMethod(Ihandle* ih)
       button = new IupQtButton(ih);
   }
 
-  ih->handle = (InativeHandle*)button;
+  ih->handle = reinterpret_cast<InativeHandle*>(button);
 
   if (ih->data->type & IUP_BUTTON_IMAGE)
   {
@@ -750,7 +750,7 @@ static int qtButtonMapMethod(Ihandle* ih)
 
 static int qtButtonSetShowAsDefaultAttrib(Ihandle* ih, const char* value)
 {
-  QPushButton* pb = dynamic_cast<QPushButton*>((QWidget*)ih->handle);
+  auto* pb = dynamic_cast<QPushButton*>(reinterpret_cast<QWidget*>(ih->handle));
   if (!pb)
     return 1;
 
@@ -764,27 +764,27 @@ extern "C" IUP_SDK_API void iupdrvButtonInitClass(Iclass* ic)
   ic->Map = qtButtonMapMethod;
   ic->LayoutUpdate = qtButtonLayoutUpdateMethod;
 
-  iupClassRegisterAttribute(ic, "FONT", NULL, qtButtonSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
+  iupClassRegisterAttribute(ic, "FONT", nullptr, qtButtonSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
 
   iupClassRegisterAttribute(ic, "ACTIVE", iupBaseGetActiveAttrib, qtButtonSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
 
   iupClassRegisterAttribute(ic, "BGCOLOR", qtButtonGetBgColorAttrib, qtButtonSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
 
-  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, qtButtonSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "TITLE", NULL, qtButtonSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FGCOLOR", nullptr, qtButtonSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "TITLE", nullptr, qtButtonSetTitleAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "ALIGNMENT", qtButtonGetAlignmentAttrib, qtButtonSetAlignmentAttrib, "ACENTER:ACENTER", NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "IMAGE", NULL, qtButtonSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "IMINACTIVE", NULL, qtButtonSetImInactiveAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "IMPRESS", NULL, qtButtonSetImPressAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ALIGNMENT", qtButtonGetAlignmentAttrib, qtButtonSetAlignmentAttrib, "ACENTER:ACENTER", nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMAGE", nullptr, qtButtonSetImageAttrib, nullptr, nullptr, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMINACTIVE", nullptr, qtButtonSetImInactiveAttrib, nullptr, nullptr, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMPRESS", nullptr, qtButtonSetImPressAttrib, nullptr, nullptr, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "PADDING", iupButtonGetPaddingAttrib, qtButtonSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "SPACING", qtButtonGetSpacingAttrib, qtButtonSetSpacingAttrib, IUPAF_SAMEASSYSTEM, "2", IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "IMAGEPOSITION", qtButtonGetImagePositionAttrib, qtButtonSetImagePositionAttrib, IUPAF_SAMEASSYSTEM, "LEFT", IUPAF_NOT_MAPPED);
 
-  iupClassRegisterAttribute(ic, "FLAT", NULL, qtButtonSetFlatAttrib, NULL, NULL, IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "IMPRESSBORDER", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FLAT", nullptr, qtButtonSetFlatAttrib, nullptr, nullptr, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "IMPRESSBORDER", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "MARKUP", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "SHOWASDEFAULT", NULL, qtButtonSetShowAsDefaultAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MARKUP", nullptr, nullptr, nullptr, nullptr, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "SHOWASDEFAULT", nullptr, qtButtonSetShowAsDefaultAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
 }

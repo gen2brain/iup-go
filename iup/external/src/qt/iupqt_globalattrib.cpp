@@ -58,10 +58,10 @@ public:
     case QEvent::MouseButtonDblClick:
     case QEvent::MouseButtonRelease:
       {
-        IFiiiis cb = (IFiiiis)IupGetFunction("GLOBALBUTTON_CB");
+        auto cb = reinterpret_cast<IFiiiis>(IupGetFunction("GLOBALBUTTON_CB"));
         if (cb)
         {
-          QMouseEvent* mouse_evt = static_cast<QMouseEvent*>(event);
+          auto* mouse_evt = static_cast<QMouseEvent*>(event);
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
           int x = mouse_evt->globalPosition().x();
           int y = mouse_evt->globalPosition().y();
@@ -97,10 +97,10 @@ public:
 
     case QEvent::MouseMove:
       {
-        IFiis cb = (IFiis)IupGetFunction("GLOBALMOTION_CB");
+        auto cb = reinterpret_cast<IFiis>(IupGetFunction("GLOBALMOTION_CB"));
         if (cb)
         {
-          QMouseEvent* mouse_evt = static_cast<QMouseEvent*>(event);
+          auto* mouse_evt = static_cast<QMouseEvent*>(event);
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
           int x = mouse_evt->globalPosition().x();
           int y = mouse_evt->globalPosition().y();
@@ -119,10 +119,10 @@ public:
 
     case QEvent::Wheel:
       {
-        IFfiis cb = (IFfiis)IupGetFunction("GLOBALWHEEL_CB");
+        auto cb = reinterpret_cast<IFfiis>(IupGetFunction("GLOBALWHEEL_CB"));
         if (cb)
         {
-          QWheelEvent* wheel_evt = static_cast<QWheelEvent*>(event);
+          auto* wheel_evt = static_cast<QWheelEvent*>(event);
 
           QPoint angle_delta = wheel_evt->angleDelta();
           float delta = angle_delta.y() / 120.0f;  /* Normalize to notches (120 units per notch) */
@@ -147,7 +147,7 @@ public:
     case QEvent::KeyPress:
     case QEvent::KeyRelease:
       {
-        IFii cb = (IFii)IupGetFunction("GLOBALKEYPRESS_CB");
+        IFii cb = reinterpret_cast<IFii>(IupGetFunction("GLOBALKEYPRESS_CB"));
         if (cb)
         {
           int pressed = (event->type() == QEvent::KeyPress) ? 1 : 0;
@@ -276,7 +276,7 @@ extern "C" IUP_SDK_API char* iupdrvGetGlobal(const char* name)
 
     for (int i = 0; i < monitors_count; i++)
     {
-      int remaining = monitors_count * entry_size - (int)(pstr - str);
+      int remaining = monitors_count * entry_size - static_cast<int>(pstr - str);
       if (remaining <= 0)
         break;
       QRect geom = screens[i]->geometry();
@@ -320,7 +320,7 @@ extern "C" IUP_SDK_API char* iupdrvGetGlobal(const char* name)
     QStyle* style = QApplication::style();
     if (style)
       return iupStrReturnStr(style->objectName().toUtf8().constData());
-    return NULL;
+    return nullptr;
   }
 
 #ifndef _WIN32
@@ -335,15 +335,15 @@ extern "C" IUP_SDK_API char* iupdrvGetGlobal(const char* name)
   if (iupStrEqual(name, "SANDBOX"))
   {
     if (getenv("FLATPAK_ID"))
-      return (char*)"FLATPAK";
+      return const_cast<char*>("FLATPAK");
     if (getenv("SNAP"))
-      return (char*)"SNAP";
+      return const_cast<char*>("SNAP");
     if (getenv("APPIMAGE"))
-      return (char*)"APPIMAGE";
-    return NULL;
+      return const_cast<char*>("APPIMAGE");
+    return nullptr;
   }
 
-  return NULL;
+  return nullptr;
 }
 
 /****************************************************************************
@@ -352,7 +352,7 @@ extern "C" IUP_SDK_API char* iupdrvGetGlobal(const char* name)
 
 IUP_DRV_API int iupqtKeyDecode(QEvent* evt)
 {
-  QKeyEvent* key_evt = static_cast<QKeyEvent*>(evt);
+  auto* key_evt = static_cast<QKeyEvent*>(evt);
 
   if (!key_evt)
     return 0;

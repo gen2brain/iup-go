@@ -106,7 +106,7 @@ static int qtClipboardSetImageAttrib(Ihandle* ih, const char* value)
     return 0;
   }
 
-  QPixmap* pixmap = (QPixmap*)iupImageGetImage(value, ih, 0, NULL);
+  auto* pixmap = static_cast<QPixmap*>(iupImageGetImage(value, ih, 0, nullptr));
   if (pixmap && !pixmap->isNull())
     clipboard->setPixmap(*pixmap, mode);
 
@@ -128,7 +128,7 @@ static int qtClipboardSetNativeImageAttrib(Ihandle* ih, const char* value)
     return 0;
   }
 
-  clipboard->setPixmap(*(QPixmap*)value, mode);
+  clipboard->setPixmap(*reinterpret_cast<const QPixmap*>(value), mode);
   return 0;
 }
 
@@ -145,9 +145,9 @@ static char* qtClipboardGetNativeImageAttrib(Ihandle* ih)
   if (pixmap.isNull())
     return nullptr;
 
-  QPixmap* result = new QPixmap(pixmap);
+  auto* result = new QPixmap(pixmap);
 
-  return (char*)result;
+  return reinterpret_cast<char*>(result);
 }
 
 static char* qtClipboardGetImageAvailableAttrib(Ihandle* ih)
@@ -184,8 +184,8 @@ static int qtClipboardSetNativeVectorImageAttrib(Ihandle* ih, const char* value)
   int data_size = iupAttribGetInt(ih, "FORMATDATASIZE");
   if (data_size > 0)
   {
-    QMimeData* mimeData = new QMimeData();
-    QByteArray byteArray((const char*)value, data_size);
+    auto* mimeData = new QMimeData();
+    QByteArray byteArray(value, data_size);
 
     mimeData->setData("application/pdf", byteArray);
     clipboard->setMimeData(mimeData, mode);
@@ -215,7 +215,7 @@ static char* qtClipboardGetNativeVectorImageAttrib(Ihandle* ih)
   memcpy(data, byteArray.constData(), size);
 
   iupAttribSetInt(ih, "FORMATDATASIZE", size);
-  return (char*)data;
+  return static_cast<char*>(data);
 }
 
 static char* qtClipboardGetPDFAvailableAttrib(Ihandle* ih)
@@ -277,7 +277,7 @@ static int qtClipboardSetHTMLAttrib(Ihandle* ih, const char* value)
     return 0;
   }
 
-  QMimeData* mimeData = new QMimeData();
+  auto* mimeData = new QMimeData();
   mimeData->setHtml(QString::fromUtf8(value));
   clipboard->setMimeData(mimeData, mode);
 
@@ -340,8 +340,8 @@ static int qtClipboardSetFormatDataAttrib(Ihandle* ih, const char* value)
   if (size <= 0)
     return 0;
 
-  QMimeData* mimeData = new QMimeData();
-  QByteArray byteArray((const char*)value, size);
+  auto* mimeData = new QMimeData();
+  QByteArray byteArray(value, size);
   mimeData->setData(QString::fromUtf8(mime_type), byteArray);
 
   clipboard->setMimeData(mimeData, mode);
@@ -375,14 +375,14 @@ static char* qtClipboardGetFormatDataAttrib(Ihandle* ih)
   memcpy(data, byteArray.constData(), size);
 
   iupAttribSetInt(ih, "FORMATDATASIZE", size);
-  return (char*)data;
+  return static_cast<char*>(data);
 }
 
 static char* qtClipboardGetFormatDataStringAttrib(Ihandle* ih)
 {
   char* data = qtClipboardGetFormatDataAttrib(ih);
   if (!data)
-    return NULL;
+    return nullptr;
 
   int size = iupAttribGetInt(ih, "FORMATDATASIZE");
   data[size] = 0;
@@ -393,7 +393,7 @@ static int qtClipboardSetFormatDataStringAttrib(Ihandle* ih, const char* value)
 {
   if (value)
   {
-    int len = (int)strlen(value);
+    int len = static_cast<int>(strlen(value));
     iupAttribSetInt(ih, "FORMATDATASIZE", len + 1);
     return qtClipboardSetFormatDataAttrib(ih, value);
   }
@@ -440,7 +440,7 @@ extern "C" Iclass* iupClipboardNewClass(void)
 {
   Iclass* ic = iupClassNew(nullptr);
 
-  ic->name = (char*)"clipboard";
+  ic->name = const_cast<char*>("clipboard");
   ic->format = nullptr;
   ic->nativetype = IUP_TYPEOTHER;
   ic->childtype = IUP_CHILDNONE;

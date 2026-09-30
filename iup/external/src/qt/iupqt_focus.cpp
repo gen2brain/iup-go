@@ -48,7 +48,7 @@ extern "C" IUP_SDK_API void iupdrvSetFocus(Ihandle* ih)
   QWidget* widget = iupqtCanvasGetWidget(ih);
 
   if (!widget)
-    widget = (QWidget*)ih->handle;
+    widget = reinterpret_cast<QWidget*>(ih->handle);
 
   if (!widget)
     return;
@@ -56,7 +56,7 @@ extern "C" IUP_SDK_API void iupdrvSetFocus(Ihandle* ih)
   Ihandle* dialog = IupGetDialog(ih);
   if (dialog && dialog->handle)
   {
-    QWidget* dialog_widget = (QWidget*)dialog->handle;
+    auto* dialog_widget = reinterpret_cast<QWidget*>(dialog->handle);
 
     if (!dialog_widget->isActiveWindow())
     {
@@ -95,7 +95,7 @@ IUP_DRV_API int iupqtFocusInOutEvent(QWidget* widget, QEvent* evt, Ihandle* ih)
 
     Ihandle* dialog = IupGetDialog(ih);
     if (dialog && ih != dialog)
-      iupAttribSet(dialog, "_IUPQT_LASTFOCUS", (char*)ih);
+      iupAttribSet(dialog, "_IUPQT_LASTFOCUS", reinterpret_cast<char*>(ih));
 
     iupCallGetFocusCb(ih);
   }
@@ -121,7 +121,7 @@ IUP_DRV_API void iupqtDialogSetFocus(Ihandle* ih)
   }
   else
   {
-    Ihandle* lastfocus = (Ihandle*)iupAttribGet(ih, "_IUPQT_LASTFOCUS");
+    auto* lastfocus = reinterpret_cast<Ihandle*>(iupAttribGet(ih, "_IUPQT_LASTFOCUS"));
 
     if (iupObjectCheck(lastfocus))
     {

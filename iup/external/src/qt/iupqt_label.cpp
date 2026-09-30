@@ -156,7 +156,7 @@ protected:
     int m = margin();
     r.adjust(m, m, -m, -m);
     QString elided = fontMetrics().elidedText(text(), Qt::ElideRight, r.width());
-    painter.drawText(r, (int)alignment() | Qt::TextShowMnemonic, elided);
+    painter.drawText(r, static_cast<int>(alignment()) | Qt::TextShowMnemonic, elided);
   }
 
 private:
@@ -169,7 +169,7 @@ private:
 
 static QWidget* qtLabelGetInnerWidget(Ihandle* ih)
 {
-  IupQtEventWrapper* wrapper = (IupQtEventWrapper*)ih->handle;
+  auto* wrapper = reinterpret_cast<IupQtEventWrapper*>(ih->handle);
   if (wrapper)
     return wrapper->child_widget;
   return nullptr;
@@ -181,12 +181,12 @@ static void qtLabelSetPixmap(Ihandle* ih, const char* name, int make_inactive)
     return;
 
   QWidget* widget = qtLabelGetInnerWidget(ih);
-  QLabel* label = qobject_cast<QLabel*>(widget);
+  auto* label = qobject_cast<QLabel*>(widget);
 
   if (label)
   {
     const char* bgcolor = iupBaseNativeParentGetBgColorAttrib(ih);
-    QPixmap* pixmap = (QPixmap*)iupImageGetImage(name, ih, make_inactive, bgcolor);
+    auto* pixmap = static_cast<QPixmap*>(iupImageGetImage(name, ih, make_inactive, bgcolor));
 
     if (pixmap && !pixmap->isNull())
     {
@@ -220,7 +220,7 @@ static int qtLabelSetTitleAttrib(Ihandle* ih, const char* value)
   if (ih->data->type == IUP_LABEL_TEXT)
   {
     QWidget* widget = qtLabelGetInnerWidget(ih);
-    QLabel* label = qobject_cast<QLabel*>(widget);
+    auto* label = qobject_cast<QLabel*>(widget);
 
     if (label)
     {
@@ -284,7 +284,7 @@ static char* qtLabelGetTitleAttrib(Ihandle* ih)
       return iupAttribGet(ih, "TITLE");
 
     QWidget* widget = qtLabelGetInnerWidget(ih);
-    QLabel* label = qobject_cast<QLabel*>(widget);
+    auto* label = qobject_cast<QLabel*>(widget);
 
     if (label)
     {
@@ -301,7 +301,7 @@ static int qtLabelSetAlignmentAttrib(Ihandle* ih, const char* value)
   if (ih->data->type == IUP_LABEL_TEXT || ih->data->type == IUP_LABEL_IMAGE)
   {
     QWidget* widget = qtLabelGetInnerWidget(ih);
-    QLabel* label = qobject_cast<QLabel*>(widget);
+    auto* label = qobject_cast<QLabel*>(widget);
 
     if (!label)
       return 0;
@@ -347,8 +347,8 @@ static char* qtLabelGetAlignmentAttrib(Ihandle* ih)
 {
   if (ih->data->type != IUP_LABEL_SEP_HORIZ && ih->data->type != IUP_LABEL_SEP_VERT)
   {
-    char* horiz_align2str[3] = {(char*)"ALEFT", (char*)"ACENTER", (char*)"ARIGHT"};
-    char* vert_align2str[3] = {(char*)"ATOP", (char*)"ACENTER", (char*)"ABOTTOM"};
+    char* horiz_align2str[3] = {const_cast<char*>("ALEFT"), const_cast<char*>("ACENTER"), const_cast<char*>("ARIGHT")};
+    char* vert_align2str[3] = {const_cast<char*>("ATOP"), const_cast<char*>("ACENTER"), const_cast<char*>("ABOTTOM")};
 
     int horiz = ih->data->horiz_alignment;
     int vert = ih->data->vert_alignment;
@@ -369,7 +369,7 @@ static int qtLabelSetWordWrapAttrib(Ihandle* ih, const char* value)
   if (ih->data->type == IUP_LABEL_TEXT)
   {
     QWidget* widget = qtLabelGetInnerWidget(ih);
-    QLabel* label = qobject_cast<QLabel*>(widget);
+    auto* label = qobject_cast<QLabel*>(widget);
 
     if (label)
     {
@@ -389,7 +389,7 @@ static int qtLabelSetEllipsisAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->type == IUP_LABEL_TEXT)
   {
-    QLabel* label = qobject_cast<QLabel*>(qtLabelGetInnerWidget(ih));
+    auto* label = qobject_cast<QLabel*>(qtLabelGetInnerWidget(ih));
     if (label)
     {
       static_cast<IupQtLabel*>(label)->setEllipsis(iupStrBoolean(value) != 0);
@@ -405,7 +405,7 @@ static int qtLabelSetSelectableAttrib(Ihandle* ih, const char* value)
   if (ih->data->type == IUP_LABEL_TEXT)
   {
     QWidget* widget = qtLabelGetInnerWidget(ih);
-    QLabel* label = qobject_cast<QLabel*>(widget);
+    auto* label = qobject_cast<QLabel*>(widget);
 
     if (label)
     {
@@ -430,7 +430,7 @@ static char* qtLabelGetSelectableAttrib(Ihandle* ih)
   if (ih->data->type == IUP_LABEL_TEXT)
   {
     QWidget* widget = qtLabelGetInnerWidget(ih);
-    QLabel* label = qobject_cast<QLabel*>(widget);
+    auto* label = qobject_cast<QLabel*>(widget);
 
     if (label)
     {
@@ -449,7 +449,7 @@ static int qtLabelSetBgColorAttrib(Ihandle* ih, const char* value)
   if (!iupStrToRGB(value, &r, &g, &b))
     return 0;
 
-  IupQtEventWrapper* wrapper = (IupQtEventWrapper*)ih->handle;
+  auto* wrapper = reinterpret_cast<IupQtEventWrapper*>(ih->handle);
   QWidget* widget = qtLabelGetInnerWidget(ih);
 
   if (wrapper && widget)
@@ -481,7 +481,7 @@ static int qtLabelSetFgColorAttrib(Ihandle* ih, const char* value)
     return 0;
 
   QWidget* widget = qtLabelGetInnerWidget(ih);
-  QLabel* label = qobject_cast<QLabel*>(widget);
+  auto* label = qobject_cast<QLabel*>(widget);
 
   if (label)
   {
@@ -607,7 +607,7 @@ static int qtLabelSetSunkenAttrib(Ihandle* ih, const char* value)
   if (ih->data->type == IUP_LABEL_SEP_HORIZ || ih->data->type == IUP_LABEL_SEP_VERT)
   {
     QWidget* widget = qtLabelGetInnerWidget(ih);
-    QFrame* frame = qobject_cast<QFrame*>(widget);
+    auto* frame = qobject_cast<QFrame*>(widget);
 
     if (frame)
     {
@@ -637,7 +637,7 @@ static int qtLabelSetHtTransparentAttrib(Ihandle* ih, const char* value)
 {
   if (ih->handle)
   {
-    IupQtEventWrapper* wrapper = (IupQtEventWrapper*)ih->handle;
+    auto* wrapper = reinterpret_cast<IupQtEventWrapper*>(ih->handle);
     wrapper->setHitTransparent(iupStrBoolean(value));
     return 1;
   }
@@ -673,14 +673,14 @@ static int qtLabelMapMethod(Ihandle* ih)
 
   if (ih->data->type == IUP_LABEL_SEP_HORIZ)
   {
-    QFrame* frame = new QFrame();
+    auto* frame = new QFrame();
     frame->setFrameStyle(QFrame::HLine | QFrame::Plain);
     frame->setLineWidth(1);
     inner_widget = frame;
   }
   else if (ih->data->type == IUP_LABEL_SEP_VERT)
   {
-    QFrame* frame = new QFrame();
+    auto* frame = new QFrame();
     frame->setFrameStyle(QFrame::VLine | QFrame::Plain);
     frame->setLineWidth(1);
     inner_widget = frame;
@@ -734,10 +734,10 @@ static int qtLabelMapMethod(Ihandle* ih)
   if (!inner_widget)
     return IUP_ERROR;
 
-  IupQtEventWrapper* wrapper = new IupQtEventWrapper(ih);
+  auto* wrapper = new IupQtEventWrapper(ih);
   wrapper->setChildWidget(inner_widget);
 
-  ih->handle = (InativeHandle*)wrapper;
+  ih->handle = reinterpret_cast<InativeHandle*>(wrapper);
 
   iupqtAddToParent(ih);
 
@@ -772,32 +772,32 @@ extern "C" IUP_SDK_API void iupdrvLabelInitClass(Iclass* ic)
   /* Driver Dependent Attribute functions */
 
   /* Overwrite Common */
-  iupClassRegisterAttribute(ic, "FONT", NULL, qtLabelSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
+  iupClassRegisterAttribute(ic, "FONT", nullptr, qtLabelSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
 
   /* Overwrite Visual */
   iupClassRegisterAttribute(ic, "ACTIVE", iupBaseGetActiveAttrib, qtLabelSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
 
   /* Visual */
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, qtLabelSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", nullptr, qtLabelSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
 
   /* Special */
-  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, qtLabelSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "TITLE", qtLabelGetTitleAttrib, qtLabelSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FGCOLOR", nullptr, qtLabelSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "TITLE", qtLabelGetTitleAttrib, qtLabelSetTitleAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 
   /* IupLabel only */
-  iupClassRegisterAttribute(ic, "ALIGNMENT", qtLabelGetAlignmentAttrib, qtLabelSetAlignmentAttrib, "ALEFT:ACENTER", NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "IMAGE", qtLabelGetImageAttrib, qtLabelSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "IMINACTIVE", NULL, qtLabelSetImInactiveAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ALIGNMENT", qtLabelGetAlignmentAttrib, qtLabelSetAlignmentAttrib, "ALEFT:ACENTER", nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMAGE", qtLabelGetImageAttrib, qtLabelSetImageAttrib, nullptr, nullptr, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMINACTIVE", nullptr, qtLabelSetImInactiveAttrib, nullptr, nullptr, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "PADDING", iupLabelGetPaddingAttrib, qtLabelSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
-  iupClassRegisterAttribute(ic, "WORDWRAP", NULL, qtLabelSetWordWrapAttrib, NULL, NULL, IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "ELLIPSIS", NULL, qtLabelSetEllipsisAttrib, NULL, NULL, IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "SUNKEN", NULL, qtLabelSetSunkenAttrib, NULL, NULL, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "WORDWRAP", nullptr, qtLabelSetWordWrapAttrib, nullptr, nullptr, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "ELLIPSIS", nullptr, qtLabelSetEllipsisAttrib, nullptr, nullptr, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "SUNKEN", nullptr, qtLabelSetSunkenAttrib, nullptr, nullptr, IUPAF_DEFAULT);
 
   /* IupLabel Qt specific */
   iupClassRegisterAttribute(ic, "SELECTABLE", qtLabelGetSelectableAttrib, qtLabelSetSelectableAttrib, IUPAF_SAMEASSYSTEM, "NO", IUPAF_DEFAULT|IUPAF_NO_INHERIT);
 
   /* IupLabel Windows only */
-  iupClassRegisterAttribute(ic, "HTTRANSPARENT", NULL, qtLabelSetHtTransparentAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "HTTRANSPARENT", nullptr, qtLabelSetHtTransparentAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "MARKUP", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "MARKUP", nullptr, nullptr, nullptr, nullptr, IUPAF_DEFAULT);
 }
