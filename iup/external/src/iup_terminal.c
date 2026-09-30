@@ -429,6 +429,7 @@ static int itermRedraw_CB(Ihandle* ih)
       unsigned short style = (unsigned short)(cell->flags & ITERM_FL_STYLEMASK);
       int start = c, len = 0, run_cells, has_glyph = 0;
       int x = ITERM_PADDING + c * ih->data->ch_w;
+      int solo = (cell->cp >= 0x80 || cell->combo);
 
       itermCellColors(ih, cell, &fg, &bg);
       if (itermCellSelected(ih, line_id, c))
@@ -440,6 +441,9 @@ static int itermRedraw_CB(Ihandle* ih)
       {
         ItermCell* rc = &line->cells[c];
         unsigned int rfg, rbg;
+        /* a non-ASCII glyph may come from a fallback font with another advance, keep it on its own cell */
+        if (c > start && !(rc->flags & ITERM_FL_WIDECONT) && (solo || rc->cp >= 0x80 || rc->combo))
+          break;
         if ((unsigned short)(rc->flags & ITERM_FL_STYLEMASK) != style)
           break;
         itermCellColors(ih, rc, &rfg, &rbg);
