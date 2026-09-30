@@ -69,7 +69,7 @@ IupHaikuCameraConsumer::IupHaikuCameraConsumer(Ihandle* ih)
     BMediaEventLooper(),
     BBufferConsumer(B_MEDIA_RAW_VIDEO),
     fIh(ih),
-    fRgb(NULL),
+    fRgb(nullptr),
     fRgbSize(0)
 {
   AddNodeKind(B_PHYSICAL_OUTPUT);
@@ -87,7 +87,7 @@ IupHaikuCameraConsumer::~IupHaikuCameraConsumer()
 BMediaAddOn* IupHaikuCameraConsumer::AddOn(int32* cookie) const
 {
   *cookie = 0;
-  return NULL;
+  return nullptr;
 }
 
 void IupHaikuCameraConsumer::NodeRegistered()
@@ -200,23 +200,23 @@ status_t IupHaikuCameraConsumer::FormatChanged(const media_source& producer, con
 void IupHaikuCameraConsumer::Deliver(BBuffer* buffer)
 {
   const media_raw_video_format& video = fInput.format.u.raw_video;
-  int width = (int)video.display.line_width;
-  int height = (int)video.display.line_count;
-  int stride = (int)video.display.bytes_per_row;
-  const unsigned char* src = (const unsigned char*)buffer->Data();
+  int width = static_cast<int>(video.display.line_width);
+  int height = static_cast<int>(video.display.line_count);
+  int stride = static_cast<int>(video.display.bytes_per_row);
+  const auto* src = static_cast<const unsigned char*>(buffer->Data());
   unsigned char* dst;
   int x, y;
 
   if (stride <= 0)
     stride = width * 4;
-  if (width <= 0 || height <= 0 || (size_t)(stride * height) > buffer->SizeUsed())
+  if (width <= 0 || height <= 0 || static_cast<size_t>(stride * height) > buffer->SizeUsed())
     return;
 
   if (fRgbSize != width * height * 3)
   {
     free(fRgb);
     fRgbSize = width * height * 3;
-    fRgb = (unsigned char*)malloc(fRgbSize);
+    fRgb = static_cast<unsigned char*>(malloc(fRgbSize));
   }
 
   dst = fRgb;
@@ -245,7 +245,7 @@ void IupHaikuCameraConsumer::HandleEvent(const media_timed_event* event, bigtime
     break;
   case BTimedEventQueue::B_HANDLE_BUFFER:
   {
-    BBuffer* buffer = (BBuffer*)event->pointer;
+    auto* buffer = static_cast<BBuffer*>(event->pointer);
     if (RunState() == B_STARTED && fInput.source != media_source::null)
       Deliver(buffer);
     buffer->Recycle();
@@ -279,7 +279,7 @@ char* iupdrvCameraGetDeviceName(int index)
   char* name;
 
   if (index != 0 || !roster || roster->GetVideoInput(&node) != B_OK)
-    return NULL;
+    return nullptr;
   if (roster->GetLiveNodeInfo(node, &info) == B_OK)
     name = iupStrReturnStr(info.name);
   else
@@ -291,7 +291,7 @@ char* iupdrvCameraGetDeviceName(int index)
 char* iupdrvCameraGetPermission(Ihandle* ih)
 {
   (void)ih;
-  return iupdrvCameraGetDeviceCount() ? (char*)"GRANTED" : (char*)"UNAVAILABLE";
+  return iupdrvCameraGetDeviceCount() ? const_cast<char*>("GRANTED") : const_cast<char*>("UNAVAILABLE");
 }
 
 static void haikuCameraRelease(IhaikuCamera* camera)
@@ -326,7 +326,7 @@ int iupdrvCameraStart(Ihandle* ih, int device, int* width, int* height, int* fps
     return 0;
   }
 
-  camera = (IhaikuCamera*)calloc(1, sizeof(IhaikuCamera));
+  camera = static_cast<IhaikuCamera*>(calloc(1, sizeof(IhaikuCamera)));
   camera->producer = media_node::null;
   camera->roster = BMediaRoster::Roster();
   if (!camera->roster || camera->roster->GetVideoInput(&camera->producer) != B_OK)
@@ -342,7 +342,7 @@ int iupdrvCameraStart(Ihandle* ih, int device, int* width, int* height, int* fps
   if (camera->roster->RegisterNode(camera->consumer) != B_OK)
   {
     delete camera->consumer;
-    camera->consumer = NULL;
+    camera->consumer = nullptr;
     haikuCameraRelease(camera);
     iupCameraError(ih, "Cannot register the capture node");
     return 0;
@@ -399,22 +399,22 @@ int iupdrvCameraStart(Ihandle* ih, int device, int* width, int* height, int* fps
     return 0;
   }
 
-  *width = (int)camera->output.format.u.raw_video.display.line_width;
-  *height = (int)camera->output.format.u.raw_video.display.line_count;
+  *width = static_cast<int>(camera->output.format.u.raw_video.display.line_width);
+  *height = static_cast<int>(camera->output.format.u.raw_video.display.line_count);
   if (camera->output.format.u.raw_video.field_rate > 0)
-    *fps = (int)(camera->output.format.u.raw_video.field_rate + 0.5f);
-  iupAttribSet(ih, "_IUP_CAMERA", (char*)camera);
+    *fps = static_cast<int>(camera->output.format.u.raw_video.field_rate + 0.5f);
+  iupAttribSet(ih, "_IUP_CAMERA", reinterpret_cast<char*>(camera));
   return 1;
 }
 
 void iupdrvCameraStop(Ihandle* ih)
 {
-  IhaikuCamera* camera = (IhaikuCamera*)iupAttribGet(ih, "_IUP_CAMERA");
+  auto* camera = reinterpret_cast<IhaikuCamera*>(iupAttribGet(ih, "_IUP_CAMERA"));
   if (!camera)
     return;
 
   haikuCameraRelease(camera);
-  iupAttribSet(ih, "_IUP_CAMERA", NULL);
+  iupAttribSet(ih, "_IUP_CAMERA", nullptr);
 }
 
 void iupdrvCameraInitClass(Iclass* ic)

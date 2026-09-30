@@ -45,7 +45,7 @@ typedef struct _IwinCamera
   unsigned char* rgb;
 } IwinCamera;
 
-static int winCameraLoad(void)
+static int winCameraLoad()
 {
   HMODULE mfplat, mf, mfreadwrite;
 
@@ -59,11 +59,11 @@ static int winCameraLoad(void)
   if (!mfplat || !mf || !mfreadwrite)
     return 0;
 
-  winMFStartup = (MFStartupFunc)GetProcAddress(mfplat, "MFStartup");
-  winMFCreateAttributes = (MFCreateAttributesFunc)GetProcAddress(mfplat, "MFCreateAttributes");
-  winMFCreateMediaType = (MFCreateMediaTypeFunc)GetProcAddress(mfplat, "MFCreateMediaType");
-  winMFEnumDeviceSources = (MFEnumDeviceSourcesFunc)GetProcAddress(mf, "MFEnumDeviceSources");
-  winMFCreateSourceReaderFromMediaSource = (MFCreateSourceReaderFromMediaSourceFunc)GetProcAddress(mfreadwrite, "MFCreateSourceReaderFromMediaSource");
+  winMFStartup = reinterpret_cast<MFStartupFunc>(GetProcAddress(mfplat, "MFStartup"));
+  winMFCreateAttributes = reinterpret_cast<MFCreateAttributesFunc>(GetProcAddress(mfplat, "MFCreateAttributes"));
+  winMFCreateMediaType = reinterpret_cast<MFCreateMediaTypeFunc>(GetProcAddress(mfplat, "MFCreateMediaType"));
+  winMFEnumDeviceSources = reinterpret_cast<MFEnumDeviceSourcesFunc>(GetProcAddress(mf, "MFEnumDeviceSources"));
+  winMFCreateSourceReaderFromMediaSource = reinterpret_cast<MFCreateSourceReaderFromMediaSourceFunc>(GetProcAddress(mfreadwrite, "MFCreateSourceReaderFromMediaSource"));
   if (!winMFStartup || !winMFCreateAttributes || !winMFCreateMediaType || !winMFEnumDeviceSources || !winMFCreateSourceReaderFromMediaSource)
     return 0;
 
@@ -76,18 +76,18 @@ static int winCameraLoad(void)
 
 static IMFActivate** winCameraEnumerate(UINT32* count)
 {
-  IMFAttributes* attributes = NULL;
-  IMFActivate** devices = NULL;
+  IMFAttributes* attributes = nullptr;
+  IMFActivate** devices = nullptr;
 
   *count = 0;
   if (!winCameraLoad())
-    return NULL;
+    return nullptr;
 
   if (FAILED(winMFCreateAttributes(&attributes, 1)))
-    return NULL;
+    return nullptr;
   attributes->SetGUID(MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE, MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_GUID);
   if (FAILED(winMFEnumDeviceSources(attributes, &devices, count)))
-    devices = NULL;
+    devices = nullptr;
   attributes->Release();
   return devices;
 }
@@ -111,27 +111,27 @@ int iupdrvCameraGetDeviceCount(void)
   IMFActivate** devices = winCameraEnumerate(&count);
   if (devices)
     winCameraFreeDevices(devices, count);
-  return (int)count;
+  return static_cast<int>(count);
 }
 
 char* iupdrvCameraGetDeviceName(int index)
 {
   UINT32 count;
   IMFActivate** devices = winCameraEnumerate(&count);
-  char* name = NULL;
+  char* name = nullptr;
 
   if (!devices)
-    return NULL;
+    return nullptr;
 
-  if (index >= 0 && (UINT32)index < count)
+  if (index >= 0 && static_cast<UINT32>(index) < count)
   {
-    WCHAR* wname = NULL;
+    WCHAR* wname = nullptr;
     UINT32 length = 0;
     if (SUCCEEDED(devices[index]->GetAllocatedString(MF_DEVSOURCE_ATTRIBUTE_FRIENDLY_NAME, &wname, &length)))
     {
-      int size = WideCharToMultiByte(CP_UTF8, 0, wname, -1, NULL, 0, NULL, NULL);
+      int size = WideCharToMultiByte(CP_UTF8, 0, wname, -1, nullptr, 0, nullptr, nullptr);
       char* utf8 = iupStrGetMemory(size);
-      WideCharToMultiByte(CP_UTF8, 0, wname, -1, utf8, size, NULL, NULL);
+      WideCharToMultiByte(CP_UTF8, 0, wname, -1, utf8, size, nullptr, nullptr);
       name = utf8;
       CoTaskMemFree(wname);
     }
@@ -144,7 +144,7 @@ char* iupdrvCameraGetDeviceName(int index)
 char* iupdrvCameraGetPermission(Ihandle* ih)
 {
   (void)ih;
-  return (char*)(winCameraLoad() ? "GRANTED" : "UNAVAILABLE");
+  return const_cast<char*>(winCameraLoad() ? "GRANTED" : "UNAVAILABLE");
 }
 
 static void winCameraConsider(IMFMediaType* type, int req_width, int req_height, int req_fps, DWORD index, DWORD* best_index, long* best_score)
@@ -156,11 +156,11 @@ static void winCameraConsider(IMFMediaType* type, int req_width, int req_height,
   if (FAILED(MFGetAttributeSize(type, MF_MT_FRAME_SIZE, &width, &height)) || !width || !height)
     return;
   MFGetAttributeRatio(type, MF_MT_FRAME_RATE, &num, &den);
-  fps = den ? (int)(num / den) : 0;
+  fps = den ? static_cast<int>(num / den) : 0;
 
-  score = labs((long)width * (long)height - (long)req_width * (long)req_height) * 4;
+  score = labs(static_cast<long>(width) * static_cast<long>(height) - static_cast<long>(req_width) * static_cast<long>(req_height)) * 4;
   if (fps && fps < req_fps)
-    score += (long)(req_fps - fps) * 100000;
+    score += static_cast<long>(req_fps - fps) * 100000;
 
   if (*best_score < 0 || score < *best_score)
   {
@@ -171,7 +171,7 @@ static void winCameraConsider(IMFMediaType* type, int req_width, int req_height,
 
 static int winCameraChooseType(IMFSourceReader* reader, int req_width, int req_height, int req_fps, int* width, int* height, int* fps)
 {
-  IMFMediaType* type = NULL;
+  IMFMediaType* type = nullptr;
   DWORD index = 0, best_index = 0;
   long best_score = -1;
   UINT32 w = 0, h = 0, num = 0, den = 1;
@@ -187,7 +187,7 @@ static int winCameraChooseType(IMFSourceReader* reader, int req_width, int req_h
 
   if (FAILED(reader->GetNativeMediaType(MF_SOURCE_READER_FIRST_VIDEO_STREAM, best_index, &type)))
     return 0;
-  if (FAILED(reader->SetCurrentMediaType(MF_SOURCE_READER_FIRST_VIDEO_STREAM, NULL, type)))
+  if (FAILED(reader->SetCurrentMediaType(MF_SOURCE_READER_FIRST_VIDEO_STREAM, nullptr, type)))
   {
     type->Release();
     return 0;
@@ -196,25 +196,25 @@ static int winCameraChooseType(IMFSourceReader* reader, int req_width, int req_h
   MFGetAttributeRatio(type, MF_MT_FRAME_RATE, &num, &den);
   type->Release();
 
-  *width = (int)w;
-  *height = (int)h;
+  *width = static_cast<int>(w);
+  *height = static_cast<int>(h);
   if (den && num)
-    *fps = (int)(num / den);
+    *fps = static_cast<int>(num / den);
   return 1;
 }
 
 static int winCameraSetOutput(IwinCamera* camera, const GUID& subtype)
 {
-  IMFMediaType* type = NULL;
-  IMFMediaType* current = NULL;
+  IMFMediaType* type = nullptr;
+  IMFMediaType* current = nullptr;
   HRESULT hr;
 
   if (FAILED(winMFCreateMediaType(&type)))
     return 0;
   type->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Video);
   type->SetGUID(MF_MT_SUBTYPE, subtype);
-  MFSetAttributeSize(type, MF_MT_FRAME_SIZE, (UINT32)camera->width, (UINT32)camera->height);
-  hr = camera->reader->SetCurrentMediaType(MF_SOURCE_READER_FIRST_VIDEO_STREAM, NULL, type);
+  MFSetAttributeSize(type, MF_MT_FRAME_SIZE, static_cast<UINT32>(camera->width), static_cast<UINT32>(camera->height));
+  hr = camera->reader->SetCurrentMediaType(MF_SOURCE_READER_FIRST_VIDEO_STREAM, nullptr, type);
   type->Release();
   if (FAILED(hr))
     return 0;
@@ -226,8 +226,8 @@ static int winCameraSetOutput(IwinCamera* camera, const GUID& subtype)
     INT32 stride = 0;
     if (SUCCEEDED(MFGetAttributeSize(current, MF_MT_FRAME_SIZE, &w, &h)) && w && h)
     {
-      camera->width = (int)w;
-      camera->height = (int)h;
+      camera->width = static_cast<int>(w);
+      camera->height = static_cast<int>(h);
     }
     if (SUCCEEDED(current->GetUINT32(MF_MT_DEFAULT_STRIDE, (UINT32*)&stride)))
       camera->stride = stride;
@@ -238,7 +238,7 @@ static int winCameraSetOutput(IwinCamera* camera, const GUID& subtype)
 
 static unsigned char winCameraClamp(int value)
 {
-  return (unsigned char)(value < 0 ? 0 : value > 255 ? 255 : value);
+  return static_cast<unsigned char>(value < 0 ? 0 : value > 255 ? 255 : value);
 }
 
 static void winCameraConvert(IwinCamera* camera, const unsigned char* src, DWORD length)
@@ -250,7 +250,7 @@ static void winCameraConvert(IwinCamera* camera, const unsigned char* src, DWORD
   {
     LONG stride = camera->stride > 0 ? camera->stride : width;
     const unsigned char* uv = src + stride * height;
-    if ((DWORD)(stride * height * 3 / 2) > length)
+    if (static_cast<DWORD>(stride * height * 3 / 2) > length)
       return;
     for (y = 0; y < height; y++)
     {
@@ -272,8 +272,8 @@ static void winCameraConvert(IwinCamera* camera, const unsigned char* src, DWORD
     LONG stride = camera->stride ? camera->stride : width * 4;
     const unsigned char* base = src;
     if (stride < 0)
-      base = src + (LONG)(height - 1) * (-stride);
-    if ((DWORD)(labs(stride) * height) > length)
+      base = src + static_cast<LONG>(height - 1) * (-stride);
+    if (static_cast<DWORD>(labs(stride) * height) > length)
       return;
     for (y = 0; y < height; y++)
     {
@@ -290,15 +290,15 @@ static void winCameraConvert(IwinCamera* camera, const unsigned char* src, DWORD
 
 static DWORD WINAPI winCameraThread(LPVOID arg)
 {
-  IwinCamera* camera = (IwinCamera*)arg;
+  auto* camera = static_cast<IwinCamera*>(arg);
 
-  CoInitializeEx(NULL, COINIT_MULTITHREADED);
+  CoInitializeEx(nullptr, COINIT_MULTITHREADED);
 
   while (!camera->quit)
   {
     DWORD stream = 0, flags = 0;
     LONGLONG timestamp = 0;
-    IMFSample* sample = NULL;
+    IMFSample* sample = nullptr;
     HRESULT hr = camera->reader->ReadSample(MF_SOURCE_READER_FIRST_VIDEO_STREAM, 0, &stream, &flags, &timestamp, &sample);
 
     if (FAILED(hr))
@@ -314,12 +314,12 @@ static DWORD WINAPI winCameraThread(LPVOID arg)
     if (!sample)
       continue;
 
-    IMFMediaBuffer* buffer = NULL;
+    IMFMediaBuffer* buffer = nullptr;
     if (SUCCEEDED(sample->ConvertToContiguousBuffer(&buffer)))
     {
-      BYTE* data = NULL;
+      BYTE* data = nullptr;
       DWORD length = 0;
-      if (SUCCEEDED(buffer->Lock(&data, NULL, &length)))
+      if (SUCCEEDED(buffer->Lock(&data, nullptr, &length)))
       {
         winCameraConvert(camera, data, length);
         buffer->Unlock();
@@ -351,12 +351,12 @@ int iupdrvCameraStart(Ihandle* ih, int device, int* width, int* height, int* fps
 {
   UINT32 count;
   IMFActivate** devices;
-  IMFAttributes* attributes = NULL;
+  IMFAttributes* attributes = nullptr;
   IwinCamera* camera;
   HRESULT hr;
 
   devices = winCameraEnumerate(&count);
-  if (!devices || device < 0 || (UINT32)device >= count)
+  if (!devices || device < 0 || static_cast<UINT32>(device) >= count)
   {
     if (devices)
       winCameraFreeDevices(devices, count);
@@ -364,10 +364,10 @@ int iupdrvCameraStart(Ihandle* ih, int device, int* width, int* height, int* fps
     return 0;
   }
 
-  camera = (IwinCamera*)calloc(1, sizeof(IwinCamera));
+  camera = static_cast<IwinCamera*>(calloc(1, sizeof(IwinCamera)));
   camera->ih = ih;
 
-  hr = devices[device]->ActivateObject(IID_IMFMediaSource, (void**)&camera->source);
+  hr = devices[device]->ActivateObject(IID_IMFMediaSource, reinterpret_cast<void**>(&camera->source));
   winCameraFreeDevices(devices, count);
   if (FAILED(hr))
   {
@@ -392,8 +392,8 @@ int iupdrvCameraStart(Ihandle* ih, int device, int* width, int* height, int* fps
     return 0;
   }
 
-  camera->reader->SetStreamSelection((DWORD)MF_SOURCE_READER_ALL_STREAMS, FALSE);
-  camera->reader->SetStreamSelection((DWORD)MF_SOURCE_READER_FIRST_VIDEO_STREAM, TRUE);
+  camera->reader->SetStreamSelection(static_cast<DWORD>(MF_SOURCE_READER_ALL_STREAMS), FALSE);
+  camera->reader->SetStreamSelection(static_cast<DWORD>(MF_SOURCE_READER_FIRST_VIDEO_STREAM), TRUE);
 
   if (!winCameraChooseType(camera->reader, *width, *height, *fps, &camera->width, &camera->height, fps))
   {
@@ -413,8 +413,8 @@ int iupdrvCameraStart(Ihandle* ih, int device, int* width, int* height, int* fps
     return 0;
   }
 
-  camera->rgb = (unsigned char*)malloc(camera->width * camera->height * 3);
-  camera->thread = CreateThread(NULL, 0, winCameraThread, camera, 0, NULL);
+  camera->rgb = static_cast<unsigned char*>(malloc(camera->width * camera->height * 3));
+  camera->thread = CreateThread(nullptr, 0, winCameraThread, camera, 0, nullptr);
   if (!camera->thread)
   {
     winCameraRelease(camera);
@@ -424,13 +424,13 @@ int iupdrvCameraStart(Ihandle* ih, int device, int* width, int* height, int* fps
 
   *width = camera->width;
   *height = camera->height;
-  iupAttribSet(ih, "_IUP_CAMERA", (char*)camera);
+  iupAttribSet(ih, "_IUP_CAMERA", reinterpret_cast<char*>(camera));
   return 1;
 }
 
 void iupdrvCameraStop(Ihandle* ih)
 {
-  IwinCamera* camera = (IwinCamera*)iupAttribGet(ih, "_IUP_CAMERA");
+  auto* camera = reinterpret_cast<IwinCamera*>(iupAttribGet(ih, "_IUP_CAMERA"));
   if (!camera)
     return;
 
@@ -438,7 +438,7 @@ void iupdrvCameraStop(Ihandle* ih)
   WaitForSingleObject(camera->thread, INFINITE);
   CloseHandle(camera->thread);
   winCameraRelease(camera);
-  iupAttribSet(ih, "_IUP_CAMERA", NULL);
+  iupAttribSet(ih, "_IUP_CAMERA", nullptr);
 }
 
 void iupdrvCameraInitClass(Iclass* ic)

@@ -23,9 +23,9 @@ static int ihaiku_audio_ready = 0;
 
 static void haikuAudioPlayBuffer(void* cookie, void* buffer, size_t size, const media_raw_audio_format& format)
 {
-  IhaikuAudioDevice* device = (IhaikuAudioDevice*)cookie;
-  ma_uint32 frames = (ma_uint32)(size / (format.channel_count * sizeof(float)));
-  ma_device_handle_backend_data_callback(&device->device, buffer, NULL, frames);
+  auto* device = static_cast<IhaikuAudioDevice*>(cookie);
+  auto frames = static_cast<ma_uint32>(size / (format.channel_count * sizeof(float)));
+  ma_device_handle_backend_data_callback(&device->device, buffer, nullptr, frames);
 }
 
 static ma_result haikuAudioEnumerateDevices(ma_context* context, ma_enum_devices_callback_proc callback, void* user_data)
@@ -56,7 +56,7 @@ static ma_result haikuAudioGetDeviceInfo(ma_context* context, ma_device_type typ
 
 static ma_result haikuAudioDeviceInit(ma_device* base, const ma_device_config* config, ma_device_descriptor* playback, ma_device_descriptor* capture)
 {
-  IhaikuAudioDevice* device = (IhaikuAudioDevice*)base;
+  auto* device = reinterpret_cast<IhaikuAudioDevice*>(base);
   media_raw_audio_format format = media_raw_audio_format::wildcard;
   (void)capture;
 
@@ -71,23 +71,23 @@ static ma_result haikuAudioDeviceInit(ma_device* base, const ma_device_config* c
 
   format.format = media_raw_audio_format::B_AUDIO_FLOAT;
   format.byte_order = B_MEDIA_HOST_ENDIAN;
-  format.frame_rate = (float)playback->sampleRate;
+  format.frame_rate = static_cast<float>(playback->sampleRate);
   format.channel_count = playback->channels;
   format.buffer_size = playback->periodSizeInFrames * playback->channels * sizeof(float);
 
-  device->player = new BSoundPlayer(&format, "IupAudio", haikuAudioPlayBuffer, NULL, device);
+  device->player = new BSoundPlayer(&format, "IupAudio", haikuAudioPlayBuffer, nullptr, device);
   if (device->player->InitCheck() != B_OK)
   {
     delete device->player;
-    device->player = NULL;
+    device->player = nullptr;
     return MA_FAILED_TO_OPEN_BACKEND_DEVICE;
   }
 
   format = device->player->Format();
   playback->format = ma_format_f32;
   playback->channels = format.channel_count;
-  playback->sampleRate = (ma_uint32)format.frame_rate;
-  playback->periodSizeInFrames = (ma_uint32)(format.buffer_size / (format.channel_count * sizeof(float)));
+  playback->sampleRate = static_cast<ma_uint32>(format.frame_rate);
+  playback->periodSizeInFrames = static_cast<ma_uint32>(format.buffer_size / (format.channel_count * sizeof(float)));
   playback->periodCount = 1;
   ma_channel_map_init_standard(ma_standard_channel_map_default, playback->channelMap, sizeof(playback->channelMap) / sizeof(playback->channelMap[0]), playback->channels);
   return MA_SUCCESS;
@@ -95,21 +95,21 @@ static ma_result haikuAudioDeviceInit(ma_device* base, const ma_device_config* c
 
 static ma_result haikuAudioDeviceUninit(ma_device* base)
 {
-  IhaikuAudioDevice* device = (IhaikuAudioDevice*)base;
+  auto* device = reinterpret_cast<IhaikuAudioDevice*>(base);
   delete device->player;
-  device->player = NULL;
+  device->player = nullptr;
   return MA_SUCCESS;
 }
 
 static ma_result haikuAudioDeviceStart(ma_device* base)
 {
-  IhaikuAudioDevice* device = (IhaikuAudioDevice*)base;
+  auto* device = reinterpret_cast<IhaikuAudioDevice*>(base);
   return device->player->Start() == B_OK ? MA_SUCCESS : MA_FAILED_TO_START_BACKEND_DEVICE;
 }
 
 static ma_result haikuAudioDeviceStop(ma_device* base)
 {
-  IhaikuAudioDevice* device = (IhaikuAudioDevice*)base;
+  auto* device = reinterpret_cast<IhaikuAudioDevice*>(base);
   device->player->Stop();
   return MA_SUCCESS;
 }
@@ -136,7 +136,7 @@ static ma_result haikuAudioContextInit(ma_context* context, const ma_context_con
 static void haikuAudioEngineData(ma_device* device, void* output, const void* input, ma_uint32 frames)
 {
   (void)input;
-  ma_engine_read_pcm_frames((ma_engine*)device->pUserData, output, frames, NULL);
+  ma_engine_read_pcm_frames(static_cast<ma_engine*>(device->pUserData), output, frames, nullptr);
 }
 
 extern "C" ma_device* iupdrvAudioDeviceInit(ma_engine* engine)
@@ -147,7 +147,7 @@ extern "C" ma_device* iupdrvAudioDeviceInit(ma_engine* engine)
 
   context_config.custom.onContextInit = haikuAudioContextInit;
   if (ma_context_init(backends, 1, &context_config, &ihaiku_audio_context) != MA_SUCCESS)
-    return NULL;
+    return nullptr;
 
   device_config = ma_device_config_init(ma_device_type_playback);
   device_config.playback.format = ma_format_f32;
@@ -156,7 +156,7 @@ extern "C" ma_device* iupdrvAudioDeviceInit(ma_engine* engine)
   if (ma_device_init(&ihaiku_audio_context, &device_config, &ihaiku_audio_device.device) != MA_SUCCESS)
   {
     ma_context_uninit(&ihaiku_audio_context);
-    return NULL;
+    return nullptr;
   }
 
   ihaiku_audio_ready = 1;
