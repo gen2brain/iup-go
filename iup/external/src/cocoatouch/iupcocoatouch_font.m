@@ -279,6 +279,8 @@ IUP_SDK_API int iupdrvSetFontAttrib(Ihandle* ih, const char* value)
 	{
 		id widget = (id)ih->handle;
 		UIFont* native_font = [font nativeFont];
+		if ([widget isKindOfClass:[IupCocoaTouchTextScroll class]])
+			widget = [(IupCocoaTouchTextScroll*)widget textView];
 
 		if ([widget isKindOfClass:[UITextView class]])
 		{

@@ -125,7 +125,22 @@ static BOOL cocoaTouchTextIsReturnPress(UIPress* press)
 {
 	(void)note;
 	_contentWidth = -1;
-	if (_unwrapped) [self setNeedsLayout];
+	if (_unwrapped)
+	{
+		[self setNeedsLayout];
+		[self.superview setNeedsLayout];
+	}
+}
+
+- (CGFloat)unwrappedWidth
+{
+	if (_contentWidth < 0)
+	{
+		CGRect r = [self.textStorage boundingRectWithSize:CGSizeMake(CGFLOAT_MAX, CGFLOAT_MAX)
+		                                          options:NSStringDrawingUsesLineFragmentOrigin context:nil];
+		_contentWidth = ceil(r.size.width) + 2 * self.textContainer.lineFragmentPadding;
+	}
+	return _contentWidth + self.textContainerInset.left + self.textContainerInset.right;
 }
 
 - (NSArray<UIKeyCommand*>*)keyCommands
@@ -151,14 +166,8 @@ static BOOL cocoaTouchTextIsReturnPress(UIPress* press)
 	[super layoutSubviews];
 	if (!_unwrapped) return;
 	NSTextContainer* tc = self.textContainer;
-	if (_contentWidth < 0)
-	{
-		CGRect r = [self.textStorage boundingRectWithSize:CGSizeMake(CGFLOAT_MAX, CGFLOAT_MAX)
-		                                          options:NSStringDrawingUsesLineFragmentOrigin context:nil];
-		_contentWidth = ceil(r.size.width) + 2 * tc.lineFragmentPadding;
-	}
 	UIEdgeInsets inset = self.textContainerInset;
-	CGFloat width = MAX(self.bounds.size.width - inset.left - inset.right, _contentWidth);
+	CGFloat width = MAX(self.bounds.size.width, [self unwrappedWidth]) - inset.left - inset.right;
 	if (tc.widthTracksTextView || tc.size.width != width)
 	{
 		tc.widthTracksTextView = NO;
@@ -180,6 +189,72 @@ static BOOL cocoaTouchTextIsReturnPress(UIPress* press)
 	for (UIPress* p in presses)
 		if (iupCocoaTouchKeyEvent(_ihandle, p, false)) handled = YES;
 	if (!handled) [super pressesEnded:presses withEvent:event];
+}
+
+@end
+
+
+@implementation IupCocoaTouchTextScroll
+
+- (instancetype)initWithTextView:(IupCocoaTouchTextView*)tv
+{
+	self = [super initWithFrame:CGRectZero];
+	if (self)
+	{
+		self.textView = tv;
+		self.showsVerticalScrollIndicator = NO;
+		[self addSubview:tv];
+	}
+	return self;
+}
+
+- (void)dealloc
+{
+	[_textView release];
+	[super dealloc];
+}
+
+- (void)layoutSubviews
+{
+	[super layoutSubviews];
+	CGSize size = self.bounds.size;
+	CGFloat width = MAX(size.width, [(IupCocoaTouchTextView*)_textView unwrappedWidth]);
+	if (_textView.frame.size.width != width || _textView.frame.size.height != size.height)
+		_textView.frame = CGRectMake(0, 0, width, size.height);
+	if (self.contentSize.width != width || self.contentSize.height != size.height)
+		self.contentSize = CGSizeMake(width, size.height);
+}
+
+- (void)revealRange:(NSRange)range
+{
+	[self layoutIfNeeded];
+	[_textView layoutIfNeeded];
+	UITextPosition* pos = [_textView positionFromPosition:_textView.beginningOfDocument offset:(NSInteger)NSMaxRange(range)];
+	if (!pos) return;
+	CGRect caret = [_textView convertRect:[_textView caretRectForPosition:pos] toView:self];
+	caret.origin.y = self.contentOffset.y;
+	caret.size.height = 1;
+	[self scrollRectToVisible:caret animated:NO];
+}
+
+- (BOOL)canBecomeFirstResponder
+{
+	return [_textView canBecomeFirstResponder];
+}
+
+- (BOOL)becomeFirstResponder
+{
+	return [_textView becomeFirstResponder];
+}
+
+- (BOOL)resignFirstResponder
+{
+	return [_textView resignFirstResponder];
+}
+
+- (BOOL)isFirstResponder
+{
+	return [_textView isFirstResponder];
 }
 
 @end
@@ -261,7 +336,15 @@ static UITextView* cocoaTouchTextView(Ihandle* ih)
 {
 	if (!ih) return nil;
 	id h = ih->handle;
+	if ([h isKindOfClass:[IupCocoaTouchTextScroll class]]) return [(IupCocoaTouchTextScroll*)h textView];
 	return [h isKindOfClass:[UITextView class]] ? (UITextView*)h : nil;
+}
+
+static void cocoaTouchTextScrollRangeToVisible(UITextView* v, NSRange range)
+{
+	[v scrollRangeToVisible:range];
+	if ([v.superview isKindOfClass:[IupCocoaTouchTextScroll class]])
+		[(IupCocoaTouchTextScroll*)v.superview revealRange:range];
 }
 
 static UIView* cocoaTouchTextEditor(Ihandle* ih)
@@ -1104,6 +1187,8 @@ static NSString* cocoaTouchTextValidateEdit(Ihandle* ih, NSString* current, NSRa
 
 - (void)textViewDidChangeSelection:(UITextView*)textView
 {
+	if ([textView.superview isKindOfClass:[IupCocoaTouchTextScroll class]])
+		[(IupCocoaTouchTextScroll*)textView.superview revealRange:textView.selectedRange];
 	if (!_ihandle) return;
 	IFniii cb = (IFniii)IupGetCallback(_ihandle, "CARET_CB");
 	if (!cb) return;
@@ -1278,7 +1363,7 @@ static int cocoaTouchTextSetBorderAttrib(Ihandle* ih, const char* value)
 		f.borderStyle = on ? UITextBorderStyleRoundedRect : UITextBorderStyleNone;
 		return 1;
 	}
-	UITextView* v = cocoaTouchTextView(ih);
+	UIView* v = cocoaTouchTextView(ih) ? (UIView*)ih->handle : nil;
 	if (v)
 	{
 		v.layer.borderWidth = on ? 1.0 : 0.0;
@@ -1391,11 +1476,10 @@ static char* cocoaTouchTextGetScrollVisibleAttrib(Ihandle* ih)
 	UITextView* v = cocoaTouchTextView(ih);
 	if (!v) return "NO";
 	if (!v.scrollEnabled) return "NO";
-	CGSize content = v.contentSize;
-	CGSize frame = v.bounds.size;
+	UIScrollView* hs = [v.superview isKindOfClass:[IupCocoaTouchTextScroll class]] ? (UIScrollView*)v.superview : v;
 	int sb_h = 0, sb_v = 0;
-	if (v.showsHorizontalScrollIndicator && content.width  > frame.width)  sb_h = 1;
-	if (v.showsVerticalScrollIndicator   && content.height > frame.height) sb_v = 1;
+	if (hs.showsHorizontalScrollIndicator && hs.contentSize.width > hs.bounds.size.width) sb_h = 1;
+	if (v.showsVerticalScrollIndicator && v.contentSize.height > v.bounds.size.height) sb_v = 1;
 	if (sb_h && sb_v) return "YES";
 	if (sb_h) return "HORIZONTAL";
 	if (sb_v) return "VERTICAL";
@@ -1556,7 +1640,7 @@ static int cocoaTouchTextSetAppendAttrib(Ihandle* ih, const char* value)
 		[tv.textStorage appendAttributedString:tail];
 		[tail release];
 		if (ih->data->append_scroll)
-			[tv scrollRangeToVisible:NSMakeRange(tv.textStorage.length, 0)];
+			cocoaTouchTextScrollRangeToVisible(tv, NSMakeRange(tv.textStorage.length, 0));
 		return 0;
 	}
 
@@ -1588,7 +1672,7 @@ static int cocoaTouchTextSetScrollToAttrib(Ihandle* ih, const char* value)
 	UITextView* v = cocoaTouchTextView(ih);
 	if (v)
 	{
-		[v scrollRangeToVisible:NSMakeRange((NSUInteger)pos, 0)];
+		cocoaTouchTextScrollRangeToVisible(v, NSMakeRange((NSUInteger)pos, 0));
 		return 0;
 	}
 	UITextField* f = cocoaTouchTextField(ih);
@@ -1602,7 +1686,7 @@ static int cocoaTouchTextSetScrollToPosAttrib(Ihandle* ih, const char* value)
 	if (!value || !iupStrToInt(value, &pos)) return 0;
 	if (pos < 0) pos = 0;
 	UITextView* v = cocoaTouchTextView(ih);
-	if (v) { [v scrollRangeToVisible:NSMakeRange((NSUInteger)pos, 0)]; return 0; }
+	if (v) { cocoaTouchTextScrollRangeToVisible(v, NSMakeRange((NSUInteger)pos, 0)); return 0; }
 	UITextField* f = cocoaTouchTextField(ih);
 	if (f) cocoaTouchTextFieldSetSelection(f, (NSUInteger)pos, (NSUInteger)pos);
 	return 0;
@@ -1771,12 +1855,16 @@ static int cocoaTouchTextMapMethod(Ihandle* ih)
 		tv.font = [UIFont systemFontOfSize:[UIFont systemFontSize]];
 		tv.textContainerInset = UIEdgeInsetsZero;
 		ih->data->has_formatting = 1;
+		cocoaTouchTextWireViewDelegate(tv, ih);
+		view = tv;
 		if (iupAttribGetBoolean(ih, "WORDWRAP"))
 			ih->data->sb &= ~IUP_SB_HORIZ;
 		else
+		{
 			tv.unwrapped = YES;
-		cocoaTouchTextWireViewDelegate(tv, ih);
-		view = tv;
+			view = [[IupCocoaTouchTextScroll alloc] initWithTextView:tv];
+			[tv release];
+		}
 	}
 	else if (iupAttribGetBoolean(ih, "SPIN"))
 	{
