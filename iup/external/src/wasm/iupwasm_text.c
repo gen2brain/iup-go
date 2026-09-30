@@ -743,7 +743,7 @@ IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bul
   sel = iupAttribGet(formattag, "SELECTION");
   if (iupStrToIntInt(selpos, &p1, &p2, ':') == 2)
     use_pos = 1;
-  else if (!sel || sscanf(sel, "%d,%d:%d,%d", &l1, &c1, &l2, &c2) != 4)
+  else if (!sel || !iupStrToLinColRange(sel, &l1, &c1, &l2, &c2))
     return;
 
   v = iupAttribGet(formattag, "WEIGHT");

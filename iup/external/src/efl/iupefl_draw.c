@@ -585,7 +585,7 @@ IUP_SDK_API void iupdrvDrawFlush(IdrawCanvas* dc)
 
   updaterect = iupAttribGet(dc->ih, "_IUP_EFL_UPDATERECT");
   if (updaterect && img_w == dc->w && img_h == dc->h &&
-      sscanf(updaterect, "%d %d %d %d", &x1, &y1, &x2, &y2) == 4)
+      iupStrToRect(updaterect, &x1, &y1, &x2, &y2))
   {
     if (x1 < 0) x1 = 0;
     if (y1 < 0) y1 = 0;

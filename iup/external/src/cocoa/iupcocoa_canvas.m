@@ -1111,7 +1111,7 @@ static int cocoaCanvasSetBgColorAttrib(Ihandle* ih, const char* value)
 static int cocoaCanvasSetUpdateRectAttrib(Ihandle* ih, const char* value)
 {
   int x1, y1, x2, y2;
-  if (value && !iupAttribGet(ih, "_IUP_GLCONTROLDATA") && sscanf(value, "%d %d %d %d", &x1, &y1, &x2, &y2) == 4)
+  if (value && !iupAttribGet(ih, "_IUP_GLCONTROLDATA") && iupStrToRect(value, &x1, &y1, &x2, &y2))
   {
     IupCocoaCanvasView* canvas_view = cocoaCanvasGetCanvasView(ih);
     [canvas_view setNeedsDisplayInRect:NSMakeRect(x1, y1, x2 - x1 + 1, y2 - y1 + 1)];

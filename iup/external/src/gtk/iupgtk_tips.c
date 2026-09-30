@@ -56,7 +56,7 @@ static gboolean gtkQueryTooltip(GtkWidget* widget, gint _x, gint _y, gboolean ke
   {
     GdkRectangle rect;
     int x1 = 0, x2 = 0, y1 = 0, y2 = 0;
-    if (sscanf(value, "%d %d %d %d", &x1, &y1, &x2, &y2) != 4)
+    if (!iupStrToRect(value, &x1, &y1, &x2, &y2))
       return FALSE;
     rect.x = x1;
     rect.y = y1;

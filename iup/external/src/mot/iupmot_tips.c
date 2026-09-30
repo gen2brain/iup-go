@@ -60,7 +60,7 @@ static void motTipsShow(void)
   if (value)
   {
     int x1 = 0, x2 = 0, y1 = 0, y2 = 0, wx = x, wy = y;
-    if (sscanf(value, "%d %d %d %d", &x1, &y1, &x2, &y2) != 4)
+    if (!iupStrToRect(value, &x1, &y1, &x2, &y2))
       return;
     iupdrvScreenToClient(mot_tips.ih, &wx, &wy);
     if (wx < x1 || wx > x2 || wy < y1 || wy > y2)

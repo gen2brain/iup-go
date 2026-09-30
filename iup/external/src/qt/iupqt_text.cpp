@@ -947,7 +947,7 @@ static int qtTextSetSelectionAttrib(Ihandle* ih, const char* value)
   if (ih->data->is_multiline)
   {
     int lin1 = 1, col1 = 1, lin2 = 1, col2 = 1;
-    if (sscanf(value, "%d,%d:%d,%d", &lin1, &col1, &lin2, &col2) != 4)
+    if (!iupStrToLinColRange(value, &lin1, &col1, &lin2, &col2))
       return 0;
     iupdrvTextConvertLinColToPos(ih, lin1, col1, &start);
     iupdrvTextConvertLinColToPos(ih, lin2, col2, &end);
@@ -2093,7 +2093,7 @@ static bool qtTextParseSelection(Ihandle* ih, const char* value, int* start, int
     return true;
   }
 
-  if (sscanf(value, "%d,%d:%d,%d", &lin_start, &col_start, &lin_end, &col_end) != 4)
+  if (!iupStrToLinColRange(value, &lin_start, &col_start, &lin_end, &col_end))
     return false;
 
   if (lin_start < 1 || col_start < 1 || lin_end < 1 || col_end < 1)

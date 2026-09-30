@@ -54,7 +54,7 @@ static int winDatePickSetValueAttrib(Ihandle* ih, const char* value)
   else
   {
     int year, month, day;
-    if (sscanf(value, "%d/%d/%d", &year, &month, &day) == 3)
+    if (iupStrToDate(value, &year, &month, &day))
     {
       SYSTEMTIME st;
       ZeroMemory(&st, sizeof(SYSTEMTIME));

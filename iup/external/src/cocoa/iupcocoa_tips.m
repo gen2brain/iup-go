@@ -323,7 +323,7 @@ static void iupCocoaTipsUpdateForView(NSView* the_view, IupCocoaToolTipOwner* ow
   if (tiprect_value)
   {
     int x1, y1, x2, y2;
-    if (sscanf(tiprect_value, "%d %d %d %d", &x1, &y1, &x2, &y2) == 4)
+    if (iupStrToRect(tiprect_value, &x1, &y1, &x2, &y2))
     {
       tip_rect = NSMakeRect(x1, y1, x2 - x1 + 1, y2 - y1 + 1);
 

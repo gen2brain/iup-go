@@ -807,7 +807,7 @@ static int fltkCanvasSetUpdateRectAttrib(Ihandle* ih, const char* value)
 {
   auto* widget = reinterpret_cast<Fl_Widget*>(ih->handle);
   int x1, y1, x2, y2;
-  if (widget && value && sscanf(value, "%d %d %d %d", &x1, &y1, &x2, &y2) == 4)
+  if (widget && value && iupStrToRect(value, &x1, &y1, &x2, &y2))
     widget->damage(FL_DAMAGE_ALL, widget->x() + x1, widget->y() + y1, x2 - x1 + 1, y2 - y1 + 1);
   else
     iupdrvPostRedraw(ih);

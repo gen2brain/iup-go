@@ -442,7 +442,7 @@ static NSRange cocoaTouchTextResolveFormatRange(Ihandle* ih, Ihandle* tag, NSUIn
 		if (ih->data->is_multiline)
 		{
 			int l1 = 1, c1 = 1, l2 = 1, c2 = 1;
-			if (sscanf(sel, "%d,%d:%d,%d", &l1, &c1, &l2, &c2) == 4)
+			if (iupStrToLinColRange(sel, &l1, &c1, &l2, &c2))
 			{
 				int s = 0, e = 0;
 				iupdrvTextConvertLinColToPos(ih, l1, c1, &s);
@@ -1435,7 +1435,7 @@ static int cocoaTouchTextSetSelectionAttrib(Ihandle* ih, const char* value)
 	if (ih->data->is_multiline)
 	{
 		int lin1 = 1, col1 = 1, lin2 = 1, col2 = 1;
-		if (sscanf(value, "%d,%d:%d,%d", &lin1, &col1, &lin2, &col2) != 4) return 0;
+		if (!iupStrToLinColRange(value, &lin1, &col1, &lin2, &col2)) return 0;
 		iupdrvTextConvertLinColToPos(ih, lin1, col1, &s);
 		iupdrvTextConvertLinColToPos(ih, lin2, col2, &e);
 	}

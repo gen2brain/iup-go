@@ -370,7 +370,7 @@ static int gtk4CanvasUpdateRetained(Ihandle* ih, iupGtk4Canvas* canvas, int widt
   if (!full && !update)
     return 1;
 
-  if (update && sscanf(update, "%d %d %d %d", &x1, &y1, &x2, &y2) != 4)
+  if (update && !iupStrToRect(update, &x1, &y1, &x2, &y2))
   {
     full = 1;
     x1 = 0; y1 = 0; x2 = width - 1; y2 = height - 1;
@@ -494,13 +494,13 @@ static void iup_gtk4_canvas_init(iupGtk4Canvas* canvas)
 static int gtk4CanvasSetUpdateRectAttrib(Ihandle* ih, const char* value)
 {
   int x1, y1, x2, y2;
-  if (value && sscanf(value, "%d %d %d %d", &x1, &y1, &x2, &y2) == 4)
+  if (value && iupStrToRect(value, &x1, &y1, &x2, &y2))
   {
     char* pending = iupAttribGet(ih, "_IUPGTK4_UPDATERECT");
     if (pending)
     {
       int px1, py1, px2, py2;
-      if (sscanf(pending, "%d %d %d %d", &px1, &py1, &px2, &py2) != 4)
+      if (!iupStrToRect(pending, &px1, &py1, &px2, &py2))
         return 0;
 
       if (px1 < x1) x1 = px1;

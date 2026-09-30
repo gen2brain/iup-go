@@ -744,7 +744,7 @@ static void winCanvasRelease(Iclass* ic)
 static int winCanvasSetUpdateRectAttrib(Ihandle* ih, const char* value)
 {
   int x1, y1, x2, y2;
-  if (value && iupwinDrawPartialSupported() && !iupAttribGet(ih, "_IUP_GLCONTROLDATA") && sscanf(value, "%d %d %d %d", &x1, &y1, &x2, &y2) == 4)
+  if (value && iupwinDrawPartialSupported() && !iupAttribGet(ih, "_IUP_GLCONTROLDATA") && iupStrToRect(value, &x1, &y1, &x2, &y2))
   {
     RECT rect;
     rect.left = x1;

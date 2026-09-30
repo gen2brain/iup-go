@@ -59,7 +59,7 @@ static int gtk4CalendarSetValueAttrib(Ihandle* ih, const char* value)
   else
   {
     int year, month, day;
-    if (sscanf(value, "%d/%d/%d", &year, &month, &day) == 3)
+    if (iupStrToDate(value, &year, &month, &day))
     {
       GDateTime* dt;
       if (month < 1) month = 1;

@@ -45,7 +45,7 @@ static int cocoaCalendarSetValueAttrib(Ihandle* ih, const char* value)
   else if (value)
   {
     int year, month, day;
-    if (sscanf(value, "%d/%d/%d", &year, &month, &day) == 3)
+    if (iupStrToDate(value, &year, &month, &day))
     {
       if (month < 1) month = 1;
       if (month > 12) month = 12;

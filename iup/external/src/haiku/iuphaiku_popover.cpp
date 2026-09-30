@@ -91,7 +91,7 @@ public:
       if (rect)
       {
         int x = 0, y = 0, w = 0, h = 0;
-        if (sscanf(rect, "%d %d %d %d", &x, &y, &w, &h) == 4)
+        if (iupStrToRect(rect, &x, &y, &w, &h))
         {
           BPoint cur;
           uint32 buttons = 0;

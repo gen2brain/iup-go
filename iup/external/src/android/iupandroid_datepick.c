@@ -125,7 +125,7 @@ static int androidDatePickSetValueAttrib(Ihandle* ih, const char* value)
   {
     androidDatePickGetToday(&y, &m, &d);
   }
-  else if (sscanf(value, "%d/%d/%d", &y, &m, &d) != 3)
+  else if (!iupStrToDate(value, &y, &m, &d))
   {
     return 0;
   }
