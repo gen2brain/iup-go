@@ -518,7 +518,12 @@ static void gtkTextParseParagraphFormat(Ihandle* formattag, GtkTextTag* tag)
       free(str);
 
       str = iupStrDupUntil((const char**)&format, ' ');
-      if (!str) break;
+      if (!str)
+      {
+        if (!format || !*format) break;
+        str = iupStrDup(format);
+        format = NULL;
+      }
 
 #if PANGO_VERSION_CHECK(1, 50, 0)
       if (iupStrEqualNoCase(str, "RIGHT"))

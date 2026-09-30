@@ -2183,7 +2183,12 @@ static bool qtTextParseParagraphFormat(Ihandle* formattag, QTextBlockFormat* blo
       free(str);
 
       str = iupStrDupUntil(&format, ' ');
-      if (!str) break;
+      if (!str)
+      {
+        if (!format || !*format) break;
+        str = iupStrDup(format);
+        format = nullptr;
+      }
 
       QTextOption::TabType tabType = QTextOption::LeftTab;
       if (iupStrEqualNoCase(str, "RIGHT"))

@@ -2169,7 +2169,12 @@ static void winuiTextParseParagraphFormat(Ihandle* formattag, ITextRange const& 
       free(postok);
 
       char* aligntok = iupStrDupUntil(const_cast<const char**>(&str), ' ');
-      if (!aligntok) break;
+      if (!aligntok)
+      {
+        if (!str || !*str) break;
+        aligntok = iupStrDup(str);
+        str = nullptr;
+      }
       TabAlignment ta = TabAlignment::Left;
       if (iupStrEqualNoCase(aligntok, "DECIMAL")) ta = TabAlignment::Decimal;
       else if (iupStrEqualNoCase(aligntok, "RIGHT")) ta = TabAlignment::Right;

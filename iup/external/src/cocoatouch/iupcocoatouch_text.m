@@ -607,7 +607,12 @@ static NSParagraphStyle* cocoaTouchTextTagBuildParagraph(Ihandle* tag)
 			if (!postok) break;
 			int pos = 0; iupStrToInt(postok, &pos); free(postok);
 			char* aligntok = iupStrDupUntil((const char**)&str, ' ');
-			if (!aligntok) break;
+			if (!aligntok)
+			{
+				if (!str || !*str) break;
+				aligntok = iupStrDup(str);
+				str = NULL;
+			}
 			NSTextAlignment ta = NSTextAlignmentLeft;
 			if (iupStrEqualNoCase(aligntok, "RIGHT")) ta = NSTextAlignmentRight;
 			else if (iupStrEqualNoCase(aligntok, "CENTER")) ta = NSTextAlignmentCenter;

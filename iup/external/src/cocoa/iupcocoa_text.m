@@ -2282,7 +2282,12 @@ static bool cocoaTextParseParagraphAttributes(NSMutableParagraphStyle* paragraph
       free(str);
 
       str = iupStrDupUntil(&format, ' ');
-      if (!str) break;
+      if (!str)
+      {
+        if (!format || !*format) break;
+        str = iupStrDup(format);
+        format = NULL;
+      }
 
       NSTextTab* text_tab = nil;
       if(iupStrEqualNoCase(str, "LEFT"))
