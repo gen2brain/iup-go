@@ -10,7 +10,6 @@ import android.os.Looper;
 import android.os.Message;
 import android.os.MessageQueue;
 import android.os.SystemClock;
-import android.view.Choreographer;
 import android.util.Log;
 import android.view.InputDevice;
 import android.view.KeyEvent;
@@ -738,9 +737,10 @@ public final class IupCommon
     public static void loopStepFlush()
     {
         if (Looper.myLooper() != Looper.getMainLooper()) return;
-        if (IupActivity.currentActivity() == null) return;
-        /* Fire-and-forget vsync nudge; the frame runs on this same thread, so blocking would deadlock. */
-        Choreographer.getInstance().postFrameCallback(t -> {});
+        /* drain what is already queued: pump until a marker posted behind it runs */
+        final boolean[] done = { false };
+        new android.os.Handler(Looper.getMainLooper()).post(() -> done[0] = true);
+        pumpUntilDone(done);
     }
 
     @Keep

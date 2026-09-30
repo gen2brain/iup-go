@@ -115,6 +115,12 @@ static int androidProgressBarMapMethod(Ihandle* ih)
   if (initial_height == 0) initial_height = 30;
 
   jboolean is_vertical = iupStrEqualNoCase(iupAttribGetStr(ih, "ORIENTATION"), "VERTICAL") ? JNI_TRUE : JNI_FALSE;
+  if (is_vertical && ih->userheight < ih->userwidth)
+  {
+    int tmp = ih->userheight;
+    ih->userheight = ih->userwidth;
+    ih->userwidth = tmp;
+  }
   jboolean is_marquee  = iupStrBoolean(iupAttribGetStr(ih, "MARQUEE")) ? JNI_TRUE : JNI_FALSE;
   jboolean is_circular = iupStrBoolean(iupAttribGetStr(ih, "CIRCULAR")) ? JNI_TRUE : JNI_FALSE;
 

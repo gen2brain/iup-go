@@ -12,6 +12,8 @@
 #include "iupcbs.h"
 
 #include "iup_object.h"
+#include "iup_attrib.h"
+#include "iup_dlglist.h"
 
 #include "iupandroid_drv.h"
 #include "iupandroid_jnimacros.h"
@@ -112,10 +114,21 @@ int IupMainLoopLevel(void)
   return s_modal_pump_level;
 }
 
+static int androidLoopHasModalDialog(void)
+{
+  Ihandle* dlg;
+  for (dlg = iupDlgListFirst(); dlg; dlg = iupDlgListNext())
+  {
+    if (dlg->handle && iupAttribGetBoolean(dlg, "MODAL"))
+      return 1;
+  }
+  return 0;
+}
+
 /* first call from user main() returns immediately (Activity owns the looper); nested call from iup.Popup pumps until onDestroy */
 int IupMainLoop(void)
 {
-  if (!s_entry_finished)
+  if (!s_entry_finished && !androidLoopHasModalDialog())
   {
     s_entry_finished = 1;
     return IUP_NOERROR;

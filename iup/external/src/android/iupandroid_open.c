@@ -175,15 +175,17 @@ void iupAndroidUpdateGlobalColors(void)
   int accent_argb = iupAndroidResolveThemeColor("colorAccent",    dark ? 0xFFD0BCFF : 0xFF6750A4);
   int hl_argb     = iupAndroidResolveThemeColor("colorPrimary",   accent_argb);
   int hl_fg_argb  = iupAndroidResolveThemeColor("colorOnPrimary", dark ? 0xFF381E72 : 0xFFFFFFFF);
+  int link_argb   = iupAndroidResolveThemeColor("textColorLink",  hl_argb);
 
   IUP_RGB_FROM_ARGB(hl,    hl_argb);
   IUP_RGB_FROM_ARGB(hf,    hl_fg_argb);
   IUP_RGB_FROM_ARGB(ac,    accent_argb);
+  IUP_RGB_FROM_ARGB(lk,    link_argb);
 
   iupGlobalSetDefaultColorAttrib("TXTHLCOLOR",   hl_r, hl_g, hl_b);
   iupGlobalSetDefaultColorAttrib("TXTHLFGCOLOR", hf_r, hf_g, hf_b);
   iupGlobalSetDefaultColorAttrib("ACCENTCOLOR",  ac_r, ac_g, ac_b);
-  iupGlobalSetDefaultColorAttrib("LINKFGCOLOR",  ac_r, ac_g, ac_b);
+  iupGlobalSetDefaultColorAttrib("LINKFGCOLOR",  lk_r, lk_g, lk_b);
 
 #undef IUP_RGB_FROM_ARGB
 

@@ -123,6 +123,21 @@ static int androidCanvasSetPosXAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
+static int androidCanvasSetBorderAttrib(Ihandle* ih, const char* value)
+{
+  IUPJNI_DECLARE_METHOD_ID_STATIC(IupCanvasHelper_setBorder);
+  if (!ih->handle)
+    return 1;
+
+  JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
+  jclass java_class = IUPJNI_FindClass(IupCanvasHelper, jni_env, "io/github/gen2brain/iupgo/IupCanvasHelper");
+  jmethodID method_id = IUPJNI_GetStaticMethodID(IupCanvasHelper_setBorder, jni_env, java_class, "setBorder", "(Landroid/view/View;Z)V");
+  (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, ih->handle, (jboolean)iupStrBoolean(value));
+  iupAndroid_CheckException(jni_env, "IupCanvasHelper.setBorder");
+  (*jni_env)->DeleteLocalRef(jni_env, java_class);
+  return 1;
+}
+
 static int androidCanvasSetPosYAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->sb & IUP_SB_VERT)
@@ -150,6 +165,7 @@ IUP_SDK_API void iupdrvCanvasInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, androidCanvasSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
 
   iupClassRegisterAttribute(ic, "DRAWABLE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_STRING|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BORDER", NULL, androidCanvasSetBorderAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "POSX", iupCanvasGetPosXAttrib, androidCanvasSetPosXAttrib, "0", NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "POSY", iupCanvasGetPosYAttrib, androidCanvasSetPosYAttrib, "0", NULL, IUPAF_NO_INHERIT);

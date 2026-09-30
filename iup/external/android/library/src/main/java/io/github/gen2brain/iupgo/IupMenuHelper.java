@@ -5,7 +5,6 @@ import android.graphics.Bitmap;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.drawable.BitmapDrawable;
-import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.ShapeDrawable;
@@ -118,15 +117,17 @@ public final class IupMenuHelper
     {
         if (menuIhandle == 0) return;
         appendRecentItems(androidMenu, menuIhandle);
+        androidx.core.view.MenuCompat.setGroupDividerEnabled(androidMenu, true);
+        int group = Menu.FIRST;
         int count = nativeGetChildCount(menuIhandle);
         for (int i = 0; i < count; i++)
         {
             long childIh = nativeGetChild(menuIhandle, i);
             if (childIh == 0) continue;
             int type = nativeGetType(childIh);
-            if (type == TYPE_ITEM) addItem(androidMenu, childIh);
-            else if (type == TYPE_SUBMENU) addSubmenu(androidMenu, childIh);
-            /* Overflow menu has no separator primitive pre API 28. */
+            if (type == TYPE_SEPARATOR) group++;
+            else if (type == TYPE_ITEM) addItem(androidMenu, childIh, null, group);
+            else if (type == TYPE_SUBMENU) addSubmenu(androidMenu, childIh, null, group);
         }
     }
 
@@ -215,14 +216,17 @@ public final class IupMenuHelper
 
         long[] picked = { 0 };
         Menu menu = pm.getMenu();
+        androidx.core.view.MenuCompat.setGroupDividerEnabled(menu, true);
+        int group = Menu.FIRST;
         int count = nativeGetChildCount(menuIhandle);
         for (int i = 0; i < count; i++)
         {
             long childIh = nativeGetChild(menuIhandle, i);
             if (childIh == 0) continue;
             int type = nativeGetType(childIh);
-            if (type == TYPE_ITEM) addItem(menu, childIh, picked);
-            else if (type == TYPE_SUBMENU) addSubmenu(menu, childIh, picked);
+            if (type == TYPE_SEPARATOR) group++;
+            else if (type == TYPE_ITEM) addItem(menu, childIh, picked, group);
+            else if (type == TYPE_SUBMENU) addSubmenu(menu, childIh, picked, group);
         }
 
         boolean[] done = { false };
@@ -263,7 +267,10 @@ public final class IupMenuHelper
             ViewGroup.LayoutParams.WRAP_CONTENT,
             ViewGroup.LayoutParams.WRAP_CONTENT,
             true);
-        pw.setBackgroundDrawable(new ColorDrawable(0x00000000));
+        GradientDrawable shadowShape = new GradientDrawable();
+        shadowShape.setColor(bgColor);
+        shadowShape.setCornerRadius(4 * density);
+        pw.setBackgroundDrawable(shadowShape);
         pw.setOutsideTouchable(true);
         pw.setElevation(8 * density);
 
@@ -423,8 +430,13 @@ public final class IupMenuHelper
 
     private static void addItem(Menu androidMenu, final long itemIh, final long[] pickedSlot)
     {
+        addItem(androidMenu, itemIh, pickedSlot, Menu.NONE);
+    }
+
+    private static void addItem(Menu androidMenu, final long itemIh, final long[] pickedSlot, int group)
+    {
         String title = nativeGetTitle(itemIh);
-        MenuItem mi = androidMenu.add(Menu.NONE, ID_BASE, Menu.NONE, title != null ? title : "");
+        MenuItem mi = androidMenu.add(group, ID_BASE, Menu.NONE, title != null ? title : "");
         mi.setEnabled(nativeIsActive(itemIh));
         Activity a = IupApplication.getIupApplication().getCurrentActivity();
         if (a != null)
@@ -466,13 +478,18 @@ public final class IupMenuHelper
 
     private static void addSubmenu(Menu androidMenu, final long submenuIh, final long[] pickedSlot)
     {
+        addSubmenu(androidMenu, submenuIh, pickedSlot, Menu.NONE);
+    }
+
+    private static void addSubmenu(Menu androidMenu, final long submenuIh, final long[] pickedSlot, int group)
+    {
         final long innerMenu = submenuInnerMenu(submenuIh);
         String title = nativeGetTitle(submenuIh);
         Activity actx = IupApplication.getIupApplication().getCurrentActivity();
 
         if (innerMenu != 0 && !hasNestedSubmenus(innerMenu))
         {
-            SubMenu sub = androidMenu.addSubMenu(Menu.NONE, ID_BASE, Menu.NONE, title != null ? title : "");
+            SubMenu sub = androidMenu.addSubMenu(group, ID_BASE, Menu.NONE, title != null ? title : "");
             MenuItem parent = sub.getItem();
             parent.setEnabled(nativeIsActive(submenuIh));
             if (actx != null)
@@ -482,12 +499,15 @@ public final class IupMenuHelper
             }
 
             int count = nativeGetChildCount(innerMenu);
+            int subGroup = Menu.FIRST;
+            androidx.core.view.MenuCompat.setGroupDividerEnabled(sub, true);
             for (int i = 0; i < count; i++)
             {
                 long childIh = nativeGetChild(innerMenu, i);
                 if (childIh == 0) continue;
                 int type = nativeGetType(childIh);
-                if (type == TYPE_ITEM) addItem(sub, childIh, pickedSlot);
+                if (type == TYPE_SEPARATOR) subGroup++;
+                else if (type == TYPE_ITEM) addItem(sub, childIh, pickedSlot, subGroup);
                 /* SubMenu children do not support icons or further nesting per Android spec. */
             }
             return;

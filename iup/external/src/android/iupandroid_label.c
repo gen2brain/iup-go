@@ -317,6 +317,9 @@ static int androidLabelMapMethod(Ihandle* ih)
 
   iupAndroid_AddWidgetToParent(jni_env, ih);
 
+  if (!iupAttribGet(ih, "WORDWRAP") && !iupAttribGet(ih, "ELLIPSIS"))
+    androidLabelSetWordWrapAttrib(ih, "NO");
+
   if (IupGetCallback(ih, "DROPFILES_CB"))
     iupAttribSet(ih, "DROPFILESTARGET", "YES");
 
@@ -330,7 +333,7 @@ IUP_SDK_API void iupdrvLabelInitClass(Iclass* ic)
 
   iupClassRegisterAttribute(ic, "TITLE", NULL, androidLabelSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "IMAGE", NULL, androidLabelSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "ALIGNMENT", NULL, androidLabelSetAlignmentAttrib, IUPAF_SAMEASSYSTEM, "ALEFT:ACENTER", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ALIGNMENT", NULL, androidLabelSetAlignmentAttrib, "ALEFT:ACENTER", NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FGCOLOR", NULL, androidLabelSetFgColorAttrib, "DLGFGCOLOR", NULL, IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, androidLabelSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
 

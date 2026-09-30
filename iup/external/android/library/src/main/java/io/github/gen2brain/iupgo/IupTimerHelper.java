@@ -10,6 +10,15 @@ public final class IupTimerHelper
 {
     private IupTimerHelper() {}
 
+    private static final java.util.Set<IupTimer> sRunning = new java.util.HashSet<>();
+
+    /* the last dialog is gone: the app's main loop has ended, as IupMainLoop returning on desktop */
+    static void stopAll()
+    {
+        for (IupTimer timer : new java.util.ArrayList<>(sRunning))
+            timer.stop();
+    }
+
 
     @Keep
     public static IupTimer createTimer(final long ihandlePtr)
@@ -63,6 +72,7 @@ public final class IupTimerHelper
             startTime = SystemClock.uptimeMillis();
             postDelayed(runnable, intervalPeriod);
             isStarted = true;
+            sRunning.add(this);
         }
 
         public void stop()
@@ -70,6 +80,7 @@ public final class IupTimerHelper
             if (runnableCode != null) removeCallbacks(runnableCode);
             runnableCode = null;
             isStarted = false;
+            sRunning.remove(this);
         }
     }
 }

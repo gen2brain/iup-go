@@ -18,6 +18,7 @@ public class IupLaunchActivity extends Activity
 
 
     private boolean loadLibraryFailed = false;
+    private boolean entryStarted = false;
 
     /* Override to add libraries (no lib prefix, no .so suffix). Must include "iup". */
     protected String[] getLibraries()
@@ -82,6 +83,8 @@ public class IupLaunchActivity extends Activity
     protected void onStart()
     {
         super.onStart();
+        if (entryStarted || loadLibraryFailed || isFinishing()) return;
+        entryStarted = true;
 
         String entryFunctionName = getManifestMetaString("ENTRY_POINT");
         String entryLibraryName = getManifestMetaString("ENTRY_LIBRARY");
@@ -90,7 +93,12 @@ public class IupLaunchActivity extends Activity
             entryLibraryName = getEntryPointLibraryName();
         }
 
-        IupEntry(this, entryFunctionName, entryLibraryName);
+        final String entryName = entryFunctionName, libraryName = entryLibraryName;
+        /* a popup from the entry point pumps a modal loop, which needs this activity resumed */
+        getWindow().getDecorView().post(() -> {
+            IupEntry(this, entryName, libraryName);
+            finish();
+        });
     }
 
     @Override

@@ -35,10 +35,13 @@ JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupTabsHelper_dispatchTabC
   Ihandle* old_child = IupGetChild(ih, old_pos);
 
   IFnnn cb_change = (IFnnn)IupGetCallback(ih, "TABCHANGE_CB");
-  if (cb_change) cb_change(ih, new_child, old_child);
-
-  IFnii cb_change_pos = (IFnii)IupGetCallback(ih, "TABCHANGEPOS_CB");
-  if (cb_change_pos) cb_change_pos(ih, new_pos, old_pos);
+  if (cb_change)
+    cb_change(ih, new_child, old_child);
+  else
+  {
+    IFnii cb_change_pos = (IFnii)IupGetCallback(ih, "TABCHANGEPOS_CB");
+    if (cb_change_pos) cb_change_pos(ih, new_pos, old_pos);
+  }
 
   char buf[32];
   snprintf(buf, sizeof(buf), "%d", new_pos);

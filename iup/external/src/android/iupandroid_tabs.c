@@ -258,6 +258,8 @@ static int androidTabsSetTabImageAttribId(Ihandle* ih, int pos, const char* valu
 static int androidTabsSetTabVisibleAttribId(Ihandle* ih, int pos, const char* value)
 {
   if (!ih->handle) return 1;
+  if (!iupStrBoolean(value))
+    iupTabsCheckCurrentTab(ih, pos, 0);
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
   jclass cls = androidTabsFindHelper(jni_env);
   jmethodID m = (*jni_env)->GetStaticMethodID(jni_env, cls, "setTabVisible", "(Landroid/view/View;IZ)V");

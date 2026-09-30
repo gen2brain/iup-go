@@ -12,6 +12,7 @@
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_key.h"
+#include "iup_image.h"
 
 #include "iupandroid_drv.h"
 
@@ -27,14 +28,14 @@ JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupTableHelper_dispatchSel
   iupTableCallMultiSelectionCb(ih);
 }
 
-JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupTableHelper_dispatchClick(
+JNIEXPORT jint JNICALL Java_io_github_gen2brain_iupgo_IupTableHelper_dispatchClick(
     JNIEnv* jni_env, jclass cls, jlong ihandle_ptr,
-    jint lin, jint col, jint focus_changed)
+    jint lin, jint col, jint focus_changed, jint double_click)
 {
   (void)jni_env;
   (void)cls;
   Ihandle* ih = (Ihandle*)ihandle_ptr;
-  if (!ih) return;
+  if (!ih) return 0;
 
   iupAndroidTableCellsCollapse(ih);
 
@@ -53,9 +54,12 @@ JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupTableHelper_dispatchCli
   {
     char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
     iupKEY_SETBUTTON1(status);
+    if (double_click) iupKEY_SETDOUBLE(status);
     int ret = click_cb(ih, (int)lin, (int)col, status);
     if (ret == IUP_CLOSE) IupExitLoop();
+    if (ret == IUP_IGNORE) return 1;
   }
+  return 0;
 }
 
 
@@ -219,4 +223,19 @@ JNIEXPORT jstring JNICALL Java_io_github_gen2brain_iupgo_IupTableHelper_dispatch
   if (!cb) return NULL;
   char* v = cb(ih, (int)lin, (int)col);
   return v ? (*jni_env)->NewStringUTF(jni_env, v) : NULL;
+}
+
+JNIEXPORT jobject JNICALL Java_io_github_gen2brain_iupgo_IupTableHelper_dispatchImageRequest(
+    JNIEnv* jni_env, jclass cls, jlong ihandle_ptr, jint lin, jint col)
+{
+  (void)jni_env;
+  (void)cls;
+  Ihandle* ih = (Ihandle*)ihandle_ptr;
+  if (!ih) return NULL;
+
+  sIFnii cb = (sIFnii)IupGetCallback(ih, "IMAGE_CB");
+  if (!cb) return NULL;
+  char* name = cb(ih, (int)lin, (int)col);
+  if (!name) return NULL;
+  return (jobject)iupImageGetImage(name, ih, 0, NULL);
 }

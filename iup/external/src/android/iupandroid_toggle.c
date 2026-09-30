@@ -247,15 +247,16 @@ static int androidToggleSetFgColorAttrib(Ihandle* ih, const char* value)
 }
 
 /* callers pass the live value; the hash holds the old one until the setter returns */
-static void androidToggleApplyImages(Ihandle* ih, const char* image_name, const char* impress_name)
+static void androidToggleApplyImages(Ihandle* ih, const char* image_name, const char* impress_name, const char* iminactive)
 {
   void* img = image_name ? iupImageGetImage(image_name, ih, 0, NULL) : NULL;
   void* impress = impress_name ? iupImageGetImage(impress_name, ih, 0, NULL) : NULL;
+  void* inactive = iminactive ? iupImageGetImage(iminactive, ih, 0, NULL) : (image_name ? iupImageGetImage(image_name, ih, 1, NULL) : NULL);
 
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
   jclass cls = IUPJNI_FindClass(IupToggleHelper, jni_env, "io/github/gen2brain/iupgo/IupToggleHelper");
-  jmethodID m = (*jni_env)->GetStaticMethodID(jni_env, cls, "setImage", "(Landroid/view/View;Landroid/graphics/Bitmap;Landroid/graphics/Bitmap;)V");
-  (*jni_env)->CallStaticVoidMethod(jni_env, cls, m, ih->handle, (jobject)img, (jobject)impress);
+  jmethodID m = (*jni_env)->GetStaticMethodID(jni_env, cls, "setImage", "(Landroid/view/View;Landroid/graphics/Bitmap;Landroid/graphics/Bitmap;Landroid/graphics/Bitmap;)V");
+  (*jni_env)->CallStaticVoidMethod(jni_env, cls, m, ih->handle, (jobject)img, (jobject)impress, (jobject)inactive);
   iupAndroid_CheckException(jni_env, "IupToggleHelper.setImage");
   (*jni_env)->DeleteLocalRef(jni_env, cls);
 }
@@ -299,14 +300,21 @@ static int androidToggleSetPaddingAttrib(Ihandle* ih, const char* value)
 static int androidToggleSetImageAttrib(Ihandle* ih, const char* value)
 {
   if (!ih->handle) return 1;
-  androidToggleApplyImages(ih, value, iupAttribGet(ih, "IMPRESS"));
+  androidToggleApplyImages(ih, value, iupAttribGet(ih, "IMPRESS"), iupAttribGet(ih, "IMINACTIVE"));
   return 1;
 }
 
 static int androidToggleSetImpressAttrib(Ihandle* ih, const char* value)
 {
   if (!ih->handle) return 1;
-  androidToggleApplyImages(ih, iupAttribGet(ih, "IMAGE"), value);
+  androidToggleApplyImages(ih, iupAttribGet(ih, "IMAGE"), value, iupAttribGet(ih, "IMINACTIVE"));
+  return 1;
+}
+
+static int androidToggleSetImInactiveAttrib(Ihandle* ih, const char* value)
+{
+  if (!ih->handle) return 1;
+  androidToggleApplyImages(ih, iupAttribGet(ih, "IMAGE"), iupAttribGet(ih, "IMPRESS"), value);
   return 1;
 }
 
@@ -413,4 +421,5 @@ IUP_SDK_API void iupdrvToggleInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "RIGHTBUTTON", NULL, androidToggleSetRightButtonAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "IMPRESS", NULL, androidToggleSetImpressAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMINACTIVE", NULL, androidToggleSetImInactiveAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 }
