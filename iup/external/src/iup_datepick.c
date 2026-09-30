@@ -254,7 +254,7 @@ static int iDatePickSetValueAttrib(Ihandle* ih, const char* value)
   else
   {
     int year, month, day;
-    if (sscanf(value, "%d/%d/%d", &year, &month, &day) == 3)
+    if (iupStrToDate(value, &year, &month, &day))
     {
       Ihandle* txt_year = (Ihandle*)iupAttribGet(ih, "_IUP_DATE_YEAR");
       Ihandle* txt_month = (Ihandle*)iupAttribGet(ih, "_IUP_DATE_MONTH");

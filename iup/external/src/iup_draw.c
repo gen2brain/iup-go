@@ -2366,7 +2366,7 @@ IUP_API void IupDrawImage(Ihandle* ih, const char* name, int x, int y, int w, in
     quality = IUP_DRAW_IMAGE_NEAREST;
 
   value = iupAttribGetStr(ih, "DRAWIMAGESRCRECT");
-  if (value && sscanf(value, "%d %d %d %d", &sx, &sy, &sw, &sh) == 4 && sw > 0 && sh > 0)
+  if (value && iupStrToRect(value, &sx, &sy, &sw, &sh) && sw > 0 && sh > 0)
   {
     int img_w = 0, img_h = 0;
     iupImageGetDrawInfo(name, &img_w, &img_h, NULL);

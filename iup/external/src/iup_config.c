@@ -644,7 +644,7 @@ IUP_API void IupConfigDialogShow(Ihandle* ih, Ihandle* dialog, const char* name)
         char* virtual_screen = IupGetGlobal("VIRTUALSCREEN");
         virtual_x = virtual_y = virtual_w = virtual_h = 0;
         if (virtual_screen)
-          sscanf(virtual_screen, "%d %d %d %d", &virtual_x, &virtual_y, &virtual_w, &virtual_h);
+          iupStrToRect(virtual_screen, &virtual_x, &virtual_y, &virtual_w, &virtual_h);
       }
       else
       {

@@ -292,6 +292,21 @@ IUP_SDK_API int iupStrToDoubleDouble(const char* str, double* f1, double* f2, ch
  * \ingroup str */
 IUP_SDK_API int iupStrToStrStr(const char* str, char* str1, int str1_size, char* str2, int str2_size, char sep);
 
+/** Converts the string "x1 y1 x2 y2" (whitespace separated) to four int.
+ * Returns 1 only when all four values are converted, else 0 and the values are not changed.
+ * \ingroup str */
+IUP_SDK_API int iupStrToRect(const char* str, int* x1, int* y1, int* x2, int* y2);
+
+/** Converts the string "lin1,col1:lin2,col2" to four int.
+ * Returns 1 only when all four values are converted, else 0 and the values are not changed.
+ * \ingroup str */
+IUP_SDK_API int iupStrToLinColRange(const char* str, int* lin1, int* col1, int* lin2, int* col2);
+
+/** Converts the string "year/month/day" to three int.
+ * Returns 1 only when all three values are converted, else 0 and the values are not changed.
+ * \ingroup str */
+IUP_SDK_API int iupStrToDate(const char* str, int* year, int* month, int* day);
+
 /** Returns the file extension of a file name.
  * Supports UNIX and Windows directory separators.
  * Must free the returned string.
