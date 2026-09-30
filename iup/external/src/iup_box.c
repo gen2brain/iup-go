@@ -13,6 +13,7 @@
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_drvfont.h"
+#include "iup_drvinfo.h"
 #include "iup_box.h"
 #include "iup_normalizer.h"
 
@@ -65,7 +66,9 @@ static char* iBoxGetCGapAttrib(Ihandle* ih)
 
 static int iBoxSetGapAttrib(Ihandle* ih, const char* value)
 {
-  iupStrToInt(value, &ih->data->gap);
+  int gap;
+  if (iupStrToInt(value, &gap))
+    ih->data->gap = iupdrvScaleNaturalPx(gap);
   return 0;
 }
 
@@ -140,7 +143,12 @@ static char* iBoxGetCMarginAttrib(Ihandle* ih)
 
 static int iBoxSetMarginAttrib(Ihandle* ih, const char* value)
 {
-  iupStrToIntInt(value, &ih->data->margin_horiz, &ih->data->margin_vert, 'x');
+  int margin_x = -1, margin_y = -1;
+  iupStrToIntInt(value, &margin_x, &margin_y, 'x');
+  if (margin_x != -1)
+    ih->data->margin_horiz = iupdrvScaleNaturalPx(margin_x);
+  if (margin_y != -1)
+    ih->data->margin_vert = iupdrvScaleNaturalPx(margin_y);
   return 0;
 }
 

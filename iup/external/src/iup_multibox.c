@@ -13,6 +13,7 @@
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_drvfont.h"
+#include "iup_drvinfo.h"
 #include "iup_stdcontrols.h"
 #include "iup_varg.h"
 
@@ -79,7 +80,9 @@ static char* iMultiBoxGetCGapHorizAttrib(Ihandle* ih)
 
 static int iMultiBoxSetGapVertAttrib(Ihandle* ih, const char* value)
 {
-  iupStrToInt(value, &ih->data->gap_vert);
+  int gap;
+  if (iupStrToInt(value, &gap))
+    ih->data->gap_vert = iupdrvScaleNaturalPx(gap);
   return 0;
 }
 
@@ -90,7 +93,9 @@ static char* iMultiBoxGetGapVertAttrib(Ihandle* ih)
 
 static int iMultiBoxSetGapHorizAttrib(Ihandle* ih, const char* value)
 {
-  iupStrToInt(value, &ih->data->gap_horiz);
+  int gap;
+  if (iupStrToInt(value, &gap))
+    ih->data->gap_horiz = iupdrvScaleNaturalPx(gap);
   return 0;
 }
 
@@ -121,7 +126,12 @@ static char* iMultiBoxGetCMarginAttrib(Ihandle* ih)
 
 static int iMultiBoxSetMarginAttrib(Ihandle* ih, const char* value)
 {
-  iupStrToIntInt(value, &ih->data->margin_horiz, &ih->data->margin_vert, 'x');
+  int margin_x = -1, margin_y = -1;
+  iupStrToIntInt(value, &margin_x, &margin_y, 'x');
+  if (margin_x != -1)
+    ih->data->margin_horiz = iupdrvScaleNaturalPx(margin_x);
+  if (margin_y != -1)
+    ih->data->margin_vert = iupdrvScaleNaturalPx(margin_y);
   return 0;
 }
 
