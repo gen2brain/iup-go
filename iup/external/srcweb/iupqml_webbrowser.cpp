@@ -72,7 +72,6 @@ static const char* qmlWebBrowserQml =
   "  function iupGo(offset) { goBackOrForward(offset) }\n"
   "  function iupFind(text) { findText(text) }\n"
   "  function iupLoadHtml(html) { loadHtml(html) }\n"
-  "  function iupPdf(path) { printToPdf(path) }\n"
   "  function iupAction(name) {\n"
   "    var actions = { Copy: WebEngineView.Copy, Cut: WebEngineView.Cut, Paste: WebEngineView.Paste, Undo: WebEngineView.Undo, Redo: WebEngineView.Redo, SelectAll: WebEngineView.SelectAll }\n"
   "    triggerWebAction(actions[name])\n"
@@ -581,20 +580,6 @@ static char* qmlWebBrowserGetZoomAttrib(Ihandle* ih)
     return nullptr;
 
   return iupStrReturnInt(static_cast<int>(data->view->property("zoomFactor").toDouble() * 100.0));
-}
-
-/****************************************************************************
- * Print Attributes
- ****************************************************************************/
-
-static int qmlWebBrowserSetPrintAttrib(Ihandle* ih, const char* value)
-{
-  IupQmlWebData* data = qmlWebBrowserGetData(ih);
-  if (!data || !value || !value[0])
-    return 0;
-
-  iupqmlCallMethod(data->view, "iupPdf", QString::fromUtf8(value));
-  return 0;
 }
 
 /****************************************************************************
@@ -1374,7 +1359,7 @@ extern "C" Iclass* iupWebBrowserNewClass(void)
 
   iupClassRegisterAttribute(ic, "ZOOM", qmlWebBrowserGetZoomAttrib, qmlWebBrowserSetZoomAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "PRINT", nullptr, qmlWebBrowserSetPrintAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "PRINT", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED | IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "EDITABLE", qmlWebBrowserGetEditableAttrib, qmlWebBrowserSetEditableAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
 
